@@ -12,8 +12,7 @@ use IEEE.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 entity cache is
-generic (jpc_width : integer := 10; tag_width : integer := 14);
--- generic (jpc_width : integer; tag_width : integer := 14); -- use only 64KB cachable area!
+generic (jpc_width : integer; tag_width : integer := 18);
 
 port (
 
