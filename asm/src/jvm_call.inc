@@ -4,8 +4,8 @@
 //		include file for invoke and return functions
 //
 //	2004-08-19	extracted from jvm.asm
-//	2004-09-16	new bc read hardware
-//	2005-01-10	changes for bytecode cache
+//	
+//	see changlog in jvm.asm
 //
 //	TODO
 
