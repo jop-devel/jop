@@ -1530,6 +1530,27 @@ return:
 //*****************
 // long bytecodes
 
+lreturn:
+dreturn:
+			stm	a	// return value
+			stm b
+			stm	mp
+			stm	cp
+			stvp
+
+			stm	new_jpc
+			nop			// written in adr/read stage!
+			stsp	// last is new sp
+			pop		// flash tos, tos-1 (registers)
+			pop		// sp must be two lower, points to rd adr
+			ldm b
+			ldm	a 
+			ldi	1
+			nop
+			bnz	load_bc
+			nop
+			nop
+
 ldc2_w:	
 			ldm	cp opd
 			nop	opd
@@ -1605,27 +1626,6 @@ lstore_3:	ldvp			// there is no ld4
 //******************
 
 //
-//	this is an interrupt, (bytecode 0xf0)
-//	call com.jopdesign.sys.JVMHelp.interrupt()	(
-//		oder gleich eine f aus JVMHelp ????
-//		... JVM in Java!
-//
-sys_int:
-			ldjpc				// correct wrong increment on jpc
-			ldi	1				//    could also be done in bcfetch.vhd
-			sub					//    but this is simpler :-)
-			stjpc
-			ldm	jjhp			// interrupt() is at offset 0
-								// jjhp points in method table to first
-								// method after methods inherited from Object
-
-			ldi	1
-			nop
-			bnz	invoke			// simulate invokestatic with ptr to meth. str. on stack
-			nop
-			nop
-
-//
 //	null pointer
 //		call JVMHelp.nullPoint();
 //
@@ -1645,7 +1645,7 @@ null_pointer:
 
 
 //
-//	null pointer
+//	array bound exception
 //		call JVMHelp.arrayBound();
 //
 
@@ -1655,6 +1655,27 @@ array_bound:
 								// method after methods inherited from Object
 			ldi	4				// second method (index 2 * 2 word);
 			add
+
+			ldi	1
+			nop
+			bnz	invoke			// simulate invokestatic with ptr to meth. str. on stack
+			nop
+			nop
+
+//
+//	this is an interrupt, (bytecode 0xf0)
+//	call com.jopdesign.sys.JVMHelp.interrupt()	(
+//		oder gleich eine f aus JVMHelp ????
+//		... JVM in Java!
+//
+sys_int:
+			ldjpc				// correct wrong increment on jpc
+			ldi	1				//    could also be done in bcfetch.vhd
+			sub					//    but this is simpler :-)
+			stjpc
+			ldm	jjhp			// interrupt() is at offset 0
+								// jjhp points in method table to first
+								// method after methods inherited from Object
 
 			ldi	1
 			nop

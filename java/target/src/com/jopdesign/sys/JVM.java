@@ -101,7 +101,15 @@ class JVM {
 	private static void f_dup2_x2() { JVMHelp.noim();}
 	private static void f_swap() { JVMHelp.noim();}
 	private static void f_iadd() { JVMHelp.noim(); /* jvm.asm */ }
-	private static void f_ladd() { JVMHelp.noim();}
+	private static long f_ladd(int ah, int al, int bh, int bl) {
+
+util.Dbg.intVal(ah);
+util.Dbg.intVal(al);
+util.Dbg.intVal(bh);
+util.Dbg.intVal(bl);
+
+		return 0L;
+	}
 	private static int f_fadd(int a, int b) {
 
 		return SoftFloat.float32_add(a, b);
