@@ -52,9 +52,19 @@
 //	2004-05-24	jopsys_invoke to call main() from Startup.boot()
 //	2004-10-08	single instruction to start mul (with a and b as operands)
 //	2004-12-11	Enhancements in array access
+//	2004-09-16	new bc read hardware (jvm_call.inc)
+//	2005-01-10	changes for bytecode cache (jvm_call.inc)
+//	2005-02-05	
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
+
+//
+//	'special' constant for a version number
+//	gets written in RAM at position 64
+//	update it when changing .asm, .inc or .vhdl files
+//
+version		= 20050205
 
 //
 //	io register
