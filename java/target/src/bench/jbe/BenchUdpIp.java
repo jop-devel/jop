@@ -65,8 +65,6 @@ public class BenchUdpIp extends BenchMark {
 		a = 0x1234;
 		b = 0xabcd;
 		sum = 1234;
-
-		test(5000);
 	}
 
 	public int test(int cnt) {

@@ -127,7 +127,7 @@ public class Instruction {
 		return (Instruction) map.get(s);
 	}
 
-	public static void main(String[] args) {
+	public static void printVhdl() {
 
 		for (int i=0; i<ia.length; ++i) {
 			Instruction ins = ia[i];
@@ -144,5 +144,30 @@ public class Instruction {
 			System.out.println();
 		}
 	}
+
+	public static void printCsv() {
+
+		for (int i=0; i<ia.length; ++i) {
+			Instruction ins = ia[i];
+
+			System.out.print(ins.name);
+			System.out.print(";;{");
+			if (ins.hasOpd) {
+				System.out.print(Jopa.bin(ins.opcode>>>5, 3));
+				System.out.print("-----");
+			} else {
+				System.out.print(Jopa.bin(ins.opcode, 8));
+			}
+			System.out.println("}");
+		}
+	}
+
+
+	public static void main(String[] args) {
+
+		// printVhdl();
+		printCsv();
+	}
+
 }
 		

@@ -5,26 +5,31 @@ import jbe.Execute;
 
 public class InvokeStatic extends BenchMark {
 
+	static int val;
+	public InvokeStatic() {
+		val = 123;
+	}
 /*
-   0:	iload_1
-   1:	iload_2
+   0:	iload_0
+   1:	iload_1
    2:	iadd
-   3:	ireturn
+   3:	getstatic	#2; //Field val:I
+   6:	iadd
+   7:	ireturn
 */
-	static int add(int a, int b) {
+	public static int add(int a, int b) {
 
-		return a+b;
+		return a+b+val;
 	}
 		
 
 /*
    9:	iload_2
-   10:	aload_0
-   11:	iload_3
-   12:	iload_3
-   13:	invokevirtual	#2; //Method add:(II)I
-   16:	iadd
-   17:	istore_2
+   10:	iload_3
+   11:	iload_1
+   12:	invokestatic	#3; //Method add:(II)I
+   15:	iadd
+   16:	istore_2
 */
 	public int test(int cnt) {
 
@@ -32,7 +37,7 @@ public class InvokeStatic extends BenchMark {
 		int i;
 
 		for (i=0; i<cnt; ++i) {
-			a += add(i, i);
+			a += InvokeStatic.add(i, cnt);
 		}
 		return a;
 	}
@@ -40,10 +45,12 @@ public class InvokeStatic extends BenchMark {
 /*
    9:	iload_2
    10:	iload_3
-   11:	iload_3
+   11:	iload_1
    12:	iadd
-   13:	iadd
-   14:	istore_2
+   13:	getstatic	#2; //Field val:I
+   16:	iadd
+   17:	iadd
+   18:	istore_2
 */
 	public int overhead(int cnt) {
 
@@ -51,7 +58,7 @@ public class InvokeStatic extends BenchMark {
 		int i;
 
 		for (i=0; i<cnt; ++i) {
-			a += i+i;
+			a += i+cnt+val;
 		}
 		return a;
 	}

@@ -49,7 +49,14 @@ public class Execute {
 		// result is test() per second
 		int result;
 		if (cnt>2000000) {		// check for overflow on cnt*1000
-			result = cnt/time*1000;
+			result = cnt/time;
+			if (result>2000000) {
+				LowLevel.msg(bm.getName());
+				LowLevel.msg(" no result");
+				LowLevel.lf();
+				return;
+			}
+			result *= 1000;
 		} else {
 			result = cnt*1000/time;
 		}
