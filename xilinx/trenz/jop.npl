@@ -1,0 +1,44 @@
+JDF G
+// Created by Project Navigator ver 1.0
+PROJECT jop
+DESIGN jop
+DEVFAM spartan3
+DEVFAMTIME 0
+DEVICE xc3s200
+DEVICETIME 0
+DEVPKG ft256
+DEVPKGTIME 0
+DEVSPEED -4
+DEVSPEEDTIME 1100607011
+DEVTOPLEVELMODULETYPE HDL
+TOPLEVELMODULETYPETIME 0
+DEVSYNTHESISTOOL XST (VHDL/Verilog)
+SYNTHESISTOOLTIME 0
+DEVSIMULATOR Modelsim
+SIMULATORTIME 0
+DEVGENERATEDSIMULATIONMODEL VHDL
+GENERATEDSIMULATIONMODELTIME 0
+SOURCE ..\..\vhdl\core\extension.vhd
+SOURCE ..\..\vhdl\core\bcfetch.vhd
+SOURCE ..\..\vhdl\core\fetch.vhd
+SOURCE ..\..\vhdl\core\shift.vhd
+SOURCE ..\..\vhdl\core\mem_trenz.vhd
+SOURCE ..\..\vhdl\core\stack.vhd
+SOURCE ..\..\vhdl\core\mul.vhd
+SOURCE ..\..\vhdl\core\core.vhd
+SOURCE ..\..\vhdl\core\decode.vhd
+SOURCE ..\..\vhdl\io\cnt.vhd
+SOURCE ..\..\vhdl\io\iomin.vhd
+SOURCE ..\..\vhdl\io\uart.vhd
+SOURCE ..\..\vhdl\io\fifo.vhd
+SOURCE ..\..\vhdl\jtbl.vhd
+SOURCE ..\..\vhdl\offtbl.vhd
+SOURCE ..\..\vhdl\rom.vhd
+SOURCE ..\..\vhdl\core\xram.vhd
+SOURCE ..\..\vhdl\xram_block.vhd
+SOURCE ..\..\vhdl\top\jop_trenz.vhd
+DEPASSOC jop jop.ucf
+[Normal]
+xilxBitgStart_Clk=xstvhd, spartan3, VHDL.t_bitFile, 1100609012, JTAG Clock
+[STRATEGY-LIST]
+Normal=True
