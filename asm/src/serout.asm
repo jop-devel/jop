@@ -47,6 +47,8 @@ c			?
 //	special byte codes
 //		but starts with pc=0!!! (so init bc is not really necassary)
 //
+			nop
+			nop
 sys_init:
 			ldi	127
 			nop			// written in adr/read stage!

@@ -46,6 +46,8 @@ c			?
 //
 //	but starts with pc=0!!! (so init bc is not really necassary)
 //
+			nop
+			nop
 			ldi	127
 			nop			// written in adr/read stage!
 			stsp
