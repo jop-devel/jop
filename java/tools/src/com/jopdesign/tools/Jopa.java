@@ -15,6 +15,7 @@ revision:
 	2001-10-24	working version
 	2001-12-08	intruction set change (16->8 bit)
 	2005-01-17	interrupt mux in jtbl.vhd
+	2005-02-06	JOP version in stack RAM at address 64
 
 */
 
@@ -153,6 +154,7 @@ public class Jopa {
 	private Map symMap  = new HashMap();
 	private int memcnt = 0;
 	private List varList = new LinkedList();
+	private int version = -1;
 
 /**
 *	first pass.
@@ -642,15 +644,33 @@ public class Jopa {
 			line = "--\n";
 			line += "-- "+constMap.size()+" consts\n";
 			line += "--\n\n";
-			ram.write( line );
+			ram.write(line);
 			for (int i=0; i<constList.size(); ++i) {
 				Integer val = (Integer) constList.get(i);
 				line = "\t";
 				line += hex(CONST_ADDR+i, 4) + " : " ;
 				line += hex(val.intValue(), 8) + ";\t--\t";
 				line += val + "\n";
-				ram.write( line );
+				ram.write(line);
 			}
+
+			// check if version is set
+			Integer i = (Integer) symMap.get("version");
+			if (i==null) {
+				error(in, "version not set, setting to -1");
+			} else {
+				version = i.intValue();
+			}
+			ram.write("\n\n--\tVersion\n");
+			line = "\t";
+			line += hex(64, 4) + " : " ;
+			line += hex(version, 8) + ";\t--\t";
+			line += version + "\n";
+			ram.write(line);
+			line = "\t";
+			line = "\t"+hex(65, 4) + " : " ;
+			line += hex(0, 8) + ";\t--\tfor future use - FPGA type?\n";
+			ram.write(line);
 
 			ram.write( "\nend;\n" );
 			ram.close();
