@@ -204,8 +204,6 @@ invoke_vpsave:					// vp is allready saved in old_vp
 			ldm	mp
 			stm	old_mp
 			stm	mp
-			ldm	cp
-			stm	old_cp
 
 			wait
 			wait
@@ -215,6 +213,22 @@ invoke_vpsave:					// vp is allready saved in old_vp
 					// int locals = (cp>>>5) & 0x01f;
 					// int args = cp & 0x01f;
 					// cp >>>= 10;
+
+// start bytecode load....
+			ldm	mp
+			stmra
+
+			ldm	cp
+			stm	old_cp
+
+			wait
+			wait
+			ldmrd		 		// read ext. mem
+
+					// int len = start & 0x03ff;
+					// start >>>= 10;
+			stbcrd				// start bytecode load
+
 
 			dup
 			ldi	31
@@ -233,7 +247,6 @@ invoke_vpsave:					// vp is allready saved in old_vp
 
 old_sp			?
 real_sp			?
-new_jpc			?
 
 
 //
@@ -272,97 +285,23 @@ new_jpc			?
 
 			ldm	old_sp
 			ldjpc
+// without cache load jpc here
+		ldi 0
+		stjpc
 			ldm	old_vp
 			ldm	old_cp
 			ldm	old_mp
 
-			ldi	0
-			stm	new_jpc
-
-//
-//	now load bc from external ram :-(
-//
-load_bc:
-
-
-			ldm	mp
-			stmra
-			ldi	0
-			stjpc
-			wait
-			wait
-			ldmrd		 		// read ext. mem
-
-/////////////////// hardware version ////////////////////
-			stbcrd				// start bytecode load
-
-			ldm	new_jpc
-			stjpc
-
 // wait on bytecode load from memory system
 			wait
 			wait
-			nop
-			nop	nxt
-// end load_bc
-/////////////////// hardware version ////////////////////
-					// int len = start & 0x03ff;
-					// start >>>= 10;
-			dup
-			ldi	10
-			ushr
 
-			dup
-			stmra				// first bytecode word
-
-			stm	start
-			ldi	1023
-			and					// mask len
-			ldm	start
-			add
-			stm end
-
-
-//
-//	this fetch loop takes about 66% in Mast.java!
-//		=> to be optimized (hw fetch, cach)
-//	2003-08-14	changed from 29 cycles to 17 cycles per word
-//
-ldbc_rd_l:
-			wait
-			wait
-			ldmrd		 		// read ext. mem
-
-			ldm	start			// addr inc.
-			ldi	1
-			add
-			stm	start
-
-			ldm	start
-			stmra				// start next read
-
-//	only one 32 bit store
-//	jbc automaitcally writes 4 bytes
-//	this takes 'some' time (about 5) cycles
-
-			stbc
-
-//	check loop
-
-			ldm	end				// end address
-			ldm	start			// start is address 'counter'
-			xor
-			nop
-			bnz	ldbc_rd_l
-			nop
-			nop
-
-			ldm	new_jpc
-			stjpc
-// wait on last (unused) memory read.
-			wait
-			wait
-			nop
+// TODO: use ldbcstart in jpc save and in return for correct cache handling
+//			ldbcstart			// for future cache
+//			stjpc
+//			nop
+//			nop
+//			nop
 			nop	nxt
 // end load_bc
 
@@ -383,36 +322,70 @@ ldbc_rd_l:
 areturn:
 freturn:
 ireturn:
-			stm	a	// return value
+			stm	a			// store return value
+			dup				// mp is on tos
+			stmra
 			stm	mp
 			stm	cp
 			stvp
+			wait			// wait for mem(mp)
+			wait
+			ldmrd		 	// read ext. mem
+			stbcrd			// start bytecode load
+			stjpc
 
-			stm	new_jpc
-			nop			// written in adr/read stage!
-			stsp	// last is new sp
-			pop		// flash tos, tos-1 (registers)
-			pop		// sp must be two lower, points to rd adr
-			ldm	a 
-			ldi	1
-			nop
-			bnz	load_bc
-			nop
-			nop
+			nop				// written in adr/read stage!
+			stsp			// last is new sp
+			pop				// flash tos, tos-1 (registers)
+			pop				// sp must be two lower, points to rd adr
+			ldm	a 			// load return value
+			wait			// wait on bytecode load from memory system
+			wait
+			nop	nxt
+
+dreturn:
+lreturn:
+			stm	a			// store return value
+			stm	b
+			dup				// mp is on tos
+			stmra
+			stm	mp
+			stm	cp
+			stvp
+			wait			// wait for mem(mp)
+			wait
+			ldmrd		 	// read ext. mem
+			stbcrd			// start bytecode load
+			stjpc
+
+			nop				// written in adr/read stage!
+			stsp			// last is new sp
+			pop				// flash tos, tos-1 (registers)
+			pop				// sp must be two lower, points to rd adr
+			ldm	b
+			ldm	a 			// load return value
+			wait			// wait on bytecode load from memory system
+			wait
+			nop	nxt
 
 return:
+			dup				// mp is on tos
+			stmra
 			stm	mp
 			stm	cp
 			stvp
+			wait			// wait for mem(mp)
+			wait
+			ldmrd		 	// read ext. mem
+			stbcrd			// start bytecode load
+			stjpc
 
-			stm	new_jpc
-			nop			// written in adr/read stage!
-			stsp	// last is new sp
-			pop		// flash tos, tos-1 (registers)
-			pop		// sp must be two lower, points to rd adr
-			ldi	1
-			nop
-			bnz	load_bc
-			nop
-			nop
+			nop				// written in adr/read stage!
+			stsp			// last is new sp
+			pop				// flash tos, tos-1 (registers)
+			pop				// sp must be two lower, points to rd adr
+			wait			// wait on bytecode load from memory system
+			wait
+			nop	nxt
+
 

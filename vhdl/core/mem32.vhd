@@ -23,6 +23,7 @@
 --				leave ram addr driving (no tri state)
 --	2004-01-10	release mem_bsy two cycle earlier
 --	2004-09-11	move data mux and mul to extension
+--	2004-09-14	flash/ram mux after data register in dout path
 --
 
 Library IEEE;
@@ -161,12 +162,16 @@ architecture rtl of mem32 is
 
 	signal mem_wr_addr		: std_logic_vector(20 downto 0);
 	signal mem_wr_val		: std_logic_vector(31 downto 0);
-	signal mem_rd_val		: std_logic_vector(31 downto 0);
+	signal mem_rd_mux		: std_logic_vector(31 downto 0);
+	signal ram_data_ena		: std_logic;
 	signal mem_bsy			: std_logic;
 
 	signal nwr_int			: std_logic;
 	signal ram_access		: std_logic;
 	signal nand_access		: std_logic;
+
+	signal ram_data			: std_logic_vector(31 downto 0);
+	signal flash_data		: std_logic_vector(8 downto 0);
 
 	signal sel_flash		: std_logic;
 
@@ -176,7 +181,7 @@ architecture rtl of mem32 is
 	signal ram_cs, ram_oe	: std_logic;
 	signal ram_addr			: std_logic_vector(17 downto 0);
 
-	signal wait_state		: unsigned(2 downto 0);
+	signal wait_state		: unsigned(3 downto 0);
 
 --
 --	values for bytecode read/cache
@@ -197,14 +202,14 @@ architecture rtl of mem32 is
 begin
 
 	bsy <= mem_bsy;
-	dout <= mem_rd_val;
+	dout <= mem_rd_mux;
 	bcstart <= (others => '0');	-- for now we load only at base 0
 
 	-- change byte order for jbc memory (high byte first)
-	bc_wr_data <= mem_rd_val(7 downto 0) &
-				mem_rd_val(15 downto 8) &
-				mem_rd_val(23 downto 16) &
-				mem_rd_val(31 downto 24);
+	bc_wr_data <= ram_data(7 downto 0) &
+				ram_data(15 downto 8) &
+				ram_data(23 downto 16) &
+				ram_data(31 downto 24);
 
 --	cmp_jbc: jbc generic map (8, jpc_width) port map(din, jbc_addr, jpc_wr, bc_wr, clk, jbc_data);
 
@@ -347,8 +352,6 @@ end process;
 --
 process(clk, reset, din, mem_wr_addr, mem_rd, mem_wr, mem_bc_rd)
 
-	variable i : integer range 0 to 31;
-
 begin
 	if (reset='1') then
 		state <= idl;
@@ -356,6 +359,8 @@ begin
 		ram_d_ena <= '0';
 		ram_cs <= '0';
 		ram_oe <= '0';
+
+		ram_data_ena <= '0';
 
 		-- fl_a <= (others => 'Z');
 		fl_a <= (others => '0');
@@ -367,7 +372,6 @@ begin
 		fl_nwe <= '1';
 		ram_access <= '1';
 		nand_access <= '0';
-		mem_rd_val <= std_logic_vector(to_unsigned(0, 32));
 		mem_wr_val <= std_logic_vector(to_unsigned(0, 32));
 		mem_bsy <= '0';
 
@@ -394,7 +398,6 @@ begin
 
 				nwr_int <= '1';
 				fl_nwe <= '1';
-				ram_access <= '1';
 				nand_access <= '0';
 				mem_bsy <= '0';
 
@@ -406,13 +409,13 @@ begin
 						ram_cs <= '1';
 						ram_oe <= '1';
 						ram_access <= '1';
-						i := ram_cnt;
+						wait_state <= to_unsigned(ram_cnt-1, 4);
 					elsif (din(20 downto 19) = "01") then	-- flash
 						fl_a <= din(18 downto 0);
 						sel_flash <= '0';
 						fl_noe <= '0';
 						ram_access <= '0';
-						i := rom_cnt;
+						wait_state <= to_unsigned(rom_cnt-1, 4);
 --
 --	TODO see request on nCS for NAND in data sheet.
 --	Must be coninous for some operations.
@@ -426,7 +429,7 @@ begin
 --	could be easier when using "11" for rdy signal on read
 --
 						nand_access <= '1';
-						i := rom_cnt;
+						wait_state <= to_unsigned(rom_cnt-1, 4);
 					end if;
 					mem_bsy <= '1';
 					state <= rd1;
@@ -436,23 +439,24 @@ begin
 						ram_addr <= mem_wr_addr(17 downto 0);
 						ram_cs <= '1';
 						ram_access <= '1';
-						i := ram_cnt+1;			-- one more for single cycle read
+						wait_state <= to_unsigned(ram_cnt, 4);		-- one more for single cycle read
 					elsif (mem_wr_addr(20 downto 19) = "01") then	-- flash
 						fl_a <= mem_wr_addr(18 downto 0);
 						sel_flash <= '0';
 						ram_access <= '0';
-						i := rom_cnt;
+						wait_state <= to_unsigned(rom_cnt-1, 4);
 					else								-- NAND
 						fl_a <= mem_wr_addr(18 downto 0);
 						sel_flash <= '1';
 						ram_access <= '0';
-						i := rom_cnt;
+						wait_state <= to_unsigned(rom_cnt-1, 4);
 					end if;
 					mem_bsy <= '1';
 					nwr_int <= '0';
 					state <= wr1;
 				elsif (mem_bc_rd='1') then
 					mem_bsy <= '1';
+					ram_access <= '1';
 					state <= bc1;
 				end if;
 
@@ -460,44 +464,43 @@ begin
 --	memory read
 --
 			when rd1 =>
-				i := i-1;
-				if (i=2) then		-- ***** only on ram ?????
+				wait_state <= wait_state-1;
+				if wait_state="0010" then		-- ***** only on ram ?????
 					mem_bsy <= '0';					-- release mem_bsy two cycle earlier
 				end if;
-				if (i=0) then
+				ram_data_ena <= '0';
+				if wait_state="0001" then
+					if ram_access='1' then
+						ram_data_ena <= '1';
+					end if;
+				end if;
+				if wait_state="0000" then
+					if (nand_access='1') then
+						flash_data <= fl_rdy & fl_d;
+					else
+						flash_data <= "0" & fl_d;
+					end if;
 					state <= idl;
 					mem_bsy <= '0';
-					--
-					--	this mux costs about 6ns, tsu is 5.2ns (could be negativ!)
-					--
-					if (ram_access='1') then
-						mem_rd_val <= ramb_d & rama_d;
-					else
-						if (nand_access='1') then
-							mem_rd_val <= std_logic_vector(to_unsigned(0, 32-9)) & fl_rdy & fl_d;
-						else
-							mem_rd_val <= std_logic_vector(to_unsigned(0, 32-8)) & fl_d;
-						end if;
-					end if;
 				end if;
 
 --
 --	memory write
 --
 			when wr1 =>
-				i := i-1;
+				wait_state <= wait_state-1;
 				if (ram_access='1') then
 					ram_d_ena <= '1';
 				else
 					fl_nwe <= '0';
 					fl_d_ena <= '1';
 				end if;
-				if (i=1) then
+				if wait_state="0001" then
 					fl_nwe <= '1';
 					nwr_int <= '1';
 -- only ram ???					mem_bsy <= '0';					-- release mem_bsy one cycle earlier
 				end if;
-				if (i=0) then
+				if wait_state="0000" then
 					fl_nwe <= '1';
 					state <= idl;
 					mem_bsy <= '0';
@@ -513,17 +516,20 @@ begin
 				bc_wr_ena <= '0';
 				ram_cs <= '1';
 				ram_oe <= '1';
-				wait_state <= to_unsigned(bc_ram_cnt-1, 3);
+				wait_state <= to_unsigned(bc_ram_cnt-1, 4);
 				state <= bc2;
 
 			when bc2 =>
 				bc_wr_ena <= '0';
 				wait_state <= wait_state-1;
-				if wait_state="000" then
-					wait_state <= to_unsigned(bc_ram_cnt-1, 3);
+				ram_data_ena <= '0';
+				if wait_state="0001" then
+					ram_data_ena <= '1';
+				end if;
+				if wait_state="0000" then
+					wait_state <= to_unsigned(bc_ram_cnt-1, 4);
 					ram_addr <= std_logic_vector(unsigned(ram_addr)+1);
 					bc_cnt <= bc_cnt-1;
-					mem_rd_val <= ramb_d & rama_d;	-- read next word
 					state <=bc3;
 				end if;
 
@@ -531,11 +537,14 @@ begin
 			when bc3 =>
 				bc_wr_ena <= '0';
 				wait_state <= wait_state-1;
-				if wait_state="000" then
-					wait_state <= to_unsigned(bc_ram_cnt-1, 3);
+				ram_data_ena <= '0';
+				if wait_state="0001" then
+					ram_data_ena <= '1';
+				end if;
+				if wait_state="0000" then
+					wait_state <= to_unsigned(bc_ram_cnt-1, 4);
 					ram_addr <= std_logic_vector(unsigned(ram_addr)+1);
 					bc_cnt <= bc_cnt-1;
-					mem_rd_val <= ramb_d & rama_d;	-- read next word
 					bc_wr_addr <= bc_wr_addr+1;		-- next jbc address
 				else
 					bc_wr_ena <= '1';				-- write former word
@@ -549,5 +558,30 @@ begin
 	end if;
 end process;
 
+process(ram_access, ram_data, flash_data)
+
+begin
+	--
+	--	this mux costs about 6ns, tsu is 5.2ns (could be negativ!)
+	--
+	-- we could move this mux after the two registers befor dout
+	if (ram_access='1') then
+		mem_rd_mux <= ram_data;
+	else
+		mem_rd_mux <= std_logic_vector(to_unsigned(0, 32-9)) & flash_data;
+	end if;
+end process;
+
+process(clk, reset, mem_rd_mux, ram_data_ena)
+
+begin
+	if (reset='1') then
+		ram_data <= std_logic_vector(to_unsigned(0, 32));
+	elsif rising_edge(clk) then
+		if ram_data_ena='1' then
+			ram_data <= ramb_d & rama_d;
+		end if;
+	end if;
+end process;
 
 end rtl;

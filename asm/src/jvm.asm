@@ -111,6 +111,7 @@ addr		?			// address used for bc load from flash
 			nop			// written in adr/read stage!
 			stsp		// someting strange in stack.vhd A->B !!!
 
+
 //TEST jbc
 //		ldi	10
 //		stjpc

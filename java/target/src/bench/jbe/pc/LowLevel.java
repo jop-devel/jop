@@ -1,4 +1,4 @@
-package embjbench;
+package jbe;
 
 /**
 *	LowLevel time and output for PC

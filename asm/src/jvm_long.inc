@@ -2,26 +2,7 @@
 //	Include file for long bytecodes
 //
 
-lreturn:
-dreturn:
-			stm	a	// return value
-			stm b
-			stm	mp
-			stm	cp
-			stvp
-
-			stm	new_jpc
-			nop			// written in adr/read stage!
-			stsp	// last is new sp
-			pop		// flash tos, tos-1 (registers)
-			pop		// sp must be two lower, points to rd adr
-			ldm b
-			ldm	a 
-			ldi	1
-			nop
-			bnz	load_bc
-			nop
-			nop
+// lreturn: is in jvm_call.inc
 
 ldc2_w:	
 			ldm	cp opd

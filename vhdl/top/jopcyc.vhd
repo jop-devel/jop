@@ -31,7 +31,7 @@ entity jop is
 
 generic (
 --	clk_freq	: integer := 20000000;	-- 20 MHz clock frequency
-clk_freq	: integer := 100000000;	-- 100 MHz clock frequency
+	clk_freq	: integer := 100000000;	-- 100 MHz clock frequency
 	exta_width	: integer := 3;		-- address bits of internal io
 	ram_cnt		: integer := 3;		-- clock cycles for external ram
 --	rom_cnt		: integer := 3;		-- clock cycles for external rom OK for 20 MHz

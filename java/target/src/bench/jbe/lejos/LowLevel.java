@@ -1,4 +1,4 @@
-package embjbench;
+package jbe;
 
 import josx.platform.rcx.*;
 
