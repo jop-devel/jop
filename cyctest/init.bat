@@ -1,7 +1,6 @@
-jbi32 -dDO_PROGRAM=1 -aPROGRAM init.jbc
-jbi32 -dDO_PROGRAM=1 -aCONFIGURE init.jbc
-..\down web_nand.bin COM2
-java -cp ../java/pc Flash ..\java\tcpip\cyc.html
-java -cp ../java/pc Flash web_nand.bin
-java -cp ../java/pc Flash ..\ttf\jopcyc.ttf
-jbi32 -dDO_PROGRAM=1 -aPROGRAM conf.jbc
+jbi32 -dDO_PROGRAM=1 -aPROGRAM ..\jbc\cyctal_init.jbc
+jbi32 -dDO_PROGRAM=1 -aCONFIGURE ..\jbc\cyctal_init.jbc
+..\down ejip_Main.bin COM2
+java -cp ../java/pc/dist/lib/jop-pc.jar Flash ejip_Main.bin 192.168.0.4
+java -cp ../java/pc/dist/lib/jop-pc.jar Flash ..\ttf\cyctal.ttf 192.168.0.4
+jbi32 -dDO_PROGRAM=1 -aPROGRAM ..\jbc\cyc_conf.jbc
