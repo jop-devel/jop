@@ -1,7 +1,7 @@
 --
---	jopcyc.vhd
+--	jopcyc12.vhd
 --
---	top level for Cyclone board with EP1C12
+--	top level for new borad
 --		use iocore.vhd for all io-pins
 --
 --	2002-06-27:	2088 LCs, 23.6 MHz
@@ -18,6 +18,7 @@
 --	2002-12-07	disable clkout
 --	2003-02-21	adapt for new Cyclone board with EP1C6
 --	2003-07-08	invertion of cts, rts to uart
+--	2004-09-11	new extension module
 --
 --
 
@@ -29,13 +30,13 @@ use ieee.numeric_std.all;
 entity jop is
 
 generic (
-	clk_freq	: integer := 20000000;	-- 20 MHz clock frequency
--- clk_freq	: integer := 100000000;	-- 100 MHz clock frequency
-	width		: integer := 32;	-- one data word
-	ioa_width	: integer := 3;		-- address bits of internal io
+--	clk_freq	: integer := 20000000;	-- 20 MHz clock frequency
+clk_freq	: integer := 100000000;	-- 100 MHz clock frequency
+	exta_width	: integer := 3;		-- address bits of internal io
 	ram_cnt		: integer := 3;		-- clock cycles for external ram
-	rom_cnt		: integer := 3		-- clock cycles for external rom
---	rom_cnt		: integer := 30		-- clock cycles for external rom
+--	rom_cnt		: integer := 3;		-- clock cycles for external rom OK for 20 MHz
+rom_cnt		: integer := 15;		-- clock cycles for external rom for 100 MHz
+	jpc_width	: integer := 10	-- address bits of java byte code pc
 );
 
 port (
@@ -113,33 +114,77 @@ port (
 -- memio connection
 
 	bsy			: in std_logic;
-	din			: in std_logic_vector(width-1 downto 0);
-	addr		: out std_logic_vector(ioa_width-1 downto 0);
+	din			: in std_logic_vector(31 downto 0);
+	ext_addr	: out std_logic_vector(exta_width-1 downto 0);
 	rd, wr		: out std_logic;
+
+-- jbc connections
+
+	jbc_addr	: out std_logic_vector(jpc_width-1 downto 0);
+	jbc_data	: in std_logic_vector(7 downto 0);
+	jpc_wr		: out std_logic;
+	bc_wr		: out std_logic;
 
 -- interrupt from io
 
 	irq			: in std_logic;
 	irq_ena		: in std_logic;
 
-	dout		: out std_logic_vector(width-1 downto 0)
+	dout		: out std_logic_vector(31 downto 0)
+);
+end component;
+
+component extension is
+generic (exta_width : integer);
+port (
+	clk, reset	: in std_logic;
+
+-- core interface
+
+	din			: in std_logic_vector(31 downto 0);		-- from stack
+	ext_addr	: in std_logic_vector(exta_width-1 downto 0);
+	rd, wr		: in std_logic;
+	dout		: out std_logic_vector(31 downto 0);	-- to stack
+
+-- mem interface
+
+	mem_rd		: out std_logic;
+	mem_wr		: out std_logic;
+	mem_addr_wr	: out std_logic;
+	mem_data	: in std_logic_vector(31 downto 0); 	-- output of memory module
+	
+-- io interface
+
+	io_rd		: out std_logic;
+	io_wr		: out std_logic;
+	io_addr_wr	: out std_logic;
+	io_data		: in std_logic_vector(31 downto 0)		-- output of io module
 );
 end component;
 
 component mem32 is
-generic (width : integer; ioa_width : integer; ram_cnt : integer; rom_cnt : integer);
+generic (jpc_width : integer; ram_cnt : integer; rom_cnt : integer);
 port (
 
 -- jop interface
 
 	clk, reset	: in std_logic;
 
-	din			: in std_logic_vector(width-1 downto 0);
-	addr		: in std_logic_vector(ioa_width-1 downto 0);
-	rd, wr		: in std_logic;
+	din			: in std_logic_vector(31 downto 0);
+
+	mem_rd		: in std_logic;
+	mem_wr		: in std_logic;
+	mem_addr_wr	: in std_logic;
+	dout		: out std_logic_vector(31 downto 0);
 
 	bsy			: out std_logic;
-	dout		: out std_logic_vector(width-1 downto 0);
+
+-- jbc connections
+
+	jbc_addr	: in std_logic_vector(jpc_width-1 downto 0);
+	jbc_data	: out std_logic_vector(7 downto 0);
+	jpc_wr		: in std_logic;
+	bc_wr		: in std_logic;
 
 --
 --	two ram banks
@@ -168,14 +213,7 @@ port (
 	fl_ncsb	: out std_logic;
 	fl_noe	: out std_logic;
 	fl_nwe	: out std_logic;
-	fl_rdy	: in std_logic;
-
--- io interface
-
-	io_din		: in std_logic_vector(width-1 downto 0);
-	io_rd		: out std_logic;
-	io_wr		: out std_logic;
-	io_addr_wr	: out std_logic
+	fl_rdy	: in std_logic
 
 );
 end component;
@@ -188,14 +226,14 @@ port (
 
 	clk, reset	: in std_logic;
 
-	din			: in std_logic_vector(width-1 downto 0);
+	din			: in std_logic_vector(31 downto 0);
 
 -- interface to mem
 
 	rd, wr		: in std_logic;
 	addr_wr		: in std_logic;
 
-	dout		: out std_logic_vector(width-1 downto 0);
+	dout		: out std_logic_vector(31 downto 0);
 
 -- interrupt
 
@@ -227,18 +265,26 @@ end component;
 --
 	signal clk_int			: std_logic;
 
-	signal memio_din		: std_logic_vector(width-1 downto 0);
+	signal stack_tos		: std_logic_vector(31 downto 0);
+	signal rd, wr			: std_logic;
+	signal ext_addr			: std_logic_vector(exta_width-1 downto 0);
+	signal stack_din		: std_logic_vector(31 downto 0);
 
-	signal mem_addr			: std_logic_vector(ioa_width-1 downto 0);
 	signal mem_rd			: std_logic;
 	signal mem_wr			: std_logic;
+	signal mem_addr_wr		: std_logic;
+	signal mem_dout			: std_logic_vector(31 downto 0);
 	signal mem_bsy			: std_logic;
-	signal mem_dout			: std_logic_vector(width-1 downto 0);
+
+	signal jbc_addr			: std_logic_vector(jpc_width-1 downto 0);
+	signal jbc_data			: std_logic_vector(7 downto 0);
+	signal jpc_wr			: std_logic;
+	signal bc_wr			: std_logic;
 
 	signal io_rd			: std_logic;
 	signal io_wr			: std_logic;
 	signal io_addr_wr		: std_logic;
-	signal io_dout			: std_logic_vector(width-1 downto 0);
+	signal io_dout			: std_logic_vector(31 downto 0);
 	signal io_irq			: std_logic;
 	signal io_irq_ena		: std_logic;
 
@@ -266,32 +312,41 @@ end process;
 --
 --	components of jop
 --
---	pll_inst : pll port map (
---		inclk0	 => clk,
---		c0	 => clk_int
---	);
-	clk_int <= clk;
+	pll_inst : pll port map (
+		inclk0	 => clk,
+		c0	 => clk_int
+	);
+--	clk_int <= clk;
 
 	cmp_core: core 
 		port map (clk_int, int_res,
 			mem_bsy,
-			mem_dout, mem_addr,
-			mem_rd, mem_wr,
+			stack_din, ext_addr,
+			rd, wr,
+			jbc_addr, jbc_data, jpc_wr, bc_wr,
 			io_irq, io_irq_ena,
-			memio_din
+			stack_tos
 		);
 
+	cmp_ext: extension generic map (exta_width)
+		port map (clk_int, int_res, stack_tos,
+			ext_addr, rd, wr, stack_din,
+			mem_rd, mem_wr, mem_addr_wr, mem_dout,
+			io_rd, io_wr, io_addr_wr, io_dout
+		);
 
-	cmp_mem: mem32 generic map (width, ioa_width, ram_cnt, rom_cnt)
-		port map (clk_int, int_res, memio_din, mem_addr, mem_rd, mem_wr, mem_bsy, mem_dout,
+	cmp_mem: mem32 generic map (jpc_width, ram_cnt, rom_cnt)
+		port map (clk_int, int_res, stack_tos,
+			mem_rd, mem_wr, mem_addr_wr, mem_dout,
+			mem_bsy,
+			jbc_addr, jbc_data, jpc_wr, bc_wr,
 			rama_a, rama_d, rama_ncs, rama_noe, rama_nlb, rama_nub, rama_nwe,
 			ramb_a, ramb_d, ramb_ncs, ramb_noe, ramb_nlb, ramb_nub, ramb_nwe,
-			fl_a, fl_d, fl_ncs, fl_ncsb, fl_noe, fl_nwe, fl_rdy,
-			io_dout, io_rd, io_wr, io_addr_wr
+			fl_a, fl_d, fl_ncs, fl_ncsb, fl_noe, fl_nwe, fl_rdy
 		);
 
 	cmp_io: io generic map (clk_freq)
-		port map (clk_int, int_res, memio_din,
+		port map (clk_int, int_res, stack_tos,
 			io_rd, io_wr, io_addr_wr, io_dout,
 			io_irq, io_irq_ena,
 			ser_txd, ser_rxd, ser_ncts, ser_nrts,
@@ -299,9 +354,6 @@ end process;
 			io_b, io_l, io_r, io_t
 		);
 
---
---	EP1C12 additional power pins as tristatet output on EP1C6
---
 	freeio <= 'Z';
 
 end rtl;

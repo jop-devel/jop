@@ -46,6 +46,7 @@ set_global_assignment -name VHDL_FILE ../../vhdl/core/aram.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/arom.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/bcfetch.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/core.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/core/extension.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/decode.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/fetch.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/mem32.vhd
@@ -58,7 +59,6 @@ set_global_assignment -name VECTOR_WAVEFORM_FILE jop.vwf
 
 # Pin & Location Assignments
 # ==========================
-set_global_assignment -name RESERVE_PIN "AS INPUT TRI-STATED"
 set_location_assignment PIN_152 -to clk
 set_location_assignment PIN_80 -to dummy_gnd\[0\]
 set_location_assignment PIN_96 -to dummy_gnd\[1\]
@@ -453,6 +453,7 @@ set_instance_assignment -name IO_STANDARD LVCMOS -to ser_rxd
 set_instance_assignment -name IO_STANDARD LVCMOS -to ser_txd
 set_instance_assignment -name IO_STANDARD LVCMOS -to wd
 set_global_assignment -name STRATIX_DEVICE_IO_STANDARD LVCMOS
+set_global_assignment -name ERROR_CHECK_FREQUENCY_DIVISOR 1
 
 # Assembler Assignments
 # =====================

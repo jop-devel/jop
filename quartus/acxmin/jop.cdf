@@ -1,12 +1,12 @@
-/* Quartus II Version 3.0 Build 199 06/26/2003 SJ Web Edition */
+/* Quartus II Version 4.1 Build 181 06/29/2004 SJ Web Edition */
 JedecChain;
 	FileRevision(JESD32A);
 	DefaultMfr(6E);
 
 	P ActionCode(Ign)
-		Device PartName(EPM7032AET44) MfrSpec(OpMask(0) FullPath("C:\usr\cpu\jop\acxconf\pld_init2.pof"));
+		Device PartName(EPM7032AET44) MfrSpec(OpMask(0) FullPath("C:/usr/cpu/jop/quartus/acxconf/pld_init2.pof"));
 	P ActionCode(Cfg)
-		Device PartName(EP1K50T144) Path("C:\usr\cpu\jop\acxmin\") File("jop.sof") MfrSpec(OpMask(1));
+		Device PartName(EP1K50T144) Path("C:/usr/cpu/jop/quartus/acxmin/") File("jop.sof") MfrSpec(OpMask(1));
 
 ChainEnd;
 

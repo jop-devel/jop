@@ -20,6 +20,7 @@
 --	2003-08-15	interrupt handling
 --	2004-04-06	removed signal jfetch from interrupt mux (is in fetch allready)
 --				different mux for jpc and jbc rdaddr, register jump address calculation
+--	2004-09-11	move jbc to mem
 --
 --	TODO:	use 'running' bit and generate jbr here!
 --
@@ -41,7 +42,11 @@ port (
 	jpc_out		: out std_logic_vector(jpc_width-1 downto 0);	-- jpc read
 	din			: in std_logic_vector(31 downto 0);				-- A from stack
 	jpc_wr		: in std_logic;
-	bc_wr		: in std_logic;
+
+--	connection to bytecode cache
+
+	jbc_addr	: out std_logic_vector(jpc_width-1 downto 0);
+	jbc_data	: in std_logic_vector(7 downto 0);
 
 	jfetch		: in std_logic;
 	jopdfetch	: in std_logic;
@@ -61,27 +66,6 @@ end bcfetch;
 
 architecture rtl of bcfetch is
 
---
---	jbc component (use technology specific vhdl-file (ajbc/xjbc))
---
---	dual port ram
---	wraddr and wrena registered and delayed
---	rdaddr is registered
---	indata registered
---	outdata is unregistered
---
-component jbc is
-generic (width : integer; addr_width : integer);
-port (
-	data		: in std_logic_vector(31 downto 0);
-	rdaddress	: in std_logic_vector(jpc_width-1 downto 0);
-	wr_addr		: in std_logic;									-- load start address (=jpc)
-	wren		: in std_logic;
-	clock		: in std_logic;
-
-	q			: out std_logic_vector(7 downto 0)
-);
-end component;
 --
 --	jtbl component (generated vhdl file from Jopa!)
 --
@@ -171,7 +155,8 @@ end process;
 	bytecode <= jbc_q_mux;		-- register this for an additional pipeline stage
 
 	cmp_jtbl: jtbl port map(bytecode, jpaddr);
-	cmp_jbc: jbc generic map (8, jpc_width) port map(din, jbc_mux, jpc_wr, bc_wr, clk, jbc_q);
+	jbc_addr <= jbc_mux;
+	jbc_q <= jbc_data;
 
 
 --

@@ -25,7 +25,7 @@ use IEEE.std_logic_1164.all ;
 use ieee.numeric_std.all;
 
 entity jbc is
-generic (width : integer := 8; addr_width : integer := 9);
+generic (width : integer; addr_width: integer);
 port (
 	data		: in std_logic_vector(31 downto 0);
 

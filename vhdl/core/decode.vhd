@@ -34,9 +34,9 @@ use ieee.numeric_std.all ;
 
 entity decode is
 generic (
-	i_width		: integer := 8;		-- instruction width
-	addr_width	: integer := 8;		-- address bits of internal ram (sp,...)
-	ioa_width	: integer := 3		-- address bits of internal io (or 5/4)
+	i_width		: integer;		-- instruction width
+	addr_width	: integer;		-- address bits of internal ram (sp,...)
+	exta_width	: integer		-- address bits of internal io (or 5/4)
 );
 
 port (
@@ -51,7 +51,7 @@ port (
 	pcwait		: out std_logic;	-- no pc increment 'wait'
 	jbr			: out std_logic;
 
-	io_addr		: out std_logic_vector(ioa_width-1 downto 0);
+	ext_addr	: out std_logic_vector(exta_width-1 downto 0);
 	rd, wr		: out std_logic;
 
 	dir			: out std_logic_vector(addr_width-1 downto 0);
@@ -94,7 +94,7 @@ begin
 
 	ir <= instr;		-- registered in fetch
 
-	io_addr <= ir(ioa_width-1 downto 0);
+	ext_addr <= ir(exta_width-1 downto 0);	-- address for extension select
 
 --
 --	branch, pcwait, jbranch

@@ -1,24 +1,7 @@
 --
 --	mem32.vhd
 --
---	external memory interface and multiplyer
---
---		addr, wr are one cycle earlier than data
---		dout one cycle after read (ior)
---
---	resources on ACEX1K30-3
---
---	first mapping (for ldp, stp):
---
---		0	io-address
---		1	data read/write
---		2	st	mem_rd_addr		start read
---		2	ld	mem_rd_data		read data
---		3	st	mem_wr_addr		store write address
---		4	st	mem_wr_data		start write
---		5	ld	mul result
---		5	st	mul operand a
---		6	st	mul operand b and start mul
+--	external memory interface
 --
 --
 --	memory mapping
@@ -39,6 +22,7 @@
 --	2003-07-09	extra tri state signal for data out (Quartus bug)
 --				leave ram addr driving (no tri state)
 --	2004-01-10	release mem_bsy two cycle earlier
+--	2004-09-11	move data mux and mul to extension
 --
 
 Library IEEE;
@@ -46,7 +30,8 @@ use IEEE.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 entity mem32 is
-generic (width : integer; ioa_width : integer; ram_cnt : integer; rom_cnt : integer);
+-- generic (jpc_width : integer; ram_cnt : integer; rom_cnt : integer);
+generic (jpc_width : integer := 10; ram_cnt : integer := 3; rom_cnt : integer := 15);
 
 port (
 
@@ -54,12 +39,21 @@ port (
 
 	clk, reset	: in std_logic;
 
-	din			: in std_logic_vector(width-1 downto 0);
-	addr		: in std_logic_vector(ioa_width-1 downto 0);
-	rd, wr		: in std_logic;
+	din			: in std_logic_vector(31 downto 0);
+
+	mem_rd		: in std_logic;
+	mem_wr		: in std_logic;
+	mem_addr_wr	: in std_logic;
+	dout		: out std_logic_vector(31 downto 0);
 
 	bsy			: out std_logic;
-	dout		: out std_logic_vector(width-1 downto 0);
+
+-- jbc connections
+
+	jbc_addr	: in std_logic_vector(jpc_width-1 downto 0);
+	jbc_data	: out std_logic_vector(7 downto 0);
+	jpc_wr		: in std_logic;
+	bc_wr		: in std_logic;
 
 --
 --	two ram banks
@@ -88,37 +82,35 @@ port (
 	fl_ncsb	: out std_logic;
 	fl_noe	: out std_logic;
 	fl_nwe	: out std_logic;
-	fl_rdy	: in std_logic;
+	fl_rdy	: in std_logic
 
--- io interface
-
-	io_din		: in std_logic_vector(width-1 downto 0);
-	io_rd		: out std_logic;
-	io_wr		: out std_logic;
-	io_addr_wr	: out std_logic
 );
 end mem32;
 
 architecture rtl of mem32 is
 
-component mul is
-
-generic (width : integer);
+--
+--	jbc component (use technology specific vhdl-file (ajbc/xjbc))
+--
+--	dual port ram
+--	wraddr and wrena registered and delayed
+--	rdaddr is registered
+--	indata registered
+--	outdata is unregistered
+--
+component jbc is
+generic (width : integer; addr_width : integer);
 port (
-	clk			: in std_logic;
+	data		: in std_logic_vector(31 downto 0);
+	rdaddress	: in std_logic_vector(jpc_width-1 downto 0);
+	wr_addr		: in std_logic;									-- load start address (=jpc)
+	wren		: in std_logic;
+	clock		: in std_logic;
 
-	din			: in std_logic_vector(width-1 downto 0);
-	wr_a		: in std_logic;
-	wr_b		: in std_logic;		-- write to b starts multiplier
-	dout		: out std_logic_vector(width-1 downto 0)
+	q			: out std_logic_vector(7 downto 0)
 );
-end component mul;
+end component;
 
---
---	signals for mulitiplier
---
-	signal mul_dout				: std_logic_vector(width-1 downto 0);
-	signal mul_wra, mul_wrb		: std_logic;
 
 --
 --	signals for mem interface
@@ -129,13 +121,10 @@ end component mul;
 	signal state 		: state_type;
 
 	signal mem_wr_addr		: std_logic_vector(20 downto 0);
-	signal mem_dout			: std_logic_vector(width-1 downto 0);
-	signal mem_din			: std_logic_vector(width-1 downto 0);
-	signal mem_rd			: std_logic;
-	signal mem_wr			: std_logic;
+	signal mem_wr_val		: std_logic_vector(31 downto 0);
+	signal mem_rd_val		: std_logic_vector(31 downto 0);
 	signal mem_bsy			: std_logic;
 
-	signal addr_wr			: std_logic;
 	signal nwr_int			: std_logic;
 	signal ram_access		: std_logic;
 	signal nand_access		: std_logic;
@@ -145,94 +134,24 @@ end component mul;
 	signal fl_d_ena			: std_logic;
 	signal ram_d_ena		: std_logic;
 
-begin
+	signal ram_cs, ram_oe	: std_logic;
+	signal ram_addr			: std_logic_vector(17 downto 0);
 
-	cmp_mul : mul generic map (width)
-			port map (clk,
-				din, mul_wra, mul_wrb,
-				mul_dout
-		);
+begin
 
 	bsy <= mem_bsy;
-
---
---	read
---
-process(clk, reset, rd, addr)
-begin
-	if (reset='1') then
-		dout <= std_logic_vector(to_unsigned(0, width));
-		io_rd <= '0';
-	elsif rising_edge(clk) then
-		dout <= std_logic_vector(to_unsigned(0, width));
-		io_rd <= '0';
-
---
---	TODO: Do I need rd='1' in this MUX?
---
-		if (rd='1') then
-			if (addr="010") then
-				dout <= mem_din;
-			elsif (addr="101") then
-				dout <= mul_dout;
-			else
-				dout <= io_din;
-				io_rd <= '1';
-			end if;
-		end if;
-	end if;
-end process;
+	dout <= mem_rd_val;
 
 
---
---	write
---
-process(clk, reset, rd, wr)
-begin
-	if (reset='1') then
-		io_addr_wr <= '0';
-		mem_rd <= '0';
-		mem_wr <= '0';
-		addr_wr <= '0';
-		mul_wra <= '0';
-		mul_wrb <= '0';
-		io_wr <= '0';
+	cmp_jbc: jbc generic map (8, jpc_width) port map(din, jbc_addr, jpc_wr, bc_wr, clk, jbc_data);
 
 
-	elsif rising_edge(clk) then
-		io_addr_wr <= '0';
-		mem_rd <= '0';
-		mem_wr <= '0';
-		addr_wr <= '0';
-		mul_wra <= '0';
-		mul_wrb <= '0';
-		io_wr <= '0';
-
-		if (wr='1') then
-			if (addr="000") then
-				io_addr_wr <= '1';		-- store real io address
-			elsif (addr="010") then
-				mem_rd <= '1';			-- start read
-			elsif (addr="011") then
-				addr_wr <= '1';			-- store write address
-			elsif (addr="100") then
-				mem_wr <= '1';			-- start write
-			elsif (addr="101") then
-				mul_wra <= '1';
-			elsif (addr="110") then
-				mul_wrb <= '1';
-			else
-				io_wr <= '1';
-			end if;
-		end if;
-	end if;
-end process;
 
 --
 --	wr_addr write
 --		one cycle after io write (address is avaliable one cycle before ex stage)
 --
-process(clk, reset, din, addr_wr)
+process(clk, reset, din, mem_addr_wr)
 
 begin
 	if (reset='1') then
@@ -241,7 +160,7 @@ begin
 
 	elsif rising_edge(clk) then
 
-		if (addr_wr='1') then
+		if (mem_addr_wr='1') then
 			mem_wr_addr <= din(20 downto 0);	-- store write address
 		end if;
 
@@ -274,22 +193,22 @@ end process;
 --
 --	tristate output
 --
-process(fl_d_ena, mem_dout)
+process(fl_d_ena, mem_wr_val)
 
 begin
 	if (fl_d_ena='1') then
-		fl_d <= mem_dout(7 downto 0);
+		fl_d <= mem_wr_val(7 downto 0);
 	else
 		fl_d <= (others => 'Z');
 	end if;
 end process;
 
-process(ram_d_ena, mem_dout)
+process(ram_d_ena, mem_wr_val)
 
 begin
 	if (ram_d_ena='1') then
-		rama_d <= mem_dout(15 downto 0);
-		ramb_d <= mem_dout(31 downto 16);
+		rama_d <= mem_wr_val(15 downto 0);
+		ramb_d <= mem_wr_val(31 downto 16);
 	else
 		rama_d <= (others => 'Z');
 		ramb_d <= (others => 'Z');
@@ -297,6 +216,21 @@ begin
 end process;
 
 
+	rama_nlb <= '0';
+	rama_nub <= '0';
+	ramb_nlb <= '0';
+	ramb_nub <= '0';
+	rama_ncs <= not ram_cs;
+	rama_noe <= not ram_oe;
+	ramb_ncs <= not ram_cs;
+	ramb_noe <= not ram_oe;
+
+--
+--	To put this in an output register
+--	we have to make an assignment (FAST_OUTPUT_REGISTER)
+--
+	rama_a <= ram_addr;
+	ramb_a <= ram_addr;
 
 --
 --	state machine for external memory (single byte static ram, flash)
@@ -308,17 +242,10 @@ process(clk, reset, din, mem_wr_addr, mem_rd, mem_wr)
 begin
 	if (reset='1') then
 		state <= idl;
-		rama_a <= (others => '0');
+		ram_addr <= (others => '0');
 		ram_d_ena <= '0';
-		rama_ncs <= '1';
-		rama_noe <= '1';
-		rama_nlb <= '1';
-		rama_nub <= '1';
-		ramb_a <= (others => '0');
-		ramb_ncs <= '1';
-		ramb_noe <= '1';
-		ramb_nlb <= '1';
-		ramb_nub <= '1';
+		ram_cs <= '0';
+		ram_oe <= '0';
 
 		-- fl_a <= (others => 'Z');
 		fl_a <= (others => '0');
@@ -330,8 +257,8 @@ begin
 		fl_nwe <= '1';
 		ram_access <= '1';
 		nand_access <= '0';
-		mem_din <= std_logic_vector(to_unsigned(0, width));
-		mem_dout <= std_logic_vector(to_unsigned(0, width));
+		mem_rd_val <= std_logic_vector(to_unsigned(0, 32));
+		mem_wr_val <= std_logic_vector(to_unsigned(0, 32));
 		mem_bsy <= '0';
 
 	elsif rising_edge(clk) then
@@ -340,14 +267,8 @@ begin
 
 			when idl =>
 				ram_d_ena <= '0';
-				rama_ncs <= '1';
-				rama_noe <= '1';
-				rama_nlb <= '1';
-				rama_nub <= '1';
-				ramb_ncs <= '1';
-				ramb_noe <= '1';
-				ramb_nlb <= '1';
-				ramb_nub <= '1';
+				ram_cs <= '0';
+				ram_oe <= '0';
 
 -- leave the addr. pins.
 --				fl_a <= (others => 'Z');
@@ -367,16 +288,9 @@ begin
 
 				if (mem_rd='1') then
 					if (din(20 downto 19) = "00") then	-- ram
-						rama_a <= din(17 downto 0);
-						rama_ncs <= '0';
-						rama_noe <= '0';
-						rama_nlb <= '0';
-						rama_nub <= '0';
-						ramb_a <= din(17 downto 0);
-						ramb_ncs <= '0';
-						ramb_noe <= '0';
-						ramb_nlb <= '0';
-						ramb_nub <= '0';
+						ram_addr <= din(17 downto 0);
+						ram_cs <= '1';
+						ram_oe <= '1';
 						ram_access <= '1';
 						i := ram_cnt;
 					elsif (din(20 downto 19) = "01") then	-- flash
@@ -403,16 +317,10 @@ begin
 					mem_bsy <= '1';
 					state <= rd1;
 				elsif (mem_wr='1') then
-					mem_dout <= din;
+					mem_wr_val <= din;
 					if (mem_wr_addr(20 downto 19) = "00") then	-- ram
-						rama_a <= mem_wr_addr(17 downto 0);
-						rama_ncs <= '0';
-						rama_nlb <= '0';
-						rama_nub <= '0';
-						ramb_a <= mem_wr_addr(17 downto 0);
-						ramb_ncs <= '0';
-						ramb_nlb <= '0';
-						ramb_nub <= '0';
+						ram_addr <= mem_wr_addr(17 downto 0);
+						ram_cs <= '1';
 						ram_access <= '1';
 						i := ram_cnt+1;			-- one more for single cycle read
 					elsif (mem_wr_addr(20 downto 19) = "01") then	-- flash
@@ -446,12 +354,12 @@ begin
 					--	this mux costs about 6ns, tsu is 5.2ns (could be negativ!)
 					--
 					if (ram_access='1') then
-						mem_din <= ramb_d & rama_d;
+						mem_rd_val <= ramb_d & rama_d;
 					else
 						if (nand_access='1') then
-							mem_din <= std_logic_vector(to_unsigned(0, width-9)) & fl_rdy & fl_d;
+							mem_rd_val <= std_logic_vector(to_unsigned(0, 32-9)) & fl_rdy & fl_d;
 						else
-							mem_din <= std_logic_vector(to_unsigned(0, width-8)) & fl_d;
+							mem_rd_val <= std_logic_vector(to_unsigned(0, 32-8)) & fl_d;
 						end if;
 					end if;
 				end if;

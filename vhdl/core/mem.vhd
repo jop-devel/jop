@@ -1,25 +1,7 @@
 --
 --	mem.vhd
 --
---	external memory interface and multiplyer for ACEX jopcore board
---
---
---		addr, wr are one cycle earlier than data
---		dout one cycle after read (ior)
---
---	resources on ACEX1K30-3
---
---	first mapping (for ldp, stp):
---
---		0	io-address
---		1	data read/write
---		2	st	mem_rd_addr		start read
---		2	ld	mem_rd_data		read data
---		3	st	mem_wr_addr		store write address
---		4	st	mem_wr_data		start write
---		5	ld	mul result
---		5	st	mul operand a
---		6	st	mul operand b and start mul
+--	external memory interface for ACEX jopcore board
 --
 --
 --	memory mapping
@@ -56,7 +38,7 @@ use IEEE.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 entity mem is
-generic (width : integer; ioa_width : integer; ram_cnt : integer; rom_cnt : integer);
+generic (jpc_width : integer; ram_cnt : integer; rom_cnt : integer);
 
 port (
 
@@ -64,12 +46,21 @@ port (
 
 	clk, reset	: in std_logic;
 
-	din			: in std_logic_vector(width-1 downto 0);
-	addr		: in std_logic_vector(ioa_width-1 downto 0);
-	rd, wr		: in std_logic;
+	din			: in std_logic_vector(31 downto 0);
+
+	mem_rd		: in std_logic;
+	mem_wr		: in std_logic;
+	mem_addr_wr	: in std_logic;
+	dout		: out std_logic_vector(31 downto 0);
 
 	bsy			: out std_logic;
-	dout		: out std_logic_vector(width-1 downto 0);
+
+-- jbc connections
+
+	jbc_addr	: in std_logic_vector(jpc_width-1 downto 0);
+	jbc_data	: out std_logic_vector(7 downto 0);
+	jpc_wr		: in std_logic;
+	bc_wr		: in std_logic;
 
 -- external mem interface
 
@@ -78,37 +69,34 @@ port (
 	nram_cs		: out std_logic;
 	nrom_cs		: out std_logic;
 	nrd			: out std_logic;
-	nwr			: out std_logic;
-
--- io interface
-
-	io_din		: in std_logic_vector(width-1 downto 0);
-	io_rd		: out std_logic;
-	io_wr		: out std_logic;
-	io_addr_wr	: out std_logic
+	nwr			: out std_logic
 );
 end mem;
 
 architecture rtl of mem is
 
-component mul is
 
-generic (width : integer);
+--
+--	jbc component (use technology specific vhdl-file (ajbc/xjbc))
+--
+--	dual port ram
+--	wraddr and wrena registered and delayed
+--	rdaddr is registered
+--	indata registered
+--	outdata is unregistered
+--
+component jbc is
+generic (width : integer; addr_width : integer);
 port (
-	clk			: in std_logic;
+	data		: in std_logic_vector(31 downto 0);
+	rdaddress	: in std_logic_vector(jpc_width-1 downto 0);
+	wr_addr		: in std_logic;									-- load start address (=jpc)
+	wren		: in std_logic;
+	clock		: in std_logic;
 
-	din			: in std_logic_vector(width-1 downto 0);
-	wr_a		: in std_logic;
-	wr_b		: in std_logic;		-- write to b starts multiplier
-	dout		: out std_logic_vector(width-1 downto 0)
+	q			: out std_logic_vector(7 downto 0)
 );
-end component mul;
-
---
---	signals for mulitiplier
---
-	signal mul_dout				: std_logic_vector(width-1 downto 0);
-	signal mul_wra, mul_wrb		: std_logic;
+end component;
 
 --
 --	signals for mem interface
@@ -123,101 +111,25 @@ end component mul;
 	signal state 		: state_type;
 
 	signal mem_wr_addr		: std_logic_vector(19 downto 0);
-	signal mem_dout			: std_logic_vector(width-1 downto 0);
-	signal mem_din			: std_logic_vector(width-1 downto 0);
-	signal mem_rd			: std_logic;
-	signal mem_wr			: std_logic;
+	signal mem_wr_val		: std_logic_vector(31 downto 0);
+	signal mem_rd_val		: std_logic_vector(31 downto 0);
 	signal mem_bsy			: std_logic;
 
-	signal addr_wr			: std_logic;
 	signal nwr_int			: std_logic;
 	signal ram_access		: std_logic;
 
 begin
 
-	cmp_mul : mul generic map (width)
-			port map (clk,
-				din, mul_wra, mul_wrb,
-				mul_dout
-		);
-
 	bsy <= mem_bsy;
+	dout <= mem_rd_val;
 
---
---	read
---
-process(clk, reset, rd, addr)
-begin
-	if (reset='1') then
-		dout <= std_logic_vector(to_unsigned(0, width));
-		io_rd <= '0';
-	elsif rising_edge(clk) then
-		dout <= std_logic_vector(to_unsigned(0, width));
-		io_rd <= '0';
-
-		if (rd='1') then
-			if (addr="010") then
-				dout <= mem_din;
-			elsif (addr="101") then
-				dout <= mul_dout;
-			else
-				dout <= io_din;
-				io_rd <= '1';
-			end if;
-		end if;
-	end if;
-end process;
-
-
---
---	write
---
-process(clk, reset, rd, wr)
-begin
-	if (reset='1') then
-		io_addr_wr <= '0';
-		mem_rd <= '0';
-		mem_wr <= '0';
-		addr_wr <= '0';
-		mul_wra <= '0';
-		mul_wrb <= '0';
-		io_wr <= '0';
-
-
-	elsif rising_edge(clk) then
-		io_addr_wr <= '0';
-		mem_rd <= '0';
-		mem_wr <= '0';
-		addr_wr <= '0';
-		mul_wra <= '0';
-		mul_wrb <= '0';
-		io_wr <= '0';
-
-		if (wr='1') then
-			if (addr="000") then
-				io_addr_wr <= '1';		-- store real io address
-			elsif (addr="010") then
-				mem_rd <= '1';			-- start read
-			elsif (addr="011") then
-				addr_wr <= '1';			-- store write address
-			elsif (addr="100") then
-				mem_wr <= '1';			-- start write
-			elsif (addr="101") then
-				mul_wra <= '1';
-			elsif (addr="110") then
-				mul_wrb <= '1';
-			else
-				io_wr <= '1';
-			end if;
-		end if;
-	end if;
-end process;
+	cmp_jbc: jbc generic map (8, jpc_width) port map(din, jbc_addr, jpc_wr, bc_wr, clk, jbc_data);
 
 --
 --	wr_addr write
 --		one cycle after io write (address is avaliable one cycle before ex stage)
 --
-process(clk, reset, din, addr_wr)
+process(clk, reset, din, mem_addr_wr)
 
 begin
 	if (reset='1') then
@@ -226,7 +138,7 @@ begin
 
 	elsif rising_edge(clk) then
 
-		if (addr_wr='1') then
+		if (mem_addr_wr='1') then
 			mem_wr_addr <= din(19 downto 0);	-- store write address
 		end if;
 
@@ -286,8 +198,8 @@ begin
 		nrd <= '1';
 		nwr_int <= '1';
 		ram_access <= '1';
-		mem_din <= std_logic_vector(to_unsigned(0, width));
-		mem_dout <= std_logic_vector(to_unsigned(0, width));
+		mem_rd_val <= std_logic_vector(to_unsigned(0, 32));
+		mem_wr_val <= std_logic_vector(to_unsigned(0, 32));
 		mem_bsy <= '0';
 
 	elsif rising_edge(clk) then
@@ -319,7 +231,7 @@ begin
 					nrd <= '0';
 					state <= rd1;
 				elsif (mem_wr='1') then
-					mem_dout <= din;
+					mem_wr_val <= din;
 					if (mem_wr_addr(19)='1') then
 						maddr <= mem_wr_addr(18 downto 0);
 						nrom_cs <= '0';
@@ -344,13 +256,13 @@ begin
 				if (i=0) then
 					if (ram_access='1') then
 						state <= rd2;
-						mem_din(7 downto 0) <= d;
+						mem_rd_val(7 downto 0) <= d;
 						maddr(1 downto 0) <= "01";
 						i := ram_cnt;
 					else
 						state <= idl;
 						mem_bsy <= '0';
-						mem_din <= std_logic_vector(to_unsigned(0, width-8)) & d;
+						mem_rd_val <= std_logic_vector(to_unsigned(0, 32-8)) & d;
 					end if;
 				end if;
 
@@ -358,7 +270,7 @@ begin
 				i := i-1;
 				if (i=0) then
 					state <= rd3;
-					mem_din(15 downto 8) <= d;
+					mem_rd_val(15 downto 8) <= d;
 					maddr(1 downto 0) <= "10";
 					i := ram_cnt;
 				end if;
@@ -367,7 +279,7 @@ begin
 				i := i-1;
 				if (i=0) then
 					state <= rd4;
-					mem_din(23 downto 16) <= d;
+					mem_rd_val(23 downto 16) <= d;
 					maddr(1 downto 0) <= "11";
 					i := ram_cnt;
 				end if;
@@ -379,7 +291,7 @@ begin
 				end if;
 				if (i=0) then
 					state <= idl;
-					mem_din(31 downto 24) <= d;
+					mem_rd_val(31 downto 24) <= d;
 				end if;
 --
 --	memory write
@@ -387,7 +299,7 @@ begin
 			when wr1 =>
 				i := i-1;
 				d_ena <='1';
-				mdout <= mem_dout(7 downto 0);
+				mdout <= mem_wr_val(7 downto 0);
 				if (i=1) then
 					nwr_int <= '1';
 				end if;
@@ -405,7 +317,7 @@ begin
 
 			when wr2 =>
 				i := i-1;
-				mdout <= mem_dout(15 downto 8);
+				mdout <= mem_wr_val(15 downto 8);
 				nwr_int <= '0';
 				if (i=1) then
 					nwr_int <= '1';
@@ -419,7 +331,7 @@ begin
 					
 			when wr3 =>
 				i := i-1;
-				mdout <= mem_dout(23 downto 16);
+				mdout <= mem_wr_val(23 downto 16);
 				if (i=1) then
 					nwr_int <= '1';
 				end if;
@@ -432,7 +344,7 @@ begin
 					
 			when wr4 =>
 				i := i-1;
-				mdout <= mem_dout(31 downto 24);
+				mdout <= mem_wr_val(31 downto 24);
 				if (i=1) then
 					nwr_int <= '1';
 					mem_bsy <= '0';					-- release mem_bsy one cycle earlier

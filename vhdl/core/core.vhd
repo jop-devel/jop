@@ -43,7 +43,7 @@ entity core is
 generic (
 	width		: integer := 32;	-- one data word
 	addr_width	: integer := 8;		-- address bits of internal ram (sp,...)
-	ioa_width	: integer := 3;		-- address bits of internal io (or 5/4)
+	exta_width	: integer := 3;		-- address bits of internal io (or 5/4)
 	jpc_width	: integer := 10;	-- address bits of java byte code pc
 	pc_width	: integer := 10;	-- address bits of internal instruction rom (upper half)
 	i_width		: integer := 8		-- instruction width
@@ -56,10 +56,18 @@ port (
 
 	bsy			: in std_logic;
 	din			: in std_logic_vector(width-1 downto 0);
-	addr		: out std_logic_vector(ioa_width-1 downto 0);
+	ext_addr	: out std_logic_vector(exta_width-1 downto 0);
 	rd, wr		: out std_logic;
 
+-- jbc connections
+
+	jbc_addr	: out std_logic_vector(jpc_width-1 downto 0);
+	jbc_data	: in std_logic_vector(7 downto 0);
+	jpc_wr		: out std_logic;
+	bc_wr		: out std_logic;
+
 -- interrupt from io
+
 	irq			: in std_logic;
 	irq_ena		: in std_logic;
 
@@ -80,7 +88,11 @@ port (
 	jpc_out		: out std_logic_vector(jpc_width-1 downto 0);	-- jpc read
 	din			: in std_logic_vector(31 downto 0);				-- A from stack
 	jpc_wr		: in std_logic;
-	bc_wr		: in std_logic;
+
+--	connection to bytecode cache
+
+	jbc_addr	: out std_logic_vector(jpc_width-1 downto 0);
+	jbc_data	: in std_logic_vector(7 downto 0);
 
 	jfetch		: in std_logic;
 	jopdfetch	: in std_logic;
@@ -150,7 +162,7 @@ port (
 end component;
 
 component decode is
-generic (i_width : integer; addr_width : integer; ioa_width : integer);
+generic (i_width : integer; addr_width : integer; exta_width : integer);
 port (
 	clk, reset	: in std_logic;
 
@@ -163,7 +175,7 @@ port (
 	pcwait		: out std_logic;
 	jbr			: out std_logic;
 
-	io_addr		: out std_logic_vector(ioa_width-1 downto 0);
+	ext_addr	: out std_logic_vector(exta_width-1 downto 0);
 	rd, wr		: out std_logic;
 
 	dir			: out std_logic_vector(addr_width-1 downto 0);
@@ -210,7 +222,6 @@ end component;
 	signal jpc_out		: std_logic_vector(jpc_width-1 downto 0);
 	signal instr		: std_logic_vector(i_width-1 downto 0);
 	signal ena_jpc		: std_logic;
-	signal ena_bc		: std_logic;
 
 --
 -- stack connections
@@ -244,7 +255,8 @@ end component;
 begin
 
 	cmp_bcf: bcfetch generic map(jpc_width, pc_width)
-			port map (clk, reset, jpc_out, stk_dout, ena_jpc, ena_bc,
+			port map (clk, reset, jpc_out, stk_dout, ena_jpc,
+			jbc_addr, jbc_data,
 			jfetch, jopdfetch,
 			stk_zf, stk_nf, stk_eq, stk_lt, jbr,
 			irq, irq_ena,
@@ -261,15 +273,16 @@ begin
 			wr_ena, ena_b, ena_vp,
 			stk_zf, stk_nf, stk_eq, stk_lt, stk_dout);
 
-	cmp_dec: decode generic map (i_width, addr_width, ioa_width)
+	cmp_dec: decode generic map (i_width, addr_width, exta_width)
 		port map (clk, reset, instr, stk_zf, stk_nf, stk_eq, stk_lt, bsy,
 			br, pcwait, jbr,
-			addr, rd, wr,
+			ext_addr, rd, wr,
 			dir,
 			sel_amux, sel_bmux, sel_log, sel_shf, sel_lmux, sel_imux, sel_rmux, sel_smux,
 			sel_mmux, sel_rda, sel_wra,
-			wr_ena, ena_b, ena_vp, ena_jpc, ena_bc);
+			wr_ena, ena_b, ena_vp, ena_jpc, bc_wr);
 
 	dout <= stk_dout;
+	jpc_wr <= ena_jpc;
 
 end rtl;

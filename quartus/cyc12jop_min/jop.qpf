@@ -20,10 +20,10 @@
 
 
 
-QUARTUS_VERSION = "4.0"
-DATE = "09:46:41  May 03, 2004"
+QUARTUS_VERSION = "4.1"
+DATE = "10:21:51  September 13, 2004"
 
 
-# Active Revisions
+# Revisions
 
 PROJECT_REVISION = "jop"
