@@ -77,6 +77,7 @@ public class Html {
 		// hits = 30390;		// 1.10.2003
 		// hits = 30477;		// 6.10.2003
 		hits = 32914;		// 13.2.2003
+hits = 0;
 		outVal = 1;
 		Native.wr(outVal, Native.IO_OUT);
 

@@ -47,4 +47,7 @@ public abstract class UdpHandler {
 *	handle one request of registered port.
 */
 	public abstract void request(Packet p);
+
+	public void loop() {
+	}
 }

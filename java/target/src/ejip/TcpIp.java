@@ -69,14 +69,12 @@ public class TcpIp {
     static final int WINDOW = 2680;
 
 /**
-*	calc ip header check sum.
+*	calc ip check sum.
 *	assume (32 bit) word boundries. rest of buffer is 0.
 *	off offset in buffer (in words)
 *	cnt length in bytes
 */
-	// static int chkSum(int[] buf, int off, int cnt) {
-// for OEBB
-public static int chkSum(int[] buf, int off, int cnt) {
+	static int chkSum(int[] buf, int off, int cnt) {
 
 
 		int i;
@@ -103,6 +101,16 @@ public static int chkSum(int[] buf, int off, int cnt) {
 		ip_id = 0x12340000;
 		Html.init();
 	}
+
+/**
+*	return IP id in upper 16 bit.
+*/
+	static int getId() {
+
+		ip_id += 0x10000;
+		return ip_id;
+	}
+
 /**
 *	process one ip packet.
 *	change buffer and set length to get a packet sent back.
@@ -115,14 +123,6 @@ public static int chkSum(int[] buf, int off, int cnt) {
 		int[] buf = p.buf;
 		int len;
 
-/*
- Dbg.wr('\n');
- Dbg.wr('I');
- for (i=0; i<(p.len+3)>>2; ++i) {
- Dbg.hexVal(p.buf[i]);
- }
-*/
-
 		i = buf[0];
 		len = i & 0xffff;		// len from IP header
 // NO options are assumed in ICMP/TCP/IP...
@@ -134,28 +134,42 @@ public static int chkSum(int[] buf, int off, int cnt) {
 			p.len = len;				// correct for to long packets
 		}
 
-		// TODO check version, header checksum
 		// TODO fragmentation
-		// TODO unique id for sent packet
+		if (chkSum(buf, 0, 20)!=0) {
+			p.setStatus(Packet.FREE);
+Dbg.wr("wrong IP checksum ");
+			return;
+		}
 
 		int prot = (buf[2]>>16) & 0xff;		// protocol
 		if (prot==PROT_ICMP) {
 			doICMP(p);
+			doIp(p, prot);
 		} else if (prot==PROT_TCP) {
 			doTCP(p);
+			doIp(p, prot);
 		} else if (prot==Udp.PROTOCOL) {
-			if (!Udp.process(p)) {
-				return;					// no repley processiong necessary
-			}
+			Udp.process(p);				// Udp generates the reply
 		} else {
-			p.len = 0;
+			p.setStatus(Packet.FREE);	// mark packet free
 		}
+	}
 
-		len = p.len;
-		if (len != 0) {
+/**
+*	very simple generation of IP header.
+*	just swap source and destination.
+*/
+	private static void doIp(Packet p, int prot) {
+
+		int[] buf = p.buf;
+		int len = p.len;
+		int i;
+
+		if (len == 0) {
+			p.setStatus(Packet.FREE);	// mark packet free
+		} else {
 			buf[0] = 0x45000000 + len;			// ip length	(header without options)
-			buf[1] = ip_id;						// identification, no fragmentation
-			ip_id += 0x10000;					// increment id (upper part of word)
+			buf[1] = getId();					// identification, no fragmentation
 			buf[2] = (0x20<<24) + (prot<<16);	// ttl, protocol, clear checksum
 			i = buf[3];							// swap ip addresses
 			buf[3] = buf[4];
@@ -169,19 +183,7 @@ public static int chkSum(int[] buf, int off, int cnt) {
 			p.llh[2] = p.llh[5];
 			p.llh[6] = 0x0800;
 			p.setStatus(Packet.SND);	// mark packet ready to send
-/*
- Dbg.wr('\n');
- Dbg.wr('i');
- for (i=0; i<(p.len+3)>>2; ++i) {
- Dbg.hexVal(p.buf[i]);
- }
- Dbg.wr('\n');
-*/
-		} else {
-			p.setStatus(Packet.FREE);	// mark packet free
 		}
-
-		return;
 	}
 
 /**
@@ -191,7 +193,7 @@ public static int chkSum(int[] buf, int off, int cnt) {
 
 Dbg.wr('P');
 		if (p.buf[5]>>>16 == 0x0800) {
-			// TODO check checksum
+			// TODO check received ICMP checksum
 			p.buf[5] = 0;							// echo replay plus clear checksu,
 			p.buf[5] = chkSum(p.buf, 5, p.len-20);	// echo replay (0x0000) plus checksum
 		} else {

@@ -69,6 +69,7 @@ public class Slip extends LinkLayer {
 	private static final int ESC_END = 0xdc;
 	private static final int ESC_ESC = 0xdd;
 
+private static int simSendErr, simRcvErr;
 
 /**
 *	receive buffer
@@ -244,9 +245,9 @@ Dbg.wr('!');
 
 		int[] pb = p.buf;
 
-		rbuf[cnt] = 0;
-		rbuf[cnt+1] = 0;
-		rbuf[cnt+2] = 0;
+		rbuf[cnt] = 0;						// fill remaining bytes to word
+		rbuf[cnt+1] = 0;					// boundry with 0 for UDP
+		rbuf[cnt+2] = 0;					// checksum
 
 		// copy buffer
 		k = 0;
@@ -265,6 +266,15 @@ Dbg.intVal(cnt);
 		cnt = 0;
 		ready = false;
 
+/*
+++simRcvErr;
+if (simRcvErr%5==1) {
+p.setStatus(Packet.FREE);
+Dbg.wr(" rcv dropped");
+Dbg.lf();
+return;
+}
+*/
 		p.setStatus(Packet.RCV);		// inform upper layer
 	}
 
@@ -280,6 +290,15 @@ Dbg.intVal(cnt);
 Dbg.wr('s');
 Dbg.intVal(p.len);
 
+/*
+++simSendErr;
+if (simSendErr%7==3) {
+p.setStatus(Packet.FREE);
+Dbg.wr(" send dropped");
+Dbg.lf();
+return;
+}
+*/
 		scnt = p.len;
 		sent = 0;
 		for (i=0; i<scnt; i+=4) {

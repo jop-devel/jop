@@ -55,6 +55,7 @@ public class Udp {
 	public static final int MAX_HANDLER = 8;
 	private static UdpHandler[] list;
 	private static int[] ports;
+	private static int loopCnt;
 
 	public static void init() {
 
@@ -62,6 +63,9 @@ public class Udp {
 		monitor = new Object();
 		list = new UdpHandler[MAX_HANDLER];
 		ports = new int[MAX_HANDLER];
+		loopCnt = 0;
+
+		addHandler(Tftp.PORT, new Tftp());
 	}
 	/**
 	*	add a handler for UDP requests.
@@ -84,10 +88,25 @@ public class Udp {
 	}
 
 	/**
-	*	return true if the received packet should be processed by TcpIp
-	*		recycled packet is sent back for simple protocols.
+	*	Called periodic from Net for timeout processing.
 	*/
-	static boolean process(Packet p) {
+	static void loop() {
+
+		int i = loopCnt;
+
+		if (list[i]!=null) {
+			list[i].loop();
+			++i;
+			if (i==MAX_HANDLER) i=0;
+		} else {
+			i = 0;
+		}
+		loopCnt = i;
+	}
+	/**
+	*	process packet and generate reply if necessary.
+	*/
+	static void process(Packet p) {
 
 		int i, j;
 		int[] buf = p.buf;
@@ -96,18 +115,20 @@ public class Udp {
 		int remport = port >>> 16;
 		port &= 0xffff;
 
-		// TODO chksum
-		if (port == Tftp.PORT) {
-			
-			Tftp.process(p);
-Dbg.wr("tftp reply: ");
-Dbg.intVal(p.len);
+		buf[2] = (PROTOCOL<<16) + p.len - 20; 		// set protocol and udp length in iph checksum for tcp checksum
+		if (TcpIp.chkSum(buf, 2, p.len-8)!=0) {
+			p.setStatus(Packet.FREE);	// mark packet free
+Dbg.wr("wrong UDP checksum ");
+			return;
+		}
 
-		} else if (port == 1625) {
+		if (port == 1625) {
 
 			// do the Dgb thing!
 			i = Dbg.readBuffer(buf, 7);
 			p.len = 28+i;
+			// generate a reply with IP src/dst exchanged
+			Udp.build(p, buf[4], buf[3], remport);
 
 		} else {
 
@@ -120,40 +141,33 @@ Dbg.intVal(p.len);
 				}
 				if (i==MAX_HANDLER) {
 					p.setStatus(Packet.FREE);	// mark packet free
-Dbg.wr('\n');
+Dbg.lf();
 Dbg.wr('U');
 Dbg.intVal(port);
 				}
 			} else {
 				p.setStatus(Packet.FREE);
 			}
-			return false;
 		}
+	}
 
-		if (p.len==0) {
-// TODO drop it in app.
-			p.setStatus(Packet.FREE);	// mark packet free
-			return false;
+	/**
+	*	Get source IP from interface and build IP/UDP header.
+	*/
+	public static void build(Packet p, int dstIp, int port) {
+
+		int srcIp = p.interf.getIpAddress();
+		if (srcIp==0) {						// interface is down
+			p.setStatus(Packet.FREE);		// mark packet free
+		} else {
+			build(p, srcIp, dstIp, port);
 		}
-
-		// 'exchange' port numbers
-		buf[HEAD] = (port<<16) + remport;
-
-		// Fill in UDP header
-		buf[HEAD+1] = (p.len-20)<<16;
-		buf[2] = (PROTOCOL<<16) + p.len - 20; 		// set protocol and udp length in iph checksum for tcp checksum
-		i = TcpIp.chkSum(buf, 2, p.len-8);
-		if (i==0) i = 0xffff;
-		buf[HEAD+1] |= i;
-
-// IP header is filled in TcpIp for echo packets
-		return true;
 	}
 
 	/**
 	*	Fill UDP and IP header and mark packet ready to send.
 	*/
-	public static void build(Packet p, int ip, int port) {
+	public static void build(Packet p, int srcIp, int dstIp, int port) {
 
 		int i;
 		int[] buf = p.buf;
@@ -164,10 +178,16 @@ Dbg.intVal(port);
 			p.llh[i] = CS8900.llh[i];
 		}
 */
+		// IP header
+		// TODO unique id for sent packet
+		buf[0] = 0x45000000 + p.len;		// ip length	(header without options)
+		buf[1] = TcpIp.getId();				// identification, no fragmentation
+		buf[3] = srcIp;
+		buf[4] = dstIp;
 
 		// UDP header
 		// 'set' port numbers
-		buf[HEAD] = ((port+10000)<<16) + port;				// src port = dst port + 10000
+		buf[HEAD] = ((port+10000)<<16) + port;		// src port = dst port + 10000
 		// Fill in UDP header
 		buf[HEAD+1] = (p.len-20)<<16;
 		buf[2] = (PROTOCOL<<16) + p.len - 20; 		// set protocol and udp length in iph checksum for tcp checksum
@@ -175,18 +195,8 @@ Dbg.intVal(port);
 		if (i==0) i = 0xffff;
 		buf[HEAD+1] |= i;
 
-		// IP header
-		buf[0] = 0x45000000 + p.len;		// ip length	(header without options)
-		buf[1] = 0x00300000;				// dummy identification, no fragmentation
+		// for UDP checksum used field of IP header
 		buf[2] = (0x20<<24) + (PROTOCOL<<16);	// ttl, protocol, clear checksum
-
-		i = p.interf.getIpAddress();
-		if (i==0) {							// interface is down
-			p.setStatus(Packet.FREE);		// mark packet free
-			return;
-		}
-		buf[3] = i;
-		buf[4] = ip;
 		buf[2] |= TcpIp.chkSum(buf, 0, 20);
 
 		// a VERY dummy arp/routing!

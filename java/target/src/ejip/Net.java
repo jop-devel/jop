@@ -113,6 +113,8 @@ public class Net extends RtThread {
 			p = Packet.getPacket(Packet.RCV, Packet.ALLOC);
 			if (p!=null) {					// got one received Packet from pool
 				TcpIp.receive(p);
+			} else {
+				Udp.loop();
 			}
 			waitForNextPeriod();
 		}

@@ -46,7 +46,7 @@ import util.*;
 *	Tftp.java: A simple TFTP Server. see rfc1350.
 */
 
-public class Tftp {
+public class Tftp extends UdpHandler {
 
 	public static final int PORT = 69;
 
@@ -58,22 +58,29 @@ public class Tftp {
 	private static final int ACK = 4;
 	private static final int ERR = 5;
 
-	private static boolean initOk;
-
 	private static int state;
 	private static int fn;
 	private static int endBlock;
 	private static int block;
 private static int simerr;
 
+	private static int srcIp, dstIp, dstPort;
+	private static LinkLayer ipLink;
+
+	Tftp() {
+		tftpInit();
+	}
+
 	private static void tftpInit() {
 
-		initOk = true;
 		state = IDLE;
 		block = 0;
 		fn = 0;
+		block_out = 0;
+		timeout = 0;
 	}
 
+/* not used
 	private static void error(Packet p) {
 
 		p.buf[Udp.DATA] = (ERR<<16) + 4711;
@@ -81,6 +88,7 @@ private static int simerr;
 		p.len = Udp.DATA+6;
 		tftpInit();
 	}
+*/
 
 	/** drop the packet end reset state */
 	private static void discard(Packet p) {
@@ -88,8 +96,55 @@ private static int simerr;
 		tftpInit();
 	}
 
-	static void timer() {
-		// TODO: retransmit DATA
+	private static int block_out;
+	private static int timeout;
+	private static int time;
+
+	private static void onTheFly(int block) {
+
+		block_out = block;
+		time = 4;
+		timeout = Timer.getTimeoutSec(time);
+	}
+
+	public void loop() {
+
+		if (block_out != 0) {
+			if (Timer.timeout(timeout)) {
+				resend();
+			}
+		}
+	}
+
+	private static void resend() {
+
+
+		time <<= 1;
+		if (time > 64) {
+Dbg.wr("TFTP give up");
+			tftpInit();
+			return;
+		}
+
+Dbg.wr("TFTP resend ");
+Dbg.intVal(block_out);
+		// retransmit DATA
+		timeout = Timer.getTimeoutSec(time);
+
+		Packet p = Packet.getPacket(Packet.FREE, Packet.ALLOC, ipLink);
+		if (p == null) {								// got no free buffer!
+			Dbg.wr('!');
+			Dbg.wr('b');
+			return;
+		}
+		p.buf[Udp.DATA] = (DAT<<16)+block_out;
+		if (block_out==endBlock) {
+			p.len = Udp.DATA*4+4;			// last block is zero length
+		} else {
+			read(p.buf, block_out);
+			p.len = Udp.DATA*4+4+512;
+		}
+		Udp.build(p, srcIp, dstIp, dstPort);
 	}
 
 	/**
@@ -100,37 +155,29 @@ private static int simerr;
 	*		'f0'..'f8'	flash sector (64 KB)
 	*
 	*/
-	static void process(Packet p) {
-
-		if (!initOk) tftpInit();
+	public void request(Packet p) {
 
 		int i, j;
 		int[] buf = p.buf;
 
 Dbg.wr('F');
+Dbg.hexVal(buf[Udp.DATA]);
 
 		int op = buf[Udp.DATA]>>>16;
 
-Dbg.intVal(op);
-Dbg.intVal(buf[Udp.DATA]&0xffff);
 
 /*
 ++simerr;
-if (simerr%3==1) { 
-Dbg.wr('x');
-p.len=0; return;
+if (simerr%23==0) { 
+Dbg.wr(" dropped ");
+Dbg.lf();
+p.setStatus(Packet.FREE);	// mark packet free
+return;
 }
 */
 
 		if (op==RRQ) {
 
-//Amd.sectorErase(0x20000);
-/* just change state and cancel old communication
-			if (state!=IDLE) {
-				error(p);
-				return;
-			}
-*/
 			state = RRQ;
 			fn = buf[Udp.DATA]&0xffff;
 			i = fn>>8;
@@ -146,11 +193,20 @@ p.len=0; return;
 			buf[Udp.DATA] = (DAT<<16)+block;
 			read(buf, block);
 			p.len = Udp.DATA*4+4+512;
+			onTheFly(block);
 
 		} else if (op==ACK) {
 
-			block = (buf[Udp.DATA] & 0xffff)+1;		// use one higher then last acked block
-			if (block>endBlock) {
+			i = (buf[Udp.DATA] & 0xffff);	// get block number
+			if (i < block) {
+				// a ACK for an allready sent package
+				// drop it
+				p.setStatus(Packet.FREE);	// mark packet free
+				return;
+			}
+
+			block = i+1;					// use one higher then last acked block
+			if (block>endBlock) {			// ACK of last block
 				discard(p);
 			} else {
 				buf[Udp.DATA] = (DAT<<16)+block;
@@ -160,6 +216,15 @@ p.len=0; return;
 					read(buf, block);
 					p.len = Udp.DATA*4+4+512;
 				}
+				onTheFly(block);
+/*
+++simerr;
+if (simerr%23==0) { 
+Dbg.wr(" simulate wrong data on read ");
+Dbg.lf();
+buf[Udp.DATA+13] = 0x12345678;
+}
+*/
 			}
 
 		} else if (op==WRQ) {
@@ -182,7 +247,7 @@ p.len=0; return;
 					buf[Udp.DATA] = (ACK<<16)+i;	// just ack it
 					p.len = Udp.DATA*4+4;			// we have allready received it before
 				} else {
-					discard(p);
+					p.len = 0;				// else just discarde paket
 				}
 			} else {
 // Dbg.wr('a');
@@ -199,9 +264,38 @@ p.len=0; return;
 				}
 			}
 		} else {
-			error(p);
+			p.len = 0;
+			tftpInit();
+Dbg.wr("error ");
 		}
 
+		if (p.len==0) {
+			p.setStatus(Packet.FREE);	// mark packet free
+		} else {
+			reply(p);
+		}
+	}
+
+	private static void reply(Packet p) {
+
+/*
+++simerr;
+if (simerr%23==0) { 
+Dbg.wr("reply dropped ");
+Dbg.lf();
+p.setStatus(Packet.FREE);	// mark packet free
+return;
+}
+*/
+int[] buf = p.buf;
+Dbg.wr("tftp reply: ");
+Dbg.intVal(block);
+			// generate a reply with IP src/dst exchanged
+			dstPort = buf[Udp.HEAD]>>>16;
+			srcIp = buf[4];
+			dstIp = buf[3];
+			ipLink = p.getLinkLayer();
+			Udp.build(p, srcIp, dstIp, dstPort);
 	}
 
 	/**
