@@ -167,4 +167,27 @@ for (fp=10530; fp<=10700; ++fp) {
 			wr(s.charAt(j));
 		}
 	}
+
+	private static final int MAX_TMP = 32;
+	private static int[] tmp;			// a generic buffer
+
+	static void intVal(int val) {
+
+		if (tmp==null) tmp = new int[MAX_TMP];
+		int i;
+		if (val<0) {
+			wr('-');
+			val = -val;
+		}
+		for (i=0; i<MAX_TMP-1; ++i) {
+			tmp[i] = (val%10)+'0';
+			val /= 10;
+			if (val==0) break;
+		}
+		for (val=i; val>=0; --val) {
+			wr(tmp[val]);
+		}
+		wr(' ');
+	}
+
 }
