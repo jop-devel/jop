@@ -1,7 +1,8 @@
 --
 --	fetch.vhd
 --
---	jbc and instr fetch
+--	jop instrcution fetch and branch
+--
 --
 --	resources on ACEX1K30-3
 --
@@ -28,6 +29,8 @@
 --	2001-12-08	instruction set changed to 8 bit, pc to 10 bits
 --	2002-12-02	wait instruction for memory
 --	2003-08-15	move bcfetch to core
+--	2004-04-06	nxt and opd are in rom. rom address from jpc_mux and with
+--				positiv edge rdaddr. unregistered output in rom.
 --
 --
 
@@ -39,7 +42,6 @@ use ieee.numeric_std.all;
 entity fetch is
 
 generic (
-	jpc_width	: integer := 10;	-- address bits of java byte code pc
 	pc_width	: integer := 10;	-- address bits of internal instruction rom
 	i_width		: integer := 8		-- instruction width
 );
@@ -60,8 +62,9 @@ architecture rtl of fetch is
 
 --
 --	rom component (use technology specific vhdl-file (arom/xrom))
+--		or generic rom.vhd
 --
---	rom unregistered address (or registered on negativ clock edge), registerd out (=ir)
+--	rom registered address, unregisterd out
 --
 component rom is
 generic (width : integer; addr_width : integer);
@@ -70,7 +73,7 @@ port (
 
 	address		: in std_logic_vector(pc_width-1 downto 0);
 
-	q			: out std_logic_vector(i_width-1 downto 0)
+	q			: out std_logic_vector(i_width+1 downto 0)
 );
 end component;
 --
@@ -94,8 +97,9 @@ port (
 );
 end component;
 
+	signal pc_mux		: std_logic_vector(pc_width-1 downto 0);
+	signal pc_inc		: std_logic_vector(pc_width-1 downto 0);
 	signal pc			: std_logic_vector(pc_width-1 downto 0);
-	signal pcin			: std_logic_vector(pc_width-1 downto 0);
 	signal brdly		: std_logic_vector(pc_width-1 downto 0);
 
 	signal off			: std_logic_vector(pc_width-1 downto 0);
@@ -103,16 +107,22 @@ end component;
 	signal jfetch		: std_logic;		-- fetch next byte code as opcode
 	signal jopdfetch	: std_logic;		-- fetch next byte code as operand
 
+	signal rom_data		: std_logic_vector(i_width+1 downto 0);		-- output from ROM
 	signal ir			: std_logic_vector(i_width-1 downto 0);		-- instruction register
 
 begin
 
---
---	jop instrcution fetch and branch
---
 
-	cmp_rom: rom generic map (i_width, pc_width) port map(clk, pc, ir);
-	cmp_bft: bcfetbl port map(pc, jfetch, jopdfetch);
+--
+--	pc_mux is 1 during reset!
+--		=> first instruction from ROM gets NEVER executed.
+--
+	cmp_rom: rom generic map (i_width+2, pc_width) port map(clk, pc_mux, rom_data);
+	jfetch <= rom_data(9);
+	jopdfetch <= rom_data(8);
+
+-- not used anymore
+--	cmp_bft: bcfetbl port map(pc, jfetch, jopdfetch);
 
 	cmp_off: offtbl port map(ir(4 downto 0), off);
 
@@ -120,6 +130,14 @@ begin
 	nxt <= jfetch;
 	opd <= jopdfetch;
 
+process(clk)
+begin
+
+	if rising_edge(clk) then				-- we don't need a reset
+		ir <= rom_data(7 downto 0);			-- better read (second) instruction from room
+	end if;
+
+end process;
 
 process(clk, reset, pc, off)
 
@@ -131,25 +149,26 @@ begin
 	elsif rising_edge(clk) then
 
 		brdly <= std_logic_vector(unsigned(pc) + unsigned(off));
-		pc <= pcin;
+		pc <= pc_mux;
 
 	end if;
 
 end process;
 
+	pc_inc <= "000000000" & not pcwait;
 
-process(jfetch, br, pcwait, jpaddr, brdly, pc)
+process(jfetch, br, jpaddr, brdly, pc)
 
 begin
 
 	if (jfetch='1') then
-		pcin <= jpaddr;
-	elsif (br='1') then
-		pcin <= brdly;
-	elsif (pcwait='1') then
-		pcin <= pc;
-	else
-		pcin <= std_logic_vector(unsigned(pc) + 1);
+		pc_mux <= jpaddr;
+	else 
+		if (br='1') then
+			pc_mux <= brdly;
+		else
+			pc_mux <= std_logic_vector(unsigned(pc) + unsigned(pc_inc));
+		end if;
 	end if;
 
 end process;

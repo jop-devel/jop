@@ -1,10 +1,14 @@
 --
 --	arom.vhd
 --
---	microinstruction memory for JOP3
+--	Microinstruction memory for JOP3
 --	Version for Altera
 --
---	emulate asynch address with address register on negativ clock edge
+--	Generated rom.vhd can be used instead
+--	if the synthesis tool can instantiate a ROM.
+--
+--	changelog:
+--		2004-04-06	positiv edge registered address and unregisterd data out
 --
 --
 
@@ -52,12 +56,11 @@ begin
 				LPM_NUMWORDS =>	2**addr_width,
 				LPM_FILE => "../../asm/generated/rom.mif", 
 				LPM_ADDRESS_CONTROL => "REGISTERED",
-				LPM_OUTDATA => "REGISTERED",
+				LPM_OUTDATA => "UNREGISTERED",
 				LPM_HINT => "USE_EAB=ON")
 			port map (
 				address => address,
-				inclock => not clk,
-				outclock => clk,
+				inclock => clk,
 				q => q
 			); 
 

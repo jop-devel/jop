@@ -41,7 +41,6 @@ set_global_assignment -name VHDL_FILE ../../vhdl/io/disp.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/io/fifo.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jopcyc.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/offtbl.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/bcfetbl.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/jtbl.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/stack.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/ajbc.vhd

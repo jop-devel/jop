@@ -19,7 +19,6 @@ FILES
 	VHDL_FILE = ..\..\vhdl\core\shift.vhd;
 	VHDL_FILE = ..\..\vhdl\core\stack.vhd;
 	VHDL_FILE = ..\..\vhdl\offtbl.vhd;
-	VHDL_FILE = ..\..\vhdl\bcfetbl.vhd;
 	VHDL_FILE = ..\..\vhdl\jtbl.vhd;
 	CDF_FILE = jop.cdf;
 	VECTOR_WAVEFORM_FILE = jop.vwf;

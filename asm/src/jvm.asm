@@ -47,6 +47,8 @@
 //				array check, div/rem moved to JVM.java
 //	2004-02-12	added instruction ld_opd_8u and ld_opd_16u
 //	2004-03-12	added support for long: lreturn, lload, lstore
+//	2004-04-06	first two instructions nop because of change in fetch.vhd
+//				stjpc to nxt pipeline is now one longer (simpler mux for jbc rdaddr)
 //
 //	TODO
 //		idiv, irem	WRONG when one operand is 0x80000000
@@ -100,7 +102,11 @@ addr		?			// address used for bc load from flash
 //	special byte codes
 //		but starts with pc=0!!! (so init bc is not really necassary)
 //
-sys_init:
+//	new fetch does NOT reset address of ROM =>
+//		it starts with pc+1
+			nop			// this gets never executed
+			nop			// for shure during reset (perhaps two times executed)
+
 			ldi	127
 			nop			// written in adr/read stage!
 			stsp		// someting strange in stack.vhd A->B !!!
@@ -1480,16 +1486,28 @@ ldbc_rd_l:
 			nop
 			nop
 
+			ldm	new_jpc
+			stjpc
 // wait on last (unused) memory read.
 			wait
 			wait
-
-			ldm	new_jpc
-			stjpc
-			nop					// ???
 			nop
 			nop	nxt
 // end load_bc
+
+//
+//	thats the pipeline delay from stjpc - jpc -
+//	rdaddress - jpaddr - pc!
+//
+//		could be simpler if a different command to store
+//		write address for jbc (or use DMA in mem.vhd!)
+//
+//			stjpc
+//			nop
+//			nop
+//			nop
+//			nop	nxt
+//
 
 areturn:
 freturn:
@@ -1599,6 +1617,7 @@ sys_noim:
 			sub
 			stjpc				// get last byte code
 			nop					// ???
+			nop					// one more now (2004-04-06) ?
 			ldm	jjp
 			nop	opd
 			ld_opd_8u
@@ -1632,6 +1651,7 @@ checkcast:
 			sub
 			stjpc				// get last byte code
 			nop					// ???
+			nop					// one more now (2004-04-06) ?
 			ldm	jjp
 			nop	opd
 			ld_opd_8u

@@ -5,19 +5,21 @@
 --
 --	resources on ACEX1K30-3
 --
---		xxx LCs, max ca. xx MHz
+--		bytecode LCs, max ca. xx MHz
 --
 --	todo:
 --
 --	2001-11-16	split from fetch.vhd, register jpaddr instead of jinstr
 --	2001-12-06	unregistered!!! jpaddr, jbr registered (moved from decode)
 --	2001-12-07	removed mux befor jbc ram, jbr unregistered selects addr. for jpc
---				decode goto and if_xxx from jinstr
+--				decode goto and if_bytecode from jinstr
 --	2002-03-24	autoincrement of jpc on bc_wr
 --	2002-10-21	added if(non)null
 --	2003-02-22	registered jbc ram
 --	2003-08-14	move wr-addr load and autoincrement to ajbc.vhd (now 32 bit interface)
 --	2003-08-15	interrupt handling
+--	2004-04-06	removed signal jfetch from interrupt mux (is in fetch allready)
+--				different mux for jpc and jbc rdaddr, register jump address calculation
 --
 --	TODO:	use 'running' bit and generate jbr here!
 --
@@ -98,6 +100,7 @@ end component;
 
 	signal jpc		: std_logic_vector(jpc_width-1 downto 0);
 	signal jpc_br	: std_logic_vector(jpc_width-1 downto 0);
+	signal jmp_addr	: std_logic_vector(jpc_width-1 downto 0);
 
 	signal jinstr	: std_logic_vector(7 downto 0);
 	signal tp		: std_logic_vector(3 downto 0);
@@ -115,6 +118,7 @@ end component;
 	signal sys_int		: std_logic;
 
 	signal jbc_q_mux	: std_logic_vector(7 downto 0);
+	signal bytecode		: std_logic_vector(7 downto 0);
 
 begin
 
@@ -147,9 +151,15 @@ end process;
 --		jpc is one too high after generating sys_int
 --		this is corrected in jvm.asm
 --
-process(sys_int, jbc_q) begin
+process(int_pend, jbc_q) begin
 	jbc_q_mux <= jbc_q;
-	if sys_int='1' then
+
+--
+--	we do not depend in this mux for jfetch (do we?)
+--	jfetch is allready used in the mux after the jump table
+--
+--	if sys_int='1' then
+	if int_pend='1' then
 		jbc_q_mux <= "11110000";			-- int bytecode
 	end if;
 end process;
@@ -158,7 +168,9 @@ end process;
 --	java byte code fetch and branch
 --
 
-	cmp_jtbl: jtbl port map(jbc_q_mux, jpaddr);
+	bytecode <= jbc_q_mux;		-- register this for an additional pipeline stage
+
+	cmp_jtbl: jtbl port map(bytecode, jpaddr);
 	cmp_jbc: jbc generic map (8, jpc_width) port map(din, jbc_mux, jpc_wr, bc_wr, clk, jbc_q);
 
 
@@ -264,17 +276,15 @@ begin
 end process;
 
 --
---	jbc read address and jpc mux (is registered in ram)
+--	jbc read address mux (is registered in ram)
+--		no write from din
 --
-process(din, jpc, jpc_br, jopd, jpc_wr, jfetch, jopdfetch, jmp)
+process(din, jpc, jmp_addr, jopd, jfetch, jopdfetch, jmp)
 
 begin
 
-	if (jpc_wr='1') then
-		jbc_mux <= din(jpc_width-1 downto 0);
-	elsif (jmp='1') then
-		jbc_mux <= std_logic_vector(unsigned(jpc_br) +
-			unsigned(jopd(jpc_width-1 downto 0)));
+	if (jmp='1') then
+		jbc_mux <= jmp_addr;
 	elsif (jfetch='1' or jopdfetch='1') then
 		jbc_mux <= std_logic_vector(unsigned(jpc) + 1);
 	else
@@ -284,25 +294,47 @@ begin
 end process;
 
 --
---	use same read address mux for jpc
+--	jpc mux conatins also din
 --
-process(clk, reset, jbc_mux)
+process(clk, reset)
 
 begin
 	if (reset='1') then
+
 		jpc <= std_logic_vector(to_unsigned(0, jpc_width));
+
 	elsif rising_edge(clk) then
-		jpc <= jbc_mux;
+
+		if (jpc_wr='1') then
+			jpc <= din(jpc_width-1 downto 0);
+		elsif (jmp='1') then
+			jpc <= jmp_addr;
+		elsif (jfetch='1' or jopdfetch='1') then
+			jpc <= std_logic_vector(unsigned(jpc) + 1);
+		else
+			jpc <= jpc;
+		end if;
+
 	end if;
 end process;
 
 	jpc_out <= jpc;
 
 
+--
+--	use this without register
+--
+--		jmp_addr <= std_logic_vector(unsigned(jpc_br) +
+--			unsigned(jopd(jpc_width-1 downto 0)));
 
-process(clk, jpc, jfetch)
+process(clk)
 begin
 	if rising_edge(clk) then
+
+		-- from jbc_q + jopd low!
+		jmp_addr <= std_logic_vector(unsigned(jpc_br) +
+			unsigned(jopd(jpc_width-1-8 downto 0) & jbc_q));
+
 		if (jfetch='1') then
 			jpc_br <= jpc;		-- save start address of instruction for branch
 			jinstr <= jbc_q;
@@ -311,7 +343,7 @@ begin
 	end if;
 end process;
 
-process(clk, reset, jbc_q, jopdfetch)
+process(clk, reset)
 
 begin
 	if (reset='1') then

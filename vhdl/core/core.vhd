@@ -30,7 +30,7 @@
 --	2001-12-04	cp removed
 --	2001-12-08	instruction set changed to 8 bit
 --	2002-03-24	shifter to stack
---	2003-08-14	movved bcfetch from fetch to core
+--	2003-08-14	moved bcfetch from fetch to core
 --
 
 
@@ -99,7 +99,7 @@ port (
 end component;
 
 component fetch is
-generic (jpc_width : integer; pc_width : integer; i_width : integer);
+generic (pc_width : integer; i_width : integer);
 port (
 	clk, reset	: in std_logic;
 
@@ -250,7 +250,7 @@ begin
 			irq, irq_ena,
 			jpaddr, opd);
 
-	cmp_fch: fetch generic map (jpc_width, pc_width, i_width)
+	cmp_fch: fetch generic map (pc_width, i_width)
 		port map (clk, reset, jfetch, jopdfetch,
 			br, pcwait, jpaddr, instr);
 

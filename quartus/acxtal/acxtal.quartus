@@ -14,7 +14,6 @@ FILES
 	VHDL_FILE = ..\..\vhdl\core\shift.vhd;
 	VHDL_FILE = ..\..\vhdl\core\stack.vhd;
 	VHDL_FILE = ..\..\vhdl\offtbl.vhd;
-	VHDL_FILE = ..\..\vhdl\bcfetbl.vhd;
 	VHDL_FILE = ..\..\vhdl\jtbl.vhd;
 	VHDL_FILE = ..\..\vhdl\io\iotal.vhd;
 	VHDL_FILE = ..\..\vhdl\io\uart.vhd;

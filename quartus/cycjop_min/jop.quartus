@@ -6,7 +6,6 @@ FILES
 	VHDL_FILE = ..\..\vhdl\io\cnt.vhd;
 	VHDL_FILE = ..\..\vhdl\io\iomin.vhd;
 	VHDL_FILE = ..\..\vhdl\offtbl.vhd;
-	VHDL_FILE = ..\..\vhdl\bcfetbl.vhd;
 	VHDL_FILE = ..\..\vhdl\jtbl.vhd;
 	VHDL_FILE = ..\..\vhdl\core\ajbc.vhd;
 	VHDL_FILE = ..\..\vhdl\core\aram.vhd;
