@@ -29,6 +29,7 @@
 --	2002-11-08	rx fifo to 20 characters and stop after 4
 --	2003-07-05	new IO standard, change cts/rts to neg logic
 --	2003-09-19	sync ncts in!
+--	2004-03-23	two stop bits
 --
 
 
@@ -222,7 +223,7 @@ end process;
 --
 process(clk, reset)
 
-	variable i : integer range 0 to 10;
+	variable i : integer range 0 to 11;
 
 begin
 
@@ -253,7 +254,7 @@ begin
 					tsr(9) <= '1';
 					tsr(8 downto 0) <= tsr(9 downto 1);
 					i := i+1;
-					if (i=10) then
+					if (i=11) then				-- two stop bits
 						uart_tx_state <= s0;
 					end if;
 				end if;
