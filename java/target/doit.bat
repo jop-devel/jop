@@ -5,6 +5,8 @@ pause
 rem jbi32 -dDO_PROGRAM=1 -aPROGRAM ..\..\jbc\acxmin_init.jbc
 rem jbi32 -dDO_PROGRAM=1 -aCONFIGURE ..\..\jbc\acxmin_init.jbc
 rem jbi32 -dDO_PROGRAM=1 -aCONFIGURE ..\..\jbc\acxtal_init.jbc
+rem jbi32 -dDO_PROGRAM=1 -aPROGRAM ..\..\jbc\cyctal_init.jbc
+rem jbi32 -dDO_PROGRAM=1 -aCONFIGURE ..\..\jbc\cyctal_init.jbc
 rem jbi32 -dDO_PROGRAM=1 -aPROGRAM ..\..\jbc\bgcyc_init.jbc
 jbi32 -dDO_PROGRAM=1 -aCONFIGURE ..\..\jbc\bgcyc_init.jbc
 ..\..\down -e dist\bin\%project%.bin COM2

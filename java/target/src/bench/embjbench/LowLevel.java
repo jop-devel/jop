@@ -14,7 +14,7 @@ public class LowLevel {
 	static void msg(String msg) {
 
 		if (!init) {
-			Dbg.initSer();
+			Dbg.initSerWait();
 			init = true;
 		}
 

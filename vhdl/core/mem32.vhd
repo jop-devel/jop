@@ -439,6 +439,9 @@ begin
 				if (i=0) then
 					state <= idl;
 					mem_bsy <= '0';
+					--
+					--	this mux costs about 6ns, tsu is 5.2ns (could be negativ!)
+					--
 					if (ram_access='1') then
 						mem_din <= ramb_d & rama_d;
 					else

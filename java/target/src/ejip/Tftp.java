@@ -169,7 +169,7 @@ Dbg.hexVal(buf[Udp.DATA]);
 /*
 ++simerr;
 if (simerr%23==0) { 
-Dbg.wr(" dropped ");
+Dbg.wr(" tftp dropped");
 Dbg.lf();
 p.setStatus(Packet.FREE);	// mark packet free
 return;
@@ -239,7 +239,12 @@ buf[Udp.DATA+13] = 0x12345678;
 
 			i = (buf[Udp.DATA] & 0xffff);	// get block number
 
-			if (state!=WRQ) {
+			if (state==IDLE) {
+				// ACK of last data block got lost,
+				// but we received the data and finished programming
+				buf[Udp.DATA] = (ACK<<16)+i;	// just ack it
+				p.len = Udp.DATA*4+4;			// we have allready received it before
+			} else if (state!=WRQ) {
 				discard(p);
 			} else if (block != i) {		// not the expected block
 				// is it a second write with the old block number?
@@ -276,6 +281,7 @@ Dbg.wr("error ");
 		}
 	}
 
+// TODO: insert reply back to request or split in smaller methods
 	private static void reply(Packet p) {
 
 /*
@@ -289,7 +295,8 @@ return;
 */
 int[] buf = p.buf;
 Dbg.wr("tftp reply: ");
-Dbg.intVal(block);
+Dbg.intVal(buf[Udp.DATA] & 0xffff);
+
 			// generate a reply with IP src/dst exchanged
 			dstPort = buf[Udp.HEAD]>>>16;
 			srcIp = buf[4];

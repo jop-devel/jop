@@ -9,7 +9,7 @@ public class Hello {
 		// need some initialisation
 		Dbg.initSer();
 
-		Dbg.wr("Hello World!");
+		Dbg.wr("Hello World from JAVA!");
 
 		// mark the end of the program
 		// in emb. systems there is no exit()

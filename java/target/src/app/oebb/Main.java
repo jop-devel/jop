@@ -9,6 +9,7 @@ package oebb;
 *	0.15		init Fehler in UDP (=> UDP checksum error) korrigiert
 *	0.16		TFTP retransmit on missing ACK in read
 *	0.17		Zielmelderaum, 2 stop bit in uart.vhd (JOP)
+*	0.18		TFTP: accept a retransmit of last data block on a WRQ
 *
 */
 
@@ -22,7 +23,7 @@ public class Main {
 
 	// SW version
 	public static final int VER_MAJ = 0;
-	public static final int VER_MIN = 17;
+	public static final int VER_MIN = 18;
 
 	static LinkLayer ipLink;
 

@@ -431,6 +431,7 @@ void init(char *filename)
 #ifndef __nios__
 	printf("This machine runns at %d MHz\n", getMHz());
 #endif
+	printf("\n");
 
 	nextTimerInt = 0;
 	intPend = 0;
@@ -859,7 +860,6 @@ void interprete()
 	int ref, val, idx;
 	int old_pc = -1;
 	int old_mp = -1;
-	char spc[80];
 
 	int a, b, c, d;
 
@@ -908,8 +908,7 @@ void interprete()
 		STATISTICS(bcStat[instr]++;)
 		STATISTICS(ioCnt += JopInstr.cnt(instr);)
 
-		sprintf(spc, "%4d %s", pc - 1, jopInstruction[instr].name);
-DEBUG(printf("%s\n", spc);)
+		DEBUG(printf("%4d %s\n", pc-1, jopInstruction[instr].name);)
 
 		switch(instr) {
 

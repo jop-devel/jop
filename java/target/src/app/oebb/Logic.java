@@ -555,7 +555,7 @@ public class Logic extends RtThread {
 		Display.write(20, "");
 		Flash.setText(Status.melNr, buf);
 		Display.write(40, buf);
-		Comm.melnrCmd(Cmd.ZIEL, Status.strNr, Status.melNr);
+		Comm.melnrCmd(Cmd.ANZ, Status.strNr, Status.melNr);
 		Led.startBlinking();
 		if (!waitEnter()) {
 			Led.stopBlinking();

@@ -54,10 +54,8 @@ public class Cmd {
 	public static final int VERSCHUB_RPL = 44;
 	public static final int FERL_QUIT = 45;
 	public static final int FERL_QUIT_RPL = 46;
-	public static final int ZIEL = 47;
-	public static final int ZIEL_RPL = 48;
 
-	public static final int LAST_CMD = 48;
+	public static final int LAST_CMD = 46;
 
 	public static final int ALARM_UEBERF = 1;
 	public static final int ALARM_RICHTUNG = 2;
