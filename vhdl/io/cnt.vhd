@@ -69,10 +69,9 @@ begin
 process(addr, rd, clock_cnt, us_cnt)
 
 begin
---	if addr=std_logic_vector(to_unsigned(io_addr, 4)) then
---		dout <= clock_cnt;
---	elsif addr=std_logic_vector(to_unsigned(io_addr+1, 4)) then
-if addr=std_logic_vector(to_unsigned(io_addr+1, 4)) then
+	if addr=std_logic_vector(to_unsigned(io_addr, 4)) then
+		dout <= clock_cnt;
+	elsif addr=std_logic_vector(to_unsigned(io_addr+1, 4)) then
 		dout <= us_cnt;
 	else
 		dout <= (others => 'Z');
