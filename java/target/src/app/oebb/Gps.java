@@ -27,6 +27,9 @@ public class Gps extends RtThread {
 */
 	public static int fix;
 
+// TODO Geschw. in Knoten >=2 ... faehrt (= 1m/s).
+// Meldr.ueberw und Richtung wird im Stillstand unterdrueckt.
+
 /**
 *	Calculated speed in m/s
 *
