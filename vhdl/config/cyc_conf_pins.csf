@@ -1,0 +1,39 @@
+CHIP(cyc_conf)
+{
+	~TDI~ : LOCATION = Pin_1;
+	conf_done : LOCATION = Pin_31;
+	a[2] : LOCATION = Pin_22;
+	clk : LOCATION = Pin_37;
+	d[4] : LOCATION = Pin_30;
+	a[12] : LOCATION = Pin_5;
+	a[3] : LOCATION = Pin_20;
+	d[5] : LOCATION = Pin_28;
+	~TCK~ : LOCATION = Pin_26;
+	a[13] : LOCATION = Pin_43;
+	data : LOCATION = Pin_19;
+	a[4] : LOCATION = Pin_10;
+	d[6] : LOCATION = Pin_27;
+	a[14] : LOCATION = Pin_2;
+	dclk : LOCATION = Pin_21;
+	a[5] : LOCATION = Pin_11;
+	d[7] : LOCATION = Pin_38;
+	a[15] : LOCATION = Pin_3;
+	a[6] : LOCATION = Pin_8;
+	d[0] : LOCATION = Pin_35;
+	a[16] : LOCATION = Pin_6;
+	a[7] : LOCATION = Pin_12;
+	~TMS~ : LOCATION = Pin_7;
+	d[1] : LOCATION = Pin_34;
+	a[17] : LOCATION = Pin_44;
+	~TDO~ : LOCATION = Pin_32;
+	a[8] : LOCATION = Pin_13;
+	a[0] : LOCATION = Pin_23;
+	d[2] : LOCATION = Pin_40;
+	a[10] : LOCATION = Pin_14;
+	a[9] : LOCATION = Pin_15;
+	a[1] : LOCATION = Pin_18;
+	nreset : LOCATION = Pin_39;
+	d[3] : LOCATION = Pin_33;
+	a[11] : LOCATION = Pin_42;
+	nconfig : LOCATION = Pin_25;
+}

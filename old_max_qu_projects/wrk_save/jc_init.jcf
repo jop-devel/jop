@@ -1,0 +1,6 @@
+JCF002
+
+[JTAG_CHAIN]
+DEVICE_1=EPM7032AE c:\usr\cpu\jop3\wrk\pld_init2.pof
+DEVICE_2=EP1K50 c:\usr\cpu\jop3\wrk\jopcore.sof
+

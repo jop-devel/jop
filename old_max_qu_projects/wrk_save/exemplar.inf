@@ -1,0 +1,29 @@
+restore_project_script C:/usr/cpu/jop3/wrk/jopcore.scr
+save_project_script C:/usr/cpu/jop3/wrk/jopcore.scr
+_gc_read_init
+_gc_run_init
+set input_file_list { C:/usr/cpu/jop3/jopcore.vhd }
+set sdf_hierarchical_names FALSE
+set sdf_type typical
+set part EP1K50TC144
+set process 3
+set max_fanin ""
+set lut_max_fanout ""
+set chip TRUE
+set macro FALSE
+set optimize_for area
+set report brief
+set -hierarchy auto
+set hierarchy_auto TRUE
+set hierarchy_preserve FALSE
+set hierarchy_flatten FALSE
+set extract_ram FALSE
+set extract_rom FALSE
+set output_file C:/usr/cpu/jop3/wrk/jopcore.edf
+set novendor_constraint_file FALSE
+set target acex1
+_gc_read
+_gc_run
+set input_file_list ""
+restore_project_script C:/usr/cpu/jop3/wrk/jopeth.scr
+save_project_script C:/usr/cpu/jop3/wrk/jopeth.scr

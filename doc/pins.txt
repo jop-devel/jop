@@ -1,0 +1,426 @@
+--
+--	pins for jop an acex board for BB project
+--
+--		con A memory
+--		con B display and keyboard
+--		con D serial
+--		con C LEDs
+--
+--
+	DEVICE = ep1k50tc144-3;
+	|lpt_d0 :	BIDIR_PIN = 14;
+	|lpt_d1 :	BIDIR_PIN = 17;
+	|lpt_d2 :	BIDIR_PIN = 18;
+	|lpt_d3 :	BIDIR_PIN = 19;
+	|lpt_d4 :	BIDIR_PIN = 20;
+	|lpt_d5 :	BIDIR_PIN = 21;
+	|lpt_d6 :	BIDIR_PIN = 22;
+	|lpt_d7 :	BIDIR_PIN = 23;
+	|clk :	INPUT_PIN = 55;
+	|reset :	INPUT_PIN = 56;
+	|txd :	OUTPUT_PIN = 59;
+	|rxd :	INPUT_PIN = 60;
+	|rts :	OUTPUT_PIN = 62;
+	|cts :	INPUT_PIN = 63;
+	|a18 :	OUTPUT_PIN = 12;
+	|nrom_cs :	OUTPUT_PIN = 11;
+	|a16 :	OUTPUT_PIN = 10;
+	|a15 :	OUTPUT_PIN = 9;
+	|a14 :	OUTPUT_PIN = 8;
+	|a17 :	OUTPUT_PIN = 7;
+	|a12 :	OUTPUT_PIN = 144;
+	|nwr :	OUTPUT_PIN = 143;
+	|a7 :	OUTPUT_PIN = 142;
+	|a13 :	OUTPUT_PIN = 141;
+	|a6 :	OUTPUT_PIN = 140;
+	|a8 :	OUTPUT_PIN = 138;
+	|a5 :	OUTPUT_PIN = 137;
+	|a9 :	OUTPUT_PIN = 136;
+	|a4 :	OUTPUT_PIN = 135;
+	|a11 :	OUTPUT_PIN = 133;
+	|a3 :	OUTPUT_PIN = 132;
+	|nrd :	OUTPUT_PIN = 131;
+	|a2 :	OUTPUT_PIN = 130;
+	|a10 :	OUTPUT_PIN = 128;
+	|a1 :	OUTPUT_PIN = 121;
+	|nram_cs :	OUTPUT_PIN = 120;
+	|a0 :	OUTPUT_PIN = 119;
+	|d7 :	BIDIR_PIN = 118;
+	|d0 :	BIDIR_PIN = 117;
+	|d6 :	BIDIR_PIN = 116;
+	|d1 :	BIDIR_PIN = 114;
+	|d5 :	BIDIR_PIN = 113;
+	|d2 :	BIDIR_PIN = 112;
+	|d4 :	BIDIR_PIN = 111;
+	|max_oe :	OUTPUT_PIN = 110;
+	|d3 :	BIDIR_PIN = 109;
+	|lpt_c1 :	INPUT_PIN = 27;
+	|lpt_c2 :	INPUT_PIN = 28;
+	|lpt_c3 :	INPUT_PIN = 29;
+	|lpt_s7 :	OUTPUT_PIN = 36;
+	|lpt_s6 :	OUTPUT_PIN = 33;
+	|lpt_s5 :	OUTPUT_PIN = 32;
+	|lpt_s4 :	OUTPUT_PIN = 31;
+	|lpt_c0 :	INPUT_PIN = 26;
+	|lpt_s3 :	OUTPUT_PIN = 30;
+--
+--	keyboard
+--
+	|key_in0 :	INPUT_PIN = 78;
+	|key_in1 :	INPUT_PIN = 79;
+	|key_in2 :	INPUT_PIN = 80;
+	|key_in3 :	INPUT_PIN = 81;
+	|key_out0 :	OUTPUT_PIN = 82;
+	|key_out1 :	OUTPUT_PIN = 83;
+	|key_out2 :	OUTPUT_PIN = 86;
+	|key_out3 :	OUTPUT_PIN = 87;
+--
+--	display
+--
+	|disp_rs :	OUTPUT_PIN = 88;
+	|disp_nwr :	OUTPUT_PIN = 89;
+	|disp_e :	OUTPUT_PIN = 90;
+	|disp_d4 :	OUTPUT_PIN = 91;
+	|disp_d5 :	OUTPUT_PIN = 92;
+	|disp_d6 :	OUTPUT_PIN = 95;
+	|disp_d7 :	OUTPUT_PIN = 96;
+--
+--	outp not used
+--
+--	|outp0 :	OUTPUT_PIN = 37;
+--	|outp1 :	OUTPUT_PIN = 38;
+--	|outp2 :	OUTPUT_PIN = 39;
+--	|outp3 :	OUTPUT_PIN = 41;
+--	|outp4 :	OUTPUT_PIN = 42;
+--	|outp5 :	OUTPUT_PIN = 43;
+--	|outp6 :	OUTPUT_PIN = 44;
+--	|outp7 :	OUTPUT_PIN = 46;
+--	|outp8 :	OUTPUT_PIN = 47;
+--	|outp9 :	OUTPUT_PIN = 48;
+--	|outp10 :	OUTPUT_PIN = 49;
+--	|outp11 :	OUTPUT_PIN = 51;
+--
+--	triac now only for test
+--
+	|p1_auf_ab :	OUTPUT_PIN = 64;
+	|p2_auf :	OUTPUT_PIN = 65;
+	|p3_auf :	OUTPUT_PIN = 67;
+	|p2_ab :	OUTPUT_PIN = 68;
+	|p3_ab :	OUTPUT_PIN = 69;
+
+	|p1_u :		INPUT_PIN = 38;
+	|p2_u :		INPUT_PIN = 41;
+	|p3_u :		INPUT_PIN = 43;
+	|p1_i :		INPUT_PIN = 46;
+	|p2_i :		INPUT_PIN = 48;
+	|p3_i :		INPUT_PIN = 49;
+--
+--	motor sensor
+--
+	|sens_i :		INPUT_PIN = 70;
+	|sens_o :		INPUT_PIN = 72;
+	|sens_u :		INPUT_PIN = 73;
+
+	|ab_t :	INPUT_PIN = 102;
+	|auf_t :	INPUT_PIN = 101;
+	|not_stop :	INPUT_PIN = 100;
+	|tuer :	INPUT_PIN = 99;
+
+	|wd :	OUTPUT_PIN = 37;
+	|led1 :	OUTPUT_PIN = 39;
+	|led2 :	OUTPUT_PIN = 42;
+	|led3 :	OUTPUT_PIN = 44;
+	|led4 :	OUTPUT_PIN = 47;
+--
+--	dummy fuer ext conn
+--
+	|exp0 :	OUTPUT_PIN = 88;
+	|exp1 :	OUTPUT_PIN = 87;
+	|exp2 :	OUTPUT_PIN = 86;
+	|exp3 :	OUTPUT_PIN = 83;
+	|exp4 :	OUTPUT_PIN = 82;
+	|exp5 :	OUTPUT_PIN = 81;
+	|exp6 :	OUTPUT_PIN = 80;
+	|exp7 :	OUTPUT_PIN = 79;
+	|exp8 :	OUTPUT_PIN = 78;
+	|exp9 :	OUTPUT_PIN = 73;
+	|exp10 :	OUTPUT_PIN = 72;
+	|exp11 :	OUTPUT_PIN = 70;
+
+
+--
+--	pins for jopcore (2002/05)
+--		and jopeth with baseio
+--
+	DEVICE = ep1k50tc144-3;
+	|clk :	INPUT_PIN = 55;
+	|reset :	INPUT_PIN = 56;
+	|a18 :	OUTPUT_PIN = 44;
+	|a17 :	OUTPUT_PIN = 47;
+	|a16 :	OUTPUT_PIN = 62;
+	|a15 :	OUTPUT_PIN = 42;
+	|a14 :	OUTPUT_PIN = 48;
+	|a13 :	OUTPUT_PIN = 60;
+	|a12 :	OUTPUT_PIN = 65;
+	|a11 :	OUTPUT_PIN = 51;
+	|a10 :	OUTPUT_PIN = 130;
+	|a9 :	OUTPUT_PIN = 59;
+	|a8 :	OUTPUT_PIN = 49;
+	|a7 :	OUTPUT_PIN = 69;
+	|a6 :	OUTPUT_PIN = 70;
+	|a5 :	OUTPUT_PIN = 38;
+	|a4 :	OUTPUT_PIN = 72;
+	|a3 :	OUTPUT_PIN = 140;
+	|a2 :	OUTPUT_PIN = 120;
+	|a1 :	OUTPUT_PIN = 138;
+	|a0 :	OUTPUT_PIN = 121;
+	|ram_ax :	OUTPUT_PIN = 67;
+	|nram_cs :	OUTPUT_PIN = 117;
+	|nrom_cs :	OUTPUT_PIN = 131;
+	|nmem_rd :	OUTPUT_PIN = 128;
+	|nmem_wr :	OUTPUT_PIN = 46;
+	|wd :	OUTPUT_PIN = 43;
+	|d7 :	BIDIR_PIN = 116;
+	|d6 :	BIDIR_PIN = 114;
+	|d5 :	BIDIR_PIN = 113;
+	|d4 :	BIDIR_PIN = 112;
+	|d3 :	BIDIR_PIN = 111;
+	|d2 :	BIDIR_PIN = 110;
+	|d1 :	BIDIR_PIN = 109;
+	|d0 :	BIDIR_PIN = 118;
+--
+--	uart
+--
+	|txd :	OUTPUT_PIN = 133;
+	|nrts :	OUTPUT_PIN = 135;
+	|rxd :	INPUT_PIN = 124;
+	|ncts :	INPUT_PIN = 126;
+--
+--	io pins
+--
+--	|t1 :	OUTPUT_PIN = 7;
+--	|t2 :	OUTPUT_PIN = 137;
+--	|t3 :	OUTPUT_PIN = 136;
+--	|t4 :	OUTPUT_PIN = 132;
+--	|t5 :	OUTPUT_PIN = 122;
+--	|t6 :	OUTPUT_PIN = 119;
+	|isa_nior :	OUTPUT_PIN = 7;
+	|isa_a4 :	OUTPUT_PIN = 137;
+	|isa_a3 :	OUTPUT_PIN = 136;
+	|isa_a2 :	OUTPUT_PIN = 132;
+	|isa_a1 :	OUTPUT_PIN = 122;
+	|isa_a0 :	OUTPUT_PIN = 119;
+
+
+--	|l1 :	OUTPUT_PIN = 8;
+--	|l2 :	OUTPUT_PIN = 9;
+--	|l3 :	OUTPUT_PIN = 10;
+--	|l4 :	OUTPUT_PIN = 12;
+--	|l5 :	OUTPUT_PIN = 13;
+--	|l6 :	OUTPUT_PIN = 14;
+--	|l7 :	OUTPUT_PIN = 17;
+--	|l8 :	OUTPUT_PIN = 18;
+--	|l9 :	OUTPUT_PIN = 19;
+--	|l10 :	OUTPUT_PIN = 20;
+	|isa_niow :	OUTPUT_PIN = 8;
+	|isa_d0 :	BIDIR_PIN = 9;
+	|isa_d1 :	BIDIR_PIN = 10;
+	|isa_d2 :	BIDIR_PIN = 12;
+	|isa_d3 :	BIDIR_PIN = 13;
+	|isa_d4 :	BIDIR_PIN = 14;
+	|isa_d5 :	BIDIR_PIN = 17;
+	|isa_d6 :	BIDIR_PIN = 18;
+	|isa_d7 :	BIDIR_PIN = 19;
+	|isa_reset :	OUTPUT_PIN = 20;
+--	|clkout :	OUTPUT_PIN = 21;
+
+	|l11 :	OUTPUT_PIN = 21;
+	|l12 :	OUTPUT_PIN = 22;
+	|l13 :	OUTPUT_PIN = 23;
+	|l14 :	OUTPUT_PIN = 26;
+	|l15 :	OUTPUT_PIN = 27;
+	|l16 :	OUTPUT_PIN = 28;
+
+--	|l17 :	OUTPUT_PIN = 29;
+--	|l18 :	OUTPUT_PIN = 30;
+--	|l19 :	OUTPUT_PIN = 31;
+--	|l20 :	OUTPUT_PIN = 32;
+	|o1 :	OUTPUT_PIN = 29;
+	|o2 :	OUTPUT_PIN = 30;
+	|o3 :	OUTPUT_PIN = 31;
+	|o4 :	OUTPUT_PIN = 32;
+
+--	|b1 :	OUTPUT_PIN = 33;
+--	|b2 :	OUTPUT_PIN = 36;
+--	|b3 :	OUTPUT_PIN = 37;
+--	|b4 :	OUTPUT_PIN = 39;
+--	|b5 :	OUTPUT_PIN = 41;
+--	|b6 :	OUTPUT_PIN = 63;
+--	|b7 :	OUTPUT_PIN = 64;
+--	|b8 :	OUTPUT_PIN = 68;
+--	|b9 :	OUTPUT_PIN = 73;
+--	|b10 :	OUTPUT_PIN = 78;
+	|lo10 :	OUTPUT_PIN = 33;
+	|lo9 :	OUTPUT_PIN = 36;
+	|lo8 :	OUTPUT_PIN = 37;
+	|lo7 :	OUTPUT_PIN = 39;
+	|lo6 :	OUTPUT_PIN = 41;
+	|lo5 :	OUTPUT_PIN = 63;
+	|lo4 :	OUTPUT_PIN = 64;
+	|lo3 :	OUTPUT_PIN = 68;
+	|lo2 :	OUTPUT_PIN = 73;
+	|lo1 :	OUTPUT_PIN = 78;
+
+--	|r1 :	OUTPUT_PIN = 102;
+--	|r2 :	OUTPUT_PIN = 101;
+--	|r3 :	OUTPUT_PIN = 100;
+--	|r4 :	OUTPUT_PIN = 99;
+--	|r5 :	OUTPUT_PIN = 98;
+--	|r6 :	OUTPUT_PIN = 97;
+--	|r7 :	OUTPUT_PIN = 96;
+	|rr1 :	OUTPUT_PIN = 102;
+	|rr2 :	OUTPUT_PIN = 101;
+	|rr3 :	OUTPUT_PIN = 100;
+--	|dbgrx :	INPUT_PIN = 102;
+--	|dbgtx :	OUTPUT_PIN = 101;
+	|sdo1 :	OUTPUT_PIN = 99;
+	|sdo2 :	OUTPUT_PIN = 98;
+	|sdi2 :	INPUT_PIN = 97;
+	|sdi1 :	INPUT_PIN = 96;
+
+	|r8 :	OUTPUT_PIN = 95;
+	|r9 :	OUTPUT_PIN = 92;
+	|r10 :	OUTPUT_PIN = 91;
+
+--	|r11 :	OUTPUT_PIN = 90;
+--	|r12 :	OUTPUT_PIN = 89;
+--	|r13 :	OUTPUT_PIN = 88;
+--	|r14 :	OUTPUT_PIN = 87;
+--	|r15 :	OUTPUT_PIN = 86;
+--	|r16 :	OUTPUT_PIN = 83;
+--	|r17 :	OUTPUT_PIN = 82;
+--	|r18 :	OUTPUT_PIN = 81;
+--	|r19 :	OUTPUT_PIN = 80;
+--	|r20 :	OUTPUT_PIN = 79;
+	|i1 :	OUTPUT_PIN = 90;
+	|i2 :	OUTPUT_PIN = 89;
+	|i3 :	INPUT_PIN = 88;
+	|i4 :	INPUT_PIN = 87;
+	|i5 :	INPUT_PIN = 86;
+	|i6 :	INPUT_PIN = 83;
+	|i7 :	INPUT_PIN = 82;
+	|i8 :	INPUT_PIN = 81;
+	|i9 :	INPUT_PIN = 80;
+	|i10 :	INPUT_PIN = 79;
+
+
+--
+--	pins for jopcore (2002/05)
+--		on bg263 (2003/05)
+--
+	DEVICE = ep1k50tc144-3;
+	|clk :	INPUT_PIN = 55;
+	|reset :	INPUT_PIN = 56;
+	|a18 :	OUTPUT_PIN = 44;
+	|a17 :	OUTPUT_PIN = 47;
+	|a16 :	OUTPUT_PIN = 62;
+	|a15 :	OUTPUT_PIN = 42;
+	|a14 :	OUTPUT_PIN = 48;
+	|a13 :	OUTPUT_PIN = 60;
+	|a12 :	OUTPUT_PIN = 65;
+	|a11 :	OUTPUT_PIN = 51;
+	|a10 :	OUTPUT_PIN = 130;
+	|a9 :	OUTPUT_PIN = 59;
+	|a8 :	OUTPUT_PIN = 49;
+	|a7 :	OUTPUT_PIN = 69;
+	|a6 :	OUTPUT_PIN = 70;
+	|a5 :	OUTPUT_PIN = 38;
+	|a4 :	OUTPUT_PIN = 72;
+	|a3 :	OUTPUT_PIN = 140;
+	|a2 :	OUTPUT_PIN = 120;
+	|a1 :	OUTPUT_PIN = 138;
+	|a0 :	OUTPUT_PIN = 121;
+	|ram_ax :	OUTPUT_PIN = 67;
+	|nram_cs :	OUTPUT_PIN = 117;
+	|nrom_cs :	OUTPUT_PIN = 131;
+	|nmem_rd :	OUTPUT_PIN = 128;
+	|nmem_wr :	OUTPUT_PIN = 46;
+	|wd :	OUTPUT_PIN = 43;
+	|d7 :	BIDIR_PIN = 116;
+	|d6 :	BIDIR_PIN = 114;
+	|d5 :	BIDIR_PIN = 113;
+	|d4 :	BIDIR_PIN = 112;
+	|d3 :	BIDIR_PIN = 111;
+	|d2 :	BIDIR_PIN = 110;
+	|d1 :	BIDIR_PIN = 109;
+	|d0 :	BIDIR_PIN = 118;
+--
+--	uart
+--
+	|txd :	OUTPUT_PIN = 133;
+	|nrts :	OUTPUT_PIN = 135;
+	|rxd :	INPUT_PIN = 124;
+	|ncts :	INPUT_PIN = 126;
+--
+--	io pins
+--
+	|t1 :	OUTPUT_PIN = 7;
+	|t2 :	OUTPUT_PIN = 137;
+	|t3 :	OUTPUT_PIN = 136;
+	|t4 :	OUTPUT_PIN = 132;
+	|t5 :	OUTPUT_PIN = 122;
+	|t6 :	OUTPUT_PIN = 119;
+
+
+	|l1 :	OUTPUT_PIN = 8;
+	|l2 :	OUTPUT_PIN = 9;
+	|l3 :	OUTPUT_PIN = 10;
+	|l4 :	OUTPUT_PIN = 12;
+	|l5 :	OUTPUT_PIN = 13;
+	|l6 :	OUTPUT_PIN = 14;
+	|l7 :	OUTPUT_PIN = 17;
+	|l8 :	OUTPUT_PIN = 18;
+	|l9 :	OUTPUT_PIN = 19;
+	|l10 :	OUTPUT_PIN = 20;
+	|l11 :	OUTPUT_PIN = 21;
+	|l12 :	OUTPUT_PIN = 22;
+	|l13 :	OUTPUT_PIN = 23;
+	|l14 :	OUTPUT_PIN = 26;
+	|l15 :	OUTPUT_PIN = 27;
+	|l16 :	OUTPUT_PIN = 28;
+	|l17 :	OUTPUT_PIN = 29;
+	|l18 :	OUTPUT_PIN = 30;
+	|l19 :	OUTPUT_PIN = 31;
+	|l20 :	OUTPUT_PIN = 32;
+
+	|b1 :	OUTPUT_PIN = 33;
+	|b2 :	OUTPUT_PIN = 36;
+	|b3 :	OUTPUT_PIN = 37;
+	|b4 :	OUTPUT_PIN = 39;
+	|b5 :	OUTPUT_PIN = 41;
+	|b6 :	OUTPUT_PIN = 63;
+	|b7 :	OUTPUT_PIN = 64;
+	|b8 :	OUTPUT_PIN = 68;
+	|b9 :	OUTPUT_PIN = 73;
+	|b10 :	OUTPUT_PIN = 78;
+
+	|r1 :	OUTPUT_PIN = 102;
+	|r2 :	OUTPUT_PIN = 101;
+	|r3 :	OUTPUT_PIN = 100;
+	|r4 :	OUTPUT_PIN = 99;
+	|r5 :	OUTPUT_PIN = 98;
+	|r6 :	OUTPUT_PIN = 97;
+	|r7 :	OUTPUT_PIN = 96;
+	|r8 :	OUTPUT_PIN = 95;
+	|r9 :	OUTPUT_PIN = 92;
+	|r10 :	OUTPUT_PIN = 91;
+	|r11 :	OUTPUT_PIN = 90;
+	|r12 :	OUTPUT_PIN = 89;
+	|r13 :	OUTPUT_PIN = 88;
+	|r14 :	OUTPUT_PIN = 87;
+	|r15 :	OUTPUT_PIN = 86;
+	|r16 :	OUTPUT_PIN = 83;
+	|r17 :	OUTPUT_PIN = 82;
+	|r18 :	OUTPUT_PIN = 81;
+	|r19 :	OUTPUT_PIN = 80;
+	|r20 :	OUTPUT_PIN = 79;

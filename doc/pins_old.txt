@@ -1,0 +1,87 @@
+--
+--	pins for jop an acex board
+--
+--		con B serial
+--		con C outp
+--		con D inp
+--
+	|lpt_d0 :	BIDIR_PIN = 14;
+	|lpt_d1 :	BIDIR_PIN = 17;
+	|lpt_d2 :	BIDIR_PIN = 18;
+	|lpt_d3 :	BIDIR_PIN = 19;
+	|lpt_d4 :	BIDIR_PIN = 20;
+	|lpt_d5 :	BIDIR_PIN = 21;
+	|lpt_d6 :	BIDIR_PIN = 22;
+	|lpt_d7 :	BIDIR_PIN = 23;
+	DEVICE = ep1k30tc144-3;
+	|clk :	INPUT_PIN = 55;
+	|reset :	INPUT_PIN = 56;
+	|txd :	OUTPUT_PIN = 78;
+	|cts :	INPUT_PIN = 81;
+	|rxd :	INPUT_PIN = 79;
+	|rts :	OUTPUT_PIN = 80;
+	|a18 :	OUTPUT_PIN = 12;
+	|nrom_cs :	OUTPUT_PIN = 11;
+	|a16 :	OUTPUT_PIN = 10;
+	|a15 :	OUTPUT_PIN = 9;
+	|a14 :	OUTPUT_PIN = 8;
+	|a17 :	OUTPUT_PIN = 7;
+	|a12 :	OUTPUT_PIN = 144;
+	|nwr :	OUTPUT_PIN = 143;
+	|a7 :	OUTPUT_PIN = 142;
+	|a13 :	OUTPUT_PIN = 141;
+	|a6 :	OUTPUT_PIN = 140;
+	|a8 :	OUTPUT_PIN = 138;
+	|a5 :	OUTPUT_PIN = 137;
+	|a9 :	OUTPUT_PIN = 136;
+	|a4 :	OUTPUT_PIN = 135;
+	|a11 :	OUTPUT_PIN = 133;
+	|a3 :	OUTPUT_PIN = 132;
+	|nrd :	OUTPUT_PIN = 131;
+	|a2 :	OUTPUT_PIN = 130;
+	|a10 :	OUTPUT_PIN = 128;
+	|a1 :	OUTPUT_PIN = 121;
+	|nram_cs :	OUTPUT_PIN = 120;
+	|a0 :	OUTPUT_PIN = 119;
+	|d7 :	BIDIR_PIN = 118;
+	|d0 :	BIDIR_PIN = 117;
+	|d6 :	BIDIR_PIN = 116;
+	|d1 :	BIDIR_PIN = 114;
+	|d5 :	BIDIR_PIN = 113;
+	|d2 :	BIDIR_PIN = 112;
+	|d4 :	BIDIR_PIN = 111;
+	|max_oe :	OUTPUT_PIN = 110;
+	|d3 :	BIDIR_PIN = 109;
+	|inp0 :	INPUT_PIN = 59;
+	|inp1 :	INPUT_PIN = 60;
+	|inp2 :	INPUT_PIN = 62;
+	|inp3 :	INPUT_PIN = 63;
+	|inp4 :	INPUT_PIN = 64;
+	|inp5 :	INPUT_PIN = 65;
+	|inp6 :	INPUT_PIN = 67;
+	|inp7 :	INPUT_PIN = 68;
+	|inp8 :	INPUT_PIN = 69;
+	|inp9 :	INPUT_PIN = 70;
+	|inp10 :	INPUT_PIN = 72;
+	|inp11 :	INPUT_PIN = 73;
+	|outp0 :	OUTPUT_PIN = 37;
+	|outp1 :	OUTPUT_PIN = 38;
+	|outp2 :	OUTPUT_PIN = 39;
+	|outp3 :	OUTPUT_PIN = 41;
+	|outp4 :	OUTPUT_PIN = 42;
+	|outp5 :	OUTPUT_PIN = 43;
+	|outp6 :	OUTPUT_PIN = 44;
+	|outp7 :	OUTPUT_PIN = 46;
+	|outp8 :	OUTPUT_PIN = 47;
+	|outp9 :	OUTPUT_PIN = 48;
+	|outp10 :	OUTPUT_PIN = 49;
+	|outp11 :	OUTPUT_PIN = 51;
+	|lpt_c1 :	INPUT_PIN = 27;
+	|lpt_c2 :	INPUT_PIN = 28;
+	|lpt_c3 :	INPUT_PIN = 29;
+	|lpt_s7 :	OUTPUT_PIN = 36;
+	|lpt_s6 :	OUTPUT_PIN = 33;
+	|lpt_s5 :	OUTPUT_PIN = 32;
+	|lpt_s4 :	OUTPUT_PIN = 31;
+	|lpt_c0 :	INPUT_PIN = 26;
+	|lpt_s3 :	OUTPUT_PIN = 30;

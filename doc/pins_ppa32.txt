@@ -1,0 +1,35 @@
+--
+--	pinout for confppa pld (max7032)
+--	PPA on BB board
+--
+	|resacx :	OUTPUT_PIN = 42;
+	|nws :	OUTPUT_PIN = 11;
+	|csacx :	OUTPUT_PIN = 10;
+	|nconf :	OUTPUT_PIN = 6;
+	|d0out :	OUTPUT_PIN = 13;
+	|nce :	OUTPUT_PIN = 12;
+	|noe :	OUTPUT_PIN = 44;
+	|a0 :	OUTPUT_PIN = 14;
+	|a1 :	OUTPUT_PIN = 8;
+	|a2 :	OUTPUT_PIN = 15;
+	|a3 :	OUTPUT_PIN = 20;
+	|a4 :	OUTPUT_PIN = 23;
+	|a5 :	OUTPUT_PIN = 27;
+	|a6 :	OUTPUT_PIN = 25;
+	|a7 :	OUTPUT_PIN = 22;
+	|a8 :	OUTPUT_PIN = 21;
+	|a9 :	OUTPUT_PIN = 19;
+	|a10 :	OUTPUT_PIN = 28;
+	|a11 :	OUTPUT_PIN = 30;
+	|a12 :	OUTPUT_PIN = 31;
+	|a13 :	OUTPUT_PIN = 33;
+	|a14 :	OUTPUT_PIN = 34;
+	|a15 :	OUTPUT_PIN = 35;
+	|a16 :	OUTPUT_PIN = 18;
+	|conf_done :	INPUT_PIN = 38;
+	|d0in :	INPUT_PIN = 2;
+	|nce_in :	INPUT_PIN = 3;
+	|noe_in :	INPUT_PIN = 5;
+	|nreset :	INPUT_PIN = 43;
+	|CLK :	INPUT_PIN = 37;
+	DEVICE = EPM7032AETI44-7;

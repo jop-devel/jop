@@ -1,0 +1,39 @@
+#slattach -l -p slip -s 115200 /dev/ttyS0 &
+#sleep 3
+#ifconfig sl0 192.168.1.1 dstaddr 192.168.1.2
+
+ifconfig eth0 192.168.0.1
+
+#alias for intern net
+ifconfig eth0:1 80.110.200.231
+route add default gw 80.110.200.1
+
+#-F ... delete all rules
+iptables -F; iptables -t nat -F; iptables -t mangle -F
+
+#masq for gericom (all from network 192.168.0)
+iptables -t nat -A POSTROUTING -o eth0 \
+-s 192.168.0.5 -j SNAT --to 80.110.200.231
+
+
+#fwd www to jop (intern)
+iptables -t nat -A PREROUTING -p tcp -d 80.110.200.231 --dport 80 \
+-m state --state NEW,ESTABLISHED,RELATED -j DNAT --to 192.168.0.4
+
+#fwd www to jop (extern)
+#iptables -A FORWARD -i eth0 -o sl0 -p tcp --dport 80 -m state \
+#--state NEW,ESTABLISHED,RELATED -j ACCEPT
+iptables -t nat -A PREROUTING -p tcp -d 80.110.200.231 --dport 80 \
+-j DNAT --to 192.168.0.4:80
+
+#fwd udp 200x to 198.168.0.5 for OEBB
+#aber retour gehts dann net!!!
+#iptables -A PREROUTING -t nat -p udp -d 80.110.200.231 \
+#--destination-port 2000:2009 \
+#-j DNAT --to 192.168.0.5
+
+
+#start forwarding
+echo 1 > /proc/sys/net/ipv4/ip_forward
+
+

@@ -1,0 +1,25 @@
+slattach -l -p slip -s 115200 /dev/ttyS0 &
+sleep 3
+ifconfig sl0 192.168.1.1 dstaddr 192.168.1.2
+
+#alias for intern net
+ifconfig eth0:1 192.168.0.1
+
+#masq for gericom
+iptables -F; iptables -t nat -F; iptables -t mangle -F
+iptables -t nat -A POSTROUTING -o eth0 -j SNAT --to 213.47.18.244
+
+#fwd www to jop (intern)
+iptables -A PREROUTING -t nat -p tcp -d 213.47.18.244 --dport 80 \
+-m state --state NEW,ESTABLISHED,RELATED -j DNAT --to 192.168.1.2
+
+#fwd www to jop (extern)
+iptables -A FORWARD -i eth0 -o sl0 -p tcp --dport 80 -m state \
+--state NEW,ESTABLISHED,RELATED -j ACCEPT
+iptables -A PREROUTING -t nat -p tcp -d 213.47.18.244 --dport 80 \
+-j DNAT --to 192.168.1.2:80
+
+#start forwarding
+echo 1 > /proc/sys/net/ipv4/ip_forward
+
+

@@ -1,0 +1,173 @@
+/**
+*	Thread.java
+*/
+
+package java.lang;
+
+import com.jopdesign.sys.Native;
+
+// public class Thread implements Runnable { no interfaces for now :-(
+public class Thread {
+
+	public final static int MIN_PRIORITY = 1;
+	public final static int NORM_PRIORITY = 5;
+	public final static int MAX_PRIORITY = 10;
+
+	private int priority;
+	private int nr;
+
+	private final static int MAX_THREAD = 8;
+	private final static int MAX_STACK = 128;
+	private final static int MAX_STACK_SHIFT = 7;
+
+	private static boolean init;
+	private static int active;
+	private static int cnt;
+	private static int[] stack;
+	private static int[] sp;
+
+	private static void doInit() {
+
+		init = true;
+		active = 0;
+		cnt = 1;
+		stack = new int[MAX_THREAD*MAX_STACK];
+		sp = new int[MAX_THREAD];
+	}
+
+	public Thread() {
+
+		if (!init) {
+			doInit();
+		}
+		priority = NORM_PRIORITY;
+	}
+
+	private static void saveStack(int nr) {
+
+		int i, j, k;
+		int[] mem = stack;
+
+		i = Native.getSP();
+		sp[nr] = i;
+		k = nr<<MAX_STACK_SHIFT;
+		for (j=128; j<=i; ++j) {
+			mem[k++] = Native.rdIntMem(j);
+		}
+	}
+
+	private static int s1;
+
+	private static void restoreStack() {
+
+		int i, j, k;
+		int[] mem;
+
+		s1 = sp[active];
+		Native.setVP(s1+2);		// +2 for shure ???
+		Native.setSP(s1+6);		// +4 locals
+
+		i = s1;
+		mem = stack;
+		k = (active<<MAX_STACK_SHIFT)-128;
+		for (j=128; j<=i; ++j) {
+			Native.wrIntMem(mem[k+j], j);
+		}
+		Native.setSP(i);
+	}
+
+	public static void yield() {
+
+
+		int i, j, k;
+		int[] mem;
+		int oldActive;
+
+		j = cnt;
+		if (j==1) return;
+
+		oldActive = i = active;
+		++i;
+		if (i==j) i = 0;
+		active = i;
+
+		// saveStack(oldActive)
+		i = Native.getSP();
+		sp[oldActive] = i;
+		mem = stack;
+		k = (oldActive<<MAX_STACK_SHIFT)-128;
+		for (j=128; j<=i; ++j) {
+			mem[k+j] = Native.rdIntMem(j);
+		}
+
+		if (active != oldActive) {
+			restoreStack();
+		}
+	}
+
+
+	public static void sleep(long millis) throws InterruptedException {
+		// TODO thread switch!!!
+		// busy wait if only one thread
+		;
+	}
+
+// was passiert wenn start ein zweites mal aufgerufen wird?
+	public synchronized void start() {
+
+		int oldActive = active;
+		nr = cnt;
+		active = nr;
+		saveStack(oldActive);
+		if (active == nr) {
+// util.Dbg.wr('s');
+			++cnt;
+			run();
+			// if we arrive here it's time to delete runtime struct of thread
+			// now do nothing!
+			for (;;) yield();
+		}
+// util.Dbg.wr('S');
+	}
+
+	public void run() {
+		;					// do nothing
+	}
+
+	public static Thread currentThread() {
+		return null;
+	}
+
+	public final boolean isAlive() {
+		return true;
+	}
+
+	public final void setPriority(int newPriority) {
+		if (newPriority > MAX_PRIORITY || newPriority < MIN_PRIORITY) {
+			throw new IllegalArgumentException();
+		}
+		priority = newPriority;
+	}
+
+	public final int getPriority() {
+		return priority;
+	}
+
+	public static int activeCount() {
+		return 0;
+	}
+
+	public final void join() throws InterruptedException {
+		if (this == currentThread()) {
+			return;
+		}
+		while(isAlive()) {
+			yield();
+		}
+	}
+
+	public String toString() {
+		return "Thread[@" + hashCode() + "," + getPriority() + "]";
+	}
+
+}

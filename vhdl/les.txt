@@ -1,0 +1,22 @@
+
+bg263:
+
+orig w Leo Max+:  2595 LE (?) MHz
+orig w Leo Quart. II:  2631 LE 16.6 (?) MHz
+orig w Leo Quart. III:  2609 LE  16.6 MHz
+orig w Quart. III: 2445 LE 22.9 MHz
+
+modem input buffer from 4 to 34 bytes:
+
+does not fit with Leo and not generating mems.
+
+orig w Leo Max+:  2833 LE 25 MHz +EC 512Bit			w. extract rams/roms (256x2)
+orig w Leo Quart. III:  2847 LE  17 MHz +EC 512Bit	w. 256x2
+orig w Quart. III: 2799 LE 23.9 MHz +EC 4KBit
+
+now with new IO interface:
+
+w Leo Max+:  2842 LE 26 MHz +EC 512Bit
+w Quart. III: 2790 LE 29 MHz +EC 4KBit
+
+on Cyclone (EP1C6Q240C6): 2691 LE 106 MHz +EC 0Bit

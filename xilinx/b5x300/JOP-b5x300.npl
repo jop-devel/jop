@@ -1,0 +1,45 @@
+JDF G
+// Created by Project Navigator ver 1.0
+PROJECT JOP-b5x300
+DESIGN jop-b5x300
+DEVFAM spartan2e
+DEVFAMTIME 0
+DEVICE xc2s300e
+DEVICETIME 0
+DEVPKG pq208
+DEVPKGTIME 0
+DEVSPEED -6
+DEVSPEEDTIME 0
+DEVTOPLEVELMODULETYPE HDL
+TOPLEVELMODULETYPETIME 0
+DEVSYNTHESISTOOL XST (VHDL/Verilog)
+SYNTHESISTOOLTIME 0
+DEVSIMULATOR Other
+SIMULATORTIME 0
+DEVGENERATEDSIMULATIONMODEL VHDL
+GENERATEDSIMULATIONMODELTIME 0
+SOURCE ..\..\vhdl\core\decode.vhd
+SOURCE ..\..\vhdl\core\shift.vhd
+SOURCE ..\..\vhdl\core\core.vhd
+SOURCE ..\..\vhdl\core\xram.vhd
+SOURCE ..\..\vhdl\core\xjbc.vhd
+SOURCE ..\..\vhdl\core\xrom.vhd
+SOURCE ..\..\vhdl\core\mem_b5x300.vhd
+SOURCE ..\..\vhdl\core\mul.vhd
+SOURCE ..\..\vhdl\core\stack.vhd
+SOURCE ..\..\vhdl\core\bcfetch.vhd
+SOURCE ..\..\vhdl\core\fetch.vhd
+SOURCE ..\..\vhdl\io\fifo.vhd
+SOURCE ..\..\vhdl\io\uart.vhd
+SOURCE ..\..\vhdl\io\cnt.vhd
+SOURCE ..\..\vhdl\io\iomin.vhd
+SOURCE ..\..\vhdl\top\jop_b5x300.vhd
+SOURCE ..\..\vhdl\xram_block.vhd
+SOURCE ..\..\vhdl\xrom_block.vhd
+SOURCE ..\..\vhdl\xjbc_block.vhd
+SOURCE ..\..\vhdl\jtbl.vhd
+SOURCE ..\..\vhdl\offtbl.vhd
+SOURCE ..\..\vhdl\bcfetbl.vhd
+DEPASSOC jop jop.ucf
+[STRATEGY-LIST]
+Normal=True

@@ -1,0 +1,463 @@
+/**
+*	RtTask.java
+*/
+
+package joprt;
+
+import com.jopdesign.sys.Native;
+
+public abstract class RtTask {
+
+	// priority levels above Thread
+	protected final static int RT_BASE = 2;
+	protected final static int RT_IDLE = 1;
+
+	protected final static int IDL_TICK = 10000;
+
+	private int priority;
+	private int period;			// period in us
+	private int offset;			// offset in us
+
+	// index in next and ref
+	private int nr;
+	private int[] stack;
+	private int sp;
+
+	// allocated and set in startMission
+	// ordered by priority
+	private static int next[];			// next time to change to state running
+	private static RtTask[] ref;		// references to threads
+
+	private static int cnt;
+	private static int active;					// active thread number
+
+	// linked list of threads in priority order
+	private RtTask lower;
+	private static RtTask head;
+
+	// only used in startMission
+	protected final static int CREATED = 0;
+	protected final static int READY = 1;		// READY means ready to run.
+	protected final static int WAITING = 2;		// active is the running thread.
+	protected final static int DEAD = 3;
+	private int state;
+
+	private final static int MAX_STACK = 128;
+
+	private static boolean init;
+	private static boolean mission;
+
+
+	protected static Object monitor;
+
+	//	no synchronization necessary:
+	//	doInit() is called on first new Thread() =>
+	//	only one (this calling) thread is now runnable.
+	private static void doInit() {
+
+		init = true;
+		mission = false;
+
+		monitor = new Object();
+
+		active = 0;			// main thread (or idl thread) is first thread
+		cnt = 1;			// stays 1 till startMission
+
+		next = new int[1];
+		ref = new RtTask[1];
+
+		head = null;
+
+		//	thread struct for main
+		ref[0] = new RtTask(Thread.NORM_PRIORITY, 0);
+		ref[0].state = READY;		// main thread is READY
+		next[0] = 0;
+
+		//	create one idle thread with Thread prio 0
+		//	If we have a main thread with 'active' (yielding)
+		//	sleep() this is not necessary.
+		//
+		//	Should be replaced by a Thread scheduler with
+		//	RT_IDLE priority
+/* main is now our idle task
+		new RtTask(0, 0) {
+			public void run() {
+				for (;;) {
+					util.Dbg.wr('i');
+				}
+			}
+		};
+*/
+
+		// We have now more than one thread =>
+		// If we have 'normal' Threads we should start the timer!
+
+	}
+
+	public RtTask(int prio, int us) {
+	
+		this(prio, us, 0);
+	}
+
+	public RtTask(int prio, int us, int off) {
+
+		if (!init) {
+			doInit();
+		}
+
+		stack = new int[MAX_STACK];
+
+		period = us;
+		offset = off;
+		if (us==0)	{					// this is NOT a RT thread
+			priority = prio;
+		} else {						// RT prio is above Thread prios.
+			priority = prio+Thread.MAX_PRIORITY+RT_BASE;
+		}
+		state = CREATED;
+
+		//	insert in linked list, priority ordered
+		//	highest priority first.
+		//	same priority is ordered as first created has
+		//	'higher' priority.
+		RtTask th = head;
+		RtTask prev = null;
+		while (th!=null && priority<=th.priority) {
+			prev = th;
+			th = th.lower;
+		}
+		lower = th;
+		if (prev!=null) {
+			prev.lower = this;
+		} else {
+			head = this;
+		}
+	}
+
+
+	public static void genInt() {
+		
+		// just schedule an interrupt
+		// schedule() gets called.
+		Native.wr(1, Native.IO_SWINT);
+	}
+
+
+//	time stamps:
+public static int ts0, ts1, ts2, ts3, ts4;
+
+	private static int s1;		// helper var
+
+	private static int tim;		// next timer value
+	// timer offset to ensure that no timer int happens just
+	// after monitorexit in this method and the new thread
+	// has a minimum time to run.
+	private final static int TIM_OFF = 100;
+
+	//	this is the one and only function to
+	//	switch threads.
+	//	schedule() is called from JVMHelp.interrupt()
+	//	and should NEVER be called from somewhere
+	//	else.
+	//	Interrupts (also yield/genInt()) should NEVER
+	//	ocour befor startMission is called (ref and active are set)
+	public static void schedule() {
+
+		int i, j, k;
+		int[] mem;
+		int diff;
+
+		// we have not called doInit(), which means
+		// we have only one thread => just return
+		if (!init) return;
+
+		Native.wr(0, Native.IO_INT_ENA);
+		// synchronized(monitor) {
+
+// RtTask.ts1 = Native.rd(Native.IO_US_CNT);
+			// save stack
+			i = Native.getSP();
+			RtTask th = ref[active];
+			th.sp = i;
+/*
+			mem = th.stack;
+			for (j=128; j<=i; ++j) {
+				mem[j-128] = Native.rdIntMem(j);
+			}
+*/
+			Native.int2extMem(128, th.stack, i-127);	// cnt is i-128+1
+
+// RtTask.ts2 = Native.rd(Native.IO_US_CNT);
+
+			// SCHEDULE
+			//	cnt should NOT contain idle thread
+			//	change this some time
+			k = IDL_TICK;
+
+			// this is now
+			j = Native.rd(Native.IO_US_CNT);
+
+			for (i=cnt-1; i>0; --i) {
+
+				diff = next[i]-j;
+				if (diff < TIM_OFF) {
+					break;					// found a ready task
+				} else if (diff < k) {
+					k = diff;				// next int time of higher prio task
+				}
+			}
+			// i is next ready thread (index in new list)
+			// If none is ready i points to idle task or main thread (fist in the list)
+			active = i;	
+
+			// set next int time to now+(min(diff)) (j, k)
+			tim = j+k;
+
+// RtTask.ts3 = Native.rd(Native.IO_US_CNT);
+			// restore stack
+			s1 = ref[i].sp;
+			Native.setVP(s1+2);		// +2 for shure ???
+			Native.setSP(s1+7);		// +5 locals, take care to use only the first 5!!
+
+			i = s1;
+/*
+			mem = ref[active].stack;				// can't use th since VP is changed, use static active
+			for (j=128; j<=i; ++j) {
+				Native.wrIntMem(mem[j-128], j);
+			}
+*/
+			// can't use s1-127 as count,
+			// don't know why I have to store it in a local.
+			Native.ext2intMem(ref[active].stack, 128, i-127);		// cnt is i-128+1
+
+// RtTask.ts4 = Native.rd(Native.IO_US_CNT);
+
+			j = Native.rd(Native.IO_US_CNT);
+			// check if next timer value is too early (or allready missed)
+			// ack int and schedule timer
+			if (tim-j<TIM_OFF) {
+				// set timer to now plus some short time
+				Native.wr(j+TIM_OFF, Native.IO_TIMER);
+			} else {
+				Native.wr(tim, Native.IO_TIMER);
+			}
+			Native.setSP(i);
+			// only return after setSP!
+			// WHY should this be true? We need a monitorexit AFTER setSP().
+			// It compiles to following:
+			//	invokestatic #32 <Method void setSP(int)>
+			//	aload 5
+			//	monitorexit
+			//	goto 283
+			//	...
+ 			//	283 return
+			//
+			// for a 'real monitor' we have a big problem:
+			// aload 5 loads the monitor from the OLD stack!!!
+			//
+			// we can't access any 'old' locals now
+			//
+			// a solution: don't use a monitor here!
+			// disable and enable INT 'manual'
+			// and DON'T call a method with synchronized
+			// it would enable the INT on monitorexit
+		Native.wr(1, Native.IO_INT_ENA);
+		// }
+	}
+
+	private void startThread() {
+
+		if (state!=CREATED) return;		// allread called start
+
+		// if we have int enabled we have to synchronize
+
+		if (period==0) {
+			state = READY;			// for the idle thread
+		} else {
+			state = WAITING;
+		}
+
+		createStack();
+
+		// new thread starts right here after first scheduled
+
+		if (mission) {		// main (startMission) falls through
+			run();
+			// if we arrive here it's time to delete runtime struct of thread
+			// now do nothing!
+			state = DEAD;
+			for (;;) {
+				// This will not work is we change stack like in Thread.java.
+				// Then we have no reference to this.
+				next[nr] = Native.rd(Native.IO_US_CNT) + 2*IDL_TICK;
+				genInt();
+			}
+		}
+	}
+
+	/**
+	*	Create stack for the new thread.
+	*	Copy stack frame of of main.
+	*	Could be reduced to copy only frames from 
+	*	createStack() and startThread() and adjust the
+	*	frames to new position.
+	*/
+	private void createStack() {
+
+		int i, j, k;
+
+		i = Native.getSP();					// sp of createStack();
+		j = Native.rdIntMem(i-4);			// sp of calling function
+		j = Native.rdIntMem(j-4);			// one more level of indirection
+
+		sp = i-j+128;
+		k = j;
+		for (; j<=i; ++j) {
+			stack[j-k] = Native.rdIntMem(j);
+		}
+		//	adjust stack frames
+		k -= 128;	// now difference between main stack and new stack
+		stack[sp-128-2] -= k;				// saved vp
+		stack[sp-128-4] -= k;				// saved sp
+		j = stack[sp-128-4];
+		stack[j-128-2] -= k;
+		stack[j-128-4] -= k;
+		
+/*	this is the save version
+		i = Native.getSP();
+		sp = i;
+		for (j=128; j<=i; ++j) {
+			stack[j-128] = Native.rdIntMem(j);
+		}
+*/
+	}
+
+	public void run() {
+		;							// nothing to do
+	}
+
+
+	public static void startMission() {
+
+
+		int i, c, startTime;
+		RtTask th, mth;
+
+		// if we have int's enabled for Thread scheduling
+		// we have to place a monitorenter here
+		th = head;
+		for (c=0; th!=null; ++c) {
+			th = th.lower;
+		}
+
+		mth = ref[0];		// this was our main thread
+
+		ref = new RtTask[c];
+		next = new int[c];
+		th = head;
+		// array is order according priority
+		// top priority is last!
+		for (i=c-1; th!=null; --i) {
+			ref[i] = th;
+			th.nr = i;
+			th = th.lower;
+		}
+
+		// change active if a lower priority
+		// thread is befor main
+		active = mth.nr;
+
+		// running threads (state!=CREATED)
+		// are not started
+		// TODO: where are 'normal' Threads placed?
+		for (i=0; i<c; ++i) {
+			ref[i].startThread();
+		}
+
+		// wait 100 ms (for main Thread.debug())
+		startTime = Native.rd(Native.IO_US_CNT)+100000;
+		for (i=0; i<c; ++i) {
+			next[i] = startTime+ref[i].offset;
+		}
+
+		cnt = c;
+		mission = true;
+
+		// set moncnt in jvm.asm to zero to enable int's
+		// on monitorexit from now on
+		Native.wrIntMem(0, 5);
+		// ack any 'pending' int and schedule timer in 10 ms
+		Native.wr(startTime, Native.IO_TIMER);
+		// enable int
+		Native.wr(1, Native.IO_INT_ENA);
+
+	}
+
+
+	public boolean waitForNextPeriod() {
+
+		synchronized(monitor) {
+
+			next[nr] += period;
+
+			int i = Native.rd(Native.IO_US_CNT);
+			if (next[nr]-i < 0) {				// missed time!
+				next[nr] = i;					// correct next
+				return false;
+			}
+			state = WAITING;
+			// just schedule an interrupt
+			// schedule() gets called.
+			Native.wr(1, Native.IO_SWINT);
+			// will arrive befor return statement,
+			// just after monitorexit
+		}
+		return true;
+	}
+
+
+	/**
+	*	dummy yield() for compatibility reason.
+	*/
+	public static void yield() {}
+
+
+	/**
+	*	for 'soft' rt threads.
+	*/
+
+	public static void sleepMs(int millis) {
+	
+		int next = Native.rd(Native.IO_US_CNT)+millis*1000;
+		while (Native.rd(Native.IO_US_CNT)-next < 0) {
+			genInt();
+		}
+	}
+
+// WARNING: debug can take a long time (xx ms)
+/*
+public static void debug() {
+	synchronized(monitor) {
+		
+		int i, tim;
+
+		tim = Native.rd(Native.IO_US_CNT);
+		util.Dbg.wr(' ');
+		util.Dbg.intVal(active);
+		util.Dbg.wr('-');
+		util.Dbg.wr(' ');
+		for (i=0; i<cnt; ++i) {
+			util.Dbg.intVal(ref[i].nr);
+			util.Dbg.intVal(ref[i].priority);
+			util.Dbg.intVal(ref[i].state);
+			util.Dbg.intVal(next[i]-tim);
+		}
+		util.Dbg.wr('\n');
+		tim = Native.rd(Native.IO_US_CNT)-tim;
+		util.Dbg.intVal(tim);
+		util.Dbg.wr('\n');
+	}
+}
+*/
+
+}

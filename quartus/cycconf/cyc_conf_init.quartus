@@ -1,0 +1,17 @@
+FILES
+{
+	VHDL_FILE = ..\..\vhdl\config\cyc_conf_init.vhd;
+}
+COMPILER_SETTINGS_LIST
+{
+	COMPILER_SETTINGS = cyc_conf_init;
+}
+SIMULATOR_SETTINGS_LIST
+{
+	SIMULATOR_SETTINGS = cyc_conf_init;
+}
+SOFTWARE_SETTINGS_LIST
+{
+	SOFTWARE_SETTINGS = Debug;
+	SOFTWARE_SETTINGS = Release;
+}

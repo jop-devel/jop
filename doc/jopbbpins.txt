@@ -1,0 +1,168 @@
+--
+--	pins for jop on bb board
+--
+--
+--	general
+--
+	|clk :	INPUT_PIN = 55;
+-- reset comes from max7032
+	|reset :	INPUT_PIN = 124;
+--
+--	ram/flash
+--
+--	d1..d7 are fix
+--
+	|d0 :	BIDIR_PIN = 102;
+	|d1 :	BIDIR_PIN = 109;
+	|d2 :	BIDIR_PIN = 110;
+	|d3 :	BIDIR_PIN = 111;
+	|d4 :	BIDIR_PIN = 112;
+	|d5 :	BIDIR_PIN = 113;
+	|d6 :	BIDIR_PIN = 114;
+	|d7 :	BIDIR_PIN = 116;
+--
+--	pinout for TSOP ram/flash 'above' acex
+--
+	|a0 :	OUTPUT_PIN = 101;
+	|a1 :	OUTPUT_PIN = 100;
+	|a2 :	OUTPUT_PIN = 99;
+	|a3 :	OUTPUT_PIN = 98;
+-- pin 16 to 1 of ram
+	|a4 :	OUTPUT_PIN = 117;
+	|a5 :	OUTPUT_PIN = 118;
+	|a6 :	OUTPUT_PIN = 119;
+	|a7 :	OUTPUT_PIN = 120;
+	|a12 :	OUTPUT_PIN = 121;
+	|a14 :	OUTPUT_PIN = 122;
+	|a16 :	OUTPUT_PIN = 128;
+	|a18 :	OUTPUT_PIN = 130;
+	|a15 :	OUTPUT_PIN = 131;
+	|a17 :	OUTPUT_PIN = 132;
+	|nwr :	OUTPUT_PIN = 133;
+	|a13 :	OUTPUT_PIN = 135;
+	|a8 :	OUTPUT_PIN = 136;
+	|a9 :	OUTPUT_PIN = 137;
+	|a11 :	OUTPUT_PIN = 138;
+-- pin 30 to 32 of ram
+	|nram_cs :	OUTPUT_PIN = 140;
+	|a10 :	OUTPUT_PIN = 7;
+	|nrd :	OUTPUT_PIN = 8;
+-- to max7032 pld
+	|nrom_cs :	OUTPUT_PIN = 9;
+-- to watch dog
+	|wd :	OUTPUT_PIN = 10;
+--
+--	display
+--
+	|disp_rs :	OUTPUT_PIN = 97;
+	|disp_nwr :	OUTPUT_PIN = 96;
+	|disp_e :	OUTPUT_PIN = 95;
+	|disp_d4 :	OUTPUT_PIN = 92;
+	|disp_d5 :	OUTPUT_PIN = 91;
+	|disp_d6 :	OUTPUT_PIN = 90;
+	|disp_d7 :	OUTPUT_PIN = 89;
+--
+--	keyboard
+--
+	|key_in0 :	INPUT_PIN = 20;
+	|key_in1 :	INPUT_PIN = 21;
+	|key_in2 :	INPUT_PIN = 22;
+	|key_in3 :	INPUT_PIN = 23;
+	|key_out0 :	OUTPUT_PIN = 26;
+	|key_out1 :	OUTPUT_PIN = 27;
+	|key_out2 :	OUTPUT_PIN = 28;
+	|key_out3 :	OUTPUT_PIN = 29;
+--
+--	triac out
+--
+	|p1_auf_ab :	OUTPUT_PIN = 30;
+	|p2_auf :	OUTPUT_PIN = 31;
+	|p3_auf :	OUTPUT_PIN = 32;
+	|p2_ab :	OUTPUT_PIN = 33;
+	|p3_ab :	OUTPUT_PIN = 36;
+--
+--	opto in
+--
+	|null_i :	INPUT_PIN = 37;
+	|p1_i :	INPUT_PIN = 38;
+	|p2_i :	INPUT_PIN = 39;
+	|p3_i :	INPUT_PIN = 41;
+	|p1_u :	INPUT_PIN = 42;
+	|p2_u :	INPUT_PIN = 43;
+	|p3_u :	INPUT_PIN = 44;
+--
+--	sensor input
+--
+	|sens_u :	INPUT_PIN = 67;
+	|sens_o :	INPUT_PIN = 68;
+	|sens_i :	INPUT_PIN = 69;
+--
+--	tast, leds
+--
+	|auf_t :	INPUT_PIN = 126;
+	|ab_t :	INPUT_PIN = 125;
+	|not_stop :	INPUT_PIN = 12;
+	|tuer :	INPUT_PIN = 13;
+	|led1 :	OUTPUT_PIN = 14;
+	|led2 :	OUTPUT_PIN = 17;
+	|led3 :	OUTPUT_PIN = 18;
+	|led4 :	OUTPUT_PIN = 19;
+--
+--	main switch
+--
+	|u15kv_res :	OUTPUT_PIN = 60;
+	|u15kv_set :	OUTPUT_PIN = 62;
+	|loben_res :	OUTPUT_PIN = 63;
+	|loben_set :	OUTPUT_PIN = 64;
+	|schuetz :	OUTPUT_PIN = 65;
+--
+--	serial lines
+--
+--		use exp connector for now
+--
+	|txd :	OUTPUT_PIN = 46;
+	|ncts :	INPUT_PIN = 47;
+	|rxd :	INPUT_PIN = 48;
+	|nrts :	OUTPUT_PIN = 49;
+
+	|s1_txd :	OUTPUT_PIN = 51;
+	|s1_ncts :	INPUT_PIN = 54;
+	|s1_rxd :	INPUT_PIN = 56;
+	|s1_nrts :	OUTPUT_PIN = 59;
+--
+--	expansion
+--
+	|iadc_sdi3 :	INPUT_PIN = 88;
+	|iadc_sdo3 :	OUTPUT_PIN = 87;
+	|iadc_sdi2 :	INPUT_PIN = 86;
+	|iadc_sdo2 :	OUTPUT_PIN = 83;
+	|iadc_sdi1 :	INPUT_PIN = 82;
+	|iadc_sdo1 :	OUTPUT_PIN = 81;
+	|exp6 :	OUTPUT_PIN = 80;
+	|exp7 :	OUTPUT_PIN = 79;
+	|exp8 :	OUTPUT_PIN = 78;
+	|exp9 :	INPUT_PIN = 73;			-- really for temp adc sdi
+	|exp10 :	OUTPUT_PIN = 72;	-- really for temp adc sdo
+	|exp11 :	OUTPUT_PIN = 70;	-- really for temp adc gnd
+***************************************************************
+--
+--	pins used for ehternet card
+--
+	|isa_d0 :	BIDIR_PIN = 88;		-- instead of exp
+	|isa_d1 :	BIDIR_PIN = 87;
+	|isa_d2 :	BIDIR_PIN = 86;
+	|isa_d3 :	BIDIR_PIN = 83;
+	|isa_d4 :	BIDIR_PIN = 82;
+	|isa_d5 :	BIDIR_PIN = 81;
+	|isa_d6 :	BIDIR_PIN = 80;
+	|isa_d7 :	BIDIR_PIN = 79;
+	|isa_reset :	OUTPUT_PIN = 78;
+
+	|isa_a0 :	OUTPUT_PIN = 20;	-- instead of key_*
+	|isa_a1 :	OUTPUT_PIN = 21;
+	|isa_a2 :	OUTPUT_PIN = 22;
+	|isa_a3 :	OUTPUT_PIN = 23;
+	|isa_a4 :	OUTPUT_PIN = 26;
+	|isa_nior :	OUTPUT_PIN = 27;
+	|isa_niow :	OUTPUT_PIN = 28;
+	|isa_nc :	OUTPUT_PIN = 29;

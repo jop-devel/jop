@@ -1,0 +1,6 @@
+doit.bat:
+	include urt instead or joprt
+	del urt\*.class
+
+JVMHelp.java:
+	import urt instead of joprt

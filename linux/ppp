@@ -1,0 +1,6 @@
+pppd -d -detach crtscts lock login \
+connect 'chat -v -f ppp.chat' \
+local auth login \
+debug \
+-chap +pap \
+192.168.3.1:192.168.3.2 /dev/ttyS0 115200 &

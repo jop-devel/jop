@@ -1,0 +1,12 @@
+
+C:\usr\cpu\jop\cyctest>rem load a JOP memser32 program 
+
+C:\usr\cpu\jop\cyctest>jbi32 -dDO_PROGRAM=1 -aCONFIGURE mem.jbc 
+Device #2 IDCODE is FFFFFFFF
+Device #1 IDCODE is FFFFFFFF
+Unrecognized device
+Exit code = 6... Unrecognized device
+
+C:\usr\cpu\jop\cyctest>..\e COM2 
+
+0000 Batchvorgang abbrechen (J/N)? 

@@ -1,0 +1,77 @@
+/*
+WARNING: Do NOT edit the input and output ports in this file in a text
+editor if you plan to continue editing the block that represents it in
+the Block Editor! File corruption is VERY likely to occur.
+*/
+/*
+Copyright (C) 1991-2003 Altera Corporation
+Any  megafunction  design,  and related netlist (encrypted  or  decrypted),
+support information,  device programming or simulation file,  and any other
+associated  documentation or information  provided by  Altera  or a partner
+under  Altera's   Megafunction   Partnership   Program  may  be  used  only
+to program  PLD  devices (but not masked  PLD  devices) from  Altera.   Any
+other  use  of such  megafunction  design,  netlist,  support  information,
+device programming or simulation file,  or any other  related documentation
+or information  is prohibited  for  any  other purpose,  including, but not
+limited to  modification,  reverse engineering,  de-compiling, or use  with
+any other  silicon devices,  unless such use is  explicitly  licensed under
+a separate agreement with  Altera  or a megafunction partner.  Title to the
+intellectual property,  including patents,  copyrights,  trademarks,  trade
+secrets,  or maskworks,  embodied in any such megafunction design, netlist,
+support  information,  device programming or simulation file,  or any other
+related documentation or information provided by  Altera  or a megafunction
+partner, remains with Altera, the megafunction partner, or their respective
+licensors. No other licenses, including any licenses needed under any third
+party's intellectual property, are provided herein.
+*/
+(header "symbol" (version "1.1"))
+(symbol
+	(rect 0 0 320 176)
+	(text "pll" (rect 160 1 177 20)(font "Arial" (font_size 10)))
+	(text "inst" (rect 8 157 31 172)(font "Arial" ))
+	(port
+		(pt 0 72)
+		(input)
+		(text "inclk0" (rect 0 0 40 16)(font "Arial" (font_size 8)))
+		(text "inclk0" (rect 4 56 38 72)(font "Arial" (font_size 8)))
+		(line (pt 0 72)(pt 48 72)(line_width 1))
+	)
+	(port
+		(pt 320 72)
+		(output)
+		(text "c0" (rect 0 0 16 16)(font "Arial" (font_size 8)))
+		(text "c0" (rect 303 56 317 72)(font "Arial" (font_size 8)))
+		(line (pt 320 72)(pt 288 72)(line_width 1))
+	)
+	(drawing
+		(text "inclk0 frequency: 20.000 MHz" (rect 58 67 201 81)(font "Arial" ))
+		(text "Operation Mode: Normal" (rect 58 84 173 98)(font "Arial" ))
+		(text "Clk " (rect 59 111 76 125)(font "Arial" ))
+		(text "Ratio" (rect 85 111 109 125)(font "Arial" ))
+		(text "Ph (dg)" (rect 119 111 154 125)(font "Arial" ))
+		(text "Td (ns)" (rect 164 111 199 125)(font "Arial" ))
+		(text "DC (%)" (rect 208 111 243 125)(font "Arial" ))
+		(text "c0" (rect 63 129 75 143)(font "Arial" ))
+		(text "5/1" (rect 91 129 106 143)(font "Arial" ))
+		(text "0.00" (rect 127 129 148 143)(font "Arial" ))
+		(text "0.00" (rect 171 129 192 143)(font "Arial" ))
+		(text "50.00" (rect 213 129 240 143)(font "Arial" ))
+		(line (pt 0 0)(pt 321 0)(line_width 1))
+		(line (pt 321 0)(pt 321 177)(line_width 1))
+		(line (pt 0 177)(pt 321 177)(line_width 1))
+		(line (pt 0 0)(pt 0 177)(line_width 1))
+		(line (pt 56 108)(pt 250 108)(line_width 1))
+		(line (pt 56 125)(pt 250 125)(line_width 1))
+		(line (pt 56 143)(pt 250 143)(line_width 1))
+		(line (pt 56 108)(pt 56 143)(line_width 1))
+		(line (pt 82 108)(pt 82 143)(line_width 3))
+		(line (pt 116 108)(pt 116 143)(line_width 3))
+		(line (pt 161 108)(pt 161 143)(line_width 3))
+		(line (pt 205 108)(pt 205 143)(line_width 3))
+		(line (pt 249 108)(pt 249 143)(line_width 1))
+		(line (pt 48 56)(pt 288 56)(line_width 1))
+		(line (pt 288 56)(pt 288 160)(line_width 1))
+		(line (pt 48 160)(pt 288 160)(line_width 1))
+		(line (pt 48 56)(pt 48 160)(line_width 1))
+	)
+)
