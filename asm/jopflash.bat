@@ -1,2 +1,2 @@
-gcc -x c -E -C -P -DFLASH src\jvm.asm > src\jvmflash.asm
-call build jvmflash
+gcc -x c -E -C -P -DFLASH src\jvm.asm > generated\jvmflash.asm
+call build ..\generated\jvmflash

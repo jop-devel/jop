@@ -1,2 +1,2 @@
-gcc -x c -E -C -P src\jvm.asm > src\jvmser.asm
-call build jvmser
+gcc -x c -E -C -P src\jvm.asm > generated\jvmser.asm
+call build ..\generated\jvmser

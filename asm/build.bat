@@ -1,6 +1,7 @@
 set project=%1
 set blocksize=4096
-rmdir /Q /S generated
+rem generated is used by jop[ser|flash].bat
+rem rmdir /Q /S generated
 mkdir generated
 java -cp ..\java\tools\dist\lib\jop-tools.jar com.jopdesign.tools.Jopa -s src -d generated %project%.asm
 java -cp ..\java\tools\dist\lib\jop-tools.jar BlockGen -b %blocksize% -pd -d 1024 -w 8 -m xjbc_block -o generated
