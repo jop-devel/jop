@@ -20,8 +20,6 @@
 
 
 # The default values for assignments are stored in the file
-#		jop_assignment_defaults.qdf
-# If this file doesn't exist, and for assignments not listed, see file
 #		assignment_defaults.qdf
 
 # Altera recommends that you do not modify this file. This
@@ -33,10 +31,9 @@
 # ========================
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION 4.0
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "02:30:11  APRIL 04, 2004"
-set_global_assignment -name LAST_QUARTUS_VERSION 4.1
+set_global_assignment -name LAST_QUARTUS_VERSION 4.0
 set_global_assignment -name CDF_FILE jop.cdf
-set_global_assignment -name VHDL_FILE ../wizzard/pll.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/top/jopcyc.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/top/jopcyc12.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/ajbc.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/aram.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/arom.vhd
@@ -59,20 +56,7 @@ set_global_assignment -name VHDL_FILE ../../vhdl/io/sigdel.vhd
 
 # Pin & Location Assignments
 # ==========================
-set_global_assignment -name RESERVE_PIN "AS INPUT TRI-STATED"
 set_location_assignment PIN_152 -to clk
-set_location_assignment PIN_80 -to dummy_gnd\[0\]
-set_location_assignment PIN_96 -to dummy_gnd\[1\]
-set_location_assignment PIN_102 -to dummy_gnd\[2\]
-set_location_assignment PIN_199 -to dummy_gnd\[3\]
-set_location_assignment PIN_205 -to dummy_gnd\[4\]
-set_location_assignment PIN_221 -to dummy_gnd\[5\]
-set_location_assignment PIN_81 -to dummy_vccint\[0\]
-set_location_assignment PIN_97 -to dummy_vccint\[1\]
-set_location_assignment PIN_103 -to dummy_vccint\[2\]
-set_location_assignment PIN_198 -to dummy_vccint\[3\]
-set_location_assignment PIN_204 -to dummy_vccint\[4\]
-set_location_assignment PIN_220 -to dummy_vccint\[5\]
 set_location_assignment PIN_47 -to fl_a\[0\]
 set_location_assignment PIN_20 -to fl_a\[10\]
 set_location_assignment PIN_14 -to fl_a\[11\]
@@ -248,31 +232,19 @@ set_location_assignment PIN_166 -to wd
 
 # Analysis & Synthesis Assignments
 # ================================
-set_global_assignment -name DEVICE_FILTER_PACKAGE "ANY QFP"
-set_global_assignment -name DEVICE_FILTER_PIN_COUNT 240
 set_global_assignment -name FAMILY Cyclone
+set_global_assignment -name DEVICE_FILTER_PIN_COUNT 240
+set_global_assignment -name DEVICE_FILTER_PACKAGE "ANY QFP"
 set_global_assignment -name TOP_LEVEL_ENTITY jop
 set_global_assignment -name AUTO_ENABLE_SMART_COMPILE On
 
 # Fitter Assignments
 # ==================
-set_global_assignment -name DEVICE EP1C6Q240C6
-set_global_assignment -name CYCLONE_CONFIGURATION_SCHEME "PASSIVE SERIAL"
-set_global_assignment -name AUTO_RESTART_CONFIGURATION OFF
 set_global_assignment -name RESERVE_ALL_UNUSED_PINS "AS INPUT TRI-STATED"
+set_global_assignment -name AUTO_RESTART_CONFIGURATION OFF
+set_global_assignment -name CYCLONE_CONFIGURATION_SCHEME "PASSIVE SERIAL"
+set_global_assignment -name DEVICE EP1C12Q240C8
 set_instance_assignment -name IO_STANDARD LVCMOS -to clk
-set_instance_assignment -name IO_STANDARD LVCMOS -to dummy_gnd\[0\]
-set_instance_assignment -name IO_STANDARD LVCMOS -to dummy_gnd\[1\]
-set_instance_assignment -name IO_STANDARD LVCMOS -to dummy_gnd\[2\]
-set_instance_assignment -name IO_STANDARD LVCMOS -to dummy_gnd\[3\]
-set_instance_assignment -name IO_STANDARD LVCMOS -to dummy_gnd\[4\]
-set_instance_assignment -name IO_STANDARD LVCMOS -to dummy_gnd\[5\]
-set_instance_assignment -name IO_STANDARD LVCMOS -to dummy_vccint\[0\]
-set_instance_assignment -name IO_STANDARD LVCMOS -to dummy_vccint\[1\]
-set_instance_assignment -name IO_STANDARD LVCMOS -to dummy_vccint\[2\]
-set_instance_assignment -name IO_STANDARD LVCMOS -to dummy_vccint\[3\]
-set_instance_assignment -name IO_STANDARD LVCMOS -to dummy_vccint\[4\]
-set_instance_assignment -name IO_STANDARD LVCMOS -to dummy_vccint\[5\]
 set_instance_assignment -name IO_STANDARD LVCMOS -to fl_a\[0\]
 set_instance_assignment -name IO_STANDARD LVCMOS -to fl_a\[10\]
 set_instance_assignment -name IO_STANDARD LVCMOS -to fl_a\[11\]
@@ -449,16 +421,17 @@ set_global_assignment -name STRATIX_DEVICE_IO_STANDARD LVCMOS
 
 # Assembler Assignments
 # =====================
-set_global_assignment -name USE_CONFIGURATION_DEVICE OFF
 set_global_assignment -name GENERATE_TTF_FILE ON
+set_global_assignment -name USE_CONFIGURATION_DEVICE OFF
+set_global_assignment -name ON_CHIP_BITSTREAM_DECOMPRESSION ON
 
 # Design Assistant Assignments
 # ============================
-set_global_assignment -name DRC_REPORT_TOP_FANOUT OFF
 set_global_assignment -name DRC_REPORT_FANOUT_EXCEEDING OFF
+set_global_assignment -name DRC_REPORT_TOP_FANOUT OFF
 
 # SignalTap II Assignments
 # ========================
-set_global_assignment -name HUB_ENTITY_NAME SLD_HUB
 set_global_assignment -name HUB_INSTANCE_NAME SLD_HUB_INST
+set_global_assignment -name HUB_ENTITY_NAME SLD_HUB
 set_global_assignment -name ENABLE_SIGNALTAP Off
