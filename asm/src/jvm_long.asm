@@ -91,6 +91,22 @@ lload:		ldvp
 			stvp
 			nop	nxt
 
+
+// dload:
+// lload:		nop
+// 			ld				// high word
+// 			ldvp
+// 			dup
+// 			stm	a
+// 			ldi	1
+// 			add
+// 			stvp
+// 			nop	
+// 			ld				// low word
+// 			ldm	a			// restore vp
+// 			stvp opd
+// 			nop nxt
+
 dstore_0:
 lstore_0:	st1				// low word
 			st0 nxt			// high word
@@ -125,4 +141,18 @@ lstore:		ldvp
 			ldm	a
 			stvp
 			nop	nxt
+
+// dstore:
+// lstore:		ldvp
+//			dup
+//			stm	a
+//			ldi	1
+//			add
+//			stvp
+//			nop	
+//			st				// low word
+//			ldm	a			// restore vp
+//			stvp
+//			nop opd
+//			st	nxt			// high word
 
