@@ -26,6 +26,7 @@ public class Native {
 	public static native void setVP(int val);
 	public static native void int2extMem(int intAdr, int[] extAdr, int cnt);
 	public static native void ext2intMem(int[] extAdr, int intAdr, int cnt);
+	public static native long makeLong(int hWord, int lWord);
 
 	public static final int IO_CNT = 0;
 	public static final int IO_INT_ENA = 0;

@@ -103,12 +103,8 @@ class JVM {
 	private static void f_iadd() { JVMHelp.noim(); /* jvm.asm */ }
 	private static long f_ladd(int ah, int al, int bh, int bl) {
 
-util.Dbg.intVal(ah);
-util.Dbg.intVal(al);
-util.Dbg.intVal(bh);
-util.Dbg.intVal(bl);
-
-		return 0L;
+		int carry = ((al>>>1) + (bl>>>1) + (al & bl & 1)) >>> 31;
+		return Native.makeLong(ah+bh+carry, al+bl);
 	}
 	private static int f_fadd(int a, int b) {
 
@@ -116,7 +112,10 @@ util.Dbg.intVal(bl);
 	}
 	private static void f_dadd() { JVMHelp.noim();}
 	private static void f_isub() { JVMHelp.noim(); /* jvm.asm */ }
-	private static void f_lsub() { JVMHelp.noim();}
+	private static long f_lsub(long a, long b) {
+
+		return a+(~b)+1;
+	}
 	private static int f_fsub(int a, int b) {
 
 		return SoftFloat.float32_sub(a, b);
@@ -202,7 +201,10 @@ util.Dbg.intVal(bl);
 	private static void f_frem() { JVMHelp.noim();}
 	private static void f_drem() { JVMHelp.noim();}
 	private static void f_ineg() { JVMHelp.noim(); /* jvm.asm */ }
-	private static void f_lneg() { JVMHelp.noim();}
+	private static long f_lneg(long a) {
+
+		return ~a+1;
+	}
 	private static void f_fneg() { JVMHelp.noim();}
 	private static void f_dneg() { JVMHelp.noim();}
 	private static void f_ishl() { JVMHelp.noim(); /* jvm.asm */ }
@@ -210,15 +212,35 @@ util.Dbg.intVal(bl);
 	private static void f_ishr() { JVMHelp.noim(); /* jvm.asm */ }
 	private static void f_lshr() { JVMHelp.noim();}
 	private static void f_iushr() { JVMHelp.noim(); /* jvm.asm */ }
-	private static void f_lushr() { JVMHelp.noim();}
+	private static long f_lushr(int ah, int al, int cnt) {
+
+		if (cnt>31) {
+			al = ah >>> (cnt-32);
+			ah = 0;
+		} else {
+			al = al >>> cnt;
+			int mask = -1>>>(32-cnt);
+			al += (ah & mask) << (32-cnt);
+			ah = ah >>> cnt;
+		}
+		return Native.makeLong(ah, al);
+	}
 	private static void f_iand() { JVMHelp.noim(); /* jvm.asm */ }
 	private static void f_land() { JVMHelp.noim();}
 	private static void f_ior() { JVMHelp.noim(); /* jvm.asm */ }
 	private static void f_lor() { JVMHelp.noim();}
 	private static void f_ixor() { JVMHelp.noim(); /* jvm.asm */ }
-	private static void f_lxor() { JVMHelp.noim();}
+	private static long f_lxor(int ah, int al, int bh, int bl) {
+
+		ah ^= bh;
+		al ^= bl;
+		return Native.makeLong(ah, al);
+	}
 	private static void f_iinc() { JVMHelp.noim(); /* jvm.asm */ }
-	private static void f_i2l() { JVMHelp.noim();}
+	private static long f_i2l(int a) {
+
+		return Native.makeLong(a>>31, a);
+	}
 	private static int f_i2f(int a) {
 
 JVMHelp.noim(); // TODO: test
@@ -241,7 +263,19 @@ JVMHelp.noim(); // TODO: test
 	private static void f_i2b() { JVMHelp.noim();}
 	private static void f_i2c() { JVMHelp.noim(); /* jvm.asm */ }
 	private static void f_i2s() { JVMHelp.noim();}
-	private static void f_lcmp() { JVMHelp.noim();}
+	private static int f_lcmp(long a, long b) {
+
+		a -= b;
+		int al = (int) a;
+		int ah = (int) (a>>>32);
+
+		if ((ah | al)==0) return 0;
+		if ((ah & 0x80000000)==0) {
+			return 1;
+		} else {
+			return -1;
+		}
+	}
 	private static void f_fcmpl() { JVMHelp.noim();}
 	private static void f_fcmpg() { JVMHelp.noim();}
 	private static void f_dcmpl() { JVMHelp.noim();}

@@ -40,15 +40,15 @@
 //	2003-09-15	cbsf-a-load/store for String class (all array elements are one word)
 //	2003-10-06	changed max_words from 8192 to 16384, and flash address for Java
 //				program at 0x80000
-//	2003-10-23	long load_n, store_n, const_n, i2l added, ldc2_w error corretion
+//	2003-10-23	long load_n, store_n, const_n, l2i added, ldc2_w error corretion
 //	2003-10-27	invokeinterface
-//	2003-01-18	ldc_w, pop2; float load, store and return; NOT tested!
-//	2003-02-07	null pointer check in xaload/xastore, put/getfield and invoke,
+//	2004-01-18	ldc_w, pop2; float load, store and return; NOT tested!
+//	2004-02-07	null pointer check in xaload/xastore, put/getfield and invoke,
 //				array check, div/rem moved to JVM.java
-//	2003-02-12	added instruction ld_opd_8u and ld_opd_16u
+//	2004-02-12	added instruction ld_opd_8u and ld_opd_16u
+//	2004-03-12	added support for long: lreturn, lload, lstore
 //
 //	TODO
-//		ld_opd_8u	when index to cpool
 //		idiv, irem	WRONG when one operand is 0x80000000
 
 //
@@ -1527,104 +1527,6 @@ return:
 			nop
 			nop
 
-//*****************
-// long bytecodes
-
-lreturn:
-dreturn:
-			stm	a	// return value
-			stm b
-			stm	mp
-			stm	cp
-			stvp
-
-			stm	new_jpc
-			nop			// written in adr/read stage!
-			stsp	// last is new sp
-			pop		// flash tos, tos-1 (registers)
-			pop		// sp must be two lower, points to rd adr
-			ldm b
-			ldm	a 
-			ldi	1
-			nop
-			bnz	load_bc
-			nop
-			nop
-
-ldc2_w:	
-			ldm	cp opd
-			nop	opd
-			ld_opd_16u
-			add
-			dup
-
-			stmra				// read ext. mem, mem_bsy comes one cycle later
-
-			ldi	1
-			add					// address for next word
-
-			wait
-			wait
-
-			ldmrd		 		// first word
-			stm	a
-
-			stmra				// read ext. mem, mem_bsy comes one cycle later
-			ldm	a				// first word again on stack
-			wait
-			wait
-			ldmrd		 nxt	// second word
-
-lconst_0:	ldi	0
-			ldi 0 nxt
-lconst_1:	ldi	0
-			ldi 1 nxt			// is TOS low part? yes... see ldc2_w and JOPWriter
-
-l2i:		stm	a				// low part
-			pop					// drop high word
-			ldm	a nxt			// low on stack
-
-lload_0:	ld0				// high word
-			ld1 nxt			// low word
-lload_1:	ld1
-			ld2 nxt
-lload_2:	ld2
-			ld3 nxt
-lload_3:	ldvp			// there is no ld4
-			dup
-			stm	a
-			ldi	1
-			add
-			stvp
-			nop	
-			ld2	
-			ld3	
-			ldm	a			// restore vp
-			stvp
-			nop nxt
-
-lstore_0:	st1				// low word
-			st0 nxt			// high word
-lstore_1:	st2
-			st1 nxt
-lstore_2:	st3
-			st2 nxt
-lstore_3:	ldvp			// there is no ld4
-			dup
-			stm	a
-			ldi	1
-			add
-			stvp
-			nop	
-			st3	
-			st2	
-			ldm	a			// restore vp
-			stvp
-			nop nxt
-
-
-//******************
-
 //
 //	null pointer
 //		call JVMHelp.nullPoint();
@@ -1661,6 +1563,9 @@ array_bound:
 			bnz	invoke			// simulate invokestatic with ptr to meth. str. on stack
 			nop
 			nop
+
+// long bytecodes
+#include "jvm_long.asm"
 
 //
 //	this is an interrupt, (bytecode 0xf0)
@@ -1906,6 +1811,11 @@ extint_loop:
 			nop		nxt
 
 
+//
+//	some conversion only need a nop!
+//
+jopsys_nop:
+			nop	nxt
 
 
 

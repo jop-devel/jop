@@ -808,6 +808,16 @@ void ireturn()
 	stack[++sp] = val;
 }
 
+	void lreturn() {
+
+		int val1 = stack[sp--];
+		int val2 = stack[sp--];
+		vreturn();
+		stack[++sp] = val2;
+		stack[++sp] = val1;
+	}
+
+/**
 /**
  *
  */
@@ -976,10 +986,14 @@ DEBUG(printf("%s\n", spc);)
 				stack[++sp] = stack[vp+idx];
 				break;
 			case 22 :		// lload
-				noim(22);
+				idx = readOpd8u();
+				stack[++sp] = stack[vp+idx];
+				stack[++sp] = stack[vp+idx+1];
 				break;
 			case 24 :		// dload
-				noim(24);
+				idx = readOpd8u();
+				stack[++sp] = stack[vp+idx];
+				stack[++sp] = stack[vp+idx+1];
 				break;
 			case 42 :		// aload_0
 			case 34 :		// fload_0
@@ -1052,10 +1066,14 @@ DEBUG(printf("%s\n", spc);)
 				stack[vp+idx] = stack[sp--];
 				break;
 			case 55 :		// lstore
-				noim(55);
+				idx = readOpd8u();
+				stack[vp+idx+1] = stack[sp--];
+				stack[vp+idx] = stack[sp--];
 				break;
 			case 57 :		// dstore
-				noim(57);
+				idx = readOpd8u();
+				stack[vp+idx+1] = stack[sp--];
+				stack[vp+idx] = stack[sp--];
 				break;
 			case 75 :		// astore_0
 			case 67 :		// fstore_0
@@ -1444,10 +1462,10 @@ DEBUG(printf("%s\n", spc);)
 				ireturn();
 				break;
 			case 173 :		// lreturn
-				noim(173);
+				lreturn();
 				break;
 			case 175 :		// dreturn
-				noim(175);
+				lreturn();
 				break;
 			case 177 :		// return
 				vreturn();
@@ -1665,8 +1683,7 @@ System.out.println("new heap: "+heap);
 					stack[b+a] = readMem(c+a);
 				}
 				break;
-			case 221 :		// resDD
-				noim(221);
+			case 221 :		// jopsys_nop
 				break;
 			case 222 :		// resDE
 				noim(222);

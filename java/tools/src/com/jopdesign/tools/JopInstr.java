@@ -309,7 +309,7 @@ public class JopInstr{
 		new JopInstr("jopsys_setvp", 1, IMP_ASM, 2),			// 0xDA
 		new JopInstr("jopsys_int2ext", 1, IMP_ASM, 100),			// 0xDB
 		new JopInstr("jopsys_ext2int", 1, IMP_ASM, 100),			// 0xDC
-		new JopInstr("resDD", 1, IMP_NO, 1),			// 0xDD
+		new JopInstr("jopsys_nop", 1, IMP_NO, 1),			// 0xDD
 		new JopInstr("resDE", 1, IMP_NO, 1),			// 0xDE
 		new JopInstr("resDF", 1, IMP_NO, 1),			// 0xDF
 
