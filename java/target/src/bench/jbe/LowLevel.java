@@ -1,26 +1,44 @@
 package jbe;
 
+import com.jopdesign.sys.*;
+import util.*;
+
 /**
-*	LowLevel time and output for PC
+*	low level time and output for JOP.
 */
+
 public class LowLevel {
 
 	static boolean init;
+	
 
-	static int timeMillis() {
-    	return (int) System.currentTimeMillis();
+	public static int timeMillis() {
+		return Native.rd(Const.IO_US_CNT)/1000;
+	}
+	
+	public static int clockTicks() {
+		return Native.rd(Const.IO_US_CNT);
 	}
 
-	static void msg(String msg) {
+	public static void msg(String msg) {
 
-		System.out.print(msg);
-		System.out.print(" ");
+		if (!init) {
+			Dbg.initSerWait();
+			init = true;
+		}
+
+		Dbg.wr(msg);
+		Dbg.wr(' ');
 	}
 
-	static void msg(int val) {
+	public static void msg(int val) {
 
-		System.out.print(val);
-		System.out.print(" ");
+		if (!init) {
+			Dbg.initSerWait();
+			init = true;
+		}
+
+		Dbg.intVal(val);
 	}
 
 	static void msg(String msg, int val) {
@@ -31,6 +49,6 @@ public class LowLevel {
 
 	static void lf() {
 
-		System.out.println();
+		Dbg.lf();
 	}
 }

@@ -43,7 +43,7 @@ public abstract class Dbg {
 	}
 
 	public static void wr(int c) { st.dbgWr(c); }
-	public static void lf() { st.dbgWr('\n'); }
+	public static void lf() { st.dbgWr('\r'); st.dbgWr('\n'); }
 
 	public static int readBuffer(int[] buf, int pos) {
 		return st.dbgReadBuffer(buf, pos);
@@ -53,7 +53,7 @@ public abstract class Dbg {
 
 		wr(s);
 		intVal(val);
-		wr('\n');
+		wr("\r\n");
 	}
 
 	public static void wr(String s) {

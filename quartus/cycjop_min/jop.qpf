@@ -20,8 +20,8 @@
 
 
 
-QUARTUS_VERSION = "4.1"
-DATE = "21:42:05  September 24, 2004"
+QUARTUS_VERSION = "4.2"
+DATE = "17:24:43  January 17, 2005"
 
 
 # Revisions

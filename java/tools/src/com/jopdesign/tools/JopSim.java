@@ -249,6 +249,10 @@ System.out.println(mp+" "+pc);
 			case Const.IO_US_CNT:
 				stack[sp] = usCnt();
 				break;
+			case 1234:
+				// trigger cache debug output
+//				cache.rawData();
+//				cache.resetCnt();
 			default:
 				stack[sp] = 0;
 		}

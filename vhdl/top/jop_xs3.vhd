@@ -21,6 +21,7 @@
 --	2003-07-08	invertion of cts, rts to uart
 --	2004-09-11	new extension module
 --	2004-10-01	version for Xilinx
+--	2004-10-08	mul operands from a and b, single instruction
 --
 --
 
@@ -105,7 +106,8 @@ port (
 	irq			: in std_logic;
 	irq_ena		: in std_logic;
 
-	dout		: out std_logic_vector(31 downto 0)
+	aout		: out std_logic_vector(31 downto 0);
+	bout		: out std_logic_vector(31 downto 0)
 );
 end component;
 
@@ -116,7 +118,8 @@ port (
 
 -- core interface
 
-	din			: in std_logic_vector(31 downto 0);		-- from stack
+	ain			: in std_logic_vector(31 downto 0);		-- from stack
+	bin			: in std_logic_vector(31 downto 0);		-- from stack
 	ext_addr	: in std_logic_vector(exta_width-1 downto 0);
 	rd, wr		: in std_logic;
 	dout		: out std_logic_vector(31 downto 0);	-- to stack
@@ -230,6 +233,7 @@ end component;
 	signal clk_int			: std_logic;
 
 	signal stack_tos		: std_logic_vector(31 downto 0);
+	signal stack_nos		: std_logic_vector(31 downto 0);
 	signal rd, wr			: std_logic;
 	signal ext_addr			: std_logic_vector(exta_width-1 downto 0);
 	signal stack_din		: std_logic_vector(31 downto 0);
@@ -289,11 +293,11 @@ end process;
 			rd, wr,
 			jbc_addr, jbc_data,
 			io_irq, io_irq_ena,
-			stack_tos
+			stack_tos, stack_nos
 		);
 
 	cmp_ext: extension generic map (exta_width)
-		port map (clk_int, int_res, stack_tos,
+		port map (clk_int, int_res, stack_tos, stack_nos,
 			ext_addr, rd, wr, stack_din,
 			mem_rd, mem_wr, mem_addr_wr, mem_bc_rd,
 			mem_dout, mem_bcstart,

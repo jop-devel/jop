@@ -17,6 +17,10 @@ public class Flash {
 
 	public static final int DATA_START = 0xa0000; 	// user data, Streckendaten in oebb BG263
 	public static final int BGID_START = 0xb0000; 	// user data, bgid
+	public static final int BG_MASTER = 10*4;
+	public static final int BG_MASTER_MAGIC = 1234;
+
+
 
 	static final int OFF_VER = 4;
 	static final int OFF_LEN = 8;
@@ -165,7 +169,7 @@ public class Flash {
 				return str[i];
 			}
 		}
-		Dbg.wr("Point PROBLEM\n");
+		Dbg.wr("\nPoint PROBLEM\n");
 		return null;
 	}
 
@@ -417,6 +421,11 @@ Dbg.wr("\"\n");
 	public static int getId() {
 		return intVal(0+BGID_START-DATA_START);
 	}
+	public static boolean isMaster() {
+		int val = intVal(BG_MASTER+BGID_START-DATA_START);
+		return (val==BG_MASTER_MAGIC);
+	}
+	
 
 	public static void dump() {
 

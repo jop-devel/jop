@@ -50,9 +50,11 @@
 //	2004-04-06	first two instructions nop because of change in fetch.vhd
 //				stjpc to nxt pipeline is now one longer (simpler mux for jbc rdaddr)
 //	2004-05-24	jopsys_invoke to call main() from Startup.boot()
+//	2004-10-08	single instruction to start mul (with a and b as operands)
+//	2004-12-11	Enhancements in array access
 //
-//	TODO
 //		idiv, irem	WRONG when one operand is 0x80000000
+//			but is now in JVM.java
 
 //
 //	io register
@@ -144,21 +146,25 @@ addr		?			// address used for bc load from flash
 // test mem interface
 //
 //			ldi 15
+//
+//			// this sequence takes 6 cycles with ram_cnt=3
 //			stmra				// start read ext. mem
 //			nop					// mem_bsy comes one cycle later
 //			wait				// one for fetch
 //			wait				// one for decode
 //			ldmrd		 		// read ext. mem
 //
-//			ldi	16
+//			ldi	32				// write data
+//			ldi	16				// write address
+//
+//			// this sequence takes 6 cycles with ram_cnt=3
 //			stmwa				// write ext. mem address
-//			ldi	32
 //			stmwd				// write ext. mem data
 //			nop
 //			wait
 //			wait
 //
-//			ldi 15
+//			ldi 7
 //			stmra				// start read ext. mem
 //			nop					// mem_bsy comes one cycle later
 //			wait				// one for fetch
@@ -416,9 +422,6 @@ ldc_w:
 			wait
 			ldmrd		 nxt	// read ext. mem
 
-
-			stmra				// read ext. mem, mem_bsy comes one cycle later
-
 aload:
 fload:
 iload:		nop opd
@@ -492,11 +495,11 @@ iushr:		ushr nxt
 
 
 imul:
-			stopa			// first operand
-			stopb			// second and start mul
+			stmul			// store both operands and start
+			pop				// pop second operand
 
 			ldi	5			// 6*5+3 wait ok!!
-imul_loop:
+imul_loop:					// plus 1 for the ldi 5... to many cycles?
 			dup
 			nop
 			bnz	imul_loop
@@ -504,8 +507,6 @@ imul_loop:
 			add
 
 			pop				// remove counter
-			nop				// wait
-			nop				// wait
 
 			ldmul	nxt
 
@@ -850,7 +851,7 @@ putstatic:
 			ldmrd		 	// read ext. mem
 
 			stmwa				// write ext. mem address
-			nop					// ??? tos is val
+//			nop					// ??? tos is val
 			stmwd				// write ext. mem data
 			nop
 			wait
@@ -965,45 +966,33 @@ fastore:
 iastore:
 sastore:
 			stm	a				// value
-
-			dup					//	check if index is negativ
-         	ldi	-2147483648		//  0x80000000
-			and
-			nop
-			bnz	array_bound
-			nop
-			nop
-
 			stm	b				// index
 			// arrayref is TOS
 
-			dup					// null pointer check
-			nop					// could be interleaved with
-			bz	null_pointer	// following code
-			nop
-			nop
-
+			dup					// for null pointer check
 			dup					// bound check
 			ldi	-1
 			add					// arrayref-1
 			stmra				// read ext. mem, mem_bsy comes one cycle later
-			nop
-			wait
+			nop					// wait one cycle for flags of ref
+			bz	null_pointer	// 
+			wait				// is this ok? - wait in branch slot
 			wait
 			ldmrd		 		// read ext. mem (array length)
+
 			ldi	1
 			sub					// length-1
 			ldm	b				// index
-			sub
+			sub					// TOS = length-1-index
+			ldm	b				// check if index is negativ
+			or					// is one of both checks neagtv?
          	ldi	-2147483648		//  0x80000000
 			and
 			nop
 			bnz	array_bound
-			nop
-			nop
-
-			ldm	b
+			ldm	b				// in branch slot....
 			add					// index+arrayref
+
 			stmwa				// write ext. mem address
 			ldm	a
 			stmwd				// write ext. mem data
@@ -1018,44 +1007,39 @@ caload:
 faload:
 iaload:
 saload:
-			dup					//	check if index is negativ
-         	ldi	-2147483648		//  0x80000000
-			and
-			nop
-			bnz	array_bound
-			nop
-			nop
-
+//
+//	ideas for enhancements:
+//		array pointer points to length and not the first element
+//		load and checks in memory interface
+//
 			stm	b				// index
 			// arrayref is TOS
 
-			dup					// null pointer check
-			nop					// could be interleaved with
-			bz	null_pointer	// following code
-			nop
-			nop
-
-			dup					// bound check
+			dup					// for null pointer check
+			dup					// for bound check
 			ldi	-1
 			add					// arrayref-1
-			stmra				// read ext. mem, mem_bsy comes one cycle later
-			nop
-			wait
+
+			stmra				// read array length
+			nop					// wait one cycle for flags of ref
+			bz	null_pointer	// 
+			wait				// is this ok? - wait in branch slot
 			wait
 			ldmrd		 		// read ext. mem (array length)
+
 			ldi	1
 			sub					// length-1
 			ldm	b				// index
-			sub
+			sub					// TOS = length-1-index
+			ldm	b				// check if index is negativ
+			or					// is one of both checks neagtv?
          	ldi	-2147483648		//  0x80000000
 			and
 			nop
 			bnz	array_bound
-			nop
-			nop
-
-			ldm	b
+			ldm	b				// in branch slot...
 			add					// index+arrayref
+
 			stmra				// read ext. mem, mem_bsy comes one cycle later
 			nop
 			wait
@@ -1104,6 +1088,8 @@ mon_no_ena:	nop		nxt
 //
 
 null_pointer:
+			wait				// just for shure if we jump during
+			wait				// a memory transaction to this point
 			ldm	jjhp			// interrupt() is at offset 0
 								// jjhp points in method table to first
 								// method after methods inherited from Object
@@ -1123,6 +1109,8 @@ null_pointer:
 //
 
 array_bound:
+			wait				// just for shure if we jump during
+			wait				// a memory transaction to this point
 			ldm	jjhp			// interrupt() is at offset 0
 								// jjhp points in method table to first
 								// method after methods inherited from Object

@@ -31,6 +31,7 @@
 --	2003-08-15	move bcfetch to core
 --	2004-04-06	nxt and opd are in rom. rom address from jpc_mux and with
 --				positiv edge rdaddr. unregistered output in rom.
+--	2004-10-08	moved bsy/pcwait from decode to fetch
 --
 --
 
@@ -51,7 +52,7 @@ port (
 	nxt, opd	: out std_logic;	-- jfetch and jopdfetch from table
 
 	br			: in std_logic;
-	pcwait		: in std_logic;
+	bsy			: in std_logic;		-- direct from the memory module
 	jpaddr		: in std_logic_vector(pc_width-1 downto 0);
 
 	dout		: out std_logic_vector(i_width-1 downto 0)		-- internal instruction (rom)
@@ -109,6 +110,7 @@ end component;
 
 	signal rom_data		: std_logic_vector(i_width+1 downto 0);		-- output from ROM
 	signal ir			: std_logic_vector(i_width-1 downto 0);		-- instruction register
+signal pcwait : std_logic;
 
 begin
 
@@ -132,11 +134,14 @@ begin
 
 process(clk)
 begin
-
 	if rising_edge(clk) then				-- we don't need a reset
 		ir <= rom_data(7 downto 0);			-- better read (second) instruction from room
+		pcwait <= '0';
+		-- decode wait instruction from unregistered rom
+		if (rom_data(7 downto 0)="10000001") then	-- wait instuction
+			pcwait <= '1';
+		end if;
 	end if;
-
 end process;
 
 process(clk, reset, pc, off)
@@ -145,22 +150,17 @@ begin
 	if (reset='1') then
 		pc <= std_logic_vector(to_unsigned(0, pc_width));
 		brdly <= std_logic_vector(to_unsigned(0, pc_width));
-
 	elsif rising_edge(clk) then
-
 		brdly <= std_logic_vector(unsigned(pc) + unsigned(off));
 		pc <= pc_mux;
-
 	end if;
-
 end process;
 
-	pc_inc <= "000000000" & not pcwait;
+	-- bsy is too late to register pcwait and bsy
+	pc_inc <= "000000000" & not (pcwait and bsy);
 
 process(jfetch, br, jpaddr, brdly, pc, pc_inc)
-
 begin
-
 	if (jfetch='1') then
 		pc_mux <= jpaddr;
 	else 
@@ -170,7 +170,6 @@ begin
 			pc_mux <= std_logic_vector(unsigned(pc) + unsigned(pc_inc));
 		end if;
 	end if;
-
 end process;
 
 end rtl;

@@ -4,6 +4,8 @@
 //		include file for invoke and return functions
 //
 //	2004-08-19	extracted from jvm.asm
+//	2004-09-16	new bc read hardware
+//	2005-01-10	changes for bytecode cache
 //
 //	TODO
 
@@ -12,6 +14,7 @@
 //
 old_mp			?
 old_vp			?
+old_jpc			?
 
 old_cp			?		// for now save it on stack
 
@@ -214,7 +217,16 @@ invoke_vpsave:					// vp is allready saved in old_vp
 					// int args = cp & 0x01f;
 					// cp >>>= 10;
 
-// start bytecode load....
+// get 'old' (= current) bc start address
+// and store relative jpc in stack frame
+			ldjpc
+			ldbcstart
+			sub		// relative pc
+			stm	old_jpc
+// TODO: ldjpc and subtraction could be moved down
+
+// get method start address and length
+
 			ldm	mp
 			stmra
 
@@ -227,7 +239,8 @@ invoke_vpsave:					// vp is allready saved in old_vp
 
 					// int len = start & 0x03ff;
 					// start >>>= 10;
-			stbcrd				// start bytecode load
+// start bytecode load....
+			stbcrd
 
 
 			dup
@@ -277,17 +290,28 @@ real_sp			?
 			pop			// could really be optimized :-(
 
 				// stack[++sp] = old_sp;
-				// stack[++sp] = pc;
+				// stack[++sp] = cache.corrPc(pc);
+					// in VarBlockCache:
+					// save pc relative to start address of the method
+					// return (pc - currentBlock*blockSize) & mask;
 				// stack[++sp] = old_vp;
 				// stack[++sp] = old_cp;
 				// stack[++sp] = old_mp;
-
+				// 
+				// pc = cache.invoke(start, len);
+					// in VarBlockCache:
+					// test or load cache, return start address (block number * size)
+					// int off = testCache(start, len);
+					// return off;
 
 			ldm	old_sp
-			ldjpc
+			ldm old_jpc
 // without cache load jpc here
-		ldi 0
-		stjpc
+//		ldi 0
+//		stjpc
+// bc start address is a 'few' cycles after stbcrd available
+			ldbcstart			// for future cache
+			stjpc
 			ldm	old_vp
 			ldm	old_cp
 			ldm	old_mp
@@ -295,13 +319,6 @@ real_sp			?
 // wait on bytecode load from memory system
 			wait
 			wait
-
-// TODO: use ldbcstart in jpc save and in return for correct cache handling
-//			ldbcstart			// for future cache
-//			stjpc
-//			nop
-//			nop
-//			nop
 			nop	nxt
 // end load_bc
 
@@ -332,14 +349,22 @@ ireturn:
 			wait
 			ldmrd		 	// read ext. mem
 			stbcrd			// start bytecode load
-			stjpc
+//			stjpc
+			stm	old_jpc		// save realtive pc
 
 			nop				// written in adr/read stage!
 			stsp			// last is new sp
 			pop				// flash tos, tos-1 (registers)
 			pop				// sp must be two lower, points to rd adr
+
+			ldbcstart			// start block of method
+			ldm	old_jpc			// plus relative jpc
+			add
+			stjpc
+
 			ldm	a 			// load return value
-			wait			// wait on bytecode load from memory system
+// wait on bytecode load from memory system
+			wait
 			wait
 			nop	nxt
 
@@ -356,19 +381,43 @@ lreturn:
 			wait
 			ldmrd		 	// read ext. mem
 			stbcrd			// start bytecode load
-			stjpc
+//			stjpc
+			stm	old_jpc		// save realtive pc
 
 			nop				// written in adr/read stage!
 			stsp			// last is new sp
 			pop				// flash tos, tos-1 (registers)
 			pop				// sp must be two lower, points to rd adr
+
+			ldbcstart			// start block of method
+			ldm	old_jpc			// plus relative jpc
+			add
+			stjpc
+
 			ldm	b
 			ldm	a 			// load return value
-			wait			// wait on bytecode load from memory system
+// wait on bytecode load from memory system
+			wait
 			wait
 			nop	nxt
 
 return:
+				// mp = stack[sp--];
+				// cp = stack[sp--];
+				// vp = stack[sp--];
+				// pc = stack[sp--];
+				// sp = stack[sp--];
+				// 
+				// int start = readMem(mp);
+				// int len = start & 0x03ff;
+				// start >>>= 10;
+				// pc = cache.ret(start, len, pc);
+					// in VarBlockCache:
+					// int off = testCache(start, len);
+					// return (off+pc) & mask;
+
+
+
 			dup				// mp is on tos
 			stmra
 			stm	mp
@@ -378,14 +427,22 @@ return:
 			wait
 			ldmrd		 	// read ext. mem
 			stbcrd			// start bytecode load
-			stjpc
+//			stjpc
+			stm	old_jpc		// save realtive pc
 
 			nop				// written in adr/read stage!
 			stsp			// last is new sp
+
+			ldbcstart			// start block of method
+			ldm	old_jpc			// plus relative jpc
+			add
+			stjpc
+
 			pop				// flash tos, tos-1 (registers)
 			pop				// sp must be two lower, points to rd adr
-			wait			// wait on bytecode load from memory system
+// wait on bytecode load from memory system
+			wait
 			wait
 			nop	nxt
-
+// end load_bc
 

@@ -24,6 +24,8 @@
 --	2004-01-10	release mem_bsy two cycle earlier
 --	2004-09-11	move data mux and mul to extension
 --	2004-09-14	flash/ram mux after data register in dout path
+--	2004-12-08	release mem_bsy three cycle earlier on write
+--	2005-01-11	Added cache
 --
 
 Library IEEE;
@@ -93,6 +95,26 @@ end mem32;
 
 architecture rtl of mem32 is
 
+component cache is
+generic (jpc_width : integer);
+
+port (
+
+	clk, reset	: in std_logic;
+
+	bc_len		: in std_logic_vector(9 downto 0);		-- length of method in words
+	bc_addr		: in std_logic_vector(17 downto 0);		-- memory address of bytecode
+
+	find		: in std_logic;							-- start lookup
+
+	bcstart		: out std_logic_vector(jpc_width-3 downto 0); 	-- start of method in bc cache
+
+	rdy			: out std_logic;						-- lookup finished
+	in_cache	: out std_logic							-- method is in cache
+
+);
+end component;
+
 --
 --	jbc component (use technology specific vhdl-file (ajbc/xjbc))
 --
@@ -156,7 +178,7 @@ architecture rtl of mem32 is
 --
 	type state_type		is (
 							idl, rd1, wr1,
-							bc1, bc2, bc3
+							bc0, bc1, bc2, bc3
 						);
 	signal state 		: state_type;
 
@@ -189,27 +211,45 @@ architecture rtl of mem32 is
 --	len is in words, 10 bits range is 'hardcoded' in JOPWriter.java
 --	start is address in external memory (rest of the word)
 --
-	signal bc_len			: unsigned(9 downto 0);		-- length of method in words
-	signal bc_start			: unsigned(17 downto 0);	-- memory address of bytecode
-	signal bc_wr_addr		: unsigned(7 downto 0);		-- address for jbc
+	signal bc_len			: unsigned(9 downto 0);				-- length of method in words
+	signal bc_mem_start		: unsigned(17 downto 0);			-- memory address of bytecode
+	signal bc_wr_addr		: unsigned(7 downto 0);				-- address for jbc
 	signal bc_wr_data		: std_logic_vector(31 downto 0);	-- write data for jbc
 	signal bc_wr_ena		: std_logic;
 
-	signal bc_cnt			: unsigned(9 downto 0);		-- I can't use bc_len???
+	signal bc_cnt			: unsigned(9 downto 0);				-- I can't use bc_len???
 
-	constant bc_ram_cnt	: integer := ram_cnt;			-- a different constant for perf. tests
+	constant bc_ram_cnt	: integer := ram_cnt;					-- a different constant for perf. tests
+
+--
+--	signals for cache connection
+--
+	signal cache_rdy		: std_logic;
+	signal cache_in_cache	: std_logic;
+	signal cache_bcstart	: std_logic_vector(jpc_width-3 downto 0);
 
 begin
 
 	bsy <= mem_bsy;
 	dout <= mem_rd_mux;
-	bcstart <= (others => '0');	-- for now we load only at base 0
+	bcstart <= std_logic_vector(to_unsigned(0, 32-jpc_width)) & cache_bcstart & "00";
 
 	-- change byte order for jbc memory (high byte first)
 	bc_wr_data <= ram_data(7 downto 0) &
 				ram_data(15 downto 8) &
 				ram_data(23 downto 16) &
 				ram_data(31 downto 24);
+
+
+	cmp_cache: cache generic map (jpc_width) port map(
+		clk, reset,
+		std_logic_vector(bc_len), std_logic_vector(bc_mem_start),
+		mem_bc_rd,
+		cache_bcstart,
+		cache_rdy, cache_in_cache
+	);
+
+
 
 --	cmp_jbc: jbc generic map (8, jpc_width) port map(din, jbc_addr, jpc_wr, bc_wr, clk, jbc_data);
 
@@ -273,11 +313,11 @@ process(clk, reset, din) begin
 
 	if (reset='1') then
 		bc_len <= (others => '0');
-		bc_start <= (others => '0');
+		bc_mem_start <= (others => '0');
 	elsif rising_edge(clk) then
 		if (mem_bc_rd='1') then
 			bc_len <= unsigned(din(9 downto 0));
-			bc_start <= unsigned(din(27 downto 10));
+			bc_mem_start <= unsigned(din(27 downto 10));
 		end if;
 
 	end if;
@@ -457,7 +497,7 @@ begin
 				elsif (mem_bc_rd='1') then
 					mem_bsy <= '1';
 					ram_access <= '1';
-					state <= bc1;
+					state <= bc0;
 				end if;
 
 --
@@ -465,9 +505,9 @@ begin
 --
 			when rd1 =>
 				wait_state <= wait_state-1;
-				if wait_state="0010" then		-- ***** only on ram ?????
-					mem_bsy <= '0';					-- release mem_bsy two cycle earlier
-				end if;
+				if wait_state="0010" then	
+					mem_bsy <= '0';			-- release mem_bsy two cycles earlier
+				end if;	
 				ram_data_ena <= '0';
 				if wait_state="0001" then
 					if ram_access='1' then
@@ -495,10 +535,12 @@ begin
 					fl_nwe <= '0';
 					fl_d_ena <= '1';
 				end if;
+				if wait_state="0011" then
+					mem_bsy <= '0';			-- release mem_bsy three cycles earlier
+				end if;
 				if wait_state="0001" then
 					fl_nwe <= '1';
 					nwr_int <= '1';
--- only ram ???					mem_bsy <= '0';					-- release mem_bsy one cycle earlier
 				end if;
 				if wait_state="0000" then
 					fl_nwe <= '1';
@@ -509,10 +551,21 @@ begin
 --
 --	bytecode read
 --
+			-- cache lookup
+			when bc0 =>
+				if cache_rdy = '1' then
+					if cache_in_cache = '1' then
+						state <= idl;
+					else
+						state <= bc1;
+					end if;
+				end if;
+
+			-- not in cache
 			when bc1 =>
-				ram_addr <= std_logic_vector(bc_start);
+				ram_addr <= std_logic_vector(bc_mem_start);
 				bc_cnt <= bc_len;
-				bc_wr_addr <= (others => '0');		-- we start at zero offset for now (no caching)
+				bc_wr_addr <= unsigned(cache_bcstart);
 				bc_wr_ena <= '0';
 				ram_cs <= '1';
 				ram_oe <= '1';

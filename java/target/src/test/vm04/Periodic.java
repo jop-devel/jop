@@ -5,7 +5,7 @@ import com.jopdesign.sys.*;
 
 public class Periodic {
 
-	public final static int CNT = 10;
+	public final static int CNT = 500;
 	static int[] result;
 
 	public static void main(String[] args) {
@@ -14,12 +14,13 @@ public class Periodic {
 
 		result = new int[CNT];
 
-		RtThread rt = new RtThread(10, 300) {
+		RtThread rt = new RtThread(10, 50) {
 			public void run() {
 
 				int ts, ts_old;
 				int i;
 
+				waitForNextPeriod();
 				waitForNextPeriod();
 				ts_old = Native.rd(Const.IO_US_CNT);
 
@@ -55,6 +56,11 @@ public class Periodic {
 		};
 
 		RtThread.startMission();
+
+		forever();
+	}
+
+	static void forever() {
 
 		for (;;) {
 // Dbg.intVal(123456);

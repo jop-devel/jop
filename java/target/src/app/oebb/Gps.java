@@ -16,6 +16,12 @@ import joprt.*;
 import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 
+/**
+ * @author martin
+ *
+ * To change the template for this generated type comment go to
+ * Window&gt;Preferences&gt;Java&gt;Code Generation&gt;Code and Comments
+ */
 public class Gps extends RtThread {
 
 /**
@@ -31,11 +37,29 @@ public class Gps extends RtThread {
 // Meldr.ueberw und Richtung wird im Stillstand unterdrueckt.
 
 /**
-*	Calculated speed in m/s
+*	Calculated speed in km/h
 *
 *	-1 if no GPS fix;
 */
-	public static int speed;
+	public static int speedCalc;		// my calculated value
+	public static int speed;			// value from GPS
+	
+/**
+ *	Minimum speed in km/h for direction detection and
+ *	Stillstand detection.
+ */
+	public static final int MIN_SPEED = 4;
+/**
+ *	Direction:
+ *		forward is from 'left to right'
+ *		back is from 'right to left'
+ *			seen from the Strecke definition
+ *
+ */
+	public static int direction;
+	public static final int DIR_UNKNOWN = 0;
+	public static final int DIR_FORWARD = 1;
+	public static final int DIR_BACK = -1;
 
 	/** delay of fix for correct subtraction */
 	private static int last_fix;
@@ -45,9 +69,18 @@ public class Gps extends RtThread {
 	/** last known 'good' coordinates */
 	public static int last_lat;
 	public static int last_lon;
+	/** old coordinates for direction processing */
+	public static int old_lat;
+	public static int old_lon;
 	public static int[] text;
 
 	private static final int FIX_TIMEOUT = 3000000;
+	
+	/*
+	 * values for info mode
+	 */
+	public static int nearestPoint;
+	public static int nearestPointDistance;
 
 	/**
 	*	start averaging.
@@ -57,11 +90,6 @@ public class Gps extends RtThread {
 	static int avgCnt;
 	private static int[] avgLat, avgLon;
 
-/**
-*	period for thread in us.
-*/
-	// TODO find a schedule whith correct priorities
-	private static final int PERIOD = 100000;
 /**
 *	The one and only reference to this object.
 */
@@ -80,7 +108,7 @@ public class Gps extends RtThread {
 	}
 
 
-	public static void init(int priority) {
+	public static void init(int priority, int period, Serial serPort) {
 
 		if (single != null) return;			// allready called init()
 
@@ -88,7 +116,9 @@ public class Gps extends RtThread {
 		rxCnt = 0;
 		fix = -1;
 		last_fix = 0;
+		speedCalc = -1;
 		speed = -1;
+		direction = DIR_UNKNOWN;
 		average = false;
 		avgCnt = 0;
 		avgLat = new int[MAX_AVG];
@@ -96,22 +126,18 @@ public class Gps extends RtThread {
 		text = new int[19];
 		
 		// start serial buffer thread
-//
-//		for GPS use: 4800 baud => 2.0833 ms per character
-//		send fifo: 4, receive fifo: 8
-//			16 ms should be ok, 12 ms for shure
-//
-		ser = new Serial(Const.IO_UART_BG_GPS_BASE, 8, 12000);
+		
+		ser = serPort;
 
 		//
 		//	start my own thread
 		//
-		single = new Gps(priority, PERIOD);
+		single = new Gps(priority, period);
 	}
 
 
 /**
-*	Echo GPS data to Dbg.
+*	Main loop for GPS processing.
 */
 	public void run() {
 
@@ -126,7 +152,9 @@ public class Gps extends RtThread {
 Dbg.wr('*');
 				last_fix = 0;
 				fix = 0;
+				speedCalc = -1;
 				speed = -1;
+				direction = DIR_UNKNOWN;
 			}
 
 			i = ser.rxCnt();
@@ -141,6 +169,16 @@ Dbg.wr('*');
 					if (checkGGA()) {
 						if (checkSum()) {
 							process();
+							if (fix>0) {
+								// find Strecke and Melderaum
+								checkStrMelnr();
+							}
+						} else {
+Dbg.wr("GPS wrong checksum\n");
+						} 
+					} else if (checkRMC()) {
+						if (checkSum()) {
+							processRMC();
 						} else {
 Dbg.wr("GPS wrong checksum\n");
 						} 
@@ -160,6 +198,15 @@ Dbg.wr("GPS wrong checksum\n");
 		if (rxBuf[5] != 'A') return false;
 		return true;
 	}
+	
+	private static boolean checkRMC() {
+
+		if (rxBuf[3] != 'R') return false;
+		if (rxBuf[4] != 'M') return false;
+		if (rxBuf[5] != 'C') return false;
+		return true;
+	}
+	
 
 	private static boolean checkSum() {
 
@@ -182,6 +229,40 @@ Dbg.wr("GPS wrong checksum\n");
 		}
 
 		return true;
+	}
+	
+	/**
+	*	Get speed from RMC message.
+	*
+	*	speed is in knots.
+	*	1 nautical mile = 1.15 miles = 1852 meters = 6067 feet 
+	*	knots = nautic miles / hour
+	*/
+	private static void processRMC() {
+
+		int i, knt, val;
+
+
+		knt = 0;
+		for (i=0; i<5; ++i) {
+			val = rxBuf[41+i];
+			if (val=='.') continue;
+			if (val==',') break;
+			knt *= 10;
+			knt += val-'0';
+		}
+		
+		// in 1/10 knots
+		// k/10*1.85 = x km/h
+		// = k*0.185 = k*47/256
+		speed = (knt*47)>>8;
+/*
+Dbg.wr("knots=");
+Dbg.intVal(knt);
+Dbg.wr("km/h=");
+Dbg.intVal(gpsSpeed);
+Dbg.lf();
+*/
 	}
 
 	/**
@@ -235,6 +316,9 @@ Dbg.wr("GPS wrong checksum\n");
 		int last_ts = ts;
 		int lat_diff = lat-last_lat;
 		int lon_diff = lon-last_lon;
+		
+		old_lat = last_lat;			// remeber for direction check
+		old_lon = last_lon;
 
 		if (i!=0) {
 			ts = Native.rd(Const.IO_US_CNT);
@@ -247,6 +331,11 @@ Dbg.wr("GPS wrong checksum\n");
 			}
 		}
 
+		if (i!=last_fix) {
+			if (Status.connOk) {
+				Comm.gpsStatus(i, last_lat, last_lon);
+			} 
+		}
 		// delay fix one message
 		if (last_fix!=0) {
 			last_fix = i;
@@ -264,21 +353,11 @@ Dbg.wr("GPS wrong checksum\n");
 			// calculate speed
 			if (i!=0) {
 				j = dist(lat_diff, lon_diff);
-				speed = j/i;
+				// x[m/s]*3.6 = x[km/h]
+				// 3.6 = 922/256
+				speedCalc = (j/i*922)>>8;
 			}
 
-			// find Strecke and Melderaum
-			if (Status.strNr<=0) {
-				findStr();
-			} else {
-				int melnr = getMelnr();
-				if (melnr != Status.melNr) {
-Dbg.wr("Melderaum: ");
-Dbg.intVal(melnr);
-Dbg.wr("\n");
-					Status.melNr = melnr;
-				}
-			}
 		}
 /*
 Dbg.wr("GPS: ");
@@ -288,6 +367,39 @@ Dbg.intVal(rxBuf[39]);
 Dbg.intVal(speed);
 Dbg.wr("m/s \n");
 */
+	}
+
+
+	private static void checkStrMelnr() {
+
+		if (Status.strNr<=0) {
+			findStr();
+		} else {
+			int melnr = getMelnr();
+			if (melnr != Status.melNr) {
+Dbg.wr("Melderaum: ");
+Dbg.intVal(melnr);
+Dbg.wr("\n");
+				//
+				// keep last melNr if no new melnr found
+				//
+				if (melnr!=-1) {
+					// change only if previous unknown or
+					// we're moving
+					if (Status.melNr<=0 || speed>MIN_SPEED) {
+						Status.melNr = melnr;
+						// enable Alarm checking again
+						Status.checkMove = true;
+					}
+				}
+			} else {
+				// check direction only if no melNr change
+				// and we have a valid melNr
+				if (Status.melNr>0) {
+					checkDir();
+				}
+			}
+		}
 	}
 
 
@@ -407,7 +519,9 @@ Dbg.wr("\n");
 
 	private static int getMelnr() {
 
+		int ret = -1;			// default not found
 		int b = findNearestPoint();
+		nearestPoint = b;
 		if (b==-1) return -1;	// not even one point found
 
 		int a = Flash.getPrev(b);
@@ -437,20 +551,46 @@ Dbg.wr("\n");
 		int ab = dist(pa.lat-pb.lat, pa.lon-pb.lon);
 		int bc = dist(pb.lat-pc.lat, pb.lon-pc.lon);
 
+		nearestPointDistance = xb;
+		
 		//
 		// return 'left' melnr
 		//
 		if (xa<ab && xb<ab) {
-			return a;
-		}
-		if (xb<bc && xc<bc) {
-			return b;
+			if (xb<bc && xc<bc) {
+				ret = -1;	// point fits for both -> undecided
+			} else {
+				ret = a;
+			}
+		} else if (xb<bc && xc<bc) {
+			ret = b;
 		}
 
-		// we have not found a melnr
-		return -1;
+		return ret;
 	}
 
+	static void checkDir() {
+		
+		if (speed<MIN_SPEED) {
+			direction = DIR_UNKNOWN;
+			return;
+		} 
+		Flash.Point p = Flash.getPoint(Status.melNr);
+		if (p==null) return;
+		
+		int dold = dist(p.lat-old_lat, p.lon-old_lon);
+		int dnew = dist(p.lat-last_lat, p.lon-last_lon);
+		if (dnew > dold) {
+			direction = DIR_FORWARD;
+// Dbg.wr("forward\n");
+		} else if (dnew<dold) {
+			direction = DIR_BACK;
+// Dbg.wr("back\n");
+		} else {
+			direction = DIR_UNKNOWN;
+// Dbg.wr("undecided\n");
+		}
+	}
 
 	/**
 	*	start collecting values for averaging.

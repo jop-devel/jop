@@ -46,6 +46,8 @@ c			?
 //
 //	but starts with pc=0!!! (so init bc is not really necassary)
 //
+			nop
+			nop
 			ldi	127
 			nop			// written in adr/read stage!
 			stsp
@@ -65,10 +67,10 @@ loop:
 // nop
 // nop
 
-			ldi	io_outp
-			stioa
-			ldi	1
-			stiod
+//			ldi	io_outp
+//			stioa
+//			ldi	1
+//			stiod
 wr_loop:
 
 			ldm	a
@@ -115,10 +117,10 @@ sys_wr_mem:
 			ldi 0
 			stm	a
 
-			ldi	io_outp
-			stioa
-			ldi	0
-			stiod
+//			ldi	io_outp
+//			stioa
+//			ldi	0
+//			stiod
 rd_loop:
 
 

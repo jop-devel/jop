@@ -17,8 +17,9 @@ public class CallJOPMain {
 
 	public static void main(String[] args) {
 		
-		ejip.Bench.main(args);
-		// tal.Tal.main(args);
+		// vmtest.Imul.main(args);
+		// ejip.Bench.main(args);
+		tal.Tal.main(args);
 		// kfl.Mast.main(args);
 		// tal.Lift.main(args);
 		// embjbench.DoAll.main(args);

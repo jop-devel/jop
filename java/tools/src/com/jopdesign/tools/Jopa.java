@@ -14,6 +14,7 @@ revision:
 	2001-09-22	creation
 	2001-10-24	working version
 	2001-12-08	intruction set change (16->8 bit)
+	2005-01-17	interrupt mux in jtbl.vhd
 
 */
 
@@ -283,6 +284,7 @@ public class Jopa {
 			line += "entity jtbl is\n";
 			line += "port (\n";
 			line += "\tbcode\t: in std_logic_vector(7 downto 0);\n";
+			line += "\tint_pend\t: in  std_logic;\n";
 			line += "\tq\t\t: out std_logic_vector("+(ADDRBITS-1)+" downto 0)\n";
 			line += ");\n";
 			line += "end jtbl;\n";
@@ -292,6 +294,8 @@ public class Jopa {
 			line += "--\tunregistered dout\n";
 			line += "--\n";
 			line += "architecture rtl of jtbl is\n";
+			line += "\n";
+			line += "\tsignal\taddr\t: std_logic_vector("+(ADDRBITS-1)+" downto 0);\n";
 			line += "\n";
 			line += "begin\n";
 			line += "\n";
@@ -338,6 +342,7 @@ public class Jopa {
 			bcfetbl.write( line );
 
 			int noim_address = 0;
+			int int_address = 0;
 
 			while (in.nextToken() != StreamTokenizer.TT_EOF) {
 				in.pushBack();
@@ -346,11 +351,14 @@ public class Jopa {
 
 				if (l.jinstr!=-1) {
 					++ji_cnt;
-					jtbl.write("\t\twhen \""+bin(l.jinstr, 8) +
-						"\" => q <= \""+bin(pc, ADDRBITS)+"\";" +
-						"\t--\t"+hex(pc,4)+"\t"+JopInstr.name(l.jinstr)+"\n");
-					if (JopInstr.name(l.jinstr).equals("sys_noim")) {
+					if (JopInstr.name(l.jinstr).equals("sys_int")) {
+						int_address = pc;
+					} else if (JopInstr.name(l.jinstr).equals("sys_noim")) {
 						noim_address = pc;
+					} else {
+						jtbl.write("\t\twhen \""+bin(l.jinstr, 8) +
+							"\" => addr <= \""+bin(pc, ADDRBITS)+"\";" +
+							"\t--\t"+hex(pc,4)+"\t"+JopInstr.name(l.jinstr)+"\n");
 					}
 				}
 
@@ -440,11 +448,21 @@ public class Jopa {
 			rom.close();
 
 			line = "\n";
-//			line += "\t\twhen others => q <= (others => '0');\t--\tinit on umimplemented bc\n";
-			line += "\t\twhen others => q <= \""+bin(noim_address, ADDRBITS)+"\";\n";
+			line += "\t\twhen others => addr <= \""+bin(noim_address, ADDRBITS)+
+							"\";\t\t--\t"+hex(noim_address,4)+"\tsys_noim\n";
 			line += "\tend case;\n";
 			line += "end process;\n";
 			line += "\n";
+			line += "process(int_pend, addr) begin\n";
+			line += "\n";
+			line += "\tq <= addr;\n";
+			line += "\tif int_pend='1' then\n";
+			line += "\t\tq <= \""+bin(int_address, ADDRBITS)+
+							"\";\t\t--\t"+hex(int_address,4)+"\tsys_int\n";
+			line += "\tend if;\n";
+			line += "end process;\n";
+			line += "\n";
+
 			line += "end rtl;\n";
 
 			jtbl.write(line);

@@ -52,6 +52,7 @@
 --	2003-07-08	new IO interface (with tri-state bus)
 --	2003-10-06	modem DTR
 --	2004-02-07	ignore ncts on service uart (for simpler debugging)
+--	2004-10-05	changed modem baud rate to 38400
 --
 --
 
@@ -239,8 +240,9 @@ begin
 		);
 
 	-- Siemens TC35 sends up to 32!!! characters after cts deasert
-	-- cmp_ua2 : uart generic map (6, clk_freq, 38400, 16, 2, 50, 16)
-	cmp_ua2 : uart generic map (6, clk_freq, 115200, 16, 2, 50, 16)
+	cmp_ua2 : uart generic map (6, clk_freq, 38400, 16, 2, 50, 16)
+	-- WW does not like the 115200 baud :-(
+	-- cmp_ua2 : uart generic map (6, clk_freq, 115200, 16, 2, 50, 16)
 			port map (clk, reset, addr,
 				din, wr, dout, rd,
 				l(14), 		-- txd

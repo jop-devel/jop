@@ -9,7 +9,7 @@ class JVMHelp {
 	//	interrupt gets called from jvm.asm
 	//
 	public static void interrupt() {
-// RtThread.ts0 = Native.rd(Native.IO_US_CNT);
+// RtThread.ts0 = Native.rd(Const.IO_US_CNT);
 		RtThread.schedule();
 // Scheduler.schedInt();
 	}

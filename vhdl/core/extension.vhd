@@ -45,7 +45,8 @@ port (
 
 -- core interface
 
-	din			: in std_logic_vector(31 downto 0);		-- from stack
+	ain			: in std_logic_vector(31 downto 0);		-- from stack
+	bin			: in std_logic_vector(31 downto 0);		-- from stack
 	ext_addr	: in std_logic_vector(exta_width-1 downto 0);
 	rd, wr		: in std_logic;
 	dout		: out std_logic_vector(31 downto 0);	-- to stack
@@ -79,9 +80,9 @@ component mul is
 port (
 	clk			: in std_logic;
 
-	din			: in std_logic_vector(31 downto 0);
-	wr_a		: in std_logic;
-	wr_b		: in std_logic;		-- write to b starts multiplier
+	ain			: in std_logic_vector(31 downto 0);
+	bin			: in std_logic_vector(31 downto 0);
+	wr			: in std_logic;		-- write starts multiplier
 	dout		: out std_logic_vector(31 downto 0)
 );
 end component mul;
@@ -90,7 +91,7 @@ end component mul;
 --	signals for mulitiplier
 --
 	signal mul_dout				: std_logic_vector(31 downto 0);
-	signal mul_wra, mul_wrb		: std_logic;
+	signal mul_wr				: std_logic;
 
 --
 --	Signals
@@ -100,7 +101,7 @@ begin
 
 	cmp_mul : mul
 			port map (clk,
-				din, mul_wra, mul_wrb,
+				ain, bin, mul_wr,
 				mul_dout
 		);
 
@@ -144,8 +145,7 @@ begin
 		mem_wr <= '0';
 		mem_addr_wr <= '0';
 		mem_bc_rd <= '0';
-		mul_wra <= '0';
-		mul_wrb <= '0';
+		mul_wr <= '0';
 		io_wr <= '0';
 
 
@@ -155,8 +155,7 @@ begin
 		mem_wr <= '0';
 		mem_addr_wr <= '0';
 		mem_bc_rd <= '0';
-		mul_wra <= '0';
-		mul_wrb <= '0';
+		mul_wr <= '0';
 		io_wr <= '0';
 
 		if (wr='1') then
@@ -169,9 +168,7 @@ begin
 			elsif (ext_addr="100") then
 				mem_wr <= '1';			-- start write
 			elsif (ext_addr="101") then
-				mul_wra <= '1';
-			elsif (ext_addr="110") then
-				mul_wrb <= '1';
+				mul_wr <= '1';
 			elsif (ext_addr="111") then
 				mem_bc_rd <= '1';		-- start bc read
 			else

@@ -1,7 +1,7 @@
 --
 --	jopcyc12.vhd
 --
---	top level for new borad
+--	top level for new borad with EP1C12
 --		use iocore.vhd for all io-pins
 --
 --	2002-06-27:	2088 LCs, 23.6 MHz
@@ -19,6 +19,7 @@
 --	2003-02-21	adapt for new Cyclone board with EP1C6
 --	2003-07-08	invertion of cts, rts to uart
 --	2004-09-11	new extension module
+--	2004-10-08	mul operands from a and b, single instruction
 --
 --
 
@@ -30,19 +31,17 @@ use ieee.numeric_std.all;
 entity jop is
 
 generic (
---	clk_freq	: integer := 20000000;	-- 20 MHz clock frequency
-clk_freq	: integer := 100000000;	-- 100 MHz clock frequency
+	clk_freq	: integer := 20000000;	-- 20 MHz clock frequency
 	exta_width	: integer := 3;		-- address bits of internal io
 	ram_cnt		: integer := 3;		-- clock cycles for external ram
---	rom_cnt		: integer := 3;		-- clock cycles for external rom OK for 20 MHz
-rom_cnt		: integer := 15;		-- clock cycles for external rom for 100 MHz
+	rom_cnt		: integer := 3;		-- clock cycles for external rom OK for 20 MHz
 	jpc_width	: integer := 10	-- address bits of java byte code pc
 );
 
 port (
 	clk		: in std_logic;
 --
----- serial interface
+--	serial interface
 --
 	ser_txd			: out std_logic;
 	ser_rxd			: in std_logic;
@@ -122,15 +121,14 @@ port (
 
 	jbc_addr	: out std_logic_vector(jpc_width-1 downto 0);
 	jbc_data	: in std_logic_vector(7 downto 0);
-	jpc_wr		: out std_logic;
-	bc_wr		: out std_logic;
 
 -- interrupt from io
 
 	irq			: in std_logic;
 	irq_ena		: in std_logic;
 
-	dout		: out std_logic_vector(31 downto 0)
+	aout		: out std_logic_vector(31 downto 0);
+	bout		: out std_logic_vector(31 downto 0)
 );
 end component;
 
@@ -141,7 +139,8 @@ port (
 
 -- core interface
 
-	din			: in std_logic_vector(31 downto 0);		-- from stack
+	ain			: in std_logic_vector(31 downto 0);		-- from stack
+	bin			: in std_logic_vector(31 downto 0);		-- from stack
 	ext_addr	: in std_logic_vector(exta_width-1 downto 0);
 	rd, wr		: in std_logic;
 	dout		: out std_logic_vector(31 downto 0);	-- to stack
@@ -151,7 +150,9 @@ port (
 	mem_rd		: out std_logic;
 	mem_wr		: out std_logic;
 	mem_addr_wr	: out std_logic;
+	mem_bc_rd	: out std_logic;
 	mem_data	: in std_logic_vector(31 downto 0); 	-- output of memory module
+	mem_bcstart	: in std_logic_vector(31 downto 0); 	-- start of method in bc cache
 	
 -- io interface
 
@@ -175,7 +176,9 @@ port (
 	mem_rd		: in std_logic;
 	mem_wr		: in std_logic;
 	mem_addr_wr	: in std_logic;
+	mem_bc_rd	: in std_logic;
 	dout		: out std_logic_vector(31 downto 0);
+	bcstart		: out std_logic_vector(31 downto 0); 	-- start of method in bc cache
 
 	bsy			: out std_logic;
 
@@ -183,8 +186,6 @@ port (
 
 	jbc_addr	: in std_logic_vector(jpc_width-1 downto 0);
 	jbc_data	: out std_logic_vector(7 downto 0);
-	jpc_wr		: in std_logic;
-	bc_wr		: in std_logic;
 
 --
 --	two ram banks
@@ -266,6 +267,7 @@ end component;
 	signal clk_int			: std_logic;
 
 	signal stack_tos		: std_logic_vector(31 downto 0);
+	signal stack_nos		: std_logic_vector(31 downto 0);
 	signal rd, wr			: std_logic;
 	signal ext_addr			: std_logic_vector(exta_width-1 downto 0);
 	signal stack_din		: std_logic_vector(31 downto 0);
@@ -273,13 +275,13 @@ end component;
 	signal mem_rd			: std_logic;
 	signal mem_wr			: std_logic;
 	signal mem_addr_wr		: std_logic;
+	signal mem_bc_rd		: std_logic;
 	signal mem_dout			: std_logic_vector(31 downto 0);
+	signal mem_bcstart		: std_logic_vector(31 downto 0);
 	signal mem_bsy			: std_logic;
 
 	signal jbc_addr			: std_logic_vector(jpc_width-1 downto 0);
 	signal jbc_data			: std_logic_vector(7 downto 0);
-	signal jpc_wr			: std_logic;
-	signal bc_wr			: std_logic;
 
 	signal io_rd			: std_logic;
 	signal io_wr			: std_logic;
@@ -312,34 +314,36 @@ end process;
 --
 --	components of jop
 --
-	pll_inst : pll port map (
-		inclk0	 => clk,
-		c0	 => clk_int
-	);
---	clk_int <= clk;
+--	pll_inst : pll port map (
+--		inclk0	 => clk,
+--		c0	 => clk_int
+--	);
+	clk_int <= clk;
 
 	cmp_core: core 
 		port map (clk_int, int_res,
 			mem_bsy,
 			stack_din, ext_addr,
 			rd, wr,
-			jbc_addr, jbc_data, jpc_wr, bc_wr,
+			jbc_addr, jbc_data,
 			io_irq, io_irq_ena,
-			stack_tos
+			stack_tos, stack_nos
 		);
 
 	cmp_ext: extension generic map (exta_width)
-		port map (clk_int, int_res, stack_tos,
+		port map (clk_int, int_res, stack_tos, stack_nos,
 			ext_addr, rd, wr, stack_din,
-			mem_rd, mem_wr, mem_addr_wr, mem_dout,
+			mem_rd, mem_wr, mem_addr_wr, mem_bc_rd,
+			mem_dout, mem_bcstart,
 			io_rd, io_wr, io_addr_wr, io_dout
 		);
 
 	cmp_mem: mem32 generic map (jpc_width, ram_cnt, rom_cnt)
 		port map (clk_int, int_res, stack_tos,
-			mem_rd, mem_wr, mem_addr_wr, mem_dout,
+			mem_rd, mem_wr, mem_addr_wr, mem_bc_rd,
+			mem_dout, mem_bcstart,
 			mem_bsy,
-			jbc_addr, jbc_data, jpc_wr, bc_wr,
+			jbc_addr, jbc_data,
 			rama_a, rama_d, rama_ncs, rama_noe, rama_nlb, rama_nub, rama_nwe,
 			ramb_a, ramb_d, ramb_ncs, ramb_noe, ramb_nlb, ramb_nub, ramb_nwe,
 			fl_a, fl_d, fl_ncs, fl_ncsb, fl_noe, fl_nwe, fl_rdy

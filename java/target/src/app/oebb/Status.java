@@ -31,6 +31,9 @@ public class Status {
 	static final int ALARM = 16;
 
 	volatile static int state;
+	
+	static final int ZUG_NORMAL = 1;
+	static final int ZUG_NF = 2;
 
 /**
 *	some error in communication
@@ -74,6 +77,11 @@ public class Status {
 	volatile static boolean dispMenu;
 
 /**
+*	is Lernbetrieb allowed
+*/
+	volatile static boolean isMaster;
+
+/**
 *	aktuelle Strecke
 */
 	volatile static int strNr;
@@ -97,10 +105,21 @@ public class Status {
 *	send FERL_QUIT
 */
 	volatile static boolean sendFerlQuit;
+	
+	volatile static int direction;
 
 /**
 *	Verschub
 */
 	volatile static int von, bis;
 
+/**
+ *	Bewegungsueberwachung bei keiner Fahrerlaubnis
+ */
+	volatile static boolean checkMove;
+
+/**
+ *	Fahrttype
+ */
+	volatile static int art;
 }

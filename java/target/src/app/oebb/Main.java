@@ -10,6 +10,7 @@ package oebb;
 *	0.16		TFTP retransmit on missing ACK in read
 *	0.17		Zielmelderaum, 2 stop bit in uart.vhd (JOP)
 *	0.18		TFTP: accept a retransmit of last data block on a WRQ
+*	0.23		Version for OEBB Demo
 *
 */
 
@@ -24,9 +25,35 @@ public class Main {
 
 	// SW version
 	public static final int VER_MAJ = 0;
-	public static final int VER_MIN = 23;
+	public static final int VER_MIN = 41;
 
+	// TODO find a schedule whith correct priorities
+	// Serial is 10
+	// Ppp or Slip is 9
+	// Serial2 (GPS) is 8
+	// Net is 5
+	private static final int LOGIC_PRIO = 1;
+	private static final int LOGIC_PERIOD = 100000;
+	private static final int GPS_PRIO = 2;
+	private static final int GPS_PERIOD = 100000;
+	private static final int DISPLAY_PRIO = 3;
+	private static final int DISPLAY_PERIOD = 5000;
+	private static final int COMM_PRIO = 4;
+	private static final int COMM_PERIOD = 100000;
+	private static final int GPSSER_PRIO = 8;
+	private static final int GPSSER_PERIOD = 12000;
+	private static final int NET_PRIO = 5;
+	private static final int NET_PERIOD = 10000;
+	private static final int IPLINK_PRIO = 9;
+	private static final int IPLINK_PERIOD = 10000;
+	private static final int IPSER_PRIO = 10;
+	private static final int IPSER_PERIOD = 3000;
+
+	static Net net;
 	static LinkLayer ipLink;
+	static Serial ser, ser2;
+	static RtThread pppThre;
+
 
 	static boolean reset;
 
@@ -36,7 +63,7 @@ public class Main {
 
 		Timer.wd();
 
-		// Dbg.initSer();				// use serial line for debug output
+		// ncts is set to '0' in bgio.vhd, so we can 'wait' with open line
 		Dbg.initSerWait();				// use serial line for debug output
 		Dbg.wr("RESET ");
 		
@@ -44,6 +71,7 @@ public class Main {
 		Timer.wd();
 
 		for (int i=0; i<4; ++i) {
+			RtThread.sleepMs(5);
 			Keyboard.loop();
 		}
 
@@ -64,51 +92,102 @@ public class Main {
 
 		Flash.init();
 
-Flash.check();
 
+		Flash.check();
+
+		Status.isMaster = Flash.isMaster();
+		
 		//
 		//	start TCP/IP and all (four) threads
 		//
-		Net.init();
+		net = Net.init();
+		// remove default TFTP handler
+		Udp.removeHandler(BgTftp.PORT);
+		// BUT this handler can only handle 64KB sector
+		// writes. A new FPGA configuration has to be
+		// split to more writes!!!
+		Udp.addHandler(BgTftp.PORT, new BgTftp());
+		ser = new Serial(Const.IO_UART_BG_MODEM_BASE);
+
 		//
-		//	start device driver threads
+		//	Create serial, PPP/SLIP and TCP/IP threads
 		//
+		new RtThread(IPSER_PRIO, IPSER_PERIOD) {
+			public void run() {
+				for (;;) {
+					waitForNextPeriod();
+					ser.loop();
+				}
+			}
+		};
+
+		pppThre = new RtThread(IPLINK_PRIO, IPLINK_PERIOD) {
+			public void run() {
+				for (;;) {
+					waitForNextPeriod();
+					ipLink.loop();
+				}
+			}
+		};
+
+		new RtThread(NET_PRIO, NET_PERIOD) {
+			public void run() {
+				for (;;) {
+					waitForNextPeriod();
+					net.loop();
+				}
+			}
+		};
+
 		if (val==Keyboard.K3) {
-			ipLink = Ppp.init(Const.IO_UART_BG_MODEM_BASE); 
+			// SLIP for simpler tests
+			ipLink = Slip.init(ser,	(192<<24) + (168<<16) + (1<<8) + 2); 
 		} else if (val==Keyboard.K2){
-			ipLink = Slip.init(Const.IO_UART_BG_MODEM_BASE,
-				(192<<24) + (168<<16) + (2<<8) + 2); 
+			// use second SLIP subnet for 'COs test'
+			ipLink = Slip.init(ser, (192<<24) + (168<<16) + (2<<8) + 2); 
 		} else {
-			ipLink = Slip.init(Const.IO_UART_BG_MODEM_BASE,
-				(192<<24) + (168<<16) + (1<<8) + 2); 
+			ipLink = Ppp.init(ser, pppThre); 
+//			ipLink = Slip.init(ser,	(192<<24) + (168<<16) + (1<<8) + 2); 
 		}
 
+		//
+		//	create GPS serial and GPS thread
+		//
+//
+//		for GPS use: 4800 baud => 2.0833 ms per character
+//		send fifo: 4, receive fifo: 8
+//			16 ms should be ok, 12 ms for shure
+//
+		ser2 = new Serial(Const.IO_UART_BG_GPS_BASE);
+		new RtThread(GPSSER_PRIO, GPSSER_PERIOD) {
+			public void run() {
+				for (;;) {
+					waitForNextPeriod();
+					ser2.loop();
+				}
+			}
+		};
+
+		Gps.init(GPS_PRIO, GPS_PERIOD, ser2);
 
 		//
-		//	start GPS thread with priority
+		//	create Communication thread
 		//
-		Gps.init(2);
+		Comm.init(Flash.getId(), COMM_PRIO, COMM_PERIOD, ipLink);
 
 		//
-		//	start Communication thread
+		//	create Display and Keyboard thread.
 		//
-		// TODO find a schedule whith correct priorities
-		// Serial is 10
-		// Ppp or Slip is 9
-		// Serial2 (GPS) is 8
-		// Net is 5
-		Comm.init(Flash.getId(), 4, 100000, ipLink);
+		new Display(DISPLAY_PRIO, DISPLAY_PERIOD);
 
 		//
-		//	start Display and Keyboard thread.
+		//	create Logic thread.
 		//
-		new Display(3, 5000);
+		new Logic(LOGIC_PRIO, LOGIC_PERIOD, ipLink);
 
 		//
-		//	start Logic thread.
+		//	start all threads
 		//
-		new Logic(1, 100000, ipLink);
-
 		RtThread.startMission();
 
 		//
@@ -142,6 +221,7 @@ ipLink.startConnection(new StringBuffer("ATD*99***1#\r"),
 
 			if (!reset) {
 				Timer.wd();
+				Timer.loop();	// for the second timer
 } else {	// for test without WD
 
 Object o = new Object();

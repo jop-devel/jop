@@ -16,9 +16,11 @@ mkdir dist\bin
 dir /b /s src\com\jopdesign\sys\*.java > .sourcefiles
 dir /b /s src\jdk\java\*.java >> .sourcefiles
 echo on
-javac -target 1.1 -d dist/classes -sourcepath src @.sourcefiles
+rem javac -target 1.1 -d dist/classes -sourcepath src @.sourcefiles
+javac -d dist/classes -sourcepath src @.sourcefiles
 del .sourcefiles
-javac -target 1.1 -d dist/classes -sourcepath src;src/%appdir% src/%appdir%/%startclass%.java
+rem javac -target 1.1 -d dist/classes -sourcepath src;src/%appdir% src/%appdir%/%startclass%.java
+javac -d dist/classes -sourcepath src;src/%appdir% src/%appdir%/%startclass%.java
 cd dist\classes
 jar cf ../lib/classes.zip *
 cd ..\..

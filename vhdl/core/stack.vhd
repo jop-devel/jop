@@ -5,23 +5,6 @@
 --
 --	resources on ACEX1K30-3
 --
---	only stack:
---		268 LCs, max 4x.x MHz with hirarchy flatten results in an adder with inverter for sub
---		373 LCs, max 52.6 MHz (with preserve hirarchy to generate add and sub with amux!)
---	with ram and register:
---		464 LCs, max 46.3 MHz (with preserve hirarchy to generate add and sub with amux!)
---					crit. path vp - ram
--- befor 9.8.2001
---		515 LCs, max 51.0 MHz (with preserve hirarchy to generate add and sub with amux!)
---
---		669 LCs, max 52.0 MHz (with preserve hirarchy to generate add and sub with amux!)
---								and cutoff mem wr/rd path
---		654 LCs, 37.7 MHz	24.3.2002
---		883 LCs, 35.8 MHz	24.3.2002 with shift.
---
---
---	todo:
---
 --
 --	2001-06-30	first version (adapted from alu.vhd)
 --	2001-07-18	components add, sub in own file for Xilinx
@@ -32,6 +15,7 @@
 --	2001-12-07	removed imm. values
 --	2002-03-24	barrel shifter
 --	2003-02-12	added mux for 8 and 16 bit unsigned bytecode operand
+--	2004-10-07	new alu selection with sel_sub, sel_amux and ena_a
 --
 
 
@@ -54,7 +38,9 @@ port (
 	opd			: in std_logic_vector(15 downto 0);		-- index for vp load opd
 	jpc			: in std_logic_vector(jpc_width-1 downto 0);	-- jpc read
 
-	sel_amux	: in std_logic_vector(1 downto 0);		-- a, lmux, sum, diff
+	sel_sub		: in std_logic;							-- 0..add, 1..sub
+	sel_amux	: in std_logic;							-- 0..sum, 1..lmux
+	ena_a		: in std_logic;							-- 1..store new value
 	sel_bmux	: in std_logic;							-- 0..a, 1..mem
 	sel_log		: in std_logic_vector(1 downto 0);		-- pop/st, and, or, xor
 	sel_shf		: in std_logic_vector(1 downto 0);		-- sr, sl, sra, (sr)
@@ -76,7 +62,8 @@ port (
 	nf			: out std_logic;
 	eq			: out std_logic;
 	lt			: out std_logic;
-	dout		: out std_logic_vector(width-1 downto 0)
+	aout		: out std_logic_vector(width-1 downto 0);
+	bout		: out std_logic_vector(width-1 downto 0)
 );
 end stack;
 
@@ -122,7 +109,7 @@ end component;
 	signal vp0, vp1, vp2, vp3
 						: std_logic_vector(addr_width-1 downto 0);
 
-	signal sum, diff	: std_logic_vector(width-1 downto 0);
+	signal sum, diff, temp	: std_logic_vector(width-1 downto 0);
 	signal sout			: std_logic_vector(width-1 downto 0);
 	signal log			: std_logic_vector(width-1 downto 0);
 	signal immval		: std_logic_vector(width-1 downto 0);
@@ -138,7 +125,7 @@ end component;
 	signal vpadd	: std_logic_vector(addr_width-1 downto 0);
 	signal wraddr	: std_logic_vector(addr_width-1 downto 0);
 	signal rdaddr	: std_logic_vector(addr_width-1 downto 0);
-
+	signal ci : std_logic_vector(width-1 downto 0);
 begin
 
 	cmp_shf: shift generic map (width) port map (b, a(4 downto 0), sel_shf, sout);
@@ -146,8 +133,42 @@ begin
 	cmp_ram: ram generic map(width, addr_width)
 			port map(mmux, wraddr, rdaddr, wr_ena, clk, ram_dout);
 
-	sum <= std_logic_vector(signed(a) + signed(b));
-	diff <= std_logic_vector(signed(b) - signed(a));
+
+-- a version that 'could' be better in Spartan
+--process(a, b, sel_sub)
+--begin
+--
+--	if sel_sub='0' then
+--		temp <= a;
+--		ci <= X"00000000";
+--	else
+--		temp <= not a;
+--		ci <= X"00000001";
+--	end if;
+--	sum <= std_logic_vector(signed(b) + signed(temp)+ signed(ci));
+--
+--end process;
+
+
+-- this add/sub, the sum/lmux mux and the enable should fit into
+-- a single LE.
+-- But it doesn't! A synthesizer problem in Quartus.
+--
+process(a, b, sel_sub)
+begin
+
+	if sel_sub='1' then
+		sum <= std_logic_vector(signed(b) - signed(a));
+	else
+		sum <= std_logic_vector(signed(b) + signed(a));
+	end if;
+
+end process;
+
+--	lt <= diff(width-1);
+	lt <= sum(width-1);		-- default is subtract
+
+-- shift version from Flavius?
 
 --
 --	mux for stack register, alu
@@ -179,6 +200,22 @@ begin
 			rmux <= jpc;
 	end case;
 
+--
+--	this is worse than the shift component
+--
+--	case sel_shf is
+--		when "00" =>
+--			sout <= std_logic_vector(shift_right(unsigned(b),to_integer(unsigned(a(4 downto 0)))));
+--		when "01" =>
+--			sout <= std_logic_vector(shift_left(signed(b),to_integer(unsigned(a(4 downto 0)))));
+--		when "10" =>
+--			sout <= std_logic_vector(shift_right(signed(b),to_integer(unsigned(a(4 downto 0)))));
+--		when "11" =>
+--			sout <= std_logic_vector(shift_right(unsigned(b),to_integer(unsigned(a(4 downto 0)))));
+--		when others =>
+--			null;
+--	end case;
+
 	case sel_lmux(2 downto 0) is
 		when "000" =>
 			lmux <= log;
@@ -194,7 +231,6 @@ begin
 			lmux <= std_logic_vector(to_signed(to_integer(unsigned(rmux)), width));
 	end case;
 
--- TODO: immval could be 16 bit and expand in lmux
 	case sel_imux is
 		when "00" =>
 			imux <= "000000000000000000000000" & opddly(7 downto 0);
@@ -206,48 +242,41 @@ begin
 			imux <= std_logic_vector(to_signed(to_integer(signed(opddly)), width));
 	end case;
 
-	if (sel_mmux='0') then
+	if sel_mmux='0' then
 		mmux <= a;
 	else
 		mmux <= b;
 	end if;
 
-	case sel_amux is
-		when "00" =>
-			amux <= a;
-		when "01" =>
-			amux <= lmux;
-		when "10" =>
-			amux <= sum;
-		when "11" =>
-			amux <= diff;
-		when others =>
-			null;
-	end case;
+	if sel_amux='0' then
+		amux <= sum;
+	else
+		amux <= lmux;
+	end if;
 
---	if (a = (a'range => '0'))  then		-- Xilinx has problems
+--	if (a = (a'range => '0'))  then		-- Xilinx ISE has problems
 	if (a=std_logic_vector(to_unsigned(0, width))) then
 		zf <= '1';
 	else
 		zf <= '0';
 	end if;
 	nf <= a(width-1);
-
 	if (a=b) then
 		eq <= '1';
 	else
 		eq <= '0';
 	end if;
-	lt <= diff(width-1);
 
 end process;
 
-process(clk, sel_amux, ena_b) begin
+process(clk, sel_bmux, ram_dout, ena_a, ena_b) begin
 	if rising_edge(clk) then
 
-		a <= amux;
+		if ena_a='1' then
+			a <= amux;
+		end if;
 
-		if (ena_b = '1') then
+		if ena_b = '1' then
 			if sel_bmux = '0' then
 				b <= a;
 			else
@@ -258,7 +287,8 @@ process(clk, sel_amux, ena_b) begin
 	end if;
 end process;
 
-	dout <= a;
+	aout <= a;
+	bout <= b;
 
 --
 --	stack pointer and vp register

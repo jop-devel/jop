@@ -26,14 +26,32 @@ public class Bgid extends Flash {
 		if (pos>len) len = pos;
 	}
 
+	public static void usage() {
+		System.out.println("usage: java Bgid [master] host");
+		System.exit(-1);
+	}
+
 	public static void main (String[] args) {
 
-		if (args.length != 1) {
-			System.out.println("usage: java Bgid host");
-			System.exit(-1);
+		boolean master = false;
+		String host = "";
+
+		
+		if (args.length<1 || args.length>2) {
+			usage();
+		}
+		if (args.length==2) {
+			if (!args[0].equals("master")) {
+				usage();
+			} else {
+				master = true;
+			}
+			host = args[1];
+		} else {
+			host = args[0];
 		}
 
-		Bgid fl = new Bgid(new Tftp(args[0]));
+		Bgid fl = new Bgid(new Tftp(host));
 		fl.start = START_CONFIG;
 		fl.len = 0;
 		int val = (int) (System.currentTimeMillis()/1000);
@@ -48,7 +66,8 @@ System.out.println("id: "+val);
 		fl.setInt(CONFIG_IP_ADDR, 0);
 		fl.setInt(CONFIG_IP_MASK, 0);
 		fl.setInt(CONFIG_IP_GW, 0);
-		fl.setInt(CONFIG_TAL_TYPE, 0);
+		val = master ? BG_MASTER_MAGIC : 0;
+		fl.setInt(CONFIG_BG_MASTER, val);
 		fl.setInt(CONFIG_TAL_PARAM, 0);
 		fl.program();
 	}

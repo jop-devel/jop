@@ -33,7 +33,7 @@
 # ========================
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION 4.0
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "02:05:59  APRIL 04, 2004"
-set_global_assignment -name LAST_QUARTUS_VERSION 4.1
+set_global_assignment -name LAST_QUARTUS_VERSION "4.1 SP2"
 set_global_assignment -name VHDL_FILE ../wizzard/pll.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/io/fifo.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/io/uart.vhd

@@ -13,7 +13,7 @@ public class ContextSwitch {
 
 	public static void main(String[] args) {
 
-		Dbg.initSer();				// use serial line for debug output
+		Dbg.initSerWait();				// use serial line for debug output
 		result = new int[CNT];
 
 		// low priority thread

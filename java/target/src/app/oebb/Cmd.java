@@ -54,9 +54,16 @@ public class Cmd {
 	public static final int VERSCHUB_RPL = 44;
 	public static final int FERL_QUIT = 45;
 	public static final int FERL_QUIT_RPL = 46;
+	public static final int GPS_INFO = 47;
+	public static final int GPS_INFO_RPL = 48;
+	public static final int ST_LERN = 49;
+	public static final int ST_LERN_RPL = 50;
+	public static final int INFO_MODE = 51;
+	public static final int INFO_MODE_RPL = 52;
 
-	public static final int LAST_CMD = 46;
+	public static final int LAST_CMD = 52;
 
 	public static final int ALARM_UEBERF = 1;
 	public static final int ALARM_RICHTUNG = 2;
+	public static final int ALARM_FAEHRT = 3;
 }

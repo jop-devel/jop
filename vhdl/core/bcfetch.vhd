@@ -21,6 +21,7 @@
 --	2004-04-06	removed signal jfetch from interrupt mux (is in fetch allready)
 --				different mux for jpc and jbc rdaddr, register jump address calculation
 --	2004-09-11	move jbc to mem
+--	2005-01-17	move interrupt mux to jtbl.vhd (mux after the table)
 --
 --	TODO:	use 'running' bit and generate jbr here!
 --
@@ -74,6 +75,7 @@ architecture rtl of bcfetch is
 component jtbl is
 port (
 	bcode	: in std_logic_vector(7 downto 0);
+	int_pend	: in  std_logic;
 	q		: out std_logic_vector(pc_width-1 downto 0)
 );
 end component;
@@ -101,7 +103,6 @@ end component;
 	signal int_pend		: std_logic;
 	signal sys_int		: std_logic;
 
-	signal jbc_q_mux	: std_logic_vector(7 downto 0);
 	signal bytecode		: std_logic_vector(7 downto 0);
 
 begin
@@ -135,26 +136,19 @@ end process;
 --		jpc is one too high after generating sys_int
 --		this is corrected in jvm.asm
 --
-process(int_pend, jbc_q) begin
-	jbc_q_mux <= jbc_q;
-
---
---	we do not depend in this mux for jfetch (do we?)
+--	we do not depend on sys_int in this mux for jfetch (do we?)
 --	jfetch is allready used in the mux after the jump table
 --
---	if sys_int='1' then
-	if int_pend='1' then
-		jbc_q_mux <= "11110000";			-- int bytecode
-	end if;
-end process;
+--	interrupt mux is now in jtbl.vhd
 
 --
 --	java byte code fetch and branch
 --
 
-	bytecode <= jbc_q_mux;		-- register this for an additional pipeline stage
+	bytecode <= jbc_q;		-- register this for an additional pipeline stage
 
-	cmp_jtbl: jtbl port map(bytecode, jpaddr);
+	cmp_jtbl: jtbl port map(bytecode, int_pend, jpaddr);
+
 	jbc_addr <= jbc_mux;
 	jbc_q <= jbc_data;
 

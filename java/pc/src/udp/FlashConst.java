@@ -25,7 +25,9 @@ public class FlashConst {
 	public static final int CONFIG_IP_MASK = 8;
 	public static final int CONFIG_IP_GW = 9;
 	public static final int CONFIG_TAL_TYPE = 10;
+	public static final int CONFIG_BG_MASTER = 10;
 	public static final int CONFIG_TAL_PARAM = 11;
 
 
+	public static final int BG_MASTER_MAGIC = 1234;
 }

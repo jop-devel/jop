@@ -31,6 +31,8 @@
 --	2001-12-08	instruction set changed to 8 bit
 --	2002-03-24	shifter to stack
 --	2003-08-14	moved bcfetch from fetch to core
+--	2004-10-07	new alu selection with sel_sub, sel_amux and ena_a
+--	2004-10-08	mul operands from a and b, single instruction
 --
 
 
@@ -69,7 +71,8 @@ port (
 	irq			: in std_logic;
 	irq_ena		: in std_logic;
 
-	dout		: out std_logic_vector(width-1 downto 0)
+	aout		: out std_logic_vector(width-1 downto 0);
+	bout		: out std_logic_vector(width-1 downto 0)
 );
 end core;
 
@@ -116,7 +119,7 @@ port (
 	nxt, opd	: out std_logic;	-- jfetch and jopdfetch from table
 
 	br			: in std_logic;
-	pcwait		: in std_logic;
+	bsy 		: in std_logic;
 	jpaddr		: in std_logic_vector(pc_width-1 downto 0);
 
 	dout		: out std_logic_vector(i_width-1 downto 0)		-- internal instruction (rom)
@@ -133,7 +136,9 @@ port (
 	opd			: in std_logic_vector(15 downto 0);		-- index for vp load opd
 	jpc			: in std_logic_vector(jpc_width-1 downto 0);	-- jpc read
 
-	sel_amux	: in std_logic_vector(1 downto 0);		-- a, lmux, sum, diff
+	sel_sub		: in std_logic;							-- 0..add, 1..sub
+	sel_amux		: in std_logic;							-- 0..sum, 1..lmux
+	ena_a		: in std_logic;							-- 1..store new value
 	sel_bmux	: in std_logic;							-- 0..a, 1..mem
 	sel_log		: in std_logic_vector(1 downto 0);		-- pop/st, and, or, xor
 	sel_shf		: in std_logic_vector(1 downto 0);		-- sr, sl, sra, (sr)
@@ -155,7 +160,8 @@ port (
 	nf			: out std_logic;
 	eq			: out std_logic;
 	lt			: out std_logic;
-	dout		: out std_logic_vector(width-1 downto 0)
+	aout		: out std_logic_vector(width-1 downto 0);
+	bout		: out std_logic_vector(width-1 downto 0)
 );
 end component;
 
@@ -167,10 +173,8 @@ port (
 	instr		: in std_logic_vector(i_width-1 downto 0);
 	zf, nf		: in std_logic;
 	eq, lt		: in std_logic;
-	bsy			: in std_logic;
 
 	br			: out std_logic;
-	pcwait		: out std_logic;
 	jbr			: out std_logic;
 
 	ext_addr	: out std_logic_vector(exta_width-1 downto 0);
@@ -178,7 +182,9 @@ port (
 
 	dir			: out std_logic_vector(addr_width-1 downto 0);
 
-	sel_amux	: out std_logic_vector(1 downto 0);		-- a, lmux, sum, diff
+	sel_sub		: out std_logic;						-- 0..add, 1..sub
+	sel_amux		: out std_logic;						-- 0..sum, 1..lmux
+	ena_a		: out std_logic;						-- 1..store new value
 	sel_bmux	: out std_logic;						-- 0..a, 1..mem
 	sel_log		: out std_logic_vector(1 downto 0);		-- pop/st, and, or, xor
 	sel_shf		: out std_logic_vector(1 downto 0);		-- sr, sl, sra, (sr)
@@ -207,7 +213,6 @@ end component;
 -- (bc)fetch connections
 --
 	signal br			: std_logic;
-	signal pcwait		: std_logic;
 	signal jbr			: std_logic;
 
 	signal jfetch		: std_logic;
@@ -225,7 +230,9 @@ end component;
 --
 	signal dir			: std_logic_vector(addr_width-1 downto 0);
 
-	signal sel_amux		: std_logic_vector(1 downto 0);		-- a, lmux, sum, diff
+	signal sel_sub		: std_logic;						-- 0..add, 1..sub
+	signal sel_amux		: std_logic;						-- 0..sum, 1..lmux
+	signal ena_a		: std_logic;						-- 1..store new value
 	signal sel_bmux		: std_logic;						-- 0..a, 1..mem
 	signal sel_log		: std_logic_vector(1 downto 0);		-- ld, and, or, xor
 	signal sel_shf		: std_logic_vector(1 downto 0);		-- sr, sl, sra, (sr)
@@ -247,12 +254,13 @@ end component;
 	signal stk_nf		: std_logic;
 	signal stk_eq		: std_logic;
 	signal stk_lt		: std_logic;
-	signal stk_dout		: std_logic_vector(width-1 downto 0);
+	signal stk_aout		: std_logic_vector(width-1 downto 0);
+	signal stk_bout		: std_logic_vector(width-1 downto 0);
 
 begin
 
 	cmp_bcf: bcfetch generic map(jpc_width, pc_width)
-			port map (clk, reset, jpc_out, stk_dout, ena_jpc,
+			port map (clk, reset, jpc_out, stk_aout, ena_jpc,
 			jbc_addr, jbc_data,
 			jfetch, jopdfetch,
 			stk_zf, stk_nf, stk_eq, stk_lt, jbr,
@@ -261,24 +269,27 @@ begin
 
 	cmp_fch: fetch generic map (pc_width, i_width)
 		port map (clk, reset, jfetch, jopdfetch,
-			br, pcwait, jpaddr, instr);
+			br, bsy, jpaddr, instr);
 
 	cmp_stk: stack generic map (width, addr_width, jpc_width)
 		port map (clk, reset, din, dir, opd, jpc_out,
-			sel_amux, sel_bmux, sel_log, sel_shf, sel_lmux, sel_imux, sel_rmux, sel_smux,
+			sel_sub, sel_amux, ena_a,
+			sel_bmux, sel_log, sel_shf, sel_lmux, sel_imux, sel_rmux, sel_smux,
 			sel_mmux, sel_rda, sel_wra,
 			wr_ena, ena_b, ena_vp,
-			stk_zf, stk_nf, stk_eq, stk_lt, stk_dout);
+			stk_zf, stk_nf, stk_eq, stk_lt, stk_aout, stk_bout);
 
 	cmp_dec: decode generic map (i_width, addr_width, exta_width)
-		port map (clk, reset, instr, stk_zf, stk_nf, stk_eq, stk_lt, bsy,
-			br, pcwait, jbr,
+		port map (clk, reset, instr, stk_zf, stk_nf, stk_eq, stk_lt,
+			br, jbr,
 			ext_addr, rd, wr,
 			dir,
-			sel_amux, sel_bmux, sel_log, sel_shf, sel_lmux, sel_imux, sel_rmux, sel_smux,
+			sel_sub, sel_amux, ena_a,
+			sel_bmux, sel_log, sel_shf, sel_lmux, sel_imux, sel_rmux, sel_smux,
 			sel_mmux, sel_rda, sel_wra,
 			wr_ena, ena_b, ena_vp, ena_jpc);
 
-	dout <= stk_dout;
+	aout <= stk_aout;
+	bout <= stk_bout;
 
 end rtl;

@@ -183,6 +183,32 @@ return;
     value[count++] = ch;
     return this;
   }
+  
+  private static final int MAX_TMP = 32;
+  private static char[] tmp;			// a generic buffer
+
+
+  public synchronized StringBuffer append(int val)
+  {
+  	if (tmp==null) tmp = new char[MAX_TMP];
+
+	int i;
+	// When the value is MIN_VALUE, it overflows when made positive
+ 	if (val<0) {
+		this.append('-');
+		val = -val;
+	}
+	for (i=0; i<MAX_TMP-1; ++i) {
+		tmp[i] = (char) ((val%10)+'0');
+		val /= 10;
+		if (val==0) break;
+	}
+	for (val=i; val>=0; --val) {
+		this.append(tmp[val]);
+	}
+
+	return this;
+  }
 
   public synchronized StringBuffer delete(int start, int end)
   {

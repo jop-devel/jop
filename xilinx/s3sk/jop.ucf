@@ -3,54 +3,54 @@
 # Design provided for Spartan-3 Starter Board (rev E).
 #
 #
-# Time specifications for 50MHz clock
+# Time specifications for 100MHz clock
 #
 NET "clk" TNM_NET = "clk";
-TIMESPEC "TS_clk" = PERIOD "clk" 20 ns HIGH 50 %;
-TIMESPEC TS01 = FROM : FFS : TO : FFS : 20 ns;
-TIMESPEC TS02 = FROM : RAMS : TO : FFS : 20 ns;
-TIMESPEC TS03 = FROM : FFS : TO : RAMS : 20 ns;
-TIMESPEC TS04 = FROM : RAMS : TO : RAMS : 20 ns;
-TIMESPEC TS05 = FROM : FFS : TO : PADS : 20 ns; 
-TIMESPEC TS06 = FROM : PADS : TO : FFS : 20 ns; 
-TIMESPEC TS07 = FROM : PADS : TO : RAMS : 20 ns; 
-#TIMESPEC TS08 = FROM : RAMS : TO : PADS : 20 ns;
+TIMESPEC "TS_clk" = PERIOD "clk" 10 ns HIGH 50 %;
+#TIMESPEC "TS01" = FROM "FFS" TO "FFS" 10 ns;
+#TIMESPEC "TS02" = FROM "RAMS" TO "FFS" 10 ns;
+#TIMESPEC "TS03" = FROM "FFS" TO "RAMS" 10 ns;
+#TIMESPEC "TS04" = FROM "RAMS" TO "RAMS" 10 ns;
+#TIMESPEC "TS05" = FROM "FFS" TO "PADS" 10 ns;
+#TIMESPEC "TS06" = FROM "PADS" TO "FFS" 10 ns;
+#TIMESPEC "TS07" = FROM "PADS" TO "RAMS" 10 ns;
+#TIMESPEC TS08 = FROM : RAMS : TO : PADS : 10 ns
 #
 #
 # I/O constraints for Spartan-3 Starter Board.
 #
 # soldered 50MHz Clock
-# 
+#
 NET "clk" LOC = "T9";
 #
-# Simple LEDs 
+# Simple LEDs
 #
 NET "wd" LOC = "K12";
-#NET "led<1>" LOC = "P14";
-#NET "led<2>" LOC = "L12";
-#NET "led<3>" LOC = "N14";
-#NET "led<4>" LOC = "P13";
-#NET "led<5>" LOC = "N12";
-#NET "led<6>" LOC = "P12";
-#NET "led<7>" LOC = "P11";
+#NET "led<1>" LOC = "P14"
+#NET "led<2>" LOC = "L12"
+#NET "led<3>" LOC = "N14"
+#NET "led<4>" LOC = "P13"
+#NET "led<5>" LOC = "N12"
+#NET "led<6>" LOC = "P12"
+#NET "led<7>" LOC = "P11"
 #
-# Simple switches 
+# Simple switches
 #
-#NET "switch<0>" LOC = "F12";
-#NET "switch<1>" LOC = "G12";
-#NET "switch<2>" LOC = "H14";
-#NET "switch<3>" LOC = "H13";
-#NET "switch<4>" LOC = "J14";
-#NET "switch<5>" LOC = "J13";
-#NET "switch<6>" LOC = "K14";
-#NET "switch<7>" LOC = "K13";
+#NET "switch<0>" LOC = "F12"
+#NET "switch<1>" LOC = "G12"
+#NET "switch<2>" LOC = "H14"
+#NET "switch<3>" LOC = "H13"
+#NET "switch<4>" LOC = "J14"
+#NET "switch<5>" LOC = "J13"
+#NET "switch<6>" LOC = "K14"
+#NET "switch<7>" LOC = "K13"
 #
-# Press buttons 
+# Press buttons
 #
-#NET "button<0>" LOC = "M13";
-#NET "button<1>" LOC = "M14";
-#NET "button<2>" LOC = "L13";
-#NET "button<3>" LOC = "L14";
+#NET "button<0>" LOC = "M13"
+#NET "button<1>" LOC = "M14"
+#NET "button<2>" LOC = "L13"
+#NET "button<3>" LOC = "L14"
 #
 #
 # UART connections to female DB9 connector J2
@@ -58,22 +58,22 @@ NET "wd" LOC = "K12";
 NET "ser_txd" LOC = "R13";
 NET "ser_rxd" LOC = "T13";
 #
-# 7-segement display 
+# 7-segement display
 #
-#NET "digit_anode<0>" LOC = "D14";
-#NET "digit_anode<1>" LOC = "G14";
-#NET "digit_anode<2>" LOC = "F14";
-#NET "digit_anode<3>" LOC = "E13";
-#NET "segment_a" LOC = "E14";
-#NET "segment_b" LOC = "G13";
-#NET "segment_c" LOC = "N15";
-#NET "segment_d" LOC = "P15";
-#NET "segment_e" LOC = "R16";
-#NET "segment_f" LOC = "F13";
-#NET "segment_g" LOC = "N16";
-#NET "segment_dp" LOC = "P16";
+#NET "digit_anode<0>" LOC = "D14"
+#NET "digit_anode<1>" LOC = "G14"
+#NET "digit_anode<2>" LOC = "F14"
+#NET "digit_anode<3>" LOC = "E13"
+#NET "segment_a" LOC = "E14"
+#NET "segment_b" LOC = "G13"
+#NET "segment_c" LOC = "N15"
+#NET "segment_d" LOC = "P15"
+#NET "segment_e" LOC = "R16"
+#NET "segment_f" LOC = "F13"
+#NET "segment_g" LOC = "N16"
+#NET "segment_dp" LOC = "P16"
 #
-# RAM 
+# RAM
 #
 NET "ram_addr<0>" LOC = "L5";
 NET "ram_addr<1>" LOC = "N3";
@@ -142,9 +142,9 @@ NET "ramb_nub" LOC = "R4";
 #
 # XCF02S Serial PROM connections
 #
-#NET "din" LOC = "M11";
-#NET "reset_prom" LOC = "N9";
-#NET "cclk" LOC = "A14";
+#NET "din" LOC = "M11"
+#NET "reset_prom" LOC = "N9"
+#NET "cclk" LOC = "A14"
 #
 #
 #End of file jop.ucf

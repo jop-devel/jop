@@ -6,6 +6,11 @@ public class DoAll {
 
 	public static void main(String[] args) {
 
+/*
+		Jitter.test(new BenchKfl());
+		Jitter.test(new BenchUdpIp());
+*/
+
 		Execute.perform(new Add());
 		Execute.perform(new Iinc());
 		Execute.perform(new Ldc());

@@ -25,6 +25,8 @@
 --	2002-03-24	new shift instructions
 --	2002-12-02	wait instruction for memory
 --	2003-02-12	added instruction ld_opd_8u/16u
+--	2004-10-07	new alu selection with sel_sub, sel_amux and ena_a
+--	2004-10-08	moved bsy/pcwait from decode to fetch
 --
 
 
@@ -45,10 +47,8 @@ port (
 	instr		: in std_logic_vector(i_width-1 downto 0);
 	zf, nf		: in std_logic;		-- nf, eq and lt not used (only brz, brnz)
 	eq, lt		: in std_logic;
-	bsy			: in std_logic;		-- from mem interface
 
 	br			: out std_logic;
-	pcwait		: out std_logic;	-- no pc increment 'wait'
 	jbr			: out std_logic;
 
 	ext_addr	: out std_logic_vector(exta_width-1 downto 0);
@@ -56,7 +56,9 @@ port (
 
 	dir			: out std_logic_vector(addr_width-1 downto 0);
 
-	sel_amux	: out std_logic_vector(1 downto 0);		-- a, lmux, sum, diff
+	sel_sub		: out std_logic;						-- 0..add, 1..sub
+	sel_amux		: out std_logic;						-- 0..sum, 1..lmux
+	ena_a		: out std_logic;						-- 1..store new value
 	sel_bmux	: out std_logic;						-- 0..a, 1..mem
 	sel_log		: out std_logic_vector(1 downto 0);		-- pop/st, and, or, xor
 	sel_shf		: out std_logic_vector(1 downto 0);		-- sr, sl, sra, (sr)
@@ -96,7 +98,7 @@ begin
 	ext_addr <= ir(exta_width-1 downto 0);	-- address for extension select
 
 --
---	branch, pcwait, jbranch
+--	branch, jbranch
 --
 
 process(clk, reset, ir, zf)
@@ -114,15 +116,7 @@ begin
 	end if;
 end process;
 
-process(ir, bsy)
-begin
-
-	pcwait <= '0';
-	if (ir="10000001") then		-- wait 
-		pcwait <= bsy;
-	end if;
-
-end process;
+--	wait is decoded direct in fetch.vhd!
 
 process(ir)
 begin
@@ -213,7 +207,9 @@ process(clk, reset)
 begin
 
 	if (reset='1') then
-		sel_amux <= "00";
+		sel_sub <= '0';
+		sel_amux <= '0';
+		ena_a <= '0';
 		sel_bmux <= '0';
 		sel_log <= "00";
 		sel_shf <= "00";
@@ -233,7 +229,9 @@ begin
 
 		sel_shf <= ir(1 downto 0);
 
-		sel_amux <= "01";		-- lmux
+		sel_sub <= '1';			-- default is subtract for lt-flag
+		sel_amux <= '1';			-- default is lmux
+		ena_a <= '1';			-- default is enable
 		ena_vp <= '0';
 		ena_jpc <= '0';
 
@@ -244,9 +242,10 @@ begin
 			when "00000010" =>				-- or
 			when "00000011" =>				-- xor
 			when "00000100" =>				-- add
-					sel_amux <= "10";
+					sel_sub <= '0';
+					sel_amux <= '0';
 			when "00000101" =>				-- sub
-					sel_amux <= "11";
+					sel_amux <= '0';
 			when "00001000" =>				-- stioa
 			when "00001001" =>				-- stiod
 			when "00001010" =>				-- stmra
@@ -272,11 +271,11 @@ begin
 --			when "010-----" =>				-- bz
 --			when "011-----" =>				-- bnz
 			when "10000000" =>				-- nop
-					sel_amux <= "00";	-- a
+					ena_a <= '0';
 			when "10000001" =>				-- wait
-					sel_amux <= "00";	-- a
+					ena_a <= '0';
 			when "10000010" =>				-- jbr
-					sel_amux <= "00";	-- a
+					ena_a <= '0';
 --			when "101-----" =>				-- ldm
 --			when "110-----" =>				-- ldi
 			when "11100001" =>				-- ldiod
@@ -296,7 +295,7 @@ begin
 			when "11110110" =>				-- ld_opd_16u
 			when "11110111" =>				-- ld_opd_16s
 			when "11111000" =>				-- dup
-				sel_amux <= "00";	-- a
+					ena_a <= '0';
 
 			when others =>
 				null;

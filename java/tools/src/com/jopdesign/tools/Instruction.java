@@ -43,8 +43,8 @@ public class Instruction {
 		new Instruction("stmra", 0x08+2, false, false),
 		new Instruction("stmwa", 0x08+3, false, false),
 		new Instruction("stmwd", 0x08+4, false, false),
-		new Instruction("stopa", 0x08+5, false, false),
-		new Instruction("stopb", 0x08+6, false, false),
+		new Instruction("stmul", 0x08+5, false, false),
+		// one instruction free
 		new Instruction("stbcrd", 0x08+7, false, false),
 
 //	st (vp)	3 bits

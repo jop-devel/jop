@@ -18,7 +18,9 @@ public class VarBlockCache extends Cache {
 	int blockSize;
 	int mask;
 
-	VarBlockCache(int[] main, JopSim js, int size, int num) {
+	boolean stackNext;
+
+	VarBlockCache(int[] main, JopSim js, int size, int num, boolean stkNxt) {
 
 		mem = main;
 		sim = js;
@@ -34,6 +36,8 @@ public class VarBlockCache extends Cache {
 		for (int i=0; i<numBlocks; ++i) {
 			ctag[i] = 0;
 		}
+
+		stackNext = stkNxt;
 	}
 
 
@@ -53,6 +57,13 @@ public class VarBlockCache extends Cache {
 	}
 
 	int ret(int start, int len, int pc) {
+
+/*
+	stack-next policy
+*/
+		if (stackNext) {
+			next = currentBlock;
+		}
 
 		int off = testCache(start, len);
 // System.out.println("return pc: "+((off+pc) & mask));

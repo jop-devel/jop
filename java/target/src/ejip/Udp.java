@@ -94,6 +94,26 @@ public class Udp {
 	}
 
 	/**
+	*	remove a handler for UDP requests.
+	*	returns false if it was not in the list.
+	*/
+	public static boolean removeHandler(int port) {
+
+		if (monitor==null) init();
+
+		synchronized(monitor) {
+			for (int i=0; i<MAX_HANDLER; ++i) {
+				if (list[i]!=null) {
+					if (ports[i] == port) {
+						list[i] = null;
+						return true;
+					}
+				}
+			}
+		}
+		return false;
+	}
+	/**
 	*	Called periodic from Net for timeout processing.
 	*/
 	static void loop() {

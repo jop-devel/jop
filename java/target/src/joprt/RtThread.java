@@ -164,8 +164,8 @@ public static int ts0, ts1, ts2, ts3, ts4;
 	// timer offset to ensure that no timer int happens just
 	// after monitorexit in this method and the new thread
 	// has a minimum time to run.
-	private final static int TIM_OFF = 100;
-	// for 100 MHz version: private final static int TIM_OFF = 20;
+	// private final static int TIM_OFF = 100;
+private final static int TIM_OFF = 2; // for 100 MHz version 20 or even lower
 
 	//	this is the one and only function to
 	//	switch threads.
@@ -187,7 +187,7 @@ public static int ts0, ts1, ts2, ts3, ts4;
 		Native.wr(0, Const.IO_INT_ENA);
 		// synchronized(monitor) {
 
-// RtThread.ts1 = Native.rd(Native.IO_US_CNT);
+// RtThread.ts1 = Native.rd(Const.IO_US_CNT);
 			// save stack
 			i = Native.getSP();
 			RtThread th = ref[active];
@@ -200,7 +200,7 @@ public static int ts0, ts1, ts2, ts3, ts4;
 */
 			Native.int2extMem(128, th.stack, i-127);	// cnt is i-128+1
 
-// RtThread.ts2 = Native.rd(Native.IO_US_CNT);
+// RtThread.ts2 = Native.rd(Const.IO_US_CNT);
 
 			// SCHEDULE
 			//	cnt should NOT contain idle thread
@@ -230,7 +230,7 @@ public static int ts0, ts1, ts2, ts3, ts4;
 			// set next int time to now+(min(diff)) (j, k)
 			tim = j+k;
 
-// RtThread.ts3 = Native.rd(Native.IO_US_CNT);
+// RtThread.ts3 = Native.rd(Const.IO_US_CNT);
 			// restore stack
 			s1 = ref[i].sp;
 			Native.setVP(s1+2);		// +2 for shure ???
@@ -247,7 +247,7 @@ public static int ts0, ts1, ts2, ts3, ts4;
 			// don't know why I have to store it in a local.
 			Native.ext2intMem(ref[active].stack, 128, i-127);		// cnt is i-128+1
 
-// RtThread.ts4 = Native.rd(Native.IO_US_CNT);
+// RtThread.ts4 = Native.rd(Const.IO_US_CNT);
 
 			j = Native.rd(Const.IO_US_CNT);
 			// check if next timer value is too early (or allready missed)
@@ -433,6 +433,7 @@ public static int ts0, ts1, ts2, ts3, ts4;
 			now = Native.rd(Const.IO_US_CNT);
 			if (nxt-now < 0) {					// missed time!
 				next[nr] = now;					// correct next
+//				next[nr] = nxt;					// without correction!
 				return false;
 			} else {
 				next[nr] = nxt;

@@ -8,7 +8,7 @@ public class Periodic {
 
 	public static void main(String[] args) {
 
-		Dbg.initSer();				// use serial line for debug output
+		Dbg.initSerWait();				// use serial line for debug output
 
 		RtThread rt = new RtThread(10, 100000) {
 			public void run() {
@@ -50,7 +50,7 @@ Dbg.wr('*');
 Dbg.wr('M');
 // RtThread.debug();
 			Timer.wd();
-			try { RtThread.sleepMs(1200); } catch (Exception e) {}
+			RtThread.sleepMs(1200);
 		}
 	}
 

@@ -60,7 +60,7 @@ public class PrintStream {
 	}
 
 	public void println() {
-		wr('\n');
+		wr("\r\n");
 	}
 
 	public void println(String s) {

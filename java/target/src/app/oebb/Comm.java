@@ -33,7 +33,7 @@ public class Comm extends RtThread {
 	// local slip pc
 	// public static final int DST_IP = (192<<24) + (168<<16) + (1<<8) + 1;
 	// local Windoz pc
-	public static final int DST_IP = (192<<24) + (168<<16) + (0<<8) + 5;
+	// public static final int DST_IP = (192<<24) + (168<<16) + (0<<8) + 5;
 	// linux pc (chello)
 	// public static final int DST_IP = (80<<24) + (110<<16) + (200<<8) + 231;
 
@@ -78,9 +78,9 @@ private static boolean scheduleReset;
 	private static class MsgOut {
 
 		final static int MAX_OUTSTANDING = 4;
-		final static int MAX_DATA = 4;		// maximum length of data
-		final static int TIMEOUT = 5000000;	// 5 seconds
-//		final static int TIMEOUT = 10000000;	// 10 seconds
+		final static int MAX_DATA = 5;		// maximum length of data
+//		final static int TIMEOUT = 5000000;	// 5 seconds
+		final static int TIMEOUT = 10000000;	// 10 seconds
 		final static int RETRY = 3;			// maximum send count
 
 		int cmd;		// waiting for repley on this command
@@ -144,6 +144,16 @@ Dbg.wr("no free MsgOut\n");
 					m.cmd = 0;
 				}
 			}
+		}
+		
+		static void setAllFreeErr() {
+			synchronized (monitor) {
+				for (int i=0; i<MAX_OUTSTANDING; ++i) {
+					MsgOut m = list[i];
+					m.cnt = 0;
+					m.cmd = 0;
+				}
+			}
 			// force a reconnect in Ppp-Modem
 			ipLink.reconnect();
 			Status.connOk = false;
@@ -159,7 +169,7 @@ Dbg.wr("no free MsgOut\n");
 Dbg.wr("give up ");
 Dbg.intVal(cmd);
 Dbg.lf();
-				setAllFree();				// give up!
+				setAllFreeErr();				// give up!
 				return false;
 			}
 
@@ -292,7 +302,7 @@ Dbg.lf();
 		scheduleReset = false;
 
 		ipLink = ipl;
-		dst_ip = DST_IP;					// as default
+		dst_ip = 0;						// as default
 
 		MsgOut.init();
 
@@ -432,6 +442,31 @@ Dbg.wr('#');
 			m.data[0] = strnr;
 			m.data[1] = melnr;
 			m.data[2] = alarmType;
+			m.len = 3;
+			m.send();
+		}
+	}
+	public static void gpsStatus(int gpsInfo, int lat, int lon) {
+
+		MsgOut m = MsgOut.getFree(Cmd.GPS_INFO);
+		if (m!=null) {
+			m.data[0] = Status.strNr;
+			m.data[1] = Status.melNr;
+			m.data[2] = gpsInfo;
+			m.data[3] = lat;
+			m.data[4] = lon;
+			m.len = 5;
+			m.send();
+		}
+	}
+
+	public static void charlyStatus(int cmd, int val) {
+
+		MsgOut m = MsgOut.getFree(cmd);
+		if (m!=null) {
+			m.data[0] = Status.strNr;
+			m.data[1] = Status.melNr;
+			m.data[2] = val;
 			m.len = 3;
 			m.send();
 		}
@@ -595,7 +630,7 @@ Dbg.lf();
 		if (!MsgOut.inList(p)) return;
 
 		int nr = p.buf[Udp.DATA];
-Dbg.wr("reply ");
+Dbg.wr("got reply ");
 Dbg.intVal(nr);
 Dbg.lf();
 		if (nr==Cmd.PING_RPL) {
@@ -682,6 +717,10 @@ stat[4]++;
 stat[0]++;
 stat[1] += np.len;
 		Udp.build(np, dst_ip, BG_REPLY);
+Dbg.wr("send reply ");
+Dbg.intVal(np.buf[OFF_CMD]);
+Dbg.lf();
+
 
 p.setStatus(Packet.FREE);		// mark packet free
 // we could reuse p now with changed Udp.java
@@ -709,6 +748,10 @@ p.setStatus(Packet.FREE);		// mark packet free
 stat[0]++;
 stat[1] += np.len;
 		Udp.build(np, dst_ip, BG_REPLY);
+Dbg.wr("send reply ");
+Dbg.intVal(np.buf[OFF_CMD]);
+Dbg.lf();
+
 p.setStatus(Packet.FREE);		// mark packet free
 // we could reuse p now with changed Udp.java
 	}
@@ -723,12 +766,13 @@ p.setStatus(Packet.FREE);		// mark packet free
 			return;
 		}
 
-		np.len = (OFF_DATA+2)<<2;
+		np.len = (OFF_DATA+3)<<2;
 		np.buf[OFF_CMD] = Cmd.DGPS_RPL;		// reply
 		np.buf[OFF_ID] = p.buf[OFF_ID];		// copy id
 		np.buf[OFF_BGID] = bgid;			// bg263 serial number
 		np.buf[OFF_DATA] = Gps.last_lat;
 		np.buf[OFF_DATA+1] = Gps.last_lon;
+		np.buf[OFF_DATA+2] = Status.melNr;
 stat[0]++;
 stat[1] += np.len;
 		Udp.build(np, dst_ip, BG_REPLY);
@@ -753,6 +797,9 @@ p.setStatus(Packet.FREE);		// mark packet free
 stat[0]++;
 stat[1] += np.len;
 		Udp.build(np, dst_ip, BG_REPLY);
+Dbg.wr("send reply ");
+Dbg.intVal(np.buf[OFF_CMD]);
+Dbg.lf();
 p.setStatus(Packet.FREE);		// mark packet free
 // we could reuse p now with changed Udp.java
 	}
@@ -777,6 +824,9 @@ p.setStatus(Packet.FREE);		// mark packet free
 stat[0]++;
 stat[1] += np.len;
 		Udp.build(np, dst_ip, BG_REPLY);
+Dbg.wr("send reply ");
+Dbg.intVal(np.buf[OFF_CMD]);
+Dbg.lf();
 p.setStatus(Packet.FREE);		// mark packet free
 // we could reuse p now with changed Udp.java
 	}
@@ -798,6 +848,9 @@ stat[0]++;
 stat[1] += np.len;
 		Udp.build(np, dst_ip, BG_REPLY);
 
+Dbg.wr("send reply ");
+Dbg.intVal(np.buf[OFF_CMD]);
+Dbg.lf();
 		Status.anmOk = true;
 p.setStatus(Packet.FREE);		// mark packet free
 // we could reuse p now with changed Udp.java

@@ -37,6 +37,7 @@ package ejip;
 */
 
 import util.*;
+import joprt.*;
 
 /**
 *	Ppp driver.
@@ -48,10 +49,6 @@ public class Ppp extends LinkLayer {
 /**
 *	period for thread in us.
 */
-	private static final int PRIORITY = 9;
-	private static final int PERIOD = 10000;
-	private static final int PERMS = PERIOD/1000;
-
 
 	private static final int IP = 0x0021;			// Internet Protocol packet
 	private static final int IPCP = 0x8021;			// Internet Protocol Configuration Protocol packet
@@ -65,8 +62,8 @@ public class Ppp extends LinkLayer {
 	private static final int REJ = 4;				// Reject options list
 	private static final int TERM = 5;				// Termination
 
-	private static final int NEG_SEND= 3000/PERMS;	// Period of send negotiation
-	private static final int IP_SEND= 10000/PERMS;	// Send timout for ip for reconnect
+	private static final int NEG_SEND= 3000;		// Period of send negotiation (in ms)
+	private static final int IP_SEND= 10000;		// Send timout for ip for reconnect (in ms)
 
 /**
 *	receive buffer
@@ -137,18 +134,18 @@ public class Ppp extends LinkLayer {
 	private static Ppp single;
 
 	private static Serial ser;
+	private static RtThread rth;
 
 /**
 *	private constructor. The singleton object is created in init().
 */
 	private Ppp() {
-		super(PRIORITY, PERIOD);
 	}
 
 /**
 *	allocate buffer, start serial buffer and slip Thread.
 */
-	public static LinkLayer init(int serAddr) {
+	public static LinkLayer init(Serial serPort, RtThread pppThread) {
 
 		if (single != null) return single;		// allready called init()
 
@@ -169,9 +166,11 @@ public class Ppp extends LinkLayer {
 
 		initStr();
 
-		ser = new Serial(serAddr, 10, 3000);
+		ser = serPort;
+		// new Serial(serAddr, 10, 3000);
 
 		single = new Ppp();
+		rth = pppThread;
 
 		return single;
 	}
@@ -189,6 +188,7 @@ public class Ppp extends LinkLayer {
 	public void startConnection(StringBuffer dialstr, StringBuffer connect, StringBuffer user, StringBuffer passwd) {
 
 		int i, j;
+// System.out.println("start Conn");
 
 		// TODO correct dial string in Strecken data
 		// copyStr(dialstr, dial);
@@ -203,18 +203,24 @@ public class Ppp extends LinkLayer {
 		copyStr(passwd, pwd);
 
 		reconnectRequest = true;
+		connCount = 0;
+		ip = 0;
 	}
 
 	/**
 	*	Forces the connection to be new established.
 	*/
 	public void reconnect() {
+// System.out.println("reconnect");
 		reconnectRequest = true;
+		connCount = 0;
+		ip = 0;
 	}
 /**
-*	main loop.
+*	main loop. However this loop NEVER returns!
+*	TODO: change to a loop based version to use PPP without threads.
 */
-	public void run() {
+	public void loop() {
 
 		connect();
 	}
@@ -295,15 +301,15 @@ public class Ppp extends LinkLayer {
 	}
 
 	/**
-	*	wait seconds
+	*	wait seconds and drop IP packets
 	*/
 	void waitSec(int t) {
 
-		// t *= 1000/PERMS;
+		int timer = Timer.getTimeoutMs(1000);
 
 		for (int i=0; i<t; ++i) {
-			for (int j=0; j<100; ++j) {
-				waitForNextPeriod();
+			while (!Timer.timeout(timer)) {
+				rth.waitForNextPeriod();
 			}
 			dropIp();
 		}
@@ -348,17 +354,17 @@ Dbg.wr('\n');
 	*/
 	boolean sendWait(StringBuffer snd, String rcv, int timeout) {
 
-		timeout *= 1000/PERMS;
+		timeout *= 1000;
+
 
 		//
 		//	send string
 		//
-		int timer = timeout;				// use same timeout for send
+		int timer = Timer.getTimeoutMs(timeout);	// use same timeout for send
 		while (!wrString(snd)) {
-			waitForNextPeriod();			// wait till send buffer is free
+			rth.waitForNextPeriod();			// wait till send buffer is free
 			dropIp();
-			--timer;
-			if (timer == 0) return false;	// timeout on send means problem with handshake lines
+			if (Timer.timeout(timer)) return false;	// timeout on send means problem with handshake lines
 		}
 
 		if (rcv==null) return true;			// no wait string, we're done
@@ -368,9 +374,9 @@ Dbg.wr('\n');
 		//
 		//	now wait on response string
 		//
-		for (timer = timeout; timer>0; --timer) {
+		for (timer = Timer.getTimeoutMs(timeout); !Timer.timeout(timer); ) {
 
-			waitForNextPeriod();
+			rth.waitForNextPeriod();
 			dropIp();
 
 			for (int i = ser.rxCnt(); i>0; --i) {
@@ -395,13 +401,20 @@ Dbg.wr('\n');
 		return false;							// timeout expired
 	}
 
+	private static int globTimer;					// negotion send and ip-restart timer
+	private static boolean lcpAck;
+	private static boolean ipcpAck;
+
 	/**
 	*	do the modem stuff till CONNECT
 	*/
 
 	void modemInit() {
 
-		for (connCount=1;;++connCount) {
+		++connCount;
+		for (;;++connCount) {
+// System.out.print("Modem init ");
+// System.out.println(connCount);
 
 			if (sendWait(ath, ok, 3)) {
 				if (sendWait(flow, ok, 3)) {
@@ -421,7 +434,7 @@ Dbg.wr('\n');
 		}
 
 		state = MODEM_OK;
-		timer = 0;
+		globTimer = Timer.getTimeoutMs(NEG_SEND);
 		lcpAck = false;
 		ipcpAck = false;
 	}
@@ -431,6 +444,8 @@ Dbg.wr('\n');
 	*/
 	void modemHangUp() {
 
+// System.out.print("Modem hangup ");
+// System.out.println(connCount);
 		ip = 0;								// stop sending ip data
 		reconnectRequest = false;
 		state = INIT;
@@ -458,28 +473,27 @@ Dbg.wr('\n');
 	private static final int IPCP_OK = 8;
 	private static final int CONNECTED = 9;
 
-	private static int timer;							// negotion send and ip-restart timer
-	private static boolean lcpAck;
-	private static boolean ipcpAck;
-
 	/**
 	*	establish a connetcion.
 	*/
 	void connect() {
 
-		timer = 0;
 		state = INIT;
 		rejCnt = 0;
 		lcpAck = false;
-		boolean ipcpAck = false;
+		ipcpAck = false;
 
+		//
+		//	wait for startConnection(...)
+		//
+		while (!reconnectRequest) {
+			rth.waitForNextPeriod();
+		}
+		reconnectRequest = false;
+			
 		//
 		//	start the modem
 		//
-		while (!reconnectRequest) {
-			waitForNextPeriod();
-		}
-			
 		modemInit();
 
 		//
@@ -487,13 +501,14 @@ Dbg.wr('\n');
 		//
 
 		for (;;) {
-			waitForNextPeriod();
+			rth.waitForNextPeriod();
 			pppLoop();
 
 			if (state==MODEM_OK) {
 			}
 
 			if (rejCnt > MAX_REJ) {
+// System.out.print("1");
 				modemHangUp();		// start over
 				modemInit();
 			}
@@ -516,6 +531,7 @@ dbgCon();
 					} else if (code==ACK && rbuf[5]==lcpId) {
 						state = LCP_OK;
 					} else if (code==TERM) {
+// System.out.print("2");
 						modemHangUp();		// start over
 						modemInit();
 					}
@@ -566,13 +582,14 @@ Dbg.wr('\n');
 	void doSend() {
 
 		if (reconnectRequest) {
+// System.out.print("3");
 			modemHangUp();		// start over
 			modemInit();
 		}
 
 		if (state==CONNECTED) {			// send waiting ip packets
 			if (scnt==0) {				// transmit buffer is free
-				timer = 0;
+				globTimer = Timer.getTimeoutMs(IP_SEND);	// use IP timeout
 				//
 				// get a ready to send packet with source from this driver.
 				//
@@ -580,22 +597,21 @@ Dbg.wr('\n');
 				if (p!=null) {
 					sendIp(p);			// send one packet
 				}
-			} else {					// increment sendTimer;
-				timer++;
-				if (timer>IP_SEND) {
+			} else {					// check sendTimer;
+				if (Timer.timeout(globTimer)) {
+// System.out.print("4");
 					modemHangUp();		// start over
 					modemInit();
 				}
 			}
 		} else {						// do the negotiation stuff
 			dropIp();
-			++timer;
-			if (timer>NEG_SEND) {
+			if (Timer.timeout(globTimer)) {
 /*
 Dbg.intVal(state);
 if (lcpAck) Dbg.wr('t'); else Dbg.wr('f');
 */
-				if (scnt==0) {			// once every two seconds send a REQ
+				if (scnt==0) {			// once every three seconds send a REQ
 					if (state == MODEM_OK) {
 						makeLCP();
 						state = LCP_SENT;
@@ -608,7 +624,7 @@ if (lcpAck) Dbg.wr('t'); else Dbg.wr('f');
 						state = IPCP_SENT;
 						++rejCnt;		// incremenet counter to start over when no respond
 					}
-					timer = 0;
+					globTimer = Timer.getTimeoutMs(NEG_SEND);	// use negotiation timeout
 				}
 			}
 		}
@@ -630,7 +646,7 @@ if (state!=CONNECTED) {
 Dbg.wr('>');
 for (int i=0; i<cnt; ++i) {
 	Dbg.byteVal(rbuf[i]);
-	if ((i&0x0f) ==0) waitForNextPeriod();
+	if ((i&0x0f) ==0) rth.waitForNextPeriod();
 }
 Dbg.wr('\n');
 }
@@ -1147,7 +1163,7 @@ if (state!=CONNECTED) {
 Dbg.wr('<');
 for (i=0; i<scnt; ++i) {
 	Dbg.byteVal(sbuf[i]);
-	if ((i&0x0f) ==0) waitForNextPeriod();
+	if ((i&0x0f) ==0) rth.waitForNextPeriod();
 }
 Dbg.wr('\n');
 }

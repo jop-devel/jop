@@ -8,8 +8,8 @@ DEVICE xc3s200
 DEVICETIME 0
 DEVPKG ft256
 DEVPKGTIME 0
-DEVSPEED -4
-DEVSPEEDTIME 0
+DEVSPEED -5
+DEVSPEEDTIME 1097243223
 DEVTOPLEVELMODULETYPE HDL
 TOPLEVELMODULETYPETIME 0
 DEVSYNTHESISTOOL XST (VHDL/Verilog)
@@ -38,8 +38,3 @@ SOURCE ..\..\vhdl\core\xram.vhd
 SOURCE ..\..\vhdl\xram_block.vhd
 SOURCE ..\..\vhdl\top\jop_xs3.vhd
 DEPASSOC jop jop.ucf
-[Normal]
-xilxBitgStart_Clk=xstvhd, spartan3, VHDL.t_bitFile, 1096632758, JTAG Clock
-[STATUS-ALL]
-[STRATEGY-LIST]
-Normal=True
