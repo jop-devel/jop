@@ -149,6 +149,7 @@ return;
 
 /*
 	only in 1.4 (not 1.3)!
+*/
   public synchronized StringBuffer append(StringBuffer stringBuffer)
   {
     if (stringBuffer == null)
@@ -162,7 +163,6 @@ return;
 //      }
     return this;
   }
-*/
 
   public StringBuffer append(char[] data)
   {

@@ -37,24 +37,19 @@ package ejip;
 */
 
 
-import joprt.*;
-import util.*;
 
 /**
 *	LinkLayer driver.
 */
 
-public abstract class LinkLayer extends RtThread {
+public abstract class LinkLayer {
 
-/**
-*	
-*/
-	protected LinkLayer(int priority, int period) {
-		super(priority, period);
-	}
 
 	public abstract int getIpAddress();
 	public abstract void startConnection(StringBuffer dialstr,
 			StringBuffer connect, StringBuffer user, StringBuffer passwd);
 	public abstract void reconnect();
+	public abstract int getConnCount();
+
+	public abstract void loop();
 }

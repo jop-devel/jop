@@ -1,6 +1,7 @@
 package test;
 
 import com.jopdesign.sys.Native;
+import com.jopdesign.sys.Const;
 //
 //	Clock.java
 //
@@ -9,9 +10,9 @@ public class Clock {
 
 	public static void main( String s[] ) {
 
-		Native.wr(0, Native.IO_WD);		// make WD happy
-		Native.wr(1, Native.IO_WD);
-		Native.wr(0, Native.IO_WD);
+		Native.wr(0, Const.IO_WD);		// make WD happy
+		Native.wr(1, Const.IO_WD);
+		Native.wr(0, Const.IO_WD);
 		time();
 	}
 
@@ -47,11 +48,11 @@ public class Clock {
 				print_02d(s);
 				print_char('\r');
 
-				Native.wr(s & 1, Native.IO_WD);
+				Native.wr(s & 1, Const.IO_WD);
 			}
 
-			Native.wr(~s & 1, Native.IO_WD);
-			Native.wr(s & 1, Native.IO_WD);
+			Native.wr(~s & 1, Const.IO_WD);
+			Native.wr(s & 1, Const.IO_WD);
 
 			next = waitForNextInterval(next);
 		}
@@ -62,12 +63,12 @@ public class Clock {
 		final int INTERVAL = 1000;		// one ms
 
 		if (next==0) {
-			next = Native.rd(Native.IO_US_CNT)+INTERVAL;
+			next = Native.rd(Const.IO_US_CNT)+INTERVAL;
 		} else {
 			next += INTERVAL;
 		}
 
-		while (next-Native.rd(Native.IO_US_CNT) >= 0)
+		while (next-Native.rd(Const.IO_US_CNT) >= 0)
 				;
 
 		return next;
@@ -139,13 +140,13 @@ public class Clock {
 
 	static void wait_serial() {
 
-		while ((Native.rd(Native.IO_STATUS)&1)==0) ;
+		while ((Native.rd(Const.IO_STATUS)&1)==0) ;
 	}
 
 	static void print_char(int i) {
 
 		wait_serial();
-		Native.wr(i, Native.IO_UART);
+		Native.wr(i, Const.IO_UART);
 	}
 
 }

@@ -32,9 +32,11 @@ package ejip;
 *		2002-06-28	first working version
 *		2002-10-xx	some optimations, use Packet buffer (in 32 bit)
 *		2002-11-11	runs it its own thread (as LinkLayer)
+*		2004-08-19	longer time for read/write (nior/w low) for 100 MHz JOP
 */
 
 import com.jopdesign.sys.*;
+
 import util.*;
 
 /**
@@ -385,17 +387,11 @@ public class CS8900 extends LinkLayer {
 public static CS8900 single;
 public static int[] llh;		// for OEBB test
 
-/**
-*	period for thread in us.
-*/
-	private static final int PRIORITY = 5;
-	private static final int PERIOD = 10000;
 
 /**
 *	private constructor. The singleton object is created in init().
 */
 	private CS8900() {
-		super(PRIORITY, PERIOD);
 	}
 
 	public int getIpAddress() {
@@ -416,27 +412,21 @@ public static int[] llh;		// for OEBB test
 	}
 
 /**
-*	the polling thread loop.
+*	the polling loop.
 */
-	public void run() {
+
+	public void loop() {
 
 		Packet p;
 
-		reset();
-		waitForNextPeriod();
-
-		for (;;) {
-			waitForNextPeriod();
-
-			poll();
-			if (txFree) {
-				//
-				// get a ready to send packet with source from this driver.
-				//
-				p = Packet.getPacket(single, Packet.SND, Packet.ALLOC);
-				if (p!=null) {
-					send(p);				// send one packet
-				}
+		poll();
+		if (txFree) {
+			//
+			// get a ready to send packet with source from this driver.
+			//
+			p = Packet.getPacket(single, Packet.SND, Packet.ALLOC);
+			if (p!=null) {
+				send(p);				// send one packet
 			}
 		}
 	}
@@ -470,6 +460,8 @@ llh = new int[ETH_HLEN/2];
 
 		single = new CS8900();
 
+		single.reset();
+		
 		return single;
 	}
 
@@ -498,10 +490,13 @@ llh = new int[ETH_HLEN/2];
 	// private void resetIsa() {
 	void resetIsa() {
 
-		Native.wr(ISA_RESET, Native.IO_CTRL);				// isa bus reset
-		waitForNextPeriod();
-		Native.wr(0, Native.IO_CTRL);						// disable reset
-		waitForNextPeriod();
+		int i;
+		for (i=0; i<10; ++i) {
+			Native.wr(ISA_RESET, Const.IO_CTRL);				// isa bus reset
+		}
+		for (i=0; i<10; ++i) {
+			Native.wr(0, Const.IO_CTRL);						// disable reset
+		}
 	}
 
 /**
@@ -509,15 +504,17 @@ llh = new int[ETH_HLEN/2];
 */
 	private static int readWord(int port) {
 
-		Native.wr(port, Native.IO_CTRL);				// port
-		Native.wr(port | ISA_RD, Native.IO_CTRL);		// nior low
-		int ret = Native.rd(Native.IO_DATA);			// read data
-		Native.wr(port, Native.IO_CTRL);				// nior high again
+		Native.wr(port, Const.IO_CTRL);				// port
+		Native.wr(port | ISA_RD, Const.IO_CTRL);		// nior low
+Native.wr(port | ISA_RD, Const.IO_CTRL);		// nior low
+		int ret = Native.rd(Const.IO_DATA);			// read data
+		Native.wr(port, Const.IO_CTRL);				// nior high again
 		++port;
-		Native.wr(port, Native.IO_CTRL);				// port
-		Native.wr(port | ISA_RD, Native.IO_CTRL);		// nior low
-		ret += Native.rd(Native.IO_DATA)<<8;			// read data
-		Native.wr(port, Native.IO_CTRL);				// nior high again
+		Native.wr(port, Const.IO_CTRL);				// port
+		Native.wr(port | ISA_RD, Const.IO_CTRL);		// nior low
+Native.wr(port | ISA_RD, Const.IO_CTRL);		// nior low
+		ret += Native.rd(Const.IO_DATA)<<8;			// read data
+		Native.wr(port, Const.IO_CTRL);				// nior high again
 
 		return ret;
 	}
@@ -528,15 +525,17 @@ llh = new int[ETH_HLEN/2];
 	private static int readWordHighFirst(int port) {
 
 		++port;
-		Native.wr(port, Native.IO_CTRL);				// addr
-		Native.wr(port | ISA_RD, Native.IO_CTRL);		// nior low
-		int ret = Native.rd(Native.IO_DATA)<<8;		// read data
-		Native.wr(port, Native.IO_CTRL);				// nior high again
+		Native.wr(port, Const.IO_CTRL);				// addr
+		Native.wr(port | ISA_RD, Const.IO_CTRL);		// nior low
+Native.wr(port | ISA_RD, Const.IO_CTRL);		// nior low
+		int ret = Native.rd(Const.IO_DATA)<<8;		// read data
+		Native.wr(port, Const.IO_CTRL);				// nior high again
 		--port;
-		Native.wr(port, Native.IO_CTRL);				// addr
-		Native.wr(port | ISA_RD, Native.IO_CTRL);		// nior low
-		ret += Native.rd(Native.IO_DATA)&0xff;			// read data
-		Native.wr(port, Native.IO_CTRL);				// nior high again
+		Native.wr(port, Const.IO_CTRL);				// addr
+		Native.wr(port | ISA_RD, Const.IO_CTRL);		// nior low
+Native.wr(port | ISA_RD, Const.IO_CTRL);		// nior low
+		ret += Native.rd(Const.IO_DATA)&0xff;			// read data
+		Native.wr(port, Const.IO_CTRL);				// nior high again
 
 		return ret;
 	}
@@ -547,16 +546,18 @@ llh = new int[ETH_HLEN/2];
 */
 	private static void writeWord(int port, int value) {
 
-		Native.wr(value, Native.IO_DATA);					// value in buffer
-		Native.wr(port | ISA_DIR, Native.IO_CTRL);			// port and drive value out
-		Native.wr(port | ISA_WR | ISA_DIR, Native.IO_CTRL);	// niow low
-		Native.wr(port | ISA_DIR, Native.IO_CTRL);			// niow high again
+		Native.wr(value, Const.IO_DATA);					// value in buffer
+		Native.wr(port | ISA_DIR, Const.IO_CTRL);			// port and drive value out
+		Native.wr(port | ISA_WR | ISA_DIR, Const.IO_CTRL);	// niow low
+Native.wr(port | ISA_WR | ISA_DIR, Const.IO_CTRL);	// niow low
+		Native.wr(port | ISA_DIR, Const.IO_CTRL);			// niow high again
 		++port;
-		Native.wr(value>>8, Native.IO_DATA);				// value in buffer
-		Native.wr(port | ISA_DIR, Native.IO_CTRL);			// port and drive value out
-		Native.wr(port | ISA_WR | ISA_DIR, Native.IO_CTRL);	// niow low
-		Native.wr(port | ISA_DIR, Native.IO_CTRL);			// niow high again
-		Native.wr(port, Native.IO_CTRL);					// disable dout
+		Native.wr(value>>8, Const.IO_DATA);				// value in buffer
+		Native.wr(port | ISA_DIR, Const.IO_CTRL);			// port and drive value out
+		Native.wr(port | ISA_WR | ISA_DIR, Const.IO_CTRL);	// niow low
+Native.wr(port | ISA_WR | ISA_DIR, Const.IO_CTRL);	// niow low
+		Native.wr(port | ISA_DIR, Const.IO_CTRL);			// niow high again
+		Native.wr(port, Const.IO_CTRL);					// disable dout
 	}
 
 
@@ -582,16 +583,18 @@ llh = new int[ETH_HLEN/2];
 		for (i=0; i<ETH_HLEN/2; ++i) {
 
 			val = p.llh[i];
-			Native.wr(val>>>8, Native.IO_DATA);							// value in buffer
-			Native.wr(TX_FRAME_PORT | ISA_DIR, Native.IO_CTRL);			// port and drive value out
-			Native.wr(TX_FRAME_PORT | ISA_WR | ISA_DIR, Native.IO_CTRL);	// niow low
-			Native.wr(TX_FRAME_PORT | ISA_DIR, Native.IO_CTRL);			// niow high again
-			Native.wr(val, Native.IO_DATA);								// value in buffer
-			Native.wr(TX_FRAME_PORT+1 | ISA_DIR, Native.IO_CTRL);			// port and drive value out
-			Native.wr(TX_FRAME_PORT+1 | ISA_WR | ISA_DIR, Native.IO_CTRL);	// niow low
-			Native.wr(TX_FRAME_PORT+1 | ISA_DIR, Native.IO_CTRL);			// niow high again
+			Native.wr(val>>>8, Const.IO_DATA);							// value in buffer
+			Native.wr(TX_FRAME_PORT | ISA_DIR, Const.IO_CTRL);			// port and drive value out
+			Native.wr(TX_FRAME_PORT | ISA_WR | ISA_DIR, Const.IO_CTRL);	// niow low
+Native.wr(TX_FRAME_PORT | ISA_WR | ISA_DIR, Const.IO_CTRL);	// niow low
+			Native.wr(TX_FRAME_PORT | ISA_DIR, Const.IO_CTRL);			// niow high again
+			Native.wr(val, Const.IO_DATA);								// value in buffer
+			Native.wr(TX_FRAME_PORT+1 | ISA_DIR, Const.IO_CTRL);			// port and drive value out
+			Native.wr(TX_FRAME_PORT+1 | ISA_WR | ISA_DIR, Const.IO_CTRL);	// niow low
+Native.wr(TX_FRAME_PORT+1 | ISA_WR | ISA_DIR, Const.IO_CTRL);	// niow low
+			Native.wr(TX_FRAME_PORT+1 | ISA_DIR, Const.IO_CTRL);			// niow high again
 		}
-		Native.wr(TX_FRAME_PORT+1, Native.IO_CTRL);						// disable dout
+		Native.wr(TX_FRAME_PORT+1, Const.IO_CTRL);						// disable dout
 	}
 /**
 *	write tx data.
@@ -613,16 +616,18 @@ llh = new int[ETH_HLEN/2];
 				val = buf[(i>>2)];
 			}
 
-			Native.wr(val>>>24, Native.IO_DATA);							// value in buffer
-			Native.wr(TX_FRAME_PORT | ISA_DIR, Native.IO_CTRL);			// port and drive value out
-			Native.wr(TX_FRAME_PORT | ISA_WR | ISA_DIR, Native.IO_CTRL);	// niow low
-			Native.wr(TX_FRAME_PORT | ISA_DIR, Native.IO_CTRL);			// niow high again
-			Native.wr(val>>>16, Native.IO_DATA);							// value in buffer
-			Native.wr(TX_FRAME_PORT+1 | ISA_DIR, Native.IO_CTRL);			// port and drive value out
-			Native.wr(TX_FRAME_PORT+1 | ISA_WR | ISA_DIR, Native.IO_CTRL);	// niow low
-			Native.wr(TX_FRAME_PORT+1 | ISA_DIR, Native.IO_CTRL);			// niow high again
+			Native.wr(val>>>24, Const.IO_DATA);							// value in buffer
+			Native.wr(TX_FRAME_PORT | ISA_DIR, Const.IO_CTRL);			// port and drive value out
+			Native.wr(TX_FRAME_PORT | ISA_WR | ISA_DIR, Const.IO_CTRL);	// niow low
+Native.wr(TX_FRAME_PORT | ISA_WR | ISA_DIR, Const.IO_CTRL);	// niow low
+			Native.wr(TX_FRAME_PORT | ISA_DIR, Const.IO_CTRL);			// niow high again
+			Native.wr(val>>>16, Const.IO_DATA);							// value in buffer
+			Native.wr(TX_FRAME_PORT+1 | ISA_DIR, Const.IO_CTRL);			// port and drive value out
+			Native.wr(TX_FRAME_PORT+1 | ISA_WR | ISA_DIR, Const.IO_CTRL);	// niow low
+Native.wr(TX_FRAME_PORT+1 | ISA_WR | ISA_DIR, Const.IO_CTRL);	// niow low
+			Native.wr(TX_FRAME_PORT+1 | ISA_DIR, Const.IO_CTRL);			// niow high again
 		}
-		Native.wr(TX_FRAME_PORT+1, Native.IO_CTRL);						// disable dout
+		Native.wr(TX_FRAME_PORT+1, Const.IO_CTRL);						// disable dout
 	}
 
 /**
@@ -636,14 +641,16 @@ llh = new int[ETH_HLEN/2];
 		for (i=0; i<ETH_HLEN/2; ++i) {
 
 			// be careful: intel byte order!
-			Native.wr(RX_FRAME_PORT, Native.IO_CTRL);				// port
-			Native.wr(RX_FRAME_PORT | ISA_RD, Native.IO_CTRL);		// nior low
-			val = Native.rd(Native.IO_DATA)<<8;					// read data (second byte)
-			Native.wr(RX_FRAME_PORT, Native.IO_CTRL);				// nior high again
-			Native.wr(RX_FRAME_PORT+1, Native.IO_CTRL);			// port
-			Native.wr(RX_FRAME_PORT+1 | ISA_RD, Native.IO_CTRL);	// nior low
-			buf[i] = val + Native.rd(Native.IO_DATA);				// read data (first byte)
-			Native.wr(RX_FRAME_PORT+1, Native.IO_CTRL);			// nior high again
+			Native.wr(RX_FRAME_PORT, Const.IO_CTRL);				// port
+			Native.wr(RX_FRAME_PORT | ISA_RD, Const.IO_CTRL);		// nior low
+Native.wr(RX_FRAME_PORT | ISA_RD, Const.IO_CTRL);		// nior low
+			val = Native.rd(Const.IO_DATA)<<8;					// read data (second byte)
+			Native.wr(RX_FRAME_PORT, Const.IO_CTRL);				// nior high again
+			Native.wr(RX_FRAME_PORT+1, Const.IO_CTRL);			// port
+			Native.wr(RX_FRAME_PORT+1 | ISA_RD, Const.IO_CTRL);	// nior low
+Native.wr(RX_FRAME_PORT+1 | ISA_RD, Const.IO_CTRL);	// nior low
+			buf[i] = val + Native.rd(Const.IO_DATA);				// read data (first byte)
+			Native.wr(RX_FRAME_PORT+1, Const.IO_CTRL);			// nior high again
 		}
 	}
 /**
@@ -660,14 +667,16 @@ llh = new int[ETH_HLEN/2];
 
 		for (i=0; i<length; i+=2) {
 
-			Native.wr(RX_FRAME_PORT, Native.IO_CTRL);				// port
-			Native.wr(RX_FRAME_PORT | ISA_RD, Native.IO_CTRL);		// nior low
-			val += Native.rd(Native.IO_DATA)<<8;					// read data
-			Native.wr(RX_FRAME_PORT, Native.IO_CTRL);				// nior high again
-			Native.wr(RX_FRAME_PORT+1, Native.IO_CTRL);			// port
-			Native.wr(RX_FRAME_PORT+1 | ISA_RD, Native.IO_CTRL);	// nior low
-			val += Native.rd(Native.IO_DATA);						// read data
-			Native.wr(RX_FRAME_PORT+1, Native.IO_CTRL);			// nior high again
+			Native.wr(RX_FRAME_PORT, Const.IO_CTRL);				// port
+			Native.wr(RX_FRAME_PORT | ISA_RD, Const.IO_CTRL);		// nior low
+Native.wr(RX_FRAME_PORT | ISA_RD, Const.IO_CTRL);		// nior low
+			val += Native.rd(Const.IO_DATA)<<8;					// read data
+			Native.wr(RX_FRAME_PORT, Const.IO_CTRL);				// nior high again
+			Native.wr(RX_FRAME_PORT+1, Const.IO_CTRL);			// port
+			Native.wr(RX_FRAME_PORT+1 | ISA_RD, Const.IO_CTRL);	// nior low
+Native.wr(RX_FRAME_PORT+1 | ISA_RD, Const.IO_CTRL);	// nior low
+			val += Native.rd(Const.IO_DATA);						// read data
+			Native.wr(RX_FRAME_PORT+1, Const.IO_CTRL);			// nior high again
 
 			if ((i & 2) != 0) {
 				buf[i>>2] = val;
@@ -678,6 +687,13 @@ llh = new int[ETH_HLEN/2];
 		}
 		if ((length & 2) != 0) {				// length is not a multiple of 4
 			buf[length>>2] = val;
+		}
+		i = p.len & 3;
+		// zero for simpler checksum calculation
+		if (i==1) {
+			buf[p.len>>2] &= 0xff000000;
+		} else if (i==3) {
+			buf[p.len>>2] &= 0xffffff00;
 		}
 	}
 
@@ -890,5 +906,12 @@ for (i=0; i<ETH_HLEN/2; ++i) {
 	
 		rx_packets++;
 		rx_bytes += length+14;
+	}
+
+	/* (non-Javadoc)
+	 * @see ejip.LinkLayer#getConnCount()
+	 */
+	public int getConnCount() {
+		return 0;
 	}
 }

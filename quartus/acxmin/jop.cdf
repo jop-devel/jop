@@ -4,7 +4,7 @@ JedecChain;
 	DefaultMfr(6E);
 
 	P ActionCode(Ign)
-		Device PartName(EPM7032AET44) MfrSpec(OpMask(0) FullPath("C:\usr\cpu\jop\mwrk\pld_init2.pof"));
+		Device PartName(EPM7032AET44) MfrSpec(OpMask(0) FullPath("C:\usr\cpu\jop\acxconf\pld_init2.pof"));
 	P ActionCode(Cfg)
 		Device PartName(EP1K50T144) Path("C:\usr\cpu\jop\acxmin\") File("jop.sof") MfrSpec(OpMask(1));
 

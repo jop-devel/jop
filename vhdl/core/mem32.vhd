@@ -167,6 +167,9 @@ begin
 		dout <= std_logic_vector(to_unsigned(0, width));
 		io_rd <= '0';
 
+--
+--	TODO: Do I need rd='1' in this MUX?
+--
 		if (rd='1') then
 			if (addr="010") then
 				dout <= mem_din;
@@ -350,7 +353,7 @@ begin
 --				fl_a <= (others => 'Z');
 				fl_d_ena <= '0';
 --
---	leave last ncs down, NAND needs somtimes coninous ncs.
+--	leave last ncs down, NAND needs somtimes continous ncs.
 --
 --				sel_flash <= '1';
 

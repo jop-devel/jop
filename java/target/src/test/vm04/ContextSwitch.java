@@ -1,7 +1,7 @@
 package vm04;
 import util.*;
 import joprt.*;
-import com.jopdesign.sys.Native;
+import com.jopdesign.sys.*;
 
 public class ContextSwitch {
 
@@ -22,7 +22,7 @@ public class ContextSwitch {
 			public void run() {
 
 				for (;;) {
-					ts = Native.rd(Native.IO_CNT);
+					ts = Native.rd(Const.IO_CNT);
 				}
 			}
 		};
@@ -38,7 +38,7 @@ public class ContextSwitch {
 
 				for (i=0; i<CNT; ++i) {
 					waitForNextPeriod();
-					result[i] = Native.rd(Native.IO_CNT)-ts;
+					result[i] = Native.rd(Const.IO_CNT)-ts;
 				}
 			
 				result();
@@ -66,8 +66,8 @@ public class ContextSwitch {
 		};
 
 		// measure time for measurement
-		ts = Native.rd(Native.IO_CNT);
-		ts = Native.rd(Native.IO_CNT)-ts;
+		ts = Native.rd(Const.IO_CNT);
+		ts = Native.rd(Const.IO_CNT)-ts;
 		t_diff = ts;
 
 		RtThread.startMission();

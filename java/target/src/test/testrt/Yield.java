@@ -167,9 +167,9 @@ Timer.cnt();
 			}
 		}.start();
 
-		int t = Native.rd(Native.IO_CNT);
+		int t = Native.rd(Const.IO_CNT);
 		loop();
-		t = Native.rd(Native.IO_CNT)-t;
+		t = Native.rd(Const.IO_CNT)-t;
 
 		Dbg.intVal(t/20/(2*MAX));
 		Dbg.wr('u');

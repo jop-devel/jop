@@ -1,6 +1,6 @@
 package test;
 
-import com.jopdesign.sys.Native;
+import com.jopdesign.sys.*;
 //
 //	Clock.java
 //
@@ -9,9 +9,9 @@ public class Blinker {
 
 	public static void main( String s[] ) {
 
-		Native.wr(0, Native.IO_WD);		// make WD happy
-		Native.wr(1, Native.IO_WD);
-		Native.wr(0, Native.IO_WD);
+		Native.wr(0, Const.IO_WD);		// make WD happy
+		Native.wr(1, Const.IO_WD);
+		Native.wr(0, Const.IO_WD);
 		time();
 	}
 
@@ -41,11 +41,11 @@ public class Blinker {
 				}
 				if (h==24) h = 0;
 
-				Native.wr(s & 1, Native.IO_WD);
+				Native.wr(s & 1, Const.IO_WD);
 			}
 
-			Native.wr(~s & 1, Native.IO_WD);
-			Native.wr(s & 1, Native.IO_WD);
+			Native.wr(~s & 1, Const.IO_WD);
+			Native.wr(s & 1, Const.IO_WD);
 
 			next = waitForNextInterval(next);
 		}
@@ -56,12 +56,12 @@ public class Blinker {
 		final int INTERVAL = 20000;		// one ms
 
 		if (next==0) {
-			next = Native.rd(Native.IO_CNT)+INTERVAL;
+			next = Native.rd(Const.IO_CNT)+INTERVAL;
 		} else {
 			next += INTERVAL;
 		}
 
-		while (next-Native.rd(Native.IO_CNT) >= 0)
+		while (next-Native.rd(Const.IO_CNT) >= 0)
 				;
 
 		return next;

@@ -6,6 +6,7 @@ package util;
 //
 //
 
+import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 
 public class Mem {
@@ -19,7 +20,6 @@ public class Mem {
 		buf = new int[128];
 		addr = data = 0;
 		cmd = ' ';
-Timer.init(20000000, 5);
 
 		for (;;) {
 			if (cmd=='a' || cmd=='d') {
@@ -141,10 +141,10 @@ Timer.init(20000000, 5);
 		data = read_char();
 		amdProgram();
 
-		i = Native.rd(Native.IO_CNT)+20000;	// one ms timeout at 20MHz
+		i = Native.rd(Const.IO_US_CNT)+1000;	// one ms timeout
 		do {
 			j = Native.rdMem(addr+0x80000) & 0x0ff;
-		} while (j!=data && (i-Native.rd(Native.IO_CNT)>=0));
+		} while (j!=data && (i-Native.rd(Const.IO_US_CNT)>=0));
 		print_char(j);
 
 		if (j==data) addr++;
@@ -167,8 +167,8 @@ Timer.init(20000000, 5);
 	}
 
 	static void print_char(int i) {
-		while ((Native.rd(Native.IO_STATUS)&1)==0) ;
-		Native.wr(i, Native.IO_UART);
+		while ((Native.rd(Const.IO_STATUS)&1)==0) ;
+		Native.wr(i, Const.IO_UART);
 	}
 
 /**
@@ -176,7 +176,7 @@ Timer.init(20000000, 5);
 *		without usleep it does not work!
 */
 	static int read_char() {
-		while ((Native.rd(Native.IO_STATUS)&2)==0) Timer.usleep(1);
-		return Native.rd(Native.IO_UART);
+		while ((Native.rd(Const.IO_STATUS)&2)==0) Timer.usleep(1);
+		return Native.rd(Const.IO_UART);
 	}
 }

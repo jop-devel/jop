@@ -13,10 +13,10 @@ public class Status {
 
 	// values for state
 	static final int INIT = 0;
-	static final int IP_LINK = 1;
+//	static final int IP_LINK = 1;
 	static final int FDL_CONN = 2;
 	static final int ANM_OK = 3;
-	static final int COMM_ERR = 4;
+//	static final int COMM_ERR = 4;
 	static final int ANGABE = 5;
 	static final int ERLAUBNIS = 6;
 	static final int WIDERRUF = 7;

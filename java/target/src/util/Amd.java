@@ -1,5 +1,6 @@
 package util;
 
+import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 /**
 *	Flash programmer (for AMD Am29LV040).
@@ -28,19 +29,24 @@ public class Amd {
 
 		addr += 0x80000;
 
+		Native.wr(0, Const.IO_INT_ENA);
+		
 		Native.wrMem(0xaa, 0x80555);
 		Native.wrMem(0x55, 0x802aa);
 		Native.wrMem(0xa0, 0x80555);
 		Native.wrMem(data, addr);
 
-		int j = Native.rd(Native.IO_US_CNT);
+		int j = Native.rd(Const.IO_US_CNT);
 		j += 350;						// maximum 350 us timeout
 		data &= 0xff;
 
 		for (;;) {
 			if (Native.rdMem(addr) == data) break;
-			if (j-Native.rd(Native.IO_US_CNT) < 0) break;
+			if (j-Native.rd(Const.IO_US_CNT) < 0) break;
 		}
+		
+		Native.wr(1, Const.IO_INT_ENA);
+
 	}
 
 	/**
@@ -52,12 +58,16 @@ public class Amd {
 
 		addr += 0x80000;
 
+		Native.wr(0, Const.IO_INT_ENA);
+		
 		Native.wrMem(0xaa, 0x80555);
 		Native.wrMem(0x55, 0x802aa);
 		Native.wrMem(0x80, 0x80555);
 		Native.wrMem(0xaa, 0x80555);
 		Native.wrMem(0x55, 0x802aa);
 		Native.wrMem(0x30, addr);
+
+		Native.wr(1, Const.IO_INT_ENA);
 
 		for (i=0; i<400; ++i) {					// maximum 40 s timeout
 			joprt.RtThread.sleepMs(100);

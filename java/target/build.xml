@@ -35,12 +35,12 @@
 		</zip>
 		
 		<java classpath="../tools/jcc.jar;../tools/dist/lib/jop-tools.jar" classname="JavaCodeCompact" >
-			<arg line="-v -nq -arch JOP -o ${dist}/lib/${ant.project.name}.bin ${dist}/lib/${ant.project.name}.zip"/>
+			<arg line="-v -nq -arch JOP -o ${dist}/lib/${ant.project.name}.jop ${dist}/lib/${ant.project.name}.zip"/>
 			<sysproperty key="jop.startclass" value="test/Clock"/>
 		</java>
 
 		<java classpath="../tools/jcc.jar;../tools/dist/lib/jop-tools.jar" classname="com.jopdesign.tools.JopBitGen" >
-			<arg line="${dist}/lib/${ant.project.name}.bin ${dist}/lib/${ant.project.name}.bit"/>
+			<arg line="${dist}/lib/${ant.project.name}.jop ${dist}/lib/${ant.project.name}.bit"/>
 		</java>
 
 

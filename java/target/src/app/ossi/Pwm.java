@@ -10,8 +10,9 @@ package ossi;
 *
 */
 
-import util.*;
 import joprt.*;
+
+import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 
 public class Pwm extends RtThread {
@@ -72,7 +73,7 @@ public class Pwm extends RtThread {
 			if (i<(vals[2]>>>5)) {
 				led += 4;
 			}
-			Native.wr(led, Native.IO_OUT);
+			Native.wr(led, Const.IO_OUT);
 
 			waitForNextPeriod();
 

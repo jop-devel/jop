@@ -91,8 +91,8 @@ public class Keyboard {
 
 	static void unread(int val) {
 
-		pressed = true;
 		key = val;
+		pressed = true;
 	}
 
 	public static int num(int val) {

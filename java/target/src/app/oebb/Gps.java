@@ -12,6 +12,8 @@ package oebb;
 import util.*;
 import ejip.*;
 import joprt.*;
+
+import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 
 public class Gps extends RtThread {
@@ -40,6 +42,7 @@ public class Gps extends RtThread {
 	/** last known 'good' coordinates */
 	public static int last_lat;
 	public static int last_lon;
+	public static int[] text;
 
 	private static final int FIX_TIMEOUT = 3000000;
 
@@ -60,6 +63,7 @@ public class Gps extends RtThread {
 *	The one and only reference to this object.
 */
 	private static Gps single;
+	private static Serial ser;
 
 	private static final int BUF_LEN = 80;
 	private static int[] rxBuf;
@@ -86,8 +90,15 @@ public class Gps extends RtThread {
 		avgCnt = 0;
 		avgLat = new int[MAX_AVG];
 		avgLon = new int[MAX_AVG];
-
-		Serial2.init();						// start serial buffer thread
+		text = new int[19];
+		
+		// start serial buffer thread
+//
+//		for GPS use: 4800 baud => 2.0833 ms per character
+//		send fifo: 4, receive fifo: 8
+//			16 ms should be ok, 12 ms for shure
+//
+		ser = new Serial(Const.IO_UART_BG_GPS_BASE, 8, 12000);
 
 		//
 		//	start my own thread
@@ -108,16 +119,16 @@ public class Gps extends RtThread {
 			waitForNextPeriod();
 
 			// too long no data from GPS
-			if (fix>0 && Native.rd(Native.IO_US_CNT)-ts>FIX_TIMEOUT) {
+			if (fix>0 && Native.rd(Const.IO_US_CNT)-ts>FIX_TIMEOUT) {
 Dbg.wr('*');
 				last_fix = 0;
 				fix = 0;
 				speed = -1;
 			}
 
-			i = Serial2.rxCnt();
+			i = ser.rxCnt();
 			for (j=0; j<i; ++j) {
-				val = Serial2.rd();
+				val = ser.rd();
 // Dbg.wr(val);
 				rxBuf[rxCnt] = val;
 				++rxCnt;
@@ -183,10 +194,19 @@ Dbg.wr("GPS wrong checksum\n");
 
 		int i, j, lat, lon;
 
+		j = 0;
+		for (i=14; i<23; ++i) {
+			text[j++]=rxBuf[i];
+		}
+		text[j++] = ' ';
+		for (i=27; i<36; ++i) {
+			text[j++]=rxBuf[i];
+		}
+
 		for (i=14; i<40; ++i) {
 			rxBuf[i] -= '0'; 
 		}
-
+		
 		lat = rxBuf[14] * 6000000;
 		lat += rxBuf[15] * 600000;
 		lat += rxBuf[16] * 100000;
@@ -214,7 +234,7 @@ Dbg.wr("GPS wrong checksum\n");
 		int lon_diff = lon-last_lon;
 
 		if (i!=0) {
-			ts = Native.rd(Native.IO_US_CNT);
+			ts = Native.rd(Const.IO_US_CNT);
 			last_lat = lat;
 			last_lon = lon;
 			if (average && avgCnt<MAX_AVG) {
@@ -286,10 +306,17 @@ Dbg.wr("\n");
 				strNr = nr;
 			}
 		}
+		// set it temporarily to find a melnr
+		// that's ok, Comm waits for a correct melnr
+		Status.strNr = strNr;
+		if (getMelnr()!=-1) {
 Dbg.wr("found: ");
 Dbg.intVal(strNr);
 Dbg.wr("\n");
-		Status.strNr = strNr;
+			Status.strNr = strNr;
+		} else {
+			Status.strNr = 0;
+		}
 	}
 
 
@@ -470,7 +497,7 @@ Dbg.wr("\n");
 
 		int len = p.len - Comm.OFF_DATA*4;
 
-		if (len > Serial2.txFreeCnt()) {
+		if (len > ser.txFreeCnt()) {
 Dbg.wr('d');
 			return;										// just drop it
 		}
@@ -481,7 +508,7 @@ Dbg.wr('D');
 		int[] buf = p.buf;
 
 		for (i=0; i<len; ++i) {
-			Serial2.wr((buf[Comm.OFF_DATA+(i>>2)]>>(24-(i&3)*8)) & 0xff);
+			ser.wr((buf[Comm.OFF_DATA+(i>>2)]>>(24-(i&3)*8)) & 0xff);
 		}
 	}
 

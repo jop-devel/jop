@@ -7,9 +7,9 @@ package oebb;
 *
 */
 
-import util.*;
 import joprt.*;
 
+import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 
 public class Display extends RtThread {
@@ -227,6 +227,46 @@ public class Display extends RtThread {
 		}
 	}
 
+	/**
+	*	write a StringBuffer and an integer at position x and clear till character position 19
+	*/
+	public static void write(int pos, StringBuffer s, int val) {
+
+		int i = s.length();
+		int j;
+		int end;
+
+		if (pos < 20) {
+			end = 19;
+		} else if (pos < 40) {
+			end = 39;
+		} else {
+			end = 59;
+		}
+
+		for (j=0; j<i; ++j) {
+			fb[pos+j+FB_OFF] = s.charAt(j);					// in [0] is cursor home
+		}
+
+		pos += j;
+
+		if (val<0) {
+			write(pos++, '-');
+			val = -val;
+		}
+		for (i=0; i<MAX_TMP-1; ++i) {
+			tmp[i] = (val%10)+'0';
+			val /= 10;
+			if (val==0) break;
+		}
+		for (val=i; val>=0; --val) {
+			write(pos++, tmp[val]);
+		}
+		for (j=0; pos+j < end; ++j) {
+			fb[pos+j+FB_OFF] = ' ';
+		}
+	}
+
 	public static void write(int pos, int ch) {
 
 		fb[pos+FB_OFF] = ch;
@@ -308,6 +348,15 @@ public class Display extends RtThread {
 		write(40, l3);
 	}
 
+	/**
+	*	Write three lines.
+	*/
+	public static void write(String l1, StringBuffer l2, StringBuffer l3) {
+
+		write(0, l1);
+		write(20, l2);
+		write(40, l3);
+	}
 
 
 	public void run() {
@@ -320,9 +369,9 @@ public class Display extends RtThread {
 			// buffer (usualla two will fit)
 			// busy goes high after each character for two ms
 			for (j=0; j<3; ++j) {
-				if ((Native.rd(Native.IO_DISP) & 0x01) == 1) {
+				if ((Native.rd(Const.IO_DISP) & 0x01) == 1) {
 					i = posRef;
-					Native.wr(fb[i], Native.IO_DISP+1);
+					Native.wr(fb[i], Const.IO_DISP+1);
 					++i;
 					// display only three lines
 					if (i==(60+FB_OFF)) i = 0;

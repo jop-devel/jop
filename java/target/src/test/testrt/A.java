@@ -5,7 +5,6 @@ public class A {
 
 	public static void main(String[] args) {
 
-		Timer.init(20000000, 5);	// just for the watch dog or some usleep
 		Dbg.initSer();				// use serial line for debug output
 
 		int t = Timer.cnt();

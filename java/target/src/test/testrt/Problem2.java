@@ -1,6 +1,6 @@
 package testrt;
 import util.*;
-import com.jopdesign.sys.Native;
+import com.jopdesign.sys.*;
 
 public class Problem2 {
 
@@ -14,9 +14,9 @@ public class Problem2 {
 
 		// test with pending int befor start
 		// for sync in Thread code!
-		Native.wr(Native.rd(Native.IO_US_CNT)+100, Native.IO_TIMER);
+		Native.wr(Native.rd(Const.IO_US_CNT)+100, Const.IO_TIMER);
 		for (int j=0; j<386000/5; ++j) ;
-		Native.wr(1, Native.IO_INT_ENA);
+		Native.wr(1, Const.IO_INT_ENA);
 
 		Thread th = new Thread() {
 			public void run() {

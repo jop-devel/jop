@@ -1,7 +1,7 @@
 package vm04;
 import util.*;
 import joprt.*;
-import com.jopdesign.sys.Native;
+import com.jopdesign.sys.*;
 
 public class Periodic {
 
@@ -21,11 +21,11 @@ public class Periodic {
 				int i;
 
 				waitForNextPeriod();
-				ts_old = Native.rd(Native.IO_US_CNT);
+				ts_old = Native.rd(Const.IO_US_CNT);
 
 				for (i=0; i<CNT; ++i) {
 					waitForNextPeriod();
-					ts = Native.rd(Native.IO_US_CNT);
+					ts = Native.rd(Const.IO_US_CNT);
 					result[i] = ts-ts_old;
 					ts_old = ts;
 				}

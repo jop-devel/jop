@@ -5,10 +5,12 @@
 package joprt;
 
 import com.jopdesign.sys.Native;
+import com.jopdesign.sys.Const;
 
-public class RtThread {
+public class RtThread extends Task {
 
 	private static PriorityScheduler scheduler;
+	private static boolean mission;
 
 	// priority levels above Thread
 	protected final static int RT_BASE = 2;
@@ -143,7 +145,7 @@ public static int ts0, ts1, ts2, ts3, ts4;
 			// but we have a static var active which points in the ref
 			state = DEAD;
 			for (;;) {
-				PriorityScheduler.next[nr] = Native.rd(Native.IO_US_CNT) + 2*10000;
+				PriorityScheduler.next[nr] = Native.rd(Const.IO_US_CNT) + 2*10000;
 				Scheduler.genInt();
 			}
 		}
@@ -204,6 +206,7 @@ public static int ts0, ts1, ts2, ts3, ts4;
 	public static void startMission() {
 
 		scheduler.start();
+		mission = true;
 	}
 
 
@@ -226,7 +229,7 @@ public static int ts0, ts1, ts2, ts3, ts4;
 
 			nxt = PriorityScheduler.next[nr] + period;
 
-			now = Native.rd(Native.IO_US_CNT);
+			now = Native.rd(Const.IO_US_CNT);
 			if (nxt-now < 0) {					// missed time!
 				PriorityScheduler.next[nr] = now;					// correct next
 				return false;
@@ -238,7 +241,7 @@ public static int ts0, ts1, ts2, ts3, ts4;
 
 			// just schedule an interrupt
 			// schedule() gets called.
-			Native.wr(1, Native.IO_SWINT);
+			Native.wr(1, Const.IO_SWINT);
 			// will arrive befor return statement,
 			// just after monitorexit
 		}
@@ -258,9 +261,11 @@ public static int ts0, ts1, ts2, ts3, ts4;
 
 	public static void sleepMs(int millis) {
 	
-		int next = Native.rd(Native.IO_US_CNT)+millis*1000;
-		while (Native.rd(Native.IO_US_CNT)-next < 0) {
-			Scheduler.genInt();
+		int next = Native.rd(Const.IO_US_CNT)+millis*1000;
+		while (Native.rd(Const.IO_US_CNT)-next < 0) {
+			if (mission) {
+				Scheduler.genInt();
+			}
 		}
 	}
 

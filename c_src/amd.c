@@ -6,7 +6,7 @@
 	read ttf and write in upper part of flash for config
 	confppa2 uses a0-a16, a17 and a18 are pulled up by ACEX
 
-	read .bin and write to flash
+	read .jop and write to flash
 	read .html and write to flash
 
 	Mem.java must be running on JOP
@@ -15,7 +15,7 @@
 
 *		.ttf	ACEX config start at 0x60000
 *				Cyclone config start at 0x40000
-*		.bin	Java files start at 0x18000		(history of BB project)
+*		.jop	Java files start at 0x18000		(history of BB project)
 *		.html	start at 0x00000
 
 */
@@ -142,7 +142,7 @@ main(int argc, char *argv[]) {
 		}
 
 	// Java file
-	} else if (strcmp(argv[1]+i, ".bin")==0) {
+	} else if (strcmp(argv[1]+i, ".jop")==0) {
 
 		i = readBin(fp, mem);
 		program(mem, JAVA_START, i);

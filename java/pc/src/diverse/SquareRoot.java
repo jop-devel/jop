@@ -1,3 +1,5 @@
+package diverse;
+
 /*
  * Integer Square Root function
  * Contributors include Arne Steinarson for the basic approximation idea, Dann 

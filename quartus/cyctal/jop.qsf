@@ -20,6 +20,8 @@
 
 
 # The default values for assignments are stored in the file
+#		jop_assignment_defaults.qdf
+# If this file doesn't exist, and for assignments not listed, see file
 #		assignment_defaults.qdf
 
 # Altera recommends that you do not modify this file. This
@@ -31,8 +33,9 @@
 # ========================
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION 4.0
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "02:30:11  APRIL 04, 2004"
-set_global_assignment -name LAST_QUARTUS_VERSION 4.0
+set_global_assignment -name LAST_QUARTUS_VERSION 4.1
 set_global_assignment -name CDF_FILE jop.cdf
+set_global_assignment -name VHDL_FILE ../wizzard/pll.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jopcyc.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/ajbc.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/aram.vhd
@@ -48,7 +51,7 @@ set_global_assignment -name VHDL_FILE ../../vhdl/core/stack.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/offtbl.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/jtbl.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/io/iotal.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/io/uart.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/io/uart_tal.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/io/cnt.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/io/fifo.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/io/isa.vhd
@@ -245,18 +248,18 @@ set_location_assignment PIN_166 -to wd
 
 # Analysis & Synthesis Assignments
 # ================================
-set_global_assignment -name FAMILY Cyclone
-set_global_assignment -name DEVICE_FILTER_PIN_COUNT 240
 set_global_assignment -name DEVICE_FILTER_PACKAGE "ANY QFP"
+set_global_assignment -name DEVICE_FILTER_PIN_COUNT 240
+set_global_assignment -name FAMILY Cyclone
 set_global_assignment -name TOP_LEVEL_ENTITY jop
 set_global_assignment -name AUTO_ENABLE_SMART_COMPILE On
 
 # Fitter Assignments
 # ==================
-set_global_assignment -name RESERVE_ALL_UNUSED_PINS "AS INPUT TRI-STATED"
-set_global_assignment -name AUTO_RESTART_CONFIGURATION OFF
-set_global_assignment -name CYCLONE_CONFIGURATION_SCHEME "PASSIVE SERIAL"
 set_global_assignment -name DEVICE EP1C6Q240C6
+set_global_assignment -name CYCLONE_CONFIGURATION_SCHEME "PASSIVE SERIAL"
+set_global_assignment -name AUTO_RESTART_CONFIGURATION OFF
+set_global_assignment -name RESERVE_ALL_UNUSED_PINS "AS INPUT TRI-STATED"
 set_instance_assignment -name IO_STANDARD LVCMOS -to clk
 set_instance_assignment -name IO_STANDARD LVCMOS -to dummy_gnd\[0\]
 set_instance_assignment -name IO_STANDARD LVCMOS -to dummy_gnd\[1\]
@@ -446,16 +449,16 @@ set_global_assignment -name STRATIX_DEVICE_IO_STANDARD LVCMOS
 
 # Assembler Assignments
 # =====================
-set_global_assignment -name GENERATE_TTF_FILE ON
 set_global_assignment -name USE_CONFIGURATION_DEVICE OFF
+set_global_assignment -name GENERATE_TTF_FILE ON
 
 # Design Assistant Assignments
 # ============================
-set_global_assignment -name DRC_REPORT_FANOUT_EXCEEDING OFF
 set_global_assignment -name DRC_REPORT_TOP_FANOUT OFF
+set_global_assignment -name DRC_REPORT_FANOUT_EXCEEDING OFF
 
 # SignalTap II Assignments
 # ========================
-set_global_assignment -name HUB_INSTANCE_NAME SLD_HUB_INST
 set_global_assignment -name HUB_ENTITY_NAME SLD_HUB
+set_global_assignment -name HUB_INSTANCE_NAME SLD_HUB_INST
 set_global_assignment -name ENABLE_SIGNALTAP Off

@@ -4,6 +4,7 @@
 
 package joprt;
 
+import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 
 public class RtThread {
@@ -150,7 +151,7 @@ isEvent = false;
 		
 		// just schedule an interrupt
 		// schedule() gets called.
-		Native.wr(1, Native.IO_SWINT);
+		Native.wr(1, Const.IO_SWINT);
 	}
 
 
@@ -183,7 +184,7 @@ public static int ts0, ts1, ts2, ts3, ts4;
 		// we have only one thread => just return
 		if (!init) return;
 
-		Native.wr(0, Native.IO_INT_ENA);
+		Native.wr(0, Const.IO_INT_ENA);
 		// synchronized(monitor) {
 
 // RtThread.ts1 = Native.rd(Native.IO_US_CNT);
@@ -207,7 +208,7 @@ public static int ts0, ts1, ts2, ts3, ts4;
 			k = IDL_TICK;
 
 			// this is now
-			j = Native.rd(Native.IO_US_CNT);
+			j = Native.rd(Const.IO_US_CNT);
 
 			for (i=cnt-1; i>0; --i) {
 
@@ -248,14 +249,14 @@ public static int ts0, ts1, ts2, ts3, ts4;
 
 // RtThread.ts4 = Native.rd(Native.IO_US_CNT);
 
-			j = Native.rd(Native.IO_US_CNT);
+			j = Native.rd(Const.IO_US_CNT);
 			// check if next timer value is too early (or allready missed)
 			// ack int and schedule timer
 			if (tim-j<TIM_OFF) {
 				// set timer to now plus some short time
-				Native.wr(j+TIM_OFF, Native.IO_TIMER);
+				Native.wr(j+TIM_OFF, Const.IO_TIMER);
 			} else {
-				Native.wr(tim, Native.IO_TIMER);
+				Native.wr(tim, Const.IO_TIMER);
 			}
 			Native.setSP(i);
 			// only return after setSP!
@@ -277,7 +278,7 @@ public static int ts0, ts1, ts2, ts3, ts4;
 			// disable and enable INT 'manual'
 			// and DON'T call a method with synchronized
 			// it would enable the INT on monitorexit
-		Native.wr(1, Native.IO_INT_ENA);
+		Native.wr(1, Const.IO_INT_ENA);
 		// }
 	}
 
@@ -305,7 +306,7 @@ public static int ts0, ts1, ts2, ts3, ts4;
 			for (;;) {
 				// This will not work if we change stack like in Thread.java.
 				// Then we have no reference to this.
-				next[nr] = Native.rd(Native.IO_US_CNT) + 2*IDL_TICK;
+				next[nr] = Native.rd(Const.IO_US_CNT) + 2*IDL_TICK;
 				genInt();
 			}
 		}
@@ -402,7 +403,7 @@ public static int ts0, ts1, ts2, ts3, ts4;
 		}
 
 		// wait 100 ms (for main Thread.debug())
-		startTime = Native.rd(Native.IO_US_CNT)+100000;
+		startTime = Native.rd(Const.IO_US_CNT)+100000;
 		for (i=0; i<c; ++i) {
 			next[i] = startTime+ref[i].offset;
 		}
@@ -414,9 +415,9 @@ public static int ts0, ts1, ts2, ts3, ts4;
 		// on monitorexit from now on
 		Native.wrIntMem(0, 5);
 		// ack any 'pending' int and schedule timer in 100 ms
-		Native.wr(startTime, Native.IO_TIMER);
+		Native.wr(startTime, Const.IO_TIMER);
 		// enable int
-		Native.wr(1, Native.IO_INT_ENA);
+		Native.wr(1, Const.IO_INT_ENA);
 
 	}
 
@@ -429,7 +430,7 @@ public static int ts0, ts1, ts2, ts3, ts4;
 
 			nxt = next[nr] + period;
 
-			now = Native.rd(Native.IO_US_CNT);
+			now = Native.rd(Const.IO_US_CNT);
 			if (nxt-now < 0) {					// missed time!
 				next[nr] = now;					// correct next
 				return false;
@@ -441,7 +442,7 @@ public static int ts0, ts1, ts2, ts3, ts4;
 
 			// just schedule an interrupt
 			// schedule() gets called.
-			Native.wr(1, Native.IO_SWINT);
+			Native.wr(1, Const.IO_SWINT);
 			// will arrive befor return statement,
 			// just after monitorexit
 		}
@@ -461,8 +462,8 @@ public static int ts0, ts1, ts2, ts3, ts4;
 
 	public static void sleepMs(int millis) {
 	
-		int next = Native.rd(Native.IO_US_CNT)+millis*1000;
-		while (Native.rd(Native.IO_US_CNT)-next < 0) {
+		int next = Native.rd(Const.IO_US_CNT)+millis*1000;
+		while (Native.rd(Const.IO_US_CNT)-next < 0) {
 			genInt();
 		}
 	}

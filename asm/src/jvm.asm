@@ -49,6 +49,7 @@
 //	2004-03-12	added support for long: lreturn, lload, lstore
 //	2004-04-06	first two instructions nop because of change in fetch.vhd
 //				stjpc to nxt pipeline is now one longer (simpler mux for jbc rdaddr)
+//	2004-05-24	jopsys_invoke to call main() from Startup.boot()
 //
 //	TODO
 //		idiv, irem	WRONG when one operand is 0x80000000
@@ -99,8 +100,7 @@ addr		?			// address used for bc load from flash
 						// only in jvmflash.asm
 
 //
-//	special byte codes
-//		but starts with pc=0!!! (so init bc is not really necassary)
+//	JVM starts here.
 //
 //	new fetch does NOT reset address of ROM =>
 //		it starts with pc+1
@@ -142,30 +142,30 @@ addr		?			// address used for bc load from flash
 ////////////
 // test mem interface
 //
-			ldi 15
-			stmra				// start read ext. mem
-			nop					// mem_bsy comes one cycle later
-			wait				// one for fetch
-			wait				// one for decode
-			ldmrd		 		// read ext. mem
-
-			ldi	16
-			stmwa				// write ext. mem address
-			ldi	32
-			stmwd				// write ext. mem data
-			nop
-			wait
-			wait
-
-			ldi 15
-			stmra				// start read ext. mem
-			nop					// mem_bsy comes one cycle later
-			wait				// one for fetch
-			wait				// one for decode
-			ldmrd		 		// read ext. mem
-
-			pop
-			pop
+//			ldi 15
+//			stmra				// start read ext. mem
+//			nop					// mem_bsy comes one cycle later
+//			wait				// one for fetch
+//			wait				// one for decode
+//			ldmrd		 		// read ext. mem
+//
+//			ldi	16
+//			stmwa				// write ext. mem address
+//			ldi	32
+//			stmwd				// write ext. mem data
+//			nop
+//			wait
+//			wait
+//
+//			ldi 15
+//			stmra				// start read ext. mem
+//			nop					// mem_bsy comes one cycle later
+//			wait				// one for fetch
+//			wait				// one for decode
+//			ldmrd		 		// read ext. mem
+//
+//			pop
+//			pop
 ///////////
 
 
@@ -1091,459 +1091,11 @@ mon_no_ena:	nop		nxt
 
 
 //
-//	invoke static
+//	invoke and return functions
 //
+#include "jvm_call.inc"
 
-//
-//	local vars for tmp storage
-//
-old_mp			?
-old_pc			?
-old_vp			?
 
-old_cp			?		// for now save it on stack
-
-len			?
-start		?
-args		?
-varcnt		?
-
-invokevirtual:
-
-		//	int idx = readOpd16u();
-		//	int off = readMem(cp+idx);	// index in vt and arg count (-1)
-		//	int args = off & 0xff;
-		//	off >>>= 8;
-		//	int ref = stack[sp-args];
-		//	int vt = readMem(ref-1);
-		//	invoke(vt+off);
-
-			ldm	cp opd
-			nop	opd
-			ld_opd_16u
-			add
-
-			stmra				// read constant
-			nop
-			wait
-			wait
-			ldmrd		 		// read ext. mem
-
-			dup
-			ldi	255
-			and
-			stm	a				// arg count (without objectref)
-			ldi	8
-			ushr
-			stm	b				// offset in method table
-
-			ldsp		// one increment but still one to low ('real' sp is sp+2 because of registers)
-			ldi	1		// 'real' sp			da sp auf rd adr zeigt
-			add
-			ldm	a
-			sub
-
-			ldvp
-			stm	c
-			stvp			// address in vp
-			nop				// ???
-			ld0				// read objectref
-			ldm	c			// restore vp
-			stvp
-			// objectref is now on TOS
-
-			dup					// null pointer check
-			nop					// could be interleaved with
-			bz	null_pointer	// following code
-			nop
-			nop
-
-			ldi	1			// at address ref-1 is pointer to method table
-			sub
-
-			stmra				// read pointer to method table
-			nop
-			wait
-			wait
-			ldmrd		 		// read ext. mem
-
-			ldm	b
-			add					// add offset
-
-			ldi	1
-			nop
-			bnz	invoke
-			nop
-			nop
-
-
-invokeinterface:
-
-		//	int idx = readOpd16u();
-		//	readOpd16u();						// read historical argument count and 0
-		//	int off = readMem(cp+idx);			// index in interface table
-		//	int args = off & 0xff;				// this is args count without obj-ref
-		//	off >>>= 8;
-		//	int ref = stack[sp-args];
-		//	int vt = readMem(ref-1);			// pointer to virtual table in obj-1
-		//	int it = readMem(vt-1);				// pointer to interface table one befor vt
-		//	int mp = readMem(it+off);
-		//	invoke(mp);
-
-			ldm	cp opd
-			nop	opd
-			ld_opd_16u
-			add	opd
-
-			stmra	opd			// read constant
-			nop
-			wait
-			wait
-			ldmrd		 		// off on TOS
-
-			dup
-			ldi	255
-			and
-			stm	a				// arg count (without objectref)
-			ldi	8
-			ushr
-			stm	b				// offset in method table
-
-			ldsp		// one increment but still one to low ('real' sp is sp+2 because of registers)
-			ldi	1		// 'real' sp			da sp auf rd adr zeigt
-			add
-			ldm	a
-			sub
-
-			ldvp
-			stm	c
-			stvp			// address in vp
-			nop				// ???
-			ld0				// read objectref
-			ldm	c			// restore vp
-			stvp
-			// objectref is now on TOS
-
-			dup					// null pointer check
-			nop					// could be interleaved with
-			bz	null_pointer	// following code
-			nop
-			nop
-
-
-			ldi	1				// at address ref-1 is pointer to method table
-			sub
-			stmra				// read pointer to method table
-			nop
-			wait
-			wait
-			ldmrd		 		// vt on TOS
-
-			ldi	1				// pointer to interface table
-			sub					// befor method table
-			stmra				// read interface table address
-			nop
-			wait
-			wait
-			ldmrd		 		// it on TOS
-
-			ldm	b
-			add					// add offset
-			stmra				// read method pointer
-			nop					// from interface table
-			wait
-			wait
-			ldmrd		 		// mp on TOS
-
-			ldi	1
-			nop
-			bnz	invoke
-			nop
-			nop
-
-
-invokespecial:			// is it really equivilant ????? (not really)
-						// there is an object ref on stack (but arg counts for it)
-						// is called for privat methods AND <init>!!!
-invokestatic:
-
-						// mp = readMem(cp+idx);
-			ldm	cp opd
-			nop	opd
-			ld_opd_16u
-			add
-
-invoke_main:					// jmp with pointer to pointer to mp on TOS
-
-			stmra				// read 'real' mp
-			nop
-			wait
-			wait
-			ldmrd		 		// read ext. mem
-
-invoke:							// jmp with mp on TOS (pointer to method struct)
-								// used for noim and invokevirtual
-
-			dup					// one higher is new cp,...
-			stmra				// read first val of meth const
-
-			ldm	mp
-			stm	old_mp
-
-			dup					// address is mp!
-			stm	mp
-			ldi	1
-			add					// next address
-			stm	a
-
-			wait
-			wait
-			ldmrd		 	// read ext. mem
-
-			ldm	a				// mp+1
-			stmra				// read first val of meth const
-
-// TOS is still new meth. addr. and len
-
-			ldjpc
-			stm old_pc
-
-					// int len = start & 0x03ff;
-					// start >>>= 10;
-
-			dup
-			ldi	1023
-			and					// mask len
-			stm len
-			ldi	10
-			ushr
-			stm	start
-
-			ldvp
-			stm	old_vp
-
-			ldm	cp
-			stm	old_cp
-
-
-			wait
-			wait
-			ldmrd		 	// read ext. mem
-
-					// cp = readMem(mp+1);
-					// int locals = (cp>>>5) & 0x01f;
-					// int args = cp & 0x01f;
-					// cp >>>= 10;
-
-			dup
-			ldi	31
-			and
-			stm	args
-			ldi	5
-			ushr
-			dup
-			ldi	31
-			and
-			stm	varcnt
-			ldi	5
-			ushr
-			stm	cp
-
-
-old_sp			?
-real_sp			?
-new_jpc			?
-
-
-//
-// tos and tos-1 are allready written back to memory
-//
-				// int old_sp = sp-args;
-				// vp = old_sp+1;
-				// sp += varcnt;
-
-			ldsp	// one increment but still one to low ('real' sp is sp+2 because of registers)
-			ldi	1	// 'real' sp			da sp auf rd adr zeigt
-			add
-			stm	real_sp
-
-			ldm	real_sp
-			ldm	args
-			sub
-			stm	old_sp
-
-			ldm	old_sp
-			ldi	1
-			add
-			stvp
-
-			ldm	real_sp
-			ldm	varcnt		// 'real' varcnt (=locals-args)
-			add
-
-			nop			// written in adr/read stage!
-			stsp
-			pop			// flush reg., sp reg is sp-2 again
-			pop			// could really be optimized :-(
-
-				// stack[++sp] = old_sp;
-				// stack[++sp] = pc;
-				// stack[++sp] = old_vp;
-				// stack[++sp] = old_cp;
-				// stack[++sp] = old_mp;
-
-
-			ldm	old_sp
-			ldm	old_pc
-			ldm	old_vp
-			ldm	old_cp
-			ldm	old_mp
-
-			ldi	0
-			stm	new_jpc
-
-			ldi	1
-			nop
-			bnz	invoke_load_bc
-			nop
-			nop
-
-
-//
-//	now load bc from external ram :-(
-//
-load_bc:
-			ldm	mp
-			stmra
-			nop
-			wait
-			wait
-			ldmrd		 		// read ext. mem
-
-					// int len = start & 0x03ff;
-					// start >>>= 10;
-
-			dup
-			ldi	1023
-			and					// mask len
-			stm len
-			ldi	10
-			ushr
-
-			stm	start
-
-invoke_load_bc:
-			ldm	start
-			stmra
-
-			ldi	0
-			stjpc
-
-			ldm	start
-			ldm	len
-			add
-			stm	len			// len is now endaddr
-
-//
-//	this fetch loop takes about 66% in Mast.java!
-//		=> to be optimized (hw fetch, cach)
-//	2003-08-14	changed from 29 cycles to 17 cycles per word
-//
-ldbc_rd_l:
-			wait
-			wait
-			ldmrd		 		// read ext. mem
-
-			ldm	start			// addr inc.
-			ldi	1
-			add
-			stm	start
-
-			ldm	start
-			stmra				// start next read
-
-//	store in jbc, high byte first
-				//		for (int i=0; i<len; ++i) {
-				//			int val = readMem(start+i);
-				//			for (int j=0; j<4; ++j) {
-				//				bc[i*4+(3-j)] = (byte) val;
-				//				val >>>= 8;
-				//			}
-				//		}
-//	only one 32 bit store
-//	jbc automaitcally writes 4 bytes
-//	this takes 'some' time (about 5) cycles
-
-			stbc
-
-//	check loop
-
-			ldm	len				// len is end address
-			ldm	start			// start is address 'counter'
-			xor
-			nop
-			bnz	ldbc_rd_l
-			nop
-			nop
-
-			ldm	new_jpc
-			stjpc
-// wait on last (unused) memory read.
-			wait
-			wait
-			nop
-			nop	nxt
-// end load_bc
-
-//
-//	thats the pipeline delay from stjpc - jpc -
-//	rdaddress - jpaddr - pc!
-//
-//		could be simpler if a different command to store
-//		write address for jbc (or use DMA in mem.vhd!)
-//
-//			stjpc
-//			nop
-//			nop
-//			nop
-//			nop	nxt
-//
-
-areturn:
-freturn:
-ireturn:
-			stm	a	// return value
-			stm	mp
-			stm	cp
-			stvp
-
-			stm	new_jpc
-			nop			// written in adr/read stage!
-			stsp	// last is new sp
-			pop		// flash tos, tos-1 (registers)
-			pop		// sp must be two lower, points to rd adr
-			ldm	a 
-			ldi	1
-			nop
-			bnz	load_bc
-			nop
-			nop
-
-return:
-			stm	mp
-			stm	cp
-			stvp
-
-			stm	new_jpc
-			nop			// written in adr/read stage!
-			stsp	// last is new sp
-			pop		// flash tos, tos-1 (registers)
-			pop		// sp must be two lower, points to rd adr
-			ldi	1
-			nop
-			bnz	load_bc
-			nop
-			nop
 
 //
 //	null pointer
@@ -1583,7 +1135,7 @@ array_bound:
 			nop
 
 // long bytecodes
-#include "jvm_long.asm"
+#include "jvm_long.inc"
 
 //
 //	this is an interrupt, (bytecode 0xf0)
@@ -1838,6 +1390,7 @@ extint_loop:
 jopsys_nop:
 			nop	nxt
 
+//jopsys_invoke: see invoke
 
 
 

@@ -8,9 +8,9 @@ package oebb;
 */
 
 import util.*;
-import ejip.*;
 import joprt.*;
 
+import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 
 public class TestMode {
@@ -118,14 +118,14 @@ public class TestMode {
 		for (i=0; i<10; ++i) {
 			RtThread.sleepMs(100);
 			Timer.wd();
-			while ((Native.rd(Native.IO_STATUS) & Native.MSK_UA_RDRF)!=0) {
-				Native.rd(Native.IO_UART);
+			while ((Native.rd(Const.IO_STATUS) & Const.MSK_UA_RDRF)!=0) {
+				Native.rd(Const.IO_UART);
 			}
-			while ((Native.rd(Native.IO_STATUS2) & Native.MSK_UA_RDRF)!=0) {
-				Native.rd(Native.IO_UART2);
+			while ((Native.rd(Const.IO_STATUS2) & Const.MSK_UA_RDRF)!=0) {
+				Native.rd(Const.IO_UART2);
 			}
-			while ((Native.rd(Native.IO_STATUS3) & Native.MSK_UA_RDRF)!=0) {
-				Native.rd(Native.IO_UART3);
+			while ((Native.rd(Const.IO_STATUS3) & Const.MSK_UA_RDRF)!=0) {
+				Native.rd(Const.IO_UART3);
 			}
 		}
 	}
@@ -137,14 +137,14 @@ public class TestMode {
 		++serVal;
 		if (serVal==10) serVal = 0;
 
-		if ((Native.rd(Native.IO_STATUS) & Native.MSK_UA_TDRE)!=0) {
-			Native.wr('0'+serVal, Native.IO_UART);
+		if ((Native.rd(Const.IO_STATUS) & Const.MSK_UA_TDRE)!=0) {
+			Native.wr('0'+serVal, Const.IO_UART);
 		}
-		if ((Native.rd(Native.IO_STATUS2) & Native.MSK_UA_TDRE)!=0) {
-			Native.wr('a'+serVal, Native.IO_UART2);
+		if ((Native.rd(Const.IO_STATUS2) & Const.MSK_UA_TDRE)!=0) {
+			Native.wr('a'+serVal, Const.IO_UART2);
 		}
-		if ((Native.rd(Native.IO_STATUS3) & Native.MSK_UA_TDRE)!=0) {
-			Native.wr('A'+serVal, Native.IO_UART3);
+		if ((Native.rd(Const.IO_STATUS3) & Const.MSK_UA_TDRE)!=0) {
+			Native.wr('A'+serVal, Const.IO_UART3);
 		}
 	}
 
@@ -152,12 +152,12 @@ public class TestMode {
 
 		int val;
 
-		if ((Native.rd(Native.IO_STATUS) & Native.MSK_UA_RDRF)!=0) {
-			val = Native.rd(Native.IO_UART);
+		if ((Native.rd(Const.IO_STATUS) & Const.MSK_UA_RDRF)!=0) {
+			val = Native.rd(Const.IO_UART);
 			if (val != '0'+serVal) {
 				Display.write(0, "Serv.: Falsches Z.");
-				while ((Native.rd(Native.IO_STATUS) & Native.MSK_UA_RDRF)!=0) {
-					Native.rd(Native.IO_UART);
+				while ((Native.rd(Const.IO_STATUS) & Const.MSK_UA_RDRF)!=0) {
+					Native.rd(Const.IO_UART);
 				}
 			} else {
 				Display.write(0, "Ser.: OK          ");
@@ -166,12 +166,12 @@ public class TestMode {
 			Display.write(0, "Serv.: Kein Zeich.");
 		}
 
-		if ((Native.rd(Native.IO_STATUS2) & Native.MSK_UA_RDRF)!=0) {
-			val = Native.rd(Native.IO_UART2);
+		if ((Native.rd(Const.IO_STATUS2) & Const.MSK_UA_RDRF)!=0) {
+			val = Native.rd(Const.IO_UART2);
 			if (val != 'a'+serVal) {
 				Display.write(20, "Modem: Falsches Z.");
-				while ((Native.rd(Native.IO_STATUS2) & Native.MSK_UA_RDRF)!=0) {
-					Native.rd(Native.IO_UART2);
+				while ((Native.rd(Const.IO_STATUS2) & Const.MSK_UA_RDRF)!=0) {
+					Native.rd(Const.IO_UART2);
 				}
 			} else {
 				Display.write(20, "Modem: OK         ");
@@ -180,12 +180,12 @@ public class TestMode {
 			Display.write(20, "Modem: Kein Zeich.");
 		}
 
-		if ((Native.rd(Native.IO_STATUS3) & Native.MSK_UA_RDRF)!=0) {
-			val = Native.rd(Native.IO_UART3);
+		if ((Native.rd(Const.IO_STATUS3) & Const.MSK_UA_RDRF)!=0) {
+			val = Native.rd(Const.IO_UART3);
 			if (val != 'A'+serVal) {
 				Display.write(43, "GPS: Falsches Z.");
-				while ((Native.rd(Native.IO_STATUS3) & Native.MSK_UA_RDRF)!=0) {
-					Native.rd(Native.IO_UART3);
+				while ((Native.rd(Const.IO_STATUS3) & Const.MSK_UA_RDRF)!=0) {
+					Native.rd(Const.IO_UART3);
 				}
 			} else {
 				Display.write(43, "GPS: OK         ");
@@ -218,8 +218,8 @@ public class TestMode {
 
 				testKeyboard();
 
-				val = Native.rd(Native.IO_BG+1);	// check input pin
-				Native.wr(val | (outVal ^ 8), Native.IO_BG+1);	// and set led with value, invert DTR
+				val = Native.rd(Const.IO_BG+1);	// check input pin
+				Native.wr(val | (outVal ^ 8), Const.IO_BG+1);	// and set led with value, invert DTR
 			}
 		}
 	}

@@ -11,6 +11,7 @@ package oebb;
 
 import util.*;
 
+import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 
 public class Led {
@@ -59,7 +60,7 @@ public class Led {
 		if (beepOn) {
 			val |= 2;		// relais a
 		}
-		Native.wr(val, Native.IO_BG+1);
+		Native.wr(val, Const.IO_BG+1);
 	}
 
 	static void startBlinking() {

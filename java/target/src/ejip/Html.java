@@ -31,6 +31,7 @@
 package ejip;
 
 import com.jopdesign.sys.*;
+
 import util.*;
 
 /**
@@ -46,7 +47,7 @@ public class Html {
 	public static int[] val;
 	public static int[] tmp;
 	private static int hits;
-	private static int outVal;
+	private static int[] outVal;
 
 	private static int[] valArr;
 
@@ -64,6 +65,7 @@ public class Html {
 		val = new int[5];
 		tmp = new int[1500];
 		msg = new int[MAX_MSG];
+		outVal = new int[1];
 
 		for (int i=0; i<MAX_MSG; ++i) msg[i] = ' ';
 		// hits = 17800;	// 10.3.2003 auch jetzt bei ACEX
@@ -76,10 +78,13 @@ public class Html {
 		// hits = 30104;		// 23.9.2003
 		// hits = 30390;		// 1.10.2003
 		// hits = 30477;		// 6.10.2003
-		hits = 32914;		// 13.2.2003
-hits = 0;
-		outVal = 1;
-		Native.wr(outVal, Native.IO_OUT);
+		// hits = 32914;		// 13.2.2004
+		// hits = 37038;		// 27.4.2004
+		// hits = 38175;		// 13.7.2004
+		// hits = 38800;		// 17.8.2004
+		hits = 39291;			// 9.9.2004
+		outVal[0] = 0;
+		Native.wr(outVal[0], Const.IO_OUT);
 
 		text =
 /*
@@ -95,9 +100,10 @@ hits = 0;
 
 			"<html><head></head><body>"+
 //			"<h2>TAL TeleAlarm</h2>"+
-			"<h2><a href=\"http://www.jopdesign.com/\">JOP</a> Webserver on Altera Cyclone EP1C6</h2>"+
+			"<h2><a href=\"http://www.jopdesign.com/\">JOP</a> Web Server on Altera Cyclone EP1C6</h2>"+
 			"Analog 1: !a1 mA<br>"+
-			"Analog 2: !a2 mA <p>"+
+			"Analog 2: !a2 mA<br>"+
+			"Vbat: !a3 V<p>"+
 			"input 1: !i1<br>"+
 			"input 2: !i2<br>"+
 			"input 3: !i3<br>"+
@@ -129,6 +135,10 @@ hits = 0;
 
 		valArr = vals;
 	}
+	public static void setOutValArray(int[] out) {
+		
+		outVal = out;
+	}
 
 	private static int append(int[] buf, int pos, String str) {
 
@@ -153,7 +163,7 @@ hits = 0;
 
 	private static int[] getTemp() {
 
-		int i = Native.rd(Native.IO_ADC1);
+		int i = Native.rd(Const.IO_ADC1);
 //		Dbg.intVal(i>>>16);
 		i &= 0xffff;
 //		Dbg.wr('T');
@@ -194,11 +204,27 @@ hits = 0;
 
 	private static int[] getAnalog(int channel) {
 
-		int i = Native.rd(Native.IO_ADC1-1+channel);
+		int i = 0;
+		if (channel==1) {
+			i = Native.rd(Const.IO_ADC1);	// I = ADCout * 3.3 / (100 * (2^16-1))
+			i *= 100;
+			i /= 19859;
+		} else if (channel==2) {
+			i = Native.rd(Const.IO_ADC2);
+			i *= 100;
+			i /= 19859;
+		} else if (channel==3) {
+			i = Native.rd(Const.IO_ADC3);	// U = 11 * ADCout * 3.3 / (2^16-1)
+			i *= 100;
+			i /= 18054;
+		}
+		// value is now in 1/10 mA or 1/10 V
 
 		// setInt(i, val);
+/*
 		i += 100;
 		i /= 201;
+*/
 		val[4] = ' ';
 		val[3] = '0'+i%10;
 		val[2] = '.';
@@ -227,7 +253,7 @@ hits = 0;
 
 	private static int[] getDigital() {
 
-		setInt(Native.rd(Native.IO_IN), val);
+		setInt(Native.rd(Const.IO_IN), val);
 		return val;
 	}
 
@@ -286,6 +312,7 @@ Dbg.wr('\n');
 for (i=0; i<req_len; ++i) Dbg.wr(tmp[i]);
 
 		int ret = 0;
+		if (tmp[0]!='G' || tmp[1]!='E') return 0;
 
 		k = tmp[5];
 		if (k=='T') {								// request for 'Tal.class'
@@ -356,20 +383,20 @@ Dbg.wr('\n');
 		if (buf[i]=='m') {
 			setMsg(buf, i+2);
 		} else {							// set/reset outValuts
-			outVal = 0;
+			outVal[0] = 0;
 			for(; i<100; ++i) {
 				if (buf[i]=='o') {
 					++i;
 					int j = buf[i]-'1';
 					if (j>=0 && j<=3) {
-						outVal |= 1<<j;
+						outVal[0] |= 1<<j;
 					}
 				} else if (buf[i]=='\r') {
 					break;
 				}
 			}
 	
-			Native.wr(outVal, Native.IO_OUT);
+			Native.wr(outVal[0], Const.IO_OUT);
 		}
 	}
 
@@ -404,7 +431,7 @@ Dbg.wr('\n');
 		} else if (ch1=='h') {
 			return append(buf, pos, getHit());
 		} else if (ch1=='i') {
-			i = Native.rd(Native.IO_IN);
+			i = Native.rd(Const.IO_IN);
 			j = ch2-'1';
 			if ((i&(1<<j))!=0) {
 				return append(buf, pos, "on");
@@ -412,7 +439,7 @@ Dbg.wr('\n');
 				return append(buf, pos, "off");
 			}
 		} else if (ch1=='o') {
-			i = outVal;
+			i = outVal[0];
 			j = ch2-'1';
 			if ((i&(1<<j))!=0) {
 				return append(buf, pos, "on");

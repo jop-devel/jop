@@ -6,11 +6,11 @@
 *
 */
 
+import com.jopdesign.sys.Const;
+
 import util.*;
 import ejip.*;
 import joprt.*;
-
-import com.jopdesign.sys.Native;
 
 public class SlipMon {
 
@@ -31,7 +31,8 @@ public class SlipMon {
 		//
 		//	start device driver threads
 		//
-		ipLink = Slip.init((192<<24) + (168<<16) + (1<<8) + 2); 
+		ipLink = Slip.init(Const.IO_UART_BG_MODEM_BASE,
+			(192<<24) + (168<<16) + (1<<8) + 2); 
 
 
 		RtThread.startMission();

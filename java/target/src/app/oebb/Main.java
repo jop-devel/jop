@@ -17,13 +17,14 @@ import util.*;
 import ejip.*;
 import joprt.*;
 
+import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 
 public class Main {
 
 	// SW version
 	public static final int VER_MAJ = 0;
-	public static final int VER_MIN = 18;
+	public static final int VER_MIN = 23;
 
 	static LinkLayer ipLink;
 
@@ -33,14 +34,13 @@ public class Main {
 
 		reset = false;
 
-		Timer.init(20000000, 5);	// just for the watch dog or some usleep (where ?) in Amd.java!!!!
 		Timer.wd();
 
 		// Dbg.initSer();				// use serial line for debug output
 		Dbg.initSerWait();				// use serial line for debug output
 		Dbg.wr("RESET ");
 		
-		Keyboard.init(Native.IO_BG);
+		Keyboard.init(Const.IO_BG);
 		Timer.wd();
 
 		for (int i=0; i<4; ++i) {
@@ -56,7 +56,7 @@ public class Main {
 		}
 
 		// set DTR to 1
-		Native.wr(8, Native.IO_BG+1);
+		Native.wr(8, Const.IO_BG+1);
 
 		Timer.wd();
 		RtThread.sleepMs(1000);
@@ -73,10 +73,14 @@ Flash.check();
 		//
 		//	start device driver threads
 		//
-		if (val==Keyboard.K2) {
-			ipLink = Ppp.init(); 
+		if (val==Keyboard.K3) {
+			ipLink = Ppp.init(Const.IO_UART_BG_MODEM_BASE); 
+		} else if (val==Keyboard.K2){
+			ipLink = Slip.init(Const.IO_UART_BG_MODEM_BASE,
+				(192<<24) + (168<<16) + (2<<8) + 2); 
 		} else {
-			ipLink = Slip.init((192<<24) + (168<<16) + (1<<8) + 2); 
+			ipLink = Slip.init(Const.IO_UART_BG_MODEM_BASE,
+				(192<<24) + (168<<16) + (1<<8) + 2); 
 		}
 
 

@@ -31,25 +31,10 @@
 package ejip;
 
 /**
-*	Net.java: starts device driver threads and polls for packets.
-*
-*	Author: Martin Schoeberl (martin.schoeberl@chello.at)
-*
-*   Changelog:
-*		2002-03-15	ARP works!
-*		2002-10-21	use Packet buffer, 4 bytes in one word
-*		2002-11-11	runs in its own thread
-*
-*/
-
-import util.*;
-import joprt.*;
-
-/**
 *	Start device driver threads and poll for packets.
 */
 
-public class Net extends RtThread {
+public class Net {
 
 	public static int[] eth;				// own ethernet address
 	public static int ip;					// own ip address
@@ -60,24 +45,17 @@ public class Net extends RtThread {
 	private static Net single;
 
 /**
-*	period for thread in us.
-*/
-	private static final int PRIORITY = 5;
-	private static final int PERIOD = 10000;
-
-/**
 *	private because it's a singleton Thread.
 */
 	private Net() {
-		super(PRIORITY, PERIOD);
 	}
 
 /**
 *	Allocate buffer and create thread.
 */
-	public static void init() {
+	public static Net init() {
 
-		if (single != null) return;			// allready called init()
+		if (single != null) return single;			// allready called init()
 
 		eth = new int[6];
 		eth[0] = 0x00;
@@ -87,7 +65,8 @@ public class Net extends RtThread {
 		eth[4] = 0xb0;
 		eth[5] = 0xf7;		// this is eth card for chello
 		eth[5] = 0xf8;
-		ip = (192<<24) + (168<<16) + (0<<8) + 4;
+		ip = (192<<24) + (168<<16) + (0<<8) + 123;
+		// ip = (192<<24) + (168<<16) + (0<<8) + 4;
 
 		Udp.init();
 		Packet.init();
@@ -97,6 +76,8 @@ public class Net extends RtThread {
 		//	start my own thread
 		//
 		single = new Net();
+		
+		return single;
 	}
 
 
@@ -104,19 +85,16 @@ public class Net extends RtThread {
 *	Look for received packets and call TcpIp.
 *	Mark them to be sent if returned with len!=0 from TcpIp layer.
 */
-	public void run() {
+	public void loop() {
 
 		Packet p;
 
-		for (;;) {
-			// is a received packet in the pool?
-			p = Packet.getPacket(Packet.RCV, Packet.ALLOC);
-			if (p!=null) {					// got one received Packet from pool
-				TcpIp.receive(p);
-			} else {
-				Udp.loop();
-			}
-			waitForNextPeriod();
+		// is a received packet in the pool?
+		p = Packet.getPacket(Packet.RCV, Packet.ALLOC);
+		if (p!=null) {					// got one received Packet from pool
+			TcpIp.receive(p);
+		} else {
+			Udp.loop();
 		}
 	}
 }

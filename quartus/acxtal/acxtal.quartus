@@ -16,7 +16,7 @@ FILES
 	VHDL_FILE = ..\..\vhdl\offtbl.vhd;
 	VHDL_FILE = ..\..\vhdl\jtbl.vhd;
 	VHDL_FILE = ..\..\vhdl\io\iotal.vhd;
-	VHDL_FILE = ..\..\vhdl\io\uart.vhd;
+	VHDL_FILE = ..\..\vhdl\io\uart_tal.vhd;
 	VHDL_FILE = ..\..\vhdl\io\cnt.vhd;
 	VHDL_FILE = ..\..\vhdl\io\fifo.vhd;
 	VHDL_FILE = ..\..\vhdl\io\isa.vhd;

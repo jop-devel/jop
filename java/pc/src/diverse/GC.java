@@ -1,3 +1,5 @@
+package diverse;
+
 
   class GC {
 
@@ -41,7 +43,7 @@ public static final int NULL = -1;
 *
 **************************************************************/
 
-public static int GC(int root) {
+public static int GCTest(int root) {
 
 	for(int i=0; i<memSize; i++) {
 		marked[i] = false;

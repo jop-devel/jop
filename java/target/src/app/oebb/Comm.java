@@ -80,6 +80,7 @@ private static boolean scheduleReset;
 		final static int MAX_OUTSTANDING = 4;
 		final static int MAX_DATA = 4;		// maximum length of data
 		final static int TIMEOUT = 5000000;	// 5 seconds
+//		final static int TIMEOUT = 10000000;	// 10 seconds
 		final static int RETRY = 3;			// maximum send count
 
 		int cmd;		// waiting for repley on this command
@@ -144,7 +145,8 @@ Dbg.wr("no free MsgOut\n");
 				}
 			}
 			// force a reconnect in Ppp-Modem
-			ipLink.reconnect();	
+			ipLink.reconnect();
+			Status.connOk = false;
 			Status.commErr = 1;
 		}
 
@@ -187,9 +189,12 @@ synchronized (monitor) { for(;;); }
 			p.len = (OFF_DATA+len)<<2;		// in bytes
 
 Dbg.wr("send cmd ");
+Dbg.intVal(p.buf[Udp.DATA]);
+/*
 for (int i=Udp.DATA; i<(p.len>>2); ++i) {
 	Dbg.intVal(p.buf[i]);
 }
+*/
 Dbg.lf();
 			// and send it
 stat[0]++;
@@ -349,16 +354,16 @@ Dbg.lf();
 			}
 
 
-if (Status.connOk) {			// Charlys Fehler
-			++ptim;
-			if (ptim==PING_PERIOD) {
-				if (pingOut) {					// last ping not replayed
-					timeout();
+			if (Status.connOk) {
+				++ptim;
+				if (ptim==PING_PERIOD) {
+					if (pingOut) {					// last ping not replayed
+						timeout();
+					}
+					ptim = 0;
+					ping();
 				}
-				ptim = 0;
-				ping();
 			}
-}
 
 		}
 	}
@@ -527,9 +532,12 @@ Dbg.intVal(com.jopdesign.sys.Native.rdMem(i));
 		if (!checkPkt(p)) return;
 		int nr = p.buf[Udp.DATA];
 Dbg.wr("got cmd ");
+Dbg.intVal(p.buf[Udp.DATA]);
+/*
 for (int i=Udp.DATA; i<(p.len>>2); ++i) {
 	Dbg.intVal(p.buf[i]);
 }
+*/
 Dbg.lf();
 
 		if (nr==Cmd.PING) {
@@ -605,7 +613,7 @@ Dbg.lf();
 			Status.von = p.buf[OFF_DATA+1];
 			Status.bis = p.buf[OFF_DATA+2];
 		} else if (nr==Cmd.ANM_RPL || nr==Cmd.MLR_RPL) {
-			Dbg.wr("rpl");
+			;
 		} else if (nr==Cmd.ANK_RPL) {
 			Status.ankunftOk = true;
 		} else if (nr==Cmd.VERL_RPL) {

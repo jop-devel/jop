@@ -30,7 +30,7 @@
 
 #ifdef INCJAVA
 int prog[] = {
-	#include "java.bin"
+	#include "java.jop"
 };
 #endif
 
@@ -1684,8 +1684,9 @@ System.out.println("new heap: "+heap);
 				break;
 			case 221 :		// jopsys_nop
 				break;
-			case 222 :		// resDE
-				noim(222);
+			case 222 :		// jopsys_invoke
+				a = stack[sp--];
+				invoke(a);
 				break;
 			case 223 :		// resDF
 				noim(223);

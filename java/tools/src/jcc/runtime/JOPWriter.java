@@ -575,14 +575,15 @@ public class JOPWriter implements CoreImageWriter, Const, EVMConst {
 					System.exit(-1);
 				}
 
-				addrCnt += 3;		// pointer to main(), JVM, Util classes
+				addrCnt += 4;		// pointer to main(), JVM, Util classes
 				int addrStringTable = addrCnt;
 
 				addrCnt += stringTable.getTableLength();
 
-				int addrMain = 0;	// pointer to main struct
+				int addrBoot = 0;	// pointer to boot code
 				int addrJVM = 0;	// pointer to method table of class JVM
 				int addrJVMHelp = 0;	// pointer to method table of class JVMHelp
+				int addrMain = 0;	// pointer to main struct
 				ClVT oclvt = (ClVT) mapClVT.get("java_lang_Object");
 
 				for (Enumeration e = classTable.enumerate(); e.hasMoreElements(); ) {
@@ -634,6 +635,25 @@ public class JOPWriter implements CoreImageWriter, Const, EVMConst {
 							if (cc.getNativeName().equals("com_jopdesign_sys_JVMHelp")) {
 								addrJVMHelp = cla.mtab+oclvt.len*METH_STR;
 							}
+		//
+		//	find boot() method
+		//
+							if (cc.getNativeName().equals("com_jopdesign_sys_Startup")) {
+								EVMMethodInfo m[] = cc.methods;
+								for (int i = 0; i < m.length; i++) { 
+									EVMMethodInfo meth = m[i];  
+									MethodInfo mi = meth.method;
+									if (mi.name.string.indexOf("boot")!=-1) {
+										String methodNativeName = meth.getNativeName();
+										for (int j=0; j<clvt.len; ++j) {
+											if (clvt.nativeName[j].equals(methodNativeName)) {
+												addrBoot = cla.mtab+j*METH_STR;
+												break;
+											}
+										}
+									}
+								}
+							}
 
 							if (cc.getNativeName().equals("java_lang_String")) {
 								addrString = cla.mtab;
@@ -664,9 +684,10 @@ public class JOPWriter implements CoreImageWriter, Const, EVMConst {
 				out.println("//");
 				out.println("//\tspecial pointer:");
 				out.println("//");
-				out.println("\t\t "+addrMain+",\t// pointer to main method struct");
+				out.println("\t\t "+addrBoot+",\t// pointer to boot code");
 				out.println("\t\t "+addrJVM+",\t// pointer to first non Object method struct of class JVM");
 				out.println("\t\t "+addrJVMHelp+",\t// pointer to first non Object method struct of of class JVMHelp");
+				out.println("\t\t "+addrMain+",\t// pointer to main method struct");
 
 				// Print out the string table
 				njavastrings = stringTable.writeStrings(this, "InternStringTable", addrString, addrStringTable);

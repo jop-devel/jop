@@ -7,12 +7,13 @@ public class Hello {
 	public static void main(String[] agrgs) {
 
 		// need some initialisation
-		Dbg.initSer();
+		Dbg.initSerWait();
 
 		Dbg.wr("Hello World from JAVA!");
 
 		// mark the end of the program
 		// in emb. systems there is no exit()
-		for (;;);
+//		for (;;);
+//		we don't need this anymore!
 	}
 }

@@ -1,7 +1,7 @@
 package testrt;
 import util.*;
 import joprt.*;
-import com.jopdesign.sys.Native;
+import com.jopdesign.sys.*;
 
 //	use differnet (unrelated) period to find WC Jitter
 
@@ -32,11 +32,11 @@ public class PeriodicUnrel {
 			public void run() {
 
 				waitForNextPeriod();
-				int ts_old = Native.rd(Native.IO_US_CNT);
+				int ts_old = Native.rd(Const.IO_US_CNT);
 
 				for (;;) {
 					waitForNextPeriod();
-					int ts = Native.rd(Native.IO_US_CNT);
+					int ts = Native.rd(Const.IO_US_CNT);
 					Result.printPeriod(ts_old, ts);
 					ts_old = ts;
 				}

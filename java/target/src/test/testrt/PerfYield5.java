@@ -1,7 +1,7 @@
 package testrt;
 
 import util.*;
-import com.jopdesign.sys.Native;
+import com.jopdesign.sys.*;
 
 /**
 *	test thread switch performance.
@@ -66,11 +66,11 @@ public class PerfYield5 extends Thread {
 		t3.start();
 		t4.start();
 
-		start = Native.rd(Native.IO_CNT);
+		start = Native.rd(Const.IO_CNT);
 
 		loop();
 
-		end = Native.rd(Native.IO_CNT);
+		end = Native.rd(Const.IO_CNT);
 
 		end -= start;
 		Dbg.wr('\n');

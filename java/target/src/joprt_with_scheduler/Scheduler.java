@@ -5,6 +5,7 @@
 package joprt;
 
 import com.jopdesign.sys.Native;
+import com.jopdesign.sys.Const;
 
 public abstract class Scheduler {
 
@@ -69,13 +70,16 @@ public abstract class Scheduler {
 	//	called by RtThread
 	//
 
-	public abstract void addThread(RtThread t);
+	public void addTask(Task t) {}
 
-// isDead(Task t);
+	public void isDead(Task t) {}
 
 	//
 	//	called by application
 	//
+	// should not be static, but super.start() does not work
+	// in JOP
+	// public void start() {
 	public static void start() {
 
 		// running threads (state!=CREATED)
@@ -92,9 +96,9 @@ public abstract class Scheduler {
 		// on monitorexit from now on
 		Native.wrIntMem(0, 5);
 		// ack any 'pending' int and schedule timer in 10 ms
-		Native.wr(Native.rd(Native.IO_US_CNT)+10000, Native.IO_TIMER);
+		Native.wr(Native.rd(Const.IO_US_CNT)+10000, Const.IO_TIMER);
 		// enable int
-		Native.wr(1, Native.IO_INT_ENA);
+		Native.wr(1, Const.IO_INT_ENA);
 	}
 
 	//
@@ -110,6 +114,8 @@ public abstract class Scheduler {
 	public static void schedInt() {
 		single.schedule();
 	}
+
+
 	public abstract void schedule();
 
 	//
@@ -139,7 +145,7 @@ public abstract class Scheduler {
 		
 		// just schedule an interrupt
 		// schedule() gets called.
-		Native.wr(1, Native.IO_SWINT);
+		Native.wr(1, Const.IO_SWINT);
 	}
 
 	protected static final void enableInt() {
@@ -156,12 +162,16 @@ public abstract class Scheduler {
 		return RtThread.getCnt();
 	}
 
+	protected static final Task getRunningTask() {
+
+		return active;
+	}
 	//
 	//	get 'system' time in us
 	//
-	protected static final int getNow() {
+	public static final int getNow() {
 
-		return Native.rd(Native.IO_US_CNT);
+		return Native.rd(Const.IO_US_CNT);
 	}
 
 	private static int s1;		// helper var for dispatch
@@ -174,10 +184,10 @@ public abstract class Scheduler {
 
 		int i;
 
-		Native.wr(0, Native.IO_INT_ENA);
+		Native.wr(0, Const.IO_INT_ENA);
 
 			// ack int and schedule timer
-			Native.wr(nextTim, Native.IO_TIMER);
+			Native.wr(nextTim, Const.IO_TIMER);
 
 			// save stack
 			i = Native.getSP();
@@ -220,7 +230,7 @@ public abstract class Scheduler {
 			// and DON'T call a method with synchronized
 			// it would enable the INT on monitorexit
 
-		Native.wr(1, Native.IO_INT_ENA);
+		Native.wr(1, Const.IO_INT_ENA);
 	}
 
 
@@ -228,7 +238,7 @@ public abstract class Scheduler {
 	//	called by 'user' thread
 	//
 
-	public static void block() {
+	public void block() {
 
 		genInt();
 	}

@@ -1,2 +1,2 @@
-java -cp ../java/pc/dist/lib/jop-pc.jar Erase 192.168.1.2
-jbi32 -dDO_PROGRAM=1 -aPROGRAM ..\jbc\cyctal_init.jbc
+java -cp ../java/pc/dist/lib/jop-pc.jar udp.Erase 192.168.0.123
+jbi32 -dDO_PROGRAM=1 -aPROGRAM ..\jbc\cyctal.jbc

@@ -3,6 +3,7 @@ package util;
 /**
 *	serial output for debug on uart 1.
 */
+import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 
 public class DbgSerial extends Dbg {
@@ -20,7 +21,7 @@ public class DbgSerial extends Dbg {
 
 		if (waitHs) {
 			// busy wait, no sleep for thread tests!
-			while ((Native.rd(Native.IO_STATUS)&Native.MSK_UA_TDRE)==0) ;
+			while ((Native.rd(Const.IO_STATUS)&Const.MSK_UA_TDRE)==0) ;
 		}
 /*
 		// changed for OEBB
@@ -34,7 +35,7 @@ public class DbgSerial extends Dbg {
 			return;
 		}
 */
-		Native.wr(c, Native.IO_UART);
+		Native.wr(c, Const.IO_UART);
 	}
 
 

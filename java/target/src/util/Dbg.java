@@ -71,6 +71,11 @@ public abstract class Dbg {
 			wr(s.charAt(j));
 		}
 	}
+	
+	public static void wr(boolean b) {
+		
+		wr(b ? "true " : "false ");
+	}
 
 
 	public static void intVal(int val) {

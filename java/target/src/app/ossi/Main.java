@@ -11,10 +11,10 @@ package ossi;
 *
 */
 
-import ejip.*;
 import util.*;
 import joprt.*;
 
+import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 
 /**
@@ -28,7 +28,6 @@ public class Main {
 */
 	public static void main(String[] args) {
 
-		Timer.init(20000000, 5);	// just for the watch dog or some usleep (where ?)
 		// Dbg.init();
 		Dbg.initSer();
 
@@ -100,8 +99,8 @@ Dbg.hexVal(Native.rdMem(0x80001));
 		for (;;) {
 			for (int i=0; i<10; ++i) {
 				RtThread.sleepMs(50);
-				int val = Native.rd(Native.IO_IN);
-				Native.wr(val, Native.IO_LED);
+				int val = Native.rd(Const.IO_IN);
+				Native.wr(val, Const.IO_LED);
 			}
 			Timer.wd();
 		}

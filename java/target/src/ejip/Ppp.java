@@ -128,11 +128,15 @@ public class Ppp extends LinkLayer {
 *	request for reconnect.
 */
 	private static boolean reconnectRequest;
+	
+	private static int connCount;
 
 /**
 *	The one and only reference to this object.
 */
 	private static Ppp single;
+
+	private static Serial ser;
 
 /**
 *	private constructor. The singleton object is created in init().
@@ -144,7 +148,7 @@ public class Ppp extends LinkLayer {
 /**
 *	allocate buffer, start serial buffer and slip Thread.
 */
-	public static LinkLayer init() {
+	public static LinkLayer init(int serAddr) {
 
 		if (single != null) return single;		// allready called init()
 
@@ -156,6 +160,7 @@ public class Ppp extends LinkLayer {
 		flag = false;
 		scnt = 0;
 		sent = 0;
+		connCount = 0;
 
 		lcpId = 0x11;
 		ip = 0;
@@ -164,7 +169,7 @@ public class Ppp extends LinkLayer {
 
 		initStr();
 
-		Serial.init();						// start serial buffer thread
+		ser = new Serial(serAddr, 10, 3000);
 
 		single = new Ppp();
 
@@ -312,7 +317,7 @@ public class Ppp extends LinkLayer {
 
 		int i, j, k, val;
 
-		i = Serial.txFreeCnt();
+		i = ser.txFreeCnt();
 		j = s.length();
 		if (j>i) return false;
 Dbg.wr('\'');
@@ -321,7 +326,7 @@ Dbg.wr('\'');
 			if (val=='|') {
 				waitSec(2);			// for shure if send buffer is full
 			} else {
-				Serial.wr(val);
+				ser.wr(val);
 Dbg.wr(val);
 			}
 		}
@@ -368,9 +373,9 @@ Dbg.wr('\n');
 			waitForNextPeriod();
 			dropIp();
 
-			for (int i = Serial.rxCnt(); i>0; --i) {
+			for (int i = ser.rxCnt(); i>0; --i) {
 
-				int val = Serial.rd();
+				int val = ser.rd();
 Dbg.wr(val);
 				if (val == rcv.charAt(ptr)) {
 					++ptr;
@@ -396,7 +401,7 @@ Dbg.wr('\n');
 
 	void modemInit() {
 
-		for (;;) {
+		for (connCount=1;;++connCount) {
 
 			if (sendWait(ath, ok, 3)) {
 				if (sendWait(flow, ok, 3)) {
@@ -431,8 +436,8 @@ Dbg.wr('\n');
 		state = INIT;
 		rejCnt = 0;
 		// flush buffer
-		for (int i = Serial.rxCnt(); i>0; --i) {
-			Serial.rd();
+		for (int i = ser.rxCnt(); i>0; --i) {
+			ser.rd();
 		}
 		for (;;) {
 			if (sendWait(ath, ok, 3)) {
@@ -483,7 +488,7 @@ Dbg.wr('\n');
 
 		for (;;) {
 			waitForNextPeriod();
-			loop();
+			pppLoop();
 
 			if (state==MODEM_OK) {
 			}
@@ -959,18 +964,18 @@ Dbg.intVal(p.len);
 *	read from serial buffer and build a ppp packet.
 *	send a packet if one is in our send buffer.
 */
-	boolean loop() {
+	boolean pppLoop() {
 
 		int i;
 		boolean ret = false;
 
-		i = Serial.rxCnt();
+		i = ser.rxCnt();
 		if (i!=0 && !ready) {
 			ret = true;
 			rcv(i);
 		}
 		if (scnt!=0) {
-			i = Serial.txFreeCnt();
+			i = ser.txFreeCnt();
 			if (i>2) {	
 				snd(i);
 			}
@@ -987,7 +992,7 @@ Dbg.intVal(p.len);
 		int i;
 
 		if (sent==0) {
-			Serial.wr('~');
+			ser.wr('~');
 			--free;
 		}
 
@@ -997,21 +1002,21 @@ Dbg.intVal(p.len);
 /* no hard code
 if (state >= LCP_OK) { 			// hard code async map
 	if (c=='~' || c=='}' || c==17 || c==19) { // 0x000a0000 async map
-		Serial.wr('}');
-		Serial.wr(c ^ ' ');
+		ser.wr('}');
+		ser.wr(c ^ ' ');
 		free -= 2;
 	} else {
-		Serial.wr(c);
+		ser.wr(c);
 		--free;
 	}
 } else {
 */
 			if (c=='~' || c=='}' || c<0x20) {			// c<0x20 could be omitted after LCP async map
-				Serial.wr('}');
-				Serial.wr(c ^ ' ');
+				ser.wr('}');
+				ser.wr(c ^ ' ');
 				free -= 2;
 			} else {
-				Serial.wr(c);
+				ser.wr(c);
 				--free;
 			}
 /*
@@ -1021,7 +1026,7 @@ if (state >= LCP_OK) { 			// hard code async map
 		sent = i;
 
 		if (sent==scnt && free!=0) {
-			Serial.wr('~');
+			ser.wr('~');
 			scnt = 0;
 			sent = 0;
 		}
@@ -1042,7 +1047,7 @@ if (state >= LCP_OK) { 			// hard code async map
 		// get all bytes from serial buffer
 		for (i=0; i<len && cnt<MAX_BUF; ++i) {
 
-			int val = Serial.rd();
+			int val = ser.rd();
 			if (cnt==0 && !flag && val!='~') {	// wait for a packet start
 				escape = false;					// first data byte is not an escape
 Dbg.wr('d');
@@ -1147,4 +1152,11 @@ for (i=0; i<scnt; ++i) {
 Dbg.wr('\n');
 }
 	}
+	/**
+	 * @return
+	 */
+	public int getConnCount() {
+		return connCount;
+	}
+
 }

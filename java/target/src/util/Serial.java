@@ -1,43 +1,49 @@
 package util;
 
+import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
-import joprt.*;
 
 /**
-*	Buffered serial line in it's own thread with maximum priority.
+*	Buffered serial line. Create a periodic thread
+*	for the loop().
 */
 
-public class Serial extends RtThread {
+public class Serial {
 
 
 	private static final int BUF_LEN = 128;
 	private static final int BUF_MSK = 0x7f;
 
-	private static final int PERIOD = 3000;
+	private static final int DATA = 1;
+	private static final int STATUS = 0;
 
+	// private static final int PERIOD = 3000;
+
+/**
+*	I/O address for UART.
+*/
+	private int io_status;
+	private int io_data;
 /**
 *	Send buffer for serial line.
 */
-	private static int[] txBuf;
+	private int[] txBuf;
 /**
 *	Receive buffer for serial line.
 */
-	private static int[] rxBuf;
+	private int[] rxBuf;
 
-	private static int rdptTx, wrptTx;
-	private static int rdptRx, wrptRx;
+	private int rdptTx, wrptTx;
+	private int rdptRx, wrptRx;
 
-	private static Object monitor;
+	private Object monitor;
 
-	private static Serial ser;
+	private Serial ser;
 
-	Serial(int priority, int us) {
-		super(priority, us);
-	}
+	public Serial(int addr) {
 
-	public static void init() {
-
-		if (ser!=null) return;
+		io_status = addr + STATUS;
+		io_data = addr + DATA;
 
 		txBuf = new int[BUF_LEN];		// should be byte
 		rxBuf = new int[BUF_LEN];
@@ -45,26 +51,13 @@ public class Serial extends RtThread {
 		rdptRx = wrptRx = 0;
 		monitor = new Object();
 
-		//
-		// minimum 1 ms, but performance degrades below 2/3 ms
-		//
-		ser = new Serial(10, PERIOD);
 	}
 
-	public void run() {
-
-		for (;;) {
-			waitForNextPeriod();
-			loop();
-		}
-	}
 
 /**
 *	read and write loop.
-*	call it! (polling)
 */
-	// public static void loop() {
-	private static void loop() {
+	public void loop() {
 
 		int i, j;
 
@@ -74,8 +67,8 @@ public class Serial extends RtThread {
 //
 			i = wrptRx;
 			j = rdptRx;
-			while ((Native.rd(Native.IO_STATUS2) & Native.MSK_UA_RDRF)!=0 && ((i+1)&BUF_MSK)!=j) {
-				rxBuf[i] = Native.rd(Native.IO_UART2);
+			while ((Native.rd(io_status) & Const.MSK_UA_RDRF)!=0 && ((i+1)&BUF_MSK)!=j) {
+				rxBuf[i] = Native.rd(io_data);
 				i = (i+1)&BUF_MSK;
 			}
 			wrptRx = i;
@@ -84,15 +77,15 @@ public class Serial extends RtThread {
 //
 			i = rdptTx;
 			j = wrptTx;
-			while ((Native.rd(Native.IO_STATUS2) & Native.MSK_UA_TDRE)!=0 && i!=j) {
-				Native.wr(txBuf[i], Native.IO_UART2);
+			while ((Native.rd(io_status) & Const.MSK_UA_TDRE)!=0 && i!=j) {
+				Native.wr(txBuf[i], io_data);
 				i = (i+1) & BUF_MSK;
 			}
 			rdptTx = i;
 		}
 	}
 
-	public static int rxCnt() {
+	public int rxCnt() {
 
 		int ret;
 
@@ -102,7 +95,7 @@ public class Serial extends RtThread {
 		return ret;
 	}
 
-	public static int txFreeCnt() {
+	public int txFreeCnt() {
 
 		int ret;
 
@@ -112,7 +105,7 @@ public class Serial extends RtThread {
 		return ret;
 	}
 
-	public static int rd() {
+	public int rd() {
 
 		int i, ch;
 		synchronized (monitor) {
@@ -123,12 +116,17 @@ public class Serial extends RtThread {
 		return ch;
 	}
 
-	public static void wr(int c) {
+	public void wr(int c) {
 
 		synchronized (monitor) {
 			int i = wrptTx;
 			wrptTx = (i+1) & BUF_MSK;
 			txBuf[i] = c;
 		}
+	}
+	
+	public void setDTR(boolean arg) {
+
+		Native.wr(arg ? 1 : 0, io_status);
 	}
 }

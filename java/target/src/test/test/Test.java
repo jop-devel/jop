@@ -1,7 +1,7 @@
 package test;
 
 import util.*;
-import com.jopdesign.sys.Native;
+import com.jopdesign.sys.*;
 
 /**
 *	Test.java ... the name implys it
@@ -15,16 +15,16 @@ public class Test {
 
 		Dbg.initSer();
 
-		int t1 = Native.rd(Native.IO_CNT);
-		int t2 = Native.rd(Native.IO_CNT);
+		int t1 = Native.rd(Const.IO_CNT);
+		int t2 = Native.rd(Const.IO_CNT);
 		int diff = t2-t1;
 
 		Dbg.intVal(diff);
 
 		i = 3; j = 7;
-		t1 = Native.rd(Native.IO_CNT);
+		t1 = Native.rd(Const.IO_CNT);
 		k = i << j;
-		t2 = Native.rd(Native.IO_CNT);
+		t2 = Native.rd(Const.IO_CNT);
 		t2 = t2-t1-diff;
 		Dbg.intVal(t2);
 

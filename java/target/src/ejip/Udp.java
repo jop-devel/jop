@@ -40,6 +40,12 @@ package ejip;
 import util.*;
 
 /**
+ * @author martin
+ *
+ * To change the template for this generated type comment go to
+ * Window&gt;Preferences&gt;Java&gt;Code Generation&gt;Code and Comments
+ */
+/**
 *	UDP functions.
 */
 
@@ -117,6 +123,11 @@ public class Udp {
 
 		buf[2] = (PROTOCOL<<16) + p.len - 20; 		// set protocol and udp length in iph checksum for tcp checksum
 		if (TcpIp.chkSum(buf, 2, p.len-8)!=0) {
+			Dbg.intVal(p.len);
+			Dbg.wr(" : ");
+			for (int k = 0; k < (p.len+3)/4; k++) {
+				Dbg.hexVal(buf[k]);
+			}
 			p.setStatus(Packet.FREE);	// mark packet free
 Dbg.wr("wrong UDP checksum ");
 			return;
@@ -149,6 +160,42 @@ Dbg.intVal(port);
 				p.setStatus(Packet.FREE);
 			}
 		}
+	}
+	
+
+	public static void getData(Packet p, StringBuffer s) {
+		
+		int[] buf = p.buf;
+		s.setLength(0);
+		for (int i = Udp.DATA*4; i < p.len; i++) {
+			s.append((char) ((buf[i>>2]>>(24 - ((i&3)<<3))) & 0xff));
+		}
+	}
+	
+	public static void setData(Packet p, StringBuffer s) {
+		
+		int[] buf = p.buf;
+		int cnt = s.length();
+		// copy buffer
+		int k = 0;
+		for (int i=0; i<cnt; i+=4) {
+			for (int j=0; j<4; ++j) {
+				k <<= 8;
+				if (i+j < cnt) k += s.charAt(i+j);
+			}
+			buf[Udp.DATA + (i>>>2)] = k;
+		}
+
+		p.len = Udp.DATA*4+cnt;
+	}
+	/**
+	 * Generate a reply with IP src/dst exchanged.
+	 * @param p
+	 */
+	public static void reply(Packet p) {
+		
+		int[] buf = p.buf;
+		Udp.build(p, buf[4], buf[3], buf[HEAD]>>>16);
 	}
 
 	/**

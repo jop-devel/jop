@@ -50,12 +50,14 @@ public class Flash {
 		int flags;
 		boolean ankunft;
 		boolean verlassen;
-		StringBuffer station;
+		StringBuffer stationLine1;
+		StringBuffer stationLine2;
 		StringBuffer verschubVon;
 		StringBuffer verschubBis;
 
 		Point() {
-			station = new StringBuffer(19);
+			stationLine1 = new StringBuffer(19);
+			stationLine2 = new StringBuffer(19);
 			verschubVon = new StringBuffer(19);
 			verschubBis = new StringBuffer(19);
 		}
@@ -76,8 +78,14 @@ public class Flash {
 	}
 
 	static final int MAX_POINTS = 100;
-	/** List of GPD points */
+	/** List of GPS points */
 	static Point[] str;
+	/** start of Points in Flash */
+	static int addrPoints;
+	/** Names valid */
+	static boolean textOk;
+	/** Direction for names */
+	static boolean left2right;
 	/** Streckennummer */
 	static int nrStr;
 	/** len of Strecke (in points) */
@@ -86,6 +94,8 @@ public class Flash {
 	static int dstIp;
 	/** connection strings */
 	static StringBuffer[] connStr;
+	
+	static StringBuffer[] tmpStr;
 
 	public static void init() {
 
@@ -102,6 +112,12 @@ public class Flash {
 		connStr[1] = new StringBuffer(40);
 		connStr[2] = new StringBuffer(20);
 		connStr[3] = new StringBuffer(20);
+		
+		tmpStr = new StringBuffer[6];
+		for (int i=0; i<6; ++i) {
+			tmpStr[i] = new StringBuffer(19);
+		}
+		textOk = false;
 		
 	}
 
@@ -189,26 +205,6 @@ public class Flash {
 		return -1;
 	}
 
-	static void setText(int melnr, int[] buf) {
-
-		int i;
-		for (i=0; i<buf.length; ++i) {
-			buf[i] = ' ';
-		}
-		Point p = getPoint(melnr);
-		
-		if (p==null) return;
-
-		int idx = p.ptr;
-		if (idx<=0) return;
-
-		for (i=0; i<buf.length; ++i) {
-			int val = Native.rdMem(DATA_START+idx+i);
-			if (val==0) break;
-			buf[i] = val;
-		}
-	}
-
 	static void loadString(StringBuffer str, int addr) {
 
 		int i;
@@ -233,11 +229,13 @@ public class Flash {
 
 
 	/**
-	*	Load data from flash to str array.
+	*	Load point data from flash to str array.
 	*/
 	static boolean loadStr(int strnr) {
 
 		if (str==null) init();
+		
+		textOk = false;
 
 		// number of Strecken
 		int cnt = intVal(OFF_CNT);
@@ -261,6 +259,7 @@ possible stack overfolw!!!
 				nrStr = strnr;
 				lenStr = nrPt;
 				addr += STR_LEN;
+				addrPoints = addr;
 				for (int j=0; j<nrPt; ++j) {
 					Point p = str[j];
 					p.melnr = intVal(addr+PT_MELNR);
@@ -271,48 +270,6 @@ possible stack overfolw!!!
 					p.ankunft = (p.flags & PT_FLG_ANK)!=0;
 					p.verlassen = (p.flags & PT_FLG_VERL)!=0;
 
-					int idx = p.ptr;
-					if (idx>0) {
-						int k;
-						StringBuffer sp = p.station;
-						sp.setLength(0);
-						for (k=0; k<60; ++k) {
-							int val = Native.rdMem(DATA_START+idx+k);
-							if (val==0) break;
-							if (val == '^') {
-								++k;
-								break;
-							}
-							sp.append((char) val);
-							if (sp.length()>=19) break;
-						}
-
-						sp = p.verschubVon;
-						sp.setLength(0);
-						for (; k<60; ++k) {
-							int val = Native.rdMem(DATA_START+idx+k);
-							if (val==0) break;
-							if (val == '^') {
-								++k;
-								break;
-							}
-							sp.append((char) val);
-							if (sp.length()>=19) break;
-						}
-
-						sp = p.verschubBis;
-						sp.setLength(0);
-						for (; k<60; ++k) {
-							int val = Native.rdMem(DATA_START+idx+k);
-							if (val==0) break;
-							if (val == '^') {
-								++k;
-								break;
-							}
-							sp.append((char) val);
-							if (sp.length()>=19) break;
-						}
-					}
 					
 					addr += PT_LEN;
 				}
@@ -322,6 +279,59 @@ possible stack overfolw!!!
 		}
 		Dbg.wr("Strecke not found ", strnr);
 		return false;											// not found
+	}
+
+	/**
+	*	Load strings from flash to str array.
+	*	Points MUST be loaded with loadStr().
+	*/
+	static void loadStrNames(int strnr, int von, int bis) {
+
+		boolean l2r = bis-von>=0;
+		
+		if (l2r==left2right && textOk) return;
+Dbg.wr("loadStrNames ");
+Dbg.intVal(strnr);
+Dbg.lf();
+		
+		// if we go from left to right,
+		// ziel is right name
+		int line = l2r ? 2 : 0;
+		
+		int addr = addrPoints;
+		for (int i=0; i<lenStr; ++i) {
+			Point p = str[i];
+			p.ptr = intVal(addr+PT_PTR);
+
+			int idx = p.ptr;
+			if (idx<=0) continue;
+			
+			int val = ' ';
+			int off = 0;
+			for (int j=0; j<6 && val!=0; ++j) {
+				tmpStr[j].setLength(0);
+				for (int k=0; k<19; ++k) {
+					val = Native.rdMem(DATA_START+idx+off);
+					++off;
+					if (val==0 || val=='^') break;
+					tmpStr[j].append((char) val);
+				}
+Dbg.wr(tmpStr[j]);
+			}
+			p.stationLine1.setLength(0);
+			p.stationLine2.setLength(0);
+			p.stationLine1.append(tmpStr[line]);
+			p.stationLine2.append(tmpStr[line+1]);
+			
+			p.verschubVon.setLength(0);
+			p.verschubVon.append(tmpStr[4]);
+			p.verschubBis.setLength(0);
+			p.verschubBis.append(tmpStr[5]);
+			addr += PT_LEN;
+			
+		}
+		textOk = true;
+		left2right = l2r;
 	}
 
 	/**

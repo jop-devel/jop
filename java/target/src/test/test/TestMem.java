@@ -1,5 +1,7 @@
 package test;
 
+import joprt.RtThread;
+
 import com.jopdesign.sys.Native;
 import util.*;
 
@@ -16,7 +18,6 @@ public class TestMem {
 
 	public static void main( String s[] ) {
 
-		Timer.init(20000000, 5); // only for link
 		Dbg.initSer();
 		Timer.wd();
 
@@ -33,7 +34,7 @@ public class TestMem {
 				Dbg.wr('.');
 				cnt = 0;
 			}
-			Timer.waitForNextInterval();
+			RtThread.sleepMs(10);
 		}
 	}
 /*

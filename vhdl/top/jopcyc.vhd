@@ -29,13 +29,13 @@ use ieee.numeric_std.all;
 entity jop is
 
 generic (
-	clk_freq	: integer := 20000000;	-- 20 MHz clock frequency
--- clk_freq	: integer := 100000000;	-- 100 MHz clock frequency
+--	clk_freq	: integer := 20000000;	-- 20 MHz clock frequency
+clk_freq	: integer := 100000000;	-- 100 MHz clock frequency
 	width		: integer := 32;	-- one data word
 	ioa_width	: integer := 3;		-- address bits of internal io
 	ram_cnt		: integer := 3;		-- clock cycles for external ram
-	rom_cnt		: integer := 3		-- clock cycles for external rom
---	rom_cnt		: integer := 30		-- clock cycles for external rom
+--	rom_cnt		: integer := 3		-- clock cycles for external rom OK for 20 MHz
+rom_cnt		: integer := 15		-- clock cycles for external rom for 100 MHz
 );
 
 port (
@@ -272,11 +272,11 @@ end process;
 --
 --	components of jop
 --
---	pll_inst : pll port map (
---		inclk0	 => clk,
---		c0	 => clk_int
---	);
-	clk_int <= clk;
+	pll_inst : pll port map (
+		inclk0	 => clk,
+		c0	 => clk_int
+	);
+--	clk_int <= clk;
 
 	cmp_core: core 
 		port map (clk_int, int_res,

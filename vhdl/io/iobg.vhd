@@ -239,7 +239,8 @@ begin
 		);
 
 	-- Siemens TC35 sends up to 32!!! characters after cts deasert
-	cmp_ua2 : uart generic map (6, clk_freq, 38400, 16, 2, 50, 16)
+	-- cmp_ua2 : uart generic map (6, clk_freq, 38400, 16, 2, 50, 16)
+	cmp_ua2 : uart generic map (6, clk_freq, 115200, 16, 2, 50, 16)
 			port map (clk, reset, addr,
 				din, wr, dout, rd,
 				l(14), 		-- txd

@@ -1,7 +1,7 @@
 package vm04;
 import util.*;
 import joprt.*;
-import com.jopdesign.sys.Native;
+import com.jopdesign.sys.*;
 
 public class Event {
 
@@ -20,7 +20,7 @@ public class Event {
 		sev = new SwEvent(11, 10000) {
 
 			public void handle() {
-				f_tim = Native.rd(Native.IO_CNT);
+				f_tim = Native.rd(Const.IO_CNT);
 			}
 		};
 
@@ -31,7 +31,7 @@ public class Event {
 
 				for (i=0; i<CNT; ++i) {
 					waitForNextPeriod();
-					ts = Native.rd(Native.IO_CNT);
+					ts = Native.rd(Const.IO_CNT);
 					sev.fire();
 					result[i] = f_tim-ts;
 				}

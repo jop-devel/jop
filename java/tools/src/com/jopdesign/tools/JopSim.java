@@ -19,20 +19,22 @@ import com.jopdesign.sys.*;
 public class JopSim {
 
 	static final int MAX_MEM = 1024*1024/4;
-	static final int MAX_BC = 1024;		// per function
 	static final int MAX_STACK = 256;	// with internal memory
 
 	static final int SYS_INT = 0xf0;
 
+	int[] mem_load = new int[MAX_MEM];
 	int[] mem = new int[MAX_MEM];
-	byte[] bc = new byte[MAX_BC];
 	int[] stack = new int[MAX_STACK];
+	Cache cache;
 
 	int pc, cp, vp, sp, mp;
 	int heap;
 	int jjp;
 	int jjhp;
 	int moncnt;
+
+	int empty_heap;
 
 	static final boolean LOG = false;
 
@@ -47,21 +49,18 @@ public class JopSim {
 	//
 	//	only for statistics
 	//
-	int ioCnt = 0;
+	int ioCnt;
 
 	int[] bcStat = new int[256];
-	int rdMemCnt = 0;
-	int wrMemCnt = 0;
-	int rdBcCnt = 0;
-	int maxInstr = 0;
-	int instrCnt = 0;
-	int instrBytesCnt = 0;
-	int maxSp = 0;
+	int rdMemCnt;
+	int wrMemCnt;
+	int maxInstr;
+	int instrCnt;
+	int maxSp;
 
 	JopSim(String fn, int max) {
 		maxInstr = max;
 		init(fn);
-		interpret();
 	}
 
 	JopSim(String fn) {
@@ -86,7 +85,7 @@ public class JopSim {
 			
 			while (in.nextToken()!=StreamTokenizer.TT_EOF) {
 				if (in.ttype == StreamTokenizer.TT_NUMBER) {
-					mem[heap++] = (int) in.nval;
+					mem_load[heap++] = (int) in.nval;
 				}
 			}
 
@@ -95,7 +94,28 @@ public class JopSim {
 			System.exit(-1);
 		}
 
-		System.out.println(heap + " words mem read");
+		int instr = mem_load[0];
+		System.out.println("Program: "+fn);
+		System.out.println(instr + " instruction word ("+(instr*4/1024)+" KB)");
+		System.out.println(heap + " words mem read ("+(heap*4/1024)+" KB)");
+		empty_heap = heap;
+
+		cache = new Cache(mem, this);
+
+	}
+
+	void start() {
+
+		ioCnt = 0;
+		rdMemCnt = 0;
+		wrMemCnt = 0;
+		instrCnt = 0;
+		maxSp = 0;
+		for (int i=0; i<256; ++i) bcStat[i] = 0;
+
+		heap = empty_heap;
+		for (int i=0; i<heap; ++i) mem[i] = mem_load[i];
+		moncnt = 1;
 
 		nextTimerInt = 0;
 		intPend = false;
@@ -111,70 +131,6 @@ public class JopSim {
 		invokestatic(ptr);			// load main()
 	}
 
-
-/**
-*	calculate 'cache' usage
-*/
-
-
-	int rdBcCntCache = 0;
-	int[] ctag = {-1, -1, -1, -1};
-	int[] clen = {-1, -1, -1, -1};
-	int[] lrucnt = {0, 0, 0, 0};
-
-	void simCach(int start, int len) {
-
-//for (int i=0; i<4; ++i) System.out.print(ctag[i]+" "); System.out.println(" start="+start);
-		for (int i=0; i<4; ++i) {
-			if (ctag[i]==start) {	// HIT
-				lrucnt[i]++;
-				return;
-			}
-		}
-
-		rdBcCntCache += len;		// read BC data
-
-//
-//	LRU system
-//
-		int min = lrucnt[0];		// finde last recently used block
-		int max = lrucnt[0];		// and max lru count
-		int usenr = 0;
-		for (int i=1; i<4; ++i) {
-			if (lrucnt[i] < min) {
-				min = lrucnt[i];
-				usenr = i;
-			}
-			if (lrucnt[i] > max) {
-				max = lrucnt[i];
-			}
-		}
-
-//for (int i=0; i<4; ++i) System.out.print(lrucnt[i]+" "); System.out.println("\t\tnew usenr="+usenr);
-//
-//	discard smallest
-//
-/* not really good!!!
-		int small = clen[0];
-		usenr = 0;
-		for (int i=1; i<4; ++i) {
-			if (clen[i] < small) {
-				small = clen[i];
-				usenr = i;
-			}
-		}
-for (int i=0; i<4; ++i) System.out.print(clen[i]+" "); System.out.println(" new usenr="+usenr);
-*/
-
-		ctag[usenr] = start;		// use block usenr
-		lrucnt[usenr] = max+1;
-		clen[usenr] = len;
-
-
-		for (int i=0; i<4; ++i) {	// bring lru counters back to low value
-			lrucnt[i] -= min;
-		}
-	}
 /**
 *	'debug' functions.
 */
@@ -209,6 +165,18 @@ System.out.println(mp+" "+pc);
 /**
 *	helper functions.
 */
+	int readInstrMem(int addr) {
+
+// System.out.println(addr+" "+mem[addr]);
+		ioCnt += 12;
+
+		if (addr>heap || addr<0) {
+			System.out.println("readInstrMem: wrong address: "+addr);
+			System.exit(-1);
+		}
+
+		return mem[addr];
+	}
 	int readMem(int addr) {
 
 // System.out.println(addr+" "+mem[addr]);
@@ -235,25 +203,9 @@ System.out.println(mp+" "+pc);
 		mem[addr] = data;
 	}
 
-	void loadBc(int start, int len) {
-
-// high byte of word is first bc!!!
-		for (int i=0; i<len; ++i) {
-			int val = readMem(start+i);
-			for (int j=0; j<4; ++j) {
-				bc[i*4+(3-j)] = (byte) val;
-				val >>>= 8;
-			}
-		}
-
-		rdBcCnt += len;
-		simCach(start, len);
-	}
-
 	int readOpd16u() {
 
-		instrBytesCnt += 2;
-		int idx = ((bc[pc]<<8) | (bc[pc+1]&0x0ff)) & 0x0ffff;
+		int idx = ((cache.bc(pc)<<8) | (cache.bc(pc+1)&0x0ff)) & 0x0ffff;
 		pc += 2;
 		return idx;
 	}
@@ -269,14 +221,12 @@ System.out.println(mp+" "+pc);
 
 	int readOpd8s() {
 
-		++instrBytesCnt;
-		return bc[pc++];
+		return cache.bc(pc++);
 	}
 
 	int readOpd8u() {
 
-		++instrBytesCnt;
-		return bc[pc++]&0x0ff;
+		return cache.bc(pc++)&0x0ff;
 	}
 
 	int usCnt() {
@@ -287,16 +237,16 @@ System.out.println(mp+" "+pc);
 
 		int addr = stack[sp];
 		switch (addr) {
-			case Native.IO_STATUS:
+			case Const.IO_STATUS:
 				stack[sp] = -1;
 				break;
-			case Native.IO_UART:
+			case Const.IO_UART:
 				stack[sp] = 'u';
 				break;
-			case Native.IO_CNT:
+			case Const.IO_CNT:
 				stack[sp] = ioCnt;
 				break;
-			case Native.IO_US_CNT:
+			case Const.IO_US_CNT:
 				stack[sp] = usCnt();
 				break;
 			default:
@@ -309,20 +259,20 @@ System.out.println(mp+" "+pc);
 		int addr = stack[sp--];
 		int val = stack[sp--];
 		switch (addr) {
-			case Native.IO_UART:
+			case Const.IO_UART:
 				if (LOG) System.out.print("\t->");
 				System.out.print((char) val);
 				if (LOG) System.out.println("<-");
 				break;
-			case Native.IO_INT_ENA:
+			case Const.IO_INT_ENA:
 				intEna = (val==0) ? false : true;
 				break;
-			case Native.IO_TIMER:
+			case Const.IO_TIMER:
 				intPend = false;		// reset pending interrupt
 				interrupt = false;		// for shure ???
 				nextTimerInt = val;
 				break;
-			case Native.IO_SWINT:
+			case Const.IO_SWINT:
 				if (!intPend) {
 					interrupt = true;
 					intPend = true;
@@ -408,14 +358,12 @@ System.out.println(mp+" "+pc);
 // System.out.println("inv: start: "+start+" len: "+len+" locals: "+locals+" args: "+args+" cp: "+cp);
 
 		stack[++sp] = old_sp;
-		stack[++sp] = pc;
+		stack[++sp] = cache.corrPc(pc);
 		stack[++sp] = old_vp;
 		stack[++sp] = old_cp;
 		stack[++sp] = old_mp;
 
-		loadBc(start, len);
-		pc = 0;
-
+		pc = cache.invoke(start, len);
 	}
 
 /**
@@ -434,7 +382,7 @@ System.out.println(mp+" "+pc);
 		start >>>= 10;
 		// cp = readMem(mp+1)>>>10;
 
-		loadBc(start, len);
+		pc = cache.ret(start, len, pc);
 	}
 
 	void ireturn() {
@@ -522,12 +470,11 @@ System.out.println(mp+" "+pc);
 //
 //	statistic
 //
-			++instrBytesCnt;
 			++instrCnt;
 			if (sp > maxSp) maxSp = sp;
 
 
-			int instr = bc[pc++] & 0x0ff;
+			int instr = cache.bc(pc++) & 0x0ff;
 
 //
 //	interrupt handling
@@ -1278,6 +1225,7 @@ System.out.println("new heap: "+heap);
 						cp = val;
 					} else if (ref==2) {
 						heap = val;
+// System.out.println("jopsys_wrint: heap "+heap);
 					} else if (ref==3) {
 						jjp = val;
 					} else if (ref==4) {
@@ -1322,8 +1270,9 @@ System.out.println("new heap: "+heap);
 					break;
 				case 221 :		// jopsys_nop
 					break;
-				case 222 :		// resDE
-					noim(222);
+				case 222 :		// jopsys_invoke
+					a = stack[sp--];
+					invoke(a);
 					break;
 				case 223 :		// resDF
 					noim(223);
@@ -1438,8 +1387,12 @@ System.out.println("new heap: "+heap);
 
 		}
 
-/*
+	}
+
+	void stat() {
+
 System.out.println();
+/*
 int sum = 0;
 int sumcnt = 0;
 for (int i=0; i<256; ++i) {
@@ -1452,25 +1405,40 @@ for (int i=0; i<256; ++i) {
 System.out.println();
 System.out.println(sum+" instructions, "+sumcnt+" cycles, "+instrBytesCnt+" bytes");
 */
-System.out.println(maxSp+" maximum sp");
-System.out.println(heap+" heap");
-System.out.println();
-System.out.println("memory: "+rdMemCnt+" read ("+rdBcCnt+" bc read), "+wrMemCnt+" write");
-System.out.println("bc read / bc byte = "+((float) (rdBcCnt*4)/instrBytesCnt));
-System.out.println("Cache: "+rdBcCntCache+" bc read, bc read / bc byte = "+((float) (rdBcCntCache*4)/instrBytesCnt));
+		System.out.println(maxSp+" maximum sp");
+		System.out.println(heap+" heap");
+		System.out.println();
+		System.out.println(instrCnt+" Instructions executed");
+		int insByte = cache.instrBytes();
+		System.out.println(insByte+" Instructions bytes");
+		System.out.println(((float) insByte/instrCnt)+" average Instruction length");
+		System.out.println("memory word: "+rdMemCnt+" load "+wrMemCnt+" store");
+		System.out.println("memory word per instruction: "+
+			((float) rdMemCnt/instrCnt)+" load "+
+			((float) wrMemCnt/instrCnt)+" store");
+		System.out.println();
+
 
 	}
 
 	public static void main(String args[]) {
 
+		JopSim js = null;
 		if (args.length==1) {
-			JopSim js = new JopSim(args[0]);
+			js = new JopSim(args[0]);
 		} else if (args.length==2) {
-			JopSim js = new JopSim(args[0], Integer.parseInt(args[1]));
+			js = new JopSim(args[0], Integer.parseInt(args[1]));
 		} else {
 			System.out.println("usage: java JopSim file.bin [max instr]");
 			System.exit(-1);
 		}
 
+		for (int i=0; i<js.cache.cnt(); ++i) {
+			js.cache.use(i);
+			js.start();
+			js.interpret();
+			if (i==0) js.stat();
+			js.cache.stat();
+		}
 	}
 }

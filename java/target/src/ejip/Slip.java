@@ -58,11 +58,6 @@ import util.*;
 public class Slip extends LinkLayer {
 
 	private static final int MAX_BUF = 1500;		// or should we use 1006
-/**
-*	period for thread in us.
-*/
-	private static final int PRIORITY = 9;
-	private static final int PERIOD = 10000;	// timeout depends on period!
 
 	private static final int END = 0xc0;
 	private static final int ESC = 0xdb;
@@ -110,18 +105,19 @@ private static int simSendErr, simRcvErr;
 *	The one and only reference to this object.
 */
 	private static Slip single;
+	
+	private static Serial ser;
 
 /**
 *	private constructor. The singleton object is created in init().
 */
 	private Slip() {
-		super(PRIORITY, PERIOD);
 	}
 
 /**
 *	allocate buffer, start serial buffer and slip Thread.
 */
-	public static LinkLayer init(int ipAddr) {
+	public static LinkLayer init(Serial serPort, int ipAddr) {
 
 		ip = ipAddr;
 
@@ -135,7 +131,7 @@ private static int simSendErr, simRcvErr;
 		scnt = 0;
 		sent = 0;
 
-		Serial.init();						// start serial buffer thread
+		ser = serPort;
 
 		single = new Slip();
 
@@ -158,30 +154,28 @@ private static int simSendErr, simRcvErr;
 	*/
 	public void reconnect() {
 	}
+	static int timer;
+	
 /**
 *	main loop.
 */
-	public void run() {
+	public void loop() {
 
-		int timer = 0;; 
 		Packet p;
 
-		for (;;) {
-			waitForNextPeriod();
-
-			//
-			//	read, write loop
-			//
-			if (loop()) {
-				timer = 0;
-			} else {
-				++timer;
-				if (timer>100 && cnt>0) {		// flush buffer on timeout (100*10ms)
-					Dbg.wr('t');
+		//
+		//	read, write loop
+		//
+		if (ipLoop()) {
+			timer = 0;
+		} else {
+			++timer;
+			if (timer>100 && cnt>0) {		// flush buffer on timeout (100*10ms)
+				Dbg.wr('t');
 for (int i=0; i<cnt; ++i) {
 int val = rbuf[i];
 if (val=='\r') {
-	Dbg.wr('r');
+Dbg.wr('r');
 } else {
 	Dbg.wr(val);
 }
@@ -191,40 +185,38 @@ if (val=='\r') {
 					ready = false;
 					timer = 0;
 					// send anything back for windoz slip version
-					if (Serial.txFreeCnt()>0) {
-						Serial.wr('C');
-						Serial.wr('L');
-						Serial.wr('I');
-						Serial.wr('E');
-						Serial.wr('N');
-						Serial.wr('T');
-						Serial.wr('S');
-						Serial.wr('E');
-						Serial.wr('R');
-						Serial.wr('V');
-						Serial.wr('E');
-						Serial.wr('R');
-						Serial.wr('\r');
-					}
+				if (ser.txFreeCnt()>0) {
+					ser.wr('C');
+					ser.wr('L');
+					ser.wr('I');
+					ser.wr('E');
+					ser.wr('N');
+					ser.wr('T');
+					ser.wr('S');
+					ser.wr('E');
+					ser.wr('R');
+					ser.wr('V');
+					ser.wr('E');
+					ser.wr('R');
+					ser.wr('\r');
 				}
 			}
+		}
 
+		//
+		//	copy packet to packet buffer.
+		//
+		if (ready) {				// we got a packet
+			read();
+		}
+		if (scnt==0) {				// transmit buffer is free
 			//
-			//	copy packet to packet buffer.
+			// get a ready to send packet with source from this driver.
 			//
-			if (ready) {				// we got a packet
-				read();
+			p = Packet.getPacket(single, Packet.SND, Packet.ALLOC);
+			if (p!=null) {
+				send(p);				// send one packet
 			}
-			if (scnt==0) {				// transmit buffer is free
-				//
-				// get a ready to send packet with source from this driver.
-				//
-				p = Packet.getPacket(single, Packet.SND, Packet.ALLOC);
-				if (p!=null) {
-					send(p);				// send one packet
-				}
-			}
-
 		}
 	}
 
@@ -318,19 +310,19 @@ return;
 *	read from serial buffer and build an ip packet.
 *	send a packet if one is in our send buffer.
 */
-	private static boolean loop() {
+	private static boolean ipLoop() {
 
 		int i;
 		boolean ret = false;
 
-		i = Serial.rxCnt();
+		i = ser.rxCnt();
 		if (i!=0) {
 			ret = true;
 			rcv(i);
 		}
 		if (cnt==MAX_BUF && !ready) cnt = 0;	// buffer full, but not ready => drop it
 		if (scnt!=0) {
-			i = Serial.txFreeCnt();
+			i = ser.txFreeCnt();
 			if (i>2) {	
 				snd(i);
 			}
@@ -347,7 +339,7 @@ return;
 		int i;
 
 		if (sent==0) {
-			Serial.wr(END);
+			ser.wr(END);
 			--free;
 		}
 
@@ -355,22 +347,22 @@ return;
 
 			int c = sbuf[i];
 			if (c==END) {
-				Serial.wr(ESC);
-				Serial.wr(ESC_END);
+				ser.wr(ESC);
+				ser.wr(ESC_END);
 				free -= 2;
 			} else if (c==ESC) {
-				Serial.wr(ESC);
-				Serial.wr(ESC_ESC);
+				ser.wr(ESC);
+				ser.wr(ESC_ESC);
 				free -= 2;
 			} else {
-				Serial.wr(c);
+				ser.wr(c);
 				--free;
 			}
 		}
 		sent = i;
 
 		if (sent==scnt && free!=0) {
-			Serial.wr(END);
+			ser.wr(END);
 			scnt = 0;
 			sent = 0;
 		}
@@ -388,7 +380,7 @@ return;
 
 			if (ready) break;			// wait till buffer is copied
 
-			int val = Serial.rd();
+			int val = ser.rd();
 
 			if (esc) {
 				if (val == ESC_END) {
@@ -420,6 +412,13 @@ return;
 			}
 		}
 	}
+
+/* (non-Javadoc)
+ * @see ejip.LinkLayer#getConnCount()
+ */
+public int getConnCount() {
+	return 0;
+}
 
 
 }

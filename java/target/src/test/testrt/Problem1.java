@@ -1,6 +1,6 @@
 package testrt;
 import util.*;
-import com.jopdesign.sys.Native;
+import com.jopdesign.sys.*;
 
 public class Problem1 {
 
@@ -13,10 +13,10 @@ public class Problem1 {
 		syn = new Object();
 		// ack int and schedule timer in 330 ms
 		Native.wr(
- 			Native.rd(Native.IO_US_CNT) + 330000,
-			Native.IO_TIMER);
+ 			Native.rd(Const.IO_US_CNT) + 330000,
+			Const.IO_TIMER);
 		// enable int
-		Native.wr(1, Native.IO_INT_ENA);
+		Native.wr(1, Const.IO_INT_ENA);
 
 		Thread th = new Thread() {
 			public void run() {

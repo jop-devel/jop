@@ -37,8 +37,8 @@ public class Periodic {
 			public void run() {
 				for (;;) {
 					Dbg.wr('*');
-					int ts = Native.rd(Native.IO_US_CNT) + 990000;
-					while (ts-Native.rd(Native.IO_US_CNT)>0)
+					int ts = Scheduler.getNow() + 990000;
+					while (ts-Scheduler.getNow()>0)
 						;
 					waitForNextPeriod();
 				}

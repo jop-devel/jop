@@ -156,7 +156,15 @@ for (fp=10530; fp<=10700; ++fp) {
 
 
 	static void wr(int c) {
-		while ((Native.rd(Native.IO_STATUS)&1)==0) ;
-		Native.wr(c, Native.IO_UART);
+		while ((Native.rd(Const.IO_STATUS)&1)==0) ;
+		Native.wr(c, Const.IO_UART);
+	}
+	
+	static void wr(String s) {
+
+		int i = s.length();
+		for (int j=0; j<i; ++j) {
+			wr(s.charAt(j));
+		}
 	}
 }

@@ -4,6 +4,7 @@
 
 package joprt;
 
+import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 
 public class RtThread {
@@ -52,20 +53,20 @@ private int next;
 			yield();
 		}
 		nextOk = true;
-		next = Native.rd(Native.IO_CNT);
+		next = Native.rd(Const.IO_US_CNT);
 	}
 
 
 	public boolean waitForNextPeriod() {
 
 		if (!nextOk) {
-			next = Native.rd(Native.IO_CNT);		// this should not happen!
+			next = Native.rd(Const.IO_US_CNT);		// this should not happen!
 			nextOk = true;							// you forgot to wait on start mission
 		}
 
 		next += period;
 
-		int i = Native.rd(Native.IO_CNT);
+		int i = Native.rd(Const.IO_US_CNT);
 		if (next-i < 0) {							// missed time!
 			next = i;								// correct next
 			return false;
@@ -74,7 +75,7 @@ private int next;
 		state = WAITING;
 		yield();
 */
-		while (next-Native.rd(Native.IO_CNT) >= 0) {	// 'busy' wait with yield.
+		while (next-Native.rd(Const.IO_US_CNT) >= 0) {	// 'busy' wait with yield.
 try { Thread.sleep(1); } catch (Exception e) {}
 			yield();
 		}
@@ -89,8 +90,8 @@ try { Thread.sleep(1); } catch (Exception e) {}
 
 	public static void sleepMs(int millis) {
 	
-		int next = Native.rd(Native.IO_US_CNT)+millis*1000;
-		while (Native.rd(Native.IO_US_CNT)-next < 0) {
+		int next = Native.rd(Const.IO_US_CNT)+millis*1000;
+		while (Native.rd(Const.IO_US_CNT)-next < 0) {
 try { Thread.sleep(1); } catch (Exception e) {}
 			yield();
 		}

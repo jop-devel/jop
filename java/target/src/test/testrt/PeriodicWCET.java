@@ -1,7 +1,7 @@
 package testrt;
 import util.*;
 import joprt.*;
-import com.jopdesign.sys.Native;
+import com.jopdesign.sys.*;
 
 //
 //	max threads, max stack, max function length
@@ -153,11 +153,11 @@ Timer.cnt();
 Timer.cnt();
 Timer.cnt();
 				waitForNextPeriod();
-				int ts_old = Native.rd(Native.IO_US_CNT);
+				int ts_old = Native.rd(Const.IO_US_CNT);
 
 				for (;;) {
 					waitForNextPeriod();
-					int ts = Native.rd(Native.IO_US_CNT);
+					int ts = Native.rd(Const.IO_US_CNT);
 					Result.printPeriod(ts_old, ts);
 					ts_old = ts;
 				}
@@ -189,8 +189,8 @@ Timer.cnt();
 					for (;;) {
 Dbg.wr('*');
 						waitForNextPeriod();
-						int ts = Native.rd(Native.IO_US_CNT) + 890000;
-						while (ts-Native.rd(Native.IO_US_CNT)>0)
+						int ts = Native.rd(Const.IO_US_CNT) + 890000;
+						while (ts-Native.rd(Const.IO_US_CNT)>0)
 							;
 					}
 				}

@@ -429,7 +429,7 @@ synchronized (o) {
 /* is now in jvm.asm
 */
 		// is there a race condition???????????????? when timer int happens NOW!
-		Native.wr(0, Native.IO_INT_ENA);
+		Native.wr(0, Const.IO_INT_ENA);
 		++enterCnt;
 		// JVMHelp.wr('M');
 	}
@@ -445,7 +445,7 @@ if (enterCnt<0) {
 	for (;;);
 }
 		if (enterCnt==0) {
-			Native.wr(1, Native.IO_INT_ENA);
+			Native.wr(1, Const.IO_INT_ENA);
 		}
 	}
 

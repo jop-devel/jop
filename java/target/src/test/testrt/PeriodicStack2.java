@@ -1,7 +1,7 @@
 package testrt;
 import util.*;
 import joprt.*;
-import com.jopdesign.sys.Native;
+import com.jopdesign.sys.*;
 
 //
 //	increase stack in busy RtThread and RtThread (6 entries per function call)
@@ -33,11 +33,11 @@ public class PeriodicStack2 {
 			void loop() {
 
 				waitForNextPeriod();
-				int ts_old = Native.rd(Native.IO_US_CNT);
+				int ts_old = Native.rd(Const.IO_US_CNT);
 
 				for (;;) {
 					waitForNextPeriod();
-					int ts = Native.rd(Native.IO_US_CNT);
+					int ts = Native.rd(Const.IO_US_CNT);
 					Result.printPeriod(ts_old, ts);
 					ts_old = ts;
 				}
@@ -67,8 +67,8 @@ public class PeriodicStack2 {
 				for (;;) {
 Dbg.wr('*');
 					waitForNextPeriod();
-					int ts = Native.rd(Native.IO_US_CNT) + 990000;
-					while (ts-Native.rd(Native.IO_US_CNT)>0)
+					int ts = Native.rd(Const.IO_US_CNT) + 990000;
+					while (ts-Native.rd(Const.IO_US_CNT)>0)
 						;
 				}
 			}

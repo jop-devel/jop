@@ -13,6 +13,7 @@
 --		10-11	display uart + display reset
 --		12-13	keyboard io, bg io
 --	TAL
+--		8		ADC3 input (battery watch)
 --		10		in pins, led outs
 --		11		out pins
 --		12		ADC1 input
@@ -29,6 +30,8 @@
 --
 --
 --	2003-09-23	created for 'new' io standard
+--	2004-04-08	more leds, bat output, ADC for VCC watching
+--	2004-04-23	special uart with two baud rates, hs on/off, dtr
 --
 --
 
@@ -102,7 +105,7 @@ port (
 end component cnt ;
 
 
-component uart is
+component uart_tal is
 generic (io_addr : integer; clk_freq : integer;
 	baud_rate : integer;
 	txf_depth : integer; txf_thres : integer;
@@ -119,9 +122,10 @@ port (
 	txd		: out std_logic;
 	rxd		: in std_logic;
 	ncts	: in std_logic;
-	nrts	: out std_logic
+	nrts	: out std_logic;
+	dtr		: out std_logic
 );
-end component uart;
+end component uart_tal;
 
 component tal is
 
@@ -137,7 +141,8 @@ port (
 
 -- io ports
 	i			: in std_logic_vector(10 downto 1);
-	lo			: out std_logic_vector(10 downto 1);
+	lo			: out std_logic_vector(14 downto 1);
+	bat			: out std_logic;
 	o			: out std_logic_vector(4 downto 1)
 );
 end component tal;
@@ -184,7 +189,8 @@ end component sigdel ;
 
 	signal addr		: std_logic_vector(3 downto 0);		-- io address
 
-	signal lo		: std_logic_vector(10 downto 1);
+	signal lo		: std_logic_vector(14 downto 1);
+	signal bat		: std_logic;
 	signal isa_a	: std_logic_vector(4 downto 0);
 
 begin
@@ -192,14 +198,14 @@ begin
 --
 --	unused and input pins tri state
 --
-	l(16 downto 11) <= (others => 'Z');
-	r(3 downto 1) <= (others => 'Z');
+	r(2 downto 1) <= (others => 'Z');
 	r(20 downto 6) <= (others => 'Z');
 
 --
 --	for baseio 2002/08
 --
 --		remove this when the board 'disapears'
+--		this is for ossi's board!
 --
 --	l(11) <= clk;
 
@@ -210,13 +216,18 @@ begin
 				wd
 		);
 
-	cmp_ua : uart generic map (4, clk_freq, 115200, 2, 1, 2, 1)
+	-- Siemens TC35 sends up to 32!!! characters after cts deasert
+	cmp_ua : uart_tal generic map (4, clk_freq, 115200, 16, 2, 50, 16)
 			port map (clk, reset, addr,
 				din, wr, dout, rd,
-				txd, rxd, ncts, nrts
+				txd, rxd, ncts, nrts, l(11)
 		);
 
 	-- b(1 to 10) <= lo(10 downto 1);	Quartus does not compile!!!
+	l(12) <= lo(14);
+	l(13) <= lo(13);
+	l(14) <= lo(12);
+	l(15) <= lo(11);
 	b(1) <= lo(10);
 	b(2) <= lo(9);
 	b(3) <= lo(8);
@@ -227,11 +238,13 @@ begin
 	b(8) <= lo(3);
 	b(9) <= lo(2);
 	b(10) <= lo(1);
+	l(16) <= bat;
 	cmp_tal : tal generic map (10, clk_freq)
 			port map (clk, reset, addr,
 				din, wr, dout, rd,
 				r(20 downto 11),				-- in pins
 				lo,								-- leds
+				bat,							-- battery on
 				l(20 downto 17)					-- out pins
 		);
 
@@ -247,6 +260,13 @@ begin
 				din, wr, dout, rd,
 				r(6),					-- sdi
 				r(5)					-- sdo
+		);
+
+	cmp_sd3 : sigdel generic map (8, clk_freq)
+			port map (clk, reset, addr,
+				din, wr, dout, rd,
+				r(8),					-- sdi
+				r(3)					-- sdo
 		);
 
 	t(2) <= isa_a(4);
@@ -307,7 +327,8 @@ port (
 
 -- io ports
 	i			: in std_logic_vector(10 downto 1);
-	lo			: out std_logic_vector(10 downto 1);
+	lo			: out std_logic_vector(14 downto 1);
+	bat			: out std_logic;
 	o			: out std_logic_vector(4 downto 1)
 );
 end tal;
@@ -315,7 +336,7 @@ end tal;
 architecture rtl of tal is
 
 	signal inreg			: std_logic_vector(10 downto 1);
-	signal led				: std_logic_vector(10 downto 1);
+	signal led				: std_logic_vector(14 downto 1);
 
 begin
 
@@ -348,13 +369,15 @@ begin
 	if (reset='1') then
 
 		led <= (others => '0');
+		bat <= '1';
 		o <= (others => '0');
 
 	elsif rising_edge(clk) then
 
 		if addr=std_logic_vector(to_unsigned(io_addr, 4))
 			and wr='1' then
-			led <= din(9 downto 0);
+			led <= din(13 downto 0);
+			bat <= not din(31);
 		elsif addr=std_logic_vector(to_unsigned(io_addr+1, 4))
 			and wr='1' then
 			o <= din(3 downto 0);
@@ -376,5 +399,9 @@ end process;
 	lo(8) <= '0' when led(8)='1' else 'Z';
 	lo(9) <= '0' when led(9)='1' else 'Z';
 	lo(10) <= '0' when led(10)='1' else 'Z';
+	lo(11) <= '0' when led(11)='1' else 'Z';
+	lo(12) <= '0' when led(12)='1' else 'Z';
+	lo(13) <= '0' when led(13)='1' else 'Z';
+	lo(14) <= '0' when led(14)='1' else 'Z';
 
 end rtl;

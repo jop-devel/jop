@@ -3,7 +3,7 @@ package ravenscar;
 // import javax.realtime.*;
 // public class SporadicEvent extends javax.realtime.AsyncEvent
 
-import joprt.*;
+// import joprt.*;
 
 public class SporadicEvent {
 

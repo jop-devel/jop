@@ -1,5 +1,8 @@
 package test;
 
+import util.*;
+import com.jopdesign.sys.*;
+
 /**
 *	div. utilites, test von mul/div/rem
 *
@@ -98,6 +101,36 @@ public static int add(int a, int b) { return a+b; }
 		return r;
 	}
 
+	public static void main(String[] args) {
+
+		int t1, toff;
+/*
+		int a = -1;
+		int b = -1234;
+*/
+		int c;
+
+		Dbg.initSer();
+
+/*
+		t1 = Native.rd(Const.IO_CNT);
+		t1 = Native.rd(Const.IO_CNT) - t1;
+		toff = t1;
+		Dbg.intVal(toff);
+
+		t1 = Native.rd(Const.IO_CNT);
+		c = a*b;
+		t1 = Native.rd(Const.IO_CNT) - t1;
+		Dbg.intVal(t1-toff);
+
+*/
+		t1 = Native.rd(Const.IO_CNT);
+		c = mul(-1, -1234);
+		t1 = Native.rd(Const.IO_CNT) - t1;
+		Dbg.intVal(t1);
+
+		for (;;) ;
+	}
 /*
 	public static void test(int a, int b) {
 

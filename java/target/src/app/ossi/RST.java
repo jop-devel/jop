@@ -10,8 +10,9 @@ package ossi;
 *
 */
 
-import util.*;
 import joprt.*;
+
+import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 
 public class RST extends RtThread {
@@ -75,9 +76,9 @@ public class RST extends RtThread {
 			Pwm.vals[1] = sinTab[s];
 			Pwm.vals[2] = sinTab[t];
 
-			Native.wr(Pwm.vals[0], Native.IO_PWM);
-			Native.wr(Pwm.vals[1], Native.IO_PWM+1);
-			Native.wr(Pwm.vals[2], Native.IO_PWM+2);
+			Native.wr(Pwm.vals[0], Const.IO_PWM);
+			Native.wr(Pwm.vals[1], Const.IO_PWM+1);
+			Native.wr(Pwm.vals[2], Const.IO_PWM+2);
 
 
 

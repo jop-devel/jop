@@ -5,6 +5,7 @@
 package joprt;
 
 import com.jopdesign.sys.Native;
+import com.jopdesign.sys.Const;
 
 public class PriorityScheduler extends Scheduler {
 
@@ -29,8 +30,9 @@ public class PriorityScheduler extends Scheduler {
 
 	}
 
-	public void addThread(RtThread t) {}
-
+	// should not be static, but super.start() does not work
+	// in JOP
+	// public void start() {
 	public static void start() {
 
 		int i, c, startTime;
@@ -65,7 +67,7 @@ public class PriorityScheduler extends Scheduler {
 		// active = mth.nr;		// we have set this in Scheduler()
 
 		// wait 100 ms (for main Thread.debug())
-		startTime = Native.rd(Native.IO_US_CNT)+100000;
+		startTime = Native.rd(Const.IO_US_CNT)+100000;
 		for (i=0; i<c; ++i) {
 			next[i] = startTime+ref[i].offset;
 		}
@@ -92,7 +94,7 @@ public class PriorityScheduler extends Scheduler {
 		int i, j, k;
 		int diff, tim;
 
-Native.wr(0, Native.IO_INT_ENA);
+Native.wr(0, Const.IO_INT_ENA);
 		// we have not called start(), which means
 		// we perhaps have only one thread => just return
 		if (!started) return;
@@ -103,7 +105,7 @@ Native.wr(0, Native.IO_INT_ENA);
 		k = IDL_TICK;
 
 		// this is now
-		j = Native.rd(Native.IO_US_CNT);
+		j = Native.rd(Const.IO_US_CNT);
 
 		for (i=cnt-1; i>0; --i) {
 
@@ -124,7 +126,7 @@ Native.wr(0, Native.IO_INT_ENA);
 		// set next int time to now+(min(diff)) (j, k)
 		tim = j+k;
 
-		j = Native.rd(Native.IO_US_CNT);
+		j = Native.rd(Const.IO_US_CNT);
 		// check if next timer value is too early (or allready missed)
 		// ack int and schedule timer
 		if (tim-j<TIM_OFF) {

@@ -22,5 +22,5 @@ javac -target 1.1 -d dist/classes -sourcepath src;src/%appdir% src/%appdir%/%sta
 cd dist\classes
 jar cf ../lib/classes.zip *
 cd ..\..
-java -cp ../tools/jcc.jar;../tools/dist/lib/jop-tools.jar -Djop.startclass="%startclass%" JavaCodeCompact -nq -arch JOP -o dist/bin/%project%.bin dist/lib/classes.zip
-rem java -cp ..\tools\dist\lib\jop-tools.jar com.jopdesign.tools.JopBitGen dist\bin\%project%.bin dist\bin\%project%.bit
+java -cp ../tools/jcc.jar;../tools/dist/lib/jop-tools.jar -Djop.startclass="%startclass%" JavaCodeCompact -nq -arch JOP -o dist/bin/%project%.jop dist/lib/classes.zip
+rem java -cp ..\tools\dist\lib\jop-tools.jar com.jopdesign.tools.JopBitGen dist\bin\%project%.jop dist\bin\%project%.bit

@@ -20,9 +20,11 @@ public class RoundRobin extends Scheduler {
 
 			for (;;) {
 				Dbg.wr(c);
-				// busy wait
-				int ts = Native.rd(Native.IO_US_CNT) + 3000;
-				while (ts-Native.rd(Native.IO_US_CNT)>0)
+				// busy wait to simulate
+				// 3 ms workload in Work.
+				int ts = Scheduler.getNow();
+				ts += 3000;
+				while (ts-Scheduler.getNow()>0)
 					;
 			}
 		}
@@ -35,7 +37,10 @@ public class RoundRobin extends Scheduler {
 	public void RoundRobin() {
 	}
 
-	public void addThread(RtThread t) {}
+	public void addTask(Task t) {
+		// we do not allow tasks
+		// to be added after start()
+	}
 
 
 	//
