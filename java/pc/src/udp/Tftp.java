@@ -1,6 +1,6 @@
+package udp;
 import java.io.*;
 import java.net.*;
-import java.util.*;
 
 /**
 *	send UPD requests to jop and receive UPD packets for debug output.
@@ -16,8 +16,20 @@ public class Tftp {
 	private static final int ACK = 4;
 	private static final int ERR = 5;
 
-	private static String addrString = "192.168.1.2";
+	private String addrString;
+	private int retryCnt = 0;
+	private static final int MAX_CNT = 3;
+	
+	private boolean verbose;
 
+
+	/**
+	 * 
+	 */
+	public Tftp(String addr) {
+		addrString = addr;
+		verbose = true;
+	}
 
 /**
 *	test Main read internal memory of JOP.
@@ -25,30 +37,45 @@ public class Tftp {
 	public static void main(String[] args) throws IOException {
 
 		int i;
+		String file = "i0";
 
-		if (args.length!=0) setAddr(args[0]);
+		if (args.length==0) {
+			System.out.println("usage: Tftp ip-address [file]");
+			System.exit(-1);
+		}
+		if (args.length==2) file = args[1];
+		Tftp t = new Tftp(args[0]);
 
-		byte[] buf = new byte[65536];
-//		for (;;) {
-			int rcv_len = read((byte) 'i', (byte) '0', buf);
+		int[] buf = new int[65536/4];
+		int rcv_len = t.read(file, buf);
+		System.out.println(rcv_len+" words received");
 
-			System.out.println();
-			for (i=0; i<rcv_len; i+=4) {
-				int j = (buf[i]<<24) +
-					((buf[i+1]<<16)&0xff0000) +
-					((buf[i+2]<<8)&0xff00) +
-					(buf[i+3]&0xff);
-				System.out.println((i/4)+" "+j);
+		System.out.println();
+		for (i=0; i<rcv_len; ++i) {
+			System.out.println(i+" "+buf[i]);
+		}
+		System.out.println();
+	}
+
+	public int read(String fn, int[] buf) {
+		try {
+			byte[] byteBuf = new byte[buf.length*4];
+			byte f = (byte) fn.charAt(0);
+			byte s = (byte) fn.charAt(1);
+			int len = read(f, s, byteBuf);
+			for (int i=0; i<len; i+=4) {
+				buf[i/4] = (byteBuf[i]<<24) +
+					((byteBuf[i+1]<<16)&0xff0000) +
+					((byteBuf[i+2]<<8)&0xff00) +
+					(byteBuf[i+3]&0xff);
 			}
-			System.out.println();
-//		}
+			return len/4;
+		} catch (Exception e) {
+			return 0;
+		}
 	}
 
-	public static void setAddr(String addr) {
-		addrString = addr;
-	}
-
-	public static int read(byte fn, byte sector, byte[] buf) throws IOException {
+	public int read(byte fn, byte sector, byte[] buf) throws IOException {
 
 		// get a datagram socket
 		DatagramSocket socket = new DatagramSocket();
@@ -71,6 +98,7 @@ public class Tftp {
 		int expBlock = 1;
 
 		int len = 0;
+		retryCnt = 0;
 
 		// get response
 		for (;;) {
@@ -83,6 +111,7 @@ public class Tftp {
 
 				// display response
 				byte[] resp = rcv.getData();
+				retryCnt = 0;
 				if (resp[1]==DAT) {
 
 					sndBuf[0] = 0;
@@ -96,7 +125,7 @@ public class Tftp {
 					int block = ((((int) resp[2])&0xff)<<8) +
 								(((int) resp[3])&0xff);
 
-System.out.print("got "+block+"\r");
+					if (verbose) System.out.print("got "+block+"\r");
 					if (block == expBlock) {
 						for (int i=0; i<rcv.getLength()-4; ++i) {
 							buf[(block-1)*512+i] = resp[i+4];
@@ -115,17 +144,19 @@ System.out.print("got "+block+"\r");
 				}
 			} catch (Exception e) {
 
-System.out.println();
+				++retryCnt;
+				if (retryCnt > MAX_CNT) return 0;
+				if (verbose) System.out.println();
 				System.out.println(e);
 				// retry
 				if (expBlock==1) {
-System.out.println("retry RRQ");
+					if (verbose) System.out.println("retry RRQ");
 					sndBuf[0] = 0;
 					sndBuf[1] = RRQ;
 					sndBuf[2] = fn;
 					sndBuf[3] = sector;
 				} else {
-System.out.println("retry ACK "+(expBlock-1));
+					if (verbose) System.out.println("retry ACK "+(expBlock-1));
 					sndBuf[0] = 0;
 					sndBuf[1] = ACK;
 					sndBuf[2] = (byte) ((expBlock-1) >>> 8);
@@ -142,7 +173,7 @@ System.out.println("retry ACK "+(expBlock-1));
 		return len;
 	}
 
-	public static boolean write(byte fn, byte sector, byte[] buf, int len) throws IOException {
+	public boolean write(byte fn, byte sector, byte[] buf, int len) throws IOException {
 
 		// get a datagram socket
 		DatagramSocket socket = new DatagramSocket();
@@ -189,7 +220,7 @@ System.out.println("retry ACK "+(expBlock-1));
 
 					++expBlock;
 
-System.out.print("send "+expBlock+"\r");
+					if (verbose) System.out.print("send "+expBlock+"\r");
 
 				} else {
 					ret = false;
@@ -197,13 +228,13 @@ System.out.print("send "+expBlock+"\r");
 				}
 			} catch (Exception e) {
 
-System.out.println();
+				if (verbose) System.out.println();
 				System.out.println(e);
 				// retry
 				if (expBlock==0) {
-System.out.println("retry WRQ");
+					if (verbose) System.out.println("retry WRQ");
 				} else {
-System.out.println("retry DAT "+expBlock);
+					if (verbose) System.out.println("retry DAT "+expBlock);
 				}
 			}
 
@@ -247,4 +278,18 @@ System.out.println("retry DAT "+expBlock);
 		socket.close();
 		return ret;
 	}
+	/**
+	 * @return
+	 */
+	public boolean isVerbose() {
+		return verbose;
+	}
+
+	/**
+	 * @param b
+	 */
+	public void setVerbose(boolean b) {
+		verbose = b;
+	}
+
 }

@@ -1,11 +1,10 @@
+package udp;
 /**
 *	Flash ean ia TFTP.
 *
 *	For new jopcore board with 512 KB flash.
 *
 */
-import java.io.*;
-import java.util.*;
 
 public class Erase {
 
@@ -18,9 +17,11 @@ public class Erase {
 
 	private byte[] mem;
 	private int len;
+	private Tftp tftp;
 
-	public Erase() {
+	public Erase(Tftp tftp) {
 
+		this.tftp = tftp;
 		mem = new byte[FLASH_SIZE];
 		for (int i=0; i<FLASH_SIZE; ++i) mem[i] = (byte) 0xff;
 		len = FLASH_SIZE;
@@ -47,14 +48,14 @@ public class Erase {
 			byte s = (byte) ('0'+((i+start)>>SECTOR_SHIFT));
 
 			try {
-				if (!Tftp.write((byte) 'f', (byte) s, buf, slen)) {
+				if (!tftp.write((byte) 'f', (byte) s, buf, slen)) {
 					System.out.println();
 					System.out.println("programming error");
 					System.exit(-1);
 				}
 				System.out.println();
 				System.out.println("compare");
-				if (Tftp.read((byte) 'f', s, inbuf)!=SECTOR_SIZE) {
+				if (tftp.read((byte) 'f', s, inbuf)!=SECTOR_SIZE) {
 					System.out.println();
 					System.out.println("read error");
 					System.exit(-1);
@@ -76,8 +77,12 @@ public class Erase {
 
 	public static void main (String[] args) {
 
-		if (args.length==1) Tftp.setAddr(args[0]);
-		Erase fl = new Erase();
+		if (args.length!=1) {
+			System.out.println("usage: Erase host");
+			System.exit(-1);
+		}
+		Erase fl = new Erase(new Tftp(args[0]));
 		fl.program();
 	}
+
 }

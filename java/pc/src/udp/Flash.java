@@ -22,10 +22,11 @@
 *		0x60000 :	ACX, CYC config
 *		0x70000 :	ACX, CYC config
 */
+package udp;
 import java.io.*;
 import java.util.*;
 
-public class Flash {
+public class Flash extends FlashConst {
 
 	protected static final int FLASH_SIZE = 0x80000;
 	protected static final int SECTOR_SIZE = 0x10000;
@@ -39,19 +40,22 @@ public class Flash {
 
 	protected static final int START_JAVA = 0x00000;
 	protected static final int START_HTML = 0x10000;
-	protected static final int START_APPL = 0x30000;
+	protected static final int START_DATA = 0x20000;
+	protected static final int START_CONFIG = 0x30000;
 	protected static final int START_TTF = 0x60000;
 	protected static final int START_CYC_TTF = 0x40000;
-
+	
 	protected int start;
 
 	protected String fname;
 
 	protected byte[] mem;
 	protected int len;
+	private Tftp tftp;
 
-	public Flash(String fname) {
+	public Flash(Tftp t, String fname) {
 
+		tftp = t;
 		this.fname = fname;
 		mem = new byte[MAX_MEM];
 		for (int i=0; i<MAX_MEM; ++i) mem[i] = 0;
@@ -78,7 +82,7 @@ public class Flash {
 				System.exit(-1);
 			}
 			s = s.substring(pos);
-			if (s.equals(".bin")) {
+			if (s.equals(".jop") || s.equals(".bin")) {
 				isJava = true;
 				start= START_JAVA & SECTOR_MASK;
 			} else if (s.equals(".html")) {
@@ -86,7 +90,7 @@ public class Flash {
 				start= START_HTML;
 			} else if (s.equals(".class")) {
 				isAppl = true;
-				start= START_APPL;
+				start= START_CONFIG;
 			} else if (s.equals(".ttf")) {
 				isTtf = true;
 				start= START_TTF;					// assume a file for Jopcore (ACEX)
@@ -187,14 +191,14 @@ public class Flash {
 System.out.println("sector "+(s-'0'));
 
 			try {
-				if (!Tftp.write((byte) 'f', (byte) s, buf, slen)) {
+				if (!tftp.write((byte) 'f', (byte) s, buf, slen)) {
 					System.out.println();
 					System.out.println("programming error");
 					System.exit(-1);
 				}
 				System.out.println();
 				System.out.println("compare");
-				if (Tftp.read((byte) 'f', s, inbuf)!=SECTOR_SIZE) {
+				if (tftp.read((byte) 'f', s, inbuf)!=SECTOR_SIZE) {
 					System.out.println();
 					System.out.println("read error");
 					System.exit(-1);
@@ -216,14 +220,12 @@ System.out.println("sector "+(s-'0'));
 
 	public static void main (String[] args) {
 
-		if (args.length < 1) {
-			System.out.println("usage: java Flash file [host]");
+		if (args.length < 2) {
+			System.out.println("usage: java Flash file host");
 			System.exit(-1);
 		}
 
-		if (args.length==2) Tftp.setAddr(args[1]);
-
-		Flash fl = new Flash(args[0]);
+		Flash fl = new Flash(new Tftp(args[1]), args[0]);
 		fl.read();
 		fl.program();
 	}

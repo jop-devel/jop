@@ -1,6 +1,6 @@
+package udp;
 import java.io.*;
 import java.net.*;
-import java.util.*;
 
 /**
 *	send UPD requests to jop and receive UPD packets for debug output.

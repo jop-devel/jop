@@ -1,6 +1,6 @@
+package udp;
 import java.io.*;
 import java.net.*;
-import java.util.*;
 
 /**
 *	send UPD requests to jop and receive UPD packets for debug output.
@@ -21,7 +21,7 @@ public class UDPDbg {
 		if (args.length!=0) {
 			address = InetAddress.getByName(args[0]);
 		} else {
-			address = InetAddress.getByName("192.168.0.4");
+			address = InetAddress.getByName("192.168.1.2");
 		}
 		DatagramPacket send = new DatagramPacket(sndBuf, 0, address, 1625);
 
