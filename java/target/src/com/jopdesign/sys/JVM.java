@@ -413,7 +413,12 @@ synchronized (o) {
 
 	private static void f_arraylength() { JVMHelp.noim(); /* jvm.asm */ }
 	private static void f_athrow() { JVMHelp.noim();}
-	private static void f_checkcast() { JVMHelp.noim();}
+	// private static void f_checkcast() { JVMHelp.noim();}
+	private static int f_checkcast(int objref, int cons) {
+// TODO: implement it
+// util.Dbg.wr("checkcast");
+		return objref;
+	}
 	private static void f_instanceof() { JVMHelp.noim();}
 
 

@@ -40,7 +40,7 @@
 //	2003-09-15	cbsf-a-load/store for String class (all array elements are one word)
 //	2003-10-06	changed max_words from 8192 to 16384, and flash address for Java
 //				program at 0x80000
-//	2003-10-23	long load_n, store_n, const_n, i2l added, ldc2_w error corretion
+//	2003-10-23	long load_n, store_n, const_n, l2i added, ldc2_w error corretion
 //	2003-10-27	invokeinterface
 //	2004-01-18	ldc_w, pop2; float load, store and return; NOT tested!
 //	2004-02-07	null pointer check in xaload/xastore, put/getfield and invoke,
@@ -1622,6 +1622,7 @@ sys_noim:
 
 new:
 anewarray:
+checkcast:
 
 //
 //	find address for JVM function

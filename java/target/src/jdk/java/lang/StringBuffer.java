@@ -68,6 +68,11 @@ for (int i=0; i<count; ++i) value[i] = str.value[i];
     // str.getChars(0, count, value, 0);
   }
 
+  public String toString()
+  {
+    return new String(this);
+  }
+
   public synchronized int length()
   {
     return count;

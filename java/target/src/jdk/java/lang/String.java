@@ -54,6 +54,13 @@ public final class String {
     value = str.value;
   }
 
+  public String(StringBuffer str)
+  {
+	int count = str.length();
+    value = new char[count];
+for (int i=0; i<count; ++i) value[i] = str.value[i];
+  }
+
   public int length()
   {
     return value.length;
@@ -83,4 +90,34 @@ return;
 */
 	for (int i=0; i<srcEnd-srcBegin; ++i) dst[dstBegin+i] = value[srcBegin+i];
   }
+
+//
+//	for CoffeinMarkEmbedded
+//
+  public int indexOf(String str, int fromIndex)
+  {
+    if (fromIndex < 0)
+      fromIndex = 0;
+    int limit = value.length - str.value.length;
+    for ( ; fromIndex <= limit; fromIndex++)
+      if (regionMatches(fromIndex, str, 0, str.value.length))
+        return fromIndex;
+    return -1;
+  }
+
+  public boolean regionMatches(int toffset, String other, int ooffset, int len)
+  {
+    if (toffset < 0 || ooffset < 0 || toffset + len > value.length
+        || ooffset + len > other.value.length)
+      return false;
+    while (--len >= 0)
+      {
+        char c1 = value[toffset++];
+        char c2 = other.value[ooffset++];
+        if (c1 != c2)
+          return false;
+      }
+    return true;
+  }
+
 }

@@ -18,7 +18,7 @@ import com.jopdesign.sys.*;
 
 public class JopSim {
 
-	static final int MAX_MEM = 8182;
+	static final int MAX_MEM = 1024*1024/4;
 	static final int MAX_BC = 1024;		// per function
 	static final int MAX_STACK = 256;	// with internal memory
 
@@ -196,6 +196,7 @@ System.out.println(mp+" "+pc);
 
 		int idx = readOpd16u();
 		int val = readMem(cp+idx);			// read constant
+// System.out.println("jjvmConst: "+instr+" "+(cp+idx)+" "+val);
 		stack[++sp] = val;					// push on stack
 		invoke(jjp+(instr<<1));
 	}
@@ -1170,7 +1171,7 @@ System.out.println("new heap: "+heap);
 					noim(191);
 					break;
 				case 192 :		// checkcast
-					noim(192);
+					jjvmConst(192);
 					break;
 				case 193 :		// instanceof
 					noim(193);
