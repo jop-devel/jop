@@ -14,6 +14,7 @@ public class PeriodicFull {
 		Busy(int per, int ch) {
 			super(5, per);
 			w = per*90/100;
+w = per*12/100;
 			c = ch;
 		}
 
@@ -43,7 +44,7 @@ public class PeriodicFull {
 				for (;;) {
 					waitForNextPeriod();
 					int ts = Native.rd(Native.IO_US_CNT);
-					Result.printPeriod(ts_old, ts);
+//					Result.printPeriod(ts_old, ts);
 					ts_old = ts;
 				}
 			}
@@ -58,9 +59,10 @@ public class PeriodicFull {
 
 		// sleep
 		for (;;) {
-RtThread.debug();
+// RtThread.debug();
 			Timer.wd();
-			try { Thread.sleep(1200); } catch (Exception e) {}
+			RtThread.sleepMs(1200);
+			Dbg.wr('M');
 		}
 	}
 }
