@@ -51,7 +51,9 @@ port (
 	mem_rd		: in std_logic;
 	mem_wr		: in std_logic;
 	mem_addr_wr	: in std_logic;
+	mem_bc_rd	: in std_logic;
 	dout		: out std_logic_vector(31 downto 0);
+	bcstart		: out std_logic_vector(31 downto 0); 	-- start of method in bc cache
 
 	bsy			: out std_logic;
 
@@ -122,6 +124,7 @@ begin
 
 	bsy <= mem_bsy;
 	dout <= mem_rd_val;
+	bcstart <= (others => '0');	-- for now we load only at base 0
 
 	cmp_jbc: jbc generic map (8, jpc_width) port map(din, jbc_addr, jpc_wr, bc_wr, clk, jbc_data);
 

@@ -128,8 +128,6 @@ port (
 
 	jbc_addr	: out std_logic_vector(jpc_width-1 downto 0);
 	jbc_data	: in std_logic_vector(7 downto 0);
-	jpc_wr		: out std_logic;
-	bc_wr		: out std_logic;
 
 -- interrupt from io
 
@@ -157,7 +155,9 @@ port (
 	mem_rd		: out std_logic;
 	mem_wr		: out std_logic;
 	mem_addr_wr	: out std_logic;
+	mem_bc_rd	: out std_logic;
 	mem_data	: in std_logic_vector(31 downto 0); 	-- output of memory module
+	mem_bcstart	: in std_logic_vector(31 downto 0); 	-- start of method in bc cache
 	
 -- io interface
 
@@ -181,7 +181,9 @@ port (
 	mem_rd		: in std_logic;
 	mem_wr		: in std_logic;
 	mem_addr_wr	: in std_logic;
+	mem_bc_rd	: in std_logic;
 	dout		: out std_logic_vector(31 downto 0);
+	bcstart		: out std_logic_vector(31 downto 0); 	-- start of method in bc cache
 
 	bsy			: out std_logic;
 
@@ -189,8 +191,6 @@ port (
 
 	jbc_addr	: in std_logic_vector(jpc_width-1 downto 0);
 	jbc_data	: out std_logic_vector(7 downto 0);
-	jpc_wr		: in std_logic;
-	bc_wr		: in std_logic;
 
 --
 --	two ram banks
@@ -279,13 +279,13 @@ end component;
 	signal mem_rd			: std_logic;
 	signal mem_wr			: std_logic;
 	signal mem_addr_wr		: std_logic;
+	signal mem_bc_rd		: std_logic;
 	signal mem_dout			: std_logic_vector(31 downto 0);
+	signal mem_bcstart		: std_logic_vector(31 downto 0);
 	signal mem_bsy			: std_logic;
 
 	signal jbc_addr			: std_logic_vector(jpc_width-1 downto 0);
 	signal jbc_data			: std_logic_vector(7 downto 0);
-	signal jpc_wr			: std_logic;
-	signal bc_wr			: std_logic;
 
 	signal io_rd			: std_logic;
 	signal io_wr			: std_logic;
@@ -329,7 +329,7 @@ end process;
 			mem_bsy,
 			stack_din, ext_addr,
 			rd, wr,
-			jbc_addr, jbc_data, jpc_wr, bc_wr,
+			jbc_addr, jbc_data,
 			io_irq, io_irq_ena,
 			stack_tos
 		);
@@ -337,15 +337,17 @@ end process;
 	cmp_ext: extension generic map (exta_width)
 		port map (clk_int, int_res, stack_tos,
 			ext_addr, rd, wr, stack_din,
-			mem_rd, mem_wr, mem_addr_wr, mem_dout,
+			mem_rd, mem_wr, mem_addr_wr, mem_bc_rd,
+			mem_dout, mem_bcstart,
 			io_rd, io_wr, io_addr_wr, io_dout
 		);
 
 	cmp_mem: mem32 generic map (jpc_width, ram_cnt, rom_cnt)
 		port map (clk_int, int_res, stack_tos,
-			mem_rd, mem_wr, mem_addr_wr, mem_dout,
+			mem_rd, mem_wr, mem_addr_wr, mem_bc_rd,
+			mem_dout, mem_bcstart,
 			mem_bsy,
-			jbc_addr, jbc_data, jpc_wr, bc_wr,
+			jbc_addr, jbc_data,
 			rama_a, rama_d, rama_ncs, rama_noe, rama_nlb, rama_nub, rama_nwe,
 			ramb_a, ramb_d, ramb_ncs, ramb_noe, ramb_nlb, ramb_nub, ramb_nwe,
 			fl_a, fl_d, fl_ncs, fl_ncsb, fl_noe, fl_nwe, fl_rdy

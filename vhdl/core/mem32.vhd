@@ -1,7 +1,7 @@
 --
 --	mem32.vhd
 --
---	external memory interface
+--	external memory interface (for the Cyclone board)
 --
 --
 --	memory mapping
@@ -29,6 +29,9 @@ Library IEEE;
 use IEEE.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+LIBRARY altera_mf;
+USE altera_mf.altera_mf_components.all;
+
 entity mem32 is
 -- generic (jpc_width : integer; ram_cnt : integer; rom_cnt : integer);
 generic (jpc_width : integer := 10; ram_cnt : integer := 3; rom_cnt : integer := 15);
@@ -44,7 +47,9 @@ port (
 	mem_rd		: in std_logic;
 	mem_wr		: in std_logic;
 	mem_addr_wr	: in std_logic;
+	mem_bc_rd	: in std_logic;
 	dout		: out std_logic_vector(31 downto 0);
+	bcstart		: out std_logic_vector(31 downto 0); 	-- start of method in bc cache
 
 	bsy			: out std_logic;
 
@@ -52,8 +57,6 @@ port (
 
 	jbc_addr	: in std_logic_vector(jpc_width-1 downto 0);
 	jbc_data	: out std_logic_vector(7 downto 0);
-	jpc_wr		: in std_logic;
-	bc_wr		: in std_logic;
 
 --
 --	two ram banks
@@ -98,25 +101,61 @@ architecture rtl of mem32 is
 --	indata registered
 --	outdata is unregistered
 --
-component jbc is
-generic (width : integer; addr_width : integer);
-port (
-	data		: in std_logic_vector(31 downto 0);
-	rdaddress	: in std_logic_vector(jpc_width-1 downto 0);
-	wr_addr		: in std_logic;									-- load start address (=jpc)
-	wren		: in std_logic;
-	clock		: in std_logic;
+--component jbc is
+--generic (width : integer; addr_width : integer);
+--port (
+--	data		: in std_logic_vector(31 downto 0);
+--	rdaddress	: in std_logic_vector(jpc_width-1 downto 0);
+--	wr_addr		: in std_logic;									-- load start address (=jpc)
+--	wren		: in std_logic;
+--	clock		: in std_logic;
+--
+--	q			: out std_logic_vector(7 downto 0)
+--);
+--end component;
 
-	q			: out std_logic_vector(7 downto 0)
-);
-end component;
+--
+--	generated with Quartus wizzard:
+--
+	COMPONENT altsyncram
+	GENERIC (
+		intended_device_family		: STRING;
+		operation_mode		: STRING;
+		width_a		: NATURAL;
+		widthad_a		: NATURAL;
+		numwords_a		: NATURAL;
+		width_b		: NATURAL;
+		widthad_b		: NATURAL;
+		numwords_b		: NATURAL;
+		lpm_type		: STRING;
+		width_byteena_a		: NATURAL;
+		outdata_reg_b		: STRING;
+		indata_aclr_a		: STRING;
+		wrcontrol_aclr_a		: STRING;
+		address_aclr_a		: STRING;
+		address_reg_b		: STRING;
+		address_aclr_b		: STRING;
+		outdata_aclr_b		: STRING;
+		read_during_write_mode_mixed_ports		: STRING
+	);
+	PORT (
+			wren_a	: IN STD_LOGIC ;
+			clock0	: IN STD_LOGIC ;
+			address_a	: IN STD_LOGIC_VECTOR (7 DOWNTO 0);
+			address_b	: IN STD_LOGIC_VECTOR (9 DOWNTO 0);
+			q_b	: OUT STD_LOGIC_VECTOR (7 DOWNTO 0);
+			data_a	: IN STD_LOGIC_VECTOR (31 DOWNTO 0)
+	);
+	END COMPONENT;
+
 
 
 --
 --	signals for mem interface
 --
 	type state_type		is (
-							idl, rd1, wr1
+							idl, rd1, wr1,
+							bc1, bc2, bc3
 						);
 	signal state 		: state_type;
 
@@ -137,13 +176,71 @@ end component;
 	signal ram_cs, ram_oe	: std_logic;
 	signal ram_addr			: std_logic_vector(17 downto 0);
 
+	signal wait_state		: unsigned(2 downto 0);
+
+--
+--	values for bytecode read/cache
+--
+--	len is in words, 10 bits range is 'hardcoded' in JOPWriter.java
+--	start is address in external memory (rest of the word)
+--
+	signal bc_len			: unsigned(9 downto 0);		-- length of method in words
+	signal bc_start			: unsigned(17 downto 0);	-- memory address of bytecode
+	signal bc_wr_addr		: unsigned(7 downto 0);		-- address for jbc
+	signal bc_wr_data		: std_logic_vector(31 downto 0);	-- write data for jbc
+	signal bc_wr_ena		: std_logic;
+
+	signal bc_cnt			: unsigned(9 downto 0);		-- I can't use bc_len???
+
+	constant bc_ram_cnt	: integer := ram_cnt;			-- a different constant for perf. tests
+
 begin
 
 	bsy <= mem_bsy;
 	dout <= mem_rd_val;
+	bcstart <= (others => '0');	-- for now we load only at base 0
+
+	-- change byte order for jbc memory (high byte first)
+	bc_wr_data <= mem_rd_val(7 downto 0) &
+				mem_rd_val(15 downto 8) &
+				mem_rd_val(23 downto 16) &
+				mem_rd_val(31 downto 24);
+
+--	cmp_jbc: jbc generic map (8, jpc_width) port map(din, jbc_addr, jpc_wr, bc_wr, clk, jbc_data);
 
 
-	cmp_jbc: jbc generic map (8, jpc_width) port map(din, jbc_addr, jpc_wr, bc_wr, clk, jbc_data);
+--
+--	generated with Quartus wizzard:
+--
+	cmp_jbc : altsyncram
+	GENERIC MAP (
+		intended_device_family => "Cyclone",
+		operation_mode => "DUAL_PORT",
+		width_a => 32,
+		widthad_a => 8,
+		numwords_a => 256,
+		width_b => 8,
+		widthad_b => 10,
+		numwords_b => 1024,
+		lpm_type => "altsyncram",
+		width_byteena_a => 1,
+		outdata_reg_b => "UNREGISTERED",
+		indata_aclr_a => "NONE",
+		wrcontrol_aclr_a => "NONE",
+		address_aclr_a => "NONE",
+		address_reg_b => "CLOCK0",
+		address_aclr_b => "NONE",
+		outdata_aclr_b => "NONE",
+		read_during_write_mode_mixed_ports => "DONT_CARE"
+	)
+	PORT MAP (
+		wren_a => bc_wr_ena,
+		clock0 => clk,
+		address_a => std_logic_vector(bc_wr_addr),
+		address_b => jbc_addr,
+		data_a => bc_wr_data,
+		q_b => jbc_data
+	);
 
 
 
@@ -156,7 +253,7 @@ process(clk, reset, din, mem_addr_wr)
 begin
 	if (reset='1') then
 
-		mem_wr_addr <= std_logic_vector(to_unsigned(0, 21));
+		mem_wr_addr <= (others => '0');
 
 	elsif rising_edge(clk) then
 
@@ -167,6 +264,19 @@ begin
 	end if;
 end process;
 
+process(clk, reset, din) begin
+
+	if (reset='1') then
+		bc_len <= (others => '0');
+		bc_start <= (others => '0');
+	elsif rising_edge(clk) then
+		if (mem_bc_rd='1') then
+			bc_len <= unsigned(din(9 downto 0));
+			bc_start <= unsigned(din(27 downto 10));
+		end if;
+
+	end if;
+end process;
 
 --
 --	'delay' nwr 1/2 cycle -> change on falling edge
@@ -235,7 +345,7 @@ end process;
 --
 --	state machine for external memory (single byte static ram, flash)
 --
-process(clk, reset, din, mem_wr_addr, mem_rd, mem_wr)
+process(clk, reset, din, mem_wr_addr, mem_rd, mem_wr, mem_bc_rd)
 
 	variable i : integer range 0 to 31;
 
@@ -261,6 +371,8 @@ begin
 		mem_wr_val <= std_logic_vector(to_unsigned(0, 32));
 		mem_bsy <= '0';
 
+		bc_wr_ena <= '0';
+
 	elsif rising_edge(clk) then
 
 		case state is
@@ -285,6 +397,8 @@ begin
 				ram_access <= '1';
 				nand_access <= '0';
 				mem_bsy <= '0';
+
+				bc_wr_ena <= '0';
 
 				if (mem_rd='1') then
 					if (din(20 downto 19) = "00") then	-- ram
@@ -337,6 +451,9 @@ begin
 					mem_bsy <= '1';
 					nwr_int <= '0';
 					state <= wr1;
+				elsif (mem_bc_rd='1') then
+					mem_bsy <= '1';
+					state <= bc1;
 				end if;
 
 --
@@ -384,6 +501,47 @@ begin
 					fl_nwe <= '1';
 					state <= idl;
 					mem_bsy <= '0';
+				end if;
+
+--
+--	bytecode read
+--
+			when bc1 =>
+				ram_addr <= std_logic_vector(bc_start);
+				bc_cnt <= bc_len;
+				bc_wr_addr <= (others => '0');		-- we start at zero offset for now (no caching)
+				bc_wr_ena <= '0';
+				ram_cs <= '1';
+				ram_oe <= '1';
+				wait_state <= to_unsigned(bc_ram_cnt-1, 3);
+				state <= bc2;
+
+			when bc2 =>
+				bc_wr_ena <= '0';
+				wait_state <= wait_state-1;
+				if wait_state="000" then
+					wait_state <= to_unsigned(bc_ram_cnt-1, 3);
+					ram_addr <= std_logic_vector(unsigned(ram_addr)+1);
+					bc_cnt <= bc_cnt-1;
+					mem_rd_val <= ramb_d & rama_d;	-- read next word
+					state <=bc3;
+				end if;
+
+-- this version reads one more word, but I don't care at the moment
+			when bc3 =>
+				bc_wr_ena <= '0';
+				wait_state <= wait_state-1;
+				if wait_state="000" then
+					wait_state <= to_unsigned(bc_ram_cnt-1, 3);
+					ram_addr <= std_logic_vector(unsigned(ram_addr)+1);
+					bc_cnt <= bc_cnt-1;
+					mem_rd_val <= ramb_d & rama_d;	-- read next word
+					bc_wr_addr <= bc_wr_addr+1;		-- next jbc address
+				else
+					bc_wr_ena <= '1';				-- write former word
+					if bc_cnt="0000000000" then
+						state <= idl;
+					end if;
 				end if;
 
 		end case;

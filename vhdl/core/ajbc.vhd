@@ -109,7 +109,7 @@ process(cnt) begin
 	end if;
 end process;
 
-process(sel) begin
+process(sel, dreg) begin
 	case sel is
 		when "00" =>
 			ram_din <= dreg(31 downto 24);

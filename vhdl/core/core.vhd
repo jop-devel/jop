@@ -63,8 +63,6 @@ port (
 
 	jbc_addr	: out std_logic_vector(jpc_width-1 downto 0);
 	jbc_data	: in std_logic_vector(7 downto 0);
-	jpc_wr		: out std_logic;
-	bc_wr		: out std_logic;
 
 -- interrupt from io
 
@@ -197,8 +195,7 @@ port (
 
 	ena_b		: out std_logic;
 	ena_vp		: out std_logic;
-	ena_jpc		: out std_logic;
-	ena_bc		: out std_logic
+	ena_jpc		: out std_logic
 );
 end component;
 
@@ -280,9 +277,8 @@ begin
 			dir,
 			sel_amux, sel_bmux, sel_log, sel_shf, sel_lmux, sel_imux, sel_rmux, sel_smux,
 			sel_mmux, sel_rda, sel_wra,
-			wr_ena, ena_b, ena_vp, ena_jpc, bc_wr);
+			wr_ena, ena_b, ena_vp, ena_jpc);
 
 	dout <= stk_dout;
-	jpc_wr <= ena_jpc;
 
 end rtl;

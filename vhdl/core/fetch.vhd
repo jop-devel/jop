@@ -157,7 +157,7 @@ end process;
 
 	pc_inc <= "000000000" & not pcwait;
 
-process(jfetch, br, jpaddr, brdly, pc)
+process(jfetch, br, jpaddr, brdly, pc, pc_inc)
 
 begin
 

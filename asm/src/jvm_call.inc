@@ -283,6 +283,8 @@ new_jpc			?
 //	now load bc from external ram :-(
 //
 load_bc:
+
+
 			ldm	mp
 			stmra
 			ldi	0
@@ -291,6 +293,19 @@ load_bc:
 			wait
 			ldmrd		 		// read ext. mem
 
+/////////////////// hardware version ////////////////////
+			stbcrd				// start bytecode load
+
+			ldm	new_jpc
+			stjpc
+
+// wait on bytecode load from memory system
+			wait
+			wait
+			nop
+			nop	nxt
+// end load_bc
+/////////////////// hardware version ////////////////////
 					// int len = start & 0x03ff;
 					// start >>>= 10;
 			dup

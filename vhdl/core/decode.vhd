@@ -73,8 +73,7 @@ port (
 
 	ena_b		: out std_logic;
 	ena_vp		: out std_logic;
-	ena_jpc		: out std_logic;
-	ena_bc		: out std_logic
+	ena_jpc		: out std_logic
 );
 end decode;
 
@@ -164,12 +163,6 @@ begin
 	end if;
 
 	sel_imux <= ir(1 downto 0);			-- ld opd_x
-
-	ena_bc <= '0';
-
-	if ir="00011010" then				-- stbc
-		ena_bc <= '1';
-	end if;
 
 -- select for rd/wr address muxes
 
@@ -270,7 +263,7 @@ begin
 					ena_vp <= '1';
 			when "00011001" =>				-- stjpc
 					ena_jpc <= '1';
-			when "00011010" =>				-- stbc
+--			when "00011010" =>				-- free, stbc not used
 			when "00011011" =>				-- stsp
 			when "00011100" =>				-- ushr
 			when "00011101" =>				-- shl

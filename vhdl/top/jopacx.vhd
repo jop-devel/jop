@@ -119,7 +119,9 @@ port (
 	mem_rd		: out std_logic;
 	mem_wr		: out std_logic;
 	mem_addr_wr	: out std_logic;
+	mem_bc_rd	: out std_logic;
 	mem_data	: in std_logic_vector(31 downto 0); 	-- output of memory module
+	mem_bcstart	: in std_logic_vector(31 downto 0); 	-- start of method in bc cache
 	
 -- io interface
 
@@ -143,7 +145,9 @@ port (
 	mem_rd		: in std_logic;
 	mem_wr		: in std_logic;
 	mem_addr_wr	: in std_logic;
+	mem_bc_rd	: in std_logic;
 	dout		: out std_logic_vector(31 downto 0);
+	bcstart		: out std_logic_vector(31 downto 0); 	-- start of method in bc cache
 
 	bsy			: out std_logic;
 
@@ -218,7 +222,9 @@ end component;
 	signal mem_rd			: std_logic;
 	signal mem_wr			: std_logic;
 	signal mem_addr_wr		: std_logic;
+	signal mem_bc_rd		: std_logic;
 	signal mem_dout			: std_logic_vector(31 downto 0);
+	signal mem_bcstart		: std_logic_vector(31 downto 0);
 	signal mem_bsy			: std_logic;
 
 	signal jbc_addr			: std_logic_vector(jpc_width-1 downto 0);
@@ -271,13 +277,15 @@ end process;
 	cmp_ext: extension generic map (exta_width)
 		port map (clk, int_res, stack_tos,
 			ext_addr, rd, wr, stack_din,
-			mem_rd, mem_wr, mem_addr_wr, mem_dout,
+			mem_rd, mem_wr, mem_addr_wr, mem_bc_rd,
+			mem_dout, mem_bcstart,
 			io_rd, io_wr, io_addr_wr, io_dout
 		);
 
 	cmp_mem: mem generic map (jpc_width, ram_cnt, rom_cnt)
 		port map (clk, int_res, stack_tos,
-			mem_rd, mem_wr, mem_addr_wr, mem_dout,
+			mem_rd, mem_wr, mem_addr_wr, mem_bc_rd,
+			mem_dout, mem_bcstart,
 			mem_bsy,
 			jbc_addr, jbc_data, jpc_wr, bc_wr,
 			aint, d, nram_cs, nrom_cs, nmem_rd, nmem_wr

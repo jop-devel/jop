@@ -45,6 +45,7 @@ public class Instruction {
 		new Instruction("stmwd", 0x08+4, false, false),
 		new Instruction("stopa", 0x08+5, false, false),
 		new Instruction("stopb", 0x08+6, false, false),
+		new Instruction("stbcrd", 0x08+7, false, false),
 
 //	st (vp)	3 bits
 		new Instruction("st0", 0x10+0, false, false),
@@ -55,7 +56,7 @@ public class Instruction {
 
 		new Instruction("stvp", 0x18, false, false),
 		new Instruction("stjpc", 0x19, false, false),
-		new Instruction("stbc", 0x1a, false, false),
+//		new Instruction("stbc", 0x1a, false, false),	not used any more
 		new Instruction("stsp", 0x1b, false, false),
 
 //	shift
@@ -90,6 +91,7 @@ public class Instruction {
 		new Instruction("ldiod", 0xe0+1, false, false),
 		new Instruction("ldmrd", 0xe0+2, false, false),
 		new Instruction("ldmul", 0xe0+5, false, false),
+		new Instruction("ldbcstart", 0xe0+7, false, false),
 
 //	ld (vp)	3 bits
 		new Instruction("ld0", 0xe8+0, false, false),
