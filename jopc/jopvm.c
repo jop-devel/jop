@@ -656,7 +656,7 @@ int usCnt() {
 	return (int) (readTSC()/divide);
 }
 
-#endif __nios__
+#endif // __nios__
 
 void sysRd() 
 {
