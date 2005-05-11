@@ -1,0 +1,119 @@
+/*
+ * Copyright (c) Martin Schoeberl, martin@jopdesign.com
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. All advertising materials mentioning features or use of this software
+ *    must display the following acknowledgement:
+ *	This product includes software developed by Martin Schoeberl
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ *
+ */
+
+package ejip;
+
+/**
+*	Main.java: test main.
+*
+*	Author: Martin Schoeberl (martin.schoeberl@chello.at)
+*
+*/
+
+import joprt.RtThread;
+import util.Dbg;
+import util.Timer;
+
+import com.jopdesign.sys.Const;
+import com.jopdesign.sys.Native;
+
+/**
+*	Test Main for ejip.
+*/
+
+	
+public class Main {
+
+	static Net net;
+	static LinkLayer ipLink;
+
+/**
+*	Start network and enter forever loop.
+*/
+	public static void main(String[] args) {
+
+		Dbg.init();
+
+		//
+		//	start TCP/IP
+		//
+		net = Net.init();
+// don't use CS8900 when simulating on PC or for BG263
+		ipLink = CS8900.init(Net.eth, Net.ip);
+// don't use PPP on my web server
+
+		//
+		//	start device driver threads
+		//
+
+		new RtThread(5, 10000) {
+			public void run() {
+				for (;;) {
+					waitForNextPeriod();
+					net.loop();
+				}
+			}
+		};
+		new RtThread(5, 10000) {
+			public void run() {
+				for (;;) {
+					waitForNextPeriod();
+					ipLink.loop();
+				}
+			}
+		};
+
+		//
+		//	WD thread has lowest priority to see if every timing will be met
+		//
+
+		RtThread.startMission();
+
+		forever();
+	}
+
+	private static void forever() {
+
+		//
+		//	just do the WD blink with lowest priority
+		//	=> if the other threads take to long (*3) there will be a reset
+		//
+		for (;;) {
+			for (int i=0; i<10; ++i) {
+				RtThread.sleepMs(50);
+				int val = Native.rd(Const.IO_IN);
+				Native.wr(val, Const.IO_LED);
+// Native.wr(-1, Native.IO_LED);
+				Timer.loop();
+			}
+			Timer.wd();
+		}
+	}
+}
