@@ -1,0 +1,404 @@
+set_global_assignment -name NUMBER_OF_SOURCES_PER_DESTINATION_TO_REPORT -value 10
+set_global_assignment -name NUMBER_OF_DESTINATION_TO_REPORT -value 10
+set_global_assignment -name NUMBER_OF_PATHS_TO_REPORT -value 200
+set_global_assignment -name DO_MIN_ANALYSIS -value ON
+set_global_assignment -name DO_MIN_TIMING -value OFF
+set_global_assignment -name REPORT_IO_PATHS_SEPARATELY -value OFF
+set_global_assignment -name CLOCK_ANALYSIS_ONLY -value OFF
+set_global_assignment -name DEFAULT_HOLD_MULTICYCLE -value "SAME AS MULTICYCLE"
+set_global_assignment -name CUT_OFF_PATHS_BETWEEN_CLOCK_DOMAINS -value ON
+set_global_assignment -name CUT_OFF_READ_DURING_WRITE_PATHS -value ON
+set_global_assignment -name CUT_OFF_CLEAR_AND_PRESET_PATHS -value ON
+set_global_assignment -name CUT_OFF_IO_PIN_FEEDBACK -value ON
+set_global_assignment -name IGNORE_CLOCK_SETTINGS -value OFF
+set_global_assignment -name ANALYZE_LATCHES_AS_SYNCHRONOUS_ELEMENTS -value OFF
+set_global_assignment -name PROCESSOR -value ARM922T
+set_global_assignment -name BYTE_ORDER -value "LITTLE ENDIAN"
+set_global_assignment -name TOOLSET -value "CUSTOM BUILD"
+set_global_assignment -name OUTPUT_TYPE -value "INTEL HEX"
+set_global_assignment -name PROGRAMMING_FILE_TYPE -value "NO PROGRAMMING FILE"
+set_global_assignment -name DO_POST_BUILD_COMMAND_LINE -value OFF
+set_global_assignment -name USE_C_PREPROCESSOR_FOR_GNU_ASM_FILES -value ON
+set_global_assignment -name ARM_CPP_COMMAND_LINE -value "-O2"
+set_global_assignment -name GNUPRO_NIOS_CPP_COMMAND_LINE -value "-O3"
+set_global_assignment -name GNUPRO_ARM_CPP_COMMAND_LINE -value "-O3 -fomit-frame-pointer"
+set_global_assignment -name START_TIME -value 0ns
+set_global_assignment -name SIMULATION_MODE -value TIMING
+set_global_assignment -name AUTO_USE_SIMULATION_PDB_NETLIST -value OFF
+set_global_assignment -name ADD_DEFAULT_PINS_TO_SIMULATION_OUTPUT_WAVEFORMS -value ON
+set_global_assignment -name POWER_ESTIMATION_START_TIME -value "0 ns"
+set_global_assignment -name SETUP_HOLD_DETECTION -value OFF
+set_global_assignment -name CHECK_OUTPUTS -value OFF
+set_global_assignment -name SIMULATION_COVERAGE -value ON
+set_global_assignment -name GLITCH_DETECTION -value OFF
+set_global_assignment -name GLITCH_INTERVAL -value 1ns
+set_global_assignment -name ESTIMATE_POWER_CONSUMPTION -value OFF
+set_global_assignment -name SIM_NO_DELAYS -value OFF
+set_global_assignment -name HUB_ENTITY_NAME -value sld_hub
+set_global_assignment -name HUB_INSTANCE_NAME -value sld_hub_inst
+set_global_assignment -name AUTO_INSERT_SLD_HUB_ENTITY -value ENABLE
+set_global_assignment -name SIGNALPROBE_ALLOW_OVERUSE -value OFF
+set_global_assignment -name SIGNALPROBE_DURING_NORMAL_COMPILATION -value OFF
+set_global_assignment -name PROJECT_SHOW_ENTITY_NAME -value ON
+set_global_assignment -name VER_COMPATIBLE_DB_DIR -value export_db
+set_global_assignment -name AUTO_EXPORT_VER_COMPATIBLE_DB -value OFF
+set_global_assignment -name MERGE_HEX_FILE -value OFF
+set_global_assignment -name GENERATE_SVF_FILE -value OFF
+set_global_assignment -name GENERATE_ISC_FILE -value OFF
+set_global_assignment -name GENERATE_JAM_FILE -value OFF
+set_global_assignment -name GENERATE_JBC_FILE -value OFF
+set_global_assignment -name GENERATE_JBC_FILE_COMPRESSED -value ON
+set_global_assignment -name GENERATE_CONFIG_SVF_FILE -value OFF
+set_global_assignment -name GENERATE_CONFIG_ISC_FILE -value OFF
+set_global_assignment -name GENERATE_CONFIG_JAM_FILE -value OFF
+set_global_assignment -name GENERATE_CONFIG_JBC_FILE -value OFF
+set_global_assignment -name GENERATE_CONFIG_JBC_FILE_COMPRESSED -value ON
+set_global_assignment -name GENERATE_CONFIG_HEXOUT_FILE -value OFF
+set_global_assignment -name EDA_SIMULATION_TOOL -value "<None>"
+set_global_assignment -name EDA_TIMING_ANALYSIS_TOOL -value "<None>"
+set_global_assignment -name EDA_BOARD_DESIGN_TOOL -value "<None>"
+set_global_assignment -name EDA_FORMAL_VERIFICATION_TOOL -value "<None>"
+set_global_assignment -name EDA_RESYNTHESIS_TOOL -value "<None>"
+set_global_assignment -name HARDCOPY_EXTERNAL_CLOCK_JITTER -value "0.0 ns"
+set_global_assignment -name HARDCOPY_INPUT_TRANSITION_CLOCK_PIN -value "0.1 ns"
+set_global_assignment -name HARDCOPY_INPUT_TRANSITION_DATA_PIN -value "1.0 ns"
+set_global_assignment -name MUX_RESTRUCTURE -value AUTO
+set_global_assignment -name ENABLE_IP_DEBUG -value OFF
+set_global_assignment -name SPEED_DISK_USAGE_TRADEOFF -value NORMAL
+set_global_assignment -name SAVE_DISK_SPACE -value ON
+set_global_assignment -name DISABLE_OCP_HW_EVAL -value OFF
+set_global_assignment -name RECOMPILE_QUESTION -value YES
+set_global_assignment -name DEVICE_FILTER_PACKAGE -value ANY
+set_global_assignment -name DEVICE_FILTER_PIN_COUNT -value ANY
+set_global_assignment -name DEVICE_FILTER_SPEED_GRADE -value ANY
+set_global_assignment -name EDA_DESIGN_ENTRY_SYNTHESIS_TOOL -value "<None>"
+set_global_assignment -name VERILOG_INPUT_VERSION -value VERILOG_2001
+set_global_assignment -name VHDL_INPUT_VERSION -value VHDL93
+set_global_assignment -name COMPILATION_LEVEL -value FULL
+set_global_assignment -name FAMILY -value Stratix
+set_global_assignment -name TRUE_WYSIWYG_FLOW -value OFF
+set_global_assignment -name SMART_COMPILE_IGNORES_TDC_FOR_STRATIX_PLL_CHANGES -value OFF
+set_global_assignment -name STATE_MACHINE_PROCESSING -value AUTO
+set_global_assignment -name DSP_BLOCK_BALANCING -value AUTO
+set_global_assignment -name NOT_GATE_PUSH_BACK -value ON
+set_global_assignment -name ALLOW_POWER_UP_DONT_CARE -value ON
+set_global_assignment -name REMOVE_REDUNDANT_LOGIC_CELLS -value OFF
+set_global_assignment -name REMOVE_DUPLICATE_REGISTERS -value ON
+set_global_assignment -name IGNORE_CARRY_BUFFERS -value OFF
+set_global_assignment -name IGNORE_CASCADE_BUFFERS -value OFF
+set_global_assignment -name IGNORE_GLOBAL_BUFFERS -value OFF
+set_global_assignment -name IGNORE_ROW_GLOBAL_BUFFERS -value OFF
+set_global_assignment -name IGNORE_LCELL_BUFFERS -value OFF
+set_global_assignment -name MAX7000_IGNORE_LCELL_BUFFERS -value AUTO
+set_global_assignment -name IGNORE_SOFT_BUFFERS -value ON
+set_global_assignment -name MAX7000_IGNORE_SOFT_BUFFERS -value OFF
+set_global_assignment -name LIMIT_AHDL_INTEGERS_TO_32_BITS -value OFF
+set_global_assignment -name USE_LPM_FOR_AHDL_OPERATORS -value ON
+set_global_assignment -name AUTO_GLOBAL_CLOCK_MAX -value ON
+set_global_assignment -name AUTO_GLOBAL_OE_MAX -value ON
+set_global_assignment -name MAX_AUTO_GLOBAL_REGISTER_CONTROLS -value ON
+set_global_assignment -name AUTO_IMPLEMENT_IN_ROM -value OFF
+set_global_assignment -name STRATIX_TECHNOLOGY_MAPPER -value LUT
+set_global_assignment -name MAX7000_TECHNOLOGY_MAPPER -value "PRODUCT TERM"
+set_global_assignment -name APEX20K_TECHNOLOGY_MAPPER -value LUT
+set_global_assignment -name MERCURY_TECHNOLOGY_MAPPER -value LUT
+set_global_assignment -name FLEX6K_TECHNOLOGY_MAPPER -value LUT
+set_global_assignment -name FLEX10K_TECHNOLOGY_MAPPER -value LUT
+set_global_assignment -name STRATIXII_OPTIMIZATION_TECHNIQUE -value BALANCED
+set_global_assignment -name CYCLONE_OPTIMIZATION_TECHNIQUE -value BALANCED
+set_global_assignment -name CYCLONEII_OPTIMIZATION_TECHNIQUE -value BALANCED
+set_global_assignment -name STRATIX_OPTIMIZATION_TECHNIQUE -value BALANCED
+set_global_assignment -name MAXII_OPTIMIZATION_TECHNIQUE -value BALANCED
+set_global_assignment -name MAX7000_OPTIMIZATION_TECHNIQUE -value SPEED
+set_global_assignment -name APEX20K_OPTIMIZATION_TECHNIQUE -value BALANCED
+set_global_assignment -name MERCURY_OPTIMIZATION_TECHNIQUE -value AREA
+set_global_assignment -name FLEX6K_OPTIMIZATION_TECHNIQUE -value AREA
+set_global_assignment -name FLEX10K_OPTIMIZATION_TECHNIQUE -value AREA
+set_global_assignment -name ALLOW_XOR_GATE_USAGE -value ON
+set_global_assignment -name AUTO_LCELL_INSERTION -value ON
+set_global_assignment -name CARRY_CHAIN_LENGTH -value 48
+set_global_assignment -name FLEX6K_CARRY_CHAIN_LENGTH -value 32
+set_global_assignment -name FLEX10K_CARRY_CHAIN_LENGTH -value 32
+set_global_assignment -name MERCURY_CARRY_CHAIN_LENGTH -value 48
+set_global_assignment -name STRATIX_CARRY_CHAIN_LENGTH -value 70
+set_global_assignment -name STRATIXII_CARRY_CHAIN_LENGTH -value 70
+set_global_assignment -name CASCADE_CHAIN_LENGTH -value 2
+set_global_assignment -name PARALLEL_EXPANDER_CHAIN_LENGTH -value 16
+set_global_assignment -name MAX7000_PARALLEL_EXPANDER_CHAIN_LENGTH -value 4
+set_global_assignment -name AUTO_CARRY_CHAINS -value ON
+set_global_assignment -name AUTO_CASCADE_CHAINS -value ON
+set_global_assignment -name AUTO_PARALLEL_EXPANDERS -value ON
+set_global_assignment -name AUTO_OPEN_DRAIN_PINS -value ON
+set_global_assignment -name REMOVE_DUPLICATE_LOGIC -value ON
+set_global_assignment -name ADV_NETLIST_OPT_SYNTH_WYSIWYG_REMAP -value OFF
+set_global_assignment -name ADV_NETLIST_OPT_SYNTH_GATE_RETIME -value OFF
+set_global_assignment -name ADV_NETLIST_OPT_RETIME_CORE_AND_IO -value ON
+set_global_assignment -name AUTO_ROM_RECOGNITION -value ON
+set_global_assignment -name AUTO_RAM_RECOGNITION -value ON
+set_global_assignment -name AUTO_DSP_RECOGNITION -value ON
+set_global_assignment -name AUTO_SHIFT_REGISTER_RECOGNITION -value ON
+set_global_assignment -name AUTO_CLOCK_ENABLE_RECOGNITION -value ON
+set_global_assignment -name SHOW_REGISTRATION_MESSAGE -value ON
+set_global_assignment -name ALLOW_SYNCH_CTRL_USAGE -value ON
+set_global_assignment -name AUTO_RAM_BLOCK_BALANCING -value ON
+set_global_assignment -name ESTIMATE_POWER_DURING_COMPILATION -value OFF
+set_global_assignment -name AUTO_RESOURCE_SHARING -value OFF
+set_global_assignment -name USE_NEW_TEXT_REPORT_TABLE_FORMAT -value OFF
+set_global_assignment -name ALLOW_ANY_RAM_SIZE_FOR_RECOGNITION -value OFF
+set_global_assignment -name ALLOW_ANY_ROM_SIZE_FOR_RECOGNITION -value OFF
+set_global_assignment -name ALLOW_ANY_SHIFT_REGISTER_SIZE_FOR_RECOGNITION -value OFF
+set_global_assignment -name MAX7000_FANIN_PER_CELL -value 100
+set_global_assignment -name IGNORE_DUPLICATE_DESIGN_ENTITY -value OFF
+set_global_assignment -name VHDL_VERILOG_BREAK_LOOPS -value OFF
+set_global_assignment -name LOGICLOCK_INCREMENTAL_COMPILE_ASSIGNMENT -value OFF
+set_global_assignment -name ECO_ALLOW_ROUTING_CHANGES -value OFF
+set_global_assignment -name DEVICE -value AUTO
+set_global_assignment -name BASE_PIN_OUT_FILE_ON_SAMEFRAME_DEVICE -value OFF
+set_global_assignment -name ENABLE_JTAG_BST_SUPPORT -value OFF
+set_global_assignment -name MAX7000_ENABLE_JTAG_BST_SUPPORT -value ON
+set_global_assignment -name RESERVE_NCEO_AFTER_CONFIGURATION -value "USE AS REGULAR IO"
+set_global_assignment -name CYCLONEII_RESERVE_NCEO_AFTER_CONFIGURATION -value "AS OUTPUT DRIVING GROUND"
+set_global_assignment -name STRATIX_UPDATE_MODE -value STANDARD
+set_global_assignment -name STRATIX_II_CONFIGURATION_SCHEME -value "PASSIVE SERIAL"
+set_global_assignment -name CYCLONEII_CONFIGURATION_SCHEME -value "ACTIVE SERIAL"
+set_global_assignment -name APEX20K_CONFIGURATION_SCHEME -value "PASSIVE SERIAL"
+set_global_assignment -name STRATIX_CONFIGURATION_SCHEME -value "PASSIVE SERIAL"
+set_global_assignment -name CYCLONE_CONFIGURATION_SCHEME -value "ACTIVE SERIAL"
+set_global_assignment -name EXCALIBUR_CONFIGURATION_SCHEME -value "PASSIVE SERIAL"
+set_global_assignment -name MERCURY_CONFIGURATION_SCHEME -value "PASSIVE SERIAL"
+set_global_assignment -name FLEX6K_CONFIGURATION_SCHEME -value "PASSIVE SERIAL"
+set_global_assignment -name FLEX10K_CONFIGURATION_SCHEME -value "PASSIVE SERIAL"
+set_global_assignment -name APEXII_CONFIGURATION_SCHEME -value "PASSIVE SERIAL"
+set_global_assignment -name USER_START_UP_CLOCK -value OFF
+set_global_assignment -name ENABLE_VREFA_PIN -value OFF
+set_global_assignment -name ENABLE_VREFB_PIN -value OFF
+set_global_assignment -name AUTO_RESTART_CONFIGURATION -value ON
+set_global_assignment -name RELEASE_CLEARS_BEFORE_TRI_STATES -value OFF
+set_global_assignment -name ENABLE_DEVICE_WIDE_RESET -value OFF
+set_global_assignment -name ENABLE_DEVICE_WIDE_OE -value OFF
+set_global_assignment -name FLEX10K_ENABLE_LOCK_OUTPUT -value OFF
+set_global_assignment -name ENABLE_INIT_DONE_OUTPUT -value OFF
+set_global_assignment -name RESERVE_NWS_NRS_NCS_CS_AFTER_CONFIGURATION -value "USE AS REGULAR IO"
+set_global_assignment -name RESERVE_RDYNBUSY_AFTER_CONFIGURATION -value "USE AS REGULAR IO"
+set_global_assignment -name RESERVE_DATA7_THROUGH_DATA1_AFTER_CONFIGURATION -value "USE AS REGULAR IO"
+set_global_assignment -name RESERVE_DATA0_AFTER_CONFIGURATION -value "AS INPUT TRI-STATED"
+set_global_assignment -name RESERVE_ASDO_AFTER_CONFIGURATION -value "USE AS REGULAR IO"
+set_global_assignment -name CRC_ERROR_CHECKING -value OFF
+set_global_assignment -name RESERVE_ALL_UNUSED_PINS -value "AS OUTPUT DRIVING GROUND"
+set_global_assignment -name OPTIMIZE_HOLD_TIMING -value "IO PATHS AND MINIMUM TPD PATHS"
+set_global_assignment -name OPTIMIZE_TIMING -value "NORMAL COMPILATION"
+set_global_assignment -name OPTIMIZE_IOC_REGISTER_PLACEMENT_FOR_TIMING -value ON
+set_global_assignment -name DISABLE_PLL_COMPENSATION_DELAY_CHANGE_WARNING -value OFF
+set_global_assignment -name FIT_ONLY_ONE_ATTEMPT -value OFF
+set_global_assignment -name STRIPE_TO_PLD_BRIDGE_EPXA4_10 -value "MEGALAB COLUMN 1"
+set_global_assignment -name PROCESSOR_DEBUG_EXTENSIONS_EPXA4_10 -value "MEGALAB COLUMN 2"
+set_global_assignment -name PLD_TO_STRIPE_INTERRUPTS_EPXA4_10 -value "MEGALAB COLUMN 2"
+set_global_assignment -name STRIPE_TO_PLD_INTERRUPTS_EPXA4_10 -value "MEGALAB COLUMN 2"
+set_global_assignment -name DPRAM_INPUT_EPXA4_10 -value "DEFAULT INPUT ROUTING OPTIONS"
+set_global_assignment -name DPRAM_OUTPUT_EPXA4_10 -value "DEFAULT OUTPUT ROUTING OPTIONS"
+set_global_assignment -name DPRAM_OTHER_SIGNALS_EPXA4_10 -value "DEFAULT OTHER ROUTING OPTIONS"
+set_global_assignment -name DPRAM_DEEP_MODE_INPUT_EPXA4_10 -value "MEGALAB COLUMN 3"
+set_global_assignment -name DPRAM_WIDE_MODE_INPUT_EPXA4_10 -value "LOWER TO 3 UPPER TO 4"
+set_global_assignment -name DPRAM_SINGLE_PORT_MODE_INPUT_EPXA4_10 -value "DPRAM0 TO 3 DPRAM1 TO 4"
+set_global_assignment -name DPRAM_DUAL_PORT_MODE_INPUT_EPXA4_10 -value "DPRAM0 TO 3 DPRAM1 TO 4"
+set_global_assignment -name DPRAM_DEEP_MODE_OUTPUT_EPXA4_10 -value "MEGALAB COLUMN 3"
+set_global_assignment -name DPRAM_WIDE_MODE_OUTPUT_EPXA4_10 -value "LOWER TO 3 UPPER TO 4ESB"
+set_global_assignment -name DPRAM_SINGLE_PORT_MODE_OUTPUT_EPXA4_10 -value "DPRAM0 TO 3 DPRAM1 TO 4ESB"
+set_global_assignment -name DPRAM_DUAL_PORT_MODE_OUTPUT_EPXA4_10 -value "DPRAM0 TO 3 DPRAM1 TO 4ESB"
+set_global_assignment -name DPRAM_DEEP_MODE_OTHER_SIGNALS_EPXA4_10 -value "MEGALAB COLUMN 3"
+set_global_assignment -name DPRAM_WIDE_MODE_OTHER_SIGNALS_EPXA4_10 -value "MEGALAB COLUMN 3"
+set_global_assignment -name DPRAM_SINGLE_PORT_MODE_OTHER_SIGNALS_EPXA4_10 -value "DPRAM0 TO 3 DPRAM1 TO 4"
+set_global_assignment -name DPRAM_DUAL_PORT_MODE_OTHER_SIGNALS_EPXA4_10 -value "DPRAM0 TO 3 DPRAM1 TO 4"
+set_global_assignment -name DPRAM_8BIT_16BIT_SINGLE_PORT_MODE_INPUT_EPXA1 -value "MEGALAB COLUMN 1"
+set_global_assignment -name DPRAM_32BIT_SINGLE_PORT_MODE_INPUT_EPXA1 -value "MEGALAB COLUMN 1"
+set_global_assignment -name DPRAM_DUAL_PORT_MODE_INPUT_EPXA1 -value "DPRAM0 TO 1 DPRAM1 TO 2"
+set_global_assignment -name DPRAM_8BIT_16BIT_SINGLE_PORT_MODE_OUTPUT_EPXA1 -value "MEGALAB COLUMN 1"
+set_global_assignment -name DPRAM_32BIT_SINGLE_PORT_MODE_OUTPUT_EPXA1 -value "LOWER TO 1ESB UPPER TO 1"
+set_global_assignment -name DPRAM_DUAL_PORT_MODE_OUTPUT_EPXA1 -value "DPRAM0 TO 1 DPRAM1 TO 2"
+set_global_assignment -name DPRAM_8BIT_16BIT_SINGLE_PORT_MODE_OTHER_SIGNALS_EPXA1 -value "MEGALAB COLUMN 1"
+set_global_assignment -name DPRAM_32BIT_SINGLE_PORT_MODE_OTHER_SIGNALS_EPXA1 -value "MEGALAB COLUMN 1"
+set_global_assignment -name DPRAM_DUAL_PORT_MODE_OTHER_SIGNALS_EPXA1 -value "DPRAM0 TO 1 DPRAM1 TO 2"
+set_global_assignment -name FINAL_PLACEMENT_OPTIMIZATION -value AUTOMATICALLY
+set_global_assignment -name SEED -value 1
+set_global_assignment -name SLOW_SLEW_RATE -value OFF
+set_global_assignment -name PCI_IO -value OFF
+set_global_assignment -name TURBO_BIT -value ON
+set_global_assignment -name WEAK_PULL_UP_RESISTOR -value OFF
+set_global_assignment -name ENABLE_BUS_HOLD_CIRCUITRY -value OFF
+set_global_assignment -name AUTO_GLOBAL_MEMORY_CONTROLS -value OFF
+set_global_assignment -name AUTO_PACKED_REGISTERS_STRATIXII -value AUTO
+set_global_assignment -name AUTO_PACKED_REGISTERS_MAXII -value AUTO
+set_global_assignment -name AUTO_PACKED_REGISTERS_CYCLONE -value AUTO
+set_global_assignment -name AUTO_PACKED_REGISTERS -value OFF
+set_global_assignment -name AUTO_PACKED_REGISTERS_STRATIX -value AUTO
+set_global_assignment -name NORMAL_LCELL_INSERT -value ON
+set_global_assignment -name CARRY_OUT_PINS_LCELL_INSERT -value ON
+set_global_assignment -name AUTO_DELAY_CHAINS -value ON
+set_global_assignment -name AUTO_FAST_INPUT_REGISTERS -value OFF
+set_global_assignment -name AUTO_FAST_OUTPUT_REGISTERS -value OFF
+set_global_assignment -name AUTO_FAST_OUTPUT_ENABLE_REGISTERS -value OFF
+set_global_assignment -name AUTO_MERGE_PLLS -value ON
+set_global_assignment -name AUTO_TURBO_BIT -value ON
+set_global_assignment -name PHYSICAL_SYNTHESIS_COMBO_LOGIC -value OFF
+set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_DUPLICATION -value OFF
+set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_RETIMING -value OFF
+set_global_assignment -name IO_PLACEMENT_OPTIMIZATION -value ON
+set_global_assignment -name ALLOW_LVTTL_LVCMOS_INPUT_LEVELS_TO_OVERDRIVE_INPUT_BUFFER -value OFF
+set_global_assignment -name OVERRIDE_DEFAULT_ELECTROMIGRATION_PARAMETERS -value OFF
+set_global_assignment -name FITTER_EFFORT -value "AUTO FIT"
+set_global_assignment -name FITTER_AUTO_EFFORT_DESIRED_SLACK_MARGIN -value 0ns
+set_global_assignment -name PHYSICAL_SYNTHESIS_EFFORT -value NORMAL
+set_global_assignment -name ROUTER_LCELL_INSERTION_AND_LOGIC_DUPLICATION -value AUTO
+set_global_assignment -name ROUTER_REGISTER_DUPLICATION -value OFF
+set_global_assignment -name ALLOW_SERIES_TERMINATION -value OFF
+set_global_assignment -name ALLOW_PARALLEL_TERMINATION -value OFF
+set_global_assignment -name STRATIXGX_ALLOW_CLOCK_FANOUT_WITH_ANALOG_RESET -value OFF
+set_global_assignment -name AUTO_GLOBAL_CLOCK -value ON
+set_global_assignment -name AUTO_GLOBAL_OE -value ON
+set_global_assignment -name AUTO_GLOBAL_REGISTER_CONTROLS -value ON
+set_global_assignment -name DRC_REPORT_TOP_FANOUT -value ON
+set_global_assignment -name DRC_TOP_FANOUT -value 50
+set_global_assignment -name DRC_REPORT_FANOUT_EXCEEDING -value ON
+set_global_assignment -name DRC_FANOUT_EXCEEDING -value 30
+set_global_assignment -name ASSG_CAT -value ON
+set_global_assignment -name ASSG_RULE_MISSING_FMAX -value ON
+set_global_assignment -name ASSG_RULE_MISSING_TIMING -value ON
+set_global_assignment -name SIGNALRACE_RULE_TRISTATE -value ON
+set_global_assignment -name HCPY_PLL_MULTIPLE_CLK_NETWORK_TYPES -value ON
+set_global_assignment -name NONSYNCHSTRUCT_RULE_ASYN_RAM -value ON
+set_global_assignment -name HARDCOPY_FLOW_AUTOMATION -value MIGRATION_ONLY
+set_global_assignment -name ENABLE_DRC_SETTINGS -value OFF
+set_global_assignment -name CLK_CAT -value ON
+set_global_assignment -name CLK_RULE_COMB_CLOCK -value ON
+set_global_assignment -name CLK_RULE_INV_CLOCK -value ON
+set_global_assignment -name CLK_RULE_GATING_SCHEME -value ON
+set_global_assignment -name CLK_RULE_INPINS_CLKNET -value ON
+set_global_assignment -name CLK_RULE_CLKNET_CLKSPINES -value ON
+set_global_assignment -name CLK_RULE_MIX_EDGES -value ON
+set_global_assignment -name RESET_CAT -value ON
+set_global_assignment -name RESET_RULE_INPINS_RESETNET -value ON
+set_global_assignment -name RESET_RULE_UNSYNCH_EXRESET -value ON
+set_global_assignment -name RESET_RULE_IMSYNCH_EXRESET -value ON
+set_global_assignment -name RESET_RULE_COMB_ASYNCH_RESET -value ON
+set_global_assignment -name RESET_RULE_UNSYNCH_ASYNCH_DOMAIN -value ON
+set_global_assignment -name RESET_RULE_IMSYNCH_ASYNCH_DOMAIN -value ON
+set_global_assignment -name TIMING_CAT -value ON
+set_global_assignment -name TIMING_RULE_SHIFT_REG -value ON
+set_global_assignment -name TIMING_RULE_COIN_CLKEDGE -value ON
+set_global_assignment -name NONSYNCHSTRUCT_RULE_COMB_DRIVES_RAM_WE -value ON
+set_global_assignment -name NONSYNCHSTRUCT_CAT -value ON
+set_global_assignment -name NONSYNCHSTRUCT_RULE_COMBLOOP -value ON
+set_global_assignment -name NONSYNCHSTRUCT_RULE_REG_LOOP -value ON
+set_global_assignment -name NONSYNCHSTRUCT_RULE_DELAY_CHAIN -value ON
+set_global_assignment -name NONSYNCHSTRUCT_RULE_RIPPLE_CLK -value ON
+set_global_assignment -name NONSYNCHSTRUCT_RULE_ILLEGAL_PULSE_GEN -value ON
+set_global_assignment -name NONSYNCHSTRUCT_RULE_MULTI_VIBRATOR -value ON
+set_global_assignment -name NONSYNCHSTRUCT_RULE_SRLATCH -value ON
+set_global_assignment -name NONSYNCHSTRUCT_RULE_LATCH_UNIDENTIFIED -value ON
+set_global_assignment -name SIGNALRACE_CAT -value ON
+set_global_assignment -name ACLK_CAT -value ON
+set_global_assignment -name ACLK_RULE_NO_SZER_ACLK_DOMAIN -value ON
+set_global_assignment -name ACLK_RULE_SZER_BTW_ACLK_DOMAIN -value ON
+set_global_assignment -name ACLK_RULE_IMSZER_ADOMAIN -value ON
+set_global_assignment -name HCPY_CAT -value ON
+set_global_assignment -name HCPY_VREF_PINS -value ON
+set_global_assignment -name ON_CHIP_BITSTREAM_DECOMPRESSION -value ON
+set_global_assignment -name COMPRESSION_MODE -value OFF
+set_global_assignment -name CLOCK_SOURCE -value INTERNAL
+set_global_assignment -name CONFIGURATION_CLOCK_FREQUENCY -value "10 MHZ"
+set_global_assignment -name CONFIGURATION_CLOCK_DIVISOR -value 1
+set_global_assignment -name ENABLE_LOW_VOLTAGE_MODE_ON_CONFIG_DEVICE -value ON
+set_global_assignment -name FLEX6K_ENABLE_LOW_VOLTAGE_MODE_ON_CONFIG_DEVICE -value OFF
+set_global_assignment -name FLEX10K_ENABLE_LOW_VOLTAGE_MODE_ON_CONFIG_DEVICE -value ON
+set_global_assignment -name MAX7000S_JTAG_USER_CODE -value FFFF
+set_global_assignment -name STRATIX_JTAG_USER_CODE -value FFFFFFFF
+set_global_assignment -name APEX20K_JTAG_USER_CODE -value FFFFFFFF
+set_global_assignment -name MERCURY_JTAG_USER_CODE -value FFFFFFFF
+set_global_assignment -name FLEX10K_JTAG_USER_CODE -value 7F
+set_global_assignment -name MAX7000_JTAG_USER_CODE -value FFFFFFFF
+set_global_assignment -name MAX7000_USE_CHECKSUM_AS_USERCODE -value OFF
+set_global_assignment -name USE_CHECKSUM_AS_USERCODE -value OFF
+set_global_assignment -name SECURITY_BIT -value OFF
+set_global_assignment -name USE_CONFIGURATION_DEVICE -value ON
+set_global_assignment -name STRATIX_II_CONFIGURATION_DEVICE -value AUTO
+set_global_assignment -name APEX20K_CONFIGURATION_DEVICE -value AUTO
+set_global_assignment -name EXCALIBUR_CONFIGURATION_DEVICE -value AUTO
+set_global_assignment -name MERCURY_CONFIGURATION_DEVICE -value AUTO
+set_global_assignment -name FLEX6K_CONFIGURATION_DEVICE -value AUTO
+set_global_assignment -name FLEX10K_CONFIGURATION_DEVICE -value AUTO
+set_global_assignment -name CYCLONE_CONFIGURATION_DEVICE -value AUTO
+set_global_assignment -name STRATIX_CONFIGURATION_DEVICE -value AUTO
+set_global_assignment -name APEX20K_CONFIG_DEVICE_JTAG_USER_CODE -value FFFFFFFF
+set_global_assignment -name STRATIX_CONFIG_DEVICE_JTAG_USER_CODE -value FFFFFFFF
+set_global_assignment -name MERCURY_CONFIG_DEVICE_JTAG_USER_CODE -value FFFFFFFF
+set_global_assignment -name FLEX10K_CONFIG_DEVICE_JTAG_USER_CODE -value FFFFFFFF
+set_global_assignment -name EPROM_USE_CHECKSUM_AS_USERCODE -value OFF
+set_global_assignment -name AUTO_INCREMENT_CONFIG_DEVICE_JTAG_USER_CODE -value ON
+set_global_assignment -name DISABLE_NCS_AND_OE_PULLUPS_ON_CONFIG_DEVICE -value OFF
+set_global_assignment -name GENERATE_TTF_FILE -value OFF
+set_global_assignment -name GENERATE_RBF_FILE -value OFF
+set_global_assignment -name GENERATE_HEX_FILE -value OFF
+set_global_assignment -name HEXOUT_FILE_START_ADDRESS -value 0
+set_global_assignment -name HEXOUT_FILE_COUNT_DIRECTION -value UP
+set_global_assignment -name DUTY_CYCLE -value 50 -section_id ?
+set_global_assignment -name INVERT_BASE_CLOCK -value OFF -section_id ?
+set_global_assignment -name MULTIPLY_BASE_CLOCK_PERIOD_BY -value 1 -section_id ?
+set_global_assignment -name DIVIDE_BASE_CLOCK_PERIOD_BY -value 1 -section_id ?
+set_global_assignment -name EDA_LAUNCH_CMD_LINE_TOOL -value OFF -section_id ?
+set_global_assignment -name EDA_INCLUDE_VHDL_CONFIGURATION_DECLARATION -value OFF -section_id ?
+set_global_assignment -name EDA_TRUNCATE_LONG_HIERARCHY_PATHS -value OFF -section_id ?
+set_global_assignment -name EDA_FLATTEN_BUSES -value OFF -section_id ?
+set_global_assignment -name EDA_MAP_ILLEGAL_CHARACTERS -value OFF -section_id ?
+set_global_assignment -name EDA_EXCALIBUR_ATOMS_AS_SINGLE_STRIPE -value OFF -section_id ?
+set_global_assignment -name EDA_OUTPUT_DATA_FORMAT -value NONE -section_id ?
+set_global_assignment -name EDA_GENERATE_TIMING_CLOSURE_DATA -value OFF -section_id ?
+set_global_assignment -name EDA_GENERATE_POWER_INPUT_FILE -value OFF -section_id ?
+set_global_assignment -name EDA_TEST_BENCH_ENABLE_STATUS -value NOT_USED -section_id ?
+set_global_assignment -name EDA_USE_IBIS_RLC_TYPE -value TYPICAL -section_id ?
+set_global_assignment -name EDA_MAINTAIN_DESIGN_HIERARCHY -value OFF -section_id ?
+set_global_assignment -name EDA_GENERATE_FUNCTIONAL_NETLIST -value OFF -section_id ?
+set_global_assignment -name EDA_WRITE_DEVICE_CONTROL_PORTS -value OFF -section_id ?
+set_global_assignment -name EDA_INPUT_GND_NAME -value GND -section_id ?
+set_global_assignment -name EDA_INPUT_VCC_NAME -value VCC -section_id ?
+set_global_assignment -name EDA_INPUT_DATA_FORMAT -value EDIF -section_id ?
+set_global_assignment -name EDA_SHOW_LMF_MAPPING_MESSAGES -value OFF -section_id ?
+set_global_assignment -name EDA_RUN_TOOL_AUTOMATICALLY -value OFF -section_id ?
+set_global_assignment -name RESYNTHESIS_RETIMING -value FULL -section_id ?
+set_global_assignment -name RESYNTHESIS_OPTIMIZATION_EFFORT -value NORMAL -section_id ?
+set_global_assignment -name RESYNTHESIS_PHYSICAL_SYNTHESIS -value NORMAL -section_id ?
+set_global_assignment -name USE_GENERATED_PHYSICAL_CONSTRAINTS -value ON -section_id ?
+set_global_assignment -name VCCPD_VOLTAGE -value 3.3V -section_id ?
+set_global_assignment -name EDA_SIMULATION_TOOL -value "<None>" -entity ?
+set_global_assignment -name EDA_TIMING_ANALYSIS_TOOL -value "<None>" -entity ?
+set_global_assignment -name EDA_BOARD_DESIGN_TOOL -value "<None>" -entity ?
+set_global_assignment -name EDA_FORMAL_VERIFICATION_TOOL -value "<None>" -entity ?
+set_global_assignment -name EDA_RESYNTHESIS_TOOL -value "<None>" -entity ?
+set_global_assignment -name EDA_DESIGN_ENTRY_SYNTHESIS_TOOL -value "<None>" -entity ?
+set_global_assignment -name EDA_LAUNCH_CMD_LINE_TOOL -value OFF -section_id ? -entity ?
+set_global_assignment -name EDA_INCLUDE_VHDL_CONFIGURATION_DECLARATION -value OFF -section_id ? -entity ?
+set_global_assignment -name EDA_TRUNCATE_LONG_HIERARCHY_PATHS -value OFF -section_id ? -entity ?
+set_global_assignment -name EDA_FLATTEN_BUSES -value OFF -section_id ? -entity ?
+set_global_assignment -name EDA_MAP_ILLEGAL_CHARACTERS -value OFF -section_id ? -entity ?
+set_global_assignment -name EDA_EXCALIBUR_ATOMS_AS_SINGLE_STRIPE -value OFF -section_id ? -entity ?
+set_global_assignment -name EDA_OUTPUT_DATA_FORMAT -value NONE -section_id ? -entity ?
+set_global_assignment -name EDA_GENERATE_TIMING_CLOSURE_DATA -value OFF -section_id ? -entity ?
+set_global_assignment -name EDA_GENERATE_POWER_INPUT_FILE -value OFF -section_id ? -entity ?
+set_global_assignment -name EDA_TEST_BENCH_ENABLE_STATUS -value NOT_USED -section_id ? -entity ?
+set_global_assignment -name EDA_USE_IBIS_RLC_TYPE -value TYPICAL -section_id ? -entity ?
+set_global_assignment -name EDA_MAINTAIN_DESIGN_HIERARCHY -value OFF -section_id ? -entity ?
+set_global_assignment -name EDA_GENERATE_FUNCTIONAL_NETLIST -value OFF -section_id ? -entity ?
+set_global_assignment -name EDA_WRITE_DEVICE_CONTROL_PORTS -value OFF -section_id ? -entity ?
+set_global_assignment -name EDA_INPUT_GND_NAME -value GND -section_id ? -entity ?
+set_global_assignment -name EDA_INPUT_VCC_NAME -value VCC -section_id ? -entity ?
+set_global_assignment -name EDA_INPUT_DATA_FORMAT -value EDIF -section_id ? -entity ?
+set_global_assignment -name EDA_SHOW_LMF_MAPPING_MESSAGES -value OFF -section_id ? -entity ?
+set_global_assignment -name EDA_RUN_TOOL_AUTOMATICALLY -value OFF -section_id ? -entity ?
+set_global_assignment -name RESYNTHESIS_RETIMING -value FULL -section_id ? -entity ?
+set_global_assignment -name RESYNTHESIS_OPTIMIZATION_EFFORT -value NORMAL -section_id ? -entity ?
+set_global_assignment -name RESYNTHESIS_PHYSICAL_SYNTHESIS -value NORMAL -section_id ? -entity ?
+set_global_assignment -name USE_GENERATED_PHYSICAL_CONSTRAINTS -value ON -section_id ? -entity ?
+set_global_assignment -name APEX20K_CLIQUE_TYPE -value LAB -section_id ? -entity ?
+set_global_assignment -name MAX7K_CLIQUE_TYPE -value LAB -section_id ? -entity ?
+set_global_assignment -name MERCURY_CLIQUE_TYPE -value LAB -section_id ? -entity ?
+set_global_assignment -name FLEX6K_CLIQUE_TYPE -value LAB -section_id ? -entity ?
+set_global_assignment -name FLEX10K_CLIQUE_TYPE -value LAB -section_id ? -entity ?
