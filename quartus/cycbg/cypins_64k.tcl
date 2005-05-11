@@ -4,7 +4,7 @@ cmp add_assignment "jop" "" "fl_a\[0\]" "SIGNALPROBE_ENABLE" "Off";
 cmp add_assignment "jop" "" "fl_a\[1\]" "IO_STANDARD" "LVCMOS";
 cmp add_assignment "jop" "" "fl_a\[1\]" "LOCATION" "Pin_48";
 cmp add_assignment "jop" "" "fl_a\[1\]" "SIGNALPROBE_ENABLE" "Off";
-cmp add_assignment "jop" "" "fl_a\[10\]" "IO_STANDARD" "LVCMOS";
+cmp add_assignment "jop" "" "fl_a\[1\]" "CURRENT_STRENGTH" "STRENGTH 2MA";
 cmp add_assignment "jop" "" "fl_a\[10\]" "LOCATION" "Pin_20";
 cmp add_assignment "jop" "" "fl_a\[10\]" "SIGNALPROBE_ENABLE" "Off";
 cmp add_assignment "jop" "" "fl_a\[11\]" "IO_STANDARD" "LVCMOS";
