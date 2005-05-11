@@ -1,7 +1,7 @@
 package testrt;
-import util.*;
-import joprt.*;
-import com.jopdesign.sys.Native;
+import joprt.RtThread;
+import joprt.SwEvent;
+import util.Dbg;
 
 public class Event {
 

@@ -1,7 +1,10 @@
 package testrt;
-import util.*;
-import joprt.*;
-import com.jopdesign.sys.*;
+import joprt.RtThread;
+import util.Dbg;
+import util.Timer;
+
+import com.jopdesign.sys.Const;
+import com.jopdesign.sys.Native;
 
 //
 //	increase stack in busy RtThread and RtThread (6 entries per function call)

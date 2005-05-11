@@ -1,7 +1,10 @@
 package vm04;
-import util.*;
-import joprt.*;
-import com.jopdesign.sys.*;
+import joprt.RtThread;
+import joprt.SwEvent;
+import util.Dbg;
+
+import com.jopdesign.sys.Const;
+import com.jopdesign.sys.Native;
 
 public class Event {
 

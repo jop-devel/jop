@@ -90,6 +90,11 @@ public class JOPWriter implements CoreImageWriter, Const, EVMConst {
 
 	Map mapCodeStart = new HashMap();
 	int addrCnt = 1;	// first word is pointer to main pointer
+	// number of <clinit> methods
+	int cntClinit = 0;
+	// list of method table entries for <clinit> methods
+	LinkedList listClinit = new LinkedList();
+
 	class ClAddr {
 		int stat;		// static fields first
 		int start;
@@ -122,6 +127,8 @@ public class JOPWriter implements CoreImageWriter, Const, EVMConst {
 	static final int CLS_HEAD = 2;
 	static final int METH_STR = 2;
 	static final int CONST_STR = 1;
+
+	private static final int METHOD_MAX_SIZE = 1024;
 
 	static int addrString = 0;	// pointer to method table of class java.lang.String
 
@@ -576,8 +583,11 @@ public class JOPWriter implements CoreImageWriter, Const, EVMConst {
 				}
 
 				addrCnt += 4;		// pointer to main(), JVM, Util classes
-				int addrStringTable = addrCnt;
 
+				// tabel of <clinit> method pointers
+				addrCnt += 1 + cntClinit;
+
+				int addrStringTable = addrCnt;
 				addrCnt += stringTable.getTableLength();
 
 				int addrBoot = 0;	// pointer to boot code
@@ -659,20 +669,28 @@ public class JOPWriter implements CoreImageWriter, Const, EVMConst {
 								addrString = cla.mtab;
 							}
 		//
-		//	find pointer to main...
+		//	find pointer to main and <clinit> methods
 		//
-							if (cc.ci.className.equals(startClass)) {
-								EVMMethodInfo m[] = cc.methods;
-								for (int i = 0; i < m.length; i++) { 
-									EVMMethodInfo meth = m[i];  
-									MethodInfo mi = meth.method;
-									if (mi.name.string.indexOf("main")!=-1) {
-										String methodNativeName = meth.getNativeName();
-										for (int j=0; j<clvt.len; ++j) {
-											if (clvt.nativeName[j].equals(methodNativeName)) {
-												addrMain = cla.mtab+j*METH_STR;
-												break;
+							EVMMethodInfo m[] = cc.methods;
+							for (int i = 0; i < m.length; i++) { 
+								EVMMethodInfo meth = m[i];  
+								MethodInfo mi = meth.method;
+								boolean isMain = false;
+								if (cc.ci.className.equals(startClass)) {
+									isMain = mi.name.string.indexOf("main")!=-1;
+								}
+								boolean isClinit = mi.name.string.indexOf("<clinit>")!=-1;
+								if (isMain || isClinit) {
+									String methodNativeName = meth.getNativeName();
+									for (int j=0; j<clvt.len; ++j) {
+										if (clvt.nativeName[j].equals(methodNativeName)) {
+											int addr = cla.mtab+j*METH_STR;
+											if (isMain) {
+												addrMain = addr;
+											} else {
+												listClinit.add(new Integer(addr));
 											}
+											break;
 										}
 									}
 								}
@@ -688,6 +706,20 @@ public class JOPWriter implements CoreImageWriter, Const, EVMConst {
 				out.println("\t\t "+addrJVM+",\t// pointer to first non Object method struct of class JVM");
 				out.println("\t\t "+addrJVMHelp+",\t// pointer to first non Object method struct of of class JVMHelp");
 				out.println("\t\t "+addrMain+",\t// pointer to main method struct");
+
+				if (addrMain==0) {
+					System.out.println("no main() method found");
+					System.exit(-1);
+				}
+				// print out <clinit> table
+				out.println("//");
+				out.println("//\t<clinit> method pointers:");
+				out.println("//");
+				out.println("\t\t "+cntClinit+",\t// number of methods");
+				for (int i=0; i<listClinit.size(); ++i) {
+					int addr = ((Integer) listClinit.get(i)).intValue();
+					out.println("\t\t "+addr+",");
+				}
 
 				// Print out the string table
 				njavastrings = stringTable.writeStrings(this, "InternStringTable", addrString, addrStringTable);
@@ -936,7 +968,11 @@ public class JOPWriter implements CoreImageWriter, Const, EVMConst {
 					String methodNativeName = (String)e.nextElement();
 					final MethodInfo mi = meth.method;
 					ncodebytes += mi.code.length;
-					out.println("\t// " + mi.parent.className + ": " + prettyName(mi));
+					int codeStart = ((Integer) mapCodeStart.get(methodNativeName)).intValue();
+					out.println("\t// "+codeStart+" " + mi.parent.className + ": " + prettyName(mi));
+					if (prettyName(mi).equals("<clinit>()")) {
+						++cntClinit;
+					}
 
 		/*
 					if (index == 0 && (mi == runCustomCodeMethod)) {
@@ -1147,11 +1183,19 @@ public class JOPWriter implements CoreImageWriter, Const, EVMConst {
 						out.println("\t\t\t//\tlocals: "+mi.locals+" args size: "+mi.argsSize);
 
 						int realLocals = mi.locals-mi.argsSize;
-						if (len>=512/4 || realLocals>31 || mi.argsSize>31) {
-							System.out.println("wrong size: "+c.getNativeName()+" "+prettyName(mi));
-							System.exit(-1);
+						if (len>=METHOD_MAX_SIZE/4 || realLocals>31 || mi.argsSize>31) {
+							// we allow only large <clinit> methods
+							if (!prettyName(mi).equals("<clinit>()")) {
+								System.out.println("wrong size: "+c.getNativeName()+" "+prettyName(mi));
+								System.exit(-1);
+							}
 						}
-						out.println("\t\t"+((addr.intValue()<<10) | len)+",");
+						if (prettyName(mi).equals("<clinit>()")) {
+							out.println("\t// no size for <clinit> - we iterpret it and allow larger methods!");
+							out.println("\t\t"+((addr.intValue()<<10) )+",");
+						} else {
+							out.println("\t\t"+((addr.intValue()<<10) | len)+",");
+						}
 						out.println("\t\t"+((cla.ctab<<10) | (realLocals<<5) | mi.argsSize)+",");
 					}
 		//			out.print(classTable.getNameAndTypeKey(mi));

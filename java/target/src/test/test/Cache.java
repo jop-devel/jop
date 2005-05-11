@@ -1,6 +1,6 @@
 package test;
 
-import util.*;
+import util.Dbg;
 
 /**
 *	Cache.java ... test program for cache

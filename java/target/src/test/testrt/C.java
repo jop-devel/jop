@@ -1,7 +1,6 @@
 package testrt;
-import util.*;
-import joprt.*;
-import com.jopdesign.sys.Native;
+import joprt.RtThread;
+import util.Dbg;
 
 public class C {
 

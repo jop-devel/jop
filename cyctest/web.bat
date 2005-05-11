@@ -1,6 +1,13 @@
+rem Is doit.bat set to COM1?
+rem Is jopser.bat called?
+rem Is there no jop directory in \tmp?
+pause
 cd ..\..
 xcopy /s jop \tmp\jop\
 cd \tmp\jop
+cd modelsim
+call clean
+cd ..
 for /R . %%x IN (.) DO call max_del %%x
 cd \tmp\jop
 for /R . %%x IN (*.jop) DO del %%x

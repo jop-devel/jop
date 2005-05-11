@@ -43,8 +43,10 @@ public class Flash {
 	static final int PT_FLAGS = 16;
 	static final int PT_LEN = 20;
 
-	static final int PT_FLG_ANK = 1;
+	// Ankunft flag = station (used in ES)!
+	static final int PT_FLG_STATION = 1;
 	static final int PT_FLG_VERL = 2;
+	static final int PT_FLG_ES = 4;
 
 	static class Point {
 		int melnr;
@@ -135,7 +137,20 @@ public class Flash {
 
 		return val;
 	}
+	
+	public static void forceReload() {
+		nrStr = -1;
+	}
 
+	/**
+	 * How many points in the loaded Strecke?
+	 * @return
+	 */
+	/*
+	public static int getStrLen() {
+		return lenStr;
+	}
+	*/
 	/**
 	*	Find first point to Strecke strnr.
 	*/
@@ -144,6 +159,9 @@ public class Flash {
 		if (nrStr!=strnr) {
 			if (!loadStr(strnr)) {
 				return -1;
+			}
+			if (Status.esMode) {
+				esStr();
 			}
 		}
 		return str[0].melnr;
@@ -157,6 +175,9 @@ public class Flash {
 		if (nrStr!=strnr) {
 			if (!loadStr(strnr)) {
 				return -1;
+			}
+			if (Status.esMode) {
+				esStr();
 			}
 		}
 		return str[lenStr-1].melnr;
@@ -240,11 +261,14 @@ public class Flash {
 		if (str==null) init();
 		
 		textOk = false;
-
+		int i, j, k;
+		
 		// number of Strecken
 		int cnt = intVal(OFF_CNT);
 		int addr = OFF_FIRST;
-		for (int i=0; i<cnt; ++i) {
+		Point p;
+		
+		for (i=0; i<cnt; ++i) {
 			if (intVal(addr+STR_NR)==strnr) {
 				int nrPt = intVal(addr+STR_CNT);
 				if (nrPt>MAX_POINTS) {
@@ -264,14 +288,14 @@ possible stack overfolw!!!
 				lenStr = nrPt;
 				addr += STR_LEN;
 				addrPoints = addr;
-				for (int j=0; j<nrPt; ++j) {
-					Point p = str[j];
+				for (j=0; j<nrPt; ++j) {
+					p = str[j];
 					p.melnr = intVal(addr+PT_MELNR);
 					p.lat = intVal(addr+PT_LAT);
 					p.lon = intVal(addr+PT_LON);
 					p.ptr = intVal(addr+PT_PTR);
 					p.flags = intVal(addr+PT_FLAGS);
-					p.ankunft = (p.flags & PT_FLG_ANK)!=0;
+					p.ankunft = (p.flags & PT_FLG_STATION)!=0;
 					p.verlassen = (p.flags & PT_FLG_VERL)!=0;
 
 					
@@ -336,6 +360,84 @@ Dbg.wr(tmpStr[j]);
 		}
 		textOk = true;
 		left2right = l2r;
+	}
+
+	/**
+	 * Change the data for ES mode. MUST be called after loadStr()
+	 * in ES mode!
+	 *
+	 */
+	static void esStr() {
+		
+System.out.println("ES Strecke:");
+		int i, j, k;
+		int txtPtr = -1;
+		boolean left = true;
+		Point p1, p2;
+		// Suche die pointer zu den Stationstexten fuer die ES Strecke
+		for (i=0; i<lenStr; ++i) {
+			p1 = str[i];
+			if ((p1.flags&PT_FLG_ES)!=0) {
+				if (left) {
+					// find next station name
+					txtPtr = -1;
+					for (j=i; j<lenStr; ++j) {
+						p2 = str[j];
+						if ((p2.flags&PT_FLG_STATION)!=0) {
+							txtPtr = p2.ptr;
+							break;
+						}
+					}
+				}
+				left = !left;
+				// use next (or same points) Name on left points
+				// use previous name on right point
+				p1.ptr = txtPtr;
+			}
+		}
+		// shorten the list to ES length
+		for (i=0; i<lenStr; ++i) {
+			p1 = str[i];
+
+			if ((p1.flags&PT_FLG_ES)==0) {
+				// we don't need this point in ES mode
+				// remove it from the list
+				--lenStr;
+				for (k=i; k<lenStr; ++k) {
+					p1 = str[k];
+					p2 = str[k+1];
+
+					p1.melnr = p2.melnr;
+					p1.lat = p2.lat;
+					p1.lon = p2.lon;
+					p1.flags = p2.flags;
+					p1.ptr = p2.ptr;
+				}
+				--i;	// reevaluate moved point
+			}
+		}
+		// in ES mode we load the text strings here
+		for (i=0; i<lenStr; ++i) {
+			p1 = str[i];
+			int idx = p1.ptr;
+			if (idx<=0) continue;
+			
+			int val = ' ';
+			int off = 0;
+			tmpStr[0].setLength(0);
+			for (k=0; k<19; ++k) {
+				val = Native.rdMem(DATA_START+idx+k);
+				if (val==0 || val=='^') break;
+				tmpStr[0].append((char) val);
+			}
+			p1.stationLine1.setLength(0);
+			p1.stationLine2.setLength(0);
+			p1.stationLine1.append(tmpStr[0]);
+System.out.print(p1.melnr);
+Dbg.wr(p1.stationLine1);
+System.out.println();
+		}
+
 	}
 
 	/**

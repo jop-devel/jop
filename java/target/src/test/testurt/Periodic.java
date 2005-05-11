@@ -1,7 +1,7 @@
 package testurt;
-import util.*;
-import joprt.*;
-import com.jopdesign.sys.Native;
+import joprt.RtThread;
+import util.Dbg;
+import util.Timer;
 
 public class Periodic {
 

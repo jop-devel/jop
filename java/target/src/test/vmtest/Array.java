@@ -1,6 +1,6 @@
 package vmtest;
 
-import util.*;
+import util.Dbg;
 
 public class Array {
 

@@ -10,7 +10,7 @@ package ossi;
 *
 */
 
-import joprt.*;
+import joprt.RtThread;
 
 import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;

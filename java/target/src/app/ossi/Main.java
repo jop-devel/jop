@@ -11,8 +11,9 @@ package ossi;
 *
 */
 
-import util.*;
-import joprt.*;
+import joprt.RtThread;
+import util.Dbg;
+import util.Timer;
 
 import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;

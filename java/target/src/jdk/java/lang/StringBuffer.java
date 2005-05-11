@@ -297,6 +297,33 @@ return this;
     return this;
   }
 
+  public int indexOf(String str)
+  {
+    return indexOf(str, 0);
+  }
+
+  public synchronized int indexOf(String str, int fromIndex)
+  {
+    if (fromIndex < 0)
+      fromIndex = 0;
+    int limit = count - str.length();
+    for ( ; fromIndex <= limit; fromIndex++)
+      if (regionMatches(fromIndex, str))
+        return fromIndex;
+    return -1;
+  }
+
+
+  private boolean regionMatches(int toffset, String other)
+  {
+    int len = other.length();
+    int index = 0;
+    while (--len >= 0)
+      if (value[toffset++] != other.charAt(index++))
+        return false;
+    return true;
+  }
+
   private void ensureCapacity_unsynchronized(int minimumCapacity)
   {
     // if (shared || minimumCapacity > value.length)

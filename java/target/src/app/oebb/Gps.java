@@ -60,6 +60,8 @@ public class Gps extends RtThread {
 	public static final int DIR_UNKNOWN = 0;
 	public static final int DIR_FORWARD = 1;
 	public static final int DIR_BACK = -1;
+	// minum Distance change for direction test
+	public static final int MIN_DIR_DIST = 1;
 
 	/** delay of fix for correct subtraction */
 	private static int last_fix;
@@ -160,7 +162,7 @@ Dbg.wr('*');
 			i = ser.rxCnt();
 			for (j=0; j<i; ++j) {
 				val = ser.rd();
-// Dbg.wr(val);
+// System.out.print((char) val);
 				rxBuf[rxCnt] = val;
 				++rxCnt;
 // TODO set fix to 0 when no data
@@ -402,13 +404,24 @@ Dbg.wr("\n");
 		}
 	}
 
-
+	/**
+	 * Strecken muessen mindestens 1km voneinander
+	 * entfernt sein sonst ist eine Benutzereingabe erforderlich.
+	 */
+	private static final int MIN_DIST = 1000;
+	
 	private static void findStr() {
 
 		int cnt = Flash.getCnt();
 		int min = 999999999;
 		int dist, strNr = 0;
+		boolean foundOne = false;
 
+		//
+		//	We have to enter it manually
+		//
+		if (Status.selectStr) return;
+		
 Dbg.wr("find Strecke\n");
 		for (int i=0; i<cnt; ++i) {
 			int nr = Flash.getStrNr(i);
@@ -419,6 +432,15 @@ Dbg.wr("\n");
 			if (dist<min) {
 				min = dist;
 				strNr = nr;
+			}
+			if (dist<MIN_DIST) {
+				if (foundOne) {
+					Status.selectStr = true;
+System.out.println("Strecke nicht eindeutig");
+					return;
+				} else {
+					foundOne = true;
+				}
 			}
 		}
 		// set it temporarily to find a melnr
@@ -580,10 +602,18 @@ Dbg.wr("\n");
 		
 		int dold = dist(p.lat-old_lat, p.lon-old_lon);
 		int dnew = dist(p.lat-last_lat, p.lon-last_lon);
-		if (dnew > dold) {
+		if (dnew > dold + MIN_DIR_DIST) {
+if (direction==DIR_BACK) {
+	System.out.print("direction change - diff=");
+	System.out.println(dnew-dold);
+}
 			direction = DIR_FORWARD;
 // Dbg.wr("forward\n");
-		} else if (dnew<dold) {
+		} else if (dold > dnew + MIN_DIR_DIST) {
+if (direction==DIR_FORWARD) {
+	System.out.print("direction change - diff=");
+	System.out.println(dold-dnew);
+}
 			direction = DIR_BACK;
 // Dbg.wr("back\n");
 		} else {

@@ -19,9 +19,9 @@ public class CallJOPMain {
 		
 		// vmtest.Imul.main(args);
 		// ejip.Bench.main(args);
-		tal.Tal.main(args);
+		// tal.Tal.main(args);
 		// kfl.Mast.main(args);
-		// tal.Lift.main(args);
-		// embjbench.DoAll.main(args);
+		tal.Lift.main(args);
+		// jbe.DoAll.main(args);
 	}
 }

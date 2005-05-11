@@ -26,9 +26,12 @@ public class Logic extends RtThread {
 
 	private String[] mnuTxt;
 	private static final int MNU_CNT = 5;
+	private String[] mnuESTxt;
+	private static final int MNU_ES_CNT = 4;
 	
 	private String bsyIndication;
 	private StringBuffer tmpStr;
+	
 
 	/**
 	*	Next state after alarm quit.
@@ -43,9 +46,30 @@ public class Logic extends RtThread {
 
 	private void init() {
 
-		Status.state = Status.INIT;
 		buf = new int[BUF_LEN];
 
+		mnuTxt = new String[MNU_CNT];
+		mnuTxt[0] = "Ankunft/Verlassen";
+		mnuTxt[1] = "Infobetrieb";
+		mnuTxt[2] = "Lernbetrieb";
+		mnuTxt[3] = "Umschalten -> ES221";
+		mnuTxt[4] = "Neustart";
+		mnuESTxt = new String[MNU_ES_CNT];
+		mnuESTxt[0] = "Haltepunkt";
+		mnuESTxt[1] = "Verschub";
+		mnuESTxt[2] = "Umschalten -> ZLB";
+		mnuESTxt[3] = "Neustart";
+		bsyIndication = "+*";
+		tmpStr = new StringBuffer(19);
+		
+		initVals();
+	}
+	
+	private void initVals() {
+
+		Status.state = Status.INIT;
+
+		Status.selectStr = false;
 		Status.melNr = 0;
 		Status.melNrSent = 0;
 		Status.strNr = 0;
@@ -57,23 +81,26 @@ public class Logic extends RtThread {
 		Status.checkMove = true;
 
 		Status.dispMenu = false;
-		mnuTxt = new String[MNU_CNT];
-		mnuTxt[0] = "Ankunft/Verlassen";
-		mnuTxt[1] = "Infobetrieb";
-		mnuTxt[2] = "Lernbetrieb";
-		mnuTxt[3] = "Umschalten -> ES221";
-		mnuTxt[4] = "Neustart";
-		bsyIndication = "+*";
-		tmpStr = new StringBuffer(19);
 
 		stateAfterQuit = Status.state;
 		connSent = false;
+		Status.esMode = false;
 	}
 
 	public void run() {
 
+		int old_state = Status.state;
+		
 		for (;;) {
 
+			//
+			// Beep on every change
+			//
+			if (Status.state != old_state) {
+				Led.shortBeep();
+				old_state = Status.state;
+			}
+			
 			if (Status.commErr!=0) {
 				commError();
 			} else if (Status.download) {
@@ -85,7 +112,13 @@ public class Logic extends RtThread {
 			} else if (Status.state==Status.FDL_CONN) {
 				anmelden();
 			} else if (Status.state==Status.ANM_OK) {
-				Display.write("Anmeldung OK", "", "");
+				if (Status.esMode) {
+					// we get into ANM_OK after an alarm the removes
+					// our Fahrerlaubnis
+					Status.state = Status.ES_RDY;
+				} else {
+					Display.write("Anmeldung OK", "", "");
+				}
 			} else if (Status.state==Status.ANGABE) {
 				Flash.loadStrNames(Status.strNr, Status.melNrStart, Status.melNrZiel);
 				Flash.Point p = Flash.getPoint(Status.melNrZiel);
@@ -110,6 +143,12 @@ public class Logic extends RtThread {
 				es221();
 			} else if (Status.state==Status.ALARM) {
 				alarm();
+			} else if (Status.state==Status.ES_RDY) {
+				esRdy();
+			} else if (Status.state==Status.ES_VERSCHUB) {
+				esVerschub();
+			} else if (Status.state==Status.ES2ZLB) {
+				es2zlb();
 			} else {
 				Display.write(0, "STATE          ");
 				Display.intVal(40, Status.state);
@@ -195,8 +234,9 @@ public class Logic extends RtThread {
 				// check direction
 				if (Gps.direction==Gps.DIR_BACK &&
 					!(Status.art==Status.ZUG_NF && Status.melNr==Status.melNrZiel)) {
-//						stateAfterQuit = Status.state;
-						stateAfterQuit = Status.ANM_OK;
+						stateAfterQuit = Status.state;
+// FERL bleibt
+//						stateAfterQuit = Status.ANM_OK;
 						Status.state = Status.ALARM;
 						alarmType = Cmd.ALARM_RICHTUNG;
 						return false;					
@@ -212,8 +252,9 @@ public class Logic extends RtThread {
 				// check direction
 				if (Gps.direction==Gps.DIR_FORWARD &&
 					!(Status.art==Status.ZUG_NF && Status.melNr==Status.melNrZiel)) {
-//						stateAfterQuit = Status.state;
-						stateAfterQuit = Status.ANM_OK;
+						stateAfterQuit = Status.state;
+// FERL bleibt
+//						stateAfterQuit = Status.ANM_OK;
 						Status.state = Status.ALARM;
 						alarmType = Cmd.ALARM_RICHTUNG;
 						return false;					
@@ -226,6 +267,7 @@ public class Logic extends RtThread {
 			if (Status.von<=0 && Status.state!=Status.ALARM &&
 				Status.state!=Status.NOTHALT && Status.state!=Status.NOTHALT_OK &&
 				Status.state!=Status.INFO && Status.state!=Status.LERN &&
+				Status.state!=Status.ES_VERSCHUB &&
 				Status.checkMove && Gps.speed>Gps.MIN_SPEED) {
 System.out.print("faehrt ");
 System.out.println(Status.state);
@@ -240,7 +282,7 @@ System.out.println(Status.state);
 		if (Gps.speed<Gps.MIN_SPEED) {
 			Status.checkMove = true;
 		}
-		if (Status.von>0) {		// Verschub
+		if (Status.von>0 && Status.state!=Status.ALARM) {		// Verschub
 			if (Status.melNr>Status.bis || Status.melNr<Status.von) {
 				Status.state = Status.ALARM;
 				alarmType = Cmd.ALARM_UEBERF;
@@ -296,7 +338,11 @@ System.out.println(Status.state);
 System.out.println("Menue");
 		while (loop()) {
 
-			Display.write("Betriebsfunktion:", mnuTxt[cnt],"");
+			if (Status.esMode) {
+				Display.write("Betriebsfunktion:", mnuESTxt[cnt],"");
+			} else {
+				Display.write("Betriebsfunktion:", mnuTxt[cnt],"");
+			}
 
 			if (Timer.timeout(tim)) {
 				Status.dispMenu = false;
@@ -314,7 +360,11 @@ System.out.println("Menue");
 			}
 			if (val==Keyboard.B) {
 				++cnt;
-				if (cnt==MNU_CNT) cnt=0;
+				if (Status.esMode) {
+					if (cnt==MNU_ES_CNT) cnt=0;								
+				} else {
+					if (cnt==MNU_CNT) cnt=0;			
+				}
 			}
 			if (val==Keyboard.E) {
 				Status.dispMenu = false;
@@ -323,23 +373,37 @@ System.out.println("Menue");
 					waitEnter();
 					return;
 				}
-				if (cnt==0) {
-					ankverl();
-					return;
-				} else if (cnt==1) {
-					Status.state = Status.INFO;
-				} else if (cnt==2) {
-					if (!Status.isMaster) {
-						Display.write("", "Nicht erlaubt", "");
-						waitEnter();
-						return;
+			
+				if (Status.esMode) {
+					if (cnt==0) {
+						Status.state = Status.ES_RDY;
+					} else if (cnt==1) {
+						Status.state = Status.ES_VERSCHUB;
+					} else if (cnt==2) {
+						Status.state = Status.ES2ZLB;
+					} else if (cnt==3) {
+						Display.write("Neustart", "", "");
+						restart();
 					}
-					Status.state = Status.LERN;
-				} else if (cnt==3) {
-					Status.state = Status.ES221;
-				} else if (cnt==4) {
-					Display.write("Neustart", "", "");
-					restart();
+				} else {
+					if (cnt==0) {
+						ankverl();
+						return;
+					} else if (cnt==1) {
+						Status.state = Status.INFO;
+					} else if (cnt==2) {
+						if (!Status.isMaster) {
+							Display.write("", "Nicht erlaubt", "");
+							waitEnter();
+							return;
+						}
+						Status.state = Status.LERN;
+					} else if (cnt==3) {
+						Status.state = Status.ES221;
+					} else if (cnt==4) {
+						Display.write("Neustart", "", "");
+						restart();
+					}			
 				}
 
 				return;
@@ -347,6 +411,11 @@ System.out.println("Menue");
 		}
 	}
 
+	/**
+	 * Wait for GPS to be ready.
+	 * Wait to find a Strecke.
+	 *
+	 */
 	private void connect() {
 
 System.out.println("Connect");
@@ -382,6 +451,9 @@ System.out.println("Connect");
 			if (Gps.fix!=0) {
 				Display.write("Betriebsbereit", "","");
 			}
+			if (Status.strNr<=0 && Status.selectStr) {
+				enterStrNr();
+			}
 			if (Timer.secTimeout(tim) && first) {
 				if (Gps.fix==0) {
 					Display.write("Keine Satelliten!", "","");
@@ -392,7 +464,42 @@ System.out.println("Connect");
 			if (!loop()) return;
 		}
 
-		startConn();
+		if (Status.esMode) {
+			// Str. names are already loaded in ES mode!
+			Status.state = Status.ES_RDY;
+		} else {
+			startConn();			
+		}
+	}
+
+	/**
+	 * Strecke nicht eindeutig => eingeben
+	 */
+	private void enterStrNr() {
+		
+		int nr=-1;
+		
+		while (nr<=0) {
+			Display.write("Strecke eingeben","Strecke:","");
+			Led.shortBeep();
+			nr = getNumber(8, 3);
+			if (nr>0) {
+				int cnt = Flash.getCnt();
+				int i;
+				for (i=0; i<cnt; ++i) {
+					if (nr==Flash.getStrNr(i)) {
+						break;
+					}
+				}
+				if (i==cnt) {
+					Display.write("Streckennummer","ungültig","");
+					Led.shortBeep();
+					waitEnterOnly();
+					nr = -1;
+				}
+			}
+		}
+		Status.strNr = nr;
 	}
 
 	private void startConn() {
@@ -483,27 +590,9 @@ System.out.println("Anmelden");
 		tim = Timer.getTimeoutSec(5);
 
 		// Strecke is known!!!
-		// TODO querry Strecke if not clear which one
-
-/*
-		if (Status.strNr<=0) {
-			nr = getNumber(8, 3);		// TODO: check Strecke
-			if (nr == -1) { 			// start communication
-				return;					// change anmelden() with known Strecke...
-			} else {
-				Status.strNr = nr;
-			}
-		} else {
-		}
-		if (Status.strNr == -1) return;
-*/
 
 		while (loop()) {
 
-/*
-			Display.write("Anmelden", "Strecke", "Z: 1, Nf: 2");
-			Display.intVal(28, Status.strNr);
-*/
 			Display.write("Anmelden", "Strecke ", Status.strNr, "Z: 1, Nf: 2");
 
 			if (Timer.timeout(tim)) {
@@ -598,6 +687,11 @@ System.out.println("Zugnummer");
 	private void commError() {
 
 System.out.println("Comm Error");
+		// In ES mode we just ignore the communication error
+		if (Status.esMode) {
+			Status.commErr = 0;
+			return;
+		}
 		int nr = Status.commErr;
 		Led.shortBeep();
 		Led.startBlinking();
@@ -646,7 +740,7 @@ System.out.println("Comm Error");
 	}
 
 	/**
-	*	Now only one Alarm defined.
+	*	Handle the alarms.
 	*/
 	private void alarm() {
 
@@ -1033,12 +1127,126 @@ System.out.println("Measure");
 			}
 		}
 	}
-
+	
+	/**
+	 * Menu command to change to ES mode
+	 *
+	 */
 	private void es221() {
 
-System.out.println("ES221");
-		Display.write("", "---", "");
-		waitEnterAndInit();
+		Display.write("Wechsel zu", "ES221 Betrieb", "");
+		Status.esMode = true;
+		// force a new Str. load
+		Status.strNr = 0;
+		Status.melNr = 0;
+		Status.melNrSent = 0;
+		Flash.forceReload();
+		Status.state = Status.ES_RDY;
+		int tim = Timer.getTimeoutSec(2);
+		while (loop()) {
+			if (Timer.timeout(tim)) {
+				return;
+			}
+		}
+	}
+
+	/**
+	 * ES mode: wait for entering a destination
+	 *
+	 */
+	private void esRdy() {
+		
+		Status.melNrStart = Status.melNr;
+		Status.melNrZiel = Status.melNr;
+
+		int val = 0;
+		int i = 0;
+		int melnr = Flash.getFirst(Status.strNr);
+		Flash.Point p = Flash.getPoint(melnr);
+		
+System.out.println("Menue");
+		while (loop()) {
+
+			Display.write("Haltepunkt ausw.:", p.stationLine1, p.stationLine2);
+
+			val = Keyboard.rd();
+			if (val==-1) {
+				continue;
+			}
+			if (val==Keyboard.B) {
+				Keyboard.unread(val);
+				return;
+			}
+
+			// display only the left point text
+
+			if (val==Keyboard.UP) {
+				i = Flash.getNext(melnr);
+				i = Flash.getNext(i);
+				if (i!=-1) {
+					melnr = i;
+					p = Flash.getPoint(melnr);
+				}
+			}
+			if (val==Keyboard.DOWN) {
+				i = Flash.getPrev(melnr);
+				i = Flash.getPrev(i);
+				if (i!=-1) {
+					melnr = i;
+					p = Flash.getPoint(melnr);
+				}
+			}
+			if (val==Keyboard.E) {
+				
+				// The left point is the station
+				// smaller melnr is start
+				Status.melNrStart = Status.melNr;
+				Status.melNrZiel = melnr;
+				Status.state = Status.ERLAUBNIS;
+				Status.art = Status.ZUG_NORMAL;
+				Status.direction = Gps.DIR_UNKNOWN;
+
+System.out.print("Ausgewaehlt von ");
+System.out.print(Status.melNrStart);
+System.out.print(" nach ");
+System.out.print(Status.melNrZiel);
+System.out.println();
+				return;
+			}
+		}
+
+	}
+
+	private void esVerschub() {
+		Display.write("ES Verschub", "", "");
+		
+		Status.state = Status.ES_VERSCHUB;
+		Status.melNrStart = Status.melNr;
+		Status.melNrZiel = Status.melNr;
+		while (loop()) {
+			;
+		}
+
+	}
+	
+	/**
+	 * Menu command to change to ES mode
+	 *
+	 */
+	private void es2zlb() {
+
+		Display.write("Wechsel zu", "ZLB Betrieb", "");
+		// hoffentlich reicht das!!
+		initVals();
+		Status.esMode = false;
+		// force a new Str. load
+		Flash.forceReload();
+		int tim = Timer.getTimeoutSec(2);
+		while (loop()) {
+			if (Timer.timeout(tim)) {
+				return;
+			}
+		}
 	}
 
 	/**

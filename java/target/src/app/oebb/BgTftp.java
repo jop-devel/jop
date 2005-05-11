@@ -18,8 +18,13 @@ package oebb;
 *
 */
 
-import util.*;
-import ejip.*;
+import util.Amd;
+import util.Dbg;
+import util.Timer;
+import ejip.LinkLayer;
+import ejip.Packet;
+import ejip.Udp;
+import ejip.UdpHandler;
 
 /**
 *	BgTftp.java: A simple TFTP Server. see rfc1350.

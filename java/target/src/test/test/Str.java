@@ -1,6 +1,6 @@
 package test;
 
-import util.*;
+import util.Dbg;
 
 /**
 *	Str.java ... test internal strings

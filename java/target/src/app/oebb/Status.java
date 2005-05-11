@@ -29,12 +29,27 @@ public class Status {
 	static final int LERN = 14;
 	static final int ES221 = 15;
 	static final int ALARM = 16;
+	
+	static final int ES_RDY = 17;
+	static final int ES_VERSCHUB = 18;
+	static final int ES2ZLB = 19;
 
 	volatile static int state;
 	
 	static final int ZUG_NORMAL = 1;
 	static final int ZUG_NF = 2;
+	
+	/**
+	 * wenn esMode is true we work local without
+	 * Internet connection.
+	 */
+	volatile static boolean esMode;
 
+
+/**
+ * Streckennummer vom Benutzer anfordern.
+ */
+	volatile static boolean selectStr;
 /**
 *	some error in communication
 */

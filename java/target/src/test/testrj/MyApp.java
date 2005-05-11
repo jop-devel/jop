@@ -6,10 +6,10 @@
  */
 package testrj;
 
-import javax.realtime.*;
-import ravenscar.*;
+import javax.realtime.AbsoluteTime;
+import javax.realtime.RelativeTime;
 
-import util.*;
+import util.Dbg;
 
 /**
  * @author martin

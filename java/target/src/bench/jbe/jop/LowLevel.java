@@ -1,7 +1,9 @@
 package jbe;
 
-import com.jopdesign.sys.*;
-import util.*;
+import util.Dbg;
+
+import com.jopdesign.sys.Const;
+import com.jopdesign.sys.Native;
 
 /**
 *	low level time and output for JOP.

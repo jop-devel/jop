@@ -1,7 +1,7 @@
 package test;
 
-import com.jopdesign.sys.Native;
 import com.jopdesign.sys.Const;
+import com.jopdesign.sys.Native;
 //
 //	Clock.java
 //

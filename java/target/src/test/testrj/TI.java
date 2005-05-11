@@ -6,7 +6,7 @@
  */
 package testrj;
 
-import util.*;
+import util.Dbg;
 
 /**
  * @author martin

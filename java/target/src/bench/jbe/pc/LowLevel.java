@@ -1,6 +1,5 @@
 package jbe;
 
-import sun.misc.Perf;
 
 /**
 *	LowLevel time and output for PC

@@ -1,6 +1,6 @@
 package testrt;
-import util.*;
-import joprt.*;
+import joprt.RtThread;
+import util.Dbg;
 
 public class Result {
 

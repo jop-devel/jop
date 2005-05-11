@@ -6,7 +6,6 @@
  */
 package jbe;
 
-import jbe.kfl.*;
 
 /**
  * @author martin

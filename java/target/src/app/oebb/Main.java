@@ -11,6 +11,11 @@ package oebb;
 *	0.17		Zielmelderaum, 2 stop bit in uart.vhd (JOP)
 *	0.18		TFTP: accept a retransmit of last data block on a WRQ
 *	0.23		Version for OEBB Demo
+*	0.42		Beep bei jedem Anzeige(=Status)wechsel, Eingabe der
+*				Streckennummer wenn nicht eindeutig (1km Abstand)
+*	0.90		Fahrerlaubnis bleibt bei falscher Richtung,
+*				Richtungscheck toleranter.
+*	0.91		ES Mode - first version
 *
 */
 
@@ -25,7 +30,7 @@ public class Main {
 
 	// SW version
 	public static final int VER_MAJ = 0;
-	public static final int VER_MIN = 41;
+	public static final int VER_MIN = 91;
 
 	// TODO find a schedule whith correct priorities
 	// Serial is 10
@@ -147,6 +152,7 @@ public class Main {
 			ipLink = Slip.init(ser, (192<<24) + (168<<16) + (2<<8) + 2); 
 		} else {
 			ipLink = Ppp.init(ser, pppThre); 
+//			System.out.println("SLIP is default!!");
 //			ipLink = Slip.init(ser,	(192<<24) + (168<<16) + (1<<8) + 2); 
 		}
 

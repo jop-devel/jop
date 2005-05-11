@@ -14,11 +14,18 @@ import joprt.*;
 
 public class SlipMon {
 
+	static Serial ser;
 	static LinkLayer ipLink;
 
 	static boolean reset;
 
 	public static void main(String[] args) {
+
+		if (args!=null) {
+			ser = new Serial(Const.IO_UART_BG_MODEM_BASE);
+		} else {
+			ser = new Serial(Const.IO_UART1_BASE);
+		}
 
 		Dbg.initSer();
 		//
@@ -31,8 +38,7 @@ public class SlipMon {
 		//
 		//	start device driver threads
 		//
-		ipLink = Slip.init(Const.IO_UART_BG_MODEM_BASE,
-			(192<<24) + (168<<16) + (1<<8) + 2); 
+		ipLink = Slip.init(ser, (192<<24) + (168<<16) + (1<<8) + 2); 
 
 
 		RtThread.startMission();

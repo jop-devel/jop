@@ -4,7 +4,7 @@
 
 package sms;
 
-import util.*;
+import util.Serial;
 
 /**
 *	Receive functions for SMS.

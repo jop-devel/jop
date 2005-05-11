@@ -2,7 +2,7 @@
 	down.c
 
 	read file for java bytecodes, constant pool and method table
-	and download it to ACEX via serial line
+	and download it to JOP via serial line
 
 	Author: Martin Schoeberl martin@good-ear.com
 
@@ -18,6 +18,8 @@
 
 #define DOWN_CNT	16384
 
+static int prog_cnt = 0;
+static char prog_char[] = {'|','/','-','\\','|','/','-','\\'};
 
 main(int argc, char *argv[]) {
 
@@ -28,8 +30,9 @@ main(int argc, char *argv[]) {
 	long ram[DOWN_CNT];
 	long len;
 
-	DCB dcb;
 	HANDLE hCom;
+	DCB dcb;
+	COMMTIMEOUTS ctm;
 	DWORD dwError;
 	BOOL fSuccess;
 
@@ -98,6 +101,16 @@ main(int argc, char *argv[]) {
 		exit(-1);
 	}
 
+/*
+doesn't work
+	GetCommTimeouts(hCom,&ctm);
+	ctm.ReadIntervalTimeout = 0;
+	ctm.ReadTotalTimeoutMultiplier = 0;
+	ctm.ReadTotalTimeoutConstant = 100;
+	SetCommTimeouts(hCom,&ctm);
+and should be changed after download for the echo
+*/
+
 //
 //	read file
 //
@@ -105,6 +118,8 @@ main(int argc, char *argv[]) {
 		printf("Error opening %s\n", argv[argc-2]);
 		exit(-1);
 	}
+
+	len = 0;
 
 	while (fgets(buf, sizeof(buf), fp)!=NULL) {
 		for (i=0; i<strlen(buf); ++i) {
@@ -131,13 +146,13 @@ main(int argc, char *argv[]) {
 //
 //	write external RAM
 //
-	printf("%d words of byte code (%d KB)\n", ram[0], ram[0]/256);
+	printf("%d words of Java bytecode (%d KB)\n", ram[0], ram[0]/256);
 
 //	wr32(hCom, len);
 	for (j=0; j<len; ++j) {
 		wr32(hCom, ram[j]);
 	}
-	printf("%d words extern ram (%d KB)\n", j, j/256);
+	printf("%d words external RAM (%d KB)\n", j, j/256);
 	for (; j<DOWN_CNT; ++j) {
 		wr32(hCom, 0);
 	}
@@ -176,6 +191,11 @@ int wr32(HANDLE hCom, long data) {
 		wr(hCom, data>>((3-j)*8));
 	}
 
+	++prog_cnt;
+	if ((prog_cnt&0x3f) == 0) {
+		printf("%c\r", prog_char[(prog_cnt>>6)&0x07]);
+		fflush(stdout);
+	}
 	return 0;
 }
 
@@ -188,6 +208,15 @@ int wr(HANDLE hCom, unsigned char data) {
 //	printf("%d-", data); fflush(stdout);
 	ReadFile(hCom, &c, 1, &cnt, NULL);
 //	printf("%d ", c); fflush(stdout);
+	if (data != c) {
+		printf("error during download\n");
+		exit(-1);
+	}
+	if (cnt!=1) {
+		printf("timeout during download\n");
+		exit(-1);
+	}
+
 
 	return 0;
 }

@@ -1,7 +1,6 @@
 package testrt;
-import util.*;
-import joprt.*;
-import com.jopdesign.sys.*;
+import util.Dbg;
+import util.Timer;
 
 //	das Problem beim Flash loeschen:
 //	Thread wird RUNNING, aber ist nicht in der Liste

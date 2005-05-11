@@ -193,9 +193,11 @@ begin
 
 	case sel_rmux is
 		when "00" =>
-			rmux <= "00" & sp;
+--			rmux <= "00" & sp;
+			rmux <= std_logic_vector(to_signed(to_integer(unsigned(sp)), jpc_width));
 		when "01" =>
-			rmux <= "00" & vp0;
+--			rmux <= "00" & vp0;
+			rmux <= std_logic_vector(to_signed(to_integer(unsigned(vp0)), jpc_width));
 		when others =>
 			rmux <= jpc;
 	end case;

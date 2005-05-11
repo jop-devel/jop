@@ -28,14 +28,16 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+use work.jop_types.all;
+
 entity jop is
 
 generic (
-	clk_freq	: integer := 20000000;	-- 20 MHz clock frequency
 	exta_width	: integer := 3;		-- address bits of internal io
 	ram_cnt		: integer := 3;		-- clock cycles for external ram
-	rom_cnt		: integer := 3;		-- clock cycles for external rom OK for 20 MHz
-	jpc_width	: integer := 10	-- address bits of java byte code pc
+	rom_cnt		: integer := 15;		-- 3 clock cycles for external rom OK for 20 MHz
+	jpc_width	: integer := 12;	-- address bits of java bytecode pc = cache size
+	block_bits	: integer := 3		-- 2*block_bits is number of cache blocks
 );
 
 port (
@@ -100,6 +102,7 @@ architecture rtl of jop is
 --
 
 component pll is
+generic (multiply_by : natural; divide_by : natural);
 port (
 	inclk0		: in std_logic;
 	c0			: out std_logic
@@ -107,6 +110,7 @@ port (
 end component;
 
 component core is
+generic(jpc_width	: integer);			-- address bits of java bytecode pc
 port (
 	clk, reset	: in std_logic;
 
@@ -164,7 +168,7 @@ port (
 end component;
 
 component mem32 is
-generic (jpc_width : integer; ram_cnt : integer; rom_cnt : integer);
+generic (jpc_width : integer; block_bits : integer; ram_cnt : integer; rom_cnt : integer);
 port (
 
 -- jop interface
@@ -291,7 +295,11 @@ end component;
 	signal io_irq_ena		: std_logic;
 
 	signal int_res			: std_logic;
-	signal res_cnt			: unsigned(2 downto 0);
+	signal res_cnt			: unsigned(2 downto 0) := "000";	-- for the simulation
+
+	-- for generationg internal reset
+	attribute altera_attribute : string;
+	attribute altera_attribute of res_cnt : signal is "POWER_UP_LEVEL=LOW";
 
 begin
 
@@ -314,13 +322,17 @@ end process;
 --
 --	components of jop
 --
---	pll_inst : pll port map (
---		inclk0	 => clk,
---		c0	 => clk_int
---	);
-	clk_int <= clk;
+	pll_inst : pll generic map(
+		multiply_by => pll_mult,
+		divide_by => pll_div
+	)
+	port map (
+		inclk0	 => clk,
+		c0	 => clk_int
+	);
+-- clk_int <= clk;
 
-	cmp_core: core 
+	cmp_core: core generic map(jpc_width)
 		port map (clk_int, int_res,
 			mem_bsy,
 			stack_din, ext_addr,
@@ -338,7 +350,7 @@ end process;
 			io_rd, io_wr, io_addr_wr, io_dout
 		);
 
-	cmp_mem: mem32 generic map (jpc_width, ram_cnt, rom_cnt)
+	cmp_mem: mem32 generic map (jpc_width, block_bits, ram_cnt, rom_cnt)
 		port map (clk_int, int_res, stack_tos,
 			mem_rd, mem_wr, mem_addr_wr, mem_bc_rd,
 			mem_dout, mem_bcstart,

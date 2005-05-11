@@ -1,13 +1,7 @@
 --
 --	jopcyc.vhd
 --
---	top level for new borad
---		use iocore.vhd for all io-pins
---
---	2002-06-27:	2088 LCs, 23.6 MHz
---	2002-07-27:	2308 LCs, 23.1 MHz	with some changes in jvm and baseio
---	2002-08-02:	2463 LCs
---	2002-08-08:	2431 LCs simpler sigdel
+--	top level for cycore borad
 --
 --	2002-03-28	creation
 --	2002-06-27	isa bus for CS8900
@@ -28,16 +22,17 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+use work.jop_types.all;
+
 entity jop is
 
 generic (
---	clk_freq	: integer := 20000000;	-- 20 MHz clock frequency
-	clk_freq	: integer := 100000000;	-- 100 MHz clock frequency
 	exta_width	: integer := 3;		-- address bits of internal io
-	ram_cnt		: integer := 3;		-- clock cycles for external ram
+	ram_cnt		: integer := 2;		-- clock cycles for external ram
 --	rom_cnt		: integer := 3;		-- clock cycles for external rom OK for 20 MHz
-rom_cnt		: integer := 15;		-- clock cycles for external rom for 100 MHz
-	jpc_width	: integer := 10	-- address bits of java byte code pc
+	rom_cnt		: integer := 15;	-- clock cycles for external rom for 100 MHz
+	jpc_width	: integer := 12;	-- address bits of java bytecode pc = cache size
+	block_bits	: integer := 3		-- 2*block_bits is number of cache blocks
 );
 
 port (
@@ -108,6 +103,7 @@ architecture rtl of jop is
 --
 
 component pll is
+generic (multiply_by : natural; divide_by : natural);
 port (
 	inclk0		: in std_logic;
 	c0			: out std_logic
@@ -115,6 +111,7 @@ port (
 end component;
 
 component core is
+generic(jpc_width	: integer);			-- address bits of java bytecode pc
 port (
 	clk, reset	: in std_logic;
 
@@ -151,6 +148,7 @@ port (
 	bin			: in std_logic_vector(31 downto 0);		-- from stack
 	ext_addr	: in std_logic_vector(exta_width-1 downto 0);
 	rd, wr		: in std_logic;
+	bsy			: out std_logic;
 	dout		: out std_logic_vector(31 downto 0);	-- to stack
 
 -- mem interface
@@ -161,6 +159,7 @@ port (
 	mem_bc_rd	: out std_logic;
 	mem_data	: in std_logic_vector(31 downto 0); 	-- output of memory module
 	mem_bcstart	: in std_logic_vector(31 downto 0); 	-- start of method in bc cache
+	mem_bsy		: in std_logic;
 	
 -- io interface
 
@@ -172,7 +171,7 @@ port (
 end component;
 
 component mem32 is
-generic (jpc_width : integer; ram_cnt : integer; rom_cnt : integer);
+generic (jpc_width : integer; block_bits : integer; ram_cnt : integer; rom_cnt : integer);
 port (
 
 -- jop interface
@@ -287,6 +286,7 @@ end component;
 	signal mem_dout			: std_logic_vector(31 downto 0);
 	signal mem_bcstart		: std_logic_vector(31 downto 0);
 	signal mem_bsy			: std_logic;
+	signal bsy				: std_logic;
 
 	signal jbc_addr			: std_logic_vector(jpc_width-1 downto 0);
 	signal jbc_data			: std_logic_vector(7 downto 0);
@@ -299,7 +299,11 @@ end component;
 	signal io_irq_ena		: std_logic;
 
 	signal int_res			: std_logic;
-	signal res_cnt			: unsigned(2 downto 0);
+	signal res_cnt			: unsigned(2 downto 0) := "000";	-- for the simulation
+
+	-- for generation of internal reset
+	attribute altera_attribute : string;
+	attribute altera_attribute of res_cnt : signal is "POWER_UP_LEVEL=LOW";
 
 begin
 
@@ -322,15 +326,19 @@ end process;
 --
 --	components of jop
 --
-	pll_inst : pll port map (
+	pll_inst : pll generic map(
+		multiply_by => pll_mult,
+		divide_by => pll_div
+	)
+	port map (
 		inclk0	 => clk,
 		c0	 => clk_int
 	);
 -- clk_int <= clk;
 
-	cmp_core: core 
+	cmp_core: core generic map(jpc_width)
 		port map (clk_int, int_res,
-			mem_bsy,
+			bsy,
 			stack_din, ext_addr,
 			rd, wr,
 			jbc_addr, jbc_data,
@@ -340,13 +348,13 @@ end process;
 
 	cmp_ext: extension generic map (exta_width)
 		port map (clk_int, int_res, stack_tos, stack_nos,
-			ext_addr, rd, wr, stack_din,
+			ext_addr, rd, wr, bsy, stack_din,
 			mem_rd, mem_wr, mem_addr_wr, mem_bc_rd,
-			mem_dout, mem_bcstart,
+			mem_dout, mem_bcstart, mem_bsy,
 			io_rd, io_wr, io_addr_wr, io_dout
 		);
 
-	cmp_mem: mem32 generic map (jpc_width, ram_cnt, rom_cnt)
+	cmp_mem: mem32 generic map (jpc_width, block_bits, ram_cnt, rom_cnt)
 		port map (clk_int, int_res, stack_tos,
 			mem_rd, mem_wr, mem_addr_wr, mem_bc_rd,
 			mem_dout, mem_bcstart,

@@ -1,8 +1,10 @@
 
 package test;
 
-import util.*;
-import com.jopdesign.sys.*;
+import util.Dbg;
+
+import com.jopdesign.sys.Const;
+import com.jopdesign.sys.Native;
 
 class M {
 

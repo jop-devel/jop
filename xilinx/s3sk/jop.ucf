@@ -3,10 +3,10 @@
 # Design provided for Spartan-3 Starter Board (rev E).
 #
 #
-# Time specifications for 100MHz clock
+# Time specifications for 50MHz clock
 #
 NET "clk" TNM_NET = "clk";
-TIMESPEC "TS_clk" = PERIOD "clk" 10 ns HIGH 50 %;
+TIMESPEC "TS_clk" = PERIOD "clk" 20 ns HIGH 50 %;
 #TIMESPEC "TS01" = FROM "FFS" TO "FFS" 10 ns;
 #TIMESPEC "TS02" = FROM "RAMS" TO "FFS" 10 ns;
 #TIMESPEC "TS03" = FROM "FFS" TO "RAMS" 10 ns;

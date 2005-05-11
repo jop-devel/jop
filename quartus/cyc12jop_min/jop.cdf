@@ -1,12 +1,12 @@
-/* Quartus II Version 4.1 Build 208 09/10/2004 Service Pack 2 SJ Web Edition */
+/* Quartus II Version 5.0 Build 148 04/26/2005 SJ Web Edition */
 JedecChain;
 	FileRevision(JESD32A);
 	DefaultMfr(6E);
 
-	P ActionCode(Cfg)
-		Device PartName(EPM7064AET44) Path("C:/usr/cpu/jop/quartus/cycconf/") File("cyc_conf_init.pof") MfrSpec(OpMask(1));
 	P ActionCode(Ign)
-		Device PartName(EP1C12Q240) MfrSpec(OpMask(0) FullPath("C:/usr/cpu/jop/quartus/cyc12jop_min/jop.sof"));
+		Device PartName(EPM7064AET44) MfrSpec(OpMask(0) FullPath("../cycconf/cyc_conf_init.pof"));
+	P ActionCode(Cfg)
+		Device PartName(EP1C12Q240) Path("./") File("jop.sof") MfrSpec(OpMask(1));
 
 ChainEnd;
 

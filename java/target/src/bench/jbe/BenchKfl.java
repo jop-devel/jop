@@ -1,6 +1,6 @@
 package jbe;
 
-import jbe.kfl.*;
+import jbe.kfl.Mast;
 
 public class BenchKfl extends BenchMark {
 

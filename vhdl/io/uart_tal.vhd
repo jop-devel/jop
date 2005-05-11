@@ -3,13 +3,14 @@
 --
 --	8-N-1 serial interface
 --	conf_reg: baud_rate and 2400, HW hs on/off, DTR
---	default: 111 => baud_rate, HW hs, DTR on
+--	default: 101 => baud_rate, no HW hs, DTR on
 --	
 --	Author: Martin Schoeberl	martin@good-ear.com
 --
 --
 --	2004-04-23	Version for TAL
 --	2004-04-26	DTR is inverted conf_reg(0) => '1' means set DTR!
+--	2005-02-28	Changed default conf_reg to no hand shake (ignore ncts)
 --
 
 
@@ -143,7 +144,7 @@ process (clk, reset)
 begin
 
 	if reset='1' then
-		conf_reg <= "111";
+		conf_reg <= "101";
 	elsif rising_edge(clk) then
 
 		if addr=std_logic_vector(to_unsigned(io_addr, 4))

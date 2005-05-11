@@ -4,7 +4,9 @@
 
 package sms;
 
-import util.*;
+import util.Dbg;
+import util.Serial;
+import util.Timer;
 
 /**
 *	Send a SMS via a mobile phone.

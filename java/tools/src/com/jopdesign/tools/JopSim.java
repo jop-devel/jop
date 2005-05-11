@@ -36,7 +36,7 @@ public class JopSim {
 
 	int empty_heap;
 
-	static final boolean LOG = false;
+	static boolean log = false;
 
 	//
 	//	simulate timer interrupt
@@ -236,25 +236,37 @@ System.out.println(mp+" "+pc);
 	void sysRd() {
 
 		int addr = stack[sp];
-		switch (addr) {
-			case Const.IO_STATUS:
-				stack[sp] = -1;
-				break;
-			case Const.IO_UART:
-				stack[sp] = 'u';
-				break;
-			case Const.IO_CNT:
-				stack[sp] = ioCnt;
-				break;
-			case Const.IO_US_CNT:
-				stack[sp] = usCnt();
-				break;
-			case 1234:
-				// trigger cache debug output
-//				cache.rawData();
-//				cache.resetCnt();
-			default:
-				stack[sp] = 0;
+
+		try {
+			switch (addr) {
+				case Const.IO_STATUS:
+					stack[sp] = Const.MSK_UA_TDRE;
+					if (System.in.available()!=0) {
+						stack[sp] |= Const.MSK_UA_RDRF;
+					}
+					break;
+				case Const.IO_UART:
+					if (System.in.available()!=0) {
+						stack[sp] = System.in.read();
+					} else {
+						stack[sp] = '_';
+					}
+					break;
+				case Const.IO_CNT:
+					stack[sp] = ioCnt;
+					break;
+				case Const.IO_US_CNT:
+					stack[sp] = usCnt();
+					break;
+				case 1234:
+					// trigger cache debug output
+//					cache.rawData();
+//					cache.resetCnt();
+				default:
+					stack[sp] = 0;
+			}
+		} catch (Exception e) {
+			System.out.println(e);
 		}
 	}
 
@@ -264,9 +276,9 @@ System.out.println(mp+" "+pc);
 		int val = stack[sp--];
 		switch (addr) {
 			case Const.IO_UART:
-				if (LOG) System.out.print("\t->");
+				if (log) System.out.print("\t->");
 				System.out.print((char) val);
-				if (LOG) System.out.println("<-");
+				if (log) System.out.println("<-");
 				break;
 			case Const.IO_INT_ENA:
 				intEna = (val==0) ? false : true;
@@ -748,7 +760,13 @@ System.out.println(mp+" "+pc);
 					stack[++sp] = a;
 					break;
 				case 91 :		// dup_x2
-					noim(91);
+					a = stack[sp--];
+					b = stack[sp--];
+					c = stack[sp--];
+					stack[++sp] = a;
+					stack[++sp] = c;
+					stack[++sp] = b;
+					stack[++sp] = a;
 					break;
 				case 92 :		// dup2
 					a = stack[sp--];
@@ -1384,7 +1402,7 @@ System.out.println("new heap: "+heap);
 
 			}
 
-			if (LOG) {
+			if (log) {
 				System.out.print(s+"\t");
 				dump();
 			}
@@ -1436,6 +1454,8 @@ System.out.println(sum+" instructions, "+sumcnt+" cycles, "+instrBytesCnt+" byte
 			System.out.println("usage: java JopSim file.bin [max instr]");
 			System.exit(-1);
 		}
+
+		log = System.getProperty("log", "false").equals("true");
 
 		for (int i=0; i<js.cache.cnt(); ++i) {
 			js.cache.use(i);

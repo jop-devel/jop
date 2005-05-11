@@ -26,18 +26,15 @@
 --	2004-09-14	flash/ram mux after data register in dout path
 --	2004-12-08	release mem_bsy three cycle earlier on write
 --	2005-01-11	Added cache
+--	2005-04-07	read mux after registering RAM and Flash data
 --
 
 Library IEEE;
 use IEEE.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-LIBRARY altera_mf;
-USE altera_mf.altera_mf_components.all;
-
 entity mem32 is
--- generic (jpc_width : integer; ram_cnt : integer; rom_cnt : integer);
-generic (jpc_width : integer := 10; ram_cnt : integer := 3; rom_cnt : integer := 15);
+generic (jpc_width : integer; block_bits : integer; ram_cnt : integer; rom_cnt : integer);
 
 port (
 
@@ -96,13 +93,13 @@ end mem32;
 architecture rtl of mem32 is
 
 component cache is
-generic (jpc_width : integer);
+generic (jpc_width : integer; block_bits : integer);
 
 port (
 
 	clk, reset	: in std_logic;
 
-	bc_len		: in std_logic_vector(9 downto 0);		-- length of method in words
+	bc_len		: in std_logic_vector(jpc_width-3 downto 0);		-- length of method in words
 	bc_addr		: in std_logic_vector(17 downto 0);		-- memory address of bytecode
 
 	find		: in std_logic;							-- start lookup
@@ -116,61 +113,29 @@ port (
 end component;
 
 --
---	jbc component (use technology specific vhdl-file (ajbc/xjbc))
+--	jbc component (use technology specific vhdl-file cyc_jbc,...)
+--
+--	ajbc,xjbc are OLD!
+--	check if ajbc.vhd can still be used (multicycle write!)
 --
 --	dual port ram
---	wraddr and wrena registered and delayed
+--	wraddr and wrena registered
 --	rdaddr is registered
 --	indata registered
 --	outdata is unregistered
 --
---component jbc is
---generic (width : integer; addr_width : integer);
---port (
---	data		: in std_logic_vector(31 downto 0);
---	rdaddress	: in std_logic_vector(jpc_width-1 downto 0);
---	wr_addr		: in std_logic;									-- load start address (=jpc)
---	wren		: in std_logic;
---	clock		: in std_logic;
---
---	q			: out std_logic_vector(7 downto 0)
---);
---end component;
 
---
---	generated with Quartus wizzard:
---
-	COMPONENT altsyncram
-	GENERIC (
-		intended_device_family		: STRING;
-		operation_mode		: STRING;
-		width_a		: NATURAL;
-		widthad_a		: NATURAL;
-		numwords_a		: NATURAL;
-		width_b		: NATURAL;
-		widthad_b		: NATURAL;
-		numwords_b		: NATURAL;
-		lpm_type		: STRING;
-		width_byteena_a		: NATURAL;
-		outdata_reg_b		: STRING;
-		indata_aclr_a		: STRING;
-		wrcontrol_aclr_a		: STRING;
-		address_aclr_a		: STRING;
-		address_reg_b		: STRING;
-		address_aclr_b		: STRING;
-		outdata_aclr_b		: STRING;
-		read_during_write_mode_mixed_ports		: STRING
-	);
-	PORT (
-			wren_a	: IN STD_LOGIC ;
-			clock0	: IN STD_LOGIC ;
-			address_a	: IN STD_LOGIC_VECTOR (7 DOWNTO 0);
-			address_b	: IN STD_LOGIC_VECTOR (9 DOWNTO 0);
-			q_b	: OUT STD_LOGIC_VECTOR (7 DOWNTO 0);
-			data_a	: IN STD_LOGIC_VECTOR (31 DOWNTO 0)
-	);
-	END COMPONENT;
-
+component jbc is
+generic (jpc_width : integer);
+port (
+	clk			: in std_logic;
+	data		: in std_logic_vector(31 downto 0);
+	rd_addr		: in std_logic_vector(jpc_width-1 downto 0);
+	wr_addr		: in std_logic_vector(jpc_width-3 downto 0);
+	wr_en		: in std_logic;
+	q			: out std_logic_vector(7 downto 0)
+);
+end component;
 
 
 --
@@ -185,7 +150,6 @@ end component;
 	signal mem_wr_addr		: std_logic_vector(20 downto 0);
 	signal mem_wr_val		: std_logic_vector(31 downto 0);
 	signal mem_rd_mux		: std_logic_vector(31 downto 0);
-	signal ram_data_ena		: std_logic;
 	signal mem_bsy			: std_logic;
 
 	signal nwr_int			: std_logic;
@@ -193,7 +157,10 @@ end component;
 	signal nand_access		: std_logic;
 
 	signal ram_data			: std_logic_vector(31 downto 0);
-	signal flash_data		: std_logic_vector(8 downto 0);
+	signal ram_data_ena		: std_logic;
+	signal flash_data		: std_logic_vector(7 downto 0);
+	signal nand_rdy			: std_logic;
+	signal flash_data_ena	: std_logic;
 
 	signal sel_flash		: std_logic;
 
@@ -211,13 +178,13 @@ end component;
 --	len is in words, 10 bits range is 'hardcoded' in JOPWriter.java
 --	start is address in external memory (rest of the word)
 --
-	signal bc_len			: unsigned(9 downto 0);				-- length of method in words
+	signal bc_len			: unsigned(jpc_width-3 downto 0);	-- length of method in words
 	signal bc_mem_start		: unsigned(17 downto 0);			-- memory address of bytecode
-	signal bc_wr_addr		: unsigned(7 downto 0);				-- address for jbc
+	signal bc_wr_addr		: unsigned(jpc_width-3 downto 0);	-- address for jbc (in words!)
 	signal bc_wr_data		: std_logic_vector(31 downto 0);	-- write data for jbc
 	signal bc_wr_ena		: std_logic;
 
-	signal bc_cnt			: unsigned(9 downto 0);				-- I can't use bc_len???
+	signal bc_cnt			: unsigned(jpc_width-3 downto 0);	-- I can't use bc_len???
 
 	constant bc_ram_cnt	: integer := ram_cnt;					-- a different constant for perf. tests
 
@@ -241,7 +208,7 @@ begin
 				ram_data(31 downto 24);
 
 
-	cmp_cache: cache generic map (jpc_width) port map(
+	cmp_cache: cache generic map (jpc_width, block_bits) port map(
 		clk, reset,
 		std_logic_vector(bc_len), std_logic_vector(bc_mem_start),
 		mem_bc_rd,
@@ -250,44 +217,15 @@ begin
 	);
 
 
-
---	cmp_jbc: jbc generic map (8, jpc_width) port map(din, jbc_addr, jpc_wr, bc_wr, clk, jbc_data);
-
-
---
---	generated with Quartus wizzard:
---
-	cmp_jbc : altsyncram
-	GENERIC MAP (
-		intended_device_family => "Cyclone",
-		operation_mode => "DUAL_PORT",
-		width_a => 32,
-		widthad_a => 8,
-		numwords_a => 256,
-		width_b => 8,
-		widthad_b => 10,
-		numwords_b => 1024,
-		lpm_type => "altsyncram",
-		width_byteena_a => 1,
-		outdata_reg_b => "UNREGISTERED",
-		indata_aclr_a => "NONE",
-		wrcontrol_aclr_a => "NONE",
-		address_aclr_a => "NONE",
-		address_reg_b => "CLOCK0",
-		address_aclr_b => "NONE",
-		outdata_aclr_b => "NONE",
-		read_during_write_mode_mixed_ports => "DONT_CARE"
-	)
-	PORT MAP (
-		wren_a => bc_wr_ena,
-		clock0 => clk,
-		address_a => std_logic_vector(bc_wr_addr),
-		address_b => jbc_addr,
-		data_a => bc_wr_data,
-		q_b => jbc_data
+	cmp_jbc: jbc generic map (jpc_width)
+	port map(
+		clk => clk,
+		data => bc_wr_data,
+		wr_en => bc_wr_ena,
+		wr_addr => std_logic_vector(bc_wr_addr),
+		rd_addr => jbc_addr,
+		q => jbc_data
 	);
-
-
 
 --
 --	wr_addr write
@@ -316,7 +254,7 @@ process(clk, reset, din) begin
 		bc_mem_start <= (others => '0');
 	elsif rising_edge(clk) then
 		if (mem_bc_rd='1') then
-			bc_len <= unsigned(din(9 downto 0));
+			bc_len <= unsigned(din(jpc_width-3 downto 0));
 			bc_mem_start <= unsigned(din(27 downto 10));
 		end if;
 
@@ -401,6 +339,7 @@ begin
 		ram_oe <= '0';
 
 		ram_data_ena <= '0';
+		flash_data_ena <= '0';
 
 		-- fl_a <= (others => 'Z');
 		fl_a <= (others => '0');
@@ -509,17 +448,15 @@ begin
 					mem_bsy <= '0';			-- release mem_bsy two cycles earlier
 				end if;	
 				ram_data_ena <= '0';
+				flash_data_ena <= '0';
 				if wait_state="0001" then
 					if ram_access='1' then
 						ram_data_ena <= '1';
+					else
+						flash_data_ena <= '1';
 					end if;
 				end if;
 				if wait_state="0000" then
-					if (nand_access='1') then
-						flash_data <= fl_rdy & fl_d;
-					else
-						flash_data <= "0" & fl_d;
-					end if;
 					state <= idl;
 					mem_bsy <= '0';
 				end if;
@@ -601,7 +538,7 @@ begin
 					bc_wr_addr <= bc_wr_addr+1;		-- next jbc address
 				else
 					bc_wr_ena <= '1';				-- write former word
-					if bc_cnt="0000000000" then
+					if bc_cnt=to_unsigned(0, jpc_width-3) then
 						state <= idl;
 					end if;
 				end if;
@@ -611,29 +548,37 @@ begin
 	end if;
 end process;
 
-process(ram_access, ram_data, flash_data)
+--
+--	register RAM or Flash data befor the mux
+--
+process(clk, reset)
 
 begin
-	--
-	--	this mux costs about 6ns, tsu is 5.2ns (could be negativ!)
-	--
-	-- we could move this mux after the two registers befor dout
-	if (ram_access='1') then
-		mem_rd_mux <= ram_data;
-	else
-		mem_rd_mux <= std_logic_vector(to_unsigned(0, 32-9)) & flash_data;
-	end if;
-end process;
-
-process(clk, reset, mem_rd_mux, ram_data_ena)
-
-begin
-	if (reset='1') then
-		ram_data <= std_logic_vector(to_unsigned(0, 32));
+	if (reset='1') then					-- do I need a reset?
+		ram_data <= (others => '0');
+		flash_data <= (others => '0');
+		nand_rdy <= '0';
 	elsif rising_edge(clk) then
 		if ram_data_ena='1' then
 			ram_data <= ramb_d & rama_d;
 		end if;
+		if flash_data_ena='1' then
+			nand_rdy <= fl_rdy;
+			flash_data <= fl_d;
+		end if;
+	end if;
+end process;
+
+--
+--	MUX registered RAM and Flash data
+--
+process(ram_access, ram_data, flash_data, nand_access, nand_rdy)
+
+begin
+	if (ram_access='1') then
+		mem_rd_mux <= ram_data;
+	else
+		mem_rd_mux <= std_logic_vector(to_unsigned(0, 32-9)) & (nand_access and nand_rdy) & flash_data;
 	end if;
 end process;
 

@@ -96,6 +96,7 @@ architecture rtl of jop is
 --
 
 component core is
+generic(jpc_width	: integer);			-- address bits of java bytecode pc
 port (
 	clk, reset	: in std_logic;
 
@@ -262,7 +263,11 @@ end component;
 	signal io_irq_ena		: std_logic;
 
 	signal int_res			: std_logic;
-	signal res_cnt			: unsigned(2 downto 0);
+	signal res_cnt			: unsigned(2 downto 0) := "000";	-- for the simulation
+
+	-- for generationg internal reset
+	-- attribute altera_attribute : string;
+	-- attribute altera_attribute of res_cnt : signal is "POWER_UP_LEVEL=LOW";
 
 begin
 
@@ -297,7 +302,7 @@ end process;
 --
 	clk_int <= utmi_clkout;
 
-	cmp_core: core 
+	cmp_core: core generic map(jpc_width)
 		port map (clk_int, int_res,
 			mem_bsy,
 			stack_din, ext_addr,

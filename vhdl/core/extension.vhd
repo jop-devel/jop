@@ -17,7 +17,7 @@
 --		1	io	read/write
 --		2	st	mem_rd_addr		start read
 --		2	ld	mem_rd_data		read data
---		3	st	mem_wr_addr		store write address
+--		3	st	wraddr		store write address
 --		4	st	mem_wr_data		start write
 --		5	ld	mul result
 --		5	st	mul operand a
@@ -28,7 +28,9 @@
 --	todo:
 --
 --
---	2003-09-11	first version
+--	2004-09-11	first version
+--	2005-04-05	Reserve negative addresses for wishbone interface
+--	2005-04-07	generate bsy from delayed wr or'ed with mem_bsy
 --
 
 
@@ -49,6 +51,7 @@ port (
 	bin			: in std_logic_vector(31 downto 0);		-- from stack
 	ext_addr	: in std_logic_vector(exta_width-1 downto 0);
 	rd, wr		: in std_logic;
+	bsy			: out std_logic;
 	dout		: out std_logic_vector(31 downto 0);	-- to stack
 
 -- mem interface
@@ -59,6 +62,7 @@ port (
 	mem_bc_rd	: out std_logic;
 	mem_data	: in std_logic_vector(31 downto 0); 	-- output of memory module
 	mem_bcstart	: in std_logic_vector(31 downto 0); 	-- start of method in bc cache
+	mem_bsy		: in std_logic;
 	
 -- io interface
 
@@ -96,6 +100,14 @@ end component mul;
 --
 --	Signals
 --
+	signal mem_wb_rd			: std_logic;
+	signal mem_wb_wr			: std_logic;
+	signal wraddr_wr			: std_logic;
+	signal wraddr_msb			: std_logic;
+
+	signal wraddr				: std_logic_vector(7 downto 0);		-- wishbone write address
+
+	signal wr_dly				: std_logic;	-- generate a bsy with delayed wr
 
 begin
 
@@ -134,6 +146,7 @@ begin
 end process;
 
 
+
 --
 --	write
 --
@@ -141,40 +154,81 @@ process(clk, reset, rd, wr)
 begin
 	if (reset='1') then
 		io_addr_wr <= '0';
-		mem_rd <= '0';
-		mem_wr <= '0';
-		mem_addr_wr <= '0';
+		mem_wb_rd <= '0';
+		mem_wb_wr <= '0';
+		wraddr_wr <= '0';
 		mem_bc_rd <= '0';
 		mul_wr <= '0';
 		io_wr <= '0';
+		wr_dly <= '0';
 
 
 	elsif rising_edge(clk) then
 		io_addr_wr <= '0';
-		mem_rd <= '0';
-		mem_wr <= '0';
-		mem_addr_wr <= '0';
+		mem_wb_rd <= '0';
+		mem_wb_wr <= '0';
+		wraddr_wr <= '0';
 		mem_bc_rd <= '0';
 		mul_wr <= '0';
 		io_wr <= '0';
 
+		wr_dly <= wr;
+
+--
+--	wr is generated in decode and one cycle earlier than
+--	the data to be written (e.g. read address for the memory interface)
+--
 		if (wr='1') then
 			if (ext_addr="000") then
 				io_addr_wr <= '1';		-- store real io address
 			elsif (ext_addr="010") then
-				mem_rd <= '1';			-- start read
+				mem_wb_rd <= '1';		-- start memory or wishbone read
 			elsif (ext_addr="011") then
-				mem_addr_wr <= '1';		-- store write address
+				wraddr_wr <= '1';		-- store write address
 			elsif (ext_addr="100") then
-				mem_wr <= '1';			-- start write
+				mem_wb_wr <= '1';		-- start memory or wishbone write
 			elsif (ext_addr="101") then
-				mul_wr <= '1';
+				mul_wr <= '1';			-- start multiplier
 			elsif (ext_addr="111") then
 				mem_bc_rd <= '1';		-- start bc read
 			else
 				io_wr <= '1';
 			end if;
 		end if;
+	end if;
+end process;
+
+--
+--	memory read/write only from positive addresses
+--
+	mem_rd <= mem_wb_rd and not ain(31);
+	mem_wr <= mem_wb_wr and not wraddr_msb;
+	mem_addr_wr <= wraddr_wr;
+
+--	just copy bsy for now
+
+	bsy <= mem_bsy or wr_dly;
+
+
+--
+--	store write address (msb)
+--		one cycle after write instruction (address is avaliable one cycle before ex stage)
+--
+process(clk, reset)
+
+begin
+	if (reset='1') then
+
+		wraddr <= (others => '0');
+		wraddr_msb <= '0';
+
+	elsif rising_edge(clk) then
+
+		if (wraddr_wr='1') then
+			wraddr <= ain(7 downto 0);	-- store wishbone write address
+			wraddr_msb <= ain(31);
+		end if;
+
 	end if;
 end process;
 

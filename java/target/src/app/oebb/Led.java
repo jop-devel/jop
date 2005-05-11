@@ -9,7 +9,7 @@ package oebb;
 *
 */
 
-import util.*;
+import util.Timer;
 
 import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;

@@ -1,6 +1,5 @@
 package vmtest;
 
-import util.*;
 
 public class Imul {
 

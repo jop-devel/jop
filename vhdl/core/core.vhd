@@ -43,10 +43,11 @@ use ieee.numeric_std.all ;
 entity core is
 
 generic (
+	jpc_width	: integer;			-- address bits of java bytecode pc
+
 	width		: integer := 32;	-- one data word
 	addr_width	: integer := 8;		-- address bits of internal ram (sp,...)
 	exta_width	: integer := 3;		-- address bits of internal io (or 5/4)
-	jpc_width	: integer := 10;	-- address bits of java byte code pc
 	pc_width	: integer := 10;	-- address bits of internal instruction rom (upper half)
 	i_width		: integer := 8		-- instruction width
 );

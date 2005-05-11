@@ -16,6 +16,7 @@ revision:
 	2001-12-08	intruction set change (16->8 bit)
 	2005-01-17	interrupt mux in jtbl.vhd
 	2005-02-06	JOP version in stack RAM at address 64
+	2005-02-20	Generate memory data for the simulation
 
 */
 
@@ -31,6 +32,9 @@ public class Jopa {
 	static final int BRBITS = 10;
 	static final int OPDBITS = 5;
 	static final int CONST_ADDR = 32;
+	static final int VER_ADDR = 64;
+	static final int RAM_LEN = 256;
+	static final int ROM_LEN = 1<<ADDRBITS;
 	private String srcDir;
 	private String dstDir;
 
@@ -227,8 +231,10 @@ public class Jopa {
 	private Map offMap = new HashMap();
 	private List offList = new LinkedList();
 
-	private int[] romData = new int[1<<ADDRBITS];
+	private int[] romData = new int[ROM_LEN];
 	private int romLen = 0;
+
+	private int[] ramData = new int[RAM_LEN];
 
 /**
 *	second pass.
@@ -553,6 +559,12 @@ public class Jopa {
 			romvhd.write(line);
 			romvhd.close();
 
+			PrintStream rom_mem = new PrintStream(new FileOutputStream(dstDir + "mem_rom.dat"));
+			for (int i=0; i<ROM_LEN; ++i) {
+				rom_mem.println(romData[i]+" ");
+			}
+			rom_mem.close();
+
 //
 //	print table of branch offsets
 //
@@ -609,9 +621,12 @@ public class Jopa {
 
 
 //
-//	print symbol table
+//	Print symbol table as ram.mif and data for the simulation.
 //
 			FileWriter ram = new FileWriter(dstDir + "ram.mif");
+			for (int i=0; i<RAM_LEN; ++i) {
+				ramData[i] = 0x12345678;
+			}
 
 			line = "--\n";
 			line += "--\tram.mif\n";
@@ -632,8 +647,12 @@ public class Jopa {
 			line += "--\n\n";
 			ram.write( line );
 
+			//
+			// Variables
+			//
 			for (int i=0; i<varList.size(); ++i) {
 				String s = (String) varList.get(i);
+				ramData[i] = 0;
 				line = "\t";
 				line += hex(i, 4) + " : " ;
 				line += hex(0, 8) + ";\t--\t";
@@ -644,36 +663,49 @@ public class Jopa {
 			line = "--\n";
 			line += "-- "+constMap.size()+" consts\n";
 			line += "--\n\n";
-			ram.write(line);
+			ram.write( line );
+
+			//
+			//	Constants
+			//
 			for (int i=0; i<constList.size(); ++i) {
 				Integer val = (Integer) constList.get(i);
+				ramData[CONST_ADDR+i] = val.intValue();
 				line = "\t";
 				line += hex(CONST_ADDR+i, 4) + " : " ;
 				line += hex(val.intValue(), 8) + ";\t--\t";
 				line += val + "\n";
-				ram.write(line);
+				ram.write( line );
 			}
 
 			// check if version is set
-			Integer i = (Integer) symMap.get("version");
-			if (i==null) {
+			Integer ver = (Integer) symMap.get("version");
+			if (ver==null) {
 				error(in, "version not set, setting to -1");
 			} else {
-				version = i.intValue();
+				version = ver.intValue();
 			}
+			ramData[VER_ADDR] = version;
+			ramData[VER_ADDR+1] = 0;
 			ram.write("\n\n--\tVersion\n");
 			line = "\t";
-			line += hex(64, 4) + " : " ;
+			line += hex(VER_ADDR, 4) + " : " ;
 			line += hex(version, 8) + ";\t--\t";
 			line += version + "\n";
 			ram.write(line);
 			line = "\t";
-			line = "\t"+hex(65, 4) + " : " ;
+			line = "\t"+hex(VER_ADDR+1, 4) + " : " ;
 			line += hex(0, 8) + ";\t--\tfor future use - FPGA type?\n";
 			ram.write(line);
 
 			ram.write( "\nend;\n" );
 			ram.close();
+
+			PrintStream ram_mem = new PrintStream(new FileOutputStream(dstDir + "mem_ram.dat"));
+			for (int i=0; i<RAM_LEN; ++i) {
+				ram_mem.println(ramData[i]+" ");
+			}
+			ram_mem.close();
 
 			System.out.println(ji_cnt+" Instructions implemented");
 

@@ -15,8 +15,71 @@
 --
 --	2002-01-06	first working version
 --	2002-11-03	a signal for reaching threshold
+--	2005-02-20	change entity order for modelsim vcom
 --
 
+library ieee;
+use ieee.std_logic_1164.all;
+
+entity fifo_elem is
+
+generic (width : integer);
+port (
+	clk		: in std_logic;
+	reset	: in std_logic;
+
+	din		: in std_logic_vector(width-1 downto 0);
+	dout	: out std_logic_vector(width-1 downto 0);
+
+	rd		: in std_logic;
+	wr		: in std_logic;
+
+	rd_prev	: out std_logic;
+	full	: out std_logic
+);
+end fifo_elem;
+
+architecture rtl of fifo_elem is
+
+	signal buf		: std_logic_vector(width-1 downto 0);
+	signal f		: std_logic;
+
+begin
+
+	dout <= buf;
+
+process(clk, reset, f)
+
+begin
+
+	full <= f;
+
+	if (reset='1') then
+
+		buf <= (others => '0');
+		f <= '0';
+		rd_prev <= '0';
+
+	elsif rising_edge(clk) then
+
+		rd_prev <= '0';
+		if f='0' then
+			if wr='1' then
+				rd_prev <= '1';
+				buf <= din;
+				f <= '1';
+			end if;
+		else
+			if rd='1' then
+				f <= '0';
+			end if;
+		end if;
+
+	end if;
+
+end process;
+
+end rtl;
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -93,65 +156,3 @@ begin
 	
 end rtl;
 
-library ieee;
-use ieee.std_logic_1164.all;
-
-entity fifo_elem is
-
-generic (width : integer);
-port (
-	clk		: in std_logic;
-	reset	: in std_logic;
-
-	din		: in std_logic_vector(width-1 downto 0);
-	dout	: out std_logic_vector(width-1 downto 0);
-
-	rd		: in std_logic;
-	wr		: in std_logic;
-
-	rd_prev	: out std_logic;
-	full	: out std_logic
-);
-end fifo_elem;
-
-architecture rtl of fifo_elem is
-
-	signal buf		: std_logic_vector(width-1 downto 0);
-	signal f		: std_logic;
-
-begin
-
-	dout <= buf;
-
-process(clk, reset, f)
-
-begin
-
-	full <= f;
-
-	if (reset='1') then
-
-		buf <= (others => '0');
-		f <= '0';
-		rd_prev <= '0';
-
-	elsif rising_edge(clk) then
-
-		rd_prev <= '0';
-		if f='0' then
-			if wr='1' then
-				rd_prev <= '1';
-				buf <= din;
-				f <= '1';
-			end if;
-		else
-			if rd='1' then
-				f <= '0';
-			end if;
-		end if;
-
-	end if;
-
-end process;
-
-end rtl;

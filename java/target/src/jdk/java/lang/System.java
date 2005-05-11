@@ -1,8 +1,11 @@
 
 package java.lang;
 
-import com.jopdesign.sys.*;
+import java.io.InputStream;
 import java.io.PrintStream;
+
+import com.jopdesign.sys.Const;
+import com.jopdesign.sys.Native;
 
 public final class System {
 
@@ -10,7 +13,9 @@ public final class System {
 	// up to now.
 	// public static final PrintStream out;
 	public static PrintStream out;
+	public static InputStream in;
 
+	  
 	public static long currentTimeMillis() {
 		return (long) (Native.rd(Const.IO_US_CNT)/1000);
 	}
@@ -21,5 +26,6 @@ public final class System {
 	public static void init() {
 
 		out = new PrintStream();
+		in = new InputStream();
 	}
 }

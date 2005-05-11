@@ -1,9 +1,10 @@
 package test;
 
 import joprt.RtThread;
+import util.Dbg;
+import util.Timer;
 
 import com.jopdesign.sys.Native;
-import util.*;
 
 /**
 *	Test.java

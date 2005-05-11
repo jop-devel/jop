@@ -1,7 +1,7 @@
 
 package test;
 
-import util.*;
+import util.Dbg;
 
 class O {
 

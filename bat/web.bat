@@ -1,3 +1,4 @@
+rem xxx
 cd ..\..
 xcopy /s jop \tmp\jop\
 cd \tmp\jop

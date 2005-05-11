@@ -1,6 +1,7 @@
 package java.io;
 
-import com.jopdesign.sys.*;
+import com.jopdesign.sys.Const;
+import com.jopdesign.sys.Native;
 
 
 // public class PrintStream extends FilterOutputStream
@@ -57,6 +58,10 @@ public class PrintStream {
 
 	public void print(int i) {
 		wr(i);
+	}
+
+	public void print(char c) {
+		wr(c);
 	}
 
 	public void println() {

@@ -247,7 +247,15 @@ int readVal() {
 	unsigned val;
 
 	ReadFile(hCom, inbuf, 1, &cnt, NULL);
+	if (cnt!=1) {
+		printf("Error in readVal()\n");
+		exit(-1);
+	}
 	ReadFile(hCom, inbuf+1, 1, &cnt, NULL);
+	if (cnt!=1) {
+		printf("Error in readVal()\n");
+		exit(-1);
+	}
 	inbuf[2] = 0;
 	sscanf(inbuf, "%x", &val);
 	printf("%02x", val);

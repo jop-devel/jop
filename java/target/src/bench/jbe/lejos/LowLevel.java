@@ -1,6 +1,5 @@
 package jbe;
 
-import josx.platform.rcx.*;
 
 /**
 *	LowLevel time and output for leJOS

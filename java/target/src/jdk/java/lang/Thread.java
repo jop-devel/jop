@@ -17,4 +17,10 @@ public class Thread implements Runnable {
 	public void run() {
 		;					// do nothing
 	}
+
+	public static void sleep(long l) {
+
+		int tim = (int) l;
+		joprt.RtThread.sleepMs(tim);
+	}
 }

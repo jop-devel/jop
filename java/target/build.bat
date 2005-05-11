@@ -13,14 +13,12 @@ rmdir /Q /S dist
 mkdir dist\classes
 mkdir dist\lib
 mkdir dist\bin
-dir /b /s src\com\jopdesign\sys\*.java > .sourcefiles
-dir /b /s src\jdk\java\*.java >> .sourcefiles
+dir /b /s src\jdk\java\*.java > .sourcefiles
+dir /b /s src\common\com\jopdesign\sys\*.java >> .sourcefiles
 echo on
-rem javac -target 1.1 -d dist/classes -sourcepath src @.sourcefiles
-javac -d dist/classes -sourcepath src @.sourcefiles
+javac -d dist/classes -sourcepath src/common @.sourcefiles
 del .sourcefiles
-rem javac -target 1.1 -d dist/classes -sourcepath src;src/%appdir% src/%appdir%/%startclass%.java
-javac -d dist/classes -sourcepath src;src/%appdir% src/%appdir%/%startclass%.java
+javac -d dist/classes -sourcepath src/common;src/%appdir% src/%appdir%/%startclass%.java
 cd dist\classes
 jar cf ../lib/classes.zip *
 cd ..\..
