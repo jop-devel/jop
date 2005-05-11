@@ -8,3 +8,5 @@ rem java -cp ..\java\tools\dist\lib\jop-tools.jar BlockGen -b %blocksize% -pd -d
 java -cp ..\java\tools\dist\lib\jop-tools.jar BlockGen -b %blocksize% -pd -m xram_block generated\ram.mif generated\xram_block.vhd
 rem java -cp ..\java\tools\dist\lib\jop-tools.jar BlockGen -b %blocksize% -pd -m xrom_block generated\rom.mif generated\xrom_block.vhd
 copy generated\*.vhd ..\vhdl
+
+copy generated\*.dat ..\modelsim

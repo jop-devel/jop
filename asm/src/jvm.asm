@@ -54,7 +54,9 @@
 //	2004-12-11	Enhancements in array access
 //	2004-09-16	new bc read hardware (jvm_call.inc)
 //	2005-01-10	changes for bytecode cache (jvm_call.inc)
-//	2005-02-05	
+//	2005-02-05	include version number
+//	2005-02-18	switch for simulation version
+//	2005-04-27	dup_x2
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -64,7 +66,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20050205
+version		= 20050509
 
 //
 //	io register
@@ -123,25 +125,6 @@ addr		?			// address used for bc load from flash
 			nop			// written in adr/read stage!
 			stsp		// someting strange in stack.vhd A->B !!!
 
-
-//TEST jbc
-//		ldi	10
-//		stjpc
-//		ldi	123456
-//		stbc
-//		nop
-//		nop
-//		nop
-//		ldi	-1
-//		stbc
-//		nop					// ???
-//		nop					// ???
-//		nop					// ???
-//		ldi	0
-//		stjpc
-//		nop					// ???
-//		nop
-//		nop	nxt
 
 // TEST read after write
 
@@ -213,12 +196,29 @@ addr		?			// address used for bc load from flash
 //			nop
 //			nop
 
-//
-//	download n words in extern ram (high byte first!)
-//
 			ldi	1			// disable int's
 			stm	moncnt		// monitor counter gets zeroed in startMission
 
+#ifdef SIMULATION
+//
+//	Main memory (ram) is loaded by the simulation.
+//	Just set the heap pointer and load mp from ram
+//		This could be done in all versions!
+//
+			ldi	max_words
+			stm	heap
+			ldi	0
+			stmra
+			nop
+			wait
+			wait
+			ldmrd
+			stm	mp
+#else
+//
+//
+//	download n words in extern ram (high byte first!)
+//
 			ldi	0
 			stm	heap		// word counter (ram address)
 
@@ -317,6 +317,7 @@ not_first:
 			nop
 			nop
 
+#endif // SIMULATION
 //
 //	ram is now loaded, heap points to free ram
 //	load pointer to main struct and invoke
@@ -483,6 +484,13 @@ dup2:		stm	a
 dup_x1:		stm	a
 			stm	b
 			ldm a
+			ldm b
+			ldm a nxt
+dup_x2:		stm	a
+			stm	b
+			stm	c
+			ldm a
+			ldm c
 			ldm b
 			ldm a nxt
 
