@@ -1,0 +1,24 @@
+
+...
+2002-07-24	Zentrale zus. Meldung: 'kein Mast antwortet'
+			jop3_20020724_bb.zip
+2002-07-29	BB: Zentrale updaten
+2002-07-30	Falsche Timer Rechnung (- vrs. >) korrigiert.
+
+		noch immer Probleme beim booten
+
+2002-07-31	BB: Zentrale updaten (jop3_20020731_bb.zip)
+
+2002-08-06	BB: Zentrale updaten (jop3_20020806_bb.zip)
+			In Station.boot() falsches sleep(100) ausgebessert.
+2002-08-06	BB: (7.8.) update von Weber (jop3_20020807_bb.zip)
+			In Station.boot() flush RS485 buffer after sleep(100)
+2002-08-13	Strommessung in Mast eingebaut, aber Error disabled.
+			neue jvm: Zusammenfuehrung mit jop3!
+2002-08-15	Msg.flush() in Mast nach start.
+			CMD_PAUSE mit pause() in Mast (fuer Regelung).
+			Zentrale sucht Mast mit Adresse 0 nach boot timeout.
+			Zentrale save und restore in Mast 1 (mit gr. timeout bei prog. msg!).
+2002-08-15	Zentrale: Regelung (V 0.9)
+2002-09-11	Mast: Filter fuer Strommessung eingebaut, Ueberwachung aktiviert.
+			Mast V1.3, jop3_20020911_bb.zip

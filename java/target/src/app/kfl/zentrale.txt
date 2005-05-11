@@ -1,0 +1,180 @@
+Komm. PC-RS485
+Stop mit 'C'
+Leitung fährt hinauf
+Leitung ist oben
+Leitung fährt runter
+Leitung ist unten
+Stop
+Fehler
+Down/Upload
+NOTAUS gedrückt
+Automatik
+ein
+aus
+bereit
+Datum Zeit
+aktiv
+Menu 'E' Auswahl
+Fehler Mast
+Maste überprüfen
+Fehlermodus
+Anlage neu starten!
+Kommunikationstest
+Kommunikationsfehler
+Anzahl Maste
+Maste unten just.
+autom. Neustart
+Anlage nicht just.!
+Endlagen einstellen
+Position einstellen
+Bestätigen
+Servicemode unten
+Sens unten zu klein
+Sens unten zu groß
+Sens oben zu klein
+Sens oben zu groß
+Mast
+Maste nicht unten
+Maste oben just.
+Mastnummer
+Servicemode oben
+Maste nicht oben
+Warten auf Maste
+Mast auswählen
+PIN eingeben
+Deutsch
+Englisch
+Sprachauswahl
+Logbuch
+Fehler M
+neue MS gefunden
+Zentrale sichern 
+Zentrale laden
+
+
+
+
+
+
+
+Fehler null
+Kommunikation
+max. Diff. erreicht
+Mast
+Kein Mast antwortet
+Text nicht belegt
+falsche Anzahl MS
+Sensor oben u. unten
+keine Impulse
+keine Abfragen
+Sensor oben defekt
+Sensor unten defekt
+Spannung L1 fehlt
+Spannung L2 fehlt
+Spannung L3 fehlt
+antwortet nicht
+kein Strom L1
+kein Strom L2
+kein Strom L3
+Strom Überlast L1
+Strom Überlast L2
+Strom Überlast L3
+zu wenig Strom L1
+zu wenig Strom L2
+zu wenig Strom L3
+Strom in L1
+Strom in L2
+Strom in L3
+
+
+
+Comm. PC-RS485
+Stop with 'C'
+Cont. line going up
+Cont. line is up
+Cont.line going down
+Cont. line is down
+Stop
+Error
+Down/Upload
+Emergency Stop
+Automatic
+On
+Off
+Ready
+Date Time
+active
+Choose Menu 'E'
+Mast error
+Check masts
+Error Mode
+Re-start system
+Communication test
+Communication error
+Number of Masts
+Adjust down Masts
+Automatic re-start
+System not adjusted
+Set end position
+Set position
+Confirm
+Service Mode down
+Bot. Sens. too small
+Bot. Sens. too large
+Top Sens. too small
+Top Sens. too large
+Mast
+Masts not down
+Mast up adjust
+Number of Mast
+Service Mode up
+Mast not up
+Wait for Mast
+Select Mast
+enter PIN
+German
+English
+Select Language
+Logbook
+Mast error
+new MS found
+Backup ZS 
+Restore ZS
+
+
+
+
+
+
+
+Zero error
+Communication
+Max. dif. reached
+Mast
+No responses from MS
+Text not occupied
+Wrong number of MS
+Sens. top and bottom
+No Signals
+No Requests
+Top sensor defect
+Bot. sensor defect
+Voltage L1 missing
+Voltage L2 missing
+Voltage L3 missing
+not answering
+No power L1
+No power L2
+No power L3
+Power overload L1
+Power overload L2
+Power overload L3
+Too little power L1
+Too little power L2
+Too little power L3
+Power in L1
+Power in L2
+Power in L3
+
+
+
