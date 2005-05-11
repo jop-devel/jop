@@ -4,6 +4,11 @@ set p1= bench
 set p2=jbe
 set p3=DoAll
 
+cd java
+cd tools
+call build
+cd ..
+cd .. 
 cd asm
 call jopser
 cd ..
