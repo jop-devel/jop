@@ -1,0 +1,74 @@
+--
+--	sim_rom.vhd
+--
+--	A 'faster' simulation version of the JVM ROM.
+--
+--
+
+library std;
+use std.textio.all;
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+entity rom is
+generic (width : integer; addr_width : integer);
+port (
+	clk			: in std_logic;
+	address		: in std_logic_vector(9 downto 0);
+	q			: out std_logic_vector(9 downto 0)
+);
+
+	subtype word is std_logic_vector(width-1 downto 0);
+	constant nwords : integer := 2 ** addr_width;
+	type ram_type is array(0 to nwords-1) of word;
+end rom;
+
+
+architecture sim of rom is
+
+	shared variable ram : ram_type;
+
+	signal areg		: std_logic_vector(9 downto 0);
+	signal data		: std_logic_vector(9 downto 0);
+
+begin
+
+process(clk) begin
+
+	if rising_edge(clk) then
+		q <= ram(to_integer(unsigned(address)));
+	end if;
+
+end process;
+
+
+-- initialize at start with a second process accessing
+-- the shared variable ram
+
+initialize:
+process
+
+	variable address	: natural;
+
+	file memfile		: text is "mem_rom.dat";
+	variable memline	: line; 
+	variable val		: integer;
+
+begin
+--	write(output, "load ROM memory...");
+	for address in 0 to nwords-1 loop
+		if endfile(memfile) then
+			exit;
+		end if;
+		readline(memfile, memline);
+		read(memline, val);
+		ram(address) := std_logic_vector(to_signed(val, width));
+	end loop;
+	file_close(memfile);
+	-- we're done, wait forever
+	wait;
+end process initialize;
+
+end sim;
