@@ -1,0 +1,8 @@
+/dev/hda1 C: NTFS Windows
+/dev/hda2 D: VFAT user data
+/dev/hda3 100M ext2 /boot
+/dev/hda4 ext. partition
+/dev/hda5 1G swap
+/dev/hda6 5G ext2 /home
+/dev/hda7 10G reiserfs / gentoo
+/dev/hda8 10G ext2? / fedora
