@@ -57,6 +57,8 @@
 //	2005-02-05	include version number
 //	2005-02-18	switch for simulation version
 //	2005-04-27	dup_x2
+//	2005-05-12	remove nops after mem rd/wr start. the 'io' wr
+//				generates the first bsy cycle (extension.vhd)
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -66,7 +68,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20050509
+version		= 20050512
 
 //
 //	io register

@@ -27,6 +27,7 @@
 --	2004-12-08	release mem_bsy three cycle earlier on write
 --	2005-01-11	Added cache
 --	2005-04-07	read mux after registering RAM and Flash data
+--	2005-05-12  no bsy on ram_cnt=2
 --
 
 Library IEEE;
