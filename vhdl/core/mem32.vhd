@@ -383,12 +383,16 @@ begin
 				bc_wr_ena <= '0';
 
 				if (mem_rd='1') then
+					mem_bsy <= '1';
 					if (din(20 downto 19) = "00") then	-- ram
 						ram_addr <= din(17 downto 0);
 						ram_cs <= '1';
 						ram_oe <= '1';
 						ram_access <= '1';
 						wait_state <= to_unsigned(ram_cnt-1, 4);
+						if ram_cnt=2 then
+							mem_bsy <= '0';		-- with ram_cnt=2 we do NOT need additional wait states
+						end if;
 					elsif (din(20 downto 19) = "01") then	-- flash
 						fl_a <= din(18 downto 0);
 						sel_flash <= '0';
@@ -410,7 +414,6 @@ begin
 						nand_access <= '1';
 						wait_state <= to_unsigned(rom_cnt-1, 4);
 					end if;
-					mem_bsy <= '1';
 					state <= rd1;
 				elsif (mem_wr='1') then
 					mem_wr_val <= din;
@@ -455,6 +458,7 @@ begin
 					else
 						flash_data_ena <= '1';
 					end if;
+					mem_bsy <= '0';
 				end if;
 				if wait_state="0000" then
 					state <= idl;
@@ -475,9 +479,13 @@ begin
 				if wait_state="0011" then
 					mem_bsy <= '0';			-- release mem_bsy three cycles earlier
 				end if;
+				if wait_state="0010" then
+					mem_bsy <= '0';
+				end if;
 				if wait_state="0001" then
 					fl_nwe <= '1';
 					nwr_int <= '1';
+					mem_bsy <= '0';
 				end if;
 				if wait_state="0000" then
 					fl_nwe <= '1';

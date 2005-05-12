@@ -60,6 +60,7 @@ version		= 20050220
 			wait				// one for decode
 			ldmrd		 		// read ext. mem
 
+			ldi 7				// read addr.for back to back wr/rd
 			ldi	32				// write data
 			ldi	16				// write address
 
@@ -69,7 +70,6 @@ version		= 20050220
 			wait
 			wait
 
-			ldi 7
 			stmra				// start read ext. mem
 			wait				// one for fetch
 			wait				// one for decode
@@ -77,3 +77,50 @@ version		= 20050220
 
 			pop
 			pop
+
+
+
+			nop
+			nop
+			nop
+			nop
+			nop
+			nop
+			nop
+			nop
+			nop
+			nop
+
+			// back to back write
+			ldi	33				// write data
+			ldi	17				// write address
+
+			ldi	32				// write data
+			ldi	16				// write address
+
+			// this sequence takes 6 cycles with ram_cnt=3
+			stmwa				// write ext. mem address
+			stmwd				// write ext. mem data
+			wait
+			wait
+
+			stmwa				// write ext. mem address
+			stmwd				// write ext. mem data
+			wait
+			wait
+
+
+			nop
+			nop
+			nop
+			nop
+			nop
+			nop
+			nop
+			nop
+			nop
+			nop
+			nop
+			nop
+			nop
+			nop

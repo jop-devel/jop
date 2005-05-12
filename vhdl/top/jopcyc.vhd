@@ -32,7 +32,7 @@ generic (
 --	rom_cnt		: integer := 3;		-- clock cycles for external rom OK for 20 MHz
 	rom_cnt		: integer := 15;	-- clock cycles for external rom for 100 MHz
 	jpc_width	: integer := 12;	-- address bits of java bytecode pc = cache size
-	block_bits	: integer := 3		-- 2*block_bits is number of cache blocks
+	block_bits	: integer := 5		-- 2*block_bits is number of cache blocks
 );
 
 port (

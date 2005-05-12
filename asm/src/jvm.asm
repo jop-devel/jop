@@ -142,7 +142,8 @@ addr		?			// address used for bc load from flash
 //
 //			// this sequence takes 6 cycles with ram_cnt=3
 //			stmra				// start read ext. mem
-//			nop					// mem_bsy comes one cycle later
+// not any more necessary
+//			// nop					// mem_bsy comes one cycle later
 //			wait				// one for fetch
 //			wait				// one for decode
 //			ldmrd		 		// read ext. mem
@@ -153,13 +154,13 @@ addr		?			// address used for bc load from flash
 //			// this sequence takes 6 cycles with ram_cnt=3
 //			stmwa				// write ext. mem address
 //			stmwd				// write ext. mem data
-//			nop
+// not any more necessary
 //			wait
 //			wait
 //
 //			ldi 7
 //			stmra				// start read ext. mem
-//			nop					// mem_bsy comes one cycle later
+// not any more necessary
 //			wait				// one for fetch
 //			wait				// one for decode
 //			ldmrd		 		// read ext. mem
@@ -209,7 +210,6 @@ addr		?			// address used for bc load from flash
 			stm	heap
 			ldi	0
 			stmra
-			nop
 			wait
 			wait
 			ldmrd
@@ -286,7 +286,6 @@ ser4:
 			stmwa				// write ext. mem address
 			ldm	c
 			stmwd				// write ext. mem data
-			nop
 			wait
 			wait
 
@@ -417,7 +416,6 @@ ldc:		ldm	cp opd
 			ld_opd_8u
 			add
 			stmra				// read ext. mem, mem_bsy comes one cycle later
-			nop
 			wait
 			wait
 			ldmrd		 nxt	// read ext. mem
@@ -428,7 +426,6 @@ ldc_w:
 			ld_opd_16u
 			add
 			stmra				// read ext. mem, mem_bsy comes one cycle later
-			nop
 			wait
 			wait
 			ldmrd		 nxt	// read ext. mem
@@ -754,7 +751,6 @@ start_jvm:
 			dup
 
 			stmra				// read jjp
-			nop
 			wait
 			wait
 			ldmrd			 	// read ext. mem
@@ -763,7 +759,6 @@ start_jvm:
 			ldi	1
 			add
 			stmra				// read jjhp
-			nop
 			wait
 			wait
 			ldmrd			 	// read ext. mem
@@ -839,13 +834,11 @@ getstatic:
 			add
 
 			stmra				// read ext. mem, mem_bsy comes one cycle later
-			nop
 			wait
 			wait
 			ldmrd		 	// read ext. mem
 
 			stmra				// read ext. mem, mem_bsy comes one cycle later
-			nop
 			wait
 			wait
 			ldmrd		 nxt	// read ext. mem
@@ -863,7 +856,6 @@ putstatic:
 			add
 
 			stmra				// read ext. mem, mem_bsy comes one cycle later
-			nop
 			wait
 			wait
 			ldmrd		 	// read ext. mem
@@ -871,7 +863,6 @@ putstatic:
 			stmwa				// write ext. mem address
 //			nop					// ??? tos is val
 			stmwd				// write ext. mem data
-			nop
 			wait
 			wait
 			nop	nxt
@@ -893,7 +884,6 @@ getfield:
 			add
 
 			stmra				// read ext. mem, mem_bsy comes one cycle later
-			nop
 			wait
 			wait
 			ldmrd			 	// read offset
@@ -901,7 +891,6 @@ getfield:
 			add					// +objectref
 
 			stmra				// read ext. mem, mem_bsy comes one cycle later
-			nop
 			wait
 			wait
 			ldmrd		 nxt	// read ext. mem
@@ -931,7 +920,6 @@ putfield:
 			add
 
 			stmra				// read ext. mem, mem_bsy comes one cycle later
-			nop
 			wait
 			wait
 			ldmrd			 	// read offset
@@ -941,7 +929,6 @@ putfield:
 			stmwa				// write ext. mem address
 			ldm	a				// restore value
 			stmwd				// write ext. mem data
-			nop
 			wait
 			wait
 			nop	nxt
@@ -971,7 +958,6 @@ arraylength:
 			ldi	-1
 			add					// arrayref-1
 			stmra				// read ext. mem, mem_bsy comes one cycle later
-			nop
 			wait
 			wait
 			ldmrd		 nxt	// read ext. mem
@@ -992,6 +978,7 @@ sastore:
 			ldi	-1
 			add					// arrayref-1
 			stmra				// read ext. mem, mem_bsy comes one cycle later
+// could this nop be removed?
 			nop					// wait one cycle for flags of ref
 			bz	null_pointer	// 
 			wait				// is this ok? - wait in branch slot
@@ -1014,7 +1001,6 @@ sastore:
 			stmwa				// write ext. mem address
 			ldm	a
 			stmwd				// write ext. mem data
-			nop
 			wait
 			wait
 			nop	nxt
@@ -1039,6 +1025,7 @@ saload:
 			add					// arrayref-1
 
 			stmra				// read array length
+// could this nop be removed?
 			nop					// wait one cycle for flags of ref
 			bz	null_pointer	// 
 			wait				// is this ok? - wait in branch slot
@@ -1059,7 +1046,6 @@ saload:
 			add					// index+arrayref
 
 			stmra				// read ext. mem, mem_bsy comes one cycle later
-			nop
 			wait
 			wait
 			ldmrd		 nxt	// read ext. mem
@@ -1230,7 +1216,6 @@ checkcast:
 			add
 
 			stmra				// read ext. mem, mem_bsy comes one cycle later
-			nop
 			wait
 			wait
 			ldmrd		 		// read ext. mem
@@ -1262,7 +1247,6 @@ jopsys_wr:
 
 jopsys_rdmem:
 			stmra				// read ext. mem, mem_bsy comes one cycle later
-			nop
 			wait
 			wait
 			ldmrd		 nxt	// read ext. mem
@@ -1270,7 +1254,6 @@ jopsys_rdmem:
 jopsys_wrmem:
 			stmwa				// write ext. mem address
 			stmwd				// write ext. mem data
-			nop
 			wait
 			wait
 			nop	nxt

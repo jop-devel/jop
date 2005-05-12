@@ -38,7 +38,6 @@ invokestatic:
 invoke_main:					// jmp with pointer to pointer to mp on TOS
 
 			stmra				// read 'real' mp
-			nop
 			wait
 			wait
 			ldmrd		 		// read ext. mem
@@ -73,7 +72,6 @@ invokeinterface:
 			add	opd
 
 			stmra	opd			// read constant
-			nop
 			wait
 			wait
 			ldmrd		 		// off on TOS
@@ -106,7 +104,6 @@ invokeinterface:
 			ldi	1				// at address ref-1 is pointer to method table
 			sub
 			stmra				// read pointer to method table
-			nop
 			wait
 			wait
 			ldmrd		 		// vt on TOS
@@ -114,7 +111,6 @@ invokeinterface:
 			ldi	1				// pointer to interface table
 			sub					// befor method table
 			stmra				// read interface table address
-			nop
 			wait
 			wait
 			ldmrd		 		// it on TOS
@@ -122,8 +118,7 @@ invokeinterface:
 			ldm	b
 			add					// add offset
 			stmra				// read method pointer
-			nop					// from interface table
-			wait
+			wait				// from interface table
 			wait
 			ldmrd		 		// mp on TOS
 
@@ -152,7 +147,6 @@ invokevirtual:
 			add
 
 			stmra				// read constant
-			nop
 			wait
 			wait
 			ldmrd		 		// read ext. mem
@@ -185,7 +179,6 @@ invokevirtual:
 			sub
 
 			stmra				// read pointer to method table
-			nop
 			wait
 			wait
 			ldmrd		 		// read ext. mem
