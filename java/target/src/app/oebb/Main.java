@@ -15,7 +15,8 @@ package oebb;
 *				Streckennummer wenn nicht eindeutig (1km Abstand)
 *	0.90		Fahrerlaubnis bleibt bei falscher Richtung,
 *				Richtungscheck toleranter.
-*	0.91		ES Mode - first version
+*	0.91		ES mode - first version
+*	0.92		ES mode default
 *
 */
 
@@ -30,7 +31,7 @@ public class Main {
 
 	// SW version
 	public static final int VER_MAJ = 0;
-	public static final int VER_MIN = 91;
+	public static final int VER_MIN = 92;
 
 	// TODO find a schedule whith correct priorities
 	// Serial is 10

@@ -84,7 +84,7 @@ public class Logic extends RtThread {
 
 		stateAfterQuit = Status.state;
 		connSent = false;
-		Status.esMode = false;
+		Status.esMode = true;
 	}
 
 	public void run() {
