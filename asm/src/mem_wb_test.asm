@@ -36,6 +36,9 @@ version		= 20050220
 			wait
 			wait
 			ldmrd
+ldi 1
+ldi 2
+ldi 3
 
 
 			nop
