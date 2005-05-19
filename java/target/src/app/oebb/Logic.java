@@ -60,7 +60,7 @@ public class Logic extends RtThread {
 		mnuESTxt[2] = "Umschalten -> ZLB";
 		mnuESTxt[3] = "Neustart";
 		bsyIndication = "+*";
-		tmpStr = new StringBuffer(19);
+		tmpStr = new StringBuffer(200);
 		
 		initVals();
 	}
@@ -269,8 +269,6 @@ public class Logic extends RtThread {
 				Status.state!=Status.INFO && Status.state!=Status.LERN &&
 				Status.state!=Status.ES_VERSCHUB &&
 				Status.checkMove && Gps.speed>Gps.MIN_SPEED) {
-System.out.print("faehrt ");
-System.out.println(Status.state);
 				stateAfterQuit = Status.state;
 				Status.state = Status.ALARM;
 				alarmType = Cmd.ALARM_FAEHRT;
@@ -335,7 +333,7 @@ System.out.println(Status.state);
 		cnt = 0;
 		tim = Timer.getTimeoutSec(10);
 
-System.out.println("Menue");
+// System.out.println("Menue");
 		while (loop()) {
 
 			if (Status.esMode) {
@@ -579,7 +577,7 @@ System.out.println("Connect");
 
 		int nr, val, tim;
 
-System.out.println("Anmelden");
+// System.out.println("Anmelden");
 		// load default strings for Verschub
 		Flash.loadStrNames(Status.strNr, 0, 0);
 
@@ -672,7 +670,7 @@ System.out.println("Anmelden");
 
 	private int zugnummer(int val) {
 
-System.out.println("Zugnummer");
+// System.out.println("Zugnummer");
 		if (val==1) {
 			Display.write("", "ZugNr:","");
 			return getNumber(7, 5);
@@ -686,7 +684,7 @@ System.out.println("Zugnummer");
 	
 	private void commError() {
 
-System.out.println("Comm Error");
+// System.out.println("Comm Error");
 		// In ES mode we just ignore the communication error
 		if (Status.esMode) {
 			Status.commErr = 0;
@@ -744,9 +742,9 @@ System.out.println("Comm Error");
 	*/
 	private void alarm() {
 
-		Dbg.wr("Alarm ");
-		Dbg.intVal(alarmType);
-		Dbg.lf();
+//		Dbg.wr("Alarm ");
+//		Dbg.intVal(alarmType);
+//		Dbg.lf();
 		if (alarmType==Cmd.ALARM_UEBERF) {
 			Display.write("Melderaum", "überfahren", "");
 		} else if (alarmType==Cmd.ALARM_FAEHRT) {
@@ -756,6 +754,15 @@ System.out.println("Comm Error");
 		} else {
 			Display.write("Alarm", "Nummer", alarmType, "");
 		}
+		if (Status.esMode) {
+			setGpsData();
+			tmpStr.append("Alarm: ");
+			tmpStr.append(alarmType);
+			tmpStr.append("\n");
+			Flash.log(tmpStr);
+
+		}
+
 		Led.alarm();
 		Comm.alarm(Status.strNr, Status.melNr, alarmType);
 		for (;;) {
@@ -820,6 +827,14 @@ System.out.println("Comm Error");
 		Display.write("Ziel erreicht:", p.stationLine1, p.stationLine2);
 		Comm.melnrCmd(Cmd.ANZ, Status.strNr, Status.melNr);
 		Led.startBlinking();
+		if (Status.esMode) {
+			setGpsData();
+			tmpStr.append("Ziel erreicht: ");
+			tmpStr.append(Status.melNr);
+			tmpStr.append("\n");
+			Flash.log(tmpStr);
+
+		}
 		if (!waitEnter()) {
 			Led.stopBlinking();
 			return;
@@ -831,7 +846,7 @@ System.out.println("Comm Error");
 
 	private void widerruf() {
 
-System.out.println("Widerruf");
+// System.out.println("Widerruf");
 		Display.write("Fahrtwiderruf", "", "");
 		Status.melNrZiel = 0;
 		Led.startBlinking();
@@ -849,7 +864,7 @@ System.out.println("Widerruf");
 
 	private void nothalt() {
 
-System.out.println("Nothalt");
+// System.out.println("Nothalt");
 		Display.write("", "NOTHALT!", "");
 		Led.alarm();
 		// wait for Enter
@@ -865,7 +880,7 @@ System.out.println("Nothalt");
 
 	private void abmelden() {
 
-System.out.println("Abmelden");
+// System.out.println("Abmelden");
 		Display.write("Abgemeldet", "", "");
 		restart();
 	}
@@ -889,8 +904,9 @@ System.out.println("Abmelden");
 		
 		int tim;
 
-System.out.println("AnkVerl");
-		if (Status.melNr<=0 || Status.melNrStart<=0 || Status.melNrZiel<=0) {
+// System.out.println("AnkVerl");
+		if (Status.melNr<=0 || Status.melNrStart<=0 || Status.melNrZiel<=0 ||
+				Status.direction == Gps.DIR_UNKNOWN) {
 			Display.write("Keine Meldung", "möglich!", "");
 			waitEnter();
 			return;
@@ -920,7 +936,7 @@ System.out.println("AnkVerl");
 			}
 			return;
 		} else if (p.verlassen) {
-			if (Status.melNrZiel > Status.melNrStart) {		// going from left to rigth.
+			if (Status.direction == Gps.DIR_FORWARD) {		// going from left to rigth.
 				while (p!=null && !p.ankunft) {
 					p = p.getPrev();
 				}
@@ -960,7 +976,7 @@ System.out.println("AnkVerl");
 		int percent = -1;
 		int cnt = 0;
 
-System.out.println("Download");
+// System.out.println("Download");
 		Display.write("Übertragung", "", "");
 		for (;;) {
 			loop();			// there is no exit from download state!
@@ -992,7 +1008,7 @@ System.out.println("Download");
 
 		int i, j;
 
-System.out.println("Infobtrieb");
+// System.out.println("Infobtrieb");
 		Display.write("Infobetrieb", "", "");
 		Comm.charlyStatus(Cmd.INFO_MODE, 1);
 		// wait for Enter or 'C'
@@ -1035,7 +1051,7 @@ System.out.println("Infobtrieb");
 
 		int i, val;
 
-System.out.println("Lern");
+// System.out.println("Lern");
 		Display.write("Lerne", "Strecke","");
 
 		Status.strNr = getNumber(8, 3);
@@ -1092,7 +1108,7 @@ System.out.println("Lern");
 
 	private void measure(int melnr) {
 
-System.out.println("Measure");
+// System.out.println("Measure");
 		Display.write("Mittelung ", melnr, "", "");
 		Gps.startAvg();
 
@@ -1163,8 +1179,31 @@ System.out.println("Measure");
 		int i = 0;
 		int melnr = Flash.getFirst(Status.strNr);
 		Flash.Point p = Flash.getPoint(melnr);
+		if (p==null) {
+			Display.write("Keine ES-mode", "Streckendaten", "");
+			while (loop()) {
+				;
+			}
+			return;
+		}
 		
-System.out.println("Menue");
+// System.out.println("ES Menue");
+
+		for (;;) {
+			i = Flash.getNext(melnr);
+			i = Flash.getNext(i);
+			if (i!=-1) {
+				melnr = i;
+				if (melnr>=Status.melNr) {
+					p = Flash.getPoint(melnr);
+					break;
+				}
+			} else {
+				i = 0;
+				break;
+			}
+		}
+
 		while (loop()) {
 
 			Display.write("Haltepunkt ausw.:", p.stationLine1, p.stationLine2);
@@ -1206,20 +1245,46 @@ System.out.println("Menue");
 				Status.art = Status.ZUG_NORMAL;
 				Status.direction = Gps.DIR_UNKNOWN;
 
-System.out.print("Ausgewaehlt von ");
-System.out.print(Status.melNrStart);
-System.out.print(" nach ");
-System.out.print(Status.melNrZiel);
-System.out.println();
+				setGpsData();
+				tmpStr.append("Fahrt von ");
+				tmpStr.append(Status.melNrStart);
+				tmpStr.append(" nach ");
+				tmpStr.append(Status.melNrZiel);
+				tmpStr.append("\n");
+				Flash.log(tmpStr);
+
+
 				return;
 			}
 		}
 
 	}
 
+	/**
+	 * 
+	 */
+	private void setGpsData() {
+		tmpStr.setLength(0);
+		synchronized (Gps.lastGGA) {
+			tmpStr.append(Gps.lastGGA);
+		}
+		synchronized (Gps.lastRMC) {
+			tmpStr.append(Gps.lastRMC);
+		}
+		tmpStr.append("Strecke ");
+		tmpStr.append(Status.strNr);
+		tmpStr.append(" - ");
+	}
+
 	private void esVerschub() {
 		Display.write("ES Verschub", "", "");
-		
+
+		setGpsData();
+		tmpStr.append("Verschub: ");
+		tmpStr.append(Status.melNr);
+		tmpStr.append("\n");
+		Flash.log(tmpStr);
+
 		Status.state = Status.ES_VERSCHUB;
 		Status.melNrStart = Status.melNr;
 		Status.melNrZiel = Status.melNr;
@@ -1311,7 +1376,6 @@ System.out.println();
 	*/
 	private int getNumber(int pos, int size) {
 
-System.out.println("getNumber");
 		int cnt;
 		if (size>BUF_LEN) size = BUF_LEN;
 		for (cnt=0; cnt<size; ++cnt) {

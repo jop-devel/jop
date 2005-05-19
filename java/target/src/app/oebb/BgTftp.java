@@ -18,6 +18,8 @@ package oebb;
 *
 */
 
+import com.jopdesign.sys.Native;
+
 import util.Amd;
 import util.Dbg;
 import util.Timer;
@@ -56,7 +58,9 @@ private static int simerr;
 	private static int[] sector;
 
 	BgTftp() {
-		sector = new int[MAX_BLOCKS*512/4];
+		// +1 is for the final block on a 64KB write
+		// that contains no data
+		sector = new int[(MAX_BLOCKS+1)*512/4];
 		tftpInit();
 	}
 
@@ -315,7 +319,10 @@ System.out.print("Save "); System.out.println(block);
 		if (i=='f') {			// program flash
 			// here we count in 128 word blocks = 512 byte blocks
 			base = (block<<7);
-			if (block>=MAX_BLOCKS) return;
+			if (block>MAX_BLOCKS) {
+				System.out.println("Too many blocks!");
+				return;
+			}
 			// base += ((fn&0xff)-'0')<<16;	// 64 KB sector
 			for (j=0; j<128; ++j) {
 				sector[base+j] = buf[Udp.DATA+1+j]; 
@@ -336,21 +343,24 @@ System.out.print("Program "); System.out.print(cnt); System.out.println(" blocks
 		i = fn>>8;
 		if (i!='f') return;			// filename not valid
 		base = ((fn&0xff)-'0')<<16;	// 64 KB sector
-System.out.print("Erase sector "); System.out.println(base);
-		Amd.erase(base);
+// System.out.print("Erase sector "); System.out.println(base);
+//		synchronized (sector) {
+			Amd.erase(base);
 System.out.println("Program");
-		for (i=0; i<cnt; ++i) {
-			Timer.wd();				// toggle for each block?
-System.out.print(" blk "); System.out.print(i);
-			for (j=0; j<128; ++j) {
-				w = sector[i*128+j];
-				Amd.program(base, w>>>24);
-				Amd.program(base+1, w>>>16);
-				Amd.program(base+2, w>>>8);
-				Amd.program(base+3, w);
-				base += 4;
-			}
-		}
+
+			for (i=0; i<cnt && i<MAX_BLOCKS; ++i) {
+				Timer.wd();				// toggle for each block?
+ System.out.print(" blk "); System.out.print(i);
+				for (j=0; j<128; ++j) {
+					w = sector[i*128+j];
+					Amd.program(base, w>>>24);
+					Amd.program(base+1, w>>>16);
+					Amd.program(base+2, w>>>8);
+					Amd.program(base+3, w);
+					base += 4;
+				}
+			}	
+//		}
 	}
 
 	/**
@@ -385,6 +395,46 @@ System.out.print(" blk "); System.out.print(i);
 				buf[Udp.DATA+1+i] = 0;
 			}
 		}
+	}
+	
+	/**
+	 * move log data
+	 * @author admin
+	 *
+	 * TODO To change the template for this generated type comment go to
+	 * Window - Preferences - Java - Code Style - Code Templates
+	 */
+	static void moveLog() {
+		
+		int i, j;
+//		synchronized (sector) {
+			Timer.wd();
+			j = sector.length;
+			for (i=0; i<j; ++i) {
+				sector[i] = -1;
+			}
+			for (i=0; i<Flash.CONFIG_LEN/4; ++i) {
+				sector[i] = intVal(Flash.BGID_START+(i<<2));
+			}
+			j = Flash.CONFIG_LEN/4;
+			for (i=8000; i<16384; ++i) {
+				sector[j] = intVal(Flash.BGID_START+(i<<2));
+				++j;
+			}
+			fn = (((int)'f')<<8) + '3';
+			program(MAX_BLOCKS);
+//		}
+	}
+	
+	static int intVal(int addr) {
+
+		int val = 0;
+		for (int i=0; i<4; ++i) {
+			val <<= 8;
+			val += Native.rdMem(addr+i);
+		}
+
+		return val;
 	}
 
 }

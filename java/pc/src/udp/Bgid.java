@@ -61,7 +61,9 @@ System.out.println("id: "+val);
 		fl.setInt(CONFIG_CORE, 2);
 		fl.setInt(CONFIG_IO, 0);
 		fl.setInt(CONFIG_APP, 0);
-		fl.setInt(CONFIG_LEN, 300);
+		// logbook starts at byte addess 256
+		// len is in words?
+		fl.setInt(CONFIG_LEN, 64);
 		fl.setInt(CONFIG_CHECK, 0);
 		fl.setInt(CONFIG_IP_ADDR, 0);
 		fl.setInt(CONFIG_IP_MASK, 0);

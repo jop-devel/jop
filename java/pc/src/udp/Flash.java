@@ -58,7 +58,7 @@ public class Flash extends FlashConst {
 		tftp = t;
 		this.fname = fname;
 		mem = new byte[MAX_MEM];
-		for (int i=0; i<MAX_MEM; ++i) mem[i] = 0;
+		for (int i=0; i<MAX_MEM; ++i) mem[i] = (byte) 0xff;
 	}
 
 	public void read() {

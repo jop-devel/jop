@@ -17,6 +17,8 @@ public class Flash {
 
 	public static final int DATA_START = 0xa0000; 	// user data, Streckendaten in oebb BG263
 	public static final int BGID_START = 0xb0000; 	// user data, bgid
+	public static final int CONFIG_LEN = 256;		// first 256 Bytes are confing data
+													// than logbook
 	public static final int BG_MASTER = 10*4;
 	public static final int BG_MASTER_MAGIC = 1234;
 
@@ -102,6 +104,8 @@ public class Flash {
 	static StringBuffer[] connStr;
 	
 	static StringBuffer[] tmpStr;
+	
+	static int logPtr;
 
 	public static void init() {
 
@@ -124,6 +128,7 @@ public class Flash {
 			tmpStr[i] = new StringBuffer(19);
 		}
 		textOk = false;
+		logPtr = 0;
 		
 	}
 
@@ -161,7 +166,9 @@ public class Flash {
 				return -1;
 			}
 			if (Status.esMode) {
-				esStr();
+				if (!esStr()) {
+					return -1;
+				}
 			}
 		}
 		return str[0].melnr;
@@ -177,7 +184,9 @@ public class Flash {
 				return -1;
 			}
 			if (Status.esMode) {
-				esStr();
+				if (!esStr()) {
+					return -1;
+				}
 			}
 		}
 		return str[lenStr-1].melnr;
@@ -367,7 +376,7 @@ Dbg.wr(tmpStr[j]);
 	 * in ES mode!
 	 *
 	 */
-	static void esStr() {
+	static boolean esStr() {
 		
 System.out.println("ES Strecke:");
 		int i, j, k;
@@ -437,7 +446,7 @@ System.out.print(p1.melnr);
 Dbg.wr(p1.stationLine1);
 System.out.println();
 		}
-
+		return lenStr>0;
 	}
 
 	/**
@@ -482,18 +491,51 @@ Dbg.wr("\"\n");
 		return (intVal(0)==0x0ebb0ebb);
 	}
 
-	public static void check() {
+	public static void check(boolean log) {
 
+		int i, j;
 		if (!ok()) {
-			Dbg.wr("Keine Streckendaten\n");
+			System.out.println("Keine Streckendaten");
 		}
 		
-		Dbg.wr("Streckendaten:\n");
+		// System.out.println("Streckendaten:");
 		// dump();
 		int cnt = intVal(OFF_CNT);
 		Dbg.wr("Anzahl: ");
 		Dbg.intVal(cnt);
 		Dbg.wr('\n');
+
+		i = intVal(BGID_START-DATA_START);
+		System.out.print("BG Id: ");
+		System.out.println(i);
+		System.out.println("Logbook:");
+		
+		for (i=CONFIG_LEN; i<0x10000; ++i) {
+			j = Native.rdMem(BGID_START+i);
+			if (j=='\n') {
+				if (log) System.out.println();
+			} else if (j==0xff) {
+				System.out.println("Logbook end");
+				break;
+			} else {
+				if (log) System.out.print((char) j);
+			}
+			Timer.wd();
+		}
+		// Move the log data
+		// the threshold stand in relation to the copy length
+		// in moveLog().
+		if (i>45000) {
+// System.out.println("move log");
+			BgTftp.moveLog();
+		}
+		
+		for (logPtr=CONFIG_LEN; logPtr<0x10000; ++logPtr) {
+			j = Native.rdMem(BGID_START+logPtr);
+			if (j==0xff) {
+				break;
+			}
+		}
 
 /*
 		for (int i=0; i<cnt; ++i) {
@@ -552,6 +594,27 @@ Dbg.wr("\"\n");
 		Dbg.wr('\n');
 	}
 
+	/**
+	 * Write logfile entry in the Flash
+	 * @param tmpStr2
+	 */
+	public static void log(StringBuffer str) {
+		
+		int i, j;
+		
+		for (i=0; i<str.length(); ++i) {
+			j = str.charAt(i);
+			System.out.print((char) j);
+			if (logPtr<0x10000) {
+				Amd.program(BGID_START-0x80000+logPtr, j);
+				++logPtr;
+			}
+			Timer.wd();
+		}
+		
+	}
+
+/*
 	public static void info(int nr) {
 
 		int i, j, addr;
@@ -590,30 +653,31 @@ Dbg.wr("\"\n");
 			melnr = getNext(melnr);
 		}
 
-/* read direct from Flash
+// read direct from Flash
 
-		addr += STR_LEN;			// start of points
-		for (i=0; i<cnt; ++i) {
-			Dbg.wr("Melnr: ", intVal(addr+PT_MELNR));
-			Dbg.wr("lat: ", intVal(addr+PT_LAT));
-			Dbg.wr("long: ", intVal(addr+PT_LON));
-			int idx = intVal(addr+PT_PTR);
-			addr += PT_LEN;
-			Dbg.wr("Text: ");
-			if (idx<=0) {
-				Dbg.intVal(idx);
-			} else {
-				for (j=0; j<20; ++j) {
-					int val = Native.rdMem(DATA_START+idx+j);
-					if (val==0) break;
-					Dbg.wr(val);
-				}
-			}
-			Dbg.wr('\n');
-		}
-*/
+//		addr += STR_LEN;			// start of points
+//		for (i=0; i<cnt; ++i) {
+//			Dbg.wr("Melnr: ", intVal(addr+PT_MELNR));
+//			Dbg.wr("lat: ", intVal(addr+PT_LAT));
+//			Dbg.wr("long: ", intVal(addr+PT_LON));
+//			int idx = intVal(addr+PT_PTR);
+//			addr += PT_LEN;
+//			Dbg.wr("Text: ");
+//			if (idx<=0) {
+//				Dbg.intVal(idx);
+//			} else {
+//				for (j=0; j<20; ++j) {
+//					int val = Native.rdMem(DATA_START+idx+j);
+//					if (val==0) break;
+//					Dbg.wr(val);
+//				}
+//			}
+//			Dbg.wr('\n');
+//		}
+
 
 		
 	}
+*/
 
 }

@@ -17,6 +17,14 @@ package oebb;
 *				Richtungscheck toleranter.
 *	0.91		ES mode - first version
 *	0.92		ES mode default
+*	0.93		Verlassensmeldung von Status.direction abhaengig, Fehler bei
+*				Ziel im 6-er behoben.
+*				Fehlermeldung bei fehlenden ES Eintraegen in der Streckendatei
+*				im ES mode.
+*				Haltepunktauswahl: Naechster mögliche Haltepunkt von der
+*				aktuellen Position aus (in Richtung 'rechts').
+*	0.94		ES mode logbook, Print log auf Serviceschnittstelle bei Start
+*				mit Taste 3 gedrueckt (SLIP). 
 *
 */
 
@@ -31,7 +39,7 @@ public class Main {
 
 	// SW version
 	public static final int VER_MAJ = 0;
-	public static final int VER_MIN = 92;
+	public static final int VER_MIN = 94;
 
 	// TODO find a schedule whith correct priorities
 	// Serial is 10
@@ -96,10 +104,13 @@ public class Main {
 		RtThread.sleepMs(1000);
 		Timer.wd();
 
+		// we need the BgTftp befor Flash.init()!
+		BgTftp tftpHandler = new BgTftp();
 		Flash.init();
 
 
-		Flash.check();
+		Flash.check(val==Keyboard.K3);
+		Timer.wd();
 
 		Status.isMaster = Flash.isMaster();
 		
@@ -112,7 +123,7 @@ public class Main {
 		// BUT this handler can only handle 64KB sector
 		// writes. A new FPGA configuration has to be
 		// split to more writes!!!
-		Udp.addHandler(BgTftp.PORT, new BgTftp());
+		Udp.addHandler(BgTftp.PORT, tftpHandler);
 		ser = new Serial(Const.IO_UART_BG_MODEM_BASE);
 
 		//

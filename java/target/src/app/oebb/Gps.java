@@ -101,6 +101,15 @@ public class Gps extends RtThread {
 	private static final int BUF_LEN = 80;
 	private static int[] rxBuf;
 	private static int rxCnt;
+	
+/**
+ *	GPS GGA line for the logbook 
+ */
+	static StringBuffer lastGGA;
+/**
+ *	GPS RMC line for the logbook 
+ */
+	static StringBuffer lastRMC;
 
 /**
 *	private because it's a singleton Thread.
@@ -126,6 +135,8 @@ public class Gps extends RtThread {
 		avgLat = new int[MAX_AVG];
 		avgLon = new int[MAX_AVG];
 		text = new int[19];
+		lastGGA = new StringBuffer(BUF_LEN);
+		lastRMC = new StringBuffer(BUF_LEN);
 		
 		// start serial buffer thread
 		
@@ -244,6 +255,12 @@ Dbg.wr("GPS wrong checksum\n");
 
 		int i, knt, val;
 
+		synchronized (lastRMC) {
+			lastRMC.setLength(0);
+			for (i=0; i<rxCnt; ++i) {
+				lastRMC.append((char) rxBuf[i]);
+			}
+		}
 
 		knt = 0;
 		for (i=0; i<5; ++i) {
@@ -280,6 +297,12 @@ Dbg.lf();
 
 		int i, j, lat, lon;
 
+		synchronized (lastGGA) {
+			lastGGA.setLength(0);
+			for (i=0; i<rxCnt; ++i) {
+				lastGGA.append((char) rxBuf[i]);
+			}
+		}
 		j = 0;
 		for (i=14; i<23; ++i) {
 			text[j++]=rxBuf[i];
@@ -501,6 +524,7 @@ Dbg.wr("\n");
 
 		while (nr!=-1) {
 			Flash.Point p = Flash.getPoint(nr);
+			if (p==null) break;
 			if (p.lat!=0 && p.lon!=0) {
 				int i = dist(p.lat-last_lat, p.lon-last_lon);
 				if (i<diff) {
