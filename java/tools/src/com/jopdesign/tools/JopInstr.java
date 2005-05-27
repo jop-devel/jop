@@ -1,5 +1,7 @@
 /**
 *	Definition of JVM instructions for JopSim, Jopa,...
+*
+*	2005-05-27	added Native to jopsys_* mapping for Flavius JOPizer
 */
 
 
@@ -19,6 +21,9 @@ public class JopInstr{
 	private int cnt;
 	private static Map map = new HashMap();
 
+	// mapping of native methods
+	private static Map natMap = new HashMap();
+
 	public static int get(String s) {
 
 		Integer i = (Integer) map.get(s);
@@ -26,6 +31,16 @@ public class JopInstr{
 			return -1;
 		} else {
 			return i.intValue();
+		}
+	}
+	
+	public static int getNative(String s) {
+		
+		s = (String) natMap.get(s);
+		if (s==null) {
+			return -1;
+		} else {
+			return get(s);
 		}
 	}
 
@@ -348,9 +363,36 @@ public class JopInstr{
 		new JopInstr("sys_init", 1, IMP_ASM, 1),			// 0xFF
 	};
 
+	//
+	//	Mapping of 'native' methods from Native.java
+	//	to special bytecodes
+	//	With JCC the index in Native was used, but with JOPizer
+	//	and BCEL we need the expilicit mapping.
+	
+	private static String[] nativeMapping = {
+			"rd", "jopsys_rd",
+			"wr", "jopsys_wr",
+			"rdMem", "jopsys_rdmem",
+			"wrMem", "jopsys_wrmem",
+			"rdIntMem", "jopsys_rdint",
+			"wrIntMem", "jopsys_wrint",
+			"getSP", "jopsys_getsp",
+			"setSP", "jopsys_setsp",
+			"getVP", "jopsys_getvp",
+			"setVP", "jopsys_setvp",
+			"int2extMem", "jopsys_int2ext",
+			"ext2intMem", "jopsys_ext2int",
+			"makeLong", "jopsys_nop",
+			"invoke", "jopsys_invoke",
+	};
+	
 	static {
-		for (int i=0; i<ia.length; ++i) {
+		int i;
+		for (i=0; i<ia.length; ++i) {
 			map.put(ia[i].name, new Integer(i));
+		}
+		for (i=0; i<nativeMapping.length; i+=2) {
+			natMap.put(nativeMapping[i], nativeMapping[i+1]);
 		}
 	}
 
