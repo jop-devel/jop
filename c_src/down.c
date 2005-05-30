@@ -20,6 +20,7 @@
 
 static int prog_cnt = 0;
 static char prog_char[] = {'|','/','-','\\','|','/','-','\\'};
+static char *exitString = "JVM exit!";
 
 main(int argc, char *argv[]) {
 
@@ -170,10 +171,20 @@ and should be changed after download for the echo
 //
 // read serial output of Jop
 //
+	for (j=0; j<strlen(exitString)+1; ++j) {
+		buf[j] = 0;
+	}
 	if (argc!=3) {
 		for (;;) {
 			ReadFile(hCom, &c, 1, &i, NULL);	// read without timeout -> kbhit is useless
 			printf("%c", c); fflush(stdout);
+			for (j=0; j<strlen(exitString)-1; ++j) {
+				buf[j] = buf[j+1];
+			}
+			buf[strlen(exitString)-1] = c;
+			if (strcmp(buf, exitString)==0) {
+				break;
+			}
 			//printf("'%c' %d\n", c, c); fflush(stdout);
 		}
 	}
