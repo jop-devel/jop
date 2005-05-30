@@ -36,6 +36,9 @@ set_global_assignment -name PROJECT_CREATION_TIME_DATE "02:30:11  APRIL 04, 2004
 set_global_assignment -name LAST_QUARTUS_VERSION 4.2
 set_global_assignment -name CDF_FILE jop.cdf
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_types_60.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/wishbone/wb_pack.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/wishbone/wb_test_slave.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/wishbone/wb_top.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc_pll.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/io/iotal.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/io/uart_tal.vhd

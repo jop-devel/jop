@@ -35,6 +35,9 @@ set_global_assignment -name ORIGINAL_QUARTUS_VERSION 4.0
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "02:36:57  APRIL 04, 2004"
 set_global_assignment -name LAST_QUARTUS_VERSION 4.2
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_types_20.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/wishbone/wb_pack.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/wishbone/wb_test_slave.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/wishbone/wb_top.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc_pll.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/io/iobg.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/io/uart.vhd

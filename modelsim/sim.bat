@@ -10,6 +10,9 @@ vcom %options% %jopdir%/simulation/sim_jbc.vhd
 vcom %options% %jopdir%/simulation/sim_rom.vhd
 vcom %options% %jopdir%/simulation/sim_memory.vhd
 vcom %options% %jopdir%/simulation/sim_uart.vhd
+vcom %options% %jopdir%/wishbone/wb_pack.vhd
+vcom %options% %jopdir%/wishbone/wb_test_slave.vhd
+vcom %options% %jopdir%/wishbone/wb_top.vhd
 vcom %options% %jopdir%/jtbl.vhd
 vcom %options% %jopdir%/offtbl.vhd
 vcom %options% %jopdir%/core/cache.vhd

@@ -59,6 +59,7 @@
 //	2005-04-27	dup_x2
 //	2005-05-12	remove nops after mem rd/wr start. the 'io' wr
 //				generates the first bsy cycle (extension.vhd)
+//	2005-05-30	wishbone interface (extension.vhd and wb_top.vhd)
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -68,7 +69,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20050512
+version		= 20050530
 
 //
 //	io register

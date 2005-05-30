@@ -86,10 +86,48 @@ ldi 3
 			nop
 			nop
 			nop
+
+// test wishbone interface
+// we use negativ addresses to access the wishbone devices
+//
+
+			ldi	-2
+			stmra
+			wait
+			wait
+			ldmrd
+			ldi	-1
+			stmra
+			wait
+			wait
+			ldmrd
+
+
 			nop
 			nop
+
+			pop
+			pop
+
+
+			ldi	16
+			ldi	-1
+			stmwa
+			stmwd
+			wait
+			wait
+
+			ldi	-1
+			stmra
+			wait
+			wait
+			ldmrd
+
 			nop
 			nop
+
+			pop
+
 			nop
 			nop
 			nop

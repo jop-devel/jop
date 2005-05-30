@@ -46,4 +46,10 @@ public class Const {
 	public static final int IO_UART1_BASE = 4;
 	public static final int IO_UART_BG_MODEM_BASE = 6;
 	public static final int IO_UART_BG_GPS_BASE = 8;
+	
+	// use neagitve base address for fast constant load in Java
+	public static final int WB_BASE = 0xffffff80;
+	// we use 4 bit slave addresses
+	public static final int WB_TS0 = WB_BASE+0x00;
+	public static final int WB_TS1 = WB_BASE+0x10;
 }

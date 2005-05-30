@@ -18,6 +18,9 @@ DEVSIMULATOR Modelsim
 SIMULATORTIME 0
 DEVGENERATEDSIMULATIONMODEL VHDL
 GENERATEDSIMULATIONMODELTIME 0
+SOURCE ..\..\vhdl\wishbone\wb_pack.vhd
+SOURCE ..\..\vhdl\wishbone\wb_test_slave.vhd
+SOURCE ..\..\vhdl\wishbone\wb_top.vhd
 SOURCE ..\..\vhdl\core\extension.vhd
 SOURCE ..\..\vhdl\core\bcfetch.vhd
 SOURCE ..\..\vhdl\core\fetch.vhd
