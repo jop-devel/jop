@@ -14,6 +14,7 @@
 --	2003-07-08	invertion of cts, rts to uart
 --	2004-09-11	new extension module
 --	2004-10-08	mul operands from a and b, single instruction
+--	2005-05-12	added the bsy routing through extension
 --
 --
 
