@@ -22,6 +22,7 @@
 --	2004-09-11	new extension module
 --	2004-10-01	version for Xilinx
 --	2004-10-08	mul operands from a and b, single instruction
+--	2005-06-09	added the bsy routing through extension
 --
 --
 
@@ -123,6 +124,7 @@ port (
 	bin			: in std_logic_vector(31 downto 0);		-- from stack
 	ext_addr	: in std_logic_vector(exta_width-1 downto 0);
 	rd, wr		: in std_logic;
+	bsy			: out std_logic;
 	dout		: out std_logic_vector(31 downto 0);	-- to stack
 
 -- mem interface
@@ -133,6 +135,7 @@ port (
 	mem_bc_rd	: out std_logic;
 	mem_data	: in std_logic_vector(31 downto 0); 	-- output of memory module
 	mem_bcstart	: in std_logic_vector(31 downto 0); 	-- start of method in bc cache
+	mem_bsy		: in std_logic;
 	
 -- io interface
 
@@ -246,6 +249,7 @@ end component;
 	signal mem_dout			: std_logic_vector(31 downto 0);
 	signal mem_bcstart		: std_logic_vector(31 downto 0);
 	signal mem_bsy			: std_logic;
+	signal bsy				: std_logic;
 
 	signal jbc_addr			: std_logic_vector(jpc_width-1 downto 0);
 	signal jbc_data			: std_logic_vector(7 downto 0);
@@ -293,7 +297,7 @@ end process;
 
 	cmp_core: core generic map(jpc_width)
 		port map (clk_int, int_res,
-			mem_bsy,
+			bsy,
 			stack_din, ext_addr,
 			rd, wr,
 			jbc_addr, jbc_data,
@@ -303,9 +307,9 @@ end process;
 
 	cmp_ext: extension generic map (exta_width)
 		port map (clk_int, int_res, stack_tos, stack_nos,
-			ext_addr, rd, wr, stack_din,
+			ext_addr, rd, wr, bsy, stack_din,
 			mem_rd, mem_wr, mem_addr_wr, mem_bc_rd,
-			mem_dout, mem_bcstart,
+			mem_dout, mem_bcstart, mem_bsy,
 			io_rd, io_wr, io_addr_wr, io_dout
 		);
 
