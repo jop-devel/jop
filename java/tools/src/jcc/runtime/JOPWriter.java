@@ -454,17 +454,18 @@ public class JOPWriter implements CoreImageWriter, Const, EVMConst {
 					}
 					clvt.len = supVt.len;
 				}
-//out.println("// VT: "+nativeName);
+// out.println("// VT: "+nativeName);
 
 				for (i = 0; i < methodCount; i++) { 
 					EVMMethodInfo meth = m[i];  
 					MethodInfo mi = meth.method;
     				JOPClassTable.NameAndTypeKey ntk = classTable.getNameAndTypeKey(mi);
-//out.println("//          "+prettyName(mi)+" "+ntk.nameKey+" "+ntk.typeKey);
+// out.println("//          "+prettyName(mi)+" "+ntk.nameKey+" "+ntk.typeKey);
 					int key = (ntk.nameKey<<16) + ntk.typeKey;
 					String methodNativeName = meth.getNativeName();
 					for (j=0; j<clvt.len; ++j) {
 						if (clvt.key[j] == key) {					// override method
+// out.println("// override: "+clvt.nativeName[j]+" with "+methodNativeName);
 							clvt.nativeName[j] = methodNativeName;
 							clvt.meth[j] = meth;
 							break;
@@ -473,14 +474,15 @@ public class JOPWriter implements CoreImageWriter, Const, EVMConst {
 					if (j==clvt.len) {								// new method
 						clvt.key[clvt.len] = key;
 						clvt.nativeName[clvt.len] = methodNativeName;
+// out.println("// new "+methodNativeName);
 						clvt.meth[clvt.len] = meth;
 						++clvt.len;
 					}
 
 				}
-//for (i=0; i<clvt.len; i++) { 
-//	out.println("//      "+clvt.nativeName[i]+" "+clvt.key[i]);
-//}
+// for (i=0; i<clvt.len; i++) { 
+// 	out.println("//      "+clvt.nativeName[i]+" "+clvt.key[i]);
+// }
 
 			}
 		//
