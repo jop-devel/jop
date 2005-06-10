@@ -179,11 +179,12 @@ public static final int PTRS = 4;
 					clsArgs.add(args[i]);
 					
 					// The last class contains the main method
-					mainClass = args[i];
+					// We also allow / notation as used with JCC
+					mainClass = args[i].replace('/', '.');
 //					AppInfo.mainClass = args[i];
 				}
 				
-				System.out.println("CLASSPATH="+jz.classpath);
+				System.out.println("CLASSPATH="+jz.classpath+"\tmain class="+mainClass);
 				
 				jz.out = new PrintWriter(new FileOutputStream(outFile));
 

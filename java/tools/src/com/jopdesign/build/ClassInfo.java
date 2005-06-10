@@ -124,6 +124,15 @@ public class ClassInfo {
 		return (MethodInfo)usedMethods.get(amth);
 	}
 	
+	public MethodInfo getVTMethodInfo(String mid) {
+		for (int i=0; i<clvt.len; ++i) {
+			if (clvt.key[i].equals(mid)) {
+				return clvt.mi[i];
+			}
+		}
+		return null;
+	}
+	
 	public List getMethods() {
 		return list;
 	}
@@ -260,6 +269,11 @@ public class ClassInfo {
 						cpoolComments[pos] = "Long: "+lval;
 						cpoolComments[pos+1] = "";
 						break;
+					case Constants.CONSTANT_Float:
+						float fval = ((ConstantFloat) co).getBytes();
+						cpoolArry[pos] = Float.floatToRawIntBits(fval);
+						cpoolComments[pos] = "Float: "+fval;
+						break;
 					case Constants.CONSTANT_String:
 						String str = ((ConstantString) co).getBytes(cp);
 						StringInfo si = StringInfo.getStringInfo(str);
@@ -309,7 +323,7 @@ public class ClassInfo {
 							cpoolComments[pos] = "static "+mclname+"."+sigstr;
 							break;
 						}
-						MethodInfo minf = clinf.getMethodInfo(sigstr);
+						MethodInfo minf = clinf.getVTMethodInfo(sigstr);
 						if(minf.method.isStatic() ||	
 							// <init> and privat methods are called with invokespecial
 							// which mapps in jvm.asm to invokestatic
@@ -420,28 +434,6 @@ out.print("\t//\tvirtual index: "+i+" args: "+mi.argsSize);
 */
 	
 	
-/*
-case Constants.CONSTANT_Fieldref:
-	int fidx = ((ConstantFieldref) cnst).getClassIndex();
-	ConstantClass fcl = (ConstantClass) cpool.getConstant(fidx);
-	String fclname = fcl.getBytes(cpool).replace('/','.');
-	// got the class name
-	sigidx = ((ConstantFieldref) cnst).getNameAndTypeIndex();
-	signt = (ConstantNameAndType) cpool.getConstant(sigidx);
-	sigstr = signt.getName(cpool)+signt.getSignature(cpool);
-	FieldInfo fi = appinfo.getClassInfo(fclname).getInstanceField(sigstr);
-	String prestr="";
-	if(fi == null) {
-		fi = appinfo.getClassInfo(fclname).getStaticField(sigstr);
-		prestr = "static ";
-		if(fi == null)
-			System.err.println("Can't find Field ref:"+fclname+" signature: "+sigstr);
-	}
-	System.out.println("\t"+prestr+"field from class:"+fclname+" signature:"+sigstr+" ADDR = "+fi.getAddress());
-	cli.cpoolArry[realidx] = fi.getAddress();
-	break;
-	
-*/
 	
 	
 	

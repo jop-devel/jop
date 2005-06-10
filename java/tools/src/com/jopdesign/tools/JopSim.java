@@ -158,7 +158,7 @@ System.out.println(mp+" "+pc);
 	}
 
 	void dump() {
-		System.out.print("vp="+vp+" sp="+sp+" pc="+pc);
+		System.out.print("cp="+cp+" vp="+vp+" sp="+sp+" pc="+pc);
 		System.out.println(" Stack=[..., "+stack[sp-2]+", "+stack[sp-1]+", "+stack[sp]+"]");
 	}
 
@@ -354,6 +354,9 @@ System.out.println(mp+" "+pc);
 */
 	void invoke(int new_mp) {
 
+		if (log) {
+			System.out.println("addr. of meth.struct="+new_mp);		
+		}
 		int old_vp = vp;
 		int old_cp = cp;
 		int old_mp = mp;
@@ -511,6 +514,10 @@ System.out.println(mp+" "+pc);
 			String spc = (pc-1)+" ";
 			while (spc.length()<4) spc = " "+spc;
 			String s = spc+JopInstr.name(instr);
+			if (log) {
+				System.out.print(s+"\t");
+				dump();
+			}
 
 			switch (instr) {
 
@@ -1402,10 +1409,6 @@ System.out.println("new heap: "+heap);
 
 			}
 
-			if (log) {
-				System.out.print(s+"\t");
-				dump();
-			}
 
 		}
 

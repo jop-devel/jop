@@ -11,6 +11,7 @@ import java.io.PrintWriter;
 
 import org.apache.bcel.classfile.*;
 import org.apache.bcel.classfile.Method;
+import org.apache.bcel.generic.Type;
 
 
 /**
@@ -55,8 +56,11 @@ public class MethodInfo {
         code = m.getCode();
         codeAddress = addr;
         
-        
-		margs = m.getArgumentTypes().length;
+        margs = 0;
+        Type at[] = m.getArgumentTypes();
+        for (int i=0; i<at.length; ++i) {
+        	margs += at[i].getSize();
+        }
 //		FIXME! invokespecial adds an extra objref!!! inits, private, and superclass calls
 //		for now only handle inits
 		if(!m.isStatic()) {
@@ -70,11 +74,6 @@ public class MethodInfo {
 			mreallocals = m.getCode().getMaxLocals() - margs;
 //			System.err.println(" ++++++++++++ "+methodId+" --> mlocals ="+mlocals+" margs ="+margs);
 			len = (m.getCode().getCode().length + 3)/4;
-
-			// we allow only large <clinit> methods
-			if (methodId.equals(JOPizer.clinitSig)) {
-				len = 0;
-			}
 
 			if (len>=JOPizer.METHOD_MAX_SIZE/4 || mreallocals>31 || margs>31) {
 				System.err.println("wrong size: "+cli.clazz.getClassName()+"."+methodId);
@@ -114,8 +113,12 @@ public class MethodInfo {
 		out.println("\t\t//\tcode length: " + len);
 		out.println("\t\t//\tcp: " + cli.cpoolAddress);
 		out.println("\t\t//\tlocals: "+(mreallocals+margs)+" args size: "+margs);
-		
+
 		int word1 = codeAddress << 10 | len;
+		// we allow only large <clinit> methods
+		if (methodId.equals(JOPizer.clinitSig)) {
+			word1 = codeAddress << 10;
+		}
 		int word2 = cli.cpoolAddress << 10 |  mreallocals << 5 |  margs;
 		
 		if (method.isAbstract()) {

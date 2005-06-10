@@ -16,6 +16,8 @@ static long x(long a, long b) {
 		Dbg.wr("Long Test\n");
 
 		long l1, l2;
+		
+//		double d = 0.1;
 
 		l1 = 1;
 		l2 = 2;
@@ -55,9 +57,6 @@ static long x(long a, long b) {
 		lneg(123456789012345L, -123456789012345L);
 		lneg(-123456789012345L, 123456789012345L);
 */
-		// mark the end of the program
-		// in emb. systems there is no exit()
-		for (;;);
 	}
 
 	static void add(long a, long b, long exp) {
