@@ -19,6 +19,7 @@ import org.apache.bcel.classfile.*;
 public class BuildVT extends MyVisitor {
 
 	Map mapClVT = new HashMap();
+	Map mapClFT = new HashMap();
 
 	
 	public BuildVT(JOPizer jz) {
@@ -61,6 +62,7 @@ System.err.println("build VT on class: "+cli.clazz);
 */
 
 		ClassInfo.ClVT supVt = null;
+		ClassInfo.ClFT supFt = null;
 		if (clazz.getClassName().equals(clazz.getSuperclassName())) {
 			;	// now we'r Object
 		} else {
@@ -76,6 +78,7 @@ System.err.println("build VT on class: "+cli.clazz);
 				buildVT(superClazz);	// first build super VT
 			}
 			supVt = (ClassInfo.ClVT) mapClVT.get(superName);
+			supFt = (ClassInfo.ClFT) mapClFT.get(superName);
 		}
 // System.err.println("build VT on: "+clazz.getClassName());
 		String clazzName = clazz.getClassName();
@@ -88,7 +91,9 @@ System.err.println("build VT on class: "+cli.clazz);
 
 // System.err.println(cli);
 		ClassInfo.ClVT clvt = cli.getClVT();
+		ClassInfo.ClFT clft = cli.getClFT();
 		mapClVT.put(clazzName, clvt);
+		mapClFT.put(clazzName, clft);
 
 		Method m[] = clazz.getMethods();
 		int methodCount =  m.length;
@@ -97,8 +102,18 @@ System.err.println("build VT on class: "+cli.clazz);
 		if (supVt!=null) maxLen += supVt.len;
 		clvt.len = 0;
 		clvt.key = new String[maxLen];
-		clvt.ptr = new int[maxLen];
+//		clvt.ptr = new int[maxLen];
 		clvt.mi = new MethodInfo[maxLen];
+		
+		Field f[] = clazz.getFields();
+		maxLen = f.length;
+		if (supFt!=null) maxLen += supFt.len;
+		clft.len = 0;
+		clft.key = new String[maxLen];
+		clft.idx = new int[maxLen];
+		clft.size = new int[maxLen];
+		clft.isStatic = new boolean[maxLen];
+		
 
 // System.out.println("// VT: "+clazzName);
 
@@ -109,6 +124,15 @@ System.err.println("build VT on class: "+cli.clazz);
 				clvt.mi[i] = supVt.mi[i];
 			}
 			clvt.len = supVt.len;
+		}
+		if (supFt!=null) {
+			for (i=0; i<supFt.len; ++i) {
+				clft.key[i] = supFt.key[i];
+				clft.idx[i] = supFt.idx[i];
+				clft.size[i] = supFt.size[i];
+				clft.isStatic[i] = supFt.isStatic[i];
+			}
+			clft.len = supFt.len;
 		}
 
 		for (i = 0; i < methodCount; i++) { 
@@ -129,12 +153,47 @@ System.err.println("build VT on class: "+cli.clazz);
 				clvt.mi[clvt.len] = mi;
 				++clvt.len;
 			}
-
 		}
 //System.out.println("The VT of "+clazzName);
 //for (i=0; i<clvt.len; i++) { 
 //	System.out.println("//\t"+clvt.meth[i].cli.clazz.getClassName()+"."+clvt.key[i]);
 //}
+		int nextFieldIndex = 0;
+		int nextStaticIndex = 0;
+		for (i=0; i<f.length; ++i) {
+			Field field = f[i];
+			int size = field.getType().getSize();
+	
+			String fieldId = field.getName()+field.getSignature();
+			
+			for (j=0; j<clft.len; ++j) {
+				if (clft.key[j].equals(fieldId)) {
+					// field is already in a super class
+					if (field.isStatic()) {
+						nextStaticIndex += size;
+					} else {
+						nextFieldIndex += size;				
+					}
+					break;
+				}
+			}
+			
+			if (j==clft.len) {		// a new field
+				clft.key[clft.len] = fieldId;
+				clft.size[clft.len] = size;
+				if (field.isStatic()) {
+					clft.idx[clft.len] = nextStaticIndex;
+					clft.isStatic[clft.len] = true;
+					nextStaticIndex += size;
+				} else {
+					clft.idx[clft.len] = nextFieldIndex;
+					clft.isStatic[clft.len] = false;
+					nextFieldIndex += size;				
+				}
+				clft.len++;
+			}
+		}
+		cli.setInstanceSize(nextFieldIndex);
 
 	}
 

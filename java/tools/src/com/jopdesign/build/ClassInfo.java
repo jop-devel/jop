@@ -64,12 +64,28 @@ public class ClassInfo {
 		int len;
 		// Method name plus signature is the key
 		String[] key;
-		int[] ptr;
+// do I need this?
+//		int[] ptr;
 // do I need this?
 // This was a app.-wide unique id.
 //		String[] nativeName;
 		MethodInfo mi[];
-	}	
+	}
+	
+	/**
+	 * Field table
+	 * @author Martin
+	 *
+	 */
+	class ClFT {
+		int len;
+		// fieldname and signature
+		String[] key;
+		// index in the object
+		int[] idx;
+		int[] size;
+		boolean[] isStatic;
+	}
 
 	public JavaClass clazz;
 	public ClassInfo superClass;
@@ -79,7 +95,9 @@ public class ClassInfo {
 	private List list = new LinkedList();
 
 	public ClVT clvt;
-
+	
+	public ClFT clft;
+	private int instSize;
 
 	public List cpoolUsed;
 	public int cpoolArry[];
@@ -96,6 +114,7 @@ public class ClassInfo {
 		this.clazz = clazz;
 		methodsAddress = 0;
 		cpoolAddress = 0;
+		instSize = 0;
 		cpoolUsed = new LinkedList();
 
 		mapClassNames.put(clazz.getClassName(), this);
@@ -144,6 +163,17 @@ public class ClassInfo {
 		}
 		return clvt;
 	}
+	public ClFT getClFT() {
+		
+		if (clft==null) {
+			clft = new ClFT();
+		}
+		return clft;
+	}
+	
+	public void setInstanceSize(int size) {
+		instSize = size;
+	}
 	/**
 	 * Get an IT object.
 	 * @return
@@ -167,10 +197,12 @@ public class ClassInfo {
 		
 		// first are the class variables - the static fields
 		staticVarAddress = addr;
-		Field f[] = clazz.getFields();
-		for (i=0; i<f.length; ++i) {
-			if (f[i].isStatic()) {
-				addr += f[i].getType().getSize();
+		for (i=0; i<clft.len; ++i) {
+			if (clft.isStatic[i]) {
+				// resolve the address
+				// idx is now the static address
+				clft.idx[i] = addr;			
+				addr += clft.size[i]; 
 			}
 		}
 		classRefAddress = addr;
@@ -374,37 +406,23 @@ public class ClassInfo {
 						signt = (ConstantNameAndType) cp.getConstant(sigidx);
 						sigstr = signt.getName(cp)+signt.getSignature(cp);
 						clinf = (ClassInfo) mapClassNames.get(fclname);
-						// count the field position of object and class fields
-						int cntStatic = 0;
-						int cntField = 0;
-						Field fa[] = clinf.clazz.getFields();
-						Field f = fa[0];
 						int j;
-						for (j=0; j<fa.length; ++j) {
-							f = fa[j];
-							int size = f.getType().getSize();
-							String sig = f.getName()+f.getSignature();
-							if (sig.equals(sigstr)) {
+						String comment = "";
+						for (j=0; j<clinf.clft.len; ++j) {
+							if (clinf.clft.key[j].equals(sigstr)) {
 								break;
 							}
-							if (f.isStatic()) {
-								cntStatic += size;
-							} else {
-								cntField += size;
-							}
 						}
-						if (j==fa.length) {
+						if (j==clinf.clft.len) {
 							System.out.println("Error: field "+fclname+"."+sigstr+" not found!");
+							break;
 						}
-						String comment = "";
-						if (f.isStatic()) {
-							// for static fields a direct pointer to the
-							// static field
-							cpoolArry[pos] = clinf.staticVarAddress+cntStatic;
-							comment = "static ";
-						} else {
-							cpoolArry[pos] = cntField;
+						if (clinf.clft.isStatic[j]) {
+							comment = "static ";						
 						}
+						// for static fields a direct pointer to the
+						// static field
+						cpoolArry[pos] = clinf.clft.idx[j];
 						cpoolComments[pos] = comment+clinf.clazz.getClassName()+
 							"."+sigstr;				
 						break;
@@ -444,29 +462,27 @@ out.print("\t//\tvirtual index: "+i+" args: "+mi.argsSize);
 		out.println("//\t"+staticVarAddress+": "+clazz.getClassName()+
 				" static fields");
 		out.println("//");
-
-		// calculate the instance size on the fly
-		int instSize = 0;
-		Field fa[] = clazz.getFields();
-		for (i=0; i<fa.length; ++i) {
-			Field f = fa[i];
-			int size = f.getType().getSize();
-			if (f.isStatic()) {
-				out.println("\t\t0,\t//\t"+f.getName()+f.getSignature());
-				
-				if (size==2) {
-					out.print("\t\t0,");					
+		for (i=0; i<clft.len; ++i) {
+			if (clft.isStatic[i]) {
+				if (clft.size[i]==1) {
+					out.print("\t\t0,");
+				} else {
+					out.print("\t\t0, 0,");
 				}
-			} else {
-				// add the size to the instance size
-				instSize += size;
+				out.println("\t//\t"+clft.idx[i]+": "+clft.key[i]);
 			}
 		}
+
 		
 		out.println("//");
 		out.println("//\t"+classRefAddress+": "+clazz.getClassName());
 		out.println("//");
 		out.println("\t\t"+instSize+",\t//\tinstance size");
+		for (i=0; i<clft.len; ++i) {
+			if (!clft.isStatic[i]) {
+				out.println("\t\t\t\t//\t"+clft.idx[i]+" "+clft.key[i]);				
+			}
+		}
 		String supname = "null";
 		if (superClass!=null) {
 			supname = superClass.clazz.getClassName();
