@@ -22,5 +22,10 @@ javac -d dist/classes -sourcepath src/common;src/%appdir% src/%appdir%/%startcla
 cd dist\classes
 jar cf ../lib/classes.zip *
 cd ..\..
-java -cp ../tools/jcc.jar;../tools/dist/lib/jop-tools.jar -Djop.startclass="%startclass%" JavaCodeCompact -nq -arch JOP -o dist/bin/%project%.jop dist/lib/classes.zip
+set java_lib=../tools/dist/lib/jop-tools.jar;../lib/bcel-5.1.jar;../lib/jakarta-regexp-1.3.jar
+java -cp %java_lib% com.jopdesign.build.JOPizer -cp dist/lib/classes.zip -o dist/bin/%project%.jop %startclass%
+
+rem this is the 'old' JCC version
+rem java -cp ../tools/jcc.jar;../tools/dist/lib/jop-tools.jar -Djop.startclass="%startclass%" JavaCodeCompact -nq -arch JOP -o dist/bin/%project%.jop dist/lib/classes.zip
+
 rem java -cp ..\tools\dist\lib\jop-tools.jar com.jopdesign.tools.JopBitGen dist\bin\%project%.jop dist\bin\%project%.bit
