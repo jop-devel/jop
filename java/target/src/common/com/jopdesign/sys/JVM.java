@@ -385,6 +385,7 @@ static Object o;
 
 	private static int f_new(int cons) {
 
+/* original non handle version
 		int h, val, ret;
 
 		// cons is a pointer to the class struct
@@ -402,8 +403,10 @@ synchronized (o) {
 		}
 }
 		return ret;
+*/
 
 /* Handle version:
+*/
 		int h, val, ret;
 
 		// cons is pointer to class struct
@@ -427,12 +430,12 @@ synchronized (o) {
 		}
 }
 		return ret;
-*/
 
 	}
 
 	private static int f_newarray(int count) {
 
+/* original non handle version
 		int h, ret;
 
 		//	ignore cons (type info)
@@ -449,8 +452,10 @@ synchronized (o) {
 		}
 }
 		return ret;
+*/
 
 /* Handle version
+*/
 		int h, ret;
 
 synchronized (o) {
@@ -470,12 +475,12 @@ synchronized (o) {
 		}
 }
 		return ret;
-*/
 
 	}
 
 	private static int f_anewarray(int count, int cons) {
 
+/* original non handle version
 		int h, ret;
 
 		//	ignore cons (type info)
@@ -492,9 +497,11 @@ synchronized (o) {
 		}
 }
 		return ret;
+*/
 
 
 /* Handle version
+*/
 		int h, ret;
 
 		//	ignore cons (type info)
@@ -516,7 +523,6 @@ synchronized (o) {
 		}
 }
 		return ret;
-*/
 	}
 
 

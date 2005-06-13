@@ -66,7 +66,7 @@
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
 
-//#define HANDLE 1
+#define HANDLE 1
 //
 //	'special' constant for a version number
 //	gets written in RAM at position 64
