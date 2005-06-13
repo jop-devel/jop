@@ -37,12 +37,16 @@ public class StringInfo {
 		list.add(si);
 		
 		if (JOPizer.useHandle) {
+			/* flavius version
 			length += HANDLE_Words; // jump the string handle
 			length += HEADER_Words; // jump the string object header
 			length += STRING_Words; // jump the string object
 			length += HANDLE_Words; // jump the char[] handle
 			length += HEADER_Words; // jump the array header
 			length += s.length();   // jump the array contents
+			*/
+			length += STR_OBJ_LEN+1+s.length();
+			length += 2;	// two handles, no GC info for now
 		} else {
 			length += STR_OBJ_LEN+1+s.length();
 		}
@@ -59,7 +63,11 @@ public class StringInfo {
 	 * @return
 	 */
 	public int getAddress() {
-		return startAddress+1;
+		if (JOPizer.useHandle) {
+			return startAddress;
+		} else {
+			return startAddress+1;			
+		}
 	}
 
 
@@ -79,9 +87,11 @@ public class StringInfo {
 	// handle size
 	public static final int HANDLE_Words = 2;
 	
+	/*
 	public int getHandle() {
 		return startAddress + PREHANDLE_Words;
 	}
+	*/
 	
 	public StringInfo(String s, int addr) {
 		string = s;
@@ -122,7 +132,15 @@ public class StringInfo {
 	}
 	
 	public void dump(PrintWriter out, ClassInfo strcli, int arrygcinfo) {
-		if (JOPizer.useGC) {
+		if (JOPizer.useHandle) {
+			int addr = stringTableAddress+startAddress;
+			commentary(string, addr, out);
+			out.println("\t"+(addr+3)+",\t//\tString handle points to the first field");
+			out.println("\t"+(addr+5)+",\t//\tchar[] handle points to the first element");
+			out.println("\t"+strcli.methodsAddress+",\t//\t pointer to String mtab ");
+			out.println("\t"+(addr+1)+",\t//\tchar ref. points to char[] handle");
+			
+			/* flavius version
 //			String disp = string.replaceAll("\n","/n");
 //			out.println("// ADDR:"+startAddress+" Constant String: \""+disp+"\"");
 			commentary(string, startAddress, out);   		
@@ -144,6 +162,7 @@ public class StringInfo {
 			// out.println("\t0,\t// methods pointer - not used for arrays");
 			// out.println("\t"+arrygcinfo+",\t// gc info for arrays of non-refs");
 			out.println("\t"+charptr+",\t// handle");
+			*/
 		} else {
 			out.print("\t"+strcli.methodsAddress+", "+
 					(stringTableAddress+startAddress+STR_OBJ_LEN+1)+",");

@@ -11,4 +11,4 @@ rem jbi32 -dDO_PROGRAM=1 -aPROGRAM ..\..\jbc\cyc_conf.jbc
 rem jbi32 -dDO_PROGRAM=1 -aCONFIGURE ..\..\jbc\cycmin100.jbc
 ..\..\down -e dist\bin\%project%.jop COM1
 
-rem java -cp ../tools/dist/lib/jop-tools.jar -Dlog="false" com.jopdesign.tools.JopSim dist\bin\%project%.jop
+rem java -cp ../tools/dist/lib/jop-tools.jar -Dlog="false" -Dhandle="false" com.jopdesign.tools.JopSim dist\bin\%project%.jop

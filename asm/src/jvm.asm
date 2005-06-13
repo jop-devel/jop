@@ -60,16 +60,19 @@
 //	2005-05-12	remove nops after mem rd/wr start. the 'io' wr
 //				generates the first bsy cycle (extension.vhd)
 //	2005-05-30	wishbone interface (extension.vhd and wb_top.vhd)
+//	2005-06-13	move newarray to JVM.java
+//				use indirection (handle) for objects and arrays
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
 
+//#define HANDLE 1
 //
 //	'special' constant for a version number
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20050530
+version		= 20050613
 
 //
 //	io register
@@ -881,6 +884,12 @@ getfield:
 			nop
 			nop
 
+#ifdef HANDLE
+			stmra				// read handle indirection
+			wait				// for the GC
+			wait
+			ldmrd
+#endif
 			ldm	cp opd
 			nop	opd
 			ld_opd_16u
@@ -917,6 +926,12 @@ putfield:
 			nop
 			nop
 
+#ifdef HANDLE
+			stmra				// read handle indirection
+			wait				// for the GC
+			wait
+			ldmrd
+#endif
 			ldm	cp opd
 			nop	opd
 			ld_opd_16u
@@ -939,25 +954,55 @@ putfield:
 // TODO: initialize to zero
 // or move to JVM.java (with synchronized())
 //
-newarray:	nop	opd				// no type info
-			stm	a				// save count
-			ldm	heap 
-			stmwa				// write ext. mem address
-			ldm	a
-			stmwd				// store count
-			ldm	heap
+//newarray:	nop	opd				// no type info
+//			stm	a				// save count
+//			ldm	heap 
+//			stmwa				// write ext. mem address
+//			ldm	a
+//			stmwd				// store count
+//			ldm	heap
+//			ldi	1
+//			add					// arrayref to first element
+//			dup
+//			ldm	a
+//			add					// +count
+//			stm	heap
+//			wait
+//			wait
+//			nop	nxt
+
+
+newarray:
+			ldjpc
 			ldi	1
-			add					// arrayref to first element
+			sub
+			stjpc				// get last byte code
+			nop					// ???
+			nop					// one more now (2004-04-06) ?
+			ldm	jjp
+			nop	opd
+			ld_opd_8u
+			ldi	255 
+			and opd				// remove type info
 			dup
-			ldm	a
-			add					// +count
-			stm	heap
-			wait
-			wait
-			nop	nxt
+			add					// *2
+			add					// jjp+2*bc
+
+// invoke JVM.fxxx();
+			ldi	1
+			nop
+			bnz	invoke			// simulate invokestatic with ptr to meth. str. on stack
+			nop
+			nop
 
 
 arraylength:
+#ifdef HANDLE
+			stmra				// read handle indirection
+			wait				// for the GC
+			wait
+			ldmrd
+#endif
 			ldi	-1
 			add					// arrayref-1
 			stmra				// read ext. mem, mem_bsy comes one cycle later
@@ -975,6 +1020,12 @@ sastore:
 			stm	a				// value
 			stm	b				// index
 			// arrayref is TOS
+#ifdef HANDLE
+			stmra				// read handle indirection
+			wait				// for the GC
+			wait
+			ldmrd
+#endif
 
 			dup					// for null pointer check
 			dup					// bound check
@@ -1021,6 +1072,12 @@ saload:
 //
 			stm	b				// index
 			// arrayref is TOS
+#ifdef HANDLE
+			stmra				// read handle indirection
+			wait				// for the GC
+			wait
+			ldmrd
+#endif
 
 			dup					// for null pointer check
 			dup					// for bound check
@@ -1378,7 +1435,7 @@ extint_loop:
 
 
 //
-//	some conversion only need a nop!
+//	some conversions only need a nop!
 //
 jopsys_nop:
 			nop	nxt

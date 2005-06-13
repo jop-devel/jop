@@ -387,8 +387,7 @@ static Object o;
 
 		int h, val, ret;
 
-		// cons is pointer to class struct
-// TODO should be synchronized
+		// cons is a pointer to the class struct
 
 synchronized (o) {
 		h = Native.rdIntMem(2);				// get heap pointer
@@ -404,9 +403,76 @@ synchronized (o) {
 }
 		return ret;
 
+/* Handle version:
+		int h, val, ret;
+
+		// cons is pointer to class struct
+
+synchronized (o) {
+		h = Native.rdIntMem(2);				// get heap pointer
+		val = Native.rdMem(cons);			// instance size
+		Native.wrIntMem(h+2+val, 2);		// write heap pointer
+		// GC change:
+		ret = h;
+		Native.wrMem(h+2, h); 				// write handle
+		++h;
+		// end GC change
+		Native.wrMem(cons+2, h);			// pointer to method table in objectref-1
+		++h;								// one increment for ptr to mt
+		// GC change:
+		// ret = h;							// return pointer to object
+		val += h;
+		for (; h<val; ++h) {
+			Native.wrMem(0, h);				// zero object
+		}
+}
+		return ret;
+*/
+
 	}
 
-	private static void f_newarray() { JVMHelp.noim(); /* jvm.asm */ }
+	private static int f_newarray(int count) {
+
+		int h, ret;
+
+		//	ignore cons (type info)
+
+synchronized (o) {
+		h = Native.rdIntMem(2);				// get heap pointer
+		Native.wrMem(count, h);				// count as first element
+		++h;								// one increment for count
+		ret = h;							// return pointer to first element
+		count += h;
+		Native.wrIntMem(count, 2);			// write heap pointer
+		for (; h<count; ++h) {
+			Native.wrMem(0, h);				// zero array
+		}
+}
+		return ret;
+
+/* Handle version
+		int h, ret;
+
+synchronized (o) {
+		h = Native.rdIntMem(2);				// get heap pointer
+		Native.wrIntMem(h+2+count, 2);		// write heap pointer
+		// GC change:
+		ret = h;
+		Native.wrMem(h+2, h); 				// write handle
+		++h;
+		// end GC change
+		Native.wrMem(count, h);				// count as first element
+		++h;								// one increment for count
+//		ret = h;							// return pointer to first element
+		count += h;
+		for (; h<count; ++h) {
+			Native.wrMem(0, h);				// zero array
+		}
+}
+		return ret;
+*/
+
+	}
 
 	private static int f_anewarray(int count, int cons) {
 
@@ -426,6 +492,31 @@ synchronized (o) {
 		}
 }
 		return ret;
+
+
+/* Handle version
+		int h, ret;
+
+		//	ignore cons (type info)
+
+synchronized (o) {
+		h = Native.rdIntMem(2);				// get heap pointer
+		Native.wrIntMem(h+2+count, 2);		// write heap pointer
+		// GC change:
+		ret = h;
+		Native.wrMem(h+2, h); 				// write handle
+		++h;
+		// end GC change
+		Native.wrMem(count, h);				// count as first element
+		++h;								// one increment for count
+//		ret = h;							// return pointer to first element
+		count += h;
+		for (; h<count; ++h) {
+			Native.wrMem(0, h);				// zero array
+		}
+}
+		return ret;
+*/
 	}
 
 

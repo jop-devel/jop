@@ -7,7 +7,6 @@
 //	
 //	see changlog in jvm.asm
 //
-//	TODO
 
 //
 //	local vars for tmp storage
@@ -101,6 +100,16 @@ invokeinterface:
 			dup					// null pointer check
 			nop					// could be interleaved with
 			bz	null_pointer	// following code
+			nop
+			nop
+
+#ifdef HANDLE
+			stmra				// read handle indirection
+			wait				// for the GC
+			wait
+			ldmrd
+#endif
+
 			ldi	1				// at address ref-1 is pointer to method table
 			sub
 			stmra				// read pointer to method table
@@ -175,6 +184,17 @@ invokevirtual:
 			dup					// null pointer check
 			nop					// could be interleaved with
 			bz	null_pointer	// following code
+			nop
+			nop
+
+#ifdef HANDLE
+			stmra				// read handle indirection
+			wait				// for the GC
+			wait
+			ldmrd
+#endif
+
+
 			ldi	1			// at address ref-1 is pointer to method table
 			sub
 

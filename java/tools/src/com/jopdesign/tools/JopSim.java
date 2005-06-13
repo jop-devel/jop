@@ -37,6 +37,7 @@ public class JopSim {
 	int empty_heap;
 
 	static boolean log = false;
+	static boolean useHandle = false;
 
 	//
 	//	simulate timer interrupt
@@ -311,6 +312,10 @@ System.out.println(mp+" "+pc);
 		int args = off & 0xff;		// this is args count without obj-ref
 		off >>>= 8;
 		int ref = stack[sp-args];
+		if (useHandle) {
+			// handle needs indirection
+			ref = readMem(ref);
+		}
 		int vt = readMem(ref-1);
 // System.out.println("invvirt: off: "+off+" args: "+args+" ref: "+ref+" vt: "+vt+" addr: "+(vt+off));
 		invoke(vt+off);
@@ -326,6 +331,10 @@ System.out.println(mp+" "+pc);
 		int args = off & 0xff;				// this is args count without obj-ref
 		off >>>= 8;
 		int ref = stack[sp-args];
+		if (useHandle) {
+			// handle needs indirection
+			ref = readMem(ref);
+		}
 
 		int vt = readMem(ref-1);			// pointer to virtual table in obj-1
 		int it = readMem(vt-1);				// pointer to interface table one befor vt
@@ -444,14 +453,24 @@ System.out.println(mp+" "+pc);
 		int idx = readOpd16u();
 		int off = readMem(cp+idx);
 		int val = stack[sp--];
-		writeMem(stack[sp--]+off, val);
+		int ref = stack[sp--];
+		if (useHandle) {
+			// handle needs indirection
+			ref = readMem(ref);
+		}
+		writeMem(ref+off, val);
 	}
 
 	void getfield() {
 
 		int idx = readOpd16u();
 		int off = readMem(cp+idx);
-		stack[sp] = readMem(stack[sp]+off);
+		int ref = stack[sp];
+		if (useHandle) {
+			// handle needs indirection
+			ref = readMem(ref);
+		}
+		stack[sp] = readMem(ref+off);
 	}
 
 /**
@@ -657,9 +676,13 @@ System.out.println(mp+" "+pc);
 				case 48 :		// faload
 				case 46 :		// iaload
 				case 53 :		// saload
-					ref = stack[sp--];	// index
-					ref += stack[sp--];	// ref
-					stack[++sp] = readMem(ref);
+					idx = stack[sp--];	// index
+					ref = stack[sp--];	// ref
+					if (useHandle) {
+						// handle needs indirection
+						ref = readMem(ref);
+					}
+					stack[++sp] = readMem(ref+idx);
 					break;
 				case 47 :		// laload
 					noim(47);
@@ -738,9 +761,13 @@ System.out.println(mp+" "+pc);
 				case 79 :		// iastore
 				case 86 :		// sastore
 					val = stack[sp--];	// value
-					ref = stack[sp--];	// index
-					ref += stack[sp--];	// ref
-					writeMem(ref, val);
+					idx = stack[sp--];	// index
+					ref = stack[sp--];	// ref
+					if (useHandle) {
+						// handle needs indirection
+						ref = readMem(ref);
+					}
+					writeMem(ref+idx, val);
 					break;
 				case 80 :		// lastore
 					noim(80);
@@ -1128,18 +1155,28 @@ System.out.println("new heap: "+heap);
 					break;
 				case 188 :		// newarray
 					readOpd8u();		// ignore typ
+					// invoke JVM.f_newarray(int count);
+					invoke(jjp+(188<<1));
+					/*
+
 					val = stack[sp--];	// count from stack
 					writeMem(heap, val);
 					++heap;
 					stack[++sp] = heap;	// ref to first element
 					heap += val;
 // System.out.println("newarray heap: "+heap);
+ * 
+ */
 					break;
 				case 189 :		// anewarray
 					jjvmConst(189);
 					break;
 				case 190 :		// arraylength
 					ref = stack[sp--];	// ref from stack
+					if (useHandle) {
+						// handle needs indirection
+						ref = readMem(ref);
+					}
 					--ref;				// point to count
 					stack[++sp] = readMem(ref);
 					break;
@@ -1459,6 +1496,7 @@ System.out.println(sum+" instructions, "+sumcnt+" cycles, "+instrBytesCnt+" byte
 		}
 
 		log = System.getProperty("log", "false").equals("true");
+		useHandle = System.getProperty("handle", "false").equals("true");
 
 		for (int i=0; i<js.cache.cnt(); ++i) {
 			js.cache.use(i);
