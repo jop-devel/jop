@@ -1208,6 +1208,12 @@ System.out.println("new heap: "+heap);
 					break;
 				case 197 :		// multianewarray
 					noim(197);
+/* 
+					stack[++sp] = readOpd8u();		// push dimenensions onto the stack
+					// invoke JVM.f_multianewarray(int dim);
+					invoke(jjp+(197<<1));
+					readOpd16u();	// ignore type information
+*/
 					break;
 				case 200 :		// goto_w
 					noim(200);

@@ -170,9 +170,9 @@ public class Startup {
 					newarray();
 					break;
 				default:
-					System.out.print("JVM interpreter - ");
+					System.out.print("JVM interpreter: bytecode ");
 					System.out.print(instr);
-					System.out.println(" bytecode not implemented");
+					System.out.println(" not implemented");
 					for (;;);
 
 			}
@@ -227,6 +227,7 @@ public class Startup {
 
 	static void putfield() {
 
+		// TODO: handle version!
 		int idx = readBC16u();
 		int off = Native.rdMem(cp+idx);
 		int val = stack[sp--];
@@ -235,6 +236,7 @@ public class Startup {
 
 	static void getfield() {
 
+		// TODO: handle version!
 		int idx = readBC16u();
 		int off = Native.rdMem(cp+idx);
 		stack[sp] = Native.rdMem(stack[sp]+off);
@@ -242,6 +244,7 @@ public class Startup {
 
 	static void newarray() {
 
+		// TODO: handle version!
 		readBC8u();			// ignore typ
 		int val = stack[sp--];	// count from stack
 		int heap = Native.rdIntMem(2);	// get heap pointer

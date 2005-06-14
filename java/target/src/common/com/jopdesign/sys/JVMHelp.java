@@ -87,7 +87,13 @@ wr(' ');
 
 		int val = Native.rdMem(start+(pc>>2));
 		for (i=(pc&0x03); i<3; ++i) val >>= 8;
-		wrByte(val & 0xff);
+		val &= 0xff;
+		wrByte(val);
+
+		System.out.println();
+		System.out.print("JOP: bytecode ");
+		System.out.print(val);
+		System.out.println(" not implemented");
 
 		trace();
 

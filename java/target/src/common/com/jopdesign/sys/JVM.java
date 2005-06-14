@@ -386,6 +386,7 @@ static Object o;
 	private static int f_new(int cons) {
 
 /* original non handle version
+*/
 		int h, val, ret;
 
 		// cons is a pointer to the class struct
@@ -403,10 +404,8 @@ synchronized (o) {
 		}
 }
 		return ret;
-*/
 
 /* Handle version:
-*/
 		int h, val, ret;
 
 		// cons is pointer to class struct
@@ -430,12 +429,15 @@ synchronized (o) {
 		}
 }
 		return ret;
+*/
 
 	}
 
 	private static int f_newarray(int count) {
 
+		// TODO: also change newarray in Startup.java!
 /* original non handle version
+*/
 		int h, ret;
 
 		//	ignore cons (type info)
@@ -452,10 +454,8 @@ synchronized (o) {
 		}
 }
 		return ret;
-*/
 
 /* Handle version
-*/
 		int h, ret;
 
 synchronized (o) {
@@ -475,12 +475,14 @@ synchronized (o) {
 		}
 }
 		return ret;
+*/
 
 	}
 
 	private static int f_anewarray(int count, int cons) {
 
 /* original non handle version
+*/
 		int h, ret;
 
 		//	ignore cons (type info)
@@ -497,11 +499,9 @@ synchronized (o) {
 		}
 }
 		return ret;
-*/
 
 
 /* Handle version
-*/
 		int h, ret;
 
 		//	ignore cons (type info)
@@ -523,6 +523,7 @@ synchronized (o) {
 		}
 }
 		return ret;
+*/
 	}
 
 
@@ -568,7 +569,63 @@ if (enterCnt<0) {
 
 
 	private static void f_wide() { JVMHelp.noim();}
-	private static void f_multianewarray() { JVMHelp.noim();}
+	
+	private static int f_multianewarray() {
+
+		//
+		// be careful! We have to manipulate the stack frame.
+		// If the layout changes we have to change this method.
+		//
+		int ret = 0;
+		int i, j;
+		
+		int sp = Native.getSP();			// sp after call of f_multi();
+		int fp = sp-4;		// first frame point is easy, since last sp points to the end of the frame
+
+		// pc points to the next byte - the first index byte
+		int pc = Native.rdIntMem(fp+1);
+		pc += 2;	// now to dimensions
+		int mp = Native.rdIntMem(fp+4);
+		int start = Native.rdMem(mp)>>>10;	// address of method
+
+		// memory is addressed in 32 bit words!
+		
+		int dim = Native.rdMem(start+(pc>>2));
+		for (i=(pc&0x03); i<3; ++i) dim >>= 8;
+		dim &= 0xff;
+		
+		// correct pc to point to the next instruction
+		Native.wrIntMem(pc+1, fp+1);
+
+		// int vp = Native.rdIntMem(fp+2);
+		// sp is now the previous sp
+		sp = Native.rdIntMem(fp);
+		sp -= dim;		// correct the sp
+		Native.wrIntMem(sp, fp);
+		if (dim!=2) {
+			System.out.print("multanewarray: ");
+			System.out.print(dim);
+			System.out.println("dimensions not supported");
+			JVMHelp.noim();
+		}
+/*
+		System.out.print("multianewarray: ");
+		System.out.println(dim);
+		for (i=1; i<=dim; ++i) {
+			System.out.println(Native.rdIntMem(sp+i));
+		}
+*/
+		// first dimension
+		int cnt = Native.rdIntMem(sp+1);
+		int cnt2 = Native.rdIntMem(sp+2);
+		ret = f_newarray(cnt);
+		for (i=0; i<cnt; ++i) {
+			Native.wrMem(f_newarray(cnt2), ret+i);
+		}
+		
+		return ret;
+	}
+
 	private static void f_ifnull() { JVMHelp.noim();}
 	private static void f_ifnonnull() { JVMHelp.noim();}
 	private static void f_goto_w() { JVMHelp.noim();}

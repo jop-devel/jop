@@ -62,17 +62,19 @@
 //	2005-05-30	wishbone interface (extension.vhd and wb_top.vhd)
 //	2005-06-13	move newarray to JVM.java
 //				use indirection (handle) for objects and arrays
+//	2005-06-14	added multianewarray to JVM.java, version is 
+//				again without handles
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
 
-#define HANDLE 1
+//#define HANDLE 1
 //
 //	'special' constant for a version number
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20050613
+version		= 20050614
 
 //
 //	io register
