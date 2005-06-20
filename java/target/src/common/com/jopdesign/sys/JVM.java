@@ -393,7 +393,7 @@ static Object o;
 
 synchronized (o) {
 		h = Native.rdIntMem(2);				// get heap pointer
-		Native.wrMem(cons+2, h);			// pointer to method table in objectref-1
+		Native.wrMem(cons+3, h);			// pointer to method table in objectref-1
 		++h;								// one increment for ptr to mt
 		ret = h;							// return pointer to object
 		val = Native.rdMem(cons);			// instance size

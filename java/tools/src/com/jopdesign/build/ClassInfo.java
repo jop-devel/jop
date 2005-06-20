@@ -14,7 +14,18 @@ import org.apache.bcel.classfile.*;
 /**
  * @author Flavius, Martin
  *
+ * Class struct:
  * 
+ * -n: class variables
+ *  0: instance size (class reference)
+ *  1: GC info field (one bit per field)
+ *  2: pointer to interface table
+ * 3+: method table, two words per entry
+ *   : class reference (pointer back to class info)
+ *   : constant pool (cp)
+ *   : optional interface table
+ * 
+ * Flavius type class struct:
  * 
  * A Class struct image should look as follows:
  * (the byte code for used Methods is output and at known locations)
@@ -35,7 +46,7 @@ import org.apache.bcel.classfile.*;
 
 public class ClassInfo {
 
-	static final int CLS_HEAD = 2;
+	static final int CLS_HEAD = 3;
 	static final int METH_STR = 2;
 	static final int CONST_STR = 1;
 
@@ -85,6 +96,7 @@ public class ClassInfo {
 		int[] idx;
 		int[] size;
 		boolean[] isStatic;
+		boolean[] isReference;
 	}
 
 	public JavaClass clazz;
@@ -98,6 +110,7 @@ public class ClassInfo {
 	
 	public ClFT clft;
 	private int instSize;
+	private int instGCinfo;
 
 	public List cpoolUsed;
 	public int cpoolArry[];
@@ -115,6 +128,7 @@ public class ClassInfo {
 		methodsAddress = 0;
 		cpoolAddress = 0;
 		instSize = 0;
+		instGCinfo = 0;
 		cpoolUsed = new LinkedList();
 
 		mapClassNames.put(clazz.getClassName(), this);
@@ -185,6 +199,7 @@ public class ClassInfo {
 	 * Calculate the size of the class info table,
 	 * adjust the addresses and return the next available
 	 * address.
+	 * Calculate GC info for the instance.
 	 * @param addr
 	 * @return
 	 */
@@ -194,7 +209,7 @@ public class ClassInfo {
 		if (JOPizer.useGC) {
 			System.out.println("TODO: GC info for the class");
 		}
-		
+		instGCinfo = 0;
 		// first are the class variables - the static fields
 		staticVarAddress = addr;
 		for (i=0; i<clft.len; ++i) {
@@ -203,6 +218,11 @@ public class ClassInfo {
 				// idx is now the static address
 				clft.idx[i] = addr;			
 				addr += clft.size[i]; 
+			} else {
+				// generate GC info for the instance
+				if (clft.isReference[i]) {
+					instGCinfo |= (1<<clft.idx[i]);
+				}
 			}
 		}
 		classRefAddress = addr;
@@ -483,6 +503,12 @@ out.print("\t//\tvirtual index: "+i+" args: "+mi.argsSize);
 				out.println("\t\t\t\t//\t"+clft.idx[i]+" "+clft.key[i]);				
 			}
 		}
+		if (instSize>31) {
+			System.err.println("Error: Object of "+clazz.getClassName()+" to big!");
+			System.exit(-1);
+		}
+		out.println("\t\t"+instGCinfo+",\t//\tinstance GC info");
+
 		String supname = "null";
 		if (superClass!=null) {
 			supname = superClass.clazz.getClassName();

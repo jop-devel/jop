@@ -8,6 +8,7 @@ package com.jopdesign.build;
 
 import java.util.*;
 import org.apache.bcel.classfile.*;
+import org.apache.bcel.generic.*;
 
 /**
  * 
@@ -113,6 +114,8 @@ System.err.println("build VT on class: "+cli.clazz);
 		clft.idx = new int[maxLen];
 		clft.size = new int[maxLen];
 		clft.isStatic = new boolean[maxLen];
+		clft.isReference = new boolean[maxLen];
+		
 		
 
 // System.out.println("// VT: "+clazzName);
@@ -131,6 +134,7 @@ System.err.println("build VT on class: "+cli.clazz);
 				clft.idx[i] = supFt.idx[i];
 				clft.size[i] = supFt.size[i];
 				clft.isStatic[i] = supFt.isStatic[i];
+				clft.isReference[i] = supFt.isReference[i];
 			}
 			clft.len = supFt.len;
 		}
@@ -181,6 +185,7 @@ System.err.println("build VT on class: "+cli.clazz);
 			if (j==clft.len) {		// a new field
 				clft.key[clft.len] = fieldId;
 				clft.size[clft.len] = size;
+				clft.isReference[clft.len] = field.getType() instanceof ReferenceType; 
 				if (field.isStatic()) {
 					clft.idx[clft.len] = nextStaticIndex;
 					clft.isStatic[clft.len] = true;

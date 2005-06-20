@@ -79,9 +79,8 @@ public class MethodInfo {
 				System.err.println("wrong size: "+cli.clazz.getClassName()+"."+methodId);
 				System.exit(-1);
 			}
-			
-
-			
+//System.out.println((mstack+m.getCode().getMaxLocals())+" "+
+//		m.getName()+" maxStack="+mstack+" locals="+m.getCode().getMaxLocals());
 		}
 	}
 
