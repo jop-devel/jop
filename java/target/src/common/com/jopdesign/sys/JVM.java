@@ -386,7 +386,6 @@ static Object o;
 	private static int f_new(int cons) {
 
 /* original non handle version
-*/
 		int h, val, ret;
 
 		// cons is a pointer to the class struct
@@ -404,8 +403,10 @@ synchronized (o) {
 		}
 }
 		return ret;
+*/
 
 /* Handle version:
+*/
 		int h, val, ret;
 
 		// cons is pointer to class struct
@@ -419,7 +420,7 @@ synchronized (o) {
 		Native.wrMem(h+2, h); 				// write handle
 		++h;
 		// end GC change
-		Native.wrMem(cons+2, h);			// pointer to method table in objectref-1
+		Native.wrMem(cons+3, h);			// pointer to method table in objectref-1
 		++h;								// one increment for ptr to mt
 		// GC change:
 		// ret = h;							// return pointer to object
@@ -429,15 +430,12 @@ synchronized (o) {
 		}
 }
 		return ret;
-*/
 
 	}
 
-	private static int f_newarray(int count) {
+	static int f_newarray(int count) {
 
-		// TODO: also change newarray in Startup.java!
 /* original non handle version
-*/
 		int h, ret;
 
 		//	ignore cons (type info)
@@ -454,8 +452,10 @@ synchronized (o) {
 		}
 }
 		return ret;
+*/
 
 /* Handle version
+*/
 		int h, ret;
 
 synchronized (o) {
@@ -475,14 +475,12 @@ synchronized (o) {
 		}
 }
 		return ret;
-*/
 
 	}
 
 	private static int f_anewarray(int count, int cons) {
 
 /* original non handle version
-*/
 		int h, ret;
 
 		//	ignore cons (type info)
@@ -499,9 +497,11 @@ synchronized (o) {
 		}
 }
 		return ret;
+*/
 
 
 /* Handle version
+*/
 		int h, ret;
 
 		//	ignore cons (type info)
@@ -523,7 +523,6 @@ synchronized (o) {
 		}
 }
 		return ret;
-*/
 	}
 
 

@@ -42,8 +42,7 @@ public static final int PTRS = 4;
 	// TODO add all changes???
 	public static final int METHOD_MAX_SIZE = 1024;
 
-	public static boolean useHandle = false;
-	public static boolean useGC = false;
+	public static boolean useHandle = true;
 
 	PrintWriter out;
 	

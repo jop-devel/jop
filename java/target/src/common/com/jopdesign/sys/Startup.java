@@ -28,21 +28,6 @@ public class Startup {
 	 */
 	static void boot() {
 		
-// Native.rdMem(0x1234);
-// Flash read
-// Native.rdMem(0x8000a);
-// NAND read
-// Native.rdMem(0x10000b);
-// Native.wrMem(0xab, 0x1234);
-// RAM mirror
-// Native.rdMem(0x80000000);
-// Native.wrMem(0xcd,0x80000000);
-// NAND Flash mirror
-// Native.rdMem(-1);
-// Native.wrMem(0xef, -1);
-
-
-
 
 		// place for some initialization:
 		// could be placed in <clinit> in the future
@@ -92,9 +77,7 @@ public class Startup {
 			// int args = cp & 0x01f;
 			cp >>>= 10;
 			System.out.print("start=");
-			System.out.print(var);
-			System.out.print(" len=");
-			System.out.println(len);
+			System.out.println(var);
 			interpret();
 		}
 	}
@@ -105,7 +88,7 @@ public class Startup {
 
 		pc = 0;
 		sp = 0;
-		int instr, val, ref;
+		int instr, val, ref, idx;
 
 		for (;;) {
 
@@ -151,11 +134,13 @@ public class Startup {
 				case 18 :		// ldc
 					stack[++sp] = Native.rdMem(cp+readBC8u());
 					break;
-				case 79 :		// iastore
+				case 79 :		// iastore				
 					val = stack[sp--];	// value
-					ref = stack[sp--];	// index
-					ref += stack[sp--];	// ref
-					Native.wrMem(val, ref);
+					idx = stack[sp--];	// index
+					ref = stack[sp--];	// ref
+					// handle:
+					ref = Native.rdMem(ref);
+					Native.wrMem(val, ref+idx);
 					break;
 				case 89 :		// dup
 					val = stack[sp];
@@ -227,31 +212,41 @@ public class Startup {
 
 	static void putfield() {
 
-		// TODO: handle version!
 		int idx = readBC16u();
 		int off = Native.rdMem(cp+idx);
 		int val = stack[sp--];
-		Native.wrMem(val, stack[sp--]+off);
+		int ref = stack[sp--];
+		// handle indirection:
+		ref = Native.rdMem(ref);
+
+		Native.wrMem(val, ref+off);
 	}
 
 	static void getfield() {
 
-		// TODO: handle version!
 		int idx = readBC16u();
 		int off = Native.rdMem(cp+idx);
-		stack[sp] = Native.rdMem(stack[sp]+off);
+		int ref = stack[sp];
+		// handle indirection:
+		ref = Native.rdMem(ref);
+
+		stack[sp] = Native.rdMem(ref+off);
+
+
 	}
 
 	static void newarray() {
 
-		// TODO: handle version!
 		readBC8u();			// ignore typ
-		int val = stack[sp--];	// count from stack
+		int val = stack[sp];	// count from stack
+		stack[sp] = JVM.f_newarray(val);
+/* non JVM, non handle version:
 		int heap = Native.rdIntMem(2);	// get heap pointer
 		Native.wrMem(val, heap);
 		++heap;
 		stack[++sp] = heap;				// ref to first element
 		heap += val;
 		Native.wrIntMem(heap, 2);		// write heap pointer
+*/
 	}
 }

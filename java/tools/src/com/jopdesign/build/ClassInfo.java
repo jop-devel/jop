@@ -206,9 +206,6 @@ public class ClassInfo {
 	public int setAddress(int addr) {
 		
 		int i;
-		if (JOPizer.useGC) {
-			System.out.println("TODO: GC info for the class");
-		}
 		instGCinfo = 0;
 		// first are the class variables - the static fields
 		staticVarAddress = addr;

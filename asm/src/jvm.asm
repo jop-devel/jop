@@ -64,17 +64,18 @@
 //				use indirection (handle) for objects and arrays
 //	2005-06-14	added multianewarray to JVM.java, version is 
 //				again without handles
+//	2005-06-20  use indirection, GC info in class struct
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
 
-//#define HANDLE 1
+#define HANDLE 1
 //
 //	'special' constant for a version number
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20050614
+version		= 20050620
 
 //
 //	io register
