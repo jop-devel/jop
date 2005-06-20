@@ -1,7 +1,7 @@
 set qu_proj=cycmin
 set projpath=quartus\%qu_proj%
-set p1=bench
-set p2=jbe
+set p1=test
+set p2=vmtest
 set p3=DoAll
 
 cd java

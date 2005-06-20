@@ -463,7 +463,8 @@ synchronized (o) {
 		Native.wrIntMem(h+2+count, 2);		// write heap pointer
 		// GC change:
 		ret = h;
-		Native.wrMem(h+2, h); 				// write handle
+		Native.wrMem(h+2, h); // write handle
+
 		++h;
 		// end GC change
 		Native.wrMem(count, h);				// count as first element
@@ -480,49 +481,8 @@ synchronized (o) {
 
 	private static int f_anewarray(int count, int cons) {
 
-/* original non handle version
-		int h, ret;
-
 		//	ignore cons (type info)
-
-synchronized (o) {
-		h = Native.rdIntMem(2);				// get heap pointer
-		Native.wrMem(count, h);				// count as first element
-		++h;								// one increment for count
-		ret = h;							// return pointer to first element
-		count += h;
-		Native.wrIntMem(count, 2);			// write heap pointer
-		for (; h<count; ++h) {
-			Native.wrMem(0, h);				// zero array
-		}
-}
-		return ret;
-*/
-
-
-/* Handle version
-*/
-		int h, ret;
-
-		//	ignore cons (type info)
-
-synchronized (o) {
-		h = Native.rdIntMem(2);				// get heap pointer
-		Native.wrIntMem(h+2+count, 2);		// write heap pointer
-		// GC change:
-		ret = h;
-		Native.wrMem(h+2, h); 				// write handle
-		++h;
-		// end GC change
-		Native.wrMem(count, h);				// count as first element
-		++h;								// one increment for count
-//		ret = h;							// return pointer to first element
-		count += h;
-		for (; h<count; ++h) {
-			Native.wrMem(0, h);				// zero array
-		}
-}
-		return ret;
+		return f_newarray(count);
 	}
 
 
@@ -617,9 +577,12 @@ if (enterCnt<0) {
 		// first dimension
 		int cnt = Native.rdIntMem(sp+1);
 		int cnt2 = Native.rdIntMem(sp+2);
-		ret = f_newarray(cnt);
+		// we ignore type on anewarray
+		ret = f_anewarray(cnt, 0);
+		// handle
+		int ref = Native.rdMem(ret);
 		for (i=0; i<cnt; ++i) {
-			Native.wrMem(f_newarray(cnt2), ret+i);
+			Native.wrMem(f_newarray(cnt2), ref+i);
 		}
 		
 		return ret;

@@ -18,7 +18,7 @@ dir /b /s src\common\com\jopdesign\sys\*.java >> .sourcefiles
 echo on
 javac -d dist/classes -sourcepath src/common @.sourcefiles
 del .sourcefiles
-javac -d dist/classes -sourcepath src/common;src/%appdir% src/%appdir%/%startclass%.java
+javac -d dist/classes -sourcepath src/common;src/bench;src/%appdir% src/%appdir%/%startclass%.java
 cd dist\classes
 jar cf ../lib/classes.zip *
 cd ..\..
