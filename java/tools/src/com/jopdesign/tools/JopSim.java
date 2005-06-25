@@ -171,7 +171,7 @@ System.out.println(mp+" "+pc);
 // System.out.println(addr+" "+mem[addr]);
 		ioCnt += 12;
 
-		if (addr>heap || addr<0) {
+		if (addr>MAX_MEM || addr<0) {
 			System.out.println("readInstrMem: wrong address: "+addr);
 			System.exit(-1);
 		}
@@ -184,7 +184,7 @@ System.out.println(mp+" "+pc);
 		rdMemCnt++;
 		ioCnt += 12;
 
-		if (addr>heap || addr<0) {
+		if (addr>MAX_MEM || addr<0) {
 			System.out.println("readMem: wrong address: "+addr);
 			System.exit(-1);
 		}
@@ -196,7 +196,7 @@ System.out.println(mp+" "+pc);
 		wrMemCnt++;
 		ioCnt += 12;
 
-		if (addr>heap || addr<0) {
+		if (addr>MAX_MEM || addr<0) {
 			System.out.println("writeMem: wrong address: "+addr);
 			System.exit(-1);
 		}

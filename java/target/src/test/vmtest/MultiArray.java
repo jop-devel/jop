@@ -4,8 +4,9 @@ public class MultiArray {
 
 	public static void main(String[] agrgs) {
 
+		boolean ok = true;
 
-		System.out.println("multianewarray:");
+		System.out.print("multianewarray test ");
 		int ia[] = new int[11];
 		int val = 1;
 		
@@ -38,13 +39,16 @@ public class MultiArray {
 		for (int i=0; i<3; ++i) {
 			for (int j=0; j<5; ++j) {
 				if (ia2[i][j] != i+j) {
-					System.out.println("Error");
-				} else {
-					System.out.println("ok");
+					ok = false;
 				}
 			}
 		}
 
+		if (ok) {
+			System.out.println("ok");			
+		} else {
+			System.out.println("Error");
+		}
 		
 
 	}

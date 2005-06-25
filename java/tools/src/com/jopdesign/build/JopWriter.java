@@ -45,8 +45,10 @@ public class JopWriter {
 		out.println("\t\t"+ClassInfo.jvmAddress+",\t// pointer to first non Object method struct of class JVM");
 		out.println("\t\t"+ClassInfo.jvmHelpAddress+",\t// pointer to first non Object method struct of of class JVMHelp");
 		out.println("\t\t"+ClassInfo.mainAddress+",\t// pointer to main method struct");
+		out.println("\t\t"+ClassInfo.addrRefStatic+",\t// pointer to static reference fields");
+		out.println("\t\t"+ClassInfo.cntRefStatic+",\t// number of static reference fields");
 
-		if (ClassInfo.mainAddress==-1) {
+		if (ClassInfo.mainAddress==0 || ClassInfo.mainAddress==-1) {
 			System.out.println("Error: no main() method found");
 			System.exit(-1);
 		}
@@ -55,6 +57,8 @@ public class JopWriter {
 		out.println("//TODO: GC info");
 		
 		dumpStrings();
+		
+		dumpStaticFields();
 		
 		dumpClassInfo();
 		
@@ -77,9 +81,27 @@ public class JopWriter {
 		}
 	}
 	
+	private void dumpStaticFields() {
+		
+		Iterator it;
+		// dump the static value fields
+		it = jz.clazzes.iterator();
+		while (it.hasNext()) {
+			ClassInfo cli = (ClassInfo) it.next();
+			cli.dumpStaticFields(out, false);			
+		}	
+		// dump the static ref fields
+		it = jz.clazzes.iterator();
+		while (it.hasNext()) {
+			ClassInfo cli = (ClassInfo) it.next();
+			cli.dumpStaticFields(out, true);			
+		}	
+	}
+	
 	private void dumpClassInfo() {
 		
-		Iterator it = jz.clazzes.iterator();
+		Iterator it;
+		it = jz.clazzes.iterator();
 		while (it.hasNext()) {
 			ClassInfo cli = (ClassInfo) it.next();
 			cli.dump(out);			

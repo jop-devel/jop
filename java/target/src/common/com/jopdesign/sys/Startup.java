@@ -22,26 +22,32 @@ public class Startup {
 	final static int MAX_STACK = 100;
 	static int sp, pc, cp;
 	
+	static boolean started;
+	
 	/**
 	 * called from jvm.asm as first method.
 	 * Do all initialization here and call main method.
 	 */
 	static void boot() {
 		
-
+		started = false;
+		var = Native.rdMem(0);		// pointer to 'special' pointers
+		// first initialize the GC with the address of static ref. fields
+		GC.init(var+4);
 		// place for some initialization:
 		// could be placed in <clinit> in the future
 		System.init();
 		msg();
+		started = true;
 		clazzinit();
 		
 		// call main()
 		var = Native.rdMem(0);		// pointer to 'special' pointers
-		var = Native.rdMem(var+3);	// pointer to mein method struct
+		var = Native.rdMem(var+3);	// pointer to main method struct
 		Native.invoke(0, var);		// call main (with null pointer on TOS
-		JVMHelp.wr("\r\nJVM exit!\r\n");
-		for (;;) ;
+		exit();
 	}
+	
 
 	static void msg() {
 
@@ -57,11 +63,15 @@ public class Startup {
 		JVMHelp.wr("\r\n");
 	}
 
+	public static void exit() {
+		JVMHelp.wr("\r\nJVM exit!\r\n");
+		for (;;) ;
+	}
 	static void clazzinit() {
 
 		stack = new int[MAX_STACK];
 
-		int table = Native.rdMem(0)+4;		// start of clinit table
+		int table = Native.rdMem(0)+6;		// start of clinit table
 		int cnt = Native.rdMem(table);		// number of methods
 		++table;
 		for (int i=0; i<cnt; ++i) {

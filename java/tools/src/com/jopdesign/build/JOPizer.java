@@ -31,7 +31,8 @@ public class JOPizer {
 	public final static String stringClass = "java.lang.String";
 	public final static String objectClass = "java.lang.Object";
 
-public static final int PTRS = 4;
+	public static final int PTRS = 6;
+
 	public static final int IMPORTANT_PTRS = 12;
 	public static final int GCINFO_NONREFARRY = 6; // gci is at -1 from classinfo
 	public static final int CLASSINFO_NONREFARRY = GCINFO_NONREFARRY + 1;
@@ -221,14 +222,26 @@ public static final int PTRS = 4;
 				// How long is the string table?
 				StringInfo.stringTableAddress = jz.pointerAddr+PTRS+cntClinit+1;
 				
+				// calculate addresses for static fields
+				jz.iterate(new CountStaticFields(jz));
+				int addrVal = StringInfo.stringTableAddress + StringInfo.length;
+				ClassInfo.addrValueStatic = addrVal; 
+				int addrRef = ClassInfo.addrValueStatic + ClassInfo.cntValueStatic;
+				ClassInfo.addrRefStatic = addrRef;
+				
 				// Start of class info
-				jz.clinfoAddr = StringInfo.stringTableAddress + StringInfo.length;
+				jz.clinfoAddr = ClassInfo.addrRefStatic + ClassInfo.cntRefStatic;
+				
 				// Calculate class info addresses
 				ClassAddress cla = new ClassAddress(jz, jz.clinfoAddr);
 				jz.iterate(cla);
 				// Now all sizes are known
 				jz.heapStart = cla.getAddress();
-				
+
+				// set back the start addresses
+				ClassInfo.addrValueStatic = addrVal; 
+				ClassInfo.addrRefStatic = addrRef;
+
 				// As all addresses are now known we can
 				// resolve the constants.
 				jz.iterate(new ResolveCPool(jz));

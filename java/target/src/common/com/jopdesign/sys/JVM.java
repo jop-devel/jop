@@ -411,24 +411,28 @@ synchronized (o) {
 
 		// cons is pointer to class struct
 
-synchronized (o) {
-		h = Native.rdIntMem(2);				// get heap pointer
-		val = Native.rdMem(cons);			// instance size
-		Native.wrIntMem(h+2+val, 2);		// write heap pointer
-		// GC change:
-		ret = h;
-		Native.wrMem(h+2, h); 				// write handle
-		++h;
-		// end GC change
-		Native.wrMem(cons+3, h);			// pointer to method table in objectref-1
-		++h;								// one increment for ptr to mt
-		// GC change:
-		// ret = h;							// return pointer to object
-		val += h;
-		for (; h<val; ++h) {
-			Native.wrMem(0, h);				// zero object
+		synchronized (o) {
+
+			ret = GC.newObject(cons);
+/*
+			h = Native.rdIntMem(2);				// get heap pointer
+			val = Native.rdMem(cons);			// instance size
+			Native.wrIntMem(h+2+val, 2);		// write heap pointer
+			// GC change:
+			ret = h;
+			Native.wrMem(h+2, h); 				// write handle
+			++h;
+			// end GC change
+			Native.wrMem(cons+3, h);			// pointer to method table in objectref-1
+			++h;								// one increment for ptr to mt
+			// GC change:
+			// ret = h;							// return pointer to object
+			val += h;
+			for (; h<val; ++h) {
+				Native.wrMem(0, h);				// zero object
+			}
+*/
 		}
-}
 		return ret;
 
 	}
@@ -458,31 +462,43 @@ synchronized (o) {
 */
 		int h, ret;
 
-synchronized (o) {
-		h = Native.rdIntMem(2);				// get heap pointer
-		Native.wrIntMem(h+2+count, 2);		// write heap pointer
-		// GC change:
-		ret = h;
-		Native.wrMem(h+2, h); // write handle
+		synchronized (o) {
+			
+			ret = GC.newArray(count, false);
 
-		++h;
-		// end GC change
-		Native.wrMem(count, h);				// count as first element
-		++h;								// one increment for count
-//		ret = h;							// return pointer to first element
-		count += h;
-		for (; h<count; ++h) {
-			Native.wrMem(0, h);				// zero array
+/*
+			h = Native.rdIntMem(2);				// get heap pointer
+			Native.wrIntMem(h+2+count, 2);		// write heap pointer
+			// GC change:
+			ret = h;
+			Native.wrMem(h+2, h); // write handle
+	
+			++h;
+			// end GC change
+			Native.wrMem(count, h);				// count as first element
+			++h;								// one increment for count
+	//		ret = h;							// return pointer to first element
+			count += h;
+			for (; h<count; ++h) {
+				Native.wrMem(0, h);				// zero array
+			}
+*/
 		}
-}
 		return ret;
 
 	}
 
 	private static int f_anewarray(int count, int cons) {
 
-		//	ignore cons (type info)
-		return f_newarray(count);
+		// ignore cons (type info)
+		// should be different for the GC!!!
+		int h, ret;
+
+		synchronized (o) {
+			
+			ret = GC.newArray(count, true);
+		}
+		return ret;
 	}
 
 

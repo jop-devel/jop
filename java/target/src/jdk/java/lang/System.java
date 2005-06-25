@@ -4,8 +4,7 @@ package java.lang;
 import java.io.InputStream;
 import java.io.PrintStream;
 
-import com.jopdesign.sys.Const;
-import com.jopdesign.sys.Native;
+import com.jopdesign.sys.*;
 
 public final class System {
 
@@ -27,5 +26,9 @@ public final class System {
 
 		out = new PrintStream();
 		in = new InputStream();
+	}
+	
+	public static void exit(int i) {
+		Startup.exit();
 	}
 }

@@ -99,6 +99,12 @@ public class ClassInfo {
 		boolean[] isReference;
 	}
 
+	static int cntValueStatic = 0;
+	static int cntRefStatic = 0;
+	static int addrValueStatic = 0;
+	static int addrRefStatic = 0;
+	
+	
 	public JavaClass clazz;
 	public ClassInfo superClass;
 
@@ -116,7 +122,8 @@ public class ClassInfo {
 	public int cpoolArry[];
 	public String cpoolComments[];
 	
-	public int staticVarAddress;
+	public int staticValueVarAddress;
+	public int staticRefVarAddress;
 	public int classRefAddress;
 	public int methodsAddress;
 	public int cpoolAddress;
@@ -195,6 +202,21 @@ public class ClassInfo {
 	public static IT getITObject() {
 		return new IT();
 	}
+	
+	void cntStaticFields() {
+		
+		int i;
+		for (i=0; i<clft.len; ++i) {
+			if (clft.isStatic[i]) {
+				if (clft.isReference[i]) {
+					cntRefStatic += clft.size[i];
+				} else {
+					cntValueStatic += clft.size[i];
+				}
+			}
+		}
+	}
+	
 	/**
 	 * Calculate the size of the class info table,
 	 * adjust the addresses and return the next available
@@ -208,13 +230,19 @@ public class ClassInfo {
 		int i;
 		instGCinfo = 0;
 		// first are the class variables - the static fields
-		staticVarAddress = addr;
+		staticRefVarAddress = addrRefStatic;
+		staticValueVarAddress = addrValueStatic;
 		for (i=0; i<clft.len; ++i) {
 			if (clft.isStatic[i]) {
 				// resolve the address
 				// idx is now the static address
-				clft.idx[i] = addr;			
-				addr += clft.size[i]; 
+				if (clft.isReference[i]) {
+					clft.idx[i] = addrRefStatic;			
+					addrRefStatic += clft.size[i];
+				} else {
+					clft.idx[i] = addrValueStatic;			
+					addrValueStatic += clft.size[i];
+				}
 			} else {
 				// generate GC info for the instance
 				if (clft.isReference[i]) {
@@ -373,6 +401,11 @@ public class ClassInfo {
 							break;
 						}
 						MethodInfo minf = clinf.getVTMethodInfo(sigstr);
+						if (minf==null) {
+							System.out.println("Error: Method "+sigstr+" not found.");
+							System.out.println("Invoked by "+clazz.getClassName());
+							System.exit(1);
+						}
 						if(minf.method.isStatic() ||	
 							// <init> and privat methods are called with invokespecial
 							// which mapps in jvm.asm to invokestatic
@@ -472,24 +505,35 @@ out.print("\t//\tvirtual index: "+i+" args: "+mi.argsSize);
 	
 	
 	
-	public void dump(PrintWriter out) {
+	public void dumpStaticFields(PrintWriter out, boolean ref) {
 		
-		int i;
+		int i, addr;
+		if (ref) {
+			addr = staticRefVarAddress;
+		} else {
+			addr = staticValueVarAddress;
+		}
 		out.println("//");
-		out.println("//\t"+staticVarAddress+": "+clazz.getClassName()+
+		out.println("//\t"+addr+": "+clazz.getClassName()+
 				" static fields");
 		out.println("//");
 		for (i=0; i<clft.len; ++i) {
 			if (clft.isStatic[i]) {
-				if (clft.size[i]==1) {
-					out.print("\t\t0,");
-				} else {
-					out.print("\t\t0, 0,");
+				if (clft.isReference[i]==ref) {
+					if (clft.size[i]==1) {
+						out.print("\t\t0,");
+					} else {
+						out.print("\t\t0, 0,");
+					}
+					out.println("\t//\t"+clft.idx[i]+": "+clft.key[i]);				
 				}
-				out.println("\t//\t"+clft.idx[i]+": "+clft.key[i]);
 			}
 		}
+	}
 
+	public void dump(PrintWriter out) {
+			
+			int i;
 		
 		out.println("//");
 		out.println("//\t"+classRefAddress+": "+clazz.getClassName());
