@@ -255,12 +255,12 @@ set_global_assignment -name TCO_REQUIREMENT 2.5ns
 
 # Analysis & Synthesis Assignments
 # ================================
-set_global_assignment -name TOP_LEVEL_ENTITY jop
 set_global_assignment -name MUX_RESTRUCTURE AUTO
 set_global_assignment -name SAVE_DISK_SPACE OFF
 set_global_assignment -name DEVICE_FILTER_SPEED_GRADE 6
 set_global_assignment -name FAMILY Cyclone
 set_global_assignment -name CYCLONE_OPTIMIZATION_TECHNIQUE SPEED
+set_global_assignment -name TOP_LEVEL_ENTITY jop
 
 # Fitter Assignments
 # ==================
