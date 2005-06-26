@@ -75,7 +75,7 @@ public class Flash {
 		if (i==0x1c0 && j==0x1c0) {
 			Dbg.wr("status OK\n");
 		} else {
-			Dbg.wr("error reading Flash\n");
+			Dbg.wr("error reading NAND status\n");
 		}
 
 	}

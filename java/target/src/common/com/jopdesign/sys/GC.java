@@ -12,8 +12,8 @@ package com.jopdesign.sys;
 public class GC {
 	
 	static final int MEM_START = 16384; // 64KB for .jop
-//	static final int MEM_SIZE = 5000;
-	static final int MEM_SIZE = 256000-16384;
+	static final int MEM_SIZE = 10000;
+//	static final int MEM_SIZE = 256000-16384;
 	/**
 	 * The handle contains following data:
 	 * 0 pointer to the object in the heap
@@ -284,7 +284,7 @@ public class GC {
 		}
 	}
 
-	static void gc() {
+	public static void gc() {
 		System.out.print("GC called, ");
 		System.out.print(free());
 		System.out.print(" words remaining - now ");
@@ -414,6 +414,20 @@ public class GC {
 	// not used in JOP
 	static void setField(int ref, int off, int val) {
 		Native.wrMem(val, translate(ref)+off);
+	}
+
+	/**
+	 * @return
+	 */
+	public static int freeMemory() {
+		return free()*4;
+	}
+
+	/**
+	 * @return
+	 */
+	public static int totalMemory() {
+		return HEAP_SIZE*4;
 	}
 	
 /*	
