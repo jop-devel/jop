@@ -8,7 +8,10 @@ pause Compilation ok? Start download?
 
 rem jbi32 -dDO_PROGRAM=1 -aPROGRAM ..\..\jbc\cycmin.jbc
 rem jbi32 -dDO_PROGRAM=1 -aPROGRAM ..\..\jbc\cyc_conf.jbc
-jbi32 -dDO_PROGRAM=1 -aCONFIGURE ..\..\jbc\cycmin100.jbc
+rem jbi32 -dDO_PROGRAM=1 -aCONFIGURE ..\..\jbc\cycmin100.jbc
+rem jbi32 -dDO_PROGRAM=1 -aCONFIGURE ..\..\jbc\cyc12min.jbc
+rem jbi32 -dDO_PROGRAM=1 -aCONFIGURE ..\..\jbc\cycbaseio60.jbc
+jbi32 -dDO_PROGRAM=1 -aCONFIGURE ..\..\jbc\cycmin.jbc
 ..\..\down -e dist\bin\%project%.jop COM1
 
 rem java -cp ../tools/dist/lib/jop-tools.jar -Dlog="false" -Dhandle="true" com.jopdesign.tools.JopSim dist\bin\%project%.jop
