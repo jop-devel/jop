@@ -1,22 +1,16 @@
-# Copyright (C) 1991-2004 Altera Corporation
-# Any  megafunction  design,  and related netlist (encrypted  or  decrypted),
-# support information,  device programming or simulation file,  and any other
-# associated  documentation or information  provided by  Altera  or a partner
-# under  Altera's   Megafunction   Partnership   Program  may  be  used  only
-# to program  PLD  devices (but not masked  PLD  devices) from  Altera.   Any
-# other  use  of such  megafunction  design,  netlist,  support  information,
-# device programming or simulation file,  or any other  related documentation
-# or information  is prohibited  for  any  other purpose,  including, but not
-# limited to  modification,  reverse engineering,  de-compiling, or use  with
-# any other  silicon devices,  unless such use is  explicitly  licensed under
-# a separate agreement with  Altera  or a megafunction partner.  Title to the
-# intellectual property,  including patents,  copyrights,  trademarks,  trade
-# secrets,  or maskworks,  embodied in any such megafunction design, netlist,
-# support  information,  device programming or simulation file,  or any other
-# related documentation or information provided by  Altera  or a megafunction
-# partner, remains with Altera, the megafunction partner, or their respective
-# licensors. No other licenses, including any licenses needed under any third
-# party's intellectual property, are provided herein.
+# Copyright (C) 1991-2005 Altera Corporation
+# Your use of Altera Corporation's design tools, logic functions 
+# and other software and tools, and its AMPP partner logic       
+# functions, and any output files any of the foregoing           
+# (including device programming or simulation files), and any    
+# associated documentation or information are expressly subject  
+# to the terms and conditions of the Altera Program License      
+# Subscription Agreement, Altera MegaCore Function License       
+# Agreement, or other applicable license agreement, including,   
+# without limitation, that your use is for the sole purpose of   
+# programming logic devices manufactured by Altera and sold by   
+# Altera or its authorized distributors.  Please refer to the    
+# applicable agreement for further details.
 
 
 # The default values for assignments are stored in the file
@@ -33,7 +27,7 @@
 # ========================
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION 4.0
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "02:30:11  APRIL 04, 2004"
-set_global_assignment -name LAST_QUARTUS_VERSION 4.2
+set_global_assignment -name LAST_QUARTUS_VERSION 5.0
 set_global_assignment -name CDF_FILE jop.cdf
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_types_60.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/wishbone/wb_pack.vhd
@@ -461,7 +455,7 @@ set_global_assignment -name AUTO_RESTART_CONFIGURATION OFF
 
 # Simulator Assignments
 # =====================
-set_global_assignment -name GLITCH_INTERVAL "1 "
+set_global_assignment -name GLITCH_INTERVAL 1
 
 # Design Assistant Assignments
 # ============================
@@ -476,4 +470,4 @@ set_global_assignment -name ENABLE_SIGNALTAP Off
 
 # LogicLock Region Assignments
 # ============================
-set_global_assignment -name LOGICLOCK_INCREMENTAL_COMPILE_ASSIGNMENT off
+set_global_assignment -name LOGICLOCK_INCREMENTAL_COMPILE_ASSIGNMENT OFF

@@ -39,6 +39,7 @@ library ieee ;
 use ieee.std_logic_1164.all ;
 use ieee.numeric_std.all ;
 
+use work.jop_types.all;
 use work.wb_pack.all;
 
 entity extension is
@@ -72,7 +73,12 @@ port (
 	io_rd		: out std_logic;
 	io_wr		: out std_logic;
 	io_addr_wr	: out std_logic;
-	io_data		: in std_logic_vector(31 downto 0)		-- output of io module
+	io_data		: in std_logic_vector(31 downto 0);		-- output of io module
+
+-- io ports that go to the wishbone interface
+
+	wb_io	: inout io_ports
+
 );
 end extension;
 
@@ -270,7 +276,8 @@ end process;
 		clk => clk,
 		reset => reset,
 		wb_out => wb_out,
-		wb_in => wb_in
+		wb_in => wb_in,
+		wb_io => wb_io
 	);
 
 	wb_out.adr_o <= wb_addr;

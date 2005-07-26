@@ -3,26 +3,27 @@ quietly WaveActivateNextPane {} 0
 add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/clk_int
 add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/int_res
 add wave -noupdate -format Literal -radix ascii /tb_jop/cmp_jop/cmp_io/cmp_ua/char
+add wave -noupdate -format Logic /tb_jop/cmp_jop/io_r(20)
 add wave -noupdate -divider wishbone
 add wave -noupdate -format Literal -radix hexadecimal -expand /tb_jop/cmp_jop/cmp_ext/wbtop/wb_in
 add wave -noupdate -format Literal -radix hexadecimal -expand /tb_jop/cmp_jop/cmp_ext/wbtop/wb_out
 add wave -noupdate -divider {wb slave}
-add wave -noupdate -format Logic /tb_jop/cmp_jop/cmp_ext/wbtop/gsl__0/wbsl/rd
-add wave -noupdate -format Logic /tb_jop/cmp_jop/cmp_ext/wbtop/gsl__0/wbsl/wr
-add wave -noupdate -format Logic /tb_jop/cmp_jop/cmp_ext/wbtop/gsl__0/wbsl/ack
-add wave -noupdate -format Logic /tb_jop/cmp_jop/cmp_ext/wbtop/gsl__0/wbsl/ena
-add wave -noupdate -format Literal /tb_jop/cmp_jop/cmp_ext/wbtop/gsl__0/wbsl/cnt
-add wave -noupdate -format Literal /tb_jop/cmp_jop/cmp_ext/wbtop/gsl__0/wbsl/xyz
-add wave -noupdate -format Literal /tb_jop/cmp_jop/cmp_ext/wbtop/gsl__0/wbsl/wb_out
-add wave -noupdate -format Literal /tb_jop/cmp_jop/cmp_ext/wbtop/gsl__0/wbsl/wb_in
-add wave -noupdate -format Logic /tb_jop/cmp_jop/cmp_ext/wbtop/gsl__1/wbsl/rd
-add wave -noupdate -format Logic /tb_jop/cmp_jop/cmp_ext/wbtop/gsl__1/wbsl/wr
-add wave -noupdate -format Logic /tb_jop/cmp_jop/cmp_ext/wbtop/gsl__1/wbsl/ack
-add wave -noupdate -format Logic /tb_jop/cmp_jop/cmp_ext/wbtop/gsl__1/wbsl/ena
-add wave -noupdate -format Literal /tb_jop/cmp_jop/cmp_ext/wbtop/gsl__1/wbsl/cnt
-add wave -noupdate -format Literal /tb_jop/cmp_jop/cmp_ext/wbtop/gsl__1/wbsl/xyz
-add wave -noupdate -format Literal /tb_jop/cmp_jop/cmp_ext/wbtop/gsl__1/wbsl/wb_out
-add wave -noupdate -format Literal /tb_jop/cmp_jop/cmp_ext/wbtop/gsl__1/wbsl/wb_in
+add wave -noupdate -format Logic /tb_jop/cmp_jop/cmp_ext/wbtop/wbsl/rd
+add wave -noupdate -format Logic /tb_jop/cmp_jop/cmp_ext/wbtop/wbsl/wr
+add wave -noupdate -format Logic /tb_jop/cmp_jop/cmp_ext/wbtop/wbsl/ack
+add wave -noupdate -format Logic /tb_jop/cmp_jop/cmp_ext/wbtop/wbsl/ena
+add wave -noupdate -format Literal /tb_jop/cmp_jop/cmp_ext/wbtop/wbsl/cnt
+add wave -noupdate -format Literal /tb_jop/cmp_jop/cmp_ext/wbtop/wbsl/xyz
+add wave -noupdate -format Literal /tb_jop/cmp_jop/cmp_ext/wbtop/wbsl/wb_out
+add wave -noupdate -format Literal /tb_jop/cmp_jop/cmp_ext/wbtop/wbsl/wb_in
+add wave -noupdate -format Logic /tb_jop/cmp_jop/cmp_ext/wbtop/wbsl/rd
+add wave -noupdate -format Logic /tb_jop/cmp_jop/cmp_ext/wbtop/wbsl/wr
+add wave -noupdate -format Logic /tb_jop/cmp_jop/cmp_ext/wbtop/wbsl/ack
+add wave -noupdate -format Logic /tb_jop/cmp_jop/cmp_ext/wbtop/wbsl/ena
+add wave -noupdate -format Literal /tb_jop/cmp_jop/cmp_ext/wbtop/wbsl/cnt
+add wave -noupdate -format Literal /tb_jop/cmp_jop/cmp_ext/wbtop/wbsl/xyz
+add wave -noupdate -format Literal /tb_jop/cmp_jop/cmp_ext/wbtop/wbsl/wb_out
+add wave -noupdate -format Literal /tb_jop/cmp_jop/cmp_ext/wbtop/wbsl/wb_in
 add wave -noupdate -divider {wishbone end}
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cmp_core/cmp_fch/pc
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cmp_core/cmp_dec/ir
@@ -195,4 +196,4 @@ configure wave -gridperiod 1
 configure wave -griddelta 40
 configure wave -timeline 0
 update
-WaveRestoreZoom {0 ps} {2100 ns}
+WaveRestoreZoom {23005 ns} {25105 ns}

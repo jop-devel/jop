@@ -1,3 +1,4 @@
+rem use Makefile instead
 set qu_proj=cycmin
 set projpath=quartus\%qu_proj%
 set p1=test

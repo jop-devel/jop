@@ -1,5 +1,5 @@
 --
---	wb_top.vhd
+--	wb_top_guitar.vhd
 --
 --	The top level for wishbone devices connected to JOP.
 --	Do the address decoding here for the various slaves.
@@ -35,7 +35,7 @@
 --          
 --          
 --
---	2005-05-30	first version with two simple test slaves
+--	2005-06-30	top level for guitar project
 --
 --	todo:
 --
@@ -72,26 +72,43 @@ architecture rtl of wb_top is
 
 begin
 
+--
+--	unused and input pins tri state
+--
+	wb_io.l(18 downto 1) <= (others => 'Z');
+	wb_io.l(20) <= 'Z';
+	wb_io.r(18 downto 1) <= (others => 'Z');
+	wb_io.t <= (others => 'Z');
+	wb_io.b <= (others => 'Z');
+
 --	this is a simple point to point connection
 --	wb_connect(wb_in, wb_out,
 --		wb_s_in, wb_s_out);
 
+
+	wbsl: entity work.wb_guitar port map(
+		clk => clk,
+		reset => reset,
+		wb_in => wbs_in(0),
+		wb_out => wbs_out(0),
+		adc_in => wb_io.l(20),
+		adc_out => wb_io.l(19),
+		dac_l => wb_io.r(20),
+		dac_r => wb_io.r(19)
+	);
 	--
 	-- two simple test slaves
 	--
 	gsl: for i in 0 to SLAVE_NR-1 generate
-		wbsl: entity work.wb_test_slave port map(
-			clk => clk,
-			reset => reset,
-			wb_in => wbs_in(i),
-			wb_out => wbs_out(i)
-		);
 		wbs_in(i).dat_i <= wb_out.dat_o;
 		wbs_in(i).we_i <= wb_out.we_o;
 		wbs_in(i).adr_i <= wb_out.adr_o(S_ADDR_SIZE-1 downto 0);
 		wbs_in(i).cyc_i <= wb_out.cyc_o;
 	end generate;
 
+-- the second slave is not used:
+	wbs_out(1).dat_o <= (others => '0');
+	wbs_out(1).ack_o <= wbs_in(1).cyc_i and wbs_in(1).stb_i;
 --
 --	This is the address decoding and the data muxer.
 --

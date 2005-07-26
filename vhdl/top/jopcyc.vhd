@@ -167,7 +167,12 @@ port (
 	io_rd		: out std_logic;
 	io_wr		: out std_logic;
 	io_addr_wr	: out std_logic;
-	io_data		: in std_logic_vector(31 downto 0)		-- output of io module
+	io_data		: in std_logic_vector(31 downto 0);		-- output of io module
+
+-- io ports that go to the wishbone interface
+
+	wb_io	: inout io_ports
+
 );
 end component;
 
@@ -352,7 +357,11 @@ end process;
 			ext_addr, rd, wr, bsy, stack_din,
 			mem_rd, mem_wr, mem_addr_wr, mem_bc_rd,
 			mem_dout, mem_bcstart, mem_bsy,
-			io_rd, io_wr, io_addr_wr, io_dout
+			io_rd, io_wr, io_addr_wr, io_dout,
+			wb_io.b => io_b,
+			wb_io.l => io_l,
+			wb_io.r => io_r,
+			wb_io.t => io_t
 		);
 
 	cmp_mem: mem32 generic map (jpc_width, block_bits, ram_cnt, rom_cnt)
