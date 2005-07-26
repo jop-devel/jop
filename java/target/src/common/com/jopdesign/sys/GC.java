@@ -12,8 +12,8 @@ package com.jopdesign.sys;
 public class GC {
 	
 	static final int MEM_START = 16384; // 64KB for .jop
-	static final int MEM_SIZE = 10000;
-//	static final int MEM_SIZE = 256000-16384;
+//	static final int MEM_SIZE = 10000;
+	static final int MEM_SIZE = 256000-16384;
 	/**
 	 * The handle contains following data:
 	 * 0 pointer to the object in the heap
