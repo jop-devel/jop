@@ -65,6 +65,7 @@
 //	2005-06-14	added multianewarray to JVM.java, version is 
 //				again without handles
 //	2005-06-20  use indirection, GC info in class struct
+//	2005-07-28	fix missing indirection bug in thread stack move (int2ext and ext2int)
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -75,7 +76,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20050620
+version		= 20050728
 
 //
 //	io register
@@ -1362,6 +1363,12 @@ jopsys_int2ext:
 			ldvp
 			stm	d			// save vp
 			stm	c			// save counter
+#ifdef HANDLE
+			stmra			// read handle indirection
+			wait			// for the GC
+			wait
+			ldmrd
+#endif
 			stm	a			// extern address
 			stm	b			// intern address
 			ldm	a
@@ -1403,6 +1410,12 @@ jopsys_ext2int:
 			stm	d			// save vp
 			stm	c			// save counter
 			stm	b			// intern address
+#ifdef HANDLE
+			stmra			// read handle indirection
+			wait			// for the GC
+			wait
+			ldmrd
+#endif
 			stm	a			// extern address
 			ldm	a
 			ldm	c

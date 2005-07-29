@@ -1326,6 +1326,10 @@ System.out.println("new heap: "+heap);
 // public static native void int2extMem(int intAdr, int extAdr, int cnt);
 					a = stack[sp--];
 					b = stack[sp--];
+					if (useHandle) {
+						// handle needs indirection
+						b = readMem(b);
+					}
 					c = stack[sp--];
 					for(; a>=0; --a) {
 						writeMem(b+a, stack[c+a]);
@@ -1336,6 +1340,10 @@ System.out.println("new heap: "+heap);
 					a = stack[sp--];
 					b = stack[sp--];
 					c = stack[sp--];
+					if (useHandle) {
+						// handle needs indirection
+						c = readMem(c);
+					}
 					for(; a>=0; --a) {
 						stack[b+a] = readMem(c+a);
 					}
