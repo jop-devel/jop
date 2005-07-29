@@ -264,9 +264,11 @@ public class Ppp extends LinkLayer {
 		uid = new StringBuffer(20);
 		pwd = new StringBuffer(20);
 
+/* we get the information from startConnection
 		con.append("AT+CGDCONT=1,\"IP\",\"A1.net\"\r");
 		uid.append("ppp@A1plus.at");
 		pwd.append("ppp");
+*/
 
 /*
 		con.append("AT+CGDCONT=1,\"IP\",\"oebb.A1.net\"\r");
