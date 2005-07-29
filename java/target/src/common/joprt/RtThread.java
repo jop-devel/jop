@@ -152,6 +152,7 @@ isEvent = false;
 		// just schedule an interrupt
 		// schedule() gets called.
 		Native.wr(1, Const.IO_SWINT);
+		for (int j=0;j<10;++j) ;
 	}
 
 
@@ -445,6 +446,7 @@ public static int ts0, ts1, ts2, ts3, ts4;
 			// just schedule an interrupt
 			// schedule() gets called.
 			Native.wr(1, Const.IO_SWINT);
+			for (int j=0;j<10;++j) ;
 			// will arrive befor return statement,
 			// just after monitorexit
 		}
