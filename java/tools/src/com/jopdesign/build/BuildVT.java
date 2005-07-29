@@ -130,13 +130,16 @@ System.err.println("build VT on class: "+cli.clazz);
 		}
 		if (supFt!=null) {
 			for (i=0; i<supFt.len; ++i) {
-				clft.key[i] = supFt.key[i];
-				clft.idx[i] = supFt.idx[i];
-				clft.size[i] = supFt.size[i];
-				clft.isStatic[i] = supFt.isStatic[i];
-				clft.isReference[i] = supFt.isReference[i];
+				// copy only the non static fields
+				if (!supFt.isStatic[i]) {
+					clft.key[clft.len] = supFt.key[i];
+					clft.idx[clft.len] = supFt.idx[i];
+					clft.size[clft.len] = supFt.size[i];
+					clft.isStatic[clft.len] = supFt.isStatic[i];
+					clft.isReference[clft.len] = supFt.isReference[i];
+					++clft.len;
+				}
 			}
-			clft.len = supFt.len;
 		}
 
 		for (i = 0; i < methodCount; i++) { 
@@ -162,8 +165,20 @@ System.err.println("build VT on class: "+cli.clazz);
 //for (i=0; i<clvt.len; i++) { 
 //	System.out.println("//\t"+clvt.meth[i].cli.clazz.getClassName()+"."+clvt.key[i]);
 //}
+
+		// this is strange!!!
+		// BTW we copied only the non static fields....
 		int nextFieldIndex = 0;
 		int nextStaticIndex = 0;
+		for (j=0; j<clft.len; ++j) {
+			int size = clft.size[j];
+			if (clft.isStatic[j]) {
+				nextStaticIndex += size;
+			} else {
+				nextFieldIndex += size;				
+			}
+		}
+
 		for (i=0; i<f.length; ++i) {
 			Field field = f[i];
 			int size = field.getType().getSize();
@@ -173,11 +188,7 @@ System.err.println("build VT on class: "+cli.clazz);
 			for (j=0; j<clft.len; ++j) {
 				if (clft.key[j].equals(fieldId)) {
 					// field is already in a super class
-					if (field.isStatic()) {
-						nextStaticIndex += size;
-					} else {
-						nextFieldIndex += size;				
-					}
+					// TODO: is this correct???
 					break;
 				}
 			}
