@@ -346,7 +346,7 @@ System.out.print("Program "); System.out.print(cnt); System.out.println(" blocks
 // System.out.print("Erase sector "); System.out.println(base);
 //		synchronized (sector) {
 			Amd.erase(base);
-System.out.println("Program");
+System.out.println("Program ");
 
 			for (i=0; i<cnt && i<MAX_BLOCKS; ++i) {
 				Timer.wd();				// toggle for each block?
