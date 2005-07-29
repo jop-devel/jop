@@ -286,8 +286,8 @@ public class GC {
 
 	public static void gc() {
 		System.out.print("GC called, ");
-		System.out.print(free());
-		System.out.print(" words remaining - now ");
+//		System.out.print(free());
+//		System.out.print(" words remaining - now ");
 		mark();
 		sweep();
 		compact();
@@ -323,7 +323,7 @@ public class GC {
 			System.exit(1);
 		}
 		if (freeList==0) {
-			System.out.println("Run out of handles!");
+//			System.out.println("Run out of handles!");
 			// is this a good place to call gc????
 			// better check available handles on newObject
 			gc();
@@ -377,7 +377,7 @@ public class GC {
 			System.exit(1);
 		}
 		if (freeList==0) {
-			System.out.println("Run out of handles!");
+//			System.out.println("Run out of handles!");
 			// is this a good place to call gc????
 			// better check available handles on newObject
 			gc();
