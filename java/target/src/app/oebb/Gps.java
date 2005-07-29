@@ -187,13 +187,13 @@ Dbg.wr('*');
 								checkStrMelnr();
 							}
 						} else {
-Dbg.wr("GPS wrong checksum\n");
+//Dbg.wr("GPS wrong checksum\n");
 						} 
 					} else if (checkRMC()) {
 						if (checkSum()) {
 							processRMC();
 						} else {
-Dbg.wr("GPS wrong checksum\n");
+//Dbg.wr("GPS wrong checksum\n");
 						} 
 					}
 					rxCnt = 0;	// free buffer
@@ -459,7 +459,7 @@ Dbg.wr("\n");
 			if (dist<MIN_DIST) {
 				if (foundOne) {
 					Status.selectStr = true;
-System.out.println("Strecke nicht eindeutig");
+//System.out.println("Strecke nicht eindeutig");
 					return;
 				} else {
 					foundOne = true;
@@ -627,22 +627,11 @@ Dbg.wr("\n");
 		int dold = dist(p.lat-old_lat, p.lon-old_lon);
 		int dnew = dist(p.lat-last_lat, p.lon-last_lon);
 		if (dnew > dold + MIN_DIR_DIST) {
-if (direction==DIR_BACK) {
-	System.out.print("direction change - diff=");
-	System.out.println(dnew-dold);
-}
 			direction = DIR_FORWARD;
-// Dbg.wr("forward\n");
 		} else if (dold > dnew + MIN_DIR_DIST) {
-if (direction==DIR_FORWARD) {
-	System.out.print("direction change - diff=");
-	System.out.println(dold-dnew);
-}
 			direction = DIR_BACK;
-// Dbg.wr("back\n");
 		} else {
 			direction = DIR_UNKNOWN;
-// Dbg.wr("undecided\n");
 		}
 	}
 

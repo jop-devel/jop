@@ -76,8 +76,8 @@ public class Startup {
 		++table;
 		for (int i=0; i<cnt; ++i) {
 			int addr = Native.rdMem(table+i);
-			System.out.print("<clinit> ");
-			System.out.println(addr);
+//			System.out.print("<clinit> ");
+//			System.out.println(addr);
 			// reuse static var for 
 			var = Native.rdMem(addr);
 			int len = var & 0x03ff;
@@ -86,8 +86,8 @@ public class Startup {
 			// int locals = (cp>>>5) & 0x01f;
 			// int args = cp & 0x01f;
 			cp >>>= 10;
-			System.out.print("start=");
-			System.out.println(var);
+//			System.out.print("start=");
+//			System.out.println(var);
 			interpret();
 		}
 	}

@@ -508,7 +508,7 @@ synchronized (o) {
 	// private static void f_checkcast() { JVMHelp.noim();}
 	private static int f_checkcast(int objref, int cons) {
 // TODO: implement it
-util.Dbg.wr("checkcast");
+// util.Dbg.wr("checkcast");
 JVMHelp.noim();
 		return objref;
 	}
@@ -578,7 +578,7 @@ if (enterCnt<0) {
 		sp -= dim;		// correct the sp
 		Native.wrIntMem(sp, fp);
 		if (dim!=2) {
-			System.out.print("multanewarray: ");
+//			System.out.print("multanewarray: ");
 			System.out.print(dim);
 			System.out.println("dimensions not supported");
 			JVMHelp.noim();

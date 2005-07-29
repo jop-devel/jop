@@ -79,7 +79,7 @@ public class Main {
 
 		// ncts is set to '0' in bgio.vhd, so we can 'wait' with open line
 		Dbg.initSerWait();				// use serial line for debug output
-		Dbg.wr("RESET ");
+//		Dbg.wr("RESET ");
 		
 		Keyboard.init(Const.IO_BG);
 		Timer.wd();
