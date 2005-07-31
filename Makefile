@@ -29,21 +29,22 @@ clean:
 QPROJ=cycmin cyc12min cycbaseio cycbg
 # if you want to build only one Quartus project use e.q.:
 #QPROJ=cycmin
-QPROJ=cycbg
+QPROJ=cycbaseio
 
 # Which project do you want to be downloaded?
-DLPROJ=cycbg
+DLPROJ=cycbaseio
 
 P1=test
+
 P2=test
 P3=Baseio
-#P2=vmtest
+#P2=jvm
 #P3=DoAll
-P2=testrt
-P3=PeriodicFull
-P1=app
-P2=oebb
-P3=Main
+#P2=testrt
+#P3=PeriodicFull
+#P1=app
+#P2=oebb
+#P3=Main
 
 tools:
 	cd java/tools && ./build.bat
