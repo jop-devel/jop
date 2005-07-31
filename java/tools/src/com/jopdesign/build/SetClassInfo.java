@@ -26,6 +26,10 @@ public class SetClassInfo extends MyVisitor {
 		super.visitJavaClass(clazz);
 // System.err.println("visit "+clazz.getClassName()+" getSuper");
 		cli.superClass = ClassInfo.getClassInfo(clazz.getSuperclassName());
+		if (clazz.getClassName().equals("java.lang.Object")) {
+			// Object has no super class
+			cli.superClass = null;
+		}
 		// this one searches in the application CLASSPATH!!!
 		/*
 		JavaClass suClazz = clazz.getSuperClass();

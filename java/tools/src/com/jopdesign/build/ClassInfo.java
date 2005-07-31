@@ -228,7 +228,7 @@ public class ClassInfo {
 	public int setAddress(int addr) {
 		
 		int i;
-		instGCinfo = 0;
+		instGCinfo = getGCInfo();
 		// first are the class variables - the static fields
 		staticRefVarAddress = addrRefStatic;
 		staticValueVarAddress = addrValueStatic;
@@ -242,11 +242,6 @@ public class ClassInfo {
 				} else {
 					clft.idx[i] = addrValueStatic;			
 					addrValueStatic += clft.size[i];
-				}
-			} else {
-				// generate GC info for the instance
-				if (clft.isReference[i]) {
-					instGCinfo |= (1<<clft.idx[i]);
 				}
 			}
 		}
@@ -298,6 +293,23 @@ public class ClassInfo {
 		return addr;
 	}
 
+	/**
+	 * generate GC info for the instance
+	 */
+	private int getGCInfo() {
+		
+		int gcInfo = 0;
+		for (ClassInfo clinf = this; clinf!=null; clinf = clinf.superClass) {
+			ClFT ft = clinf.clft;
+			for (int i=0; i<ft.len; ++i) {
+				if (!ft.isStatic[i] & ft.isReference[i]) {
+					gcInfo |= (1<<ft.idx[i]);
+				}
+			}			
+		}
+		
+		return gcInfo;
+	}
 	public void addUsedConst(int idx, int len) {
 		
 		Integer ii = new Integer(idx);
@@ -458,23 +470,30 @@ public class ClassInfo {
 						clinf = (ClassInfo) mapClassNames.get(fclname);
 						int j;
 						String comment = "";
-						for (j=0; j<clinf.clft.len; ++j) {
-							if (clinf.clft.key[j].equals(sigstr)) {
-								break;
+						boolean found = false;
+						while (!found) {
+							for (j=0; j<clinf.clft.len; ++j) {
+								if (clinf.clft.key[j].equals(sigstr)) {
+									found = true;
+									if (clinf.clft.isStatic[j]) {
+										comment = "static ";						
+									}
+									// for static fields a direct pointer to the
+									// static field
+									cpoolArry[pos] = clinf.clft.idx[j];
+									cpoolComments[pos] = comment+clinf.clazz.getClassName()+
+										"."+sigstr;				
+									break;
+								}
 							}
+							if (!found) {
+								clinf = clinf.superClass;
+								if (clinf==null) {
+									System.out.println("Error: field "+fclname+"."+sigstr+" not found!");
+									break;									
+								}
+							}							
 						}
-						if (j==clinf.clft.len) {
-							System.out.println("Error: field "+fclname+"."+sigstr+" not found!");
-							break;
-						}
-						if (clinf.clft.isStatic[j]) {
-							comment = "static ";						
-						}
-						// for static fields a direct pointer to the
-						// static field
-						cpoolArry[pos] = clinf.clft.idx[j];
-						cpoolComments[pos] = comment+clinf.clazz.getClassName()+
-							"."+sigstr;				
 						break;
 					default:
 						System.out.println("TODO: cpool@"+pos+" = orig_cp@"+i+" "+co);
@@ -515,7 +534,7 @@ out.print("\t//\tvirtual index: "+i+" args: "+mi.argsSize);
 		}
 		out.println("//");
 		out.println("//\t"+addr+": "+clazz.getClassName()+
-				" static fields");
+				" static "+(ref ? "reference " : " ")+"fields");
 		out.println("//");
 		for (i=0; i<clft.len; ++i) {
 			if (clft.isStatic[i]) {

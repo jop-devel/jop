@@ -108,7 +108,7 @@ System.err.println("build VT on class: "+cli.clazz);
 		
 		Field f[] = clazz.getFields();
 		maxLen = f.length;
-		if (supFt!=null) maxLen += supFt.len;
+//		if (supFt!=null) maxLen += supFt.len;
 		clft.len = 0;
 		clft.key = new String[maxLen];
 		clft.idx = new int[maxLen];
@@ -128,6 +128,7 @@ System.err.println("build VT on class: "+cli.clazz);
 			}
 			clvt.len = supVt.len;
 		}
+/*
 		if (supFt!=null) {
 			for (i=0; i<supFt.len; ++i) {
 				// copy only the non static fields
@@ -141,6 +142,7 @@ System.err.println("build VT on class: "+cli.clazz);
 				}
 			}
 		}
+*/
 
 		for (i = 0; i < methodCount; i++) { 
 			Method meth = m[i];
@@ -170,6 +172,7 @@ System.err.println("build VT on class: "+cli.clazz);
 		// BTW we copied only the non static fields....
 		int nextFieldIndex = 0;
 		int nextStaticIndex = 0;
+/*
 		for (j=0; j<clft.len; ++j) {
 			int size = clft.size[j];
 			if (clft.isStatic[j]) {
@@ -178,36 +181,41 @@ System.err.println("build VT on class: "+cli.clazz);
 				nextFieldIndex += size;				
 			}
 		}
+*/
+		if (supFt!=null) {
+			for (i=0; i<supFt.len; ++i) {
+				if (supFt.isStatic[i]) {
+					if (supFt.idx[i]>nextStaticIndex) {
+						nextStaticIndex = supFt.idx[i]+1;
+					}
+				} else {
+					if (supFt.idx[i]>nextFieldIndex) {
+						nextFieldIndex = supFt.idx[i]+1;
+					}
+				}
+			}
+		}
 
+				
 		for (i=0; i<f.length; ++i) {
 			Field field = f[i];
 			int size = field.getType().getSize();
 	
 			String fieldId = field.getName()+field.getSignature();
 			
-			for (j=0; j<clft.len; ++j) {
-				if (clft.key[j].equals(fieldId)) {
-					// field is already in a super class
-					// TODO: is this correct???
-					break;
-				}
+			clft.key[clft.len] = fieldId;
+			clft.size[clft.len] = size;
+			clft.isReference[clft.len] = field.getType() instanceof ReferenceType; 
+			if (field.isStatic()) {
+				clft.idx[clft.len] = nextStaticIndex;
+				clft.isStatic[clft.len] = true;
+				nextStaticIndex += size;
+			} else {
+				clft.idx[clft.len] = nextFieldIndex;
+				clft.isStatic[clft.len] = false;
+				nextFieldIndex += size;				
 			}
-			
-			if (j==clft.len) {		// a new field
-				clft.key[clft.len] = fieldId;
-				clft.size[clft.len] = size;
-				clft.isReference[clft.len] = field.getType() instanceof ReferenceType; 
-				if (field.isStatic()) {
-					clft.idx[clft.len] = nextStaticIndex;
-					clft.isStatic[clft.len] = true;
-					nextStaticIndex += size;
-				} else {
-					clft.idx[clft.len] = nextFieldIndex;
-					clft.isStatic[clft.len] = false;
-					nextFieldIndex += size;				
-				}
-				clft.len++;
-			}
+			clft.len++;
 		}
 		cli.setInstanceSize(nextFieldIndex);
 
