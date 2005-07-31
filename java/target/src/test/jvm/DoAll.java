@@ -8,6 +8,7 @@ import jvm.math.Float;
 import jvm.math.Imul;
 import jvm.math.Long;
 import jvm.obj.Basic;
+import jvm.obj.Basic2;
 import jvm.obj.Clinit;
 import jvm.obj.Static;
 
@@ -21,6 +22,7 @@ public class DoAll {
 		
 		TestCase tc[] = {
 				new Basic(),
+				new Basic2(),
 				new Static(),
 				new Array(),
 				new Clinit(),
@@ -40,6 +42,6 @@ public class DoAll {
 			}
 		}
 		
-		jbe.DoAll.main(args);
+//		jbe.DoAll.main(args);
 	}
 }
