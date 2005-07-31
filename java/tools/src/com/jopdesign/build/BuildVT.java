@@ -185,11 +185,11 @@ System.err.println("build VT on class: "+cli.clazz);
 		if (supFt!=null) {
 			for (i=0; i<supFt.len; ++i) {
 				if (supFt.isStatic[i]) {
-					if (supFt.idx[i]>nextStaticIndex) {
+					if (supFt.idx[i]>=nextStaticIndex) {
 						nextStaticIndex = supFt.idx[i]+1;
 					}
 				} else {
-					if (supFt.idx[i]>nextFieldIndex) {
+					if (supFt.idx[i]>=nextFieldIndex) {
 						nextFieldIndex = supFt.idx[i]+1;
 					}
 				}
