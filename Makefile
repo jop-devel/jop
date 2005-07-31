@@ -26,18 +26,24 @@ clean:
 	cd quartus && d:/bin/qu_del.bat
 
 # 'some' different Quartus projects
-QPROJ=cycmin cyc12min cycbaseio
+QPROJ=cycmin cyc12min cycbaseio cycbg
 # if you want to build only one Quartus project use e.q.:
 #QPROJ=cycmin
+QPROJ=cycbg
 
 # Which project do you want to be downloaded?
-DLPROJ=cycbaseio
+DLPROJ=cycbg
 
 P1=test
 P2=test
 P3=Baseio
 #P2=vmtest
 #P3=DoAll
+P2=testrt
+P3=PeriodicFull
+P1=app
+P2=oebb
+P3=Main
 
 tools:
 	cd java/tools && ./build.bat
