@@ -29,7 +29,7 @@ clean:
 QPROJ=cycmin cyc12min cycbaseio cycbg
 # if you want to build only one Quartus project use e.q.:
 #QPROJ=cycmin
-QPROJ=cycbaseio
+#QPROJ=cycbaseio
 
 # Which project do you want to be downloaded?
 DLPROJ=cycbaseio
