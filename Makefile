@@ -121,7 +121,7 @@ prog_flash:
 	cd java/target && ./build.bat app oebb Main
 	java -cp java/pc/dist/lib/jop-pc.jar udp.Flash java/target/dist/bin/oebb_Main.jop 192.168.1.2
 	java -cp java/pc/dist/lib/jop-pc.jar udp.Flash ttf/$(FLPROJ).ttf 192.168.1.2
-	quartus_pgm -c ByteBlasterMV -m JTAG -o p\;jbc/cyc_conf.jbc
+	quartus_pgm -c ByteBlasterMV -m JTAG -o p\;quartus/cycconf/cyc_conf.pof
 	
 
 #
@@ -145,3 +145,4 @@ ttf:
 xxx:
 	quartus_pgm -c ByteBlasterMV -m JTAG -o p\;jbc/cycbg.jbc
 	quartus_pgm -c ByteBlasterMV -m JTAG -o p\;jbc/cyc_conf.jbc
+
