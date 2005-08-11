@@ -11,7 +11,7 @@ public class TU extends Thread {
 
 
 	static DatagramSocket socket;
-
+	static DatagramSocket rcv_socket;
 	/**
 	*	kind of 'ping' the 'client' to send a new packet.
 	*/
@@ -22,10 +22,11 @@ public class TU extends Thread {
 
 			// send request
 			byte[] buf = new byte[256];
-			InetAddress address = InetAddress.getByName("192.168.0.4");
-			DatagramPacket packet = new DatagramPacket(buf, 0, address, 1625);
+			InetAddress address = InetAddress.getByName("192.168.0.5");
+			DatagramPacket packet = new DatagramPacket(buf, 1, address, 1234);
 			for (;;) {
 				socket.send(packet);
+				System.out.print('*');
 				Thread.sleep(1000);
 			}
 		} catch (Exception e) {
@@ -37,14 +38,19 @@ public class TU extends Thread {
 	/**
 	*	main is the 'server'.
 	*/
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) {
 
 
-		// get a datagram socket
-		socket = new DatagramSocket();
+		try {
+			// get a datagram socket
+			socket = new DatagramSocket();
+			rcv_socket = new DatagramSocket(1234);
+		} catch (Exception e) {
+			System.out.println(e);
+		}
 
 		TU t = new TU();
-		t.start();
+//		t.start();
 	
 		byte[] buf = new byte[256];
 
@@ -52,7 +58,11 @@ public class TU extends Thread {
 		for (;;) {
 
 			DatagramPacket packet = new DatagramPacket(buf, buf.length);
-			socket.receive(packet);
+			try {
+				rcv_socket.receive(packet);
+			} catch (Exception e) {
+				System.out.println(e);
+			}
 
 			// display response
 			byte[] resp = packet.getData();

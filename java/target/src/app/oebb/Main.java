@@ -26,6 +26,14 @@ package oebb;
 *	0.94		ES mode logbook, Print log auf Serviceschnittstelle bei Start
 *				mit Taste 3 gedrueckt (SLIP). 
 *
+*	0.97-0.99	Interne Testversionen fuer Download mit Javaprog. > 64KB
+*		
+ 0.97 Java Program ist noch <64KB, aber neuer JOP, Java Program braucht
+      aber schon den neuen JOP zum Laufen. Unterscheidung der JOP versionen
+      beim Start auf der Serviceschnittstelle:
+        'JOP start V pre2005' - alte Version
+        'JOP start V 20050728' - neue Version
+
 */
 
 import util.*;
@@ -33,13 +41,14 @@ import ejip.*;
 import joprt.*;
 
 import com.jopdesign.sys.Const;
+import com.jopdesign.sys.GC;
 import com.jopdesign.sys.Native;
 
 public class Main {
 
 	// SW version
 	public static final int VER_MAJ = 0;
-	public static final int VER_MIN = 94;
+	public static final int VER_MIN = 97;
 
 	// TODO find a schedule whith correct priorities
 	// Serial is 10
@@ -48,15 +57,17 @@ public class Main {
 	// Net is 5
 	private static final int LOGIC_PRIO = 1;
 	private static final int LOGIC_PERIOD = 100000;
-	private static final int GPS_PRIO = 2;
+	private static final int STRECKE_PRIO = 2;
+	private static final int STRECKE_PERIOD = 100000;
+	private static final int GPS_PRIO = 3;
 	private static final int GPS_PERIOD = 100000;
-	private static final int DISPLAY_PRIO = 3;
+	private static final int DISPLAY_PRIO = 4;
 	private static final int DISPLAY_PERIOD = 5000;
-	private static final int COMM_PRIO = 4;
+	private static final int COMM_PRIO = 5;
 	private static final int COMM_PERIOD = 100000;
 	private static final int GPSSER_PRIO = 8;
 	private static final int GPSSER_PERIOD = 12000;
-	private static final int NET_PRIO = 5;
+	private static final int NET_PRIO = 6;
 	private static final int NET_PERIOD = 10000;
 	private static final int IPLINK_PRIO = 9;
 	private static final int IPLINK_PERIOD = 10000;
@@ -106,6 +117,8 @@ public class Main {
 
 		// we need the BgTftp befor Flash.init()!
 		BgTftp tftpHandler = new BgTftp();
+/* comment Flash for JopSim debug
+*/
 		Flash.init();
 
 
@@ -163,9 +176,9 @@ public class Main {
 			// use second SLIP subnet for 'COs test'
 			ipLink = Slip.init(ser, (192<<24) + (168<<16) + (2<<8) + 2); 
 		} else {
-			ipLink = Ppp.init(ser, pppThre); 
-//			System.out.println("SLIP is default!!");
-//			ipLink = Slip.init(ser,	(192<<24) + (168<<16) + (1<<8) + 2); 
+//			ipLink = Ppp.init(ser, pppThre); 
+			System.out.println("SLIP is default!!");
+			ipLink = Slip.init(ser,	(192<<24) + (168<<16) + (1<<8) + 2); 
 		}
 
 		//
@@ -187,6 +200,9 @@ public class Main {
 		};
 
 		Gps.init(GPS_PRIO, GPS_PERIOD, ser2);
+		// The SW handle fired by the GPS thread
+		// to find a Strecke
+//		new Strecke(STRECKE_PRIO, STRECKE_PERIOD);
 
 		//
 		//	create Communication thread
@@ -202,7 +218,7 @@ public class Main {
 		//	create Logic thread.
 		//
 		new Logic(LOGIC_PRIO, LOGIC_PERIOD, ipLink);
-
+System.out.println("startMission");
 		//
 		//	start all threads
 		//
@@ -251,6 +267,8 @@ synchronized(o) {
 			for (int i=0; i<25; ++i) {
 				RtThread.sleepMs(20);
 			}
+//			System.out.print("free memory: ");
+//			System.out.println(GC.freeMemory());
 		}
 	}
 }

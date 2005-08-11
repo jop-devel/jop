@@ -288,9 +288,12 @@ public class GC {
 		System.out.print("GC called, ");
 //		System.out.print(free());
 //		System.out.print(" words remaining - now ");
+/* disabled for now (BG)
+ * TODO: get stack roots from threads!
 		mark();
 		sweep();
 		compact();
+*/
 		System.out.print(free());
 		System.out.println(" words free");
 		

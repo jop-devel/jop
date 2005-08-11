@@ -398,6 +398,7 @@ Dbg.wr("m/s \n");
 	private static void checkStrMelnr() {
 
 		if (Status.strNr<=0) {
+//			Strecke.event.fire();
 			findStr();
 		} else {
 			int melnr = getMelnr();
@@ -435,7 +436,10 @@ Dbg.wr("\n");
 	
 	private static void findStr() {
 
+
 		int cnt = Flash.getCnt();
+System.out.print(cnt);
+System.out.println(" Strecken");
 		int min = 999999999;
 		int dist, strNr = 0;
 		boolean foundOne = false;
@@ -447,6 +451,9 @@ Dbg.wr("\n");
 		
 Dbg.wr("find Strecke\n");
 		for (int i=0; i<cnt; ++i) {
+//Dbg.intVal(Native.rdIntMem(253));
+//Dbg.intVal(Native.rdIntMem(254));
+//Dbg.intVal(Native.rdIntMem(255));
 			int nr = Flash.getStrNr(i);
 Dbg.intVal(nr);
 			dist = getDistStr(nr);

@@ -49,6 +49,7 @@ public class Flash {
 	static final int PT_FLG_STATION = 1;
 	static final int PT_FLG_VERL = 2;
 	static final int PT_FLG_ES = 4;
+	static final int PT_FLG_NO_DIR = 8;
 
 	static class Point {
 		int melnr;
@@ -379,12 +380,18 @@ Dbg.wr(tmpStr[j]);
 	static boolean esStr() {
 		
 System.out.println("ES Strecke:");
+Dbg.intVal(Native.rdIntMem(253));
+Dbg.intVal(Native.rdIntMem(254));
+Dbg.intVal(Native.rdIntMem(255));
+Dbg.intVal(Native.getSP());
+System.out.println(Status.strNr);
 		int i, j, k;
 		int txtPtr = -1;
 		boolean left = true;
 		Point p1, p2;
 		// Suche die pointer zu den Stationstexten fuer die ES Strecke
 		for (i=0; i<lenStr; ++i) {
+System.out.println(i);
 			p1 = str[i];
 			if ((p1.flags&PT_FLG_ES)!=0) {
 				if (left) {

@@ -111,12 +111,22 @@ boolean isEvent;
 
 	public RtThread(int prio, int us, int off) {
 
+//System.out.print("new Thread w prio ");
+//System.out.println(prio);
+//System.out.println("a");
 		if (!init) {
 			doInit();
 		}
+//System.out.println("b");
 
 		stack = new int[MAX_STACK];
-for (int i=0; i<MAX_STACK; ++i) stack[i] = 1234567;
+//		System.out.print(MAX_STACK);
+//		System.out.println("c");
+for (int i=0; i<MAX_STACK; ++i) {
+//	System.out.print(i);
+	stack[i] = 1234567;
+}
+//System.out.println("d");
 
 		period = us;
 		offset = off;
