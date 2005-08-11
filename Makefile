@@ -11,9 +11,9 @@
 #
 
 # do the while process for the BG
-test: directories jopflash jopser prog_flash
+test: directories tools jopflash jopser prog_flash
 
-all: directories jopser japp
+all: directories tools jopser japp
 
 japp: java_app download
 
