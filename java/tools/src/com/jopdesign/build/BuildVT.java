@@ -183,15 +183,18 @@ System.err.println("build VT on class: "+cli.clazz);
 		}
 */
 		if (supFt!=null) {
+			nextFieldIndex = supFt.instSize;
 			for (i=0; i<supFt.len; ++i) {
 				if (supFt.isStatic[i]) {
 					if (supFt.idx[i]>=nextStaticIndex) {
 						nextStaticIndex = supFt.idx[i]+1;
 					}
+/*
 				} else {
 					if (supFt.idx[i]>=nextFieldIndex) {
 						nextFieldIndex = supFt.idx[i]+1;
 					}
+*/
 				}
 			}
 		}
@@ -217,6 +220,8 @@ System.err.println("build VT on class: "+cli.clazz);
 			}
 			clft.len++;
 		}
+		// This is redundant!
+		clft.instSize = nextFieldIndex;
 		cli.setInstanceSize(nextFieldIndex);
 
 	}

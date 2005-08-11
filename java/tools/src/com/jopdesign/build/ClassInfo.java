@@ -90,6 +90,7 @@ public class ClassInfo {
 	 */
 	class ClFT {
 		int len;
+		int instSize;
 		// fieldname and signature
 		String[] key;
 		// index in the object
@@ -97,6 +98,16 @@ public class ClassInfo {
 		int[] size;
 		boolean[] isStatic;
 		boolean[] isReference;
+		
+		public String toString() {
+			StringBuffer sb = new StringBuffer();
+			
+			for (int i=0; i<len; ++i) {
+				sb.append(key[i]+" ");
+			}
+			
+			return sb.toString();
+		}
 	}
 
 	static int cntValueStatic = 0;
