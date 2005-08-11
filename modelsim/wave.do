@@ -13,7 +13,6 @@ add wave -noupdate -format Logic /tb_jop/cmp_jop/cmp_ext/wbtop/wbsl/wr
 add wave -noupdate -format Logic /tb_jop/cmp_jop/cmp_ext/wbtop/wbsl/ack
 add wave -noupdate -format Logic /tb_jop/cmp_jop/cmp_ext/wbtop/wbsl/ena
 add wave -noupdate -format Literal /tb_jop/cmp_jop/cmp_ext/wbtop/wbsl/cnt
-add wave -noupdate -format Literal /tb_jop/cmp_jop/cmp_ext/wbtop/wbsl/xyz
 add wave -noupdate -format Literal /tb_jop/cmp_jop/cmp_ext/wbtop/wbsl/wb_out
 add wave -noupdate -format Literal /tb_jop/cmp_jop/cmp_ext/wbtop/wbsl/wb_in
 add wave -noupdate -format Logic /tb_jop/cmp_jop/cmp_ext/wbtop/wbsl/rd
@@ -21,7 +20,6 @@ add wave -noupdate -format Logic /tb_jop/cmp_jop/cmp_ext/wbtop/wbsl/wr
 add wave -noupdate -format Logic /tb_jop/cmp_jop/cmp_ext/wbtop/wbsl/ack
 add wave -noupdate -format Logic /tb_jop/cmp_jop/cmp_ext/wbtop/wbsl/ena
 add wave -noupdate -format Literal /tb_jop/cmp_jop/cmp_ext/wbtop/wbsl/cnt
-add wave -noupdate -format Literal /tb_jop/cmp_jop/cmp_ext/wbtop/wbsl/xyz
 add wave -noupdate -format Literal /tb_jop/cmp_jop/cmp_ext/wbtop/wbsl/wb_out
 add wave -noupdate -format Literal /tb_jop/cmp_jop/cmp_ext/wbtop/wbsl/wb_in
 add wave -noupdate -divider {wishbone end}
@@ -196,4 +194,4 @@ configure wave -gridperiod 1
 configure wave -griddelta 40
 configure wave -timeline 0
 update
-WaveRestoreZoom {23005 ns} {25105 ns}
+WaveRestoreZoom {0 ps} {26250 ns}

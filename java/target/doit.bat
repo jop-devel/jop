@@ -1,9 +1,5 @@
 call build %1 %2 %3
 
-java -cp ../tools/dist/lib/jop-tools.jar com.jopdesign.tools.jop2dat dist\bin\%project%.jop 
-copy *.dat ..\..\modelsim
-del *.dat
-
 pause Compilation ok? Start download?
 
 rem uncomment your target for the Cyclone board:

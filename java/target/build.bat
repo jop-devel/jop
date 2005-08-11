@@ -28,4 +28,8 @@ java -cp %java_lib% com.jopdesign.build.JOPizer -cp dist/lib/classes.zip -o dist
 rem this is the 'old' JCC version
 rem java -cp ../tools/jcc.jar;../tools/dist/lib/jop-tools.jar -Djop.startclass="%startclass%" JavaCodeCompact -nq -arch JOP -o dist/bin/%project%.jop dist/lib/classes.zip
 
+java -cp ../tools/dist/lib/jop-tools.jar com.jopdesign.tools.jop2dat dist\bin\%project%.jop 
+copy *.dat ..\..\modelsim
+del *.dat
+
 rem java -cp ..\tools\dist\lib\jop-tools.jar com.jopdesign.tools.JopBitGen dist\bin\%project%.jop dist\bin\%project%.bit

@@ -31,13 +31,14 @@ public class Startup {
 	static void boot() {
 		
 		started = false;
+		msg();
 		var = Native.rdMem(0);		// pointer to 'special' pointers
 		// first initialize the GC with the address of static ref. fields
 		GC.init(var+4);
 		// place for some initialization:
 		// could be placed in <clinit> in the future
 		System.init();
-		msg();
+		version();
 		started = true;
 		clazzinit();
 		
@@ -52,7 +53,13 @@ public class Startup {
 	static void msg() {
 
 		int version = Native.rdIntMem(64);
-		JVMHelp.wr("JOP start V ");
+		JVMHelp.wr("JOP start");
+	}
+	
+	static void version() {
+
+		int version = Native.rdIntMem(64);
+		JVMHelp.wr(" V ");
 		// take care with future GC - JVMHelp.intVal allocates
 		// a buffer!
 		if (version==0x12345678) {

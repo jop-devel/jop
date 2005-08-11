@@ -11,7 +11,7 @@
 #
 
 # do the while process for the BG
-test: directories tools jopflash jopser prog_flash
+test: directories tools jopflash jopser prog_flash sim
 
 all: directories tools jopser japp
 
@@ -102,6 +102,13 @@ jopflash:
 #	done
 
 
+#
+#	Modelsim target
+#		without the tools
+#
+sim: java_app
+	cd asm && ./jopsim.bat
+	cd modelsim && ./sim.bat
 
 
 java_app:
@@ -123,6 +130,9 @@ prog_flash:
 	java -cp java/pc/dist/lib/jop-pc.jar udp.Flash ttf/$(FLPROJ).ttf 192.168.1.2
 	quartus_pgm -c ByteBlasterMV -m JTAG -o p\;quartus/cycconf/cyc_conf.pof
 	
+
+pld_init:
+	quartus_pgm -c ByteBlasterMV -m JTAG -o p\;quartus/cycconf/cyc_conf_init.pof
 
 #
 #	some directories for configuration files
