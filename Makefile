@@ -77,7 +77,6 @@ jopser:
 #
 jopflash:
 	cd asm && ./jopflash.bat
-	mkdir
 	@echo $(QPROJ)
 	for target in $(QPROJ); do \
 		echo "building $$target"; \
