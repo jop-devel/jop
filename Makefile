@@ -11,9 +11,9 @@
 #
 
 # do the while process for the BG
-test: tools jopflash jopser prog_flash
+test: directories jopflash jopser prog_flash
 
-all: tools jopser japp
+all: directories jopser japp
 
 japp: java_app download
 
@@ -77,6 +77,7 @@ jopser:
 #
 jopflash:
 	cd asm && ./jopflash.bat
+	mkdir
 	@echo $(QPROJ)
 	for target in $(QPROJ); do \
 		echo "building $$target"; \
@@ -123,6 +124,17 @@ prog_flash:
 	java -cp java/pc/dist/lib/jop-pc.jar udp.Flash ttf/$(FLPROJ).ttf 192.168.1.2
 	quartus_pgm -c ByteBlasterMV -m JTAG -o p\;jbc/cyc_conf.jbc
 	
+
+#
+#	some directories for configuration files
+#
+directories: jbc ttf
+
+jbc:
+	mkdir jbc
+
+ttf:
+	mkdir ttf
 
 #
 # this line configures the FPGA and programs the PLD
