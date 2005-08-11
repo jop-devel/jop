@@ -43,13 +43,13 @@ P1=test
 
 P2=test
 P3=Baseio
-#P2=jvm
-#P3=DoAll
+P2=jvm
+P3=DoAll
 #P2=testrt
 #P3=PeriodicFull
-P1=app
-P2=oebb
-P3=Main
+#P1=app
+#P2=oebb
+#P3=Main
 
 tools:
 	cd java/tools && ./build.bat

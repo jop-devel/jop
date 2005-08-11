@@ -398,7 +398,7 @@ Dbg.wr("m/s \n");
 	private static void checkStrMelnr() {
 
 		if (Status.strNr<=0) {
-//			Strecke.event.fire();
+			Strecke.find.fire();
 			findStr();
 		} else {
 			int melnr = getMelnr();

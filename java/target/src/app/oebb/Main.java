@@ -202,7 +202,7 @@ public class Main {
 		Gps.init(GPS_PRIO, GPS_PERIOD, ser2);
 		// The SW handle fired by the GPS thread
 		// to find a Strecke
-//		new Strecke(STRECKE_PRIO, STRECKE_PERIOD);
+		new Strecke(STRECKE_PRIO, STRECKE_PERIOD);
 
 		//
 		//	create Communication thread
