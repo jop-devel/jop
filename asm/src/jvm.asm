@@ -66,6 +66,7 @@
 //				again without handles
 //	2005-06-20  use indirection, GC info in class struct
 //	2005-07-28	fix missing indirection bug in thread stack move (int2ext and ext2int)
+//	2005-08-13	moved null pointer check in xaload/store to check the handle!
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -76,7 +77,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20050728
+version		= 20050813
 
 //
 //	io register
@@ -1024,6 +1025,12 @@ sastore:
 			stm	a				// value
 			stm	b				// index
 			// arrayref is TOS
+			dup					// for null pointer check
+			nop					// wait one cycle for flags of ref
+			bz	null_pointer	// 
+			nop
+			nop
+
 #ifdef HANDLE
 			stmra				// read handle indirection
 			wait				// for the GC
@@ -1031,14 +1038,10 @@ sastore:
 			ldmrd
 #endif
 
-			dup					// for null pointer check
 			dup					// bound check
 			ldi	-1
 			add					// arrayref-1
 			stmra				// read ext. mem, mem_bsy comes one cycle later
-// could this nop be removed?
-			nop					// wait one cycle for flags of ref
-			bz	null_pointer	// 
 			wait				// is this ok? - wait in branch slot
 			wait
 			ldmrd		 		// read ext. mem (array length)
@@ -1076,6 +1079,11 @@ saload:
 //
 			stm	b				// index
 			// arrayref is TOS
+			dup					// for null pointer check
+			nop					// wait one cycle for flags of ref
+			bz	null_pointer	// 
+			nop
+			nop
 #ifdef HANDLE
 			stmra				// read handle indirection
 			wait				// for the GC
@@ -1083,15 +1091,11 @@ saload:
 			ldmrd
 #endif
 
-			dup					// for null pointer check
 			dup					// for bound check
 			ldi	-1
 			add					// arrayref-1
 
 			stmra				// read array length
-// could this nop be removed?
-			nop					// wait one cycle for flags of ref
-			bz	null_pointer	// 
 			wait				// is this ok? - wait in branch slot
 			wait
 			ldmrd		 		// read ext. mem (array length)
