@@ -33,7 +33,7 @@ public class RtThread {
 	final static int EV_FIRED = 1;
 	final static int EV_WAITING = 2;
 	static int event[];					// state of an event
-boolean isEvent;
+	boolean isEvent;
 
 	private static int cnt;
 	private static int active;					// active thread number
@@ -136,7 +136,7 @@ for (int i=0; i<MAX_STACK; ++i) {
 			priority = prio+Thread.MAX_PRIORITY+RT_BASE;
 		}
 		state = CREATED;
-isEvent = false;
+		isEvent = false;
 
 		//	insert in linked list, priority ordered
 		//	highest priority first.
@@ -198,7 +198,6 @@ public static int ts0, ts1, ts2, ts3, ts4;
 
 		Native.wr(0, Const.IO_INT_ENA);
 		// synchronized(monitor) {
-
 // RtThread.ts1 = Native.rd(Const.IO_US_CNT);
 			// save stack
 			i = Native.getSP();
@@ -437,7 +436,6 @@ public static int ts0, ts1, ts2, ts3, ts4;
 	public boolean waitForNextPeriod() {
 
 		synchronized(monitor) {
-
 			int nxt, now;
 
 			nxt = next[nr] + period;
