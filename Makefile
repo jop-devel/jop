@@ -43,13 +43,13 @@ P1=test
 
 P2=test
 P3=Baseio
-P2=jvm
-P3=DoAll
+#P2=jvm
+#P3=DoAll
 #P2=testrt
 #P3=PeriodicFull
-#P1=app
-#P2=oebb
-#P3=Main
+P1=app
+P2=oebb
+P3=Main
 
 tools:
 	cd java/tools && ./build.bat
@@ -109,6 +109,14 @@ jopflash:
 sim: java_app
 	cd asm && ./jopsim.bat
 	cd modelsim && ./sim.bat
+
+#
+#	JopSim target
+#		without the tools
+#
+jsim: java_app
+	java -cp java/tools/dist/lib/jop-tools.jar -Dlog="true" -Dhandle="true" \
+	com.jopdesign.tools.JopSim java/target/dist/bin/$(P2)_$(P3).jop
 
 
 java_app:
