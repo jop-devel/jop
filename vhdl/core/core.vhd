@@ -72,6 +72,8 @@ port (
 	irq			: in std_logic;
 	irq_ena		: in std_logic;
 
+	sp_ov		: out std_logic;
+
 	aout		: out std_logic_vector(width-1 downto 0);
 	bout		: out std_logic_vector(width-1 downto 0)
 );
@@ -156,6 +158,8 @@ port (
 
 	ena_b		: in std_logic;
 	ena_vp		: in std_logic;
+
+	sp_ov		: out std_logic;
 
 	zf			: out std_logic;
 	nf			: out std_logic;
@@ -278,6 +282,7 @@ begin
 			sel_bmux, sel_log, sel_shf, sel_lmux, sel_imux, sel_rmux, sel_smux,
 			sel_mmux, sel_rda, sel_wra,
 			wr_ena, ena_b, ena_vp,
+			sp_ov,
 			stk_zf, stk_nf, stk_eq, stk_lt, stk_aout, stk_bout);
 
 	cmp_dec: decode generic map (i_width, addr_width, exta_width)

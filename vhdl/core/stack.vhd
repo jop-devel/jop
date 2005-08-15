@@ -58,6 +58,8 @@ port (
 	ena_b		: in std_logic;
 	ena_vp		: in std_logic;
 
+	sp_ov		: out std_logic;
+
 	zf			: out std_logic;
 	nf			: out std_logic;
 	eq			: out std_logic;
@@ -366,9 +368,13 @@ begin
 --
 --	sp is 'strange' (0xfe) after reset, after stsp all is ok
 --
-		sp <= std_logic_vector(to_unsigned(0, addr_width));		
-		spp <= std_logic_vector(to_unsigned(0, addr_width));	-- just for the compiler
-		spm <= std_logic_vector(to_unsigned(0, addr_width));	-- just for the compiler
+--		sp <= std_logic_vector(to_unsigned(0, addr_width));		
+--		spp <= std_logic_vector(to_unsigned(0, addr_width));	-- just for the compiler
+--		spm <= std_logic_vector(to_unsigned(0, addr_width));	-- just for the compiler
+sp <= "10000000";
+spp <= "10000001";
+spm <= "01111111";
+sp_ov <= '0';
 		vp0 <= std_logic_vector(to_unsigned(0, addr_width));
 		vp1 <= std_logic_vector(to_unsigned(0, addr_width));
 		vp2 <= std_logic_vector(to_unsigned(0, addr_width));
@@ -380,6 +386,9 @@ begin
 		spp <= std_logic_vector(unsigned(smux) + 1);
 		spm <= std_logic_vector(unsigned(smux) - 1);
 		sp <= smux;
+		if sp(7 downto 6)="00" then
+			sp_ov <= '1';
+		end if;
 		if (ena_vp = '1') then
 			vp0 <= a(addr_width-1 downto 0);
 			vp1 <= std_logic_vector(unsigned(a(addr_width-1 downto 0)) + 1);

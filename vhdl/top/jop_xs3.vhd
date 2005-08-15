@@ -23,6 +23,7 @@
 --	2004-10-01	version for Xilinx
 --	2004-10-08	mul operands from a and b, single instruction
 --	2005-06-09	added the bsy routing through extension
+--	2005-08-15	sp_ov can be used to show a stoack overflow on the wd pin
 --
 --
 
@@ -107,6 +108,8 @@ port (
 
 	irq			: in std_logic;
 	irq_ena		: in std_logic;
+
+	sp_ov		: out std_logic;
 
 	aout		: out std_logic_vector(31 downto 0);
 	bout		: out std_logic_vector(31 downto 0)
@@ -264,6 +267,8 @@ end component;
 	signal int_res			: std_logic;
 	signal res_cnt			: unsigned(2 downto 0) := "000";	-- for the simulation
 
+	signal wd_out, sp_ov	: std_logic;
+
 	-- for generationg internal reset
 	-- attribute altera_attribute : string;
 	-- attribute altera_attribute of res_cnt : signal is "POWER_UP_LEVEL=LOW";
@@ -295,6 +300,8 @@ end process;
 --
 	clk_int <= clk;
 
+	wd <= wd_out;
+
 	cmp_core: core generic map(jpc_width)
 		port map (clk_int, int_res,
 			bsy,
@@ -302,6 +309,7 @@ end process;
 			rd, wr,
 			jbc_addr, jbc_data,
 			io_irq, io_irq_ena,
+			sp_ov,
 			stack_tos, stack_nos
 		);
 
@@ -329,7 +337,7 @@ end process;
 			io_rd, io_wr, io_addr_wr, io_dout,
 			io_irq, io_irq_ena,
 			ser_txd, ser_rxd, ser_ncts, ser_nrts,
-			wd,
+			wd_out,
 --			io_b, io_l, io_r, io_t
 			open, open, open, open
 		);
