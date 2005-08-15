@@ -163,6 +163,9 @@ public class Flash {
 	public static int getFirst(int strnr) {
 
 		if (nrStr!=strnr) {
+System.out.println("getFirst: wrong strnr");
+			return -1;
+/* automatic load is disabled due to stack issues.
 			if (!loadStr(strnr)) {
 				return -1;
 			}
@@ -171,13 +174,15 @@ public class Flash {
 					return -1;
 				}
 			}
+*/
 		}
 		return str[0].melnr;
 	}
 
-	/**
+	/*
 	*	Find last point to Strecke strnr.
-	*/
+	*
+	*	not used
 	public static int getLast(int strnr) {
 
 		if (nrStr!=strnr) {
@@ -192,6 +197,7 @@ public class Flash {
 		}
 		return str[lenStr-1].melnr;
 	}
+	*/
 
 	public static Point getPoint(int melnr) {
 
@@ -271,6 +277,7 @@ public class Flash {
 		if (str==null) init();
 		
 		textOk = false;
+		nrStr = -1;		// if not found
 		int i, j, k;
 		
 		// number of Strecken
@@ -285,6 +292,7 @@ public class Flash {
 					Dbg.wr("MAX_POINTS\n");
 					return false;
 				}
+
 				dstIp = intVal(addr+STR_IP);
 /*
 possible stack overfolw!!!
@@ -378,20 +386,13 @@ Dbg.wr(tmpStr[j]);
 	 *
 	 */
 	static boolean esStr() {
-		
-System.out.println("ES Strecke:");
-Dbg.intVal(Native.rdIntMem(253));
-Dbg.intVal(Native.rdIntMem(254));
-Dbg.intVal(Native.rdIntMem(255));
-Dbg.intVal(Native.getSP());
-System.out.println(Status.strNr);
+
 		int i, j, k;
 		int txtPtr = -1;
 		boolean left = true;
 		Point p1, p2;
 		// Suche die pointer zu den Stationstexten fuer die ES Strecke
 		for (i=0; i<lenStr; ++i) {
-System.out.println(i);
 			p1 = str[i];
 			if ((p1.flags&PT_FLG_ES)!=0) {
 				if (left) {
@@ -449,11 +450,10 @@ System.out.println(i);
 			p1.stationLine1.setLength(0);
 			p1.stationLine2.setLength(0);
 			p1.stationLine1.append(tmpStr[0]);
-System.out.print(p1.melnr);
-Dbg.wr(p1.stationLine1);
-System.out.println();
 		}
+	
 		return lenStr>0;
+
 	}
 
 	/**

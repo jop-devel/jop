@@ -84,7 +84,7 @@ public class Logic extends RtThread {
 
 		stateAfterQuit = Status.state;
 		connSent = false;
-		Status.esMode = false;
+		Status.esMode = true;
 	}
 
 	public void run() {
@@ -486,6 +486,7 @@ System.out.println("Connect");
 				int i;
 				for (i=0; i<cnt; ++i) {
 					if (nr==Flash.getStrNr(i)) {
+						Flash.loadStr(nr);
 						break;
 					}
 				}
@@ -1056,6 +1057,7 @@ System.out.println("Connect");
 
 		Status.strNr = getNumber(8, 3);
 		if (Status.strNr == -1) return;
+		Flash.loadStr(Status.strNr);
 
 		int melnr = Flash.getFirst(Status.strNr);
 		if (melnr==-1) {
@@ -1177,6 +1179,13 @@ System.out.println("Connect");
 
 		int val = 0;
 		int i = 0;
+		// TODO: move es-mode load Strecke to a different state
+		// a ES preparation state
+		// question: when shall be do the esStr()?
+		// is it necessary to do esStr() on ES Strecken befor findStr()?
+		Flash.loadStr(Status.strNr);
+		Flash.esStr();
+		
 		int melnr = Flash.getFirst(Status.strNr);
 		Flash.Point p = Flash.getPoint(melnr);
 		if (p==null) {

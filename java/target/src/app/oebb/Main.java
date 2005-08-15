@@ -27,6 +27,10 @@ package oebb;
 *				mit Taste 3 gedrueckt (SLIP). 
 *
 *	0.97-0.99	Interne Testversionen fuer Download mit Javaprog. > 64KB
+*
+*	0.95		Reset Fehler bei mehreren Streckn im ES-mode behoben.
+*				Diese Version ist nach 0.97, aber noch mit JOP pre2005
+*				version.
 *		
  0.97 Java Program ist noch <64KB, aber neuer JOP, Java Program braucht
       aber schon den neuen JOP zum Laufen. Unterscheidung der JOP versionen
@@ -41,14 +45,14 @@ import ejip.*;
 import joprt.*;
 
 import com.jopdesign.sys.Const;
-import com.jopdesign.sys.GC;
+//import com.jopdesign.sys.GC;
 import com.jopdesign.sys.Native;
 
 public class Main {
 
 	// SW version
 	public static final int VER_MAJ = 0;
-	public static final int VER_MIN = 97;
+	public static final int VER_MIN = 95;
 
 	// TODO find a schedule whith correct priorities
 	// Serial is 10
@@ -63,12 +67,14 @@ public class Main {
 	private static final int GPS_PERIOD = 100000;
 	private static final int DISPLAY_PRIO = 4;
 	private static final int DISPLAY_PERIOD = 5000;
-	private static final int COMM_PRIO = 5;
+	private static final int WD_PRIO = 5;
+	private static final int WD_PERIOD = 25000;
+	private static final int COMM_PRIO = 6;
 	private static final int COMM_PERIOD = 100000;
+	private static final int NET_PRIO = 7;
+	private static final int NET_PERIOD = 10000;
 	private static final int GPSSER_PRIO = 8;
 	private static final int GPSSER_PERIOD = 12000;
-	private static final int NET_PRIO = 6;
-	private static final int NET_PERIOD = 10000;
 	private static final int IPLINK_PRIO = 9;
 	private static final int IPLINK_PERIOD = 10000;
 	private static final int IPSER_PRIO = 10;
@@ -90,8 +96,6 @@ public class Main {
 
 		// ncts is set to '0' in bgio.vhd, so we can 'wait' with open line
 		Dbg.initSerWait();				// use serial line for debug output
-//		Dbg.wr("RESET ");
-		
 		Keyboard.init(Const.IO_BG);
 		Timer.wd();
 
@@ -176,9 +180,9 @@ public class Main {
 			// use second SLIP subnet for 'COs test'
 			ipLink = Slip.init(ser, (192<<24) + (168<<16) + (2<<8) + 2); 
 		} else {
-//			ipLink = Ppp.init(ser, pppThre); 
-			System.out.println("SLIP is default!!");
-			ipLink = Slip.init(ser,	(192<<24) + (168<<16) + (1<<8) + 2); 
+			ipLink = Ppp.init(ser, pppThre); 
+//			System.out.println("SLIP is default!!");
+//			ipLink = Slip.init(ser,	(192<<24) + (168<<16) + (1<<8) + 2); 
 		}
 
 		//
@@ -218,7 +222,31 @@ public class Main {
 		//	create Logic thread.
 		//
 		new Logic(LOGIC_PRIO, LOGIC_PERIOD, ipLink);
-System.out.println("startMission");
+		
+		//
+		//	watch dog in it's own thread
+		new RtThread(WD_PRIO, WD_PERIOD) {
+			public void run() {
+				
+				for (;;) {
+					for (int i=0; i<20; ++i) {
+						waitForNextPeriod();
+					}
+					if (!reset) {
+						Timer.wd();
+						Timer.loop();	// for the second timer
+					} else {
+						// for test without WD disable ints
+						Object o = new Object();
+						synchronized(o) {
+							for (;;);	// wait on WD!
+						}
+					}
+				}
+			}
+		};
+
+//System.out.println("startMission");
 		//
 		//	start all threads
 		//
@@ -234,39 +262,13 @@ System.out.println("startMission");
 	private static void forever() {
 
 		//
-		//	just do the WD blink with lowest priority
-		//	=> if the other threads take to long (*3) there will be a reset
+		//	Nothing to do in main thread.
+		//	We could measure CPU utilization here.
 		//
-/*
-ipLink.startConnection(new StringBuffer("ATD*99***1#\r"), 
-		new StringBuffer("AT+CGDCONT=1,\"IP\",\"A1.net\"\r"), 
-		new StringBuffer("ppp@A1plus.at"), 
-		new StringBuffer("ppp"));
-
-ipLink.startConnection(new StringBuffer("ATD*99***1#\r"), 
-		new StringBuffer("AT+CGDCONT=1,\"IP\",\"network\"\r"), 
-		new StringBuffer("peter"), 
-		new StringBuffer("paul"));
-*/
-
-
 
 		for (;;) {
 
-			if (!reset) {
-				Timer.wd();
-				Timer.loop();	// for the second timer
-} else {	// for test without WD
-
-Object o = new Object();
-synchronized(o) {
-	for (;;);	// wait on WD!
-}
-			}
-
-			for (int i=0; i<25; ++i) {
-				RtThread.sleepMs(20);
-			}
+			RtThread.sleepMs(1000);
 //			System.out.print("free memory: ");
 //			System.out.println(GC.freeMemory());
 		}

@@ -398,10 +398,15 @@ Dbg.wr("m/s \n");
 	private static void checkStrMelnr() {
 
 		if (Status.strNr<=0) {
-			Strecke.find.fire();
-			findStr();
+			if (Strecke.idle) {
+				Strecke.idle = false;
+				// set coordinates
+				Strecke.lat = last_lat;
+				Strecke.lon = last_lon;
+				Strecke.find.fire();
+			}
 		} else {
-			int melnr = getMelnr();
+			int melnr = getMelnr(Status.strNr, last_lat, last_lon);
 			if (melnr != Status.melNr) {
 Dbg.wr("Melderaum: ");
 Dbg.intVal(melnr);
@@ -428,69 +433,12 @@ Dbg.wr("\n");
 		}
 	}
 
-	/**
-	 * Strecken muessen mindestens 1km voneinander
-	 * entfernt sein sonst ist eine Benutzereingabe erforderlich.
-	 */
-	private static final int MIN_DIST = 1000;
-	
-	private static void findStr() {
-
-
-		int cnt = Flash.getCnt();
-System.out.print(cnt);
-System.out.println(" Strecken");
-		int min = 999999999;
-		int dist, strNr = 0;
-		boolean foundOne = false;
-
-		//
-		//	We have to enter it manually
-		//
-		if (Status.selectStr) return;
-		
-Dbg.wr("find Strecke\n");
-		for (int i=0; i<cnt; ++i) {
-//Dbg.intVal(Native.rdIntMem(253));
-//Dbg.intVal(Native.rdIntMem(254));
-//Dbg.intVal(Native.rdIntMem(255));
-			int nr = Flash.getStrNr(i);
-Dbg.intVal(nr);
-			dist = getDistStr(nr);
-Dbg.intVal(dist);
-Dbg.wr("\n");
-			if (dist<min) {
-				min = dist;
-				strNr = nr;
-			}
-			if (dist<MIN_DIST) {
-				if (foundOne) {
-					Status.selectStr = true;
-//System.out.println("Strecke nicht eindeutig");
-					return;
-				} else {
-					foundOne = true;
-				}
-			}
-		}
-		// set it temporarily to find a melnr
-		// that's ok, Comm waits for a correct melnr
-		Status.strNr = strNr;
-		if (getMelnr()!=-1) {
-Dbg.wr("found: ");
-Dbg.intVal(strNr);
-Dbg.wr("\n");
-			Status.strNr = strNr;
-		} else {
-			Status.strNr = 0;
-		}
-	}
 
 
 	/**
 	*	calculate distance in meter.
 	*/
-	private static int dist(int lat_diff, int lon_diff) {
+	static int dist(int lat_diff, int lon_diff) {
 
 		// to simplifiy rounding
 		if (lat_diff<0) lat_diff = -lat_diff;
@@ -516,39 +464,12 @@ Dbg.wr("\n");
 		return val;
 	}
 
-	/**
-	*	find nearest point in strNr and return distance in m.
-	*/
 
-	private static int getDistStr(int strNr) {
+	private static int findNearestPoint(int strNr) {
 
 		if (strNr<=0) return -1;
 
 		int nr = Flash.getFirst(strNr);
-
-		int melnr = nr;
-		int diff = 999999999;
-
-		while (nr!=-1) {
-			Flash.Point p = Flash.getPoint(nr);
-			if (p==null) break;
-			if (p.lat!=0 && p.lon!=0) {
-				int i = dist(p.lat-last_lat, p.lon-last_lon);
-				if (i<diff) {
-					diff = i;
-					melnr = nr;
-				}
-			}
-			nr = Flash.getNext(nr);
-		}
-		return diff;
-	}
-
-	private static int findNearestPoint() {
-
-		if (Status.strNr<=0) return -1;
-
-		int nr = Flash.getFirst(Status.strNr);
 
 		int melnr = -1;
 		int diff = 999999999;
@@ -570,10 +491,10 @@ Dbg.wr("\n");
 		return melnr;
 	}
 
-	private static int getMelnr() {
+	static int getMelnr(int strNr, int lat, int lon) {
 
 		int ret = -1;			// default not found
-		int b = findNearestPoint();
+		int b = findNearestPoint(strNr);
 		nearestPoint = b;
 		if (b==-1) return -1;	// not even one point found
 
@@ -597,9 +518,9 @@ Dbg.wr("\n");
 		Flash.Point pb = Flash.getPoint(b);
 		Flash.Point pc = Flash.getPoint(c);
 		
-		int xa = dist(pa.lat-last_lat, pa.lon-last_lon);
-		int xb = dist(pb.lat-last_lat, pb.lon-last_lon);
-		int xc = dist(pc.lat-last_lat, pc.lon-last_lon);
+		int xa = dist(pa.lat-lat, pa.lon-lon);
+		int xb = dist(pb.lat-lat, pb.lon-lon);
+		int xc = dist(pc.lat-lat, pc.lon-lon);
 
 		int ab = dist(pa.lat-pb.lat, pa.lon-pb.lon);
 		int bc = dist(pb.lat-pc.lat, pb.lon-pc.lon);
