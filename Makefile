@@ -115,7 +115,7 @@ sim: java_app
 #		without the tools
 #
 jsim: java_app
-	java -cp java/tools/dist/lib/jop-tools.jar -Dlog="true" -Dhandle="true" \
+	java -cp java/tools/dist/lib/jop-tools.jar -Dlog="false" -Dhandle="true" \
 	com.jopdesign.tools.JopSim java/target/dist/bin/$(P2)_$(P3).jop
 
 
