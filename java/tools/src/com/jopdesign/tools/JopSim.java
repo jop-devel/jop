@@ -13,7 +13,6 @@
 package com.jopdesign.tools;
 
 import java.io.*;
-import java.util.*;
 import com.jopdesign.sys.*;
 
 public class JopSim {
@@ -47,6 +46,9 @@ public class JopSim {
 	static boolean interrupt;
 	static boolean intEna;
 
+	//	find JVM exit
+	static String exitStr = "JVM exit!";
+	static char[] exitBuf = new char[exitStr.length()];
 	//
 	//	only for statistics
 	//
@@ -125,7 +127,7 @@ public class JopSim {
 
 		pc = vp = 0;
 		sp = 128;
-		int ptr = readMem(0);
+		int ptr = readMem(1);
 		jjp = readMem(ptr+1);
 		jjhp = readMem(ptr+2);
 
@@ -280,6 +282,14 @@ System.out.println(mp+" "+pc);
 				if (log) System.out.print("\t->");
 				System.out.print((char) val);
 				if (log) System.out.println("<-");
+				// check the output for JVM exit!
+				for (int i=0; i<exitStr.length()-1; ++i) {
+					exitBuf[i] = exitBuf[i+1];
+				}
+				exitBuf[exitBuf.length-1] = (char) val;
+				if (new String(exitBuf).equals(exitStr)) {
+					System.exit(0);
+				}
 				break;
 			case Const.IO_INT_ENA:
 				intEna = (val==0) ? false : true;

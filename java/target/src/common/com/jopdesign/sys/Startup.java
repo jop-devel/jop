@@ -14,7 +14,7 @@ package com.jopdesign.sys;
  */
 public class Startup {
 	
-	// use static vars, don't waste stack
+	// use static vars, don't waste stack space
 	static int var;
 
 	// a stack for the interpreter mode
@@ -32,7 +32,9 @@ public class Startup {
 		
 		started = false;
 		msg();
-		var = Native.rdMem(0);		// pointer to 'special' pointers
+		// mem(0) is the length of the application
+		// or in other words the heap start
+		var = Native.rdMem(1);		// pointer to 'special' pointers
 		// first initialize the GC with the address of static ref. fields
 		GC.init(var+4);
 		// place for some initialization:
@@ -43,7 +45,7 @@ public class Startup {
 		clazzinit();
 		
 		// call main()
-		var = Native.rdMem(0);		// pointer to 'special' pointers
+		var = Native.rdMem(1);		// pointer to 'special' pointers
 		var = Native.rdMem(var+3);	// pointer to main method struct
 		Native.invoke(0, var);		// call main (with null pointer on TOS
 		exit();

@@ -67,6 +67,7 @@
 //	2005-06-20  use indirection, GC info in class struct
 //	2005-07-28	fix missing indirection bug in thread stack move (int2ext and ext2int)
 //	2005-08-13	moved null pointer check in xaload/store to check the handle!
+//	2005-08-16	new file/download format with a size field in the first word
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -77,7 +78,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20050813
+version		= 20050816
 
 //
 //	io register
@@ -214,17 +215,14 @@ addr		?			// address used for bc load from flash
 #ifdef SIMULATION
 //
 //	Main memory (ram) is loaded by the simulation.
-//	Just set the heap pointer and load mp from ram
-//		This could be done in all versions!
+//	Just set the heap pointer from the size field.
 //
-			ldi	max_words
-			stm	heap
 			ldi	0
 			stmra
 			wait
 			wait
 			ldmrd
-			stm	mp
+			stm	heap
 #else
 //
 //
@@ -233,11 +231,19 @@ addr		?			// address used for bc load from flash
 			ldi	0
 			stm	heap		// word counter (ram address)
 
+#ifdef FLASH
 //
 //	start address of Java program in flash: 0x80000
 //
 			ldi	524288		// only for jvmflash usefull
 			stm	addr
+#endif
+
+//
+//	Variable a will be the length set by the first word.
+//	Variable c is used to assemble the word from the
+//	serial transmitted bytes.
+//
 
 xram_loop:
 			ldi	4			// byte counter
@@ -309,8 +315,8 @@ ser4:
 			bnz	cnt_not_0
 			nop
 			nop
-			ldm	c				// first 'real' data is pointer to main struct
-			stm	mp
+			ldm	c				// first data word is the size of the application
+			stm a
 
 cnt_not_0:
 			ldm	heap		// mem counter
@@ -320,7 +326,7 @@ cnt_not_0:
 
 not_first:
 			ldm	heap
-			ldi	max_words
+			ldm	a
 			xor
 			nop
 			bnz	xram_loop
@@ -328,6 +334,16 @@ not_first:
 			nop
 
 #endif // SIMULATION
+
+//
+//	Load mp from the second word in ram.
+//
+			ldi	1
+			stmra
+			wait
+			wait
+			ldmrd
+			stm	mp
 //
 //	ram is now loaded, heap points to free ram
 //	load pointer to main struct and invoke

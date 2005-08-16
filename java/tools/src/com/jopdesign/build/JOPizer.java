@@ -75,6 +75,12 @@ public class JOPizer {
 	static String mainClass;
 	
 	/**
+	 * Length of the generated application in words.
+	 * It is written as the first word in .jop
+	 * Equal to the address of the first free memory = heap start.
+	 */
+	int length;
+	/**
 	 * Start of bytecode
 	 */
 	int codeStart;
@@ -86,10 +92,7 @@ public class JOPizer {
 	 * Address of class info structures
 	 */
 	int clinfoAddr;
-	/**
-	 * Address of first free memory
-	 */
-	int heapStart;
+
 	
 	public JOPizer() {
 		
@@ -208,7 +211,7 @@ public class JOPizer {
 				// we have 'illegal' instructions in the bytecode.
 	
 
-				jz.codeStart = 1;
+				jz.codeStart = 2;
 				// Now we can set the method info code and the address
 				// jz.pointerAddr is set
 				jz.iterate(new SetMethodInfo(jz));
@@ -236,7 +239,7 @@ public class JOPizer {
 				ClassAddress cla = new ClassAddress(jz, jz.clinfoAddr);
 				jz.iterate(cla);
 				// Now all sizes are known
-				jz.heapStart = cla.getAddress();
+				jz.length = cla.getAddress();
 
 				// set back the start addresses
 				ClassInfo.addrValueStatic = addrVal; 

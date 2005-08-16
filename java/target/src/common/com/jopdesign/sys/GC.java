@@ -11,9 +11,10 @@ package com.jopdesign.sys;
  */
 public class GC {
 	
-	static final int MEM_START = 16384; // 64KB for .jop
+	static int mem_start;		// read from memory
 //	static final int MEM_SIZE = 10000;
-	static final int MEM_SIZE = 256000-16384;
+	static final int MEM_SIZE = 256000; // in words (262144)
+	static int full_heap_size;
 	/**
 	 * The handle contains following data:
 	 * 0 pointer to the object in the heap
@@ -36,9 +37,8 @@ public class GC {
 	
 	static final int OFF_NEXT = 4;
 	static final int TYPICAL_OBJ_SIZE = 10;
-	static final int HANDLE_CNT = MEM_SIZE/(TYPICAL_OBJ_SIZE+HANDLE_SIZE);
-//	static final int HANDLE_CNT = 200;
-	static final int HEAP_SIZE = (MEM_SIZE-HANDLE_CNT*HANDLE_SIZE)/2;
+	static int handle_cnt;
+	static int heap_size;
 	
 	
 	static int stackStart;
@@ -56,20 +56,28 @@ public class GC {
 		
 		addrStaticRefs = addr;
 		
-		heapStartA = MEM_START+HANDLE_CNT*HANDLE_SIZE;
-		heapStartB = heapStartA+HEAP_SIZE;
-// System.out.println("Heap: "+heapStartA+" "+heapStartB+" "+(heapStartB+HEAP_SIZE));
-// System.out.println("Size: "+HEAP_SIZE+" words");
+		mem_start = Native.rdMem(0);
+		full_heap_size = MEM_SIZE-mem_start;
+		handle_cnt = full_heap_size/2/(TYPICAL_OBJ_SIZE+HANDLE_SIZE);
+//		handle_cnt = 200;
+		heap_size = (full_heap_size-handle_cnt*HANDLE_SIZE)/2;
+		
+		heapStartA = mem_start+handle_cnt*HANDLE_SIZE;
+		heapStartB = heapStartA+heap_size;
+		
+// we canot call System.out here!
+// System.out.println("Heap: "+heapStartA+" "+heapStartB+" "+(heapStartB+heap_size));
+// System.out.println("Size: "+heap_size+" words");
 		useA = true;
 		heapPtr = heapStartA;
 		stackStart = heapStartB;
-		heapEnd = heapPtr+HEAP_SIZE;
+		heapEnd = heapPtr+heap_size;
 		
 		freeList = 0;
 		useList = 0;
 		sp = 0;
-		for (int i=0; i<HANDLE_CNT; ++i) {
-			addToFreeList(MEM_START+i*HANDLE_SIZE);
+		for (int i=0; i<handle_cnt; ++i) {
+			addToFreeList(mem_start+i*HANDLE_SIZE);
 		}
 		// clean the heap
 		for (int i=heapPtr; i<heapEnd; ++i) {
@@ -118,7 +126,7 @@ public class GC {
 		// investigated.
 // System.out.print("?p ");
 // System.out.print(ref);
-		if (ref<MEM_START || ref>=MEM_START+HANDLE_CNT*HANDLE_SIZE) return;
+		if (ref<mem_start || ref>=mem_start+handle_cnt*HANDLE_SIZE) return;
 		// Is this handle on the free list?
 		// Is possible when using conservative stack scanning
 		if (Native.rdMem(ref+OFF_MTAB)==0) return;
@@ -128,7 +136,7 @@ public class GC {
 // System.out.print(ref);
 		Native.wrMem(ref, stackStart+sp);
 		++sp;
-		if (sp==HEAP_SIZE) {	// do we really need this check???
+		if (sp==heap_size) {	// do we really need this check???
 			// mark stack should be large enough if the same size
 			// as the heap
 			// However, think about concurrent allocation space
@@ -257,7 +265,7 @@ public class GC {
 			heapPtr = heapStartB;			
 			stackStart = heapStartA;
 		}
-		heapEnd = heapPtr+HEAP_SIZE;
+		heapEnd = heapPtr+heap_size;
 		
 		int ref = useList;
 		while (ref!=0) {
@@ -279,7 +287,7 @@ public class GC {
 			Native.wrMem(0, i);
 		}
 		// for tests clean also the former from space
-		for (int i=stackStart; i<stackStart+HEAP_SIZE; ++i) {
+		for (int i=stackStart; i<stackStart+heap_size; ++i) {
 			Native.wrMem(0, i);
 		}
 	}
@@ -294,6 +302,7 @@ public class GC {
 		sweep();
 		compact();
 */
+
 		System.out.print(free());
 		System.out.println(" words free");
 		
@@ -430,7 +439,7 @@ public class GC {
 	 * @return
 	 */
 	public static int totalMemory() {
-		return HEAP_SIZE*4;
+		return heap_size*4;
 	}
 	
 /*	

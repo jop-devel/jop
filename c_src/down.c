@@ -14,21 +14,58 @@
 #include <stdio.h>
 #include <string.h>
 
-// #include "/usr/include/ecpio.h"
-
-#define DOWN_CNT	16384
+// maximum of 1MB
+#define MAX_MEM	(1048576/4)
 
 static int prog_cnt = 0;
 static char prog_char[] = {'|','/','-','\\','|','/','-','\\'};
 static char *exitString = "JVM exit!";
 
-main(int argc, char *argv[]) {
+int wr(HANDLE hCom, unsigned char data) {
+
+	DWORD cnt;
+	unsigned char c;
+
+	WriteFile(hCom, &data, 1, &cnt, NULL);
+//	printf("%d-", data); fflush(stdout);
+	ReadFile(hCom, &c, 1, &cnt, NULL);
+//	printf("%d ", c); fflush(stdout);
+	if (data != c) {
+		printf("error during download\n");
+		exit(-1);
+	}
+	if (cnt!=1) {
+		printf("timeout during download\n");
+		exit(-1);
+	}
+
+
+	return 0;
+}
+
+int wr32(HANDLE hCom, long data) {
+
+	int j;
+
+	for (j=0; j<4; ++j) {
+		wr(hCom, data>>((3-j)*8));
+	}
+
+	++prog_cnt;
+	if ((prog_cnt&0x3f) == 0) {
+		printf("%c\r", prog_char[(prog_cnt>>6)&0x07]);
+		fflush(stdout);
+	}
+	return 0;
+}
+
+int main(int argc, char *argv[]) {
 
 	unsigned char c;
 	int i, j;
 	long l;
 
-	long ram[DOWN_CNT];
+	long *ram;
 	long len;
 
 	HANDLE hCom;
@@ -40,6 +77,12 @@ main(int argc, char *argv[]) {
 	FILE *fp;
 	char buf[10000];
 	char *tok;
+
+	ram = calloc(MAX_MEM, 4);
+	if (ram==NULL) {
+		printf("error with allocation\n");
+		exit(-1);
+	}
 
 	if (argc<3) {
 		printf("usage: down [-e] file port\n");
@@ -135,8 +178,8 @@ and should be changed after download for the echo
 				ram[len++] = l;
 			}
 			tok = strtok(NULL, " ,\t");
-			if (len>=DOWN_CNT) {
-				printf("too many words (%d/%d)\n", len, DOWN_CNT);
+			if (len>=MAX_MEM) {
+				printf("too many words (%d/%d)\n", len, MAX_MEM);
 				exit(-1);
 			}
 		}
@@ -147,27 +190,16 @@ and should be changed after download for the echo
 //
 //	write external RAM
 //
-	printf("%d words of Java bytecode (%d KB)\n", ram[0], ram[0]/256);
+	printf("%d words of Java bytecode (%d KB)\n", ram[1]-1, (ram[1]-1)/256);
 
-//	wr32(hCom, len);
 	for (j=0; j<len; ++j) {
 		wr32(hCom, ram[j]);
 	}
 	printf("%d words external RAM (%d KB)\n", j, j/256);
-	for (; j<DOWN_CNT; ++j) {
-		wr32(hCom, 0);
-	}
 
 	printf("download complete\n");
 	printf("\n\n");
 
-//
-// read ECP output of Jop
-//
-/*
-	printf("reading ECP: don't stop with CTRL^C!!!\n");
-	echo_ecp();
-*/
 //
 // read serial output of Jop
 //
@@ -175,8 +207,9 @@ and should be changed after download for the echo
 		buf[j] = 0;
 	}
 	if (argc!=3) {
+		DWORD rdCnt;
 		for (;;) {
-			ReadFile(hCom, &c, 1, &i, NULL);	// read without timeout -> kbhit is useless
+			ReadFile(hCom, &c, 1, &rdCnt, NULL);	// read without timeout -> kbhit is useless
 			printf("%c", c); fflush(stdout);
 			for (j=0; j<strlen(exitString)-1; ++j) {
 				buf[j] = buf[j+1];
@@ -192,79 +225,7 @@ and should be changed after download for the echo
 */
 
 	CloseHandle(hCom);
-}
-
-int wr32(HANDLE hCom, long data) {
-
-	int j;
-
-	for (j=0; j<4; ++j) {
-		wr(hCom, data>>((3-j)*8));
-	}
-
-	++prog_cnt;
-	if ((prog_cnt&0x3f) == 0) {
-		printf("%c\r", prog_char[(prog_cnt>>6)&0x07]);
-		fflush(stdout);
-	}
-	return 0;
-}
-
-int wr(HANDLE hCom, unsigned char data) {
-
-	int cnt;
-	unsigned char c;
-
-	WriteFile(hCom, &data, 1, &cnt, NULL);
-//	printf("%d-", data); fflush(stdout);
-	ReadFile(hCom, &c, 1, &cnt, NULL);
-//	printf("%d ", c); fflush(stdout);
-	if (data != c) {
-		printf("error during download\n");
-		exit(-1);
-	}
-	if (cnt!=1) {
-		printf("timeout during download\n");
-		exit(-1);
-	}
-
 
 	return 0;
 }
 
-/*
-	 not used in bb project
-
-int start_ecp() {
-
-	ecp_ecr_ps2();			// bidir. mode
-	if (!ecp_negotiate()) {
-		printf( "error in negotiation\n" );
-		return 0;
-	}
-	ecp_ecr_ecp();			// switch to ecp mode
-	ecp_periph2pc();		// disable output, revers request
-}
-#define BUF_LEN 256
-int echo_ecp() {
-
-	int i, j;
-	unsigned char buf[BUF_LEN];
-
-	start_ecp();			// causes delay in EcpPrime
-
-	while (!kbhit()) {
-
-		if (i = ecp_read( buf, BUF_LEN)) {
-			for (j=0; j<i; ++j) {
-				printf("%c", buf[j] );
-			}
-		}
-	}
-
-
-	ecp_pc2periph();				// end reverse, enable output
-	ecp_ecr_ps2();					// back to bidir. mode
-	ecp_terminate();				// and set c3 to 0
-}
-*/

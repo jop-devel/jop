@@ -29,9 +29,11 @@ public class JopWriter {
 	
 	public void write() {
 		
-		out.println("//\tlength of code in 32 bit words = address of 'special' pointer");
-		out.println("\t"+jz.pointerAddr+",");
-		
+		out.print("\t"+jz.length+",");
+		out.println("//\tlength of the application in words (including this word)");
+		out.print("\t"+jz.pointerAddr+",");
+		out.println("//\tpointer to special pointers = address of 'special' pointer");
+			
 		dumpByteCode();
 		
 		out.println("//");

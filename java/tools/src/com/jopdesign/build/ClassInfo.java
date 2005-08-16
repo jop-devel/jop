@@ -240,7 +240,7 @@ public class ClassInfo {
 		
 		int i;
 		instGCinfo = getGCInfo();
-		// first are the class variables - the static fields
+		// the class variables (the static fields) are in a special area
 		staticRefVarAddress = addrRefStatic;
 		staticValueVarAddress = addrValueStatic;
 		for (i=0; i<clft.len; ++i) {

@@ -15,7 +15,7 @@ use ieee.numeric_std.all;
 -- use IEEE.std_logic_textio.all;          -- I/O for logic types
 
 entity memory is
-	generic(add_bits : integer := 12;
+	generic(add_bits : integer := 18;
 		data_bits : integer := 32);
 	port(
 		addr	: in std_logic_vector(add_bits-1 downto 0);
@@ -63,14 +63,16 @@ initialize:
 process
 
 	variable address	: natural;
+	variable cnt		: natural;
 
 	file memfile		: text is "mem_main.dat";
 	variable memline	: line; 
+	variable l 			: line;
 	variable val		: integer;
 variable x : integer;
 
 	begin
---		write(output, "load main memory...");
+		write(output, "load main memory...");
 		for address in 0 to nwords-1 loop
 			if endfile(memfile) then
 				exit;
@@ -78,8 +80,13 @@ variable x : integer;
 			readline(memfile, memline);
 			read(memline, val);
 			ram(address) := std_logic_vector(to_signed(val, data_bits));
+			cnt := address;
 		end loop;
 		file_close(memfile);
+		cnt := cnt+1;
+		write(output, " words: ");
+		write(l, cnt);
+		writeline(output, l);
 		-- we're done, wait forever
 		wait;
 	end process initialize;

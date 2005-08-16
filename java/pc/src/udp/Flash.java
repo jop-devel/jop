@@ -14,7 +14,7 @@
 *	Flash overview (in 64 KB sectors):
 *
 *		0x00000 :	Java program
-*		0x10000 :	HTML
+*		0x10000 :	HTML or longer Java program
 *		0x20000 :	user data, Streckendaten in oebb BG263
 *		0x30000 :	Applet for TAL, bgid in oebb
 *		0x40000 :	CYC config
@@ -30,19 +30,19 @@ public class Flash extends FlashConst {
 
 	protected static final int FLASH_SIZE = 0x80000;
 	protected static final int SECTOR_SIZE = 0x10000;
-	protected static final int SECTOR_MASK = 0xf0000;
+	protected static final int SECTOR_MASKx = 0xf0000;
 	protected static final int SECTOR_SHIFT = 16;
 
 	protected static final int MAX_ACEX = 32768*3;	// 96kB (acex 1k50)
 	protected static final int MAX_MEM = 65536*4;		// 256kB (Cyclone)
-	protected static final int MAX_JAVA = 16384*4;	// max. 16384 word (-1 for address)
+	protected static final int MAX_JAVA = 16384*4*2;	// max. 128KB
 	protected static final int MAX_HTML = 1024;		// max. 1KB
 
 	protected static final int START_JAVA = 0x00000;
 	protected static final int START_HTML = 0x10000;
 	protected static final int START_DATA = 0x20000;
 	protected static final int START_CONFIG = 0x30000;
-	protected static final int START_TTF = 0x60000;
+	protected static final int START_ACX_TTF = 0x60000;
 	protected static final int START_CYC_TTF = 0x40000;
 	
 	protected int start;
@@ -84,7 +84,7 @@ public class Flash extends FlashConst {
 			s = s.substring(pos);
 			if (s.equals(".jop") || s.equals(".bin")) {
 				isJava = true;
-				start= START_JAVA & SECTOR_MASK;
+				start= START_JAVA;
 			} else if (s.equals(".html")) {
 				isHtml = true;
 				start= START_HTML;
@@ -93,7 +93,8 @@ public class Flash extends FlashConst {
 				start= START_CONFIG;
 			} else if (s.equals(".ttf")) {
 				isTtf = true;
-				start= START_TTF;					// assume a file for Jopcore (ACEX)
+				// TODO: should be changed to an option
+				start= START_ACX_TTF;		// assume a file for Jopcore (ACEX)
 			} else {
 				System.out.println("wrong file type: '"+s+"'");
 				System.exit(-1);
@@ -102,10 +103,6 @@ public class Flash extends FlashConst {
 			if (isJava || isTtf) {
 
 				BufferedReader in = new BufferedReader(new FileReader(f));
-
-				if (isJava) {			// not at sector boundery
-					len= START_JAVA & ~SECTOR_MASK;
-				}
 
 				while ((line = in.readLine()) != null) {
 
@@ -130,8 +127,8 @@ public class Flash extends FlashConst {
 							System.out.println("too many words");
 							System.exit(-1);
 						}
-						if (isJava && len==MAX_JAVA+(START_JAVA & ~SECTOR_MASK)) {
-							System.out.println("too many words: change jvmflash.asm");
+						if (isJava && len==MAX_JAVA) {
+							System.out.println("too many words for this Flash");
 							System.exit(-1);
 						}
 					}
