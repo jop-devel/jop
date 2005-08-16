@@ -82,12 +82,14 @@ public class BgInit {
 			}
 		};
 
-		//
-		//	WD thread has lowest priority to see if every timing will be met
-		//
+
+		System.out.println("Bginit");
 
 		RtThread.startMission();
 
+		//
+		//	WD thread has lowest priority to see if every timing will be met
+		//
 		forever();
 	}
 
