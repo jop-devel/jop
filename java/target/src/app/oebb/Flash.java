@@ -366,8 +366,14 @@ Dbg.wr(tmpStr[j]);
 			}
 			p.stationLine1.setLength(0);
 			p.stationLine2.setLength(0);
-			p.stationLine1.append(tmpStr[line]);
-			p.stationLine2.append(tmpStr[line+1]);
+			// recycle first text if the second one is not set
+			off = line;
+			if (line==2 && tmpStr[line].length()==0) {
+				off = 0;
+			}
+			p.stationLine1.append(tmpStr[off]);
+			p.stationLine2.append(tmpStr[off+1]);
+
 			
 			p.verschubVon.setLength(0);
 			p.verschubVon.append(tmpStr[4]);
@@ -392,6 +398,7 @@ Dbg.wr(tmpStr[j]);
 		boolean left = true;
 		Point p1, p2;
 		// Suche die pointer zu den Stationstexten fuer die ES Strecke
+System.out.println("ES Strecke:");
 		for (i=0; i<lenStr; ++i) {
 			p1 = str[i];
 			if ((p1.flags&PT_FLG_ES)!=0) {

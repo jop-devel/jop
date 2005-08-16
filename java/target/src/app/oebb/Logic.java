@@ -1313,6 +1313,7 @@ System.out.println("Connect");
 		// hoffentlich reicht das!!
 		initVals();
 		Status.esMode = false;
+		Status.strNr = 0;
 		// force a new Str. load
 		Flash.forceReload();
 		int tim = Timer.getTimeoutSec(2);

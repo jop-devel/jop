@@ -31,6 +31,8 @@ package oebb;
 *	0.95		Reset Fehler bei mehreren Streckn im ES-mode behoben.
 *				Diese Version ist nach 0.97, aber noch mit JOP pre2005
 *				version.
+*
+*	0.98		Verwende Text 1 und 2, wenn 3 und 4 nicht gesetzt sind.
 *		
  0.97 Java Program ist noch <64KB, aber neuer JOP, Java Program braucht
       aber schon den neuen JOP zum Laufen. Unterscheidung der JOP versionen
@@ -52,13 +54,9 @@ public class Main {
 
 	// SW version
 	public static final int VER_MAJ = 0;
-	public static final int VER_MIN = 95;
+	public static final int VER_MIN = 98;
 
 	// TODO find a schedule whith correct priorities
-	// Serial is 10
-	// Ppp or Slip is 9
-	// Serial2 (GPS) is 8
-	// Net is 5
 	private static final int LOGIC_PRIO = 1;
 	private static final int LOGIC_PERIOD = 100000;
 	private static final int STRECKE_PRIO = 2;
@@ -250,6 +248,8 @@ public class Main {
 		//
 		//	start all threads
 		//
+
+
 		RtThread.startMission();
 
 		//
