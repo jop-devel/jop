@@ -127,6 +127,10 @@ public class Ppp extends LinkLayer {
 *	request for reconnect.
 */
 	private static boolean reconnectRequest;
+/**
+*	request for a disconnect.
+*/
+	private static boolean disconnectRequest;
 	
 	private static int connCount;
 
@@ -165,6 +169,7 @@ public class Ppp extends LinkLayer {
 		ip = 0;
 		ipRemote = 0;
 		reconnectRequest = false;
+		disconnectRequest = false;
 
 		initStr();
 
@@ -210,13 +215,20 @@ public class Ppp extends LinkLayer {
 	}
 
 	/**
-	*	Forces the connection to be new established.
+	*	Forces the connection to be anew established.
 	*/
 	public void reconnect() {
 // System.out.println("reconnect");
 		reconnectRequest = true;
 		connCount = 0;
 		ip = 0;
+	}
+	
+	/**
+	 * not used at the moment
+	 */
+	public void disconnect() {
+		disconnectRequest = true;
 	}
 /**
 *	main loop. However this loop NEVER returns!
@@ -270,11 +282,6 @@ public class Ppp extends LinkLayer {
 		pwd.append("ppp");
 */
 
-/*
-		con.append("AT+CGDCONT=1,\"IP\",\"oebb.A1.net\"\r");
-		uid.append("z252245");
-		pwd.append("StTfDg$");
-*/
 
 		dial.append("ATD*99***1#\r");
 
@@ -589,6 +596,10 @@ Dbg.wr('\n');
 // System.out.print("3");
 			modemHangUp();		// start over
 			modemInit();
+		}
+		
+		if (disconnectRequest) {
+			modemHangUp();		// stop the connection
 		}
 
 		if (state==CONNECTED) {			// send waiting ip packets

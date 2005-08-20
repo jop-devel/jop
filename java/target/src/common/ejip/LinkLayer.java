@@ -50,6 +50,9 @@ public abstract class LinkLayer {
 			StringBuffer connect, StringBuffer user, StringBuffer passwd);
 	public abstract void reconnect();
 	public abstract int getConnCount();
+	public void disconnect() {
+		// only usefull for PPP
+	}
 
 	public abstract void loop();
 }
