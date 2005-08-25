@@ -52,8 +52,10 @@ public class Cmd {
 	public static final int NOT_QUIT_RPL = 42;
 	public static final int VERSCHUB = 43;
 	public static final int VERSCHUB_RPL = 44;
+/* 2005-08-19: wird nicht mehr verwendet
 	public static final int FERL_QUIT = 45;
 	public static final int FERL_QUIT_RPL = 46;
+*/
 	public static final int GPS_INFO = 47;
 	public static final int GPS_INFO_RPL = 48;
 	public static final int ST_LERN = 49;
@@ -66,4 +68,5 @@ public class Cmd {
 	public static final int ALARM_UEBERF = 1;
 	public static final int ALARM_RICHTUNG = 2;
 	public static final int ALARM_FAEHRT = 3;
+	public static final int ALARM_ES221 = 4;
 }

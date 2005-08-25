@@ -22,13 +22,15 @@ public class Display extends RtThread {
 	static boolean inetOk;
 
 	static final int ESC = 0x1b;
-	static final int FON = 0x52;	// Language
+	// Language for 7 bit encoding
+	static final int FON = 0x52;
 	static final int GER = 2;
+
 	static final int CCT = 0x74;	// character code type
 	static final int LAT = 16;		// WPC 1252
 	static final int HOM = 0x0b;
 
-	static final int FB_OFF = 7;
+	static final int FB_OFF = 4;
 
 	Display(int prio, int period) {
 		super(prio, period);
@@ -104,11 +106,8 @@ public class Display extends RtThread {
 
 		fb[0] = HOM;
 		fb[1] = ESC;
-		fb[2] = FON;
-		fb[3] = GER;
-		fb[4] = ESC;
-		fb[5] = CCT;
-		fb[6] = LAT;
+		fb[2] = CCT;
+		fb[3] = LAT;
 		for (int i=0; i<20*4; ++i) {
 			fb[i+FB_OFF] = ' ';
 		}
@@ -358,6 +357,15 @@ public class Display extends RtThread {
 		write(40, l3);
 	}
 
+	/**
+	*	Write three lines.
+	*/
+	public static void write(String l1, StringBuffer l2, String l3) {
+
+		write(0, l1);
+		write(20, l2);
+		write(40, l3);
+	}
 
 	public void run() {
 

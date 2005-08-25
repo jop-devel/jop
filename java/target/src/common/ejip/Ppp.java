@@ -186,7 +186,11 @@ public class Ppp extends LinkLayer {
 	*	Returns IP address, 0 if not connected.
 	*/
 	public int getIpAddress() {
-		return ip;
+		if (state==CONNECTED) {
+			return ip;
+		} else {
+			return 0;
+		}
 	}
 
 	/**
@@ -225,10 +229,11 @@ public class Ppp extends LinkLayer {
 	}
 	
 	/**
-	 * not used at the moment
+	 * Force a disconnect
 	 */
 	public void disconnect() {
 		disconnectRequest = true;
+		ip = 0;
 	}
 /**
 *	main loop. However this loop NEVER returns!
@@ -424,8 +429,8 @@ Dbg.wr('\n');
 
 		++connCount;
 		for (;;++connCount) {
-// System.out.print("Modem init ");
-// System.out.println(connCount);
+ System.out.print("Modem init ");
+ System.out.println(connCount);
 
 			if (sendWait(ath, ok, 3)) {
 				if (sendWait(flow, ok, 3)) {
@@ -459,6 +464,7 @@ Dbg.wr('\n');
 // System.out.println(connCount);
 		ip = 0;								// stop sending ip data
 		reconnectRequest = false;
+		disconnectRequest = false;
 		state = INIT;
 		rejCnt = 0;
 		// flush buffer

@@ -12,11 +12,12 @@ package oebb;
 public class Status {
 
 	// values for state
+	static final int DL_CHECK = -1;
 	static final int INIT = 0;
-//	static final int IP_LINK = 1;
-	static final int FDL_CONN = 2;
-	static final int ANM_OK = 3;
-//	static final int COMM_ERR = 4;
+	static final int GPS_OK = 1;
+	static final int CONNECT = 2;
+	static final int FDL_CONN = 3;
+	static final int ANM_OK = 4;
 	static final int ANGABE = 5;
 	static final int ERLAUBNIS = 6;
 	static final int WIDERRUF = 7;
@@ -32,7 +33,6 @@ public class Status {
 	
 	static final int ES_RDY = 17;
 	static final int ES_VERSCHUB = 18;
-	static final int ES2ZLB = 19;
 
 	volatile static int state;
 	
@@ -100,6 +100,13 @@ public class Status {
 *	aktuelle Strecke
 */
 	volatile static int strNr;
+
+/**
+*	Zugnummer, wird aber nur für Fahrtwiederruf Text
+*	verwendet.
+*/
+	volatile static int zugNr;
+
 /**
 *	aktueller Melderaum
 */
@@ -116,11 +123,17 @@ public class Status {
 *	Zielmelderaum
 */
 	volatile static int melNrZiel;
+	
+/**
+ *  Angabe Melderaum
+ */
+	volatile static int angabe;
 /**
 *	send FERL_QUIT
 */
 	volatile static boolean sendFerlQuit;
 	
+	static Object dirMutex;
 	volatile static int direction;
 
 /**
@@ -128,10 +141,6 @@ public class Status {
 */
 	volatile static int von, bis;
 
-/**
- *	Bewegungsueberwachung bei keiner Fahrerlaubnis
- */
-	volatile static boolean checkMove;
 
 /**
  *	Fahrttype

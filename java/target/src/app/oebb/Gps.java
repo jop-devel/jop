@@ -24,6 +24,7 @@ import com.jopdesign.sys.Native;
  */
 public class Gps extends RtThread {
 
+	static boolean wait;
 /**
 *	Status of GPS fix:
 *	-1 ... no GGA from GPS
@@ -76,7 +77,14 @@ public class Gps extends RtThread {
 	public static int old_lon;
 	public static int[] text;
 
+	// this one is in us - for history reasons
 	private static final int FIX_TIMEOUT = 3000000;
+	
+	// this timeout is in Seconds
+	private static final int MELNR_TIMEOUT = 120;
+	private static int melNrTimeout;
+	
+	public static boolean changeToBereit;
 	
 	/*
 	 * values for info mode
@@ -123,6 +131,7 @@ public class Gps extends RtThread {
 
 		if (single != null) return;			// allready called init()
 
+		wait = true;
 		rxBuf = new int[BUF_LEN];
 		rxCnt = 0;
 		fix = -1;
@@ -131,6 +140,7 @@ public class Gps extends RtThread {
 		speed = -1;
 		direction = DIR_UNKNOWN;
 		average = false;
+		changeToBereit = false;
 		avgCnt = 0;
 		avgLat = new int[MAX_AVG];
 		avgLon = new int[MAX_AVG];
@@ -156,6 +166,12 @@ public class Gps extends RtThread {
 
 		int i, j;
 		int val;
+		
+		// wait till all download stuff is done and
+		// Logic starts GPS recognition
+		while (wait) {
+			waitForNextPeriod();
+		}
 
 		for (;;) {
 			waitForNextPeriod();
@@ -204,6 +220,63 @@ Dbg.wr('*');
 		}
 	}
 
+
+private static void checkStrMelnr() {
+
+		if (Status.strNr<=0) {
+			if (Strecke.idle) {
+				Strecke.idle = false;
+				// set coordinates
+				Strecke.lat = last_lat;
+				Strecke.lon = last_lon;
+				Strecke.find.fire();
+			}
+		} else {
+			int melnr = getMelnr(Status.strNr, last_lat, last_lon);
+			
+			if (melnr != Status.melNr) {
+Dbg.wr("Melderaum: ");
+Dbg.intVal(melnr);
+Dbg.wr("\n");
+				//
+				// keep last melNr if no new melnr found
+				//
+				if (melnr!=-1) {
+					// change only if previous unknown or
+					// we're moving
+					if (Status.melNr<=0 || speed>MIN_SPEED) {
+						Status.melNr = melnr;
+Dbg.wr("Melderaum: ");
+Dbg.intVal(melnr);
+Dbg.wr(" nun aktiv\n");
+						// enable Alarm checking again
+						// is disabled again!!!
+						// Status.checkMove = true;
+					}
+				}
+			} else {
+				// check direction only if no melNr change
+				// and we have a valid melNr
+				if (Status.melNr>0) {
+					checkDir();
+				}
+			}
+			//
+			//	check the timeout for a change to 'Bereit'
+			//
+			if (Status.melNr>=0) {
+				if (melnr==-1) {
+					if (Timer.secTimeout(melNrTimeout)) {
+						changeToBereit = true;
+					}
+				} else {
+					melNrTimeout = Timer.getSec() + MELNR_TIMEOUT;
+					changeToBereit = false;
+				}				
+			}
+		}
+	}
+
 	private static boolean checkGGA() {
 
 		if (rxBuf[3] != 'G') return false;
@@ -211,7 +284,8 @@ Dbg.wr('*');
 		if (rxBuf[5] != 'A') return false;
 		return true;
 	}
-	
+
+
 	private static boolean checkRMC() {
 
 		if (rxBuf[3] != 'R') return false;
@@ -393,46 +467,6 @@ Dbg.intVal(speed);
 Dbg.wr("m/s \n");
 */
 	}
-
-
-	private static void checkStrMelnr() {
-
-		if (Status.strNr<=0) {
-			if (Strecke.idle) {
-				Strecke.idle = false;
-				// set coordinates
-				Strecke.lat = last_lat;
-				Strecke.lon = last_lon;
-				Strecke.find.fire();
-			}
-		} else {
-			int melnr = getMelnr(Status.strNr, last_lat, last_lon);
-			if (melnr != Status.melNr) {
-Dbg.wr("Melderaum: ");
-Dbg.intVal(melnr);
-Dbg.wr("\n");
-				//
-				// keep last melNr if no new melnr found
-				//
-				if (melnr!=-1) {
-					// change only if previous unknown or
-					// we're moving
-					if (Status.melNr<=0 || speed>MIN_SPEED) {
-						Status.melNr = melnr;
-						// enable Alarm checking again
-						Status.checkMove = true;
-					}
-				}
-			} else {
-				// check direction only if no melNr change
-				// and we have a valid melNr
-				if (Status.melNr>0) {
-					checkDir();
-				}
-			}
-		}
-	}
-
 
 
 	/**

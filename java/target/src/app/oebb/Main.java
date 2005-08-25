@@ -28,17 +28,25 @@ package oebb;
 *
 *	0.97-0.99	Interne Testversionen fuer Download mit Javaprog. > 64KB
 *
-*	0.95		Reset Fehler bei mehreren Streckn im ES-mode behoben.
+*	0.95		Reset Fehler bei mehreren Strecken im ES-mode behoben.
 *				Diese Version ist nach 0.97, aber noch mit JOP pre2005
 *				version.
 *
-*	0.98		Verwende Text 1 und 2, wenn 3 und 4 nicht gesetzt sind.
-*		
- 0.97 Java Program ist noch <64KB, aber neuer JOP, Java Program braucht
+	
+	0.97 Java Program ist noch <64KB, aber neuer JOP, Java Program braucht
       aber schon den neuen JOP zum Laufen. Unterscheidung der JOP versionen
       beim Start auf der Serviceschnittstelle:
         'JOP start V pre2005' - alte Version
         'JOP start V 20050728' - neue Version
+
+	0.98		Verwende Text 1 und 2, wenn 3 und 4 nicht gesetzt sind.
+	
+	0.98c		Automatische ES/ZLB Erkennung
+	
+	0.99		Diverse gröbere Änderungen laut ÖBB Bestellung
+	
+	1.00		Änderungen laut ÖBB Bestellung, Version für Wieselburger
+				Testbetrieb
 
 */
 
@@ -53,14 +61,13 @@ import com.jopdesign.sys.Native;
 public class Main {
 
 	// SW version
-	public static final int VER_MAJ = 0;
-	public static final int VER_MIN = 98;
+	public static final int VER_MAJ = 1;
+	public static final int VER_MIN = 0;
 
-	// TODO find a schedule whith correct priorities
-	private static final int LOGIC_PRIO = 1;
-	private static final int LOGIC_PERIOD = 100000;
-	private static final int STRECKE_PRIO = 2;
+	private static final int STRECKE_PRIO = 1;
 	private static final int STRECKE_PERIOD = 100000;
+	private static final int LOGIC_PRIO = 2;
+	private static final int LOGIC_PERIOD = 100000;
 	private static final int GPS_PRIO = 3;
 	private static final int GPS_PERIOD = 100000;
 	private static final int DISPLAY_PRIO = 4;
@@ -259,6 +266,8 @@ public class Main {
 		forever();
 	}
 
+	final static int MIN_US = 10;
+
 	private static void forever() {
 
 		//
@@ -266,11 +275,36 @@ public class Main {
 		//	We could measure CPU utilization here.
 		//
 
-		for (;;) {
+		int t1, t2, t3;
+		int idle, timeout;
+		
+		idle = 0;	
+		t1 = Native.rd(Const.IO_US_CNT);
+		timeout = t1;
 
-			RtThread.sleepMs(1000);
-//			System.out.print("free memory: ");
-//			System.out.println(GC.freeMemory());
+		for (;;) {
+			t2 = Native.rd(Const.IO_US_CNT);
+			t3 = t2-t1;
+			t1 = t2;
+			if (t3<MIN_US) {
+				idle += t3;
+			}
+			if (t2-timeout>1000000) {
+				t2 -= timeout;
+//				System.out.print(t2);
+//				System.out.print(idle);
+				idle *= 100;
+				idle /= t2;
+				idle = 100-idle;
+//				System.out.print("CPU utilization [%]: ");
+//				System.out.print(idle);
+//				System.out.println();
+//				System.out.print("free memory: ");
+//				System.out.println(com.jopdesign.sys.GC.freeMemory());
+				idle = 0;	
+				t1 = Native.rd(Const.IO_US_CNT);
+				timeout = t1;
+			}
 		}
 	}
 }

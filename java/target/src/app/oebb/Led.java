@@ -26,7 +26,7 @@ public class Led {
 	private static int beepTimeout;
 	private static boolean beepOn;
 	private static final int BEEP_TIME = 500;
-	private static final int SHORT_BEEP_TIME = 300;
+	private static final int SHORT_BEEP_TIME = 500;
 
 	// regular called from Logic.loop().
 

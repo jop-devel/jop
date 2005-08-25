@@ -380,6 +380,7 @@ Dbg.lf();
 
 	public static void startConnection(int dstIp, StringBuffer[] connStr) {
 
+System.out.println("start Connection");
 		dst_ip = dstIp;
 		ipLink.startConnection(connStr[0], connStr[1], connStr[2], connStr[3]);
 	}
@@ -589,12 +590,21 @@ Dbg.lf();
 			Status.anmOk = true;
 			sendReply(p);
 		} else if (nr==Cmd.FLAN) {
-			Status.melNrZiel = p.buf[OFF_DATA+1];
+			Status.angabe = p.buf[OFF_DATA+1];
 			Status.state = Status.ANGABE;
 			sendReply(p);
 		} else if (nr==Cmd.FERL) {
-			Status.melNrStart = Status.melNr;
-			Status.melNrZiel = p.buf[OFF_DATA+1];
+			synchronized (Status.dirMutex) {
+				// let Logik.check() update the direction
+				Status.direction = Gps.DIR_UNKNOWN;
+				Status.melNrStart = Status.melNr;
+				Status.melNrZiel = p.buf[OFF_DATA+1];
+			}
+Dbg.wr("FERL ");
+Dbg.intVal(Status.melNrStart);
+Dbg.intVal(Status.melNrZiel);
+Dbg.lf();
+
 			Status.state = Status.ERLAUBNIS;
 			Status.sendFerlQuit = true;
 			sendReply(p);
@@ -607,6 +617,7 @@ Dbg.lf();
 			Status.anmOk = false;
 			sendReply(p);
 		} else if (nr==Cmd.NOT) {
+			Status.melNrZiel = Status.melNr;
 			Status.state = Status.NOTHALT;
 			sendReply(p);
 		} else if (nr==Cmd.DLSTAT) {
@@ -633,6 +644,10 @@ Dbg.lf();
 Dbg.wr("got reply ");
 Dbg.intVal(nr);
 Dbg.lf();
+/*
+for (int i=0; i<p.len>>2; ++i) Dbg.intVal(p.buf[i]);
+Dbg.lf();
+*/
 		if (nr==Cmd.PING_RPL) {
 			rcvPingReply(p);
 		} else if (nr==Cmd.CONN_RPL) {

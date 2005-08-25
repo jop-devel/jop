@@ -10,8 +10,8 @@
 #
 #
 
-# do the while process for the BG
-test: directories tools jopflash jopser prog_flash sim
+# do the whole build process for the BG
+test: directories tools jopflash jopser prog_flash
 
 all: directories tools jopser japp
 
@@ -36,6 +36,7 @@ QPROJ=cycbg
 
 # Which project do you want to be downloaded?
 DLPROJ=cycbg
+#DLPROJ=cycmin
 # Which project do you want to be programmed into the flash?
 FLPROJ=cycbg
 
@@ -43,8 +44,8 @@ P1=test
 
 P2=test
 P3=Baseio
-#P2=jvm
-#P3=DoAll
+P2=jvm
+P3=DoAll
 #P2=testrt
 #P3=PeriodicFull
 P1=app
@@ -141,6 +142,12 @@ prog_flash:
 
 pld_init:
 	quartus_pgm -c ByteBlasterMV -m JTAG -o p\;quartus/cycconf/cyc_conf_init.pof
+
+pld_conf:
+	quartus_pgm -c ByteBlasterMV -m JTAG -o p\;quartus/cycconf/cyc_conf.pof
+
+oebb:
+	java -cp java/pc/dist/lib/jop-pc.jar udp.Flash java/target/dist/bin/oebb_Main.jop 192.168.1.2
 
 #
 #	some directories for configuration files

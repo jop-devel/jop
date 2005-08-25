@@ -50,6 +50,8 @@ public class Flash {
 	static final int PT_FLG_VERL = 2;
 	static final int PT_FLG_ES = 4;
 	static final int PT_FLG_NO_DIR = 8;
+	static final int PT_FLG_NO_MOVE = 16;
+	static final int PT_FLG_ANM = 32;
 
 	static class Point {
 		int melnr;
@@ -57,8 +59,11 @@ public class Flash {
 		int lon;
 		int ptr;
 		int flags;
-		boolean ankunft;
+		boolean anmelden;
+		boolean station;
 		boolean verlassen;
+		boolean checkMove;
+		boolean checkDirection;
 		StringBuffer stationLine1;
 		StringBuffer stationLine2;
 		StringBuffer verschubVon;
@@ -86,7 +91,7 @@ public class Flash {
 		
 	}
 
-	static final int MAX_POINTS = 100;
+	static final int MAX_POINTS = 200;
 	/** List of GPS points */
 	static Point[] str;
 	/** start of Points in Flash */
@@ -148,6 +153,13 @@ public class Flash {
 		nrStr = -1;
 	}
 
+	/**
+	 * What's the IP address of the ZLB server?
+	 * @return
+	 */
+	public static int getIp() {
+		return dstIp;
+	}
 	/**
 	 * How many points in the loaded Strecke?
 	 * @return
@@ -313,8 +325,11 @@ possible stack overfolw!!!
 					p.lon = intVal(addr+PT_LON);
 					p.ptr = intVal(addr+PT_PTR);
 					p.flags = intVal(addr+PT_FLAGS);
-					p.ankunft = (p.flags & PT_FLG_STATION)!=0;
+					p.station = (p.flags & PT_FLG_STATION)!=0;
+					p.anmelden = (p.flags & PT_FLG_ANM)!=0;
 					p.verlassen = (p.flags & PT_FLG_VERL)!=0;
+					p.checkDirection = (p.flags & PT_FLG_NO_DIR)==0;
+					p.checkMove = (p.flags & PT_FLG_NO_MOVE)==0;
 
 					
 					addr += PT_LEN;
@@ -467,14 +482,16 @@ System.out.println("ES Strecke:");
 	*	Start dial up and
 	*	set IP address in Comm.
 	*/
-	static void startComm() {
+	static boolean startComm(int strnr) {
 
-		if (Status.strNr<=0) return;
+		if (strnr<=0) return false;
 
 		int cnt = intVal(OFF_CNT);
 		int addr = OFF_FIRST;
-		for (int i=0; i<cnt; ++i) {
-			if (intVal(addr+STR_NR)==Status.strNr) {
+		int i;
+		for (i=0; i<cnt; ++i) {
+			if (intVal(addr+STR_NR)==strnr) {
+				dstIp = intVal(addr+STR_IP);
 				loadString(connStr[0], addr+STR_DIAL);
 				loadString(connStr[1], addr+STR_NET);
 				loadString(connStr[2], addr+STR_UID);
@@ -483,6 +500,7 @@ System.out.println("ES Strecke:");
 			}
 			addr += STR_LEN+intVal(addr+STR_CNT)*PT_LEN;		// find next Strecke
 		}
+		if (i==cnt) return false;
 		Comm.startConnection(dstIp, connStr);
 Dbg.wr("IP dest: ");
 Dbg.intVal((Comm.dst_ip>>>24)&0xff);
@@ -490,11 +508,12 @@ Dbg.intVal((Comm.dst_ip>>>16)&0xff);
 Dbg.intVal((Comm.dst_ip>>>8)&0xff);
 Dbg.intVal((Comm.dst_ip>>>0)&0xff);
 Dbg.wr('\n');
-for (int i=0; i<4; ++i) {
+for (i=0; i<4; ++i) {
 Dbg.wr('\"');
 Dbg.wr(connStr[i]);
 Dbg.wr("\"\n");
 }
+		return true;
 	}
 
 	/**
@@ -522,14 +541,14 @@ Dbg.wr("\"\n");
 		i = intVal(BGID_START-DATA_START);
 		System.out.print("BG Id: ");
 		System.out.println(i);
-		System.out.println("Logbook:");
+		if (log) System.out.println("Logbook:");
 		
 		for (i=CONFIG_LEN; i<0x10000; ++i) {
 			j = Native.rdMem(BGID_START+i);
 			if (j=='\n') {
 				if (log) System.out.println();
 			} else if (j==0xff) {
-				System.out.println("Logbook end");
+				if (log) System.out.println("Logbook end");
 				break;
 			} else {
 				if (log) System.out.print((char) j);
@@ -540,7 +559,7 @@ Dbg.wr("\"\n");
 		// the threshold stand in relation to the copy length
 		// in moveLog().
 		if (i>45000) {
-// System.out.println("move log");
+System.out.println("move logbook");
 			BgTftp.moveLog();
 		}
 		

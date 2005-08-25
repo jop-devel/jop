@@ -35,7 +35,7 @@ public class Strecke extends SwEvent {
 	}
 	
 	/**
-	 * Strecken muessen mindestens 1km voneinander
+	 * Strecken muessen mindestens 5km voneinander
 	 * entfernt sein sonst ist eine Benutzereingabe erforderlich.
 	 */
 	private static final int MIN_DIST = 1000;
@@ -48,9 +48,9 @@ System.out.print(cnt);
 System.out.println(" Strecken");
 		int nr;
 		int min = 999999999;
-		int dist, strNr = 0;
-		boolean foundOne = false;
-		int foundIdx = 0;
+		int dist;
+		int foundCnt = 0;
+		int foundIdx = -1;
 
 		//
 		//	We have to enter it manually
@@ -60,47 +60,63 @@ System.out.println(" Strecken");
 //Dbg.wr("find Strecke\n");
 		for (int i=0; i<cnt; ++i) {
 			nr = Flash.getStrNr(i);
-			Flash.loadStr(nr);
-//Dbg.intVal(nr);
-			dist = getDistStr(nr);
-//Dbg.intVal(dist);
-//Dbg.wr("\n");
-			if (dist<min) {
-				min = dist;
-				strNr = nr;
+			if (nr==Logic.DL_STRNR) {
+				continue;
 			}
-			if (dist<MIN_DIST) {
-				if (foundOne) {
-					Status.selectStr = true;
-//System.out.println("Strecke nicht eindeutig");
-					return;
-				} else {
-					foundIdx = i;
-					foundOne = true;
-				}
+			Flash.loadStr(nr);
+			if (Flash.getIp()==0) {
+				Flash.esStr();
+			}
+
+Dbg.intVal(nr);
+
+			// find one 'exact'
+			if (Gps.getMelnr(nr, lat, lon)!=-1) {
+				foundIdx = i;
+				++foundCnt;
+Dbg.wr("in melr");
+Dbg.lf();
+			} else {
+				// check if another is nearby
+				dist = getDistStr(nr);
+Dbg.intVal(dist);
+Dbg.wr("\n");
+				if (dist<MIN_DIST) {
+					++foundCnt;
+				}				
 			}
 		}
 		
-//System.out.print("minimum Distance=");
-//Dbg.intVal(min);
-//System.out.println();
+System.out.print("foundIdx=");
+Dbg.intVal(foundIdx);
+System.out.print("foundCnt=");
+Dbg.intVal(foundCnt);
+System.out.println();
 
-
-		if (foundOne) {
-			nr = Flash.getStrNr(foundIdx);
-			Flash.loadStr(nr);
-			
-			if (Gps.getMelnr(strNr, lat, lon)!=-1) {
+		if (foundIdx!=-1) {
+			if (foundCnt==1) {
+				nr = Flash.getStrNr(foundIdx);
+				Flash.loadStr(nr);
+				if (Flash.getIp()==0) {
+					Flash.esStr();
+				}
+Dbg.wr("found: ");
+Dbg.intVal(nr);
+Dbg.wr("\n");
+				Status.strNr = nr;
 				
-//Dbg.wr("found: ");
-//Dbg.intVal(strNr);
-//Dbg.wr("\n");
-				Status.strNr = strNr;
+			} else if (foundCnt>1 ) {
+				Status.selectStr = true;
+//				System.out.println("Strecke nicht eindeutig");
+				return;
+				
 			}
+			
 		} else {
 			Status.strNr = 0;
-//Dbg.wr("nothing found\n");
+Dbg.wr("nothing found\n");		
 		}
+
 	}
 	
 	/**
