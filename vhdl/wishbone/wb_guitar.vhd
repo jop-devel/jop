@@ -135,15 +135,15 @@ end process;
 --	This is the simple bit stream copy
 --	for delta measurements
 --
-	dac_l <= serdata;
-	dac_r <= serdata;
+--	dac_l <= serdata;
+--	dac_r <= serdata;
 
 --
 --	This is the output from the delta
 --	modulator
 ---
---	dac_l <= outl;
---	dac_r <= outr;
+	dac_l <= outl;
+	dac_r <= outr;
 
 	noise <= lsfr(1);
 
