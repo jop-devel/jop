@@ -80,7 +80,7 @@ public class Startup {
 
 		stack = new int[MAX_STACK];
 
-		int table = Native.rdMem(0)+6;		// start of clinit table
+		int table = Native.rdMem(1)+6;		// start of clinit table
 		int cnt = Native.rdMem(table);		// number of methods
 		++table;
 		for (int i=0; i<cnt; ++i) {
