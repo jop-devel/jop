@@ -145,8 +145,11 @@ public class Clock {
 
 	static void print_char(int i) {
 
+		System.out.print((char) i);
+		/*
 		wait_serial();
 		Native.wr(i, Const.IO_UART);
+		*/
 	}
 
 }
