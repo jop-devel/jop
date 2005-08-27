@@ -20,7 +20,9 @@
 --	todo:
 --
 --
---	2003-07-09	created
+--	2003-06		created - no tristate assignements to IO pins
+--				for usage with the wishbone interface
+--	2005-08-27	ignore ncts on uart
 --
 --
 
@@ -133,7 +135,8 @@ begin
 	cmp_ua : uart generic map (4, clk_freq, 115200, 2, 1, 2, 1)
 			port map (clk, reset, addr,
 				din, wr, dout, rd,
-				txd, rxd, ncts, nrts
+--				txd, rxd, ncts, nrts
+				txd, rxd, '0', nrts
 		);
 
 --
