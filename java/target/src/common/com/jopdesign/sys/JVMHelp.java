@@ -177,7 +177,7 @@ for (fp=10530; fp<=10700; ++fp) {
 		Native.wr(c, Const.IO_UART);
 		// this is the USB port
 		/* we will NOT wait for the USB device to be compatible
-		   with other devices. The UART limits the transfer rate
+		   with other configurations. The UART limits the transfer rate
 		   to about 10kB/s.
 		   
 		while ((Native.rdMem(Const.WB_USB_STATUS) & Const.MSK_UA_TDRE)==0) {
