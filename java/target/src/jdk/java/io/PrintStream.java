@@ -1,7 +1,6 @@
 package java.io;
 
-import com.jopdesign.sys.Const;
-import com.jopdesign.sys.Native;
+import com.jopdesign.sys.JVMHelp;
 
 
 // public class PrintStream extends FilterOutputStream
@@ -11,10 +10,15 @@ public class PrintStream {
 	private static int[] tmp;			// a generic buffer
 
 	static void wr(char c) {
+		
+		JVMHelp.wr(c);
+		/*
 		// no buffering => busy wait on serial line!
 		while ((Native.rd(Const.IO_STATUS)&1)==0)
 			;
 		Native.wr(c, Const.IO_UART);
+		*/
+
 	}
 	
 	static void wr(String s) {

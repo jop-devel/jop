@@ -2,7 +2,11 @@ package com.jopdesign.sys;
 
 import joprt.RtThread;
 
-class JVMHelp {
+//
+//	I don't like to make JVMHelp public, but I need it in java.io.PrintStream
+//
+// class JVMHelp {
+public class JVMHelp {
 
 	//
 	// DON'T change order of first functions!!!
@@ -161,9 +165,26 @@ for (fp=10530; fp<=10700; ++fp) {
 	}
 
 
-	static void wr(int c) {
-		while ((Native.rd(Const.IO_STATUS)&1)==0) ;
+	public static void wr(int c) {
+		
+		// busy wait on free tx buffer
+		// but ncts is not used anymore =>
+		// no wait on an open serial line, just wait
+		// on the baud rate
+		while ((Native.rd(Const.IO_STATUS)&1)==0) {
+			;
+		}
 		Native.wr(c, Const.IO_UART);
+		// this is the USB port
+		/* we will NOT wait for the USB device to be compatible
+		   with other devices. The UART limits the transfer rate
+		   to about 10kB/s.
+		   
+		while ((Native.rdMem(Const.WB_USB_STATUS) & Const.MSK_UA_TDRE)==0) {
+			;
+		}
+		*/
+		Native.wrMem(c, Const.WB_USB_DATA);
 	}
 	
 	static void wr(String s) {
