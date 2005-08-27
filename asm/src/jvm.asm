@@ -68,6 +68,7 @@
 //	2005-07-28	fix missing indirection bug in thread stack move (int2ext and ext2int)
 //	2005-08-13	moved null pointer check in xaload/store to check the handle!
 //	2005-08-16	new file/download format with a size field in the first word
+//	2005-08-27	added boot from USB interface (dspio board)
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -78,7 +79,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20050816
+version		= 20050827
 
 //
 //	io register
@@ -98,7 +99,16 @@ io_uart		=	5
 ua_rdrf		= 	2
 ua_tdre		= 	1
 
-max_words	= 16384	// words loaded from serial line to ram
+//
+//	WISHBONE devices are at negativ memory addresses
+//
+//	WB_BASE = 0xffffff80;
+//	WB_USB_STATUS = WB_BASE+0x10
+//	WB_USB_DATA = WB_BASE+0x11
+
+usb_status	=	-112
+usb_data	=	-111
+
 //
 //	first vars for start
 //	keep order! these vars are accessed from Java progs.
@@ -261,6 +271,48 @@ ser4:
 			ldmrd		 		// read ext. mem
 // ************** end change for load from flash *********************
 #else
+#ifdef USB
+// ************** change for load from USB interface *********************
+			ldi	usb_status		// wait for byte from USB
+			stmra
+			ldi	ua_rdrf
+			wait
+			wait
+			ldmrd
+			and
+			nop
+			bz	ser4
+			nop
+			nop
+
+			ldi	usb_data		// read byte from USB
+			stmra
+			wait
+			wait
+			ldmrd
+
+//wait_usb_tx:
+//			ldi	usb_status		// wait for TX-buffer ready
+//			stmra
+//			ldi	ua_tdre
+//			wait
+//			wait
+//			ldmrd
+//			and
+//			nop
+//			bz	wait_usb_tx
+//			nop
+//			nop
+//
+//			ldi	usb_data		// write byte to USB
+//			stmwa
+//			dup					// echo for down.c, 'handshake'
+//			stmwd		
+//			wait
+//			wait
+
+// ************** end change for load from USB interface *********************
+#else
 // ************** change for load from serial line *********************
 			ldi	io_status	// wait for byte from uart
 			stioa
@@ -281,6 +333,7 @@ ser4:
 			stiod
 
 // ************** end change for load from serial line *********************
+#endif
 #endif
 
 			ldm	c			// mem word

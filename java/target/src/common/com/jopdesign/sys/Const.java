@@ -50,6 +50,14 @@ public class Const {
 	// use neagitve base address for fast constant load in Java
 	public static final int WB_BASE = 0xffffff80;
 	// we use 4 bit slave addresses
+	// test salve addresses
 	public static final int WB_TS0 = WB_BASE+0x00;
 	public static final int WB_TS1 = WB_BASE+0x10;
+
+	// FTDI USB interface
+	// We use the same status/data interface as for the
+	// UART, but connected to the WISHBONE interface and
+	// mapped to memory addresses
+	public static final int WB_USB_STATUS = WB_BASE+0x10;
+	public static final int WB_USB_DATA = WB_BASE+0x11;
 }

@@ -10,10 +10,48 @@
 #
 #
 
-# do the whole build process for the BG
-test: directories tools jopflash jopser prog_flash
 
-all: directories tools jopser japp
+
+#
+#	com1 is the usual serial port
+#	com8 is the FTDI VCOM for the USB download
+#		use -usb to download the Java application
+#		without the echo 'protocol' on USB
+#
+COM_PORT=com1
+COM_PORT=com8
+COM_FLAG=-usb
+
+# 'some' different Quartus projects
+QPROJ=cycmin cyc12min cycbaseio cycbg dspio
+# if you want to build only one Quartus project use e.q.:
+QPROJ=dspio6c
+
+# Which project do you want to be downloaded?
+DLPROJ=dspio6c
+# Which project do you want to be programmed into the flash?
+#FLPROJ=cycbg
+
+P1=test
+P2=test
+P3=Baseio
+P3=Clock
+
+#P2=jvm
+#P3=DoAll
+#P2=testrt
+#P3=PeriodicFull
+#P1=app
+#P2=oebb
+#P3=Main
+#P2=wishbone
+#P3=Usb
+
+# use this for serial download
+#all: directories tools jopser japp
+
+# we use USB download now as default
+all: directories tools jopusb japp
 
 japp: java_app download
 
@@ -27,30 +65,6 @@ clean:
 	d:/bin/del_class.bat
 	cd quartus && d:/bin/qu_del.bat
 
-# 'some' different Quartus projects
-QPROJ=cycmin cyc12min cycbaseio cycbg
-# if you want to build only one Quartus project use e.q.:
-#QPROJ=cycmin
-#QPROJ=cycbaseio
-QPROJ=cycbg
-
-# Which project do you want to be downloaded?
-DLPROJ=cycbg
-#DLPROJ=cycmin
-# Which project do you want to be programmed into the flash?
-FLPROJ=cycbg
-
-P1=test
-
-P2=test
-P3=Baseio
-P2=jvm
-P3=DoAll
-#P2=testrt
-#P3=PeriodicFull
-P1=app
-P2=oebb
-P3=Main
 
 tools:
 	cd java/tools && ./build.bat
@@ -61,6 +75,23 @@ tools:
 #
 jopser:
 	cd asm && ./jopser.bat
+	@echo $(QPROJ)
+	for target in $(QPROJ); do \
+		echo "building $$target"; \
+		qp="quartus/$$target/jop"; \
+		echo $$qp; \
+		quartus_map $$qp; \
+		quartus_fit $$qp; \
+		quartus_asm $$qp; \
+		quartus_tan $$qp; \
+		cd quartus/$$target && quartus_cpf -c jop.cdf ../../jbc/$$target.jbc; \
+	done
+
+#
+#	project.jbc fiels are used to boot from the USB interface
+#
+jopusb:
+	cd asm && ./jopusb.bat
 	@echo $(QPROJ)
 	for target in $(QPROJ); do \
 		echo "building $$target"; \
@@ -125,7 +156,7 @@ java_app:
 
 download:
 	cd quartus/$(DLPROJ) && quartus_pgm -c ByteBlasterMV -m JTAG jop.cdf
-	down -e java/target/dist/bin/$(P2)_$(P3).jop COM1
+	down -e $(COM_FLAG) java/target/dist/bin/$(P2)_$(P3).jop $(COM_PORT)
 
 #
 #	flash programming for the BG hardware as an example
@@ -148,6 +179,9 @@ pld_conf:
 
 oebb:
 	java -cp java/pc/dist/lib/jop-pc.jar udp.Flash java/target/dist/bin/oebb_Main.jop 192.168.1.2
+
+# do the whole build process for the BG
+bg: directories tools jopflash jopser prog_flash
 
 #
 #	some directories for configuration files

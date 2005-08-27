@@ -21,6 +21,9 @@ static int prog_cnt = 0;
 static char prog_char[] = {'|','/','-','\\','|','/','-','\\'};
 static char *exitString = "JVM exit!";
 
+static int echo = 0;
+static int usb = 0;
+
 int wr(HANDLE hCom, unsigned char data) {
 
 	DWORD cnt;
@@ -28,17 +31,18 @@ int wr(HANDLE hCom, unsigned char data) {
 
 	WriteFile(hCom, &data, 1, &cnt, NULL);
 //	printf("%d-", data); fflush(stdout);
-	ReadFile(hCom, &c, 1, &cnt, NULL);
-//	printf("%d ", c); fflush(stdout);
-	if (data != c) {
-		printf("error during download\n");
-		exit(-1);
+	if (!usb) {
+		ReadFile(hCom, &c, 1, &cnt, NULL);
+//		printf("%d ", c); fflush(stdout);
+		if (data != c) {
+			printf("error during download\n");
+			exit(-1);
+		}
+		if (cnt!=1) {
+			printf("timeout during download\n");
+			exit(-1);
+		}
 	}
-	if (cnt!=1) {
-		printf("timeout during download\n");
-		exit(-1);
-	}
-
 
 	return 0;
 }
@@ -85,8 +89,15 @@ int main(int argc, char *argv[]) {
 	}
 
 	if (argc<3) {
-		printf("usage: down [-e] file port\n");
+		printf("usage: down [-e] [-usb] file port\n");
 		exit(-1);
+	}
+
+	if (strcmp(argv[1],"-e")==0 || strcmp(argv[2],"-e")==0) {
+		echo = 1;
+	}
+	if (strcmp(argv[1],"-usb")==0 || strcmp(argv[2],"-usb")==0) {
+		usb = 1;
 	}
 
 //
@@ -206,7 +217,7 @@ and should be changed after download for the echo
 	for (j=0; j<strlen(exitString)+1; ++j) {
 		buf[j] = 0;
 	}
-	if (argc!=3) {
+	if (echo) {
 		DWORD rdCnt;
 		for (;;) {
 			ReadFile(hCom, &c, 1, &rdCnt, NULL);	// read without timeout -> kbhit is useless
