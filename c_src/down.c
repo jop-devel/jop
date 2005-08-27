@@ -72,6 +72,8 @@ int main(int argc, char *argv[]) {
 	long *ram;
 	long len;
 
+	unsigned char *byt_buf;
+
 	HANDLE hCom;
 	DCB dcb;
 	COMMTIMEOUTS ctm;
@@ -84,6 +86,11 @@ int main(int argc, char *argv[]) {
 
 	ram = calloc(MAX_MEM, 4);
 	if (ram==NULL) {
+		printf("error with allocation\n");
+		exit(-1);
+	}
+	byt_buf = malloc(MAX_MEM*4);
+	if (byt_buf==NULL) {
 		printf("error with allocation\n");
 		exit(-1);
 	}
@@ -198,15 +205,29 @@ and should be changed after download for the echo
 
 	fclose(fp);
 
+	for (i=0; i<len; ++i) {
+		l = ram[i];
+		for (j=0; j<4; ++j) {
+			byt_buf[i*4+j] = l>>((3-j)*8);
+		}
+	}
 //
 //	write external RAM
 //
 	printf("%d words of Java bytecode (%d KB)\n", ram[1]-1, (ram[1]-1)/256);
 
-	for (j=0; j<len; ++j) {
-		wr32(hCom, ram[j]);
+	if (usb) {
+		WriteFile(hCom, byt_buf, len*4, &i, NULL);
+		if (i!=len*4) {
+			printf("download error %ld %ld\n", len*4, i);
+			exit(-1);
+		}
+	} else {
+		for (j=0; j<len; ++j) {
+			wr32(hCom, ram[j]);
+		}
 	}
-	printf("%d words external RAM (%d KB)\n", j, j/256);
+	printf("%d words external RAM (%d KB)\n", len, len/256);
 
 	printf("download complete\n");
 	printf("\n\n");
