@@ -266,18 +266,6 @@ set_global_assignment -name PHYSICAL_SYNTHESIS_EFFORT NORMAL
 set_global_assignment -name INC_PLC_MODE OFF
 set_global_assignment -name ROUTING_BACK_ANNOTATION_MODE OFF
 set_instance_assignment -name IO_STANDARD LVCMOS -to clk
-set_instance_assignment -name IO_STANDARD LVCMOS -to dummy_gnd[0]
-set_instance_assignment -name IO_STANDARD LVCMOS -to dummy_gnd[1]
-set_instance_assignment -name IO_STANDARD LVCMOS -to dummy_gnd[2]
-set_instance_assignment -name IO_STANDARD LVCMOS -to dummy_gnd[3]
-set_instance_assignment -name IO_STANDARD LVCMOS -to dummy_gnd[4]
-set_instance_assignment -name IO_STANDARD LVCMOS -to dummy_gnd[5]
-set_instance_assignment -name IO_STANDARD LVCMOS -to dummy_vccint[0]
-set_instance_assignment -name IO_STANDARD LVCMOS -to dummy_vccint[1]
-set_instance_assignment -name IO_STANDARD LVCMOS -to dummy_vccint[2]
-set_instance_assignment -name IO_STANDARD LVCMOS -to dummy_vccint[3]
-set_instance_assignment -name IO_STANDARD LVCMOS -to dummy_vccint[4]
-set_instance_assignment -name IO_STANDARD LVCMOS -to dummy_vccint[5]
 set_instance_assignment -name IO_STANDARD LVCMOS -to fl_a[0]
 set_instance_assignment -name IO_STANDARD LVCMOS -to fl_a[10]
 set_instance_assignment -name IO_STANDARD LVCMOS -to fl_a[11]
