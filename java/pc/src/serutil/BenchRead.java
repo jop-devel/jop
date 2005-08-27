@@ -9,7 +9,7 @@ package serutil;
 import java.io.*;
 import javax.comm.*;
 
-public class TestSer extends Thread {
+public class BenchRead extends Thread {
 
 
 	private static CommPortIdentifier portId;
@@ -27,7 +27,7 @@ public class TestSer extends Thread {
 			System.out.println("usage java TestSer port");
 			System.exit(-1);
 		}
-		TestSer ts = new TestSer(args[0]);
+		BenchRead ts = new BenchRead(args[0]);
 
 		byte[] buf = new byte[256];
 
@@ -35,40 +35,27 @@ public class TestSer extends Thread {
 
 		start = System.currentTimeMillis();
 
-		new Thread() {
-			public void run() {
-
-				for (;;) {
-					try {
-						Thread.sleep(1000);
-					} catch (Exception e) {}
-
-					long i = cntRcv;
-					long t = System.currentTimeMillis()-start;
-
-					if (t!=0) {
-						System.out.print((cntSend/1024)+" KB sent "+(i/1024)+" KB received "+
-								(cntSend/1024*1000/t)+" KB/s "+(i/1024*1000/t)+" KB/s   \r");
-					}
-				}
-			}
-		}.start();
 
 		for (;;) {
 
 			try {
-				os.write(buf);
-			} catch (Exception e) {
-				System.out.println(e);
+				Thread.sleep(1000);
+			} catch (Exception e) {}
+
+			long i = cntRcv;
+			long t = System.currentTimeMillis()-start;
+
+			if (t!=0) {
+				System.out.print((i/1024)+" KB received "+
+						(i/1024*1000/t)+" KB/s   \r");
 			}
-			cntSend += buf.length;
 
 		}
 	}
 
 	private static final int TIMEOUT = 20;
 
-	public TestSer(String port) {
+	public BenchRead(String port) {
 
 		try {
 			portId = CommPortIdentifier.getPortIdentifier(port);
@@ -105,7 +92,6 @@ public class TestSer extends Thread {
 		for (;;) {
 			try {
 				cnt = is.read(buf);
-// Thread.sleep(256);
 			} catch (Exception e) {
 				System.out.println(e);
 			}
