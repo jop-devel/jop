@@ -24,10 +24,12 @@ main(int argc, char *argv[]) {
 		exit(-1);
 	}
 
+	// com ports > COM9 need a special name!
+	sprintf(buf, "\\\\.\\%s",argv[argc-1]); 
 //
 //	open serial line after start of JOP
 //
-	hCom = CreateFile(argv[argc-1],
+	hCom = CreateFile(buf,
 		GENERIC_READ | GENERIC_WRITE,
 		0,    /* comm devices must be opened w/exclusive-access */
 		NULL, /* no security attrs */
@@ -40,7 +42,7 @@ main(int argc, char *argv[]) {
 	if (hCom == INVALID_HANDLE_VALUE) {
 		dwError = GetLastError();
 
-		printf("shit CreateFile\n");
+		printf("shit CreateFile %d\n", dwError);
 		exit(-1);
 	}
 
