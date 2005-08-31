@@ -184,7 +184,8 @@ for (fp=10530; fp<=10700; ++fp) {
 			;
 		}
 		*/
-		Native.wrMem(c, Const.WB_USB_DATA);
+		// disable for OEBB project
+//		Native.wrMem(c, Const.WB_USB_DATA);
 	}
 	
 	static void wr(String s) {

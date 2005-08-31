@@ -74,14 +74,17 @@ Dbg.intVal(nr);
 			if (Gps.getMelnr(nr, lat, lon)!=-1) {
 				foundIdx = i;
 				++foundCnt;
-Dbg.wr("in melr");
+Dbg.wr("in melnr ");
 Dbg.lf();
 			} else {
 				// check if another is nearby
 				dist = getDistStr(nr);
+Dbg.wr("distance: ");
 Dbg.intVal(dist);
 Dbg.wr("\n");
 				if (dist<MIN_DIST) {
+Dbg.wr("++foundCnt");
+Dbg.lf();
 					++foundCnt;
 				}				
 			}

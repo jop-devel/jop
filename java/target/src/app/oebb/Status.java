@@ -30,10 +30,12 @@ public class Status {
 	static final int LERN = 14;
 	static final int ES221 = 15;
 	static final int ALARM = 16;
+
 	
 	static final int ES_RDY = 17;
 	static final int ES_VERSCHUB = 18;
-
+	static final int DEAKT = 19;
+	
 	volatile static int state;
 	
 	static final int ZUG_NORMAL = 1;

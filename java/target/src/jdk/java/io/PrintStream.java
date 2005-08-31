@@ -25,7 +25,7 @@ public class PrintStream {
 
 		int i = s.length();
 		for (int j=0; j<i; ++j) {
-			wr(s.charAt(j));
+			JVMHelp.wr(s.charAt(j));
 		}
 	}
 
@@ -42,7 +42,7 @@ public class PrintStream {
 			if (val==0) break;
 		}
 		for (val=i; val>=0; --val) {
-			wr((char) tmp[val]);
+			JVMHelp.wr((char) tmp[val]);
 		}
 		wr(' ');
 	}
@@ -65,7 +65,7 @@ public class PrintStream {
 	}
 
 	public void print(char c) {
-		wr(c);
+		JVMHelp.wr(c);
 	}
 
 	public void println() {

@@ -35,6 +35,8 @@ public class Logic extends RtThread {
 	// length is one display line without status character
 	private static final int BUF_LEN = 19;
 
+	private String[] mnuBereit;
+	private static final int MNU_BEREIT_CNT = 2;
 	private String[] mnuTxt;
 	private static final int MNU_CNT = 6;
 	private String[] mnuESTxt;
@@ -44,7 +46,7 @@ public class Logic extends RtThread {
 	private StringBuffer tmpStr;
 	
 	static final int DL_STRNR = 999;
-	static final int DL_TIMEOUT = 120;
+	static final int DL_TIMEOUT = 60;
 
 	/**
 	*	Next state after alarm quit.
@@ -61,6 +63,9 @@ public class Logic extends RtThread {
 
 		buf = new int[BUF_LEN];
 
+		mnuBereit = new String[MNU_BEREIT_CNT];
+		mnuBereit[0] = "Deaktivieren";
+		mnuBereit[1] = "Neustart";
 		mnuTxt = new String[MNU_CNT];
 		mnuTxt[0] = "Ankunft";
 		mnuTxt[1] = "Verlassen";
@@ -198,6 +203,9 @@ System.out.println("Logic.initVals()");
 						break;
 					case Status.ES_VERSCHUB:
 						esVerschub();
+						break;
+					case Status.DEAKT:
+						deakt();
 						break;
 
 					default:
@@ -415,12 +423,23 @@ System.out.println("Logic.initVals()");
 		int cnt, val, tim;
 		cnt = 0;
 		tim = Timer.getTimeoutSec(10);
+		boolean bereit = false;
+		
+		if (Status.state==Status.DL_CHECK ||
+			Status.state==Status.INIT  ||
+			Status.state==Status.GPS_OK  ||
+			Status.state==Status.CONNECT) {
+				bereit = true;
+			}
+
 
 // System.out.println("Menue");
 		while (loop()) {
 
 			if (Status.esMode) {
 				Display.write("Betriebsfunktion:", mnuESTxt[cnt],"");
+			} else if (bereit) {
+				Display.write("Betriebsfunktion:", mnuBereit[cnt],"");				
 			} else {
 				Display.write("Betriebsfunktion:", mnuTxt[cnt],"");
 			}
@@ -442,7 +461,9 @@ System.out.println("Logic.initVals()");
 			if (val==Keyboard.B) {
 				++cnt;
 				if (Status.esMode) {
-					if (cnt==MNU_ES_CNT) cnt=0;								
+					if (cnt==MNU_ES_CNT) cnt=0;	
+				} else if (bereit) {
+					if (cnt==MNU_BEREIT_CNT) cnt=0;	
 				} else {
 					if (cnt==MNU_CNT) cnt=0;			
 				}
@@ -461,6 +482,13 @@ System.out.println("Logic.initVals()");
 					} else if (cnt==1) {
 						Status.state = Status.ES_VERSCHUB;
 					} else if (cnt==2) {
+						Display.write("Neustart", "", "");
+						restart();
+					}
+				} else if (bereit) {
+					if (cnt==0) {
+						Status.state = Status.DEAKT;
+					} else if (cnt==1) {
 						Display.write("Neustart", "", "");
 						restart();
 					}
@@ -604,7 +632,7 @@ System.out.println("waitGps");
 					}
 				}
 				if (i==cnt) {
-					Display.write("Streckennummer","ungültig","");
+					Display.write("Streckennummer","ungültig","(Quitt. [E])");
 					Led.shortBeep();
 					waitEnterOnly();
 					nr = -1;
@@ -625,6 +653,7 @@ System.out.println("Check download server");
 			Status.state = Status.INIT;
 			return;
 		}
+		Display.write("Verbindungsaufbau", "Download check", "(Bitte warten)");
 		
 		// wait for ip link established
 		for (;;) {
@@ -747,12 +776,17 @@ System.out.println("Download server connect timeout");
 			}
 			int val = Keyboard.rd();
 			if (val==Keyboard.C) {
+				Status.von=0;
+				Status.bis=0;
 				return false;
 			} else if (val==Keyboard.B) {
 				Keyboard.unread(val);
 				loop();
 				return true;
 			}
+
+			// Status.state change in loop()
+			if (Status.state!=Status.FDL_CONN || Status.dispMenu) return true;
 		}
 		return true;
 	}
@@ -823,8 +857,6 @@ System.out.println("Download server connect timeout");
 					"(Anmelden mit [E])");
 		}
 
-		// TODO: do I need this or was this really old stuff?
-//		Flash.loadStr(Status.strNr);
 
 		while (loop()) {
 			val = Keyboard.rd();
@@ -974,6 +1006,9 @@ Dbg.lf();
 		//
 		if (Status.state==Status.ALARM) {
 			Status.state = stateAfterQuit;
+			if (Status.state==Status.ZIEL) {
+				Status.state = Status.ANM_OK;
+			}
 		}
 	}
 
@@ -1090,6 +1125,20 @@ Dbg.lf();
 			Flash.log(tmpStr);
 		}
 		reset();
+	}
+	
+	private void deakt() {
+		
+		Display.write("Deaktiviert", "", "Aktivieren mit [E]");
+		setGpsData();
+		tmpStr.append("Deaktiviert: ");
+		tmpStr.append(Status.melNr);
+		tmpStr.append("\n");
+		Flash.log(tmpStr);
+		initVals();
+		waitEnterOnly();
+		reset();
+		
 	}
 	
 	/**
@@ -1388,32 +1437,8 @@ Dbg.lf();
 
 		Display.write("Wechsel zu", "ES221 Betrieb", "");
 		// we will keep the connection up
-		Comm.alarm(Status.strNr, Status.melNr, Cmd.ALARM_ES221);			
-		esInit();
-		for (;;) {
-			if (Status.melNr>0) {
-				// now we can check for a change of Melnr
-				checkMelnr = true;
-				Status.melNrStart = Status.melNr;
-				Status.melNrZiel = Status.melNr;
-				break;
-			}
-			loop();
-		}
-		int tim = Timer.getTimeoutSec(2);
-		while (loop()) {
-			if (Timer.timeout(tim)) {
-				return;
-			}
-		}
-	}
-	
-	/**
-	 * Prepare for ES-mode:
-	 *
-	 */
-	private void esInit() {
-
+		Comm.alarm(Status.strNr, Status.melNr, Cmd.ALARM_ES221);
+		
 System.out.println("esInit");
 		Status.esMode = true;
 		// question: when shall be do the esStr()?
@@ -1436,7 +1461,25 @@ System.out.println("esInit");
 			return;
 		}
 		Status.state = Status.ES_RDY;
+		
+		for (;;) {
+			if (Status.melNr>0) {
+				// now we can check for a change of Melnr
+				checkMelnr = true;
+				Status.melNrStart = Status.melNr;
+				Status.melNrZiel = Status.melNr;
+				break;
+			}
+			loop();
+		}
+		int tim = Timer.getTimeoutSec(2);
+		while (loop()) {
+			if (Timer.timeout(tim)) {
+				return;
+			}
+		}
 	}
+	
 
 	/**
 	 * ES mode: wait for entering a destination
@@ -1555,11 +1598,12 @@ System.out.println("ES Rdy");
 		Flash.log(tmpStr);
 
 		Status.state = Status.ES_VERSCHUB;
-		Status.melNrStart = Status.melNr;
-		Status.melNrZiel = Status.melNr;
+		checkMelnr = false;
 		while (loop()) {
-			;
+			Status.melNrStart = Status.melNr;
+			Status.melNrZiel = Status.melNr;
 		}
+		checkMelnr = true;
 
 	}
 	
