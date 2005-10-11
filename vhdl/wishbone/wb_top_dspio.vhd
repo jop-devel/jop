@@ -62,12 +62,60 @@ end wb_top;
 
 architecture rtl of wb_top is
 
-	constant SLAVE_NR : integer := 2;
+component ac97_top is
+port (
 
-	type wbs_in_array is array(0 to SLAVE_NR-1) of wb_slave_in_type;
+	clk_i			: in std_logic;
+	rst_i			: in std_logic;
+
+-- WISHBONE SLAVE INTERFACE 
+	wb_data_i		: in std_logic_vector(31 downto 0);
+	wb_data_o		: out std_logic_vector(31 downto 0);
+	wb_addr_i		: in std_logic_vector(31 downto 0);
+	wb_sel_i		: in std_logic_vector(3 downto 0);
+	wb_we_i			: in std_logic;
+	wb_cyc_i		: in std_logic;
+	wb_stb_i		: in std_logic;
+	wb_ack_o		: out std_logic;
+	wb_err_o		: out std_logic ;
+
+-- Misc Signals
+	int_o			: out std_logic;
+	dma_req_o		: out std_logic_vector(8 downto 0);
+	dma_ack_i		: in std_logic_vector(8 downto 0);
+-- Suspend Resume Interface
+	suspended_o		: out std_logic;
+
+-- AC97 Codec Interface
+	bit_clk_pad_i	: in std_logic;
+	sync_pad_o		: out std_logic;
+	sdata_pad_o		: out std_logic;
+	sdata_pad_i		: in std_logic;
+	ac97_reset_pad_o	: out std_logic
+);
+end component;
+
+
+	constant SLAVE_CNT : integer := 3;
+
+	type wbs_in_array is array(0 to SLAVE_CNT-1) of wb_slave_in_type;
 	signal wbs_in		: wbs_in_array;
-	type wbs_out_array is array(0 to SLAVE_NR-1) of wb_slave_out_type;
+	type wbs_out_array is array(0 to SLAVE_CNT-1) of wb_slave_out_type;
 	signal wbs_out		: wbs_out_array;
+
+	signal module_addr	: std_logic_vector(M_ADDR_SIZE-S_ADDR_SIZE-1 downto 0);
+	signal addr_part	: std_logic_vector(1 downto 0);
+
+--
+--	AC97 signals
+--
+	signal ac97_nres	: std_logic;
+	signal ac97_sdo		: std_logic;
+	signal ac97_sdi		: std_logic;
+	signal ac97_syn		: std_logic;
+	signal ac97_bclk	: std_logic;
+
+	signal ac97_wb_adr	: std_logic_vector(31 downto 0);
 
 
 begin
@@ -75,7 +123,7 @@ begin
 --
 --	unused and input pins tri state
 --
-	wb_io.l(15 downto 1) <= (others => 'Z');
+	wb_io.l(15 downto 6) <= (others => 'Z');
 	wb_io.l(20 downto 18) <= (others => 'Z');
 	wb_io.r(20 downto 14) <= (others => 'Z');
 	wb_io.t <= (others => 'Z');
@@ -111,12 +159,53 @@ begin
 		nsi => wb_io.r(13)
 	);
 
+	ac97_wb_adr <= "00000000000000000000000000"
+					& wbs_in(2).adr_i & "00";
+
+	wbac97: ac97_top  port map(
+
+		clk_i			=> clk,
+		rst_i			=> not reset,	-- the AC97 core uses nreset!
+
+-- WISHBONE SLAVE INTERFACE 
+		wb_data_i		=> wbs_in(2).dat_i,
+		wb_data_o		=> wbs_out(2).dat_o,
+		wb_addr_i		=> ac97_wb_adr,
+		wb_sel_i		=> "1111",
+		wb_we_i			=> wbs_in(2).we_i,
+		wb_cyc_i		=> wbs_in(2).cyc_i,
+		wb_stb_i		=> wbs_in(2).stb_i,
+		wb_ack_o		=> wbs_out(2).ack_o,
+		wb_err_o		=> open,
+
+-- Misc Signals
+		int_o			=> open,
+		dma_req_o		=> open,
+		dma_ack_i		=> "000000000",
+-- Suspend Resume Interface
+		suspended_o		=> open,
+
+-- AC97 Codec Interface
+		bit_clk_pad_i	=> ac97_bclk,
+		sync_pad_o		=> ac97_syn,
+		sdata_pad_o		=> ac97_sdo,
+		sdata_pad_i		=> ac97_sdi,
+		ac97_reset_pad_o	=> ac97_nres
+	);
+
+	wb_io.l(1) <= ac97_sdo;
+	ac97_bclk <= wb_io.l(2);	-- this one is inout on AC97/AD1981BL
+	wb_io.l(2) <= 'Z';
+	ac97_sdi <= wb_io.l(3);
+	wb_io.l(3) <= 'Z';
+	wb_io.l(4) <= ac97_syn;
+	wb_io.l(5) <= ac97_nres;
 
 
 	--
 	-- two simple test slaves
 	--
-	gsl: for i in 0 to SLAVE_NR-1 generate
+	gsl: for i in 0 to SLAVE_CNT-1 generate
 		wbs_in(i).dat_i <= wb_out.dat_o;
 		wbs_in(i).we_i <= wb_out.we_o;
 		wbs_in(i).adr_i <= wb_out.adr_o(S_ADDR_SIZE-1 downto 0);
@@ -126,19 +215,42 @@ begin
 --
 --	This is the address decoding and the data muxer.
 --
-process(wb_out, wbs_out)
+--		we use negative addresse for fast constant load
+--		base is 0xffffff80
+--
+	module_addr <= wb_out.adr_o(M_ADDR_SIZE-1 downto S_ADDR_SIZE);
+	addr_part <= module_addr(1 downto 0);
+
+process(addr_part, wb_out, wbs_out)
 begin
 
-	if wb_out.adr_o(S_ADDR_SIZE)='0' then
+	wbs_in(0).stb_i <= '0';
+	wbs_in(1).stb_i <= '0';
+	wbs_in(2).stb_i <= '0';
+
+--	if wb_out.adr_o(S_ADDR_SIZE)='0' then
+--		wbs_in(0).stb_i <= wb_out.stb_o;
+--		wb_in.dat_i <= wbs_out(0).dat_o;
+--		wb_in.ack_i <= wbs_out(0).ack_o;
+--	else
+--		wbs_in(1).stb_i <= wb_out.stb_o;
+--		wb_in.dat_i <= wbs_out(1).dat_o;
+--		wb_in.ack_i <= wbs_out(1).ack_o;
+--	end if;
+
+	if addr_part="00" then
 		wbs_in(0).stb_i <= wb_out.stb_o;
-		wbs_in(1).stb_i <= '0';
 		wb_in.dat_i <= wbs_out(0).dat_o;
 		wb_in.ack_i <= wbs_out(0).ack_o;
-	else
-		wbs_in(0).stb_i <= '0';
+	elsif addr_part="01" then
 		wbs_in(1).stb_i <= wb_out.stb_o;
 		wb_in.dat_i <= wbs_out(1).dat_o;
 		wb_in.ack_i <= wbs_out(1).ack_o;
+	else
+		wbs_in(2).stb_i <= wb_out.stb_o;
+		wb_in.dat_i <= wbs_out(2).dat_o;
+-- wb_in.dat_i <= "00000000000000000000000000001010";
+		wb_in.ack_i <= wbs_out(2).ack_o;
 	end if;
 
 end process;

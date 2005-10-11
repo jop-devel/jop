@@ -14,27 +14,31 @@
 
 #
 #	com1 is the usual serial port
-#	com8 is the FTDI VCOM for the USB download
+#	com14 is the FTDI VCOM for the USB download
 #		use -usb to download the Java application
 #		without the echo 'protocol' on USB
 #
 COM_PORT=com1
-COM_PORT=com8
-COM_FLAG=-usb
+COM_FLAG=-e
+#COM_PORT=com14
+#COM_FLAG=-e -usb
 
 # 'some' different Quartus projects
 QPROJ=cycmin cyc12min cycbaseio cycbg dspio
 # if you want to build only one Quartus project use e.q.:
-QPROJ=dspio6c
+QPROJ=cycmin
 
 # Which project do you want to be downloaded?
-DLPROJ=dspio6c
+DLPROJ=$(QPROJ)
 # Which project do you want to be programmed into the flash?
-#FLPROJ=cycbg
+FLPROJ=$(DLProj)
+# IP address for Flash programming
+IPDEST=192.168.1.2
+IPDEST=192.168.0.123
+
 
 P1=test
 P2=test
-P3=Baseio
 P3=Clock
 
 #P2=jvm
@@ -46,12 +50,34 @@ P3=Clock
 #P3=Main
 #P2=wishbone
 #P3=Usb
+#P1=app
+#P2=dsp
+#P3=AC97
+# for baseio (Rasmus)
+#P1=app
+#P2=tal
+#P3=Tal
+
+# special section for Jinze Li begin
+#P1=test
+#P2=test
+#P3=Hello
+#QPROJ=cycmin
+#DLPROJ=cycmin
+#COM_PORT=com1
+#COM_FLAG=-e
+#
+#jinze_li: directories tools jopser japp
+#
+# special section for Jinze Li end:
+
+
 
 # use this for serial download
-#all: directories tools jopser japp
+all: directories tools jopser japp
 
 # we use USB download now as default
-all: directories tools jopusb japp
+#all: directories tools jopusb japp
 
 japp: java_app download
 
@@ -68,6 +94,13 @@ clean:
 
 tools:
 	cd java/tools && ./build.bat
+
+# we moved the pc stuff to it's own target to bo
+# NOT built on make all.
+# It depends on javax.comm which is NOT installed
+# by default - Blame SUN on this!
+#
+pc:
 	cd java/pc && ./build.bat
 
 #
@@ -156,19 +189,29 @@ java_app:
 
 download:
 	cd quartus/$(DLPROJ) && quartus_pgm -c ByteBlasterMV -m JTAG jop.cdf
-	down -e $(COM_FLAG) java/target/dist/bin/$(P2)_$(P3).jop $(COM_PORT)
+	down $(COM_FLAG) java/target/dist/bin/$(P2)_$(P3).jop $(COM_PORT)
 
+#
+#	flash programming
+#
+prog_flash: java_app
+	quartus_pgm -c ByteblasterMV -m JTAG -o p\;jbc/$(DLPROJ).jbc
+	down java/target/dist/bin/$(P2)_$(P3).jop $(COM_PORT)
+	java -cp java/pc/dist/lib/jop-pc.jar udp.Flash java/target/dist/bin/$(P2)_$(P3).jop $(IPDEST)
+	java -cp java/pc/dist/lib/jop-pc.jar udp.Flash ttf/$(FLPROJ).ttf $(IPDEST)
+	quartus_pgm -c ByteBlasterMV -m JTAG -o p\;quartus/cycconf/cyc_conf.pof
+	
 #
 #	flash programming for the BG hardware as an example
 #
-prog_flash:
-	quartus_pgm -c ByteblasterMV -m JTAG -o p\;jbc/$(FLPROJ).jbc
-	cd java/target && ./build.bat app oebb BgInit
-	down java/target/dist/bin/oebb_BgInit.jop COM1
-	cd java/target && ./build.bat app oebb Main
-	java -cp java/pc/dist/lib/jop-pc.jar udp.Flash java/target/dist/bin/oebb_Main.jop 192.168.1.2
-	java -cp java/pc/dist/lib/jop-pc.jar udp.Flash ttf/$(FLPROJ).ttf 192.168.1.2
-	quartus_pgm -c ByteBlasterMV -m JTAG -o p\;quartus/cycconf/cyc_conf.pof
+#prog_flash:
+#	quartus_pgm -c ByteblasterMV -m JTAG -o p\;jbc/$(DLPROG).jbc
+#	cd java/target && ./build.bat app oebb BgInit
+#	down java/target/dist/bin/oebb_BgInit.jop $(COM_PORT)
+#	cd java/target && ./build.bat app oebb Main
+#	java -cp java/pc/dist/lib/jop-pc.jar udp.Flash java/target/dist/bin/oebb_Main.jop 192.168.1.2
+#	java -cp java/pc/dist/lib/jop-pc.jar udp.Flash ttf/$(FLPROJ).ttf 192.168.1.2
+#	quartus_pgm -c ByteBlasterMV -m JTAG -o p\;quartus/cycconf/cyc_conf.pof
 	
 
 pld_init:
@@ -180,7 +223,8 @@ pld_conf:
 oebb:
 	java -cp java/pc/dist/lib/jop-pc.jar udp.Flash java/target/dist/bin/oebb_Main.jop 192.168.1.2
 
-# do the whole build process for the BG
+# do the whole build process including flash programming
+# for BG and baseio (TAL)
 bg: directories tools jopflash jopser prog_flash
 
 #

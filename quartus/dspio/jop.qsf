@@ -29,6 +29,22 @@ set_global_assignment -name SMART_RECOMPILE OFF
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION 4.0
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "02:05:59  APRIL 04, 2004"
 set_global_assignment -name LAST_QUARTUS_VERSION 5.0
+set_global_assignment -name VERILOG_FILE ../../ext/ac97/ac97_wb_if.v
+set_global_assignment -name VERILOG_FILE ../../ext/ac97/ac97_cra.v
+set_global_assignment -name VERILOG_FILE ../../ext/ac97/ac97_defines.v
+set_global_assignment -name VERILOG_FILE ../../ext/ac97/ac97_dma_if.v
+set_global_assignment -name VERILOG_FILE ../../ext/ac97/ac97_dma_req.v
+set_global_assignment -name VERILOG_FILE ../../ext/ac97/ac97_fifo_ctrl.v
+set_global_assignment -name VERILOG_FILE ../../ext/ac97/ac97_in_fifo.v
+set_global_assignment -name VERILOG_FILE ../../ext/ac97/ac97_int.v
+set_global_assignment -name VERILOG_FILE ../../ext/ac97/ac97_out_fifo.v
+set_global_assignment -name VERILOG_FILE ../../ext/ac97/ac97_prc.v
+set_global_assignment -name VERILOG_FILE ../../ext/ac97/ac97_rf.v
+set_global_assignment -name VERILOG_FILE ../../ext/ac97/ac97_rst.v
+set_global_assignment -name VERILOG_FILE ../../ext/ac97/ac97_sin.v
+set_global_assignment -name VERILOG_FILE ../../ext/ac97/ac97_soc.v
+set_global_assignment -name VERILOG_FILE ../../ext/ac97/ac97_sout.v
+set_global_assignment -name VERILOG_FILE ../../ext/ac97/ac97_top.v
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_types_60.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/wishbone/wb_pack.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/io/fifo.vhd
@@ -56,6 +72,7 @@ set_global_assignment -name VHDL_FILE ../../vhdl/core/shift.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/stack.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jopcyc12.vhd
 set_global_assignment -name CDF_FILE jop.cdf
+set_global_assignment -name CDF_FILE jrun.cdf
 
 # Pin & Location Assignments
 # ==========================

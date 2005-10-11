@@ -60,4 +60,7 @@ public class Const {
 	// mapped to memory addresses
 	public static final int WB_USB_STATUS = WB_BASE+0x10;
 	public static final int WB_USB_DATA = WB_BASE+0x11;
+	
+	// AC97 interface
+	public static final int WB_AC97 = WB_BASE+0x20;
 }

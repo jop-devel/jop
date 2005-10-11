@@ -84,10 +84,20 @@ public class Html {
 		// hits = 38175;		// 13.7.2004
 		// hits = 38800;		// 17.8.2004
 		hits = 39291;			// 9.9.2004
+		hits = 0;
 		outVal[0] = 0;
 		Native.wr(outVal[0], Const.IO_OUT);
 
 		text =
+/*
+			"<html><head></head><body>"+
+			"<h2>Hej Rasmus and DDM class</h2>"+
+			"<h3>Greetings from Vienna.</h3>"+
+			"<h3>Have fun,</h3>"+
+			"<h3>Martin</h3>"+
+			"</body></html>";
+*/
+/*
 				"<html><head></head><body><h2>BG 263</h2>"+
 				"Some Communication Statistics<p>"+
 				"sent packets #0<br>"+
@@ -96,8 +106,9 @@ public class Html {
 				"rcvd bytes #3<br>"+
 				"wrong packets #4<br>"+
 				"</body></html>";
+*/
 
-/*
+
 			"<html><head></head><body>"+
 //			"<h2>TAL TeleAlarm</h2>"+
 			"<h2><a href=\"http://www.jopdesign.com/\">JOP</a> Web Server on Altera Cyclone EP1C6</h2>"+
@@ -123,7 +134,7 @@ public class Html {
 			"</form>"+
 			"<p><sub>!ht</sub>"+
 			"</body></html>";
-*/
+
 		prot = "HTTP/1.0 200 OK\r\n\r\n";
 		end = "\r\n\r\n";
 	}

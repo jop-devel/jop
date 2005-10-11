@@ -399,6 +399,12 @@ public class JopInstr{
 	public static void main(String[] args) {
 
 		for (int i=0; i<256; ++i) {
+			System.out.print(i+"; ");
+			System.out.print(JopInstr.name(i)+"; ");
+			System.out.println(JopInstr.cnt(i));
+		}
+/*
+		for (int i=0; i<256; ++i) {
 			System.out.print(i+"\t");
 			System.out.print(JopInstr.name(i)+"\t");
 			int imp = JopInstr.imp(i);
@@ -414,5 +420,6 @@ public class JopInstr{
 				System.out.println("NI");
 			}
 		}
+*/
 	}
 }

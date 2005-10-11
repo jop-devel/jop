@@ -8,7 +8,7 @@ public class Throwable
 
   private Throwable cause = this;
 
-  private StackTraceElement[] stackTrace;
+//  private StackTraceElement[] stackTrace;
 
   public Throwable()
   {
