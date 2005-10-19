@@ -20,7 +20,7 @@
 #
 COM_PORT=com1
 COM_FLAG=-e
-#COM_PORT=com14
+#COM_PORT=com18
 #COM_FLAG=-e -usb
 
 # 'some' different Quartus projects
@@ -43,34 +43,22 @@ P3=Clock
 
 #P2=jvm
 #P3=DoAll
+
 #P2=testrt
 #P3=PeriodicFull
 #P1=app
 #P2=oebb
 #P3=Main
-#P2=wishbone
 #P3=Usb
-#P1=app
-#P2=dsp
-#P3=AC97
 # for baseio (Rasmus)
 #P1=app
 #P2=tal
 #P3=Tal
 
-# special section for Jinze Li begin
-#P1=test
-#P2=test
-#P3=Hello
-#QPROJ=cycmin
-#DLPROJ=cycmin
-#COM_PORT=com1
-#COM_FLAG=-e
-#
-#jinze_li: directories tools jopser japp
-#
-# special section for Jinze Li end:
-
+#P1=app
+#P2=dsp
+#P3=AC97
+#P3=SigDel
 
 
 # use this for serial download
