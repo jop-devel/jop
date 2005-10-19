@@ -9,7 +9,7 @@ public class Hello {
 		System.out.println("Hello World from JOP!");
 		for (;;) {
 			Timer.wd();
-			int i = Timer.getTimeoutMs(1000);
+			int i = Timer.getTimeoutMs(500);
 			while (!Timer.timeout(i)) {
 				;
 			}
