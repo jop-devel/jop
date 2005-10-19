@@ -1,16 +1,18 @@
 package test;
 
-import util.Dbg;
+import util.*;
 
 public class Hello {
 
 	public static void main(String[] agrgs) {
 
-		System.out.println("Hello World from JAVA!");
-
-		// mark the end of the program
-		// in emb. systems there is no exit()
-//		for (;;);
-//		we don't need this anymore!
+		System.out.println("Hello World from JOP!");
+		for (;;) {
+			Timer.wd();
+			int i = Timer.getTimeoutMs(1000);
+			while (!Timer.timeout(i)) {
+				;
+			}
+		}
 	}
 }
