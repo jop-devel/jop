@@ -19,6 +19,8 @@ public class JopSim {
 
 	static final int MAX_MEM = 1024*1024/4;
 	static final int MAX_STACK = 256;	// with internal memory
+	
+	static final int MIN_WB_ADDRESS = -128;
 
 	static final int SYS_INT = 0xf0;
 
@@ -186,9 +188,12 @@ System.out.println(mp+" "+pc);
 		rdMemCnt++;
 		ioCnt += 12;
 
-		if (addr>MAX_MEM || addr<0) {
+		if (addr>MAX_MEM || addr<MIN_WB_ADDRESS) {
 			System.out.println("readMem: wrong address: "+addr);
 			System.exit(-1);
+		}
+		if (addr<0) {
+			return 0; // no Simulation of the Wishbone devices
 		}
 
 		return mem[addr];
@@ -198,11 +203,14 @@ System.out.println(mp+" "+pc);
 		wrMemCnt++;
 		ioCnt += 12;
 
-		if (addr>MAX_MEM || addr<0) {
+		if (addr>MAX_MEM || addr<MIN_WB_ADDRESS) {
 			System.out.println("writeMem: wrong address: "+addr);
 			System.exit(-1);
 		}
 
+		if (addr<0) {
+			return; // no Simulation of the Wishbone devices
+		}
 		mem[addr] = data;
 	}
 
