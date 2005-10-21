@@ -59,8 +59,8 @@ public class Example {
 			int rec = (sig & 0x40)<<1;
 			int saw = sig;
 			
-			left = (rec*cnt + saw*(0xffff-cnt2))>>18;
-			right = (saw*cnt2 + rec*(0xffff-cnt))>>18;
+			left = (rec*cnt + saw*(0xffff-cnt2))>>16;
+			right = (saw*cnt2 + rec*(0xffff-cnt))>>16;
 
 			
 			
