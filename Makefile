@@ -237,3 +237,43 @@ xxx:
 	quartus_pgm -c ByteBlasterMV -m JTAG -o p\;jbc/cycbg.jbc
 	quartus_pgm -c ByteBlasterMV -m JTAG -o p\;jbc/cyc_conf.jbc
 
+
+#
+#	JOP porting test programs
+#
+#	TODO: combine all quartus stuff to a single target
+#
+jop_blink_test:
+	cd asm && ./build.bat blink
+	@echo $(QPROJ)
+	for target in $(QPROJ); do \
+		echo "building $$target"; \
+		qp="quartus/$$target/jop"; \
+		echo $$qp; \
+		quartus_map $$qp; \
+		quartus_fit $$qp; \
+		quartus_asm $$qp; \
+		quartus_tan $$qp; \
+		cd quartus/$$target && quartus_cpf -c jop.cdf ../../jbc/$$target.jbc; \
+	done
+	cd quartus/$(DLPROJ) && quartus_pgm -c ByteBlasterMV -m JTAG jop.cdf
+	e $(COM_PORT)
+
+
+jop_testmon:
+	cd asm && ./build.bat testmon
+	@echo $(QPROJ)
+	for target in $(QPROJ); do \
+		echo "building $$target"; \
+		qp="quartus/$$target/jop"; \
+		echo $$qp; \
+		quartus_map $$qp; \
+		quartus_fit $$qp; \
+		quartus_asm $$qp; \
+		quartus_tan $$qp; \
+		cd quartus/$$target && quartus_cpf -c jop.cdf ../../jbc/$$target.jbc; \
+	done
+	cd quartus/$(DLPROJ) && quartus_pgm -c ByteBlasterMV -m JTAG jop.cdf
+
+
+
