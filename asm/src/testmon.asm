@@ -3,17 +3,6 @@
 //
 //	Test monitor.
 //
-//
-//	io register
-//
-io_addr		=	0
-io_data		=	1
-mem_rd_addr	=	2			// st
-mem_rd_data	=	2			// ld
-mem_wr_addr	=	3			// st
-mem_status	=	3			// ld
-mem_wr_data	=	4			// st
-mem_cancel	=	4			// ld
 
 //
 //	io address
@@ -54,6 +43,8 @@ ua_tdre		= 	1
 //	special byte codes
 //	but starts with pc=0!!! (so init bc is not really necassary)
 //
+			nop			// this gets never executed
+			nop			// for shure during reset (perhaps two times executed)
 sys_init:
 			ldi	127
 			nop			// written in adr/read stage!
