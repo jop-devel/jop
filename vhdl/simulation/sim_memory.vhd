@@ -34,19 +34,35 @@ architecture sim of memory is
 	------------------------------
 	shared variable ram : ram_type;
 	------------------------------
-	constant tAcc : time := 17 ns;
+	constant tAcc : time := 17 ns;	-- original 15ns
+--	constant tAcc : time := 27 ns;
+	constant tDoe : time := 9 ns;	-- original 7ns
+--	constant tDoe : time := 19 ns;	-- original 7ns
 	constant tHold : time := 2 ns;
+
+	signal cs_ok	: std_logic;
+	signal oe_ok	: std_logic;
 
 begin
 
 memory:
-process (addr, data, ncs, noe, nwr)
+process (addr, data, ncs, cs_ok, noe, oe_ok, nwr)
 	variable address : natural;
 
 begin
 		address := to_integer(unsigned(addr));
-		if noe='0' and ncs='0' then
-			data <= ram(address) after tAcc;
+		if ncs='0' then
+			cs_ok <= '1' after tAcc;
+		else
+			cs_ok <= '0';
+		end if;
+		if noe='0' then
+			oe_ok <= '1' after tDoe;
+		else
+			oe_ok <= '0';
+		end if;
+		if cs_ok='1' and oe_ok='1' then
+			data <= ram(address);
 		else
 			data <= (others => 'Z') after tHold;
 		end if;
