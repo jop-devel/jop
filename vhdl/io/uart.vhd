@@ -111,6 +111,7 @@ end component;
 	signal rf_full		: std_logic;
 	signal rf_half		: std_logic;
 
+	signal rxd_reg		: std_logic;
 	signal rx_buf		: std_logic_vector(2 downto 0);	-- sync in, filter
 	signal rx_d			: std_logic;					-- rx serial data
 	
@@ -199,7 +200,8 @@ begin
 --
 --	sync in filter buffer
 --
-			rx_buf(0) <= rxd;
+			rxd_reg <= rxd;			-- to avoid setup timing error in Quartus
+			rx_buf(0) <= rxd_reg;
 			rx_buf(2 downto 1) <= rx_buf(1 downto 0);
 		else
 			clk16 := clk16 + 1;
