@@ -16,10 +16,35 @@ package wb_pack is
 	constant M_ADDR_SIZE : integer := 8;
 	constant S_ADDR_SIZE : integer := 4;
 
+
+--
+--	type definitions for the memory WISHBONE interface
+--
+
+	-- 21 bits as example for the SRAM/Flash/NAND interface
+	constant MEM_ADDR_SIZE : integer := 21;
+
+	type wb_mem_out_type is record
+		dat : std_logic_vector(31 downto 0);
+		adr : std_logic_vector(MEM_ADDR_SIZE-1 downto 0);
+		we  : std_logic;
+		cyc : std_logic;
+		sel : std_logic_vector(3 downto 0);
+		stb : std_logic;
+	end record;
+	type wb_mem_in_type is record
+		dat : std_logic_vector(31 downto 0);
+		ack : std_logic;
+	end record;
+
+--
+--	type definitions for the IO WISHBONE interface
+--
+
 	type wb_slave_in_type is record
 		dat_i : std_logic_vector(31 downto 0);
 		adr_i : std_logic_vector(S_ADDR_SIZE-1 downto 0);
-		we_i	: std_logic;
+		we_i  : std_logic;
 		cyc_i : std_logic;
 		stb_i : std_logic;
 	end record;
@@ -31,7 +56,7 @@ package wb_pack is
 	type wb_master_out_type is record
 		dat_o : std_logic_vector(31 downto 0);
 		adr_o : std_logic_vector(M_ADDR_SIZE-1 downto 0);
-		we_o	: std_logic;
+		we_o  : std_logic;
 		cyc_o : std_logic;
 		stb_o : std_logic;
 	end record;

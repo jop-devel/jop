@@ -28,8 +28,8 @@
 set_global_assignment -name SMART_RECOMPILE OFF
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION 4.0
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "02:05:59  APRIL 04, 2004"
-set_global_assignment -name LAST_QUARTUS_VERSION "5.0 SP1"
-set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_types_80.vhd
+set_global_assignment -name LAST_QUARTUS_VERSION 5.1
+set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_types_100.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/wishbone/wb_pack.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/wishbone/wb_test_slave.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/wishbone/wb_top.vhd
@@ -47,15 +47,15 @@ set_global_assignment -name VHDL_FILE ../../vhdl/core/core.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/extension.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/decode.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/fetch.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/core/mem32.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/memory/wb_mem_sram32.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/memory/mem_wb.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc_jbc.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/cache.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/mul.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/shift.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/stack.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/top/jopcyc.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/top/jopwb.vhd
 set_global_assignment -name CDF_FILE jop.cdf
-set_global_assignment -name VECTOR_WAVEFORM_FILE jop.vwf
 
 # Pin & Location Assignments
 # ==========================
@@ -275,6 +275,7 @@ set_global_assignment -name PHYSICAL_SYNTHESIS_COMBO_LOGIC OFF
 set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_DUPLICATION OFF
 set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_RETIMING OFF
 set_global_assignment -name PHYSICAL_SYNTHESIS_EFFORT NORMAL
+set_global_assignment -name ROUTER_REGISTER_DUPLICATION ON
 set_global_assignment -name INC_PLC_MODE OFF
 set_global_assignment -name ROUTING_BACK_ANNOTATION_MODE OFF
 set_instance_assignment -name IO_STANDARD LVCMOS -to clk
@@ -473,7 +474,7 @@ set_global_assignment -name AUTO_RESTART_CONFIGURATION OFF
 
 # Simulator Assignments
 # =====================
-set_global_assignment -name GLITCH_INTERVAL 1
+set_global_assignment -name GLITCH_INTERVAL "1 ns"
 
 # Design Assistant Assignments
 # ============================
@@ -488,3 +489,20 @@ set_global_assignment -name HUB_INSTANCE_NAME SLD_HUB_INST
 # LogicLock Region Assignments
 # ============================
 set_global_assignment -name LOGICLOCK_INCREMENTAL_COMPILE_ASSIGNMENT OFF
+
+# -----------------
+# start ENTITY(jop)
+
+	# Pin & Location Assignments
+	# ==========================
+	set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to ram*_a
+	set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to ram*_d
+	set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to ram*_noe
+	set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to ram*_d
+	set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to ram*_ncs
+	set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to ram*_nwe
+
+# end ENTITY(jop)
+# ---------------
+
+set_global_assignment -name OPTIMIZE_HOLD_TIMING OFF
