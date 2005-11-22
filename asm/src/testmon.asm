@@ -65,7 +65,7 @@ new_line:
 			
 			ldm	mema
 			stmra			// read ext. mem, mem_bsy comes one cycle later
-			nop
+//			nop				// uncomment this when having troubles
 			wait
 			wait
 			ldmrd		 	// read ext. mem
@@ -290,7 +290,7 @@ chk_write_key:
 			stmwa			// write ext. mem address
 			ldm	wval
 			stmwd			// write ext. mem data
-			nop
+//			nop				// uncomment this when having troubles
 			wait
 			wait
 			
