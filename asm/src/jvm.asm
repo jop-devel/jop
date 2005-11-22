@@ -157,15 +157,13 @@ addr		?			// address used for bc load from flash
 // add
 // pop
 
-////////////
+//////////
 // test mem interface
 //
 //			ldi 15
 //
 //			// this sequence takes 6 cycles with ram_cnt=3
 //			stmra				// start read ext. mem
-// not any more necessary
-//			// nop					// mem_bsy comes one cycle later
 //			wait				// one for fetch
 //			wait				// one for decode
 //			ldmrd		 		// read ext. mem
@@ -176,20 +174,18 @@ addr		?			// address used for bc load from flash
 //			// this sequence takes 6 cycles with ram_cnt=3
 //			stmwa				// write ext. mem address
 //			stmwd				// write ext. mem data
-// not any more necessary
 //			wait
 //			wait
 //
 //			ldi 7
 //			stmra				// start read ext. mem
-// not any more necessary
 //			wait				// one for fetch
 //			wait				// one for decode
 //			ldmrd		 		// read ext. mem
 //
 //			pop
 //			pop
-///////////
+/////////
 
 
 ////////////////
