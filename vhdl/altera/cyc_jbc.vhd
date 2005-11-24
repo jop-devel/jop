@@ -11,7 +11,7 @@
 --	Changes:
 --		2003-08-14	load start address with jpc_wr and do autoincrement
 --					load 32 bit data and do the 4 byte writes serial
---		2005-02-17	extrected again from mem32.vhd
+--		2005-02-17	extracted again from mem32.vhd
 --		2005-05-03	address width is jpc_width
 --
 --
@@ -35,7 +35,7 @@ port (
 end jbc;
 
 --
---	registered and delayed wraddress, wren
+--	registered wraddress, wren
 --	registered din
 --	registered rdaddress
 --	unregistered dout
