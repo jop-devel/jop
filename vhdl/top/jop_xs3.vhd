@@ -24,6 +24,8 @@
 --	2004-10-08	mul operands from a and b, single instruction
 --	2005-06-09	added the bsy routing through extension
 --	2005-08-15	sp_ov can be used to show a stoack overflow on the wd pin
+--	2005-11-24	use mem_sc for the memory interface and xs3_jbc for the
+--				bc cache. Now a real block cache (+40% performance with KFL)
 --
 --
 
@@ -38,7 +40,9 @@ generic (
 	clk_freq	: integer := 50000000;	-- 50 MHz clock frequency
 	exta_width	: integer := 3;		-- address bits of internal io
 	ram_cnt		: integer := 3;		-- clock cycles for external ram
-	jpc_width	: integer := 10	-- address bits of java byte code pc
+	rom_cnt		: integer := 15;	-- not used for S3K
+	jpc_width	: integer := 11;	-- address bits of java byte code pc
+	block_bits	: integer := 4		-- 2*block_bits is number of cache blocks
 );
 
 port (
@@ -149,49 +153,6 @@ port (
 );
 end component;
 
-component mem_xs3 is
-generic (jpc_width : integer; ram_cnt : integer);
-port (
-
--- jop interface
-
-	clk, reset	: in std_logic;
-
-	din			: in std_logic_vector(31 downto 0);
-
-	mem_rd		: in std_logic;
-	mem_wr		: in std_logic;
-	mem_addr_wr	: in std_logic;
-	mem_bc_rd	: in std_logic;
-	dout		: out std_logic_vector(31 downto 0);
-	bcstart		: out std_logic_vector(31 downto 0); 	-- start of method in bc cache
-
-	bsy			: out std_logic;
-
--- jbc connections
-
-	jbc_addr	: in std_logic_vector(jpc_width-1 downto 0);
-	jbc_data	: out std_logic_vector(7 downto 0);
-
---
---	two ram banks
---
-	ram_addr	: out std_logic_vector(17 downto 0);
-	ram_nwe		: out std_logic;
-	ram_noe		: out std_logic;
-
-	rama_d		: inout std_logic_vector(15 downto 0);
-	rama_ncs	: out std_logic;
-	rama_nlb	: out std_logic;
-	rama_nub	: out std_logic;
-	ramb_d		: inout std_logic_vector(15 downto 0);
-	ramb_ncs	: out std_logic;
-	ramb_nlb	: out std_logic;
-	ramb_nub	: out std_logic
-
-);
-end component;
-
 component io is
 generic (clk_freq : integer);
 port (
@@ -257,6 +218,19 @@ end component;
 	signal jbc_addr			: std_logic_vector(jpc_width-1 downto 0);
 	signal jbc_data			: std_logic_vector(7 downto 0);
 
+	signal sc_addr			: std_logic_vector(17 downto 0);
+	signal sc_wr_data		: std_logic_vector(31 downto 0);
+	signal sc_rd, sc_wr		: std_logic;
+	signal sc_rd_data		: std_logic_vector(31 downto 0);
+	signal sc_bsy_cnt		: unsigned(1 downto 0);
+
+-- memory interface
+
+	signal ram_dout			: std_logic_vector(31 downto 0);
+	signal ram_din			: std_logic_vector(31 downto 0);
+	signal ram_dout_en		: std_logic;
+	signal ram_ncs			: std_logic;
+
 	signal io_rd			: std_logic;
 	signal io_wr			: std_logic;
 	signal io_addr_wr		: std_logic;
@@ -321,16 +295,98 @@ end process;
 			io_rd, io_wr, io_addr_wr, io_dout
 		);
 
-	cmp_mem: mem_xs3 generic map (jpc_width, ram_cnt)
-		port map (clk_int, int_res, stack_tos,
-			mem_rd, mem_wr, mem_addr_wr, mem_bc_rd,
-			mem_dout, mem_bcstart,
-			mem_bsy,
-			jbc_addr, jbc_data,
-			ram_addr, ram_nwe, ram_noe,
-			rama_d, rama_ncs, rama_nlb, rama_nub,
-			ramb_d, ramb_ncs, ramb_nlb, ramb_nub
+	cmp_mem: entity work.mem_sc
+		generic map (
+			jpc_width => jpc_width,
+			block_bits => block_bits,
+			addr_bits => 18
+		)
+		port map (
+			clk => clk_int,
+			reset => int_res,
+			din => stack_tos,
+
+			mem_rd => mem_rd,
+			mem_wr => mem_wr,
+			mem_addr_wr => mem_addr_wr,
+			mem_bc_rd => mem_bc_rd,
+			dout => mem_dout,
+			bcstart => mem_bcstart,
+			bsy => mem_bsy,
+
+			jbc_addr => jbc_addr,
+			jbc_data => jbc_data,
+
+			addr => sc_addr,
+			wr_data => sc_wr_data,
+			rd => sc_rd,
+			wr => sc_wr,
+			rd_data => sc_rd_data,
+			bsy_cnt => sc_bsy_cnt
 		);
+
+	cmp_scm: entity work.sc_mem_if
+		generic map (
+			ram_ws => ram_cnt-1,
+			rom_cnt => rom_cnt,
+			addr_bits => 18
+		)
+		port map (
+			clk => clk_int,
+			reset => int_res,
+
+			addr => sc_addr,
+			wr_data => sc_wr_data,
+			rd => sc_rd,
+			wr => sc_wr,
+			rd_data => sc_rd_data,
+			bsy_cnt => sc_bsy_cnt,
+
+			ram_addr => ram_addr,
+			ram_dout => ram_dout,
+			ram_din => ram_din,
+			ram_dout_en	=> ram_dout_en,
+			ram_ncs => ram_ncs,
+			ram_noe => ram_noe,
+			ram_nwe => ram_nwe,
+
+			-- TODO: should be removed when we
+			-- have two versions of the sc_memory
+			fl_a => open,
+			fl_d => open,
+			fl_ncs => open,
+			fl_ncsb => open,
+			fl_noe => open,
+			fl_nwe => open,
+			fl_rdy => '1'
+
+		);
+
+	process(ram_dout_en, ram_dout)
+	begin
+		if ram_dout_en='1' then
+			rama_d <= ram_dout(15 downto 0);
+			ramb_d <= ram_dout(31 downto 16);
+		else
+			rama_d <= (others => 'Z');
+			ramb_d <= (others => 'Z');
+		end if;
+	end process;
+
+	ram_din <= ramb_d & rama_d;
+
+--
+--	To put this RAM address in an output register
+--	we have to make an assignment (FAST_OUTPUT_REGISTER)
+--
+	rama_ncs <= ram_ncs;
+	rama_nlb <= '0';
+	rama_nub <= '0';
+
+	ramb_ncs <= ram_ncs;
+	ramb_nlb <= '0';
+	ramb_nub <= '0';
+
 
 	cmp_io: io generic map (clk_freq)
 		port map (clk_int, int_res, stack_tos,
