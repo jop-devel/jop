@@ -26,7 +26,10 @@ SOURCE ..\..\vhdl\core\extension.vhd
 SOURCE ..\..\vhdl\core\bcfetch.vhd
 SOURCE ..\..\vhdl\core\fetch.vhd
 SOURCE ..\..\vhdl\core\shift.vhd
-SOURCE ..\..\vhdl\core\mem_xs3.vhd
+SOURCE ..\..\vhdl\core\cache.vhd
+SOURCE ..\..\vhdl\xilinx\xs3_jbc.vhd
+SOURCE ..\..\vhdl\memory\mem_sc.vhd
+SOURCE ..\..\vhdl\memory\sc_sram32.vhd
 SOURCE ..\..\vhdl\core\stack.vhd
 SOURCE ..\..\vhdl\core\mul.vhd
 SOURCE ..\..\vhdl\core\core.vhd
@@ -38,7 +41,7 @@ SOURCE ..\..\vhdl\io\fifo.vhd
 SOURCE ..\..\vhdl\jtbl.vhd
 SOURCE ..\..\vhdl\offtbl.vhd
 SOURCE ..\..\vhdl\rom.vhd
-SOURCE ..\..\vhdl\core\xram.vhd
+SOURCE ..\..\vhdl\xilinx\xram.vhd
 SOURCE ..\..\vhdl\xram_block.vhd
 SOURCE ..\..\vhdl\top\jop_xs3.vhd
 DEPASSOC jop jop.ucf
