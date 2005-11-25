@@ -32,19 +32,22 @@ public class PrintStream {
 	static void wr(int val) {
 
 		int i;
+		int sign = 1;
 		if (val<0) {
 			wr('-');
-			val = -val;
+			//val = -val;
+			sign = -1;
 		}
 		for (i=0; i<MAX_TMP-1; ++i) {
-			tmp[i] = (val%10)+'0';
+			//tmp[i] = (val%10)+'0';
+			tmp[i] = ((val%10)*sign)+'0';
 			val /= 10;
 			if (val==0) break;
 		}
 		for (val=i; val>=0; --val) {
-			JVMHelp.wr((char) tmp[val]);
+			wr((char) tmp[val]);
 		}
-		wr(' ');
+		//wr(' ');
 	}
 
 	/**

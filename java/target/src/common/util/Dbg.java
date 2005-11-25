@@ -81,21 +81,24 @@ public abstract class Dbg {
 	public static void intVal(int val) {
 
 		int i;
+		int sign = 1;
 		if (val<0) {
 			wr('-');
-			val = -val;
+			//val = -val;
+			sign = -1;
 		}
 		for (i=0; i<MAX_TMP-1; ++i) {
-			tmp[i] = (val%10)+'0';
+			//tmp[i] = (val%10)+'0';
+			tmp[i] = ((val%10)*sign)+'0';
 			val /= 10;
 			if (val==0) break;
 		}
 		for (val=i; val>=0; --val) {
-			wr(tmp[val]);
+			wr((char) tmp[val]);
 		}
 		wr(' ');
 	}
-
+	
 	public static void hexVal(int val) {
 
 		int i, j;
