@@ -32,6 +32,7 @@
 --	2005-04-05	Reserve negative addresses for wishbone interface
 --	2005-04-07	generate bsy from delayed wr or'ed with mem_bsy
 --	2005-05-30	added wishbone interface
+--	2005-11-28	add SimpCon IO interface
 --
 
 
@@ -119,6 +120,8 @@ end component mul;
 
 	signal wr_dly				: std_logic;	-- generate a bsy with delayed wr
 
+	signal exr					: std_logic_vector(31 downto 0); 	-- extension data register
+
 --
 --	Wishbone specific signals
 --
@@ -138,29 +141,31 @@ begin
 				mul_dout
 		);
 
+	dout <= exr;
+
 --
 --	read
 --
 process(clk, reset)
 begin
 	if (reset='1') then
-		dout <= (others => '0');
+		exr <= (others => '0');
 		io_rd <= '0';
 	elsif rising_edge(clk) then
-		dout <= (others => '0');
+		exr <= (others => '0');
 
 		if (ext_addr="010") then
 			if rdaddr_msb='0' then
-				dout <= mem_data;
+				exr <= mem_data;
 			else
-				dout <= wb_data;
+				exr <= wb_data;
 			end if;
 		elsif (ext_addr="101") then
-			dout <= mul_dout;
+			exr <= mul_dout;
 		elsif (ext_addr="111") then
-			dout <= mem_bcstart;
+			exr <= mem_bcstart;
 		else
-			dout <= io_data;
+			exr <= io_data;
 		end if;
 
 		io_rd <= '0';
