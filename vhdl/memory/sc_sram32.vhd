@@ -37,11 +37,11 @@ port (
 
 -- SimpCon interface
 
-	addr		: in std_logic_vector(addr_bits-1 downto 0);
+	address		: in std_logic_vector(addr_bits-1 downto 0);
 	wr_data		: in std_logic_vector(31 downto 0);
 	rd, wr		: in std_logic;
 	rd_data		: out std_logic_vector(31 downto 0);
-	bsy_cnt		: out unsigned(1 downto 0);
+	rdy_cnt		: out unsigned(1 downto 0);
 
 -- memory interface
 
@@ -90,7 +90,7 @@ begin
 
 	ram_dout_en <= dout_ena;
 
-	bsy_cnt <= cnt;
+	rdy_cnt <= cnt;
 
 --
 --	Register memory address, write data and read data
@@ -106,7 +106,7 @@ begin
 	elsif rising_edge(clk) then
 
 		if rd='1' or wr='1' then
-			ram_addr <= addr(17 downto 0);
+			ram_addr <= address(17 downto 0);
 		end if;
 		if wr='1' then
 			ram_dout <= wr_data;

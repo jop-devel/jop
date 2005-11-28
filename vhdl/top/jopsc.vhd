@@ -247,11 +247,11 @@ end component;
 	signal jbc_addr			: std_logic_vector(jpc_width-1 downto 0);
 	signal jbc_data			: std_logic_vector(7 downto 0);
 
-	signal sc_addr			: std_logic_vector(17 downto 0);
+	signal sc_address		: std_logic_vector(17 downto 0);
 	signal sc_wr_data		: std_logic_vector(31 downto 0);
 	signal sc_rd, sc_wr		: std_logic;
 	signal sc_rd_data		: std_logic_vector(31 downto 0);
-	signal sc_bsy_cnt		: unsigned(1 downto 0);
+	signal sc_rdy_cnt		: unsigned(1 downto 0);
 
 -- memory interface
 
@@ -360,12 +360,12 @@ end process;
 			jbc_addr => jbc_addr,
 			jbc_data => jbc_data,
 
-			addr => sc_addr,
+			address => sc_address,
 			wr_data => sc_wr_data,
 			rd => sc_rd,
 			wr => sc_wr,
 			rd_data => sc_rd_data,
-			bsy_cnt => sc_bsy_cnt
+			rdy_cnt => sc_rdy_cnt
 		);
 
 	cmp_scm: entity work.sc_mem_if
@@ -378,12 +378,12 @@ end process;
 			clk => clk_int,
 			reset => int_res,
 
-			addr => sc_addr,
+			address => sc_address,
 			wr_data => sc_wr_data,
 			rd => sc_rd,
 			wr => sc_wr,
 			rd_data => sc_rd_data,
-			bsy_cnt => sc_bsy_cnt,
+			rdy_cnt => sc_rdy_cnt,
 
 			ram_addr => ram_addr,
 			ram_dout => ram_dout,

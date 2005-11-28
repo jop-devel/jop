@@ -1,7 +1,9 @@
 --
 --	mem_sc.vhd
 --
---	external memory interface with SimpCon
+--	External memory interface with SimpCon
+--	Translates between JOP/extension memory interface
+--	and SimpCon memory interface
 --
 --
 --	todo:
@@ -42,11 +44,11 @@ port (
 
 -- SimpCon interface
 
-	addr		: out std_logic_vector(addr_bits-1 downto 0);
+	address		: out std_logic_vector(addr_bits-1 downto 0);
 	wr_data		: out std_logic_vector(31 downto 0);
 	rd, wr		: out std_logic;
 	rd_data		: in std_logic_vector(31 downto 0);
-	bsy_cnt		: in unsigned(1 downto 0)
+	rdy_cnt		: in unsigned(1 downto 0)
 
 );
 end mem_sc;
@@ -142,7 +144,7 @@ end component;
 
 begin
 
-	mem_bsy <= '1' when bsy_cnt=3 or bcl_bsy='1' else '0';
+	mem_bsy <= '1' when rdy_cnt=3 or bcl_bsy='1' else '0';
 
 	bsy <= mem_bsy;
 
@@ -179,7 +181,7 @@ begin
 --
 
 
-	addr <= ram_addr;
+	address <= ram_addr;
 	wr <= mem_wr;
 	rd <= mem_rd or bc_rd;
 	wr_data <= din;
@@ -246,7 +248,7 @@ end process;
 --
 --	next state logic
 --
-process(state, mem_rd, mem_wr, mem_bc_rd, bsy_cnt,
+process(state, mem_rd, mem_wr, mem_bc_rd, rdy_cnt,
 	cache_rdy, cache_in_cache, bc_len)
 begin
 
@@ -267,7 +269,7 @@ begin
 		-- where the data is available
 		when rd1 =>
 			-- either 1 or 0
-			if bsy_cnt(1)='0' then
+			if rdy_cnt(1)='0' then
 				next_state <= idl;
 			end if;
 
@@ -276,7 +278,7 @@ begin
 		-- However, it is not used in JOP (at the moment).
 		when wr1 =>
 			-- either 1 or 0
-			if bsy_cnt(1)='0' then
+			if rdy_cnt(1)='0' then
 				next_state <= idl;
 			end if;
 
@@ -306,11 +308,11 @@ begin
 			if bc_len=to_unsigned(0, jpc_width-3) then
 				next_state <= bc_wl;
 			-- this works with pipeline level 1
-			-- elsif bsy_cnt(1)='0' then
+			-- elsif rdy_cnt(1)='0' then
 
 			-- we need a pipeline level of 2 in
 			-- the memory interface for this to work!
-			elsif bsy_cnt/=3 then
+			elsif rdy_cnt/=3 then
 				next_state <= bc_rn;
 			end if;
 
@@ -324,7 +326,7 @@ begin
 
 		when bc_wr =>
 			-- w. pipeline level 2
-			if bsy_cnt/=3 then
+			if rdy_cnt/=3 then
 				next_state <= bc_rn;
 			else
 				next_state <= bc_w;
@@ -332,7 +334,7 @@ begin
 
 		-- wait fot the last ack
 		when bc_wl =>
-			if bsy_cnt(1)='0' then
+			if rdy_cnt(1)='0' then
 				next_state <= idl;
 			end if;
 
