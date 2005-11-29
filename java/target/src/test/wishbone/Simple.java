@@ -45,7 +45,7 @@ public class Simple {
 		System.out.println(t2-t1);
 
 		t1 = Native.rdMem(Const.WB_TS0);
-		t2 = Native.rdMem(Const.WB_TS1);
+		t2 = Native.rdMem(Const.WB_TS0);
 		System.out.print("Wishbone counter: ");
 		System.out.println(t2-t1);
 
