@@ -114,8 +114,6 @@ end component;
 	signal mem_wr_addr		: std_logic_vector(addr_bits-1 downto 0);
 	signal ram_addr			: std_logic_vector(addr_bits-1 downto 0);
 
-
-	signal mem_bsy			: std_logic;
 	signal bcl_bsy			: std_logic;
 
 
@@ -144,9 +142,7 @@ end component;
 
 begin
 
-	mem_bsy <= '1' when rdy_cnt=3 or bcl_bsy='1' else '0';
-
-	bsy <= mem_bsy;
+	bsy <= '1' when rdy_cnt=3 or bcl_bsy='1' else '0';
 
 	bcstart <= std_logic_vector(to_unsigned(0, 32-jpc_width)) & cache_bcstart & "00";
 
