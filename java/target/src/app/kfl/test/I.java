@@ -1,3 +1,6 @@
+package kfl.test;
+
+import kfl.*;
 //
 //	I.java
 //

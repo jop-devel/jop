@@ -14,8 +14,8 @@ public class JopSys {
 //		...
 //
 
-	static native int rd(int adr);
-	static native void wr(int val, int adr);
+	public static native int rd(int adr);
+	public static native void wr(int val, int adr);
 	static native int rdMem(int adr);
 	static native void wrMem(int val, int adr);
 	static native int rdIntMem(int adr);

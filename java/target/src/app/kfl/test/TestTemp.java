@@ -1,3 +1,6 @@
+package kfl.test;
+
+import kfl.*;
 /**
 *	test program for sigma delta ADC with NTC.
 */

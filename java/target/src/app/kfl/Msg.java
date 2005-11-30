@@ -100,7 +100,7 @@ public class Msg {
 /**
 *	message loop.
 */
-	static void loop() {
+	public static void loop() {
 
 		if (send) {		// send the response
 			doSend();
@@ -170,7 +170,7 @@ public class Msg {
 		send = false;
 	}
 
-	static int readCmd() {
+	public static int readCmd() {
 
 		available = false;
 		return cmd>>>12;
@@ -184,7 +184,7 @@ public class Msg {
 /**
 *	write back the answer.
 */
-	static void write(int val) {
+	public static void write(int val) {
 
 		int i;
 

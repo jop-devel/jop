@@ -1,3 +1,5 @@
+package kfl;
+
 /**
 *	Write Rs485 Data with timestamp to serial line.
 */

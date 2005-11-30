@@ -45,7 +45,7 @@ public class Keyboard {
 	key_out(2) <= 'Z' when key_oc(2)='0' else '0';
 	key_out(3) <= 'Z' when key_oc(3)='0' else '0';
 */
-	static void loop() {
+	public static void loop() {
 
 		int val = JopSys.rd(IO_KEY);
 
@@ -66,7 +66,7 @@ public class Keyboard {
 		JopSys.wr(0x01<<cnt, IO_KEY);
 	}
 
-	static int rd() {
+	public static int rd() {
 
 		if (pressed) {
 			pressed = false;

@@ -33,12 +33,12 @@ public class Timer {
 		last = next;
 	}
 
-	static int usedTime() {
+	public static int usedTime() {
 
 		return JopSys.rd(JopSys.IO_CNT)-last;
 	}
 
-	static void waitForNextInterval() {
+	public static void waitForNextInterval() {
 
 		next += JopSys.INTERVAL;
 
@@ -74,7 +74,7 @@ public class Timer {
 /**
 *	simple wait val ms (no wd!, no next increment).
 */
-	static void sleep(int ms) {
+	public static void sleep(int ms) {
 
 		int j = JopSys.rd(JopSys.IO_CNT);
 		for (int i=0; i<ms; ++i) {
@@ -87,7 +87,7 @@ public class Timer {
 /**
 *	simple wait val ms with wd.
 */
-	static void sleepWd(int ms) {
+	public static void sleepWd(int ms) {
 
 		int j = JopSys.rd(JopSys.IO_CNT)+JopSys.MS;
 		for (int i=0; i<ms; ++i) {

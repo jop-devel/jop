@@ -1,3 +1,6 @@
+package kfl.test;
+
+import kfl.*;
 /**
 *	Test Main.
 */
@@ -97,9 +100,11 @@ public class Main {
 				Msg.write((JopSys.rd(BBSys.IO_SENSOR)<<4) + JopSys.rd(BBSys.IO_TAST));
 			} else if (val==BBSys.CMD_OPTO) {
 				Msg.write(Triac.getOpto());
+/* don't remeber what this was for?
 			} else if (val==BBSys.CMD_RESCNT) {
 				Triac.resetCnt();
 				Msg.write(0);
+*/
 			} else if (val==BBSys.CMD_CNT) {
 				Msg.write(Triac.getCnt());
 			}
