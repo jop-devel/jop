@@ -108,9 +108,11 @@ public class Main {
 		for (;;) {
 			for (int i=0; i<10; ++i) {
 				RtThread.sleepMs(50);
+				Timer.wd();
+				/*-
 				int val = Native.rd(Const.IO_IN);
 				Native.wr(val, Const.IO_LED);
-// Native.wr(-1, Native.IO_LED);
+				*/
 				Timer.loop();
 			}
 			Timer.wd();

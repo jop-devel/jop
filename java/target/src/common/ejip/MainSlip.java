@@ -122,8 +122,11 @@ public class MainSlip {
 		//
 		for (;;) {
 			for (int i=0; i<10; ++i) {
+				Timer.wd();
+				/*-
 				int val = Native.rd(Const.IO_IN);
 				Native.wr(val, Const.IO_LED);
+				*/
 				RtThread.sleepMs(50);
 			}
 			Timer.wd();
