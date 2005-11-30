@@ -1,18 +1,5 @@
 package kfl.ctrl;
 
-/*
- * Find.java
- *
- * Created on 01. Februar 2002, 14:25
- */
-
-/**
- *
- * @author  Standard
- */
-import BBSys;
-import Msg;
-
 public class Find extends javax.swing.JFrame {
 
 	private Msg m;

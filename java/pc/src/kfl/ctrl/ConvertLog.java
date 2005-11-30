@@ -1,11 +1,5 @@
 package kfl.ctrl;
 
-/**
-* really deletes log.
-*/
-import BBSys;
-import Msg;
-
 public class ConvertLog {
 
 	private class CmdException extends Exception {};
