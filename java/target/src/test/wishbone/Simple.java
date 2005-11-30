@@ -32,11 +32,17 @@ public class Simple {
 		System.out.println("Writing values to the slaves...");
 		Native.wrMem(123, Const.WB_TS0+1);
 		Native.wrMem(456, Const.WB_TS1+1);
+		Native.wrMem(222, Const.WB_TS2+1);
+		Native.wrMem(333, Const.WB_TS3+1);
 
 		System.out.print("Wishbone slave 0: ");
 		System.out.println(Native.rdMem(Const.WB_TS0+1));
 		System.out.print("Wishbone slave 1: ");
 		System.out.println(Native.rdMem(Const.WB_TS1+1));
+		System.out.print("Wishbone slave 2: ");
+		System.out.println(Native.rdMem(Const.WB_TS2+1));
+		System.out.print("Wishbone slave 3: ");
+		System.out.println(Native.rdMem(Const.WB_TS3+1));
 		
 
 		t1 = Native.rd(Const.IO_CNT);

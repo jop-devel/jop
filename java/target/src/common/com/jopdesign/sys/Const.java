@@ -53,6 +53,8 @@ public class Const {
 	// test salve addresses
 	public static final int WB_TS0 = WB_BASE+0x00;
 	public static final int WB_TS1 = WB_BASE+0x10;
+	public static final int WB_TS2 = WB_BASE+0x20;
+	public static final int WB_TS3 = WB_BASE+0x30;
 
 	// FTDI USB interface
 	// We use the same status/data interface as for the
