@@ -69,6 +69,7 @@
 //	2005-08-13	moved null pointer check in xaload/store to check the handle!
 //	2005-08-16	new file/download format with a size field in the first word
 //	2005-08-27	added boot from USB interface (dspio board)
+//	2005-12-01	IO devices are memory mapped - no more stioa, stiod, ldiod
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -79,35 +80,29 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20050827
+version		= 20051201
 
 //
-//	io register
+//	io address are negativ memory addresses
 //
-io_addr		=	0
-io_data		=	1
+//	CNT=-128
+//	IO_INT_ENA=-128
+//	UART status=-112
+//	UART=-111
+//	USB status=-96
+//	USB date=-95
+io_cnt		=	-128
+io_wd		=	-125
+io_int_ena	=	-128
+io_status	=	-112
+io_uart		=	-111
 
-//
-//	io address
-//
-io_cnt		=	0
-io_int_ena	=	0
-io_status	=	4
-io_uart		=	5
-
+usb_status	=	-96
+usb_data	=	-95
 
 ua_rdrf		= 	2
 ua_tdre		= 	1
 
-//
-//	WISHBONE devices are at negativ memory addresses
-//
-//	WB_BASE = 0xffffff80;
-//	WB_USB_STATUS = WB_BASE+0x10
-//	WB_USB_DATA = WB_BASE+0x11
-
-usb_status	=	-112
-usb_data	=	-111
 
 //
 //	first vars for start
@@ -188,35 +183,9 @@ addr		?			// address used for bc load from flash
 /////////
 
 
-////////////////
-//ser_invoke2:
-//ldi	io_status	// wait for uart ready
-//stioa
-//ldi	ua_tdre
-//ldiod
-//and
-//nop
-//bz	ser_invoke2
-//nop
-//nop
-//ldi	io_uart
-//stioa
-//ldi	65
-//stiod
-//ldi	1
-//nop
-//bnz ser_invoke2
-//nop
-//nop
-////////////////
-//			ldi	1
-//			nop
-//			bnz	start_jvm	// use this without download
-//			nop
-//			nop
-
 			ldi	1			// disable int's
 			stm	moncnt		// monitor counter gets zeroed in startMission
+
 
 #ifdef SIMULATION
 //
@@ -310,24 +279,30 @@ ser4:
 // ************** end change for load from USB interface *********************
 #else
 // ************** change for load from serial line *********************
-			ldi	io_status	// wait for byte from uart
-			stioa
+			ldi	io_status		// wait for byte from uart
+			stmra
 			ldi	ua_rdrf
-			ldiod
+			wait
+			wait
+			ldmrd
 			and
 			nop
 			bz	ser4
 			nop
 			nop
 
-			ldi	io_uart		// read byte from uart
-			stioa
-			nop
-			ldiod
+			ldi	io_uart			// read byte from uart
+			stmra
+			wait
+			wait
+			ldmrd
 
-			dup				// echo for down.c, 'handshake'
-			stiod
-
+			ldi	io_uart			// write byte to uart
+			stmwa
+			dup					// echo for down.c, 'handshake'
+			stmwd		
+			wait
+			wait
 // ************** end change for load from serial line *********************
 #endif
 #endif
@@ -402,70 +377,6 @@ not_first:
 			bnz	start_jvm	// two jumps for long distance
 			nop
 			nop
-
-////////////////
-//ser_invoke2:
-//ldi	io_status	// wait for uart ready
-//stioa
-//ldi	ua_tdre
-//ldiod
-//and
-//nop
-//bz	ser_invoke2
-//nop
-//nop
-//ldi	io_uart
-//stioa
-//ldjpc 
-//stiod
-////////////////
-
-dbg0	?
-dbg1	?
-dbg2	?
-dbg3	?
-dbg4	?
-dbg5	?
-
-//stop:
-// print dbg0..n
-//ldi	6
-//stm a
-//ldi	dbg0
-//stvp
-//ser_w_0:
-//ldi	io_status	// wait for uart ready
-//stioa
-//ldi	ua_tdre
-//ldiod
-//and
-//nop
-//bz	ser_w_0
-//nop
-//nop
-//ldi	io_uart
-//stioa
-//ld0
-//stiod
-//ldvp
-//ldi	1
-//add
-//stvp
-//ldm	a
-//ldi 1
-//sub
-//stm a
-//ldm a
-//nop
-//bnz ser_w_0
-//nop
-//nop
-//
-//ldi 1
-//nop
-//endless:	bnz endless
-//			ldi	1
-//			nop
 
 //
 //	begin of jvm code
@@ -1187,12 +1098,14 @@ saload:
 monitorenter:
 			pop					// we don't use the objref
 			ldi	io_int_ena
-			stioa
+			stmwa				// write ext. mem address
 			ldi	0
-			stiod
+			stmwd				// write ext. mem data
 			ldm	moncnt
 			ldi	1
 			add
+			wait
+			wait
 			stm	moncnt	nxt
 
 monitorexit:
@@ -1203,12 +1116,17 @@ monitorexit:
 			dup
 			stm	moncnt
 			bnz	mon_no_ena
-			ldi	io_int_ena		// exec in branch delay
-			stioa				// exec in branch delay
-
+			// can be exec in in branch delay?
+			// up to now yes, but we change the write
+			// some time....
+			nop
+			nop
+			ldi	io_int_ena
+			stmwa
 			ldi	1
-			stiod	nxt
-
+			stmwd				// write ext. mem data
+			wait
+			wait
 mon_no_ena:	nop		nxt
 
 
@@ -1368,22 +1286,24 @@ checkcast:
 
 // special byte codes for native functions
 
+//jopsys_rd:
+//			stioa		// io-address
+//			nop
+//			ldiod	nxt	// read data
+//
+//jopsys_wr:
+//			stioa		// io-address
+//			nop
+//			stiod	nxt	// write data
+
 jopsys_rd:
-			stioa		// io-address
-			nop
-			ldiod	nxt	// read data
-
-jopsys_wr:
-			stioa		// io-address
-			nop
-			stiod	nxt	// write data
-
 jopsys_rdmem:
 			stmra				// read ext. mem, mem_bsy comes one cycle later
 			wait
 			wait
 			ldmrd		 nxt	// read ext. mem
 
+jopsys_wr:
 jopsys_wrmem:
 			stmwa				// write ext. mem address
 			stmwd				// write ext. mem data
@@ -1526,19 +1446,5 @@ jopsys_nop:
 			nop	nxt
 
 //jopsys_invoke: see invoke
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 

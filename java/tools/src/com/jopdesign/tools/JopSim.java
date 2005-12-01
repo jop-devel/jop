@@ -1267,10 +1267,18 @@ System.out.println("new heap: "+heap);
 					sysWr();
 					break;
 				case 211 :		// jopsys_rdmem
+					if (stack[sp]<0) {
+						sysRd();
+						break;
+					}
 					ref = stack[sp--];
 					stack[++sp] = readMem(ref);
 					break;
 				case 212 :		// jopsys_wrmem
+					if (stack[sp]<0) {
+						sysWr();
+						break;
+					}
 					ref = stack[sp--];
 					val = stack[sp--];
 					writeMem(ref, val);

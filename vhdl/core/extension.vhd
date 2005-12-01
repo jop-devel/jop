@@ -32,7 +32,7 @@
 --	2005-04-05	Reserve negative addresses for wishbone interface
 --	2005-04-07	generate bsy from delayed wr or'ed with mem_bsy
 --	2005-05-30	added wishbone interface
---	2005-11-28	add SimpCon IO interface
+--	2005-11-28	Substitute WB interface by the SimpCon IO interface ;-)
 --
 
 
@@ -41,19 +41,18 @@ use ieee.std_logic_1164.all ;
 use ieee.numeric_std.all ;
 
 use work.jop_types.all;
-use work.wb_pack.all;
 
 entity extension is
 
-generic (exta_width : integer);
+generic (exta_width : integer; io_addr_bits : integer);
 
 port (
 	clk, reset	: in std_logic;
 
 -- core interface
 
-	ain			: in std_logic_vector(31 downto 0);		-- from stack
-	bin			: in std_logic_vector(31 downto 0);		-- from stack
+	ain			: in std_logic_vector(31 downto 0);		-- TOS
+	bin			: in std_logic_vector(31 downto 0);		-- NOS
 	ext_addr	: in std_logic_vector(exta_width-1 downto 0);
 	rd, wr		: in std_logic;
 	bsy			: out std_logic;
@@ -69,16 +68,13 @@ port (
 	mem_bcstart	: in std_logic_vector(31 downto 0); 	-- start of method in bc cache
 	mem_bsy		: in std_logic;
 	
--- io interface
+-- SimpCon master io interface
 
-	io_rd		: out std_logic;
-	io_wr		: out std_logic;
-	io_addr_wr	: out std_logic;
-	io_data		: in std_logic_vector(31 downto 0);		-- output of io module
-
--- io ports that go to the wishbone interface
-
-	wb_io	: inout io_ports
+	scio_address		: out std_logic_vector(io_addr_bits-1 downto 0);
+	scio_wr_data		: out std_logic_vector(31 downto 0);
+	scio_rd, scio_wr	: out std_logic;
+	scio_rd_data		: in std_logic_vector(31 downto 0);
+	scio_rdy_cnt		: in unsigned(1 downto 0)
 
 );
 end extension;
@@ -110,28 +106,26 @@ end component mul;
 --
 --	Signals
 --
-	signal mem_wb_rd			: std_logic;	-- memory or wishbone read
-	signal mem_wb_wr			: std_logic;	-- memory or wishbone write
+	signal mem_scio_rd			: std_logic;	-- memory or SimpCon IO read
+	signal mem_scio_wr			: std_logic;	-- memory or SimpCon IO write
 	signal wraddr_wr			: std_logic;
 
 	-- msb selects mem/wishbone
 	signal wraddr_msb			: std_logic;
-	signal rdaddr_msb			: std_logic;
+	signal was_a_mem_rd			: std_logic;
 
 	signal wr_dly				: std_logic;	-- generate a bsy with delayed wr
 
-	signal exr					: std_logic_vector(31 downto 0); 	-- extension data register
+	signal exr, exr_next		: std_logic_vector(31 downto 0); 	-- extension data register
 
 --
---	Wishbone specific signals
+--	SimpCon specific signals
 --
-	signal wb_data				: std_logic_vector(31 downto 0); 	-- output of wishbone module
-	signal wb_addr				: std_logic_vector(7 downto 0);		-- wishbone read/write address
-	signal wb_rd, wb_wr, wb_bsy	: std_logic;
-	signal wb_rd_reg, wb_wr_reg	: std_logic;
+	-- SimpCon IO write address
+	signal sc_wr_addr			: std_logic_vector(io_addr_bits-1 downto 0);
+	signal sc_bsy				: std_logic;
+	signal sc_rd				: std_logic;
 
-	signal wb_in	: wb_master_in_type;
-	signal wb_out	: wb_master_out_type;
 
 begin
 
@@ -146,35 +140,46 @@ begin
 --
 --	read
 --
+--	TODO: the read MUX could be set by using the
+--	according wr/ext_addr from JOP and not the
+--	following rd/ext_addr
+--	Than no intermixing of mul/mem and io operations
+--	is allowed. But we are not using interleaved mul/mem/io
+--	operations in jvm.asm anyway.
+--
+--	TAKE CARE when mem_bcstart is read!
+--
+--   ** bcstart is also read without a mem_bc_rd JOP wr !!! ***
+--		=> a combinatorial mux select on rd and ext_adr==7!
+--
+--		The rest could be set with JOP wr start transaction 
+--		Is this also true for io_data?
+--
+--	29.11.2005 evening: I think this solution driving the exr
+--	mux from ext_addr is quite ok. The pipelining from rd/ext_adr
+--	to A is fixed.
+--
 process(clk, reset)
 begin
 	if (reset='1') then
 		exr <= (others => '0');
-		io_rd <= '0';
 	elsif rising_edge(clk) then
-		exr <= (others => '0');
 
 		if (ext_addr="010") then
-			if rdaddr_msb='0' then
+			if was_a_mem_rd='1' then
 				exr <= mem_data;
 			else
-				exr <= wb_data;
+				exr <= scio_rd_data;
 			end if;
 		elsif (ext_addr="101") then
 			exr <= mul_dout;
-		elsif (ext_addr="111") then
-			exr <= mem_bcstart;
+		-- elsif (ext_addr="111") then
 		else
-			exr <= io_data;
+			exr <= mem_bcstart;
 		end if;
 
-		io_rd <= '0';
-		if (ext_addr="001" and rd='1') then
-			io_rd <= '1';
-		end if;
 	end if;
 end process;
-
 
 
 --
@@ -183,24 +188,20 @@ end process;
 process(clk, reset)
 begin
 	if (reset='1') then
-		io_addr_wr <= '0';
-		mem_wb_rd <= '0';
-		mem_wb_wr <= '0';
+		mem_scio_rd <= '0';
+		mem_scio_wr <= '0';
 		wraddr_wr <= '0';
 		mem_bc_rd <= '0';
 		mul_wr <= '0';
-		io_wr <= '0';
 		wr_dly <= '0';
 
 
 	elsif rising_edge(clk) then
-		io_addr_wr <= '0';
-		mem_wb_rd <= '0';
-		mem_wb_wr <= '0';
+		mem_scio_rd <= '0';
+		mem_scio_wr <= '0';
 		wraddr_wr <= '0';
 		mem_bc_rd <= '0';
 		mul_wr <= '0';
-		io_wr <= '0';
 
 		wr_dly <= wr;
 
@@ -208,146 +209,96 @@ begin
 --	wr is generated in decode and one cycle earlier than
 --	the data to be written (e.g. read address for the memory interface)
 --
-		if (wr='1') then
-			if (ext_addr="000") then
-				io_addr_wr <= '1';		-- store real io address
-			elsif (ext_addr="010") then
-				mem_wb_rd <= '1';		-- start memory or wishbone read
-			elsif (ext_addr="011") then
+		if wr='1' then
+			-- if ext_addr="000" then
+			-- 	io_addr_wr <= '1';		-- store real io address
+			-- elsif ext_addr="010" then
+			if ext_addr="010" then
+				mem_scio_rd <= '1';		-- start memory or wishbone read
+			elsif ext_addr="011" then
 				wraddr_wr <= '1';		-- store write address
-			elsif (ext_addr="100") then
-				mem_wb_wr <= '1';		-- start memory or wishbone write
-			elsif (ext_addr="101") then
+			elsif ext_addr="100" then
+				mem_scio_wr <= '1';		-- start memory or wishbone write
+			elsif ext_addr="101" then
 				mul_wr <= '1';			-- start multiplier
-			elsif (ext_addr="111") then
-				mem_bc_rd <= '1';		-- start bc read
+			-- elsif ext_addr="111" then
 			else
-				io_wr <= '1';
+				mem_bc_rd <= '1';		-- start bc read
 			end if;
 		end if;
+
 	end if;
 end process;
 
 --
 --	memory read/write only from positive addresses
 --
-	mem_rd <= mem_wb_rd and not ain(31);
-	mem_wr <= mem_wb_wr and not wraddr_msb;
+	mem_rd <= mem_scio_rd and not ain(31);
+	mem_wr <= mem_scio_wr and not wraddr_msb;
 	mem_addr_wr <= wraddr_wr;
 
 	-- a JOP wr generates the first bsy cycle
 	-- the following are generated by the memory
-	-- system or the wishbone device
-	bsy <= wr_dly or mem_bsy or wb_bsy;
+	-- system or the SimpCon device
+	bsy <= wr_dly or mem_bsy or sc_bsy;
 
+	sc_bsy <= '1' when scio_rdy_cnt=3 else '0';
 
 --
 --	store write address (msb)
 --		one cycle after write instruction (address is avaliable one cycle before ex stage)
+--	store read address msb for exr MUX
 --
 process(clk, reset)
 
 begin
 	if (reset='1') then
 
-		wb_addr <= (others => '0');
+		sc_wr_addr <= (others => '0');
 		wraddr_msb <= '0';
-		rdaddr_msb <= '0';
+		was_a_mem_rd <= '0';
 
 	elsif rising_edge(clk) then
 
 		if wraddr_wr='1' then
-			wb_addr <= ain(7 downto 0);	-- store wishbone write address
+			-- store SimpCon write address
+			sc_wr_addr <= ain(io_addr_bits-1 downto 0);
 			wraddr_msb <= ain(31);
 		end if;
 
-		if mem_wb_rd='1' then
-			rdaddr_msb <= ain(31);
-			wb_addr <= ain(7 downto 0);
+		if mem_scio_rd='1' then
+			was_a_mem_rd <= not ain(31);
 		end if;
 
 	end if;
 end process;
 
 --
---	Wishbone interface
+--	SimpCon connections
 --
-
-	-- use negativ addresses for wishbone devices
-	wb_rd <= mem_wb_rd and ain(31);
-	wb_wr <= mem_wb_wr and wraddr_msb;
-
-	wbtop: entity work.wb_top port map(
-		clk => clk,
-		reset => reset,
-		wb_out => wb_out,
-		wb_in => wb_in,
-		wb_io => wb_io
-	);
-
-	wb_out.adr_o <= wb_addr;
-
+	-- use negativ addresses for SimpCon IO devices
+	sc_rd <= mem_scio_rd and ain(31);
+	-- we need the additional signal for the addr MUX
+	-- can be avoided when removing the wr addr store.
+	scio_rd <= sc_rd;
+	scio_wr <= mem_scio_wr and wraddr_msb;
+	scio_wr_data <= ain;
 
 --
---	Handle the Wishbone protocoll.
---	rd and wr request are registered for additional WSs.
+--	SimpCon address MUX
 --
-process(clk, reset)
+--	TODO: change memory instruction so that the address
+--	is in A and the data is in B. So we have a single
+--	microinstruction for read AND write and we don't
+--	need to store the write address and mux it here and
+--	in mem_sc.
+--
+process(ain, sc_wr_addr, sc_rd)
 begin
-	if (reset='1') then
-
-		wb_out.stb_o <= '0';
-		wb_out.cyc_o <= '0';
-		wb_out.we_o <= '0';
-
-		wb_rd_reg <= '0';
-		wb_wr_reg <= '0';
-		wb_bsy <= '0';
-
-	elsif rising_edge(clk) then
-
-		-- read request:
-		-- address is saved from TOS and valid in the next
-		-- cycle
-		if wb_rd='1' then
-			wb_out.stb_o <= '1';
-			wb_out.cyc_o <= '1';
-			wb_out.we_o <= '0';
-			wb_rd_reg <= '1';
-			wb_bsy <= '1';
-		elsif wb_rd_reg='1' then
-			-- do we need a timeout???
-			if wb_in.ack_i='1' then
-				wb_out.stb_o <= '0';
-				wb_out.cyc_o <= '0';
-				wb_rd_reg <= '0';
-				wb_bsy <= '0';
-				wb_data <= wb_in.dat_i;
-			end if;
-		-- write request:
-		-- address already in wb_addr
-		-- However, write data is valid in the next cycle
-		elsif wb_wr='1' then
-			-- this keeps the write data registered,
-			-- but costs a latency of one cycle.
-			wb_out.dat_o <= ain;
-
-			wb_out.stb_o <= '1';
-			wb_out.cyc_o <= '1';
-			wb_out.we_o <= '1';
-			wb_wr_reg <= '1';
-			wb_bsy <= '1';
-		elsif wb_wr_reg='1' then
-			-- do we need a timeout???
-			if wb_in.ack_i='1' then
-				wb_out.stb_o <= '0';
-				wb_out.cyc_o <= '0';
-				wb_out.we_o <= '0';
-				wb_wr_reg <= '0';
-				wb_bsy <= '0';
-			end if;
-		end if;
-
+	if sc_rd='1' then
+		scio_address <= ain(io_addr_bits-1 downto 0);
+	else
+		scio_address <= sc_wr_addr;
 	end if;
 end process;
 

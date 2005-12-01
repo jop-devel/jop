@@ -7,10 +7,14 @@
 //
 //	io address
 //
-io_cnt		=	0
-io_wd		=	3
-io_status	=	4
-io_uart		=	5
+io_cnt		=	-128
+io_wd		=	-125
+io_status	=	-112
+io_uart		=	-111
+
+usb_status	=	-96
+usb_data	=	-95
+
 
 ua_rdrf		= 	2
 ua_tdre		= 	1
@@ -175,9 +179,11 @@ skip2:
 
 prompt_loop:
 			ldi	io_status
-			stioa
+			stmra
 			ldi	ua_tdre
-			ldiod
+			wait
+			wait
+			ldmrd
 			and
 			nop
 			bz	prompt_loop
@@ -185,9 +191,10 @@ prompt_loop:
 			nop
 			
 			ldi	io_uart
-			stioa
-			nop
-			stiod
+			stmwa
+			stmwd		
+			wait
+			wait
 			
 			dup
 			nop
@@ -201,9 +208,11 @@ prompt_loop:
 			
 key_loop:
 			ldi	io_status
-			stioa
+			stmra
 			ldi	ua_rdrf
-			ldiod
+			wait
+			wait
+			ldmrd
 			and
 			nop
 			bz	key_loop			
@@ -211,14 +220,16 @@ key_loop:
 			nop
 			
 			ldi io_uart 		// read byte from uart
-			stioa
-			nop
-			ldiod
+			stmra
+			wait
+			wait
+			ldmrd
 			dup 			// echo
-			nop
-			nop
-			nop
-			stiod
+			ldi io_uart
+			stmwa
+			stmwd		
+			wait
+			wait
 
 			dup
 			stm	kchar

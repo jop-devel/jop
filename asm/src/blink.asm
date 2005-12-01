@@ -3,17 +3,18 @@
 //
 //		Blinking WD LED to see if FPGA is running.
 //		Also writes to serial line.
-//		read Flash ID
 //
 
 //
 //	io address
 //
-io_cnt		=	0
-io_wd		=	3
-io_status	=	4
-io_uart		=	5
+io_cnt		=	-128
+io_wd		=	-125
+io_status	=	-112
+io_uart		=	-111
 
+usb_status	=	-96
+usb_data	=	-95
 
 ua_rdrf		= 	2
 ua_tdre		= 	1
@@ -41,103 +42,6 @@ c			?
 			nop			// written in adr/read stage!
 			stsp
 
-//	/* Read ID from Flash
-//	Native.wrMem(0xaa, 0x80555);
-//	Native.wrMem(0x55, 0x802aa);
-//	Native.wrMem(0x90, 0x80555);
-//	Dbg.hexVal(Native.rdMem(0x80000));
-//	Native.wrMem(0xaa, 0x80555);
-//	Native.wrMem(0x55, 0x802aa);
-//	Native.wrMem(0x90, 0x80555);
-//	Dbg.hexVal(Native.rdMem(0x80001));
-//	*/
-//
-//	read flash ID and write to serial line
-//
-//			ldi	525653	// 0x80555
-//			stmwa
-//			ldi	170		// 0xaa
-//			stmwd
-//			nop
-//			wait
-//			wait
-//			ldi	524970	// 0x802aa
-//			stmwa
-//			ldi	85		// 0x55
-//			stmwd
-//			nop
-//			wait
-//			wait
-//			ldi	525653	// 0x80555
-//			stmwa
-//			ldi	144		// 0x90
-//			stmwd
-//			nop
-//			wait
-//			wait
-//			ldi	524288	// 0x80000
-//			stmra
-//			nop
-//			wait
-//			wait
-//			ldmrd
-//fl0:
-//			ldi	io_status
-//			stioa
-//			ldi	ua_tdre
-//			ldiod
-//			and
-//			nop
-//			bz	fl0
-//			nop
-//			nop
-//			ldi	io_uart
-//			stioa
-//			stiod
-//
-//
-//
-//			ldi	525653	// 0x80555
-//			stmwa
-//			ldi	170		// 0xaa
-//			stmwd
-//			nop
-//			wait
-//			wait
-//			ldi	524970	// 0x802aa
-//			stmwa
-//			ldi	85		// 0x55
-//			stmwd
-//			nop
-//			wait
-//			wait
-//			ldi	525653	// 0x80555
-//			stmwa
-//			ldi	144		// 0x90
-//			stmwd
-//			nop
-//			wait
-//			wait
-//			ldi	524281	// 0x80001
-//			stmra
-//			nop
-//			wait
-//			wait
-//			ldmrd
-//fl1:
-//			ldi	io_status
-//			stioa
-//			ldi	ua_tdre
-//			ldiod
-//			and
-//			nop
-//			bz	fl1
-//			nop
-//			nop
-//			ldi	io_uart
-//			stioa
-//			stiod
-//
 
 //
 //	blink loop (stops when serial line note read - hw hs)
@@ -147,24 +51,30 @@ loop_cnt	= 1000000
 
 blink:
 			ldi	io_wd
-			stioa
+			stmwa
 			ldi	0
-			stiod
+			stmwd		
+			wait
+			wait
 
 ser0:
 			ldi	io_status
-			stioa
+			stmra
 			ldi	ua_tdre
-			ldiod
+			wait
+			wait
+			ldmrd
 			and
 			nop
 			bz	ser0
 			nop
 			nop
 			ldi	io_uart
-			stioa
+			stmwa
 			ldi	48
-			stiod
+			stmwd		
+			wait
+			wait
 
 			ldi	loop_cnt
 bl0:		ldi	1
@@ -177,24 +87,30 @@ bl0:		ldi	1
 			pop
 
 			ldi	io_wd
-			stioa
+			stmwa
 			ldi	31
-			stiod
+			stmwd		
+			wait
+			wait
 
 ser1:
 			ldi	io_status
-			stioa
+			stmra
 			ldi	ua_tdre
-			ldiod
+			wait
+			wait
+			ldmrd
 			and
 			nop
 			bz	ser1
 			nop
 			nop
 			ldi	io_uart
-			stioa
+			stmwa
 			ldi	49
-			stiod
+			stmwd		
+			wait
+			wait
 
 			ldi	loop_cnt
 bl1:		ldi	1

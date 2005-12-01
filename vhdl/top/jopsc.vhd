@@ -16,6 +16,7 @@
 --	2004-10-08	mul operands from a and b, single instruction
 --	2005-05-12	added the bsy routing through extension
 --	2005-08-15	sp_ov can be used to show a stoack overflow on the wd pin
+--	2005-11-30	SimpCon for IO devices
 --
 --
 
@@ -31,7 +32,8 @@ use work.wb_pack.all;
 entity jop is
 
 generic (
-	exta_width	: integer := 3;		-- address bits of internal io
+	exta_width	: integer := 3;		-- length of exta part in JOP microcode
+	io_addr_bits	: integer := 7;	-- address bits of internal io
 	ram_cnt		: integer := 2;		-- clock cycles for external ram
 --	rom_cnt		: integer := 3;		-- clock cycles for external rom OK for 20 MHz
 	rom_cnt		: integer := 15;	-- clock cycles for external rom for 100 MHz
@@ -143,86 +145,6 @@ port (
 );
 end component;
 
-component extension is
-generic (exta_width : integer);
-port (
-	clk, reset	: in std_logic;
-
--- core interface
-
-	ain			: in std_logic_vector(31 downto 0);		-- from stack
-	bin			: in std_logic_vector(31 downto 0);		-- from stack
-	ext_addr	: in std_logic_vector(exta_width-1 downto 0);
-	rd, wr		: in std_logic;
-	bsy			: out std_logic;
-	dout		: out std_logic_vector(31 downto 0);	-- to stack
-
--- mem interface
-
-	mem_rd		: out std_logic;
-	mem_wr		: out std_logic;
-	mem_addr_wr	: out std_logic;
-	mem_bc_rd	: out std_logic;
-	mem_data	: in std_logic_vector(31 downto 0); 	-- output of memory module
-	mem_bcstart	: in std_logic_vector(31 downto 0); 	-- start of method in bc cache
-	mem_bsy		: in std_logic;
-	
--- io interface
-
-	io_rd		: out std_logic;
-	io_wr		: out std_logic;
-	io_addr_wr	: out std_logic;
-	io_data		: in std_logic_vector(31 downto 0);		-- output of io module
-
--- io ports that go to the wishbone interface
-
-	wb_io	: inout io_ports
-
-);
-end component;
-
-
-component io is
-generic (clk_freq : integer);
-port (
-
--- jop interface
-
-	clk, reset	: in std_logic;
-
-	din			: in std_logic_vector(31 downto 0);
-
--- interface to mem
-
-	rd, wr		: in std_logic;
-	addr_wr		: in std_logic;
-
-	dout		: out std_logic_vector(31 downto 0);
-
--- interrupt
-
-	irq			: out std_logic;
-	irq_ena		: out std_logic;
-
--- serial interface
-
-	txd			: out std_logic;
-	rxd			: in std_logic;
-	ncts		: in std_logic;
-	nrts		: out std_logic;
-
--- watch dog
-
-	wd			: out std_logic;
-
---	I/O pins of board
-
-	b		: inout std_logic_vector(10 downto 1);
-	l		: inout std_logic_vector(20 downto 1);
-	r		: inout std_logic_vector(20 downto 1);
-	t		: inout std_logic_vector(6 downto 1)
-);
-end component;
 
 --
 --	Signals
@@ -235,6 +157,8 @@ end component;
 	signal ext_addr			: std_logic_vector(exta_width-1 downto 0);
 	signal stack_din		: std_logic_vector(31 downto 0);
 
+-- extension/mem interface
+
 	signal mem_rd			: std_logic;
 	signal mem_wr			: std_logic;
 	signal mem_addr_wr		: std_logic;
@@ -246,6 +170,8 @@ end component;
 
 	signal jbc_addr			: std_logic_vector(jpc_width-1 downto 0);
 	signal jbc_data			: std_logic_vector(7 downto 0);
+
+-- mem/sc interface
 
 	signal sc_address		: std_logic_vector(17 downto 0);
 	signal sc_wr_data		: std_logic_vector(31 downto 0);
@@ -263,10 +189,17 @@ end component;
 	signal ram_noe			: std_logic;
 	signal ram_nwe			: std_logic;
 
-	signal io_rd			: std_logic;
-	signal io_wr			: std_logic;
-	signal io_addr_wr		: std_logic;
-	signal io_dout			: std_logic_vector(31 downto 0);
+-- SimpCon io interface
+
+	signal scio_address		: std_logic_vector(io_addr_bits-1 downto 0);
+	signal scio_wr_data		: std_logic_vector(31 downto 0);
+	signal scio_rd			: std_logic;
+	signal scio_wr			: std_logic;
+	signal scio_rd_data		: std_logic_vector(31 downto 0);
+	signal scio_rdy_cnt		: unsigned(1 downto 0);
+
+-- interrupt io interface
+
 	signal io_irq			: std_logic;
 	signal io_irq_ena		: std_logic;
 
@@ -326,16 +259,65 @@ end process;
 			stack_tos, stack_nos
 		);
 
-	cmp_ext: extension generic map (exta_width)
-		port map (clk_int, int_res, stack_tos, stack_nos,
-			ext_addr, rd, wr, bsy, stack_din,
-			mem_rd, mem_wr, mem_addr_wr, mem_bc_rd,
-			mem_dout, mem_bcstart, mem_bsy,
-			io_rd, io_wr, io_addr_wr, io_dout,
-			wb_io.b => io_b,
-			wb_io.l => io_l,
-			wb_io.r => io_r,
-			wb_io.t => io_t
+	cmp_ext: entity work.extension 
+		generic map (
+			exta_width => exta_width,
+			io_addr_bits => io_addr_bits
+		)
+		port map (
+			clk => clk_int,
+			reset => int_res,
+			ain => stack_tos,
+			bin => stack_nos,
+
+			ext_addr => ext_addr,
+			rd => rd,
+			wr => wr,
+			bsy => bsy,
+			dout => stack_din,
+
+			mem_rd => mem_rd,
+			mem_wr => mem_wr,
+			mem_addr_wr => mem_addr_wr,
+			mem_bc_rd => mem_bc_rd,
+			mem_data => mem_dout,
+			mem_bcstart => mem_bcstart,
+			mem_bsy => mem_bsy,
+	
+			scio_address => scio_address,
+			scio_wr_data => scio_wr_data,
+			scio_rd => scio_rd,
+			scio_wr => scio_wr,
+			scio_rd_data => scio_rd_data,
+			scio_rdy_cnt => scio_rdy_cnt
+		);
+
+	cmp_io: entity work.scio 
+		generic map (
+			addr_bits => io_addr_bits
+		)
+		port map (
+			clk => clk_int,
+			reset => int_res,
+
+			address => scio_address,
+			wr_data => scio_wr_data,
+			rd => scio_rd,
+			wr => scio_wr,
+			rd_data => scio_rd_data,
+			rdy_cnt => scio_rdy_cnt,
+
+			irq => io_irq,
+			irq_ena => io_irq_ena,
+			txd => ser_txd,
+			rxd => ser_rxd,
+			ncts => ser_ncts,
+			nrts => ser_nrts,
+			wd => wd_out,
+			l => io_l,
+			r => io_r,
+			t => io_t,
+			b => io_b
 		);
 
 	cmp_mem: entity work.mem_sc
@@ -433,17 +415,6 @@ end process;
 	ramb_nwe <= ram_nwe;
 	ramb_nlb <= '0';
 	ramb_nub <= '0';
-
-
-	cmp_io: io generic map (clk_freq)
-		port map (clk_int, int_res, stack_tos,
-			io_rd, io_wr, io_addr_wr, io_dout,
-			io_irq, io_irq_ena,
-			ser_txd, ser_rxd, ser_ncts, ser_nrts,
-			wd_out,
-			io_b, io_l, io_r, io_t
-		);
-
 
 
 --

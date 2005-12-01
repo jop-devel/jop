@@ -31,31 +31,29 @@ set_global_assignment -name PROJECT_CREATION_TIME_DATE "02:05:59  APRIL 04, 2004
 set_global_assignment -name LAST_QUARTUS_VERSION 5.1
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_types_80.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/wishbone/wb_pack.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/wishbone/wb_test_slave.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/wishbone/wb_top.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc_pll.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/io/fifo.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/io/uart.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/io/cnt.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/io/iomin.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/fifo.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_uart.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_cnt.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/iomin.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/offtbl.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/jtbl.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/rom.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/aram.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/bcfetch.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/core.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/core/extension.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/decode.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/fetch.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/core/mem32.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/memory/sc_sram32_flash.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc_jbc.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/memory/mem_sc.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/core/extension.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/cache.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/mul.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/shift.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/stack.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/top/jopcyc.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/top/jopsc.vhd
 set_global_assignment -name CDF_FILE jop.cdf
-set_global_assignment -name VECTOR_WAVEFORM_FILE jop.vwf
 
 # Pin & Location Assignments
 # ==========================
@@ -249,9 +247,9 @@ set_location_assignment PIN_166 -to wd
 # ==================
 set_global_assignment -name IGNORE_CLOCK_SETTINGS ON
 set_global_assignment -name INCLUDE_EXTERNAL_PIN_DELAYS_IN_FMAX_CALCULATIONS OFF
-set_global_assignment -name FMAX_REQUIREMENT "100.0 MHz"
-set_global_assignment -name TSU_REQUIREMENT 2.5ns
-set_global_assignment -name TCO_REQUIREMENT 2.5ns
+set_global_assignment -name FMAX_REQUIREMENT "100 MHz"
+set_global_assignment -name TSU_REQUIREMENT "2.5 ns"
+set_global_assignment -name TCO_REQUIREMENT "2.5 ns"
 
 # Analysis & Synthesis Assignments
 # ================================
@@ -260,7 +258,6 @@ set_global_assignment -name SAVE_DISK_SPACE OFF
 set_global_assignment -name DEVICE_FILTER_SPEED_GRADE 6
 set_global_assignment -name FAMILY Cyclone
 set_global_assignment -name CYCLONE_OPTIMIZATION_TECHNIQUE SPEED
-set_global_assignment -name ADV_NETLIST_OPT_SYNTH_WYSIWYG_REMAP OFF
 set_global_assignment -name TOP_LEVEL_ENTITY jop
 
 # Fitter Assignments
@@ -276,6 +273,7 @@ set_global_assignment -name PHYSICAL_SYNTHESIS_COMBO_LOGIC OFF
 set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_DUPLICATION OFF
 set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_RETIMING OFF
 set_global_assignment -name PHYSICAL_SYNTHESIS_EFFORT NORMAL
+set_global_assignment -name ROUTER_REGISTER_DUPLICATION ON
 set_global_assignment -name INC_PLC_MODE OFF
 set_global_assignment -name ROUTING_BACK_ANNOTATION_MODE OFF
 set_instance_assignment -name IO_STANDARD LVCMOS -to clk
@@ -474,9 +472,7 @@ set_global_assignment -name AUTO_RESTART_CONFIGURATION OFF
 
 # Simulator Assignments
 # =====================
-set_global_assignment -name SIMULATION_MODE TIMING
-set_global_assignment -name ADD_DEFAULT_PINS_TO_SIMULATION_OUTPUT_WAVEFORMS OFF
-set_global_assignment -name VECTOR_INPUT_SOURCE jop.vwf
+set_global_assignment -name GLITCH_INTERVAL "1 ns"
 
 # Design Assistant Assignments
 # ============================
@@ -491,3 +487,22 @@ set_global_assignment -name HUB_INSTANCE_NAME SLD_HUB_INST
 # LogicLock Region Assignments
 # ============================
 set_global_assignment -name LOGICLOCK_INCREMENTAL_COMPILE_ASSIGNMENT OFF
+
+# -----------------
+# start ENTITY(jop)
+
+	# Pin & Location Assignments
+	# ==========================
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to ram*_a
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to ram*_d
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to ram*_noe
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to ram*_d
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to ram*_ncs
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to ram*_nwe
+
+# end ENTITY(jop)
+# ---------------
+
+set_global_assignment -name OPTIMIZE_HOLD_TIMING OFF
+
+set_global_assignment -name VECTOR_WAVEFORM_FILE jop.vwf

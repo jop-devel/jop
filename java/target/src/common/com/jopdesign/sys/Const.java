@@ -14,55 +14,72 @@ package com.jopdesign.sys;
  */
 public class Const {
 	
-	public static final int IO_CNT = 0;
-	public static final int IO_INT_ENA = 0;
-	public static final int IO_US_CNT = 1;
-	public static final int IO_TIMER = 1;
-	public static final int IO_SWINT = 2;
-	public static final int IO_WD = 3;
-	public static final int IO_STATUS = 4;
-	public static final int IO_UART = 5;
+	// use neagitve base address for fast constant load
+	// with bipush
+	public static final int IO_BASE = 0xffffff80;
+
+	// all IO devices are decoded from address(6 downto 4)
+	//	=> 8 different IO devices
+	//	=> each device can contain up to 16 registers
+
+	public static final int IO_CNT = IO_BASE+0;
+	public static final int IO_INT_ENA = IO_BASE+0;
+	public static final int IO_US_CNT = IO_BASE+1;
+	public static final int IO_TIMER = IO_BASE+1;
+	public static final int IO_SWINT = IO_BASE+2;
+	public static final int IO_WD = IO_BASE+3;
+
+	public static final int IO_STATUS = IO_BASE+0x10;
+	public static final int IO_UART = IO_BASE+0x10+1;
+
 	public static final int MSK_UA_TDRE = 1;
 	public static final int MSK_UA_RDRF = 2;
 	// BG263
-	public static final int IO_STATUS2 = 6;
-	public static final int IO_UART2 = 7;
-	public static final int IO_STATUS3 = 8;
-	public static final int IO_UART3 = 9;
-	public static final int IO_DISP = 10;
-	public static final int IO_BG = 12;
-	// TAL
-	public static final int IO_IN = 10;
-	public static final int IO_LED = 10;
-	public static final int IO_OUT = 11;
-	public static final int IO_ADC1 = 12;
-	public static final int IO_ADC2 = 13;
-	public static final int IO_ADC3 = 8;
-	public static final int IO_CTRL = 14;
-	public static final int IO_DATA = 15;
-	// OSSI
-	public static final int IO_PWM = 6;
 	// new naming for UART base address
-	public static final int IO_UART1_BASE = 4;
-	public static final int IO_UART_BG_MODEM_BASE = 6;
-	public static final int IO_UART_BG_GPS_BASE = 8;
+	public static final int IO_UART1_BASE = IO_BASE+0x10;
+	public static final int IO_UART_BG_MODEM_BASE = IO_BASE+0x20;
+	public static final int IO_UART_BG_GPS_BASE = IO_BASE+0x30;
+	// these are used in Testprog - substitute them
+	// some time by the new names
+	public static final int IO_STATUS2 = IO_UART_BG_MODEM_BASE;
+	public static final int IO_UART2 = IO_UART_BG_MODEM_BASE+1;
+	public static final int IO_STATUS3 = IO_UART_BG_GPS_BASE;
+	public static final int IO_UART3 = IO_UART_BG_GPS_BASE+1;
+	//
+	public static final int IO_DISP = IO_BASE+0x40;
+	public static final int IO_BG = IO_BASE+0x50;
+	// TAL
+	// TODO: change iobaseio
+	// TODO: change constants - 0x30 is a dummy value
+	public static final int IO_IN = IO_BASE+0x30+10;
+	public static final int IO_LED = IO_BASE+0x30+10;
+	public static final int IO_OUT = IO_BASE+0x30+11;
+	public static final int IO_ADC1 = IO_BASE+0x30+12;
+	public static final int IO_ADC2 = IO_BASE+0x30+13;
+	public static final int IO_ADC3 = IO_BASE+0x30+8;
+	public static final int IO_CTRL = IO_BASE+0x30+14;
+	public static final int IO_DATA = IO_BASE+0x30+15;
+	// OSSI
+	public static final int IO_PWM = IO_BASE+0x30+6;
 	
 	// use neagitve base address for fast constant load in Java
 	public static final int WB_BASE = 0xffffff80;
 	// we use 4 bit slave addresses
 	// test salve addresses
-	public static final int WB_TS0 = WB_BASE+0x00;
-	public static final int WB_TS1 = WB_BASE+0x10;
-	public static final int WB_TS2 = WB_BASE+0x20;
-	public static final int WB_TS3 = WB_BASE+0x30;
+	public static final int WB_TS0 = WB_BASE+0x70;
+	public static final int WB_TS1 = WB_BASE+0x72;
+	public static final int WB_TS2 = WB_BASE+0x74;
+	public static final int WB_TS3 = WB_BASE+0x76;
+
+	// TODO: change jopdspio
 
 	// FTDI USB interface
 	// We use the same status/data interface as for the
 	// UART, but connected to the WISHBONE interface and
 	// mapped to memory addresses
-	public static final int WB_USB_STATUS = WB_BASE+0x10;
-	public static final int WB_USB_DATA = WB_BASE+0x11;
+	public static final int WB_USB_STATUS = WB_BASE+0x20;
+	public static final int WB_USB_DATA = WB_BASE+0x21;
 	
 	// AC97 interface
-	public static final int WB_AC97 = WB_BASE+0x20;
+	public static final int WB_AC97 = WB_BASE+0x30;
 }

@@ -49,8 +49,6 @@ public class BaseSim {
 
 	public int rd(int address) {
 
-		int i;
-
 		switch (address) {
 			case Const.IO_CNT:
 				return (int) ((System.currentTimeMillis()-startTime)*TICKS);
@@ -86,6 +84,9 @@ public class BaseSim {
 	 */
 	public int rdMem(int addr) {
 		
+		if (addr<0) {
+			return rd(addr);
+		}
 		long pos = addr-FLASH_START;
 		try {
 			flash.seek(pos);
@@ -103,7 +104,11 @@ public class BaseSim {
 	 * @param addr
 	 */
 	public void wrMem(int val, int addr) {
-		
+
+		if (addr<0) {
+			wr(val, addr);
+		}
+
 /* erase
 		Native.wrMem(0xaa, 0x80555);
 		Native.wrMem(0x55, 0x802aa);

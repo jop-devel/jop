@@ -1,13 +1,7 @@
 --
---	jopcyc12.vhd
+--	jopsc.vhd
 --
---	top level for new borad with EP1C12
---		use iocore.vhd for all io-pins
---
---	2002-06-27:	2088 LCs, 23.6 MHz
---	2002-07-27:	2308 LCs, 23.1 MHz	with some changes in jvm and baseio
---	2002-08-02:	2463 LCs
---	2002-08-08:	2431 LCs simpler sigdel
+--	top level for cycore borad
 --
 --	2002-03-28	creation
 --	2002-06-27	isa bus for CS8900
@@ -20,8 +14,9 @@
 --	2003-07-08	invertion of cts, rts to uart
 --	2004-09-11	new extension module
 --	2004-10-08	mul operands from a and b, single instruction
---	2005-06-09	added the bsy routing through extension
+--	2005-05-12	added the bsy routing through extension
 --	2005-08-15	sp_ov can be used to show a stoack overflow on the wd pin
+--	2005-11-30	SimpCon for IO devices
 --
 --
 
@@ -31,15 +26,19 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 use work.jop_types.all;
+use work.wb_pack.all;
+
 
 entity jop is
 
 generic (
-	exta_width	: integer := 3;		-- address bits of internal io
-	ram_cnt		: integer := 3;		-- clock cycles for external ram
-	rom_cnt		: integer := 15;		-- 3 clock cycles for external rom OK for 20 MHz
+	exta_width	: integer := 3;		-- length of exta part in JOP microcode
+	io_addr_bits	: integer := 7;	-- address bits of internal io
+	ram_cnt		: integer := 2;		-- clock cycles for external ram
+--	rom_cnt		: integer := 3;		-- clock cycles for external rom OK for 20 MHz
+	rom_cnt		: integer := 15;	-- clock cycles for external rom for 100 MHz
 	jpc_width	: integer := 12;	-- address bits of java bytecode pc = cache size
-	block_bits	: integer := 3		-- 2*block_bits is number of cache blocks
+	block_bits	: integer := 4		-- 2*block_bits is number of cache blocks
 );
 
 port (
@@ -140,141 +139,6 @@ port (
 );
 end component;
 
-component extension is
-generic (exta_width : integer);
-port (
-	clk, reset	: in std_logic;
-
--- core interface
-
-	ain			: in std_logic_vector(31 downto 0);		-- from stack
-	bin			: in std_logic_vector(31 downto 0);		-- from stack
-	ext_addr	: in std_logic_vector(exta_width-1 downto 0);
-	rd, wr		: in std_logic;
-	bsy			: out std_logic;
-	dout		: out std_logic_vector(31 downto 0);	-- to stack
-
--- mem interface
-
-	mem_rd		: out std_logic;
-	mem_wr		: out std_logic;
-	mem_addr_wr	: out std_logic;
-	mem_bc_rd	: out std_logic;
-	mem_data	: in std_logic_vector(31 downto 0); 	-- output of memory module
-	mem_bcstart	: in std_logic_vector(31 downto 0); 	-- start of method in bc cache
-	mem_bsy		: in std_logic;
-	
--- io interface
-
-	io_rd		: out std_logic;
-	io_wr		: out std_logic;
-	io_addr_wr	: out std_logic;
-	io_data		: in std_logic_vector(31 downto 0);		-- output of io module
-
--- io ports that go to the wishbone interface
-
-	wb_io	: inout io_ports
-
-);
-end component;
-
-component mem32 is
-generic (jpc_width : integer; block_bits : integer; ram_cnt : integer; rom_cnt : integer);
-port (
-
--- jop interface
-
-	clk, reset	: in std_logic;
-
-	din			: in std_logic_vector(31 downto 0);
-
-	mem_rd		: in std_logic;
-	mem_wr		: in std_logic;
-	mem_addr_wr	: in std_logic;
-	mem_bc_rd	: in std_logic;
-	dout		: out std_logic_vector(31 downto 0);
-	bcstart		: out std_logic_vector(31 downto 0); 	-- start of method in bc cache
-
-	bsy			: out std_logic;
-
--- jbc connections
-
-	jbc_addr	: in std_logic_vector(jpc_width-1 downto 0);
-	jbc_data	: out std_logic_vector(7 downto 0);
-
---
---	two ram banks
---
-	rama_a		: out std_logic_vector(17 downto 0);
-	rama_d		: inout std_logic_vector(15 downto 0);
-	rama_ncs	: out std_logic;
-	rama_noe	: out std_logic;
-	rama_nlb	: out std_logic;
-	rama_nub	: out std_logic;
-	rama_nwe	: out std_logic;
-	ramb_a		: out std_logic_vector(17 downto 0);
-	ramb_d		: inout std_logic_vector(15 downto 0);
-	ramb_ncs	: out std_logic;
-	ramb_noe	: out std_logic;
-	ramb_nlb	: out std_logic;
-	ramb_nub	: out std_logic;
-	ramb_nwe	: out std_logic;
-
---
---	config/program flash and big nand flash
---
-	fl_a	: out std_logic_vector(18 downto 0);
-	fl_d	: inout std_logic_vector(7 downto 0);
-	fl_ncs	: out std_logic;
-	fl_ncsb	: out std_logic;
-	fl_noe	: out std_logic;
-	fl_nwe	: out std_logic;
-	fl_rdy	: in std_logic
-
-);
-end component;
-
-component io is
-generic (clk_freq : integer);
-port (
-
--- jop interface
-
-	clk, reset	: in std_logic;
-
-	din			: in std_logic_vector(31 downto 0);
-
--- interface to mem
-
-	rd, wr		: in std_logic;
-	addr_wr		: in std_logic;
-
-	dout		: out std_logic_vector(31 downto 0);
-
--- interrupt
-
-	irq			: out std_logic;
-	irq_ena		: out std_logic;
-
--- serial interface
-
-	txd			: out std_logic;
-	rxd			: in std_logic;
-	ncts		: in std_logic;
-	nrts		: out std_logic;
-
--- watch dog
-
-	wd			: out std_logic;
-
---	I/O pins of board
-
-	b		: inout std_logic_vector(10 downto 1);
-	l		: inout std_logic_vector(20 downto 1);
-	r		: inout std_logic_vector(20 downto 1);
-	t		: inout std_logic_vector(6 downto 1)
-);
-end component;
 
 --
 --	Signals
@@ -286,6 +150,8 @@ end component;
 	signal rd, wr			: std_logic;
 	signal ext_addr			: std_logic_vector(exta_width-1 downto 0);
 	signal stack_din		: std_logic_vector(31 downto 0);
+
+-- extension/mem interface
 
 	signal mem_rd			: std_logic;
 	signal mem_wr			: std_logic;
@@ -299,10 +165,35 @@ end component;
 	signal jbc_addr			: std_logic_vector(jpc_width-1 downto 0);
 	signal jbc_data			: std_logic_vector(7 downto 0);
 
-	signal io_rd			: std_logic;
-	signal io_wr			: std_logic;
-	signal io_addr_wr		: std_logic;
-	signal io_dout			: std_logic_vector(31 downto 0);
+-- mem/sc interface
+
+	signal sc_address		: std_logic_vector(17 downto 0);
+	signal sc_wr_data		: std_logic_vector(31 downto 0);
+	signal sc_rd, sc_wr		: std_logic;
+	signal sc_rd_data		: std_logic_vector(31 downto 0);
+	signal sc_rdy_cnt		: unsigned(1 downto 0);
+
+-- memory interface
+
+	signal ram_addr			: std_logic_vector(17 downto 0);
+	signal ram_dout			: std_logic_vector(31 downto 0);
+	signal ram_din			: std_logic_vector(31 downto 0);
+	signal ram_dout_en		: std_logic;
+	signal ram_ncs			: std_logic;
+	signal ram_noe			: std_logic;
+	signal ram_nwe			: std_logic;
+
+-- SimpCon io interface
+
+	signal scio_address		: std_logic_vector(io_addr_bits-1 downto 0);
+	signal scio_wr_data		: std_logic_vector(31 downto 0);
+	signal scio_rd			: std_logic;
+	signal scio_wr			: std_logic;
+	signal scio_rd_data		: std_logic_vector(31 downto 0);
+	signal scio_rdy_cnt		: unsigned(1 downto 0);
+
+-- interrupt io interface
+
 	signal io_irq			: std_logic;
 	signal io_irq_ena		: std_logic;
 
@@ -311,7 +202,7 @@ end component;
 
 	signal wd_out, sp_ov	: std_logic;
 
-	-- for generationg internal reset
+	-- for generation of internal reset
 	attribute altera_attribute : string;
 	attribute altera_attribute of res_cnt : signal is "POWER_UP_LEVEL=LOW";
 
@@ -346,6 +237,9 @@ end process;
 	);
 -- clk_int <= clk;
 
+	-- sp_ov indicates stack overflow
+	-- We can use the wd LED
+	-- wd <= sp_ov;
 	wd <= wd_out;
 
 	cmp_core: core generic map(jpc_width)
@@ -359,38 +253,163 @@ end process;
 			stack_tos, stack_nos
 		);
 
-	cmp_ext: extension generic map (exta_width)
-		port map (clk_int, int_res, stack_tos, stack_nos,
-			ext_addr, rd, wr, bsy, stack_din,
-			mem_rd, mem_wr, mem_addr_wr, mem_bc_rd,
-			mem_dout, mem_bcstart, mem_bsy,
-			io_rd, io_wr, io_addr_wr, io_dout,
-			wb_io.b => io_b,
-			wb_io.l => io_l,
-			wb_io.r => io_r,
-			wb_io.t => io_t
+	cmp_ext: entity work.extension 
+		generic map (
+			exta_width => exta_width,
+			io_addr_bits => io_addr_bits
+		)
+		port map (
+			clk => clk_int,
+			reset => int_res,
+			ain => stack_tos,
+			bin => stack_nos,
+
+			ext_addr => ext_addr,
+			rd => rd,
+			wr => wr,
+			bsy => bsy,
+			dout => stack_din,
+
+			mem_rd => mem_rd,
+			mem_wr => mem_wr,
+			mem_addr_wr => mem_addr_wr,
+			mem_bc_rd => mem_bc_rd,
+			mem_data => mem_dout,
+			mem_bcstart => mem_bcstart,
+			mem_bsy => mem_bsy,
+	
+			scio_address => scio_address,
+			scio_wr_data => scio_wr_data,
+			scio_rd => scio_rd,
+			scio_wr => scio_wr,
+			scio_rd_data => scio_rd_data,
+			scio_rdy_cnt => scio_rdy_cnt
 		);
 
+	cmp_io: entity work.scio 
+		generic map (
+			addr_bits => io_addr_bits
+		)
+		port map (
+			clk => clk_int,
+			reset => int_res,
 
-	cmp_mem: mem32 generic map (jpc_width, block_bits, ram_cnt, rom_cnt)
-		port map (clk_int, int_res, stack_tos,
-			mem_rd, mem_wr, mem_addr_wr, mem_bc_rd,
-			mem_dout, mem_bcstart,
-			mem_bsy,
-			jbc_addr, jbc_data,
-			rama_a, rama_d, rama_ncs, rama_noe, rama_nlb, rama_nub, rama_nwe,
-			ramb_a, ramb_d, ramb_ncs, ramb_noe, ramb_nlb, ramb_nub, ramb_nwe,
-			fl_a, fl_d, fl_ncs, fl_ncsb, fl_noe, fl_nwe, fl_rdy
+			address => scio_address,
+			wr_data => scio_wr_data,
+			rd => scio_rd,
+			wr => scio_wr,
+			rd_data => scio_rd_data,
+			rdy_cnt => scio_rdy_cnt,
+
+			irq => io_irq,
+			irq_ena => io_irq_ena,
+			txd => ser_txd,
+			rxd => ser_rxd,
+			ncts => ser_ncts,
+			nrts => ser_nrts,
+			wd => wd_out,
+			l => io_l,
+			r => io_r,
+			t => io_t,
+			b => io_b
 		);
 
-	cmp_io: io generic map (clk_freq)
-		port map (clk_int, int_res, stack_tos,
-			io_rd, io_wr, io_addr_wr, io_dout,
-			io_irq, io_irq_ena,
-			ser_txd, ser_rxd, ser_ncts, ser_nrts,
-			wd_out,
-			io_b, io_l, io_r, io_t
+	cmp_mem: entity work.mem_sc
+		generic map (
+			jpc_width => jpc_width,
+			block_bits => block_bits,
+			addr_bits => 18
+		)
+		port map (
+			clk => clk_int,
+			reset => int_res,
+			din => stack_tos,
+
+			mem_rd => mem_rd,
+			mem_wr => mem_wr,
+			mem_addr_wr => mem_addr_wr,
+			mem_bc_rd => mem_bc_rd,
+			dout => mem_dout,
+			bcstart => mem_bcstart,
+			bsy => mem_bsy,
+
+			jbc_addr => jbc_addr,
+			jbc_data => jbc_data,
+
+			address => sc_address,
+			wr_data => sc_wr_data,
+			rd => sc_rd,
+			wr => sc_wr,
+			rd_data => sc_rd_data,
+			rdy_cnt => sc_rdy_cnt
 		);
+
+	cmp_scm: entity work.sc_mem_if
+		generic map (
+			ram_ws => ram_cnt-1,
+			rom_cnt => rom_cnt,
+			addr_bits => 18
+		)
+		port map (
+			clk => clk_int,
+			reset => int_res,
+
+			address => sc_address,
+			wr_data => sc_wr_data,
+			rd => sc_rd,
+			wr => sc_wr,
+			rd_data => sc_rd_data,
+			rdy_cnt => sc_rdy_cnt,
+
+			ram_addr => ram_addr,
+			ram_dout => ram_dout,
+			ram_din => ram_din,
+			ram_dout_en	=> ram_dout_en,
+			ram_ncs => ram_ncs,
+			ram_noe => ram_noe,
+			ram_nwe => ram_nwe,
+
+			fl_a => fl_a,
+			fl_d => fl_d,
+			fl_ncs => fl_ncs,
+			fl_ncsb => fl_ncsb,
+			fl_noe => fl_noe,
+			fl_nwe => fl_nwe,
+			fl_rdy => fl_rdy
+
+		);
+
+	process(ram_dout_en, ram_dout)
+	begin
+		if ram_dout_en='1' then
+			rama_d <= ram_dout(15 downto 0);
+			ramb_d <= ram_dout(31 downto 16);
+		else
+			rama_d <= (others => 'Z');
+			ramb_d <= (others => 'Z');
+		end if;
+	end process;
+
+	ram_din <= ramb_d & rama_d;
+
+--
+--	To put this RAM address in an output register
+--	we have to make an assignment (FAST_OUTPUT_REGISTER)
+--
+	rama_a <= ram_addr;
+	rama_ncs <= ram_ncs;
+	rama_noe <= ram_noe;
+	rama_nwe <= ram_nwe;
+	rama_nlb <= '0';
+	rama_nub <= '0';
+
+	ramb_a <= ram_addr;
+	ramb_ncs <= ram_ncs;
+	ramb_noe <= ram_noe;
+	ramb_nwe <= ram_nwe;
+	ramb_nlb <= '0';
+	ramb_nub <= '0';
+
 
 	freeio <= 'Z';
 
