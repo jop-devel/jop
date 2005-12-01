@@ -2,22 +2,16 @@
 --	sc_sram32.vhd
 --
 --	SimpCon compliant external memory interface
---	for 32-bit SRAM (e.g. Cyclone board)
+--	for 32-bit SRAM (e.g. Cyclone board, Spartan-3 Starter Kit)
 --
 --	Connection between mem_sc and the external memory bus
 --
 --	memory mapping
 --	
 --		000000-x7ffff	external SRAM (w mirror)	max. 512 kW (4*4 MBit)
---		080000-xfffff	external Flash (w mirror)	max. 512 kB (4 MBit)
---		100000-xfffff	external NAND flash
 --
 --	RAM: 32 bit word
---	ROM: 8 bit word (for flash programming)
 --
---	todo:
---		make a version with Flash interface
---		
 --
 --	2005-11-22	first version
 --
@@ -51,18 +45,7 @@ port (
 	ram_dout_en	: out std_logic;
 	ram_ncs		: out std_logic;
 	ram_noe		: out std_logic;
-	ram_nwe		: out std_logic;
-
---
---	config/program flash and big nand flash interface
---
-	fl_a	: out std_logic_vector(18 downto 0);
-	fl_d	: inout std_logic_vector(7 downto 0);
-	fl_ncs	: out std_logic;
-	fl_ncsb	: out std_logic;
-	fl_noe	: out std_logic;
-	fl_nwe	: out std_logic;
-	fl_rdy	: in std_logic
+	ram_nwe		: out std_logic
 
 );
 end sc_mem_if;
@@ -126,10 +109,8 @@ process(clk, reset)
 begin
 	if (reset='1') then
 		ram_nwe <= '1';
---		ram_noe <= '1';
 	elsif falling_edge(clk) then
 		ram_nwe <= nwr_int;
---		ram_noe <= noe_int;
 	end if;
 
 end process;
@@ -305,15 +286,5 @@ begin
 
 	end if;
 end process;
-
--- TODO: move Flash interface to a second WB interface
-
-	fl_a <= (others => '0');
-	fl_d <= (others => 'Z');
-	fl_ncs <= '1';
-	fl_ncsb <= '1';
-	fl_noe <= '1';
-	fl_nwe <= '1';
---	fl_rdy	: in std_logic
 
 end rtl;
