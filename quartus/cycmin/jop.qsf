@@ -52,7 +52,7 @@ set_global_assignment -name VHDL_FILE ../../vhdl/core/cache.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/mul.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/shift.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/stack.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/top/jopsc.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/top/jopcyc.vhd
 set_global_assignment -name CDF_FILE jop.cdf
 
 # Pin & Location Assignments
