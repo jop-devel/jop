@@ -114,6 +114,7 @@ jopser:
 		quartus_asm $$qp; \
 		quartus_tan $$qp; \
 		cd quartus/$$target && quartus_cpf -c jop.cdf ../../jbc/$$target.jbc; \
+		cd ../..; \
 	done
 
 #
@@ -132,6 +133,7 @@ jopusb:
 		quartus_asm $$qp; \
 		quartus_tan $$qp; \
 		cd quartus/$$target && quartus_cpf -c jop.cdf ../../jbc/$$target.jbc; \
+		cd ../..; \
 	done
 
 #
@@ -150,6 +152,7 @@ jopflash:
 		quartus_asm $$qp; \
 		quartus_tan $$qp; \
 		quartus_cpf -c quartus/$$target/jop.sof ttf/$$target.ttf; \
+		cd ../..; \
 	done
 
 #qsyn:
