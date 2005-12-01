@@ -44,6 +44,13 @@ P3=Hello
 #P2=jvm
 #P3=DoAll
 
+#P2=wishbone
+#P3=Simple
+
+#P1=bench
+#P2=jbe
+#P3=DoAll
+
 #P2=testrt
 #P3=PeriodicFull
 #P1=app
@@ -99,6 +106,7 @@ jopser:
 	@echo $(QPROJ)
 	for target in $(QPROJ); do \
 		echo "building $$target"; \
+		rm -r quartus/$$target/db; \
 		qp="quartus/$$target/jop"; \
 		echo $$qp; \
 		quartus_map $$qp; \
@@ -116,6 +124,7 @@ jopusb:
 	@echo $(QPROJ)
 	for target in $(QPROJ); do \
 		echo "building $$target"; \
+		rm -r quartus/$$target/db; \
 		qp="quartus/$$target/jop"; \
 		echo $$qp; \
 		quartus_map $$qp; \
@@ -133,6 +142,7 @@ jopflash:
 	@echo $(QPROJ)
 	for target in $(QPROJ); do \
 		echo "building $$target"; \
+		rm -r quartus/$$target/db; \
 		qp="quartus/$$target/jop"; \
 		echo $$qp; \
 		quartus_map $$qp; \
@@ -146,6 +156,7 @@ jopflash:
 #	@echo $(QPROJ)
 #	for target in $(QPROJ); do \
 #		echo "building $$target"; \
+#		rm -r quartus/$$target/db; \
 #		qp="quartus/$$target/jop"; \
 #		echo $$qp; \
 #		quartus_map $$qp; \
