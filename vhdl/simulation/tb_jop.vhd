@@ -92,7 +92,8 @@ component memory is
 end component;
 
 
-	signal clk	: std_logic := '1';
+	signal clk		: std_logic := '1';
+	signal ser_rxd	: std_logic := '1';
 
 --
 --	RAM connection. We use address and control lines only
@@ -110,7 +111,7 @@ begin
 
 	cmp_jop: jop port map(
 		clk => clk,
-		ser_rxd => '1',
+		ser_rxd => ser_rxd,
 		ser_ncts => '0',
 		ser_txd => txd,
 		fl_rdy => '1',
@@ -154,6 +155,25 @@ begin
 	end loop;
 	write(l, character'val(to_integer(unsigned(data(7 downto 0)))));
 	writeline(output, l);
+
+end process;
+
+--
+--	simulate download for jvm.asm test
+--
+process
+
+	variable data : std_logic_vector(10 downto 0);
+	variable l : line;
+
+begin
+
+	data := "11010100110";
+	wait for 10 us;
+	for i in 0 to 9 loop
+		wait for 8.68 us;
+		ser_rxd <= data(i);
+	end loop;
 
 end process;
 
