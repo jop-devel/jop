@@ -131,6 +131,7 @@ end component;
 begin
 
 	rdy_cnt <= "00";	-- no wait states
+	rd_data(31 downto 8) <= std_logic_vector(to_unsigned(0, 24));
 --
 --	The registered MUX is all we need for a SimpCon read.
 --	The read data is stored in registered rd_data.
@@ -139,16 +140,16 @@ process(clk, reset)
 begin
 
 	if (reset='1') then
-		rd_data <= (others => '0');
+		rd_data(7 downto 0) <= (others => '0');
 	elsif rising_edge(clk) then
 
 		ua_rd <= '0';
 		if rd='1' then
 			-- that's our very simple address decoder
 			if address(0)='0' then
-				rd_data <= std_logic_vector(to_unsigned(0, 30)) & rdrf & tdre;
+				rd_data(7 downto 0) <= "000000" & rdrf & tdre;
 			else
-				rd_data <= std_logic_vector(to_unsigned(0, 24)) & ua_dout;
+				rd_data(7 downto 0) <= ua_dout;
 				ua_rd <= rd;
 			end if;
 		end if;
