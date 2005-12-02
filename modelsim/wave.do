@@ -61,10 +61,10 @@ add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cmp_scm/wr
 add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/cmp_scm/rd
 add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/cmp_scm/wr
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cmp_scm/rd_data
+add wave -noupdate -format Logic /tb_jop/cmp_jop/cmp_scm/ram_data_ena
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cmp_scm/rdy_cnt
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cmp_scm/wait_state
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cmp_scm/state
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/cmp_scm/rd_data_ena
 add wave -noupdate -divider {bc load}
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cmp_mem/bc_len
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cmp_mem/bc_mem_start
@@ -131,4 +131,4 @@ configure wave -gridperiod 1
 configure wave -griddelta 40
 configure wave -timeline 0
 update
-WaveRestoreZoom {64159 ps} {139734 ps}
+WaveRestoreZoom {4928204 ps} {5003779 ps}

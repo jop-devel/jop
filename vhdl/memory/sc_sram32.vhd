@@ -23,7 +23,7 @@ use ieee.numeric_std.all;
 use work.jop_types.all;
 
 entity sc_mem_if is
-generic (ram_ws : integer; rom_cnt : integer; addr_bits : integer);
+generic (ram_ws : integer; addr_bits : integer);
 
 port (
 
@@ -39,7 +39,7 @@ port (
 
 -- memory interface
 
-	ram_addr	: out std_logic_vector(17 downto 0);
+	ram_addr	: out std_logic_vector(addr_bits-1 downto 0);
 	ram_dout	: out std_logic_vector(31 downto 0);
 	ram_din		: in std_logic_vector(31 downto 0);
 	ram_dout_en	: out std_logic;
@@ -89,7 +89,7 @@ begin
 	elsif rising_edge(clk) then
 
 		if rd='1' or wr='1' then
-			ram_addr <= address(17 downto 0);
+			ram_addr <= address;
 		end if;
 		if wr='1' then
 			ram_dout <= wr_data;
@@ -150,7 +150,7 @@ begin
 		when rd2 =>
 			next_state <= idl;
 			-- This should do to give us a pipeline
-			-- level of 1 for read
+			-- level of 2 for read
 			if rd='1' then
 				if ram_ws=0 then
 					-- then we omit state rd1!
@@ -258,31 +258,14 @@ begin
 			cnt <= wait_state(1 downto 0)-1;
 		end if;
 
-		if rd='1' then
+		if rd='1' or wr='1' then
 			wait_state <= to_unsigned(ram_ws+1, 4);
 			if ram_ws<3 then
 				cnt <= to_unsigned(ram_ws+1, 2);
 			else
 				cnt <= "11";
 			end if;
-		elsif wr='1' then
-			-- one more cycle for the write
-			-- But in original mem32 this was only true
-			-- for ram_cnt=2!
-			if ram_ws<3 then
-				cnt <= to_unsigned(ram_ws+1, 2);
-			else
-				cnt <= "11";
-			end if;
-			wait_state <= to_unsigned(ram_ws+1, 4);
---		else
---			-- do we need this?
---			-- we don't care about wait_state in state idle
---			if state=idl then
---				wait_state <= (others => '1');			-- keep it on max value
---			end if;
 		end if;
-
 
 	end if;
 end process;

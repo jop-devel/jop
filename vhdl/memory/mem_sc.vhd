@@ -236,7 +236,9 @@ begin
 		-- default use the bc address (simpled MUX selection)
 		ram_addr(17 downto 0) <= std_logic_vector(bc_mem_start);
 		-- addr_bits is 17
-		-- ram_addr(addr_bits-1 downto 18) <= (others => '0');
+		if addr_bits>18 then
+			ram_addr(addr_bits-1 downto 18) <= (others => '0');
+		end if;
 	end if;
 end process;
 
