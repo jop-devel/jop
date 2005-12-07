@@ -167,7 +167,7 @@ end component;
 
 -- mem/sc interface
 
-	signal sc_address		: std_logic_vector(17 downto 0);
+	signal sc_address		: std_logic_vector(20 downto 0);
 	signal sc_wr_data		: std_logic_vector(31 downto 0);
 	signal sc_rd, sc_wr		: std_logic;
 	signal sc_rd_data		: std_logic_vector(31 downto 0);
@@ -318,7 +318,7 @@ end process;
 		generic map (
 			jpc_width => jpc_width,
 			block_bits => block_bits,
-			addr_bits => 18
+			addr_bits => 21
 		)
 		port map (
 			clk => clk_int,
@@ -347,8 +347,8 @@ end process;
 	cmp_scm: entity work.sc_mem_if
 		generic map (
 			ram_ws => ram_cnt-1,
-			rom_cnt => rom_cnt,
-			addr_bits => 18
+			rom_ws => rom_cnt-1,
+			addr_bits => 21
 		)
 		port map (
 			clk => clk_int,
@@ -409,7 +409,6 @@ end process;
 	ramb_nwe <= ram_nwe;
 	ramb_nlb <= '0';
 	ramb_nub <= '0';
-
 
 	freeio <= 'Z';
 
