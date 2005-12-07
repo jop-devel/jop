@@ -262,6 +262,7 @@ jop_blink_test:
 	@echo $(QPROJ)
 	for target in $(QPROJ); do \
 		echo "building $$target"; \
+		rm -r quartus/$$target/db; \
 		qp="quartus/$$target/jop"; \
 		echo $$qp; \
 		quartus_map $$qp; \
@@ -279,6 +280,7 @@ jop_testmon:
 	@echo $(QPROJ)
 	for target in $(QPROJ); do \
 		echo "building $$target"; \
+		rm -r quartus/$$target/db; \
 		qp="quartus/$$target/jop"; \
 		echo $$qp; \
 		quartus_map $$qp; \
