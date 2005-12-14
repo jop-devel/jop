@@ -7,6 +7,7 @@ call clean
 cd ..
 for /R . %%x IN (*.jop) DO del %%x
 for /R . %%x IN (*.ttf) DO del %%x
+for /R . %%x IN (*.rbf) DO del %%x
 for /R . %%x IN (*.sof) DO del %%x
 for /R . %%x IN (*.class) DO del %%x
 cd \tmp\jop
