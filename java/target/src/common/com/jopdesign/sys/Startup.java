@@ -54,7 +54,6 @@ public class Startup {
 
 	static void msg() {
 
-		int version = Native.rdIntMem(64);
 		JVMHelp.wr("JOP start");
 	}
 	
@@ -74,7 +73,9 @@ public class Startup {
 
 	public static void exit() {
 		JVMHelp.wr("\r\nJVM exit!\r\n");
-		for (;;) ;
+		synchronized (stack) {
+			for (;;) ;
+		}
 	}
 	static void clazzinit() {
 
