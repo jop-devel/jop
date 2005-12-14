@@ -479,6 +479,33 @@ public static int ts0, ts1, ts2, ts3, ts4;
 			genInt();
 		}
 	}
+	final static int MIN_US = 10;
+
+	/**
+	 * Waste CPU cycles to simulate work.
+	 * @param us execution time in us
+	 */
+	public static void busyWait(int us) {
+
+		int t1, t2, t3;
+		int cnt;
+		
+		cnt = 0;	
+		t1 = Native.rd(Const.IO_US_CNT);
+
+		for (;;) {
+			t2 = Native.rd(Const.IO_US_CNT);
+			t3 = t2-t1;
+//			System.out.println(cnt+" "+t3);
+			t1 = t2;
+			if (t3<MIN_US) {
+				cnt += t3;
+			}
+			if (cnt>=us) {
+				return;
+			}
+		}
+	}
 
 // WARNING: debug can take a long time (xx ms)
 public static void debug() {
