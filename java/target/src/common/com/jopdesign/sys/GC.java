@@ -60,7 +60,11 @@ public class GC {
 	
 	static final int TYPICAL_OBJ_SIZE = 10;
 	static int handle_cnt;
-	static int heap_size;
+	/**
+	 * Size of one semi-space, complete heap is two times
+	 * the semi_size
+	 */
+	static int semi_size;
 	
 	
 	static int heapStartA, heapStartB;
@@ -104,14 +108,15 @@ public class GC {
 		
 		
 		handle_cnt = FIX_HANDLES;
-		heap_size = (full_heap_size-handle_cnt*HANDLE_SIZE)/2;
+		semi_size = (full_heap_size-handle_cnt*HANDLE_SIZE)/2;
 		
 		heapStartA = mem_start+handle_cnt*HANDLE_SIZE;
-		heapStartB = heapStartA+heap_size;
+		heapStartB = heapStartA+semi_size;
 		
-		log("handle start ", mem_start);
+//		log("handle start ", mem_start);
+		log("");
 		log("heap start", heapStartA);
-		log("heap size (bytes)", heap_size*4);
+		log("heap size (bytes)", semi_size*4*2);
 		
 // we canot call System.out here!
 // System.out.println("Heap: "+heapStartA+" "+heapStartB+" "+(heapStartB+heap_size));
@@ -119,7 +124,7 @@ public class GC {
 		useA = true;
 		heapPtr = heapStartA;
 		fromSpace = heapStartB;
-		allocPtr = heapPtr+heap_size;
+		allocPtr = heapPtr+semi_size;
 		
 		freeList = 0;
 		useList = 0;
@@ -316,7 +321,7 @@ public class GC {
 				heapPtr = heapStartB;			
 				fromSpace = heapStartA;
 			}
-			allocPtr = heapPtr+heap_size;
+			allocPtr = heapPtr+semi_size;
 		}
 	}
 
@@ -348,7 +353,7 @@ public class GC {
 		}
 		// clean the from-space to prepare for the next
 		// flip
-		for (int i=fromSpace; i<fromSpace+heap_size; ++i) {
+		for (int i=fromSpace; i<fromSpace+semi_size; ++i) {
 			Native.wrMem(0, i);
 		}
 		// for tests clean also the remainig memory in the to-space??
@@ -508,15 +513,19 @@ public class GC {
 	 * @return
 	 */
 	public static int totalMemory() {
-		return heap_size*4;
+		return semi_size*4;
 	}
 	
 	static int logCnt;
 	
+	/**
+	 * Log all array allocations in the remaining free memory
+	 * with the us time stamp and the free memory of the to-space
+	 */
 	static void logAlloc() {
 		
 		// free memory after the heap
-		int addr = heapStartB+heap_size+logCnt;
+		int addr = heapStartB+semi_size+logCnt;
 		Native.wrMem((Native.rd(Const.IO_US_CNT)-startTime), addr);
 		Native.wrMem(freeMemory(), addr+1);
 		logCnt += 2;
@@ -528,13 +537,16 @@ public class GC {
 //		JVMHelp.wr("\n");
 	}
 	
+	/**
+	 * Dump the logging from logAlloc().
+	 */
 	public static void dump() {
 		System.out.println("Program end");
 		System.out.print("Time [ms];Free Memory [Bytes]");
 		// a single lf for file dump
 		System.out.print("\n");
 		for (int i=0; i<logCnt; i+=2) {
-			int addr = heapStartB+heap_size+i;
+			int addr = heapStartB+semi_size+i;
 			int time = Native.rdMem(addr);
 			int mem = Native.rdMem(addr+1);
 			System.out.print(time/1000);
