@@ -16,8 +16,8 @@ public class PaperEx1 {
 	static Object mutex;
 	
 	// We have to use static data for our experiments because
-	// the current GC does not get the roots from the other
-	// threads stack frames.
+	// the current GC prototype does not get the roots from the
+	// other threads stack frames.
 	static class Data {
 		int[] n;
 	}
@@ -83,6 +83,7 @@ public class PaperEx1 {
 					}
 				}
 				synchronized (mutex) {
+					// dump the results
 					GC.dump();
 					System.exit(0);
 				}
@@ -95,12 +96,18 @@ public class PaperEx1 {
 		for (i=0; i<da.length; ++i) {
 			da[i] = new Data();
 		}
+		// about memory consumption:
+		// allocates an integer array of n*256-1 elements
+		// plus the size field results in exact n*1024
+		// bytes.
 		new Worker(0, 3, 5*1000, 1*1000, 1*1024/4-1);
 		new Worker(1, 2, 10*1000, 3*1000, 3*1024/4-1);
 		
 		// dummy thread to get the same static memory
 		// consumption for both examples
 		new Worker(2, 0, 1000*1000, 10, 0);
+		
+		System.out.println("GC Example 1 (two worker threads)");
 
 		RtThread.startMission();
 
