@@ -70,15 +70,15 @@ P3=Hello
 #
 #	make targets for the two RT GC examples
 #
-gc_paper: directories tools jopser examples
-
-examples:
-	cd java/target && ./build.bat test gctest PaperEx1
-	cd quartus/$(DLPROJ) && quartus_pgm -c ByteBlasterMV -m JTAG jop.cdf
-	down $(COM_FLAG) java/target/dist/bin/gctest_PaperEx1.jop $(COM_PORT)
-	cd java/target && ./build.bat test gctest PaperEx2
-	cd quartus/$(DLPROJ) && quartus_pgm -c ByteBlasterMV -m JTAG jop.cdf
-	down $(COM_FLAG) java/target/dist/bin/gctest_PaperEx2.jop $(COM_PORT)
+#gc_paper: directories tools jopser examples
+#
+#examples:
+#	cd java/target && ./build.bat test gctest PaperEx1
+#	cd quartus/$(DLPROJ) && quartus_pgm -c ByteBlasterMV -m JTAG jop.cdf
+#	down $(COM_FLAG) java/target/dist/bin/gctest_PaperEx1.jop $(COM_PORT)
+#	cd java/target && ./build.bat test gctest PaperEx2
+#	cd quartus/$(DLPROJ) && quartus_pgm -c ByteBlasterMV -m JTAG jop.cdf
+#	down $(COM_FLAG) java/target/dist/bin/gctest_PaperEx2.jop $(COM_PORT)
 #
 #	end make target for RT GC paper
 #
