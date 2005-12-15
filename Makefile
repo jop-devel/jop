@@ -14,13 +14,13 @@
 
 #
 #	com1 is the usual serial port
-#	com14 is the FTDI VCOM for the USB download
+#	com6 is the FTDI VCOM for the USB download
 #		use -usb to download the Java application
 #		without the echo 'protocol' on USB
 #
 COM_PORT=com1
 COM_FLAG=-e
-#COM_PORT=com18
+#COM_PORT=com6
 #COM_FLAG=-e -usb
 
 # 'some' different Quartus projects
@@ -67,14 +67,35 @@ P3=Hello
 #P3=AC97
 #P3=SigDel
 
+#
+#	make targets for the two RT GC examples
+#
+gc_paper: directories tools jopser examples
+
+examples:
+	cd java/target && ./build.bat test gctest PaperEx1
+	cd quartus/$(DLPROJ) && quartus_pgm -c ByteBlasterMV -m JTAG jop.cdf
+	down $(COM_FLAG) java/target/dist/bin/gctest_PaperEx1.jop $(COM_PORT)
+	cd java/target && ./build.bat test gctest PaperEx2
+	cd quartus/$(DLPROJ) && quartus_pgm -c ByteBlasterMV -m JTAG jop.cdf
+	down $(COM_FLAG) java/target/dist/bin/gctest_PaperEx2.jop $(COM_PORT)
+#
+#	end make target for RT GC paper
+#
 
 # use this for serial download
 all: directories tools jopser japp
 
-# we use USB download now as default
+japp: java_app download
+
+# TODO: add USB device to SimpCon!
+
+# use this for USB download of FPGA configuration
+# and Java program download
 #all: directories tools jopusb japp
 
-japp: java_app download
+#japp: java_app download_usb
+
 
 install:
 	@echo nothing to install
@@ -105,17 +126,13 @@ jopser:
 	cd asm && ./jopser.bat
 	@echo $(QPROJ)
 	for target in $(QPROJ); do \
-		echo "building $$target"; \
-		rm -r quartus/$$target/db; \
-		qp="quartus/$$target/jop"; \
-		echo $$qp; \
-		quartus_map $$qp; \
-		quartus_fit $$qp; \
-		quartus_asm $$qp; \
-		quartus_tan $$qp; \
-		cd quartus/$$target && quartus_cpf -c jop.cdf ../../jbc/$$target.jbc; \
+		make qsyn -e QBT=$$target; \
+		cd quartus/$$target; \
+		quartus_cpf -c jop.cdf ../../jbc/$$target.jbc; \
+		quartus_cpf -c jop.sof ../../rbf/$$target.rbf; \
 		cd ../..; \
 	done
+
 
 #
 #	project.jbc fiels are used to boot from the USB interface
@@ -124,15 +141,10 @@ jopusb:
 	cd asm && ./jopusb.bat
 	@echo $(QPROJ)
 	for target in $(QPROJ); do \
-		echo "building $$target"; \
-		rm -r quartus/$$target/db; \
-		qp="quartus/$$target/jop"; \
-		echo $$qp; \
-		quartus_map $$qp; \
-		quartus_fit $$qp; \
-		quartus_asm $$qp; \
-		quartus_tan $$qp; \
-		cd quartus/$$target && quartus_cpf -c jop.cdf ../../jbc/$$target.jbc; \
+		make qsyn -e QBT=$$target; \
+		cd quartus/$$target; \
+		quartus_cpf -c jop.cdf ../../jbc/$$target.jbc; \
+		quartus_cpf -c jop.sof ../../rbf/$$target.rbf; \
 		cd ../..; \
 	done
 
@@ -143,31 +155,24 @@ jopflash:
 	cd asm && ./jopflash.bat
 	@echo $(QPROJ)
 	for target in $(QPROJ); do \
-		echo "building $$target"; \
-		rm -r quartus/$$target/db; \
-		qp="quartus/$$target/jop"; \
-		echo $$qp; \
-		quartus_map $$qp; \
-		quartus_fit $$qp; \
-		quartus_asm $$qp; \
-		quartus_tan $$qp; \
+		make qsyn -e QBT=$$target; \
 		quartus_cpf -c quartus/$$target/jop.sof ttf/$$target.ttf; \
 		cd ../..; \
 	done
 
-#qsyn:
-#	@echo $(QPROJ)
-#	for target in $(QPROJ); do \
-#		echo "building $$target"; \
-#		rm -r quartus/$$target/db; \
-#		qp="quartus/$$target/jop"; \
-#		echo $$qp; \
-#		quartus_map $$qp; \
-#		quartus_fit $$qp; \
-#		quartus_asm $$qp; \
-#		quartus_tan $$qp; \
-#	done
 
+#
+#	Quartus build process
+#		called by jopser, jopusb,...
+#
+qsyn:
+	echo $(QBT)
+	echo "building $(QBT)"
+	-rm -r quartus/$(QBT)/db
+	quartus_map quartus/$(QBT)/jop
+	quartus_fit quartus/$(QBT)/jop
+	quartus_asm quartus/$(QBT)/jop
+	quartus_tan quartus/$(QBT)/jop
 
 #
 #	Modelsim target
@@ -191,6 +196,10 @@ java_app:
 
 download:
 	cd quartus/$(DLPROJ) && quartus_pgm -c ByteBlasterMV -m JTAG jop.cdf
+	down $(COM_FLAG) java/target/dist/bin/$(P2)_$(P3).jop $(COM_PORT)
+
+download_usb:
+	cd rbf && ../USBRunner $(DLPROJ).cdf
 	down $(COM_FLAG) java/target/dist/bin/$(P2)_$(P3).jop $(COM_PORT)
 
 #
@@ -232,13 +241,16 @@ bg: directories tools jopflash jopser prog_flash
 #
 #	some directories for configuration files
 #
-directories: jbc ttf
+directories: jbc ttf rbf
 
 jbc:
 	mkdir jbc
 
 ttf:
 	mkdir ttf
+
+rbf:
+	mkdir rbf
 
 #
 # this line configures the FPGA and programs the PLD
