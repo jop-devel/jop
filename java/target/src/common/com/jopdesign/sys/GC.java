@@ -11,8 +11,14 @@ package com.jopdesign.sys;
  */
 public class GC {
 	
+	final static int FIX_HANDLES = 400;
+	static final int HANDLE_SIZE = 6;
+	
 	static int mem_start;		// read from memory
-	static final int MEM_SIZE = 30000;
+	// get a effective heap size with fixed handle count
+	// for our RT-GC tests
+	static final int MEM_SIZE = 100*1024/4 + FIX_HANDLES*HANDLE_SIZE;
+//	static final int MEM_SIZE = 30000;
 //	static final int MEM_SIZE = 256000; // in words (262144)
 	static int full_heap_size;
 	/**
@@ -28,7 +34,6 @@ public class GC {
 	 * 3 flags to mark reference fields - could be in class info
 	 *   -1 means more than 31 fields -> look in class info....
 	 */
-	static final int HANDLE_SIZE = 6;
 	static final int OFF_PTR = 0;
 	static final int OFF_MTAB = 1;
 	static final int OFF_SIZE = 2;
@@ -84,15 +89,21 @@ public class GC {
 	static Object mutex;
 	
 	static boolean concurrentGc;
+	
+	static int startTime;
 
 	static void init(int addr) {
 		
 		addrStaticRefs = addr;
 		
 		mem_start = Native.rdMem(0);
-		full_heap_size = MEM_SIZE-mem_start;
-		handle_cnt = full_heap_size/2/(TYPICAL_OBJ_SIZE+HANDLE_SIZE);
-//		handle_cnt = 200;
+//		full_heap_size = MEM_SIZE-mem_start;
+//		handle_cnt = full_heap_size/2/(TYPICAL_OBJ_SIZE+HANDLE_SIZE);
+		// we use fixed handles and a fixed heap size for the tests:
+		full_heap_size = MEM_SIZE;
+		
+		
+		handle_cnt = FIX_HANDLES;
 		heap_size = (full_heap_size-handle_cnt*HANDLE_SIZE)/2;
 		
 		heapStartA = mem_start+handle_cnt*HANDLE_SIZE;
@@ -126,6 +137,8 @@ public class GC {
 		
 		// allocate the monitor
 		mutex = new Object();
+		
+		startTime = Native.rd(Const.IO_US_CNT);
 	}
 	
 	static void addToFreeList(int ref) {
@@ -147,9 +160,9 @@ public class GC {
 			// pointer to former freelist head
 			Native.wrMem(grayList, ref+OFF_GRAY);
 			grayList = ref;			
-			log("addGray", ref);
+//			log("addGray", ref);
 		} else {
-			log("already in gray list", ref);
+//			log("already in gray list", ref);
 		}
 	}
 	
@@ -197,7 +210,7 @@ public class GC {
 		int addr = grayList;
 		grayList = Native.rdMem(addr+OFF_GRAY);
 		Native.wrMem(0, addr+OFF_GRAY);		// mark as not in list
-		log("pop", addr);
+//		log("pop", addr);
 		return addr;
 	}
 	
@@ -293,6 +306,7 @@ public class GC {
 	 * switch from-space and to-space
 	 */
 	static void flip() {
+//		log("flip");
 		synchronized (mutex) {
 			useA = !useA;
 			if (useA) {
@@ -316,7 +330,7 @@ public class GC {
 		
 		int ref = useList;
 		while (ref!=0) {
-			log("move", ref);
+//			log("move", ref);
 			int addr = Native.rdMem(ref+OFF_PTR);
 			--addr; // copy also the mtab pointer or arrays size!
 //			System.out.println(ref+" move from "+addr+" to "+heapPtr);
@@ -338,9 +352,9 @@ public class GC {
 			Native.wrMem(0, i);
 		}
 		// for tests clean also the remainig memory in the to-space??
-		for (int i=heapPtr; i<allocPtr; ++i) {
-			Native.wrMem(0, i);
-		}
+//		for (int i=heapPtr; i<allocPtr; ++i) {
+//			Native.wrMem(0, i);
+//		}
 	}
 
 	public static void setConcurrent() {
@@ -351,24 +365,21 @@ public class GC {
 		log("GC allocation triggered");
 		if (concurrentGc) {
 			log("meaning out of memory for RT-GC");
-			System.exit(1);			
+			dump();
+			System.exit(1);	
 		} else {
 			gc();			
 		}
 	}
 
 	public static void gc() {
-		log("GC called - free memory:", freeMemory());
-//		System.out.print(free());
-//		System.out.print(" words remaining - now ");
-/* disabled for now (BG)
- * TODO: get stack roots from threads!
-*/
+//		log("GC called - free memory:", freeMemory());
+
 		mark();
 		sweep();
 		compact();			
 
-		log("GC end - free memory:",freeMemory());
+//		log("GC end - free memory:",freeMemory());
 		
 	}
 	
@@ -425,17 +436,15 @@ public class GC {
 		Native.wrMem(cons+3, allocPtr);		// pointer to method table in objectref-1
 
 		// zero could be done on a flip and at initialization!
-		for (int i=1; i<size; ++i) {
-			Native.wrMem(0, allocPtr+i);		// zero object
-		}
+		// we don't need this
+//		for (int i=1; i<size; ++i) {
+//			Native.wrMem(0, allocPtr+i);		// zero object
+//		}
 
 		return ref;
 	}
 	
 	static int newArray(int size, boolean isRef) {
-		
-		log("newArray - free memory:", freeMemory());
-		log("size", size);
 		
 		// we are NOT using JVM var h at address 2 for the
 		// heap pointer anymore.
@@ -476,9 +485,13 @@ public class GC {
 		// in the heap or in the handle structure
 		Native.wrMem(size-1, allocPtr);		// pointer to method table in objectref-1
 
-		for (int i=1; i<size; ++i) {
-			Native.wrMem(0, allocPtr+i);		// zero array
-		}
+		// we don't need this
+//		for (int i=1; i<size; ++i) {
+//			Native.wrMem(0, allocPtr+i);		// zero array
+//		}
+		
+		logAlloc();
+		
 		return ref;
 		
 	}
@@ -498,14 +511,48 @@ public class GC {
 		return heap_size*4;
 	}
 	
+	static int logCnt;
+	
+	static void logAlloc() {
+		
+		// free memory after the heap
+		int addr = heapStartB+heap_size+logCnt;
+		Native.wrMem((Native.rd(Const.IO_US_CNT)-startTime), addr);
+		Native.wrMem(freeMemory(), addr+1);
+		logCnt += 2;
+		
+//		JVMHelp.wr("alloc: ");
+//		JVMHelp.wrSmall((Native.rd(Const.IO_US_CNT)-startTime)>>10);
+//		JVMHelp.wr(";");
+//		JVMHelp.wrSmall(freeMemory());
+//		JVMHelp.wr("\n");
+	}
+	
+	public static void dump() {
+		System.out.println("Program end");
+		System.out.print("Time [ms];Free Memory [Bytes]");
+		// a single lf for file dump
+		System.out.print("\n");
+		for (int i=0; i<logCnt; i+=2) {
+			int addr = heapStartB+heap_size+i;
+			int time = Native.rdMem(addr);
+			int mem = Native.rdMem(addr+1);
+			System.out.print(time/1000);
+			System.out.print(";");
+			System.out.print(mem);
+			// a single lf for file dump
+			System.out.print("\n");
+		}
+	}
+
 	static void log(String s, int i) {
 		JVMHelp.wr(s);
 		JVMHelp.wr(" ");
 		JVMHelp.wrSmall(i);
-		JVMHelp.wr("\r\n");
+		JVMHelp.wr("\n");
 	}
 	static void log(String s) {
 		JVMHelp.wr(s);
-		JVMHelp.wr("\r\n");
+		JVMHelp.wr("\n");
 	}
 }
