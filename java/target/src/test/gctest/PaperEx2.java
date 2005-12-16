@@ -119,7 +119,7 @@ public class PaperEx2 {
 
 		int i;
 
-		new RtThread(1, 45*1000) {
+		new RtThread(1, 65*1000) {
 			public void run() {
 
 				
