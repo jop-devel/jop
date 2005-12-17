@@ -119,12 +119,12 @@ public class PaperEx2 {
 
 		int i;
 
-		new RtThread(1, 65*1000) {
+		new RtThread(1, 63*1000) {
 			public void run() {
 
 				
 				GC.setConcurrent();
-				for (int i=0; i<10; ++i) {
+				for (int i=0; i<30; ++i) {
 					System.out.print("G");
 //					int ts;
 //					synchronized (mutex) {
