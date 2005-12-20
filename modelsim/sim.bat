@@ -29,7 +29,7 @@ vcom %options% %jopdir%/core/shift.vhd
 vcom %options% %jopdir%/core/stack.vhd
 vcom %options% %jopdir%/core/core.vhd
 vcom %options% %jopdir%/scio/sc_cnt.vhd
-vcom %options% %jopdir%/scio/iomin.vhd
+vcom %options% %jopdir%/scio/scio_min.vhd
 vcom %options% %jopdir%/top/jopcyc.vhd
 vcom %options% %jopdir%/simulation/tb_jop.vhd
 pause Start simulation?
