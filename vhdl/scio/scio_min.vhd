@@ -1,5 +1,5 @@
 --
---	iomin.vhd
+--	scio_min.vhd
 --
 --	io devices for minimal configuration
 --	only counter, wd and serial line, alle io pins are tri statet
