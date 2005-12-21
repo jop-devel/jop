@@ -28,7 +28,7 @@
 set_global_assignment -name SMART_RECOMPILE OFF
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION 4.0
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "02:05:59  APRIL 04, 2004"
-set_global_assignment -name LAST_QUARTUS_VERSION 5.0
+set_global_assignment -name LAST_QUARTUS_VERSION 5.1
 set_global_assignment -name VERILOG_FILE ../../ext/ac97/ac97_wb_if.v
 set_global_assignment -name VERILOG_FILE ../../ext/ac97/ac97_cra.v
 set_global_assignment -name VERILOG_FILE ../../ext/ac97/ac97_defines.v
@@ -47,25 +47,25 @@ set_global_assignment -name VERILOG_FILE ../../ext/ac97/ac97_sout.v
 set_global_assignment -name VERILOG_FILE ../../ext/ac97/ac97_top.v
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_types_60.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/wishbone/wb_pack.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/io/fifo.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/wishbone/wb_usb.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/wishbone/wb_guitar.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/wishbone/wb_top_dspio.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc_pll.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/io/uart.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/io/cnt.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/io/iomin_wb.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/fifo.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_uart.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_cnt.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_usb.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc2wb.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/scio_dspio.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/offtbl.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/jtbl.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/rom.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/aram.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/bcfetch.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/core.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/core/extension.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/decode.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/fetch.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/core/mem32.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/memory/sc_sram32_flash.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc_jbc.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/memory/mem_sc.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/core/extension.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/cache.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/mul.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/shift.vhd
@@ -254,9 +254,6 @@ set_location_assignment PIN_166 -to wd
 # ==================
 set_global_assignment -name IGNORE_CLOCK_SETTINGS ON
 set_global_assignment -name INCLUDE_EXTERNAL_PIN_DELAYS_IN_FMAX_CALCULATIONS OFF
-set_global_assignment -name FMAX_REQUIREMENT "60.0 MHz"
-set_global_assignment -name TSU_REQUIREMENT 4ns
-set_global_assignment -name TCO_REQUIREMENT 4ns
 
 # Analysis & Synthesis Assignments
 # ================================
@@ -466,7 +463,7 @@ set_global_assignment -name AUTO_RESTART_CONFIGURATION OFF
 # Simulator Assignments
 # =====================
 set_global_assignment -name SIMULATION_MODE FUNCTIONAL
-set_global_assignment -name GLITCH_INTERVAL 1
+set_global_assignment -name GLITCH_INTERVAL "1 ns"
 
 # Design Assistant Assignments
 # ============================
@@ -487,25 +484,30 @@ set_global_assignment -name LOGICLOCK_INCREMENTAL_COMPILE_ASSIGNMENT OFF
 
 	# Pin & Location Assignments
 	# ==========================
-	set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to io_b[1]
-	set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to io_b[2]
-	set_instance_assignment -name FAST_INPUT_REGISTER ON -to io_l[17]
-	set_instance_assignment -name FAST_INPUT_REGISTER ON -to io_l[20]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to io_b[1]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to io_b[2]
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to io_l[17]
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to io_l[20]
 
 	# Fitter Assignments
 	# ==================
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to io_l[15]
-	set_instance_assignment -name SLOW_SLEW_RATE OFF -to io_l[15]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to io_l[16]
-	set_instance_assignment -name SLOW_SLEW_RATE OFF -to io_l[16]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to io_l[18]
-	set_instance_assignment -name SLOW_SLEW_RATE OFF -to io_l[18]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to io_l[19]
-	set_instance_assignment -name SLOW_SLEW_RATE OFF -to io_l[19]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to io_b[1]
-	set_instance_assignment -name SLOW_SLEW_RATE OFF -to io_b[1]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to io_b[2]
-	set_instance_assignment -name SLOW_SLEW_RATE OFF -to io_b[2]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to io_l[15]
+set_instance_assignment -name SLOW_SLEW_RATE OFF -to io_l[15]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to io_l[16]
+set_instance_assignment -name SLOW_SLEW_RATE OFF -to io_l[16]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to io_l[18]
+set_instance_assignment -name SLOW_SLEW_RATE OFF -to io_l[18]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to io_l[19]
+set_instance_assignment -name SLOW_SLEW_RATE OFF -to io_l[19]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to io_b[1]
+set_instance_assignment -name SLOW_SLEW_RATE OFF -to io_b[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to io_b[2]
+set_instance_assignment -name SLOW_SLEW_RATE OFF -to io_b[2]
 
 # end ENTITY(jop)
 # ---------------
+
+set_global_assignment -name FMAX_REQUIREMENT "20 MHz" -section_id clk_input
+set_instance_assignment -name CLOCK_SETTINGS clk_input -to clk
+set_instance_assignment -name TCO_REQUIREMENT "9 ns" -from * -to ram*
+set_instance_assignment -name TSU_REQUIREMENT "9 ns" -from * -to ram*
