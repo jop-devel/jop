@@ -70,6 +70,7 @@
 //	2005-08-16	new file/download format with a size field in the first word
 //	2005-08-27	added boot from USB interface (dspio board)
 //	2005-12-01	IO devices are memory mapped - no more stioa, stiod, ldiod
+//	2005-12-20	Changed dspio devices (USB) to SimpCon
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -80,7 +81,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20051201
+version		= 20051220
 
 //
 //	io address are negativ memory addresses
@@ -91,6 +92,7 @@ version		= 20051201
 //	UART=-111
 //	USB status=-96
 //	USB date=-95
+//
 io_cnt		=	-128
 io_wd		=	-125
 io_int_ena	=	-128
@@ -256,6 +258,9 @@ ser4:
 			wait
 			ldmrd
 
+//	We don't do the byte handshake on the USB connection.
+//	The FTDI chip handles flow control.
+//
 //wait_usb_tx:
 //			ldi	usb_status		// wait for TX-buffer ready
 //			stmra
