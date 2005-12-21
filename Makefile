@@ -241,16 +241,13 @@ bg: directories tools jopflash jopser prog_flash
 #
 #	some directories for configuration files
 #
-directories: jbc ttf rbf
+directories: jbc ttf
 
 jbc:
 	mkdir jbc
 
 ttf:
 	mkdir ttf
-
-rbf:
-	mkdir rbf
 
 #
 # this line configures the FPGA and programs the PLD
