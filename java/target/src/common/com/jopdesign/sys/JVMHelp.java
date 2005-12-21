@@ -181,12 +181,12 @@ for (fp=10530; fp<=10700; ++fp) {
 		   with other configurations. The UART limits the transfer rate
 		   to about 10kB/s.
 		   
-		while ((Native.rdMem(Const.WB_USB_STATUS) & Const.MSK_UA_TDRE)==0) {
+		while ((Native.rdMem(Const.IO_USB_STATUS) & Const.MSK_UA_TDRE)==0) {
 			;
 		}
 		*/
 		// disable for OEBB project
-		// Native.wrMem(c, Const.WB_USB_DATA);
+		Native.wrMem(c, Const.IO_USB_DATA);
 	}
 	
 	static void wr(String s) {
