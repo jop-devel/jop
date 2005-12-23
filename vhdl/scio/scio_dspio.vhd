@@ -11,7 +11,7 @@
 --		0x00 0-3		system clock counter, us counter, timer int, wd bit
 --		0x10 0-1		uart (download)
 --		0x20 0-1		USB connection (download)
---		0x30 
+--		0x30 0-f		AC97 connection
 --
 --	status word in uart and usb:
 --		0	uart transmit data register empty
