@@ -24,7 +24,7 @@ COM_FLAG=-e
 #COM_FLAG=-e -usb
 
 # 'some' different Quartus projects
-QPROJ=cycmin cyc12min cycbaseio cycbg dspio
+QPROJ=cycmin cyc12min cycbaseio cycbg dspio lego
 # if you want to build only one Quartus project use e.q.:
 QPROJ=cycmin
 
@@ -66,6 +66,10 @@ P3=Hello
 #P2=dsp
 #P3=AC97
 #P3=SigDel
+
+#P1=app
+#P2=lego
+#P3=LineFollower
 
 #
 #	make targets for the two RT GC examples
@@ -169,6 +173,9 @@ qsyn:
 	echo $(QBT)
 	echo "building $(QBT)"
 	-rm -r quartus/$(QBT)/db
+	-rm quartus/$(QBT)/jop.sof
+	-rm jbc/$(QBT).jbc
+	-rm rbf/$(QBT).rbf
 	quartus_map quartus/$(QBT)/jop
 	quartus_fit quartus/$(QBT)/jop
 	quartus_asm quartus/$(QBT)/jop
