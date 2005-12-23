@@ -1,7 +1,6 @@
 package test;
 
 import joprt.RtThread;
-import util.Dbg;
 import util.Timer;
 
 import com.jopdesign.sys.Const;
@@ -11,7 +10,7 @@ public class Lego {
 
 	final static int MAX = 1000;
 
-	final static int IO_MOTOR = Const.IO_ADC2;
+	final static int IO_MOTOR = Const.IO_LEGO;
 
 /*
 	en2 <= m_out(5);
@@ -30,12 +29,17 @@ public class Lego {
 
 	public static void main(String[] agrgs) {
 
-		// need some initialisation
-		Dbg.initSerWait();
 
-		Dbg.wr("Hello World from JAVA!");
+		System.out.println("Hello LEGO world!");
 
-		RtThread rt = new RtThread(10, 100) {
+		for (;;) {
+			Native.wr(M_EN1|M_1A, Const.IO_LEGO);
+			RtThread.sleepMs(500);
+			Native.wr(M_EN1|M_1A, Const.IO_LEGO);
+			RtThread.sleepMs(500);
+		}
+		/*-
+		new RtThread(10, 100) {
 			public void run() {
 
 				int cnt = 0;
@@ -60,7 +64,9 @@ public class Lego {
 
 		RtThread.startMission();
 
-		forever();
+		//forever();
+		for (;;) ;
+		*/
 	}
 
 	static void forever() {
@@ -164,8 +170,7 @@ public class Lego {
 		Native.wr(motor, IO_MOTOR);
 
 		if ((mcnt&127)==0) {
-			Dbg.intVal(sum);
-			Dbg.lf();
+			System.out.println(sum);
 		}
 /*
 		if (mcnt==100) {
