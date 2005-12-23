@@ -42,13 +42,20 @@ public class Const {
 	// FTDI USB interface
 	// We use the same status/data interface as for the
 	// UART connected to SimpCon
+	//
+	// Take care, System.out (JVWHelp.wr()) writes to
+	// the USB port!
+	//
 	public static final int IO_USB_STATUS = IO_BASE+0x20;
 	public static final int IO_USB_DATA = IO_BASE+0x20+1;
 
-	// use neagitve base address for fast constant load in Java
+	// Wishbone base address
 	public static final int WB_BASE = IO_BASE;
 	// AC97 interface
 	public static final int WB_AC97 = WB_BASE+0x30;
+
+	// LEGO stuff
+	public static final int IO_LEGO = IO_BASE+0x30;
 
 	// BG263
 	// TODO: change iobg
