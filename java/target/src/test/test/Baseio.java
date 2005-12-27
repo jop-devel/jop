@@ -16,7 +16,12 @@ class Baseio {
 		int cnt = 5;
 		int o = 0x08;
 
-		Dbg.init();
+		/*-
+		 * test DTR and switch baud rate, HW hs
+		Serial ser = new Serial(Const.IO_UART1_BASE);
+		// switches also baud rate to 2400
+		ser.setDTR(true);
+		*/
 		for (;;) {
 
 			i = Native.rd(Const.IO_IN);
