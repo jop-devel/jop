@@ -11,15 +11,15 @@ package com.jopdesign.sys;
  */
 public class GC {
 	
-	final static int FIX_HANDLES = 400;
+//	final static int FIX_HANDLES = 400;
 	static final int HANDLE_SIZE = 6;
 	
 	static int mem_start;		// read from memory
 	// get a effective heap size with fixed handle count
 	// for our RT-GC tests
-	static final int MEM_SIZE = 100*1024/4 + FIX_HANDLES*HANDLE_SIZE;
+//	static final int MEM_SIZE = 100*1024/4 + FIX_HANDLES*HANDLE_SIZE;
 //	static final int MEM_SIZE = 30000;
-//	static final int MEM_SIZE = 256000; // in words (262144)
+	static final int MEM_SIZE = 256000; // in words (262144)
 	static int full_heap_size;
 	/**
 	 * The handle contains following data:
@@ -101,13 +101,13 @@ public class GC {
 		addrStaticRefs = addr;
 		
 		mem_start = Native.rdMem(0);
-//		full_heap_size = MEM_SIZE-mem_start;
-//		handle_cnt = full_heap_size/2/(TYPICAL_OBJ_SIZE+HANDLE_SIZE);
+		full_heap_size = MEM_SIZE-mem_start;
+		handle_cnt = full_heap_size/2/(TYPICAL_OBJ_SIZE+HANDLE_SIZE);
 		// we use fixed handles and a fixed heap size for the tests:
 		full_heap_size = MEM_SIZE;
 		
 		
-		handle_cnt = FIX_HANDLES;
+//		handle_cnt = FIX_HANDLES;
 		semi_size = (full_heap_size-handle_cnt*HANDLE_SIZE)/2;
 		
 		heapStartA = mem_start+handle_cnt*HANDLE_SIZE;
