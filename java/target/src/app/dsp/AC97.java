@@ -148,25 +148,6 @@ public class AC97 {
 //			}
 			
 
-			i = (i+1) & 0xffff;
-			j = i;
-			if (j>0x7fff) {
-				j = 0xffff-i;
-			}
-			
-			v1 = left & 0xffff;
-			v2 = left >>> 16;
-//			v1 = ((v1*j)>>15)&0xffff;
-//			v2 = ((v2*j)>>15)&0xffff;
-			left = (v2<<16)+v1; 
-			
-
-			v1 = right & 0xffff;
-			v2 = right >>> 16;
-//			v1 = (v1*(0x7fff-j))>>16;
-//			v2 = (v2*(0x7fff-j))>>16;
-			right = (v2<<16)+v1; 
-
 			Native.wrMem(left, Const.WB_AC97+OCH0);
 			Native.wrMem(right, Const.WB_AC97+OCH1);
 		}
