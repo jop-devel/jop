@@ -10,7 +10,7 @@
 --
 --		0x00 0-3		system clock counter, us counter, timer int, wd bit
 --		0x10 0-1		uart (download)
---		0x20			LEGO interface
+--		0x30			LEGO interface
 --
 --	status word in uarts:
 --		0	uart transmit data register empty
