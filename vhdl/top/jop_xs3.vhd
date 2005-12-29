@@ -317,18 +317,18 @@ end process;
 			jbc_addr => jbc_addr,
 			jbc_data => jbc_data,
 
-			addr => sc_addr,
+			address => sc_address,
 			wr_data => sc_wr_data,
 			rd => sc_rd,
 			wr => sc_wr,
 			rd_data => sc_rd_data,
-			bsy_cnt => sc_bsy_cnt
+			rdy_cnt => sc_rdy_cnt
 		);
 
 	cmp_scm: entity work.sc_mem_if
 		generic map (
 			ram_ws => ram_cnt-1,
-			rom_cnt => rom_cnt,
+			rom_ws => rom_cnt-1,
 			addr_bits => 18
 		)
 		port map (
@@ -348,18 +348,7 @@ end process;
 			ram_dout_en	=> ram_dout_en,
 			ram_ncs => ram_ncs,
 			ram_noe => ram_noe,
-			ram_nwe => ram_nwe,
-
-			-- TODO: should be removed when we
-			-- have two versions of the sc_memory
-			fl_a => open,
-			fl_d => open,
-			fl_ncs => open,
-			fl_ncsb => open,
-			fl_noe => open,
-			fl_nwe => open,
-			fl_rdy => '1'
-
+			ram_nwe => ram_nwe
 		);
 
 	process(ram_dout_en, ram_dout)
