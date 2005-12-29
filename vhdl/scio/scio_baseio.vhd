@@ -234,7 +234,7 @@ end scio;
 
 architecture rtl of scio is
 
-	constant SLAVE_CNT : integer := 5;
+	constant SLAVE_CNT : integer := 6;
 	-- SLAVE_CNT <= 2**DECODE_BITS
 	constant DECODE_BITS : integer := 3;
 	-- number of bits that can be used inside the slave
@@ -366,6 +366,8 @@ rdy_cnt <= "00";
 
 	-- slave 2 is reserved for USB and System.out writes to it!!!
 
+	-- slave 3 is reserved for TAL simulation on the PC
+
 	--
 	--	TAL stuff (IO ports, sigdel converter)
 	--
@@ -379,10 +381,10 @@ rdy_cnt <= "00";
 
 			address => address(SLAVE_ADDR_BITS-1 downto 0),
 			wr_data => wr_data,
-			rd => sc_rd(3),
-			wr => sc_wr(3),
-			rd_data => sc_dout(3),
-			rdy_cnt => sc_rdy_cnt(3),
+			rd => sc_rd(4),
+			wr => sc_wr(4),
+			rd_data => sc_dout(4),
+			rdy_cnt => sc_rdy_cnt(4),
 
 			i => r(20 downto 11),		-- input pins
 			lo => lo,					-- LEDs
@@ -421,10 +423,10 @@ rdy_cnt <= "00";
 
 			address => address(SLAVE_ADDR_BITS-1 downto 0),
 			wr_data => wr_data,
-			rd => sc_rd(4),
-			wr => sc_wr(4),
-			rd_data => sc_dout(4),
-			rdy_cnt => sc_rdy_cnt(4),
+			rd => sc_rd(5),
+			wr => sc_wr(5),
+			rd_data => sc_dout(5),
+			rdy_cnt => sc_rdy_cnt(5),
 
 			isa_d => l(9 downto 2),			-- data bus
 			isa_a => isa_a,					-- address bus

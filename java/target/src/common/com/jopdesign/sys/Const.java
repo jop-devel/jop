@@ -38,15 +38,15 @@ public class Const {
 	public static final int MSK_UA_RDRF = 2;
 
 	// TAL, baseio (scio_baseio.vhd)
-	public static final int IO_IN = IO_BASE+0x30+0;
-	public static final int IO_LED = IO_BASE+0x30+0;
-	public static final int IO_OUT = IO_BASE+0x30+1;
-	public static final int IO_ADC1 = IO_BASE+0x30+1;
-	public static final int IO_ADC2 = IO_BASE+0x30+2;
-	public static final int IO_ADC3 = IO_BASE+0x30+3;
+	public static final int IO_IN = IO_BASE+0x40+0;
+	public static final int IO_LED = IO_BASE+0x40+0;
+	public static final int IO_OUT = IO_BASE+0x40+1;
+	public static final int IO_ADC1 = IO_BASE+0x40+1;
+	public static final int IO_ADC2 = IO_BASE+0x40+2;
+	public static final int IO_ADC3 = IO_BASE+0x40+3;
 	// ISA bus for the CS8900
-	public static final int IO_CTRL = IO_BASE+0x40+0;
-	public static final int IO_DATA = IO_BASE+0x40+1;
+	public static final int IO_CTRL = IO_BASE+0x50+0;
+	public static final int IO_DATA = IO_BASE+0x50+1;
 
 	// dspio (scio_dpsio.vhd)
 	//
