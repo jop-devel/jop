@@ -25,41 +25,39 @@
 
 # Project-Wide Assignments
 # ========================
+set_global_assignment -name SMART_RECOMPILE OFF
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION 4.0
-set_global_assignment -name PROJECT_CREATION_TIME_DATE "02:30:11  APRIL 04, 2004"
-set_global_assignment -name LAST_QUARTUS_VERSION 5.0
-set_global_assignment -name CDF_FILE jop.cdf
+set_global_assignment -name PROJECT_CREATION_TIME_DATE "02:05:59  APRIL 04, 2004"
+set_global_assignment -name LAST_QUARTUS_VERSION 5.1
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_types_60.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/wishbone/wb_pack.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/wishbone/wb_test_slave.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/wishbone/wb_top.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc_pll.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/io/iotal.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/io/uart_tal.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/io/cnt.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/io/fifo.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/io/isa.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/io/sigdel.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/fifo.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_uart_tal.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_cnt.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_isa.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/sigdel.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/scio_baseio.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/offtbl.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/jtbl.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/rom.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/aram.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/bcfetch.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/core.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/core/extension.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/decode.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/fetch.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/core/mem32.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/memory/sc_sram32_flash.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc_jbc.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/memory/mem_sc.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/core/extension.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/cache.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/mul.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/shift.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/stack.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jopcyc.vhd
+set_global_assignment -name CDF_FILE jop.cdf
 
 # Pin & Location Assignments
 # ==========================
-set_global_assignment -name RESERVE_PIN "AS INPUT TRI-STATED"
 set_location_assignment PIN_152 -to clk
 set_location_assignment PIN_80 -to dummy_gnd[0]
 set_location_assignment PIN_96 -to dummy_gnd[1]
@@ -246,19 +244,38 @@ set_location_assignment PIN_153 -to ser_rxd
 set_location_assignment PIN_178 -to ser_txd
 set_location_assignment PIN_166 -to wd
 
+# Timing Assignments
+# ==================
+set_global_assignment -name IGNORE_CLOCK_SETTINGS OFF
+set_global_assignment -name INCLUDE_EXTERNAL_PIN_DELAYS_IN_FMAX_CALCULATIONS OFF
+set_instance_assignment -name TCO_REQUIREMENT "9 ns" -from * -to ram*
+set_instance_assignment -name TSU_REQUIREMENT "9 ns" -from * -to ram*
+
 # Analysis & Synthesis Assignments
 # ================================
-set_global_assignment -name DEVICE_FILTER_PACKAGE "ANY QFP"
-set_global_assignment -name DEVICE_FILTER_PIN_COUNT 240
+set_global_assignment -name MUX_RESTRUCTURE AUTO
+set_global_assignment -name SAVE_DISK_SPACE OFF
+set_global_assignment -name DEVICE_FILTER_SPEED_GRADE ANY
 set_global_assignment -name FAMILY Cyclone
+set_global_assignment -name CYCLONE_OPTIMIZATION_TECHNIQUE SPEED
 set_global_assignment -name TOP_LEVEL_ENTITY jop
-set_global_assignment -name AUTO_ENABLE_SMART_COMPILE On
 
 # Fitter Assignments
 # ==================
 set_global_assignment -name DEVICE EP1C6Q240C8
 set_global_assignment -name CYCLONE_CONFIGURATION_SCHEME "PASSIVE SERIAL"
 set_global_assignment -name RESERVE_ALL_UNUSED_PINS "AS INPUT TRI-STATED"
+set_global_assignment -name OPTIMIZE_TIMING "NORMAL COMPILATION"
+set_global_assignment -name FINAL_PLACEMENT_OPTIMIZATION ALWAYS
+set_global_assignment -name SEED 5
+set_global_assignment -name AUTO_PACKED_REGISTERS_CYCLONE AUTO
+set_global_assignment -name PHYSICAL_SYNTHESIS_COMBO_LOGIC OFF
+set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_DUPLICATION OFF
+set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_RETIMING OFF
+set_global_assignment -name PHYSICAL_SYNTHESIS_EFFORT NORMAL
+set_global_assignment -name ROUTER_REGISTER_DUPLICATION ON
+set_global_assignment -name INC_PLC_MODE OFF
+set_global_assignment -name ROUTING_BACK_ANNOTATION_MODE OFF
 set_instance_assignment -name IO_STANDARD LVCMOS -to clk
 set_instance_assignment -name IO_STANDARD LVCMOS -to dummy_gnd[0]
 set_instance_assignment -name IO_STANDARD LVCMOS -to dummy_gnd[1]
@@ -445,17 +462,17 @@ set_instance_assignment -name IO_STANDARD LVCMOS -to ser_rxd
 set_instance_assignment -name IO_STANDARD LVCMOS -to ser_txd
 set_instance_assignment -name IO_STANDARD LVCMOS -to wd
 set_global_assignment -name STRATIX_DEVICE_IO_STANDARD LVCMOS
+set_global_assignment -name ERROR_CHECK_FREQUENCY_DIVISOR 1
 
 # Assembler Assignments
 # =====================
-set_global_assignment -name USE_CONFIGURATION_DEVICE OFF
 set_global_assignment -name GENERATE_TTF_FILE ON
 set_global_assignment -name RESERVE_ALL_UNUSED_PINS_NO_OUTPUT_GND "AS INPUT TRI-STATED"
 set_global_assignment -name AUTO_RESTART_CONFIGURATION OFF
 
 # Simulator Assignments
 # =====================
-set_global_assignment -name GLITCH_INTERVAL 1
+set_global_assignment -name GLITCH_INTERVAL "1 ns"
 
 # Design Assistant Assignments
 # ============================
@@ -466,8 +483,32 @@ set_global_assignment -name DRC_REPORT_FANOUT_EXCEEDING OFF
 # ========================
 set_global_assignment -name HUB_ENTITY_NAME SLD_HUB
 set_global_assignment -name HUB_INSTANCE_NAME SLD_HUB_INST
-set_global_assignment -name ENABLE_SIGNALTAP Off
 
 # LogicLock Region Assignments
 # ============================
 set_global_assignment -name LOGICLOCK_INCREMENTAL_COMPILE_ASSIGNMENT OFF
+
+# -----------------
+# start ENTITY(jop)
+
+	# Pin & Location Assignments
+	# ==========================
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to ram*_a
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to ram*_d
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to ram*_noe
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to ram*_d
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to ram*_ncs
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to ram*_nwe
+
+# end ENTITY(jop)
+# ---------------
+
+set_global_assignment -name OPTIMIZE_HOLD_TIMING OFF
+
+set_global_assignment -name VECTOR_WAVEFORM_FILE jop.vwf
+
+set_global_assignment -name DEVICE_FILTER_PIN_COUNT 240
+set_global_assignment -name FMAX_REQUIREMENT "20 MHz" -section_id clk
+set_instance_assignment -name CLOCK_SETTINGS clk -to clk
+
+set_global_assignment -name ENABLE_CLOCK_LATENCY ON

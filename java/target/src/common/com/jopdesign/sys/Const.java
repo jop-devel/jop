@@ -37,6 +37,17 @@ public class Const {
 	public static final int MSK_UA_TDRE = 1;
 	public static final int MSK_UA_RDRF = 2;
 
+	// TAL, baseio (scio_baseio.vhd)
+	public static final int IO_IN = IO_BASE+0x30+0;
+	public static final int IO_LED = IO_BASE+0x30+0;
+	public static final int IO_OUT = IO_BASE+0x30+1;
+	public static final int IO_ADC1 = IO_BASE+0x30+1;
+	public static final int IO_ADC2 = IO_BASE+0x30+2;
+	public static final int IO_ADC3 = IO_BASE+0x30+3;
+	// ISA bus for the CS8900
+	public static final int IO_CTRL = IO_BASE+0x40+0;
+	public static final int IO_DATA = IO_BASE+0x40+1;
+
 	// dspio (scio_dpsio.vhd)
 	//
 	// FTDI USB interface
@@ -46,6 +57,8 @@ public class Const {
 	// Take care, System.out (JVWHelp.wr()) writes to
 	// the USB port!
 	//
+	// use a better address some time (higher address)
+	//
 	public static final int IO_USB_STATUS = IO_BASE+0x20;
 	public static final int IO_USB_DATA = IO_BASE+0x20+1;
 
@@ -54,7 +67,7 @@ public class Const {
 	// AC97 interface
 	public static final int WB_AC97 = WB_BASE+0x30;
 
-	// LEGO stuff
+	// LEGO stuff (scio_lego.vhd)
 	public static final int IO_LEGO = IO_BASE+0x30;
 
 	// BG263
@@ -72,17 +85,7 @@ public class Const {
 	//
 	public static final int IO_DISP = IO_BASE+0x40;
 	public static final int IO_BG = IO_BASE+0x50;
-	// TAL
-	// TODO: change iobaseio
-	// TODO: change constants - 0x30 is a dummy value
-	public static final int IO_IN = IO_BASE+0x30+10;
-	public static final int IO_LED = IO_BASE+0x30+10;
-	public static final int IO_OUT = IO_BASE+0x30+11;
-	public static final int IO_ADC1 = IO_BASE+0x30+12;
-	public static final int IO_ADC2 = IO_BASE+0x30+13;
-	public static final int IO_ADC3 = IO_BASE+0x30+8;
-	public static final int IO_CTRL = IO_BASE+0x30+14;
-	public static final int IO_DATA = IO_BASE+0x30+15;
+	
 	// OSSI
 	public static final int IO_PWM = IO_BASE+0x30+6;
 	
