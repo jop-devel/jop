@@ -494,8 +494,11 @@ public class GC {
 //		for (int i=1; i<size; ++i) {
 //			Native.wrMem(0, allocPtr+i);		// zero array
 //		}
-		
-		logAlloc();
+	
+		// this is for debugging/paper
+		// use ONLY when the maximum heap size is lower than the
+		// actaul memory!!!
+//		logAlloc();
 		
 		return ref;
 		
