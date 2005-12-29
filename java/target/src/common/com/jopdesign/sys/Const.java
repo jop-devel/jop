@@ -74,8 +74,9 @@ public class Const {
 	// TODO: change iobg
 	// new naming for UART base address
 	public static final int IO_UART1_BASE = IO_BASE+0x10;
-	public static final int IO_UART_BG_MODEM_BASE = IO_BASE+0x20;
-	public static final int IO_UART_BG_GPS_BASE = IO_BASE+0x30;
+	// avoid 0x20, the USB port
+	public static final int IO_UART_BG_MODEM_BASE = IO_BASE+0x30;
+	public static final int IO_UART_BG_GPS_BASE = IO_BASE+0x40;
 	// these are used in Testprog - substitute them
 	// some time by the new names
 	public static final int IO_STATUS2 = IO_UART_BG_MODEM_BASE;
@@ -83,8 +84,8 @@ public class Const {
 	public static final int IO_STATUS3 = IO_UART_BG_GPS_BASE;
 	public static final int IO_UART3 = IO_UART_BG_GPS_BASE+1;
 	//
-	public static final int IO_DISP = IO_BASE+0x40;
-	public static final int IO_BG = IO_BASE+0x50;
+	public static final int IO_DISP = IO_BASE+0x50;
+	public static final int IO_BG = IO_BASE+0x60;
 	
 	// OSSI
 	public static final int IO_PWM = IO_BASE+0x30+6;
