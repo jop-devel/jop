@@ -1,8 +1,7 @@
 --
---	scio_min.vhd
+--	scio_baseio.vhd
 --
---	io devices for minimal configuration
---	only counter, wd and serial line, alle io pins are tri statet
+--	io devices for baseio print (TAL)
 --
 --
 --	io address mapping:
