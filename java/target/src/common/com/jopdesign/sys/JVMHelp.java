@@ -1,7 +1,5 @@
 package com.jopdesign.sys;
 
-import joprt.RtThread;
-
 //
 //	I don't like to make JVMHelp public, but I need it in java.io.PrintStream
 //
@@ -14,7 +12,7 @@ public class JVMHelp {
 	//
 	public static void interrupt() {
 // RtThread.ts0 = Native.rd(Const.IO_US_CNT);
-		RtThread.schedule();
+		RtThreadImpl.schedule();
 // Scheduler.schedInt();
 	}
 

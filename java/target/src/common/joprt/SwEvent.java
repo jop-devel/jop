@@ -4,15 +4,13 @@ public class SwEvent extends RtThread {
 
 
 	public SwEvent(int priority, int minTime) {
+
 		super(priority, minTime);
-isEvent = true;
+		thr.setEvent();
 	}
 
 	public final void fire() {
-		event[this.nr] = EV_FIRED;
-		// if prio higher...
-// should not be allowed befor startMission
-		RtThread.genInt();
+		thr.fire();
 	}
 
 	public final void run() {
@@ -26,8 +24,7 @@ if (event[this.nr] == EV_WAITING) {
 
 		for (;;) {
 			handle();
-			event[this.nr] = EV_WAITING;
-			RtThread.genInt();
+			thr.blockEvent();
 		}
 	}
 
