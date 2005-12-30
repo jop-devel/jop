@@ -18,8 +18,8 @@ public class GC {
 	// get a effective heap size with fixed handle count
 	// for our RT-GC tests
 //	static final int MEM_SIZE = 100*1024/4 + FIX_HANDLES*HANDLE_SIZE;
-//	static final int MEM_SIZE = 30000;
-	static final int MEM_SIZE = 256000; // in words (262144)
+	static final int MEM_SIZE = 30000;
+//	static final int MEM_SIZE = 256000; // in words (262144)
 	static int full_heap_size;
 	/**
 	 * The handle contains following data:
@@ -222,18 +222,35 @@ public class GC {
 	static void getRoots() {
 
 		synchronized (mutex) {
+			int i, j;
 			// add static refs to root list
 			int addr = Native.rdMem(addrStaticRefs);
 			int cnt = Native.rdMem(addrStaticRefs+1);
-			for (int i=0; i<cnt; ++i) {
+			for (i=0; i<cnt; ++i) {
 				push(Native.rdMem(addr+i));
 			}
-			// add complete stack to the root list
-			int i = Native.getSP();
-			for (int j=128; j<=i; ++j) {
+			// add complete stack of the current thread to the root list
+			i = Native.getSP();
+			for (j=128; j<=i; ++j) {
 				push(Native.rdIntMem(j));
 			}
-			// TODO: add other threads stacks
+			// Stacks from the other threads
+			cnt = RtThreadImpl.getCnt();
+			for (i=0; i<cnt; ++i) {
+				// can we allocate objects here???
+				// better don't do it....
+//				System.out.print("thread stack ");
+//				System.out.println(i);
+				int[] mem = RtThreadImpl.getStack(i);
+				int sp = RtThreadImpl.getSP(i)-128;		// sp starts at 128
+//				System.out.print("sp=");
+//				System.out.println(sp);
+				for (j=0; j<=sp; ++j) {
+					push(mem[j]);
+				}
+			}
+			// TODO: and what happens when the stack gets changed during
+			// GC?
 		}
 	}
 	

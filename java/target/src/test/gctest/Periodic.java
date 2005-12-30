@@ -7,26 +7,24 @@ package gctest;
 import util.Timer;
 import joprt.RtThread;
 
-import com.jopdesign.sys.Const;
 import com.jopdesign.sys.GC;
-import com.jopdesign.sys.Native;
 
 public class Periodic {
 
-	static final int SIZE = 100;
-	static int[] ia;
+	static final int SIZE = 1000;
+//	static int[] ia;
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) {
 		
-		new RtThread(2, 100000) {
+		new RtThread(2, 50000) {
 			public void run() {
 
 				int i, iteration = 0;
 //				This does not work because we don't get the
 //				roots from the other threads!
-//				int [] ia = null;
+				int [] ia = null;
 				
 				waitForNextPeriod();
 
@@ -64,7 +62,7 @@ public class Periodic {
 		//
 		// GC thread
 		//
-		new RtThread(1, 200000) {
+		new RtThread(1, 500000) {
 			public void run() {
 
 				GC.setConcurrent();

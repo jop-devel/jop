@@ -127,6 +127,7 @@ public class RtThreadImpl {
 //System.out.println("b");
 
 		stack = new int[MAX_STACK];
+		sp = 128;	// default empty stack for GC before startMission()
 //		System.out.print(MAX_STACK);
 //		System.out.println("c");
 for (int i=0; i<MAX_STACK; ++i) {
@@ -536,15 +537,19 @@ public static int ts0, ts1, ts2, ts3, ts4;
 //  stack while assembling it. Then some writebarrier should protect the 
 //  references and downgrade the GC state from black to grey?
 
-	public static int[] getStack(int num) {
+	static int[] getStack(int num) {
 		return ref[num].stack;
 	}
 
-	public static int getSP(int num) {
+	static int getSP(int num) {
 		return ref[num].sp;
 	}
 
-	public static int getActive() {
+	static int getCnt() {
+		return cnt;
+	}
+	
+	static int getActive() {
 		return active;
 	}
 
