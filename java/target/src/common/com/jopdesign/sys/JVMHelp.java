@@ -71,8 +71,6 @@ wrByte(pc);
 
 	static void noim() {
 
-Object o = new Object();
-synchronized (o) {
 		int i;
 		wr('n');
 		wr('i');
@@ -93,6 +91,9 @@ wr(' ');
 		for (i=(pc&0x03); i<3; ++i) val >>= 8;
 		val &= 0xff;
 		wrByte(val);
+
+Object o = new Object();
+synchronized (o) {
 
 		System.out.println();
 		System.out.print("JOP: bytecode ");
