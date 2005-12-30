@@ -18,8 +18,8 @@ public class GC {
 	// get a effective heap size with fixed handle count
 	// for our RT-GC tests
 //	static final int MEM_SIZE = 100*1024/4 + FIX_HANDLES*HANDLE_SIZE;
-	static final int MEM_SIZE = 30000;
-//	static final int MEM_SIZE = 256000; // in words (262144)
+//	static final int MEM_SIZE = 30000;
+	static final int MEM_SIZE = 256000; // in words (262144)
 	static int full_heap_size;
 	/**
 	 * The handle contains following data:
