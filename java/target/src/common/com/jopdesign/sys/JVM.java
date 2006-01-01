@@ -509,6 +509,7 @@ synchronized (o) {
 	private static int f_checkcast(int objref, int cons) {
 // TODO: implement it
 // util.Dbg.wr("checkcast");
+// ECM needs it...
 JVMHelp.noim();
 		return objref;
 	}
