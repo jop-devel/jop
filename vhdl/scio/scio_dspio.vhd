@@ -34,6 +34,7 @@ use IEEE.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 use work.jop_types.all;
+use work.jop_config.all;
 use work.wb_pack.all;
 
 entity scio is
