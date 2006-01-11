@@ -1,18 +1,13 @@
 --
---	jop_types_60.vhd
+--	jop_types.vhd
 --
---	package for 60MHz definitions
+--	package type definitions definitions
 --
 
 library ieee;
 use ieee.std_logic_1164.all;
 
 package jop_types is
-
-	-- constants for 20MHz input and 60MHz internal clock
-	constant clk_freq : integer := 60000000;
-	constant pll_mult : natural := 3;
-	constant pll_div : natural := 1;
 
 	type io_ports is record
 		l	: std_logic_vector(20 downto 1);
