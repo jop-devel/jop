@@ -76,8 +76,11 @@ public class MethodInfo {
 			len = (m.getCode().getCode().length + 3)/4;
 
 			if (len>=JOPizer.METHOD_MAX_SIZE/4 || mreallocals>31 || margs>31) {
-				System.err.println("wrong size: "+cli.clazz.getClassName()+"."+methodId);
-				System.exit(-1);
+				// we interprete clinit on JOP - no size restriction
+				if (!m.getName().equals("<clinit>")) {
+					System.err.println("wrong size: "+cli.clazz.getClassName()+"."+methodId);
+					System.exit(-1);					
+				}
 			}
 //System.out.println((mstack+m.getCode().getMaxLocals())+" "+
 //		m.getName()+" maxStack="+mstack+" locals="+m.getCode().getMaxLocals());
