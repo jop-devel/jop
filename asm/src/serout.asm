@@ -50,7 +50,7 @@ c			?
 			nop
 			nop
 sys_init:
-			ldi	127
+			ldi	128
 			nop			// written in adr/read stage!
 			stsp
 

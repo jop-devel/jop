@@ -34,7 +34,7 @@ c			?
 //
 			nop
 			nop
-			ldi	127
+			ldi	128
 			nop			// written in adr/read stage!
 			stsp
 

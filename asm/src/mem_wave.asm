@@ -56,7 +56,7 @@ addr		?			// address used for bc load from flash
 			nop			// this gets never executed
 			nop			// for shure during reset (perhaps two times executed)
 
-			ldi	127
+			ldi	128
 			nop			// written in adr/read stage!
 			stsp		// someting strange in stack.vhd A->B !!!
 
