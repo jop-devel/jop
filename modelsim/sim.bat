@@ -3,7 +3,8 @@ rem set options=-93 -quiet -check_synthesis -lint -pedanticerrors
 set options=-93 -quiet
 rmdir /S/Q work
 vlib work
-vcom %options% %jopdir%/simulation/sim_jop_types_100.vhd
+vcom %options% %jopdir%/simulation/sim_jop_config_100.vhd
+vcom %options% %jopdir%/top/jop_types.vhd
 vcom %options% %jopdir%/simulation/sim_ram.vhd
 vcom %options% %jopdir%/simulation/sim_pll.vhd
 vcom %options% %jopdir%/simulation/sim_jbc.vhd
