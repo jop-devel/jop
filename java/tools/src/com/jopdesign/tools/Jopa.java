@@ -293,6 +293,7 @@ public class Jopa {
 			line += "port (\n";
 			line += "\tbcode\t: in std_logic_vector(7 downto 0);\n";
 			line += "\tint_pend\t: in  std_logic;\n";
+			line += "\texc_pend\t: in  std_logic;\n";			
 			line += "\tq\t\t: out std_logic_vector("+(ADDRBITS-1)+" downto 0)\n";
 			line += ");\n";
 			line += "end jtbl;\n";
@@ -351,6 +352,7 @@ public class Jopa {
 
 			int noim_address = 0;
 			int int_address = 0;
+			int exc_address = 0;
 
 			while (in.nextToken() != StreamTokenizer.TT_EOF) {
 				in.pushBack();
@@ -361,6 +363,8 @@ public class Jopa {
 					++ji_cnt;
 					if (JopInstr.name(l.jinstr).equals("sys_int")) {
 						int_address = pc;
+					} else if (JopInstr.name(l.jinstr).equals("sys_exc")) {
+							exc_address = pc;
 					} else if (JopInstr.name(l.jinstr).equals("sys_noim")) {
 						noim_address = pc;
 					} else {
@@ -461,10 +465,13 @@ public class Jopa {
 			line += "\tend case;\n";
 			line += "end process;\n";
 			line += "\n";
-			line += "process(int_pend, addr) begin\n";
+			line += "process(int_pend, exc_pend, addr) begin\n";
 			line += "\n";
 			line += "\tq <= addr;\n";
-			line += "\tif int_pend='1' then\n";
+			line += "\tif exc_pend='1' then\n";
+			line += "\t\tq <= \""+bin(exc_address, ADDRBITS)+
+							"\";\t\t--\t"+hex(exc_address,4)+"\tsys_exc\n";
+			line += "\telsif int_pend='1' then\n";
 			line += "\t\tq <= \""+bin(int_address, ADDRBITS)+
 							"\";\t\t--\t"+hex(int_address,4)+"\tsys_int\n";
 			line += "\tend if;\n";

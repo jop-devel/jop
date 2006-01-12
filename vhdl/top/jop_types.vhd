@@ -16,6 +16,10 @@ package jop_types is
 		b	: std_logic_vector(10 downto 1);
 	end record;
 
+	type exception_type is record
+		spov	: std_logic;
+	end record;
+
 end jop_types;
 
 package body jop_types is

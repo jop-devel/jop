@@ -123,7 +123,7 @@ end component;
 	signal mmux		: std_logic_vector(width-1 downto 0);
 
 	signal rmux		: std_logic_vector(jpc_width-1 downto 0);
-	signal smux		: std_logic_vector(addr_width-1 downto 0);
+	signal smux		: std_logic_vector(addr_width-2 downto 0);
 	signal vpadd	: std_logic_vector(addr_width-1 downto 0);
 	signal wraddr	: std_logic_vector(addr_width-1 downto 0);
 	signal rdaddr	: std_logic_vector(addr_width-1 downto 0);
@@ -301,15 +301,16 @@ process(a, sp, spm, spp, sel_smux)
 
 begin
 
+	-- sp(addr_width-1) == '1'
 	case sel_smux is
 		when "00" =>
-			smux <= sp;
+			smux <= sp(addr_width-2 downto 0);
 		when "01" =>
-			smux <= spm;
+			smux <= spm(addr_width-2 downto 0);
 		when "10" =>
-			smux <= spp;
+			smux <= spp(addr_width-2 downto 0);
 		when "11" =>
-			smux <= a(addr_width-1 downto 0);
+			smux <= a(addr_width-2 downto 0);
 		when others =>
 			null;
 	end case;
@@ -373,7 +374,7 @@ begin
 --		spm <= std_logic_vector(to_unsigned(0, addr_width));	-- just for the compiler
 sp <= "10000000";
 spp <= "10000001";
-spm <= "01111111";
+spm <= "10000000"; -- just avoid a leading zero
 sp_ov <= '0';
 		vp0 <= std_logic_vector(to_unsigned(0, addr_width));
 		vp1 <= std_logic_vector(to_unsigned(0, addr_width));
@@ -383,10 +384,10 @@ sp_ov <= '0';
 		immval <= std_logic_vector(to_unsigned(0, width));		-- just for the compiler
 		opddly <= std_logic_vector(to_unsigned(0, 16));			-- just for the compiler
 	elsif rising_edge(clk) then
-		spp <= std_logic_vector(unsigned(smux) + 1);
-		spm <= std_logic_vector(unsigned(smux) - 1);
-		sp <= smux;
-		if sp(7 downto 6)="00" then
+		spp <= "1" & std_logic_vector(unsigned(smux) + 1);
+		spm <= "1" & std_logic_vector(unsigned(smux) - 1);
+		sp <= "1" & smux;
+		if sp="11111111" then
 			sp_ov <= '1';
 		end if;
 		if (ena_vp = '1') then

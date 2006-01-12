@@ -71,6 +71,7 @@
 //	2005-08-27	added boot from USB interface (dspio board)
 //	2005-12-01	IO devices are memory mapped - no more stioa, stiod, ldiod
 //	2005-12-20	Changed dspio devices (USB) to SimpCon
+//	2006-01-11	Generate HW exception and invoke JVMHelp.exception()
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -81,7 +82,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20051220
+version		= 20060111
 
 //
 //	io address are negativ memory addresses
@@ -140,7 +141,7 @@ addr		?			// address used for bc load from flash
 			nop			// this gets never executed
 			nop			// for shure during reset (perhaps two times executed)
 
-			ldi	127
+			ldi	128
 			nop			// written in adr/read stage!
 			stsp		// someting strange in stack.vhd A->B !!!
 
@@ -1174,7 +1175,7 @@ array_bound:
 			ldm	jjhp			// interrupt() is at offset 0
 								// jjhp points in method table to first
 								// method after methods inherited from Object
-			ldi	4				// second method (index 2 * 2 word);
+			ldi	4				// third method (index 2 * 2 word);
 			add
 
 			ldi	1
@@ -1200,6 +1201,28 @@ sys_int:
 			ldm	jjhp			// interrupt() is at offset 0
 								// jjhp points in method table to first
 								// method after methods inherited from Object
+
+			ldi	1
+			nop
+			bnz	invoke			// simulate invokestatic with ptr to meth. str. on stack
+			nop
+			nop
+
+
+//
+//	this is an exception, (bytecode 0xf1)
+//	call com.jopdesign.sys.JVMHelp.except()	(
+//
+sys_exc:
+			ldjpc				// correct wrong increment on jpc
+			ldi	1				//    could also be done in bcfetch.vhd
+			sub					//    but this is simpler :-)
+			stjpc
+			ldm	jjhp			// interrupt() is at offset 0
+								// jjhp points in method table to first
+			ldi	6				// forth method (index 3 * 2 word);
+			add
+
 
 			ldi	1
 			nop

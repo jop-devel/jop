@@ -89,11 +89,18 @@ add wave -noupdate -format Logic /tb_jop/cmp_jop/fl_nwe
 add wave -noupdate -format Logic /tb_jop/cmp_jop/fl_rdy
 add wave -noupdate -divider {wishbone IO}
 add wave -noupdate -divider {wb slave}
-add wave -noupdate -divider {wishbone IO end}
+add wave -noupdate -divider exception
+add wave -noupdate -format Logic /tb_jop/cmp_jop/cmp_core/sp_ov
+add wave -noupdate -format Logic /tb_jop/cmp_jop/cmp_core/cmp_bcf/exc_int
+add wave -noupdate -format Logic /tb_jop/cmp_jop/cmp_core/cmp_bcf/exc_pend
+add wave -noupdate -format Logic /tb_jop/cmp_jop/cmp_core/cmp_bcf/sys_exc
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cmp_core/cmp_bcf/jinstr
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cmp_core/cmp_bcf/jpaddr
 add wave -noupdate -divider execute
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cmp_core/cmp_stk/din
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cmp_core/cmp_stk/a
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cmp_core/cmp_stk/b
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cmp_core/cmp_stk/sp
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cmp_core/cmp_stk/cmp_ram/ram(0)
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cmp_core/cmp_stk/cmp_ram/ram(1)
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cmp_core/cmp_stk/cmp_ram/ram(2)
@@ -117,9 +124,9 @@ add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cmp_core/c
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cmp_core/cmp_stk/cmp_ram/ram(142)
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cmp_core/cmp_stk/cmp_ram/ram(143)
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {2106906 ps} 0} {{Cursor 2} {5566400 ps} 0}
+WaveRestoreCursors {{Cursor 1} {2106906 ps} 0} {{Cursor 2} {693090000 ps} 0}
 configure wave -namecolwidth 259
-configure wave -valuecolwidth 54
+configure wave -valuecolwidth 47
 configure wave -justifyvalue left
 configure wave -signalnamewidth 0
 configure wave -snapdistance 10
@@ -131,4 +138,4 @@ configure wave -gridperiod 1
 configure wave -griddelta 40
 configure wave -timeline 0
 update
-WaveRestoreZoom {4928204 ps} {5003779 ps}
+WaveRestoreZoom {692972495 ps} {693500069 ps}

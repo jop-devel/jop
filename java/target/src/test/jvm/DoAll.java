@@ -31,6 +31,7 @@ public class DoAll {
 				new Long(),
 				new MultiArray(),
 				new Switch(),
+//				new Except(),
 		};
 		
 		for (int i=0; i<tc.length; ++i) {

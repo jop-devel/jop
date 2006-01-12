@@ -24,6 +24,8 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+use work.jop_types.all;
+
 entity sc_cnt is
 
 generic (addr_bits : integer;
@@ -42,6 +44,9 @@ port (
 
 	irq		: out std_logic;
 	irq_ena	: out std_logic;
+
+	exc_req		: in exception_type;
+	exc_int		: out std_logic;
 
 	wd		: out std_logic
 );
@@ -136,6 +141,12 @@ process(clk, reset, timer_int, yield_int) begin
 end process;
 
 	irq <= timer or yield;
+
+--
+--	exception processing
+--
+
+	exc_int <= exc_req.spov;
 
 --
 --	counters

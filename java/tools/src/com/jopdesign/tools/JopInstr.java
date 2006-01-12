@@ -346,7 +346,7 @@ public class JopInstr{
 		new JopInstr("resEF", 1, IMP_NO, 1),			// 0xEF
 
 		new JopInstr("sys_int", 1, IMP_ASM, 1),			// 0xF0
-		new JopInstr("resF1", 1, IMP_NO, 1),			// 0xF1
+		new JopInstr("sys_exc", 1, IMP_ASM, 1),			// 0xF1
 		new JopInstr("resF2", 1, IMP_NO, 1),			// 0xF2
 		new JopInstr("resF3", 1, IMP_NO, 1),			// 0xF3
 		new JopInstr("resF4", 1, IMP_NO, 1),			// 0xF4

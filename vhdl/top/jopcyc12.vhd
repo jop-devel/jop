@@ -132,6 +132,7 @@ port (
 	irq			: in std_logic;
 	irq_ena		: in std_logic;
 
+	exc_int		: in std_logic;
 	sp_ov		: out std_logic;
 
 	aout		: out std_logic_vector(31 downto 0);
@@ -197,6 +198,9 @@ end component;
 	signal io_irq			: std_logic;
 	signal io_irq_ena		: std_logic;
 
+	signal exc_req			: exception_type;
+	signal exc_int			: std_logic;
+
 	signal int_res			: std_logic;
 	signal res_cnt			: unsigned(2 downto 0) := "000";	-- for the simulation
 
@@ -249,9 +253,11 @@ end process;
 			rd, wr,
 			jbc_addr, jbc_data,
 			io_irq, io_irq_ena,
-			sp_ov,
+			exc_int, sp_ov,
 			stack_tos, stack_nos
 		);
+
+	exc_req.spov <= sp_ov;
 
 	cmp_ext: entity work.extension 
 		generic map (
@@ -303,6 +309,9 @@ end process;
 
 			irq => io_irq,
 			irq_ena => io_irq_ena,
+			exc_req => exc_req,
+			exc_int => exc_int,
+			
 			txd => ser_txd,
 			rxd => ser_rxd,
 			ncts => ser_ncts,

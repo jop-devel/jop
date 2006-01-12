@@ -213,6 +213,11 @@ port (
 	irq			: out std_logic;
 	irq_ena		: out std_logic;
 
+-- exception
+
+	exc_req		: in exception_type;
+	exc_int		: out std_logic;
+
 -- serial interface
 
 	txd			: out std_logic;
@@ -318,6 +323,10 @@ rdy_cnt <= "00";
 
 			irq => irq,
 			irq_ena => irq_ena,
+
+			exc_req => exc_req,
+			exc_int => exc_int,
+			
 			wd => wd
 		);
 

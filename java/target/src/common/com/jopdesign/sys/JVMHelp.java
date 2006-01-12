@@ -66,6 +66,18 @@ wrByte(pc);
 		for (;;);
 }
 	}
+	
+	/**
+	 * Invoked on a hardware generated exception.
+	 * Currently only on stack overflow
+	 */
+	static void except() {
+		
+		JVMHelp.wr("\nException: Stack overflow");
+		trace();
+
+		for (;;);
+	}
 
 	static void noim() {
 

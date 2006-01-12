@@ -72,6 +72,7 @@ port (
 	irq			: in std_logic;
 	irq_ena		: in std_logic;
 
+	exc_int		: in std_logic;
 	sp_ov		: out std_logic;
 
 	aout		: out std_logic_vector(width-1 downto 0);
@@ -108,6 +109,8 @@ port (
 
 	irq			: in std_logic;			-- interrupt request (positiv edge sensitive)
 	irq_ena		: in std_logic;			-- interrupt enable (pendig int is fired on ena)
+
+	exc_int		: in std_logic;			-- exception interrupt
 
 	jpaddr		: out std_logic_vector(pc_width-1 downto 0);	-- address for JVM
 	opd			: out std_logic_vector(15 downto 0)				-- operands
@@ -270,6 +273,7 @@ begin
 			jfetch, jopdfetch,
 			stk_zf, stk_nf, stk_eq, stk_lt, jbr,
 			irq, irq_ena,
+			exc_int,
 			jpaddr, opd);
 
 	cmp_fch: fetch generic map (pc_width, i_width)

@@ -60,6 +60,8 @@ port (
 	irq			: in std_logic;			-- interrupt request (positiv edge sensitive)
 	irq_ena		: in std_logic;			-- interrupt enable (pendig int is fired on ena)
 
+	exc_int		: in std_logic;			-- exception interrupt
+
 	jpaddr		: out std_logic_vector(pc_width-1 downto 0);	-- address for JVM
 	opd			: out std_logic_vector(15 downto 0)				-- operands
 );
@@ -76,6 +78,7 @@ component jtbl is
 port (
 	bcode	: in std_logic_vector(7 downto 0);
 	int_pend	: in  std_logic;
+	exc_pend	: in  std_logic;
 	q		: out std_logic_vector(pc_width-1 downto 0)
 );
 end component;
@@ -103,6 +106,10 @@ end component;
 	signal int_pend		: std_logic;
 	signal sys_int		: std_logic;
 
+	signal exc_dly		: std_logic;
+	signal exc_pend		: std_logic;
+	signal sys_exc		: std_logic;
+
 	signal bytecode		: std_logic_vector(7 downto 0);
 
 begin
@@ -115,13 +122,25 @@ process(clk, reset) begin
 	if (reset='1') then
 		irq_dly <= '0';
 		int_pend <= '0';
+
+		exc_dly <= '0';
+		exc_pend <= '0';
+
 	elsif rising_edge(clk) then
 
 		irq_dly <= irq_gate;
+		exc_dly <= exc_int;
+
 		if trig='1' then
 			int_pend <= '1';
 		elsif sys_int='1' or irq_ena='0' then
 			int_pend <= '0';
+		end if;
+
+		if exc_int='1' and exc_dly='0' then
+			exc_pend <= '1';
+		elsif sys_exc='1' then
+			exc_pend <= '0';
 		end if;
 	end if;
 
@@ -130,6 +149,8 @@ end process;
 	irq_gate <= irq and irq_ena;
 	trig <= irq_gate and not irq_dly;
 	sys_int <= int_pend and jfetch;
+
+	sys_exc <= exc_pend and jfetch;
 
 --
 --	bytecode mux on interrupt
@@ -147,7 +168,7 @@ end process;
 
 	bytecode <= jbc_q;		-- register this for an additional pipeline stage
 
-	cmp_jtbl: jtbl port map(bytecode, int_pend, jpaddr);
+	cmp_jtbl: jtbl port map(bytecode, int_pend, exc_pend, jpaddr);
 
 	jbc_addr <= jbc_mux;
 	jbc_q <= jbc_data;
