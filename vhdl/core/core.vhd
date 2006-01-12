@@ -33,6 +33,7 @@
 --	2003-08-14	moved bcfetch from fetch to core
 --	2004-10-07	new alu selection with sel_sub, sel_amux and ena_a
 --	2004-10-08	mul operands from a and b, single instruction
+--	2006-01-12	new ar for local memory addressing
 --
 
 
