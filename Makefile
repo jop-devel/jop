@@ -24,7 +24,7 @@ COM_FLAG=-e
 #COM_FLAG=-e -usb
 
 # 'some' different Quartus projects
-QPROJ=cycmin cyc12min cycbaseio cycbg dspio lego
+QPROJ=cycmin cycbaseio cycbg dspio lego
 # if you want to build only one Quartus project use e.q.:
 QPROJ=cycmin
 
@@ -92,7 +92,6 @@ all: directories tools jopser japp
 
 japp: java_app download
 
-# TODO: add USB device to SimpCon!
 
 # use this for USB download of FPGA configuration
 # and Java program download
