@@ -13,15 +13,15 @@
 --
 --	address mapping:
 --
---		0	io-address
---		1	io	read/write
+--		0	free (former IO address)
+--		1	free (former IO data read/write)
 --		2	st	mem_rd_addr		start read
 --		2	ld	mem_rd_data		read data
 --		3	st	wraddr		store write address
 --		4	st	mem_wr_data		start write
 --		5	ld	mul result
---		5	st	mul operand a
---		6	st	mul operand b and start mul
+--		5	st	mul operand a, b and start mul
+--		6	free
 --		7	st	start bytecode load (or cache)
 --		7	ld	read new pc base (for cache version)
 --
@@ -33,6 +33,7 @@
 --	2005-04-07	generate bsy from delayed wr or'ed with mem_bsy
 --	2005-05-30	added wishbone interface
 --	2005-11-28	Substitute WB interface by the SimpCon IO interface ;-)
+--				All IO devices are now memory mapped
 --
 
 
