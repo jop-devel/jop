@@ -37,8 +37,8 @@ public class Instruction {
 		new Instruction("sub", 0x05, false, false),
 
 //	'direct' IO	3 bits
-		new Instruction("stioa", 0x08+0, false, false),	
-		new Instruction("stiod", 0x08+1, false, false),
+//		new Instruction("stioa", 0x08+0, false, false), not used anymore	
+//		new Instruction("stiod", 0x08+1, false, false),
 
 		new Instruction("stmra", 0x08+2, false, false),
 		new Instruction("stmwa", 0x08+3, false, false),
@@ -52,11 +52,12 @@ public class Instruction {
 		new Instruction("st1", 0x10+1, false, false),
 		new Instruction("st2", 0x10+2, false, false),
 		new Instruction("st3", 0x10+3, false, false),
-		new Instruction("st",  0x10+5, false, false),
+		new Instruction("st",  0x10+4, false, false),
+		new Instruction("stmi",  0x10+5, false, false),
 
 		new Instruction("stvp", 0x18, false, false),
 		new Instruction("stjpc", 0x19, false, false),
-//		new Instruction("stbc", 0x1a, false, false),	not used any more
+		new Instruction("star", 0x1a, false, false),
 		new Instruction("stsp", 0x1b, false, false),
 
 //	shift
@@ -88,7 +89,7 @@ public class Instruction {
 		new Instruction("ldi", 0xc0, true, false),
 
 //	'direct' IO	3 bits
-		new Instruction("ldiod", 0xe0+1, false, false),
+//		new Instruction("ldiod", 0xe0+1, false, false), no used anymore
 		new Instruction("ldmrd", 0xe0+2, false, false),
 		new Instruction("ldmul", 0xe0+5, false, false),
 		new Instruction("ldbcstart", 0xe0+7, false, false),
@@ -98,7 +99,8 @@ public class Instruction {
 		new Instruction("ld1", 0xe8+1, false, false),
 		new Instruction("ld2", 0xe8+2, false, false),
 		new Instruction("ld3", 0xe8+3, false, false),
-		new Instruction("ld",  0xe8+5, false, false),
+		new Instruction("ld",  0xe8+4, false, false),
+		new Instruction("ldmi",  0xe8+5, false, false),
 
 //	2 bits
 		new Instruction("ldsp", 0xf0+0, false, false),

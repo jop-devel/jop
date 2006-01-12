@@ -30,6 +30,7 @@ public class Const {
 	public static final int IO_TIMER = IO_BASE+1;
 	public static final int IO_SWINT = IO_BASE+2;
 	public static final int IO_WD = IO_BASE+3;
+	public static final int IO_EXCPT = IO_BASE+4;
 
 	public static final int IO_STATUS = IO_BASE+0x10;
 	public static final int IO_UART = IO_BASE+0x10+1;

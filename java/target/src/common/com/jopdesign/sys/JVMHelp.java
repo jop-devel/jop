@@ -69,11 +69,30 @@ wrByte(pc);
 	
 	/**
 	 * Invoked on a hardware generated exception.
-	 * Currently only on stack overflow
+	 * Currently only on stack overflow and integer
+	 * division, remainder by zero.
 	 */
 	static void except() {
 		
-		JVMHelp.wr("\nException: Stack overflow");
+		int i;
+		i = Native.rdMem(Const.IO_EXCPT);
+		JVMHelp.wr("\nException: ");
+		if (i==1) {
+			JVMHelp.wr("Stack overflow\n");
+		} else if (i==2) {
+			JVMHelp.wr("ArithmeticException\n");
+		}
+
+		int sp = Native.getSP();			// sp of ();
+		int pc = Native.rdIntMem(sp-3);		// pc is not exact (depends on instruction)
+		i = Native.rdIntMem(sp);			// mp
+wrSmall(i);
+wr(' ');
+		int start = Native.rdMem(i)>>>10;	// address of method
+wrSmall(start);
+wr(' ');
+wrByte(pc);
+
 		trace();
 
 		for (;;);

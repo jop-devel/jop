@@ -128,6 +128,11 @@ class JVM {
 
 	private static int f_idiv(int a, int b) { 
 
+		if (b==0) {
+			// division by zero exception
+			Native.wrMem(0x02, Const.IO_EXCPT);
+			return 0;
+		}
 		boolean neg = false;
 		if (a<0) {
 			neg = true;
@@ -165,6 +170,11 @@ class JVM {
 
 	private static int f_irem(int a, int b) {
 
+		if (b==0) {
+			// division by zero exception
+			Native.wrMem(0x02, Const.IO_EXCPT);
+			return 0;
+		}
 		boolean neg = false;
 		if (a<0) {
 			neg = true;
