@@ -21,7 +21,7 @@ public class UDPDbg {
 		if (args.length!=0) {
 			address = InetAddress.getByName(args[0]);
 		} else {
-			address = InetAddress.getByName("192.168.1.2");
+			address = InetAddress.getByName("192.168.0.123");
 		}
 		DatagramPacket send = new DatagramPacket(sndBuf, 0, address, 1625);
 
