@@ -307,4 +307,8 @@ jop_testmon:
 	cd quartus/$(DLPROJ) && quartus_pgm -c ByteBlasterMV -m JTAG jop.cdf
 
 
-
+#
+#	UDP debugging
+#
+udp_dbg:
+	java -cp java/pc/dist/lib/jop-pc.jar udp.UDPDbg
