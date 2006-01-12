@@ -22,7 +22,7 @@ public class TU extends Thread {
 
 			// send request
 			byte[] buf = new byte[256];
-			InetAddress address = InetAddress.getByName("192.168.0.5");
+			InetAddress address = InetAddress.getByName("192.168.0.123");
 			DatagramPacket packet = new DatagramPacket(buf, 1, address, 1234);
 			for (;;) {
 				socket.send(packet);
@@ -50,7 +50,7 @@ public class TU extends Thread {
 		}
 
 		TU t = new TU();
-//		t.start();
+		t.start();
 	
 		byte[] buf = new byte[256];
 
