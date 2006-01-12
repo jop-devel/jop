@@ -27,6 +27,8 @@
 --	2003-02-12	added instruction ld_opd_8u/16u
 --	2004-10-07	new alu selection with sel_sub, sel_amux and ena_a
 --	2004-10-08	moved bsy/pcwait from decode to fetch
+--	2006-01-12	new ar for local memory addressing: star, ldmi, stmi
+--				stioa, stiod, ldiod removed
 --
 
 
@@ -75,7 +77,8 @@ port (
 
 	ena_b		: out std_logic;
 	ena_vp		: out std_logic;
-	ena_jpc		: out std_logic
+	ena_jpc		: out std_logic;
+	ena_ar		: out std_logic
 );
 end decode;
 
@@ -142,7 +145,7 @@ begin
 		ir(7 downto 5)="110" or
 		ir(7 downto 5)="111" or
 		ir(7 downto 5)="001" or			-- stm
-		ir(7 downto 3)="00010") then	-- st, stn
+		ir(7 downto 3)="00010") then	-- st, stn, stmi
 
 		wr_ena <= '1';
 	end if;
@@ -162,8 +165,8 @@ begin
 
 	dir <= "000" & ir(4 downto 0);
 
-	sel_rda <= "100";					-- sp
-	if (ir(7 downto 3)="11101") then	-- ld, ldn
+	sel_rda <= "110";					-- sp
+	if (ir(7 downto 3)="11101") then	-- ld, ldn, ldmi
 		sel_rda <= ir(2 downto 0);
 	end if;
 	if (ir(7 downto 5)="101") then		-- ldm
@@ -174,8 +177,8 @@ begin
 		dir <= "001" & ir(4 downto 0);	-- addr > 31 constants
 	end if;
 
-	sel_wra <= "100";					-- spp
-	if ir(7 downto 3)="00010" then		-- st, stn
+	sel_wra <= "110";					-- spp
+	if ir(7 downto 3)="00010" then		-- st, stn, stmi
 		sel_wra <= ir(2 downto 0);
 	end if;
 	if ir(7 downto 5)="001" then		-- stm
@@ -219,6 +222,7 @@ begin
 		ena_b <= '0';
 		ena_vp <= '0';
 		ena_jpc <= '0';
+		ena_ar <= '0';
 
 	elsif rising_edge(clk) then
 
@@ -234,6 +238,7 @@ begin
 		ena_a <= '1';			-- default is enable
 		ena_vp <= '0';
 		ena_jpc <= '0';
+		ena_ar <= '0';
 
 		case ir is
 
@@ -246,8 +251,6 @@ begin
 					sel_amux <= '0';
 			when "00000101" =>				-- sub
 					sel_amux <= '0';
-			when "00001000" =>				-- stioa
-			when "00001001" =>				-- stiod
 			when "00001010" =>				-- stmra
 			when "00001011" =>				-- stmwa
 			when "00001100" =>				-- stmwd
@@ -257,12 +260,14 @@ begin
 			when "00010001" =>				-- st1
 			when "00010010" =>				-- st2
 			when "00010011" =>				-- st3
-			when "00010101" =>				-- st
+			when "00010100" =>				-- st
+			when "00010101" =>				-- stmi
 			when "00011000" =>				-- stvp
 					ena_vp <= '1';
 			when "00011001" =>				-- stjpc
 					ena_jpc <= '1';
---			when "00011010" =>				-- free, stbc not used
+			when "00011010" =>				-- star
+					ena_ar <= '1';
 			when "00011011" =>				-- stsp
 			when "00011100" =>				-- ushr
 			when "00011101" =>				-- shl
@@ -278,7 +283,6 @@ begin
 					ena_a <= '0';
 --			when "101-----" =>				-- ldm
 --			when "110-----" =>				-- ldi
-			when "11100001" =>				-- ldiod
 			when "11100010" =>				-- ldmrd
 			when "11100011" =>				-- ldmbsy
 			when "11100101" =>				-- ldmul
@@ -286,7 +290,8 @@ begin
 			when "11101001" =>				-- ld1
 			when "11101010" =>				-- ld2
 			when "11101011" =>				-- ld3
-			when "11101101" =>				-- ld
+			when "11101100" =>				-- ld
+			when "11101101" =>				-- ldmi
 			when "11110000" =>				-- ldsp
 			when "11110001" =>				-- ldvp
 			when "11110010" =>				-- ldjpc
@@ -315,7 +320,7 @@ begin
 			sel_lmux <= "010";
 		end if;
 
-		if ir(7 downto 3)="11101" then				-- ld, ldn
+		if ir(7 downto 3)="11101" then				-- ld, ldn, ldmi
 			sel_lmux <= "010";
 		end if;
 

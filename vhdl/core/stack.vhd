@@ -16,6 +16,7 @@
 --	2002-03-24	barrel shifter
 --	2003-02-12	added mux for 8 and 16 bit unsigned bytecode operand
 --	2004-10-07	new alu selection with sel_sub, sel_amux and ena_a
+--	2006-01-12	new ar for local memory addressing, sp and vp MSB fix at '1'
 --
 
 
@@ -57,6 +58,7 @@ port (
 
 	ena_b		: in std_logic;
 	ena_vp		: in std_logic;
+	ena_ar		: in std_logic;
 
 	sp_ov		: out std_logic;
 
@@ -110,6 +112,7 @@ end component;
 	signal sp, spp, spm	: std_logic_vector(addr_width-1 downto 0);
 	signal vp0, vp1, vp2, vp3
 						: std_logic_vector(addr_width-1 downto 0);
+	signal ar			: std_logic_vector(addr_width-1 downto 0);
 
 	signal sum, diff, temp	: std_logic_vector(width-1 downto 0);
 	signal sout			: std_logic_vector(width-1 downto 0);
@@ -321,7 +324,7 @@ end process;
 --
 --	address mux for ram
 --
-process(sp, spp, vp0, vp1, vp2, vp3, vpadd, dir, sel_rda, sel_wra)
+process(sp, spp, vp0, vp1, vp2, vp3, vpadd, ar, dir, sel_rda, sel_wra)
 
 begin
 
@@ -336,9 +339,11 @@ begin
 		when "011" =>
 			rdaddr <= vp3;
 		when "100" =>
-			rdaddr <= sp;
-		when "101" =>
 			rdaddr <= vpadd;
+		when "101" =>
+			rdaddr <= ar;
+		when "110" =>
+			rdaddr <= sp;
 		when others =>
 			rdaddr <= dir;
 	end case;
@@ -353,9 +358,11 @@ begin
 		when "011" =>
 			wraddr <= vp3;
 		when "100" =>
-			wraddr <= spp;
-		when "101" =>
 			wraddr <= vpadd;
+		when "101" =>
+			wraddr <= ar;
+		when "110" =>
+			wraddr <= spp;
 		when others =>
 			wraddr <= dir;
 	end case;
@@ -374,12 +381,13 @@ begin
 --		spm <= std_logic_vector(to_unsigned(0, addr_width));	-- just for the compiler
 sp <= "10000000";
 spp <= "10000001";
-spm <= "10000000"; -- just avoid a leading zero
+spm <= "11111111";
 sp_ov <= '0';
 		vp0 <= std_logic_vector(to_unsigned(0, addr_width));
 		vp1 <= std_logic_vector(to_unsigned(0, addr_width));
 		vp2 <= std_logic_vector(to_unsigned(0, addr_width));
 		vp3 <= std_logic_vector(to_unsigned(0, addr_width));
+		ar <= (others => '0');
 		vpadd <= std_logic_vector(to_unsigned(0, addr_width));	-- just for the compiler
 		immval <= std_logic_vector(to_unsigned(0, width));		-- just for the compiler
 		opddly <= std_logic_vector(to_unsigned(0, 16));			-- just for the compiler
@@ -391,12 +399,15 @@ sp_ov <= '0';
 			sp_ov <= '1';
 		end if;
 		if (ena_vp = '1') then
-			vp0 <= a(addr_width-1 downto 0);
-			vp1 <= std_logic_vector(unsigned(a(addr_width-1 downto 0)) + 1);
-			vp2 <= std_logic_vector(unsigned(a(addr_width-1 downto 0)) + 2);
-			vp3 <= std_logic_vector(unsigned(a(addr_width-1 downto 0)) + 3);
+			vp0 <= "1" & a(addr_width-2 downto 0);
+			vp1 <= "1" & std_logic_vector(unsigned(a(addr_width-2 downto 0)) + 1);
+			vp2 <= "1" & std_logic_vector(unsigned(a(addr_width-2 downto 0)) + 2);
+			vp3 <= "1" & std_logic_vector(unsigned(a(addr_width-2 downto 0)) + 3);
 		end if;
-		vpadd <= std_logic_vector(unsigned(vp0) + unsigned(opd(7 downto 0)));
+		if ena_ar = '1' then
+			ar <= a(addr_width-1 downto 0);
+		end if;
+		vpadd <= "1" & std_logic_vector(unsigned(vp0(addr_width-2 downto 0)) + unsigned(opd(6 downto 0)));
 		opddly <= opd;
 		immval <= imux;
 	end if;

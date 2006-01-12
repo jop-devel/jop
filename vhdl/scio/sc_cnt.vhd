@@ -11,6 +11,7 @@
 --			1	read 1 MHz counter, write timer val (us) + irq ack
 --			2	write generates sw-int (for yield())
 --			3	write wd port
+--			4	write generates SW exception, read exception reason
 --
 --	todo:
 --
@@ -18,6 +19,7 @@
 --	2003-07-05	new IO standard
 --	2003-08-15	us counter, irq added
 --	2005-11-30	change interface to SimpCon
+--	2006-01-11	added exception
 --
 
 library ieee;
@@ -71,6 +73,8 @@ architecture rtl of sc_cnt is
 	signal timer_equ		: std_logic;
 	signal timer_dly		: std_logic;
 
+	signal exc_type			: std_logic_vector(7 downto 0);
+
 begin
 
 	rdy_cnt <= "00";	-- no wait states
@@ -85,11 +89,15 @@ begin
 	elsif rising_edge(clk) then
 
 		if rd='1' then
-			if address(0)='0' then
-				rd_data <= clock_cnt;
-			else
-				rd_data <= us_cnt;
-			end if;
+			case address(2 downto 0) is
+				when "000" =>
+					rd_data <= clock_cnt;
+				when "001" =>
+					rd_data <= us_cnt;
+				when others =>
+					rd_data(7 downto 0) <= exc_type;
+					rd_data(31 downto 8) <= (others => '0');
+			end case;
 		end if;
 	end if;
 
@@ -142,11 +150,6 @@ end process;
 
 	irq <= timer or yield;
 
---
---	exception processing
---
-
-	exc_int <= exc_req.spov;
 
 --
 --	counters
@@ -173,7 +176,7 @@ process(clk, reset) begin
 end process;
 
 --
---	io write processing
+--	io write processing and exception processing
 --
 process(clk, reset)
 
@@ -185,22 +188,35 @@ begin
 		int_ack <= '0';
 		wd <= '0';
 
+		exc_type <= (others => '0');
+		exc_int <= '0';
+
 	elsif rising_edge(clk) then
 
 		int_ack <= '0';
 		yield_int <= '0';
 
+		exc_int <= '0';
+
+		if exc_req.spov='1' then
+			exc_type(0) <= '1';
+			exc_int <= '1';
+		end if;
+
 		if wr='1' then
-			case address(1 downto 0) is
-				when "00" =>
+			case address(2 downto 0) is
+				when "000" =>
 					irq_ena <= wr_data(0);
-				when "01" =>
+				when "001" =>
 					irq_cnt <= wr_data;
 					int_ack <= '1';
-				when "10" =>
+				when "010" =>
 					yield_int <= '1';
-				when others =>
+				when "011" =>
 					wd <= wr_data(0);
+				when others =>
+					exc_type <= wr_data(7 downto 0);
+					exc_int <= '1';
 			end case;
 		end if;
 

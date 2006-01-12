@@ -161,6 +161,7 @@ port (
 
 	ena_b		: in std_logic;
 	ena_vp		: in std_logic;
+	ena_ar		: in std_logic;
 
 	sp_ov		: out std_logic;
 
@@ -209,7 +210,8 @@ port (
 
 	ena_b		: out std_logic;
 	ena_vp		: out std_logic;
-	ena_jpc		: out std_logic
+	ena_jpc		: out std_logic;
+	ena_ar		: out std_logic
 );
 end component;
 
@@ -257,6 +259,7 @@ end component;
 
 	signal ena_b		: std_logic;
 	signal ena_vp		: std_logic;
+	signal ena_ar		: std_logic;
 
 	signal stk_zf		: std_logic;
 	signal stk_nf		: std_logic;
@@ -285,7 +288,7 @@ begin
 			sel_sub, sel_amux, ena_a,
 			sel_bmux, sel_log, sel_shf, sel_lmux, sel_imux, sel_rmux, sel_smux,
 			sel_mmux, sel_rda, sel_wra,
-			wr_ena, ena_b, ena_vp,
+			wr_ena, ena_b, ena_vp, ena_ar,
 			sp_ov,
 			stk_zf, stk_nf, stk_eq, stk_lt, stk_aout, stk_bout);
 
@@ -297,7 +300,7 @@ begin
 			sel_sub, sel_amux, ena_a,
 			sel_bmux, sel_log, sel_shf, sel_lmux, sel_imux, sel_rmux, sel_smux,
 			sel_mmux, sel_rda, sel_wra,
-			wr_ena, ena_b, ena_vp, ena_jpc);
+			wr_ena, ena_b, ena_vp, ena_jpc, ena_ar);
 
 	aout <= stk_aout;
 	bout <= stk_bout;

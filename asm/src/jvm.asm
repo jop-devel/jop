@@ -72,6 +72,9 @@
 //	2005-12-01	IO devices are memory mapped - no more stioa, stiod, ldiod
 //	2005-12-20	Changed dspio devices (USB) to SimpCon
 //	2006-01-11	Generate HW exception and invoke JVMHelp.exception()
+//	2006-01-12	Additional register for int. memory addressing (ar)
+//				Instructions: star, stmi, ldmi
+//				removed stioa, stiod, and ldiod
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -82,7 +85,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20060111
+version		= 20060112
 
 //
 //	io address are negativ memory addresses
@@ -768,17 +771,14 @@ start_jvm:
 
 
 iinc:
-			ldvp
-			dup opd
+			ldvp opd
 			ld_opd_8u
 			add
-			stvp opd
+			star opd
 			ld_opd_8s
-			ld0
+			ldmi
 			add
-			st0
-			stvp
-			nop nxt
+			stmi nxt
 
 i2c:		ldi	65535
 			and	nxt
@@ -1340,24 +1340,14 @@ jopsys_wrmem:
 			nop	nxt
 
 jopsys_rdint:
-			ldvp
-			stm	a
-			stvp			// address in vp
-			nop				// ???
-			ld0				// read value
-			ldm	a			// restore vp
-			stvp
-			nop nxt
+			star			// address in ar
+			nop				// due to pipelining
+			ldmi nxt		// read value (ar indirect)
 
 jopsys_wrint:
-			ldvp
-			stm	a
-			stvp			// address in vp
-			nop				// ???
-			st0				// write value
-			ldm	a			// restore vp
-			stvp
-			nop nxt
+			star			// address in ar
+			nop				// due to pipelining
+			stmi nxt		// write value (ar indirect)
 
 jopsys_getsp:
 			ldsp		// one increment but still one to low ('real' sp is sp+2 because of registers)
@@ -1377,8 +1367,6 @@ jopsys_setvp:
 // public static native void int2extMem(int intAdr, int extAdr, int cnt);
 
 jopsys_int2ext:
-			ldvp
-			stm	d			// save vp
 			stm	c			// save counter
 #ifdef HANDLE
 			stmra			// read handle indirection
@@ -1396,10 +1384,10 @@ jopsys_int2ext:
 			stm	e			// extern end address+1
 intext_loop:
 			ldm	b
-			stvp
+			star
 			ldm	a
 			stmwa				// write ext. mem address
-			ld0
+			ldmi
 			stmwd				// write ext. mem data
 			ldm	a				// could be on the stack
 			ldi	1				// but I'm now to lazy to think
@@ -1416,15 +1404,13 @@ intext_loop:
 			sub
 			nop
 			bnz		intext_loop
-			ldm	d				// restore vp in branch
-			stvp				// slots
+			nop
+			nop
 			nop		nxt
 
 // public static native void ext2intMem(int extAdr, int intAdr, int cnt);
 
 jopsys_ext2int:
-			ldvp
-			stm	d			// save vp
 			stm	c			// save counter
 			stm	b			// intern address
 #ifdef HANDLE
@@ -1448,7 +1434,7 @@ extint_loop:
 			add
 			stm a
 			ldm	b
-			stvp
+			star
 			ldm	b
 			ldi	1
 			add
@@ -1456,14 +1442,14 @@ extint_loop:
 			wait
 			wait
 			ldmrd			// read ext val
-			st0
+			stmi
 			ldm	a			// finished?
 			ldm	e
 			sub
 			nop
 			bnz		extint_loop
-			ldm	d			// restore vp in branch
-			stvp			// slots
+			nop
+			nop
 			nop		nxt
 
 

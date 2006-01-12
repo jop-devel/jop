@@ -89,7 +89,6 @@ invokeinterface:
 			ldm	a
 			sub
 
-// could do the vp save in old_vp here
 			ldvp
 			stm	old_vp
 			stvp			// address in vp
