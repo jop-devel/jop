@@ -34,10 +34,13 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+use work.jop_types.all;
+use work.jop_config.all;
+
+
 entity jop is
 
 generic (
-	clk_freq	: integer := 50000000;	-- 50 MHz clock frequency
 	io_addr_bits	: integer := 7;	-- address bits of internal io
 	exta_width	: integer := 3;		-- address bits of internal io
 	ram_cnt		: integer := 3;		-- clock cycles for external ram
