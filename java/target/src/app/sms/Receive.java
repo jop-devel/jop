@@ -4,8 +4,6 @@
 
 package sms;
 
-import util.Serial;
-
 /**
 *	Receive functions for SMS.
 *	@author  <a href="mailto:martin.schoeberl@chello.at">Martin Schoeberl</a>
@@ -70,8 +68,8 @@ public class Receive {
 */
 	static void loop() {
 
-		while (!Serial.rxEmpty() && rcvd<BUF_MAX) {
-				buf[rcvd] = Serial.rd();
+		while (Sms.ser.rxCnt()>0 && rcvd<BUF_MAX) {
+				buf[rcvd] = Sms.ser.rd();
 				timer = Sms.sec + RCV_TIMEOUT;					// restart Timer 
 if (rcvd==0) util.Dbg.wr('r');
 if (buf[rcvd]=='\r') util.Dbg.wr('c');

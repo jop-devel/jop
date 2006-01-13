@@ -4,6 +4,7 @@
 
 package sms;
 
+import joprt.RtThread;
 import util.Serial;
 
 /**
@@ -40,16 +41,18 @@ class Send {
 	static void loop() {
 
 		if (sent<sndLen) {
-			if (!Serial.txFull()) {
+			if (Sms.ser.txFreeCnt()>0) {
 if (sent==0) util.Dbg.wr('s');
 if (buf[sent]=='\r') util.Dbg.wr('c');
 else util.Dbg.wr(buf[sent]);
+
+RtThread.sleepMs(10);
 /*
 if (sent==0) System.out.print("send:");
 System.out.print((char) buf[sent]);
 if (buf[sent]=='\r') System.out.println();
 */
-				Serial.wr(buf[sent]);
+				Sms.ser.wr(buf[sent]);
 				++sent;
 			}
 		} else if (sent==sndLen) {

@@ -4,6 +4,14 @@
 
 package sms;
 
+import joprt.RtThread;
+
+import com.jopdesign.sys.Const;
+
+import ejip.CS8900;
+import ejip.LinkLayer;
+import ejip.Net;
+
 import util.Dbg;
 import util.Serial;
 import util.Timer;
@@ -24,6 +32,8 @@ import util.Timer;
 
 public class Sms {
 
+	static Serial ser;
+	
 /** maximum length of 7 bit (default) messages */
 	public static final int SMS_MAX = 160;
 /** maximum length of a telefon number */
@@ -109,14 +119,12 @@ Dbg.wr('\n');
 		sendIt = false;
 
 		strInit();
-
 		Receive.init();
 		Send.init();
 
-		Serial.init();
 
-		timer = Timer.cnt();
-		timer = Timer.getNextCnt(timer, WD_TIME);
+
+		timer = Timer.getTimeoutMs(WD_TIME);
 		sec = 0;
 
 		state = INIT;
@@ -132,27 +140,20 @@ Dbg.wr('\n');
 */
 	public static void loop() {
 
-		Serial.loop();
 		Receive.loop();
-Serial.loop();
 		Send.loop();
-Serial.loop();
 
 //
 //	half second timer
 //		alternate between Receive and Sms second loop.
 //
 		if (Timer.timeout(timer)) {
-			timer = Timer.getNextCnt(timer, WD_TIME);
+			timer = Timer.getTimeoutMs(WD_TIME);
 			++tick;
 			if ((tick & 1)!=0) {		// one half
-Serial.loop();
 				loopSec();
-Serial.loop();
 			} else {
-Serial.loop();
 				Receive.loopSec();		// and the other
-Serial.loop();
 			}
 		}
 	}
@@ -167,6 +168,8 @@ Serial.loop();
 	private static final int STATE_TIME = 10;
 //	private static final int ERROR_TIME = 60;
 private static final int ERROR_TIME = 10;
+	private static final int PIN_TIME = 60;
+
 
 /** master states */
 	private static int state;
@@ -174,10 +177,11 @@ private static final int ERROR_TIME = 10;
 	private static final int INIT0 = 1;
 	private static final int INIT1 = 2;
 	private static final int INIT2 = 3;
-	private static final int NO_HANDY = 4;
-	private static final int READY = 5;
-	private static final int SEND_HEAD = 6;
-	private static final int SEND_PDU = 7;
+	private static final int INIT3 = 4;	
+	private static final int NO_HANDY = 5;
+	private static final int READY = 6;
+	private static final int SEND_HEAD = 7;
+	private static final int SEND_PDU = 8;
 
 /**
 *	This loop is called once every second too handle the state machine.
@@ -201,7 +205,9 @@ private static final int ERROR_TIME = 10;
 				state = INIT0;
 			} else if (state==INIT0) {
 				if (ok) {
-					Send.send(cmgf);
+					Send.send(cpin);
+					// a longer time for the pin
+					timEvent = sec + PIN_TIME;
 					state = INIT1;
 				} else {
 					state = NO_HANDY;
@@ -209,13 +215,23 @@ private static final int ERROR_TIME = 10;
 				}
 			} else if (state==INIT1) {
 				if (ok) {
-					Send.send(csms);
+					Send.send(cmgf);
 					state = INIT2;
 				} else {
 					state = NO_HANDY;
 					timEvent = sec + ERROR_TIME;
 				}
+				
 			} else if (state==INIT2) {
+				state = INIT3;
+				if (ok) {
+					Send.send(csms);
+					state = INIT3;
+				} else {
+					state = NO_HANDY;
+					timEvent = sec + ERROR_TIME;
+				}
+			} else if (state==INIT3) {
 				if (ok) {
 					state = READY;
 					timInit = sec + INIT_TIME;	// next new init sequence
@@ -313,6 +329,7 @@ private static final int ERROR_TIME = 10;
 	private static int[] cmgs;
 	private static int[] cmgl;
 	private static int[] cmgd;
+	private static int[] cpin;
 
 	private static void strInit() {
 //
@@ -330,16 +347,62 @@ private static final int ERROR_TIME = 10;
 		cmgl = s5;
 		int[] s6 = {'A','T','+','C','M','G','D','=',};
 		cmgd = s6;
+//		int[] s7 = {'A','T','+','C','P','I','N','=','5','6','4','4','\r'};
+		int[] s7 = {'A','T','+','C','P','I','N','=','9','1','7','4','\r'};
+		cpin = s7;
 	}
 
+
+	static Net net;
+	static LinkLayer ipLink;
 
 
 /**
 *	Test main.
+*/
 	public static void main(String[] args) {
 
-		Timer.init(20000000, 5);
+		Dbg.init();	// that's the UDP version
 		init();
+		ser = new Serial(Const.IO_UART1_BASE);
+		new RtThread(1, 10000) {
+			public void run() {
+				for (;;) {
+					waitForNextPeriod();
+					ser.loop();
+				}
+			}
+		};
+
+		//
+		//	start TCP/IP
+		//
+		net = Net.init();
+// don't use CS8900 when simulating on PC or for BG263
+		ipLink = CS8900.init(Net.eth, Net.ip);
+
+		//
+		//	start device driver threads
+		//
+
+		new RtThread(5, 10000) {
+			public void run() {
+				for (;;) {
+					waitForNextPeriod();
+					net.loop();
+				}
+			}
+		};
+		new RtThread(5, 10000) {
+			public void run() {
+				for (;;) {
+					waitForNextPeriod();
+					ipLink.loop();
+				}
+			}
+		};
+
+		RtThread.startMission();
 
 		int i, j;
 		int[] text = {'H','e','l','l','o',' ','f','r','o','m',' ','J','O','P','!'};
@@ -348,49 +411,56 @@ private static final int ERROR_TIME = 10;
 		int[] gotNr = new int[Sms.NR_MAX];
 		int gotNrType;
 
-		int cnt = 1;
-		int timer = Timer.getNextCnt(1000);
+		int timer = Timer.getTimeoutMs(1000);
 		int sec = 0;
+		boolean doit = true;
 
 		for (;;) {
 			loop();
 			if (Timer.timeout(timer)) {
-				timer = Timer.getNextCnt(timer, 1000);
+				timer = Timer.getTimeoutMs(1000);
 				++sec;
 			}
 
+			if (state==READY && doit) {
+				Dbg.wr("ready to send");
+				//	0x91 for intl. numbers (43...)
+				Sms.send(text, nr, 0x91);
+				doit = false;
+			}
 			if (gotSms) {
-				tim();
-				System.out.print("got SMS:");
+//				tim();
+				Dbg.wr("got SMS:");
 				for (i=0; i<rcvTxt.length; ++i) {
 					j = rcvTxt[i];
 					if (j==0) break;
-					System.out.print((char) j);
+					Dbg.wr((char) j);
 				}
-				System.out.println();
-				System.out.print("from ");
+				Dbg.lf();
+				Dbg.wr("from ");
 				for (i=0; i<rcvNr.length; ++i) {
 					j = rcvNr[i];
 					if (j==0) break;
-					System.out.print((char) j);
+					Dbg.wr((char) j);
 				}
-				System.out.print(" type: "+Sms.rcvNrType);
-				System.out.println();
+				Dbg.wr(" type: "+Sms.rcvNrType);
+				Dbg.lf();
 
 
 				Sms.strcpy(gotNr, Sms.rcvNr);
 				gotNrType = Sms.rcvNrType;
 				if (Sms.isFree()) {
-					System.out.println("send replay");
+					Dbg.wr("send replay");
+					Dbg.lf();
 					Sms.send(text, gotNr, gotNrType);
 				} else {
-					System.out.println("send buffer full!");
+					Dbg.wr("send buffer full!");
+					Dbg.lf();
 				}
 
 				Sms.gotSms = false;
 			}
 		}
 	}
-*/
 
 }
