@@ -42,6 +42,7 @@ public class JOPizer {
 	public static final int METHOD_MAX_SIZE = 1024;
 
 	public static boolean useHandle = true;
+	public static boolean dumpMgci = false;
 
 	PrintWriter out;
 	
@@ -154,6 +155,8 @@ public class JOPizer {
 	public static void main(String[] args) {
 		String outFile = "/tmp/test.jop";
 		
+		dumpMgci = System.getProperty("mgci", "false").equals("true");
+		
 		JOPizer jz = new JOPizer();
 		HashSet clsArgs = new HashSet();
 
@@ -232,6 +235,13 @@ public class JOPizer {
 				
 				// Start of class info
 				jz.clinfoAddr = ClassInfo.addrRefStatic + ClassInfo.cntRefStatic;
+				// GC info for the methods adjustment
+				// Count field of mgci "structs"
+				jz.clinfoAddr += 1; 
+				if (dumpMgci) {
+					// Each mgci is a key (method struct addr) and a mgci word
+					jz.clinfoAddr += MethodInfo.cntMgci*2;					
+				}
 				
 				// Calculate class info addresses
 				ClassAddress cla = new ClassAddress(jz, jz.clinfoAddr);
