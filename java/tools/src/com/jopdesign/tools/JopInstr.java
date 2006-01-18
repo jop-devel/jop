@@ -328,7 +328,7 @@ public class JopInstr{
 		new JopInstr("jopsys_invoke", 1, IMP_NO, 1),			// 0xDE
 		new JopInstr("resDF", 1, IMP_NO, 1),			// 0xDF
 
-		new JopInstr("resE0", 1, IMP_NO, 1),			// 0xE0
+		new JopInstr("getfield_ref", 3, IMP_ASM, 30),   // 0xE0
 		new JopInstr("resE1", 1, IMP_NO, 1),			// 0xE1
 		new JopInstr("resE2", 1, IMP_NO, 1),			// 0xE2
 		new JopInstr("resE3", 1, IMP_NO, 1),			// 0xE3
