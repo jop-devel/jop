@@ -61,7 +61,9 @@ public class JopWriter {
 		dumpStrings();
 		
 		dumpStaticFields();
-		dumpMethodGci();		
+		if (JOPizer.dumpMgci) {
+			dumpMethodGci();					
+		}
 		dumpClassInfo();
 		
 		out.close();
