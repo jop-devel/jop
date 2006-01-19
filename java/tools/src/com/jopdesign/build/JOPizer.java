@@ -235,10 +235,10 @@ public class JOPizer {
 				
 				// Start of class info
 				jz.clinfoAddr = ClassInfo.addrRefStatic + ClassInfo.cntRefStatic;
-				// GC info for the methods adjustment
-				// Count field of mgci "structs"
-				jz.clinfoAddr += 1; 
 				if (dumpMgci) {
+					// GC info for the methods adjustment
+					// Count field of mgci "structs"
+					jz.clinfoAddr += 1; 
 					// Each mgci is a key (method struct addr) and a mgci word
 					jz.clinfoAddr += MethodInfo.cntMgci*2;					
 				}
