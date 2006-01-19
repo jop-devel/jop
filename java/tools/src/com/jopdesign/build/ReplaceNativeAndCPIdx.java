@@ -11,15 +11,7 @@ import java.util.Iterator;
 
 import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.*;
-import org.apache.bcel.generic.CPInstruction;
-import org.apache.bcel.generic.ConstantPoolGen;
-import org.apache.bcel.generic.FieldInstruction;
-import org.apache.bcel.generic.INVOKEVIRTUAL;
-import org.apache.bcel.generic.InstructionHandle;
-import org.apache.bcel.generic.InstructionList;
-import org.apache.bcel.generic.InvokeInstruction;
-import org.apache.bcel.generic.MethodGen;
-import org.apache.bcel.generic.NOP;
+import org.apache.bcel.generic.*;
 import org.apache.bcel.util.InstructionFinder;
 
 import com.jopdesign.tools.JopInstr;
@@ -80,6 +72,43 @@ public class ReplaceNativeAndCPIdx extends MyVisitor {
 			}
 		}
 
+		// Added by Rasmus
+		// Replace GETFIELD with GETFIELD_REF_JOP for reference
+		// references:-)
+		f = new InstructionFinder(il);
+		int cnt = 0;
+
+		// replace the field instructions with the new reference/value type
+		// instructions
+		String fs = "FieldInstruction";
+		for (Iterator i = f.search(fs); i.hasNext();) {
+			InstructionHandle[] match = (InstructionHandle[]) i.next();
+			for (int j = 0; j < match.length; j++) {
+				InstructionHandle ih = match[j];
+				if ((ih.getInstruction()) instanceof GETFIELD) {
+					GETFIELD gf = (GETFIELD) ih.getInstruction();
+					if (gf.getFieldType(cpool) instanceof ReferenceType) {
+//						System.out.println("GETFIELD ReferenceType found:"
+//								+ gf.getFieldName(cpool));
+						int index = gf.getIndex();
+						// ih.setInstruction(new
+						// GETFIELD_REF_JOP((short)0xB4,(short)index)); //use
+						// the GETFIELD
+						ih.setInstruction(new GETFIELD_REF((short) 0xE0,
+								(short) index)); // use the new GETFIELD_REF
+						// System.exit(1);
+						cnt++;
+					}
+				}
+			}
+		}
+
+	    if (cnt > 0)
+		System.out.println("GETFIELD found " + cnt + " matches in "
+				+ clazz.getClassName() + "." + method.getName());
+
+		
+		
 		f = new InstructionFinder(il);
 		// find instructions that access the constant pool
 		// and replace the index by the new value from ClassInfo
@@ -108,11 +137,19 @@ public class ReplaceNativeAndCPIdx extends MyVisitor {
 				ii.setIndex(pos+1);
 			}
 		}
+		
 
 		Method m = mg.getMethod();
 		il.dispose();
 		return m;
 
 	}
-	
+	class GETFIELD_REF extends FieldInstruction {
+		public GETFIELD_REF(short arg0, short arg1) {
+			super(arg0, arg1);
+		}
+
+		public void accept(org.apache.bcel.generic.Visitor v) {
+		}
+	}
 }
