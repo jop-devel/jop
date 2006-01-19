@@ -75,6 +75,7 @@
 //	2006-01-12	Additional register for int. memory addressing (ar)
 //				Instructions: star, stmi, ldmi
 //				removed stioa, stiod, and ldiod
+//	2006-01-19	add getfield_ref
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -85,7 +86,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20060112
+version		= 20060119
 
 //
 //	io address are negativ memory addresses
