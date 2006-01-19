@@ -61,7 +61,7 @@ public class JopWriter {
 		dumpStrings();
 		
 		dumpStaticFields();
-		
+		dumpMethodGci();		
 		dumpClassInfo();
 		
 		out.close();
@@ -141,5 +141,19 @@ public class JopWriter {
 			si.dump(out, strcli, StringInfo.stringTableAddress+JOPizer.CLASSINFO_NONREFARRY);
 		}
 	}
-
+	private void dumpMethodGci() {
+		Iterator it = jz.clazzes.iterator();
+		out.println("//\tStart of MGCI dump");
+		out.println("\t"+MethodInfo.cntMgci+",\t//\tcntMgci");
+		while (it.hasNext()) {
+			ClassInfo cli = (ClassInfo) it.next();
+			
+			//out.println("//\tmethod GCI start for class:"+cli.clazz.getClassName());
+			List methods = cli.getMethods();
+			
+			for(int i=0; i < methods.size(); i++) {
+				((MethodInfo) methods.get(i)).dumpMethodGcis(out);
+			}
+		}
+	}
 }
