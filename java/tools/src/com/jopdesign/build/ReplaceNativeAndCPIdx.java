@@ -103,9 +103,9 @@ public class ReplaceNativeAndCPIdx extends MyVisitor {
 			}
 		}
 
-	    if (cnt > 0)
-		System.out.println("GETFIELD found " + cnt + " matches in "
-				+ clazz.getClassName() + "." + method.getName());
+//	    if (cnt > 0)
+//		System.out.println("GETFIELD found " + cnt + " matches in "
+//				+ clazz.getClassName() + "." + method.getName());
 
 		
 		
