@@ -1383,8 +1383,8 @@ System.out.println("new heap: "+heap);
 				case 223 :		// resDF
 					noim(223);
 					break;
-				case 224 :		// resE0
-					noim(224);
+				case 224 :		// resE0 - getfield_ref
+					getfield();
 					break;
 				case 225 :		// resE1
 					noim(225);
