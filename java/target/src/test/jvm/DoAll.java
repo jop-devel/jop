@@ -4,13 +4,8 @@
  */
 package jvm;
 
-import jvm.math.Float;
-import jvm.math.Imul;
-import jvm.math.Long;
-import jvm.obj.Basic;
-import jvm.obj.Basic2;
-import jvm.obj.Clinit;
-import jvm.obj.Static;
+import jvm.math.*;
+import jvm.obj.*;
 
 /**
  * @author Martin Schoeberl (martin@jopdesign.com)
@@ -23,12 +18,14 @@ public class DoAll {
 		TestCase tc[] = {
 				new Basic(),
 				new Basic2(),
+//				new TypeMix(),
 				new Static(),
 				new Array(),
 				new Clinit(),
 //				new Float(),
 				new Imul(),
-				new Long(),
+				new jvm.math.Long(),
+				new LongField(),
 				new MultiArray(),
 				new Switch(),
 //				new Except(),
