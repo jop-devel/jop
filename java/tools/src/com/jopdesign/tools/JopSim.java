@@ -538,7 +538,7 @@ System.out.println(mp+" "+pc);
 	void interpret() {
 
 		int new_pc;		// for cond. branches
-		int ref, val, idx;
+		int ref, val, idx, val2;
 		int old_pc = -1;
 		int old_mp = -1;
 
@@ -742,7 +742,14 @@ System.out.println(mp+" "+pc);
 					stack[++sp] = readMem(ref+idx);
 					break;
 				case 47 :		// laload
-					noim(47);
+					idx = stack[sp--];	// index
+					ref = stack[sp--];	// ref
+					if (useHandle) {
+						// handle needs indirection
+						ref = readMem(ref);
+					}
+					stack[++sp] = readMem(ref+idx*2);
+					stack[++sp] = readMem(ref+idx*2+1);
 					break;
 				case 49 :		// daload
 					noim(49);
@@ -827,7 +834,16 @@ System.out.println(mp+" "+pc);
 					writeMem(ref+idx, val);
 					break;
 				case 80 :		// lastore
-					noim(80);
+					val = stack[sp--];	// value
+					val2 = stack[sp--];	// value
+					idx = stack[sp--];	// index
+					ref = stack[sp--];	// ref
+					if (useHandle) {
+						// handle needs indirection
+						ref = readMem(ref);
+					}
+					writeMem(ref+idx*2, val2);					
+					writeMem(ref+idx*2+1, val);					
 					break;
 				case 82 :		// dastore
 					noim(82);
@@ -1211,8 +1227,8 @@ System.out.println("new heap: "+heap);
 */
 					break;
 				case 188 :		// newarray
-					readOpd8u();		// ignore typ
-					// invoke JVM.f_newarray(int count);
+					stack[++sp]=readOpd8u();		// use typ info
+					// invoke JVM.f_newarray(int count,val);
 					invoke(jjp+(188<<1));
 					/*
 

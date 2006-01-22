@@ -278,3 +278,118 @@ putfield_long:
 			wait
 			nop	nxt
 
+//
+//	long array access disabled:
+//		1. we run out of microcode memory
+//		2. we need to add long array support in the GC
+//			copy the right size (add type info)
+//
+//lastore:
+//			stm	a				// value_h
+//			stm c               // value_l
+//			stm	b				// index
+//			// arrayref is TOS
+//			dup					// for null pointer check
+//			nop					// wait one cycle for flags of ref
+//			bz	null_pointer	// 
+//			nop
+//			nop
+//
+//#ifdef HANDLE
+//			stmra				// read handle indirection
+//			wait				// for the GC
+//			wait
+//			ldmrd
+//#endif
+//
+//			dup					// bound check
+//			ldi	-1
+//			add					// arrayref-1
+//			stmra				// read ext. mem, mem_bsy comes one cycle later
+//			wait				// is this ok? - wait in branch slot
+//			wait
+//			ldmrd		 		// read ext. mem (array length)
+//
+//			ldi	1
+//			sub					// length-1
+//			ldm	b				// index
+//			sub					// TOS = length-1-index
+//			ldm	b				// check if index is negativ
+//			or					// is one of both checks neagtv?
+//         	ldi	-2147483648		//  0x80000000
+//			and
+//			nop
+//			bnz	array_bound
+//			ldm	b				// in branch slot....
+//			ldi 1
+//			shl                 // index*2
+//			add					// index*2+arrayref
+//			stm d
+//			ldm d
+//			stmwa				// write ext. mem address
+//			ldm	c
+//			stmwd				// write ext. mem data
+//			ldm d
+//			ldi 1
+//			add					// index*2+arrayref+1
+//			wait
+//			wait
+//			stmwa				// write ext. mem address
+//			ldm	a
+//			stmwd				// write ext. mem data
+//			wait
+//			wait
+//			nop	nxt
+//
+//laload:                           
+//			stm	b				// index
+//			// arrayref is TOS
+//			dup					// for null pointer check
+//			nop					// wait one cycle for flags of ref
+//			bz	null_pointer	// 
+//			nop
+//			nop
+//#ifdef HANDLE
+//			stmra				// read handle indirection
+//			wait				// for the GC
+//			wait
+//			ldmrd
+//#endif
+//
+//			dup					// for bound check
+//			ldi	-1
+//			add					// arrayref-1
+//
+//			stmra				// read array length
+//			wait				// is this ok? - wait in branch slot
+//			wait
+//			ldmrd		 		// read ext. mem (array length)
+//
+//			ldi	1
+//			sub					// length-1
+//			ldm	b				// index
+//			sub					// TOS = length-1-index
+//			ldm	b				// check if index is negative
+//			or					// is one of both checks negative?
+//         	ldi	-2147483648		//  0x80000000
+//			and
+//			nop
+//			bnz	array_bound
+//			ldm	b				// in branch slot...
+//			ldi 1
+//			shl                 // index*2
+//			add					// index*2+arrayref
+//			dup
+//			stm d
+//			stmra				// read ext. mem, mem_bsy comes one cycle later
+//			wait
+//			wait
+//			ldmrd		 
+//			ldm d
+//			ldi 1
+//			add					// index*2+arrayref+1
+//			stmra				// read ext. mem, mem_bsy comes one cycle later
+//			wait
+//			wait
+//			ldmrd 	nxt	// read ext. mem
+//

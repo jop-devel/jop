@@ -466,12 +466,18 @@ public class GC {
 		return ref;
 	}
 	
-	static int newArray(int size, boolean isRef) {
+	static int newArray(int size, int type, boolean isRef) {
 		
 		// we are NOT using JVM var h at address 2 for the
 		// heap pointer anymore.
-		++size;		// for the additional size field
 		
+		int arrayLength = size;
+		
+		// long or double array
+		if((type==11)||(type==7)) size <<= 1;
+
+		++size;		// for the additional size field
+
 		if (heapPtr+size >= allocPtr) {
 			gc_alloc();
 		}
@@ -503,9 +509,12 @@ public class GC {
 			Native.wrMem(IS_VALARR, ref+OFF_TYPE);
 		}
 
+		// TODO: we also need the type (long/double)
+		// for a correct copy!
+		// disable long array access for now...
 		// we need the array size.
 		// in the heap or in the handle structure
-		Native.wrMem(size-1, allocPtr);		// pointer to method table in objectref-1
+		Native.wrMem(arrayLength, allocPtr);		// pointer to method table in objectref-1
 
 		// we don't need this
 //		for (int i=1; i<size; ++i) {

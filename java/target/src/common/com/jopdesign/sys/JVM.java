@@ -13,8 +13,8 @@ class JVM {
 	private static void f_iconst_3() { JVMHelp.noim(); /* jvm.asm */ }
 	private static void f_iconst_4() { JVMHelp.noim(); /* jvm.asm */ }
 	private static void f_iconst_5() { JVMHelp.noim(); /* jvm.asm */ }
-	private static void f_lconst_0() { JVMHelp.noim();}
-	private static void f_lconst_1() { JVMHelp.noim();}
+	private static void f_lconst_0() { JVMHelp.noim(); /* jvm_long.inc */ }
+	private static void f_lconst_1() { JVMHelp.noim(); /* jvm_long.inc */ }
 	private static void f_fconst_0() { JVMHelp.noim();}
 	private static void f_fconst_1() { JVMHelp.noim();}
 	private static void f_fconst_2() { JVMHelp.noim();}
@@ -24,9 +24,9 @@ class JVM {
 	private static void f_sipush() { JVMHelp.noim(); /* jvm.asm */ }
 	private static void f_ldc() { JVMHelp.noim(); /* jvm.asm */ }
 	private static void f_ldc_w() { JVMHelp.noim();}
-	private static void f_ldc2_w() { JVMHelp.noim(); /* jvm.asm */ }
+	private static void f_ldc2_w() { JVMHelp.noim();  /* jvm_long.inc */  }
 	private static void f_iload() { JVMHelp.noim(); /* jvm.asm */ }
-	private static void f_lload() { JVMHelp.noim();}
+	private static void f_lload() { JVMHelp.noim(); /* jvm_long.inc */ }
 	private static void f_fload() { JVMHelp.noim();}
 	private static void f_dload() { JVMHelp.noim();}
 	private static void f_aload() { JVMHelp.noim(); /* jvm.asm */ }
@@ -34,10 +34,10 @@ class JVM {
 	private static void f_iload_1() { JVMHelp.noim(); /* jvm.asm */ }
 	private static void f_iload_2() { JVMHelp.noim(); /* jvm.asm */ }
 	private static void f_iload_3() { JVMHelp.noim(); /* jvm.asm */ }
-	private static void f_lload_0() { JVMHelp.noim();}
-	private static void f_lload_1() { JVMHelp.noim();}
-	private static void f_lload_2() { JVMHelp.noim();}
-	private static void f_lload_3() { JVMHelp.noim();}
+	private static void f_lload_0() { JVMHelp.noim(); /* jvm_long.inc */ }
+	private static void f_lload_1() { JVMHelp.noim(); /* jvm_long.inc */ }
+	private static void f_lload_2() { JVMHelp.noim(); /* jvm_long.inc */ }
+	private static void f_lload_3() { JVMHelp.noim(); /* jvm_long.inc */ }
 	private static void f_fload_0() { JVMHelp.noim();}
 	private static void f_fload_1() { JVMHelp.noim();}
 	private static void f_fload_2() { JVMHelp.noim();}
@@ -51,7 +51,7 @@ class JVM {
 	private static void f_aload_2() { JVMHelp.noim(); /* jvm.asm */ }
 	private static void f_aload_3() { JVMHelp.noim(); /* jvm.asm */ }
 	private static void f_iaload() { JVMHelp.noim(); /* jvm.asm */ }
-	private static void f_laload() { JVMHelp.noim();}
+	private static void f_laload() { JVMHelp.noim(); /* jvm.asm */}
 	private static void f_faload() { JVMHelp.noim();}
 	private static void f_daload() { JVMHelp.noim();}
 	private static void f_aaload() { JVMHelp.noim();}
@@ -59,7 +59,7 @@ class JVM {
 	private static void f_caload() { JVMHelp.noim();}
 	private static void f_saload() { JVMHelp.noim();}
 	private static void f_istore() { JVMHelp.noim(); /* jvm.asm */ }
-	private static void f_lstore() { JVMHelp.noim();}
+	private static void f_lstore() { JVMHelp.noim(); /* jvm_long.inc */ }
 	private static void f_fstore() { JVMHelp.noim();}
 	private static void f_dstore() { JVMHelp.noim();}
 	private static void f_astore() { JVMHelp.noim(); /* jvm.asm */ }
@@ -67,10 +67,10 @@ class JVM {
 	private static void f_istore_1() { JVMHelp.noim(); /* jvm.asm */ }
 	private static void f_istore_2() { JVMHelp.noim(); /* jvm.asm */ }
 	private static void f_istore_3() { JVMHelp.noim(); /* jvm.asm */ }
-	private static void f_lstore_0() { JVMHelp.noim();}
-	private static void f_lstore_1() { JVMHelp.noim();}
-	private static void f_lstore_2() { JVMHelp.noim();}
-	private static void f_lstore_3() { JVMHelp.noim();}
+	private static void f_lstore_0() { JVMHelp.noim(); /* jvm_long.inc */ }
+	private static void f_lstore_1() { JVMHelp.noim(); /* jvm_long.inc */ }
+	private static void f_lstore_2() { JVMHelp.noim(); /* jvm_long.inc */ }
+	private static void f_lstore_3() { JVMHelp.noim(); /* jvm_long.inc */ }
 	private static void f_fstore_0() { JVMHelp.noim();}
 	private static void f_fstore_1() { JVMHelp.noim();}
 	private static void f_fstore_2() { JVMHelp.noim();}
@@ -84,7 +84,7 @@ class JVM {
 	private static void f_astore_2() { JVMHelp.noim(); /* jvm.asm */ }
 	private static void f_astore_3() { JVMHelp.noim(); /* jvm.asm */ }
 	private static void f_iastore() { JVMHelp.noim(); /* jvm.asm */ }
-	private static void f_lastore() { JVMHelp.noim();}
+	private static void f_lastore() { JVMHelp.noim(); /* jvm.asm */ }
 	private static void f_fastore() { JVMHelp.noim();}
 	private static void f_dastore() { JVMHelp.noim();}
 	private static void f_aastore() { JVMHelp.noim();}
@@ -122,7 +122,39 @@ class JVM {
 	}
 	private static void f_dsub() { JVMHelp.noim();}
 	private static void f_imul() { JVMHelp.noim(); /* jvm.asm */ }
-	private static void f_lmul() { JVMHelp.noim();}
+	private static long f_lmul(long a, long b) {
+		
+		boolean positive = true;
+		if(a<0) {
+			a = (~a)+1; 
+			positive = false;
+		  }
+		if(b<0) {
+			b = (~b)+1; 
+			positive = !positive;
+			}
+		
+		long aa = a;
+		long res = 0;
+		for(int i=0;i<64;i=i+8)
+		{
+			long bb = b;
+			int am = ((int)aa) & 0x000000FF;
+			
+			for(int j=0;j<64;j=j+8)
+			{
+				int bm = ((int)bb) & 0x000000FF;
+				
+			    long sres = 0;
+				if (i+j < 64) sres=f_lshl(0,am*bm,i+j);
+				res += sres;
+				bb = bb>>>8;
+			}
+			aa = aa>>>8;
+		}
+		if(!positive) res = (~res)+1;
+		return res;
+	}
 	private static void f_fmul() { JVMHelp.noim();}
 	private static void f_dmul() { JVMHelp.noim();}
 
@@ -164,7 +196,53 @@ class JVM {
 		return c;
 	}
 
-	private static void f_ldiv() { JVMHelp.noim();}
+	private static long f_ldiv(long a, long b) {
+		
+	//	System.out.println("a="+((int)(a>>32))+" "+((int)a));
+	//	System.out.println("b="+((int)(b>>32))+" "+((int)b));
+
+		if(b==0x8000000000000000L)
+			{
+			if(a==0x8000000000000000L) return 1;
+			else return 0;
+			}
+		
+		boolean neg = false;
+		if (a<0) {
+			neg = true;
+			a = -a;
+		}
+		if (b<0) {
+			neg = !neg;
+			b = -b;
+		}
+
+		long c = 0;
+		long r = 0;
+		for (int i=0; i<64; ++i) {
+			c <<= 1;
+			r <<= 1;
+			if ((a & 0x8000000000000000L)!=0) {
+				r |= 1;
+			}
+			a <<= 1;
+			if ((r-1)>=(b-1)) //over/underflow problem - other testcases??
+			{
+				r -= b;
+				c |= 1;
+			}
+//			System.out.println("c="+((int)(c>>32))+" "+((int)c));
+//			System.out.println("r="+((int)(r>>32))+" "+((int)r));
+
+		}
+
+		if (neg) {
+			c = -c;
+		}
+
+		return c;	
+	}
+	
 	private static void f_fdiv() { JVMHelp.noim();}
 	private static void f_ddiv() { JVMHelp.noim();}
 
@@ -184,10 +262,8 @@ class JVM {
 			b = -b;
 		}
 
-		int c = 0;
 		int r = 0;
 		for (int i=0; i<32; ++i) {
-			c <<= 1;
 			r <<= 1;
 			if ((a & 0x80000000)!=0) {
 				r |= 1;
@@ -195,7 +271,6 @@ class JVM {
 			a <<= 1;
 			if (r>=b) {
 				r -= b;
-				c |= 1;
 			}
 		}
 
@@ -207,7 +282,42 @@ class JVM {
 
 
 
-	private static void f_lrem() { JVMHelp.noim();}
+	private static long f_lrem(long a, long b) {
+
+		if(b==0x8000000000000000L)
+		{
+			if(a!=0x8000000000000000L) return a;
+			else return 0;
+		}
+
+		boolean neg = false;
+		if (a<0) {
+			neg = true;
+			a = -a;
+		}
+		if (b<0) {
+			b = -b;
+		}
+
+		long r = 0;
+		for (int i=0; i<64; ++i) {
+			r <<= 1;
+			if ((a & 0x8000000000000000L)!=0) {
+				r |= 1;
+			}
+			a <<= 1;
+			if (r>=b) {
+				r -= b;
+			}
+	//		System.out.println("r="+((int)(r>>32))+" "+((int)r));
+
+		}
+
+		if (neg) {
+			r = -r;
+		}
+		return r;
+	}
 	private static void f_frem() { JVMHelp.noim();}
 	private static void f_drem() { JVMHelp.noim();}
 	private static void f_ineg() { JVMHelp.noim(); /* jvm.asm */ }
@@ -218,27 +328,67 @@ class JVM {
 	private static void f_fneg() { JVMHelp.noim();}
 	private static void f_dneg() { JVMHelp.noim();}
 	private static void f_ishl() { JVMHelp.noim(); /* jvm.asm */ }
-	private static void f_lshl() { JVMHelp.noim();}
+	private static long f_lshl(int ah, int al, int cnt) { 
+		
+		cnt &= 0x3F;
+		if ((cnt==0)) return Native.makeLong(ah, al);	
+		if (cnt>31) {
+			ah = al << (cnt-32);
+			al = 0;
+		} else {
+			ah = ah << cnt;
+			ah += al >>> (32-cnt);
+			al = al << cnt;
+		}
+		return Native.makeLong(ah, al);		
+	}
 	private static void f_ishr() { JVMHelp.noim(); /* jvm.asm */ }
-	private static void f_lshr() { JVMHelp.noim();}
+	private static long f_lshr(int ah, int al, int cnt) 
+	{ 
+		cnt &= 0x3F;
+		if (cnt==0) return Native.makeLong(ah, al);	
+		if (cnt>31) {
+			al = ah >>> (cnt-32);
+			if(ah<0)
+			  ah = -1;
+			else
+		      ah = 0;
+		} else {
+			al = al >>> cnt;
+			al += ah << (32-cnt);
+			ah = ah >> cnt;
+		}
+		return Native.makeLong(ah, al);
+	}
 	private static void f_iushr() { JVMHelp.noim(); /* jvm.asm */ }
 	private static long f_lushr(int ah, int al, int cnt) {
 
+		cnt &= 0x3F;
+		if ((cnt==0)) return Native.makeLong(ah, al);	
 		if (cnt>31) {
 			al = ah >>> (cnt-32);
 			ah = 0;
 		} else {
 			al = al >>> cnt;
-			int mask = -1>>>(32-cnt);
-			al += (ah & mask) << (32-cnt);
+			al += ah << (32-cnt);
 			ah = ah >>> cnt;
 		}
 		return Native.makeLong(ah, al);
 	}
 	private static void f_iand() { JVMHelp.noim(); /* jvm.asm */ }
-	private static void f_land() { JVMHelp.noim();}
+	private static long f_land(int ah, int al, int bh, int bl) {
+		
+		ah &= bh;
+		al &= bl;
+		return Native.makeLong(ah, al);
+	}
 	private static void f_ior() { JVMHelp.noim(); /* jvm.asm */ }
-	private static void f_lor() { JVMHelp.noim();}
+	private static long f_lor(int ah, int al, int bh, int bl) {
+		
+		ah |= bh;
+		al |= bl;
+		return Native.makeLong(ah, al);
+	}
 	private static void f_ixor() { JVMHelp.noim(); /* jvm.asm */ }
 	private static long f_lxor(int ah, int al, int bh, int bl) {
 
@@ -257,7 +407,7 @@ JVMHelp.noim(); // TODO: test
 		return SoftFloat.int32_to_float32(a);
 	}
 	private static void f_i2d() { JVMHelp.noim();}
-	private static void f_l2i() { JVMHelp.noim();}
+	private static void f_l2i() { JVMHelp.noim(); /* jvm_long.inc */}
 	private static void f_l2f() { JVMHelp.noim();}
 	private static void f_l2d() { JVMHelp.noim();}
 	private static int f_f2i(int a) {
@@ -294,9 +444,18 @@ JVMHelp.noim(); // TODO: test
 	}
 	private static int f_lcmp(long a, long b) {
 
+		// is this really necessary?
+		// Change by Peter & Christof
+		int ah = (int)(a>>>32);
+		int bh = (int)(b>>>32);
+		//overflow, underflow, if a and b have different signs
+		if(((ah & 0x80000000)==0)&&((bh & 0x80000000)!=0)) return 1;
+		if(((ah & 0x80000000)!=0)&&((bh & 0x80000000)==0)) return -1;
+		// I didn't have it in my first implementation
+		
 		a -= b;
 		int al = (int) a;
-		int ah = (int) (a>>>32);
+		ah = (int) (a>>>32);
 
 		if ((ah | al)==0) return 0;
 		if ((ah & 0x80000000)==0) {
@@ -447,7 +606,7 @@ synchronized (o) {
 
 	}
 
-	static int f_newarray(int count) {
+	static int f_newarray(int count, int type) {
 
 /* original non handle version
 		int h, ret;
@@ -470,11 +629,12 @@ synchronized (o) {
 
 /* Handle version
 */
+				
 		int h, ret;
 
 		synchronized (o) {
 			
-			ret = GC.newArray(count, false);
+			ret = GC.newArray(count, type, false);
 
 /*
 			h = Native.rdIntMem(2);				// get heap pointer
@@ -506,7 +666,7 @@ synchronized (o) {
 
 		synchronized (o) {
 			
-			ret = GC.newArray(count, true);
+			ret = GC.newArray(count, 0, true); //0..type not available=reference
 		}
 		return ret;
 	}
@@ -609,7 +769,7 @@ if (enterCnt<0) {
 		// handle
 		int ref = Native.rdMem(ret);
 		for (i=0; i<cnt; ++i) {
-			Native.wrMem(f_newarray(cnt2), ref+i);
+			Native.wrMem(f_newarray(cnt2,10), ref+i);
 		}
 		
 		return ret;

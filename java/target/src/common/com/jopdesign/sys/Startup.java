@@ -258,9 +258,9 @@ public class Startup {
 
 	static void newarray() {
 
-		readBC8u();			// ignore typ
+		int type = readBC8u();			// ignore typ
 		int val = stack[sp];	// count from stack
-		stack[sp] = JVM.f_newarray(val);
+		stack[sp] = JVM.f_newarray(val, type);
 /* non JVM, non handle version:
 		int heap = Native.rdIntMem(2);	// get heap pointer
 		Native.wrMem(val, heap);

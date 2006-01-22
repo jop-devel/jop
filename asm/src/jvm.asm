@@ -76,6 +76,7 @@
 //				Instructions: star, stmi, ldmi
 //				removed stioa, stiod, and ldiod
 //	2006-01-20	add get/put field/static _ref/_long
+//	2006-01-22	add type info for newarray (for long)
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -86,7 +87,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20060120
+version		= 20060122
 
 //
 //	io address are negativ memory addresses
@@ -965,12 +966,16 @@ putfield:
 
 
 newarray:
+			nop opd
+			ld_opd_8u
+			stm a
 			ldjpc
-			ldi	1
+			ldi	2
 			sub
 			stjpc				// get last byte code
 			nop					// ???
 			nop					// one more now (2004-04-06) ?
+			ldm	a
 			ldm	jjp
 			nop	opd
 			ld_opd_8u

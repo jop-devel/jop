@@ -18,7 +18,7 @@ public class DoAll {
 		TestCase tc[] = {
 				new Basic(),
 				new Basic2(),
-//				new TypeMix(),
+				new TypeMix(),
 				new Static(),
 				new Array(),
 				new Clinit(),
