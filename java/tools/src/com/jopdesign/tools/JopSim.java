@@ -447,23 +447,34 @@ System.out.println(mp+" "+pc);
 		stack[++sp] = val1;
 	}
 
-/**
-*
-*/
 	void putstatic() {
 
 		int idx = readOpd16u();
-		int addr = readMem(cp+idx);	// not now
-// System.out.println("putstatic address: "+addr+" TOS: "+stack[sp]);
+		int addr = readMem(cp+idx);
 		writeMem(addr, stack[sp--]);
 	}
 
 	void getstatic() {
 
 		int idx = readOpd16u();
-		int addr = readMem(cp+idx);	// not now
-// System.out.println("getstatic address: "+addr+" TOS: "+stack[sp]);
+		int addr = readMem(cp+idx);
 		stack[++sp] = readMem(addr);
+	}
+
+	void putstatic_long() {
+
+		int idx = readOpd16u();
+		int addr = readMem(cp+idx);
+		writeMem(addr+1, stack[sp--]);
+		writeMem(addr, stack[sp--]);
+	}
+
+	void getstatic_long() {
+
+		int idx = readOpd16u();
+		int addr = readMem(cp+idx);
+		stack[++sp] = readMem(addr);
+		stack[++sp] = readMem(addr+1);
 	}
 
 	void putfield() {
@@ -489,6 +500,34 @@ System.out.println(mp+" "+pc);
 			ref = readMem(ref);
 		}
 		stack[sp] = readMem(ref+off);
+	}
+
+	void putfield_long() {
+
+		int idx = readOpd16u();
+		int off = readMem(cp+idx);
+		int val_l = stack[sp--];
+		int val_h = stack[sp--];
+		int ref = stack[sp--];
+		if (useHandle) {
+			// handle needs indirection
+			ref = readMem(ref);
+		}
+		writeMem(ref+off, val_h);
+		writeMem(ref+off+1, val_l);
+	}
+
+	void getfield_long() {
+
+		int idx = readOpd16u();
+		int off = readMem(cp+idx);
+		int ref = stack[sp];
+		if (useHandle) {
+			// handle needs indirection
+			ref = readMem(ref);
+		}
+		stack[sp] = readMem(ref+off);
+		stack[++sp] = readMem(ref+off+1);
 	}
 
 /**
@@ -1383,29 +1422,29 @@ System.out.println("new heap: "+heap);
 				case 223 :		// resDF
 					noim(223);
 					break;
-				case 224 :		// resE0 - getfield_ref
+				case 224 :		// resE0 - getstatic_ref
+					getstatic();
+					break;
+				case 225 :		// resE1 - putstatic_ref
+					putstatic();
+					break;
+				case 226 :		// resE2 - getfield_ref
 					getfield();
 					break;
-				case 225 :		// resE1
-					noim(225);
+				case 227 :		// resE3 - putfield_ref
+					putfield();
 					break;
-				case 226 :		// resE2
-					noim(226);
+				case 228 :		// resE4 - getstatic_long
+					getstatic_long();
 					break;
-				case 227 :		// resE3
-					noim(227);
+				case 229 :		// resE5 - putstatic_long
+					putstatic_long();
 					break;
-				case 228 :		// resE4
-					noim(228);
+				case 230 :		// resE6 - getfield_long
+					getfield_long();
 					break;
-				case 229 :		// resE5
-					noim(229);
-					break;
-				case 230 :		// resE6
-					noim(230);
-					break;
-				case 231 :		// resE7
-					noim(231);
+				case 231 :		// resE7 - putfield_long
+					putfield_long();
 					break;
 				case 232 :		// resE8
 					noim(232);

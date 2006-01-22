@@ -13,6 +13,8 @@ import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.*;
 import org.apache.bcel.generic.*;
 import org.apache.bcel.util.InstructionFinder;
+import org.apache.bcel.verifier.statics.DOUBLE_Upper;
+import org.apache.bcel.verifier.statics.LONG_Upper;
 
 import com.jopdesign.tools.JopInstr;
 
@@ -72,40 +74,53 @@ public class ReplaceNativeAndCPIdx extends MyVisitor {
 			}
 		}
 
-		// Added by Rasmus
-		// Replace GETFIELD with GETFIELD_REF_JOP for reference
-		// references:-)
+		// Added by Rasmus and extended by Martin
+		// Replace reference and long/double field bytecodes
+		// with 'special' bytecodes.
+		// TODO: also replace index by the offset into the object
+		// on method fields
 		f = new InstructionFinder(il);
-		int cnt = 0;
 
-		// replace the field instructions with the new reference/value type
-		// instructions
 		String fs = "FieldInstruction";
 		for (Iterator i = f.search(fs); i.hasNext();) {
 			InstructionHandle[] match = (InstructionHandle[]) i.next();
 			for (int j = 0; j < match.length; j++) {
 				InstructionHandle ih = match[j];
-				if ((ih.getInstruction()) instanceof GETFIELD) {
-					GETFIELD gf = (GETFIELD) ih.getInstruction();
-					if (gf.getFieldType(cpool) instanceof ReferenceType) {
-//						System.out.println("GETFIELD ReferenceType found:"
-//								+ gf.getFieldName(cpool));
-						int index = gf.getIndex();
-						// ih.setInstruction(new
-						// GETFIELD_REF_JOP((short)0xB4,(short)index)); //use
-						// the GETFIELD
-						ih.setInstruction(new GETFIELD_REF((short) 0xE0,
-								(short) index)); // use the new GETFIELD_REF
-						// System.exit(1);
-						cnt++;
+				FieldInstruction fi = (FieldInstruction) ih.getInstruction();
+				int index = fi.getIndex();
+				Type ft = fi.getFieldType(cpool);
+				
+				boolean isRef = ft instanceof ReferenceType;
+				boolean	isLong = ft==BasicType.LONG || ft==BasicType.DOUBLE;
+
+				if (fi instanceof GETSTATIC) {
+					if (isRef) {
+						ih.setInstruction(new GETSTATIC_REF((short) index));
+					} else if (isLong) {
+						ih.setInstruction(new GETSTATIC_LONG((short) index));
+					}
+				} else if (fi instanceof PUTSTATIC) {
+					if (isRef) {
+						ih.setInstruction(new PUTSTATIC_REF((short) index));
+					} else if (isLong) {
+						ih.setInstruction(new PUTSTATIC_LONG((short) index));
+					}
+				} else if (fi instanceof GETFIELD) {
+					if (isRef) {
+						ih.setInstruction(new GETFIELD_REF((short) index));
+					} else if (isLong) {
+						ih.setInstruction(new GETFIELD_LONG((short) index));
+					}
+				} else if (fi instanceof PUTFIELD) {
+					if (isRef) {
+						ih.setInstruction(new PUTFIELD_REF((short) index));
+					} else if (isLong) {
+						ih.setInstruction(new PUTFIELD_LONG((short) index));
 					}
 				}
+
 			}
 		}
-
-//	    if (cnt > 0)
-//		System.out.println("GETFIELD found " + cnt + " matches in "
-//				+ clazz.getClassName() + "." + method.getName());
 
 		
 		
@@ -144,12 +159,58 @@ public class ReplaceNativeAndCPIdx extends MyVisitor {
 		return m;
 
 	}
+	class GETSTATIC_REF extends FieldInstruction {
+		public GETSTATIC_REF(short index) {
+			super((short) JopInstr.get("getstatic_ref"), index);
+		}
+		public void accept(org.apache.bcel.generic.Visitor v) {}
+	}
+	class PUTSTATIC_REF extends FieldInstruction {
+		public PUTSTATIC_REF(short index) {
+			super((short) JopInstr.get("putstatic_ref"), index);
+		}
+		public void accept(org.apache.bcel.generic.Visitor v) {}
+	}
 	class GETFIELD_REF extends FieldInstruction {
-		public GETFIELD_REF(short arg0, short arg1) {
+		public GETFIELD_REF(short index) {
+			super((short) JopInstr.get("getfield_ref"), index);
+		}
+		public void accept(org.apache.bcel.generic.Visitor v) {}
+	}
+	class PUTFIELD_REF extends FieldInstruction {
+		public PUTFIELD_REF(short index) {
+			super((short) JopInstr.get("putfield_ref"), index);
+		}
+		public void accept(org.apache.bcel.generic.Visitor v) {}
+	}
+	class GETSTATIC_LONG extends FieldInstruction {
+		public GETSTATIC_LONG(short index) {
+			super((short) JopInstr.get("getstatic_long"), index);
+		}
+		public void accept(org.apache.bcel.generic.Visitor v) {}
+	}
+	class PUTSTATIC_LONG extends FieldInstruction {
+		public PUTSTATIC_LONG(short index) {
+			super((short) JopInstr.get("putstatic_long"), index);
+		}
+		public void accept(org.apache.bcel.generic.Visitor v) {}
+	}
+	class GETFIELD_LONG extends FieldInstruction {
+		public GETFIELD_LONG(short index) {
+			super((short) JopInstr.get("getfield_long"), index);
+		}
+		public void accept(org.apache.bcel.generic.Visitor v) {}
+	}
+	class PUTFIELD_LONG extends FieldInstruction {
+		public PUTFIELD_LONG(short index) {
+			super((short) JopInstr.get("putfield_long"), index);
+		}
+		public void accept(org.apache.bcel.generic.Visitor v) {}
+	}
+	class NativeInstruction extends Instruction {
+		public NativeInstruction(short arg0, short arg1) {
 			super(arg0, arg1);
 		}
-
-		public void accept(org.apache.bcel.generic.Visitor v) {
-		}
+		public void accept(org.apache.bcel.generic.Visitor v) {}
 	}
 }

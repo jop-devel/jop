@@ -169,6 +169,7 @@ public class Startup {
 				case 177 :		// return
 					return;
 				case 179 :		// putstatic
+				case 225 :		// resE1 - putstatic_ref
 					putstatic();
 					break;
 				case 188 :		// newarray

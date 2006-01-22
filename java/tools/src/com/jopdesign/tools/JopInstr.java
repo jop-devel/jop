@@ -328,14 +328,14 @@ public class JopInstr{
 		new JopInstr("jopsys_invoke", 1, IMP_NO, 1),			// 0xDE
 		new JopInstr("resDF", 1, IMP_NO, 1),			// 0xDF
 
-		new JopInstr("getfield_ref", 3, IMP_ASM, 30),   // 0xE0
-		new JopInstr("resE1", 1, IMP_NO, 1),			// 0xE1
-		new JopInstr("resE2", 1, IMP_NO, 1),			// 0xE2
-		new JopInstr("resE3", 1, IMP_NO, 1),			// 0xE3
-		new JopInstr("resE4", 1, IMP_NO, 1),			// 0xE4
-		new JopInstr("resE5", 1, IMP_NO, 1),			// 0xE5
-		new JopInstr("resE6", 1, IMP_NO, 1),			// 0xE6
-		new JopInstr("resE7", 1, IMP_NO, 1),			// 0xE7
+		new JopInstr("getstatic_ref", 3, IMP_ASM, 30),   // 0xE0
+		new JopInstr("putstatic_ref", 3, IMP_ASM, 30),			// 0xE1
+		new JopInstr("getfield_ref", 3, IMP_ASM, 30),			// 0xE2
+		new JopInstr("putfield_ref", 3, IMP_ASM, 30),			// 0xE3
+		new JopInstr("getstatic_long", 3, IMP_ASM, 30),			// 0xE4
+		new JopInstr("putstatic_long", 3, IMP_ASM, 30),			// 0xE5
+		new JopInstr("getfield_long", 3, IMP_ASM, 30),			// 0xE6
+		new JopInstr("putfield_long", 3, IMP_ASM, 30),			// 0xE7
 		new JopInstr("resE8", 1, IMP_NO, 1),			// 0xE8
 		new JopInstr("resE9", 1, IMP_NO, 1),			// 0xE9
 		new JopInstr("resEA", 1, IMP_NO, 1),			// 0xEA

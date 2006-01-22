@@ -75,7 +75,7 @@
 //	2006-01-12	Additional register for int. memory addressing (ar)
 //				Instructions: star, stmi, ldmi
 //				removed stioa, stiod, and ldiod
-//	2006-01-19	add getfield_ref
+//	2006-01-20	add get/put field/static _ref/_long
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -86,7 +86,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20060119
+version		= 20060120
 
 //
 //	io address are negativ memory addresses
@@ -817,6 +817,7 @@ goto:		nop opd
 
 
 
+getstatic_ref:
 getstatic:
 				// int idx = readOpd16u();
 				// int addr = readMem(cp+idx);	// not now
@@ -839,6 +840,7 @@ getstatic:
 
 
 
+putstatic_ref:
 putstatic:
 				// int idx = readOpd16u();
 				// int addr = readMem(cp+idx);	// not now
@@ -901,14 +903,12 @@ getfield:
 
 
 
-				// int idx = readOpd16u();
-				// int addr = readMem(cp+idx);	// not now
-				// writeMem(addr, stack[sp--]);
+putfield_ref:
 putfield:
 				// int idx = readOpd16u();
 				// int off = readMem(cp+idx);
 				// int val = stack[sp--];
-				// writeMem(stack[sp--]+off, val);
+				// writeMem(ref+off, val);
 
 			stm	a				// save value
 
