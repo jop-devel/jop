@@ -165,6 +165,7 @@ putstatic_long:
 			wait
 			wait
 			ldmrd		 	// read ext. mem
+long_write:
 			dup
 
 			stmwa				// write ext. mem address
@@ -183,11 +184,11 @@ putstatic_long:
 			nop	nxt
 
 getfield_long:
-				// int idx = readOpd16u();
-				// int off = readMem(cp+idx);
+				// int off = readOpd16u();
 				// int ref = stack[sp];
 				// if (useHandle) {
-				// 	ref = readMem(ref);
+				//	// handle needs indirection
+				//	ref = readMem(ref);
 				// }
 				// stack[sp] = readMem(ref+off);
 				// stack[++sp] = readMem(ref+off+1);
@@ -204,16 +205,9 @@ getfield_long:
 			wait
 			ldmrd
 #endif
-			ldm	cp opd
 			nop	opd
-			ld_opd_16u
-			add
-
-			stmra				// read ext. mem, mem_bsy comes one cycle later
-			wait
-			wait
-			ldmrd			 	// read offset
-
+			nop	opd
+			ld_opd_16u			// CP index is the offset for the field
 			add					// +objectref
 			// address!=0 for the bnz
 			dup
@@ -224,12 +218,12 @@ getfield_long:
 
 
 putfield_long:
-				// int idx = readOpd16u();
-				// int off = readMem(cp+idx);
+				// int off = readOpd16u();
 				// int val_l = stack[sp--];
 				// int val_h = stack[sp--];
 				// int ref = stack[sp--];
 				// if (useHandle) {
+				// 	// handle needs indirection
 				// 	ref = readMem(ref);
 				// }
 				// writeMem(ref+off, val_h);
@@ -250,38 +244,21 @@ putfield_long:
 			wait
 			ldmrd
 #endif
-			ldm	cp opd
 			nop	opd
-			ld_opd_16u
-			add
-
-			stmra				// read ext. mem, mem_bsy comes one cycle later
-			wait
-			wait
-			ldmrd			 	// read offset
-
+			nop	opd
+			ld_opd_16u			// CP index is the offset for the field
 			add					// +objectref
+			// address!=0 for the bnz
 			dup
+			bnz	long_write
+			nop
+			nop
 
-			stmwa				// write ext. mem address
-			ldm	a				// restore value
-			stmwd				// write ext. mem data
-			ldi	1
-			add
-			wait
-			wait
-
-			stmwa
-			ldm	b
-			stmwd
-			wait
-			wait
-			nop	nxt
 
 //
 //	long array access disabled:
 //		1. we run out of microcode memory
-//		2. we need to add long array support in the GC
+//		2. we need to add long array support in the GC:
 //			copy the right size (add type info)
 //
 //lastore:

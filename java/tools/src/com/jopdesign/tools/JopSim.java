@@ -479,8 +479,7 @@ System.out.println(mp+" "+pc);
 
 	void putfield() {
 
-		int idx = readOpd16u();
-		int off = readMem(cp+idx);
+		int off = readOpd16u();
 		int val = stack[sp--];
 		int ref = stack[sp--];
 		if (useHandle) {
@@ -492,8 +491,7 @@ System.out.println(mp+" "+pc);
 
 	void getfield() {
 
-		int idx = readOpd16u();
-		int off = readMem(cp+idx);
+		int off = readOpd16u();
 		int ref = stack[sp];
 		if (useHandle) {
 			// handle needs indirection
@@ -504,8 +502,7 @@ System.out.println(mp+" "+pc);
 
 	void putfield_long() {
 
-		int idx = readOpd16u();
-		int off = readMem(cp+idx);
+		int off = readOpd16u();
 		int val_l = stack[sp--];
 		int val_h = stack[sp--];
 		int ref = stack[sp--];
@@ -519,8 +516,7 @@ System.out.println(mp+" "+pc);
 
 	void getfield_long() {
 
-		int idx = readOpd16u();
-		int off = readMem(cp+idx);
+		int off = readOpd16u();
 		int ref = stack[sp];
 		if (useHandle) {
 			// handle needs indirection

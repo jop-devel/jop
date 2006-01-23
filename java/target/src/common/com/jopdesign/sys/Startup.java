@@ -233,8 +233,7 @@ public class Startup {
 
 	static void putfield() {
 
-		int idx = readBC16u();
-		int off = Native.rdMem(cp+idx);
+		int off = readBC16u();
 		int val = stack[sp--];
 		int ref = stack[sp--];
 		// handle indirection:
@@ -245,8 +244,7 @@ public class Startup {
 
 	static void getfield() {
 
-		int idx = readBC16u();
-		int off = Native.rdMem(cp+idx);
+		int off = readBC16u();
 		int ref = stack[sp];
 		// handle indirection:
 		ref = Native.rdMem(ref);
@@ -258,8 +256,8 @@ public class Startup {
 
 	static void newarray() {
 
-		int type = readBC8u();			// ignore typ
-		int val = stack[sp];	// count from stack
+		int type = readBC8u();			// use typ
+		int val = stack[sp];			// count from stack
 		stack[sp] = JVM.f_newarray(val, type);
 /* non JVM, non handle version:
 		int heap = Native.rdIntMem(2);	// get heap pointer

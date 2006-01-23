@@ -203,6 +203,15 @@ public class JOPizer {
 				// length of the reduced cpool is now known
 
 				// jz.iterate(new Dump(jz));
+
+				// BuildVT was after SetMethodInfo
+				// we need it for replace of field offsets
+				// is this ok?
+				// TODO: split VT and field info...
+				// Build the virtual tables
+				BuildVT vt = new BuildVT(jz);
+				jz.iterate(vt);
+				
 				
 				// change methods - replace Native calls
 				// TODO: also change the index into the cp for the
@@ -216,10 +225,6 @@ public class JOPizer {
 				// Now we can set the method info code and the address
 				// jz.pointerAddr is set
 				jz.iterate(new SetMethodInfo(jz));
-				
-				// Build the virtual tables
-				BuildVT vt = new BuildVT(jz);
-				jz.iterate(vt);
 				
 				// How long is the <clinit> List?
 				int cntClinit = MethodInfo.clinitList.size();

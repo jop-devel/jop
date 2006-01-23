@@ -77,6 +77,7 @@
 //				removed stioa, stiod, and ldiod
 //	2006-01-20	add get/put field/static _ref/_long
 //	2006-01-22	add type info for newarray (for long)
+//	2006-01-23	use offset instead of cp index for get/putfield
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -87,7 +88,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20060122
+version		= 20060123
 
 //
 //	io address are negativ memory addresses
@@ -869,12 +870,16 @@ putstatic:
 			// at the moment it's just a copy of the original
 getfield_ref:
 getfield:
-				// int idx = readOpd16u();
-				// int off = readMem(cp+idx);
-				// stack[sp] = readMem(stack[sp]+off);
+				// int off = readOpd16u();
+				// int ref = stack[sp];
+				// if (useHandle) {
+				//	// handle needs indirection
+				//	ref = readMem(ref);
+				// }
+				// stack[sp] = readMem(ref+off);
 
-			dup					// null pointer check
-			nop					// could be interleaved with
+			dup				// null pointer check
+			nop				// could be interleaved with
 			bz	null_pointer	// following code
 			nop
 			nop
@@ -885,16 +890,13 @@ getfield:
 			wait
 			ldmrd
 #endif
-			ldm	cp opd
+			// TODO: why does flag opd has to be immediatley
+			// before usage by ld_opd?
+			// We cannot optimize this instruction as far as
+			// we want to!
+			nop	opd
 			nop	opd
 			ld_opd_16u
-			add
-
-			stmra				// read ext. mem, mem_bsy comes one cycle later
-			wait
-			wait
-			ldmrd			 	// read offset
-
 			add					// +objectref
 
 			stmra				// read ext. mem, mem_bsy comes one cycle later
@@ -906,15 +908,19 @@ getfield:
 
 putfield_ref:
 putfield:
-				// int idx = readOpd16u();
-				// int off = readMem(cp+idx);
+				// int off = readOpd16u();
 				// int val = stack[sp--];
+				// int ref = stack[sp--];
+				// if (useHandle) {
+				// 	// handle needs indirection
+				// 	ref = readMem(ref);
+				// }
 				// writeMem(ref+off, val);
 
 			stm	a				// save value
 
-			dup					// null pointer check
-			nop					// could be interleaved with
+			dup				// null pointer check
+			nop				// could be interleaved with
 			bz	null_pointer	// following code
 			nop
 			nop
@@ -925,16 +931,9 @@ putfield:
 			wait
 			ldmrd
 #endif
-			ldm	cp opd
+			nop	opd
 			nop	opd
 			ld_opd_16u
-			add
-
-			stmra				// read ext. mem, mem_bsy comes one cycle later
-			wait
-			wait
-			ldmrd			 	// read offset
-
 			add					// +objectref
 
 			stmwa				// write ext. mem address

@@ -26,7 +26,9 @@ import com.jopdesign.tools.JopInstr;
  */
 public class ReplaceNativeAndCPIdx extends MyVisitor {
 
-	private ConstantPoolGen cpool;
+	// Why do we use a ConstantPoolGen and a ConstantPool?
+	private ConstantPoolGen cpoolgen;
+	private ConstantPool cp;
 	
 	public ReplaceNativeAndCPIdx(JOPizer jz) {
 		super(jz);
@@ -37,7 +39,8 @@ public class ReplaceNativeAndCPIdx extends MyVisitor {
 		super.visitJavaClass(clazz);
 		
 		Method[] methods = clazz.getMethods();
-		cpool = new ConstantPoolGen(clazz.getConstantPool());
+		cp = clazz.getConstantPool();
+		cpoolgen = new ConstantPoolGen(cp);
 		
 		for(int i=0; i < methods.length; i++) {
 			if(!(methods[i].isAbstract() || methods[i].isNative())) {
@@ -52,11 +55,10 @@ public class ReplaceNativeAndCPIdx extends MyVisitor {
 
 	private Method replace(Method method) {
 		
-		MethodGen mg  = new MethodGen(method, clazz.getClassName(), cpool);
+		MethodGen mg  = new MethodGen(method, clazz.getClassName(), cpoolgen);
 		InstructionList il  = mg.getInstructionList();
 		InstructionFinder f = new InstructionFinder(il);
 		
-//		System.out.println("Replace: "+method.getName());
 		// find invokes first and replace call to Native by
 		// JOP native instructions.
 		String invokeStr = "InvokeInstruction";		
@@ -64,10 +66,10 @@ public class ReplaceNativeAndCPIdx extends MyVisitor {
 			InstructionHandle[] match = (InstructionHandle[])i.next();
 			InstructionHandle   first = match[0];
 			InvokeInstruction ii = (InvokeInstruction)first.getInstruction();
-			if(ii.getClassName(cpool).equals(JOPizer.nativeClass)) {
-				short opid = (short) JopInstr.getNative(ii.getMethodName(cpool));
+			if(ii.getClassName(cpoolgen).equals(JOPizer.nativeClass)) {
+				short opid = (short) JopInstr.getNative(ii.getMethodName(cpoolgen));
 				if(opid == -1) {
-					System.err.println(method.getName()+": cannot locate "+ii.getMethodName(cpool)+". Replacing with NOP.");
+					System.err.println(method.getName()+": cannot locate "+ii.getMethodName(cpoolgen)+". Replacing with NOP.");
 					first.setInstruction(new NOP());
 				} else {
 					first.setInstruction(new NativeInstruction(opid, (short)1));
@@ -75,12 +77,6 @@ public class ReplaceNativeAndCPIdx extends MyVisitor {
 			}
 		}
 
-		// Added field instruction replacement
-		// by Rasmus and extended by Martin
-		// Replace reference and long/double field bytecodes
-		// with 'special' bytecodes.
-		// TODO: also replace index by the offset into the object
-		// on method fields
 		
 		
 		f = new InstructionFinder(il);
@@ -100,7 +96,7 @@ public class ReplaceNativeAndCPIdx extends MyVisitor {
 			Type ft = null;
 			if (cpii instanceof FieldInstruction) {
 				fi = (FieldInstruction) ih.getInstruction();
-				ft = fi.getFieldType(cpool);
+				ft = fi.getFieldType(cpoolgen);
 			}
 
 			Integer idx = new Integer(index);
@@ -109,26 +105,32 @@ public class ReplaceNativeAndCPIdx extends MyVisitor {
 			int pos = cli.cpoolUsed.indexOf(idx);
 			int new_index = pos+1;
 			if (pos==-1) {
-				System.out.println("Error: constant "+index+" "+cpool.getConstant(index)+
+				System.out.println("Error: constant "+index+" "+cpoolgen.getConstant(index)+
 						" not found");
 				System.out.println("new cpool: "+cli.cpoolUsed);
-				System.out.println("original cpool: "+cpool);
+				System.out.println("original cpool: "+cpoolgen);
 				
 				System.exit(-1);
 			} else {
-//				if (cpii instanceof GETFIELD || cpii instanceof GETFIELD) {
-//					System.out.println("CPI get/putfield");
-//				} else if (cpii instanceof GETFIELD_REF){
-//					System.out.println("CPI getfield_ref");					
-//				}
+				// replace index by the offset for getfield
+				// and putfield
+				if (cpii instanceof GETFIELD || cpii instanceof PUTFIELD) {
+					int offset = getFieldOffset(cp, index);
+					// we use the offset instead of the CP index 
+					new_index = offset;
+				}
 				// set new index, position starts at
 				// 1 as cp points to the length of the pool
 // System.out.println(cli.clazz.getClassName()+"."+method.getName()+" "+ii+" -> "+(pos+1));
 				cpii.setIndex(new_index);
 			}
 			
+			// Added field instruction replacement
+			// by Rasmus and extended by Martin
+			// Replace reference and long/double field bytecodes
+			// with 'special' bytecodes.
+
 			if (cpii instanceof FieldInstruction) {
-//				System.out.println("Field instruction");
 				
 				boolean isRef = ft instanceof ReferenceType;
 				boolean	isLong = ft==BasicType.LONG || ft==BasicType.DOUBLE;
@@ -148,12 +150,8 @@ public class ReplaceNativeAndCPIdx extends MyVisitor {
 				} else if (fi instanceof GETFIELD) {
 					if (isRef) {
 						ih.setInstruction(new GETFIELD_REF((short) new_index));
-//						System.out.println("get ref");
 					} else if (isLong) {
 						ih.setInstruction(new GETFIELD_LONG((short) new_index));
-//						System.out.println("get long");
-					} else {
-//						System.out.println("get word");						
 					}
 				} else if (fi instanceof PUTFIELD) {
 					if (isRef) {
@@ -171,6 +169,48 @@ public class ReplaceNativeAndCPIdx extends MyVisitor {
 		return m;
 
 	}
+
+	private int getFieldOffset(ConstantPool cp, int index) {
+		
+		// from ClassInfo.resolveCPool
+		
+		Constant co = cp.getConstant(index);
+		
+		int fidx = ((ConstantFieldref) co).getClassIndex();
+		ConstantClass fcl = (ConstantClass) cp.getConstant(fidx);
+		String fclname = fcl.getBytes(cp).replace('/','.');
+		// got the class name
+		int sigidx = ((ConstantFieldref) co).getNameAndTypeIndex();
+		ConstantNameAndType signt = (ConstantNameAndType) cp.getConstant(sigidx);
+		String sigstr = signt.getName(cp)+signt.getSignature(cp);
+		ClassInfo clinf = (ClassInfo) ClassInfo.mapClassNames.get(fclname);
+		int j;
+		boolean found = false;
+		while (!found) {
+			for (j=0; j<clinf.clft.len; ++j) {
+				if (clinf.clft.key[j].equals(sigstr)) {
+					found = true;
+					// should not happen - check it for sure
+					if (clinf.clft.isStatic[j]) {
+						System.out.println("Error is static in ReplNCI");
+						System.exit(-1);
+					}
+					return clinf.clft.idx[j];
+				}
+			}
+			if (!found) {
+				clinf = clinf.superClass;
+				if (clinf==null) {
+					System.out.println("Error: field "+fclname+"."+sigstr+" not found!");
+					break;									
+				}
+			}							
+		}
+		System.out.println("Error in getFieldOffset()");
+		System.exit(-1);
+		return 0;
+	}
+	
 	class GETSTATIC_REF extends FieldInstruction {
 		public GETSTATIC_REF(short index) {
 			super((short) JopInstr.get("getstatic_ref"), index);
