@@ -201,7 +201,10 @@ public class JOPizer {
 				// Reduce constant pool
 				jz.iterate(new FindUsedConstants(jz));
 				// length of the reduced cpool is now known
-
+		        if(dumpMgci){
+		          jz.iterate(new SetGCRTMethodInfo(jz));
+		        }
+		        
 				// jz.iterate(new Dump(jz));
 
 				// BuildVT was after SetMethodInfo
@@ -240,13 +243,6 @@ public class JOPizer {
 				
 				// Start of class info
 				jz.clinfoAddr = ClassInfo.addrRefStatic + ClassInfo.cntRefStatic;
-				if (dumpMgci) {
-					// GC info for the methods adjustment
-					// Count field of mgci "structs"
-					jz.clinfoAddr += 1; 
-					// Each mgci is a key (method struct addr) and a mgci word
-					jz.clinfoAddr += MethodInfo.cntMgci*2;					
-				}
 				
 				// Calculate class info addresses
 				ClassAddress cla = new ClassAddress(jz, jz.clinfoAddr);

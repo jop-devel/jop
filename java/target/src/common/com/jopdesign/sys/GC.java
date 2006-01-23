@@ -95,6 +95,8 @@ public class GC {
 	static boolean concurrentGc;
 	
 	static int startTime;
+	
+	static int roots[];
 
 	static void init(int addr) {
 		
@@ -230,24 +232,35 @@ public class GC {
 				push(Native.rdMem(addr+i));
 			}
 			// add complete stack of the current thread to the root list
-			i = Native.getSP();
-			for (j=128; j<=i; ++j) {
-				push(Native.rdIntMem(j));
+//			roots = GCStkWalk.swk(RtThreadImpl.getActive(),true,true);
+			i = Native.getSP();			
+			for (j = 128; j <= i; ++j) {
+//				if (roots[j - 128] == 1) {
+					push(Native.rdIntMem(j));
+//				}
 			}
 			// Stacks from the other threads
 			cnt = RtThreadImpl.getCnt();
-			for (i=0; i<cnt; ++i) {
-				// can we allocate objects here???
-				// better don't do it....
-//				System.out.print("thread stack ");
-//				System.out.println(i);
-				int[] mem = RtThreadImpl.getStack(i);
-				int sp = RtThreadImpl.getSP(i)-128;		// sp starts at 128
-//				System.out.print("sp=");
-//				System.out.println(sp);
-				for (j=0; j<=sp; ++j) {
-					push(mem[j]);
-				}
+			
+			for (i = 0; i < cnt; ++i) {
+				if (i != RtThreadImpl.getActive()) {
+					// can we allocate objects here???
+					// better don't do it....
+					// System.out.print("thread stack ");
+					// System.out.println(i);
+					int[] mem = RtThreadImpl.getStack(i);
+					int sp = RtThreadImpl.getSP(i) - 128; // sp starts at 128
+
+//					roots = GCStkWalk.swk(i, false, true);
+
+					// System.out.print("sp=");
+					// System.out.println(sp);
+					for (j = 0; j <= sp; ++j) {
+//						if (roots[j] == 1) {
+							push(mem[j]);
+//						}
+					}
+				} // if k!=active
 			}
 			// TODO: and what happens when the stack gets changed during
 			// GC?

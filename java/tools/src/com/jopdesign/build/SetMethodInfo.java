@@ -36,6 +36,11 @@ public class SetMethodInfo extends MyVisitor {
 			Method m = methods[i];
 			String methodId = m.getName()+m.getSignature();
 	        MethodInfo mi = cli.getMethodInfo(methodId);
+	        if(JOPizer.dumpMgci){
+	          // GCRT: get number of words used for this method's GC
+	          addr += GCRTMethodInfo.gcLength(mi);    
+	        }
+
 	        mi.setMethod(m, addr);
 	        addr += mi.getLength();
 		}

@@ -27,9 +27,11 @@ import com.jopdesign.sys.*;
 public class GCTest3 {
 
 	public static void main(String s[]) {
-	  
-	  GCStkWalk.init();
-      
+    System.out.println("HelloWorld");	  
+	  //GCStkWalk.init();
+    long l1, l2;
+    l1=l2=1;
+    long l3 = l1 + l2;      
 	  SomeClass1 sc1 = new SomeClass1();
 	  SomeClass2 sc2 = new SomeClass2(sc1);
 System.exit(0);
@@ -38,10 +40,8 @@ System.exit(0);
 			public void run() {
 				for (;;) {
 					System.out.println("Walk main from \"GC\" thread");
-					GCStkWalk.swk(0);
-//					System.out.println("Walk \"GC\" thread from \"GC\" thread");
-//					GCStkWalk.swk();
-                    System.exit(0);
+					GCStkWalk.swk(0,false,true);
+          System.exit(0);
 					waitForNextPeriod();
 				}
 			}
@@ -56,13 +56,13 @@ class SomeClass1 {
 	int i,j;
 	SomeClass1 sc1inst;  
 	void someMethod(){
-		
 		sc1inst = this;
 		int ii = i+j;
 		SomeClass1 sc1instlocal = this;
 		System.out.println("Walk someMethod");
-		GCStkWalk.swk(0);
-	  }
+		//It should not be called like this, but we are testing...
+		GCStkWalk.swk(0,true,true);
+	}
 
 }
 class SomeClass2 {

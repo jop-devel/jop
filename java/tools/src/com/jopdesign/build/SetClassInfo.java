@@ -48,6 +48,11 @@ public class SetClassInfo extends MyVisitor {
 		String methodId = method.getName()+method.getSignature();
         cli.addMethodOnce(methodId);
         MethodInfo mi = cli.getMethodInfo(methodId);
+        if(JOPizer.dumpMgci){
+          // GCRT
+          new GCRTMethodInfo(mi,method);
+        }
+
 	}
 
 	public void visitConstantString(ConstantString S) {

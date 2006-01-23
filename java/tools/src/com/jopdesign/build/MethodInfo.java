@@ -21,10 +21,6 @@ import org.apache.bcel.generic.Type;
 public class MethodInfo {
 
 	static List clinitList = new LinkedList();
-	// counts the number of methods with one or more local object references
-	public static int cntMgci = 0;
-	private static int tmpCntMgci = 0;
-	int mgci;	
 	String methodId;
 	ClassInfo cli;
 	Method method;
@@ -87,41 +83,7 @@ public class MethodInfo {
 			}
 //System.out.println((mstack+m.getCode().getMaxLocals())+" "+
 //		m.getName()+" maxStack="+mstack+" locals="+m.getCode().getMaxLocals());
-			
-			
-			//rup: Collect info on the local variables
-			LocalVariableTable lvt = m.getLocalVariableTable();
-			// method GC info
-			mgci = 0; 
-			if (lvt != null) {
-				LocalVariable[] lv = lvt.getLocalVariableTable();
-				for (int i = 0; i < lv.length; i++) {
-//					System.out.println("Local var:" + lv[i].getIndex()
-//							+ " Signature:" + lv[i].getSignature());
-					String sig = lv[i].getSignature();
-					if (sig.charAt(0) == 'L' || sig.charAt(0) == '[') {
-						int ref = (1 << i);
-						mgci |= ref;
-//						System.out.println("GCI, sig(0):" + sig.charAt(0)
-//								+ ", ref:" + ref + ", mgci:" + mgci);
-					}
-				}
-				// increment the static counter (used by JOPizer) if a reference
-				// is part of the args or locals
-				if (mgci > 0)
-					cntMgci++;
-			} else {
-//				System.out.println("LocalVariableTable:null,margs:" + margs
-//						+ ",mreallocals:" + mreallocals);
-				if (margs + mreallocals > 0) {
-					System.out
-							.println("GC problem: GC needs LocalVariableTable to mark references");
-					System.out
-							.println("Recompile target source with javac -g option");
-					// System.exit(0); //TODO: Why does test test Clock not give
-					// LocalVariableTables
-				}
-			}
+
 		}
 	}
 
@@ -168,29 +130,6 @@ public class MethodInfo {
 		out.println("\t\t"+word1+",");
 		out.println("\t\t"+word2+",");
 
-	}
-	public void dumpMethodGcis(PrintWriter out) {
-		out.println("\t//\tgarbage info word for method "
-				+ cli.clazz.getClassName() + "." + methodId);
-		out.println("\t//\targs size:" + margs + " locals:" + mreallocals);
-
-		if (mgci > 0) {
-			tmpCntMgci++;
-			out.println("\t//\ttmpCntMgci:" + tmpCntMgci);
-			// make mgci to bit string
-			StringBuffer sb = new StringBuffer();
-			int mask = 0x01;
-			for (int i = 31; i >= 0; i--) {
-				int res = (mgci >>> i) & mask;
-				if ((i + 1) % 8 == 0 && i < 31)
-					sb.append("_");
-				sb.append(res);
-			}
-
-			// out.println("\t\t"+codeAddress+",//\tkey");structAddress
-			out.println("\t\t" + structAddress + ",//\tkey");
-			out.println("\t\t" + mgci + ",//\tmgci:" + sb.toString());
-		}
 	}
 		
 	public void dumpByteCode(PrintWriter out) {
