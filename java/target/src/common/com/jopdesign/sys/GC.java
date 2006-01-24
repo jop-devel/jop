@@ -105,11 +105,6 @@ public class GC {
 		mem_start = Native.rdMem(0);
 		full_heap_size = MEM_SIZE-mem_start;
 		handle_cnt = full_heap_size/2/(TYPICAL_OBJ_SIZE+HANDLE_SIZE);
-		// we use fixed handles and a fixed heap size for the tests:
-		full_heap_size = MEM_SIZE;
-		
-		
-//		handle_cnt = FIX_HANDLES;
 		semi_size = (full_heap_size-handle_cnt*HANDLE_SIZE)/2;
 		
 		heapStartA = mem_start+handle_cnt*HANDLE_SIZE;
