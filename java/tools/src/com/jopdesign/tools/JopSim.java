@@ -13,6 +13,12 @@
 package com.jopdesign.tools;
 
 import java.io.*;
+
+// uncomment for usage of the PCs com port
+//import javax.comm.CommPortIdentifier;
+//import javax.comm.SerialPort;
+//import javax.comm.UnsupportedCommOperationException;
+
 import com.jopdesign.sys.*;
 
 public class JopSim {
@@ -243,10 +249,55 @@ System.out.println(mp+" "+pc);
 	int usCnt() {
 		return ((int) System.currentTimeMillis())*1000;
 	}
-
+	
+	//
+	//	Mapping of the second serial line to the PCs
+	//	com port. See ejip.MainSlipUart2 for an example.
+	//	Uncommented as javax.comm is NOT part of the standard
+	//	JDK - Blame Sun!
+	
+//	private String portName;
+//	private CommPortIdentifier portId;
+//	private InputStream is = null;
+//	private OutputStream os = null;
+//	private SerialPort serialPort;
+//
+//	private void openSerialPort() {
+//		try {
+//			if (portId!=null) {
+//				try {
+//					is.close();
+//					os.close();
+//					is = null;
+//					os = null;
+//				} catch (Exception e1) {
+//				}
+//				serialPort.close();
+//			}
+//			portId = CommPortIdentifier.getPortIdentifier(portName);
+//			serialPort = (SerialPort) portId.open(getClass().toString(), 2000);
+//			serialPort.setFlowControlMode(SerialPort.FLOWCONTROL_RTSCTS_OUT
+//										| SerialPort.FLOWCONTROL_RTSCTS_IN);
+//			serialPort.setSerialPortParams(115200,
+//				SerialPort.DATABITS_8,
+//				SerialPort.STOPBITS_1,
+//				SerialPort.PARITY_NONE);
+//			is = serialPort.getInputStream();
+//			os = serialPort.getOutputStream();
+//System.out.println("open"+portName);
+//		} catch (Exception e) {
+//			is = null;
+//			os = null;
+//			System.out.println("Problem with serial port "+portName);
+//			System.out.println(e.getMessage());
+//			// System.exit(-1);
+//		}
+//	}
+	
 	void sysRd() {
 
 		int addr = stack[sp];
+		int i;
 
 		try {
 			switch (addr) {
@@ -256,12 +307,35 @@ System.out.println(mp+" "+pc);
 						stack[sp] |= Const.MSK_UA_RDRF;
 					}
 					break;
+				case Const.IO_STATUS2:
+					i = 0;
+//					if (is!=null) {
+//						try {
+//							if (is.available()!=0) {
+//								i |= Const.MSK_UA_RDRF;
+//							}
+//						} catch (IOException e1) {
+//							e1.printStackTrace();
+//						}	// rdrf
+//					}
+//					i |= Const.MSK_UA_TDRE;							// tdre is alwais true on OutputStream
+					stack[sp] = i;
+					break;
 				case Const.IO_UART:
 					if (System.in.available()!=0) {
 						stack[sp] = System.in.read();
 					} else {
 						stack[sp] = '_';
 					}
+					break;
+				case Const.IO_UART2:
+					i=0;
+//					try {
+//						i =  is.read();
+//					} catch (IOException e) {
+//						e.printStackTrace();
+//					}
+					stack[sp] = i;
 					break;
 				case Const.IO_CNT:
 					stack[sp] = ioCnt;
@@ -273,6 +347,7 @@ System.out.println(mp+" "+pc);
 					// trigger cache debug output
 //					cache.rawData();
 //					cache.resetCnt();
+					break;
 				default:
 					stack[sp] = 0;
 			}
@@ -299,6 +374,41 @@ System.out.println(mp+" "+pc);
 					System.exit(0);
 				}
 				break;
+			case Const.IO_UART2:
+//				if (os==null) return;
+//				try {
+//					os.write(val&0xff);
+//				} catch (IOException e) {
+//					e.printStackTrace();
+//				}
+				break;
+			case Const.IO_STATUS2:
+//				if (serialPort!=null) {
+//					serialPort.setDTR(val==1);
+//					try {
+//						if ((val&0x04)==0) {
+//							serialPort.setSerialPortParams(2400,
+//								SerialPort.DATABITS_8,
+//								SerialPort.STOPBITS_1,
+//								SerialPort.PARITY_NONE);
+//						} else {
+//							serialPort.setSerialPortParams(115200,
+//								SerialPort.DATABITS_8,
+//								SerialPort.STOPBITS_1,
+//								SerialPort.PARITY_NONE);
+//						}
+//						if ((val&0x02)==0) {
+//							serialPort.setFlowControlMode(SerialPort.FLOWCONTROL_NONE);
+//						} else {
+//							serialPort.setFlowControlMode(SerialPort.FLOWCONTROL_RTSCTS_OUT
+//														| SerialPort.FLOWCONTROL_RTSCTS_IN);
+//						}
+//					} catch (UnsupportedCommOperationException e1) {
+//						e1.printStackTrace();
+//					}
+//				}
+				break;
+				
 			case Const.IO_INT_ENA:
 				intEna = (val==0) ? false : true;
 				break;
@@ -535,10 +645,7 @@ System.out.println(mp+" "+pc);
 
 		int new_pc;		// for cond. branches
 		int ref, val, idx, val2;
-		int old_pc = -1;
-		int old_mp = -1;
-
-		int a, b, c, d;
+		int a, b, c;
 
 		for (;;) {
 
@@ -583,10 +690,10 @@ System.out.println(mp+" "+pc);
 			bcStat[instr]++;
 			ioCnt += JopInstr.cnt(instr);
 
-			String spc = (pc-1)+" ";
-			while (spc.length()<4) spc = " "+spc;
-			String s = spc+JopInstr.name(instr);
 			if (log) {
+				String spc = (pc-1)+" ";
+				while (spc.length()<4) spc = " "+spc;
+				String s = spc+JopInstr.name(instr);
 				System.out.print(s+"\t");
 				dump();
 			}
@@ -1588,6 +1695,8 @@ System.out.println(sum+" instructions, "+sumcnt+" cycles, "+instrBytesCnt+" byte
 
 		log = System.getProperty("log", "false").equals("true");
 		useHandle = System.getProperty("handle", "false").equals("true");
+//		js.portName = System.getProperty("port", "COM1");
+//		js.openSerialPort();
 
 		for (int i=0; i<js.cache.cnt(); ++i) {
 			js.cache.use(i);
