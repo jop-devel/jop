@@ -158,11 +158,12 @@ end component;
 	signal ac97_bclk	: std_logic;
 
 	signal ac97_wb_adr	: std_logic_vector(31 downto 0);
+	signal not_reset : std_logic; -- for sim
 
 
 begin
 
---
+	not_reset <= not reset;
 --	unused and input pins tri state
 --
 	l(20 downto 5) <= (others => 'Z');
@@ -317,7 +318,7 @@ begin
 	wbac97: ac97_top  port map(
 
 		clk_i			=> clk,
-		rst_i			=> not reset,	-- the AC97 core uses nreset!
+		rst_i			=> not_reset,	-- the AC97 core uses nreset!
 
 -- WISHBONE SLAVE INTERFACE 
 		wb_data_i		=> wbs_in(WB_AC97).dat_i,
