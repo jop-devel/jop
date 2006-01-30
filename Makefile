@@ -24,7 +24,7 @@ COM_FLAG=-e
 #COM_FLAG=-e -usb
 
 # 'some' different Quartus projects
-QPROJ=cycmin cycbaseio cycbg dspio lego
+QPROJ=cycmin cycbaseio cycbg dspio lego cycfpu
 # if you want to build only one Quartus project use e.q.:
 QPROJ=cycmin
 
