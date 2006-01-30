@@ -54,14 +54,14 @@ public class CS8900 extends LinkLayer {
 */
 	private static boolean txFree;			// ready for next transmit
 
-	private static int[] eth;				// own ethernet address
+	static int[] eth;				// own ethernet address
 	private static int mac_low, mac_mid, mac_hi;
-	private static int ip;					// ip address for ARP requests
+	static int ip;					// ip address for the interface
 
 
 	private static int tx_packets;
-	private static int tx_bytes;
-	private static int collisions;
+//	private static int tx_bytes;
+//	private static int collisions;
 
 	private static int rx_packets;
 	private static int rx_bytes;
@@ -71,90 +71,90 @@ public class CS8900 extends LinkLayer {
 
 /******** cs.h **********/
 
-	private static final int PP_ISAIOB = 0x0020;	/*  IO base address */
+//	private static final int PP_ISAIOB = 0x0020;	/*  IO base address */
 
 	private static final int PP_RxCFG = 0x0102;		/*  Rx Bus config */
 	private static final int PP_RxCTL = 0x0104;		/*  Receive Control Register */
 	private static final int PP_TxCFG = 0x0106;		/*  Transmit Config Register */
-	private static final int PP_TxCMD = 0x0108;		/*  Transmit Command Register */
+//	private static final int PP_TxCMD = 0x0108;		/*  Transmit Command Register */
 	private static final int PP_BufCFG = 0x010A;	/*  Bus configuration Register */
 	private static final int PP_LineCTL = 0x0112;	/*  Line Config Register */
-	private static final int PP_SelfCTL = 0x0114;	/*  Self Command Register */
+//	private static final int PP_SelfCTL = 0x0114;	/*  Self Command Register */
 	private static final int PP_BusCTL = 0x0116;	/*  ISA bus control Register */
-	private static final int PP_TestCTL = 0x0118;	/*  Test Register */
-	private static final int PP_AutoNegCTL = 0x011C;	/*  Auto Negotiation Ctrl */
+//	private static final int PP_TestCTL = 0x0118;	/*  Test Register */
+//	private static final int PP_AutoNegCTL = 0x011C;	/*  Auto Negotiation Ctrl */
 
-	private static final int PP_ISQ = 0x0120;		/*  Interrupt Status */
+//	private static final int PP_ISQ = 0x0120;		/*  Interrupt Status */
 	private static final int PP_RxEvent = 0x0124;	/*  Rx Event Register */
 	private static final int PP_TxEvent = 0x0128;	/*  Tx Event Register */
 	private static final int PP_BufEvent = 0x012C;	/*  Bus Event Register */
-	private static final int PP_RxMiss = 0x0130;	/*  Receive Miss Count */
-	private static final int PP_TxCol = 0x0132;		/*  Transmit Collision Count */
-	private static final int PP_LineST = 0x0134;	/*  Line State Register */
+//	private static final int PP_RxMiss = 0x0130;	/*  Receive Miss Count */
+//	private static final int PP_TxCol = 0x0132;		/*  Transmit Collision Count */
+//	private static final int PP_LineST = 0x0134;	/*  Line State Register */
 	private static final int PP_SelfST = 0x0136;	/*  Self State register */
 	private static final int PP_BusST = 0x0138;		/*  Bus Status */
-	private static final int PP_TDR = 0x013C;		/*  Time Domain Reflectometry */
-	private static final int PP_AutoNegST = 0x013E;	/*  Auto Neg Status */
-	private static final int PP_TxCommand = 0x0144;	/*  Tx Command */
-	private static final int PP_TxLength = 0x0146;	/*  Tx Length */
-	private static final int PP_LAF = 0x0150;		/*  Hash Table */
+//	private static final int PP_TDR = 0x013C;		/*  Time Domain Reflectometry */
+//	private static final int PP_AutoNegST = 0x013E;	/*  Auto Neg Status */
+//	private static final int PP_TxCommand = 0x0144;	/*  Tx Command */
+//	private static final int PP_TxLength = 0x0146;	/*  Tx Length */
+//	private static final int PP_LAF = 0x0150;		/*  Hash Table */
 	private static final int PP_IA = 0x0158;		/*  Physical Address Register */
 
-	private static final int PP_RxStatus = 0x0400;	/*  Receive start of frame */
-	private static final int PP_RxLength = 0x0402;	/*  Receive Length of frame */
-	private static final int PP_RxFrame = 0x0404;	/*  Receive frame pointer */
-	private static final int PP_TxFrame = 0x0A00;	/*  Transmit frame pointer */
+//	private static final int PP_RxStatus = 0x0400;	/*  Receive start of frame */
+//	private static final int PP_RxLength = 0x0402;	/*  Receive Length of frame */
+//	private static final int PP_RxFrame = 0x0404;	/*  Receive frame pointer */
+//	private static final int PP_TxFrame = 0x0A00;	/*  Transmit frame pointer */
 
-	private static final int ADD_MASK = 0x3000;		/*  Mask it use of the ADD_PORT register */
-	private static final int ADD_SIG = 0x3000;		/*  Expected ID signature */
+//	private static final int ADD_MASK = 0x3000;		/*  Mask it use of the ADD_PORT register */
+//	private static final int ADD_SIG = 0x3000;		/*  Expected ID signature */
 
 /*  Mask to find out the types of  registers */
-	private static final int REG_TYPE_MASK = 0x001F;
+//	private static final int REG_TYPE_MASK = 0x001F;
 
 /*  Defines Control/Config register quintuplet numbers */
-	private static final int RX_BUF_CFG = 0x0003;
-	private static final int RX_CONTROL = 0x0005;
-	private static final int TX_CFG = 0x0007;
-	private static final int TX_COMMAND = 0x0009;
-	private static final int BUF_CFG = 0x000B;
-	private static final int LINE_CONTROL = 0x0013;
-	private static final int SELF_CONTROL = 0x0015;
-	private static final int BUS_CONTROL = 0x0017;
-	private static final int TEST_CONTROL = 0x0019;
+//	private static final int RX_BUF_CFG = 0x0003;
+//	private static final int RX_CONTROL = 0x0005;
+//	private static final int TX_CFG = 0x0007;
+//	private static final int TX_COMMAND = 0x0009;
+//	private static final int BUF_CFG = 0x000B;
+//	private static final int LINE_CONTROL = 0x0013;
+//	private static final int SELF_CONTROL = 0x0015;
+//	private static final int BUS_CONTROL = 0x0017;
+//	private static final int TEST_CONTROL = 0x0019;
 
 /*  Defines Status/Count registers quintuplet numbers */
-	private static final int RX_EVENT = 0x0004;
-	private static final int TX_EVENT = 0x0008;
-	private static final int BUF_EVENT = 0x000C;
-	private static final int RX_MISS_COUNT = 0x0010;
-	private static final int TX_COL_COUNT = 0x0012;
-	private static final int LINE_STATUS = 0x0014;
-	private static final int SELF_STATUS = 0x0016;
-	private static final int BUS_STATUS = 0x0018;
-	private static final int TDR = 0x001C;
+//	private static final int RX_EVENT = 0x0004;
+//	private static final int TX_EVENT = 0x0008;
+//	private static final int BUF_EVENT = 0x000C;
+//	private static final int RX_MISS_COUNT = 0x0010;
+//	private static final int TX_COL_COUNT = 0x0012;
+//	private static final int LINE_STATUS = 0x0014;
+//	private static final int SELF_STATUS = 0x0016;
+//	private static final int BUS_STATUS = 0x0018;
+//	private static final int TDR = 0x001C;
 
 /* PP_RxCFG - Receive  Configuration and Interrupt Mask bit definition -  Read/write */
 	private static final int SKIP_1 = 0x0040;
-	private static final int RX_STREAM_ENBL = 0x0080;
+//	private static final int RX_STREAM_ENBL = 0x0080;
 	private static final int RX_OK_ENBL = 0x0100;
-	private static final int RX_DMA_ONLY = 0x0200;
-	private static final int AUTO_RX_DMA = 0x0400;
-	private static final int BUFFER_CRC = 0x0800;
+//	private static final int RX_DMA_ONLY = 0x0200;
+//	private static final int AUTO_RX_DMA = 0x0400;
+//	private static final int BUFFER_CRC = 0x0800;
 	private static final int RX_CRC_ERROR_ENBL = 0x1000;
-	private static final int RX_RUNT_ENBL = 0x2000;
-	private static final int RX_EXTRA_DATA_ENBL = 0x4000;
+//	private static final int RX_RUNT_ENBL = 0x2000;
+//	private static final int RX_EXTRA_DATA_ENBL = 0x4000;
 
 /* PP_RxCTL - Receive Control bit definition - Read/write */
-	private static final int RX_IA_HASH_ACCEPT = 0x0040;
-	private static final int RX_PROM_ACCEPT = 0x0080;
+//	private static final int RX_IA_HASH_ACCEPT = 0x0040;
+//	private static final int RX_PROM_ACCEPT = 0x0080;
 	private static final int RX_OK_ACCEPT = 0x0100;
-	private static final int RX_MULTCAST_ACCEPT = 0x0200;
+//	private static final int RX_MULTCAST_ACCEPT = 0x0200;
 	private static final int RX_IA_ACCEPT = 0x0400;
 	private static final int RX_BROADCAST_ACCEPT = 0x0800;
-	private static final int RX_BAD_CRC_ACCEPT = 0x1000;
-	private static final int RX_RUNT_ACCEPT = 0x2000;
-	private static final int RX_EXTRA_DATA_ACCEPT = 0x4000;
-	private static final int RX_ALL_ACCEPT = (RX_PROM_ACCEPT|RX_BAD_CRC_ACCEPT|RX_RUNT_ACCEPT|RX_EXTRA_DATA_ACCEPT);
+//	private static final int RX_BAD_CRC_ACCEPT = 0x1000;
+//	private static final int RX_RUNT_ACCEPT = 0x2000;
+//	private static final int RX_EXTRA_DATA_ACCEPT = 0x4000;
+//	private static final int RX_ALL_ACCEPT = (RX_PROM_ACCEPT|RX_BAD_CRC_ACCEPT|RX_RUNT_ACCEPT|RX_EXTRA_DATA_ACCEPT);
 /*  Default receive mode - individually addressed, broadcast, and error free */
 	private static final int DEF_RX_ACCEPT = (RX_IA_ACCEPT | RX_BROADCAST_ACCEPT | RX_OK_ACCEPT);
 
@@ -168,226 +168,222 @@ public class CS8900 extends LinkLayer {
 	private static final int TX_16_COL_ENBL = 0x8000;
 
 /* PP_TxCMD - Transmit Command bit definition - Read-only */
-	private static final int TX_START_4_BYTES = 0x0000;
-	private static final int TX_START_64_BYTES = 0x0040;
-	private static final int TX_START_128_BYTES = 0x0080;
-	private static final int TX_START_ALL_BYTES = 0x00C0;
-	private static final int TX_FORCE = 0x0100;
-	private static final int TX_ONE_COL = 0x0200;
-	private static final int TX_TWO_PART_DEFF_DISABLE = 0x0400;
-	private static final int TX_NO_CRC = 0x1000;
-	private static final int TX_RUNT = 0x2000;
+//	private static final int TX_START_4_BYTES = 0x0000;
+//	private static final int TX_START_64_BYTES = 0x0040;
+//	private static final int TX_START_128_BYTES = 0x0080;
+//	private static final int TX_START_ALL_BYTES = 0x00C0;
+//	private static final int TX_FORCE = 0x0100;
+//	private static final int TX_ONE_COL = 0x0200;
+//	private static final int TX_TWO_PART_DEFF_DISABLE = 0x0400;
+//	private static final int TX_NO_CRC = 0x1000;
+//	private static final int TX_RUNT = 0x2000;
 
 /* PP_BufCFG - Buffer Configuration Interrupt Mask bit definition - Read/write */
-	private static final int GENERATE_SW_INTERRUPT = 0x0040;
-	private static final int RX_DMA_ENBL = 0x0080;
+//	private static final int GENERATE_SW_INTERRUPT = 0x0040;
+//	private static final int RX_DMA_ENBL = 0x0080;
 	private static final int READY_FOR_TX_ENBL = 0x0100;
 	private static final int TX_UNDERRUN_ENBL = 0x0200;
-	private static final int RX_MISS_ENBL = 0x0400;
-	private static final int RX_128_BYTE_ENBL = 0x0800;
+//	private static final int RX_MISS_ENBL = 0x0400;
+//	private static final int RX_128_BYTE_ENBL = 0x0800;
 	private static final int TX_COL_COUNT_OVRFLOW_ENBL = 0x1000;
 	private static final int RX_MISS_COUNT_OVRFLOW_ENBL = 0x2000;
-	private static final int RX_DEST_MATCH_ENBL = 0x8000;
+//	private static final int RX_DEST_MATCH_ENBL = 0x8000;
 
 /* PP_LineCTL - Line Control bit definition - Read/write */
 	private static final int SERIAL_RX_ON = 0x0040;
 	private static final int SERIAL_TX_ON = 0x0080;
-	private static final int AUI_ONLY = 0x0100;
-	private static final int AUTO_AUI_10BASET = 0x0200;
-	private static final int MODIFIED_BACKOFF = 0x0800;
-	private static final int NO_AUTO_POLARITY = 0x1000;
-	private static final int TWO_PART_DEFDIS = 0x2000;
-	private static final int LOW_RX_SQUELCH = 0x4000;
+//	private static final int AUI_ONLY = 0x0100;
+//	private static final int AUTO_AUI_10BASET = 0x0200;
+//	private static final int MODIFIED_BACKOFF = 0x0800;
+//	private static final int NO_AUTO_POLARITY = 0x1000;
+//	private static final int TWO_PART_DEFDIS = 0x2000;
+//	private static final int LOW_RX_SQUELCH = 0x4000;
 
 /* PP_SelfCTL - Software Self Control bit definition - Read/write */
-	private static final int POWER_ON_RESET = 0x0040;
-	private static final int SW_STOP = 0x0100;
-	private static final int SLEEP_ON = 0x0200;
-	private static final int AUTO_WAKEUP = 0x0400;
-	private static final int HCB0_ENBL = 0x1000;
-	private static final int HCB1_ENBL = 0x2000;
-	private static final int HCB0 = 0x4000;
-	private static final int HCB1 = 0x8000;
+//	private static final int POWER_ON_RESET = 0x0040;
+//	private static final int SW_STOP = 0x0100;
+//	private static final int SLEEP_ON = 0x0200;
+//	private static final int AUTO_WAKEUP = 0x0400;
+//	private static final int HCB0_ENBL = 0x1000;
+//	private static final int HCB1_ENBL = 0x2000;
+//	private static final int HCB0 = 0x4000;
+//	private static final int HCB1 = 0x8000;
 
 /* PP_BusCTL - ISA Bus Control bit definition - Read/write */
-	private static final int RESET_RX_DMA = 0x0040;
-	private static final int MEMORY_ON = 0x0400;
-	private static final int DMA_BURST_MODE = 0x0800;
+//	private static final int RESET_RX_DMA = 0x0040;
+//	private static final int MEMORY_ON = 0x0400;
+//	private static final int DMA_BURST_MODE = 0x0800;
 	private static final int IO_CHANNEL_READY_ON = 0x1000;
-	private static final int RX_DMA_SIZE_64K = 0x2000;
-	private static final int ENABLE_IRQ = 0x8000;
+//	private static final int RX_DMA_SIZE_64K = 0x2000;
+//	private static final int ENABLE_IRQ = 0x8000;
 
 /* PP_TestCTL - Test Control bit definition - Read/write */
-	private static final int LINK_OFF = 0x0080;
-	private static final int ENDEC_LOOPBACK = 0x0200;
-	private static final int AUI_LOOPBACK = 0x0400;
-	private static final int BACKOFF_OFF = 0x0800;
-	private static final int FDX_8900 = 0x4000;
-	private static final int FAST_TEST = 0x8000;
+//	private static final int LINK_OFF = 0x0080;
+//	private static final int ENDEC_LOOPBACK = 0x0200;
+//	private static final int AUI_LOOPBACK = 0x0400;
+//	private static final int BACKOFF_OFF = 0x0800;
+//	private static final int FDX_8900 = 0x4000;
+//	private static final int FAST_TEST = 0x8000;
 
 /* PP_RxEvent - Receive Event Bit definition - Read-only */
-	private static final int RX_IA_HASHED = 0x0040;
-	private static final int RX_DRIBBLE = 0x0080;
+//	private static final int RX_IA_HASHED = 0x0040;
+//	private static final int RX_DRIBBLE = 0x0080;
 	private static final int RX_OK = 0x0100;
-	private static final int RX_HASHED = 0x0200;
-	private static final int RX_IA = 0x0400;
-	private static final int RX_BROADCAST = 0x0800;
-	private static final int RX_CRC_ERROR = 0x1000;
-	private static final int RX_RUNT = 0x2000;
-	private static final int RX_EXTRA_DATA = 0x4000;
+//	private static final int RX_HASHED = 0x0200;
+//	private static final int RX_IA = 0x0400;
+//	private static final int RX_BROADCAST = 0x0800;
+//	private static final int RX_CRC_ERROR = 0x1000;
+//	private static final int RX_RUNT = 0x2000;
+//	private static final int RX_EXTRA_DATA = 0x4000;
 
-	private static final int HASH_INDEX_MASK = 0x0FC00;
+//	private static final int HASH_INDEX_MASK = 0x0FC00;
 
 /* PP_TxEvent - Transmit Event Bit definition - Read-only */
 	private static final int TX_LOST_CRS = 0x0040;
 	private static final int TX_SQE_ERROR = 0x0080;
 	private static final int TX_OK = 0x0100;
 	private static final int TX_LATE_COL = 0x0200;
-	private static final int TX_JBR = 0x0400;
+//	private static final int TX_JBR = 0x0400;
 	private static final int TX_16_COL = 0x8000;
-	private static final int TX_SEND_OK_BITS = (TX_OK|TX_LOST_CRS);
-	private static final int TX_COL_COUNT_MASK = 0x7800;
+//	private static final int TX_SEND_OK_BITS = (TX_OK|TX_LOST_CRS);
+//	private static final int TX_COL_COUNT_MASK = 0x7800;
 
 /* PP_BufEvent - Buffer Event Bit definition - Read-only */
-	private static final int SW_INTERRUPT = 0x0040;
-	private static final int RX_DMA = 0x0080;
+//	private static final int SW_INTERRUPT = 0x0040;
+//	private static final int RX_DMA = 0x0080;
 	private static final int READY_FOR_TX = 0x0100;
 	private static final int TX_UNDERRUN = 0x0200;
-	private static final int RX_MISS = 0x0400;
-	private static final int RX_128_BYTE = 0x0800;
-	private static final int TX_COL_OVRFLW = 0x1000;
-	private static final int RX_MISS_OVRFLW = 0x2000;
-	private static final int RX_DEST_MATCH = 0x8000;
+//	private static final int RX_MISS = 0x0400;
+//	private static final int RX_128_BYTE = 0x0800;
+//	private static final int TX_COL_OVRFLW = 0x1000;
+//	private static final int RX_MISS_OVRFLW = 0x2000;
+//	private static final int RX_DEST_MATCH = 0x8000;
 
 /* PP_LineST - Ethernet Line Status bit definition - Read-only */
-	private static final int LINK_OK = 0x0080;
-	private static final int AUI_ON = 0x0100;
-	private static final int TENBASET_ON = 0x0200;
-	private static final int POLARITY_OK = 0x1000;
-	private static final int CRS_OK = 0x4000;
+//	private static final int LINK_OK = 0x0080;
+//	private static final int AUI_ON = 0x0100;
+//	private static final int TENBASET_ON = 0x0200;
+//	private static final int POLARITY_OK = 0x1000;
+//	private static final int CRS_OK = 0x4000;
 
 /* PP_SelfST - Chip Software Status bit definition */
-	private static final int ACTIVE_33V = 0x0040;
+//	private static final int ACTIVE_33V = 0x0040;
 	private static final int INIT_DONE = 0x0080;
-	private static final int SI_BUSY = 0x0100;
-	private static final int EEPROM_PRESENT = 0x0200;
-	private static final int EEPROM_OK = 0x0400;
-	private static final int EL_PRESENT = 0x0800;
-	private static final int EE_SIZE_64 = 0x1000;
+//	private static final int SI_BUSY = 0x0100;
+//	private static final int EEPROM_PRESENT = 0x0200;
+//	private static final int EEPROM_OK = 0x0400;
+//	private static final int EL_PRESENT = 0x0800;
+//	private static final int EE_SIZE_64 = 0x1000;
 
 /* PP_BusST - ISA Bus Status bit definition */
-	private static final int TX_BID_ERROR = 0x0080;
+//	private static final int TX_BID_ERROR = 0x0080;
 	private static final int READY_FOR_TX_NOW = 0x0100;
 
 /* PP_AutoNegCTL - Auto Negotiation Control bit definition */
-	private static final int RE_NEG_NOW = 0x0040;
-	private static final int ALLOW_FDX = 0x0080;
-	private static final int AUTO_NEG_ENABLE = 0x0100;
-	private static final int NLP_ENABLE = 0x0200;
-	private static final int FORCE_FDX = 0x8000;
-	private static final int AUTO_NEG_BITS = (FORCE_FDX|NLP_ENABLE|AUTO_NEG_ENABLE);
-	private static final int AUTO_NEG_MASK = (FORCE_FDX|NLP_ENABLE|AUTO_NEG_ENABLE|ALLOW_FDX|RE_NEG_NOW);
+//	private static final int RE_NEG_NOW = 0x0040;
+//	private static final int ALLOW_FDX = 0x0080;
+//	private static final int AUTO_NEG_ENABLE = 0x0100;
+//	private static final int NLP_ENABLE = 0x0200;
+//	private static final int FORCE_FDX = 0x8000;
+//	private static final int AUTO_NEG_BITS = (FORCE_FDX|NLP_ENABLE|AUTO_NEG_ENABLE);
+//	private static final int AUTO_NEG_MASK = (FORCE_FDX|NLP_ENABLE|AUTO_NEG_ENABLE|ALLOW_FDX|RE_NEG_NOW);
 
 /* PP_AutoNegST - Auto Negotiation Status bit definition */
-	private static final int AUTO_NEG_BUSY = 0x0080;
-	private static final int FLP_LINK = 0x0100;
-	private static final int FLP_LINK_GOOD = 0x0800;
-	private static final int LINK_FAULT = 0x1000;
-	private static final int HDX_ACTIVE = 0x4000;
-	private static final int FDX_ACTIVE = 0x8000;
+//	private static final int AUTO_NEG_BUSY = 0x0080;
+//	private static final int FLP_LINK = 0x0100;
+//	private static final int FLP_LINK_GOOD = 0x0800;
+//	private static final int LINK_FAULT = 0x1000;
+//	private static final int HDX_ACTIVE = 0x4000;
+//	private static final int FDX_ACTIVE = 0x8000;
 
 /*  The following block defines the ISQ event types */
 	private static final int ISQ_RECEIVER_EVENT = 0x04;
 	private static final int ISQ_TRANSMITTER_EVENT = 0x08;
 	private static final int ISQ_BUFFER_EVENT = 0x0c;
-	private static final int ISQ_RX_MISS_EVENT = 0x10;
-	private static final int ISQ_TX_COL_EVENT = 0x12;
+//	private static final int ISQ_RX_MISS_EVENT = 0x10;
+//	private static final int ISQ_TX_COL_EVENT = 0x12;
 
 	private static final int ISQ_EVENT_MASK = 0x003F;   /*  ISQ mask to find out type of event */
-	private static final int ISQ_HIST = 16;		/*  small history buffer */
-	private static final int AUTOINCREMENT = 0x8000;	/*  Bit mask to set bit-15 for autoincrement */
+//	private static final int ISQ_HIST = 16;		/*  small history buffer */
+//	private static final int AUTOINCREMENT = 0x8000;	/*  Bit mask to set bit-15 for autoincrement */
 
-	private static final int TXRXBUFSIZE = 0x0600;
-	private static final int RXDMABUFSIZE = 0x8000;
-	private static final int RXDMASIZE = 0x4000;
-	private static final int TXRX_LENGTH_MASK = 0x07FF;
+//	private static final int TXRXBUFSIZE = 0x0600;
+//	private static final int RXDMABUFSIZE = 0x8000;
+//	private static final int RXDMASIZE = 0x4000;
+//	private static final int TXRX_LENGTH_MASK = 0x07FF;
 
 /*  rx options bits */
-	private static final int RCV_WITH_RXON	= 1;       /*  Set SerRx ON */
-	private static final int RCV_COUNTS	= 2;       /*  Use Framecnt1 */
-	private static final int RCV_PONG	= 4;       /*  Pong respondent */
-	private static final int RCV_DONG	= 8;       /*  Dong operation */
-	private static final int RCV_POLLING	= 0x10;	/*  Poll RxEvent */
-	private static final int RCV_ISQ		= 0x20;	/*  Use ISQ, int */
-	private static final int RCV_AUTO_DMA	= 0x100;	/*  Set AutoRxDMAE */
-	private static final int RCV_DMA		= 0x200;	/*  Set RxDMA only */
-	private static final int RCV_DMA_ALL	= 0x400;	/*  Copy all DMA'ed */
-	private static final int RCV_FIXED_DATA	= 0x800;	/*  Every frame same */
-	private static final int RCV_IO		= 0x1000;	/*  Use ISA IO only */
-	private static final int RCV_MEMORY	= 0x2000;	/*  Use ISA Memory */
-
-	private static final int RAM_SIZE	= 0x1000;       /*  The card has 4k bytes or RAM */
-	private static final int PKT_START = PP_TxFrame;  /*  Start of packet RAM */
+//	private static final int RCV_WITH_RXON	= 1;       /*  Set SerRx ON */
+//	private static final int RCV_COUNTS	= 2;       /*  Use Framecnt1 */
+//	private static final int RCV_PONG	= 4;       /*  Pong respondent */
+//	private static final int RCV_DONG	= 8;       /*  Dong operation */
+//	private static final int RCV_POLLING	= 0x10;	/*  Poll RxEvent */
+//	private static final int RCV_ISQ		= 0x20;	/*  Use ISQ, int */
+//	private static final int RCV_AUTO_DMA	= 0x100;	/*  Set AutoRxDMAE */
+//	private static final int RCV_DMA		= 0x200;	/*  Set RxDMA only */
+//	private static final int RCV_DMA_ALL	= 0x400;	/*  Copy all DMA'ed */
+//	private static final int RCV_FIXED_DATA	= 0x800;	/*  Every frame same */
+//	private static final int RCV_IO		= 0x1000;	/*  Use ISA IO only */
+//	private static final int RCV_MEMORY	= 0x2000;	/*  Use ISA Memory */
+//
+//	private static final int RAM_SIZE	= 0x1000;       /*  The card has 4k bytes or RAM */
+//	private static final int PKT_START = PP_TxFrame;  /*  Start of packet RAM */
 
 	private static final int RX_FRAME_PORT	= 0x0000;
 	private static final int TX_FRAME_PORT = RX_FRAME_PORT;
 	private static final int TX_CMD_PORT	= 0x0004;
-	private static final int TX_NOW		= 0x0000;       /*  Tx packet after   5 bytes copied */
-	private static final int TX_AFTER_381	= 0x0040;       /*  Tx packet after 381 bytes copied */
+//	private static final int TX_NOW		= 0x0000;       /*  Tx packet after   5 bytes copied */
+//	private static final int TX_AFTER_381	= 0x0040;       /*  Tx packet after 381 bytes copied */
 	private static final int TX_AFTER_ALL	= 0x00c0;       /*  Tx packet after all bytes copied */
 	private static final int TX_LEN_PORT	= 0x0006;
-	private static final int ISQ_PORT	= 0x0008;
+//	private static final int ISQ_PORT	= 0x0008;
 	private static final int ADD_PORT	= 0x000A;
 	private static final int DATA_PORT	= 0x000C;
 
 
 /*  Receive Header */
 /*  Description of header of each packet in receive area of memory */
-	private static final int RBUF_EVENT_LOW	= 0;   /*  Low byte of RxEvent - status of received frame */
-	private static final int RBUF_EVENT_HIGH	= 1;   /*  High byte of RxEvent - status of received frame */
-	private static final int RBUF_LEN_LOW	= 2;   /*  Length of received data - low byte */
-	private static final int RBUF_LEN_HI	= 3;   /*  Length of received data - high byte */
-	private static final int RBUF_HEAD_LEN	= 4;   /*  Length of this header */
+//	private static final int RBUF_EVENT_LOW	= 0;   /*  Low byte of RxEvent - status of received frame */
+//	private static final int RBUF_EVENT_HIGH	= 1;   /*  High byte of RxEvent - status of received frame */
+//	private static final int RBUF_LEN_LOW	= 2;   /*  Length of received data - low byte */
+//	private static final int RBUF_LEN_HI	= 3;   /*  Length of received data - high byte */
+//	private static final int RBUF_HEAD_LEN	= 4;   /*  Length of this header */
 
-	private static final int CHIP_READ = 0x1;   /*  Used to mark state of the repins code (chip or dma) */
-	private static final int DMA_READ = 0x2;   /*  Used to mark state of the repins code (chip or dma) */
+//	private static final int CHIP_READ = 0x1;   /*  Used to mark state of the repins code (chip or dma) */
+//	private static final int DMA_READ = 0x2;   /*  Used to mark state of the repins code (chip or dma) */
 
 
-	private static final int IMM_BIT = 0x0040;		/*  ignore missing media	 */
+//	private static final int IMM_BIT = 0x0040;		/*  ignore missing media	 */
 
-	private static final int A_CNF_10B_T = 0x0001;
-	private static final int A_CNF_AUI = 0x0002;
-	private static final int A_CNF_10B_2 = 0x0004;
-	private static final int A_CNF_MEDIA_TYPE = 0x0060;
-	private static final int A_CNF_MEDIA_AUTO = 0x0000;
-	private static final int A_CNF_MEDIA_10B_T = 0x0020;
-	private static final int A_CNF_MEDIA_AUI = 0x0040;
-	private static final int A_CNF_MEDIA_10B_2 = 0x0060;
-	private static final int A_CNF_DC_DC_POLARITY = 0x0080;
-	private static final int A_CNF_NO_AUTO_POLARITY = 0x2000;
-	private static final int A_CNF_LOW_RX_SQUELCH = 0x4000;
-	private static final int A_CNF_EXTND_10B_2 = 0x8000;
-
-	private static final int PACKET_PAGE_OFFSET = 0x8;
+//	private static final int A_CNF_10B_T = 0x0001;
+//	private static final int A_CNF_AUI = 0x0002;
+//	private static final int A_CNF_10B_2 = 0x0004;
+//	private static final int A_CNF_MEDIA_TYPE = 0x0060;
+//	private static final int A_CNF_MEDIA_AUTO = 0x0000;
+//	private static final int A_CNF_MEDIA_10B_T = 0x0020;
+//	private static final int A_CNF_MEDIA_AUI = 0x0040;
+//	private static final int A_CNF_MEDIA_10B_2 = 0x0060;
+//	private static final int A_CNF_DC_DC_POLARITY = 0x0080;
+//	private static final int A_CNF_NO_AUTO_POLARITY = 0x2000;
+//	private static final int A_CNF_LOW_RX_SQUELCH = 0x4000;
+//	private static final int A_CNF_EXTND_10B_2 = 0x8000;
+//
+//	private static final int PACKET_PAGE_OFFSET = 0x8;
 
 
 /**
 *	an ARP frame.
 */
-	private static final int ETH_ARP = 0x0806;
+	static final int ETH_ARP = 0x0806;
 /**
 *	an IP frame.
 */
-	private static final int ETH_IP = 0x0800;
+	static final int ETH_IP = 0x0800;
 
 /**
 *	The one and only reference to this object.
 */
-	// private static CS8900 single;
-// just for first OEBB test
-public static CS8900 single;
-public static int[] llh;		// for OEBB test
-
+	static CS8900 single;
 
 /**
 *	private constructor. The singleton object is created in init().
@@ -427,6 +423,7 @@ public static int[] llh;		// for OEBB test
 			//
 			p = Packet.getPacket(single, Packet.SND, Packet.ALLOC);
 			if (p!=null) {
+				Arp.fillETH(p);			// fill in dest MAC
 				send(p);				// send one packet
 			}
 		}
@@ -439,6 +436,7 @@ public static int[] llh;		// for OEBB test
 
 		if (single != null) return single;			// allready called init()
 
+		Arp.init();
 		txFree = true;
 
 		eth = new int[6];
@@ -447,13 +445,12 @@ public static int[] llh;		// for OEBB test
 		mac_hi = mac[0]<<8 | mac[1];
 		mac_mid = mac[2]<<8 | mac[3];
 		mac_low = mac[4]<<8 | mac[5];
-llh = new int[ETH_HLEN/2];
 
 		ip = ipaddr;
 
 		tx_packets = 0;
-		tx_bytes = 0;
-		collisions = 0;
+//		tx_bytes = 0;
+//		collisions = 0;
 
 		rx_packets = 0;
 		rx_bytes = 0;
@@ -893,13 +890,9 @@ Dbg.wr('~');
 		//
 		int i = p.llh[6];					// type field of ethernet header
 		if (i == ETH_ARP) {					// ARP type
-			Arp.request(p, eth, ip);
+			Arp.receive(p, eth, ip);
 		} else if (i == ETH_IP) {			// IP type
 			p.setStatus(Packet.RCV);		// inform upper layer
-// OEBB test
-for (i=0; i<ETH_HLEN/2; ++i) {
-	llh[i] = p.llh[i];
-}
 			
 		} else {
 			p.setStatus(Packet.FREE);		// just drop unknown types
