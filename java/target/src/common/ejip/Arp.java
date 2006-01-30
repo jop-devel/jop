@@ -124,7 +124,7 @@ class Entry {
 	
 	static void dump(int nr) {
 		
-		System.out.println("ARP IP=");
+		System.out.println("add ARP IP=");
 		Dbg.hexVal(list[nr].ip);
 		for (int i=0; i<6; ++i) {
 			Dbg.hexVal(list[nr].mac[i]);
