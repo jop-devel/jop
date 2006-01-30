@@ -178,11 +178,14 @@ Dbg.wr("wrong IP checksum ");
 
 			// a VERY dummy arp/routing!
 			// should this be in the cs8900 ?
-			p.llh[0] = p.llh[3];
-			p.llh[1] = p.llh[4];
-			p.llh[2] = p.llh[5];
-			p.llh[6] = 0x0800;
+//			p.llh[0] = p.llh[3];
+//			p.llh[1] = p.llh[4];
+//			p.llh[2] = p.llh[5];
+//			p.llh[6] = 0x0800;
+			// is now done in Arp
+			
 			p.setStatus(Packet.SND);	// mark packet ready to send
+			
 		}
 	}
 
