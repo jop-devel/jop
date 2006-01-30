@@ -55,7 +55,8 @@ public class MainLoop {
 */
 	public static void main(String[] args) {
 
-		Dbg.init();
+		// use serial line for debugging
+		Dbg.initSerWait();
 
 		net = Net.init();
 		ipLink = CS8900.init(Net.eth, Net.ip);

@@ -59,7 +59,8 @@ public class Main {
 */
 	public static void main(String[] args) {
 
-		Dbg.init();
+		// use serial line for debugging
+		Dbg.initSerWait();
 
 		//
 		//	start TCP/IP
