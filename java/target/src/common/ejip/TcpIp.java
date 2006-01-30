@@ -74,7 +74,7 @@ public class TcpIp {
 *	off offset in buffer (in words)
 *	cnt length in bytes
 */
-	static int chkSum(int[] buf, int off, int cnt) {
+	public static int chkSum(int[] buf, int off, int cnt) {
 
 
 		int i;
@@ -105,7 +105,7 @@ public class TcpIp {
 /**
 *	return IP id in upper 16 bit.
 */
-	static int getId() {
+	public static int getId() {
 
 		ip_id += 0x10000;
 		return ip_id;
