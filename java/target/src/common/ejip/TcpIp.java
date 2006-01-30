@@ -194,8 +194,10 @@ Dbg.wr("wrong IP checksum ");
 */
 	private static void doICMP(Packet p) {
 
+		int type_code = p.buf[5]>>>16;
 Dbg.wr('P');
-		if (p.buf[5]>>>16 == 0x0800) {
+Dbg.hexVal(type_code);
+		if (type_code == 0x0800) {
 			// TODO check received ICMP checksum
 			p.buf[5] = 0;							// echo replay plus clear checksu,
 			p.buf[5] = chkSum(p.buf, 5, p.len-20);	// echo replay (0x0000) plus checksum
