@@ -37,6 +37,18 @@ public class Const {
 
 	public static final int MSK_UA_TDRE = 1;
 	public static final int MSK_UA_RDRF = 2;
+	
+	// FPU
+	public static final int IO_FPU = IO_BASE+0x70;
+	public static final int FPU_A = IO_FPU+0;
+	public static final int FPU_B = IO_FPU+1;
+	public static final int FPU_OP = IO_FPU+2;
+	public static final int FPU_RES = IO_FPU+3;
+
+	public static final int FPU_OP_ADD = 0;
+	public static final int FPU_OP_SUB = 1;
+	public static final int FPU_OP_MUL = 2;
+	public static final int FPU_OP_DIV = 3;
 
 	// TAL, baseio (scio_baseio.vhd)
 	public static final int IO_IN = IO_BASE+0x40+0;
