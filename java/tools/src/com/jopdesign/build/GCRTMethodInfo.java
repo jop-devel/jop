@@ -18,27 +18,78 @@ import org.apache.bcel.verifier.structurals.LocalVariables;
 
 
 /**
+ * It is a class that are invoked two times for every non-abstract method. The
+ * <code>stackWalker</code> method simulates the instructions of a given method.
+ * Then this simulated context is used to extract information about the incoming
+ * (ie. how the locals and the operands) frame looked for this particular value
+ * of the program counter (PC). 
+ * Then the information must reach JOP. It is done by saving the garbage
+ * collection (GC) information below the code address. We save one word that is 
+ * packed with information about max. number of local, max. number of operands 
+ * etc. Then, if the method has ANY reference for ANY value of the PC, the GC
+ * information is saved below this info word. That is the case in the majority
+ * of the cases. As we need the type (primitive or reference) for every local
+ * and every operand for every value of the PC it can take up a lot of space. 
+ * Initial experiments demonstrated an overhead of 133% but now the default is
+ * an indexed approach. In this way the X local bits and the Y operand bits are 
+ * appended to form a pattern. These patterns form a small number of unique 
+ * patterns. Each PC is then mapped (using just enough bits) to point to the 
+ * corresponding unique pattern. The unique patterns are packed at the end of 
+ * bit map.
+ * When readin the file, we refer to the "raw" and "indexed" approach. The raw 
+ * aproach was saving the aforementioned patterns for every PC. 
+ * On JOP, a class called GCStkWalk is responsible for identifying the references
+ * that may be among the locals and the operands for the threads. A method
+ * named <code>swk</code> is responsible for this scan. It walks the frames from 
+ * the top and uses the packes GC bit maps to determine which (if any) of the 
+ * locals and operands that hold references. It then returns a reference to an
+ * integer array that is used in <code>GC.java</code> to push only the
+ * references onto into the scanned list. 
+ * Little note: The bits are written out from left to right in the comments. 
+ *              The sum of the locals+operands cannot exceed 32.
+ * TODO: Test a Gosling violation.
+ * TODO: Implement bytecode rearrangement when Gosling violation detected.
  * @author rup, ms
  */
 public class GCRTMethodInfo {
-// static
   static int WORDLEN = 32;
+  
+  // word counters for indexed approach
+  int pcwords = 0;
+  static int totalpcwords = 0;
+  static int totalcntMgciWords = 0;
 	
 	static HashMap miMap = new HashMap();
 	
+	/**
+	 * Called from JOPizer->SetGCRTMethodInfo to 
+	 * run the stack simulation for the method.
+	 * @param mi the method
+	 */
 	public static void stackWalker(MethodInfo mi){
 		((GCRTMethodInfo)miMap.get(mi)).stackWalker();
 	}
 	
+	/**
+	 * It runs the dump method without dumping.
+	 * @param method
+	 * @return Returns the length in words that the GC bit maps will take.
+	 */
 	public static int gcLength(MethodInfo mi){
 		return ((GCRTMethodInfo)miMap.get(mi)).gcLength();
 	}
 	
+	/**
+	 * It writes out the gcpack and the bitmaps. Nice comments are dumped 
+	 * as well in the .jop file.
+	 * @param out null if just the length is needed
+	 * @param mi the method
+	 */
 	public static void dumpMethodGcis(MethodInfo mi, PrintWriter out) {
 		((GCRTMethodInfo)miMap.get(mi)).dumpMethodGcis(out);
 	}		
 
-//instance
+  //instance
   MethodInfo mi;
   Method method;
   int length;
@@ -49,9 +100,14 @@ public class GCRTMethodInfo {
 	int []mgci; 	
 	// Instruction count
 	int instCnt;
+  // instCnt
+  String []pcinfo;
 
 	int mstack, margs, mreallocals, len;
 
+	/**
+	 * Instanciated from from <code>SetClassInfo</code>. 
+	 */
 	public GCRTMethodInfo(MethodInfo mi, Method method) {
 		this.mi = mi;
 		this.method = method;
@@ -66,7 +122,6 @@ public class GCRTMethodInfo {
 		} else{
 		  miMap.put(mi, this);
 		}
-		
 	}
 	
 	/**
@@ -77,8 +132,9 @@ public class GCRTMethodInfo {
 	private void stackWalker(){
 //System.out.println(".....................");	  
 //System.out.println("stackWalker");
-	  margs = mstack = mreallocals = len = instCnt = 0;
 //System.out.println("Class method:"+mi.cli.clazz.getClassName()+"."+mi.methodId);
+
+	  margs = mstack = mreallocals = len = instCnt = 0;
     
     Type at[] = method.getArgumentTypes();
     for (int i=0; i<at.length; ++i) {
@@ -105,7 +161,7 @@ public class GCRTMethodInfo {
 	 * type info of each entry on the stack. We map a reference entry with a 1 
 	 * and a non-reference entry with a 0. 
 	 
-	 * The simulation part is based of the JustIce Pass3bVerifer.
+	 * The simulation part is based of the BCEL Pass3bVerifer.
 	 */
 	private void operandWalker(){
 //System.out.println("operandWalker");	
@@ -159,8 +215,11 @@ public class GCRTMethodInfo {
   		}
   						
       InstructionContext start = cfg.contextOf(mg.getInstructionList().getStart());
+      // don't need to compare for first frame
       inFrames.put(start,fStart);
+      
       start.execute(fStart, new ArrayList(), icv, ev);
+      start.setTag(start.getTag()+1);
   		
   		Vector ics = new Vector(); // Type: InstructionContext
       Vector ecs = new Vector(); // Type: ArrayList (of InstructionContext)
@@ -194,7 +253,7 @@ public class GCRTMethodInfo {
   					if (skip_jsr < 0){
   						throw new AssertionViolatedException("More RET than JSR in execution chain?!");
   					}
-    					if (((InstructionContext) oldchain.get(ss)).getInstruction().getInstruction() instanceof JsrInstruction){
+    				if (((InstructionContext) oldchain.get(ss)).getInstruction().getInstruction() instanceof JsrInstruction){
   						if (skip_jsr == 0){
   							lastJSR = (InstructionContext) oldchain.get(ss);
   							break;
@@ -215,12 +274,15 @@ public class GCRTMethodInfo {
   					throw new AssertionViolatedException("RET '"+u.getInstruction()+"' info inconsistent: jump back to '"+theSuccessor+"' or '"+cfg.contextOf(jsr.physicalSuccessor())+"'?");
   				}
   
-  				inFrames.put(theSuccessor,u.getOutFrame(oldchain));
+   				if(!frmComp((Frame)inFrames.put(theSuccessor,u.getOutFrame(oldchain)),u.getOutFrame(oldchain),theSuccessor)){
+      	    System.out.println("Gosling violation:"+fStart.toString());
+      	    System.exit(-1);
+          }
   				if (theSuccessor.execute(u.getOutFrame(oldchain), newchain, icv, ev)){
-  					//icq.add(theSuccessor, (ArrayList) newchain.clone());
   					ics.add(theSuccessor);
   					ecs.add((ArrayList) newchain.clone());
   				}
+  				theSuccessor.setTag(theSuccessor.getTag()+1);
   
   			}
   			else{// "not a ret"
@@ -228,11 +290,16 @@ public class GCRTMethodInfo {
   				InstructionContext[] succs = u.getSuccessors();
   				for (int s=0; s<succs.length; s++){
   					InstructionContext v = succs[s];
-  					inFrames.put(v,u.getOutFrame(oldchain));
+  					if(!frmComp((Frame)inFrames.put(v,u.getOutFrame(oldchain)),u.getOutFrame(oldchain),v)){
+      	      System.out.println("Gosling violation:"+fStart.toString());
+      	      System.exit(-1);
+            }
+  					
   					if (v.execute(u.getOutFrame(oldchain), newchain, icv, ev)){
   						ics.add(v);
   						ecs.add((ArrayList) newchain.clone());
   					}
+  					v.setTag(v.getTag()+1);
   				}
   			}// end "not a ret"
   
@@ -242,11 +309,16 @@ public class GCRTMethodInfo {
   			for (int s=0; s<exc_hds.length; s++){
   				InstructionContext v = cfg.contextOf(exc_hds[s].getHandlerStart());
           Frame f = new Frame(u.getOutFrame(oldchain).getLocals(), new OperandStack (u.getOutFrame(oldchain).getStack().maxStack(), (exc_hds[s].getExceptionType()==null? Type.THROWABLE : exc_hds[s].getExceptionType())) );
-          inFrames.put(v,f);
+  				if(!frmComp((Frame)inFrames.put(v,f),f,v)){
+      	    System.out.println("Gosling violation:"+fStart.toString());
+       			System.exit(-1);
+          }
+
   				if (v.execute(f, new ArrayList(), icv, ev)){
   					ics.add(v);
   					ecs.add(new ArrayList());
   				}
+  				v.setTag(v.getTag()+1);
   			}
   		}// while (!ics.isEmpty()) END
   		
@@ -257,8 +329,11 @@ public class GCRTMethodInfo {
 //int inFramesSize = inFrames.size();
 //System.out.println("numInstructions:"+instCnt+" inFramesSize:"+inFramesSize);
 
+  		//This array holds the operand type bits in the low bits
   		ogci = new int[instCnt];
+  		//This array holds the local type bits in the low bits
   		mgci = new int[instCnt];
+  		pcinfo = new String[instCnt];
   		int oldPC = 0;
   		int PC = 0;
   		int icnt = 0;
@@ -278,10 +353,13 @@ public class GCRTMethodInfo {
   			  mgci[i] = mgci[oldPC];
   			}
         ogciStr.append("ih:"+ih.toString());
+        pcinfo[PC] = ih.toString();
   			InstructionContext ic = cfg.contextOf(ih);
+//System.out.println(ih.toString()+" tag:"+ic.getTag());  			
   			// It is here the incoming frame is used to achieve the desired PC->operand mapping
   			Frame f1 = (Frame) inFrames.get(ic);
   			LocalVariables lvs = f1.getLocals();
+  			// mapping the all the locals for this value of the PC
   			for (int i=0; i<lvs.maxLocals(); i++){
   				if (lvs.get(i) instanceof	ReferenceType){
 					  int	ref=(1<<i);
@@ -298,7 +376,7 @@ public class GCRTMethodInfo {
         ogciStr.append(",os slots:"+os.slotsUsed());
   			// Each slot is 32 bits				
   			int j = 0; //Used to offset for LONG and DOUBLE
-
+        // mapping the operands for this value of the PC
 				for	(int i=0;	i<os.slotsUsed();	i++,j++){
 //System.out.println("    op["+i+"]:"+(os.peek(j)).getSignature());
 					ogciStr.append(",operand("+i+"):"+(os.peek(j)).getSignature());
@@ -361,72 +439,162 @@ public class GCRTMethodInfo {
  		  }
  		  
  		  // Good for debugging
+ 		  //System.out.println(" *** "+mi.cli.clazz.getClassName()+"."+mi.methodId+" --> mreallocals ="+mreallocals+" margs ="+margs+" mstack ="+mstack);
  		  for(int i=0;i<instCnt;i++){
- 		  	//System.out.println("ogci["+i+"]"+bitStr(ogci[i]));
- 		  	//System.out.println("mgci["+i+"]"+bitStr(mgci[i]));
+ 		  	//System.out.println(pcinfo[i]+" ogci["+i+"]"+bitStr(ogci[i]));
+ 		  	//System.out.println(pcinfo[i]+" mgci["+i+"]"+bitStr(mgci[i]));
  		  }
  		  //System.out.println("--");
- 		  
 
+   	  // calculate length for raw method
    	  int varcnt = mstack+mreallocals+margs;
   	  int pos = instCnt*varcnt;
   	  length = pos / WORDLEN; // whole words
   	  if((pos % WORDLEN)>0){
   	    length++;  // partly used word
   	  }
-  	  
   	  length++; // gcpack
-  	  
 		} // if has code
-	} 
+	}
+	
+	/**
+	 * Compares the operands of two frames. It will detect the rare event that
+	 * the Gosling property is violated from two jsr instructions reaching the 
+	 * same code but with different operand or local signatures. Operands are 
+	 * checked for fun even though they must obey the Gosling property.
+	 * TODO: Implement code that can split local variables if a violation 
+	 *       occurs. 
+	 * @param prevf the previous frame if it has been visited before
+	 * @param newf the next frame
+	 * @return true if the frames equal or if prevf == null
+	 */
+	boolean frmComp(Frame prevf, Frame newf, InstructionContext ic){
+		boolean res = true;		
+		if(prevf != null){
+			// check the operand stacks
+			OperandStack osp = prevf.getStack();
+			OperandStack osn = newf.getStack();
+	
+	    if(osp.slotsUsed() != osn.slotsUsed()){
+	    	System.out.println("Frame OperandStack slotsUsed does not equal");
+	    	res = false;
+	    }
+			int j = 0; //Used to offset for LONG and DOUBLE
+
+			for	(int i=0;	i<osp.slotsUsed();	i++,j++){
+/*
+				if (osp.peek(j).getSignature() != osn.peek(j).getSignature() && 
+				    !(osp.peek(j).equals(BasicType.UNKNOWN) || osn.peek(j).equals(BasicType.UNKNOWN))){
+					System.out.println("Error: Signatures does not match");
+					res = false;
+				}
+*/				
+				if ((osp.peek(j) instanceof	UninitializedObjectType) != (osn.peek(j) instanceof	UninitializedObjectType) &&
+				   !(osp.peek(j).equals(BasicType.UNKNOWN) || osn.peek(j).equals(BasicType.UNKNOWN))){
+					System.out.println("Error: Operand stacks not equal for UninitializedObjectType");
+					res = false;
+				}
+				
+				if ((osp.peek(j) instanceof	ReferenceType) !=  (osn.peek(j) instanceof	ReferenceType) &&
+				     !(osp.peek(j).equals(BasicType.UNKNOWN) || osn.peek(j).equals(BasicType.UNKNOWN))){
+          System.out.println("Error: Operand stacks not equal for ReferenceType");
+          res = false;
+				}
+				// peek()	is per type
+				if (osp.peek(j).getSignature().equals("J")	|| osn.peek(j).getSignature().equals("D")){
+					j--;
+				}
+			}
+
+			// check the locals
+			LocalVariables lvsp = prevf.getLocals();
+			LocalVariables lvsn = newf.getLocals();
+
+	    if(lvsp.maxLocals() != lvsn.maxLocals()){
+	    	System.out.println("Frame LocalVariables maxLocals does not equal");
+	    	res = false;
+	    }
+
+			// mapping the all the locals for this value of the PC
+
+			for (int i=0; i<lvsp.maxLocals(); i++){
+/*			
+				if (!lvsp.get(i).getSignature().equals(lvsn.get(i).getSignature()) &&
+				!(lvsp.get(i).equals(BasicType.UNKNOWN) || lvsn.get(i).equals(BasicType.UNKNOWN))){
+					System.out.println("Error: Local signatures for index "+i+" from prev frame does not match next frame");
+					System.out.println(lvsp.get(i).getSignature());
+					System.out.println(lvsn.get(i).getSignature());
+					res = false;
+			  }
+*/			  
+				if (lvsp.get(i) instanceof	ReferenceType != lvsn.get(i) instanceof	ReferenceType &&
+				  !(lvsp.get(i).equals(BasicType.UNKNOWN) || lvsn.get(i).equals(BasicType.UNKNOWN))){   
+					System.out.println("Error: Local ref from prev frame does not match next frame");
+					res = false;
+			  }
+				if (lvsp.get(i) instanceof UninitializedObjectType != lvsn.get(i) instanceof UninitializedObjectType &&
+				!(lvsp.get(i).equals(BasicType.UNKNOWN) || lvsn.get(i).equals(BasicType.UNKNOWN))){
+				  System.out.println("Error: Local unit ref from prev frame does not match next frame");	
+				  res = false;
+				}
+			}
+		} // prev != null
+		
+		if(res==false){ // print debug
+			System.out.println(" *** "+mi.cli.clazz.getClassName()+"."+mi.methodId+" --> mreallocals ="+mreallocals+" margs ="+margs+" mstack ="+mstack);
+			System.out.println("ic:"+ic.toString());
+			System.out.println("ih:"+ic.getInstruction().toString());
+			System.out.println("pc:"+ic.getInstruction().getPosition());
+			System.out.println("prev Frame:");
+			System.out.println(prevf);
+			System.out.println("new Frame:");
+			System.out.println(newf);
+			
+			
+		}
+		
+		return res;
+	}
 	
 	/*
-	 * It dumps the local variable and stack operands GC info structures.
+	 * It dumps the local variable and stack operands GC info structures. Can
+	 * be called with out==null to get the word length.
    */
-	public void dumpMethodGcis(PrintWriter out) {		
+	public int dumpMethodGcis(PrintWriter out) {		
+//System.out.println("dumpMethodGcis(PrintWriter out):"+out+", mi.methodId:"+mi.methodId);    
+
     int GCIHEADERLENGTH = 1; //key, gcpack
     
     // gcpack
-    int INSTRLEN = 10; //1024 instructions
+    int UNICNTLEN = 10; // worst case if every PC has a unique pattern
+    int INSTRLEN = 10; // 1024 instructions
     int MAXSTACKLEN = 5; // max 31 operands
     int MAXLOCALSLEN = 5; // max 31 args+locals
     int LOCALMARKLEN = 1; // 1 if local references
     int STACKMARKLEN = 1; // 1 if stack references
     
     int cntMgciWords = 0;
-    
-    if(mi.code != null){ // not abstract
-  //out.println("\t//\tStackwalker garbage info word for method "+cli.clazz.getClassName()+"."+methodId);
-  //out.println("\t//\targs size:"+margs+" locals:"+mreallocals+" mstack:"+mstack);
-  //out.println("\t//\tpre, cntMgciWords:"+cntMgciWords+" cntMgci:"+cntMgci);
+    int localmark = 0;
+    int stackmark = 0;
+    int ogcimark = 0;
+    int mgcimark = 0;
+
+    //if(mi.code != null){ // not abstract
+    if(!method.isAbstract()){
       if(instCnt!=mgci.length || instCnt!=ogci.length)
       {
   	    System.err.println("exit: instCnt!=mgci.length || instCnt!=ogci.length");
   	    System.exit(-1);
   	  }
     	
-      out.println("\t\t//\t"+mi.codeAddress+": stackwalker info for "+mi.cli.clazz.getClassName()+"."+mi.methodId);
-  
-  	  int gcpack = instCnt;
-  	  gcpack = (gcpack<<MAXSTACKLEN)|mstack;
-  	  gcpack = (gcpack<<MAXLOCALSLEN)|(mreallocals+margs);
-  	  
-  	  int localmark = 0;
-  	  if((mreallocals+margs)>0){
-  	    localmark = 1;
-  	  }
-  	  gcpack = (gcpack<<LOCALMARKLEN)|(localmark);
-  	  
-  	  int stackmark = 0;
-  	  if(mstack>0){
-  	    stackmark = 1;
-  	  }
-  	  gcpack = (gcpack<<STACKMARKLEN)|(stackmark);
+    	if(out!=null){ 
+        out.println("\t\t//\t"+mi.codeAddress+"(codeAddress): stackwalker info for "+mi.cli.clazz.getClassName()+"."+mi.methodId);
+      }
   
       StringBuffer sb = new StringBuffer();
-  
       int mask = 0x01;
       int WORDLEN = 32;
+      // raw packing
       int[] bitMap = new int[2*instCnt];
       StringBuffer[] bitInfo = new StringBuffer[2*instCnt];
       for(int i=0;i<instCnt;i++){
@@ -435,47 +603,238 @@ public class GCRTMethodInfo {
       }
       
       int pos = 0;
-      int bit = 0;
       int index = 0;
-      int offset = 0;
+
+      // raw patterns later used to determine unique patterns and the index
+      int pattern[] = new int[instCnt];
       
+      // pack bitMap
       for(int i=0;i<instCnt;i++){
+        // used for Ref. reduction in paper
+        if(mgci[i]>0){
+          mgcimark=1; 
+        }
+        if(ogci[i]>0){
+          ogcimark=1;
+        }    
+        // pack locals in high bits 
+        // pattern[i] is also done here
         for(int j=0;j<(mreallocals+margs);j++){
-          bit = (mgci[i]>>>j)&mask;
+          int bit = (mgci[i]>>>j)&mask;
+          
+          pattern[i] |= bit<<(j+mstack); //(pattern[i]<<1)|
+          
           index = pos/WORDLEN;
-          offset = pos % WORDLEN;
+          int offset = pos % WORDLEN;
           bit = bit<<offset;
           bitMap[index] |= bit;
           bitInfo[index].append("["+bit+","+pos+","+index+","+offset+","+"mgci["+i+"]["+j+"]] ");
           pos++;
         }
+        // pack stack in low bits
         for(int j=0;j<mstack;j++){
-          bit = (ogci[i]>>>j)&mask;
+          int bit = (ogci[i]>>>j)&mask;
+          
+          pattern[i] |= bit<<j;
+          
           index = pos/WORDLEN;
-          offset = pos % WORDLEN;
+          int offset = pos % WORDLEN;
           bit = bit<<offset;
           bitMap[index] |= bit;
           bitInfo[index].append("["+bit+","+pos+","+index+","+offset+","+"ogci["+i+"]["+j+"]] ");
           pos++;
         }
+      }// for
+
+      // packing bitMap2 according to the reduced indexed method.
+      // identify the unique patterns
+      int unique =0;
+      int uniquepattern[]=new int[instCnt];
+      boolean match;
+      for(int i=0;i<instCnt;i++){
+      	match = false;
+        for(int j=0;j<unique;j++){
+          if(pattern[i]==uniquepattern[j]){          	
+            match = true;
+            break;
+          }
+        }
+        if(!match){
+          uniquepattern[unique]=pattern[i];
+//System.out.println("uniquepattern["+unique+"]="+bitStr(uniquepattern[unique]));
+          unique++;
+        }
       }
-//  System.out.println("dumpMethodGcis Class method:"+mi.cli.clazz.getClassName()+"."+mi.methodId);
-//  System.out.println("index="+index+" bitMap.length:"+bitMap.length+" instCnt:"+instCnt+" pos:"+pos);
-      if(instCnt>0 && (localmark==1 || stackmark==1)){
-        for(int i=0;i<=index;i++){
-          //out.println("\t\t//\tbitMap["+i+"]:"+bitStr(bitMap[i])+" "+bitInfo[i].toString());
-     		  out.println("\t\t"+bitMap[i]+",//\tbitMap["+i+"]:"+bitStr(bitMap[i]));
-          cntMgciWords++;
+      
+      // bits needed for unique patterns
+      int patbits = unique*(mreallocals+margs+mstack);
+      
+      // used in a paper
+      if(false){ //index2 reduction
+        if(mgcimark==0){
+        	patbits -= unique*(mreallocals+margs);
+        }
+        if(ogcimark==0){
+        	patbits -= unique*(mstack);
+        }
+      }
+      
+      // count index bits
+      int num = 1;
+      int indexbits = 0;
+      for(int i=1;i<32;i++){
+        if(num<unique){
+          num = (num<<1)|1;
+        } else
+        {
+        	indexbits = i;
+        	break;
+        }
+      }
+      // count bits used on indexing
+      int pcbits = indexbits*instCnt;
+      int totalbits = pcbits+patbits;
+      
+      // total words for bitmap
+      int wdc = totalbits / 32;
+      if(totalbits%32>0){
+        wdc++;
+      }
+      
+      // now make the indexed bitmaps
+      int bitMap2[] = new int[wdc];
+			StringBuffer[] bitInfo2 = new StringBuffer[wdc];
+			for(int i=0;i<wdc;i++){
+			  bitInfo2[i] = new StringBuffer();
+			}
+      int bitpos = 0;
+
+      // bit map the indexes
+      for(int i=0;i<instCnt;i++){
+      	match = false;
+      	for(int j=0;j<unique;j++){
+      	  if(pattern[i]==uniquepattern[j]){
+            int control = 0;
+            bitInfo2[bitpos / 32].append(" p"+i+"=up"+j+":["+bitpos+":");
+      			for(int k=0;k<indexbits;k++){
+      			  int index2 = bitpos / 32;
+      			  int offset2 = bitpos % 32;
+      			  int bit = (j>>>k) & 0x01;
+      			  control |=(bit<<k);
+      			  bitMap2[index2]|=(bit<<offset2);
+      			  bitInfo2[index2].append(bit);
+      			  if(k==indexbits-1){
+      			    bitInfo2[index2].append("]");
+      			  }
+      			  bitpos++;
+      		  }
+      		  
+//System.out.println("pattern["+i+"]==uniquepattern["+j+"]");      	  	
+//System.out.println("control:"+control); 
+      		  match = true; 	    
+      		  break;
+      	  }
+      	} //for unique
+      	if(!match){
+      	  System.err.println("Problem with uniquematch for PC:"+i);
+      	  System.exit(-1);
+      	}
+      }
+
+      // bit map the unique patterns
+      for(int i=0;i<unique;i++){
+        bitInfo2[bitpos / 32].append(" up"+i+":["+bitpos+":");
+        for(int j=0;j<(mreallocals+margs+mstack);j++){
+          int index2 = bitpos / 32;
+          int offset2 = bitpos % 32;
+          int bit = (uniquepattern[i]>>>j) & 0x01;
+      		bitMap2[index2]|=(bit<<offset2);
+      		bitInfo2[index2].append(bit);
+      		if(j==(mreallocals+margs+mstack)-1){
+      		  bitInfo2[index2].append("]");
+      		}      		
+      		bitpos++;
+        }
+      }
+
+      // pack gcpack
+      int gcpack = unique; // unique patterns 
+      gcpack = (gcpack<<INSTRLEN)|instCnt;
+      gcpack = (gcpack<<MAXSTACKLEN)|mstack;
+      gcpack = (gcpack<<MAXLOCALSLEN)|(mreallocals+margs);
+      	  
+      if((mreallocals+margs)>0){
+        localmark = 1;
+      }
+      //gcpack = (gcpack<<LOCALMARKLEN)|(localmark); // dump bit maps even if no refs 
+      gcpack = (gcpack<<LOCALMARKLEN)|(mgcimark); // only dump map when a ref is among the operands "Ref. only" in paper
+      	  
+      if(mstack>0){
+        stackmark = 1;
+      }
+      //gcpack = (gcpack<<STACKMARKLEN)|(stackmark); // see above
+      gcpack = (gcpack<<STACKMARKLEN)|(ogcimark);
+  
+//System.out.println("dumpMethodGcis Class method:"+mi.cli.clazz.getClassName()+"."+mi.methodId);
+//System.out.println("patbits:"+patbits);
+//System.out.println("pcbits:"+pcbits);
+//System.out.println("unique:"+unique);
+//System.out.println("instCnt:"+instCnt);
+//System.out.println("indexbits:"+indexbits);
+//System.out.println("locals:"+(mreallocals+margs));
+//System.out.println("localmark:"+localmark);
+//System.out.println("stack:"+mstack);  
+//System.out.println("stackmark:"+stackmark);  
+//System.out.println("index="+index+" bitMap.length:"+bitMap.length+" instCnt:"+instCnt+" pos:"+pos);
+      pcwords=1; //set this to 0 or 1 depending if gcpack is written out
+      
+      // can also use localmark and stackmark here if bit maps are needed regardless
+      // of the presense of references
+      if(instCnt>0 && (mgcimark==1 || ogcimark==1)){
+        pcwords += (patbits+pcbits)/32;
+        if(((patbits+pcbits)%32)>0){
+          pcwords++;
+        }
+        // change flag below and also on in setMarkWords() in GCStkWalk
+        if(true){ // write out indexed version
+          for(int i=0;i<wdc;i++){
+     		    if(out!=null){
+     		      out.println("\t\t"+bitMap2[i]+",//\tbitMap2["+i+"]: "+bitInfo2[i].toString()+", "+bitStr(bitMap2[i]));
+     		    }
+            cntMgciWords++;
+          }        	
+        } 
+        else // write out raw version
+        {
+          for(int i=0;i<=index;i++){
+            if(out!=null){
+              //out.println("\t\t//\tbitMap["+i+"]:"+bitStr(bitMap[i])+" "+bitInfo[i].toString());
+     		      out.println("\t\t"+bitMap[i]+",//\tbitMap["+i+"]:"+bitStr(bitMap[i]));
+     		    }
+            cntMgciWords++;
+          }
         }
       }
       
       cntMgciWords += GCIHEADERLENGTH;
-      out.println("\t\t"+gcpack+",//\tgcpack. instrCnt:"+instCnt+" mstack:"+mstack+" (mreallocals+margs):"+(mreallocals+margs)+" localmark:"+localmark+" stackmark:"+stackmark+" gcpack:"+bitStr(gcpack));
-      
-      //Check lengths
-      if(cntMgciWords!=gcLength()){
-      	System.err.println("Length mismatch. cntMgciWords:"+cntMgciWords+" gcLength():"+gcLength());
-      	System.exit(-1);
+      if(out!=null){
+        out.println("\t\t"+gcpack+",//\tgcpack[0:stackmark="+stackmark+",1:localmark="+localmark+",2-6:maxlocals="+(mreallocals+margs)+",7-11:maxstack="+mstack+",12-21:instr="+instCnt+",22-31:unicnt="+unique+"] indexbits(to index unique):"+indexbits+" gcpack:"+bitStr(gcpack));
+      }  
+
+//System.out.println("cntMgciWords:"+cntMgciWords);      
+//System.out.println("pcwords:"+pcwords);
+      if(out!=null){
+        totalpcwords+=pcwords;
+        totalcntMgciWords+=cntMgciWords;
+      }
+//System.out.println("totalpcwords:"+totalpcwords);
+//System.out.println("totalcntMgciWords:"+totalcntMgciWords);      
+//System.out.println("--");
+     
+      // just check that the bitMap can be reconstructed from bitMap2 
+      if(!compareBitMap(bitMap, bitMap2, gcpack, mgci, ogci)){
+        System.err.println("Error in the bitmaps.");
+        System.exit(-1);
       }
     } // if not abstract
 //System.err.println("dumpMethodGcis method:"+cli.clazz.getClassName()+"."+methodId);
@@ -483,20 +842,117 @@ public class GCRTMethodInfo {
 //System.err.println("index="+index+" bitMap.length:"+bitMap.length+" instCnt:"+instCnt+" mreallocals:"+mreallocals+" margs:"+margs +" mstack:"+mstack+" pos:"+pos);
 //System.err.println("method.isAbstract():"+method.isAbstract());
 //System.err.println("...");
+//System.out.println("cntMgciWords:"+cntMgciWords);
+    return cntMgciWords;
 	}
 	
-	int gcLength(){
-		return length;
+	// Sanity checking the bitmaps by unpacking both and comparing
+	boolean compareBitMap(int bitMap[], int bitMap2[], int gcpack, int mcgi[], int ocgi[]){
+    boolean compareresult = true;
+    
+    int UNICNTLEN = 10; // worst case if every PC has a unique pattern
+    int INSTRLEN = 10; // 1024 instructions
+    int MAXSTACKLEN = 5; // max 31 operands
+    int MAXLOCALSLEN = 5; // max 31 args+locals
+    int LOCALMARKLEN = 1; // 1 if local references
+    int STACKMARKLEN = 1; // 1 if stack references
+    
+    int unicnt = (gcpack>>>(INSTRLEN+MAXSTACKLEN+MAXLOCALSLEN+LOCALMARKLEN+STACKMARKLEN))&0x03ff;
+    int instr = (gcpack>>>(MAXSTACKLEN+MAXLOCALSLEN+LOCALMARKLEN+STACKMARKLEN))&0x03ff;		
+    int maxstack = (gcpack>>>(MAXLOCALSLEN+LOCALMARKLEN+STACKMARKLEN))&0x1f;
+    int maxlocals = (gcpack>>>(LOCALMARKLEN+STACKMARKLEN))&0x1f;		
+    int localmark = (gcpack>>>(STACKMARKLEN))&0x01;;
+    int stackmark = gcpack&0x01;		
+//System.out.println("unicnt:"+unicnt);
+//System.out.println("instr:"+instr);
+//System.out.println("maxstack:"+maxstack);
+//System.out.println("maxlocals:"+maxlocals);
+//System.out.println("localmark:"+localmark);
+//System.out.println("stackmark:"+stackmark);
+    int num = 1;
+    int indexbits = 0;
+    for(int i=1;i<32;i++){
+      if(num<unicnt){
+        num = (num<<1)|1;
+      } else
+      {
+  	    indexbits = i;
+  	    break;
+      }
+    }
+    
+    //reconstruct patterns from bitMap2
+    int patternindex2[] = new int[instr];
+    int unipattern[] = new int[unicnt];
+    int pos = 0;
+    for(int i=0;i<instr;i++){
+      patternindex2[i] = getBitsFromArray(bitMap2,pos,indexbits);
+      pos += indexbits;
+    }
+    for(int i=0;i<unicnt;i++){
+    	unipattern[i] = getBitsFromArray(bitMap2,pos,(maxstack+maxlocals));
+    	pos += (maxstack+maxlocals);
+    }
+    
+    //bitmap1 patterns
+    int patterns1[] = new int[instr];
+    pos=0;
+    for(int i=0;i<instr;i++){
+    	patterns1[i] = getBitsFromArray(bitMap,pos,(maxstack+maxlocals));
+    	pos += (maxstack+maxlocals);
+      if(patterns1[i] != unipattern[patternindex2[i]]){
+//System.out.println("mgci["+i+"]:"+bitStr(mcgi[i]));
+//System.out.println("ocgi["+i+"]:"+bitStr(ocgi[i]));
+//System.out.println("patterns1["+i+"]:"+bitStr(patterns1[i]));
+//System.out.println("patternindex2["+i+"]:"+patternindex2[i]);
+//System.out.println("unipattern[patternindex2[["+i+"]]:"+bitStr(unipattern[patternindex2[i]]));
+        compareresult = false;
+        break;
+      }    	
+    }
+    
+    return compareresult;
+	}
+	
+	// can return max 32 bits.
+	int getBitsFromArray(int array[], int pos, int len){
+		if(len>32){
+			System.out.println("len>32");
+			System.exit(-1);
+		}
+		if((pos+len)>array.length*32){
+		  System.out.println("pos:"+pos+" len:"+len+" too big for array[].length:"+array.length);
+		  
+		  System.exit(-1);
+		}
+		int res = 0;
+		for(int i=pos;i<pos+len;i++){
+			int index = i/32;
+			int offset = i%32;
+			int word = array[index];
+			res |= (word>>offset)&0x01;
+		}
+		return res;
+	}
+	
+	/**
+	 * Returns the length in words that the GC info wil consume. 
+	 * Called from SetMethodInfo's visitJavaClass method.
+	 */
+	public int gcLength(){
+		return dumpMethodGcis(null);
   }
 
 	/**
 	 * Make a word into a 0/1 bit string.
+	 * Note that the bit are written with the low bits first.
 	 */
 	String bitStr(int word){
 	  //make ogci[PC] to bit string for debugging
 	  StringBuffer sb = new StringBuffer();
 	  int mask = 0x01;
-	  for(int i = 31;i>=0;i--){
+	  //for(int i = 31;i>=0;i--){
+	  for(int i = 0;i<32;i++){
 		  int res = (word>>>i) & mask;
 		  if((i+1)%8==0 && i<31){
 			  sb.append("_");
@@ -511,8 +967,6 @@ public class GCRTMethodInfo {
  * Extends org.apache.bcel.verifier.structurals.Frame just to get access
  * to the _this field, which the the operandWalker method in MethodInfo 
  * uses.
- *
- * @author rup, ms
  */
 class FrameFrame extends Frame{
 	

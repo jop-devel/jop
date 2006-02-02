@@ -227,7 +227,7 @@ public class GC {
 				push(Native.rdMem(addr+i));
 			}
 			// add complete stack of the current thread to the root list
-//			roots = GCStkWalk.swk(RtThreadImpl.getActive(),true,true);
+//			roots = GCStkWalk.swk(RtThreadImpl.getActive(),true,false);
 			i = Native.getSP();			
 			for (j = 128; j <= i; ++j) {
 //				if (roots[j - 128] == 1) {
@@ -246,7 +246,7 @@ public class GC {
 					int[] mem = RtThreadImpl.getStack(i);
 					int sp = RtThreadImpl.getSP(i) - 128; // sp starts at 128
 
-//					roots = GCStkWalk.swk(i, false, true);
+//					roots = GCStkWalk.swk(i, false, false);
 
 					// System.out.print("sp=");
 					// System.out.println(sp);

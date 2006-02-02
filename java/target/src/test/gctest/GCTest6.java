@@ -4,7 +4,7 @@ import joprt.RtThread;
 import util.Dbg;
 import com.jopdesign.sys.*;
 
-// A test of the GCStackWalker to see of the threads are scheduled. TODO: Do some GC
+// A test of the GCStackWalker to see of the threads are scheduled. TODO: Do some GC:-)
 
 public class GCTest6 {
 
@@ -30,9 +30,10 @@ public class GCTest6 {
     
 		RtThread.startMission();
 
-		for(;;){
+		for(int i=0;i<3;i++){
   		System.out.println("Thread 0");
 			RtThread.sleepMs(500);
 		}
+		System.out.println("Test 6 ok");
 	} //main
 }

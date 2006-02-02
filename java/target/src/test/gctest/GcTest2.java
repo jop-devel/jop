@@ -10,14 +10,15 @@ import com.jopdesign.sys.GC;
 // nulls the reference and we check that GC detects it.
 // Parameters: This test can be changed using the NUMTHREADS constant
 
-public class GcTest2 {
+public class GCTest2 {
 	static int NUMTHREADS;
 
 	static GarbageThread[] garbageThreads;
 
 	public static void main(String s[]) {
 		NUMTHREADS = 500; //Takes about 2 min to run.
-		System.out.println("NUMTHREADS " + NUMTHREADS);
+		System.out.print("NUMTHREADS ");
+		System.out.println(NUMTHREADS);
 		garbageThreads = new GarbageThread[NUMTHREADS];
 		System.out.println("gabagethreads length " + garbageThreads.length);
 
@@ -95,7 +96,7 @@ class GarbageThread extends RtThread {
 					System.out.println("GC did not collect the floating reference");
 					System.out.println("gcBefore " + gcBefore);
 					System.out.println("gcAfter " + gcAfter);
-					System.exit(0);
+					System.exit(-1);
 				} else {
 					System.out.println("Test completed OK");
 					System.exit(0);
