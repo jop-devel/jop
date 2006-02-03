@@ -252,6 +252,13 @@ Dbg.wr(" nun aktiv\n");
 						// enable Alarm checking again
 						// is disabled again!!!
 						// Status.checkMove = true;
+
+						Status.doCommAlarm = Flash.isCommAlarm(melnr);
+if (Status.doCommAlarm) {
+	Dbg.wr("do communication Alarm");
+} else {
+	Dbg.wr("no communication Alarm");
+}
 					}
 				}
 			} else {

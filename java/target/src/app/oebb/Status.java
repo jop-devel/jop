@@ -117,6 +117,11 @@ public class Status {
 *	zuletzt gesendeter Melderaum
 */
 	volatile static int melNrSent;
+	
+	/**
+	*	send a communication alarm
+	*/
+	volatile static boolean doCommAlarm;
 /**
 *	Startmelderaum
 */

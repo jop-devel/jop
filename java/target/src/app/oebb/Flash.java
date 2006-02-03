@@ -52,6 +52,8 @@ public class Flash {
 	static final int PT_FLG_NO_DIR = 8;
 	static final int PT_FLG_NO_MOVE = 16;
 	static final int PT_FLG_ANM = 32;
+	
+	static final int NO_COMM_ALARM = -1;
 
 	static class Point {
 		int melnr;
@@ -257,6 +259,19 @@ System.out.println("getFirst: wrong strnr");
 		}
 		return -1;
 	}
+	
+	static boolean isCommAlarm(int melnr) {
+		
+		System.out.println(melnr);
+		boolean ret = true;
+		Point p = Flash.getPoint(melnr);
+		if (p!=null) {
+			Dbg.wr(p.stationLine1);
+			System.out.println(p.ptr);
+			ret = !(p.ptr==NO_COMM_ALARM);
+		}
+		return ret;
+	}
 
 	static void loadString(StringBuffer str, int addr) {
 
@@ -365,7 +380,10 @@ Dbg.lf();
 			p.ptr = intVal(addr+PT_PTR);
 
 			int idx = p.ptr;
-			if (idx<=0) continue;
+			if (idx<=0) {
+				addr += PT_LEN;
+				continue;
+			}
 			
 			int val = ' ';
 			int off = 0;

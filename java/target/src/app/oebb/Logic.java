@@ -93,6 +93,7 @@ System.out.println("Logic.initVals()");
 
 		Status.selectStr = false;
 		Status.melNr = 0;
+		Status.doCommAlarm = false;
 		Status.melNrSent = 0;
 		Status.strNr = 0;
 		Status.zugNr = 0;
@@ -845,6 +846,8 @@ System.out.println("Download server connect timeout");
 		}
 		// Status.state change in loop()
 		if (Status.state!=Status.FDL_CONN || Status.dispMenu) return;
+		// also return on a comm error
+		if (!loop()) return;
 
 		Status.zugNr = nr;
 		Status.art = val;
@@ -913,19 +916,21 @@ System.out.println("Download server connect timeout");
 System.out.println("comm err ignored");
 			return;
 		}
-		int nr = Status.commErr;
-		Led.shortBeep();
-		Led.startBlinking();
-		if (nr==2) {
-			Display.write("FDL Msg Fehler", "Paket zu kurz", "");
-		} else if (nr==3) {
-			Display.write("FDL Msg Fehler", "falsches CMD", "");
-		} else if (nr==4) {
-			Display.write("FDL Msg Fehler", "falsche bgid", "");
-		} else {
-			Display.write("FDL Rechner", "antwortet nicht", "(FDL verständigen)");
+		if (Status.doCommAlarm) {
+			int nr = Status.commErr;
+			Led.shortBeep();
+			Led.startBlinking();
+			if (nr==2) {
+				Display.write("FDL Msg Fehler", "Paket zu kurz", "");
+			} else if (nr==3) {
+				Display.write("FDL Msg Fehler", "falsches CMD", "");
+			} else if (nr==4) {
+				Display.write("FDL Msg Fehler", "falsche bgid", "");
+			} else {
+				Display.write("FDL Rechner", "antwortet nicht", "(FDL verständigen)");
+			}
+			// Display.intVal(40, Status.commErr);			
 		}
-		// Display.intVal(40, Status.commErr);
 
 		Status.connOk = false;
 		connSent = false;
@@ -934,23 +939,26 @@ System.out.println("comm err ignored");
 		// clear melNrSent, has to be resend
 		Status.melNrSent = 0;
 
-		for (;;) {
-			loop();
-			//
-			//	we got another communication error during wait for Enter
-			//		just reset our vars and let check()/Comm do the reconnect
-			//
-			if (Status.commErr!=0) {
-				connSent = false;
-				// clear error
-				Status.commErr = 0;
-				// clear melNrSent, has to be resend
-				Status.melNrSent = 0;
+		if (Status.doCommAlarm) {
+			for (;;) {
+				loop();
+				//
+				//	we got another communication error during wait for Enter
+				//		just reset our vars and let check()/Comm do the reconnect
+				//
+				if (Status.commErr!=0) {
+					connSent = false;
+					// clear error
+					Status.commErr = 0;
+					// clear melNrSent, has to be resend
+					Status.melNrSent = 0;
+				}
+				if (Keyboard.rd()==Keyboard.E) break;
+				if (Status.connOk) break;
 			}
-			if (Keyboard.rd()==Keyboard.E) break;
-			if (Status.connOk) break;
+			Led.stopBlinking();			
 		}
-		Led.stopBlinking();
+
 		// keep Status even if not connected
 /*
 		Status.state = Status.INIT;
