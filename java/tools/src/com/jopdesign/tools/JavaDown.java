@@ -12,6 +12,8 @@ public class JavaDown {
 
 	static boolean usb = false;
 
+	final static int MAX_MEM = 1048576/4;
+	
 	static Enumeration portList;
 
 	static CommPortIdentifier portId;
@@ -66,6 +68,8 @@ public class JavaDown {
 			System.out.println(e);
 		}
 
+		int[] ram = new int[MAX_MEM];
+		
 		FileReader fileIn = null;
 		try {
 			fileIn = new FileReader(fname);
@@ -74,33 +78,46 @@ public class JavaDown {
 			System.exit(-1);
 		}
 		
-		long time = System.currentTimeMillis();
-
+		int len = 0;
 		// read .jop file word for word and write bytes to JOP
 		try {
 			StreamTokenizer in = new StreamTokenizer(fileIn);
 			in.slashSlashComments(true);
 			in.whitespaceChars(',', ',');
-			byte adword[] = new byte[4];
 			int rplyCnt = 0;
-			int cnt = 0;
-			for (; in.nextToken() != StreamTokenizer.TT_EOF; ++cnt) {
+			for (; in.nextToken() != StreamTokenizer.TT_EOF; ++len) {
 				// in.nval contains the next 32 bit word to be sent
-				int l = (int) in.nval;
-
-				// Java code length at index 1 position in .jop
-				if (cnt == 1) {
-					System.out.println(l + " words of Java bytecode ("
-							+ (l / 256) + " KB)");
+				ram[len] = (int) in.nval;
+				if (len+1>=MAX_MEM) {
+					System.out.println("too many words ("+len+","+MAX_MEM+")");
+					System.exit(-1);
 				}
-				for (int i = 0; i < 4; i++) {
-					byte b = (byte) (l>>((3-i)*8));
-					++rplyCnt;
-					outputStream.write(b);
-					
-					if (!usb) {
-						if (cnt==i) {
+			}
+
+			// Java code length at index 1 position in .jop
+			System.out.println(ram[1]-1+" words of Java bytecode ("+(ram[1]-1)+" KB)");
+			
+			if (usb) {
+				// we have no echo on usb and we issue a single
+				// write command
+				byte[] byt_buf = new byte[MAX_MEM*4];
+				for (int i=0; i<len; ++i) {
+					int l = ram[i];
+					for (int j=0; j<4; ++j) {
+						byt_buf[i*4+j] = (byte) (l>>((3-j)*8));
+					}
+				}
+				outputStream.write(byt_buf, 0, len*4);
+			} else {
+				for (int cnt=0; cnt<len; ++cnt) {
+					for (int i = 0; i < 4; i++) {
+						byte b = (byte) (ram[cnt]>>((3-i)*8));
+						++rplyCnt;
+						outputStream.write(b);
+						
+						if (cnt==0) {
 							// TODO check reply
+							// TODO timeout on read for a unconnected baord
 							iStream.read();
 							--rplyCnt;
 						} else if (iStream.available()!=0) {
@@ -108,24 +125,24 @@ public class JavaDown {
 							--rplyCnt;
 						}						
 					}
+					if ((cnt & 0x3f) == 0) {
+						System.out.print(prog_char[(cnt >> 6) & 0x07] + "\r");
+					}
+					
 				}
-				
-				if ((cnt & 0x3f) == 0) {
-					System.out.print(prog_char[(cnt >> 6) & 0x07] + "\r");
+
+				// read the rest of the echo bytes
+				while (rplyCnt>0) {
+					iStream.read();
+					--rplyCnt;
 				}
 
 			}
-			while (rplyCnt>0) {
-				iStream.read();
-				--rplyCnt;
-			}
 
-			System.out.println(cnt + " words external RAM (" + (cnt / 256)
-					+ " KB)");
+			System.out.println(len+" words external RAM ("+(len/256)+" KB)");
 			System.out.println("download complete");
-			System.out.println("");
-			System.out.println("");
-			System.out.println("took "+(System.currentTimeMillis()-time));
+			System.out.println();
+			System.out.println();
 
 		} catch (IOException e) {
 			System.out.println(e);
