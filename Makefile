@@ -18,9 +18,9 @@
 #		use -usb to download the Java application
 #		without the echo 'protocol' on USB
 #
-COM_PORT=com1
+COM_PORT=COM1
 COM_FLAG=-e
-#COM_PORT=com6
+#COM_PORT=COM6
 #COM_FLAG=-e -usb
 
 # 'some' different Quartus projects
@@ -96,7 +96,7 @@ japp: java_app download
 # use this for USB download of FPGA configuration
 # and Java program download
 #all: directories tools jopusb japp
-
+#
 #japp: java_app download_usb
 
 
@@ -202,11 +202,16 @@ java_app:
 
 download:
 	cd quartus/$(DLPROJ) && quartus_pgm -c ByteBlasterMV -m JTAG jop.cdf
-	down $(COM_FLAG) java/target/dist/bin/$(P2)_$(P3).jop $(COM_PORT)
+	java -cp java/tools/dist/lib/jop-tools.jar\;java/lib/RXTXcomm.jar com.jopdesign.tools.JavaDown \
+		$(COM_FLAG) java/target/dist/bin/$(P2)_$(P3).jop $(COM_PORT)
+
+#	this is the download version with down.exe
+#	down $(COM_FLAG) java/target/dist/bin/$(P2)_$(P3).jop $(COM_PORT)
 
 download_usb:
 	cd rbf && ../USBRunner $(DLPROJ).cdf
-	down $(COM_FLAG) java/target/dist/bin/$(P2)_$(P3).jop $(COM_PORT)
+	java -cp java/tools/dist/lib/jop-tools.jar\;java/lib/RXTXcomm.jar com.jopdesign.tools.JavaDown \
+		$(COM_FLAG) java/target/dist/bin/$(P2)_$(P3).jop $(COM_PORT)
 
 #
 #	flash programming
