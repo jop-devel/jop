@@ -1,4 +1,4 @@
-//Copyright: www.jopdesign.com
+//Copyright: rup, fg, ms
 package com.jopdesign.tools;
 
 import java.io.*;
@@ -117,7 +117,7 @@ public class JavaDown {
 						
 						if (cnt==0) {
 							// TODO check reply
-							// TODO timeout on read for a unconnected baord
+							// TODO timeout on read for an unconnected board
 							iStream.read();
 							--rplyCnt;
 						} else if (iStream.available()!=0) {
@@ -177,7 +177,6 @@ public class JavaDown {
 					}
 					// test if the JOP JVM has exited
 					if (eb.toString().equals(exitString)) {
-						// System.out.println(" JavaDown Exiting");
 						break;
 					}
 				} catch (IOException e) {
