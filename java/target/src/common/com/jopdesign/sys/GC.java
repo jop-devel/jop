@@ -4,6 +4,8 @@
  */
 package com.jopdesign.sys;
 
+import util.Timer;
+
 
 /**
  * @author Martin Schoeberl (martin@jopdesign.com)
@@ -219,7 +221,12 @@ public class GC {
 	static void getRoots() {
 
 		synchronized (mutex) {
+//blocking time
+// time measurement by rup
+// int ts=Timer.us();
+
 			int i, j;
+			
 			// add static refs to root list
 			int addr = Native.rdMem(addrStaticRefs);
 			int cnt = Native.rdMem(addrStaticRefs+1);
@@ -230,6 +237,7 @@ public class GC {
 //			roots = GCStkWalk.swk(RtThreadImpl.getActive(),true,false);
 			i = Native.getSP();			
 			for (j = 128; j <= i; ++j) {
+				// disable the if when not using gc stack info
 //				if (roots[j - 128] == 1) {
 					push(Native.rdIntMem(j));
 //				}
@@ -251,12 +259,21 @@ public class GC {
 					// System.out.print("sp=");
 					// System.out.println(sp);
 					for (j = 0; j <= sp; ++j) {
+					// disable the if when not using gc stack info
+
 //						if (roots[j] == 1) {
 							push(mem[j]);
 //						}
 					}
-				} // if k!=active
+				}
 			}
+
+// time measurement by rup
+//      ts = Timer.us() - ts;
+//      System.out.print("blocking time for root scan: ");
+//      System.out.print(ts);
+//      System.out.println(" us");      
+
 			// TODO: and what happens when the stack gets changed during
 			// GC?
 		}
