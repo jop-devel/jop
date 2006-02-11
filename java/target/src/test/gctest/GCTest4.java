@@ -14,11 +14,11 @@ public class GCTest4 {
   public static void main(String s[]) {
 	  
 	  new RtThread(18, 100010) {
-	  	SomeObject so;
+	  	SomeObject2 so;
 			public void run() {
 				for (;;) {
 					waitForNextPeriod();
-					so = new SomeObject(1);
+					so = new SomeObject2(1);
 					waitForNextPeriod();
       		for(int i=0;i<100;i++){
       			waitForNextPeriod();
@@ -51,12 +51,12 @@ public class GCTest4 {
 		};
 
 	  new RtThread(19, 100000) {
-	  	SomeObject so;
+	  	SomeObject2 so;
 			public void run() {
 				waitForNextPeriod();
 				for (;;) {
 					waitForNextPeriod();
-					so = new SomeObject(2);
+					so = new SomeObject2(2);
 					waitForNextPeriod();
       		for(int i=0;i<1;i++){
       			waitForNextPeriod();
@@ -104,8 +104,8 @@ public class GCTest4 {
 		RtThread.startMission();
 
 		for(int j=0;j<3;j++){
-	  	SomeObject so; 
-	  	so = new SomeObject(0);
+	  	SomeObject2 so; 
+	  	so = new SomeObject2(0);
   		for(int i=0;i<100;i++){
   		  System.out.print("RtThread 0: new Object:");
   		  System.out.print(i);
@@ -126,10 +126,10 @@ public class GCTest4 {
 	} //main
 }
 
-class SomeObject {
+class SomeObject2 {
 	int test;
 	
-	SomeObject(int test){
+	SomeObject2(int test){
 	  this.test = test;
 	}
 	
