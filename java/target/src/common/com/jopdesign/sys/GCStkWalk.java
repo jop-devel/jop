@@ -1,5 +1,6 @@
 package com.jopdesign.sys; 
 
+import util.Timer;
 import joprt.RtThread;
 
 import com.jopdesign.sys.Const;
@@ -11,33 +12,36 @@ import com.jopdesign.sys.JVMHelp;
 // 2005-12-15: ms idea: Copy and paste from JVMHelp
 // 2005-12-15: rup: Only inspect local vars + operands
 // 2006-01-15: Operand walker
+// 2006-01-27: Reduced word count by indexed version
 
-//TODO: ask ms about how much mem can be used
+//TODO: top frame inspection, the initialization issue from Sitescape
 
-// The stack tracer does not inspect the top frame for 
-// reference positions because the swk method is the top
-// frame
-// It is intended for use only from the GC class. No app class should call
-//   directly.
+/**
+ * It inspects the stack of a given thread and returns a reference to an array of stack
+ * with the references for a given PC value marked with 1.
+ * The <code>swk</code> method is called from the GC's getRoots method. 
+ * @author rup, ms
+ */
 public class GCStkWalk {
 	static final int MAXSTACK = 128;
 	static int stack[];
 	
   // gcpack, see also MethodInfo.dumpMethodGcis
+  static final int UNICNTLEN = 10; // count of unique patterns
   static final int INSTRLEN = 10; //1024 instructions
   static final int MAXSTACKLEN = 5; // max 31 operands
   static final int MAXLOCALSLEN = 5; // max 31 args+locals
   static final int STACKMARKLEN = 1; // 1 if stack references
   static final int LOCALMARKLEN = 1; // 1 if local references
 
-  static final int WORDLEN = 32;
-
   //indexes of the root items for the stack that is scanned using swk(int)
   private final static int[] roots = new int[MAXSTACK];
 	
 	// used by swk method and the other utility methods
-	static int sp, cp, fp, mp, vp, pc, addr, loc, args, gcpack, val, active, num, infoaddr;
-
+	static int sp, cp, fp, mp, vp, pc, addr, loc, args, mstk, mloc; 
+	static int gcpack, val, active, num, infoaddr, instr;
+	static int localmarkword, stackmarkword, indexbits, unicnt, length;
+  
 	//Walk one stack and then you should access refPos
 	//All non-active stacks should have 
 	//  the waitForNextPeriod stack frame on top of its
@@ -46,7 +50,33 @@ public class GCStkWalk {
 	//  threads.
 	//If it is the active thread that invokes this method then 
 	//  the swk(int) method is the top frame, which we do not inspect (should we?)
+	/**
+	 * It walks the stack for a given thread. Its behavior depends if it is walking the
+	 * the active stack or not so that is flagged in the arguments. 
+	 * @param num index of the thread to be "walked"
+	 * @param active if the thread is the active one
+	 * @param info if true then a lot of debug info is printed (which can cause 
+	 *        the GC to miss the deadlines...)
+	 * @return the root set marked with 1 for references, 0 for primitives and -1 for other
+	 *          stack things from the frames.
+	 */
 	public static int[] swk(int num, boolean active, boolean info) {
+    int ts=Timer.us();
+    int ts1=0;
+
+    if(info){
+		  System.out.print("GCStkWalk.swk called(num=");
+		  System.out.print(num);
+		  System.out.print(",");
+		  if(active)
+		    System.out.print("active=true");
+		  else
+		    System.out.print("active=false");
+		  if(info)
+		    System.out.println("info=true)");
+		  else
+		    System.out.println("info=false)");
+		}
 		// mark local refs and operand refs with 1, primitives with 0, 
 		//  and the rest with -1. This array has plenty room for packing 
 		//  more information if needed. For example using 1 for local refs and 
@@ -65,9 +95,12 @@ public class GCStkWalk {
     }
         
 		fp = sp - 4;  // last sp points to the end of the frame
-		
+
+         
+      
+    
 		while (fp > 128 + 5) { // stop befor 'first' method
-			// saved vars of curent frame that points to 
+      // saved vars of curent frame that points to 
 			//   previous frame. See Fig. 6.2 in ms thesis
 			if(active){
 				mp = Native.rdIntMem(fp + 4);
@@ -95,44 +128,49 @@ public class GCStkWalk {
 			loc = (val >>> 5) & 0x1f;
       
       gcpack = Native.rdMem(addr-1);
-
+      mloc = gcMaxLocals();
+      mstk = gcMaxStack();
+      unicnt = gcUniCnt();
+      instr = gcInstr();
+      length = gcLength(); // also sets indexbits
+      
 			fp = vp + args + loc; // the fp can be calc. with vp and count of args + locals
 			      
       //Just check to see if JOP args count equals the gcpack info
-      if((args+loc) != gcMaxLocals()){
+      if((args+loc) != mloc){
         System.out.println("Method "+addr+":"+(args+loc)+"!="+gcMaxLocals());
         System.exit(-1);
       }
-      
-      infoaddr = addr - 1 - gcLength(); // now point to first gc info word
-      
+      length = gcLength();
+      infoaddr = addr - 1 - length; // now point to first gc info word
+      // it makes mgci and ogci words for the the PC
+      setMarkWords();
+         
       //Now do that root marking
-      for(int i=0;i<gcMaxLocals();i++){
+      for(int i=0;i<mloc;i++){
         // don't overwrite the ref belonging to the frame on top of this
         if(roots[vp+i-128]==-1){
-          roots[vp+i-128]=gcLocalMarkBit(i);    	
+          roots[vp+i-128]=gcLocalMarkBit(i);
         }
       }
-      for(int i=0;i<gcMaxStack();i++){
+      for(int i=0;i<mstk;i++){
         // don't overwrite the ref belonging to the frame on top of this
         if(roots[fp+5+i-128]==-1){
-          roots[fp+5+i-128]=gcStackMarkBit(i);    	
+          roots[fp+5+i-128]=gcStackMarkBit(i);
         }
       }
-      
       // debugging
       if(info){
         wrFrame();
       }
-wr('Z');
 
 		} // while loop
-		
+    
 		// debugging
 		if(info){
 		  wrroots(num);
 		}
-		
+    
 		return roots;
 	}
 	
@@ -166,13 +204,22 @@ wr('Z');
 
 		wr(" mp:");
 		wrSmall(mp);
-		wr('\n');
 		
-		wr("vp:");
+		wr(" vp:");
 		wrSmall(vp);
-		
+				
 		wr(" pc:");
 		wrSmall(pc);
+		wr('\n');
+		
+    wr("instrs:");
+    wrSmall(gcInstr());
+
+		wr(" indexbits:");
+		wrSmall(indexbits);
+    
+		wr(" uc:");
+		wrSmall(gcUniCnt());
 		
 		wr(" addr:");
 		wrSmall(addr);
@@ -180,16 +227,27 @@ wr('Z');
 		wr(" infoaddr:");
 		wrSmall(infoaddr);
 		wr('\n');
+	
+	  wr("localmark:");
+	  wrDigit(gcLocalMark());
+	  
+	  wr(" stackmark:");
+	  wrDigit(gcStackMark());
+	  wr('\n');
 		
 		wr("ogis[pc=");
 		wrSmall(pc);
 		wr("]:");
   	int mask = 0x01;
 		for(int i = 31;i>=0;i--){
-		  if((i+1)%8==0 && i<31){
+		  if((i+1)%8==0 && i<31){ 
 			  wr('_');
 			}
-			wrDigit(gcStackMarkBit(i));
+			if(i<gcMaxStack()){
+			  wrDigit(gcStackMarkBit(i));
+			} else{
+			  wrDigit(0);
+			}
 		}
 		wr('\n');			
 			
@@ -200,7 +258,11 @@ wr('Z');
 		  if((i+1)%8==0 && i<31){
 			  wr('_');
 			}
-			wrDigit(gcLocalMarkBit(i));
+			if(i<gcMaxLocals()){
+			  wrDigit(gcLocalMarkBit(i));
+			} else {
+			  wrDigit(0);
+			}
 		}
 		wr('\n');
 
@@ -291,76 +353,129 @@ wr('Z');
   static int gcInstr(){
     return ((gcpack>>>(MAXSTACKLEN+MAXLOCALSLEN+STACKMARKLEN+LOCALMARKLEN))&0x03FF);//INSTRLEN
   }
+
+  static int gcUniCnt(){
+    return ((gcpack>>>(INSTRLEN+MAXSTACKLEN+MAXLOCALSLEN+STACKMARKLEN+LOCALMARKLEN))&0x03FF); //UNICNTLEN
+  }
   
   // in words
   static int gcLength(){
-   	int instCnt = gcInstr();
-//System.out.print("gcInstr():");
-//System.out.println(gcInstr());   	
-   	int varcnt = gcMaxStack()+gcMaxLocals();
-//System.out.print("gcMaxStack()+gcMaxLocals():");
-//System.out.println(gcMaxStack()+gcMaxLocals());
-//System.out.print("gcMaxStack():");
-//System.out.println(gcMaxStack());
-//System.out.print("gcMaxLocals():");
-//System.out.println(gcMaxLocals());
-  	int pos = instCnt*varcnt;
-//System.out.print("pos:");
-//System.out.println(pos);  	  	
-  	int wordcnt = pos / WORDLEN;
-  	if((pos % WORDLEN)>0){
-  	  wordcnt++;
+  	int wordcnt;
+
+		// how wide is index
+		int num = 1;
+    indexbits = 0;
+    for(int i=1;i<32;i++){
+      if(num<unicnt){
+        num = (num<<1)|1;
+      } else
+      {
+	      indexbits = i;
+	      break;
+      }
+    }
+
+  	if(gcStackMark()==1 || gcLocalMark()==1){
+   	  int pos = instr*indexbits + unicnt*(mstk+mloc);
+  	  wordcnt = pos >> 5;
+  	  if((pos & 0x1F)>0){
+  	    wordcnt++;
+  	  }
+  	} else{
+  	  wordcnt = 0;
   	}
-//System.out.print("wordcnt:");
-//System.out.println(wordcnt);  	  	  	
+  	
   	return wordcnt;
+  }
+
+  // prepare the stack and local mark words 
+  // called once for each frame
+  static void setMarkWords(){
+    stackmarkword = localmarkword = 0;  	
+    if(gcLocalMark()==1 || gcStackMark() ==1){ // is there info
+      //read the index
+      int index = 0;
+      int indexpos = pc*indexbits;
+      for(int j=0;j<indexbits;j++){
+        int wordindex = (indexpos+j) >> 5;
+        int offset = indexpos & 0x1F;
+        int val = Native.rdMem(infoaddr+wordindex);
+        int bit = (val>>>offset) & 0x01;  
+//System.out.print("val ");
+//bitStr(val);
+//System.out.println("");
+//System.out.print("infoaddr ");
+//System.out.println(infoaddr);
+//System.out.print("wordindex ");
+//System.out.println(wordindex);
+//System.out.print("offset ");
+//System.out.println(offset);
+//System.out.print("indexpos ");
+//System.out.println(indexpos);
+//System.out.print("bit ");
+//System.out.print(j);
+//System.out.print(" ");
+//System.out.println(bit);
+        index |= (bit<<j);	
+      }
+
+
+//System.out.print("p:");
+//System.out.println(index);        
+        //read the corresponding unique pattern
+      indexpos = instr*indexbits+index*(mloc+mstk);
+      int oldwordindex = -1;
+      int val = -1;
+      for(int j=0;j<(mloc+mstk);j++){
+
+        //          indexpos = inst*indexbits+index*(gcMaxLocals()+gcMaxStack())+j;
+        int wordindex = (indexpos+j)>>5; // /32
+        int offset = indexpos & 0x1F;
+        
+        if(oldwordindex != wordindex){
+          val = Native.rdMem(infoaddr+wordindex);
+        } 
+        oldwordindex = wordindex;
+        int bit = (val>>>offset) & 0x01;  
+        if(j<mstk){ // stack marks
+          stackmarkword |= bit<<j;
+        } 
+        else { // local marks
+          localmarkword |= bit<<(j-mstk);
+        }
+
+      }
+
+    } 
   }
   
   /**
    * 1 if the stack has a reference on the <code>index</code> position.
    */
   static int gcStackMarkBit(int index){
-    int bit = 0;
-    if(index<gcMaxStack()){
-      int varcnt = gcMaxStack()+gcMaxLocals();
-      int pos = pc * varcnt+gcMaxLocals()+index;
-      int wordindex = pos / WORDLEN;
-//wrSmall(infoaddr);
-//wrSmall(pc);
-//wrSmall(index);
-//wrSmall(pos);
-//wrSmall(WORDLEN);
-      int offset = pos % WORDLEN;
-      int val = Native.rdMem(infoaddr+wordindex);
-      bit = (val>>>offset) & 0x01;
-    }
-    return bit;
+    if(index>mstk){
+	    System.out.println("index too big");
+	    System.exit(-1);
+    } 	
+    return (stackmarkword>>>index)&0x01;
   }
   
   /**
    * 1 if the locals has a reference on the <code>index</code> position.
    */
   static int gcLocalMarkBit(int index){
-    
-    int bit = 0;
-    
-    if(index<gcMaxLocals()){
-      int varcnt = gcMaxStack()+gcMaxLocals();
-    
-      int pos = pc * varcnt + index;
-    
-      int wordindex = pos / WORDLEN;
-      int offset = pos % WORDLEN;
-      int val = Native.rdMem(infoaddr+wordindex);
-    
-      bit = (val>>>offset) & 0x01;
-    }
-    return bit;
+    if(index>mloc){
+	    System.out.println("index too big");
+	    System.exit(-1);
+    } 	
+  	return (localmarkword>>>index)&0x01;
   }
   
+  // Note that we write low order bits first.
   static void bitStr(int word){
 	  int mask = 0x01;
-	  for(int i = 31;i>=0;i--){
+	  //for(int i = 31;i>=0;i--){
+	  for(int i = 0;i<32;i++){
 		  int res = (word>>>i) & mask;
 		  if((i+1)%8==0 && i<31){
 			  wr('_');
