@@ -83,6 +83,9 @@ public class Const {
 	// LEGO stuff (scio_lego.vhd)
 	public static final int IO_LEGO = IO_BASE+0x30;
 
+	// MAC for rup (scio_usb.vhd)
+	public static final int IO_MAC = IO_BASE+0x30;
+
 	// BG263
 	// TODO: change iobg
 	// new naming for UART base address
