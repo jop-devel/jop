@@ -41,6 +41,9 @@ P1=test
 P2=test
 P3=Hello
 
+P2=gctest
+P3=GCTest10
+
 #P2=jvm
 #P3=DoAll
 

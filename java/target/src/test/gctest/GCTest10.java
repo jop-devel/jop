@@ -22,7 +22,7 @@ public class GCTest10 {
     // 100 (nt=99)|         
 
     // Number of extra threads in addition to main thread:
-    int nt = 0;
+    int nt = 9;
 
     for (int i = 0; i < nt; i++) {
       System.out.print("Extra thread:");
