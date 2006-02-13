@@ -8,6 +8,16 @@
 #		configuration CPLD compiling
 #		Spartan-3 targets
 #
+#	You probably want to change the folloing parts in the Makefile:
+#
+#		QPROJ ... your Quartus FPGA project
+#		COM_* ... your communication settings
+#		all:, japp: ... USB or serial download
+#		TARGET_APP_PATH, MAIN_CLASS ... your target application
+#
+#	for a quick change you can also use command line arguments when invoking make:
+#		make japp -e QPROJ=cycwrk TARGET_APP_PATH=java/target/src/bench MAIN_CLASS=jbe/DoAll
+#
 #
 
 
@@ -44,40 +54,47 @@ P3=Hello
 #P2=jvm
 #P3=DoAll
 
-#P2=wishbone
-#P3=Simple
-
-#P1=bench
-#P2=jbe
-#P3=DoAll
-
-#P2=testrt
-#P3=PeriodicFull
-#P1=app
-#P2=oebb
-#P3=Main
-#P3=Usb
-# for baseio (Rasmus)
-#P1=app
-#P2=tal
-#P3=Tal
-
-#P1=app
-#P2=dsp
-#P3=AC97
-#P3=SigDel
-
-#P1=app
-#P2=lego
-#P3=LineFollower
-
 #
 #	some variables
 #
 TOOLS=java/tools
+EXT_CP=-classpath java/lib/bcel-5.1.jar\;java/lib/jakarta-regexp-1.3.jar\;java/lib/RXTXcomm.jar
+TOOLS_JFLAGS=-d $(TOOLS)/dist/classes $(EXT_CP) -sourcepath $(TOOLS)/src\;$(TARGET)/src/common
+
 TARGET=java/target
-EXT_LIB=-classpath java/lib/bcel-5.1.jar\;java/lib/jakarta-regexp-1.3.jar\;java/lib/RXTXcomm.jar
-TOOLS_JFLAGS=-d $(TOOLS)/dist/classes $(EXT_LIB) -sourcepath $(TOOLS)/src\;$(TARGET)/src/common
+TOOLS_CP=$(EXT_CP)\;$(TOOLS)/dist/lib/jop-tools.jar
+TARGET_SOURCE=$(TARGET)/src/common\;$(TARGET)/src/jdk\;$(TARGET_APP_SOURCE_PATH)
+TARGET_JFLAGS=-d $(TARGET)/dist/classes -sourcepath $(TARGET_SOURCE)
+
+
+#
+#	Add your application source pathes and class that contains the 
+#	main method here. We are using those simple P1/2/3 variables for
+#		P1=directory, P2=package name, and P3=main class
+#	for sources 'inside' the JOP source tree
+#
+#	TARGET_APP_PATH is the path to your application source
+#
+#	MAIN_CLASS is the class that contains the Main method with package names
+#
+TARGET_APP_PATH=$(TARGET)/src/$(P1)
+MAIN_CLASS=$(P2)/$(P3)
+
+# here an example how to define an application outside
+# from the jop directory tree
+#TARGET_APP_PATH=/usrx/jop_rasmus/dsvm/DSVMFP/src
+#MAIN_CLASS=test/TestSMO
+
+
+#	add more directoies here when needed
+#		(and use \; to escape the ';' when using a list!)
+TARGET_APP_SOURCE_PATH=$(TARGET_APP_PATH)
+TARGET_APP=$(TARGET_APP_PATH)/$(MAIN_CLASS).java
+
+# just any name that the .jop file gets.
+JOPBIN=$(P3).jop
+
+
 
 # use this for serial download
 all: directories tools jopser japp
@@ -102,7 +119,9 @@ clean:
 	d:/bin/del_class.bat
 	cd quartus && d:/bin/qu_del.bat
 
-
+#
+#	build all the (Java) tools
+#
 tools:
 	-rm -r $(TOOLS)/dist
 	mkdir $(TOOLS)/dist
@@ -116,10 +135,32 @@ tools:
 #	old version with batch file
 #	cd java/tools && ./build.bat
 
+
+#
+#	compile and JOPize the application
+#
+java_app:
+	-rm -r $(TARGET)/dist
+	mkdir $(TARGET)/dist
+	mkdir $(TARGET)/dist/classes
+	mkdir $(TARGET)/dist/lib
+	mkdir $(TARGET)/dist/bin
+	javac $(TARGET_JFLAGS) $(TARGET)/src/common/com/jopdesign/sys/*.java
+	javac $(TARGET_JFLAGS) $(TARGET_APP)
+	cd $(TARGET)/dist/classes && jar cf ../lib/classes.zip *
+	java $(TOOLS_CP) -Dmgci=false com.jopdesign.build.JOPizer \
+		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/dist/bin/$(JOPBIN) $(MAIN_CLASS)
+	java $(TOOLS_CP) com.jopdesign.tools.jop2dat $(TARGET)/dist/bin/$(JOPBIN)
+	cp *.dat modelsim
+	rm *.dat
+
+
 # we moved the pc stuff to it's own target to be
 # NOT built on make all.
 # It depends on javax.comm which is NOT installed
 # by default - Blame SUN on this!
+#
+#	TODO: change it to RXTXcomm if it's working ok
 #
 pc:
 	cd java/pc && ./build.bat
@@ -196,32 +237,29 @@ sim: java_app
 #
 jsim: java_app
 	java -cp java/tools/dist/lib/jop-tools.jar -Dlog="false" -Dhandle="true" \
-	com.jopdesign.tools.JopSim java/target/dist/bin/$(P2)_$(P3).jop
+	com.jopdesign.tools.JopSim java/target/dist/bin/$(JOPBIN)
 
-
-java_app:
-	cd java/target && ./build.bat $(P1) $(P2) $(P3)
 
 download:
 	cd quartus/$(DLPROJ) && quartus_pgm -c ByteBlasterMV -m JTAG jop.cdf
 	java -cp java/tools/dist/lib/jop-tools.jar\;java/lib/RXTXcomm.jar com.jopdesign.tools.JavaDown \
-		$(COM_FLAG) java/target/dist/bin/$(P2)_$(P3).jop $(COM_PORT)
+		$(COM_FLAG) java/target/dist/bin/$(JOPBIN) $(COM_PORT)
 
 #	this is the download version with down.exe
-#	down $(COM_FLAG) java/target/dist/bin/$(P2)_$(P3).jop $(COM_PORT)
+#	down $(COM_FLAG) java/target/dist/bin/$(JOPBIN) $(COM_PORT)
 
 download_usb:
 	cd rbf && ../USBRunner $(DLPROJ).cdf
 	java -cp java/tools/dist/lib/jop-tools.jar\;java/lib/RXTXcomm.jar com.jopdesign.tools.JavaDown \
-		$(COM_FLAG) java/target/dist/bin/$(P2)_$(P3).jop $(COM_PORT)
+		$(COM_FLAG) java/target/dist/bin/$(JOPBIN) $(COM_PORT)
 
 #
 #	flash programming
 #
 prog_flash: java_app
 	quartus_pgm -c ByteblasterMV -m JTAG -o p\;jbc/$(DLPROJ).jbc
-	down java/target/dist/bin/$(P2)_$(P3).jop $(COM_PORT)
-	java -cp java/pc/dist/lib/jop-pc.jar udp.Flash java/target/dist/bin/$(P2)_$(P3).jop $(IPDEST)
+	down java/target/dist/bin/$(JOPBBIN) $(COM_PORT)
+	java -cp java/pc/dist/lib/jop-pc.jar udp.Flash java/target/dist/bin/$(JOPBIN) $(IPDEST)
 	java -cp java/pc/dist/lib/jop-pc.jar udp.Flash ttf/$(FLPROJ).ttf $(IPDEST)
 	quartus_pgm -c ByteBlasterMV -m JTAG -o p\;quartus/cycconf/cyc_conf.pof
 	
