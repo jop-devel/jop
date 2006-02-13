@@ -9,25 +9,29 @@ public class Mac {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		// TODO Auto-generated method stub
 
-		mac(2, 1);
-		mac(2, 2);
-		mac(3, 3);
-		System.out.println("result "+result());
+		int i;
+		mac(2000, 1000);
+		for (i=0; i<4; ++i) ; // wait a little bit
+		mac(2000, 2000);
+		for (i=0; i<4; ++i) ; // wait a little bit
+		mac(3000, 3000);
+		for (i=0; i<4; ++i) ; // wait a little bit
+		System.out.println("result "+Native.rdMem(Const.IO_MAC_A)+
+				" "+Native.rdMem(Const.IO_MAC_B));
 		
-		mac(5, 5);
-		mac(5, 5);
-		System.out.println("result "+result());
+		mac(-5, 5);
+		for (i=0; i<4; ++i) ; // wait a little bit
+		mac(5, -5);
+		for (i=0; i<4; ++i) ; // wait a little bit
+		System.out.println("result "+Native.rdMem(Const.IO_MAC_A)+
+				" "+Native.rdMem(Const.IO_MAC_B));
 	}
 
 	static void mac(int a, int b) {
 		
-		Native.wrMem((a<<16)+b, Const.IO_MAC);
+		Native.wrMem(a, Const.IO_MAC_A);
+		Native.wrMem(b, Const.IO_MAC_B);
 	}
 	
-	static int result() {
-		
-		return Native.rdMem(Const.IO_MAC);
-	}
 }
