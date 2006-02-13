@@ -72,20 +72,12 @@ P3=Hello
 #P3=LineFollower
 
 #
-#	make targets for the two RT GC examples
+#	some variables
 #
-#gc_paper: directories tools jopser examples
-#
-#examples:
-#	cd java/target && ./build.bat test gctest PaperEx1
-#	cd quartus/$(DLPROJ) && quartus_pgm -c ByteBlasterMV -m JTAG jop.cdf
-#	down $(COM_FLAG) java/target/dist/bin/gctest_PaperEx1.jop $(COM_PORT)
-#	cd java/target && ./build.bat test gctest PaperEx2
-#	cd quartus/$(DLPROJ) && quartus_pgm -c ByteBlasterMV -m JTAG jop.cdf
-#	down $(COM_FLAG) java/target/dist/bin/gctest_PaperEx2.jop $(COM_PORT)
-#
-#	end make target for RT GC paper
-#
+TOOLS=java/tools
+TARGET=java/target
+EXT_LIB=-classpath java/lib/bcel-5.1.jar\;java/lib/jakarta-regexp-1.3.jar\;java/lib/RXTXcomm.jar
+TOOLS_JFLAGS=-d $(TOOLS)/dist/classes $(EXT_LIB) -sourcepath $(TOOLS)/src\;$(TARGET)/src/common
 
 # use this for serial download
 all: directories tools jopser japp
@@ -112,9 +104,19 @@ clean:
 
 
 tools:
-	cd java/tools && ./build.bat
+	-rm -r $(TOOLS)/dist
+	mkdir $(TOOLS)/dist
+	mkdir $(TOOLS)/dist/lib
+	mkdir $(TOOLS)/dist/classes
+	javac $(TOOLS_JFLAGS) $(TOOLS)/src/*.java
+	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/build/*.java
+	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/tools/*.java
+	cd $(TOOLS)/dist/classes && jar cf ../lib/jop-tools.jar *
 
-# we moved the pc stuff to it's own target to bo
+#	old version with batch file
+#	cd java/tools && ./build.bat
+
+# we moved the pc stuff to it's own target to be
 # NOT built on make all.
 # It depends on javax.comm which is NOT installed
 # by default - Blame SUN on this!
