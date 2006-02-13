@@ -11,14 +11,13 @@ public class Mac {
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 
-		mac(0, 1);
-		mac(0, 2);
-		mac(0, 3);
+		mac(2, 1);
+		mac(2, 2);
+		mac(3, 3);
 		System.out.println("result "+result());
 		
-		mac(0, 5);
-		mac(0, 6);
-		mac(0, 7);
+		mac(5, 5);
+		mac(5, 5);
 		System.out.println("result "+result());
 	}
 

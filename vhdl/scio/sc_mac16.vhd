@@ -76,25 +76,26 @@ begin
 			rd_data <= std_logic_vector(mac);
 			mac <= (others => '0');
 		end if;
-	end if;
 
-	case state is
+		case state is
 
-		when idle =>
-			if wr='1' then
-				state <= mul;
-			end if;
+			when idle =>
+				if wr='1' then
+					state <= mul;
+				end if;
 
-		when mul =>
-			res <= unsigned(opds(31 downto 16)) * unsigned(opds(15 downto 0));
-			state <= add;
+			when mul =>
+res(31 downto 16) <= (others => '0');
+				res(15 downto 0) <= unsigned(opds(23 downto 16)) * unsigned(opds(7 downto 0));
+				state <= add;
 
-		when add =>
-			mac <= mac + res;
-			state <= idle;
+			when add =>
+				mac <= mac + res;
+				state <= idle;
 				
-	end case;
+		end case;
 
+	end if;
 end process;
 
 
