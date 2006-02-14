@@ -84,9 +84,9 @@ public class Const {
 	public static final int IO_LEGO = IO_BASE+0x30;
 
 	// MAC for rup (scio_usb.vhd)
-	public static final int IO_MAC = IO_BASE+0x30;
-	public static final int IO_MAC_A = IO_BASE+0x30;
-	public static final int IO_MAC_B = IO_BASE+0x30+1;
+	public static final int IO_MAC = IO_BASE+0x60;
+	public static final int IO_MAC_A = IO_BASE+0x60;
+	public static final int IO_MAC_B = IO_BASE+0x60+1;
 
 	// BG263
 	// TODO: change iobg
