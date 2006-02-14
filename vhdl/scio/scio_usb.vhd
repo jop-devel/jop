@@ -217,7 +217,7 @@ begin
 			nsi => r(13)
 	);
 
-	cmp_mac: entity work.sc_mac16 generic map (
+	cmp_mac: entity work.sc_mac generic map (
 			addr_bits => SLAVE_ADDR_BITS
 		)
 		port map(
