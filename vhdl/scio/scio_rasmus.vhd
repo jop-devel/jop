@@ -13,13 +13,13 @@
 --
 --		0x20			reserved for USB port -- System.out.print() writes to it!
 --	TAL
---		0x30 0			in pins, led outs
---		0x30 1			out pins
---		0x30 1			ADC1 input
---		0x30 2			ADC2 input
---		0x30 3			ADC3 input (battery watch)
---		0x40 0			isa control and addr write
---		0x40 1			isa data
+--		0x40 0			in pins, led outs
+--		0x40 1			out pins
+--		0x40 1			ADC1 input
+--		0x40 2			ADC2 input
+--		0x40 3			ADC3 input (battery watch)
+--		0x50 0			isa control and addr write
+--		0x50 1			isa data
 --
 --	status word in uarts:
 --		0	uart transmit data register empty
@@ -240,7 +240,7 @@ end scio;
 
 architecture rtl of scio is
 
-	constant SLAVE_CNT : integer := 6;
+	constant SLAVE_CNT : integer := 7;
 	-- SLAVE_CNT <= 2**DECODE_BITS
 	constant DECODE_BITS : integer := 3;
 	-- number of bits that can be used inside the slave
@@ -445,4 +445,19 @@ rdy_cnt <= "00";
 			isa_niow => l(1)				-- niow
 		);
 
+	cmp_mac: entity work.sc_mac generic map (
+			addr_bits => SLAVE_ADDR_BITS
+		)
+		port map(
+			clk => clk,
+			reset => reset,
+
+			address => address(SLAVE_ADDR_BITS-1 downto 0),
+			wr_data => wr_data,
+			rd => sc_rd(6),
+			wr => sc_wr(6),
+			rd_data => sc_dout(6),
+			rdy_cnt => sc_rdy_cnt(6)
+
+	);
 end rtl;
