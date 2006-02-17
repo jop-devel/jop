@@ -67,6 +67,8 @@ public class ReplaceNativeAndCPIdx extends MyVisitor {
 			InstructionHandle   first = match[0];
 			InvokeInstruction ii = (InvokeInstruction)first.getInstruction();
 			if(ii.getClassName(cpoolgen).equals(JOPizer.nativeClass)) {
+				// TODO: correct stack map info when shortening the method
+				// due to specual bytecode substitution (1 instead of 3 bytes)
 				short opid = (short) JopInstr.getNative(ii.getMethodName(cpoolgen));
 				if(opid == -1) {
 					System.err.println(method.getName()+": cannot locate "+ii.getMethodName(cpoolgen)+". Replacing with NOP.");
