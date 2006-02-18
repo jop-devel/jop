@@ -38,16 +38,20 @@
 
 //  CVS Log
 //
-//  $Id: ac97_defines.v,v 1.1 2005/10/11 16:11:39 martin Exp $
+//  $Id: ac97_defines.v,v 1.2 2006/02/18 20:19:55 martin Exp $
 //
-//  $Date: 2005/10/11 16:11:39 $
-//  $Revision: 1.1 $
+//  $Date: 2006/02/18 20:19:55 $
+//  $Revision: 1.2 $
 //  $Author: martin $
 //  $Locker:  $
 //  $State: Exp $
 //
 // Change History:
 //               $Log: ac97_defines.v,v $
+//               Revision 1.2  2006/02/18 20:19:55  martin
+//               Longer reset timing (tip from Arnim Laeuger) helps with the
+//               startup issue
+//
 //               Revision 1.1  2005/10/11 16:11:39  martin
 //               add opencores ac97 interface
 //
@@ -132,7 +136,8 @@
 // The reset timer is driven by the AC97_250_PS prescaler.
 // This value should probably be never changed. Adjust the
 // AC97_250_PS instead.
-`define	AC97_RST_DEL	3'h4
+//`define	AC97_RST_DEL	3'h4
+`define	AC97_RST_DEL	7'h4
 
 /////////////////////////////////////////////////////////////////////
 //
@@ -143,7 +148,10 @@
 // the current state of the prescaler, and must somehow insure we
 // meet the minimum 1uS length. This value should probably be never
 // changed. Modify the AC97_250_PS instead.
-`define AC97_RES_SIG	3'h5
+//`define AC97_RES_SIG	3'h5
+// 1us is too short and causes startup problems.
+// Thanks to Arnim Laeuger who pointed this out.
+`define AC97_RES_SIG	7'h5
 
 /////////////////////////////////////////////////////////////////////
 //
