@@ -57,6 +57,10 @@ public class JopSim {
 	//	find JVM exit
 	static String exitStr = "JVM exit!";
 	static char[] exitBuf = new char[exitStr.length()];
+	
+	static boolean exit = false;
+	static boolean stopped = false;
+	
 	//
 	//	only for statistics
 	//
@@ -371,7 +375,7 @@ System.out.println(mp+" "+pc);
 				}
 				exitBuf[exitBuf.length-1] = (char) val;
 				if (new String(exitBuf).equals(exitStr)) {
-					System.exit(0);
+					exit = true;
 				}
 				break;
 			case Const.IO_UART2:
@@ -662,6 +666,9 @@ System.out.println(mp+" "+pc);
 			old_mp = mp;
 */
 			if (maxInstr!=0 && instrCnt>=maxInstr) {
+				break;
+			}
+			if (exit) {
 				break;
 			}
 
@@ -1666,8 +1673,8 @@ System.out.println();
 System.out.println(sum+" instructions, "+sumcnt+" cycles, "+instrBytesCnt+" bytes");
 */
 		System.out.println(maxSp+" maximum sp");
-		System.out.println(heap+" heap");
-		System.out.println();
+//		System.out.println(heap+" heap"); not the heap pointer anymore
+//		System.out.println();
 		System.out.println(instrCnt+" Instructions executed");
 		int insByte = cache.instrBytes();
 		System.out.println(insByte+" Instructions bytes");
@@ -1679,6 +1686,14 @@ System.out.println(sum+" instructions, "+sumcnt+" cycles, "+instrBytesCnt+" byte
 		System.out.println();
 
 
+	}
+	
+	/**
+	 * Stop the simulation (from the VSIS plugin)
+	 */
+	public static void cancel() {
+		exit = true;
+		stopped = true;
 	}
 
 	public static void main(String args[]) {
@@ -1698,10 +1713,15 @@ System.out.println(sum+" instructions, "+sumcnt+" cycles, "+instrBytesCnt+" byte
 //		js.portName = System.getProperty("port", "COM1");
 //		js.openSerialPort();
 
+		
 		for (int i=0; i<js.cache.cnt(); ++i) {
 			js.cache.use(i);
 			js.start();
 			js.interpret();
+			if (stopped) {
+				System.out.println();
+				System.out.println("JopSim stopped");
+			}
 			if (i==0) js.stat();
 			js.cache.stat();
 		}
