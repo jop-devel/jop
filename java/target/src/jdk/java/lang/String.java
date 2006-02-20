@@ -54,6 +54,11 @@ public final class String {
     value = str.value;
   }
 
+  public String(char[] ca) {
+	  int count = ca.length;
+	  value = new char[count];
+	  for (int i=0; i<count; ++i) value[i] = ca[i];
+  }
   public String(StringBuffer str)
   {
 	int count = str.length();
