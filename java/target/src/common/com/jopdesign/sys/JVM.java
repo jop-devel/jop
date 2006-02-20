@@ -678,9 +678,9 @@ synchronized (o) {
 	// private static void f_checkcast() { JVMHelp.noim();}
 	private static int f_checkcast(int objref, int cons) {
 // TODO: implement it
-// util.Dbg.wr("checkcast");
+//JVMHelp.wr("checkcast");
 // ECM needs it...
-JVMHelp.noim();
+//JVMHelp.noim();
 		return objref;
 	}
 	private static void f_instanceof() { JVMHelp.noim();}
