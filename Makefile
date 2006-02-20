@@ -82,8 +82,12 @@ MAIN_CLASS=$(P2)/$(P3)
 
 # here an example how to define an application outside
 # from the jop directory tree
+# Rasmus's distributed SVM (see www.dsvm.org)
 #TARGET_APP_PATH=/usrx/jop_rasmus/dsvm/DSVMFP/src
 #MAIN_CLASS=test/TestSMO
+# Jame's APT system (see www.muvium.com)
+#TARGET_APP_PATH=/usr2/muvium/jopaptalone/src
+#MAIN_CLASS=com/muvium/eclipse/PeriodicTimer/JOPBootstrapLauncher
 
 
 #	add more directoies here when needed
@@ -153,7 +157,6 @@ java_app:
 	java $(TOOLS_CP) com.jopdesign.tools.jop2dat $(TARGET)/dist/bin/$(JOPBIN)
 	cp *.dat modelsim
 	rm *.dat
-
 
 # we moved the pc stuff to it's own target to be
 # NOT built on make all.
