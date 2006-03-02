@@ -9,6 +9,8 @@ public class Result {
 
 	public static void printPeriod(int ts_old, int ts) {
 
+		/*- not available at the moment
+		 *  
 		int tim1 = RtThread.ts1-RtThread.ts0;
 		int tim2 = RtThread.ts2-RtThread.ts1;
 		int tim3 = RtThread.ts3-RtThread.ts2;
@@ -31,6 +33,7 @@ public class Result {
 		Dbg.intVal(max_jitter);
 		
 		Dbg.wr('\n');
+		*/
 	}
 
 }
