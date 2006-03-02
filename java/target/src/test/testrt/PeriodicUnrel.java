@@ -50,13 +50,11 @@ public class PeriodicUnrel {
 
 		RtThread.startMission();
 
-RtThread.debug();
 		// sleep
 		for (;;) {
-// RtThread.debug();
-Dbg.wr('M');
+			Dbg.wr('M');
 			Timer.wd();
-for (;;) ;
+			for (;;) ;
 			// try { Thread.sleep(1200); } catch (Exception e) {}
 		}
 	}
