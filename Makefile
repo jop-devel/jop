@@ -103,14 +103,14 @@ JOPBIN=$(P3).jop
 # use this for serial download
 all: directories tools jopser japp
 
-japp: java_app download
+japp: java_app config_byteblast download
 
 
 # use this for USB download of FPGA configuration
 # and Java program download
 #all: directories tools jopusb japp
 #
-#japp: java_app download_usb
+#japp: java_app config_usb download
 
 
 install:
@@ -242,19 +242,19 @@ jsim: java_app
 	java -cp java/tools/dist/lib/jop-tools.jar -Dlog="false" -Dhandle="true" \
 	com.jopdesign.tools.JopSim java/target/dist/bin/$(JOPBIN)
 
+config_byteblast:
+	cd quartus/$(DLPROJ) && quartus_pgm -c ByteBlasterMV -m JTAG jop.cdf
+
+config_usb:
+	cd rbf && ../USBRunner $(DLPROJ).cdf
 
 download:
-	cd quartus/$(DLPROJ) && quartus_pgm -c ByteBlasterMV -m JTAG jop.cdf
 	java -cp java/tools/dist/lib/jop-tools.jar\;java/lib/RXTXcomm.jar com.jopdesign.tools.JavaDown \
 		$(COM_FLAG) java/target/dist/bin/$(JOPBIN) $(COM_PORT)
 
 #	this is the download version with down.exe
 #	down $(COM_FLAG) java/target/dist/bin/$(JOPBIN) $(COM_PORT)
 
-download_usb:
-	cd rbf && ../USBRunner $(DLPROJ).cdf
-	java -cp java/tools/dist/lib/jop-tools.jar\;java/lib/RXTXcomm.jar com.jopdesign.tools.JavaDown \
-		$(COM_FLAG) java/target/dist/bin/$(JOPBIN) $(COM_PORT)
 
 #
 #	flash programming
