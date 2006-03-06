@@ -1,5 +1,5 @@
 package testurt;
-import joprt.RtThread;
+import jopurt.*;
 import util.Dbg;
 import util.Timer;
 
@@ -8,7 +8,7 @@ public class RoundRobin extends Scheduler {
 	/**
 	*	test threads
 	*/
-	static class Work extends RtThread {
+	static class Work extends RtUserThread {
 		int c;
 		Work(int ch) {
 
@@ -48,8 +48,8 @@ public class RoundRobin extends Scheduler {
 	//
 	public void schedule() {
 
-		RtThread th = active.next;
-		if (th==null) th = RtThread.head;
+		RtUserThread th = active.next;
+		if (th==null) th = RtUserThread.head;
 		dispatch(th, getNow()+10000);
 	}
 
@@ -70,7 +70,7 @@ public class RoundRobin extends Scheduler {
 		for (;;) {
 			Dbg.wr('M');
 			Timer.wd();
-			RtThread.sleepMs(1200);
+			RtUserThread.sleepMs(1200);
 		}
 	}
 

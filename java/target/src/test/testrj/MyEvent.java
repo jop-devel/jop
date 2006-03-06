@@ -8,8 +8,9 @@ package testrj;
 
 import javax.realtime.AbsoluteTime;
 import javax.realtime.RelativeTime;
+import ravenscar.*;
 
-import util.Dbg;
+
 
 /**
  * @author martin
@@ -35,7 +36,7 @@ public class MyEvent extends Initializer {
 		{
 			public void handleAsyncEvent() {
 
-				Dbg.wr("fire!");
+				System.out.print("fire!");
 			}
 		};
 
@@ -48,17 +49,17 @@ public class MyEvent extends Initializer {
 		//
 		//	one periodic Thread
 		//
-		PeriodicThread per = new PeriodicThread(
+		new PeriodicThread(
 			new PriorityParameters(10),
 			new PeriodicParameters(
 				new AbsoluteTime(0, 0),
-				new RelativeTime(100, 0)
+				new RelativeTime(1000, 0)
 			),
 			new Runnable() {
 				public void run() {
-					Dbg.wr("befor ");
+					System.out.print("befor ");
 					ev.fire();
-					Dbg.wr(" after\n");
+					System.out.println(" after");
 				}
 			}
 		);
@@ -66,8 +67,6 @@ public class MyEvent extends Initializer {
 
 
 	public static void main(String[] args) {
-
-		util.Dbg.initSerWait();
 
 		MyEvent ma = new MyEvent();
 		ma.start();

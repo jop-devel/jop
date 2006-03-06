@@ -8,8 +8,8 @@ package testrj;
 
 import javax.realtime.AbsoluteTime;
 import javax.realtime.RelativeTime;
+import ravenscar.*;
 
-import util.Dbg;
 
 /**
  * @author martin
@@ -21,7 +21,7 @@ public class MyApp extends Initializer {
 
 	public void run() {
 		// init
-		PeriodicThread per = new PeriodicThread(
+		new PeriodicThread(
 			new PriorityParameters(10),
 			new PeriodicParameters(
 				new AbsoluteTime(0, 0),
@@ -29,14 +29,12 @@ public class MyApp extends Initializer {
 			),
 			new Runnable() {
 				public void run() {
-					Dbg.wr('*');
+					System.out.print("*");
 				}
 			}
 		);
 	}
 	public static void main(String[] args) {
-
-		util.Dbg.initSerWait();
 
 		MyApp ma = new MyApp();
 		ma.start();

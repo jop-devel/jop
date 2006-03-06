@@ -23,11 +23,11 @@ public class Usb {
 
 		int val, flags;
 		for(;;) {
-			flags = Native.rdMem(Const.WB_USB_STATUS);
+			flags = Native.rdMem(Const.IO_USB_STATUS);
 			if ((flags & Const.MSK_UA_RDRF)!=0) {
-				val = Native.rdMem(Const.WB_USB_DATA);
+				val = Native.rdMem(Const.IO_USB_DATA);
 				if ((flags & Const.MSK_UA_TDRE)!=0) {
-					Native.wrMem(val, Const.WB_USB_DATA);
+					Native.wrMem(val, Const.IO_USB_DATA);
 				}
 			}
 		}
@@ -35,12 +35,11 @@ public class Usb {
 	
 	public static void read() {
 
-		int val, flags;
 		int tim = Native.rd(Const.IO_US_CNT)+1000000;
 		int cnt = 0;
 		for(;;) {
-			while ((Native.rdMem(Const.WB_USB_STATUS) & Const.MSK_UA_RDRF)!=0) {
-				Native.rdMem(Const.WB_USB_DATA);
+			while ((Native.rdMem(Const.IO_USB_STATUS) & Const.MSK_UA_RDRF)!=0) {
+				Native.rdMem(Const.IO_USB_DATA);
 				++cnt;
 			}
 			if (tim-Native.rd(Const.IO_US_CNT) < 0) {
@@ -55,12 +54,11 @@ public class Usb {
 
 	public static void write() {
 
-		int val, flags;
 		int tim = Native.rd(Const.IO_US_CNT)+1000000;
 		int cnt = 0;
 		for(;;) {
-			while ((Native.rdMem(Const.WB_USB_STATUS) & Const.MSK_UA_TDRE)!=0) {
-				Native.wrMem('x', Const.WB_USB_DATA);
+			while ((Native.rdMem(Const.IO_USB_STATUS) & Const.MSK_UA_TDRE)!=0) {
+				Native.wrMem('x', Const.IO_USB_DATA);
 				++cnt;
 			}
 			if (tim-Native.rd(Const.IO_US_CNT) < 0) {

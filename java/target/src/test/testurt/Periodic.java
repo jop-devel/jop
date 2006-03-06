@@ -1,7 +1,7 @@
 package testurt;
-import joprt.RtThread;
 import util.Dbg;
 import util.Timer;
+import jopurt.*;
 
 public class Periodic {
 
@@ -9,7 +9,7 @@ public class Periodic {
 
 		Dbg.initSer();				// use serial line for debug output
 
-		RtThread rt = new RtThread(10, 100000) {
+		RtUserThread rt = new RtUserThread(10, 100000) {
 			public void run() {
 
 				for (;;) {
@@ -19,7 +19,7 @@ public class Periodic {
 			}
 		};
 
-		RtThread rtx = new RtThread(9, 500000) {
+		RtUserThread rtx = new RtUserThread(9, 500000) {
 			public void run() {
 
 				for (;;) {
@@ -33,7 +33,7 @@ public class Periodic {
 		// do busy work
 		//
 
-		RtThread rts = new RtThread(8, 1000000) {
+		RtUserThread rts = new RtUserThread(8, 1000000) {
 			public void run() {
 				for (;;) {
 					Dbg.wr('*');
@@ -46,10 +46,10 @@ public class Periodic {
 		};
 
 		Dbg.wr("befor Start\n");
-		RtThread.sleepMs(1000);
+		RtUserThread.sleepMs(1000);
 		Dbg.wr("after sleep\n");
 
-		RtThread.startMission();
+		RtUserThread.startMission();
 
 		Dbg.wr("after Start\n");
 
@@ -58,7 +58,7 @@ public class Periodic {
 			Dbg.wr('M');
 // RtThread.debug();
 			Timer.wd();
-			RtThread.sleepMs(1200);
+			RtUserThread.sleepMs(1200);
 		}
 	}
 
