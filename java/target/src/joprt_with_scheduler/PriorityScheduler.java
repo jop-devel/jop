@@ -10,7 +10,7 @@ import com.jopdesign.sys.Const;
 public class PriorityScheduler extends Scheduler {
 
 	protected static int cnt;
-	protected static RtThread[] ref;		// references to threads
+	protected static RtUserThread[] ref;		// references to threads
 
 	final static int NO_EVENT = 0;
 	final static int EV_FIRED = 1;
@@ -24,7 +24,7 @@ public class PriorityScheduler extends Scheduler {
 	public PriorityScheduler() {
 
 		next = new int[1];
-		ref = new RtThread[1];
+		ref = new RtUserThread[1];
 		ref[0] = Scheduler.active;
 		cnt = 1;			// stays 1 till start
 
@@ -36,19 +36,19 @@ public class PriorityScheduler extends Scheduler {
 	public static void start() {
 
 		int i, c, startTime;
-		RtThread th, mth;
+		RtUserThread th, mth;
 
 		// if we have int's enabled for Thread scheduling
 		// we have to place a monitorenter here
-		c = RtThread.getCnt();
+		c = RtUserThread.getCnt();
 
 		mth = ref[0];		// this was our main thread
 
-		ref = new RtThread[c];
+		ref = new RtUserThread[c];
 		next = new int[c];
 		event = new int[c];
 
-		th = RtThread.head;
+		th = RtUserThread.head;
 		// array is order according priority
 		// top priority is last!
 		for (i=c-1; th!=null; --i) {
