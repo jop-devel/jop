@@ -31,7 +31,7 @@ public class PeriodicThread extends RtThread {
 			applicationLogic.run();
 			noProblems = waitForNextPeriod();
 		}
-		util.Dbg.wr("Deadline missed!!");
+		System.out.println("Deadline missed!!");
 		for (;;) waitForNextPeriod();
 		// System.out.println("Deadline is missed!!!");
 		// A deadline has been missed, or a cost
