@@ -11,6 +11,9 @@ public class RtThread {
 	RtThreadImpl thr;
 	
 
+	public static void init() {
+		RtThreadImpl.init();
+	}
 	// not necessary
 	// private RtThread() {};
 

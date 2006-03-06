@@ -58,18 +58,22 @@ public class RtThreadImpl {
 
 	private final static int MAX_STACK = 128;
 
-	private static boolean init;
+	private static boolean initDone;
 	private static boolean mission;
 
 
 	protected static Object monitor;
 
 	//	no synchronization necessary:
-	//	doInit() is called on first new Thread() =>
+	//	doInit() is called on first new RtThread() =>
 	//	only one (this calling) thread is now runnable.
-	private static void doInit() {
+	//
+	//	However, to avoid stack issues we can also call
+	//	explicit
+	public static void init() {
 
-		init = true;
+		if (initDone==true) return;
+		initDone = true;
 		mission = false;
 
 		monitor = new Object();
@@ -121,8 +125,8 @@ public class RtThreadImpl {
 //System.out.print("new Thread w prio ");
 //System.out.println(prio);
 //System.out.println("a");
-		if (!init) {
-			doInit();
+		if (!initDone) {
+			init();
 		}
 //System.out.println("b");
 
@@ -204,7 +208,7 @@ public static int ts0, ts1, ts2, ts3, ts4;
 
 		// we have not called doInit(), which means
 		// we have only one thread => just return
-		if (!init) return;
+		if (!initDone) return;
 
 		Native.wr(0, Const.IO_INT_ENA);
 		// synchronized(monitor) {
@@ -381,8 +385,8 @@ public static int ts0, ts1, ts2, ts3, ts4;
 		int i, c, startTime;
 		RtThreadImpl th, mth;
 
-		if (!init) {
-			doInit();
+		if (!initDone) {
+			init();
 		}
 
 		// if we have int's enabled for Thread scheduling
