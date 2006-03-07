@@ -12,7 +12,7 @@ public class Initializer // extends javax.realtime.RealtimeThread
 		 getMaxPriority()), null, null, javax.realtime.ImmortalMemory.instance(), null, null);
 		 */
 		// to avoid stack issues we invoke it here
-		RtThread.init();
+		RtThread.initClass();
 	}
  
  	public void run() {
