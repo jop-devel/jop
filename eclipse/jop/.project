@@ -21,6 +21,11 @@
 			<location>JOP_HOME/java/target/src/jdk</location>
 		</link>
 		<link>
+			<name>rtapi</name>
+			<type>2</type>
+			<location>JOP_HOME/java/target/src/rtapi</location>
+		</link>
+		<link>
 			<name>app</name>
 			<type>2</type>
 			<location>JOP_HOME/java/target/src/app</location>
