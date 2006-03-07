@@ -77,6 +77,8 @@ public class MethodInfo {
 			if (len>=JOPizer.METHOD_MAX_SIZE/4 || mreallocals>31 || margs>31) {
 				// we interprete clinit on JOP - no size restriction
 				if (!m.getName().equals("<clinit>")) {
+					System.err.println("len(max:"+(JOPizer.METHOD_MAX_SIZE/4)+")="+len+
+							"mreallocals(max:31)="+mreallocals+" margs(max:31)="+margs);
 					System.err.println("wrong size: "+cli.clazz.getClassName()+"."+methodId);
 					System.exit(-1);					
 				}
