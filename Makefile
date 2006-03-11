@@ -83,11 +83,21 @@ MAIN_CLASS=$(P2)/$(P3)
 # here an example how to define an application outside
 # from the jop directory tree
 # Rasmus's distributed SVM (see www.dsvm.org)
+
 #TARGET_APP_PATH=/usrx/jop_rasmus/dsvm/DSVMFP/src
 #MAIN_CLASS=test/TestSMO
+
+# and the version for Rasmus's machine ;-)
+#P1=src
+#P2=dsvmfp
+#P3=TestSMO
+#TARGET_APP_PATH=C:/eclipse/workspace/DSVMFP/src
+#MAIN_CLASS=dsvmfp/TestSMO
+
 # Jame's APT system (see www.muvium.com)
 #TARGET_APP_PATH=/usr2/muvium/jopaptalone/src
 #MAIN_CLASS=com/muvium/eclipse/PeriodicTimer/JOPBootstrapLauncher
+
 
 
 #	add more directoies here when needed
