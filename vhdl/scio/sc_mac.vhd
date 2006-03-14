@@ -141,7 +141,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 entity sc_mac is
-generic (addr_bits : integer);
+generic (addr_bits : integer; scale : integer := 16);
 
 port (
 	clk		: in std_logic;
@@ -204,15 +204,15 @@ begin
 			end if;
 		end if;
 
-		-- get MAC result and clear the accumulator
+		-- get MAC result scaled by 'scale' and clear the accumulator
 		clear <= '0';
 		if rd='1' then
-			if address(0)='0' then
-				rd_data <= result(31 downto 0);
-			else
-				rd_data <= result(63 downto 32);
+--			if address(0)='0' then
+				rd_data <= result(31+scale downto scale);
 				clear <= '1';
-			end if;
+--			else
+--				rd_data <= result(63 downto 32);
+--			end if;
 		end if;
 
 	end if;
