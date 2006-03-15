@@ -36,7 +36,7 @@ COM_FLAG=-e
 # 'some' different Quartus projects
 QPROJ=cycmin cycbaseio cycbg dspio lego cycfpu
 # if you want to build only one Quartus project use e.q.:
-QPROJ=rasmus
+QPROJ=cycmin
 
 # Which project do you want to be downloaded?
 DLPROJ=$(QPROJ)
@@ -84,8 +84,8 @@ MAIN_CLASS=$(P2)/$(P3)
 # from the jop directory tree
 # Rasmus's distributed SVM (see www.dsvm.org)
 
-TARGET_APP_PATH=/usrx/jop_rasmus/dsvm_hw/DSVMFP/src
-MAIN_CLASS=dsvmfp/TestSMO
+#TARGET_APP_PATH=/usrx/jop_rasmus/dsvm_hw/DSVMFP/src
+#MAIN_CLASS=dsvmfp/TestSMO
 #MAIN_CLASS=test/TestSMO
 
 # and the version for Rasmus's machine ;-)
