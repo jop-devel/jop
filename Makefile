@@ -36,7 +36,7 @@ COM_FLAG=-e
 # 'some' different Quartus projects
 QPROJ=cycmin cycbaseio cycbg dspio lego cycfpu
 # if you want to build only one Quartus project use e.q.:
-QPROJ=cycmin
+QPROJ=rasmus
 
 # Which project do you want to be downloaded?
 DLPROJ=$(QPROJ)
@@ -84,7 +84,8 @@ MAIN_CLASS=$(P2)/$(P3)
 # from the jop directory tree
 # Rasmus's distributed SVM (see www.dsvm.org)
 
-#TARGET_APP_PATH=/usrx/jop_rasmus/dsvm/DSVMFP/src
+TARGET_APP_PATH=/usrx/jop_rasmus/dsvm_hw/DSVMFP/src
+MAIN_CLASS=dsvmfp/TestSMO
 #MAIN_CLASS=test/TestSMO
 
 # and the version for Rasmus's machine ;-)
@@ -259,11 +260,11 @@ config_usb:
 	cd rbf && ../USBRunner $(DLPROJ).cdf
 
 download:
-	java -cp java/tools/dist/lib/jop-tools.jar\;java/lib/RXTXcomm.jar com.jopdesign.tools.JavaDown \
-		$(COM_FLAG) java/target/dist/bin/$(JOPBIN) $(COM_PORT)
-
+#	java -cp java/tools/dist/lib/jop-tools.jar\;java/lib/RXTXcomm.jar com.jopdesign.tools.JavaDown \
+#		$(COM_FLAG) java/target/dist/bin/$(JOPBIN) $(COM_PORT)
+#
 #	this is the download version with down.exe
-#	down $(COM_FLAG) java/target/dist/bin/$(JOPBIN) $(COM_PORT)
+	down $(COM_FLAG) java/target/dist/bin/$(JOPBIN) $(COM_PORT)
 
 
 #
