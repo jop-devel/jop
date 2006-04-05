@@ -1,4 +1,5 @@
 package com.jopdesign.build;
+
 //NOTE: IT DOES NOT WORK YET AND IS WORK IN PROGRESS:-)
 import java.util.*;
 import java.io.PrintWriter;
@@ -24,8 +25,8 @@ import sun.awt.windows.WVolatileImage;
  * The basic hierarchy is that WCETAnalyzer creates one WCETMethodBlock for each
  * method. The WCETMethodBlock assists WCETAnalyzer in creating the
  * WCETBasicBlock objects for each basic block. Then WCETBasicBlock can be used
- * together with WCETInstruction to calculate the WCET value for that particular 
- * basic block.  
+ * together with WCETInstruction to calculate the WCET value for that particular
+ * basic block.
  * 
  * @author rup, ms
  * @see Section 7.4 and Appendix D in MS thesis
@@ -121,14 +122,15 @@ public class WCETAnalyser {
     }
     // TODO: ms needs to check if the "3" needs to be added like
     // in MethodInfo?
+    // set method length in 32 bit words
     WCETInstruction.setN((method.getCode().getCode().length + 3) / 4);
     // TODO: Needs to do something smarter here like a real calculation
-    WCETInstruction.setPhit(1.0);
+    // set chance of cache miss
+    WCETInstruction.setPmiss(0.0);
   }
 
   /**
-   * Flow analysis which are used by both the GC stackmaps and worst case
-   * execution time (WCET) time.
+   * Control flow analysis for WCET time.
    */
   public void controlFlowGraph() {
     JavaClass jc = mi.cli.clazz;
@@ -162,34 +164,41 @@ public class WCETAnalyser {
       InstructionHandle ih = mg.getInstructionList().getStart();
       // wcet startup: create the first full covering bb
       wcmb.init(ih, mg.getInstructionList().getEnd());
-      
+
       do {
         // create new bb (a)for branch target and (b) for sucessor
-        //TODO: What about return?
+        // TODO: What about return?
         if (ih.getInstruction() instanceof BranchInstruction) {
-          InstructionHandle ihtar = ((BranchInstruction) ih.getInstruction()).getTarget();
+          InstructionHandle ihtar = ((BranchInstruction) ih.getInstruction())
+              .getTarget();
           InstructionHandle ihnext = ih.getNext();
           wcmb.createBasicBlock(ihtar);
-          if(ihnext != null){
+          if (ihnext != null) {
+            //TODO: Check that last instruction works and that a basic block can be of length one
             wcmb.createBasicBlock(ihnext);
           }
         }
       } while ((ih = ih.getNext()) != null);
 
       // Pass 1: Set the id of each block
-      int id =0;
+      int id = 0;
+      // it is sorted on the (final) start pos of each block
       for (Iterator iter = wcmb.getBbs().keySet().iterator(); iter.hasNext();) {
-        WCETBasicBlock wbb = (WCETBasicBlock)wcmb.getBbs().get((Integer)iter.next());
+        WCETBasicBlock wbb = (WCETBasicBlock) wcmb.getBbs().get(
+            (Integer) iter.next());
         wbb.setId(id);
         id++;
       }
-      
+
       // Pass 2: linking the blocks
       ih = mg.getInstructionList().getStart();
-      
+
       do {
         if (ih.getInstruction() instanceof BranchInstruction) {
-          InstructionHandle ihtar = ((BranchInstruction) ih.getInstruction()).getTarget();
+          // target
+          InstructionHandle ihtar = ((BranchInstruction) ih.getInstruction())
+              .getTarget();
+          // next
           InstructionHandle ihnext = ih.getNext();
           WCETBasicBlock wbbthis = wcmb.getCoveringBB(ih);
           WCETBasicBlock wbbtar = wcmb.getCoveringBB(ihtar);
@@ -197,17 +206,17 @@ public class WCETAnalyser {
           wbbthis.setTarbb(wbbtar);
           // targeter in target
           wbbtar.addTargeter(wbbthis);
-          
-          if(ihnext != null){
+
+          if (ihnext != null) {
             WCETBasicBlock wbbnxt = wcmb.getCoveringBB(ihnext);
             // nextwbb
             wbbthis.setSucbb(wbbnxt);
           }
         }
       } while ((ih = ih.getNext()) != null);
-      
-      // Pass 2: 
-      //TODO: Do we even need the controlflowgraph for this?
+
+      // Pass 2:
+      // TODO: Do we even need the controlflowgraph for this?
       cfg = new ControlFlowGraph(mg);
       // InstructionContext as key for inFrame
       inFrames = new HashMap();
@@ -394,7 +403,6 @@ public class WCETAnalyser {
 
         }
       }// while (!ics.isEmpty()) END
-
 
       // Check that all instruction have been simulated
       do {
@@ -594,10 +602,10 @@ class WCETMethodBlock {
     dg = new int[bbs.size()][bbs.size()];
     for (Iterator iter = bbs.keySet().iterator(); iter.hasNext();) {
       Integer keyInt = (Integer) iter.next();
-      //HERE
+      // HERE
       WCETBasicBlock wcbb = (WCETBasicBlock) bbs.get(keyInt);
       WCETBasicBlock tarwcbb = wcbb.getTarbb();
-      //TODO: Check for bugs
+      // TODO: Check for bugs
       int id = wcbb.getId();
       if (tarwcbb != null) {
         int tarbbid = tarwcbb.getId();
@@ -626,6 +634,7 @@ class WCETBasicBlock {
 
   // start pos
   final int start;
+
   final Integer key;
 
   final InstructionHandle stih;
@@ -652,16 +661,20 @@ class WCETBasicBlock {
     this.stih = stih;
     this.endih = endih;
   }
+
   /**
    * Add wbb that points to this wbb.
-   * @param wbbtargeter a wbb that points to this wbb.
+   * 
+   * @param wbbtargeter
+   *          a wbb that points to this wbb.
    * @return true if it was already added
    */
-  boolean addTargeter(WCETBasicBlock wbbtargeter){
-    WCETBasicBlock wbbold = (WCETBasicBlock)inbbs.put(wbbtargeter.getKey(),wbbtargeter);
-    if(wbbold == null){
+  boolean addTargeter(WCETBasicBlock wbbtargeter) {
+    WCETBasicBlock wbbold = (WCETBasicBlock) inbbs.put(wbbtargeter.getKey(),
+        wbbtargeter);
+    if (wbbold == null) {
       return true;
-    } else{
+    } else {
       return false;
     }
   }
@@ -756,13 +769,13 @@ class WCETInstruction {
   // mem write
   public static final int w = 6;
 
-  // load time
+  // load time (it is set externally)
   public static int b = -1;
 
-  // cache hit probability (as opposed to miss) see ms thesis p. 232
-  public static double phit = 0.5;
+  // cache miss probability see ms thesis p. 232
+  public static double pmiss = 1.0;
 
-  // method size in 32 bit words
+  // method size in 32 bit words (is it set externally)
   public static int n = -1;
 
   /**
@@ -1612,6 +1625,7 @@ class WCETInstruction {
       }
       break;
     // RETURN = 177
+      //TODO: Check with ms why it is 1 in the DATE paper
     case org.apache.bcel.Constants.RETURN:
       wcet = 13;
       if (r >= 7) {
@@ -1798,6 +1812,20 @@ class WCETInstruction {
       return true;
   }
 
+  /**
+   * Method load time on invoke or return if there is a cache miss (see pMiss).
+   * 
+   * @see ms thesis p 232
+   */
+  public static void calculateB() {
+    if (n == -1) {
+      System.err.println("n not set!");
+      System.exit(-1);
+    } else {
+      b = 2 + (n + 1) * a;
+    }
+  }
+
   public static int getB() {
     return b;
   }
@@ -1806,12 +1834,12 @@ class WCETInstruction {
     WCETInstruction.b = b;
   }
 
-  public static double getPhit() {
-    return phit;
+  public static double getPmiss() {
+    return pmiss;
   }
 
-  public static void setPhit(double phit) {
-    WCETInstruction.phit = phit;
+  public static void setPmiss(double pmiss) {
+    WCETInstruction.pmiss = pmiss;
   }
 
   public static int getN() {
@@ -1827,7 +1855,7 @@ class WCETInstruction {
 // BCEL overrides
 
 /**
- * Extends org.apache.bcel.verifier.structurals.Frame just to get access to the
+ * Extends org.apache.bcel.verifier.structurals. Frame just to get access to the
  * _this field, which the the operandWalker method in MethodInfo uses.
  */
 class FrameFrame extends Frame {
