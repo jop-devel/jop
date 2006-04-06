@@ -138,7 +138,7 @@ public class WCETAnalyser {
     ConstantPoolGen cpg = new ConstantPoolGen(jc.getConstantPool());
 
     // Some methods overridden (see bottom of this file)
-    InstConstraintVisitor icv = new AnInstConstraintVisitor();
+    InstConstraintVisitor icv = new AnInstConstraintVisitor2();
 
     icv.setConstantPoolGen(cpg);
 
@@ -223,7 +223,7 @@ public class WCETAnalyser {
       HashMap outFrames = new HashMap();
 
       // Build the initial frame situation for this method.
-      FrameFrame fStart = new FrameFrame(mg.getMaxLocals(), mg.getMaxStack());
+      FrameFrame2 fStart = new FrameFrame2(mg.getMaxLocals(), mg.getMaxStack());
       if (!mg.isStatic()) {
         if (mg.getName().equals(Constants.CONSTRUCTOR_NAME)) {
           fStart.setThis(new UninitializedObjectType(new ObjectType(jc
