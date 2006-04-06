@@ -1858,13 +1858,13 @@ class WCETInstruction {
  * Extends org.apache.bcel.verifier.structurals. Frame just to get access to the
  * _this field, which the the operandWalker method in MethodInfo uses.
  */
-class FrameFrame extends Frame {
+class FrameFrame2 extends Frame {
 
-  public FrameFrame(int maxLocals, int maxStack) {
+  public FrameFrame2(int maxLocals, int maxStack) {
     super(maxLocals, maxStack);
   }
 
-  public FrameFrame(LocalVariables locals, OperandStack stack) {
+  public FrameFrame2(LocalVariables locals, OperandStack stack) {
     super(locals, stack);
   }
 
@@ -1887,7 +1887,7 @@ class FrameFrame extends Frame {
  */
 // TODO: Can this extension be avoided (ie. why did BCEL not like the
 // overloaded Dbg field).
-class AnInstConstraintVisitor extends InstConstraintVisitor {
+class AnInstConstraintVisitor2 extends InstConstraintVisitor {
   public void visitAALOAD(AALOAD o) {
   }
 
