@@ -33,8 +33,12 @@ public class JopWriter {
 		out.println("//\tlength of the application in words (including this word)");
 		out.print("\t"+jz.pointerAddr+",");
 		out.println("//\tpointer to special pointers = address of 'special' pointer");
+		
+		System.out.println(((jz.pointerAddr*4-8+512)/1024)+"KB instruction");
 			
-		dumpByteCode();
+		int nrOfMethods = dumpByteCode();
+		
+		System.out.println(nrOfMethods+" number of methods");
 		
 		out.println("//");
 		out.println("//\tspecial pointer at "+jz.pointerAddr+":");
@@ -68,8 +72,9 @@ public class JopWriter {
 
 	}
 
-	private void dumpByteCode() {
+	private int dumpByteCode() {
 		
+		int cnt = 0;
 		Iterator it = jz.clazzes.iterator();
 		while (it.hasNext()) {
 			ClassInfo cli = (ClassInfo) it.next();
@@ -84,8 +89,10 @@ public class JopWriter {
 				}
 				
 				((MethodInfo) methods.get(i)).dumpByteCode(out);
+				++cnt;
 			}
 		}
+		return cnt;
 	}
 	
 	private void dumpStaticFields() {
