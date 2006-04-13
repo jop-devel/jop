@@ -31,7 +31,7 @@ import org.apache.bcel.verifier.structurals.LocalVariables;
  * X local bits and the Y operand bits are appended to form a pattern. These
  * patterns form a small number of unique patterns. Each PC is then mapped
  * (using just enough bits) to point to the corresponding unique pattern. The
- * unique patterns are packed at the end of bit map. When readin the file, we
+ * unique patterns are packed at the end of bit map. When reading the file, we
  * refer to the "raw" and "indexed" approach. The raw aproach was saving the
  * aforementioned patterns for every PC. On JOP, a class called GCStkWalk is
  * responsible for identifying the references that may be among the locals and
@@ -50,19 +50,11 @@ import org.apache.bcel.verifier.structurals.LocalVariables;
 public class GCRTMethodInfo {
 	static int WORDLEN = 32;
 
-	// word counters for indexed approach
-	int pcwords = 0;
-
 	static int totalpcwords = 0;
 
 	static int totalcntMgciWords = 0;
 
 	static HashMap miMap = new HashMap();
-	
-	static String tostr;
-	static String signature;
-	static String name;	
-	static String cname;
 
 	/**
 	 * Called from JOPizer->SetGCRTMethodInfo to run the stack simulation for
@@ -97,6 +89,10 @@ public class GCRTMethodInfo {
 	public static void dumpMethodGcis(MethodInfo mi, PrintWriter out) {
 		((GCRTMethodInfo) miMap.get(mi)).dumpMethodGcis(out);
 	}
+  
+  public static void removePC(int pc,MethodInfo mi){
+    ((GCRTMethodInfo) miMap.get(mi)).removePC(pc);
+  }
 
 	// instance
 	MethodInfo mi;
@@ -119,6 +115,14 @@ public class GCRTMethodInfo {
 
 	int mstack, margs, mreallocals, len;
 
+  // word counters for indexed approach
+  int pcwords = 0;
+  
+  String tostr;
+  String signature;
+  String name;  
+  String cname;
+  
 	/**
 	 * Instanciated from from <code>SetClassInfo</code>.
 	 */
@@ -164,7 +168,17 @@ public class GCRTMethodInfo {
 		if (!method.isAbstract()) {
 			mstack = method.getCode().getMaxStack();
 			mreallocals = method.getCode().getMaxLocals() - margs;
+      
+      if ((mreallocals+margs+mstack)>31) {
+        // we interprete clinit on JOP - no size restriction
+        if (!method.getName().equals("<clinit>")) {
+          System.err.println("wrong size: "+method.getName()+" cannot have (mreallocals+margs+mstack)>31");
+          System.exit(-1);          
+        }
+      }
+
 			instCnt = (method.getCode().getCode()).length;
+      
 			operandWalker();
 		}
 		// System.out.println(" ***
@@ -203,7 +217,9 @@ public class GCRTMethodInfo {
 		signature = mg.getSignature();
 		name = mg.getName();
 		cname = mg.getClassName();
-
+    if(method.getName().equalsIgnoreCase("trace")){
+      boolean stop =true;
+    }
 		icv.setMethodGen(mg);
 
 		if (!(mg.isAbstract() || mg.isNative())) { // IF mg HAS CODE (See pass
@@ -775,9 +791,10 @@ public class GCRTMethodInfo {
 		// return res;
 	}
 */
-	/*
+	/**
 	 * It dumps the local variable and stack operands GC info structures. Can be
-	 * called with out==null to get the word length.
+	 * called with out==null to get the word length. If the method is <code>
+   * clinit</code> then the stackmap is not written out.
 	 */
 	public int dumpMethodGcis(PrintWriter out) {
 		// System.out.println("dumpMethodGcis(PrintWriter out):"+out+",
@@ -808,8 +825,7 @@ public class GCRTMethodInfo {
 			}
 
 			if (out != null) {
-				out.println("\t\t//\t" + mi.codeAddress
-						+ "(codeAddress): stackwalker info for "
+				out.println("\n\t//stackwalker info for "
 						+ mi.cli.clazz.getClassName() + "." + mi.methodId);
 			}
 
@@ -1023,6 +1039,19 @@ public class GCRTMethodInfo {
 			pcwords = 1; // set this to 0 or 1 depending if gcpack is written
 			// out
 
+      //Don't write stackmap for <clinit> methods
+      if(method.getName().equals("<clinit>")){
+        gcpack = 0;
+        localmark = 0;
+        stackmark = 0;
+        mgcimark = 0;
+        ogcimark = 0;
+      } // just check that the bitMap can be reconstructed from bitMap2 
+      else if (!compareBitMap(bitMap, bitMap2, gcpack, mgci, ogci)) {
+        System.err.println("Error in the bitmaps.");
+        System.exit(-1);
+      }
+      
 			// can also use localmark and stackmark here if bit maps are needed
 			// regardless
 			// of the presense of references
@@ -1035,12 +1064,18 @@ public class GCRTMethodInfo {
 				if (true) { // write out indexed version
 					for (int i = 0; i < wdc; i++) {
 						if (out != null) {
-							out.println("\t\t" + bitMap2[i] + ",//\tbitMap2["
+							out.println("\t" + bitMap2[i] + ",//\tbitMap2["
 									+ i + "]: " + bitInfo2[i].toString() + ", "
 									+ bitStr(bitMap2[i]));
 						}
 						cntMgciWords++;
 					}
+          //debug
+          for (int i = 0; i < instCnt; i++) {
+            if (out != null) {
+              out.println("\t// mgci["+i+"]:"+bitStr(mgci[i])+" ogci["+i+"]:"+bitStr(ogci[i]));
+            }
+          }
 				} else // write out raw version
 				{
 					for (int i = 0; i <= index; i++) {
@@ -1057,7 +1092,7 @@ public class GCRTMethodInfo {
 
 			cntMgciWords += GCIHEADERLENGTH;
 			if (out != null) {
-				out.println("\t\t" + gcpack + ",//\tgcpack[0:stackmark="
+				out.println("\t" + gcpack + ",//\tgcpack[0:stackmark="
 						+ stackmark + ",1:localmark=" + localmark
 						+ ",2-6:maxlocals=" + (mreallocals + margs)
 						+ ",7-11:maxstack=" + mstack + ",12-21:instr="
@@ -1076,11 +1111,6 @@ public class GCRTMethodInfo {
 			// System.out.println("totalcntMgciWords:"+totalcntMgciWords);
 			// System.out.println("--");
 
-			// just check that the bitMap can be reconstructed from bitMap2
-			if (!compareBitMap(bitMap, bitMap2, gcpack, mgci, ogci)) {
-				System.err.println("Error in the bitmaps.");
-				System.exit(-1);
-			}
 		} // if not abstract
 		// System.err.println("dumpMethodGcis
 		// method:"+cli.clazz.getClassName()+"."+methodId);
@@ -1094,6 +1124,37 @@ public class GCRTMethodInfo {
 		// System.out.println("cntMgciWords:"+cntMgciWords);
 		return cntMgciWords;
 	}
+  
+  /**
+   * Called with a pc (program counter) value which will be removed from the 
+   * mgci and ogci structures. The <oode>instCnt</code> is also decremented by
+   * one.
+   * @param pc
+   * @return true if pc<instCnt
+   */
+  public void removePC(int pc){
+    int oldogci[] = ogci;
+    int oldmgci[] = mgci;
+    ogci = new int[instCnt-1];
+    mgci = new int[instCnt-1];
+      
+    if(pc==0){
+      System.arraycopy(oldogci,1,ogci,0,instCnt-1);        
+      System.arraycopy(oldmgci,1,mgci,0,instCnt-1);
+    } else if(pc==instCnt-1){
+      System.arraycopy(oldogci,0,ogci,0,instCnt-1);
+      System.arraycopy(oldmgci,0,mgci,0,instCnt-1);
+    }
+    else{
+      System.arraycopy(oldogci,0,ogci,0,pc);
+      System.arraycopy(oldogci,pc+1,ogci,pc,instCnt-1-pc);
+      System.arraycopy(oldmgci,0,mgci,0,pc);
+      System.arraycopy(oldmgci,pc+1,mgci,pc,instCnt-1-pc);
+    }
+    
+    //reduce instcnt accordingly
+    instCnt--;
+  }
 
 	// Sanity checking the bitmaps by unpacking both and comparing
 	boolean compareBitMap(int bitMap[], int bitMap2[], int gcpack, int mcgi[],

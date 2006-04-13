@@ -61,8 +61,8 @@ public class GCStkWalk {
 	 *          stack things from the frames.
 	 */
 	public static int[] swk(int num, boolean active, boolean info) {
-    int ts=Timer.us();
-    int ts1=0;
+//    int ts=Timer.us();
+//    int ts1=0;
 
     if(info){
 		  System.out.print("GCStkWalk.swk called(num=");
@@ -96,9 +96,6 @@ public class GCStkWalk {
         
 		fp = sp - 4;  // last sp points to the end of the frame
 
-         
-      
-    
 		while (fp > 128 + 5) { // stop befor 'first' method
       // saved vars of curent frame that points to 
 			//   previous frame. See Fig. 6.2 in ms thesis
@@ -141,9 +138,10 @@ public class GCStkWalk {
         System.out.println("Method "+addr+":"+(args+loc)+"!="+gcMaxLocals());
         System.exit(-1);
       }
-      length = gcLength();
+      //length = gcLength();
       infoaddr = addr - 1 - length; // now point to first gc info word
       // it makes mgci and ogci words for the the PC
+
       setMarkWords();
          
       //Now do that root marking
@@ -161,7 +159,7 @@ public class GCStkWalk {
       }
       // debugging
       if(info){
-        wrFrame();
+        wrFrame(num);
       }
 
 		} // while loop
@@ -176,8 +174,10 @@ public class GCStkWalk {
 	
 	// This is a good method for debugging. You start by finding 
 	//  the matching method (mpi) id in the .jop file.
-	static void wrFrame(){
-	  wr("---Frame info---\n");
+	static void wrFrame(int num){
+	  wr("---Frame info-Thread-no ");
+    wrSmall(num);
+    wr("--\n");
 
 		wr("gcpack:");
 		bitStr(gcpack);
@@ -218,7 +218,11 @@ public class GCStkWalk {
 		wr(" indexbits:");
 		wrSmall(indexbits);
     
-		wr(" uc:");
+    wr(" length:");
+    wrSmall(gcLength());
+    wr('\n');
+    
+		wr("uc:");
 		wrSmall(gcUniCnt());
 		
 		wr(" addr:");
@@ -392,13 +396,14 @@ public class GCStkWalk {
   // called once for each frame
   static void setMarkWords(){
     stackmarkword = localmarkword = 0;  	
+//    wr("inside setMarkWords\n");
     if(gcLocalMark()==1 || gcStackMark() ==1){ // is there info
       //read the index
       int index = 0;
       int indexpos = pc*indexbits;
       for(int j=0;j<indexbits;j++){
-        int wordindex = (indexpos+j) >> 5;
-        int offset = indexpos & 0x1F;
+        int wordindex = (indexpos+j) >> 5; // div 32
+        int offset = (indexpos+j) & 0x1F; // mod 32
         int val = Native.rdMem(infoaddr+wordindex);
         int bit = (val>>>offset) & 0x01;  
 //System.out.print("val ");
@@ -412,6 +417,8 @@ public class GCStkWalk {
 //System.out.println(offset);
 //System.out.print("indexpos ");
 //System.out.println(indexpos);
+//System.out.print("indexbits ");
+//System.out.println(indexbits);
 //System.out.print("bit ");
 //System.out.print(j);
 //System.out.print(" ");
@@ -430,7 +437,7 @@ public class GCStkWalk {
 
         //          indexpos = inst*indexbits+index*(gcMaxLocals()+gcMaxStack())+j;
         int wordindex = (indexpos+j)>>5; // /32
-        int offset = indexpos & 0x1F;
+        int offset = (indexpos+j) & 0x1F;
         
         if(oldwordindex != wordindex){
           val = Native.rdMem(infoaddr+wordindex);

@@ -58,28 +58,39 @@ public class ReplaceNativeAndCPIdx extends MyVisitor {
 		MethodGen mg  = new MethodGen(method, clazz.getClassName(), cpoolgen);
 		InstructionList il  = mg.getInstructionList();
 		InstructionFinder f = new InstructionFinder(il);
+    
+    String methodId = method.getName()+method.getSignature();
+    //if(methodId.equalsIgnoreCase("f_lshl(III)J")){
+    
+    MethodInfo mi = cli.getMethodInfo(methodId);
 		
 		// find invokes first and replace call to Native by
 		// JOP native instructions.
-		String invokeStr = "InvokeInstruction";		
+		String invokeStr = "InvokeInstruction";
 		for(Iterator i = f.search(invokeStr); i.hasNext(); ) {
 			InstructionHandle[] match = (InstructionHandle[])i.next();
 			InstructionHandle   first = match[0];
 			InvokeInstruction ii = (InvokeInstruction)first.getInstruction();
 			if(ii.getClassName(cpoolgen).equals(JOPizer.nativeClass)) {
-				// TODO: correct stack map info when shortening the method
-				// due to specual bytecode substitution (1 instead of 3 bytes)
 				short opid = (short) JopInstr.getNative(ii.getMethodName(cpoolgen));
 				if(opid == -1) {
 					System.err.println(method.getName()+": cannot locate "+ii.getMethodName(cpoolgen)+". Replacing with NOP.");
 					first.setInstruction(new NOP());
 				} else {
-					first.setInstruction(new NativeInstruction(opid, (short)1));
+          first.setInstruction(new NativeInstruction(opid, (short)1));
+          //since the new instruction is of length 1 and
+          //the replaced invokespecial was of length 3
+          //then we remove pc+2 and pc+1 from the MGCI info
+          if(JOPizer.dumpMgci){
+            il.setPositions();
+            int pc = first.getPosition();
+            //important: take the high one first
+            GCRTMethodInfo.removePC(pc+2,mi);
+            GCRTMethodInfo.removePC(pc+1,mi);
+          }
 				}
 			}
 		}
-
-		
 		
 		f = new InstructionFinder(il);
 		// find instructions that access the constant pool
