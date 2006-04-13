@@ -1,10 +1,10 @@
-//Copyright: rup, fg, ms
+//Copyright: www.jopdesign.com
 package com.jopdesign.tools;
 
 import java.io.*;
 import java.util.*;
 import gnu.io.*;
-// we're not using Sun's comm API
+
 //import javax.comm.*;
 
 public class JavaDown {
@@ -12,8 +12,6 @@ public class JavaDown {
 
 	static boolean usb = false;
 
-	final static int MAX_MEM = 1048576/4;
-	
 	static Enumeration portList;
 
 	static CommPortIdentifier portId;
@@ -24,14 +22,29 @@ public class JavaDown {
 
 	static InputStream iStream;
 
+	static PrintStream sysoutStream;
+
+	static InputStream sysinStream;
+
 	final static String exitString = "JVM exit!";
 
 	final static char prog_char[] = { '|', '/', '-', '\\', '|', '/', '-', '\\' };
 
 	public static void main(String[] args) {
+		/*    String driverName = "com.sun.comm.Win32Driver";
+		 try {
+		 CommDriver commdriver = (CommDriver) Class.forName(driverName)
+		 .newInstance();
+		 commdriver.initialize();
+		 } catch (Exception e2) {
+		 e2.printStackTrace();
+		 }
+		 */
+		sysoutStream = System.out;
+		sysinStream = System.in;
 
 		if (args.length < 2) {
-			System.out.println("usage: java JavaDown [-e] [-usb] file port");
+			sysoutStream.println("usage: java JavaDown [-e] [-usb] file port");
 			System.exit(-1);
 		}
 
@@ -48,142 +61,156 @@ public class JavaDown {
 		try {
 			portId = CommPortIdentifier.getPortIdentifier(portName);
 		} catch (NoSuchPortException e2) {
-			System.err.println("Can not open port " + portName);
+			sysoutStream.println("Can not open port " + portName);
 		}
 		try {
 			serialPort = (SerialPort) portId.open("JavaDown", 2000);
 		} catch (PortInUseException e) {
-			System.out.println(e);
+			sysoutStream.println(e);
 		}
 		try {
 			outputStream = serialPort.getOutputStream();
 			iStream = serialPort.getInputStream();
 		} catch (IOException e) {
-			System.out.println(e);
+			sysoutStream.println(e);
 		}
 		try {
 			serialPort.setSerialPortParams(115200, SerialPort.DATABITS_8,
 					SerialPort.STOPBITS_1, SerialPort.PARITY_NONE);
 		} catch (UnsupportedCommOperationException e) {
-			System.out.println(e);
+			sysoutStream.println(e);
 		}
 
-		int[] ram = new int[MAX_MEM];
-		
+		downLoad(fname);
+
+		if (echo) {
+			echo();
+		}
+
+		serialPort.close();
+
+	}
+
+	static public boolean downLoad(String fname) {
+		sysoutStream.println("TEST");
 		FileReader fileIn = null;
 		try {
 			fileIn = new FileReader(fname);
 		} catch (FileNotFoundException e1) {
-			System.err.println("Error opening " + fname);
+			sysoutStream.println("Error opening " + fname);
 			System.exit(-1);
 		}
-		
-		int len = 0;
+
 		// read .jop file word for word and write bytes to JOP
 		try {
 			StreamTokenizer in = new StreamTokenizer(fileIn);
 			in.slashSlashComments(true);
 			in.whitespaceChars(',', ',');
+			byte adword[] = new byte[4];
 			int rplyCnt = 0;
-			for (; in.nextToken() != StreamTokenizer.TT_EOF; ++len) {
+			int cnt = 0;
+			for (; in.nextToken() != StreamTokenizer.TT_EOF; ++cnt) {
 				// in.nval contains the next 32 bit word to be sent
-				ram[len] = (int) in.nval;
-				if (len+1>=MAX_MEM) {
-					System.out.println("too many words ("+len+","+MAX_MEM+")");
-					System.exit(-1);
-				}
-			}
+				int l = (int) in.nval;
 
-			// Java code length at index 1 position in .jop
-			System.out.println(ram[1]-1+" words of Java bytecode ("+(ram[1]-1)+" KB)");
-			
-			if (usb) {
-				// we have no echo on usb and we issue a single
-				// write command
-				byte[] byt_buf = new byte[MAX_MEM*4];
-				for (int i=0; i<len; ++i) {
-					int l = ram[i];
-					for (int j=0; j<4; ++j) {
-						byt_buf[i*4+j] = (byte) (l>>((3-j)*8));
-					}
+				// Java code length at index 1 position in .jop
+				if (cnt == 1) {
+					sysoutStream.println(l + " words of Java bytecode ("
+							+ (l / 256) + " KB)");
 				}
-				outputStream.write(byt_buf, 0, len*4);
-			} else {
-				for (int cnt=0; cnt<len; ++cnt) {
-					for (int i = 0; i < 4; i++) {
-						byte b = (byte) (ram[cnt]>>((3-i)*8));
-						++rplyCnt;
-						outputStream.write(b);
-						
-						if (cnt==0) {
+				for (int i = 0; i < 4; i++) {
+					byte b = (byte) (l >> ((3 - i) * 8));
+					++rplyCnt;
+					outputStream.write(b);
+
+					if (!usb) {
+						if (cnt == i) {
 							// TODO check reply
-							// TODO timeout on read for an unconnected board
 							iStream.read();
 							--rplyCnt;
-						} else if (iStream.available()!=0) {
+						} else if (iStream.available() != 0) {
 							iStream.read();
 							--rplyCnt;
-						}						
+						}
 					}
-					if ((cnt & 0x3f) == 0) {
-						System.out.print(prog_char[(cnt >> 6) & 0x07] + "\r");
-					}
-					
 				}
 
-				// read the rest of the echo bytes
-				while (rplyCnt>0) {
-					iStream.read();
-					--rplyCnt;
+				if ((cnt & 0x3f) == 0) {
+					sysoutStream.print(prog_char[(cnt >> 6) & 0x07] + "\r");
 				}
 
 			}
+			while (rplyCnt > 0) {
+				iStream.read();
+				--rplyCnt;
+			}
 
-			System.out.println(len+" words external RAM ("+(len/256)+" KB)");
-			System.out.println("download complete");
-			System.out.println();
-			System.out.println();
+			sysoutStream.println(cnt + " words external RAM (" + (cnt / 256)
+					+ " KB)");
+			sysoutStream.println("download complete");
+			sysoutStream.println("");
+			sysoutStream.println("");
 
 		} catch (IOException e) {
-			System.out.println(e);
+			sysoutStream.println(e);
 		}
+		return true;
+	}
 
-		if (echo) {
-			// start monitoring System.in in seperate thread
-			new Thread() {
-				public void run() {
-					try {
-						int rd = 0;
-						while ((rd = System.in.read()) != -1) {
-							outputStream.write(rd);
-						}
-					} catch (Exception e) {
-						e.printStackTrace();
-					}
-
-				}
-			}.start();
-
-			// same length as exitString as we will delete[] and append the char
-			StringBuffer eb = new StringBuffer("123456789");
-
-			while (true) {
+	static public void echo() {
+		// start monitoring System.in in seperate thread
+		new Thread() {
+			public void run() {
 				try {
-					if (iStream.available() != 0) {
-						char ch = (char) iStream.read();
-						System.out.print(ch);
-						eb.append(ch);
-						eb.deleteCharAt(0);
+					int rd = 0;
+					while ((rd = System.in.read()) != -1) {
+						outputStream.write(rd);
 					}
-					// test if the JOP JVM has exited
-					if (eb.toString().equals(exitString)) {
-						break;
-					}
-				} catch (IOException e) {
+				} catch (Exception e) {
 					e.printStackTrace();
 				}
+
+			}
+		}.start();
+
+		// same length as exitString as we will delete[] and append the char
+		StringBuffer eb = new StringBuffer("123456789");
+
+		while (true) {
+			try {
+				if (iStream.available() != 0) {
+					char ch = (char) iStream.read();
+					sysoutStream.print(ch);
+					eb.append(ch);
+					eb.deleteCharAt(0);
+				}
+				// test if the JOP JVM has exited
+				if (eb.toString().equals(exitString)) {
+					// sysoutStream.println(" JavaDown Exiting");
+					break;
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
 		}
-		serialPort.close();
+
+		// who closes the serial port now?
+		// serialPort.close();
+	}
+
+	public static void setOutputStream(OutputStream outputStream) {
+		JavaDown.outputStream = outputStream;
+	}
+
+	public static void setIStream(InputStream stream) {
+		JavaDown.iStream = stream;
+	}
+
+	public static void setSysoutStream(PrintStream sysoutStream) {
+		JavaDown.sysoutStream = sysoutStream;
+	}
+
+	public static void setSysinStream(InputStream sysinStream) {
+		JavaDown.sysinStream = sysinStream;
 	}
 }
