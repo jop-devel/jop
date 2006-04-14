@@ -16,6 +16,8 @@ public class DoAll {
 
 	public static void main(String[] args) {
 
+		LowLevel.msg("JavaBenchEmbedded V1.0");
+		LowLevel.lf();
 /*
 		Jitter.test(new BenchKfl());
 		Jitter.test(new BenchUdpIp());
