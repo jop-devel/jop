@@ -6,7 +6,6 @@
  */
 package test;
 
-import com.jopdesign.sys.*;
 /**
  * @author admin
  *
