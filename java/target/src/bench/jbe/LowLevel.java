@@ -1,56 +1,47 @@
 package jbe;
 
-import util.Dbg;
-
-import com.jopdesign.sys.Const;
-import com.jopdesign.sys.Native;
 
 /**
-*	low level time and output for JOP.
+*	LowLevel time and output for PC
 */
-
 public class LowLevel {
 
 	static boolean init;
-	
+	// static Perf p = Perf.getPerf();
+	// static long freq = p.highResFrequency();
 
 	public static int timeMillis() {
-		return Native.rd(Const.IO_US_CNT)/1000;
+    	return (int) System.currentTimeMillis();
 	}
-	
+
 	public static int clockTicks() {
-		return Native.rd(Const.IO_US_CNT);
+		// long l = p.highResCounter();
+		// l = l*1000000/freq; // in us
+		// return (int) l;
+		return 0;
 	}
 
 	public static void msg(String msg) {
 
-		if (!init) {
-			Dbg.initSerWait();
-			init = true;
-		}
-
-		Dbg.wr(msg);
-		Dbg.wr(' ');
+		System.out.print(msg);
+		System.out.print(" ");
 	}
 
 	public static void msg(int val) {
 
-		if (!init) {
-			Dbg.initSerWait();
-			init = true;
-		}
-
-		Dbg.intVal(val);
+		System.out.print(val);
+		System.out.print(" ");
 	}
 
-	static void msg(String msg, int val) {
+	public static void msg(String msg, int val) {
 
+// System.out.println("freq: "+freq);
 		msg(msg);
 		msg(val);
 	}
 
-	static void lf() {
+	public static void lf() {
 
-		Dbg.lf();
+		System.out.println();
 	}
 }
