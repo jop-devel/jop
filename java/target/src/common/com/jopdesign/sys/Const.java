@@ -87,6 +87,9 @@ public class Const {
 	public static final int IO_MAC = IO_BASE+0x60;
 	public static final int IO_MAC_A = IO_BASE+0x60;
 	public static final int IO_MAC_B = IO_BASE+0x60+1;
+	
+	// mic IO for Mikael & Jens
+	public static final int IO_MICRO = IO_BASE+0x60;
 
 	// BG263
 	// TODO: change iobg
