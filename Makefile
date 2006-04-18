@@ -38,6 +38,9 @@ QPROJ=cycmin cycbaseio cycbg dspio lego cycfpu
 # if you want to build only one Quartus project use e.q.:
 QPROJ=cycmin
 
+# Jens & Mikael uncomment this
+#QPROJ=mikjen
+
 # Which project do you want to be downloaded?
 DLPROJ=$(QPROJ)
 # Which project do you want to be programmed into the flash?
@@ -53,6 +56,11 @@ P3=Hello
 
 #P2=jvm
 #P3=DoAll
+
+# Jens & Mikael uncomment this
+#P1=app
+#P2=dsp
+#P3=SigDel
 
 #
 #	some variables

@@ -49,12 +49,12 @@ end sc_sigdel;
 architecture rtl of sc_sigdel is
 
 	-- we use a 10MHz sigma-delta clock
-	-- constant SDTICK	: integer := (clk_freq+5000000) / 10000000;
-constant SDTICK	: integer := 6;
+	constant SDF		: integer := 10000000;
+	constant SDTICK		: integer := (clk_freq+SDF/2)/SDF;
 	signal clksd		: integer range 0 to SDTICK;
---	constant CNT_MAX	: integer := (SDTICK+fsamp/2) / fsamp;
-constant CNT_MAX : integer := 10000000/20000;
+	constant CNT_MAX	: integer := (SDF+fsamp/2)/fsamp;
 	signal cnt			: integer range 0 to CNT_MAX;
+	signal dac_cnt		: integer range 0 to CNT_MAX;
 
 	signal rx_d			: std_logic;
 	signal serdata		: std_logic;
@@ -187,6 +187,7 @@ end process;
 --	and here comes the primitive version of the
 --	digital delta part - not really delta...
 --		it's just a simple PWM...
+--	now do it with the main clock...
 --
 process(clk, reset)
 
@@ -194,19 +195,21 @@ begin
 	if reset='1' then
 		delta <= (others => '0');
 		dac <= '0';
+		dac_cnt <= 0;
 	elsif rising_edge(clk) then
-		if clksd=0 then		-- recycle sd tick
-			if cnt=0 then		-- recycle the adc counter
-				-- delta <= unsigned(audio_out);
-				delta <= unsigned(audio_in);
-			else
-				dac <= '0';
-				if delta /= 0 then
-					delta <= delta-1;
-					dac <= '1';
-				end if;
+
+		if dac_cnt=0 then
+			dac_cnt <= CNT_MAX-1;
+			delta <= unsigned(audio_out);
+		else
+			dac_cnt <= dac_cnt-1;
+			dac <= '0';
+			if delta /= 0 then
+				delta <= delta-1;
+				dac <= '1';
 			end if;
 		end if;
+
 	end if;
 end process;
 
