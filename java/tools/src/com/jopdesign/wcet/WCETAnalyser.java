@@ -473,9 +473,9 @@ class WCETMethodBlock {
     // info and wcet for each block
     // listing
     sb.append("\nTable of basic blocks\n");
-    sb.append("============================\n");
-    sb.append("Block   Cyc. hit   Cyc. miss\n");
-    sb.append("----------------------------\n");
+    sb.append("==============\n");
+    sb.append("Block   Cycles\n");
+    sb.append("--------------\n");
    
     int mwcetHit = 0;
     int mwcetMiss = 0;
@@ -492,13 +492,13 @@ class WCETMethodBlock {
         validMethodWcet = false;
       }
     }
-    sb.append("============================\n");
-    sb.append("Sum:    " 
-        +WU.prepad(Integer.toString(mwcetHit),8)
-        +"   "
-        +WU.prepad(Integer.toString(mwcetMiss),9));
-    sb.append("\n");
-    sb.append("============================\n");
+    sb.append("==============\n");
+//    sb.append("Sum:    " 
+//        +WU.prepad(Integer.toString(mwcetHit),8)
+//        +"   "
+//        +WU.prepad(Integer.toString(mwcetMiss),9));
+//    sb.append("\n");
+//    sb.append("============================\n");
    
     if (!validMethodWcet)
       sb.append("*NB: invalid BB (ie. cycle count not available)\n");
@@ -551,22 +551,22 @@ class WCETMethodBlock {
 
     // bytecode listing
     sb.append("\nTable of basic blocks' and instructions\n");
-    sb.append("======================================================\n");
-    sb.append("Block Addr. Bytecode[opcode]      Cyc. hit   Cyc. miss\n");
-    sb.append("------------------------------------------------------\n");
+    sb.append("========================================\n");
+    sb.append("Block Addr. Bytecode[opcode]      Cycles\n");
+    sb.append("----------------------------------------\n");
 
     for (Iterator iter = bbs.keySet().iterator(); iter.hasNext();) {
       Integer keyInt = (Integer) iter.next();
       WCETBasicBlock wcbb = (WCETBasicBlock) bbs.get(keyInt);
       sb.append(wcbb.toCodeString());
     }
-    sb.append("======================================================\n");
-    sb.append("Sum:                              " 
-        +WU.prepad(Integer.toString(mwcetHit),8)
-        +"   "
-        +WU.prepad(Integer.toString(mwcetMiss),9)
-        +"\n");
-    sb.append("======================================================\n");
+    sb.append("========================================\n");
+//    sb.append("Sum:                              " 
+//        +WU.prepad(Integer.toString(mwcetHit),8)
+//        +"   "
+//        +WU.prepad(Integer.toString(mwcetMiss),9)
+//        +"\n");
+//    sb.append("======================================================\n");
     return sb.toString();
   }
 
@@ -719,9 +719,9 @@ class WCETBasicBlock {
     sb.append(WU.postpad(s,8));
 
     // Cyc. hit   Cyc. miss
-    sb.append(WU.prepad(Integer.toString(wcetHit),8));
-    sb.append("   ");
-    sb.append(WU.prepad(Integer.toString(wcetMiss),9));
+    sb.append(WU.prepad(Integer.toString(wcetHit),6));
+//    sb.append("   ");
+//    sb.append(WU.prepad(Integer.toString(wcetMiss),9));
     //sb.append("\n");
 
     // if(tarbb!=null){
@@ -795,12 +795,13 @@ class WCETBasicBlock {
       sb.append(ihs.toString());
 
       // "Cyc. hit   Cyc. miss" 8+3+9
+      // Cycles
       int wcetihMiss = WCETInstruction.getCyclesFromHandle(ih, true, wcmb.getN());
       int wcetihHit = WCETInstruction.getCyclesFromHandle(ih, false, wcmb.getN());
 
-      sb.append(WU.prepad(Integer.toString(wcetihHit),8));
-      sb.append("   ");
-      sb.append(WU.prepad(Integer.toString(wcetihMiss),9));
+      sb.append(WU.prepad(Integer.toString(wcetihHit),6));
+//      sb.append("   ");
+//      sb.append(WU.prepad(Integer.toString(wcetihMiss),9));
       sb.append("\n");
     } while (ih != endih && (ih = ih.getNext()) != null);
 
