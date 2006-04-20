@@ -153,6 +153,7 @@ tools:
 	javac $(TOOLS_JFLAGS) $(TOOLS)/src/*.java
 	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/build/*.java
 	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/tools/*.java
+	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/wcet/*.java
 	cd $(TOOLS)/dist/classes && jar cf ../lib/jop-tools.jar *
 
 #	old version with batch file
@@ -379,3 +380,12 @@ jop_testmon:
 #
 udp_dbg:
 	java -cp java/pc/dist/lib/jop-pc.jar udp.UDPDbg
+
+
+
+wcet:
+	-rm $(TARGET)/wcet/*.txt
+	-rm -r $(TARGET)/wcet
+	-mkdir $(TARGET)/wcet
+	java $(TOOLS_CP) -Dmgci=true com.jopdesign.wcet.WCETAnalyser \
+		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/wcet/$(P3)wcet.txt $(MAIN_CLASS)
