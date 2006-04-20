@@ -501,7 +501,7 @@ class WCETMethodBlock {
     sb.append("============================\n");
    
     if (!validMethodWcet)
-      sb.append("*NB: invalid BB (ie. cycle count not available\n)");
+      sb.append("*NB: invalid BB (ie. cycle count not available)\n");
     
     sb.append("\n");
 
