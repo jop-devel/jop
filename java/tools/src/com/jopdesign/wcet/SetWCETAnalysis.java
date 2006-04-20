@@ -23,10 +23,12 @@ public class SetWCETAnalysis extends MyVisitor {
 			String methodId = m.getName()+m.getSignature();
       
       //if(m.getName().equalsIgnoreCase("sort")){
+      if(!m.isAbstract()){
         WCETMethodBlock wcmb = new WCETMethodBlock(m,clazz);
         wcmb.controlFlowGraph();
         wcmb.directedGraph();
         wca.out.println(wcmb.toString());
+      }
         //System.out.println(wcmb.toString());
       //}
     
