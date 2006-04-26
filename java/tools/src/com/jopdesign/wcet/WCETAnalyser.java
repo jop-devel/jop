@@ -10,6 +10,7 @@ import org.apache.bcel.classfile.*;
 import org.apache.bcel.classfile.Visitor;
 import org.apache.bcel.Constants;
 import org.apache.bcel.generic.*;
+import org.apache.bcel.generic.FieldOrMethod;
 import org.apache.bcel.verifier.exc.*;
 import org.apache.bcel.verifier.structurals.*;
 
@@ -64,14 +65,18 @@ public class WCETAnalyser {
    * The class that contains the main method.
    */
   static String mainClass;
+  
+  HashMap mmap;
 
   public WCETAnalyser() {
     // TODO: Debugging from Eclipse creates a different classpath?
-    // classpath = new org.apache.bcel.util.ClassPath(".");
+    classpath = new org.apache.bcel.util.ClassPath(".");
+    mmap = new HashMap();
   }
 
   public static void main(String[] args) {
-    String outFile = "/tmp/wcet.txt";
+    // wcet/P3+Wcet.txt
+    String outFile = null;
     WCETAnalyser wca = new WCETAnalyser();
     HashSet clsArgs = new HashSet();
 
@@ -104,14 +109,10 @@ public class WCETAnalyser {
         wca.load(clsArgs);
 
         wca.iterate(new SetWCETAnalysis(wca));
+        
+        //instruction info
         wca.out.println("************************************************");
-        wca.out.println("\nTable of WCETInstruction cycles");
-        wca.out.println("\nassuming n=0");
-        wca.out.println("================================");
-        wca.out.println("Instruction               Cycles");
-        wca.out.println("--------------------------------");
-        wca.out.println(WCETInstruction.toWCAString()
-            + "================================");
+        wca.out.println(WCETInstruction.toWCAString());
         wca.out.println("Note: Remember to keep WCETAnalyzer updated");
         wca.out.println("each time a bytecode implementation is changed.");
         wca.out.close();
@@ -145,19 +146,37 @@ public class WCETAnalyser {
       if (!jc[j].getClassName().equals(nativeClass)) {
         // ClassInfo cli = new ClassInfo(jc[j]);
         clazzes.add(jc[j]);
-        // clazz2cli.put(jc[j], cli);
       }
+        Method[] m = jc[j].getMethods();
+        for(int ii=0;ii<m.length;ii++){
+          String msig = jc[j].getClassName() + "." + m[ii].getName()+m[ii].getSignature();
+//System.out.println("m to be put:"+msig);//TODO mig everywhere          
+//System.out.println("r: "+m[ii].getReturnType().getSignature());//TODO mig everywhere
+          mmap.put(msig,m[ii]);
+        }
+      
     }
   }
 
   private void iterate(Visitor v) {
 
     Iterator it = clazzes.iterator();
-    // System.err.println("------------------");
     while (it.hasNext()) {
       JavaClass clz = (JavaClass) it.next();
       new DescendingVisitor(clz, v).visit();
     }
+  }
+  
+  /**
+   * Get a method object from the String id. It is used to find
+   * the length of a method when it is invoked from some method.
+   * The methodid is created like this: c.getClassName() + "." + m.getName()+m.getSignature();
+   * @param methodid
+   * @return the method object
+   */
+  public Method getMethod(String methodid){
+    Method m = (Method)mmap.get(methodid);
+    return m;
   }
   
 }
@@ -167,7 +186,6 @@ public class WCETAnalyser {
  * from the WCETAnalyzers controlFlowGraph method. It creates the the directed
  * graph of wcbbs.
  */
-// TODO: Perhaps add a WCETJavaClass later
 class WCETMethodBlock {
   // Basic Blocks
   TreeMap bbs;
@@ -179,6 +197,8 @@ class WCETMethodBlock {
   MethodGen mg;
 
   ControlFlowGraph cfg;
+  
+  ConstantPoolGen cpg;
 
   String tostr;
 
@@ -187,6 +207,8 @@ class WCETMethodBlock {
   String name;
 
   String cname;
+  
+  WCETAnalyser wca;
 
   // directed graph of the basic blocks
   int dg[][];
@@ -198,25 +220,23 @@ class WCETMethodBlock {
   // from here on we split it when necessary
   public void init(InstructionHandle stih, InstructionHandle endih) {
     WCETBasicBlock wcbb = new WCETBasicBlock(stih, endih, this);
-    // wcbb.setEnd(endih.getPosition()); //we will do it lastly
     bbs.put(new Integer(wcbb.getStart()), wcbb);
   }
 
   /**
    * Instanciated from from <code>SetClassInfo</code>.
    */
-  public WCETMethodBlock(Method method, JavaClass jc) {
-    String methodId = method.getName() + method.getSignature();
+  public WCETMethodBlock(Method method, JavaClass jc, WCETAnalyser wca) {
+    this.wca = wca;
+    
+//String methodId = method.getName() + method.getSignature();
+//String classId = jc.getClassName();
 
-    String classId = jc.getClassName();
     bbs = new TreeMap();
     this.method = method;
     this.jc = jc;
 
-    // TODO: ms needs to check if the "3" needs to be added like
-    // in MethodInfo?
-    // set method length in 32 bit words
-
+    //method length in words
     if (!method.isAbstract()) {
       n = (method.getCode().getCode().length + 3) / 4;
     } else {
@@ -228,7 +248,7 @@ class WCETMethodBlock {
    * Control flow analysis for one nonabstract-method.
    */
   public void controlFlowGraph() {
-    ConstantPoolGen cpg = new ConstantPoolGen(jc.getConstantPool());
+    cpg = new ConstantPoolGen(jc.getConstantPool());
 
     // Some methods overridden (see bottom of this file)
     InstConstraintVisitor icv = new AnInstConstraintVisitor();
@@ -238,18 +258,14 @@ class WCETMethodBlock {
     ExecutionVisitor ev = new ExecutionVisitor();
     ev.setConstantPoolGen(cpg);
 
-    MethodGen mg = new MethodGen(method, jc.getClassName(), cpg);
-    // To later get the PC positions of the instructions
+    mg = new MethodGen(method, jc.getClassName(), cpg);
     mg.getInstructionList().setPositions(true);
-    // String tostr = mg.toString();
-    String signature = mg.getSignature();
-    // debug hint: set conditionl breakpoint here like name=="sort"
-    String name = mg.getName();
-    // System.out.println(name);
-    String cname = mg.getClassName();
+// String tostr = mg.toString();
+//String signature = mg.getSignature();
+//String name = mg.getName();
+//String cname = mg.getClassName();
 
     icv.setMethodGen(mg);
-
     if (!(mg.isAbstract() || mg.isNative())) { // IF mg HAS CODE
 
       // pass 0: Create basic blocks
@@ -257,23 +273,16 @@ class WCETMethodBlock {
       // wcet startup: create the first full covering bb
       InstructionHandle ihend = mg.getInstructionList().getEnd();
       init(ih, ihend);
-      // System.out.println(mg);
-      // System.out.println(method.getCode());
 
       do {
         // create new bb (a)for branch target and (b) for sucessor
-        // TODO: What about return?
         Instruction ins = ih.getInstruction();
-        // System.out.println(ins);
         if (ih.getInstruction() instanceof BranchInstruction) {
           InstructionHandle ihtar = ((BranchInstruction) ih.getInstruction())
               .getTarget();
-          // System.out.println(ihtar);
           InstructionHandle ihnext = ih.getNext();
           createBasicBlock(ihtar);
           if (ihnext != null) {
-            // TODO: Check that last instruction works and that a basic block
-            // can be of length one
             createBasicBlock(ihnext);
           }
         }
@@ -289,7 +298,6 @@ class WCETMethodBlock {
         wbb.setId(id);
         id++;
 
-        // Can the linking be done here?
         ih = wbb.getEndih();
         WCETBasicBlock wbbthis = getCoveringBB(ih);
 
@@ -306,16 +314,14 @@ class WCETMethodBlock {
           // next when the instruction is an if
           // TODO: What about TABLESWITCH and LOOKUPSWITCH
           if (ih.getInstruction() instanceof IfInstruction) {
-
             InstructionHandle ihnext = ih.getNext();
-
             if (ihnext != null) {
               WCETBasicBlock wbbnxt = getCoveringBB(ihnext);
               // nextwbb
               wbbthis.setSucbb(wbbnxt);
             }
           }
-        } else { // just set successor
+        } else { // set the successor
           InstructionHandle ihnext = ih.getNext();
 
           if (ihnext != null) {
@@ -323,43 +329,9 @@ class WCETMethodBlock {
             // nextwbb
             wbbthis.setSucbb(wbbnxt);
           }
-
         }
-
       }
-
-      // Pass 2: linking the blocks
-      // ih = mg.getInstructionList().getStart();
-      //
-      // do {
-      // if (ih.getInstruction() instanceof BranchInstruction) {
-      // // target
-      // InstructionHandle ihtar = ((BranchInstruction) ih.getInstruction())
-      // .getTarget();
-      // WCETBasicBlock wbbthis = getCoveringBB(ih);
-      // WCETBasicBlock wbbtar = getCoveringBB(ihtar);
-      // // target wbb
-      // wbbthis.setTarbb(wbbtar);
-      // // targeter in target
-      // wbbtar.addTargeter(wbbthis);
-      //
-      // // next when the instruction is an if
-      // //TODO: What about TABLESWITCH and LOOKUPSWITCH
-      // if (ih.getInstruction() instanceof IfInstruction) {
-      //            
-      // InstructionHandle ihnext = ih.getNext();
-      //
-      // if (ihnext != null) {
-      // WCETBasicBlock wbbnxt = getCoveringBB(ihnext);
-      // // nextwbb
-      // wbbthis.setSucbb(wbbnxt);
-      // }
-      // }
-      // }
-      // } while ((ih = ih.getNext()) != null);
-
     }
-
   }
 
   public ControlFlowGraph getControlFlowGraph() {
@@ -368,6 +340,46 @@ class WCETMethodBlock {
 
   public MethodGen getMethodGen() {
     return mg;
+  }
+  
+  /**
+   * Find a local variable based on an entry in the LocalVariableTable attribute.
+   * @see http://java.sun.com/docs/books/vmspec/2nd-edition/html/ClassFile.doc.html#5956
+   * @param index
+   * @param pc
+   * @return local variable type and name or "NA"
+   */
+  public String getLocalVarName(int index, int pc){
+//System.out.println("getLocalVarName: index:"+index+" pc:"+pc+" info:"+mg.getClassName()+"."+mg.getName());
+    LocalVariableTable lvt = method.getLocalVariableTable();
+    String lvName = "";
+    boolean match = false;
+    if(lvt!=null){
+      LocalVariable[] lva = lvt.getLocalVariableTable(); 
+
+//System.out.println("lva.length:"+lva.length);   
+     for(int i=0;i<lva.length;i++){
+       LocalVariable lv = lva[i]; 
+//System.out.println("lv["+i+"]: index:"+lv.getIndex()+" name:"+lv.getName()+" pcstart:"+pc+" length:"+lv.getLength());     
+       if(lv.getIndex()==index){
+//System.out.println("index match");       
+         if(pc>=lv.getStartPC()){
+//System.out.println("startpc match");
+           if(pc<=lv.getStartPC()+lv.getLength()){
+//System.out.println("endpc match");            
+             lvName = lv.getSignature() +":"+lv.getName();
+             if(match){
+               System.out.println("Only one match pr. local variable table is possible");
+               System.exit(-1);
+             }
+             match = true;
+             //break; //safety check when commented out, but slower
+           }
+         }
+       }
+    }
+    }
+    return lvName;
   }
 
   /**
@@ -434,10 +446,8 @@ class WCETMethodBlock {
     dg = new int[bbs.size()][bbs.size()];
     for (Iterator iter = bbs.keySet().iterator(); iter.hasNext();) {
       Integer keyInt = (Integer) iter.next();
-      // HERE
       WCETBasicBlock wcbb = (WCETBasicBlock) bbs.get(keyInt);
       WCETBasicBlock tarwcbb = wcbb.getTarbb();
-      // TODO: Check for bugs
       int id = wcbb.getId();
       if (tarwcbb != null) {
         int tarbbid = tarwcbb.getId();
@@ -449,7 +459,6 @@ class WCETMethodBlock {
         dg[id][sucid]++;
       }
     }
-
   }
 
   /**
@@ -459,77 +468,27 @@ class WCETMethodBlock {
    */
   public String toString() {
     StringBuffer sb = new StringBuffer();
-    sb.append("************************************************\n");
-    sb.append("\"WCET\" DUMP OF " + jc.getClassName() + "." + method.getName()
-        + method.getSignature() + "\nlen="+n+" words\n");
-
-    // sb.append("Number of basic blocks= "+ bbs.size()+"\n");
-
-    // sb.append("Method cycle sum="+methodWcet+" (just the sum of the basic
-    // blocks)\n");
-    // sb.append("Valid wcet="+validMethodWcet+"( if all bytecodes used have a
-    // valid cycle count)\n");
-
-    // info and wcet for each block
-    // listing
-    sb.append("\nTable of basic blocks\n");
-    sb.append("============================\n");
-    sb.append("Block   Cyc. hit   Cyc. miss\n");
-    sb.append("----------------------------\n");
-   
-    int mwcetHit = 0;
-    int mwcetMiss = 0;
-    boolean validMethodWcet = true;
-
-    for (Iterator iter = bbs.keySet().iterator(); iter.hasNext();) {
-      Integer keyInt = (Integer) iter.next();
-      WCETBasicBlock wcbb = (WCETBasicBlock) bbs.get(keyInt);
-      sb.append(wcbb.toString() + "\n");
-      if (wcbb.getValid()) {
-        mwcetHit += wcbb.getWcetHit();
-        mwcetMiss += wcbb.getWcetMiss();
-      } else {
-        validMethodWcet = false;
-      }
-    }
-    sb.append("============================\n");
-//    sb.append("Sum:    " 
-//        +WU.prepad(Integer.toString(mwcetHit),8)
-//        +"   "
-//        +WU.prepad(Integer.toString(mwcetMiss),9));
-//    sb.append("\n");
-//    sb.append("============================\n");
-   
-    if (!validMethodWcet)
-      sb.append("*NB: invalid BB (ie. cycle count not available)\n");
-    
-    sb.append("\n");
+     
+    sb.append("******************************************************************************\n");
+        sb.append("WCET info for:"+jc.getClassName() + "." + method.getName()
+        + method.getSignature()+"\n\n");
 
     // directed graph
     sb.append("Directed graph of basic blocks(row->column):\n");
     StringBuffer top = new StringBuffer();
     top.append("    ");
     for (int i = 0; i < dg.length; i++) {
-
-      top.append("B" + i);
-      if (i < 100)
-        top.append(" ");
-      if (i < 10)
-        top.append(" ");
+      top.append(WU.postpad("B" + i,4));
     }
     top.append("\n");
 
-    for (int i = 0; i < top.length() - 2; i++) {
+    for (int i = 0; i < top.length() - 3; i++) {
       sb.append("=");
     }
     sb.append("\n" + top.toString());
 
     for (int i = 0; i < dg.length; i++) {
-      sb.append("B" + i);
-      // if(i<100)
-      // sb.append(" ");
-      if (i < 10)
-        sb.append(" ");
+      sb.append(WU.postpad("B" + i,3));
 
       for (int j = 0; j < dg.length; j++) {
         if (dg[i][j] == 0)
@@ -537,36 +496,27 @@ class WCETMethodBlock {
         else
           sb.append(" " + dg[i][j]);
 
-        if (dg[i][j] < 100)
-          sb.append(" ");
-        if (dg[i][j] < 10)
-          sb.append(" ");
+        sb.append(WU.postpad("",2));
       }
       sb.append("\n");
     }
-    for (int i = 0; i < top.length() - 2; i++) {
-      sb.append("=");
-    }
+    sb.append(WU.repeat("=",top.length() - 3));
     sb.append("\n");
 
     // bytecode listing
     sb.append("\nTable of basic blocks' and instructions\n");
-    sb.append("======================================================\n");
-    sb.append("Block Addr. Bytecode[opcode]      Cyc. hit   Cyc. miss\n");
-    sb.append("------------------------------------------------------\n");
-
+    sb.append("=========================================================================\n");
+    sb.append("Block Addr.  Bytecode                Cycles   Misc. info\n");
+    sb.append("             [opcode]              hit/miss\n");
+    sb.append("-------------------------------------------------------------------------\n");
     for (Iterator iter = bbs.keySet().iterator(); iter.hasNext();) {
       Integer keyInt = (Integer) iter.next();
       WCETBasicBlock wcbb = (WCETBasicBlock) bbs.get(keyInt);
       sb.append(wcbb.toCodeString());
     }
-    sb.append("======================================================\n");
-//    sb.append("Sum:                              " 
-//        +WU.prepad(Integer.toString(mwcetHit),8)
-//        +"   "
-//        +WU.prepad(Integer.toString(mwcetMiss),9)
-//        +"\n");
-//    sb.append("======================================================\n");
+    sb.append("=========================================================================\n");
+    sb.append("Info: n="+n+" b="+WCETInstruction.calculateB(n)+" a="+WCETInstruction.a+" r="+WCETInstruction.r+" w="+WCETInstruction.w+"\n");
+         
     return sb.toString();
   }
 
@@ -576,6 +526,10 @@ class WCETMethodBlock {
 
   public int getN() {
     return n;
+  }
+
+  public ConstantPoolGen getCpg() {
+    return cpg;
   }
 }
 
@@ -589,11 +543,11 @@ class WCETBasicBlock {
   // id of the bb
   int id;
 
-  // The reason why we are doing this...
+  // the reason why we are doing this...
   int wcetHit;
   int wcetMiss;
 
-  // False if we encounter WCETNOTAVAILABLE bytecodes while counting
+  // false if we encounter WCETNOTAVAILABLE bytecodes while counting
   boolean valid;
 
   // start pos
@@ -617,6 +571,9 @@ class WCETBasicBlock {
 
   // invard links from other BBs called targeters
   HashMap inbbs;
+  
+  // invoke info after toCodeString has been called
+  String invokeStr;
 
   WCETBasicBlock(InstructionHandle stih, InstructionHandle endih, WCETMethodBlock wcmb) {
     this.wcmb = wcmb;
@@ -655,16 +612,10 @@ class WCETBasicBlock {
    *          the first instruction of the new block
    * @return the new BB
    */
-  // TODO: Do they inherit the targeters (a "targeter" is something that points
-  // to a target)
   WCETBasicBlock split(InstructionHandle newstih) {
     WCETBasicBlock spbb = new WCETBasicBlock(newstih, endih, wcmb);
-    // spbb.end = stih.getPrev().getPosition();
-    // end the last block with the previous pos
     end = newstih.getPrev().getPosition();
     endih = newstih.getPrev();
-    // start the new block with stih handle
-    // spbb.inbbs.put(new Integer(spbb.start), spbb);
     return spbb;
   }
 
@@ -697,7 +648,6 @@ class WCETBasicBlock {
     } while (ih != endih && (ih = ih.getNext()) != null); // null will never
                                                           // happen, but need
                                                           // the getNext
-    // TODO: Is the above correct?
   }
 
   /**
@@ -722,27 +672,7 @@ class WCETBasicBlock {
     sb.append(WU.prepad(Integer.toString(wcetHit),6));
     sb.append("   ");
     sb.append(WU.prepad(Integer.toString(wcetMiss),9));
-    //sb.append("\n");
 
-    // if(tarbb!=null){
-    // sb.append("target block id="+tarbb.getId()+"\n");
-    // }else
-    // {
-    // sb.append("target block id=null\n");
-    // }
-    // if(sucbb!=null){
-    // sb.append("successor block id="+sucbb.getId()+"\n");
-    // }else
-    // {
-    // sb.append("successor block id=null\n");
-    // }
-    // int i=0;
-    // for (Iterator iter = inbbs.keySet().iterator(); iter.hasNext();) {
-    // Integer keyInt = (Integer) iter.next();
-    // WCETBasicBlock wcbb = (WCETBasicBlock) inbbs.get(keyInt);
-    // sb.append("targeter["+i+"] id="+wcbb.getId()+"\n");
-    // i++;
-    // }
     return sb.toString();
   }
 
@@ -755,59 +685,177 @@ class WCETBasicBlock {
     StringBuffer sb = new StringBuffer();
 
     InstructionHandle ih = stih;
+    int blockcychit = 0;
+    int blockcycmiss = 0;
     do {
       // block (len 6)
       if (ih == stih) {
-        sb.append("B" + id + "  ");
-        if (id < 100)
-          sb.append(" ");
-        if (id < 10)
-          sb.append(" ");
+        sb.append(WU.postpad("B" + id,6));
       } else {
         sb.append("      ");
       }
       // addr (len 6)
-      sb.append(ih.getPosition() + ":" + "  ");
-      if (ih.getPosition() < 100)
-        sb.append(" ");
-      if (ih.getPosition() < 10)
+      sb.append(WU.postpad(ih.getPosition() + ":",6));
+
+      if(!WCETInstruction.wcetAvailable(ih.getInstruction().getOpcode()))
+        sb.append("*");
+      else 
         sb.append(" ");
       
       // bytecode (len 22)
       StringBuffer ihs = new StringBuffer(ih.getInstruction().getName() + "["
           + ih.getInstruction().getOpcode() + "]");
-      if(!WCETInstruction.wcetAvailable(ih.getInstruction().getOpcode()))
-        sb.append("*");
-      
+
       if (ih.getInstruction() instanceof BranchInstruction) {
         // target
         InstructionHandle ihtar = ((BranchInstruction) ih.getInstruction())
             .getTarget();
         int tarpos = ihtar.getPosition();
-        ihs.append(" -> " + tarpos + ":");
+        ihs.append("->" + tarpos + ":");
       }
-      int pad = 22 - ihs.length();
-      if (pad < 0)
-        pad = 0;
-      for (int i = 0; i < pad; i++) {
-        ihs.append(" ");
+
+      sb.append(WU.postpad(ihs.toString(),20));
+      
+      //invoke instructions
+      if(ih.getInstruction() instanceof InvokeInstruction){
+        int wcetihMiss = -1;
+        int wcetihHit = -1;
+       
+        String methodid = ((InvokeInstruction)ih.getInstruction()).getClassName(wcmb.getCpg())
+        +"."
+        +((InvokeInstruction)ih.getInstruction()).getMethodName(wcmb.getCpg())
+        +((InvokeInstruction)ih.getInstruction()).getSignature(wcmb.getCpg());
+        String retsig = ((InvokeInstruction)ih.getInstruction()).getReturnType(wcmb.getCpg()).getSignature(); 
+//System.out.println("m to be retrieved:"+methodid);
+//System.out.println("retsig: "+retsig);
+        //signature Java Type, Z boolean, B byte, C char, S short, I int
+        //J long, F float, D double, L fully-qualified-class, [ type type[] 
+        Method m = wcmb.wca.getMethod(methodid);
+          if(m!=null && !m.isAbstract()){
+          int n = -1;
+          if(m.getCode()!= null){
+            n = (m.getCode().getCode().length + 3) / 4;
+          }else{
+            n=0;
+          }
+          int invokehit = WCETInstruction.getCyclesFromHandle(ih,false,n);
+          int invokemiss = WCETInstruction.getCyclesFromHandle(ih,true,n);
+          
+          //now the return 
+          int rethit = -1;
+          int retmiss = -1; 
+          //TODO: Check these with ms
+          if(retsig.equals("V")){
+            rethit = WCETInstruction.getCycles(org.apache.bcel.Constants.RETURN,false, n);
+            retmiss = WCETInstruction.getCycles(org.apache.bcel.Constants.RETURN,true, n);
+          } 
+          else if(retsig.equals("I") || retsig.equals("Z")|| retsig.equals("B")|| retsig.equals("C")|| retsig.equals("S")){
+            rethit = WCETInstruction.getCycles(org.apache.bcel.Constants.IRETURN,false, n);
+            retmiss = WCETInstruction.getCycles(org.apache.bcel.Constants.IRETURN,true, n);
+          } 
+          else if(retsig.equals("J")){
+            rethit = WCETInstruction.getCycles(org.apache.bcel.Constants.LRETURN,false, n);
+            retmiss = WCETInstruction.getCycles(org.apache.bcel.Constants.LRETURN,true, n);
+          } 
+          else if(retsig.equals("D")){
+            rethit = WCETInstruction.getCycles(org.apache.bcel.Constants.DRETURN,false, n);
+            retmiss = WCETInstruction.getCycles(org.apache.bcel.Constants.DRETURN,true, n);
+          } 
+          else if(retsig.equals("F")){
+            rethit = WCETInstruction.getCycles(org.apache.bcel.Constants.FRETURN,false, n);
+            retmiss = WCETInstruction.getCycles(org.apache.bcel.Constants.FRETURN,true, n);
+          } 
+          else if(retsig.startsWith("[") || retsig.startsWith("L")){
+            rethit = WCETInstruction.getCycles(org.apache.bcel.Constants.ARETURN,false, n);
+            retmiss = WCETInstruction.getCycles(org.apache.bcel.Constants.ARETURN,true, n);
+          }else{
+            System.out.println("Did not recognize "+retsig+" as return type");
+            System.exit(-1);
+          }
+          wcetihMiss = invokemiss+retmiss;
+          blockcycmiss += wcetihMiss;
+          wcetihHit = invokehit+rethit;
+          blockcychit += wcetihHit;
+          if((((InvokeInstruction)ih.getInstruction()).getClassName(wcmb.getCpg())).equals(wcmb.wca.nativeClass)){
+            sb.append(WU.prepad("*"+Integer.toString(wcetihHit)+"/"+Integer.toString(wcetihMiss),10));
+          } else {
+            sb.append(WU.prepad(Integer.toString(wcetihHit)+"/"+Integer.toString(wcetihMiss),10));
+          }
+
+          sb.append("   ");
+          sb.append(methodid+", invoke(n="+n+"):"+invokehit+"/"+invokemiss+" return(n="+wcmb.getN()+"):"+rethit+"/"+retmiss);
+          if((((InvokeInstruction)ih.getInstruction()).getClassName(wcmb.getCpg())).equals(wcmb.wca.nativeClass)){
+            sb.append(", no hit/miss cycle count for Native invokes (yet)");
+          } 
+
+        }
+        else{
+          sb.append("*");
+        }
+
+      }else{ // non-invoke functions
+        int wcetihMiss = WCETInstruction.getCyclesFromHandle(ih, true, wcmb.getN());
+        int wcetihHit = WCETInstruction.getCyclesFromHandle(ih, false, wcmb.getN());
+        blockcycmiss += wcetihMiss;
+        blockcychit += wcetihHit;
+        if(ih.getInstruction() instanceof ReturnInstruction){
+          sb.append(WU.prepad("*"+Integer.toString(wcetihHit),10));
+        } else{
+          sb.append(WU.prepad(Integer.toString(wcetihHit),10));
+        }
+        sb.append("   ");
       }
-      sb.append(ihs.toString());
+      
+      //field info
+      if(ih.getInstruction() instanceof FieldInstruction){
+        String fieStrType = ((FieldInstruction)ih.getInstruction()).getFieldType(wcmb.getCpg()).toString();
+        sb.append(fieStrType+" ");
+        if(ih.getInstruction() instanceof FieldOrMethod){
+          String fieStrClass = ((FieldOrMethod)ih.getInstruction()).getClassName(wcmb.getCpg());
+          sb.append(fieStrClass+".");
+        }
+        String fieStrName = ((FieldInstruction)ih.getInstruction()).getFieldName(wcmb.cpg);
+        sb.append(fieStrName);
+      }
 
-      // "Cyc. hit   Cyc. miss" 8+3+9
-      // Cycles
-      int wcetihMiss = WCETInstruction.getCyclesFromHandle(ih, true, wcmb.getN());
-      int wcetihHit = WCETInstruction.getCyclesFromHandle(ih, false, wcmb.getN());
-
-      sb.append(WU.prepad(Integer.toString(wcetihHit),6));
-      sb.append("   ");
-      sb.append(WU.prepad(Integer.toString(wcetihMiss),9));
+      //fetch local variable name and type from class file
+      if(ih.getInstruction() instanceof LocalVariableInstruction){
+        if(ih.getInstruction() instanceof StoreInstruction){
+          StoreInstruction si = (StoreInstruction)ih.getInstruction();
+          //add instruction len to pos to peek into localvariable table
+          String siStr = wcmb.getLocalVarName(si.getIndex(),ih.getPosition()+ih.getInstruction().getLength());
+          if(siStr.length()>0)
+            sb.append("->"+siStr+" ");
+        } else{ //load or iinc        
+          LocalVariableInstruction lvi = (LocalVariableInstruction)ih.getInstruction();
+          String lvStr = wcmb.getLocalVarName(lvi.getIndex(),ih.getPosition());
+          if(lvStr.length()>0)
+            sb.append(lvStr+" ");
+        }
+      }
+      
+      if(ih.getInstruction() instanceof ArrayInstruction){
+        String aType = ((ArrayInstruction)ih.getInstruction()).getType(wcmb.getCpg()).getSignature();
+        sb.append(aType+" ");
+      }
+      
+      //block sum if end
+      if(ih == endih){
+        sb.append("sum(B"+id+"):");
+        if(ih.getInstruction() instanceof ReturnInstruction){
+          sb.append(WU.prepad(blockcychit+"/NA",7));
+          sb.append(" *do not have size of caller (yet)");
+        }
+        else{
+          sb.append(WU.prepad(blockcychit+"/"+blockcycmiss,7));
+        }
+      }
       sb.append("\n");
     } while (ih != endih && (ih = ih.getNext()) != null);
 
     return sb.toString();
   }
-
+  
   public int getStart() {
     return start;
   }
@@ -862,6 +910,10 @@ class WCETBasicBlock {
 
   public int getWcetMiss() {
     return wcetMiss;
+  }
+
+  public String getInvokeStr() {
+    return invokeStr;
   }
 }
 
@@ -961,39 +1013,36 @@ class WCETInstruction {
 
   /**
    * See the WCET values
-   * 
-   * @return
+   * @return table body of opcodes with info
    */
 
   static String toWCAString() {
     StringBuffer sb = new StringBuffer();
+    
+    sb.append("Table of WCETInstruction cycles\n");
+    sb.append("=============================================================\n");
+    sb.append("Instruction               Hit cycles  Miss cycles  Mich. info\n");
+    sb.append("                            n=0/1000     n=0/1000\n");
+    sb.append("-------------------------------------------------------------\n");
+ 
     for (int op = 0; op <= 255; op++) {
       // name (25)
       String str = new String("[" + op + "] " + getNameFromOpcode(op));
-      int pad = 25 - str.length();
-      sb.append(str);
-      for (int i = 0; i < pad; i++) {
-        sb.append(" ");
-      }
+      sb.append(WU.postpad(str,25));
 
-      // wcet (7), assuming n=0
-      int wcettmp = getCycles(op, false, 0);
-      if (wcettmp < 10000)
-        sb.append(" ");
-      if (wcettmp < 10000)
-        sb.append(" ");
-      if (wcettmp < 1000)
-        sb.append(" ");
-      if (wcettmp < 100)
-        sb.append(" ");
-      if (wcettmp < 10)
-        sb.append(" ");
-      if (wcettmp >= 0)
-        sb.append(" ");
+      //hit n={0,1000}
+      String hitstr = getCycles(op, false, 0)+"/"+getCycles(op, false, 1000); 
+      hitstr = WU.prepad(hitstr,12);
       
-      sb.append(wcettmp + "\n");
-
+      //miss n={0,1000}
+      String missstr = getCycles(op, true, 0)+"/"+getCycles(op, true, 1000);
+      missstr = WU.prepad(missstr,12);
+      
+      sb.append(hitstr+missstr + "\n");
     }
+    sb.append("=============================================================\n");
+    sb.append("Info: b(n=1000)="+calculateB(1000)+" a="+a+" r="+r+" w="+w+"\n");
+    sb.append("Signatures: V void, Z boolean, B byte, C char, S short, I int, J long, F float, D double, L class, [ array\n");
     return sb.toString();
   }
 
@@ -2822,6 +2871,20 @@ class WU{
     sb.append(val);
     for(int i=len;i>val.length();i--){
         sb.append(" ");
+    }
+    return sb.toString();
+  }
+  
+  /**
+   * Return n repetitions of a string, which is usually a single character.
+   * @param val the string
+   * @param n the repetitions
+   * @return the repeated string
+   */
+  public static String repeat(String val, int n){
+    StringBuffer sb = new StringBuffer();
+    for(int i=0;i<n;i++){
+        sb.append(val);
     }
     return sb.toString();
   }

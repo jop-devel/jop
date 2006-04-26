@@ -24,7 +24,7 @@ public class SetWCETAnalysis extends MyVisitor {
       
       //if(m.getName().equalsIgnoreCase("sort")){
       if(!m.isAbstract()){
-        WCETMethodBlock wcmb = new WCETMethodBlock(m,clazz);
+        WCETMethodBlock wcmb = new WCETMethodBlock(m,clazz,wca);
         wcmb.controlFlowGraph();
         wcmb.directedGraph();
         wca.out.println(wcmb.toString());
