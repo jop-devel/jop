@@ -17,7 +17,7 @@ import org.apache.bcel.verifier.structurals.*;
 import com.jopdesign.build.TransitiveHull;
 
 /**
- * The class is a STARTING POINT for wcet analysis. It is pretty
+ * The class is for wcet analysis. It is pretty
  * straight-forward to add classes that hook into the
  * <code>controlFlowGraph</code> and is used as a departure for further
  * analysis. The <code>WCETMethodBlock</code> is an example of how the basic
@@ -40,6 +40,7 @@ import com.jopdesign.build.TransitiveHull;
 // 2006-04-01 rup: Initial version aimed at directed graph of basic blocks
 // 2006-04-07 rup: Moved to become a non-Jopizer dependent piece of code
 // 2006-04-20 rup: Show both cachehit and cachemiss entries
+// 2006-04-27 rup: Show latex tables and load/store info for locals
 
 // TODOs:
 // TODO: WCET/BCET analysis. Now it is "just" cycle counting
@@ -50,6 +51,10 @@ import com.jopdesign.build.TransitiveHull;
  * The thing that controls the WCETClassBlock etc.
  */
 public class WCETAnalyser {
+  // latex table string
+  public static String las;
+  public static String lae;
+  
   public final static String nativeClass = "com.jopdesign.sys.Native";
 
   PrintWriter out;
@@ -79,7 +84,19 @@ public class WCETAnalyser {
     String outFile = null;
     WCETAnalyser wca = new WCETAnalyser();
     HashSet clsArgs = new HashSet();
-
+    
+    //the tables can be easier to use in latex using this property
+    boolean latex = System.getProperty("latex", "false").equals("true");
+    if(latex){
+      las = " & ";
+      lae = " \\\\";
+    }
+    else {
+      las = "";
+      lae = "";
+    }
+      
+    
     try {
       if (args.length == 0) {
         System.err
@@ -476,19 +493,26 @@ class WCETMethodBlock {
     // directed graph
     sb.append("Directed graph of basic blocks(row->column):\n");
     StringBuffer top = new StringBuffer();
-    top.append("    ");
+    if(wca.las.length()>0)
+      top.append("  ");    
+    top.append(WU.prepad(""+wca.las,4));
+
     for (int i = 0; i < dg.length; i++) {
-      top.append(WU.postpad("B" + i,4));
+      if(i<dg.length-1)
+        top.append(WU.postpad("B" + i+wca.las,4));
+      else
+        top.append(WU.postpad("B" + i+wca.lae,4));
     }
     top.append("\n");
 
-    for (int i = 0; i < top.length() - 3; i++) {
+    for (int i = 0; i < top.length() - 3+wca.las.length(); i++) {
       sb.append("=");
     }
     sb.append("\n" + top.toString());
 
     for (int i = 0; i < dg.length; i++) {
       sb.append(WU.postpad("B" + i,3));
+      sb.append(wca.las);
 
       for (int j = 0; j < dg.length; j++) {
         if (dg[i][j] == 0)
@@ -496,11 +520,14 @@ class WCETMethodBlock {
         else
           sb.append(" " + dg[i][j]);
 
-        sb.append(WU.postpad("",2));
+        if(j<dg.length-1)
+          sb.append(WU.postpad(""+wca.las,2));
+        else
+          sb.append(WU.postpad(""+wca.lae,2));
       }
       sb.append("\n");
     }
-    sb.append(WU.repeat("=",top.length() - 3));
+    sb.append(WU.repeat("=",top.length() - 3+wca.las.length()));
     sb.append("\n");
 
     // bytecode listing
@@ -537,9 +564,10 @@ class WCETMethodBlock {
  * Basic block of byte codes
  */
 class WCETBasicBlock {
+
   // parent
   WCETMethodBlock wcmb;
- 
+  
   // id of the bb
   int id;
 
@@ -694,6 +722,9 @@ class WCETBasicBlock {
       } else {
         sb.append("      ");
       }
+      
+      sb.append(wcmb.wca.las);
+      
       // addr (len 6)
       sb.append(WU.postpad(ih.getPosition() + ":",6));
 
@@ -701,6 +732,8 @@ class WCETBasicBlock {
         sb.append("*");
       else 
         sb.append(" ");
+      
+      sb.append(wcmb.wca.las);
       
       // bytecode (len 22)
       StringBuffer ihs = new StringBuffer(ih.getInstruction().getName() + "["
@@ -715,6 +748,10 @@ class WCETBasicBlock {
       }
 
       sb.append(WU.postpad(ihs.toString(),20));
+      
+      sb.append(wcmb.wca.las);
+      
+      String invoStr = "";
       
       //invoke instructions
       if(ih.getInstruction() instanceof InvokeInstruction){
@@ -783,11 +820,10 @@ class WCETBasicBlock {
           }
 
           sb.append("   ");
-          sb.append(methodid+", invoke(n="+n+"):"+invokehit+"/"+invokemiss+" return(n="+wcmb.getN()+"):"+rethit+"/"+retmiss);
+          invoStr = methodid+", invoke(n="+n+"):"+invokehit+"/"+invokemiss+" return(n="+wcmb.getN()+"):"+rethit+"/"+retmiss;
           if((((InvokeInstruction)ih.getInstruction()).getClassName(wcmb.getCpg())).equals(wcmb.wca.nativeClass)){
-            sb.append(", no hit/miss cycle count for Native invokes (yet)");
+            invoStr += ", no hit/miss cycle count for Native invokes (yet)";
           } 
-
         }
         else{
           sb.append("*");
@@ -805,6 +841,13 @@ class WCETBasicBlock {
         }
         sb.append("   ");
       }
+
+      sb.append(wcmb.wca.las);
+      
+      // misc.
+      
+      // invoke info or ""
+      sb.append(invoStr);
       
       //field info
       if(ih.getInstruction() instanceof FieldInstruction){
@@ -818,7 +861,7 @@ class WCETBasicBlock {
         sb.append(fieStrName);
       }
 
-      //fetch local variable name and type from class file
+     //fetch local variable name and type from class file
       if(ih.getInstruction() instanceof LocalVariableInstruction){
         if(ih.getInstruction() instanceof StoreInstruction){
           StoreInstruction si = (StoreInstruction)ih.getInstruction();
@@ -850,7 +893,8 @@ class WCETBasicBlock {
           sb.append(WU.prepad(blockcychit+"/"+blockcycmiss,7));
         }
       }
-      sb.append("\n");
+      
+      sb.append(wcmb.wca.lae+"\n");
     } while (ih != endih && (ih = ih.getNext()) != null);
 
     return sb.toString();
