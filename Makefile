@@ -381,11 +381,15 @@ jop_testmon:
 udp_dbg:
 	java -cp java/pc/dist/lib/jop-pc.jar udp.UDPDbg
 
-
-
+#
+#	Rasmus's WCET analyser (start)
+#	use
+#		-Dlatex=true
+#	to getv LaTeX friendly table output.
+#
 wcet:
 	-rm $(TARGET)/wcet/*.txt
 	-rm -r $(TARGET)/wcet
 	-mkdir $(TARGET)/wcet
-	java $(TOOLS_CP) -Dmgci=true com.jopdesign.wcet.WCETAnalyser \
+	java $(TOOLS_CP) com.jopdesign.wcet.WCETAnalyser \
 		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/wcet/$(P3)wcet.txt $(MAIN_CLASS)
