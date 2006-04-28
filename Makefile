@@ -38,6 +38,9 @@ QPROJ=cycmin cycbaseio cycbg dspio lego cycfpu
 # if you want to build only one Quartus project use e.q.:
 QPROJ=cycmin
 
+# Nelson uncomment this
+#QPROJ=cyc12baseio
+
 # Jens & Mikael uncomment this
 #QPROJ=mikjen
 
@@ -61,6 +64,11 @@ P3=Hello
 #P1=app
 #P2=dsp
 #P3=SigDel
+
+# Nelson uncomment this
+#P1=common
+#P2=ejip
+#P3=Main
 
 #
 #	some variables
