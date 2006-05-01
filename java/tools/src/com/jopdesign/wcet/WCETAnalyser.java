@@ -533,8 +533,8 @@ class WCETMethodBlock {
     // bytecode listing
     sb.append("\nTable of basic blocks' and instructions\n");
     sb.append("=========================================================================\n");
-    sb.append("Block Addr.  Bytecode                Cycles   Misc. info\n");
-    sb.append("             [opcode]              hit/miss\n");
+    sb.append("Block Addr.  Bytecode                Cycles    Cache miss     Misc. info\n");
+    sb.append("             [opcode]                        invoke  return\n");
     sb.append("-------------------------------------------------------------------------\n");
     for (Iterator iter = bbs.keySet().iterator(); iter.hasNext();) {
       Integer keyInt = (Integer) iter.next();
@@ -814,9 +814,13 @@ class WCETBasicBlock {
           wcetihHit = invokehit+rethit;
           blockcychit += wcetihHit;
           if((((InvokeInstruction)ih.getInstruction()).getClassName(wcmb.getCpg())).equals(wcmb.wca.nativeClass)){
-            sb.append(WU.prepad("*"+Integer.toString(wcetihHit)+"/"+Integer.toString(wcetihMiss),10));
+//            sb.append(WU.prepad("*"+Integer.toString(wcetihHit)+"/"+Integer.toString(wcetihMiss),10));
+            sb.append(WU.prepad("*to check",10));
           } else {
-            sb.append(WU.prepad(Integer.toString(wcetihHit)+"/"+Integer.toString(wcetihMiss),10));
+//            sb.append(WU.prepad(Integer.toString(wcetihHit)+"/"+Integer.toString(wcetihMiss),10));
+        	sb.append(WU.prepad(invokehit+"",10));
+        	sb.append(WU.prepad((invokemiss-invokehit)+"",8));
+        	sb.append(WU.prepad((retmiss-rethit)+"",8));
           }
 
           sb.append("   ");
@@ -830,16 +834,26 @@ class WCETBasicBlock {
         }
 
       }else{ // non-invoke functions
-        int wcetihMiss = WCETInstruction.getCyclesFromHandle(ih, true, wcmb.getN());
-        int wcetihHit = WCETInstruction.getCyclesFromHandle(ih, false, wcmb.getN());
-        blockcycmiss += wcetihMiss;
-        blockcychit += wcetihHit;
+        int wcetihMiss;
+        int wcetihHit;
         if(ih.getInstruction() instanceof ReturnInstruction){
-          sb.append(WU.prepad("*"+Integer.toString(wcetihHit),10));
+          // ms suggestion?
+          // MS: no not this way, use the hit cycles count and
+          // add the miss cycles to the invoke instruction
+          wcetihMiss = 0;
+          // wcetihHit = 0;
+          wcetihHit = WCETInstruction.getCyclesFromHandle(ih, false, wcmb.getN());
+          sb.append(WU.prepad(Integer.toString(wcetihHit),10));
         } else{
+          wcetihMiss = WCETInstruction.getCyclesFromHandle(ih, true, wcmb.getN());
+          wcetihHit = WCETInstruction.getCyclesFromHandle(ih, false, wcmb.getN());
           sb.append(WU.prepad(Integer.toString(wcetihHit),10));
         }
+        blockcycmiss += wcetihMiss;
+        blockcychit += wcetihHit;
+
         sb.append("   ");
+        sb.append("                ");
       }
 
       sb.append(wcmb.wca.las);
@@ -887,7 +901,7 @@ class WCETBasicBlock {
         sb.append("sum(B"+id+"):");
         if(ih.getInstruction() instanceof ReturnInstruction){
           sb.append(WU.prepad(blockcychit+"/NA",7));
-          sb.append(" *do not have size of caller (yet)");
+//          sb.append(" *do add return cycles and do not have size of caller (yet)");
         }
         else{
           sb.append(WU.prepad(blockcychit+"/"+blockcycmiss,7));
