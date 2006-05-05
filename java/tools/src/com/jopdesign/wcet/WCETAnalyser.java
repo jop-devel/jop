@@ -72,11 +72,27 @@ public class WCETAnalyser {
   static String mainClass;
   
   HashMap mmap;
+  
+  //Maps from a native method signature to the opcode
+  HashMap nativeToOpMap;
 
   public WCETAnalyser() {
     // TODO: Debugging from Eclipse creates a different classpath?
     classpath = new org.apache.bcel.util.ClassPath(".");
     mmap = new HashMap();
+    nativeToOpMap = new HashMap();
+    nativeToOpMap.put(new String("com.jopdesign.sys.Native.rd(I)I"),new Integer(209));
+    nativeToOpMap.put(new String("com.jopdesign.sys.Native.wr(II)V"),new Integer(210));
+    nativeToOpMap.put(new String("com.jopdesign.sys.Native.rdMem(I)I"),new Integer(211));
+    nativeToOpMap.put(new String("com.jopdesign.sys.Native.wrMem(II)V"),new Integer(212));
+    nativeToOpMap.put(new String("com.jopdesign.sys.Native.rdIntMem(I)I"),new Integer(213));
+    nativeToOpMap.put(new String("com.jopdesign.sys.Native.wrIntMem(II)V"),new Integer(214));
+    nativeToOpMap.put(new String("com.jopdesign.sys.Native.getSP()I"),new Integer(215));
+    nativeToOpMap.put(new String("com.jopdesign.sys.Native.setSP(I)V"),new Integer(216));
+    nativeToOpMap.put(new String("com.jopdesign.sys.Native.getVP()I"),new Integer(217));
+    nativeToOpMap.put(new String("com.jopdesign.sys.Native.setVP(I)V"),new Integer(218));
+    nativeToOpMap.put(new String("com.jopdesign.sys.Native.int2extMem(I[II)V"),new Integer(219));
+    nativeToOpMap.put(new String("com.jopdesign.sys.Native.ext2intMem([III)V"),new Integer(220));
   }
 
   public static void main(String[] args) {
@@ -195,7 +211,19 @@ public class WCETAnalyser {
     Method m = (Method)mmap.get(methodid);
     return m;
   }
-  
+  /**
+   * Return the opcode for the methodId (applicable to Native methods).
+   * @param methodid
+   * @return opcode which can be used to call WCETIstruction.getcycles
+   */
+  public int getNativeOpcode(String methodid){
+    int opcode = -1;
+    Integer intOp = (Integer)nativeToOpMap.get(methodid);
+    if(intOp != null){
+      opcode = intOp.intValue();
+    }
+    return opcode;
+  }
 }
 
 /**
@@ -763,12 +791,32 @@ class WCETBasicBlock {
         +((InvokeInstruction)ih.getInstruction()).getMethodName(wcmb.getCpg())
         +((InvokeInstruction)ih.getInstruction()).getSignature(wcmb.getCpg());
         String retsig = ((InvokeInstruction)ih.getInstruction()).getReturnType(wcmb.getCpg()).getSignature(); 
-//System.out.println("m to be retrieved:"+methodid);
+
 //System.out.println("retsig: "+retsig);
         //signature Java Type, Z boolean, B byte, C char, S short, I int
         //J long, F float, D double, L fully-qualified-class, [ type type[] 
         Method m = wcmb.wca.getMethod(methodid);
-          if(m!=null && !m.isAbstract()){
+        if(methodid.startsWith("com.jopdesign.sys.Native")){
+//System.out.println("native to be retrieved:"+methodid);
+          int opcode = wcmb.wca.getNativeOpcode(methodid);
+          if(opcode == -1){
+            sb.append(WU.prepad("*to check",10));
+            invoStr = methodid + " did not find mapping";
+          }else
+          {
+            int cycles = WCETInstruction.getCycles(opcode,false,0);
+            // no difference as cache is not involved
+            wcetihMiss = cycles;
+            wcetihHit = cycles;
+            blockcycmiss += wcetihMiss;
+            blockcychit += wcetihHit;
+            sb.append(WU.prepad(Integer.toString(wcetihHit),10));
+            sb.append("   ");
+            sb.append("                ");
+            invoStr = methodid;
+          }
+        }
+        else if(m!=null && !m.isAbstract()){
           int n = -1;
           if(m.getCode()!= null){
             n = (m.getCode().getCode().length + 3) / 4;
@@ -991,7 +1039,22 @@ class WCETInstruction {
 
   // mem write
   public static final int w = 6;
-
+  
+  //Native bytecodes (see jvm.asm)
+  private static final int JOPSYS_RD = 209;   
+  private static final int JOPSYS_WR = 210;
+  private static final int JOPSYS_RDMEM = 211;
+  private static final int JOPSYS_WRMEM = 212;
+  private static final int JOPSYS_RDINT = 213;
+  private static final int JOPSYS_WRINT = 214;
+  private static final int JOPSYS_GETSP = 215;
+  private static final int JOPSYS_SETSP = 216;
+  private static final int JOPSYS_GETVP = 217;
+  private static final int JOPSYS_SETVP = 218;
+  private static final int JOPSYS_INT2EXT = 219;
+  private static final int JOPSYS_EXT2INT = 220;
+  private static final int JOPSYS_NOP = 221;
+  
   private static String ILLEGAL_OPCODE = "ILLEGAL_OPCODE";
 
   /**
@@ -2130,6 +2193,71 @@ class WCETInstruction {
     case org.apache.bcel.Constants.JSR_W:
       wcet = -1;
       break;
+    // JOPSYS_RD = 209   
+    case JOPSYS_RD:
+      wcet = 3;
+      break;
+    // JOPSYS_WR = 210
+    case JOPSYS_WR:
+      wcet = 3;
+      break;
+    // JOPSYS_RDMEM = 211
+    case JOPSYS_RDMEM:
+      wcet = r;
+      break;
+    // JOPSYS_WRMEM = 212
+    case JOPSYS_WRMEM:
+      wcet = w+1;
+      break;
+    // JOPSYS_RDINT = 213
+    case JOPSYS_RDINT:
+      wcet = 8;
+      break;
+    // JOPSYS_WRINT = 214
+    case JOPSYS_WRINT:
+      wcet = 8;
+      break;
+    // JOPSYS_GETSP = 215
+    case JOPSYS_GETSP:
+      wcet = 3;
+      break;
+    // JOPSYS_SETSP = 216
+    case JOPSYS_SETSP:
+      wcet = 4;
+      break;
+    // JOPSYS_GETVP = 217
+    case JOPSYS_GETVP:
+      wcet = 1;
+      break;
+    // JOPSYS_SETVP = 218
+    case JOPSYS_SETVP:
+      wcet = 2;
+      break;
+    // JOPSYS_INT2EXT = 219
+    case JOPSYS_INT2EXT:
+      wcet = 12;
+      if(w>=12){
+        wcet+=n*(19+w-8);
+      }else
+      {
+        wcet+=n*(19+4);
+      }
+      break;
+    // JOPSYS_EXT2INT = 220
+    case JOPSYS_EXT2INT:
+      wcet = 12;
+      if(w>=14){
+        wcet+=n*(19+w-10);
+      }else
+      {
+        wcet+=n*(19+4);
+      }
+      break;
+      // JOPSYS_NOP = 221
+    case JOPSYS_NOP:
+      wcet = 1;
+      break;
+      
     default:
       wcet = -1;
       break;
