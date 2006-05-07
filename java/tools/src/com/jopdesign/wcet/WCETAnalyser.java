@@ -17,23 +17,22 @@ import org.apache.bcel.verifier.structurals.*;
 import com.jopdesign.build.TransitiveHull;
 
 /**
- * The class is for wcet analysis. It is pretty
- * straight-forward to add classes that hook into the
- * <code>controlFlowGraph</code> and is used as a departure for further
- * analysis. The <code>WCETMethodBlock</code> is an example of how the basic
- * blocks can be created.
- * 
- * The control flow graph is used as a basis for creating the basic blocks. It
- * builds up an array of basic blocks in the WCETMethodBlock.
- * 
- * The basic hierarchy is that WCETAnalyzer creates one WCETMethodBlock for each
+ * The class is for wcet analysis. The class hierarchy is such 
+ * that WCETAnalyzer creates one WCETMethodBlock for each
  * method. The WCETMethodBlock assists WCETAnalyzer in creating the
  * WCETBasicBlock objects for each basic block. Then WCETBasicBlock can be used
- * together with WCETInstruction to calculate the WCET value for that particular
+ * together with WCETInstruction to calculate the WCET/BCET value for that particular
  * basic block.
  * 
+ * Options in the Makefile for the wcet target: You can set "latex" to true, 
+ * and WCA will generate "&" characters between columns and "\\" as row terminator. 
+ * In Latex do this post-processing: replace ">" with "$>$ and "_" with "\_".
+ * A directed graph of the basic blocks can be generated in dot  
+ * format by setting the "dot" property to true.
+ *  
  * @author rup, ms
  * @see Section 7.4 and Appendix D in MS thesis
+ * @see http://www.graphviz.org
  */
 
 // History:
@@ -41,11 +40,11 @@ import com.jopdesign.build.TransitiveHull;
 // 2006-04-07 rup: Moved to become a non-Jopizer dependent piece of code
 // 2006-04-20 rup: Show both cachehit and cachemiss entries
 // 2006-04-27 rup: Show latex tables and load/store info for locals
+// 2006-05-04  ms: Split cache miss column 
+// 2006-05-07 rup: Output dot graphs 
 
 // TODOs:
-// TODO: WCET/BCET analysis. Now it is "just" cycle counting
-// TODO: How to analyze those bytecodes implemented in Java? (MS: Use the WCA on the functions)
-// TODO: How to handle the {209-221} opcodes for JOP?
+// TODO: Map bytecodes to source code (enhanced readability) 
 
 /**
  * The thing that controls the WCETClassBlock etc.
@@ -54,6 +53,8 @@ public class WCETAnalyser {
   // latex table string
   public static String las;
   public static String lae;
+  // dot property: it will generate dot graphs if true
+  public static boolean dot;
   
   public final static String nativeClass = "com.jopdesign.sys.Native";
 
@@ -103,6 +104,8 @@ public class WCETAnalyser {
     
     //the tables can be easier to use in latex using this property
     boolean latex = System.getProperty("latex", "false").equals("true");
+    //dot graphs code generation
+    dot =System.getProperty("dot", "false").equals("true"); 
     if(latex){
       las = " & ";
       lae = " \\\\";
@@ -557,6 +560,29 @@ class WCETMethodBlock {
     }
     sb.append(WU.repeat("=",top.length() - 3+wca.las.length()));
     sb.append("\n");
+    
+    // dot graph
+    // use: dot -Tps graph.dot -o graph.ps
+    boolean labels = true;
+    if(wca.dot){
+      sb.append("\n/*"+ jc.getClassName() + "." + method.getName()
+          + method.getSignature()+"*/\n");
+      sb.append("digraph G {\n");
+      for (int i = 0; i < dg.length; i++) {
+        for (int j = 0; j < dg.length; j++) {
+          if(dg[i][j]>0){
+            sb.append("\tB"+i+" -> "+"B"+j);
+            if(labels){
+              sb.append(" [label=\""+dg[i][j]+"\"");
+              //sb.append(",labelfloat=true");
+              sb.append("]");
+            }
+            sb.append(";\n");
+          }
+        }
+      }
+      sb.append("}\n");
+    }
 
     // bytecode listing
     sb.append("\nTable of basic blocks' and instructions\n");
