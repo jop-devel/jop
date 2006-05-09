@@ -1,7 +1,10 @@
 package com.jopdesign.wcet;
 
 import java.util.*;
+import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
@@ -55,6 +58,7 @@ public class WCETAnalyser {
   public static String lae;
   // dot property: it will generate dot graphs if true
   public static boolean dot;
+  public static boolean jline;
   
   public final static String nativeClass = "com.jopdesign.sys.Native";
 
@@ -76,11 +80,16 @@ public class WCETAnalyser {
   
   //Maps from a native method signature to the opcode
   HashMap nativeToOpMap;
+  
+  HashMap javaFilePathMap;
+  
+  ArrayList javaFiles;
 
   public WCETAnalyser() {
     // TODO: Debugging from Eclipse creates a different classpath?
     classpath = new org.apache.bcel.util.ClassPath(".");
     mmap = new HashMap();
+    javaFiles = new ArrayList();
     nativeToOpMap = new HashMap();
     nativeToOpMap.put(new String("com.jopdesign.sys.Native.rd(I)I"),new Integer(209));
     nativeToOpMap.put(new String("com.jopdesign.sys.Native.wr(II)V"),new Integer(210));
@@ -94,6 +103,7 @@ public class WCETAnalyser {
     nativeToOpMap.put(new String("com.jopdesign.sys.Native.setVP(I)V"),new Integer(218));
     nativeToOpMap.put(new String("com.jopdesign.sys.Native.int2extMem(I[II)V"),new Integer(219));
     nativeToOpMap.put(new String("com.jopdesign.sys.Native.ext2intMem([III)V"),new Integer(220));
+    javaFilePathMap = new HashMap();
   }
 
   public static void main(String[] args) {
@@ -105,7 +115,8 @@ public class WCETAnalyser {
     //the tables can be easier to use in latex using this property
     boolean latex = System.getProperty("latex", "false").equals("true");
     //dot graphs code generation
-    dot =System.getProperty("dot", "false").equals("true"); 
+    dot = System.getProperty("dot", "false").equals("true");
+    jline = System.getProperty("jline", "false").equals("true");
     if(latex){
       las = " & ";
       lae = " \\\\";
@@ -115,7 +126,7 @@ public class WCETAnalyser {
       lae = "";
     }
       
-    
+    String srcPath = "nodir";
     try {
       if (args.length == 0) {
         System.err
@@ -132,13 +143,32 @@ public class WCETAnalyser {
             outFile = args[i];
             continue;
           }
+          if (args[i].equals("-sp")) {
+            i++;
+            srcPath = args[i];
+            continue;
+          }
 
           clsArgs.add(args[i]);
           mainClass = args[i].replace('/', '.');
         }
+        
+        StringTokenizer st = new StringTokenizer(srcPath,";");
+        while(st.hasMoreTokens()){
+          String srcDir = st.nextToken();//"java/target/src/common";
+          File sDir = new File(srcDir);
+          if(sDir.isDirectory()){
+//System.out.println("srcDir="+srcDir);          
+            wca.visitAllFiles(sDir);
+          }
+        }
+//        Iterator ito = wca.javaFilePathMap.values().iterator();
+//        while(ito.hasNext()){
+//System.out.println(ito.next());          
+//        }
 
-        System.out.println("CLASSPATH=" + wca.classpath + "\tmain class="
-            + mainClass);
+//System.out.println("CLASSPATH=" + wca.classpath + "\tmain class="
+//            + mainClass);
 
         wca.out = new PrintWriter(new FileOutputStream(outFile));
 
@@ -157,6 +187,32 @@ public class WCETAnalyser {
       e.printStackTrace();
     }
   }
+  
+  //Java Dev. Almanac
+  public void visitAllFiles(File dir) {
+    if (dir.isDirectory()) {
+        String[] children = dir.list();
+        for (int i=0; i<children.length; i++) {
+            visitAllFiles(new File(dir, children[i]));
+        }
+    } else {
+      String filePath = dir.getAbsolutePath();
+      String fileName = dir.getName();
+      if(fileName.endsWith(".java")){
+//System.out.println(fileName);
+//System.out.println(filePath);
+//        String prevPath = (String)javaFilePathMap.get(fileName);
+//        if(prevPath != null && !prevPath.equals(filePath)){
+//          System.out.println(fileName +" is referring to "+prevPath+" and to "+filePath+". Exiting.");
+//          System.exit(1);          
+//        }
+//        else{
+//          javaFilePathMap.put(fileName,filePath);
+//        }
+        javaFiles.add(filePath);
+      }
+    }
+}
 
   /**
    * Load all classes and the super classes from the argument list.
@@ -170,7 +226,6 @@ public class WCETAnalyser {
       String clname = (String) i.next();
       InputStream is = classpath.getInputStream(clname);
       jcl[nr] = new ClassParser(is, clname).parse();
-      System.out.println(jcl[nr].getClassName());
     }
     TransitiveHull hull = new TransitiveHull(classpath, jcl);
     hull.start();
@@ -181,16 +236,38 @@ public class WCETAnalyser {
       // The class Native is NOT used in a JOP application
       if (!jc[j].getClassName().equals(nativeClass)) {
         // ClassInfo cli = new ClassInfo(jc[j]);
+//System.out.println("added classname:"+jc[j].getClassName()+" filename:"+jc[j].getFileName()+ " sourcefilename:"+jc[j].getSourceFileName()+" packagename:"+jc[j].getPackageName());        
         clazzes.add(jc[j]);
       }
-        Method[] m = jc[j].getMethods();
-        for(int ii=0;ii<m.length;ii++){
-          String msig = jc[j].getClassName() + "." + m[ii].getName()+m[ii].getSignature();
+      //package name and associated sourcefile 
+      String pacSrc = jc[j].getPackageName()+"."+jc[j].getSourceFileName();
+      boolean fileMatch = false;
+      for(int k=0;k<javaFiles.size();k++){
+        String orig = (String)javaFiles.get(k);
+        String pn = orig;
+        pn = pn.replace('/','.');
+        pn = pn.replace('\\','.');
+//System.out.println("Trying to match:"+pn+ " with: "+pacSrc);        
+        int match = pn.lastIndexOf(pacSrc);
+        if(match != -1){
+          String key = jc[j].getClassName();
+//System.out.println("Match! Key :"+key);          
+          javaFilePathMap.put(key, orig);
+          fileMatch = true;
+          break;
+        }
+      }
+      if(!fileMatch){
+        System.out.println("No filematch for "+jc[j].getClassName() + " and pacSrc="+pacSrc);
+        System.exit(-1);
+      }
+      Method[] m = jc[j].getMethods();
+      for(int ii=0;ii<m.length;ii++){
+        String msig = jc[j].getClassName() + "." + m[ii].getName()+m[ii].getSignature();
 //System.out.println("m to be put:"+msig);//TODO mig everywhere          
 //System.out.println("r: "+m[ii].getReturnType().getSignature());//TODO mig everywhere
-          mmap.put(msig,m[ii]);
-        }
-      
+        mmap.put(msig,m[ii]);
+      }
     }
   }
 
@@ -257,6 +334,8 @@ class WCETMethodBlock {
   String cname;
   
   WCETAnalyser wca;
+  
+  String[] codeLines;
 
   // directed graph of the basic blocks
   int dg[][];
@@ -277,16 +356,41 @@ class WCETMethodBlock {
   public WCETMethodBlock(Method method, JavaClass jc, WCETAnalyser wca) {
     this.wca = wca;
     
-//String methodId = method.getName() + method.getSignature();
-//String classId = jc.getClassName();
 
     bbs = new TreeMap();
     this.method = method;
     this.jc = jc;
+//System.out.println("sourcefilename: "+ jc.getSourceFileName());
 
     //method length in words
     if (!method.isAbstract()) {
       n = (method.getCode().getCode().length + 3) / 4;
+      String methodId = method.getName() + method.getSignature();
+      String classId = jc.getClassName();
+      String srcFile = jc.getSourceFileName();
+      String filePath = (String)wca.javaFilePathMap.get(classId);
+      if(filePath==null){
+        codeLines = new String[0];
+        System.out.println("Did not find file:"+srcFile+" class:"+ classId+" package:"+jc.getPackageName());
+        System.exit(-1);
+      }
+      try {
+        BufferedReader in = new BufferedReader(new FileReader(filePath));
+        String str;
+        ArrayList al = new ArrayList();
+        while ((str = in.readLine()) != null) {
+            al.add(str);
+        }
+        codeLines = (String[])al.toArray(new String[0]);
+//        for(int i=0;i<codeLines.length;i++){
+//          System.out.println(codeLines[i]);
+//        }
+        in.close();
+      } catch (IOException e) {
+      }
+//System.out.println("loaded:"+classId+"->"+filePath);      
+      
+      
     } else {
       n = -1;
     }
@@ -583,6 +687,10 @@ class WCETMethodBlock {
       }
       sb.append("}\n");
     }
+//sb.append(method.getName()+"\n");
+//for(int i=0;i<codeLines.length;i++){
+//  sb.append(i+":"+codeLines[i]+"\n");
+//}
 
     // bytecode listing
     sb.append("\nTable of basic blocks' and instructions\n");
@@ -769,7 +877,18 @@ class WCETBasicBlock {
     InstructionHandle ih = stih;
     int blockcychit = 0;
     int blockcycmiss = 0;
+    LineNumberTable lnt = wcmb.method.getLineNumberTable();
+    int prevLine = -1;
+    int srcLine = -1;
     do {
+      if(wcmb.wca.jline){
+        srcLine = lnt.getSourceLine(ih.getPosition());
+        if(srcLine>prevLine){
+          sb.append(WU.postpad(wcmb.wca.las+wcmb.wca.las+wcmb.wca.las+wcmb.wca.las+wcmb.wca.las+wcmb.wca.las+"Line["+srcLine+"]: "+wcmb.codeLines[srcLine-1].trim()+wcmb.wca.lae,62)+"\n");
+        }
+        prevLine = srcLine; 
+      }
+
       // block (len 6)
       if (ih == stih) {
         sb.append(WU.postpad("B" + id,6));
@@ -892,9 +1011,9 @@ class WCETBasicBlock {
             sb.append(WU.prepad("*to check",10));
           } else {
 //            sb.append(WU.prepad(Integer.toString(wcetihHit)+"/"+Integer.toString(wcetihMiss),10));
-        	sb.append(WU.prepad(invokehit+"",10));
-        	sb.append(WU.prepad((invokemiss-invokehit)+"",8));
-        	sb.append(WU.prepad((retmiss-rethit)+"",8));
+        	  sb.append(WU.prepad(invokehit+"",10));
+        	  sb.append(WU.prepad(wcmb.wca.las+(invokemiss-invokehit)+"",8));
+        	  sb.append(WU.prepad(wcmb.wca.las+(retmiss-rethit)+"",8));
           }
 
           sb.append("   ");
@@ -926,8 +1045,8 @@ class WCETBasicBlock {
         blockcycmiss += wcetihMiss;
         blockcychit += wcetihHit;
 
-        sb.append("   ");
-        sb.append("                ");
+        sb.append(wcmb.wca.las+"   ");
+        sb.append(wcmb.wca.las+"                ");
       }
 
       sb.append(wcmb.wca.las);
