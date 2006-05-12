@@ -1177,7 +1177,7 @@ class WCETInstruction {
   public static final int WCETNOTAVAILABLE = -1;
 
   // bytecode load
-  public static final int a = 3;
+  public static final int a = 2;
 
   // mem read: 3 for mem and 3 for pipe
   public static final int r = 6;
