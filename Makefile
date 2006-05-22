@@ -306,6 +306,8 @@ prog_flash: java_app
 #	java -cp java/pc/dist/lib/jop-pc.jar udp.Flash ttf/$(FLPROJ).ttf 192.168.1.2
 #	quartus_pgm -c ByteBlasterMV -m JTAG -o p\;quartus/cycconf/cyc_conf.pof
 	
+erase_flash:
+	java -cp java/pc/dist/lib/jop-pc.jar udp.Erase $(IPDEST)
 
 pld_init:
 	quartus_pgm -c ByteBlasterMV -m JTAG -o p\;quartus/cycconf/cyc_conf_init.pof
@@ -395,9 +397,15 @@ udp_dbg:
 #		-Dlatex=true
 #	to getv LaTeX friendly table output.
 #
+# WCETAnalyser options
+# latex: it will output latex formatting in the tables (afterwards 
+# replace ">" with "$>$ and "_" with "\_")
+# dot:   it will generate directed graphs of basic blocks in dot format 
+# (see: http://www.graphviz.org/)
+# jline: it will insert Java source code into the bytecode tables
 wcet:
 	-rm $(TARGET)/wcet/*.txt
 	-rm -r $(TARGET)/wcet
 	-mkdir $(TARGET)/wcet
-	java $(TOOLS_CP) com.jopdesign.wcet.WCETAnalyser \
-		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/wcet/$(P3)wcet.txt $(MAIN_CLASS)
+	java $(TOOLS_CP) -Dlatex=false -Ddot=true -Djline=true com.jopdesign.wcet.WCETAnalyser \
+		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/wcet/$(P3)wcet.txt -sp $(TARGET_SOURCE) $(MAIN_CLASS)
