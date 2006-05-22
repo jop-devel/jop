@@ -181,8 +181,7 @@ Dbg.wr("wrong IP checksum ");
 //			p.llh[0] = p.llh[3];
 //			p.llh[1] = p.llh[4];
 //			p.llh[2] = p.llh[5];
-//			p.llh[6] = 0x0800;
-			// is now done in Arp
+			p.llh[6] = 0x0800;
 			
 			p.setStatus(Packet.SND);	// mark packet ready to send
 			

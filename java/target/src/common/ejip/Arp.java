@@ -262,8 +262,9 @@ public class Arp {
 	static void fillETH(Packet p) {
 		
 		// IP destination address (without gateway) is
-		// at position 4
+		// at position 4 for IP packets and at 6 for ARP packets
 		Entry e = Entry.find(p.buf[4]);
+		if (p.llh[6] == 0x0806) e = Entry.find(p.buf[6]);
 		if (e==null) {
 			sendRequest(p);
 		} else {
@@ -273,7 +274,6 @@ public class Arp {
 			p.llh[1] = mac[2]<<8 | mac[3];
 			p.llh[2] = mac[4]<<8 | mac[5];
 
-			p.llh[6] = 0x0800;		// IP network		
 		}
 	}
 	
