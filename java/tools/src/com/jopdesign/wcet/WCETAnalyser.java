@@ -2172,7 +2172,6 @@ class WCETInstruction {
       }
       break;
     // RETURN = 177
-    // TODO: Check with ms why it is 1 in the DATE paper
     case org.apache.bcel.Constants.RETURN:
       wcet = 13;
       if (r >= 7) {
