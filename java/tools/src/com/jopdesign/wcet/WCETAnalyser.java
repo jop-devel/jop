@@ -91,6 +91,9 @@ public class WCETAnalyser {
     mmap = new HashMap();
     javaFiles = new ArrayList();
     nativeToOpMap = new HashMap();
+    // to rup: why not using JopInstr.getNative(String s)?
+    // This is doubling information and therefore dangerous for
+    // changes.
     nativeToOpMap.put(new String("com.jopdesign.sys.Native.rd(I)I"),new Integer(209));
     nativeToOpMap.put(new String("com.jopdesign.sys.Native.wr(II)V"),new Integer(210));
     nativeToOpMap.put(new String("com.jopdesign.sys.Native.rdMem(I)I"),new Integer(211));
@@ -1173,14 +1176,14 @@ class WCETBasicBlock {
  * making a class that wraps the microcodes into objects?
  */
 class WCETInstruction {
-  // indicate that wcet is not available for this byte code
+  // indicate that wcet is not available for this bytecode
   public static final int WCETNOTAVAILABLE = -1;
 
   // bytecode load
   public static final int a = 2;
 
-  // mem read: 3 for mem and 3 for pipe
-  public static final int r = 6;
+  // mem read: 2 for mem and 3 for pipe
+  public static final int r = 5;
 
   // mem write
   public static final int w = 6;
