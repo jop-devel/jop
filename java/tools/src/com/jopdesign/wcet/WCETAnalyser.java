@@ -886,8 +886,17 @@ class WCETBasicBlock {
     do {
       if(wcmb.wca.jline){
         srcLine = lnt.getSourceLine(ih.getPosition());
+
+        
         if(srcLine>prevLine){
-          sb.append(WU.postpad(wcmb.wca.las+wcmb.wca.las+wcmb.wca.las+wcmb.wca.las+wcmb.wca.las+wcmb.wca.las+"Line["+srcLine+"]: "+wcmb.codeLines[srcLine-1].trim()+wcmb.wca.lae,62)+"\n");
+          //"Annotation" example
+          int ai = wcmb.codeLines[srcLine-1].trim().indexOf("@WCA");
+          String c = "";
+          if(ai!=-1){
+            c = wcmb.codeLines[srcLine-1].trim().substring(ai);
+            sb.append(WU.postpad(wcmb.wca.las+wcmb.wca.las+wcmb.wca.las+wcmb.wca.las+wcmb.wca.las+wcmb.wca.las+"Annotated Line["+srcLine+"]: "+wcmb.codeLines[srcLine-1].trim()+wcmb.wca.lae,62)+"\n");
+          }else
+            sb.append(WU.postpad(wcmb.wca.las+wcmb.wca.las+wcmb.wca.las+wcmb.wca.las+wcmb.wca.las+wcmb.wca.las+"Line["+srcLine+"]: "+wcmb.codeLines[srcLine-1].trim()+wcmb.wca.lae,62)+"\n");
         }
         prevLine = srcLine; 
       }
