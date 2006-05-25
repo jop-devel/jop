@@ -688,6 +688,13 @@ class WCETMethodBlock {
           }
         }
       }
+      for (Iterator iter = bbs.keySet().iterator(); iter.hasNext();) {
+          Integer keyInt = (Integer) iter.next();
+          WCETBasicBlock wcbb = (WCETBasicBlock) bbs.get(keyInt);
+          int id = wcbb.getId();
+          sb.append("\tB"+id+" [label=\"B"+id+"\\n"+wcbb.wcetHit+"\"];\n");
+          //skhkjh
+      }
       sb.append("}\n");
     }
 //sb.append(method.getName()+"\n");
