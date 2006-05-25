@@ -32,10 +32,14 @@ import com.jopdesign.build.TransitiveHull;
  * In Latex do this post-processing: replace ">" with "$>$ and "_" with "\_".
  * A directed graph of the basic blocks can be generated in dot  
  * format by setting the "dot" property to true.
+ * 
+ * It can generate LPSolve compliant code which can be used to calculate
+ * WCET of each method. Enable the "ls" switch in the Makefile.
  *  
  * @author rup, ms
  * @see Section 7.4 and Appendix D in MS thesis
  * @see http://www.graphviz.org
+ * @see http://lpsolve.sourceforge.net/5.5/
  */
 
 // History:
@@ -45,9 +49,10 @@ import com.jopdesign.build.TransitiveHull;
 // 2006-04-27 rup: Show latex tables and load/store info for locals
 // 2006-05-04  ms: Split cache miss column 
 // 2006-05-07 rup: Output dot graphs 
+// 2006-05-25 rup: "Annotations" and lp_solvable wcet output
 
 // TODOs:
-// TODO: Map bytecodes to source code (enhanced readability) 
+// TODO: Re-use the existing bytecode mapping to native methods 
 
 /**
  * The thing that controls the WCETClassBlock etc.
@@ -59,6 +64,7 @@ public class WCETAnalyser {
   // dot property: it will generate dot graphs if true
   public static boolean dot;
   public static boolean jline;
+  public static boolean ls;
   
   public final static String nativeClass = "com.jopdesign.sys.Native";
 
@@ -120,6 +126,7 @@ public class WCETAnalyser {
     //dot graphs code generation
     dot = System.getProperty("dot", "false").equals("true");
     jline = System.getProperty("jline", "false").equals("true");
+    ls = System.getProperty("ls", "false").equals("true");
     if(latex){
       las = " & ";
       lae = " \\\\";
@@ -606,11 +613,31 @@ class WCETMethodBlock {
       int id = wcbb.getId();
       if (tarwcbb != null) {
         int tarbbid = tarwcbb.getId();
+        tarwcbb.addTargeter(wcbb);
         dg[id][tarbbid]++;
       }
       WCETBasicBlock sucbb = wcbb.getSucbb();
       if (sucbb != null) {
         int sucid = sucbb.getId();
+        sucbb.addTargeter(wcbb);
+        if(wcbb.sucbb != null && wcbb.tarbb != null){
+          LineNumberTable lnt = method.getLineNumberTable();
+          int srcLine = lnt.getSourceLine(wcbb.endih.getPosition());
+          int ai = codeLines[srcLine-1].trim().indexOf("@WCA");
+          String c = "";
+          if(ai!=-1){
+            c = codeLines[srcLine-1].trim().substring(ai);
+            int ani = c.indexOf("loop");
+            if(ani != -1){
+              String ans = c.substring(ani);
+//  System.out.println("XXX:" + ai + ":"+c+" ani:"+ani+" ans:"+ans);            
+              StringTokenizer anst = new StringTokenizer(ans,"=");
+              anst.nextToken();
+              int loop = Integer.parseInt(anst.nextToken());
+              wcbb.sucbb.loop = loop;
+            }
+          }
+        }
         dg[id][sucid]++;
       }
     }
@@ -689,11 +716,11 @@ class WCETMethodBlock {
         }
       }
       for (Iterator iter = bbs.keySet().iterator(); iter.hasNext();) {
-          Integer keyInt = (Integer) iter.next();
-          WCETBasicBlock wcbb = (WCETBasicBlock) bbs.get(keyInt);
-          int id = wcbb.getId();
-          sb.append("\tB"+id+" [label=\"B"+id+"\\n"+wcbb.wcetHit+"\"];\n");
-          //skhkjh
+        Integer keyInt = (Integer) iter.next();
+        WCETBasicBlock wcbb = (WCETBasicBlock) bbs.get(keyInt);
+        int id = wcbb.getId();
+        sb.append("\tB"+id+" [label=\"B"+id+"\\n"+wcbb.wcetHit+"\"];\n");
+        //skhkjh
       }
       sb.append("}\n");
     }
@@ -715,8 +742,92 @@ class WCETMethodBlock {
     }
     sb.append("=========================================================================\n");
     sb.append("Info: n="+n+" b="+WCETInstruction.calculateB(n)+" a="+WCETInstruction.a+" r="+WCETInstruction.r+" w="+WCETInstruction.w+"\n");
-         
+    sb.append("\n"); 
+    if(wca.ls)
+      sb.append(toLS());
+    
     return sb.toString();
+  }
+  
+  public String toLS(){
+    StringBuffer ls = new StringBuffer();
+    ls.append("/***WCET calculation source***/\n");
+    ls.append("/* WCA WCET objective function for "+jc.getClassName() + "." + method.getName()+ " */\n");
+    ls.append("max: ");
+    int i=0;
+    for (Iterator iter = bbs.keySet().iterator(); iter.hasNext();) {
+      Integer keyInt = (Integer) iter.next();
+      WCETBasicBlock wcbb = (WCETBasicBlock) bbs.get(keyInt);
+      ls.append(wcbb.blockcycmiss+" B"+(i++));
+      if(iter.hasNext())
+        ls.append(" ");
+    }
+    ls.append(";\n");
+    ls.append("/* WCA constraints */\n");
+    i=0;
+    Integer keyInt = null;
+    for (Iterator iter = bbs.keySet().iterator(); iter.hasNext();) {
+ 
+      keyInt = (Integer) iter.next();
+      WCETBasicBlock wcbb = (WCETBasicBlock) bbs.get(keyInt);
+      if(i == 0)
+        ls.append("s: B0 = BB;\n");
+   
+      // loop dispatcher/branch?
+      if(wcbb.sucbb!=null&&wcbb.tarbb!=null){
+        if(wcbb.sucbb.loop!=-1){ //loop
+          HashMap tinbbs = wcbb.getInbbs();
+          WCETBasicBlock twcbb = null;
+          for (Iterator titer = tinbbs.keySet().iterator(); titer.hasNext();) {
+            Integer tkeyInt = (Integer) titer.next();
+            twcbb = (WCETBasicBlock) tinbbs.get(tkeyInt);
+            if(twcbb.id!=wcbb.sucbb.id)
+              break;
+          }          
+          
+          ls.append("vf"+wcbb.sucbb.getId()+": B"+wcbb.sucbb.getId()+ " = "+wcbb.sucbb.loop+" B"+twcbb.id+"; // loop \n");
+          
+          ls.append("vf"+wcbb.tarbb.id+": B"+wcbb.tarbb.id + " = B"+twcbb.id+"; // loop exit \n");
+          
+        } else //if
+          ls.append("vb"+wcbb.getId()+": B"+wcbb.sucbb.id+" + B"+wcbb.tarbb.id+" <= 1; // branch\n");
+      } 
+           
+      HashMap tinbbs = wcbb.getInbbs();
+      StringBuffer flow = new StringBuffer();
+      if(tinbbs.size()>0){
+        if(wcbb.loop==-1){
+          flow.append("vf"+wcbb.getId()+": B"+wcbb.getId()+ " = ");
+          for (Iterator titer = tinbbs.keySet().iterator(); titer.hasNext();) {
+            Integer tkeyInt = (Integer) titer.next();
+            WCETBasicBlock twcbb = (WCETBasicBlock) tinbbs.get(tkeyInt);
+            if(twcbb.loop!=-1){
+              flow = new StringBuffer();
+              break;
+            }
+            flow.append("B"+twcbb.getId());
+            if(titer.hasNext())
+              flow.append(" + ");
+            else
+              flow.append("; // flow\n");
+          }
+        }
+      }
+      ls.append(flow.toString());
+//        ls.append("vb"+wcbb.getId()+": B"+wcbb.sucbb.id+" + B"+wcbb.tarbb.id+" <= 1; // branch\n");        
+//
+//        if(wcbb.sucbb.loop!=-1)
+//          ls.append("vl"+wcbb.getId()+": B"+wcbb.sucbb.id+ " <= "+wcbb.sucbb.loop+" B"+wcbb.getId()+"; // loop\n");
+//      }
+      
+      if(!iter.hasNext())      
+        ls.append("t: B" +i+" = BB;\n");
+      i++;
+    }
+    ls.append("/* WCA variable bounds */\n");
+    ls.append("BB = 1;\n");
+    
+    return ls.toString();
   }
 
   public TreeMap getBbs() {
@@ -742,10 +853,15 @@ class WCETBasicBlock {
   
   // id of the bb
   int id;
+  
+  int loop = -1;
 
   // the reason why we are doing this...
   int wcetHit;
   int wcetMiss;
+  int blockcychit;
+  int blockcycmiss;
+
 
   // false if we encounter WCETNOTAVAILABLE bytecodes while counting
   boolean valid;
@@ -885,8 +1001,9 @@ class WCETBasicBlock {
     StringBuffer sb = new StringBuffer();
 
     InstructionHandle ih = stih;
-    int blockcychit = 0;
-    int blockcycmiss = 0;
+    blockcychit = 0;
+    blockcycmiss = 0;
+
     LineNumberTable lnt = wcmb.method.getLineNumberTable();
     int prevLine = -1;
     int srcLine = -1;
@@ -901,16 +1018,25 @@ class WCETBasicBlock {
           String c = "";
           if(ai!=-1){
             c = wcmb.codeLines[srcLine-1].trim().substring(ai);
-            sb.append(WU.postpad(wcmb.wca.las+wcmb.wca.las+wcmb.wca.las+wcmb.wca.las+wcmb.wca.las+wcmb.wca.las+"Annotated Line["+srcLine+"]: "+wcmb.codeLines[srcLine-1].trim()+wcmb.wca.lae,62)+"\n");
+            sb.append(WU.postpad(wcmb.wca.las+wcmb.wca.las+wcmb.wca.las+wcmb.wca.las+wcmb.wca.las+wcmb.wca.las+"Annotated Src. line :"+srcLine+": "+wcmb.codeLines[srcLine-1].trim()+wcmb.wca.lae,62)+"\n");
           }else
-            sb.append(WU.postpad(wcmb.wca.las+wcmb.wca.las+wcmb.wca.las+wcmb.wca.las+wcmb.wca.las+wcmb.wca.las+"Line["+srcLine+"]: "+wcmb.codeLines[srcLine-1].trim()+wcmb.wca.lae,62)+"\n");
+            sb.append(WU.postpad(wcmb.wca.las+wcmb.wca.las+wcmb.wca.las+wcmb.wca.las+wcmb.wca.las+wcmb.wca.las+"  Src. line "+srcLine+": "+wcmb.codeLines[srcLine-1].trim()+wcmb.wca.lae,62)+"\n");
         }
         prevLine = srcLine; 
       }
 
       // block (len 6)
       if (ih == stih) {
-        sb.append(WU.postpad("B" + id,6));
+        String tStr = "<-[";
+        for (Iterator iter = inbbs.keySet().iterator(); iter.hasNext();) {
+          Integer keyInt = (Integer) iter.next();
+          WCETBasicBlock wcbb = (WCETBasicBlock) inbbs.get(keyInt);
+          tStr += "B"+wcbb.getId()+" ";
+        }
+        tStr += "]";
+
+sb.append(WU.postpad("B" + id+tStr,6)); // see the BBs that point to this BB
+//        sb.append(WU.postpad("B" + id,6));
       } else {
         sb.append("      ");
       }
@@ -1030,9 +1156,9 @@ class WCETBasicBlock {
             sb.append(WU.prepad("*to check",10));
           } else {
 //            sb.append(WU.prepad(Integer.toString(wcetihHit)+"/"+Integer.toString(wcetihMiss),10));
-        	  sb.append(WU.prepad(invokehit+"",10));
-        	  sb.append(WU.prepad(wcmb.wca.las+(invokemiss-invokehit)+"",8));
-        	  sb.append(WU.prepad(wcmb.wca.las+(retmiss-rethit)+"",8));
+            sb.append(WU.prepad(invokehit+"",10));
+            sb.append(WU.prepad(wcmb.wca.las+(invokemiss-invokehit)+"",8));
+            sb.append(WU.prepad(wcmb.wca.las+(retmiss-rethit)+"",8));
           }
 
           sb.append("   ");
@@ -1122,6 +1248,9 @@ class WCETBasicBlock {
       
       sb.append(wcmb.wca.lae+"\n");
     } while (ih != endih && (ih = ih.getNext()) != null);
+    
+    if(blockcycmiss<blockcychit)
+      blockcycmiss = blockcychit;
 
     return sb.toString();
   }
@@ -1185,6 +1314,11 @@ class WCETBasicBlock {
   public String getInvokeStr() {
     return invokeStr;
   }
+
+  public HashMap getInbbs() {
+    return inbbs;
+  }
+
 }
 
 /**
