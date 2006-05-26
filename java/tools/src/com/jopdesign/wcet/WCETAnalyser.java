@@ -2099,7 +2099,7 @@ class WCETInstruction {
       break;
     // IINC = 132
     case org.apache.bcel.Constants.IINC:
-      wcet = 11;
+      wcet = 8;
       break;
     // I2L = 133
     case org.apache.bcel.Constants.I2L:
