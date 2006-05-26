@@ -823,7 +823,7 @@ class WCETMethodBlock {
           WCETBasicBlock w = (WCETBasicBlock) tinbbs.get(tkeyInt);
           if(w.id!=wcbb.sucbb.id){
             ls.append("lB"+w.id+"_"+wcbb.sucbb.id+": e"+ wcbb.id+"_"+wcbb.sucbb.id+" <= ");
-            ls.append(wcbb.sucbb.loop+" e"+w.id+"_"+wcbb.id+"; // loop\n");
+            ls.append(wcbb.sucbb.loop+" e"+w.id+"_"+wcbb.id+"; // loopcontroller:B"+wcbb.id+"\n");
           }
         } 
       }
