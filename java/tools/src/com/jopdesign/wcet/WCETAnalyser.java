@@ -822,7 +822,8 @@ class WCETMethodBlock {
           Integer tkeyInt = (Integer) titer.next();
           WCETBasicBlock w = (WCETBasicBlock) tinbbs.get(tkeyInt);
           if(w.id!=wcbb.sucbb.id){
-            ls.append("lB"+w.id+"_"+wcbb.sucbb.id+": e"+ wcbb.id+"_"+wcbb.sucbb.id+" <= ");
+            //TODO: targeter can be part of a loop... and  + drivers
+            ls.append("lB"+wcbb.sucbb.id+": e"+ wcbb.id+"_"+wcbb.sucbb.id+" <= ");
             ls.append(wcbb.sucbb.loop+" e"+w.id+"_"+wcbb.id+"; // loopcontroller:B"+wcbb.id+"\n");
           }
         } 
