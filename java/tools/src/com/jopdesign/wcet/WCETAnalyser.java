@@ -11,10 +11,8 @@ import java.io.PrintWriter;
 
 import org.apache.bcel.classfile.*;
 import org.apache.bcel.classfile.Visitor;
-import org.apache.bcel.Constants;
 import org.apache.bcel.generic.*;
 import org.apache.bcel.generic.FieldOrMethod;
-import org.apache.bcel.verifier.exc.*;
 import org.apache.bcel.verifier.structurals.*;
 
 import com.jopdesign.build.TransitiveHull;
@@ -635,6 +633,7 @@ class WCETMethodBlock {
               anst.nextToken();
               int loop = Integer.parseInt(anst.nextToken());
               wcbb.sucbb.loop = loop;
+              wcbb.loopcontroller = true;
             }
           }
         }
@@ -774,46 +773,58 @@ class WCETMethodBlock {
         ls.append("s: B0 = BB;\n");
    
       // loop dispatcher/branch?
-      if(wcbb.sucbb!=null&&wcbb.tarbb!=null){
-        if(wcbb.sucbb.loop!=-1){ //loop
-          HashMap tinbbs = wcbb.getInbbs();
-          WCETBasicBlock twcbb = null;
-          for (Iterator titer = tinbbs.keySet().iterator(); titer.hasNext();) {
-            Integer tkeyInt = (Integer) titer.next();
-            twcbb = (WCETBasicBlock) tinbbs.get(tkeyInt);
-            if(twcbb.id!=wcbb.sucbb.id)
-              break;
-          }          
+      if(wcbb.loopcontroller){
+        HashMap tinbbs = wcbb.getInbbs();
+        //target sucessor
+        WCETBasicBlock tswcbb = null;
+        //loop driver
+        WCETBasicBlock ldwcbb = null;
+        for (Iterator titer = tinbbs.keySet().iterator(); titer.hasNext();) {
+          Integer tkeyInt = (Integer) titer.next();
+          WCETBasicBlock w = (WCETBasicBlock) tinbbs.get(tkeyInt);
+          if(w.id!=wcbb.sucbb.id){
+            ldwcbb = w;
+          }
+          if(w.id==wcbb.sucbb.id){
+            tswcbb = w;
+          }
+        }          
+        
+        //flow loop controller block
+        ls.append("vf"+wcbb.id+": B"+wcbb.id+ " = B"+ldwcbb.id+"+ B"+wcbb.sucbb.id+"; // loop \n");
+        //ls.append("vf"+wcbb.sucbb.getId()+": B"+wcbb.sucbb.getId()+ " = "+wcbb.sucbb.loop+" B"+twcbb.id+"; // loop \n");
+        
+        ls.append("vf"+wcbb.sucbb.getId()+": B"+wcbb.sucbb.getId()+ " <= "+wcbb.sucbb.loop+" B"+ldwcbb.id+"; // loop driver\n");
+        
+        // drive tarbb        
+        ls.append("vf"+wcbb.tarbb.id+": B"+wcbb.tarbb.id + " = B"+ldwcbb.id+"; // loop exit \n");
           
-          ls.append("vf"+wcbb.sucbb.getId()+": B"+wcbb.sucbb.getId()+ " = "+wcbb.sucbb.loop+" B"+twcbb.id+"; // loop \n");
-          
-          ls.append("vf"+wcbb.tarbb.id+": B"+wcbb.tarbb.id + " = B"+twcbb.id+"; // loop exit \n");
-          
-        } else //if
-          ls.append("vb"+wcbb.getId()+": B"+wcbb.sucbb.id+" + B"+wcbb.tarbb.id+" <= 1; // branch\n");
-      } 
-           
-      HashMap tinbbs = wcbb.getInbbs();
-      StringBuffer flow = new StringBuffer();
-      if(tinbbs.size()>0){
-        if(wcbb.loop==-1){
-          flow.append("vf"+wcbb.getId()+": B"+wcbb.getId()+ " = ");
-          for (Iterator titer = tinbbs.keySet().iterator(); titer.hasNext();) {
-            Integer tkeyInt = (Integer) titer.next();
-            WCETBasicBlock twcbb = (WCETBasicBlock) tinbbs.get(tkeyInt);
-            if(twcbb.loop!=-1){
-              flow = new StringBuffer();
-              break;
+//        } else //if
+//          ls.append("vb"+wcbb.getId()+": B"+wcbb.sucbb.id+" + B"+wcbb.tarbb.id+" <= 1; // branch\n");
+      } else{     
+        HashMap tinbbs = wcbb.getInbbs();
+        StringBuffer flow = new StringBuffer();
+        if(tinbbs.size()>0){
+          if(wcbb.loop==-1){
+            flow.append("vf"+wcbb.getId()+": B"+wcbb.getId()+ " = ");
+            for (Iterator titer = tinbbs.keySet().iterator(); titer.hasNext();) {
+              Integer tkeyInt = (Integer) titer.next();
+              WCETBasicBlock twcbb = (WCETBasicBlock) tinbbs.get(tkeyInt);
+              if(twcbb.loop!=-1){
+                flow = new StringBuffer();
+                break;
+              }
+              flow.append("B"+twcbb.getId());
+              if(titer.hasNext())
+                flow.append(" + ");
+              else
+                flow.append("; // flow\n");
             }
-            flow.append("B"+twcbb.getId());
-            if(titer.hasNext())
-              flow.append(" + ");
-            else
-              flow.append("; // flow\n");
           }
         }
+      
+      //ls.append(flow.toString());
       }
-      ls.append(flow.toString());
 //        ls.append("vb"+wcbb.getId()+": B"+wcbb.sucbb.id+" + B"+wcbb.tarbb.id+" <= 1; // branch\n");        
 //
 //        if(wcbb.sucbb.loop!=-1)
@@ -854,7 +865,11 @@ class WCETBasicBlock {
   // id of the bb
   int id;
   
+  boolean loopcontroller = false;
+  
+  // loop target
   int loop = -1;
+  
 
   // the reason why we are doing this...
   int wcetHit;
