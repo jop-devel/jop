@@ -313,7 +313,7 @@ class WCETMethodBlock {
 
   JavaClass jc;
 
-  Method method;
+  Method methodbcel;
 
   MethodGen mg;
 
@@ -362,7 +362,7 @@ class WCETMethodBlock {
     
 
     bbs = new TreeMap();
-    this.method = method;
+    this.methodbcel = method;
     this.jc = jc;
 //System.out.println("sourcefilename: "+ jc.getSourceFileName());
 
@@ -414,7 +414,7 @@ class WCETMethodBlock {
     ExecutionVisitor ev = new ExecutionVisitor();
     ev.setConstantPoolGen(cpg);
 
-    mg = new MethodGen(method, jc.getClassName(), cpg);
+    mg = new MethodGen(methodbcel, jc.getClassName(), cpg);
     mg.getInstructionList().setPositions(true);
 // String tostr = mg.toString();
 //String signature = mg.getSignature();
@@ -507,7 +507,7 @@ class WCETMethodBlock {
    */
   public String getLocalVarName(int index, int pc){
 //System.out.println("getLocalVarName: index:"+index+" pc:"+pc+" info:"+mg.getClassName()+"."+mg.getName());
-    LocalVariableTable lvt = method.getLocalVariableTable();
+    LocalVariableTable lvt = methodbcel.getLocalVariableTable();
     String lvName = "";
     boolean match = false;
     if(lvt!=null){
@@ -600,7 +600,7 @@ class WCETMethodBlock {
   public void directedGraph() {
     // now create the directed graph
     dg = new int[bbs.size()][bbs.size()];
-    LineNumberTable lnt = method.getLineNumberTable();
+    LineNumberTable lnt = methodbcel.getLineNumberTable();
     WCETBasicBlock pbb = null;
     for (Iterator iter = bbs.keySet().iterator(); iter.hasNext();) {
       Integer keyInt = (Integer) iter.next();
@@ -689,8 +689,8 @@ class WCETMethodBlock {
     StringBuffer sb = new StringBuffer();
      
     sb.append("******************************************************************************\n");
-        sb.append("WCET info for:"+jc.getClassName() + "." + method.getName()
-        + method.getSignature()+"\n\n");
+        sb.append("WCET info for:"+jc.getClassName() + "." + methodbcel.getName()
+        + methodbcel.getSignature()+"\n\n");
 
     // directed graph
     sb.append("Directed graph of basic blocks(row->column):\n");
@@ -760,8 +760,8 @@ class WCETMethodBlock {
     // use: dot -Tps graph.dot -o graph.ps
     boolean labels = true;
 
-    sb.append("\n/*"+ jc.getClassName() + "." + method.getName()
-        + method.getSignature()+"*/\n");
+    sb.append("\n/*"+ jc.getClassName() + "." + methodbcel.getName()
+        + methodbcel.getSignature()+"*/\n");
     sb.append("digraph G {\n");
     for (int i = 0; i < dg.length; i++) {
       for (int j = 0; j < dg.length; j++) {
@@ -797,7 +797,7 @@ class WCETMethodBlock {
     sb.append("}\n");
     
     try {
-      dotf = new File(WCETAnalyser.outFile).getParentFile().getAbsolutePath()+"\\"+method.getClass().getName()+"."+method.getName()+".dot";
+      dotf = new File(WCETAnalyser.outFile).getParentFile().getAbsolutePath()+"\\"+jc.getClassName()+"."+methodbcel.getName()+".dot";
       dotf = dotf.replace('<','_');
       dotf = dotf.replace('>','_');
       PrintWriter dotout = new PrintWriter(new FileOutputStream(dotf));
@@ -814,7 +814,7 @@ class WCETMethodBlock {
   public String toLS(){
     StringBuffer ls = new StringBuffer();
     ls.append("/***WCET calculation source***/\n");
-    ls.append("/* WCA WCET objective function for "+jc.getClassName() + "." + method.getName()+ " */\n");
+    ls.append("/* WCA WCET objective function for "+jc.getClassName() + "." + methodbcel.getName()+ " */\n");
     ls.append("max: ");
     for (Iterator iter = bbs.keySet().iterator(); iter.hasNext();) {
       Integer keyInt = (Integer) iter.next();
@@ -932,7 +932,7 @@ class WCETMethodBlock {
     
     
     try {
-      lpf = new File(WCETAnalyser.outFile).getParentFile().getAbsolutePath()+"\\"+method.getClass().getName()+"."+method.getName()+".lp";
+      lpf = new File(WCETAnalyser.outFile).getParentFile().getAbsolutePath()+"\\"+jc.getClassName()+"."+methodbcel.getName()+".lp";
       lpf = lpf.replace('<','_');
       lpf = lpf.replace('>','_');
 //System.out.println("about to write:"+lpf);
@@ -944,13 +944,13 @@ class WCETMethodBlock {
     }
 
     try {
-      LpSolve problem = LpSolve.readLp(lpf, LpSolve.NORMAL, method.getClass().getName()+"."+method.getName());
+      wcetvars = new HashMap();
+      LpSolve problem = LpSolve.readLp(lpf, LpSolve.NORMAL, jc.getClassName()+"."+methodbcel.getName());
       problem.setOutputfile(lpf+".output.txt");
       problem.solve();
       problem.setOutputfile(lpf+".solved.txt");
       problem.printObjective();
       problem.printSolution(1);
-      wcetvars = new HashMap();
       wcetlp = (int)problem.getObjective();
       try {
         BufferedReader in = new BufferedReader(new FileReader(lpf+".solved.txt"));
@@ -966,7 +966,8 @@ class WCETMethodBlock {
       } catch (IOException e) {
       }
     } catch (LpSolveException e) {
-      e.printStackTrace();
+      System.out.println("LP can't solve for:"+jc.getClassName()+"."+methodbcel.getName());
+      //e.printStackTrace();
     } 
     
     return ls.toString();
@@ -1160,7 +1161,7 @@ class WCETBasicBlock {
     blockcychit = 0;
     blockcycmiss = 0;
 
-    LineNumberTable lnt = wcmb.method.getLineNumberTable();
+    LineNumberTable lnt = wcmb.methodbcel.getLineNumberTable();
     int prevLine = -1;
     int srcLine = -1;
     do {
