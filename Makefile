@@ -74,7 +74,7 @@ P3=Hello
 #	some variables
 #
 TOOLS=java/tools
-EXT_CP=-classpath java/lib/bcel-5.1.jar\;java/lib/jakarta-regexp-1.3.jar\;java/lib/RXTXcomm.jar
+EXT_CP=-classpath java/lib/bcel-5.1.jar\;java/lib/jakarta-regexp-1.3.jar\;java/lib/RXTXcomm.jar\;java/lib/lpsolve55j.jar
 TOOLS_JFLAGS=-d $(TOOLS)/dist/classes $(EXT_CP) -sourcepath $(TOOLS)/src\;$(TARGET)/src/common
 
 TARGET=java/target
@@ -407,5 +407,6 @@ wcet:
 	-rm $(TARGET)/wcet/*.txt
 	-rm -r $(TARGET)/wcet
 	-mkdir $(TARGET)/wcet
-	java $(TOOLS_CP) -Dlatex=false -Ddot=true -Djline=true com.jopdesign.wcet.WCETAnalyser \
+	java $(TOOLS_CP) -Dlatex=false -Ddot=true -Djline=true -Dls=true com.jopdesign.wcet.WCETAnalyser \
 		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/wcet/$(P3)wcet.txt -sp $(TARGET_SOURCE) $(MAIN_CLASS)
+	cd $(TARGET)/wcet && ./dotall.bat
