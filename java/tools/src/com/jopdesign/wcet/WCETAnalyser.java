@@ -477,7 +477,11 @@ class WCETMethodBlock {
               wbbthis.setSucbb(wbbnxt);
             }
           }
-        } else { // set the successor
+        } 
+        else if(ih.getInstruction() instanceof ReturnInstruction){
+          // TODO: set T node here
+        }
+        else { // set the successor
           InstructionHandle ihnext = ih.getNext();
 
           if (ihnext != null) {
@@ -769,17 +773,17 @@ class WCETMethodBlock {
           sb.append("\tB"+i+" -> "+"B"+j);
           if(labels){
             //sb.append(" [label=\""+dg[i][j]+"\"");
-            String edge = "f"+i+"."+j;
+            String edge = "f"+i+"_"+j;
 
             if(wcetvars.get(edge)!=null){
               int edgeval = Integer.parseInt((String)wcetvars.get(edge));
               if(edgeval>0)
-                sb.append(" [label=\"f"+i+"."+j+"="+edgeval+"\"");
+                sb.append(" [label=\"f"+i+"_"+j+"="+edgeval+"\"");
               else
-                sb.append(" [style=dotted,label=\"f"+i+"."+j+"="+edgeval+"\"");
+                sb.append(" [style=dashed,label=\"f"+i+"_"+j+"="+edgeval+"\"");
             }
             else
-              sb.append(" [label=\"f"+i+"."+j+"=?\"");
+              sb.append(" [label=\"f"+i+"_"+j+"=?\"");
             
               //sb.append(",labelfloat=true");
             sb.append("]");
@@ -814,7 +818,7 @@ class WCETMethodBlock {
   public String toLS(){
     StringBuffer ls = new StringBuffer();
     ls.append("/***WCET calculation source***/\n");
-    ls.append("/* WCA WCET objective function for "+jc.getClassName() + "." + methodbcel.getName()+ " */\n");
+    ls.append("/* WCA WCET objective: "+jc.getClassName() + "." + methodbcel.getName()+ " */\n");
     ls.append("max: ");
     for (Iterator iter = bbs.keySet().iterator(); iter.hasNext();) {
       Integer keyInt = (Integer) iter.next();
@@ -838,8 +842,8 @@ class WCETMethodBlock {
         ls.append(" ");
     }
     ls.append(";\n");
-    ls.append("/* WCA constraints */\n");
-    ls.append("S: 1 = fs.0; // flow\n");
+    ls.append("/* WCA flow constraints */\n");
+    ls.append("S: 1 = fs_0; // flow\n");
     WCETBasicBlock wcbb = null;
     for (Iterator iter = bbs.keySet().iterator(); iter.hasNext();) {
       Integer keyInt = (Integer) iter.next();
@@ -848,7 +852,7 @@ class WCETMethodBlock {
       if(tinbbs.size()>0 || wcbb.id ==0){
         ls.append("B"+wcbb.id+": ");
         if(wcbb.id==0){
-          ls.append("fs.0");
+          ls.append("fs_0");
           if(tinbbs.size()>0){
             ls.append(" + ");
           }
@@ -856,7 +860,7 @@ class WCETMethodBlock {
         for (Iterator titer = tinbbs.keySet().iterator(); titer.hasNext();) {
           Integer tkeyInt = (Integer) titer.next();
           WCETBasicBlock w = (WCETBasicBlock) tinbbs.get(tkeyInt);
-          ls.append("f"+w.id+"."+wcbb.id);
+          ls.append("f"+w.id+"_"+wcbb.id);
           
           if(titer.hasNext())
             ls.append(" + ");
@@ -864,21 +868,21 @@ class WCETMethodBlock {
         } 
         ls.append(" = ");
         if(wcbb.sucbb != null)
-          ls.append("f"+wcbb.id+"."+wcbb.sucbb.id);
+          ls.append("f"+wcbb.id+"_"+wcbb.sucbb.id);
         if(wcbb.sucbb != null && wcbb.tarbb!=null)
           ls.append(" + ");
         if(wcbb.tarbb!=null)
-          ls.append("f"+wcbb.id+"."+wcbb.tarbb.id);
+          ls.append("f"+wcbb.id+"_"+wcbb.tarbb.id);
         if(wcbb.sucbb == null && wcbb.tarbb == null)
           ls.append("1");
-        ls.append("; // flow\n");  
+        ls.append(";\n");  
       }
       
 //      if(!iter.hasNext())      
 //        ls.append("t: B" +i+" = BB;\n");
 
     }
-    ls.append("/* WCA variable bounds */\n");
+    ls.append("/* WCA loops */\n");
 
     //loops
     for (Iterator iter = bbs.keySet().iterator(); iter.hasNext();) {
@@ -886,9 +890,9 @@ class WCETMethodBlock {
       wcbb = (WCETBasicBlock) bbs.get(keyInt);
       if(wcbb.loopcontroller){
         if(wcbb.id==0){
-          ls.append("lc"+wcbb.id+": f"+ wcbb.id+"."+wcbb.sucbb.id+" <= "+wcbb.loop+" f"+"s"+"."+wcbb.id+"; // loop controller B"+wcbb.id+ "\n");
+          ls.append("lc"+wcbb.id+": f"+ wcbb.id+"_"+wcbb.sucbb.id+" <= "+wcbb.loop+" f"+"s"+"_"+wcbb.id+";\n");
         }else {
-          ls.append("lc"+wcbb.id+": f"+ wcbb.id+"."+wcbb.sucbb.id+" <= "+wcbb.loop+" f"+(wcbb.loopid-1)+"."+wcbb.loopid+"; // loop controller B"+wcbb.id+ "\n");
+          ls.append("lc"+wcbb.id+": f"+ wcbb.id+"_"+wcbb.sucbb.id+" <= "+wcbb.loop+" f"+(wcbb.loopid-1)+"_"+wcbb.loopid+";\n");
         }
 
 //        HashMap tinbbs = wcbb.getInbbs();
@@ -906,7 +910,7 @@ class WCETMethodBlock {
       }
     }
 
-    ls.append("/* WCA execution time */\n");
+    ls.append("/* WCA flow to cycle count */\n");
     for (Iterator iter = bbs.keySet().iterator(); iter.hasNext();) {
       Integer keyInt = (Integer) iter.next();
       wcbb = (WCETBasicBlock) bbs.get(keyInt);
@@ -915,19 +919,19 @@ class WCETMethodBlock {
       HashMap tinbbs = wcbb.getInbbs();
       if(tinbbs.size()>0 || wcbb.id==0){
         if(wcbb.id==0){
-          ls.append(wcbb.blockcycmiss+" fs.0");
+          ls.append(wcbb.blockcycmiss+" fs_0");
           if(tinbbs.size()>0)
             ls.append(" + ");
         }
         for (Iterator titer = tinbbs.keySet().iterator(); titer.hasNext();) {
           Integer tkeyInt = (Integer) titer.next();
           WCETBasicBlock w = (WCETBasicBlock) tinbbs.get(tkeyInt);
-          ls.append(wcbb.blockcycmiss+" f"+w.id+"."+wcbb.id);
+          ls.append(wcbb.blockcycmiss+" f"+w.id+"_"+wcbb.id);
           if(titer.hasNext())
             ls.append(" + ");
         }
       }
-        ls.append("; // execution time for B"+wcbb.id+"\n");
+        ls.append(";\n");
     }
     
     
@@ -966,7 +970,7 @@ class WCETMethodBlock {
       } catch (IOException e) {
       }
     } catch (LpSolveException e) {
-      System.out.println("LP can't solve for:"+jc.getClassName()+"."+methodbcel.getName());
+      System.out.println("LP not solvable for: "+jc.getClassName()+"."+methodbcel.getName());
       //e.printStackTrace();
     } 
     
@@ -1302,9 +1306,9 @@ sb.append(WU.postpad("B" + id+tStr,6)); // see the BBs that point to this BB
             System.out.println("Did not recognize "+retsig+" as return type");
             System.exit(-1);
           }
-          wcetihMiss = invokemiss+retmiss;
+          wcetihMiss = invokemiss;//+retmiss;
           blockcycmiss += wcetihMiss;
-          wcetihHit = invokehit+rethit;
+          wcetihHit = invokehit;//+rethit;
           blockcychit += wcetihHit;
           if((((InvokeInstruction)ih.getInstruction()).getClassName(wcmb.getCpg())).equals(wcmb.wca.nativeClass)){
 //            sb.append(WU.prepad("*"+Integer.toString(wcetihHit)+"/"+Integer.toString(wcetihMiss),10));
@@ -1317,7 +1321,7 @@ sb.append(WU.postpad("B" + id+tStr,6)); // see the BBs that point to this BB
           }
 
           sb.append("   ");
-          invoStr = methodid+", invoke(n="+n+"):"+invokehit+"/"+invokemiss+" return(n="+wcmb.getN()+"):"+rethit+"/"+retmiss;
+          invoStr = methodid+", invoke(n="+n+"):"+invokehit+"/"+invokemiss;//+" return(n="+wcmb.getN()+"):"+rethit+"/"+retmiss;
           if((((InvokeInstruction)ih.getInstruction()).getClassName(wcmb.getCpg())).equals(wcmb.wca.nativeClass)){
             invoStr += ", no hit/miss cycle count for Native invokes (yet)";
           } 
