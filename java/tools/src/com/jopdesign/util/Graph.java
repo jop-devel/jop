@@ -56,13 +56,3 @@ public class Graph {
 }
 
 
-
-//class Edge {
-//	
-//	public Edge(Vertex f, Vertex t) {
-//		from = f;
-//		to = t;
-//	}
-//	Vertex from;
-//	Vertex to;
-//}
