@@ -346,6 +346,10 @@ class WCETMethodBlock {
   int wcetlp;
   
   HashMap wcetvars;
+  
+  public WCETBasicBlock S;
+  
+  public WCETBasicBlock T;
 
   // create a bb covering the whole method
   // from here on we split it when necessary
@@ -423,7 +427,8 @@ class WCETMethodBlock {
 
     icv.setMethodGen(mg);
     if (!(mg.isAbstract() || mg.isNative())) { // IF mg HAS CODE
-
+      S = new WCETBasicBlock(this,WCETBasicBlock.SNODE);
+      T = new WCETBasicBlock(this,WCETBasicBlock.TNODE);
       // pass 0: Create basic blocks
       InstructionHandle ih = mg.getInstructionList().getStart();
       // wcet startup: create the first full covering bb
@@ -480,6 +485,13 @@ class WCETMethodBlock {
         } 
         else if(ih.getInstruction() instanceof ReturnInstruction){
           // TODO: set T node here
+if(T==null)
+  System.out.println("T=null");
+if(wbbthis==null)
+  System.out.println("wbbthis=null");          
+
+          wbbthis.sucbb = T;
+          T.addTargeter(wbbthis);
         }
         else { // set the successor
           InstructionHandle ihnext = ih.getNext();
@@ -621,7 +633,7 @@ class WCETMethodBlock {
         dg[id][tarbbid]++;
       }
       WCETBasicBlock sucbb = wcbb.getSucbb();
-      if (sucbb != null) {
+      if (sucbb != null && sucbb.nodetype != WCETBasicBlock.TNODE) {
         int sucid = sucbb.getId();
         sucbb.addTargeter(wcbb);
         dg[id][sucid]++;
@@ -767,6 +779,8 @@ class WCETMethodBlock {
     sb.append("\n/*"+ jc.getClassName() + "." + methodbcel.getName()
         + methodbcel.getSignature()+"*/\n");
     sb.append("digraph G {\n");
+    sb.append("size = \"10,7.5\"\n");
+
     for (int i = 0; i < dg.length; i++) {
       for (int j = 0; j < dg.length; j++) {
         if(dg[i][j]>0){
@@ -792,12 +806,41 @@ class WCETMethodBlock {
         }
       }
     }
+    
+    //T
+    HashMap tinbbs = T.getInbbs();
+    for (Iterator titer = tinbbs.keySet().iterator(); titer.hasNext();) {
+      Integer tkeyInt = (Integer) titer.next();
+      WCETBasicBlock w = (WCETBasicBlock) tinbbs.get(tkeyInt);
+      sb.append("\tB"+w.id+" -> T");
+      if(labels){
+        String edge = "f"+w.id+"_t";
+        if(wcetvars.get(edge)!=null){
+          int edgeval = Integer.parseInt((String)wcetvars.get(edge));
+          if(edgeval>0)
+            sb.append(" [label=\"f"+w.id+"_t ="+edgeval+"\"");
+          else
+            sb.append(" [style=dashed,label=\"f"+w.id+"_t ="+edgeval+"\"");
+        }
+        else
+          sb.append(" [label=\"f"+w.id+"_t = ?\"");
+        
+          //sb.append(",labelfloat=true");
+        sb.append("]");
+      }
+      sb.append(";\n");
+
+    } 
+
+
+    
     for (Iterator iter = bbs.keySet().iterator(); iter.hasNext();) {
       Integer keyInt = (Integer) iter.next();
       WCETBasicBlock wcbb = (WCETBasicBlock) bbs.get(keyInt);
       int id = wcbb.getId();
       sb.append("\tB"+id+" [label=\"B"+id+"\\n"+wcbb.wcetHit+"\"];\n");
     }
+    sb.append("\tT [label=\"T\"];\n");
     sb.append("}\n");
     
     try {
@@ -867,8 +910,14 @@ class WCETMethodBlock {
           
         } 
         ls.append(" = ");
-        if(wcbb.sucbb != null)
-          ls.append("f"+wcbb.id+"_"+wcbb.sucbb.id);
+        if(wcbb.sucbb != null){
+          if(wcbb.sucbb.nodetype != WCETBasicBlock.TNODE){  
+            ls.append("f"+wcbb.id+"_"+wcbb.sucbb.id);
+          }
+          else{
+            ls.append("f"+wcbb.id+"_t");
+          }
+        }
         if(wcbb.sucbb != null && wcbb.tarbb!=null)
           ls.append(" + ");
         if(wcbb.tarbb!=null)
@@ -877,11 +926,19 @@ class WCETMethodBlock {
           ls.append("1");
         ls.append(";\n");  
       }
-      
-//      if(!iter.hasNext())      
-//        ls.append("t: B" +i+" = BB;\n");
-
     }
+
+    HashMap tinbbs = T.getInbbs();
+    for (Iterator titer = tinbbs.keySet().iterator(); titer.hasNext();) {
+      Integer tkeyInt = (Integer) titer.next();
+      WCETBasicBlock w = (WCETBasicBlock) tinbbs.get(tkeyInt);
+      ls.append("f"+w.id+"_t");
+      if(titer.hasNext())
+        ls.append(" + ");
+    } 
+    ls.append(" = 1;\n");
+    
+    
     ls.append("/* WCA loops */\n");
 
     //loops
@@ -916,7 +973,7 @@ class WCETMethodBlock {
       wcbb = (WCETBasicBlock) bbs.get(keyInt);
       ls.append("t"+wcbb.id+" = ");
       
-      HashMap tinbbs = wcbb.getInbbs();
+      tinbbs = wcbb.getInbbs();
       if(tinbbs.size()>0 || wcbb.id==0){
         if(wcbb.id==0){
           ls.append(wcbb.blockcycmiss+" fs_0");
@@ -1028,7 +1085,7 @@ class WCETBasicBlock {
 
   final Integer key;
 
-  final InstructionHandle stih;
+  InstructionHandle stih;
 
   // end pos which will change as splitting happens
   int end;
@@ -1051,7 +1108,23 @@ class WCETBasicBlock {
   
   // invoke info after toCodeString has been called
   String invokeStr;
-
+  
+  // T or S
+  
+  boolean s = false;
+  boolean t = false;
+  public final static int SNODE = 1;
+  public final static int TNODE = 2;
+  public final static int BBNODE = 3;
+  public int nodetype = BBNODE;
+  WCETBasicBlock(WCETMethodBlock wcmb, int nodetype){
+    this.nodetype = nodetype;
+    valid = true;
+    start = 0;
+    key = new Integer(-1);
+    inbbs = new HashMap();
+  }
+  
   WCETBasicBlock(InstructionHandle stih, InstructionHandle endih, WCETMethodBlock wcmb) {
     this.wcmb = wcmb;
     valid = false;
