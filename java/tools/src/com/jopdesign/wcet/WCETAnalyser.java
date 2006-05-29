@@ -3,6 +3,7 @@ package com.jopdesign.wcet;
 import java.util.*;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
@@ -16,6 +17,8 @@ import org.apache.bcel.verifier.structurals.*;
 
 import com.jopdesign.build.TransitiveHull;
 import com.jopdesign.tools.JopInstr;
+
+import lpsolve.*;
 
 /**
  * The class is for wcet analysis. The class hierarchy is such 
@@ -49,9 +52,6 @@ import com.jopdesign.tools.JopInstr;
 // 2006-05-07 rup: Output dot graphs 
 // 2006-05-25 rup: "Annotations" and lp_solvable wcet output
 
-// TODOs:
-// TODO: Re-use the existing bytecode mapping to native methods 
-
 /**
  * The thing that controls the WCETClassBlock etc.
  */
@@ -67,6 +67,8 @@ public class WCETAnalyser {
   public final static String nativeClass = "com.jopdesign.sys.Native";
 
   PrintWriter out;
+  
+  PrintWriter dotout;
 
   /**
    * Loaded classes, type is JavaClass
@@ -85,6 +87,8 @@ public class WCETAnalyser {
   HashMap javaFilePathMap;
   
   ArrayList javaFiles;
+  
+  static String outFile;
 
   public WCETAnalyser() {
     
@@ -93,14 +97,13 @@ public class WCETAnalyser {
     mmap = new HashMap();
     javaFiles = new ArrayList();
     javaFilePathMap = new HashMap();
+    
   }
 
   public static void main(String[] args) {
-    // wcet/P3+Wcet.txt
-    String outFile = null;
     WCETAnalyser wca = new WCETAnalyser();
     HashSet clsArgs = new HashSet();
-    
+    outFile = null;     // wcet/P3+Wcet.txt
     //the tables can be easier to use in latex using this property
     boolean latex = System.getProperty("latex", "false").equals("true");
     //dot graphs code generation
@@ -161,7 +164,9 @@ public class WCETAnalyser {
 //            + mainClass);
 
         wca.out = new PrintWriter(new FileOutputStream(outFile));
-
+        String ds = new File(WCETAnalyser.outFile).getParentFile().getAbsolutePath()+"\\dotall.bat";
+        wca.dotout = new PrintWriter(new FileOutputStream(ds));
+        
         wca.load(clsArgs);
 
         wca.iterate(new SetWCETAnalysis(wca));
@@ -172,6 +177,7 @@ public class WCETAnalyser {
         wca.out.println("Note: Remember to keep WCETAnalyzer updated");
         wca.out.println("each time a bytecode implementation is changed.");
         wca.out.close();
+        wca.dotout.close();
       }
     } catch (Exception e) {
       e.printStackTrace();
@@ -325,6 +331,10 @@ class WCETMethodBlock {
   
   WCETAnalyser wca;
   
+  String lpf = null;
+  
+  String dotf = null;
+  
   String[] codeLines;
 
   // directed graph of the basic blocks
@@ -332,6 +342,10 @@ class WCETMethodBlock {
   
   // method size in 32 bit words
   int n = -1;
+  
+  int wcetlp;
+  
+  HashMap wcetvars;
 
   // create a bb covering the whole method
   // from here on we split it when necessary
@@ -718,40 +732,6 @@ class WCETMethodBlock {
     sb.append(WU.repeat("=",top.length() - 3+wca.las.length()));
     sb.append("\n");
     
-    // dot graph
-    // use: dot -Tps graph.dot -o graph.ps
-    boolean labels = true;
-    if(wca.dot){
-      sb.append("\n/*"+ jc.getClassName() + "." + method.getName()
-          + method.getSignature()+"*/\n");
-      sb.append("digraph G {\n");
-      for (int i = 0; i < dg.length; i++) {
-        for (int j = 0; j < dg.length; j++) {
-          if(dg[i][j]>0){
-            sb.append("\tB"+i+" -> "+"B"+j);
-            if(labels){
-              //sb.append(" [label=\""+dg[i][j]+"\"");
-              sb.append(" [label=\"f"+i+"."+j+"\"");
-              //sb.append(",labelfloat=true");
-              sb.append("]");
-            }
-            sb.append(";\n");
-          }
-        }
-      }
-      for (Iterator iter = bbs.keySet().iterator(); iter.hasNext();) {
-        Integer keyInt = (Integer) iter.next();
-        WCETBasicBlock wcbb = (WCETBasicBlock) bbs.get(keyInt);
-        int id = wcbb.getId();
-        sb.append("\tB"+id+" [label=\"B"+id+"\\n"+wcbb.wcetHit+"\"];\n");
-        //skhkjh
-      }
-      sb.append("}\n");
-    }
-//sb.append(method.getName()+"\n");
-//for(int i=0;i<codeLines.length;i++){
-//  sb.append(i+":"+codeLines[i]+"\n");
-//}
 
     // bytecode listing
     sb.append("\nTable of basic blocks' and instructions\n");
@@ -769,8 +749,66 @@ class WCETMethodBlock {
     sb.append("\n"); 
     if(wca.ls)
       sb.append(toLS());
-    
+    if(wca.dot)
+      sb.append(toDot());
     return sb.toString();
+  }
+
+  public String toDot() {
+    StringBuffer sb = new StringBuffer();
+    // dot graph
+    // use: dot -Tps graph.dot -o graph.ps
+    boolean labels = true;
+
+    sb.append("\n/*"+ jc.getClassName() + "." + method.getName()
+        + method.getSignature()+"*/\n");
+    sb.append("digraph G {\n");
+    for (int i = 0; i < dg.length; i++) {
+      for (int j = 0; j < dg.length; j++) {
+        if(dg[i][j]>0){
+          sb.append("\tB"+i+" -> "+"B"+j);
+          if(labels){
+            //sb.append(" [label=\""+dg[i][j]+"\"");
+            String edge = "f"+i+"."+j;
+
+            if(wcetvars.get(edge)!=null){
+              int edgeval = Integer.parseInt((String)wcetvars.get(edge));
+              if(edgeval>0)
+                sb.append(" [label=\"f"+i+"."+j+"="+edgeval+"\"");
+              else
+                sb.append(" [style=dotted,label=\"f"+i+"."+j+"="+edgeval+"\"");
+            }
+            else
+              sb.append(" [label=\"f"+i+"."+j+"=?\"");
+            
+              //sb.append(",labelfloat=true");
+            sb.append("]");
+          }
+          sb.append(";\n");
+        }
+      }
+    }
+    for (Iterator iter = bbs.keySet().iterator(); iter.hasNext();) {
+      Integer keyInt = (Integer) iter.next();
+      WCETBasicBlock wcbb = (WCETBasicBlock) bbs.get(keyInt);
+      int id = wcbb.getId();
+      sb.append("\tB"+id+" [label=\"B"+id+"\\n"+wcbb.wcetHit+"\"];\n");
+    }
+    sb.append("}\n");
+    
+    try {
+      dotf = new File(WCETAnalyser.outFile).getParentFile().getAbsolutePath()+"\\"+method.getClass().getName()+"."+method.getName()+".dot";
+      dotf = dotf.replace('<','_');
+      dotf = dotf.replace('>','_');
+      PrintWriter dotout = new PrintWriter(new FileOutputStream(dotf));
+      dotout.write(sb.toString());
+      dotout.close();
+    } catch (FileNotFoundException e1) {
+      e1.printStackTrace();
+    }
+    
+    return sb.toString();    
+
   }
   //TODO: loop follows loop controller?
   public String toLS(){
@@ -893,9 +931,43 @@ class WCETMethodBlock {
     }
     
     
-    
-    
-    //ls.append("e"+wcbb.id+" = 1; // t\n");
+    try {
+      lpf = new File(WCETAnalyser.outFile).getParentFile().getAbsolutePath()+"\\"+method.getClass().getName()+"."+method.getName()+".lp";
+      lpf = lpf.replace('<','_');
+      lpf = lpf.replace('>','_');
+//System.out.println("about to write:"+lpf);
+      PrintWriter lsout = new PrintWriter(new FileOutputStream(lpf));
+      lsout.write(ls.toString());
+      lsout.close();
+    } catch (FileNotFoundException e1) {
+      e1.printStackTrace();
+    }
+
+    try {
+      LpSolve problem = LpSolve.readLp(lpf, LpSolve.NORMAL, method.getClass().getName()+"."+method.getName());
+      problem.setOutputfile(lpf+".output.txt");
+      problem.solve();
+      problem.setOutputfile(lpf+".solved.txt");
+      problem.printObjective();
+      problem.printSolution(1);
+      wcetvars = new HashMap();
+      wcetlp = (int)problem.getObjective();
+      try {
+        BufferedReader in = new BufferedReader(new FileReader(lpf+".solved.txt"));
+        String str;
+        while ((str = in.readLine()) != null) {
+          ls.append(str+"\n");
+          StringTokenizer st = new StringTokenizer(str);
+          if(st.countTokens()==2){
+            wcetvars.put(st.nextToken(),st.nextToken());
+          }
+        }
+        in.close();
+      } catch (IOException e) {
+      }
+    } catch (LpSolveException e) {
+      e.printStackTrace();
+    } 
     
     return ls.toString();
   }

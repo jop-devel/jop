@@ -28,6 +28,7 @@ public class SetWCETAnalysis extends MyVisitor {
         wcmb.controlFlowGraph();
         wcmb.directedGraph();
         wca.out.println(wcmb.toString());
+        wca.dotout.print("dot -Tps "+wcmb.dotf+" > "+wcmb.dotf.substring(0,wcmb.dotf.length()-4)+".eps\n");
       }
         //System.out.println(wcmb.toString());
       //}
