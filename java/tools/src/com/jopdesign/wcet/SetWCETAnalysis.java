@@ -22,7 +22,7 @@ public class SetWCETAnalysis extends MyVisitor {
 			Method m = methods[i];
 			String methodId = m.getName()+m.getSignature();
       
-      //if(m.getName().equalsIgnoreCase("sort")){
+      //if(m.getName().equalsIgnoreCase("loop10")){
       if(!m.isAbstract()){
         WCETMethodBlock wcmb = new WCETMethodBlock(m,clazz,wca);
         wcmb.controlFlowGraph();
