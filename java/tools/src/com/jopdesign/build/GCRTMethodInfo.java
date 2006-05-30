@@ -70,7 +70,7 @@ public class GCRTMethodInfo {
 	/**
 	 * It runs the dump method without dumping.
 	 * 
-	 * @param method
+	 * @param methodbcel
 	 * @return Returns the length in words that the GC bit maps will take.
 	 */
 	public static int gcLength(MethodInfo mi) {
