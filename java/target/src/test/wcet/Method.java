@@ -22,7 +22,7 @@ public class Method {
 		
 		int val = 123;
 		for (int i=0; i<10; ++i) { // @WCA loop=10
-			val += val;
+			val *= val;
 		}
 	}
 
@@ -31,6 +31,9 @@ public class Method {
 		int val = 123;
 		for (int i=0; i<5; ++i) { // @WCA loop=5
 			val += c();
+		}
+		for (int i=0; i<5; ++i) { // @WCA loop=5
+			val += val;
 		}
 	}
 	
