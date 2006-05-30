@@ -1773,7 +1773,7 @@ sb.append(WU.postpad("B" + id+tStr,6)); // see the BBs that point to this BB
   public int getBlockCycles() {
     boolean hit = false;
     for (int i=0;i<bbinvo.size();i++){
-      hit = CacheSimul.get((String)bbinvo.get(i));
+      hit = CacheSimul.get(wcmb.methodbcel);
     }
     if(hit)
       return blockcychit;
