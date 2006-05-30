@@ -16,7 +16,6 @@ import org.apache.bcel.generic.FieldOrMethod;
 import org.apache.bcel.verifier.structurals.*;
 
 import com.jopdesign.build.TransitiveHull;
-import com.jopdesign.tools.CacheSimul;
 import com.jopdesign.tools.JopInstr;
 
 import lpsolve.*;
