@@ -40,5 +40,10 @@
 			<type>2</type>
 			<location>JOP_HOME/java/target/src/test</location>
 		</link>
+		<link>
+			<name>bench</name>
+			<type>2</type>
+			<location>JOP_HOME/java/target/src/bench</location>
+		</link>
 	</linkedResources>
 </projectDescription>
