@@ -39,9 +39,11 @@ public class SetWCETAnalysis extends MyVisitor {
       String methodId = m.getName()+m.getSignature();
       if(m.getName().equalsIgnoreCase("main")){
       if(!m.isAbstract()){
+
         WCETMethodBlock wcmb = (WCETMethodBlock)wca.mtowcmb.get(m);
         wca.out.println("*** WCET FOR APPLICATION***");
         wca.out.println(wcmb.toLS(true,true,"")+"\n");
+        System.out.println("HI");                
         
       }
       }
