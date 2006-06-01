@@ -13,9 +13,8 @@ public class Graph {
 
 	HashMap vmap = new HashMap();
 	
-	public Vertex addVertex(Object data) {
-		Vertex v = new Vertex(data);
-		vmap.put(data, v);
+	public Vertex addVertex(Vertex v) {
+		vmap.put(v, v);
 		return v;
 	}
 	
@@ -24,8 +23,10 @@ public class Graph {
 	}
 	
 	public void addEdge(Vertex from, Vertex to) {
+		
 		from.succ.add(to);
 		to.pred.add(from);
+		System.out.println(from.succ);
 	}
 	
 	/**
@@ -39,13 +40,16 @@ public class Graph {
 	    sb.append("digraph G {\n");
 	    sb.append("size = \"10,7.5\"\n");
 	    
-	    Iterator iter = vmap.entrySet().iterator();
+	    System.out.println("******************");
+	    
+	    Iterator iter = vmap.values().iterator();
 	    while (iter.hasNext()) {
-	    	Map.Entry me = (Map.Entry) iter.next();
-	    	Vertex v = (Vertex) me.getValue(); 
+	    	Vertex v = (Vertex) iter.next();
+	    	System.out.println(v);
+	    	System.out.println("\t"+v.succ);
 	    	for (Iterator eit = v.getSucc().iterator(); eit.hasNext(); ) {
 	    		Vertex suc = (Vertex) eit.next();
-	    		sb.append("\t"+v.toString()+" -> "+suc.toString()+"\n");
+	    		sb.append("\t\""+v.toDotString()+"\" -> \""+suc.toDotString()+"\"\n");
 	    	}
 	    }
 

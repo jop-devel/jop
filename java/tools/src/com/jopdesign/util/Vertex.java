@@ -20,4 +20,8 @@ public class Vertex {
 		
 		return userData.toString();
 	}
+	
+	public String toDotString() {
+		return toString();
+	}
 }
