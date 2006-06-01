@@ -370,7 +370,7 @@ class WCETMethodBlock {
   int dg[][];
   
   // method size in 32 bit words
-  int n = -1;
+  public int n = -1;
   
   int wcetlp;
   
@@ -379,7 +379,7 @@ class WCETMethodBlock {
   public WCETBasicBlock S;
   
   public WCETBasicBlock T;
-
+  
   // create a bb covering the whole method
   // from here on we split it when necessary
   public void init(InstructionHandle stih, InstructionHandle endih) {
@@ -1032,14 +1032,14 @@ if(wbbthis==null)
       HashMap tinbbs = wcbb.getInbbs();
       if(tinbbs.size()>0 || wcbb.bid==0){
         if(wcbb.bid==0){
-          ls.append(wcbb.blockcycmiss+" f"+"m"+wcbb.wcmb.mid+"bs_"+wcbb.uid);
+          ls.append(wcbb.blockcyc+" f"+"m"+wcbb.wcmb.mid+"bs_"+wcbb.uid);
           if(tinbbs.size()>0)
             ls.append(" + ");
         }
         for (Iterator titer = tinbbs.keySet().iterator(); titer.hasNext();) {
           Integer tkeyInt = (Integer) titer.next();
           WCETBasicBlock w = (WCETBasicBlock) tinbbs.get(tkeyInt);
-          ls.append(wcbb.blockcycmiss+" f"+w.uid+"_"+wcbb.uid);
+          ls.append(wcbb.blockcyc+" f"+w.uid+"_"+wcbb.uid);
           if(titer.hasNext())
             ls.append(" + ");
         }
@@ -1193,8 +1193,7 @@ class WCETBasicBlock {
   // the reason why we are doing this...
   int wcetHit;
   int wcetMiss;
-  int blockcychit;
-  int blockcycmiss;
+  int blockcyc;
 
 
   // false if we encounter WCETNOTAVAILABLE bytecodes while counting
@@ -1570,8 +1569,7 @@ class WCETBasicBlock {
     StringBuffer sb = new StringBuffer();
 
     InstructionHandle ih = stih;
-    blockcychit = 0;
-    blockcycmiss = 0;
+    blockcyc = 0;
 
     LineNumberTable lnt = wcmb.methodbcel.getLineNumberTable();
     int prevLine = -1;
@@ -1580,7 +1578,6 @@ class WCETBasicBlock {
       if(wcmb.wca.jline){
         srcLine = lnt.getSourceLine(ih.getPosition());
 
-        
         if(srcLine>prevLine){
           //"Annotation" example
           int ai = wcmb.codeLines[srcLine-1].trim().indexOf("@WCA");
@@ -1642,9 +1639,6 @@ sb.append(WU.postpad("B" + bid+tStr,6)); // see the BBs that point to this BB
       
       //invoke instructions
       if(ih.getInstruction() instanceof InvokeInstruction){
-        int wcetihMiss = -1;
-        int wcetihHit = -1;
-System.out.println("OK");       
         String methodid = ((InvokeInstruction)ih.getInstruction()).getClassName(wcmb.getCpg())
         +"."
         +((InvokeInstruction)ih.getInstruction()).getMethodName(wcmb.getCpg())
@@ -1664,75 +1658,76 @@ System.out.println("OK");
           {
             int cycles = WCETInstruction.getCycles(opcode,false,0);
             // no difference as cache is not involved
-            wcetihMiss = cycles;
-            wcetihHit = cycles;
-            blockcycmiss += wcetihMiss;
-            blockcychit += wcetihHit;
-            sb.append(WU.prepad(Integer.toString(wcetihHit),10));
+            blockcyc += cycles;
+            sb.append(WU.prepad(Integer.toString(cycles),10));
             sb.append("   ");
             sb.append("                ");
             invoStr = methodid;
           }
         }
         else if(m!=null && !m.isAbstract()){
-          int n = -1;
+          int invon = -1;
           if(m.getCode()!= null){
-            n = (m.getCode().getCode().length + 3) / 4;
+            invon = (m.getCode().getCode().length + 3) / 4;
           }else{
-            n=0;
+            invon=0;
           }
-          int invokehit = WCETInstruction.getCyclesFromHandle(ih,false,n);
-          int invokemiss = WCETInstruction.getCyclesFromHandle(ih,true,n);
+          int invokehit = WCETInstruction.getCyclesFromHandle(ih,false,invon);
+          int invokemiss = WCETInstruction.getCyclesFromHandle(ih,true,invon);
           
           //now the return 
           int rethit = -1;
           int retmiss = -1; 
           //TODO: Check these with ms
           if(retsig.equals("V")){
-            rethit = WCETInstruction.getCycles(org.apache.bcel.Constants.RETURN,false, n);
-            retmiss = WCETInstruction.getCycles(org.apache.bcel.Constants.RETURN,true, n);
+            rethit = WCETInstruction.getCycles(org.apache.bcel.Constants.RETURN,false, wcmb.n);
+            retmiss = WCETInstruction.getCycles(org.apache.bcel.Constants.RETURN,true, wcmb.n);
           } 
           else if(retsig.equals("I") || retsig.equals("Z")|| retsig.equals("B")|| retsig.equals("C")|| retsig.equals("S")){
-            rethit = WCETInstruction.getCycles(org.apache.bcel.Constants.IRETURN,false, n);
-            retmiss = WCETInstruction.getCycles(org.apache.bcel.Constants.IRETURN,true, n);
+            rethit = WCETInstruction.getCycles(org.apache.bcel.Constants.IRETURN,false, wcmb.n);
+            retmiss = WCETInstruction.getCycles(org.apache.bcel.Constants.IRETURN,true, wcmb.n);
           } 
           else if(retsig.equals("J")){
-            rethit = WCETInstruction.getCycles(org.apache.bcel.Constants.LRETURN,false, n);
-            retmiss = WCETInstruction.getCycles(org.apache.bcel.Constants.LRETURN,true, n);
+            rethit = WCETInstruction.getCycles(org.apache.bcel.Constants.LRETURN,false, wcmb.n);
+            retmiss = WCETInstruction.getCycles(org.apache.bcel.Constants.LRETURN,true, wcmb.n);
           } 
           else if(retsig.equals("D")){
-            rethit = WCETInstruction.getCycles(org.apache.bcel.Constants.DRETURN,false, n);
-            retmiss = WCETInstruction.getCycles(org.apache.bcel.Constants.DRETURN,true, n);
+            rethit = WCETInstruction.getCycles(org.apache.bcel.Constants.DRETURN,false, wcmb.n);
+            retmiss = WCETInstruction.getCycles(org.apache.bcel.Constants.DRETURN,true, wcmb.n);
           } 
           else if(retsig.equals("F")){
-            rethit = WCETInstruction.getCycles(org.apache.bcel.Constants.FRETURN,false, n);
-            retmiss = WCETInstruction.getCycles(org.apache.bcel.Constants.FRETURN,true, n);
+            rethit = WCETInstruction.getCycles(org.apache.bcel.Constants.FRETURN,false, wcmb.n);
+            retmiss = WCETInstruction.getCycles(org.apache.bcel.Constants.FRETURN,true, wcmb.n);
           } 
           else if(retsig.startsWith("[") || retsig.startsWith("L")){
-            rethit = WCETInstruction.getCycles(org.apache.bcel.Constants.ARETURN,false, n);
-            retmiss = WCETInstruction.getCycles(org.apache.bcel.Constants.ARETURN,true, n);
+            rethit = WCETInstruction.getCycles(org.apache.bcel.Constants.ARETURN,false, wcmb.n);
+            retmiss = WCETInstruction.getCycles(org.apache.bcel.Constants.ARETURN,true, wcmb.n);
           }else{
             System.out.println("Did not recognize "+retsig+" as return type");
             System.exit(-1);
           }
-          wcetihMiss = invokemiss;//+retmiss;
-          blockcycmiss += wcetihMiss;
-          wcetihHit = invokehit;//+rethit;
-          blockcychit += wcetihHit;
+          int cacheInvokeMiss = (invokemiss-invokehit);
+          int cacheReturnMiss = (retmiss-rethit);
+          // that's the invoke instruction
+          blockcyc += invokehit;
+          // cache influence now as always miss up
+          // we hve solved it with extra blocks
+          blockcyc += cacheInvokeMiss;
+          blockcyc += cacheReturnMiss;
           if((((InvokeInstruction)ih.getInstruction()).getClassName(wcmb.getCpg())).equals(wcmb.wca.nativeClass)){
 //            sb.append(WU.prepad("*"+Integer.toString(wcetihHit)+"/"+Integer.toString(wcetihMiss),10));
             sb.append(WU.prepad("*to check",10));
           } else {
 //            sb.append(WU.prepad(Integer.toString(wcetihHit)+"/"+Integer.toString(wcetihMiss),10));
             sb.append(WU.prepad(invokehit+"",10));
-            sb.append(WU.prepad(wcmb.wca.las+(invokemiss-invokehit)+"",8));
-            sb.append(WU.prepad(wcmb.wca.las+(retmiss-rethit)+"",8));
+            sb.append(WU.prepad(wcmb.wca.las+cacheInvokeMiss+"",8));
+            sb.append(WU.prepad(wcmb.wca.las+cacheReturnMiss+"",8));
           }
 
           sb.append("   ");
-          invoStr = methodid+", invoke(n="+n+"):"+invokehit+"/"+invokemiss;//+" return(n="+wcmb.getN()+"):"+rethit+"/"+retmiss;
+          invoStr = methodid+", invoke(n="+invon+"):"+invokehit+"/"+invokemiss+" return(n="+wcmb.getN()+"):"+rethit+"/"+retmiss;
           if((((InvokeInstruction)ih.getInstruction()).getClassName(wcmb.getCpg())).equals(wcmb.wca.nativeClass)){
-            invoStr += ", no hit/miss cycle count for Native invokes (yet)";
+            invoStr = methodid;
           } 
         }
         else{
@@ -1740,23 +1735,15 @@ System.out.println("OK");
         }
 
       }else{ // non-invoke functions
-        int wcetihMiss;
-        int wcetihHit;
+        int wcetih;
         if(ih.getInstruction() instanceof ReturnInstruction){
-          // ms suggestion?
-          // MS: no not this way, use the hit cycles count and
-          // add the miss cycles to the invoke instruction
-          wcetihMiss = 0;
-          // wcetihHit = 0;
-          wcetihHit = WCETInstruction.getCyclesFromHandle(ih, false, wcmb.getN());
-          sb.append(WU.prepad(Integer.toString(wcetihHit),10));
+          wcetih = WCETInstruction.getCyclesFromHandle(ih, false, wcmb.getN());
+          sb.append(WU.prepad(Integer.toString(wcetih),10));
         } else{
-          wcetihMiss = WCETInstruction.getCyclesFromHandle(ih, true, wcmb.getN());
-          wcetihHit = WCETInstruction.getCyclesFromHandle(ih, false, wcmb.getN());
-          sb.append(WU.prepad(Integer.toString(wcetihHit),10));
+          wcetih = WCETInstruction.getCyclesFromHandle(ih, false, wcmb.getN());
+          sb.append(WU.prepad(Integer.toString(wcetih),10));
         }
-        blockcycmiss += wcetihMiss;
-        blockcychit += wcetihHit;
+        blockcyc += wcetih;
 
         sb.append(wcmb.wca.las+"   ");
         sb.append(wcmb.wca.las+"                ");
@@ -1805,21 +1792,18 @@ System.out.println("OK");
       //block sum if end
       if(ih == endih){
         sb.append("sum(B"+bid+"):");
-        if(ih.getInstruction() instanceof ReturnInstruction){
-          sb.append(WU.prepad(blockcychit+"/NA",7));
+//        if(ih.getInstruction() instanceof ReturnInstruction){
+          sb.append(WU.prepad(""+blockcyc,7));
 //          sb.append(" *do add return cycles and do not have size of caller (yet)");
-        }
-        else{
-          sb.append(WU.prepad(blockcychit+"/"+blockcycmiss,7));
-        }
+//        }
+//        else{
+//          sb.append(WU.prepad(blockcychit+"/"+blockcycmiss,7));
+//        }
       }
       
       sb.append(wcmb.wca.lae+"\n");
     } while (ih != endih && (ih = ih.getNext()) != null);
     
-    if(blockcycmiss<blockcychit)
-      blockcycmiss = blockcychit;
-
     return sb.toString();
   }
   
@@ -1892,10 +1876,7 @@ System.out.println("OK");
 //    for (int i=0;i<bbinvo.size();i++){
 //      hit = CacheSimul.get(wcmb.methodbcel);
 //    }
-//    if(hit)
-      return blockcychit;
-//    else
-//      return blockcycmiss;
+      return blockcyc;
   }
 
 }

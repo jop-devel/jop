@@ -30,7 +30,7 @@ public class SetWCETAnalysis extends MyVisitor {
         wcmb.controlFlowGraph();
         wcmb.directedGraph();
         wca.out.println(wcmb.toString());
-        
+        wca.dotout.print("\tdot -Tps "+wcmb.dotf+" > "+wcmb.dotf.substring(0,wcmb.dotf.length()-4)+".eps\n");
       }
       //}
 		}
@@ -42,7 +42,7 @@ public class SetWCETAnalysis extends MyVisitor {
         WCETMethodBlock wcmb = (WCETMethodBlock)wca.mtowcmb.get(m);
         wca.out.println("*** WCET FOR APPLICATION***");
         wca.out.println(wcmb.toLS(true,true,"")+"\n");
-        wca.dotout.print("\tdot -Tps "+wcmb.dotf+" > "+wcmb.dotf.substring(0,wcmb.dotf.length()-4)+".eps\n");
+        
       }
       }
     }
