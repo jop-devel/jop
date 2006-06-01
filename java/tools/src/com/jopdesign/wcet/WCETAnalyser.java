@@ -51,7 +51,7 @@ import lpsolve.*;
 // 2006-05-04  ms: Split cache miss column 
 // 2006-05-07 rup: Output dot graphs 
 // 2006-05-25 rup: "Annotations" and lp_solvable wcet output
-// 2006-05-30 rup: Exact call graph permutation to allow cache simulation 
+// 2006-05-30 rup: Exact call graph permutation to allow cache simulation
 
 /**
  * The thing that controls the WCETClassBlock etc.
@@ -64,6 +64,8 @@ public class WCETAnalyser {
   public static boolean dot;
   public static boolean jline;
   public static boolean ls;
+  
+  public static int idtmp = 0; // counter to make unique ids
   
   public final static String nativeClass = "com.jopdesign.sys.Native";
 
@@ -83,7 +85,20 @@ public class WCETAnalyser {
    */
   static String mainClass;
   
+  //signaure -> methodbcel
   HashMap mmap;
+  
+  // methodbcel -> WCETMethodBlock 
+  HashMap mtowcmb = new HashMap();  
+  
+  //method name to id
+  HashMap midmap;
+  
+  //id to wcmb
+  HashMap idmmap;
+  
+  // methodsignature -> wcmb
+  HashMap msigtowcmb;
   
   HashMap javaFilePathMap;
   
@@ -92,13 +107,12 @@ public class WCETAnalyser {
   static String outFile;
 
   public WCETAnalyser() {
-    
-    // TODO: Debugging from Eclipse creates a different classpath?
+    msigtowcmb = new HashMap();
     classpath = new org.apache.bcel.util.ClassPath(".");
     mmap = new HashMap();
+    midmap = new HashMap();
     javaFiles = new ArrayList();
     javaFilePathMap = new HashMap();
-    
   }
 
   public static void main(String[] args) {
@@ -229,6 +243,7 @@ public class WCETAnalyser {
     System.out.println(Arrays.asList(hull.getClassNames()));
     JavaClass[] jc = hull.getClasses();
     // clazzes contains now the closure of the application
+    int mid = 0;
     for (int j = 0; j < jc.length; ++j) {
       // The class Native is NOT used in a JOP application
       if (!jc[j].getClassName().equals(nativeClass)) {
@@ -264,12 +279,13 @@ public class WCETAnalyser {
 //System.out.println("m to be put:"+msig);//TODO mig everywhere          
 //System.out.println("r: "+m[ii].getReturnType().getSignature());//TODO mig everywhere
         mmap.put(msig,m[ii]);
+        midmap.put(new Integer(mid),msig);
+        mid++;
       }
     }
   }
 
   private void iterate(Visitor v) {
-
     Iterator it = clazzes.iterator();
     while (it.hasNext()) {
       JavaClass clz = (JavaClass) it.next();
@@ -288,6 +304,13 @@ public class WCETAnalyser {
     Method m = (Method)mmap.get(methodid);
     return m;
   }
+  
+  public WCETMethodBlock getWCMB(Method method){
+    WCETMethodBlock wcmb = (WCETMethodBlock)mtowcmb.get(method);
+//System.out.println("getWCMB:"+wcmb);    
+    return wcmb;
+  }
+
   /**
    * Return the opcode for the methodId (applicable to Native methods).
    * @param methodid
@@ -309,6 +332,11 @@ public class WCETAnalyser {
  * graph of wcbbs.
  */
 class WCETMethodBlock {
+  
+  String lso; //ls objective
+  
+  final int mid; // a unique id across the app
+  
   // Basic Blocks
   TreeMap bbs;
 
@@ -355,7 +383,7 @@ class WCETMethodBlock {
   // create a bb covering the whole method
   // from here on we split it when necessary
   public void init(InstructionHandle stih, InstructionHandle endih) {
-    WCETBasicBlock wcbb = new WCETBasicBlock(stih, endih, this);
+    WCETBasicBlock wcbb = new WCETBasicBlock(stih, endih, this, WCETBasicBlock.SNODE);
     bbs.put(new Integer(wcbb.getStart()), wcbb);
   }
 
@@ -363,7 +391,11 @@ class WCETMethodBlock {
    * Instanciated from from <code>SetClassInfo</code>.
    */
   public WCETMethodBlock(Method method, JavaClass jc, WCETAnalyser wca) {
+//System.out.println("WCMB CONSTR putting"+method);    
+    wca.mtowcmb.put(method,this);
     this.wca = wca;
+    mid = wca.idtmp++;
+    
     bbs = new TreeMap();
     this.methodbcel = method;
     name = methodbcel.getName();
@@ -434,7 +466,11 @@ class WCETMethodBlock {
       do {
         // create new bb (a)for branch target and (b) for sucessor
         Instruction ins = ih.getInstruction();
-        if (ih.getInstruction() instanceof BranchInstruction) {
+        
+        if(ih.getInstruction() instanceof InvokeInstruction){
+          createBasicBlock(ih);
+          createBasicBlock(ih.getNext());
+        } else if (ih.getInstruction() instanceof BranchInstruction) {
           InstructionHandle ihtar = ((BranchInstruction) ih.getInstruction())
               .getTarget();
           InstructionHandle ihnext = ih.getNext();
@@ -446,14 +482,18 @@ class WCETMethodBlock {
       } while ((ih = ih.getNext()) != null);
 
       // Pass 1: Set the id of each block
-      int id = 0;
+      int bid = 0;
       // it is sorted on the (final) start pos of each block
       for (Iterator iter = getBbs().keySet().iterator(); iter.hasNext();) {
         WCETBasicBlock wbb = (WCETBasicBlock) getBbs().get(
             (Integer) iter.next());
         wbb.calculateWcet();
-        wbb.setId(id);
-        id++;
+        wbb.setBid(bid);
+//        if(id==0)
+        wbb.uid = "m"+mid+"b"+bid;
+//        else
+//          wbb.uid = "m"+this.id+"bs";
+        bid++;
 
         ih = wbb.getEndih();
         WCETBasicBlock wbbthis = getCoveringBB(ih);
@@ -499,15 +539,17 @@ if(wbbthis==null)
           }
         }
       }
-      T.id = id;
+      T.bid = bid;
+      T.uid = "m"+mid+"bt";
+
       TreeMap newbbs = new TreeMap();
       for (Iterator iter = getBbs().keySet().iterator(); iter.hasNext();) {
         WCETBasicBlock wbb = (WCETBasicBlock) getBbs().get(
             (Integer) iter.next());
-        newbbs.put(new Integer(wbb.id),wbb);
+        newbbs.put(new Integer(wbb.bid),wbb);
       }
       bbs = newbbs;
-      bbs.put(new Integer(T.id),T);
+      bbs.put(new Integer(T.bid),T);
     }
   }
 
@@ -605,6 +647,8 @@ if(wbbthis==null)
     } else // create one by splitting the covering bb
     {
       WCETBasicBlock wcbb = covwcbb.split(stih);
+      if(stih.getInstruction() instanceof InvokeInstruction)
+        wcbb.nodetype = WCETBasicBlock.INODE; 
       // save the new bb in the hash map
       if (bbs.put(new Integer(stih.getPosition()), wcbb) != null) {
         System.err.println("The starting pos should be unique.");
@@ -635,18 +679,18 @@ if(wbbthis==null)
       else 
         wcbb.line = -1;
       WCETBasicBlock tarwcbb = wcbb.getTarbb();
-      int id = wcbb.getId();
-      WCETBasicBlock.bba[id] = wcbb;
+      int bid = wcbb.getBid();
+      WCETBasicBlock.bba[bid] = wcbb;
       if (tarwcbb != null) {
-        int tarbbid = tarwcbb.getId();
+        int tarbbid = tarwcbb.getBid();
         tarwcbb.addTargeter(wcbb);
-        dg[id][tarbbid]++;
+        dg[bid][tarbbid]++;
       }
       WCETBasicBlock sucbb = wcbb.getSucbb();
       if (sucbb != null && sucbb.nodetype != WCETBasicBlock.TNODE) {
-        int sucid = sucbb.getId();
+        int sucid = sucbb.getBid();
         sucbb.addTargeter(wcbb);
-        dg[id][sucid]++;
+        dg[bid][sucid]++;
       }
     }
     
@@ -688,7 +732,7 @@ if(wbbthis==null)
             wcbb.loopdriver = true;
             wcbb.loop = Integer.parseInt((String)wcaA.get("loop"));
             wcbbhit.loopcontroller = true;
-            wcbbhit.loopid = wcbb.id;
+            wcbbhit.loopid = wcbb.bid;
             wcbbhit.loop = Integer.parseInt((String)wcaA.get("loop"));
             lines.add(new Integer(wcbbhit.line));
           }
@@ -697,7 +741,7 @@ if(wbbthis==null)
           
       if(wcbb.loopcontroller){
         HashMap tinbbs = wcbb.getInbbs();
-        if(wcbb.id > 0 && tinbbs.size()!=2){
+        if(wcbb.bid > 0 && tinbbs.size()!=2){
 //          System.out.println("error in loopcontrol:"+wcbb.id);
 //          System.out.println("tinbbs.size:"+tinbbs.size());
 //          System.exit(-1);
@@ -774,12 +818,15 @@ if(wbbthis==null)
     sb.append("=========================================================================\n");
     sb.append("Info: n="+n+" b="+WCETInstruction.calculateB(n)+" a="+WCETInstruction.a+" r="+WCETInstruction.r+" w="+WCETInstruction.w+"\n");
     sb.append("\n"); 
-    if(wca.ls){
-      sb.append(toLS());
-      WCETBasicBlock.linkbb(WCETBasicBlock.bba[0]);
-      WCETBasicBlock.bbe();
-      sb.append("\n"+toLinkBBS());
-    }
+//    if(wca.ls){
+//      sb.append(toLS(true, true, ""));
+//      WCETBasicBlock.linkbb(WCETBasicBlock.bba[0]);
+//      WCETBasicBlock.bbe();
+//      sb.append("\n"+toLinkBBS());
+//    }
+    if(wca.ls)
+      sb.append(toLS(false,true, ""));
+    
     if(wca.dot)
       sb.append(toDot());
     
@@ -829,18 +876,18 @@ if(wbbthis==null)
     for (Iterator titer = tinbbs.keySet().iterator(); titer.hasNext();) {
       Integer tkeyInt = (Integer) titer.next();
       WCETBasicBlock w = (WCETBasicBlock) tinbbs.get(tkeyInt);
-      sb.append("\tB"+w.id+" -> T");
+      sb.append("\tB"+w.bid+" -> T");
       if(labels){
-        String edge = "f"+w.id+"_t";
+        String edge = "f"+w.bid+"_t";
         if(wcetvars.get(edge)!=null){
           int edgeval = Integer.parseInt((String)wcetvars.get(edge));
           if(edgeval>0)
-            sb.append(" [label=\"f"+w.id+"_t ="+edgeval+"\"");
+            sb.append(" [label=\"f"+w.bid+"_t ="+edgeval+"\"");
           else
-            sb.append(" [style=dashed,label=\"f"+w.id+"_t ="+edgeval+"\"");
+            sb.append(" [style=dashed,label=\"f"+w.bid+"_t ="+edgeval+"\"");
         }
         else
-          sb.append(" [label=\"f"+w.id+"_t = ?\"");
+          sb.append(" [label=\"f"+w.bid+"_t = ?\"");
         
           //sb.append(",labelfloat=true");
         sb.append("]");
@@ -854,7 +901,7 @@ if(wbbthis==null)
     for (Iterator iter = bbs.keySet().iterator(); iter.hasNext();) {
       Integer keyInt = (Integer) iter.next();
       WCETBasicBlock wcbb = (WCETBasicBlock) bbs.get(keyInt);
-      int id = wcbb.getId();
+      int id = wcbb.getBid();
       sb.append("\tB"+id+" [label=\"B"+id+"\\n"+wcbb.wcetHit+"\"];\n");
     }
     sb.append("\tT [label=\"T\"];\n");
@@ -875,44 +922,27 @@ if(wbbthis==null)
 
   }
   //TODO: loop follows loop controller?
-  public String toLS(){
+  /**
+   * @param fl follow the invokes
+   * @param term terminate with s=1, t=1
+   */
+  public String toLS(boolean fl, boolean term, String invoker){
     StringBuffer ls = new StringBuffer();
-    ls.append("/***WCET calculation source***/\n");
-    ls.append("/* WCA WCET objective: "+jc.getClassName() + "." + methodbcel.getName()+ " */\n");
-    ls.append("max: ");
-    for (Iterator iter = bbs.keySet().iterator(); iter.hasNext();) {
-      Integer keyInt = (Integer) iter.next();
-      WCETBasicBlock wcbb = (WCETBasicBlock) bbs.get(keyInt);
-      ls.append("t"+wcbb.id);
-      
-//      HashMap tinbbs = wcbb.getInbbs();
-//      if(wcbb.id==0){
-//        ls.append(wcbb.blockcycmiss+" e0 ");
-//      }
-//      else{
-//        for (Iterator titer = tinbbs.keySet().iterator(); titer.hasNext();) {
-//          Integer tkeyInt = (Integer) titer.next();
-//          WCETBasicBlock w = (WCETBasicBlock) tinbbs.get(tkeyInt);
-//          ls.append(wcbb.blockcycmiss+" e"+w.id+"_"+wcbb.id);
-//          if(titer.hasNext())
-//            ls.append(" ");
-//        }    
-//      }
-      if(iter.hasNext())
-        ls.append(" ");
-    }
-    ls.append(";\n");
+    StringBuffer obs = new StringBuffer();
+
     ls.append("/* WCA flow constraints */\n");
-    ls.append("S: 1 = fs_0; // flow\n");
+
     WCETBasicBlock wcbb = null;
     for (Iterator iter = bbs.keySet().iterator(); iter.hasNext();) {
       Integer keyInt = (Integer) iter.next();
       wcbb = (WCETBasicBlock) bbs.get(keyInt);
+      if(wcbb.bid ==0 && term)
+        ls.append("M"+mid+"S: 1 = fm"+mid+"bs_"+wcbb.uid+"; // flow\n");    
       HashMap tinbbs = wcbb.getInbbs();
-      if(tinbbs.size()>0 || wcbb.id ==0){
-        ls.append("B"+wcbb.id+": ");
-        if(wcbb.id==0){
-          ls.append("fs_0");
+      if(tinbbs.size()>0 || wcbb.bid ==0){
+        ls.append("B"+wcbb.uid+": ");
+        if(wcbb.bid==0){
+          ls.append("fm"+wcbb.wcmb.mid+"bs_"+wcbb.uid);
           if(tinbbs.size()>0){
             ls.append(" + ");
           }
@@ -920,7 +950,7 @@ if(wbbthis==null)
         for (Iterator titer = tinbbs.keySet().iterator(); titer.hasNext();) {
           Integer tkeyInt = (Integer) titer.next();
           WCETBasicBlock w = (WCETBasicBlock) tinbbs.get(tkeyInt);
-          ls.append("f"+w.id+"_"+wcbb.id);
+          ls.append("f"+w.uid+"_"+wcbb.uid);
           
           if(titer.hasNext())
             ls.append(" + ");
@@ -928,33 +958,52 @@ if(wbbthis==null)
         } 
         ls.append(" = ");
         if(wcbb.sucbb != null){
-          if(wcbb.sucbb.nodetype != WCETBasicBlock.TNODE){  
-            ls.append("f"+wcbb.id+"_"+wcbb.sucbb.id);
-          }
-          else{
-            ls.append("f"+wcbb.id+"_t");
-          }
+          //if(wcbb.sucbb.nodetype != WCETBasicBlock.TNODE){  
+            ls.append("f"+wcbb.uid+"_"+wcbb.sucbb.uid);
+          //}
         }
         if(wcbb.sucbb != null && wcbb.tarbb!=null)
           ls.append(" + ");
         if(wcbb.tarbb!=null)
-          ls.append("f"+wcbb.id+"_"+wcbb.tarbb.id);
-        if(wcbb.sucbb == null && wcbb.tarbb == null)
+          ls.append("f"+wcbb.uid+"_"+wcbb.tarbb.uid);
+        if(wcbb.sucbb == null && wcbb.tarbb == null && term)
           ls.append("1");
-        ls.append(";\n");  
+        if(wcbb.nodetype == WCETBasicBlock.TNODE && !term)
+          ls.append(invoker+";\n");
+        else
+          ls.append(";\n");
+      }
+      
+      // hook the called method to the outgoing node
+      if(wcbb.nodetype == WCETBasicBlock.INODE && fl){
+        
+//System.out.println("invoking "+wcbb.bbinvo);        
+//System.out.println("null?:"+wca.getMethod(wcbb.bbinvo));
+        WCETMethodBlock invowcmb = wca.getWCMB(wca.getMethod(wcbb.bbinvo));
+        ls.append("/* Invoking "+wcbb.bbinvo+" id:"+invowcmb.mid+"*/\n");
+//System.out.println("res:"+invowcmb.toLS(true,false));        
+        String invoout = "f"+wcbb.uid+"_"+wcbb.sucbb.uid; 
+        String invoS = "m"+((WCETBasicBlock)invowcmb.getBbs().get(invowcmb.getBbs().firstKey())).wcmb.mid+"bs;\n";
+        String invoT = ((WCETBasicBlock)invowcmb.getBbs().get(invowcmb.getBbs().lastKey())).uid;
+        //to invo
+        ls.append("M"+mid+"toM"+invowcmb.mid+": "+invoout+" = f"+wcbb.uid+"_"+invoS);        
+        ls.append(invowcmb.toLS(true,false, invoout)+"\n");
+        obs.append(invowcmb.lso+" ");
+        ls.append("/* Done with "+wcbb.bbinvo+"*/\n");
       }
     }
-
-    HashMap tinbbs = T.getInbbs();
-    for (Iterator titer = tinbbs.keySet().iterator(); titer.hasNext();) {
-      Integer tkeyInt = (Integer) titer.next();
-      WCETBasicBlock w = (WCETBasicBlock) tinbbs.get(tkeyInt);
-      ls.append("f"+w.id+"_t");
-      if(titer.hasNext())
-        ls.append(" + ");
-    } 
-    ls.append(" = 1;\n");
     
+//    if(term){
+//      HashMap tinbbs = T.getInbbs();
+//      for (Iterator titer = tinbbs.keySet().iterator(); titer.hasNext();) {
+//        Integer tkeyInt = (Integer) titer.next();
+//        WCETBasicBlock w = (WCETBasicBlock) tinbbs.get(tkeyInt);
+//        ls.append("f"+w.uid+"_"+T.uid);
+//        if(titer.hasNext())
+//          ls.append(" + ");
+//      } 
+//      ls.append(" = 1; //T\n");
+//    }
     ls.append("/* WCA loops */\n");
 
     //loops
@@ -963,10 +1012,10 @@ if(wbbthis==null)
       Integer keyInt = (Integer) iter.next();
       wcbb = (WCETBasicBlock) bbs.get(keyInt);
       if(wcbb.loopcontroller){
-        if(wcbb.id==0){
-          ls.append("lc"+wcbb.id+": f"+ wcbb.id+"_"+wcbb.sucbb.id+" <= "+wcbb.loop+" f"+"s"+"_"+wcbb.id+";\n");
+        if(wcbb.bid==0){
+          ls.append("lc"+wcbb.uid+": f"+wcbb.uid+"_"+wcbb.sucbb.uid+" <= "+wcbb.loop+" fm"+wcbb.wcmb.mid+"bs"+"_"+wcbb.uid+";\n");
         }else {
-          ls.append("lc"+wcbb.id+": f"+ wcbb.id+"_"+wcbb.sucbb.id+" <= "+wcbb.loop+" f"+(wcbb.loopid-1)+"_"+wcbb.loopid+";\n");
+          ls.append("lc"+wcbb.uid+": f"+ wcbb.uid+"_"+wcbb.sucbb.uid+" <= "+wcbb.loop+" fm"+wcbb.wcmb.mid+"b"+(wcbb.loopid-1)+"_m"+wcbb.wcmb.mid+"b"+wcbb.loopid+";\n");
           wcbb.sc = wcbb.loop;
           wcbb.scsid = wcbb.loopid-1;
           wcbb.sctid = wcbb.loopid;
@@ -978,19 +1027,19 @@ if(wbbthis==null)
     for (Iterator iter = bbs.keySet().iterator(); iter.hasNext();) {
       Integer keyInt = (Integer) iter.next();
       wcbb = (WCETBasicBlock) bbs.get(keyInt);
-      ls.append("t"+wcbb.id+" = ");
+      ls.append("t"+wcbb.uid+" = ");
       
-      tinbbs = wcbb.getInbbs();
-      if(tinbbs.size()>0 || wcbb.id==0){
-        if(wcbb.id==0){
-          ls.append(wcbb.blockcycmiss+" fs_0");
+      HashMap tinbbs = wcbb.getInbbs();
+      if(tinbbs.size()>0 || wcbb.bid==0){
+        if(wcbb.bid==0){
+          ls.append(wcbb.blockcycmiss+" f"+"m"+wcbb.wcmb.mid+"bs_"+wcbb.uid);
           if(tinbbs.size()>0)
             ls.append(" + ");
         }
         for (Iterator titer = tinbbs.keySet().iterator(); titer.hasNext();) {
           Integer tkeyInt = (Integer) titer.next();
           WCETBasicBlock w = (WCETBasicBlock) tinbbs.get(tkeyInt);
-          ls.append(wcbb.blockcycmiss+" f"+w.id+"_"+wcbb.id);
+          ls.append(wcbb.blockcycmiss+" f"+w.uid+"_"+wcbb.uid);
           if(titer.hasNext())
             ls.append(" + ");
         }
@@ -998,45 +1047,74 @@ if(wbbthis==null)
         ls.append(";\n");
     }
     
-    
-    try {
-      lpf = new File(WCETAnalyser.outFile).getParentFile().getAbsolutePath()+"\\"+jc.getClassName()+"."+methodbcel.getName()+".lp";
-      lpf = lpf.replace('<','_');
-      lpf = lpf.replace('>','_');
-//System.out.println("about to write:"+lpf);
-      PrintWriter lsout = new PrintWriter(new FileOutputStream(lpf));
-      lsout.write(ls.toString());
-      lsout.close();
-    } catch (FileNotFoundException e1) {
-      e1.printStackTrace();
-    }
-
-    try {
-      wcetvars = new HashMap();
-      LpSolve problem = LpSolve.readLp(lpf, LpSolve.NORMAL, jc.getClassName()+"."+methodbcel.getName());
-      problem.setOutputfile(lpf+".output.txt");
-      problem.solve();
-      problem.setOutputfile(lpf+".solved.txt");
-      problem.printObjective();
-      problem.printSolution(1);
-      wcetlp = (int)problem.getObjective();
-      try {
-        BufferedReader in = new BufferedReader(new FileReader(lpf+".solved.txt"));
-        String str;
-        while ((str = in.readLine()) != null) {
-          ls.append(str+"\n");
-          StringTokenizer st = new StringTokenizer(str);
-          if(st.countTokens()==2){
-            wcetvars.put(st.nextToken(),st.nextToken());
-          }
-        }
-        in.close();
-      } catch (IOException e) {
+    if(term){
+      String lso = obs.toString();
+      obs = new StringBuffer();
+      obs.append("/***WCET calculation source***/\n");
+      obs.append("/* WCA WCET objective: "+jc.getClassName() + "." + methodbcel.getName()+ " */\n");
+      obs.append("max: ");
+      for (Iterator iter = bbs.keySet().iterator(); iter.hasNext();) {
+        Integer keyInt = (Integer) iter.next();
+        wcbb = (WCETBasicBlock) bbs.get(keyInt);
+        obs.append("t"+wcbb.uid);
+        
+        if(iter.hasNext())
+          obs.append(" ");
       }
-    } catch (LpSolveException e) {
-      System.out.println("LP not solvable for: "+jc.getClassName()+"."+methodbcel.getName());
-      //e.printStackTrace();
-    } 
+      obs.append(" "+lso+";\n");
+      ls.insert(0,obs.toString());
+    } else{
+      for (Iterator iter = bbs.keySet().iterator(); iter.hasNext();) {
+        Integer keyInt = (Integer) iter.next();
+        wcbb = (WCETBasicBlock) bbs.get(keyInt);
+        obs.append("t"+wcbb.uid);
+        
+        if(iter.hasNext())
+          obs.append(" ");
+      } 
+      lso = obs.toString();
+    }
+    if(term){
+      try {
+        lpf = new File(WCETAnalyser.outFile).getParentFile().getAbsolutePath()+"\\"+jc.getClassName()+"."+methodbcel.getName()+".lp";
+        lpf = lpf.replace('<','_');
+        lpf = lpf.replace('>','_');
+  //System.out.println("about to write:"+lpf);
+        PrintWriter lsout = new PrintWriter(new FileOutputStream(lpf));
+        lsout.write(ls.toString());
+//System.out.println("LS to be solved:"+ls.toString());        
+        lsout.close();
+      } catch (FileNotFoundException e1) {
+        e1.printStackTrace();
+      }
+  
+      try {
+        wcetvars = new HashMap();
+        LpSolve problem = LpSolve.readLp(lpf, LpSolve.NORMAL, jc.getClassName()+"."+methodbcel.getName());
+        problem.setOutputfile(lpf+".output.txt");
+        problem.solve();
+        problem.setOutputfile(lpf+".solved.txt");
+        problem.printObjective();
+        problem.printSolution(1);
+        wcetlp = (int)problem.getObjective();
+        try {
+          BufferedReader in = new BufferedReader(new FileReader(lpf+".solved.txt"));
+          String str;
+          while ((str = in.readLine()) != null) {
+            ls.append(str+"\n");
+            StringTokenizer st = new StringTokenizer(str);
+            if(st.countTokens()==2){
+              wcetvars.put(st.nextToken(),st.nextToken());
+            }
+          }
+          in.close();
+        } catch (IOException e) {
+        }
+      } catch (LpSolveException e) {
+        System.out.println("LP not solvable for: "+jc.getClassName()+"."+methodbcel.getName());
+        //e.printStackTrace();
+      } 
+    }
     
     return ls.toString();
   }
@@ -1096,7 +1174,9 @@ class WCETBasicBlock {
   static WCETBasicBlock[] bba;
   
   // id of the bb
-  int id = -1;
+  int bid = -1;
+  
+  String uid; // unique id like "m1b1"
   
   int line = -1;
   
@@ -1150,7 +1230,7 @@ class WCETBasicBlock {
   String invokeStr;
   
   //Strings of method ids
-  ArrayList bbinvo = new ArrayList();
+  String bbinvo;
 
   // Walking
   int sc = -1; // positive if controlled
@@ -1170,6 +1250,7 @@ class WCETBasicBlock {
   public final static int SNODE = 1;
   public final static int TNODE = 2;
   public final static int BBNODE = 3;
+  public final static int INODE = 4;
   public int nodetype = BBNODE;
   WCETBasicBlock(WCETMethodBlock wcmb, int nodetype){
     this.nodetype = nodetype;
@@ -1181,8 +1262,9 @@ class WCETBasicBlock {
     inbbs = new HashMap();
   }
   
-  WCETBasicBlock(InstructionHandle stih, InstructionHandle endih, WCETMethodBlock wcmb) {
+  WCETBasicBlock(InstructionHandle stih, InstructionHandle endih, WCETMethodBlock wcmb, int nodetype) {
     this.wcmb = wcmb;
+    this.nodetype = nodetype;
     valid = false;
     wcetHit = -1;
     wcetMiss = -1;
@@ -1201,24 +1283,29 @@ class WCETBasicBlock {
 //}
     WCETBasicBlock b = S;
     ArrayList al = new ArrayList(); // not finished paths
-    int[] l = new int[200]; // -1 marks termination
-    int MAXLINK = 1000;  //
     
-    l[0] = b.id;
+    // [l.length-1] : last element (T node)
+    //  Integer.MIN_VALUE terminates a method sequence
+    // first element is unique int id of method: mmap->midmap
+    int[] l = new int[200]; 
+    int MAXLINK = 1000;  // 
+    
+    l[0] = b.bid;
 //System.out.println("l[0]:"+b.id);    
-    l[1] = -1;
+    l[1] = Integer.MIN_VALUE;
     al.add(l);
-    
+    int len = 0;    
     while(al.size()>0){
-      l = (int[])al.get(0);
-      int len = 0;
-      for (int i=0;i<l.length;i++){
-        if(l[i]!=-1)
-          len++;
-        else{
-//System.out.println("l[len-1] "+l[len-1]);          
-          b = bba[l[len-1]];
-          break;
+      if((l = (int[])al.get(0)) != l){
+        len = 0;
+        for (int i=0;true;i++){
+          if(l[i]!=Integer.MIN_VALUE)
+            len++;
+          else{
+  //System.out.println("l[len-1] "+l[len-1]);          
+            b = bba[l[len-1]];
+            break;
+          }
         }
       }
 //System.out.println("len:"+len);   
@@ -1226,9 +1313,9 @@ class WCETBasicBlock {
 //  System.out.println(l[i]);
 //}
       
-      if(l.length<len+2){
+      if(l.length<=len+1){ // make room for invokes
         int newl[] = new int[l.length+10];
-        System.arraycopy(l,0,newl,0,l.length);
+        System.arraycopy(l,0,newl,0,len);
         l = newl;
       }
       
@@ -1244,7 +1331,7 @@ class WCETBasicBlock {
       if(b.sucbb != null){
         if(b.sc != -1){  // constraint on sucbb
           for (int i=1;i<len;i++){
-            if(l[i-1] == b.id && l[i] == b.sucbb.id)
+            if(l[i-1] == b.bid && l[i] == b.sucbb.bid)
               hit++;
             if(l[i-1] == b.scsid && l[i] == b.sctid)
               chit++;
@@ -1260,7 +1347,7 @@ class WCETBasicBlock {
       if(b.tarbb != null){
         if(b.tc != -1){
           for (int i=0;i<len;i++){
-            if(l[i-1] == b.id && l[i] == b.tarbb.id)
+            if(l[i-1] == b.bid && l[i] == b.tarbb.bid)
               hit++;
             if(l[i-1] == b.tcsid && l[i] == b.tctid)
               chit++;
@@ -1274,31 +1361,55 @@ class WCETBasicBlock {
       if((b.sucbb != null && !svio) && (b.tarbb != null && !tvio)){
         int newl[] = new int[l.length];
         System.arraycopy(l,0,newl,0,l.length);
-        newl[len] = b.tarbb.id;
-        newl[len+1] = -1;
+        newl[len] = b.tarbb.bid;
+        newl[len+1] = Integer.MIN_VALUE;
         if(b.tarbb.nodetype == WCETBasicBlock.TNODE)
           bbl.add(newl);
         else
           al.add(newl);
         
-        l[len] = b.sucbb.id;
-        l[len+1] = -1;
+        l[len] = b.sucbb.bid;
+        l[len+1] = Integer.MIN_VALUE;
         if(b.sucbb.nodetype == WCETBasicBlock.TNODE)
           bbl.add(al.remove(0));
       } else if(b.sucbb != null && !svio){
-        l[len] = b.sucbb.id;
-        l[len+1] = -1;
+        l[len] = b.sucbb.bid;
+        l[len+1] = Integer.MIN_VALUE;
         if(b.sucbb.nodetype == WCETBasicBlock.TNODE)
           bbl.add(al.remove(0));
       } else if(b.tarbb != null && !tvio){
-        l[len] = b.tarbb.id;
-        l[len+1] = -1;
+        l[len] = b.tarbb.bid;
+        l[len+1] = Integer.MIN_VALUE;
         if(b.tarbb.nodetype == WCETBasicBlock.TNODE)
           bbl.add(al.remove(0));
       } else
         al.remove(l);
     }
     
+    // append methodid to invoking blocks as -id
+//    for (int i=0;i<bbl.size();i++){
+//      l = (int[])bbl.get(i);
+//      int j = 0;
+//      for (;j<l.length;j++){
+//        if(l[j]==Integer.MIN_VALUE){
+//          break;
+//        }
+//        else{
+//          int inv = bba[l[j]].bbinvo.size();
+//          int[] newl = new int[l.length+inv];
+//          System.arraycopy(l,0,newl,0,j);
+//          System.arraycopy(l,j,newl,j+inv,l.length-j);
+//          for(int m = 0;m<inv;m++){
+//            String mids = (String)bba[l[j]].bbinvo.get(m);
+//            int mid = ((Integer)wcmb.wca.midmap.get(mids)).intValue();
+//            newl[j+m] = -mid;
+//          }
+//        }
+//      }
+//    }
+//
+//    
+//    
 //    if(true){
 //      for (int i=0;i<bbl.size();i++){
 //        l = (int[])bbl.get(i);
@@ -1326,13 +1437,20 @@ class WCETBasicBlock {
       int[] l = (int[])bbl.get(i);
 //System.out.println("bbl["+i+"]"+"l.length="+l.length);      
       for (int j=0;j<l.length;j++){
-        if(l[j]==-1)
+        if(l[j]==Integer.MIN_VALUE)
           break;
 //System.out.println("i = "+i);
 //System.out.println("j = "+j);
 //System.out.println("l[j] = "+l[j]);
-        if(bba.length>l[j] && bba[l[j]]!=null)//TODO
+        if(l[j]<0){ // another method w. neg. entry
+//          int mid = -m;
+//          String mids = (String)bba[l[j]].bbinvo.get(mid);
+//          int mid = ((Integer)wcmb.wca.midmap.get(mids)).intValue();
+//          newl[j+m] = -mid;
+//        } else if(bba.length>l[j] && bba[l[j]]!=null){//TODO
           bbe[i] += bba[l[j]].getBlockCycles();
+        } 
+          
 //System.out.println("bba[l["+i+"]].getBlockCycles()"+bba[l[i]].getBlockCycles());        
 //System.out.println("bbe["+i+"]="+bbe[i]);        
         if(bbe[i]>wcetmax){
@@ -1380,7 +1498,7 @@ class WCETBasicBlock {
    * @return the new BB
    */
   WCETBasicBlock split(InstructionHandle newstih) {
-    WCETBasicBlock spbb = new WCETBasicBlock(newstih, endih, wcmb);
+    WCETBasicBlock spbb = new WCETBasicBlock(newstih, endih, wcmb, -1);
     end = newstih.getPrev().getPosition();
     endih = newstih.getPrev();
     return spbb;
@@ -1429,7 +1547,7 @@ class WCETBasicBlock {
   public String toString() {
     StringBuffer sb = new StringBuffer();
     // block (6)
-    String s = "B" + id;
+    String s = "B" + bid;
     if (!getValid())
       s+="*";
     
@@ -1482,11 +1600,11 @@ class WCETBasicBlock {
         for (Iterator iter = inbbs.keySet().iterator(); iter.hasNext();) {
           Integer keyInt = (Integer) iter.next();
           WCETBasicBlock wcbb = (WCETBasicBlock) inbbs.get(keyInt);
-          tStr += "B"+wcbb.getId()+" ";
+          tStr += "B"+wcbb.getBid()+" ";
         }
         tStr += "]";
 
-sb.append(WU.postpad("B" + id+tStr,6)); // see the BBs that point to this BB
+sb.append(WU.postpad("B" + bid+tStr,6)); // see the BBs that point to this BB
 //        sb.append(WU.postpad("B" + id,6));
       } else {
         sb.append("      ");
@@ -1526,7 +1644,7 @@ sb.append(WU.postpad("B" + id+tStr,6)); // see the BBs that point to this BB
       if(ih.getInstruction() instanceof InvokeInstruction){
         int wcetihMiss = -1;
         int wcetihHit = -1;
-       
+System.out.println("OK");       
         String methodid = ((InvokeInstruction)ih.getInstruction()).getClassName(wcmb.getCpg())
         +"."
         +((InvokeInstruction)ih.getInstruction()).getMethodName(wcmb.getCpg())
@@ -1535,7 +1653,7 @@ sb.append(WU.postpad("B" + id+tStr,6)); // see the BBs that point to this BB
 
         //signature Java Type, Z boolean, B byte, C char, S short, I int
         //J long, F float, D double, L fully-qualified-class, [ type type[] 
-        bbinvo.add(methodid);
+        bbinvo = methodid;
         Method m = wcmb.wca.getMethod(methodid);
         if(methodid.startsWith("com.jopdesign.sys.Native")){
           int opcode = wcmb.wca.getNativeOpcode(m.getName());//methodid);
@@ -1686,7 +1804,7 @@ sb.append(WU.postpad("B" + id+tStr,6)); // see the BBs that point to this BB
       
       //block sum if end
       if(ih == endih){
-        sb.append("sum(B"+id+"):");
+        sb.append("sum(B"+bid+"):");
         if(ih.getInstruction() instanceof ReturnInstruction){
           sb.append(WU.prepad(blockcychit+"/NA",7));
 //          sb.append(" *do add return cycles and do not have size of caller (yet)");
@@ -1717,12 +1835,12 @@ sb.append(WU.postpad("B" + id+tStr,6)); // see the BBs that point to this BB
     this.end = end;
   }
 
-  public int getId() {
-    return id;
+  public int getBid() {
+    return bid;
   }
 
-  public void setId(int id) {
-    this.id = id;
+  public void setBid(int bid) {
+    this.bid = bid;
   }
 
   public InstructionHandle getStih() {
@@ -1769,16 +1887,15 @@ sb.append(WU.postpad("B" + id+tStr,6)); // see the BBs that point to this BB
     return inbbs;
   }
 
-  //TODO: ms implements CacheSimul
   public int getBlockCycles() {
-    boolean hit = false;
-    for (int i=0;i<bbinvo.size();i++){
-      hit = CacheSimul.get(wcmb.methodbcel);
-    }
-    if(hit)
+//    boolean hit = false;
+//    for (int i=0;i<bbinvo.size();i++){
+//      hit = CacheSimul.get(wcmb.methodbcel);
+//    }
+//    if(hit)
       return blockcychit;
-    else
-      return blockcycmiss;
+//    else
+//      return blockcycmiss;
   }
 
 }

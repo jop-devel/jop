@@ -22,19 +22,30 @@ public class SetWCETAnalysis extends MyVisitor {
 			Method m = methods[i];
 			String methodId = m.getName()+m.getSignature();
       
-      //if(m.getName().equalsIgnoreCase("loop10")){
+      //if(m.getName().equalsIgnoreCase("main")||m.getName().equalsIgnoreCase("loop11")){
       if(!m.isAbstract()){
         WCETMethodBlock wcmb = new WCETMethodBlock(m,clazz,wca);
+        wca.msigtowcmb.put(methodId,wcmb);
+//System.out.println("put "+methodId+" in msigtiwcmb");        
         wcmb.controlFlowGraph();
         wcmb.directedGraph();
         wca.out.println(wcmb.toString());
+        
+      }
+      //}
+		}
+    for(int i=0; i < methods.length; i++) {
+      Method m = methods[i];
+      String methodId = m.getName()+m.getSignature();
+      if(m.getName().equalsIgnoreCase("main")){
+      if(!m.isAbstract()){
+        WCETMethodBlock wcmb = (WCETMethodBlock)wca.mtowcmb.get(m);
+        wca.out.println("*** WCET FOR APPLICATION***");
+        wca.out.println(wcmb.toLS(true,true,"")+"\n");
         wca.dotout.print("\tdot -Tps "+wcmb.dotf+" > "+wcmb.dotf.substring(0,wcmb.dotf.length()-4)+".eps\n");
       }
-        //System.out.println(wcmb.toString());
-      //}
-    
-      // Analyze the method
-	    //WCETAnalyser.controlFlowGraph(mi);
-		}
+      }
+    }
+
 	}
 }
