@@ -30,14 +30,15 @@ public class AppInfo {
 	 */
 	HashSet clsArgs = new HashSet();
 
-	String outFile;
-	String srcPath;
-	String mainClass = "unknown";
+	protected String outFile;
+	protected String srcPath;
+	protected String mainClass = "unknown";
+	protected String mainMethodName = "main";
 	
 	/**
 	 * Array of the application classes
 	 */
-	JavaClass[] jclazz;
+	protected JavaClass[] jclazz;
 
 	public AppInfo(String args[]) {
 		// we usually provide the classpath, so this is
@@ -61,6 +62,11 @@ public class AppInfo {
 					if (args[i].equals("-sp")) {
 						i++;
 						srcPath = args[i];
+						continue;
+					}
+					if (args[i].equals("-mm")) {
+						i++;
+						mainMethodName = args[i];
 						continue;
 					}
 					
