@@ -1,5 +1,7 @@
 package wcet;
 
+import com.jopdesign.sys.*;
+
 public class Method {
 
 	/**
@@ -7,7 +9,17 @@ public class Method {
 	 */
 	public static void main(String[] args) {
 		
+		int ts, te, to;
+		ts = Native.rdMem(Const.IO_CNT);
+		te = Native.rdMem(Const.IO_CNT);
+		to = te-ts;
+		System.out.println(to);
+		ts = Native.rdMem(Const.IO_CNT);
+		// cnt with var. block cache: 15425
+		// cnt with single block cache: 16779
 		foo();
+		te = Native.rdMem(Const.IO_CNT);
+		System.out.println(te-ts-to);
 	}
 	
 	static void foo() {
