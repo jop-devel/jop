@@ -17,37 +17,57 @@ public class SetWCETAnalysis extends MyVisitor {
 		super.visitJavaClass(clazz);
 
 		Method[] methods = clazz.getMethods();
-		
-		for(int i=0; i < methods.length; i++) {
-			Method m = methods[i];
-			String methodId = m.getName()+m.getSignature();
-      
-      //if(m.getName().equalsIgnoreCase("main")||m.getName().equalsIgnoreCase("loop11")){
-      if(!m.isAbstract()){
-        WCETMethodBlock wcmb = new WCETMethodBlock(m,clazz,wca);
-        wca.msigtowcmb.put(methodId,wcmb);
-//System.out.println("put "+methodId+" in msigtiwcmb");        
-        wcmb.controlFlowGraph();
-        wcmb.directedGraph();
-        wca.out.println(wcmb.toString());
-        wca.dotout.print("\tdot -Tps "+wcmb.dotf+" > "+wcmb.dotf.substring(0,wcmb.dotf.length()-4)+".eps\n");
-      }
-      //}
-		}
-    for(int i=0; i < methods.length; i++) {
-      Method m = methods[i];
-      String methodId = m.getName()+m.getSignature();
-      if(m.getName().equalsIgnoreCase("main")){
-      if(!m.isAbstract()){
-
-        WCETMethodBlock wcmb = (WCETMethodBlock)wca.mtowcmb.get(m);
-        wca.out.println("*** WCET FOR APPLICATION***");
-        wca.out.println(wcmb.toLS(true,true,"")+"\n");
-        System.out.println("HI");                
+		if(wca.init){
+  		for(int i=0; i < methods.length; i++) {
+  			Method m = methods[i];
+  			String methodId = m.getName()+m.getSignature();
         
-      }
+
+        if(!m.isAbstract()){
+          WCETMethodBlock wcmb = new WCETMethodBlock(m,clazz,wca);
+          wca.msigtowcmb.put(methodId,wcmb);
+          wca.wcmbs.add(wcmb);
+  //System.out.println("put "+methodId+" in msigtiwcmb");        
+          wcmb.controlFlowGraph();
+          wcmb.directedGraph();
+          //wcmb.toString();
+          if(m.getName().equalsIgnoreCase("main")||m.getName().equalsIgnoreCase("loop11")){
+            wca.wcmbapp = wcmb;
+          }
+        }
+        else
+          System.out.println("not putting"+m.getName());
+        //}
+  		}
+    }
+//    for(int i=0; i < methods.length; i++) {
+//      Method m = methods[i];
+//      String methodId = m.getName()+m.getSignature();
+//      if(m.getName().equalsIgnoreCase("main")){
+//        if(!m.isAbstract()){
+//          WCETMethodBlock wcmb = (WCETMethodBlock)wca.mtowcmb.get(m);
+//          String lss = wcmb.toLS(true,true,"");
+//          wca.out.println("*** WCET FOR APPLICATION***");
+//          wca.out.println("WCET = " + wcmb.wcetlp);
+//          wca.out.println(lss+"\n");
+//        }
+//      }
+//    }
+    if(wca.analyze){
+      for(int i=0; i < methods.length; i++) {
+        Method m = methods[i];
+        String methodId = m.getName()+m.getSignature();
+        
+        //if(m.getName().equalsIgnoreCase("main")||m.getName().equalsIgnoreCase("loop11")){
+        if(!m.isAbstract()){
+          WCETMethodBlock wcmb = (WCETMethodBlock)wca.mtowcmb.get(m);
+          wca.out.println(wcmb.toString());
+          wca.dotout.print("\tdot -Tps "+wcmb.dotf+" > "+wcmb.dotf.substring(0,wcmb.dotf.length()-4)+".eps\n");
+        }
+        //}
       }
     }
+    
 
 	}
 }
