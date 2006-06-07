@@ -54,6 +54,7 @@ public class SetWCETAnalysis extends MyVisitor {
 //      }
 //    }
     if(wca.analyze){
+
       for(int i=0; i < methods.length; i++) {
         Method m = methods[i];
         String methodId = m.getName()+m.getSignature();
@@ -61,7 +62,9 @@ public class SetWCETAnalysis extends MyVisitor {
         //if(m.getName().equalsIgnoreCase("main")||m.getName().equalsIgnoreCase("loop11")){
         if(!m.isAbstract()){
           WCETMethodBlock wcmb = (WCETMethodBlock)wca.mtowcmb.get(m);
-          wca.out.println(wcmb.toString());
+          //wca.out.println(wcmb.toString());
+          wca.wcasb.append(wcmb.toString());
+          wcmb.link();
           wca.dotout.print("\tdot -Tps "+wcmb.dotf+" > "+wcmb.dotf.substring(0,wcmb.dotf.length()-4)+".eps\n");
         }
         //}

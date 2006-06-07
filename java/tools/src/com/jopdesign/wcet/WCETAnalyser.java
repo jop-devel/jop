@@ -60,7 +60,7 @@ import lpsolve.*;
 public class WCETAnalyser{
   
   WCETMethodBlock wcmbapp = null;
-  
+  boolean global = true; // controls names of blocks B1 or B1_M1 if true
   String dotf = null;
   // latex table string
   public static String las;
@@ -89,6 +89,8 @@ public class WCETAnalyser{
    * The class that contains the main method.
    */
   static String mainClass;
+  
+  public StringBuffer wcasb = new StringBuffer();
   
   //signaure -> methodbcel
   HashMap mmap;
@@ -190,21 +192,30 @@ public class WCETAnalyser{
 //            + mainClass);
 
         wca.out = new PrintWriter(new FileOutputStream(outFile));
-        String ds = new File(WCETAnalyser.outFile).getParentFile().getAbsolutePath()+"\\dotall.bat";
+        String ds = new File(WCETAnalyser.outFile).getParentFile().getAbsolutePath()+"\\Makefile";
         wca.dotout = new PrintWriter(new FileOutputStream(ds));
+        wca.dotout.print("dot:\n");
         
         wca.load(clsArgs);
-
+        wca.global = false;
         wca.iterate(new SetWCETAnalysis(wca));
         wca.init = false;
         wca.analyze = true;
         wca.iterate(new SetWCETAnalysis(wca));
         
-        wca.out.println("*************APPLICATION WCET***********************");
+        //wca.out.println("*************APPLICATION WCET="+wca.wcmbapp.wcet+"********************");
+        StringBuffer wcasbtemp = new StringBuffer();
         if(wca.analyze){
-          wca.out.println(wca.toDot());
+          wca.global = true;
+          wcasbtemp.append(wca.wcmbapp.toLS(true,true, null));
+          //wca.out.println(wca.wcmbapp.toLS(true,true, null));
+          wcasbtemp.append(wca.toDot());
+          wcasbtemp.insert(0, "*************APPLICATION WCET="+wca.wcmbapp.wcetlp+"********************\n");
+          wca.out.println(wcasbtemp.toString());
           wca.dotout.print("\tdot -Tps "+wca.dotf+" > "+wca.dotf.substring(0,wca.dotf.length()-4)+".eps\n");
         }
+        wca.out.println("*************END APPLICATION WCET*******************");
+        wca.out.println(wca.wcasb.toString());
         
         
         //instruction info
@@ -350,7 +361,8 @@ public class WCETAnalyser{
     StringBuffer sb = new StringBuffer();
     sb.append("\n/* App Dot Graph */\n");
     sb.append("digraph G {\n");
-    //sb.append("size = \"10,7.5\"\n");
+    sb.append("size = \"7.27,10.69\"\n");
+    
     
     ArrayList appWCMB = new ArrayList();
     appWCMB.add(wcmbapp);
@@ -365,22 +377,23 @@ public class WCETAnalyser{
       sb.append("}\n");
       WCETBasicBlock[] wcbba = wcmb.getBBSArray();
       for(int j=0;j<wcbba.length;j++){
-        
         if(wcbba[j].invowcmb != null){
-          sb.append(wcbba[j].getIDS(true)+"->"+wcbba[j].invowcmb.S.getIDS(true)+"\n");
-          sb.append(wcbba[j].invowcmb.T.getIDS(true)+"->"+wcbba[j].getIDS(true)+"\n");
+          sb.append(wcbba[j].toDotFlowEdge(wcbba[j].invowcmb.S));
+          sb.append(" [label=\""+wcbba[j].toDotFlowLabel(wcbba[j].invowcmb.S)+"\"];\n");
+          sb.append(wcbba[j].invowcmb.T.toDotFlowEdge(wcbba[j]));
+          sb.append(" [label=\""+wcbba[j].invowcmb.T.toDotFlowLabel(wcbba[j])+"\"];\n");
           appWCMB.add(wcbba[j].invowcmb);
         }
       }
       appWCMB.remove(0);
     }
-
     sb.append("}\n");
    
     try {
       dotf = new File(WCETAnalyser.outFile).getParentFile().getAbsolutePath()+"\\App.dot";
       dotf = dotf.replace('<','_');
       dotf = dotf.replace('>','_');
+      dotf = dotf.replace('\\','/');
       PrintWriter dotout = new PrintWriter(new FileOutputStream(dotf));
       dotout.write(sb.toString());
       dotout.close();
@@ -400,8 +413,6 @@ public class WCETAnalyser{
 class WCETMethodBlock {
   
   int wcet = -1; // wcet count
-  
-  String lso; //ls objective
   
   final int mid; // a unique id across the app
   
@@ -442,7 +453,7 @@ class WCETMethodBlock {
   
   public int wcetlp;
   
-  HashMap wcetvars;
+  static HashMap wcetvars;
   
   public WCETBasicBlock S;
   
@@ -650,6 +661,8 @@ class WCETMethodBlock {
 //  System.out.println("wca.getWCMB(wca.getMethod(wcbb.bbinvo)) == null");
 //}
         wcbb.invowcmb = wca.getWCMB(wca.getMethod(wcbb.bbinvo));
+        if(wcbb.invowcmb==null)
+          System.out.println("Could not resolve "+wcbb.bbinvo+" for linking in "+wcbb.getIDS());
         leaf = false;
       }
     }
@@ -751,7 +764,7 @@ class WCETMethodBlock {
       WCETBasicBlock wcbb = covwcbb.split(stih);
       if((stih.getInstruction() instanceof InvokeInstruction) &&
           !(((InvokeInstruction)stih.getInstruction()).getClassName(getCpg())).equals(wca.nativeClass)){
-System.out.println("inode:"+((InvokeInstruction)stih.getInstruction()).getClassName(getCpg()));       
+//System.out.println("inode:"+((InvokeInstruction)stih.getInstruction()).getClassName(getCpg()));       
         wcbb.nodetype = WCETBasicBlock.INODE; 
         leaf = false;
       }
@@ -889,9 +902,9 @@ System.out.println("inode:"+((InvokeInstruction)stih.getInstruction()).getClassN
 
     for (int i = 0; i < dg.length; i++) {
       if(i<dg.length-1)
-        top.append(WU.postpad("B" + i+wca.las,4));
+        top.append(WU.postpad(getBbs(i).getIDS()+wca.las,4));
       else
-        top.append(WU.postpad("B" + i+wca.lae,4));
+        top.append(WU.postpad(getBbs(i).getIDS()+wca.lae,4));
     }
     top.append("\n");
 
@@ -901,7 +914,7 @@ System.out.println("inode:"+((InvokeInstruction)stih.getInstruction()).getClassN
     sb.append("\n" + top.toString());
 
     for (int i = 0; i < dg.length; i++) {
-      sb.append(WU.postpad("B" + i,3));
+      sb.append(WU.postpad(getBbs(i).getIDS(),3));
       sb.append(wca.las);
 
       for (int j = 0; j < dg.length; j++) {
@@ -942,7 +955,7 @@ System.out.println("inode:"+((InvokeInstruction)stih.getInstruction()).getClassN
 //      sb.append("\n"+toLinkBBS());
 //    }
     if(wca.ls)
-      sb.append(toLS(false,true, ""));
+      sb.append(toLS(false,true, null));
     
     if(wca.dot)
       sb.append(toDot(false));
@@ -969,20 +982,20 @@ System.out.println("inode:"+((InvokeInstruction)stih.getInstruction()).getClassN
       for (int j = 0; j < dg.length; j++) {
         if(dg[i][j]>0){
        
-          sb.append("\t"+getBbs(i).getIDS(global)+" -> "+getBbs(j).getIDS(global));
+          sb.append("\t"+getBbs(i).toDotFlowEdge(getBbs(j)));
           if(labels){
             //sb.append(" [label=\""+dg[i][j]+"\"");
-            String edge = "fm"+mid+"b"+i+"_"+j;
+            String edge = getBbs(i).toDotFlowLabel(getBbs(j));
 
             if(wcetvars.get(edge)!=null){
               int edgeval = Integer.parseInt((String)wcetvars.get(edge));
               if(edgeval>0)
-                sb.append(" [label=\"f"+i+"_"+j+"="+edgeval+"\"");
+                sb.append(" [label=\""+getBbs(i).toDotFlowLabel(getBbs(j))+"="+edgeval+"\"");
               else
-                sb.append(" [style=dashed,label=\"f"+i+"_"+j+"="+edgeval+"\"");
+                sb.append(" [style=dashed,label=\""+getBbs(i).toDotFlowLabel(getBbs(j))+"="+edgeval+"\"");
             }
             else
-              sb.append(" [label=\"f"+i+"_"+j+"=?\"");
+              sb.append(" [label=\""+getBbs(i).toDotFlowLabel(getBbs(j))+"=?\"");
             
               //sb.append(",labelfloat=true");
             sb.append("]");
@@ -997,9 +1010,9 @@ System.out.println("inode:"+((InvokeInstruction)stih.getInstruction()).getClassN
       WCETBasicBlock wcbb = (WCETBasicBlock) bbs.get(keyInt);
       int id = wcbb.getBid();
       if(wcbb.nodetype != WCETBasicBlock.SNODE && wcbb.nodetype != WCETBasicBlock.TNODE)
-        sb.append("\t"+wcbb.getIDS(global)+" [label=\""+wcbb.getIDS(global)+"\\n"+wcbb.wcetHit+"\"];\n");
+        sb.append("\t"+wcbb.getIDS()+" [label=\""+wcbb.getIDS()+"\\n"+wcbb.wcetHit+"\"];\n");
       else
-        sb.append("\t"+wcbb.getIDS(global)+";\n");
+        sb.append("\t"+wcbb.getIDS()+";\n");
     }
     if(!global){
       sb.append("}\n");
@@ -1010,6 +1023,7 @@ System.out.println("inode:"+((InvokeInstruction)stih.getInstruction()).getClassN
         dotf = new File(WCETAnalyser.outFile).getParentFile().getAbsolutePath()+"\\"+jc.getClassName()+"."+methodbcel.getName()+".dot";
         dotf = dotf.replace('<','_');
         dotf = dotf.replace('>','_');
+        dotf = dotf.replace('\\','/');
         PrintWriter dotout = new PrintWriter(new FileOutputStream(dotf));
         dotout.write(sb.toString());
         dotout.close();
@@ -1025,146 +1039,60 @@ System.out.println("inode:"+((InvokeInstruction)stih.getInstruction()).getClassN
   /**
    * @param global follow the invokes
    * @param term terminate with s=1, t=1
+   * @param invowcbb the invoking wcbb or null
    */
-  public String toLS(boolean global, boolean term, String invoker){
-System.out.println("HIHI");    
+  public String toLS(boolean global, boolean term, WCETBasicBlock invowcbb){
+    
     StringBuffer ls = new StringBuffer();
-    StringBuffer obs = new StringBuffer();
+    StringBuffer lsinvo = new StringBuffer();
+    StringBuffer lsobj = new StringBuffer();
 
     ls.append("/* WCA flow constraints */\n");
 
+    lsobj.append(toLSO());
+    
     WCETBasicBlock wcbb = null;
     for (Iterator iter = bbs.keySet().iterator(); iter.hasNext();) {
       Integer keyInt = (Integer) iter.next();
       wcbb = (WCETBasicBlock) bbs.get(keyInt);
-      if(wcbb.bid ==0 && term)
-        ls.append("M"+mid+"S: 1 = fm"+mid+"bs_"+wcbb.getIDS(global)+"; // flow\n");    
-      HashMap tinbbs = wcbb.getInbbs();
-      if(tinbbs.size()>0 || wcbb.bid ==0){
-        ls.append("B"+wcbb.getIDS(global)+": ");
-        if(wcbb.bid==0){
-          ls.append("fm"+wcbb.wcmb.mid+"bs_"+wcbb.getIDS(global));
-          if(tinbbs.size()>0){
-            ls.append(" + ");
-          }
-        }
-        for (Iterator titer = tinbbs.keySet().iterator(); titer.hasNext();) {
-          Integer tkeyInt = (Integer) titer.next();
-          WCETBasicBlock w = (WCETBasicBlock) tinbbs.get(tkeyInt);
-          ls.append("f"+w.getIDS(global)+"_"+wcbb.getIDS(global));
-          
-          if(titer.hasNext())
-            ls.append(" + ");
-          
-        } 
-        ls.append(" = ");
-        if(wcbb.sucbb != null){
-          //if(wcbb.sucbb.nodetype != WCETBasicBlock.TNODE){  
-            ls.append("f"+wcbb.getIDS(global)+"_"+wcbb.sucbb.getIDS(global));
-          //}
-        }
-        if(wcbb.sucbb != null && wcbb.tarbb!=null)
-          ls.append(" + ");
-        if(wcbb.tarbb!=null)
-          ls.append("f"+wcbb.getIDS(global)+"_"+wcbb.tarbb.getIDS(global));
-        if(wcbb.sucbb == null && wcbb.tarbb == null && term)
-          ls.append("1");
-        if(wcbb.nodetype == WCETBasicBlock.TNODE && !term)
-          ls.append(invoker+";\n");
-        else
-          ls.append(";\n");
+      //S
+      if(wcbb.nodetype==WCETBasicBlock.SNODE)
+        ls.append(wcbb.toLSS(invowcbb));
+      else if(wcbb.nodetype==WCETBasicBlock.BNODE || wcbb.nodetype==WCETBasicBlock.INODE){
+        ls.append(wcbb.toLSFlow());
+        if(wcbb.loopcontroller)
+          ls.append(wcbb.toLSLoop());
+      } else if(wcbb.nodetype==WCETBasicBlock.TNODE){
+        ls.append(wcbb.toLST(invowcbb));
       }
       
-      // hook the called method to the outgoing node
-      if(wcbb.nodetype == WCETBasicBlock.INODE && global){    
-System.out.println("invoking "+wcbb.bbinvo);
-        if(wcbb.invowcmb != null){
-          ls.append("/* Invoking "+wcbb.bbinvo+" id:"+wcbb.invowcmb.mid+"*/\n");
-          String invoout = "f"+wcbb.getIDS(global)+"_"+wcbb.sucbb.getIDS(global); 
-          String invoS = "m"+wcbb.invowcmb.mid+"bs;\n";
-          String invoT = wcbb.invowcmb.T.getIDS(global);
-          //to invo
-          ls.append("M"+mid+"toM"+wcbb.invowcmb.mid+": "+invoout+" = f"+wcbb.getIDS(global)+"_"+invoS);        
-          ls.append(wcbb.invowcmb.toLS(true,false, invoout)+"\n");
-          obs.append(wcbb.invowcmb.lso+" ");
-          ls.append("/* Done with "+wcbb.bbinvo+"*/\n");
-        }
-        else
-          System.out.println("wcbb.bbinvo, invowcbb=null:"+wcbb.bbinvo);
+      if(wcbb.nodetype==WCETBasicBlock.INODE && global){
+        ls.append(wcbb.toLSInvo());
+        lsinvo.append(wcbb.invowcmb.toLS(global,false, wcbb));
+        lsobj.append(" "+wcbb.invowcmb.toLSO());
       }
     }
-    
-    ls.append("/* WCA loops */\n");
-
-    //loops
-    //  TODO: targeter can be part of a loop... and  + drivers
-    for (Iterator iter = bbs.keySet().iterator(); iter.hasNext();) {
-      Integer keyInt = (Integer) iter.next();
-      wcbb = (WCETBasicBlock) bbs.get(keyInt);
-      if(wcbb.loopcontroller){
-        if(wcbb.bid==0){
-          ls.append("lc"+wcbb.getIDS(global)+": f"+wcbb.getIDS(global)+"_"+wcbb.sucbb.getIDS(global)+" <= "+wcbb.loop+" fm"+wcbb.wcmb.mid+"bs"+"_"+wcbb.getIDS(global)+";\n");
-        }else {
-          ls.append("lc"+wcbb.getIDS(global)+": f"+ wcbb.getIDS(global)+"_"+wcbb.sucbb.getIDS(global)+" <= "+wcbb.loop+" fm"+wcbb.wcmb.mid+"b"+(wcbb.loopid-1)+"_m"+wcbb.wcmb.mid+"b"+wcbb.loopid+";\n");
-          wcbb.sc = wcbb.loop;
-          wcbb.scsid = wcbb.loopid-1;
-          wcbb.sctid = wcbb.loopid;
-        }
-      }
-    }
-
+      
     ls.append("/* WCA flow to cycle count */\n");
     for (Iterator iter = bbs.keySet().iterator(); iter.hasNext();) {
       Integer keyInt = (Integer) iter.next();
       wcbb = (WCETBasicBlock) bbs.get(keyInt);
-      ls.append("t"+wcbb.getIDS(global)+" = ");
-      
-      HashMap tinbbs = wcbb.getInbbs();
-      if(tinbbs.size()>0 || wcbb.bid==0){
-        if(wcbb.bid==0){
-          ls.append(wcbb.blockcyc+" f"+"m"+wcbb.wcmb.mid+"bs_"+wcbb.getIDS(global));
-          if(tinbbs.size()>0)
-            ls.append(" + ");
-        }
-        for (Iterator titer = tinbbs.keySet().iterator(); titer.hasNext();) {
-          Integer tkeyInt = (Integer) titer.next();
-          WCETBasicBlock w = (WCETBasicBlock) tinbbs.get(tkeyInt);
-          ls.append(wcbb.blockcyc+" f"+w.getIDS(global)+"_"+wcbb.getIDS(global));
-          if(titer.hasNext())
-            ls.append(" + ");
-        }
+      if(wcbb.nodetype==WCETBasicBlock.BNODE || wcbb.nodetype==WCETBasicBlock.INODE){
+        ls.append(wcbb.toLSCycles());
       }
-        ls.append(";\n");
     }
     
-    if(term){
-      String lso = obs.toString();
-      obs = new StringBuffer();
-      obs.append("/***WCET calculation source***/\n");
-      obs.append("/* WCA WCET objective: "+jc.getClassName() + "." + methodbcel.getName()+ " */\n");
-      obs.append("max: ");
-      for (Iterator iter = bbs.keySet().iterator(); iter.hasNext();) {
-        Integer keyInt = (Integer) iter.next();
-        wcbb = (WCETBasicBlock) bbs.get(keyInt);
-        obs.append("t"+wcbb.getIDS(global));
-        
-        if(iter.hasNext())
-          obs.append(" ");
-      }
-      obs.append(" "+lso+";\n");
-      ls.insert(0,obs.toString());
-    } else{
-      for (Iterator iter = bbs.keySet().iterator(); iter.hasNext();) {
-        Integer keyInt = (Integer) iter.next();
-        wcbb = (WCETBasicBlock) bbs.get(keyInt);
-        obs.append("t"+wcbb.getIDS(global));
-        
-        if(iter.hasNext())
-          obs.append(" ");
-      } 
-      lso = obs.toString();
-    }
-    if(term){
+    ls.append("/* Invocation(s) */\n");
+    ls.append(lsinvo.toString());
+    
+    if(term){ // once
+      //String lso = obs.toString();
+      StringBuffer lso = new StringBuffer();
+      lso.append("/***WCET calculation source***/\n");
+      lso.append("/* WCA WCET objective: "+jc.getClassName() + "." + methodbcel.getName()+ " */\n");
+      lso.append("max: "+lsobj.toString()+";\n");
+      ls.insert(0, lso.toString());
+
       try {
         lpf = new File(WCETAnalyser.outFile).getParentFile().getAbsolutePath()+"\\"+jc.getClassName()+"."+methodbcel.getName()+".lp";
         lpf = lpf.replace('<','_');
@@ -1194,7 +1122,10 @@ System.out.println("invoking "+wcbb.bbinvo);
             ls.append(str+"\n");
             StringTokenizer st = new StringTokenizer(str);
             if(st.countTokens()==2){
-              wcetvars.put(st.nextToken(),st.nextToken());
+              String st1 = st.nextToken();
+              String st2 = st.nextToken();
+              wcetvars.put(st1,st2);
+//System.out.println("putting:"+st1+","+st2);              
             }
           }
           in.close();
@@ -1207,6 +1138,20 @@ System.out.println("invoking "+wcbb.bbinvo);
     }
     
     return ls.toString();
+  }
+  
+  // tS tB1 etc.
+  public String toLSO(){
+    StringBuffer lso = new StringBuffer();
+    for (Iterator iter = bbs.keySet().iterator(); iter.hasNext();) {
+      Integer keyInt = (Integer) iter.next();
+      WCETBasicBlock wcbb = (WCETBasicBlock) bbs.get(keyInt);
+      lso.append(wcbb.toLSObj());
+      
+      if(iter.hasNext())
+        lso.append(" ");
+    }
+    return lso.toString();
   }
   
   public String toLinkBBS(){
@@ -1662,7 +1607,173 @@ class WCETBasicBlock {
   public boolean getValid() {
     return valid;
   }
+  
+  // convert to block name: in flow = out flow, S & T default = 1
+  public String toLSFlow(){
+    StringBuffer ls = new StringBuffer();
+    if(nodetype == WCETBasicBlock.SNODE)
+      ls.append(getIDS()+": 1 = f"+getIDS()+"_"+sucbb.getIDS()+"; // S flow\n");
+    else if(nodetype == WCETBasicBlock.BNODE || nodetype == WCETBasicBlock.INODE){
+      HashMap tinbbs = getInbbs();
+      
+      ls.append(getIDS()+": ");
+      for (Iterator titer = tinbbs.keySet().iterator(); titer.hasNext();) {
+        Integer tkeyInt = (Integer) titer.next();
+        WCETBasicBlock w = (WCETBasicBlock) tinbbs.get(tkeyInt);
+        ls.append("f"+w.getIDS()+"_"+getIDS());
+        
+        if(titer.hasNext())
+          ls.append(" + ");
+      } 
+      ls.append(" = ");
+      if(sucbb != null){
+        //if(wcbb.sucbb.nodetype != WCETBasicBlock.TNODE){  
+          ls.append("f"+getIDS()+"_"+sucbb.getIDS());
+        //}
+      }
+      if(sucbb != null && tarbb!=null)
+        ls.append(" + ");
+      if(tarbb!=null)
+        ls.append("f"+getIDS()+"_"+tarbb.getIDS());
+      
+      ls.append(";\n");
+      }
+    else if(nodetype == WCETBasicBlock.TNODE){
+      HashMap tinbbs = getInbbs();
+      
+      ls.append(getIDS()+": ");
+      for (Iterator titer = tinbbs.keySet().iterator(); titer.hasNext();) {
+        Integer tkeyInt = (Integer) titer.next();
+        WCETBasicBlock w = (WCETBasicBlock) tinbbs.get(tkeyInt);
+        ls.append("f"+w.getIDS()+"_"+getIDS());
+        
+        if(titer.hasNext())
+          ls.append(" + ");
+      } 
+      ls.append(" = 1");
+    }
+    else{
+      System.out.println("Unknown nodetype");
+      System.exit(-1);
+    }
+    return ls.toString();
+  }
+  
+  // flow connect external BB to S
+  public String toLSS(WCETBasicBlock wcbb){
+    StringBuffer ls = new StringBuffer();
+    if(nodetype == WCETBasicBlock.SNODE){
+      if(wcbb == null)
+        ls.append(getIDS()+": 1 = f"+getIDS()+"_"+sucbb.getIDS()+"; // S flow\n");
+      else
+        ls.append(getIDS()+": f"+ wcbb.getIDS()+"_"+ getIDS() + " = f"+getIDS()+"_"+sucbb.getIDS()+"; // S interconnect flow\n");
+    } 
+    else{
+      System.out.println("Not S type");
+      System.exit(-1);
+    }
+    return ls.toString();
+  }
+  
+  // flow connect external BB to T
+  public String toLST(WCETBasicBlock wcbb){
+    StringBuffer ls = new StringBuffer();
+    if(nodetype == WCETBasicBlock.TNODE){
+      HashMap tinbbs = getInbbs();
+      ls.append(getIDS()+": ");
+      for (Iterator titer = tinbbs.keySet().iterator(); titer.hasNext();) {
+        Integer tkeyInt = (Integer) titer.next();
+        WCETBasicBlock w = (WCETBasicBlock) tinbbs.get(tkeyInt);
+        ls.append("f"+w.getIDS()+"_"+getIDS());
+        
+        if(titer.hasNext())
+          ls.append(" + ");
+      }
+      if(wcbb == null)
+        ls.append(" = 1; // T flow\n");
+      else
+        ls.append(" = f"+getIDS()+"_"+wcbb.getIDS()+";// T interconnect flow\n");
+    }
+    else{
+      System.out.println("Not TNODE");
+      System.exit(-1);
+    }
+    return ls.toString();
+  }
 
+  // hook INODE's outgoing link to invo S and T 
+  public String toLSInvo(){
+    StringBuffer ls = new StringBuffer();
+    // hook the called method to the outgoing node
+    if(nodetype == WCETBasicBlock.INODE){    
+//System.out.println(getIDS()+" bbinvo="+bbinvo);      
+//if(invowcmb== null)
+//  System.out.println("invowcmb== null");
+//if(invowcmb.S== null)
+//  System.out.println("invowcmb== null");
+
+      ls.append("/* Invoking "+bbinvo+" id:"+invowcmb.S.getIDS()+"*/\n");
+      String invodriver = getIDS()+"_"+sucbb.getIDS(); 
+      String invoS = getIDS()+"_"+invowcmb.S.getIDS();
+      String invoT = invowcmb.T.getIDS()+"_"+getIDS();
+      // to invo S
+      ls.append("IS_"+getIDS()+ ": f" + invodriver+" = f" +invoS+"; // invo S driver\n");
+      // from invo T      
+      ls.append("IT_"+getIDS()+ ": f" + invoT+" = f" +invodriver+"; // invo T driver\n");
+      ls.append("/* Done with "+bbinvo+"*/\n");
+     } else{
+       System.out.println("Not INODE type");
+       System.exit(-1);
+     }
+     return ls.toString();
+  }
+  
+  // loop controller code
+  public String toLSLoop(){
+    StringBuffer ls = new StringBuffer();
+    if(loopcontroller){
+      if(wcmb.wca.global)
+        ls.append("LC_"+getIDS()+": f"+ getIDS()+"_"+sucbb.getIDS()+" <= "+loop+" fB"+(loopid-1)+"_M"+wcmb.mid+"_B"+loopid+"_M"+wcmb.mid+";\n");
+      else
+        ls.append("LC_"+getIDS()+": f"+ getIDS()+"_"+sucbb.getIDS()+" <= "+loop+" fB"+(loopid-1)+"_B"+loopid+";\n");
+//      wcbb.sc = wcbb.loop;
+//      wcbb.scsid = wcbb.loopid-1;
+//      wcbb.sctid = wcbb.loopid;
+    }else{
+      System.out.println("BB is not loop controller");
+      System.exit(-1);
+    }
+    return ls.toString();
+  }
+  
+  public String toLSCycles(){
+    StringBuffer ls = new StringBuffer();
+    ls.append("t"+getIDS()+" = ");
+    HashMap tinbbs = getInbbs();
+    for (Iterator titer = tinbbs.keySet().iterator(); titer.hasNext();) {
+      Integer tkeyInt = (Integer) titer.next();
+      WCETBasicBlock w = (WCETBasicBlock) tinbbs.get(tkeyInt);
+      ls.append(blockcyc+" f"+w.getIDS()+"_"+getIDS());
+      if(titer.hasNext())
+        ls.append(" + ");
+    }
+    ls.append(";\n");
+    return ls.toString();
+  }
+  
+  // return objective string
+  public String toLSObj(){
+    return "t"+getIDS();
+  }
+  
+  public String toDotFlowEdge(WCETBasicBlock bb){
+    return getIDS()+"->"+bb.getIDS();
+  }
+
+  public String toDotFlowLabel(WCETBasicBlock bb){
+    return "f"+getIDS()+"_"+bb.getIDS();
+  }
+  
   public String toString() {
     StringBuffer sb = new StringBuffer();
     // block (6)
@@ -1688,18 +1799,18 @@ class WCETBasicBlock {
   public String toCodeString() {
     StringBuffer sb = new StringBuffer();
     if(nodetype == WCETBasicBlock.SNODE){
-      sb.append(WU.postpad(getIDS(false)+"\n",6)); // see the BBs that point to this BB
+      sb.append(WU.postpad(getIDS()+"\n",6)); // see the BBs that point to this BB
     } else if(nodetype == WCETBasicBlock.TNODE){
       String tStr = "<-[";
       for (Iterator iter = inbbs.keySet().iterator(); iter.hasNext();) {
         Integer keyInt = (Integer) iter.next();
         WCETBasicBlock wcbb = (WCETBasicBlock) inbbs.get(keyInt);
-        tStr += wcbb.getIDS(false);
+        tStr += wcbb.getIDS();
         if(iter.hasNext())
           tStr += " ";
       }
       tStr += "]";
-      sb.append(WU.postpad(getIDS(false)+tStr+"\n",6)); // see the BBs that point to this BB
+      sb.append(WU.postpad(getIDS()+tStr+"\n",6)); // see the BBs that point to this BB
     }
     else{
       InstructionHandle ih = stih;
@@ -1731,13 +1842,13 @@ class WCETBasicBlock {
           for (Iterator iter = inbbs.keySet().iterator(); iter.hasNext();) {
             Integer keyInt = (Integer) iter.next();
             WCETBasicBlock wcbb = (WCETBasicBlock) inbbs.get(keyInt);
-            tStr += wcbb.getIDS(false);
+            tStr += wcbb.getIDS();
             if(iter.hasNext())
               tStr += " ";
           }
           tStr += "]";
   
-  sb.append(WU.postpad(getIDS(false)+tStr,6)); // see the BBs that point to this BB
+  sb.append(WU.postpad(getIDS()+tStr,6)); // see the BBs that point to this BB
   //        sb.append(WU.postpad("B" + id,6));
         } else {
           sb.append("      ");
@@ -1960,11 +2071,10 @@ class WCETBasicBlock {
     return bid;
   }
   
-  public String getIDS(boolean global){
+  public String getIDS(){
+    
     StringBuffer sbIDS = new StringBuffer();
     
-
-
     if(nodetype == SNODE)
       sbIDS.append("S");
     if(nodetype == BNODE)
@@ -1974,7 +2084,7 @@ class WCETBasicBlock {
     if(nodetype == TNODE)
       sbIDS.append("T");
     
-    if(global)
+    if(wcmb.wca.global)
       sbIDS.append("_M"+wcmb.mid);
     
     return sbIDS.toString(); 
