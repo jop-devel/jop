@@ -55,7 +55,7 @@ IPDEST=192.168.0.123
 
 P1=test
 P2=test
-P3=Hello
+P3=HelloWorld
 
 #P2=jvm
 #P3=DoAll
