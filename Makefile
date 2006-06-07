@@ -409,4 +409,10 @@ wcet:
 	-mkdir $(TARGET)/wcet
 	java $(TOOLS_CP) -Dlatex=false -Ddot=true -Djline=true -Dls=true com.jopdesign.wcet.WCETAnalyser \
 		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/wcet/$(P3)wcet.txt -sp $(TARGET_SOURCE) $(MAIN_CLASS)
-	cd $(TARGET)/wcet && ./dotall.bat
+
+dot2eps:
+	cd $(TARGET)/wcet && make dot
+
+test:
+	java $(TOOLS_CP) com.jopdesign.wcet.CallGraph \
+		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/wcet/$(P3)call.txt -sp $(TARGET_SOURCE) $(MAIN_CLASS)
