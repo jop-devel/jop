@@ -1333,19 +1333,38 @@ checkcast:
 //			nop
 //			stiod	nxt	// write data
 
+//
+//	this sequence takes ram_cnt + 3 cycles
+//	means ram_cnt-1 wait states (bsy)
+//	nws = ram_cnt-1
+//
+//	or in other words 4+nws
+//
+//	For the 100MHz JOP version this sequnce takes
+//	5 cycles.
+//
+//
 jopsys_rd:
 jopsys_rdmem:
-			stmra				// read ext. mem, mem_bsy comes one cycle later
+			stmra				// read memory, mem_bsy comes one cycle later
 			wait
-			wait
+			wait				// execute 1+nws
 			ldmrd		 nxt	// read ext. mem
 
+
+//
+//	The wait states for the write are the same as
+//	for the read: nws = ram_cnt-1
+//
+//	The sequence executes for 5+nws cycles - for the
+//	100MHz version in 6 cycles
+//
 jopsys_wr:
 jopsys_wrmem:
-			stmwa				// write ext. mem address
-			stmwd				// write ext. mem data
+			stmwa				// store memory address
+			stmwd				// store memory data
 			wait
-			wait
+			wait				// execute 1+nws
 			nop	nxt
 
 jopsys_rdint:
