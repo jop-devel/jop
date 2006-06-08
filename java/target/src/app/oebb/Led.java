@@ -25,6 +25,7 @@ public class Led {
 	private static boolean bp;		// one short beep
 	private static int beepTimeout;
 	private static boolean beepOn;
+	private static boolean modemOn;
 	private static final int BEEP_TIME = 500;
 	private static final int SHORT_BEEP_TIME = 500;
 
@@ -59,6 +60,9 @@ public class Led {
 		}
 		if (beepOn) {
 			val |= 2;		// relais a
+		}
+		if (modemOn) {
+			val |= 4;		// relais b			
 		}
 		Native.wr(val, Const.IO_BG+1);
 	}
@@ -112,5 +116,13 @@ public class Led {
 			bp = true;
 			beepOn = true;
 		}
+	}
+	
+	static void startModem() {
+		modemOn = true;
+	}
+	
+	static void stopModem() {
+		modemOn = false;
 	}
 }
