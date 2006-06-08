@@ -31,7 +31,8 @@ public class SetWCETAnalysis extends MyVisitor {
           wcmb.controlFlowGraph();
           wcmb.directedGraph();
           //wcmb.toString();
-          if(m.getName().equalsIgnoreCase("main")||m.getName().equalsIgnoreCase("loop11")){
+System.out.println("comparing:"+(clazz.getClassName()+"."+m.getName())+" to:"+wca.appmethod);          
+          if((clazz.getClassName()+"."+m.getName()).equalsIgnoreCase(wca.appmethod)){
             wca.wcmbapp = wcmb;
           }
         }

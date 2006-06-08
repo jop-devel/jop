@@ -62,13 +62,11 @@ public class WCETAnalyser{
   WCETMethodBlock wcmbapp = null;
   boolean global = true; // controls names of blocks B1 or B1_M1 if true
   String dotf = null;
-  // latex table string
-  public static String las;
-  public static String lae;
   // dot property: it will generate dot graphs if true
-  public static boolean dot;
   public static boolean jline;
-  public static boolean ls;
+  
+  // The app method or main if not provided
+  public static String appmethod;
   
   public static int idtmp = 0; // counter to make unique ids
   
@@ -134,18 +132,11 @@ public class WCETAnalyser{
     HashSet clsArgs = new HashSet();
     outFile = null;     // wcet/P3+Wcet.txt
     //the tables can be easier to use in latex using this property
-    boolean latex = System.getProperty("latex", "false").equals("true");
-    //dot graphs code generation
-    dot = System.getProperty("dot", "false").equals("true");
     jline = System.getProperty("jline", "false").equals("true");
-    ls = System.getProperty("ls", "false").equals("true");
-    if(latex){
-      las = " & ";
-      lae = " \\\\";
-    }
-    else {
-      las = "";
-      lae = "";
+    appmethod = System.getProperty("appmethod");
+    if(appmethod==null){
+      System.out.println("appmethod property not set");
+      System.exit(-1);
     }
       
     String srcPath = "nodir";
@@ -194,7 +185,7 @@ public class WCETAnalyser{
         wca.out = new PrintWriter(new FileOutputStream(outFile));
         String ds = new File(WCETAnalyser.outFile).getParentFile().getAbsolutePath()+"\\Makefile";
         wca.dotout = new PrintWriter(new FileOutputStream(ds));
-        wca.dotout.print("dot:\n");
+        wca.dotout.print("doteps:\n");
         
         wca.load(clsArgs);
         wca.global = false;
@@ -372,7 +363,7 @@ public class WCETAnalyser{
       sb.append("subgraph cluster"+wcmb.mid+" {\n");
       sb.append("color = black;\n");
       sb.append(wcmb.toDot(true)+"\n");
-      sb.append("label = \""+wcmb.name+"\";\n");
+      sb.append("label = \""+wcmb.cname+"."+wcmb.name+"\";\n");
       
       sb.append("}\n");
       WCETBasicBlock[] wcbba = wcmb.getBBSArray();
@@ -650,7 +641,6 @@ class WCETMethodBlock {
       
       // hook the called method to the outgoing node
       if(wcbb.nodetype == WCETBasicBlock.INODE){
-        
 
 //if(wca.getMethod(wcbb.bbinvo)==null){
 //  System.out.println("wca.getMethod(wcbb.bbinvo) == null");  
@@ -664,7 +654,43 @@ class WCETMethodBlock {
         if(wcbb.invowcmb==null)
           System.out.println("Could not resolve "+wcbb.bbinvo+" for linking in "+wcbb.getIDS());
         leaf = false;
+        
+//        ArrayList okl = new ArrayList();
+//        ArrayList pl = new ArrayList();
+//        ArrayList link = new ArrayList();
+//        link.add(wcbb);
+//        pl.add(link);
+//        while(pl.size()>0){
+//          link = (ArrayList)pl.get(0);
+//          WCETBasicBlock wcbblast = (WCETBasicBlock)link.get(link.size()-1);
+//          if(wcbblast.sucbb != null && wcbblast.tarbb != null){
+//            ArrayList linkclone = (ArrayList)link.clone();
+//            pl.add(linkclone);
+//          }
+//          WCETBasicBlock wcbbnext = null;
+//          if(wcbblast.sucbb != null){
+//            wcbbnext = wcbblast.sucbb;             
+//          }else if(wcbblast.tarbb != null){
+//            wcbbnext = wcbblast.tarbb;
+//          }else{ // T node
+//            pl.remove(0);
+//          }
+//          
+//          if(wcbbnext != null){
+//            if(wcbbnext == wcbblast){
+//              okl.add(pl.remove(0));
+//            } else if(link.contains(wcbbnext)){
+//              pl.remove(0);
+//            } else{
+//              link.add(wcbbnext);
+//            }         
+//          }
+//        }
+//        while(okl.size()>0){
+//          
+//        }
       }
+      
     }
   }
 
@@ -896,26 +922,23 @@ class WCETMethodBlock {
     // directed graph
     sb.append("Directed graph of basic blocks(row->column):\n");
     StringBuffer top = new StringBuffer();
-    if(wca.las.length()>0)
-      top.append("  ");    
-    top.append(WU.prepad(""+wca.las,4));
+    top.append(WU.prepad("",4));
 
     for (int i = 0; i < dg.length; i++) {
       if(i<dg.length-1)
-        top.append(WU.postpad(getBbs(i).getIDS()+wca.las,4));
+        top.append(WU.postpad(getBbs(i).getIDS(),4));
       else
-        top.append(WU.postpad(getBbs(i).getIDS()+wca.lae,4));
+        top.append(WU.postpad(getBbs(i).getIDS(),4));
     }
     top.append("\n");
 
-    for (int i = 0; i < top.length() - 3+wca.las.length(); i++) {
+    for (int i = 0; i < top.length() - 3; i++) {
       sb.append("=");
     }
     sb.append("\n" + top.toString());
 
     for (int i = 0; i < dg.length; i++) {
       sb.append(WU.postpad(getBbs(i).getIDS(),3));
-      sb.append(wca.las);
 
       for (int j = 0; j < dg.length; j++) {
         if (dg[i][j] == 0)
@@ -924,13 +947,13 @@ class WCETMethodBlock {
           sb.append(" " + dg[i][j]);
 
         if(j<dg.length-1)
-          sb.append(WU.postpad(""+wca.las,2));
+          sb.append(WU.postpad("",2));
         else
-          sb.append(WU.postpad(""+wca.lae,2));
+          sb.append(WU.postpad("",2));
       }
       sb.append("\n");
     }
-    sb.append(WU.repeat("=",top.length() - 3+wca.las.length()));
+    sb.append(WU.repeat("=",top.length() - 3));
     sb.append("\n");
     
 
@@ -954,13 +977,10 @@ class WCETMethodBlock {
 //      WCETBasicBlock.bbe();
 //      sb.append("\n"+toLinkBBS());
 //    }
-    if(wca.ls)
-      sb.append(toLS(false,true, null));
+    sb.append(toLS(false,true, null));
     
-    if(wca.dot)
-      sb.append(toDot(false));
-    
-    
+    sb.append(toDot(false));
+   
     return sb.toString();
   }
 
@@ -1829,9 +1849,9 @@ class WCETBasicBlock {
             String c = "";
             if(ai!=-1){
               c = wcmb.codeLines[srcLine-1].trim().substring(ai);
-              sb.append(WU.postpad(wcmb.wca.las+wcmb.wca.las+wcmb.wca.las+wcmb.wca.las+wcmb.wca.las+wcmb.wca.las+"Annotated Src. line :"+srcLine+": "+wcmb.codeLines[srcLine-1].trim()+wcmb.wca.lae,62)+"\n");
+              sb.append(WU.postpad("Annotated Src. line :"+srcLine+": "+wcmb.codeLines[srcLine-1].trim(),62)+"\n");
             }else
-              sb.append(WU.postpad(wcmb.wca.las+wcmb.wca.las+wcmb.wca.las+wcmb.wca.las+wcmb.wca.las+wcmb.wca.las+"  Src. line "+srcLine+": "+wcmb.codeLines[srcLine-1].trim()+wcmb.wca.lae,62)+"\n");
+              sb.append(WU.postpad("  Src. line "+srcLine+": "+wcmb.codeLines[srcLine-1].trim(),62)+"\n");
           }
           prevLine = srcLine; 
         }
@@ -1854,8 +1874,6 @@ class WCETBasicBlock {
           sb.append("      ");
         }
         
-        sb.append(wcmb.wca.las);
-        
         // addr (len 6)
         sb.append(WU.postpad(ih.getPosition() + ":",6));
   
@@ -1863,8 +1881,6 @@ class WCETBasicBlock {
           sb.append("*");
         else 
           sb.append(" ");
-        
-        sb.append(wcmb.wca.las);
         
         // bytecode (len 22)
         StringBuffer ihs = new StringBuffer(ih.getInstruction().getName() + "["
@@ -1879,8 +1895,6 @@ class WCETBasicBlock {
         }
   
         sb.append(WU.postpad(ihs.toString(),20));
-        
-        sb.append(wcmb.wca.las);
         
         String invoStr = "";
         
@@ -1967,8 +1981,8 @@ class WCETBasicBlock {
             } else {
   //            sb.append(WU.prepad(Integer.toString(wcetihHit)+"/"+Integer.toString(wcetihMiss),10));
               sb.append(WU.prepad(invokehit+"",10));
-              sb.append(WU.prepad(wcmb.wca.las+cacheInvokeMiss+"",8));
-              sb.append(WU.prepad(wcmb.wca.las+cacheReturnMiss+"",8));
+              sb.append(WU.prepad(cacheInvokeMiss+"",8));
+              sb.append(WU.prepad(cacheReturnMiss+"",8));
             }
   
             sb.append("   ");
@@ -1992,12 +2006,10 @@ class WCETBasicBlock {
           }
           blockcyc += wcetih;
   
-          sb.append(wcmb.wca.las+"   ");
-          sb.append(wcmb.wca.las+"                ");
+          sb.append("   ");
+          sb.append("                ");
         }
   
-        sb.append(wcmb.wca.las);
-        
         // misc.
         
         // invoke info or ""
@@ -2048,7 +2060,7 @@ class WCETBasicBlock {
   //        }
         }
         
-        sb.append(wcmb.wca.lae+"\n");
+        sb.append("\n");
       } while (ih != endih && (ih = ih.getNext()) != null);
     }
     
