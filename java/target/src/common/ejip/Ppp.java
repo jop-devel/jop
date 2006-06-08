@@ -327,6 +327,7 @@ public class Ppp extends LinkLayer {
 			while (!Timer.timeout(timer)) {
 				rth.waitForNextPeriod();
 			}
+			timer = Timer.getTimeoutMs(1000);
 			dropIp();
 		}
 	}
