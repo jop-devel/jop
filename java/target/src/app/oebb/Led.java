@@ -25,7 +25,7 @@ public class Led {
 	private static boolean bp;		// one short beep
 	private static int beepTimeout;
 	private static boolean beepOn;
-	private static boolean modemOn;
+	private static boolean modemOff;
 	private static final int BEEP_TIME = 500;
 	private static final int SHORT_BEEP_TIME = 500;
 
@@ -61,7 +61,8 @@ public class Led {
 		if (beepOn) {
 			val |= 2;		// relais a
 		}
-		if (modemOn) {
+		// der Ruhekontakt wird verwendet
+		if (modemOff) {
 			val |= 4;		// relais b			
 		}
 		Native.wr(val, Const.IO_BG+1);
@@ -119,10 +120,10 @@ public class Led {
 	}
 	
 	static void startModem() {
-		modemOn = true;
+		modemOff = false;
 	}
 	
 	static void stopModem() {
-		modemOn = false;
+		modemOff = true;
 	}
 }
