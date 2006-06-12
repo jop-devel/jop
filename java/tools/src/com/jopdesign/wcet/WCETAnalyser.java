@@ -201,7 +201,10 @@ public class WCETAnalyser{
           wcasbtemp.append(wca.wcmbapp.toLS(true,true, null));
           //wca.out.println(wca.wcmbapp.toLS(true,true, null));
           wcasbtemp.append(wca.toDot());
-          wcasbtemp.insert(0, "*************APPLICATION WCET="+wca.wcmbapp.wcetlp+"********************\n");
+          if(wca.wcmbapp.wcetlp>=0)
+            wcasbtemp.insert(0, "*************APPLICATION WCET="+wca.wcmbapp.wcetlp+"********************\n");
+          else
+            wcasbtemp.insert(0, "*************APPLICATION WCET=UNBOUNDED (CHECK LOOP BOUNDS I.E.: @WCA loop=XYZ)********************\n");
           wca.out.println(wcasbtemp.toString());
           wca.dotout.print("\tdot -Tps "+wca.dotf+" > "+wca.dotf.substring(0,wca.dotf.length()-4)+".eps\n");
         }
@@ -402,6 +405,9 @@ public class WCETAnalyser{
  * graph of wcbbs.
  */
 class WCETMethodBlock {
+  
+  // list of BBs that are loopcontrollers
+  ArrayList loopcontrollers = new ArrayList();
   
   int wcet = -1; // wcet count
   
@@ -635,6 +641,19 @@ class WCETMethodBlock {
   }
   
   public void link (){
+    // set up the  loop controllers
+    //   WCMB: Arraylist of <WCBB> loopcontrollers
+    //     WCBB: ArrayList of <ArrayList> of loopchains
+    //       loopchain: ArrayList <WCBB> of WCBB in chain
+    for (Iterator iter = bbs.keySet().iterator(); iter.hasNext();) {
+      Integer keyInt = (Integer) iter.next();
+      WCETBasicBlock wcbb = (WCETBasicBlock) bbs.get(keyInt);
+      if(wcbb.loopcontroller){
+        wcbb.createLoopChains();
+        loopcontrollers.add(wcbb);
+      }
+    }
+    
     for (Iterator iter = bbs.keySet().iterator(); iter.hasNext();) {
       Integer keyInt = (Integer) iter.next();
       WCETBasicBlock wcbb = (WCETBasicBlock) bbs.get(keyInt);
@@ -653,45 +672,150 @@ class WCETMethodBlock {
         wcbb.invowcmb = wca.getWCMB(wca.getMethod(wcbb.bbinvo));
         if(wcbb.invowcmb==null)
           System.out.println("Could not resolve "+wcbb.bbinvo+" for linking in "+wcbb.getIDS());
+        
         leaf = false;
         
-//        ArrayList okl = new ArrayList();
-//        ArrayList pl = new ArrayList();
-//        ArrayList link = new ArrayList();
-//        link.add(wcbb);
-//        pl.add(link);
-//        while(pl.size()>0){
-//          link = (ArrayList)pl.get(0);
-//          WCETBasicBlock wcbblast = (WCETBasicBlock)link.get(link.size()-1);
-//          if(wcbblast.sucbb != null && wcbblast.tarbb != null){
-//            ArrayList linkclone = (ArrayList)link.clone();
-//            pl.add(linkclone);
-//          }
-//          WCETBasicBlock wcbbnext = null;
-//          if(wcbblast.sucbb != null){
-//            wcbbnext = wcbblast.sucbb;             
-//          }else if(wcbblast.tarbb != null){
-//            wcbbnext = wcbblast.tarbb;
-//          }else{ // T node
-//            pl.remove(0);
-//          }
-//          
-//          if(wcbbnext != null){
-//            if(wcbbnext == wcbblast){
-//              okl.add(pl.remove(0));
-//            } else if(link.contains(wcbbnext)){
-//              pl.remove(0);
-//            } else{
-//              link.add(wcbbnext);
-//            }         
-//          }
-//        }
-//        while(okl.size()>0){
-//          
-//        }
+        // backtrack
+/*        ArrayList wcbbs = new ArrayList();
+        wcbbs.add(wcbb);
+        WCETBasicBlock lcwcbb = null;
+        while(wcbbs.size()>0){
+          WCETBasicBlock curwcbb = (WCETBasicBlock)wcbbs.get(0);
+          WCETBasicBlock[] tarbb = curwcbb.getInBBSArray();
+          for (int i=0;i<tarbb.length;i++){
+            if(tarbb[i].loopcontroller){ 
+              lcwcbb = tarbb[i];
+              wcbbs.clear();
+              break;
+            }
+            if(tarbb[i].nodetype != WCETBasicBlock.SNODE || tarbb[i].nodetype != WCETBasicBlock.TNODE){
+              wcbbs.add(tarbb[i]);
+            }
+          }
+        }*/
+        
       }
-      
     }
+/*//TODO: discuss with ms    
+// if there are any path that leads back to the INODE that has only one loopcontroller    
+    for (Iterator iter = bbs.keySet().iterator(); iter.hasNext();) {
+      Integer keyInt = (Integer) iter.next();
+      WCETBasicBlock wcbb = (WCETBasicBlock) bbs.get(keyInt);
+      if(wcbb.nodetype == WCETBasicBlock.INODE && wca.global){
+        if(wcbb.invowcmb.leaf){ 
+          
+System.out.println("invowcmb from "+cname+"."+name+"("+wcbb.getIDS()+")"+":"+wcbb.invowcmb.cname+"."+wcbb.invowcmb.name+" is a leaf");          
+          //  we have a candidate  
+          //  dismiss if there is an invoblock in an inner loop 
+          ArrayList okl = new ArrayList();  //  ok
+          ArrayList pl = new ArrayList(); //  pending
+          ArrayList link = new ArrayList();
+          link.add(wcbb);
+          pl.add(link);
+          while(pl.size()>0){
+            link = (ArrayList)pl.get(0);
+System.out.println("\na:"+ WU.printChain(link));          
+            WCETBasicBlock wcbbinvo = (WCETBasicBlock)link.get(0);
+            WCETBasicBlock wcbblast = (WCETBasicBlock)link.get(link.size()-1);
+            
+            //first check the chain
+            if(wcbbnext == wcbbinvo){ 
+              System.out.println("removing  pl(0). pll.size:"+pl.size());                
+                              okl.add(pl.remove(0)); // the max 1 candidate chain saved
+              System.out.println("removed  pl(0). pll.size:"+pl.size());
+              if(pl.size()>0)
+                System.out.println("pl(0):"+WU.printChain((ArrayList)pl.get(0)));
+                            } 
+                            else if(link.contains(wcbbnext)){
+                              pl.remove(0);
+                            }
+                            else
+                              link.add(wcbbnext);
+          }}}            
+            
+            //then advance it
+            
+            if(wcbblast.sucbb != null && wcbblast.tarbb != null){
+              ArrayList linkclone = (ArrayList)link.clone();
+              pl.add(linkclone);
+            }
+            WCETBasicBlock wcbbnext = null;
+            
+            if(wcbblast.sucbb != null){
+              wcbbnext = wcbblast.sucbb;             
+            }else if(wcbblast.tarbb != null){
+              wcbbnext = wcbblast.tarbb;
+            }else{ // T node
+System.out.println("T:"+ WU.printChain(link));              
+              pl.remove(0);
+            }
+System.out.println("b:"+ WU.printChain(link));  
+System.out.println("wcbbnext:"+wcbbnext.getIDS());
+System.out.println("wcbbinvo:"+wcbbinvo.getIDS());
+            if(wcbbnext != null){
+              if(wcbbnext == wcbbinvo){ 
+System.out.println("removing  pl(0). pll.size:"+pl.size());                
+                okl.add(pl.remove(0)); // the max 1 candidate chain saved
+System.out.println("removed  pl(0). pll.size:"+pl.size());
+if(pl.size()>0)
+  System.out.println("pl(0):"+WU.printChain((ArrayList)pl.get(0)));
+              } 
+              else if(link.contains(wcbbnext)){
+                pl.remove(0);
+              }
+              else
+                link.add(wcbbnext);
+              
+//              else if(wcbbnext.loopcontroller){ // check that it is the first loopcontroller
+//                  boolean onlylc = true;
+//                  for (int i=1;i<link.size();i++){
+//                    if(((WCETBasicBlock)link.get(i)).loopcontroller){
+//                      onlylc = false;
+//                      break;
+//                    }
+//                  }
+//                  if(onlylc){
+//                    link.add(wcbbnext);
+//                    wcbbinvo.innerlc = wcbbnext.bid;
+//                  }
+//                  else
+//                    pl.remove(0);
+//              } else if(wcbbnext.nodetype == WCETBasicBlock.INODE){
+//                if(wcbbnext.invowcmb == wcbbinvo.invowcmb) 
+//                  link.add(wcbbnext); // ok to invoke the same method (one cache miss is false, however)
+//                else
+//                  pl.remove(0);
+//              }
+//              else{
+//                link.add(wcbbnext);
+//              }         
+            }
+          }
+          
+          System.out.println("#ok chains:"+okl.size());
+          for (int i=0;i<okl.size();i++){
+            link = (ArrayList)okl.get(i);
+            System.out.println(WU.printChain(link));
+          }
+          
+          while(okl.size()>0){
+            // conservative: require that it is the only invo block for all loops
+            // ok to have it multiple times (just a more conservative estimate)
+            link = (ArrayList)okl.get(0);
+            WCETBasicBlock wcbbinvo = (WCETBasicBlock)link.get(0);
+            wcbbinvo.innerinode = true;
+            for (int i=1;i<link.size()-1;i++){
+              WCETBasicBlock wcbbtest = (WCETBasicBlock)link.get(i);
+              if(wcbbtest.nodetype == WCETBasicBlock.INODE && wcbbtest != wcbbinvo)
+                wcbbinvo.innerinode = false;
+            }           
+          }
+        } else{
+          wcbb.innerinode = false; 
+        }
+      }
+    }
+    */
   }
 
   public ControlFlowGraph getControlFlowGraph() {
@@ -855,8 +979,12 @@ class WCETMethodBlock {
     // find loopdrivers/loopcontrollers
 //System.out.println("\nmethod:"+method.getClass().getName()+"."+method.getName());    
     for (Iterator iter = bbs.keySet().iterator(); iter.hasNext();) {
+      
       Integer keyInt = (Integer) iter.next();
       WCETBasicBlock wcbb = (WCETBasicBlock) bbs.get(keyInt);
+System.out.println("first wcbb:"+wcbb.getIDS());    
+if(wcbb.line >=0)
+  System.out.println("codeline:"+codeLines[wcbb.line-1]);
 //System.out.println("outer loop wcbb.id:"+wcbb.id);      
       // identify loop controller candidate
       if(((wcbb.sucbb != null && wcbb.tarbb != null)
@@ -865,7 +993,8 @@ class WCETMethodBlock {
         HashMap wcaA = WU.wcaA(codeLines[wcbb.line-1]);
         if(wcaA != null){
           if(wcaA.get("loop") != null){ // wcbb is now loopdriver
-//System.out.println("loopdriver id:"+wcbb.id);            
+//System.out.println("loopdriver id:"+wcbb.id);           
+System.out.println("LOOPDRIVER:"+wcbb.getIDS());            
             // find loopcontroller
             boolean set = false;
             WCETBasicBlock wcbbhit = wcbb;
@@ -887,23 +1016,32 @@ class WCETMethodBlock {
             }
 //System.out.println("loop controller hit:"+wcbbhit.id);            
             wcbb.loopdriver = true;
+            wcbb.loopcontroller = false;
             wcbb.loop = Integer.parseInt((String)wcaA.get("loop"));
             wcbbhit.loopcontroller = true;
+            wcbbhit.loopdriver = false;
             wcbbhit.loopid = wcbb.bid;
             wcbbhit.loop = Integer.parseInt((String)wcaA.get("loop"));
+            wcbbhit.loopdriverwcbb = wcbb;
             lines.add(new Integer(wcbbhit.line));
+//            if(wcaA.get("innerloop") != null){
+//              if(((String)wcaA.get("innerloop")).equals("true")){
+//System.out.println(wcbb.getIDS() +" is an inner loop controller");                
+//                wcbb.innerloop = true;
+//              }
+//            }
           }
         }
       }
           
-      if(wcbb.loopcontroller){
-        HashMap tinbbs = wcbb.getInbbs();
-        if(wcbb.bid > 0 && tinbbs.size()!=2){
-//          System.out.println("error in loopcontrol:"+wcbb.id);
-//          System.out.println("tinbbs.size:"+tinbbs.size());
-//          System.exit(-1);
-        }
-      }
+//      if(wcbb.loopcontroller){
+//        HashMap tinbbs = wcbb.getInbbs();
+//        if(wcbb.bid > 0 && tinbbs.size()!=2){
+////          System.out.println("error in loopcontrol:"+wcbb.id);
+////          System.out.println("tinbbs.size:"+tinbbs.size());
+////          System.exit(-1);
+//        }
+//      }
     }
   }
 
@@ -1077,13 +1215,19 @@ class WCETMethodBlock {
       wcbb = (WCETBasicBlock) bbs.get(keyInt);
       //S
       if(wcbb.nodetype==WCETBasicBlock.SNODE)
-        ls.append(wcbb.toLSS(invowcbb));
+        if(invowcbb != null)
+          ls.append(wcbb.toLSS(invowcbb));
+        else 
+          ls.append(wcbb.toLSS(null));
       else if(wcbb.nodetype==WCETBasicBlock.BNODE || wcbb.nodetype==WCETBasicBlock.INODE){
         ls.append(wcbb.toLSFlow());
         if(wcbb.loopcontroller)
           ls.append(wcbb.toLSLoop());
       } else if(wcbb.nodetype==WCETBasicBlock.TNODE){
-        ls.append(wcbb.toLST(invowcbb));
+        if(invowcbb != null)
+          ls.append(wcbb.toLST(invowcbb));
+        else
+          ls.append(wcbb.toLST(null));
       }
       
       if(wcbb.nodetype==WCETBasicBlock.INODE && global){
@@ -1257,6 +1401,10 @@ class WCETBasicBlock {
   static int bcetid;
   static WCETBasicBlock[] bba; //S on 0 and T on end
   
+  // loopcontroller vars
+  boolean innerloop = false; // used both for invo block and lc blocks when applicable
+  ArrayList loopchains; // chains of BB that loop back to the lc
+  
   // id of the bb
   int bid = -1;
   
@@ -1265,6 +1413,7 @@ class WCETBasicBlock {
   int loopid = -1;
   boolean loopdriver = false;
   boolean loopcontroller = false;
+  WCETBasicBlock loopdriverwcbb = null; // is set for loopcontrollers 
   boolean loopreturn = false;
   
   // loop target
@@ -1587,6 +1736,86 @@ class WCETBasicBlock {
   }
 
   /**
+   * <code>loopchains</code> now contains the chains the define the loop. 
+   */
+  public void createLoopChains(){
+    System.out.println("entering createloopchains");
+    if(!loopcontroller){
+      System.out.println("not a loop controler");
+      System.exit(-1);
+    }
+    else{
+      System.out.println("loopcontroller:"+getIDS());
+      System.out.println("loopdriver:"+loopdriverwcbb.getIDS());
+    }
+    
+      
+    
+    innerloop = true;
+    loopchains = new ArrayList();
+    ArrayList chains = new ArrayList();
+    ArrayList chain = new ArrayList();
+    chains.add(chain);
+    chain.add(this);
+    chain.add(sucbb);
+    // loop until exausted all possibilities
+    while(chains.size()>0){
+      chain = (ArrayList)chains.get(0);
+      WCETBasicBlock wcbblast = (WCETBasicBlock)chain.get(chain.size()-1);
+      if(wcbblast.loopcontroller)
+        innerloop = false;
+      if(wcbblast.sucbb != null){
+        if(wcbblast.sucbb == this){
+          loopchains.add(chain);
+        }
+        else if(!wcbblast.loopcontroller){
+          ArrayList newchain = (ArrayList)chain.clone();
+          newchain.add(wcbblast.sucbb);
+          chains.add(newchain);
+        }         
+      }
+      if(wcbblast.tarbb != null){
+        if(wcbblast.tarbb == this)
+          loopchains.add(chain);
+        else {
+          ArrayList newchain = (ArrayList)chain.clone();
+          newchain.add(wcbblast.tarbb);
+          chains.add(newchain);
+        }    
+      }
+      chains.remove(0);
+    }
+    // mark invocation blocks as innerloop
+    if(innerloop){
+System.out.println("if innerloop");      
+System.out.println("loopchains:\n"+WU.printChains(loopchains));
+      HashSet invowcmb = new HashSet();
+      ArrayList invoblocks = new ArrayList();
+      // loop all chains
+      for (int i=0;i<loopchains.size();i++){
+        chain = (ArrayList)loopchains.get(i);
+        for (int j=0;j<chain.size();j++){
+          WCETBasicBlock wcbb = (WCETBasicBlock)chain.get(j);
+          if(wcbb.nodetype == WCETBasicBlock.INODE){
+            invowcmb.add(wcbb.invowcmb);
+            invoblocks.add(wcbb);
+          }
+        }
+      }
+System.out.println("invowcmb.size():"+invowcmb.size());      
+      if(invowcmb.size()==1){
+System.out.println("invoblocks.size():"+invoblocks.size());        
+        for (int i=0;i<invoblocks.size();i++){
+          WCETBasicBlock invowcbb = (WCETBasicBlock)invoblocks.get(i);
+          invowcbb.innerloop = true;
+          invowcbb.loopdriverwcbb = loopdriverwcbb;
+          invowcbb.loop = loop;
+        }
+      }
+    }
+  }
+  
+  /**
    * Returns the cycle count for cache hit. Remember to check validWcet() for validity.
    * 
    * @return wcet count
@@ -1679,15 +1908,16 @@ class WCETBasicBlock {
     return ls.toString();
   }
   
-  // flow connect external BB to S
+  // flow connect external invo BB to S
   public String toLSS(WCETBasicBlock wcbb){
     StringBuffer ls = new StringBuffer();
     if(nodetype == WCETBasicBlock.SNODE){
       if(wcbb == null)
         ls.append(getIDS()+": 1 = f"+getIDS()+"_"+sucbb.getIDS()+"; // S flow\n");
-      else
-        ls.append(getIDS()+": f"+ wcbb.getIDS()+"_"+ getIDS() + " = f"+getIDS()+"_"+sucbb.getIDS()+"; // S interconnect flow\n");
-    } 
+      else{ // connect the two cache paths
+        ls.append(getIDS()+": fch"+ wcbb.getIDS()+"_"+ getIDS() + "+ fcm"+ wcbb.getIDS()+"_"+ getIDS()+" = f"+getIDS()+"_"+sucbb.getIDS()+"; // S flow\n");
+      }
+    }
     else{
       System.out.println("Not S type");
       System.exit(-1);
@@ -1722,7 +1952,9 @@ class WCETBasicBlock {
   }
 
   // hook INODE's outgoing link to invo S and T 
+  // or hook INODE's loopdriver to S and T
   public String toLSInvo(){
+    //System.exit(-1);
     StringBuffer ls = new StringBuffer();
     // hook the called method to the outgoing node
     if(nodetype == WCETBasicBlock.INODE){    
@@ -1733,13 +1965,21 @@ class WCETBasicBlock {
 //  System.out.println("invowcmb== null");
 
       ls.append("/* Invoking "+bbinvo+" id:"+invowcmb.S.getIDS()+"*/\n");
+      // to invo S
       String invodriver = getIDS()+"_"+sucbb.getIDS(); 
       String invoS = getIDS()+"_"+invowcmb.S.getIDS();
       String invoT = invowcmb.T.getIDS()+"_"+getIDS();
-      // to invo S
-      ls.append("IS_"+getIDS()+ ": f" + invodriver+" = f" +invoS+"; // invo S driver\n");
-      // from invo T      
-      ls.append("IT_"+getIDS()+ ": f" + invoT+" = f" +invodriver+"; // invo T driver\n");
+      ls.append(getIDS()+"_S: fcm"+ invoS+" + fch"+ invoS+" = f"+invodriver+"; //cache S paths\n");
+      //ls.append(getIDS()+"ch: fch"+ invoS+" = f"+invodriver+"; //cache hit S path\n");
+      ls.append(getIDS()+ "_T: f" + invodriver+" = f" +invoT+"; // invo T return path \n");
+      
+      // flow constrain the cache paths
+      if(innerloop){
+        ls.append("fcm"+ invoS + " = f"+loopdriverwcbb.getIDS()+"_"+loopdriverwcbb.sucbb.getIDS()+"; // cache misses driven by loopdriver\n");
+      } else { // cache misses
+        ls.append("fch"+ invoS + " = 0; // no cache hits (because not innerloop)\n");
+      }
+        
       ls.append("/* Done with "+bbinvo+"*/\n");
      } else{
        System.out.println("Not INODE type");
@@ -2149,6 +2389,18 @@ class WCETBasicBlock {
   public HashMap getInbbs() {
     return inbbs;
   }
+  
+  //  array of inward basic blocks
+  public WCETBasicBlock[] getInBBSArray(){
+    WCETBasicBlock[]  awcbb = new WCETBasicBlock[inbbs.size()];
+    int i=0;
+    for (Iterator iter = getInbbs().keySet().iterator(); iter.hasNext();) {
+      WCETBasicBlock wbb = (WCETBasicBlock) getInbbs().get((Integer) iter.next());
+      awcbb[i] = wbb;
+      i++;
+    }
+    return awcbb;
+  }
 
   public int getBlockCycles() {
 //    boolean hit = false;
@@ -2156,6 +2408,10 @@ class WCETBasicBlock {
 //      hit = CacheSimul.get(wcmb.methodbcel);
 //    }
       return blockcyc;
+  }
+
+  public WCETBasicBlock getLoopdriverwcbb() {
+    return loopdriverwcbb;
   }
 
 }
@@ -2960,5 +3216,28 @@ class WU{
     }
     return sb.toString();
   }
+  public static String printChains(ArrayList links){
+    StringBuffer sb = new StringBuffer();
+    for (int i=0;i<links.size();i++){
+      sb.append("links["+i+"]"+printChain((ArrayList)links.get(i))+"\n");
+    }
+    return sb.toString();
+  }
+  /**
+   * Print link info
+   * @param link WCETBasicBlock
+   * @return
+   */
+  public static String printChain(ArrayList link){
+    StringBuffer sb = new StringBuffer();
+    sb.append("chain[size="+link.size()+"]:");
+    for (int j=0;j<link.size();j++){
+      WCETBasicBlock wcbb = (WCETBasicBlock)link.get(j);
+      sb.append(wcbb.getIDS());
+      if(j<link.size()-1)
+        sb.append(" -> ");
 
+    }
+    return sb.toString();
+  }
 }
