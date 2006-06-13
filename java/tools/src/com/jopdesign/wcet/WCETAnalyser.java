@@ -64,6 +64,7 @@ public class WCETAnalyser{
   String dotf = null;
   // dot property: it will generate dot graphs if true
   public static boolean jline;
+  public static boolean instr; // true if you want instriction cycles printed
   
   // The app method or main if not provided
   public static String appmethod;
@@ -133,6 +134,8 @@ public class WCETAnalyser{
     outFile = null;     // wcet/P3+Wcet.txt
     //the tables can be easier to use in latex using this property
     jline = System.getProperty("jline", "false").equals("true");
+    instr = System.getProperty("instr", "true").equals("true");
+    
     appmethod = System.getProperty("appmethod");
     if(appmethod==null){
       System.out.println("appmethod property not set");
@@ -214,7 +217,8 @@ public class WCETAnalyser{
         
         //instruction info
         wca.out.println("*****************************************************");
-        wca.out.println(WCETInstruction.toWCAString());
+        if(instr)
+          wca.out.println(WCETInstruction.toWCAString());
         wca.out.println("Note: Remember to keep WCETAnalyzer updated");
         wca.out.println("each time a bytecode implementation is changed.");
         wca.out.close();
@@ -354,10 +358,9 @@ public class WCETAnalyser{
   public String toDot(){
     StringBuffer sb = new StringBuffer();
     sb.append("\n/* App Dot Graph */\n");
-    sb.append("digraph G {\n");
-    sb.append("size = \"7.27,10.69\"\n");
-    
-    
+    sb.append("digraph G {\n"); //8.27 x 11.69 inches
+    sb.append("size = \"7.27,9.69\"\n");
+   
     ArrayList appWCMB = new ArrayList();
     appWCMB.add(wcmbapp);
     while(appWCMB.size() > 0){
@@ -366,7 +369,7 @@ public class WCETAnalyser{
       sb.append("subgraph cluster"+wcmb.mid+" {\n");
       sb.append("color = black;\n");
       sb.append(wcmb.toDot(true)+"\n");
-      sb.append("label = \""+wcmb.cname+"."+wcmb.name+"\";\n");
+      sb.append("label = \""+wcmb.cname+"."+wcmb.name+" : M"+wcmb.mid+"\";\n");
       
       sb.append("}\n");
       WCETBasicBlock[] wcbba = wcmb.getBBSArray();
@@ -405,6 +408,8 @@ public class WCETAnalyser{
  * graph of wcbbs.
  */
 class WCETMethodBlock {
+  
+  StringBuffer lsobj;
   
   // list of BBs that are loopcontrollers
   ArrayList loopcontrollers = new ArrayList();
@@ -551,7 +556,10 @@ class WCETMethodBlock {
         // create new bb (a)for branch target and (b) for sucessor
         Instruction ins = ih.getInstruction();
         
-        if(ih.getInstruction() instanceof InvokeInstruction){
+        if(ih.getInstruction() instanceof InvokeInstruction &&
+            (((InvokeInstruction)ih.getInstruction()).getClassName(getCpg())).indexOf("Native")==-1){
+System.out.println("classname:"+((InvokeInstruction)ih.getInstruction()).getClassName(getCpg()));
+System.out.println("wca.nativeClass:"+wca.nativeClass);
           createBasicBlock(ih);
           createBasicBlock(ih.getNext());
         } else if (ih.getInstruction() instanceof BranchInstruction) {
@@ -978,21 +986,27 @@ if(pl.size()>0)
     HashSet lines = new HashSet();
     // find loopdrivers/loopcontrollers
 //System.out.println("\nmethod:"+method.getClass().getName()+"."+method.getName());    
+    System.out.println("METHOD:"+name);
     for (Iterator iter = bbs.keySet().iterator(); iter.hasNext();) {
       
       Integer keyInt = (Integer) iter.next();
       WCETBasicBlock wcbb = (WCETBasicBlock) bbs.get(keyInt);
-System.out.println("first wcbb:"+wcbb.getIDS());    
+      
+System.out.println("wcbb:"+wcbb.getIDS());    
 if(wcbb.line >=0)
   System.out.println("codeline:"+codeLines[wcbb.line-1]);
 //System.out.println("outer loop wcbb.id:"+wcbb.id);      
       // identify loop controller candidate
-      if(((wcbb.sucbb != null && wcbb.tarbb != null)
+      HashMap wcaA = null;
+      if(wcbb.line >=0)
+        wcaA = WU.wcaA(codeLines[wcbb.line-1]);
+      if(wcaA != null){
+        if(wcaA.get("loop") != null){ // wcbb is now loopdriver
+
+      if(((wcbb.sucbb != null || wcbb.tarbb != null)
           && (!wcbb.loopdriver || !wcbb.loopcontroller))
           && !lines.contains(new Integer(wcbb.line))){
-        HashMap wcaA = WU.wcaA(codeLines[wcbb.line-1]);
-        if(wcaA != null){
-          if(wcaA.get("loop") != null){ // wcbb is now loopdriver
+        
 //System.out.println("loopdriver id:"+wcbb.id);           
 System.out.println("LOOPDRIVER:"+wcbb.getIDS());            
             // find loopcontroller
@@ -1203,7 +1217,7 @@ System.out.println("LOOPDRIVER:"+wcbb.getIDS());
     
     StringBuffer ls = new StringBuffer();
     StringBuffer lsinvo = new StringBuffer();
-    StringBuffer lsobj = new StringBuffer();
+    lsobj = new StringBuffer();
 
     ls.append("/* WCA flow constraints */\n");
 
@@ -1233,7 +1247,7 @@ System.out.println("LOOPDRIVER:"+wcbb.getIDS());
       if(wcbb.nodetype==WCETBasicBlock.INODE && global){
         ls.append(wcbb.toLSInvo());
         lsinvo.append(wcbb.invowcmb.toLS(global,false, wcbb));
-        lsobj.append(" "+wcbb.invowcmb.toLSO());
+        lsobj.append(" "+wcbb.invowcmb.getLSO());
       }
     }
       
@@ -1245,9 +1259,13 @@ System.out.println("LOOPDRIVER:"+wcbb.getIDS());
         ls.append(wcbb.toLSCycles());
       }
     }
-    
-    ls.append("/* Invocation(s) */\n");
-    ls.append(lsinvo.toString());
+    if(wcbb.invowcmb != null){
+      ls.append("/* Invocation(s) from "+name+":[M"+mid+"] -> "+wcbb.invowcmb.name+":[M"+mid+"]*/\n");
+      ls.append(lsinvo.toString());
+    } else{
+      ls.append("/* Invocation(s) from "+name+":[M"+mid+"] */\n");
+      ls.append(lsinvo.toString());
+    }
     
     if(term){ // once
       //String lso = obs.toString();
@@ -1305,7 +1323,7 @@ System.out.println("LOOPDRIVER:"+wcbb.getIDS());
   }
   
   // tS tB1 etc.
-  public String toLSO(){
+  private String toLSO(){
     StringBuffer lso = new StringBuffer();
     for (Iterator iter = bbs.keySet().iterator(); iter.hasNext();) {
       Integer keyInt = (Integer) iter.next();
@@ -1381,6 +1399,11 @@ System.out.println("LOOPDRIVER:"+wcbb.getIDS());
     return cpg;
   }
   
+  // valid after call to toLS
+  public StringBuffer getLSO() {
+    return lsobj;
+  }
+  
 }
 
 /**
@@ -1426,6 +1449,10 @@ class WCETBasicBlock {
   int wcetMiss;
   int blockcyc;
 
+  // additional cycles from a cache miss on invoke
+  int cacheInvokeMiss = -1;
+  // additional cycles from a cache 
+  int cacheReturnMiss = -1;
 
   // false if we encounter WCETNOTAVAILABLE bytecodes while counting
   boolean valid;
@@ -1739,7 +1766,7 @@ class WCETBasicBlock {
    * <code>loopchains</code> now contains the chains the define the loop. 
    */
   public void createLoopChains(){
-    System.out.println("entering createloopchains");
+    System.out.println("entering createloopchains for:"+getIDS()+","+wcmb.cname+"."+wcmb.name);
     if(!loopcontroller){
       System.out.println("not a loop controler");
       System.exit(-1);
@@ -1749,10 +1776,11 @@ class WCETBasicBlock {
       System.out.println("loopdriver:"+loopdriverwcbb.getIDS());
     }
     
-      
-    
     innerloop = true;
     loopchains = new ArrayList();
+
+//if(innerloop)
+//  return;
     ArrayList chains = new ArrayList();
     ArrayList chain = new ArrayList();
     chains.add(chain);
@@ -1916,6 +1944,7 @@ System.out.println("invoblocks.size():"+invoblocks.size());
         ls.append(getIDS()+": 1 = f"+getIDS()+"_"+sucbb.getIDS()+"; // S flow\n");
       else{ // connect the two cache paths
         ls.append(getIDS()+": fch"+ wcbb.getIDS()+"_"+ getIDS() + "+ fcm"+ wcbb.getIDS()+"_"+ getIDS()+" = f"+getIDS()+"_"+sucbb.getIDS()+"; // S flow\n");
+        ls.append("t"+getIDS()+" = "+wcbb.getCacheInvokeMiss()+" fcm"+ wcbb.getIDS()+"_"+ getIDS()+"; // S cache miss time\n");
       }
     }
     else{
@@ -1941,8 +1970,15 @@ System.out.println("invoblocks.size():"+invoblocks.size());
       }
       if(wcbb == null)
         ls.append(" = 1; // T flow\n");
-      else
+      else{
         ls.append(" = f"+getIDS()+"_"+wcbb.getIDS()+";// T interconnect flow\n");
+        // hit on return if it is a leaf
+        if(wcmb.leaf)
+          ls.append("t"+getIDS()+" = 0 f"+getIDS()+"_"+wcbb.getIDS()+"; // T cache hit (leaf)\n");
+        else
+          ls.append("t"+getIDS()+" = "+wcbb.getCacheReturnMiss()+" f"+getIDS()+"_"+wcbb.getIDS()+"; // T cache miss (not leaf)\n");
+      }
+      
     }
     else{
       System.out.println("Not TNODE");
@@ -1975,7 +2011,7 @@ System.out.println("invoblocks.size():"+invoblocks.size());
       
       // flow constrain the cache paths
       if(innerloop){
-        ls.append("fcm"+ invoS + " = f"+loopdriverwcbb.getIDS()+"_"+loopdriverwcbb.sucbb.getIDS()+"; // cache misses driven by loopdriver\n");
+        ls.append("fcm"+ invoS + " = f"+loopdriverwcbb.getLoopdriverprevwcbb().getIDS()+"_"+loopdriverwcbb.getIDS()+"; // cache misses driven by loopdriver\n");
       } else { // cache misses
         ls.append("fch"+ invoS + " = 0; // no cache hits (because not innerloop)\n");
       }
@@ -2207,8 +2243,8 @@ System.out.println("invoblocks.size():"+invoblocks.size());
               System.out.println("Did not recognize "+retsig+" as return type");
               System.exit(-1);
             }
-            int cacheInvokeMiss = (invokemiss-invokehit);
-            int cacheReturnMiss = (retmiss-rethit);
+            cacheInvokeMiss = (invokemiss-invokehit);
+            cacheReturnMiss = (retmiss-rethit);
             // that's the invoke instruction
             blockcyc += invokehit;
             // cache influence now as always miss up
@@ -2249,8 +2285,6 @@ System.out.println("invoblocks.size():"+invoblocks.size());
           sb.append("   ");
           sb.append("                ");
         }
-  
-        // misc.
         
         // invoke info or ""
         sb.append(invoStr);
@@ -2412,6 +2446,28 @@ System.out.println("invoblocks.size():"+invoblocks.size());
 
   public WCETBasicBlock getLoopdriverwcbb() {
     return loopdriverwcbb;
+  }
+  
+  // called on the loop driver to get the bb that points to it
+  // check the rule
+  public WCETBasicBlock getLoopdriverprevwcbb(){
+    return (WCETBasicBlock)wcmb.getBbs(bid-1);
+  }
+
+  public int getCacheInvokeMiss() {
+    if(nodetype != INODE){
+      System.out.println("not INODE");
+      System.exit(-1);
+    }
+    return cacheInvokeMiss;
+  }
+
+  public int getCacheReturnMiss() {
+    if(nodetype != INODE){
+      System.out.println("not INODE");
+      System.exit(-1);
+    }
+    return cacheReturnMiss;
   }
 
 }
