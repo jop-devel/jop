@@ -983,19 +983,19 @@ public class WCETInstruction {
 			break;
 		// GETSTATIC = 178
 		case org.apache.bcel.Constants.GETSTATIC:
-			wcet = 4 + 2 * r;
+			wcet = 12 + 2 * r;
 			break;
 		// PUTSTATIC = 179
 		case org.apache.bcel.Constants.PUTSTATIC:
-			wcet = 5 + r + w;
+			wcet = 13 + r + w;
 			break;
 		// GETFIELD = 180
 		case org.apache.bcel.Constants.GETFIELD:
-			wcet = 10 + 2 * r;
+			wcet = 17 + 2 * r;
 			break;
 		// PUTFIELD = 181
 		case org.apache.bcel.Constants.PUTFIELD:
-			wcet = 13 + r + w;
+			wcet = 20 + r + w;
 			break;
 		// INVOKEVIRTUAL = 182
 		case org.apache.bcel.Constants.INVOKEVIRTUAL:
@@ -1081,7 +1081,7 @@ public class WCETInstruction {
 			break;
 		// NEWARRAY = 188
 		case org.apache.bcel.Constants.NEWARRAY:
-			wcet = 12 + w; // TODO: Time to clear array not included
+			wcet = -1;
 			break;
 		// ANEWARRAY = 189
 		case org.apache.bcel.Constants.ANEWARRAY:
@@ -1089,7 +1089,7 @@ public class WCETInstruction {
 			break;
 		// ARRAYLENGTH = 190
 		case org.apache.bcel.Constants.ARRAYLENGTH:
-			wcet = 2 + r;
+			wcet = 10 + 2 * r;
 			break;
 		// ATHROW = 191
 		case org.apache.bcel.Constants.ATHROW:
@@ -1105,12 +1105,11 @@ public class WCETInstruction {
 			break;
 		// MONITORENTER = 194
 		case org.apache.bcel.Constants.MONITORENTER:
-			wcet = 9;
+			wcet = 11;
 			break;
 		// MONITOREXIT = 195
 		case org.apache.bcel.Constants.MONITOREXIT:
-			wcet = 10;
-			wcet = 11; // TODO: Which one to keep?
+			wcet = 16; // BCET: 10
 			break;
 		// WIDE = 196
 		case org.apache.bcel.Constants.WIDE:
@@ -1138,27 +1137,27 @@ public class WCETInstruction {
 			break;
 		// JOPSYS_RD = 209   
 		case JOPSYS_RD:
-			wcet = r;
+			wcet = 4 + r;
 			break;
 		// JOPSYS_WR = 210
 		case JOPSYS_WR:
-			wcet = w + 1;
+			wcet = 5 + w;
 			break;
 		// JOPSYS_RDMEM = 211
 		case JOPSYS_RDMEM:
-			wcet = r;
+			wcet = 4 + r;
 			break;
 		// JOPSYS_WRMEM = 212
 		case JOPSYS_WRMEM:
-			wcet = w + 1;
+			wcet = 5 + w;
 			break;
 		// JOPSYS_RDINT = 213
 		case JOPSYS_RDINT:
-			wcet = 8;
+			wcet = 3;
 			break;
 		// JOPSYS_WRINT = 214
 		case JOPSYS_WRINT:
-			wcet = 8;
+			wcet = 3;
 			break;
 		// JOPSYS_GETSP = 215
 		case JOPSYS_GETSP:
@@ -1178,21 +1177,15 @@ public class WCETInstruction {
 			break;
 		// JOPSYS_INT2EXT = 219
 		case JOPSYS_INT2EXT:
-			wcet = 12;
-			if (w >= 12) {
-				wcet += n * (19 + w - 8);
-			} else {
-				wcet += n * (19 + 4);
-			}
+			int wt = 0;
+			if (w>8) wt = w-8;
+			wcet = 14+r+ n*(23+wt);
 			break;
 		// JOPSYS_EXT2INT = 220
 		case JOPSYS_EXT2INT:
-			wcet = 12;
-			if (w >= 14) {
-				wcet += n * (19 + w - 10);
-			} else {
-				wcet += n * (19 + 4);
-			}
+			int rt = 0;
+			if (r>10) rt = r-10;
+			wcet = 14+r+ n*(23+rt);
 			break;
 		// JOPSYS_NOP = 221
 		case JOPSYS_NOP:
