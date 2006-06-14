@@ -2410,6 +2410,10 @@ class WCETBasicBlock {
     
     StringBuffer sbIDS = new StringBuffer();
     
+    if(wcmb.wca.global){
+      sbIDS.append("M"+wcmb.mid+"_");
+    }
+    
     if(nodetype == SNODE)
       sbIDS.append("S");
     if(nodetype == BNODE)
@@ -2419,8 +2423,8 @@ class WCETBasicBlock {
     if(nodetype == TNODE)
       sbIDS.append("T");
     
+  
     if(wcmb.wca.global){
-      sbIDS.append("_M"+wcmb.mid);
       sbIDS.append("_E"+wcmb.E);
     }
     
