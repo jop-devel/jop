@@ -15,7 +15,6 @@ import org.apache.bcel.generic.*;
 import org.apache.bcel.generic.FieldOrMethod;
 import org.apache.bcel.verifier.structurals.*;
 
-import com.jopdesign.build.AppInfo;
 import com.jopdesign.build.TransitiveHull;
 import com.jopdesign.tools.JopInstr;
 
@@ -54,6 +53,8 @@ import lpsolve.*;
 // 2006-05-25 rup: "Annotations" and lp_solvable wcet output
 // 2006-05-30 rup: Exact call graph permutation to allow cache simulation
 
+//TODO: abstract method resolution (try all implementations and select worst).
+
 /**
  * The thing that controls the WCETClassBlock etc.
  */
@@ -73,6 +74,8 @@ public class WCETAnalyser{
   
   public final static String nativeClass = "com.jopdesign.sys.Native";
 
+  JavaClass[] jca;
+  
   PrintWriter out;
   
   PrintWriter dotout;
@@ -136,11 +139,11 @@ public class WCETAnalyser{
     jline = System.getProperty("jline", "false").equals("true");
     instr = System.getProperty("instr", "true").equals("true");
     
-    appmethod = System.getProperty("appmethod");
-    if(appmethod==null){
-      System.out.println("appmethod property not set");
-      System.exit(-1);
-    }
+//    appmethod = System.getProperty("appmethod");
+//    if(appmethod==null){
+//      System.out.println("appmethod property not set");
+//      System.exit(-1);
+//    }
       
     String srcPath = "nodir";
     try {
@@ -166,6 +169,7 @@ public class WCETAnalyser{
           }
           clsArgs.add(args[i]);
           mainClass = args[i].replace('/', '.');
+          appmethod = mainClass+".main";
         }
         
         StringTokenizer st = new StringTokenizer(srcPath,";");
@@ -213,7 +217,6 @@ public class WCETAnalyser{
         }
         wca.out.println("*************END APPLICATION WCET*******************");
         wca.out.println(wca.wcasb.toString());
-        
         
         //instruction info
         wca.out.println("*****************************************************");
@@ -271,18 +274,18 @@ public class WCETAnalyser{
     TransitiveHull hull = new TransitiveHull(classpath, jcl);
     hull.start();
     System.out.println(Arrays.asList(hull.getClassNames()));
-    JavaClass[] jc = hull.getClasses();
+    jca = hull.getClasses();
     // clazzes contains now the closure of the application
     int mid = 0;
-    for (int j = 0; j < jc.length; ++j) {
+    for (int j = 0; j < jca.length; ++j) {
       // The class Native is NOT used in a JOP application
-      if (!jc[j].getClassName().equals(nativeClass)) {
+      if (!jca[j].getClassName().equals(nativeClass)) {
         // ClassInfo cli = new ClassInfo(jc[j]);
 //System.out.println("added classname:"+jc[j].getClassName()+" filename:"+jc[j].getFileName()+ " sourcefilename:"+jc[j].getSourceFileName()+" packagename:"+jc[j].getPackageName());        
-        clazzes.add(jc[j]);
+        clazzes.add(jca[j]);
       }
       //package name and associated sourcefile 
-      String pacSrc = jc[j].getPackageName()+"."+jc[j].getSourceFileName();
+      String pacSrc = jca[j].getPackageName()+"."+jca[j].getSourceFileName();
       boolean fileMatch = false;
       for(int k=0;k<javaFiles.size();k++){
         String orig = (String)javaFiles.get(k);
@@ -292,7 +295,7 @@ public class WCETAnalyser{
 //System.out.println("Trying to match:"+pn+ " with: "+pacSrc);        
         int match = pn.lastIndexOf(pacSrc);
         if(match != -1){
-          String key = jc[j].getClassName();
+          String key = jca[j].getClassName();
 //System.out.println("Match! Key :"+key);          
           javaFilePathMap.put(key, orig);
           fileMatch = true;
@@ -300,12 +303,12 @@ public class WCETAnalyser{
         }
       }
       if(!fileMatch){
-        System.out.println("No filematch for "+jc[j].getClassName() + " and pacSrc="+pacSrc);
+        System.out.println("No filematch for "+jca[j].getClassName() + " and pacSrc="+pacSrc);
         System.exit(-1);
       }
-      Method[] m = jc[j].getMethods();
+      Method[] m = jca[j].getMethods();
       for(int ii=0;ii<m.length;ii++){
-        String msig = jc[j].getClassName() + "." + m[ii].getName()+m[ii].getSignature();
+        String msig = jca[j].getClassName() + "." + m[ii].getName()+m[ii].getSignature();
 //System.out.println("m to be put:"+msig);//TODO mig everywhere          
 //System.out.println("r: "+m[ii].getReturnType().getSignature());//TODO mig everywhere
         mmap.put(msig,m[ii]);
@@ -360,7 +363,8 @@ public class WCETAnalyser{
     sb.append("\n/* App Dot Graph */\n");
     sb.append("digraph G {\n"); //8.27 x 11.69 inches
     sb.append("size = \"7.27,9.69\"\n");
-   
+    //boolean mem = global;
+    //global = false;
     ArrayList appWCMB = new ArrayList();
     appWCMB.add(wcmbapp);
     while(appWCMB.size() > 0){
@@ -397,7 +401,7 @@ public class WCETAnalyser{
     } catch (FileNotFoundException e1) {
       e1.printStackTrace();
     }
-    
+    //global = mem;
     return "";
   }
 }
@@ -417,6 +421,9 @@ class WCETMethodBlock {
   int wcet = -1; // wcet count
   
   final int mid; // a unique id across the app
+  //  event id that is incremented each time the method is invoked
+  //  in a global context
+  int E = 0; 
   
   // Basic Blocks
   TreeMap bbs;
@@ -445,7 +452,7 @@ class WCETMethodBlock {
   
   String dotf = null;
   
-  String[] codeLines;
+  String[] codeLines = null;
 
   // directed graph of the basic blocks
   int dg[][];
@@ -492,25 +499,38 @@ class WCETMethodBlock {
     //method length in words
     if (!method.isAbstract()) {
       n = (method.getCode().getCode().length + 3) / 4;
+      //LImethod.getLineNumberTable()
       String methodId = method.getName() + method.getSignature();
       String classId = jc.getClassName();
       String srcFile = jc.getSourceFileName();
       String filePath = (String)wca.javaFilePathMap.get(classId);
       if(filePath==null){
-        codeLines = new String[0];
+
         System.out.println("Did not find file:"+srcFile+" class:"+ classId+" package:"+jc.getPackageName());
         System.exit(-1);
       }
-      try {
-        BufferedReader in = new BufferedReader(new FileReader(filePath));
-        String str;
-        ArrayList al = new ArrayList();
-        while ((str = in.readLine()) != null) {
-            al.add(str);
+      if(codeLines == null){
+        try {
+          codeLines = new String[0];
+          BufferedReader in = new BufferedReader(new FileReader(filePath));
+          String str;
+          ArrayList al = new ArrayList();
+          int line =0;
+          while ((str = in.readLine()) != null) {
+            line++;
+             if(str.trim().startsWith("for") || str.trim().startsWith("while")){
+               if(str.indexOf("@WCA")==-1){
+                 System.out.println("Error: no WCA annotation on line "+line+" in "+filePath+"."+srcFile+" \""+str+"\"");
+                 System.out.println("Default annotation inserted: \"//@WCA loop=1\"");
+                 str += "// @WCA loop=1";
+               }
+             }
+             al.add(str);
+          }
+          codeLines = (String[])al.toArray(new String[0]);
+          in.close();
+        } catch (IOException e) {
         }
-        codeLines = (String[])al.toArray(new String[0]);
-        in.close();
-      } catch (IOException e) {
       }
      
     } else {
@@ -533,7 +553,7 @@ class WCETMethodBlock {
     ev.setConstantPoolGen(cpg);
 
     mg = new MethodGen(methodbcel, jc.getClassName(), cpg);
-    mg.getInstructionList().setPositions(true);
+    
 // String tostr = mg.toString();
 //String signature = mg.getSignature();
 //String name = mg.getName();
@@ -541,11 +561,10 @@ class WCETMethodBlock {
 
     icv.setMethodGen(mg);
     if (!(mg.isAbstract() || mg.isNative())) { // IF mg HAS CODE
-
+      mg.getInstructionList().setPositions(true);
       S = new WCETBasicBlock(this,WCETBasicBlock.SNODE);  
       bbs.put(new Integer(Integer.MIN_VALUE), S);
       T = new WCETBasicBlock(this,WCETBasicBlock.TNODE);
-     
       // pass 0: Create basic blocks
       InstructionHandle ih = mg.getInstructionList().getStart();
       // wcet startup: create the first full covering bb
@@ -558,8 +577,8 @@ class WCETMethodBlock {
         
         if(ih.getInstruction() instanceof InvokeInstruction &&
             (((InvokeInstruction)ih.getInstruction()).getClassName(getCpg())).indexOf("Native")==-1){
-System.out.println("classname:"+((InvokeInstruction)ih.getInstruction()).getClassName(getCpg()));
-System.out.println("wca.nativeClass:"+wca.nativeClass);
+//System.out.println("classname:"+((InvokeInstruction)ih.getInstruction()).getClassName(getCpg()));
+//System.out.println("wca.nativeClass:"+wca.nativeClass);
           createBasicBlock(ih);
           createBasicBlock(ih.getNext());
         } else if (ih.getInstruction() instanceof BranchInstruction) {
@@ -678,8 +697,33 @@ System.out.println("wca.nativeClass:"+wca.nativeClass);
 //  System.out.println("wca.getWCMB(wca.getMethod(wcbb.bbinvo)) == null");
 //}
         wcbb.invowcmb = wca.getWCMB(wca.getMethod(wcbb.bbinvo));
-        if(wcbb.invowcmb==null)
-          System.out.println("Could not resolve "+wcbb.bbinvo+" for linking in "+wcbb.getIDS());
+        if(wcbb.invowcmb==null){ //check super class(es)
+          String bbinvotmp = wcbb.bbinvo;
+          bbinvotmp = jc.getSuperclassName()+wcbb.bbinvo.substring(jc.getClassName().length());
+          wcbb.invowcmb = wca.getWCMB(wca.getMethod(bbinvotmp));
+          if(wcbb.invowcmb == null && jc.isAbstract()){ // check for implementations of the abstact method
+            int classhits = 0;
+            String mname = wcbb.bbinvo.substring(jc.getClassName().length()+1);
+            for (int i=0;i<wca.jca.length;i++){
+              String newbbinvo = wca.jca[i].getClassName()+"."+mname;
+              if(wca.getWCMB(wca.getMethod(newbbinvo)) != null){
+                wcbb.invowcmb = wca.getWCMB(wca.getMethod(newbbinvo));
+                System.out.println("implementatin of abstract method "+wcbb.bbinvo+" found in "+newbbinvo +" with wcet="+wcbb.invowcmb.wcetlp);
+                classhits++;
+              }
+            }
+            if(classhits>1){
+              System.out.println("WARNING: multiple implementations of "+wcbb.bbinvo +" : "+jc.getClassName()+"."+name+":"+wcbb.getIDS()+" is not supported yet");
+              System.exit(-1);
+            }
+          }
+          if(wcbb.invowcmb!=null)
+            wcbb.bbinvo = bbinvotmp;
+          else{
+            System.out.println("Could not resolve "+wcbb.bbinvo+" for linking in "+jc.getClassName()+"."+name+":"+wcbb.getIDS());
+            System.out.println("jc abstract:"+jc.isAbstract());
+          }
+        }
         
         leaf = false;
         
@@ -714,6 +758,7 @@ System.out.println("wca.nativeClass:"+wca.nativeClass);
           
 System.out.println("invowcmb from "+cname+"."+name+"("+wcbb.getIDS()+")"+":"+wcbb.invowcmb.cname+"."+wcbb.invowcmb.name+" is a leaf");          
           //  we have a candidate  
+         
           //  dismiss if there is an invoblock in an inner loop 
           ArrayList okl = new ArrayList();  //  ok
           ArrayList pl = new ArrayList(); //  pending
@@ -986,15 +1031,15 @@ if(pl.size()>0)
     HashSet lines = new HashSet();
     // find loopdrivers/loopcontrollers
 //System.out.println("\nmethod:"+method.getClass().getName()+"."+method.getName());    
-    System.out.println("METHOD:"+name);
+//    System.out.println("METHOD:"+name);
     for (Iterator iter = bbs.keySet().iterator(); iter.hasNext();) {
       
       Integer keyInt = (Integer) iter.next();
       WCETBasicBlock wcbb = (WCETBasicBlock) bbs.get(keyInt);
       
-System.out.println("wcbb:"+wcbb.getIDS());    
-if(wcbb.line >=0)
-  System.out.println("codeline:"+codeLines[wcbb.line-1]);
+//System.out.println("wcbb:"+wcbb.getIDS());    
+//if(wcbb.line >=0)
+//  System.out.println("codeline:"+codeLines[wcbb.line-1]);
 //System.out.println("outer loop wcbb.id:"+wcbb.id);      
       // identify loop controller candidate
       HashMap wcaA = null;
@@ -1008,7 +1053,7 @@ if(wcbb.line >=0)
           && !lines.contains(new Integer(wcbb.line))){
         
 //System.out.println("loopdriver id:"+wcbb.id);           
-System.out.println("LOOPDRIVER:"+wcbb.getIDS());            
+//System.out.println("LOOPDRIVER:"+wcbb.getIDS());            
             // find loopcontroller
             boolean set = false;
             WCETBasicBlock wcbbhit = wcbb;
@@ -1214,12 +1259,13 @@ System.out.println("LOOPDRIVER:"+wcbb.getIDS());
    * @param invowcbb the invoking wcbb or null
    */
   public String toLS(boolean global, boolean term, WCETBasicBlock invowcbb){
-    
+    if(global)
+      E++;
     StringBuffer ls = new StringBuffer();
     StringBuffer lsinvo = new StringBuffer();
     lsobj = new StringBuffer();
 
-    ls.append("/* WCA flow constraints */\n");
+    ls.append("/* WCA flow constraints: "+name+" */\n");
 
     lsobj.append(toLSO());
     
@@ -1245,8 +1291,8 @@ System.out.println("LOOPDRIVER:"+wcbb.getIDS());
       }
       
       if(wcbb.nodetype==WCETBasicBlock.INODE && global){
-        ls.append(wcbb.toLSInvo());
         lsinvo.append(wcbb.invowcmb.toLS(global,false, wcbb));
+        ls.append(wcbb.toLSInvo());
         lsobj.append(" "+wcbb.invowcmb.getLSO());
       }
     }
@@ -1766,14 +1812,14 @@ class WCETBasicBlock {
    * <code>loopchains</code> now contains the chains the define the loop. 
    */
   public void createLoopChains(){
-    System.out.println("entering createloopchains for:"+getIDS()+","+wcmb.cname+"."+wcmb.name);
+//    System.out.println("entering createloopchains for:"+getIDS()+","+wcmb.cname+"."+wcmb.name);
     if(!loopcontroller){
       System.out.println("not a loop controler");
       System.exit(-1);
     }
     else{
-      System.out.println("loopcontroller:"+getIDS());
-      System.out.println("loopdriver:"+loopdriverwcbb.getIDS());
+//      System.out.println("loopcontroller:"+getIDS());
+//      System.out.println("loopdriver:"+loopdriverwcbb.getIDS());
     }
     
     innerloop = true;
@@ -1815,8 +1861,8 @@ class WCETBasicBlock {
     }
     // mark invocation blocks as innerloop
     if(innerloop){
-System.out.println("if innerloop");      
-System.out.println("loopchains:\n"+WU.printChains(loopchains));
+//System.out.println("if innerloop");      
+//System.out.println("loopchains:\n"+WU.printChains(loopchains));
       HashSet invowcmb = new HashSet();
       ArrayList invoblocks = new ArrayList();
       // loop all chains
@@ -1830,9 +1876,9 @@ System.out.println("loopchains:\n"+WU.printChains(loopchains));
           }
         }
       }
-System.out.println("invowcmb.size():"+invowcmb.size());      
+//System.out.println("invowcmb.size():"+invowcmb.size());      
       if(invowcmb.size()==1){
-System.out.println("invoblocks.size():"+invoblocks.size());        
+//System.out.println("invoblocks.size():"+invoblocks.size());        
         for (int i=0;i<invoblocks.size();i++){
           WCETBasicBlock invowcbb = (WCETBasicBlock)invoblocks.get(i);
           invowcbb.innerloop = true;
@@ -2000,7 +2046,7 @@ System.out.println("invoblocks.size():"+invoblocks.size());
 //if(invowcmb.S== null)
 //  System.out.println("invowcmb== null");
 
-      ls.append("/* Invoking "+bbinvo+" id:"+invowcmb.S.getIDS()+"*/\n");
+      ls.append("/* Connecting(invoking) to "+bbinvo+" id:"+invowcmb.S.getIDS()+"*/\n");
       // to invo S
       String invodriver = getIDS()+"_"+sucbb.getIDS(); 
       String invoS = getIDS()+"_"+invowcmb.S.getIDS();
@@ -2027,14 +2073,9 @@ System.out.println("invoblocks.size():"+invoblocks.size());
   // loop controller code
   public String toLSLoop(){
     StringBuffer ls = new StringBuffer();
+    //TODO: fix
     if(loopcontroller){
-      if(wcmb.wca.global)
-        ls.append("LC_"+getIDS()+": f"+ getIDS()+"_"+sucbb.getIDS()+" <= "+loop+" fB"+(loopid-1)+"_M"+wcmb.mid+"_B"+loopid+"_M"+wcmb.mid+";\n");
-      else
-        ls.append("LC_"+getIDS()+": f"+ getIDS()+"_"+sucbb.getIDS()+" <= "+loop+" fB"+(loopid-1)+"_B"+loopid+";\n");
-//      wcbb.sc = wcbb.loop;
-//      wcbb.scsid = wcbb.loopid-1;
-//      wcbb.sctid = wcbb.loopid;
+      ls.append("LC_"+getIDS()+": f"+ getIDS()+"_"+sucbb.getIDS()+" <= "+loop+" f"+getLoopdriverwcbb().getLoopdriverprevwcbb().getIDS()+"_"+getLoopdriverwcbb().getIDS()+";\n");
     }else{
       System.out.println("BB is not loop controller");
       System.exit(-1);
@@ -2143,8 +2184,16 @@ System.out.println("invoblocks.size():"+invoblocks.size());
               tStr += " ";
           }
           tStr += "]";
+          String lcStr = "";
+          if(loopcontroller){
+            lcStr += "lc(ld="+loopid+")";
+            if(loopdriver)
+              lcStr += ",";
+          }
+          if(loopdriver)
+            lcStr += "ld";
   
-  sb.append(WU.postpad(getIDS()+tStr,6)); // see the BBs that point to this BB
+  sb.append(WU.postpad(getIDS()+"{"+lcStr+"}"+tStr,6)); // see the BBs that point to this BB
   //        sb.append(WU.postpad("B" + id,6));
         } else {
           sb.append("      ");
@@ -2370,8 +2419,10 @@ System.out.println("invoblocks.size():"+invoblocks.size());
     if(nodetype == TNODE)
       sbIDS.append("T");
     
-    if(wcmb.wca.global)
+    if(wcmb.wca.global){
       sbIDS.append("_M"+wcmb.mid);
+      sbIDS.append("_E"+wcmb.E);
+    }
     
     return sbIDS.toString(); 
   }
@@ -2451,7 +2502,14 @@ System.out.println("invoblocks.size():"+invoblocks.size());
   // called on the loop driver to get the bb that points to it
   // check the rule
   public WCETBasicBlock getLoopdriverprevwcbb(){
-    return (WCETBasicBlock)wcmb.getBbs(bid-1);
+    WCETBasicBlock[] wcbbprev = getInBBSArray();
+    int bidin = Integer.MAX_VALUE;
+    for (int i=0;i<wcbbprev.length;i++){
+      if(bidin > wcbbprev[i].bid)
+        bidin = wcbbprev[i].bid;
+    }
+    
+    return (WCETBasicBlock)wcmb.getBbs(bidin);
   }
 
   public int getCacheInvokeMiss() {

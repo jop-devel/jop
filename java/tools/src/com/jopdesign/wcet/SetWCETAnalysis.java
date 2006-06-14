@@ -23,15 +23,15 @@ public class SetWCETAnalysis extends MyVisitor {
   			String methodId = m.getName()+m.getSignature();
         
 
-        if(!m.isAbstract()){
+        if(true){//!m.isAbstract()){
           WCETMethodBlock wcmb = new WCETMethodBlock(m,clazz,wca);
           wca.msigtowcmb.put(methodId,wcmb);
           wca.wcmbs.add(wcmb);
-  //System.out.println("put "+methodId+" in msigtiwcmb");        
+//  System.out.println("put "+clazz.getClassName()+"."+methodId+" in msigtiwcmb");        
           wcmb.controlFlowGraph();
           wcmb.directedGraph();
           //wcmb.toString();
-System.out.println("comparing:"+(clazz.getClassName()+"."+m.getName())+" to:"+wca.appmethod);          
+//System.out.println("comparing:"+(clazz.getClassName()+"."+m.getName())+" to:"+wca.appmethod);          
           if((clazz.getClassName()+"."+m.getName()).equalsIgnoreCase(wca.appmethod)){
             wca.wcmbapp = wcmb;
           }
