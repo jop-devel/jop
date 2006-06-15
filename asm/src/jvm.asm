@@ -78,6 +78,7 @@
 //	2006-01-20	add get/put field/static _ref/_long
 //	2006-01-22	add type info for newarray (for long)
 //	2006-01-23	use offset instead of cp index for get/putfield
+//	2006-06-15	enhanced memory/cache interface (less cycles)
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -88,7 +89,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20060123
+version		= 20060615
 
 //
 //	io address are negativ memory addresses
