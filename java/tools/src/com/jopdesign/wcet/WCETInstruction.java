@@ -11,19 +11,14 @@ public class WCETInstruction {
 	// indicate that wcet is not available for this bytecode
 	public static final int WCETNOTAVAILABLE = -1;
 
-	// bytecode load
-	public static final int a = 2;
-
-	//  // mem read: 2 for mem and 3 for pipe
-	//  public static final int r = 5;
-	//
-	//  // mem write
-	//  public static final int w = 5;
-
+public static final int a = -1; // should be removed from WCETAnalyser!
 	// the read and write wait states
 	public static final int r = 4;
 
 	public static final int w = 4;
+	
+	// cache read wait state (r-1)
+	public static final int c = 3;
 
 	//Native bytecodes (see jvm.asm)
 	private static final int JOPSYS_RD = 209;
@@ -169,7 +164,7 @@ public class WCETInstruction {
 		}
 		sb
 				.append("=============================================================\n");
-		sb.append("Info: b(n=1000)=" + calculateB(1000) + " a=" + a + " r=" + r
+		sb.append("Info: b(n=1000)=" + calculateB(false, 1000) + " c=" + c + " r=" + r
 				+ " w=" + w + "\n");
 		sb
 				.append("Signatures: V void, Z boolean, B byte, C char, S short, I int, J long, F float, D double, L class, [ array\n");
@@ -188,13 +183,8 @@ public class WCETInstruction {
 		int wcet = 0;
 		int b = -1;
 
-		// cache miss
-		if (pmiss) {
-			b = calculateB(n);
-		} else // cache hit
-		{
-			b = 0;
-		}
+		// cache load time
+		b = calculateB(!pmiss, n);
 
 		switch (opcode) {
 		// NOP = 0
@@ -899,86 +889,62 @@ public class WCETInstruction {
 			break;
 		// IRETURN = 172
 		case org.apache.bcel.Constants.IRETURN:
-			wcet = 15;
-			if (r >= 7) {
+			wcet = 23;
+			if (r > 3) {
 				wcet += r - 3;
-			} else {
-				wcet += 4;
 			}
-			if (b >= 8) {
-				wcet += b - 8;
-			} else {
-				wcet += 0;
+			if (b > 10) {
+				wcet += b - 10;
 			}
 			break;
 		// LRETURN = 173
 		case org.apache.bcel.Constants.LRETURN:
-			wcet = 15;
-			if (r >= 7) {
+			wcet = 25;
+			if (r > 3) {
 				wcet += r - 3;
-			} else {
-				wcet += 4;
 			}
-			if (b >= 9) {
-				wcet += b - 9;
-			} else {
-				wcet += 0;
+			if (b > 11) {
+				wcet += b - 11;
 			}
 			break;
 		// FRETURN = 174
 		case org.apache.bcel.Constants.FRETURN:
-			wcet = 15;
-			if (r >= 7) {
+			wcet = 23;
+			if (r > 3) {
 				wcet += r - 3;
-			} else {
-				wcet += 4;
 			}
-			if (b >= 8) {
-				wcet += b - 8;
-			} else {
-				wcet += 0;
+			if (b > 10) {
+				wcet += b - 10;
 			}
 			break;
 		// DRETURN = 175
 		case org.apache.bcel.Constants.DRETURN:
-			wcet = 15;
-			if (r >= 7) {
+			wcet = 25;
+			if (r > 3) {
 				wcet += r - 3;
-			} else {
-				wcet += 4;
 			}
-			if (b >= 9) {
-				wcet += b - 9;
-			} else {
-				wcet += 0;
+			if (b > 11) {
+				wcet += b - 11;
 			}
 			break;
 		// ARETURN = 176
 		case org.apache.bcel.Constants.ARETURN:
-			wcet = 15;
-			if (r >= 7) {
+			wcet = 23;
+			if (r > 3) {
 				wcet += r - 3;
-			} else {
-				wcet += 4;
 			}
-			if (b >= 8) {
-				wcet += b - 8;
-			} else {
-				wcet += 0;
+			if (b > 10) {
+				wcet += b - 10;
 			}
 			break;
 		// RETURN = 177
 		case org.apache.bcel.Constants.RETURN:
-			wcet = 13;
-			if (r >= 7) {
+			wcet = 21;
+			if (r > 3) {
 				wcet += r - 3;
-			} else {
-				wcet += 4;
 			}
-			if (b >= 7) {
-				wcet += b - 7;
-			} else {
-				wcet += 0;
+			if (b > 9) {
+				wcet += b - 9;
 			}
 			break;
 		// GETSTATIC = 178
@@ -1218,15 +1184,23 @@ public class WCETInstruction {
 	 * 
 	 * @see ms thesis p 232
 	 */
-	public static int calculateB(int n) {
+	public static int calculateB(boolean hit, int n) {
 		int b = -1;
 		if (n == -1) {
 			System.err.println("n not set!");
 			System.exit(-1);
 		} else {
-			b = 2 + (n + 1) * a;
+			if (hit) {
+				b = 4;
+			} else {
+				b = 6 + (n+1) * (2+c);
+			}
 		}
 		return b;
+	}
+	// should be removed from WCETAnalyser:
+	public static int calculateB(int x) {
+		return -1;
 	}
 
 }
