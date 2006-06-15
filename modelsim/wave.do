@@ -74,6 +74,20 @@ add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/cmp_mem/bc_w
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cmp_mem/cache_bcstart
 add wave -noupdate -format Logic /tb_jop/cmp_jop/cmp_mem/cache_in_cache
 add wave -noupdate -format Logic /tb_jop/cmp_jop/cmp_mem/cache_rdy
+add wave -noupdate -divider cache
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cmp_mem/cmp_cache/clr_val
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cmp_mem/cmp_cache/nr_of_blks
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cmp_mem/cmp_cache/nxt
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cmp_mem/cmp_cache/tag
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cmp_mem/cmp_cache/use_addr
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cmp_mem/cmp_cache/block_addr
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cmp_mem/cmp_cache/state
+add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/cmp_mem/cmp_cache/in_cache
+add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/cmp_mem/cmp_cache/rdy
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cmp_mem/cmp_cache/bcstart
+add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/cmp_mem/cmp_cache/find
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cmp_mem/cmp_cache/bc_addr
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cmp_mem/cmp_cache/bc_len
 add wave -noupdate -divider {external signals}
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/main_mem/addr
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/main_mem/data
@@ -124,7 +138,7 @@ add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cmp_core/c
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cmp_core/cmp_stk/cmp_ram/ram(142)
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cmp_core/cmp_stk/cmp_ram/ram(143)
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {2106906 ps} 0} {{Cursor 2} {693090000 ps} 0}
+WaveRestoreCursors {{Cursor 1} {3267139 ps} 0} {{Cursor 2} {693090000 ps} 0} {{Cursor 3} {3450000 ps} 0} {{Cursor 4} {3339704 ps} 0}
 configure wave -namecolwidth 259
 configure wave -valuecolwidth 47
 configure wave -justifyvalue left
@@ -138,4 +152,4 @@ configure wave -gridperiod 1
 configure wave -griddelta 40
 configure wave -timeline 0
 update
-WaveRestoreZoom {692972495 ps} {693500069 ps}
+WaveRestoreZoom {3247805 ps} {3391177 ps}
