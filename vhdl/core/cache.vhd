@@ -117,6 +117,7 @@ begin
 				-- Only one if will be true. Therefore, there
 				-- should be a place for optimization
 
+	-- comment this out for no caching
 				for i in 0 to blocks-1 loop
 					if tag(i) = use_addr then
 						block_addr <= std_logic_vector(to_unsigned(i, block_bits));
