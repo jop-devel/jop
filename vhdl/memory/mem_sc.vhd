@@ -9,6 +9,8 @@
 --	todo:
 --
 --	2005-11-22  first version adapted from mem(_wb)
+--	2006-06-15	removed unnecessary state in BC load
+--				len decrement in bc_rn and exit from bc_wr
 --
 
 Library IEEE;
@@ -106,7 +108,7 @@ end component;
 --
 	type state_type		is (
 							idl, rd1, wr1,
-							bc_cc, bc_sa, bc_r1, bc_w, bc_rn, bc_wr, bc_wl
+							bc_cc, bc_r1, bc_w, bc_rn, bc_wr, bc_wl
 						);
 	signal state 		: state_type;
 	signal next_state	: state_type;
@@ -289,45 +291,42 @@ begin
 				if cache_in_cache = '1' then
 					next_state <= idl;
 				else
-					next_state <= bc_sa;
+					next_state <= bc_r1;
 				end if;
 			end if;
 
 		-- not in cache
-		when bc_sa =>
-			next_state <= bc_r1;
-
 		-- start first read
 		when bc_r1 =>
 			next_state <= bc_w;
+			-- even for a two cycle memory we have to go to
+			-- wait for the first time as rdy_cnt is 0 in
+			-- this state. Becomes valid in the next cycle
 
 		-- wait
 		when bc_w =>
-			if bc_len=to_unsigned(0, jpc_width-3) then
-				next_state <= bc_wl;
 			-- this works with pipeline level 1
-			-- elsif rdy_cnt(1)='0' then
-
+			-- if rdy_cnt(1)='0' then
 			-- we need a pipeline level of 2 in
 			-- the memory interface for this to work!
-			elsif rdy_cnt/=3 then
+			if rdy_cnt/=3 then
 				next_state <= bc_rn;
 			end if;
 
 		-- start read 2 to n
 		when bc_rn =>
+			next_state <= bc_wr;
+
+		when bc_wr =>
 			if bc_len=to_unsigned(0, jpc_width-3) then
 				next_state <= bc_wl;
 			else
-				next_state <= bc_wr;
-			end if;
-
-		when bc_wr =>
-			-- w. pipeline level 2
-			if rdy_cnt/=3 then
-				next_state <= bc_rn;
-			else
-				next_state <= bc_w;
+				-- w. pipeline level 2
+				if rdy_cnt/=3 then
+					next_state <= bc_rn;
+				else
+					next_state <= bc_w;
+				end if;
 			end if;
 
 		-- wait fot the last ack
@@ -375,11 +374,9 @@ begin
 				bcl_bsy <= '1';
 				-- cache check
 
-			when bc_sa =>
+			when bc_r1 =>
 				-- setup data
 				bc_wr_addr <= unsigned(cache_bcstart);
-
-			when bc_r1 =>
 				-- first memory read
 				inc_mem_start <= '1';
 				bc_rd <= '1';
@@ -390,12 +387,12 @@ begin
 			when bc_rn =>
 				-- following memory reads
 				inc_mem_start <= '1';
+				dec_len <= '1';
 				bc_rd <= '1';
 
 			when bc_wr =>
 				-- BC write
 				bc_wr_ena <= '1';
-				dec_len <= '1';
 
 			when bc_wl =>
 				-- wait for last (unnecessary read)
