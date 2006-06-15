@@ -1068,6 +1068,7 @@ if(pl.size()>0)
                   } 
                 }
               }
+              
               if(lcwcbb==wcbb){
 //System.out.println("set on id:"+lcwcbb.id);                
                 set = true;
@@ -1078,6 +1079,9 @@ if(pl.size()>0)
             wcbb.loopcontroller = false;
             wcbb.loop = Integer.parseInt((String)wcaA.get("loop"));
             wcbbhit.loopcontroller = true;
+            String wcastr = (codeLines[wcbb.line-1].substring(codeLines[wcbb.line-1].indexOf("@WCA")));
+            if(wcastr.indexOf("<=")!=-1)
+              wcbbhit.leq = true;
             wcbbhit.loopdriver = false;
             wcbbhit.loopid = wcbb.bid;
             wcbbhit.loop = Integer.parseInt((String)wcaA.get("loop"));
@@ -1265,7 +1269,7 @@ if(pl.size()>0)
     StringBuffer lsinvo = new StringBuffer();
     lsobj = new StringBuffer();
 
-    ls.append("/* WCA flow constraints: "+name+" */\n");
+    ls.append("/* WCA flow constraints: "+name+" : M"+mid+" */\n");
 
     lsobj.append(toLSO());
     
@@ -1484,6 +1488,7 @@ class WCETBasicBlock {
   boolean loopcontroller = false;
   WCETBasicBlock loopdriverwcbb = null; // is set for loopcontrollers 
   boolean loopreturn = false;
+  boolean leq = false;
   
   // loop target
   int loop = -1;
@@ -1954,9 +1959,11 @@ class WCETBasicBlock {
           ls.append("f"+getIDS()+"_"+sucbb.getIDS());
         //}
       }
-      if(sucbb != null && tarbb!=null)
+      // same target can happen if there is an empty branch; if(true);
+      boolean sametarget = ((sucbb != null && tarbb!=null)&&(sucbb == tarbb));
+      if((sucbb != null && tarbb!=null)&&!sametarget)
         ls.append(" + ");
-      if(tarbb!=null)
+      if(tarbb!=null && !sametarget)
         ls.append("f"+getIDS()+"_"+tarbb.getIDS());
       
       ls.append(";\n");
@@ -2075,7 +2082,10 @@ class WCETBasicBlock {
     StringBuffer ls = new StringBuffer();
     //TODO: fix
     if(loopcontroller){
-      ls.append("LC_"+getIDS()+": f"+ getIDS()+"_"+sucbb.getIDS()+" <= "+loop+" f"+getLoopdriverwcbb().getLoopdriverprevwcbb().getIDS()+"_"+getLoopdriverwcbb().getIDS()+";\n");
+      if(leq)
+        ls.append("LC_"+getIDS()+": f"+ getIDS()+"_"+sucbb.getIDS()+" <= "+loop+" f"+getLoopdriverwcbb().getLoopdriverprevwcbb().getIDS()+"_"+getLoopdriverwcbb().getIDS()+";\n");
+      else
+        ls.append("LC_"+getIDS()+": f"+ getIDS()+"_"+sucbb.getIDS()+" = "+loop+" f"+getLoopdriverwcbb().getLoopdriverprevwcbb().getIDS()+"_"+getLoopdriverwcbb().getIDS()+";\n");
     }else{
       System.out.println("BB is not loop controller");
       System.exit(-1);
@@ -3284,6 +3294,12 @@ class WU{
       while(st.hasMoreTokens()){
         StringTokenizer stv = new StringTokenizer(st.nextToken(),"=");
         String key = stv.nextToken();
+        if(key.indexOf('<')!=-1)
+          key = key.substring(0,key.indexOf('<'));
+        if(!key.equals("loop")){
+          System.out.println("WCA only understands \"loop\" token at this time, not:"+key);
+          System.exit(-1);
+        }
         String val = stv.nextToken();
         wcaAH.put(key,val);
       }
