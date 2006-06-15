@@ -13,12 +13,13 @@ public class WCETInstruction {
 
 public static final int a = -1; // should be removed from WCETAnalyser!
 	// the read and write wait states
-	public static final int r = 4;
+	// ram_cnt - 1
+	public static final int r = 1;
 
-	public static final int w = 4;
+	public static final int w = 1;
 	
 	// cache read wait state (r-1)
-	public static final int c = 3;
+	public static final int c = 0;
 
 	//Native bytecodes (see jvm.asm)
 	private static final int JOPSYS_RD = 209;
@@ -965,80 +966,56 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			break;
 		// INVOKEVIRTUAL = 182
 		case org.apache.bcel.Constants.INVOKEVIRTUAL:
-			wcet = 78 + 2 * r;
-			if (r >= 7) {
+			wcet = 104 + 3 * r;
+			if (r > 3) {
 				wcet += r - 3;
-			} else {
-				wcet += 4;
 			}
-			if (r >= 6) {
+			if (r > 2) {
 				wcet += r - 2;
-			} else {
-				wcet += 4;
 			}
-			if (b >= 39) {
-				wcet += b - 39;
-			} else {
-				wcet += 0;
+			if (b > 37) {
+				wcet += b - 37;
 			}
 			break;
 		// INVOKESPECIAL = 183
 		case org.apache.bcel.Constants.INVOKESPECIAL:
-			wcet = 58 + r;
-			if (r >= 7) {
+			wcet = 74 + r;
+			if (r > 3) {
 				wcet += r - 3;
-			} else {
-				wcet += 4;
 			}
-			if (r >= 6) {
+			if (r > 2) {
 				wcet += r - 2;
-			} else {
-				wcet += 4;
 			}
-			if (b >= 39) {
-				wcet += b - 39;
-			} else {
-				wcet += 0;
+			if (b > 37) {
+				wcet += b - 37;
 			}
 			break;
 		// INVOKENONVIRTUAL = 183
 		// case org.apache.bcel.Constants.INVOKENONVIRTUAL : wcet = -1; break;
 		// INVOKESTATIC = 184
 		case org.apache.bcel.Constants.INVOKESTATIC:
-			wcet = 58 + r;
-			if (r >= 7) {
+			wcet = 74 + r;
+			if (r > 3) {
 				wcet += r - 3;
-			} else {
-				wcet += 4;
 			}
-			if (r >= 6) {
+			if (r > 2) {
 				wcet += r - 2;
-			} else {
-				wcet += 4;
 			}
-			if (b >= 39) {
-				wcet += b - 39;
-			} else {
-				wcet += 0;
+			if (b > 37) {
+				wcet += b - 37;
 			}
 			break;
 		// INVOKEINTERFACE = 185
 		case org.apache.bcel.Constants.INVOKEINTERFACE:
-			wcet = 84 + 4 * r;
-			if (r >= 7) {
+			wcet = 118 + 5 * r;
+			if (r > 3) {
 				wcet += r - 3;
-			} else {
-				wcet += 4;
 			}
-			if (r >= 6) {
+			if (r > 2) {
 				wcet += r - 2;
-			} else {
-				wcet += 4;
 			}
-			if (b >= 39) {
-				wcet += b - 39;
-			} else {
-				wcet += 0;
+			if (b > 37) {
+				wcet += b - 37;
 			}
 			break;
 		// NEW = 187
