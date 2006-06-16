@@ -4,23 +4,45 @@ import com.jopdesign.sys.*;
 
 public class Method {
 
+	static int ts, te, to;
+
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) {
 		
-		int ts, te, to;
+		Method m = new Method();
 		ts = Native.rdMem(Const.IO_CNT);
 		te = Native.rdMem(Const.IO_CNT);
 		to = te-ts;
-		System.out.println(to);
 		ts = Native.rdMem(Const.IO_CNT);
 		// cnt with var. block cache: 15425
 		// cnt with single block cache: 16779
-		foo();
+		int i=0;
+		c();
 		te = Native.rdMem(Const.IO_CNT);
 		System.out.println(te-ts-to);
 	}
+	
+	void x() {
+		int i=0;
+		i=1;
+		y();
+//		te = aba(0);
+		int[] x = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
+		return;
+	}
+	static void y() {
+		int i=0;
+		z();
+		return;
+	}
+	
+	static void z() {
+		int i=0;
+		return;
+	}
+static int aba(int x) { return x;};
 	
 	static void foo() {
 		
