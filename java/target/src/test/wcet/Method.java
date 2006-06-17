@@ -15,20 +15,24 @@ public class Method {
 		ts = Native.rdMem(Const.IO_CNT);
 		te = Native.rdMem(Const.IO_CNT);
 		to = te-ts;
-		// cnt with var. block cache: 15425
-		// cnt with single block cache: 16779
+		// WCET with var. block cache: x
+		// WCET with two block cache: 1116
+		// WCET analysed: 1312
 		measure();
 //		System.out.println(te-ts-to);
 	}
 	
 	static void measure() {
 		ts = Native.rdMem(Const.IO_CNT);
-		for (int i=0; i<5; ++i) { // @WCA loop=5
-			x();		
-		}
+		y();
 		te = Native.rdMem(Const.IO_CNT);		
 	}
 	
+	static void y() {
+		for (int i=0; i<5; ++i) { // @WCA loop=5
+			x();		
+		}		
+	}
 	static void x() {
 
 		int a, b, c, d, e;
@@ -50,47 +54,5 @@ public class Method {
 		i = 456;
 		i = 456;
 		
-	}
-	static void y() {
-		int i=0;
-		z();
-		return;
-	}
-	
-	static void z() {
-		int i=0;
-		return;
-	}
-	
-	static void foo() {
-		
-		for (int i=0; i<10; ++i) { // @WCA loop=10
-			a();
-			b();
-		}
-	}
-
-	static void a() {
-		
-		int val = 123;
-		for (int i=0; i<10; ++i) { // @WCA loop=10
-			val *= val;
-		}
-	}
-
-	static void b() {
-		
-		int val = 123;
-		for (int i=0; i<5; ++i) { // @WCA loop=5
-			val += c();
-		}
-		for (int i=0; i<5; ++i) { // @WCA loop=5
-			val += val;
-		}
-	}
-	
-	static int c() {
-		
-		return 456;
 	}
 }
