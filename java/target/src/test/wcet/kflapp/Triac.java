@@ -65,7 +65,9 @@ public class Triac {
 		opto_idx = 0;
 
 		curr = new int[3];
-		for (i=0; i<3; ++i) curr[i] = 0;
+		for (i=0; i<3; ++i) { // @WCA loop=4
+			curr[i] = 0;			
+		}
 
 		dir = 0;
 		timerWait = 0;
@@ -157,7 +159,7 @@ public class Triac {
 		opto_idx = i;
 
 		j = 0;
-		for (i=0; i<OPTO_LEN; ++i) {
+		for (i=0; i<OPTO_LEN; ++i) { // @WCA loop=4
 			j |= opto[i];								// or means minimum one impuls
 		}												// in 20 ms
 		opto_val = j;

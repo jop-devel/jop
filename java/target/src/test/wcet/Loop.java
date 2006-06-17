@@ -25,7 +25,7 @@ public class Loop {
 				for (j=0; j<3; ++j) {	//@WCA loop=3
 					val *= val;
 				}
-				return val;
+//				return val;
 			} else {
 				for (j=0; j<7; ++j) {	//@WCA loop=7
 					val += val;

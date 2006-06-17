@@ -56,7 +56,8 @@ public abstract class Control {
 		}
 	}
 	
-	private void getVals() {
+	// was private - public for WCET tests
+	public void getVals() {
 		int in0 = Native.rd(Const.IO_IN);
 		int in1 = dly1;
 		int in2 = dly2;
@@ -75,7 +76,7 @@ public abstract class Control {
 		io.analog[2] = Native.rd(Const.IO_ADC3);
 	}
 	
-	private void setVals() {
+	public void setVals() {
 		int val = 0;
 		for (int i=3; i>=0; --i) { // @WCA loop=3
 			val <<= 1;
@@ -91,7 +92,7 @@ public abstract class Control {
 	/**
 	 * The only method that should be overwritten.
 	 */
-	abstract void loop(TalIo io);
+	public abstract void loop(TalIo io);
 	/**
 	 * @return
 	 */

@@ -166,7 +166,7 @@ public class LiftControl extends Control {
 
 	int dbgCnt;
 	
-	void loop(TalIo io) {
+	public void loop(TalIo io) {
 		
 		if (cmd==CMD_NONE) {
 			checkCmd(io);

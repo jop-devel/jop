@@ -123,7 +123,7 @@ public class Msg {
 			msg485 = true;
 		}
 		if (cntSer==4) {					// read messages from serial and rs485
-			for (i=0; i<4; ++i) {
+			for (i=0; i<4; ++i) { // @WCA loop=4
 				buf485[i] = bufSer[i];
 			}
 			cnt485 = 4;

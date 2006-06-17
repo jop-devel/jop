@@ -19,7 +19,7 @@ public class TalIo {
 	int[] analog;
 	boolean[] led;
 	
-	TalIo() {
+	public TalIo() {
 		in = new boolean[10];
 		out = new boolean[4];
 		analog = new int[3];

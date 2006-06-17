@@ -234,7 +234,7 @@ private static void xxxDbgData() {
 
 		JopSys.wr(0x01, BBSys.IO_LED);
 
-		for (;;) {
+		for (;;) { // @WCA loop=999999
 			Msg.loop();					// only for replay to set state
 			Triac.loop();
 
@@ -270,7 +270,7 @@ private static void xxxDbgData() {
 
 		blinkCnt = 0;
 
-		for (;;) {
+		for (;;) {  // @WCA loop=999999
 			loop();
 		}
 	}
