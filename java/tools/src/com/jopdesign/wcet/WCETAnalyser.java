@@ -217,6 +217,7 @@ public class WCETAnalyser{
           wcasbtemp.append(wca.wcmbapp.toLS(true,true, null));
           //wca.out.println(wca.wcmbapp.toLS(true,true, null));
           wcasbtemp.append(wca.toDot());
+          System.out.println("Application WCET="+wca.wcmbapp.wcetlp);
           if(wca.wcmbapp.wcetlp>=0)
             wcasbtemp.insert(0, "*************APPLICATION WCET="+wca.wcmbapp.wcetlp+"********************\n");
           else
