@@ -92,6 +92,9 @@ public class WCETAnalyser{
    */
   static String mainClass;
   
+	static String mainMethodName = "main";
+
+  
   public StringBuffer wcasb = new StringBuffer();
   
   //signaure -> methodbcel
@@ -167,9 +170,15 @@ public class WCETAnalyser{
             srcPath = args[i];
             continue;
           }
+			if (args[i].equals("-mm")) {
+				i++;
+				mainMethodName = args[i];
+				continue;
+			}
+
           clsArgs.add(args[i]);
           mainClass = args[i].replace('/', '.');
-          appmethod = mainClass+".main";
+          appmethod = mainClass+"."+mainMethodName;
         }
         
         StringTokenizer st = new StringTokenizer(srcPath,";");
