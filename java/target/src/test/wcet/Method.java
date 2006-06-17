@@ -18,10 +18,7 @@ public class Method {
 		// cnt with var. block cache: 15425
 		// cnt with single block cache: 16779
 		measure();
-		println(te-ts-to);
-	}
-	static void println(int x) {
-		System.out.println(x);
+//		System.out.println(te-ts-to);
 	}
 	
 	static void measure() {
@@ -30,11 +27,6 @@ public class Method {
 			x();		
 		}
 		te = Native.rdMem(Const.IO_CNT);		
-	}
-	static void analyze() {
-		for (int i=0; i<5; ++i) { // @WCA loop=5
-			x();		
-		}
 	}
 	
 	static void x() {
