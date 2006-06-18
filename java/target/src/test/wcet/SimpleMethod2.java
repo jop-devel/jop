@@ -15,8 +15,12 @@ public class SimpleMethod2 {
 		te = Native.rdMem(Const.IO_CNT);
 		to = te-ts;
 		// measurement + return takes 22+22+21=65 cycles
-		// WCET measured: 213
-		// WCET analysed: 294
+		// WCET measured: 211
+		// WCET analysed: 289-65 = 224
+		// diff is 13 cycles:
+		//	10 from wrong invoke foo 85 instead of 75
+		//  2 from wrong invoke xxx 77 instead of 75
+		//	1 ???
 		measure();
 //		System.out.println(te-ts-to);
 	}
@@ -28,7 +32,6 @@ public class SimpleMethod2 {
 	}
 	
 	static int foo() {
-		int i=0;		// WCETA has problems
 		xxx();
 		return 123;
 	}
