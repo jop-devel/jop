@@ -483,7 +483,13 @@ class WCETMethodBlock {
   // create a bb covering the whole method
   // from here on we split it when necessary
   public void init(InstructionHandle stih, InstructionHandle endih) {
-    WCETBasicBlock wcbb = new WCETBasicBlock(stih, endih, this, WCETBasicBlock.BNODE);
+    WCETBasicBlock wcbb = null;
+    if(stih.getInstruction() instanceof InvokeInstruction &&
+        (((InvokeInstruction)stih.getInstruction()).getClassName(getCpg())).indexOf("Native")==-1){
+      wcbb = new WCETBasicBlock(stih, endih, this, WCETBasicBlock.INODE);
+    }else{
+      wcbb = new WCETBasicBlock(stih, endih, this, WCETBasicBlock.BNODE);
+    }
     S.sucbb = wcbb;
     bbs.put(new Integer(wcbb.getStart()), wcbb);
   }
@@ -2156,7 +2162,7 @@ class WCETBasicBlock {
   public String toCodeString() {
     StringBuffer sb = new StringBuffer();
     if(nodetype == WCETBasicBlock.SNODE){
-      sb.append(WU.postpad(getIDS()+"\n",6)); // see the BBs that point to this BB
+      sb.append(WU.postpad(getIDS()+"'S'\n",6)); // see the BBs that point to this BB
     } else if(nodetype == WCETBasicBlock.TNODE){
       String tStr = "<-[";
       for (Iterator iter = inbbs.keySet().iterator(); iter.hasNext();) {
@@ -2167,7 +2173,7 @@ class WCETBasicBlock {
           tStr += " ";
       }
       tStr += "]";
-      sb.append(WU.postpad(getIDS()+tStr+"\n",6)); // see the BBs that point to this BB
+      sb.append(WU.postpad(getIDS()+"'T'"+tStr+"\n",6)); // see the BBs that point to this BB
     }
     else{
       InstructionHandle ih = stih;
@@ -2212,8 +2218,11 @@ class WCETBasicBlock {
           }
           if(loopdriver)
             lcStr += "ld";
-  
-  sb.append(WU.postpad(getIDS()+"{"+lcStr+"}"+tStr,6)); // see the BBs that point to this BB
+  if(nodetype == BNODE)
+    sb.append(WU.postpad(getIDS()+"'B'{"+lcStr+"}"+tStr,6)); // see the BBs that point to this BB
+  else if(nodetype == INODE)
+    sb.append(WU.postpad(getIDS()+"'I'{"+lcStr+"}"+tStr,6)); // see the BBs that point to this BB
+    
   //        sb.append(WU.postpad("B" + id,6));
         } else {
           sb.append("      ");
