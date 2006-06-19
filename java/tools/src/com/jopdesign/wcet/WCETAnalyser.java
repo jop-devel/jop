@@ -2324,11 +2324,11 @@ class WCETBasicBlock {
             cacheInvokeMiss = (invokemiss-invokehit);
             cacheReturnMiss = (retmiss-rethit);
             // that's the invoke instruction
-            blockcyc += invokehit;
+            blockcyc = invokehit;
             // cache influence now as always miss up
             // we hve solved it with extra blocks
-            blockcyc += cacheInvokeMiss;
-            blockcyc += cacheReturnMiss;
+//            blockcyc += cacheInvokeMiss;
+//            blockcyc += cacheReturnMiss;
             if((((InvokeInstruction)ih.getInstruction()).getClassName(wcmb.getCpg())).equals(wcmb.wca.nativeClass)){
   //            sb.append(WU.prepad("*"+Integer.toString(wcetihHit)+"/"+Integer.toString(wcetihMiss),10));
               sb.append(WU.prepad("*to check",10));
