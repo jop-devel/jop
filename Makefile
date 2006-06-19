@@ -57,6 +57,11 @@ P1=test
 P2=test
 P3=HelloWorld
 
+#P2=wcet
+#P3=SimpleMethod2
+WCET_METHOD=main
+#WCET_METHOD=measure
+
 #P2=jvm
 #P3=DoAll
 
@@ -407,6 +412,7 @@ wcet:
 	-rm -r $(TARGET)/wcet
 	-mkdir $(TARGET)/wcet
 	java $(TOOLS_CP) -Dlatex=false -Ddot=true -Djline=true -Dls=true com.jopdesign.wcet.WCETAnalyser \
+		-mm $(WCET_METHOD) \
 		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/wcet/$(P3)wcet.txt -sp $(TARGET_SOURCE) $(MAIN_CLASS)
 
 dot2eps:
