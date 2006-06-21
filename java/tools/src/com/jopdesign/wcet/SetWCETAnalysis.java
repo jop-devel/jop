@@ -28,8 +28,8 @@ public class SetWCETAnalysis extends MyVisitor {
           wca.msigtowcmb.put(methodId,wcmb);
           wca.wcmbs.add(wcmb);
 //  System.out.println("put "+clazz.getClassName()+"."+methodId+" in msigtiwcmb");        
-          wcmb.controlFlowGraph();
-          wcmb.directedGraph();
+//          wcmb.controlFlowGraph();
+//          wcmb.directedGraph();
           //wcmb.toString();
 //System.out.println("comparing:"+(clazz.getClassName()+"."+m.getName())+" to:"+wca.appmethod);          
           if((clazz.getClassName()+"."+m.getName()).equalsIgnoreCase(wca.appmethod)){
@@ -54,7 +54,7 @@ public class SetWCETAnalysis extends MyVisitor {
 //        }
 //      }
 //    }
-    if(wca.analyze){
+/*    if(wca.analyze){
 
       for(int i=0; i < methods.length; i++) {
         Method m = methods[i];
@@ -70,7 +70,7 @@ public class SetWCETAnalysis extends MyVisitor {
         }
         //}
       }
-    }
+    }*/
     
 
 	}
