@@ -210,7 +210,7 @@ private static void xxxDbgData() {
 
 		int data;
 		// we need this to avoid a simple goto in the CFG
-		boolean exit = true;
+		boolean exit = false;
 
 		// that's a reset state - we do not need to
 		// analyse it -> loop count is set to 1
@@ -232,9 +232,12 @@ private static void xxxDbgData() {
 //
 	private static void doService() {
 
+		// we need this to avoid a simple goto in the CFG
+		boolean exit = false;
+
 		JopSys.wr(0x01, BBSys.IO_LED);
 
-		for (;;) { // @WCA loop=999999
+		for (;exit;) { // @WCA loop=1
 			Msg.loop();					// only for replay to set state
 			Triac.loop();
 
@@ -292,7 +295,7 @@ private static void xxxDbgData() {
 			if (!handleMsg(cmd)) {
 				handleRest(cmd);
 				if (state == BBSys.MS_SERVICE) {
-//					doService();		// never return!
+					doService();		// never return!
 				}
 			}
 			lastMsgCnt = 0;
