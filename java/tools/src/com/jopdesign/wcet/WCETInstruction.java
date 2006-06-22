@@ -1176,8 +1176,5 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 		return b;
 	}
 	// should be removed from WCETAnalyser:
-	public static int calculateB(int x) {
-		return -1;
-	}
 
 }
