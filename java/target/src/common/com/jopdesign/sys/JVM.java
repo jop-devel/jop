@@ -674,7 +674,16 @@ synchronized (o) {
 
 
 	private static void f_arraylength() { JVMHelp.noim(); /* jvm.asm */ }
-	private static void f_athrow() { JVMHelp.noim();}
+	private static Throwable f_athrow(Throwable t) {
+		JVMHelp.wr("Exception ");
+		String s = t.getMessage();
+		if (s!=null) {
+			JVMHelp.wr(s);			
+		}
+		JVMHelp.wr(" thrown\n");
+		JVMHelp.wr("catch not implemented!");
+		return t;
+	}
 	// private static void f_checkcast() { JVMHelp.noim();}
 	private static int f_checkcast(int objref, int cons) {
 // TODO: implement it
