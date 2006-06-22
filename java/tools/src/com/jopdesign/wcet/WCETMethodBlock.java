@@ -46,7 +46,7 @@ import org.apache.bcel.verifier.structurals.InstConstraintVisitor;
 // 2006-06-22 rup: Extracted as from WCETAnalyser on wish from ms
 
 class WCETMethodBlock {
-  
+  public int lpresult;
   public boolean analyzed = false; // set true when controlflow and directedgraph has been run
   public StringBuffer codeString; // is set in toString();
   StringBuffer lsobj;
@@ -1054,7 +1054,9 @@ if(pl.size()>0)
         LpSolve problem = LpSolve.readLp(lpf, LpSolve.NORMAL, jc.getClassName()+"."+methodbcel.getName());
         problem.setOutputfile(lpf+".output.txt");
         problem.setVerbose(LpSolve.CRITICAL);
-        problem.solve();
+        lpresult = problem.solve();
+        if(lpresult == LpSolve.UNBOUNDED)
+          ls.append(" ILP problem is unbounded!\n");
         problem.setOutputfile(lpf+".solved.txt");
         problem.printObjective();
         problem.printSolution(1);
