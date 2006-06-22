@@ -292,7 +292,7 @@ private static void xxxDbgData() {
 			if (!handleMsg(cmd)) {
 				handleRest(cmd);
 				if (state == BBSys.MS_SERVICE) {
-					doService();		// never return!
+//					doService();		// never return!
 				}
 			}
 			lastMsgCnt = 0;
