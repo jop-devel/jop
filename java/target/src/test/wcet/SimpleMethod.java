@@ -16,7 +16,7 @@ public class SimpleMethod {
 		to = te-ts;
 		// measurement + return takes 22+22+21=65 cycles
 		// WCET measured: 101
-		// WCET analysed: 176
+		// WCET analysed: 166-65=101
 		measure();
 //		System.out.println(te-ts-to);
 	}
