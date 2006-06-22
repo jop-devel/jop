@@ -8,18 +8,20 @@ public class Except extends TestCase {
 	
 	public boolean test() {
 
-		boolean ok = true;
-				
-		ok = ok && recursion();
+		boolean ok = false;
+		boolean thr = true;
+		
+		try {
+//			if (thr) {
+				throw new Exception("Message");				
+//			}
+		} catch (Exception e) {
+			ok = true;
+			e.printStackTrace();
+		}
 
 		return ok;
 	}
 
-	public static boolean recursion() {
-		
-		System.out.println("recursion");
-		
-		return recursion();
-	}
 	
 }
