@@ -37,8 +37,8 @@ public class StartLift {
 			if (val<min) min = val;
 			if (val>max) max = val;
 		}
-//		System.out.println(min);
-//		System.out.println(max);
+		System.out.println(min);
+		System.out.println(max);
 	}
 	static void measure() {
 		ts = Native.rdMem(Const.IO_CNT);
