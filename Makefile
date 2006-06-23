@@ -58,9 +58,10 @@ P2=test
 P3=HelloWorld
 
 #P2=wcet
-#P3=SimpleMethod2
+#P3=StartLineFollower
+#P3=StartBenchUdpIp
 WCET_METHOD=main
-#WCET_METHOD=measure
+WCET_METHOD=measure
 
 #P2=jvm
 #P3=DoAll
@@ -131,6 +132,8 @@ TARGET_APP=$(TARGET_APP_PATH)/$(MAIN_CLASS).java
 JOPBIN=$(P3).jop
 
 
+# for WCET testing
+TARGET_APP_SOURCE_PATH=$(TARGET_APP_PATH)\;$(TARGET)/src/app\;$(TARGET)/src/bench
 
 # use this for serial download
 all: directories tools jopser japp
