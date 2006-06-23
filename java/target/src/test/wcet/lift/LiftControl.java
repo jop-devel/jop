@@ -189,7 +189,7 @@ public class LiftControl extends Control {
 		
 		int middle = one_level>>2;
 		if (cntValid) {
-			for (level=1; level<levelPos.length; ++level) {
+			for (level=1; level<levelPos.length; ++level) { // @WCA loop=14
 				if (cnt < levelPos[level]-middle) {
 					break;
 				}
@@ -314,44 +314,81 @@ public class LiftControl extends Control {
 	}
 	
 	boolean checkRun(TalIo io) {
-	
-		switch (cmd) {
-			case CMD_UP:
-				if (cnt<endCnt-OFFSET && !io.in[SENS_TOP]) return true;
-				break;
-			case CMD_DOWN:
-				if (cnt>endCnt+OFFSET && !io.in[SENS_BOTTOM]) return true;
-				break;
-			case CMD_TOP:
-				if (loadPending && io.in[SENS_LOAD]) {
-					// we are at load position
-					loadLevel = level;
-					loadPending = false;
-					return false;
-				}
-				if (!io.in[SENS_TOP]) return true;
-				// for shure if load sensor does not work
-				loadPending = false;
-				break;
-			case CMD_BOTTOM:
-				if (loadPending) {
-					if (loadSensor) {
-						if (!io.in[SENS_LOAD]) {
-							loadSensor = false;
-							// we are at load position
-							loadPending = false;
-							loadLevel = level;
-							return false;
-						}
-					}
-					loadSensor = io.in[SENS_LOAD];
-				}
-				if (!io.in[SENS_BOTTOM]) return true;
-				break;
-		}
+    if(cmd==CMD_UP) {
+      if (cnt<endCnt-OFFSET && !io.in[SENS_TOP]) return true;
+    }
+    if(cmd==CMD_DOWN){
+      if (cnt>endCnt+OFFSET && !io.in[SENS_BOTTOM]) return true;
+    }
+    if(cmd==CMD_TOP){
+      if (loadPending && io.in[SENS_LOAD]) {
+        // we are at load position
+        loadLevel = level;
+        loadPending = false;
+        return false;
+      }
+      if (!io.in[SENS_TOP]) return true;
+      // for shure if load sensor does not work
+      loadPending = false;
+    }
+    if(cmd==CMD_BOTTOM){
+      if (loadPending) {
+        if (loadSensor) {
+          if (!io.in[SENS_LOAD]) {
+            loadSensor = false;
+            // we are at load position
+            loadPending = false;
+            loadLevel = level;
+            return false;
+          }
+        }
+        loadSensor = io.in[SENS_LOAD];
+      }
+      if (!io.in[SENS_BOTTOM]) return true;
+    }
+  
+
+//		switch (cmd) {
+//			case CMD_UP:
+//				if (cnt<endCnt-OFFSET && !io.in[SENS_TOP]) return true;
+//				break;
+//			case CMD_DOWN:
+//				if (cnt>endCnt+OFFSET && !io.in[SENS_BOTTOM]) return true;
+//				break;
+//			case CMD_TOP:
+//				if (loadPending && io.in[SENS_LOAD]) {
+//					// we are at load position
+//					loadLevel = level;
+//					loadPending = false;
+//					return false;
+//				}
+//				if (!io.in[SENS_TOP]) return true;
+//				// for shure if load sensor does not work
+//				loadPending = false;
+//				break;
+//			case CMD_BOTTOM:
+//				if (loadPending) {
+//					if (loadSensor) {
+//						if (!io.in[SENS_LOAD]) {
+//							loadSensor = false;
+//							// we are at load position
+//							loadPending = false;
+//							loadLevel = level;
+//							return false;
+//						}
+//					}
+//					loadSensor = io.in[SENS_LOAD];
+//				}
+//				if (!io.in[SENS_BOTTOM]) return true;
+//				break;
+//		}
 		
 		return false;	
 	}
+  
+  public void getVals(){int i=0;}
+  
+  //public void setVals(){int i=0;}
 	
 	void dbg(TalIo io) {
 		
