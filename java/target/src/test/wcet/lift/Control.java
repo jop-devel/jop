@@ -20,9 +20,9 @@ public abstract class Control {
 
 	private static RtThread th;
 	private int period;
-	private TalIo io;
+	protected TalIo io;
 	
-	private int dly1, dly2;
+	protected int dly1, dly2;
 	
 	private int min, max;			// execution time status
 	
