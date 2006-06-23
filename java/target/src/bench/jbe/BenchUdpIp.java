@@ -77,6 +77,11 @@ public class BenchUdpIp extends BenchMark {
 		return sum;
 	}
 	
+	public void loop() {
+		request();
+		ipLink.loop();
+		net.loop();
+	}
 	private static void request() {
 		
 		if (!sent) {
