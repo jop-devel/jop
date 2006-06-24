@@ -121,11 +121,11 @@ public class Udp {
 
 		buf[2] = (PROTOCOL<<16) + p.len - 20; 		// set protocol and udp length in iph checksum for tcp checksum
 		if (TcpIp.chkSum(buf, 2, p.len-8)!=0) {
-			Dbg.intVal(p.len);
-			Dbg.wr(" : ");
-			for (int k = 0; k < (p.len+3)/4; k++) {
-				Dbg.hexVal(buf[k]);
-			}
+//			Dbg.intVal(p.len);
+//			Dbg.wr(" : ");
+//			for (int k = 0; k < (p.len+3)/4; k++) {
+//				Dbg.hexVal(buf[k]);
+//			}
 			p.setStatus(Packet.FREE);	// mark packet free
 Dbg.wr("wrong UDP checksum ");
 			return;
@@ -142,7 +142,7 @@ Dbg.wr("wrong UDP checksum ");
 		} else {
 
 			if (list!=null) {
-				for (i=0; i<MAX_HANDLER; ++i) {
+				for (i=0; i<MAX_HANDLER; ++i) { // @WCA loop=8
 					if (list[i]!=null && ports[i]==port) {
 						list[i].request(p);
 						break;
@@ -165,7 +165,7 @@ Dbg.intVal(port);
 		
 		int[] buf = p.buf;
 		s.setLength(0);
-		for (int i = Udp.DATA*4; i < p.len; i++) {
+		for (int i = Udp.DATA*4; i < p.len; i++) { // @WCA loop<=1500
 			s.append((char) ((buf[i>>2]>>(24 - ((i&3)<<3))) & 0xff));
 		}
 	}
@@ -176,8 +176,8 @@ Dbg.intVal(port);
 		int cnt = s.length();
 		// copy buffer
 		int k = 0;
-		for (int i=0; i<cnt; i+=4) {
-			for (int j=0; j<4; ++j) {
+		for (int i=0; i<cnt; i+=4) {  // @WCA loop<=1500
+			for (int j=0; j<4; ++j) { // @WCA loop=4
 				k <<= 8;
 				if (i+j < cnt) k += s.charAt(i+j);
 			}
@@ -218,11 +218,11 @@ Dbg.intVal(port);
 		int[] buf = p.buf;
 
 		// read ethernet header from CS8900 driver
-/*
-		for (i=0; i<7; ++i) {
-			p.llh[i] = CS8900.llh[i];
-		}
-*/
+
+//		for (i=0; i<7; ++i) {
+//			p.llh[i] = CS8900.llh[i];
+//		}
+
 		// IP header
 		// TODO unique id for sent packet
 		buf[0] = 0x45000000 + p.len;		// ip length	(header without options)
