@@ -809,21 +809,27 @@ class WCETBasicBlock {
         
         //invoke instructions
         if(ih.getInstruction() instanceof InvokeInstruction){
-          String methodid = ((InvokeInstruction)ih.getInstruction()).getClassName(wcmb.getCpg())
-          +"."
-          +((InvokeInstruction)ih.getInstruction()).getMethodName(wcmb.getCpg())
-          +((InvokeInstruction)ih.getInstruction()).getSignature(wcmb.getCpg());
+if(nodetype!=WCETBasicBlock.INODE){
+  bbinvo = ((InvokeInstruction)ih.getInstruction()).getClassName(wcmb.getCpg())
+  +"."
+  +((InvokeInstruction)ih.getInstruction()).getMethodName(wcmb.getCpg())
+  +((InvokeInstruction)ih.getInstruction()).getSignature(wcmb.getCpg());
+}
           String retsig = ((InvokeInstruction)ih.getInstruction()).getReturnType(wcmb.getCpg()).getSignature(); 
-  
+////  
           //signature Java Type, Z boolean, B byte, C char, S short, I int
           //J long, F float, D double, L fully-qualified-class, [ type type[] 
-          bbinvo = methodid;
-          Method m = wcmb.wca.getMethod(methodid);
-          if(methodid.startsWith("com.jopdesign.sys.Native")){
+//          bbinvo = methodid;
+System.out.println("extra bbinvo:"+bbinvo);          
+          Method m = wcmb.wca.getMethod(bbinvo);
+System.out.println("bbinvo:"+bbinvo);
+System.out.println("name:"+wcmb.name);
+System.out.println("cname:"+wcmb.cname);
+          if(bbinvo.startsWith("com.jopdesign.sys.Native")){
             int opcode = wcmb.wca.getNativeOpcode(m.getName());//methodid);
             if(opcode == -1){
               sb.append(WU.prepad("*to check",10));
-              invoStr = methodid + " did not find mapping";
+              invoStr = bbinvo + " did not find mapping";
             }else
             {
               int cycles = WCETInstruction.getCycles(opcode,false,0);
@@ -832,7 +838,7 @@ class WCETBasicBlock {
               sb.append(WU.prepad(Integer.toString(cycles),10));
               sb.append("   ");
               sb.append("                ");
-              invoStr = methodid;
+              invoStr = bbinvo;
             }
           }
           else if(m!=null && !m.isAbstract()){
@@ -895,9 +901,9 @@ class WCETBasicBlock {
             }
   
             sb.append("   ");
-            invoStr = methodid+", invoke(n="+invon+"):"+invokehit+"/"+invokemiss+" return(n="+wcmb.getN()+"):"+rethit+"/"+retmiss;
+            invoStr = bbinvo+", invoke(n="+invon+"):"+invokehit+"/"+invokemiss+" return(n="+wcmb.getN()+"):"+rethit+"/"+retmiss;
             if((((InvokeInstruction)ih.getInstruction()).getClassName(wcmb.getCpg())).equals(wcmb.wca.nativeClass)){
-              invoStr = methodid;
+              invoStr = bbinvo;
             } 
           }
           else{
