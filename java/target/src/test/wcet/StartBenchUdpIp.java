@@ -34,8 +34,7 @@ public class StartBenchUdpIp {
 	}
 	static void measure() {
 		ts = Native.rdMem(Const.IO_CNT);
-		// bui.loop();
-		Packet.getPacket(null, 0, 0);
+		bui.loop();
 		te = Native.rdMem(Const.IO_CNT);		
 	}
 			
