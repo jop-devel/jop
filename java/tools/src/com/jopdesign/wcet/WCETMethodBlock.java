@@ -142,8 +142,8 @@ class WCETMethodBlock {
 
   public void check(){
     if(!analyzed){
-System.out.println("about to check:"+name);      
-System.out.println("abstract"+methodbcel.isAbstract());
+//System.out.println("about to check:"+name);      
+//System.out.println("abstract:"+methodbcel.isAbstract());
 
 
       controlFlowGraph();
@@ -200,11 +200,11 @@ System.out.println("abstract"+methodbcel.isAbstract());
       } else {
         n = 0;
       }
-System.out.println("dg for:"+name);      
+//System.out.println("dg for:"+name);      
       directedGraph();
-System.out.println("link for:"+name);      
+//System.out.println("link for:"+name);      
       link();
-System.out.println("about to string:"+name);      
+//System.out.println("about to string:"+name);      
       wca.wcasb.append(toString());
       
       if(!wca.cfgwcmbs.contains(this))
@@ -333,7 +333,7 @@ System.out.println("about to string:"+name);
       T.bid = bid;
 
       TreeMap newbbs = new TreeMap();
-System.out.println("cfg for:"+name);      
+//System.out.println("cfg for:"+name);      
       for (Iterator iter = getBbs().keySet().iterator(); iter.hasNext();) {
         WCETBasicBlock wbb = (WCETBasicBlock) getBbs().get(
             (Integer) iter.next());
@@ -348,12 +348,12 @@ System.out.println("cfg for:"+name);
     
             //signature Java Type, Z boolean, B byte, C char, S short, I int
             //J long, F float, D double, L fully-qualified-class, [ type type[]
-System.out.println("found inode and wbb.bbinvo="+methodid);          
+//System.out.println("found inode and wbb.bbinvo="+methodid);          
             wbb.bbinvo = methodid;
-System.out.println("-bbinvo:"+wbb.bbinvo);
-System.out.println("-name:"+name);
-System.out.println("-cname:"+cname);
-System.out.println("-IDS:"+wbb.getIDS());
+//System.out.println("-bbinvo:"+wbb.bbinvo);
+//System.out.println("-name:"+name);
+//System.out.println("-cname:"+cname);
+//System.out.println("-IDS:"+wbb.getIDS());
             
           } else{
             wbb.nodetype = WCETBasicBlock.BNODE;
@@ -361,8 +361,9 @@ System.out.println("-IDS:"+wbb.getIDS());
           }
           //TODO: research how this should be done (athrow discussion with ms)
           if(wbb.getInbbs().size() == 0){
-            System.out.println("Warning: connecting S to "+wbb.getIDS());
-            wbb.addTargeter(S);
+            System.out.println("Warning : no flow to "+wbb.getIDS()+" in "+wbb.wcmb.cname+"."+wbb.wcmb.name);
+            //wbb.addTargeter(S);
+            wbb.addTargeter(wbb);
           }
         }
         newbbs.put(new Integer(wbb.bid),wbb);
@@ -400,8 +401,9 @@ System.out.println("-IDS:"+wbb.getIDS());
       
       // hook the called method to the outgoing node
       if(wcbb.nodetype == WCETBasicBlock.INODE){
-System.out.println("linking inode in:"+name);
-System.out.println("and linking bbinvo:"+wcbb.bbinvo);
+//System.out.println("+linking inode in:"+name);
+//System.out.println("+class:"+cname);
+//System.out.println("+and linking bbinvo:"+wcbb.bbinvo);
 //if(wca.getMethod(wcbb.bbinvo)==null){
 //  System.out.println("wca.getMethod(wcbb.bbinvo) == null");  
 //}
@@ -412,16 +414,16 @@ System.out.println("and linking bbinvo:"+wcbb.bbinvo);
 //}
         wcbb.invowcmb = wca.getWCMB(wca.getMethod(wcbb.bbinvo));
 if(wcbb.invowcmb==null)
-  System.out.println("link target: null (probably inherited)");
-else
-  System.out.println("link target:"+wcbb.invowcmb.name);
+  System.out.println("Info: "+ wcbb.bbinvo+ " link target == null (probably inherited)");
+//else
+//  System.out.println("link target:"+wcbb.invowcmb.name);
         if(wcbb.invowcmb==null){ //check super class(es)
-System.out.println("jc:"+jc.getClassName());       
-System.out.println("method:"+methodbcel.getName());
+//System.out.println("jc:"+jc.getClassName());       
+//System.out.println("method:"+methodbcel.getName());
 //System.out.println("sig:"+methodbcel.getSignature());
 //System.out.println("wcbb.invowcmb0==null");          
           String bbinvotmp = wcbb.bbinvo;
-System.out.println("bbinvotmp0:"+bbinvotmp);
+//System.out.println("bbinvotmp0:"+bbinvotmp);
           String jcinvostr = wcbb.bbinvo.substring(0,wcbb.bbinvo.lastIndexOf('.'));
           String minvo = wcbb.bbinvo.substring(wcbb.bbinvo.lastIndexOf('.'));
 //System.out.println("minvo:"+minvo);          
@@ -436,11 +438,11 @@ System.out.println("bbinvotmp0:"+bbinvotmp);
           }
           
           bbinvotmp = jcinvo.getSuperclassName()+minvo;
-System.out.println("inherited bbinvotmp: "+bbinvotmp);
-System.out.println("jcinvo:"+jcinvo.getClassName());
+System.out.println("Info: found match in "+bbinvotmp);
+//System.out.println("jcinvo:"+jcinvo.getClassName());
           wcbb.invowcmb = wca.getWCMB(wca.getMethod(bbinvotmp));
-System.out.println("wcbb.invowcmb.name:"+wcbb.invowcmb.name);          
-System.out.println("wcbb.invowcmb.cname:"+wcbb.invowcmb.cname);
+//System.out.println("wcbb.invowcmb.name:"+wcbb.invowcmb.name);          
+//System.out.println("wcbb.invowcmb.cname:"+wcbb.invowcmb.cname);
           wcbb.invowcmb.check();
           
           if(jcinvo == null || wcbb.invowcmb == null){
@@ -452,28 +454,43 @@ System.out.println("wcbb.invowcmb.cname:"+wcbb.invowcmb.cname);
 //System.out.println("bbinvotmp1:"+bbinvotmp);          
           
           
-//          if(wcbb.invowcmb == null && jc.isAbstract()){ // check for implementations of the abstact method
-//            int classhits = 0;
-//            String mname = wcbb.bbinvo.substring(jc.getClassName().length()+1);
-//            for (int i=0;i<wca.jca.length;i++){
-//              String newbbinvo = wca.jca[i].getClassName()+"."+mname;
-//              if(wca.getWCMB(wca.getMethod(newbbinvo)) != null){
-//                wcbb.invowcmb = wca.getWCMB(wca.getMethod(newbbinvo));
-//                System.out.println("implementatin of abstract method "+wcbb.bbinvo+" found in "+newbbinvo +" with wcet="+wcbb.invowcmb.wcetlp);
-//                classhits++;
-//              }
-//            }
-//            if(classhits>1){
-//              System.out.println("WARNING: multiple implementations of "+wcbb.bbinvo +" : "+jc.getClassName()+"."+name+":"+wcbb.getIDS()+" is not supported yet");
-//              System.exit(-1);
-//            }
-//          }
           if(wcbb.invowcmb!=null)
             wcbb.bbinvo = bbinvotmp;
           else{
             System.out.println("Could not resolve "+wcbb.bbinvo+" for linking in "+jc.getClassName()+"."+name+":"+wcbb.getIDS());
             System.out.println("jc abstract:"+jc.isAbstract());
           }
+        } else if(wcbb.invowcmb.methodbcel.isAbstract()){ // such as jbe.ejip.LinkLayer.loop()
+          System.out.println("* This method is abstract: "+wcbb.invowcmb.cname+"."+wcbb.invowcmb.name);
+          JavaClass jcabs = wcbb.invowcmb.jc;
+          int classhits = 0;
+          String mname = wcbb.bbinvo.substring(wcbb.bbinvo.lastIndexOf('.')+1);
+//System.out.println("* mname:"+mname);          
+          wcbb.invowcmb = null;
+          wcbb.bbinvo = null;
+          for (int i=0;i<wca.jca.length;i++){
+            String newbbinvo = wca.jca[i].getClassName()+"."+mname;
+//System.out.println("* Checking for :"+newbbinvo);       
+            WCETMethodBlock invocandi = wca.getWCMB(wca.getMethod(newbbinvo));
+            if(invocandi != null && !invocandi.methodbcel.isAbstract()){
+//System.out.println("** "+invocandi.jc.getSuperclassName());
+//System.out.println("** "+jcabs.getClassName());
+              
+              if(invocandi.jc.getSuperclassName().equals(jcabs.getClassName())){
+                wcbb.invowcmb = invocandi;
+                wcbb.bbinvo = newbbinvo;
+                System.out.println("* Implementatin of abstract method "+wcbb.bbinvo+" found in "+newbbinvo);
+                classhits++;
+              }
+            }
+          }
+          if(classhits>1){
+            System.out.println("Error (sorry...): multiple implementations of "+wcbb.bbinvo +" : "+jc.getClassName()+"."+name+":"+wcbb.getIDS()+" is not supported yet");
+            //System.exit(-1);
+            System.out.println("Keeping last match...(until correctly implemented...)");
+          }
+
+          wcbb.invowcmb.check();
         }
         else
           wcbb.invowcmb.check();
@@ -925,8 +942,8 @@ if(pl.size()>0)
     for (Iterator iter = bbs.keySet().iterator(); iter.hasNext();) {
       Integer keyInt = (Integer) iter.next();
       WCETBasicBlock wcbb = (WCETBasicBlock) bbs.get(keyInt);
-System.out.println("about to codestring this type of node:"+wcbb.nodetype);
-System.out.println("ids:"+wcbb.getIDS());
+//System.out.println("about to codestring this type of node:"+wcbb.nodetype);
+//System.out.println("ids:"+wcbb.getIDS());
       codeString.append(wcbb.toCodeString());
     }
     codeString.append("=========================================================================\n");

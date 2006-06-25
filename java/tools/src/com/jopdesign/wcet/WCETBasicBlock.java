@@ -518,7 +518,11 @@ class WCETBasicBlock {
         
         if(titer.hasNext())
           ls.append(" + ");
-      } 
+      }
+      //TODO: Solve the real issue with no in-flow
+      if(tinbbs.size() == 0)
+        ls.append(" 0 ");
+      
       ls.append(" = ");
       if(sucbb != null){
         //if(wcbb.sucbb.nodetype != WCETBasicBlock.TNODE){  
@@ -820,11 +824,11 @@ if(nodetype!=WCETBasicBlock.INODE){
           //signature Java Type, Z boolean, B byte, C char, S short, I int
           //J long, F float, D double, L fully-qualified-class, [ type type[] 
 //          bbinvo = methodid;
-System.out.println("extra bbinvo:"+bbinvo);          
+//System.out.println("extra bbinvo:"+bbinvo);          
           Method m = wcmb.wca.getMethod(bbinvo);
-System.out.println("bbinvo:"+bbinvo);
-System.out.println("name:"+wcmb.name);
-System.out.println("cname:"+wcmb.cname);
+//System.out.println("bbinvo:"+bbinvo);
+//System.out.println("name:"+wcmb.name);
+//System.out.println("cname:"+wcmb.cname);
           if(bbinvo.startsWith("com.jopdesign.sys.Native")){
             int opcode = wcmb.wca.getNativeOpcode(m.getName());//methodid);
             if(opcode == -1){
