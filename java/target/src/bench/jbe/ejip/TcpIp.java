@@ -77,8 +77,8 @@ public class TcpIp {
 
 		int i;
 		int sum = 0;
-		cnt = (cnt+3)>>2;		// word count
-		while (cnt != 0) { // @WCA loop<=1500
+		cnt = (cnt+3)>>2;		// word count (max is 375)
+		while (cnt != 0) { // @WCA loop<=375
 			i = buf[off];
 			sum += i & 0xffff;
 			sum += i>>>16;
