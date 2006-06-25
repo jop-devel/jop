@@ -317,112 +317,43 @@ public class LiftControl extends Control {
 	}
 	
 	boolean checkRun(TalIo io) {
-    if(cmd==CMD_UP) {
-      if (cnt<endCnt-OFFSET && !io.in[SENS_TOP]) return true;
-    }
-    if(cmd==CMD_DOWN){
-      if (cnt>endCnt+OFFSET && !io.in[SENS_BOTTOM]) return true;
-    }
-    if(cmd==CMD_TOP){
-      if (loadPending && io.in[SENS_LOAD]) {
-        // we are at load position
-        loadLevel = level;
-        loadPending = false;
-        return false;
-      }
-      if (!io.in[SENS_TOP]) return true;
-      // for shure if load sensor does not work
-      loadPending = false;
-    }
-    if(cmd==CMD_BOTTOM){
-      if (loadPending) {
-        if (loadSensor) {
-          if (!io.in[SENS_LOAD]) {
-            loadSensor = false;
-            // we are at load position
-            loadPending = false;
-            loadLevel = level;
-            return false;
-          }
-        }
-        loadSensor = io.in[SENS_LOAD];
-      }
-      if (!io.in[SENS_BOTTOM]) return true;
-    }
-  
-
-//		switch (cmd) {
-//			case CMD_UP:
-//				if (cnt<endCnt-OFFSET && !io.in[SENS_TOP]) return true;
-//				break;
-//			case CMD_DOWN:
-//				if (cnt>endCnt+OFFSET && !io.in[SENS_BOTTOM]) return true;
-//				break;
-//			case CMD_TOP:
-//				if (loadPending && io.in[SENS_LOAD]) {
-//					// we are at load position
-//					loadLevel = level;
-//					loadPending = false;
-//					return false;
-//				}
-//				if (!io.in[SENS_TOP]) return true;
-//				// for shure if load sensor does not work
-//				loadPending = false;
-//				break;
-//			case CMD_BOTTOM:
-//				if (loadPending) {
-//					if (loadSensor) {
-//						if (!io.in[SENS_LOAD]) {
-//							loadSensor = false;
-//							// we are at load position
-//							loadPending = false;
-//							loadLevel = level;
-//							return false;
-//						}
-//					}
-//					loadSensor = io.in[SENS_LOAD];
-//				}
-//				if (!io.in[SENS_BOTTOM]) return true;
-//				break;
-//		}
 		
+		if (cmd == CMD_UP) {
+			if (cnt < endCnt - OFFSET && !io.in[SENS_TOP])
+				return true;
+		} else if (cmd == CMD_DOWN) {
+			if (cnt > endCnt + OFFSET && !io.in[SENS_BOTTOM])
+				return true;
+		} else if (cmd == CMD_TOP) {
+			if (loadPending && io.in[SENS_LOAD]) {
+				// we are at load position
+				loadLevel = level;
+				loadPending = false;
+				return false;
+			}
+			if (!io.in[SENS_TOP])
+				return true;
+			// for shure if load sensor does not work
+			loadPending = false;
+		} else if (cmd == CMD_BOTTOM) {
+			if (loadPending) {
+				if (loadSensor) {
+					if (!io.in[SENS_LOAD]) {
+						loadSensor = false;
+						// we are at load position
+						loadPending = false;
+						loadLevel = level;
+						return false;
+					}
+				}
+				loadSensor = io.in[SENS_LOAD];
+			}
+			if (!io.in[SENS_BOTTOM])
+				return true;
+		}		
 		return false;	
 	}
-  
-	// was private - public for WCET tests
-	public void getVals() {
-		int in0 = Native.rd(Const.IO_IN);
-		int in1 = dly1;
-		int in2 = dly2;
-		dly2 = dly1;
-		dly1 = in0;
-		for (int i=0; i<10; ++i) { // @WCA loop=10
-			// majority voting for input values
-			// delays input value change by one period
-			io.in[i] = ((in0&1) + (in1&1) + (in2&1)) > 1;
-			in0 >>>= 1;
-			in1 >>>= 1;
-			in2 >>>= 1;
-		}
-		io.analog[0] = Native.rd(Const.IO_ADC1);
-		io.analog[1] = Native.rd(Const.IO_ADC2);
-		io.analog[2] = Native.rd(Const.IO_ADC3);
-	}
-	
-	public void setVals() {
-		int val = 0;
-		for (int i=3; i>=0; --i) { // @WCA loop=3
-			val <<= 1;
-			val |= io.out[i] ? 1 : 0;
-		}
-		Native.wr(val, Const.IO_OUT);
-		for (int i=13; i>=0; --i) { // @WCA loop=14
-			val <<= 1;
-			val |= io.led[i] ? 1 : 0;
-		}
-		Native.wr(val, Const.IO_LED);
-	}
-	
+  	
 	void dbg(TalIo io) {
 		
 		Dbg.wr("cmd=");
