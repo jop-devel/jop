@@ -56,10 +56,6 @@ public class GCRTMethodInfo {
 
 	static HashMap miMap = new HashMap();
   
-  // true if the method of letting the GC thread
-  // run with lowest priority is used
-  static boolean cfgReduce = true; 
-
   //  those methods with gc info 
   //  (provided by a call to CallGraph?) 
   static HashSet gcMethods = null;
@@ -831,7 +827,7 @@ public class GCRTMethodInfo {
 		int ogcimark = 0;
 		int mgcimark = 0;
     
-    if(cfgReduce && gcMethods.contains(method)){
+    if(gcMethods != null && gcMethods.contains(method)){
       if(out != null){
         out.println("\n\t// no stackwalker info for "
             + mi.cli.clazz.getClassName() + "." + mi.methodId +" because cfgReduce == true and gcMethods.contains(method)\n");
@@ -1160,7 +1156,7 @@ public class GCRTMethodInfo {
    */
   public void removePC(int pc){
     
-    if(cfgReduce && gcMethods.contains(method))
+    if(gcMethods != null && gcMethods.contains(method))
       return;
     
     int oldogci[] = ogci;
@@ -1285,7 +1281,7 @@ public class GCRTMethodInfo {
 	 */
 	public int gcLength() {
     int len = -1;
-    if(cfgReduce && gcMethods.contains(method)){
+    if(gcMethods != null && gcMethods.contains(method)){
       len = 0;
     } 
     else {
