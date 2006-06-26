@@ -179,7 +179,10 @@ class WCETMethodBlock {
             while ((str = in.readLine()) != null) {
               line++;
               if(line >= startLine && line <= endLine){
-                if(str.trim().startsWith("for ") || str.trim().startsWith("while ")){
+                if(str.trim().startsWith("for (") 
+                    || str.trim().startsWith("while (")
+                    || str.trim().startsWith("for(")
+                    || str.trim().startsWith("while(")){
                    if(str.indexOf("@WCA")==-1){
                      System.out.println("Error: no WCA annotation on line "+line+" in "+filePath+":"+str);
                      System.exit(-1); // can be commented out to force continuation
