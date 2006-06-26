@@ -55,13 +55,28 @@ public class GCRTMethodInfo {
 	static int totalcntMgciWords = 0;
 
 	static HashMap miMap = new HashMap();
+  
+  // true if the method of letting the GC thread
+  // run with lowest priority is used
+  static boolean cfgReduce = true; 
 
+  //  those methods with gc info 
+  //  (provided by a call to CallGraph?) 
+  static HashSet gcMethods = null;
+  
+  /**
+   * Contains the set of methods which are included in the stack map generation.
+   * @param gcMethods
+   */
+  public static void setGcMethods(HashSet gcMethods) {
+    GCRTMethodInfo.gcMethods = gcMethods;
+  }
+  
 	/**
 	 * Called from JOPizer->SetGCRTMethodInfo to run the stack simulation for
 	 * the method.
 	 * 
-	 * @param mi
-	 *            the method
+	 * @param mi the method
 	 */
 	public static void stackWalker(MethodInfo mi) {
 		((GCRTMethodInfo) miMap.get(mi)).stackWalker();
@@ -162,7 +177,7 @@ public class GCRTMethodInfo {
 		}
 
 		if (!method.isStatic()) {
-			margs++;
+			margs++; //  this
 		}
 
 		if (!method.isAbstract()) {
@@ -815,7 +830,18 @@ public class GCRTMethodInfo {
 		int stackmark = 0;
 		int ogcimark = 0;
 		int mgcimark = 0;
+    
+    if(cfgReduce && gcMethods.contains(method)){
+      if(out != null){
+        out.println("\n\t// no stackwalker info for "
+            + mi.cli.clazz.getClassName() + "." + mi.methodId +" because cfgReduce == true and gcMethods.contains(method)\n");
+      }
 
+      return 0;
+    }
+      
+    
+    
 		// if(mi.code != null){ // not abstract
 		if (!method.isAbstract()) {
 			if (instCnt != mgci.length || instCnt != ogci.length) {
@@ -1133,6 +1159,10 @@ public class GCRTMethodInfo {
    * @return true if pc<instCnt
    */
   public void removePC(int pc){
+    
+    if(cfgReduce && gcMethods.contains(method))
+      return;
+    
     int oldogci[] = ogci;
     int oldmgci[] = mgci;
     ogci = new int[instCnt-1];
@@ -1254,7 +1284,15 @@ public class GCRTMethodInfo {
 	 * SetMethodInfo's visitJavaClass method.
 	 */
 	public int gcLength() {
-		return dumpMethodGcis(null);
+    int len = -1;
+    if(cfgReduce && gcMethods.contains(method)){
+      len = 0;
+    } 
+    else {
+      len = dumpMethodGcis(null);
+    }
+   
+    return len;
 	}
 
 	/**
@@ -1275,6 +1313,7 @@ public class GCRTMethodInfo {
 		}
 		return sb.toString();
 	}
+
 }
 
 /**
