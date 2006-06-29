@@ -93,7 +93,7 @@ public class GCStkWalk {
         
 		fp = sp - 4;  // last sp points to the end of the frame
     //stop befor 'first' method, loop = 255-4-128-5/5 =  
-		while (fp > 128 + 5) { // @WCA loop=3
+		while (fp > 128 + 5) { // @WCA loop=5
       // saved vars of curent frame that points to 
 			//   previous frame. See Fig. 6.2 in ms thesis
 //enable
