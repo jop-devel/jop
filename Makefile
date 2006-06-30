@@ -57,9 +57,9 @@ P1=test
 P2=test
 P3=HelloWorld
 
-P2=wcet
+#P2=wcet
 #P3=StartLineFollower
-P3=StartKfl
+#P3=StartKfl
 WCET_METHOD=main
 WCET_METHOD=measure
 
