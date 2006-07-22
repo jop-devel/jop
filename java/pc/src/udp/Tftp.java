@@ -3,7 +3,7 @@ import java.io.*;
 import java.net.*;
 
 /**
-*	send UPD requests to jop and receive UPD packets for debug output.
+*	TFTP client for Flash programming and read of internal memory (stack).
 */
 
 public class Tftp {
