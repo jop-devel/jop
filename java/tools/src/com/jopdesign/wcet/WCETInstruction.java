@@ -172,6 +172,15 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 		return sb.toString();
 	}
 
+	public static void main(String[] args) {
+		
+		for (int i=0; i<256; ++i) {
+			int cnt = getCycles(i, false, 0);
+			if (cnt==-1) cnt = 0;
+			System.out.println(cnt);
+		}
+	}
+	
 	/**
 	 * Returns the wcet count for the instruction.
 	 * 
