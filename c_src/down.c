@@ -150,9 +150,11 @@ int main(int argc, char *argv[]) {
 	dcb.Parity = NOPARITY;
 	dcb.StopBits = ONESTOPBIT;
 
-	/* use RTS/CTS handshake */
-	dcb.fOutxCtsFlow = TRUE;
-	dcb.fRtsControl = RTS_CONTROL_ENABLE;
+	/* don't use RTS/CTS handshake */
+//	dcb.fOutxCtsFlow = TRUE;
+//	dcb.fRtsControl = RTS_CONTROL_ENABLE;
+	dcb.fOutxCtsFlow = FALSE;
+	dcb.fRtsControl = RTS_CONTROL_DISABLE;
 
 	dcb.fOutxDsrFlow = FALSE;
 	dcb.fDtrControl = DTR_CONTROL_DISABLE;
