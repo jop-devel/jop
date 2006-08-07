@@ -31,29 +31,28 @@ generic (
 );
 
 port (
-	clk		: in std_logic;
+	CLOCK_50		: in std_logic;
 --
 --	serial interface
 --
-	ser_txd			: out std_logic;
-	ser_rxd			: in std_logic;
+	UART_TXD		: out std_logic;
+	UART_RXD		: in std_logic;
 
 --
 --	watchdog
 --
-	wd		: out std_logic;
-	freeio	: out std_logic;
+	LEDG		: out std_logic_vector(8 downto 0);
 
 --
 --	only one ram banks
 --
-	ram_a		: out std_logic_vector(17 downto 0);
-	ram_d		: inout std_logic_vector(15 downto 0);
-	ram_ncs	: out std_logic;
-	ram_noe	: out std_logic;
-	ram_nlb	: out std_logic;
-	ram_nub	: out std_logic;
-	ram_nwe	: out std_logic
+	SRAM_ADDR		: out std_logic_vector(17 downto 0);
+	SRAM_DQ		: inout std_logic_vector(15 downto 0);
+	SRAM_CE_N	: out std_logic;
+	SRAM_OE_N	: out std_logic;
+	SRAM_LB_N	: out std_logic;
+	SRAM_UB_N	: out std_logic;
+	SRAM_WE_N	: out std_logic
 
 );
 end jop;
@@ -199,7 +198,7 @@ end process;
 		divide_by => pll_div
 	)
 	port map (
-		inclk0	 => clk,
+		inclk0	 => CLOCK_50,
 		c0	 => clk_int
 	);
 -- clk_int <= clk;
@@ -207,7 +206,8 @@ end process;
 	-- sp_ov indicates stack overflow
 	-- We can use the wd LED
 	-- wd <= sp_ov;
-	wd <= wd_out;
+	LEDG(8) <= wd_out;
+	LEDG(7 downto 0) <= (others => '0');
 
 	cmp_core: core generic map(jpc_width)
 		port map (clk_int, int_res,
@@ -275,8 +275,8 @@ end process;
 			exc_req => exc_req,
 			exc_int => exc_int,
 			
-			txd => ser_txd,
-			rxd => ser_rxd,
+			txd => UART_TXD,
+			rxd => UART_RXD,
 			ncts => ser_ncts,
 			nrts => ser_nrts,
 			wd => wd_out,
@@ -336,29 +336,29 @@ end process;
 			ram_dout => ram_dout,
 			ram_din => ram_din,
 			ram_dout_en	=> ram_dout_en,
-			ram_ncs => ram_ncs,
-			ram_noe => ram_noe,
-			ram_nwe => ram_nwe
+			ram_ncs => SRAM_CE_N,
+			ram_noe => SRAM_OE_N,
+			ram_nwe => SRAM_WE_N
 		);
 
 	process(ram_dout_en, ram_dout)
 	begin
 		if ram_dout_en='1' then
-			ram_d <= ram_dout(15 downto 0);
+			SRAM_DQ <= ram_dout(15 downto 0);
 		else
-			ram_d <= (others => 'Z');
+			SRAM_DQ <= (others => 'Z');
 		end if;
 	end process;
 
-	ram_din <= ram_d;
+	ram_din <= SRAM_DQ;
 
 --
 --	To put this RAM address in an output register
 --	we have to make an assignment (FAST_OUTPUT_REGISTER)
 --
-	ram_a <= ram_addr;
-	ram_nlb <= '0';
-	ram_nub <= '0';
+	SRAM_ADDR <= ram_addr;
+	SRAM_LB_N <= '0';
+	SRAM_UB_N <= '0';
 
 
 end rtl;

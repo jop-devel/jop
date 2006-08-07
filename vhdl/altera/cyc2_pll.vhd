@@ -7,17 +7,17 @@ USE ieee.std_logic_1164.all;
 LIBRARY altera_mf;
 USE altera_mf.all;
 
-ENTITY cyc2_pll IS
+ENTITY pll IS
 	generic (multiply_by : natural; divide_by : natural);
 	PORT
 	(
 		inclk0		: IN STD_LOGIC  := '0';
 		c0		: OUT STD_LOGIC 
 	);
-END cyc2_pll;
+END pll;
 
 
-ARCHITECTURE SYN OF cyc2_pll IS
+ARCHITECTURE SYN OF pll IS
 
 	SIGNAL sub_wire0	: STD_LOGIC_VECTOR (5 DOWNTO 0);
 	SIGNAL sub_wire1	: STD_LOGIC ;
