@@ -85,6 +85,8 @@ process
 	variable memline	: line; 
 	variable l 			: line;
 	variable val		: integer;
+	variable data32		: std_logic_vector(31 downto 0);
+
 variable x : integer;
 
 	begin
@@ -95,7 +97,15 @@ variable x : integer;
 			end if;
 			readline(memfile, memline);
 			read(memline, val);
-			ram(address) := std_logic_vector(to_signed(val, data_bits));
+			if data_bits=32 then
+				ram(address) := std_logic_vector(to_signed(val, data_bits));
+			else
+				-- simulate a 16 bit SRAM
+				data32 := std_logic_vector(to_signed(val, 32));
+				ram(address*2) := data32(31 downto 16);
+				ram(address*2+1) := data32(15 downto 0);
+			end if;
+
 			cnt := address;
 		end loop;
 		file_close(memfile);
