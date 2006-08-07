@@ -3,25 +3,14 @@
 //
 //		memory test, write memory content to serial line
 //
-//
-//	io register
-//
-io_addr		=	0
-io_data		=	1
-mem_rd_addr	= 2		// st
-mem_rd_data	= 2		// ld
-mem_wr_addr	= 3		// st
-mem_status	= 3		// ld
-mem_wr_data	= 4		// st
-mem_cancel	= 4		// ld
 
 //
 //	io address
 //
-io_cnt		=	0
-io_wd		=	3
-io_status	=	4
-io_uart		=	5
+io_cnt		=	-128
+io_wd		=	-125
+io_status	=	-112
+io_uart		=	-111
 
 ua_rdrf		= 	2
 ua_tdre		= 	1
@@ -67,10 +56,12 @@ loop:
 // nop
 // nop
 
-			ldi	io_outp
-			stioa
+			ldi	io_wd
+			stmwa
 			ldi	1
-			stiod
+			stmwd
+			wait
+			wait
 wr_loop:
 
 sys_wr_mem:
@@ -78,7 +69,6 @@ sys_wr_mem:
 			stmwa				// write ext. mem address
 			ldm a
 			stmwd				// write ext. mem data
-			nop
 			wait
 			wait
 
@@ -108,8 +98,7 @@ rd_loop:
 
 sys_rd_mem:
 			ldm	a
-			stmra				// read ext. mem, mem_bsy comes one cycle later
-			nop
+			stmra
 			wait
 			wait
 			ldmrd		 		// read ext. mem
@@ -118,18 +107,23 @@ sys_rd_mem:
 
 ser0:
 			ldi	io_status
-			stioa
+			stmra
 			ldi	ua_tdre
-			ldiod
+			wait
+			wait
+			ldmrd
 			and
 			nop
-			bz	ser0
+			bz	ser0			
 			nop
 			nop
+			
 			ldi	io_uart
-			stioa
+			stmwa
 			ldm	b
-			stiod
+			stmwd
+			wait
+			wait
 
 
 			ldm	a
