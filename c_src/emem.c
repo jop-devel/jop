@@ -64,9 +64,9 @@ main(int argc, char *argv[]) {
 	dcb.Parity = NOPARITY;
 	dcb.StopBits = ONESTOPBIT;
 
-	/* use RTS/CTS handshake */
-	dcb.fOutxCtsFlow = TRUE;
-	dcb.fRtsControl = RTS_CONTROL_ENABLE;
+	/* don't use RTS/CTS handshake */
+	dcb.fOutxCtsFlow = FALSE;
+	dcb.fRtsControl = RTS_CONTROL_DISABLE;
 
 	dcb.fOutxDsrFlow = FALSE;
 	dcb.fDtrControl = DTR_CONTROL_DISABLE;
@@ -85,12 +85,12 @@ main(int argc, char *argv[]) {
 j=0;
 	for (;;) {
 
-printf("\n%04x ", j++); fflush(stdout);	// write four bytes
-for (k=0; k<4; ++k) {
+//printf("\n%04x ", j++); fflush(stdout);	// write four bytes
+//for (k=0; k<4; ++k) {
 		ReadFile(hCom, &c, 1, &i, NULL);	// read without timeout -> kbhit is useless
-		// printf("%04x %02x\n", j++, c); fflush(stdout);
-printf(" %02x", c); fflush(stdout);	// write four bytes
-}
+		printf("%04x %02x\n", j++, c); fflush(stdout);
+//printf(" %02x", c); fflush(stdout);	// write four bytes
+//}
 		// printf("'%c' %d\n", c, c); fflush(stdout);
 		// printf("%c", c);
 	}
