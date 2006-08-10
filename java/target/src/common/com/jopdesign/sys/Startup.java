@@ -16,6 +16,7 @@ public class Startup {
 	
 	// use static vars, don't waste stack space
 	static int var;
+	static int mem_size;
 
 	// a stack for the interpreter mode
 	static int[] stack;
@@ -29,14 +30,16 @@ public class Startup {
 	 * Do all initialization here and call main method.
 	 */
 	static void boot() {
+
 		
 		started = false;
 		msg();
+		mem_size = getRamSize();
 		// mem(0) is the length of the application
 		// or in other words the heap start
 		var = Native.rdMem(1);		// pointer to 'special' pointers
 		// first initialize the GC with the address of static ref. fields
-		GC.init(var+4);
+		GC.init(mem_size, var+4);
 		// place for some initialization:
 		// could be placed in <clinit> in the future
 		System.init();
@@ -57,8 +60,35 @@ public class Startup {
 		JVMHelp.wr("JOP start");
 	}
 	
+	/**
+	 * Get RAM size in 32 bit words
+	 * @return
+	 */
+	static int getRamSize() {
+		
+		int size = 0;
+		int firstWord = Native.rd(0);
+		int val;
+		boolean search = true;
+		
+		// increment in 1024 Bytes
+		for (size=256; search; size+=256) {
+			val = Native.rd(size);
+			Native.wr(0xaaaa5555, size);
+			if (Native.rd(size)!=0xaaaa5555) search = false;
+			Native.wr(0x12345678, size);
+			if (Native.rd(size)!=0x12345678) search = false;
+			if (Native.rd(0)!=firstWord) search = false;
+			// restore current word
+			Native.wr(val, size);
+		}
+		// restore the first word
+		Native.wr(firstWord, 0);
+		return size;
+	}
 	static void version() {
 
+		// BTW: why not using System.out.println()?
 		int version = Native.rdIntMem(64);
 		JVMHelp.wr(" V ");
 		// take care with future GC - JVMHelp.intVal allocates
@@ -68,7 +98,9 @@ public class Startup {
 		} else {
 			JVMHelp.intVal(version);
 		}
-		JVMHelp.wr("\r\n");
+		JVMHelp.wr(" ");
+		JVMHelp.intVal(mem_size/1024*4);
+		JVMHelp.wr("KB RAM\r\n");
 	}
 
 	public static void exit() {
