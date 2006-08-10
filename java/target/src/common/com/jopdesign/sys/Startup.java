@@ -61,8 +61,7 @@ public class Startup {
 	}
 	
 	/**
-	 * Get RAM size in 32 bit words
-	 * @return
+	 * @return RAM size in 32 bit words
 	 */
 	static int getRamSize() {
 		
@@ -86,6 +85,29 @@ public class Startup {
 		Native.wr(firstWord, 0);
 		return size;
 	}
+	
+	/**
+	 * @return Processor speed in MHz
+	 */
+	static int getSpeed() {
+		
+		int start=0, end=0;
+		int val = Native.rd(Const.IO_US_CNT) + 5;
+		
+		while (Native.rd(Const.IO_US_CNT)-val<0) {
+			;
+		}
+		start = Native.rd(Const.IO_CNT);
+		val += 32;	// wait 32 us
+		while (Native.rd(Const.IO_US_CNT)-val<0) {
+			;
+		}
+		end = Native.rd(Const.IO_CNT);
+		
+		// round and divide by 32
+		return (end-start+16)>>5;
+	}
+	
 	static void version() {
 
 		// BTW: why not using System.out.println()?
@@ -98,7 +120,10 @@ public class Startup {
 		} else {
 			JVMHelp.intVal(version);
 		}
-		JVMHelp.wr(" ");
+		JVMHelp.wr("- ");
+		int speed = getSpeed();
+		JVMHelp.intVal(speed);
+		JVMHelp.wr("MHz, ");
 		JVMHelp.intVal(mem_size/1024*4);
 		JVMHelp.wr("KB RAM\r\n");
 	}
