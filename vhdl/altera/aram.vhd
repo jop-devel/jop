@@ -4,6 +4,8 @@
 --	internal memory for JOP3
 --	Version for Altera (Acex ok, Cyclone with warinings)
 --
+--	2006-08-10	signal for inverted clock
+--
 --
 
 Library IEEE ;
@@ -59,7 +61,11 @@ architecture rtl of ram is
 	signal wraddr_dly	: std_logic_vector(addr_width-1 downto 0);
 	signal wren_dly		: std_logic;
 
+	signal nclk			: std_logic;
+
 begin
+
+	nclk <= not clock;
 
 --
 --	delay wr addr and ena because of registerd indata
@@ -89,7 +95,7 @@ end process;
 				wraddress => wraddr_dly,
 				data => data,
 				rdclock => clock,
-				wrclock => not clock,
+				wrclock => nclk,
 				wren => wren_dly,
 				q => q
 			); 
