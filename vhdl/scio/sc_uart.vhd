@@ -31,6 +31,7 @@
 --	2003-09-19	sync ncts in!
 --	2004-03-23	two stop bits
 --	2005-11-30	change interface to SimpCon
+--	2006-08-07	rxd input register with clk to avoid Quartus tsu violation
 --
 
 
@@ -180,6 +181,8 @@ begin
 
 	elsif rising_edge(clk) then
 
+		rxd_reg <= rxd;			-- to avoid setup timing error in Quartus
+
 		if (clk16=clk16_cnt) then		-- 16 x serial clock
 			clk16 := 0;
 --
@@ -207,7 +210,6 @@ begin
 --
 --	sync in filter buffer
 --
-			rxd_reg <= rxd;			-- to avoid setup timing error in Quartus
 			rx_buf(0) <= rxd_reg;
 			rx_buf(2 downto 1) <= rx_buf(1 downto 0);
 		else
