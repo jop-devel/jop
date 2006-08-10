@@ -19,9 +19,6 @@ public class GC {
 	static int mem_start;		// read from memory
 	// get a effective heap size with fixed handle count
 	// for our RT-GC tests
-//	static final int MEM_SIZE = 100*1024/4 + FIX_HANDLES*HANDLE_SIZE;
-//	static final int MEM_SIZE = 30000;
-	static final int MEM_SIZE = 256000; // in words (262144)
 	static int full_heap_size;
 	/**
 	 * The handle contains following data:
@@ -100,12 +97,12 @@ public class GC {
 	
 	static int roots[];
 
-	static void init(int addr) {
+	static void init(int mem_size, int addr) {
 		
 		addrStaticRefs = addr;
 		
 		mem_start = Native.rdMem(0);
-		full_heap_size = MEM_SIZE-mem_start;
+		full_heap_size = mem_size-mem_start;
 		handle_cnt = full_heap_size/2/(TYPICAL_OBJ_SIZE+HANDLE_SIZE);
 		semi_size = (full_heap_size-handle_cnt*HANDLE_SIZE)/2;
 		
