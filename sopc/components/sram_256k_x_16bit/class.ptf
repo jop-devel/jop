@@ -1,6 +1,6 @@
 #
 # This class.ptf file built by Component Editor
-# 2006.08.10.23:29:53
+# 2006.08.11.17:15:18
 #
 # DO NOT MODIFY THIS FILE
 # If you hand-modify this file you will likely
@@ -100,9 +100,9 @@ CLASS sram_256k_x_16bit
             Data_Width = "16";
             Has_Base_Address = "1";
             Has_IRQ = "0";
-            Setup_Time = "5ns";
-            Hold_Time = "5ns";
-            Read_Wait_States = "20ns";
+            Setup_Time = "0ns";
+            Hold_Time = "2ns";
+            Read_Wait_States = "18ns";
             Write_Wait_States = "10ns";
             Read_Latency = "0";
             Maximum_Pending_Read_Transactions = "0";
@@ -117,10 +117,10 @@ CLASS sram_256k_x_16bit
          {
             ATS_SETTINGS 
             {
-               Setup_Value = "5";
-               Read_Wait_Value = "20";
+               Setup_Value = "0";
+               Read_Wait_Value = "18";
                Write_Wait_Value = "10";
-               Hold_Value = "5";
+               Hold_Value = "2";
                Timing_Units = "ns";
                Read_Latency_Value = "0";
                Minimum_Arbitration_Shares = "1";
@@ -225,7 +225,7 @@ CLASS sram_256k_x_16bit
                layout = "vertical";
                TEXT 
                {
-                  title = "Built on: 2006.08.10.23:29:53";
+                  title = "Built on: 2006.08.11.17:15:18";
                }
                TEXT 
                {
@@ -258,7 +258,7 @@ CLASS sram_256k_x_16bit
       SW_FILES 
       {
       }
-      built_on = "2006.08.10.23:29:53";
+      built_on = "2006.08.11.17:15:18";
       CACHED_HDL_INFO 
       {
          # cached hdl info, emitted by CBFrameRealtime.getDocumentCachedHDLInfoSection
