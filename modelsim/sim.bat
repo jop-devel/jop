@@ -20,6 +20,7 @@ vcom %options% %jopdir%/jtbl.vhd
 vcom %options% %jopdir%/offtbl.vhd
 vcom %options% %jopdir%/core/cache.vhd
 vcom %options% %jopdir%/memory/sc_sram32_flash.vhd
+rem vcom %options% %jopdir%/memory/sc_sram16.vhd
 vcom %options% %jopdir%/memory/mem_sc.vhd
 vcom %options% %jopdir%/core/mul.vhd
 vcom %options% %jopdir%/core/extension.vhd
@@ -33,5 +34,7 @@ vcom %options% %jopdir%/scio/sc_cnt.vhd
 vcom %options% %jopdir%/scio/scio_min.vhd
 vcom %options% %jopdir%/top/jopcyc.vhd
 vcom %options% %jopdir%/simulation/tb_jop.vhd
+rem vcom %options% %jopdir%/top/jop_256x16.vhd
+rem vcom %options% %jopdir%/simulation/tb_jop_sram16.vhd
 pause Start simulation?
 vsim -do sim.do tb_jop
