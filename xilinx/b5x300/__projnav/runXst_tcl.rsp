@@ -1,1 +1,0 @@
-set allSynthModules {jtbl.MOD bcfetch.MOD rom.MOD offtbl.MOD fetch.MOD shift.MOD xram_block.MOD ram.MOD stack.MOD decode.MOD core.MOD mul.MOD mem.MOD cnt.MOD fifo_elem.MOD fifo.MOD uart.MOD io.MOD jop.MOD}

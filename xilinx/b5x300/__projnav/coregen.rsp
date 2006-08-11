@@ -1,4 +1,0 @@
-SETPROJECT .
-SET BusFormat = BusFormatAngleBracketNotRipped
-SETXIPCPORTHOST 3017
-XIPCPJSENDCORES spartan2e
