@@ -5,7 +5,7 @@ SYSTEM jop_system
    WIZARD_SCRIPT_ARGUMENTS 
    {
       device_family = "CYCLONE";
-      clock_freq = "50000000";
+      clock_freq = "100000000";
       generate_hdl = "1";
       generate_sdk = "1";
       do_build_sim = "0";
@@ -15,7 +15,7 @@ SYSTEM jop_system
       {
          CLOCK clk
          {
-            frequency = "50000000";
+            frequency = "100000000";
             source = "External";
             display_name = "clk";
             Is_Clock_Source = "0";

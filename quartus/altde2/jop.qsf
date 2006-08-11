@@ -26,7 +26,7 @@ set_global_assignment -name EDA_SIMULATION_TOOL "<None>"
 
 set_global_assignment -name FAMILY "Cyclone II"
 set_global_assignment -name DEVICE EP2C35F672C6
-set_global_assignment -name TOP_LEVEL_ENTITY simple_sopc_jop
+set_global_assignment -name TOP_LEVEL_ENTITY de2_sopc_jop
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION "6.0 SP1"
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "20:32:02  AUGUST 07, 2006"
 set_global_assignment -name LAST_QUARTUS_VERSION "6.0 SP1"
@@ -37,7 +37,7 @@ set_global_assignment -name RESERVE_ALL_UNUSED_PINS "AS INPUT TRI-STATED"
 set_global_assignment -name STRATIX_DEVICE_IO_STANDARD LVCMOS
 set_global_assignment -name RESERVE_ASDO_AFTER_CONFIGURATION "AS INPUT TRI-STATED"
 set_global_assignment -name DEVICE_MIGRATION_LIST EP2C35F672C6
-set_global_assignment -name IGNORE_CLOCK_SETTINGS ON
+set_global_assignment -name IGNORE_CLOCK_SETTINGS OFF
 set_global_assignment -name TSU_REQUIREMENT "3 ns"
 set_global_assignment -name TCO_REQUIREMENT "6 ns"
 
@@ -45,7 +45,7 @@ set_global_assignment -name RESERVE_ALL_UNUSED_PINS_NO_OUTPUT_GND "AS INPUT TRI-
 
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_de2.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_types.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc_pll.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc2_pll.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/fifo.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_uart.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_cnt.vhd
@@ -69,7 +69,7 @@ set_global_assignment -name VHDL_FILE ../../vhdl/core/stack.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_avalon.vhd
 set_global_assignment -name VHDL_FILE jop_system.vhd
 set_global_assignment -name VHDL_FILE altera_europa_support.vhd
-set_global_assignment -name VHDL_FILE ../../sopc/toplevel/simple_sopc_jop.vhd
+set_global_assignment -name VHDL_FILE ../../sopc/toplevel/de2_sopc_jop.vhd
 
 
 set_location_assignment PIN_Y12 -to wd
@@ -117,7 +117,6 @@ set_location_assignment PIN_AE9 -to rama_nlb
 set_location_assignment PIN_AC11 -to rama_ncs
 
 set_global_assignment -name DEVICE_FILTER_SPEED_GRADE FASTEST
-set_global_assignment -name FMAX_REQUIREMENT "50 MHz"
 set_location_assignment PIN_N25 -to SW[0]
 set_location_assignment PIN_N26 -to SW[1]
 set_location_assignment PIN_P25 -to SW[2]
@@ -500,3 +499,10 @@ set_location_assignment PIN_V24 -to GPIO_1[32]
 set_location_assignment PIN_V23 -to GPIO_1[33]
 set_location_assignment PIN_W25 -to GPIO_1[34]
 set_location_assignment PIN_W23 -to GPIO_1[35]
+
+set_global_assignment -name ENABLE_CLOCK_LATENCY ON
+set_global_assignment -name AUTO_PACKED_REGISTERS_STRATIXII "MINIMIZE AREA WITH CHAINS"
+set_global_assignment -name PHYSICAL_SYNTHESIS_COMBO_LOGIC ON
+set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_DUPLICATION ON
+set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_RETIMING ON
+set_global_assignment -name CYCLONEII_OPTIMIZATION_TECHNIQUE SPEED
