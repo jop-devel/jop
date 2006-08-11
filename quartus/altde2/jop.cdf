@@ -3,10 +3,8 @@ JedecChain;
 	FileRevision(JESD32A);
 	DefaultMfr(6E);
 
-	P ActionCode(Ign)
-		Device PartName(EPM7064AET44) MfrSpec(OpMask(0));
 	P ActionCode(Cfg)
-		Device PartName(EP1C12Q240) Path("./") File("jop.sof") MfrSpec(OpMask(1));
+		Device PartName(EP2C35F672) Path("") File("jop.sof") MfrSpec(OpMask(1));
 
 ChainEnd;
 
