@@ -482,3 +482,7 @@ set_location_assignment PIN_V24 -to GPIO_1[32]
 set_location_assignment PIN_V23 -to GPIO_1[33]
 set_location_assignment PIN_W25 -to GPIO_1[34]
 set_location_assignment PIN_W23 -to GPIO_1[35]
+set_global_assignment -name IGNORE_CLOCK_SETTINGS ON
+set_global_assignment -name TSU_REQUIREMENT "3 ns"
+set_global_assignment -name TCO_REQUIREMENT "3 ns"
+set_global_assignment -name STRATIX_DEVICE_IO_STANDARD LVCMOS
