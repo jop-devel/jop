@@ -33,6 +33,9 @@ COM_FLAG=-e
 #COM_PORT=COM6
 #COM_FLAG=-e -usb
 
+BLASTER_TYPE=ByteBlasterMV
+#BLASTER_TYPE=USB-Blaster
+
 # 'some' different Quartus projects
 QPROJ=cycmin cycbaseio cycbg dspio lego cycfpu cyc256x16 sopcmin
 # if you want to build only one Quartus project use e.q.:
@@ -279,7 +282,7 @@ jsim: java_app
 	com.jopdesign.tools.JopSim java/target/dist/bin/$(JOPBIN)
 
 config_byteblast:
-	cd quartus/$(DLPROJ) && quartus_pgm -c ByteBlasterMV -m JTAG jop.cdf
+	cd quartus/$(DLPROJ) && quartus_pgm -c $(BLASTER_TYPE) -m JTAG jop.cdf
 
 config_usb:
 	cd rbf && ../USBRunner $(DLPROJ).cdf
@@ -300,7 +303,7 @@ prog_flash: java_app
 	down java/target/dist/bin/$(JOPBBIN) $(COM_PORT)
 	java -cp java/pc/dist/lib/jop-pc.jar udp.Flash java/target/dist/bin/$(JOPBIN) $(IPDEST)
 	java -cp java/pc/dist/lib/jop-pc.jar udp.Flash ttf/$(FLPROJ).ttf $(IPDEST)
-	quartus_pgm -c ByteBlasterMV -m JTAG -o p\;quartus/cycconf/cyc_conf.pof
+	quartus_pgm -c $(BLASTER_TYPE) -m JTAG -o p\;quartus/cycconf/cyc_conf.pof
 	
 #
 #	flash programming for the BG hardware as an example
@@ -312,16 +315,16 @@ prog_flash: java_app
 #	cd java/target && ./build.bat app oebb Main
 #	java -cp java/pc/dist/lib/jop-pc.jar udp.Flash java/target/dist/bin/oebb_Main.jop 192.168.1.2
 #	java -cp java/pc/dist/lib/jop-pc.jar udp.Flash ttf/$(FLPROJ).ttf 192.168.1.2
-#	quartus_pgm -c ByteBlasterMV -m JTAG -o p\;quartus/cycconf/cyc_conf.pof
+#	quartus_pgm -c $(BLASTER_TYPE) -m JTAG -o p\;quartus/cycconf/cyc_conf.pof
 	
 erase_flash:
 	java -cp java/pc/dist/lib/jop-pc.jar udp.Erase $(IPDEST)
 
 pld_init:
-	quartus_pgm -c ByteBlasterMV -m JTAG -o p\;quartus/cycconf/cyc_conf_init.pof
+	quartus_pgm -c $(BLASTER_TYPE) -m JTAG -o p\;quartus/cycconf/cyc_conf_init.pof
 
 pld_conf:
-	quartus_pgm -c ByteBlasterMV -m JTAG -o p\;quartus/cycconf/cyc_conf.pof
+	quartus_pgm -c $(BLASTER_TYPE) -m JTAG -o p\;quartus/cycconf/cyc_conf.pof
 
 oebb:
 	java -cp java/pc/dist/lib/jop-pc.jar udp.Flash java/target/dist/bin/oebb_Main.jop 192.168.1.2
@@ -349,8 +352,8 @@ ttf:
 # program the PLD.
 #
 xxx:
-	quartus_pgm -c ByteBlasterMV -m JTAG -o p\;jbc/cycbg.jbc
-	quartus_pgm -c ByteBlasterMV -m JTAG -o p\;jbc/cyc_conf.jbc
+	quartus_pgm -c $(BLASTER_TYPE) -m JTAG -o p\;jbc/cycbg.jbc
+	quartus_pgm -c $(BLASTER_TYPE) -m JTAG -o p\;jbc/cyc_conf.jbc
 
 
 #
@@ -372,7 +375,7 @@ jop_blink_test:
 		quartus_tan $$qp; \
 		cd quartus/$$target && quartus_cpf -c jop.cdf ../../jbc/$$target.jbc; \
 	done
-	cd quartus/$(DLPROJ) && quartus_pgm -c ByteBlasterMV -m JTAG jop.cdf
+	cd quartus/$(DLPROJ) && quartus_pgm -c $(BLASTER_TYPE) -m JTAG jop.cdf
 	e $(COM_PORT)
 
 
@@ -390,7 +393,7 @@ jop_testmon:
 		quartus_tan $$qp; \
 		cd quartus/$$target && quartus_cpf -c jop.cdf ../../jbc/$$target.jbc; \
 	done
-	cd quartus/$(DLPROJ) && quartus_pgm -c ByteBlasterMV -m JTAG jop.cdf
+	cd quartus/$(DLPROJ) && quartus_pgm -c $(BLASTER_TYPE) -m JTAG jop.cdf
 
 
 #
