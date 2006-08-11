@@ -89,10 +89,13 @@ sys_wr_mem:
 			ldi 0
 			stm	a
 
-			ldi	io_outp
-			stioa
+			ldi	io_wd
+			stmwa
 			ldi	0
-			stiod
+			stmwd
+			wait
+			wait
+
 rd_loop:
 
 
