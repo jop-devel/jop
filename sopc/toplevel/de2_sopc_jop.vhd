@@ -42,19 +42,30 @@ port (
 	rama_nub	: out std_logic;
 	rama_nwe	: out std_logic;
 
+	--
+	--	SDRAM
+	--
+	DRAM_CLK, DRAM_CKE		: out std_logic;
+	DRAM_ADDR				: out std_logic_vector(11 downto 0);
+	DRAM_BA_1, DRAM_BA_0	: buffer std_logic;
+	DRAM_CS_N, DRAM_CAS_N, DRAM_RAS_N, DRAM_WE_N : out std_logic;
+	DRAM_DQ					: inout std_logic_vector(15 downto 0);
+	DRAM_UDQM, DRAM_LDQM	: buffer std_logic;
+
 	wd			: out std_logic
 );
 end de2_sopc_jop;
 
 architecture rtl of de2_sopc_jop is
 
-component pll is
-generic (multiply_by : natural; divide_by : natural);
-port (
-	inclk0		: in std_logic;
-	c0			: out std_logic
-);
-end component;
+	component de2_sdram_pll is
+	generic (multiply_by : natural; divide_by : natural);
+	port (
+		inclk0		: in std_logic;
+		c0			: out std_logic;
+		c1			: out std_logic
+	);
+	end component;
 
 	signal clk_int			: std_logic;
 
@@ -70,6 +81,8 @@ end component;
 
 	signal reset_n			: std_logic;
 
+	signal ba, dqm			: std_logic_vector(1 downto 0);
+	
 begin
 
 	--
@@ -89,13 +102,15 @@ begin
 
 	reset_n <= not int_res;
 
-	pll_inst : pll generic map(
+	pll_sdram : de2_sdram_pll
+	generic map(
 		multiply_by => pll_mult,
 		divide_by => pll_div
 	)
 	port map (
-		inclk0	 => clk,
-		c0	 => clk_int
+		inclk0 => clk,
+		c0 => clk_int,
+		c1 => DRAM_CLK		-- -3ns
 	);
 
 	--	the SOPC generated top level
@@ -106,6 +121,17 @@ begin
 		ser_txd_from_the_jop_avalon_0 => ser_txd,
 		wd_from_the_jop_avalon_0 => wd,
 
+		-- the_sdram
+		zs_addr_from_the_sdram  => DRAM_ADDR,
+		zs_ba_from_the_sdram  => ba,
+		zs_cas_n_from_the_sdram  => DRAM_CAS_N,
+		zs_cke_from_the_sdram  => DRAM_CKE,
+		zs_cs_n_from_the_sdram  => DRAM_CS_N,
+		zs_dq_to_and_from_the_sdram  => DRAM_DQ,
+		zs_dqm_from_the_sdram  => dqm,
+		zs_ras_n_from_the_sdram  => DRAM_RAS_N,
+		zs_we_n_from_the_sdram  => DRAM_WE_N,
+
 		-- the_tri_state_bridge_0_avalon_slave
 		chipselect_n_to_the_ext_ram => rama_ncs,
 		read_n_to_the_ext_ram => rama_noe,
@@ -115,6 +141,11 @@ begin
 		write_n_to_the_ext_ram => rama_nwe
 	);
 	
+	DRAM_BA_1 <= ba(1);
+	DRAM_BA_0 <= ba(0);
+	DRAM_UDQM <= dqm(1);
+	DRAM_LDQM <= dqm(0);
+
 	rama_nlb <= byte_nena(0);
 	rama_nub <= byte_nena(1);
 
