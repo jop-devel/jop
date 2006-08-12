@@ -1,0 +1,415 @@
+#
+# This class.ptf file built by Component Editor
+# 2006.08.12.11:41:38
+#
+# DO NOT MODIFY THIS FILE
+# If you hand-modify this file you will likely
+# interfere with Component Editor's ability to
+# read and edit it. And then Component Editor
+# will overwrite your changes anyway. So, for
+# the very best results, just relax and
+# DO NOT MODIFY THIS FILE
+#
+CLASS avalon_test_slave
+{
+   CB_GENERATOR 
+   {
+      HDL_FILES 
+      {
+         FILE 
+         {
+            use_in_simulation = "1";
+            use_in_synthesis = "1";
+            type = "vhdl";
+            filepath = "hdl/avalon_test_slave.vhd";
+         }
+      }
+      top_module_name = "avalon_test_slave.vhd:avalon_test_slave";
+      emit_system_h = "0";
+      LIBRARIES 
+      {
+         library = "ieee.std_logic_1164.all";
+         library = "ieee.numeric_std.all";
+         library = "std.standard.all";
+      }
+   }
+   MODULE_DEFAULTS global_signals
+   {
+      class = "avalon_test_slave";
+      class_version = "1.0";
+      SYSTEM_BUILDER_INFO 
+      {
+         Instantiate_In_System_Module = "1";
+         Has_Clock = "1";
+         Top_Level_Ports_Are_Enumerated = "1";
+      }
+      COMPONENT_BUILDER 
+      {
+         GLS_SETTINGS 
+         {
+         }
+      }
+      PORT_WIRING 
+      {
+         PORT clk
+         {
+            width = "1";
+            width_expression = "";
+            direction = "input";
+            type = "clk";
+            is_shared = "0";
+            vhdl_record_name = "";
+            vhdl_record_type = "";
+         }
+         PORT reset
+         {
+            width = "1";
+            width_expression = "";
+            direction = "input";
+            type = "reset";
+            is_shared = "0";
+            vhdl_record_name = "";
+            vhdl_record_type = "";
+         }
+      }
+      WIZARD_SCRIPT_ARGUMENTS 
+      {
+         hdl_parameters 
+         {
+         }
+      }
+      SIMULATION 
+      {
+         DISPLAY 
+         {
+         }
+      }
+      SLAVE avalon_slave_0
+      {
+         SYSTEM_BUILDER_INFO 
+         {
+            Bus_Type = "avalon";
+            Address_Group = "1";
+            Has_Clock = "0";
+            Address_Width = "2";
+            Address_Alignment = "native";
+            Data_Width = "32";
+            Has_Base_Address = "1";
+            Has_IRQ = "0";
+            Setup_Time = "0cycles";
+            Hold_Time = "0cycles";
+            Read_Wait_States = "0cycles";
+            Write_Wait_States = "0cycles";
+            Read_Latency = "0";
+            Maximum_Pending_Read_Transactions = "0";
+            Active_CS_Through_Read_Latency = "0";
+            Is_Printable_Device = "0";
+            Is_Memory_Device = "0";
+            Is_Readable = "1";
+            Is_Writable = "1";
+            Minimum_Uninterrupted_Run_Length = "1";
+         }
+         COMPONENT_BUILDER 
+         {
+            AVS_SETTINGS 
+            {
+               Setup_Value = "0";
+               Read_Wait_Value = "0";
+               Write_Wait_Value = "0";
+               Hold_Value = "0";
+               Timing_Units = "cycles";
+               Read_Latency_Value = "0";
+               Minimum_Arbitration_Shares = "1";
+               Active_CS_Through_Read_Latency = "0";
+               Max_Pending_Read_Transactions_Value = "1";
+               Address_Alignment = "native";
+               Is_Printable_Device = "0";
+               Interleave_Bursts = "0";
+               interface_name = "Avalon Slave";
+               external_wait = "0";
+               Is_Memory_Device = "0";
+            }
+         }
+         PORT_WIRING 
+         {
+            PORT chipselect
+            {
+               width = "1";
+               width_expression = "";
+               direction = "input";
+               type = "chipselect";
+               is_shared = "0";
+               vhdl_record_name = "";
+               vhdl_record_type = "";
+            }
+            PORT address
+            {
+               width = "2";
+               width_expression = "";
+               direction = "input";
+               type = "address";
+               is_shared = "0";
+               vhdl_record_name = "";
+               vhdl_record_type = "";
+            }
+            PORT writedata
+            {
+               width = "32";
+               width_expression = "";
+               direction = "input";
+               type = "writedata";
+               is_shared = "0";
+               vhdl_record_name = "";
+               vhdl_record_type = "";
+            }
+            PORT read
+            {
+               width = "1";
+               width_expression = "";
+               direction = "input";
+               type = "read";
+               is_shared = "0";
+               vhdl_record_name = "";
+               vhdl_record_type = "";
+            }
+            PORT write
+            {
+               width = "1";
+               width_expression = "";
+               direction = "input";
+               type = "write";
+               is_shared = "0";
+               vhdl_record_name = "";
+               vhdl_record_type = "";
+            }
+            PORT readdata
+            {
+               width = "32";
+               width_expression = "";
+               direction = "output";
+               type = "readdata";
+               is_shared = "0";
+               vhdl_record_name = "";
+               vhdl_record_type = "";
+            }
+         }
+      }
+   }
+   USER_INTERFACE 
+   {
+      USER_LABELS 
+      {
+         name = "avalon_test_slave";
+         technology = "User Logic";
+      }
+      WIZARD_UI the_wizard_ui
+      {
+         title = "avalon_test_slave - {{ $MOD }}";
+         CONTEXT 
+         {
+            H = "WIZARD_SCRIPT_ARGUMENTS/hdl_parameters";
+            M = "";
+            SBI_global_signals = "SYSTEM_BUILDER_INFO";
+            SBI_avalon_slave_0 = "SLAVE avalon_slave_0/SYSTEM_BUILDER_INFO";
+         }
+         PAGES main
+         {
+            PAGE 1
+            {
+               align = "left";
+               title = "<b>avalon_test_slave 1.0</b> Settings";
+               layout = "vertical";
+               TEXT 
+               {
+                  title = "Built on: 2006.08.12.11:41:38";
+               }
+               TEXT 
+               {
+                  title = "Class name: avalon_test_slave";
+               }
+               TEXT 
+               {
+                  title = "Class version: 1.0";
+               }
+               TEXT 
+               {
+                  title = "Component name: avalon_test_slave";
+               }
+               TEXT 
+               {
+                  title = "Component Group: User Logic";
+               }
+            }
+         }
+      }
+   }
+   SOPC_Builder_Version = "6.00";
+   COMPONENT_BUILDER 
+   {
+      HDL_PARAMETERS 
+      {
+         # generated by CBDocument.getParameterContainer
+         # used only by Component Editor
+      }
+      SW_FILES 
+      {
+      }
+      built_on = "2006.08.12.11:41:38";
+      CACHED_HDL_INFO 
+      {
+         # cached hdl info, emitted by CBFrameRealtime.getDocumentCachedHDLInfoSection
+         # used only by Component Builder
+         FILE avalon_test_slave.vhd
+         {
+            file_mod = "Sat Aug 12 11:40:58 CEST 2006";
+            quartus_map_start = "Sat Aug 12 11:40:56 CEST 2006";
+            quartus_map_finished = "Sat Aug 12 11:41:04 CEST 2006";
+            #found 1 valid modules
+            WRAPPER avalon_test_slave
+            {
+               CLASS avalon_test_slave
+               {
+                  CB_GENERATOR 
+                  {
+                     HDL_FILES 
+                     {
+                        FILE 
+                        {
+                           use_in_simulation = "1";
+                           use_in_synthesis = "1";
+                           type = "";
+                           filepath = "D:/usr/cpu/jop/quartus/tmp/../../sopc/components/avalon_test_slave/hdl/avalon_test_slave.vhd";
+                        }
+                     }
+                     top_module_name = "avalon_test_slave";
+                     emit_system_h = "0";
+                     LIBRARIES 
+                     {
+                        library = "ieee.std_logic_1164.all";
+                        library = "ieee.numeric_std.all";
+                        library = "std.standard.all";
+                     }
+                  }
+                  MODULE_DEFAULTS global_signals
+                  {
+                     class = "avalon_test_slave";
+                     class_version = "1.0";
+                     SYSTEM_BUILDER_INFO 
+                     {
+                        Instantiate_In_System_Module = "1";
+                     }
+                     SLAVE avalon_slave_0
+                     {
+                        SYSTEM_BUILDER_INFO 
+                        {
+                           Bus_Type = "avalon";
+                        }
+                        PORT_WIRING 
+                        {
+                           PORT chipselect
+                           {
+                              width = "1";
+                              width_expression = "";
+                              direction = "input";
+                              type = "chipselect";
+                              is_shared = "0";
+                              vhdl_record_name = "";
+                              vhdl_record_type = "";
+                           }
+                           PORT address
+                           {
+                              width = "2";
+                              width_expression = "";
+                              direction = "input";
+                              type = "address";
+                              is_shared = "0";
+                              vhdl_record_name = "";
+                              vhdl_record_type = "";
+                           }
+                           PORT writedata
+                           {
+                              width = "32";
+                              width_expression = "";
+                              direction = "input";
+                              type = "writedata";
+                              is_shared = "0";
+                              vhdl_record_name = "";
+                              vhdl_record_type = "";
+                           }
+                           PORT read
+                           {
+                              width = "1";
+                              width_expression = "";
+                              direction = "input";
+                              type = "read";
+                              is_shared = "0";
+                              vhdl_record_name = "";
+                              vhdl_record_type = "";
+                           }
+                           PORT write
+                           {
+                              width = "1";
+                              width_expression = "";
+                              direction = "input";
+                              type = "write";
+                              is_shared = "0";
+                              vhdl_record_name = "";
+                              vhdl_record_type = "";
+                           }
+                           PORT readdata
+                           {
+                              width = "32";
+                              width_expression = "";
+                              direction = "output";
+                              type = "readdata";
+                              is_shared = "0";
+                              vhdl_record_name = "";
+                              vhdl_record_type = "";
+                           }
+                        }
+                     }
+                     PORT_WIRING 
+                     {
+                        PORT clk
+                        {
+                           width = "1";
+                           width_expression = "";
+                           direction = "input";
+                           type = "clk";
+                           is_shared = "0";
+                           vhdl_record_name = "";
+                           vhdl_record_type = "";
+                        }
+                        PORT reset
+                        {
+                           width = "1";
+                           width_expression = "";
+                           direction = "input";
+                           type = "reset";
+                           is_shared = "0";
+                           vhdl_record_name = "";
+                           vhdl_record_type = "";
+                        }
+                     }
+                  }
+                  USER_INTERFACE 
+                  {
+                     USER_LABELS 
+                     {
+                        name = "avalon_test_slave";
+                        technology = "imported components";
+                     }
+                  }
+                  SOPC_Builder_Version = "0.0";
+               }
+            }
+         }
+      }
+   }
+   ASSOCIATED_FILES 
+   {
+      Add_Program = "the_wizard_ui";
+      Edit_Program = "the_wizard_ui";
+      Generator_Program = "cb_generator.pl";
+   }
+}
