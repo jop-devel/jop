@@ -36,6 +36,7 @@
 --	2004-04-26	DTR is inverted conf_reg(0) => '1' means set DTR!
 --	2005-02-28	Changed default conf_reg to no hand shake (ignore ncts)
 --	2005-12-27	change interface to SimpCon
+--	2006-08-13	use 3 FFs for the rxd input at clk
 --
 
 
@@ -125,7 +126,7 @@ end component;
 	signal rf_full		: std_logic;
 	signal rf_half		: std_logic;
 
-	signal rxd_reg		: std_logic;
+	signal rxd_reg		: std_logic_vector(2 downto 0);
 	signal rx_buf		: std_logic_vector(2 downto 0);	-- sync in, filter
 	signal rx_d			: std_logic;					-- rx serial data
 	
@@ -217,6 +218,10 @@ begin
 
 	elsif rising_edge(clk) then
 
+		rxd_reg(0) <= rxd;			-- to avoid setup timing error in Quartus
+		rxd_reg(1) <= rxd_reg(0);
+		rxd_reg(2) <= rxd_reg(1);
+
 		if (clk16=clk16_cnt) then		-- 16 x serial clock
 			clk16 := 0;
 --
@@ -244,8 +249,7 @@ begin
 --
 --	sync in filter buffer
 --
-			rxd_reg <= rxd;			-- to avoid setup timing error in Quartus
-			rx_buf(0) <= rxd_reg;
+			rx_buf(0) <= rxd_reg(2);
 			rx_buf(2 downto 1) <= rx_buf(1 downto 0);
 		else
 			clk16 := clk16 + 1;
