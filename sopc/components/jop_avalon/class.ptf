@@ -1,6 +1,6 @@
 #
 # This class.ptf file built by Component Editor
-# 2006.08.10.23:08:10
+# 2006.08.13.19:26:23
 #
 # DO NOT MODIFY THIS FILE
 # If you hand-modify this file you will likely
@@ -114,7 +114,7 @@ CLASS jop_avalon
             Interrupt_Range = "";
             Is_Readable = "1";
             Is_Writable = "1";
-            Is_Big_Endian = "1";
+            Is_Big_Endian = "0";
             Register_Outgoing_Signals = "0";
          }
          COMPONENT_BUILDER 
@@ -127,7 +127,7 @@ CLASS jop_avalon
                irq_number_width = "0";
                irq_scheme = "none";
                Is_Asynchronous = "0";
-               Is_Big_Endian = "1";
+               Is_Big_Endian = "0";
             }
          }
          PORT_WIRING 
@@ -263,7 +263,7 @@ CLASS jop_avalon
                layout = "vertical";
                TEXT 
                {
-                  title = "Built on: 2006.08.10.23:08:10";
+                  title = "Built on: 2006.08.13.19:26:23";
                }
                TEXT 
                {
@@ -407,7 +407,7 @@ CLASS jop_avalon
       SW_FILES 
       {
       }
-      built_on = "2006.08.10.23:08:10";
+      built_on = "2006.08.13.19:26:23";
       CACHED_HDL_INFO 
       {
          # cached hdl info, emitted by CBFrameRealtime.getDocumentCachedHDLInfoSection
