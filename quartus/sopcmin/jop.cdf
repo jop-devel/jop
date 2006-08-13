@@ -6,7 +6,7 @@ JedecChain;
 	P ActionCode(Ign)
 		Device PartName(EPM7064AET44) MfrSpec(OpMask(0));
 	P ActionCode(Cfg)
-		Device PartName(EP1C12Q240) Path("./") File("jop.sof") MfrSpec(OpMask(1));
+		Device PartName(EP1C6Q240) Path("./") File("jop.sof") MfrSpec(OpMask(1));
 
 ChainEnd;
 
