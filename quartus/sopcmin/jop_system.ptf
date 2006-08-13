@@ -5,17 +5,17 @@ SYSTEM jop_system
    WIZARD_SCRIPT_ARGUMENTS 
    {
       device_family = "CYCLONE";
-      clock_freq = "20000000";
+      clock_freq = "50000000";
       generate_hdl = "1";
       generate_sdk = "1";
-      do_build_sim = "0";
+      do_build_sim = "1";
       hardcopy_compatible = "0";
       board_class = "";
       CLOCKS 
       {
          CLOCK clk
          {
-            frequency = "20000000";
+            frequency = "50000000";
             source = "External";
             display_name = "clk";
             Is_Clock_Source = "0";
@@ -31,8 +31,7 @@ SYSTEM jop_system
       base_column_width = "75";
       clock_column_width = "80";
       end_column_width = "75";
-      view_frame_window = "184:134:1120:787";
-      do_log_history = "0";
+      view_frame_window = "140:131:1120:787";
    }
    MODULE jop_avalon_0
    {
@@ -116,9 +115,8 @@ SYSTEM jop_system
             Interrupt_Range = "";
             Is_Readable = "1";
             Is_Writable = "1";
-            Is_Big_Endian = "1";
+            Is_Big_Endian = "0";
             Register_Outgoing_Signals = "0";
-            Adapts_To = "";
          }
          COMPONENT_BUILDER 
          {
@@ -130,7 +128,7 @@ SYSTEM jop_system
                irq_number_width = "0";
                irq_scheme = "none";
                Is_Asynchronous = "0";
-               Is_Big_Endian = "1";
+               Is_Big_Endian = "0";
             }
          }
          PORT_WIRING 
@@ -257,11 +255,11 @@ SYSTEM jop_system
             IRQ = "N/A";
             Register_Outgoing_Signals = "1";
             Register_Incoming_Signals = "1";
-            Address_Group = "0";
             MASTERED_BY jop_avalon_0/avalon_master
             {
                priority = "1";
             }
+            Address_Group = "0";
          }
       }
       MASTER tristate_master
@@ -293,7 +291,7 @@ SYSTEM jop_system
    }
    MODULE ext_ram
    {
-      class = "sram_256k_x_16bit";
+      class = "sram_256k_x_32bit";
       class_version = "1.0";
       SYSTEM_BUILDER_INFO 
       {
@@ -331,12 +329,12 @@ SYSTEM jop_system
          {
             SIGNAL x101
             {
-               name = "SRAM 256K x 16bit/global_signals";
+               name = "SRAM 256K x 32bit/global_signals";
                format = "Divider";
             }
             SIGNAL x102
             {
-               name = "SRAM 256K x 16bit/sram_tristate_slave";
+               name = "SRAM 256K x 32bit/avalon_tristate_slave";
                format = "Divider";
             }
             SIGNAL x103
@@ -368,7 +366,7 @@ SYSTEM jop_system
             }
          }
       }
-      SLAVE sram_tristate_slave
+      SLAVE avalon_tristate_slave
       {
          SYSTEM_BUILDER_INFO 
          {
@@ -377,12 +375,12 @@ SYSTEM jop_system
             Has_Clock = "0";
             Address_Width = "18";
             Address_Alignment = "dynamic";
-            Data_Width = "16";
+            Data_Width = "32";
             Has_Base_Address = "1";
             Has_IRQ = "0";
-            Setup_Time = "5ns";
-            Hold_Time = "5ns";
-            Read_Wait_States = "20ns";
+            Setup_Time = "0ns";
+            Hold_Time = "2ns";
+            Read_Wait_States = "18ns";
             Write_Wait_States = "10ns";
             Read_Latency = "0";
             Maximum_Pending_Read_Transactions = "0";
@@ -402,10 +400,10 @@ SYSTEM jop_system
          {
             ATS_SETTINGS 
             {
-               Setup_Value = "5";
-               Read_Wait_Value = "20";
+               Setup_Value = "0";
+               Read_Wait_Value = "18";
                Write_Wait_Value = "10";
-               Hold_Value = "5";
+               Hold_Value = "2";
                Timing_Units = "ns";
                Read_Latency_Value = "0";
                Minimum_Arbitration_Shares = "1";
@@ -423,7 +421,7 @@ SYSTEM jop_system
          {
             PORT data
             {
-               width = "16";
+               width = "32";
                width_expression = "";
                direction = "inout";
                type = "data";
@@ -443,7 +441,7 @@ SYSTEM jop_system
             }
             PORT byteenable_n
             {
-               width = "2";
+               width = "4";
                width_expression = "";
                direction = "input";
                type = "byteenable_n";

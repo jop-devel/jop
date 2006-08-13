@@ -43,7 +43,7 @@ set_global_assignment -name TCO_REQUIREMENT "6 ns"
 
 set_global_assignment -name RESERVE_ALL_UNUSED_PINS_NO_OUTPUT_GND "AS INPUT TRI-STATED"
 
-set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_20.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_60.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_types.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc_pll.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/fifo.vhd
@@ -247,4 +247,5 @@ set_location_assignment PIN_28 -to ser_ncts
 set_location_assignment PIN_177 -to ser_nrts
 
 set_global_assignment -name DEVICE_FILTER_SPEED_GRADE 8
-set_global_assignment -name FMAX_REQUIREMENT "20 MHz"
+
+set_global_assignment -name ENABLE_CLOCK_LATENCY ON
