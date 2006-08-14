@@ -1,0 +1,662 @@
+#
+# This class.ptf file built by Component Editor
+# 2006.08.14.01:51:28
+#
+# DO NOT MODIFY THIS FILE
+# If you hand-modify this file you will likely
+# interfere with Component Editor's ability to
+# read and edit it. And then Component Editor
+# will overwrite your changes anyway. So, for
+# the very best results, just relax and
+# DO NOT MODIFY THIS FILE
+#
+CLASS av_sram
+{
+   CB_GENERATOR 
+   {
+      HDL_FILES 
+      {
+         FILE 
+         {
+            use_in_simulation = "1";
+            use_in_synthesis = "1";
+            type = "vhdl";
+            filepath = "hdl/av_sram32.vhd";
+         }
+      }
+      top_module_name = "av_sram32.vhd:av_sram";
+      emit_system_h = "0";
+      LIBRARIES 
+      {
+         library = "ieee.std_logic_1164.all";
+         library = "ieee.numeric_std.all";
+         library = "std.standard.all";
+      }
+   }
+   MODULE_DEFAULTS global_signals
+   {
+      class = "av_sram";
+      class_version = "1.0";
+      SYSTEM_BUILDER_INFO 
+      {
+         Instantiate_In_System_Module = "1";
+         Has_Clock = "1";
+         Top_Level_Ports_Are_Enumerated = "1";
+      }
+      COMPONENT_BUILDER 
+      {
+         GLS_SETTINGS 
+         {
+         }
+      }
+      PORT_WIRING 
+      {
+         PORT clk
+         {
+            width = "1";
+            width_expression = "";
+            direction = "input";
+            type = "clk";
+            is_shared = "0";
+            vhdl_record_name = "";
+            vhdl_record_type = "";
+         }
+         PORT reset
+         {
+            width = "1";
+            width_expression = "";
+            direction = "input";
+            type = "reset";
+            is_shared = "0";
+            vhdl_record_name = "";
+            vhdl_record_type = "";
+         }
+      }
+      WIZARD_SCRIPT_ARGUMENTS 
+      {
+         hdl_parameters 
+         {
+            ram_ws = "";
+            addr_bits = "";
+         }
+      }
+      SIMULATION 
+      {
+         DISPLAY 
+         {
+         }
+      }
+      SLAVE avalon_slave
+      {
+         SYSTEM_BUILDER_INFO 
+         {
+            Bus_Type = "avalon";
+            Address_Group = "1";
+            Has_Clock = "0";
+            Address_Width = "-1";
+            Address_Alignment = "dynamic";
+            Data_Width = "32";
+            Has_Base_Address = "1";
+            Has_IRQ = "0";
+            Setup_Time = "0";
+            Hold_Time = "0";
+            Read_Wait_States = "peripheral_controlled";
+            Write_Wait_States = "peripheral_controlled";
+            Read_Latency = "0";
+            Maximum_Pending_Read_Transactions = "0";
+            Active_CS_Through_Read_Latency = "0";
+            Is_Printable_Device = "0";
+            Is_Memory_Device = "1";
+            Is_Readable = "1";
+            Is_Writable = "1";
+            Minimum_Uninterrupted_Run_Length = "1";
+         }
+         COMPONENT_BUILDER 
+         {
+            AVS_SETTINGS 
+            {
+               Setup_Value = "0";
+               Read_Wait_Value = "1";
+               Write_Wait_Value = "1";
+               Hold_Value = "0";
+               Timing_Units = "cycles";
+               Read_Latency_Value = "0";
+               Minimum_Arbitration_Shares = "1";
+               Active_CS_Through_Read_Latency = "0";
+               Max_Pending_Read_Transactions_Value = "1";
+               Address_Alignment = "dynamic";
+               Is_Printable_Device = "0";
+               Interleave_Bursts = "0";
+               interface_name = "Avalon Slave";
+               external_wait = "1";
+               Is_Memory_Device = "1";
+            }
+         }
+         PORT_WIRING 
+         {
+            PORT address
+            {
+               width = "-1";
+               width_expression = "((addr_bits - 1)) - (0) + 1";
+               direction = "input";
+               type = "address";
+               is_shared = "0";
+               vhdl_record_name = "";
+               vhdl_record_type = "";
+            }
+            PORT chipselect
+            {
+               width = "1";
+               width_expression = "";
+               direction = "input";
+               type = "chipselect";
+               is_shared = "0";
+               vhdl_record_name = "";
+               vhdl_record_type = "";
+            }
+            PORT read
+            {
+               width = "1";
+               width_expression = "";
+               direction = "input";
+               type = "read";
+               is_shared = "0";
+               vhdl_record_name = "";
+               vhdl_record_type = "";
+            }
+            PORT write
+            {
+               width = "1";
+               width_expression = "";
+               direction = "input";
+               type = "write";
+               is_shared = "0";
+               vhdl_record_name = "";
+               vhdl_record_type = "";
+            }
+            PORT writedata
+            {
+               width = "32";
+               width_expression = "";
+               direction = "input";
+               type = "writedata";
+               is_shared = "0";
+               vhdl_record_name = "";
+               vhdl_record_type = "";
+            }
+            PORT readdata
+            {
+               width = "32";
+               width_expression = "";
+               direction = "output";
+               type = "readdata";
+               is_shared = "0";
+               vhdl_record_name = "";
+               vhdl_record_type = "";
+            }
+            PORT waitrequest
+            {
+               width = "1";
+               width_expression = "";
+               direction = "output";
+               type = "waitrequest";
+               is_shared = "0";
+               vhdl_record_name = "";
+               vhdl_record_type = "";
+            }
+            PORT ram_addr
+            {
+               width = "-1";
+               width_expression = "((addr_bits - 1)) - (0) + 1";
+               direction = "output";
+               type = "export";
+               is_shared = "0";
+               vhdl_record_name = "";
+               vhdl_record_type = "";
+            }
+            PORT ram_data
+            {
+               width = "32";
+               width_expression = "";
+               direction = "inout";
+               type = "export";
+               is_shared = "0";
+               vhdl_record_name = "";
+               vhdl_record_type = "";
+            }
+            PORT ram_noe
+            {
+               width = "1";
+               width_expression = "";
+               direction = "output";
+               type = "export";
+               is_shared = "0";
+               vhdl_record_name = "";
+               vhdl_record_type = "";
+            }
+            PORT ram_nwe
+            {
+               width = "1";
+               width_expression = "";
+               direction = "output";
+               type = "export";
+               is_shared = "0";
+               vhdl_record_name = "";
+               vhdl_record_type = "";
+            }
+            PORT ram_ncs
+            {
+               width = "1";
+               width_expression = "";
+               direction = "output";
+               type = "export";
+               is_shared = "0";
+               vhdl_record_name = "";
+               vhdl_record_type = "";
+            }
+         }
+      }
+   }
+   USER_INTERFACE 
+   {
+      USER_LABELS 
+      {
+         name = "av_sram";
+         technology = "JOP";
+      }
+      WIZARD_UI the_wizard_ui
+      {
+         title = "av_sram - {{ $MOD }}";
+         CONTEXT 
+         {
+            H = "WIZARD_SCRIPT_ARGUMENTS/hdl_parameters";
+            M = "";
+            SBI_global_signals = "SYSTEM_BUILDER_INFO";
+            SBI_avalon_slave = "SLAVE avalon_slave/SYSTEM_BUILDER_INFO";
+            # The following signals have parameterized widths:
+            PORT_address = "SLAVE avalon_slave/PORT_WIRING/PORT address";
+            PORT_ram_addr = "SLAVE avalon_slave/PORT_WIRING/PORT ram_addr";
+         }
+         PAGES main
+         {
+            PAGE 1
+            {
+               align = "left";
+               title = "<b>av_sram 1.0</b> Settings";
+               layout = "vertical";
+               TEXT 
+               {
+                  title = "Built on: 2006.08.14.01:51:28";
+               }
+               TEXT 
+               {
+                  title = "Class name: av_sram";
+               }
+               TEXT 
+               {
+                  title = "Class version: 1.0";
+               }
+               TEXT 
+               {
+                  title = "Component name: av_sram";
+               }
+               TEXT 
+               {
+                  title = "Component Group: JOP";
+               }
+               GROUP parameters
+               {
+                  title = "Parameters";
+                  layout = "form";
+                  align = "left";
+                  EDIT e1
+                  {
+                     id = "ram_ws";
+                     editable = "1";
+                     title = "ram_ws:";
+                     columns = "40";
+                     tooltip = "";
+                     DATA 
+                     {
+                        $H/ram_ws = "$";
+                     }
+                     q = "'";
+                     warning = "{{ if(!(regexp('ugly_'+$H/ram_ws,'ugly_[0-9]*'+$q+'[bB][01][_01]*')||regexp('ugly_'+$H/ram_ws,'ugly_[0-9]*'+$q+'[hH][0-9a-fA-F][_0-9a-fA-F]*')||regexp('ugly_'+$H/ram_ws,'ugly_[0-9]*'+$q+'[oO][0-7][_0-7]*')||regexp('ugly_'+$H/ram_ws,'ugly_0x[0-9a-fA-F]+')||regexp('ugly_'+$H/ram_ws,'ugly_-?[0-9]+')))'ram_ws must be numeric constant, not '+$H/ram_ws; }}";
+                  }
+                  EDIT e2
+                  {
+                     id = "addr_bits";
+                     editable = "1";
+                     title = "addr_bits:";
+                     columns = "40";
+                     tooltip = "";
+                     DATA 
+                     {
+                        $H/addr_bits = "$";
+                     }
+                     q = "'";
+                     warning = "{{ if(!(regexp('ugly_'+$H/addr_bits,'ugly_[0-9]*'+$q+'[bB][01][_01]*')||regexp('ugly_'+$H/addr_bits,'ugly_[0-9]*'+$q+'[hH][0-9a-fA-F][_0-9a-fA-F]*')||regexp('ugly_'+$H/addr_bits,'ugly_[0-9]*'+$q+'[oO][0-7][_0-7]*')||regexp('ugly_'+$H/addr_bits,'ugly_0x[0-9a-fA-F]+')||regexp('ugly_'+$H/addr_bits,'ugly_-?[0-9]+')))'addr_bits must be numeric constant, not '+$H/addr_bits; }}";
+                  }
+               }
+               GROUP variable_port_widths
+               {
+                  # This group is for display only, to preview parameterized port widths
+                  title = "Parameterized Signal Widths";
+                  layout = "form";
+                  align = "left";
+                  EDIT address_width
+                  {
+                     id = "address_width";
+                     editable = "0";
+                     title = "address[((addr_bits - 1)) - (0) + 1]:";
+                     tooltip = "<b>address[((addr_bits - 1)) - (0) + 1]</b><br> direction: input<br> signal type: address";
+                     # This expression should emulate the HDL, and assign the port width
+                     dummy = "{{ $PORT_address/width = (int((( ( $H/addr_bits )  - 1)) - (0) + 1-1) - int(0) + 1); }}";
+                     dummy_dummy = "{{ $SBI_avalon_slave/Address_Width = $PORT_address/width; }}";
+                     DATA 
+                     {
+                        # The EDIT field is noneditable, so this just reads the current width.
+                        $PORT_address/width = "$";
+                     }
+                     warning = "{{ if($PORT_address/width <= 0)('width of address must be greater than zero' ) }}";
+                  }
+                  EDIT ram_addr_width
+                  {
+                     id = "ram_addr_width";
+                     editable = "0";
+                     title = "ram_addr[((addr_bits - 1)) - (0) + 1]:";
+                     tooltip = "<b>ram_addr[((addr_bits - 1)) - (0) + 1]</b><br> direction: output<br> signal type: export";
+                     # This expression should emulate the HDL, and assign the port width
+                     dummy = "{{ $PORT_ram_addr/width = (int((( ( $H/addr_bits )  - 1)) - (0) + 1-1) - int(0) + 1); }}";
+                     DATA 
+                     {
+                        # The EDIT field is noneditable, so this just reads the current width.
+                        $PORT_ram_addr/width = "$";
+                     }
+                     warning = "{{ if($PORT_ram_addr/width <= 0)('width of ram_addr must be greater than zero' ) }}";
+                  }
+               }
+            }
+         }
+      }
+   }
+   SOPC_Builder_Version = "6.00";
+   COMPONENT_BUILDER 
+   {
+      HDL_PARAMETERS 
+      {
+         # generated by CBDocument.getParameterContainer
+         # used only by Component Editor
+         HDL_PARAMETER ram_ws
+         {
+            parameter_name = "ram_ws";
+            type = "integer";
+            default_value = "";
+            editable = "1";
+            tooltip = "";
+         }
+         HDL_PARAMETER addr_bits
+         {
+            parameter_name = "addr_bits";
+            type = "integer";
+            default_value = "";
+            editable = "1";
+            tooltip = "";
+         }
+      }
+      SW_FILES 
+      {
+      }
+      built_on = "2006.08.14.01:51:28";
+      CACHED_HDL_INFO 
+      {
+         # cached hdl info, emitted by CBFrameRealtime.getDocumentCachedHDLInfoSection
+         # used only by Component Builder
+         FILE av_sram32.vhd
+         {
+            file_mod = "Mon Aug 14 01:50:52 CEST 2006";
+            quartus_map_start = "Mon Aug 14 01:51:09 CEST 2006";
+            quartus_map_finished = "Mon Aug 14 01:51:17 CEST 2006";
+            #found 1 valid modules
+            WRAPPER av_sram
+            {
+               CLASS av_sram
+               {
+                  CB_GENERATOR 
+                  {
+                     HDL_FILES 
+                     {
+                        FILE 
+                        {
+                           use_in_simulation = "1";
+                           use_in_synthesis = "1";
+                           type = "";
+                           filepath = "D:/usr/cpu/jop/quartus/avsc_jop100_vhdl_avsram/../../sopc/components/av_sram/hdl/av_sram32.vhd";
+                        }
+                     }
+                     top_module_name = "av_sram";
+                     emit_system_h = "0";
+                     LIBRARIES 
+                     {
+                        library = "ieee.std_logic_1164.all";
+                        library = "ieee.numeric_std.all";
+                        library = "std.standard.all";
+                     }
+                  }
+                  MODULE_DEFAULTS global_signals
+                  {
+                     class = "av_sram";
+                     class_version = "1.0";
+                     SYSTEM_BUILDER_INFO 
+                     {
+                        Instantiate_In_System_Module = "1";
+                     }
+                     SLAVE avalon_slave_0
+                     {
+                        SYSTEM_BUILDER_INFO 
+                        {
+                           Bus_Type = "avalon";
+                        }
+                        PORT_WIRING 
+                        {
+                           PORT address
+                           {
+                              width = "-1";
+                              width_expression = "((addr_bits - 1)) - (0) + 1";
+                              direction = "input";
+                              type = "address";
+                              is_shared = "0";
+                              vhdl_record_name = "";
+                              vhdl_record_type = "";
+                           }
+                           PORT chipselect
+                           {
+                              width = "1";
+                              width_expression = "";
+                              direction = "input";
+                              type = "chipselect";
+                              is_shared = "0";
+                              vhdl_record_name = "";
+                              vhdl_record_type = "";
+                           }
+                           PORT read
+                           {
+                              width = "1";
+                              width_expression = "";
+                              direction = "input";
+                              type = "read";
+                              is_shared = "0";
+                              vhdl_record_name = "";
+                              vhdl_record_type = "";
+                           }
+                           PORT write
+                           {
+                              width = "1";
+                              width_expression = "";
+                              direction = "input";
+                              type = "write";
+                              is_shared = "0";
+                              vhdl_record_name = "";
+                              vhdl_record_type = "";
+                           }
+                           PORT writedata
+                           {
+                              width = "32";
+                              width_expression = "";
+                              direction = "input";
+                              type = "writedata";
+                              is_shared = "0";
+                              vhdl_record_name = "";
+                              vhdl_record_type = "";
+                           }
+                           PORT readdata
+                           {
+                              width = "32";
+                              width_expression = "";
+                              direction = "output";
+                              type = "readdata";
+                              is_shared = "0";
+                              vhdl_record_name = "";
+                              vhdl_record_type = "";
+                           }
+                           PORT waitrequest
+                           {
+                              width = "1";
+                              width_expression = "";
+                              direction = "output";
+                              type = "waitrequest";
+                              is_shared = "0";
+                              vhdl_record_name = "";
+                              vhdl_record_type = "";
+                           }
+                           PORT ram_addr
+                           {
+                              width = "-1";
+                              width_expression = "((addr_bits - 1)) - (0) + 1";
+                              direction = "output";
+                              type = "export";
+                              is_shared = "0";
+                              vhdl_record_name = "";
+                              vhdl_record_type = "";
+                           }
+                           PORT ram_data
+                           {
+                              width = "32";
+                              width_expression = "";
+                              direction = "inout";
+                              type = "export";
+                              is_shared = "0";
+                              vhdl_record_name = "";
+                              vhdl_record_type = "";
+                           }
+                           PORT ram_noe
+                           {
+                              width = "1";
+                              width_expression = "";
+                              direction = "output";
+                              type = "export";
+                              is_shared = "0";
+                              vhdl_record_name = "";
+                              vhdl_record_type = "";
+                           }
+                           PORT ram_nwe
+                           {
+                              width = "1";
+                              width_expression = "";
+                              direction = "output";
+                              type = "export";
+                              is_shared = "0";
+                              vhdl_record_name = "";
+                              vhdl_record_type = "";
+                           }
+                        }
+                     }
+                     SLAVE nios_custom_instruction_slave_0
+                     {
+                        SYSTEM_BUILDER_INFO 
+                        {
+                           Bus_Type = "nios_custom_instruction";
+                        }
+                        PORT_WIRING 
+                        {
+                           PORT ram_ncs
+                           {
+                              width = "1";
+                              width_expression = "";
+                              direction = "output";
+                              type = "export";
+                              is_shared = "0";
+                              vhdl_record_name = "";
+                              vhdl_record_type = "";
+                           }
+                        }
+                     }
+                     PORT_WIRING 
+                     {
+                        PORT clk
+                        {
+                           width = "1";
+                           width_expression = "";
+                           direction = "input";
+                           type = "clk";
+                           is_shared = "0";
+                           vhdl_record_name = "";
+                           vhdl_record_type = "";
+                        }
+                        PORT reset
+                        {
+                           width = "1";
+                           width_expression = "";
+                           direction = "input";
+                           type = "reset";
+                           is_shared = "0";
+                           vhdl_record_name = "";
+                           vhdl_record_type = "";
+                        }
+                     }
+                  }
+                  USER_INTERFACE 
+                  {
+                     USER_LABELS 
+                     {
+                        name = "av_sram";
+                        technology = "imported components";
+                     }
+                  }
+                  SOPC_Builder_Version = "0.0";
+                  COMPONENT_BUILDER 
+                  {
+                     HDL_PARAMETERS 
+                     {
+                        # generated by CBDocument.getParameterContainer
+                        # used only by Component Editor
+                        HDL_PARAMETER ram_ws
+                        {
+                           parameter_name = "ram_ws";
+                           type = "integer";
+                           default_value = "";
+                           editable = "1";
+                           tooltip = "";
+                        }
+                        HDL_PARAMETER addr_bits
+                        {
+                           parameter_name = "addr_bits";
+                           type = "integer";
+                           default_value = "";
+                           editable = "1";
+                           tooltip = "";
+                        }
+                     }
+                  }
+               }
+            }
+         }
+      }
+   }
+   ASSOCIATED_FILES 
+   {
+      Add_Program = "the_wizard_ui";
+      Edit_Program = "the_wizard_ui";
+      Generator_Program = "cb_generator.pl";
+   }
+}
