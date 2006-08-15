@@ -42,24 +42,27 @@ public class Flash {
 //
 //			should read 0x98 and 0x73
 //
-		i = Native.rdMem(0x100000);
-		j = Native.rdMem(0x100000);
+		i = Native.rdMem(0x100000);	// Manufacturer
+		j = Native.rdMem(0x100000);	// Size
 		Dbg.wr("NAND ");
 		Dbg.hexVal(i);
 		Dbg.hexVal(j);
 		if (i==0x198) {
 			Dbg.wr("Toshiba ");
-			if (j==0x173) {
-				Dbg.wr("16 MB\n");
-			} else if (j==0x175) {
-				Dbg.wr("32 MB\n");
-			} else if (j==0x176) {
-				Dbg.wr("64 MB\n");
-			} else if (j==0x179) {
-				Dbg.wr("128 MB\n");
-			} else {
-				Dbg.wr("error reading NAND\n");
-			}
+		} else if (i==0x120) {
+			Dbg.wr("ST ");
+		} else {
+			Dbg.wr("Unknown manufacturer\n");
+		}
+			
+		if (j==0x173) {
+			Dbg.wr("16 MB\n");
+		} else if (j==0x175) {
+			Dbg.wr("32 MB\n");
+		} else if (j==0x176) {
+			Dbg.wr("64 MB\n");
+		} else if (j==0x179) {
+			Dbg.wr("128 MB\n");
 		} else {
 			Dbg.wr("error reading NAND\n");
 		}
@@ -68,8 +71,8 @@ public class Flash {
 //			read status, should be 0xc0
 //
 		Native.wrMem(0x70, 0x100001);
-		i = Native.rdMem(0x100000);
-		j = Native.rdMem(0x100000);
+		i = Native.rdMem(0x100000)&0x1c1;
+		j = Native.rdMem(0x100000)&0x1c1;
 		Dbg.hexVal(i);
 		Dbg.hexVal(j);
 		if (i==0x1c0 && j==0x1c0) {
