@@ -16,6 +16,8 @@
 --
 --
 --	2006-08-01	Adapted from sc_ram32.vhd
+--	2006-08-16	Rebuilding the already working (lost) version
+--				Use wait_state, din register without MUX
 --
 
 Library IEEE;
@@ -339,14 +341,6 @@ begin
 
 		if rd='1' or wr='1' then
 			wait_state <= to_unsigned(ram_ws+1, 4);
---			cnt <= "11";
-		else
---			if state=rd1_l or state=rd2_l or state=wr_l then
---				-- if wait_state<4 then
---				if wait_state(3 downto 2)="00" then
---					cnt <= wait_state(1 downto 0)-1;
---				end if;
---			end if;
 		end if;
 
 		if state=rd2_h or state=wr_idl then
@@ -358,6 +352,12 @@ begin
 --			end if;
 		end if;
 
+		if state=rd1_l or state=rd2_l or state=wr_l then
+			-- if wait_state<4 then
+			if wait_state(3 downto 2)="00" then
+				cnt <= wait_state(1 downto 0)-1;
+			end if;
+		end if;
 
 	end if;
 end process;
