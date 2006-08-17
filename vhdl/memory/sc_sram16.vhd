@@ -96,7 +96,6 @@ begin
 
 		ram_addr <= (others => '0');
 		ram_dout <= (others => '0');
---		rd_data <= (others => '0');
 		ram_dout_low <= (others => '0');
 
 	elsif rising_edge(clk) then
@@ -116,14 +115,12 @@ begin
 		end if;
 		if rd_data_ena_h='1' then
 			ram_din_reg(15 downto 0) <= ram_din;
---			rd_data(31 downto 16) <= ram_din;
 		end if;
 		if rd_data_ena_l='1' then
 			-- move first word to higher half
 			ram_din_reg(31 downto 16) <= ram_din_reg(15 downto 0);
 			-- read second word
 			ram_din_reg(15 downto 0) <= ram_din;
---			rd_data(15 downto 0) <= ram_din;
 		end if;
 
 	end if;
@@ -314,8 +311,14 @@ process(next_state, state)
 begin
 
 	nwr_int <= '1';
-	if (state=wr_l and next_state=wr_l) or 
-		(state=wr_h and next_state=wr_h) then
+	-- this is the 'correct' version wich needs
+	-- at minimum 2 cycles for the RAM access
+--	if (state=wr_l and next_state=wr_l) or 
+--		(state=wr_h and next_state=wr_h) then
+	-- Slightly out of the SRAM spec. nwr goes
+	-- low befor ncs to allow single cycle
+	-- access
+	if next_state=wr_l or next_state=wr_h then
 
 		nwr_int <= '0';
 	end if;
