@@ -195,16 +195,16 @@ begin
 			next_state <= idl;
 			-- This should do to give us a pipeline
 			-- level of 2 for read
---			if rd='1' then
---				if ram_ws=0 then
---					-- then we omit state rd1!
---					next_state <= rd2_h;
---				else
---					next_state <= rd1_h;
---				end if;
---			elsif wr='1' then
---				next_state <= wr_h;
---			end if;
+			if rd='1' then
+				if ram_ws=0 then
+					-- then we omit state rd1!
+					next_state <= rd2_h;
+				else
+					next_state <= rd1_h;
+				end if;
+			elsif wr='1' then
+				next_state <= wr_h;
+			end if;
 			
 		-- the WS state
 		when wr_h =>
@@ -345,17 +345,22 @@ begin
 
 		if state=rd2_h or state=wr_idl then
 			wait_state <= to_unsigned(ram_ws+1, 4);
---			if ram_ws<3 then
---				cnt <= to_unsigned(ram_ws+1, 2);
---			else
---				cnt <= "11";
---			end if;
+			if ram_ws<3 then
+				cnt <= to_unsigned(ram_ws+1, 2);
+			else
+				cnt <= "11";
+			end if;
 		end if;
 
 		if state=rd1_l or state=rd2_l or state=wr_l then
-			-- if wait_state<4 then
-			if wait_state(3 downto 2)="00" then
-				cnt <= wait_state(1 downto 0)-1;
+			-- take care for pipelined cach transfer
+			-- there is no idl state and cnt should
+			-- go back to "11"
+			if rd='0' and wr='0' then
+				-- if wait_state<4 then
+				if wait_state(3 downto 2)="00" then
+					cnt <= wait_state(1 downto 0)-1;
+				end if;
 			end if;
 		end if;
 
