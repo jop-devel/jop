@@ -21,7 +21,7 @@ entity jop is
 generic (
 	exta_width	: integer := 3;		-- length of exta part in JOP microcode
 	io_addr_bits	: integer := 7;	-- address bits of internal io
-	ram_cnt		: integer := 5;		-- clock cycles for external ram
+	ram_cnt		: integer := 2;		-- clock cycles for external ram
 --	rom_cnt		: integer := 3;		-- clock cycles for external rom OK for 20 MHz
 	rom_cnt		: integer := 15;	-- clock cycles for external rom for 100 MHz
 	jpc_width	: integer := 12;	-- address bits of java bytecode pc = cache size
