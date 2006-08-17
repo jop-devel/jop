@@ -94,7 +94,7 @@ begin
 
 		ram_addr <= (others => '0');
 		ram_dout <= (others => '0');
-		rd_data <= (others => '0');
+--		rd_data <= (others => '0');
 		ram_dout_low <= (others => '0');
 
 	elsif rising_edge(clk) then
@@ -113,21 +113,21 @@ begin
 			ram_dout <= ram_dout_low;
 		end if;
 		if rd_data_ena_h='1' then
---			ram_din_reg(15 downto 0) <= ram_din;
-			rd_data(31 downto 16) <= ram_din;
+			ram_din_reg(15 downto 0) <= ram_din;
+--			rd_data(31 downto 16) <= ram_din;
 		end if;
 		if rd_data_ena_l='1' then
---			-- move first word to higher half
---			ram_din_reg(31 downto 16) <= ram_din_reg(15 downto 0);
---			-- read second word
---			ram_din_reg(15 downto 0) <= ram_din;
-			rd_data(15 downto 0) <= ram_din;
+			-- move first word to higher half
+			ram_din_reg(31 downto 16) <= ram_din_reg(15 downto 0);
+			-- read second word
+			ram_din_reg(15 downto 0) <= ram_din;
+--			rd_data(15 downto 0) <= ram_din;
 		end if;
 
 	end if;
 end process;
 
---	rd_data <= ram_din_reg;
+	rd_data <= ram_din_reg;
 
 --
 --	'delay' nwe 1/2 cycle -> change on falling edge
