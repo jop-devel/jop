@@ -2,8 +2,7 @@
 --	sc_sram16.vhd
 --
 --	SimpCon compliant external memory interface
---	for 16-bit SRAM (e.g. Altera DE2 board or
---	half of Cycore).
+--	for 16-bit SRAM (e.g. Altera DE2 board)
 --
 --	High 16-bit word is at lower address
 --
@@ -17,7 +16,6 @@
 --
 --
 --	2006-08-01	Adapted from sc_ram32.vhd
---	2006-08-08	Hardcoded 2 cycle memory interface
 --
 
 Library IEEE;
@@ -60,8 +58,8 @@ architecture rtl of sc_mem_if is
 --	signals for mem interface
 --
 	type state_type		is (
-							idl, rd1_h, rd2_h, rd_idl, rd1_l, rd2_l,
-							wr1_h, wr2_h, wr_idl, wr1_l, wr2_l
+							idl, rd1_h, rd2_h, rd1_l, rd2_l,
+							wr_h, wr_idl, wr_l
 						);
 	signal state 		: state_type;
 	signal next_state	: state_type;
@@ -96,8 +94,7 @@ begin
 
 		ram_addr <= (others => '0');
 		ram_dout <= (others => '0');
---		rd_data <= (others => '0');
---		ram_din_reg <= (others => '0');
+		rd_data <= (others => '0');
 		ram_dout_low <= (others => '0');
 
 	elsif rising_edge(clk) then
@@ -116,21 +113,21 @@ begin
 			ram_dout <= ram_dout_low;
 		end if;
 		if rd_data_ena_h='1' then
-			ram_din_reg(15 downto 0) <= ram_din;
---			rd_data(31 downto 16) <= ram_din;
+--			ram_din_reg(15 downto 0) <= ram_din;
+			rd_data(31 downto 16) <= ram_din;
 		end if;
 		if rd_data_ena_l='1' then
-			-- move first word to higher half
-			ram_din_reg(31 downto 16) <= ram_din_reg(15 downto 0);
-			-- read second word
-			ram_din_reg(15 downto 0) <= ram_din;
---			rd_data(15 downto 0) <= ram_din;
+--			-- move first word to higher half
+--			ram_din_reg(31 downto 16) <= ram_din_reg(15 downto 0);
+--			-- read second word
+--			ram_din_reg(15 downto 0) <= ram_din;
+			rd_data(15 downto 0) <= ram_din;
 		end if;
 
 	end if;
 end process;
 
-	rd_data <= ram_din_reg;
+--	rd_data <= ram_din_reg;
 
 --
 --	'delay' nwe 1/2 cycle -> change on falling edge
@@ -160,40 +157,72 @@ begin
 
 		when idl =>
 			if rd='1' then
-				next_state <= rd1_h;
+				if ram_ws=0 then
+					-- then we omit state rd1!
+					next_state <= rd2_h;
+				else
+					next_state <= rd1_h;
+				end if;
 			elsif wr='1' then
-				next_state <= wr1_h;
+				next_state <= wr_h;
 			end if;
 
+		-- the WS state
 		when rd1_h =>
-			next_state <= rd2_h;
+			if wait_state=2 then
+				next_state <= rd2_h;
+			end if;
 
 		when rd2_h =>
-			next_state <= rd_idl;
+			-- go to read low word
+			if ram_ws=0 then
+				-- then we omit state rd1!
+				next_state <= rd2_l;
+			else
+				next_state <= rd1_l;
+			end if;
 
-		when rd_idl =>
-			next_state <= rd1_l;
-
+		-- the WS state
 		when rd1_l =>
-			next_state <= rd2_l;
+			if wait_state=2 then
+				next_state <= rd2_l;
+			end if;
 
+		-- last read state
 		when rd2_l =>
 			next_state <= idl;
+			-- This should do to give us a pipeline
+			-- level of 2 for read
+--			if rd='1' then
+--				if ram_ws=0 then
+--					-- then we omit state rd1!
+--					next_state <= rd2_h;
+--				else
+--					next_state <= rd1_h;
+--				end if;
+--			elsif wr='1' then
+--				next_state <= wr_h;
+--			end if;
 			
-		when wr1_h =>
-			next_state <= wr2_h;
+		-- the WS state
+		when wr_h =>
+-- TODO: check what happens on ram_ws=0
+-- TODO: do we need a write pipelining?
+--	not at the moment, but parhaps later when
+--	we write the stack content to main memory
+			if wait_state=1 then
+				next_state <= wr_idl;
+			end if;
 
-		when wr2_h =>
-			next_state <= wr_idl;
-
+		-- one idle state for nwr to go high
 		when wr_idl =>
-			next_state <= wr1_l;
+			next_state <= wr_l;
 
-		when wr1_l =>
-			next_state <= wr2_l;
-
-		when wr2_l =>
-			next_state <= idl;
+		-- the WS state
+		when wr_l =>
+			if wait_state=1 then
+				next_state <= idl;
+			end if;
 
 	end case;
 				
@@ -215,8 +244,6 @@ begin
 		rd_data_ena_l <= '0';
 		inc_addr <= '0';
 		wr_low <= '0';
-		nwr_int <= '1';
-
 	elsif rising_edge(clk) then
 
 		state <= next_state;
@@ -227,7 +254,6 @@ begin
 		rd_data_ena_l <= '0';
 		inc_addr <= '0';
 		wr_low <= '0';
-		nwr_int <= '1';
 
 		case next_state is
 
@@ -238,46 +264,38 @@ begin
 				ram_ncs <= '0';
 				ram_noe <= '0';
 
+			-- high word last read state
 			when rd2_h =>
 				ram_ncs <= '0';
 				ram_noe <= '0';
 				rd_data_ena_h <= '1';
-				
-			when rd_idl =>
-				ram_ncs <= '0';
-				ram_noe <= '0';
 				inc_addr <= '1';
-
+				
+			-- the wait state
 			when rd1_l =>
 				ram_ncs <= '0';
 				ram_noe <= '0';
 
+			-- low word last read state
 			when rd2_l =>
 				ram_ncs <= '0';
 				ram_noe <= '0';
 				rd_data_ena_l <= '1';
 				
-			when wr1_h =>
-				ram_ncs <= '0';
-				dout_ena <= '1';
-				nwr_int <= '0';
-
-			when wr2_h =>
+			-- the WS state
+			when wr_h =>
 				ram_ncs <= '0';
 				dout_ena <= '1';
 
+			-- high word last write state
 			when wr_idl =>
 				ram_ncs <= '1';
 				dout_ena <= '1';
 				inc_addr <= '1';
 				wr_low <= '1';
 
-			when wr1_l =>
-				ram_ncs <= '0';
-				dout_ena <= '1';
-				nwr_int <= '0';
-
-			when wr2_l =>
+			-- the WS state
+			when wr_l =>
 				ram_ncs <= '0';
 				dout_ena <= '1';
 
@@ -287,18 +305,59 @@ begin
 end process;
 
 --
+--	nwr combinatorial processing
+--	for the negativ edge
+--
+process(next_state, state)
+begin
+
+	nwr_int <= '1';
+	if (state=wr_l and next_state=wr_l) or 
+		(state=wr_h and next_state=wr_h) then
+
+		nwr_int <= '0';
+	end if;
+
+end process;
+
+--
 -- wait_state processing
 --
 process(clk, reset)
 begin
 	if (reset='1') then
+		wait_state <= (others => '1');
 		cnt <= "00";
 	elsif rising_edge(clk) then
+
+		wait_state <= wait_state-1;
 
 		cnt <= "11";
 		if next_state=idl then
 			cnt <= "00";
 		end if;
+
+		if rd='1' or wr='1' then
+			wait_state <= to_unsigned(ram_ws+1, 4);
+--			cnt <= "11";
+		else
+--			if state=rd1_l or state=rd2_l or state=wr_l then
+--				-- if wait_state<4 then
+--				if wait_state(3 downto 2)="00" then
+--					cnt <= wait_state(1 downto 0)-1;
+--				end if;
+--			end if;
+		end if;
+
+		if state=rd2_h or state=wr_idl then
+			wait_state <= to_unsigned(ram_ws+1, 4);
+--			if ram_ws<3 then
+--				cnt <= to_unsigned(ram_ws+1, 2);
+--			else
+--				cnt <= "11";
+--			end if;
+		end if;
+
 
 	end if;
 end process;
