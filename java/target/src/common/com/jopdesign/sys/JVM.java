@@ -634,7 +634,7 @@ synchronized (o) {
 
 		synchronized (o) {
 			
-			ret = GC.newArray(count, type, false);
+			ret = GC.newArray(count, type);
 
 /*
 			h = Native.rdIntMem(2);				// get heap pointer
@@ -666,7 +666,7 @@ synchronized (o) {
 
 		synchronized (o) {
 			
-			ret = GC.newArray(count, 1, true); //1..type not available=reference
+			ret = GC.newArray(count, 1); //1..type not available=reference
 		}
 		return ret;
 	}

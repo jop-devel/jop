@@ -38,9 +38,15 @@ public class GC {
 	static final int OFF_SIZE = 2;
 	static final int OFF_TYPE = 3;
 	
+	// use array types 4..11 are standard boolean to long
+	// our addition:
+	// 1 reference
+	// 0 a plain object
 	static final int IS_OBJ = 0;
 	static final int IS_REFARR = 1;
-	static final int IS_VALARR = 2;
+	
+	//!!! be carefule when changing the handle structure, it's
+	// used in System.arraycopy() and probably in jvm.asm!!!
 	
 	/**
 	 * Free and Use list.
@@ -140,6 +146,10 @@ public class GC {
 		mutex = new Object();
 		
 		startTime = Native.rd(Const.IO_US_CNT);
+	}
+	
+	public static Object getMutex() {
+		return mutex;
 	}
 	
 	static void addToFreeList(int ref) {
@@ -293,16 +303,14 @@ public class GC {
 			// get pointer to object
 			int addr = Native.rdMem(ref);
 			int flags = Native.rdMem(ref+OFF_TYPE);
-			if (flags==IS_VALARR) {
-				// is an array
-			} else if (flags==IS_REFARR) {
+			if (flags==IS_REFARR) {
 				// is an array of references
 				size = Native.rdMem(addr-1);
 				for (i=0; i<size; ++i) {
 					push(Native.rdMem(addr+i));
 				}
 				// However, multinewarray does probably NOT work
-			} else {		
+			} else if (flags==IS_OBJ){		
 				// it's a plain object
 				
 				// get pointer to method table
@@ -317,6 +325,8 @@ public class GC {
 					}
 					flags >>= 1;
 				}				
+			} else {
+				// it's a plain value array
 			}
 		}
 	}
@@ -487,7 +497,7 @@ public class GC {
 		return ref;
 	}
 	
-	static int newArray(int size, int type, boolean isRef) {
+	static int newArray(int size, int type) {
 		
 		// we are NOT using JVM var h at address 2 for the
 		// heap pointer anymore.
@@ -496,7 +506,8 @@ public class GC {
 		
 		// long or double array
 		if((type==11)||(type==7)) size <<= 1;
-
+		// reference array type is 0 (our convention)
+		
 		++size;		// for the additional size field
 
 		if (heapPtr+size >= allocPtr) {
@@ -524,11 +535,12 @@ public class GC {
 			ref = getHandle(allocPtr+1, size);
 		}
 		// ref. flags used for array marker
-		if (isRef) {
-			Native.wrMem(IS_REFARR, ref+OFF_TYPE);
-		} else {
-			Native.wrMem(IS_VALARR, ref+OFF_TYPE);
-		}
+//		if (isRef) {
+//			Native.wrMem(IS_REFARR, ref+OFF_TYPE);
+//		} else {
+//			Native.wrMem(IS_VALARR, ref+OFF_TYPE);
+//		}
+		Native.wrMem(type, ref+OFF_TYPE);
 
 		// TODO: we also need the type (long/double)
 		// for a correct copy!
