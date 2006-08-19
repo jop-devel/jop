@@ -1,6 +1,5 @@
-/* Exception.java -- generic exception thrown to indicate an exceptional
-   condition has occurred.
-   Copyright (C) 1998, 1999, 2001, 2002, 2005  Free Software Foundation, Inc.
+/* ClassNotFoundException.java -- thrown when class definition cannot be found
+   Copyright (C) 1998, 2002, 2005  Free Software Foundation, Inc.
 
 This file is part of GNU Classpath.
 
@@ -40,65 +39,88 @@ exception statement from your version. */
 package java.lang;
 
 /**
- * The root class of all exceptions worth catching in a program.  This
- * includes the special category of <code>RuntimeException</code>, which
- * does not need to be declared in a throws clause.  Exceptions can be used
- * to represent almost any exceptional behavior, such as programming errors,
- * mouse movements, keyboard clicking, etc.
+ * Thrown when a class is requested by reflection, but the class definition
+ * cannot be found. This exception is often chained from another Throwable.
  *
  * @author Brian Jones
- * @author Warren Levy (warrenl@cygnus.com)
  * @author Eric Blake (ebb9@email.byu.edu)
+ * @see Class#forName(String)
+ * @see ClassLoader#findSystemClass(String)
+ * @see ClassLoader#loadClass(String, boolean)
  * @status updated to 1.4
  */
-public class Exception extends Throwable
+public class ClassNotFoundException extends Exception
 {
   /**
    * Compatible with JDK 1.0+.
    */
-  private static final long serialVersionUID = -3387516993124229948L;
+  private static final long serialVersionUID = 9176873029745254542L;
 
   /**
-   * Create an exception without a message. The cause remains uninitialized.
+   * The cause of this exception (duplicates the one stored in Throwable).
    *
-   * @see #initCause(Throwable)
+   * @serial the exception cause
+   * @since 1.2
    */
-  public Exception()
+  private final Throwable ex;
+
+  /**
+   * Create an exception without a message. Note that this initializes the
+   * cause to null.
+   */
+  public ClassNotFoundException()
   {
+    this(null);
   }
 
   /**
-   * Create an exception with a message. The cause remains uninitialized.
+   * Create an exception with a message. Note that this initializes the
+   * cause to null.
    *
    * @param s the message
-   * @see #initCause(Throwable)
    */
-  public Exception(String s)
+  public ClassNotFoundException(String s)
   {
     super(s);
+    ex = null;
   }
 
   /**
-   * Create an exception with a message and a cause.
+   * Create an exception with a message and chain it to the exception
+   * which occurred while loading the class.
    *
-   * @param s the message string
-   * @param cause the cause of this error
-   * @since 1.4
+   * @param s the message
+   * @param ex the chained exception
+   * @since 1.2
    */
-  public Exception(String s, Throwable cause)
+  public ClassNotFoundException(String s, Throwable ex)
   {
-    super(s, cause);
+    super(s, ex);
+    this.ex = ex;
   }
 
   /**
-   * Create an exception with a given cause, and a message of
-   * <code>cause == null ? null : cause.toString()</code>.
+   * Returns the exception which occurred while loading the class,
+   * otherwise returns null. This is a legacy method; the preferred choice
+   * now is {@link Throwable#getCause()}.
    *
-   * @param cause the cause of this exception
+   * @return the cause of this exception
+   * @since 1.2
+   */
+  public Throwable getException()
+  {
+    return ex;
+  }
+
+  /**
+   * Returns the exception which occurred while loading the class,
+   * otherwise returns null.
+   *
+   * @return the cause of this exception
    * @since 1.4
    */
-  public Exception(Throwable cause)
+  public Throwable getCause()
   {
-    super(cause);
+    return ex;
   }
 }

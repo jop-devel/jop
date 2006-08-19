@@ -1,5 +1,5 @@
-/* Exception.java -- generic exception thrown to indicate an exceptional
-   condition has occurred.
+/* IllegalMonitorStateException.java -- thrown when trying to wait or
+   notify a monitor that is not owned
    Copyright (C) 1998, 1999, 2001, 2002, 2005  Free Software Foundation, Inc.
 
 This file is part of GNU Classpath.
@@ -40,65 +40,39 @@ exception statement from your version. */
 package java.lang;
 
 /**
- * The root class of all exceptions worth catching in a program.  This
- * includes the special category of <code>RuntimeException</code>, which
- * does not need to be declared in a throws clause.  Exceptions can be used
- * to represent almost any exceptional behavior, such as programming errors,
- * mouse movements, keyboard clicking, etc.
+ * Thrown when a thread attempts to wait or notify on a monitor that it
+ * does not own (ie. it has not synchronized on the object). For example:<br>
+ * <pre>
+ * void m() {
+ *   notify();
+ * }
+ * </pre>
  *
  * @author Brian Jones
  * @author Warren Levy (warrenl@cygnus.com)
- * @author Eric Blake (ebb9@email.byu.edu)
  * @status updated to 1.4
  */
-public class Exception extends Throwable
+public class IllegalMonitorStateException extends RuntimeException
 {
   /**
    * Compatible with JDK 1.0+.
    */
-  private static final long serialVersionUID = -3387516993124229948L;
+  private static final long serialVersionUID = 3713306369498869069L;
 
   /**
-   * Create an exception without a message. The cause remains uninitialized.
-   *
-   * @see #initCause(Throwable)
+   * Create an exception without a message.
    */
-  public Exception()
+  public IllegalMonitorStateException()
   {
   }
 
   /**
-   * Create an exception with a message. The cause remains uninitialized.
+   * Create an exception with a message.
    *
    * @param s the message
-   * @see #initCause(Throwable)
    */
-  public Exception(String s)
+  public IllegalMonitorStateException(String s)
   {
     super(s);
-  }
-
-  /**
-   * Create an exception with a message and a cause.
-   *
-   * @param s the message string
-   * @param cause the cause of this error
-   * @since 1.4
-   */
-  public Exception(String s, Throwable cause)
-  {
-    super(s, cause);
-  }
-
-  /**
-   * Create an exception with a given cause, and a message of
-   * <code>cause == null ? null : cause.toString()</code>.
-   *
-   * @param cause the cause of this exception
-   * @since 1.4
-   */
-  public Exception(Throwable cause)
-  {
-    super(cause);
   }
 }

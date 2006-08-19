@@ -1,6 +1,5 @@
-/* Exception.java -- generic exception thrown to indicate an exceptional
-   condition has occurred.
-   Copyright (C) 1998, 1999, 2001, 2002, 2005  Free Software Foundation, Inc.
+/* TypeNotPresentException.java -- Thrown when a string-based type is missing
+   Copyright (C) 2004, 2005 Free Software Foundation, Inc.
 
 This file is part of GNU Classpath.
 
@@ -40,65 +39,60 @@ exception statement from your version. */
 package java.lang;
 
 /**
- * The root class of all exceptions worth catching in a program.  This
- * includes the special category of <code>RuntimeException</code>, which
- * does not need to be declared in a throws clause.  Exceptions can be used
- * to represent almost any exceptional behavior, such as programming errors,
- * mouse movements, keyboard clicking, etc.
+ * <p>
+ * Thrown when a type is accessed using a <code>String</code>-based
+ * representation, but no definition of the supplied type is found.
+ * This is effectively an unchecked equivalent of the existing
+ * <code>ClassNotFound</code> exception.  
+ * </p>
+ * <p>
+ * It may occur due to an attempt to load a missing class, interface or
+ * annotation, or when an undefined type variable is accessed.
+ * </p>
  *
- * @author Brian Jones
- * @author Warren Levy (warrenl@cygnus.com)
- * @author Eric Blake (ebb9@email.byu.edu)
- * @status updated to 1.4
+ * @author Tom Tromey (tromey@redhat.com)
+ * @author Andrew John Hughes (gnu_andrew@member.fsf.org)
+ * @see ClassNotFoundException
+ * @since 1.5
  */
-public class Exception extends Throwable
+public class TypeNotPresentException
+  extends RuntimeException
 {
-  /**
-   * Compatible with JDK 1.0+.
-   */
-  private static final long serialVersionUID = -3387516993124229948L;
+  private static final long serialVersionUID = -5101214195716534496L;
 
   /**
-   * Create an exception without a message. The cause remains uninitialized.
-   *
-   * @see #initCause(Throwable)
+   * Constructs a <code>TypeNotPresentException</code> for
+   * the supplied type.  The specified cause <code>Throwable</code>
+   * may be used to provide additional history, with regards to the
+   * root of the problem.  It is perfectly valid for this to be null,
+   * if the cause of the problem is unknown.
+   * 
+   * @param typeName the name of the missing type.
+   * @param cause the cause of this exception, or null if the cause
+   *              is unknown.
    */
-  public Exception()
+  public TypeNotPresentException(String typeName, Throwable cause)
   {
+    super("type \"" + typeName + "\" not found", cause);
+    this.typeName = typeName;
   }
 
   /**
-   * Create an exception with a message. The cause remains uninitialized.
+   * Returns the name of the missing type.
    *
-   * @param s the message
-   * @see #initCause(Throwable)
+   * @return the missing type's name.
    */
-  public Exception(String s)
+  public String typeName()
   {
-    super(s);
+    return typeName;
   }
 
   /**
-   * Create an exception with a message and a cause.
+   * The name of the missing type.
    *
-   * @param s the message string
-   * @param cause the cause of this error
-   * @since 1.4
+   * @serial the missing type's name.
    */
-  public Exception(String s, Throwable cause)
-  {
-    super(s, cause);
-  }
+  // Name fixed by serialization.
+  private String typeName;
 
-  /**
-   * Create an exception with a given cause, and a message of
-   * <code>cause == null ? null : cause.toString()</code>.
-   *
-   * @param cause the cause of this exception
-   * @since 1.4
-   */
-  public Exception(Throwable cause)
-  {
-    super(cause);
-  }
 }

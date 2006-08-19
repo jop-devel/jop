@@ -1,5 +1,5 @@
-/* Exception.java -- generic exception thrown to indicate an exceptional
-   condition has occurred.
+/* ArrayIndexOutOfBoundsException.java -- exception thrown when accessing
+   an illegal index.
    Copyright (C) 1998, 1999, 2001, 2002, 2005  Free Software Foundation, Inc.
 
 This file is part of GNU Classpath.
@@ -40,65 +40,48 @@ exception statement from your version. */
 package java.lang;
 
 /**
- * The root class of all exceptions worth catching in a program.  This
- * includes the special category of <code>RuntimeException</code>, which
- * does not need to be declared in a throws clause.  Exceptions can be used
- * to represent almost any exceptional behavior, such as programming errors,
- * mouse movements, keyboard clicking, etc.
+ * Thrown when attempting to access a position outside the valid range of
+ * an array. For example:<br>
+ * <pre>
+ * int[] i = { 1 };
+ * i[1] = 2;
+ * </pre>
  *
  * @author Brian Jones
  * @author Warren Levy (warrenl@cygnus.com)
- * @author Eric Blake (ebb9@email.byu.edu)
  * @status updated to 1.4
  */
-public class Exception extends Throwable
+public class ArrayIndexOutOfBoundsException extends IndexOutOfBoundsException
 {
   /**
    * Compatible with JDK 1.0+.
    */
-  private static final long serialVersionUID = -3387516993124229948L;
+  private static final long serialVersionUID = -5116101128118950844L;
 
   /**
-   * Create an exception without a message. The cause remains uninitialized.
-   *
-   * @see #initCause(Throwable)
+   * Create an exception without a message.
    */
-  public Exception()
+  public ArrayIndexOutOfBoundsException()
   {
   }
 
   /**
-   * Create an exception with a message. The cause remains uninitialized.
+   * Create an exception with a message.
    *
    * @param s the message
-   * @see #initCause(Throwable)
    */
-  public Exception(String s)
+  public ArrayIndexOutOfBoundsException(String s)
   {
     super(s);
   }
 
   /**
-   * Create an exception with a message and a cause.
+   * Create an exception indicating the illegal index.
    *
-   * @param s the message string
-   * @param cause the cause of this error
-   * @since 1.4
+   * @param index the invalid index
    */
-  public Exception(String s, Throwable cause)
+  public ArrayIndexOutOfBoundsException(int index)
   {
-    super(s, cause);
-  }
-
-  /**
-   * Create an exception with a given cause, and a message of
-   * <code>cause == null ? null : cause.toString()</code>.
-   *
-   * @param cause the cause of this exception
-   * @since 1.4
-   */
-  public Exception(Throwable cause)
-  {
-    super(cause);
+    super("Array index out of range: " + index);
   }
 }

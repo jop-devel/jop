@@ -1,5 +1,4 @@
-/* Exception.java -- generic exception thrown to indicate an exceptional
-   condition has occurred.
+/* NullPointerException.java -- thrown when using null instead of an object
    Copyright (C) 1998, 1999, 2001, 2002, 2005  Free Software Foundation, Inc.
 
 This file is part of GNU Classpath.
@@ -40,65 +39,44 @@ exception statement from your version. */
 package java.lang;
 
 /**
- * The root class of all exceptions worth catching in a program.  This
- * includes the special category of <code>RuntimeException</code>, which
- * does not need to be declared in a throws clause.  Exceptions can be used
- * to represent almost any exceptional behavior, such as programming errors,
- * mouse movements, keyboard clicking, etc.
+ * Thrown when attempting to use <code>null</code> where an object
+ * is required. The Virtual Machine automatically throws this exception
+ * for the following:<br><ul>
+ * <li>Calling an instance method on a null object</li>
+ * <li>Accessing or modifying a field of a null object</li>
+ * <li>Taking the array length of a null array</li>
+ * <li>Accessing or modifying the slots of a null array</li>
+ * <li>Throwing a null Throwable</li>
+ * <li>Synchronizing on a null object</li>
+ * </ul>
+ * <p>Applications should also throw NullPointerExceptions whenever
+ * <code>null</code> is an inappropriate parameter to a method.
  *
  * @author Brian Jones
  * @author Warren Levy (warrenl@cygnus.com)
- * @author Eric Blake (ebb9@email.byu.edu)
  * @status updated to 1.4
  */
-public class Exception extends Throwable
+public class NullPointerException extends RuntimeException
 {
   /**
    * Compatible with JDK 1.0+.
    */
-  private static final long serialVersionUID = -3387516993124229948L;
+  private static final long serialVersionUID = 5162710183389028792L;
 
   /**
-   * Create an exception without a message. The cause remains uninitialized.
-   *
-   * @see #initCause(Throwable)
+   * Create an exception without a message.
    */
-  public Exception()
+  public NullPointerException()
   {
   }
 
   /**
-   * Create an exception with a message. The cause remains uninitialized.
+   * Create an exception with a message.
    *
    * @param s the message
-   * @see #initCause(Throwable)
    */
-  public Exception(String s)
+  public NullPointerException(String s)
   {
     super(s);
-  }
-
-  /**
-   * Create an exception with a message and a cause.
-   *
-   * @param s the message string
-   * @param cause the cause of this error
-   * @since 1.4
-   */
-  public Exception(String s, Throwable cause)
-  {
-    super(s, cause);
-  }
-
-  /**
-   * Create an exception with a given cause, and a message of
-   * <code>cause == null ? null : cause.toString()</code>.
-   *
-   * @param cause the cause of this exception
-   * @since 1.4
-   */
-  public Exception(Throwable cause)
-  {
-    super(cause);
   }
 }
