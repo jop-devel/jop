@@ -384,6 +384,7 @@ public class JopInstr{
 			"ext2intMem", "jopsys_ext2int",
 			"makeLong", "jopsys_nop",
 			"invoke", "jopsys_invoke",
+			"toInt", "jopsys_nop",
 	};
 	
 	static {

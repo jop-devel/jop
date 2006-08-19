@@ -38,6 +38,8 @@ exception statement from your version. */
 
 package java.lang;
 
+import com.jopdesign.sys.Native;
+
 // import gnu.classpath.Configuration;
 
 /**
@@ -180,6 +182,11 @@ public class Object
    * @see #equals(Object)
    * @see System#identityHashCode(Object)
    */
+  public int hashCode()
+  {
+	  return Native.toInt(this);
+  }
+
 /*
   public int hashCode()
   {
