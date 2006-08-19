@@ -28,7 +28,8 @@ public class DoAll {
 				new LongField(),
 				new MultiArray(),
 				new Switch(),
-				new Except(),
+//				new Except(),
+				new SystemCopy(),
 		};
 		
 		for (int i=0; i<tc.length; ++i) {
