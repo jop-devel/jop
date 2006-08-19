@@ -58,6 +58,8 @@ public class Startup {
 	static void msg() {
 
 		JVMHelp.wr("JOP start");
+		JVMHelp.wr("TODO: JopSim ram size");
+		
 	}
 	
 	/**
@@ -65,25 +67,27 @@ public class Startup {
 	 */
 	static int getRamSize() {
 		
-		int size = 0;
-		int firstWord = Native.rd(0);
-		int val;
-		boolean search = true;
+//		int size = 0;
+//		int firstWord = Native.rd(0);
+//		int val;
+//		boolean search = true;
+//		
+//		// increment in 1024 Bytes
+//		for (size=256; search; size+=256) {
+//			val = Native.rd(size);
+//			Native.wr(0xaaaa5555, size);
+//			if (Native.rd(size)!=0xaaaa5555) search = false;
+//			Native.wr(0x12345678, size);
+//			if (Native.rd(size)!=0x12345678) search = false;
+//			if (Native.rd(0)!=firstWord) search = false;
+//			// restore current word
+//			Native.wr(val, size);
+//		}
+//		// restore the first word
+//		Native.wr(firstWord, 0);
+//		return size;
 		
-		// increment in 1024 Bytes
-		for (size=256; search; size+=256) {
-			val = Native.rd(size);
-			Native.wr(0xaaaa5555, size);
-			if (Native.rd(size)!=0xaaaa5555) search = false;
-			Native.wr(0x12345678, size);
-			if (Native.rd(size)!=0x12345678) search = false;
-			if (Native.rd(0)!=firstWord) search = false;
-			// restore current word
-			Native.wr(val, size);
-		}
-		// restore the first word
-		Native.wr(firstWord, 0);
-		return size;
+		return 1024*1024/4;
 	}
 	
 	/**
