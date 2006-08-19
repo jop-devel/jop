@@ -666,7 +666,7 @@ synchronized (o) {
 
 		synchronized (o) {
 			
-			ret = GC.newArray(count, 0, true); //0..type not available=reference
+			ret = GC.newArray(count, 1, true); //1..type not available=reference
 		}
 		return ret;
 	}
