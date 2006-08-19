@@ -535,7 +535,7 @@ public class GC {
 		// disable long array access for now...
 		// we need the array size.
 		// in the heap or in the handle structure
-		Native.wrMem(arrayLength, allocPtr);		// pointer to method table in objectref-1
+		Native.wrMem(arrayLength, allocPtr);		// array length objectref-1
 
 		// we don't need this
 //		for (int i=1; i<size; ++i) {
