@@ -16,9 +16,9 @@ public class Method {
 		ts = Native.rdMem(Const.IO_CNT);
 		te = Native.rdMem(Const.IO_CNT);
 		to = te-ts;
-		// WCET with var. block cache: x
-		// WCET with two block cache: 1116
-		// WCET analysed: 1312
+		// WCET with var. block cache: 12279
+		// WCET with two block cache: x
+		// WCET analysed: 11820
 		measure();
 		System.out.println(te-ts-to);
 	}
