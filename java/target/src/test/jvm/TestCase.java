@@ -8,7 +8,7 @@ package jvm;
  * @author Martin Schoeberl (martin@jopdesign.com)
  *
  */
-public class TestCase {
+public abstract class TestCase {
 	
 	public String getName() {
 		return "dummy test case";

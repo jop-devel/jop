@@ -30,8 +30,8 @@
 #
 COM_PORT=COM1
 COM_FLAG=-e
-#COM_PORT=COM6
-#COM_FLAG=-e -usb
+COM_PORT=COM6
+COM_FLAG=-e -usb
 
 BLASTER_TYPE=ByteBlasterMV
 #BLASTER_TYPE=USB-Blaster
@@ -39,7 +39,7 @@ BLASTER_TYPE=ByteBlasterMV
 # 'some' different Quartus projects
 QPROJ=cycmin cycbaseio cycbg dspio lego cycfpu cyc256x16 sopcmin
 # if you want to build only one Quartus project use e.q.:
-QPROJ=cycmin
+QPROJ=dspio
 
 # Nelson uncomment this
 #QPROJ=cyc12baseio
@@ -60,13 +60,16 @@ P1=test
 P2=test
 P3=HelloWorld
 
+P2=wcet
+P3=Loop
+
 #P2=wcet
 #P3=StartLineFollower
 #P3=StartKfl
 WCET_METHOD=main
 WCET_METHOD=measure
 
-#P2=jvm
+#P2=jdk
 #P3=DoAll
 
 # Jens & Mikael uncomment this
@@ -89,7 +92,7 @@ TOOLS_JFLAGS=-d $(TOOLS)/dist/classes $(EXT_CP) -sourcepath $(TOOLS)/src\;$(TARG
 TARGET=java/target
 TOOLS_CP=$(EXT_CP)\;$(TOOLS)/dist/lib/jop-tools.jar
 TARGET_SOURCE=$(TARGET)/src/common\;$(TARGET)/src/jdk\;$(TARGET)/src/rtapi\;$(TARGET_APP_SOURCE_PATH)
-TARGET_JFLAGS=-d $(TARGET)/dist/classes -sourcepath $(TARGET_SOURCE)
+TARGET_JFLAGS=-d $(TARGET)/dist/classes -sourcepath $(TARGET_SOURCE) -bootclasspath "" -extdirs "" -classpath "" -source 1.4
 
 
 #
@@ -139,16 +142,16 @@ JOPBIN=$(P3).jop
 TARGET_APP_SOURCE_PATH=$(TARGET_APP_PATH)\;$(TARGET)/src/app\;$(TARGET)/src/bench
 
 # use this for serial download
-all: directories tools jopser japp
-
-japp: java_app config_byteblast download
+#all: directories tools jopser japp
+#
+#japp: java_app config_byteblast download
 
 
 # use this for USB download of FPGA configuration
 # and Java program download
-#all: directories tools jopusb japp
-#
-#japp: java_app config_usb download
+all: directories tools jopusb japp
+
+japp: java_app config_usb download
 
 
 install:

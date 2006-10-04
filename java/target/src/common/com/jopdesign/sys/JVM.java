@@ -658,7 +658,7 @@ synchronized (o) {
 
 	}
 
-	private static int f_anewarray(int count, int cons) {
+	static int f_anewarray(int count, int cons) {
 
 		// ignore cons (type info)
 		// should be different for the GC!!!

@@ -86,5 +86,11 @@ public final class System {
 		}
 	}
 
+
+	public static String getProperty(String nm) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 	
 }

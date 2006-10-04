@@ -22,7 +22,11 @@ package tal;
 /**
 *	Tal.java: test main.
 *
-*	Author: Martin Schoeberl (martin.schoeberl@chello.at)
+*	Author: Martin Schoeberl (martin@jopdesign.com)
+*
+*	2004-09-09	Version 0.05
+*	2006-09-20	Version 0.06: shorten loop cycle to 5 ms to get short
+*				pulses (10 ms)
 *
 */
 
@@ -125,7 +129,7 @@ evn = true;
 			}
 		};
 		
-		loop = new Loop(7, 20000);
+		loop = new Loop(7, 5000);
 
 		RtThread.startMission();
 		forever();

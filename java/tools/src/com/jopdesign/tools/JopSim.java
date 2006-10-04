@@ -25,6 +25,7 @@ public class JopSim {
 
 	static final int MAX_MEM = 1024*1024/4;
 	static final int MAX_STACK = 256;	// with internal memory
+	static final int MEM_TEST_OFF = 256;
 	
 	static final int MIN_WB_ADDRESS = -128;
 
@@ -192,36 +193,38 @@ System.out.println(mp+" "+pc);
 
 		return mem[addr];
 	}
+	
 	int readMem(int addr) {
 
 // System.out.println(addr+" "+mem[addr]);
 		rdMemCnt++;
 		ioCnt += 12;
 
-		if (addr>MAX_MEM || addr<MIN_WB_ADDRESS) {
+		if (addr>MAX_MEM+MEM_TEST_OFF || addr<MIN_WB_ADDRESS) {
 			System.out.println("readMem: wrong address: "+addr);
 			System.exit(-1);
 		}
 		if (addr<0) {
-			return 0; // no Simulation of the Wishbone devices
+			return sysRd(addr);
 		}
 
-		return mem[addr];
+		return mem[addr%MAX_MEM];
 	}
 	void writeMem(int addr, int data) {
 
 		wrMemCnt++;
 		ioCnt += 12;
 
-		if (addr>MAX_MEM || addr<MIN_WB_ADDRESS) {
+		if (addr>MAX_MEM+MEM_TEST_OFF || addr<MIN_WB_ADDRESS) {
 			System.out.println("writeMem: wrong address: "+addr);
 			System.exit(-1);
 		}
 
 		if (addr<0) {
+			sysWr(addr, data);
 			return; // no Simulation of the Wishbone devices
 		}
-		mem[addr] = data;
+		mem[addr%MAX_MEM] = data;
 	}
 
 	int readOpd16u() {
@@ -298,17 +301,17 @@ System.out.println(mp+" "+pc);
 //		}
 //	}
 	
-	void sysRd() {
+	int sysRd(int addr) {
 
-		int addr = stack[sp];
+		int val;
 		int i;
 
 		try {
 			switch (addr) {
 				case Const.IO_STATUS:
-					stack[sp] = Const.MSK_UA_TDRE;
+					val = Const.MSK_UA_TDRE;
 					if (System.in.available()!=0) {
-						stack[sp] |= Const.MSK_UA_RDRF;
+						val |= Const.MSK_UA_RDRF;
 					}
 					break;
 				case Const.IO_STATUS2:
@@ -323,13 +326,13 @@ System.out.println(mp+" "+pc);
 //						}	// rdrf
 //					}
 //					i |= Const.MSK_UA_TDRE;							// tdre is alwais true on OutputStream
-					stack[sp] = i;
+					val = i;
 					break;
 				case Const.IO_UART:
 					if (System.in.available()!=0) {
-						stack[sp] = System.in.read();
+						val = System.in.read();
 					} else {
-						stack[sp] = '_';
+						val = '_';
 					}
 					break;
 				case Const.IO_UART2:
@@ -339,31 +342,33 @@ System.out.println(mp+" "+pc);
 //					} catch (IOException e) {
 //						e.printStackTrace();
 //					}
-					stack[sp] = i;
+					val = i;
 					break;
 				case Const.IO_CNT:
-					stack[sp] = ioCnt;
+					val = ioCnt;
 					break;
 				case Const.IO_US_CNT:
-					stack[sp] = usCnt();
+					val = usCnt();
 					break;
 				case 1234:
 					// trigger cache debug output
 //					cache.rawData();
 //					cache.resetCnt();
+					val = 0;
 					break;
 				default:
-					stack[sp] = 0;
+					val = 0;
 			}
 		} catch (Exception e) {
 			System.out.println(e);
+			val = 0;
 		}
+		
+		return val;
 	}
 
-	void sysWr() {
+	void sysWr(int addr, int val) {
 
-		int addr = stack[sp--];
-		int val = stack[sp--];
 		switch (addr) {
 			case Const.IO_UART:
 				if (log) System.out.print("\t->");
@@ -1426,24 +1431,19 @@ System.out.println("new heap: "+heap);
 					noim(208);
 					break;
 				case 209 :		// jopsys_rd
-					sysRd();
+					ref = stack[sp--];
+					stack[++sp] = readMem(ref);
 					break;
 				case 210 :		// jopsys_wr
-					sysWr();
+					ref = stack[sp--];
+					val = stack[sp--];
+					writeMem(ref, val);
 					break;
 				case 211 :		// jopsys_rdmem
-					if (stack[sp]<0) {
-						sysRd();
-						break;
-					}
 					ref = stack[sp--];
 					stack[++sp] = readMem(ref);
 					break;
 				case 212 :		// jopsys_wrmem
-					if (stack[sp]<0) {
-						sysWr();
-						break;
-					}
 					ref = stack[sp--];
 					val = stack[sp--];
 					writeMem(ref, val);

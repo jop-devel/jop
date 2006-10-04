@@ -210,6 +210,10 @@ return;
 	return this;
   }
 
+  public StringBuffer append(Object obj)
+  {
+    return append(obj == null ? "null" : obj.toString());
+  }
   public synchronized StringBuffer delete(int start, int end)
   {
     if (start < 0 || start > count || start > end)
@@ -343,5 +347,25 @@ for (int i=0; i<count; ++i) nb[i] = value[i];
 //        shared = false;
       }
   }
+
+public void append(boolean b) {
+	if (b) {
+		append("true");
+	} else {
+		append("false");
+	}
+	// TODO Auto-generated method stub
+	
+}
+
+public void append(long l) {
+	// TODO Auto-generated method stub
+	append("NYI");
+}
+
+public void append(double d) {
+	// TODO Auto-generated method stub
+	append("NYI");
+}
 
 }

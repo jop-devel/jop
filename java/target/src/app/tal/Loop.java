@@ -100,7 +100,6 @@ public class Loop extends RtThread {
 		for (;;) {
 			
 			changed = checkAlarm();
-			waitForNextPeriod();
 			
 			if (changed && Tal.modem != null) {
 				Tal.modem.startSend();
@@ -111,7 +110,6 @@ Dbg.wr("Time to send a message\n");
 					transmitTimer = Timer.getSec()+CALL_PERIOD_SEC;
 				}
 			}
-			waitForNextPeriod();
 			
 			if (Timer.timeout(ledTimer)) {
 				ledTimer = Timer.getTimeoutMs(200);

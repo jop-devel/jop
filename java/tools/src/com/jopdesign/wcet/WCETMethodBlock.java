@@ -1131,7 +1131,7 @@ if(pl.size()>0)
         problem.setOutputfile(lpf+".solved.txt");
         problem.printObjective();
         problem.printSolution(1);
-        wcetlp = (int)problem.getObjective();
+        wcetlp = (int)(problem.getObjective()+0.5);
         try {
           BufferedReader in = new BufferedReader(new FileReader(lpf+".solved.txt"));
           String str;

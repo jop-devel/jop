@@ -222,12 +222,11 @@ public class Object
    * @see Class#getName()
    * @see Integer#toHexString(int)
    */
-/*
   public String toString()
   {
-    return getClass().getName() + '@' + Integer.toHexString(hashCode());
+    // return getClass().getName() + '@' + Integer.toHexString(hashCode());
+	return "Object "+hashCode();
   }
-*/
 
   /**
    * Called on an object by the Virtual Machine at most once,
@@ -340,6 +339,10 @@ public class Object
     throw new CloneNotSupportedException("Object not cloneable");
   }
 */
+  protected Object clone() throws CloneNotSupportedException
+  {
+    throw new CloneNotSupportedException("Object not cloneable");
+  }
 
   /**
    * Returns the runtime {@link Class} of this Object.
@@ -355,6 +358,9 @@ public class Object
 /*
   public final native Class getClass();
 */
+  public final Class getClass() {
+	  throw new Error("NYI");
+  }
 
   /**
    * Wakes up one of the {@link Thread}s that has called

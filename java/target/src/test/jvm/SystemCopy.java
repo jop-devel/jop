@@ -53,7 +53,14 @@ public class SystemCopy extends TestCase
 		if ( !compare (nSrc,nDest) )
 			return false;
 		
+		String s = "aa";
+		Object o = null;
+		foo(s, o);
 		return true;
+	}
+	
+	void foo(Object a, Object b) {
+		a = b;
 	}
 	
 }

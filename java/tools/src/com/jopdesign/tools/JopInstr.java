@@ -385,7 +385,13 @@ public class JopInstr{
 			"makeLong", "jopsys_nop",
 			"invoke", "jopsys_invoke",
 			"toInt", "jopsys_nop",
+			"toFloat", "jopsys_nop",
+			"toObject", "jopsys_nop",
+			"toLong", "jopsys_nop",
+			"toInt", "jopsys_nop",
+			"toDouble", "jopsys_nop",
 	};
+
 	
 	static {
 		int i;

@@ -38,6 +38,10 @@ public class InputStream {
 
 //	public abstract int read() throws IOException;
 	public int read() {
+		
+		while ((Native.rd(Const.IO_STATUS)&Const.MSK_UA_RDRF)==0) {
+			; // block, but should enable thread switching
+		}
 		return Native.rd(Const.IO_UART);
 	}
 

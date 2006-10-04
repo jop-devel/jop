@@ -125,4 +125,9 @@ return;
     return true;
   }
 
+public boolean equalsIgnoreCase(String b) {
+	// TODO Auto-generated method stub
+	throw new Error("NYI");
+}
+
 }

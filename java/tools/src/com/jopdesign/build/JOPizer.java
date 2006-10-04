@@ -215,6 +215,11 @@ public class JOPizer {
 				BuildVT vt = new BuildVT(jz);
 				jz.iterate(vt);
 				
+				// replace the wide instrucitons generated
+				// by Sun's javac 1.5
+				// disabled for demo
+				// jz.iterate(new ReplaceIinc(jz));
+				
 				
 				// change methods - replace Native calls
 				// TODO: also change the index into the cp for the

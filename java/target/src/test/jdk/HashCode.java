@@ -1,17 +1,20 @@
 package jdk;
 
-public class HashCode {
+import jvm.TestCase;
 
-	/**
-	 * @param args
-	 */
-	public static void main(String[] args) {
-		// TODO Auto-generated method stub
+public class HashCode extends TestCase {
+
+	public String getName() {
+		return "HashCode";
+	}
+
+	public boolean test() {
 		
-		System.out.println(new Object().hashCode());
-		System.out.println(new Object().hashCode());
-		System.out.println(new Object().hashCode());
-
+		int i = new Object().hashCode();
+		int j = new Object().hashCode();
+		int k = new Object().hashCode();
+//		System.out.println("hash codes: "+i+" "+j+" "+k);
+		return (i!=j && i!=k && j!=k);
 	}
 
 }

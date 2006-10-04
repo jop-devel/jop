@@ -58,7 +58,6 @@ public class Startup {
 	static void msg() {
 
 		JVMHelp.wr("JOP start");
-		JVMHelp.wr("TODO: JopSim ram size");
 		
 	}
 	
@@ -67,27 +66,25 @@ public class Startup {
 	 */
 	static int getRamSize() {
 		
-//		int size = 0;
-//		int firstWord = Native.rd(0);
-//		int val;
-//		boolean search = true;
-//		
-//		// increment in 1024 Bytes
-//		for (size=256; search; size+=256) {
-//			val = Native.rd(size);
-//			Native.wr(0xaaaa5555, size);
-//			if (Native.rd(size)!=0xaaaa5555) search = false;
-//			Native.wr(0x12345678, size);
-//			if (Native.rd(size)!=0x12345678) search = false;
-//			if (Native.rd(0)!=firstWord) search = false;
-//			// restore current word
-//			Native.wr(val, size);
-//		}
-//		// restore the first word
-//		Native.wr(firstWord, 0);
-//		return size;
+		int size = 0;
+		int firstWord = Native.rd(0);
+		int val;
+		boolean search = true;
 		
-		return 1024*1024/4;
+		// increment in 1024 Bytes
+		for (size=256; search; size+=256) {
+			val = Native.rd(size);
+			Native.wr(0xaaaa5555, size);
+			if (Native.rd(size)!=0xaaaa5555) search = false;
+			Native.wr(0x12345678, size);
+			if (Native.rd(size)!=0x12345678) search = false;
+			if (Native.rd(0)!=firstWord) search = false;
+			// restore current word
+			Native.wr(val, size);
+		}
+		// restore the first word
+		Native.wr(firstWord, 0);
+		return size;
 	}
 	
 	/**
@@ -215,7 +212,12 @@ public class Startup {
 				case 18 :		// ldc
 					stack[++sp] = Native.rdMem(cp+readBC8u());
 					break;
-				case 79 :		// iastore				
+				case 83 :		// aastore
+				case 84 :		// bastore
+				case 85 :		// castore
+				case 81 :		// fastore
+				case 79 :		// iastore
+				case 86 :		// sastore
 					val = stack[sp--];	// value
 					idx = stack[sp--];	// index
 					ref = stack[sp--];	// ref
@@ -235,6 +237,9 @@ public class Startup {
 					break;
 				case 188 :		// newarray
 					newarray();
+					break;
+				case 189 :		// anewarray
+					anewarray();
 					break;
 				default:
 					System.out.print("JVM interpreter: bytecode ");
@@ -320,13 +325,13 @@ public class Startup {
 		int type = readBC8u();			// use typ
 		int val = stack[sp];			// count from stack
 		stack[sp] = JVM.f_newarray(val, type);
-/* non JVM, non handle version:
-		int heap = Native.rdIntMem(2);	// get heap pointer
-		Native.wrMem(val, heap);
-		++heap;
-		stack[++sp] = heap;				// ref to first element
-		heap += val;
-		Native.wrIntMem(heap, 2);		// write heap pointer
-*/
+	}
+	
+	static void anewarray() {
+		
+		int cons = readBC16u();
+		int val = stack[sp];			// count from stack
+		stack[sp] = JVM.f_anewarray(val, cons);
+		
 	}
 }
