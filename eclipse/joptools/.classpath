@@ -3,9 +3,5 @@
 	<classpathentry excluding="jcc/runtime/" kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/jop"/>
-	<classpathentry kind="lib" path="D:/usr/cpu/jop/java/lib/RXTXcomm.jar"/>
-	<classpathentry sourcepath="D:/usr2/bcel-5.1/src/java" kind="lib" path="D:/usr/cpu/jop/java/lib/bcel-5.1.jar"/>
-	<classpathentry kind="lib" path="D:/usr/cpu/jop/java/lib/jakarta-regexp-1.3.jar"/>
-	<classpathentry kind="lib" path="D:/usr/cpu/jop/java/lib/lpsolve55j.jar"/>
 	<classpathentry kind="output" path="classes"/>
 </classpath>
