@@ -41,6 +41,6 @@ public class DoAll {
 			}
 		}
 		
-		jbe.DoAll.main(args);
+//		jbe.DoAll.main(args);
 	}
 }
