@@ -30,8 +30,8 @@
 #
 COM_PORT=COM1
 COM_FLAG=-e
-COM_PORT=COM6
-COM_FLAG=-e -usb
+#COM_PORT=COM6
+#COM_FLAG=-e -usb
 
 BLASTER_TYPE=ByteBlasterMV
 #BLASTER_TYPE=USB-Blaster
@@ -60,8 +60,8 @@ P1=test
 P2=test
 P3=HelloWorld
 
-P2=wcet
-P3=Loop
+#P2=wcet
+#P3=Loop
 
 #P2=wcet
 #P3=StartLineFollower
@@ -142,16 +142,16 @@ JOPBIN=$(P3).jop
 TARGET_APP_SOURCE_PATH=$(TARGET_APP_PATH)\;$(TARGET)/src/app\;$(TARGET)/src/bench
 
 # use this for serial download
-#all: directories tools jopser japp
-#
-#japp: java_app config_byteblast download
+all: directories tools jopser japp
+
+japp: java_app config_byteblast download
 
 
 # use this for USB download of FPGA configuration
 # and Java program download
-all: directories tools jopusb japp
-
-japp: java_app config_usb download
+#all: directories tools jopusb japp
+#
+#japp: java_app config_usb download
 
 
 install:
