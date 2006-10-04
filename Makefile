@@ -39,7 +39,7 @@ BLASTER_TYPE=ByteBlasterMV
 # 'some' different Quartus projects
 QPROJ=cycmin cycbaseio cycbg dspio lego cycfpu cyc256x16 sopcmin
 # if you want to build only one Quartus project use e.q.:
-QPROJ=dspio
+QPROJ=cycmin
 
 # Nelson uncomment this
 #QPROJ=cyc12baseio
