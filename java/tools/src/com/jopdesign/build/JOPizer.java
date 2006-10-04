@@ -217,8 +217,7 @@ public class JOPizer {
 				
 				// replace the wide instrucitons generated
 				// by Sun's javac 1.5
-				// disabled for demo
-				// jz.iterate(new ReplaceIinc(jz));
+				jz.iterate(new ReplaceIinc(jz));
 				
 				
 				// change methods - replace Native calls
