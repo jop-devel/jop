@@ -235,6 +235,9 @@ Dbg.wr('T');
 		// If it's not http, just drop it
 		i = buf[5];
 		if ((i & 0xffff) != 80) {
+Dbg.lf();
+Dbg.wr('T');
+Dbg.intVal(i & 0xffff);
 			p.len = 0;
 			return;
 		}
