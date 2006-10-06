@@ -1,0 +1,1 @@
+Basemin is ok. It is not configured to support the LAN port.
