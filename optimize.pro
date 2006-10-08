@@ -4,6 +4,7 @@
 -verbose
 #-dump
 
+-allowaccessmodification
 -dontobfuscate
 
 -keepclasseswithmembers public class * {
