@@ -96,6 +96,13 @@ TARGET_JFLAGS=-d $(TARGET)/dist/classes -sourcepath $(TARGET_SOURCE) -bootclassp
 
 
 #
+#	application optimization with ProGuard:
+#	proguard.sourceforge.net/
+#	uncomment following line to use it
+#OPTIMIZE=mv java/target/dist/lib/classes.zip java/target/dist/lib/in.zip; java -jar java/lib/proguard.jar @optimize.pro
+
+
+#
 #	Add your application source pathes and class that contains the 
 #	main method here. We are using those simple P1/2/3 variables for
 #		P1=directory, P2=package name, and P3=main class
@@ -194,6 +201,7 @@ java_app:
 	javac $(TARGET_JFLAGS) $(TARGET)/src/common/com/jopdesign/sys/*.java
 	javac $(TARGET_JFLAGS) $(TARGET_APP)
 	cd $(TARGET)/dist/classes && jar cf ../lib/classes.zip *
+	$(OPTIMIZE)
 	java $(TOOLS_CP) -Dmgci=false com.jopdesign.build.JOPizer \
 		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/dist/bin/$(JOPBIN) $(MAIN_CLASS)
 	java $(TOOLS_CP) com.jopdesign.tools.jop2dat $(TARGET)/dist/bin/$(JOPBIN)
