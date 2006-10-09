@@ -27,6 +27,8 @@ package tal;
 *	2004-09-09	Version 0.05
 *	2006-09-20	Version 0.06: shorten loop cycle to 5 ms to get short
 *				pulses (10 ms)
+*	2006-10-09	Version 1.00: update JOP to ignore HW handshake
+*				by default
 *
 */
 

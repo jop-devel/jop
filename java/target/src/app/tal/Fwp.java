@@ -38,7 +38,7 @@ public class Fwp {
 		in = new StringBuffer();
 		out = new StringBuffer();
 		usnr = new StringBuffer();
-		version = "Version: TAL261 0.06 vom 20.09.2006";
+		version = "Version: TAL261 1.00 vom 9.10.2006";
 		lf = true;		// default for serial/modem
 		usnr.append(Tal.par.usnr);
 		
