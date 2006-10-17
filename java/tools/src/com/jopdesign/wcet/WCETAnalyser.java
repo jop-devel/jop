@@ -193,7 +193,7 @@ public class WCETAnalyser{
 //            + mainClass);
 
         wca.out = new PrintWriter(new FileOutputStream(outFile));
-        String ds = new File(WCETAnalyser.outFile).getParentFile().getAbsolutePath()+"\\Makefile";
+        String ds = new File(WCETAnalyser.outFile).getParentFile().getAbsolutePath()+File.separator+"Makefile";
         wca.dotout = new PrintWriter(new FileOutputStream(ds));
         wca.dotout.print("doteps:\n");
         
@@ -401,7 +401,7 @@ public class WCETAnalyser{
     sb.append("}\n");
    
     try {
-      dotf = new File(WCETAnalyser.outFile).getParentFile().getAbsolutePath()+"\\App.dot";
+      dotf = new File(WCETAnalyser.outFile).getParentFile().getAbsolutePath()+File.separator+"App.dot";
       dotf = dotf.replace('<','_');
       dotf = dotf.replace('>','_');
       dotf = dotf.replace('\\','/');

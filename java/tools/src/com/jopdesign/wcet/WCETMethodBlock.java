@@ -1021,10 +1021,10 @@ if(pl.size()>0)
     
     if(!global){
       try {
-        dotf = new File(WCETAnalyser.outFile).getParentFile().getAbsolutePath()+"\\"+jc.getClassName()+"."+methodbcel.getName()+".dot";
+        dotf = new File(WCETAnalyser.outFile).getParentFile().getAbsolutePath()+File.separator+jc.getClassName()+"."+methodbcel.getName()+".dot";
         dotf = dotf.replace('<','_');
         dotf = dotf.replace('>','_');
-        dotf = dotf.replace('\\','/');
+        dotf = dotf.replace(File.separatorChar,'/');
         PrintWriter dotout = new PrintWriter(new FileOutputStream(dotf));
         dotout.write(sb.toString());
         dotout.close();
@@ -1108,7 +1108,7 @@ if(pl.size()>0)
       ls.insert(0, lso.toString());
 
       try {
-        lpf = new File(WCETAnalyser.outFile).getParentFile().getAbsolutePath()+"\\"+jc.getClassName()+"."+methodbcel.getName()+".lp";
+        lpf = new File(WCETAnalyser.outFile).getParentFile().getAbsolutePath()+File.separator+jc.getClassName()+"."+methodbcel.getName()+".lp";
         lpf = lpf.replace('<','_');
         lpf = lpf.replace('>','_');
   //System.out.println("about to write:"+lpf);
