@@ -1,0 +1,18 @@
+<project name="clean" default="clean">
+	
+	<target name="clean">
+		
+		<delete dir="work"/>
+		
+		<delete>
+			<fileset>
+				<includes name="*.dat"/>
+				<includes name="*.wlf"/>
+			</fileset>
+		</delete>
+		
+		<delete file="transcript"/>
+		
+	</target>
+	
+</project>

@@ -1,0 +1,18 @@
+<project name="jopser" default="jopser">
+
+	<target name="jopser">
+		
+		<delete dir="generated"/>
+		<mkdir dir="generated"/>
+		
+		<exec executable="gcc" failonerror="true" output="generated/jvmser.asm">
+			<arg line="-x c -E -C -P src/jvm.asm"/>
+		</exec>
+		
+		<ant>
+			<property name="project" value="../generated/jvmser"/>
+		</ant>
+		
+	</target>
+
+</project>

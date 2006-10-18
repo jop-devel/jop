@@ -1,0 +1,639 @@
+<project name="jop" default="all">
+
+	<description>
+
+		Should build JOP and all tools from scratch.
+	
+		not included at the moment:
+			ACEX board
+			configuration CPLD compiling
+			Spartan-3 targets
+	
+		You probably want to change the following parts:
+	
+			qproj ... your Quartus FPGA project
+			com-* ... your communication settings
+			all, japp ... USB or serial download
+			target-app-path, main-class ... your target application
+
+		for a quick change you can also use command line arguments when invoking Ant:
+			ant -Dqproj=cycwrk -Dtarget-app-path=java/target/src/bench -Dmain-class=jbe/DoAll japp
+
+	</description>
+	
+	<taskdef resource="net/sf/antcontrib/antcontrib.properties">
+		<classpath>
+			<pathelement location="java/lib/ant-contrib-1.0b2.jar"/>
+		</classpath>
+	</taskdef>
+
+	<!-- com1 is the usual serial port -->
+	<property name="com-port" value="COM1"/>
+	<!-- com6 is the FTDI VCOM for the USB download -->
+	<!-- <property name="com-port" value="COM6"/> -->
+
+	<property name="com-flag" value="-e"/>
+	<!-- use -usb to download the Java application without the echo 'protocol' on USB -->
+	<!-- <property name="com-flag" value="-e -usb"/> -->
+
+	<property name="blaster-type" value="ByteBlasterMV"/>
+	<!-- <property name="blaster-type" value="USB-Blaster"/> -->
+
+	<!-- 'some' different Quartus projects -->
+	<!-- <property name="qproj" value="cycmin cycbaseio cycbg dspio lego cycfpu cyc256x16 sopcmin"/> -->
+	<!-- if you want to build only one Quartus project use e.g.: -->
+	<property name="qproj" value="cycmin"/> 
+	
+	<!-- Nelson uncomment this -->
+	<!-- <property name="qproj" value="cyc12baseio"/> -->
+	
+	<!-- Jens & Mikael uncomment this -->
+	<!-- <property name="qproj" value="mikjen"/> -->
+
+	<!-- Which project do you want to be downloaded? -->
+	<property name="dlproj" value="${qproj}"/>
+	<!-- Which project do you want to be programmed into the flash? -->
+	<property name="flproj" value="${dlproj}"/>
+	<!-- IP address for Flash programming -->
+	<!-- <property name="ipdest" value="192.168.1.2"/> -->
+	<property name="ipdest" value="192.168.0.123"/>
+
+	<property name="p1" value="test"/>
+	<property name="p2" value="test"/>
+	<property name="p3" value="HelloWorld"/>
+	 
+	<!-- <property name="p2" value="wcet"/> -->
+	<!-- <property name="p3" value="Loop"/> -->
+	 
+	<!-- <property name="p2" value="wcet"/> -->
+	<!-- <property name="p3" value="StartLineFollower"/> -->
+	<!-- <property name="p3" value="StartKfl"/> -->
+	<!-- <property name="wcet-method" value="main"/> -->
+	<property name="wcet-method" value="measure"/>
+
+	<!-- <property name="p2" value="jdk"/> -->
+	<!-- <property name="p3" value="DoAll"/> -->
+
+	<!-- Jens & Mikael uncomment this -->
+	<!-- <property name="p1" value="app"/> -->
+	<!-- <property name="p2" value="dsp"/> -->
+	<!-- <property name="p3" value="SigDel"/> -->
+
+	<!-- Nelson uncomment this -->
+	<!-- <property name="p1" value="common"/> -->
+	<!-- <property name="p2" value="ejip"/> -->
+	<!-- <property name="p3" value="Main"/> -->
+
+	<property name="tools" value="java/tools"/>
+	
+	<path id="ext-cp">
+		<fileset dir="java/lib">
+			<include name="bcel-5.1.jar"/>
+			<include name="jakarta-regexp-1.3.jar"/>
+			<include name="RXTXcomm.jar"/>
+			<include name="lpsolve55j.jar"/>
+		</fileset>
+	</path>
+
+	<property name="target" value="java/target"/>
+	
+	<path id="tools-cp">
+		<path refid="ext-cp"/>
+		<pathelement location="${tools}/dist/lib/jop-tools.jar"/>
+	</path>
+	
+	<!-- application optimization with ProGuard: proguard.sourceforge.net -->
+	<!-- 	uncomment following line to use it -->
+	<!-- <property name="optimize" value="true"/> -->
+	
+	<target name="optimize" if="optimize">
+		
+		<move file="java/target/dist/lib/classes.zip" tofile="java/target/dist/lib/in.zip"/>
+		
+		<taskdef resource="proguard/ant/task.properties" classpath="java/lib/proguard.jar"/>		
+		<proguard configuration="optimize.pro"/>
+		
+	</target>
+	
+	
+	<!-- Add your application source paths and class that contains the   -->
+	<!-- main method here. We are using those simple P1/2/3 variables for  -->
+	<!-- 	p1=directory, p2=package name, and p3=main class  -->
+	<!-- for sources 'inside' the JOP source tree  -->
+
+	<!-- path to your application source  -->
+	<property name="target-app-path" value="${target}/src/${p1}"/>
+
+	<!-- the class that contains the Main method with package names  -->
+	<property name="main-class" value="${p2}/${p3}"/>
+
+	<!-- here an example how to define an application outside -->
+	<!-- from the jop directory tree -->
+	<!-- Rasmus's distributed SVM (see www.dsvm.org) -->
+
+	<!-- <property name="target-app-path" value="/usrx/jop_rasmus/dsvm_hw/DSVMFP/src"/> -->
+	<!-- <property name="main-class" value="dsvmfp/TestSMO"/> -->
+	<!-- <property name="main-class" value="test/TestSMO"/> -->
+
+	<!-- and the version for Rasmus's machine ;-) -->
+	<!-- <property name="p1" value="src"/> -->
+	<!-- <property name="p2" value="dsvmfp"/> -->
+	<!-- <property name="p3" value="TestSMO"/> -->
+	<!-- <property name="target-app-path" value="C:\eclipse\workspace\DSVMFP\src"/> -->
+	<!-- <property name="main-class" value="dsvmfp/TestSMO"/> -->
+
+	<!-- Jame's APT system (see www.muvium.com) -->
+	<!-- <property name="target-app-path" value="/usr2/muvium/jopaptalone/src"/> -->
+	<!-- <property name="main-class" value="com/muvium/eclipse/PeriodicTimer/JOPBootstrapLauncher"/> -->
+
+
+
+	<!-- Add more directories here when needed -->
+	<!-- <path id="target-app-source-path"> -->
+	<!-- 	<pathelement location="${target-app-path}"/> -->
+	<!-- </path> -->
+	<property name="target-app" value="${target-app-path}/${main-class}.java"/> 
+
+	<!-- Just any name that the .jop file gets. -->
+	<property name="jopbin" value="${p3}.jop"/>
+
+
+	<!-- for WCET testing -->
+	<path id="target-app-source-path">
+		<dirset dir="${target}">
+        	<include name="src/app"/>
+        	<include name="src/bench"/>
+		</dirset>
+		<pathelement location="${target-app-path}"/>
+	</path>
+	
+	<path id="target-source">
+		<dirset dir="${target}">
+        	<include name="src/common"/>
+        	<include name="src/jdk"/>
+        	<include name="src/rtapi"/>
+		</dirset>
+		<path refid="target-app-source-path"/>
+	</path>
+	
+	<pathconvert refid="target-source" property="target-source-flattened"/>
+	
+	<!-- use this for serial download -->
+	<target name="all" depends="directories, tools, jopser, japp" description="Use this for serial download"/>
+
+	<target name="japp" depends="java-app, config-byteblast, download"/>
+
+	<!-- use this for USB download of FPGA configuration and Java program download -->
+	<!-- <target name="all" depends="directories, tools, jopusb, japp"/> -->
+	<!-- <target name="japp" depends="javaapp, config-usb, download"/> -->
+	
+	<target name="clean">
+		<echo message="This is specific for my configuration ;-)"/>
+		<ant dir="modelsim" antfile="clean.xml"/>
+		<echo message="classes"/>
+		<exec executable="d:\bin\del_class.bat" failonerror="true"/>
+		<exec executable="d:\bin\qu_del.bat" dir="quartus" failonerror="true"/>
+	</target>
+
+	<target name="tools" description="Builds all the (Java) tools">
+		
+		<delete dir="${tools}/dist"/>
+		<mkdir dir="${tools}/dist"/>
+		<mkdir dir="${tools}/dist/lib"/>
+		<mkdir dir="${tools}/dist/classes"/>
+
+		<javac destdir="${tools}/dist/classes" classpathref="ext-cp">
+			<src path="${tools}/src"/>
+			<src path="${target}/src/common"/>
+			<include name="*.java"/>
+			<include name="com/jopdesign/build/*.java"/>
+			<include name="com/jopdesign/tools/*.java"/>
+			<include name="com/jopdesign/wcet/*.java"/>
+		</javac>
+
+		<jar basedir="${tools}/dist/classes" destfile="${tools}/dist/lib/jop-tools.jar"/>
+
+	</target>
+
+	<target name="java-app" description="Compile and JOPize the application">
+
+		<delete dir="${target}/dist"/>
+
+		<mkdir dir="${target}/dist"/>
+		<mkdir dir="${target}/dist/classes"/>
+		<mkdir dir="${target}/dist/lib"/>
+		<mkdir dir="${target}/dist/bin"/>
+		
+		<javac
+			destdir="${target}/dist/classes"
+			sourcepathref="target-source"
+			source="1.4">
+			<!-- We want to force bootclasspath, extdirs, and classpath to be empty, but Ant makes this difficult. -->
+			<!-- If any of these are an empty string, Ant uses the default instead. So, we give them dummy values. -->
+			<!-- This works for all but classpath, for which Ant removes any non-existent paths. -->
+			<bootclasspath path="null"/>
+			<extdirs path="null"/>
+			<classpath path="null"/>
+			<src path="${target}/src/common"/>
+			<include name="com/jopdesign/sys/*.java"/>
+		</javac>
+		
+		<javac 
+			destdir="${target}/dist/classes" 
+			sourcepathref="target-source" 
+			source="1.4"> 
+			<!-- We want to force bootclasspath, extdirs, and classpath to be empty, but Ant makes this difficult. -->
+			<!-- If any of these are an empty string, Ant uses the default instead. So, we give them dummy values. -->
+			<!-- This works for all but classpath, for which Ant removes any non-existent paths. -->
+			<bootclasspath path="null"/>
+			<extdirs path="null"/>
+			<classpath path="null"/>
+			<src path="${basedir}"/> 
+			<include name="${target-app}"/> 
+		</javac>
+		 
+		<jar destfile="${target}/dist/lib/classes.zip" basedir="${target}/dist/classes"/> 
+		 
+		<antcall target="optimize"/> 
+		 
+		<java 
+			classpathref="tools-cp" 
+			classname="com.jopdesign.build.JOPizer" 
+			failonerror="true" 
+			fork="true"> 
+			<sysproperty key="mgci" value="false"/> 
+			<arg line="-cp ${target}/dist/lib/classes.zip -o ${target}/dist/bin/${jopbin} ${main-class}"/> 
+		</java> 
+		 
+		<java 
+			classpathref="tools-cp" 
+			classname="com.jopdesign.tools.jop2dat" 
+			failonerror="true" 
+			fork="true"> 
+			<arg line="${target}/dist/bin/${jopbin}"/> 
+		</java> 
+		 
+		<move todir="modelsim"> 
+			<fileset dir="${basedir}">
+				<include name="*.dat"/> 
+			</fileset> 
+		</move> 
+		
+	</target>
+	
+	<!-- we moved the pc stuff to its own target to be NOT built on make all. -->
+	<!-- It depends on javax.comm which is NOT installed by default - Blame SUN on this! -->
+	<!-- TODO: change it to RXTXcomm if it's working ok -->
+	<target name="pc">
+		<ant dir="java/pc"/>
+	</target>
+	
+	<target name="jopser" description="Creates JBC files used to boot from the serial line">
+
+		<ant dir="asm" antfile="jopser.xml"/>
+	
+		<echo message="${qproj}"/>		
+		<foreach list="${qproj}" target="jbc-project" param="project-target" delimiter=" "/>
+	
+	</target>
+
+	<target name="jbc-project">
+
+		<antcall target="qsyn">
+			<param name="qbt" value="${project-target}"/>
+		</antcall>
+		
+		<exec executable="quartus_cpf" dir="quartus/${project-target}" failonerror="true">
+			<arg line="-c jop.cdf ../../jbc/${project-target}.jbc"/>
+		</exec>
+			
+		<exec executable="quartus_cpf" dir="quartus/${project-target}" failonerror="true">
+			<arg line="-c jop.sof ../../rbf/${project-target}.rbf"/>
+		</exec>
+
+	</target>
+
+	<target name="jopusb" description="Creates project.jbc files used to boot from the USB interface">
+
+		<ant dir="asm" antfile="jopusb"/>
+
+		<echo message="${qproj}"/>
+		<foreach list="${qproj}" target="jbc-project" param="project-target" delimiter=" "/>
+
+	</target>
+	
+	<target name="jopflash" description="Creates project.ttf files used to boot from flash.">
+
+		<ant dir="asm" antfile="jopflash"/>
+		
+		<echo message="${qproj}"/>
+	<!-- 	for target in $(QPROJ); do \ -->
+	<!-- 		make qsyn -e QBT=$$target; \ -->
+	<!-- 		quartus_cpf -c quartus/$$target/jop.sof ttf/$$target.ttf; \ -->
+	<!-- 		cd ../..; \ -->
+	<!-- 	done -->
+	</target>
+	
+	<target name="qsyn" description="Quartus build process called by jopser, jopusb, ...">
+		
+		<echo message="${qbt}"/>
+		<echo message="building ${qbt}"/>
+
+		<delete dir="quartus/${qbt}/db"/>
+		<delete file="quartus/${qbt}/jop.sof"/>
+		<delete file="jbc/${qbt}.jbc"/>
+		<delete file="rbf/${qbt}.rbf"/>
+
+		<exec executable="quartus_map" failonerror="true">
+			<arg line="quartus/${qbt}/jop"/>
+		</exec>
+		
+		<exec executable="quartus_fit" failonerror="true">
+			<arg line="quartus/${qbt}/jop"/>
+		</exec>
+		
+		<exec executable="quartus_asm" failonerror="true">
+			<arg line="quartus/${qbt}/jop"/>
+		</exec>
+		
+		<exec executable="quartus_tan" failonerror="true">
+			<arg line="quartus/${qbt}/jop"/>
+		</exec>
+
+	</target>
+
+	<target name="sim" depends="java-app" description="Modelsim target without the tools">
+		<ant dir="asm" antfile="jopsim.xml"/>
+		<ant dir="modelsim" antfile="sim.xml"/>
+	</target>
+
+	<target name="jsim" depends="java-app" description="JopSim target without the tools">
+		<java classname="com.jopdesign.tools.JopSim" failonerror="true" fork="true">
+			<sysproperty key="log" value="false"/>
+			<sysproperty key="handle" value="true"/>
+			<classpath>
+				<pathelement location="java/tools/dist/lib/jop-tools.jar"/>
+			</classpath>
+			<arg line="java/target/dist/bin/${jopbin}"/>
+		</java>
+	</target>
+	
+	<target name="config-byteblast">
+		<exec executable="quartus_pgm" dir="quartus/${dlproj}" failonerror="true">
+			<arg line="-c ${blaster-type} -m JTAG jop.cdf"/>
+		</exec>
+	</target>
+	
+	<target name="config-usb">
+		<exec executable="USBRunner" dir="rbf" failonerror="true">
+			<arg line="${dlproj}.cdf"/>
+		</exec>
+	</target>
+
+	<target name="download">
+		<!-- <java classname="com.jopdesign.tools.JavaDown" failonerror="true" fork="true"> -->
+		<!-- 	<classpath> -->
+		<!-- 		<pathelement location="java/tools/dist/lib/jop-tools.jar"/> -->
+		<!-- 		<pathelement location="java/lib/RXTXcomm.jar"/> -->
+		<!-- 	</classpath> -->
+		<!-- 	<arg line="${com-flag} java/target/dist/bin/${jopbin} ${com-port}"/> -->
+		<!-- </java> -->
+
+		<!-- this is the download version with down.exe -->
+		<exec executable="down" failonerror="true">
+			<arg line="${com-flag} java/target/dist/bin/${jopbin} ${com-port}"/>
+		</exec>
+		
+	</target>
+	
+	<target name="prog-flash" depends="java-app" description="Flash programming">
+		
+		<exec executable="quartus_pgm" failonerror="true">
+			<arg line="-c ByteblasterMV -m JTAG -o p;jbc/${dlproj}.jbc"/>
+		</exec>
+	
+		<exec executable="down" failonerror="true">
+			<arg line="java/target/dist/bin/${jopbin} ${com-port}"/>
+		</exec>
+		
+		<java
+			classpath="java/pc/dist/lib/jop-pc.jar"
+			classname="udp.Flash"
+			failonerror="true"
+			fork="true">
+			<arg line="java/target/dist/bin/${jopbin} ${ipdest}"/>
+		</java>
+		
+		<java
+			classpath="java/pc/dist/lib/jop-pc.jar"
+			classname="udp.Flash"
+			failonerror="true"
+			fork="true">
+			<arg line="ttf/${flproj}.ttf ${ipdest}"/>
+		</java>
+		
+		<exec executable="quartus_pgm" failonerror="true">
+			<arg line="-c ${blaster-type} -m JTAG -o p;quartus/cycconf/cyc_conf.pof"/>
+		</exec>
+		
+	</target>
+	
+	<!-- <target name="prog-flash" description="Flash programming for the BG hardware as an example">  -->
+	<!-- 	 -->
+	<!-- 	<exec executable="quartus_pgm" failonerror="true"> -->
+	<!-- 		<arg line="-c ByteblasterMV -m JTAG -o p;jbc/${dlprog}.jbc"/> -->
+	<!-- 	</exec>  -->
+	<!-- 	 -->
+	<!-- 	<ant dir="java/target"> -->
+	<!-- 		<property name="arg1" value="app"/> -->
+	<!-- 		<property name="arg2" value="oebb"/> -->
+	<!-- 		<property name="arg3" value="BgInit"/> -->
+	<!-- 	</ant> -->
+	<!-- 	 -->
+	<!-- 	<exec executable="down" failonerror="true"> -->
+	<!-- 		<arg line="java/target/dist/bin/oebb_BgInit.jop ${com-port}"/> -->
+	<!-- 	</exec> -->
+	<!-- 	 -->
+	<!-- 	<ant dir="java/target"> -->
+	<!-- 		<property name="arg1" value="app"/> -->
+	<!-- 		<property name="arg2" value="oebb"/> -->
+	<!-- 		<property name="arg3" value="Main"/> -->
+	<!-- 	</ant> -->
+	<!-- 	  -->
+	<!-- 	<java classpath="java/pc/dist/lib/jop-pc.jar" classname="udp.Flash" failonerror="true" fork="true"> -->
+	<!-- 		<arg line="java/target/dist/bin/oebb_Main.jop 192.168.1.2"/> -->
+	<!-- 	</java> -->
+	<!-- 	 -->
+	<!-- 	<java classpath="java/pc/dist/lib/jop-pc.jar" classname="udp.Flash" failonerror="true" fork="true"> -->
+	<!-- 		<arg line="ttf/${flproj}.ttf 192.168.1.2"/> -->
+	<!-- 	</java> -->
+	<!-- 	 -->
+	<!-- 	<exec executable="quartus_pgm" failonerror="true"> -->
+	<!-- 		<arg line="-c ${blaster-type} -m JTAG -o p;quartus/cycconf/cyc_conf.pof"/> -->
+	<!-- 	</exec> -->
+	<!-- 	 -->
+	<!-- </target>  -->
+	
+	<target name="erase-flash">
+		<java
+			classpath="java/pc/dist/lib/jop-pc.jar"
+			classname="udp.Erase"
+			failonerror="true"
+			fork="true">
+			<arg line="${ipdest}"/>
+		</java>
+	</target>
+	
+	<target name="pld-init">
+		<exec executable="quartus_pgm" failonerror="true">
+			<arg line="-c ${blaster-type} -m JTAG -o p;quartus/cycconf/cyc_conf_init.pof"/>
+		</exec>
+	</target>
+	
+	<target name="pld-conf">
+		<exec executable="quartus_pgm" failonerror="true">
+			<arg line="-c ${blaster-type} -m JTAG -o p;quartus/cycconf/cyc_conf.pof"/>
+		</exec>
+	</target>
+
+	<target name="oebb">
+		<java
+			classpath="java/pc/dist/lib/jop-pc.jar"
+			classname="udp.Flash"
+			failonerror="true"
+			fork="true">
+			<arg line="java/target/dist/bin/oebb_Main.jop 192.168.1.2"/>
+		</java>
+	</target>
+
+	<target name="bg"
+		depends="directories, tools, jopflash, jopser, prog-flash"
+		description="do the whole build process including flash programming for BG and baseio (TAL)"/>
+
+	<target name="directories" description="Creates some directories for configuration files">
+		<mkdir dir="jbc"/>
+		<mkdir dir="ttf"/>
+	</target>
+
+	<!-- The order is not so perfect. We would prefer to first program the PLD. -->
+	<target name="xxx" description="Configures the FPGA and programs the PLD but uses a .jbc file">
+		<exec executable="quartus_pgm" failonerror="true">
+			<arg line="-c ${blaster-type} -m JTAG -o p;jbc/cycbg.jbc"/>
+		</exec>
+		<exec executable="quartus_pgm" failonerror="true">
+			<arg line="-c ${blaster-type} -m JTAG -o p;jbc/cyc_conf.jbc"/>
+		</exec>
+	</target>
+	
+	<!-- TODO: combine all quartus stuff to a single target -->
+	<target name="jop-blink-test" description="JOP porting test programs">
+		
+		<ant dir="asm">
+			<property name="project" value="blink"/>
+		</ant>
+		
+		<echo message="${qproj}"/>	
+		
+		<foreach list="${qproj}" target="test-project" param="project-target" delimiter=" "/>
+
+		<exec dir="quartus/${dlproj}" executable="quartus_pgm" failonerror="true">
+			<arg line="-c ${blaster-type} -m JTAG jop.cdf"/>
+		</exec>
+		
+		<exec executable="e" failonerror="true">
+			<arg line="${com-port}"/>
+		</exec>
+
+	</target>
+	
+	<target name="test-project">
+		
+		<echo message="building ${project-target}"/>
+		<delete dir="quartus/${project-target}/db"/>
+
+		<property name="qp" value="quartus/${project-target}/jop"/>
+		<echo message="${qp}"/>
+		
+		<exec executable="quartus_map" failonerror="true">
+			<arg line="${qp}"/>
+		</exec>
+		
+		<exec executable="quartus_fit" failonerror="true">
+			<arg line="${qp}"/>
+		</exec>
+		
+		<exec executable="quartus_asm" failonerror="true">
+			<arg line="${qp}"/>
+		</exec>
+		
+		<exec executable="quartus_tan" failonerror="true">
+			<arg line="${qp}"/>
+		</exec>
+
+		<exec dir="quartus/${project-target}" executable="quartus_cpf" failonerror="true">
+			<arg line="-c jop.cdf ../../jbc/${project-target}.jbc"/>
+		</exec>
+		
+	</target>
+	
+	<target name="jop-testmon">
+		
+		<ant dir="asm">
+			<property name="project" value="testmon"/>
+		</ant>
+		
+		<echo message="${qproj}"/>	
+		
+		<foreach list="${qproj}" target="test-project" param="project-target" delimiter=" "/>
+
+		<exec dir="quartus/${dlproj}" executable="quartus_pgm" failonerror="true">
+			<arg line="-c ${blaster-type} -m JTAG jop.cdf"/>
+		</exec>
+		
+	</target>
+
+	
+	<target name="udp-dbg" description="UDP debugging">
+		<java
+			classname="udp.UDPDbg"
+			classpath="java/pc/dist/lib/jop-pc.jar"
+			failonerror="true"
+			fork="true"/>
+	</target>
+
+	<!-- use latex=true to get LaTeX friendly table output. -->
+	<!-- WCETAnalyser options -->
+	<!-- latex: it will output latex formatting in the tables (afterwards replace ">" with "$>$ and "_" with "\_") -->
+	<!-- dot:   it will generate directed graphs of basic blocks in dot format (see: http://www.graphviz.org/) -->
+	<!-- jline: it will insert Java source code into the bytecode tables -->
+	<target name="wcet" description="Rasmus's WCET analyser">
+		<delete dir="${target}/wcet"/>
+		<mkdir dir="${target}/wcet"/>
+		<java
+			classpathref="tools-cp"
+			classname="com.jopdesign.wcet.WCETAnalyser"
+			failonerror="true"
+			fork="true">
+			<sysproperty key="latex" value="false"/>
+			<sysproperty key="dot" value="true"/>
+			<sysproperty key="jline" value="true"/>
+			<sysproperty key="ls" value="true"/>
+			<arg line="-mm ${wcet-method} -cp ${target}/dist/lib/classes.zip -o ${target}/wcet/${p3}wcet.txt -sp ${target-source-flattened} ${main-class}"/>
+		</java>
+	</target>
+		
+	<target name="dot2eps" depends="wcet">
+	 	<!-- cd $(TARGET)/wcet && make   -->
+	</target>  
+	
+	<target name="test">
+		<java
+			classpathref="tools-cp"
+			classname="com.jopdesign.wcet.CallGraph"
+			failonerror="true"
+			fork="true">
+			<arg line="-cp ${target}/dist/lib/classes.zip -o ${target}/wcet/${p3}call.txt -sp ${target-source-flattened} ${main-class}"/>
+		</java>
+	</target>
+	
+</project>

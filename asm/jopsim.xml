@@ -1,0 +1,14 @@
+<project name="jopsim" default="jopsim">
+	
+	<delete dir="generated"/>
+	<mkdir dir="generated"/>
+	
+	<exec executable="gcc" failonerror="true" output="generated/jvmsim.asm">
+		<arg line="-x c -E -C -P -DSIMULATION src/jvm.asm"/>
+	</exec>
+
+	<ant>
+		<property name="project" value="../generated/jvmsim"/>
+	</ant>
+
+</project>

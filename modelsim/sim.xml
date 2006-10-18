@@ -1,0 +1,166 @@
+<project name="sim" default="sim">
+	
+	<property name="jopdir" value="../vhdl"/>
+	
+	<!-- <property name="options" value="-93 -quiet -check_synthesis -lint -pedanticerrors"/> -->
+	<property name="options" value="-93 -quiet"/>
+	
+	<target name="sim">
+	
+		<delete dir="work"/>
+
+		<exec executable="vlib" failonerror="true">
+			<arg line="work"/>
+		</exec>
+
+		<presetdef name="vcom">
+			<exec executable="vcom" failonerror="true">
+				<arg line="${options}"/>
+			</exec>
+		</presetdef>
+
+		<vcom>
+			<arg line="${jopdir}/simulation/sim_jop_config_100.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/top/jop_types.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/simulation/sim_ram.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/simulation/sim_pll.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/simulation/sim_jbc.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/simulation/sim_rom.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/simulation/sim_memory.vhd"/>
+		</vcom>
+
+		<!-- <vcom> -->
+		<!-- 	<arg line="${jopdir}/scio/fifo.vhd"/> -->
+		<!-- </vcom> -->
+
+		<!-- <vcom> -->
+		<!-- 	<arg line="${jopdir}/scio/sc_uart.vhd"/> -->
+		<!-- </vcom> -->
+
+		<vcom>
+			<arg line="${jopdir}/simulation/sim_sc_uart.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/wishbone/wb_pack.vhd"/>
+		</vcom>
+
+		<!-- <vcom> -->
+		<!-- 	<arg line="${jopdir}/wishbone/wb_test_slave.vhd"/> -->
+		<!-- </vcom> -->
+
+		<!-- <vcom> -->
+		<!-- 	<arg line="${jopdir}/wishbone/wb_top.vhd"/> -->
+		<!-- </vcom> -->
+
+		<vcom>
+			<arg line="${jopdir}/jtbl.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/offtbl.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/core/cache.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/memory/sc_sram32_flash.vhd"/>
+		</vcom>
+
+		<!-- <vcom> -->
+		<!-- 	<arg line="${jopdir}/memory/sc_sram16.vhd"/> -->
+		<!-- </vcom> -->
+
+		<vcom>
+			<arg line="${jopdir}/memory/mem_sc.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/core/mul.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/core/extension.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/core/bcfetch.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/core/fetch.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/core/decode.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/core/shift.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/core/stack.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/core/core.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/scio/sc_cnt.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/scio/scio_min.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/top/jopcyc.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/simulation/tb_jop.vhd"/>
+		</vcom>
+
+		<!-- <vcom> -->
+		<!-- 	<arg line="${jopdir}/top/jop_256x16.vhd"/> -->
+		<!-- </vcom> -->
+
+		<!-- <vcom> -->
+		<!-- 	<arg line="${jopdir}/simulation/tb_jop_sram16.vhd"/> -->
+		<!-- </vcom> -->
+
+		<input message="Start simulation (y/n)?" validargs="y,n" addproperty="start-simulation"/>
+		<condition property="abort-simulation">
+			<equals arg1="n" arg2="${start-simulation}"/>
+		</condition>
+		<fail if="abort-simulation">Simulation aborted.</fail>
+		
+		<exec executable="vsim" failonerror="true">
+			<arg line="-do sim.do tb_jop"/>
+		</exec>
+
+	</target>
+	
+</project>

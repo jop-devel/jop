@@ -1,40 +1,49 @@
-<project name="blink" default="compile" basedir=".">
-	<description>
-		Assemble VM to VHDL
-	</description>
-	
-	<!-- set global properties for this vhdl -->
-	<property name="src" location="src"/>
-	<property name="vhdl" location="vhdl"/>
+<project name="asm" default="asm">
+
 	<property name="blocksize" value="4096"/>
 
-	<target name="init">
-		<!-- Create the time stamp -->
-		<tstamp/>
-		<!-- Create the vhdl directory structure used by compile -->
-		<mkdir dir="${vhdl}/${ant.project.name}"/>
+	<target name="asm">
+		
+		<!-- generated is used by jop[ser|flash] -->
+		<!-- <delete dir="generated"/> -->
+		<!-- <mkdir dir="generated"/> -->
+
+		<java
+			classpath="../java/tools/dist/lib/jop-tools.jar"
+			classname="com.jopdesign.tools.Jopa"
+			failonerror="true"
+			fork="true">
+			<arg line="-s src -d generated ${project}.asm"/> 
+		</java>
+		
+		<!-- <java classpath="../java/tools/dist/lib/jop-tools.jar" classname="BlockGen" fork="true" failonerror="true"> -->
+		<!-- 	<arg line="-b ${blocksize} -pd -d 1024 -w 8 -m xjbc_block -o generated"/> -->
+		<!-- </java> -->
+		
+		<java
+			classpath="../java/tools/dist/lib/jop-tools.jar"
+			classname="BlockGen"
+			failonerror="true"
+			fork="true">
+			<arg line="-b ${blocksize} -pd -m xram_block generated/ram.mif generated/xram_block.vhd"/>
+		</java>
+		
+		<!-- <java classpath="../java/tools/dist/lib/jop-tools.jar" classname="BlockGen" failonerror="true" fork="true"> -->
+		<!-- 	<arg line="-b ${blocksize} -pd -m xrom_block generated/rom.mif generated/xrom_block.vhd"/> -->
+		<!-- </java> -->
+		
+		<copy todir="../vhdl">
+			<fileset dir="generated">
+				<include name="*.vhd"/>
+			</fileset>
+		</copy>
+
+		<copy todir="../modelsim">
+			<fileset dir="generated">
+				<include name="*.dat"/>
+			</fileset>
+		</copy>
+		
 	</target>
 
-	<target name="compile" depends="init" description="compile the source " >
-		<java classpath="../java/tools/dist/lib/jop-tools.jar" classname="com.jopdesign.tools.Jopa" >
-			<arg line="-s ${src} -d ${vhdl}/${ant.project.name} ${ant.project.name}.asm"/>
-		</java>
-
-		<java classpath="../java/tools/dist/lib/jop-tools.jar" classname="BlockGen" >
-			<arg line="-b ${blocksize} -pd -d 1024 -w 8 -m xjbc_block -o vhdl/${ant.project.name}"/>
-		</java>
-
-		<java classpath="../java/tools/dist/lib/jop-tools.jar" classname="BlockGen" >
-			<arg line="-b ${blocksize} -pd vhdl/${ant.project.name}/ram.mif -m xram_block vhdl/${ant.project.name}/xram_block.vhd"/>
-		</java>
-
-		<java classpath="../java/tools/dist/lib/jop-tools.jar" classname="BlockGen" >
-			<arg line="-b ${blocksize} -pd vhdl/${ant.project.name}/rom.mif -m xrom_block vhdl/${ant.project.name}/xrom_block.vhd"/>
-		</java>
-	</target>
-
-	<target name="clean" description="clean up" >
-		<!-- Delete the ${vhdl}/${ant.project.name} directory tree -->
-		<delete dir="${vhdl}/${ant.project.name}"/>
-	</target>
 </project>
