@@ -256,7 +256,6 @@ jopflash:
 	for target in $(QPROJ); do \
 		make qsyn -e QBT=$$target; \
 		quartus_cpf -c quartus/$$target/jop.sof ttf/$$target.ttf; \
-		cd ../..; \
 	done
 
 
