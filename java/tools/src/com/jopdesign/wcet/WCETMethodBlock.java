@@ -1024,7 +1024,7 @@ if(pl.size()>0)
         dotf = new File(WCETAnalyser.outFile).getParentFile().getAbsolutePath()+File.separator+jc.getClassName()+"."+methodbcel.getName()+".dot";
         dotf = dotf.replace('<','_');
         dotf = dotf.replace('>','_');
-        dotf = dotf.replace(File.separatorChar,'/');
+        dotf = dotf.replace('\\','/');
         PrintWriter dotout = new PrintWriter(new FileOutputStream(dotf));
         dotout.write(sb.toString());
         dotout.close();

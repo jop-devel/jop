@@ -175,7 +175,7 @@ public class WCETAnalyser{
           appmethod = mainClass+"."+mainMethodName;
         }
         
-        StringTokenizer st = new StringTokenizer(srcPath,";");
+        StringTokenizer st = new StringTokenizer(srcPath, File.pathSeparator);
         while(st.hasMoreTokens()){
           String srcDir = st.nextToken();//"java/target/src/common";
           File sDir = new File(srcDir);
