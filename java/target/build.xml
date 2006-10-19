@@ -1,54 +1,87 @@
-<project name="target" default="dist" basedir=".">
-	<description>
-		Build the JOP target ROM
-	</description>
+<project name="build" default="build">
 	
-	<!-- set global properties for this build -->
-	<property name="src" location="src"/>
-	<property name="build" location="build"/>
-	<property name="dist"	location="dist"/>
-
-	<target name="init">
-		<!-- Create the time stamp -->
-		<tstamp/>
-		<!-- Create the build directory structure used by compile -->
-		<mkdir dir="${build}"/>
-	</target>
-
-	<target name="compile" depends="init" description="compile the source " >
-		<!-- Compile the java code from ${src} into ${build} -->
-		<javac
-			srcdir="${src}" 
-			classpath="../runtime/dist/lib/jop-runtime.zip" 
-			destdir="${build}"
-			target="1.1"
-		/>
-	</target>
-
-	<target name="dist" depends="compile" description="generate the distribution" >
-		<!-- Create the distribution directory -->
-		<mkdir dir="${dist}/lib"/>
-
-		<!-- Put everything in ${build} into the ${ant.project.name}.zip file -->
-		<zip destfile="${dist}/lib/${ant.project.name}.zip" basedir="${build}">
-			<zipfileset src="../runtime/dist/lib/jop-runtime.zip" />
-		</zip>
+	<target name="init-with-arg3" if="arg3">
 		
-		<java classpath="../tools/jcc.jar;../tools/dist/lib/jop-tools.jar" classname="JavaCodeCompact" >
-			<arg line="-v -nq -arch JOP -o ${dist}/lib/${ant.project.name}.jop ${dist}/lib/${ant.project.name}.zip"/>
-			<sysproperty key="jop.startclass" value="test/Clock"/>
+		<property name="project" value="${arg2}_${arg3}"/>
+		<property name="startclass" value="${arg2}/${arg3}"/>
+		<property name="appdir" value="${arg1}"/>
+			
+	</target>
+	
+	<target name="init-without-arg3" unless="arg3">
+		
+		<property name="project" value="${arg1}_${arg2}"/>
+		<property name="startclass" value="${arg1}/${arg2}"/>
+		<property name="appdir" value="$."/>
+		
+	</target>
+	
+	<target name="build" depends="init-with-arg3, init-without-arg3">
+		
+		<delete dir="dist"/>
+		
+		<mkdir dir="dist/classes"/>
+		<mkdir dir="dist/lib"/>
+		<mkdir dir="dist/bin"/>
+		
+		<javac debug="true" destdir="dist/classes">
+			<src path="src/common"/>
+			<include name="src/jdk/java/**"/>
+			<include name="src/common/com/jopdesign/sys/**"/>
+		</javac>
+
+		<javac debug="true" destdir="dist/classes">
+			<src path="src/common"/>
+			<src path="src/bench"/>
+			<src path="src/${appdir}"/>
+			<include name="src/${appdir}/${startclass}.java"/>
+		</javac>
+
+		<jar basedir="dist/classes" destfile="dist/lib/classes.zip"/>
+
+		<path id="java-lib">
+			<pathelement location="../tools/dist/lib/jop-tools.jar"/>
+			<pathelement location="../lib/bcel-5.1.jar"/>
+			<pathelement location="../lib/jakarta-regexp-1.3.jar"/>
+		</path>
+		
+		<java
+			classpathref="java-lib"
+			classname="com.jopdesign.build.JOPizer"
+			failonerror="true"
+			fork="true">
+			<sysproperty key="mgci" value="false"/>
+			<arg line="-cp dist/lib/classes.zip -o dist/bin/${project}.jop ${startclass}"/>
 		</java>
 
-		<java classpath="../tools/jcc.jar;../tools/dist/lib/jop-tools.jar" classname="com.jopdesign.tools.JopBitGen" >
-			<arg line="${dist}/lib/${ant.project.name}.jop ${dist}/lib/${ant.project.name}.bit"/>
+		<!-- this is the 'old' JCC version -->
+		<!-- <java classname="JavaCodeCompact" failonerror="true" fork="true"> -->
+		<!-- 	<classpath> -->
+		<!-- 		<pathelement location="../tools/jcc.jar"/> -->
+		<!-- 		<pathelement location="../tools/dist/lib/jop-tools.jar"/> -->
+		<!-- 	</classpath> -->
+		<!-- 	<sysproperty key="jop.startclass" value="${startclass}"/> -->
+		<!-- 	<arg line="-nq -arch JOP -o dist/bin/${project}.jop dist/lib/classes.zip"/> -->
+		<!-- </java> -->
+		 
+		<java
+			classpath="../tools/dist/lib/jop-tools.jar"
+			classname="com.jopdesign.tools.jop2dat"
+			failonerror="true"
+			fork="true">
+			<arg line="dist/bin/${project}.jop"/>
 		</java>
 
+		<move todir="../../modelsim">
+			<fileset dir="${basedir}">
+				<include name="*.dat"/>
+			</fileset>
+		</move>
 
+		<!-- <java classpath="../tools/dist/lib/jop-tools.jar" classname="com.jopdesign.tools.JopBitGen" failonerror="true" fork="true"> -->
+		<!-- 	<arg line="dist/bin/${project}.jop dist/bin/${project}.bit"/> -->
+		<!-- </java> -->
+		
 	</target>
 
-	<target name="clean" description="clean up" >
-		<!-- Delete the ${build} and ${dist} directory trees -->
-		<delete dir="${build}"/>
-		<delete dir="${dist}"/>
-	</target>
 </project>
