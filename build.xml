@@ -21,12 +21,6 @@
 
 	</description>
 	
-	<taskdef resource="net/sf/antcontrib/antcontrib.properties">
-		<classpath>
-			<pathelement location="java/lib/ant-contrib-1.0b2.jar"/>
-		</classpath>
-	</taskdef>
-
 	<!-- com1 is the usual serial port -->
 	<property name="com-port" value="COM1"/>
 	<!-- com6 is the FTDI VCOM for the USB download -->
@@ -40,8 +34,13 @@
 	<!-- <property name="blaster-type" value="USB-Blaster"/> -->
 
 	<!-- 'some' different Quartus projects -->
-	<!-- <property name="qproj" value="cycmin cycbaseio cycbg dspio lego cycfpu cyc256x16 sopcmin"/> -->
-	<!-- if you want to build only one Quartus project use e.g.: -->
+	<!-- <property name="qproj" value="cycbaseio"/> -->
+	<!-- <property name="qproj" value="cycbg"/> -->
+	<!-- <property name="qproj" value="dspio"/> -->
+	<!-- <property name="qproj" value="lego"/> -->
+	<!-- <property name="qproj" value="cycfpu"/> -->
+	<!-- <property name="qproj" value="cyc256x16"/> -->
+	<!-- <property name="qproj" value="sopcmin"/> -->
 	<property name="qproj" value="cycmin"/> 
 	
 	<!-- Nelson uncomment this -->
@@ -285,7 +284,20 @@
 	<!-- It depends on javax.comm which is NOT installed by default - Blame SUN on this! -->
 	<!-- TODO: change it to RXTXcomm if it's working ok -->
 	<target name="pc">
-		<ant dir="java/pc"/>
+
+		<delete dir="java/pc/dist"/>
+		
+		<mkdir dir="java/pc/dist/lib"/>
+		<mkdir dir="java/pc/dist/classes"/>
+		
+		<javac debug="true" destdir="java/pc/dist/classes" classpath="jcc.jar">
+			<src path="java/pc/"/>
+			<src path="java/pc/../target/src/common"/>
+			<include name="java/pc/src/**"/>
+		</javac>
+		
+		<jar destfile="java/pc/dist/lib/jop-pc.jar" basedir="java/pc/dist/classes"/>
+
 	</target>
 	
 	<target name="jopser" description="Creates JBC files used to boot from the serial line">
@@ -293,32 +305,32 @@
 		<ant dir="asm" antfile="jopser.xml"/>
 	
 		<echo message="${qproj}"/>		
-		<foreach list="${qproj}" target="jbc-project" param="project-target" delimiter=" "/>
+		<antcall target="jbc-project"/>
 	
-	</target>
-
-	<target name="jbc-project">
-
-		<antcall target="qsyn">
-			<param name="qbt" value="${project-target}"/>
-		</antcall>
-		
-		<exec executable="quartus_cpf" dir="quartus/${project-target}" failonerror="true">
-			<arg line="-c jop.cdf ../../jbc/${project-target}.jbc"/>
-		</exec>
-			
-		<exec executable="quartus_cpf" dir="quartus/${project-target}" failonerror="true">
-			<arg line="-c jop.sof ../../rbf/${project-target}.rbf"/>
-		</exec>
-
 	</target>
 
 	<target name="jopusb" description="Creates project.jbc files used to boot from the USB interface">
 
-		<ant dir="asm" antfile="jopusb"/>
+		<ant dir="asm" antfile="jopusb.xml"/>
 
 		<echo message="${qproj}"/>
-		<foreach list="${qproj}" target="jbc-project" param="project-target" delimiter=" "/>
+		<antcall target="jbc-project"/>
+
+	</target>
+
+	<target name="jbc-project" description="Helper target for jopser and jopusb">
+
+		<antcall target="qsyn">
+			<param name="qbt" value="${qproj}"/>
+		</antcall>
+		
+		<exec executable="quartus_cpf" dir="quartus/${qproj}" failonerror="true">
+			<arg line="-c jop.cdf ../../jbc/${qproj}.jbc"/>
+		</exec>
+			
+		<exec executable="quartus_cpf" dir="quartus/${qproj}" failonerror="true">
+			<arg line="-c jop.sof ../../rbf/${qproj}.rbf"/>
+		</exec>
 
 	</target>
 	
@@ -534,7 +546,7 @@
 		
 		<echo message="${qproj}"/>	
 		
-		<foreach list="${qproj}" target="test-project" param="project-target" delimiter=" "/>
+		<antcall target="test-project"/>
 
 		<exec dir="quartus/${dlproj}" executable="quartus_pgm" failonerror="true">
 			<arg line="-c ${blaster-type} -m JTAG jop.cdf"/>
@@ -546,12 +558,28 @@
 
 	</target>
 	
-	<target name="test-project">
+	<target name="jop-testmon">
 		
-		<echo message="building ${project-target}"/>
-		<delete dir="quartus/${project-target}/db"/>
+		<ant dir="asm">
+			<property name="project" value="testmon"/>
+		</ant>
+		
+		<echo message="${qproj}"/>	
+		
+		<antcall target="test-project"/>
 
-		<property name="qp" value="quartus/${project-target}/jop"/>
+		<exec dir="quartus/${dlproj}" executable="quartus_pgm" failonerror="true">
+			<arg line="-c ${blaster-type} -m JTAG jop.cdf"/>
+		</exec>
+		
+	</target>
+
+	<target name="test-project" description="Helper target for jop-blink-test and jop-testmon">
+		
+		<echo message="building ${qproj}"/>
+		<delete dir="quartus/${qproj}/db"/>
+
+		<property name="qp" value="quartus/${qproj}/jop"/>
 		<echo message="${qp}"/>
 		
 		<exec executable="quartus_map" failonerror="true">
@@ -570,28 +598,12 @@
 			<arg line="${qp}"/>
 		</exec>
 
-		<exec dir="quartus/${project-target}" executable="quartus_cpf" failonerror="true">
-			<arg line="-c jop.cdf ../../jbc/${project-target}.jbc"/>
+		<exec dir="quartus/${qproj}" executable="quartus_cpf" failonerror="true">
+			<arg line="-c jop.cdf ../../jbc/${qproj}.jbc"/>
 		</exec>
 		
 	</target>
 	
-	<target name="jop-testmon">
-		
-		<ant dir="asm">
-			<property name="project" value="testmon"/>
-		</ant>
-		
-		<echo message="${qproj}"/>	
-		
-		<foreach list="${qproj}" target="test-project" param="project-target" delimiter=" "/>
-
-		<exec dir="quartus/${dlproj}" executable="quartus_pgm" failonerror="true">
-			<arg line="-c ${blaster-type} -m JTAG jop.cdf"/>
-		</exec>
-		
-	</target>
-
 	
 	<target name="udp-dbg" description="UDP debugging">
 		<java
