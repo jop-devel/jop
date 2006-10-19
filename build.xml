@@ -290,11 +290,12 @@
 		<mkdir dir="java/pc/dist/lib"/>
 		<mkdir dir="java/pc/dist/classes"/>
 		
-		<javac debug="true" destdir="java/pc/dist/classes" classpath="jcc.jar">
-			<src path="java/pc/"/>
-			<src path="java/pc/../target/src/common"/>
-			<include name="java/pc/src/**"/>
+		<javac debug="true" destdir="java/pc/dist/classes">
+			<src path="java/target/src/common"/> 
+			<include name="com/jopdesign/sys/SoftFloat.java"/> 
 		</javac>
+
+		<javac debug="true" srcdir="java/pc/src" destdir="java/pc/dist/classes"/> 
 		
 		<jar destfile="java/pc/dist/lib/jop-pc.jar" basedir="java/pc/dist/classes"/>
 
@@ -339,11 +340,15 @@
 		<ant dir="asm" antfile="jopflash"/>
 		
 		<echo message="${qproj}"/>
-	<!-- 	for target in $(QPROJ); do \ -->
-	<!-- 		make qsyn -e QBT=$$target; \ -->
-	<!-- 		quartus_cpf -c quartus/$$target/jop.sof ttf/$$target.ttf; \ -->
-	<!-- 		cd ../..; \ -->
-	<!-- 	done -->
+
+		<antcall target="qsyn">
+			<param name="qbt" value="${qproj}"/>
+		</antcall>
+
+		<exec executable="quartus_cpf" failonerror="true">
+			<arg line="-c quartus/${qproj}/jop.sof ttf/${qproj}.ttf"/>
+		</exec>
+		
 	</target>
 	
 	<target name="qsyn" description="Quartus build process called by jopser, jopusb, ...">
@@ -449,42 +454,6 @@
 		</exec>
 		
 	</target>
-	
-	<!-- <target name="prog-flash" description="Flash programming for the BG hardware as an example">  -->
-	<!-- 	 -->
-	<!-- 	<exec executable="quartus_pgm" failonerror="true"> -->
-	<!-- 		<arg line="-c ByteblasterMV -m JTAG -o p;jbc/${dlprog}.jbc"/> -->
-	<!-- 	</exec>  -->
-	<!-- 	 -->
-	<!-- 	<ant dir="java/target"> -->
-	<!-- 		<property name="arg1" value="app"/> -->
-	<!-- 		<property name="arg2" value="oebb"/> -->
-	<!-- 		<property name="arg3" value="BgInit"/> -->
-	<!-- 	</ant> -->
-	<!-- 	 -->
-	<!-- 	<exec executable="down" failonerror="true"> -->
-	<!-- 		<arg line="java/target/dist/bin/oebb_BgInit.jop ${com-port}"/> -->
-	<!-- 	</exec> -->
-	<!-- 	 -->
-	<!-- 	<ant dir="java/target"> -->
-	<!-- 		<property name="arg1" value="app"/> -->
-	<!-- 		<property name="arg2" value="oebb"/> -->
-	<!-- 		<property name="arg3" value="Main"/> -->
-	<!-- 	</ant> -->
-	<!-- 	  -->
-	<!-- 	<java classpath="java/pc/dist/lib/jop-pc.jar" classname="udp.Flash" failonerror="true" fork="true"> -->
-	<!-- 		<arg line="java/target/dist/bin/oebb_Main.jop 192.168.1.2"/> -->
-	<!-- 	</java> -->
-	<!-- 	 -->
-	<!-- 	<java classpath="java/pc/dist/lib/jop-pc.jar" classname="udp.Flash" failonerror="true" fork="true"> -->
-	<!-- 		<arg line="ttf/${flproj}.ttf 192.168.1.2"/> -->
-	<!-- 	</java> -->
-	<!-- 	 -->
-	<!-- 	<exec executable="quartus_pgm" failonerror="true"> -->
-	<!-- 		<arg line="-c ${blaster-type} -m JTAG -o p;quartus/cycconf/cyc_conf.pof"/> -->
-	<!-- 	</exec> -->
-	<!-- 	 -->
-	<!-- </target>  -->
 	
 	<target name="erase-flash">
 		<java

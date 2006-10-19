@@ -1,0 +1,18 @@
+<project name="jopflash" default="jopflash">
+
+	<target name="jopflash">
+		
+		<delete dir="generated"/>
+		<mkdir dir="generated"/>
+		
+		<exec executable="gcc" failonerror="true" output="generated/jvmflash.asm">
+			<arg line="-x c -E -C -P -DFLASH src/jvm.asm"/>
+		</exec>
+		
+		<ant>
+			<property name="project" value="../generated/jvmflash"/>
+		</ant>
+		
+	</target>
+
+</project>
