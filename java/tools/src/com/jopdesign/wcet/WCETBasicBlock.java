@@ -639,7 +639,7 @@ class WCETBasicBlock {
       
       // flow constrain the cache paths
       if(innerloop){
-        ls.append("fcm"+ invoS + " = f"+loopdriverwcbb.getLoopdriverprevwcbb().getIDS()+"_"+loopdriverwcbb.getIDS()+"; // cache misses driven by loopdriver\n");
+        ls.append("fcm"+ invoS + " <= f"+loopdriverwcbb.getLoopdriverprevwcbb().getIDS()+"_"+loopdriverwcbb.getIDS()+"; // cache misses driven by loopdriver\n");
       } else { // cache misses
         ls.append("fch"+ invoS + " = 0; // no cache hits (because not innerloop)\n");
       }
