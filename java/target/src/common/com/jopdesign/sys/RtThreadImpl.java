@@ -15,6 +15,11 @@ import joprt.RtThread;
  */
 public class RtThreadImpl {
 
+	// usual priority levels of java.lang.Thread
+	public final static int MIN_PRIORITY = 1;
+	public final static int NORM_PRIORITY = 5;
+	public final static int MAX_PRIORITY = 10;
+
 	// priority levels above Thread
 	protected final static int RT_BASE = 2;
 	protected final static int RT_IDLE = 1;
@@ -87,7 +92,7 @@ public class RtThreadImpl {
 		head = null;
 
 		//	thread struct for main
-		ref[0] = new RtThreadImpl(Thread.NORM_PRIORITY, 0);
+		ref[0] = new RtThreadImpl(NORM_PRIORITY, 0);
 		ref[0].state = READY;		// main thread is READY
 		next[0] = 0;
 
@@ -147,7 +152,7 @@ for (int i=0; i<MAX_STACK; ++i) {
 		if (us==0)	{					// this is NOT a RT thread
 			priority = prio;
 		} else {						// RT prio is above Thread prios.
-			priority = prio+Thread.MAX_PRIORITY+RT_BASE;
+			priority = prio+MAX_PRIORITY+RT_BASE;
 		}
 		state = CREATED;
 		isEvent = false;
