@@ -66,7 +66,7 @@ Dbg.wr('*');
 		// sleep
 		for (;;) {
 			Timer.wd();
-			try { Thread.sleep(1200); } catch (Exception e) {}
+			try { RtThread.sleepMs(1200); } catch (Exception e) {}
 		}
 	}
 }
