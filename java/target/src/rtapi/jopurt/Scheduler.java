@@ -42,7 +42,8 @@ public abstract class Scheduler {
 
 // should this go to Task some time ???
 		// a thread for the main thread
-		active = new RtUserThread(Thread.NORM_PRIORITY, 0);
+//		active = new RtUserThread(Thread.NORM_PRIORITY, 0);
+		active = new RtUserThread(5, 0);
 		active.state = RtUserThread.READY;		// main thread is READY
 
 

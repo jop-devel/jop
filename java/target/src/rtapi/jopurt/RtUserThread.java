@@ -83,7 +83,8 @@ public class RtUserThread extends Task {
 		if (us==0)	{					// this is NOT a RT thread
 			priority = prio;
 		} else {						// RT prio is above Thread prios.
-			priority = prio+Thread.MAX_PRIORITY+RT_BASE;
+//			priority = prio+Thread.MAX_PRIORITY+RT_BASE;
+			priority = prio+10+RT_BASE;
 		}
 		state = CREATED;
 		isEvent = false;
