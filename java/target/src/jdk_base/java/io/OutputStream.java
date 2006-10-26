@@ -15,8 +15,8 @@ General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with GNU Classpath; see the file COPYING.  If not, write to the
-Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
-02111-1307 USA.
+Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+02110-1301 USA.
 
 Linking this library statically or dynamically with other modules is
 making a combined work based on this library.  Thus, the terms and
@@ -69,7 +69,7 @@ public abstract class OutputStream
    *
    * @exception IOException If an error occurs
    */
-  public abstract void write (int b); //throws IOException;
+  public abstract void write (int b) throws IOException;
 
   /**
    * This method all the writes bytes from the passed array to the
@@ -81,7 +81,7 @@ public abstract class OutputStream
    *
    * @exception IOException If an error occurs
    */
-  public void write (byte[] b) // throws IOException, NullPointerException
+  public void write (byte[] b) throws IOException, NullPointerException
   {
     write (b, 0, b.length);
   }
@@ -102,10 +102,10 @@ public abstract class OutputStream
    * @exception IOException If an error occurs
    */
   public void write (byte[] b, int off, int len)
-//    throws IOException, NullPointerException, IndexOutOfBoundsException
+    throws IOException, NullPointerException, IndexOutOfBoundsException
   {
-//    if (off < 0 || len < 0 || off + len > b.length)
-//      throw new ArrayIndexOutOfBoundsException ();
+    if (off < 0 || len < 0 || off + len > b.length)
+      throw new ArrayIndexOutOfBoundsException ();
     for (int i = 0; i < len; ++i)
       write (b[off + i]);
   }
@@ -121,7 +121,7 @@ public abstract class OutputStream
    *
    * @exception IOException If an error occurs
    */
-  public void flush ()// throws IOException
+  public void flush () throws IOException
   {
   }
 
@@ -134,7 +134,7 @@ public abstract class OutputStream
    *
    * @exception IOException If an error occurs
    */
-  public void close ()// throws IOException
+  public void close () throws IOException
   {
   }
 }

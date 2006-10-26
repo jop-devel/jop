@@ -1,4 +1,4 @@
-/* EventListener.java -- tagging interface for all event listeners
+/* UnsupportedEncodingException.java -- the requested encoding isn't supported
    Copyright (C) 1998, 1999, 2001, 2002, 2005  Free Software Foundation, Inc.
 
 This file is part of GNU Classpath.
@@ -15,8 +15,8 @@ General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with GNU Classpath; see the file COPYING.  If not, write to the
-Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
-02111-1307 USA.
+Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+02110-1301 USA.
 
 Linking this library statically or dynamically with other modules is
 making a combined work based on this library.  Thus, the terms and
@@ -36,19 +36,38 @@ obligated to do so.  If you do not wish to do so, delete this
 exception statement from your version. */
 
 
-package java.util;
+package java.io;
 
 /**
- * Empty interface that is implemented by classes that need to receive
- * events. Subinterfaces define methods that can be called to fire an
- * event notification. Normally the name of these subinterfaces end in
- * <code>Listener</code> and all method described by the subinterface
- * take as argument an subclass of <code>EventObject</code>.
+ * This exception is thrown when the requested character encoding is 
+ * not supported.
  *
- * @author Tom Tromey (tromey@cygnus.com)
- * @see EventObject
+ * @author Aaron M. Renn (arenn@urbanophile.com)
+ * @author Per Bothner (bothner@cygnus.com)
+ * @since 1.1
  * @status updated to 1.4
  */
-public interface First_EventListener
+public class UnsupportedEncodingException extends IOException
 {
-}
+  /**
+   * Compatible with JDK 1.1+.
+   */
+  private static final long serialVersionUID = -4274276298326136670L;
+
+  /**
+   * Create an exception without a descriptive error message.
+   */
+  public UnsupportedEncodingException()
+  {
+  }
+
+  /**
+   * Create an exception with a descriptive error message.
+   *
+   * @param message the descriptive error message
+   */
+  public UnsupportedEncodingException(String message)
+  {
+    super(message);
+  }
+} // class UnsupportedEncodingException

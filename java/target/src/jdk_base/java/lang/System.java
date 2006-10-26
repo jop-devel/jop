@@ -3,6 +3,8 @@ package java.lang;
 
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.io.JOPInputStream;
+import java.io.JOPPrintStream;
 
 import com.jopdesign.sys.*;
 
@@ -13,6 +15,7 @@ public final class System {
 	// public static final PrintStream out;
 	public static PrintStream out;
 	public static InputStream in;
+	public static PrintStream err;
 
 	  
 	public static long currentTimeMillis() {
@@ -24,8 +27,9 @@ public final class System {
 	// but there are no friends in Java :-(
 	public static void init() {
 
-		out = new PrintStream();
-		in = new InputStream();
+		out = new JOPPrintStream();
+		in = new JOPInputStream();
+		err = out;
 	}
 	
 	public static void exit(int i) {
@@ -88,9 +92,19 @@ public final class System {
 
 
 	public static String getProperty(String nm) {
-		// TODO Auto-generated method stub
+		// no property in our embedded system
 		return null;
+
+	}
+	public static void gc() {
+		// TODO: invoke GC.gc()
 	}
 
+	// TODO: this is not correct...
+	// Nelson, where is this needed?
+	public int identityHashCode(Object x) {
+
+		return x.hashCode();
+	}
 	
 }
