@@ -91,7 +91,7 @@ TOOLS_JFLAGS=-d $(TOOLS)/dist/classes $(EXT_CP) -sourcepath $(TOOLS)/src\;$(TARG
 
 TARGET=java/target
 TOOLS_CP=$(EXT_CP)\;$(TOOLS)/dist/lib/jop-tools.jar
-TARGET_SOURCE=$(TARGET)/src/common\;$(TARGET)/src/jdk\;$(TARGET)/src/rtapi\;$(TARGET_APP_SOURCE_PATH)
+TARGET_SOURCE=$(TARGET)/src/common\;$(TARGET)/src/jdk_base\;$(TARGET)/src/jdk11\;$(TARGET)/src/rtapi\;$(TARGET_APP_SOURCE_PATH)
 TARGET_JFLAGS=-d $(TARGET)/dist/classes -sourcepath $(TARGET_SOURCE) -bootclasspath "" -extdirs "" -classpath "" -source 1.4
 
 

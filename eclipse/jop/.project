@@ -16,9 +16,9 @@
 	</natures>
 	<linkedResources>
 		<link>
-			<name>jdk</name>
+			<name>bench</name>
 			<type>2</type>
-			<location>JOP_HOME/java/target/src/jdk</location>
+			<location>JOP_HOME/java/target/src/bench</location>
 		</link>
 		<link>
 			<name>rtapi</name>
@@ -31,6 +31,16 @@
 			<location>JOP_HOME/java/target/src/app</location>
 		</link>
 		<link>
+			<name>jdk_base</name>
+			<type>2</type>
+			<location>JOP_HOME/java/target/src/jdk_base</location>
+		</link>
+		<link>
+			<name>jdk11</name>
+			<type>2</type>
+			<location>JOP_HOME/java/target/src/jdk11</location>
+		</link>
+		<link>
 			<name>common</name>
 			<type>2</type>
 			<location>JOP_HOME/java/target/src/common</location>
@@ -39,11 +49,6 @@
 			<name>test</name>
 			<type>2</type>
 			<location>JOP_HOME/java/target/src/test</location>
-		</link>
-		<link>
-			<name>bench</name>
-			<type>2</type>
-			<location>JOP_HOME/java/target/src/bench</location>
 		</link>
 	</linkedResources>
 </projectDescription>

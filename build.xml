@@ -169,7 +169,8 @@
 	<path id="target-source">
 		<dirset dir="${target}">
         	<include name="src/common"/>
-        	<include name="src/jdk"/>
+        	<include name="src/jdk_base"/>
+        	<include name="src/jdk11"/>
         	<include name="src/rtapi"/>
 		</dirset>
 		<path refid="target-app-source-path"/>
