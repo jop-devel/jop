@@ -149,7 +149,7 @@ synchronized (o) {
 //		while does not work anymore as sp and vp are
 //		wrapping around (only 7 bits)
 //		while (fp>128+5) {	// stop befor 'fist' method
-		for (int cnt=0; cnt<3; ++cnt) {
+		for (int cnt=0; cnt<5; ++cnt) {
 			mp = Native.rdIntMem(fp+4);
 			vp = Native.rdIntMem(fp+2);
 			pc = Native.rdIntMem(fp+1);
