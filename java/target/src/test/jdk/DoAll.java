@@ -19,11 +19,9 @@ public class DoAll {
 		
 		TestCase tc[] = {
 				new HashCode(),
-//				new TestVector(),
+				new TestVector(),
 		};
-		
-		new Vector();
-		
+				
 		for (int i=0; i<tc.length; ++i) {
 			System.out.print(tc[i].getName());
 			if (tc[i].test()) {

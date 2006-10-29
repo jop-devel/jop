@@ -6,20 +6,24 @@ import jvm.TestCase;
 public class TestVector extends TestCase {
 
 	public String getName() {
-		return "Vect";
+		return "Vector";
 	}
 
 	public boolean test() {
 
+		boolean ret = true;
 		Vector v = new Vector();
 		
 		for (int i=0; i<10; ++i) {
-			v.add(new Integer(i));
+			v.addElement(new Integer(i));
 		}
 		for (int i=0; i<10; ++i) {
-			System.out.println((String) v.get(i));
+			Integer ival = (Integer) v.elementAt(i);
+			if (ival.intValue() != i) {
+				ret = false;
+			}
 		}
-		return true;
+		return ret;
 	}
 
 }
