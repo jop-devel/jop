@@ -11,7 +11,7 @@ package gctest;
  */
 public class MyList {
 	
-	final static int CNT = 10;
+	final static int CNT = 1000;
 	
 	private MyList next;
 	private int a, b, c;
@@ -28,13 +28,15 @@ public class MyList {
 		int i, j;
 		list1 = list2 = null;
 		
-		for (int cnt=0; cnt<50;++cnt) {
+		for (int cnt=0; cnt<100;++cnt) {
 			for (i=0; i<CNT; ++i) {
 				ptr = list1;
+//				System.out.println("new 1");
 				list1 = new MyList();
 				list1.a = i+cnt;
 				list1.next = ptr;
 				ptr = list2;
+//				System.out.println("new 2");
 				list2 = new MyList();
 				list2.a = 1000+i+cnt;
 				list2.next = ptr;

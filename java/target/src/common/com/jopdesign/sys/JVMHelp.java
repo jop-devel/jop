@@ -85,6 +85,10 @@ wrByte(pc);
 
 		int sp = Native.getSP();			// sp of ();
 		int pc = Native.rdIntMem(sp-3);		// pc is not exact (depends on instruction)
+		wr("sp=");
+		wrSmall(sp);
+		wr("pc=");
+		wrSmall(pc);
 		i = Native.rdIntMem(sp);			// mp
 wrSmall(i);
 wr(' ');
