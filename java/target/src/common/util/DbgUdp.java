@@ -19,11 +19,13 @@ public class DbgUdp extends Dbg {
 
 	void dbgWr(int c) {
 
-		if (((wrptTx+1)&BUF_MSK) == rdptTx) {
-			return;									// buffer full => drop value
+		synchronized(txBuf) {
+			if (((wrptTx+1)&BUF_MSK) == rdptTx) {
+				return;									// buffer full => drop value
+			}
+			txBuf[wrptTx] = c;
+			wrptTx = (wrptTx+1)&BUF_MSK;			
 		}
-		txBuf[wrptTx] = c;
-		wrptTx = (wrptTx+1)&BUF_MSK;
 	}
 
 	/**
@@ -33,23 +35,25 @@ public class DbgUdp extends Dbg {
 
 		int i, j, k;
 
-		j = 0;
-		k = pos;
-		for (i=0; rdptTx!=wrptTx; ++i) {
-			j <<= 8;
-			j += txBuf[rdptTx];
-			rdptTx = (rdptTx+1) & BUF_MSK;
-			if ((i&3)==3) {
-				udpBuf[k] = j;
-				++k;
-			}
-		}
-		int cnt = i & 3;
-		if (cnt!=0) {
-			for (; cnt<4; ++cnt) {
+		synchronized(txBuf) {
+			j = 0;
+			k = pos;
+			for (i=0; rdptTx!=wrptTx; ++i) {
 				j <<= 8;
+				j += txBuf[rdptTx];
+				rdptTx = (rdptTx+1) & BUF_MSK;
+				if ((i&3)==3) {
+					udpBuf[k] = j;
+					++k;
+				}
 			}
-			udpBuf[k] = j;
+			int cnt = i & 3;
+			if (cnt!=0) {
+				for (; cnt<4; ++cnt) {
+					j <<= 8;
+				}
+				udpBuf[k] = j;
+			}
 		}
 		return i;
 	};
