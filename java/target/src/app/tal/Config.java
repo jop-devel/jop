@@ -7,6 +7,7 @@
 package tal;
 
 import util.Amd;
+import util.Dbg;
 
 import com.jopdesign.sys.Native;
 
@@ -67,21 +68,26 @@ public class Config {
 		}
 	}
 
+	public void clearBuffer(int pos) {
+
+		for (int i=pos; i<buf.length; ++i) {
+			setInt(i, 0);
+		}
+	}
+
 	public void setString(int pos, StringBuffer s) {
 
 		if (len==0) read();
 		if (pos<0 || pos>16383) return;
-		int len = s.length();
-		int slen = len;
-		if ((len&0x03)==0) ++len;
+		int slen = s.length();		
 		// copy buffer
 		int k = 0;
-		for (int i=0; i<len; i+=4) {
+		for (int i=0; i<slen+4; i+=4) {
 			for (int j=0; j<4; ++j) {
 				k <<= 8;
 				if (i+j < slen) {
 					k += s.charAt(i+j);
-				} 
+				}
 			}
 			setInt(pos+(i>>>2), k);
 		}	
@@ -103,7 +109,6 @@ public class Config {
 	private void read() {
 		
 		len = getInt(FlashConst.CONFIG_LEN);
-		len = (len+3)>>2;		// count in words
 		if (len<=0 || len>1000) len = 512; // some ? default
 		
 		for (int i=0; i<len; ++i) {
