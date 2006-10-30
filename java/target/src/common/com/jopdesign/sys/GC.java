@@ -38,6 +38,13 @@ public class GC {
 	static final int OFF_SIZE = 2;
 	static final int OFF_TYPE = 3;
 	
+	// TODO: use MTAB and size for objects and arrays.
+	// don't reuse MTAB as array size as the array size
+	// could be 0 and this would be a marker for a free
+	// handle. Rethink and write it!!!!!
+	// mark() also uses the pointer to the method table at 
+	// address-1!
+	
 	// use array types 4..11 are standard boolean to long
 	// our addition:
 	// 1 reference
@@ -178,6 +185,8 @@ public class GC {
 	}
 	
 	static int getHandle(int ref, int size) {
+		
+//JVMHelp.wrByte(Native.getSP());
 		int addr = freeList;
 		freeList = Native.rdMem(freeList+OFF_NEXT);
 		Native.wrMem(ref, addr);
@@ -336,6 +345,9 @@ public class GC {
 	 */
 	static void sweep() {
 
+		int use = 0;
+		int free = 0;
+		
 		synchronized (mutex) {
 			int ref = useList;
 			useList = 0;
@@ -348,12 +360,18 @@ public class GC {
 					size &= 0x7fffffff;
 					Native.wrMem(size, ref+OFF_SIZE);
 					addToUseList(ref);
+					++use;
 				} else {
 					addToFreeList(ref);
+					++free;
 				}
 				ref = next;
 			}
 		}
+		System.out.print("used handles=");
+		System.out.println(use);
+		System.out.print("free handles=");
+		System.out.println(free);
 	}
 	/**
 	 * switch from-space and to-space
@@ -426,13 +444,13 @@ public class GC {
 	}
 
 	public static void gc() {
-//		log("GC called - free memory:", freeMemory());
+		log("GC called - free memory:", freeMemory());
 
 		mark();
 		sweep();
 		compact();			
 
-//		log("GC end - free memory:",freeMemory());
+		log("GC end - free memory:",freeMemory());
 		
 	}
 	
@@ -446,13 +464,13 @@ public class GC {
 	 * @return address of the handle
 	 */
 	static int newObject(int cons) {
-		
+//JVMHelp.wr('.');
 		int size = Native.rdMem(cons);			// instance size
 		// we are NOT using JVM var h at address 2 for the
 		// heap pointer anymore.
 		++size;		// for the additional method pointer
 		// TODO: Isn't the method pointer now in the handle?
-		// check jvm.asm and JVM.java
+		// check jvm.asm and JVM.java and JOPSim.java
 		
 //System.out.println("new "+heapPtr+" size "+size);
 		if (heapPtr+size >= allocPtr) {
@@ -464,7 +482,7 @@ public class GC {
 			System.exit(1);
 		}
 		if (freeList==0) {
-//			System.out.println("Run out of handles!");
+			System.out.println("Run out of handles!");
 			// is this a good place to call gc????
 			// better check available handles on newObject
 			gc_alloc();
@@ -506,7 +524,7 @@ public class GC {
 		
 		// long or double array
 		if((type==11)||(type==7)) size <<= 1;
-		// reference array type is 0 (our convention)
+		// reference array type is 1 (our convention)
 		
 		++size;		// for the additional size field
 
