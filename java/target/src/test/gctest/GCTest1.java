@@ -11,38 +11,38 @@ import com.jopdesign.sys.Native;
 
 public class GCTest1 {
 
-	public static void main( String s[] ) {
+	public static void main(String s[]) {
 		new RtThread(20, 1000000) {
 			public void run() {
 				String allocStr = "Allocation problem!";
 				String refStr = "Reference problem";
-				
+
 				Garbage garbage = new Garbage();
 				int prevId = garbage.id;
 				GC.gc();
-				int freeHeap = GC.freeMemory(); 
+				int freeHeap = GC.freeMemory();
 				for (;;) {
-					if(freeHeap != GC.freeMemory()){
+					if (freeHeap != GC.freeMemory()) {
 						System.out.println(allocStr);
 					}
-          garbage = new Garbage();
-                    
-          if((garbage.id-prevId)!=1){
-           	System.out.println(refStr);
-           	System.exit(-1);
-          }          
-          prevId = garbage.id;
-                    
-          GC.gc(); //Remove the old garbage object
-                    
-					waitForNextPeriod(); 
+					garbage = new Garbage();
+
+					if ((garbage.id - prevId) != 1) {
+						System.out.println(refStr);
+						System.exit(-1);
+					}
+					prevId = garbage.id;
+
+					GC.gc(); //Remove the old garbage object
+
+					waitForNextPeriod();
 				}
 			}
 		};
 
 		RtThread.startMission();
-        
-		for(int i=0;i<10;++i){
+
+		for (int i = 0; i < 10; ++i) {
 			RtThread.sleepMs(1000);
 		}
 		System.out.println("Test 1 OK");
@@ -51,10 +51,12 @@ public class GCTest1 {
 
 class Garbage {
 	static int cnt = 0;
+
 	public int id;
-	public Garbage(){
-	  cnt++;
-	  id = cnt;
+
+	public Garbage() {
+		cnt++;
+		id = cnt;
 		System.out.print("Garbage object id:");
 		System.out.println(id);
 	}
