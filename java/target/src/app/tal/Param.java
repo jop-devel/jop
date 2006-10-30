@@ -6,6 +6,7 @@
  */
 package tal;
 
+import joprt.RtThread;
 import util.Dbg;
 
 /**
@@ -218,10 +219,16 @@ Dbg.lf();
 	 * 
 	 */
 	public void save() {
+
+Dbg.wr("parameter string=");
+Dbg.wr(string);
+Dbg.lf();
 		Config conf = Config.getInstance();
+		conf.clearBuffer(FlashConst.CONFIG_TAL_PARAM);
 		conf.setString(FlashConst.CONFIG_TAL_PARAM, string);
-		conf.write();
 Dbg.wr("write parameter and stop the WD\n");
+Dbg.lf();
+		conf.write();
 		Tal.stop();
 	}
 	
