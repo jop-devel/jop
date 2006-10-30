@@ -124,7 +124,7 @@ class Entry {
 	
 	static void dump(int nr) {
 		
-		System.out.println("add ARP IP=");
+		Dbg.wr("add ARP IP=");
 		Dbg.hexVal(list[nr].ip);
 		for (int i=0; i<6; ++i) {
 			Dbg.hexVal(list[nr].mac[i]);
@@ -149,7 +149,7 @@ public class Arp {
 */
 	protected static void receive(Packet p, int[] eth, int ip) {
 
-		Dbg.wr('A');
+//		Dbg.wr('A');
 
 		if (p.buf[6]==ip) {
 
