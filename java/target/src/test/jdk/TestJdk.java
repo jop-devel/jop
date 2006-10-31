@@ -11,52 +11,172 @@ public class TestJdk {
 
 	public static void main(String args[]) {
 
-		// test cvs1
 		// test Hashtable
-
-		System.out.println(Integer.toString(10, 10));
-		
+		System.out.println("Hashtable test");
 		Hashtable vc = new Hashtable();
 		Integer i = new Integer(1);
 		vc.put("one", i);
 		vc.put("two", new Integer(2));
 		vc.put("three", new Integer(3));
-	
+		System.out.println("Hashtable.toString():");
 		System.out.println(vc.toString());
-	
-		System.out.println("current time: "+System.currentTimeMillis());
-		System.out.println("current time: "+System.currentTimeMillis());
-		System.out.println("current time: "+System.currentTimeMillis());
-		
-		
-		
-		if (vc.contains("two")) {
-			System.out.println("true");
+		System.out.println(vc.toString());
+
+		if (vc.containsKey("two")) {
+			System.out.println("OK");
 		} else {
-			System.out.println("false");
-			System.out.println(vc.toString());
+			System.out.println("ERROR Hashtable");
+		}
+		if (vc.contains(i)) {
+			System.out.println("OK");
+		} else {
+			System.out.println("ERROR Hashtable");
 		}
 
-		// test Vector.java
+		if (!vc.containsKey(new Object())) {
+			System.out.println("OK");
+		} else {
+			System.out.println("ERROR Hashtable");
+		}
 
-		/*
-		 * Vector vec = new Vector(); System.out.println("size:" + vec.size());
-		 * //vec.addElement(new Integer(1)); //vec.addElement(new Integer(2));
-		 * //vec.addElement(new Integer(3)); vec.addElement("nelson");
-		 * vec.addElement("nelson1"); vec.addElement("nelson2"); String five =
-		 * new String("five"); System.out.println("size:" + vec.size());
-		 * vec.insertElementAt("nelson4", 2); System.out.println("size:" +
-		 * vec.size()); vec.insertElementAt(five, 2); System.out.println("after
-		 * five insertion"+vec.toString()); if(vec.isEmpty()){
-		 * System.out.println("is empty:true"); // compiler error }else{
-		 * System.out.println("is empty:false"); // compiler error }
-		 * vec.removeElement(five); System.out.println(vec.toString());
-		 * System.out.println("size:" + vec.size()); vec.removeAllElements();
-		 * System.out.println("size:" + vec.size()); if(vec.isEmpty()){
-		 * System.out.println("is empty:true"); // compiler error }else{
-		 * System.out.println("is empty:false"); // compiler error }
-		 * 
-		 */
+		if (!vc.isEmpty()) {
+			System.out.println("OK");
+		} else {
+			System.out.println("ERROR Hashtable");
+		}
+
+		Enumeration hashenum;
+
+		// TODO: JOP says readMem: wrong address
+
+		// hashenum = vc.elements();
+		// System.out.println("Hashtable value Enumeration:");
+		// while (hashenum.hasMoreElements()) {
+		// // System.out.println(hashenum.nextElement().toString());
+		// }
+		//
+		// hashenum = vc.keys();
+		// System.out.println("Hashtable key Enumeration:");
+		// while (hashenum.hasMoreElements()) {
+		// System.out.println(hashenum.nextElement().toString());
+		// }
+
+		if (vc.get("one").equals(i)) {
+			System.out.println("OK");
+		} else {
+			System.out.println("ERROR Hashtable");
+		}
+		if (vc.size() == 3) {
+			System.out.println("OK");
+		} else {
+			System.out.println("ERROR Hashtable");
+		}
+		if (i.equals(vc.remove("one"))) {
+			System.out.println("OK");
+		} else {
+			System.out.println("ERROR Hashtable");
+		}
+		if (!(vc.size() == 3)) {
+			System.out.println("OK");
+		} else {
+			System.out.println("ERROR Hashtable");
+		}
+		if (vc.size() == 2) {
+			System.out.println("OK");
+		} else {
+			System.out.println("ERROR Hashtable");
+		}
+
+		System.out.println("Hashtable.toString():");
+		System.out.println(vc.toString());
+
+		vc.clear();
+		if (vc.isEmpty()) {
+			System.out.println("OK");
+		} else {
+			System.out.println("ERROR Hashtable");
+		}
+
+		System.out.println("Hashtable test END");
+
+		System.out.println("current time: " + System.currentTimeMillis());
+		System.out.println("current time: " + System.currentTimeMillis());
+		System.out.println("current time: " + System.currentTimeMillis());
+
+		// MARTIN: uncomment this test for the Vector class
+		// 
+
+		// test Vector.java
+		System.out.println("Vector test");
+		Vector vec = new Vector();
+		if (vec.size() == 0) {
+			System.out.println("OK");
+		} else {
+			System.out.println("ERROR Vector");
+		}
+		vec.addElement(new Integer(1));
+		vec.addElement(new Integer(2));
+		vec.addElement(new Integer(3));
+		vec.addElement("nelson");
+		vec.addElement("nelson1");
+		vec.addElement("nelson2");
+
+		if ((vec.size() == 6)) {
+			System.out.println("OK");
+		} else {
+			System.out.println("ERROR Vector");
+		}
+		System.out.println("Vector.toString():");
+		System.out.println(vec.toString());
+		System.out.println(vec.toString());
+
+		if (vec.contains("nelson")) {
+			System.out.println("OK");
+		} else {
+			System.out.println("ERROR Vector");
+		}
+// uncomment until here
+		
+//		if (!vec.contains("nelsonafasf")) {
+//			System.out.println("OK");
+//		} else {
+//			System.out.println("ERROR Vector");
+//		}
+//
+//		System.out.println("testing Vector.copyInto(Array)");
+//		Object[] objarray = new Object[6];
+//		vec.copyInto(objarray);
+//		for (int ix = 0; ix < 6; ix++) {
+//
+//			System.out.println(objarray[ix].toString());
+//		}
+
+//		if ("nelson1".equals(vec.elementAt(4))) {
+//			System.out.println("OK");
+//		} else {
+//			System.out.println("ERROR Vector");
+//		}
+//
+//		// vec.elementAt(10);
+//
+//		if (vec.indexOf("nelson2") == 5) {
+//			System.out.println("OK");
+//		} else {
+//			System.out.println("ERROR Vector");
+//		}
+//
+//		vec.addElement(new Integer(1));
+//		
+//		if (vec.indexOf("nelson2",1) == 6) {
+//			System.out.println("OK");
+//		} else {
+//			System.out.println("ERROR Vector");
+//		}
+//
+//		String five = new String("five");
+
+		System.out.println("Vector test END");
+
 		// test Stack.java
 		/*
 		 * Stack stack = new Stack(); stack.push("first1");
@@ -110,7 +230,6 @@ public class TestJdk {
 
 		// Long lon = new Long(System.currentTimeMillis());
 		// System.out.println(lon.toString());
-
 		// test String Buffer
 		/*
 		 * StringBuffer sb = new StringBuffer("dfmasafasa");
