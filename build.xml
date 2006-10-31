@@ -404,7 +404,7 @@
 	
 	<target name="config-usb">
 		<exec executable="USBRunner" dir="rbf" failonerror="true">
-			<arg line="${dlproj}.cdf"/>
+			<arg line="${dlproj}.rbf"/>
 		</exec>
 	</target>
 
