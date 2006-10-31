@@ -473,15 +473,13 @@ public class Hashtable {
 		// Since we are already synchronized, and entrySet().iterator()
 		// would repeatedly re-lock/release the monitor, we directly use the
 		// unsynchronized EntryIterator instead.
+		//Iterator entries = new EntryIterator();
 		Iterator entries = new EntryIterator();
-		StringBuffer r = new StringBuffer("{\r\n");
+		StringBuffer r = new StringBuffer("{");
 		for (int pos = size; pos > 0; pos--) {
-
-			Object obj = new Object();
-			r.append(obj);
+			r.append(entries.next());
 			if (pos > 1)
 				r.append(", ");
-			r.append("\r\n");
 		}
 		r.append("}");
 		return r.toString();
