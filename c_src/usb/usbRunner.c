@@ -23,12 +23,16 @@
 /*				 SAMPLE_BSC function added.						  */
 /*               MACROs added for easier source code reading      */
 /*				 1.6 1/28/2005									  */
-/*				 Stratix II devices support added.				  */
 /*               Cyclone II EP2C35 support added.				  */
 /*				 1.7 7/12/2005 by Christof Pitter				  */
+/*				 Stratix II devices support added.				  */
 /*				 Cyclone II EPM7064AET44 support added.           */
 /*				 FTDI device support added.						  */
-/*				 USB support added via BitBangMode   			  */
+/*				 USB support added via BitBangMode				  */
+/*				 1.8 27/10/2006 by Christof Pitter 				  */
+/*				 USBRunner takes only the .rbf-File not the .cdf  */
+/*               anymore. The .cdf-File will be selfcreated for   */
+/*				 dspio setup. At the end it will be deleted again */
 /******************************************************************/
 
 #include <iostream.h>
@@ -37,6 +41,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <string.h>
+
+// For file manipulation and creation!
+#include <fcntl.h>
+#include <io.h>
+#include <sys\stat.h>
+
 #include "jb_io.h"
 #include "jb_jtag.h"
 #include "jb_const.h"
@@ -68,6 +79,7 @@ int  GetData          (char* charset,char* buffer,char* data);
 void SearchKeyword    (char* buffer,char* data);
 int  CheckActionCode  (char* data);
 void CheckAltDev      (int dev_seq);
+int	 TestCDF		  (int file_id);
 
 /* JTAG instruction lengths of all devices */
 int  ji_info[MAX_DEVICE_ALLOW] = {0};
@@ -82,6 +94,13 @@ int main(int argc, char* argv[])
 	int config_count=0;
 	int BBMV=0;
 	int BBII=0;
+	int info = 0;
+	char test = '\0';
+	int retval;
+	FILE *outf;
+
+	// For selfcreation of the .cdf-File
+	
 
 #if PORT==EMBEDDED
 
@@ -105,10 +124,17 @@ int main(int argc, char* argv[])
 
 	/* Introduction */
 	fprintf(stdout,"\n===================================\n");
-	fprintf(stdout," USBRunner Version 1.5");
+	fprintf(stdout," USBRunner Version 1.6");
 	fprintf(stdout,"\n Altera Corporation ");
 	fprintf(stdout,"\n===================================\n\n");
 
+	
+	if(argv[1] == NULL)
+	{
+		fprintf(stdout,"Error: No argument could be found! \n");
+		fprintf(stdout,"Provide a .rbf-File as argument when using USBRunner 1.6! \n");
+		return(1);
+	}
 
 	ftStatus = FT_ListDevices(0,Buf,FT_LIST_BY_INDEX|FT_OPEN_BY_SERIAL_NUMBER);
 	ftHandle = FT_W32_CreateFile(Buf,GENERIC_READ|GENERIC_WRITE,0,0,OPEN_EXISTING,
@@ -117,8 +143,8 @@ int main(int argc, char* argv[])
 	if (ftHandle == INVALID_HANDLE_VALUE) // FT_W32_CreateDevice failed
 	{
 		// FT_Open OK, use ftHandle to access device
-		printf("No FTDI USB Device found!");
-		return -1;
+		// MessageBox(NULL, "No FTDI USB Device found!", NULL, MB_OK);
+		fprintf(stdout,"Error: No FTDI USB Device found! \n");
 	}
 
 	ftStatus = FT_SetBitMode(ftHandle,Mask,ResetMode);
@@ -147,22 +173,51 @@ int main(int argc, char* argv[])
 	/**********Initialization**********/
 
 	
-	if(argc!=2)
+	/*if(argc!=2)
 	{
 		Help();
 		return -1;
 	}
 
-	/* Open CDF file */
+	Open CDF file 
 	file_id = jb_fopen(argv[1],"rb");
-
+	
 	if(file_id)
 		fprintf(stdout,"Info: Chain Description File: \"%s\" opened..\n", argv[1]);
 	else
 	{
 		fprintf(stderr,"Error: Could not open Chain Description File (CDF): \"%s\"!\n",argv[1]);
 		return -1;
+	}*/
+
+
+	// Creation of the cdf_file 
+
+	outf = fopen( "jop.cdf", "w");
+	if (outf == NULL) 
+	{
+		perror( "fopen of jop.cdf failed\n" );
+		exit( -1 );
 	}
+
+	// Writing into the .cdf-File
+	retval = fprintf( outf, 
+		"JedecChain;\n"
+		"	FileRevision(JESD32A);\n"
+		"	DefaultMfr(6E);\n\n"
+		"	P ActionCode(Ign)\n"
+		"		Device PartName(EPM7064AET44) MfrSpec(OpMask(0));\n"
+		"	P ActionCode(Cfg)\n"
+		"		Device PartName(EP1C12Q240) Path(\"./\") File(\"%s\") MfrSpec(OpMask(1));\n\n"
+		"ChainEnd;\n\n"
+		"AlteraBegin;\n"
+		"	ChainType(JTAG);\n"
+		"AlteraEnd;\n", argv[1]);
+
+	fclose(outf);
+	
+	file_id = jb_fopen("jop.cdf","rb");
+
 
 	/**********Hardware Setup**********/
 
@@ -195,6 +250,8 @@ int main(int argc, char* argv[])
 	}
 
 	jb_fclose(file_id);
+	
+
 
 	if(!device_count)
 		return -1;
@@ -257,7 +314,9 @@ int main(int argc, char* argv[])
 			jb_strcpy(fullpath,device_list[i-1].path);
 			jb_strcat(fullpath,device_list[i-1].file);
 
-			file_id = jb_fopen( fullpath, "rb" );
+			
+			//file_id = jb_fopen( fullpath, "rb" );
+			file_id = jb_fopen( argv[1], "rb" );
 
 			if ( file_id )
 				fprintf( stdout, "Info: Programming file #%d: \"%s\" opened...\n", i,fullpath );
@@ -331,6 +390,11 @@ int main(int argc, char* argv[])
 	fprintf( stdout, "Info: Programming Time: %d s\n", start);
 #endif /* PORT==EMBEDDED */
 
+	jb_fclose(file_id);
+
+	// Deletes the jop.cdf File at the end
+	retval = remove("jop.cdf");
+	
 	return 0;
 }
 
@@ -353,16 +417,16 @@ int main(int argc, char* argv[])
 /******************************************************************/
 int ReadCDF(int file_id)
 {
-	char  buffer[160];    /* line buffer */
-
+	char buffer[300];    /* line buffer */
+	char  data[CDF_PATH_LEN];       /* device record data between '(' and ')' */
+	int   mark= 0;
+		
 /* [chtong,10/24/02,jrunner.c,ver1.2] Changed the following lines */
 /*	char  data[50];												  
     The length of data array must be same with the longest data between 
 	'(' and ')'	which is usually the path of the cdf file.
 	Therefore, CDF_PATH_LEN is used								  */
 
-	char  data[CDF_PATH_LEN];       /* device record data between '(' and ')' */
-	int   mark= 0;
 	
 	while(jb_fgets(buffer,file_id))
 	{
@@ -379,6 +443,7 @@ int ReadCDF(int file_id)
 			device_count++;
 
 			SearchKeyword(buffer,data);
+			
 
 			/* End of device record and reset flag */
 			if(jb_str_cmp(";",buffer))
@@ -387,7 +452,7 @@ int ReadCDF(int file_id)
 		else if (mark==2)
 		{
 			SearchKeyword(buffer,data);
-
+			
 			/* End of device record and reset flag */
 			if(jb_str_cmp(";",buffer))
 				mark=0;
@@ -419,7 +484,7 @@ int ReadCDF(int file_id)
 					device_count++;
 
 					SearchKeyword(buffer,data);
-				
+									
 					mark=0;
 				}
 			}
