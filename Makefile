@@ -295,7 +295,7 @@ config_byteblast:
 	cd quartus/$(DLPROJ) && quartus_pgm -c $(BLASTER_TYPE) -m JTAG jop.cdf
 
 config_usb:
-	cd rbf && ../USBRunner $(DLPROJ).cdf
+	cd rbf && ../USBRunner $(DLPROJ).rbf
 
 download:
 #	java -cp java/tools/dist/lib/jop-tools.jar\;java/lib/RXTXcomm.jar com.jopdesign.tools.JavaDown \
