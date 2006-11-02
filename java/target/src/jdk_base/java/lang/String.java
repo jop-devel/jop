@@ -47,26 +47,7 @@ public final class String {
 	 */
 	final char[] value;
 
-	/**
-	 * Holds the number of characters in value. This number is generally the
-	 * same as value.length, but can be smaller because substrings and
-	 * StringBuffers can share arrays. Package visible for use by trusted code.
-	 */
-
-	// we DO NOT use this in JOP!!!
-	// final int count;
-	// DON'T change the String layout without changing JOPizer!
-	/**
-	 * Caches the result of hashCode(). If this value is zero, the hashcode is
-	 * considered uncached (even if 0 is the correct hash value).
-	 */
-	// private int cachedHashCode;
-	/**
-	 * Holds the starting position for characters in value[]. Since
-	 * substring()'s are common, the use of offset allows the operation to
-	 * perform in O(1). Package access is granted for use by StringBuffer.
-	 */
-	// final int offset;
+	
 	/**
 	 * Creates an empty String (length 0). Unless you really need a new object,
 	 * consider using <code>""</code> instead. CLCD 1.0
@@ -129,7 +110,7 @@ public final class String {
 	public String(byte[] data, int offset, int count)
 			throws UnsupportedEncodingException {
 
-		this(data, offset, count, "ISO_8859_1");
+		this(data, offset, count, "ASCII");
 
 	}
 
@@ -165,7 +146,8 @@ public final class String {
 	public String(byte[] data, int offset, int count, String encoding)
 			throws UnsupportedEncodingException {
 
-		if (!encoding.equals("ISO_8859_1")) // TODO: check on lowercase
+		encoding = encoding.toUpperCase();
+		if (!encoding.equals("ASCII")) 
 			throw new UnsupportedEncodingException();
 
 		if (offset < 0)
@@ -263,7 +245,7 @@ public final class String {
 					+ (offset + count));
 		value = new char[count];
 		// VMSystem.arraycopy(data, offset, value, 0, count);
-
+		//System.out.println("dbg: String constructor");
 		// TODO: System.arraycopy produces stack overflow
 		for (int i = 0; i < count; i++) {
 			value[i] = data[i + offset];
@@ -353,19 +335,27 @@ public final class String {
 		char[] newStr = new char[value.length + str.value.length];
 		// VMSystem.arraycopy(value, offset, newStr, 0, count);
 		// VMSystem.arraycopy(str.value, str.offset, newStr, count, str.count);
-		System.arraycopy(value, 0, newStr, 0, value.length);
-		System.arraycopy(str.value, 0, newStr, value.length, str.value.length);
+		// TODO: System.arraycopy throws exception
+		// System.arraycopy(value, 0, newStr, 0, value.length);
+		// System.arraycopy(str.value, 0, newStr, value.length,
+		// str.value.length);
+
+		// TODO: inefficient
+		for (int i = 0; i < value.length; i++) {
+			newStr[i] = value[i];
+		}
+		for (int i2 = 0; i2 < str.value.length; i2++) {
+			newStr[i2 + value.length] = str.value[i2];
+		}
 
 		// Package constructor avoids an array copy.
-		System.out.println(newStr.length);
+		// System.out.println(newStr.length);
 		return new String(newStr, 0, newStr.length);
 	}
 
 	public boolean endsWith(String suffix) {
 		if (suffix == null)
 			throw new NullPointerException();
-		// TODO: regionMatches schould be case sensitive -> set false
-		// Character.toUpperCase etc not implemented yes
 		return regionMatches(false, value.length - suffix.value.length, suffix,
 				0, suffix.value.length);
 	}
@@ -404,8 +394,8 @@ public final class String {
 	}
 
 	public byte[] getBytes(String enc) throws UnsupportedEncodingException {
-
-		if (!enc.equals("ISO_8859_1"))
+		enc = enc.toUpperCase();
+		if (!enc.equals("ASCII"))
 			throw new UnsupportedEncodingException(
 					"at String.getBytes(String encoding)");
 		return this.getBytes();
@@ -521,7 +511,12 @@ public final class String {
 			return this;
 		// char[] newStr = (char[]) value.clone();
 		char[] newStr = new char[value.length];
-		System.arraycopy(value, 0, newStr, 0, value.length);
+		
+		//TODO: System.arraycopy crashes
+		//System.arraycopy(value, 0, newStr, 0, value.length);
+		for (int i2 = 0; i2 < value.length; i2++) {
+			newStr[i2] = value[i2];
+		}
 		newStr[x] = newChar;
 		while (--i >= 0)
 			if (value[++x] == oldChar)
@@ -568,7 +563,10 @@ public final class String {
 	public char[] toCharArray() {
 		char[] copy = new char[value.length];
 		// VMSystem.arraycopy(value, offset, copy, 0, count);
-		System.arraycopy(value, 0, copy, 0, value.length);
+		//System.arraycopy(value, 0, copy, 0, value.length);
+		for (int i = 0; i < value.length; i++) {
+			copy[i] = value[i];
+		}
 		return copy;
 	}
 
@@ -600,7 +598,8 @@ public final class String {
 		int begin = 0;
 		do
 			if (begin == limit)
-				return ""; while (value[begin++] <= '\u0020');
+				return "";
+		while (value[begin++] <= '\u0020');
 		int end = limit;
 		while (value[--end] <= '\u0020')
 			;
