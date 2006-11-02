@@ -468,8 +468,9 @@ public abstract class Calendar {
 	 */
 
 	public boolean equals(Object o) {
-		if (!(o instanceof Calendar))
-			return false;
+		//TODO: instaceof not implemented
+		//if (!(o instanceof Calendar))
+		//	return false;
 		Calendar cal = (Calendar) o;
 		if (getTimeInMillis() == ((Calendar) o).getTimeInMillis()
 				&& cal.getFirstDayOfWeek() == getFirstDayOfWeek()
@@ -508,7 +509,8 @@ public abstract class Calendar {
 	 */
 	public static synchronized Calendar getInstance() {
 		// TODO: not implemented
-		return null;
+		//return null;
+		throw new Error("Calendar.getInstance: NYI");
 	}
 
 	/**
@@ -520,7 +522,8 @@ public abstract class Calendar {
 	 */
 	public static synchronized Calendar getInstance(TimeZone zone) {
 		// TODO: not implemented
-		return null;
+		//return null;
+		throw new Error("Calendar.getInstance: NYI");
 	}
 
 	/**

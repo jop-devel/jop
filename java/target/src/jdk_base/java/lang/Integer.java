@@ -78,14 +78,6 @@ public final class Integer
    */
   public static final int MAX_VALUE = 0x7fffffff;
 
-  /**
-   * The primitive type <code>int</code> is represented by this
-   * <code>Class</code> object.
-   * @since 1.1
-   */
-  
-  //TODO: not implemented
-  //public static final Class TYPE = VMClassLoader.getPrimitiveClass('I');
 
   /**
    * The number of bits needed to represent an <code>int</code>.
@@ -169,7 +161,7 @@ public final class Integer
    * @param num the number
    * @param exp log2(digit) (ie. 1, 3, or 4 for binary, oct, hex)
    */
-  // Package visible for use by Long.
+  
   private static String toUnsignedString(int num, int exp)
   {
     // Use an array large enough for a binary number.

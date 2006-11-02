@@ -16,10 +16,7 @@ public abstract class InputStream {
 		// we could add buffering
 	}
 
-	// public int available() throws IOException {
 	public int available() throws IOException {
-
-		// ???
 		return 0;
 	}
 

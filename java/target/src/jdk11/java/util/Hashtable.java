@@ -116,6 +116,7 @@ public class Hashtable {
 	 * Iterators to know when to throw ConcurrentModificationExceptions.
 	 */
 	// Package visible for use by nested classes.
+	// TODO: not used, implememted properly
 	transient int modCount;
 
 	/**

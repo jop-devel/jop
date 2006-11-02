@@ -90,6 +90,11 @@ public class TestCldcVector {
 		
 		System.out.println("Vector.toString():");
 		System.out.println(vec.toString());
+		System.out.println("remove:");
+		vec.remove(1);
+		
+		System.out.println("Vector.toString():");
+		System.out.println(vec.toString());
 		
 		vec.removeAllElements();
 		if(vec.isEmpty()){

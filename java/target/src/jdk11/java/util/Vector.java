@@ -37,8 +37,6 @@
 
 package java.util;
 
-
-
 /**
  * The <code>Vector</code> classes implements growable arrays of Objects. You
  * can access elements in a Vector with an index, just as you can in a built in
@@ -80,7 +78,7 @@ package java.util;
  * @status updated to 1.4
  */
 public class Vector {
-	
+
 	/**
 	 * The internal array used to hold members of a Vector. The elements are in
 	 * positions 0 through elementCount - 1, and all remaining slots are null.
@@ -414,8 +412,6 @@ public class Vector {
 			return;
 
 		modCount++;
-		// Arrays.fill(elementData, 0, elementCount, null);
-		// TODO: memory leaks of course for JOP
 		for (int i = 0; i < elementCount; i++) {
 			elementData[i] = null;
 		}
@@ -585,12 +581,11 @@ public class Vector {
 	 * @return the String representation of this Vector
 	 */
 	public synchronized String toString() {
-		if(this.size() <= 0)
+		if (this.size() <= 0)
 			return "";
 		StringBuffer sb = new StringBuffer();
 		sb.append("{\n");
-		for(int i = 0; i < size();i++)
-		{
+		for (int i = 0; i < size(); i++) {
 			sb.append(elementData[i]);
 			sb.append(";\n");
 		}

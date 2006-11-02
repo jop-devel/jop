@@ -40,6 +40,8 @@ package java.lang;
 
 public final class Character {
 
+	//	TODO: NOTE:  works only for ASCII encoding
+	
 	/**
 	 * Largest value allowed for radix arguments in Java. This value is 36.
 	 * 

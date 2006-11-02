@@ -4,13 +4,17 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.io.UnsupportedEncodingException;
 import java.util.*;
 
 public class TestJdk {
 
 	public static void main(String args[]) {
 
+		System.out.println("current time: " + System.currentTimeMillis());
+		System.out.println("current time: " + System.currentTimeMillis());
+		System.out.println("current time: " + System.currentTimeMillis());
+
+		
 		// test Hashtable
 		System.out.println("Hashtable test");
 		Hashtable vc = new Hashtable();
@@ -99,10 +103,7 @@ public class TestJdk {
 
 		System.out.println("Hashtable test END");
 
-		System.out.println("current time: " + System.currentTimeMillis());
-		System.out.println("current time: " + System.currentTimeMillis());
-		System.out.println("current time: " + System.currentTimeMillis());
-
+		
 		// MARTIN: uncomment this test for the Vector class
 		// 
 
@@ -175,7 +176,7 @@ public class TestJdk {
 //
 //		String five = new String("five");
 
-		System.out.println("Vector test END");
+//		System.out.println("Vector test END");
 
 		// test Stack.java
 		/*
@@ -192,74 +193,7 @@ public class TestJdk {
 		 * 
 		 */
 
-		// test String and Co
-		/*
-		 * String str1 = new String(); String str2 = new String(); str2 = "ames
-		 * cole"; str1 = "james cole"; System.out.println(str1);
-		 * System.out.println(str2); int i = 0; i = str1.compareTo(str2);
-		 * System.out.println(i); String tmp = str1.concat(str2);
-		 * System.out.println(tmp); if(tmp.endsWith("Cole")){
-		 * System.out.println("true"); } else { System.out.println("false"); }
-		 * if(str1.equals(str1)){ System.out.println("true equality"); } else {
-		 * System.out.println("false equalitiy"); }
-		 * 
-		 * byte[] sb = str1.getBytes(); try { byte[] sb1 =
-		 * str1.getBytes("ISO_8859_1"); } catch (UnsupportedEncodingException e) { //
-		 * TODO Auto-generated catch block e.printStackTrace(); }
-		 * 
-		 * int hashcode = str1.hashCode(); System.out.print(hashcode);
-		 * 
-		 * int indexof = 0; indexof = str1.indexOf(99);
-		 * System.out.print("indexof:"); System.out.print(indexof); indexof =
-		 * str1.indexOf("e",7); System.out.print("indexof:");
-		 * System.out.print(indexof); indexof = str1.lastIndexOf(97,7);
-		 * System.out.print("indexof:"); System.out.print(indexof); tmp =
-		 * str1.replace('a', 'b'); System.out.print(tmp);
-		 * System.out.print("substring:\n");
-		 * 
-		 * tmp = str1.substring(3, 7); System.out.print(tmp);
-		 * //str1.toLowerCase();
-		 * 
-		 * String str3 = new String(" bloody mary "); tmp = str3.trim();
-		 * System.out.print(tmp);
-		 * 
-		 * 
-		 * //System.out.println(sb.toString());
-		 * 
-		 */
-
-		// Long lon = new Long(System.currentTimeMillis());
-		// System.out.println(lon.toString());
-		// test String Buffer
-		/*
-		 * StringBuffer sb = new StringBuffer("dfmasafasa");
-		 * 
-		 * System.out.println(sb.toString()); sb.append(true);
-		 * System.out.println(sb.toString()); sb.append("hgfjz");// TODO: FIXXME :
-		 * STACK OVERFLOW System.out.println(sb.toString()); sb.append(1);
-		 * System.out.println(sb.toString()); char[] tmp = new char[10]; tmp[0] =
-		 * '0'; tmp[1] = '1'; tmp[2] = '2'; tmp[3] = '3'; sb.append(tmp,1,5);
-		 * System.out.println(sb.toString()); sb.deleteCharAt(5);
-		 * System.out.println(sb.toString()); sb.insert(3, true);
-		 * System.out.println(sb.toString());
-		 * System.out.println(sb.reverse().toString()); sb.append(new
-		 * Integer(2)); System.out.println(sb.toString());
-		 * 
-		 */
-		/*
-		 * Short sho= new Short((short)2); System.out.println(sho.toString());
-		 * 
-		 * Long lo = new Long(234); System.out.println(lo.toString()); String
-		 * tmplong = new String("-123234234546"); long lo1 =
-		 * Long.parseLong(tmplong); Long lo2 = new Long(lo1);
-		 * System.out.println(lo2.toString());
-		 */
-
-		/*
-		 * Integer i1 = new Integer(1); System.out.println(i1.toString()); int
-		 * i2 = Integer.parseInt("123"); Integer i3 = new Integer(i2);
-		 * System.out.println(i3.toString());
-		 */
+		
 
 		// test lang.Character
 		/*

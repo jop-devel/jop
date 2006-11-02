@@ -130,6 +130,9 @@ public class TestCldcString {
 		String tmp23 = new String(charsb);
 		tmp23 = tmp23.concat("test toCharArray");
 		System.out.println(tmp23);
+		Long lo3 = new Long(234);
+		sb.append(lo3);
+		System.out.println(sb);
 
 	}
 }

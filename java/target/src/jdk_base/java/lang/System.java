@@ -100,8 +100,7 @@ public final class System {
 		// TODO: invoke GC.gc()
 	}
 
-	// TODO: this is not correct...
-	// Nelson, where is this needed?
+
 	public int identityHashCode(Object x) {
 
 		return x.hashCode();

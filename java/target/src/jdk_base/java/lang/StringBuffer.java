@@ -64,6 +64,7 @@ public final class StringBuffer {
 		// count = str.count;
 		count = str.length();
 		value = new char[count];
+		//TODO: System.arraycopy()
 		for (int i = 0; i < count; ++i)
 			value[i] = str.value[i];
 		// str.getChars(0, count, value, 0);
@@ -130,8 +131,7 @@ public final class StringBuffer {
   }
 
 	public StringBuffer append(long lnum) {
-		// return append(Long.toString(lnum, 10));
-		return append("NYI");
+		 return append(Long.toString(lnum, 10));
 	}
 
 	// for collection needed - dummy version
@@ -140,17 +140,14 @@ public final class StringBuffer {
 	}
 
 	public StringBuffer append(Object obj) {
-		 //System.out.println("Dbgmsg:");
 		if(obj == null)
 			return append("null");
 		return append(obj.toString());
 	}
 
 	public synchronized StringBuffer append(String str) {
-		
 		if (str == null)
 			str = "null";
-		// int len = str.count;
 		int len = str.length();
 		ensureCapacity_unsynchronized(count + len);
 		str.getChars(0, len, value, count);

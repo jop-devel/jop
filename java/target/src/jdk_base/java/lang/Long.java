@@ -70,13 +70,6 @@ public final class Long {
 	public static final long MAX_VALUE = 0x7fffffffffffffffL;
 
 	/**
-	 * The primitive type <code>long</code> is represented by this
-	 * <code>Class</code> object.
-	 * 
-	 * @since 1.1
-	 */
-	// public static final Class TYPE = VMClassLoader.getPrimitiveClass ('J');
-	/**
 	 * The number of bits needed to represent a <code>long</code>.
 	 * 
 	 * @since 1.5

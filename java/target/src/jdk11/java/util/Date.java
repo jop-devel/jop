@@ -37,8 +37,6 @@
 
 package java.util;
 
-
-
 /**
  * <p>
  * This class represents a specific time in milliseconds since the epoch. The
@@ -132,7 +130,9 @@ public class Date
 	 *         exactly the same as the time represented by this object.
 	 */
 	public boolean equals(Object obj) {
-		return (obj instanceof Date && time == ((Date) obj).time);
+		// TODO: instaceof not implemented
+		//return (obj instanceof Date && time == ((Date) obj).time);
+		return time == ((Date) obj).time;
 	}
 
 	/**

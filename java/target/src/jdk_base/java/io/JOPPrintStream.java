@@ -15,31 +15,7 @@ public class JOPPrintStream extends PrintStream {
 
 	private static int[] tmp; // a generic buffer
 
-	// TODO: Nelson, why do we need this here?
-	// Should be inhereted from Printstream.
-	
-//	private boolean error_occurred = false;
-//
-//	/**
-//	 * This method checks to see if an error has occurred on this stream. Note
-//	 * that once an error has occurred, this method will continue to report
-//	 * <code>true</code> forever for this stream. Before checking for an error
-//	 * condition, this method flushes the stream.
-//	 * 
-//	 * @return <code>true</code> if an error has occurred, <code>false</code>
-//	 *         otherwise
-//	 */
-//	public boolean checkError() {
-//		flush();
-//		return error_occurred;
-//	}
-//	/**
-//	 * This method can be called by subclasses to indicate that an error has
-//	 * occurred and should be reported by <code>checkError</code>.
-//	 */
-//	protected void setError() {
-//		error_occurred = true;
-//	}
+
 
 	/**
 	 * This method closes this stream and all underlying streams.
@@ -88,10 +64,7 @@ public class JOPPrintStream extends PrintStream {
 	 * @param ch
 	 *            The <code>char</code> value to be printed
 	 */
-//	public synchronized void print(char c) {
-//		Character ch = new Character(c);
-//		print(ch.toString());
-//	}
+
 	public void print(char c) {
 		JVMHelp.wr(c);
 	}
@@ -258,12 +231,6 @@ public class JOPPrintStream extends PrintStream {
 
 	}
 
-	// TODO: Nelson, why this public method?
-//	public void writeChars(String str) {
-//		wr(str);
-//	}
-
-	// should we care about private?
 
 	static void wr(char c) {
 
