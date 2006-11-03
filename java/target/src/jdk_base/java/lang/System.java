@@ -101,6 +101,11 @@ public final class System {
 	}
 
 
+	// TODO: this is not correct...
+	// MS: this is still not completely correct.
+	// Perhaps we don't care about it at the
+	// moment.
+	// see Sun Javadoc for the correct version.
 	public int identityHashCode(Object x) {
 
 		return x.hashCode();
