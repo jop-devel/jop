@@ -4,6 +4,8 @@
  */
 package gctest;
 
+import com.jopdesign.sys.Native;
+
 
 /**
  * @author Martin Schoeberl (martin@jopdesign.com)
@@ -32,11 +34,13 @@ public class MyList {
 			for (i=0; i<CNT; ++i) {
 				ptr = list1;
 //				System.out.println("new 1");
+//				System.out.println(Native.getSP());
 				list1 = new MyList();
 				list1.a = i+cnt;
 				list1.next = ptr;
 				ptr = list2;
 //				System.out.println("new 2");
+//				System.out.println(Native.getSP());
 				list2 = new MyList();
 				list2.a = 1000+i+cnt;
 				list2.next = ptr;
