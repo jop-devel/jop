@@ -13,13 +13,15 @@ import util.Timer;
  */
 public class GC {
 	
-//	final static int FIX_HANDLES = 400;
-	static final int HANDLE_SIZE = 6;
 	
 	static int mem_start;		// read from memory
+static int mem_end;
 	// get a effective heap size with fixed handle count
 	// for our RT-GC tests
 	static int full_heap_size;
+
+	static final int HANDLE_SIZE = 7;
+
 	/**
 	 * The handle contains following data:
 	 * 0 pointer to the object in the heap
@@ -44,6 +46,7 @@ public class GC {
 	// handle. Rethink and write it!!!!!
 	// mark() also uses the pointer to the method table at 
 	// address-1!
+	// size != array length (think about long/double)
 	
 	// use array types 4..11 are standard boolean to long
 	// our addition:
@@ -68,6 +71,10 @@ public class GC {
 	 * Special end of list marker -1
 	 */
 	static final int GRAY_END = -1;
+	/**
+	 * The mark field (don't use size at the moment)
+	 */
+	static final int OFF_MARK = 6;
 
 	
 	static final int TYPICAL_OBJ_SIZE = 10;
@@ -113,7 +120,7 @@ public class GC {
 	static void init(int mem_size, int addr) {
 		
 		addrStaticRefs = addr;
-		
+mem_end = mem_size-1;
 		mem_start = Native.rdMem(0);
 		full_heap_size = mem_size-mem_start;
 		handle_cnt = full_heap_size/2/(TYPICAL_OBJ_SIZE+HANDLE_SIZE);
@@ -122,8 +129,8 @@ public class GC {
 		heapStartA = mem_start+handle_cnt*HANDLE_SIZE;
 		heapStartB = heapStartA+semi_size;
 		
-//		log("handle start ", mem_start);
 		log("");
+		log("handle start ", mem_start);
 		log("heap start", heapStartA);
 		log("heap size (bytes)", semi_size*4*2);
 		
@@ -142,6 +149,7 @@ public class GC {
 			int ref = mem_start+i*HANDLE_SIZE;
 			addToFreeList(ref);
 			Native.wrMem(0, ref+OFF_GRAY);
+			Native.wrMem(0, ref+OFF_MARK);
 		}
 		// clean the heap
 		for (int i=heapPtr; i<allocPtr; ++i) {
@@ -186,9 +194,10 @@ public class GC {
 	
 	static int getHandle(int ref, int size) {
 		
-//JVMHelp.wrByte(Native.getSP());
+// JVMHelp.wrByte(Native.getSP());
 		int addr = freeList;
 		freeList = Native.rdMem(freeList+OFF_NEXT);
+if (addr<mem_start || addr>=heapStartA) JVMHelp.wr("Problem getHandle");
 		Native.wrMem(ref, addr);
 		// mark handle as non free
 		// will be class info...
@@ -237,9 +246,6 @@ public class GC {
 	static void getRoots() {
 
 		synchronized (mutex) {
-//blocking time
-// time measurement by rup
-//int ts=Timer.us();
 
 			int i, j;
 			
@@ -283,12 +289,6 @@ public class GC {
 				}
 			}
 
-// time measurement by rup
-//      ts = Timer.us() - ts;
-//      System.out.print("blocking time for root scan: ");
-//      System.out.print(ts);
-//      System.out.println(" us");      
-
 			// TODO: and what happens when the stack gets changed during
 			// GC?
 		}
@@ -301,20 +301,19 @@ public class GC {
 		getRoots();
 		while (grayList!=GRAY_END) {
 			int ref = pop();
-			int size = Native.rdMem(ref+OFF_SIZE);
-			if (size<0) {
+			int mark = Native.rdMem(ref+OFF_MARK);
+			if (mark!=0) {
 				// allready marked
 				continue;
 			}
-			size |= 0x80000000;
-			Native.wrMem(size, ref+OFF_SIZE);
+			Native.wrMem(1, ref+OFF_MARK);
 			
 			// get pointer to object
 			int addr = Native.rdMem(ref);
 			int flags = Native.rdMem(ref+OFF_TYPE);
 			if (flags==IS_REFARR) {
 				// is an array of references
-				size = Native.rdMem(addr-1);
+				int size = Native.rdMem(addr-1);
 				for (i=0; i<size; ++i) {
 					push(Native.rdMem(addr+i));
 				}
@@ -332,7 +331,7 @@ public class GC {
 						int child = Native.rdMem(addr+i);
 						push(child);
 					}
-					flags >>= 1;
+					flags >>>= 1;
 				}				
 			} else {
 				// it's a plain value array
@@ -352,13 +351,12 @@ public class GC {
 			int ref = useList;
 			useList = 0;
 			while (ref!=0) {
-				int size = Native.rdMem(ref+OFF_SIZE);
+				int mark = Native.rdMem(ref+OFF_MARK);
 				// read next element, as it is destroyed
 				// by addTo*List()
 				int next = Native.rdMem(ref+OFF_NEXT);
-				if (size<0) {
-					size &= 0x7fffffff;
-					Native.wrMem(size, ref+OFF_SIZE);
+				if (mark!=0) {
+					Native.wrMem(0, ref+OFF_MARK);
 					addToUseList(ref);
 					++use;
 				} else {
@@ -410,9 +408,11 @@ public class GC {
 				for (int i=0; i<size; ++i) {
 					int val = Native.rdMem(addr+i);
 					Native.wrMem(val, heapPtr+i);
+if (heapPtr+i<heapStartA || heapPtr+i>=mem_end) JVMHelp.wr("Problem compact");
 				}
 				// update object pointer to the new location
 				Native.wrMem(heapPtr+1, ref+OFF_PTR);
+if (ref<mem_start || ref>=heapStartA) JVMHelp.wr("Problem compact 2");
 				heapPtr += size;
 			}
 			ref = Native.rdMem(ref+OFF_NEXT);
@@ -423,9 +423,9 @@ public class GC {
 			Native.wrMem(0, i);
 		}
 		// for tests clean also the remainig memory in the to-space??
-//		for (int i=heapPtr; i<allocPtr; ++i) {
-//			Native.wrMem(0, i);
-//		}
+		for (int i=heapPtr; i<allocPtr; ++i) {
+			Native.wrMem(0, i);
+		}
 	}
 
 	public static void setConcurrent() {
@@ -506,12 +506,6 @@ public class GC {
 		
 		Native.wrMem(cons+3, allocPtr);		// pointer to method table in objectref-1
 
-		// zero could be done on a flip and at initialization!
-		// we don't need this
-//		for (int i=1; i<size; ++i) {
-//			Native.wrMem(0, allocPtr+i);		// zero object
-//		}
-
 		return ref;
 	}
 	
@@ -553,30 +547,10 @@ public class GC {
 			ref = getHandle(allocPtr+1, size);
 		}
 		// ref. flags used for array marker
-//		if (isRef) {
-//			Native.wrMem(IS_REFARR, ref+OFF_TYPE);
-//		} else {
-//			Native.wrMem(IS_VALARR, ref+OFF_TYPE);
-//		}
 		Native.wrMem(type, ref+OFF_TYPE);
 
-		// TODO: we also need the type (long/double)
-		// for a correct copy!
-		// disable long array access for now...
-		// we need the array size.
-		// in the heap or in the handle structure
 		Native.wrMem(arrayLength, allocPtr);		// array length objectref-1
 
-		// we don't need this
-//		for (int i=1; i<size; ++i) {
-//			Native.wrMem(0, allocPtr+i);		// zero array
-//		}
-	
-		// this is for debugging/paper
-		// use ONLY when the maximum heap size is lower than the
-		// actaul memory!!!
-//		logAlloc();
-		
 		return ref;
 		
 	}
