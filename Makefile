@@ -288,7 +288,7 @@ sim: java_app
 #		without the tools
 #
 jsim: java_app
-	java -cp java/tools/dist/lib/jop-tools.jar -Dlog="false" -Dhandle="true" \
+	java -cp java/tools/dist/lib/jop-tools.jar -Dlog="false" \
 	com.jopdesign.tools.JopSim java/target/dist/bin/$(JOPBIN)
 
 config_byteblast:
