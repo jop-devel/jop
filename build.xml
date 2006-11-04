@@ -227,13 +227,19 @@
 		<javac
 			destdir="${target}/dist/classes"
 			sourcepathref="target-source"
-			source="1.4">
+			source="1.4"
+			includeAntRuntime="false"
+			debug="true">  
 			<!-- We want to force bootclasspath, extdirs, and classpath to be empty, but Ant makes this difficult. -->
 			<!-- If any of these are an empty string, Ant uses the default instead. So, we give them dummy values. -->
 			<!-- This works for all but classpath, for which Ant removes any non-existent paths. -->
+<!-- MS: I did this for Java 1.5 tests with the collection classes
+	don't remember if it is necessary for 1.5 - probably cleaner
+	for building a target with it's own JDK
 			<bootclasspath path="null"/>
 			<extdirs path="null"/>
 			<classpath path="null"/>
+-->
 			<src path="${target}/src/common"/>
 			<include name="com/jopdesign/sys/*.java"/>
 		</javac>
@@ -241,13 +247,19 @@
 		<javac 
 			destdir="${target}/dist/classes" 
 			sourcepathref="target-source" 
-			source="1.4"> 
+			source="1.4"
+			includeAntRuntime="false"
+			debug="true">  
 			<!-- We want to force bootclasspath, extdirs, and classpath to be empty, but Ant makes this difficult. -->
 			<!-- If any of these are an empty string, Ant uses the default instead. So, we give them dummy values. -->
 			<!-- This works for all but classpath, for which Ant removes any non-existent paths. -->
+<!-- MS: I did this for Java 1.5 tests with the collection classes
+	don't remember if it is necessary for 1.5 - probably cleaner
+	for building a target with it's own JDK
 			<bootclasspath path="null"/>
 			<extdirs path="null"/>
 			<classpath path="null"/>
+-->
 			<src path="${basedir}"/> 
 			<include name="${target-app}"/> 
 		</javac>
@@ -388,7 +400,6 @@
 	<target name="jsim" depends="java-app" description="JopSim target without the tools">
 		<java classname="com.jopdesign.tools.JopSim" failonerror="true" fork="true">
 			<sysproperty key="log" value="false"/>
-			<sysproperty key="handle" value="true"/>
 			<classpath>
 				<pathelement location="java/tools/dist/lib/jop-tools.jar"/>
 			</classpath>
