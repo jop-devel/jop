@@ -554,53 +554,11 @@ static Object o;
 
 	private static int f_new(int cons) {
 
-/* original non handle version
-		int h, val, ret;
-
-		// cons is a pointer to the class struct
-
-synchronized (o) {
-		h = Native.rdIntMem(2);				// get heap pointer
-		Native.wrMem(cons+3, h);			// pointer to method table in objectref-1
-		++h;								// one increment for ptr to mt
-		ret = h;							// return pointer to object
-		val = Native.rdMem(cons);			// instance size
-		val += h;
-		Native.wrIntMem(val, 2);			// write heap pointer
-		for (; h<val; ++h) {
-			Native.wrMem(0, h);				// zero object
-		}
-}
-		return ret;
-*/
-
-/* Handle version:
-*/
-		int h, val, ret;
-
-		// cons is pointer to class struct
+		int ret;
 
 		synchronized (o) {
 
 			ret = GC.newObject(cons);
-/*
-			h = Native.rdIntMem(2);				// get heap pointer
-			val = Native.rdMem(cons);			// instance size
-			Native.wrIntMem(h+2+val, 2);		// write heap pointer
-			// GC change:
-			ret = h;
-			Native.wrMem(h+2, h); 				// write handle
-			++h;
-			// end GC change
-			Native.wrMem(cons+3, h);			// pointer to method table in objectref-1
-			++h;								// one increment for ptr to mt
-			// GC change:
-			// ret = h;							// return pointer to object
-			val += h;
-			for (; h<val; ++h) {
-				Native.wrMem(0, h);				// zero object
-			}
-*/
 		}
 		return ret;
 
@@ -608,51 +566,11 @@ synchronized (o) {
 
 	static int f_newarray(int count, int type) {
 
-/* original non handle version
-		int h, ret;
-
-		//	ignore cons (type info)
-
-synchronized (o) {
-		h = Native.rdIntMem(2);				// get heap pointer
-		Native.wrMem(count, h);				// count as first element
-		++h;								// one increment for count
-		ret = h;							// return pointer to first element
-		count += h;
-		Native.wrIntMem(count, 2);			// write heap pointer
-		for (; h<count; ++h) {
-			Native.wrMem(0, h);				// zero array
-		}
-}
-		return ret;
-*/
-
-/* Handle version
-*/
-				
-		int h, ret;
+		int ret;
 
 		synchronized (o) {
 			
 			ret = GC.newArray(count, type);
-
-/*
-			h = Native.rdIntMem(2);				// get heap pointer
-			Native.wrIntMem(h+2+count, 2);		// write heap pointer
-			// GC change:
-			ret = h;
-			Native.wrMem(h+2, h); // write handle
-	
-			++h;
-			// end GC change
-			Native.wrMem(count, h);				// count as first element
-			++h;								// one increment for count
-	//		ret = h;							// return pointer to first element
-			count += h;
-			for (; h<count; ++h) {
-				Native.wrMem(0, h);				// zero array
-			}
-*/
 		}
 		return ret;
 
@@ -662,7 +580,7 @@ synchronized (o) {
 
 		// ignore cons (type info)
 		// should be different for the GC!!!
-		int h, ret;
+		int ret;
 
 		synchronized (o) {
 			
@@ -674,6 +592,7 @@ synchronized (o) {
 
 
 	private static void f_arraylength() { JVMHelp.noim(); /* jvm.asm */ }
+
 	private static Throwable f_athrow(Throwable t) {
 		JVMHelp.wr("Exception ");
 		String s = t.getMessage();
