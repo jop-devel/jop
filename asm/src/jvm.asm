@@ -79,17 +79,18 @@
 //	2006-01-22	add type info for newarray (for long)
 //	2006-01-23	use offset instead of cp index for get/putfield
 //	2006-06-15	enhanced memory/cache interface (less cycles)
+//	2006-11-04	move mtab pointer and array length to the handle
+//				little optimization in array load/store
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
 
-#define HANDLE 1
 //
 //	'special' constant for a version number
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20060615
+version		= 20061104
 
 //
 //	io address are negativ memory addresses
@@ -822,10 +823,6 @@ goto:		nop opd
 
 getstatic_ref:
 getstatic:
-				// int idx = readOpd16u();
-				// int addr = readMem(cp+idx);	// not now
-				// stack[++sp] = readMem(addr);
-
 			ldm	cp opd
 			nop	opd
 			ld_opd_16u
@@ -845,10 +842,6 @@ getstatic:
 
 putstatic_ref:
 putstatic:
-				// int idx = readOpd16u();
-				// int addr = readMem(cp+idx);	// not now
-				// writeMem(addr, stack[sp--]);
-
 			ldm	cp opd
 			nop	opd
 			ld_opd_16u
@@ -885,12 +878,11 @@ getfield:
 			nop
 			nop
 
-#ifdef HANDLE
 			stmra				// read handle indirection
 			wait				// for the GC
 			wait
 			ldmrd
-#endif
+
 			// TODO: why does flag opd has to be immediatley
 			// before usage by ld_opd?
 			// We cannot optimize this instruction as far as
@@ -926,12 +918,11 @@ putfield:
 			nop
 			nop
 
-#ifdef HANDLE
 			stmra				// read handle indirection
 			wait				// for the GC
 			wait
 			ldmrd
-#endif
+
 			nop	opd
 			nop	opd
 			ld_opd_16u
@@ -943,27 +934,6 @@ putfield:
 			wait
 			wait
 			nop	nxt
-
-// TODO: initialize to zero
-// or move to JVM.java (with synchronized())
-//
-//newarray:	nop	opd				// no type info
-//			stm	a				// save count
-//			ldm	heap 
-//			stmwa				// write ext. mem address
-//			ldm	a
-//			stmwd				// store count
-//			ldm	heap
-//			ldi	1
-//			add					// arrayref to first element
-//			dup
-//			ldm	a
-//			add					// +count
-//			stm	heap
-//			wait
-//			wait
-//			nop	nxt
-
 
 newarray:
 			nop opd
@@ -994,14 +964,9 @@ newarray:
 
 
 arraylength:
-#ifdef HANDLE
-			stmra				// read handle indirection
-			wait				// for the GC
-			wait
-			ldmrd
-#endif
-			ldi	-1
-			add					// arrayref-1
+
+			ldi	1
+			add					// arrayref+1 (in handle)
 			stmra				// read ext. mem, mem_bsy comes one cycle later
 			wait
 			wait
@@ -1018,21 +983,13 @@ sastore:
 			stm	b				// index
 			// arrayref is TOS
 			dup					// for null pointer check
-			nop					// wait one cycle for flags of ref
+			dup					// for bound check, one cycle wait for bz
 			bz	null_pointer	// 
-			nop
-			nop
-
-#ifdef HANDLE
-			stmra				// read handle indirection
-			wait				// for the GC
-			wait
-			ldmrd
-#endif
-
-			dup					// bound check
-			ldi	-1
-			add					// arrayref-1
+			// we do the following in the
+			// branch slot -> one more element
+			// from the former dup on the stack
+			ldi	1
+			add					// arrayref+1
 			stmra				// read ext. mem, mem_bsy comes one cycle later
 			wait				// is this ok? - wait in branch slot
 			wait
@@ -1048,7 +1005,16 @@ sastore:
 			and
 			nop
 			bnz	array_bound
-			ldm	b				// in branch slot....
+			nop
+			nop
+
+// we could save one ot two cycles when
+// starting the read in the branch slot
+			stmra				// read handle indirection
+			wait				// for the GC
+			wait
+			ldmrd
+			ldm	b
 			add					// index+arrayref
 
 			stmwa				// write ext. mem address
@@ -1072,20 +1038,13 @@ saload:
 			stm	b				// index
 			// arrayref is TOS
 			dup					// for null pointer check
-			nop					// wait one cycle for flags of ref
+			dup					// for bound check, one cycle wait for bz
 			bz	null_pointer	// 
-			nop
-			nop
-#ifdef HANDLE
-			stmra				// read handle indirection
-			wait				// for the GC
-			wait
-			ldmrd
-#endif
-
-			dup					// for bound check
-			ldi	-1
-			add					// arrayref-1
+			// we do the following in the
+			// branch slot -> one more element
+			// from the former dup on the stack
+			ldi	1
+			add					// arrayref+1
 
 			stmra				// read array length
 			wait				// is this ok? - wait in branch slot
@@ -1093,7 +1052,7 @@ saload:
 			ldmrd		 		// read ext. mem (array length)
 
 			ldi	1
-			sub					// length-1
+			add					// length+1
 			ldm	b				// index
 			sub					// TOS = length-1-index
 			ldm	b				// check if index is negativ
@@ -1102,7 +1061,16 @@ saload:
 			and
 			nop
 			bnz	array_bound
-			ldm	b				// in branch slot...
+			nop
+			nop
+
+// we could save one ot two cycles when
+// starting the read in the branch slot
+			stmra				// read handle indirection
+			wait				// for the GC
+			wait
+			ldmrd
+			ldm	b
 			add					// index+arrayref
 
 			stmra				// read ext. mem, mem_bsy comes one cycle later
@@ -1397,12 +1365,10 @@ jopsys_setvp:
 
 jopsys_int2ext:
 			stm	c			// save counter
-#ifdef HANDLE
 			stmra			// read handle indirection
 			wait			// for the GC
 			wait
 			ldmrd
-#endif
 			stm	a			// extern address
 			stm	b			// intern address
 			ldm	a
@@ -1442,12 +1408,10 @@ intext_loop:
 jopsys_ext2int:
 			stm	c			// save counter
 			stm	b			// intern address
-#ifdef HANDLE
 			stmra			// read handle indirection
 			wait			// for the GC
 			wait
 			ldmrd
-#endif
 			stm	a			// extern address
 			ldm	a
 			ldm	c

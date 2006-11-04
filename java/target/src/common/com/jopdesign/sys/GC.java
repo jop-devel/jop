@@ -24,8 +24,9 @@ static int mem_end;
 
 	/**
 	 * The handle contains following data:
-	 * 0 pointer to the object in the heap
-	 * 1 pointer to the method table or 0 when the handle is free
+	 * 0 pointer to the object in the heap or 0 when the handle is free
+	 * 1 pointer to the method table or length of an array
+	 * 
 	 * 2 size - could be in class info
 	 *   + GC mark (could be part of the object pointer)
 	 * 3 type info: object, primitve array or ref array
@@ -36,7 +37,7 @@ static int mem_end;
 	 *   -1 means more than 31 fields -> look in class info....
 	 */
 	static final int OFF_PTR = 0;
-	static final int OFF_MTAB = 1;
+	static final int OFF_MTAB_LEN = 1;
 	static final int OFF_SIZE = 2;
 	static final int OFF_TYPE = 3;
 	
@@ -171,7 +172,7 @@ mem_end = mem_size-1;
 		// pointer to former freelist head
 		Native.wrMem(freeList, ref+OFF_NEXT);
 		// mark handle as free
-		Native.wrMem(0, ref+OFF_MTAB);
+		Native.wrMem(0, ref+OFF_PTR);
 		freeList = ref;
 	}
 	static void addToUseList(int ref) {		
@@ -198,10 +199,8 @@ mem_end = mem_size-1;
 		int addr = freeList;
 		freeList = Native.rdMem(freeList+OFF_NEXT);
 if (addr<mem_start || addr>=heapStartA) JVMHelp.wr("Problem getHandle");
-		Native.wrMem(ref, addr);
-		// mark handle as non free
-		// will be class info...
-		Native.wrMem(1, addr+OFF_MTAB);
+		// pointer to real object, also marks it as non free
+		Native.wrMem(ref, addr); // +OFF_PTR
 		// should be from the class info
 		Native.wrMem(size, addr+OFF_SIZE);
 		// add to used list
@@ -225,7 +224,7 @@ if (addr<mem_start || addr>=heapStartA) JVMHelp.wr("Problem getHandle");
 		if (ref<mem_start || ref>=mem_start+handle_cnt*HANDLE_SIZE) return;
 		// Is this handle on the free list?
 		// Is possible when using conservative stack scanning
-		if (Native.rdMem(ref+OFF_MTAB)==0) return;
+		if (Native.rdMem(ref+OFF_PTR)==0) return;
 		
 		addToGrayList(ref);
 		
@@ -313,7 +312,7 @@ if (addr<mem_start || addr>=heapStartA) JVMHelp.wr("Problem getHandle");
 			int flags = Native.rdMem(ref+OFF_TYPE);
 			if (flags==IS_REFARR) {
 				// is an array of references
-				int size = Native.rdMem(addr-1);
+				int size = Native.rdMem(ref+OFF_MTAB_LEN);
 				for (i=0; i<size; ++i) {
 					push(Native.rdMem(addr+i));
 				}
@@ -322,7 +321,7 @@ if (addr<mem_start || addr>=heapStartA) JVMHelp.wr("Problem getHandle");
 				// it's a plain object
 				
 				// get pointer to method table
-				flags = Native.rdMem(addr-1);
+				flags = Native.rdMem(ref+1);
 				// get real flags
 				flags = Native.rdMem(flags-2);
 				
@@ -401,7 +400,6 @@ if (addr<mem_start || addr>=heapStartA) JVMHelp.wr("Problem getHandle");
 		while (ref!=0) {
 //			log("move", ref);
 			int addr = Native.rdMem(ref+OFF_PTR);
-			--addr; // copy also the mtab pointer or arrays size!
 //			System.out.println(ref+" move from "+addr+" to "+heapPtr);
 			int size = Native.rdMem(ref+OFF_SIZE);
 			synchronized (mutex) {
@@ -411,7 +409,7 @@ if (addr<mem_start || addr>=heapStartA) JVMHelp.wr("Problem getHandle");
 if (heapPtr+i<heapStartA || heapPtr+i>=mem_end) JVMHelp.wr("Problem compact");
 				}
 				// update object pointer to the new location
-				Native.wrMem(heapPtr+1, ref+OFF_PTR);
+				Native.wrMem(heapPtr, ref+OFF_PTR);
 if (ref<mem_start || ref>=heapStartA) JVMHelp.wr("Problem compact 2");
 				heapPtr += size;
 			}
@@ -423,9 +421,9 @@ if (ref<mem_start || ref>=heapStartA) JVMHelp.wr("Problem compact 2");
 			Native.wrMem(0, i);
 		}
 		// for tests clean also the remainig memory in the to-space??
-		for (int i=heapPtr; i<allocPtr; ++i) {
-			Native.wrMem(0, i);
-		}
+//		for (int i=heapPtr; i<allocPtr; ++i) {
+//			Native.wrMem(0, i);
+//		}
 	}
 
 	public static void setConcurrent() {
@@ -466,11 +464,6 @@ if (ref<mem_start || ref>=heapStartA) JVMHelp.wr("Problem compact 2");
 	static int newObject(int cons) {
 //JVMHelp.wr('.');
 		int size = Native.rdMem(cons);			// instance size
-		// we are NOT using JVM var h at address 2 for the
-		// heap pointer anymore.
-		++size;		// for the additional method pointer
-		// TODO: Isn't the method pointer now in the handle?
-		// check jvm.asm and JVM.java and JOPSim.java
 		
 //System.out.println("new "+heapPtr+" size "+size);
 		if (heapPtr+size >= allocPtr) {
@@ -498,13 +491,15 @@ if (ref<mem_start || ref>=heapStartA) JVMHelp.wr("Problem compact 2");
 		// in the heap or in the handle structure
 		// or retrive it from the class info
 		int ref;
+		// TODO: shouldn't be the whole newObject synchronized?
+		//		Than we can remove the synchronized from JVM.java
 		synchronized (mutex) {
-			ref = getHandle(allocPtr+1, size);
+			ref = getHandle(allocPtr, size);
+			// ref. flags used for array marker
+			Native.wrMem(IS_OBJ, ref+OFF_TYPE);
+			// pointer to method table in the handle
+			Native.wrMem(cons+3, ref+OFF_MTAB_LEN);
 		}
-		// ref. flags used for array marker
-		Native.wrMem(IS_OBJ, ref+OFF_TYPE);
-		
-		Native.wrMem(cons+3, allocPtr);		// pointer to method table in objectref-1
 
 		return ref;
 	}
@@ -520,8 +515,6 @@ if (ref<mem_start || ref>=heapStartA) JVMHelp.wr("Problem compact 2");
 		if((type==11)||(type==7)) size <<= 1;
 		// reference array type is 1 (our convention)
 		
-		++size;		// for the additional size field
-
 		if (heapPtr+size >= allocPtr) {
 			gc_alloc();
 		}
@@ -544,12 +537,12 @@ if (ref<mem_start || ref>=heapStartA) JVMHelp.wr("Problem compact 2");
 		allocPtr -= size;
 		int ref;
 		synchronized (mutex) {
-			ref = getHandle(allocPtr+1, size);
+			ref = getHandle(allocPtr, size);
+			// ref. flags used for array marker
+			Native.wrMem(type, ref+OFF_TYPE);
+			// array length in the handle
+			Native.wrMem(arrayLength, ref+OFF_MTAB_LEN);
 		}
-		// ref. flags used for array marker
-		Native.wrMem(type, ref+OFF_TYPE);
-
-		Native.wrMem(arrayLength, allocPtr);		// array length objectref-1
 
 		return ref;
 		

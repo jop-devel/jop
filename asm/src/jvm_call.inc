@@ -54,17 +54,6 @@ invoke:							// jmp with mp on TOS (pointer to method struct)
 
 invokeinterface:
 
-		//	int idx = readOpd16u();
-		//	readOpd16u();						// read historical argument count and 0
-		//	int off = readMem(cp+idx);			// index in interface table
-		//	int args = off & 0xff;				// this is args count without obj-ref
-		//	off >>>= 8;
-		//	int ref = stack[sp-args];
-		//	int vt = readMem(ref-1);			// pointer to virtual table in obj-1
-		//	int it = readMem(vt-1);				// pointer to interface table one befor vt
-		//	int mp = readMem(it+off);
-		//	invoke(mp);
-
 			ldm	cp opd
 			nop	opd
 			ld_opd_16u
@@ -102,15 +91,8 @@ invokeinterface:
 			nop
 			nop
 
-#ifdef HANDLE
-			stmra				// read handle indirection
-			wait				// for the GC
-			wait
-			ldmrd
-#endif
-
-			ldi	1				// at address ref-1 is pointer to method table
-			sub
+			ldi	1				// at address ref+1 (in the handle) is the pointer to method table
+			add
 			stmra				// read pointer to method table
 			wait
 			wait
@@ -140,14 +122,6 @@ invokeinterface:
 
 
 invokevirtual:
-
-		//	int idx = readOpd16u();
-		//	int off = readMem(cp+idx);	// index in vt and arg count (-1)
-		//	int args = off & 0xff;
-		//	off >>>= 8;
-		//	int ref = stack[sp-args];
-		//	int vt = readMem(ref-1);
-		//	invoke(vt+off);
 
 			ldm	cp opd
 			nop	opd
@@ -186,16 +160,8 @@ invokevirtual:
 			nop
 			nop
 
-#ifdef HANDLE
-			stmra				// read handle indirection
-			wait				// for the GC
-			wait
-			ldmrd
-#endif
-
-
-			ldi	1			// at address ref-1 is pointer to method table
-			sub
+			ldi	1				// at address ref+1 (in the handle) is the pointer to method table
+			add
 
 			stmra				// read pointer to method table
 			wait

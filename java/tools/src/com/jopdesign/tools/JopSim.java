@@ -45,7 +45,6 @@ public class JopSim {
 	int empty_heap;
 
 	static boolean log = false;
-	static boolean useHandle = false;
 
 	//
 	//	simulate timer interrupt
@@ -449,11 +448,8 @@ System.out.println(mp+" "+pc);
 		int args = off & 0xff;		// this is args count without obj-ref
 		off >>>= 8;
 		int ref = stack[sp-args];
-		if (useHandle) {
-			// handle needs indirection
-			ref = readMem(ref);
-		}
-		int vt = readMem(ref-1);
+		// pointer to method table in handle at offset 1
+		int vt = readMem(ref+1);
 // System.out.println("invvirt: off: "+off+" args: "+args+" ref: "+ref+" vt: "+vt+" addr: "+(vt+off));
 		invoke(vt+off);
 	}
@@ -468,12 +464,8 @@ System.out.println(mp+" "+pc);
 		int args = off & 0xff;				// this is args count without obj-ref
 		off >>>= 8;
 		int ref = stack[sp-args];
-		if (useHandle) {
-			// handle needs indirection
-			ref = readMem(ref);
-		}
-
-		int vt = readMem(ref-1);			// pointer to virtual table in obj-1
+		// pointer to method table in handle at offset 1
+		int vt = readMem(ref+1);			// pointer to virtual table in obj-1
 		int it = readMem(vt-1);				// pointer to interface table one befor vt
 
 		int mp = readMem(it+off);
@@ -601,10 +593,8 @@ System.out.println(mp+" "+pc);
 		int off = readOpd16u();
 		int val = stack[sp--];
 		int ref = stack[sp--];
-		if (useHandle) {
-			// handle needs indirection
-			ref = readMem(ref);
-		}
+		// handle needs indirection
+		ref = readMem(ref);
 		writeMem(ref+off, val);
 	}
 
@@ -612,10 +602,8 @@ System.out.println(mp+" "+pc);
 
 		int off = readOpd16u();
 		int ref = stack[sp];
-		if (useHandle) {
-			// handle needs indirection
-			ref = readMem(ref);
-		}
+		// handle needs indirection
+		ref = readMem(ref);
 		stack[sp] = readMem(ref+off);
 	}
 
@@ -625,10 +613,8 @@ System.out.println(mp+" "+pc);
 		int val_l = stack[sp--];
 		int val_h = stack[sp--];
 		int ref = stack[sp--];
-		if (useHandle) {
-			// handle needs indirection
-			ref = readMem(ref);
-		}
+		// handle needs indirection
+		ref = readMem(ref);
 		writeMem(ref+off, val_h);
 		writeMem(ref+off+1, val_l);
 	}
@@ -637,10 +623,8 @@ System.out.println(mp+" "+pc);
 
 		int off = readOpd16u();
 		int ref = stack[sp];
-		if (useHandle) {
-			// handle needs indirection
-			ref = readMem(ref);
-		}
+		// handle needs indirection
+		ref = readMem(ref);
 		stack[sp] = readMem(ref+off);
 		stack[++sp] = readMem(ref+off+1);
 	}
@@ -850,19 +834,17 @@ System.out.println(mp+" "+pc);
 				case 53 :		// saload
 					idx = stack[sp--];	// index
 					ref = stack[sp--];	// ref
-					if (useHandle) {
-						// handle needs indirection
-						ref = readMem(ref);
-					}
+					// null pointer and array check missing
+					// handle needs indirection
+					ref = readMem(ref);
 					stack[++sp] = readMem(ref+idx);
 					break;
 				case 47 :		// laload
 					idx = stack[sp--];	// index
 					ref = stack[sp--];	// ref
-					if (useHandle) {
-						// handle needs indirection
-						ref = readMem(ref);
-					}
+					// null pointer and array check missing
+					// handle needs indirection
+					ref = readMem(ref);
 					stack[++sp] = readMem(ref+idx*2);
 					stack[++sp] = readMem(ref+idx*2+1);
 					break;
@@ -942,10 +924,9 @@ System.out.println(mp+" "+pc);
 					val = stack[sp--];	// value
 					idx = stack[sp--];	// index
 					ref = stack[sp--];	// ref
-					if (useHandle) {
-						// handle needs indirection
-						ref = readMem(ref);
-					}
+					// null pointer and array check missing
+					// handle needs indirection
+					ref = readMem(ref);
 					writeMem(ref+idx, val);
 					break;
 				case 80 :		// lastore
@@ -953,10 +934,9 @@ System.out.println(mp+" "+pc);
 					val2 = stack[sp--];	// value
 					idx = stack[sp--];	// index
 					ref = stack[sp--];	// ref
-					if (useHandle) {
-						// handle needs indirection
-						ref = readMem(ref);
-					}
+					// null pointer and array check missing
+					// handle needs indirection
+					ref = readMem(ref);
 					writeMem(ref+idx*2, val2);					
 					writeMem(ref+idx*2+1, val);					
 					break;
@@ -1361,12 +1341,8 @@ System.out.println("new heap: "+heap);
 					break;
 				case 190 :		// arraylength
 					ref = stack[sp--];	// ref from stack
-					if (useHandle) {
-						// handle needs indirection
-						ref = readMem(ref);
-					}
-					--ref;				// point to count
-					stack[++sp] = readMem(ref);
+					// lenght in handle at offset 1
+					stack[++sp] = readMem(ref+1);
 					break;
 				case 191 :		// athrow
 					noim(191);
@@ -1517,10 +1493,8 @@ System.out.println("new heap: "+heap);
 // public static native void int2extMem(int intAdr, int extAdr, int cnt);
 					a = stack[sp--];
 					b = stack[sp--];
-					if (useHandle) {
-						// handle needs indirection
-						b = readMem(b);
-					}
+					// handle needs indirection
+					b = readMem(b);
 					c = stack[sp--];
 					for(; a>=0; --a) {
 						writeMem(b+a, stack[c+a]);
@@ -1531,10 +1505,8 @@ System.out.println("new heap: "+heap);
 					a = stack[sp--];
 					b = stack[sp--];
 					c = stack[sp--];
-					if (useHandle) {
-						// handle needs indirection
-						c = readMem(c);
-					}
+					// handle needs indirection
+					c = readMem(c);
 					for(; a>=0; --a) {
 						stack[b+a] = readMem(c+a);
 					}
@@ -1709,7 +1681,6 @@ System.out.println(sum+" instructions, "+sumcnt+" cycles, "+instrBytesCnt+" byte
 		}
 
 		log = System.getProperty("log", "false").equals("true");
-		useHandle = System.getProperty("handle", "false").equals("true");
 //		js.portName = System.getProperty("port", "COM1");
 //		js.openSerialPort();
 

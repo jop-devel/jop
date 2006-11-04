@@ -41,7 +41,6 @@ public class JOPizer {
 	// TODO add all changes???
 	public static final int METHOD_MAX_SIZE = 1024;
 
-	public static boolean useHandle = true;
 	public static boolean dumpMgci = false;
 
 	PrintWriter out;

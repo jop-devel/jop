@@ -389,7 +389,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			break;
 		// IALOAD = 46
 		case org.apache.bcel.Constants.IALOAD:
-			wcet = 33 + 3*r;
+			wcet = 32 + 3*r;
 			break;
 		// LALOAD = 47
 		case org.apache.bcel.Constants.LALOAD:
@@ -397,7 +397,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			break;
 		// FALOAD = 48
 		case org.apache.bcel.Constants.FALOAD:
-			wcet = 33 + 3*r;
+			wcet = 32 + 3*r;
 			break;
 		// DALOAD = 49
 		case org.apache.bcel.Constants.DALOAD:
@@ -405,19 +405,19 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			break;
 		// AALOAD = 50
 		case org.apache.bcel.Constants.AALOAD:
-			wcet = 33 + 3*r;
+			wcet = 32 + 3*r;
 			break;
 		// BALOAD = 51
 		case org.apache.bcel.Constants.BALOAD:
-			wcet = 33 + 3*r;
+			wcet = 32 + 3*r;
 			break;
 		// CALOAD = 52
 		case org.apache.bcel.Constants.CALOAD:
-			wcet = 33 + 3*r;
+			wcet = 32 + 3*r;
 			break;
 		// SALOAD = 53
 		case org.apache.bcel.Constants.SALOAD:
-			wcet = 33 + 3*r;
+			wcet = 32 + 3*r;
 			break;
 		// ISTORE = 54
 		case org.apache.bcel.Constants.ISTORE:
@@ -521,7 +521,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			break;
 		// IASTORE = 79
 		case org.apache.bcel.Constants.IASTORE:
-			wcet = 36+2*r+w;
+			wcet = 35+2*r+w;
 			break;
 		// LASTORE = 80
 		case org.apache.bcel.Constants.LASTORE:
@@ -529,7 +529,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			break;
 		// FASTORE = 81
 		case org.apache.bcel.Constants.FASTORE:
-			wcet = 36+2*r+w;
+			wcet = 35+2*r+w;
 			break;
 		// DASTORE = 82
 		case org.apache.bcel.Constants.DASTORE:
@@ -537,19 +537,19 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			break;
 		// AASTORE = 83
 		case org.apache.bcel.Constants.AASTORE:
-			wcet = 36+2*r+w;
+			wcet = 35+2*r+w;
 			break;
 		// BASTORE = 84
 		case org.apache.bcel.Constants.BASTORE:
-			wcet = 36+2*r+w;
+			wcet = 35+2*r+w;
 			break;
 		// CASTORE = 85
 		case org.apache.bcel.Constants.CASTORE:
-			wcet = 36+2*r+w;
+			wcet = 35+2*r+w;
 			break;
 		// SASTORE = 86
 		case org.apache.bcel.Constants.SASTORE:
-			wcet = 36+2*r+w;
+			wcet = 35+2*r+w;
 			break;
 		// POP = 87
 		case org.apache.bcel.Constants.POP:
@@ -975,7 +975,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			break;
 		// INVOKEVIRTUAL = 182
 		case org.apache.bcel.Constants.INVOKEVIRTUAL:
-			wcet = 104 + 3 * r;
+			wcet = 100 + 2 * r;
 			if (r > 3) {
 				wcet += r - 3;
 			}
@@ -1016,7 +1016,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			break;
 		// INVOKEINTERFACE = 185
 		case org.apache.bcel.Constants.INVOKEINTERFACE:
-			wcet = 118 + 5 * r;
+			wcet = 114 + 4 * r;
 			if (r > 3) {
 				wcet += r - 3;
 			}
@@ -1041,7 +1041,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			break;
 		// ARRAYLENGTH = 190
 		case org.apache.bcel.Constants.ARRAYLENGTH:
-			wcet = 10 + 2 * r;
+			wcet = 6 + r;
 			break;
 		// ATHROW = 191
 		case org.apache.bcel.Constants.ATHROW:

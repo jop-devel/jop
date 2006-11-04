@@ -199,12 +199,11 @@ getfield_long:
 			nop
 			nop
 
-#ifdef HANDLE
 			stmra				// read handle indirection
 			wait				// for the GC
 			wait
 			ldmrd
-#endif
+
 			nop	opd
 			nop	opd
 			ld_opd_16u			// CP index is the offset for the field
@@ -238,12 +237,11 @@ putfield_long:
 			nop
 			nop
 
-#ifdef HANDLE
 			stmra				// read handle indirection
 			wait				// for the GC
 			wait
 			ldmrd
-#endif
+
 			nop	opd
 			nop	opd
 			ld_opd_16u			// CP index is the offset for the field
@@ -255,6 +253,7 @@ putfield_long:
 			nop
 
 
+// see also the little optimizations in iaload/iastore
 //
 //	long array access disabled:
 //		1. we run out of microcode memory
@@ -272,16 +271,9 @@ putfield_long:
 //			nop
 //			nop
 //
-//#ifdef HANDLE
-//			stmra				// read handle indirection
-//			wait				// for the GC
-//			wait
-//			ldmrd
-//#endif
-//
 //			dup					// bound check
-//			ldi	-1
-//			add					// arrayref-1
+//			ldi	1
+//			add					// arrayref+1
 //			stmra				// read ext. mem, mem_bsy comes one cycle later
 //			wait				// is this ok? - wait in branch slot
 //			wait
@@ -297,7 +289,14 @@ putfield_long:
 //			and
 //			nop
 //			bnz	array_bound
-//			ldm	b				// in branch slot....
+//			nop
+//			nop
+//
+//			stmra				// read handle indirection
+//			wait				// for the GC
+//			wait
+//			ldmrd
+//			ldm	b
 //			ldi 1
 //			shl                 // index*2
 //			add					// index*2+arrayref
@@ -326,16 +325,10 @@ putfield_long:
 //			bz	null_pointer	// 
 //			nop
 //			nop
-//#ifdef HANDLE
-//			stmra				// read handle indirection
-//			wait				// for the GC
-//			wait
-//			ldmrd
-//#endif
 //
 //			dup					// for bound check
-//			ldi	-1
-//			add					// arrayref-1
+//			ldi	1
+//			add					// arrayref+1
 //
 //			stmra				// read array length
 //			wait				// is this ok? - wait in branch slot
@@ -352,7 +345,14 @@ putfield_long:
 //			and
 //			nop
 //			bnz	array_bound
-//			ldm	b				// in branch slot...
+//			nop
+//			nop
+//
+//			stmra				// read handle indirection
+//			wait				// for the GC
+//			wait
+//			ldmrd
+//			ldm	b	
 //			ldi 1
 //			shl                 // index*2
 //			add					// index*2+arrayref
