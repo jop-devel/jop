@@ -130,6 +130,10 @@ public class Startup {
 	}
 
 	public static void exit() {
+		
+		for (;RtThreadImpl.mission;) {
+			RtThreadImpl.sleepMs(1000);
+		}
 		JVMHelp.wr("\r\nJVM exit!\r\n");
 		synchronized (stack) {
 			for (;;) ;
