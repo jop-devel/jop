@@ -64,7 +64,7 @@ public class RtThreadImpl {
 	private final static int MAX_STACK = 128;
 
 	private static boolean initDone;
-	private static boolean mission;
+	static boolean mission;
 
 
 	protected static Object monitor;
