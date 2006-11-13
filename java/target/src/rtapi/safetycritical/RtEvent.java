@@ -78,7 +78,7 @@ public abstract class RtEvent {
 	/**
 	 * Gets invoked in the shutdown phase at the same period as
 	 * run (instead of run()). Invoked until return true.
-	 * @return true is shutdown is finished.
+	 * @return true if shutdown is finished.
 	 */
 	protected boolean cleanup() {
 		return true;

@@ -74,6 +74,23 @@ public class RtSystem {
 			}
 		}
 	}
+	/**
+	 * Schedule a software event.
+	 * TODO: decide on which version is better: String or RtEvent
+	 * @param re
+	 */
+	public static void fire(RtEvent re) {
+		
+		// a simple linear search :-(
+		// could be better if not using the adapter stuff
+		for (int i=0; i<rsaLst.size(); ++i) {
+			RtSwEventAdapter rsa = (RtSwEventAdapter) rsaLst.elementAt(i);
+			if (rsa.re==re) {
+				rsa.fire();
+				break;
+			}
+		}
+	}
 
 	/**
 	 * Return the elapsed time from system startup in micro seconds.
