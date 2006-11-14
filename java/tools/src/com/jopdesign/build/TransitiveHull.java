@@ -25,7 +25,7 @@ import org.apache.bcel.Repository;
  * <p>
  * It fails however in the presence of reflection code.
  *
- * @version $Id: TransitiveHull.java,v 1.2 2005/06/14 13:58:28 martin Exp $
+ * @version $Id: TransitiveHull.java,v 1.3 2006/11/14 12:21:07 martin Exp $
  * @author	<A HREF="mailto:markus.dahm@berlin.de">M. Dahm</A>
  */
 public class TransitiveHull extends org.apache.bcel.classfile.EmptyVisitor {
@@ -97,11 +97,13 @@ public class TransitiveHull extends org.apache.bcel.classfile.EmptyVisitor {
 	private void add(String class_name) {
 		class_name = class_name.replace('/', '.');
 
-		for(int i = 0; i < _ignored.length; i++) {
-			if(class_name.matches(_ignored[i])) {
-				return; // Ihh
-			}
-		}
+		// not used for JOPizer and matches not part
+		// of JDK 1.3
+//		for(int i = 0; i < _ignored.length; i++) {
+//			if(class_name.matches(_ignored[i])) {
+//				return; // Ihh
+//			}
+//		}
 		// we ignore array classes
 		if (class_name.startsWith("[")) {
 			return;
