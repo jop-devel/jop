@@ -16,8 +16,8 @@ public class RtSystem {
 	static Vector rtaLst, rsaLst;
 	
 	/**
-	 * Starts the real-time mission. All periodic and sporadic
-	 * RT-events are scheduled. 
+	 * Starts the real-time system (teh mission).
+	 * All periodic and sporadic RT-events are scheduled. 
 	 *
 	 */
 	public static void start() {
@@ -43,7 +43,7 @@ public class RtSystem {
 		RtThread.startMission();
 	}
 	/**
-	 * Stop the mission. When the event run() method returns
+	 * Stop the real-time system (mission). When the event run() method returns
 	 * true the cleanup() methods are invoked until returning true
 	 * for a clean shutdown.
 	 *
