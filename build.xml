@@ -202,7 +202,7 @@
 		<mkdir dir="${tools}/dist/lib"/>
 		<mkdir dir="${tools}/dist/classes"/>
 
-		<javac destdir="${tools}/dist/classes" classpathref="ext-cp">
+		<javac debug="true" destdir="${tools}/dist/classes" classpathref="ext-cp">
 			<src path="${tools}/src"/>
 			<src path="${target}/src/common"/>
 			<include name="*.java"/>
@@ -608,6 +608,9 @@
 			<sysproperty key="dot" value="true"/>
 			<sysproperty key="jline" value="true"/>
 			<sysproperty key="ls" value="true"/>
+<!--
+			<arg line="-mm ${wcet-method} -cp ${target}/dist/lib/classes.zip -o ${target}/wcet/${p3}wcet.txt -sp &quot;${target-source-flattened} &quot; ${main-class}"/>
+-->
 			<arg line="-mm ${wcet-method} -cp ${target}/dist/lib/classes.zip -o ${target}/wcet/${p3}wcet.txt -sp ${target-source-flattened} ${main-class}"/>
 		</java>
 	</target>
