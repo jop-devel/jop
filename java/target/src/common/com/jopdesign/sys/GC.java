@@ -131,6 +131,7 @@ mem_end = mem_size-1;
 		heapStartB = heapStartA+semi_size;
 		
 		log("");
+		log("memory size", mem_size);
 		log("handle start ", mem_start);
 		log("heap start", heapStartA);
 		log("heap size (bytes)", semi_size*4*2);
