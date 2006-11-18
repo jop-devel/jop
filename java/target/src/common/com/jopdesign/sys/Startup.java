@@ -69,16 +69,15 @@ public class Startup {
 		int size = 0;
 		int firstWord = Native.rd(0);
 		int val;
-		boolean search = true;
 		
 		// increment in 1024 Bytes
-		for (size=256; search; size+=256) {
+		for (size=256; ; size+=256) {
 			val = Native.rd(size);
 			Native.wr(0xaaaa5555, size);
-			if (Native.rd(size)!=0xaaaa5555) search = false;
+			if (Native.rd(size)!=0xaaaa5555) break;
 			Native.wr(0x12345678, size);
-			if (Native.rd(size)!=0x12345678) search = false;
-			if (Native.rd(0)!=firstWord) search = false;
+			if (Native.rd(size)!=0x12345678) break;
+			if (Native.rd(0)!=firstWord) break;
 			// restore current word
 			Native.wr(val, size);
 		}
