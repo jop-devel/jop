@@ -774,30 +774,6 @@ Dbg.wr('\n');
 		checksum(24);
 */
 
-/* OEBB
-// Z252245
-// EN$Pf1dV
-		sbuf[5] = 22-2;		// length including code, id and length field
-		sbuf[6] = 7;		// length of user id
-		sbuf[7] = 'z';
-		sbuf[8] = '2';
-		sbuf[9] = '5';
-		sbuf[10] = '2';
-		sbuf[11] = '2';
-		sbuf[12] = '4';
-		sbuf[13] = '5';
-		sbuf[14] = 7;		// length of password
-		sbuf[15] = 'S';
-		sbuf[16] = 't';
-		sbuf[17] = 'T';
-		sbuf[18] = 'f';
-		sbuf[19] = 'D';
-		sbuf[20] = 'g';
-		sbuf[21] = '$';
-
-
-		checksum(22);
-*/
 
 /* ONE
 		sbuf[7] = 30-4;		// length including code, id and length field
