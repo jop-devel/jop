@@ -391,7 +391,8 @@ System.out.println("start Connection");
 		if (m!=null) {
 			m.data[0] = (Main.VER_MAJ<<16)+Main.VER_MIN;	// SW Ver.
 			m.data[1] = Flash.getVer();
-			m.len = 2;
+			m.data[2] = BgPpp.getConnType();
+			m.len = 3;
 			Status.connOk = false;
 			Status.download = false;
 			m.send();
