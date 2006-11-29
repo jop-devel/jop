@@ -67,6 +67,7 @@ public class BgPpp extends LinkLayer {
 
 	private static final int NEG_SEND= 3000;		// Period of send negotiation (in ms)
 	private static final int IP_SEND= 10000;		// Send timout for ip for reconnect (in ms)
+	private static final int PPP_HANDLING = 60000;	// Timout for the PPP negotiation
 	
 	private static final int GPRS_TRY_CNT = 3;		// After that count connect via GSM
 
@@ -454,7 +455,7 @@ System.out.println(connCount);
 			Led.startModem();
 			waitSec(1);
 			
-			if (connCount>GPRS_TRY_CNT) {
+			if (connCount>GPRS_TRY_CNT && gsm_uid.length()!=0) {
 				useGSM = true;
 			}
 
@@ -534,6 +535,8 @@ System.out.println(connCount);
 		rejCnt = 0;
 		lcpAck = false;
 		ipcpAck = false;
+		
+		int timer = 0;
 
 		//
 		//	wait for startConnection(...)
@@ -557,9 +560,12 @@ System.out.println(connCount);
 			pppLoop();
 
 			if (state==MODEM_OK) {
+				// start timer for PPP negotiation
+				timer = Timer.getTimeoutMs(PPP_HANDLING);
 			}
 
-			if (rejCnt > MAX_REJ) {
+			if ((rejCnt > MAX_REJ) || 
+					(Timer.timeout(timer) && state!=CONNECTED)) {
 // System.out.print("1");
 				modemHangUp();		// start over
 				modemInit();
@@ -576,7 +582,7 @@ dbgCon();
 
 					if (code == REQ) {
 						if (checkOptions(LCP)) {
-							lcpAck = true;;
+							lcpAck = true;
 						} else {
 							++rejCnt;
 						}
