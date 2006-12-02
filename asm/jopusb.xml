@@ -1,14 +1,16 @@
 <project name="jopusb" default="jopusb">
 	
-	<delete dir="generated"/>
-	<mkdir dir="generated"/>
+	<target name="jopusb">
+		<delete dir="generated"/>
+		<mkdir dir="generated"/>
 	
-	<exec executable="gcc" failonerror="true" output="generated/jvmusb.asm">
-		<arg line="-x c -E -C -P -DUSB src/jvm.asm"/>
-	</exec>
+		<exec executable="gcc" failonerror="true" output="generated/jvmusb.asm">
+			<arg line="-x c -E -C -P -DUSB src/jvm.asm"/>
+		</exec>
 
-	<ant>
-		<property name="project" value="../generated/jvmusb"/>
-	</ant>
+		<ant>
+			<property name="project" value="../generated/jvmusb"/>
+		</ant>
+	</target>
 	
 </project>
