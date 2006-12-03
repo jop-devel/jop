@@ -2,6 +2,8 @@ package safetycritical;
 
 import java.util.*;
 
+import com.jopdesign.sys.Const;
+import com.jopdesign.sys.Native;
 import com.jopdesign.sys.RtThreadImpl;
 
 import joprt.RtThread;
@@ -99,7 +101,7 @@ public class RtSystem {
 	 * @return
 	 */
 	public static int currentTimeMicro() {
-		return 0;
+		return Native.rdMem(Const.IO_US_CNT);
 	}
 }
 
