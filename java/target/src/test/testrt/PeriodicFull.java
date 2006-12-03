@@ -20,7 +20,7 @@ w = per*12/100;
 
 		public void run() {
 			for (;;) {
-				Dbg.wr(c);
+				System.out.print(c);
 				int ts = Native.rd(Const.IO_US_CNT);
 				ts += w;
 				// busy wait for period end
@@ -63,7 +63,7 @@ w = per*12/100;
 // RtThread.debug();
 			Timer.wd();
 			RtThread.sleepMs(1200);
-			Dbg.wr('M');
+			System.out.print('M');
 		}
 	}
 }

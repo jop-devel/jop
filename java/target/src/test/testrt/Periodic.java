@@ -36,7 +36,7 @@ public class Periodic {
 		RtThread rts = new RtThread(9, 1000000) {
 			public void run() {
 				for (;;) {
-Dbg.wr('*');
+					System.out.print('*');
 					waitForNextPeriod();
 					int ts = Native.rd(Const.IO_US_CNT) + 990000;
 					while (ts-Native.rd(Const.IO_US_CNT)>0)
@@ -49,7 +49,7 @@ Dbg.wr('*');
 
 		// sleep
 		for (;;) {
-Dbg.wr('M');
+			System.out.print('m');
 // RtThread.debug();
 			Timer.wd();
 			RtThread.sleepMs(1200);
