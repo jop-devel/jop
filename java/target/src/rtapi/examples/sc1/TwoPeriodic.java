@@ -10,42 +10,34 @@ public class TwoPeriodic {
 	 */
 	public static void main(String[] args) {
 
-		new RtEvent(1000000) {
+		new RtEvent(500000) {
 			protected boolean run() {
 				System.out.println("P1");
 				return true;
 			}		
+			protected boolean cleanup() {
+				System.out.println("cleanup in P1 invoked!");
+				return true;
+			}
 		};
 
-		new MyEvent();
-		
+		new RtEvent(1000000) {
+			
+			int counter = 0;
+			
+			protected boolean run() {
+				System.out.println("P2");
+				++counter;
+				if (counter==5) {
+					System.out.println("Stop request from P2");
+					RtSystem.stop();
+				}
+				return true;
+			}		
+		};
+
 		RtSystem.start();
 		
 	}
 
-}
-
-class MyEvent extends RtEvent {
-	
-	int counter;
-	
-	public MyEvent() {
-		super(2000000);
-		counter = 0;
-	}
-
-	protected boolean run() {
-		System.out.println("P2");
-		++counter;
-		if (counter==5) {
-			RtSystem.stop();
-		}
-		return true;
-	}
-	
-	protected boolean cleanup() {
-		System.out.println("cleanup invoked!");
-		return true;
-	}
-	
 }

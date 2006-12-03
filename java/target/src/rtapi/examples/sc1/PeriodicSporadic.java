@@ -10,44 +10,37 @@ public class PeriodicSporadic {
 	 */
 	public static void main(String[] args) {
 
-		new RtEvent("SWEVENT", 1000000) {
+		final RtEvent rte = new RtEvent("SWEVENT", 2000000) {
 			protected boolean run() {
 				System.out.println("SW event fired");
 				return true;
 			}		
 		};
 
-		new MyPeriodic();
+		new RtEvent(1000000) {
+
+			int counter = 0;
+			
+			protected boolean run() {
+				System.out.println("P1");
+				++counter;
+				if (counter%2==1) {
+					RtSystem.fire(rte);
+				}
+				if (counter==10) {
+					RtSystem.stop();
+				}
+				return true;
+			}
+			
+			protected boolean cleanup() {
+				System.out.println("cleanup invoked!");
+				return true;
+			}
+			
+		};
 		
 		RtSystem.start();
 	}
 
-}
-
-class MyPeriodic extends RtEvent {
-	
-	int counter;
-	
-	public MyPeriodic() {
-		super(1000000);
-		counter = 0;
-	}
-
-	protected boolean run() {
-		System.out.println("P2");
-		++counter;
-		if (counter%2==1) {
-			RtSystem.fire("SWEVENT");
-		}
-		if (counter==10) {
-			RtSystem.stop();
-		}
-		return true;
-	}
-	
-	protected boolean cleanup() {
-		System.out.println("cleanup invoked!");
-		return true;
-	}
-	
 }
