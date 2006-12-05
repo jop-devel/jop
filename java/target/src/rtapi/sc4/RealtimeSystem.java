@@ -11,10 +11,12 @@ import joprt.SwEvent;
 
 public class RealtimeSystem {
 
+	/**
+	 * This class is uninstantiable.
+	 */
 	private RealtimeSystem() {
-		// no RtSystem object
 	}
-	
+	 
 	static Vector rtaLst, rsaLst;
 	
 	/**
@@ -65,7 +67,7 @@ public class RealtimeSystem {
 	 * Schedule a software event.
 	 * @param re
 	 */
-	public static void fire(RealtimeThread re) {
+	static void fire(RealtimeThread re) {
 		
 		// a simple linear search :-(
 		// could be better if not using the adapter stuff
