@@ -113,6 +113,8 @@ class RtThreadAdapter extends RtThread {
 			if (runReturn && shutdown) {
 				if (!cleanupReturn) {
 					cleanupReturn = re.cleanup();
+				} else {
+					break;
 				}
 			} else {
 				runReturn = re.run();				
