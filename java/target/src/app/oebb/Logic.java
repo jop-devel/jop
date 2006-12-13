@@ -311,8 +311,20 @@ System.out.println("Logic.initVals()");
 			}
 
 			if (Status.direction==Gps.DIR_FORWARD) {		// going from left to rigth.
+				// check direction with melnr
+				if (checkDirection && Status.melNr<Status.melNrStart) {				
+					// FERL bleibt
+					stateAfterQuit = Status.state;
+					// set back melNrStart
+					Status.melNrStart = Status.melNr;
+					Status.state = Status.ALARM;
+					alarmType = Cmd.ALARM_RICHTUNG;
+					return false;						
+				}
 				// check Melderaum
-				if (Status.melNr<Status.melNrStart || Status.melNr>Status.melNrZiel) {
+//				if (Status.melNr<Status.melNrStart || Status.melNr>Status.melNrZiel) {
+				// change 13.12.2006 - Ziel only in the direction
+				if (Status.melNr>Status.melNrZiel) {
 					stateAfterQuit = Status.state;
 					Status.state = Status.ALARM;
 					alarmType = Cmd.ALARM_UEBERF;
@@ -323,16 +335,28 @@ System.out.println("Logic.initVals()");
 				// check direction
 				if (checkDirection && Gps.direction==Gps.DIR_BACK &&
 					!(Status.art==Status.ZUG_NF && Status.melNr==Status.melNrZiel)) {
-						stateAfterQuit = Status.state;
-// FERL bleibt
-//						stateAfterQuit = Status.ANM_OK;
-						Status.state = Status.ALARM;
-						alarmType = Cmd.ALARM_RICHTUNG;
-						return false;					
+
+					// FERL bleibt
+					stateAfterQuit = Status.state;
+					Status.state = Status.ALARM;
+					alarmType = Cmd.ALARM_RICHTUNG;
+					return false;					
 				}
 			} else {										// going from right to left
+				// check direction with melnr
+				if (checkDirection && Status.melNr>Status.melNrStart) {				
+					// FERL bleibt
+					stateAfterQuit = Status.state;
+					// set back melNrStart
+					Status.melNrStart = Status.melNr;
+					Status.state = Status.ALARM;
+					alarmType = Cmd.ALARM_RICHTUNG;
+					return false;						
+				}
 				// check Melderaum
-				if (Status.melNr>Status.melNrStart || Status.melNr<Status.melNrZiel) {
+				// change 13.12.2006 - Ziel only in the direction
+//				if (Status.melNr>Status.melNrStart || Status.melNr<Status.melNrZiel) {
+				if (Status.melNr<Status.melNrZiel) {
 					stateAfterQuit = Status.state;
 					Status.state = Status.ALARM;
 					alarmType = Cmd.ALARM_UEBERF;

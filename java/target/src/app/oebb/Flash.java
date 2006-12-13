@@ -379,6 +379,15 @@ Dbg.lf();
 			Point p = str[i];
 			p.ptr = intVal(addr+PT_PTR);
 
+Dbg.lf();
+Dbg.intVal(p.melnr);
+
+			// TODO: this earlier init is not
+			// part of the current BG SW (1.05)
+			p.stationLine1.setLength(0);
+			p.stationLine2.setLength(0);
+			p.verschubVon.setLength(0);
+			p.verschubBis.setLength(0);
 			int idx = p.ptr;
 			if (idx<=0) {
 				addr += PT_LEN;
@@ -397,8 +406,6 @@ Dbg.lf();
 				}
 Dbg.wr(tmpStr[j]);
 			}
-			p.stationLine1.setLength(0);
-			p.stationLine2.setLength(0);
 			// recycle first text if the second one is not set
 			off = line;
 			if (line==2 && tmpStr[line].length()==0) {
@@ -408,13 +415,12 @@ Dbg.wr(tmpStr[j]);
 			p.stationLine2.append(tmpStr[off+1]);
 
 			
-			p.verschubVon.setLength(0);
 			p.verschubVon.append(tmpStr[4]);
-			p.verschubBis.setLength(0);
 			p.verschubBis.append(tmpStr[5]);
 			addr += PT_LEN;
 			
 		}
+Dbg.lf();
 		textOk = true;
 		left2right = l2r;
 	}
