@@ -34,5 +34,6 @@ public class Native {
 	public static native float toFloat(int i);
 	public static native long toLong(double d);
 	public static native double toDouble(long l);
+	public static native int condMove(int a, int b, boolean cond);
 
 }

@@ -1517,8 +1517,11 @@ System.out.println("new heap: "+heap);
 					a = stack[sp--];
 					invoke(a);
 					break;
-				case 223 :		// resDF
-					noim(223);
+				case 223 :		// jopsys_cond_move
+					a = stack[sp--];
+					b = stack[sp--];
+					c = stack[sp--];
+					stack[++sp] = a!=0 ? c : b;
 					break;
 				case 224 :		// resE0 - getstatic_ref
 					getstatic();

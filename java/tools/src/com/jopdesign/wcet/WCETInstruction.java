@@ -1144,8 +1144,9 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			wcet = 1;
 			break;
 
+		case 223: // conditional move 
 		default:
-			wcet = -1;
+			wcet = 5;
 			break;
 		}
 		// TODO: Add the JOP speciffic codes?

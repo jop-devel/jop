@@ -81,6 +81,8 @@
 //	2006-06-15	enhanced memory/cache interface (less cycles)
 //	2006-11-04	move mtab pointer and array length to the handle
 //				little optimization in array load/store
+//	2006-12-27	add a special bytecode for Peter's single path
+//				programming
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -90,7 +92,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20061104
+version		= 20061227
 
 //
 //	io address are negativ memory addresses
@@ -1455,3 +1457,10 @@ jopsys_nop:
 //jopsys_invoke: see invoke
 
 
+jopsys_cond_move:
+			nop		// one cycle for the condition
+			bz		false_path
+			stm		b
+			stm		c
+			ldm		c nxt
+false_path:	ldm		b nxt
