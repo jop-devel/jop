@@ -86,7 +86,7 @@ public class RealtimeSystem {
 	 * 
 	 * @return
 	 */
-	public static int currentTimeMicro() {
+	public static int currentTimeMicros() {
 		return Native.rdMem(Const.IO_US_CNT);
 	}
 }
