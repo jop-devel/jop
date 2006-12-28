@@ -2,14 +2,14 @@ package jvm.math;
 
 import jvm.TestCase;
 
-public class Long extends TestCase {
+public class LongTest extends TestCase {
 
 	static long x(long a, long b) {
 	
 		return a-b;
 	}
 	public String getName() {
-		return "Long";
+		return "LongTest";
 	}
 	
 	public boolean test() {
