@@ -18,6 +18,8 @@ public class FloatTest extends TestCase {
 
 		float f3 = f1+f2;
 
+		ok = ok && test_f2i();
+		
 		int i = (int) f3;
 		ok = ok && (i==4);
 
@@ -33,6 +35,31 @@ public class FloatTest extends TestCase {
 		ok = ok && (i==3);
 		
 
+
+		return ok;
+	}
+	
+	boolean test_f2i() {
+		
+		boolean ok = true;
+		
+		ok = ok && (((int) 0F) == 0);
+		ok = ok && (((int) 1F) == 1);
+		ok = ok && (((int) 2F) == 2);
+		ok = ok && (((int) 0.1F) == 0);
+		ok = ok && (((int) 0.4F) == 0);
+		ok = ok && (((int) 0.7F) == 0);
+		ok = ok && (((int) 0.9999F) == 0);
+		ok = ok && (((int) 99.9999F) == 99);
+
+		ok = ok && (((int) -0F) == 0);
+		ok = ok && (((int) -1F) == -1);
+		ok = ok && (((int) -2F) == -2);
+		ok = ok && (((int) -0.1F) == 0);
+		ok = ok && (((int) -0.3F) == 0);
+		ok = ok && (((int) -0.99F) == 0);
+		ok = ok && (((int) -1.1F) == -1);
+		ok = ok && (((int) -999.999F) == -999);
 
 		return ok;
 	}

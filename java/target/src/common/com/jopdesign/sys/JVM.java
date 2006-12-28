@@ -15,9 +15,15 @@ class JVM {
 	private static void f_iconst_5() { JVMHelp.noim(); /* jvm.asm */ }
 	private static void f_lconst_0() { JVMHelp.noim(); /* jvm_long.inc */ }
 	private static void f_lconst_1() { JVMHelp.noim(); /* jvm_long.inc */ }
-	private static void f_fconst_0() { JVMHelp.noim();}
-	private static void f_fconst_1() { JVMHelp.noim();}
-	private static void f_fconst_2() { JVMHelp.noim();}
+	private static int f_fconst_0() { 
+		return 0;
+	}
+	private static int f_fconst_1() { 
+		return 0x3f800000;
+	}
+	private static int f_fconst_2() { 
+		return 0x40000000;
+	}
 	private static void f_dconst_0() { JVMHelp.noim();}
 	private static void f_dconst_1() { JVMHelp.noim();}
 	private static void f_bipush() { JVMHelp.noim(); /* jvm.asm */ }
@@ -412,7 +418,6 @@ JVMHelp.noim(); // TODO: test
 	private static void f_l2d() { JVMHelp.noim();}
 	private static int f_f2i(int a) {
 
-JVMHelp.noim(); // TODO: test
 		return SoftFloat.float32_to_int32_round_to_zero(a);
 	}
 	private static void f_f2l() { JVMHelp.noim();}
