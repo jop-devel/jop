@@ -143,7 +143,7 @@ begin
 end process;
 
 	-- bsy is too late to register pcwait and bsy
-	pc_inc <= "000000000" & not (pcwait and bsy);
+	pc_inc <= std_logic_vector(to_unsigned(0, pc_width-1)) & not (pcwait and bsy);
 
 process(jfetch, br, jpaddr, brdly, pc, pc_inc)
 begin
