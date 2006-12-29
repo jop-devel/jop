@@ -534,6 +534,10 @@ dup2_x2:	stm	a
 			ldm c
 			ldm b
 			ldm a nxt
+swap:		stm	a		// not tested, javac does not generate it!
+			stm	b
+			ldm	a
+			ldm	b nxt
 
 iadd:		add nxt
 isub:		sub nxt

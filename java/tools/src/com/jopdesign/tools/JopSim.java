@@ -1001,7 +1001,10 @@ System.out.println(mp+" "+pc);
 					stack[++sp] = a;
 					break;
 				case 95 :		// swap
-					noim(95);
+					a = stack[sp--];
+					b = stack[sp--];
+					stack[++sp] = a;
+					stack[++sp] = b;
 					break;
 				case 96 :		// iadd
 					val = stack[sp-1] + stack[sp];
