@@ -34,6 +34,7 @@
 --	2004-10-07	new alu selection with sel_sub, sel_amux and ena_a
 --	2004-10-08	mul operands from a and b, single instruction
 --	2006-01-12	new ar for local memory addressing
+--	2006-12-29	changed rom size to 2K
 --
 
 
@@ -49,7 +50,7 @@ generic (
 	width		: integer := 32;	-- one data word
 	addr_width	: integer := 8;		-- address bits of internal ram (sp,...)
 	exta_width	: integer := 3;		-- address bits of internal io (or 5/4)
-	pc_width	: integer := 10;	-- address bits of internal instruction rom (upper half)
+	pc_width	: integer := 11;	-- address bits of internal instruction rom (upper half)
 	i_width		: integer := 8		-- instruction width
 );
 

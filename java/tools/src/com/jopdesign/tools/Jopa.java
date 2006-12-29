@@ -18,6 +18,7 @@ revision:
 	2005-02-06	JOP version in stack RAM at address 64
 	2005-02-20	Generate memory data for the simulation
 	2006-12-29	Remove bcfetbl.vhd generation (it's part of rom.vhd/mif)
+				Changed rom legth to 2K
 
 */
 
@@ -28,9 +29,10 @@ import java.util.*;
 public class Jopa {
 
 	private String fname;
-	static final int ADDRBITS = 10;
+	static final int ADDRBITS = 11;
 	static final int DATABITS = 10;
-	static final int BRBITS = 10;
+//	static final int BRBITS = 10;
+	static final int BRBITS = ADDRBITS;
 	static final int OPDBITS = 5;
 	static final int CONST_ADDR = 32;
 	static final int VER_ADDR = 64;
@@ -261,7 +263,7 @@ public class Jopa {
 			line = "--\n";
 			line += "--\trom.mif\n";
 			line += "--\n";
-			line += "depth = 1024;\n";
+			line += "depth = "+ROM_LEN+";\n";
 			line += "width = "+DATABITS+";\n";
 			line += "\n";
 			line += "content\n";
@@ -378,7 +380,7 @@ public class Jopa {
 
 						if (l.instr.isJmp) {						// List of branch offsets
 							Integer off = new Integer(opVal-pc-1);
-							if (off.intValue()< -512 || off.intValue()>511) {
+							if (off.intValue()< -ROM_LEN || off.intValue()>(ROM_LEN-1)) {
 								error(in, "offset "+off+" wrong range");
 							}
 							Integer addr;
