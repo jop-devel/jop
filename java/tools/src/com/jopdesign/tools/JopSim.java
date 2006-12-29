@@ -979,7 +979,14 @@ System.out.println(mp+" "+pc);
 					stack[++sp] = a;
 					break;
 				case 93 :		// dup2_x1
-					noim(93);
+					a = stack[sp--];
+					b = stack[sp--];
+					c = stack[sp--];
+					stack[++sp] = b;
+					stack[++sp] = a;
+					stack[++sp] = c;
+					stack[++sp] = b;
+					stack[++sp] = a;
 					break;
 				case 94 :		// dup2_x2
 					a = stack[sp--];

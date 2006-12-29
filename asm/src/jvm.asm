@@ -83,7 +83,7 @@
 //				little optimization in array load/store
 //	2006-12-27	add a special bytecode for Peter's single path
 //				programming
-//	2006-12-29	2K ROM, laload, lastore enabled again
+//	2006-12-29	2K ROM, laload, lastore enabled again, dup2_x1, dup2_x2
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -498,12 +498,6 @@ pop:		pop nxt
 pop2:		pop
 			pop	nxt
 dup:		dup nxt
-dup2:		stm	a
-			stm	b
-			ldm b
-			ldm a
-			ldm b
-			ldm a nxt
 dup_x1:		stm	a
 			stm	b
 			ldm a
@@ -513,6 +507,30 @@ dup_x2:		stm	a
 			stm	b
 			stm	c
 			ldm a
+			ldm c
+			ldm b
+			ldm a nxt
+dup2:		stm	a
+			stm	b
+			ldm b
+			ldm a
+			ldm b
+			ldm a nxt
+dup2_x1:	stm	a
+			stm	b
+			stm	c
+			ldm b
+			ldm a
+			ldm c
+			ldm b
+			ldm a nxt
+dup2_x2:	stm	a
+			stm	b
+			stm	c
+			stm	d
+			ldm b
+			ldm a
+			ldm d
 			ldm c
 			ldm b
 			ldm a nxt

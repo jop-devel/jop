@@ -580,11 +580,11 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			break;
 		// DUP2_X1 = 93
 		case org.apache.bcel.Constants.DUP2_X1:
-			wcet = -1;
+			wcet = 8;
 			break;
 		// DUP2_X2 = 94
 		case org.apache.bcel.Constants.DUP2_X2:
-			wcet = -1;
+			wcet = 10;
 			break;
 		// SWAP = 95
 		case org.apache.bcel.Constants.SWAP:
