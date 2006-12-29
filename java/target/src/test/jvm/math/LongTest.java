@@ -1,5 +1,8 @@
 package jvm.math;
 
+import com.jopdesign.sys.Const;
+import com.jopdesign.sys.Native;
+
 import jvm.TestCase;
 
 public class LongTest extends TestCase {
@@ -16,7 +19,7 @@ public class LongTest extends TestCase {
 	
 		boolean ok = true;
 				
-//		ok = ok && testArray();
+		ok = ok && testArray();
 		ok = ok && testArithOps1();
 		ok = ok && testArithOps2();
 		ok = ok && testCmpCastOps();
@@ -32,20 +35,25 @@ public class LongTest extends TestCase {
 		boolean ok = true;
 		long[] a = new long[4];
 	
-		//System.out.println("len="+a.length);
+//		System.out.println("len="+a.length);
 		
 		
 		long a0 = 0xffffffffL;
 		long a1 = 0xfffffffff0L;
 		long a2 = 0xfffffffff00L;
 		long a3 = 0xfffffffff000L;
-
-//		int t1 = Native.rd(Const.IO_CNT);
+		
+//		int t1, t2, diff;
+//		t1 = Native.rd(Const.IO_CNT);
+//		t2 = Native.rd(Const.IO_CNT);
+//		diff = t2-t1;
+//		
+//		t1 = Native.rd(Const.IO_CNT);
 
 		a[0] = a0;
 
-//		int t2 = Native.rd(Const.IO_CNT);
-//		System.out.println("lastore="+(t2-t1-5));
+//		t2 = Native.rd(Const.IO_CNT);
+//		System.out.println("lastore="+(t2-t1-diff-4));
 
 		a[1] = a1;
 		a[2] = a2;
@@ -56,7 +64,7 @@ public class LongTest extends TestCase {
 		a0 = a[0];
 
 //		t2 = Native.rd(Const.IO_CNT);
-//		System.out.println("laload="+(t2-t1-5));
+//		System.out.println("laload="+(t2-t1-diff-4));
 
 		ok = ok && (a[0] == a0);
 		ok = ok && (a[1] == a1);
