@@ -165,7 +165,7 @@ putstatic_long:
 			wait
 			wait
 			ldmrd		 	// read ext. mem
-long_write:
+
 			dup
 
 			stmwa				// write ext. mem address
@@ -208,12 +208,22 @@ getfield_long:
 			nop	opd
 			ld_opd_16u			// CP index is the offset for the field
 			add					// +objectref
-			// address!=0 for the bnz
-			dup
-			bnz	long_read
-			nop
-			nop
 
+			dup
+
+			stmra
+			ldi	1
+			add
+			stm	a
+			wait
+			wait
+			ldmrd				// read high word
+
+			ldm	a
+			stmra
+			wait
+			wait
+			ldmrd	nxt			// read low word
 
 
 putfield_long:
@@ -246,127 +256,128 @@ putfield_long:
 			nop	opd
 			ld_opd_16u			// CP index is the offset for the field
 			add					// +objectref
-			// address!=0 for the bnz
+
 			dup
-			bnz	long_write
+
+			stmwa				// write ext. mem address
+			ldm	a				// restore value
+			stmwd				// write ext. mem data
+			ldi	1
+			add
+			wait
+			wait
+
+			stmwa
+			ldm	b
+			stmwd
+			wait
+			wait
+			nop	nxt
+
+lastore:
+			stm	a				// value_h
+			stm c               // value_l
+			stm	b				// index
+			// arrayref is TOS
+			dup					// for null pointer check
+			dup					// for bound check, one cycle wait for bz
+			bz	null_pointer	// 
+			// we do the following in the
+			// branch slot -> one more element
+			// from the former dup on the stack
+			ldi	1
+			add					// arrayref+1
+			stmra				// read ext. mem, mem_bsy comes one cycle later
+			wait				// is this ok? - wait in branch slot
+			wait
+			ldmrd		 		// read ext. mem (array length)
+
+			ldi	1
+			sub					// length-1
+			ldm	b				// index
+			sub					// TOS = length-1-index
+			ldm	b				// check if index is negativ
+			or					// is one of both checks neagtv?
+         	ldi	-2147483648		//  0x80000000
+			and
+			nop
+			bnz	array_bound
 			nop
 			nop
 
+			stmra				// read handle indirection
+			wait				// for the GC
+			wait
+			ldmrd
+			ldm	b
+			ldi 1
+			shl                 // index*2
+			add					// index*2+arrayref
+			stm d
+			ldm d
+			stmwa				// write ext. mem address
+			ldm	c
+			stmwd				// write ext. mem data
+			ldm d
+			ldi 1
+			add					// index*2+arrayref+1
+			wait
+			wait
+			stmwa				// write ext. mem address
+			ldm	a
+			stmwd				// write ext. mem data
+			wait
+			wait
+			nop	nxt
 
-// see also the little optimizations in iaload/iastore
-//
-//	long array access disabled:
-//		1. we run out of microcode memory
-//		2. we need to add long array support in the GC:
-//			copy the right size (add type info)
-//
-//lastore:
-//			stm	a				// value_h
-//			stm c               // value_l
-//			stm	b				// index
-//			// arrayref is TOS
-//			dup					// for null pointer check
-//			nop					// wait one cycle for flags of ref
-//			bz	null_pointer	// 
-//			nop
-//			nop
-//
-//			dup					// bound check
-//			ldi	1
-//			add					// arrayref+1
-//			stmra				// read ext. mem, mem_bsy comes one cycle later
-//			wait				// is this ok? - wait in branch slot
-//			wait
-//			ldmrd		 		// read ext. mem (array length)
-//
-//			ldi	1
-//			sub					// length-1
-//			ldm	b				// index
-//			sub					// TOS = length-1-index
-//			ldm	b				// check if index is negativ
-//			or					// is one of both checks neagtv?
-//         	ldi	-2147483648		//  0x80000000
-//			and
-//			nop
-//			bnz	array_bound
-//			nop
-//			nop
-//
-//			stmra				// read handle indirection
-//			wait				// for the GC
-//			wait
-//			ldmrd
-//			ldm	b
-//			ldi 1
-//			shl                 // index*2
-//			add					// index*2+arrayref
-//			stm d
-//			ldm d
-//			stmwa				// write ext. mem address
-//			ldm	c
-//			stmwd				// write ext. mem data
-//			ldm d
-//			ldi 1
-//			add					// index*2+arrayref+1
-//			wait
-//			wait
-//			stmwa				// write ext. mem address
-//			ldm	a
-//			stmwd				// write ext. mem data
-//			wait
-//			wait
-//			nop	nxt
-//
-//laload:                           
-//			stm	b				// index
-//			// arrayref is TOS
-//			dup					// for null pointer check
-//			nop					// wait one cycle for flags of ref
-//			bz	null_pointer	// 
-//			nop
-//			nop
-//
-//			dup					// for bound check
-//			ldi	1
-//			add					// arrayref+1
-//
-//			stmra				// read array length
-//			wait				// is this ok? - wait in branch slot
-//			wait
-//			ldmrd		 		// read ext. mem (array length)
-//
-//			ldi	1
-//			sub					// length-1
-//			ldm	b				// index
-//			sub					// TOS = length-1-index
-//			ldm	b				// check if index is negative
-//			or					// is one of both checks negative?
-//         	ldi	-2147483648		//  0x80000000
-//			and
-//			nop
-//			bnz	array_bound
-//			nop
-//			nop
-//
-//			stmra				// read handle indirection
-//			wait				// for the GC
-//			wait
-//			ldmrd
-//			ldm	b	
-//			ldi 1
-//			shl                 // index*2
-//			add					// index*2+arrayref
-//			dup
-//			stm d
-//			stmra				// read ext. mem, mem_bsy comes one cycle later
-//			wait
-//			wait
-//			ldmrd		 
-//			ldm d
-//			ldi 1
-//			add					// index*2+arrayref+1
-//			stmra				// read ext. mem, mem_bsy comes one cycle later
-//			wait
-//			wait
-//			ldmrd 	nxt	// read ext. mem
-//
+laload:                           
+			stm	b				// index
+			// arrayref is TOS
+			dup					// for null pointer check
+			dup					// for bound check, one cycle wait for bz
+			bz	null_point			// we do the following in the
+			// branch slot -> one more element
+			// from the former dup on the stack
+			ldi	1
+			add					// arrayref+1
+
+			stmra				// read array length
+			wait				// is this ok? - wait in branch slot
+			wait
+			ldmrd		 		// read ext. mem (array length)er	// 
+
+			ldi	1
+			sub					// length-1
+			ldm	b				// index
+			sub					// TOS = length-1-index
+			ldm	b				// check if index is negative
+			or					// is one of both checks negative?
+         	ldi	-2147483648		//  0x80000000
+			and
+			nop
+			bnz	array_bound
+			nop
+			nop
+
+			stmra				// read handle indirection
+			wait				// for the GC
+			wait
+			ldmrd
+			ldm	b	
+			ldi 1
+			shl                 // index*2
+			add					// index*2+arrayref
+			dup
+			stm d
+			stmra				// read ext. mem, mem_bsy comes one cycle later
+			wait
+			wait
+			ldmrd		 
+			ldm d
+			ldi 1
+			add					// index*2+arrayref+1
+			stmra				// read ext. mem, mem_bsy comes one cycle later
+			wait
+			wait
+			ldmrd 	nxt	// read ext. mem
+
