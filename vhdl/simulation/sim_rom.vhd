@@ -16,7 +16,7 @@ entity rom is
 generic (width : integer; addr_width : integer);
 port (
 	clk			: in std_logic;
-	address		: in std_logic_vector(9 downto 0);
+	address		: in std_logic_vector(addr_width-1 downto 0);
 	q			: out std_logic_vector(9 downto 0)
 );
 
@@ -30,7 +30,7 @@ architecture sim of rom is
 
 	shared variable ram : ram_type;
 
-	signal areg		: std_logic_vector(9 downto 0);
+	signal areg		: std_logic_vector(addr_width-1 downto 0);
 	signal data		: std_logic_vector(9 downto 0);
 
 begin
