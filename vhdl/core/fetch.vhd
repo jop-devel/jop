@@ -43,8 +43,8 @@ use ieee.numeric_std.all;
 entity fetch is
 
 generic (
-	pc_width	: integer := 10;	-- address bits of internal instruction rom
-	i_width		: integer := 8		-- instruction width
+	pc_width	: integer;	-- address bits of internal instruction rom
+	i_width		: integer	-- instruction width
 );
 port (
 	clk, reset	: in std_logic;
@@ -87,17 +87,6 @@ port (
 );
 end component;
 
---
---	table to generate jfetch and jopdfetch
---		generated from Jopa.java
---
-component bcfetbl is
-port (
-	addr		: in std_logic_vector(pc_width-1 downto 0);
-	nxt, opd	: out std_logic
-);
-end component;
-
 	signal pc_mux		: std_logic_vector(pc_width-1 downto 0);
 	signal pc_inc		: std_logic_vector(pc_width-1 downto 0);
 	signal pc			: std_logic_vector(pc_width-1 downto 0);
@@ -122,9 +111,6 @@ begin
 	cmp_rom: rom generic map (i_width+2, pc_width) port map(clk, pc_mux, rom_data);
 	jfetch <= rom_data(9);
 	jopdfetch <= rom_data(8);
-
--- not used anymore
---	cmp_bft: bcfetbl port map(pc, jfetch, jopdfetch);
 
 	cmp_off: offtbl port map(ir(4 downto 0), off);
 
