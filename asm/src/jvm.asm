@@ -83,6 +83,7 @@
 //				little optimization in array load/store
 //	2006-12-27	add a special bytecode for Peter's single path
 //				programming
+//	2006-12-29	2K ROM, laload, lastore enabled again
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -92,7 +93,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20061227
+version		= 20061229
 
 //
 //	io address are negativ memory addresses
@@ -388,15 +389,37 @@ not_first:
 //	ram is now loaded, heap points to free ram
 //	load pointer to main struct and invoke
 //
+			ldm	mp			// pointer to 'special' pointer list
+			ldi	1
+			add
+			dup
+
+			stmra				// read jjp
+			wait
+			wait
+			ldmrd			 	// read ext. mem
+			stm	jjp
+
+			ldi	1
+			add
+			stmra				// read jjhp
+			wait
+			wait
+			ldmrd			 	// read ext. mem
+			stm	jjhp
+
+			ldm	mp			// pointer to pointer to main meth. struct
 			ldi	1
 			nop
-			bnz	start_jvm	// two jumps for long distance
+			bnz	invoke_main	// simulate invokestatic
 			nop
 			nop
-
+///////////////////////////////////////////////////////////////////////////
 //
 //	begin of jvm code
 //
+///////////////////////////////////////////////////////////////////////////
+
 nop:		nop nxt
 
 iconst_m1:	ldi -1 nxt
@@ -742,38 +765,7 @@ imul_loop:					// plus 1 for the ldi 5... to many cycles?
 // 			ldm	d	nxt
 // 
 
-///////////////////////////////////////////////////////////////////////////
-//
-//	part of init, split of jump!
-//	TODO: should get simplified
-//
-start_jvm:
-			ldm	mp			// pointer to 'special' pointer list
-			ldi	1
-			add
-			dup
 
-			stmra				// read jjp
-			wait
-			wait
-			ldmrd			 	// read ext. mem
-			stm	jjp
-
-			ldi	1
-			add
-			stmra				// read jjhp
-			wait
-			wait
-			ldmrd			 	// read ext. mem
-			stm	jjhp
-
-			ldm	mp			// pointer to pointer to main meth. struct
-			ldi	1
-			nop
-			bnz	invoke_main	// simulate invokestatic
-			nop
-			nop
-///////////////////////////////////////////////////////////////////////////
 
 
 
