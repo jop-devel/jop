@@ -393,7 +393,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			break;
 		// LALOAD = 47
 		case org.apache.bcel.Constants.LALOAD:
-			wcet = -1;
+			wcet = 43+4*r;
 			break;
 		// FALOAD = 48
 		case org.apache.bcel.Constants.FALOAD:
@@ -525,7 +525,10 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			break;
 		// LASTORE = 80
 		case org.apache.bcel.Constants.LASTORE:
-			wcet = -1;
+			wcet = 48+2*r+w;
+			if (w > 3) {
+				wcet += w - 3;
+			}
 			break;
 		// FASTORE = 81
 		case org.apache.bcel.Constants.FASTORE:
