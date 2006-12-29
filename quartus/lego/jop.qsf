@@ -40,7 +40,7 @@ set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_lego.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/scio_lego.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/offtbl.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/jtbl.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/rom.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/altera/arom.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/aram.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/bcfetch.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/core.vhd
