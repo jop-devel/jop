@@ -638,7 +638,7 @@ System.out.println(mp+" "+pc);
 
 		int new_pc;		// for cond. branches
 		int ref, val, idx, val2;
-		int a, b, c;
+		int a, b, c, d;
 
 		for (;;) {
 
@@ -982,7 +982,16 @@ System.out.println(mp+" "+pc);
 					noim(93);
 					break;
 				case 94 :		// dup2_x2
-					noim(94);
+					a = stack[sp--];
+					b = stack[sp--];
+					c = stack[sp--];
+					d = stack[sp--];
+					stack[++sp] = b;
+					stack[++sp] = a;
+					stack[++sp] = d;
+					stack[++sp] = c;
+					stack[++sp] = b;
+					stack[++sp] = a;
 					break;
 				case 95 :		// swap
 					noim(95);
