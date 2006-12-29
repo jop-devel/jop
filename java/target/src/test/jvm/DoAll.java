@@ -22,6 +22,7 @@ public class DoAll {
 				new Static(),
 				new Array(),
 				new Clinit(),
+				new Conversion(),
 				new FloatTest(),
 				new StackManipulation(),
 				new Imul(),
