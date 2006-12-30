@@ -16,7 +16,6 @@ import org.apache.bcel.classfile.*;
  *
  * Class struct:
  * 
- * -n: class variables
  *  0: instance size (class reference)
  *  1: GC info field (one bit per field)
  *  2: pointer to interface table
@@ -24,36 +23,27 @@ import org.apache.bcel.classfile.*;
  *   : class reference (pointer back to class info)
  *   : constant pool (cp)
  *   : optional interface table
- * 
- * Flavius type class struct:
- * 
- * A Class struct image should look as follows:
- * (the byte code for used Methods is output and at known locations)
- * 
- * a. GCInfo: USE length + PACKED 2w into 1w ? (not big anyway)
- * b. static fields
- * c. -2. addrOf(staticfields)
- * c. -1. addrOf(GCInfo)
- * c.  0. instance size (class struct ptr)
- * c.  1. addrOf(interfaces)
- * d. method table, 2w per entry
- *	- uses f or other classes' f
- * e. addrOf(class struct)
- * f. constant pool
- * 	  - length
- *	- uses entries in b. and d.
+ *   
+ * class variables are collected in one area for
+ * easier GC access of the reference types
+ *    
  */
 
 public class ClassInfo {
 
+	/**
+	 * Size of the class header.
+	 * Difference between class pointer and mtab pointer.
+	 */
 	static final int CLS_HEAD = 3;
+	/**
+	 * Size of a method table entry.
+	 */
 	static final int METH_STR = 2;
-	static final int CONST_STR = 1;
 
 	static class IT {
 		int nr;
 		String key;
-//		String nativeName;
 		MethodInfo meth;
 	}
 	
