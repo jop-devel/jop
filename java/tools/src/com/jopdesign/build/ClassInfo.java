@@ -35,6 +35,9 @@ public class ClassInfo {
 	/**
 	 * Size of the class header.
 	 * Difference between class pointer and mtab pointer.
+	 * 
+	 * If changed than also change in GC.java and JVM.java
+	 * (checkcast, instanceof). 
 	 */
 	static final int CLS_HEAD = 4;
 	/**
