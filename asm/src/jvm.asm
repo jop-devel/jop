@@ -84,6 +84,7 @@
 //	2006-12-27	add a special bytecode for Peter's single path
 //				programming
 //	2006-12-29	2K ROM, laload, lastore enabled again, dup2_x1, dup2_x2
+//	2006-12-30	add instanceof to invoke JVM.java with constant on TOS
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -93,7 +94,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20061229
+version		= 20061230
 
 //
 //	io address are negativ memory addresses
@@ -1260,6 +1261,7 @@ sys_noim:
 new:
 anewarray:
 checkcast:
+instanceof:
 
 //
 //	find address for JVM function

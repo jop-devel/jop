@@ -30,6 +30,7 @@ public class DoAll {
 				new LongField(),
 				new MultiArray(),
 				new Switch(),
+				new InstanceCheckcast(),
 //				new Except(),
 				new SystemCopy(),
 		};

@@ -1370,7 +1370,7 @@ System.out.println("new heap: "+heap);
 					jjvmConst(192);
 					break;
 				case 193 :		// instanceof
-					noim(193);
+					jjvmConst(193);
 					break;
 				case 194 :		// monitorenter
 					sp--;		// we don't use the objref

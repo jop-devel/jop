@@ -608,15 +608,50 @@ static Object o;
 		JVMHelp.wr("catch not implemented!");
 		return t;
 	}
-	// private static void f_checkcast() { JVMHelp.noim();}
+
 	private static int f_checkcast(int objref, int cons) {
-// TODO: implement it
-//JVMHelp.wr("checkcast");
-// ECM needs it...
-//JVMHelp.noim();
-		return objref;
+
+		if (objref==0) {
+			return objref;
+		}
+
+		int p = Native.rdMem(objref+1);	// handle indirection
+		p -= 4;							// start of class info
+
+		for (;;) {
+			if (p==cons) {
+				return 1;
+			} else {
+				p = Native.rdMem(p+2);
+				if (p==0) break;		// we are at Object
+			}
+		}
+		
+		throw new ClassCastException();
+		
+//		return objref;
 	}
-	private static void f_instanceof() { JVMHelp.noim();}
+	private static int f_instanceof(int objref, int cons) {
+
+		// TODO: check if it works for interfaces
+		// TODO: simplify the code
+		if (objref==0) {
+			return 0;
+		}
+		int p = Native.rdMem(objref+1);	// handle indirection
+		p -= 4;							// start of class info
+
+		for (;;) {
+			if (p==cons) {
+				return 1;
+			} else {
+				p = Native.rdMem(p+2);
+				if (p==0) break;		// we are at Object
+			}
+		}
+		
+		return 0;
+	}
 
 
 	private static int enterCnt;
