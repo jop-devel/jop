@@ -18,8 +18,9 @@ import org.apache.bcel.classfile.*;
  * 
  *  0: instance size (class reference)
  *  1: GC info field (one bit per field)
- *  2: pointer to interface table
- * 3+: method table, two words per entry
+ *  2: pointer to super class
+ *  3: pointer to interface table
+ * 4+: method table, two words per entry
  *   : class reference (pointer back to class info)
  *   : constant pool (cp)
  *   : optional interface table
@@ -35,7 +36,7 @@ public class ClassInfo {
 	 * Size of the class header.
 	 * Difference between class pointer and mtab pointer.
 	 */
-	static final int CLS_HEAD = 3;
+	static final int CLS_HEAD = 4;
 	/**
 	 * Size of a method table entry.
 	 */
@@ -65,11 +66,6 @@ public class ClassInfo {
 		int len;
 		// Method name plus signature is the key
 		String[] key;
-// do I need this?
-//		int[] ptr;
-// do I need this?
-// This was a app.-wide unique id.
-//		String[] nativeName;
 		MethodInfo mi[];
 	}
 	
@@ -505,24 +501,6 @@ public class ClassInfo {
 		}
 		
 	}
-/* from JCC JOPWriter
- * 
- * 
-	if (mi.isStaticMember() ||
-			// <init> and privat methods are called with invokespecial
-			// which mapps in jvm.asm to invokestatic
-			prettyName(mi).charAt(0)=='<' || (mi.access & Const.ACC_PRIVATE)!=0) {
-
-			out.print((cla.mtab+i*METH_STR)+",");
-out.print("\t//\tstatic, special or private");
-		} else {
-			out.print(((i*2<<8)+mi.argsSize-1)+",");
-out.print("\t//\tvirtual index: "+i+" args: "+mi.argsSize);
-		}
-*/
-	
-	
-	
 	
 	
 	public void dumpStaticFields(PrintWriter out, boolean ref) {
@@ -571,10 +549,12 @@ out.print("\t//\tvirtual index: "+i+" args: "+mi.argsSize);
 		out.println("\t\t"+instGCinfo+",\t//\tinstance GC info");
 
 		String supname = "null";
+		int superAddr = 0;
 		if (superClass!=null) {
 			supname = superClass.clazz.getClassName();
+			superAddr = ((ClassInfo) mapClassNames.get(supname)).classRefAddress;
 		}
-		out.println("\t\t\t//\tTODO: pointer to super class - "+supname);
+		out.println("\t\t"+superAddr+",\t//\tpointer to super class - "+supname);
 		out.println("\t\t"+iftableAddress+",\t//\tpointer to interface table");
 		
 		out.println("//");

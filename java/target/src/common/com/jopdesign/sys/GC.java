@@ -23,11 +23,11 @@ public class GC {
 	 * Size of class header part.
 	 * Difference between class struct and method table
 	 */
-	static final int CLASS_HEADR = 3;
+	static final int CLASS_HEADR = 4;
 	/**
 	 * GC_INFO field relativ to start of MTAB.
 	 */
-	static final int MTAB2GC_INFO = -2;
+	static final int MTAB2GC_INFO = -3;
 
 	/**
 	 * Fields in the handle structure.
@@ -90,7 +90,7 @@ public class GC {
 	static final int OFF_MARK = 6;
 
 	
-	static final int TYPICAL_OBJ_SIZE = 10;
+	static final int TYPICAL_OBJ_SIZE = 5;
 	static int handle_cnt;
 	/**
 	 * Size of one semi-space, complete heap is two times
@@ -210,7 +210,6 @@ public class GC {
 // JVMHelp.wrByte(Native.getSP());
 		int addr = freeList;
 		freeList = Native.rdMem(freeList+OFF_NEXT);
-if (addr<mem_start || addr>=heapStartA) JVMHelp.wr("Problem getHandle");
 		// pointer to real object, also marks it as non free
 		Native.wrMem(ref, addr); // +OFF_PTR
 		// should be from the class info
@@ -335,8 +334,7 @@ if (addr<mem_start || addr>=heapStartA) JVMHelp.wr("Problem getHandle");
 				// get pointer to method table
 				flags = Native.rdMem(ref+OFF_MTAB_LEN);
 				// get real flags
-				flags = Native.rdMem(flags-MTAB2GC_INFO);
-				
+				flags = Native.rdMem(flags+MTAB2GC_INFO);
 				for (i=0; flags!=0; ++i) {
 					if ((flags|1)!=0) {
 						int child = Native.rdMem(addr+i);
