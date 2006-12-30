@@ -15,11 +15,23 @@ public class GC {
 	
 	
 	static int mem_start;		// read from memory
-static int mem_end;
 	// get a effective heap size with fixed handle count
 	// for our RT-GC tests
 	static int full_heap_size;
+	
+	/**
+	 * Size of class header part.
+	 * Difference between class struct and method table
+	 */
+	static final int CLASS_HEADR = 3;
+	/**
+	 * GC_INFO field relativ to start of MTAB.
+	 */
+	static final int MTAB2GC_INFO = -2;
 
+	/**
+	 * Fields in the handle structure.
+	 */
 	static final int HANDLE_SIZE = 7;
 
 	/**
@@ -121,7 +133,6 @@ static int mem_end;
 	static void init(int mem_size, int addr) {
 		
 		addrStaticRefs = addr;
-mem_end = mem_size-1;
 		mem_start = Native.rdMem(0);
 		full_heap_size = mem_size-mem_start;
 		handle_cnt = full_heap_size/2/(TYPICAL_OBJ_SIZE+HANDLE_SIZE);
@@ -322,9 +333,9 @@ if (addr<mem_start || addr>=heapStartA) JVMHelp.wr("Problem getHandle");
 				// it's a plain object
 				
 				// get pointer to method table
-				flags = Native.rdMem(ref+1);
+				flags = Native.rdMem(ref+OFF_MTAB_LEN);
 				// get real flags
-				flags = Native.rdMem(flags-2);
+				flags = Native.rdMem(flags-MTAB2GC_INFO);
 				
 				for (i=0; flags!=0; ++i) {
 					if ((flags|1)!=0) {
@@ -407,11 +418,9 @@ if (addr<mem_start || addr>=heapStartA) JVMHelp.wr("Problem getHandle");
 				for (int i=0; i<size; ++i) {
 					int val = Native.rdMem(addr+i);
 					Native.wrMem(val, heapPtr+i);
-if (heapPtr+i<heapStartA || heapPtr+i>=mem_end) JVMHelp.wr("Problem compact");
 				}
 				// update object pointer to the new location
 				Native.wrMem(heapPtr, ref+OFF_PTR);
-if (ref<mem_start || ref>=heapStartA) JVMHelp.wr("Problem compact 2");
 				heapPtr += size;
 			}
 			ref = Native.rdMem(ref+OFF_NEXT);
@@ -499,7 +508,7 @@ if (ref<mem_start || ref>=heapStartA) JVMHelp.wr("Problem compact 2");
 			// ref. flags used for array marker
 			Native.wrMem(IS_OBJ, ref+OFF_TYPE);
 			// pointer to method table in the handle
-			Native.wrMem(cons+3, ref+OFF_MTAB_LEN);
+			Native.wrMem(cons+CLASS_HEADR, ref+OFF_MTAB_LEN);
 		}
 
 		return ref;
