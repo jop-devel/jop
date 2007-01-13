@@ -414,7 +414,7 @@ public class ClassInfo {
 						}
 						MethodInfo minf = clinf.getVTMethodInfo(sigstr);
 						if (minf==null) {
-							System.out.println("Error: Method "+sigstr+" not found.");
+							System.out.println("Error: Method "+clinf.clazz.getClassName()+'.'+sigstr+" not found.");
 							System.out.println("Invoked by "+clazz.getClassName());
 							System.exit(1);
 						}
