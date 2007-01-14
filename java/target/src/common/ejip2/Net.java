@@ -11,7 +11,7 @@ import ejip2.jtcpip.util.Debug;
  * @author Ulrich Feichter
  * @author Tobias Kellner
  * @author Christof Rath
- * @version $Rev: 905 $ $Date: 2007/01/11 18:59:23 $
+ * @version $Rev: 905 $ $Date: 2007/01/14 22:17:53 $
  */
 public class Net {
 	/**
@@ -93,6 +93,12 @@ public class Net {
 	/**
 	 * Does the required stuff to setup the network.
 	 * 
+	 * TODO: use IP address and macAddr, or remove parameter!
+	 * TODO: Net should not handle the LinkLayer, we can have
+	 * more interfaces!
+	 * 
+	 * TODO: add all other stuff for initialization
+	 * 
 	 * @param myIpAddr
 	 *            IP address of the stack
 	 * @param macAddr
@@ -110,7 +116,7 @@ public class Net {
 		eth[4] = 0x04;
 		eth[5] = 0x07;
 
-		ip = (129 << 24) + (27 << 16) + (142 << 8) + 183;
+		ip = (192 << 24) + (168 << 16) + (0 << 8) + 123;
 		// ip = ipStringToInt(myIpAddr);
 		// StringFunctions.macStrToByteArr(macAddr, mac);
 

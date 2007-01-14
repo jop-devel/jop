@@ -189,7 +189,7 @@ public class Arp {
 	 */
 	protected static void receive(Packet p, int[] eth, int ip) {
 
-		Dbg.wr('A');
+//		Dbg.wr('A');
 
 		if (p.buf[6] == ip) { // Handle request only if someone is asking for
 			// my ip
