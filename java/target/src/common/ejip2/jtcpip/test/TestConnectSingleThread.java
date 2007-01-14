@@ -62,7 +62,7 @@ public class TestConnectSingleThread {
 
 		// init. stuff
 		Dbg.initSerWait();
-		ipLink = Net.init("129.27.142.183", "00:01:02:03:04:05");
+		ipLink = Net.init("192.168.0.123", "00:01:02:03:04:05");
 		nwlt = NwLoopThread.createInstance(ipLink);
 		ejip2.jtcpip.UDPConnection.init();
 		ejip2.jtcpip.TCPConnection.init();
