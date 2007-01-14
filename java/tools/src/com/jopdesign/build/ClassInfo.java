@@ -173,6 +173,16 @@ public class ClassInfo {
 		return null;
 	}
 	
+	public MethodInfo getITMethodInfo(String mid) {
+		for (int j=0; j<listIT.size(); ++j) {
+			IT it = (IT) listIT.get(j);
+			if (it.key.equals(mid)) {
+				return it.meth;
+			}
+		}
+		return null;
+	}
+	
 	public List getMethods() {
 		return list;
 	}
@@ -412,10 +422,18 @@ public class ClassInfo {
 							cpoolComments[pos] = "static "+mclname+"."+sigstr;
 							break;
 						}
-						MethodInfo minf = clinf.getVTMethodInfo(sigstr);
+						MethodInfo minf;
+						if (isInterface) {
+							minf = clinf.getITMethodInfo(sigstr);							
+						} else {
+							minf = clinf.getVTMethodInfo(sigstr);
+						}
 						if (minf==null) {
 							System.out.println("Error: Method "+clinf.clazz.getClassName()+'.'+sigstr+" not found.");
 							System.out.println("Invoked by "+clazz.getClassName());
+							for (int xxx = 0; xxx < clinf.clvt.len; ++xxx) {
+								System.out.println(clinf.clvt.key[xxx]);		
+							}
 							System.exit(1);
 						}
 						if(minf.method.isStatic() ||	
@@ -437,6 +455,11 @@ public class ClassInfo {
 							// that's for simple virtual methods
 							int vpos = minf.vtindex;
 							String comment = "virtual";
+							
+							// TODO: is kind of redundant search as we've allready
+							// searched the IT table with getVTMethodInfo()
+							// TODO: do we handle different interfaces with same
+							// method id correct? (see buildIT)
 							if (isInterface) {
 								comment = "interface";
 								for (int j=0; j<listIT.size(); ++j) {
