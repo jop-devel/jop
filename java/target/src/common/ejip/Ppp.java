@@ -750,58 +750,6 @@ Dbg.wr('\n');
 		}
 		checksum(ulen + plen + 8);
 
-/* A1.net
-		sbuf[5] = 24-2;		// length including code, id and length field
-		sbuf[6] = 13;		// length of user id
-		sbuf[7] = 'p';
-		sbuf[8] = 'p';
-		sbuf[9] = 'p';
-		sbuf[10] = '@';
-		sbuf[11] = 'A';
-		sbuf[12] = '1';
-		sbuf[13] = 'p';
-		sbuf[14] = 'l';
-		sbuf[15] = 'u';
-		sbuf[16] = 's';
-		sbuf[17] = '.';
-		sbuf[18] = 'a';
-		sbuf[19] = 't';
-		sbuf[20] = 3;		// length of password
-		sbuf[21] = 'p';
-		sbuf[22] = 'p';
-		sbuf[23] = 'p';
-
-		checksum(24);
-*/
-
-
-/* ONE
-		sbuf[7] = 30-4;		// length including code, id and length field
-		sbuf[8] = 14;		// length of user id
-		sbuf[9] = '+';
-		sbuf[10] = '4';
-		sbuf[11] = '3';
-		sbuf[12] = '6';
-		sbuf[13] = '9';
-		sbuf[14] = '9';
-		sbuf[15] = '1';
-		sbuf[16] = '9';
-		sbuf[17] = '5';
-		sbuf[18] = '2';
-		sbuf[19] = '0';
-		sbuf[20] = '2';
-		sbuf[21] = '2';
-		sbuf[22] = '0';
-		sbuf[23] = 6;		// length of password
-		sbuf[24] = 'N';
-		sbuf[25] = '6';
-		sbuf[26] = 'J';
-		sbuf[27] = '8';
-		sbuf[28] = 'N';
-		sbuf[29] = '4';
-
-		checksum(30);
-*/
 
 	}
 
