@@ -28,7 +28,7 @@
  *
  */
 
-package ejip;
+package ejip.test;
 
 /**
 *	MainSlipLoop.java: SLIP test main without threads
@@ -42,6 +42,10 @@ import util.Serial;
 import util.Timer;
 
 import com.jopdesign.sys.Const;
+
+import ejip.LinkLayer;
+import ejip.Net;
+import ejip.Slip;
 
 /**
 *	Test Main for ejip.

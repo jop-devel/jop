@@ -28,7 +28,7 @@
  *
  */
 
-package ejip;
+package ejip.test;
 
 /**
 *	Main.java: test main.
@@ -39,41 +39,53 @@ package ejip;
 
 import joprt.RtThread;
 import util.Dbg;
+import util.Serial;
 import util.Timer;
 
 import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 
+import ejip.LinkLayer;
+import ejip.Net;
+import ejip.Slip;
+
 /**
 *	Test Main for ejip.
 */
 
-	
-public class Main {
+public class MainSlipUart2 {
 
 	static Net net;
 	static LinkLayer ipLink;
+	static Serial ser;
 
 /**
 *	Start network and enter forever loop.
 */
 	public static void main(String[] args) {
 
-		// use serial line for debugging
-		Dbg.initSerWait();
+		Dbg.initSer();
 
 		//
-		//	start TCP/IP
+		//	start TCP/IP and all (four) threads
 		//
 		net = Net.init();
 // don't use CS8900 when simulating on PC or for BG263
-		ipLink = CS8900.init(Net.eth, Net.ip);
+		// LinkLayer ipLink = CS8900.init(Net.eth, Net.ip);
 // don't use PPP on my web server
+		// Ppp.init(Const.IO_UART_BG_MODEM_BASE); 
 
+		//
+		//	use second serial line for simulation
+		//	with JopSim
+		//
+		ser = new Serial(Const.IO_UART_BG_MODEM_BASE);
+		ipLink = Slip.init(ser,	(192<<24) + (168<<16) + (1<<8) + 2);
+		
 		//
 		//	start device driver threads
 		//
-
+		
 		new RtThread(5, 10000) {
 			public void run() {
 				for (;;) {
@@ -82,11 +94,21 @@ public class Main {
 				}
 			}
 		};
-		new RtThread(5, 10000) {
+		// Slip timeout (for windoz slip reply) depends on
+		// period (=100*period) !
+		new RtThread(9, 10000) {
 			public void run() {
 				for (;;) {
 					waitForNextPeriod();
 					ipLink.loop();
+				}
+			}
+		};
+		new RtThread(10, 3000) {
+			public void run() {
+				for (;;) {
+					waitForNextPeriod();
+					ser.loop();
 				}
 			}
 		};
@@ -108,13 +130,9 @@ public class Main {
 		//
 		for (;;) {
 			for (int i=0; i<10; ++i) {
-				RtThread.sleepMs(50);
-				Timer.wd();
-				/*-
 				int val = Native.rd(Const.IO_IN);
 				Native.wr(val, Const.IO_LED);
-				*/
-				Timer.loop();
+				RtThread.sleepMs(50);
 			}
 			Timer.wd();
 		}

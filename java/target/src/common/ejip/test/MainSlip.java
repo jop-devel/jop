@@ -28,7 +28,7 @@
  *
  */
 
-package ejip;
+package ejip.test;
 
 /**
 *	Main.java: test main.
@@ -44,6 +44,10 @@ import util.Timer;
 
 import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
+
+import ejip.LinkLayer;
+import ejip.Net;
+import ejip.Slip;
 
 /**
 *	Test Main for ejip.
