@@ -44,9 +44,11 @@ import util.Dbg;
 public class Packet {
 
 	public final static int MAX = 1500;		// maximum Packet length in bytes
+//	public final static int MAX = StackParameters.PACKET_MTU_SIZE; 
 	public final static int MAXW = 1500/4;	// maximum Packet length in word
 	public final static int MAXLLH = 7;		// 7 16 bit words for ethernet
 	private final static int CNT = 8;		// size of packet pool
+//	private final static int CNT = StackParameters.PACKET_POOL_SIZE; 
 
 	/** interface source/destination */
 	public LinkLayer interf;
