@@ -33,16 +33,23 @@ package ejip;
 /**
 *	LinkLayer.java
 *
-*	communicate with jopbb via serial line.
 */
 
 
 
 /**
-*	LinkLayer driver.
-*/
-
+ * LinkLayer driver.
+ */
 public abstract class LinkLayer {
+	/** Own IP address */
+//	int ip; // own ip address
+// TODO: use this one instead of the static in CS8900, SLIP, and PPP
+
+	/** */
+	int gateway;
+
+	/** Subnet mask */
+	int netmask;
 
 
 	public abstract int getIpAddress();
@@ -55,4 +62,18 @@ public abstract class LinkLayer {
 	}
 
 	public abstract void loop();
+	/**
+	 * @param remoteAddr
+	 * @return true if the remote address is in the same subnet or if no gateway
+	 *         is given
+	 */
+	public boolean isSameSubnet(int remoteAddr) {
+		if (gateway == 0)
+			return true;
+
+		int test1 = /* ip & */ netmask;
+		int test2 = remoteAddr & netmask;
+
+		return (test1 ^ test2) == 0;
+	}
 }
