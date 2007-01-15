@@ -29,66 +29,75 @@
  */
 
 package ejip;
+
 /*
-*   Changelog:
-*		2002-03-16	works with ethernet
-*		2002-10-21	use Packet buffer, 4 bytes in one word
-*
-*
-*/
+ * Changelog: 2002-03-16 works with ethernet 2002-10-21 use Packet buffer, 4
+ * bytes in one word
+ * 
+ * 
+ */
 
 import util.Dbg;
 
 /**
-*	A minimalistic TCP/IP stack (with ICMP).
-*
-*	It's enough to handel a HTTP request (and nothing more)!
-*/
+ * A minimalistic TCP/IP stack (with ICMP).
+ * 
+ * It's enough to handel a HTTP request (and nothing more)!
+ */
 
 public class TcpIp {
 
 	private static final int PROT_ICMP = 1;
+
 	private static final int PROT_TCP = 6;
 
 	static final int FL_URG = 0x20;
+
 	static final int FL_ACK = 0x10;
+
 	static final int FL_PSH = 0x8;
+
 	static final int FL_RST = 0x4;
+
 	static final int FL_SYN = 0x2;
+
 	static final int FL_FIN = 0x1;
 
-	static int ip_id, tcb_port;	// ip id, tcp port
-	static int tcb_st;	// state
+	static int ip_id, tcb_port; // ip id, tcp port
+
+	static int tcb_st; // state
 
 	static final int ST_LISTEN = 0;
+
 	static final int ST_ESTAB = 2;
+
 	static final int ST_FW1 = 3;
+
 	static final int ST_FW2 = 4;
 
-    static final int MTU = 1500-8;
-    static final int WINDOW = 2680;
+	static final int MTU = 1500 - 8;
 
-/**
-*	calc ip check sum.
-*	assume (32 bit) word boundries. rest of buffer is 0.
-*	off offset in buffer (in words)
-*	cnt length in bytes
-*/
+	static final int WINDOW = 2680;
+
+	/**
+	 * calc ip check sum. assume (32 bit) word boundries. rest of buffer is 0.
+	 * off offset in buffer (in words) cnt length in bytes
+	 */
 	public static int chkSum(int[] buf, int off, int cnt) {
-
 
 		int i;
 		int sum = 0;
-		cnt = (cnt+3)>>2;		// word count
+		cnt = (cnt + 3) >> 2; // word count
 		while (cnt != 0) {
 			i = buf[off];
 			sum += i & 0xffff;
-			sum += i>>>16;
+			sum += i >>> 16;
 			++off;
 			--cnt;
 		}
 
-		while ((sum>>16) != 0) sum = (sum & 0xffff) + (sum >> 16);
+		while ((sum >> 16) != 0)
+			sum = (sum & 0xffff) + (sum >> 16);
 
 		sum = (~sum) & 0xffff;
 
@@ -97,25 +106,24 @@ public class TcpIp {
 
 	public static void init() {
 
-		tcb_st = ST_LISTEN;		// select();
+		tcb_st = ST_LISTEN; // select();
 		ip_id = 0x12340000;
 		Html.init();
 	}
 
-/**
-*	return IP id in upper 16 bit.
-*/
+	/**
+	 * return IP id in upper 16 bit.
+	 */
 	public static int getId() {
 
 		ip_id += 0x10000;
 		return ip_id;
 	}
 
-/**
-*	process one ip packet.
-*	change buffer and set length to get a packet sent back.
-*	called from Net.run().
-*/
+	/**
+	 * process one ip packet. change buffer and set length to get a packet sent
+	 * back. called from Net.run().
+	 */
 	public static void receive(Packet p) {
 
 		int i, j;
@@ -124,41 +132,41 @@ public class TcpIp {
 		int len;
 
 		i = buf[0];
-		len = i & 0xffff;		// len from IP header
-// NO options are assumed in ICMP/TCP/IP...
-//		=> copy if options present
-		if (len > p.len || (i>>>24!=0x45)) {
-			p.setStatus(Packet.FREE);	// packet to short or ip options => drop it
+		len = i & 0xffff; // len from IP header
+		// NO options are assumed in ICMP/TCP/IP...
+		// => copy if options present
+		if (len > p.len || (i >>> 24 != 0x45)) {
+			p.setStatus(Packet.FREE); // packet to short or ip options => drop
+										// it
 			return;
 		} else {
-			p.len = len;				// correct for to long packets
+			p.len = len; // correct for to long packets
 		}
 
 		// TODO fragmentation
-		if (chkSum(buf, 0, 20)!=0) {
+		if (chkSum(buf, 0, 20) != 0) {
 			p.setStatus(Packet.FREE);
-Dbg.wr("wrong IP checksum ");
+			Dbg.wr("wrong IP checksum ");
 			return;
 		}
 
-		int prot = (buf[2]>>16) & 0xff;		// protocol
-		if (prot==PROT_ICMP) {
+		int prot = (buf[2] >> 16) & 0xff; // protocol
+		if (prot == PROT_ICMP) {
 			doICMP(p);
 			doIp(p, prot);
-		} else if (prot==PROT_TCP) {
+		} else if (prot == PROT_TCP) {
 			doTCP(p);
 			doIp(p, prot);
-		} else if (prot==Udp.PROTOCOL) {
-			Udp.process(p);				// Udp generates the reply
+		} else if (prot == Udp.PROTOCOL) {
+			Udp.process(p); // Udp generates the reply
 		} else {
-			p.setStatus(Packet.FREE);	// mark packet free
+			p.setStatus(Packet.FREE); // mark packet free
 		}
 	}
 
-/**
-*	very simple generation of IP header.
-*	just swap source and destination.
-*/
+	/**
+	 * very simple generation of IP header. just swap source and destination.
+	 */
 	private static void doIp(Packet p, int prot) {
 
 		int[] buf = p.buf;
@@ -166,48 +174,49 @@ Dbg.wr("wrong IP checksum ");
 		int i;
 
 		if (len == 0) {
-			p.setStatus(Packet.FREE);	// mark packet free
+			p.setStatus(Packet.FREE); // mark packet free
 		} else {
-			buf[0] = 0x45000000 + len;			// ip length	(header without options)
-			buf[1] = getId();					// identification, no fragmentation
-			buf[2] = (0x20<<24) + (prot<<16);	// ttl, protocol, clear checksum
-			i = buf[3];							// swap ip addresses
+			buf[0] = 0x45000000 + len; // ip length (header without options)
+			buf[1] = getId(); // identification, no fragmentation
+			buf[2] = (0x20 << 24) + (prot << 16); // ttl, protocol, clear
+													// checksum
+			i = buf[3]; // swap ip addresses
 			buf[3] = buf[4];
 			buf[4] = i;
 			buf[2] |= chkSum(buf, 0, 20);
 
 			// a VERY dummy arp/routing!
 			// should this be in the cs8900 ?
-//			p.llh[0] = p.llh[3];
-//			p.llh[1] = p.llh[4];
-//			p.llh[2] = p.llh[5];
+			// p.llh[0] = p.llh[3];
+			// p.llh[1] = p.llh[4];
+			// p.llh[2] = p.llh[5];
 			p.llh[6] = 0x0800;
-			
-			p.setStatus(Packet.SND);	// mark packet ready to send
-			
+
+			p.setStatus(Packet.SND); // mark packet ready to send
+
 		}
 	}
 
-/**
-*	the famous ping.
-*/
+	/**
+	 * the famous ping.
+	 */
 	private static void doICMP(Packet p) {
 
-		int type_code = p.buf[5]>>>16;
-Dbg.wr('P');
-Dbg.hexVal(type_code);
+		int type_code = p.buf[5] >>> 16;
+		Dbg.wr('P');
+		Dbg.hexVal(type_code);
 		if (type_code == 0x0800) {
 			// TODO check received ICMP checksum
-			p.buf[5] = 0;							// echo replay plus clear checksu,
-			p.buf[5] = chkSum(p.buf, 5, p.len-20);	// echo replay (0x0000) plus checksum
+			p.buf[5] = 0; // echo replay plus clear checksu,
+			p.buf[5] = chkSum(p.buf, 5, p.len - 20); // echo replay (0x0000)
+														// plus checksum
 		} else {
 			p.len = 0;
 		}
 	}
 
-
-// TODO:!!!!!! do a real state machine,
-// end is wrong (sending ack in fw1 !!!) makes remote site crazy
+	// TODO:!!!!!! do a real state machine,
+	// end is wrong (sending ack in fw1 !!!) makes remote site crazy
 	static void doTCP(Packet p) {
 
 		int i;
@@ -216,117 +225,119 @@ Dbg.hexVal(type_code);
 		int rcvcnt, sndcnt;
 		int fl;
 
-Dbg.wr('T');
+		Dbg.wr('T');
 
 		// Find the payload
-		i = buf[8]>>>16;
+		i = buf[8] >>> 16;
 		int flags = i & 0xff;
-		int hlen = i>>>12;
-		datlen = p.len - 20 - (hlen<<2);
+		int hlen = i >>> 12;
+		datlen = p.len - 20 - (hlen << 2);
 
 		// "TCB"
-		// In a full tcp implementation we would keep track of this per connection.
+		// In a full tcp implementation we would keep track of this per
+		// connection.
 		// This implementation only handles one connection at a time.
 		// As a result, very little of this state is actually used after
 		// the reply packet has been sent.
 
-//		if (datlen < 0) return 0;
+		// if (datlen < 0) return 0;
 
 		// If it's not http, just drop it
 		i = buf[5];
 		if ((i & 0xffff) != 80) {
-Dbg.lf();
-Dbg.wr('T');
-Dbg.intVal(i & 0xffff);
+			Dbg.lf();
+			Dbg.wr('T');
+			Dbg.intVal(i & 0xffff);
 			p.len = 0;
 			return;
 		}
 		// Get source port
-		tcb_port = i>>>16;
+		tcb_port = i >>> 16;
 
-		rcvcnt = buf[6];		// sequence number
-		sndcnt = buf[7];		// acknowledge number
+		rcvcnt = buf[6]; // sequence number
+		sndcnt = buf[7]; // acknowledge number
 		// sndcnt has to be incremented for SYN!!!
-	
-	
+
 		fl = FL_ACK;
 		p.len = 40;
-	
-	
+
 		// Figure out what kind of packet this is, and respond
 		if ((flags & FL_SYN) != 0) {
-	
+
 			// SYN
-			sndcnt = -1;		// start with -1 for SYN 
+			sndcnt = -1; // start with -1 for SYN
 			rcvcnt++;
 			fl |= FL_SYN;
-//			tcb_st = ST_ESTAB;
-	
+			// tcb_st = ST_ESTAB;
+
 		} else if (datlen > 0) {
-	
+
 			// incoming data
 			rcvcnt += datlen;
-	
+
 			// TODO get url
 
-			if (sndcnt==0) {
-				p.len += Html.setText(buf, 5+hlen, datlen, 10);
+			if (sndcnt == 0) {
+				p.len += Html.setText(buf, 5 + hlen, datlen, 10);
 				// Send reply packet
-//				if (len > MTU) len = MTU;	// TODO MTU should be taken from tcp options
+				// if (len > MTU) len = MTU; // TODO MTU should be taken from
+				// tcp options
 				// Read next segment of data into buffer
 			} else {
 				fl |= FL_FIN;
-//				tcb_st = ST_FW1;
+				// tcb_st = ST_FW1;
 			}
-	
 
 			fl |= FL_PSH;
-	
+
 		} else if ((flags & FL_FIN) != 0) {
-	
+
 			// FIN
 			rcvcnt++;
-			// Don't bother with FIN-WAIT-2, TIME-WAIT, or CLOSED; they just cause trouble
-//			tcb_st = ST_LISTEN;
-	
+			// Don't bother with FIN-WAIT-2, TIME-WAIT, or CLOSED; they just
+			// cause trouble
+			// tcb_st = ST_LISTEN;
+
 		} else if ((flags & FL_ACK) != 0) {
-	
+
 			// ack with no data
 			if (sndcnt > 0) {
 				// calculate no of bytes left to send
-// i = len2send - sndnxt
-i = 0;
+				// i = len2send - sndnxt
+				i = 0;
 				if (i == 0) {
 					// EOF; send FIN
 					fl |= FL_FIN;
-//					tcb_st = ST_FW1;
+					// tcb_st = ST_FW1;
 				} else if (i > 0) {
 					// not EOF; send next segment
-//					len += i;
+					// len += i;
 					fl |= FL_PSH;
-				} else {						// ***** this is never used! thats bad
+				} else { // ***** this is never used! thats bad
 					// ack of FIN; no reply
 					p.len = 0;
 					return;
 				}
 			} else {
 				p.len = 0;
-				return;					// No reply packet
+				return; // No reply packet
 			}
-	
+
 		} else {
 			p.len = 0;
-			return;						// drop it
+			return; // drop it
 		}
-	
+
 		// Fill in TCP header
-		buf[5] = (80<<16) + tcb_port;
+		buf[5] = (80 << 16) + tcb_port;
 		buf[6] = sndcnt;
 		buf[7] = rcvcnt;
-		buf[8] = 0x50000000 + (fl<<16) + WINDOW;	// hlen = 20, no options
-		buf[9] = 0;									// clear checksum field
-		buf[2] = (PROT_TCP<<16) + p.len - 20; 		// set protocol and tcp length in iph checksum for tcp checksum
-		buf[9] = chkSum(buf, 2, p.len-8)<<16;
-	
+		buf[8] = 0x50000000 + (fl << 16) + WINDOW; // hlen = 20, no options
+		buf[9] = 0; // clear checksum field
+		buf[2] = (PROT_TCP << 16) + p.len - 20; // set protocol and tcp length
+												// in iph checksum for tcp
+												// checksum
+		buf[9] = chkSum(buf, 2, p.len - 8) << 16;
+
 	}
 }
