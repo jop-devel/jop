@@ -48,6 +48,8 @@ import util.Dbg;
 class Entry {
 
 	final static int ENTRY_CNT = 4;
+// TODO: use this one when the merge is finished
+//	final static int ENTRY_CNT = StackParameters.ARP_ENTRY_POOL_SIZE + 1;
 	static Entry[] list;
 	static int ageCnt;
 
@@ -62,6 +64,17 @@ class Entry {
 		
 		list = new Entry[ENTRY_CNT];
 		for (int i=0; i<ENTRY_CNT; ++i) list[i] = new Entry();
+		// Static ARP entry: IP Broadcast -> Ethernet Broadcast
+		list[0].ip = 0xFFFFFFFF; // 255.255.255.255
+		list[0].mac[0] = 0xFF; // -> resolves to FF:FF:FF:FF:FF:FF
+		list[0].mac[1] = 0xFF;
+		list[0].mac[2] = 0xFF;
+		list[0].mac[3] = 0xFF;
+		list[0].mac[4] = 0xFF;
+		list[0].mac[5] = 0xFF;
+		list[0].valid = true;
+		list[0].age = 0; // Never gets checked ... MS: is this true?
+
 		ageCnt = 0;
 	}
 	
@@ -248,7 +261,7 @@ public class Arp {
 		p.llh[0] = 0xffff;		// Ethernet broadcast
 		p.llh[1] = 0xffff;
 		p.llh[2] = 0xffff;
-		// own Etherner address is filled by CS8900
+		// own Ethernet address is filled by CS8900
 		p.llh[6] = 0x0806;		// ARP frame
 
 	}
@@ -257,24 +270,51 @@ public class Arp {
 	 * Fill in the destination MAC address. If not in
 	 * the cache use this packet for a ARP request.
 	 * The IP packet get's lost.
+	 * 
 	 * @param p
 	 */
-	static void fillETH(Packet p) {
-		
+	static void fillMAC(Packet p) {
+
+		Entry e;
 		// IP destination address (without gateway) is
 		// at position 4 for IP packets and at 6 for ARP packets
-		Entry e = Entry.find(p.buf[4]);
-		if (p.llh[6] == 0x0806) e = Entry.find(p.buf[6]);
-		if (e==null) {
+		if (p.llh[6] == 0x0806) {
+			e = Entry.find(p.buf[6]);
+		} else {
+			e = Entry.find(p.buf[4]);			
+		}
+		// TODO: for dhcp
+		// int firstHopDest = CS8900.isSameSubnet(p.buf[addrPos]) ?
+		// p.buf[addrPos] : Net.linkLayer.gateway;
+//		int firstHopDest = p.buf[addrPos];
+//		Entry e = Entry.find(firstHopDest);
+
+
+		if (e == null) {
 			sendRequest(p);
 		} else {
 			int[] mac = e.mac;
 			// intel byte order !!!
-			p.llh[0] = mac[0]<<8 | mac[1];
-			p.llh[1] = mac[2]<<8 | mac[3];
-			p.llh[2] = mac[4]<<8 | mac[5];
+			p.llh[0] = mac[0] << 8 | mac[1];
+			p.llh[1] = mac[2] << 8 | mac[3];
+			p.llh[2] = mac[4] << 8 | mac[5];
 
 		}
+
 	}
 	
+	/**
+	 * Returns true if the MAC address of a given IP address is already in the
+	 * cache
+	 * 
+	 * @param ip
+	 * @return boolean
+	 */
+	public static boolean inCache(int ip) {
+		// TODO dhcp
+		// return Entry.find(CS8900.isSameSubnet(ip) ? ip :
+		// Net.linkLayer.gateway) != null;
+		return Entry.find(ip) != null;
+
+	}
 }

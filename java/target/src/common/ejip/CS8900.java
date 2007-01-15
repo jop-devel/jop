@@ -423,7 +423,7 @@ public class CS8900 extends LinkLayer {
 			//
 			p = Packet.getPacket(single, Packet.SND, Packet.ALLOC);
 			if (p!=null) {
-				Arp.fillETH(p);			// fill in dest MAC
+				Arp.fillMAC(p);			// fill in dest MAC
 				send(p);				// send one packet
 			}
 		}
