@@ -234,6 +234,13 @@ private static void checkStrMelnr() {
 		} else {
 			int melnr = getMelnr(Status.strNr, last_lat, last_lon);
 			
+			Status.doCommAlarm = Flash.isCommAlarm(melnr, last_lat, last_lon);
+//			if (Status.doCommAlarm) {
+//				Dbg.wr("do communication Alarm");
+//			} else {
+//				Dbg.wr("no communication Alarm");
+//			}
+
 			if (melnr != Status.melNr) {
 Dbg.wr("Melderaum: ");
 Dbg.intVal(melnr);
@@ -253,12 +260,6 @@ Dbg.wr(" nun aktiv\n");
 						// is disabled again!!!
 						// Status.checkMove = true;
 
-						Status.doCommAlarm = Flash.isCommAlarm(melnr);
-if (Status.doCommAlarm) {
-	Dbg.wr("do communication Alarm");
-} else {
-	Dbg.wr("no communication Alarm");
-}
 					}
 				}
 			} else {
