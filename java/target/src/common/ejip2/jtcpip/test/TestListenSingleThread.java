@@ -32,12 +32,12 @@
 package ejip2.jtcpip.test;
 
 /**
- * Single Thread version of passive TcpIp.
- * jop is listening for connections
+ * Single Thread version of passive TcpIp. jop is listening for connections
  * 
  * @author Nelson Langkamp
  */
 
+import java.io.IOException;
 
 import util.Dbg;
 import ejip2.LinkLayer;
@@ -55,13 +55,12 @@ public class TestListenSingleThread {
 
 	static TCPConnection conn = null;
 
-	
 	public static void main(String[] args) {
 
 		// init stuff
 		Dbg.initSerWait();
 		Dbg.wr("Main2");
-		ipLink = Net.init("129.27.142.183", "00:01:02:03:04:05");
+		ipLink = Net.init("129.27.142.183", "05:01:02:03:04:05");
 		nwlt = NwLoopThread.createInstance(ipLink);
 		ejip2.jtcpip.UDPConnection.init();
 		ejip2.jtcpip.TCPConnection.init();
@@ -70,11 +69,10 @@ public class TestListenSingleThread {
 		ejip2.jtcpip.util.NumFunctions.init();
 		ejip2.jtcpip.IP.init();
 		ejip2.Arp.init();
-	
-		
-		TCPConnection tmp = null;
-		int my_byte = 0;
+
+		boolean once = true; // only write once
 		short port = 44;
+		// FIXME: newConnection sets state to closed?!
 		TCPConnection conn = TCPConnection.newConnection(port);
 		conn.setState(TCPConnection.STATE_LISTEN);
 
@@ -84,19 +82,68 @@ public class TestListenSingleThread {
 		}
 
 		for (;;) {
-
-			if (tmp == null) {
-				tmp = TCP.listen(port, conn);
-				if (tmp != null)
-					Dbg.wr("CONNECTION");
-			} else {
-				Dbg.wr("reading\n");
-				my_byte = tmp.iStream.read();
-				if (my_byte != -1) {
-					Dbg.wr((char) my_byte);
-				}
+			if (conn.getState() == TCPConnection.STATE_CLOSED) {
+				conn = TCPConnection.newConnection(port);
+				conn.setState(TCPConnection.STATE_LISTEN);
+			}
+			// TODO: why does the connection go to state close wait?
+			if (conn.getState() == TCPConnection.STATE_CLOSE_WAIT) {
+				conn.close();
+				conn = TCPConnection.newConnection(port);
+				conn.setState(TCPConnection.STATE_LISTEN);
 			}
 
+			// reading from input stream
+			int tmp = 0;
+			while ((tmp = conn.iStream.read()) != -1) {
+				Dbg.wr("input: ");
+				Dbg.wr((char) tmp);
+				Dbg.wr('\n');
+				// do Echo
+				try {
+					conn.oStream.write(tmp);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+
+			}
+
+			if (conn.getState() == TCPConnection.STATE_ESTABLISHED) {
+				if (once) {
+					try {
+						conn.oStream.write(104);
+						conn.oStream.write(97);
+						conn.oStream.write(108);
+						conn.oStream.write(108);
+						conn.oStream.write(111);
+						conn.oStream.write(32);
+						conn.oStream.write(119);
+						conn.oStream.write(101);
+						conn.oStream.write(108);
+						conn.oStream.write(116);
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+					once = false;
+				}
+			}
+			// if (tmp == null) {
+			// tmp = TCP.listen(port, conn);
+			// if (tmp != null) {
+			// Dbg.wr("CONNECTION\n");
+			// Dbg.wr("reading\n");
+			// my_byte = tmp.iStream.read();
+			// if (my_byte != -1) {
+			// Dbg.wr((char) my_byte);
+			// }
+			// } else {
+			// Dbg.wr("reading\n");
+			// my_byte = tmp.iStream.read();
+			// if (my_byte != -1) {
+			// Dbg.wr((char) my_byte);
+			// // }
+			// }
+			// }
 			nwlt.run();
 			ipLink.loop();
 		}
