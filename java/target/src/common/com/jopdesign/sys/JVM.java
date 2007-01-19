@@ -161,7 +161,10 @@ class JVM {
 		if(!positive) res = (~res)+1;
 		return res;
 	}
-	private static void f_fmul() { JVMHelp.noim();}
+	private static int f_fmul(int a, int b) {
+
+		return SoftFloat.float32_mul(a, b);
+	}
 	private static void f_dmul() { JVMHelp.noim();}
 
 	private static int f_idiv(int a, int b) { 
@@ -249,7 +252,10 @@ class JVM {
 		return c;	
 	}
 	
-	private static void f_fdiv() { JVMHelp.noim();}
+	private static int f_fdiv(int a, int b) {
+
+		return SoftFloat.float32_div(a, b);
+	}
 	private static void f_ddiv() { JVMHelp.noim();}
 
 	private static int f_irem(int a, int b) {
@@ -324,14 +330,20 @@ class JVM {
 		}
 		return r;
 	}
-	private static void f_frem() { JVMHelp.noim();}
+	private static int f_frem(int a, int b) {
+
+		return SoftFloat.float32_rem(a, b);
+	}
 	private static void f_drem() { JVMHelp.noim();}
 	private static void f_ineg() { JVMHelp.noim(); /* jvm.asm */ }
 	private static long f_lneg(long a) {
 
 		return ~a+1;
 	}
-	private static void f_fneg() { JVMHelp.noim();}
+	private static int f_fneg(int a) { 
+
+                return a ^ 0x80000000;
+	}
 	private static void f_dneg() { JVMHelp.noim();}
 	private static void f_ishl() { JVMHelp.noim(); /* jvm.asm */ }
 	private static long f_lshl(int ah, int al, int cnt) { 
@@ -409,7 +421,6 @@ class JVM {
 	}
 	private static int f_i2f(int a) {
 
-JVMHelp.noim(); // TODO: test
 		return SoftFloat.int32_to_float32(a);
 	}
 	private static void f_i2d() { JVMHelp.noim();}
@@ -469,8 +480,14 @@ JVMHelp.noim(); // TODO: test
 			return -1;
 		}
 	}
-	private static void f_fcmpl() { JVMHelp.noim();}
-	private static void f_fcmpg() { JVMHelp.noim();}
+	private static int f_fcmpl(int a, int b) {
+
+		return SoftFloat.float32_cmpl(a, b);
+	}
+	private static int f_fcmpg(int a, int b) {
+
+		return SoftFloat.float32_cmpg(a, b);
+	}
 	private static void f_dcmpl() { JVMHelp.noim();}
 	private static void f_dcmpg() { JVMHelp.noim();}
 	private static void f_ifeq() { JVMHelp.noim(); /* jvm.asm */ }
