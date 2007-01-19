@@ -530,10 +530,19 @@ public final class Float extends Number implements Comparable
    */
   public static int floatToIntBits(float value)
   {
-	  // TODO: handle NaN collapsing
-	  System.out.println("NYI");
-	  return Native.toInt(value);
-//    return VMFloat.floatToIntBits(value);
+      int v = Native.toInt(value);
+
+      // collapse NaNs
+      if ((((v >>> 23) & 0xff) == 0xff)
+	  && ((v & 0x007fffff) != 0)) {
+	  return 0x7fc00000;
+      }
+
+      return v;
+
+      //	  System.out.println("NYI");
+      //	  return Native.toInt(value);
+      //    return VMFloat.floatToIntBits(value);
   }
 
   /**
