@@ -206,6 +206,15 @@ public class Startup {
 				case 8 :		// iconst_5
 					stack[++sp] = 5;
 					break;
+				case 11 :		// fconst_0
+					stack[++sp] = 0;
+					break;
+				case 12 :		// fconst_1
+					stack[++sp] = 0x3f800000;
+					break;
+				case 13 :		// fconst_2
+					stack[++sp] = 0x40000000;
+					break;
 				case 16 :		// bipush
 					stack[++sp] = readBC8s();
 					break;
