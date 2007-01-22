@@ -178,80 +178,59 @@ public class SoftFloat {
 | positive integer is returned.  Otherwise, if the conversion overflows, the
 | largest integer with the same sign as `a' is returned.
 *----------------------------------------------------------------------------*/
-
-/*
-	no rounding used in Java.
-
-// int32 float32_to_int32( float32 a )
-public static int float32_to_int32( int a )
-{
-	// flag aSign;
-	// int16 aExp, shiftCount;
-	// bits32 aSig, aSigExtra;
-	// int32 z;
-	// int8 roundingMode;
+    public static int float32_to_int32( int a ) {
 	int aSign;
 	int aExp, shiftCount;
 	int aSig, aSigExtra;
 	int z;
-	int roundingMode;
 
-	// aSig = extractFloat32Frac( a );
-	// aExp = extractFloat32Exp( a );
-	// aSign = extractFloat32Sign( a );
-	aSig = a & 0x007FFFFF;
-	aExp = ( a>>>23 ) & 0xFF;
+	aSig = a & 0x007fffff;
+	aExp = ( a>>>23 ) & 0xff;
 	aSign = a>>>31;
-	shiftCount = aExp - 0x96;
-	if ( 0 <= shiftCount ) {
-		if ( 0x9E <= aExp ) {
-			if ( a != 0xCF000000 ) {
-//				float_raise( float_flag_invalid );
-				// if ( ! aSign || ( ( aExp == 0xFF ) && aSig ) ) {
-				if ( aSign==0 || ( ( aExp == 0xFF ) && aSig!=0 ) ) {
-					return 0x7FFFFFFF;
-				}
-			}
-			return 0x80000000;
-		}
-		z = ( aSig | 0x00800000 )<<shiftCount;
-		if ( aSign!=0 ) z = - z;
-	}
-	else {
-		if ( aExp < 0x7E ) {
-			aSigExtra = aExp | aSig;
-			z = 0;
-		}
-		else {
-			aSig |= 0x00800000;
-			aSigExtra = aSig<<( shiftCount & 31 );
-			z = aSig>>>( -shiftCount );
-		}
-		// if ( aSigExtra ) float_exception_flags |= float_flag_inexact;
-		// roundingMode = float_rounding_mode;
-		// if ( roundingMode == float_round_nearest_even ) {
-			if ( aSigExtra < 0 ) {
-				++z;
-				// if ( (bits32) ( aSigExtra<<1 ) == 0 ) z &= ~1;
-				if ( ( aSigExtra<<1 ) == 0 ) z &= ~1;
-			}
-			if ( aSign!=0 ) z = - z;
-//		}
-//		else {
-//			aSigExtra = ( aSigExtra != 0 );
-//			if ( aSign ) {
-//				z += ( roundingMode == float_round_down ) & aSigExtra;
-//				z = - z;
-//			}
-//			else {
-//				z += ( roundingMode == float_round_up ) & aSigExtra;
-//			}
-//		}
-	}
-	return z;
+	shiftCount = aExp - 0x9e;
 
-}
-*/
+	if ( shiftCount >= 0 ) {
+	    if ( ( aExp == 0xff ) && (aSig != 0) ) {
+		return 0;
+	    } else if ( aSign!=0 ) {
+		return 0x80000000;
+	    } else {
+		return 0x7fffffff;
+	    }
+	} else if ( shiftCount == -33 ) {
+	    return ((aSign == 0) && (aSig == 0x7fffff)) ? 1 : 0;
+	} else if ( shiftCount < -33 ) {
+	    return 0;
+	}
+
+	aSig |= 0x00800000;
+	aSig <<= 7;
+
+	z = aSig >>> -shiftCount-1;
+	
+	aSig = shift32RightJamming(aSig, -shiftCount-9) & 0xff;
+
+	// those fine rounding rules
+	if (aSign == 0) {
+	    if (aSig >= 0x80) {
+		z += 1;
+	    } else if ((aExp == 0x96) && ((z & 1) != 0)) {
+		z += 1;
+	    }
+	} else {
+	    if (aSig > 0x80) {
+		z += 1;
+	    } else if ((aExp == 0x96) && (aSig == 1) && ((z & 1) != 0)) {
+		z -= 1;
+	    }
+	}
+	
+	if ( aSign != 0 ) {
+	    z = -z;
+	}
+
+	return z;
+    }
 
 /*----------------------------------------------------------------------------
 | Returns the result of converting the single-precision floating-point value
@@ -268,30 +247,31 @@ public static int float32_to_int32( int a )
 	int aSig;
 	int z;
 
-	aSig = a & 0x007FFFFF;
+	aSig = a & 0x007fffff;
 	aExp = (a >>> 23) & 0xff;
 	aSign = a >>> 31;
-	shiftCount = aExp - 0x9E;
+	shiftCount = aExp - 0x9e;
+
 	if (0 <= shiftCount) {
-	    if (a != 0xCF000000) {
-		if (((aExp == 0xff) && aSig != 0)) {	// NaN
-		    // NaN has to return 0 in Java!
-		    // That is different form IEEE 754
-		    return 0;
-		} else if (aSign == 0) {	// +INF
-		    return 0x7FFFFFFF;
-		}
+	    if (((aExp == 0xff) && aSig != 0)) {	// NaN
+		// NaN has to return 0 in Java!
+		// That is different form IEEE 754
+		return 0;
+	    } else if (aSign == 0) {	// +INF
+		return 0x7FFFFFFF;
 	    }
 	    return 0x80000000;
 	} else if (aExp <= 0x7E) {
 	    return 0;
 	}
+
 	aSig = (aSig | 0x00800000) << 8;
-	z = aSig >>> (-shiftCount);
+	z = aSig >>> -shiftCount;
 
 	if (aSign != 0) {
 	    z = -z;
 	}
+
 	return z;
     }
 
@@ -603,13 +583,14 @@ public static int float32_to_int32( int a )
 	aSig = (aSig | 0x00800000);
 	bSig = (bSig | 0x00800000);
 
-	zSig = (long) (aSig << 7) * ((long) bSig << 8);
+	zSig = ((long) aSig << 7) * ((long) bSig << 8);
 
 	// normalize
 	if (0 <= (zSig << 1)) {
 	    zSig <<= 1;
 	    --zExp;
 	}
+
 	// shift right with sticky bit
 	if ((int) zSig != 0) {
 	    zSig >>>= 32;
@@ -618,7 +599,7 @@ public static int float32_to_int32( int a )
 	    zSig >>>= 32;
 	}
 
-//     System.err.println(Integer.toHexString(aSig) + " E" +
+//     System.out.println(Integer.toHexString(aSig) + " E" +
 //                     Integer.toHexString(aExp) + ",\t" +
 //                     Integer.toHexString(bSig) + " E" +
 //                     Integer.toHexString(bExp) + ",\t" +
@@ -704,17 +685,15 @@ public static int float32_to_int32( int a )
 	// rounding, with all those nice exceptions
 	if ((zExp > 0) && ((zSig & 0x3f) == 0x20)) {
 	    zSig |= 1;
-	}
-	if ((zSig & 0x7f) == 0x40) {
+	} else if ((zSig & 0x7f) == 0x40) {
+	    zSig |= 1;
+	} else if ((zExp == -1) && ((zSig & 0xff) == 0x80)) {
+	    zSig |= 1;
+	} else if ((zExp < -1) && ((((long) aSig << 38) % (bSig)) != 0)) {
 	    zSig |= 1;
 	}
-	if ((zExp == -1) && ((zSig & 0xff) == 0x80)) {
-	    zSig |= 1;
-	}
-	if ((zExp < -1) && ((((long) aSig << 38) % (bSig)) != 0)) {
-	    zSig |= 1;
-	}
-//     System.err.println(Integer.toHexString(aSig) + " E" +
+
+//     System.out.println(Integer.toHexString(aSig) + " E" +
 //                     Integer.toHexString(aExp) + ",\t" +
 //                     Integer.toHexString(bSig) + " E" +
 //                     Integer.toHexString(bExp) + ",\t" +
@@ -794,7 +773,7 @@ public static int float32_to_int32( int a )
 	    }
 	}
 
-//     System.err.println(Integer.toHexString(aSig) + " E" +
+//     System.out.println(Integer.toHexString(aSig) + " E" +
 //                     Integer.toHexString(aExp) + ",\t" +
 //                     Integer.toHexString(bSig) + " E" +
 //                     Integer.toHexString(bExp) + ",\t" +
@@ -907,156 +886,4 @@ public static int float32_to_int32( int a )
 	}
     }
 
-//flag float32_lt( float32 a, float32 b )
-//{
-//      flag aSign, bSign;
-//
-//      aSign = extractFloat32Sign( a );
-//      bSign = extractFloat32Sign( b );
-//      if ( aSign != bSign ) return aSign && ( (bits32) ( ( a | b )<<1 ) != 0 );
-//      return ( a != b ) && ( aSign ^ ( a < b ) );
-//
-//}
-
-///*----------------------------------------------------------------------------
-//| Returns 1 if the single-precision floating-point value `a' is equal to
-//| the corresponding value `b', and 0 otherwise.  The comparison is performed
-//| according to the IEC/IEEE Standard for Binary Floating-Point Arithmetic.
-//*----------------------------------------------------------------------------*/
-//
-//flag float32_eq( float32 a, float32 b )
-//{
-//
-//      if (    ( ( extractFloat32Exp( a ) == 0xFF ) && extractFloat32Frac( a ) )
-//               || ( ( extractFloat32Exp( b ) == 0xFF ) && extractFloat32Frac( b ) )
-//         ) {
-//              if ( float32_is_signaling_nan( a ) || float32_is_signaling_nan( b ) ) {
-//                      float_raise( float_flag_invalid );
-//              }
-//              return 0;
-//      }
-//      return ( a == b ) || ( (bits32) ( ( a | b )<<1 ) == 0 );
-//
-//}
-//
-///*----------------------------------------------------------------------------
-//| Returns 1 if the single-precision floating-point value `a' is less than
-//| or equal to the corresponding value `b', and 0 otherwise.  The comparison
-//| is performed according to the IEC/IEEE Standard for Binary Floating-Point
-//| Arithmetic.
-//*----------------------------------------------------------------------------*/
-//
-//flag float32_le( float32 a, float32 b )
-//{
-//      flag aSign, bSign;
-//
-//      if (    ( ( extractFloat32Exp( a ) == 0xFF ) && extractFloat32Frac( a ) )
-//               || ( ( extractFloat32Exp( b ) == 0xFF ) && extractFloat32Frac( b ) )
-//         ) {
-//              float_raise( float_flag_invalid );
-//              return 0;
-//      }
-//      aSign = extractFloat32Sign( a );
-//      bSign = extractFloat32Sign( b );
-//      if ( aSign != bSign ) return aSign || ( (bits32) ( ( a | b )<<1 ) == 0 );
-//      return ( a == b ) || ( aSign ^ ( a < b ) );
-//
-//}
-//
-///*----------------------------------------------------------------------------
-//| Returns 1 if the single-precision floating-point value `a' is less than
-//| the corresponding value `b', and 0 otherwise.  The comparison is performed
-//| according to the IEC/IEEE Standard for Binary Floating-Point Arithmetic.
-//*----------------------------------------------------------------------------*/
-//
-//flag float32_lt( float32 a, float32 b )
-//{
-//      flag aSign, bSign;
-//
-//      if (    ( ( extractFloat32Exp( a ) == 0xFF ) && extractFloat32Frac( a ) )
-//               || ( ( extractFloat32Exp( b ) == 0xFF ) && extractFloat32Frac( b ) )
-//         ) {
-//              float_raise( float_flag_invalid );
-//              return 0;
-//      }
-//      aSign = extractFloat32Sign( a );
-//      bSign = extractFloat32Sign( b );
-//      if ( aSign != bSign ) return aSign && ( (bits32) ( ( a | b )<<1 ) != 0 );
-//      return ( a != b ) && ( aSign ^ ( a < b ) );
-//
-//}
-//
-///*----------------------------------------------------------------------------
-//| Returns 1 if the single-precision floating-point value `a' is equal to
-//| the corresponding value `b', and 0 otherwise.  The invalid exception is
-//| raised if either operand is a NaN.  Otherwise, the comparison is performed
-//| according to the IEC/IEEE Standard for Binary Floating-Point Arithmetic.
-//*----------------------------------------------------------------------------*/
-//
-//flag float32_eq_signaling( float32 a, float32 b )
-//{
-//
-//      if (    ( ( extractFloat32Exp( a ) == 0xFF ) && extractFloat32Frac( a ) )
-//               || ( ( extractFloat32Exp( b ) == 0xFF ) && extractFloat32Frac( b ) )
-//         ) {
-//              float_raise( float_flag_invalid );
-//              return 0;
-//      }
-//      return ( a == b ) || ( (bits32) ( ( a | b )<<1 ) == 0 );
-//
-//}
-//
-///*----------------------------------------------------------------------------
-//| Returns 1 if the single-precision floating-point value `a' is less than or
-//| equal to the corresponding value `b', and 0 otherwise.  Quiet NaNs do not
-//| cause an exception.  Otherwise, the comparison is performed according to the
-//| IEC/IEEE Standard for Binary Floating-Point Arithmetic.
-//*----------------------------------------------------------------------------*/
-//
-//flag float32_le_quiet( float32 a, float32 b )
-//{
-//      flag aSign, bSign;
-//      int16 aExp, bExp;
-//
-//      if (    ( ( extractFloat32Exp( a ) == 0xFF ) && extractFloat32Frac( a ) )
-//               || ( ( extractFloat32Exp( b ) == 0xFF ) && extractFloat32Frac( b ) )
-//         ) {
-//              if ( float32_is_signaling_nan( a ) || float32_is_signaling_nan( b ) ) {
-//                      float_raise( float_flag_invalid );
-//              }
-//              return 0;
-//      }
-//      aSign = extractFloat32Sign( a );
-//      bSign = extractFloat32Sign( b );
-//      if ( aSign != bSign ) return aSign || ( (bits32) ( ( a | b )<<1 ) == 0 );
-//      return ( a == b ) || ( aSign ^ ( a < b ) );
-//
-//}
-//
-///*----------------------------------------------------------------------------
-//| Returns 1 if the single-precision floating-point value `a' is less than
-//| the corresponding value `b', and 0 otherwise.  Quiet NaNs do not cause an
-//| exception.  Otherwise, the comparison is performed according to the IEC/IEEE
-//| Standard for Binary Floating-Point Arithmetic.
-//*----------------------------------------------------------------------------*/
-//
-//flag float32_lt_quiet( float32 a, float32 b )
-//{
-//      flag aSign, bSign;
-//
-//      if (    ( ( extractFloat32Exp( a ) == 0xFF ) && extractFloat32Frac( a ) )
-//               || ( ( extractFloat32Exp( b ) == 0xFF ) && extractFloat32Frac( b ) )
-//         ) {
-//              if ( float32_is_signaling_nan( a ) || float32_is_signaling_nan( b ) ) {
-//                      float_raise( float_flag_invalid );
-//              }
-//              return 0;
-//      }
-//      aSign = extractFloat32Sign( a );
-//      bSign = extractFloat32Sign( b );
-//      if ( aSign != bSign ) return aSign && ( (bits32) ( ( a | b )<<1 ) != 0 );
-//      return ( a != b ) && ( aSign ^ ( a < b ) );
-//
-//}
-//
 }				// end class

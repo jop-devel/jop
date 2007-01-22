@@ -42,6 +42,8 @@ package java.lang;
 
 //import java.util.Random;
 
+import com.jopdesign.sys.SoftFloat;
+
 /**
  * Helper class containing useful mathematical functions and constants.
  * <P>
@@ -289,6 +291,20 @@ public final class Math
     if (a == 0 && b == 0)
       return a - -b;
     return (a > b) ? a : b;
+  }
+
+  /**
+   * Return the closest integer value to the argument. If the argument
+   * is NaN, the result is 0; if the argument's value does not fit an
+   * int, Integer.MIN_VALUE or Integer.MAX_VALUE are returned,
+   * depending on the sign.
+   *
+   * @param a the float to convert
+   * @return the closest int to the argument
+   */
+  public static int round(float a)
+  {
+    return SoftFloat.float32_to_int32(Float.floatToIntBits(a));
   }
 
 }

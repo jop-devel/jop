@@ -103,6 +103,22 @@ public class GenFloatTestRnd {
          System.err.println(Integer.toHexString(pc_val)+" != "+Integer.toHexString(jop_val));
        }
     }
+    {
+       int pc_val = Math.round (a);
+       int jop_val = SoftFloat.float32_to_int32 (Float.floatToRawIntBits(a));
+       if (pc_val != jop_val) {
+         System.err.println("Math.round ("+Integer.toHexString(Float.floatToRawIntBits(a))+") != SoftFloat.float32_to_int32 ("+Integer.toHexString(Float.floatToRawIntBits(a))+")");
+         System.err.println(Integer.toHexString(pc_val)+" != "+Integer.toHexString(jop_val));
+       }
+    }
+    {
+       int pc_val = (int) (a);
+       int jop_val = SoftFloat.float32_to_int32_round_to_zero (Float.floatToRawIntBits(a));
+       if (pc_val != jop_val) {
+         System.err.println("(int) ("+Integer.toHexString(Float.floatToRawIntBits(a))+") != SoftFloat.float32_to_int32_round_to_zero ("+Integer.toHexString(Float.floatToRawIntBits(a))+")");
+         System.err.println(Integer.toHexString(pc_val)+" != "+Integer.toHexString(jop_val));
+       }
+    }
     }
   }
 }

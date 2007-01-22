@@ -539,10 +539,6 @@ public final class Float extends Number implements Comparable
       }
 
       return v;
-
-      //	  System.out.println("NYI");
-      //	  return Native.toInt(value);
-      //    return VMFloat.floatToIntBits(value);
   }
 
   /**

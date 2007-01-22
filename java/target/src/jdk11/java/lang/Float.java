@@ -54,7 +54,7 @@ import com.jopdesign.sys.Native;
  * @since 1.0
  * @status updated to 1.4
  */
-public final class Float // extends Number implements Comparable
+public final class Float // JDK 1.4 extends Number implements Comparable
 {
   /**
    * Compatible with JDK 1.0+.
@@ -347,7 +347,7 @@ public final class Float // extends Number implements Comparable
     // XXX Rounding parseDouble() causes some errors greater than 1 ulp from
     // the infinitely precise decimal.
 //    return (float) Double.parseDouble(str);
-    throw new Error("NIY");
+    throw new Error("NYI");
   }
 
   /**
@@ -540,10 +540,6 @@ public final class Float // extends Number implements Comparable
       }
 
       return v;
-
-      //	  System.out.println("NYI");
-      //	  return Native.toInt(value);
-      //    return VMFloat.floatToIntBits(value);
   }
 
   /**

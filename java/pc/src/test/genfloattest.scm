@@ -7,13 +7,17 @@
 	       ("%" . "SoftFloat.float32_rem")
 	       ))
 
+(define uops '(("Math.round" . "SoftFloat.float32_to_int32")
+	       ("(int)" . "SoftFloat.float32_to_int32_round_to_zero")
+	       ))
+
 (define cops '(("fcmpl" . "SoftFloat.float32_cmpl")
 	       ("fcmpg" . "SoftFloat.float32_cmpg")
 	       ))
 
 (define aops* '("+" "-" "*" "/" "%"))
 (define cops* '("<" ">" "<=" ">=" "==" "!="))
-(define uops* '("-"))
+(define uops* '("-" "(int)" "Math.round"))
 
 (define nums '("Float.NaN"
 	       "Float.MAX_VALUE" "Float.MIN_VALUE"
@@ -245,6 +249,23 @@
 	       "Float.intBitsToFloat(0xf84a5aed)"
 	       "Float.intBitsToFloat(0x9e1b55f9)"
 	       "Float.intBitsToFloat(0x5e99b660)"
+
+	       "Float.intBitsToFloat(0xbfc02e00)"
+	       "Float.intBitsToFloat(0xc2020300)"
+	       "Float.intBitsToFloat(0xc22a0300)"
+	       "Float.intBitsToFloat(0xc2020300)"
+	       "Float.intBitsToFloat(0xc1780200)"
+	       "Float.intBitsToFloat(0xc1e40400)"
+	       "Float.intBitsToFloat(0xbfc02c00)"
+	       "Float.intBitsToFloat(0xc1180d00)"
+
+	       "Float.intBitsToFloat(0xc2df0100)"
+	       "Float.intBitsToFloat(0xc19c0000)"
+	       "Float.intBitsToFloat(0xc2950100)"
+	       "Float.intBitsToFloat(0xc2a30100)"
+	       "Float.intBitsToFloat(0xc2c30100)"
+	       "Float.intBitsToFloat(0x3effffff)"
+
 ))
 
 (define (format_aop file o a b)
@@ -275,6 +296,19 @@
                                               ~A (\"+Integer.toHexString(Float.floatToRawIntBits(~A))+\",\" ~
                                                     +Integer.toHexString(Float.floatToRawIntBits(~A))+\")\");\n"
 	  (car o) a b (cdr o) a b)
+  (format file "         System.err.println(Integer.toHexString(pc_val)+\" != \"~
+                                           +Integer.toHexString(jop_val));\n")
+  (format file "       }\n")
+  (format file "    }\n"))
+
+(define (format_uop file o a)
+  (format file "    {\n")
+  (format file "       int pc_val = ~A (~A);\n" (car o) a)
+  (format file "       int jop_val = ~A (Float.floatToRawIntBits(~A));\n" (cdr o) a)
+  (format file "       if (pc_val != jop_val) {\n")
+  (format file "         System.err.println(\"~A (\"+Integer.toHexString(Float.floatToRawIntBits(~A))+\") != ~
+                                              ~A (\"+Integer.toHexString(Float.floatToRawIntBits(~A))+\")\");\n"
+	  (car o) a (cdr o) a)
   (format file "         System.err.println(Integer.toHexString(pc_val)+\" != \"~
                                            +Integer.toHexString(jop_val));\n")
   (format file "       }\n")
@@ -338,6 +372,14 @@
        (format file "  System.err.println(\"Testing ~A finished.\");\n" (cdr o)))
      cops)
 
+    (for-each
+     (lambda (o)
+       (format file "  for (int i=0; i<nums.length; i++) {\n")
+       (format_uop file o "nums[i]")
+       (format file "  }\n")
+       (format file "  System.err.println(\"Testing ~A finished.\");\n" (cdr o)))
+     uops)
+
     (format file "    System.err.println(\"All tests finished.\");\n")
 
     (format file "  }\n}\n")))
@@ -396,6 +438,11 @@
        (format_cop file o "a" "b"))
      cops)
     
+    (for-each
+     (lambda (o)
+       (format_uop file o "a"))
+     uops)
+
     (format file "    }\n")
 
     (format file "  }\n}\n")))

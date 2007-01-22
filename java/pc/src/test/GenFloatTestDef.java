@@ -259,7 +259,21 @@ public class GenFloatTestDef {
 	Float.intBitsToFloat(0xb6c4c126),
 	Float.intBitsToFloat(0xf84a5aed),
 	Float.intBitsToFloat(0x9e1b55f9),
-	Float.intBitsToFloat(0x5e99b660)  };
+	Float.intBitsToFloat(0x5e99b660),
+	Float.intBitsToFloat(0xbfc02e00),
+	Float.intBitsToFloat(0xc2020300),
+	Float.intBitsToFloat(0xc22a0300),
+	Float.intBitsToFloat(0xc2020300),
+	Float.intBitsToFloat(0xc1780200),
+	Float.intBitsToFloat(0xc1e40400),
+	Float.intBitsToFloat(0xbfc02c00),
+	Float.intBitsToFloat(0xc1180d00),
+	Float.intBitsToFloat(0xc2df0100),
+	Float.intBitsToFloat(0xc19c0000),
+	Float.intBitsToFloat(0xc2950100),
+	Float.intBitsToFloat(0xc2a30100),
+	Float.intBitsToFloat(0xc2c30100),
+	Float.intBitsToFloat(0x3effffff)  };
 
   System.err.println("Testing predefined values...");
   for (int i=0; i<nums.length; i++) {
@@ -353,6 +367,28 @@ public class GenFloatTestDef {
     }
   }
   System.err.println("Testing SoftFloat.float32_cmpg finished.");
+  for (int i=0; i<nums.length; i++) {
+    {
+       int pc_val = Math.round (nums[i]);
+       int jop_val = SoftFloat.float32_to_int32 (Float.floatToRawIntBits(nums[i]));
+       if (pc_val != jop_val) {
+         System.err.println("Math.round ("+Integer.toHexString(Float.floatToRawIntBits(nums[i]))+") != SoftFloat.float32_to_int32 ("+Integer.toHexString(Float.floatToRawIntBits(nums[i]))+")");
+         System.err.println(Integer.toHexString(pc_val)+" != "+Integer.toHexString(jop_val));
+       }
+    }
+  }
+  System.err.println("Testing SoftFloat.float32_to_int32 finished.");
+  for (int i=0; i<nums.length; i++) {
+    {
+       int pc_val = (int) (nums[i]);
+       int jop_val = SoftFloat.float32_to_int32_round_to_zero (Float.floatToRawIntBits(nums[i]));
+       if (pc_val != jop_val) {
+         System.err.println("(int) ("+Integer.toHexString(Float.floatToRawIntBits(nums[i]))+") != SoftFloat.float32_to_int32_round_to_zero ("+Integer.toHexString(Float.floatToRawIntBits(nums[i]))+")");
+         System.err.println(Integer.toHexString(pc_val)+" != "+Integer.toHexString(jop_val));
+       }
+    }
+  }
+  System.err.println("Testing SoftFloat.float32_to_int32_round_to_zero finished.");
     System.err.println("All tests finished.");
   }
 }
