@@ -243,6 +243,8 @@ public class Startup {
 					break;
 				case 177 :		// return
 					return;
+				case 221 :		// jopsys_nop
+					break;
 				case 179 :		// putstatic
 				case 225 :		// resE1 - putstatic_ref
 					putstatic();
