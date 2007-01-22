@@ -40,27 +40,27 @@ import util.Dbg;
  * @author Tobias Kellner
  * @author Ulrich Feichter
  * @author Christof Rath
- * @version $Rev: 939 $ $Date: 2007/01/11 19:00:30 $
+ * @version $Rev: 939 $ $Date: 2007/01/22 19:28:28 $
  */
 public class TCPPacket
 {
 	/** Position of the FIN Flag in the 4th word of the IP header */
-	private static final int FIN_MASK = 0x10000;
+	public static final int FIN_MASK = 0x10000;
 
 	/** Position of the SYN Flag in the 4th word of the IP header */
-	private static final int SYN_MASK = 0x20000;
+	public static final int SYN_MASK = 0x20000;
 
 	/** Position of the RST Flag in the 4th word of the IP header */
-	private static final int RST_MASK = 0x40000;
+	public static final int RST_MASK = 0x40000;
 
 	/** Position of the PSH Flag in the 4th word of the IP header */
-	private static final int PSH_MASK = 0x80000;
+	public static final int PSH_MASK = 0x80000;
 
 	/** Position of the ACK Flag in the 4th word of the IP header */
-	private static final int ACK_MASK = 0x100000;
+	public static final int ACK_MASK = 0x100000;
 
 	/** Position of the URG Flag in the 4th word of the IP header */
-	private static final int URG_MASK = 0x200000;
+	public static final int URG_MASK = 0x200000;
 
 	/**
 	 * Get the sending port. The value is read from the TCP header.
@@ -653,7 +653,7 @@ public class TCPPacket
 	 */
 	public static int getDataLength(Payload pay)
 	{
-		return pay.length - (int) getDataOffset(pay) * 4;
+		return pay.length - ((pay.payload[3] >>> 28) & 0x0F) * 4;
 	}
 
 	/**

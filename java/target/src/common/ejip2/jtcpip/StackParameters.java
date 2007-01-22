@@ -37,7 +37,7 @@ package ejip2.jtcpip;
  * @author Ulrich Feichter
  * @author Tobias Kellner
  * @author Christof Rath
- * @version $Rev: 991 $ $Date: 2007/01/11 19:00:30 $
+ * @version $Rev: 991 $ $Date: 2007/01/22 19:28:28 $
  */
 public class StackParameters
 {
@@ -57,7 +57,7 @@ public class StackParameters
 	public final static byte ARP_ENTRY_POOL_SIZE = 4;
 
 	/** Maximum Data length in bytes (max IP Packet size excl. Header) */
-	protected final static int PAYLOAD_MAX_DATA_SIZE = PACKET_MTU_SIZE - 20;
+	public final static int PAYLOAD_MAX_DATA_SIZE = PACKET_MTU_SIZE - 20;
 		// minus 20 bytes IP header
 
 	/** Size of the <code>Payload</code> pool */
@@ -75,7 +75,7 @@ public class StackParameters
 	 * Initial window size. The size marks the amount of TCP payload bytes the
 	 * stack is willing to buffer until the next acknowlege
 	 */
-	protected final static int TCP_INITIAL_WINDOW_SIZE = 2 * TCP_RCV_MAX_SEGMENT_SIZE;
+	public final static int TCP_INITIAL_WINDOW_SIZE = 2 * TCP_RCV_MAX_SEGMENT_SIZE;
 
 	/** The count of TCP connections the stack can handle at one time */
 	protected final static byte TCP_CONNECTION_POOL_SIZE = 8;

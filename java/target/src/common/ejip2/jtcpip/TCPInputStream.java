@@ -41,7 +41,7 @@ import util.Dbg;
  * @author Ulrich Feichter
  * @author Tobias Kellner
  * @author Christof Rath
- * @version $Rev: 989 $ $Date: 2007/01/11 19:00:30 $
+ * @version $Rev: 989 $ $Date: 2007/01/22 19:28:28 $
  */
 public class TCPInputStream extends InputStream
 {
@@ -147,17 +147,18 @@ public class TCPInputStream extends InputStream
 	{
 		
 		
-		if (isBufferEmpty() && closed == true)
+		if (isBufferEmpty() || (closed == true))
 			return -1;
-		while (isBufferEmpty()) {
-			//wait(); // block
-			return -1;
-		}
+//		while (isBufferEmpty()) {
+//			//wait(); // block
+//			return -1;
+//		}
 
 		byte out = buffer[readPtr];
 		readPtr = ++readPtr % BUFSIZE;
 		isBufferFull = false;
 		return out & 0xFF;
+	
 	}
 
 	/**

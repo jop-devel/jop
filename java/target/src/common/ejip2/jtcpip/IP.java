@@ -48,7 +48,7 @@ import ejip2.jtcpip.util.NumFunctions;
  * @author Tobias Kellner
  * @author Ulrich Feichter
  * @author Christof Rath
- * @version $Rev: 994 $ $Date: 2007/01/11 19:00:30 $
+ * @version $Rev: 994 $ $Date: 2007/01/22 19:28:28 $
  */
 public class IP {
 	/** Default Time To Live Value */
@@ -90,16 +90,17 @@ public class IP {
 		int maxIndex = NumFunctions.divRoundUp(pLen, 4);
 
 		if (ofs + maxIndex > rsmblPay.payload.length) {
-//			if (Debug.enabled)
-//				Debug
-//						.println(
-//								"Reassembled Payload would be greater than max. Payload size! Offset: "
-//										+ ofs + " max. index: " + maxIndex
-//										+ " Payload.length: "
-//										+ rsmblPay.payload.length, Debug.DBG_IP);
+			// if (Debug.enabled)
+			// Debug
+			// .println(
+			// "Reassembled Payload would be greater than max. Payload size!
+			// Offset: "
+			// + ofs + " max. index: " + maxIndex
+			// + " Payload.length: "
+			// + rsmblPay.payload.length, Debug.DBG_IP);
 
 			ICMP.sendDestUnreach(rsmblPay, 4); // fragmentation needed and DF
-												// set;
+			// set;
 			return;
 		}
 
@@ -109,7 +110,7 @@ public class IP {
 		 */
 
 		switch (pLen % 4) {// copy the last bytes but don't overwrite the
-							// previous content
+		// previous content
 		case 1:
 			fragmtPay.payload[maxIndex] &= 0xFF000000;
 			rsmblPay.payload[ofs + maxIndex] &= 0x00FFFFFF;
@@ -140,7 +141,7 @@ public class IP {
 				pLen / 8);
 
 		if (!IPPacket.isMFSet(fragmtPay)) {// last fragment => calculate bytes
-											// of unfragmented packet
+			// of unfragmented packet
 			rsmblPay.length = pLen + IPPacket.getFragOfs(fragmtPay) * 8;
 
 			// Only the very last datablock that doesn't fall on an eight byte
@@ -167,30 +168,48 @@ public class IP {
 			if (Payload.pool[i] != null
 					&& Payload.pool[i].getStatus() == Payload.PAYLOAD_RESMBL
 					&& (IPPacket.getID(pay) == IPPacket.getID(Payload.pool[i]))) { // just
-																					// received
-																					// a
-																					// packet
-																					// with
-																					// the
-																					// same
-																					// ID
+				// received
+				// a
+				// packet
+				// with
+				// the
+				// same
+				// ID
 				rsmblStore(Payload.pool[i], pay);
 				Payload.freePayload(pay);
 
-//				if (Debug.enabled)
-//					if (Payload.pool[i].length != -1)
-//						Debug.println("Seeing if all "
-//								+ NumFunctions.divRoundUp(
-//										Payload.pool[i].length, 8)
-//								+ " bits are set", Debug.DBG_IP);
+				// if (Debug.enabled)
+				// if (Payload.pool[i].length != -1)
+				// Debug.println("Seeing if all "
+				// + NumFunctions.divRoundUp(
+				// Payload.pool[i].length, 8)
+				// + " bits are set", Debug.DBG_IP);
 
 				if (Payload.pool[i].length != -1 // length is -1 until we got
-													// the last fragment.
+						// the last fragment.
 						&& Payload.pool[i].reassembledBitMap
 								.allSet(NumFunctions.divRoundUp(
 										Payload.pool[i].length, 8))) {
 					Payload.pool[i].setStatus(Payload.PAYLOAD_USED, 0);
-					handlePayload(Payload.pool[i]);
+					//handlePayload(Payload.pool[i]);
+					byte prot = IPPacket.getProtocol(Payload.pool[i]);
+
+					switch (prot) {
+
+					case PROT_TCP:
+						TCP.receivePayload(Payload.pool[i]);
+						break;
+
+					case PROT_UDP:
+						UDP.receivePayload(Payload.pool[i]);
+						break;
+
+					case PROT_ICMP:
+						ICMP.receivePayload(Payload.pool[i]);
+						break;
+					}
+				
+				
 				}
 
 				return;
@@ -214,13 +233,14 @@ public class IP {
 	 * read from the Protocol entry in the IP header. If the protocol is unknown
 	 * (not handled), the packet is dropped.
 	 * 
+	 * NOTE: this function has been inlined!!
+	 * 
 	 * @param pay
 	 *            Packet
 	 */
 	private static void handlePayload(Payload pay) {
 		byte prot = IPPacket.getProtocol(pay);
-		if (Debug.enabled)
-			System.out.println(prot);
+
 		switch (prot) {
 
 		case PROT_TCP:
@@ -353,7 +373,7 @@ public class IP {
 	 */
 	public static void receivePacket(Packet p) {
 
-		//if (Debug.enabled)
+		if (Debug.enabled)
 			Debug.println("Received a packet", Debug.DBG_IP);
 		if (p.len < 20) {
 			if (Debug.enabled)
@@ -387,8 +407,8 @@ public class IP {
 		// accept only packets for our ip or eth broadcasts
 		if (IPPacket.getDestAddr(pay) != Net.linkLayer.getIpAddress()
 				&& !(p.llh[0] == 0xFFFF && p.llh[1] == 0xFFFF && p.llh[2] == 0xFFFF)) {
-//			System.out.println(IPPacket.getDestAddr(pay));
-//			System.out.println(Net.linkLayer.ip);
+			// System.out.println(IPPacket.getDestAddr(pay));
+			// System.out.println(Net.linkLayer.ip);
 			if (Debug.enabled)
 				Debug.println("Packet is not for us... dropping", Debug.DBG_IP);
 			p.setStatus(Packet.FREE);
@@ -402,8 +422,8 @@ public class IP {
 			for (int i = 5; i < headerLength; i++)
 				pay.ipHeader[i] = p.buf[i];
 
-//		if (Debug.enabled)
-//			Debug.println("Captured packet length: ", Debug.DBG_IP);
+		// if (Debug.enabled)
+		// Debug.println("Captured packet length: ", Debug.DBG_IP);
 
 		// check if the packet length is acceptable, drop the packet if wrong
 		int payloadLengtFromIPHeader = ((int) (IPPacket.getLength(pay) & 0xFFFF) - headerLength * 4);
@@ -419,8 +439,8 @@ public class IP {
 		// payload
 		{
 			pay.payload[i] = p.buf[i + headerLength];
-//			if (Debug.enabled)
-//				Debug.print(Debug.intToHexString(pay.payload[i]), Debug.DBG_IP);
+			// if (Debug.enabled)
+			// Debug.print(Debug.intToHexString(pay.payload[i]), Debug.DBG_IP);
 		}
 
 		// Take the min of the length specified in the IP header and the real
@@ -443,9 +463,26 @@ public class IP {
 		} else { // not fragmented
 			if (Debug.enabled)
 				Debug.println("Valid Packet, not fragmented", Debug.DBG_IP);
-			handlePayload(pay);
-		}
+			// TODO: inlined
+			 //handlePayload(pay);
+		
+			byte prot = IPPacket.getProtocol(pay);
 
+			switch (prot) {
+
+			case PROT_TCP:
+				TCP.receivePayload(pay);
+				break;
+
+			case PROT_UDP:
+				UDP.receivePayload(pay);
+				break;
+
+			case PROT_ICMP:
+				ICMP.receivePayload(pay);
+				break;
+			}
+		}
 		/*
 		 * if (Debug.enabled){ Debug.println("version " +
 		 * IPPacket.getVersion(pay)); Debug.println("ihl " +
@@ -479,7 +516,8 @@ public class IP {
 	private static void prepareIPPacket(Payload pay, int destIP, byte protocol) {
 		IPPacket.setIHL(pay, (byte) 0x5);
 		IPPacket.setToS(pay, (byte) 0x0);
-		IPPacket.setLength(pay, (short) (pay.length + IPPacket.getIHL(pay) * 4));
+		IPPacket
+				.setLength(pay, (short) (pay.length + IPPacket.getIHL(pay) * 4));
 		IPPacket.setID(pay, packetID++);
 		IPPacket.clearDF(pay);
 		IPPacket.clearMF(pay);
@@ -490,7 +528,7 @@ public class IP {
 		if ((destIP >= 2130706432) && (destIP <= 2147483647)) // 127.0.0.0/8
 		{
 			IPPacket.setDestAddr(pay, Net.linkLayer.getIpAddress()); // Swapping
-															// addresses for
+			// addresses for
 			// loopback
 			IPPacket.setSrcAddr(pay, destIP);
 		} else {
@@ -509,7 +547,7 @@ public class IP {
 			ICMPPacket.setChecksum(pay);
 			break;
 		}
-		
+
 	}
 
 	/**
@@ -561,10 +599,11 @@ public class IP {
 	 * @param protocol
 	 *            The transport protocol id
 	 */
-	public synchronized static void asyncSendPayload(Payload pay, int destIP, byte protocol) {
+	public synchronized static void asyncSendPayload(Payload pay, int destIP,
+			byte protocol) {
 		if (Debug.enabled)
 			Debug.println("asyncSendPayload", Debug.DBG_IP);
-		
+
 		prepareIPPacket(pay, destIP, protocol);
 		if (Debug.enabled)
 			Debug.println("asyncSendPayload2", Debug.DBG_IP);
@@ -572,7 +611,7 @@ public class IP {
 		pay.setStatus(Payload.PAYLOAD_SND_RD, 0);
 		if (Debug.enabled)
 			Debug.println("asyncSendPayload3", Debug.DBG_IP);
-	
+
 	}
 
 	/**
@@ -592,16 +631,16 @@ public class IP {
 		for (int i = 0; i <= ipAddr.length(); i++) {
 			if (i == ipAddr.length() || ipAddr.charAt(i) == '.') {
 				if (i < ipAddr.length() && ++dots == 4) {
-//					if (Debug.enabled)
-//						Debug.println("Too many dots in " + ipAddr,
-//								Debug.DBG_IP);
+					// if (Debug.enabled)
+					// Debug.println("Too many dots in " + ipAddr,
+					// Debug.DBG_IP);
 					throw ipException;
 				}
 
 				if (ipOctet < 0 || ipOctet > 255) {
-//					if (Debug.enabled)
-//						Debug.println("Wrong IP values in " + ipAddr,
-//								Debug.DBG_IP);
+					// if (Debug.enabled)
+					// Debug.println("Wrong IP values in " + ipAddr,
+					// Debug.DBG_IP);
 					throw ipException;
 				}
 
@@ -611,8 +650,7 @@ public class IP {
 				ipOctet = (short) (ipOctet * 10 + (ipAddr.charAt(i) - '0'));
 			else {
 				if (Debug.enabled)
-					Debug.println("Wrong char in IP address ",
-							Debug.DBG_IP);
+					Debug.println("Wrong char in IP address ", Debug.DBG_IP);
 				throw ipException;
 			}
 		}

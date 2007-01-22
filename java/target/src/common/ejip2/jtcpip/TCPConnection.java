@@ -43,50 +43,50 @@ import ejip2.jtcpip.util.NumFunctions;
  * @author Tobias Kellner
  * @author Ulrich Feichter
  * @author Christof Rath
- * @version $Rev: 989 $ $Date: 2007/01/11 19:00:30 $
+ * @version $Rev: 989 $ $Date: 2007/01/22 19:28:28 $
  */
 public class TCPConnection
 {
 	
 	public boolean wakeup = false;
 	/** Connection state: Closed */
-	protected final static byte STATE_CLOSED = 0;
+	public final static byte STATE_CLOSED = 0;
 
 	/** Connection state: Listen */
 	public final static byte STATE_LISTEN = 1;
 
 	/** Connection state: SYN Sent */
-	protected final static byte STATE_SYN_SENT = 2;
+	public final static byte STATE_SYN_SENT = 2;
 
 	/** Connection state: SYN Received */
-	protected final static byte STATE_SYN_RCVD = 3;
+	public final static byte STATE_SYN_RCVD = 3;
 
 	/** Connection state: Established */
 	public final static byte STATE_ESTABLISHED = 4;
 
 	/** Connection state: FIN Wait 1 */
-	protected final static byte STATE_FIN_WAIT_1 = 5;
+	public final static byte STATE_FIN_WAIT_1 = 5;
 
 	/** Connection state: FIN Wait 2 */
-	protected final static byte STATE_FIN_WAIT_2 = 6;
+	public final static byte STATE_FIN_WAIT_2 = 6;
 
 	/** Connection state: Close Wait */
-	protected final static byte STATE_CLOSE_WAIT = 7;
+	public final static byte STATE_CLOSE_WAIT = 7;
 
 	/** Connection state: Closing */
-	protected final static byte STATE_CLOSING = 8;
+	public final static byte STATE_CLOSING = 8;
 
 	/** Connection state: Last ACK */
-	protected final static byte STATE_LAST_ACK = 9;
+	public final static byte STATE_LAST_ACK = 9;
 
 	/** Connection state: Time Wait */
-	protected final static byte STATE_TIME_WAIT = 10;
+	public final static byte STATE_TIME_WAIT = 10;
 
 	/** Free <code>TCPConnection</code> */
-	protected final static byte TCP_CONN_FREE = 0x01;
+	public final static byte TCP_CONN_FREE = 0x01;
 
 	/** Used <code>TCPConnection</code> */
-	protected final static byte TCP_CONN_USED = 0x02;
+	public final static byte TCP_CONN_USED = 0x02;
 
 	/** The <code>TCPConnection</code> pool */
 	protected static TCPConnection[] pool ;
@@ -593,8 +593,8 @@ public class TCPConnection
 	 */
 	protected synchronized boolean pollConnection()
 	{
-		if (Debug.enabled)
-			Debug.println("------- Polling TCP conn ----------", Debug.DBG_TCP);
+//		if (Debug.enabled)
+//			Debug.println("------- Polling TCP conn ----------", Debug.DBG_TCP);
 //			Debug.println("------- Polling TCP conn " + connNum + " (state: " + getStateName(state)
 //				+ ") ----------", Debug.DBG_TCP);
 		if (state == STATE_LISTEN || state == STATE_CLOSED)

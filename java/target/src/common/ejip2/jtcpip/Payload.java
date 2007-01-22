@@ -42,13 +42,13 @@ import ejip2.jtcpip.util.NumFunctions;
  * @author Tobias Kellner
  * @author Ulrich Feichter
  * @author Christof Rath
- * @version $Rev: 950 $ $Date: 2007/01/11 19:00:30 $
+ * @version $Rev: 950 $ $Date: 2007/01/22 19:28:28 $
  */
-public class Payload
-{
+public class Payload {
 	/** Maximum Data length in words */
-	// TODO: 
-	//private final static int MAXW = NumFunctions.divRoundUp(StackParameters.PAYLOAD_MAX_DATA_SIZE, 4);
+	// TODO:
+	// private final static int MAXW =
+	// NumFunctions.divRoundUp(StackParameters.PAYLOAD_MAX_DATA_SIZE, 4);
 	private final static int MAXW = StackParameters.PAYLOAD_MAX_DATA_SIZE;
 
 	/** Maximum IP Header length */
@@ -61,10 +61,10 @@ public class Payload
 	protected final static byte PAYLOAD_FREE = 0x01;
 
 	/** Used <code>Payload</code> */
-	protected final static byte PAYLOAD_USED = 0x02;
+	public final static byte PAYLOAD_USED = 0x02;
 
 	/** <code>Payload</code> is a future part of a TCP connections */
-	protected final static byte PAYLOAD_WND_RX = 0x03;
+	public final static byte PAYLOAD_WND_RX = 0x03;
 
 	/** <code>Payload</code> marked able to send */
 	protected final static byte PAYLOAD_SND_RD = 0x04;
@@ -85,10 +85,11 @@ public class Payload
 	protected final static byte PAYLOAD_RESMBL = 0x07;
 
 	/** Exception that gets thrown when passes data is too large */
-	private static JtcpipException payloadException ;
+	private static JtcpipException payloadException;
 
 	/** The <code>Payload</code> pool */
-	protected static Payload[] pool ;
+	public static Payload[] pool;
+
 	/**
 	 * Holds the number of <code>Payload</code>s that are currently in a
 	 * waiting state
@@ -100,22 +101,22 @@ public class Payload
 	 * the number of waiting payloads must be correct the setter methode has to
 	 * be used!
 	 */
-	private byte status;
+	public byte status;
 
 	/**
 	 * The <code>Payload</code> data (excluding the first 20 bytes of the IP
 	 * Header)
 	 */
-	protected int[] payload;
+	public int[] payload;
 
 	/** The IP Header (only the first 20 bytes) */
-	protected int[] ipHeader;
+	public int[] ipHeader;
 
 	/**
 	 * Length of <code>Payload</code> data. Length (connection layer, without
 	 * IP header) stored in {@link Payload#payload} in bytes.
 	 */
-	protected int length;
+	public int length;
 
 	/**
 	 * Containing TCP Connection (only needed if the payload is in WND_RX state)
@@ -139,14 +140,13 @@ public class Payload
 	/** Used to mark all received fragments of an incoming payload */
 	protected Bitmap reassembledBitMap;
 
-	
-	public static void init(){
+	public static void init() {
 		payloadException = new JtcpipException(
-		"The buffer exceeds the payload size");
+				"The buffer exceeds the payload size");
 		pool = new Payload[StackParameters.PAYLOAD_POOL_SIZE];
 
 	}
-	
+
 	/**
 	 * Get a new <code>Payload</code>. Tries to find an unused
 	 * <code>Payload</code>, allocates and returns it. If none is found, null
@@ -154,8 +154,7 @@ public class Payload
 	 * 
 	 * @return The <code>Payload</code> (or null)
 	 */
-	public static synchronized Payload newPayload()
-	{
+	public static synchronized Payload newPayload() {
 		/**
 		 * If we can't find a free payload we look for a payload that holds a
 		 * future part of a TCP connection (Payload marked with the
@@ -164,16 +163,14 @@ public class Payload
 		int futureIndex = -1;
 		int futureSeqNr = 0;
 
-		for (int i = 0; i < StackParameters.PAYLOAD_POOL_SIZE; i++)
-		{
+		for (int i = 0; i < StackParameters.PAYLOAD_POOL_SIZE; i++) {
 			if (pool[i] == null)
 				pool[i] = new Payload();
 
-			if (pool[i].status != PAYLOAD_FREE)
-			{
+			if (pool[i].status != PAYLOAD_FREE) {
 				if (pool[i].status == PAYLOAD_WND_RX
-						&& NumFunctions.unsignedGt(TCPPacket.getSeqNr(pool[i]), futureSeqNr) > 0)
-				{
+						&& NumFunctions.unsignedGt(TCPPacket.getSeqNr(pool[i]),
+								futureSeqNr) > 0) {
 					futureIndex = i;
 					futureSeqNr = TCPPacket.getSeqNr(pool[i]);
 				}
@@ -185,8 +182,7 @@ public class Payload
 			return pool[i];
 		}
 
-		if (futureIndex > -1)
-		{
+		if (futureIndex > -1) {
 			freePayload(pool[futureIndex]);
 			pool[futureIndex].setStatus(PAYLOAD_USED, 0);
 			clearPayload(pool[futureIndex]);
@@ -204,8 +200,7 @@ public class Payload
 	 * @param pay
 	 *            the Payload
 	 */
-	private static void clearPayload(Payload pay)
-	{
+	private static void clearPayload(Payload pay) {
 		if (pay == null)
 			return;
 
@@ -221,8 +216,7 @@ public class Payload
 	 * @param pay
 	 *            The <code>Payload</code> to be freed
 	 */
-	public static void freePayload(Payload pay)
-	{
+	public static void freePayload(Payload pay) {
 		if (pay == null)
 			return;
 
@@ -236,13 +230,13 @@ public class Payload
 	 * {@link Payload#newPayload}. Initializes both (payload and ip header)
 	 * arrays.
 	 */
-	private Payload()
-	{
+	private Payload() {
 		payload = new int[MAXW];
 		ipHeader = new int[MAXIPHW];
 		status = PAYLOAD_FREE;
 
-		reassembledBitMap = new Bitmap(NumFunctions.divRoundUp(StackParameters.PAYLOAD_MAX_DATA_SIZE, 8));
+		reassembledBitMap = new Bitmap(NumFunctions.divRoundUp(
+				StackParameters.PAYLOAD_MAX_DATA_SIZE, 8));
 	}
 
 	/**
@@ -259,28 +253,26 @@ public class Payload
 	 * @throws JtcpipException
 	 *             Data too large
 	 */
-	public void setData(int offset, byte[] buffer, int firstByte, int count) throws JtcpipException
-	{
+	public void setData(int offset, byte[] buffer, int firstByte, int count)
+			throws JtcpipException {
 		length = offset * 4 + count;
 		if (length > StackParameters.PAYLOAD_MAX_DATA_SIZE)
 			throw payloadException;
 
-		for (int i = 0; i < count; i++)
-		{
-			switch (i % 4)
-			{
-				case 0:
-					payload[offset] = buffer[firstByte + i] << 24;
-					break;
-				case 1:
-					payload[offset] |= (buffer[firstByte + i] & 0xFF) << 16;
-					break;
-				case 2:
-					payload[offset] |= (buffer[firstByte + i] & 0xFF) << 8;
-					break;
-				case 3:
-					payload[offset] |= buffer[firstByte + i] & 0xFF;
-					offset++;
+		for (int i = 0; i < count; i++) {
+			switch (i % 4) {
+			case 0:
+				payload[offset] = buffer[firstByte + i] << 24;
+				break;
+			case 1:
+				payload[offset] |= (buffer[firstByte + i] & 0xFF) << 16;
+				break;
+			case 2:
+				payload[offset] |= (buffer[firstByte + i] & 0xFF) << 8;
+				break;
+			case 3:
+				payload[offset] |= buffer[firstByte + i] & 0xFF;
+				offset++;
 			}
 		}
 	}
@@ -292,17 +284,16 @@ public class Payload
 	 * @param msTimeout
 	 *            timeout in milli seconds
 	 */
-	protected synchronized void setStatus(byte newStatus, int msTimeout)
-	{
-		if (Debug.enabled){
+	protected synchronized void setStatus(byte newStatus, int msTimeout) {
+		if (Debug.enabled) {
 			Debug.println("Status change", Debug.DBG_OTHER);
-//			Byte byt = new Byte(status);
-//			Debug.print(byt.toString(),Debug.DBG_OTHER);
-//			Debug.print(" -> ",Debug.DBG_OTHER);
-//			Byte byt1 = new Byte(newStatus);
-//			Debug.print(byt1.toString(), Debug.DBG_OTHER);
-//			Debug.println(" T: ", Debug.DBG_OTHER);
-//			
+			// Byte byt = new Byte(status);
+			// Debug.print(byt.toString(),Debug.DBG_OTHER);
+			// Debug.print(" -> ",Debug.DBG_OTHER);
+			// Byte byt1 = new Byte(newStatus);
+			// Debug.print(byt1.toString(), Debug.DBG_OTHER);
+			// Debug.println(" T: ", Debug.DBG_OTHER);
+			//			
 		}
 		if (status <= PAYLOAD_WND_RX && newStatus > PAYLOAD_WND_RX)
 			numWaitingPayloads++;
@@ -312,15 +303,13 @@ public class Payload
 
 		status = newStatus;
 
-		if (status == PAYLOAD_FRAGMT)
-		{
+		if (status == PAYLOAD_FRAGMT) {
 			timeout = 0;
 			nextFragOffset = msTimeout;
-		}
-		else{
-			if(msTimeout > 0){
-			timeout = System.currentTimeMillis() + msTimeout;
-			}else{
+		} else {
+			if (msTimeout > 0) {
+				timeout = System.currentTimeMillis() + msTimeout;
+			} else {
 				timeout = 0;
 			}
 		}
@@ -331,8 +320,7 @@ public class Payload
 	 * 
 	 * @return byte
 	 */
-	protected synchronized byte getStatus()
-	{
+	protected synchronized byte getStatus() {
 		return status;
 	}
 
@@ -341,8 +329,7 @@ public class Payload
 	 * 
 	 * @return boolean
 	 */
-	protected boolean isTimeout()
-	{
+	protected boolean isTimeout() {
 		return timeout > 0 ? System.currentTimeMillis() > timeout : false;
 	}
 
@@ -352,9 +339,9 @@ public class Payload
 	 * 
 	 * @return The offset for the next fragment
 	 */
-	protected int getOffset()
-	{
-		return (status == PAYLOAD_FRAGMT || status == PAYLOAD_RESMBL) ? nextFragOffset : 0;
+	protected int getOffset() {
+		return (status == PAYLOAD_FRAGMT || status == PAYLOAD_RESMBL) ? nextFragOffset
+				: 0;
 	}
 
 	/**
@@ -365,8 +352,7 @@ public class Payload
 	 * @param curOffset
 	 *            Offset of the current fragment
 	 */
-	protected void setOffset(int curOffset)
-	{
+	protected void setOffset(int curOffset) {
 		if (curOffset < nextFragOffset)
 			nextFragOffset = curOffset;
 	}
@@ -377,28 +363,32 @@ public class Payload
 	 * 
 	 * @return the number of payloads that are to be processed
 	 */
-	public synchronized static short waitingPayloadCount()
-	{
+	public synchronized static short waitingPayloadCount() {
 		return numWaitingPayloads;
 	}
 
 	/**
 	 * Checks if a payload contains a certain seqNr.
 	 * 
-	 * @param seqNr the sequence number to look for
-	 * @param pay the Payload to check
+	 * @param seqNr
+	 *            the sequence number to look for
+	 * @param pay
+	 *            the Payload to check
 	 * @return whether the Payload contains the seqNr
 	 */
-	public static boolean isSeqNrInPayload(int seqNr, Payload pay)
-	{
-//		if(Debug.enabled)
-//			Debug.println("seqNext: ",Debug.DBG_OTHER);//+ seqNr + " seq payload" + TCPPacket.getSeqNr(pay), Debug.DBG_TCP);
-		return NumFunctions.isBetweenOrEqualSmaller(
-				TCPPacket.getSeqNr(pay),
-				TCPPacket.getSeqNr(pay)	+ TCP.calculateSegmentLength(pay),
+	public static boolean isSeqNrInPayload(int seqNr, Payload pay) {
+		if (Debug.enabled)
+			Debug.println("seqNextNrinPayload ", Debug.DBG_TCP);// + seqNr + "
+		// seq payload"
+		// +
+		// TCPPacket.getSeqNr(pay),
+		// Debug.DBG_TCP);
+
+		return NumFunctions.isBetweenOrEqualSmaller(TCPPacket.getSeqNr(pay),
+				TCPPacket.getSeqNr(pay) + TCP.calculateSegmentLength(pay),
 				seqNr);
 	}
-	
+
 	/**
 	 * Look for a payload which contains a certain seqNr.
 	 * 
@@ -409,20 +399,43 @@ public class Payload
 	 * @return the <code>Payload</code> or <code>null</code> if none was
 	 *         found
 	 */
-	public synchronized static Payload findPayload(TCPConnection conn, int seqNr)
-	{
+	public synchronized static Payload findPayload(TCPConnection conn, int seqNr) {
 		Payload pay;
-		for (int i = 0; i < StackParameters.PACKET_POOL_SIZE; i++)
-		{
+		for (int i = 0; i < StackParameters.PACKET_POOL_SIZE; i++) {
 			pay = pool[i];
 			if (pay == null)
-				//continue;
+				continue;
 			if (pay.status != PAYLOAD_WND_RX)
-				//continue;
+				continue;
 			if (pay.conn != conn)
-				//continue;
-			if (isSeqNrInPayload(seqNr, pay))
-			{
+				continue;
+			// inline----------------------(isSeqNrInPayload(seqNr, pay)
+			// if (isSeqNrInPayload(seqNr, pay))
+
+			boolean isSeqNumberInPl = false;
+
+			int seqLength = TCPPacket.getDataLength(pay);
+			if (TCPPacket.isFINFlagSet(pay))
+				seqLength++;
+			if (TCPPacket.isSYNFlagSet(pay))
+				seqLength++;
+
+			int smallerVal = TCPPacket.getSeqNr(pay);
+			int testVal = seqNr;
+			int biggerVal = TCPPacket.getSeqNr(pay) + seqLength;
+
+			if (smallerVal == testVal)
+				isSeqNumberInPl = true;
+			if (biggerVal < smallerVal)
+				isSeqNumberInPl = ((testVal >= smallerVal) && (testVal <= Integer.MAX_VALUE))
+						|| ((testVal >= Integer.MIN_VALUE) && (testVal < biggerVal));
+			else
+				isSeqNumberInPl = (testVal >= smallerVal)
+						&& (testVal < biggerVal);
+
+			// inline----------------------(isSeqNrInPayload(seqNr, pay)---end
+
+			if (isSeqNumberInPl) {
 				// So they won't get freed
 				pay.status = PAYLOAD_USED;
 				return pay;

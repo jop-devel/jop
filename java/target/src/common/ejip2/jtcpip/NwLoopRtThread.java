@@ -47,14 +47,13 @@ import ejip2.jtcpip.util.Debug;
  * @author Christof Rath
  * @version $Rev: 984 $ $Date: 2007/01/22 19:28:28 $
  */
-public class NwLoopThread // extends RtThread
-{
+public class NwLoopRtThread extends RtThread {
 	public static TCPConnection conn = null;
 
 	public static Payload pay = null;
 
 	/** Holds the instance for the singelton pattern */
-	private static NwLoopThread nwLoop;
+	private static NwLoopRtThread nwLoop;
 
 	/**
 	 * Holds a references to the LinkLayer instances to call the
@@ -80,105 +79,113 @@ public class NwLoopThread // extends RtThread
 	 * @param msDelay
 	 *            Delay in milli seconds between two calls
 	 */
-	private NwLoopThread(LinkLayer linkLayer, int msDelay) {
+	private NwLoopRtThread(LinkLayer linkLayer, int msDelay) {
+		super(10, 10000);
 		Packet.init();
 		this.linkLayer = linkLayer;
 	}
 
 	public void run() {
-		// Dbg.wr("NWLOOP\n");
+		for (;;) {
+		//	Dbg.wr("NWLOOP\n");
 
-		if (cycleCnt % tcpModulus == 0) {
-			int conToTest = cycleCnt / tcpModulus;
-			if (TCPConnection.pool[conToTest] != null
-					&& TCPConnection.pool[conToTest].getState() != TCPConnection.STATE_CLOSED) {
-				if (!TCPConnection.pool[conToTest].pollConnection())
-					TCPConnection.retryToSendData = conToTest;
+			waitForNextPeriod();
+			if (cycleCnt % tcpModulus == 0) {
+				int conToTest = cycleCnt / tcpModulus;
+				if (TCPConnection.pool[conToTest] != null
+						&& TCPConnection.pool[conToTest].getState() != TCPConnection.STATE_CLOSED) {
+					if (!TCPConnection.pool[conToTest].pollConnection())
+						TCPConnection.retryToSendData = conToTest;
+				}
+			} else {
+				if (TCPConnection.retryToSendData > -1) {
+					if (TCPConnection.pool[TCPConnection.retryToSendData]
+							.pollConnection())
+						TCPConnection.retryToSendData = -1;
+				}
 			}
-		} else {
-			if (TCPConnection.retryToSendData > -1) {
-				if (TCPConnection.pool[TCPConnection.retryToSendData]
-						.pollConnection())
-					TCPConnection.retryToSendData = -1;
-			}
-		}
 
-		int cnt = Payload.waitingPayloadCount();
+			int cnt = Payload.waitingPayloadCount();
 
-		if (cnt > 0) {
-			byte status;
+			if (cnt > 0) {
+				byte status;
 
-			for (int i = 0; i < StackParameters.PAYLOAD_POOL_SIZE; i++) {
-				status = Payload.pool[i].getStatus();
-				if (status > Payload.PAYLOAD_WND_RX) {
-					cnt--;
-					switch (status) {
-					case Payload.PAYLOAD_FRAGMT:
-					case Payload.PAYLOAD_SND_RD:
-						if (preparedSend(Payload.pool[i])) {
-							// Everything ok -> free payload
-							Payload.freePayload(Payload.pool[i]);
-						}
-						break;
-
-					case Payload.PAYLOAD_ARP_WT:
-						if (Arp.inCache(IPPacket.getDestAddr(Payload.pool[i]))) {
-							if (Payload.pool[i].getOffset() == 0)
-								Payload.pool[i].setStatus(
-										Payload.PAYLOAD_SND_RD, 0);
-							else
-								Payload.pool[i].setStatus(
-										Payload.PAYLOAD_FRAGMT, Payload.pool[i]
-												.getOffset());
-						}
-
-						if (Payload.pool[i].isTimeout()) {
-							if (Debug.enabled)
-								Debug.println("ARP timeout!", Debug.DBG_OTHER);
-							Payload.freePayload(Payload.pool[i]);
-							// No one to inform (ICMP) -> free payload
-						}
-						break;
-
-					case Payload.PAYLOAD_RESMBL:
-						if (Payload.pool[i].isTimeout()) {
-							if (Payload.pool[i].getOffset() == 0)
-								// The first fragment has been received
-								// -> So we can inform the remote host
-								ICMP.sendTimeExceeded(Payload.pool[i]);
-							else
+				for (int i = 0; i < StackParameters.PAYLOAD_POOL_SIZE; i++) {
+					status = Payload.pool[i].getStatus();
+					if (status > Payload.PAYLOAD_WND_RX) {
+						cnt--;
+						switch (status) {
+						case Payload.PAYLOAD_FRAGMT:
+						case Payload.PAYLOAD_SND_RD:
+							if (preparedSend(Payload.pool[i])) {
+								// Everything ok -> free payload
 								Payload.freePayload(Payload.pool[i]);
-							// Just free the payload
-						}
-						break;
+							}
+							break;
 
-					default:
-						if (Debug.enabled)
-							Debug.println("Unknown Payload status: ",
-									Debug.DBG_OTHER);
+						case Payload.PAYLOAD_ARP_WT:
+							if (Arp.inCache(IPPacket
+									.getDestAddr(Payload.pool[i]))) {
+								if (Payload.pool[i].getOffset() == 0)
+									Payload.pool[i].setStatus(
+											Payload.PAYLOAD_SND_RD, 0);
+								else
+									Payload.pool[i].setStatus(
+											Payload.PAYLOAD_FRAGMT,
+											Payload.pool[i].getOffset());
+							}
+
+							if (Payload.pool[i].isTimeout()) {
+								if (Debug.enabled)
+									Debug.println("ARP timeout!",
+											Debug.DBG_OTHER);
+								Payload.freePayload(Payload.pool[i]);
+								// No one to inform (ICMP) -> free payload
+							}
+							break;
+
+						case Payload.PAYLOAD_RESMBL:
+							if (Payload.pool[i].isTimeout()) {
+								if (Payload.pool[i].getOffset() == 0)
+									// The first fragment has been received
+									// -> So we can inform the remote host
+									ICMP.sendTimeExceeded(Payload.pool[i]);
+								else
+									Payload.freePayload(Payload.pool[i]);
+								// Just free the payload
+							}
+							break;
+
+						default:
+							if (Debug.enabled)
+								Debug.println("Unknown Payload status: ",
+										Debug.DBG_OTHER);
+						}
 					}
+
+					if (cnt <= 0)
+						break;
 				}
 
-				if (cnt <= 0)
-					break;
 			}
-		}
 
-		Packet p = Packet.getPacket(Packet.RCV, Packet.ALLOC);
-		if (p != null){ 
-			IP.receivePacket(p);
-			Dbg.wr("Ip.receive returned\n");
-		}
-		if((conn != null) && (pay != null)){
-			TCP.sendPackets(conn, pay);
-			conn = null;
-			pay = null;
+			Packet p = Packet.getPacket(Packet.RCV, Packet.ALLOC);
+			if (p != null) {
+				IP.receivePacket(p);
+				Dbg.wr("Ip.receive returned\n");
+			}
+			if ((conn != null) && (pay != null)) {
+				TCP.sendPackets(conn, pay);
+				conn = null;
+				pay = null;
+			}
+
+			cycleCnt++;
+			if (cycleCnt >= StackParameters.NW_LOOP_CYCLES)
+				cycleCnt = 0;
+
 		}
 		
-		cycleCnt++;
-		if (cycleCnt >= StackParameters.NW_LOOP_CYCLES)
-			cycleCnt = 0;
-
 	}
 
 	/**
@@ -259,9 +266,9 @@ public class NwLoopThread // extends RtThread
 	 * @param linkLayer
 	 * @return The instance of the network loop
 	 */
-	public static NwLoopThread createInstance(LinkLayer linkLayer) {
+	public static NwLoopRtThread createInstance(LinkLayer linkLayer) {
 		if (nwLoop == null) {
-			nwLoop = new NwLoopThread(linkLayer,
+			nwLoop = new NwLoopRtThread(linkLayer,
 					StackParameters.NW_LOOP_TIMEOUT);
 			// nwLoop.start();
 		}
@@ -274,7 +281,7 @@ public class NwLoopThread // extends RtThread
 	 * 
 	 * @return NwLoopThread
 	 */
-	public static NwLoopThread getInstance() {
+	public static NwLoopRtThread getInstance() {
 		return nwLoop;
 	}
 }

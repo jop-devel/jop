@@ -37,9 +37,11 @@ package ejip2.jtcpip.test;
  * @author Nelson Langkamp
  */
 
+import java.io.IOException;
+
 import ejip2.LinkLayer;
 import ejip2.Net;
-import ejip2.jtcpip.NwLoopThread;
+import ejip2.jtcpip.NwLoopRtThread;
 import ejip2.jtcpip.TCP;
 import ejip2.jtcpip.TCPConnection;
 
@@ -47,25 +49,22 @@ import joprt.RtThread;
 import util.Dbg;
 import util.Timer;
 
-
-
 public class TestListenRtThread {
 
 	static Net net;
 
 	static LinkLayer ipLink;
 
-	static NwLoopThread nwlt;
+	static RtThread nwlt;
 
 	static TCPConnection conn = null;
 
-	
 	public static void main(String[] args) {
 
 		Dbg.initSerWait();
 		// initialize jop to use ip and mac
-		ipLink = Net.init("129.27.142.183", "00:01:02:03:04:05");
-		nwlt = NwLoopThread.createInstance(ipLink);
+		ipLink = Net.init("129.27.142.183", "05:01:02:03:04:05");
+		nwlt = NwLoopRtThread.createInstance(ipLink);
 		ejip2.jtcpip.UDPConnection.init();
 		ejip2.jtcpip.TCPConnection.init();
 		ejip2.jtcpip.Payload.init();
@@ -73,48 +72,19 @@ public class TestListenRtThread {
 		ejip2.jtcpip.util.NumFunctions.init();
 		ejip2.jtcpip.IP.init();
 		ejip2.Arp.init();
-		int time = 10000;
-		
-		new RtThread(10, time) {
 
-			public void run() {
-				TCPConnection tmp = null;
-				int my_byte = 0;
-				short port = 44;
-				TCPConnection conn = TCPConnection.newConnection(port);
-				conn.setState(TCPConnection.STATE_LISTEN);
+		ListenThread listenThread = new ListenThread(8, 10000);
+		//
+		// new RtThread(9, 5000) {
+		// public void run() {
+		// for (;;) {
+		// waitForNextPeriod();
+		// nwlt.run();
+		// }
+		// }
+		// };
 
-				if (conn == null)
-					return;
-
-				for (;;) {
-					waitForNextPeriod();
-					if (tmp == null) {
-						tmp = TCP.listen(port, conn);
-						if (tmp != null)
-							Dbg.wr("CONNECTION\n");
-					} else {
-						Dbg.wr("reading\n");
-						my_byte = tmp.iStream.read();
-						if (my_byte != -1) {
-							Dbg.wr("print\n");
-							Dbg.wr((char) my_byte);
-						}
-					}
-				}
-			}
-		};
-
-		new RtThread(10, time) {
-			public void run() {
-				for (;;) {
-					waitForNextPeriod();
-					nwlt.run();
-				}
-			}
-		};
-
-		new RtThread(10, time) {
+		new RtThread(10, 2500) {
 			public void run() {
 				for (;;) {
 					waitForNextPeriod();
@@ -123,7 +93,6 @@ public class TestListenRtThread {
 			}
 		};
 
-	
 		RtThread.startMission();
 
 		// forever();
@@ -146,6 +115,50 @@ public class TestListenRtThread {
 				Timer.loop();
 			}
 			Timer.wd();
+		}
+	}
+}
+
+class ListenThread extends RtThread {
+
+	public ListenThread(int prio, int us) {
+		super(prio, us);
+		// TODO Auto-generated constructor stub
+	}
+
+	public void run() {
+		TCPConnection conn = null;
+		short port = 44;
+		// while is to be able to open up another connection 
+		// after previous was closed
+		while (true) {
+			// TODO: only one connection for now
+			conn = TCP.listen(port, this);
+
+			// do something
+			for (;;) {
+
+				// do echo
+				int tmp = 0;
+				while ((tmp = conn.iStream.read()) != -1) {
+					Dbg.wr("input: ");
+					Dbg.wr((char) tmp);
+					Dbg.wr('\n');
+					// do Echo
+					try {
+						conn.oStream.write(tmp);
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+
+				if (conn.getState() == TCPConnection.STATE_CLOSE_WAIT
+						|| conn.getState() == TCPConnection.STATE_CLOSED) {
+					conn = null;
+					break;
+				}
+				waitForNextPeriod();
+			}
 		}
 	}
 }
