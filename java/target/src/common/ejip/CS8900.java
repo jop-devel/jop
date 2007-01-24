@@ -54,11 +54,11 @@ public class CS8900 extends LinkLayer {
 	 */
 	private static boolean txFree; // ready for next transmit
 
-	static int[] eth; // own ethernet address
+	// FIXME: schould be pacakge - change it when jtcpip is moved
+	// to ejip
+	public static int[] eth; // own ethernet address
 
 	private static int mac_low, mac_mid, mac_hi;
-
-	static int ip; // ip address for the interface
 
 	private static int tx_packets;
 
@@ -527,7 +527,6 @@ public class CS8900 extends LinkLayer {
 		mac_mid = mac[2] << 8 | mac[3];
 		mac_low = mac[4] << 8 | mac[5];
 
-		ip = ipaddr;
 
 		tx_packets = 0;
 		// tx_bytes = 0;
@@ -538,6 +537,7 @@ public class CS8900 extends LinkLayer {
 		rx_dropped = 0;
 
 		single = new CS8900();
+		single.ip = ipaddr;
 
 		single.reset();
 
@@ -997,7 +997,7 @@ public class CS8900 extends LinkLayer {
 		//
 		int i = p.llh[6]; // type field of ethernet header
 		if (i == ETH_ARP) { // ARP type
-			Arp.receive(p, eth, ip);
+			Arp.receive(p, eth, single.ip);
 		} else if (i == ETH_IP) { // IP type
 			p.setStatus(Packet.RCV); // inform upper layer
 

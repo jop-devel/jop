@@ -152,8 +152,9 @@ class Entry {
 public class Arp {
 	
 	
+	// TODO: change back to package visible
 	
-	protected static void init() {
+	public static void init() {
 		Entry.init();
 	}
 
@@ -259,8 +260,8 @@ public class Arp {
 //		+ (p.interf.getIpAddress() >>> 16);
 //		p.buf[4] = (p.interf.getIpAddress() << 16); // we don't know the
 
-		p.buf[3] = (eth[4]<<24) + (eth[5]<<16) + (CS8900.ip>>>16);
-		p.buf[4] = (CS8900.ip<<16);	// we don't know the dest. eth. addr.
+		p.buf[3] = (eth[4]<<24) + (eth[5]<<16) + (CS8900.single.ip>>>16);
+		p.buf[4] = (CS8900.single.ip<<16);	// we don't know the dest. eth. addr.
 		p.buf[5] = 0;
 		p.buf[6] = ip_dest;			// destination IP address
 		p.len = 46;				// why 46?

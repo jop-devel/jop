@@ -97,10 +97,6 @@ private static int simSendErr, simRcvErr;
 */
 	private static int sent;
 
-/**
-*	ip address.
-*/
-	private static int ip;
 
 /**
 *	The one and only reference to this object.
@@ -120,7 +116,6 @@ private static int simSendErr, simRcvErr;
 */
 	public static LinkLayer init(Serial serPort, int ipAddr) {
 
-		ip = ipAddr;
 
 		if (single != null) return single;	// allready called init()
 
@@ -135,6 +130,7 @@ private static int simSendErr, simRcvErr;
 		ser = serPort;
 
 		single = new Slip();
+		single.ip = ipAddr;
 
 		return single;
 	}

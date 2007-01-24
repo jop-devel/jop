@@ -118,10 +118,6 @@ public class Ppp extends LinkLayer {
 *	remote ip address.
 */
 	private static int ipRemote;
-/**
-*	ip address.
-*/
-	private static int ip;
 
 /**
 *	request for reconnect.
@@ -166,7 +162,6 @@ public class Ppp extends LinkLayer {
 		connCount = 0;
 
 		lcpId = 0x11;
-		ip = 0;
 		ipRemote = 0;
 		reconnectRequest = false;
 		disconnectRequest = false;
@@ -177,6 +172,7 @@ public class Ppp extends LinkLayer {
 		// new Serial(serAddr, 10, 3000);
 
 		single = new Ppp();
+		single.ip = 0;
 		rth = pppThread;
 
 		return single;

@@ -45,10 +45,6 @@ public class Loopback extends LinkLayer {
 
 	private static final int MAX_BUF = 1500;		// or should we use 1006
 
-/**
-*	ip address.
-*/
-	private static int ip;
 
 /**
 *	The one and only reference to this object.
@@ -66,11 +62,11 @@ public class Loopback extends LinkLayer {
 */
 	public static LinkLayer init() {
 
-		ip = (127<<24) + (0<<16) + (0<<8) + 1;
 
 		if (single != null) return single;	// allready called init()
 
 		single = new Loopback();
+		single.ip = (127<<24) + (0<<16) + (0<<8) + 1;
 		return single;
 	}
 

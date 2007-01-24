@@ -125,7 +125,7 @@ public class BgPpp extends LinkLayer {
 /**
 *	ip address.
 */
-	private static int ip;
+//	private static int ip;
 
 /**
 *	request for reconnect.
@@ -172,7 +172,6 @@ public class BgPpp extends LinkLayer {
 		connCount = 0;
 
 		lcpId = 0x11;
-		ip = 0;
 		ipRemote = 0;
 		reconnectRequest = false;
 		disconnectRequest = false;
@@ -185,6 +184,7 @@ public class BgPpp extends LinkLayer {
 		// new Serial(serAddr, 10, 3000);
 
 		single = new BgPpp();
+		single.ip = 0;
 		rth = pppThread;
 
 		return single;

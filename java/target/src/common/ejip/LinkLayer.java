@@ -41,15 +41,17 @@ package ejip;
  * LinkLayer driver.
  */
 public abstract class LinkLayer {
+	
+	
 	/** Own IP address */
-//	int ip; // own ip address
-// TODO: use this one instead of the static in CS8900, SLIP, and PPP
+	public int ip; // own ip address
+// TODO: make ip, gateway, netmask package visible again
 
 	/** */
-	int gateway;
+	public int gateway;
 
 	/** Subnet mask */
-	int netmask;
+	public int netmask;
 
 
 	public abstract int getIpAddress();
