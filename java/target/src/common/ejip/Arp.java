@@ -253,6 +253,12 @@ public class Arp {
 		int eth[] = CS8900.eth;	// we have only the static filed in CS8900
 		
 		p.buf[2] = (eth[0]<<24) + (eth[1]<<16) + (eth[2]<<8) + eth[3];
+
+		// could be this way
+//		p.buf[3] = (eth[4] << 24) + (eth[5] << 16)
+//		+ (p.interf.getIpAddress() >>> 16);
+//		p.buf[4] = (p.interf.getIpAddress() << 16); // we don't know the
+
 		p.buf[3] = (eth[4]<<24) + (eth[5]<<16) + (CS8900.ip>>>16);
 		p.buf[4] = (CS8900.ip<<16);	// we don't know the dest. eth. addr.
 		p.buf[5] = 0;
