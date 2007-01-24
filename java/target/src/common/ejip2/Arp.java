@@ -279,8 +279,8 @@ public class Arp {
 
 		p.buf[2] = (eth[0] << 24) + (eth[1] << 16) + (eth[2] << 8) + eth[3];
 		p.buf[3] = (eth[4] << 24) + (eth[5] << 16)
-				+ (Net.linkLayer.getIpAddress() >>> 16);
-		p.buf[4] = (Net.linkLayer.getIpAddress() << 16); // we don't know the
+				+ (p.interf.getIpAddress() >>> 16);
+		p.buf[4] = (p.interf.getIpAddress() << 16); // we don't know the
 		// dest. eth. addr.
 		p.buf[5] = 0;
 		p.buf[6] = ip_dest; // destination IP address
