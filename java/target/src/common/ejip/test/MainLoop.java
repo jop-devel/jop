@@ -62,7 +62,7 @@ public class MainLoop {
 		Dbg.initSerWait();
 
 		net = Net.init();
-		int[] eth = {0x00, 0xe0, 0x98, 0x33, 0xb0, 0xf7, 0xf8};
+		int[] eth = {0x00, 0xe0, 0x98, 0x33, 0xb0, 0xf8};
 		int ip = (192<<24) + (168<<16) + (0<<8) + 123;
 		ipLink = CS8900.init(eth, ip);
 

@@ -30,7 +30,7 @@
 
 package ejip;
 
-import ejip2.LinkLayer;
+import ejip.LinkLayer;
 
 /**
 *	Start device driver threads and poll for packets.
