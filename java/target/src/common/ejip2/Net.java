@@ -11,18 +11,20 @@ import ejip2.jtcpip.util.Debug;
  * @author Ulrich Feichter
  * @author Tobias Kellner
  * @author Christof Rath
- * @version $Rev: 905 $ $Date: 2007/01/14 22:17:53 $
+ * @version $Rev: 905 $ $Date: 2007/01/24 18:38:03 $
  */
 public class Net {
 	/**
 	 * Holds a reference to the actual LinkLayer to abstract the source of the
 	 * IP address
+	 * 
+	 * TODO: should not be that global! We can have more link layers.
 	 */
 	public static LinkLayer linkLayer;
 
-	public static int[] eth; // own ethernet address
+	public static int[] ethX; // own ethernet address
 
-	public static int ip; // own ip address
+	public static int ipX; // own ip address
 
 	
 	/**
@@ -45,20 +47,20 @@ public class Net {
 	 */
 	//TODO: this is dangerous!
 	
-	public static Net init() {
+	public static Net init_not_used() {
 
 		if (single != null)
 			return single; // allready called init()
 
-		eth = new int[6];
-		eth[0] = 0x00;
-		eth[1] = 0xe0;
-		eth[2] = 0x98;
-		eth[3] = 0x33;
-		eth[4] = 0xb0;
-		eth[5] = 0xf7; // this is eth card for chello
-		eth[5] = 0xf8;
-		ip = (192 << 24) + (168 << 16) + (0 << 8) + 123;
+//		eth = new int[6];
+//		eth[0] = 0x00;
+//		eth[1] = 0xe0;
+//		eth[2] = 0x98;
+//		eth[3] = 0x33;
+//		eth[4] = 0xb0;
+//		eth[5] = 0xf7; // this is eth card for chello
+//		eth[5] = 0xf8;
+//		ip = (192 << 24) + (168 << 16) + (0 << 8) + 123;
 		// ip = (192<<24) + (168<<16) + (0<<8) + 4;
 
 		Udp.init();
@@ -82,8 +84,8 @@ public class Net {
 	 * 
 	 * @throws JtcpipException
 	 */
-	public static void initNet() {
-		init(StackParameters.INIT_IP_ADDR, StackParameters.INIT_MAC);
+	public static void initNet_not_used() {
+//		init(StackParameters.INIT_IP_ADDR, StackParameters.INIT_MAC);
 	}
 	
 	
@@ -106,23 +108,23 @@ public class Net {
 	 * @throws JtcpipException
 	 * @throws JtcpipException
 	 */
-	public static LinkLayer init(String myIpAddr, String macAddr) {
+//	public static LinkLayer init_not_used(String myIpAddr, String macAddr) {
 
-		eth = new int[6];
-		eth[0] = 0x00;
-		eth[1] = 0x05;
-		eth[2] = 0x02;
-		eth[3] = 0x03;
-		eth[4] = 0x04;
-		eth[5] = 0x07;
-
-		ip = (192 << 24) + (168 << 16) + (0 << 8) + 123;
-		// ip = ipStringToInt(myIpAddr);
-		// StringFunctions.macStrToByteArr(macAddr, mac);
-
-		linkLayer = CS8900.init(eth, ip);
+//		eth = new int[6];
+//		eth[0] = 0x00;
+//		eth[1] = 0x05;
+//		eth[2] = 0x02;
+//		eth[3] = 0x03;
+//		eth[4] = 0x04;
+//		eth[5] = 0x07;
+//
+//		ip = (192 << 24) + (168 << 16) + (0 << 8) + 123;
+//		// ip = ipStringToInt(myIpAddr);
+//		// StringFunctions.macStrToByteArr(macAddr, mac);
+//
+//		linkLayer = CS8900.init(eth, ip);
 		// NwLoopThread.createInstance(linkLayer);
-		return linkLayer;
+//		return linkLayer;
 
 		//		
 		// while (linkLayer.ip == 0)
@@ -160,45 +162,45 @@ public class Net {
 		// System.out.println("Retry DHCP request.");
 		// }
 		// }
-	}
+//	}
 
-	public static int ipStringToInt(String ipAddr) {
-		byte dots = 0;
-		short ipOctet = 0;
-		int ipInt = 0;
-		for (int i = 0; i <= ipAddr.length(); i++) {
-			if (i == ipAddr.length() || ipAddr.charAt(i) == '.') {
-				if (i < ipAddr.length() && ++dots == 4) {
-					if (Debug.enabled)
-						Debug.println("Too many dots in  ipAddr", Debug.DBG_IP);
-
-				}
-
-				if (ipOctet < 0 || ipOctet > 255) {
-					if (Debug.enabled)
-						Debug
-								.println("Wrong IP values in ipAddr",
-										Debug.DBG_IP);
-
-				}
-
-				ipInt = (ipInt << 8) | (ipOctet & 0xFF);
-				ipOctet = 0;
-			} else if (ipAddr.charAt(i) >= '0' && ipAddr.charAt(i) <= '9')
-				ipOctet = (short) (ipOctet * 10 + (ipAddr.charAt(i) - '0'));
-			else {
-				if (Debug.enabled)
-					Debug.println("Wrong char in IP address ipAddr",
-							Debug.DBG_IP);
-
-			}
-		}
-
-		if (dots != 3) {
-			if (Debug.enabled)
-				Debug.println("IP address too short ipAddr", Debug.DBG_IP);
-
-		}
-		return ipInt;
-	}
+//	public static int ipStringToInt_not_used(String ipAddr) {
+//		byte dots = 0;
+//		short ipOctet = 0;
+//		int ipInt = 0;
+//		for (int i = 0; i <= ipAddr.length(); i++) {
+//			if (i == ipAddr.length() || ipAddr.charAt(i) == '.') {
+//				if (i < ipAddr.length() && ++dots == 4) {
+//					if (Debug.enabled)
+//						Debug.println("Too many dots in  ipAddr", Debug.DBG_IP);
+//
+//				}
+//
+//				if (ipOctet < 0 || ipOctet > 255) {
+//					if (Debug.enabled)
+//						Debug
+//								.println("Wrong IP values in ipAddr",
+//										Debug.DBG_IP);
+//
+//				}
+//
+//				ipInt = (ipInt << 8) | (ipOctet & 0xFF);
+//				ipOctet = 0;
+//			} else if (ipAddr.charAt(i) >= '0' && ipAddr.charAt(i) <= '9')
+//				ipOctet = (short) (ipOctet * 10 + (ipAddr.charAt(i) - '0'));
+//			else {
+//				if (Debug.enabled)
+//					Debug.println("Wrong char in IP address ipAddr",
+//							Debug.DBG_IP);
+//
+//			}
+//		}
+//
+//		if (dots != 3) {
+//			if (Debug.enabled)
+//				Debug.println("IP address too short ipAddr", Debug.DBG_IP);
+//
+//		}
+//		return ipInt;
+//	}
 }
