@@ -84,7 +84,9 @@ evn = true;
 		//
 		// don't use CS8900 when simulating on PC
 		if (!simpc) {
-			ipLink = CS8900.init(Net.eth, Net.ip);
+			int[] eth = {0x00, 0xe0, 0x98, 0x33, 0xb0, 0xf8};
+			int ip = (192<<24) + (168<<16) + (0<<8) + 123;
+			ipLink = CS8900.init(eth, ip);
 			// use instead Slip for PC simulation
 			// LinkLayer ipLink = Slip.init(Const.IO_UART_BG_MODEM_BASE,
 			//	(192<<24) + (168<<16) + (1<<8) + 2); 
