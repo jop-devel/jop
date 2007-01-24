@@ -63,7 +63,7 @@ public class TestListenRtThread {
 
 		Dbg.initSerWait();
 		// initialize jop to use ip and mac
-		ipLink = Net.init("129.27.142.183", "05:01:02:03:04:05");
+		ipLink = Net.init("129.168.0.123", "05:01:02:03:04:05");
 		nwlt = NwLoopRtThread.createInstance(ipLink);
 		ejip2.jtcpip.UDPConnection.init();
 		ejip2.jtcpip.TCPConnection.init();
