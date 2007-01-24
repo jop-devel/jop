@@ -9,7 +9,7 @@ public class TestTcp2 {
 
 	public static void main(String[] args) {
 		try {
-			socket = new Socket("129.168.0.123", 44);
+			socket = new Socket("192.168.0.123", 44);
 		} catch (Exception e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
