@@ -30,14 +30,23 @@
 
 package ejip;
 
+import ejip2.LinkLayer;
+
 /**
 *	Start device driver threads and poll for packets.
 */
 
 public class Net {
+	
+	/**
+	 * Holds a reference to the actual LinkLayer to abstract the source of the
+	 * IP address
+	 * 
+	 * TODO: should not be that global! We can have more link layers.
+	 * FIXME: remove it!!!! - used by jtcpip
+	 */
+	public static LinkLayer linkLayer;
 
-	public static int[] eth;				// own ethernet address
-	public static int ip;					// own ip address
 
 /**
 *	The one and only reference to this object.
@@ -57,24 +66,10 @@ public class Net {
 
 		if (single != null) return single;			// allready called init()
 
-		eth = new int[6];
-		eth[0] = 0x00;
-		eth[1] = 0xe0;
-		eth[2] = 0x98;
-		eth[3] = 0x33;
-		eth[4] = 0xb0;
-		eth[5] = 0xf7;		// this is eth card for chello
-		eth[5] = 0xf8;
-		ip = (192<<24) + (168<<16) + (0<<8) + 123;
-		// ip = (192<<24) + (168<<16) + (0<<8) + 4;
-
 		Udp.init();
 		Packet.init();
 		TcpIp.init();
 
-		//
-		//	start my own thread
-		//
 		single = new Net();
 		
 		return single;
