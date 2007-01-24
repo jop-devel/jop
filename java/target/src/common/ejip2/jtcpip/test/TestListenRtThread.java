@@ -39,6 +39,7 @@ package ejip2.jtcpip.test;
 
 import java.io.IOException;
 
+import ejip2.CS8900;
 import ejip2.LinkLayer;
 import ejip2.Net;
 import ejip2.jtcpip.NwLoopRtThread;
@@ -63,7 +64,9 @@ public class TestListenRtThread {
 
 		Dbg.initSerWait();
 		// initialize jop to use ip and mac
-		ipLink = Net.init("129.168.0.123", "05:01:02:03:04:05");
+		int[] eth = {0x00, 0x05, 0x02, 0x03, 0x04, 0x07};
+		ipLink = CS8900.init(eth , (192 << 24) + (168 << 16) + (0 << 8) + 123);
+		Net.linkLayer = ipLink;
 		nwlt = NwLoopRtThread.createInstance(ipLink);
 		ejip2.jtcpip.UDPConnection.init();
 		ejip2.jtcpip.TCPConnection.init();
