@@ -19,6 +19,11 @@ public class RealtimeSystem {
 	 
 	static Vector rtaLst, rsaLst;
 	
+    public static void start(MissionMode m) {}
+
+    public static void changeMode(MissionMode m) {}
+
+	
 	/**
 	 * Starts the real-time system (teh mission).
 	 * All periodic and sporadic RT-events are scheduled. 
