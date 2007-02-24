@@ -10,4 +10,7 @@ public abstract class PeriodicThread extends RealtimeThread {
 		super(period, period, 0, 0);		
 	}
 
+	public PeriodicThread(javax.realtime.RelativeTime period) {
+		super(period.getUs(), period.getUs(), 0, 0);
+	}
 }
