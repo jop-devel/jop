@@ -224,6 +224,9 @@
 		<mkdir dir="${target}/dist/lib"/>
 		<mkdir dir="${target}/dist/bin"/>
 		
+		<tempfile property="empty.dir" destDir="${java.io.tmpdir}"/>
+		<mkdir dir="${empty.dir}"/>
+
 		<javac
 			destdir="${target}/dist/classes"
 			sourcepathref="target-source"
@@ -234,9 +237,9 @@
 			<!-- If any of these are an empty string, Ant uses the default instead. So, we give them dummy values. -->
 			<!-- This works for all but classpath, for which Ant removes any non-existent paths. -->
 			<!-- MS: this is needed for Java 1.5 -->
-			<bootclasspath path="null"/>
-			<extdirs path="null"/>
-			<classpath path="null"/>
+			<bootclasspath path="${empty.dir}"/>
+			<extdirs path="${empty.dir}"/>
+			<classpath path="${empty.dir}"/>
 			<src path="${target}/src/common"/>
 			<include name="com/jopdesign/sys/*.java"/>
 		</javac>
@@ -252,14 +255,16 @@
 			<!-- This works for all but classpath, for which Ant removes any non-existent paths. -->
 <!-- MS: I did this for Java 1.5 tests with the collection classes
 	don't remember if it is necessary for 1.5 - probably cleaner
-	for building a target with it's own JDK
-			<bootclasspath path="null"/>
-			<extdirs path="null"/>
-			<classpath path="null"/>
+	for building a target with its own JDK
+			<bootclasspath path="${empty.dir}"/>
+			<extdirs path="${empty.dir}"/>
+			<classpath path="${empty.dir}"/>
 -->
 			<src path="${basedir}"/> 
 			<include name="${target-app}"/> 
 		</javac>
+		
+		<delete dir="${empty.dir}"/>
 		 
 		<jar destfile="${target}/dist/lib/classes.zip" basedir="${target}/dist/classes"/> 
 		 

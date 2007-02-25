@@ -151,11 +151,14 @@
 		<!-- 	<arg line="${jopdir}/simulation/tb_jop_sram16.vhd"/> -->
 		<!-- </vcom> -->
 
+<!--
 		<input message="Start simulation (y/n)?" validargs="y,n" addproperty="start-simulation"/>
 		<condition property="abort-simulation">
 			<equals arg1="n" arg2="${start-simulation}"/>
 		</condition>
 		<fail if="abort-simulation">Simulation aborted.</fail>
+
+-->
 		
 		<exec executable="vsim" failonerror="true">
 			<arg line="-do sim.do tb_jop"/>
