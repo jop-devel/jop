@@ -158,8 +158,8 @@
 		</condition>
 		<fail if="abort-simulation">Simulation aborted.</fail>
 
+		<input>Press Enter to start the simulation.</input>
 -->
-		
 		<exec executable="vsim" failonerror="true">
 			<arg line="-do sim.do tb_jop"/>
 		</exec>
