@@ -335,7 +335,7 @@ laload:
 			// arrayref is TOS
 			dup					// for null pointer check
 			dup					// for bound check, one cycle wait for bz
-			bz	null_point			// we do the following in the
+			bz	null_pointer			// we do the following in the
 			// branch slot -> one more element
 			// from the former dup on the stack
 			ldi	1
