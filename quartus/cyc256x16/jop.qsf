@@ -31,7 +31,7 @@ set_global_assignment -name PROJECT_CREATION_TIME_DATE "20:32:02  AUGUST 07, 200
 set_global_assignment -name LAST_QUARTUS_VERSION "6.0 SP1"
 set_global_assignment -name DEVICE_FILTER_PIN_COUNT 240
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_80.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_types.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/core/jop_types.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc_pll.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/fifo.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_uart.vhd

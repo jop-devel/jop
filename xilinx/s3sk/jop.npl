@@ -19,7 +19,7 @@ SIMULATORTIME 0
 DEVGENERATEDSIMULATIONMODEL VHDL
 GENERATEDSIMULATIONMODELTIME 0
 SOURCE ..\..\vhdl\top\jop_config_xs3.vhd
-SOURCE ..\..\vhdl\top\jop_types.vhd
+SOURCE ..\..\vhdl\core\jop_types.vhd
 SOURCE ..\..\vhdl\scio\fifo.vhd
 SOURCE ..\..\vhdl\scio\sc_uart.vhd
 SOURCE ..\..\vhdl\scio\sc_cnt.vhd

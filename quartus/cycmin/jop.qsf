@@ -30,7 +30,7 @@ set_global_assignment -name ORIGINAL_QUARTUS_VERSION 4.0
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "02:05:59  APRIL 04, 2004"
 set_global_assignment -name LAST_QUARTUS_VERSION 6.1
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_80.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_types.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/core/jop_types.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc_pll.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/fifo.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_uart.vhd

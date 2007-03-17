@@ -44,7 +44,7 @@ set_global_assignment -name TCO_REQUIREMENT "6 ns"
 set_global_assignment -name RESERVE_ALL_UNUSED_PINS_NO_OUTPUT_GND "AS INPUT TRI-STATED"
 
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_de2.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_types.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/core/jop_types.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/fifo.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_uart.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_cnt.vhd
