@@ -21,7 +21,3 @@ package jop_types is
 	end record;
 
 end jop_types;
-
-package body jop_types is
-
-end jop_types;
