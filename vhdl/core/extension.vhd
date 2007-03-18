@@ -42,10 +42,11 @@ use ieee.std_logic_1164.all ;
 use ieee.numeric_std.all ;
 
 use work.jop_types.all;
+use work.sc_pack.all;
 
 entity extension is
 
-generic (exta_width : integer; io_addr_bits : integer);
+generic (exta_width : integer);
 
 port (
 	clk, reset	: in std_logic;
@@ -71,12 +72,8 @@ port (
 	
 -- SimpCon master io interface
 
-	scio_address		: out std_logic_vector(io_addr_bits-1 downto 0);
-	scio_wr_data		: out std_logic_vector(31 downto 0);
-	scio_rd, scio_wr	: out std_logic;
-	scio_rd_data		: in std_logic_vector(31 downto 0);
-	scio_rdy_cnt		: in unsigned(1 downto 0)
-
+	sc_io_out		: out sc_io_out_type;
+	sc_io_in		: in sc_in_type
 );
 end extension;
 
@@ -123,7 +120,7 @@ end component mul;
 --	SimpCon specific signals
 --
 	-- SimpCon IO write address
-	signal sc_wr_addr			: std_logic_vector(io_addr_bits-1 downto 0);
+	signal sc_wr_addr			: std_logic_vector(IO_ADDR_SIZE-1 downto 0);
 	signal sc_bsy				: std_logic;
 	signal sc_rd				: std_logic;
 
@@ -170,7 +167,7 @@ begin
 			if was_a_mem_rd='1' then
 				exr <= mem_data;
 			else
-				exr <= scio_rd_data;
+				exr <= sc_io_in.rd_data;
 			end if;
 		elsif (ext_addr="101") then
 			exr <= mul_dout;
@@ -243,7 +240,7 @@ end process;
 	-- system or the SimpCon device
 	bsy <= wr_dly or mem_bsy or sc_bsy;
 
-	sc_bsy <= '1' when scio_rdy_cnt=3 else '0';
+	sc_bsy <= '1' when sc_io_in.rdy_cnt=3 else '0';
 
 --
 --	store write address (msb)
@@ -263,7 +260,7 @@ begin
 
 		if wraddr_wr='1' then
 			-- store SimpCon write address
-			sc_wr_addr <= ain(io_addr_bits-1 downto 0);
+			sc_wr_addr <= ain(IO_ADDR_SIZE-1 downto 0);
 			wraddr_msb <= ain(31);
 		end if;
 
@@ -281,9 +278,9 @@ end process;
 	sc_rd <= mem_scio_rd and ain(31);
 	-- we need the additional signal for the addr MUX
 	-- can be avoided when removing the wr addr store.
-	scio_rd <= sc_rd;
-	scio_wr <= mem_scio_wr and wraddr_msb;
-	scio_wr_data <= ain;
+	sc_io_out.rd <= sc_rd;
+	sc_io_out.wr <= mem_scio_wr and wraddr_msb;
+	sc_io_out.wr_data <= ain;
 
 --
 --	SimpCon address MUX
@@ -297,9 +294,9 @@ end process;
 process(ain, sc_wr_addr, sc_rd)
 begin
 	if sc_rd='1' then
-		scio_address <= ain(io_addr_bits-1 downto 0);
+		sc_io_out.address <= ain(IO_ADDR_SIZE-1 downto 0);
 	else
-		scio_address <= sc_wr_addr;
+		sc_io_out.address <= sc_wr_addr;
 	end if;
 end process;
 

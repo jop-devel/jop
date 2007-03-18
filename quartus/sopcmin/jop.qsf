@@ -45,6 +45,7 @@ set_global_assignment -name RESERVE_ALL_UNUSED_PINS_NO_OUTPUT_GND "AS INPUT TRI-
 
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_60.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/jop_types.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_pack.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc_pll.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/fifo.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_uart.vhd
@@ -66,6 +67,7 @@ set_global_assignment -name VHDL_FILE ../../vhdl/core/cache.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/mul.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/shift.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/stack.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/core/jopcpu.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_avalon.vhd
 set_global_assignment -name VHDL_FILE jop_system.vhd
 set_global_assignment -name VHDL_FILE altera_europa_support.vhd

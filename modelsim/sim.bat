@@ -4,7 +4,8 @@ set options=-93 -quiet
 rmdir /S/Q work
 vlib work
 vcom %options% %jopdir%/simulation/sim_jop_config_100.vhd
-vcom %options% %jopdir%/top/jop_types.vhd
+vcom %options% %jopdir%/core/jop_types.vhd
+vcom %options% %jopdir%/simpcon/sc_pack.vhd
 vcom %options% %jopdir%/simulation/sim_ram.vhd
 vcom %options% %jopdir%/simulation/sim_pll.vhd
 vcom %options% %jopdir%/simulation/sim_jbc.vhd
@@ -32,6 +33,7 @@ vcom %options% %jopdir%/core/stack.vhd
 vcom %options% %jopdir%/core/core.vhd
 vcom %options% %jopdir%/scio/sc_cnt.vhd
 vcom %options% %jopdir%/scio/scio_min.vhd
+vcom %options% %jopdir%/core/jopcpu.vhd
 vcom %options% %jopdir%/top/jopcyc.vhd
 vcom %options% %jopdir%/simulation/tb_jop.vhd
 rem vcom %options% %jopdir%/top/jop_256x16.vhd

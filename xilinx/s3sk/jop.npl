@@ -20,6 +20,7 @@ DEVGENERATEDSIMULATIONMODEL VHDL
 GENERATEDSIMULATIONMODELTIME 0
 SOURCE ..\..\vhdl\top\jop_config_xs3.vhd
 SOURCE ..\..\vhdl\core\jop_types.vhd
+SOURCE ..\..\vhdl\simpcon\sc_pack.vhd
 SOURCE ..\..\vhdl\scio\fifo.vhd
 SOURCE ..\..\vhdl\scio\sc_uart.vhd
 SOURCE ..\..\vhdl\scio\sc_cnt.vhd
@@ -41,5 +42,6 @@ SOURCE ..\..\vhdl\offtbl.vhd
 SOURCE ..\..\vhdl\rom.vhd
 SOURCE ..\..\vhdl\xilinx\xram.vhd
 SOURCE ..\..\vhdl\xram_block.vhd
+SOURCE ..\..\vhdl\core\jopcpu.vhd
 SOURCE ..\..\vhdl\top\jop_xs3.vhd
 DEPASSOC jop jop.ucf

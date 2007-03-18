@@ -20,6 +20,7 @@
 --	2003-08-15	us counter, irq added
 --	2005-11-30	change interface to SimpCon
 --	2006-01-11	added exception
+--	2007-03-17	changed interrupts to records
 --
 
 library ieee;
@@ -44,11 +45,11 @@ port (
 	rd_data		: out std_logic_vector(31 downto 0);
 	rdy_cnt		: out unsigned(1 downto 0);
 
-	irq		: out std_logic;
-	irq_ena	: out std_logic;
-
+--
+--	Interrupts from IO devices
+--
+	irq_in		: out irq_in_type;
 	exc_req		: in exception_type;
-	exc_int		: out std_logic;
 
 	wd		: out std_logic
 );
@@ -148,7 +149,7 @@ process(clk, reset, timer_int, yield_int) begin
 
 end process;
 
-	irq <= timer or yield;
+	irq_in.irq <= timer or yield;
 
 
 --
@@ -183,30 +184,30 @@ process(clk, reset)
 begin
 	if (reset='1') then
 
-		irq_ena <= '0';
+		irq_in.irq_ena <= '0';
 		irq_cnt <= (others => '0');
 		int_ack <= '0';
 		wd <= '0';
 
 		exc_type <= (others => '0');
-		exc_int <= '0';
+		irq_in.exc_int <= '0';
 
 	elsif rising_edge(clk) then
 
 		int_ack <= '0';
 		yield_int <= '0';
 
-		exc_int <= '0';
+		irq_in.exc_int <= '0';
 
 		if exc_req.spov='1' then
 			exc_type(0) <= '1';
-			exc_int <= '1';
+			irq_in.exc_int <= '1';
 		end if;
 
 		if wr='1' then
 			case address(2 downto 0) is
 				when "000" =>
-					irq_ena <= wr_data(0);
+					irq_in.irq_ena <= wr_data(0);
 				when "001" =>
 					irq_cnt <= wr_data;
 					int_ack <= '1';
@@ -216,7 +217,7 @@ begin
 					wd <= wr_data(0);
 				when others =>
 					exc_type <= wr_data(7 downto 0);
-					exc_int <= '1';
+					irq_in.exc_int <= '1';
 			end case;
 		end if;
 

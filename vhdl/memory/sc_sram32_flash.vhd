@@ -27,21 +27,20 @@ use IEEE.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 use work.jop_types.all;
+use work.sc_pack.all;
 
 entity sc_mem_if is
-generic (ram_ws : integer; rom_ws : integer; addr_bits : integer);
+generic (ram_ws : integer; rom_ws : integer);
 
 port (
 
 	clk, reset	: in std_logic;
 
--- SimpCon interface
-
-	address		: in std_logic_vector(addr_bits-1 downto 0);
-	wr_data		: in std_logic_vector(31 downto 0);
-	rd, wr		: in std_logic;
-	rd_data		: out std_logic_vector(31 downto 0);
-	rdy_cnt		: out unsigned(1 downto 0);
+--
+--	SimpCon memory interface
+--
+	sc_mem_out		: in sc_mem_out_type;
+	sc_mem_in		: out sc_in_type;
 
 -- memory interface
 
@@ -102,22 +101,22 @@ architecture rtl of sc_mem_if is
 
 begin
 
-	assert addr_bits>=21 report "Too less address bits";
+	assert MEM_ADDR_SIZE>=21 report "Too less address bits";
 	ram_dout_en <= dout_ena;
 
-	rdy_cnt <= cnt;
+	sc_mem_in.rdy_cnt <= cnt;
 
 --
 --	decode ram/flash
 --	The signals are only valid for the first cycle
 --
-process(address(20 downto 19))
+process(sc_mem_out.address(20 downto 19))
 begin
 
 	trans_ram <= '0';
 	trans_flash <= '0';
 
-	case address(20 downto 19) is
+	case sc_mem_out.address(20 downto 19) is
 		when "00" =>
 			trans_ram <= '1';
 		when "01" =>
@@ -145,13 +144,13 @@ begin
 
 	elsif rising_edge(clk) then
 
-		if rd='1' or wr='1' then
+		if sc_mem_out.rd='1' or sc_mem_out.wr='1' then
 			if trans_ram='1' then
 				ram_access <= '1';
-				ram_addr <= address(17 downto 0);
+				ram_addr <= sc_mem_out.address(17 downto 0);
 			else
 				ram_access <= '0';
-				fl_a <= address(18 downto 0);
+				fl_a <= sc_mem_out.address(18 downto 0);
 				-- select flash type
 				-- and keep it selected
 				if trans_flash='1' then
@@ -161,11 +160,11 @@ begin
 				end if;
 			end if;
 		end if;
-		if wr='1' then
+		if sc_mem_out.wr='1' then
 			if trans_ram='1' then
-				ram_dout <= wr_data;
+				ram_dout <= sc_mem_out.wr_data;
 			else
-				flash_dout <= wr_data(7 downto 0);
+				flash_dout <= sc_mem_out.wr_data(7 downto 0);
 			end if;
 		end if;
 		if ram_data_ena='1' then
@@ -187,9 +186,9 @@ process(ram_access, ram_data, flash_data, nand_rdy)
 
 begin
 	if (ram_access='1') then
-		rd_data <= ram_data;
+		sc_mem_in.rd_data <= ram_data;
 	else
-		rd_data <= std_logic_vector(to_unsigned(0, 32-9)) & nand_rdy & flash_data;
+		sc_mem_in.rd_data <= std_logic_vector(to_unsigned(0, 32-9)) & nand_rdy & flash_data;
 	end if;
 end process;
 
@@ -211,7 +210,7 @@ end process;
 --
 --	next state logic
 --
-process(state, rd, wr, trans_ram, wait_state)
+process(state, sc_mem_out.rd, sc_mem_out.wr, trans_ram, wait_state)
 
 begin
 
@@ -220,7 +219,7 @@ begin
 	case state is
 
 		when idl =>
-			if rd='1' then
+			if sc_mem_out.rd='1' then
 				if trans_ram='1' then
 					if ram_ws=0 then
 						-- then we omit state rd1!
@@ -231,7 +230,7 @@ begin
 				else
 					next_state <= fl_rd1;
 				end if;
-			elsif wr='1' then
+			elsif sc_mem_out.wr='1' then
 				if trans_ram='1' then
 					next_state <= wr1;
 				else
@@ -252,14 +251,14 @@ begin
 			-- level of 2 for read
 			-- we don't care about a flash trans.
 			-- in the pipeline!
-			if rd='1' then
+			if sc_mem_out.rd='1' then
 				if ram_ws=0 then
 					-- then we omit state rd1!
 					next_state <= rd2;
 				else
 					next_state <= rd1;
 				end if;
-			elsif wr='1' then
+			elsif sc_mem_out.wr='1' then
 				next_state <= wr1;
 			end if;
 			
@@ -401,7 +400,7 @@ begin
 			cnt <= wait_state(1 downto 0)-1;
 		end if;
 
-		if rd='1' or wr='1' then
+		if sc_mem_out.rd='1' or sc_mem_out.wr='1' then
 			if trans_ram='1' then
 				wait_state <= to_unsigned(ram_ws+1, 4);
 				if ram_ws<3 then

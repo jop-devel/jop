@@ -47,6 +47,7 @@ set_global_assignment -name VERILOG_FILE ../../ext/ac97/ac97_sout.v
 set_global_assignment -name VERILOG_FILE ../../ext/ac97/ac97_top.v
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_60.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/jop_types.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_pack.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/wishbone/wb_pack.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc_pll.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/fifo.vhd
@@ -71,6 +72,7 @@ set_global_assignment -name VHDL_FILE ../../vhdl/core/cache.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/mul.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/shift.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/stack.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/core/jopcpu.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jopcyc12.vhd
 set_global_assignment -name CDF_FILE jop.cdf
 set_global_assignment -name CDF_FILE jrun.cdf

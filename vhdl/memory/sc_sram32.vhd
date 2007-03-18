@@ -14,6 +14,7 @@
 --
 --
 --	2005-11-22	first version
+--	2007-03-17	changed SimpCon to records
 --
 
 Library IEEE;
@@ -21,6 +22,7 @@ use IEEE.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 use work.jop_types.all;
+use work.sc_pack.all;
 
 entity sc_mem_if is
 generic (ram_ws : integer; addr_bits : integer);
@@ -29,13 +31,11 @@ port (
 
 	clk, reset	: in std_logic;
 
--- SimpCon interface
-
-	address		: in std_logic_vector(addr_bits-1 downto 0);
-	wr_data		: in std_logic_vector(31 downto 0);
-	rd, wr		: in std_logic;
-	rd_data		: out std_logic_vector(31 downto 0);
-	rdy_cnt		: out unsigned(1 downto 0);
+--
+--	SimpCon memory interface
+--
+	sc_mem_out		: in sc_mem_out_type;
+	sc_mem_in		: out sc_in_type;
 
 -- memory interface
 
@@ -71,9 +71,10 @@ architecture rtl of sc_mem_if is
 
 begin
 
+	assert MEM_ADDR_SIZE>=addr_bits report "Too less address bits";
 	ram_dout_en <= dout_ena;
 
-	rdy_cnt <= cnt;
+	sc_mem_in.rdy_cnt <= cnt;
 
 --
 --	Register memory address, write data and read data
@@ -84,18 +85,18 @@ begin
 
 		ram_addr <= (others => '0');
 		ram_dout <= (others => '0');
-		rd_data <= (others => '0');
+		sc_mem_in.rd_data <= (others => '0');
 
 	elsif rising_edge(clk) then
 
-		if rd='1' or wr='1' then
-			ram_addr <= address;
+		if sc_mem_out.rd='1' or sc_mem_out.wr='1' then
+			ram_addr <= sc_mem_out.address(addr_bits-1 downto 0);
 		end if;
-		if wr='1' then
-			ram_dout <= wr_data;
+		if sc_mem_out.wr='1' then
+			ram_dout <= sc_mem_out.wr_data;
 		end if;
 		if rd_data_ena='1' then
-			rd_data <= ram_din;
+			sc_mem_in.rd_data <= ram_din;
 		end if;
 
 	end if;
@@ -119,7 +120,7 @@ end process;
 --
 --	next state logic
 --
-process(state, rd, wr, wait_state)
+process(state, sc_mem_out.rd, sc_mem_out.wr, wait_state)
 
 begin
 
@@ -129,14 +130,14 @@ begin
 	case state is
 
 		when idl =>
-			if rd='1' then
+			if sc_mem_out.rd='1' then
 				if ram_ws=0 then
 					-- then we omit state rd1!
 					next_state <= rd2;
 				else
 					next_state <= rd1;
 				end if;
-			elsif wr='1' then
+			elsif sc_mem_out.wr='1' then
 				next_state <= wr1;
 			end if;
 
@@ -151,14 +152,14 @@ begin
 			next_state <= idl;
 			-- This should do to give us a pipeline
 			-- level of 2 for read
-			if rd='1' then
+			if sc_mem_out.rd='1' then
 				if ram_ws=0 then
 					-- then we omit state rd1!
 					next_state <= rd2;
 				else
 					next_state <= rd1;
 				end if;
-			elsif wr='1' then
+			elsif sc_mem_out.wr='1' then
 				next_state <= wr1;
 			end if;
 			
@@ -258,7 +259,7 @@ begin
 			cnt <= wait_state(1 downto 0)-1;
 		end if;
 
-		if rd='1' or wr='1' then
+		if sc_mem_out.rd='1' or sc_mem_out.wr='1' then
 			wait_state <= to_unsigned(ram_ws+1, 4);
 			if ram_ws<3 then
 				cnt <= to_unsigned(ram_ws+1, 2);

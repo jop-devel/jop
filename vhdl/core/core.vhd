@@ -42,6 +42,8 @@ library ieee ;
 use ieee.std_logic_1164.all ;
 use ieee.numeric_std.all ;
 
+use work.jop_types.all;
+
 entity core is
 
 generic (
@@ -71,10 +73,8 @@ port (
 
 -- interrupt from io
 
-	irq			: in std_logic;
-	irq_ena		: in std_logic;
+	irq_in		: in irq_in_type;
 
-	exc_int		: in std_logic;
 	sp_ov		: out std_logic;
 
 	aout		: out std_logic_vector(width-1 downto 0);
@@ -109,10 +109,7 @@ port (
 
 	jbr			: in std_logic;
 
-	irq			: in std_logic;			-- interrupt request (positiv edge sensitive)
-	irq_ena		: in std_logic;			-- interrupt enable (pendig int is fired on ena)
-
-	exc_int		: in std_logic;			-- exception interrupt
+	irq_in		: in irq_in_type;
 
 	jpaddr		: out std_logic_vector(pc_width-1 downto 0);	-- address for JVM
 	opd			: out std_logic_vector(15 downto 0)				-- operands
@@ -277,8 +274,7 @@ begin
 			jbc_addr, jbc_data,
 			jfetch, jopdfetch,
 			stk_zf, stk_nf, stk_eq, stk_lt, jbr,
-			irq, irq_ena,
-			exc_int,
+			irq_in,
 			jpaddr, opd);
 
 	cmp_fch: fetch generic map (pc_width, i_width)

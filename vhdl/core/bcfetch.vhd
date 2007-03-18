@@ -31,6 +31,8 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+use work.jop_types.all;
+
 entity bcfetch is
 
 generic (
@@ -57,10 +59,7 @@ port (
 
 	jbr			: in std_logic;
 
-	irq			: in std_logic;			-- interrupt request (positiv edge sensitive)
-	irq_ena		: in std_logic;			-- interrupt enable (pendig int is fired on ena)
-
-	exc_int		: in std_logic;			-- exception interrupt
+	irq_in		: in irq_in_type;
 
 	jpaddr		: out std_logic_vector(pc_width-1 downto 0);	-- address for JVM
 	opd			: out std_logic_vector(15 downto 0)				-- operands
@@ -129,15 +128,15 @@ process(clk, reset) begin
 	elsif rising_edge(clk) then
 
 		irq_dly <= irq_gate;
-		exc_dly <= exc_int;
+		exc_dly <= irq_in.exc_int;
 
 		if trig='1' then
 			int_pend <= '1';
-		elsif sys_int='1' or irq_ena='0' then
+		elsif sys_int='1' or irq_in.irq_ena='0' then
 			int_pend <= '0';
 		end if;
 
-		if exc_int='1' and exc_dly='0' then
+		if irq_in.exc_int='1' and exc_dly='0' then
 			exc_pend <= '1';
 		elsif sys_exc='1' then
 			exc_pend <= '0';
@@ -146,7 +145,7 @@ process(clk, reset) begin
 
 end process;
 
-	irq_gate <= irq and irq_ena;
+	irq_gate <= irq_in.irq and irq_in.irq_ena;
 	trig <= irq_gate and not irq_dly;
 	sys_int <= int_pend and jfetch;
 
