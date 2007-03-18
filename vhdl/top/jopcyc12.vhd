@@ -92,13 +92,7 @@ port (
 	io_b	: inout std_logic_vector(10 downto 1);
 	io_l	: inout std_logic_vector(20 downto 1);
 	io_r	: inout std_logic_vector(20 downto 1);
-	io_t	: inout std_logic_vector(6 downto 1);
---
---	dummy input pins for EP1C6 on board with EP1C12 pinout
---	EP1C12 has additional GND and VCCINT pins.
---
-	dummy_gnd		: out std_logic_vector(5 downto 0);
-	dummy_vccint	: out std_logic_vector(5 downto 0)
+	io_t	: inout std_logic_vector(6 downto 1)
 );
 end jop;
 
