@@ -85,6 +85,7 @@
 //				programming
 //	2006-12-29	2K ROM, laload, lastore enabled again, dup2_x1, dup2_x2
 //	2006-12-30	add instanceof to invoke JVM.java with constant on TOS
+//	2007-03-17	new VHDL structure: jopcpu and more records (SimpCon)
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -94,7 +95,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20061230
+version		= 20070317
 
 //
 //	io address are negativ memory addresses
@@ -840,6 +841,7 @@ goto:		nop opd
 
 getstatic_ref:
 getstatic:
+
 			ldm	cp opd
 			nop	opd
 			ld_opd_16u
@@ -888,6 +890,7 @@ getfield:
 				//	ref = readMem(ref);
 				// }
 				// stack[sp] = readMem(ref+off);
+
 
 			dup				// null pointer check
 			nop				// could be interleaved with
