@@ -135,7 +135,7 @@ end process;
 --	addr, read stage:
 --		decode from ir (only logic, no register)
 --
-process(ir, ir(2 downto 0))
+process(ir)
 begin
 
 -- ram wraddress and wrena are registered
