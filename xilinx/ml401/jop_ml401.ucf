@@ -3,7 +3,7 @@
 # Design provided for ML401 Virtex-4 Board.
 
 #NET "clk" TNM_NET = "clk";
-TIMESPEC "TS_clk" = PERIOD "clk" 10 ns HIGH 50 %;
+#TIMESPEC "TS_clk" = PERIOD "clk" 10 ns HIGH 50 %;
 
 NET "clk" LOC = "AE14";
 NET "sram_clk" LOC = "AF7";
