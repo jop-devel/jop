@@ -43,4 +43,4 @@ SOURCE ..\..\vhdl\xilinx\xram.vhd
 SOURCE ..\..\vhdl\xv4ram_block.vhd
 SOURCE ..\..\vhdl\core\jopcpu.vhd
 SOURCE ..\..\vhdl\top\jop_ml401.vhd
-DEPASSOC jop jop_ml401.ucf
+DEPASSOC jop jop.ucf
