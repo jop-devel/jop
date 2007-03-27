@@ -93,7 +93,6 @@ signal s_expo3 : std_logic_vector(8 downto 0);
 
 signal s_infa, s_infb : std_logic;
 signal s_nan_in, s_nan_op, s_nan_a, s_nan_b : std_logic;
-signal s_opa_dn, s_opb_dn : std_logic;
 
 begin
 
@@ -146,7 +145,7 @@ begin
 	begin
 	if rising_edge(clk_i) then
 		if s_exp_10a(9)='1' or s_exp_10a="0000000000" then
-			v_shr1 := "0000000001" - s_exp_10a;
+			v_shr1 := "0000000001" - s_exp_10a + ("000000000"&s_carry);
 			v_shl1 := (others =>'0');
 			s_expo1 <= "000000001";
 		else
@@ -253,12 +252,14 @@ begin
 
 	s_ine_o <= '1' when s_op_0='0' and (s_lost or or_reduce(s_frac2a(22 downto 0)) or s_overflow)='1' else '0';
 	
-	process(s_sign_i, s_expo3, s_frac3, s_nan_in, s_nan_op, s_infa, s_infb, s_overflow)
+	process(s_sign_i, s_expo3, s_frac3, s_nan_in, s_nan_op, s_infa, s_infb, s_overflow, s_r_zeros)
 	begin
 		if (s_nan_in or s_nan_op)='1' then
 			s_output_o <= s_sign_i & QNAN;
 		elsif (s_infa or s_infb)='1' or s_overflow='1' then
 				s_output_o <= s_sign_i & INF;	
+		elsif s_r_zeros=48 then
+				s_output_o <= s_sign_i & ZERO_VECTOR;			
 		else
 				s_output_o <= s_sign_i & s_expo3(7 downto 0) & s_frac3(22 downto 0);
 

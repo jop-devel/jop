@@ -1,0 +1,7 @@
+==fpu_v16==
+1) Corrected an embarrassing sytax error in "tb_fpu.vhd": start_i <= 0 to start_i <= '0'
+2) In "serial_div.vhd" and "sqrt.vhd": unused bits in some signals were initialized. 
+3)Not need line in "fpusim.bat" was removed.
+
+==fpu_v17==
+1)Corrected bug related to adding two denormalized operands.

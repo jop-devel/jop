@@ -103,8 +103,8 @@ end fpu;
 architecture rtl of fpu is
     
 
-	constant MUL_SERIAL: integer range 0 to 1 := 1; -- 0 for parallel multiplier, 1 for serial
-	constant MUL_COUNT: integer:= 33; --10 for parallel multiplier, 33 for serial
+	constant MUL_SERIAL: integer range 0 to 1 := 0; -- 0 for parallel multiplier, 1 for serial
+	constant MUL_COUNT: integer:= 11; --11 for parallel multiplier, 34 for serial
 		
 	-- Input/output registers
 	signal s_opa_i, s_opb_i : std_logic_vector(FP_WIDTH-1 downto 0);
@@ -116,7 +116,9 @@ architecture rtl of fpu is
 	type   t_state is (waiting,busy);
 	signal s_state : t_state;
 	signal s_start_i : std_logic;
-	signal s_count : integer;	
+	signal s_count : integer;
+	signal s_output1 : std_logic_vector(FP_WIDTH-1 downto 0);	
+	signal s_infa, s_infb : std_logic;
 	
 	--	***Add/Substract units signals***
 
@@ -227,7 +229,7 @@ begin
 			 fractb_i => pre_norm_mul_fractb_24,
 			 signa_i => s_opa_i(31),
 			 signb_i => s_opb_i(31),
-			 start_i => s_start_i,
+			 start_i => start_i,
 			 fract_o => mul_24_fract_48, 
 			 sign_o =>	mul_24_sign,
 			 ready_o => open);	
@@ -256,7 +258,7 @@ begin
 			 exp_10_i => pre_norm_mul_exp_10,
 			 fract_48_i	=> mul_fract_48,
 			 sign_i	=> mul_24_sign,
-			 rmode_i => rmode_i,
+			 rmode_i => s_rmode_i,
 			 output_o => post_norm_mul_output,
 			 ine_o => post_norm_mul_ine
 			);
@@ -370,7 +372,7 @@ begin
 			if s_start_i ='1' then
 				s_state <= busy;
 				s_count <= 0;
-			elsif s_count=5 and ((fpu_op_i="000") or (fpu_op_i="001")) then
+			elsif s_count=6 and ((fpu_op_i="000") or (fpu_op_i="001")) then
 				s_state <= waiting;
 				ready_o <= '1';
 				s_count <=0;
@@ -378,7 +380,7 @@ begin
 				s_state <= waiting;
 				ready_o <= '1';
 				s_count <=0;
-			elsif s_count=32 and fpu_op_i="011" then
+			elsif s_count=33 and fpu_op_i="011" then
 				s_state <= waiting;
 				ready_o <= '1';
 				s_count <=0;
@@ -400,31 +402,63 @@ begin
 	begin
 		if rising_edge(clk_i) then
 			if fpu_op_i="000" or fpu_op_i="001" then	
-				s_output_o 		<= postnorm_addsub_output_o;
+				s_output1 		<= postnorm_addsub_output_o;
 				s_ine_o 		<= postnorm_addsub_ine_o;
 			elsif fpu_op_i="010" then
-				s_output_o 	<= post_norm_mul_output;
+				s_output1 	<= post_norm_mul_output;
 				s_ine_o 		<= post_norm_mul_ine;
 			elsif fpu_op_i="011" then
-				s_output_o 	<= post_norm_div_output;
+				s_output1 	<= post_norm_div_output;
 				s_ine_o 		<= post_norm_div_ine;		
---			elsif fpu_op_i="100" then
---				s_output_o 	<= post_norm_sqrt_output;
---				s_ine_o 	<= post_norm_sqrt_ine_o;			
+			elsif fpu_op_i="100" then
+				s_output1 	<= post_norm_sqrt_output;
+				s_ine_o 	<= post_norm_sqrt_ine_o;			
 			else
-				s_output_o 	<= (others => '0');
+				s_output1 	<= (others => '0');
 				s_ine_o 		<= '0';
 			end if;
 		end if;
 	end process;	
 
+	
+	s_infa <= '1' when s_opa_i(30 downto 23)="11111111"  else '0';
+	s_infb <= '1' when s_opb_i(30 downto 23)="11111111"  else '0';
+	
+
+	--In round down: the subtraction of two equal numbers other than zero are always -0!!!
+	process(s_output1, s_rmode_i, s_div_zero_o, s_infa, s_infb, s_qnan_o, s_snan_o, s_zero_o, s_fpu_op_i, s_opa_i, s_opb_i )
+	begin
+			if s_rmode_i="00" or (s_div_zero_o or (s_infa or s_infb) or s_qnan_o or s_snan_o)='1' then --round-to-nearest-even
+				s_output_o <= s_output1;
+			elsif s_rmode_i="01" and s_output1(30 downto 23)="11111111" then
+				--In round-to-zero: the sum of two non-infinity operands is never infinity,even if an overflow occures
+				s_output_o <= s_output1(31) & "1111111011111111111111111111111";
+			elsif s_rmode_i="10" and s_output1(31 downto 23)="111111111" then
+				--In round-up: the sum of two non-infinity operands is never negative infinity,even if an overflow occures
+				s_output_o <= "11111111011111111111111111111111";
+			elsif s_rmode_i="11" then
+				--In round-down: a-a= -0
+				if (s_fpu_op_i="000" or s_fpu_op_i="001") and s_zero_o='1' and (s_opa_i(31) or (s_fpu_op_i(0) xor s_opb_i(31)))='1' then
+					s_output_o <= "1" & s_output1(30 downto 0);	
+				--In round-down: the sum of two non-infinity operands is never postive infinity,even if an overflow occures
+				elsif s_output1(31 downto 23)="011111111" then
+					s_output_o <= "01111111011111111111111111111111";
+				else
+					s_output_o <= s_output1;
+				end if;			
+			else
+				s_output_o <= s_output1;
+			end if;
+	end process;
+		
+
 	-- Generate Exceptions 
-	s_underflow_o <= '1' when s_output_o(30 downto 23)="00000000" and s_ine_o='1' else '0'; 
-	s_overflow_o <= '1' when s_output_o(30 downto 23)="11111111" and s_ine_o='1' else '0';
+	s_underflow_o <= '1' when s_output1(30 downto 23)="00000000" and s_ine_o='1' else '0'; 
+	s_overflow_o <= '1' when s_output1(30 downto 23)="11111111" and s_ine_o='1' else '0';
 	s_div_zero_o <= serial_div_div_zero when fpu_op_i="011" else '0';
-	s_inf_o <= '1' when s_output_o(30 downto 23)="11111111" and (s_qnan_o or s_snan_o)='0' else '0';
-	s_zero_o <= '1' when or_reduce(s_output_o(30 downto 0))='0' else '0';
-	s_qnan_o <= '1' when s_output_o(30 downto 0)=QNAN else '0';
+	s_inf_o <= '1' when s_output1(30 downto 23)="11111111" and (s_qnan_o or s_snan_o)='0' else '0';
+	s_zero_o <= '1' when or_reduce(s_output1(30 downto 0))='0' else '0';
+	s_qnan_o <= '1' when s_output1(30 downto 0)=QNAN else '0';
     s_snan_o <= '1' when s_opa_i(30 downto 0)=SNAN or s_opb_i(30 downto 0)=SNAN else '0';
 
 

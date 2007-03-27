@@ -83,6 +83,7 @@ signal s_ine_o, s_overflow : std_logic;
 signal s_opa_dn, s_opb_dn : std_logic; 
 signal s_qutdn : std_logic;
 
+signal s_exp_10b : std_logic_vector(9 downto 0);
 signal s_shr1, s_shl1 : std_logic_vector(5 downto 0);
 signal s_shr2 : std_logic;
 signal s_expo1, s_expo2, s_expo3 : std_logic_vector(8 downto 0);
@@ -91,10 +92,10 @@ signal s_frac_rnd, s_fraco2 : std_logic_vector(24 downto 0);
 signal s_guard, s_round, s_sticky, s_roundup : std_logic;
 signal s_lost : std_logic;
 
-signal s_op_0, s_opab_0 : std_logic;
+signal s_op_0, s_opab_0, s_opb_0 : std_logic;
 signal s_infa, s_infb : std_logic;
 signal s_nan_in, s_nan_op, s_nan_a, s_nan_b : std_logic;
-signal s_exp_10b : std_logic_vector(9 downto 0);
+signal s_inf_result: std_logic;
 
 begin
 
@@ -152,7 +153,7 @@ begin
 		elsif s_exp_10b(8)='1' then
 			v_shr := (others =>'0');
 			v_shl := (others =>'0');
-			s_expo1 <= "011111111";
+			s_expo1 <= s_exp_10b(8 downto 0);
 		else
 			v_shr := (others =>'0');
 			v_shl :=  "000000000"& s_qutdn;
@@ -211,7 +212,7 @@ begin
 	process(clk_i)
 	begin
 		if rising_edge(clk_i) then
-			if s_shr2='1' and s_expo2 /= "011111111" then
+			if s_shr2='1' then
 				s_expo3 <= s_expo2 + "1";
 				s_fraco2 <= "0"&s_frac_rnd(24 downto 1);
 			else 
@@ -229,6 +230,7 @@ begin
 		
 	s_op_0 <= not ( or_reduce(s_opa_i(30 downto 0)) and or_reduce(s_opb_i(30 downto 0)) );
 	s_opab_0 <= not ( or_reduce(s_opa_i(30 downto 0)) or or_reduce(s_opb_i(30 downto 0)) );
+	s_opb_0 <= not or_reduce(s_opb_i(30 downto 0));
 	
 	s_infa <= '1' when s_expa="11111111"  else '0';
 	s_infb <= '1' when s_expb="11111111"  else '0';
@@ -238,17 +240,20 @@ begin
 	s_nan_in <= '1' when s_nan_a='1' or  s_nan_b='1' else '0';
 	s_nan_op <= '1' when (s_infa and s_infb)='1' or s_opab_0='1' else '0';-- 0 / 0, inf / inf
 
+	s_inf_result <= '1' when (and_reduce(s_expo3(7 downto 0)) or s_expo3(8))='1' or s_opb_0='1' else '0';
 
-	s_overflow <= '1' when s_expo3 = "011111111" and (s_infa or s_infb)='0' and or_reduce(s_opb_i(30 downto 0))='1' else '0';
+	s_overflow <= '1' when s_inf_result='1'  and (s_infa or s_infb)='0' and s_opb_0='0' else '0';
 
 	s_ine_o <= '1' when s_op_0='0' and (s_lost or or_reduce(s_fraco1(2 downto 0)) or s_overflow or or_reduce(s_rmndr_i))='1' else '0';
 	
-	process(s_sign_i, s_expo3, s_fraco2, s_nan_in, s_nan_op, s_infa, s_infb, s_overflow)
+	process(s_sign_i, s_expo3, s_fraco2, s_nan_in, s_nan_op, s_infa, s_infb, s_overflow, s_inf_result, s_op_0)
 	begin
 		if (s_nan_in or s_nan_op)='1' then
-			s_output_o <= s_sign_i & QNAN;
-		elsif (s_infa or s_infb)='1' or s_overflow='1' then
-				s_output_o <= s_sign_i & INF;	
+			s_output_o <= '1' & QNAN;
+		elsif (s_infa or s_infb)='1' or s_overflow='1' or s_inf_result='1' then
+				s_output_o <= s_sign_i & INF;
+		elsif s_op_0='1' then
+				s_output_o <= s_sign_i & ZERO_VECTOR;					
 		else
 				s_output_o <= s_sign_i & s_expo3(7 downto 0) & s_fraco2(22 downto 0);
 		end if;

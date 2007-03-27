@@ -137,7 +137,11 @@ process(clk_i)
 variable v_div : std_logic_vector(26 downto 0);
 begin
 	if rising_edge(clk_i) then
-		if s_state=busy then
+		--Reset
+		if s_start_i ='1' then
+			s_qutnt_o <= (others =>'0');
+			s_rmndr_o <= (others =>'0');
+		elsif s_state=busy then
 			if s_count=26 then
 				v_div := "000" & s_dvdnd_i(49 downto 26);
 			else	

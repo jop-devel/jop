@@ -17,6 +17,5 @@ post_norm_sqrt.vhd
 comppack.vhd
 fpu.vhd
 
-tb_fpu.vhd ( the test bench)
-
-To run the simulation just execute fpusim.bat in a command prompt
+***For simulation ****
+To run the simulation read readme.txt in folder test_bench.

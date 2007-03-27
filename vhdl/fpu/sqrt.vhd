@@ -178,7 +178,9 @@ begin
 	process(clk_i)
 	begin
 		if rising_edge(clk_i) then
-			if s_count=0 then
+			if s_start_i = '1' then
+				s_sqr_o <= (others =>'0');
+			elsif s_count=0 then
 						if r1_2 > s_rad_i then
 							s_sqr_o <= r1 - '1';
 						else

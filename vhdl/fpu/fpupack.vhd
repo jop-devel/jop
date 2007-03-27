@@ -57,13 +57,15 @@ package fpupack is
 	
 	-- Data width of exponent. Deafult: 8
 	constant EXP_WIDTH : integer := 8;
-	
+
+	--Zero vector
+	constant ZERO_VECTOR: std_logic_vector(30 downto 0) := "0000000000000000000000000000000";
 	
 	-- Infinty FP format
 	constant INF  : std_logic_vector(30 downto 0) := "1111111100000000000000000000000";
 	
 	-- QNaN (Quit Not a Number) FP format (without sign bit)
-    constant QNAN : std_logic_vector(30 downto 0) := "1111111110000000000000000000001";
+    constant QNAN : std_logic_vector(30 downto 0) := "1111111110000000000000000000000";
     
     -- SNaN (Signaling Not a Number) FP format (without sign bit)
     constant SNAN : std_logic_vector(30 downto 0) := "1111111100000000000000000000001";

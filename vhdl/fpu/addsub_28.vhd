@@ -103,7 +103,7 @@ fracta_lt_fractb <= '1' when s_fracta_i > s_fractb_i else '0';
 s_addop <= ((s_signa_i xor s_signb_i)and not (s_fpu_op_i)) or ((s_signa_i xnor s_signb_i)and (s_fpu_op_i));
 
 -- sign of result
-s_sign_o <= '0' when s_fract_o = conv_std_logic_vector(0,28) else 
+s_sign_o <= '0' when s_fract_o = conv_std_logic_vector(0,28) and (s_signa_i and s_signb_i)='0' else 
 										((not s_signa_i) and ((not fracta_lt_fractb) and (fpu_op_i xor s_signb_i))) or
 										((s_signa_i) and (fracta_lt_fractb or (fpu_op_i xor s_signb_i)));
 
