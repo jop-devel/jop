@@ -1,7 +1,7 @@
 --
---	scio_min.vhd
+--	scio_min_fpu.vhd
 --
---	io devices for minimal configuration
+--	io devices with FPU for minimal configuration
 --	only counter, wd and serial line, alle io pins are tri statet
 --
 --
@@ -11,7 +11,6 @@
 --
 --		0x00 0-3		system clock counter, us counter, timer int, wd bit
 --		0x10 0-1		uart (download)
---		.............
 --		0x70 2-4		FPU
 --
 --	status word in uarts:
@@ -25,6 +24,7 @@
 --	2003-07-09	created
 --	2005-08-27	ignore ncts on uart
 --	2005-11-30	changed to SimpCon
+--	2007-03-27	use records
 --
 --
 
@@ -34,32 +34,26 @@ use IEEE.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 use work.jop_types.all;
+use work.sc_pack.all;
 use work.jop_config.all;
 
 entity scio is
-generic (addr_bits : integer);
 
 port (
 	clk		: in std_logic;
 	reset	: in std_logic;
 
--- SimpCon interface
+--
+--	SimpCon IO interface
+--
+	sc_io_out		: in sc_io_out_type;
+	sc_io_in		: out sc_in_type;
 
-	address		: in std_logic_vector(addr_bits-1 downto 0);
-	wr_data		: in std_logic_vector(31 downto 0);
-	rd, wr		: in std_logic;
-	rd_data		: out std_logic_vector(31 downto 0);
-	rdy_cnt		: out unsigned(1 downto 0);
-
--- interrupt
-
-	irq			: out std_logic;
-	irq_ena		: out std_logic;
-
--- exception
-
-	exc_req		: in exception_type;
-	exc_int		: out std_logic;
+--
+--	Interrupts from IO devices
+--
+	irq_in			: out irq_in_type;
+	exc_req			: in exception_type;
 
 -- serial interface
 
@@ -85,8 +79,8 @@ architecture rtl of scio is
 
 	constant SLAVE_CNT : integer := 8;
 	-- SLAVE_CNT <= 2**DECODE_BITS
-	constant DECODE_BITS : integer := 3;
 	-- take care of USB address 0x20!
+	constant DECODE_BITS : integer := 3;
 	-- number of bits that can be used inside the slave
 	constant SLAVE_ADDR_BITS : integer := 4;
 
@@ -113,19 +107,19 @@ begin
 
 	assert SLAVE_CNT <= 2**DECODE_BITS report "Wrong constant in scio";
 
-	sel <= to_integer(unsigned(address(SLAVE_ADDR_BITS+DECODE_BITS-1 downto SLAVE_ADDR_BITS)));
+	sel <= to_integer(unsigned(sc_io_out.address(SLAVE_ADDR_BITS+DECODE_BITS-1 downto SLAVE_ADDR_BITS)));
 
 	-- What happens when sel_reg > SLAVE_CNT-1??
-	rd_data <= sc_dout(sel_reg);
-	rdy_cnt <= sc_rdy_cnt(sel_reg);
+	sc_io_in.rd_data <= sc_dout(sel_reg);
+	sc_io_in.rdy_cnt <= sc_rdy_cnt(sel_reg);
 
 	--
 	-- Connect SLAVE_CNT simple test slaves
 	--
 	gsl: for i in 0 to SLAVE_CNT-1 generate
 
-		sc_rd(i) <= rd when i=sel else '0';
-		sc_wr(i) <= wr when i=sel else '0';
+		sc_rd(i) <= sc_io_out.rd when i=sel else '0';
+		sc_wr(i) <= sc_io_out.wr when i=sel else '0';
 
 	end generate;
 
@@ -137,7 +131,7 @@ begin
 		if (reset='1') then
 			sel_reg <= 0;
 		elsif rising_edge(clk) then
-			if rd='1' then
+			if sc_io_out.rd='1' then
 				sel_reg <= sel;
 			end if;
 		end if;
@@ -151,18 +145,15 @@ begin
 			clk => clk,
 			reset => reset,
 
-			address => address(SLAVE_ADDR_BITS-1 downto 0),
-			wr_data => wr_data,
+			address => sc_io_out.address(SLAVE_ADDR_BITS-1 downto 0),
+			wr_data => sc_io_out.wr_data,
 			rd => sc_rd(0),
 			wr => sc_wr(0),
 			rd_data => sc_dout(0),
 			rdy_cnt => sc_rdy_cnt(0),
 
-			irq => irq,
-			irq_ena => irq_ena,
-
+			irq_in => irq_in,
 			exc_req => exc_req,
-			exc_int => exc_int,
 			
 			wd => wd
 		);
@@ -180,8 +171,8 @@ begin
 			clk => clk,
 			reset => reset,
 
-			address => address(SLAVE_ADDR_BITS-1 downto 0),
-			wr_data => wr_data,
+			address => sc_io_out.address(SLAVE_ADDR_BITS-1 downto 0),
+			wr_data => sc_io_out.wr_data,
 			rd => sc_rd(1),
 			wr => sc_wr(1),
 			rd_data => sc_dout(1),
@@ -192,22 +183,23 @@ begin
 			ncts => '0',
 			nrts => nrts
 	);
-
+	
 	cmp_fpu: entity work.sc_fpu generic map( 
 			ADDR_WIDTH => SLAVE_ADDR_BITS 
 			)
-	port map(
+		port map(
 			clk_i => clk,
 			reset_i => reset,
 
 			-- SimpCon interface
-			address_i => address(SLAVE_ADDR_BITS-1 downto 0),
-			wr_data_i => wr_data,
+			address_i => sc_io_out.address(SLAVE_ADDR_BITS-1 downto 0),
+			wr_data_i => sc_io_out.wr_data,
 			rd_i => sc_rd(7),
 			wr_i => sc_wr(7),
 			
 			rd_data_o => sc_dout(7),
 			rdy_cnt_o => sc_rdy_cnt(7)
 	);
+
 
 end rtl;
