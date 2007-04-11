@@ -841,7 +841,19 @@ goto:		nop opd
 
 getstatic_ref:
 getstatic:
-
+//*******************************
+// test for oohw change
+//			ldi	1			// 2*5+2+2=14
+//dly4:
+//			dup
+//			nop
+//			bnz	dly4
+//			ldi	-1			// decrement in branch slot
+//			add
+//			pop				// remove counter
+//			nop
+//			nop
+//*******************************
 			ldm	cp opd
 			nop	opd
 			ld_opd_16u
@@ -861,6 +873,20 @@ getstatic:
 
 putstatic_ref:
 putstatic:
+//*******************************
+// test for oohw change
+//			ldi	1			// 2*5+2+3=15
+//dly5:
+//			dup
+//			nop
+//			bnz	dly5
+//			ldi	-1			// decrement in branch slot
+//			add
+//			pop				// remove counter
+//			nop
+//			nop
+//			nop
+//*******************************
 			ldm	cp opd
 			nop	opd
 			ld_opd_16u
@@ -883,6 +909,19 @@ putstatic:
 			// at the moment it's just a copy of the original
 getfield_ref:
 getfield:
+//*******************************
+// test for oohw change
+//			ldi	2			// 3*5+2+2=19
+//dly2:
+//			dup
+//			nop
+//			bnz	dly2
+//			ldi	-1			// decrement in branch slot
+//			add
+//			pop				// remove counter
+//			nop
+//			nop
+//*******************************
 				// int off = readOpd16u();
 				// int ref = stack[sp];
 				// if (useHandle) {
@@ -921,6 +960,17 @@ getfield:
 
 putfield_ref:
 putfield:
+//*******************************
+// test for oohw change
+//			ldi	3			// 4*5+2=22
+//dly3:
+//			dup
+//			nop
+//			bnz	dly3
+//			ldi	-1			// decrement in branch slot
+//			add
+//			pop				// remove counter
+//*******************************
 				// int off = readOpd16u();
 				// int val = stack[sp--];
 				// int ref = stack[sp--];
@@ -999,6 +1049,18 @@ castore:
 fastore:
 iastore:
 sastore:
+//*******************************
+// test for oohw change
+//			ldi	6			// 7*5+2+1=38
+//dly7:
+//			dup
+//			nop
+//			bnz	dly7
+//			ldi	-1			// decrement in branch slot
+//			add
+//			pop				// remove counter
+//			nop
+//*******************************
 			stm	a				// value
 			stm	b				// index
 			// arrayref is TOS
@@ -1050,6 +1112,21 @@ caload:
 faload:
 iaload:
 saload:
+//*******************************
+// test for oohw change
+//			ldi	5			// 6*5+2+3=35
+//dly6:
+//			dup
+//			nop
+//			bnz	dly6
+//			ldi	-1			// decrement in branch slot
+//			add
+//			pop				// remove counter
+//			nop
+//			nop
+//			nop
+//*******************************
+
 //
 //	ideas for enhancements:
 //		array pointer points to length and not the first element

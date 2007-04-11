@@ -175,6 +175,19 @@ invokevirtual:
 
 invoke_vpsave:					// vp is allready saved in old_vp
 								// used for invokestatic and invokevirtual
+
+//*******************************
+// test for oohw change
+//			ldi	19			// 20*5+2=102
+//dlyl:
+//			dup
+//			nop
+//			bnz	dlyl
+//			ldi	-1			// decrement in branch slot
+//			add
+//			pop				// remove counter
+//*******************************
+
 //	mp is on TOS
 //		we will not read mem[mp] now,
 //		this is done in load_bc
