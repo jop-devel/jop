@@ -17,7 +17,7 @@ public class LowLevel {
 	 * Works only up to 2 GHz (integer overflow). However, that
 	 * should be ok for embedded devices ;-)
 	 */
-	public static final int FREQ = 0;
+	public static final int FREQ = 60;
 
 	static boolean init;
 
