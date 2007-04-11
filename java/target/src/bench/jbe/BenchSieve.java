@@ -12,7 +12,7 @@ public class BenchSieve extends BenchMark {
 
 	public int test(int cnt) {
 
-		int i, prime, k, iter, count;
+		int i, prime, k, count;
 		count=0;
 
 		for (int j=0; j<cnt; ++j) {

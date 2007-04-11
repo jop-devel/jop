@@ -10,7 +10,7 @@ public class Execute {
 		overhead = 0;
 		minus = 0;
 
-		LowLevel.msg("start");
+		LowLevel.msg(bm.getName());
 		while (time<1000) {
 			cnt <<= 1;
 			if (cnt < 0) {
@@ -32,12 +32,12 @@ public class Execute {
 */
 		}
 
-		LowLevel.msg("time", time);
-		LowLevel.msg("ohd", overhead);
+//		LowLevel.msg("time", time);
+//		LowLevel.msg("ohd", overhead);
 //		LowLevel.msg("ohdm", minus);
-		LowLevel.msg("cnt", cnt);
+//		LowLevel.msg("cnt", cnt);
 		time -= overhead;
-//		time += minus;
+		time += minus;
 
 		if (time<25 || cnt<0) {
 			LowLevel.msg(bm.getName());
@@ -60,7 +60,17 @@ public class Execute {
 		} else {
 			result = cnt*1000/time;
 		}
-		LowLevel.msg(bm.getName(), result);
+		LowLevel.msg(result);
+		LowLevel.msg("1/s");
+		if (LowLevel.FREQ!=0) {
+			int clocks = (LowLevel.FREQ*2000000/result+1)/2;
+			if (LowLevel.FREQ>1000) {
+				result /= 10;
+				clocks = (LowLevel.FREQ*200000/result+1)/2;
+			}
+			LowLevel.msg(clocks);
+			LowLevel.msg("clocks");
+		}
 		LowLevel.lf();
 	}
 }

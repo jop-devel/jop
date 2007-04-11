@@ -103,7 +103,7 @@ public class BenchUdpIp extends BenchMark {
 
 	public String getName() {
 
-		return "UDP/IP";
+		return "UdpIp";
 	}
 
 	public static void main(String[] args) {

@@ -42,10 +42,11 @@ package jbe.ejip;
 */
 public class Packet {
 
-	public final static int MAX = 1500;		// maximum Packet length in bytes
-	public final static int MAXW = 1500/4;	// maximum Packet length in word
+	// smaller packet sizes for the benchmark
+	public final static int MAX = 40;		// maximum Packet length in bytes
+	public final static int MAXW = 40/4;	// maximum Packet length in word
 	public final static int MAXLLH = 7;		// 7 16 bit words for ethernet
-	private final static int CNT = 8;		// size of packet pool
+	private final static int CNT = 2;		// size of packet pool
 
 	/** interface source/destination */
 	public LinkLayer interf;

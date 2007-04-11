@@ -11,6 +11,14 @@ package jbe;
  */
 public class LowLevel {
 
+	/**
+	 * Clock frequency for the target to calculate clock cycles
+	 * of the micro benchmarks. Set to 0 if not known.
+	 * Works only up to 2 GHz (integer overflow). However, that
+	 * should be ok for embedded devices ;-)
+	 */
+	public static final int FREQ = 0;
+
 	static boolean init;
 
 	// Performance counter for the PC JVM

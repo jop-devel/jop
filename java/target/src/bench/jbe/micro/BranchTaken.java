@@ -55,7 +55,7 @@ public class BranchTaken extends BenchMark {
 
 	public String getName() {
 
-		return "if_icmplt";
+		return "if_icmplt taken";
 	}
 
 	public static void main(String[] args) {
