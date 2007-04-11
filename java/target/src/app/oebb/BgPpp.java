@@ -976,8 +976,8 @@ Dbg.wr('!');
 
 		p.len = cnt;
 
-Dbg.wr('r');
-Dbg.intVal(cnt);
+//Dbg.wr('r');
+//Dbg.intVal(cnt);
 /*
 dbgIp(pb[3]);
 dbgIp(pb[4]);
@@ -999,8 +999,8 @@ Dbg.wr('\n');
 		int i, k;
 		int[] pb = p.buf;
 
-Dbg.wr('s');
-Dbg.intVal(p.len);
+//Dbg.wr('s');
+//Dbg.intVal(p.len);
 
 		sbuf[0] = 0xff;
 		sbuf[1] = 0x03;
