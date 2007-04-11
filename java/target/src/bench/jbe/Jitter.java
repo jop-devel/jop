@@ -35,13 +35,13 @@ public class Jitter {
 		LowLevel.lf();
 		
 		for (int i=0; i<CNT; ++i) {
-			t = LowLevel.clockTicks();
+			t = LowLevel.timeMicros();
 /*	to check if high resolution counter is correct
 			long l = System.currentTimeMillis()+100;
 			while (System.currentTimeMillis()-l < 0);
 */
 			b.test(1);
-			t = LowLevel.clockTicks()-t;
+			t = LowLevel.timeMicros()-t;
 			results[i] = t;
 		}
 		for (int i=0; i<CNT; ++i) {
