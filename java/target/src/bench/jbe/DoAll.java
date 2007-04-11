@@ -15,6 +15,7 @@ package jbe;
  * 					Less verbose output
  * 					Print clock cycles when LowLevel.FREQU is set
  * 					Smaller packet sizes in ejip for memory constraint devices
+ * 					Added Lift to the application benchmarks
  * 
  * @author admin
  *
