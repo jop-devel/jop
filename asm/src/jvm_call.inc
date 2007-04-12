@@ -178,7 +178,9 @@ invoke_vpsave:					// vp is allready saved in old_vp
 
 //*******************************
 // test for oohw change
-//			ldi	19			// 20*5+2=102
+// invoke would be 102, invokestatic would be 75
+// we use 89 as arithmetic mean
+//			ldi	16			// 17*5+2+2=102
 //dlyl:
 //			dup
 //			nop
@@ -186,6 +188,8 @@ invoke_vpsave:					// vp is allready saved in old_vp
 //			ldi	-1			// decrement in branch slot
 //			add
 //			pop				// remove counter
+//			nop
+//			nop
 //*******************************
 
 //	mp is on TOS
