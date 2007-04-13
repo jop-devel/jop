@@ -9,21 +9,42 @@ use ieee.std_logic_1164.all;
 
 package jop_types is
 
-	-- not usefull as it's inout
-	type io_port_type is record
-		l	: std_logic_vector(20 downto 1);
-		r	: std_logic_vector(20 downto 1);
-		t	: std_logic_vector(6 downto 1);
-		b	: std_logic_vector(10 downto 1);
+--
+--	extension address constants (used in extension.vhd and Instrucion.java)
+--
+--		0	st	mem_rd_addr		start read
+--		0	ld	mem_rd_data		read data
+--		1	st	wraddr		store write address
+--		2	st	mem_wr_data		start write
+--		5	st	mul operand a, b and start mul
+--		5	ld	mul result
+--		6	free
+--		7	st	start bytecode load (or cache)
+--		7	ld	read new pc base (for cache version)
+--
+	constant STMRA	: std_logic_vector(2 downto 0) := "000"; 
+	constant STMWA	: std_logic_vector(2 downto 0) := "001"; 
+	constant STMWD	: std_logic_vector(2 downto 0) := "010"; 
+	constant STALD	: std_logic_vector(2 downto 0) := "011"; 
+	constant STAST	: std_logic_vector(2 downto 0) := "100"; 
+	constant STMUL	: std_logic_vector(2 downto 0) := "101"; 
+	constant STBCR	: std_logic_vector(2 downto 0) := "111"; 
+
+	constant LDMRD	: std_logic_vector(2 downto 0) := "000"; 
+	constant LDMUL	: std_logic_vector(2 downto 0) := "101"; 
+	constant LDBCSTART	: std_logic_vector(2 downto 0) := "111"; 
+
+	type mem_in_type is record
+		rd		: std_logic;
+		wr		: std_logic;
+		addr_wr	: std_logic;
+		bc_rd	: std_logic;
 	end record;
 
-	type ser_in_type is record
-		rxd			: std_logic;
-		ncts		: std_logic;
-	end record;
-	type ser_out_type is record
-		txd			: std_logic;
-		nrts		: std_logic;
+	type mem_out_type is record
+		dout		: std_logic_vector(31 downto 0);
+		bcstart		: std_logic_vector(31 downto 0); 	-- start of method in bc cache
+		bsy			: std_logic;
 	end record;
 
 	type exception_type is record
@@ -35,6 +56,23 @@ package jop_types is
 		irq_ena		: std_logic;	-- interrupt enable (pendig int is fired on ena)
 
 		exc_int		: std_logic;	-- exception interrupt
+	end record;
+
+	type ser_in_type is record
+		rxd			: std_logic;
+		ncts		: std_logic;
+	end record;
+	type ser_out_type is record
+		txd			: std_logic;
+		nrts		: std_logic;
+	end record;
+
+	-- not usefull as it's inout
+	type io_port_type is record
+		l	: std_logic_vector(20 downto 1);
+		r	: std_logic_vector(20 downto 1);
+		t	: std_logic_vector(6 downto 1);
+		b	: std_logic_vector(10 downto 1);
 	end record;
 
 end jop_types;

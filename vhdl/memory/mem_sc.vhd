@@ -1,9 +1,10 @@
 --
 --	mem_sc.vhd
 --
---	External memory interface with SimpCon
+--	External memory interface with SimpCon.
 --	Translates between JOP/extension memory interface
---	and SimpCon memory interface
+--	and SimpCon memory interface.
+--	Does the method cache load.
 --
 --
 --	todo:
@@ -11,6 +12,7 @@
 --	2005-11-22  first version adapted from mem(_wb)
 --	2006-06-15	removed unnecessary state in BC load
 --				len decrement in bc_rn and exit from bc_wr
+--	2007-04-13	Changed memory connection to records
 --
 
 Library IEEE;
@@ -18,9 +20,10 @@ use IEEE.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 use work.jop_types.all;
+use work.sc_pack.all;
 
 entity mem_sc is
-generic (jpc_width : integer; block_bits : integer; addr_bits : integer);
+generic (jpc_width : integer; block_bits : integer);
 
 port (
 
@@ -30,14 +33,9 @@ port (
 
 	din			: in std_logic_vector(31 downto 0);
 
-	mem_rd		: in std_logic;
-	mem_wr		: in std_logic;
-	mem_addr_wr	: in std_logic;
-	mem_bc_rd	: in std_logic;
-	dout		: out std_logic_vector(31 downto 0);
-	bcstart		: out std_logic_vector(31 downto 0); 	-- start of method in bc cache
-
-	bsy			: out std_logic;
+-- extension connection
+	mem_in		: in mem_in_type;
+	mem_out		: out mem_out_type;
 
 -- jbc connections
 
@@ -46,11 +44,8 @@ port (
 
 -- SimpCon interface
 
-	address		: out std_logic_vector(addr_bits-1 downto 0);
-	wr_data		: out std_logic_vector(31 downto 0);
-	rd, wr		: out std_logic;
-	rd_data		: in std_logic_vector(31 downto 0);
-	rdy_cnt		: in unsigned(1 downto 0)
+	sc_mem_out	: out sc_mem_out_type;
+	sc_mem_in	: in sc_in_type
 
 );
 end mem_sc;
@@ -113,8 +108,8 @@ end component;
 	signal state 		: state_type;
 	signal next_state	: state_type;
 
-	signal mem_wr_addr		: std_logic_vector(addr_bits-1 downto 0);
-	signal ram_addr			: std_logic_vector(addr_bits-1 downto 0);
+	signal mem_wr_addr		: std_logic_vector(MEM_ADDR_SIZE-1 downto 0);
+	signal ram_addr			: std_logic_vector(MEM_ADDR_SIZE-1 downto 0);
 
 	signal bcl_bsy			: std_logic;
 
@@ -144,21 +139,21 @@ end component;
 
 begin
 
-	bsy <= '1' when rdy_cnt=3 or bcl_bsy='1' else '0';
+	mem_out.bsy <= '1' when sc_mem_in.rdy_cnt=3 or bcl_bsy='1' else '0';
 
-	bcstart <= std_logic_vector(to_unsigned(0, 32-jpc_width)) & cache_bcstart & "00";
+	mem_out.bcstart <= std_logic_vector(to_unsigned(0, 32-jpc_width)) & cache_bcstart & "00";
 
 	-- change byte order for jbc memory (high byte first)
-	bc_wr_data <= rd_data(7 downto 0) &
-				rd_data(15 downto 8) &
-				rd_data(23 downto 16) &
-				rd_data(31 downto 24);
+	bc_wr_data <= sc_mem_in.rd_data(7 downto 0) &
+				sc_mem_in.rd_data(15 downto 8) &
+				sc_mem_in.rd_data(23 downto 16) &
+				sc_mem_in.rd_data(31 downto 24);
 
 
 	cmp_cache: cache generic map (jpc_width, block_bits) port map(
 		clk, reset,
 		std_logic_vector(bc_len), std_logic_vector(bc_mem_start),
-		mem_bc_rd,
+		mem_in.bc_rd,
 		cache_bcstart,
 		cache_rdy, cache_in_cache
 	);
@@ -179,11 +174,11 @@ begin
 --
 
 
-	address <= ram_addr;
-	wr <= mem_wr;
-	rd <= mem_rd or bc_rd;
-	wr_data <= din;
-	dout <= rd_data;
+	sc_mem_out.address <= ram_addr;
+	sc_mem_out.wr_data <= din;
+	sc_mem_out.rd <= mem_in.rd or bc_rd;
+	sc_mem_out.wr <= mem_in.wr;
+	mem_out.dout <= sc_mem_in.rd_data;
 
 
 --
@@ -198,8 +193,8 @@ begin
 	if reset='1' then
 		mem_wr_addr <= (others => '0');
 	elsif rising_edge(clk) then
-		if mem_addr_wr='1' then
-			mem_wr_addr <= din(addr_bits-1 downto 0);	-- store write address
+		if mem_in.addr_wr='1' then
+			mem_wr_addr <= din(MEM_ADDR_SIZE-1 downto 0);	-- store write address
 		end if;
 	end if;
 end process;
@@ -210,7 +205,7 @@ begin
 		bc_len <= (others => '0');
 		bc_mem_start <= (others => '0');
 	elsif rising_edge(clk) then
-		if mem_bc_rd='1' then
+		if mem_in.bc_rd='1' then
 			bc_len <= unsigned(din(jpc_width-3 downto 0));
 			bc_mem_start <= unsigned(din(27 downto 10));
 		else
@@ -228,18 +223,18 @@ end process;
 --
 --	RAM address MUX (combinational)
 --
-process(din, mem_wr_addr, bc_mem_start, mem_rd, mem_wr)
+process(din, mem_wr_addr, bc_mem_start, mem_in)
 begin
-	if mem_rd='1' then
-		ram_addr <= din(addr_bits-1 downto 0);
-	elsif mem_wr='1' then
+	if mem_in.rd='1' then
+		ram_addr <= din(MEM_ADDR_SIZE-1 downto 0);
+	elsif mem_in.wr='1' then
 		ram_addr <= mem_wr_addr;
 	else
 		-- default use the bc address (simpled MUX selection)
 		ram_addr(17 downto 0) <= std_logic_vector(bc_mem_start);
 		-- addr_bits is 17
-		if addr_bits>18 then
-			ram_addr(addr_bits-1 downto 18) <= (others => '0');
+		if MEM_ADDR_SIZE>18 then
+			ram_addr(MEM_ADDR_SIZE-1 downto 18) <= (others => '0');
 		end if;
 	end if;
 end process;
@@ -248,7 +243,7 @@ end process;
 --
 --	next state logic
 --
-process(state, mem_rd, mem_wr, mem_bc_rd, rdy_cnt,
+process(state, mem_in, sc_mem_in.rdy_cnt,
 	cache_rdy, cache_in_cache, bc_len)
 begin
 
@@ -257,11 +252,11 @@ begin
 	case state is
 
 		when idl =>
-			if mem_rd='1' then
+			if mem_in.rd='1' then
 				next_state <= rd1;
-			elsif mem_wr='1' then
+			elsif mem_in.wr='1' then
 				next_state <= wr1;
-			elsif mem_bc_rd='1' then
+			elsif mem_in.bc_rd='1' then
 				next_state <= bc_cc;
 			end if;
 
@@ -269,7 +264,7 @@ begin
 		-- where the data is available
 		when rd1 =>
 			-- either 1 or 0
-			if rdy_cnt(1)='0' then
+			if sc_mem_in.rdy_cnt(1)='0' then
 				next_state <= idl;
 			end if;
 
@@ -278,7 +273,7 @@ begin
 		-- However, it is not used in JOP (at the moment).
 		when wr1 =>
 			-- either 1 or 0
-			if rdy_cnt(1)='0' then
+			if sc_mem_in.rdy_cnt(1)='0' then
 				next_state <= idl;
 			end if;
 
@@ -306,10 +301,10 @@ begin
 		-- wait
 		when bc_w =>
 			-- this works with pipeline level 1
-			-- if rdy_cnt(1)='0' then
+			-- if sc_mem_in.rdy_cnt(1)='0' then
 			-- we need a pipeline level of 2 in
 			-- the memory interface for this to work!
-			if rdy_cnt/=3 then
+			if sc_mem_in.rdy_cnt/=3 then
 				next_state <= bc_rn;
 			end if;
 
@@ -322,7 +317,7 @@ begin
 				next_state <= bc_wl;
 			else
 				-- w. pipeline level 2
-				if rdy_cnt/=3 then
+				if sc_mem_in.rdy_cnt/=3 then
 					next_state <= bc_rn;
 				else
 					next_state <= bc_w;
@@ -331,7 +326,7 @@ begin
 
 		-- wait fot the last ack
 		when bc_wl =>
-			if rdy_cnt(1)='0' then
+			if sc_mem_in.rdy_cnt(1)='0' then
 				next_state <= idl;
 			end if;
 

@@ -4,6 +4,7 @@
 --	The JOP CPU
 --
 --	2007-03-16	creation
+--	2007-04-13	Changed memory connection to records
 --
 --	todo: clean up: substitute all signals by records
 
@@ -63,27 +64,13 @@ architecture rtl of jopcpu is
 
 -- extension/mem interface
 
-	signal mem_rd			: std_logic;
-	signal mem_wr			: std_logic;
-	signal mem_addr_wr		: std_logic;
-	signal mem_bc_rd		: std_logic;
-	signal mem_dout			: std_logic_vector(31 downto 0);
-	signal mem_bcstart		: std_logic_vector(31 downto 0);
-	signal mem_bsy			: std_logic;
+	signal mem_in			: mem_in_type;
+	signal mem_out			: mem_out_type;
+
 	signal bsy				: std_logic;
 
 	signal jbc_addr			: std_logic_vector(jpc_width-1 downto 0);
 	signal jbc_data			: std_logic_vector(7 downto 0);
-
--- memory interface
-
-	signal ram_addr			: std_logic_vector(17 downto 0);
-	signal ram_dout			: std_logic_vector(31 downto 0);
-	signal ram_din			: std_logic_vector(31 downto 0);
-	signal ram_dout_en		: std_logic;
-	signal ram_ncs			: std_logic;
-	signal ram_noe			: std_logic;
-	signal ram_nwe			: std_logic;
 
 -- SimpCon io interface
 
@@ -122,13 +109,8 @@ begin
 			bsy => bsy,
 			dout => stack_din,
 
-			mem_rd => mem_rd,
-			mem_wr => mem_wr,
-			mem_addr_wr => mem_addr_wr,
-			mem_bc_rd => mem_bc_rd,
-			mem_data => mem_dout,
-			mem_bcstart => mem_bcstart,
-			mem_bsy => mem_bsy,
+			mem_in => mem_in,
+			mem_out => mem_out,
 	
 			sc_io_out => sc_io_out,
 			sc_io_in => sc_io_in
@@ -137,31 +119,21 @@ begin
 	cmp_mem: entity work.mem_sc
 		generic map (
 			jpc_width => jpc_width,
-			block_bits => block_bits,
-			addr_bits => 21
+			block_bits => block_bits
 		)
 		port map (
 			clk => clk,
 			reset => reset,
 			din => stack_tos,
 
-			mem_rd => mem_rd,
-			mem_wr => mem_wr,
-			mem_addr_wr => mem_addr_wr,
-			mem_bc_rd => mem_bc_rd,
-			dout => mem_dout,
-			bcstart => mem_bcstart,
-			bsy => mem_bsy,
-
+			mem_in => mem_in,
+			mem_out => mem_out,
+	
 			jbc_addr => jbc_addr,
 			jbc_data => jbc_data,
 
-			address => sc_mem_out.address,
-			wr_data => sc_mem_out.wr_data,
-			rd => sc_mem_out.rd,
-			wr => sc_mem_out.wr,
-			rd_data => sc_mem_in.rd_data,
-			rdy_cnt => sc_mem_in.rdy_cnt
+			sc_mem_out => sc_mem_out,
+			sc_mem_in => sc_mem_in
 		);
 
 end rtl;
