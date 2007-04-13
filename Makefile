@@ -175,7 +175,7 @@ clean:
 #	build all the (Java) tools
 #
 tools:
-	-rm -r $(TOOLS)/dist
+	-rm -rf $(TOOLS)/dist
 	mkdir $(TOOLS)/dist
 	mkdir $(TOOLS)/dist/lib
 	mkdir $(TOOLS)/dist/classes
@@ -193,7 +193,7 @@ tools:
 #	compile and JOPize the application
 #
 java_app:
-	-rm -r $(TARGET)/dist
+	-rm -rf $(TARGET)/dist
 	mkdir $(TARGET)/dist
 	mkdir $(TARGET)/dist/classes
 	mkdir $(TARGET)/dist/lib
@@ -206,7 +206,7 @@ java_app:
 		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/dist/bin/$(JOPBIN) $(MAIN_CLASS)
 	java $(TOOLS_CP) com.jopdesign.tools.jop2dat $(TARGET)/dist/bin/$(JOPBIN)
 	cp *.dat modelsim
-	rm *.dat
+	rm -f *.dat
 
 # we moved the pc stuff to it's own target to be
 # NOT built on make all.
@@ -266,10 +266,10 @@ jopflash:
 qsyn:
 	echo $(QBT)
 	echo "building $(QBT)"
-	-rm -r quartus/$(QBT)/db
-	-rm quartus/$(QBT)/jop.sof
-	-rm jbc/$(QBT).jbc
-	-rm rbf/$(QBT).rbf
+	-rm -rf quartus/$(QBT)/db
+	-rm -f quartus/$(QBT)/jop.sof
+	-rm -f jbc/$(QBT).jbc
+	-rm -f rbf/$(QBT).rbf
 	quartus_map quartus/$(QBT)/jop
 	quartus_fit quartus/$(QBT)/jop
 	quartus_asm quartus/$(QBT)/jop
@@ -376,7 +376,7 @@ jop_blink_test:
 	@echo $(QPROJ)
 	for target in $(QPROJ); do \
 		echo "building $$target"; \
-		rm -r quartus/$$target/db; \
+		rm -rf quartus/$$target/db; \
 		qp="quartus/$$target/jop"; \
 		echo $$qp; \
 		quartus_map $$qp; \
@@ -394,7 +394,7 @@ jop_testmon:
 	@echo $(QPROJ)
 	for target in $(QPROJ); do \
 		echo "building $$target"; \
-		rm -r quartus/$$target/db; \
+		rm -rf quartus/$$target/db; \
 		qp="quartus/$$target/jop"; \
 		echo $$qp; \
 		quartus_map $$qp; \
@@ -425,7 +425,7 @@ udp_dbg:
 # (see: http://www.graphviz.org/)
 # jline: it will insert Java source code into the bytecode tables
 wcet:
-	-rm -r $(TARGET)/wcet
+	-rm -rf $(TARGET)/wcet
 	-mkdir $(TARGET)/wcet
 	java $(TOOLS_CP) -Dlatex=false -Ddot=true -Djline=true -Dls=true com.jopdesign.wcet.WCETAnalyser \
 		-mm $(WCET_METHOD) \
