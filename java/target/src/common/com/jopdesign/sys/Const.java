@@ -14,6 +14,13 @@ package com.jopdesign.sys;
  */
 public class Const {
 	
+	// Exception numbers - 1-7 reserved for HW generated exceptions
+	public static final int EXC_SPOV = 1;
+	public static final int EXC_NP = 2;
+	public static final int EXC_AB = 3;
+	
+	public static final int EXC_DIVZ = 8;
+	
 	// use neagitve base address for fast constant load
 	// with bipush
 	public static final int IO_BASE = 0xffffff80;
