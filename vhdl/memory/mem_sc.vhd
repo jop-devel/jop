@@ -176,8 +176,7 @@ begin
 	if sc_mem_in.rdy_cnt=3 then
 		mem_out.bsy <= '1';
 	else
-		if state/=ialrb and state/=iasw
-			and state/=iasst and bcl_arr_bsy='1' then
+		if state/=ialrb and state/=iasw and bcl_arr_bsy='1' then
 			mem_out.bsy <= '1';
 		end if;
 	end if;
@@ -492,9 +491,6 @@ begin
 
 		when iasst =>
 			next_state <= iasw;
-			if sc_mem_in.rdy_cnt(1)='0' then
-				next_state <= idl;
-			end if;
 
 		when iasw =>
 			-- either 1 or 0
@@ -517,21 +513,6 @@ begin
 end process;
 
 --
---	state machine combinatorial output
---	from next_state
---	read for single cycle memory could be
---	speed up
---
-process(next_state)
-begin
-	arr_wr <= '0';
-	if next_state=iasst then
-		arr_wr <= '1';
-	end if;
-
-end process;
-
---
 --	state machine register
 --	output register
 --
@@ -547,6 +528,7 @@ begin
 		bcl_arr_bsy <= '0';
 		null_pointer <= '0';
 		bounds_error <= '0';
+		arr_wr <= '0';
 
 	elsif rising_edge(clk) then
 
@@ -558,6 +540,7 @@ begin
 		bc_arr_rd <= '0';
 		null_pointer <= '0';
 		bounds_error <= '0';
+		arr_wr <= '0';
 
 		case next_state is
 
@@ -622,6 +605,7 @@ begin
 			when iasrb =>
 
 			when iasst =>
+				arr_wr <= '1';
 
 			when iasw =>
 
