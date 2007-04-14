@@ -11,6 +11,7 @@ add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cm
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_core/cmp_fch/ir
 add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_core/cmp_fch/bsy
 add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_core/cmp_fch/nxt
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_core/cmp_stk/sp
 add wave -noupdate -divider io
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cmp_io/sel_reg
 add wave -noupdate -divider {io cnt}
@@ -22,25 +23,24 @@ add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/cmp_io/cmp_c
 add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/cmp_io/cmp_cnt/wr
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cmp_io/cmp_cnt/clock_cnt
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cmp_io/cmp_cnt/irq_cnt
+add wave -noupdate -divider mem_sc
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_mem/mem_in
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_mem/mem_out
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_mem/next_state
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_mem/state
+add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_mem/bcl_arr_bsy
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_mem/addr_reg
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_mem/index
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_mem/addr_calc
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_mem/value
+add wave -noupdate -format Logic /tb_jop/cmp_jop/cpm_cpu/cmp_mem/was_a_store
+add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_mem/iastore_nxt
+add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_mem/null_pointer
+add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_mem/bounds_error
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/main_mem/data
 add wave -noupdate -divider SimpCon
 add wave -noupdate -format Literal -radix hexadecimal -expand /tb_jop/cmp_jop/cpm_cpu/sc_mem_out
 add wave -noupdate -format Literal -radix hexadecimal -expand /tb_jop/cmp_jop/cpm_cpu/sc_mem_in
-add wave -noupdate -divider mem_sc
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/main_mem/data
-add wave -noupdate -divider sc_mem_if
-add wave -noupdate -divider {bc load}
-add wave -noupdate -divider cache
-add wave -noupdate -divider amba
-add wave -noupdate -format Literal /tb_jop/cmp_jop/cmp_s2a/state
-add wave -noupdate -format Literal /tb_jop/cmp_jop/cmp_s2a/next_state
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cmp_s2a/reg_wr_data
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cmp_s2a/reg_rd_data
-add wave -noupdate -format Literal -radix hexadecimal -expand /tb_jop/cmp_jop/cmp_s2a/ahbsi
-add wave -noupdate -format Literal -radix hexadecimal -expand /tb_jop/cmp_jop/cmp_s2a/ahbso
-add wave -noupdate -format Literal -radix hexadecimal -expand /tb_jop/cmp_jop/cmp_s2a/scmi
-add wave -noupdate -format Literal -radix hexadecimal -expand /tb_jop/cmp_jop/cmp_s2a/scmo
-add wave -noupdate -divider ahb-memctrl
-add wave -noupdate -format Literal -radix hexadecimal -expand /tb_jop/cmp_jop/srctrl0/r
 add wave -noupdate -divider {external signals}
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/main_mem/addr
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/main_mem/data
@@ -54,10 +54,6 @@ add wave -noupdate -format Logic /tb_jop/cmp_jop/fl_ncsb
 add wave -noupdate -format Logic /tb_jop/cmp_jop/fl_noe
 add wave -noupdate -format Logic /tb_jop/cmp_jop/fl_nwe
 add wave -noupdate -format Logic /tb_jop/cmp_jop/fl_rdy
-add wave -noupdate -divider {wishbone IO}
-add wave -noupdate -divider {wb slave}
-add wave -noupdate -divider exception
-add wave -noupdate -divider execute
 TreeUpdate [SetDefaultTree]
 WaveRestoreCursors {{Cursor 1} {226600 ps} 0} {{Cursor 2} {693090000 ps} 0} {{Cursor 3} {3450000 ps} 0} {{Cursor 4} {3339704 ps} 0}
 configure wave -namecolwidth 228
@@ -73,4 +69,4 @@ configure wave -gridperiod 1
 configure wave -griddelta 40
 configure wave -timeline 0
 update
-WaveRestoreZoom {148539 ps} {287265 ps}
+WaveRestoreZoom {0 ps} {201973 ps}

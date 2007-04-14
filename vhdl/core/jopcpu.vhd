@@ -124,7 +124,11 @@ begin
 		port map (
 			clk => clk,
 			reset => reset,
-			din => stack_tos,
+			ain => stack_tos,
+			bin => stack_nos,
+
+			np_exc => exc_req.np,
+			ab_exc => exc_req.ab,
 
 			mem_in => mem_in,
 			mem_out => mem_out,

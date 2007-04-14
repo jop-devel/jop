@@ -39,6 +39,8 @@ package jop_types is
 		wr		: std_logic;
 		addr_wr	: std_logic;
 		bc_rd	: std_logic;
+		iaload	: std_logic;
+		iastore	: std_logic;
 	end record;
 
 	type mem_out_type is record
@@ -48,8 +50,14 @@ package jop_types is
 	end record;
 
 	type exception_type is record
-		spov	: std_logic;
+		spov	: std_logic;	-- stack overflow
+		np		: std_logic;	-- null pointer
+		ab		: std_logic;	-- array out of bounds
 	end record;
+
+	constant EXC_SPOV	: std_logic_vector(2 downto 0) := "001";
+	constant EXC_NP		: std_logic_vector(2 downto 0) := "010";
+	constant EXC_AB		: std_logic_vector(2 downto 0) := "011";
 
 	type irq_in_type is record
 		irq			: std_logic;	-- interrupt request (positiv edge sensitive)

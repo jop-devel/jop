@@ -171,7 +171,7 @@ class JVM {
 
 		if (b==0) {
 			// division by zero exception
-			Native.wrMem(0x02, Const.IO_EXCPT);
+			Native.wrMem(Const.EXC_DIVZ, Const.IO_EXCPT);
 			return 0;
 		}
 		boolean neg = false;
@@ -262,7 +262,7 @@ class JVM {
 
 		if (b==0) {
 			// division by zero exception
-			Native.wrMem(0x02, Const.IO_EXCPT);
+			Native.wrMem(Const.EXC_DIVZ, Const.IO_EXCPT);
 			return 0;
 		}
 		boolean neg = false;

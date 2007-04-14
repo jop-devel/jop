@@ -94,7 +94,7 @@ end component mul;
 	signal wraddr_msb			: std_logic;
 	signal was_a_mem_rd			: std_logic;
 
-	signal was_a_aload			: std_logic;	-- select memory for array load
+	signal was_a_iaload			: std_logic;	-- select memory for array load
 
 	signal wr_dly				: std_logic;	-- generate a bsy with delayed wr
 
@@ -148,7 +148,7 @@ begin
 	elsif rising_edge(clk) then
 
 		if (ext_addr=LDMRD) then
-			if was_a_mem_rd='1' or was_a_aload='1' then
+			if was_a_mem_rd='1' or was_a_iaload='1' then
 				exr <= mem_out.dout;
 			else
 				exr <= sc_io_in.rd_data;
@@ -174,9 +174,11 @@ begin
 		mem_scio_wr <= '0';
 		wraddr_wr <= '0';
 		mem_in.bc_rd <= '0';
+		mem_in.iaload <= '0';
+		mem_in.iastore <= '0';
 		mul_wr <= '0';
 		wr_dly <= '0';
-		was_a_aload <= '0';
+		was_a_iaload <= '0';
 
 
 	elsif rising_edge(clk) then
@@ -184,6 +186,8 @@ begin
 		mem_scio_wr <= '0';
 		wraddr_wr <= '0';
 		mem_in.bc_rd <= '0';
+		mem_in.iaload <= '0';
+		mem_in.iastore <= '0';
 		mul_wr <= '0';
 
 		wr_dly <= wr;
@@ -193,7 +197,7 @@ begin
 --	the data to be written (e.g. read address for the memory interface)
 --
 		if wr='1' then
-			was_a_aload <= '0';
+			was_a_iaload <= '0';
 
 			if ext_addr=STMRA then
 				mem_scio_rd <= '1';		-- start memory or io read
@@ -202,7 +206,10 @@ begin
 			elsif ext_addr=STMWD then
 				mem_scio_wr <= '1';		-- start memory or io write
 			elsif ext_addr=STALD then
-				was_a_aload <= '0';
+				mem_in.iaload <= '1';	-- start an array load
+				was_a_iaload <= '0';
+			elsif ext_addr=STAST then
+				mem_in.iastore <= '1';	-- start an array store
 			elsif ext_addr=STMUL then
 				mul_wr <= '1';			-- start multiplier
 			-- elsif ext_addr=STBCR then

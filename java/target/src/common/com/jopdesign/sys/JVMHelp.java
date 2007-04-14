@@ -77,9 +77,13 @@ wrByte(pc);
 		int i;
 		i = Native.rdMem(Const.IO_EXCPT);
 		JVMHelp.wr("\nException: ");
-		if (i==1) {
+		if (i==Const.EXC_SPOV) {
 			JVMHelp.wr("Stack overflow\n");
-		} else if (i==2) {
+		} else if (i==Const.EXC_NP) {
+			JVMHelp.wr("Null pointer exception\n");
+		} else if (i==Const.EXC_AB) {
+			JVMHelp.wr("Array out of bounds exception\n");
+		} else if (i==Const.EXC_DIVZ) {
 			JVMHelp.wr("ArithmeticException\n");
 		}
 
@@ -90,12 +94,11 @@ wrByte(pc);
 		wr("pc=");
 		wrSmall(pc);
 		i = Native.rdIntMem(sp);			// mp
-wrSmall(i);
-wr(' ');
+		wr("mp=");
+		wrSmall(i);
 		int start = Native.rdMem(i)>>>10;	// address of method
-wrSmall(start);
-wr(' ');
-wrByte(pc);
+		wr("start=");
+		wrSmall(start);
 
 		trace();
 
@@ -171,10 +174,12 @@ synchronized (o) {
 			fp = vp+args+loc;			// new fp can be calc. with vp and count of local vars
 		}
 		wr('\n');
+/*
 for (fp=128; fp<=sp; ++fp) {
 	wrSmall(Native.rdIntMem(fp));
 }
 		wr('\n');
+*/
 /*
 for (fp=10530; fp<=10700; ++fp) {
 	wrSmall(Native.rdMem(fp));

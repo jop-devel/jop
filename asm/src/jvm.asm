@@ -86,6 +86,7 @@
 //	2006-12-29	2K ROM, laload, lastore enabled again, dup2_x1, dup2_x2
 //	2006-12-30	add instanceof to invoke JVM.java with constant on TOS
 //	2007-03-17	new VHDL structure: jopcpu and more records (SimpCon)
+//	2007-04-14	iaload and iastore in hardware (mem_sc.vhd)
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -95,7 +96,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20070317
+version		= 20070414
 
 //
 //	io address are negativ memory addresses
@@ -196,6 +197,29 @@ addr		?			// address used for bc load from flash
 //
 //			pop
 //			pop
+/////////
+// test iaload
+//			ldi	1
+//			ldi 5
+//			stald
+//			pop
+//			wait
+//			wait
+//			ldmrd
+//			pop
+//
+//			nop
+//			nop
+//			nop
+// test iastore
+//			ldi 1
+//			ldi 5
+//			ldi 3
+//			stast
+//			pop
+//			pop
+//			wait
+//			wait
 /////////
 
 
@@ -1049,6 +1073,14 @@ castore:
 fastore:
 iastore:
 sastore:
+// new HW version :-)))
+			stast
+			pop
+			pop
+			wait
+			wait
+			nop nxt
+
 //*******************************
 // test for oohw change
 //			ldi	6			// 7*5+2+1=38
@@ -1061,50 +1093,52 @@ sastore:
 //			pop				// remove counter
 //			nop
 //*******************************
-			stm	a				// value
-			stm	b				// index
-			// arrayref is TOS
-			dup					// for null pointer check
-			dup					// for bound check, one cycle wait for bz
-			bz	null_pointer	// 
-			// we do the following in the
-			// branch slot -> one more element
-			// from the former dup on the stack
-			ldi	1
-			add					// arrayref+1
-			stmra				// read ext. mem, mem_bsy comes one cycle later
-			wait				// is this ok? - wait in branch slot
-			wait
-			ldmrd		 		// read ext. mem (array length)
 
-			ldi	1
-			sub					// length-1
-			ldm	b				// index
-			sub					// TOS = length-1-index
-			ldm	b				// check if index is negativ
-			or					// is one of both checks neagtv?
-         	ldi	-2147483648		//  0x80000000
-			and
-			nop
-			bnz	array_bound
-			nop
-			nop
-
-// we could save one ot two cycles when
-// starting the read in the branch slot
-			stmra				// read handle indirection
-			wait				// for the GC
-			wait
-			ldmrd
-			ldm	b
-			add					// index+arrayref
-
-			stmwa				// write ext. mem address
-			ldm	a
-			stmwd				// write ext. mem data
-			wait
-			wait
-			nop	nxt
+// original SW version
+//			stm	a				// value
+//			stm	b				// index
+//			// arrayref is TOS
+//			dup					// for null pointer check
+//			dup					// for bound check, one cycle wait for bz
+//			bz	null_pointer	// 
+//			// we do the following in the
+//			// branch slot -> one more element
+//			// from the former dup on the stack
+//			ldi	1
+//			add					// arrayref+1
+//			stmra				// read ext. mem, mem_bsy comes one cycle later
+//			wait				// is this ok? - wait in branch slot
+//			wait
+//			ldmrd		 		// read ext. mem (array length)
+//
+//			ldi	1
+//			sub					// length-1
+//			ldm	b				// index
+//			sub					// TOS = length-1-index
+//			ldm	b				// check if index is negativ
+//			or					// is one of both checks negativ?
+//         	ldi	-2147483648		//  0x80000000
+//			and
+//			nop
+//			bnz	array_bound
+//			nop
+//			nop
+//
+//// we could save one or two cycles when
+//// starting the read in the branch slot
+//			stmra				// read handle indirection
+//			wait				// for the GC
+//			wait
+//			ldmrd
+//			ldm	b
+//			add					// index+arrayref
+//
+//			stmwa				// write ext. mem address
+//			ldm	a
+//			stmwd				// write ext. mem data
+//			wait
+//			wait
+//			nop	nxt
 
 aaload:
 baload:
@@ -1112,6 +1146,13 @@ caload:
 faload:
 iaload:
 saload:
+// new HW version :-)))
+			stald
+			pop
+			wait
+			wait
+			ldmrd nxt
+
 //*******************************
 // test for oohw change
 //			ldi	5			// 6*5+2+3=35
@@ -1127,53 +1168,54 @@ saload:
 //			nop
 //*******************************
 
+// original SW version
 //
 //	ideas for enhancements:
 //		array pointer points to length and not the first element
 //		load and checks in memory interface
 //
-			stm	b				// index
-			// arrayref is TOS
-			dup					// for null pointer check
-			dup					// for bound check, one cycle wait for bz
-			bz	null_pointer	// 
-			// we do the following in the
-			// branch slot -> one more element
-			// from the former dup on the stack
-			ldi	1
-			add					// arrayref+1
-
-			stmra				// read array length
-			wait				// is this ok? - wait in branch slot
-			wait
-			ldmrd		 		// read ext. mem (array length)
-
-			ldi	1
-			add					// length+1
-			ldm	b				// index
-			sub					// TOS = length-1-index
-			ldm	b				// check if index is negativ
-			or					// is one of both checks neagtv?
-         	ldi	-2147483648		//  0x80000000
-			and
-			nop
-			bnz	array_bound
-			nop
-			nop
-
-// we could save one ot two cycles when
-// starting the read in the branch slot
-			stmra				// read handle indirection
-			wait				// for the GC
-			wait
-			ldmrd
-			ldm	b
-			add					// index+arrayref
-
-			stmra				// read ext. mem, mem_bsy comes one cycle later
-			wait
-			wait
-			ldmrd		 nxt	// read ext. mem
+//			stm	b				// index
+//			// arrayref is TOS
+//			dup					// for null pointer check
+//			dup					// for bound check, one cycle wait for bz
+//			bz	null_pointer	// 
+//			// we do the following in the
+//			// branch slot -> one more element
+//			// from the former dup on the stack
+//			ldi	1
+//			add					// arrayref+1
+//
+//			stmra				// read array length
+//			wait				// is this ok? - wait in branch slot
+//			wait
+//			ldmrd		 		// read ext. mem (array length)
+//
+//			ldi	1
+//			add					// length+1
+//			ldm	b				// index
+//			sub					// TOS = length-1-index
+//			ldm	b				// check if index is negativ
+//			or					// is one of both checks neagtv?
+//         	ldi	-2147483648		//  0x80000000
+//			and
+//			nop
+//			bnz	array_bound
+//			nop
+//			nop
+//
+//// we could save one ot two cycles when
+//// starting the read in the branch slot
+//			stmra				// read handle indirection
+//			wait				// for the GC
+//			wait
+//			ldmrd
+//			ldm	b
+//			add					// index+arrayref
+//
+//			stmra				// read ext. mem, mem_bsy comes one cycle later
+//			wait
+//			wait
+//			ldmrd		 nxt	// read ext. mem
 
 
 monitorenter:

@@ -200,7 +200,15 @@ begin
 		irq_in.exc_int <= '0';
 
 		if exc_req.spov='1' then
-			exc_type(0) <= '1';
+			exc_type(2 downto 0) <= EXC_SPOV;
+			irq_in.exc_int <= '1';
+		end if;
+		if exc_req.np='1' then
+			exc_type(2 downto 0) <= EXC_NP;
+			irq_in.exc_int <= '1';
+		end if;
+		if exc_req.ab='1' then
+			exc_type(2 downto 0) <= EXC_AB;
 			irq_in.exc_int <= '1';
 		end if;
 
