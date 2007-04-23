@@ -24,7 +24,11 @@
 		</vcom>
 
 		<vcom>
-			<arg line="${jopdir}/top/jop_types.vhd"/>
+			<arg line="${jopdir}/core/jop_types.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/simpcon/sc_pack.vhd"/>
 		</vcom>
 
 		<vcom>
@@ -133,6 +137,10 @@
 
 		<vcom>
 			<arg line="${jopdir}/scio/scio_min.vhd"/>
+		</vcom>
+
+		<vcom>
+			<arg line="${jopdir}/core/jopcpu.vhd"/>
 		</vcom>
 
 		<vcom>

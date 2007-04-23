@@ -6,8 +6,8 @@
 		
 		<delete>
 			<fileset>
-				<includes name="*.dat"/>
-				<includes name="*.wlf"/>
+				<include name="*.dat"/>
+				<include name="*.wlf"/>
 			</fileset>
 		</delete>
 		
