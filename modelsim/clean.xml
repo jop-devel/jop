@@ -5,7 +5,7 @@
 		<delete dir="work"/>
 		
 		<delete>
-			<fileset>
+			<fileset dir=".">
 				<include name="*.dat"/>
 				<include name="*.wlf"/>
 			</fileset>
