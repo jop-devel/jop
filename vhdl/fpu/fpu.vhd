@@ -257,7 +257,7 @@ begin
 			 opb_i => s_opb_i,
 			 exp_10_i => pre_norm_mul_exp_10,
 			 fract_48_i	=> mul_fract_48,
-			 sign_i	=> mul_24_sign,
+			 sign_i	=> mul_sign,
 			 rmode_i => s_rmode_i,
 			 output_o => post_norm_mul_output,
 			 ine_o => post_norm_mul_ine
