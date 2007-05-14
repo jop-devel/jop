@@ -389,7 +389,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			break;
 		// IALOAD = 46
 		case org.apache.bcel.Constants.IALOAD:
-			wcet = 32 + 3*r;
+			wcet = 7 + 3*r;
 			break;
 		// LALOAD = 47
 		case org.apache.bcel.Constants.LALOAD:
@@ -397,7 +397,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			break;
 		// FALOAD = 48
 		case org.apache.bcel.Constants.FALOAD:
-			wcet = 32 + 3*r;
+			wcet = 7 + 3*r;
 			break;
 		// DALOAD = 49
 		case org.apache.bcel.Constants.DALOAD:
@@ -405,19 +405,19 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			break;
 		// AALOAD = 50
 		case org.apache.bcel.Constants.AALOAD:
-			wcet = 32 + 3*r;
+			wcet = 7 + 3*r;
 			break;
 		// BALOAD = 51
 		case org.apache.bcel.Constants.BALOAD:
-			wcet = 32 + 3*r;
+			wcet = 7 + 3*r;
 			break;
 		// CALOAD = 52
 		case org.apache.bcel.Constants.CALOAD:
-			wcet = 32 + 3*r;
+			wcet = 7 + 3*r;
 			break;
 		// SALOAD = 53
 		case org.apache.bcel.Constants.SALOAD:
-			wcet = 32 + 3*r;
+			wcet = 7 + 3*r;
 			break;
 		// ISTORE = 54
 		case org.apache.bcel.Constants.ISTORE:
@@ -521,7 +521,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			break;
 		// IASTORE = 79
 		case org.apache.bcel.Constants.IASTORE:
-			wcet = 35+2*r+w;
+			wcet = 9+2*r+w;
 			break;
 		// LASTORE = 80
 		case org.apache.bcel.Constants.LASTORE:
@@ -532,7 +532,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			break;
 		// FASTORE = 81
 		case org.apache.bcel.Constants.FASTORE:
-			wcet = 35+2*r+w;
+			wcet = 9+2*r+w;
 			break;
 		// DASTORE = 82
 		case org.apache.bcel.Constants.DASTORE:
@@ -540,19 +540,19 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			break;
 		// AASTORE = 83
 		case org.apache.bcel.Constants.AASTORE:
-			wcet = 35+2*r+w;
+			wcet = 9+2*r+w;
 			break;
 		// BASTORE = 84
 		case org.apache.bcel.Constants.BASTORE:
-			wcet = 35+2*r+w;
+			wcet = 9+2*r+w;
 			break;
 		// CASTORE = 85
 		case org.apache.bcel.Constants.CASTORE:
-			wcet = 35+2*r+w;
+			wcet = 9+2*r+w;
 			break;
 		// SASTORE = 86
 		case org.apache.bcel.Constants.SASTORE:
-			wcet = 35+2*r+w;
+			wcet = 9+2*r+w;
 			break;
 		// POP = 87
 		case org.apache.bcel.Constants.POP:
