@@ -1,0 +1,68 @@
+# Copyright (C) 1991-2006 Altera Corporation
+# Your use of Altera Corporation's design tools, logic functions 
+# and other software and tools, and its AMPP partner logic 
+# functions, and any output files any of the foregoing 
+# (including device programming or simulation files), and any 
+# associated documentation or information are expressly subject 
+# to the terms and conditions of the Altera Program License 
+# Subscription Agreement, Altera MegaCore Function License 
+# Agreement, or other applicable license agreement, including, 
+# without limitation, that your use is for the sole purpose of 
+# programming logic devices manufactured by Altera and sold by 
+# Altera or its authorized distributors.  Please refer to the 
+# applicable agreement for further details.
+
+
+# The default values for assignments are stored in the file
+#		pld_assignment_defaults.qdf
+# If this file doesn't exist, and for assignments not listed, see file
+#		assignment_defaults.qdf
+
+# Altera recommends that you do not modify this file. This
+# file is updated automatically by the Quartus II software
+# and any changes you make may be lost or overwritten.
+
+
+set_global_assignment -name FAMILY MAX3000A
+set_global_assignment -name DEVICE "EPM3064ATC44-10"
+set_global_assignment -name TOP_LEVEL_ENTITY pld
+set_global_assignment -name ORIGINAL_QUARTUS_VERSION "6.0 SP1"
+set_global_assignment -name PROJECT_CREATION_TIME_DATE "17:23:00  JANUARY 19, 2007"
+set_global_assignment -name LAST_QUARTUS_VERSION "6.0 SP1"
+set_global_assignment -name DEVICE_FILTER_PIN_COUNT 44
+set_global_assignment -name DEVICE_FILTER_PACKAGE TQFP
+set_location_assignment PIN_37 -to clk
+set_location_assignment PIN_1 -to TDI
+set_location_assignment PIN_26 -to TCK
+set_location_assignment PIN_32 -to TDO
+set_location_assignment PIN_7 -to TMS
+set_location_assignment PIN_8 -to pins[0]
+set_location_assignment PIN_10 -to pins[1]
+set_location_assignment PIN_12 -to pins[2]
+set_location_assignment PIN_13 -to pins[3]
+set_location_assignment PIN_14 -to pins[4]
+set_location_assignment PIN_15 -to pins[5]
+set_location_assignment PIN_18 -to pins[6]
+set_location_assignment PIN_19 -to pins[7]
+set_location_assignment PIN_20 -to pins[8]
+set_location_assignment PIN_21 -to pins[9]
+set_location_assignment PIN_22 -to pins[10]
+set_location_assignment PIN_23 -to pins[11]
+set_location_assignment PIN_25 -to pins[12]
+set_location_assignment PIN_27 -to pins[13]
+set_location_assignment PIN_28 -to pins[14]
+set_location_assignment PIN_5 -to data
+set_location_assignment PIN_6 -to pld_strobe
+set_location_assignment PIN_38 -to input_only_pins[0]
+set_location_assignment PIN_39 -to input_only_pins[1]
+
+set_location_assignment PIN_2 -to ignored_pins[0]
+set_location_assignment PIN_3 -to ignored_pins[1]
+set_location_assignment PIN_31 -to pins[15]
+set_location_assignment PIN_33 -to pins[16]
+set_location_assignment PIN_34 -to pins[17]
+set_location_assignment PIN_35 -to pins[18]
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/lego/lego_pld_pack.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/lego/input_synchronizer.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/lego/pld.vhd
+set_global_assignment -name CDF_FILE pld.cdf

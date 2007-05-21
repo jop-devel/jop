@@ -3,10 +3,8 @@ JedecChain;
 	FileRevision(JESD32A);
 	DefaultMfr(6E);
 
-	P ActionCode(Ign)
-		Device PartName(EPM7064AET44) MfrSpec(OpMask(0) FullPath("../cycconf/cyc_conf_init.pof"));
 	P ActionCode(Cfg)
-		Device PartName(EP1C12Q240) Path("./") File("jop.sof") MfrSpec(OpMask(1));
+		Device PartName(EPM3064AT44) Path("") File("pld.pof") MfrSpec(OpMask(3));
 
 ChainEnd;
 

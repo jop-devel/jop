@@ -1,0 +1,27 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head></head>
+<body bgcolor="white">
+Provides interfaces to the JOP Lego board periphery.
+<p>
+The package uses the Native.rd() and Native.wr() instructions provided by the JOP 
+processor to communicate with the VHDL counterpart.
+The VHDL counterpart is realized as a (simple) 
+<a href="http://www.opencores.org/projects.cgi/web/simpcon/overview">SimpCon</a> slave.
+The slaves top level entity is contained in vhdl/scio/sc_lego.vhd, and instantiated as 
+jop/scio/sc_lego.
+<p>
+Conventions:
+<ul>
+<li>When writing, all non-relevant bits will be ignored.
+<li>When reading, all non-relevant bits will be zero.
+</ul>
+<p>
+In the JOP sources, the package is located in java/target/src/app/lego/lib.
+<p>
+Related documentation:
+<ul>
+<li>XXX
+</ul>
+</body>
+</html>

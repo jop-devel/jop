@@ -1,0 +1,182 @@
+package lego;
+
+import com.jopdesign.sys.*;
+import joprt.RtThread;
+import lego.lib.Buttons;
+import lego.lib.DigitalInputs;
+import lego.lib.FutureUse;
+import lego.lib.Leds;
+import lego.lib.Microphone;
+import lego.lib.Motor;
+import lego.lib.Sensors;
+
+/**
+ * 
+ * @author Peter Hilber (peter.hilber@student.tuwien.ac.at)
+ *
+ */
+public class GCTest7
+{
+	// configuration
+	static final boolean REPEAT = true;
+	static final int INTERVAL = 1000;
+
+	static final boolean BUTTONS = true;
+	static final boolean DIGITALINPUTS = true;
+	static final boolean FUTUREUSE = true;
+	static final boolean LEDS = true;
+	static final boolean MICROPHONE = true;
+	static final boolean MOTORS = true;
+	static final boolean SENSORS = true;
+	static final boolean PLD_RAW_INPUT = true;
+	static final boolean KNIGHT_RIDER_DEMO = true;
+	static final boolean FREEMEMORY = true;
+
+	public static final int LED0 = 1<<1; 	
+	public static final int LED1 = 1<<7;
+	public static final int LED2 = 1<<5;
+	public static final int LED3 = 1<<4;
+
+	static int val;
+	static boolean up;
+
+	public static void knightRiderLoop() {
+		FutureUse.writePins(val);
+		//Native.wr(val, IO_LEDS);
+
+		if (up){
+			switch (val) {
+				case LED0: val = LED1; break;
+				case LED1: val = LED2; break;
+				case LED2: val = LED3; break;
+				case LED3: {
+					up = false;
+					val = LED2;
+					break;
+				}
+				default: val = LED0; break;
+			}
+		} else {
+			switch (val) {
+				case LED0: {
+					up = true;
+					val = LED1;
+					break;
+				}
+				case LED1: val = LED0; break;
+				case LED2: val = LED1; break;
+				default: val = LED0; break;
+			}
+		}
+	}
+
+	/**
+	 * @param args
+	 */
+	public static void main(String[] args)
+	{				
+		System.out.println("Initializing.");
+		
+		Motor.setMotor(0, Motor.STATE_FORWARD, true, Motor.MAX_DUTYCYCLE);
+		//Native.wr(-1 << 1, Motor.IO_OUTPUT_MOTOR[1]);
+
+		if (KNIGHT_RIDER_DEMO)
+		{
+			val = LED0;
+			up = true;
+
+			new RtThread(10, 100*1000) {
+				public void run() {
+					for (;;) {
+						knightRiderLoop();
+						waitForNextPeriod();
+
+					}
+				}
+			};
+		}
+
+		new RtThread(10, 10*1000)
+		{
+			public void run()
+			{
+				StringBuffer output = new StringBuffer(500);
+				do
+				{
+					output = new StringBuffer(500);
+					
+					output.setLength(0);
+					
+					output.append("New measurement...\n\n");
+					if (FREEMEMORY)
+					{
+						output.append("Free memory: ").append(GC.freeMemory()).append("\n");
+					}
+					if (BUTTONS)
+					{
+						for (int i = 0; i < 4; i++)
+						{
+							// uncomment this to have fun with javac
+							//System.out.println("Button " + i + ": " + Buttons.getButton(i));
+							// uncomment this to have fun with JOP
+							//System.out.println("Button " + i + ": " + new Boolean(Buttons.getButton(i)));
+							output.append("Button ").append(i).append(": ").append(Buttons.getButton(i) ? "Down" : "Up").append("\n");
+						}
+					}
+					if (DIGITALINPUTS)
+					{
+						for (int i = 0; i < 3; i++)
+							output.append("Digital input ").append(i).append(": ").append(DigitalInputs.getDigitalInput(i) ? "1" : "0").append("\n");
+					}
+					if (FUTUREUSE)
+					{
+						output.append("Unknown input: 0x").append(
+								Integer.toHexString((FutureUse.readPins()))).append("\n");
+					}
+					if (LEDS)
+					{
+						Leds.setLeds(-1);
+					}
+					if (MICROPHONE)
+					{
+						output.append("Microphone: ").append(Microphone.readMicrophone()).append("\n");
+					}
+					if (MOTORS)
+					{
+						Motor.synchronizedReadBackEMF();
+						for (int i = 0; i < 2; i++)
+						{
+							int[] backEMF = new Motor(i).getSynchronizedBackEMF();
+							output.append(
+									"Motor ").append(i).append(" back-emf measurement: ").append(backEMF[0] - 0x100).append(", ").append(backEMF[1] - 0x100).append("\n");
+						}
+					}			
+					if (SENSORS)
+					{
+						Sensors.synchronizedReadSensors();
+						for (int i = 0; i < 3; i++)
+							output.append("Analog sensor ").append(i).append(": ").append(Sensors.getBufferedSensor(i)).append(
+								" (").append(Sensors.readSensorValueAsPercentage(i)).append(("%)")).append("\n");
+					}
+					if (PLD_RAW_INPUT)
+					{
+						output.append("PLD raw input: ").append(Native.rd(Const.IO_LEGO + 7)).append("\n");
+					}
+
+					output.append("\nMeasurement finished.\n\n");
+					output.append("Length: ").append(output.length()).append(" Capacity: " ).append(output.capacity()).append("\n");
+					
+					System.out.print(output);
+					if (!REPEAT)
+						break;
+					waitForNextPeriod();
+				} while (true);
+			}
+		};
+
+		RtThread.startMission();
+
+		System.out.println("Started.");
+	}
+
+}
