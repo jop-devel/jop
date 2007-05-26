@@ -1,0 +1,73 @@
+
+\input{preamble}
+
+
+\begin{document}
+
+\title{JOP User Manual}
+\author{Martin Schoeberl\\martin@jopdesign.com}
+\maketitle \thispagestyle{empty}
+
+%\input{intro/title}
+
+
+%\input{intro/abstract}
+
+%\pagestyle{scrheadings} \pagenumbering{roman}
+
+\tableofcontents \cleardoublepage
+% \listoftables \newpage \listoffigures
+% \newpage \lstlistoflistings \newpage
+
+
+%\pagestyle{scrheadings} \pagenumbering{arabic}
+
+
+%-----------------------------------------------------------------
+% here we start to work
+%-----------------------------------------------------------------
+
+%\chapter{Introduction}
+%\label{chap:intro}
+%    \input{intro/intro}
+
+\chapter{Introduction into the Design Flow}
+\label{chap:build}
+\input{build/flow}
+
+
+%\printindex
+%\pagestyle{empty}
+%\chaptermark{} % remove chapter mark in the heading, but it does it on the
+               % last page too!
+\bibliographystyle{plain}
+%\bibliographystyle{plnnolow} % changed plain.bst to keep upper case in titles
+\bibliography{../bib/all}
+
+%\def\rightmark{} % remove section part in the heading
+\appendix
+% \ihead{\leftmark} % use chapter (=\leftmark) on both pages in the appendix
+
+%\chapter{Publications}
+%    \input{outro/publications}
+
+%\chapter{Glossary}
+\chapter{Acronyms}
+ \label{appx:acro}
+\input{appendix/acronyms}
+
+
+\chapter{JOP Instruction Set} \label{appx:jop:instr}
+\input{appendix/instruction_set}
+
+\chapter{Bytecode Execution Time} \label{appx:bytecode}
+\input{appendix/bytetable}
+
+%\chapter{Benchmark Results} \label{appx:bench}
+%\input{appendix/benchmarks}
+
+%\chapter{Cyclone FPGA Board} \label{appx:cycore}
+%\input{appendix/cycore}
+
+
+\end{document}

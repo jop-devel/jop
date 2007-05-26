@@ -1,0 +1,258 @@
+0 & nop & hw & 1 \\
+1 & aconst\_null & hw & 1 \\
+2 & iconst\_m1 & hw & 1 \\
+3 & iconst\_0 & hw & 1 \\
+4 & iconst\_1 & hw & 1 \\
+5 & iconst\_2 & hw & 1 \\
+6 & iconst\_3 & hw & 1 \\
+7 & iconst\_4 & hw & 1 \\
+8 & iconst\_5 & hw & 1 \\
+9 & lconst\_0 & mc & 2 \\
+10 & lconst\_1 & mc & 2 \\
+11 & fconst\_0 & Java &  \\
+12 & fconst\_1 & Java &  \\
+13 & fconst\_2 & Java &  \\
+14 & dconst\_0 & - &  \\
+15 & dconst\_1 & - &  \\
+16 & bipush & mc & 2 \\
+17 & sipush & mc & 3 \\
+18 & ldc & mc & 7+r \\
+19 & ldc\_w & mc & 8+r \\
+20 & ldc2\_w\footnotemark[20] & mc & 17+2*r \\
+21 & iload & mc & 2 \\
+22 & lload & mc & 11 \\
+23 & fload & mc & 2 \\
+24 & dload & mc & 11 \\
+25 & aload & mc & 2 \\
+26 & iload\_0 & hw & 1 \\
+27 & iload\_1 & hw & 1 \\
+28 & iload\_2 & hw & 1 \\
+29 & iload\_3 & hw & 1 \\
+30 & lload\_0 & mc & 2 \\
+31 & lload\_1 & mc & 2 \\
+32 & lload\_2 & mc & 2 \\
+33 & lload\_3 & mc & 11 \\
+34 & fload\_0 & hw & 1 \\
+35 & fload\_1 & hw & 1 \\
+36 & fload\_2 & hw & 1 \\
+37 & fload\_3 & hw & 1 \\
+38 & dload\_0 & mc & 2 \\
+39 & dload\_1 & mc & 2 \\
+40 & dload\_2 & mc & 2 \\
+41 & dload\_3 & mc & 11 \\
+42 & aload\_0 & hw & 1 \\
+43 & aload\_1 & hw & 1 \\
+44 & aload\_2 & hw & 1 \\
+45 & aload\_3 & hw & 1 \\
+%46 & iaload\footnotemark[46] & mc & 32+3*r \\
+46 & iaload\footnotemark[46] & mc & 7+3*r \\
+47 & laload & mc & 43+4*r \\
+48 & faload\footnotemark[46] & mc & 7+3*r \\
+49 & daload & - &  \\
+50 & aaload\footnotemark[46] & mc & 7+3*r \\
+51 & baload\footnotemark[46] & mc & 7+3*r \\
+52 & caload\footnotemark[46] & mc & 7+3*r \\
+53 & saload\footnotemark[46] & mc & 7+3*r \\
+54 & istore & mc & 2 \\
+55 & lstore & mc & 11 \\
+56 & fstore & mc & 2 \\
+57 & dstore & mc & 11 \\
+58 & astore & mc & 2 \\
+59 & istore\_0 & hw & 1 \\
+60 & istore\_1 & hw & 1 \\
+61 & istore\_2 & hw & 1 \\
+62 & istore\_3 & hw & 1 \\
+63 & lstore\_0 & mc & 2 \\
+64 & lstore\_1 & mc & 2 \\
+65 & lstore\_2 & mc & 2 \\
+66 & lstore\_3 & mc & 11 \\
+67 & fstore\_0 & hw & 1 \\
+68 & fstore\_1 & hw & 1 \\
+69 & fstore\_2 & hw & 1 \\
+70 & fstore\_3 & hw & 1 \\
+71 & dstore\_0 & mc & 2 \\
+72 & dstore\_1 & mc & 2 \\
+73 & dstore\_2 & mc & 2 \\
+74 & dstore\_3 & mc & 11 \\
+75 & astore\_0 & hw & 1 \\
+76 & astore\_1 & hw & 1 \\
+77 & astore\_2 & hw & 1 \\
+78 & astore\_3 & hw & 1 \\
+%79 & iastore\footnotemark[79] & mc & 35+2*r+w \\
+79 & iastore\footnotemark[79] & mc & 9+2*r+w \\
+80 & lastore\footnotemark[1] & mc & 48+2*r+2*w \\
+81 & fastore\footnotemark[79] & mc & 9+2*r+w \\
+82 & dastore & - &  \\
+83 & aastore\footnotemark[79] & mc & 9+2*r+w \\
+84 & bastore\footnotemark[79] & mc & 9+2*r+w \\
+85 & castore\footnotemark[79] & mc & 9+2*r+w \\
+86 & sastore\footnotemark[79] & mc & 9+2*r+w \\
+87 & pop & hw & 1 \\
+88 & pop2 & mc & 2 \\
+89 & dup & hw & 1 \\
+90 & dup\_x1 & mc & 5 \\
+91 & dup\_x2 & mc & 7 \\
+92 & dup2 & mc & 6 \\
+93 & dup2\_x1 & mc & 8 \\
+94 & dup2\_x2 & mc & 10 \\
+95 & swap\footnotemark[2] & mc & 4 \\
+96 & iadd & hw & 1 \\
+97 & ladd & Java &  \\
+98 & fadd & Java &  \\
+99 & dadd & - &  \\
+100 & isub & hw & 1 \\
+101 & lsub & Java &  \\
+102 & fsub & Java &  \\
+103 & dsub & - &  \\
+104 & imul & mc & 35 \\
+105 & lmul & Java &  \\
+106 & fmul & Java &  \\
+107 & dmul & - &  \\
+108 & idiv & Java &  \\
+109 & ldiv & Java &  \\
+110 & fdiv & Java &  \\
+111 & ddiv & - &  \\
+112 & irem & Java &  \\
+113 & lrem & Java &  \\
+114 & frem & Java &  \\
+115 & drem & - &  \\
+116 & ineg & mc & 4 \\
+117 & lneg & Java &  \\
+118 & fneg & Java &  \\
+119 & dneg & - &  \\
+120 & ishl & hw & 1 \\
+121 & lshl & Java &  \\
+122 & ishr & hw & 1 \\
+123 & lshr & Java &  \\
+124 & iushr & hw & 1 \\
+125 & lushr & Java &  \\
+126 & iand & hw & 1 \\
+127 & land & Java &  \\
+128 & ior & hw & 1 \\
+129 & lor & Java &  \\
+130 & ixor & hw & 1 \\
+131 & lxor & Java &  \\
+132 & iinc & mc & 8 \\
+133 & i2l & Java &  \\
+134 & i2f & Java &  \\
+135 & i2d & - &  \\
+136 & l2i & mc & 3 \\
+137 & l2f & - &  \\
+138 & l2d & - &  \\
+139 & f2i & Java &  \\
+140 & f2l & - &  \\
+141 & f2d & - &  \\
+142 & d2i & - &  \\
+143 & d2l & - &  \\
+144 & d2f & - &  \\
+145 & i2b & Java &  \\
+146 & i2c & mc & 2 \\
+147 & i2s & Java &  \\
+148 & lcmp & Java &  \\
+149 & fcmpl & Java &  \\
+150 & fcmpg & Java &  \\
+151 & dcmpl & - &  \\
+152 & dcmpg & - &  \\
+153 & ifeq & mc & 4 \\
+154 & ifne & mc & 4 \\
+155 & iflt & mc & 4 \\
+156 & ifge & mc & 4 \\
+157 & ifgt & mc & 4 \\
+158 & ifle & mc & 4 \\
+159 & if\_icmpeq & mc & 4 \\
+160 & if\_icmpne & mc & 4 \\
+161 & if\_icmplt & mc & 4 \\
+162 & if\_icmpge & mc & 4 \\
+163 & if\_icmpgt & mc & 4 \\
+164 & if\_icmple & mc & 4 \\
+165 & if\_acmpeq & mc & 4 \\
+166 & if\_acmpne & mc & 4 \\
+167 & goto & mc & 4 \\
+168 & jsr & \emph{not used} &  \\
+169 & ret & \emph{not used} &  \\
+170 & tableswitch\footnotemark[170] & Java & \\
+171 & lookupswitch\footnotemark[171] & Java &  \\
+172 & ireturn\footnotemark[172] & mc &  23+r+l \\
+173 & lreturn\footnotemark[173] & mc &  25+r+l \\
+174 & freturn\footnotemark[172] & mc &  23+r+l \\
+175 & dreturn\footnotemark[173] & mc &  25+r+l \\
+176 & areturn\footnotemark[172] & mc &  23+r+l \\
+177 & return\footnotemark[177] & mc &  21+r+l \\
+178 & getstatic & mc & 12+2*r \\
+179 & putstatic & mc & 13+r+w \\
+180 & getfield & mc & 17+2*r \\
+181 & putfield & mc & 20+r+w \\
+182 & invokevirtual\footnotemark[182] & mc & 100+4r+l \\
+183 & invokespecial\footnotemark[183] & mc &  74+3*r+l \\
+184 & invokestatic\footnotemark[183] & mc &  74+3*r+l \\
+185 & invokeinterface\footnotemark[185] & mc &  114+6r+l \\
+186 & unused\_ba & - &  \\
+187 & new\footnotemark[187] & Java &   \\
+188 & newarray\footnotemark[188] & Java &  \\
+189 & anewarray & Java &  \\
+190 & arraylength & mc & 6+r \\
+191 & athrow\footnotemark[3] & Java &  \\
+192 & checkcast & Java &  \\
+193 & instanceof & Java &  \\
+194 & monitorenter & mc & 11 \\
+195 & monitorexit & mc & 10/16 \\
+196 & wide & \emph{not used} &  \\
+197 & multianewarray\footnotemark[4] & Java &  \\
+198 & ifnull & mc & 4 \\
+199 & ifnonnull & mc & 4 \\
+200 & goto\_w & \emph{not used} &  \\
+201 & jsr\_w & \emph{not used} &  \\
+202 & breakpoint & - &  \\
+203 & reserved & - &  \\
+204 & reserved & - &  \\
+205 & reserved & - &  \\
+206 & reserved & - &  \\
+207 & reserved & - &  \\
+208 & reserved & - &  \\
+209 & jopsys\_rd\footnotemark[209] & mc & 4+r \\
+210 & jopsys\_wr & mc & 5+w \\
+211 & jopsys\_rdmem & mc & 4+r \\
+212 & jopsys\_wrmem & mc & 5+w \\
+213 & jopsys\_rdint & mc & 3 \\
+214 & jopsys\_wrint & mc & 3 \\
+215 & jopsys\_getsp & mc & 3 \\
+216 & jopsys\_setsp & mc & 4 \\
+217 & jopsys\_getvp & hw & 1 \\
+218 & jopsys\_setvp & mc & 2 \\
+219 & jopsys\_int2ext\footnotemark[219] & mc & 14+r+n*(23+w) \\
+220 & jopsys\_ext2int\footnotemark[220] & mc & 14+r+n*(23+r) \\
+221 & jopsys\_nop & mc & 1 \\
+222 & jopsys\_invoke & mc &  \\
+223 & jopsys\_cond\_move & mc & 5 \\
+224 & getstatic\_ref & mc & \\
+225 & putstatic\_ref & mc & \\
+226 & getfield\_ref & mc & \\
+227 & putfield\_ref & mc & \\
+228 & getstatic\_long & mc & \\
+229 & putstatic\_long & mc & \\
+230 & getfield\_long & mc & \\
+231 & putfield\_long & mc & \\
+232 & reserved & - \\
+233 & reserved & - \\
+234 & reserved & - \\
+235 & reserved & - \\
+236 & reserved & - \\
+237 & reserved & - \\
+238 & reserved & - \\
+239 & reserved & - \\
+240 & sys\_int\footnotemark[240] & Java \\
+241 & sys\_exc\footnotemark[240] & Java \\
+242 & reserved & - \\
+243 & reserved & - \\
+244 & reserved & - \\
+245 & reserved & - \\
+246 & reserved & - \\
+247 & reserved & - \\
+248 & reserved & - \\
+249 & reserved & - \\
+250 & reserved & - \\
+251 & reserved & - \\
+252 & reserved & - \\
+253 & reserved & - \\
+254 & sys\_noimp & Java \\
+255 & sys\_init & \emph{not used} \\

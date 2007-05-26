@@ -1,0 +1,236 @@
+
+% a changed copy from the thesis
+
+%\documentclass[a4paper,10pt,twocolumn]{article}
+% use option draft to check for typesetting problems.
+% similar to original word document
+
+% don't use textheight... with koma-script
+\documentclass[%draft,
+    a4paper,12pt, % 'Standard'
+%    11pt, % use explicit paper format for Java book format
+%    b5paper,10pt, % B5 printout
+    % use BCOR to compensate for the two-side margin!
+%    a4paper,12pt,BCOR37pt,DIV15,
+%    a4paper,12pt,BCOR40pt,DIV14,
+%    b5paper,10pt,DIV12,
+    headinclude, footexclude,
+%    twoside, % this produces strange margins!
+    openright, % for new chapters
+    cleardoubleempty,
+% normalheadings - smaller chapter or smallheadings - too small
+    % abstracton, % the author of koma-script argues against the title
+    headsepline,
+%    5headlines, % standard is 1.25 -- wirkt net!
+    pointlessnumbers,
+    ]{scrreprt}
+
+%\usepackage{html}
+
+% headings
+\usepackage{scrpage2} % for headers
+ \setkomafont{pagehead}{\scshape\small}
+ \setkomafont{pagenumber}{\scshape\small}
+ \automark[section]{chapter}
+ \ohead[]{\pagemark}
+ \chead[]{}
+ \ihead[]{\headmark}
+ \ofoot[]{} \cfoot[]{} \ifoot[]{}
+
+%\tolerance=500 % to avoid lines sticking out into the margin
+               % needed for 'high-performance' in Intro - contributions
+\emergencystretch=2em
+% or tol. to 500 and emerg. to 1em?
+% pagebreak was ok with 500 and 1em
+\interfootnotelinepenalty=10000
+
+
+% use BCOR = (paperwidth-textwidth)/4
+% A4: 210mm x 297mm
+% B5: 176mm x 250mm
+% Java book: 185mm x 232mm
+% Engblom: 120x188 (without head)
+% Java: 127x187 (without head)
+% 1pt = 1/72.27 in = 0.351 mm
+
+
+% for book
+% 'Java-format' 526pt x 660pt (Ghostscript)
+%\setlength{\paperwidth}{185mm} \setlength{\paperheight}{232mm}
+%\areaset[13.75mm]{130mm}{200mm} % Java book format
+
+% for book to A4 conversion:
+% Set the following sizes and export with
+% 'Variable Page Size' in gs.
+% Print with 'fit to paper' in Acrobat - results in 110%
+% and an effective text area of 142x215
+%\setlength{\paperwidth}{180mm} \setlength{\paperheight}{232mm}
+%\areaset[12.5mm]{130mm}{200mm} % Java book format
+
+% for two page printout in .pdf
+%\setlength{\paperwidth}{134mm} \setlength{\paperheight}{206mm}
+%\areaset[1mm]{130mm}{200mm} % Java book format
+
+
+% use 10pt for code instead of 11pt - but I still would prefer Lucida Typewriter
+%\newfont{\myttfont}{cmss10 scaled 1000}
+%\newfont{\myttbfont}{cmssdc10 scaled 1000}
+%
+% This IS Lucida Typewriter
+%\newfont{\myttfont}{plsr8r scaled 950}
+%\newfont{\myttbfont}{plsb8r scaled 950}
+%\newfont{\myttifont}{plsro8r scaled 950}
+%%\newfont{\mytttextfont}{plsr8r}
+
+% Lucida is perhaps available in the new Tex installation!!!!
+% does not really work!!!
+\newfont{\myttfont}{hlsrt8r scaled 950}
+\newfont{\myttbfont}{hlsbt8r scaled 950}
+\newfont{\myttifont}{hlsrot8r scaled 950}
+
+% I used these .ttf for the official Thesis
+%..\ttf2pt1 -e -b LucidaTypewriterRegular.ttf plsr8a
+%..\ttf2pt1 -e -b LucidaTypewriterBold.ttf plsb8a
+%..\ttf2pt1 -e -b LucidaTypewriterOblique.ttf plsro8a
+%..\ttf2pt1 -e -b LucidaTypewriterBoldOblique.ttf plsbo8a
+
+%\newcommand{\javatt}{\myttfont}
+%\newcommand{\javattb}{\myttbfont}
+%\newcommand{\javatti}{\myttifont}
+%\newcommand{\javatext}{\myttfont}
+%
+%\newcommand{\picscale}{0.909}
+%\newcommand{\excelwidth}{11cm}
+
+% end book
+
+% for B5
+%\newfont{\javatt}{cmss10}
+%\newfont{\javattb}{cmssdc10}
+%\newcommand{\picscale}{0.833}
+%\newcommand{\excelwidth}{10cm}
+
+
+
+% for A4
+% 12pt A4 scaled from book
+%\areaset[17.05mm]{142mm}{219mm}
+\newfont{\javatt}{cmss12}
+\newfont{\javattb}{cmssdc10 scaled 1200}
+\newcommand{\javatext}{\javatt}
+
+\newcommand{\picscale}{1}
+\newcommand{\excelwidth}{12cm}
+% NOT used anymore!
+
+
+
+% for chapter head without a number
+% \renewcommand{\chaptermark}[1]{\def\myleftmark{#1}}
+% \ihead{\myleftmark} \chead{} \ohead{{\rightmark}}
+
+\setkomafont{captionlabel}{\sffamily\bfseries}
+
+
+
+% Do I need this package?
+\usepackage{float}
+
+% is this a correction for the <> problem?
+% \usepackage[T1]{fontenc}
+
+\usepackage{pslatex} % -- times instead of computer modern
+% pslatex should be replaced by this:
+%\usepackage{mathptmx}
+%\usepackage[scaled=.90]{helvet}
+%\usepackage{courier}
+% pslatex does not work with T1 encoding. <> Problem?
+
+
+\usepackage{latexsym}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{longtable}
+\usepackage{booktabs}
+
+% I would need Lucida Console!!!
+%
+%\newfont{\javatt}{pltt12} % lucida teletype, better than normal but with serifs
+%\newfont{\javatt}{plss12} % lucida no serifes, but variable spacing
+%\newfont{\javatt}{plss10 scaled 1200}
+%\newfont{\javattb}{plssdc10 scaled 1200}
+% cmss is NOT a tt font....
+
+
+\usepackage{listings}
+\lstset{language=Java,keywordstyle=,
+basicstyle=\javatt,emphstyle=\javattb,commentstyle=\javatti,
+showstringspaces=false,captionpos=b}
+
+\usepackage{array}
+\usepackage{dcolumn}
+\newcommand{\cc}[1]{\multicolumn{1}{c}{#1}}
+\newcolumntype{d}[1]{D{.}{.}{#1}}
+
+% für die Umlaute in der Kurzfassung
+% bekomme ich dadurch Probleme???
+\usepackage[ansinew]{inputenc}
+
+
+\usepackage{capt-of}
+\usepackage[colorlinks=true,linkcolor=black,citecolor=black]{hyperref}
+%\usepackage{hyperref}
+
+% ----------------------
+
+%\usepackage{makeidx}
+%\makeindex
+
+
+\usepackage{import} % for subimport text and graphics from subdirectory
+% does not work with latex2html!
+
+
+\newcommand{\codefoot}{\textsf}
+\newcommand{\code}[1]{{\javatext#1}} % for LaTeX
+\newcommand{\cmd}[1]{{\texttt{#1}}}
+\newcommand{\dirent}[1]{{\texttt{#1}}}
+\newcommand{\menuitem}[1]{\textsf{\textbf{#1}}}
+
+% for flow.tex - part of index helper
+\newcommand{\eei}[1]{%
+\index{extension!\texttt{#1}}\texttt{#1}}
+
+
+
+%\begin{htmlonly}
+%\renewcommand{\code}[1]{{\texttt{#1}}} % for html2LaTeX
+%\newcommand{\toprule}{\hline}
+%\newcommand{\midrule}{\hline}
+%\newcommand{\bottomrule}{\hline}
+%\end{htmlonly}
+
+% net wirklich notwendig -- hängt von code generierung ab
+%\begin{htmlonly}
+%\renewcommand{\javatt}{\texttt}
+%\renewcommand{\javattb}{\texttt\bfseries}
+%\end{htmlonly}
+
+%\code{\hyphenchar\font=-1}
+
+\newcommand{\mycomment}[1]{}
+
+\newcommand{\instr}[6]{
+    \begin{table}
+        \begin{tabular}{ll}
+            \emph{\large\textbf{#1}} & \\
+            \\ \\
+            \textbf{Operation} & #2 \\ \\
+            \textbf{Opcode} & \texttt{#3} \\ \\
+            \textbf{Dataflow} & \parbox[t]{9.5cm}{\(#4\)}\\ \\
+            \textbf{JVM equivalent} & \parbox[t]{9.5cm}{\code{#5}} \\ \\
+            \textbf{Description} & \parbox[t]{9.5cm}{#6}\\
+        \end{tabular}
+    \end{table}
+}
+

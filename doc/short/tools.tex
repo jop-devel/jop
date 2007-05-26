@@ -1,0 +1,130 @@
+\documentclass[a4paper,12pt]{scrartcl}
+\usepackage{pslatex} % -- times instead of computer modern
+
+\usepackage[colorlinks=true,linkcolor=black,citecolor=black]{hyperref}
+\usepackage{booktabs}
+
+\usepackage[latin1]{inputenc}
+
+\newcommand{\code}[1]{{\texttt{#1}}}
+\newcommand{\cmd}[1]{{\texttt{#1}}}
+\newcommand{\dirent}[1]{{\texttt{#1}}}
+\newcommand{\menuitem}[1]{\textsf{\textbf{#1}}}
+
+
+\begin{document}
+
+
+
+\section*{Tools for JOP Development}
+
+
+
+For application development with JOP, the Java optimized processor,
+several tools have to be installed:
+
+%
+\begin{itemize}
+    \item  \href{http://java.sun.com/j2se/1.4.2/download.html}%
+{Java 2 Platform 1.4, Standard Edition}  Java compiler and runtime
+    \item  \href{http://www.cygwin.com/}%
+{Cygwin} GNU tools for Windows. Packages cvs, gcc and make are
+needed
+    \item  \href{https://www.altera.com/support/software/download/altera_design/quartus_we/dnl-quartus_we.jsp}%
+{Quarts II Web Edition} VHDL synthesis, place and route for Altera
+FPGAs
+    \item  \href{https://www.altera.com/support/software/download/programming/jam/dnl-byte_code_player.jsp}%
+{Jam STAPL Byte-Code Player} FPGA configuration in batch mode
+(\cmd{jbi32.exe})
+
+\end{itemize}
+%
+All needed tools are freely available.
+
+\subsection*{Java}
+
+As we want to build Java applications we need a Java compiler. On a
+standard Windows PC only the Java runtime is installed per default.
+Install the Java SDK in version 1.4 (or 1.5).
+Add the \dirent{bin} directory of the Java installation to
+your \dirent{PATH} variable.
+
+\subsection*{GNU Tools}
+
+Several Unix (GNU) tools are available for Windows from cygwin. Make
+sure that \code{make}, \code{gcc} and \code{cvs} are installed and
+the cygwin directory is in the \dirent{PATH}.
+
+\subsection*{Quartus}
+
+Quartus is the VHDL compiler from Altera. The Web-edition is freely
+available. However, you have to obtain a licence file (that uses the
+NIC number) from Altera, which you will get per e-mail.
+
+To enable the ByteBlaster download driver start Quartus, open the
+\emph{Programmer} window with \menuitem{Tools -- Programmer}, select
+\menuitem{Hardware Setup... -- Add Hardware...}, and add the
+\menuitem{ByteBlaster}.
+
+For batch FPGA configuration download \cmd{jbi32.exe} and put it in
+a directory which is in the PC's PATH.
+
+\subsection*{Optional Tools}
+
+These tools are not absolutely necessary, but make live a little
+easier.
+
+\begin{description}
+    \item[WinCvs] from \url{http://www.wincvs.org/} is a CVS client
+    for Windows.
+    \item[Eclipse] from \url{http://www.eclipse.org/} makes it way
+    easier to write Java programs.
+    \item[ModelSim] the VHDL simulator from \url{http://www.model.com/}
+    is available as restricted, free version from
+    \url{http://www.xilinx.com/ise/verification/mxe_details.html}.
+\end{description}
+
+\subsection*{Installation Check}
+
+The PATH variable should contain entries to the executables of all
+packages (java and javac, Cygwin bin, Quartus executables and
+jbi32). Check the PATH variable at the command prompt with:
+%
+\begin{verbatim}
+    javac
+    gcc
+    make
+    cvs
+    quartus_map
+    jbi32
+\end{verbatim}
+%
+All the executables should be found and usually report their usage.
+
+\subsection*{Build Check}
+
+Create a working directory and download JOP from the
+\url{www.opencores.org} CVS server:
+%
+\begin{verbatim}
+ cvs -d :pserver:anonymous@cvs.opencores.org:/cvsroot/anonymous -z9 co -P jop
+\end{verbatim}
+%
+There is a \code{Makefile} available and when everything is set up
+correct a simple
+%
+\begin{verbatim}
+    make
+\end{verbatim}
+%
+in the source root directory (\dirent{.../jop}) should build
+everything from the sources and download a \emph{Hello World}
+example.
+
+If \url{www.opencores.org} is offline (which happens sometimes) you
+can also download a source snapshot from \url{www.jopdesign.com}. A
+detailed instruction for the design flow for JOP can be found in
+\url{http://www.jopdesign.com/doc/build.pdf}.
+
+
+\end{document}

@@ -1,0 +1,381 @@
+\documentclass[a4paper,12pt]{scrartcl}
+\usepackage{pslatex} % -- times instead of computer modern
+
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue,citecolor=black]{hyperref}
+\usepackage{booktabs}
+
+\usepackage[latin1]{inputenc}
+
+\newcommand{\code}[1]{{\texttt{#1}}}
+\newcommand{\cmd}[1]{{\texttt{#1}}}
+\newcommand{\dirent}[1]{{\texttt{#1}}}
+\newcommand{\menuitem}[1]{\textsf{\textbf{#1}}}
+
+% 'stolen' from lshort.sty
+% By Tobias Oetiker
+%
+% Some commands for helping with INDEX creation
+%
+\newcommand{\bs}{\symbol{'134}}%Print backslash
+%\newcommand{\bs}{\ensuremath{\mathtt{\backslash}}}%Print backslash
+% Index entry for a command (\cih for hidden command index
+\newcommand{\eei}[1]{%
+\index{extension!\texttt{#1}}\texttt{#1}}
+% probably add handling of period like handling of \ in \ci
+\newcommand{\fni}[1]{%
+\index{font!#1@\texttt{\bs#1}}%
+\index{#1@\texttt{\hspace*{-1.2ex}\bs #1}}\texttt{\bs #1}}
+\newcommand{\cih}[1]{%
+\index{commands!#1@\texttt{\bs#1}}%
+\index{#1@\texttt{\hspace*{-1.2ex}\bs #1}}}
+\newcommand{\ci}[1]{\cih{#1}\texttt{\bs #1}}
+%Package
+\newcommand{\paih}[1]{%
+\index{packages!#1@\textsf{#1}}%
+\index{#1@\textsf{#1}}}
+\newcommand{\pai}[1]{%
+\paih{#1}\textsf{#1}}
+% Index entry for an environment
+\newcommand{\ei}[1]{%
+\index{environments!\texttt{#1}}%
+\index{#1@\texttt{#1}}%
+\texttt{#1}}
+% Indexentry for a word (Word inserted into the text)
+\newcommand{\wi}[1]{\index{#1}#1}
+
+\begin{document}
+
+\title{An Introduction into the \\Design Flow for JOP}
+\author{Martin Schoeberl\\martin@jopdesign.com}
+\maketitle \thispagestyle{empty}
+
+\input{flow}
+
+\bibliographystyle{plain}
+\bibliography{../../bib/all}
+
+\end{document}
+
+%%%%%%%%%%%%%%%%%% old stuff %%%%%%%%%%%%%%%%%%%%%%%%
+
+
+Getting Started
+
+This page (should) contain the information you need to get JOP
+running in an FPGA. The description assumes you are using an Altera
+FPGA (EP1K50 or Cyclone). The boot logic is for a board like Cyclone
+Board.
+
+This documentation is not up-to-date. The organization of the source
+files has changed. However, this introduction is still usefull. The
+prelinked file for JOP has changed the file extension from .bin to
+.jop. As this file was never a real binary this name is better. The
+.jop file is a plain ASCII file with some comments to debug changes
+in the class structure. The file has a format that can be included
+in an array definition in C. Therefore you can generate a single
+executable with the C version of JopSim (e.g. a software JVM on
+NIOS).
+
+The java subdirectory is split to:
+
+    * tools: There you will find the assembler for JOP and JopSim
+    * target: The is the main directory of Java applications for JOP.
+      The resulting .jop file is placed under dist/bin
+    * pcsim: An environment to simulate Java programs trageted for JOP on a PC. E.g. The real-time classes RtThread or a small Swing application to simulate the IO-ports from baseio.
+    * pc: various tools such as an UDP client to program the FLASH on the Cyclone board.
+
+In each of these directory you will find a small batch file
+(doit.bat) to compile the sources. Tools you need:
+
+    * JavaTM 2 Platform, Standard Edition Java compiler and runtime.
+    * Quarts II Web Edition VHDL synthesis, place and route for Altera FPGAs.
+    * Jam STAPL Byte-Code Player FPGA configuration in batch mode (jbi32.exe or different name).
+    * Download Cable The schematic for the ByteBlasterMV can be found at: Data Sheet
+
+Booting In the final application boot works as follows:
+
+    * The watchdog generates a reset on power up for the MAX7064.
+    * MAX7064 loads FPGA configuration for Cyclone from flash.
+    * Cyclone starts with internal generated reset.
+    * JVM is started (jvmflash.asm) and loads Java program from flash to ram.
+    * Java program is started.
+    * Application has to toggle the watchdog input.
+
+How is the flash programmed and is there a faster way for
+development?
+
+There are two ways to configure the FPGA and two ways to load Java
+programs: Configure FPGA The FPGA is configured in passive serial
+mode when loaded from flash. Neverless, the JTAG pins are also
+connected to the ByteBlaster connector. This means it can also be
+configured from Quartus. To switch between these two modes the
+MAX7064 has to be reprogrammed:
+
+    * cyc_conf.vhd (cyc_conf.pof) for flash mode.
+    * cyc_conf_init.vhd (cyc_conf_init.pof) for JTAG mode.
+
+Load a Java program There are two versions of the JVM: One loads the
+Java program from flash, the second from the serial line (115200, 8,
+n, 1).
+
+    * jvmflash.asm for flash mode.
+    * jvm.asm for serial line mode.
+
+Design Flow This is a short description to build JOP from ground up.
+But you can use any precompiled files or project files from the ZIP
+archive for a short cut. MAX7064 PLD Create a new project with
+Quartus:
+
+    * File -> New Project Wizard
+    * Next
+    * Select working directory: .../cycconf
+    * Change project name and top-level design entity to 'cyc_conf_init'
+    * Next
+    * Select as design file ../vhdl/config/cyc_conf_init.vhdl
+    * Next
+    * Next
+    * Select as device: MAX7000AE
+    * 'Yes' for a specific device
+    * Next
+    * Select EPM7064AETC44-10
+    * Next
+    * Finish
+    * Compile with: Processing -> Start Compilation
+
+Now the correct pinout has to be defined. This can be done in
+Quartus or by editing cyc_conf_init.csf. Close Quartus and copy the
+the pin definition from cyc_conf_pins.csf (in directory vhdl/config)
+to the relevant section of cyc_conf_init.csf. Start Quartus again:
+
+    * File -> Recent Projects -> ...\cyc_conf_init.quartus
+    * Compile again: Processing -> Start Compilation
+
+Check the pinout! It can be found in the Compilation Report or as
+cyc_conf_init.pin. It should look similar to cyc_conf_init.pin.
+
+You can now program the EPM7064:
+
+    * Tools -> Programmer
+    * Processing -> Auto Detect
+    * Double click on the first entry and select cyc_conf_init.pof
+    * Enable Program/Configure for the EP7064
+    * Processing -> Start Programming
+
+You can save this configuration with: File -> Save
+
+Do the same for cyc_conf.vhdl the configuration of the EPM7064 to
+load the FPGA from flash (without programming of corse). FPGA
+configuration The JVM is written in 'JOP Assembler' and Jopa
+generates some vhdl and mif files:
+
+In directory asm these files have to be built:
+
+    javac ..\java\com\jopdesign\tools\*.java
+    java -cp ..\java com.jopdesign.tools.Jopa jvm.asm
+    copy *.vhd ..\vhdl
+
+There is a litte batch file for this: doit.bat.
+
+Now we create a new project for JOP in Quartus:
+
+    * File -> New Project Wizard
+    * Next
+    * Select working directory: .../cycjop_min
+    * Change project name and top-level design entity to 'jop'
+    * Next
+    * Add following design files:
+      ..\vhdl\top\jopcyc.vhd
+      ..\vhdl\core\ajbc.vhd
+      ..\vhdl\core\aram.vhd
+      ..\vhdl\core\arom.vhd
+      ..\vhdl\core\bcfetch.vhd
+      ..\vhdl\core\core.vhd
+      ..\vhdl\core\decode.vhd
+      ..\vhdl\core\fetch.vhd
+      ..\vhdl\core\mem32.vhd
+      ..\vhdl\core\mul.vhd
+      ..\vhdl\core\shift.vhd
+      ..\vhdl\core\stack.vhd
+      ..\vhdl\io\uart.vhd
+      ..\vhdl\io\cnt.vhd
+      ..\vhdl\io\fifo.vhd
+      ..\vhdl\io\iomin.vhd
+      ..\vhdl\io\uart.vhd
+      ..\vhdl\offtbl.vhd
+      ..\vhdl\bcfetbl.vhd
+      ..\vhdl\jtbl.vhd
+    * Next
+    * Next
+    * Select as device: Cyclone
+    * 'Yes' for a specific device
+    * Next
+    * Select EP1C6Q240C6
+    * Next
+    * Finish
+    * Compile with: Processing -> Start Compilation
+
+Check some assignments with: Assignments -> Device -> Device & Pin
+Options.
+
+    * Configuration: passive serial
+    * Unused Pins: as inputs, tri-stated
+    * Voltage: Default I/O standard: LVCMOS
+
+Now the correct pinout has to be defined. This can be done in
+Quartus or with a provided tcl-scrip. This scrip can be found in
+directory tcl. Copy cypins.tcl to the working directory (I don't
+know how to call a tcl-script from any directoy in Quartus). Execute
+it as follows and compile again:
+
+    * Tools -> Tcl Scripts
+    * Select cypins
+    * Run
+    * Compile again: Processing -> Start Compilation
+
+Check the pinout! It can be found in the Compilation Report or as
+jop.pin. It should look similar to jop.pin.
+
+JOP is now downloaded to the board with:
+
+    * Tools -> Programmer
+    * Processing -> Auto Detect
+    * Double click on the second entry and select jop.sof
+    * Enable Program/Configure for the EP1C6
+    * Processing -> Start Programming
+
+You can add the program file for the MAX as above and save this
+configuration with: File -> Save Java program Now it's time to
+compile our first Java example and download it to JOP! Under
+java/test the program Clock.java keeps the watchdog led blinking and
+writes the time to the serial line.
+
+Java programs are compiled as usual (javac) but must be preverifyed
+and linked. This is done with jcc.jar. The resulting .bin file can
+now be downloaded via serial line. A small C program down.c does
+just this.
+
+In directory java use doit.bat:
+
+    rem
+    rem usage: doit pkg MainClass
+    rem
+    rem javac -classpath .;jcc.jar runtime\*.java
+
+    javac com\jopdesign\sys\*.java
+    javac java\lang\*.java
+    javac javax\joprt\*.java
+
+    del %1\*.class
+    del util\*.class
+    del ejip\*.class
+    del test\*.class
+
+    rem classes for simple tests
+    java -cp jcc.jar;. JavaCodeCompact
+        -nq -arch JOP -o %1/%2.bin %1/*.class
+        java/lang/*.class com/jopdesign/sys/*.class
+
+    pause
+    rem javac com\jopdesign\tools\JopSim.java
+    rem java com.jopdesign.tools.JopSim %1\%2.bin
+
+    rem jbi32 -dDO_PROGRAM=1 -aPROGRAM ..\jbc\es_init.jbc
+    rem jbi32 -dDO_PROGRAM=1 -aCONFIGURE ..\jbc\es_init.jbc
+    ..\down -e %1\%2.bin COM2
+
+    rem java -cp pc Flash %1\%2.bin
+
+Change the COM port for the download and call it this way:
+
+doit test Clock
+
+After the download JOP is running your first Java program :-) Flash
+programming There is a short java program for JOP to program the
+flash: Mem.java. A small C program amd.c can be used to program FPGA
+configuration (.ttf) and Java programs (.bin).
+
+Step by step:
+
+    * Generate flash version of JVM: in directory asm call doit jvmflash.
+    * Compile JOP with generation of jop.ttf.
+    * Rename jop.ttf to jop_flash.ttf.
+    * Generate serial version of JVM: in directory asm call doit jvm.
+    * Compile JOP again.
+    * Configure Cyclone in Quartus.
+    * Download Mem.java.
+    * Program configuration: amd cycjop_min\jop_flash.ttf COM1.
+    * Program Java file: amd java\test\Clock.bin COM1.
+    * Program MAX7064 with cyc_conf.pof.
+    * Start e COM1 for serial echo (and hand-shake signals).
+    * Switch power off and on (MAX7064 needs a reset for the new configuration).
+
+To simplify programming the flash with your design you can download
+program.zip. Unzip it to an empty directory and call:
+
+    program your_design.ttf COM1
+
+Changes for ACEX board: a little bit outdated, perhaps helpfull.
+Booting In the final appliction boot works as follows:
+
+    * WD generates reset on power up for MAX7032.
+    * MAX7032 loads FPGA configuration for ACEX from flash.
+    * MAX7032 generates reset on FPGA.
+    * JVM is started (jvmflash.asm) and loads Java program from flash to RAM.
+    * Java program is started.
+    * Application has to toggle WD input.
+
+How can the flash get programmed and is there a faster way for
+development?
+
+There are two ways to configure the FPGA and two ways to load Java
+programs: Configure FPGA The FPGA is configured in PPA mode when
+loaded from flash. The JTAG pins are also connected to the
+ByteBlaster connector. This means it can also be downloaded from
+MAX+PLUS II. To switch between these two modes the MAX7032 has to be
+reprogrammed:
+
+    * confacx.vhd (confacx.pof) for flash mode.
+    * pld_init2.vhd (pld_init2.pof) for JTAG mode.
+
+MAX7032 PLD The PLD has to be programmed first:
+
+Generate a project in Leonardo with pld_init2.vhd or open
+pld_init2.lsp in directory wrk. Leonardo project files use absolute
+path, so you have to edit the file for your directory structure.
+
+Select device EPM7032AETC44 and check the output file. It should be:
+../wrk/pld_init2.edf.
+
+Run Flow
+
+Generate a project from pld_init2.edf in MAX PLUS and run the
+Compiler.
+
+Check the pinout in the report.
+
+To program the PLD you have to setup the JTAG chain: Open the
+programmer window and enable under menu 'JTAG' 'Multi-Device JTAG
+Chain'. Set up the Chain: First device: EPM7032AE with pld_init2.edf
+and second device: EP1K50. This setup can be saved or restored
+(e.g.: ../wrk/jc_init.jcf).
+
+In the programmer window select 'Program' ('Configure' is used to
+configure a FPGA). FPGA configuration
+
+Generate a project in Leonard and Compile it (like above). As an
+example see ../wrk/jopcore.lsp or use it.
+
+Generate a project in MAX PLUS and define the pins. The simplest way
+to define the pins is:
+
+    * After project definition close MAX PLUS.
+    * Open project.acf and copy a definition from pins.txt (see: -- pins for jopcore (2002/05) .
+    * Compile the project in MAX PLUS.
+    * Check the report for pinout and that VCCIO is configured for 3.3V!.
+
+Important part of the report: jopcore.rpt
+
+Change JTAG chain to include jopcore.sof (not .pof!) for EP1K50 and
+configure FPGA.
+
+JOP is now listening on the serial line to load a Java program.

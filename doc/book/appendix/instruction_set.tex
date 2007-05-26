@@ -1,0 +1,48 @@
+%\input{../preamble}
+
+The instruction set of JOP, the so-called microcode, is described in
+this appendix. Each instruction consists of a single instruction
+word (8 bits) without extra operands and executes in a single
+cycle\footnote{The only multicycle instruction is \codefoot{wait}
+and depends on the access time of the external memory}.
+\tablename~\ref{tab:appendix:hwreg} lists the registers and internal
+memory areas that are used in the dataflow description.
+
+\begin{table}[h]
+  \centering
+  \begin{tabular}{ll}
+    \toprule
+    Name & Description \\
+    \midrule
+    A & Top of the stack\\
+    B & The element one below the top of stack\\
+    stack[] & The stack buffer for the rest of the stack\\
+    sp & The stack pointer for the stack buffer\\
+    vp & The variable pointer. Points to the first local in
+    the stack buffer\\
+    ar & Address register for indirect stack access\\
+    pc & Microcode program counter\\
+    offtbl & Table for branch offsets\\
+    jpc & Program counter for the Java bytecode\\
+    opd & 8 bit operand from the bytecode fetch unit\\
+    opd$_{16}$ & 16 bit operand from the bytecode fetch unit\\
+    ioar & Address register of the IO subsystem\\
+    memrda & Read address register of the memory subsystem\\
+    memwra & Write address register of the memory subsystem\\
+    memrdd & Read data register of the memory subsystem\\
+    memwrd & Write data register of the memory subsystem\\
+    mula, mulb & Operands of the hardware multiplier\\
+    mulr & Result register of the hardware multiplier\\
+    membcr & Bytecode address and length register of the memory
+    subsystem\\
+    bcstart & Method start address register in the method cache\\
+    \bottomrule
+  \end{tabular}
+  \caption{JOP hardware registers and memory areas}\label{tab:appendix:hwreg}
+\end{table}
+
+\clearpage
+\input{appendix/microcode}
+
+
+%\end{document}

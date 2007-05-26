@@ -1,0 +1,339 @@
+%\input{../preamble}
+
+\tablename~\ref{tab:appendix:bytecode} lists the bytecodes of the
+JVM with their opcode, mnemonics, the implementation type and the
+execution time on JOP. In the implementation column \emph{hw} means
+that this bytecode has a microcode equivalent, \emph{mc} means that
+a microcode sequence implements the bytecode, \emph{Java} means the
+bytecode is implemented in Java, and a `-' indicates that this
+bytecode is not yet implemented. For bytecodes with a variable
+execution time the minimum and maximum values are given.
+
+\begin{longtable}{rllr}
+    \toprule
+    Opcode & Instruction & Implementation & Cycles \\
+    \midrule
+    \endhead
+    \bottomrule
+    \caption{Implemented bytecodes and execution time in cycles}
+    \label{tab:appendix:bytecode}
+    \endfoot
+%   18 & ldc & mc & 3+m \\
+    \input{appendix/bytecode}
+\end{longtable}
+
+\footnotetext[1]{The exact value is given below.}
+
+\footnotetext[2]{Not tested as javac does not emit the \code{swap}
+bytecode.}
+
+\footnotetext[3]{A simple version that stops the JVM. No catch
+support.}
+
+\footnotetext[4]{Only dimension 2 supported.}
+
+\footnotetext[20]{The exact value is
+    $17+\left\{\begin{array}{r@{\quad:\quad}l}
+    r-2 & r>2 \\
+    0   & r\le2
+    \end{array} \right.
+    +
+    \left\{\begin{array}{r@{\quad:\quad}l}
+    r-1 & r>1 \\
+    0   & r\le1
+    \end{array} \right.
+    $
+}
+
+\footnotetext[46]{The exact value is
+%    $19+r+\left\{\begin{array}{r@{\quad:\quad}l}
+%    r-2 & r\ge6 \\
+%    4   & r<6
+%    \end{array} \right. $
+ \emph{no hidden wait states at the moment.}
+}
+
+\footnotetext[79]{The exact value is
+%    $22+\left\{\begin{array}{r@{\quad:\quad}l}
+%    r-2 & r\ge6 \\
+%    4   & r<6
+%    \end{array} \right.
+%    +w
+%    $
+ \emph{no hidden wait states at the moment.}
+}
+
+\footnotetext[170]{\codefoot{tableswitch} execution time depends to
+a great extent on the caching of the corresponding Java method or
+the memory transfer time for the method.}
+
+\footnotetext[171]{\codefoot{lookupswitch} execution time depends to
+a great extent on the caching of the corresponding Java method or
+the memory transfer time for the method. \codefoot{lookupswitch}
+also depends on the argument as it performs a linear search in the
+jump table.}
+
+%172 & ireturn & mc &  23+r+b\footnotemark[172] \\
+\footnotetext[172]{The exact value is:
+    $
+    23+\left\{\begin{array}{r@{\quad:\quad}l}
+    r-3 & r>3 \\
+    0   & r\le3
+    \end{array} \right.
+    +
+% the saved cycles are counted from the instruction after stbcrd
+% up to and including the last wait
+    \left\{\begin{array}{r@{\quad:\quad}l}
+    l-10 & l>10 \\
+    0   & l\le10
+    \end{array} \right.
+    $
+}
+
+%173 & lreturn & mc &  25+r+b\footnotemark[173] \\
+\footnotetext[173]{The exact value is:
+    $
+    25+\left\{\begin{array}{r@{\quad:\quad}l}
+    r-3 & r>3 \\
+    0   & r\le3
+    \end{array} \right.
+    +
+    \left\{\begin{array}{r@{\quad:\quad}l}
+    l-11 & l>11 \\
+    0   & l\le11
+    \end{array} \right.
+    $
+}
+
+
+
+%177 & return & mc &  21+r+b\footnotemark[177] \\
+\footnotetext[177]{ The exact value is:
+    $
+    21+\left\{\begin{array}{r@{\quad:\quad}l}
+    r-3 & r>3 \\
+    0   & r\le3
+    \end{array} \right.
+    +
+    \left\{\begin{array}{r@{\quad:\quad}l}
+    l-9 & l>9 \\
+    0   & l\le9
+    \end{array} \right.
+    $
+}
+
+%182 & invokevirtual & mc & 100+4r+b\footnotemark[182] \\
+\footnotetext[182]{The exact value is:
+    $
+    100+2r+
+    \left\{\begin{array}{r@{\quad:\quad}l}
+    r-3 & r>3 \\
+    0   & r\le3
+    \end{array} \right.
+    +
+    \left\{\begin{array}{r@{\quad:\quad}l}
+    r-2 & r>2 \\
+    0   & r\le2
+    \end{array} \right.
+    +
+    \left\{\begin{array}{r@{\quad:\quad}l}
+    l-37 & l>37 \\
+    0   & l\le37
+    \end{array} \right.
+    $
+}
+
+%183 & invokespecial & mc &  74+3r+b\footnotemark[182] \\
+%184 & invokestatic & mc &  74+3r+b\footnotemark[182] \\
+\footnotetext[183]{The exact value is:
+    $
+    74+r+
+    \left\{\begin{array}{r@{\quad:\quad}l}
+    r-3 & r>3 \\
+    0   & r\le3
+    \end{array} \right.
+    +
+    \left\{\begin{array}{r@{\quad:\quad}l}
+    r-2 & r>2 \\
+    0   & r\le2
+    \end{array} \right.
+    +
+    \left\{\begin{array}{r@{\quad:\quad}l}
+    l-37 & l>37 \\
+    0   & l\le37
+    \end{array} \right.
+    $
+}
+
+%185 & invokeinterface & mc &  114+6r+b\footnotemark[182] \\
+\footnotetext[185]{The exact value is:
+    $
+    114+4r+
+    \left\{\begin{array}{r@{\quad:\quad}l}
+    r-3 & r>3 \\
+    0   & r\le3
+    \end{array} \right.
+    +
+    \left\{\begin{array}{r@{\quad:\quad}l}
+    r-2 & r>2 \\
+    0   & r\le2
+    \end{array} \right.
+    +
+    \left\{\begin{array}{r@{\quad:\quad}l}
+    l-37 & l>37 \\
+    0   & l\le37
+    \end{array} \right.
+    $
+}
+
+
+
+\footnotetext[187]{\codefoot{new} execution time depends to a great
+extent on the caching of the corresponding Java method or the memory
+transfer time for the method. \codefoot{new} also depends on the
+size of the created object as the memory for the object is filled
+with zeros -- This will change with the GC}
+
+%188 & newarray & mc & 12+w-7\footnotemark[188] \\
+\footnotetext[188]{\codefoot{newarray} execution time depends to a
+great extent on the caching of the corresponding Java method or the
+memory transfer time for the method. \codefoot{newarray} also
+depends on the size of the array as the memory for the object is
+filled with zeros -- This will change with the GC}
+
+\footnotetext[209]{The native instructions \codefoot{jopsys\_rd} and
+\codefoot{jopsys\_wr} are alias to the \codefoot{jopsys\_rdmem} and
+\codefoot{jopsys\_wrmem} instructions just for compatibility to
+existing Java code. IO devices are now memory mapped. In the case
+for simple IO devices there are no wait states and the exact values
+are 4 and 5 cycles respective.}
+
+%14+r+n*(23+w)
+\footnotetext[219]{The exact value is
+    $14+r+n(23+\left\{\begin{array}{r@{\quad:\quad}l}
+    w-8 & w>8 \\
+    0   & w\le8
+    \end{array} \right. )$.
+$n$ is the number of words transferred.}
+
+%14+r+n*(23+w)
+\footnotetext[220]{The exact value is
+    $14+r+n(23+\left\{\begin{array}{r@{\quad:\quad}l}
+    r-10 & r>10 \\
+    0   & r\le10
+    \end{array} \right. )$.
+$n$ is the number of words transferred.}
+
+\footnotetext[240]{\emph{Is the interrupt and the exception still a
+bytecode or is it now inserted just as microcode address?}}
+
+
+\subsection*{Memory Timing}
+
+The external memory timing is defined in the top level VHDL file
+(e.g.\ \code{jopcyc.vhd}) with \code{ram\_cnt} for the number of
+cycles for a read and write access. At the moment there is no
+difference for a read and write access. For the 100MHz JOP with 15ns
+SRAMs this access time is two cycles (\code{ram\_cnt}=2, 20ns).
+Therefore the wait state $n_{ws}$ is 1 (\code{ram\_cnt-1}).
+%
+A basic memory read in microcode is as follows:
+\begin{verbatim}
+    stmra    // start read with address store
+    wait     // fill the pipeline with two
+    wait     // wait instructions
+    ldmrd    // push read result on TOS
+\end{verbatim}
+%
+In this sequence the \emph{last} \code{wait} executes for $1+n_{ws}$
+cycles. Therefore the whole read sequence takes $4+n_{ws}$ cycles.
+For the example with \code{ram\_cnt}=2 this basic memory read takes
+5 cycles.
+
+A memory write in microcode is as follows:
+\begin{verbatim}
+    stmwa    // store address
+    stmwd    // store data and start the write
+    wait     // fill the pipeline with wait
+    wait     // wait for the memory ready
+\end{verbatim}
+The last wait again executes for $1+n_{ws}$ cycles and the basic
+write takes $4+n_{ws}$ cycles. For the native bytecode \code
+{jopsys\_wrmem} an additional \code{nop} instruction for the
+\code{nxt} flag is necessary.
+
+The read and write wait states $r_{ws}$ and $w_{ws}$ are:
+\begin{equation*}
+    r_{ws} = w_{ws} =
+    \left\{\begin{array}{r@{\quad:\quad}l}
+    ram\_cnt-1 & ram\_cnt>1 \\
+    0   & ram\_cnt\le1
+    \end{array} \right.
+\end{equation*}
+
+In the instruction timing we use $r$ and $w$ instead of $r_{ws}$ and
+$w_{ws}$. The wait states can be hidden by other microcode
+instructions between \code{stmra/wait} and \code{stmwd/wait}. The
+exact value is given in the footnote.
+
+\subsection*{Instruction Timing}
+
+The bytecodes that access memory are indicated by an $r$ for a
+memory read and an $w$ for a memory write at the cycles column ($r$
+and $w$ are the additional wait states). The wait cycles for the
+memory access have to be added to the execution time. These two
+values are implementation dependent (clock frequency versus RAM
+access time, data bus width); for the Cyclone EP1C6 board with 15ns
+SRAMs and 100MHz clock frequency these values are both 1 cycle
+(\code{ram\_cnt}-1).
+
+For some bytecodes, part of the memory latency can be hidden by
+executing microcode during the memory access. However, these cycles
+can only be subtracted when the wait states (\emph{r} or \emph{w})
+are larger then 0 cycles. The exact execution time with the
+subtraction of the saved cycles is given in the footnote.
+
+\subsubsection*{Cache Load}
+
+For the method cache load the cache wait state $c_{ws}$ is:
+\begin{equation*}
+    c_{ws} =
+    \left\{\begin{array}{r@{\quad:\quad}l}
+    r_{ws}-1 & r_{ws}>1 \\
+    0   & r_{ws}\le1
+    \end{array} \right.
+\end{equation*}
+
+On a method invoke or return the bytecode has to be loaded into the
+cache on a cache miss. The load time $l$ is:
+\[
+    l =
+    \left\{\begin{array}{r@{\quad:\quad}l}
+    6+(n+1)(2+c_{ws}) & \mbox{cache miss} \\
+    4   & \mbox{cach hit}
+    \end{array} \right.
+\]
+with $n$ as the length of the method in number of 32-bit words. For
+short methods the load time of the method on a cache miss, or part
+of it, is hidden by microcode execution. The exact value is given in
+the footnote.
+
+% We count the hidden cycles in the same way as for a read or write:
+%   the instructions between stbcr and the first wait
+%
+
+\subsubsection*{lastore}
+
+% 48+2*r+2*w
+\begin{equation*}
+    t_{lastore} = 48+2r_{ws}+w_{ws} + \left\{\begin{array}{r@{\quad:\quad}l}
+    w_{ws}-3 & w_{ws}>3 \\
+    0   & w_{ws}\le3
+    \end{array} \right.
+\end{equation*}
+
+\subsubsection*{get/putfield/ref/long}
+
+TODO: add different values for 32-bit, 64-bit and reference type.
+
+%\end{document}
