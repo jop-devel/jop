@@ -508,6 +508,7 @@
 	<target name="directories" description="Creates some directories for configuration files">
 		<mkdir dir="jbc"/>
 		<mkdir dir="ttf"/>
+		<mkdir dir="rbf"/>
 	</target>
 
 	<!-- The order is not so perfect. We would prefer to first program the PLD. -->
