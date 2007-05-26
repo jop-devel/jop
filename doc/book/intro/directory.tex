@@ -8,7 +8,7 @@ The top-level directories of the distribution are:
     \item[bat] Old batch files - \emph{not used}
     \item[boards] Pictures and text for the Eclipse plugin
     \item[c\_src] Some utilities in C (e.g.\ \cmd{down.exe} and
-    \cmd{e.exe}.
+    \cmd{e.exe}).
     \item[doc] \LaTeX sources for this handbook and short notes.
     \item[eclipse] Eclipse project files
     \item[ext] External VHDL and Verilog sources
@@ -17,19 +17,53 @@ The top-level directories of the distribution are:
         \item[lib] External .jar files
         \item[pc] Tools on the PC
         \item[pcsim] High-level simulation on the PC
-        \item[target] THE Java sources for JOP
+        \item[target] \emph{The} Java sources for JOP
         \item[tools] All Java tools
     \end{description}
-    \item[jbc] (generated)
-    \item[jopc]
-    \item[linux]
-    \item[modelsim]
-    \item[pins]
-    \item[quartus]
-    \item[rbf]
-    \item[sopc]
-    \item[support]
-    \item[ttf] (generated)
-    \item[vhdl]
-    \item[xilinx]
+    \item[jbc] FPGA configuration files for \cmd{jbi32.exe} (generated)
+    \item[jopc] A C version of a JOP JVM simulation -- \emph{very} outdated
+    \item[linux] Scripts to start a network and SLIP
+    \item[modelsim] ModelSim simulation
+    \item[pins] Pin definitions for FPGA boards
+    \item[quartus] Quartus project files
+    \item[rbf] FPGA configuration files for USBRunner (generated)
+    \item[sopc] JOP as SoPC component and SRAM components
+    \item[support] Stand-alone Flash programming for the Cycore board
+    \item[ttf] FPGA configuration files for Flash programming (generated)
+    \item[vhdl] The processor sources
+    \begin{description}
+        \item[altera] Altera specific components (PLL, RAM)
+        \item[config] Cycore PLD sources
+        \item[core] The processor core
+        \item[fpu] The floating-point unit -- \emph{not used}
+        \item[memory] Main memory connections vi SimpCon
+        \item[scio] IO components and configurations with SimpCon
+        \item[simpcon] SimpCon bridges and arbiter
+        \item[simulation] Memory and UART for ModelSim simulation
+        \item[start] The VHDL version of \emph{hello world} -- a blinking
+        LED
+        \item[testbenches] no real content
+        \item[top] Top-level and configuration (e.g.\ PLL setting) components
+        \item[vga] A SimpCon VGA controller
+        \item[wishbone] WISHBONE files -- \emph{not used?}
+        \item[xilinx] Xilinx specific components (RAM)
+    \end{description}
+    \item[xilinx] Xilins project files
+\end{description}
+
+\subsection{The Java Sources for JOP}
+
+The most important directory for all Java sources that run on JOP is
+in \dirent{java/target}.
+
+\begin{description}
+    \item[dist] Generated files
+    \begin{description}
+        \item[bin] The linked application (\code{.jop})
+        \item[classes] The class files
+        \item[lib] The application class files in \code{classes.zip}
+        -- input for \cmd{JOPizer}
+    \end{description}
+    \item[src] The source
+    \item[wcet] Output from the WCET analyzer (generated)
 \end{description}
