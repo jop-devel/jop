@@ -57,6 +57,7 @@ public class ForceBlack2White {
 						System.out.println("Error in GC (local)");
 						System.exit(1);
 					}
+					System.out.print('.');
 					abc = null;
 					waitForNextPeriod();
 				}
@@ -81,6 +82,7 @@ public class ForceBlack2White {
 			public void run() {
 				GC.setConcurrent();
 				for (;;) {
+					waitForNextPeriod();
 //					int time = RtSystem.currentTimeMicro();
 					System.out.print("G");
 					GC.gc();
