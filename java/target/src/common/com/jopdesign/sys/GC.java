@@ -134,6 +134,7 @@ public class GC {
 		
 		addrStaticRefs = addr;
 		mem_start = Native.rdMem(0);
+//mem_size = mem_start + 2000;
 		full_heap_size = mem_size-mem_start;
 		handle_cnt = full_heap_size/2/(TYPICAL_OBJ_SIZE+HANDLE_SIZE);
 		semi_size = (full_heap_size-handle_cnt*HANDLE_SIZE)/2;
@@ -255,16 +256,17 @@ public class GC {
 	
 	static void getRoots() {
 
-		synchronized (mutex) {
 
-			int i, j;
-			
-			// add static refs to root list
-			int addr = Native.rdMem(addrStaticRefs);
-			int cnt = Native.rdMem(addrStaticRefs+1);
-			for (i=0; i<cnt; ++i) {
-				push(Native.rdMem(addr+i));
-			}
+		int i, j;
+		
+		// add static refs to root list
+		int addr = Native.rdMem(addrStaticRefs);
+		int cnt = Native.rdMem(addrStaticRefs+1);
+		for (i=0; i<cnt; ++i) {
+			push(Native.rdMem(addr+i));
+		}
+		// only pushing stack roots need to be atomic
+		synchronized (mutex) {
 			// add complete stack of the current thread to the root list
 //			roots = GCStkWalk.swk(RtThreadImpl.getActive(),true,false);
 			i = Native.getSP();			
@@ -375,10 +377,10 @@ public class GC {
 				ref = next;
 			}
 		}
-		System.out.print("used handles=");
-		System.out.println(use);
-		System.out.print("free handles=");
-		System.out.println(free);
+//		System.out.print("used handles=");
+//		System.out.println(use);
+//		System.out.print("free handles=");
+//		System.out.println(free);
 	}
 	/**
 	 * switch from-space and to-space
@@ -404,8 +406,6 @@ public class GC {
 	 */
 	static void compact() {
 
-		flip();
-		
 		int ref = useList;
 		while (ref!=0) {
 //			log("move", ref);
@@ -429,9 +429,9 @@ public class GC {
 			Native.wrMem(0, i);
 		}
 		// for tests clean also the remainig memory in the to-space??
-//		for (int i=heapPtr; i<allocPtr; ++i) {
-//			Native.wrMem(0, i);
-//		}
+		for (int i=heapPtr; i<allocPtr; ++i) {
+			Native.wrMem(0, i);
+		}
 	}
 
 	public static void setConcurrent() {
@@ -442,7 +442,7 @@ public class GC {
 		log("GC allocation triggered");
 		if (concurrentGc) {
 			log("meaning out of memory for RT-GC");
-			dump();
+//			dump();
 			System.exit(1);	
 		} else {
 			gc();			
@@ -450,13 +450,14 @@ public class GC {
 	}
 
 	public static void gc() {
-		log("GC called - free memory:", freeMemory());
+//		log("GC called - free memory:", freeMemory());
 
+		flip();
 		mark();
 		sweep();
 		compact();			
 
-		log("GC end - free memory:",freeMemory());
+//		log("GC end - free memory:",freeMemory());
 		
 	}
 	
@@ -501,6 +502,8 @@ public class GC {
 		int ref;
 		// TODO: shouldn't be the whole newObject synchronized?
 		//		Than we can remove the synchronized from JVM.java
+		// BTW: when we create mutex we synchrnize on the not yet
+		// created Object!
 		synchronized (mutex) {
 			ref = getHandle(allocPtr, size);
 			// ref. flags used for array marker

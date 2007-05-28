@@ -87,6 +87,7 @@
 //	2006-12-30	add instanceof to invoke JVM.java with constant on TOS
 //	2007-03-17	new VHDL structure: jopcpu and more records (SimpCon)
 //	2007-04-14	iaload and iastore in hardware (mem_sc.vhd)
+//	2007-05-28	putfield_ref and putstatic_ref in JVM.java
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -96,7 +97,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20070414
+version		= 20070528
 
 //
 //	io address are negativ memory addresses
@@ -895,7 +896,6 @@ getstatic:
 
 
 
-putstatic_ref:
 putstatic:
 //*******************************
 // test for oohw change
@@ -982,7 +982,6 @@ getfield:
 
 
 
-putfield_ref:
 putfield:
 //*******************************
 // test for oohw change
@@ -1384,6 +1383,7 @@ new:
 anewarray:
 checkcast:
 instanceof:
+putstatic_ref:
 
 //
 //	find address for JVM function
@@ -1421,6 +1421,51 @@ instanceof:
 
 //
 //	invoke JVM.fxxx(int cons)
+//
+			ldi	1
+			nop
+			bnz	invoke
+			nop
+			nop
+
+//
+//	call com.jopdesign.sys.JMV.fxxx(int index) for not implemented  byte codes.
+//		... JVM in Java!
+//		with index into constant pool on stack
+//
+
+putfield_ref:
+
+//
+//	find address for JVM function
+//
+			ldjpc
+			ldi	1
+			sub
+			stjpc				// get last byte code
+			nop					// ???
+			nop					// one more now (2004-04-06) ?
+			ldm	jjp
+			nop	opd
+			ld_opd_8u
+			ldi	255
+			and
+			dup
+			add					// *2
+			add					// jjp+2*bc
+			stm	a				// save
+
+//
+//	get index
+//
+			nop	opd
+			nop	opd
+			ld_opd_16u
+
+			ldm	a				// restore mp
+
+//
+//	invoke JVM.fxxx(int index)
 //
 			ldi	1
 			nop

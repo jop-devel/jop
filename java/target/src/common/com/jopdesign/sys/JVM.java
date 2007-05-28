@@ -620,7 +620,7 @@ class JVM {
 		}
 		JVMHelp.wr(" thrown\n");
 		JVMHelp.wr("catch not implemented!");
-		Startup.exit();
+		System.exit(1);
 		return t;
 	}
 
@@ -785,9 +785,19 @@ if (enterCnt<0) {
 	private static void f_resDE() { JVMHelp.noim();}
 	private static void f_resDF() { JVMHelp.noim();}
 	private static void f_resE0() { JVMHelp.noim();}
-	private static void f_resE1() { JVMHelp.noim();}
+	private static void f_putstatic_ref(int val, int addr) {
+		
+		Native.wrMem(val, addr);
+	}
 	private static void f_resE2() { JVMHelp.noim();}
-	private static void f_resE3() { JVMHelp.noim();}
+	private static void f_putfield_ref(int ref, int val, int index) {
+		
+		if (ref==0) {
+			throw new NullPointerException();
+		}
+		ref = Native.rdMem(ref);
+		Native.wrMem(val, ref+index);
+	}
 	private static void f_resE4() { JVMHelp.noim();}
 	private static void f_resE5() { JVMHelp.noim();}
 	private static void f_resE6() { JVMHelp.noim();}

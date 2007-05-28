@@ -172,6 +172,16 @@ System.out.println(mp+" "+pc);
 		invoke(jjp+(instr<<1));
 	}
 
+	/**
+	*	call function in JVM.java with index in constant pool on stack
+	*/
+	void jjvmIdx(int instr) {
+
+		int idx = readOpd16u();
+		stack[++sp] = idx;					// push on stack
+		invoke(jjp+(instr<<1));
+	}
+
 	void dump() {
 		System.out.print("cp="+cp+" vp="+vp+" sp="+sp+" pc="+pc);
 		System.out.println(" Stack=[..., "+stack[sp-2]+", "+stack[sp-1]+", "+stack[sp]+"]");
@@ -1546,13 +1556,15 @@ System.out.println("new heap: "+heap);
 					getstatic();
 					break;
 				case 225 :		// resE1 - putstatic_ref
-					putstatic();
+					jjvmConst(225);	// use JVM.java version
+					//putstatic();
 					break;
 				case 226 :		// resE2 - getfield_ref
 					getfield();
 					break;
 				case 227 :		// resE3 - putfield_ref
-					putfield();
+					jjvmIdx(227);	// use JVM.java version
+					//putfield();
 					break;
 				case 228 :		// resE4 - getstatic_long
 					getstatic_long();

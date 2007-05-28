@@ -156,22 +156,23 @@ synchronized (o) {
 //		while does not work anymore as sp and vp are
 //		wrapping around (only 7 bits)
 //		while (fp>128+5) {	// stop befor 'fist' method
-		for (int cnt=0; cnt<5; ++cnt) {
-			mp = Native.rdIntMem(fp+4);
-			vp = Native.rdIntMem(fp+2);
-			pc = Native.rdIntMem(fp+1);
+		for (int cnt=0; cnt<10; ++cnt) {
+			mp = Native.rdIntMem(((fp+4)&0x7f)|0x80);
+			vp = Native.rdIntMem(((fp+2)&0x7f)|0x80);
+			pc = Native.rdIntMem(((fp+1)&0x7f)|0x80);
 			val = Native.rdMem(mp);
 			addr = val>>>10;			// address of callee
 
 			wrSmall(mp);
 			wrSmall(addr);
 			wrSmall(pc);
+			wrSmall(fp);
 			wr('\n');
 
 			val = Native.rdMem(mp+1);	// cp, locals, args
 			args = val & 0x1f;
 			loc = (val>>>5) & 0x1f;
-			fp = vp+args+loc;			// new fp can be calc. with vp and count of local vars
+			fp = ((vp+args+loc)&0x7f)|0x80;			// new fp can be calc. with vp and count of local vars
 		}
 		wr('\n');
 /*
