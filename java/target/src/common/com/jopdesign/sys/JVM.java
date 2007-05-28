@@ -571,14 +571,11 @@ class JVM {
 	private static void f_invokeinterface() { JVMHelp.noim();}
 	private static void f_unused_ba() { JVMHelp.noim();}
 
-// TODO: synchronized on functions that change JVM state (e.g. heap pointer)
-static Object o;
-
 	private static int f_new(int cons) {
 
 		int ret;
 
-		synchronized (o) {
+		synchronized (GC.mutex) {
 
 			ret = GC.newObject(cons);
 		}
@@ -590,7 +587,7 @@ static Object o;
 
 		int ret;
 
-		synchronized (o) {
+		synchronized (GC.mutex) {
 			
 			ret = GC.newArray(count, type);
 		}
@@ -604,7 +601,7 @@ static Object o;
 		// should be different for the GC!!!
 		int ret;
 
-		synchronized (o) {
+		synchronized (GC.mutex) {
 			
 			ret = GC.newArray(count, 1); //1..type not available=reference
 		}
@@ -623,6 +620,7 @@ static Object o;
 		}
 		JVMHelp.wr(" thrown\n");
 		JVMHelp.wr("catch not implemented!");
+		Startup.exit();
 		return t;
 	}
 
@@ -637,7 +635,7 @@ static Object o;
 
 		for (;;) {
 			if (p==cons) {
-				return 1;
+				return objref;
 			} else {
 				p = Native.rdMem(p+2);
 				if (p==0) break;		// we are at Object
