@@ -4,8 +4,6 @@
  */
 package com.jopdesign.sys;
 
-import util.Timer;
-
 
 /**
  * @author Martin Schoeberl (martin@jopdesign.com)
@@ -85,10 +83,14 @@ public class GC {
 	 */
 	static final int GRAY_END = -1;
 	/**
-	 * The mark field (don't use size at the moment)
+	 * Denote in which space the object is
 	 */
-	static final int OFF_MARK = 6;
-
+	static final int OFF_SPACE = 6;
+	
+	/**
+	 * A flag to represent marking state
+	 */
+	static boolean isMarkingXXX; // not set and used at the moment
 	
 	static final int TYPICAL_OBJ_SIZE = 5;
 	static int handle_cnt;
@@ -103,6 +105,7 @@ public class GC {
 	static boolean useA;
 
 	static int fromSpace;
+	static int toSpace;
 	/**
 	 * Points to the start of the to-space after
 	 * a flip. Objects are copied from the start
@@ -153,17 +156,22 @@ public class GC {
 // System.out.println("Size: "+heap_size+" words");
 		useA = true;
 		heapPtr = heapStartA;
-		fromSpace = heapStartB;
 		allocPtr = heapPtr+semi_size;
+		toSpace = heapStartA;
+		fromSpace = heapStartB;
 		
 		freeList = 0;
 		useList = 0;
 		grayList = GRAY_END;
 		for (int i=0; i<handle_cnt; ++i) {
 			int ref = mem_start+i*HANDLE_SIZE;
-			addToFreeList(ref);
+			// pointer to former freelist head
+			Native.wrMem(freeList, ref+OFF_NEXT);
+			// mark handle as free
+			Native.wrMem(0, ref+OFF_PTR);
+			freeList = ref;
 			Native.wrMem(0, ref+OFF_GRAY);
-			Native.wrMem(0, ref+OFF_MARK);
+			Native.wrMem(0, ref+OFF_SPACE);
 		}
 		// clean the heap
 		for (int i=heapPtr; i<allocPtr; ++i) {
@@ -181,65 +189,31 @@ public class GC {
 		return mutex;
 	}
 	
-	static void addToFreeList(int ref) {
-		// pointer to former freelist head
-		Native.wrMem(freeList, ref+OFF_NEXT);
-		// mark handle as free
-		Native.wrMem(0, ref+OFF_PTR);
-		freeList = ref;
-	}
-	static void addToUseList(int ref) {		
-		// add to used list
-		Native.wrMem(useList, ref+OFF_NEXT);
-		useList = ref;
-	}
-	static void addToGrayList(int ref) {
-		// only objects not allready in the gray list
-		// are added
-		if (Native.rdMem(ref+OFF_GRAY)==0) {
-			// pointer to former freelist head
-			Native.wrMem(grayList, ref+OFF_GRAY);
-			grayList = ref;			
-//			log("addGray", ref);
-		} else {
-//			log("already in gray list", ref);
-		}
-	}
-	
-	static int getHandle(int ref, int size) {
-		
-// JVMHelp.wrByte(Native.getSP());
-		int addr = freeList;
-		freeList = Native.rdMem(freeList+OFF_NEXT);
-		// pointer to real object, also marks it as non free
-		Native.wrMem(ref, addr); // +OFF_PTR
-		// should be from the class info
-		Native.wrMem(size, addr+OFF_SIZE);
-		// add to used list
-		addToUseList(addr);
-		return addr;
-	}
-	
-	
-	
 	/**
 	 * Add object to the gray list/stack
 	 * @param ref
 	 */
 	static void push(int ref) {
 		
-		// if (ref==0) return;		// that's a null pointer
-		// Only objects that are referenced by a handle in the
-		// handle area are considered for GC.
-		// Null pointer and references to static strings are not
-		// investigated.
-		if (ref<mem_start || ref>=mem_start+handle_cnt*HANDLE_SIZE) return;
-		// Is this handle on the free list?
-		// Is possible when using conservative stack scanning
-		if (Native.rdMem(ref+OFF_PTR)==0) return;
-		
-		addToGrayList(ref);
-		
+		synchronized (mutex) {
+			// if (ref==0) return;		// that's a null pointer
+			// Only objects that are referenced by a handle in the
+			// handle area are considered for GC.
+			// Null pointer and references to static strings are not
+			// investigated.
+			if (ref<mem_start || ref>=mem_start+handle_cnt*HANDLE_SIZE) return;
+			// Is this handle on the free list?
+			// Is possible when using conservative stack scanning
+			if (Native.rdMem(ref+OFF_PTR)==0) return;
+			
+			// only objects not allready in the gray list
+			// are added
+			if (Native.rdMem(ref+OFF_GRAY)==0) {
+				// pointer to former freelist head
+				Native.wrMem(grayList, ref+OFF_GRAY);
+				grayList = ref;			
+			}			
+		}		
 	}
 	/**
 	 * Get one (the top) element from the gray list/stack
@@ -247,13 +221,34 @@ public class GC {
 	 */
 	static int pop() {
 
-		int addr = grayList;
-		grayList = Native.rdMem(addr+OFF_GRAY);
-		Native.wrMem(0, addr+OFF_GRAY);		// mark as not in list
-//		log("pop", addr);
-		return addr;
+		synchronized (mutex) {
+			int addr = grayList;
+			grayList = Native.rdMem(addr+OFF_GRAY);
+			Native.wrMem(0, addr+OFF_GRAY);		// mark as not in list
+//			log("pop", addr);
+			return addr;			
+		}
 	}
-	
+
+	/**
+	 * switch from-space and to-space
+	 */
+	static void flip() {
+		synchronized (mutex) {
+			useA = !useA;
+			if (useA) {
+				heapPtr = heapStartA;
+				fromSpace = heapStartB;
+				toSpace = heapStartA;
+			} else {
+				heapPtr = heapStartB;			
+				fromSpace = heapStartA;
+				toSpace = heapStartB;
+			}
+			allocPtr = heapPtr+semi_size;
+		}
+	}
+
 	static void getRoots() {
 
 
@@ -303,22 +298,26 @@ public class GC {
 
 			// TODO: and what happens when the stack gets changed during
 			// GC?
+			// That's what a snapshot-at-beginning write-barrier is for
+			// - or our SCJ approach without stack roots ;-)
 		}
 	}
 	
-	static void mark() {
+	static void markAndCopy() {
 		
 		int i;
 		
 		getRoots();
 		while (grayList!=GRAY_END) {
 			int ref = pop();
-			int mark = Native.rdMem(ref+OFF_MARK);
-			if (mark!=0) {
-				// allready marked
+			int space = Native.rdMem(ref+OFF_SPACE);
+			if (space==toSpace) {
+				// allready moved
+				// can this happen? - yes, as we do not check it in mark
 				continue;
 			}
-			Native.wrMem(1, ref+OFF_MARK);
+			
+			// push all childs
 			
 			// get pointer to object
 			int addr = Native.rdMem(ref);
@@ -331,8 +330,7 @@ public class GC {
 				}
 				// However, multinewarray does probably NOT work
 			} else if (flags==IS_OBJ){		
-				// it's a plain object
-				
+				// it's a plain object				
 				// get pointer to method table
 				flags = Native.rdMem(ref+OFF_MTAB_LEN);
 				// get real flags
@@ -344,85 +342,91 @@ public class GC {
 					}
 					flags >>>= 1;
 				}				
-			} else {
-				// it's a plain value array
 			}
-		}
-	}
-	
-	/**
-	 * Sweep through the handle list.
-	 */
-	static void sweep() {
-
-		int use = 0;
-		int free = 0;
-		
-		synchronized (mutex) {
-			int ref = useList;
-			useList = 0;
-			while (ref!=0) {
-				int mark = Native.rdMem(ref+OFF_MARK);
-				// read next element, as it is destroyed
-				// by addTo*List()
-				int next = Native.rdMem(ref+OFF_NEXT);
-				if (mark!=0) {
-					Native.wrMem(0, ref+OFF_MARK);
-					addToUseList(ref);
-					++use;
-				} else {
-					addToFreeList(ref);
-					++free;
-				}
-				ref = next;
-			}
-		}
-//		System.out.print("used handles=");
-//		System.out.println(use);
-//		System.out.print("free handles=");
-//		System.out.println(free);
-	}
-	/**
-	 * switch from-space and to-space
-	 */
-	static void flip() {
-//		log("flip");
-		synchronized (mutex) {
-			useA = !useA;
-			if (useA) {
-				heapPtr = heapStartA;
-				fromSpace = heapStartB;
-			} else {
-				heapPtr = heapStartB;			
-				fromSpace = heapStartA;
-			}
-			allocPtr = heapPtr+semi_size;
-		}
-	}
-
-	/**
-	 * Copy all objects in the useList to the
-	 * to-space.
-	 */
-	static void compact() {
-
-		int ref = useList;
-		while (ref!=0) {
-//			log("move", ref);
-			int addr = Native.rdMem(ref+OFF_PTR);
-//			System.out.println(ref+" move from "+addr+" to "+heapPtr);
+			
+			// now move it - color it BLACK
+			
 			int size = Native.rdMem(ref+OFF_SIZE);
 			synchronized (mutex) {
-				for (int i=0; i<size; ++i) {
+				for (i=0; i<size; ++i) {
 					int val = Native.rdMem(addr+i);
 					Native.wrMem(val, heapPtr+i);
 				}
 				// update object pointer to the new location
 				Native.wrMem(heapPtr, ref+OFF_PTR);
-				heapPtr += size;
+				heapPtr += size;					
+				Native.wrMem(toSpace, ref+OFF_SPACE);
 			}
-			ref = Native.rdMem(ref+OFF_NEXT);
 		}
+	}
+	
+	/**
+	 * Sweep through the 'old' use list and move garbage to free list.
+	 */
+	static void sweepHandles() {
+
+		int use = 0;
+		int free = 0;
+		int ref;
+		
+		synchronized (mutex) {
+			ref = useList;		// get start of the list
+			useList = 0;		// new uselist starts empty
+		}
+		
+		while (ref!=0) {
+			
+			int space = Native.rdMem(ref+OFF_SPACE);
+			// read next element, as it is destroyed
+			// by addTo*List()
+			int next = Native.rdMem(ref+OFF_NEXT);
+			if (space==toSpace) {
+				// add to used list
+				synchronized (mutex) {
+					Native.wrMem(useList, ref+OFF_NEXT);
+					useList = ref;					
+				}
+				++use;				
+			} else {
+				synchronized (mutex) {
+					// pointer to former freelist head
+					Native.wrMem(freeList, ref+OFF_NEXT);
+					// mark handle as free
+					Native.wrMem(0, ref+OFF_PTR);
+					freeList = ref;					
+				}
+				++free;			
+			}		
+			ref = next;
+		}
+//		System.out.print("still used handles=");
+//		System.out.println(use);
+//		System.out.print("new free handles=");
+//		System.out.println(free);
+//		use = 0;
+//		ref = useList;
+//		while (ref!=0) {
+//			++use;
+//			ref = Native.rdMem(ref+OFF_NEXT);
+//		}
+//		free = 0;
+//		ref = freeList;
+//		while (ref!=0) {
+//			++free;
+//			ref = Native.rdMem(ref+OFF_NEXT);
+//		}
+//		System.out.print("used handles=");
+//		System.out.println(use);
+//		System.out.print("free handles=");
+//		System.out.println(free);
+		
+	}
+
+	/**
+	 * Clean the from-space 
+	 */
+	static void zapSemi() {
+
 		// clean the from-space to prepare for the next
 		// flip
 		for (int i=fromSpace; i<fromSpace+semi_size; ++i) {
@@ -453,9 +457,9 @@ public class GC {
 //		log("GC called - free memory:", freeMemory());
 
 		flip();
-		mark();
-		sweep();
-		compact();			
+		markAndCopy();
+		sweepHandles();
+		zapSemi();			
 
 //		log("GC end - free memory:",freeMemory());
 		
@@ -464,7 +468,31 @@ public class GC {
 	static int free() {
 		return allocPtr-heapPtr;
 	}
-	
+
+	/**
+	 * Get a handle: remove from freeList and add to useList
+	 * Mark BLACK
+	 * Gets invoked from newObject and newArray under the mutex
+	 * @param ref
+	 * @param size
+	 * @return
+	 */
+	static int getHandle(int ref, int size) {
+		
+		int addr = freeList;
+		freeList = Native.rdMem(freeList+OFF_NEXT);
+		// pointer to real object, also marks it as non free
+		Native.wrMem(ref, addr); // +OFF_PTR
+		// should be from the class info
+		Native.wrMem(size, addr+OFF_SIZE);
+		// mark it as BLACK - means it will be in toSpace
+		Native.wrMem(toSpace, addr+OFF_SPACE);
+		// add to used list
+		Native.wrMem(useList, addr+OFF_NEXT);
+		useList = addr;
+		return addr;
+	}
+
 	/**
 	 * Allocate a new Object. Invoked from JVM.f_new(cons);
 	 * @param cons pointer to class struct
@@ -502,7 +530,7 @@ public class GC {
 		int ref;
 		// TODO: shouldn't be the whole newObject synchronized?
 		//		Than we can remove the synchronized from JVM.java
-		// BTW: when we create mutex we synchrnize on the not yet
+		// BTW: when we create mutex we synchronize on the not yet
 		// created Object!
 		synchronized (mutex) {
 			ref = getHandle(allocPtr, size);
@@ -573,6 +601,8 @@ public class GC {
 	public static int totalMemory() {
 		return semi_size*4;
 	}
+	
+/************************************************************************************************/
 	
 	static int logCnt;
 	
