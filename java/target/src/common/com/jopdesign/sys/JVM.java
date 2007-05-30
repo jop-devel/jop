@@ -787,7 +787,15 @@ if (enterCnt<0) {
 	private static void f_resE0() { JVMHelp.noim();}
 	private static void f_putstatic_ref(int val, int addr) {
 		
-		Native.wrMem(val, addr);
+		synchronized (GC.mutex) {
+			// snapshot-at-beginning barrier
+			int oldRef = Native.rdMem(addr);
+			int space = Native.rdMem(oldRef+GC.OFF_SPACE);
+			if (space!=GC.toSpace) {
+				GC.push(oldRef);
+			}
+			Native.wrMem(val, addr);			
+		}
 	}
 	private static void f_resE2() { JVMHelp.noim();}
 	private static void f_putfield_ref(int ref, int val, int index) {
@@ -795,8 +803,27 @@ if (enterCnt<0) {
 		if (ref==0) {
 			throw new NullPointerException();
 		}
-		ref = Native.rdMem(ref);
-		Native.wrMem(val, ref+index);
+		synchronized (GC.mutex) {
+			/*
+			// push the object on mark stack if not
+			// black - that's the what kind of
+			// write barrier?
+			int space = Native.rdMem(ref+GC.OFF_SPACE);
+			if (space!=GC.toSpace) {
+				GC.push(ref);
+			}
+			*/
+			
+			ref = Native.rdMem(ref);
+			// snapshot-at-beginning barrier
+			int oldRef = Native.rdMem(ref+index);
+			int space = Native.rdMem(oldRef+GC.OFF_SPACE);
+			if (space!=GC.toSpace) {
+				GC.push(oldRef);
+			}
+			
+			Native.wrMem(val, ref+index);			
+		}
 	}
 	private static void f_resE4() { JVMHelp.noim();}
 	private static void f_resE5() { JVMHelp.noim();}

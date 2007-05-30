@@ -29,8 +29,11 @@ public class GC {
 
 	/**
 	 * Fields in the handle structure.
+	 * 
+	 * WARNING: Don't change the size as long
+	 * as we do conservative stack scanning.
 	 */
-	static final int HANDLE_SIZE = 7;
+	static final int HANDLE_SIZE = 8;
 
 	/**
 	 * The handle contains following data:
@@ -108,10 +111,10 @@ public class GC {
 	static int toSpace;
 	/**
 	 * Points to the start of the to-space after
-	 * a flip. Objects are copied from the start
-	 * and heapPtr is inecremented
+	 * a flip. Objects are copied to copyPtr and
+	 * copyPtr is incremented.
 	 */
-	static int heapPtr;
+	static int copyPtr;
 	/**
 	 * Points to the end of the to-space after
 	 * a flip. Objects are allocated from the end
@@ -155,8 +158,8 @@ public class GC {
 // System.out.println("Heap: "+heapStartA+" "+heapStartB+" "+(heapStartB+heap_size));
 // System.out.println("Size: "+heap_size+" words");
 		useA = true;
-		heapPtr = heapStartA;
-		allocPtr = heapPtr+semi_size;
+		copyPtr = heapStartA;
+		allocPtr = copyPtr+semi_size;
 		toSpace = heapStartA;
 		fromSpace = heapStartB;
 		
@@ -174,7 +177,7 @@ public class GC {
 			Native.wrMem(0, ref+OFF_SPACE);
 		}
 		// clean the heap
-		for (int i=heapPtr; i<allocPtr; ++i) {
+		for (int i=copyPtr; i<allocPtr; ++i) {
 			Native.wrMem(0, i);
 		}
 		concurrentGc = false;
@@ -202,9 +205,13 @@ public class GC {
 			// Null pointer and references to static strings are not
 			// investigated.
 			if (ref<mem_start || ref>=mem_start+handle_cnt*HANDLE_SIZE) return;
+			if ((ref&0x3)!=0) return;
 			// Is this handle on the free list?
 			// Is possible when using conservative stack scanning
 			if (Native.rdMem(ref+OFF_PTR)==0) return;
+			
+			// Is it black?
+			if (Native.rdMem(ref+OFF_SPACE)==toSpace) return;
 			
 			// only objects not allready in the gray list
 			// are added
@@ -237,15 +244,15 @@ public class GC {
 		synchronized (mutex) {
 			useA = !useA;
 			if (useA) {
-				heapPtr = heapStartA;
+				copyPtr = heapStartA;
 				fromSpace = heapStartB;
 				toSpace = heapStartA;
 			} else {
-				heapPtr = heapStartB;			
+				copyPtr = heapStartB;			
 				fromSpace = heapStartA;
 				toSpace = heapStartB;
 			}
-			allocPtr = heapPtr+semi_size;
+			allocPtr = copyPtr+semi_size;
 		}
 	}
 
@@ -337,8 +344,7 @@ public class GC {
 				flags = Native.rdMem(flags+MTAB2GC_INFO);
 				for (i=0; flags!=0; ++i) {
 					if ((flags|1)!=0) {
-						int child = Native.rdMem(addr+i);
-						push(child);
+						push(Native.rdMem(addr+i));
 					}
 					flags >>>= 1;
 				}				
@@ -350,11 +356,11 @@ public class GC {
 			synchronized (mutex) {
 				for (i=0; i<size; ++i) {
 					int val = Native.rdMem(addr+i);
-					Native.wrMem(val, heapPtr+i);
+					Native.wrMem(val, copyPtr+i);
 				}
 				// update object pointer to the new location
-				Native.wrMem(heapPtr, ref+OFF_PTR);
-				heapPtr += size;					
+				Native.wrMem(copyPtr, ref+OFF_PTR);
+				copyPtr += size;					
 				Native.wrMem(toSpace, ref+OFF_SPACE);
 			}
 		}
@@ -433,7 +439,7 @@ public class GC {
 			Native.wrMem(0, i);
 		}
 		// for tests clean also the remainig memory in the to-space??
-		for (int i=heapPtr; i<allocPtr; ++i) {
+		for (int i=copyPtr; i<allocPtr; ++i) {
 			Native.wrMem(0, i);
 		}
 	}
@@ -458,15 +464,18 @@ public class GC {
 
 		flip();
 		markAndCopy();
+		System.out.println("after mark&copy");
 		sweepHandles();
+		System.out.println("after sweep");
 		zapSemi();			
+		System.out.println("after zap");
 
 //		log("GC end - free memory:",freeMemory());
 		
 	}
 	
 	static int free() {
-		return allocPtr-heapPtr;
+		return allocPtr-copyPtr;
 	}
 
 	/**
@@ -503,36 +512,37 @@ public class GC {
 		int size = Native.rdMem(cons);			// instance size
 		
 //System.out.println("new "+heapPtr+" size "+size);
-		if (heapPtr+size >= allocPtr) {
+		if (copyPtr+size >= allocPtr) {
 			gc_alloc();
-		}
-		if (heapPtr+size >= allocPtr) {
-			// still not enough memory
-			System.out.println("Out of memory error!");
-			System.exit(1);
+			if (copyPtr+size >= allocPtr) {
+				// still not enough memory
+				System.out.println("Out of memory error!");
+				System.exit(1);
+			}
 		}
 		if (freeList==0) {
 			System.out.println("Run out of handles!");
 			// is this a good place to call gc????
 			// better check available handles on newObject
 			gc_alloc();
+			if (freeList==0) {
+				System.out.println("Still out of handles!");
+				System.exit(1);
+			}
 		}
-		if (freeList==0) {
-			System.out.println("Still out of handles!");
-			System.exit(1);
-		}
-
-		// we allocate from the upper part
-		allocPtr -= size;
-		// we need the object size.
-		// in the heap or in the handle structure
-		// or retrive it from the class info
 		int ref;
-		// TODO: shouldn't be the whole newObject synchronized?
-		//		Than we can remove the synchronized from JVM.java
-		// BTW: when we create mutex we synchronize on the not yet
-		// created Object!
+		
+
 		synchronized (mutex) {
+			// we allocate from the upper part
+			allocPtr -= size;
+			// we need the object size.
+			// in the heap or in the handle structure
+			// or retrive it from the class info
+			// TODO: shouldn't be the whole newObject synchronized?
+			//		Than we can remove the synchronized from JVM.java
+			// BTW: when we create mutex we synchronize on the not yet
+			// created Object!
 			ref = getHandle(allocPtr, size);
 			// ref. flags used for array marker
 			Native.wrMem(IS_OBJ, ref+OFF_TYPE);
@@ -554,22 +564,22 @@ public class GC {
 		if((type==11)||(type==7)) size <<= 1;
 		// reference array type is 1 (our convention)
 		
-		if (heapPtr+size >= allocPtr) {
+		if (copyPtr+size >= allocPtr) {
 			gc_alloc();
-		}
-		if (heapPtr+size >= allocPtr) {
-			// still not enough memory
-			System.out.println("Out of memory error!");
-			System.exit(1);
+			if (copyPtr+size >= allocPtr) {
+				// still not enough memory
+				System.out.println("Out of memory error!");
+				System.exit(1);
+			}
 		}
 		if (freeList==0) {
 			// is this a good place to call gc????
 			// better check available handles on newObject
 			gc_alloc();
-		}
-		if (freeList==0) {
-			System.out.println("Still out of handles!");
-			System.exit(1);
+			if (freeList==0) {
+				System.out.println("Still out of handles!");
+				System.exit(1);
+			}
 		}
 
 		// we allocate from the upper part
