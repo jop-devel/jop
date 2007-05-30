@@ -43,7 +43,7 @@ public class ForceBlack2White {
 					waitForNextPeriod();
 					check();
 					waitForNextPeriod();
-					// switch pointer to 4 from 3 to23
+					// switch pointer to 4 from 3 to2
 					tmp = r.r2.r1;
 					waitForNextPeriod();
 					r.r2.r1 = null;
@@ -57,7 +57,7 @@ public class ForceBlack2White {
 						System.out.println("Error in GC (local)");
 						System.exit(1);
 					}
-					System.out.print('.');
+//					System.out.print('.');
 					abc = null;
 					waitForNextPeriod();
 				}
