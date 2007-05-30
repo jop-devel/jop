@@ -140,6 +140,9 @@ public class GC {
 		
 		addrStaticRefs = addr;
 		mem_start = Native.rdMem(0);
+		// align mem_start to 8 word boundary for the
+		// conservative handle check
+		mem_start = (mem_start+7)&0xfffffff8;
 //mem_size = mem_start + 2000;
 		full_heap_size = mem_size-mem_start;
 		handle_cnt = full_heap_size/2/(TYPICAL_OBJ_SIZE+HANDLE_SIZE);
@@ -205,7 +208,8 @@ public class GC {
 			// Null pointer and references to static strings are not
 			// investigated.
 			if (ref<mem_start || ref>=mem_start+handle_cnt*HANDLE_SIZE) return;
-			if ((ref&0x3)!=0) return;
+			// does the reference point to a handle start?
+			if ((ref&0x7)!=0) return;
 			// Is this handle on the free list?
 			// Is possible when using conservative stack scanning
 			if (Native.rdMem(ref+OFF_PTR)==0) return;
@@ -371,8 +375,6 @@ public class GC {
 	 */
 	static void sweepHandles() {
 
-		int use = 0;
-		int free = 0;
 		int ref;
 		
 		synchronized (mutex) {
@@ -392,7 +394,6 @@ public class GC {
 					Native.wrMem(useList, ref+OFF_NEXT);
 					useList = ref;					
 				}
-				++use;				
 			} else {
 				synchronized (mutex) {
 					// pointer to former freelist head
@@ -401,30 +402,9 @@ public class GC {
 					Native.wrMem(0, ref+OFF_PTR);
 					freeList = ref;					
 				}
-				++free;			
 			}		
 			ref = next;
 		}
-//		System.out.print("still used handles=");
-//		System.out.println(use);
-//		System.out.print("new free handles=");
-//		System.out.println(free);
-//		use = 0;
-//		ref = useList;
-//		while (ref!=0) {
-//			++use;
-//			ref = Native.rdMem(ref+OFF_NEXT);
-//		}
-//		free = 0;
-//		ref = freeList;
-//		while (ref!=0) {
-//			++free;
-//			ref = Native.rdMem(ref+OFF_NEXT);
-//		}
-//		System.out.print("used handles=");
-//		System.out.println(use);
-//		System.out.print("free handles=");
-//		System.out.println(free);
 		
 	}
 
@@ -464,11 +444,8 @@ public class GC {
 
 		flip();
 		markAndCopy();
-		System.out.println("after mark&copy");
 		sweepHandles();
-		System.out.println("after sweep");
 		zapSemi();			
-		System.out.println("after zap");
 
 //		log("GC end - free memory:",freeMemory());
 		
