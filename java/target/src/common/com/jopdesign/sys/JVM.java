@@ -789,9 +789,9 @@ if (enterCnt<0) {
 		
 		synchronized (GC.mutex) {
 			// snapshot-at-beginning barrier
-			int oldRef = Native.rdMem(addr);
-			if (oldRef!=0 && Native.rdMem(oldRef+GC.OFF_SPACE)!=GC.toSpace) {
-				GC.push(oldRef);
+			int oldVal = Native.rdMem(addr);
+			if (oldVal!=0 && Native.rdMem(oldVal+GC.OFF_SPACE)!=GC.toSpace) {
+				GC.push(oldVal);
 			}
 			Native.wrMem(val, addr);			
 		}
@@ -807,17 +807,17 @@ if (enterCnt<0) {
 			// push the object on mark stack if not
 			// black - that's the what kind of
 			// write barrier?
-			int space = Native.rdMem(ref+GC.OFF_SPACE);
-			if (space!=GC.toSpace) {
+			if (ref!=0 && Native.rdMem(ref+GC.OFF_SPACE)!=GC.toSpace) {
 				GC.push(ref);
 			}
 			*/
 			
+			// handle indirection
 			ref = Native.rdMem(ref);
 			// snapshot-at-beginning barrier
-			int oldRef = Native.rdMem(ref+index);
-			if (oldRef!=0 && Native.rdMem(oldRef+GC.OFF_SPACE)!=GC.toSpace) {
-				GC.push(oldRef);
+			int oldVal = Native.rdMem(ref+index);
+			if (oldVal!=0 && Native.rdMem(oldVal+GC.OFF_SPACE)!=GC.toSpace) {
+				GC.push(oldVal);
 			}
 			
 			Native.wrMem(val, ref+index);			

@@ -39,27 +39,20 @@ public class GC {
 	 * The handle contains following data:
 	 * 0 pointer to the object in the heap or 0 when the handle is free
 	 * 1 pointer to the method table or length of an array
-	 * 
 	 * 2 size - could be in class info
-	 *   + GC mark (could be part of the object pointer)
 	 * 3 type info: object, primitve array or ref array
 	 * 4 pointer to next handle of same type (used or free)
+	 * 5 gray list
+	 * 6 space marker - either toSpace or fromSpace
 	 * 
-	 * follwoing is NOT true
-	 * 3 flags to mark reference fields - could be in class info
-	 *   -1 means more than 31 fields -> look in class info....
+	 * !!! be carefule when changing the handle structure, it's
+	 * used in System.arraycopy() and probably in jvm.asm!!!
 	 */
 	static final int OFF_PTR = 0;
-	static final int OFF_MTAB_LEN = 1;
+	static final int OFF_MTAB_ALEN = 1;
 	static final int OFF_SIZE = 2;
 	static final int OFF_TYPE = 3;
 	
-	// TODO: use MTAB and size for objects and arrays.
-	// don't reuse MTAB as array size as the array size
-	// could be 0 and this would be a marker for a free
-	// handle. Rethink and write it!!!!!
-	// mark() also uses the pointer to the method table at 
-	// address-1!
 	// size != array length (think about long/double)
 	
 	// use array types 4..11 are standard boolean to long
@@ -68,9 +61,6 @@ public class GC {
 	// 0 a plain object
 	static final int IS_OBJ = 0;
 	static final int IS_REFARR = 1;
-	
-	//!!! be carefule when changing the handle structure, it's
-	// used in System.arraycopy() and probably in jvm.asm!!!
 	
 	/**
 	 * Free and Use list.
@@ -91,9 +81,9 @@ public class GC {
 	static final int OFF_SPACE = 6;
 	
 	/**
-	 * A flag to represent marking state
+	 * A flag to represent marking/copy state
 	 */
-	static boolean isMarkingXXX; // not set and used at the moment
+	static boolean isMarking;
 	
 	static final int TYPICAL_OBJ_SIZE = 5;
 	static int handle_cnt;
@@ -157,9 +147,6 @@ public class GC {
 		log("heap start", heapStartA);
 		log("heap size (bytes)", semi_size*4*2);
 		
-// we canot call System.out here!
-// System.out.println("Heap: "+heapStartA+" "+heapStartB+" "+(heapStartB+heap_size));
-// System.out.println("Size: "+heap_size+" words");
 		useA = true;
 		copyPtr = heapStartA;
 		allocPtr = copyPtr+semi_size;
@@ -203,6 +190,8 @@ public class GC {
 		
 		synchronized (mutex) {
 			// if (ref==0) return;		// that's a null pointer
+			// null pointer check is in the following handle check
+			
 			// Only objects that are referenced by a handle in the
 			// handle area are considered for GC.
 			// Null pointer and references to static strings are not
@@ -217,6 +206,9 @@ public class GC {
 			// Is it black?
 			if (Native.rdMem(ref+OFF_SPACE)==toSpace) return;
 			
+			// are we marking?
+			if (!isMarking) return;
+			
 			// only objects not allready in the gray list
 			// are added
 			if (Native.rdMem(ref+OFF_GRAY)==0) {
@@ -226,21 +218,6 @@ public class GC {
 			}			
 		}		
 	}
-	/**
-	 * Get one (the top) element from the gray list/stack
-	 * @return
-	 */
-	static int pop() {
-
-		synchronized (mutex) {
-			int addr = grayList;
-			grayList = Native.rdMem(addr+OFF_GRAY);
-			Native.wrMem(0, addr+OFF_GRAY);		// mark as not in list
-//			log("pop", addr);
-			return addr;			
-		}
-	}
-
 	/**
 	 * switch from-space and to-space
 	 */
@@ -260,17 +237,14 @@ public class GC {
 		}
 	}
 
-	static void getRoots() {
+	/**
+	 * Scan all thread stacks atomic.
+	 *
+	 */
+	static void getStackRoots() {
 
 
-		int i, j;
-		
-		// add static refs to root list
-		int addr = Native.rdMem(addrStaticRefs);
-		int cnt = Native.rdMem(addrStaticRefs+1);
-		for (i=0; i<cnt; ++i) {
-			push(Native.rdMem(addr+i));
-		}
+		int i, j, cnt;
 		// only pushing stack roots need to be atomic
 		synchronized (mutex) {
 			// add complete stack of the current thread to the root list
@@ -287,17 +261,11 @@ public class GC {
 			
 			for (i = 0; i < cnt; ++i) {
 				if (i != RtThreadImpl.getActive()) {
-					// can we allocate objects here???
-					// better don't do it....
-					// System.out.print("thread stack ");
-					// System.out.println(i);
 					int[] mem = RtThreadImpl.getStack(i);
 					int sp = RtThreadImpl.getSP(i) - 128; // sp starts at 128
 
 //					roots = GCStkWalk.swk(i, false, false);
 
-					// System.out.print("sp=");
-					// System.out.println(sp);
 					for (j = 0; j <= sp; ++j) {
 						// disable the if when not using gc stack info
 //						if (roots[j] == 1) {
@@ -307,66 +275,102 @@ public class GC {
 				}
 			}
 
-			// TODO: and what happens when the stack gets changed during
-			// GC?
+			// What happens when the stack gets changed during GC?
 			// That's what a snapshot-at-beginning write-barrier is for
 			// - or our SCJ approach without stack roots ;-)
+		}
+	}
+
+	/**
+	 * Scan all static fields
+	 *
+	 */
+	private static void getStaticRoots() {
+		int i;
+		// add static refs to root list
+		int addr = Native.rdMem(addrStaticRefs);
+		int cnt = Native.rdMem(addrStaticRefs+1);
+		for (i=0; i<cnt; ++i) {
+			push(Native.rdMem(addr+i));
 		}
 	}
 	
 	static void markAndCopy() {
 		
-		int i;
+		int i, ref;
 		
-		getRoots();
-		while (grayList!=GRAY_END) {
-			int ref = pop();
-			int space = Native.rdMem(ref+OFF_SPACE);
-			if (space==toSpace) {
-				// allready moved
-				// can this happen? - yes, as we do not check it in mark
-				continue;
-			}
+		isMarking = true;
+		getStaticRoots();
+		getStackRoots();
+		for (;;) {
 			
-			// push all childs
-			
-			// get pointer to object
-			int addr = Native.rdMem(ref);
-			int flags = Native.rdMem(ref+OFF_TYPE);
-			if (flags==IS_REFARR) {
-				// is an array of references
-				int size = Native.rdMem(ref+OFF_MTAB_LEN);
-				for (i=0; i<size; ++i) {
-					push(Native.rdMem(addr+i));
+			// pop one object from the gray list
+			synchronized (mutex) {
+				ref = grayList;
+				if (ref==GRAY_END) {
+					// we're done with our mark and copy
+					isMarking = false;
+					break;
 				}
-				// However, multinewarray does probably NOT work
-			} else if (flags==IS_OBJ){		
-				// it's a plain object				
-				// get pointer to method table
-				flags = Native.rdMem(ref+OFF_MTAB_LEN);
-				// get real flags
-				flags = Native.rdMem(flags+MTAB2GC_INFO);
-				for (i=0; flags!=0; ++i) {
-					if ((flags|1)!=0) {
+				grayList = Native.rdMem(ref+OFF_GRAY);
+				Native.wrMem(0, ref+OFF_GRAY);		// mark as not in list
+			}
+
+			// allready moved
+			// can this happen? - yes, as we do not check it in mark
+			// TODO: no, it's checked in push()
+			if (Native.rdMem(ref+OFF_SPACE)==toSpace) continue;
+			
+			// TODO: there should be no null pointers on the mark stack
+			if (Native.rdMem(ref+OFF_PTR)==0) continue; 
+			
+			// TODO: this synchronization shoul NOT be necessary!!!
+			synchronized (mutex) {
+
+				
+				// push all childs
+					
+				// get pointer to object
+				int addr = Native.rdMem(ref);
+				int flags = Native.rdMem(ref+OFF_TYPE);
+				if (flags==IS_REFARR) {
+					// is an array of references
+					int size = Native.rdMem(ref+OFF_MTAB_ALEN);
+					for (i=0; i<size; ++i) {
 						push(Native.rdMem(addr+i));
 					}
-					flags >>>= 1;
-				}				
-			}
-			
-			// now move it - color it BLACK
-			
-			int size = Native.rdMem(ref+OFF_SIZE);
-			synchronized (mutex) {
-				for (i=0; i<size; ++i) {
-					int val = Native.rdMem(addr+i);
-					Native.wrMem(val, copyPtr+i);
+					// However, multinewarray does probably NOT work
+				} else if (flags==IS_OBJ){		
+					// it's a plain object				
+					// get pointer to method table
+					flags = Native.rdMem(ref+OFF_MTAB_ALEN);
+					// get real flags
+					flags = Native.rdMem(flags+MTAB2GC_INFO);
+					for (i=0; flags!=0; ++i) {
+						if ((flags|1)!=0) {
+							push(Native.rdMem(addr+i));
+						}
+						flags >>>= 1;
+					}				
 				}
-				// update object pointer to the new location
-				Native.wrMem(copyPtr, ref+OFF_PTR);
-				copyPtr += size;					
-				Native.wrMem(toSpace, ref+OFF_SPACE);
+				
+				// now copy it - color it BLACK
+				
+				int size = Native.rdMem(ref+OFF_SIZE);
+				synchronized (mutex) {
+					// update object pointer to the new location
+					Native.wrMem(copyPtr, ref+OFF_PTR);
+					// set it BLACK
+					Native.wrMem(toSpace, ref+OFF_SPACE);
+					// copy it
+					for (i=0; i<size; ++i) {
+						Native.wrMem(Native.rdMem(addr+i), copyPtr+i);
+					}
+					copyPtr += size;			
+				}
+			
 			}
+
 		}
 	}
 	
@@ -375,6 +379,34 @@ public class GC {
 	 */
 	static void sweepHandles() {
 
+		synchronized (mutex) {
+			useList = 0;
+			freeList = 0;
+			for (int i=0; i<handle_cnt; ++i) {
+				int ref = mem_start+i*HANDLE_SIZE;
+				synchronized (mutex) {
+					// a BLACK one
+					if (Native.rdMem(ref+OFF_SPACE)==toSpace) {
+						// add to used list
+						Native.wrMem(useList, ref+OFF_NEXT);
+						useList = ref;					
+					// a WHITE one
+					} else {
+						// pointer to former freelist head
+						Native.wrMem(freeList, ref+OFF_NEXT);
+						freeList = ref;					
+						// mark handle as free
+						Native.wrMem(0, ref+OFF_PTR);
+						// TODO: should not be necessary - now just for sure
+						Native.wrMem(0, ref+OFF_GRAY);
+					}
+				}					
+			}			
+		}
+		
+		// the following is the better one to sweep, but
+		// has probably a bug
+/*
 		int ref;
 		
 		synchronized (mutex) {
@@ -384,28 +416,31 @@ public class GC {
 		
 		while (ref!=0) {
 			
-			int space = Native.rdMem(ref+OFF_SPACE);
 			// read next element, as it is destroyed
 			// by addTo*List()
 			int next = Native.rdMem(ref+OFF_NEXT);
-			if (space==toSpace) {
+			// a BLACK one
+			if (Native.rdMem(ref+OFF_SPACE)==toSpace) {
 				// add to used list
 				synchronized (mutex) {
 					Native.wrMem(useList, ref+OFF_NEXT);
 					useList = ref;					
 				}
+			// a WHITE one
 			} else {
 				synchronized (mutex) {
 					// pointer to former freelist head
 					Native.wrMem(freeList, ref+OFF_NEXT);
+					freeList = ref;					
 					// mark handle as free
 					Native.wrMem(0, ref+OFF_PTR);
-					freeList = ref;					
+					// TODO: should not be necessary - now just for sure
+					Native.wrMem(0, ref+OFF_GRAY);
 				}
 			}		
 			ref = next;
 		}
-		
+*/		
 	}
 
 	/**
@@ -418,9 +453,11 @@ public class GC {
 		for (int i=fromSpace; i<fromSpace+semi_size; ++i) {
 			Native.wrMem(0, i);
 		}
-		// for tests clean also the remainig memory in the to-space??
-		for (int i=copyPtr; i<allocPtr; ++i) {
-			Native.wrMem(0, i);
+		// for tests clean also the remainig memory in the to-space
+		synchronized (mutex) {
+			for (int i=copyPtr; i<allocPtr; ++i) {
+				Native.wrMem(0, i);
+			}			
 		}
 	}
 
@@ -432,7 +469,6 @@ public class GC {
 		log("GC allocation triggered");
 		if (concurrentGc) {
 			log("meaning out of memory for RT-GC");
-//			dump();
 			System.exit(1);	
 		} else {
 			gc();			
@@ -459,24 +495,28 @@ public class GC {
 	 * Get a handle: remove from freeList and add to useList
 	 * Mark BLACK
 	 * Gets invoked from newObject and newArray under the mutex
-	 * @param ref
+	 * @param allocPtr
 	 * @param size
 	 * @return
 	 */
-	static int getHandle(int ref, int size) {
-		
-		int addr = freeList;
-		freeList = Native.rdMem(freeList+OFF_NEXT);
+	static int getHandle(int size) {
+
+		// get one from free list
+		int ref = freeList;
+		freeList = Native.rdMem(ref+OFF_NEXT);
+		// and add it to use list
+		Native.wrMem(useList, ref+OFF_NEXT);
+		useList = ref;
 		// pointer to real object, also marks it as non free
-		Native.wrMem(ref, addr); // +OFF_PTR
+		Native.wrMem(allocPtr, ref); // +OFF_PTR
 		// should be from the class info
-		Native.wrMem(size, addr+OFF_SIZE);
+		Native.wrMem(size, ref+OFF_SIZE);
 		// mark it as BLACK - means it will be in toSpace
-		Native.wrMem(toSpace, addr+OFF_SPACE);
-		// add to used list
-		Native.wrMem(useList, addr+OFF_NEXT);
-		useList = addr;
-		return addr;
+		Native.wrMem(toSpace, ref+OFF_SPACE);
+		// TODO: should not be necessary - now just for sure
+		Native.wrMem(0, ref+OFF_GRAY);
+
+		return ref;
 	}
 
 	/**
@@ -520,20 +560,17 @@ public class GC {
 			//		Than we can remove the synchronized from JVM.java
 			// BTW: when we create mutex we synchronize on the not yet
 			// created Object!
-			ref = getHandle(allocPtr, size);
+			ref = getHandle(size);
 			// ref. flags used for array marker
 			Native.wrMem(IS_OBJ, ref+OFF_TYPE);
 			// pointer to method table in the handle
-			Native.wrMem(cons+CLASS_HEADR, ref+OFF_MTAB_LEN);
+			Native.wrMem(cons+CLASS_HEADR, ref+OFF_MTAB_ALEN);
 		}
 
 		return ref;
 	}
 	
 	static int newArray(int size, int type) {
-		
-		// we are NOT using JVM var h at address 2 for the
-		// heap pointer anymore.
 		
 		int arrayLength = size;
 		
@@ -559,15 +596,15 @@ public class GC {
 			}
 		}
 
-		// we allocate from the upper part
-		allocPtr -= size;
 		int ref;
 		synchronized (mutex) {
-			ref = getHandle(allocPtr, size);
+			// we allocate from the upper part
+			allocPtr -= size;
+			ref = getHandle(size);
 			// ref. flags used for array marker
 			Native.wrMem(type, ref+OFF_TYPE);
 			// array length in the handle
-			Native.wrMem(arrayLength, ref+OFF_MTAB_LEN);
+			Native.wrMem(arrayLength, ref+OFF_MTAB_ALEN);
 		}
 
 		return ref;
