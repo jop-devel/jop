@@ -790,8 +790,7 @@ if (enterCnt<0) {
 		synchronized (GC.mutex) {
 			// snapshot-at-beginning barrier
 			int oldRef = Native.rdMem(addr);
-			int space = Native.rdMem(oldRef+GC.OFF_SPACE);
-			if (space!=GC.toSpace) {
+			if (oldRef!=0 && Native.rdMem(oldRef+GC.OFF_SPACE)!=GC.toSpace) {
 				GC.push(oldRef);
 			}
 			Native.wrMem(val, addr);			
@@ -817,8 +816,7 @@ if (enterCnt<0) {
 			ref = Native.rdMem(ref);
 			// snapshot-at-beginning barrier
 			int oldRef = Native.rdMem(ref+index);
-			int space = Native.rdMem(oldRef+GC.OFF_SPACE);
-			if (space!=GC.toSpace) {
+			if (oldRef!=0 && Native.rdMem(oldRef+GC.OFF_SPACE)!=GC.toSpace) {
 				GC.push(oldRef);
 			}
 			
