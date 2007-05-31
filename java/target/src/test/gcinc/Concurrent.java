@@ -17,7 +17,7 @@ public class Concurrent {
 		b = new SimpVector(100);
 		c = new SimpVector(999);
 
-		new RtThread(2, 100000) {
+		new RtThread(2, 200000) {
 			public void run() {
 				for (;;) {
 					c.run();
