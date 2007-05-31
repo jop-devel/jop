@@ -70,11 +70,11 @@ public class GC {
 	 * Threading the gray list. End of list is 'special' value -1.
 	 * 0 means not in list.
 	 */
-	static final int OFF_GRAY = 5;
+	static final int OFF_GREY = 5;
 	/**
 	 * Special end of list marker -1
 	 */
-	static final int GRAY_END = -1;
+	static final int GREY_END = -1;
 	/**
 	 * Denote in which space the object is
 	 */
@@ -114,7 +114,7 @@ public class GC {
 	
 	static int freeList;
 	static int useList;
-	static int grayList;
+	static int greyList;
 	
 	static int addrStaticRefs;
 	
@@ -155,7 +155,7 @@ public class GC {
 		
 		freeList = 0;
 		useList = 0;
-		grayList = GRAY_END;
+		greyList = GREY_END;
 		for (int i=0; i<handle_cnt; ++i) {
 			int ref = mem_start+i*HANDLE_SIZE;
 			// pointer to former freelist head
@@ -163,7 +163,7 @@ public class GC {
 			// mark handle as free
 			Native.wrMem(0, ref+OFF_PTR);
 			freeList = ref;
-			Native.wrMem(0, ref+OFF_GRAY);
+			Native.wrMem(0, ref+OFF_GREY);
 			Native.wrMem(0, ref+OFF_SPACE);
 		}
 		// clean the heap
@@ -211,10 +211,10 @@ public class GC {
 			
 			// only objects not allready in the gray list
 			// are added
-			if (Native.rdMem(ref+OFF_GRAY)==0) {
-				// pointer to former freelist head
-				Native.wrMem(grayList, ref+OFF_GRAY);
-				grayList = ref;			
+			if (Native.rdMem(ref+OFF_GREY)==0) {
+				// pointer to former gray list head
+				Native.wrMem(greyList, ref+OFF_GREY);
+				greyList = ref;			
 			}			
 		}		
 	}
@@ -306,14 +306,14 @@ public class GC {
 			
 			// pop one object from the gray list
 			synchronized (mutex) {
-				ref = grayList;
-				if (ref==GRAY_END) {
+				ref = greyList;
+				if (ref==GREY_END) {
 					// we're done with our mark and copy
 					isMarking = false;
 					break;
 				}
-				grayList = Native.rdMem(ref+OFF_GRAY);
-				Native.wrMem(0, ref+OFF_GRAY);		// mark as not in list
+				greyList = Native.rdMem(ref+OFF_GREY);
+				Native.wrMem(0, ref+OFF_GREY);		// mark as not in list
 			}
 
 			// allready moved
@@ -398,7 +398,7 @@ public class GC {
 						// mark handle as free
 						Native.wrMem(0, ref+OFF_PTR);
 						// TODO: should not be necessary - now just for sure
-						Native.wrMem(0, ref+OFF_GRAY);
+						Native.wrMem(0, ref+OFF_GREY);
 					}
 				}					
 			}			
@@ -482,6 +482,7 @@ public class GC {
 		markAndCopy();
 		sweepHandles();
 		zapSemi();			
+			
 
 //		log("GC end - free memory:",freeMemory());
 		
@@ -514,7 +515,7 @@ public class GC {
 		// mark it as BLACK - means it will be in toSpace
 		Native.wrMem(toSpace, ref+OFF_SPACE);
 		// TODO: should not be necessary - now just for sure
-		Native.wrMem(0, ref+OFF_GRAY);
+		Native.wrMem(0, ref+OFF_GREY);
 
 		return ref;
 	}
