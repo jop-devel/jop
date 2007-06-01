@@ -88,6 +88,7 @@
 //	2007-03-17	new VHDL structure: jopcpu and more records (SimpCon)
 //	2007-04-14	iaload and iastore in hardware (mem_sc.vhd)
 //	2007-05-28	putfield_ref and putstatic_ref in JVM.java
+//  2007-06-01  added multiprocessor startup
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -97,7 +98,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20070528
+version		= 20070601
 
 //
 //	io address are negativ memory addresses
@@ -114,6 +115,9 @@ io_wd		=	-125
 io_int_ena	=	-128
 io_status	=	-112
 io_uart		=	-111
+
+io_cpu_id = -122
+io_signal = -121
 
 usb_status	=	-96
 usb_data	=	-95
@@ -227,7 +231,40 @@ addr		?			// address used for bc load from flash
 			ldi	1			// disable int's
 			stm	moncnt		// monitor counter gets zeroed in startMission
 
+// Checks whether the cpu_id != 0, waits and jumps then further down to the invoke of the boot!!!
 
+			ldi io_cpu_id
+			stmra
+			wait
+			wait
+			ldmrd
+			nop
+			bz cpu0_load
+			nop
+			nop
+			
+cpux_loop:
+			ldi io_signal
+			stmra
+			wait
+			wait
+			ldmrd
+			nop
+			bz cpux_loop
+			nop
+			nop
+			ldi io_signal
+			stmra
+			wait
+			wait
+			ldmrd
+			nop
+			bnz cpux_boot
+			nop
+			nop
+			
+			
+cpu0_load:
 #ifdef SIMULATION
 //
 //	Main memory (ram) is loaded by the simulation.
@@ -403,6 +440,10 @@ not_first:
 
 #endif // SIMULATION
 
+
+// jump to here with cpu_id other than 0
+
+cpux_boot:
 //
 //	Load mp from the second word in ram.
 //
