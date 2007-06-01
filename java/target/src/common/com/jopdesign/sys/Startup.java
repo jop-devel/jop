@@ -30,22 +30,24 @@ public class Startup {
 	 * Do all initialization here and call main method.
 	 */
 	static void boot() {
-
 		
-		started = false;
-		msg();
-		mem_size = getRamSize();
-		// mem(0) is the length of the application
-		// or in other words the heap start
-		var = Native.rdMem(1);		// pointer to 'special' pointers
-		// first initialize the GC with the address of static ref. fields
-		GC.init(mem_size, var+4);
-		// place for some initialization:
-		// could be placed in <clinit> in the future
-		System.init();
-		version();
-		started = true;
-		clazzinit();
+		if (Native.rdMem(Const.IO_CPU_ID) == 0x00000000)
+		{
+				started = false;
+				msg();
+				mem_size = getRamSize();
+				// mem(0) is the length of the application
+				// or in other words the heap start
+				var = Native.rdMem(1);		// pointer to 'special' pointers
+				// first initialize the GC with the address of static ref. fields
+				GC.init(mem_size, var+4);
+				// place for some initialization:
+				// could be placed in <clinit> in the future
+				System.init();
+				version();
+				started = true;
+				clazzinit();
+		}
 		
 		// call main()
 		var = Native.rdMem(1);		// pointer to 'special' pointers
@@ -85,6 +87,7 @@ public class Startup {
 		Native.wr(firstWord, 0);
 		return size;
 	}
+	
 	
 	/**
 	 * @return Processor speed in MHz
