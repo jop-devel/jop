@@ -63,6 +63,8 @@ public class ArrayIndexOutOfBoundsException extends IndexOutOfBoundsException
    */
   public ArrayIndexOutOfBoundsException()
   {
+	  // until Class works
+	  super("ArrayIndexOutOfBoundsException");
   }
 
   /**
