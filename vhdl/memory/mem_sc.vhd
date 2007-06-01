@@ -295,7 +295,7 @@ end process;
 --
 --	RAM address MUX (combinational)
 --
-process(ain, addr_reg, mem_in)
+process(ain, addr_reg, mem_in, value)
 begin
 	if mem_in.rd='1' then
 		ram_addr <= ain(MEM_ADDR_SIZE-1 downto 0);
@@ -309,7 +309,7 @@ end process;
 --
 --	RAM write data MUX (combinational)
 --
-process(ain, addr_reg, mem_in)
+process(ain, addr_reg, mem_in, value)
 begin
 	if mem_in.wr='1' then
 		ram_wr_data <= ain;
@@ -327,7 +327,8 @@ end process;
 --	next state logic
 --
 process(state, mem_in, sc_mem_in.rdy_cnt,
-	cache_rdy, cache_in_cache, bc_len, addr_calc)
+	cache_rdy, cache_in_cache, bc_len, addr_calc, value, index, 
+	addr_reg, was_a_store)
 begin
 
 	next_state <= state;

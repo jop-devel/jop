@@ -210,7 +210,7 @@ end process;
 --
 --	next state logic
 --
-process(state, sc_mem_out.rd, sc_mem_out.wr, trans_ram, wait_state)
+process(state, sc_mem_out, trans_ram, wait_state)
 
 begin
 

@@ -1,7 +1,7 @@
 --
 --	jopmul.vhd
 --
---	top level for multiprocessor, cycore board with EP1C6
+--	top level for multiprocessor, cycore board with EP1C12
 --
 --	2002-03-28	creation
 --	2002-06-27	isa bus for CS8900
@@ -91,14 +91,8 @@ port (
 --	io_b	: inout std_logic_vector(10 downto 1);
 	io_l	: inout std_logic_vector(20 downto 1);
 	io_r	: inout std_logic_vector(20 downto 1);
-	io_t	: inout std_logic_vector(6 downto 1);
+	io_t	: inout std_logic_vector(6 downto 1)
 	
-	
--- VGA ----------------------
-	
-	vga_rgb : out std_logic_vector(3 downto 0);
-  vga_h_out	: out std_logic;
-  vga_v_out	: out std_logic
 );
 end jop;
 
@@ -135,17 +129,19 @@ end component;
 	
 	signal sc_mem_out		: sc_mem_out_type;
 	signal sc_mem_in		: sc_in_type;
-	signal sc_io_out		: sc_io_out_type;
-	signal sc_io_in			: sc_in_type;
-	signal irq_in			  : irq_in_type;
-	signal exc_req			: exception_type;
+	
+	signal sc_io_out		: sc_io_out_array_type(0 to cpu_cnt-1);
+	signal sc_io_in			: sc_in_array_type(0 to cpu_cnt-1);
+	signal irq_in			  : irq_in_array_type(0 to cpu_cnt-1);
+	signal exc_req			: exception_array_type(0 to cpu_cnt-1);
 
 --
 --	IO interface
 --
 	signal ser_in			: ser_in_type;
 	signal ser_out			: ser_out_type;
-	signal wd_out			: std_logic;
+	type wd_out_array is array (0 to cpu_cnt-1) of std_logic;
+	signal wd_out			: wd_out_array;
 
 	-- for generation of internal reset
 
@@ -154,11 +150,18 @@ end component;
 	signal ram_addr			: std_logic_vector(17 downto 0);
 	signal ram_dout			: std_logic_vector(31 downto 0);
 	signal ram_din			: std_logic_vector(31 downto 0);
-	signal ram_dout_en		: std_logic;
+	signal ram_dout_en	: std_logic;
 	signal ram_ncs			: std_logic;
 	signal ram_noe			: std_logic;
 	signal ram_nwe			: std_logic;
 
+-- cmpsync
+
+	signal sync_in_array	: sync_in_array_type(0 to cpu_cnt-1);
+	signal sync_out_array	: sync_out_array_type(0 to cpu_cnt-1);
+	
+--	signal wd_help			: std_logic;
+	
 begin
 
 --
@@ -189,27 +192,28 @@ end process;
 		c0	 => clk_int
 	);
 -- clk_int <= clk;
-
-	wd <= wd_out;
-
-	cmp_cpu: entity work.jopcpu
-		generic map(
-			jpc_width => jpc_width,
-			block_bits => block_bits
-		)
-		port map(clk_int, int_res,
-			sc_arb_out(1), sc_arb_in(1),
-			sc_io_out, sc_io_in,
-			irq_in, exc_req);
-			
-	cmp_vga: entity work.vga
-		port map(clk_int, int_res,
-  		vga_rgb, vga_h_out,
-			vga_v_out, sc_arb_out(0).address,
-			sc_arb_out(0).wr_data,
-			sc_arb_out(0).rd, sc_arb_out(0).wr,
-			sc_arb_in(0).rd_data, 
-			sc_arb_in(0).rdy_cnt);
+	
+--	process(wd_out, wd_help)
+--	begin
+--		for i in 0 to cpu_cnt-1 loop
+--			wd_help <= wd_help or wd_out(i);
+--			wd <= wd_help;
+--		end loop;
+--	end process;
+	
+	wd <= wd_out(0);
+	
+	gen_cpu: for i in 0 to cpu_cnt-1 generate
+		cmp_cpu: entity work.jopcpu
+			generic map(
+				jpc_width => jpc_width,
+				block_bits => block_bits
+			)
+			port map(clk_int, int_res,
+				sc_arb_out(i), sc_arb_in(i),
+				sc_io_out(i), sc_io_in(i),
+				irq_in(i), exc_req(i));
+	end generate;
 			
 	cmp_arbiter: entity work.arbiter
 		generic map(
@@ -246,21 +250,65 @@ end process;
 
 		);
 		
-	cmp_io: entity work.scio 
+	-- syncronization of processors
+	cmp_sync: entity work.cmpsync generic map (
+		cpu_cnt => cpu_cnt)
+		port map
+		(
+			sync_in_array => sync_in_array,
+			sync_out_array => sync_out_array
+		);
+	
+	-- io for processor 0
+	cmp_io: entity work.scio generic map (
+			cpu_id => 0
+		)
 		port map (clk_int, int_res,
-			sc_io_out, sc_io_in,
-			irq_in, exc_req,
+			sc_io_out(0), sc_io_in(0),
+			irq_in(0), exc_req(0),
+
+			sync_out => sync_out_array(0),
+			sync_in => sync_in_array(0),
 
 			txd => ser_txd,
 			rxd => ser_rxd,
 			ncts => ser_ncts,
 			nrts => ser_nrts,
-			wd => wd_out,
+			wd => wd_out(0),
 			l => io_l,
 			r => io_r,
 			t => io_t
 			--b => io_b
+			
 		);
+	
+	-- io for processors with only sc_sys
+	gen_io: for i in 1 to cpu_cnt-1 generate
+		cmp_io2: entity work.sc_sys generic map (
+			addr_bits => 4,
+			clk_freq => clk_freq,
+			cpu_id => i
+		)
+		port map(
+			clk => clk_int,
+			reset => int_res,
+			address => sc_io_out(i).address(3 downto 0),
+			wr_data => sc_io_out(i).wr_data,
+			rd => sc_io_out(i).rd,
+			wr => sc_io_out(i).wr,
+			rd_data => sc_io_in(i).rd_data,
+			rdy_cnt => sc_io_in(i).rdy_cnt,
+			
+			irq_in => irq_in(i),
+			exc_req => exc_req(i),
+			
+			sync_out => sync_out_array(i),
+			sync_in => sync_in_array(i),
+			wd => wd_out(i)
+		);
+
+	end generate;
+	
 
 	process(ram_dout_en, ram_dout)
 	begin

@@ -33,10 +33,13 @@ package sc_pack is
 		rd			: std_logic;
 		wr			: std_logic;
 	end record;
-
+	
 	type sc_in_type is record
 		rd_data		: std_logic_vector(31 downto 0);
 		rdy_cnt		: unsigned(RDY_CNT_SIZE-1 downto 0);
 	end record;
-
+	
+	type sc_io_out_array_type is array (integer range <>) of sc_io_out_type;
+	type sc_in_array_type is array (integer range <>) of sc_in_type;
+	
 end sc_pack;

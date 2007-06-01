@@ -83,4 +83,21 @@ package jop_types is
 		b	: std_logic_vector(10 downto 1);
 	end record;
 
+	type irq_in_array_type is array (integer range <>) of irq_in_type;
+	type exception_array_type is array (integer range <>) of exception_type;
+	
+	-- CMP synchronization
+	type sync_in_type is record
+		s_in		: std_logic;
+	end record;
+	
+	type sync_out_type is record
+		s_out	: std_logic;
+	end record;
+	
+	constant NO_SYNC : sync_out_type := (s_out => '0');
+	type sync_in_array_type is array (integer range <>) of sync_in_type;
+	type sync_out_array_type is array (integer range <>) of sync_out_type;
+
+
 end jop_types;

@@ -393,7 +393,6 @@ set_global_assignment -name ERROR_CHECK_FREQUENCY_DIVISOR 1
 
 # Assembler Assignments
 # =====================
-set_global_assignment -name RESERVE_ALL_UNUSED_PINS_NO_OUTPUT_GND "AS OUTPUT DRIVING AN UNSPECIFIED SIGNAL"
 set_global_assignment -name AUTO_RESTART_CONFIGURATION OFF
 
 # Simulator Assignments
@@ -448,15 +447,21 @@ set_location_assignment PIN_122 -to vga_rgb[2]
 set_location_assignment PIN_121 -to vga_rgb[3]
 set_location_assignment PIN_60 -to vga_h_out
 set_location_assignment PIN_61 -to vga_v_out
+
+set_global_assignment -name ENABLE_CLOCK_LATENCY ON
+set_instance_assignment -name PARTITION_HIERARCHY no_file_for_top_partition -to | -section_id Top
+set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
+set_global_assignment -name ON_CHIP_BITSTREAM_DECOMPRESSION ON
+set_global_assignment -name RESERVE_ALL_UNUSED_PINS_NO_OUTPUT_GND "AS INPUT TRI-STATED"
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_80.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/jop_types.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_pack.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc_pll.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/fifo.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_uart.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_cnt.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_usb.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/scio/scio_dspiomin.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_sys.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/scio_cmp.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/offtbl.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/jtbl.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/arom.vhd
@@ -474,12 +479,8 @@ set_global_assignment -name VHDL_FILE ../../vhdl/core/mul.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/shift.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/stack.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/jopcpu.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/vga/vga.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/vga/dpram.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/vga/vga.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_arbiter_pack.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_arbiter.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/top/jopmul.vhd
-
-set_global_assignment -name ENABLE_CLOCK_LATENCY ON
-set_instance_assignment -name PARTITION_HIERARCHY no_file_for_top_partition -to | -section_id Top
-set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
+set_global_assignment -name VHDL_FILE ../../vhdl/top/jopvga.vhd
