@@ -482,6 +482,9 @@ set_global_assignment -name OPTIMIZE_HOLD_TIMING OFF
 
 set_instance_assignment -name PARTITION_HIERARCHY no_file_for_top_partition -to | -section_id Top
 set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
+set_global_assignment -name DEVICE_MIGRATION_LIST "EP1C6Q240C6,EP1C12Q240C6"
+
+set_global_assignment -name RESERVE_ALL_UNUSED_PINS_NO_OUTPUT_GND "AS INPUT TRI-STATED"
 set_global_assignment -name VHDL_FILE ../../ext/gaisler/version.vhd
 set_global_assignment -name VHDL_FILE ../../ext/gaisler/stdlib.vhd
 set_global_assignment -name VHDL_FILE ../../ext/gaisler/amba.vhd
@@ -496,7 +499,7 @@ set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc2ahbsl.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc_pll.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/fifo.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_uart.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_cnt.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_sys.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/scio_min.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/offtbl.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/jtbl.vhd
@@ -515,6 +518,3 @@ set_global_assignment -name VHDL_FILE ../../vhdl/core/shift.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/stack.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/jopcpu.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_amba.vhd
-set_global_assignment -name DEVICE_MIGRATION_LIST "EP1C6Q240C6,EP1C12Q240C6"
-
-set_global_assignment -name RESERVE_ALL_UNUSED_PINS_NO_OUTPUT_GND "AS INPUT TRI-STATED"
