@@ -379,30 +379,28 @@ public class GC {
 	 */
 	static void sweepHandles() {
 
-		synchronized (mutex) {
-			useList = 0;
-			freeList = 0;
-			for (int i=0; i<handle_cnt; ++i) {
-				int ref = mem_start+i*HANDLE_SIZE;
-				synchronized (mutex) {
-					// a BLACK one
-					if (Native.rdMem(ref+OFF_SPACE)==toSpace) {
-						// add to used list
-						Native.wrMem(useList, ref+OFF_NEXT);
-						useList = ref;					
-					// a WHITE one
-					} else {
-						// pointer to former freelist head
-						Native.wrMem(freeList, ref+OFF_NEXT);
-						freeList = ref;					
-						// mark handle as free
-						Native.wrMem(0, ref+OFF_PTR);
-						// TODO: should not be necessary - now just for sure
-						Native.wrMem(0, ref+OFF_GREY);
-					}
-				}					
-			}			
-		}
+		useList = 0;
+		freeList = 0;
+		for (int i=0; i<handle_cnt; ++i) {
+			int ref = mem_start+i*HANDLE_SIZE;
+			synchronized (mutex) {
+				// a BLACK one
+				if (Native.rdMem(ref+OFF_SPACE)==toSpace) {
+					// add to used list
+					Native.wrMem(useList, ref+OFF_NEXT);
+					useList = ref;					
+				// a WHITE one
+				} else {
+					// pointer to former freelist head
+					Native.wrMem(freeList, ref+OFF_NEXT);
+					freeList = ref;					
+					// mark handle as free
+					Native.wrMem(0, ref+OFF_PTR);
+					// TODO: should not be necessary - now just for sure
+					Native.wrMem(0, ref+OFF_GREY);
+				}
+			}					
+		}			
 		
 		// the following is the better one to sweep, but
 		// has probably a bug
@@ -454,11 +452,11 @@ public class GC {
 			Native.wrMem(0, i);
 		}
 		// for tests clean also the remainig memory in the to-space
-		synchronized (mutex) {
-			for (int i=copyPtr; i<allocPtr; ++i) {
-				Native.wrMem(0, i);
-			}			
-		}
+//		synchronized (mutex) {
+//			for (int i=copyPtr; i<allocPtr; ++i) {
+//				Native.wrMem(0, i);
+//			}			
+//		}
 	}
 
 	public static void setConcurrent() {
