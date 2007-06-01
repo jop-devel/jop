@@ -38,6 +38,8 @@ public class Const {
 	public static final int IO_SWINT = IO_BASE+2;
 	public static final int IO_WD = IO_BASE+3;
 	public static final int IO_EXCPT = IO_BASE+4;
+	public static final int IO_CPU_ID = IO_BASE+6;
+	public static final int IO_SIGNAL = IO_BASE+7;
 
 	public static final int IO_STATUS = IO_BASE+0x10;
 	public static final int IO_UART = IO_BASE+0x10+1;
