@@ -88,7 +88,8 @@
 //	2007-03-17	new VHDL structure: jopcpu and more records (SimpCon)
 //	2007-04-14	iaload and iastore in hardware (mem_sc.vhd)
 //	2007-05-28	putfield_ref and putstatic_ref in JVM.java
-//  2007-06-01  added multiprocessor startup
+//  2007-06-01  added multiprocessor startup (CP)
+//				aastore in JVM.java
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -1107,7 +1108,7 @@ arraylength:
 			ldmrd		 nxt	// read ext. mem
 
 
-aastore:
+//aastore: is now in JVM.java for the write barrier
 bastore:
 castore:
 fastore:

@@ -926,6 +926,8 @@ System.out.println(mp+" "+pc);
 					noim(74);
 					break;
 				case 83 :		// aastore
+					noim(83);
+					break;
 				case 84 :		// bastore
 				case 85 :		// castore
 				case 81 :		// fastore

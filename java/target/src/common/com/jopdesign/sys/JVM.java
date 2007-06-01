@@ -93,7 +93,33 @@ class JVM {
 	private static void f_lastore() { JVMHelp.noim(); /* jvm.asm */ }
 	private static void f_fastore() { JVMHelp.noim();}
 	private static void f_dastore() { JVMHelp.noim();}
-	private static void f_aastore() { JVMHelp.noim();}
+	private static void f_aastore(int ref, int index, int value) {
+		
+		if (ref==0) throw new NullPointerException();
+		if (index<0 || index>=Native.rdMem(ref+GC.OFF_MTAB_ALEN))
+			throw new ArrayIndexOutOfBoundsException();
+		
+		synchronized (GC.mutex) {
+			/*
+			// push the object on mark stack if not
+			// black - that's the what kind of
+			// write barrier?
+			if (ref!=0 && Native.rdMem(ref+GC.OFF_SPACE)!=GC.toSpace) {
+				GC.push(ref);
+			}
+			*/
+			
+			// handle indirection
+			ref = Native.rdMem(ref);
+			// snapshot-at-beginning barrier
+			int oldVal = Native.rdMem(ref+index);
+			if (oldVal!=0 && Native.rdMem(oldVal+GC.OFF_SPACE)!=GC.toSpace) {
+				GC.push(oldVal);
+			}
+			Native.wrMem(value, ref+index);
+		}
+	}
+		
 	private static void f_bastore() { JVMHelp.noim();}
 	private static void f_castore() { JVMHelp.noim();}
 	private static void f_sastore() { JVMHelp.noim();}
