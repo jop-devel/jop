@@ -28,51 +28,7 @@
 set_global_assignment -name SMART_RECOMPILE OFF
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION 4.0
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "02:05:59  APRIL 04, 2004"
-set_global_assignment -name LAST_QUARTUS_VERSION 5.1
-set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_100.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/core/jop_types.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_pack.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc_pll.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/fpu/fpupack.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/fpu/comppack.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/fpu/fpu.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/fpu/addsub_28.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/fpu/mul_24.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/fpu/serial_mul.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/fpu/post_norm_addsub.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/fpu/post_norm_div.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/fpu/post_norm_mul.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/fpu/post_norm_sqrt.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/fpu/pre_norm_addsub.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/fpu/pre_norm_div.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/fpu/pre_norm_mul.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/fpu/pre_norm_sqrt.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/fpu/serial_div.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/fpu/sqrt.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_fpu.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/scio/fifo.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_uart.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_cnt.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/scio/scio_min_fpu.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/offtbl.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/jtbl.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/altera/arom.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/altera/aram.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/core/bcfetch.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/core/core.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/core/decode.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/core/fetch.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/memory/sc_sram32_flash.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc_jbc.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/memory/mem_sc.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/core/extension.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/core/cache.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/core/mul.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/core/shift.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/core/stack.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/core/jopcpu.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/top/jopcyc.vhd
-set_global_assignment -name CDF_FILE jop.cdf
+set_global_assignment -name LAST_QUARTUS_VERSION 7.0
 
 # Pin & Location Assignments
 # ==========================
@@ -523,7 +479,52 @@ set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to ram*_nwe
 
 set_global_assignment -name OPTIMIZE_HOLD_TIMING OFF
 
-set_global_assignment -name VECTOR_WAVEFORM_FILE jop.vwf
 
 set_global_assignment -name FMAX_REQUIREMENT "20 MHz" -section_id clk_in
 set_instance_assignment -name CLOCK_SETTINGS clk_in -to clk
+
+set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_100.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/core/jop_types.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_pack.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc_pll.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/fpu/fpupack.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/fpu/comppack.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/fpu/fpu.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/fpu/addsub_28.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/fpu/mul_24.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/fpu/serial_mul.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/fpu/post_norm_addsub.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/fpu/post_norm_div.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/fpu/post_norm_mul.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/fpu/post_norm_sqrt.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/fpu/pre_norm_addsub.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/fpu/pre_norm_div.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/fpu/pre_norm_mul.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/fpu/pre_norm_sqrt.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/fpu/serial_div.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/fpu/sqrt.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_fpu.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/fifo.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_uart.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_sys.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/scio_min_fpu.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/offtbl.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/jtbl.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/altera/arom.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/altera/aram.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/core/bcfetch.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/core/core.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/core/decode.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/core/fetch.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/memory/sc_sram32_flash.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc_jbc.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/memory/mem_sc.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/core/extension.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/core/cache.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/core/mul.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/core/shift.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/core/stack.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/core/jopcpu.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/top/jopcyc.vhd
+set_global_assignment -name CDF_FILE jop.cdf
+set_global_assignment -name VECTOR_WAVEFORM_FILE jop.vwf

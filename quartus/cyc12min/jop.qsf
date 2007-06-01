@@ -28,34 +28,7 @@
 set_global_assignment -name SMART_RECOMPILE ON
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION 4.0
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "02:05:59  APRIL 04, 2004"
-set_global_assignment -name LAST_QUARTUS_VERSION 5.0
-set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_60.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/core/jop_types.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_pack.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc_pll.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/scio/fifo.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_uart.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_cnt.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/scio/scio_min.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/offtbl.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/jtbl.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/altera/arom.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/altera/aram.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/core/bcfetch.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/core/core.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/core/decode.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/core/fetch.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/memory/sc_sram32_flash.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc_jbc.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/memory/mem_sc.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/core/extension.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/core/cache.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/core/mul.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/core/shift.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/core/stack.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/core/jopcpu.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/top/jopcyc12.vhd
-set_global_assignment -name CDF_FILE jop.cdf
+set_global_assignment -name LAST_QUARTUS_VERSION 7.0
 
 # Pin & Location Assignments
 # ==========================
@@ -445,3 +418,31 @@ set_global_assignment -name DRC_REPORT_FANOUT_EXCEEDING OFF
 # ========================
 set_global_assignment -name HUB_ENTITY_NAME SLD_HUB
 set_global_assignment -name HUB_INSTANCE_NAME SLD_HUB_INST
+
+set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_60.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/core/jop_types.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_pack.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc_pll.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/fifo.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_uart.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_sys.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/scio_min.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/offtbl.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/jtbl.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/altera/arom.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/altera/aram.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/core/bcfetch.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/core/core.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/core/decode.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/core/fetch.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/memory/sc_sram32_flash.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc_jbc.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/memory/mem_sc.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/core/extension.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/core/cache.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/core/mul.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/core/shift.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/core/stack.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/core/jopcpu.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/top/jopcyc12.vhd
+set_global_assignment -name CDF_FILE jop.cdf

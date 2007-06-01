@@ -54,6 +54,11 @@ port (
 	irq_in			: out irq_in_type;
 	exc_req			: in exception_type;
 
+-- CMP
+
+	sync_out : in sync_out_type := NO_SYNC;
+	sync_in	 : out sync_in_type;
+	
 -- serial interface
 
 	txd			: out std_logic;
@@ -136,9 +141,10 @@ begin
 		end if;
 	end process;
 			
-	cmp_cnt: entity work.sc_cnt generic map (
+	cmp_sys: entity work.sc_sys generic map (
 			addr_bits => SLAVE_ADDR_BITS,
-			clk_freq => clk_freq
+			clk_freq => clk_freq,
+			cpu_id => 0
 		)
 		port map(
 			clk => clk,
@@ -153,6 +159,9 @@ begin
 
 			irq_in => irq_in,
 			exc_req => exc_req,
+			
+			sync_out => sync_out,
+			sync_in => sync_in,
 			
 			wd => wd
 		);
