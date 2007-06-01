@@ -42,7 +42,7 @@ vcom %options% %jopdir%/core/decode.vhd
 vcom %options% %jopdir%/core/shift.vhd
 vcom %options% %jopdir%/core/stack.vhd
 vcom %options% %jopdir%/core/core.vhd
-vcom %options% %jopdir%/scio/sc_cnt.vhd
+vcom %options% %jopdir%/scio/sc_sys.vhd
 vcom %options% %jopdir%/scio/scio_min.vhd
 vcom %options% %jopdir%/core/jopcpu.vhd
 vcom %options% %jopdir%/top/jopcyc.vhd
