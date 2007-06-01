@@ -28,7 +28,7 @@
 set_global_assignment -name SMART_RECOMPILE OFF
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION 4.0
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "02:05:59  APRIL 04, 2004"
-set_global_assignment -name LAST_QUARTUS_VERSION "6.0 SP1"
+set_global_assignment -name LAST_QUARTUS_VERSION 7.0
 
 # Pin & Location Assignments
 # ==========================
@@ -477,7 +477,7 @@ set_global_assignment -name VHDL_FILE ../../vhdl/wishbone/wb_pack.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc_pll.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/fifo.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_uart.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_cnt.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_sys.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/lego/input_synchronizer.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/lego/audio.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/lego/lesens.vhd
