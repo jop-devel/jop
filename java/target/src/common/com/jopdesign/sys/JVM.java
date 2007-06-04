@@ -95,26 +95,9 @@ class JVM {
 	private static void f_dastore() { JVMHelp.noim();}
 	private static void f_aastore(int ref, int index, int value) {
 		
-//		JVMHelp.wr("aas");
-		if ((ref&0x07)!=0) {
-			System.out.print("aas-problem ref=");
-			System.out.println(ref);
-		}
-		if (ref==0) throw new NullPointerException("yy");
-		if (index<0 || index>=Native.rdMem(ref+GC.OFF_MTAB_ALEN)) {
-
-			System.out.print("aastore: ref=");
-			System.out.println(ref);
-			System.out.print("aastore: index=");
-			System.out.println(index);
-			System.out.print("aastore: value=");
-			System.out.println(value);
-			System.out.print("aastore: len=");
-			System.out.println(Native.rdMem(ref+GC.OFF_MTAB_ALEN));
-			System.out.print("aastore: type=");
-			System.out.println(Native.rdMem(ref+GC.OFF_TYPE));
-			
-			throw new ArrayIndexOutOfBoundsException("xx");
+		if (ref==0) throw new NullPointerException();
+		if (index<0 || index>=Native.rdMem(ref+GC.OFF_MTAB_ALEN)) {	
+			throw new ArrayIndexOutOfBoundsException();
 		}
 		
 		synchronized (GC.mutex) {
@@ -823,11 +806,9 @@ if (enterCnt<0) {
 	private static void f_resE0() { JVMHelp.noim();}
 	private static void f_putstatic_ref(int val, int addr) {
 		
-//		GC.log("psr");
 		synchronized (GC.mutex) {
 			// snapshot-at-beginning barrier
 			int oldVal = Native.rdMem(addr);
-//			GC.log("psr-old", oldVal);
 			if (oldVal!=0 && Native.rdMem(oldVal+GC.OFF_SPACE)!=GC.toSpace) {
 				GC.push(oldVal);
 			}
@@ -837,7 +818,6 @@ if (enterCnt<0) {
 	private static void f_resE2() { JVMHelp.noim();}
 	private static void f_putfield_ref(int ref, int val, int index) {
 		
-//		GC.log("pfr");
 		if (ref==0) {
 			throw new NullPointerException();
 		}
@@ -851,15 +831,10 @@ if (enterCnt<0) {
 			}
 			*/
 			
-//			GC.log("pfr-ref", ref);
-//			GC.log("pfr-val", val);
-//			GC.log("pfr-index", index);			
 			// handle indirection
 			ref = Native.rdMem(ref);
 			// snapshot-at-beginning barrier
 			int oldVal = Native.rdMem(ref+index);
-//			GC.log("pfr-addr", ref);
-//			GC.log("pfr-old", oldVal);
 			if (oldVal!=0 && Native.rdMem(oldVal+GC.OFF_SPACE)!=GC.toSpace) {
 				GC.push(oldVal);
 			}
