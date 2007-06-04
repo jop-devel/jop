@@ -13,11 +13,11 @@ public class Concurrent {
 	 */
 	public static void main(String[] args) {
 		
-		a = new SimpVector(25);
+		a = new SimpVector(20);
 		b = new SimpVector(100);
 		c = new SimpVector(999);
 
-		new RtThread(2, 200000) {
+		new RtThread(2, 300000) {
 			public void run() {
 				for (;;) {
 					c.run();
@@ -25,7 +25,7 @@ public class Concurrent {
 				}
 			}			
 		};
-		new RtThread(3, 34560) {
+		new RtThread(3, 100560) {
 			public void run() {
 				for (;;) {
 					b.run();
@@ -33,7 +33,7 @@ public class Concurrent {
 				}
 			}			
 		};
-		new RtThread(4, 23450) {
+		new RtThread(4, 50450) {
 			public void run() {
 				for (;;) {
 					a.run();
@@ -42,7 +42,7 @@ public class Concurrent {
 			}			
 		};
 
-		new RtThread(1, 3456) {
+		new RtThread(1, 1000) {
 			public void run() {
 				for (;;) {
 //					int time = RtSystem.currentTimeMicro();

@@ -27,7 +27,7 @@ public class ForceBlack2White {
 		nroot.r2 = new ForceBlack2White(3);
 		nroot.r1.r1 = new ForceBlack2White(4);
 
-		new RtThread(2, 100) {
+		new RtThread(2, 333) {
 			public void run() {
 
 				ForceBlack2White r, tmp;
@@ -36,7 +36,6 @@ public class ForceBlack2White {
 					r = nroot;
 					// switch pointer to 4 from 2 to 3
 					tmp = r.r1.r1;
-					waitForNextPeriod();
 					r.r1.r1 = null;
 					waitForNextPeriod();
 					r.r2.r1 = tmp;
@@ -45,7 +44,6 @@ public class ForceBlack2White {
 					waitForNextPeriod();
 					// switch pointer to 4 from 3 to2
 					tmp = r.r2.r1;
-					waitForNextPeriod();
 					r.r2.r1 = null;
 					waitForNextPeriod();
 					r.r1.r1 = tmp;
@@ -53,10 +51,10 @@ public class ForceBlack2White {
 					check();
 					waitForNextPeriod();
 //					System.out.print('.');
-					if (abc.nr!=123) {
-						System.out.println("Error in GC (local)");
-						System.exit(1);
-					}
+//					if (abc.nr!=123) {
+//						System.out.println("Error in GC (local)");
+//						System.exit(1);
+//					}
 //					System.out.print('.');
 					abc = null;
 					waitForNextPeriod();
