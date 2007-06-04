@@ -37,6 +37,7 @@ use work.jop_types.all;
 use work.jop_config.all;
 
 entity scio is
+generic (cpu_id : integer := 0);
 generic (addr_bits : integer);
 
 port (
@@ -144,26 +145,27 @@ begin
 		end if;
 	end process;
 			
-	cmp_cnt: entity work.sc_cnt generic map (
+	cmp_sys: entity work.sc_sys generic map (
 			addr_bits => SLAVE_ADDR_BITS,
-			clk_freq => clk_freq
+			clk_freq => clk_freq,
+			cpu_id => cpu_id
 		)
 		port map(
 			clk => clk,
 			reset => reset,
 
-			address => address(SLAVE_ADDR_BITS-1 downto 0),
-			wr_data => wr_data,
+			address => sc_io_out.address(SLAVE_ADDR_BITS-1 downto 0),
+			wr_data => sc_io_out.wr_data,
 			rd => sc_rd(0),
 			wr => sc_wr(0),
 			rd_data => sc_dout(0),
 			rdy_cnt => sc_rdy_cnt(0),
 
-			irq => irq,
-			irq_ena => irq_ena,
-
+			irq_in => irq_in,
 			exc_req => exc_req,
-			exc_int => exc_int,
+			
+			sync_out => sync_out,
+			sync_in => sync_in,
 			
 			wd => wd
 		);
@@ -181,8 +183,8 @@ begin
 			clk => clk,
 			reset => reset,
 
-			address => address(SLAVE_ADDR_BITS-1 downto 0),
-			wr_data => wr_data,
+			address => sc_io_out.address(SLAVE_ADDR_BITS-1 downto 0),
+			wr_data => sc_io_out.wr_data,
 			rd => sc_rd(1),
 			wr => sc_wr(1),
 			rd_data => sc_dout(1),
@@ -202,8 +204,8 @@ begin
 			clk => clk,
 			reset => reset,
 
-			address => address(SLAVE_ADDR_BITS-1 downto 0),
-			wr_data => wr_data,
+			address => sc_io_out.address(SLAVE_ADDR_BITS-1 downto 0),
+			wr_data => sc_io_out.wr_data,
 			rd => sc_rd(2),
 			wr => sc_wr(2),
 			rd_data => sc_dout(2),
