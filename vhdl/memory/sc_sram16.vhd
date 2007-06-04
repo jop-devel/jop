@@ -18,6 +18,7 @@
 --	2006-08-01	Adapted from sc_ram32.vhd
 --	2006-08-16	Rebuilding the already working (lost) version
 --				Use wait_state, din register without MUX
+--	2007-06-04	changed SimpCon to records
 --
 
 Library IEEE;
@@ -25,6 +26,7 @@ use IEEE.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 use work.jop_types.all;
+use work.sc_pack.all;
 
 entity sc_mem_if is
 generic (ram_ws : integer; addr_bits : integer);
@@ -33,13 +35,11 @@ port (
 
 	clk, reset	: in std_logic;
 
--- SimpCon interface
-
-	address		: in std_logic_vector(addr_bits-1 downto 0);
-	wr_data		: in std_logic_vector(31 downto 0);
-	rd, wr		: in std_logic;
-	rd_data		: out std_logic_vector(31 downto 0);
-	rdy_cnt		: out unsigned(1 downto 0);
+--
+--	SimpCon memory interface
+--
+	sc_mem_out		: in sc_mem_out_type;
+	sc_mem_in		: out sc_in_type;
 
 -- memory interface
 
@@ -85,7 +85,7 @@ begin
 
 	ram_dout_en <= dout_ena;
 
-	rdy_cnt <= cnt;
+	sc_mem_in.rdy_cnt <= cnt;
 
 --
 --	Register memory address, write data and read data
@@ -100,15 +100,15 @@ begin
 
 	elsif rising_edge(clk) then
 
-		if rd='1' or wr='1' then
-			ram_addr <= address(addr_bits-2 downto 0) & "0";
+		if sc_mem_out.rd='1' or sc_mem_out.wr='1' then
+			ram_addr <= sc_mem_out.address(addr_bits-2 downto 0) & "0";
 		end if;
 		if inc_addr='1' then
 			ram_addr(0) <= '1';
 		end if;
-		if wr='1' then
-			ram_dout <= wr_data(31 downto 16);
-			ram_dout_low <= wr_data(15 downto 0);
+		if sc_mem_out.wr='1' then
+			ram_dout <= sc_mem_out.wr_data(31 downto 16);
+			ram_dout_low <= sc_mem_out.wr_data(15 downto 0);
 		end if;
 		if wr_low='1' then
 			ram_dout <= ram_dout_low;
@@ -126,7 +126,7 @@ begin
 	end if;
 end process;
 
-	rd_data <= ram_din_reg;
+	sc_mem_in.rd_data <= ram_din_reg;
 
 --
 --	'delay' nwe 1/2 cycle -> change on falling edge
@@ -146,7 +146,7 @@ end process;
 --
 --	next state logic
 --
-process(state, rd, wr, wait_state)
+process(state, sc_mem_out.rd, sc_mem_out.wr, wait_state)
 
 begin
 
@@ -155,14 +155,14 @@ begin
 	case state is
 
 		when idl =>
-			if rd='1' then
+			if sc_mem_out.rd='1' then
 				if ram_ws=0 then
 					-- then we omit state rd1!
 					next_state <= rd2_h;
 				else
 					next_state <= rd1_h;
 				end if;
-			elsif wr='1' then
+			elsif sc_mem_out.wr='1' then
 				next_state <= wr_h;
 			end if;
 
@@ -192,14 +192,14 @@ begin
 			next_state <= idl;
 			-- This should do to give us a pipeline
 			-- level of 2 for read
-			if rd='1' then
+			if sc_mem_out.rd='1' then
 				if ram_ws=0 then
 					-- then we omit state rd1!
 					next_state <= rd2_h;
 				else
 					next_state <= rd1_h;
 				end if;
-			elsif wr='1' then
+			elsif sc_mem_out.wr='1' then
 				next_state <= wr_h;
 			end if;
 			
@@ -342,7 +342,7 @@ begin
 			cnt <= "00";
 		end if;
 
-		if rd='1' or wr='1' then
+		if sc_mem_out.rd='1' or sc_mem_out.wr='1' then
 			wait_state <= to_unsigned(ram_ws+1, 4);
 		end if;
 
@@ -359,7 +359,7 @@ begin
 			-- take care for pipelined cach transfer
 			-- there is no idl state and cnt should
 			-- go back to "11"
-			if rd='0' and wr='0' then
+			if sc_mem_out.rd='0' and sc_mem_out.wr='0' then
 				-- if wait_state<4 then
 				if wait_state(3 downto 2)="00" then
 					cnt <= wait_state(1 downto 0)-1;
