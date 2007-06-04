@@ -39,6 +39,7 @@ use work.wb_pack.all;
 use work.sc_pack.all;
 
 entity scio is
+generic (cpu_id : integer := 0);
 port (
 	clk		: in std_logic;
 	reset	: in std_logic;
@@ -204,7 +205,7 @@ begin
 	cmp_sys: entity work.sc_sys generic map (
 			addr_bits => SLAVE_ADDR_BITS,
 			clk_freq => clk_freq,
-			cpu_id => 0
+			cpu_id => cpu_id
 		)
 		port map(
 			clk => clk,
