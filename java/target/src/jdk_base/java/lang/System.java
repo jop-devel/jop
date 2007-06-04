@@ -52,8 +52,8 @@ public final class System {
 		int dstHandle = Native.toInt(dst);
 
 		// the type field from the handle - see GC.java
-		int src_type = Native.rdMem(srcHandle+3);
-		int dst_type = Native.rdMem(dstHandle+3);
+		int src_type = Native.rdMem(srcHandle+GC.OFF_TYPE);
+		int dst_type = Native.rdMem(dstHandle+GC.OFF_TYPE);
 		
 		// 0 means it's a plain object
 		if (src_type==0 || dst_type==0) {
