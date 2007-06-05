@@ -118,6 +118,19 @@ begin
 	sc_io_in.rd_data <= sc_dout(sel_reg);
 	sc_io_in.rdy_cnt <= sc_rdy_cnt(sel_reg);
 
+	-- default for unused USB device
+	sc_dout(2) <= (others => '0');
+	sc_rdy_cnt(2) <= (others => '0');
+	-- default for other unused devices
+	sc_dout(3) <= (others => '0');
+	sc_rdy_cnt(3) <= (others => '0');
+	sc_dout(4) <= (others => '0');
+	sc_rdy_cnt(4) <= (others => '0');
+	sc_dout(5) <= (others => '0');
+	sc_rdy_cnt(5) <= (others => '0');
+	sc_dout(6) <= (others => '0');
+	sc_rdy_cnt(6) <= (others => '0');
+
 	--
 	-- Connect SLAVE_CNT simple test slaves
 	--

@@ -486,6 +486,10 @@ begin
 	-- What happens when sel_reg > SLAVE_CNT-1??
 	sc_io_in.rd_data <= sc_dout(sel_reg);
 	sc_io_in.rdy_cnt <= sc_rdy_cnt(sel_reg);
+	-- slave 2 is reserved for USB and System.out writes to it!!!
+	sc_rdy_cnt(2) <= (others => '0');
+	sc_dout(2) <= (others => '0');
+
 
 	--
 	-- Connect SLAVE_CNT slaves
@@ -562,10 +566,6 @@ begin
 			ncts => '0',
 			nrts => nrts
 	);
-
-	-- slave 2 is reserved for USB and System.out writes to it!!!
-	sc_rdy_cnt(2) <= (others => '0');
-	sc_dout(2) <= (others => '0');
 
 	-- Siemens TC35 sends up to 32!!! characters after cts deasert
 	-- WW does not like the 115200 baud :-(

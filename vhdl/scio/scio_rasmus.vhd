@@ -20,6 +20,7 @@
 --		0x40 3			ADC3 input (battery watch)
 --		0x50 0			isa control and addr write
 --		0x50 1			isa data
+--		0x60 			MAC
 --
 --	status word in uarts:
 --		0	uart transmit data register empty
@@ -279,8 +280,14 @@ begin
 
 	-- What happens when sel_reg > SLAVE_CNT-1??
 	sc_io_in.rd_data <= sc_dout(sel_reg);
---	rdy_cnt <= sc_rdy_cnt(sel_reg);
-sc_io_in.rdy_cnt <= "00";
+	rdy_cnt <= sc_rdy_cnt(sel_reg);
+
+	-- default for unused USB device
+	sc_dout(2) <= (others => '0');
+	sc_rdy_cnt(2) <= (others => '0');
+	-- default for other unused devices
+	sc_dout(3) <= (others => '0');
+	sc_rdy_cnt(3) <= (others => '0');
 
 	--
 	-- Connect SLAVE_CNT slaves

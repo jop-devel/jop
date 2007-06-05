@@ -82,7 +82,7 @@ end scio;
 
 architecture rtl of scio is
 
-	constant SLAVE_CNT : integer := 4;
+	constant SLAVE_CNT : integer := 3;
 	-- SLAVE_CNT <= 2**DECODE_BITS
 	-- take care of USB address 0x20!
 	constant DECODE_BITS : integer := 2;

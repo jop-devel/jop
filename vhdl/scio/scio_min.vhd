@@ -81,7 +81,7 @@ end scio;
 
 architecture rtl of scio is
 
-	constant SLAVE_CNT : integer := 2;
+	constant SLAVE_CNT : integer := 3;
 	-- SLAVE_CNT <= 2**DECODE_BITS
 	-- take care of USB address 0x20!
 	constant DECODE_BITS : integer := 2;
@@ -116,6 +116,10 @@ begin
 	-- What happens when sel_reg > SLAVE_CNT-1??
 	sc_io_in.rd_data <= sc_dout(sel_reg);
 	sc_io_in.rdy_cnt <= sc_rdy_cnt(sel_reg);
+
+	-- default for unused USB device
+	sc_dout(2) <= (others => '0');
+	sc_rdy_cnt(2) <= (others => '0');
 
 	--
 	-- Connect SLAVE_CNT simple test slaves
