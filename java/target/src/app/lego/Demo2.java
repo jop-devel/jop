@@ -1,7 +1,5 @@
 package lego;
 
-import _legonotforrelease.MyRtThread;
-
 import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 
@@ -57,7 +55,7 @@ public class Demo2
 	 */
 	public static void main(String[] args)
 	{
-		new MyRtThread(10, 1*100)
+		new RtThread(10, 1*100)
 		{
 			public void run() {
 				up = true;
