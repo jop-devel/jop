@@ -936,7 +936,7 @@ System.out.println(mp+" "+pc);
 					val = stack[sp--];	// value
 					idx = stack[sp--];	// index
 					ref = stack[sp--];	// ref
-					// null pointer and array check missing
+					// TODO: null pointer and array check missing
 					// handle needs indirection
 					ref = readMem(ref);
 					writeMem(ref+idx, val);
@@ -946,7 +946,7 @@ System.out.println(mp+" "+pc);
 					val2 = stack[sp--];	// value
 					idx = stack[sp--];	// index
 					ref = stack[sp--];	// ref
-					// null pointer and array check missing
+					// TODO: null pointer and array check missing
 					// handle needs indirection
 					ref = readMem(ref);
 					writeMem(ref+idx*2, val2);					
