@@ -140,7 +140,7 @@ public class Latency {
 		mft = new MFThread(9, PERIOD_MEDIUM);
 		new LFThread(8, PERIOD_LOW);
 		
-//		new GCThread();
+		new GCThread();
 		
 		new RtThread (2, 5*1000*1000) {
 			public void run() {
