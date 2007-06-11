@@ -368,54 +368,48 @@ public class GC {
 				continue; 
 			}
 			
-			// TODO: this synchronization shoul NOT be necessary!!!
-			synchronized (mutex) {
-
 				
-				// push all childs
-					
-				// get pointer to object
-				int addr = Native.rdMem(ref);
-				int flags = Native.rdMem(ref+OFF_TYPE);
-				if (flags==IS_REFARR) {
-					// is an array of references
-					int size = Native.rdMem(ref+OFF_MTAB_ALEN);
-					for (i=0; i<size; ++i) {
+			// push all childs
+				
+			// get pointer to object
+			int addr = Native.rdMem(ref);
+			int flags = Native.rdMem(ref+OFF_TYPE);
+			if (flags==IS_REFARR) {
+				// is an array of references
+				int size = Native.rdMem(ref+OFF_MTAB_ALEN);
+				for (i=0; i<size; ++i) {
+					push(Native.rdMem(addr+i));
+				}
+				// However, multianewarray does probably NOT work
+			} else if (flags==IS_OBJ){
+				// it's a plain object				
+				// get pointer to method table
+				flags = Native.rdMem(ref+OFF_MTAB_ALEN);
+				// get real flags
+				flags = Native.rdMem(flags+MTAB2GC_INFO);
+				for (i=0; flags!=0; ++i) {
+					if ((flags&1)!=0) {
 						push(Native.rdMem(addr+i));
 					}
-					// However, multianewarray does probably NOT work
-				} else if (flags==IS_OBJ){
-					// it's a plain object				
-					// get pointer to method table
-					flags = Native.rdMem(ref+OFF_MTAB_ALEN);
-					// get real flags
-					flags = Native.rdMem(flags+MTAB2GC_INFO);
-					for (i=0; flags!=0; ++i) {
-						if ((flags&1)!=0) {
-							push(Native.rdMem(addr+i));
-						}
-						flags >>>= 1;
-					}				
-				}
-				
-				// now copy it - color it BLACK
-				
-				
-				int size = Native.rdMem(ref+OFF_SIZE);
-				synchronized (mutex) {
-					// update object pointer to the new location
-					Native.wrMem(copyPtr, ref+OFF_PTR);
-					// set it BLACK
-					Native.wrMem(toSpace, ref+OFF_SPACE);
-					// copy it
-					for (i=0; i<size; ++i) {
-						Native.wrMem(Native.rdMem(addr+i), copyPtr+i);
-					}
-					copyPtr += size;			
-				}
-			
+					flags >>>= 1;
+				}				
 			}
-
+			
+			// now copy it - color it BLACK
+			
+			int size = Native.rdMem(ref+OFF_SIZE);
+			synchronized (mutex) {
+				// update object pointer to the new location
+				Native.wrMem(copyPtr, ref+OFF_PTR);
+				// set it BLACK
+				Native.wrMem(toSpace, ref+OFF_SPACE);
+				// copy it
+				for (i=0; i<size; ++i) {
+					Native.wrMem(Native.rdMem(addr+i), copyPtr+i);
+				}
+				copyPtr += size;			
+			}
+		
 		}
 	}
 	
@@ -423,45 +417,6 @@ public class GC {
 	 * Sweep through the 'old' use list and move garbage to free list.
 	 */
 	static void sweepHandles() {
-
-/*
-		int fcnt = 0;
-		synchronized (mutex) {
-			useList = 0;
-			freeList = 0;			
-		}
-		for (int i=0; i<handle_cnt; ++i) {
-			int ref = mem_start+i*HANDLE_SIZE;
-			synchronized (mutex) {
-				// a BLACK one
-				// TODO: check why there are OFF_PTR=0 in toSpace
-				if (Native.rdMem(ref+OFF_SPACE)==toSpace && 
-						Native.rdMem(ref+OFF_PTR)!=0) {
-					// TODO: that happens in concurrent
-					if (Native.rdMem(ref+OFF_PTR)==0) {
-						log("sweep: a toSpace object with OFF_PTR=0!!!");
-					}
-					// add to use list
-					Native.wrMem(useList, ref+OFF_NEXT);
-					useList = ref;
-				// a WHITE one
-				} else {
-					++fcnt;
-					// pointer to former freelist head
-					Native.wrMem(freeList, ref+OFF_NEXT);
-					freeList = ref;			
-					// mark handle as free
-					Native.wrMem(0, ref+OFF_PTR);
-					// just for the test:
-					Native.wrMem(-2, ref+OFF_MTAB_ALEN);
-				}
-			}					
-		}			
-
-		log("free handles", fcnt);
-*/
-		// the following is the better one to sweep, but
-		// has probably a bug
 
 		int ref;
 		
@@ -535,15 +490,7 @@ public class GC {
 		flip();
 		markAndCopy();
 		sweepHandles();
-		zapSemi();
-//		for (int i=0; i<handle_cnt; ++i) {
-//			int ref = mem_start+i*HANDLE_SIZE;
-//			if (Native.rdMem(ref+OFF_PTR)!=0) {
-//				log("ptr=", Native.rdMem(ref+OFF_PTR));
-//			}
-//		}
-
-			
+		zapSemi();	
 
 //		log("GC end - free memory:",freeMemory());
 		
