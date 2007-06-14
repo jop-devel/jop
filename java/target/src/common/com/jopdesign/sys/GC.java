@@ -549,17 +549,17 @@ public class GC {
 			gc_alloc();
 			if (copyPtr+size >= allocPtr) {
 				// still not enough memory
-				System.out.println("Out of memory error!");
+				log("Out of memory error!");
 				System.exit(1);
 			}
 		}
 		if (freeList==0) {
-			System.out.println("Run out of handles in new Object!");
+			log("Run out of handles in new Object!");
 			// is this a good place to call gc????
 			// better check available handles on newObject
 			gc_alloc();
 			if (freeList==0) {
-				System.out.println("Still out of handles!");
+				log("Still out of handles!");
 				System.exit(1);
 			}
 		}
@@ -604,17 +604,17 @@ public class GC {
 			gc_alloc();
 			if (copyPtr+size >= allocPtr) {
 				// still not enough memory
-				System.out.println("Out of memory error!");
+				log("Out of memory error!");
 				System.exit(1);
 			}
 		}
 		if (freeList==0) {
-			System.out.println("Run out of handles in new array!");
+			log("Run out of handles in new array!");
 			// is this a good place to call gc????
 			// better check available handles on newObject
 			gc_alloc();
 			if (freeList==0) {
-				System.out.println("Still out of handles!");
+				log("Still out of handles!");
 				System.exit(1);
 			}
 		}
