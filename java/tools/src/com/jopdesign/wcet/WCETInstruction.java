@@ -1153,9 +1153,21 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			break;
 		}
 		// TODO: Add the JOP speciffic codes?
+		if (isInJava(opcode)) {
+			return 0;
+		}
 		return wcet;
 	}
 
+	static boolean isInJava(int opcode) {
+		
+		switch (opcode) {
+			case org.apache.bcel.Constants.NEW:
+				return true;
+			default:
+				return false;
+		}
+	}
 	/**
 	 * Check to see if there is a valid WCET count for the instruction.
 	 * 
