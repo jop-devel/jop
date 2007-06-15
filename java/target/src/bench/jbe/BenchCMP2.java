@@ -28,7 +28,7 @@ public class BenchCMP2 {
 			LowLevel.msg("Application benchmarks:");
 			LowLevel.lf();
 			
-			lift0 = Execute.perform(bm0);
+			lift0 = Execute.performResult(bm0);
 			while(signal == false);
 			
 			LowLevel.msg("Lift on JOP0:", lift0);
@@ -40,7 +40,7 @@ public class BenchCMP2 {
 		{		
 			if (cpu_id == 0x00000001)
 			{	
-				lift1 = Execute.perform(bm1);
+				lift1 = Execute.performResult(bm1);
 				signal = true;
 			}
 		}
