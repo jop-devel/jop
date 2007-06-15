@@ -26,20 +26,29 @@ public class HelloWorld {
 		
 		if (cpu_id == 0x00000000)
 		{
-			System.out.println("Hello from JOP0");
-			//Native.wrMem(0x11111111, 0x3ffff); // write on the largest address
-			whoAmI = 1;
+			whoAmI = 0;
 			Native.wrMem(0x00000001, Const.IO_SIGNAL);
 			time();			
 		}
 		else
-		{			
-			while(true)
-			{
-				if (whoAmI == 1)
-					whoAmI = 2;
-				//Native.wrMem(0x01010101, 0x3ffff); // write on the largest address
+		{
+			if (cpu_id == 0x00000001)
+			{			
+				while(true)
+				{
+					if (whoAmI == 0)
+						whoAmI = cpu_id;
+				}
 			}
+			/*else
+			{
+				while(true)
+				{
+					if (whoAmI == 1)
+						whoAmI = cpu_id;
+				}
+			}*/
+				
 		}
 	}
 	

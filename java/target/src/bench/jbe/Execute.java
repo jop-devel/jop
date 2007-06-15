@@ -2,7 +2,7 @@ package jbe;
 
 public class Execute {
 
-	public static void perform(BenchMark bm) {
+	public static int perform(BenchMark bm) {
 
 		int start, stop, cnt, time, overhead, minus;
 		cnt = 512;		// run the benchmark loop 1024 times minimum
@@ -10,7 +10,7 @@ public class Execute {
 		overhead = 0;
 		minus = 0;
 
-		LowLevel.msg(bm.getName());
+		//LowLevel.msg(bm.getName());
 		while (time<1000) {
 			cnt <<= 1;
 			if (cnt < 0) {
@@ -43,7 +43,8 @@ public class Execute {
 			LowLevel.msg(bm.getName());
 			LowLevel.msg(" no result");
 			LowLevel.lf();
-			return;
+			//return ;
+			return 0;
 		}
 
 		// result is test() per second
@@ -54,15 +55,19 @@ public class Execute {
 				LowLevel.msg(bm.getName());
 				LowLevel.msg(" no result");
 				LowLevel.lf();
-				return;
+				//return ;
+				return 0;
 			}
 			result *= 1000;
 		} else {
 			result = cnt*1000/time;
 		}
-		LowLevel.msg(result);
-		LowLevel.msg("1/s");
-		if (LowLevel.FREQ!=0) {
+		//+++++++++++++LowLevel.msg(result);
+		//+++++++++++++LowLevel.msg("1/s");
+		
+			return result;
+				
+		/*if (LowLevel.FREQ!=0) {
 			int clocks = (LowLevel.FREQ*2000000/result+1)/2;
 			if (LowLevel.FREQ>1000) {
 				result /= 10;
@@ -71,6 +76,6 @@ public class Execute {
 			LowLevel.msg(clocks);
 			LowLevel.msg("clocks");
 		}
-		LowLevel.lf();
+		LowLevel.lf();*/
 	}
 }
