@@ -591,25 +591,13 @@ class JVM {
 
 	private static int f_new(int cons) {
 
-		int ret;
-
-		synchronized (GC.mutex) {
-
-			ret = GC.newObject(cons);
-		}
-		return ret;
+		return GC.newObject(cons);
 
 	}
 
 	static int f_newarray(int count, int type) {
 
-		int ret;
-
-		synchronized (GC.mutex) {
-			
-			ret = GC.newArray(count, type);
-		}
-		return ret;
+		return GC.newArray(count, type);
 
 	}
 
@@ -617,13 +605,7 @@ class JVM {
 
 		// ignore cons (type info)
 		// should be different for the GC!!!
-		int ret;
-
-		synchronized (GC.mutex) {
-			
-			ret = GC.newArray(count, 1); //1..type not available=reference
-		}
-		return ret;
+		return GC.newArray(count, 1); //1..type not available=reference
 	}
 
 

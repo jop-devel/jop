@@ -541,39 +541,39 @@ public class GC {
 	 * @return address of the handle
 	 */
 	static int newObject(int cons) {
-//JVMHelp.wr('.');
+
 		int size = Native.rdMem(cons);			// instance size
 		
-//System.out.println("new "+heapPtr+" size "+size);
-		if (copyPtr+size >= allocPtr) {
-			gc_alloc();
+		// that's the stop-the-world GC
+		synchronized (mutex) {
 			if (copyPtr+size >= allocPtr) {
-				// still not enough memory
-				log("Out of memory error!");
-				System.exit(1);
-			}
+				gc_alloc();
+				if (copyPtr+size >= allocPtr) {
+					// still not enough memory
+					log("Out of memory error!");
+					System.exit(1);
+				}
+			}			
 		}
-		if (freeList==0) {
-			log("Run out of handles in new Object!");
-			// is this a good place to call gc????
-			// better check available handles on newObject
-			gc_alloc();
+		synchronized (mutex) {
 			if (freeList==0) {
-				log("Still out of handles!");
-				System.exit(1);
-			}
+				log("Run out of handles in new Object!");
+				// is this a good place to call gc????
+				// better check available handles on newObject
+				gc_alloc();
+				if (freeList==0) {
+					log("Still out of handles!");
+					System.exit(1);
+				}
+			}			
 		}
+		
 		int ref;
 		
 
 		synchronized (mutex) {
 			// we allocate from the upper part
 			allocPtr -= size;
-			// we need the object size.
-			// in the heap or in the handle structure
-			// or retrive it from the class info
-			// TODO: shouldn't be the whole newObject synchronized?
-			//		Than we can remove the synchronized from JVM.java
 			// BTW: when we create mutex we synchronize on the not yet
 			// created Object!
 			ref = getHandle(size);
@@ -582,12 +582,6 @@ public class GC {
 			// pointer to method table in the handle
 			Native.wrMem(cons+CLASS_HEADR, ref+OFF_MTAB_ALEN);
 		}
-//		log("new ref=", ref);
-//		int addr = Native.rdMem(ref);
-//		log("new addr=", addr);
-//		for (int i=0; i<size; ++i) {
-//			log("o", Native.rdMem(addr+i));
-//		}
 
 		return ref;
 	}
@@ -600,23 +594,27 @@ public class GC {
 		if((type==11)||(type==7)) size <<= 1;
 		// reference array type is 1 (our convention)
 		
-		if (copyPtr+size >= allocPtr) {
-			gc_alloc();
+		synchronized (mutex) {
 			if (copyPtr+size >= allocPtr) {
-				// still not enough memory
-				log("Out of memory error!");
-				System.exit(1);
-			}
+				gc_alloc();
+				if (copyPtr+size >= allocPtr) {
+					// still not enough memory
+					log("Out of memory error!");
+					System.exit(1);
+				}
+			}			
 		}
-		if (freeList==0) {
-			log("Run out of handles in new array!");
-			// is this a good place to call gc????
-			// better check available handles on newObject
-			gc_alloc();
+		synchronized (mutex) {
 			if (freeList==0) {
-				log("Still out of handles!");
-				System.exit(1);
-			}
+				log("Run out of handles in new array!");
+				// is this a good place to call gc????
+				// better check available handles on newObject
+				gc_alloc();
+				if (freeList==0) {
+					log("Still out of handles!");
+					System.exit(1);
+				}
+			}			
 		}
 
 		int ref;
@@ -629,14 +627,6 @@ public class GC {
 			// array length in the handle
 			Native.wrMem(arrayLength, ref+OFF_MTAB_ALEN);
 		}
-		
-//		log("newArray ref=", ref);
-//		int addr = Native.rdMem(ref);
-//		log("new addr=", addr);
-//		for (int i=0; i<size; ++i) {
-//			log("o", Native.rdMem(addr+i));
-//		}
-
 		return ref;
 		
 	}
