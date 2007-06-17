@@ -57,7 +57,8 @@ public class Latency {
 		}
 	}
 	
-	static Vector v;
+//	static Vector v;
+	static SimpleList sl;
 	
 	static class MFThread extends HFThread {
 
@@ -68,9 +69,10 @@ public class Latency {
 		}
 		
 		void work() {
-			synchronized (v) {
-				v.addElement(new Integer(nr));				
-			}
+			sl.append(new Integer(nr));
+//			synchronized (v) {
+//				v.addElement(new Integer(nr));				
+//			}
 			++nr;
 		}
 	}
@@ -83,23 +85,31 @@ public class Latency {
 		}
 		
 		void work() {
-			int size;
-			synchronized (v) {
-				size = v.size();
-			}
-			while (size!=0) {
-				Object o;
-				synchronized (v) {
-					o = v.remove(0);
-				}
+			
+			Object o;
+			while ((o = sl.remove())!=null) {
 				if (((Integer) o).intValue()!=expNr) {
-					System.out.println("Vector problem");					
+					System.out.println("List problem");					
 				}
 				++expNr;
-				synchronized (v) {
-					size = v.size();
-				}
 			}
+//			int size;
+//			synchronized (v) {
+//				size = v.size();
+//			}
+//			while (size!=0) {
+//				Object o;
+//				synchronized (v) {
+//					o = v.remove(0);
+//				}
+//				if (((Integer) o).intValue()!=expNr) {
+//					System.out.println("Vector problem");					
+//				}
+//				++expNr;
+//				synchronized (v) {
+//					size = v.size();
+//				}
+//			}
 		}
 	}
 	
@@ -124,17 +134,24 @@ public class Latency {
 
 	// 300 is without jitter when running it alone
 	// 500 without jitter when a second dummy thread runs
-	public static final int PERIOD_HIGH = 500;
-	public static final int PERIOD_MEDIUM = 1234;
-	public static final int PERIOD_LOW = 10235;
-	public static final int PERIOD_GC = 20000;
+	// change to 200us on the 100 MHz version
+	// at 100 MHz, RtThreadImp TIM_OFF at 2:
+	// 200 us without jitter when run alone
+	// with output thread 10 us
+	// with prod/cons threads (no GC) 16 us
+	// with GC 72 us (77 us)
+	public static final int PERIOD_HIGH = 211;
+	public static final int PERIOD_MEDIUM = 1009;
+	public static final int PERIOD_LOW = 10853;
+	public static final int PERIOD_GC = 234567;
 	
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) {
 
-		v = new Vector(20);
+//		v = new Vector(20);
+		sl = new SimpleList();
 		
 		hft = new HFThread(10, PERIOD_HIGH);
 		mft = new MFThread(9, PERIOD_MEDIUM);
@@ -142,19 +159,24 @@ public class Latency {
 		
 		new GCThread();
 		
-		new RtThread (2, 5*1000*1000) {
+		new RtThread (2, 1000*1000) {
 			public void run() {
 				for (;;) {
 					waitForNextPeriod();
 					System.out.println();
-					System.out.print("hft max=");
-					System.out.println(hft.max);
-					System.out.print("hft min=");
-					System.out.println(hft.min);					
-					System.out.print("mft max=");
-					System.out.println(mft.max);
-					System.out.print("mft min=");
-					System.out.println(mft.min);					
+					if (hft!=null) {
+						System.out.print("hft max=");
+						System.out.println(hft.max);
+						System.out.print("hft min=");
+						System.out.println(hft.min);					
+						
+					}
+					if (mft!=null) {
+						System.out.print("mft max=");
+						System.out.println(mft.max);
+						System.out.print("mft min=");
+						System.out.println(mft.min);											
+					}
 				}
 			}
 		};
