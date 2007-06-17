@@ -186,28 +186,23 @@ public class GC {
 	 */
 	static void push(int ref) {
 		
-		synchronized (mutex) {
-			// if (ref==0) return;		// that's a null pointer
-			if (ref==0) {
-//				log("push null pointer");
-				return;
-			}
-			// null pointer check is in the following handle check
-			
-			// Only objects that are referenced by a handle in the
-			// handle area are considered for GC.
-			// Null pointer and references to static strings are not
-			// investigated.
-			if (ref<mem_start || ref>=mem_start+handle_cnt*HANDLE_SIZE) {
-				log("not a handle", ref);
-				return;
-			}
-			// does the reference point to a handle start?
-			// TODO: happens in concurrent
-			if ((ref&0x7)!=0) {
+		// null pointer check is in the following handle check
+		
+		// Only objects that are referenced by a handle in the
+		// handle area are considered for GC.
+		// Null pointer and references to static strings are not
+		// investigated.
+		if (ref<mem_start || ref>=mem_start+handle_cnt*HANDLE_SIZE) {
+			return;
+		}
+		// does the reference point to a handle start?
+		// TODO: happens in concurrent
+		if ((ref&0x7)!=0) {
 //				log("a not aligned handle");
-				return;
-			}
+			return;
+		}
+
+		synchronized (mutex) {
 			// Is this handle on the free list?
 			// Is possible when using conservative stack scanning
 			if (Native.rdMem(ref+OFF_PTR)==0) {
@@ -215,12 +210,7 @@ public class GC {
 //				log("push of a handle with 0 at OFF_PRT!", ref);
 				return;
 			}
-			
-			if (Native.rdMem(ref+OFF_GREY)!=0) {
-//				log("push: allready in grey list", ref);
-				return;
-			}
-			
+						
 			// Is it black?
 			// Can happen from a left over from the last GC cycle, can it?
 			// -- it's checked in the write barrier
@@ -230,19 +220,6 @@ public class GC {
 				return;
 			}
 			
-			// are we marking?
-//			if (!isMarking) {
-//				log("not marking");
-//				return;
-//			}
-			
-//			if (Native.rdMem(ref+OFF_TYPE)==IS_OBJ) {
-//				log("push object", ref);
-//			} else if (Native.rdMem(ref+OFF_TYPE)==IS_REFARR) {
-//				log("push ref-array", ref);
-//			} else {
-//				log("push array", ref);
-//			}
 			// only objects not allready in the grey list
 			// are added
 			if (Native.rdMem(ref+OFF_GREY)==0) {
@@ -358,15 +335,16 @@ public class GC {
 			// What happens when the actuall scanning object is
 			// again pushed on the grey stack by the mutator?
 			if (Native.rdMem(ref+OFF_SPACE)==toSpace) {
-				log("mark/copy allready in toSpace");
+				// it happens 
+//				log("mark/copy allready in toSpace");
 				continue;
 			}
 			
-			// TODO: there should be no null pointers on the mark stack
-			if (Native.rdMem(ref+OFF_PTR)==0) {
-				log("mark/copy OFF_PTR=0!!!");
-				continue; 
-			}
+			// there should be no null pointers on the mark stack
+//			if (Native.rdMem(ref+OFF_PTR)==0) {
+//				log("mark/copy OFF_PTR=0!!!");
+//				continue; 
+//			}
 			
 				
 			// push all childs
@@ -430,23 +408,21 @@ public class GC {
 			// read next element, as it is destroyed
 			// by addTo*List()
 			int next = Native.rdMem(ref+OFF_NEXT);
-			// a BLACK one
-			if (Native.rdMem(ref+OFF_SPACE)==toSpace) {
-				// add to used list
-				synchronized (mutex) {
+			synchronized (mutex) {
+				// a BLACK one
+				if (Native.rdMem(ref+OFF_SPACE)==toSpace) {
+					// add to used list
 					Native.wrMem(useList, ref+OFF_NEXT);
 					useList = ref;					
-				}
-			// a WHITE one
-			} else {
-				synchronized (mutex) {
+				// a WHITE one
+				} else {
 					// pointer to former freelist head
 					Native.wrMem(freeList, ref+OFF_NEXT);
 					freeList = ref;					
 					// mark handle as free
 					Native.wrMem(0, ref+OFF_PTR);
-				}
-			}		
+				}		
+			}
 			ref = next;
 		}
 		
@@ -501,41 +477,6 @@ public class GC {
 	}
 
 	/**
-	 * Get a handle: remove from freeList and add to useList
-	 * Mark BLACK
-	 * Gets invoked from newObject and newArray under the mutex
-	 * @param allocPtr
-	 * @param size
-	 * @return
-	 */
-	static int getHandle(int size) {
-
-		// get one from free list
-		int ref = freeList;
-		if ((ref&0x07)!=0) {
-			log("getHandle problem");
-		}
-		if (Native.rdMem(ref+OFF_PTR)!=0) {
-			log("getHandle not free");
-		}
-//		log("getHandle", ref);
-		freeList = Native.rdMem(ref+OFF_NEXT);
-		// and add it to use list
-		Native.wrMem(useList, ref+OFF_NEXT);
-		useList = ref;
-		// pointer to real object, also marks it as non free
-		Native.wrMem(allocPtr, ref); // +OFF_PTR
-		// should be from the class info
-		Native.wrMem(size, ref+OFF_SIZE);
-		// mark it as BLACK - means it will be in toSpace
-		Native.wrMem(toSpace, ref+OFF_SPACE);
-		// TODO: should not be necessary - now just for sure
-		Native.wrMem(0, ref+OFF_GREY);
-
-		return ref;
-	}
-
-	/**
 	 * Allocate a new Object. Invoked from JVM.f_new(cons);
 	 * @param cons pointer to class struct
 	 * @return address of the handle
@@ -574,9 +515,28 @@ public class GC {
 		synchronized (mutex) {
 			// we allocate from the upper part
 			allocPtr -= size;
+			// get one from free list
+			ref = freeList;
+	//		if ((ref&0x07)!=0) {
+	//			log("getHandle problem");
+	//		}
+	//		if (Native.rdMem(ref+OFF_PTR)!=0) {
+	//			log("getHandle not free");
+	//		}
+			freeList = Native.rdMem(ref+OFF_NEXT);
+			// and add it to use list
+			Native.wrMem(useList, ref+OFF_NEXT);
+			useList = ref;
+			// pointer to real object, also marks it as non free
+			Native.wrMem(allocPtr, ref); // +OFF_PTR
+			// should be from the class info
+			Native.wrMem(size, ref+OFF_SIZE);
+			// mark it as BLACK - means it will be in toSpace
+			Native.wrMem(toSpace, ref+OFF_SPACE);
+			// TODO: should not be necessary - now just for sure
+			Native.wrMem(0, ref+OFF_GREY);
 			// BTW: when we create mutex we synchronize on the not yet
 			// created Object!
-			ref = getHandle(size);
 			// ref. flags used for array marker
 			Native.wrMem(IS_OBJ, ref+OFF_TYPE);
 			// pointer to method table in the handle
@@ -621,7 +581,26 @@ public class GC {
 		synchronized (mutex) {
 			// we allocate from the upper part
 			allocPtr -= size;
-			ref = getHandle(size);
+			// get one from free list
+			ref = freeList;
+	//		if ((ref&0x07)!=0) {
+	//			log("getHandle problem");
+	//		}
+	//		if (Native.rdMem(ref+OFF_PTR)!=0) {
+	//			log("getHandle not free");
+	//		}
+			freeList = Native.rdMem(ref+OFF_NEXT);
+			// and add it to use list
+			Native.wrMem(useList, ref+OFF_NEXT);
+			useList = ref;
+			// pointer to real object, also marks it as non free
+			Native.wrMem(allocPtr, ref); // +OFF_PTR
+			// should be from the class info
+			Native.wrMem(size, ref+OFF_SIZE);
+			// mark it as BLACK - means it will be in toSpace
+			Native.wrMem(toSpace, ref+OFF_SPACE);
+			// TODO: should not be necessary - now just for sure
+			Native.wrMem(0, ref+OFF_GREY);
 			// ref. flags used for array marker
 			Native.wrMem(type, ref+OFF_TYPE);
 			// array length in the handle
