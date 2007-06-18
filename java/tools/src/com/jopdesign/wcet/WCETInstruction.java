@@ -1064,7 +1064,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			break;
 		// MONITOREXIT = 195
 		case org.apache.bcel.Constants.MONITOREXIT:
-			wcet = 16; // BCET: 10
+			wcet = 14; // BCET: 10
 			break;
 		// WIDE = 196
 		case org.apache.bcel.Constants.WIDE:
