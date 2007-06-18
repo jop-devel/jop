@@ -91,6 +91,7 @@
 //  2007-06-01  added multiprocessor startup (CP)
 //				aastore in JVM.java
 //	2007-06-17	new instruction jopsys_memcpy, jopsys_cond_move disabled
+//				speed-up ext2int and int2ext
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -1592,86 +1593,74 @@ jopsys_setvp:
 // public static native void int2extMem(int intAdr, int extAdr, int cnt);
 
 jopsys_int2ext:
-			stm	c			// save counter
+			ldi	-1
+			add
+			stm c			// counter-1
 			stmra			// read handle indirection
+			stm	b			// intern address
 			wait			// for the GC
 			wait
 			ldmrd
 			stm	a			// extern address
-			stm	b			// intern address
-			ldm	a
-			ldm	c
-			add
-			ldi	1
-			add
-			stm	e			// extern end address+1
+			ldm	c			// keep counter on the stack
+
 intext_loop:
+			dup
 			ldm	b
+			add
 			star
+			dup
 			ldm	a
-			stmwa				// write ext. mem address
+			add
+			stmwa
 			ldmi
-			stmwd				// write ext. mem data
-			ldm	a				// could be on the stack
-			ldi	1				// but I'm now to lazy to think
-			add
-			stm a
-			ldm	b
-			ldi	1
-			add
-			stm b
-			wait				// wait for write
+			stmwd
+			dup
 			wait
-			ldm	a				// finished?
-			ldm	e
-			sub
-			nop
+			wait
+
+nop	// to keep offtbl.vhd short enough....
 			bnz		intext_loop
-			nop
-			nop
-			nop		nxt
+			ldi	-1	// decrement in branch slot
+			add
+
+			pop	nxt	// remove counter
 
 // public static native void ext2intMem(int extAdr, int intAdr, int cnt);
 
 jopsys_ext2int:
-			stm	c			// save counter
+			ldi	-1
+			add
+			stm c			// counter-1
 			stm	b			// intern address
 			stmra			// read handle indirection
 			wait			// for the GC
 			wait
 			ldmrd
 			stm	a			// extern address
-			ldm	a
-			ldm	c
-			add
-			ldi	1
-			add
-			stm	e			// extern end address+1
+			ldm	c			// keep counter on the stack
+
 extint_loop:
+			dup
 			ldm	a
-			stmra			// read ext. mem, mem_bsy comes one cycle later
-			ldm	a
-			ldi	1
 			add
-			stm a
+			stmra
+			dup
 			ldm	b
+			add
 			star
-			ldm	b
-			ldi	1
-			add
-			stm b
 			wait
 			wait
 			ldmrd			// read ext val
 			stmi
-			ldm	a			// finished?
-			ldm	e
-			sub
+
+			dup
 			nop
 			bnz		extint_loop
-			nop
-			nop
-			nop		nxt
+			ldi	-1	// decrement in branch slot
+			add
+
+			pop	nxt	// remove counter
 
 //	public static native void memCopy(int src, int dest, int cnt);
 
@@ -1681,7 +1670,7 @@ jopsys_memcpy:
 			stm c	// counter-1
 			stm b	// destination
 			stm a	// source
-			ldm	c	// keep it on the stack
+			ldm	c	// keep counter on the stack
 
 memcpy_loop:
 			dup
