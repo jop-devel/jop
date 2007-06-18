@@ -1549,10 +1549,11 @@ System.out.println("new heap: "+heap);
 					invoke(a);
 					break;
 				case 223 :		// jopsys_cond_move
-					a = stack[sp--];
-					b = stack[sp--];
-					c = stack[sp--];
-					stack[++sp] = a!=0 ? c : b;
+//					a = stack[sp--];
+//					b = stack[sp--];
+//					c = stack[sp--];
+//					stack[++sp] = a!=0 ? c : b;
+					noim(223);
 					break;
 				case 224 :		// resE0 - getstatic_ref
 					getstatic();
@@ -1580,8 +1581,14 @@ System.out.println("new heap: "+heap);
 				case 231 :		// resE7 - putfield_long
 					putfield_long();
 					break;
-				case 232 :		// resE8
-					noim(232);
+				case 232 :		// resE8 - jopsys_memcpy
+					a = stack[sp--];
+					b = stack[sp--];
+					c = stack[sp--];
+					for (int i=a-1; i>=0; --i) {
+						writeMem(b+i, readMem(c+i));
+					}
+
 					break;
 				case 233 :		// resE9
 					noim(233);

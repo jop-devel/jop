@@ -90,6 +90,7 @@
 //	2007-05-28	putfield_ref and putstatic_ref in JVM.java
 //  2007-06-01  added multiprocessor startup (CP)
 //				aastore in JVM.java
+//	2007-06-17	new instruction jopsys_memcpy, jopsys_cond_move disabled
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -99,7 +100,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20070601
+version		= 20070617
 
 //
 //	io address are negativ memory addresses
@@ -1283,8 +1284,8 @@ monitorexit:
 			// can be exec in in branch delay?
 			// up to now yes, but we change the write
 			// some time....
-			nop
-			nop
+			// nop
+			// nop
 			ldi	io_int_ena
 			stmwa
 			ldi	1
@@ -1672,6 +1673,40 @@ extint_loop:
 			nop
 			nop		nxt
 
+//	public static native void memCopy(int src, int dest, int cnt);
+
+jopsys_memcpy:
+			ldi	-1
+			add
+			stm c	// counter-1
+			stm b	// destination
+			stm a	// source
+			ldm	c	// keep it on the stack
+
+memcpy_loop:
+			dup
+			ldm	a
+			add
+			stmra
+			dup
+			ldm	b
+			add
+			stmwa	// should be ok
+			wait
+			wait
+			ldmrd
+			stmwd
+			dup
+			wait
+			wait
+
+			bnz	memcpy_loop
+			ldi	-1	// decrement in branch slot
+			add
+
+			pop	nxt	// remove counter
+
+
 
 //
 //	some conversions only need a nop!
@@ -1682,10 +1717,10 @@ jopsys_nop:
 //jopsys_invoke: see invoke
 
 
-jopsys_cond_move:
-			nop		// one cycle for the condition
-			bz		false_path
-			stm		b
-			stm		c
-			ldm		c nxt
-false_path:	ldm		b nxt
+//jopsys_cond_move:
+//			nop		// one cycle for the condition
+//			bz		false_path
+//			stm		b
+//			stm		c
+//			ldm		c nxt
+//false_path:	ldm		b nxt

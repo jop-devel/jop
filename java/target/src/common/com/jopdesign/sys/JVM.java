@@ -828,7 +828,7 @@ if (enterCnt<0) {
 	private static void f_resE5() { JVMHelp.noim();}
 	private static void f_resE6() { JVMHelp.noim();}
 	private static void f_resE7() { JVMHelp.noim();}
-	private static void f_resE8() { JVMHelp.noim();}
+	private static void f_jopsys_memcpy() { JVMHelp.noim();}
 	private static void f_resE9() { JVMHelp.noim();}
 	private static void f_resEA() { JVMHelp.noim();}
 	private static void f_resEB() { JVMHelp.noim();}

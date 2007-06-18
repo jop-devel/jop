@@ -16,7 +16,7 @@ public class JopInstr{
 	public final static int IMP_NO = 2;
 
 	private String name;
-	private int len;		// in byte codes (0 means variabe len!)
+	private int len;		// in byte codes (0 means variable length!)
 	private int imp;		// is implemented in JOP
 	private int cnt;
 	private static Map map = new HashMap();
@@ -326,7 +326,8 @@ public class JopInstr{
 		new JopInstr("jopsys_ext2int", 1, IMP_ASM, 100),			// 0xDC
 		new JopInstr("jopsys_nop", 1, IMP_NO, 1),			// 0xDD
 		new JopInstr("jopsys_invoke", 1, IMP_NO, 1),			// 0xDE
-		new JopInstr("jopsys_cond_move", 1, IMP_NO, 1),			// 0xDF
+//		new JopInstr("jopsys_cond_move", 1, IMP_NO, 1),			// 0xDF
+		new JopInstr("resDF", 1, IMP_NO, 1),			// 0xDF
 
 		new JopInstr("getstatic_ref", 3, IMP_ASM, 30),   // 0xE0
 		new JopInstr("putstatic_ref", 3, IMP_ASM, 30),			// 0xE1
@@ -336,7 +337,7 @@ public class JopInstr{
 		new JopInstr("putstatic_long", 3, IMP_ASM, 30),			// 0xE5
 		new JopInstr("getfield_long", 3, IMP_ASM, 30),			// 0xE6
 		new JopInstr("putfield_long", 3, IMP_ASM, 30),			// 0xE7
-		new JopInstr("resE8", 1, IMP_NO, 1),			// 0xE8
+		new JopInstr("jopsys_memcpy", 1, IMP_ASM, 100),			// 0xE8
 		new JopInstr("resE9", 1, IMP_NO, 1),			// 0xE9
 		new JopInstr("resEA", 1, IMP_NO, 1),			// 0xEA
 		new JopInstr("resEB", 1, IMP_NO, 1),			// 0xEB
@@ -390,7 +391,8 @@ public class JopInstr{
 			"toLong", "jopsys_nop",
 			"toInt", "jopsys_nop",
 			"toDouble", "jopsys_nop",
-			"condMove", "jopsys_cond_move"
+//			"condMove", "jopsys_cond_move",
+			"memCopy", "jopsys_memcpy"
 	};
 
 	

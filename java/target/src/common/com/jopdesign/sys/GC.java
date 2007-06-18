@@ -118,9 +118,7 @@ public class GC {
 	static Object mutex;
 	
 	static boolean concurrentGc;
-	
-//	static boolean isMarking;
-	
+		
 	static int roots[];
 
 	static void init(int mem_size, int addr) {
@@ -234,7 +232,6 @@ public class GC {
 	 */
 	static void flip() {
 		synchronized (mutex) {
-//			isMarking = true;
 			if (greyList!=GREY_END) log("GC: grey list not empty");
 
 			useA = !useA;
@@ -289,9 +286,6 @@ public class GC {
 				}
 			}
 
-			// What happens when the stack gets changed during GC?
-			// That's what a snapshot-at-beginning write-barrier is for
-			// - or our SCJ approach without stack roots ;-)
 		}
 	}
 
@@ -381,9 +375,12 @@ public class GC {
 				Native.wrMem(copyPtr, ref+OFF_PTR);
 				// set it BLACK
 				Native.wrMem(toSpace, ref+OFF_SPACE);
-				// copy it
-				for (i=0; i<size; ++i) {
-					Native.wrMem(Native.rdMem(addr+i), copyPtr+i);
+				if (size>0) {
+					// copy it
+//					for (i=size-1; i>=0; --i) {
+//						Native.wrMem(Native.rdMem(addr+i), copyPtr+i);
+//					}
+					Native.memCopy(addr, copyPtr, size);					
 				}
 				copyPtr += size;			
 			}

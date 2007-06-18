@@ -3,16 +3,10 @@ package com.jopdesign.sys;
 
 /**
 *	native functions in JOP JVM.
+*	Mapping is defined in JopInstr.java
 */
 
 public class Native {
-//
-// Reihenfolge so lassen!!!
-// ergibt static funktionsnummern:
-//		1 rd
-//		2 wr
-//		...
-//
 
 	public static native int rd(int adr);
 	public static native void wr(int val, int adr);
@@ -34,6 +28,13 @@ public class Native {
 	public static native float toFloat(int i);
 	public static native long toLong(double d);
 	public static native double toDouble(long l);
-	public static native int condMove(int a, int b, boolean cond);
+//	public static native int condMove(int a, int b, boolean cond);
+	/**
+	 * 
+	 * @param src memory source address
+	 * @param dest memory destination address
+	 * @param cnt number of words (cnt must be >0!)
+	 */
+	public static native void memCopy(int src, int dest, int cnt);
 
 }
