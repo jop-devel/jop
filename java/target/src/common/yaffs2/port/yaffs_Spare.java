@@ -1,6 +1,5 @@
 package yaffs2.port;
 
-import yaffs2.utils.NotImplementedException;
 import yaffs2.utils.SerializableObject;
 
 //XXX byte? // ???
@@ -10,13 +9,11 @@ public class yaffs_Spare extends yaffs2.utils.SerializableObject
 	public yaffs_Spare(SerializableObject owner, int offset)
 	{
 		super(owner, offset);
-		throw new NotImplementedException();
 	}
 
 	public yaffs_Spare()
 	{
 		super(SERIALIZED_LENGTH);
-		throw new NotImplementedException();
 	}
 
 	public static final int SERIALIZED_LENGTH = 16; 

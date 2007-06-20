@@ -3,7 +3,7 @@ package yaffs2.port;
 import yaffs2.utils.*;
 import static yaffs2.port.Guts_H.*;
 
-public class yaffs_Object implements list_head_or_yaffs_Object // PORT XXX It is not so elegant to do this...
+public class yaffs_Object extends yaffs2.utils.factory.PooledObject implements list_head_or_yaffs_Object // PORT XXX It is not so elegant to do this...
 {
 	//struct yaffs_ObjectStruct {
 		// XXX space wasted?

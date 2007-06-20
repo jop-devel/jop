@@ -8,6 +8,20 @@ import static yaffs2.utils.Unix.*;
  */
 public abstract class Utils
 {
+	
+	public static String to2CharHex(byte array)
+	{
+		StringBuffer s = new StringBuffer();
+		s.append(Integer.toHexString((Integer)(array&0xff)));
+		
+		if (s.length() < 2)
+			s.insert(0,"0"); 
+		return s.toString();
+				
+				
+	}
+	
+	
 	public static String byteArrayToString(byte[] array, int index)
 	{
 		int length = strlen(array, index);

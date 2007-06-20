@@ -29,7 +29,7 @@ public class yaffs_guts_C
 	 */
 
 	static final String yaffs_guts_c_version =
-		"$Id: yaffs_guts_C.java,v 1.1 2007/06/07 14:37:29 peter.hilber Exp $";
+		"$Id: yaffs_guts_C.java,v 1.2 2007/06/20 00:45:16 alexander.dejaco Exp $";
 
 	/*#include "yportenv.h"
 
@@ -843,7 +843,7 @@ public class yaffs_guts_C
 		}
 		
 		// FIXME
-		T(~0, "PutLevel0Tnode: pos %d val %d map[wordInMap]: %d\n", pos, val, tn.level0AsInt(wordInMap));
+		T(YAFFS_TRACE_TNODE, "PutLevel0Tnode: pos %d val %d map[wordInMap]: %d\n", pos, val, tn.level0AsInt(wordInMap));
 	}
 
 	static int yaffs_GetChunkGroupBase(yaffs_Device dev, yaffs_Tnode tn, int pos)
@@ -993,7 +993,7 @@ public class yaffs_guts_C
 
 			// FIXME
 			if (requiredTallness > 0) 
-				T(~0, "Required tallness: %d\n", requiredTallness); 
+				T(YAFFS_TRACE_TALLNESS, "Required tallness: %d\n", requiredTallness); 
 			fStruct.topLevel = requiredTallness;
 		}
 
@@ -1348,7 +1348,7 @@ public class yaffs_guts_C
 					fStruct.top = tn.internal[0];
 					fStruct.topLevel--;
 					// FIXME
-					T(~0, "Reducing topLevel: %d\n", fStruct.topLevel);
+					T(YAFFS_TRACE_TOPLEVEL, "Reducing topLevel: %d\n", fStruct.topLevel);
 					yaffs_FreeTnode(dev, tn);
 				} else {
 					done = true;
@@ -3288,10 +3288,10 @@ public class yaffs_guts_C
 				for (i = 0; i < nCaches; i++) {
 					if (dev.srCache[i].object == obj &&
 							dev.srCache[i].dirty) {
-						if (!(cache != null)
+						if (!(cache != null)					
 								|| dev.srCache[i].chunkId <
 								lowest) {
-							cache = dev.srCache[i];
+							cache = dev.srCache[i];				// nBytes given 156
 							lowest = cache.chunkId;
 						}
 					}
@@ -3829,6 +3829,7 @@ public class yaffs_guts_C
 				if (lh != null) {
 					obj = /*list_entry(lh, yaffs_Object, hashLink)*/ (yaffs_Object)lh.list_entry;
 					if (!obj.deferedFree) {
+						memset(cp.serialized,0,(byte)0,cp.getSerializedLength());
 						yaffs_ObjectToCheckpointObject(cp,obj);
 						cp.setStructType(yaffs_CheckpointObject.SERIALIZED_LENGTH);
 

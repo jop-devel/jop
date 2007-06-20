@@ -45,7 +45,7 @@ public class yaffs_BlockInfo extends yaffs2.utils.SerializableObject
 	void setSoftDeletions(int value)
 	{
 		serialized[offset+0] = (byte)value;
-		serialized[offset+1] = (byte)(serialized[offset+1] & ~0x3 | ((value & 0x3) >>> 8));
+		serialized[offset+1] = (byte)(serialized[offset+1] & ~0x3 | ((value & 0x300) >>> 8));
 	}
 	int pagesInUse()
 	{
@@ -54,7 +54,7 @@ public class yaffs_BlockInfo extends yaffs2.utils.SerializableObject
 	void setPagesInUse(int value)
 	{
 		serialized[offset+1] = (byte)(serialized[offset+1] & 0x3 | (value << 2));
-		serialized[offset+2] = (byte)(serialized[offset+2] & ~0xf | ((value & 0xf00) >>> 8));
+		serialized[offset+2] = (byte)(serialized[offset+2] & ~0xf | ((value & 0x3C0) >>> 6));
 	}
 	int blockState()
 	{
@@ -94,7 +94,7 @@ public class yaffs_BlockInfo extends yaffs2.utils.SerializableObject
 	}
 	void setChunkErrorStrikes(int value)
 	{
-		serialized[offset+3] = (byte)(serialized[offset+3] & (~0x7 << 3) | ((value & 0x7) << 3));
+		serialized[offset+3] = (byte)(serialized[offset+3] & (~0x38) | ((value & 0x7) << 3));
 	}
 
 	//#ifdef CONFIG_YAFFS_YAFFS2 

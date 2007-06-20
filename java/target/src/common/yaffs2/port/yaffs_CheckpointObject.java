@@ -121,19 +121,21 @@ public class yaffs_CheckpointObject extends SerializableObject
 	}
 	void setUnlinkAllowed(boolean value)
 	{
-		serialized[offset+16] = (byte)((value ? 1<<0 : 0) | (serialized[offset+16] & ~(1<<0)));
+		serialized[offset+17] = (byte)((value ? 1<<0 : 0) | (serialized[offset+17] & ~(1<<0)));
 	}
 
 //	__u8 serial;
 	byte serial()
 	{
 		return serialized[offset+18];
+		//return (byte)((serialized[offset+17] >>> 1) | ((serialized[offset+18] & 0x1) << 7));
 	}
 	void setSerial(byte value)
 	{
 		serialized[offset+18] = value;
+		//serialized[offset+17] = (byte)((value << 1) | (serialized[offset+17] & 0x1));
+		//serialized[offset+18] = (byte)((value >>> 7) | (serialized[offset+18] & ~0x1));
 	}
-
 
 	int nDataChunks()
 	{

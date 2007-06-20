@@ -1,6 +1,8 @@
 package yaffs2.utils;
 
-public abstract class SerializableObject
+import yaffs2.utils.factory.PooledObject;
+
+public abstract class SerializableObject extends PooledObject // XXX remove if not using pooling
 {
 	// XXX does not need a pool
 	/**

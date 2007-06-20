@@ -15,6 +15,7 @@ import static yaffs2.utils.Unix.*;
 import static yaffs2.port.yportenv.*;
 import static yaffs2.port.ydirectenv.*;
 import static yaffs2.utils.emulation.FileEmulationUnix.*;
+import static yaffs2.utils.emulation.CheckSum.*;
 import static yaffs2.port.yaffs_packedtags2_C.*;
 import static yaffs2.utils.Utils.*;
 import static yaffs2.port.yaffsfs_H.*;
@@ -44,7 +45,7 @@ public class yaffs_fileem2k_C implements readChunkWithTagsFromNANDInterface,
 	 * This is only intended as test code to test persistence etc.
 	 */
 
-	static final String yaffs_flashif_c_version = "$Id: yaffs_fileem2k_C.java,v 1.1 2007/06/07 14:37:29 peter.hilber Exp $";
+	static final String yaffs_flashif_c_version = "$Id: yaffs_fileem2k_C.java,v 1.2 2007/06/20 00:45:16 alexander.dejaco Exp $";
 
 
 //	#include "yportenv.h"
@@ -201,8 +202,12 @@ public class yaffs_fileem2k_C implements readChunkWithTagsFromNANDInterface,
 			nRead =  read(h, localBuffer,localBufferIndex, dev.nDataBytesPerChunk);
 			for(i = error = 0; i < dev.nDataBytesPerChunk && !(error != 0); i++){
 				if(byteAsUnsignedByte(localBuffer[localBufferIndex+i]) != 0xFF){
-					printf("nand simulation: chunk %d data byte %d was %02x\n", // PORT I think %0x2 is a typo.
-						chunkInNAND,i,byteAsUnsignedByte(localBuffer[localBufferIndex+i]));
+					//FIXME
+					T(YAFFS_TRACE_NANDSIM, "nand simulation: chunk %d data byte %d was %02x\n",
+							chunkInNAND,i,byteAsUnsignedByte(localBuffer[localBufferIndex+i]));
+//					printf("nand simulation: chunk %d data byte %d was %02x\n", // PORT I think %0x2 is a typo.
+//						chunkInNAND,i,byteAsUnsignedByte(localBuffer[localBufferIndex+i]));
+					
 					error = 1;
 				}
 			}
@@ -216,6 +221,10 @@ public class yaffs_fileem2k_C implements readChunkWithTagsFromNANDInterface,
 			lseek(h,pos,SEEK_SET);
 			written = write(h,localBuffer,localBufferIndex,dev.nDataBytesPerChunk);
 			
+			// TODO FIXME
+			if ((YAFFS_TRACE_CHECKSUMS & yaffs2.utils.Globals.yaffs_traceMask) != 0)
+				checksumOfBytes(localBuffer,localBufferIndex,dev.nDataBytesPerChunk);
+				
 			if(yaffs_testPartialWrite){
 				close(h);
 				System.exit(1);
@@ -260,8 +269,12 @@ public class yaffs_fileem2k_C implements readChunkWithTagsFromNANDInterface,
 				nRead = read(h,localBuffer,localBufferIndex,pt.SERIALIZED_LENGTH);
 				for(i = error = 0; i < pt.SERIALIZED_LENGTH && !(error != 0); i++){
 					if(byteAsUnsignedByte(localBuffer[i]) != 0xFF){
-						printf("nand simulation: chunk %d oob byte %d was %02x\n", // PORT I think %0x2 is a typo.
-							chunkInNAND,i,byteAsUnsignedByte(localBuffer[i]));
+						
+//						FIXME
+						T(YAFFS_TRACE_NANDSIM, "nand simulation: chunk %d oob byte %d was %02x\n",
+								chunkInNAND,i,byteAsUnsignedByte(localBuffer[i]));					
+//						printf("nand simulation: chunk %d oob byte %d was %02x\n", // PORT I think %0x2 is a typo.
+//							chunkInNAND,i,byteAsUnsignedByte(localBuffer[i]));
 							error = 1;
 					}
 				}
@@ -271,7 +284,9 @@ public class yaffs_fileem2k_C implements readChunkWithTagsFromNANDInterface,
 				 
 				if(memcmp(localBuffer,localBufferIndex,pt.serialized,pt.offset,
 						pt.SERIALIZED_LENGTH) != 0)
-					printf("nand sim: tags corruption\n");
+//					FIXME					
+					T(YAFFS_TRACE_NANDSIM, "nand sim: tags corruption\n");		
+//					printf("nand sim: tags corruption\n");
 					
 				lseek(h,pos,SEEK_SET);
 				
@@ -416,7 +431,9 @@ public class yaffs_fileem2k_C implements readChunkWithTagsFromNANDInterface,
 			
 		CheckInit();
 		
-		printf("erase block %d\n",blockNumber);
+		// FIXME
+		T(YAFFS_TRACE_ERASE,"erase block %d\n",blockNumber);
+//		printf("erase block %d\n",blockNumber);
 		
 		if(blockNumber == 320)
 			fail320 = 1;

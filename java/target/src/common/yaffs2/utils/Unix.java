@@ -356,8 +356,12 @@ public class Unix
 	public static int strlen(byte[] s, int sIndex)
 	{
 		int i = 0;
-		while (s[sIndex+i] != 0)
-			++i;
+		while (sIndex+i < s.length)		// XXX this was not a bug, methinks, this should only be called on zero-terminated strings
+			if (s[sIndex+i] != 0)
+			{
+				i++;
+			} else
+				break;
 		
 		return i;
 	}
@@ -434,6 +438,14 @@ public class Unix
 //						break;
 					case 'd':	// integer
 					case 'i':
+						if (width != 0)
+						{
+							for (int i = 0; i < width-args[argsIndex].toString().length(); i++)
+							{
+								s[sOffset] = ' ';
+								sOffset++;								
+							}
+						}
 						sOffset = StringToByteArraySafe(
 								((Integer)args[argsIndex]).toString(), s, sOffset);
 						break;
@@ -446,6 +458,12 @@ public class Unix
 						sOffset = StringToByteArraySafe(
 								Integer.toHexString((Integer)args[argsIndex]),
 								s, sOffset); 
+						break;
+					case 'y':	// one element byte[] to 2 char hex
+						sOffset = StringToByteArraySafe(
+									to2CharHex(((byte [])args[argsIndex]) [0]),							
+									s, sOffset
+									);
 						break;
 					case 'b':	// boolean
 						s[sOffset++] = (Boolean)args[argsIndex] ? (byte)'1' : (byte)'0'; 

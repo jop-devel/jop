@@ -145,7 +145,7 @@ public class Dtest_C {
 		printf("%a\n",fn,fnIndex);
 		while(yaffs_read(h,b,0,1)> 0)
 		{
-			printf("%02x",b);
+			printf("%02y",b);
 			i++;
 			if(i > 32) 
 			{
@@ -190,7 +190,8 @@ public class Dtest_C {
 		//char xx[200];
 		byte[] xx = new byte[200]; final int xxIndex = 0; 
 		
-		int iterations = (syze + /*strlen*/(fn.length) -1)/ /*strlen*/(fn.length);
+		int iterations = (syze + strlen(fn,fnIndex) -1)/ strlen(fn,fnIndex);	// BUG FOUND
+		//int iterations = (syze + yaffs2.utils.FileNameLength.fnLength(fn, fnIndex) -1)/ yaffs2.utils.FileNameLength.fnLength(fn, fnIndex);
 		
 		h = yaffs_open(fn, fnIndex, O_CREAT | O_RDWR | O_TRUNC, S_IREAD | S_IWRITE);
 			
@@ -635,257 +636,260 @@ public class Dtest_C {
 		
 	}
 
-//	 XXX translate
-//	static int long_test(int argc, char *argv[])
-//	{
-//
-//		int f;
-//		int r;
-//		char buffer[20];
-//		
-//		char str[100];
-//		
-//		int h;
-//		mode_t temp_mode;
-//		struct yaffs_stat ystat;
-//		
-//		yaffs_StartUp();
-//		
-//		yaffs_mount("/boot");
-//		yaffs_mount("/data");
-//		yaffs_mount("/flash");
-//		yaffs_mount("/ram");
-//		
+
+	static int long_test(/*int argc, char *argv[]*/)
+	{
+
+		int f;
+		int r;
+
+		byte[] buffer = new byte[20]; final int bufferIndex = 0;
+		byte[] str = new byte[100]; final int strIndex = 0;
+
+		int h;
+		
+		int temp_mode;
+		yaffs_stat ystat = new yaffs_stat();
+		
+		yaffs2.utils.Globals.configuration.yaffs_StartUp();
+	
+		yaffs_mount(StringToByteArray("/flash/boot"), 0);
+//		yaffs_mount(StringToByteArray("/boot"), 0);
+//		yaffs_mount(StringToByteArray("/data"), 0);
+//		yaffs_mount(StringToByteArray("/flash"), 0);
+//		yaffs_mount(StringToByteArray("/ram"), 0);
+		
+		printf("\nDirectory look-up of /flash/boot\n");
+		dumpDir(StringToByteArray("/flash/boot"), 0);
 //		printf("\nDirectory look-up of /boot\n");
-//		dumpDir("/boot");
+//		dumpDir(StringToByteArray("/boot"), 0);
 //		printf("\nDirectory look-up of /data\n");
-//		dumpDir("/data");
+//		dumpDir(StringToByteArray("/data"), 0);
 //		printf("\nDirectory look-up of /flash\n");
-//		dumpDir("/flash");
-//
-//		//leave_unlinked_file("/flash",20000,0);
-//		//leave_unlinked_file("/data",20000,0);
-//		
-//		leave_unlinked_file("/ram",20,0);
-//		
-//
-//		f = yaffs_open("/boot/b1", O_RDONLY,0);
-//		
-//		printf("open /boot/b1 readonly, f=%d\n",f);
-//		
-//		f = yaffs_open("/boot/b1", O_CREAT,S_IREAD | S_IWRITE);
-//		
-//		printf("open /boot/b1 O_CREAT, f=%d\n",f);
-//		
-//		
-//		r = yaffs_write(f,"hello",1);
-//		printf("write %d attempted to write to a read-only file\n",r);
-//		
-//		r = yaffs_close(f);
-//		
-//		printf("close %d\n",r);
-//
-//		f = yaffs_open("/boot/b1", O_RDWR,0);
-//		
-//		printf("open /boot/b1 O_RDWR,f=%d\n",f);
-//		
-//		
-//		r = yaffs_write(f,"hello",2);
-//		printf("write %d attempted to write to a writeable file\n",r);
-//		r = yaffs_write(f,"world",3);
-//		printf("write %d attempted to write to a writeable file\n",r);
-//		
-//		r= yaffs_lseek(f,0,SEEK_END);
-//		printf("seek end %d\n",r);
-//		memset(buffer,0,20);
-//		r = yaffs_read(f,buffer,10);
-//		printf("read %d \"%s\"\n",r,buffer);
-//		r= yaffs_lseek(f,0,SEEK_SET);
-//		printf("seek set %d\n",r);
-//		memset(buffer,0,20);
-//		r = yaffs_read(f,buffer,10);
-//		printf("read %d \"%s\"\n",r,buffer);
-//		memset(buffer,0,20);
-//		r = yaffs_read(f,buffer,10);
-//		printf("read %d \"%s\"\n",r,buffer);
-//
-//		// Check values reading at end.
-//		// A read past end of file should return 0 for 0 bytes read.
-//			
-//		r= yaffs_lseek(f,0,SEEK_END);
-//		r = yaffs_read(f,buffer,10);
-//		printf("read at end returned  %d\n",r); 
-//		r= yaffs_lseek(f,500,SEEK_END);
-//		r = yaffs_read(f,buffer,10);
-//		printf("read past end returned  %d\n",r);       
-//		
-//		r = yaffs_close(f);
-//		
-//		printf("close %d\n",r);
-//		
-//		copy_in_a_file("/boot/yyfile","xxx");
-//		
-//		// Create a file with a long name
-//		
-//		copy_in_a_file("/boot/file with a long name","xxx");
-//		
-//		
-//		printf("\nDirectory look-up of /boot\n");
-//		dumpDir("/boot");
-//
-//		// Check stat
-//		r = yaffs_stat("/boot/file with a long name",&ystat);
-//		
-//		// Check rename
-//		
-//		r = yaffs_rename("/boot/file with a long name","/boot/r1");
-//		
-//		printf("\nDirectory look-up of /boot\n");
-//		dumpDir("/boot");
-//		
-//		// Check unlink
-//		r = yaffs_unlink("/boot/r1");
-//		
-//		printf("\nDirectory look-up of /boot\n");
-//		dumpDir("/boot");
-//
-//		// Check mkdir
-//		
-//		r = yaffs_mkdir("/boot/directory1",0);
-//		
-//		printf("\nDirectory look-up of /boot\n");
-//		dumpDir("/boot");
-//		printf("\nDirectory look-up of /boot/directory1\n");
-//		dumpDir("/boot/directory1");
-//
-//		// add a file to the directory                  
-//		copy_in_a_file("/boot/directory1/file with a long name","xxx");
-//		
-//		printf("\nDirectory look-up of /boot\n");
-//		dumpDir("/boot");
-//		printf("\nDirectory look-up of /boot/directory1\n");
-//		dumpDir("/boot/directory1");
-//		
-//		//  Attempt to delete directory (should fail)
-//		
-//		r = yaffs_rmdir("/boot/directory1");
-//		
-//		printf("\nDirectory look-up of /boot\n");
-//		dumpDir("/boot");
-//		printf("\nDirectory look-up of /boot/directory1\n");
-//		dumpDir("/boot/directory1");
-//		
-//		// Delete file first, then rmdir should work
-//		r = yaffs_unlink("/boot/directory1/file with a long name");
-//		r = yaffs_rmdir("/boot/directory1");
-//		
-//		
-//		printf("\nDirectory look-up of /boot\n");
-//		dumpDir("/boot");
-//		printf("\nDirectory look-up of /boot/directory1\n");
-//		dumpDir("/boot/directory1");
-//
+//		dumpDir(StringToByteArray("/flash"), 0);
+
+		//leave_unlinked_file("/flash",20000,0);
+		//leave_unlinked_file("/data",20000,0);
+		
+//		leave_unlinked_file(StringToByteArray("/ram"),0,20,0);
+		
+
+		f = yaffs_open(StringToByteArray("/flashboot/b1"), 0, O_RDONLY,0);
+		
+		printf("open /flash/boot/b1 readonly, f=%d\n",f);
+		
+		f = yaffs_open(StringToByteArray("/flash/boot/b1"), 0, O_CREAT,S_IREAD | S_IWRITE);
+		
+		printf("open /flash/boot/b1 O_CREAT, f=%d\n",f);
+		
+		
+		r = yaffs_write(f,StringToByteArray("hello"),0,1);
+		printf("write %d attempted to write to a read-only file\n",r);
+		
+		r = yaffs_close(f);
+		
+		printf("close %d\n",r);
+
+		f = yaffs_open(StringToByteArray("/flash/boot/b1"), 0, O_RDWR,0);
+		
+		printf("open /flash/boot/b1 O_RDWR,f=%d\n",f);
+		
+		
+		r = yaffs_write(f,StringToByteArray("hello"),0,2);
+		printf("write %d attempted to write to a writeable file\n",r);
+		r = yaffs_write(f,StringToByteArray("world"),0,3);
+		printf("write %d attempted to write to a writeable file\n",r);
+		
+		r= yaffs_lseek(f,0,SEEK_END);
+		printf("seek end %d\n",r);
+		memset(buffer,bufferIndex,(byte)0,20);
+		r = yaffs_read(f,buffer,bufferIndex,10);
+		printf("read %d \"%s\"\n",r,byteArrayToString(buffer,0));
+		r= yaffs_lseek(f,0,SEEK_SET);
+		printf("seek set %d\n",r);
+		memset(buffer,bufferIndex,(byte)0,20);
+		r = yaffs_read(f,buffer,bufferIndex,10);
+		printf("read %d \"%s\"\n",r,byteArrayToString(buffer,0));
+		memset(buffer,bufferIndex,(byte)0,20);
+		r = yaffs_read(f,buffer,bufferIndex,10);
+		printf("read %d \"%s\"\n",r,byteArrayToString(buffer,0));
+
+		// Check values reading at end.
+		// A read past end of file should return 0 for 0 bytes read.
+			
+		r= yaffs_lseek(f,0,SEEK_END);
+		r = yaffs_read(f,buffer,bufferIndex,10);
+		printf("read at end returned  %d\n",r); 
+		r= yaffs_lseek(f,500,SEEK_END);
+		r = yaffs_read(f,buffer,bufferIndex,10);
+		printf("read past end returned  %d\n",r);       
+		
+		r = yaffs_close(f);
+		
+		printf("close %d\n",r);
+		
+		copy_in_a_file("/flash/boot/yyfile","xxx");
+		
+		// Create a file with a long name
+		
+		copy_in_a_file("/flash/boot/file with a long name","xxx");
+		
+		
+		printf("\nDirectory look-up of /flash/boot\n");
+		dumpDir(StringToByteArray("/flash/boot"),0);
+
+		// Check stat
+		r = yaffs_stat(StringToByteArray("/flash/boot/file with a long name"),0,ystat);
+		
+		// Check rename
+		
+		r = yaffs_rename(StringToByteArray("/flash/boot/file with a long name"),0,StringToByteArray("/flash/boot/r1"),0);
+		
+		printf("\nDirectory look-up of /flash/boot\n");
+		dumpDir(StringToByteArray("/flash/boot"),0);
+		
+		// Check unlink
+		r = yaffs_unlink(StringToByteArray("/flash/boot/r1"),0);
+		
+		printf("\nDirectory look-up of /flash/boot\n");
+		dumpDir(StringToByteArray("/flash/boot"),0);
+
+		// Check mkdir
+		
+		r = yaffs_mkdir(StringToByteArray("/flash/boot/directory1"),0,0);
+		
+		printf("\nDirectory look-up of /flash/boot\n");
+		dumpDir(StringToByteArray("/flash/boot"),0);
+		printf("\nDirectory look-up of /flash/boot/directory1\n");
+		dumpDir(StringToByteArray("/flash/boot/directory1"),0);
+
+		// add a file to the directory                  
+		copy_in_a_file("/flash/boot/directory1/file with a long name","xxx");
+		
+		printf("\nDirectory look-up of /flash/boot\n");
+		dumpDir(StringToByteArray("/flash/boot"),0);
+		printf("\nDirectory look-up of /flash/boot/directory1\n");
+		dumpDir(StringToByteArray("/flash/boot/directory1"),0);
+		
+		//  Attempt to delete directory (should fail)
+		
+		r = yaffs_rmdir(StringToByteArray("/flash/boot/directory1"),0);
+		
+		printf("\nDirectory look-up of /flash/boot\n");
+		dumpDir(StringToByteArray("/flash/boot"),0);
+		printf("\nDirectory look-up of /flash/boot/directory1\n");
+		dumpDir(StringToByteArray("/flash/boot/directory1"),0);
+		
+		// Delete file first, then rmdir should work
+		r = yaffs_unlink(StringToByteArray("/flash/boot/directory1/file with a long name"),0);
+		r = yaffs_rmdir(StringToByteArray("/flash/boot/directory1"),0);
+		
+		
+		printf("\nDirectory look-up of /flash/boot\n");
+		dumpDir(StringToByteArray("/flash/boot"),0);
+		printf("\nDirectory look-up of /flash/boot/directory1\n");
+		dumpDir(StringToByteArray("/flash/boot/directory1"),0);
+
 //	#if 0
 //		fill_disk_and_delete("/boot",20,20);
 //				
 //		printf("\nDirectory look-up of /boot\n");
 //		dumpDir("/boot");
 //	#endif
-//
-//		yaffs_symlink("yyfile","/boot/slink");
-//		
-//		yaffs_readlink("/boot/slink",str,100);
-//		printf("symlink alias is %s\n",str);
-//		
-//		
-//		
-//		
-//		printf("\nDirectory look-up of /boot\n");
-//		dumpDir("/boot");
-//		printf("\nDirectory look-up of /boot (using stat instead of lstat)\n");
-//		dumpDirFollow("/boot");
-//		printf("\nDirectory look-up of /boot/directory1\n");
-//		dumpDir("/boot/directory1");
-//
-//		h = yaffs_open("/boot/slink",O_RDWR,0);
-//		
-//		printf("file length is %d\n",(int)yaffs_lseek(h,0,SEEK_END));
-//		
-//		yaffs_close(h);
-//		
-//		yaffs_unlink("/boot/slink");
-//
-//		
-//		printf("\nDirectory look-up of /boot\n");
-//		dumpDir("/boot");
-//		
-//		// Check chmod
-//		
-//		yaffs_stat("/boot/yyfile",&ystat);
-//		temp_mode = ystat.st_mode;
-//		
-//		yaffs_chmod("/boot/yyfile",0x55555);
-//		printf("\nDirectory look-up of /boot\n");
-//		dumpDir("/boot");
-//		
-//		yaffs_chmod("/boot/yyfile",temp_mode);
-//		printf("\nDirectory look-up of /boot\n");
-//		dumpDir("/boot");
-//		
-//		// Permission checks...
-//		PermissionsCheck("/boot/yyfile",0, O_WRONLY,0);
-//		PermissionsCheck("/boot/yyfile",0, O_RDONLY,0);
-//		PermissionsCheck("/boot/yyfile",0, O_RDWR,0);
-//
-//		PermissionsCheck("/boot/yyfile",S_IREAD, O_WRONLY,0);
-//		PermissionsCheck("/boot/yyfile",S_IREAD, O_RDONLY,1);
-//		PermissionsCheck("/boot/yyfile",S_IREAD, O_RDWR,0);
-//
-//		PermissionsCheck("/boot/yyfile",S_IWRITE, O_WRONLY,1);
-//		PermissionsCheck("/boot/yyfile",S_IWRITE, O_RDONLY,0);
-//		PermissionsCheck("/boot/yyfile",S_IWRITE, O_RDWR,0);
-//		
-//		PermissionsCheck("/boot/yyfile",S_IREAD | S_IWRITE, O_WRONLY,1);
-//		PermissionsCheck("/boot/yyfile",S_IREAD | S_IWRITE, O_RDONLY,1);
-//		PermissionsCheck("/boot/yyfile",S_IREAD | S_IWRITE, O_RDWR,1);
-//
-//		yaffs_chmod("/boot/yyfile",temp_mode);
-//		
-//		//create a zero-length file and unlink it (test for scan bug)
-//		
-//		h = yaffs_open("/boot/zlf",O_CREAT | O_TRUNC | O_RDWR,0);
-//		yaffs_close(h);
-//		
-//		yaffs_unlink("/boot/zlf");
-//		
-//		
-//		yaffs_DumpDevStruct("/boot");
-//		
-//		fill_disk_and_delete("/boot",20,20);
-//		
-//		yaffs_DumpDevStruct("/boot");
-//		
-//		fill_files("/boot",1,10000,0);
-//		fill_files("/boot",1,10000,5000);
-//		fill_files("/boot",2,10000,0);
-//		fill_files("/boot",2,10000,5000);
-//		
-//		leave_unlinked_file("/data",20000,0);
-//		leave_unlinked_file("/data",20000,5000);
-//		leave_unlinked_file("/data",20000,5000);
-//		leave_unlinked_file("/data",20000,5000);
-//		leave_unlinked_file("/data",20000,5000);
-//		leave_unlinked_file("/data",20000,5000);
-//		
-//		yaffs_DumpDevStruct("/boot");
-//		yaffs_DumpDevStruct("/data");
-//		
-//			
-//			
-//		return 0;
-//
-//	}
-//
+
+		yaffs_symlink(StringToByteArray("yyfile"),0,StringToByteArray("/flash/boot/slink"),0);
+		
+		yaffs_readlink(StringToByteArray("/flash/boot/slink"),0,str,strIndex,100);
+		printf("symlink alias is %s\n",byteArrayToString(str,0));
+		
+
+		printf("\nDirectory look-up of /flash/boot\n");
+		dumpDir(StringToByteArray("/flash/boot"),0);
+		printf("\nDirectory look-up of /flash/boot (using stat instead of lstat)\n");
+		dumpDirFollow(StringToByteArray("/flash/boot"),0);
+		printf("\nDirectory look-up of /flash/boot/directory1\n");
+		dumpDir(StringToByteArray("/flash/boot/directory1"),0);
+
+		h = yaffs_open(StringToByteArray("/flash/boot/slink"),0,O_RDWR,0);
+		
+		printf("file length is %d\n",(int)yaffs_lseek(h,0,SEEK_END));
+		
+		yaffs_close(h);
+		
+		yaffs_unlink(StringToByteArray("/flash/boot/slink"),0);
+
+		
+		printf("\nDirectory look-up of /flash/boot\n");
+		dumpDir(StringToByteArray("/flash/boot"),0);
+		
+		// Check chmod
+		
+		yaffs_stat(StringToByteArray("/flash/boot/yyfile"),0,ystat);
+		temp_mode = ystat.st_mode;
+		
+		yaffs_chmod(StringToByteArray("/flash/boot/yyfile"),0,0x55555);
+		printf("\nDirectory look-up of /flash/boot\n");
+		dumpDir(StringToByteArray("/flash/boot"),0);
+		
+		yaffs_chmod(StringToByteArray("/flash/boot/yyfile"),0,temp_mode);
+		printf("\nDirectory look-up of /flash/boot\n");
+		dumpDir(StringToByteArray("/flash/boot"),0);
+		
+		// Permission checks...
+		PermissionsCheck(StringToByteArray("/flash/boot/yyfile"),0,0, O_WRONLY,0);
+		PermissionsCheck(StringToByteArray("/flash/boot/yyfile"),0,0, O_RDONLY,0);
+		PermissionsCheck(StringToByteArray("/flash/boot/yyfile"),0,0, O_RDWR,0);
+
+		PermissionsCheck(StringToByteArray("/flash/boot/yyfile"),0,S_IREAD, O_WRONLY,0);
+		PermissionsCheck(StringToByteArray("/flash/boot/yyfile"),0,S_IREAD, O_RDONLY,1);
+		PermissionsCheck(StringToByteArray("/flash/boot/yyfile"),0,S_IREAD, O_RDWR,0);
+
+		PermissionsCheck(StringToByteArray("/flash/boot/yyfile"),0,S_IWRITE, O_WRONLY,1);
+		PermissionsCheck(StringToByteArray("/flash/boot/yyfile"),0,S_IWRITE, O_RDONLY,0);
+		PermissionsCheck(StringToByteArray("/flash/boot/yyfile"),0,S_IWRITE, O_RDWR,0);
+		
+		PermissionsCheck(StringToByteArray("/flash/boot/yyfile"),0,S_IREAD | S_IWRITE, O_WRONLY,1);
+		PermissionsCheck(StringToByteArray("/flash/boot/yyfile"),0,S_IREAD | S_IWRITE, O_RDONLY,1);
+		PermissionsCheck(StringToByteArray("/flash/boot/yyfile"),0,S_IREAD | S_IWRITE, O_RDWR,1);
+
+		yaffs_chmod(StringToByteArray("/flash/boot/yyfile"),0,temp_mode);
+		
+		//create a zero-length file and unlink it (test for scan bug)
+		
+		h = yaffs_open(StringToByteArray("/flash/boot/zlf"),0,O_CREAT | O_TRUNC | O_RDWR,0);
+		yaffs_close(h);
+		
+		yaffs_unlink(StringToByteArray("/flash/boot/zlf"),0);
+		
+		
+		yaffs_DumpDevStruct(StringToByteArray("/flash/boot"),0);
+		
+		fill_disk_and_delete(StringToByteArray("/flash/boot"),0,20,20);
+		
+		yaffs_DumpDevStruct(StringToByteArray("/flash/boot"),0);
+		
+		fill_files(StringToByteArray("/flash/boot"),0,1,10000,0);
+		fill_files(StringToByteArray("/flash/boot"),0,1,10000,5000);
+		fill_files(StringToByteArray("/flash/boot"),0,2,10000,0);
+		fill_files(StringToByteArray("/flash/boot"),0,2,10000,5000);
+		
+//		leave_unlinked_file(StringToByteArray("/data"),0,20000,0);
+//		leave_unlinked_file(StringToByteArray("/data"),0,20000,5000);
+//		leave_unlinked_file(StringToByteArray("/data"),0,20000,5000);
+//		leave_unlinked_file(StringToByteArray("/data"),0,20000,5000);
+//		leave_unlinked_file(StringToByteArray("/data"),0,20000,5000);
+//		leave_unlinked_file(StringToByteArray("/data"),0,20000,5000);
+		
+		yaffs_DumpDevStruct(StringToByteArray("/flash/boot"),0);
+//		yaffs_DumpDevStruct(StringToByteArray("/data"),0);
+		
+			
+			
+		return 0;
+
+	}
+	
+//  XXX translate
 //	static int huge_directory_test_on_path(char *path)
 //	{
 //
@@ -1225,38 +1229,37 @@ public class Dtest_C {
 //		
 //	}
 //
-//	static int cache_read_test(void)
-//	{
-//		int a,b,c;
-//		int i;
-//		int sizeOfFiles = 500000;
-//		char buffer[100];
-//		
-//		yaffs_StartUp();
-//		
-//		yaffs_mount("/boot");
-//		
-//		make_a_file("/boot/a",'a',sizeOfFiles);
-//		make_a_file("/boot/b",'b',sizeOfFiles);
-//
-//		a = yaffs_open("/boot/a",O_RDONLY,0);
-//		b = yaffs_open("/boot/b",O_RDONLY,0);
-//		c = yaffs_open("/boot/c", O_CREAT | O_RDWR | O_TRUNC, S_IREAD | S_IWRITE);
-//
-//		do{
-//			i = sizeOfFiles;
-//			if (i > 100) i = 100;
-//			sizeOfFiles  -= i;
-//			yaffs_read(a,buffer,i);
-//			yaffs_read(b,buffer,i);
-//			yaffs_write(c,buffer,i);
-//		} while(sizeOfFiles > 0);
-//		
-//		
-//		
-//		return 1;
-//		
-//	}
+	static int cache_read_test()
+	{
+		int a,b,c;
+		int i;
+		int sizeOfFiles = 500000;
+		byte[] buffer = new byte[100]; final int bufferIndex = 0;
+		
+		yaffs2.utils.Globals.configuration.yaffs_StartUp();
+		
+		yaffs_mount(StringToByteArray("/flash/boot"), 0);
+		
+		make_a_file(StringToByteArray("/flash/boot/a"), 0, (byte)'a',sizeOfFiles);
+		make_a_file(StringToByteArray("/flash/boot/b"), 0, (byte)'b',sizeOfFiles);
+
+		a = yaffs_open(StringToByteArray("/flash/boot/a"),0,O_RDONLY,0);
+		b = yaffs_open(StringToByteArray("/flash/boot/b"),0,O_RDONLY,0);
+		c = yaffs_open(StringToByteArray("/flash/boot/c"),0, O_CREAT | O_RDWR | O_TRUNC, S_IREAD | S_IWRITE);
+
+		do{
+			i = sizeOfFiles;
+			if (i > 100) i = 100;
+			sizeOfFiles  -= i;
+			yaffs_read(a,buffer,bufferIndex,i);
+			yaffs_read(b,buffer,bufferIndex,i);
+			yaffs_write(c,buffer,bufferIndex,i);
+		} while(sizeOfFiles > 0);
+		
+		
+		return 1;
+		
+	}
 //
 //	static int cache_bypass_bug_test(void)
 //	{
@@ -1955,58 +1958,59 @@ public class Dtest_C {
 	}
 
 
-// XXX translate
-//	static void yaffs_touch(const char *fn)
-//	{
-//		yaffs_chmod(fn, S_IREAD | S_IWRITE);
-//	}
-//
-//	static void checkpoint_fill_test(const char *mountpt,int nmounts)
-//	{
-//
-//		char a[50];
-//		char b[50];
-//		char c[50];
-//		
-//		int i;
-//		int j;
-//		int h;
-//		
-//		sprintf(a,"%s/a",mountpt);
-//		
-//
-//		
-//		
-//		yaffs_StartUp();
-//		
-//		for(i = 0; i < nmounts; i++){
-//			printf("############### Iteration %d   Start\n",i);
-//			yaffs_mount(mountpt);
-//			dump_directory_tree(mountpt);
-//			yaffs_mkdir(a,0);
-//			
-//			sprintf(b,"%s/zz",a);
-//			
-//			h = yaffs_open(b,O_CREAT | O_RDWR,S_IREAD |S_IWRITE);
-//			
-//			
-//			while(yaffs_write(h,c,50) == 50){}
-//			
-//			yaffs_close(h);
-//			
-//			for(j = 0; j < 2; j++){
-//				printf("touch %d\n",j);
-//				yaffs_touch(b);
-//				yaffs_unmount(mountpt);
-//				yaffs_mount(mountpt);
-//			}
-//
-//			dump_directory_tree(mountpt);		
-//			yaffs_unmount(mountpt);
-//		}
-//	}
-//
-//
+	static void yaffs_touch(byte[] fn, int fnIndex)
+	{
+		yaffs_chmod(fn, fnIndex, S_IREAD | S_IWRITE);
+	}
+	
+// TODO needs testing
+	static void checkpoint_fill_test(String mountpt, int nmounts)
+	{
+
+		byte[] a = new byte[50]; final int aIndex = 0;
+		byte[] b = new byte[50]; final int bIndex = 0;
+		byte[] c = new byte[50]; final int cIndex = 0;
+		
+		byte[] tmp = StringToByteArray("test Data");
+		
+		memcpy(c, cIndex, tmp, 0, tmp.length);
+		
+		
+		
+		int i;
+		int j;
+		int h;
+		
+		sprintf(a,aIndex,"%s/a",mountpt);
+		
+		yaffs2.utils.Globals.configuration.yaffs_StartUp();
+		
+		for(i = 0; i < nmounts; i++){
+			printf("############### Iteration %d   Start\n",i);
+			yaffs_mount(StringToByteArray(mountpt), 0);
+			dump_directory_tree(StringToByteArray(mountpt), 0);
+			yaffs_mkdir(a,aIndex,0);
+			
+			sprintf(b,bIndex,"%a/zz",a, aIndex);
+			
+			h = yaffs_open(b,bIndex,O_CREAT | O_RDWR,S_IREAD |S_IWRITE);
+			
+			while(yaffs_write(h,c,cIndex,50) == 50){}
+			
+			yaffs_close(h);
+			
+			for(j = 0; j < 2; j++){
+				printf("touch %d\n",j);
+				yaffs_touch(b,bIndex);
+				yaffs_unmount(StringToByteArray(mountpt), 0);
+				yaffs_mount(StringToByteArray(mountpt), 0);
+			}
+
+			dump_directory_tree(StringToByteArray(mountpt), 0);
+			yaffs_unmount(StringToByteArray(mountpt), 0);
+		}
+	}
+
 //	static int make_file2(const char *name1, const char *name2,int syz)
 //	{
 //
@@ -2155,31 +2159,41 @@ public class Dtest_C {
 				new yaffs2.platform.emulation.PortConfiguration(),
 				new yaffs2.platform.emulation.DebugConfiguration());
 		
-		small_overwrite_test("/flash/boot",1);
+		// PASSED:
 		
-		//return long_test(argc,argv);
+		//cache_read_test();
+		//scan_pattern_test(StringToByteArray("/flash/boot"),0,10000,10);
+		//yaffs_backward_scan_test(StringToByteArray("/flash/boot"),0);
+		//scan_pattern_test(StringToByteArray("/flash/boot"),0,10000,100);
+		//yaffs_device_flush_test(StringToByteArray("/flash/boot"),0);
+		//short_scan_test(StringToByteArray("/flash/boot"),0,40000,10);
+		//short_scan_test(StringToByteArray("/flash/boot"),0,40000,20);
+		//short_scan_test(StringToByteArray("/flash/boot"),0,40000,100);
+		//small_overwrite_test("/flash/boot",100);
+		//small_overwrite_test("/flash/boot",10);
+		//checkpoint_fill_test("/flash/boot",10);
+		//long_test();
 		
-		//return cache_read_test();
+		// NEEDS RETESTING:
+		
+		//small_overwrite_test("/flash/boot",1000);		
+		//(should be fine)		
+		
+		// DOING ATM:
+		
+		
+		
+		// NOT DONE:
+		
 		
 		//resize_stress_test_no_grow("/flash",20);
-		
 		//huge_directory_test_on_path("/ram2k");
-		
-		 //yaffs_backward_scan_test("/flash/flash");
-		// yaffs_device_flush_test("/flash/flash");
-
-		 
-		 //scan_pattern_test("/flash",10000,10);
-		//short_scan_test("/flash/flash",40000,200);
 		  //small_mount_test("/flash/flash",1000);
-//		  small_overwrite_test("/flash/flash",1000);
-		 //checkpoint_fill_test("/flash/flash",20);
+		 
 		 //checkpoint_upgrade_test("/flash/flash",20);
 		 // huge_array_test("/flash/flash",10);
 
 
-
-		
 		//long_test_on_path("/ram2k");
 		// long_test_on_path("/flash");
 		//simple_rw_test("/flash/flash");
@@ -2187,16 +2201,9 @@ public class Dtest_C {
 		// rename_over_test("/flash");
 		//lookup_test("/flash");
 		//freespace_test("/flash/flash");
-		
 		//link_test("/flash/flash");
-		
-		
-		
-		
 		// cache_bypass_bug_test();
-		
 		 //free_space_check();
-		 
 		 //check_resize_gc_bug("/flash");
 		 
 		 //return 0;

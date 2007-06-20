@@ -19,7 +19,7 @@ public class Utils
 		else
 			return null;
 	}
-
+	
 	/**
 	 * XXX byte order - little endian for now
 	 * @param array

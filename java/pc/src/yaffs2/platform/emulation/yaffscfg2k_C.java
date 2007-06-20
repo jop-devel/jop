@@ -40,12 +40,18 @@ public class yaffscfg2k_C implements yaffs2.port.yaffscfg2k_C
 		return
 		YAFFS_TRACE_SCAN |  
 		YAFFS_TRACE_GC | YAFFS_TRACE_GC_DETAIL | 
-		YAFFS_TRACE_WRITE  | YAFFS_TRACE_ERASE | 
+	//	YAFFS_TRACE_WRITE  | YAFFS_TRACE_ERASE | 
 		YAFFS_TRACE_TRACING | 
 		YAFFS_TRACE_ALLOCATE | 
 		YAFFS_TRACE_CHECKPOINT |
 		YAFFS_TRACE_BAD_BLOCKS |
 		// PORT user configured XXX why not included by default?
+		
+		YAFFS_TRACE_CHECKSUMS |
+		YAFFS_TRACE_TOPLEVEL |
+		YAFFS_TRACE_TALLNESS |
+		YAFFS_TRACE_NANDSIM |
+	    YAFFS_TRACE_TNODE |
 		YAFFS_TRACE_ALWAYS |
 		(~0) | // XXX
 
@@ -60,7 +66,7 @@ public class yaffscfg2k_C implements yaffs2.port.yaffscfg2k_C
 		{
 			//Do whatever to set error
 			System.out.println("Error number " + err + "!");
-			new UnexpectedException().printStackTrace();
+//			new UnexpectedException().printStackTrace();
 //			new Exception().getStackTrace()[1].getClassName() + ":" +
 //			new Exception().getStackTrace()[1].getMethodName() + ":" +
 //			new Exception().getStackTrace()[1].getLineNumber());

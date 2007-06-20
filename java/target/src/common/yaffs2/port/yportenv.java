@@ -46,6 +46,11 @@ public class yportenv
 	public static final int YAFFS_TRACE_SCAN_DEBUG =		0x00002000;
 	public static final int YAFFS_TRACE_MTD =			0x00004000;
 	public static final int YAFFS_TRACE_CHECKPOINT =		0x00008000;
+	public static final int YAFFS_TRACE_TNODE =		0x00010000;
+	public static final int YAFFS_TRACE_NANDSIM =		0x00020000;
+	public static final int YAFFS_TRACE_TALLNESS =		0x00040000;
+	public static final int YAFFS_TRACE_TOPLEVEL =		0x00080000;
+	public static final int YAFFS_TRACE_CHECKSUMS =		0x00100000;
 	public static final int YAFFS_TRACE_ALWAYS =		0x40000000;
 	public static final int YAFFS_TRACE_BUG =			0x80000000;
 
