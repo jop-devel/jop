@@ -326,6 +326,19 @@ public class Unix
 		return s1[s1Index+i]-s2[s2Index+i];
 	}
 	
+	public static int strncmp(byte[] s1, int s1Index, byte[] s2, int s2Index, int n)
+	{
+		// XXX could make it quicker
+		int i = 0;
+		while (s1[s1Index+i] == s2[s2Index+i] && s1[s1Index+i] != 0)
+		{
+			if (i == n-1)
+				return 0;
+			i++;
+		}
+		return s1[s1Index+i]-s2[s2Index+i];
+	}
+	
 	// XXX speed functions up
 	public static void strcpy(byte[] a, int aIndex, byte[] b, int bIndex)
 	{
