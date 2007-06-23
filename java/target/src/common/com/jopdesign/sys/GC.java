@@ -453,7 +453,7 @@ public class GC {
 			log("meaning out of memory for RT-GC");
 			System.exit(1);	
 		} else {
-			gc();			
+			gc();
 		}
 	}
 

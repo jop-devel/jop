@@ -21,27 +21,25 @@ public class Latency {
 		int expected;
 		int max, min;
 		int cnt;
+		boolean notFirst;
 		
 		public void run() {
-			int t;
 
-			waitForNextPeriod();
-			t = Native.rdMem(Const.IO_US_CNT);
-			expected = t+period;
-			
 			for (;;) {
 				waitForNextPeriod();
-				t = Native.rdMem(Const.IO_US_CNT);
-				int diff = t-expected;
-				if (diff>max) {
-					max = diff;
-				} else if (diff<min) {
-					min = diff;
+				int t = Native.rdMem(Const.IO_US_CNT);
+				if (!notFirst) {
+					expected = t+period;
+					notFirst = true;
+				} else {
+					int diff = t-expected;
+					if (diff>max) max = diff;
+					if (diff<min) min = diff;
+//					if (++cnt==1000000) {
+//						result();
+//					}				
+					expected += period;					
 				}
-//				if (++cnt==100000) {
-//					result();
-//				}				
-				expected = expected+period;
 				work();
 			}
 		}
@@ -127,12 +125,40 @@ public class Latency {
 				waitForNextPeriod();
 			}
 		}
-		
 	}
+	
+	static class LogThread extends RtThread {
+	
+		public LogThread(int prio, int us) {
+			super(prio, us);
+		}
+
+		public void run() {
+			for (;;) {
+				waitForNextPeriod();
+				System.out.println();
+				if (hft!=null) {
+					System.out.print("hft max=");
+					System.out.println(hft.max);
+					System.out.print("hft min=");
+					System.out.println(hft.min);					
+					
+				}
+				if (mft!=null) {
+					System.out.print("mft max=");
+					System.out.println(mft.max);
+					System.out.print("mft min=");
+					System.out.println(mft.min);											
+				}
+			}
+		}
+
+	}
+	
 	static HFThread hft;
 	static MFThread mft;
 
-	// 300 is without jitter when running it alone
+	// 200 is without jitter when running it alone
 	// 500 without jitter when a second dummy thread runs
 	// change to 200us on the 100 MHz version
 	// at 100 MHz, RtThreadImp TIM_OFF at 2:
@@ -140,10 +166,14 @@ public class Latency {
 	// with output thread 10 us
 	// with prod/cons threads (no GC) 16 us
 	// with GC 72 us (77 us)
-	public static final int PERIOD_HIGH = 211;
+//	public static final int PERIOD_HIGH = 100;
+//	public static final int PERIOD_MEDIUM = 1000;
+//	public static final int PERIOD_LOW = 10000;
+//	public static final int PERIOD_GC = 200000;
+	public static final int PERIOD_HIGH = 107; // 211; // 107;
 	public static final int PERIOD_MEDIUM = 1009;
 	public static final int PERIOD_LOW = 10853;
-	public static final int PERIOD_GC = 234567;
+	public static final int PERIOD_GC = 200183;
 	
 	/**
 	 * @param args
@@ -153,34 +183,14 @@ public class Latency {
 //		v = new Vector(20);
 		sl = new SimpleList();
 		
-		hft = new HFThread(10, PERIOD_HIGH);
-		mft = new MFThread(9, PERIOD_MEDIUM);
-		new LFThread(8, PERIOD_LOW);
+		hft = new HFThread(5, PERIOD_HIGH);
+		mft = new MFThread(4, PERIOD_MEDIUM);
+		new LFThread(3, PERIOD_LOW);
 		
 		new GCThread();
 		
-		new RtThread (2, 1000*1000) {
-			public void run() {
-				for (;;) {
-					waitForNextPeriod();
-					System.out.println();
-					if (hft!=null) {
-						System.out.print("hft max=");
-						System.out.println(hft.max);
-						System.out.print("hft min=");
-						System.out.println(hft.min);					
-						
-					}
-					if (mft!=null) {
-						System.out.print("mft max=");
-						System.out.println(mft.max);
-						System.out.print("mft min=");
-						System.out.println(mft.min);											
-					}
-				}
-			}
-		};
-		
+		new LogThread (2, 1000*1000);
+				
 		RtThread.startMission();
 		
 		// that one is mandatary to get low latency!
