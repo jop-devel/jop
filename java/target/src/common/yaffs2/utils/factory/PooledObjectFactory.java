@@ -3,9 +3,9 @@ package yaffs2.utils.factory;
 import yaffs2.utils.SerializableObject;
 
 
-public abstract class PooledObjectFactory<PO extends PooledObject>
+public abstract class PooledObjectFactory
 {
-	protected PO first;
+	protected PooledObject first;
 
 	public PooledObjectFactory()
 	{
@@ -14,31 +14,31 @@ public abstract class PooledObjectFactory<PO extends PooledObject>
 	
 	public PooledObjectFactory(int initialCapacity)
 	{
-		PO last = null;
+		PooledObject last = null;
 		for (int i = 0; i < initialCapacity; i++)
 		{
-			 PO o = createInstance();			 
+			PooledObject o = createInstance();			 
 
-			 o.next = last;
+			o.next = last;
 
-			 last = o;
+			last = o;
 		}
 	}
 		
-	protected abstract PO createInstance();
+	protected abstract PooledObject createInstance();
 	
-	@SuppressWarnings("unchecked")
-	public PO get()
+	public PooledObject get()
 	{ 
 		if (first == null)
 			return createInstance();
 		else
 		{
-			PO result = first;
+			PooledObject result = first;
 			
-			first = (PO)first.next;
+			first = (PooledObject)first.next;
 
 			// XXX simulation only: we might want to clear it if it is written to disk 
+			// XXX but then we should also clear other objects
 			if (result instanceof SerializableObject)
 				yaffs2.utils.Unix.memset((SerializableObject)result, (byte)0);
 			
@@ -50,7 +50,7 @@ public abstract class PooledObjectFactory<PO extends PooledObject>
 	 * 
 	 * @param o Might be null.
 	 */
-	public void put(PO o)
+	public void put(PooledObject o)
 	{
 		if (o != null)
 		{

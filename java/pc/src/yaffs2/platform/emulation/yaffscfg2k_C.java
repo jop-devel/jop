@@ -1,10 +1,9 @@
 package yaffs2.platform.emulation;
 
 import yaffs2.port.*;
-import yaffs2.utils.UnexpectedException;
+import yaffs2.utils.Globals;
 
-import static yaffs2.port.yportenv.*;
-import static yaffs2.utils.emulation.Utils.*;
+import yaffs2.utils.*;
 
 public class yaffscfg2k_C implements yaffs2.port.yaffscfg2k_C
 {
@@ -35,25 +34,31 @@ public class yaffscfg2k_C implements yaffs2.port.yaffscfg2k_C
 
 //	#include <errno.h>
 
+	// PORT CONFIGURATION
+	
+	protected static final boolean USE_SPARE_TAGS = true;
+	
+	
 	public /*unsigned*/ int yaffs_traceMask()
 	{
 		return
-//		YAFFS_TRACE_SCAN |  
-//		YAFFS_TRACE_GC | YAFFS_TRACE_GC_DETAIL | 
-	//	YAFFS_TRACE_WRITE  | YAFFS_TRACE_ERASE | 
-//		YAFFS_TRACE_TRACING | 
-//		YAFFS_TRACE_ALLOCATE | 
-//		YAFFS_TRACE_CHECKPOINT |
-//		YAFFS_TRACE_BAD_BLOCKS |
-		// PORT user configured XXX why not included by default?
+		yportenv.YAFFS_TRACE_SCAN |  
+		yportenv.YAFFS_TRACE_GC | yportenv.YAFFS_TRACE_GC_DETAIL | 
+		yportenv.YAFFS_TRACE_WRITE  | yportenv.YAFFS_TRACE_ERASE | 
+		yportenv.YAFFS_TRACE_TRACING | 
+		yportenv.YAFFS_TRACE_ALLOCATE | 
+		yportenv.YAFFS_TRACE_CHECKPOINT |
+		yportenv.YAFFS_TRACE_BAD_BLOCKS |
+
+		// PORT user configured
 		
-//		YAFFS_TRACE_CHECKSUMS |
-//		YAFFS_TRACE_TOPLEVEL |
-//		YAFFS_TRACE_TALLNESS |
-//		YAFFS_TRACE_NANDSIM |
-//	    YAFFS_TRACE_TNODE |
-//		YAFFS_TRACE_ALWAYS |
-//		(~0) | // XXX
+//		yportenv.PORT_TRACE_CHECKSUMS |
+//		yportenv.PORT_TRACE_TOPLEVEL |
+//		yportenv.PORT_TRACE_TALLNESS |
+//		yportenv.PORT_TRACE_NANDSIM |
+//	    yportenv.PORT_TRACE_TNODE |
+		yportenv.YAFFS_TRACE_ALWAYS |
+//		(~0) |
 
 		0;
 	}
@@ -65,7 +70,7 @@ public class yaffscfg2k_C implements yaffs2.port.yaffscfg2k_C
 		if (err != 0)
 		{
 			//Do whatever to set error
-			System.out.println("Error number " + err + "!");
+			Globals.logStream.println("Error number " + err + "!");
 //			new UnexpectedException().printStackTrace();
 //			new Exception().getStackTrace()[1].getClassName() + ":" +
 //			new Exception().getStackTrace()[1].getMethodName() + ":" +
@@ -121,10 +126,10 @@ public class yaffscfg2k_C implements yaffs2.port.yaffscfg2k_C
 //		{(void *)0,(void *)0}
 //		#else
 		return new yaffsfs_DeviceConfiguration[] {
-				new yaffsfs_DeviceConfiguration(StringToByteArray("/"), 0, ramDev), // XXX bad style for demo
-				new yaffsfs_DeviceConfiguration(StringToByteArray("/flash/boot"), 0, bootDev),
-				new yaffsfs_DeviceConfiguration(StringToByteArray("/flash/flash"), 0, flashDev),
-				new yaffsfs_DeviceConfiguration(StringToByteArray("/ram2k"), 0, ram2kDev),
+				new yaffsfs_DeviceConfiguration(Utils.StringToByteArray("/"), 0, ramDev), // XXX bad style for demo
+				new yaffsfs_DeviceConfiguration(Utils.StringToByteArray("/flash/boot"), 0, bootDev),
+				new yaffsfs_DeviceConfiguration(Utils.StringToByteArray("/flash/flash"), 0, flashDev),
+				new yaffsfs_DeviceConfiguration(Utils.StringToByteArray("/ram2k"), 0, ram2kDev),
 				new yaffsfs_DeviceConfiguration(null, 0, null) /* Null entry to terminate list */
 		};
 //		#endif
@@ -140,46 +145,56 @@ public class yaffscfg2k_C implements yaffs2.port.yaffscfg2k_C
 		// Set up devices
 		// /ram
 //		memset(ramDev/*,0,sizeof(ramDev)*/);
-		ramDev.nDataBytesPerChunk = 512;
-		ramDev.nChunksPerBlock = 32;
-		ramDev.nReservedBlocks = 2; // Set this smaller for RAM
-		ramDev.startBlock = 0; // Can use block 0
-		ramDev.endBlock = 127; // Last block in 2MB.	
+		ramDev.subField1.nDataBytesPerChunk = 512;
+		ramDev.subField1.nChunksPerBlock = 32;
+		ramDev.subField1.nReservedBlocks = 2; // Set this smaller for RAM
+		ramDev.subField1.startBlock = 0; // Can use block 0
+		ramDev.subField1.endBlock = 127; // Last block in 2MB.	
 		//ramDev.useNANDECC = 1;
-		ramDev.nShortOpCaches = 0;	// Disable caching on this device.
-		ramDev.genericDevice = /*(void *)*/ 0;	// Used to identify the device in fstat.
+		ramDev.subField1.nShortOpCaches = 0;	// Disable caching on this device.
+		ramDev.subField1.genericDevice = /*(void *)*/ 0;	// Used to identify the device in fstat.
 //		ramDev.writeChunkWithTagsToNAND = yramdisk_WriteChunkWithTagsToNAND;
 //		ramDev.readChunkWithTagsFromNAND = yramdisk_ReadChunkWithTagsFromNAND;
 //		ramDev.eraseBlockInNAND = yramdisk_EraseBlockInNAND;
 //		ramDev.initialiseNAND = yramdisk_InitialiseNAND;
-		ramDev.writeChunkWithTagsToNAND = yaffs2.port.yaffs_ramdisk_C.instance;
-		ramDev.readChunkWithTagsFromNAND = yaffs2.port.yaffs_ramdisk_C.instance;
-		ramDev.eraseBlockInNAND = yaffs2.port.yaffs_ramdisk_C.instance;
-		ramDev.initialiseNAND = yaffs2.port.yaffs_ramdisk_C.instance;
+		ramDev.subField1.writeChunkWithTagsToNAND = yaffs2.port.yaffs_ramdisk_C.instance;
+		ramDev.subField1.readChunkWithTagsFromNAND = yaffs2.port.yaffs_ramdisk_C.instance;
+		ramDev.subField1.eraseBlockInNAND = yaffs2.port.yaffs_ramdisk_C.instance;
+		ramDev.subField1.initialiseNAND = yaffs2.port.yaffs_ramdisk_C.instance;
 
 		// /boot
 //		memset(bootDev);
-		bootDev.nDataBytesPerChunk = 512;
-		bootDev.nChunksPerBlock = 32;
-		bootDev.nReservedBlocks = 5;
-		bootDev.startBlock = 0; // Can use block 0
-		bootDev.endBlock = 63; // Last block
+		bootDev.subField1.nDataBytesPerChunk = 512;
+		bootDev.subField1.nChunksPerBlock = 32;
+		bootDev.subField1.nReservedBlocks = 5;
+		bootDev.subField1.startBlock = 0; // Can use block 0
+		bootDev.subField1.endBlock = 63; // Last block
 		//bootDev.useNANDECC = 0; // use YAFFS's ECC
-		bootDev.nShortOpCaches = 10; // Use caches
-		bootDev.genericDevice = /*(void *)*/ 1;	// Used to identify the device in fstat.
+		bootDev.subField1.nShortOpCaches = 10; // Use caches
+		bootDev.subField1.genericDevice = /*(void *)*/ 1;	// Used to identify the device in fstat.
 //		bootDev.writeChunkWithTagsToNAND = yflash_WriteChunkWithTagsToNAND;
 //		bootDev.readChunkWithTagsFromNAND = yflash_ReadChunkWithTagsFromNAND;
 //		bootDev.eraseBlockInNAND = yflash_EraseBlockInNAND;
 //		bootDev.initialiseNAND = yflash_InitialiseNAND;
 //		bootDev.markNANDBlockBad = yflash_MarkNANDBlockBad;
 //		bootDev.queryNANDBlock = yflash_QueryNANDBlock;
-		bootDev.writeChunkWithTagsToNAND = yaffs2.port.yaffs_fileem2k_C.instance;
-		bootDev.readChunkWithTagsFromNAND = yaffs2.port.yaffs_fileem2k_C.instance;
-		bootDev.eraseBlockInNAND = yaffs2.port.yaffs_fileem2k_C.instance;
-		bootDev.initialiseNAND = yaffs2.port.yaffs_fileem2k_C.instance;
-		bootDev.markNANDBlockBad = yaffs2.port.yaffs_fileem2k_C.instance;
-		bootDev.queryNANDBlock = yaffs2.port.yaffs_fileem2k_C.instance;
-
+		
+		if (!USE_SPARE_TAGS)
+		{
+			bootDev.subField1.writeChunkWithTagsToNAND = yaffs2.port.yaffs_fileem2k_C.instance;
+			bootDev.subField1.readChunkWithTagsFromNAND = yaffs2.port.yaffs_fileem2k_C.instance;
+			bootDev.subField1.eraseBlockInNAND = yaffs2.port.yaffs_fileem2k_C.instance;
+			bootDev.subField1.initialiseNAND = yaffs2.port.yaffs_fileem2k_C.instance;
+			bootDev.subField1.markNANDBlockBad = yaffs2.port.yaffs_fileem2k_C.instance;
+			bootDev.subField1.queryNANDBlock = yaffs2.port.yaffs_fileem2k_C.instance;
+		}
+		else
+		{
+			bootDev.subField1.writeChunkToNAND = yaffs2.port.port_fileem2k_C.instance;
+			bootDev.subField1.readChunkFromNAND = yaffs2.port.port_fileem2k_C.instance;
+			bootDev.subField1.eraseBlockInNAND = yaffs2.port.port_fileem2k_C.instance;
+			bootDev.subField1.initialiseNAND = yaffs2.port.port_fileem2k_C.instance;
+		}
 
 
 //		XXX implement and uncomment
@@ -240,6 +255,6 @@ public class yaffscfg2k_C implements yaffs2.port.yaffscfg2k_C
 
 	public void SetCheckpointReservedBlocks(int n)
 	{
-		flashDev.nCheckpointReservedBlocks = n;
+		flashDev.subField1.nCheckpointReservedBlocks = n;
 	}
 }

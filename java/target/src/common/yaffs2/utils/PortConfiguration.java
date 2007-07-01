@@ -1,7 +1,10 @@
 package yaffs2.utils;
 
-// XXX not needed atm
+import java.io.PrintStream;
+
 public interface PortConfiguration
 {
+	public PrintStream logStream();
+	
 	public void YBUG();
 }

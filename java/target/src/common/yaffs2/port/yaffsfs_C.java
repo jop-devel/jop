@@ -38,7 +38,7 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 //	#endif
 
 
-	static final String yaffsfs_c_version="$Id: yaffsfs_C.java,v 1.2 2007/07/01 01:08:51 alexander.dejaco Exp $";
+	static final String yaffsfs_c_version="$Id: yaffsfs_C.java,v 1.3 2007/07/01 01:29:51 alexander.dejaco Exp $";
 
 //	 configurationList is the list of devices that are supported
 	static yaffsfs_DeviceConfiguration[] yaffsfs_configurationList;

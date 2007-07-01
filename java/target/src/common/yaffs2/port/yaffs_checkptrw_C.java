@@ -20,7 +20,7 @@ public class yaffs_checkptrw_C
 	 */
 
 	static final String yaffs_checkptrw_c_version =
-	    "$Id: yaffs_checkptrw_C.java,v 1.2 2007/07/01 01:08:51 alexander.dejaco Exp $";
+	    "$Id: yaffs_checkptrw_C.java,v 1.3 2007/07/01 01:29:50 alexander.dejaco Exp $";
 
 
 //	#include "yaffs_checkptrw.h"

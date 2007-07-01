@@ -2,7 +2,7 @@ package yaffs2.utils.emulation;
 
 import java.io.*;
 
-import static yaffs2.port.yaffsfs_H.*;
+import yaffs2.port.*;
 
 public abstract class FileEmulationUnix
 {
@@ -73,8 +73,8 @@ public abstract class FileEmulationUnix
 	{
 		try
 		{
-			fildes.seek(((whence == SEEK_END) ? fildes.length() : 
-				((whence == SEEK_CUR) ? fildes.getFilePointer() : + 
+			fildes.seek(((whence == yaffsfs_H.SEEK_END) ? fildes.length() : 
+				((whence == yaffsfs_H.SEEK_CUR) ? fildes.getFilePointer() : + 
 						0)) + offset);
 
 			return (int)fildes.getFilePointer();

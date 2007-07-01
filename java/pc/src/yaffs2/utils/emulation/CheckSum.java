@@ -1,9 +1,10 @@
 package yaffs2.utils.emulation;
 
-import static yaffs2.utils.Unix.printf;
+import yaffs2.utils.*;
+import yaffs2.utils.factory.PrimitiveWrapperFactory;
 
 public abstract class CheckSum {
-	public static byte checksumOfByte(byte[] array, int index)
+	public static byte checksumOfBytesUnused(byte[] array, int index)
 	{
 		final byte divisor = 0x15;
 		byte sum = 0, temp;
@@ -23,7 +24,7 @@ public abstract class CheckSum {
 	public static void checksumOfBytes(byte[] array, int index, int n)
 	{
 		int temp = 0;
-		byte [] out = {0};
+		byte out = 0;
 		for(int i = 0; i < n; i++)
 		{
 			temp = 0;
@@ -31,12 +32,14 @@ public abstract class CheckSum {
 			{
 				temp += array[index+(4*i)+j];
 			}
-			out[0] = (byte)((~temp)+1);
-			printf("%02y",out);
+			out = (byte)((~temp)+1);
+			
+			Unix.xprintfArgs[0] = PrimitiveWrapperFactory.get(yaffs2.utils.Utils.byteAsUnsignedByte(out)); 
+			Unix.printf("%02x");
 			if ((i>0)&&(i%32) == 0)
-				printf("\n");
+				Unix.printf("\n");
 				
 		}	
-		printf("\n");
+		Unix.printf("\n");
 	}
 }

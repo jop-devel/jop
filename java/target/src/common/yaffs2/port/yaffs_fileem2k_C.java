@@ -37,7 +37,7 @@ public class yaffs_fileem2k_C implements readChunkWithTagsFromNANDInterface,
 	 * This is only intended as test code to test persistence etc.
 	 */
 
-	static final String yaffs_flashif_c_version = "$Id: yaffs_fileem2k_C.java,v 1.3 2007/07/01 01:08:51 alexander.dejaco Exp $";
+	static final String yaffs_flashif_c_version = "$Id: yaffs_fileem2k_C.java,v 1.4 2007/07/01 01:29:50 alexander.dejaco Exp $";
 
 
 //	#include "yportenv.h"

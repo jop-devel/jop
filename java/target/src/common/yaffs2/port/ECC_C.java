@@ -37,7 +37,7 @@ public class ECC_C
 	 */
 
 	static final String yaffs_ecc_c_version =
-	    "$Id: ECC_C.java,v 1.2 2007/07/01 01:08:51 alexander.dejaco Exp $";
+	    "$Id: ECC_C.java,v 1.3 2007/07/01 01:29:50 alexander.dejaco Exp $";
 
 	static final byte[] column_parity_table = {
 		(byte)0x00, (byte)0x55, (byte)0x59, (byte)0x0c, (byte)0x65, (byte)0x30, (byte)0x3c, (byte)0x69,

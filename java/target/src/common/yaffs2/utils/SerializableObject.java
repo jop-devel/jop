@@ -4,9 +4,9 @@ import yaffs2.utils.factory.PooledObject;
 
 public abstract class SerializableObject extends PooledObject // XXX remove if not using pooling
 {
-	// XXX does not need a pool
 	/**
-	 * The object is "contained" in the owner struct. 
+	 * The object is "contained" in the owner struct.
+	 * XXX Does not need a pool.
 	 * @param owner
 	 * @param offset
 	 */
@@ -16,9 +16,9 @@ public abstract class SerializableObject extends PooledObject // XXX remove if n
 		this.offset = offset;
 	}
 	
-	// XXX needs a separate pool(?)
 	/**
 	 * The object is "contained" in an array buffer.
+	 * XXX Needs a pool.
 	 * @param array
 	 * @param offset
 	 */
@@ -34,7 +34,7 @@ public abstract class SerializableObject extends PooledObject // XXX remove if n
 	 */
 	public SerializableObject(int serializedLength)
 	{
-		assert serializedLength > 0;
+//		assert serializedLength > 0;
 		
 		serialized = new byte[serializedLength]; 
 	}

@@ -3,10 +3,9 @@ package yaffs2.utils.factory;
 import yaffs2.port.yaffs_Object;
 
 public class yaffs_ObjectFactory extends
-		PooledObjectFactory<yaffs_Object>
+		PooledObjectFactory
 {
-	@Override
-	protected yaffs_Object createInstance()
+	protected PooledObject createInstance()
 	{
 		return new yaffs_Object();
 	}

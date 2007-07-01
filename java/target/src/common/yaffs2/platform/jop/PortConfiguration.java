@@ -1,4 +1,4 @@
-package yaffs2.platform.emulation;
+package yaffs2.platform.jop;
 
 import yaffs2.port.*;
 import yaffs2.utils.*;

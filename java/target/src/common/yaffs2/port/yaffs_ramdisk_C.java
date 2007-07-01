@@ -33,7 +33,7 @@ public class yaffs_ramdisk_C implements
 //	 * Use this with dev->useNANDECC enabled, then ECC overheads are not required.
 //	 */
 //
-//	const char *yaffs_ramdisk_c_version = "$Id: yaffs_ramdisk_C.java,v 1.2 2007/07/01 01:08:51 alexander.dejaco Exp $";
+//	const char *yaffs_ramdisk_c_version = "$Id: yaffs_ramdisk_C.java,v 1.3 2007/07/01 01:29:51 alexander.dejaco Exp $";
 //
 //
 //	#include "yportenv.h"

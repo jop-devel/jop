@@ -17,7 +17,7 @@ public class Utils
 		if (Globals.debugConfiguration != null)
 			return Globals.debugConfiguration.__FILE__();
 		else
-			return null;
+			return "<no file information>";
 	}
 	
 	/**
@@ -97,5 +97,21 @@ public class Utils
 	public static int hashCode(Object o)
 	{
 		return o != null ? o.hashCode() : 0;
+	}
+	
+	/**
+	 * XXX Check where it's used.
+	 * XXX A terminating 0 is appended. 
+	 * @param string
+	 * @return
+	 */
+	public static byte[] StringToByteArray(String string)
+	{
+		byte[] result = new byte[string.length()+1];
+		for (int i = 0; i < string.length(); i++)
+			result[i] = (byte)string.charAt(i);
+		result[result.length-1] = 0;
+		
+		return result;
 	}
 }

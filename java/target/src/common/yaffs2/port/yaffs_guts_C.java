@@ -20,7 +20,7 @@ public class yaffs_guts_C
 	 */
 
 	static final String yaffs_guts_c_version =
-		"$Id: yaffs_guts_C.java,v 1.3 2007/07/01 01:08:51 alexander.dejaco Exp $";
+		"$Id: yaffs_guts_C.java,v 1.4 2007/07/01 01:29:50 alexander.dejaco Exp $";
 
 	/*#include "yportenv.h"
 

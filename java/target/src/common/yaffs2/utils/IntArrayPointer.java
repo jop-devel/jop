@@ -1,7 +1,5 @@
 package yaffs2.utils;
 
-import static yaffs2.utils.Utils.*;
-
 /**
  * N.B. that modifications of the index will propagate downward.  
  *
@@ -20,12 +18,12 @@ public class IntArrayPointer
 
 	public void set(int value)
 	{
-		writeIntToByteArray(array, index, value);
+		Utils.writeIntToByteArray(array, index, value);
 	}
 	
 	public int get()
 	{
-		return getIntFromByteArray(array, index);
+		return Utils.getIntFromByteArray(array, index);
 	}
 
 	public byte[] array;

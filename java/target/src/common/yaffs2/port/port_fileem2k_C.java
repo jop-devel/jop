@@ -36,7 +36,7 @@ public class port_fileem2k_C implements Yaffs1NANDInterface
 	 * This is only intended as test code to test persistence etc.
 	 */
 
-	static final String yaffs_flashif_c_version = "$Id: port_fileem2k_C.java,v 1.1 2007/07/01 01:08:51 alexander.dejaco Exp $";
+	static final String yaffs_flashif_c_version = "$Id: port_fileem2k_C.java,v 1.2 2007/07/01 01:29:50 alexander.dejaco Exp $";
 
 
 //	#include "yportenv.h"

@@ -1,51 +1,23 @@
 package yaffs2.utils.emulation;
 
-import static yaffs2.utils.Unix.*;
+import yaffs2.utils.*;
 
 /**
  * These methods should not be used if you want to avoid garbage collection. 
  *
  */
-public abstract class Utils
+public abstract class EmulationUtils
 {
-	
-	public static String to2CharHex(byte array)
-	{
-		StringBuffer s = new StringBuffer();
-		s.append(Integer.toHexString((Integer)(array&0xff)));
-		
-		if (s.length() < 2)
-			s.insert(0,"0"); 
-		return s.toString();
-				
-				
-	}
-	
 	
 	public static String byteArrayToString(byte[] array, int index)
 	{
-		int length = strlen(array, index);
+		int length = Unix.strlen(array, index);
 		StringBuffer result = new StringBuffer(length);
 		result.setLength(length);
 		
 		for (int i = 0; i < length; i++)
 			result.setCharAt(i, (char)(array[index+i] & 0xff));
 		return result.toString();
-	}
-	
-	/**
-	 * XXX A terminating 0 is appended. 
-	 * @param string
-	 * @return
-	 */
-	public static byte[] StringToByteArray(String string)
-	{
-		byte[] result = new byte[string.length()+1];
-		for (int i = 0; i < string.length(); i++)
-			result[i] = (byte)string.charAt(i);
-		result[result.length-1] = 0;
-		
-		return result;
 	}
 	
 	/**
