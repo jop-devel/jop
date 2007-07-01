@@ -1,21 +1,14 @@
 package yaffs2.port;
 
 import yaffs2.utils.*;
-
-import static yaffs2.port.yaffs_Device.*;
-
-import static yaffs2.utils.Unix.*;
-import static yaffs2.port.yaffs_packedtags1_C.*;
-import static yaffs2.port.Guts_H.*;
-import static yaffs2.port.yportenv.*;
-import static yaffs2.port.ydirectenv.*;
+import yaffs2.utils.factory.PrimitiveWrapperFactory;
 
 
 public class yaffs_ramdisk_C implements 
-	writeChunkWithTagsToNANDInterface,
-	readChunkWithTagsFromNANDInterface, 
-	eraseBlockInNANDInterface, 
-	initialiseNANDInterface
+	yaffs_Device.writeChunkWithTagsToNANDInterface,
+	yaffs_Device.readChunkWithTagsFromNANDInterface, 
+	yaffs_Device.eraseBlockInNANDInterface, 
+	yaffs_Device.initialiseNANDInterface
 {
 	// PORT
 	public static final yaffs_ramdisk_C instance = new yaffs_ramdisk_C();
@@ -40,7 +33,7 @@ public class yaffs_ramdisk_C implements
 //	 * Use this with dev->useNANDECC enabled, then ECC overheads are not required.
 //	 */
 //
-//	const char *yaffs_ramdisk_c_version = "$Id: yaffs_ramdisk_C.java,v 1.1 2007/06/07 14:37:29 peter.hilber Exp $";
+//	const char *yaffs_ramdisk_c_version = "$Id: yaffs_ramdisk_C.java,v 1.2 2007/07/01 01:08:51 alexander.dejaco Exp $";
 //
 //
 //	#include "yportenv.h"
@@ -72,7 +65,7 @@ public class yaffs_ramdisk_C implements
 		
 		if(_STATIC_LOCAL_CheckInit_initialised != 0) 
 		{
-			return YAFFS_OK;
+			return Guts_H.YAFFS_OK;
 		}
 
 		_STATIC_LOCAL_CheckInit_initialised = 1;
@@ -110,12 +103,12 @@ public class yaffs_ramdisk_C implements
 		{
 			for(i = 0; i < nAllocated; i++)
 			{
-				YFREE(ramdisk.block[i]);
+				ydirectenv.YFREE(ramdisk.block[i]);
 			}
-			YFREE(/*ramdisk.block*/blockPointer.dereferenced); // XXX ???
+			ydirectenv.YFREE(/*ramdisk.block*/blockPointer.dereferenced); // XXX ???
 			
-			T(YAFFS_TRACE_ALWAYS,"Allocation failed, could only allocate %dMB of %dMB requested.\n",
-			   nAllocated/64,ramdisk.nBlocks * 528);
+			yportenv.T(yportenv.YAFFS_TRACE_ALWAYS,"Allocation failed, could only allocate %dMB of %dMB requested.\n",
+					PrimitiveWrapperFactory.get(nAllocated/64),PrimitiveWrapperFactory.get(ramdisk.nBlocks * 528));
 			return false;
 		}
 		
@@ -137,7 +130,7 @@ public class yaffs_ramdisk_C implements
 		
 		if(data != null)
 		{
-			memcpy(ramdisk.block[blk].page[pg].data,0,data,dataIndex,512);
+			Unix.memcpy(ramdisk.block[blk].page[pg].data,0,data,dataIndex,512);
 		}
 		
 		
@@ -145,12 +138,12 @@ public class yaffs_ramdisk_C implements
 		{
 			yaffs_PackedTags1 pt = new yaffs_PackedTags1();
 
-			yaffs_PackTags1(pt,tags);	// made it a static method
+			yaffs_packedtags1_C.yaffs_PackTags1(pt,tags);	// made it a static method
 
-			memcpy(ramdisk.block[blk].page[pg].data,512,pt.serialized,pt.offset,/*sizeof(*/pt.SERIALIZED_LENGTH/*)*/);
+			Unix.memcpy(ramdisk.block[blk].page[pg].data,512,pt.serialized,pt.offset,/*sizeof(*/pt.SERIALIZED_LENGTH/*)*/);
 		}
 
-		return YAFFS_OK;	
+		return Guts_H.YAFFS_OK;	
 
 	}
 
@@ -169,7 +162,7 @@ public class yaffs_ramdisk_C implements
 		
 		if(data != null)
 		{
-			memcpy(data,dataIndex,ramdisk.block[blk].page[pg].data,0,512);
+			Unix.memcpy(data,dataIndex,ramdisk.block[blk].page[pg].data,0,512);
 		}
 		
 		
@@ -177,12 +170,12 @@ public class yaffs_ramdisk_C implements
 		{
 			yaffs_PackedTags1 pt = new yaffs_PackedTags1();
 			
-			memcpy(pt.serialized,pt.offset,ramdisk.block[blk].page[pg].data,512,/*sizeof(*/pt.SERIALIZED_LENGTH/*)*/);
-			yaffs_UnpackTags1(tags,pt);
+			Unix.memcpy(pt.serialized,pt.offset,ramdisk.block[blk].page[pg].data,512,/*sizeof(*/pt.SERIALIZED_LENGTH/*)*/);
+			yaffs_packedtags1_C.yaffs_UnpackTags1(tags,pt);
 			
 		}
 
-		return YAFFS_OK;
+		return Guts_H.YAFFS_OK;
 	}
 
 
@@ -203,11 +196,11 @@ public class yaffs_ramdisk_C implements
 		{
 			if(ramdisk.block[blk].page[pg].data[i] != 0xFF)
 			{
-				return YAFFS_FAIL;
+				return Guts_H.YAFFS_FAIL;
 			}
 		}
 
-		return YAFFS_OK;
+		return Guts_H.YAFFS_OK;
 
 	}
 
@@ -218,13 +211,13 @@ public class yaffs_ramdisk_C implements
 		
 		if(blockNumber < 0 || blockNumber >= ramdisk.nBlocks)
 		{
-			T(YAFFS_TRACE_ALWAYS,"Attempt to erase non-existant block %d\n",blockNumber);
-			return YAFFS_FAIL;
+			yportenv.T(yportenv.YAFFS_TRACE_ALWAYS,"Attempt to erase non-existant block %d\n",PrimitiveWrapperFactory.get(blockNumber));
+			return Guts_H.YAFFS_FAIL;
 		}
 		else
 		{
 			yaffs2.utils.emulation.RamEmulationUnix.memset(ramdisk.block[blockNumber],(byte)0xFF/*,sizeof(yramdisk_Block*)*/);
-			return YAFFS_OK;
+			return Guts_H.YAFFS_OK;
 		}
 		
 	}
@@ -234,7 +227,7 @@ public class yaffs_ramdisk_C implements
 		//dev->useNANDECC = 1; // force on useNANDECC which gets faked. 
 							 // This saves us doing ECC checks.
 		
-		return YAFFS_OK;
+		return Guts_H.YAFFS_OK;
 	}
 
 

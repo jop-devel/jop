@@ -1,7 +1,7 @@
 package yaffs2.port;
 
 import yaffs2.utils.*;
-import static yaffs2.utils.Unix.*;
+import yaffs2.utils.factory.PrimitiveWrapper;
 
 public class ydirectenv
 {
@@ -26,7 +26,7 @@ public class ydirectenv
 
 //	 Direct interface
 
-	// XXX #include "devextras.h"
+	// #include "devextras.h"
 
 	// #define YYIELD()  do {} while(0)
 	static void YYIELD()
@@ -45,20 +45,20 @@ public class ydirectenv
 
 	static void yaffs_strcpy(byte[] a, int aIndex, byte[] b, int bIndex)
 	{
-		strcpy(a, aIndex, b, bIndex);
+		Unix.strcpy(a, aIndex, b, bIndex);
 	}
 	static void yaffs_strncpy(byte[] a, int aIndex, byte[] b, int bIndex, int c)
 	{
-		strncpy(a, aIndex, b, bIndex, c);
+		Unix.strncpy(a, aIndex, b, bIndex, c);
 	}
 	static int yaffs_strlen(byte[] s, int sIndex)
 	{
-		return strlen(s, sIndex);
+		return Unix.strlen(s, sIndex);
 	}
-	static void yaffs_sprintf(byte[] s, int sIndex, String format, Object... args)
-	{
-		sprintf(s, sIndex, format, args);
-	}
+//	static void yaffs_sprintf(byte[] s, int sIndex, String format, PrimitiveWrapper... args)
+//	{
+//		Unix.sprintf(s, sIndex, format, args);
+//	}
 	//#define yaffs_toupper(a)     toupper(a)
 	
 	
@@ -153,15 +153,15 @@ public class ydirectenv
 
 	public static final String TENDSTR = "\n";
 	
-	public static final String TSTR(String x)
-	{
-		return x;
-	}
+//	public static final String (String x)
+//	{
+//		return x;
+//	}
 
-	static void TOUT(String format, Object... args)
-	{
-		printf(format, args); 
-	}
+//	static void TOUT(String format, Object... args)
+//	{
+//		printf(format, args); 
+//	}
 
 //	static final String YAFFS_LOSTNFOUND_NAME =		"lost+found";
 	static final byte[] YAFFS_LOSTNFOUND_NAME =		
@@ -179,18 +179,13 @@ public class ydirectenv
 
 	// #include "yaffscfg.h"
 
-
-	// XXX really an int?
 	static int Y_CURRENT_TIME()
 	{
 		return yaffs2.utils.Globals.configuration.yaffsfs_CurrentTime();
 	}
 	
-	// XXX #define Y_TIME_CONVERT(x) x
-	static int Y_TIME_CONVERT(int x)
-	{
-		return x;
-	}
+	// PORT removed
+	// #define Y_TIME_CONVERT(x) x
 
 	static final int YAFFS_ROOT_MODE =				0666;
 	static final int YAFFS_LOSTNFOUND_MODE =		0666;

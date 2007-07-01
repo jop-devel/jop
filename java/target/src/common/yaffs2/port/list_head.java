@@ -21,11 +21,11 @@ public class list_head implements list_head_or_yaffs_Object
 	
 	//struct list_head {
 		public list_head_or_yaffs_Object next, prev;
-		public list_head next()	// XXX see if these typecasts will always succeed
+		public list_head next()	// PORT typecasts will always succeed(?)
 		{
 			return (list_head)next;
 		}
-		public list_head prev()	// XXX see if these typecasts will always succeed
+		public list_head prev()	// PORT typecasts will always succeed(?)
 		{
 			return (list_head)prev;
 		}

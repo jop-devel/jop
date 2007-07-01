@@ -127,7 +127,6 @@ public class yaffs_Spare extends yaffs2.utils.SerializableObject
 		return offset+13;
 	}
 
-	@Override
 	public int getSerializedLength()
 	{
 		return SERIALIZED_LENGTH;

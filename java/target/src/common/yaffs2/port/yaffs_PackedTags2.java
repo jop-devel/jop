@@ -16,7 +16,6 @@ public class yaffs_PackedTags2 extends SerializableObject
 
 	public static final int SERIALIZED_LENGTH = yaffs_PackedTags2TagsPart.SERIALIZED_LENGTH + yaffs_ECCOther.SERIALIZED_LENGTH; // no alignment needed
 
-	@Override
 	public int getSerializedLength()
 	{
 		return SERIALIZED_LENGTH;

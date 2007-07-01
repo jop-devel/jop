@@ -1,6 +1,6 @@
 package yaffs2.port;
 
-import static yaffs2.utils.Unix.*;
+import yaffs2.utils.*;
 
 public class yaffs_tagsvalidity_C {
 	/*
@@ -20,7 +20,7 @@ public class yaffs_tagsvalidity_C {
 	
 	static void yaffs_InitialiseTags(yaffs_ExtendedTags tags)
 	{
-		memset(tags);
+		Unix.memset(tags);
 		tags.validMarker0 = 0xAAAAAAAA;
 		tags.validMarker1 = 0x55555555;
 	}

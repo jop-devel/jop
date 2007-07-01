@@ -1,6 +1,6 @@
 package yaffs2.port;
 
-import static yaffs2.utils.Utils.*;
+import yaffs2.utils.*;
 
 public class yaffs_Tags extends yaffs2.utils.SerializableObject
 {
@@ -28,8 +28,8 @@ public class yaffs_Tags extends yaffs2.utils.SerializableObject
 	}
 	int getChunkId()
 	{
-		return byteAsUnsignedByte(serialized[0]) | 
-		(byteAsUnsignedByte(serialized[1]) << 8) | ((serialized[2] & 0xf) << 16);
+		return Utils.byteAsUnsignedByte(serialized[0]) | 
+		(Utils.byteAsUnsignedByte(serialized[1]) << 8) | ((serialized[2] & 0xf) << 16);
 	}
 	
 	void setSerialNumber(int serialNumber)
@@ -48,7 +48,7 @@ public class yaffs_Tags extends yaffs2.utils.SerializableObject
 	}
 	int getByteCount()
 	{
-		return (byteAsUnsignedByte(serialized[2]) >>> 6) | (byteAsUnsignedByte(serialized[3]) << 2);
+		return (Utils.byteAsUnsignedByte(serialized[2]) >>> 6) | (Utils.byteAsUnsignedByte(serialized[3]) << 2);
 	}
 	
 	void setObjectID(int objectId)
@@ -59,7 +59,7 @@ public class yaffs_Tags extends yaffs2.utils.SerializableObject
 	}
 	int getObjectId()
 	{
-		return byteAsUnsignedByte(serialized[4]) | (byteAsUnsignedByte(serialized[5]) << 8) | 
+		return Utils.byteAsUnsignedByte(serialized[4]) | (Utils.byteAsUnsignedByte(serialized[5]) << 8) | 
 		((serialized[6] & 0x3) << 16);
 	}
 		
@@ -70,10 +70,9 @@ public class yaffs_Tags extends yaffs2.utils.SerializableObject
 	}	
 	int getEcc()
 	{
-		return (byteAsUnsignedByte(serialized[6]) >>> 2) | ((serialized[7] & 0x3f) << 6);
+		return (Utils.byteAsUnsignedByte(serialized[6]) >>> 2) | ((serialized[7] & 0x3f) << 6);
 	}	
 	
-	@Override
 	public int getSerializedLength()
 	{
 		return SERIALIZED_LENGTH;

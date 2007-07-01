@@ -1,6 +1,6 @@
 package yaffs2.port;
 
-import static yaffs2.utils.Utils.*;
+import yaffs2.utils.*;
 
 public class yaffs_PackedTags1 extends yaffs2.utils.SerializableObject
 {
@@ -13,7 +13,7 @@ public class yaffs_PackedTags1 extends yaffs2.utils.SerializableObject
 //	unsigned chunkId:20;
 	int chunkId()
 	{
-		return byteAsUnsignedByte(serialized[offset]) | (byteAsUnsignedByte(serialized[offset+1]) << 8) | 
+		return Utils.byteAsUnsignedByte(serialized[offset]) | (Utils.byteAsUnsignedByte(serialized[offset+1]) << 8) | 
 		((serialized[offset+2] & 0xF) << 16);
 	}
 	void setChunkId(int value)
@@ -36,7 +36,7 @@ public class yaffs_PackedTags1 extends yaffs2.utils.SerializableObject
 //	unsigned byteCount:10;
 	int byteCount()
 	{
-		return ((byteAsUnsignedByte(serialized[offset+2]) >>> 6) | (byteAsUnsignedByte(serialized[offset+3]) << 2));
+		return ((Utils.byteAsUnsignedByte(serialized[offset+2]) >>> 6) | (Utils.byteAsUnsignedByte(serialized[offset+3]) << 2));
 	}
 	void setByteCount(int value)
 	{
@@ -47,7 +47,7 @@ public class yaffs_PackedTags1 extends yaffs2.utils.SerializableObject
 //	unsigned objectId:18;
 	int objectId()
 	{
-		return byteAsUnsignedByte(serialized[offset+4]) | (byteAsUnsignedByte(serialized[offset+5]) << 8) |
+		return Utils.byteAsUnsignedByte(serialized[offset+4]) | (Utils.byteAsUnsignedByte(serialized[offset+5]) << 8) |
 		((serialized[offset+6] & 0x3) << 16);
 	}
 	void setObjectId(int value)
@@ -59,7 +59,7 @@ public class yaffs_PackedTags1 extends yaffs2.utils.SerializableObject
 //	unsigned ecc:12;
 	int ecc()
 	{
-		return (byteAsUnsignedByte(serialized[offset+6]) >>> 2) | ((serialized[offset+7] & 0x3F) << 6);
+		return (Utils.byteAsUnsignedByte(serialized[offset+6]) >>> 2) | ((serialized[offset+7] & 0x3F) << 6);
 	}
 	void setEcc(int value)
 	{
@@ -91,18 +91,17 @@ public class yaffs_PackedTags1 extends yaffs2.utils.SerializableObject
 //	unsigned shouldBeFF;
 	int shouldBeFF()
 	{
-		return getIntFromByteArray(serialized, offset+8);
+		return Utils.getIntFromByteArray(serialized, offset+8);
 	}
 	void setShouldBeFF(int value)
 	{
-		writeIntToByteArray(serialized, offset+8, value);
+		Utils.writeIntToByteArray(serialized, offset+8, value);
 	}
 
 //	} yaffs_PackedTags1;
 
 	static final int SERIALIZED_LENGTH = 8+4;
 
-	@Override
 	public int getSerializedLength()
 	{
 		return SERIALIZED_LENGTH;

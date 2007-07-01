@@ -1,12 +1,7 @@
 package yaffs2.port;
 
-import static yaffs2.utils.Unix.*;
-
-import static yaffs2.port.Guts_H.*;
-import static yaffs2.port.ECC_C.*;
-import static yaffs2.port.yportenv.*;
-import static yaffs2.port.ydirectenv.*;
-import static yaffs2.port.yaffs_tagsvalidity_C.*;
+import yaffs2.utils.*;
+import yaffs2.utils.factory.PrimitiveWrapperFactory;
 
 public class yaffs_packedtags2_C
 {
@@ -51,21 +46,20 @@ public class yaffs_packedtags2_C
 
 	static void yaffs_DumpPackedTags2(yaffs_PackedTags2 pt)
 	{
-		T(YAFFS_TRACE_MTD,
-		  TSTR("packed tags obj %d chunk %d byte %d seq %d" + TENDSTR),
-		   pt.t.objectId(), pt.t.chunkId(), pt.t.byteCount(),
-		   pt.t.sequenceNumber());
+		yportenv.T(yportenv.YAFFS_TRACE_MTD,
+		  ("packed tags obj %d chunk %d byte %d seq %d" + ydirectenv.TENDSTR),
+		  PrimitiveWrapperFactory.get(pt.t.objectId()), PrimitiveWrapperFactory.get(pt.t.chunkId()), PrimitiveWrapperFactory.get(pt.t.byteCount()),
+		  PrimitiveWrapperFactory.get(pt.t.sequenceNumber()));
 	}
 
 	static void yaffs_DumpTags2(yaffs_ExtendedTags t)
 	{
-		T(YAFFS_TRACE_MTD,
-		  TSTR
+		yportenv.T(yportenv.YAFFS_TRACE_MTD,
 		   ("ext.tags eccres %d blkbad %b chused %b obj %d chunk%d byte " +
 		    "%d del %b ser %d seq %d" +
-		    TENDSTR), t.eccResult, t.blockBad, t.chunkUsed, t.objectId,
-		   t.chunkId, t.byteCount, t.chunkDeleted, t.serialNumber,
-		   t.sequenceNumber);
+		    ydirectenv.TENDSTR), PrimitiveWrapperFactory.get(t.eccResult), PrimitiveWrapperFactory.get(t.blockBad), PrimitiveWrapperFactory.get(t.chunkUsed), PrimitiveWrapperFactory.get(t.objectId),
+		    PrimitiveWrapperFactory.get(t.chunkId), PrimitiveWrapperFactory.get(t.byteCount), PrimitiveWrapperFactory.get(t.chunkDeleted), PrimitiveWrapperFactory.get(t.serialNumber),
+		    PrimitiveWrapperFactory.get(t.sequenceNumber));
 
 	}
 
@@ -92,9 +86,9 @@ public class yaffs_packedtags2_C
 			pt.t.orObjectId(
 			    (t.extraObjectType << EXTRA_OBJECT_TYPE_SHIFT));
 
-			if (t.extraObjectType == YAFFS_OBJECT_TYPE_HARDLINK) {
+			if (t.extraObjectType == Guts_H.YAFFS_OBJECT_TYPE_HARDLINK) {
 				pt.t.setByteCount(t.extraEquivalentObjectId);
-			} else if (t.extraObjectType == YAFFS_OBJECT_TYPE_FILE) {
+			} else if (t.extraObjectType == Guts_H.YAFFS_OBJECT_TYPE_FILE) {
 				pt.t.setByteCount(t.extraFileLength);
 			} else {
 				pt.t.setByteCount(0);
@@ -106,7 +100,7 @@ public class yaffs_packedtags2_C
 
 //	#ifndef YAFFS_IGNORE_TAGS_ECC
 		{
-			yaffs_ECCCalculateOther(/*(unsigned char *)&*/ pt.t/*,
+			ECC_C.yaffs_ECCCalculateOther(/*(unsigned char *)&*/ pt.t/*,
 					sizeof(yaffs_PackedTags2TagsPart)*/ ,
 						pt.ecc);
 		}
@@ -116,9 +110,9 @@ public class yaffs_packedtags2_C
 	static void yaffs_UnpackTags2(yaffs_ExtendedTags t, yaffs_PackedTags2 pt)
 	{
 
-		memset(t/*, 0, sizeof(yaffs_ExtendedTags)*/);
+		Unix.memset(t/*, 0, sizeof(yaffs_ExtendedTags)*/);
 
-		yaffs_InitialiseTags(t);
+		yaffs_tagsvalidity_C.yaffs_InitialiseTags(t);
 
 		if (pt.t.sequenceNumber() != 0xFFFFFFFF) {
 			/* Page is in use */
@@ -130,27 +124,27 @@ public class yaffs_packedtags2_C
 			{
 				yaffs_ECCOther ecc = new yaffs_ECCOther();
 				int result;
-				yaffs_ECCCalculateOther(/*(unsigned char *)&*/ pt.t,
+				ECC_C.yaffs_ECCCalculateOther(/*(unsigned char *)&*/ pt.t,
 						/*sizeof
 						(yaffs_PackedTags2TagsPart),*/
 							ecc);
 				result =
-				    yaffs_ECCCorrectOther(/*(unsigned char *)&*/ pt.t,
+					ECC_C.yaffs_ECCCorrectOther(/*(unsigned char *)&*/ pt.t,
 				    		/*sizeof
 							  (yaffs_PackedTags2TagsPart),*/ 
 							  pt.ecc, ecc);
 				switch(result){
 					case 0: 
-						t.eccResult = YAFFS_ECC_RESULT_NO_ERROR; 
+						t.eccResult = Guts_H.YAFFS_ECC_RESULT_NO_ERROR; 
 						break;
 					case 1: 
-						t.eccResult = YAFFS_ECC_RESULT_FIXED;
+						t.eccResult = Guts_H.YAFFS_ECC_RESULT_FIXED;
 						break;
 					case -1:
-						t.eccResult = YAFFS_ECC_RESULT_UNFIXED;
+						t.eccResult = Guts_H.YAFFS_ECC_RESULT_UNFIXED;
 						break;
 					default:
-						t.eccResult = YAFFS_ECC_RESULT_UNKNOWN;
+						t.eccResult = Guts_H.YAFFS_ECC_RESULT_UNKNOWN;
 				}
 			}
 //	#endif
@@ -180,7 +174,7 @@ public class yaffs_packedtags2_C
 				    pt.t.objectId() >>> EXTRA_OBJECT_TYPE_SHIFT;
 				t.objectId &= ~EXTRA_OBJECT_TYPE_MASK;
 
-				if (t.extraObjectType == YAFFS_OBJECT_TYPE_HARDLINK) {
+				if (t.extraObjectType == Guts_H.YAFFS_OBJECT_TYPE_HARDLINK) {
 					t.extraEquivalentObjectId = pt.t.byteCount();
 				} else {
 					t.extraFileLength = pt.t.byteCount();

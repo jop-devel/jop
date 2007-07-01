@@ -76,10 +76,13 @@ public interface yaffscfg2k_C
 
 
 
+	/**
+	 * XXX After calling yaffs2.utils.Globals.startUp(), call this method.
+	 */  
 	public int yaffs_StartUp();
 
 
-	public void SetCheckpointReservedBlocks(int n);
+//	public void SetCheckpointReservedBlocks(int n);
 //	{
 //		flashDev.nCheckpointReservedBlocks = n;
 //	}

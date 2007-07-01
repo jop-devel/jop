@@ -1,7 +1,6 @@
 package yaffs2.port;
 
 import yaffs2.utils.*;
-import static yaffs2.utils.Utils.*;
 
 public class yaffs_CheckpointObject extends SerializableObject
 {
@@ -19,38 +18,38 @@ public class yaffs_CheckpointObject extends SerializableObject
 	//typedef struct {
 	int structType()
 	{
-		return getIntFromByteArray(serialized, offset);
+		return Utils.getIntFromByteArray(serialized, offset);
 	}
 	void setStructType(int value)
 	{
-		writeIntToByteArray(serialized, offset, value);
+		Utils.writeIntToByteArray(serialized, offset, value);
 	}
 
 	/**__u32*/ int objectId()
 	{
-		return getIntFromByteArray(serialized, offset+4);
+		return Utils.getIntFromByteArray(serialized, offset+4);
 	}
 	void setObjectId(int value)
 	{
-		writeIntToByteArray(serialized, offset+4, value);
+		Utils.writeIntToByteArray(serialized, offset+4, value);
 	}
 
 	/**__u32*/ int parentId()
 	{
-		return getIntFromByteArray(serialized, offset+8);
+		return Utils.getIntFromByteArray(serialized, offset+8);
 	}
 	void setParentId(int value)
 	{
-		writeIntToByteArray(serialized, offset+8, value);
+		Utils.writeIntToByteArray(serialized, offset+8, value);
 	}
 
 	int chunkId()
 	{
-		return getIntFromByteArray(serialized, offset+12);
+		return Utils.getIntFromByteArray(serialized, offset+12);
 	}	
 	void setChunkId(int value)
 	{
-		writeIntToByteArray(serialized, offset+12, value);
+		Utils.writeIntToByteArray(serialized, offset+12, value);
 	}
 
 
@@ -139,23 +138,22 @@ public class yaffs_CheckpointObject extends SerializableObject
 
 	int nDataChunks()
 	{
-		return getIntFromByteArray(serialized, offset+20);
+		return Utils.getIntFromByteArray(serialized, offset+20);
 	}	
 	void setNDataChunks(int value)
 	{
-		writeIntToByteArray(serialized, offset+20, value);
+		Utils.writeIntToByteArray(serialized, offset+20, value);
 	}
 
 	/**__u32*/ int fileSizeOrEquivalentObjectId()
 	{
-		return getIntFromByteArray(serialized, offset+24);
+		return Utils.getIntFromByteArray(serialized, offset+24);
 	}	
 	void setFileSizeOrEquivalentObjectId(int value)
 	{
-		writeIntToByteArray(serialized, offset+24, value);
+		Utils.writeIntToByteArray(serialized, offset+24, value);
 	}
 
-	@Override
 	public int getSerializedLength()
 	{
 		return SERIALIZED_LENGTH;

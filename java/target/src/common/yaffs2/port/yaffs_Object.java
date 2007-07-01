@@ -1,16 +1,20 @@
 package yaffs2.port;
 
 import yaffs2.utils.*;
-import static yaffs2.port.Guts_H.*;
 
-public class yaffs_Object extends yaffs2.utils.factory.PooledObject implements list_head_or_yaffs_Object // PORT XXX It is not so elegant to do this...
+public class yaffs_Object implements list_head_or_yaffs_Object
 {
-	//struct yaffs_ObjectStruct {
-		// XXX space wasted?
+	public class yaffs_Object_Sub
+	{
 		public boolean deleted;		/* This should only apply to unlinked files. */
 		public boolean softDeleted;	/* it has also been soft deleted */
 		public boolean unlinked;	/* An unlinked file. The file should be in the unlinked directory.*/
-		public boolean fake;		/* A fake object has no presence on NAND. */
+		public boolean fake;		/* A fake object has no presence on NAND. */		
+	}
+	
+	public yaffs_Object_Sub sub = new yaffs_Object_Sub();
+	
+	//struct yaffs_ObjectStruct {
 		public boolean renameAllowed;	/* Some objects are not allowed to be renamed. */
 		public boolean unlinkAllowed;
 		public boolean dirty;		/* the object needs to be written to flash */
@@ -26,7 +30,7 @@ public class yaffs_Object extends yaffs2.utils.factory.PooledObject implements l
 					 */
 
 		/**__u8*/ public byte serial;		/* serial number of chunk in NAND. Cached here */
-		/**__u16*/ public short sum;		/* sum of the name to speed searching */ // XXX
+		/**__u16*/ public short sum;		/* sum of the name to speed searching */
 
 		public yaffs_Device myDev;	/* The device I'm on */
 
@@ -49,7 +53,7 @@ public class yaffs_Object extends yaffs2.utils.factory.PooledObject implements l
 		/**__u32*/ public int yst_mode;
 
 	//#ifdef CONFIG_YAFFS_SHORT_NAMES_IN_RAM
-		public byte[] shortName = new byte[YAFFS_SHORT_NAME_LENGTH + 1];
+		public byte[] shortName = new byte[Guts_H.YAFFS_SHORT_NAME_LENGTH + 1];
 		public final int shortNameIndex = 0;
 	//#endif
 

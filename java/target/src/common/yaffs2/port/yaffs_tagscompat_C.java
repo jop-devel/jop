@@ -1,13 +1,7 @@
 package yaffs2.port;
 
-import static yaffs2.utils.Utils.*;
 import yaffs2.utils.*;
-import static yaffs2.utils.Unix.*;
-
-import static yaffs2.port.Guts_H.*;
-import static yaffs2.port.ECC_C.*;
-import static yaffs2.port.yportenv.*;
-import static yaffs2.port.ydirectenv.*;
+import yaffs2.utils.factory.PrimitiveWrapperFactory;
 
 public class yaffs_tagscompat_C {
 	/*
@@ -68,8 +62,8 @@ public class yaffs_tagscompat_C {
 
 	static void yaffs_CalcECC(/*const __u8*/byte[] data, int dataIndex, yaffs_Spare spare)
 	{
-		yaffs_ECCCalculate(data, dataIndex, spare.ecc1(), spare.ecc1Index());
-		yaffs_ECCCalculate(data, dataIndex + 256, spare.ecc2(), spare.ecc2Index());
+		ECC_C.yaffs_ECCCalculate(data, dataIndex, spare.ecc1(), spare.ecc1Index());
+		ECC_C.yaffs_ECCCalculate(data, dataIndex + 256, spare.ecc2(), spare.ecc2Index());
 	}
 
 	static void yaffs_CalcTagsECC(yaffs_Tags tags)
@@ -105,7 +99,7 @@ public class yaffs_tagscompat_C {
 
 		ecc ^= tags.getEcc();
 
-		if ((ecc != 0) && (intAsUnsignedInt(ecc) <= 64)) {
+		if ((ecc != 0) && (Utils.intAsUnsignedInt(ecc) <= 64)) {
 			/* TODO: Handle the failure better. Retire? */
 			byte[] b = tags.serialized; int bIndex = tags.offset;
 
@@ -162,7 +156,7 @@ public class yaffs_tagscompat_C {
 
 		result = yaffs_CheckECCOnTags(tagsPtr);
 		if (result > 0) {
-			dev.tagsEccFixed++;
+			dev.subField3.tagsEccFixed++;
 		} else if (result < 0) {
 			dev.tagsEccUnfixed++;
 		}
@@ -170,22 +164,22 @@ public class yaffs_tagscompat_C {
 
 	static void yaffs_SpareInitialise(yaffs_Spare spare)
 	{
-		memset(spare, (byte)0xFF/*, sizeof(yaffs_Spare)*/);
+		Unix.memset(spare, (byte)0xFF/*, sizeof(yaffs_Spare)*/);
 	}
 
 	static boolean yaffs_WriteChunkToNAND(yaffs_Device dev,
 					  int chunkInNAND, /*const __u8 **/byte[] data, int dataIndex,
 					  yaffs_Spare spare)
 	{
-		if (chunkInNAND < dev.startBlock * dev.nChunksPerBlock) {
-			T(YAFFS_TRACE_ERROR,
-			  TSTR("**>> yaffs chunk %d is not valid" + TENDSTR),
-			   chunkInNAND);
-			return YAFFS_FAIL;
+		if (chunkInNAND < dev.subField1.startBlock * dev.subField1.nChunksPerBlock) {
+			yportenv.T(yportenv.YAFFS_TRACE_ERROR,
+			  ("**>> yaffs chunk %d is not valid" + ydirectenv.TENDSTR),
+			  PrimitiveWrapperFactory.get(chunkInNAND));
+			return Guts_H.YAFFS_FAIL;
 		}
 
-		dev.nPageWrites++;
-		return dev.writeChunkToNAND.writeChunkToNAND(dev, chunkInNAND, data, dataIndex, spare);
+		dev.subField3.nPageWrites++;
+		return dev.subField1.writeChunkToNAND.writeChunkToNAND(dev, chunkInNAND, data, dataIndex, spare);
 	}
 
 	static boolean yaffs_ReadChunkFromNAND(yaffs_Device dev,
@@ -198,7 +192,7 @@ public class yaffs_tagscompat_C {
 		boolean retVal;
 		yaffs_Spare localSpare = new yaffs_Spare();		
 
-		dev.nPageReads++;
+		dev.subField3.nPageReads++;
 
 		if ((spare == null) && (data != null)) {
 			/* If we don't have a real spare, then we use a local one. */
@@ -206,8 +200,8 @@ public class yaffs_tagscompat_C {
 			spare = localSpare;
 		}
 
-		if (!dev.useNANDECC) {
-			retVal = dev.readChunkFromNAND.readChunkFromNAND(dev, chunkInNAND, data, dataIndex, spare);
+		if (!dev.subField1.useNANDECC) {
+			retVal = dev.subField1.readChunkFromNAND.readChunkFromNAND(dev, chunkInNAND, data, dataIndex, spare);
 			if ((data != null) && doErrorCorrection) {
 				/* Do ECC correction */
 				/* Todo handle any errors */
@@ -215,42 +209,38 @@ public class yaffs_tagscompat_C {
 				/*__u8 calcEcc[3];*/ byte[] calcEcc = new byte[3]; 
 				int calcEccIndex = 0;
 
-				yaffs_ECCCalculate(data, dataIndex, calcEcc, calcEccIndex);
+				ECC_C.yaffs_ECCCalculate(data, dataIndex, calcEcc, calcEccIndex);
 				eccResult1 =
-				    yaffs_ECCCorrect(data, dataIndex, spare.ecc1(), spare.ecc1Index(), 
+					ECC_C.yaffs_ECCCorrect(data, dataIndex, spare.ecc1(), spare.ecc1Index(), 
 				    		calcEcc, calcEccIndex);
-				yaffs_ECCCalculate(data, dataIndex+256, calcEcc, calcEccIndex);
+				ECC_C.yaffs_ECCCalculate(data, dataIndex+256, calcEcc, calcEccIndex);
 				eccResult2 =
-				    yaffs_ECCCorrect(data, dataIndex+256, 
+					ECC_C.yaffs_ECCCorrect(data, dataIndex+256, 
 				    		spare.ecc2(), spare.ecc2Index(), 
 				    		calcEcc, calcEccIndex);
 
 				if (eccResult1 > 0) {
-					T(YAFFS_TRACE_ERROR,
-					  TSTR
+					yportenv.T(yportenv.YAFFS_TRACE_ERROR,
 					   ("**>>yaffs ecc error fix performed on chunk %d:0" + 
-					    TENDSTR), chunkInNAND);
-					dev.eccFixed++;
+							   ydirectenv.TENDSTR), PrimitiveWrapperFactory.get(chunkInNAND));
+					dev.subField3.eccFixed++;
 				} else if (eccResult1 < 0) {
-					T(YAFFS_TRACE_ERROR,
-					  TSTR
+					yportenv.T(yportenv.YAFFS_TRACE_ERROR,
 					   ("**>>yaffs ecc error unfixed on chunk %d:0" +
-					    TENDSTR), chunkInNAND);
-					dev.eccUnfixed++;
+							   ydirectenv.TENDSTR), PrimitiveWrapperFactory.get(chunkInNAND));
+					dev.subField3.eccUnfixed++;
 				}
 
 				if (eccResult2 > 0) {
-					T(YAFFS_TRACE_ERROR,
-					  TSTR
+					yportenv.T(yportenv.YAFFS_TRACE_ERROR,
 					   ("**>>yaffs ecc error fix performed on chunk %d:1" +
-					    TENDSTR), chunkInNAND);
-					dev.eccFixed++;
+							   ydirectenv.TENDSTR), PrimitiveWrapperFactory.get(chunkInNAND));
+					dev.subField3.eccFixed++;
 				} else if (eccResult2 < 0) {
-					T(YAFFS_TRACE_ERROR,
-					  TSTR
+					yportenv.T(yportenv.YAFFS_TRACE_ERROR,
 					   ("**>>yaffs ecc error unfixed on chunk %d:1" +
-					    TENDSTR), chunkInNAND);
-					dev.eccUnfixed++;
+							   ydirectenv.TENDSTR), PrimitiveWrapperFactory.get(chunkInNAND));
+					dev.subField3.eccUnfixed++;
 				}
 
 				if ((eccResult1 != 0) || (eccResult2 != 0)) {
@@ -259,43 +249,39 @@ public class yaffs_tagscompat_C {
 				}
 
 				if ((eccResult1 < 0) || (eccResult2 < 0))
-					eccResult.dereferenced = YAFFS_ECC_RESULT_UNFIXED;
+					eccResult.dereferenced = Guts_H.YAFFS_ECC_RESULT_UNFIXED;
 				else if ((eccResult1 > 0) || (eccResult2 > 0))
-					eccResult.dereferenced = YAFFS_ECC_RESULT_FIXED;
+					eccResult.dereferenced = Guts_H.YAFFS_ECC_RESULT_FIXED;
 				else
-					eccResult.dereferenced = YAFFS_ECC_RESULT_NO_ERROR;
+					eccResult.dereferenced = Guts_H.YAFFS_ECC_RESULT_NO_ERROR;
 			}
 		} else {
 			/* Must allocate enough memory for spare+2*sizeof(int) */
 			/* for ecc results from device. */
 			yaffs_NANDSpare nspare = new yaffs_NANDSpare();
 			retVal =
-			    dev.readChunkFromNAND.readChunkFromNAND(dev, chunkInNAND, data, dataIndex,
+			    dev.subField1.readChunkFromNAND.readChunkFromNAND(dev, chunkInNAND, data, dataIndex,
 						   /*(yaffs_Spare *) & nspare*/nspare.spare);
-			memcpy(spare, nspare.spare/*, sizeof(yaffs_Spare)*/);
+			Unix.memcpy(spare, nspare.spare/*, sizeof(yaffs_Spare)*/);
 			if ((data != null) && doErrorCorrection) {
 				if (nspare.eccres1 > 0) {
-					T(YAFFS_TRACE_ERROR,
-					  TSTR
+					yportenv.T(yportenv.YAFFS_TRACE_ERROR,
 					   ("**>>mtd ecc error fix performed on chunk %d:0" +
-					    TENDSTR), chunkInNAND);
+					    ydirectenv.TENDSTR), PrimitiveWrapperFactory.get(chunkInNAND));
 				} else if (nspare.eccres1 < 0) {
-					T(YAFFS_TRACE_ERROR,
-					  TSTR
+					yportenv.T(yportenv.YAFFS_TRACE_ERROR,
 					   ("**>>mtd ecc error unfixed on chunk %d:0" +
-					    TENDSTR), chunkInNAND);
+					    ydirectenv.TENDSTR), PrimitiveWrapperFactory.get(chunkInNAND));
 				}
 
 				if (nspare.eccres2 > 0) {
-					T(YAFFS_TRACE_ERROR,
-					  TSTR
+					yportenv.T(yportenv.YAFFS_TRACE_ERROR,
 					   ("**>>mtd ecc error fix performed on chunk %d:1" +
-					    TENDSTR), chunkInNAND);
+					    ydirectenv.TENDSTR), PrimitiveWrapperFactory.get(chunkInNAND));
 				} else if (nspare.eccres2 < 0) {
-					T(YAFFS_TRACE_ERROR,
-					  TSTR
+					yportenv.T(yportenv.YAFFS_TRACE_ERROR,
 					   ("**>>mtd ecc error unfixed on chunk %d:1" +
-					    TENDSTR), chunkInNAND);
+					    ydirectenv.TENDSTR), PrimitiveWrapperFactory.get(chunkInNAND));
 				}
 
 				if ((nspare.eccres1 != 0) || (nspare.eccres2 != 0)) {
@@ -304,11 +290,11 @@ public class yaffs_tagscompat_C {
 				}
 
 				if ((nspare.eccres1 < 0) || (nspare.eccres2 < 0))
-					eccResult.dereferenced = YAFFS_ECC_RESULT_UNFIXED;
+					eccResult.dereferenced = Guts_H.YAFFS_ECC_RESULT_UNFIXED;
 				else if ((nspare.eccres1 > 0) || (nspare.eccres2 > 0))
-					eccResult.dereferenced = YAFFS_ECC_RESULT_FIXED;
+					eccResult.dereferenced = Guts_H.YAFFS_ECC_RESULT_FIXED;
 				else
-					eccResult.dereferenced = YAFFS_ECC_RESULT_NO_ERROR;
+					eccResult.dereferenced = Guts_H.YAFFS_ECC_RESULT_NO_ERROR;
 
 			}
 		}
@@ -335,9 +321,9 @@ public class yaffs_tagscompat_C {
 //		}
 //
 //		if (memcmp(cmpbuf, data, YAFFS_BYTES_PER_CHUNK))
-//			return YAFFS_FAIL;
+//			return Guts_H.YAFFS_FAIL;
 //		if (memcmp(cmpbuf, spare, 16))
-//			return YAFFS_FAIL;
+//			return Guts_H.YAFFS_FAIL;
 //
 //		return YAFFS_OK;
 //
@@ -350,12 +336,12 @@ public class yaffs_tagscompat_C {
 
 	static void yaffs_HandleReadDataError(yaffs_Device dev, int chunkInNAND)
 	{
-		int blockInNAND = chunkInNAND / dev.nChunksPerBlock;
+		int blockInNAND = chunkInNAND / dev.subField1.nChunksPerBlock;
 
 		/* Mark the block for retirement */
-		yaffs_GetBlockInfo(dev, blockInNAND).setNeedsRetiring(true);
-		T(YAFFS_TRACE_ERROR | YAFFS_TRACE_BAD_BLOCKS,
-		  TSTR("**>>Block %d marked for retirement" + TENDSTR), blockInNAND);
+		Guts_H.yaffs_GetBlockInfo(dev, blockInNAND).setNeedsRetiring(true);
+		yportenv.T(yportenv.YAFFS_TRACE_ERROR | yportenv.YAFFS_TRACE_BAD_BLOCKS,
+		  ("**>>Block %d marked for retirement" + ydirectenv.TENDSTR), PrimitiveWrapperFactory.get(blockInNAND));
 
 		/* TODO:
 		 * Just do a garbage collection on the affected block
@@ -434,7 +420,7 @@ public class yaffs_tagscompat_C {
 			tags.setByteCount(eTags.byteCount);
 			tags.setSerialNumber(eTags.serialNumber);
 
-			if ((!dev.useNANDECC) && (data != null)) {
+			if ((!dev.subField1.useNANDECC) && (data != null)) {
 				yaffs_CalcECC(data, dataIndex, spare);
 			}
 			yaffs_LoadTagsIntoSpare(spare, tags);
@@ -461,7 +447,7 @@ public class yaffs_tagscompat_C {
 		/*static int init;*/
 
 		if (!_STATIC_LOCAL_yaffs_TagsCompatabilityReadChunkWithTagsFromNAND_init) {
-			memset(_STATIC_LOCAL_yaffs_TagsCompatabilityReadChunkWithTagsFromNAND_spareFF, (byte)0xFF/*, sizeof(spareFF)*/);
+			Unix.memset(_STATIC_LOCAL_yaffs_TagsCompatabilityReadChunkWithTagsFromNAND_spareFF, (byte)0xFF/*, sizeof(spareFF)*/);
 			_STATIC_LOCAL_yaffs_TagsCompatabilityReadChunkWithTagsFromNAND_init = true;
 		}
 
@@ -481,7 +467,7 @@ public class yaffs_tagscompat_C {
 				eTags.blockBad = false;	/* We're reading it */
 				/* therefore it is not a bad block */
 
-				eTags.chunkUsed = memcmp(_STATIC_LOCAL_yaffs_TagsCompatabilityReadChunkWithTagsFromNAND_spareFF, spare) != 0; 
+				eTags.chunkUsed = Unix.memcmp(_STATIC_LOCAL_yaffs_TagsCompatabilityReadChunkWithTagsFromNAND_spareFF, spare) != 0; 
 
 				if (eTags.chunkUsed) {
 					yaffs_GetTagsFromSpare(dev, spare, tags);
@@ -493,10 +479,10 @@ public class yaffs_tagscompat_C {
 				}
 			}
 
-			return YAFFS_OK;
+			return Guts_H.YAFFS_OK;
 		} else {
 //			eccResult = eccResultPointer.dereferenced;
-			return YAFFS_FAIL;
+			return Guts_H.YAFFS_FAIL;
 		}
 	}
 
@@ -506,16 +492,16 @@ public class yaffs_tagscompat_C {
 
 		yaffs_Spare spare = new yaffs_Spare();
 
-		memset(spare, (byte)0xFF/*, sizeof(yaffs_Spare)*/);
+		Unix.memset(spare, (byte)0xFF/*, sizeof(yaffs_Spare)*/);
 
 		spare.setBlockStatus((byte)'Y');
 
-		yaffs_WriteChunkToNAND(dev, blockInNAND * dev.nChunksPerBlock, null, 0,
+		yaffs_WriteChunkToNAND(dev, blockInNAND * dev.subField1.nChunksPerBlock, null, 0,
 				       spare);
-		yaffs_WriteChunkToNAND(dev, blockInNAND * dev.nChunksPerBlock + 1,
+		yaffs_WriteChunkToNAND(dev, blockInNAND * dev.subField1.nChunksPerBlock + 1,
 				       null, 0, spare);
 
-		return YAFFS_OK;
+		return Guts_H.YAFFS_OK;
 
 	}
 	
@@ -535,7 +521,7 @@ public class yaffs_tagscompat_C {
 //		int dummy;
 
 		if (!_STATIC_LOCAL_yaffs_TagsCompatabilityQueryNANDBlock_init) {
-			memset(_STATIC_LOCAL_yaffs_TagsCompatabilityQueryNANDBlock_spareFF, (byte)0xFF/*, sizeof(spareFF)*/);
+			Unix.memset(_STATIC_LOCAL_yaffs_TagsCompatabilityQueryNANDBlock_spareFF, (byte)0xFF/*, sizeof(spareFF)*/);
 			_STATIC_LOCAL_yaffs_TagsCompatabilityQueryNANDBlock_init = true;
 		}
 
@@ -543,21 +529,21 @@ public class yaffs_tagscompat_C {
 		
 		IntegerPointer dummyPointer = new IntegerPointer();
 
-		yaffs_ReadChunkFromNAND(dev, blockNo * dev.nChunksPerBlock, null, 0,
+		yaffs_ReadChunkFromNAND(dev, blockNo * dev.subField1.nChunksPerBlock, null, 0,
 				spare0, dummyPointer, true);
-		yaffs_ReadChunkFromNAND(dev, blockNo * dev.nChunksPerBlock + 1, null, 0,
+		yaffs_ReadChunkFromNAND(dev, blockNo * dev.subField1.nChunksPerBlock + 1, null, 0,
 				spare1, dummyPointer, true);
 		
 //		dummy = dummyPointer.dereferenced;
 
 		if (yaffs_CountBits((byte)(spare0.blockStatus() & spare1.blockStatus())) < 7)
-			state.dereferenced = YAFFS_BLOCK_STATE_DEAD;
+			state.dereferenced = Guts_H.YAFFS_BLOCK_STATE_DEAD;
 		/*else if (memcmp(&spareFF, &spare0, sizeof(spareFF)) == 0)*/
-		else if (memcmp(_STATIC_LOCAL_yaffs_TagsCompatabilityQueryNANDBlock_spareFF, spare0) == 0)
-			state.dereferenced = YAFFS_BLOCK_STATE_EMPTY;
+		else if (Unix.memcmp(_STATIC_LOCAL_yaffs_TagsCompatabilityQueryNANDBlock_spareFF, spare0) == 0)
+			state.dereferenced = Guts_H.YAFFS_BLOCK_STATE_EMPTY;
 		else
-			state.dereferenced = YAFFS_BLOCK_STATE_NEEDS_SCANNING;
+			state.dereferenced = Guts_H.YAFFS_BLOCK_STATE_NEEDS_SCANNING;
 		
-		return YAFFS_OK;
+		return Guts_H.YAFFS_OK;
 	}
 }

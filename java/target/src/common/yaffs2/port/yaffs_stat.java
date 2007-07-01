@@ -10,7 +10,7 @@ public class yaffs_stat
 	    int           st_uid;      /* user ID of owner */
 	    int           st_gid;      /* group ID of owner */
 	    /*unsigned*/ int      st_rdev;     /* device type (if inode device) */
-	    /*off_t*/ int         st_size;     /* total size, in bytes */ // XXX this should probably be a long, but it will not work?
+	    /*off_t*/ int         st_size;     /* total size, in bytes */
 	    /*unsigned long*/ int st_blksize;  /* blocksize for filesystem I/O */
 	    /*unsigned long*/ int st_blocks;   /* number of blocks allocated */
 	    /*unsigned long*/ int yst_atime;    /* time of last access */

@@ -2,8 +2,8 @@ package yaffs2.port;
 
 public class yaffs_ObjectVariant
 {
+	// XXX memory hog
 	// XXX initialize: either create all possible variants or initialize variant in yaffs_CreateNewObject()
-	// XXX could be a mm issue?
 	//typedef union {
 
 //	Object variant;

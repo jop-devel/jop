@@ -1,187 +1,65 @@
 package yaffs2.port;
 
 import yaffs2.utils.*;
-import static yaffs2.port.Guts_H.*;
 
 public class yaffs_Device
 {
 	/*----------------- Device ---------------------------------*/
 
-	// PORT
-	public yaffs_Device()
+	public class yaffs_Device_Sub1
 	{
-		tempBuffer = new yaffs_TempBuffer[YAFFS_N_TEMP_BUFFERS];
-		for (int i = 0; i < tempBuffer.length; i++)
-			tempBuffer[i] = new yaffs_TempBuffer();
-		
-		objectBucket = new yaffs_ObjectBucket[YAFFS_NOBJECT_BUCKETS];
-		for (int i = 0; i < objectBucket.length; i++)
-			objectBucket[i] = new yaffs_ObjectBucket();
-	}
-	
-	//struct yaffs_DeviceStruct {
 		public list_head devList;
 		public String name;
-
-		/* Entry parameters set up way early. Yaffs sets up the rest.*/
-		public int nDataBytesPerChunk;	/* Should be a power of 2 >= 512 */
-		public int nChunksPerBlock;	/* does not need to be a power of 2 */
-		public int nBytesPerSpare;	/* spare area size */
-		public int startBlock;		/* Start block we're allowed to use */
-		public int endBlock;		/* End block we're allowed to use */
-		public int nReservedBlocks;	/* We want this tuneable so that we can reduce */
-					/* reserved blocks on NOR and RAM. */
-		
-		/* Stuff used by the partitioned checkpointing mechanism */
+		public int nDataBytesPerChunk;
+		public int nChunksPerBlock;
+		public int nBytesPerSpare;
+		public int startBlock;
+		public int endBlock;
+		public int nReservedBlocks;
 		public int checkpointStartBlock;
 		public int checkpointEndBlock;
-		
-		/* Stuff used by the shared space checkpointing mechanism */
-		/* If this value is zero, then this mechanism is disabled */
-		
-		public int nCheckpointReservedBlocks; /* Blocks to reserve for checkpoint data */
-
-		
-
-
-		public int nShortOpCaches;	/* If <= 0, then short op caching is disabled, else
-					 * the number of short op caches (don't use too many)
-					 */
-
-		public boolean useHeaderFileSize;	/* Flag to determine if we should use file sizes from the header */
-
-		public boolean useNANDECC;		/* Flag to decide whether or not to use NANDECC */
-
-		public int genericDevice;	/* Pointer to device context
-					 * On an mtd this holds the mtd pointer.
-					 */
-		// PORT It's not really a pointer.
-		public Object superBlock; // XXX only needed to mark superblock as "dirsty"?
-	        
-		/* NAND access functions (Must be set before calling YAFFS)*/
-
-	    public interface writeChunkToNANDInterface {
-	    	public boolean writeChunkToNAND (yaffs_Device dev,
-					 int chunkInNAND, byte[] data, int dataIndex,
-					 yaffs_Spare spare);
-	    }
-	    public writeChunkToNANDInterface writeChunkToNAND;
-	
-		public interface readChunkFromNANDInterface {
-			public boolean readChunkFromNAND (yaffs_Device dev,
-					  int chunkInNAND, byte[] data, int dataIndex,
-					  yaffs_Spare spare);
-		}
+		public int nCheckpointReservedBlocks;
+		public int nShortOpCaches;
+		public boolean useHeaderFileSize;
+		public boolean useNANDECC;
+		public int genericDevice;
+		public Object superBlock;
+		public writeChunkToNANDInterface writeChunkToNAND;
 		public readChunkFromNANDInterface readChunkFromNAND;
-		
-		public interface eraseBlockInNANDInterface { 
-			public boolean eraseBlockInNAND (yaffs_Device dev,
-					 int blockInNAND);
-		}
 		public eraseBlockInNANDInterface eraseBlockInNAND;
-		
-		public interface initialiseNANDInterface {
-			public boolean initialiseNAND (yaffs_Device dev);
-		}
 		public initialiseNANDInterface initialiseNAND;
-
-	// #ifdef CONFIG_YAFFS_YAFFS2
-		public interface writeChunkWithTagsToNANDInterface {
-			public boolean writeChunkWithTagsToNAND (yaffs_Device dev,
-						 int chunkInNAND, byte[] data, int dataIndex, 
-						 yaffs_ExtendedTags tags);
-		}
 		public writeChunkWithTagsToNANDInterface writeChunkWithTagsToNAND;
-		
-		public interface readChunkWithTagsFromNANDInterface {
-			public boolean readChunkWithTagsFromNAND (yaffs_Device dev,
-						  int chunkInNAND, byte[] data, int dataIndex,
-						  yaffs_ExtendedTags tags);
-		}
 		public readChunkWithTagsFromNANDInterface readChunkWithTagsFromNAND;
-		
-		public interface markNANDBlockBadInterface { 
-			public boolean markNANDBlockBad (yaffs_Device dev, int blockNo);
-		}
 		public markNANDBlockBadInterface markNANDBlockBad;
-		
-		public interface queryNANDBlockInterface {
-			public boolean queryNANDBlock  (yaffs_Device dev, int blockNo,
-				       /*yaffs_BlockState*/ IntegerPointer state, IntegerPointer sequenceNumber);
-		}
 		public queryNANDBlockInterface queryNANDBlock;
-		
-	// #endif
-
 		public boolean isYaffs2;
+		removeObjectCallbackInterface removeObjectCallback;
+		public markSuperBlockDirtyInterface markSuperBlockDirty;
+		public boolean wideTnodesDisabled;
+		public int chunkGroupBits;
+		public int chunkGroupSize;
 		
-		/* The removeObjectCallback function must be supplied by OS flavours that 
-		 * need it. The Linux kernel does not use this, but yaffs direct does use
-		 * it to implement the faster readdir
-		 */
-		interface removeObjectCallbackInterface {
-			void yaffsfs_RemoveObjectCallback (yaffs_Object obj);
-		}
-		removeObjectCallbackInterface removeObjectCallback; 
-		
-		/* Callback to mark the superblock dirsty */
-		public interface markSuperBlockDirtyInterface {
-			public boolean markSuperBlockDirty (Object superblock);
-		}
-		public markSuperBlockDirtyInterface markSuperBlockDirty; 
-		
-		public boolean wideTnodesDisabled; /* Set to disable wide tnodes */// XXX as of now, we cant support wideTnodes
-		
-
-		/* End of stuff that must be set before initialisation. */
-
-		/* Runtime parameters. Set up by YAFFS. */
-
-		public int chunkGroupBits;	/* 0 for devices <= 32MB. else log2(nchunks) - 16 */
-		public int chunkGroupSize;	/* == 2^^chunkGroupBits */
-		
-		/* Stuff to support wide tnodes */
+	}
+	public class yaffs_Device_Sub2
+	{
 		public int tnodeWidth;
-		public int tnodeMask; // XXX hope it works as a int
-		
-		/* Stuff to support various file offses to chunk/offset translations */
-		/* "Crumbs" for nDataBytesPerChunk not being a power of 2 */
-		public int crumbMask;	// XXX changed long->
+		public int tnodeMask;
+		public int crumbMask;
 		public int crumbShift;
 		public int crumbsPerChunk;
-		
-		/* Straight shifting for nDataBytesPerChunk being a power of 2 */
 		public int chunkShift;
-		public int chunkMask;	// XXX changed long->
-		
-
-//	#ifdef __KERNEL__
-//
-//		struct semaphore sem;	/* Semaphore for waiting on erasure.*/
-//		struct semaphore grossLock;	/* Gross locking semaphore */
-//		__u8 *spareBuffer;	/* For mtdif2 use. Don't know the size of the buffer 
-//					 * at compile time so we have to allocate it.
-//					 */
-//		void (*putSuperFunc) (struct super_block * sb);
-//	#endif
-
+		public int chunkMask;
 		public boolean isMounted;
-		
 		public boolean isCheckpointed;
-
-
-		/* Stuff to support block offsetting to support start block zero */
 		public int internalStartBlock;
 		public int internalEndBlock;
 		public int blockOffset;
 		public int chunkOffset;
-		
-
-		/* Runtime checkpointing stuff */
-		public int checkpointPageSequence;   /* running sequence number of checkpoint pages */
+		public int checkpointPageSequence;
 		public int checkpointByteCount;
 		public int checkpointByteOffset;
-		public byte[] checkpointBuffer; int checkpointBufferIndex;
+		public byte[] checkpointBuffer;
+		int checkpointBufferIndex;
 		public boolean checkpointOpenForWrite;
 		public int blocksInCheckpoint;
 		public int checkpointCurrentChunk;
@@ -189,45 +67,32 @@ public class yaffs_Device
 		public int checkpointNextBlock;
 		public int[] checkpointBlockList;
 		public int checkpointMaxBlocks;
-		
-		/* Block Info */
 		public yaffs_BlockInfo[] blockInfo;
-		public byte[] chunkBits;	/* bitmap of chunks in use */
+		public byte[] chunkBits;
 		public int chunkBitsIndex;
-		public boolean blockInfoAlt;	/* was allocated using alternative strategy */
-		public boolean chunkBitsAlt;	/* was allocated using alternative strategy */
-		public int chunkBitmapStride;	/* Number of bytes of chunkBits per block. 
-					 * Must be consistent with nChunksPerBlock.
-					 */
-
+		public boolean blockInfoAlt;
+		public boolean chunkBitsAlt;
+	}
+	public class yaffs_Device_Sub3
+	{
+		public int chunkBitmapStride;
 		public int nErasedBlocks;
-		public int allocationBlock;	/* Current block being allocated off */
+		public int allocationBlock;
 		public int allocationPage;
-		public int allocationBlockFinder;	/* Used to search for next allocation block */
-
-		/* Runtime state */
+		public int allocationBlockFinder;
 		public int nTnodesCreated;
-		public yaffs_Tnode freeTnodes;	// XXX array?
+		public yaffs_Tnode freeTnodes;
 		public int nFreeTnodes;
 		public yaffs_TnodeList allocatedTnodeList;
-
 		public boolean isDoingGC;
-
 		public int nObjectsCreated;
 		public yaffs_Object freeObjects;
 		public int nFreeObjects;
-
 		public yaffs_ObjectList allocatedObjectList;
-
-		public yaffs_ObjectBucket[] objectBucket; // PORT initialized in constructor
-
+		public yaffs_ObjectBucket[] objectBucket;
 		public int nFreeChunks;
-
-		public int currentDirtyChecker;	/* Used to find current dirtiest block */
-
-		public int[] gcCleanupList;	/* objects to delete at the end of a GC. */
-
-		/* Statistcs */
+		public int currentDirtyChecker;
+		public int[] gcCleanupList;
 		public int nPageWrites;
 		public int nPageReads;
 		public int nBlockErasures;
@@ -240,6 +105,69 @@ public class yaffs_Device
 		public int eccFixed;
 		public int eccUnfixed;
 		public int tagsEccFixed;
+	}
+	// PORT
+	public yaffs_Device()
+	{
+		tempBuffer = new yaffs_TempBuffer[Guts_H.YAFFS_N_TEMP_BUFFERS];
+		for (int i = 0; i < tempBuffer.length; i++)
+			tempBuffer[i] = new yaffs_TempBuffer();
+		
+		subField3.objectBucket = new yaffs_ObjectBucket[Guts_H.YAFFS_NOBJECT_BUCKETS];
+		for (int i = 0; i < subField3.objectBucket.length; i++)
+			subField3.objectBucket[i] = new yaffs_ObjectBucket();
+	}
+	
+	public yaffs_Device_Sub1 subField1 = new yaffs_Device_Sub1();
+	public yaffs_Device_Sub2 subField2 = new yaffs_Device_Sub2();
+	public yaffs_Device_Sub3 subField3 = new yaffs_Device_Sub3();
+	
+	public interface writeChunkToNANDInterface {
+	    	public boolean writeChunkToNAND (yaffs_Device dev,
+					 int chunkInNAND, byte[] data, int dataIndex,
+					 yaffs_Spare spare);
+	    }
+	    public interface readChunkFromNANDInterface {
+			public boolean readChunkFromNAND (yaffs_Device dev,
+					  int chunkInNAND, byte[] data, int dataIndex,
+					  yaffs_Spare spare);
+		}
+		public interface eraseBlockInNANDInterface { 
+			public boolean eraseBlockInNAND (yaffs_Device dev,
+					 int blockInNAND);
+		}
+		public interface initialiseNANDInterface {
+			public boolean initialiseNAND (yaffs_Device dev);
+		}
+		// #ifdef CONFIG_YAFFS_YAFFS2
+		public interface writeChunkWithTagsToNANDInterface {
+			public boolean writeChunkWithTagsToNAND (yaffs_Device dev,
+						 int chunkInNAND, byte[] data, int dataIndex, 
+						 yaffs_ExtendedTags tags);
+		}
+		public interface readChunkWithTagsFromNANDInterface {
+			public boolean readChunkWithTagsFromNAND (yaffs_Device dev,
+						  int chunkInNAND, byte[] data, int dataIndex,
+						  yaffs_ExtendedTags tags);
+		}
+		public interface markNANDBlockBadInterface { 
+			public boolean markNANDBlockBad (yaffs_Device dev, int blockNo);
+		}
+		public interface queryNANDBlockInterface {
+			public boolean queryNANDBlock  (yaffs_Device dev, int blockNo,
+				       /*yaffs_BlockState*/ IntegerPointer state, IntegerPointer sequenceNumber);
+		}
+		/* The removeObjectCallback function must be supplied by OS flavours that 
+		 * need it. The Linux kernel does not use this, but yaffs direct does use
+		 * it to implement the faster readdir
+		 */
+		interface removeObjectCallbackInterface {
+			void yaffsfs_RemoveObjectCallback (yaffs_Object obj);
+		}
+		/* Callback to mark the superblock dirsty */
+		public interface markSuperBlockDirtyInterface {
+			public boolean markSuperBlockDirty (Object superblock);
+		}
 		public int tagsEccUnfixed;
 		public int nDeletions;
 		public int nUnmarkedDeletions;

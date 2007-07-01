@@ -1,7 +1,6 @@
 package yaffs2.port;
 
 import yaffs2.utils.SerializableObject;
-import static yaffs2.utils.Utils.*;
 
 public class yaffs_BlockInfo extends yaffs2.utils.SerializableObject
 {
@@ -40,7 +39,7 @@ public class yaffs_BlockInfo extends yaffs2.utils.SerializableObject
 	
 	int softDeletions()
 	{
-		return byteAsUnsignedByte(serialized[offset+0]) | ((serialized[offset+1] & 0x3) << 8); 
+		return yaffs2.utils.Utils.byteAsUnsignedByte(serialized[offset+0]) | ((serialized[offset+1] & 0x3) << 8); 
 	}
 	void setSoftDeletions(int value)
 	{
@@ -49,7 +48,7 @@ public class yaffs_BlockInfo extends yaffs2.utils.SerializableObject
 	}
 	int pagesInUse()
 	{
-		return (byteAsUnsignedByte(serialized[offset+1]) >>> 2) | ((serialized[offset+2] & 0xf ) << 2);
+		return (yaffs2.utils.Utils.byteAsUnsignedByte(serialized[offset+1]) >>> 2) | ((serialized[offset+2] & 0xf ) << 2);
 	}
 	void setPagesInUse(int value)
 	{
@@ -58,7 +57,7 @@ public class yaffs_BlockInfo extends yaffs2.utils.SerializableObject
 	}
 	int blockState()
 	{
-		return (byteAsUnsignedByte(serialized[offset+2]) >>> 4);
+		return (yaffs2.utils.Utils.byteAsUnsignedByte(serialized[offset+2]) >>> 4);
 	}
 	void setBlockState(int value)
 	{
@@ -119,7 +118,6 @@ public class yaffs_BlockInfo extends yaffs2.utils.SerializableObject
 	}
 	//#endif
 
-	@Override
 	public int getSerializedLength()
 	{
 		return SERIALIZED_LENGTH;

@@ -2,7 +2,7 @@ package yaffs2.port;
 
 import yaffs2.utils.*;
 
-import static yaffs2.utils.Utils.*;
+import yaffs2.utils.*;
 
 public class ECC_C
 {
@@ -37,9 +37,9 @@ public class ECC_C
 	 */
 
 	static final String yaffs_ecc_c_version =
-	    "$Id: ECC_C.java,v 1.1 2007/06/07 14:37:29 peter.hilber Exp $";
+	    "$Id: ECC_C.java,v 1.2 2007/07/01 01:08:51 alexander.dejaco Exp $";
 
-	static final byte[] column_parity_table = {	// XXX first it was mistakenly a short[]
+	static final byte[] column_parity_table = {
 		(byte)0x00, (byte)0x55, (byte)0x59, (byte)0x0c, (byte)0x65, (byte)0x30, (byte)0x3c, (byte)0x69,
 		(byte)0x69, (byte)0x3c, (byte)0x30, (byte)0x65, (byte)0x0c, (byte)0x59, (byte)0x55, (byte)0x00,
 		(byte)0x95, (byte)0xc0, (byte)0xcc, (byte)0x99, (byte)0xf0, (byte)0xa5, (byte)0xa9, (byte)0xfc,
@@ -98,7 +98,6 @@ public class ECC_C
 		return r;
 	}
 
-	// XXX make several versions? // ???
 	/* Calculate the ECC for a 256-byte block of data */
 	static void yaffs_ECCCalculate(byte[] data, int dataIndex, 
 			byte[] ecc, int eccIndex)
@@ -112,7 +111,7 @@ public class ECC_C
 		int b;
 
 		for (i = 0; i < 256; i++) {
-			b = column_parity_table[byteAsUnsignedByte(data[dataIndex+i])];
+			b = column_parity_table[Utils.byteAsUnsignedByte(data[dataIndex+i])];
 			col_parity ^= b;
 
 			if ((b & 0x01) != 0)	// odd number of bits in the byte
@@ -269,7 +268,7 @@ public class ECC_C
 		int b;
 
 		for (i = 0; i < nBytes; i++) {
-			b = column_parity_table[byteAsUnsignedByte(data.serialized[data.offset+i])];
+			b = column_parity_table[Utils.byteAsUnsignedByte(data.serialized[data.offset+i])];
 			col_parity ^= b;
 
 			if ((b & 0x01) != 0)	 {

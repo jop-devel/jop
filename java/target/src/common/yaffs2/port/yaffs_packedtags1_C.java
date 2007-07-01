@@ -1,9 +1,6 @@
 package yaffs2.port;
 
-import static yaffs2.port.Guts_H.*;
-import static yaffs2.utils.Unix.*;
-
-import static yaffs2.utils.Utils.*; 
+import yaffs2.utils.*;
 
 public class yaffs_packedtags1_C
 {
@@ -45,7 +42,7 @@ public class yaffs_packedtags1_C
 //		    { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 //	0xff };
 
-		if (memcmp(allFF, 0, pt.serialized, pt.offset, /*sizeof(yaffs_PackedTags1)*/ yaffs_PackedTags1.SERIALIZED_LENGTH) != 0) {
+		if (Unix.memcmp(allFF, 0, pt.serialized, pt.offset, /*sizeof(yaffs_PackedTags1)*/ yaffs_PackedTags1.SERIALIZED_LENGTH) != 0) {
 			t.blockBad = false;
 			if (pt.shouldBeFF() != 0xFFFFFFFF) {
 				t.blockBad = true;
@@ -54,11 +51,11 @@ public class yaffs_packedtags1_C
 			t.objectId = pt.objectId();
 			t.chunkId = pt.chunkId();
 			t.byteCount = pt.byteCount();
-			t.eccResult = YAFFS_ECC_RESULT_NO_ERROR;
+			t.eccResult = Guts_H.YAFFS_ECC_RESULT_NO_ERROR;
 			t.chunkDeleted = pt.deleted();
-			t.serialNumber = byteAsUnsignedByte(pt.serialNumber());
+			t.serialNumber = Utils.byteAsUnsignedByte(pt.serialNumber());
 		} else {
-			memset(t/*, 0 , sizeof(yaffs_ExtendedTags)*/ );
+			Unix.memset(t/*, 0 , sizeof(yaffs_ExtendedTags)*/ );
 
 		}
 	}

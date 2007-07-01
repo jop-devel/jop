@@ -2,13 +2,9 @@ package yaffs2.port;
 
 import java.io.RandomAccessFile; 
 
-import static yaffs2.port.yaffsfs_C.*;
-import static yaffs2.port.yaffsfs_H.*;
-import static yaffs2.utils.Unix.*;
-import static yaffs2.utils.emulation.FileEmulationUnix.*;
-import static yaffs2.utils.emulation.Utils.*;
-import static yaffs2.utils.Constants.*;
-import static yaffs2.utils.Utils.*;
+import yaffs2.utils.*;
+import yaffs2.utils.emulation.*;
+import yaffs2.utils.factory.PrimitiveWrapperFactory;
 
 public class Dtest_C {
 	/*
@@ -40,21 +36,21 @@ public class Dtest_C {
 		/*unsigned char buffer[100];*/
 		byte[] buffer = new byte[100]; final int bufferIndex = 0;
 		int ni,no;
-		inh = open(inName,O_RDONLY);
-		outh = yaffs_open(StringToByteArray(yaffsName), 0, O_CREAT | O_RDWR | O_TRUNC, S_IREAD | S_IWRITE);
+		inh = FileEmulationUnix.open(inName,yaffsfs_H.O_RDONLY);
+		outh = yaffsfs_C.yaffs_open(Utils.StringToByteArray(yaffsName), 0, yaffsfs_H.O_CREAT | yaffsfs_H.O_RDWR | yaffsfs_H.O_TRUNC, yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE);
 		
-		while((ni = read(inh,buffer,bufferIndex,100)) > 0)
+		while((ni = FileEmulationUnix.read(inh,buffer,bufferIndex,100)) > 0)
 		{
-			no = yaffs_write(outh,buffer,bufferIndex,ni);
+			no = yaffsfs_C.yaffs_write(outh,buffer,bufferIndex,ni);
 			if(ni != no)
 			{
-				printf("problem writing yaffs file\n");
+				Unix.printf("problem writing yaffs file\n");
 			}
 			
 		}
 		
-		yaffs_close(outh);
-		close(inh);
+		yaffsfs_C.yaffs_close(outh);
+		FileEmulationUnix.close(inh);
 	}
 
 	static void make_a_file(byte[] yaffsName,int yaffsNameIndex,byte bval,int sizeOfFile)
@@ -64,21 +60,21 @@ public class Dtest_C {
 		//unsigned char buffer[100];
 		byte[] buffer = new byte[100]; final int bufferIndex = 0;
 
-		outh = yaffs_open(yaffsName, yaffsNameIndex, O_CREAT | O_RDWR | O_TRUNC, S_IREAD | S_IWRITE);
+		outh = yaffsfs_C.yaffs_open(yaffsName, yaffsNameIndex, yaffsfs_H.O_CREAT | yaffsfs_H.O_RDWR | yaffsfs_H.O_TRUNC, yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE);
 		
-		memset(buffer,bufferIndex,bval,100);
+		Unix.memset(buffer,bufferIndex,bval,100);
 		
 		do{
 			i = sizeOfFile;
 			if(i > 100) i = 100;
 			sizeOfFile -= i;
 			
-			yaffs_write(outh,buffer,bufferIndex,i);
+			yaffsfs_C.yaffs_write(outh,buffer,bufferIndex,i);
 			
 		} while (sizeOfFile > 0);
 		
 			
-		yaffs_close(outh);
+		yaffsfs_C.yaffs_close(outh);
 
 	}
 
@@ -87,43 +83,43 @@ public class Dtest_C {
 		int outh;
 		int marker;
 		int i;
-		outh = yaffs_open(fn, fnIndex, O_CREAT | O_RDWR | O_TRUNC, S_IREAD | S_IWRITE);
-		yaffs_lseek(outh,size-1,SEEK_SET);
-		yaffs_write(outh,new byte[] {'A'},0,1);
+		outh = yaffsfs_C.yaffs_open(fn, fnIndex, yaffsfs_H.O_CREAT | yaffsfs_H.O_RDWR | yaffsfs_H.O_TRUNC, yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE);
+		yaffsfs_C.yaffs_lseek(outh,size-1,yaffsfs_H.SEEK_SET);
+		yaffsfs_C.yaffs_write(outh,new byte[] {'A'},0,1);
 		
 		for(i = 0; i < size; i+=256)
 		{
 			marker = ~i;
-			yaffs_lseek(outh,i,SEEK_SET);
-			yaffs_write(outh,IntToByteArray(marker),0,SIZEOF_INT);
+			yaffsfs_C.yaffs_lseek(outh,i,yaffsfs_H.SEEK_SET);
+			yaffsfs_C.yaffs_write(outh,FileEmulationUnix.IntToByteArray(marker),0,Constants.SIZEOF_INT);
 		}
-		yaffs_close(outh);
+		yaffsfs_C.yaffs_close(outh);
 		
 	}
 
 	static boolean check_pattern_file(byte[] fn, int fnIndex)
 	{
 		int h;
-		byte[] marker = new byte[SIZEOF_INT];
+		byte[] marker = new byte[Constants.SIZEOF_INT];
 		int i;
 		int size;
 		boolean ok = true;
 		
-		h = yaffs_open(fn, fnIndex, O_RDWR,0);
-		size = yaffs_lseek(h,0,SEEK_END);
+		h = yaffsfs_C.yaffs_open(fn, fnIndex, yaffsfs_H.O_RDWR,0);
+		size = yaffsfs_C.yaffs_lseek(h,0,yaffsfs_H.SEEK_END);
 			
 		for(i = 0; i < size; i+=256)
 		{
-			yaffs_lseek(h,i,SEEK_SET);
-			yaffs_read(h,marker,0,SIZEOF_INT);
-			ok = (getIntFromByteArray(marker,0) == ~i);
+			yaffsfs_C.yaffs_lseek(h,i,yaffsfs_H.SEEK_SET);
+			yaffsfs_C.yaffs_read(h,marker,0,Constants.SIZEOF_INT);
+			ok = (Utils.getIntFromByteArray(marker,0) == ~i);
 			if(!ok)
 			{
-			   printf("pattern check failed on file %a, size %d at position %d. Got %x instead of %x\n",
-						fn,fnIndex,size,i,getIntFromByteArray(marker,0),~i);
+			   Unix.printf("pattern check failed on file %a, size %d at position %d. Got %x instead of %x\n",
+					   PrimitiveWrapperFactory.get(fn),PrimitiveWrapperFactory.get(fnIndex),PrimitiveWrapperFactory.get(size),PrimitiveWrapperFactory.get(i),PrimitiveWrapperFactory.get(Utils.getIntFromByteArray(marker,0)),PrimitiveWrapperFactory.get(~i));
 			}
 		}
-		yaffs_close(h);
+		yaffsfs_C.yaffs_close(h);
 		return ok;
 	}
 
@@ -140,21 +136,21 @@ public class Dtest_C {
 		boolean ok = true;
 		/*unsigned*/ byte[] b = new byte[1];
 		
-		h = yaffs_open(fn, fnIndex, O_RDWR,0);
+		h = yaffsfs_C.yaffs_open(fn, fnIndex, yaffsfs_H.O_RDWR,0);
 					
-		printf("%a\n",fn,fnIndex);
-		while(yaffs_read(h,b,0,1)> 0)
+		Unix.printf("%a\n",PrimitiveWrapperFactory.get(fn),PrimitiveWrapperFactory.get(fnIndex));
+		while(yaffsfs_C.yaffs_read(h,b,0,1)> 0)
 		{
-			printf("%02y",b);
+			Unix.printf("%02y",PrimitiveWrapperFactory.get(b));
 			i++;
 			if(i > 32) 
 			{
-			   printf("\n");
+			   Unix.printf("\n");
 			   i = 0;;
 			 }
 		}
-		printf("\n");
-		yaffs_close(h);
+		Unix.printf("\n");
+		yaffsfs_C.yaffs_close(h);
 		return ok;
 	}
 
@@ -166,15 +162,15 @@ public class Dtest_C {
 		int size;
 		int h;
 		
-		h = yaffs_open(fn,fnIndex,O_RDONLY,0);
+		h = yaffsfs_C.yaffs_open(fn,fnIndex,yaffsfs_H.O_RDONLY,0);
 		if(h < 0)
 		{
-			printf("*****\nDump file %a does not exist\n",fn,fnIndex);
+			Unix.printf("*****\nDump file %a does not exist\n",PrimitiveWrapperFactory.get(fn),PrimitiveWrapperFactory.get(fnIndex));
 		}
 		else
 		{
-			size = yaffs_lseek(h,0,SEEK_SET);
-			printf("*****\nDump file %a size %d\n",fn,fnIndex,size);
+			size = yaffsfs_C.yaffs_lseek(h,0,yaffsfs_H.SEEK_SET);
+			Unix.printf("*****\nDump file %a size %d\n",PrimitiveWrapperFactory.get(fn),PrimitiveWrapperFactory.get(fnIndex),PrimitiveWrapperFactory.get(size));
 			for(i = 0; i < size; i++)
 			{
 				
@@ -190,18 +186,18 @@ public class Dtest_C {
 		//char xx[200];
 		byte[] xx = new byte[200]; final int xxIndex = 0; 
 		
-		int iterations = (syze + strlen(fn,fnIndex) -1)/ strlen(fn,fnIndex);	// BUG FOUND
+		int iterations = (syze + Unix.strlen(fn,fnIndex) -1)/ Unix.strlen(fn,fnIndex);	// BUG FOUND
 		//int iterations = (syze + yaffs2.utils.FileNameLength.fnLength(fn, fnIndex) -1)/ yaffs2.utils.FileNameLength.fnLength(fn, fnIndex);
 		
-		h = yaffs_open(fn, fnIndex, O_CREAT | O_RDWR | O_TRUNC, S_IREAD | S_IWRITE);
+		h = yaffsfs_C.yaffs_open(fn, fnIndex, yaffsfs_H.O_CREAT | yaffsfs_H.O_RDWR | yaffsfs_H.O_TRUNC, yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE);
 			
 		while (iterations > 0)
 		{
-			sprintf(xx,xxIndex,"%a %8d",fn,fnIndex,iterations);
-			yaffs_write(h,xx,xxIndex,strlen(xx, xxIndex));
+			Unix.sprintf(xx,xxIndex,"%a %8d",PrimitiveWrapperFactory.get(fn),PrimitiveWrapperFactory.get(fnIndex),PrimitiveWrapperFactory.get(iterations));
+			yaffsfs_C.yaffs_write(h,xx,xxIndex,Unix.strlen(xx, xxIndex));
 			iterations--;
 		}
-		yaffs_close (h);
+		yaffsfs_C.yaffs_close (h);
 	}
 
 	static void verify_file_of_size(byte[] fn,int fnIndex,int syze)
@@ -213,24 +209,24 @@ public class Dtest_C {
 		byte[] yy = new byte[200]; final int yyIndex = 0;
 		int l;
 		
-		int iterations = (syze + strlen(fn,fnIndex) -1)/ strlen(fn,fnIndex);
+		int iterations = (syze + Unix.strlen(fn,fnIndex) -1)/ Unix.strlen(fn,fnIndex);
 		
-		h = yaffs_open(fn, fnIndex, O_RDONLY, S_IREAD | S_IWRITE);
+		h = yaffsfs_C.yaffs_open(fn, fnIndex, yaffsfs_H.O_RDONLY, yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE);
 			
 		while (iterations > 0)
 		{
-			sprintf(xx,xxIndex,"%a %8d",fn,fnIndex,iterations);
-			l = strlen(xx,xxIndex);
+			Unix.sprintf(xx,xxIndex,"%a %8d",PrimitiveWrapperFactory.get(fn),PrimitiveWrapperFactory.get(fnIndex),PrimitiveWrapperFactory.get(iterations));
+			l = Unix.strlen(xx,xxIndex);
 			
-			yaffs_read(h,yy,xxIndex,l);
+			yaffsfs_C.yaffs_read(h,yy,xxIndex,l);
 			yy[l] = 0;
 			
-			if(strcmp(xx,xxIndex,yy,yyIndex) != 0){
-				printf("=====>>>>> verification of file %a failed near position %d\n",fn,fnIndex,yaffs_lseek(h,0,SEEK_CUR));
+			if(Unix.strcmp(xx,xxIndex,yy,yyIndex) != 0){
+				Unix.printf("=====>>>>> verification of file %a failed near position %d\n",PrimitiveWrapperFactory.get(fn),PrimitiveWrapperFactory.get(fnIndex),PrimitiveWrapperFactory.get(yaffsfs_C.yaffs_lseek(h,0,yaffsfs_H.SEEK_CUR)));
 			}
 			iterations--;
 		}
-		yaffs_close (h);
+		yaffsfs_C.yaffs_close (h);
 	}
 
 	static void create_resized_file_of_size(/*const char **/ byte[] fn,int fnIndex,
@@ -242,26 +238,26 @@ public class Dtest_C {
 		
 		int iterations;
 		
-		h = yaffs_open(fn, fnIndex, O_CREAT | O_RDWR | O_TRUNC, S_IREAD | S_IWRITE);
+		h = yaffsfs_C.yaffs_open(fn, fnIndex, yaffsfs_H.O_CREAT | yaffsfs_H.O_RDWR | yaffsfs_H.O_TRUNC, yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE);
 			
-		iterations = (syze1 + strlen(fn,fnIndex) -1)/ strlen(fn,fnIndex);
+		iterations = (syze1 + Unix.strlen(fn,fnIndex) -1)/ Unix.strlen(fn,fnIndex);
 		while (iterations > 0)
 		{
-			yaffs_write(h,fn,fnIndex,strlen(fn,fnIndex));
+			yaffsfs_C.yaffs_write(h,fn,fnIndex,Unix.strlen(fn,fnIndex));
 			iterations--;
 		}
 		
-		yaffs_truncate(h,reSyze);
+		yaffsfs_C.yaffs_truncate(h,reSyze);
 		
-		yaffs_lseek(h,0,SEEK_SET);
-		iterations = (syze2 + strlen(fn,fnIndex) -1)/ strlen(fn,fnIndex);
+		yaffsfs_C.yaffs_lseek(h,0,yaffsfs_H.SEEK_SET);
+		iterations = (syze2 + Unix.strlen(fn,fnIndex) -1)/ Unix.strlen(fn,fnIndex);
 		while (iterations > 0)
 		{
-			yaffs_write(h,fn,fnIndex,strlen(fn,fnIndex));
+			yaffsfs_C.yaffs_write(h,fn,fnIndex,Unix.strlen(fn,fnIndex));
 			iterations--;
 		}
 		
-		yaffs_close (h);
+		yaffsfs_C.yaffs_close (h);
 	}
 
 
@@ -270,14 +266,14 @@ public class Dtest_C {
 
 		byte[] fn = new byte[100]; final int fnIndex = 0;
 
-		sprintf(fn,fnIndex,"%a/%s",path,pathIndex,"f1");
+		Unix.sprintf(fn,fnIndex,"%a/%s",PrimitiveWrapperFactory.get(path),PrimitiveWrapperFactory.get(pathIndex),PrimitiveWrapperFactory.get("f1"));
 		create_file_of_size(fn,fnIndex,10000);
 
-		sprintf(fn,fnIndex,"%a/%s",path,pathIndex,"fdel");
+		Unix.sprintf(fn,fnIndex,"%a/%s",PrimitiveWrapperFactory.get(path),PrimitiveWrapperFactory.get(pathIndex),PrimitiveWrapperFactory.get("fdel"));
 		create_file_of_size(fn,fnIndex,10000);
-		yaffs_unlink(fn,fnIndex);
+		yaffsfs_C.yaffs_unlink(fn,fnIndex);
 
-		sprintf(fn,fnIndex,"%a/%s",path,pathIndex,"f2");
+		Unix.sprintf(fn,fnIndex,"%a/%s",PrimitiveWrapperFactory.get(path),PrimitiveWrapperFactory.get(pathIndex),PrimitiveWrapperFactory.get("f2"));
 		
 		create_resized_file_of_size(fn,fnIndex,10000,3000,4000);
 	}
@@ -288,19 +284,19 @@ public class Dtest_C {
 		
 		yaffs2.utils.Globals.configuration.yaffs_StartUp();	
 		
-		yaffs_mount(path,pathIndex);
+		yaffsfs_C.yaffs_mount(path,pathIndex);
 		
 		do_some_file_stuff(path,pathIndex);
 		
-		sprintf(fn,fnIndex,"%a/ddd",path,pathIndex);
+		Unix.sprintf(fn,fnIndex,"%a/ddd",PrimitiveWrapperFactory.get(path),PrimitiveWrapperFactory.get(pathIndex));
 		
-		yaffs_mkdir(fn,fnIndex,0);
+		yaffsfs_C.yaffs_mkdir(fn,fnIndex,0);
 		
 		do_some_file_stuff(fn,fnIndex);
 		
-		yaffs_unmount(path,pathIndex);
+		yaffsfs_C.yaffs_unmount(path,pathIndex);
 		
-		yaffs_mount(path,pathIndex);
+		yaffsfs_C.yaffs_mount(path,pathIndex);
 	}
 
 	static byte[] xxzz = new byte[2000]; static int xxzzIndex = 0;
@@ -314,22 +310,22 @@ public class Dtest_C {
 		
 		yaffs2.utils.Globals.configuration.yaffs_StartUp();	
 		
-		yaffs_mount(path, pathIndex);
+		yaffsfs_C.yaffs_mount(path, pathIndex);
 		
 		do_some_file_stuff(path, pathIndex);
 		
 		// Open and add some data to a few files
 		for(i = 0; i < 10; i++) {
 		
-			sprintf(fn,fnIndex,"%a/ff%d",path,pathIndex,i);
+			Unix.sprintf(fn,fnIndex,"%a/ff%d",PrimitiveWrapperFactory.get(path),PrimitiveWrapperFactory.get(pathIndex),PrimitiveWrapperFactory.get(i));
 
-			h = yaffs_open(fn, fnIndex, O_CREAT | O_RDWR | O_TRUNC, S_IWRITE | S_IREAD);
-			yaffs_write(h,xxzz,xxzzIndex,2000);
-			yaffs_write(h,xxzz,xxzzIndex,2000);
+			h = yaffsfs_C.yaffs_open(fn, fnIndex, yaffsfs_H.O_CREAT | yaffsfs_H.O_RDWR | yaffsfs_H.O_TRUNC, yaffsfs_H.S_IWRITE | yaffsfs_H.S_IREAD);
+			yaffsfs_C.yaffs_write(h,xxzz,xxzzIndex,2000);
+			yaffsfs_C.yaffs_write(h,xxzz,xxzzIndex,2000);
 		}
-		yaffs_unmount(path,pathIndex);
+		yaffsfs_C.yaffs_unmount(path,pathIndex);
 		
-		yaffs_mount(path,pathIndex);
+		yaffsfs_C.yaffs_mount(path,pathIndex);
 	}
 
 
@@ -339,17 +335,17 @@ public class Dtest_C {
 		int i;
 		byte[] fn = new byte[100]; final int fnIndex = 0;
 		
-		sprintf(fn,fnIndex,"%a/%s",path,pathIndex,"f1");
+		Unix.sprintf(fn,fnIndex,"%a/%s",PrimitiveWrapperFactory.get(path),PrimitiveWrapperFactory.get(pathIndex),PrimitiveWrapperFactory.get("f1"));
 		
 		yaffs2.utils.Globals.configuration.yaffs_StartUp();
 		for(i = 0; i < niterations; i++)
 		{
-			printf("\n*****************\nIteration %d\n",i);
-			yaffs_mount(path,pathIndex);
-			printf("\nmount: Directory look-up of %a\n",path,pathIndex);
+			Unix.printf("\n*****************\nIteration %d\n",PrimitiveWrapperFactory.get(i));
+			yaffsfs_C.yaffs_mount(path,pathIndex);
+			Unix.printf("\nmount: Directory look-up of %a\n",PrimitiveWrapperFactory.get(path),PrimitiveWrapperFactory.get(pathIndex));
 			dumpDir(path, pathIndex);
 			make_a_file(fn, fnIndex,(byte)1,fsize);
-			yaffs_unmount(path, pathIndex);
+			yaffsfs_C.yaffs_unmount(path, pathIndex);
 		}
 	}
 
@@ -362,17 +358,17 @@ public class Dtest_C {
 		byte[][] fn = new byte[3][100]; final int fnIndex = 0;
 		boolean result;
 		
-		sprintf(fn[0],fnIndex,"%a/%s",path,pathIndex,"f0");
-		sprintf(fn[1],fnIndex,"%a/%s",path,pathIndex,"f1");
-		sprintf(fn[2],fnIndex,"%a/%s",path,pathIndex,"f2");
+		Unix.sprintf(fn[0],fnIndex,"%a/%s",PrimitiveWrapperFactory.get(path),PrimitiveWrapperFactory.get(pathIndex),PrimitiveWrapperFactory.get("f0"));
+		Unix.sprintf(fn[1],fnIndex,"%a/%s",PrimitiveWrapperFactory.get(path),PrimitiveWrapperFactory.get(pathIndex),PrimitiveWrapperFactory.get("f1"));
+		Unix.sprintf(fn[2],fnIndex,"%a/%s",PrimitiveWrapperFactory.get(path),PrimitiveWrapperFactory.get(pathIndex),PrimitiveWrapperFactory.get("f2"));
 		
 		yaffs2.utils.Globals.configuration.yaffs_StartUp();
 		
 		for(i = 0; i < niterations; i++)
 		{
-			printf("\n*****************\nIteration %d\n",i);
-			yaffs_mount(path, pathIndex);
-			printf("\nmount: Directory look-up of %a\n",path,pathIndex);
+			Unix.printf("\n*****************\nIteration %d\n",PrimitiveWrapperFactory.get(i));
+			yaffsfs_C.yaffs_mount(path, pathIndex);
+			Unix.printf("\nmount: Directory look-up of %a\n",PrimitiveWrapperFactory.get(path),PrimitiveWrapperFactory.get(pathIndex));
 			dumpDir(path, pathIndex);
 			for(j = 0; j < 3; j++)
 			{
@@ -382,7 +378,7 @@ public class Dtest_C {
 				result = dump_file_data(fn[j],fnIndex);
 				result = check_pattern_file(fn[j],fnIndex);
 			}
-			yaffs_unmount(path, pathIndex);
+			yaffsfs_C.yaffs_unmount(path, pathIndex);
 		}
 	}
 
@@ -397,18 +393,18 @@ public class Dtest_C {
 		
 		for(n = 0; n < nfiles; n++)
 		{
-			sprintf(str,strIndex,"%a/%d",path,pathIndex,n);
+			Unix.sprintf(str,strIndex,"%a/%d",PrimitiveWrapperFactory.get(path),PrimitiveWrapperFactory.get(pathIndex),PrimitiveWrapperFactory.get(n));
 			
-			h = yaffs_open(str, strIndex, O_CREAT | O_RDWR | O_TRUNC, S_IREAD | S_IWRITE);
+			h = yaffsfs_C.yaffs_open(str, strIndex, yaffsfs_H.O_CREAT | yaffsfs_H.O_RDWR | yaffsfs_H.O_TRUNC, yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE);
 			
-			printf("writing file %a handle %d ",str,strIndex,h);
+			Unix.printf("writing file %a handle %d ",PrimitiveWrapperFactory.get(str),PrimitiveWrapperFactory.get(strIndex),PrimitiveWrapperFactory.get(h));
 			
-			while ((result = yaffs_write(h,xx,xxIndex,600)) == 600)
+			while ((result = yaffsfs_C.yaffs_write(h,xx,xxIndex,600)) == 600)
 			{
-				f = yaffs_freespace(path, pathIndex);
+				f = yaffsfs_C.yaffs_freespace(path, pathIndex);
 			}
-			result = yaffs_close(h);
-			printf(" close %d\n",result);
+			result = yaffsfs_C.yaffs_close(h);
+			Unix.printf(" close %d\n",PrimitiveWrapperFactory.get(result));
 		}
 	}
 
@@ -420,14 +416,14 @@ public class Dtest_C {
 		
 		for(i = 0; i < ncycles; i++)
 		{
-			printf("@@@@@@@@@@@@@@ cycle %d\n",i);
+			Unix.printf("@@@@@@@@@@@@@@ cycle %d\n",PrimitiveWrapperFactory.get(i));
 			fill_disk(path,pathIndex,nfiles);
 			
 			for(j = 0; j < nfiles; j++)
 			{
-				sprintf(str,strIndex,"%a/%d",path,pathIndex,j);
-				result = yaffs_unlink(str,strIndex);
-				printf("unlinking file %a, result %d\n",str,strIndex,result);
+				Unix.sprintf(str,strIndex,"%a/%d",PrimitiveWrapperFactory.get(path),PrimitiveWrapperFactory.get(pathIndex),PrimitiveWrapperFactory.get(j));
+				result = yaffsfs_C.yaffs_unlink(str,strIndex);
+				Unix.printf("unlinking file %a, result %d\n",PrimitiveWrapperFactory.get(str),PrimitiveWrapperFactory.get(strIndex),PrimitiveWrapperFactory.get(result));
 			}
 		}
 	}
@@ -443,21 +439,21 @@ public class Dtest_C {
 		i = 0;
 		
 		do{
-			sprintf(str,strIndex,"%a/%d",path,pathIndex,i);
-			h = yaffs_open(str, strIndex, O_CREAT | O_TRUNC | O_RDWR,S_IREAD | S_IWRITE);
-			yaffs_close(h);
+			Unix.sprintf(str,strIndex,"%a/%d",PrimitiveWrapperFactory.get(path),PrimitiveWrapperFactory.get(pathIndex),PrimitiveWrapperFactory.get(i));
+			h = yaffsfs_C.yaffs_open(str, strIndex, yaffsfs_H.O_CREAT | yaffsfs_H.O_TRUNC | yaffsfs_H.O_RDWR,yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE);
+			yaffsfs_C.yaffs_close(h);
 
 			if(h >= 0)
 			{
 				for(j = 0; j < siz; j++)
 				{
-					yaffs_write(h,str,strIndex,1);
+					yaffsfs_C.yaffs_write(h,str,strIndex,1);
 				}
 			}
 			
 			if((flags & 1) != 0)
 			{
-				yaffs_unlink(str, strIndex);
+				yaffsfs_C.yaffs_unlink(str, strIndex);
 			}
 			i++;
 		} while(h >= 0 && i < maxIterations);
@@ -466,10 +462,10 @@ public class Dtest_C {
 		{
 			i = 0;
 			do{
-				sprintf(str, strIndex, "%a/%d", path, pathIndex, i);
-				printf("unlink %a\n",str,strIndex);
+				Unix.sprintf(str, strIndex, "%a/%d", PrimitiveWrapperFactory.get(path), PrimitiveWrapperFactory.get(pathIndex), PrimitiveWrapperFactory.get(i));
+				Unix.printf("unlink %a\n",PrimitiveWrapperFactory.get(str),PrimitiveWrapperFactory.get(strIndex));
 				i++;
-			} while(yaffs_unlink(str,strIndex) >= 0);
+			} while(yaffsfs_C.yaffs_unlink(str,strIndex) >= 0);
 		}
 	}
 
@@ -482,12 +478,12 @@ public class Dtest_C {
 		i = 0;
 		
 		do{
-			sprintf(str, strIndex,"%a/%d",path, pathIndex,i);
-			printf("create %a\n",str, strIndex);
-			h = yaffs_open(str, strIndex, O_CREAT | O_TRUNC | O_RDWR,S_IREAD | S_IWRITE);
+			Unix.sprintf(str, strIndex,"%a/%d",PrimitiveWrapperFactory.get(path), PrimitiveWrapperFactory.get(pathIndex),PrimitiveWrapperFactory.get(i));
+			Unix.printf("create %a\n",PrimitiveWrapperFactory.get(str), PrimitiveWrapperFactory.get(strIndex));
+			h = yaffsfs_C.yaffs_open(str, strIndex, yaffsfs_H.O_CREAT | yaffsfs_H.O_TRUNC | yaffsfs_H.O_RDWR,yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE);
 			if(h >= 0)
 			{
-				yaffs_unlink(str, strIndex);
+				yaffsfs_C.yaffs_unlink(str, strIndex);
 			}
 			i++;
 		} while(h < 0 && i < maxIterations);
@@ -496,11 +492,11 @@ public class Dtest_C {
 		{
 			for(i = 0; i < siz; i++)
 			{
-				yaffs_write(h,str, strIndex,1);
+				yaffsfs_C.yaffs_write(h,str, strIndex,1);
 			}
 		}
 		
-		printf("Leaving file %a open\n",str, strIndex);
+		Unix.printf("Leaving file %a open\n",PrimitiveWrapperFactory.get(str), PrimitiveWrapperFactory.get(strIndex));
 
 	}
 
@@ -511,42 +507,42 @@ public class Dtest_C {
 		yaffs_stat s = new yaffs_stat();
 		byte[] str = new byte[100]; final int strIndex = 0;
 				
-		d = yaffs_opendir(dname, dnameIndex);
+		d = yaffsfs_C.yaffs_opendir(dname, dnameIndex);
 		
 		if(!(d != null))
 		{
-			printf("opendir failed\n");
+			Unix.printf("opendir failed\n");
 		}
 		else
 		{
-			while((de = yaffs_readdir(d)) != null)
+			while((de = yaffsfs_C.yaffs_readdir(d)) != null)
 			{
-				sprintf(str, strIndex,"%a/%a",dname, dnameIndex,de.d_name,de.d_nameIndex);
+				Unix.sprintf(str, strIndex,"%a/%a",PrimitiveWrapperFactory.get(dname), PrimitiveWrapperFactory.get(dnameIndex),PrimitiveWrapperFactory.get(de.d_name),PrimitiveWrapperFactory.get(de.d_nameIndex));
 				
-				yaffs_stat(str, strIndex, s);
+				yaffsfs_C.yaffs_stat(str, strIndex, s);
 				
-				printf("%a length %d mode %X ",de.d_name,de.d_nameIndex,(int)s.st_size,s.st_mode);
-				switch(s.st_mode & S_IFMT)
+				Unix.printf("%a length %d mode %X ",PrimitiveWrapperFactory.get(de.d_name),PrimitiveWrapperFactory.get(de.d_nameIndex),PrimitiveWrapperFactory.get((int)s.st_size),PrimitiveWrapperFactory.get(s.st_mode));
+				switch(s.st_mode & yaffsfs_H.S_IFMT)
 				{
-					case S_IFREG: printf("data file"); break;
-					case S_IFDIR: printf("directory"); break;
-					case S_IFLNK: printf("symlink -->");
-								  if(yaffs_readlink(str, strIndex,str, strIndex,100) < 0)
-									printf("no alias");
+					case yaffsfs_H.S_IFREG: Unix.printf("data file"); break;
+					case Unix.S_IFDIR: Unix.printf("directory"); break;
+					case yaffsfs_H.S_IFLNK: Unix.printf("symlink -->");
+								  if(yaffsfs_C.yaffs_readlink(str, strIndex,str, strIndex,100) < 0)
+									Unix.printf("no alias");
 								  else
-									printf("\"%a\"",str, strIndex);    
+									Unix.printf("\"%a\"",PrimitiveWrapperFactory.get(str), PrimitiveWrapperFactory.get(strIndex));    
 								  break;
-					default: printf("unknown"); break;
+					default: Unix.printf("unknown"); break;
 				}
 				
-				printf("\n");           
+				Unix.printf("\n");           
 			}
 			
-			yaffs_closedir(d);
+			yaffsfs_C.yaffs_closedir(d);
 		}
-		printf("\n");
+		Unix.printf("\n");
 		
-		printf("Free space in %a is %d\n\n",dname,dnameIndex,(int)yaffs_freespace(dname, dnameIndex));
+		Unix.printf("Free space in %a is %d\n\n",PrimitiveWrapperFactory.get(dname),PrimitiveWrapperFactory.get(dnameIndex),PrimitiveWrapperFactory.get((int)yaffsfs_C.yaffs_freespace(dname, dnameIndex)));
 
 	}
 
@@ -558,43 +554,43 @@ public class Dtest_C {
 		yaffs_stat s = new yaffs_stat();
 		byte[] str = new byte[1000]; final int strIndex = 0;
 				
-		d = yaffs_opendir(dname, dnameIndex);
+		d = yaffsfs_C.yaffs_opendir(dname, dnameIndex);
 		
 		if(!(d != null))
 		{
-			printf("opendir failed\n");
+			Unix.printf("opendir failed\n");
 		}
 		else
 		{
-			while((de = yaffs_readdir(d)) != null)
+			while((de = yaffsfs_C.yaffs_readdir(d)) != null)
 			{
-				sprintf(str, strIndex,"%a/%a",dname,dnameIndex,de.d_name,de.d_nameIndex);
+				Unix.sprintf(str, strIndex,"%a/%a",PrimitiveWrapperFactory.get(dname),PrimitiveWrapperFactory.get(dnameIndex),PrimitiveWrapperFactory.get(de.d_name),PrimitiveWrapperFactory.get(de.d_nameIndex));
 				
-				yaffs_lstat(str, strIndex,s);
+				yaffsfs_C.yaffs_lstat(str, strIndex,s);
 				
-				printf("%a inode %d obj %x length %d mode %X ",str,strIndex,s.st_ino,
-						yaffs2.utils.Utils.hashCode(de.d_dont_use),(int)s.st_size,s.st_mode);
-				switch(s.st_mode & S_IFMT)
+				Unix.printf("%a inode %d obj %x length %d mode %X ",PrimitiveWrapperFactory.get(str),PrimitiveWrapperFactory.get(strIndex),PrimitiveWrapperFactory.get(s.st_ino),
+						PrimitiveWrapperFactory.get(Utils.hashCode(de.d_dont_use)),PrimitiveWrapperFactory.get((int)s.st_size),PrimitiveWrapperFactory.get(s.st_mode));
+				switch(s.st_mode & yaffsfs_H.S_IFMT)
 				{
-					case S_IFREG: printf("data file"); break;
-					case S_IFDIR: printf("directory"); break;
-					case S_IFLNK: printf("symlink -->");
-								  if(yaffs_readlink(str, strIndex,str, strIndex,100) < 0)
-									printf("no alias");
+					case yaffsfs_H.S_IFREG: Unix.printf("data file"); break;
+					case Unix.S_IFDIR: Unix.printf("directory"); break;
+					case yaffsfs_H.S_IFLNK: Unix.printf("symlink -->");
+								  if(yaffsfs_C.yaffs_readlink(str, strIndex,str, strIndex,100) < 0)
+									Unix.printf("no alias");
 								  else
-									printf("\"%a\"",str, strIndex);    
+									Unix.printf("\"%a\"",PrimitiveWrapperFactory.get(str), PrimitiveWrapperFactory.get(strIndex));    
 								  break;
-					default: printf("unknown"); break;
+					default: Unix.printf("unknown"); break;
 				}
 				
-				printf("\n");
+				Unix.printf("\n");
 
-				if((s.st_mode & S_IFMT) == S_IFDIR && recursive != 0)
+				if((s.st_mode & yaffsfs_H.S_IFMT) == Unix.S_IFDIR && recursive != 0)
 					dump_directory_tree_worker(str, strIndex,1);
 								
 			}
 			
-			yaffs_closedir(d);
+			yaffsfs_C.yaffs_closedir(d);
 		}
 
 	}
@@ -602,14 +598,14 @@ public class Dtest_C {
 	static void dump_directory_tree(byte[] dname, int dnameIndex)
 	{
 		dump_directory_tree_worker(dname, dnameIndex,1);
-		printf("\n");
-		printf("Free space in %a is %d\n\n",dname,dnameIndex,(int)yaffs_freespace(dname, dnameIndex));
+		Unix.printf("\n");
+		Unix.printf("Free space in %a is %d\n\n",PrimitiveWrapperFactory.get(dname),PrimitiveWrapperFactory.get(dnameIndex),PrimitiveWrapperFactory.get((int)yaffsfs_C.yaffs_freespace(dname, dnameIndex)));
 	}
 
 	static void dumpDir(byte[] dname, int dnameIndex)
 	{	dump_directory_tree_worker(dname, dnameIndex,0);
-		printf("\n");
-		printf("Free space in %a is %d\n\n",dname, dnameIndex,(int)yaffs_freespace(dname, dnameIndex));
+		Unix.printf("\n");
+		Unix.printf("Free space in %a is %d\n\n",PrimitiveWrapperFactory.get(dname), PrimitiveWrapperFactory.get(dnameIndex),PrimitiveWrapperFactory.get((int)yaffsfs_C.yaffs_freespace(dname, dnameIndex)));
 	}
 
 
@@ -617,21 +613,21 @@ public class Dtest_C {
 	{
 		int fd;
 		
-		if(yaffs_chmod(path, pathIndex,tmode)< 0) printf("chmod failed\n");
+		if(yaffsfs_C.yaffs_chmod(path, pathIndex,tmode)< 0) Unix.printf("chmod failed\n");
 		
-		fd = yaffs_open(path, pathIndex,tflags,0);
+		fd = yaffsfs_C.yaffs_open(path, pathIndex,tflags,0);
 		
 		if((fd >= 0) != (expectedResult > 0))
 		{
-			printf("Permissions check %x %x %d failed\n",tmode,tflags,expectedResult);
+			Unix.printf("Permissions check %x %x %d failed\n",PrimitiveWrapperFactory.get(tmode),PrimitiveWrapperFactory.get(tflags),PrimitiveWrapperFactory.get(expectedResult));
 		}
 		else
 		{
-			printf("Permissions check %x %x %d OK\n",tmode,tflags,expectedResult);
+			Unix.printf("Permissions check %x %x %d OK\n",PrimitiveWrapperFactory.get(tmode),PrimitiveWrapperFactory.get(tflags),PrimitiveWrapperFactory.get(expectedResult));
 		}
 		
 		
-		yaffs_close(fd);
+		yaffsfs_C.yaffs_close(fd);
 		
 		
 	}
@@ -653,80 +649,80 @@ public class Dtest_C {
 		
 		yaffs2.utils.Globals.configuration.yaffs_StartUp();
 	
-		yaffs_mount(StringToByteArray("/flash/boot"), 0);
-//		yaffs_mount(StringToByteArray("/boot"), 0);
-//		yaffs_mount(StringToByteArray("/data"), 0);
-//		yaffs_mount(StringToByteArray("/flash"), 0);
-//		yaffs_mount(StringToByteArray("/ram"), 0);
+		yaffsfs_C.yaffs_mount(Utils.StringToByteArray("/flash/boot"), 0);
+//		yaffsfs_C.yaffs_mount(Utils.StringToByteArray("/boot"), 0);
+//		yaffsfs_C.yaffs_mount(Utils.StringToByteArray("/data"), 0);
+//		yaffsfs_C.yaffs_mount(Utils.StringToByteArray("/flash"), 0);
+//		yaffsfs_C.yaffs_mount(Utils.StringToByteArray("/ram"), 0);
 		
-		printf("\nDirectory look-up of /flash/boot\n");
-		dumpDir(StringToByteArray("/flash/boot"), 0);
-//		printf("\nDirectory look-up of /boot\n");
-//		dumpDir(StringToByteArray("/boot"), 0);
-//		printf("\nDirectory look-up of /data\n");
-//		dumpDir(StringToByteArray("/data"), 0);
-//		printf("\nDirectory look-up of /flash\n");
-//		dumpDir(StringToByteArray("/flash"), 0);
+		Unix.printf("\nDirectory look-up of /flash/boot\n");
+		dumpDir(Utils.StringToByteArray("/flash/boot"), 0);
+//		Unix.printf("\nDirectory look-up of /boot\n");
+//		dumpDir(Utils.StringToByteArray("/boot"), 0);
+//		Unix.printf("\nDirectory look-up of /data\n");
+//		dumpDir(Utils.StringToByteArray("/data"), 0);
+//		Unix.printf("\nDirectory look-up of /flash\n");
+//		dumpDir(Utils.StringToByteArray("/flash"), 0);
 
 		//leave_unlinked_file("/flash",20000,0);
 		//leave_unlinked_file("/data",20000,0);
 		
-//		leave_unlinked_file(StringToByteArray("/ram"),0,20,0);
+//		leave_unlinked_file(Utils.StringToByteArray("/ram"),0,20,0);
 		
 
-		f = yaffs_open(StringToByteArray("/flashboot/b1"), 0, O_RDONLY,0);
+		f = yaffsfs_C.yaffs_open(Utils.StringToByteArray("/flashboot/b1"), 0, yaffsfs_H.O_RDONLY,0);
 		
-		printf("open /flash/boot/b1 readonly, f=%d\n",f);
+		Unix.printf("open /flash/boot/b1 readonly, f=%d\n",PrimitiveWrapperFactory.get(f));
 		
-		f = yaffs_open(StringToByteArray("/flash/boot/b1"), 0, O_CREAT,S_IREAD | S_IWRITE);
+		f = yaffsfs_C.yaffs_open(Utils.StringToByteArray("/flash/boot/b1"), 0, yaffsfs_H.O_CREAT,yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE);
 		
-		printf("open /flash/boot/b1 O_CREAT, f=%d\n",f);
+		Unix.printf("open /flash/boot/b1 yaffsfs_H.O_CREAT, f=%d\n",PrimitiveWrapperFactory.get(f));
 		
 		
-		r = yaffs_write(f,StringToByteArray("hello"),0,1);
-		printf("write %d attempted to write to a read-only file\n",r);
+		r = yaffsfs_C.yaffs_write(f,Utils.StringToByteArray("hello"),0,1);
+		Unix.printf("write %d attempted to write to a read-only file\n",PrimitiveWrapperFactory.get(r));
 		
-		r = yaffs_close(f);
+		r = yaffsfs_C.yaffs_close(f);
 		
-		printf("close %d\n",r);
+		Unix.printf("close %d\n",PrimitiveWrapperFactory.get(r));
 
-		f = yaffs_open(StringToByteArray("/flash/boot/b1"), 0, O_RDWR,0);
+		f = yaffsfs_C.yaffs_open(Utils.StringToByteArray("/flash/boot/b1"), 0, yaffsfs_H.O_RDWR,0);
 		
-		printf("open /flash/boot/b1 O_RDWR,f=%d\n",f);
+		Unix.printf("open /flash/boot/b1 yaffsfs_H.O_RDWR,f=%d\n",PrimitiveWrapperFactory.get(f));
 		
 		
-		r = yaffs_write(f,StringToByteArray("hello"),0,2);
-		printf("write %d attempted to write to a writeable file\n",r);
-		r = yaffs_write(f,StringToByteArray("world"),0,3);
-		printf("write %d attempted to write to a writeable file\n",r);
+		r = yaffsfs_C.yaffs_write(f,Utils.StringToByteArray("hello"),0,2);
+		Unix.printf("write %d attempted to write to a writeable file\n",PrimitiveWrapperFactory.get(r));
+		r = yaffsfs_C.yaffs_write(f,Utils.StringToByteArray("world"),0,3);
+		Unix.printf("write %d attempted to write to a writeable file\n",PrimitiveWrapperFactory.get(r));
 		
-		r= yaffs_lseek(f,0,SEEK_END);
-		printf("seek end %d\n",r);
-		memset(buffer,bufferIndex,(byte)0,20);
-		r = yaffs_read(f,buffer,bufferIndex,10);
-		printf("read %d \"%s\"\n",r,byteArrayToString(buffer,0));
-		r= yaffs_lseek(f,0,SEEK_SET);
-		printf("seek set %d\n",r);
-		memset(buffer,bufferIndex,(byte)0,20);
-		r = yaffs_read(f,buffer,bufferIndex,10);
-		printf("read %d \"%s\"\n",r,byteArrayToString(buffer,0));
-		memset(buffer,bufferIndex,(byte)0,20);
-		r = yaffs_read(f,buffer,bufferIndex,10);
-		printf("read %d \"%s\"\n",r,byteArrayToString(buffer,0));
+		r= yaffsfs_C.yaffs_lseek(f,0,yaffsfs_H.SEEK_END);
+		Unix.printf("seek end %d\n",PrimitiveWrapperFactory.get(r));
+		Unix.memset(buffer,bufferIndex,(byte)0,20);
+		r = yaffsfs_C.yaffs_read(f,buffer,bufferIndex,10);
+		Unix.printf("read %d \"%s\"\n",PrimitiveWrapperFactory.get(r),PrimitiveWrapperFactory.get(EmulationUtils.byteArrayToString(buffer,0)));
+		r= yaffsfs_C.yaffs_lseek(f,0,yaffsfs_H.SEEK_SET);
+		Unix.printf("seek set %d\n",PrimitiveWrapperFactory.get(r));
+		Unix.memset(buffer,bufferIndex,(byte)0,20);
+		r = yaffsfs_C.yaffs_read(f,buffer,bufferIndex,10);
+		Unix.printf("read %d \"%s\"\n",PrimitiveWrapperFactory.get(r),PrimitiveWrapperFactory.get(EmulationUtils.byteArrayToString(buffer,0)));
+		Unix.memset(buffer,bufferIndex,(byte)0,20);
+		r = yaffsfs_C.yaffs_read(f,buffer,bufferIndex,10);
+		Unix.printf("read %d \"%s\"\n",PrimitiveWrapperFactory.get(r),PrimitiveWrapperFactory.get(EmulationUtils.byteArrayToString(buffer,0)));
 
 		// Check values reading at end.
 		// A read past end of file should return 0 for 0 bytes read.
 			
-		r= yaffs_lseek(f,0,SEEK_END);
-		r = yaffs_read(f,buffer,bufferIndex,10);
-		printf("read at end returned  %d\n",r); 
-		r= yaffs_lseek(f,500,SEEK_END);
-		r = yaffs_read(f,buffer,bufferIndex,10);
-		printf("read past end returned  %d\n",r);       
+		r= yaffsfs_C.yaffs_lseek(f,0,yaffsfs_H.SEEK_END);
+		r = yaffsfs_C.yaffs_read(f,buffer,bufferIndex,10);
+		Unix.printf("read at end returned  %d\n",PrimitiveWrapperFactory.get(r)); 
+		r= yaffsfs_C.yaffs_lseek(f,500,yaffsfs_H.SEEK_END);
+		r = yaffsfs_C.yaffs_read(f,buffer,bufferIndex,10);
+		Unix.printf("read past end returned  %d\n",PrimitiveWrapperFactory.get(r));       
 		
-		r = yaffs_close(f);
+		r = yaffsfs_C.yaffs_close(f);
 		
-		printf("close %d\n",r);
+		Unix.printf("close %d\n",PrimitiveWrapperFactory.get(r));
 		
 		copy_in_a_file("/flash/boot/yyfile","xxx");
 		
@@ -735,153 +731,153 @@ public class Dtest_C {
 		copy_in_a_file("/flash/boot/file with a long name","xxx");
 		
 		
-		printf("\nDirectory look-up of /flash/boot\n");
-		dumpDir(StringToByteArray("/flash/boot"),0);
+		Unix.printf("\nDirectory look-up of /flash/boot\n");
+		dumpDir(Utils.StringToByteArray("/flash/boot"),0);
 
 		// Check stat
-		r = yaffs_stat(StringToByteArray("/flash/boot/file with a long name"),0,ystat);
+		r = yaffsfs_C.yaffs_stat(Utils.StringToByteArray("/flash/boot/file with a long name"),0,ystat);
 		
 		// Check rename
 		
-		r = yaffs_rename(StringToByteArray("/flash/boot/file with a long name"),0,StringToByteArray("/flash/boot/r1"),0);
+		r = yaffsfs_C.yaffs_rename(Utils.StringToByteArray("/flash/boot/file with a long name"),0,Utils.StringToByteArray("/flash/boot/r1"),0);
 		
-		printf("\nDirectory look-up of /flash/boot\n");
-		dumpDir(StringToByteArray("/flash/boot"),0);
+		Unix.printf("\nDirectory look-up of /flash/boot\n");
+		dumpDir(Utils.StringToByteArray("/flash/boot"),0);
 		
 		// Check unlink
-		r = yaffs_unlink(StringToByteArray("/flash/boot/r1"),0);
+		r = yaffsfs_C.yaffs_unlink(Utils.StringToByteArray("/flash/boot/r1"),0);
 		
-		printf("\nDirectory look-up of /flash/boot\n");
-		dumpDir(StringToByteArray("/flash/boot"),0);
+		Unix.printf("\nDirectory look-up of /flash/boot\n");
+		dumpDir(Utils.StringToByteArray("/flash/boot"),0);
 
 		// Check mkdir
 		
-		r = yaffs_mkdir(StringToByteArray("/flash/boot/directory1"),0,0);
+		r = yaffsfs_C.yaffs_mkdir(Utils.StringToByteArray("/flash/boot/directory1"),0,0);
 		
-		printf("\nDirectory look-up of /flash/boot\n");
-		dumpDir(StringToByteArray("/flash/boot"),0);
-		printf("\nDirectory look-up of /flash/boot/directory1\n");
-		dumpDir(StringToByteArray("/flash/boot/directory1"),0);
+		Unix.printf("\nDirectory look-up of /flash/boot\n");
+		dumpDir(Utils.StringToByteArray("/flash/boot"),0);
+		Unix.printf("\nDirectory look-up of /flash/boot/directory1\n");
+		dumpDir(Utils.StringToByteArray("/flash/boot/directory1"),0);
 
 		// add a file to the directory                  
 		copy_in_a_file("/flash/boot/directory1/file with a long name","xxx");
 		
-		printf("\nDirectory look-up of /flash/boot\n");
-		dumpDir(StringToByteArray("/flash/boot"),0);
-		printf("\nDirectory look-up of /flash/boot/directory1\n");
-		dumpDir(StringToByteArray("/flash/boot/directory1"),0);
+		Unix.printf("\nDirectory look-up of /flash/boot\n");
+		dumpDir(Utils.StringToByteArray("/flash/boot"),0);
+		Unix.printf("\nDirectory look-up of /flash/boot/directory1\n");
+		dumpDir(Utils.StringToByteArray("/flash/boot/directory1"),0);
 		
 		//  Attempt to delete directory (should fail)
 		
-		r = yaffs_rmdir(StringToByteArray("/flash/boot/directory1"),0);
+		r = yaffsfs_C.yaffs_rmdir(Utils.StringToByteArray("/flash/boot/directory1"),0);
 		
-		printf("\nDirectory look-up of /flash/boot\n");
-		dumpDir(StringToByteArray("/flash/boot"),0);
-		printf("\nDirectory look-up of /flash/boot/directory1\n");
-		dumpDir(StringToByteArray("/flash/boot/directory1"),0);
+		Unix.printf("\nDirectory look-up of /flash/boot\n");
+		dumpDir(Utils.StringToByteArray("/flash/boot"),0);
+		Unix.printf("\nDirectory look-up of /flash/boot/directory1\n");
+		dumpDir(Utils.StringToByteArray("/flash/boot/directory1"),0);
 		
 		// Delete file first, then rmdir should work
-		r = yaffs_unlink(StringToByteArray("/flash/boot/directory1/file with a long name"),0);
-		r = yaffs_rmdir(StringToByteArray("/flash/boot/directory1"),0);
+		r = yaffsfs_C.yaffs_unlink(Utils.StringToByteArray("/flash/boot/directory1/file with a long name"),0);
+		r = yaffsfs_C.yaffs_rmdir(Utils.StringToByteArray("/flash/boot/directory1"),0);
 		
 		
-		printf("\nDirectory look-up of /flash/boot\n");
-		dumpDir(StringToByteArray("/flash/boot"),0);
-		printf("\nDirectory look-up of /flash/boot/directory1\n");
-		dumpDir(StringToByteArray("/flash/boot/directory1"),0);
+		Unix.printf("\nDirectory look-up of /flash/boot\n");
+		dumpDir(Utils.StringToByteArray("/flash/boot"),0);
+		Unix.printf("\nDirectory look-up of /flash/boot/directory1\n");
+		dumpDir(Utils.StringToByteArray("/flash/boot/directory1"),0);
 
 //	#if 0
 //		fill_disk_and_delete("/boot",20,20);
 //				
-//		printf("\nDirectory look-up of /boot\n");
+//		Unix.printf("\nDirectory look-up of /boot\n");
 //		dumpDir("/boot");
 //	#endif
 
-		yaffs_symlink(StringToByteArray("yyfile"),0,StringToByteArray("/flash/boot/slink"),0);
+		yaffsfs_C.yaffs_symlink(Utils.StringToByteArray("yyfile"),0,Utils.StringToByteArray("/flash/boot/slink"),0);
 		
-		yaffs_readlink(StringToByteArray("/flash/boot/slink"),0,str,strIndex,100);
-		printf("symlink alias is %s\n",byteArrayToString(str,0));
+		yaffsfs_C.yaffs_readlink(Utils.StringToByteArray("/flash/boot/slink"),0,str,strIndex,100);
+		Unix.printf("symlink alias is %s\n",PrimitiveWrapperFactory.get(EmulationUtils.byteArrayToString(str,0)));
 		
 
-		printf("\nDirectory look-up of /flash/boot\n");
-		dumpDir(StringToByteArray("/flash/boot"),0);
-		printf("\nDirectory look-up of /flash/boot (using stat instead of lstat)\n");
-		dumpDirFollow(StringToByteArray("/flash/boot"),0);
-		printf("\nDirectory look-up of /flash/boot/directory1\n");
-		dumpDir(StringToByteArray("/flash/boot/directory1"),0);
+		Unix.printf("\nDirectory look-up of /flash/boot\n");
+		dumpDir(Utils.StringToByteArray("/flash/boot"),0);
+		Unix.printf("\nDirectory look-up of /flash/boot (using stat instead of lstat)\n");
+		dumpDirFollow(Utils.StringToByteArray("/flash/boot"),0);
+		Unix.printf("\nDirectory look-up of /flash/boot/directory1\n");
+		dumpDir(Utils.StringToByteArray("/flash/boot/directory1"),0);
 
-		h = yaffs_open(StringToByteArray("/flash/boot/slink"),0,O_RDWR,0);
+		h = yaffsfs_C.yaffs_open(Utils.StringToByteArray("/flash/boot/slink"),0,yaffsfs_H.O_RDWR,0);
 		
-		printf("file length is %d\n",(int)yaffs_lseek(h,0,SEEK_END));
+		Unix.printf("file length is %d\n",PrimitiveWrapperFactory.get((int)yaffsfs_C.yaffs_lseek(h,0,yaffsfs_H.SEEK_END)));
 		
-		yaffs_close(h);
+		yaffsfs_C.yaffs_close(h);
 		
-		yaffs_unlink(StringToByteArray("/flash/boot/slink"),0);
+		yaffsfs_C.yaffs_unlink(Utils.StringToByteArray("/flash/boot/slink"),0);
 
 		
-		printf("\nDirectory look-up of /flash/boot\n");
-		dumpDir(StringToByteArray("/flash/boot"),0);
+		Unix.printf("\nDirectory look-up of /flash/boot\n");
+		dumpDir(Utils.StringToByteArray("/flash/boot"),0);
 		
 		// Check chmod
 		
-		yaffs_stat(StringToByteArray("/flash/boot/yyfile"),0,ystat);
+		yaffsfs_C.yaffs_stat(Utils.StringToByteArray("/flash/boot/yyfile"),0,ystat);
 		temp_mode = ystat.st_mode;
 		
-		yaffs_chmod(StringToByteArray("/flash/boot/yyfile"),0,0x55555);
-		printf("\nDirectory look-up of /flash/boot\n");
-		dumpDir(StringToByteArray("/flash/boot"),0);
+		yaffsfs_C.yaffs_chmod(Utils.StringToByteArray("/flash/boot/yyfile"),0,0x55555);
+		Unix.printf("\nDirectory look-up of /flash/boot\n");
+		dumpDir(Utils.StringToByteArray("/flash/boot"),0);
 		
-		yaffs_chmod(StringToByteArray("/flash/boot/yyfile"),0,temp_mode);
-		printf("\nDirectory look-up of /flash/boot\n");
-		dumpDir(StringToByteArray("/flash/boot"),0);
+		yaffsfs_C.yaffs_chmod(Utils.StringToByteArray("/flash/boot/yyfile"),0,temp_mode);
+		Unix.printf("\nDirectory look-up of /flash/boot\n");
+		dumpDir(Utils.StringToByteArray("/flash/boot"),0);
 		
 		// Permission checks...
-		PermissionsCheck(StringToByteArray("/flash/boot/yyfile"),0,0, O_WRONLY,0);
-		PermissionsCheck(StringToByteArray("/flash/boot/yyfile"),0,0, O_RDONLY,0);
-		PermissionsCheck(StringToByteArray("/flash/boot/yyfile"),0,0, O_RDWR,0);
+		PermissionsCheck(Utils.StringToByteArray("/flash/boot/yyfile"),0,0, yaffsfs_H.O_WRONLY,0);
+		PermissionsCheck(Utils.StringToByteArray("/flash/boot/yyfile"),0,0, yaffsfs_H.O_RDONLY,0);
+		PermissionsCheck(Utils.StringToByteArray("/flash/boot/yyfile"),0,0, yaffsfs_H.O_RDWR,0);
 
-		PermissionsCheck(StringToByteArray("/flash/boot/yyfile"),0,S_IREAD, O_WRONLY,0);
-		PermissionsCheck(StringToByteArray("/flash/boot/yyfile"),0,S_IREAD, O_RDONLY,1);
-		PermissionsCheck(StringToByteArray("/flash/boot/yyfile"),0,S_IREAD, O_RDWR,0);
+		PermissionsCheck(Utils.StringToByteArray("/flash/boot/yyfile"),0,yaffsfs_H.S_IREAD, yaffsfs_H.O_WRONLY,0);
+		PermissionsCheck(Utils.StringToByteArray("/flash/boot/yyfile"),0,yaffsfs_H.S_IREAD, yaffsfs_H.O_RDONLY,1);
+		PermissionsCheck(Utils.StringToByteArray("/flash/boot/yyfile"),0,yaffsfs_H.S_IREAD, yaffsfs_H.O_RDWR,0);
 
-		PermissionsCheck(StringToByteArray("/flash/boot/yyfile"),0,S_IWRITE, O_WRONLY,1);
-		PermissionsCheck(StringToByteArray("/flash/boot/yyfile"),0,S_IWRITE, O_RDONLY,0);
-		PermissionsCheck(StringToByteArray("/flash/boot/yyfile"),0,S_IWRITE, O_RDWR,0);
+		PermissionsCheck(Utils.StringToByteArray("/flash/boot/yyfile"),0,yaffsfs_H.S_IWRITE, yaffsfs_H.O_WRONLY,1);
+		PermissionsCheck(Utils.StringToByteArray("/flash/boot/yyfile"),0,yaffsfs_H.S_IWRITE, yaffsfs_H.O_RDONLY,0);
+		PermissionsCheck(Utils.StringToByteArray("/flash/boot/yyfile"),0,yaffsfs_H.S_IWRITE, yaffsfs_H.O_RDWR,0);
 		
-		PermissionsCheck(StringToByteArray("/flash/boot/yyfile"),0,S_IREAD | S_IWRITE, O_WRONLY,1);
-		PermissionsCheck(StringToByteArray("/flash/boot/yyfile"),0,S_IREAD | S_IWRITE, O_RDONLY,1);
-		PermissionsCheck(StringToByteArray("/flash/boot/yyfile"),0,S_IREAD | S_IWRITE, O_RDWR,1);
+		PermissionsCheck(Utils.StringToByteArray("/flash/boot/yyfile"),0,yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE, yaffsfs_H.O_WRONLY,1);
+		PermissionsCheck(Utils.StringToByteArray("/flash/boot/yyfile"),0,yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE, yaffsfs_H.O_RDONLY,1);
+		PermissionsCheck(Utils.StringToByteArray("/flash/boot/yyfile"),0,yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE, yaffsfs_H.O_RDWR,1);
 
-		yaffs_chmod(StringToByteArray("/flash/boot/yyfile"),0,temp_mode);
+		yaffsfs_C.yaffs_chmod(Utils.StringToByteArray("/flash/boot/yyfile"),0,temp_mode);
 		
 		//create a zero-length file and unlink it (test for scan bug)
 		
-		h = yaffs_open(StringToByteArray("/flash/boot/zlf"),0,O_CREAT | O_TRUNC | O_RDWR,0);
-		yaffs_close(h);
+		h = yaffsfs_C.yaffs_open(Utils.StringToByteArray("/flash/boot/zlf"),0,yaffsfs_H.O_CREAT | yaffsfs_H.O_TRUNC | yaffsfs_H.O_RDWR,0);
+		yaffsfs_C.yaffs_close(h);
 		
-		yaffs_unlink(StringToByteArray("/flash/boot/zlf"),0);
+		yaffsfs_C.yaffs_unlink(Utils.StringToByteArray("/flash/boot/zlf"),0);
 		
 		
-		yaffs_DumpDevStruct(StringToByteArray("/flash/boot"),0);
+		yaffsfs_C.yaffs_DumpDevStruct(Utils.StringToByteArray("/flash/boot"),0);
 		
-		fill_disk_and_delete(StringToByteArray("/flash/boot"),0,20,20);
+		fill_disk_and_delete(Utils.StringToByteArray("/flash/boot"),0,20,20);
 		
-		yaffs_DumpDevStruct(StringToByteArray("/flash/boot"),0);
+		yaffsfs_C.yaffs_DumpDevStruct(Utils.StringToByteArray("/flash/boot"),0);
 		
-		fill_files(StringToByteArray("/flash/boot"),0,1,10000,0);
-		fill_files(StringToByteArray("/flash/boot"),0,1,10000,5000);
-		fill_files(StringToByteArray("/flash/boot"),0,2,10000,0);
-		fill_files(StringToByteArray("/flash/boot"),0,2,10000,5000);
+		fill_files(Utils.StringToByteArray("/flash/boot"),0,1,10000,0);
+		fill_files(Utils.StringToByteArray("/flash/boot"),0,1,10000,5000);
+		fill_files(Utils.StringToByteArray("/flash/boot"),0,2,10000,0);
+		fill_files(Utils.StringToByteArray("/flash/boot"),0,2,10000,5000);
 		
-//		leave_unlinked_file(StringToByteArray("/data"),0,20000,0);
-//		leave_unlinked_file(StringToByteArray("/data"),0,20000,5000);
-//		leave_unlinked_file(StringToByteArray("/data"),0,20000,5000);
-//		leave_unlinked_file(StringToByteArray("/data"),0,20000,5000);
-//		leave_unlinked_file(StringToByteArray("/data"),0,20000,5000);
-//		leave_unlinked_file(StringToByteArray("/data"),0,20000,5000);
+//		leave_unlinked_file(Utils.StringToByteArray("/data"),0,20000,0);
+//		leave_unlinked_file(Utils.StringToByteArray("/data"),0,20000,5000);
+//		leave_unlinked_file(Utils.StringToByteArray("/data"),0,20000,5000);
+//		leave_unlinked_file(Utils.StringToByteArray("/data"),0,20000,5000);
+//		leave_unlinked_file(Utils.StringToByteArray("/data"),0,20000,5000);
+//		leave_unlinked_file(Utils.StringToByteArray("/data"),0,20000,5000);
 		
-		yaffs_DumpDevStruct(StringToByteArray("/flash/boot"),0);
-//		yaffs_DumpDevStruct(StringToByteArray("/data"),0);
+		yaffsfs_C.yaffs_DumpDevStruct(Utils.StringToByteArray("/flash/boot"),0);
+//		yaffs_DumpDevStruct(Utils.StringToByteArray("/data"),0);
 		
 			
 			
@@ -914,40 +910,40 @@ public class Dtest_C {
 		
 		yaffs2.utils.Globals.configuration.yaffs_StartUp();
 		
-		yaffs_mount(StringToByteArray(path),0);
+		yaffsfs_C.yaffs_mount(Utils.StringToByteArray(path),0);
 		
 		// Create a large number of files
 		
 		for(i = 0; i < 2000; i++)
 		{
-		  sprintf(str,strIndex,"%s/%d",path,i);
+		  Unix.sprintf(str,strIndex,"%s/%d",PrimitiveWrapperFactory.get(path),PrimitiveWrapperFactory.get(i));
 		  
-		   f = yaffs_open(str,strIndex,O_CREAT,S_IREAD | S_IWRITE);
-		   yaffs_close(f);
+		   f = yaffsfs_C.yaffs_open(str,strIndex,yaffsfs_H.O_CREAT,yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE);
+		   yaffsfs_C.yaffs_close(f);
 		}
 		
 		
 		
-		d = yaffs_opendir(StringToByteArray(path),0);
+		d = yaffsfs_C.yaffs_opendir(Utils.StringToByteArray(path),0);
 		i = 0;
 		if (d != null) {
-		while((de = yaffs_readdir(d)) != null) {
+		while((de = yaffsfs_C.yaffs_readdir(d)) != null) {
 		if (total >lastTotal+100*9*1024||(i & 1023)==0){
-		printf("files = %d, total = %d\n",i, total);
+		Unix.printf("files = %d, total = %d\n",PrimitiveWrapperFactory.get(i), PrimitiveWrapperFactory.get(total));
 		lastTotal = total;
 		}
 			i++;
-			sprintf(str,strIndex,"%s/%s",path,byteArrayToString(de.d_name,de.d_nameIndex));
-			yaffs_lstat(str,strIndex,s);
-			switch(s.st_mode & S_IFMT){
-			case S_IFREG:
-		//printf("data file");
+			Unix.sprintf(str,strIndex,"%s/%s",PrimitiveWrapperFactory.get(path),PrimitiveWrapperFactory.get(EmulationUtils.byteArrayToString(de.d_name,de.d_nameIndex)));
+			yaffsfs_C.yaffs_lstat(str,strIndex,s);
+			switch(s.st_mode & yaffsfs_H.S_IFMT){
+			case yaffsfs_H.S_IFREG:
+		//Unix.printf("data file");
 		total += s.st_size;
 		break;
 		}
 		}
 		
-		yaffs_closedir(d);
+		yaffsfs_C.yaffs_closedir(d);
 		}
 		
 		return 0;
@@ -964,22 +960,22 @@ public class Dtest_C {
 		byte[] a = new byte[100]; final int aIndex = 0;
 		byte[] b = new byte[100]; final int bIndex = 0;
 		
-		sprintf(a,aIndex,"%s/a",mountpt);
-		sprintf(b,bIndex,"%s/b",mountpt);
+		Unix.sprintf(a,aIndex,"%s/a",PrimitiveWrapperFactory.get(mountpt));
+		Unix.sprintf(b,bIndex,"%s/b",PrimitiveWrapperFactory.get(mountpt));
 		
 		yaffs2.utils.Globals.configuration.yaffs_StartUp();
 		
-		yaffs_mount(StringToByteArray(mountpt),0);
-		i = yaffs_open(a,aIndex,O_CREAT | O_TRUNC | O_RDWR, 0); 
-		yaffs_close(i);
-		i = yaffs_open(b,bIndex,O_CREAT | O_TRUNC | O_RDWR, 0);
-		yaffs_close(i);
-		yaffs_rename(a,aIndex,b,bIndex); // rename over
-		yaffs_rename(b,bIndex,a,aIndex); // rename back again (not renaimng over)
-		yaffs_rename(a,aIndex,b,bIndex); // rename back again (not renaimng over)
+		yaffsfs_C.yaffs_mount(Utils.StringToByteArray(mountpt),0);
+		i = yaffsfs_C.yaffs_open(a,aIndex,yaffsfs_H.O_CREAT | yaffsfs_H.O_TRUNC | yaffsfs_H.O_RDWR, 0); 
+		yaffsfs_C.yaffs_close(i);
+		i = yaffsfs_C.yaffs_open(b,bIndex,yaffsfs_H.O_CREAT | yaffsfs_H.O_TRUNC | yaffsfs_H.O_RDWR, 0);
+		yaffsfs_C.yaffs_close(i);
+		yaffsfs_C.yaffs_rename(a,aIndex,b,bIndex); // rename over
+		yaffsfs_C.yaffs_rename(b,bIndex,a,aIndex); // rename back again (not renaimng over)
+		yaffsfs_C.yaffs_rename(a,aIndex,b,bIndex); // rename back again (not renaimng over)
 		
 		
-		yaffs_unmount(StringToByteArray(mountpt),0);
+		yaffsfs_C.yaffs_unmount(Utils.StringToByteArray(mountpt),0);
 		
 	}
 	
@@ -996,46 +992,46 @@ public class Dtest_C {
 	   
 	   yaffs2.utils.Globals.configuration.yaffs_StartUp();
 	   
-	   yaffs_mount(StringToByteArray(path),0);
+	   yaffsfs_C.yaffs_mount(Utils.StringToByteArray(path),0);
 	   
-	   sprintf(aname,anameIndex,"%s%s",path,"/a");
-	   sprintf(bname,bnameIndex,"%s%s",path,"/b");
+	   Unix.sprintf(aname,anameIndex,"%s%s",PrimitiveWrapperFactory.get(path),PrimitiveWrapperFactory.get("/a"));
+	   Unix.sprintf(bname,bnameIndex,"%s%s",PrimitiveWrapperFactory.get(path),PrimitiveWrapperFactory.get("/b"));
 	   
-	   memset(abuffer,abufferIndex,(byte)'a',1000);
-	   memset(bbuffer,bbufferIndex,(byte)'b',1000);
+	   Unix.memset(abuffer,abufferIndex,(byte)'a',1000);
+	   Unix.memset(bbuffer,bbufferIndex,(byte)'b',1000);
 	   
-	   a = yaffs_open(aname, anameIndex, O_CREAT | O_TRUNC | O_RDWR, S_IREAD | S_IWRITE);
-	   b = yaffs_open(bname, bnameIndex, O_CREAT | O_TRUNC | O_RDWR, S_IREAD | S_IWRITE);
+	   a = yaffsfs_C.yaffs_open(aname, anameIndex, yaffsfs_H.O_CREAT | yaffsfs_H.O_TRUNC | yaffsfs_H.O_RDWR, yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE);
+	   b = yaffsfs_C.yaffs_open(bname, bnameIndex, yaffsfs_H.O_CREAT | yaffsfs_H.O_TRUNC | yaffsfs_H.O_RDWR, yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE);
 	   
-	   printf(" %s %d %s %d\n",byteArrayToString(aname,0),a,byteArrayToString(bname,0),b);
+	   Unix.printf(" %s %d %s %d\n",PrimitiveWrapperFactory.get(EmulationUtils.byteArrayToString(aname,0)),PrimitiveWrapperFactory.get(a),PrimitiveWrapperFactory.get(EmulationUtils.byteArrayToString(bname,0)),PrimitiveWrapperFactory.get(b));
 	  
 	   x = 0;
 	   
 	   for(j = 0; j < 100; j++)
 	   {
-			yaffs_lseek(a,0,SEEK_END);
+			yaffsfs_C.yaffs_lseek(a,0,yaffsfs_H.SEEK_END);
 
 			
 			for(i = 0; i <20000; i++)
 			{
-			   //r =        yaffs_lseek(b,i,SEEK_SET);
-				//r = yaffs_write(b,bbuffer,1000);
+			   //r =        yaffsfs_C.yaffs_lseek(b,i,yaffsfs_H.SEEK_SET);
+				//r = yaffsfs_C.yaffs_write(b,bbuffer,1000);
 				
 				if((x & 0x16) != 0)
 				{
 					// shrink
-					int syz = yaffs_lseek(a,0,SEEK_END);
+					int syz = yaffsfs_C.yaffs_lseek(a,0,yaffsfs_H.SEEK_END);
 					
 					syz -= 500;
 					if(syz < 0) syz = 0;
-					yaffs_truncate(a,syz);
+					yaffsfs_C.yaffs_truncate(a,syz);
 					
 				}
 				else
 				{
 					//expand
-					r = yaffs_lseek(a,i * 500,SEEK_SET);
-					r = yaffs_write(a,abuffer,abufferIndex,1000);
+					r = yaffsfs_C.yaffs_lseek(a,i * 500,yaffsfs_H.SEEK_SET);
+					r = yaffsfs_C.yaffs_write(a,abuffer,abufferIndex,1000);
 				}
 				x++;
 				
@@ -1060,44 +1056,44 @@ public class Dtest_C {
 	   
 	   yaffs2.utils.Globals.configuration.yaffs_StartUp();
 	   
-	   yaffs_mount(StringToByteArray(path),0);
+	   yaffsfs_C.yaffs_mount(Utils.StringToByteArray(path),0);
 	   
-	   sprintf(aname,anameIndex,"%s%s",path,"/a");
-	   sprintf(bname,bnameIndex,"%s%s",path,"/b");
+	   Unix.sprintf(aname,anameIndex,"%s%s",PrimitiveWrapperFactory.get(path),PrimitiveWrapperFactory.get("/a"));
+	   Unix.sprintf(bname,bnameIndex,"%s%s",PrimitiveWrapperFactory.get(path),PrimitiveWrapperFactory.get("/b"));
 	   
-	   memset(abuffer,abufferIndex,(byte)'a',1000);
-	   memset(bbuffer,bbufferIndex,(byte)'b',1000);
+	   Unix.memset(abuffer,abufferIndex,(byte)'a',1000);
+	   Unix.memset(bbuffer,bbufferIndex,(byte)'b',1000);
 	   
-	   a = yaffs_open(aname, anameIndex, O_CREAT | O_TRUNC | O_RDWR, S_IREAD | S_IWRITE);
-	   b = yaffs_open(bname, bnameIndex, O_CREAT | O_TRUNC | O_RDWR, S_IREAD | S_IWRITE);
+	   a = yaffsfs_C.yaffs_open(aname, anameIndex, yaffsfs_H.O_CREAT | yaffsfs_H.O_TRUNC | yaffsfs_H.O_RDWR, yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE);
+	   b = yaffsfs_C.yaffs_open(bname, bnameIndex, yaffsfs_H.O_CREAT | yaffsfs_H.O_TRUNC | yaffsfs_H.O_RDWR, yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE);
 	   
-	   printf(" %s %d %s %d\n",byteArrayToString(aname,anameIndex),a,byteArrayToString(bname,bnameIndex),b);
+	   Unix.printf(" %s %d %s %d\n",PrimitiveWrapperFactory.get(EmulationUtils.byteArrayToString(aname,anameIndex)),PrimitiveWrapperFactory.get(a),PrimitiveWrapperFactory.get(EmulationUtils.byteArrayToString(bname,bnameIndex)),PrimitiveWrapperFactory.get(b));
 	  
 	   x = 0;
 	   
 	   for(j = 0; j < iters; j++)
 	   {
-			yaffs_lseek(a,0,SEEK_END);
+			yaffsfs_C.yaffs_lseek(a,0,yaffsfs_H.SEEK_END);
 
 			
 			for(i = 0; i <20000; i++)
 			{
-			   //r =        yaffs_lseek(b,i,SEEK_SET);
-				//r = yaffs_write(b,bbuffer,1000);
+			   //r =        yaffsfs_C.yaffs_lseek(b,i,yaffsfs_H.SEEK_SET);
+				//r = yaffsfs_C.yaffs_write(b,bbuffer,1000);
 				
 				if(!(x%20 != 0))
 				{
 					// shrink
-					int syz = yaffs_lseek(a,0,SEEK_END);
+					int syz = yaffsfs_C.yaffs_lseek(a,0,yaffsfs_H.SEEK_END);
 					
 					while(syz > 4000)
 					{
 					
 						syz -= 2050;
 						if(syz < 0) syz = 0;
-						yaffs_truncate(a,syz);
-						syz = yaffs_lseek(a,0,SEEK_END);
-						printf("shrink to %d\n",syz);
+						yaffsfs_C.yaffs_truncate(a,syz);
+						syz = yaffsfs_C.yaffs_lseek(a,0,yaffsfs_H.SEEK_END);
+						Unix.printf("shrink to %d\n",PrimitiveWrapperFactory.get(syz));
 					}
 					
 					
@@ -1105,14 +1101,14 @@ public class Dtest_C {
 				else
 				{
 					//expand
-					r = yaffs_lseek(a,500,SEEK_END);
-					r = yaffs_write(a,abuffer,abufferIndex,1000);
+					r = yaffsfs_C.yaffs_lseek(a,500,yaffsfs_H.SEEK_END);
+					r = yaffsfs_C.yaffs_write(a,abuffer,abufferIndex,1000);
 				}
 				x++;
 				
 						
 			}
-			printf("file size is %d\n",yaffs_lseek(a,0,SEEK_END));
+			Unix.printf("file size is %d\n",PrimitiveWrapperFactory.get(yaffsfs_C.yaffs_lseek(a,0,yaffsfs_H.SEEK_END)));
 
 	   }
 	   
@@ -1133,44 +1129,44 @@ public class Dtest_C {
 //	   
 //	   yaffs_StartUp();
 //	   
-//	   yaffs_mount(path);
+//	   yaffsfs_C.yaffs_mount(path);
 //	   
-//	   sprintf(aname,"%s%s",path,"/a");
-//	   sprintf(bname,"%s%s",path,"/b");
+//	   Unix.sprintf(aname,"%s%s",path,"/a");
+//	   Unix.sprintf(bname,"%s%s",path,"/b");
 //	   
-//	   memset(abuffer,'a',1000);
-//	   memset(bbuffer,'b',1000);
+//	   Unix.memset(abuffer,'a',1000);
+//	   Unix.memset(bbuffer,'b',1000);
 //	   
-//	   a = yaffs_open(aname, O_CREAT | O_TRUNC | O_RDWR, S_IREAD | S_IWRITE);
-//	   b = yaffs_open(bname, O_CREAT | O_TRUNC | O_RDWR, S_IREAD | S_IWRITE);
+//	   a = yaffsfs_C.yaffs_open(aname, yaffsfs_H.O_CREAT | yaffsfs_H.O_TRUNC | yaffsfs_H.O_RDWR, yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE);
+//	   b = yaffsfs_C.yaffs_open(bname, yaffsfs_H.O_CREAT | yaffsfs_H.O_TRUNC | yaffsfs_H.O_RDWR, yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE);
 //	   
-//	   printf(" %s %d %s %d\n",aname,a,bname,b);
+//	   Unix.printf(" %s %d %s %d\n",aname,a,bname,b);
 //	  
 //	   x = 0;
 //	   
 //	   for(j = 0; j < iters; j++)
 //	   {
-//			yaffs_lseek(a,0,SEEK_END);
+//			yaffsfs_C.yaffs_lseek(a,0,yaffsfs_H.SEEK_END);
 //
 //			
 //			for(i = 0; i <20000; i++)
 //			{
-//			   //r =        yaffs_lseek(b,i,SEEK_SET);
-//				//r = yaffs_write(b,bbuffer,1000);
+//			   //r =        yaffsfs_C.yaffs_lseek(b,i,yaffsfs_H.SEEK_SET);
+//				//r = yaffsfs_C.yaffs_write(b,bbuffer,1000);
 //				
 //				if(!(x%20))
 //				{
 //					// shrink
-//					int syz = yaffs_lseek(a,0,SEEK_END);
+//					int syz = yaffsfs_C.yaffs_lseek(a,0,yaffsfs_H.SEEK_END);
 //					
 //					while(syz > 4000)
 //					{
 //					
 //						syz -= 2050;
 //						if(syz < 0) syz = 0;
-//						yaffs_truncate(a,syz);
-//						syz = yaffs_lseek(a,0,SEEK_END);
-//						printf("shrink to %d\n",syz);
+//						yaffsfs_C.yaffs_truncate(a,syz);
+//						syz = yaffsfs_C.yaffs_lseek(a,0,yaffsfs_H.SEEK_END);
+//						Unix.printf("shrink to %d\n",syz);
 //					}
 //					
 //					
@@ -1178,14 +1174,14 @@ public class Dtest_C {
 //				else
 //				{
 //					//expand
-//					r = yaffs_lseek(a,-500,SEEK_END);
-//					r = yaffs_write(a,abuffer,1000);
+//					r = yaffsfs_C.yaffs_lseek(a,-500,yaffsfs_H.SEEK_END);
+//					r = yaffsfs_C.yaffs_write(a,abuffer,1000);
 //				}
 //				x++;
 //				
 //						
 //			}
-//			printf("file size is %d\n",yaffs_lseek(a,0,SEEK_END));
+//			Unix.printf("file size is %d\n",yaffsfs_C.yaffs_lseek(a,0,yaffsfs_H.SEEK_END));
 //
 //	   }
 //	   
@@ -1198,28 +1194,28 @@ public class Dtest_C {
 //		int r;
 //		yaffs_StartUp();
 //		
-//		yaffs_mount("/ram");
-//		yaffs_mkdir("/ram/a",0);
-//		yaffs_mkdir("/ram/a/b",0);
-//		yaffs_mkdir("/ram/c",0);
+//		yaffsfs_C.yaffs_mount("/ram");
+//		yaffsfs_C.yaffs_mkdir("/ram/a",0);
+//		yaffsfs_C.yaffs_mkdir("/ram/a/b",0);
+//		yaffsfs_C.yaffs_mkdir("/ram/c",0);
 //		
-//		printf("\nDirectory look-up of /ram\n");
+//		Unix.printf("\nDirectory look-up of /ram\n");
 //		dumpDir("/ram");
 //		dumpDir("/ram/a");
 //		dumpDir("/ram/a/b");
 //
-//		printf("Do rename (should fail)\n");
+//		Unix.printf("Do rename (should fail)\n");
 //			
 //		r = yaffs_rename("/ram/a","/ram/a/b/d");
-//		printf("\nDirectory look-up of /ram\n");
+//		Unix.printf("\nDirectory look-up of /ram\n");
 //		dumpDir("/ram");
 //		dumpDir("/ram/a");
 //		dumpDir("/ram/a/b");
 //
-//		printf("Do rename (should not fail)\n");
+//		Unix.printf("Do rename (should not fail)\n");
 //			
 //		r = yaffs_rename("/ram/c","/ram/a/b/d");
-//		printf("\nDirectory look-up of /ram\n");
+//		Unix.printf("\nDirectory look-up of /ram\n");
 //		dumpDir("/ram");
 //		dumpDir("/ram/a");
 //		dumpDir("/ram/a/b");
@@ -1238,29 +1234,31 @@ public class Dtest_C {
 		
 		yaffs2.utils.Globals.configuration.yaffs_StartUp();
 		
-		yaffs_mount(StringToByteArray("/flash/boot"), 0);
+		yaffsfs_C.yaffs_mount(Utils.StringToByteArray("/flash/boot"), 0);
 		
-		make_a_file(StringToByteArray("/flash/boot/a"), 0, (byte)'a',sizeOfFiles);
-		make_a_file(StringToByteArray("/flash/boot/b"), 0, (byte)'b',sizeOfFiles);
+		make_a_file(Utils.StringToByteArray("/flash/boot/a"), 0, (byte)'a',sizeOfFiles);
+		make_a_file(Utils.StringToByteArray("/flash/boot/b"), 0, (byte)'b',sizeOfFiles);
 
-		a = yaffs_open(StringToByteArray("/flash/boot/a"),0,O_RDONLY,0);
-		b = yaffs_open(StringToByteArray("/flash/boot/b"),0,O_RDONLY,0);
-		c = yaffs_open(StringToByteArray("/flash/boot/c"),0, O_CREAT | O_RDWR | O_TRUNC, S_IREAD | S_IWRITE);
+		a = yaffsfs_C.yaffs_open(Utils.StringToByteArray("/flash/boot/a"),0,yaffsfs_H.O_RDONLY,0);
+		b = yaffsfs_C.yaffs_open(Utils.StringToByteArray("/flash/boot/b"),0,yaffsfs_H.O_RDONLY,0);
+		c = yaffsfs_C.yaffs_open(Utils.StringToByteArray("/flash/boot/c"),0, yaffsfs_H.O_CREAT | yaffsfs_H.O_RDWR | yaffsfs_H.O_TRUNC, yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE);
 
 		do{
 			i = sizeOfFiles;
 			if (i > 100) i = 100;
 			sizeOfFiles  -= i;
-			yaffs_read(a,buffer,bufferIndex,i);
-			yaffs_read(b,buffer,bufferIndex,i);
-			yaffs_write(c,buffer,bufferIndex,i);
+			yaffsfs_C.yaffs_read(a,buffer,bufferIndex,i);
+			yaffsfs_C.yaffs_read(b,buffer,bufferIndex,i);
+			yaffsfs_C.yaffs_write(c,buffer,bufferIndex,i);
 		} while(sizeOfFiles > 0);
 		
 		
 		return 1;
 		
 	}
-//	XXX not worth translating
+	
+//	PORT Not worth translating.
+//
 //	static int cache_bypass_bug_test(void)
 //	{
 //		// This test reporoduces a bug whereby YAFFS caching *was* buypassed
@@ -1272,55 +1270,55 @@ public class Dtest_C {
 //		char buffer1[1000];
 //		char buffer2[1000];
 //		
-//		memset(buffer1,0,sizeof(buffer1));
-//		memset(buffer2,0,sizeof(buffer2));
+//		Unix.memset(buffer1,0,sizeof(buffer1));
+//		Unix.memset(buffer2,0,sizeof(buffer2));
 //			
 //		yaffs_StartUp();
 //		
-//		yaffs_mount("/boot");
+//		yaffsfs_C.yaffs_mount("/boot");
 //		
 //		// Create a file of 2000 bytes.
 //		make_a_file("/boot/a",'X',2000);
 //
-//		a = yaffs_open("/boot/a",O_RDWR, S_IREAD | S_IWRITE);
+//		a = yaffsfs_C.yaffs_open("/boot/a",yaffsfs_H.O_RDWR, yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE);
 //		
 //		// Write a short sequence to the file.
 //		// This will go into the cache.
-//		yaffs_lseek(a,0,SEEK_SET);
-//		yaffs_write(a,"abcdefghijklmnopqrstuvwxyz",20); 
+//		yaffsfs_C.yaffs_lseek(a,0,yaffsfs_H.SEEK_SET);
+//		yaffsfs_C.yaffs_write(a,"abcdefghijklmnopqrstuvwxyz",20); 
 //
 //		// Read a short sequence from the file.
 //		// This will come from the cache.
-//		yaffs_lseek(a,0,SEEK_SET);
-//		yaffs_read(a,buffer1,30); 
+//		yaffsfs_C.yaffs_lseek(a,0,yaffsfs_H.SEEK_SET);
+//		yaffsfs_C.yaffs_read(a,buffer1,30); 
 //
 //		// Read a page size sequence from the file.
-//		yaffs_lseek(a,0,SEEK_SET);
-//		yaffs_read(a,buffer2,512); 
+//		yaffsfs_C.yaffs_lseek(a,0,yaffsfs_H.SEEK_SET);
+//		yaffsfs_C.yaffs_read(a,buffer2,512); 
 //		
-//		printf("buffer 1 %s\n",buffer1);
-//		printf("buffer 2 %s\n",buffer2);
+//		Unix.printf("buffer 1 %s\n",buffer1);
+//		Unix.printf("buffer 2 %s\n",buffer2);
 //		
 //		if(strncmp(buffer1,buffer2,20))
 //		{
-//			printf("Cache bypass bug detected!!!!!\n");
+//			Unix.printf("Cache bypass bug detected!!!!!\n");
 //		}
 //		
 //		
 //		return 1;
 //	}
 //
-//
+
 	static int free_space_check()
 	{
 		int f;
 		
 			yaffs2.utils.Globals.configuration.yaffs_StartUp();
-			yaffs_mount(StringToByteArray("/flash/boot"),0);
-		    fill_disk(StringToByteArray("/flash/boot/"),0,2);
-		    f = yaffs_freespace(StringToByteArray("/flash/boot"),0);
+			yaffsfs_C.yaffs_mount(Utils.StringToByteArray("/flash/boot"),0);
+		    fill_disk(Utils.StringToByteArray("/flash/boot/"),0,2);
+		    f = yaffsfs_C.yaffs_freespace(Utils.StringToByteArray("/flash/boot"),0);
 		    
-		    printf("%d free when disk full\n",f);           
+		    Unix.printf("%d free when disk full\n",PrimitiveWrapperFactory.get(f));           
 		    return 1;
 	}
 
@@ -1335,35 +1333,35 @@ public class Dtest_C {
 		byte[] tmp = new byte[1];
 
 		yaffs2.utils.Globals.configuration.yaffs_StartUp();
-		yaffs_mount(StringToByteArray("/flash/boot"),0);
+		yaffsfs_C.yaffs_mount(Utils.StringToByteArray("/flash/boot"),0);
 
-		yaffs_unlink(StringToByteArray("/flash/boot/trunctest"),0);
+		yaffsfs_C.yaffs_unlink(Utils.StringToByteArray("/flash/boot/trunctest"),0);
 		
-		a = yaffs_open(StringToByteArray("/flash/boot/trunctest"),0, O_CREAT | O_TRUNC | O_RDWR,  S_IREAD | S_IWRITE);
+		a = yaffsfs_C.yaffs_open(Utils.StringToByteArray("/flash/boot/trunctest"),0, yaffsfs_H.O_CREAT | yaffsfs_H.O_TRUNC | yaffsfs_H.O_RDWR,  yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE);
 		
-		yaffs_write(a,StringToByteArray("abcdefghijklmnopqrstuvwzyz"),0,26);
+		yaffsfs_C.yaffs_write(a,Utils.StringToByteArray("abcdefghijklmnopqrstuvwzyz"),0,26);
 		
-		yaffs_truncate(a,3);
-		l= yaffs_lseek(a,0,SEEK_END);
+		yaffsfs_C.yaffs_truncate(a,3);
+		l= yaffsfs_C.yaffs_lseek(a,0,yaffsfs_H.SEEK_END);
 		
-		printf("truncated length is %d\n",l);
+		Unix.printf("truncated length is %d\n",PrimitiveWrapperFactory.get(l));
 
-		yaffs_lseek(a,5,SEEK_SET);
-		yaffs_write(a,StringToByteArray("1"),0,1);
+		yaffsfs_C.yaffs_lseek(a,5,yaffsfs_H.SEEK_SET);
+		yaffsfs_C.yaffs_write(a,Utils.StringToByteArray("1"),0,1);
 
-		yaffs_lseek(a,0,SEEK_SET);
+		yaffsfs_C.yaffs_lseek(a,0,yaffsfs_H.SEEK_SET);
 		
-		r = yaffs_read(a,y,yIndex,10);
+		r = yaffsfs_C.yaffs_read(a,y,yIndex,10);
 
-		printf("read %d bytes:",r);
+		Unix.printf("read %d bytes:",PrimitiveWrapperFactory.get(r));
 
 		for(i = 0; i < r; i++)
 			{
 			tmp[0] = y[i];
-			printf("[%y]",tmp);
+			Unix.printf("[%02X]",PrimitiveWrapperFactory.get(tmp));
 			}
 
-		printf("\n");
+		Unix.printf("\n");
 
 		return 0;
 
@@ -1380,9 +1378,9 @@ public class Dtest_C {
 		
 		for(i = 0; i < 5; i++)
 		{
-			yaffs_mount(StringToByteArray(mountpt),0);
-			fill_disk_and_delete(StringToByteArray(mountpt),0,100,i+1);
-			yaffs_unmount(StringToByteArray(mountpt),0);
+			yaffsfs_C.yaffs_mount(Utils.StringToByteArray(mountpt),0);
+			fill_disk_and_delete(Utils.StringToByteArray(mountpt),0,100,i+1);
+			yaffsfs_C.yaffs_unmount(Utils.StringToByteArray(mountpt),0);
 		}
 		
 	}
@@ -1404,53 +1402,53 @@ public class Dtest_C {
 
 		yaffs2.utils.Globals.configuration.yaffs_StartUp();
 		
-		yaffs_mount(StringToByteArray(mountpt),0);
+		yaffsfs_C.yaffs_mount(Utils.StringToByteArray(mountpt),0);
 					
-		d = yaffs_opendir(StringToByteArray(mountpt),0);
+		d = yaffsfs_C.yaffs_opendir(Utils.StringToByteArray(mountpt),0);
 		
 		if(!(d != null))
 		{
-			printf("opendir failed\n");
+			Unix.printf("opendir failed\n");
 		}
 		else
 		{
 			
-			for(i = 0; (de = yaffs_readdir(d)) != null; i++)
+			for(i = 0; (de = yaffsfs_C.yaffs_readdir(d)) != null; i++)
 			{
-				printf("unlinking %s\n",byteArrayToString(de.d_name,de.d_nameIndex));
-				yaffs_unlink(de.d_name,de.d_nameIndex);
+				Unix.printf("unlinking %s\n",PrimitiveWrapperFactory.get(EmulationUtils.byteArrayToString(de.d_name,de.d_nameIndex)));
+				yaffsfs_C.yaffs_unlink(de.d_name,de.d_nameIndex);
 			}
 			
-			printf("%d files deleted\n",i);
+			Unix.printf("%d files deleted\n",PrimitiveWrapperFactory.get(i));
 		}
 		
 		
 		for(i = 0; i < 2000; i++){
-		sprintf(a,aIndex,"%s/%d",mountpt,i);
-			h =  yaffs_open(a,aIndex,O_CREAT | O_TRUNC | O_RDWR, 0);
-			yaffs_close(h);
+		Unix.sprintf(a,aIndex,"%s/%d",PrimitiveWrapperFactory.get(mountpt),PrimitiveWrapperFactory.get(i));
+			h =  yaffsfs_C.yaffs_open(a,aIndex,yaffsfs_H.O_CREAT | yaffsfs_H.O_TRUNC | yaffsfs_H.O_RDWR, 0);
+			yaffsfs_C.yaffs_close(h);
 		}
 
-		yaffs_rewinddir(d);
-		for(i = 0; (de = yaffs_readdir(d)) != null; i++)
+		yaffsfs_C.yaffs_rewinddir(d);
+		for(i = 0; (de = yaffsfs_C.yaffs_readdir(d)) != null; i++)
 		{
-			printf("%d  %s\n",i,byteArrayToString(de.d_name,de.d_nameIndex));
+			Unix.printf("%d  %s\n",PrimitiveWrapperFactory.get(i),PrimitiveWrapperFactory.get(EmulationUtils.byteArrayToString(de.d_name,de.d_nameIndex)));
 		}	
 		
-		printf("%d files listed\n\n\n",i);
+		Unix.printf("%d files listed\n\n\n",PrimitiveWrapperFactory.get(i));
 		
-		yaffs_rewinddir(d);
-		yaffs_readdir(d);
-		yaffs_readdir(d);
-		yaffs_readdir(d);
+		yaffsfs_C.yaffs_rewinddir(d);
+		yaffsfs_C.yaffs_readdir(d);
+		yaffsfs_C.yaffs_readdir(d);
+		yaffsfs_C.yaffs_readdir(d);
 		
 		for(i = 0; i < 2000; i++){
-			sprintf(a,aIndex,"%s/%d",mountpt,i);
-			yaffs_unlink(a,aIndex);
+			Unix.sprintf(a,aIndex,"%s/%d",PrimitiveWrapperFactory.get(mountpt),PrimitiveWrapperFactory.get(i));
+			yaffsfs_C.yaffs_unlink(a,aIndex);
 		}
 		
 			
-		yaffs_unmount(StringToByteArray(mountpt),0);
+		yaffsfs_C.yaffs_unmount(Utils.StringToByteArray(mountpt),0);
 		
 	}
 
@@ -1466,34 +1464,34 @@ public class Dtest_C {
 		int f1;
 		int f2;
 		int f3;
-		sprintf(a,aIndex,"%s/aaa",mountpt);
-		sprintf(b,bIndex,"%s/bbb",mountpt);
-		sprintf(c,cIndex,"%s/ccc",mountpt);
+		Unix.sprintf(a,aIndex,"%s/aaa",PrimitiveWrapperFactory.get(mountpt));
+		Unix.sprintf(b,bIndex,"%s/bbb",PrimitiveWrapperFactory.get(mountpt));
+		Unix.sprintf(c,cIndex,"%s/ccc",PrimitiveWrapperFactory.get(mountpt));
 		
 		yaffs2.utils.Globals.configuration.yaffs_StartUp();
 		
-		yaffs_mount(StringToByteArray(mountpt),0);
+		yaffsfs_C.yaffs_mount(Utils.StringToByteArray(mountpt),0);
 		
 		
-		h = yaffs_open(a, aIndex, O_CREAT | O_TRUNC | O_RDWR, S_IREAD | S_IWRITE);
+		h = yaffsfs_C.yaffs_open(a, aIndex, yaffsfs_H.O_CREAT | yaffsfs_H.O_TRUNC | yaffsfs_H.O_RDWR, yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE);
 		for(i = 0; i < 100; i++)
-			yaffs_write(h,a,aIndex,100);
+			yaffsfs_C.yaffs_write(h,a,aIndex,100);
 		
-		yaffs_close(h);
+		yaffsfs_C.yaffs_close(h);
 		
-		yaffs_unlink(b,bIndex);
-		yaffs_unlink(c,cIndex);
-		yaffs_link(a,aIndex,b,bIndex);
-		yaffs_link(a,aIndex,c,cIndex);
-		yaffs_unlink(b,bIndex);
-		yaffs_unlink(c,cIndex);
-		yaffs_unlink(a,aIndex);
+		yaffsfs_C.yaffs_unlink(b,bIndex);
+		yaffsfs_C.yaffs_unlink(c,cIndex);
+		yaffsfs_C.yaffs_link(a,aIndex,b,bIndex);
+		yaffsfs_C.yaffs_link(a,aIndex,c,cIndex);
+		yaffsfs_C.yaffs_unlink(b,bIndex);
+		yaffsfs_C.yaffs_unlink(c,cIndex);
+		yaffsfs_C.yaffs_unlink(a,aIndex);
 		
 		
-		yaffs_unmount(StringToByteArray(mountpt),0);
-		yaffs_mount(StringToByteArray(mountpt),0);
+		yaffsfs_C.yaffs_unmount(Utils.StringToByteArray(mountpt),0);
+		yaffsfs_C.yaffs_mount(Utils.StringToByteArray(mountpt),0);
 		
-		printf("link test done\n");	
+		Unix.printf("link test done\n");	
 		
 	}
 
@@ -1508,34 +1506,34 @@ public class Dtest_C {
 		int f1;
 		int f2;
 		int f3;
-		sprintf(a,aIndex,"%s/aaa",mountpt);
+		Unix.sprintf(a,aIndex,"%s/aaa",PrimitiveWrapperFactory.get(mountpt));
 		
 		yaffs2.utils.Globals.configuration.yaffs_StartUp();
 		
-		yaffs_mount(StringToByteArray(mountpt),0);
+		yaffsfs_C.yaffs_mount(Utils.StringToByteArray(mountpt),0);
 		
-		f0 = yaffs_freespace(StringToByteArray(mountpt),0);
+		f0 = yaffsfs_C.yaffs_freespace(Utils.StringToByteArray(mountpt),0);
 		
-		h = yaffs_open(a, aIndex, O_CREAT | O_TRUNC | O_RDWR, S_IREAD | S_IWRITE);
+		h = yaffsfs_C.yaffs_open(a, aIndex, yaffsfs_H.O_CREAT | yaffsfs_H.O_TRUNC | yaffsfs_H.O_RDWR, yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE);
 		
 		for(i = 0; i < 100; i++)
-			yaffs_write(h,a,aIndex,100);
+			yaffsfs_C.yaffs_write(h,a,aIndex,100);
 		
-		yaffs_close(h);
+		yaffsfs_C.yaffs_close(h);
 		
-		f1 = yaffs_freespace(StringToByteArray(mountpt),0);
+		f1 = yaffsfs_C.yaffs_freespace(Utils.StringToByteArray(mountpt),0);
 		
-		yaffs_unlink(a,aIndex);
+		yaffsfs_C.yaffs_unlink(a,aIndex);
 		
-		f2 = yaffs_freespace(StringToByteArray(mountpt),0);
+		f2 = yaffsfs_C.yaffs_freespace(Utils.StringToByteArray(mountpt),0);
 		
 			
-		yaffs_unmount(StringToByteArray(mountpt),0);
-		yaffs_mount(StringToByteArray(mountpt),0);
+		yaffsfs_C.yaffs_unmount(Utils.StringToByteArray(mountpt),0);
+		yaffsfs_C.yaffs_mount(Utils.StringToByteArray(mountpt),0);
 		
-		f3 = yaffs_freespace(StringToByteArray(mountpt),0);
+		f3 = yaffsfs_C.yaffs_freespace(Utils.StringToByteArray(mountpt),0);
 		
-		printf("%d\n%d\n%d\n%d\n",f0, f1,f2,f3);
+		Unix.printf("%d\n%d\n%d\n%d\n",PrimitiveWrapperFactory.get(f0), PrimitiveWrapperFactory.get(f1),PrimitiveWrapperFactory.get(f2),PrimitiveWrapperFactory.get(f3));
 		
 		
 	}
@@ -1551,44 +1549,44 @@ public class Dtest_C {
 		byte[] x;
 		int result;
 
-		sprintf(a,aIndex,"%s/aaa",mountpt);
+		Unix.sprintf(a,aIndex,"%s/aaa",PrimitiveWrapperFactory.get(mountpt));
 		
 		yaffs2.utils.Globals.configuration.yaffs_StartUp();
 		
-		yaffs_mount(StringToByteArray(mountpt),0);
+		yaffsfs_C.yaffs_mount(Utils.StringToByteArray(mountpt),0);
 		
-		yaffs_unlink(a,aIndex);
+		yaffsfs_C.yaffs_unlink(a,aIndex);
 		
-		h = yaffs_open(a,aIndex,O_CREAT| O_TRUNC | O_RDWR, S_IREAD | S_IWRITE);
+		h = yaffsfs_C.yaffs_open(a,aIndex,yaffsfs_H.O_CREAT| yaffsfs_H.O_TRUNC | yaffsfs_H.O_RDWR, yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE);
 		
 		for(i = 100000;i < 200000; i++){
-			tmp = StringToByteArray(Integer.toString(i));				// TODO test it
-			result = yaffs_write(h,tmp,0,tmp.length);/*(h,&i,sizeof(i))*/
+			tmp = Utils.StringToByteArray(Integer.toString(i));				// TODO test it
+			result = yaffsfs_C.yaffs_write(h,tmp,0,tmp.length);/*(h,&i,sizeof(i))*/
 
 			if(result != 7)
 			{
-				printf("write error\n");
+				Unix.printf("write error\n");
 				System.exit(1);
 			}
 		}
 		
-		//yaffs_close(h);
+		//yaffsfs_C.yaffs_close(h);
 		
-		// h = yaffs_open(a,O_RDWR, S_IREAD | S_IWRITE);
+		// h = yaffsfs_C.yaffs_open(a,yaffsfs_H.O_RDWR, yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE);
 		
 		
-		yaffs_lseek(h,0,SEEK_SET);
+		yaffsfs_C.yaffs_lseek(h,0,yaffsfs_H.SEEK_SET);
 		
 		for(i = 100000; i < 200000; i++){
-			x = StringToByteArray(Integer.toString(i));
-			result = yaffs_read(h,x,0,x.length);
+			x = Utils.StringToByteArray(Integer.toString(i));
+			result = yaffsfs_C.yaffs_read(h,x,0,x.length);
 			
-			if(result != 7 || strcmp(x,0,StringToByteArray(Integer.toString(i)),0) != 0){
-				printf("read error %d %x %s\n",i,result,byteArrayToString(x,0));
+			if(result != 7 || Unix.strcmp(x,0,Utils.StringToByteArray(Integer.toString(i)),0) != 0){
+				Unix.printf("read error %d %x %s\n",PrimitiveWrapperFactory.get(i),PrimitiveWrapperFactory.get(result),PrimitiveWrapperFactory.get(EmulationUtils.byteArrayToString(x,0)));
 			}
 		}
 		
-		printf("Simple rw test passed\n");
+		Unix.printf("Simple rw test passed\n");
 		
 		
 		
@@ -1608,44 +1606,44 @@ public class Dtest_C {
 		int k;
 		int h;
 		
-		sprintf(sub,subIndex,"%s/sdir",mountpt);
+		Unix.sprintf(sub,subIndex,"%s/sdir",PrimitiveWrapperFactory.get(mountpt));
 		yaffs2.utils.Globals.configuration.yaffs_StartUp();
 		
 		for(j = 0; j < 10; j++)
 		{
-			printf("\n\n>>>>>>> Run %d <<<<<<<<<<<<<\n\n",j);
-			yaffs_mount(StringToByteArray(mountpt),0);
-			yaffs_mkdir(sub,subIndex,0);
+			Unix.printf("\n\n>>>>>>> Run %d <<<<<<<<<<<<<\n\n",PrimitiveWrapperFactory.get(j));
+			yaffsfs_C.yaffs_mount(Utils.StringToByteArray(mountpt),0);
+			yaffsfs_C.yaffs_mkdir(sub,subIndex,0);
 			
 			// TODO verify
-			p = ((j & 0) != 0) ? StringToByteArray(mountpt): sub;
+			p = ((j & 0) != 0) ? Utils.StringToByteArray(mountpt): sub;
 		
 			for(i = 0; i < 100; i++)
 			{
-			  sprintf(fn,fnIndex,"%s/%d",byteArrayToString(p, 0),i);  
+			  Unix.sprintf(fn,fnIndex,"%s/%d",PrimitiveWrapperFactory.get(EmulationUtils.byteArrayToString(p, 0)),PrimitiveWrapperFactory.get(i));  
 			  
 			  if((i & 1) != 0)
 			  {
-				  h = yaffs_open(fn,fnIndex,O_CREAT | O_TRUNC | O_RDWR, S_IREAD | S_IWRITE);
+				  h = yaffsfs_C.yaffs_open(fn,fnIndex,yaffsfs_H.O_CREAT | yaffsfs_H.O_TRUNC | yaffsfs_H.O_RDWR, yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE);
 				  for(k = 0; k < 1000; k++)
-					  yaffs_write(h,fn,fnIndex,100);
-				  yaffs_close(h);
+					  yaffsfs_C.yaffs_write(h,fn,fnIndex,100);
+				  yaffsfs_C.yaffs_close(h);
 			  }
 			  else
-			    	yaffs_mkdir(fn,fnIndex,0);
+			    	yaffsfs_C.yaffs_mkdir(fn,fnIndex,0);
 			}
 			
 			for(i = 0; i < 10; i++)
 			{
-			  sprintf(fn,fnIndex,"%s/%d",byteArrayToString(p, 0),i);  
+			  Unix.sprintf(fn,fnIndex,"%s/%d",PrimitiveWrapperFactory.get(EmulationUtils.byteArrayToString(p, 0)),PrimitiveWrapperFactory.get(i));  
 			  if((i & 1) != 0) 
-			  	yaffs_unlink(fn,fnIndex);
+			  	yaffsfs_C.yaffs_unlink(fn,fnIndex);
 			  else
-			  	yaffs_rmdir(fn,fnIndex);
+				  yaffsfs_C.yaffs_rmdir(fn,fnIndex);
 			  
 			}
 					
-			yaffs_unmount(StringToByteArray(mountpt),0);
+			yaffsfs_C.yaffs_unmount(Utils.StringToByteArray(mountpt),0);
 		}
 		
 		
@@ -1657,9 +1655,9 @@ public class Dtest_C {
 	static void write_10k(int h)
 	{
 	   int i;
-	   byte[] s = StringToByteArray("0123456789");
+	   byte[] s = Utils.StringToByteArray("0123456789");
 	   for(i = 0; i < 1000; i++)
-	     yaffs_write(h,s,0,10);
+	     yaffsfs_C.yaffs_write(h,s,0,10);
 
 	}
 	static void write_200k_file(byte[] fn, int fnIndex, byte[] fdel, int fdelIndex, byte[] fdel1, int fdel1Index)
@@ -1668,33 +1666,33 @@ public class Dtest_C {
 	   int i;
 	   int offs;
 	   
-	   h1 = yaffs_open(fn, fnIndex, O_CREAT | O_TRUNC | O_RDWR, S_IREAD | S_IWRITE);
+	   h1 = yaffsfs_C.yaffs_open(fn, fnIndex, yaffsfs_H.O_CREAT | yaffsfs_H.O_TRUNC | yaffsfs_H.O_RDWR, yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE);
 	   
 	   for(i = 0; i < 100000; i+= 10000)
 	   {
 	   	write_10k(h1);
 	   }
 	   
-	   offs = yaffs_lseek(h1,0,SEEK_CUR);
+	   offs = yaffsfs_C.yaffs_lseek(h1,0,yaffsfs_H.SEEK_CUR);
 	   if( offs != 100000)
 	   {
-	   	printf("Could not write file\n");
+	   	Unix.printf("Could not write file\n");
 	   }
 	   
-	   yaffs_unlink(fdel,fdelIndex);
+	   yaffsfs_C.yaffs_unlink(fdel,fdelIndex);
 	   for(i = 0; i < 100000; i+= 10000)
 	   {
 	   	write_10k(h1);
 	   }
 	   
-	   offs = yaffs_lseek(h1,0,SEEK_CUR);
+	   offs = yaffsfs_C.yaffs_lseek(h1,0,yaffsfs_H.SEEK_CUR);
 	   if( offs != 200000)
 	   {
-	   	printf("Could not write file\n");
+	   	Unix.printf("Could not write file\n");
 	   }
 	   
-	   yaffs_close(h1);
-	   yaffs_unlink(fdel1,fdelIndex);
+	   yaffsfs_C.yaffs_close(h1);
+	   yaffsfs_C.yaffs_unlink(fdel1,fdelIndex);
 	   
 	}
 
@@ -1704,24 +1702,24 @@ public class Dtest_C {
 	   int h1;
 	   int i;
 	   byte[] x = new byte[11]; final int xIndex = 0;
-	   byte[] s=StringToByteArray("0123456789"); final int sIndex = 0;
+	   byte[] s=Utils.StringToByteArray("0123456789"); final int sIndex = 0;
 	   int errCount = 0;
 	   
-	   h1 = yaffs_open(fn, fnIndex, O_RDONLY, 0);
+	   h1 = yaffsfs_C.yaffs_open(fn, fnIndex, yaffsfs_H.O_RDONLY, 0);
 	   
 	   for(i = 0; i < 200000 && errCount < 10; i+= 10)
 	   {
-	   	yaffs_read(h1,x,xxIndex,10);
-		if(strncmp(x,xIndex,s,sIndex,10) != 0)
+	   	yaffsfs_C.yaffs_read(h1,x,xxIndex,10);
+		if(Unix.strncmp(x,xIndex,s,sIndex,10) != 0)
 		{
-			printf("File %s verification failed at %d\n",byteArrayToString(fn, fnIndex),i);
+			Unix.printf("File %s verification failed at %d\n",PrimitiveWrapperFactory.get(EmulationUtils.byteArrayToString(fn, fnIndex)),PrimitiveWrapperFactory.get(i));
 			errCount++;
 		}
 	   }
 	   if(errCount >= 10)
-	   	printf("Too many errors... aborted\n");
+	   	Unix.printf("Too many errors... aborted\n");
 	      
-	   yaffs_close(h1);	   
+	   yaffsfs_C.yaffs_close(h1);	   
 		
 	}
 
@@ -1736,26 +1734,26 @@ public class Dtest_C {
 		
 		int i;
 		
-		sprintf(a,aIndex,"%s/a",mountpt);
-		sprintf(b,bIndex,"%s/b",mountpt);
-		sprintf(c,cIndex,"%s/c",mountpt);
-		memset(tmp,tmpIndex,(byte)0,30);
+		Unix.sprintf(a,aIndex,"%s/a",PrimitiveWrapperFactory.get(mountpt));
+		Unix.sprintf(b,bIndex,"%s/b",PrimitiveWrapperFactory.get(mountpt));
+		Unix.sprintf(c,cIndex,"%s/c",PrimitiveWrapperFactory.get(mountpt));
+		Unix.memset(tmp,tmpIndex,(byte)0,30);
 	
 		yaffs2.utils.Globals.configuration.yaffs_StartUp();
-		yaffs_mount(StringToByteArray(mountpt),0);
-		yaffs_unlink(a,aIndex);
-		yaffs_unlink(b,bIndex);
+		yaffsfs_C.yaffs_mount(Utils.StringToByteArray(mountpt),0);
+		yaffsfs_C.yaffs_unlink(a,aIndex);
+		yaffsfs_C.yaffs_unlink(b,bIndex);
 		
 		for(i = 0; i < 50; i++)
 		{  
-		   printf("A\n");write_200k_file/*(a,"",c)*/(a,aIndex,tmp,tmpIndex,c,cIndex);		// TODO verify
-		   printf("B\n");verify_200k_file(a,aIndex);
-		   printf("C\n");write_200k_file(b,bIndex,a,aIndex,c,cIndex);
-		   printf("D\n");verify_200k_file(b,bIndex);
-		   yaffs_unmount(StringToByteArray(mountpt),0);
-		   yaffs_mount(StringToByteArray(mountpt),0);
-		   printf("E\n");verify_200k_file(a,aIndex);
-		   printf("F\n");verify_200k_file(b,bIndex);
+		   Unix.printf("A\n");write_200k_file/*(a,"",c)*/(a,aIndex,tmp,tmpIndex,c,cIndex);		// TODO verify
+		   Unix.printf("B\n");verify_200k_file(a,aIndex);
+		   Unix.printf("C\n");write_200k_file(b,bIndex,a,aIndex,c,cIndex);
+		   Unix.printf("D\n");verify_200k_file(b,bIndex);
+		   yaffsfs_C.yaffs_unmount(Utils.StringToByteArray(mountpt),0);
+		   yaffsfs_C.yaffs_mount(Utils.StringToByteArray(mountpt),0);
+		   Unix.printf("E\n");verify_200k_file(a,aIndex);
+		   Unix.printf("F\n");verify_200k_file(b,bIndex);
 		}
 			
 	}
@@ -1772,7 +1770,7 @@ public class Dtest_C {
 		int i;
 		int j;
 		
-		sprintf(a,aIndex,"%s/a",mountpt);
+		Unix.sprintf(a,aIndex,"%s/a",PrimitiveWrapperFactory.get(mountpt));
 
 		yaffs2.utils.Globals.configuration.yaffs_StartUp();
 		
@@ -1784,47 +1782,47 @@ public class Dtest_C {
 			
 			//static char xx[1000];
 			
-			printf("############### Iteration %d   Start\n",i);
+			Unix.printf("############### Iteration %d   Start\n",PrimitiveWrapperFactory.get(i));
 			if(true || i == 0 || i == 5) 
-				yaffs_mount(StringToByteArray(mountpt),0);
+				yaffsfs_C.yaffs_mount(Utils.StringToByteArray(mountpt),0);
 
-			dump_directory_tree(StringToByteArray(mountpt),0);
+			dump_directory_tree(Utils.StringToByteArray(mountpt),0);
 			
 			
-			yaffs_mkdir(a,aIndex,0);
+			yaffsfs_C.yaffs_mkdir(a,aIndex,0);
 			
-			sprintf(xx,xxIndex,"%s/0",byteArrayToString(a, aIndex));
-			h0 = yaffs_open(xx, xxIndex,O_RDWR | O_CREAT | O_TRUNC, S_IREAD | S_IWRITE);
+			Unix.sprintf(xx,xxIndex,"%s/0",PrimitiveWrapperFactory.get(EmulationUtils.byteArrayToString(a, aIndex)));
+			h0 = yaffsfs_C.yaffs_open(xx, xxIndex,yaffsfs_H.O_RDWR | yaffsfs_H.O_CREAT | yaffsfs_H.O_TRUNC, yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE);
 			
-			sprintf(xx,xxIndex,"%s/1",byteArrayToString(a, aIndex));
-			h1 = yaffs_open(xx, xxIndex, O_RDWR | O_CREAT | O_TRUNC, S_IREAD | S_IWRITE);
+			Unix.sprintf(xx,xxIndex,"%s/1",PrimitiveWrapperFactory.get(EmulationUtils.byteArrayToString(a, aIndex)));
+			h1 = yaffsfs_C.yaffs_open(xx, xxIndex, yaffsfs_H.O_RDWR | yaffsfs_H.O_CREAT | yaffsfs_H.O_TRUNC, yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE);
 			
 			for(j = 0; j < 200; j++){
-			   yaffs_write(h0,xx,xxIndex,1000);
-			   yaffs_write(h1,xx,xxIndex,1000);
+			   yaffsfs_C.yaffs_write(h0,xx,xxIndex,1000);
+			   yaffsfs_C.yaffs_write(h1,xx,xxIndex,1000);
 			}
 			
-			len0 = yaffs_lseek(h0,0,SEEK_END);
-			len1 = yaffs_lseek(h1,0,SEEK_END);
+			len0 = yaffsfs_C.yaffs_lseek(h0,0,yaffsfs_H.SEEK_END);
+			len1 = yaffsfs_C.yaffs_lseek(h1,0,yaffsfs_H.SEEK_END);
 			
-			yaffs_lseek(h0,0,SEEK_SET);
-			yaffs_lseek(h1,0,SEEK_SET);
+			yaffsfs_C.yaffs_lseek(h0,0,yaffsfs_H.SEEK_SET);
+			yaffsfs_C.yaffs_lseek(h1,0,yaffsfs_H.SEEK_SET);
 
 			for(j = 0; j < 200; j++){
-			   yaffs_read(h0,xx,xxIndex,1000);
-			   yaffs_read(h1,xx,xxIndex,1000);
+			   yaffsfs_C.yaffs_read(h0,xx,xxIndex,1000);
+			   yaffsfs_C.yaffs_read(h1,xx,xxIndex,1000);
 			}
 			
 			
-			yaffs_truncate(h0,0);
-			yaffs_close(h0);
-			yaffs_close(h1);
+			yaffsfs_C.yaffs_truncate(h0,0);
+			yaffsfs_C.yaffs_close(h0);
+			yaffsfs_C.yaffs_close(h1);
 			
-			printf("########### %d\n",i);
-			dump_directory_tree(StringToByteArray(mountpt),0);
+			Unix.printf("########### %d\n",PrimitiveWrapperFactory.get(i));
+			dump_directory_tree(Utils.StringToByteArray(mountpt),0);
 
 			if(true || i == 4 || i == nmounts -1)
-				yaffs_unmount(StringToByteArray(mountpt),0);
+				yaffsfs_C.yaffs_unmount(Utils.StringToByteArray(mountpt),0);
 		}
 	}
 
@@ -1845,7 +1843,7 @@ public class Dtest_C {
 		int len1;
 		int nread;
 		
-		sprintf(a,aIndex,"%s/a",mountpt);
+		Unix.sprintf(a,aIndex,"%s/a",PrimitiveWrapperFactory.get(mountpt));
 
 		yaffs2.utils.Globals.configuration.yaffs_StartUp();
 		
@@ -1856,51 +1854,51 @@ public class Dtest_C {
 			//static char xx[1000];
 			
 			
-			printf("############### Iteration %d   Start\n",i);
+			Unix.printf("############### Iteration %d   Start\n",PrimitiveWrapperFactory.get(i));
 			if(true || i == 0 || i == 5) 
-				yaffs_mount(StringToByteArray(mountpt),0);
+				yaffsfs_C.yaffs_mount(Utils.StringToByteArray(mountpt),0);
 
-			dump_directory_tree(StringToByteArray(mountpt),0);
+			dump_directory_tree(Utils.StringToByteArray(mountpt),0);
 			
-			yaffs_mkdir(a,aIndex,0);
+			yaffsfs_C.yaffs_mkdir(a,aIndex,0);
 			
-			sprintf(xx,xxIndex,"%s/0",byteArrayToString(a, aIndex));
+			Unix.sprintf(xx,xxIndex,"%s/0",PrimitiveWrapperFactory.get(EmulationUtils.byteArrayToString(a, aIndex)));
 			if(i ==0){
 			
-				h0 = yaffs_open(xx, xxIndex, O_RDWR | O_CREAT | O_TRUNC, S_IREAD | S_IWRITE);
+				h0 = yaffsfs_C.yaffs_open(xx, xxIndex, yaffsfs_H.O_RDWR | yaffsfs_H.O_CREAT | yaffsfs_H.O_TRUNC, yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE);
 				for(j = 0; j < 130; j++)
-					yaffs_write(h0,xx,xxIndex,1000);
-				yaffs_close(h0);
+					yaffsfs_C.yaffs_write(h0,xx,xxIndex,1000);
+				yaffsfs_C.yaffs_close(h0);
 			}
 			
-			h0 = yaffs_open(xx,xxIndex,O_RDONLY,0);
+			h0 = yaffsfs_C.yaffs_open(xx,xxIndex,yaffsfs_H.O_RDONLY,0);
 			
-			sprintf(xx,xxIndex,"%s/1",byteArrayToString(a, aIndex));
-			h1 = yaffs_open(xx, xxIndex, O_RDWR | O_CREAT | O_TRUNC, S_IREAD | S_IWRITE);
+			Unix.sprintf(xx,xxIndex,"%s/1",PrimitiveWrapperFactory.get(EmulationUtils.byteArrayToString(a, aIndex)));
+			h1 = yaffsfs_C.yaffs_open(xx, xxIndex, yaffsfs_H.O_RDWR | yaffsfs_H.O_CREAT | yaffsfs_H.O_TRUNC, yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE);
 			
-			while((nread = yaffs_read(h0,xx,xxIndex,1000)) > 0)
-				yaffs_write(h1,xx,xxIndex,nread);
+			while((nread = yaffsfs_C.yaffs_read(h0,xx,xxIndex,1000)) > 0)
+				yaffsfs_C.yaffs_write(h1,xx,xxIndex,nread);
 			
 			
-			len0 = yaffs_lseek(h0,0,SEEK_END);
-			len1 = yaffs_lseek(h1,0,SEEK_END);
+			len0 = yaffsfs_C.yaffs_lseek(h0,0,yaffsfs_H.SEEK_END);
+			len1 = yaffsfs_C.yaffs_lseek(h1,0,yaffsfs_H.SEEK_END);
 			
-			yaffs_lseek(h0,0,SEEK_SET);
-			yaffs_lseek(h1,0,SEEK_SET);
+			yaffsfs_C.yaffs_lseek(h0,0,yaffsfs_H.SEEK_SET);
+			yaffsfs_C.yaffs_lseek(h1,0,yaffsfs_H.SEEK_SET);
 
 			for(j = 0; j < 200; j++){
-			   yaffs_read(h0,xx,xxIndex,1000);
-			   yaffs_read(h1,xx,xxIndex,1000);
+			   yaffsfs_C.yaffs_read(h0,xx,xxIndex,1000);
+			   yaffsfs_C.yaffs_read(h1,xx,xxIndex,1000);
 			}
 			
-			yaffs_close(h0);
-			yaffs_close(h1);
+			yaffsfs_C.yaffs_close(h0);
+			yaffsfs_C.yaffs_close(h1);
 			
-			printf("########### %d\n",i);
-			dump_directory_tree(StringToByteArray(mountpt),0);
+			Unix.printf("########### %d\n",PrimitiveWrapperFactory.get(i));
+			dump_directory_tree(Utils.StringToByteArray(mountpt),0);
 
 			if(true || i == 4 || i == nmounts -1)
-				yaffs_unmount(StringToByteArray(mountpt),0);
+				yaffsfs_C.yaffs_unmount(Utils.StringToByteArray(mountpt),0);
 		}
 	}
 
@@ -1925,7 +1923,7 @@ public class Dtest_C {
 		int len1;
 		int nread;
 		
-		sprintf(a,aIndex,"%s/a",mountpt);
+		Unix.sprintf(a,aIndex,"%s/a",PrimitiveWrapperFactory.get(mountpt));
 
 		yaffs2.utils.Globals.configuration.yaffs_StartUp();
 		
@@ -1935,43 +1933,43 @@ public class Dtest_C {
 			
 //			static char xx[8000];
 			
-			printf("############### Iteration %d   Start\n",i);
+			Unix.printf("############### Iteration %d   Start\n",PrimitiveWrapperFactory.get(i));
 			if(true)
-				yaffs_mount(StringToByteArray(mountpt), 0);
+				yaffsfs_C.yaffs_mount(Utils.StringToByteArray(mountpt), 0);
 
-			dump_directory_tree(StringToByteArray(mountpt), 0);
+			dump_directory_tree(Utils.StringToByteArray(mountpt), 0);
 			
-			yaffs_mkdir(a, aIndex,0);
+			yaffsfs_C.yaffs_mkdir(a, aIndex,0);
 			
-			sprintf(_STATIC_LOCAL_small_overwrite_test_xx,0,"%a/0",a,aIndex);
-			h0 = yaffs_open(_STATIC_LOCAL_small_overwrite_test_xx,0, O_RDWR | O_CREAT | O_TRUNC, S_IREAD | S_IWRITE);
-			sprintf(_STATIC_LOCAL_small_overwrite_test_xx,0,"%a/1",a,aIndex);
-			h1 = yaffs_open(_STATIC_LOCAL_small_overwrite_test_xx,0, O_RDWR | O_CREAT | O_TRUNC, S_IREAD | S_IWRITE);
+			Unix.sprintf(_STATIC_LOCAL_small_overwrite_test_xx,0,"%a/0",PrimitiveWrapperFactory.get(a),PrimitiveWrapperFactory.get(aIndex));
+			h0 = yaffsfs_C.yaffs_open(_STATIC_LOCAL_small_overwrite_test_xx,0, yaffsfs_H.O_RDWR | yaffsfs_H.O_CREAT | yaffsfs_H.O_TRUNC, yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE);
+			Unix.sprintf(_STATIC_LOCAL_small_overwrite_test_xx,0,"%a/1",PrimitiveWrapperFactory.get(a),PrimitiveWrapperFactory.get(aIndex));
+			h1 = yaffsfs_C.yaffs_open(_STATIC_LOCAL_small_overwrite_test_xx,0, yaffsfs_H.O_RDWR | yaffsfs_H.O_CREAT | yaffsfs_H.O_TRUNC, yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE);
 			
 			for(j = 0; j < 1000000; j+=1000){
-				yaffs_truncate(h0,j);
-				yaffs_lseek(h0,j,SEEK_SET);
-				yaffs_write(h0,_STATIC_LOCAL_small_overwrite_test_xx,0,7000);
-				yaffs_write(h1,_STATIC_LOCAL_small_overwrite_test_xx,0,7000);
+				yaffsfs_C.yaffs_truncate(h0,j);
+				yaffsfs_C.yaffs_lseek(h0,j,yaffsfs_H.SEEK_SET);
+				yaffsfs_C.yaffs_write(h0,_STATIC_LOCAL_small_overwrite_test_xx,0,7000);
+				yaffsfs_C.yaffs_write(h1,_STATIC_LOCAL_small_overwrite_test_xx,0,7000);
 				
 				if(early_exit)
 					System.exit(0);
 			}
 			
-			yaffs_close(h0);
+			yaffsfs_C.yaffs_close(h0);
 			
-			printf("########### %d\n",i);
-			dump_directory_tree(StringToByteArray(mountpt), 0);
+			Unix.printf("########### %d\n",PrimitiveWrapperFactory.get(i));
+			dump_directory_tree(Utils.StringToByteArray(mountpt), 0);
 
 			if(true)
-				yaffs_unmount(StringToByteArray(mountpt), 0);
+				yaffsfs_C.yaffs_unmount(Utils.StringToByteArray(mountpt), 0);
 		}
 	}
 
 
 	static void yaffs_touch(byte[] fn, int fnIndex)
 	{
-		yaffs_chmod(fn, fnIndex, S_IREAD | S_IWRITE);
+		yaffsfs_C.yaffs_chmod(fn, fnIndex, yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE);
 	}
 	
 // TODO needs testing
@@ -1982,9 +1980,9 @@ public class Dtest_C {
 		byte[] b = new byte[50]; final int bIndex = 0;
 		byte[] c = new byte[50]; final int cIndex = 0;
 		
-		byte[] tmp = StringToByteArray("test Data");
+		byte[] tmp = Utils.StringToByteArray("test Data");
 		
-		memcpy(c, cIndex, tmp, 0, tmp.length);
+		Unix.memcpy(c, cIndex, tmp, 0, tmp.length);
 		
 		
 		
@@ -1992,33 +1990,33 @@ public class Dtest_C {
 		int j;
 		int h;
 		
-		sprintf(a,aIndex,"%s/a",mountpt);
+		Unix.sprintf(a,aIndex,"%s/a",PrimitiveWrapperFactory.get(mountpt));
 		
 		yaffs2.utils.Globals.configuration.yaffs_StartUp();
 		
 		for(i = 0; i < nmounts; i++){
-			printf("############### Iteration %d   Start\n",i);
-			yaffs_mount(StringToByteArray(mountpt), 0);
-			dump_directory_tree(StringToByteArray(mountpt), 0);
-			yaffs_mkdir(a,aIndex,0);
+			Unix.printf("############### Iteration %d   Start\n",PrimitiveWrapperFactory.get(i));
+			yaffsfs_C.yaffs_mount(Utils.StringToByteArray(mountpt), 0);
+			dump_directory_tree(Utils.StringToByteArray(mountpt), 0);
+			yaffsfs_C.yaffs_mkdir(a,aIndex,0);
 			
-			sprintf(b,bIndex,"%a/zz",a, aIndex);
+			Unix.sprintf(b,bIndex,"%a/zz",PrimitiveWrapperFactory.get(a), PrimitiveWrapperFactory.get(aIndex));
 			
-			h = yaffs_open(b,bIndex,O_CREAT | O_RDWR,S_IREAD |S_IWRITE);
+			h = yaffsfs_C.yaffs_open(b,bIndex,yaffsfs_H.O_CREAT | yaffsfs_H.O_RDWR,yaffsfs_H.S_IREAD |yaffsfs_H.S_IWRITE);
 			
-			while(yaffs_write(h,c,cIndex,50) == 50){}
+			while(yaffsfs_C.yaffs_write(h,c,cIndex,50) == 50){}
 			
-			yaffs_close(h);
+			yaffsfs_C.yaffs_close(h);
 			
 			for(j = 0; j < 2; j++){
-				printf("touch %d\n",j);
+				Unix.printf("touch %d\n",PrimitiveWrapperFactory.get(j));
 				yaffs_touch(b,bIndex);
-				yaffs_unmount(StringToByteArray(mountpt), 0);
-				yaffs_mount(StringToByteArray(mountpt), 0);
+				yaffsfs_C.yaffs_unmount(Utils.StringToByteArray(mountpt), 0);
+				yaffsfs_C.yaffs_mount(Utils.StringToByteArray(mountpt), 0);
 			}
 
-			dump_directory_tree(StringToByteArray(mountpt), 0);
-			yaffs_unmount(StringToByteArray(mountpt), 0);
+			dump_directory_tree(Utils.StringToByteArray(mountpt), 0);
+			yaffsfs_C.yaffs_unmount(Utils.StringToByteArray(mountpt), 0);
 		}
 	}
 
@@ -2026,26 +2024,26 @@ public class Dtest_C {
 	{
 
 		byte[] xx = new byte[2500]; final int xxIndex = 0;
-		byte[] tmp = StringToByteArray("abcdefghijklmnopqrstuvwxyz"); 
-		memcpy(xx,xxIndex,tmp,0,tmp.length);
+		byte[] tmp = Utils.StringToByteArray("abcdefghijklmnopqrstuvwxyz"); 
+		Unix.memcpy(xx,xxIndex,tmp,0,tmp.length);
 		int i;
 		int h1=-1,h2=-1;
 		int n = 1;
 
 
 		if(name1 != null)
-			h1 = yaffs_open(name1,name1Index,O_CREAT | O_TRUNC | O_RDWR, S_IREAD | S_IWRITE);
+			h1 = yaffsfs_C.yaffs_open(name1,name1Index,yaffsfs_H.O_CREAT | yaffsfs_H.O_TRUNC | yaffsfs_H.O_RDWR, yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE);
 		if(name2 != null)
-			h2 = yaffs_open(name2,name2Index,O_CREAT | O_TRUNC | O_RDWR, S_IREAD | S_IWRITE);
+			h2 = yaffsfs_C.yaffs_open(name2,name2Index,yaffsfs_H.O_CREAT | yaffsfs_H.O_TRUNC | yaffsfs_H.O_RDWR, yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE);
 		
 		while(syz > 0 && n > 0){
 			i = (syz > 2500) ? 2500 : syz;
-			n = yaffs_write(h1,xx,xxIndex,i);
-			n = yaffs_write(h2,xx,xxIndex,i);
+			n = yaffsfs_C.yaffs_write(h1,xx,xxIndex,i);
+			n = yaffsfs_C.yaffs_write(h2,xx,xxIndex,i);
 			syz -= 500;
 		}
-		yaffs_close(h1);
-		yaffs_close(h2);
+		yaffsfs_C.yaffs_close(h1);
+		yaffsfs_C.yaffs_close(h2);
 		
 	}
 //
@@ -2064,48 +2062,48 @@ public class Dtest_C {
 		int j;
 		int h;
 		
-		sprintf(a,aIndex,"%s/a",mountpt);
+		Unix.sprintf(a,aIndex,"%s/a",PrimitiveWrapperFactory.get(mountpt));
 
-		printf("Create start condition\n");
+		Unix.printf("Create start condition\n");
 		yaffs2.utils.Globals.configuration.yaffs_StartUp();
-		yaffs2.utils.Globals.configuration.SetCheckpointReservedBlocks(0);
-		yaffs_mount(StringToByteArray(mountpt),0);
-		yaffs_mkdir(a,aIndex,0);
-		sprintf(b,bIndex,"%s/zz",byteArrayToString(a, aIndex));
-		sprintf(c,cIndex,"%s/xx",byteArrayToString(a, aIndex));
+		((yaffs2.platform.emulation.yaffscfg2k_C)yaffs2.utils.Globals.configuration).SetCheckpointReservedBlocks(0);
+		yaffsfs_C.yaffs_mount(Utils.StringToByteArray(mountpt),0);
+		yaffsfs_C.yaffs_mkdir(a,aIndex,0);
+		Unix.sprintf(b,bIndex,"%s/zz",PrimitiveWrapperFactory.get(EmulationUtils.byteArrayToString(a, aIndex)));
+		Unix.sprintf(c,cIndex,"%s/xx",PrimitiveWrapperFactory.get(EmulationUtils.byteArrayToString(a, aIndex)));
 		make_file2(b,bIndex,c,cIndex,2000000);
-		sprintf(d,dIndex,"%s/aa",byteArrayToString(a, aIndex));
+		Unix.sprintf(d,dIndex,"%s/aa",PrimitiveWrapperFactory.get(EmulationUtils.byteArrayToString(a, aIndex)));
 		make_file2(d,dIndex,null,0,500000000);
-		dump_directory_tree(StringToByteArray(mountpt),0);
+		dump_directory_tree(Utils.StringToByteArray(mountpt),0);
 		
-		printf("Umount/mount attempt full\n");
-		yaffs_unmount(StringToByteArray(mountpt),0);
+		Unix.printf("Umount/mount attempt full\n");
+		yaffsfs_C.yaffs_unmount(Utils.StringToByteArray(mountpt),0);
 		
-		yaffs2.utils.Globals.configuration.SetCheckpointReservedBlocks(10);
-		yaffs_mount(StringToByteArray(mountpt),0);
+		((yaffs2.platform.emulation.yaffscfg2k_C)yaffs2.utils.Globals.configuration).SetCheckpointReservedBlocks(10);
+		yaffsfs_C.yaffs_mount(Utils.StringToByteArray(mountpt),0);
 		
-		printf("unlink small file\n");
-		yaffs_unlink(c,cIndex);
-		dump_directory_tree(StringToByteArray(mountpt),0);
+		Unix.printf("unlink small file\n");
+		yaffsfs_C.yaffs_unlink(c,cIndex);
+		dump_directory_tree(Utils.StringToByteArray(mountpt),0);
 			
-		printf("Umount/mount attempt\n");
-		yaffs_unmount(StringToByteArray(mountpt),0);
-		yaffs_mount(StringToByteArray(mountpt),0);
+		Unix.printf("Umount/mount attempt\n");
+		yaffsfs_C.yaffs_unmount(Utils.StringToByteArray(mountpt),0);
+		yaffsfs_C.yaffs_mount(Utils.StringToByteArray(mountpt),0);
 		
 		for(j = 0; j < 500; j++){
-			printf("***** touch %d\n",j);
-			dump_directory_tree(StringToByteArray(mountpt),0);
+			Unix.printf("***** touch %d\n",PrimitiveWrapperFactory.get(j));
+			dump_directory_tree(Utils.StringToByteArray(mountpt),0);
 			yaffs_touch(b,bIndex);
-			yaffs_unmount(StringToByteArray(mountpt),0);
-			yaffs_mount(StringToByteArray(mountpt),0);
+			yaffsfs_C.yaffs_unmount(Utils.StringToByteArray(mountpt),0);
+			yaffsfs_C.yaffs_mount(Utils.StringToByteArray(mountpt),0);
 		}
 
 		for(j = 0; j < 500; j++){
-			printf("***** touch %d\n",j);
-			dump_directory_tree(StringToByteArray(mountpt),0);
+			Unix.printf("***** touch %d\n",PrimitiveWrapperFactory.get(j));
+			dump_directory_tree(Utils.StringToByteArray(mountpt),0);
 			yaffs_touch(b,bIndex);
-			yaffs_unmount(StringToByteArray(mountpt),0);
-			yaffs_mount(StringToByteArray(mountpt),0);
+			yaffsfs_C.yaffs_unmount(Utils.StringToByteArray(mountpt),0);
+			yaffsfs_C.yaffs_mount(Utils.StringToByteArray(mountpt),0);
 		}
 	}
 	
@@ -2121,37 +2119,37 @@ public class Dtest_C {
 		
 		int fnum;
 		
-		sprintf(a,aIndex,"mount point %s",mountpt);
+		Unix.sprintf(a,aIndex,"mount point %s",PrimitiveWrapperFactory.get(mountpt));
 		
 
 		
 		yaffs2.utils.Globals.configuration.yaffs_StartUp();
 
-		yaffs_mount(StringToByteArray(mountpt),0);
+		yaffsfs_C.yaffs_mount(Utils.StringToByteArray(mountpt),0);
 		
 		while(n>0){
 			n--;
 			fnum = 0;
-			printf("\n\n START run\n\n");
-			while(yaffs_freespace(StringToByteArray(mountpt),0) > 25000000){
-				sprintf(a,aIndex,"%s/file%d",mountpt,fnum);
+			Unix.printf("\n\n START run\n\n");
+			while(yaffsfs_C.yaffs_freespace(Utils.StringToByteArray(mountpt),0) > 25000000){
+				Unix.sprintf(a,aIndex,"%s/file%d",PrimitiveWrapperFactory.get(mountpt),PrimitiveWrapperFactory.get(fnum));
 				fnum++;
-				printf("create file %s\n",a);
+				Unix.printf("create file %s\n",PrimitiveWrapperFactory.get(a));
 				create_file_of_size(a,aIndex,10000000);
-				printf("verifying file %s\n",a);
+				Unix.printf("verifying file %s\n",PrimitiveWrapperFactory.get(a));
 				verify_file_of_size(a,aIndex,10000000);
 			}
 			
-			printf("\n\n verification/deletion\n\n");
+			Unix.printf("\n\n verification/deletion\n\n");
 			
 			for(i = 0; i < fnum; i++){
-				sprintf(a,aIndex,"%s/file%d",mountpt,i);
-				printf("verifying file %s\n",a);
+				Unix.sprintf(a,aIndex,"%s/file%d",PrimitiveWrapperFactory.get(mountpt),PrimitiveWrapperFactory.get(i));
+				Unix.printf("verifying file %s\n",PrimitiveWrapperFactory.get(a));
 				verify_file_of_size(a,aIndex,10000000);
-				printf("deleting file %s\n",a);
-				yaffs_unlink(a,aIndex);
+				Unix.printf("deleting file %s\n",PrimitiveWrapperFactory.get(a));
+				yaffsfs_C.yaffs_unlink(a,aIndex);
 			}
-			printf("\n\n done \n\n");
+			Unix.printf("\n\n done \n\n");
 				
 			   
 		}
@@ -2169,16 +2167,18 @@ public class Dtest_C {
 				new yaffs2.platform.emulation.PortConfiguration(),
 				new yaffs2.platform.emulation.DebugConfiguration());
 		
+		small_overwrite_test("/flash/boot",1);
+		
 // PASSED:
 		
 		//cache_read_test();
-		//scan_pattern_test(StringToByteArray("/flash/boot"),0,10000,10);
-		//yaffs_backward_scan_test(StringToByteArray("/flash/boot"),0);
-		//scan_pattern_test(StringToByteArray("/flash/boot"),0,10000,100);
-		//yaffs_device_flush_test(StringToByteArray("/flash/boot"),0);
-		//short_scan_test(StringToByteArray("/flash/boot"),0,40000,10);
-		//short_scan_test(StringToByteArray("/flash/boot"),0,40000,20);
-		//short_scan_test(StringToByteArray("/flash/boot"),0,40000,100);
+		//scan_pattern_test(Utils.StringToByteArray("/flash/boot"),0,10000,10);
+		//yaffs_backward_scan_test(Utils.StringToByteArray("/flash/boot"),0);
+		//scan_pattern_test(Utils.StringToByteArray("/flash/boot"),0,10000,100);
+		//yaffs_device_flush_test(Utils.StringToByteArray("/flash/boot"),0);
+		//short_scan_test(Utils.StringToByteArray("/flash/boot"),0,40000,10);
+		//short_scan_test(Utils.StringToByteArray("/flash/boot"),0,40000,20);
+		//short_scan_test(Utils.StringToByteArray("/flash/boot"),0,40000,100);
 		//small_overwrite_test("/flash/boot",100);
 		//small_overwrite_test("/flash/boot",10);
 		//checkpoint_fill_test("/flash/boot",10);

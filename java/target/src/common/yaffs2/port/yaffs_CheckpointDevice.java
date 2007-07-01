@@ -1,7 +1,6 @@
 package yaffs2.port;
 
 import yaffs2.utils.*;
-import static yaffs2.utils.Utils.*;
 
 public class yaffs_CheckpointDevice extends SerializableObject
 {
@@ -18,90 +17,89 @@ public class yaffs_CheckpointDevice extends SerializableObject
 	//typedef struct {
 	int structType()
 	{
-		return getIntFromByteArray(serialized, offset+0);
+		return Utils.getIntFromByteArray(serialized, offset+0);
 	}
 	void setStructType(int value)
 	{
-		writeIntToByteArray(serialized, offset+0, value);
+		Utils.writeIntToByteArray(serialized, offset+0, value);
 	}
 	int nErasedBlocks()
 	{
-		return getIntFromByteArray(serialized, offset+4);
+		return Utils.getIntFromByteArray(serialized, offset+4);
 	}
 	void setNErasedBlocks(int value)
 	{
-		writeIntToByteArray(serialized, offset+4, value);
+		Utils.writeIntToByteArray(serialized, offset+4, value);
 	}
 	int allocationBlock() 	/* Current block being allocated off */
 	{
-		return getIntFromByteArray(serialized, offset+8);
+		return Utils.getIntFromByteArray(serialized, offset+8);
 	}
 	void setAllocationBlock(int value)
 	{
-		writeIntToByteArray(serialized, offset+8, value);
+		Utils.writeIntToByteArray(serialized, offset+8, value);
 	}
 	/**__u32*/ int allocationPage()
 	{
-		return getIntFromByteArray(serialized, offset+12);
+		return Utils.getIntFromByteArray(serialized, offset+12);
 	}
 	void setAllocationPage(int value)
 	{
-		writeIntToByteArray(serialized, offset+12, value);
+		Utils.writeIntToByteArray(serialized, offset+12, value);
 	}
 	int nFreeChunks()
 	{
-		return getIntFromByteArray(serialized, offset+16);
+		return Utils.getIntFromByteArray(serialized, offset+16);
 	}	
 	void setNFreeChunks(int value)
 	{
-		writeIntToByteArray(serialized, offset+16, value);
+		Utils.writeIntToByteArray(serialized, offset+16, value);
 	}
 
 
 	int nDeletedFiles()		/* Count of files awaiting deletion;*/
 	{
-		return getIntFromByteArray(serialized, offset+20);
+		return Utils.getIntFromByteArray(serialized, offset+20);
 	}
 	void setNDeletedFiles(int value)
 	{
-		writeIntToByteArray(serialized, offset+20, value);
+		Utils.writeIntToByteArray(serialized, offset+20, value);
 	}
 	int nUnlinkedFiles()		/* Count of unlinked files. */
 	{
-		return getIntFromByteArray(serialized, offset+24);
+		return Utils.getIntFromByteArray(serialized, offset+24);
 	}
 	void setNUnlinkedFiles(int value)
 	{
-		writeIntToByteArray(serialized, offset+24, value);
+		Utils.writeIntToByteArray(serialized, offset+24, value);
 	}
 	int nBackgroundDeletions()	/* Count of background deletions. */
 	{
-		return getIntFromByteArray(serialized, offset+28);
+		return Utils.getIntFromByteArray(serialized, offset+28);
 	}
 	void setNBackgroundDeletions(int value)
 	{
-		writeIntToByteArray(serialized, offset+28, value);
+		Utils.writeIntToByteArray(serialized, offset+28, value);
 	}
 
-	/* yaffs2 runtime stuff */ // XXX check conversion
+	/* yaffs2 runtime stuff */
 	/**unsigned*/ int sequenceNumber()	/* Sequence number of currently allocating block */
 	{
-		return getIntFromByteArray(serialized, offset+32);
+		return Utils.getIntFromByteArray(serialized, offset+32);
 	}
 	/**@param value unsigned*/ void setSequenceNumber(int value)
 	{
-		writeIntToByteArray(serialized, offset+32, value);
+		Utils.writeIntToByteArray(serialized, offset+32, value);
 	}
-	/**unsigned*/ int oldestDirtySequence()	// XXX check conversion
+	/**unsigned*/ int oldestDirtySequence()
 	{
-		return getIntFromByteArray(serialized, offset+36);
+		return Utils.getIntFromByteArray(serialized, offset+36);
 	}
 	/**@param value unsigned*/ void setOldestDirtySequence(int value)
 	{
-		writeIntToByteArray(serialized, offset+36, value);
+		Utils.writeIntToByteArray(serialized, offset+36, value);
 	}
 
-	@Override
 	public int getSerializedLength()
 	{
 		return SERIALIZED_LENGTH;

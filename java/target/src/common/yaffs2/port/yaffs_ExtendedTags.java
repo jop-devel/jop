@@ -1,11 +1,7 @@
 package yaffs2.port;
 
-import static yaffs2.utils.Utils.getBooleanAsIntFromByteArray;
-import static yaffs2.utils.Utils.getIntFromByteArray;
-import static yaffs2.utils.Utils.writeBooleanAsIntToByteArray;
-import static yaffs2.utils.Utils.writeIntToByteArray;
+import yaffs2.utils.*;
 
-// XXX make it a SerializableObject
 public class yaffs_ExtendedTags
 {
 	
@@ -24,7 +20,7 @@ public class yaffs_ExtendedTags
 		/**unsigned*/ public int serialNumber;	/* Yaffs1 2-bit serial number */
 
 		/* YAFFS2 stuff */
-		/**unsigned*/ public int sequenceNumber;	/* The sequence number of this block */	// XXX changed long=>int
+		/**unsigned*/ public int sequenceNumber;	/* The sequence number of this block */
 
 		/* Extra info if this is an object header (YAFFS2 only) */
 
@@ -44,59 +40,59 @@ public class yaffs_ExtendedTags
 		
 		public void writeTagsToByteArray(byte[] array, int index)
 		{
-			writeIntToByteArray(array, index+4, validMarker0);
-			writeBooleanAsIntToByteArray(array, index+4, chunkUsed);
-			writeIntToByteArray(array, index+8, objectId);
-			writeIntToByteArray(array, index+12, chunkId);
-			writeIntToByteArray(array, index+16, byteCount);
+			Utils.writeIntToByteArray(array, index+4, validMarker0);
+			Utils.writeBooleanAsIntToByteArray(array, index+4, chunkUsed);
+			Utils.writeIntToByteArray(array, index+8, objectId);
+			Utils.writeIntToByteArray(array, index+12, chunkId);
+			Utils.writeIntToByteArray(array, index+16, byteCount);
 			
-			writeIntToByteArray(array, index+20, eccResult);
-			writeBooleanAsIntToByteArray(array, index+24, blockBad);
+			Utils.writeIntToByteArray(array, index+20, eccResult);
+			Utils.writeBooleanAsIntToByteArray(array, index+24, blockBad);
 			
-			writeBooleanAsIntToByteArray(array, index+28, chunkDeleted);
-			writeIntToByteArray(array, index+32, serialNumber);
+			Utils.writeBooleanAsIntToByteArray(array, index+28, chunkDeleted);
+			Utils.writeIntToByteArray(array, index+32, serialNumber);
 			
-			writeIntToByteArray(array, index+36, sequenceNumber);
+			Utils.writeIntToByteArray(array, index+36, sequenceNumber);
 			
-			writeBooleanAsIntToByteArray(array, index+40, extraHeaderInfoAvailable);
-			writeIntToByteArray(array, index+44, extraParentObjectId);
-			writeBooleanAsIntToByteArray(array, index+48, extraIsShrinkHeader);
-			writeBooleanAsIntToByteArray(array, index+52, extraShadows);
+			Utils.writeBooleanAsIntToByteArray(array, index+40, extraHeaderInfoAvailable);
+			Utils.writeIntToByteArray(array, index+44, extraParentObjectId);
+			Utils.writeBooleanAsIntToByteArray(array, index+48, extraIsShrinkHeader);
+			Utils.writeBooleanAsIntToByteArray(array, index+52, extraShadows);
 			
-			writeIntToByteArray(array, index+56, extraObjectType);
+			Utils.writeIntToByteArray(array, index+56, extraObjectType);
 			
-			writeIntToByteArray(array, index+60, extraFileLength);
-			writeIntToByteArray(array, index+64, extraEquivalentObjectId);
+			Utils.writeIntToByteArray(array, index+60, extraFileLength);
+			Utils.writeIntToByteArray(array, index+64, extraEquivalentObjectId);
 			
-			writeIntToByteArray(array, index+68, validMarker1);
+			Utils.writeIntToByteArray(array, index+68, validMarker1);
 		}
 
 		public void readTagsFromByteArray(byte[] array, int index)
 		{
-			validMarker0 = getIntFromByteArray(array, index+4);
-			chunkUsed = getBooleanAsIntFromByteArray(array, index+4);
-			objectId = getIntFromByteArray(array, index+8);
-			chunkId = getIntFromByteArray(array, index+12);
-			byteCount = getIntFromByteArray(array, index+16);
+			validMarker0 = Utils.getIntFromByteArray(array, index+4);
+			chunkUsed = Utils.getBooleanAsIntFromByteArray(array, index+4);
+			objectId = Utils.getIntFromByteArray(array, index+8);
+			chunkId = Utils.getIntFromByteArray(array, index+12);
+			byteCount = Utils.getIntFromByteArray(array, index+16);
 			
-			eccResult = getIntFromByteArray(array, index+20);
-			blockBad = getBooleanAsIntFromByteArray(array, index+24);
+			eccResult = Utils.getIntFromByteArray(array, index+20);
+			blockBad = Utils.getBooleanAsIntFromByteArray(array, index+24);
 			
-			chunkDeleted = getBooleanAsIntFromByteArray(array, index+28);
-			serialNumber = getIntFromByteArray(array, index+32);
+			chunkDeleted = Utils.getBooleanAsIntFromByteArray(array, index+28);
+			serialNumber = Utils.getIntFromByteArray(array, index+32);
 			
-			sequenceNumber = getIntFromByteArray(array, index+36);
+			sequenceNumber = Utils.getIntFromByteArray(array, index+36);
 			
-			extraHeaderInfoAvailable = getBooleanAsIntFromByteArray(array, index+40);
-			extraParentObjectId = getIntFromByteArray(array, index+44);
-			extraIsShrinkHeader = getBooleanAsIntFromByteArray(array, index+48);
-			extraShadows = getBooleanAsIntFromByteArray(array, index+52);
+			extraHeaderInfoAvailable = Utils.getBooleanAsIntFromByteArray(array, index+40);
+			extraParentObjectId = Utils.getIntFromByteArray(array, index+44);
+			extraIsShrinkHeader = Utils.getBooleanAsIntFromByteArray(array, index+48);
+			extraShadows = Utils.getBooleanAsIntFromByteArray(array, index+52);
 			
-			extraObjectType = getIntFromByteArray(array, index+56);
+			extraObjectType = Utils.getIntFromByteArray(array, index+56);
 			
-			extraFileLength = getIntFromByteArray(array, index+60);
-			extraEquivalentObjectId = getIntFromByteArray(array, index+64);
+			extraFileLength = Utils.getIntFromByteArray(array, index+60);
+			extraEquivalentObjectId = Utils.getIntFromByteArray(array, index+64);
 			
-			validMarker1 = getIntFromByteArray(array, index+68);
+			validMarker1 = Utils.getIntFromByteArray(array, index+68);
 		}
 }

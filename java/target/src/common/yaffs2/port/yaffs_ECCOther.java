@@ -1,7 +1,6 @@
 package yaffs2.port;
 
 import yaffs2.utils.*;
-import static yaffs2.utils.Utils.*;
 
 public class yaffs_ECCOther extends SerializableObject {
 	public yaffs_ECCOther(SerializableObject owner, int offset)
@@ -17,7 +16,7 @@ public class yaffs_ECCOther extends SerializableObject {
 	/**
 	 * unsigned char
 	 */
-	byte colParity() // XXX changed int => byte
+	byte colParity()
 	{
 		return serialized[offset]; 
 	}
@@ -34,14 +33,14 @@ public class yaffs_ECCOther extends SerializableObject {
 	 */
 	int lineParity()
 	{
-		return getIntFromByteArray(serialized, offset+4);
+		return Utils.getIntFromByteArray(serialized, offset+4);
 	}
 	/**
 	 * unsigned 
 	 */
 	void setlineParity(int value)
 	{
-		writeIntToByteArray(serialized, offset+4, value);
+		Utils.writeIntToByteArray(serialized, offset+4, value);
 	}
 
 	/**
@@ -49,19 +48,18 @@ public class yaffs_ECCOther extends SerializableObject {
 	 */
 	int lineParityPrime()
 	{
-		return getIntFromByteArray(serialized, offset+8);
+		return Utils.getIntFromByteArray(serialized, offset+8);
 	}
 	/**
 	 * unsigned
 	 */
 	void setlineParityPrime(int value)
 	{
-		writeIntToByteArray(serialized, offset+8, value);
+		Utils.writeIntToByteArray(serialized, offset+8, value);
 	}
 	
 	public static final int SERIALIZED_LENGTH = 12;
 	
-	@Override
 	public int getSerializedLength()
 	{
 		return SERIALIZED_LENGTH;

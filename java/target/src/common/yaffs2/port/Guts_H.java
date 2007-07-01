@@ -1,8 +1,6 @@
 package yaffs2.port;
 
-import static yaffs2.port.yportenv.*;
-import static yaffs2.port.ydirectenv.*;
-
+import yaffs2.utils.factory.PrimitiveWrapperFactory;
 public abstract class Guts_H
 {
 	/*
@@ -20,8 +18,8 @@ public abstract class Guts_H
 	 * Note: Only YAFFS headers are LGPL, YAFFS C code is covered by GPL.
 	 */
 
-	static final boolean YAFFS_OK = /*1*/ true;
-	static final boolean YAFFS_FAIL = /*0*/ false;
+	public static final boolean YAFFS_OK = /*1*/ true;
+	public static final boolean YAFFS_FAIL = /*0*/ false;
 
 	/* Give us a  Y=0x59, 
 	 * Give us an A=0x41, 
@@ -197,14 +195,13 @@ public abstract class Guts_H
 	/* Function to manipulate block info */
 	static /*Y_INLINE*/ yaffs_BlockInfo yaffs_GetBlockInfo(yaffs_Device dev, int blk)
 	{
-		if (blk < dev.internalStartBlock || blk > dev.internalEndBlock) {
-			T(YAFFS_TRACE_ERROR,
-			  TSTR
-			   ("**>> yaffs: getBlockInfo block %d is not valid" + TENDSTR),
-			   	blk);
+		if (blk < dev.subField2.internalStartBlock || blk > dev.subField2.internalEndBlock) {
+			yportenv.T(yportenv.YAFFS_TRACE_ERROR,
+			   ("**>> yaffs: getBlockInfo block %d is not valid" + ydirectenv.TENDSTR),
+			   PrimitiveWrapperFactory.get(blk));
 			yaffs2.utils.Globals.portConfiguration.YBUG();
 		}
-		return dev.blockInfo[blk - dev.internalStartBlock];
+		return dev.subField2.blockInfo[blk - dev.subField2.internalStartBlock];
 	}
 
 	/*----------------------- YAFFS Functions -----------------------*/

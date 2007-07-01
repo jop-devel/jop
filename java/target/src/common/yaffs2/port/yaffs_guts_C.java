@@ -1,17 +1,8 @@
 package yaffs2.port;
 
-import static yaffs2.utils.Utils.*;
-import static yaffs2.utils.Constants.*;
 import yaffs2.utils.*;
-import static yaffs2.utils.Unix.*;
-import static yaffs2.port.devextras.*;
-
-import static yaffs2.port.yaffs_checkptrw_C.*;
-import static yaffs2.port.Guts_H.*;
-import static yaffs2.port.yportenv.*;
-import static yaffs2.port.ydirectenv.*;
-import static yaffs2.port.yaffs_nand_C.*;
-import static yaffs2.port.yaffs_tagsvalidity_C.*;
+import yaffs2.utils.factory.PrimitiveWrapper;
+import yaffs2.utils.factory.PrimitiveWrapperFactory;
 
 public class yaffs_guts_C
 {
@@ -29,7 +20,7 @@ public class yaffs_guts_C
 	 */
 
 	static final String yaffs_guts_c_version =
-		"$Id: yaffs_guts_C.java,v 1.2 2007/06/20 00:45:16 alexander.dejaco Exp $";
+		"$Id: yaffs_guts_C.java,v 1.3 2007/07/01 01:08:51 alexander.dejaco Exp $";
 
 	/*#include "yportenv.h"
 
@@ -133,18 +124,18 @@ public class yaffs_guts_C
 
 	static void yaffs_AddrToChunk(yaffs_Device dev, int addr, IntegerPointer chunk, IntegerPointer offset)
 	{
-		if(dev.chunkShift != 0){
+		if(dev.subField2.chunkShift != 0){
 			/* Easy-peasy power of 2 case */
-			chunk.dereferenced  = /*(__u32)*/(addr >>> dev.chunkShift);
-			offset.dereferenced = /*(__u32)*/(addr & dev.chunkMask);
+			chunk.dereferenced  = /*(__u32)*/(addr >>> dev.subField2.chunkShift);
+			offset.dereferenced = /*(__u32)*/(addr & dev.subField2.chunkMask);
 		}
-		else if(dev.crumbsPerChunk != 0)
+		else if(dev.subField2.crumbsPerChunk != 0)
 		{
 			/* Case where we're using "crumbs" */
-			offset.dereferenced = /*(__u32)*/(addr & dev.crumbMask);
-			addr >>>= dev.crumbShift;
-			chunk.dereferenced = (/*(__u32)*/addr)/dev.crumbsPerChunk;
-			offset.dereferenced += ((addr - (chunk.dereferenced * dev.crumbsPerChunk)) << dev.crumbShift);
+			offset.dereferenced = /*(__u32)*/(addr & dev.subField2.crumbMask);
+			addr >>>= dev.subField2.crumbShift;
+			chunk.dereferenced = (/*(__u32)*/addr)/dev.subField2.crumbsPerChunk;
+			offset.dereferenced += ((addr - (chunk.dereferenced * dev.subField2.crumbsPerChunk)) << dev.subField2.crumbShift);
 		}
 		else
 			yaffs2.utils.Globals.portConfiguration.YBUG();
@@ -163,7 +154,7 @@ public class yaffs_guts_C
 
 		nShifts = extraBits = 0;
 
-		while(intAsUnsignedInt(x)>1){
+		while(Utils.intAsUnsignedInt(x)>1){
 			if((x & 1) != 0)extraBits++;
 			x>>>=1;
 			nShifts++;
@@ -203,7 +194,7 @@ public class yaffs_guts_C
 	static byte[] yaffs_GetTempBuffer(yaffs_Device dev, int lineNo)
 	{
 		int i, j;
-		for (i = 0; i < YAFFS_N_TEMP_BUFFERS; i++) {
+		for (i = 0; i < Guts_H.YAFFS_N_TEMP_BUFFERS; i++) {
 			if (dev.tempBuffer[i].line == 0) {
 				dev.tempBuffer[i].line = lineNo;
 				if ((i + 1) > dev.maxTemp) {
@@ -217,13 +208,13 @@ public class yaffs_guts_C
 			}
 		}
 
-		T(YAFFS_TRACE_BUFFERS,
-				TSTR("Out of temp buffers at line %d, other held by lines:"),
-				lineNo);
-		for (i = 0; i < YAFFS_N_TEMP_BUFFERS; i++) {
-			T(YAFFS_TRACE_BUFFERS, TSTR(" %d "), dev.tempBuffer[i].line);
+		yportenv.T(yportenv.YAFFS_TRACE_BUFFERS,
+				("Out of temp buffers at line %d, other held by lines:"),
+				PrimitiveWrapperFactory.get(lineNo));
+		for (i = 0; i < Guts_H.YAFFS_N_TEMP_BUFFERS; i++) {
+			yportenv.T(yportenv.YAFFS_TRACE_BUFFERS, (" %d "), PrimitiveWrapperFactory.get(dev.tempBuffer[i].line));
 		}
-		T(YAFFS_TRACE_BUFFERS, (TSTR(" " + TENDSTR)));
+		yportenv.T(yportenv.YAFFS_TRACE_BUFFERS, ((" " + ydirectenv.TENDSTR)));
 
 		/*
 		 * If we got here then we have to allocate an unmanaged one
@@ -231,7 +222,7 @@ public class yaffs_guts_C
 		 */
 
 		dev.unmanagedTempAllocations++;
-		return YMALLOC(dev.nDataBytesPerChunk);
+		return ydirectenv.YMALLOC(dev.subField1.nDataBytesPerChunk);
 
 	}
 
@@ -239,7 +230,7 @@ public class yaffs_guts_C
 			int lineNo)
 	{
 		int i;
-		for (i = 0; i < YAFFS_N_TEMP_BUFFERS; i++) {
+		for (i = 0; i < Guts_H.YAFFS_N_TEMP_BUFFERS; i++) {
 			if (dev.tempBuffer[i].buffer == buffer) {
 				dev.tempBuffer[i].line = 0;
 				return;
@@ -248,10 +239,10 @@ public class yaffs_guts_C
 
 		if (buffer != null) {
 			/* assume it is an unmanaged one. */
-			T(YAFFS_TRACE_BUFFERS,
-					TSTR("Releasing unmanaged temp buffer in line %d" + TENDSTR),
-					lineNo);
-			YFREE(buffer);
+			yportenv.T(yportenv.YAFFS_TRACE_BUFFERS,
+					("Releasing unmanaged temp buffer in line %d" + ydirectenv.TENDSTR),
+					PrimitiveWrapperFactory.get(lineNo));
+			ydirectenv.YFREE(buffer);
 			dev.unmanagedTempDeallocations++;
 		}
 
@@ -263,23 +254,23 @@ public class yaffs_guts_C
 	static boolean yaffs_IsManagedTempBuffer(yaffs_Device dev, byte[] buffer)
 	{
 		int i;
-		for (i = 0; i < YAFFS_N_TEMP_BUFFERS; i++) {
+		for (i = 0; i < Guts_H.YAFFS_N_TEMP_BUFFERS; i++) {
 			if (dev.tempBuffer[i].buffer == buffer)
 				return true;
 
 		}
 
-		for (i = 0; i < dev.nShortOpCaches; i++) {
+		for (i = 0; i < dev.subField1.nShortOpCaches; i++) {
 			if( dev.srCache[i].data == buffer )
 				return true;
 
 		}
 
-		if (buffer == dev.checkpointBuffer)
+		if (buffer == dev.subField2.checkpointBuffer)
 			return true;
 
-		T(YAFFS_TRACE_ALWAYS,
-				TSTR("yaffs: unmaged buffer detected.\n" + TENDSTR));
+		yportenv.T(yportenv.YAFFS_TRACE_ALWAYS,
+				("yaffs: unmaged buffer detected.\n" + ydirectenv.TENDSTR));
 		return false;
 	}
 
@@ -289,20 +280,20 @@ public class yaffs_guts_C
 
 	static /*Y_INLINE*/ /*byte[]*/ ArrayPointer yaffs_BlockBits(yaffs_Device dev, int blk)
 	{
-		if (blk < dev.internalStartBlock || blk > dev.internalEndBlock) {
-			T(YAFFS_TRACE_ERROR,
-					TSTR("**>> yaffs: BlockBits block %d is not valid" + TENDSTR),
-					blk);
+		if (blk < dev.subField2.internalStartBlock || blk > dev.subField2.internalEndBlock) {
+			yportenv.T(yportenv.YAFFS_TRACE_ERROR,
+					("**>> yaffs: BlockBits block %d is not valid" + ydirectenv.TENDSTR),
+					PrimitiveWrapperFactory.get(blk));
 			yaffs2.utils.Globals.portConfiguration.YBUG();
 		}
-		return new ArrayPointer(dev.chunkBits, (dev.chunkBitmapStride * (blk - dev.internalStartBlock)));
+		return new ArrayPointer(dev.subField2.chunkBits, (dev.subField3.chunkBitmapStride * (blk - dev.subField2.internalStartBlock)));
 	}
 
 	static /*Y_INLINE*/ void yaffs_ClearChunkBits(yaffs_Device dev, int blk)
 	{
 		ArrayPointer blkBits = yaffs_BlockBits(dev, blk);
 
-		memset(blkBits.array, blkBits.index, (byte)0, dev.chunkBitmapStride);
+		Unix.memset(blkBits.array, blkBits.index, (byte)0, dev.subField3.chunkBitmapStride);
 	}
 
 	static /*Y_INLINE*/ void yaffs_ClearChunkBit(yaffs_Device dev, int blk, int chunk)
@@ -333,7 +324,7 @@ public class yaffs_guts_C
 	{
 		ArrayPointer blkBits = yaffs_BlockBits(dev, blk);
 		int i;
-		for (i = 0; i < dev.chunkBitmapStride; i++) {
+		for (i = 0; i < dev.subField3.chunkBitmapStride; i++) {
 			if (blkBits.get() != 0)
 				return true;
 			blkBits.increment();
@@ -348,7 +339,7 @@ public class yaffs_guts_C
 	static /*Y_INLINE*/ int yaffs_HashFunction(int n)
 	{
 		n = Math.abs(n);
-		return (n % YAFFS_NOBJECT_BUCKETS);
+		return (n % Guts_H.YAFFS_NOBJECT_BUCKETS);
 	}
 
 	/*
@@ -375,7 +366,7 @@ public class yaffs_guts_C
 		/* Horrible, slow implementation */
 		int i = 0;
 		while ((nBytes--) != 0) {
-			if (byteAsUnsignedByte(buffer[bufferIndex+i]) != 0xFF)
+			if (Utils.byteAsUnsignedByte(buffer[bufferIndex+i]) != 0xFF)
 				return false;
 			i++;
 		}
@@ -386,25 +377,25 @@ public class yaffs_guts_C
 			int chunkInNAND)
 	{
 
-		boolean retval = YAFFS_OK;
-		byte[] data = yaffs_GetTempBuffer(dev, __LINE__());
+		boolean retval = Guts_H.YAFFS_OK;
+		byte[] data = yaffs_GetTempBuffer(dev, Utils.__LINE__());
 		final int dataIndex = 0;
 		yaffs_ExtendedTags tags = new yaffs_ExtendedTags();
 		boolean result;
 
-		result = yaffs_ReadChunkWithTagsFromNAND(dev, chunkInNAND, data, dataIndex, tags);
+		result = yaffs_nand_C.yaffs_ReadChunkWithTagsFromNAND(dev, chunkInNAND, data, dataIndex, tags);
 
-		if(tags.eccResult > YAFFS_ECC_RESULT_NO_ERROR)
-			retval = YAFFS_FAIL;
+		if(tags.eccResult > Guts_H.YAFFS_ECC_RESULT_NO_ERROR)
+			retval = Guts_H.YAFFS_FAIL;
 
 
-		if (!yaffs_CheckFF(data, dataIndex, dev.nDataBytesPerChunk) || tags.chunkUsed) {
-			T(YAFFS_TRACE_NANDACCESS,
-					TSTR("Chunk %d not erased" + TENDSTR), chunkInNAND);
-			retval = YAFFS_FAIL;
+		if (!yaffs_CheckFF(data, dataIndex, dev.subField1.nDataBytesPerChunk) || tags.chunkUsed) {
+			yportenv.T(yportenv.YAFFS_TRACE_NANDACCESS,
+					("Chunk %d not erased" + ydirectenv.TENDSTR), PrimitiveWrapperFactory.get(chunkInNAND));
+			retval = Guts_H.YAFFS_FAIL;
 		}
 
-		yaffs_ReleaseTempBuffer(dev, data, __LINE__());
+		yaffs_ReleaseTempBuffer(dev, data, Utils.__LINE__());
 
 		return retval;
 
@@ -451,7 +442,7 @@ public class yaffs_guts_C
 				 */
 
 				if(bi.gcPrioritise()){
-					yaffs_DeleteChunk(dev, chunk, true, __LINE__());
+					yaffs_DeleteChunk(dev, chunk, true, Utils.__LINE__());
 				} else {
 					/*#ifdef CONFIG_YAFFS_ALWAYS_CHECK_CHUNK_ERASED
 
@@ -465,13 +456,13 @@ public class yaffs_guts_C
 					}
 
 					if (!erasedOk) {
-						T(YAFFS_TRACE_ERROR,
-								TSTR
+						yportenv.T(yportenv.YAFFS_TRACE_ERROR,
+
 								("**>> yaffs chunk %d was not erased"
-										+ TENDSTR), chunk);
+										+ ydirectenv.TENDSTR), PrimitiveWrapperFactory.get(chunk));
 					} else {
 						writeOk =
-							yaffs_WriteChunkWithTagsToNAND(dev, chunk,
+							yaffs_nand_C.yaffs_WriteChunkWithTagsToNAND(dev, chunk,
 									data, dataIndex, tags);
 					}
 
@@ -495,10 +486,10 @@ public class yaffs_guts_C
 		} while (chunk >= 0 && !writeOk);
 
 		if (attempts > 1) {
-			T(YAFFS_TRACE_ERROR,
-					TSTR("**>> yaffs write required %d attempts" + TENDSTR),
-					attempts);
-			dev.nRetriedWrites += (attempts - 1);
+			yportenv.T(yportenv.YAFFS_TRACE_ERROR,
+					("**>> yaffs write required %d attempts" + ydirectenv.TENDSTR),
+					PrimitiveWrapperFactory.get(attempts));
+			dev.subField3.nRetriedWrites += (attempts - 1);
 		}
 
 		return chunk;
@@ -511,17 +502,17 @@ public class yaffs_guts_C
 
 	static void yaffs_RetireBlock(yaffs_Device dev, int blockInNAND)
 	{
-		yaffs_BlockInfo bi = yaffs_GetBlockInfo(dev, blockInNAND);
+		yaffs_BlockInfo bi = Guts_H.yaffs_GetBlockInfo(dev, blockInNAND);
 
 		yaffs_InvalidateCheckpoint(dev);
 
-		yaffs_MarkBlockBad(dev, blockInNAND);
+		yaffs_nand_C.yaffs_MarkBlockBad(dev, blockInNAND);
 
-		bi.setBlockState(YAFFS_BLOCK_STATE_DEAD);
+		bi.setBlockState(Guts_H.YAFFS_BLOCK_STATE_DEAD);
 		bi.setGcPrioritise(false);
 		bi.setNeedsRetiring(false);
 
-		dev.nRetiredBlocks++;
+		dev.subField3.nRetiredBlocks++;
 	}
 
 	/*
@@ -549,7 +540,7 @@ public class yaffs_guts_C
 
 			if(bi.chunkErrorStrikes() > 3){
 				bi.setNeedsRetiring(true); /* Too many stikes, so retire this */
-				T(YAFFS_TRACE_ALWAYS, TSTR("yaffs: Block struck out" + TENDSTR));
+				yportenv.T(yportenv.YAFFS_TRACE_ALWAYS, ("yaffs: Block struck out" + ydirectenv.TENDSTR));
 
 			}
 
@@ -560,13 +551,13 @@ public class yaffs_guts_C
 	{
 		int i;
 
-		for(i = dev.internalStartBlock; i <= dev.internalEndBlock && ((yaffs2.utils.Globals.yaffs_traceMask & YAFFS_TRACE_BAD_BLOCKS) != 0); i++){
-			yaffs_BlockInfo bi = yaffs_GetBlockInfo(dev,i);
+		for(i = dev.subField2.internalStartBlock; i <= dev.subField2.internalEndBlock && ((yaffs2.utils.Globals.yaffs_traceMask & yportenv.YAFFS_TRACE_BAD_BLOCKS) != 0); i++){
+			yaffs_BlockInfo bi = Guts_H.yaffs_GetBlockInfo(dev,i);
 			if(bi.needsRetiring() || bi.gcPrioritise())
-				T(YAFFS_TRACE_BAD_BLOCKS, TSTR("yaffs block %d%s%s" + TENDSTR),
-						i,
-						bi.needsRetiring() ? " needs retiring" : "", // XXX hope no gc
-								bi.gcPrioritise() ?  " gc prioritised" : "");
+				yportenv.T(yportenv.YAFFS_TRACE_BAD_BLOCKS, ("yaffs block %d%s%s" + ydirectenv.TENDSTR),
+						PrimitiveWrapperFactory.get(i),
+						PrimitiveWrapperFactory.get(bi.needsRetiring() ? " needs retiring" : ""), // XXX hope no gc
+						PrimitiveWrapperFactory.get(bi.gcPrioritise() ?  " gc prioritised" : ""));
 
 		}
 	}
@@ -574,8 +565,8 @@ public class yaffs_guts_C
 	static void yaffs_HandleWriteChunkError(yaffs_Device dev, int chunkInNAND, boolean erasedOk)
 	{
 
-		int blockInNAND = chunkInNAND / dev.nChunksPerBlock;
-		yaffs_BlockInfo bi = yaffs_GetBlockInfo(dev, blockInNAND);
+		int blockInNAND = chunkInNAND / dev.subField1.nChunksPerBlock;
+		yaffs_BlockInfo bi = Guts_H.yaffs_GetBlockInfo(dev, blockInNAND);
 
 		yaffs_HandleChunkError(dev,bi);
 
@@ -583,14 +574,14 @@ public class yaffs_guts_C
 		if(erasedOk ) {
 			/* Was an actual write failure, so mark the block for retirement  */
 			bi.setNeedsRetiring(true);
-			T(YAFFS_TRACE_ERROR | YAFFS_TRACE_BAD_BLOCKS,
-					TSTR("**>> Block %d needs retiring" + TENDSTR), blockInNAND);
+			yportenv.T(yportenv.YAFFS_TRACE_ERROR | yportenv.YAFFS_TRACE_BAD_BLOCKS,
+					("**>> Block %d needs retiring" + ydirectenv.TENDSTR), PrimitiveWrapperFactory.get(blockInNAND));
 
 
 		}
 
 		/* Delete the chunk */
-		yaffs_DeleteChunk(dev, chunkInNAND, true, __LINE__());
+		yaffs_DeleteChunk(dev, chunkInNAND, true, Utils.__LINE__());
 	}
 
 
@@ -607,12 +598,12 @@ public class yaffs_guts_C
 		byte[] bname = name;
 		int bnameIndex = nameIndex;		
 		if (bname != null) {
-			while (bname[bnameIndex] != 0 && (i <= YAFFS_MAX_NAME_LENGTH)) {
+			while (bname[bnameIndex] != 0 && (i <= Guts_H.YAFFS_MAX_NAME_LENGTH)) {
 
 				/*#ifdef CONFIG_YAFFS_CASE_INSENSITIVE
 			sum += yaffs_toupper(*bname) * i;
 #else*/
-				sum += byteAsUnsignedByte(bname[bnameIndex]) * i;
+				sum += Utils.byteAsUnsignedByte(bname[bnameIndex]) * i;
 				/*#endif*/
 				i++;
 				bnameIndex++;
@@ -624,8 +615,8 @@ public class yaffs_guts_C
 	static void yaffs_SetObjectName(yaffs_Object obj, byte[] name, int nameIndex)
 	{
 		/*#ifdef CONFIG_YAFFS_SHORT_NAMES_IN_RAM*/
-		if ((name != null) && yaffs_strlen(name, nameIndex) <= YAFFS_SHORT_NAME_LENGTH) {
-			yaffs_strcpy(obj.shortName, 0, name, nameIndex);
+		if ((name != null) && ydirectenv.yaffs_strlen(name, nameIndex) <= Guts_H.YAFFS_SHORT_NAME_LENGTH) {
+			ydirectenv.yaffs_strcpy(obj.shortName, 0, name, nameIndex);
 		} else {
 			obj.shortName[0] = ((byte)0);
 		}
@@ -656,21 +647,21 @@ public class yaffs_guts_C
 		yaffs_TnodeList tnl;
 
 		if (nTnodes < 1)
-			return YAFFS_OK;
+			return Guts_H.YAFFS_OK;
 
 		/* Calculate the tnode size in bytes for variable width tnode support.
 		 * Must be a multiple of 32-bits  */
-		tnodeSize = (dev.tnodeWidth * YAFFS_NTNODES_LEVEL0)/8;
+		tnodeSize = (dev.subField2.tnodeWidth * Guts_H.YAFFS_NTNODES_LEVEL0)/8;
 
 		/* make these things */
 
-		newTnodes = /*YMALLOC(nTnodes * tnodeSize)*/ YMALLOC_TNODE(nTnodes); 
+		newTnodes = /*ydirectenv.YMALLOC(nTnodes * tnodeSize)*/ ydirectenv.YMALLOC_TNODE(nTnodes); 
 		//mem = (__u8 *)newTnodes;
 
 		if (newTnodes == null) {
-			T(YAFFS_TRACE_ERROR,
-					(TSTR("yaffs: Could not allocate Tnodes" + TENDSTR)));
-			return YAFFS_FAIL;
+			yportenv.T(yportenv.YAFFS_TRACE_ERROR,
+					(("yaffs: Could not allocate Tnodes" + ydirectenv.TENDSTR)));
+			return Guts_H.YAFFS_FAIL;
 		}
 
 		/* Hook them into the free list */
@@ -696,35 +687,35 @@ public class yaffs_guts_C
 		}
 
 		curr = /*(yaffs_Tnode *) &mem[(nTnodes - 1) * tnodeSize]*/ newTnodes[nTnodes - 1];
-		curr.internal[0] = dev.freeTnodes; 
-		dev.freeTnodes = /*(yaffs_Tnode *)mem*/ newTnodes[0]; // XXX array or not?
+		curr.internal[0] = dev.subField3.freeTnodes; 
+		dev.subField3.freeTnodes = /*(yaffs_Tnode *)mem*/ newTnodes[0];
 
 		/*#endif*/
 
 
-		dev.nFreeTnodes += nTnodes;
-		dev.nTnodesCreated += nTnodes;
+		dev.subField3.nFreeTnodes += nTnodes;
+		dev.subField3.nTnodesCreated += nTnodes;
 
 		/* Now add this bunch of tnodes to a list for freeing up.
 		 * NB If we can't add this to the management list it isn't fatal
 		 * but it just means we can't free this bunch of tnodes later.
 		 */
 
-		tnl = /*YMALLOC(sizeof(yaffs_TnodeList))*/ new yaffs_TnodeList();
+		tnl = /*ydirectenv.YMALLOC(sizeof(yaffs_TnodeList))*/ new yaffs_TnodeList();
 		if (tnl == null) {
-			T(YAFFS_TRACE_ERROR,
-					(TSTR
-							("yaffs: Could not add tnodes to management list" + TENDSTR)));
+			yportenv.T(yportenv.YAFFS_TRACE_ERROR,
+					(
+							("yaffs: Could not add tnodes to management list" + ydirectenv.TENDSTR)));
 
 		} else {
-			tnl.tnodes = newTnodes;	// XXX check
-			tnl.next = dev.allocatedTnodeList;
-			dev.allocatedTnodeList = tnl;
+			tnl.tnodes = newTnodes;
+			tnl.next = dev.subField3.allocatedTnodeList;
+			dev.subField3.allocatedTnodeList = tnl;
 		}
 
-		T(YAFFS_TRACE_ALLOCATE, (TSTR("yaffs: Tnodes added" + TENDSTR)));
+		yportenv.T(yportenv.YAFFS_TRACE_ALLOCATE, (("yaffs: Tnodes added" + ydirectenv.TENDSTR)));
 
-		return YAFFS_OK;
+		return Guts_H.YAFFS_OK;
 	}
 
 
@@ -735,21 +726,21 @@ public class yaffs_guts_C
 		yaffs_Tnode tn = null;
 
 		/* If there are none left make more */
-		if (dev.freeTnodes == null) {
-			yaffs_CreateTnodes(dev, YAFFS_ALLOCATION_NTNODES);
+		if (dev.subField3.freeTnodes == null) {
+			yaffs_CreateTnodes(dev, Guts_H.YAFFS_ALLOCATION_NTNODES);
 		}
 
-		if (dev.freeTnodes != null) {
-			tn = dev.freeTnodes;
+		if (dev.subField3.freeTnodes != null) {
+			tn = dev.subField3.freeTnodes;
 //			#ifdef CONFIG_YAFFS_TNODE_LIST_DEBUG
 //			if (tn->internal[YAFFS_NTNODES_INTERNAL] != (void *)1) {
 //			/* Hoosterman, this thing looks like it isn't in the list */
-//			T(YAFFS_TRACE_ALWAYS,
-//			(TSTR("yaffs: Tnode list bug 1" TENDSTR)));
+//			yportenv.T(yportenv.YAFFS_TRACE_ALWAYS,
+//			(("yaffs: Tnode list bug 1" ydirectenv.TENDSTR)));
 //			}
 //			#endif
-			dev.freeTnodes = dev.freeTnodes.internal[0]; // XXX check
-			dev.nFreeTnodes--;
+			dev.subField3.freeTnodes = dev.subField3.freeTnodes.internal[0];
+			dev.subField3.nFreeTnodes--;
 		}
 
 		return tn;
@@ -760,7 +751,7 @@ public class yaffs_guts_C
 		yaffs_Tnode tn = yaffs_GetTnodeRaw(dev);
 
 		if(tn != null)
-			memset(tn/*, 0, (dev.tnodeWidth * YAFFS_NTNODES_LEVEL0)/8*/);
+			Unix.memset(tn/*, 0, (dev.tnodeWidth * Guts_H.YAFFS_NTNODES_LEVEL0)/8*/);
 
 		return tn;	
 	}
@@ -772,14 +763,14 @@ public class yaffs_guts_C
 //			#ifdef CONFIG_YAFFS_TNODE_LIST_DEBUG
 //			if (tn->internal[YAFFS_NTNODES_INTERNAL] != 0) {
 //			/* Hoosterman, this thing looks like it is already in the list */
-//			T(YAFFS_TRACE_ALWAYS,
-//			(TSTR("yaffs: Tnode list bug 2" TENDSTR)));
+//			yportenv.T(yportenv.YAFFS_TRACE_ALWAYS,
+//			(("yaffs: Tnode list bug 2" ydirectenv.TENDSTR)));
 //			}
 //			tn->internal[YAFFS_NTNODES_INTERNAL] = (void *)1;
 //			#endif
-			tn.internal[0] = dev.freeTnodes;
-			dev.freeTnodes = tn;
-			dev.nFreeTnodes++;
+			tn.internal[0] = dev.subField3.freeTnodes;
+			dev.subField3.freeTnodes = tn;
+			dev.subField3.nFreeTnodes++;
 		}
 	}
 
@@ -789,27 +780,27 @@ public class yaffs_guts_C
 		/* Free the list of allocated tnodes */
 		yaffs_TnodeList tmp;
 
-		while (dev.allocatedTnodeList != null) {
-			tmp = dev.allocatedTnodeList.next;
+		while (dev.subField3.allocatedTnodeList != null) {
+			tmp = dev.subField3.allocatedTnodeList.next;
 
 			// XXX has it a chance to work?
 			// XXX or try another strategy?
-			/*YFREE(dev->allocatedTnodeList->tnodes)*/ dev.allocatedTnodeList.tnodes = null;
-			/*YFREE(dev->allocatedTnodeList)*/ dev.allocatedTnodeList = null;
-			dev.allocatedTnodeList = tmp;
+			/*ydirectenv.YFREE(dev->allocatedTnodeList->tnodes)*/ dev.subField3.allocatedTnodeList.tnodes = null;
+			/*ydirectenv.YFREE(dev->allocatedTnodeList)*/ dev.subField3.allocatedTnodeList = null;
+			dev.subField3.allocatedTnodeList = tmp;
 
 		}
 
-		dev.freeTnodes = null;
-		dev.nFreeTnodes = 0;
+		dev.subField3.freeTnodes = null;
+		dev.subField3.nFreeTnodes = 0;
 	}
 
 	static void yaffs_InitialiseTnodes(yaffs_Device dev)
 	{
-		dev.allocatedTnodeList = null;
-		dev.freeTnodes = null;
-		dev.nFreeTnodes = 0;
-		dev.nTnodesCreated = 0;
+		dev.subField3.allocatedTnodeList = null;
+		dev.subField3.freeTnodes = null;
+		dev.subField3.nFreeTnodes = 0;
+		dev.subField3.nTnodesCreated = 0;
 
 	}
 
@@ -822,28 +813,28 @@ public class yaffs_guts_C
 		int wordInMap;
 		int mask;
 
-		pos &= YAFFS_TNODES_LEVEL0_MASK;
-		val >>>= dev.chunkGroupBits;
+		pos &= Guts_H.YAFFS_TNODES_LEVEL0_MASK;
+		val >>>= dev.subField1.chunkGroupBits;
 
-		bitInMap = pos * dev.tnodeWidth;
+		bitInMap = pos * dev.subField2.tnodeWidth;
 		wordInMap = bitInMap /32;
 		bitInWord = bitInMap & (32 -1);
 
-		mask = dev.tnodeMask << bitInWord;
+		mask = dev.subField2.tnodeMask << bitInWord;
 
 		tn.andLevel0AsInt(wordInMap, ~mask);
 		tn.orLevel0AsInt(wordInMap, (mask & (val << bitInWord)));
 
-		if(dev.tnodeWidth > (32-bitInWord)) {
+		if(dev.subField2.tnodeWidth > (32-bitInWord)) {
 			bitInWord = (32 - bitInWord);
 			wordInMap++;;
-			mask = dev.tnodeMask >>> (/*dev->tnodeWidth -*/ bitInWord);
-		tn.andLevel0AsInt(wordInMap, ~mask);
-		tn.orLevel0AsInt(wordInMap, mask & (val >>> bitInWord));
+			mask = dev.subField2.tnodeMask >>> (/*dev->tnodeWidth -*/ bitInWord);
+			tn.andLevel0AsInt(wordInMap, ~mask);
+			tn.orLevel0AsInt(wordInMap, mask & (val >>> bitInWord));
 		}
-		
+
 		// FIXME
-		T(YAFFS_TRACE_TNODE, "PutLevel0Tnode: pos %d val %d map[wordInMap]: %d\n", pos, val, tn.level0AsInt(wordInMap));
+		yportenv.T(yportenv.PORT_TRACE_TNODE, "PutLevel0Tnode: pos %d val %d map[wordInMap]: %d\n", PrimitiveWrapperFactory.get(pos), PrimitiveWrapperFactory.get(val), PrimitiveWrapperFactory.get(tn.level0AsInt(wordInMap)));
 	}
 
 	static int yaffs_GetChunkGroupBase(yaffs_Device dev, yaffs_Tnode tn, int pos)
@@ -854,22 +845,22 @@ public class yaffs_guts_C
 		int wordInMap;
 		int val;
 
-		pos &= YAFFS_TNODES_LEVEL0_MASK;
+		pos &= Guts_H.YAFFS_TNODES_LEVEL0_MASK;
 
-		bitInMap = pos * dev.tnodeWidth;
+		bitInMap = pos * dev.subField2.tnodeWidth;
 		wordInMap = bitInMap /32;
 		bitInWord = bitInMap & (32 -1);
 
 		val = tn.level0AsInt(wordInMap) >>> bitInWord;
 
-		if(dev.tnodeWidth > (32-bitInWord)) {
+		if(dev.subField2.tnodeWidth > (32-bitInWord)) {
 			bitInWord = (32 - bitInWord);
 			wordInMap++;;
 			val |= (tn.level0AsInt(wordInMap) << bitInWord);
 		}
 
-		val &= dev.tnodeMask;
-		val <<= dev.chunkGroupBits;
+		val &= dev.subField2.tnodeMask;
+		val <<= dev.subField1.chunkGroupBits;
 
 		return val;
 	}
@@ -893,42 +884,42 @@ public class yaffs_guts_C
 		int level = fStruct.topLevel;
 
 		/* Check sane level and chunk Id */
-		if (level < 0 || level > YAFFS_TNODES_MAX_LEVEL) {
+		if (level < 0 || level > Guts_H.YAFFS_TNODES_MAX_LEVEL) {
 			return null;
 		}
 
-		if (chunkId > YAFFS_MAX_CHUNK_ID) {
+		if (chunkId > Guts_H.YAFFS_MAX_CHUNK_ID) {
 			return null;
 		}
 
 		/* First check we're tall enough (ie enough topLevel) */
 
-		i = chunkId >>> YAFFS_TNODES_LEVEL0_BITS;
-			requiredTallness = 0;
-			while (i != 0) {
-				i >>>= YAFFS_TNODES_INTERNAL_BITS;
-					requiredTallness++;
-			}
+		i = chunkId >>> Guts_H.YAFFS_TNODES_LEVEL0_BITS;
+		requiredTallness = 0;
+		while (i != 0) {
+			i >>>= Guts_H.YAFFS_TNODES_INTERNAL_BITS;
+			requiredTallness++;
+		}
 
-			if (requiredTallness > fStruct.topLevel) {
-				/* Not tall enough, so we can't find it, return NULL. */
-				return null;
-			}
+		if (requiredTallness > fStruct.topLevel) {
+			/* Not tall enough, so we can't find it, return NULL. */
+			return null;
+		}
 
-			/* Traverse down to level 0 */
-			while (level > 0 && tn != null) {
-				tn = tn.
-				internal[(chunkId >>>
-				( YAFFS_TNODES_LEVEL0_BITS + 
-						(level - 1) *
-						YAFFS_TNODES_INTERNAL_BITS)
-				) &
-				YAFFS_TNODES_INTERNAL_MASK];
-				level--;
+		/* Traverse down to level 0 */
+		while (level > 0 && tn != null) {
+			tn = tn.
+			internal[(chunkId >>>
+			( Guts_H.YAFFS_TNODES_LEVEL0_BITS + 
+					(level - 1) *
+					Guts_H.YAFFS_TNODES_INTERNAL_BITS)
+			) &
+			Guts_H.YAFFS_TNODES_INTERNAL_MASK];
+			level--;
 
-			}
+		}
 
-			return tn;
+		return tn;
 	}
 
 
@@ -958,20 +949,20 @@ public class yaffs_guts_C
 
 
 		/* Check sane level and page Id */
-		if (fStruct.topLevel < 0 || fStruct.topLevel > YAFFS_TNODES_MAX_LEVEL) {
+		if (fStruct.topLevel < 0 || fStruct.topLevel > Guts_H.YAFFS_TNODES_MAX_LEVEL) {
 			return null;
 		}
 
-		if (intAsUnsignedInt(chunkId) > YAFFS_MAX_CHUNK_ID) { 
+		if (Utils.intAsUnsignedInt(chunkId) > Guts_H.YAFFS_MAX_CHUNK_ID) { 
 			return null;
 		}
 
 		/* First check we're tall enough (ie enough topLevel) */
 
-		x = chunkId >>> YAFFS_TNODES_LEVEL0_BITS;
+		x = chunkId >>> Guts_H.YAFFS_TNODES_LEVEL0_BITS;
 		requiredTallness = 0;
 		while (x != 0) {
-			x >>>= YAFFS_TNODES_INTERNAL_BITS;
+			x >>>= Guts_H.YAFFS_TNODES_INTERNAL_BITS;
 			requiredTallness++;
 		}
 
@@ -986,14 +977,14 @@ public class yaffs_guts_C
 					tn.internal[0] = fStruct.top;
 					fStruct.top = tn;
 				} else {
-					T(YAFFS_TRACE_ERROR,
-							(TSTR("yaffs: no more tnodes" + TENDSTR)));
+					yportenv.T(yportenv.YAFFS_TRACE_ERROR,
+							(("yaffs: no more tnodes" + ydirectenv.TENDSTR)));
 				}
 			}
 
 			// FIXME
 			if (requiredTallness > 0) 
-				T(YAFFS_TRACE_TALLNESS, "Required tallness: %d\n", requiredTallness); 
+				yportenv.T(yportenv.PORT_TRACE_TALLNESS, "Required tallness: %d\n", PrimitiveWrapperFactory.get(requiredTallness)); 
 			fStruct.topLevel = requiredTallness;
 		}
 
@@ -1005,9 +996,9 @@ public class yaffs_guts_C
 		if(l > 0) {
 			while (l > 0 && tn != null) {
 				x = (chunkId >>>
-				( YAFFS_TNODES_LEVEL0_BITS +
-						(l - 1) * YAFFS_TNODES_INTERNAL_BITS)) &
-						YAFFS_TNODES_INTERNAL_MASK;
+				( Guts_H.YAFFS_TNODES_LEVEL0_BITS +
+						(l - 1) * Guts_H.YAFFS_TNODES_INTERNAL_BITS)) &
+						Guts_H.YAFFS_TNODES_INTERNAL_MASK;
 
 
 				if((l>1) && (tn.internal[x] == null)){
@@ -1034,7 +1025,7 @@ public class yaffs_guts_C
 		} else {
 			/* top is level 0 */
 			if(passedTn != null) {
-				memcpy(tn,passedTn/*,(dev.tnodeWidth * YAFFS_NTNODES_LEVEL0)/8*/); // XXX only copy level0?
+				Unix.memcpy(tn,passedTn/*,(dev.tnodeWidth * Guts_H.YAFFS_NTNODES_LEVEL0)/8*/); // XXX only copy level0?
 				yaffs_FreeTnode(dev,passedTn);
 			}
 		}
@@ -1048,11 +1039,11 @@ public class yaffs_guts_C
 	{
 		int j;
 
-		for (j = 0; theChunk != 0 && j < dev.chunkGroupSize; j++) {
+		for (j = 0; theChunk != 0 && j < dev.subField1.chunkGroupSize; j++) {
 			if (yaffs_CheckChunkBit
-					(dev, theChunk / dev.nChunksPerBlock,
-							theChunk % dev.nChunksPerBlock)) {
-				yaffs_ReadChunkWithTagsFromNAND(dev, theChunk, null, 0,
+					(dev, theChunk / dev.subField1.nChunksPerBlock,
+							theChunk % dev.subField1.nChunksPerBlock)) {
+				yaffs_nand_C.yaffs_ReadChunkWithTagsFromNAND(dev, theChunk, null, 0,
 						tags);
 				if (yaffs_TagsMatch(tags, objectId, chunkInInode)) {
 					/* found it; */
@@ -1071,6 +1062,7 @@ public class yaffs_guts_C
 	 * Returns 1 if the tree was deleted. 
 	 * Returns 0 if it stopped early due to hitting the limit and the delete is incomplete.
 	 */
+	// XXX recursive
 
 	static boolean yaffs_DeleteWorker(yaffs_Object in, yaffs_Tnode tn, int level,
 			int chunkOffset, IntegerPointer limit)
@@ -1087,7 +1079,7 @@ public class yaffs_guts_C
 		if (tn != null) {
 			if (level > 0) {
 
-				for (i = YAFFS_NTNODES_INTERNAL - 1; allDone && i >= 0;
+				for (i = Guts_H.YAFFS_NTNODES_INTERNAL - 1; allDone && i >= 0;
 				i--) {
 					if (tn.internal[i] != null) {
 						if (limit != null && (limit.dereferenced) < 0) {
@@ -1102,7 +1094,7 @@ public class yaffs_guts_C
 										1,
 										(chunkOffset
 												<<
-												YAFFS_TNODES_INTERNAL_BITS)
+												Guts_H.YAFFS_TNODES_INTERNAL_BITS)
 												+ i,
 												limit);
 						}
@@ -1119,14 +1111,14 @@ public class yaffs_guts_C
 			} else if (level == 0) {
 				int hitLimit = 0;
 
-				for (i = YAFFS_NTNODES_LEVEL0 - 1; i >= 0 && (hitLimit == 0);
+				for (i = Guts_H.YAFFS_NTNODES_LEVEL0 - 1; i >= 0 && (hitLimit == 0);
 				i--) {
 					theChunk = yaffs_GetChunkGroupBase(dev,tn,i);
 					if (theChunk != 0) {
 
 						chunkInInode =
 							(chunkOffset <<
-									YAFFS_TNODES_LEVEL0_BITS) + i;
+									Guts_H.YAFFS_TNODES_LEVEL0_BITS) + i;
 
 						foundChunk =
 							yaffs_FindChunkInGroup(dev,
@@ -1138,7 +1130,7 @@ public class yaffs_guts_C
 						if (foundChunk > 0) {
 							yaffs_DeleteChunk(dev,
 									foundChunk, true,
-									__LINE__());
+									Utils.__LINE__());
 							in.nDataChunks--;
 							if (limit != null) {
 								limit.dereferenced = limit.dereferenced - 1;
@@ -1168,12 +1160,12 @@ public class yaffs_guts_C
 
 		yaffs_BlockInfo theBlock;
 
-		T(YAFFS_TRACE_DELETION, TSTR("soft delete chunk %d" + TENDSTR), chunk);
+		yportenv.T(yportenv.YAFFS_TRACE_DELETION, ("soft delete chunk %d" + ydirectenv.TENDSTR), PrimitiveWrapperFactory.get(chunk));
 
-		theBlock = yaffs_GetBlockInfo(dev, chunk / dev.nChunksPerBlock);
+		theBlock = Guts_H.yaffs_GetBlockInfo(dev, chunk / dev.subField1.nChunksPerBlock);
 		if (theBlock != null) {
 			theBlock.setSoftDeletions(theBlock.softDeletions()+1);
-			dev.nFreeChunks++;
+			dev.subField3.nFreeChunks++;
 		}
 	}
 
@@ -1182,6 +1174,7 @@ public class yaffs_guts_C
 	 * of the tnode.
 	 * Thus, essentially this is the same as DeleteWorker except that the chunks are soft deleted.
 	 */
+	// XXX recursive
 
 	static boolean yaffs_SoftDeleteWorker(yaffs_Object in, yaffs_Tnode tn,
 			int level, int chunkOffset)
@@ -1194,7 +1187,7 @@ public class yaffs_guts_C
 		if (tn != null) {
 			if (level > 0) {
 
-				for (i = YAFFS_NTNODES_INTERNAL - 1; (allDone) && i >= 0;
+				for (i = Guts_H.YAFFS_NTNODES_INTERNAL - 1; (allDone) && i >= 0;
 				i--) {
 					if (tn.internal[i] != null) {
 						allDone =
@@ -1204,7 +1197,7 @@ public class yaffs_guts_C
 									level - 1,
 									(chunkOffset
 											<<
-											YAFFS_TNODES_INTERNAL_BITS)
+											Guts_H.YAFFS_TNODES_INTERNAL_BITS)
 											+ i);
 						if (allDone) {
 							yaffs_FreeTnode(dev,
@@ -1219,7 +1212,7 @@ public class yaffs_guts_C
 				return (allDone) ? true : false;
 			} else if (level == 0) {
 
-				for (i = YAFFS_NTNODES_LEVEL0 - 1; i >= 0; i--) {
+				for (i = Guts_H.YAFFS_NTNODES_LEVEL0 - 1; i >= 0; i--) {
 					theChunk = yaffs_GetChunkGroupBase(dev,tn,i);
 					if (theChunk != 0) {
 						/* Note this does not find the real chunk, only the chunk group.
@@ -1243,23 +1236,23 @@ public class yaffs_guts_C
 
 	static void yaffs_SoftDeleteFile(yaffs_Object obj)
 	{
-		if (obj.deleted &&
-				obj.variantType == YAFFS_OBJECT_TYPE_FILE && !obj.softDeleted) {
+		if (obj.sub.deleted &&
+				obj.variantType == Guts_H.YAFFS_OBJECT_TYPE_FILE && !obj.sub.softDeleted) {
 			if (obj.nDataChunks <= 0) {
 				/* Empty file with no duplicate object headers, just delete it immediately */
 				yaffs_FreeTnode(obj.myDev,
 						obj.variant.fileVariant().top);
 				obj.variant.fileVariant().top = null;
-				T(YAFFS_TRACE_TRACING,
-						TSTR("yaffs: Deleting empty file %d" + TENDSTR),
-						obj.objectId);
+				yportenv.T(yportenv.YAFFS_TRACE_TRACING,
+						("yaffs: Deleting empty file %d" + ydirectenv.TENDSTR),
+						PrimitiveWrapperFactory.get(obj.objectId));
 				yaffs_DoGenericObjectDeletion(obj);
 			} else {
 				yaffs_SoftDeleteWorker(obj,
 						obj.variant.fileVariant().top,
 						obj.variant.fileVariant().
 						topLevel, 0);
-				obj.softDeleted = true;
+				obj.sub.softDeleted = true;
 			}
 		}
 	}
@@ -1284,10 +1277,10 @@ public class yaffs_guts_C
 		if (tn != null) {
 			hasData = 0;
 
-			for (i = 0; i < YAFFS_NTNODES_INTERNAL; i++) {
-				assert (level > 0 ? 
-						getIntFromByteArray(tn.serialized, i*4) == 0 : 
-							tn.internal[i] == null); 
+			for (i = 0; i < Guts_H.YAFFS_NTNODES_INTERNAL; i++) {
+//				assert (level > 0 ? 
+//				Utils.getIntFromByteArray(tn.serialized, i*4) == 0 : 
+//				tn.internal[i] == null); 
 
 				if (tn.internal[i] != null && level > 0) {
 					tn.internal[i] =	// XXX recursive call
@@ -1297,7 +1290,7 @@ public class yaffs_guts_C
 				}
 
 				if ((tn.internal[i] != null) || // PORT union
-						(getIntFromByteArray(tn.serialized, tn.offset+i*4) != 0)) {
+						(Utils.getIntFromByteArray(tn.serialized, tn.offset+i*4) != 0)) {
 					hasData++;
 				}
 			}
@@ -1338,7 +1331,7 @@ public class yaffs_guts_C
 				tn = fStruct.top;
 
 				hasData = 0;
-				for (i = 1; i < YAFFS_NTNODES_INTERNAL; i++) {
+				for (i = 1; i < Guts_H.YAFFS_NTNODES_INTERNAL; i++) {
 					if (tn.internal[i] != null) {
 						hasData++;
 					}
@@ -1348,7 +1341,7 @@ public class yaffs_guts_C
 					fStruct.top = tn.internal[0];
 					fStruct.topLevel--;
 					// FIXME
-					T(YAFFS_TRACE_TOPLEVEL, "Reducing topLevel: %d\n", fStruct.topLevel);
+					yportenv.T(yportenv.PORT_TRACE_TOPLEVEL, "Reducing topLevel: %d\n", PrimitiveWrapperFactory.get(fStruct.topLevel));
 					yaffs_FreeTnode(dev, tn);
 				} else {
 					done = true;
@@ -1356,7 +1349,7 @@ public class yaffs_guts_C
 			}
 		}
 
-		return YAFFS_OK;
+		return Guts_H.YAFFS_OK;
 	}
 
 	/*-------------------- End of File Structure functions.-------------------*/
@@ -1371,41 +1364,41 @@ public class yaffs_guts_C
 		yaffs_ObjectList list;
 
 		if (nObjects < 1)
-			return YAFFS_OK;
+			return Guts_H.YAFFS_OK;
 
 		/* make these things */
-		newObjects = YMALLOC_OBJECT(nObjects/* * sizeof(yaffs_Object)*/ );
+		newObjects = ydirectenv.YMALLOC_OBJECT(nObjects/* * sizeof(yaffs_Object)*/ );
 
 		if (!(newObjects != null)) {
-			T(YAFFS_TRACE_ALLOCATE,
-					(TSTR("yaffs: Could not allocate more objects" + TENDSTR)));
-			return YAFFS_FAIL;
+			yportenv.T(yportenv.YAFFS_TRACE_ALLOCATE,
+					(("yaffs: Could not allocate more objects" + ydirectenv.TENDSTR)));
+			return Guts_H.YAFFS_FAIL;
 		}
 
 		/* Hook them into the free list */
 		for (i = 0; i < nObjects - 1; i++) {
 			newObjects[i].siblings.next =
-				/*(list_head)*/ (newObjects[i + 1]);	// XXX check
+				/*(list_head)*/ (newObjects[i + 1]);
 		}
 
-		newObjects[nObjects - 1].siblings.next = /*(void *)*/ dev.freeObjects; 
-		dev.freeObjects = newObjects[0];	// XXX check
-		dev.nFreeObjects += nObjects;
-		dev.nObjectsCreated += nObjects;
+		newObjects[nObjects - 1].siblings.next = /*(void *)*/ dev.subField3.freeObjects; 
+		dev.subField3.freeObjects = newObjects[0];
+		dev.subField3.nFreeObjects += nObjects;
+		dev.subField3.nObjectsCreated += nObjects;
 
 		/* Now add this bunch of Objects to a list for freeing up. */
 
-		list = /*YMALLOC(sizeof(yaffs_ObjectList))*/ new yaffs_ObjectList();
+		list = /*ydirectenv.YMALLOC(sizeof(yaffs_ObjectList))*/ new yaffs_ObjectList();
 		if (!(list != null)) {
-			T(YAFFS_TRACE_ALLOCATE,
-					(TSTR("Could not add objects to management list" + TENDSTR)));
+			yportenv.T(yportenv.YAFFS_TRACE_ALLOCATE,
+					(("Could not add objects to management list" + ydirectenv.TENDSTR)));
 		} else {
 			list.objects = newObjects;
-			list.next = dev.allocatedObjectList;
-			dev.allocatedObjectList = list;
+			list.next = dev.subField3.allocatedObjectList;
+			dev.subField3.allocatedObjectList = list;
 		}
 
-		return YAFFS_OK;
+		return Guts_H.YAFFS_OK;
 	}
 
 
@@ -1415,25 +1408,25 @@ public class yaffs_guts_C
 		yaffs_Object tn = null;
 
 		/* If there are none left make more */
-		if (!(dev.freeObjects != null)) {
-			yaffs_CreateFreeObjects(dev, YAFFS_ALLOCATION_NOBJECTS);
+		if (!(dev.subField3.freeObjects != null)) {
+			yaffs_CreateFreeObjects(dev, Guts_H.YAFFS_ALLOCATION_NOBJECTS);
 		}
 
-		if (dev.freeObjects != null) {
-			tn = dev.freeObjects;	// XXX check
-			dev.freeObjects =
-				(yaffs_Object) (dev.freeObjects.siblings.next);
-			dev.nFreeObjects--;
+		if (dev.subField3.freeObjects != null) {
+			tn = dev.subField3.freeObjects;
+			dev.subField3.freeObjects =
+				(yaffs_Object) (dev.subField3.freeObjects.siblings.next);
+			dev.subField3.nFreeObjects--;
 
 			/* Now sweeten it up... */
 
-			memset(tn/*, 0, sizeof(yaffs_Object)*/ );
+			Unix.memset(tn/*, 0, sizeof(yaffs_Object)*/ );
 			tn.myDev = dev;
 			tn.chunkId = -1;
-			tn.variantType = YAFFS_OBJECT_TYPE_UNKNOWN;
-			INIT_LIST_HEAD((tn.hardLinks));
-			INIT_LIST_HEAD((tn.hashLink));
-			INIT_LIST_HEAD(tn.siblings);
+			tn.variantType = Guts_H.YAFFS_OBJECT_TYPE_UNKNOWN;
+			devextras.INIT_LIST_HEAD((tn.hardLinks));
+			devextras.INIT_LIST_HEAD((tn.hashLink));
+			devextras.INIT_LIST_HEAD(tn.siblings);
 
 			/* Add it to the lost and found directory.
 			 * NB Can't put root or lostNFound in lostNFound so
@@ -1452,13 +1445,13 @@ public class yaffs_guts_C
 	{
 
 		yaffs_Object obj =
-			yaffs_CreateNewObject(dev, number, YAFFS_OBJECT_TYPE_DIRECTORY);
+			yaffs_CreateNewObject(dev, number, Guts_H.YAFFS_OBJECT_TYPE_DIRECTORY);
 		if (obj != null) {
-			obj.fake = true;		/* it is fake so it has no NAND presence... */
+			obj.sub.fake = true;		/* it is fake so it has no NAND presence... */
 			obj.renameAllowed = false;	/* ... and we're not allowed to rename it... */
 			obj.unlinkAllowed = false;	/* ... or unlink it */
-			obj.deleted = false;
-			obj.unlinked = false;
+			obj.sub.deleted = false;
+			obj.sub.unlinked = false;
 			obj.yst_mode = mode;
 			obj.myDev = dev;
 			obj.chunkId = 0;	/* Not a valid chunk. */
@@ -1474,10 +1467,10 @@ public class yaffs_guts_C
 		yaffs_Device dev = tn.myDev;
 
 		/* If it is still linked into the bucket list, free from the list */
-		if (!list_empty(tn.hashLink)) {
-			list_del_init(tn.hashLink);
+		if (!devextras.list_empty(tn.hashLink)) {
+			devextras.list_del_init(tn.hashLink);
 			bucket = yaffs_HashFunction(tn.objectId);
-			dev.objectBucket[bucket].count--;
+			dev.subField3.objectBucket[bucket].count--;
 		}
 
 	}
@@ -1501,9 +1494,9 @@ public class yaffs_guts_C
 		yaffs_UnhashObject(tn);
 
 		/* Link into the free list. */
-		tn.siblings.next = /*(list_head)*/ (dev.freeObjects);
-		dev.freeObjects = tn;
-		dev.nFreeObjects++;
+		tn.siblings.next = /*(list_head)*/ (dev.subField3.freeObjects);
+		dev.subField3.freeObjects = tn;
+		dev.subField3.nFreeObjects++;
 	}
 
 //	#ifdef __KERNEL__
@@ -1523,29 +1516,29 @@ public class yaffs_guts_C
 
 		yaffs_ObjectList tmp;
 
-		while (dev.allocatedObjectList != null) {
-			tmp = dev.allocatedObjectList.next;
-			YFREE(dev.allocatedObjectList.objects);
-			YFREE(dev.allocatedObjectList);
+		while (dev.subField3.allocatedObjectList != null) {
+			tmp = dev.subField3.allocatedObjectList.next;
+			ydirectenv.YFREE(dev.subField3.allocatedObjectList.objects);
+			ydirectenv.YFREE(dev.subField3.allocatedObjectList);
 
-			dev.allocatedObjectList = tmp;
+			dev.subField3.allocatedObjectList = tmp;
 		}
 
-		dev.freeObjects = null;
-		dev.nFreeObjects = 0;
+		dev.subField3.freeObjects = null;
+		dev.subField3.nFreeObjects = 0;
 	}
 
 	static void yaffs_InitialiseObjects(yaffs_Device dev)
 	{
 		int i;
 
-		dev.allocatedObjectList = null;
-		dev.freeObjects = null;
-		dev.nFreeObjects = 0;
+		dev.subField3.allocatedObjectList = null;
+		dev.subField3.freeObjects = null;
+		dev.subField3.nFreeObjects = 0;
 
-		for (i = 0; i < YAFFS_NOBJECT_BUCKETS; i++) {
-			INIT_LIST_HEAD(dev.objectBucket[i].list);
-			dev.objectBucket[i].count = 0;
+		for (i = 0; i < Guts_H.YAFFS_NOBJECT_BUCKETS; i++) {
+			devextras.INIT_LIST_HEAD(dev.subField3.objectBucket[i].list);
+			dev.subField3.objectBucket[i].count = 0;
 		}
 
 	}
@@ -1562,9 +1555,9 @@ public class yaffs_guts_C
 
 		for (i = 0; i < 10 && lowest > 0; i++) {
 			_STATIC_LOCAL_yaffs_FindNiceObjectBucket_x++;
-			_STATIC_LOCAL_yaffs_FindNiceObjectBucket_x %= YAFFS_NOBJECT_BUCKETS;
-			if (dev.objectBucket[_STATIC_LOCAL_yaffs_FindNiceObjectBucket_x].count < lowest) {
-				lowest = dev.objectBucket[_STATIC_LOCAL_yaffs_FindNiceObjectBucket_x].count;
+			_STATIC_LOCAL_yaffs_FindNiceObjectBucket_x %= Guts_H.YAFFS_NOBJECT_BUCKETS;
+			if (dev.subField3.objectBucket[_STATIC_LOCAL_yaffs_FindNiceObjectBucket_x].count < lowest) {
+				lowest = dev.subField3.objectBucket[_STATIC_LOCAL_yaffs_FindNiceObjectBucket_x].count;
 				l = _STATIC_LOCAL_yaffs_FindNiceObjectBucket_x;
 			}
 
@@ -1576,9 +1569,9 @@ public class yaffs_guts_C
 
 		for (i = 0; i < 10 && lowest > 3; i++) {
 			_STATIC_LOCAL_yaffs_FindNiceObjectBucket_x++;
-			_STATIC_LOCAL_yaffs_FindNiceObjectBucket_x %= YAFFS_NOBJECT_BUCKETS;
-			if (dev.objectBucket[_STATIC_LOCAL_yaffs_FindNiceObjectBucket_x].count < lowest) {
-				lowest = dev.objectBucket[_STATIC_LOCAL_yaffs_FindNiceObjectBucket_x].count;
+			_STATIC_LOCAL_yaffs_FindNiceObjectBucket_x %= Guts_H.YAFFS_NOBJECT_BUCKETS;
+			if (dev.subField3.objectBucket[_STATIC_LOCAL_yaffs_FindNiceObjectBucket_x].count < lowest) {
+				lowest = dev.subField3.objectBucket[_STATIC_LOCAL_yaffs_FindNiceObjectBucket_x].count;
 				l = _STATIC_LOCAL_yaffs_FindNiceObjectBucket_x;
 			}
 
@@ -1604,10 +1597,10 @@ public class yaffs_guts_C
 
 		while (!found) {
 			found = true;
-			n += YAFFS_NOBJECT_BUCKETS;
-			if (true || dev.objectBucket[bucket].count > 0) {
+			n += Guts_H.YAFFS_NOBJECT_BUCKETS;
+			if (true || dev.subField3.objectBucket[bucket].count > 0) {
 //				list_for_each(i, &dev->objectBucket[bucket].list) {
-				for (i = dev.objectBucket[bucket].list.next(); i != dev.objectBucket[bucket].list;
+				for (i = dev.subField3.objectBucket[bucket].list.next(); i != dev.subField3.objectBucket[bucket].list;
 				i =	i.next())
 				{
 					/* If there is already one in the list */
@@ -1629,8 +1622,8 @@ public class yaffs_guts_C
 		int bucket = yaffs_HashFunction(in.objectId);
 		yaffs_Device dev = in.myDev;
 
-		list_add(in.hashLink, dev.objectBucket[bucket].list);
-		dev.objectBucket[bucket].count++;
+		devextras.list_add(in.hashLink, dev.subField3.objectBucket[bucket].list);
+		dev.subField3.objectBucket[bucket].count++;
 
 	}
 
@@ -1641,7 +1634,7 @@ public class yaffs_guts_C
 		yaffs_Object in;
 
 //		list_for_each(i, &dev.objectBucket[bucket].list) {
-		for (i = dev.objectBucket[bucket].list.next(); i != dev.objectBucket[bucket].list;
+		for (i = dev.subField3.objectBucket[bucket].list.next(); i != dev.subField3.objectBucket[bucket].list;
 		i = i.next()) {
 			/* Look if it is in the list */
 			if (i != null) {
@@ -1674,7 +1667,7 @@ public class yaffs_guts_C
 		theObject = yaffs_AllocateEmptyObject(dev);
 
 		if (theObject != null) {
-			theObject.fake = false;
+			theObject.sub.fake = false;
 			theObject.renameAllowed = true;
 			theObject.unlinkAllowed = true;
 			theObject.objectId = number;
@@ -1690,29 +1683,29 @@ public class yaffs_guts_C
 //			#else
 
 			theObject.yst_atime = theObject.yst_mtime =
-				theObject.yst_ctime = Y_CURRENT_TIME();
+				theObject.yst_ctime = ydirectenv.Y_CURRENT_TIME();
 //			#endif
-			switch (type) {	// XXX either create the corresponding variant here, or create all possible variants on object creation
-				case YAFFS_OBJECT_TYPE_FILE:
-					theObject.variant.fileVariant().fileSize = 0;
-					theObject.variant.fileVariant().scannedFileSize = 0;
-					theObject.variant.fileVariant().shrinkSize = 0xFFFFFFFF;	/* max __u32 */
-					theObject.variant.fileVariant().topLevel = 0;
-					theObject.variant.fileVariant().top =
-						yaffs_GetTnode(dev);
-					break;
-				case YAFFS_OBJECT_TYPE_DIRECTORY:
-					INIT_LIST_HEAD(theObject.variant.directoryVariant().
-							children);
-					break;
-				case YAFFS_OBJECT_TYPE_SYMLINK:
-				case YAFFS_OBJECT_TYPE_HARDLINK:
-				case YAFFS_OBJECT_TYPE_SPECIAL:
-					/* No action required */
-					break;
-				case YAFFS_OBJECT_TYPE_UNKNOWN:
-					/* todo this should not happen */
-					break;
+			switch (type) {	// XXX either allocate/get from pool the corresponding variant here, or create all possible variants on object creation
+			case Guts_H.YAFFS_OBJECT_TYPE_FILE:
+				theObject.variant.fileVariant().fileSize = 0;
+				theObject.variant.fileVariant().scannedFileSize = 0;
+				theObject.variant.fileVariant().shrinkSize = 0xFFFFFFFF;	/* max __u32 */
+				theObject.variant.fileVariant().topLevel = 0;
+				theObject.variant.fileVariant().top =
+					yaffs_GetTnode(dev);
+				break;
+			case Guts_H.YAFFS_OBJECT_TYPE_DIRECTORY:
+				devextras.INIT_LIST_HEAD(theObject.variant.directoryVariant().
+						children);
+				break;
+			case Guts_H.YAFFS_OBJECT_TYPE_SYMLINK:
+			case Guts_H.YAFFS_OBJECT_TYPE_HARDLINK:
+			case Guts_H.YAFFS_OBJECT_TYPE_SPECIAL:
+				/* No action required */
+				break;
+			case Guts_H.YAFFS_OBJECT_TYPE_UNKNOWN:
+				/* todo this should not happen */
+				break;
 			}
 		}
 
@@ -1746,8 +1739,8 @@ public class yaffs_guts_C
 		byte[] newStr = null;
 
 		if (str != null && str[0] != 0) {
-			newStr = YMALLOC((yaffs_strlen(str, strIndex) + 1)/* * sizeof(YCHAR)*/);
-			yaffs_strcpy(newStr, 0, str, strIndex);
+			newStr = ydirectenv.YMALLOC((ydirectenv.yaffs_strlen(str, strIndex) + 1)/* * sizeof(YCHAR)*/);
+			ydirectenv.yaffs_strcpy(newStr, 0, str, strIndex);
 		}
 
 		return newStr;
@@ -1795,7 +1788,7 @@ public class yaffs_guts_C
 //			in.win_ctime[1] = in.win_mtime[1] = in.win_atime[1];
 
 //			#else
-			in.yst_atime = in.yst_mtime = in.yst_ctime = Y_CURRENT_TIME();
+			in.yst_atime = in.yst_mtime = in.yst_ctime = ydirectenv.Y_CURRENT_TIME();
 
 			in.yst_rdev = rdev;
 			in.yst_uid = uid;
@@ -1811,24 +1804,24 @@ public class yaffs_guts_C
 			in.myDev = parent.myDev;
 
 			switch (type) {
-				case YAFFS_OBJECT_TYPE_SYMLINK:
-					in.variant.symLinkVariant().alias =
-						yaffs_CloneString(aliasString, aliasStringIndex);
-					in.variant.symLinkVariant().aliasIndex = 0;
-					break;
-				case YAFFS_OBJECT_TYPE_HARDLINK:
-					in.variant.hardLinkVariant().equivalentObject =
-						equivalentObject;
-					in.variant.hardLinkVariant().equivalentObjectId =
-						equivalentObject.objectId;
-					list_add(in.hardLinks, equivalentObject.hardLinks);
-					break;
-				case YAFFS_OBJECT_TYPE_FILE:	
-				case YAFFS_OBJECT_TYPE_DIRECTORY:
-				case YAFFS_OBJECT_TYPE_SPECIAL:
-				case YAFFS_OBJECT_TYPE_UNKNOWN:
-					/* do nothing */
-					break;
+			case Guts_H.YAFFS_OBJECT_TYPE_SYMLINK:
+				in.variant.symLinkVariant().alias =
+					yaffs_CloneString(aliasString, aliasStringIndex);
+				in.variant.symLinkVariant().aliasIndex = 0;
+				break;
+			case Guts_H.YAFFS_OBJECT_TYPE_HARDLINK:
+				in.variant.hardLinkVariant().equivalentObject =
+					equivalentObject;
+				in.variant.hardLinkVariant().equivalentObjectId =
+					equivalentObject.objectId;
+				devextras.list_add(in.hardLinks, equivalentObject.hardLinks);
+				break;
+			case Guts_H.YAFFS_OBJECT_TYPE_FILE:	
+			case Guts_H.YAFFS_OBJECT_TYPE_DIRECTORY:
+			case Guts_H.YAFFS_OBJECT_TYPE_SPECIAL:
+			case Guts_H.YAFFS_OBJECT_TYPE_UNKNOWN:
+				/* do nothing */
+				break;
 			}
 
 			if (yaffs_UpdateObjectHeader(in, name, nameIndex, false, false, 0) < 0) {
@@ -1845,21 +1838,21 @@ public class yaffs_guts_C
 	static yaffs_Object yaffs_MknodFile(yaffs_Object  parent, byte[] name, int nameIndex,
 			/*__u32*/ int mode, /*__u32*/ int uid, /*__u32*/ int gid)
 	{
-		return yaffs_MknodObject(YAFFS_OBJECT_TYPE_FILE, parent, name, nameIndex, mode,
+		return yaffs_MknodObject(Guts_H.YAFFS_OBJECT_TYPE_FILE, parent, name, nameIndex, mode,
 				uid, gid, null, null, 0, 0);
 	}
 
 	static yaffs_Object yaffs_MknodDirectory(yaffs_Object  parent, byte[] name, int nameIndex,
 			/*__u32*/ int mode, /*__u32*/ int uid, /*__u32*/ int gid)
 	{
-		return yaffs_MknodObject(YAFFS_OBJECT_TYPE_DIRECTORY, parent, name, nameIndex,
+		return yaffs_MknodObject(Guts_H.YAFFS_OBJECT_TYPE_DIRECTORY, parent, name, nameIndex,
 				mode, uid, gid, null, null, 0, 0);
 	}
 
 	static yaffs_Object yaffs_MknodSpecial(yaffs_Object  parent, byte[] name, int nameIndex,
 			/*__u32*/ int mode, /*__u32*/ int uid, /*__u32*/ int gid, /*__u32*/ int rdev)
 	{
-		return yaffs_MknodObject(YAFFS_OBJECT_TYPE_SPECIAL, parent, name, nameIndex, 
+		return yaffs_MknodObject(Guts_H.YAFFS_OBJECT_TYPE_SPECIAL, parent, name, nameIndex, 
 				mode, uid, gid, null, null, 0, rdev);
 	}
 
@@ -1867,7 +1860,7 @@ public class yaffs_guts_C
 			/*__u32*/ int mode, /*__u32*/ int uid, /*__u32*/ int gid,
 			byte[] alias, int aliasIndex)
 	{
-		return yaffs_MknodObject(YAFFS_OBJECT_TYPE_SYMLINK, parent, name, nameIndex,
+		return yaffs_MknodObject(Guts_H.YAFFS_OBJECT_TYPE_SYMLINK, parent, name, nameIndex,
 				mode, uid, gid, null, alias, aliasIndex, 0);
 	}
 
@@ -1879,7 +1872,7 @@ public class yaffs_guts_C
 		equivalentObject = yaffs_GetEquivalentObject(equivalentObject);
 
 		if (yaffs_MknodObject
-				(YAFFS_OBJECT_TYPE_HARDLINK, parent, name, nameIndex, 0, 0, 0,
+				(Guts_H.YAFFS_OBJECT_TYPE_HARDLINK, parent, name, nameIndex, 0, 0, 0,
 						equivalentObject, null, 0, 0) != null) {
 			return equivalentObject;
 		} else {
@@ -1900,20 +1893,20 @@ public class yaffs_guts_C
 			newDir = obj.parent;	/* use the old directory */
 		}
 
-		if (newDir.variantType != YAFFS_OBJECT_TYPE_DIRECTORY) {
-			T(YAFFS_TRACE_ALWAYS,
-					TSTR
+		if (newDir.variantType != Guts_H.YAFFS_OBJECT_TYPE_DIRECTORY) {
+			yportenv.T(yportenv.YAFFS_TRACE_ALWAYS,
+
 					("tragendy: yaffs_ChangeObjectName: newDir is not a directory"
-							+ TENDSTR));
+							+ ydirectenv.TENDSTR));
 			yaffs2.utils.Globals.portConfiguration.YBUG();
 		}
 
 		/* TODO: Do we need this different handling for YAFFS2 and YAFFS1?? */
-		if (obj.myDev.isYaffs2) {
+		if (obj.myDev.subField1.isYaffs2) {
 			unlinkOp = (newDir == obj.myDev.unlinkedDir);
 		} else {
 			unlinkOp = (newDir == obj.myDev.unlinkedDir
-					&& obj.variantType == YAFFS_OBJECT_TYPE_FILE);
+					&& obj.variantType == Guts_H.YAFFS_OBJECT_TYPE_FILE);
 		}
 
 		deleteOp = (newDir == obj.myDev.deletedDir);
@@ -1930,21 +1923,21 @@ public class yaffs_guts_C
 				force ||
 				(shadows > 0) ||
 				!(existingTarget != null)) &&
-				newDir.variantType == YAFFS_OBJECT_TYPE_DIRECTORY) {
+				newDir.variantType == Guts_H.YAFFS_OBJECT_TYPE_DIRECTORY) {
 			yaffs_SetObjectName(obj, newName, newNameIndex);
 			obj.dirty = true;
 
 			yaffs_AddObjectToDirectory(newDir, obj);
 
 			if (unlinkOp)
-				obj.unlinked = true;
+				obj.sub.unlinked = true;
 
 			/* If it is a deletion then we mark it as a shrink for gc purposes. */
 			if (yaffs_UpdateObjectHeader(obj, newName, newNameIndex, false, deleteOp, shadows)>= 0)
-				return YAFFS_OK;
+				return Guts_H.YAFFS_OK;
 		}
 
-		return YAFFS_FAIL;
+		return Guts_H.YAFFS_FAIL;
 	}
 
 	static boolean yaffs_RenameObject(yaffs_Object  oldDir, byte[] oldName, int oldNameIndex,
@@ -1966,14 +1959,14 @@ public class yaffs_guts_C
 
 		obj = yaffs_FindObjectByName(oldDir, oldName, oldNameIndex);
 		/* Check new name to long. */
-		if (obj.variantType == YAFFS_OBJECT_TYPE_SYMLINK &&
-				yaffs_strlen(newName, newNameIndex) > YAFFS_MAX_ALIAS_LENGTH)
+		if (obj.variantType == Guts_H.YAFFS_OBJECT_TYPE_SYMLINK &&
+				ydirectenv.yaffs_strlen(newName, newNameIndex) > Guts_H.YAFFS_MAX_ALIAS_LENGTH)
 			/* ENAMETOOLONG */
-			return YAFFS_FAIL;
-		else if (obj.variantType != YAFFS_OBJECT_TYPE_SYMLINK &&
-				yaffs_strlen(newName, newNameIndex) > YAFFS_MAX_NAME_LENGTH)
+			return Guts_H.YAFFS_FAIL;
+		else if (obj.variantType != Guts_H.YAFFS_OBJECT_TYPE_SYMLINK &&
+				ydirectenv.yaffs_strlen(newName, newNameIndex) > Guts_H.YAFFS_MAX_NAME_LENGTH)
 			/* ENAMETOOLONG */
-			return YAFFS_FAIL;
+			return Guts_H.YAFFS_FAIL;
 
 		if (obj != null && obj.renameAllowed) {
 
@@ -1981,10 +1974,10 @@ public class yaffs_guts_C
 
 			existingTarget = yaffs_FindObjectByName(newDir, newName, newNameIndex);
 			if (existingTarget != null &&
-					existingTarget.variantType == YAFFS_OBJECT_TYPE_DIRECTORY &&
-					!list_empty(existingTarget.variant.directoryVariant().children)) {
+					existingTarget.variantType == Guts_H.YAFFS_OBJECT_TYPE_DIRECTORY &&
+					!devextras.list_empty(existingTarget.variant.directoryVariant().children)) {
 				/* There is a target that is a non-empty directory, so we fail */
-				return YAFFS_FAIL;	/* EEXIST or ENOTEMPTY */
+				return Guts_H.YAFFS_FAIL;	/* EEXIST or ENOTEMPTY */
 			} else if (existingTarget != null && existingTarget != obj) {
 				/* Nuke the target first, using shadowing, 
 				 * but only if it isn't the same object
@@ -1996,68 +1989,68 @@ public class yaffs_guts_C
 
 			return yaffs_ChangeObjectName(obj, newDir, newName, newNameIndex, true, 0);
 		}
-		return YAFFS_FAIL;
+		return Guts_H.YAFFS_FAIL;
 	}
 
 	/*------------------------- Block Management and Page Allocation ----------------*/
 
 	static boolean yaffs_InitialiseBlocks(yaffs_Device dev)	// XXX only done once?
 	{
-		int nBlocks = dev.internalEndBlock - dev.internalStartBlock + 1;
+		int nBlocks = dev.subField2.internalEndBlock - dev.subField2.internalStartBlock + 1;
 
-		dev.allocationBlock = -1;	/* force it to get a new one */
+		dev.subField3.allocationBlock = -1;	/* force it to get a new one */
 
 		/* Todo we're assuming the malloc will pass. */
-		dev.blockInfo = /*YMALLOC(nBlocks * sizeof(yaffs_BlockInfo))*/ YMALLOC_BLOCKINFO(nBlocks);
-		if(!(dev.blockInfo != null)){
-			// XXX makes no sense in Java?
+		dev.subField2.blockInfo = /*ydirectenv.YMALLOC(nBlocks * sizeof(yaffs_BlockInfo))*/ ydirectenv.YMALLOC_BLOCKINFO(nBlocks);
+		if(!(dev.subField2.blockInfo != null)){
+			// XXX makes no sense in Java
 			throw new NotImplementedException();
-//			dev.blockInfo = YMALLOC_ALT(nBlocks * sizeof(yaffs_BlockInfo));
+//			dev.blockInfo = ydirectenv.YMALLOC_ALyportenv.T(nBlocks * sizeof(yaffs_BlockInfo));
 //			dev.blockInfoAlt = 1;
 		}
 		else
-			dev.blockInfoAlt = false;
+			dev.subField2.blockInfoAlt = false;
 
 		/* Set up dynamic blockinfo stuff. */
-		dev.chunkBitmapStride = (dev.nChunksPerBlock + 7) / 8; /* round up bytes */
-		dev.chunkBits = YMALLOC(dev.chunkBitmapStride * nBlocks);
-		dev.chunkBitsIndex = 0;
-		if(!(dev.chunkBits != null)){
+		dev.subField3.chunkBitmapStride = (dev.subField1.nChunksPerBlock + 7) / 8; /* round up bytes */
+		dev.subField2.chunkBits = ydirectenv.YMALLOC(dev.subField3.chunkBitmapStride * nBlocks);
+		dev.subField2.chunkBitsIndex = 0;
+		if(!(dev.subField2.chunkBits != null)){
 			throw new NotImplementedException();
-//			dev.chunkBits = YMALLOC_ALT(dev.chunkBitmapStride * nBlocks);
+//			dev.chunkBits = ydirectenv.YMALLOC_ALyportenv.T(dev.chunkBitmapStride * nBlocks);
 //			dev.chunkBitsAlt = 1;
 		}
 		else
-			dev.chunkBitsAlt = false;
+			dev.subField2.chunkBitsAlt = false;
 
-		if ((dev.blockInfo != null) && (dev.chunkBits != null)) {
+		if ((dev.subField2.blockInfo != null) && (dev.subField2.chunkBits != null)) {
 			// PORT already done on object creation
 			// XXX not if not using pool
-			memset(dev.blockInfo, (byte)0/*, nBlocks * sizeof(yaffs_BlockInfo)*/);
-			memset(dev.chunkBits, dev.chunkBitsIndex, (byte)0, dev.chunkBitmapStride * nBlocks);
-			return YAFFS_OK;
+			Unix.memset(dev.subField2.blockInfo, (byte)0/*, nBlocks * sizeof(yaffs_BlockInfo)*/);
+			Unix.memset(dev.subField2.chunkBits, dev.subField2.chunkBitsIndex, (byte)0, dev.subField3.chunkBitmapStride * nBlocks);
+			return Guts_H.YAFFS_OK;
 		}
 
-		return YAFFS_FAIL;
+		return Guts_H.YAFFS_FAIL;
 
 	}
 
 	static void yaffs_DeinitialiseBlocks(yaffs_Device dev) // XXX
 	{
-		if(dev.blockInfoAlt)
-			YFREE_ALT(dev.blockInfo);
+		if(dev.subField2.blockInfoAlt)
+			ydirectenv.YFREE_ALT(dev.subField2.blockInfo);
 		else
-			YFREE(dev.blockInfo);
-		dev.blockInfoAlt = false;
+			ydirectenv.YFREE(dev.subField2.blockInfo);
+		dev.subField2.blockInfoAlt = false;
 
-		dev.blockInfo = null;
+		dev.subField2.blockInfo = null;
 
-		if(dev.chunkBitsAlt)
-			YFREE_ALT(dev.chunkBits);
+		if(dev.subField2.chunkBitsAlt)
+			ydirectenv.YFREE_ALT(dev.subField2.chunkBits);
 		else
-			YFREE(dev.chunkBits);
-		dev.chunkBitsAlt = false;
-		dev.chunkBits = null;
+			ydirectenv.YFREE(dev.subField2.chunkBits);
+		dev.subField2.chunkBitsAlt = false;
+		dev.subField2.chunkBits = null;
 	}
 
 	static boolean yaffs_BlockNotDisqualifiedFromGC(yaffs_Device dev,
@@ -2067,7 +2060,7 @@ public class yaffs_guts_C
 		/*__u32*/ long seq;
 		yaffs_BlockInfo b;
 
-		if (!dev.isYaffs2)
+		if (!dev.subField1.isYaffs2)
 			return true;	/* disqualification only applies to yaffs2. */
 
 		if (!bi.hasShrinkHeader()) 
@@ -2079,13 +2072,13 @@ public class yaffs_guts_C
 		if (!(dev.oldestDirtySequence != 0)) {
 			seq = dev.sequenceNumber;
 
-			for (i = dev.internalStartBlock; i <= dev.internalEndBlock;
+			for (i = dev.subField2.internalStartBlock; i <= dev.subField2.internalEndBlock;
 			i++) {
-				b = yaffs_GetBlockInfo(dev, i);
-				if (b.blockState() == YAFFS_BLOCK_STATE_FULL &&
+				b = Guts_H.yaffs_GetBlockInfo(dev, i);
+				if (b.blockState() == Guts_H.YAFFS_BLOCK_STATE_FULL &&
 						(b.pagesInUse() - b.softDeletions()) <
-						dev.nChunksPerBlock && intAsUnsignedInt(b.sequenceNumber()) < seq) {
-					seq = intAsUnsignedInt(b.sequenceNumber());
+						dev.subField1.nChunksPerBlock && Utils.intAsUnsignedInt(b.sequenceNumber()) < seq) {
+					seq = Utils.intAsUnsignedInt(b.sequenceNumber());
 				}
 			}
 			dev.oldestDirtySequence = seq;
@@ -2094,7 +2087,7 @@ public class yaffs_guts_C
 		/* Can't do gc of this block if there are any blocks older than this one that have
 		 * discarded pages.
 		 */
-		return (intAsUnsignedInt(bi.sequenceNumber()) <= dev.oldestDirtySequence);
+		return (Utils.intAsUnsignedInt(bi.sequenceNumber()) <= dev.oldestDirtySequence);
 
 	}
 
@@ -2107,7 +2100,7 @@ public class yaffs_guts_C
 			boolean aggressive)
 	{
 
-		int b = dev.currentDirtyChecker;
+		int b = dev.subField3.currentDirtyChecker;
 
 		int i;
 		int iterations;
@@ -2120,12 +2113,12 @@ public class yaffs_guts_C
 
 		/* First let's see if we need to grab a prioritised block */
 		if(dev.hasPendingPrioritisedGCs){
-			for(i = dev.internalStartBlock; i < dev.internalEndBlock && !prioritised; i++){
+			for(i = dev.subField2.internalStartBlock; i < dev.subField2.internalEndBlock && !prioritised; i++){
 
-				bi = yaffs_GetBlockInfo(dev, i);
+				bi = Guts_H.yaffs_GetBlockInfo(dev, i);
 				if(bi.gcPrioritise()) {
 					pendingPrioritisedExist = true;
-					if(bi.blockState() == YAFFS_BLOCK_STATE_FULL &&
+					if(bi.blockState() == Guts_H.YAFFS_BLOCK_STATE_FULL &&
 							yaffs_BlockNotDisqualifiedFromGC(dev, bi)){
 						pagesInUse = (bi.pagesInUse() - bi.softDeletions());
 						dirtiest = i;
@@ -2153,14 +2146,14 @@ public class yaffs_guts_C
 
 		if(!prioritised)
 			pagesInUse =
-				(aggressive) ? dev.nChunksPerBlock : YAFFS_PASSIVE_GC_CHUNKS + 1;
+				(aggressive) ? dev.subField1.nChunksPerBlock : YAFFS_PASSIVE_GC_CHUNKS + 1;
 
 		if (aggressive) {
 			iterations =
-				dev.internalEndBlock - dev.internalStartBlock + 1;
+				dev.subField2.internalEndBlock - dev.subField2.internalStartBlock + 1;
 		} else {
 			iterations =
-				dev.internalEndBlock - dev.internalStartBlock + 1;
+				dev.subField2.internalEndBlock - dev.subField2.internalStartBlock + 1;
 			iterations = iterations / 16;
 			if (iterations > 200) {
 				iterations = 200;
@@ -2169,17 +2162,17 @@ public class yaffs_guts_C
 
 		for (i = 0; i <= iterations && pagesInUse > 0 && !prioritised; i++) {
 			b++;
-			if (b < dev.internalStartBlock || b > dev.internalEndBlock) {
-				b = dev.internalStartBlock;
+			if (b < dev.subField2.internalStartBlock || b > dev.subField2.internalEndBlock) {
+				b = dev.subField2.internalStartBlock;
 			}
 
-			if (b < dev.internalStartBlock || b > dev.internalEndBlock) {
-				T(YAFFS_TRACE_ERROR,
-						TSTR("**>> Block %d is not valid" + TENDSTR), b);
+			if (b < dev.subField2.internalStartBlock || b > dev.subField2.internalEndBlock) {
+				yportenv.T(yportenv.YAFFS_TRACE_ERROR,
+						("**>> Block %d is not valid" + ydirectenv.TENDSTR), PrimitiveWrapperFactory.get(b));
 				yaffs2.utils.Globals.portConfiguration.YBUG();
 			}
 
-			bi = yaffs_GetBlockInfo(dev, b);
+			bi = Guts_H.yaffs_GetBlockInfo(dev, b);
 
 //			#if 0
 //			if (bi.blockState == YAFFS_BLOCK_STATE_CHECKPOINT) {
@@ -2189,7 +2182,7 @@ public class yaffs_guts_C
 //			else 
 //			#endif
 
-			if (bi.blockState() == YAFFS_BLOCK_STATE_FULL &&
+			if (bi.blockState() == Guts_H.YAFFS_BLOCK_STATE_FULL &&
 					(bi.pagesInUse() - bi.softDeletions()) < pagesInUse &&
 					(yaffs_BlockNotDisqualifiedFromGC(dev, bi))) {
 				dirtiest = b;
@@ -2197,12 +2190,12 @@ public class yaffs_guts_C
 			}
 		}
 
-		dev.currentDirtyChecker = b;
+		dev.subField3.currentDirtyChecker = b;
 
 		if (dirtiest > 0) {
-			T(YAFFS_TRACE_GC,
-					TSTR("GC Selected block %d with %d free, prioritised:%b" + TENDSTR), dirtiest,
-					dev.nChunksPerBlock - pagesInUse,prioritised);
+			yportenv.T(yportenv.YAFFS_TRACE_GC,
+					("GC Selected block %d with %d free, prioritised:%b" + ydirectenv.TENDSTR), PrimitiveWrapperFactory.get(dirtiest),
+					PrimitiveWrapperFactory.get(dev.subField1.nChunksPerBlock - pagesInUse),PrimitiveWrapperFactory.get(prioritised));
 		}
 
 		dev.oldestDirtySequence = 0;
@@ -2216,7 +2209,7 @@ public class yaffs_guts_C
 
 	static void yaffs_BlockBecameDirty(yaffs_Device dev, int blockNo)
 	{
-		yaffs_BlockInfo bi = yaffs_GetBlockInfo(dev, blockNo);
+		yaffs_BlockInfo bi = Guts_H.yaffs_GetBlockInfo(dev, blockNo);
 
 		boolean erasedOk = false;
 
@@ -2224,39 +2217,39 @@ public class yaffs_guts_C
 		 * If the block has had a data failure, then retire it.
 		 */
 
-		T(YAFFS_TRACE_GC | YAFFS_TRACE_ERASE,
-				TSTR("yaffs_BlockBecameDirty block %d state %d %s"+ TENDSTR),
-				blockNo, bi.blockState(), (bi.needsRetiring()) ? "needs retiring" : "");
+		yportenv.T(yportenv.YAFFS_TRACE_GC | yportenv.YAFFS_TRACE_ERASE,
+				("yaffs_BlockBecameDirty block %d state %d %s"+ ydirectenv.TENDSTR),
+				PrimitiveWrapperFactory.get(blockNo), PrimitiveWrapperFactory.get(bi.blockState()), PrimitiveWrapperFactory.get((bi.needsRetiring()) ? "needs retiring" : ""));
 
-		bi.setBlockState(YAFFS_BLOCK_STATE_DIRTY);
+		bi.setBlockState(Guts_H.YAFFS_BLOCK_STATE_DIRTY);
 
 		if (!bi.needsRetiring()) {
 			yaffs_InvalidateCheckpoint(dev);
-			erasedOk = yaffs_EraseBlockInNAND(dev, blockNo);
+			erasedOk = yaffs_nand_C.yaffs_EraseBlockInNAND(dev, blockNo);
 			if (!erasedOk) {
-				dev.nErasureFailures++;
-				T(YAFFS_TRACE_ERROR | YAFFS_TRACE_BAD_BLOCKS,
-						TSTR("**>> Erasure failed %d" + TENDSTR), blockNo);
+				dev.subField3.nErasureFailures++;
+				yportenv.T(yportenv.YAFFS_TRACE_ERROR | yportenv.YAFFS_TRACE_BAD_BLOCKS,
+						("**>> Erasure failed %d" + ydirectenv.TENDSTR), PrimitiveWrapperFactory.get(blockNo));
 			}
 		}
 
-		if (erasedOk && ((yaffs2.utils.Globals.yaffs_traceMask & YAFFS_TRACE_ERASE) != 0)) {
+		if (erasedOk && ((yaffs2.utils.Globals.yaffs_traceMask & yportenv.YAFFS_TRACE_ERASE) != 0)) {
 			int i;
-			for (i = 0; i < dev.nChunksPerBlock; i++) {
+			for (i = 0; i < dev.subField1.nChunksPerBlock; i++) {
 				if (!yaffs_CheckChunkErased
-						(dev, blockNo * dev.nChunksPerBlock + i)) {
-					T(YAFFS_TRACE_ERROR,
-							TSTR
+						(dev, blockNo * dev.subField1.nChunksPerBlock + i)) {
+					yportenv.T(yportenv.YAFFS_TRACE_ERROR,
+
 							(">>Block %d erasure supposedly OK, but chunk %d not erased"
-									+ TENDSTR), blockNo, i);
+									+ ydirectenv.TENDSTR), PrimitiveWrapperFactory.get(blockNo), PrimitiveWrapperFactory.get(i));
 				}
 			}
 		}
 
 		if (erasedOk) {
 			/* Clean it up... */
-			bi.setBlockState(YAFFS_BLOCK_STATE_EMPTY);
-			dev.nErasedBlocks++;
+			bi.setBlockState(Guts_H.YAFFS_BLOCK_STATE_EMPTY);
+			dev.subField3.nErasedBlocks++;
 			bi.setPagesInUse(0);
 			bi.setSoftDeletions(0);
 			bi.setHasShrinkHeader(false);
@@ -2264,14 +2257,14 @@ public class yaffs_guts_C
 			bi.setGcPrioritise(false);
 			yaffs_ClearChunkBits(dev, blockNo);
 
-			T(YAFFS_TRACE_ERASE,
-					TSTR("Erased block %d" + TENDSTR), blockNo);
+			yportenv.T(yportenv.YAFFS_TRACE_ERASE,
+					("Erased block %d" + ydirectenv.TENDSTR), PrimitiveWrapperFactory.get(blockNo));
 		} else {
-			dev.nFreeChunks -= dev.nChunksPerBlock;	/* We lost a block of free space */
+			dev.subField3.nFreeChunks -= dev.subField1.nChunksPerBlock;	/* We lost a block of free space */
 
 			yaffs_RetireBlock(dev, blockNo);
-			T(YAFFS_TRACE_ERROR | YAFFS_TRACE_BAD_BLOCKS,
-					TSTR("**>> Block %d retired" + TENDSTR), blockNo);
+			yportenv.T(yportenv.YAFFS_TRACE_ERROR | yportenv.YAFFS_TRACE_BAD_BLOCKS,
+					("**>> Block %d retired" + ydirectenv.TENDSTR), PrimitiveWrapperFactory.get(blockNo));
 		}
 	}
 
@@ -2281,44 +2274,44 @@ public class yaffs_guts_C
 
 		yaffs_BlockInfo bi;
 
-		if (dev.nErasedBlocks < 1) {
+		if (dev.subField3.nErasedBlocks < 1) {
 			/* Hoosterman we've got a problem.
 			 * Can't get space to gc
 			 */
-			T(YAFFS_TRACE_ERROR,
-					(TSTR("yaffs tragedy: no more eraased blocks" + TENDSTR)));
+			yportenv.T(yportenv.YAFFS_TRACE_ERROR,
+					(("yaffs tragedy: no more eraased blocks" + ydirectenv.TENDSTR)));
 
 			return -1;
 		}
 
 		/* Find an empty block. */
 
-		for (i = dev.internalStartBlock; i <= dev.internalEndBlock; i++) {
-			dev.allocationBlockFinder++;
-			if (dev.allocationBlockFinder < dev.internalStartBlock
-					|| dev.allocationBlockFinder > dev.internalEndBlock) {
-				dev.allocationBlockFinder = dev.internalStartBlock;
+		for (i = dev.subField2.internalStartBlock; i <= dev.subField2.internalEndBlock; i++) {
+			dev.subField3.allocationBlockFinder++;
+			if (dev.subField3.allocationBlockFinder < dev.subField2.internalStartBlock
+					|| dev.subField3.allocationBlockFinder > dev.subField2.internalEndBlock) {
+				dev.subField3.allocationBlockFinder = dev.subField2.internalStartBlock;
 			}
 
-			bi = yaffs_GetBlockInfo(dev, dev.allocationBlockFinder);
+			bi = Guts_H.yaffs_GetBlockInfo(dev, dev.subField3.allocationBlockFinder);
 
-			if (bi.blockState() == YAFFS_BLOCK_STATE_EMPTY) {
-				bi.setBlockState(YAFFS_BLOCK_STATE_ALLOCATING);
+			if (bi.blockState() == Guts_H.YAFFS_BLOCK_STATE_EMPTY) {
+				bi.setBlockState(Guts_H.YAFFS_BLOCK_STATE_ALLOCATING);
 				dev.sequenceNumber++;
 				bi.setSequenceNumber((int)dev.sequenceNumber);
-				dev.nErasedBlocks--;
-				T(YAFFS_TRACE_ALLOCATE,
-						TSTR("Allocated block %d, seq  %l, %d left" + TENDSTR),
-						dev.allocationBlockFinder, dev.sequenceNumber,
-						dev.nErasedBlocks);
-				return dev.allocationBlockFinder;
+				dev.subField3.nErasedBlocks--;
+				yportenv.T(yportenv.YAFFS_TRACE_ALLOCATE,
+						("Allocated block %d, seq  %d, %d left" + ydirectenv.TENDSTR),
+						PrimitiveWrapperFactory.get(dev.subField3.allocationBlockFinder), PrimitiveWrapperFactory.get((int)dev.sequenceNumber),
+						PrimitiveWrapperFactory.get(dev.subField3.nErasedBlocks));
+				return dev.subField3.allocationBlockFinder;
 			}
 		}
 
-		T(YAFFS_TRACE_ALWAYS,
-				TSTR
+		yportenv.T(yportenv.YAFFS_TRACE_ALWAYS,
+
 				("yaffs tragedy: no more eraased blocks, but there should have been %d"
-						+ TENDSTR), dev.nErasedBlocks);
+						+ ydirectenv.TENDSTR), PrimitiveWrapperFactory.get(dev.subField3.nErasedBlocks));
 
 		return -1;
 	}
@@ -2329,16 +2322,16 @@ public class yaffs_guts_C
 	static boolean yaffs_CheckSpaceForAllocation(yaffs_Device dev)
 	{
 		int reservedChunks;
-		int reservedBlocks = dev.nReservedBlocks;
+		int reservedBlocks = dev.subField1.nReservedBlocks;
 		int checkpointBlocks;
 
-		checkpointBlocks =  dev.nCheckpointReservedBlocks - dev.blocksInCheckpoint;
+		checkpointBlocks =  dev.subField1.nCheckpointReservedBlocks - dev.subField2.blocksInCheckpoint;
 		if(checkpointBlocks < 0)
 			checkpointBlocks = 0;
 
-		reservedChunks = ((reservedBlocks + checkpointBlocks) * dev.nChunksPerBlock);
+		reservedChunks = ((reservedBlocks + checkpointBlocks) * dev.subField1.nChunksPerBlock);
 
-		return (dev.nFreeChunks > reservedChunks);
+		return (dev.subField3.nFreeChunks > reservedChunks);
 	}
 
 	/**
@@ -2353,10 +2346,10 @@ public class yaffs_guts_C
 		int retVal;
 		yaffs_BlockInfo bi;
 
-		if (dev.allocationBlock < 0) {
+		if (dev.subField3.allocationBlock < 0) {
 			/* Get next block to allocate off */
-			dev.allocationBlock = yaffs_FindBlockForAllocation(dev);
-			dev.allocationPage = 0;
+			dev.subField3.allocationBlock = yaffs_FindBlockForAllocation(dev);
+			dev.subField3.allocationPage = 0;
 		}
 
 		if (!useReserve && !yaffs_CheckSpaceForAllocation(dev)) {
@@ -2364,29 +2357,29 @@ public class yaffs_guts_C
 			return -1;
 		}
 
-		if (dev.nErasedBlocks < dev.nReservedBlocks
-				&& dev.allocationPage == 0) {
-			T(YAFFS_TRACE_ALLOCATE, (TSTR("Allocating reserve" + TENDSTR)));
+		if (dev.subField3.nErasedBlocks < dev.subField1.nReservedBlocks
+				&& dev.subField3.allocationPage == 0) {
+			yportenv.T(yportenv.YAFFS_TRACE_ALLOCATE, (("Allocating reserve" + ydirectenv.TENDSTR)));
 		}
 
 		/* Next page please.... */
-		if (dev.allocationBlock >= 0) {
-			bi = yaffs_GetBlockInfo(dev, dev.allocationBlock);
+		if (dev.subField3.allocationBlock >= 0) {
+			bi = Guts_H.yaffs_GetBlockInfo(dev, dev.subField3.allocationBlock);
 
-			retVal = (dev.allocationBlock * dev.nChunksPerBlock) +
-			dev.allocationPage;
+			retVal = (dev.subField3.allocationBlock * dev.subField1.nChunksPerBlock) +
+			dev.subField3.allocationPage;
 			bi.setPagesInUse(bi.pagesInUse()+ 1);
-			yaffs_SetChunkBit(dev, dev.allocationBlock,
-					dev.allocationPage);
+			yaffs_SetChunkBit(dev, dev.subField3.allocationBlock,
+					dev.subField3.allocationPage);
 
-			dev.allocationPage++;
+			dev.subField3.allocationPage++;
 
-			dev.nFreeChunks--;
+			dev.subField3.nFreeChunks--;
 
 			/* If the block is full set the state to full */
-			if (dev.allocationPage >= dev.nChunksPerBlock) {
-				bi.setBlockState(YAFFS_BLOCK_STATE_FULL);
-				dev.allocationBlock = -1;
+			if (dev.subField3.allocationPage >= dev.subField1.nChunksPerBlock) {
+				bi.setBlockState(Guts_H.YAFFS_BLOCK_STATE_FULL);
+				dev.subField3.allocationBlock = -1;
 			}
 
 			if(blockUsedPtr != null)
@@ -2395,8 +2388,8 @@ public class yaffs_guts_C
 			return retVal;
 		}
 
-		T(YAFFS_TRACE_ERROR,
-				TSTR("!!!!!!!!! Allocator out !!!!!!!!!!!!!!!!!" + TENDSTR));
+		yportenv.T(yportenv.YAFFS_TRACE_ERROR,
+				("!!!!!!!!! Allocator out !!!!!!!!!!!!!!!!!" + ydirectenv.TENDSTR));
 
 		return -1;
 	}
@@ -2405,10 +2398,10 @@ public class yaffs_guts_C
 	{
 		int n;
 
-		n = dev.nErasedBlocks * dev.nChunksPerBlock;
+		n = dev.subField3.nErasedBlocks * dev.subField1.nChunksPerBlock;
 
-		if (dev.allocationBlock > 0) {
-			n += (dev.nChunksPerBlock - dev.allocationPage);
+		if (dev.subField3.allocationBlock > 0) {
+			n += (dev.subField1.nChunksPerBlock - dev.subField3.allocationPage);
 		}
 
 		return n;
@@ -2421,7 +2414,7 @@ public class yaffs_guts_C
 		int newChunk;
 		int chunkInBlock;
 		boolean markNAND;
-		boolean retVal = YAFFS_OK;
+		boolean retVal = Guts_H.YAFFS_OK;
 		int cleanups = 0;
 		int i;
 		boolean isCheckpointBlock;
@@ -2431,17 +2424,17 @@ public class yaffs_guts_C
 
 		yaffs_ExtendedTags tags = new yaffs_ExtendedTags();
 
-		yaffs_BlockInfo bi = yaffs_GetBlockInfo(dev, block);
+		yaffs_BlockInfo bi = Guts_H.yaffs_GetBlockInfo(dev, block);
 
 		yaffs_Object object;
 
-		isCheckpointBlock = (bi.blockState() == YAFFS_BLOCK_STATE_CHECKPOINT);
+		isCheckpointBlock = (bi.blockState() == Guts_H.YAFFS_BLOCK_STATE_CHECKPOINT);
 
-		bi.setBlockState(YAFFS_BLOCK_STATE_COLLECTING);
+		bi.setBlockState(Guts_H.YAFFS_BLOCK_STATE_COLLECTING);
 
-		T(YAFFS_TRACE_TRACING,
-				TSTR("Collecting block %d, in use %d, shrink %b, " + TENDSTR), block,
-				bi.pagesInUse(), bi.hasShrinkHeader());
+		yportenv.T(yportenv.YAFFS_TRACE_TRACING,
+				("Collecting block %d, in use %d, shrink %b, " + ydirectenv.TENDSTR), PrimitiveWrapperFactory.get(block),
+				PrimitiveWrapperFactory.get(bi.pagesInUse()), PrimitiveWrapperFactory.get(bi.hasShrinkHeader()));
 
 		/*yaffs_VerifyFreeChunks(dev); */
 
@@ -2450,23 +2443,23 @@ public class yaffs_guts_C
 		/* Take off the number of soft deleted entries because
 		 * they're going to get really deleted during GC.
 		 */
-		dev.nFreeChunks -= bi.softDeletions();
+		dev.subField3.nFreeChunks -= bi.softDeletions();
 
-		dev.isDoingGC = true;
+		dev.subField3.isDoingGC = true;
 
 		if (isCheckpointBlock ||
 				!yaffs_StillSomeChunkBits(dev, block)) {
-			T(YAFFS_TRACE_TRACING,
-					TSTR
-					("Collecting block %d that has no chunks in use" + TENDSTR),
-					block);
+			yportenv.T(yportenv.YAFFS_TRACE_TRACING,
+
+					("Collecting block %d that has no chunks in use" + ydirectenv.TENDSTR),
+					PrimitiveWrapperFactory.get(block));
 			yaffs_BlockBecameDirty(dev, block);
 		} else {
 
-			byte[] buffer = yaffs_GetTempBuffer(dev, __LINE__());
+			byte[] buffer = yaffs_GetTempBuffer(dev, Utils.__LINE__());
 
-			for (chunkInBlock = 0, oldChunk = block * dev.nChunksPerBlock;
-			chunkInBlock < dev.nChunksPerBlock
+			for (chunkInBlock = 0, oldChunk = block * dev.subField1.nChunksPerBlock;
+			chunkInBlock < dev.subField1.nChunksPerBlock
 			&& yaffs_StillSomeChunkBits(dev, block);
 			chunkInBlock++, oldChunk++) {
 				if (yaffs_CheckChunkBit(dev, block, chunkInBlock)) {
@@ -2475,29 +2468,29 @@ public class yaffs_guts_C
 
 					markNAND = true;
 
-					yaffs_InitialiseTags(tags);
+					yaffs_tagsvalidity_C.yaffs_InitialiseTags(tags);
 
-					yaffs_ReadChunkWithTagsFromNAND(dev, oldChunk,
+					yaffs_nand_C.yaffs_ReadChunkWithTagsFromNAND(dev, oldChunk,
 							buffer, 0, tags);
 
 					object =
 						yaffs_FindObjectByNumber(dev,
 								tags.objectId);
 
-					T(YAFFS_TRACE_GC_DETAIL,
-							TSTR
-							("Collecting page %d, %d %d %d " + TENDSTR),
-							chunkInBlock, tags.objectId, tags.chunkId,
-							tags.byteCount);
+					yportenv.T(yportenv.YAFFS_TRACE_GC_DETAIL,
+
+							("Collecting page %d, %d %d %d " + ydirectenv.TENDSTR),
+							PrimitiveWrapperFactory.get(chunkInBlock), PrimitiveWrapperFactory.get(tags.objectId), PrimitiveWrapperFactory.get(tags.chunkId),
+							PrimitiveWrapperFactory.get(tags.byteCount));
 
 					if (!(object != null)) {
-						T(YAFFS_TRACE_ERROR,
-								TSTR
+						yportenv.T(yportenv.YAFFS_TRACE_ERROR,
+
 								("page %d in gc has no object "
-										+ TENDSTR), oldChunk);
+										+ ydirectenv.TENDSTR), PrimitiveWrapperFactory.get(oldChunk));
 					}
 
-					if (object != null && object.deleted
+					if (object != null && object.sub.deleted
 							&& tags.chunkId != 0) {
 						/* Data chunk in a deleted file, throw it away
 						 * It's a soft deleted data chunk,
@@ -2509,7 +2502,7 @@ public class yaffs_guts_C
 
 						if (object.nDataChunks <= 0) {
 							/* remeber to clean up the object */
-							dev.gcCleanupList[cleanups] =
+							dev.subField3.gcCleanupList[cleanups] =
 								tags.objectId;
 							cleanups++;
 						}
@@ -2535,7 +2528,7 @@ public class yaffs_guts_C
 						 */
 						tags.serialNumber++;
 
-						dev.nGCCopies++;
+						dev.subField3.nGCCopies++;
 
 						if (tags.chunkId == 0) {
 							/* It is an object Id,
@@ -2557,7 +2550,7 @@ public class yaffs_guts_C
 							yaffs_WriteNewChunkWithTagsToNAND(dev, buffer, 0, tags, true);
 
 						if (newChunk < 0) {
-							retVal = YAFFS_FAIL;
+							retVal = Guts_H.YAFFS_FAIL;
 						} else {
 
 							/* Ok, now fix up the Tnodes etc. */
@@ -2576,12 +2569,12 @@ public class yaffs_guts_C
 						}
 					}
 
-					yaffs_DeleteChunk(dev, oldChunk, markNAND, __LINE__());
+					yaffs_DeleteChunk(dev, oldChunk, markNAND, Utils.__LINE__());
 
 				}
 			}
 
-			yaffs_ReleaseTempBuffer(dev, buffer, __LINE__());
+			yaffs_ReleaseTempBuffer(dev, buffer, Utils.__LINE__());
 
 
 			/* Do any required cleanups */
@@ -2589,16 +2582,16 @@ public class yaffs_guts_C
 				/* Time to delete the file too */
 				object =
 					yaffs_FindObjectByNumber(dev,
-							dev.gcCleanupList[i]);
+							dev.subField3.gcCleanupList[i]);
 				if (object != null) {
 					yaffs_FreeTnode(dev,
 							object.variant.fileVariant().
 							top);
 					object.variant.fileVariant().top = null;
-					T(YAFFS_TRACE_GC,
-							TSTR
+					yportenv.T(yportenv.YAFFS_TRACE_GC,
+
 							("yaffs: About to finally delete object %d"
-									+ TENDSTR), object.objectId);
+									+ ydirectenv.TENDSTR), PrimitiveWrapperFactory.get(object.objectId));
 					yaffs_DoGenericObjectDeletion(object);
 					object.myDev.nDeletedFiles--;
 				}
@@ -2608,15 +2601,14 @@ public class yaffs_guts_C
 		}
 
 		if (chunksBefore >= (chunksAfter = yaffs_GetErasedChunks(dev))) {
-			T(YAFFS_TRACE_GC,
-					TSTR
+			yportenv.T(yportenv.YAFFS_TRACE_GC,
 					("gc did not increase free chunks before %d after %d"
-							+ TENDSTR), chunksBefore, chunksAfter);
+							+ ydirectenv.TENDSTR), PrimitiveWrapperFactory.get(chunksBefore), PrimitiveWrapperFactory.get(chunksAfter));
 		}
 
-		dev.isDoingGC = false;
+		dev.subField3.isDoingGC = false;
 
-		return YAFFS_OK;
+		return Guts_H.YAFFS_OK;
 	}
 
 	/* New garbage collector
@@ -2632,14 +2624,14 @@ public class yaffs_guts_C
 	{
 		int block;
 		boolean aggressive;
-		boolean gcOk = YAFFS_OK;
+		boolean gcOk = Guts_H.YAFFS_OK;
 		int maxTries = 0;
 
 		int checkpointBlockAdjust;
 
-		if (dev.isDoingGC) {
+		if (dev.subField3.isDoingGC) {
 			/* Bail out so we don't get recursive gc */
-			return YAFFS_OK;
+			return Guts_H.YAFFS_OK;
 		}
 
 		/* This loop should pass the first time.
@@ -2649,11 +2641,11 @@ public class yaffs_guts_C
 		do {
 			maxTries++;
 
-			checkpointBlockAdjust = (dev.nCheckpointReservedBlocks - dev.blocksInCheckpoint);
+			checkpointBlockAdjust = (dev.subField1.nCheckpointReservedBlocks - dev.subField2.blocksInCheckpoint);
 			if(checkpointBlockAdjust < 0)
 				checkpointBlockAdjust = 0;
 
-			if (dev.nErasedBlocks < (dev.nReservedBlocks + checkpointBlockAdjust)) {
+			if (dev.subField3.nErasedBlocks < (dev.subField1.nReservedBlocks + checkpointBlockAdjust)) {
 				/* We need a block soon...*/
 				aggressive = true;
 			} else {
@@ -2664,29 +2656,29 @@ public class yaffs_guts_C
 			block = yaffs_FindBlockForGarbageCollection(dev, aggressive);
 
 			if (block > 0) {
-				dev.garbageCollections++;
+				dev.subField3.garbageCollections++;
 				if (!aggressive) {
-					dev.passiveGarbageCollections++;
+					dev.subField3.passiveGarbageCollections++;
 				}
 
-				T(YAFFS_TRACE_GC,
-						TSTR
-						("yaffs: GC erasedBlocks %d aggressive %b" + TENDSTR),
-						dev.nErasedBlocks, aggressive);
+				yportenv.T(yportenv.YAFFS_TRACE_GC,
+
+						("yaffs: GC erasedBlocks %d aggressive %b" + ydirectenv.TENDSTR),
+						PrimitiveWrapperFactory.get(dev.subField3.nErasedBlocks), PrimitiveWrapperFactory.get(aggressive));
 
 				gcOk = yaffs_GarbageCollectBlock(dev, block);
 			}
 
-			if (dev.nErasedBlocks < (dev.nReservedBlocks) && block > 0) {
-				T(YAFFS_TRACE_GC,
-						TSTR
+			if (dev.subField3.nErasedBlocks < (dev.subField1.nReservedBlocks) && block > 0) {
+				yportenv.T(yportenv.YAFFS_TRACE_GC,
+
 						("yaffs: GC !!!no reclaim!!! erasedBlocks %d after try %d block %d"
-								+ TENDSTR), dev.nErasedBlocks, maxTries, block);
+								+ ydirectenv.TENDSTR), PrimitiveWrapperFactory.get(dev.subField3.nErasedBlocks), PrimitiveWrapperFactory.get(maxTries), PrimitiveWrapperFactory.get(block));
 			}
-		} while ((dev.nErasedBlocks < dev.nReservedBlocks) && (block > 0)
+		} while ((dev.subField3.nErasedBlocks < dev.subField1.nReservedBlocks) && (block > 0)
 				&& (maxTries < 2));
 
-		return aggressive ? gcOk : YAFFS_OK;
+		return aggressive ? gcOk : Guts_H.YAFFS_OK;
 	}
 
 	/*-------------------------  TAGS --------------------------------*/
@@ -2761,11 +2753,11 @@ public class yaffs_guts_C
 				yaffs_PutLevel0Tnode(dev,tn,chunkInInode,0);
 			}
 		} else {
-			/*T(("No level 0 found for %d\n", chunkInInode)); */
+			/*yportenv.T(("No level 0 found for %d\n", chunkInInode)); */
 		}
 
 		if (retVal == -1) {
-			/* T(("Could not find %d to delete\n",chunkInInode)); */
+			/* yportenv.T(("Could not find %d to delete\n",chunkInInode)); */
 		}
 		return retVal;
 	}
@@ -2787,9 +2779,9 @@ public class yaffs_guts_C
 //	int theChunk;
 //	boolean chunkDeleted;
 
-//	if (in.variantType != YAFFS_OBJECT_TYPE_FILE) {
-//	/* T(("Object not a file\n")); */
-//	return YAFFS_FAIL;
+//	if (in.variantType != Guts_H.YAFFS_OBJECT_TYPE_FILE) {
+//	/* yportenv.T(("Object not a file\n")); */
+//	return Guts_H.YAFFS_FAIL;
 //	}
 
 //	objId = in.objectId;
@@ -2823,11 +2815,11 @@ public class yaffs_guts_C
 //	}
 
 //	} else {
-//	/* T(("No level 0 found for %d\n", chunk)); */
+//	/* yportenv.T(("No level 0 found for %d\n", chunk)); */
 //	}
 //	}
 
-//	return failed ? YAFFS_FAIL : YAFFS_OK;
+//	return failed ? Guts_H.YAFFS_FAIL : Guts_H.YAFFS_OK;
 //	}
 
 //	#endif
@@ -2847,20 +2839,20 @@ public class yaffs_guts_C
 		yaffs_ExtendedTags newTags = new yaffs_ExtendedTags();
 		/*unsigned*/ int existingSerial, newSerial;
 
-		if (in.variantType != YAFFS_OBJECT_TYPE_FILE) {
+		if (in.variantType != Guts_H.YAFFS_OBJECT_TYPE_FILE) {
 			/* Just ignore an attempt at putting a chunk into a non-file during scanning
 			 * If it is not during Scanning then something went wrong!
 			 */
 			if (!(inScan != 0)) {
-				T(YAFFS_TRACE_ERROR,
-						TSTR
+				yportenv.T(yportenv.YAFFS_TRACE_ERROR,
+
 						("yaffs tragedy:attempt to put data chunk into a non-file"
-								+ TENDSTR));
+								+ ydirectenv.TENDSTR));
 				yaffs2.utils.Globals.portConfiguration.YBUG();
 			}
 
-			yaffs_DeleteChunk(dev, chunkInNAND, true, __LINE__());
-			return YAFFS_OK;
+			yaffs_DeleteChunk(dev, chunkInNAND, true, Utils.__LINE__());
+			return Guts_H.YAFFS_OK;
 		}
 
 		tn = yaffs_AddOrFindLevel0Tnode(dev, 
@@ -2868,7 +2860,7 @@ public class yaffs_guts_C
 				chunkInInode,
 				null);
 		if (!(tn != null)) {
-			return YAFFS_FAIL;
+			return Guts_H.YAFFS_FAIL;
 		}
 
 		existingChunk = yaffs_GetChunkGroupBase(dev,tn,chunkInInode);
@@ -2896,7 +2888,7 @@ public class yaffs_guts_C
 
 				if (inScan > 0) {
 					/* Only do this for forward scanning */
-					yaffs_ReadChunkWithTagsFromNAND(dev,
+					yaffs_nand_C.yaffs_ReadChunkWithTagsFromNAND(dev,
 							chunkInNAND,
 							null, 0, newTags);
 
@@ -2909,10 +2901,10 @@ public class yaffs_guts_C
 				if (existingChunk <= 0) {
 					/*Hoosterman - how did this happen? */
 
-					T(YAFFS_TRACE_ERROR,
-							TSTR
+					yportenv.T(yportenv.YAFFS_TRACE_ERROR,
+
 							("yaffs tragedy: existing chunk < 0 in scan"
-									+ TENDSTR));
+									+ ydirectenv.TENDSTR));
 
 				}
 
@@ -2924,7 +2916,7 @@ public class yaffs_guts_C
 				existingSerial = existingTags.serialNumber;
 
 				if ((inScan > 0) &&
-						(in.myDev.isYaffs2 ||
+						(in.myDev.subField1.isYaffs2 ||
 								existingChunk <= 0 ||
 								((existingSerial + 1) & 3) == newSerial)) {
 					/* Forward scanning.                            
@@ -2932,15 +2924,15 @@ public class yaffs_guts_C
 					 * Delete the old one and drop through to update the tnode
 					 */
 					yaffs_DeleteChunk(dev, existingChunk, true,
-							__LINE__());
+							Utils.__LINE__());
 				} else {
 					/* Backward scanning or we want to use the existing one
 					 * Use existing.
 					 * Delete the new one and return early so that the tnode isn't changed
 					 */
 					yaffs_DeleteChunk(dev, chunkInNAND, true,
-							__LINE__());
-					return YAFFS_OK;
+							Utils.__LINE__());
+					return Guts_H.YAFFS_OK;
 				}
 			}
 
@@ -2952,7 +2944,7 @@ public class yaffs_guts_C
 
 		yaffs_PutLevel0Tnode(dev,tn,chunkInInode,chunkInNAND);
 
-		return YAFFS_OK;
+		return Guts_H.YAFFS_OK;
 	}
 
 	static boolean yaffs_ReadChunkDataFromObject(yaffs_Object  in, int chunkInInode,
@@ -2961,14 +2953,14 @@ public class yaffs_guts_C
 		int chunkInNAND = yaffs_FindChunkInFile(in, chunkInInode, null);
 
 		if (chunkInNAND >= 0) {
-			return yaffs_ReadChunkWithTagsFromNAND(in.myDev, chunkInNAND,
+			return yaffs_nand_C.yaffs_ReadChunkWithTagsFromNAND(in.myDev, chunkInNAND,
 					buffer,bufferIndex,null);
 		} else {
-			T(YAFFS_TRACE_NANDACCESS,
-					TSTR("Chunk %d not found zero instead" + TENDSTR),
-					chunkInNAND);
+			yportenv.T(yportenv.YAFFS_TRACE_NANDACCESS,
+					("Chunk %d not found zero instead" + ydirectenv.TENDSTR),
+					PrimitiveWrapperFactory.get(chunkInNAND));
 			/* get sane (zero) data if you read a hole */
-			memset(buffer, bufferIndex, (byte)0, in.myDev.nDataBytesPerChunk);	
+			Unix.memset(buffer, bufferIndex, (byte)0, in.myDev.subField1.nDataBytesPerChunk);	
 			return false;
 		}
 
@@ -2985,22 +2977,22 @@ public class yaffs_guts_C
 			return;
 
 		dev.nDeletions++;
-		block = chunkId / dev.nChunksPerBlock;
-		page = chunkId % dev.nChunksPerBlock;
+		block = chunkId / dev.subField1.nChunksPerBlock;
+		page = chunkId % dev.subField1.nChunksPerBlock;
 
-		bi = yaffs_GetBlockInfo(dev, block);
+		bi = Guts_H.yaffs_GetBlockInfo(dev, block);
 
-		T(YAFFS_TRACE_DELETION,
-				TSTR("line %d delete of chunk %d" + TENDSTR), lyn, chunkId);
+		yportenv.T(yportenv.YAFFS_TRACE_DELETION,
+				("line %d delete of chunk %d" + ydirectenv.TENDSTR), PrimitiveWrapperFactory.get(lyn), PrimitiveWrapperFactory.get(chunkId));
 
 		if (markNAND &&
-				bi.blockState() != YAFFS_BLOCK_STATE_COLLECTING && !dev.isYaffs2) {
+				bi.blockState() != Guts_H.YAFFS_BLOCK_STATE_COLLECTING && !dev.subField1.isYaffs2) {
 
-			yaffs_InitialiseTags(tags);
+			yaffs_tagsvalidity_C.yaffs_InitialiseTags(tags);
 
 			tags.chunkDeleted = true;
 
-			yaffs_WriteChunkWithTagsToNAND(dev, chunkId, null, 0, tags);
+			yaffs_nand_C.yaffs_WriteChunkWithTagsToNAND(dev, chunkId, null, 0, tags);
 			yaffs_HandleUpdateChunk(dev, chunkId, tags);
 		} else {
 			dev.nUnmarkedDeletions++;
@@ -3009,11 +3001,11 @@ public class yaffs_guts_C
 		/* Pull out of the management area.
 		 * If the whole block became dirty, this will kick off an erasure.
 		 */
-		if (bi.blockState() == YAFFS_BLOCK_STATE_ALLOCATING ||
-				bi.blockState() == YAFFS_BLOCK_STATE_FULL ||
-				bi.blockState() == YAFFS_BLOCK_STATE_NEEDS_SCANNING ||
-				bi.blockState() == YAFFS_BLOCK_STATE_COLLECTING) {
-			dev.nFreeChunks++;
+		if (bi.blockState() == Guts_H.YAFFS_BLOCK_STATE_ALLOCATING ||
+				bi.blockState() == Guts_H.YAFFS_BLOCK_STATE_FULL ||
+				bi.blockState() == Guts_H.YAFFS_BLOCK_STATE_NEEDS_SCANNING ||
+				bi.blockState() == Guts_H.YAFFS_BLOCK_STATE_COLLECTING) {
+			dev.subField3.nFreeChunks++;
 
 			yaffs_ClearChunkBit(dev, block, page);
 
@@ -3021,13 +3013,13 @@ public class yaffs_guts_C
 
 			if (bi.pagesInUse() == 0 &&
 					!bi.hasShrinkHeader() &&
-					bi.blockState() != YAFFS_BLOCK_STATE_ALLOCATING &&
-					bi.blockState() != YAFFS_BLOCK_STATE_NEEDS_SCANNING) {
+					bi.blockState() != Guts_H.YAFFS_BLOCK_STATE_ALLOCATING &&
+					bi.blockState() != Guts_H.YAFFS_BLOCK_STATE_NEEDS_SCANNING) {
 				yaffs_BlockBecameDirty(dev, block);
 			}
 
 		} else {
-			/* T(("Bad news deleting chunk %d\n",chunkId)); */
+			/* yportenv.T(("Bad news deleting chunk %d\n",chunkId)); */
 		}
 
 	}
@@ -3055,7 +3047,7 @@ public class yaffs_guts_C
 		prevChunkId = yaffs_FindChunkInFile(in, chunkInInode, prevTags);
 
 		/* Set up new tags */
-		yaffs_InitialiseTags(newTags);
+		yaffs_tagsvalidity_C.yaffs_InitialiseTags(newTags);
 
 		newTags.chunkId = chunkInInode;
 		newTags.objectId = in.objectId;
@@ -3071,7 +3063,7 @@ public class yaffs_guts_C
 			yaffs_PutChunkIntoFile(in, chunkInInode, newChunkId, 0);
 
 			if (prevChunkId >= 0) {
-				yaffs_DeleteChunk(dev, prevChunkId, true, __LINE__());
+				yaffs_DeleteChunk(dev, prevChunkId, true, Utils.__LINE__());
 
 			}
 
@@ -3100,26 +3092,26 @@ public class yaffs_guts_C
 		yaffs_ExtendedTags newTags = new yaffs_ExtendedTags();
 
 		byte[] buffer = null; final int bufferIndex = 0;
-		byte[] oldName = new byte[YAFFS_MAX_NAME_LENGTH + 1]; final int oldNameIndex = 0;
+		byte[] oldName = new byte[Guts_H.YAFFS_MAX_NAME_LENGTH + 1]; final int oldNameIndex = 0;
 
 		yaffs_ObjectHeader oh = null;
 
-		if (!in.fake || force) {
+		if (!in.sub.fake || force) {
 
 			yaffs_CheckGarbageCollection(dev);
 
-			buffer = yaffs_GetTempBuffer(in.myDev, __LINE__());
+			buffer = yaffs_GetTempBuffer(in.myDev, Utils.__LINE__());
 			oh = /*(yaffs_ObjectHeader *) buffer*/ new yaffs_ObjectHeader(buffer,0);
 
 			prevChunkId = in.chunkId;
 
 			if (prevChunkId >= 0) {
-				result = yaffs_ReadChunkWithTagsFromNAND(dev, prevChunkId,
+				result = yaffs_nand_C.yaffs_ReadChunkWithTagsFromNAND(dev, prevChunkId,
 						buffer, bufferIndex, null);
-				memcpy(oldName, oldNameIndex, oh.name(), oh.nameIndex(), (yaffs_ObjectHeader.SIZEOF_name));
+				Unix.memcpy(oldName, oldNameIndex, oh.name(), oh.nameIndex(), (yaffs_ObjectHeader.SIZEOF_name));
 			}
 
-			memset(buffer, bufferIndex, (byte)0xFF, dev.nDataBytesPerChunk);
+			Unix.memset(buffer, bufferIndex, (byte)0xFF, dev.subField1.nDataBytesPerChunk);
 
 			oh.setType(in.variantType);
 			oh.setYst_mode(in.yst_mode);
@@ -3147,52 +3139,52 @@ public class yaffs_guts_C
 			}
 
 			if (name != null && name[nameIndex] != 0) {
-				memset(oh.name(), oh.nameIndex(), (byte)0, yaffs_ObjectHeader.SIZEOF_name);
-				yaffs_strncpy(oh.name(), oh.nameIndex(), name, nameIndex, YAFFS_MAX_NAME_LENGTH);
+				Unix.memset(oh.name(), oh.nameIndex(), (byte)0, yaffs_ObjectHeader.SIZEOF_name);
+				ydirectenv.yaffs_strncpy(oh.name(), oh.nameIndex(), name, nameIndex, Guts_H.YAFFS_MAX_NAME_LENGTH);
 			} else if (prevChunkId != 0) {
-				memcpy(oh.name(), oh.nameIndex(), oldName, oldNameIndex, yaffs_ObjectHeader.SIZEOF_name);
+				Unix.memcpy(oh.name(), oh.nameIndex(), oldName, oldNameIndex, yaffs_ObjectHeader.SIZEOF_name);
 			} else {
-				memset(oh.name(), oh.nameIndex(), (byte)0, yaffs_ObjectHeader.SIZEOF_name);
+				Unix.memset(oh.name(), oh.nameIndex(), (byte)0, yaffs_ObjectHeader.SIZEOF_name);
 			}
 
 			oh.setIsShrink(isShrink);
 
 			switch (in.variantType) {
-				case YAFFS_OBJECT_TYPE_UNKNOWN:
-					/* Should not happen */
-					break;
-				case YAFFS_OBJECT_TYPE_FILE:
-					oh.setFileSize(
-							(oh.parentObjectId() == YAFFS_OBJECTID_DELETED
-									|| oh.parentObjectId() ==
-										YAFFS_OBJECTID_UNLINKED) ? 0 : in.variant.
-												fileVariant().fileSize);
-					break;
-				case YAFFS_OBJECT_TYPE_HARDLINK:
-					oh.setEquivalentObjectId(
-							in.variant.hardLinkVariant().equivalentObjectId);
-					break;
-				case YAFFS_OBJECT_TYPE_SPECIAL:
-					/* Do nothing */
-					break;
-				case YAFFS_OBJECT_TYPE_DIRECTORY:
-					/* Do nothing */
-					break;
-				case YAFFS_OBJECT_TYPE_SYMLINK:
-					yaffs_strncpy(oh.alias(), oh.aliasIndex(),
-							in.variant.symLinkVariant().alias,
-							in.variant.symLinkVariant().aliasIndex,
-							YAFFS_MAX_ALIAS_LENGTH);
-					oh.alias()[oh.aliasIndex()+YAFFS_MAX_ALIAS_LENGTH] = 0;
-					break;
+			case Guts_H.YAFFS_OBJECT_TYPE_UNKNOWN:
+				/* Should not happen */
+				break;
+			case Guts_H.YAFFS_OBJECT_TYPE_FILE:
+				oh.setFileSize(
+						(oh.parentObjectId() == Guts_H.YAFFS_OBJECTID_DELETED
+								|| oh.parentObjectId() ==
+									Guts_H.YAFFS_OBJECTID_UNLINKED) ? 0 : in.variant.
+											fileVariant().fileSize);
+				break;
+			case Guts_H.YAFFS_OBJECT_TYPE_HARDLINK:
+				oh.setEquivalentObjectId(
+						in.variant.hardLinkVariant().equivalentObjectId);
+				break;
+			case Guts_H.YAFFS_OBJECT_TYPE_SPECIAL:
+				/* Do nothing */
+				break;
+			case Guts_H.YAFFS_OBJECT_TYPE_DIRECTORY:
+				/* Do nothing */
+				break;
+			case Guts_H.YAFFS_OBJECT_TYPE_SYMLINK:
+				ydirectenv.yaffs_strncpy(oh.alias(), oh.aliasIndex(),
+						in.variant.symLinkVariant().alias,
+						in.variant.symLinkVariant().aliasIndex,
+						Guts_H.YAFFS_MAX_ALIAS_LENGTH);
+				oh.alias()[oh.aliasIndex()+Guts_H.YAFFS_MAX_ALIAS_LENGTH] = 0;
+				break;
 			}
 
 			/* Tags */
-			yaffs_InitialiseTags(newTags);
+			yaffs_tagsvalidity_C.yaffs_InitialiseTags(newTags);
 			in.serial++;
 			newTags.chunkId = 0;
 			newTags.objectId = in.objectId;
-			newTags.serialNumber = byteAsUnsignedByte(in.serial);
+			newTags.serialNumber = Utils.byteAsUnsignedByte(in.serial);
 
 			/* Add extra info for file header */
 
@@ -3215,7 +3207,7 @@ public class yaffs_guts_C
 
 				if (prevChunkId >= 0) {
 					yaffs_DeleteChunk(dev, prevChunkId, true,
-							__LINE__());
+							Utils.__LINE__());
 				}
 
 				if(!yaffs_ObjectHasCachedWriteData(in))
@@ -3223,8 +3215,8 @@ public class yaffs_guts_C
 
 				/* If this was a shrink, then mark the block that the chunk lives on */
 				if (isShrink) {
-					bi = yaffs_GetBlockInfo(in.myDev,
-							newChunkId /in.myDev.	nChunksPerBlock);
+					bi = Guts_H.yaffs_GetBlockInfo(in.myDev,
+							newChunkId /in.myDev.	subField1.nChunksPerBlock);
 					bi.setHasShrinkHeader(true);
 				}
 
@@ -3235,7 +3227,7 @@ public class yaffs_guts_C
 		}
 
 		if (buffer != null)
-			yaffs_ReleaseTempBuffer(dev, buffer, __LINE__());
+			yaffs_ReleaseTempBuffer(dev, buffer, Utils.__LINE__());
 
 		return retVal;
 	}
@@ -3258,7 +3250,7 @@ public class yaffs_guts_C
 		yaffs_Device dev = obj.myDev;
 		int i;
 		yaffs_ChunkCache cache;
-		int nCaches = obj.myDev.nShortOpCaches;
+		int nCaches = obj.myDev.subField1.nShortOpCaches;
 
 		for(i = 0; i < nCaches; i++){
 			cache = dev.srCache[i];
@@ -3278,7 +3270,7 @@ public class yaffs_guts_C
 		int i;
 		yaffs_ChunkCache cache;
 		int chunkWritten = 0;
-		int nCaches = obj.myDev.nShortOpCaches;
+		int nCaches = obj.myDev.subField1.nShortOpCaches;
 
 		if (nCaches > 0) {
 			do {
@@ -3314,8 +3306,8 @@ public class yaffs_guts_C
 
 			if (cache != null) {
 				/* Hoosterman, disk full while writing cache out. */
-				T(YAFFS_TRACE_ERROR,
-						(TSTR("yaffs tragedy: no space during cache write" + TENDSTR)));
+				yportenv.T(yportenv.YAFFS_TRACE_ERROR,
+						(("yaffs tragedy: no space during cache write" + ydirectenv.TENDSTR)));
 
 			}
 		}
@@ -3330,7 +3322,7 @@ public class yaffs_guts_C
 	static void yaffs_FlushEntireDeviceCache(yaffs_Device dev)
 	{
 		yaffs_Object obj;
-		int nCaches = dev.nShortOpCaches;
+		int nCaches = dev.subField1.nShortOpCaches;
 		int i;
 
 		/* Find a dirty object in the cache and flush it...
@@ -3363,8 +3355,8 @@ public class yaffs_guts_C
 		int usage;
 		int theOne;
 
-		if (dev.nShortOpCaches > 0) {
-			for (i = 0; i < dev.nShortOpCaches; i++) {
+		if (dev.subField1.nShortOpCaches > 0) {
+			for (i = 0; i < dev.subField1.nShortOpCaches; i++) {
 				if (!(dev.srCache[i].object != null)) 
 					return dev.srCache[i];
 			}
@@ -3400,7 +3392,7 @@ public class yaffs_guts_C
 		int i;
 		int pushout;
 
-		if (dev.nShortOpCaches > 0) {
+		if (dev.subField1.nShortOpCaches > 0) {
 			/* Try find a non-dirty one... */
 
 			cache = yaffs_GrabChunkCacheWorker(dev);
@@ -3419,7 +3411,7 @@ public class yaffs_guts_C
 				cache = null;
 				pushout = -1;
 
-				for (i = 0; i < dev.nShortOpCaches; i++) {
+				for (i = 0; i < dev.subField1.nShortOpCaches; i++) {
 					if ((dev.srCache[i].object != null) &&
 							!dev.srCache[i].locked &&
 							(dev.srCache[i].lastUse < usage || !(cache != null)))
@@ -3450,8 +3442,8 @@ public class yaffs_guts_C
 	{
 		yaffs_Device dev = obj.myDev;
 		int i;
-		if (dev.nShortOpCaches > 0) {
-			for (i = 0; i < dev.nShortOpCaches; i++) {
+		if (dev.subField1.nShortOpCaches > 0) {
+			for (i = 0; i < dev.subField1.nShortOpCaches; i++) {
 				if (dev.srCache[i].object == obj &&
 						dev.srCache[i].chunkId == chunkId) {
 					dev.cacheHits++;
@@ -3468,11 +3460,11 @@ public class yaffs_guts_C
 			boolean isAWrite)
 	{
 
-		if (dev.nShortOpCaches > 0) {
+		if (dev.subField1.nShortOpCaches > 0) {
 			if (dev.srLastUse < 0 || dev.srLastUse > 100000000) {
 				/* Reset the cache usages */
 				int i;
-				for (i = 1; i < dev.nShortOpCaches; i++) {
+				for (i = 1; i < dev.subField1.nShortOpCaches; i++) {
 					dev.srCache[i].lastUse = 0;
 				}
 				dev.srLastUse = 0;
@@ -3494,7 +3486,7 @@ public class yaffs_guts_C
 	 */
 	static void yaffs_InvalidateChunkCache(yaffs_Object  object, int chunkId)
 	{
-		if (object.myDev.nShortOpCaches > 0) {
+		if (object.myDev.subField1.nShortOpCaches > 0) {
 			yaffs_ChunkCache cache = yaffs_FindChunkCache(object, chunkId);
 
 			if (cache != null) {
@@ -3511,9 +3503,9 @@ public class yaffs_guts_C
 		int i;
 		yaffs_Device dev = in.myDev;
 
-		if (dev.nShortOpCaches > 0) {
+		if (dev.subField1.nShortOpCaches > 0) {
 			/* Invalidate it. */
-			for (i = 0; i < dev.nShortOpCaches; i++) {
+			for (i = 0; i < dev.subField1.nShortOpCaches; i++) {
 				if (dev.srCache[i].object == in) {
 					dev.srCache[i].object = null;
 				}
@@ -3528,11 +3520,11 @@ public class yaffs_guts_C
 	{
 		yaffs_CheckpointValidity cp = new yaffs_CheckpointValidity();
 		cp.setStructType(/*sizeof(cp)*/ yaffs_CheckpointValidity.SERIALIZED_LENGTH);
-		cp.setMagic(YAFFS_MAGIC);
-		cp.setVersion(YAFFS_CHECKPOINT_VERSION);
+		cp.setMagic(Guts_H.YAFFS_MAGIC);
+		cp.setVersion(Guts_H.YAFFS_CHECKPOINT_VERSION);
 		cp.setHead((head != 0) ? 1 : 0);
 
-		return (yaffs_CheckpointWrite(dev,cp.serialized,cp.offset,
+		return (yaffs_checkptrw_C.yaffs_CheckpointWrite(dev,cp.serialized,cp.offset,
 				/*sizeof(cp)*/ yaffs_CheckpointValidity.SERIALIZED_LENGTH) 
 				== /*sizeof(cp)*/ yaffs_CheckpointValidity.SERIALIZED_LENGTH) ? true : false;
 	}
@@ -3542,13 +3534,13 @@ public class yaffs_guts_C
 		yaffs_CheckpointValidity cp = new yaffs_CheckpointValidity();
 		boolean ok;
 
-		ok = (yaffs_CheckpointRead(dev,cp.serialized,cp.offset,
+		ok = (yaffs_checkptrw_C.yaffs_CheckpointRead(dev,cp.serialized,cp.offset,
 				yaffs_CheckpointValidity.SERIALIZED_LENGTH) == yaffs_CheckpointValidity.SERIALIZED_LENGTH);
 
 		if(ok)
 			ok = (cp.structType() == yaffs_CheckpointValidity.SERIALIZED_LENGTH) &&
-			(cp.magic() == YAFFS_MAGIC) &&
-			(cp.version() == YAFFS_CHECKPOINT_VERSION) &&
+			(cp.magic() == Guts_H.YAFFS_MAGIC) &&
+			(cp.version() == Guts_H.YAFFS_CHECKPOINT_VERSION) &&
 			(cp.head() == ((head != 0) ? 1 : 0));
 		return (ok) ? true : false;
 	}
@@ -3556,10 +3548,10 @@ public class yaffs_guts_C
 	static void yaffs_DeviceToCheckpointDevice(yaffs_CheckpointDevice cp, 
 			yaffs_Device dev)
 	{
-		cp.setNErasedBlocks(dev.nErasedBlocks);
-		cp.setAllocationBlock(dev.allocationBlock);
-		cp.setAllocationPage(dev.allocationPage);
-		cp.setNFreeChunks(dev.nFreeChunks);
+		cp.setNErasedBlocks(dev.subField3.nErasedBlocks);
+		cp.setAllocationBlock(dev.subField3.allocationBlock);
+		cp.setAllocationPage(dev.subField3.allocationPage);
+		cp.setNFreeChunks(dev.subField3.nFreeChunks);
 
 		cp.setNDeletedFiles(dev.nDeletedFiles);
 		cp.setNUnlinkedFiles(dev.nUnlinkedFiles);
@@ -3572,16 +3564,16 @@ public class yaffs_guts_C
 	static void yaffs_CheckpointDeviceToDevice(yaffs_Device dev,
 			yaffs_CheckpointDevice cp)
 	{
-		dev.nErasedBlocks = cp.nErasedBlocks();
-		dev.allocationBlock = cp.allocationBlock();
-		dev.allocationPage = cp.allocationPage();
-		dev.nFreeChunks = cp.nFreeChunks();
+		dev.subField3.nErasedBlocks = cp.nErasedBlocks();
+		dev.subField3.allocationBlock = cp.allocationBlock();
+		dev.subField3.allocationPage = cp.allocationPage();
+		dev.subField3.nFreeChunks = cp.nFreeChunks();
 
 		dev.nDeletedFiles = cp.nDeletedFiles();
 		dev.nUnlinkedFiles = cp.nUnlinkedFiles();
 		dev.nBackgroundDeletions = cp.nBackgroundDeletions();
-		dev.sequenceNumber = intAsUnsignedInt(cp.sequenceNumber());
-		dev.oldestDirtySequence = intAsUnsignedInt(cp.oldestDirtySequence());
+		dev.sequenceNumber = Utils.intAsUnsignedInt(cp.sequenceNumber());
+		dev.oldestDirtySequence = Utils.intAsUnsignedInt(cp.oldestDirtySequence());
 	}
 
 
@@ -3589,7 +3581,7 @@ public class yaffs_guts_C
 	{
 		yaffs_CheckpointDevice cp = new yaffs_CheckpointDevice();
 		/**__u32*/ int nBytes;
-		/**__u32*/ int nBlocks = (dev.internalEndBlock - dev.internalStartBlock + 1);
+		/**__u32*/ int nBlocks = (dev.subField2.internalEndBlock - dev.subField2.internalStartBlock + 1);
 
 		boolean ok;
 
@@ -3597,21 +3589,21 @@ public class yaffs_guts_C
 		yaffs_DeviceToCheckpointDevice(cp,dev);
 		cp.setStructType(yaffs_CheckpointDevice.SERIALIZED_LENGTH);
 
-		ok = (yaffs_CheckpointWrite(dev,cp.serialized,cp.offset,yaffs_CheckpointDevice.SERIALIZED_LENGTH) == yaffs_CheckpointDevice.SERIALIZED_LENGTH);
+		ok = (yaffs_checkptrw_C.yaffs_CheckpointWrite(dev,cp.serialized,cp.offset,yaffs_CheckpointDevice.SERIALIZED_LENGTH) == yaffs_CheckpointDevice.SERIALIZED_LENGTH);
 
 		/* Write block info */
 		if(ok) {
 			nBytes = nBlocks * yaffs_BlockInfo.SERIALIZED_LENGTH;
 			// PORT We want to write the data for the whole array.
 			// The data for all yaffs_BlockInfo array members is stored in the same array.
-			ok = (yaffs_CheckpointWrite(dev,dev.blockInfo[0].serialized,
-					dev.blockInfo[0].offset,nBytes) == nBytes);
+			ok = (yaffs_checkptrw_C.yaffs_CheckpointWrite(dev,dev.subField2.blockInfo[0].serialized,
+					dev.subField2.blockInfo[0].offset,nBytes) == nBytes);
 		}
 
 		/* Write chunk bits */		
 		if(ok) {
-			nBytes = nBlocks * dev.chunkBitmapStride;
-			ok = (yaffs_CheckpointWrite(dev,dev.chunkBits,dev.chunkBitsIndex,nBytes) == nBytes);
+			nBytes = nBlocks * dev.subField3.chunkBitmapStride;
+			ok = (yaffs_checkptrw_C.yaffs_CheckpointWrite(dev,dev.subField2.chunkBits,dev.subField2.chunkBitsIndex,nBytes) == nBytes);
 		}
 		return	 ok ? true : false;
 
@@ -3621,11 +3613,11 @@ public class yaffs_guts_C
 	{
 		yaffs_CheckpointDevice cp = new yaffs_CheckpointDevice();
 		/**__u32*/ int nBytes;
-		/**__u32*/ int nBlocks = (dev.internalEndBlock - dev.internalStartBlock + 1);
+		/**__u32*/ int nBlocks = (dev.subField2.internalEndBlock - dev.subField2.internalStartBlock + 1);
 
 		boolean ok;	
 
-		ok = (yaffs_CheckpointRead(dev,cp.serialized,cp.offset,yaffs_CheckpointDevice.SERIALIZED_LENGTH) == yaffs_CheckpointDevice.SERIALIZED_LENGTH);
+		ok = (yaffs_checkptrw_C.yaffs_CheckpointRead(dev,cp.serialized,cp.offset,yaffs_CheckpointDevice.SERIALIZED_LENGTH) == yaffs_CheckpointDevice.SERIALIZED_LENGTH);
 		if(!(ok))
 			return false;
 
@@ -3637,14 +3629,14 @@ public class yaffs_guts_C
 
 		nBytes = nBlocks * yaffs_BlockInfo.SERIALIZED_LENGTH;
 
-		ok = (yaffs_CheckpointRead(dev,dev.blockInfo[0].serialized,dev.blockInfo[0].offset,
+		ok = (yaffs_checkptrw_C.yaffs_CheckpointRead(dev,dev.subField2.blockInfo[0].serialized,dev.subField2.blockInfo[0].offset,
 				nBytes) == nBytes);
 
 		if(!(ok))
 			return false;
-		nBytes = nBlocks * dev.chunkBitmapStride;
+		nBytes = nBlocks * dev.subField3.chunkBitmapStride;
 
-		ok = (yaffs_CheckpointRead(dev,dev.chunkBits,dev.chunkBitsIndex,nBytes) == nBytes);
+		ok = (yaffs_checkptrw_C.yaffs_CheckpointRead(dev,dev.subField2.chunkBits,dev.subField2.chunkBitsIndex,nBytes) == nBytes);
 
 		return ok ? true : false;
 	}
@@ -3657,18 +3649,18 @@ public class yaffs_guts_C
 		cp.setParentId((obj.parent != null) ? obj.parent.objectId : 0);
 		cp.setChunkId(obj.chunkId);
 		cp.setVariantType(obj.variantType);			
-		cp.setDeleted(obj.deleted);
-		cp.setSoftDeleted(obj.softDeleted);
-		cp.setUnlinked(obj.unlinked);
-		cp.setFake(obj.fake);
+		cp.setDeleted(obj.sub.deleted);
+		cp.setSoftDeleted(obj.sub.softDeleted);
+		cp.setUnlinked(obj.sub.unlinked);
+		cp.setFake(obj.sub.fake);
 		cp.setRenameAllowed(obj.renameAllowed);
 		cp.setUnlinkAllowed(obj.unlinkAllowed);
 		cp.setSerial(obj.serial);
 		cp.setNDataChunks(obj.nDataChunks);
 
-		if(obj.variantType == YAFFS_OBJECT_TYPE_FILE)
+		if(obj.variantType == Guts_H.YAFFS_OBJECT_TYPE_FILE)
 			cp.setFileSizeOrEquivalentObjectId(obj.variant.fileVariant().fileSize);
-		else if(obj.variantType == YAFFS_OBJECT_TYPE_HARDLINK)
+		else if(obj.variantType == Guts_H.YAFFS_OBJECT_TYPE_HARDLINK)
 			cp.setFileSizeOrEquivalentObjectId(obj.variant.hardLinkVariant().equivalentObjectId);
 	}
 
@@ -3683,7 +3675,7 @@ public class yaffs_guts_C
 			parent = yaffs_FindOrCreateObjectByNumber(
 					obj.myDev,
 					cp.parentId(),
-					YAFFS_OBJECT_TYPE_DIRECTORY);
+					Guts_H.YAFFS_OBJECT_TYPE_DIRECTORY);
 		else
 			parent = null;
 
@@ -3692,56 +3684,54 @@ public class yaffs_guts_C
 
 		obj.chunkId = cp.chunkId();
 		obj.variantType = cp.variantType();			
-		obj.deleted = cp.deleted();
-		obj.softDeleted = cp.softDeleted();
-		obj.unlinked = cp.unlinked();
-		obj.fake = cp.fake();
+		obj.sub.deleted = cp.deleted();
+		obj.sub.softDeleted = cp.softDeleted();
+		obj.sub.unlinked = cp.unlinked();
+		obj.sub.fake = cp.fake();
 		obj.renameAllowed = cp.renameAllowed();
 		obj.unlinkAllowed = cp.unlinkAllowed();
 		obj.serial = cp.serial();
 		obj.nDataChunks = cp.nDataChunks();
 
-		if(obj.variantType == YAFFS_OBJECT_TYPE_FILE)
+		if(obj.variantType == Guts_H.YAFFS_OBJECT_TYPE_FILE)
 			obj.variant.fileVariant().fileSize = cp.fileSizeOrEquivalentObjectId();
-		else if(obj.variantType == YAFFS_OBJECT_TYPE_HARDLINK)
+		else if(obj.variantType == Guts_H.YAFFS_OBJECT_TYPE_HARDLINK)
 			obj.variant.hardLinkVariant().equivalentObjectId = cp.fileSizeOrEquivalentObjectId();
 
-		if(obj.objectId >= YAFFS_NOBJECT_BUCKETS)
+		if(obj.objectId >= Guts_H.YAFFS_NOBJECT_BUCKETS)
 			obj.lazyLoaded = true;
 	}
 
 
 
-	// XXX what is written here
-	// - only leafs (16 bit page address)
-	// - or pointers, too?
+	// PORT Only leafs (16 bit page address) are written here.
 	static boolean yaffs_CheckpointTnodeWorker(yaffs_Object  in, yaffs_Tnode tn,
 			/**__u32*/ int level, int chunkOffset)
 	{
 		int i;
 		yaffs_Device dev = in.myDev;
 		boolean ok = true;
-		int nTnodeBytes = (dev.tnodeWidth * YAFFS_NTNODES_LEVEL0)/8;
+		int nTnodeBytes = (dev.subField2.tnodeWidth * Guts_H.YAFFS_NTNODES_LEVEL0)/8;
 
 		if (tn != null) {
 			if (level > 0) {
 
-				for (i = 0; i < YAFFS_NTNODES_INTERNAL && ok; i++){
+				for (i = 0; i < Guts_H.YAFFS_NTNODES_INTERNAL && ok; i++){
 					if (tn.internal[i] != null) {
 						ok = yaffs_CheckpointTnodeWorker(in,
 								tn.internal[i],
 								level - 1,
-								(chunkOffset<<YAFFS_TNODES_INTERNAL_BITS) + i);
+								(chunkOffset<<Guts_H.YAFFS_TNODES_INTERNAL_BITS) + i);
 					}
 				}
 			} else if (level == 0) {
 				/*__u32*/ byte[] baseOffset = new byte[4]; final int baseOffsetIndex = 0;
-				writeIntToByteArray(baseOffset, baseOffsetIndex, 
-						chunkOffset <<  YAFFS_TNODES_LEVEL0_BITS);	// XXX haaaaaa?
+				Utils.writeIntToByteArray(baseOffset, baseOffsetIndex, 
+						chunkOffset <<  Guts_H.YAFFS_TNODES_LEVEL0_BITS);
 				/* printf("write tnode at %d\n",baseOffset); */
-				ok = (yaffs_CheckpointWrite(dev,baseOffset,baseOffsetIndex,4) == 4);
+				ok = (yaffs_checkptrw_C.yaffs_CheckpointWrite(dev,baseOffset,baseOffsetIndex,4) == 4);
 				if(ok)
-					ok = (yaffs_CheckpointWrite(dev,tn.serialized,tn.offset,nTnodeBytes) == nTnodeBytes);
+					ok = (yaffs_checkptrw_C.yaffs_CheckpointWrite(dev,tn.serialized,tn.offset,nTnodeBytes) == nTnodeBytes);
 			}
 		}
 
@@ -3751,18 +3741,18 @@ public class yaffs_guts_C
 
 	static boolean yaffs_WriteCheckpointTnodes(yaffs_Object obj)
 	{
-		/**__u32*/ byte[] endMarker = new byte[SIZEOF_INT]; final int endMarkerIndex = 0;
-		writeIntToByteArray(endMarker, endMarkerIndex, ~0);
+		/**__u32*/ byte[] endMarker = new byte[Constants.SIZEOF_INT]; final int endMarkerIndex = 0;
+		Utils.writeIntToByteArray(endMarker, endMarkerIndex, ~0);
 		boolean ok = true;
 
-		if(obj.variantType == YAFFS_OBJECT_TYPE_FILE){
+		if(obj.variantType == Guts_H.YAFFS_OBJECT_TYPE_FILE){
 			ok = yaffs_CheckpointTnodeWorker(obj,
 					obj.variant.fileVariant().top,
 					obj.variant.fileVariant().topLevel,
 					0);
 			if(ok)
-				ok = (yaffs_CheckpointWrite(obj.myDev,endMarker,endMarkerIndex,SIZEOF_INT) == 
-					SIZEOF_INT);
+				ok = (yaffs_checkptrw_C.yaffs_CheckpointWrite(obj.myDev,endMarker,endMarkerIndex,Constants.SIZEOF_INT) == 
+					Constants.SIZEOF_INT);
 		}
 
 		return ok ? true : false;
@@ -3770,38 +3760,38 @@ public class yaffs_guts_C
 
 	static boolean yaffs_ReadCheckpointTnodes(yaffs_Object obj)
 	{
-		/**__u32*/ byte[] baseChunk = new byte[SIZEOF_INT];
+		/**__u32*/ byte[] baseChunk = new byte[Constants.SIZEOF_INT];
 		final int baseChunkIndex = 0;
 		boolean ok = true;
 		yaffs_Device dev = obj.myDev;
 		yaffs_FileStructure fileStructPtr = obj.variant.fileVariant();
 		yaffs_Tnode tn;
 
-		ok = (yaffs_CheckpointRead(dev,baseChunk,baseChunkIndex,SIZEOF_INT) == SIZEOF_INT);
+		ok = (yaffs_checkptrw_C.yaffs_CheckpointRead(dev,baseChunk,baseChunkIndex,Constants.SIZEOF_INT) == Constants.SIZEOF_INT);
 
-		while(ok && (~getIntFromByteArray(baseChunk, baseChunkIndex)) != 0){
+		while(ok && (~Utils.getIntFromByteArray(baseChunk, baseChunkIndex)) != 0){
 			/* Read level 0 tnode */
 
 			/* printf("read  tnode at %d\n",baseChunk); */
 			tn = yaffs_GetTnodeRaw(dev);
 			if(tn != null)
-				ok = (yaffs_CheckpointRead(dev,tn.serialized,tn.offset,
-						(dev.tnodeWidth * YAFFS_NTNODES_LEVEL0)/8) ==
-							(dev.tnodeWidth * YAFFS_NTNODES_LEVEL0)/8);
+				ok = (yaffs_checkptrw_C.yaffs_CheckpointRead(dev,tn.serialized,tn.offset,
+						(dev.subField2.tnodeWidth * Guts_H.YAFFS_NTNODES_LEVEL0)/8) ==
+							(dev.subField2.tnodeWidth * Guts_H.YAFFS_NTNODES_LEVEL0)/8);
 			else
 				ok = false;
 
 			if(tn != null && ok){
 				ok = yaffs_AddOrFindLevel0Tnode(dev,
 						fileStructPtr,
-						getIntFromByteArray(baseChunk, baseChunkIndex),
+						Utils.getIntFromByteArray(baseChunk, baseChunkIndex),
 						tn) != null ? true : false;
 			}
 
 			if(ok)
-				ok = (yaffs_CheckpointRead(dev,baseChunk,baseChunkIndex,
-						SIZEOF_INT) == 
-							SIZEOF_INT);
+				ok = (yaffs_checkptrw_C.yaffs_CheckpointRead(dev,baseChunk,baseChunkIndex,
+						Constants.SIZEOF_INT) == 
+							Constants.SIZEOF_INT);
 
 		}
 
@@ -3822,25 +3812,28 @@ public class yaffs_guts_C
 		 * dumping them to the checkpointing stream.
 		 */
 
-		for(i = 0; ok &&  i <  YAFFS_NOBJECT_BUCKETS; i++){
+		for(i = 0; ok &&  i <  Guts_H.YAFFS_NOBJECT_BUCKETS; i++){
 //			list_for_each(lh, &dev.objectBucket[i].list) {
-			for (lh = dev.objectBucket[i].list.next(); lh != dev.objectBucket[i].list;
+			for (lh = dev.subField3.objectBucket[i].list.next(); lh != dev.subField3.objectBucket[i].list;
 			lh = lh.next()) {
 				if (lh != null) {
 					obj = /*list_entry(lh, yaffs_Object, hashLink)*/ (yaffs_Object)lh.list_entry;
 					if (!obj.deferedFree) {
-						memset(cp.serialized,0,(byte)0,cp.getSerializedLength());
+						Unix.memset(cp.serialized,0,(byte)0,cp.getSerializedLength());
 						yaffs_ObjectToCheckpointObject(cp,obj);
 						cp.setStructType(yaffs_CheckpointObject.SERIALIZED_LENGTH);
 
-						T(YAFFS_TRACE_CHECKPOINT,
-								TSTR("Checkpoint write object %d parent %d type %d chunk %d obj addr %x" + TENDSTR),
-								cp.objectId(),cp.parentId(),cp.variantType(),cp.chunkId(),/*(unsigned)*/yaffs2.utils.Utils.hashCode(obj));
+						yportenv.T(yportenv.YAFFS_TRACE_CHECKPOINT,
+								("Checkpoint write object %d parent %d type %d chunk %d obj addr %x" + ydirectenv.TENDSTR),
+								PrimitiveWrapperFactory.get(cp.objectId()),PrimitiveWrapperFactory.get(cp.parentId()),
+								PrimitiveWrapperFactory.get(cp.variantType()),PrimitiveWrapperFactory.get(cp.chunkId()),
+								/*(unsigned)*/PrimitiveWrapperFactory.get(yaffs2.utils.Utils.hashCode(obj)),
+								null, null, null, null);
 
-						ok = (yaffs_CheckpointWrite(dev,cp.serialized,cp.offset,
+						ok = (yaffs_checkptrw_C.yaffs_CheckpointWrite(dev,cp.serialized,cp.offset,
 								yaffs_CheckpointObject.SERIALIZED_LENGTH)) == yaffs_CheckpointObject.SERIALIZED_LENGTH;
 
-						if(ok && obj.variantType == YAFFS_OBJECT_TYPE_FILE){
+						if(ok && obj.variantType == Guts_H.YAFFS_OBJECT_TYPE_FILE){
 							ok = yaffs_WriteCheckpointTnodes(obj);
 						}
 					}
@@ -3849,11 +3842,11 @@ public class yaffs_guts_C
 		}
 
 		/* Dump end of list */
-		memset(cp,(byte)0xFF/*,sizeof(yaffs_CheckpointObject)*/);
+		Unix.memset(cp,(byte)0xFF/*,sizeof(yaffs_CheckpointObject)*/);
 		cp.setStructType(yaffs_CheckpointObject.SERIALIZED_LENGTH);
 
 		if(ok)
-			ok = (yaffs_CheckpointWrite(dev,cp.serialized,cp.offset,
+			ok = (yaffs_checkptrw_C.yaffs_CheckpointWrite(dev,cp.serialized,cp.offset,
 					yaffs_CheckpointObject.SERIALIZED_LENGTH) == yaffs_CheckpointObject.SERIALIZED_LENGTH);
 
 		return ok ? true : false;
@@ -3868,7 +3861,7 @@ public class yaffs_guts_C
 		yaffs_Object hardList = null;
 
 		while(ok && !done) {
-			ok = (yaffs_CheckpointRead(dev,cp.serialized,cp.offset,
+			ok = (yaffs_checkptrw_C.yaffs_CheckpointRead(dev,cp.serialized,cp.offset,
 					yaffs_CheckpointObject.SERIALIZED_LENGTH) == yaffs_CheckpointObject.SERIALIZED_LENGTH);
 			if(cp.structType() != yaffs_CheckpointObject.SERIALIZED_LENGTH) {
 				/* printf("structure parsing failed\n"); */
@@ -3879,14 +3872,17 @@ public class yaffs_guts_C
 				done = true;
 			else if(ok){
 				obj = yaffs_FindOrCreateObjectByNumber(dev,cp.objectId(), cp.variantType());
-				T(YAFFS_TRACE_CHECKPOINT,TSTR("Checkpoint read object %d parent %d type %d chunk %d obj addr %x" + TENDSTR),
-						cp.objectId(),cp.parentId(),cp.variantType(),cp.chunkId(),/*(unsigned)*/yaffs2.utils.Utils.hashCode(obj));
+				yportenv.T(yportenv.YAFFS_TRACE_CHECKPOINT,("Checkpoint read object %d parent %d type %d chunk %d obj addr %x" + ydirectenv.TENDSTR),
+						PrimitiveWrapperFactory.get(cp.objectId()),PrimitiveWrapperFactory.get(cp.parentId()),
+						PrimitiveWrapperFactory.get(cp.variantType()),PrimitiveWrapperFactory.get(cp.chunkId()),
+						/*(unsigned)*/PrimitiveWrapperFactory.get(yaffs2.utils.Utils.hashCode(obj)),
+						null, null, null, null);
 				if(obj != null) {
 					yaffs_CheckpointObjectToObject(obj,cp);
-					if(obj.variantType == YAFFS_OBJECT_TYPE_FILE) {
+					if(obj.variantType == Guts_H.YAFFS_OBJECT_TYPE_FILE) {
 						ok = yaffs_ReadCheckpointTnodes(obj);
-					} else if(obj.variantType == YAFFS_OBJECT_TYPE_HARDLINK) {
-						obj.hardLinks.next =	// XXX what does this do?
+					} else if(obj.variantType == Guts_H.YAFFS_OBJECT_TYPE_HARDLINK) {
+						obj.hardLinks.next =
 							/*(list_head)*/ 
 							hardList;
 						hardList = obj;
@@ -3907,7 +3903,7 @@ public class yaffs_guts_C
 
 		boolean ok;
 
-		ok = yaffs_CheckpointOpen(dev,true) ? true : false;
+		ok = yaffs_checkptrw_C.yaffs_CheckpointOpen(dev,true) ? true : false;
 
 		if(ok)
 			ok = yaffs_WriteCheckpointValidityMarker(dev,1);
@@ -3918,22 +3914,22 @@ public class yaffs_guts_C
 		if(ok)
 			ok = yaffs_WriteCheckpointValidityMarker(dev,0);
 
-		if(!yaffs_CheckpointClose(dev))
+		if(!yaffs_checkptrw_C.yaffs_CheckpointClose(dev))
 			ok = false;
 
 		if(ok)
-			dev.isCheckpointed = true;
+			dev.subField2.isCheckpointed = true;
 		else 
-			dev.isCheckpointed = false;
+			dev.subField2.isCheckpointed = false;
 
-		return dev.isCheckpointed;
+		return dev.subField2.isCheckpointed;
 	}
 
 	static boolean yaffs_ReadCheckpointData(yaffs_Device dev)
 	{
 		boolean ok;
 
-		ok = yaffs_CheckpointOpen(dev,false); /* open for read */
+		ok = yaffs_checkptrw_C.yaffs_CheckpointOpen(dev,false); /* open for read */
 
 		if(ok)
 			ok = yaffs_ReadCheckpointValidityMarker(dev,1);
@@ -3946,13 +3942,13 @@ public class yaffs_guts_C
 
 
 
-		if(!yaffs_CheckpointClose(dev))
+		if(!yaffs_checkptrw_C.yaffs_CheckpointClose(dev))
 			ok = false;
 
 		if(ok)
-			dev.isCheckpointed = true;
+			dev.subField2.isCheckpointed = true;
 		else 
-			dev.isCheckpointed = false;
+			dev.subField2.isCheckpointed = false;
 
 		return ok ? true : false;
 
@@ -3960,12 +3956,12 @@ public class yaffs_guts_C
 
 	static void yaffs_InvalidateCheckpoint(yaffs_Device dev)
 	{
-		if(dev.isCheckpointed || 
-				dev.blocksInCheckpoint > 0){
-			dev.isCheckpointed = false;
-			yaffs_CheckpointInvalidateStream(dev);
-			if(dev.superBlock != null && dev.markSuperBlockDirty != null)
-				dev.markSuperBlockDirty.markSuperBlockDirty(dev.superBlock);
+		if(dev.subField2.isCheckpointed || 
+				dev.subField2.blocksInCheckpoint > 0){
+			dev.subField2.isCheckpointed = false;
+			yaffs_checkptrw_C.yaffs_CheckpointInvalidateStream(dev);
+			if(dev.subField1.superBlock != null && dev.subField1.markSuperBlockDirty != null)
+				dev.subField1.markSuperBlockDirty.markSuperBlockDirty(dev.subField1.superBlock);
 		}
 	}
 
@@ -3973,24 +3969,24 @@ public class yaffs_guts_C
 	static boolean yaffs_CheckpointSave(yaffs_Device dev)
 	{
 		yaffs_ReportOddballBlocks(dev);
-		T(YAFFS_TRACE_CHECKPOINT,TSTR("save entry: isCheckpointed %b"+ TENDSTR),dev.isCheckpointed);
+		yportenv.T(yportenv.YAFFS_TRACE_CHECKPOINT,("save entry: isCheckpointed %b"+ ydirectenv.TENDSTR),PrimitiveWrapperFactory.get(dev.subField2.isCheckpointed));
 
-		if(!dev.isCheckpointed)
+		if(!dev.subField2.isCheckpointed)
 			yaffs_WriteCheckpointData(dev);
 
-		T(YAFFS_TRACE_CHECKPOINT,TSTR("save exit: isCheckpointed %b"+ TENDSTR),dev.isCheckpointed);
+		yportenv.T(yportenv.YAFFS_TRACE_CHECKPOINT,("save exit: isCheckpointed %b"+ ydirectenv.TENDSTR),PrimitiveWrapperFactory.get(dev.subField2.isCheckpointed));
 
-		return dev.isCheckpointed;
+		return dev.subField2.isCheckpointed;
 	}
 
 	static boolean yaffs_CheckpointRestore(yaffs_Device dev)
 	{
 		boolean retval;
-		T(YAFFS_TRACE_CHECKPOINT,TSTR("restore entry: isCheckpointed %b"+ TENDSTR),dev.isCheckpointed);
+		yportenv.T(yportenv.YAFFS_TRACE_CHECKPOINT,("restore entry: isCheckpointed %b"+ ydirectenv.TENDSTR),PrimitiveWrapperFactory.get(dev.subField2.isCheckpointed));
 
 		retval = yaffs_ReadCheckpointData(dev);
 
-		T(YAFFS_TRACE_CHECKPOINT,TSTR("restore exit: isCheckpointed %b"+ TENDSTR),dev.isCheckpointed);
+		yportenv.T(yportenv.YAFFS_TRACE_CHECKPOINT,("restore exit: isCheckpointed %b"+ ydirectenv.TENDSTR),PrimitiveWrapperFactory.get(dev.subField2.isCheckpointed));
 
 		yaffs_ReportOddballBlocks(dev);
 
@@ -4035,10 +4031,10 @@ public class yaffs_guts_C
 			/* OK now check for the curveball where the start and end are in
 			 * the same chunk.      
 			 */
-			if ((start + n) < dev.nDataBytesPerChunk) {
+			if ((start + n) < dev.subField1.nDataBytesPerChunk) {
 				nToCopy = n;
 			} else {
-				nToCopy = dev.nDataBytesPerChunk - start;
+				nToCopy = dev.subField1.nDataBytesPerChunk - start;
 			}
 
 			cache = yaffs_FindChunkCache(in, chunk);
@@ -4047,8 +4043,8 @@ public class yaffs_guts_C
 			 * then use the cache (if there is caching)
 			 * else bypass the cache.
 			 */
-			if (cache != null || nToCopy != dev.nDataBytesPerChunk) {
-				if (dev.nShortOpCaches > 0) {
+			if (cache != null || nToCopy != dev.subField1.nDataBytesPerChunk) {
+				if (dev.subField1.nShortOpCaches > 0) {
 
 					/* If we can't find the data in the cache, then load it up. */
 
@@ -4070,7 +4066,7 @@ public class yaffs_guts_C
 //					#ifdef CONFIG_YAFFS_WINCE
 //					yfsd_UnlockYAFFS(TRUE);
 //					#endif
-					memcpy(buffer, bufferIndex, cache.data, cache.dataIndex+start, nToCopy);
+					Unix.memcpy(buffer, bufferIndex, cache.data, cache.dataIndex+start, nToCopy);
 
 //					#ifdef CONFIG_YAFFS_WINCE
 //					yfsd_LockYAFFS(TRUE);
@@ -4080,25 +4076,25 @@ public class yaffs_guts_C
 					/* Read into the local buffer then copy..*/
 
 					/*__u8 **/ byte[] localBuffer =
-						yaffs_GetTempBuffer(dev, __LINE__());
+						yaffs_GetTempBuffer(dev, Utils.__LINE__());
 					final int localBufferIndex = 0;
 					yaffs_ReadChunkDataFromObject(in, chunk,
 							localBuffer, localBufferIndex);
 //					#ifdef CONFIG_YAFFS_WINCE
 //					yfsd_UnlockYAFFS(TRUE);
 //					#endif
-					memcpy(buffer, bufferIndex, localBuffer, localBufferIndex+start, nToCopy);
+					Unix.memcpy(buffer, bufferIndex, localBuffer, localBufferIndex+start, nToCopy);
 
 //					#ifdef CONFIG_YAFFS_WINCE
 //					yfsd_LockYAFFS(TRUE);
 //					#endif
 					yaffs_ReleaseTempBuffer(dev, localBuffer,
-							__LINE__());
+							Utils.__LINE__());
 				}
 
 			} else {
 //				#ifdef CONFIG_YAFFS_WINCE
-//				__u8 *localBuffer = yaffs_GetTempBuffer(dev, __LINE__);
+//				__u8 *localBuffer = yaffs_GetTempBuffer(dev, Utils.__LINE__);
 
 //				/* Under WinCE can't do direct transfer. Need to use a local buffer.
 //				* This is because we otherwise screw up WinCE's memory mapper
@@ -4108,11 +4104,11 @@ public class yaffs_guts_C
 //				#ifdef CONFIG_YAFFS_WINCE
 //				yfsd_UnlockYAFFS(TRUE);
 //				#endif
-//				memcpy(buffer, localBuffer, dev.nDataBytesPerChunk);
+//				Unix.memcpy(buffer, localBuffer, dev.nDataBytesPerChunk);
 
 //				#ifdef CONFIG_YAFFS_WINCE
 //				yfsd_LockYAFFS(TRUE);
-//				yaffs_ReleaseTempBuffer(dev, localBuffer, __LINE__);
+//				yaffs_ReleaseTempBuffer(dev, localBuffer, Utils.__LINE__);
 //				#endif
 
 //				#else
@@ -4163,7 +4159,7 @@ public class yaffs_guts_C
 			 * the same chunk.
 			 */
 
-			if ((start + n) < dev.nDataBytesPerChunk) {
+			if ((start + n) < dev.subField1.nDataBytesPerChunk) {
 				nToCopy = n;
 
 				/* Now folks, to calculate how many bytes to write back....
@@ -4173,10 +4169,10 @@ public class yaffs_guts_C
 
 				nBytesRead =
 					in.variant.fileVariant().fileSize -
-					((chunk - 1) * dev.nDataBytesPerChunk);
+					((chunk - 1) * dev.subField1.nDataBytesPerChunk);
 
-				if (nBytesRead > dev.nDataBytesPerChunk) {
-					nBytesRead = dev.nDataBytesPerChunk;
+				if (nBytesRead > dev.subField1.nDataBytesPerChunk) {
+					nBytesRead = dev.subField1.nDataBytesPerChunk;
 				}
 
 				nToWriteBack =
@@ -4184,13 +4180,13 @@ public class yaffs_guts_C
 					(start + n)) ? nBytesRead : (start + n);
 
 			} else {
-				nToCopy = dev.nDataBytesPerChunk - start;
-				nToWriteBack = dev.nDataBytesPerChunk;
+				nToCopy = dev.subField1.nDataBytesPerChunk - start;
+				nToWriteBack = dev.subField1.nDataBytesPerChunk;
 			}
 
-			if (nToCopy != dev.nDataBytesPerChunk) {
+			if (nToCopy != dev.subField1.nDataBytesPerChunk) {
 				/* An incomplete start or end chunk (or maybe both start and end chunk) */
-				if (dev.nShortOpCaches > 0) {
+				if (dev.subField1.nShortOpCaches > 0) {
 					yaffs_ChunkCache cache;
 					/* If we can't find the data in the cache, then load the cache */
 					cache = yaffs_FindChunkCache(in, chunk);
@@ -4222,7 +4218,7 @@ public class yaffs_guts_C
 //						yfsd_UnlockYAFFS(TRUE);
 //						#endif
 
-						memcpy(cache.data, cache.dataIndex+start, buffer, bufferIndex,
+						Unix.memcpy(cache.data, cache.dataIndex+start, buffer, bufferIndex,
 								nToCopy);
 
 //						#ifdef CONFIG_YAFFS_WINCE
@@ -4250,7 +4246,7 @@ public class yaffs_guts_C
 					 */
 
 					/*__u8 **/ byte[] localBuffer =
-						yaffs_GetTempBuffer(dev, __LINE__());
+						yaffs_GetTempBuffer(dev, Utils.__LINE__());
 					final int localBufferIndex = 0;
 
 					yaffs_ReadChunkDataFromObject(in, chunk,
@@ -4260,7 +4256,7 @@ public class yaffs_guts_C
 //					yfsd_UnlockYAFFS(TRUE);
 //					#endif
 
-					memcpy(localBuffer, start, buffer, bufferIndex, nToCopy);
+					Unix.memcpy(localBuffer, start, buffer, bufferIndex, nToCopy);
 
 //					#ifdef CONFIG_YAFFS_WINCE
 //					yfsd_LockYAFFS(TRUE);
@@ -4272,7 +4268,7 @@ public class yaffs_guts_C
 								false);
 
 					yaffs_ReleaseTempBuffer(dev, localBuffer,
-							__LINE__());
+							Utils.__LINE__());
 
 				}
 
@@ -4282,11 +4278,11 @@ public class yaffs_guts_C
 //				/* Under WinCE can't do direct transfer. Need to use a local buffer.
 //				* This is because we otherwise screw up WinCE's memory mapper
 //				*/
-//				__u8 *localBuffer = yaffs_GetTempBuffer(dev, __LINE__);
+//				__u8 *localBuffer = yaffs_GetTempBuffer(dev, Utils.__LINE__);
 //				#ifdef CONFIG_YAFFS_WINCE
 //				yfsd_UnlockYAFFS(TRUE);
 //				#endif
-//				memcpy(localBuffer, buffer, dev.nDataBytesPerChunk);
+//				Unix.memcpy(localBuffer, buffer, dev.nDataBytesPerChunk);
 //				#ifdef CONFIG_YAFFS_WINCE
 //				yfsd_LockYAFFS(TRUE);
 //				#endif
@@ -4294,12 +4290,12 @@ public class yaffs_guts_C
 //				yaffs_WriteChunkDataToObject(in, chunk, localBuffer,
 //				dev.nDataBytesPerChunk,
 //				0);
-//				yaffs_ReleaseTempBuffer(dev, localBuffer, __LINE__);
+//				yaffs_ReleaseTempBuffer(dev, localBuffer, Utils.__LINE__);
 //				#else
 				/* A full chunk. Write directly from the supplied buffer. */
 				chunkWritten =
 					yaffs_WriteChunkDataToObject(in, chunk, buffer, bufferIndex,
-							dev.nDataBytesPerChunk,
+							dev.subField1.nDataBytesPerChunk,
 							false);
 //				#endif
 				/* Since we've overwritten the cached data, we better invalidate it. */
@@ -4335,10 +4331,10 @@ public class yaffs_guts_C
 		yaffs_Device dev = in.myDev;
 		int oldFileSize = in.variant.fileVariant().fileSize;
 
-		int lastDel = 1 + (oldFileSize - 1) / dev.nDataBytesPerChunk;
+		int lastDel = 1 + (oldFileSize - 1) / dev.subField1.nDataBytesPerChunk;
 
-		int startDel = 1 + (newSize + dev.nDataBytesPerChunk - 1) /
-		dev.nDataBytesPerChunk;
+		int startDel = 1 + (newSize + dev.subField1.nDataBytesPerChunk - 1) /
+		dev.subField1.nDataBytesPerChunk;
 		int i;
 		int chunkId;
 
@@ -4354,16 +4350,16 @@ public class yaffs_guts_C
 			chunkId = yaffs_FindAndDeleteChunkInFile(in, i, null);
 			if (chunkId > 0) {
 				if (chunkId <
-						(dev.internalStartBlock * dev.nChunksPerBlock)
+						(dev.subField2.internalStartBlock * dev.subField1.nChunksPerBlock)
 						|| chunkId >=
-							((dev.internalEndBlock +
-									1) * dev.nChunksPerBlock)) {
-					T(YAFFS_TRACE_ALWAYS,
-							TSTR("Found daft chunkId %d for %d" + TENDSTR),
-							chunkId, i);
+							((dev.subField2.internalEndBlock +
+									1) * dev.subField1.nChunksPerBlock)) {
+					yportenv.T(yportenv.YAFFS_TRACE_ALWAYS,
+							("Found daft chunkId %d for %d" + ydirectenv.TENDSTR),
+							PrimitiveWrapperFactory.get(chunkId), PrimitiveWrapperFactory.get(i));
 				} else {
 					in.nDataChunks--;
-					yaffs_DeleteChunk(dev, chunkId, true, __LINE__());
+					yaffs_DeleteChunk(dev, chunkId, true, Utils.__LINE__());
 				}
 			}
 		}
@@ -4390,7 +4386,7 @@ public class yaffs_guts_C
 
 		yaffs_CheckGarbageCollection(dev);
 
-		if (in.variantType != YAFFS_OBJECT_TYPE_FILE) {
+		if (in.variantType != Guts_H.YAFFS_OBJECT_TYPE_FILE) {
 			return yaffs_GetFileSize(in);
 		}
 
@@ -4405,20 +4401,20 @@ public class yaffs_guts_C
 			if (newSizeOfPartialChunk != 0) {
 				int lastChunk = 1 + newFullChunks;
 
-				/*__u8 **/ byte[] localBuffer = yaffs_GetTempBuffer(dev, __LINE__());
+				/*__u8 **/ byte[] localBuffer = yaffs_GetTempBuffer(dev, Utils.__LINE__());
 				final int localBufferIndex = 0;
 
 				/* Got to read and rewrite the last chunk with its new size and zero pad */
 				yaffs_ReadChunkDataFromObject(in, lastChunk,
 						localBuffer, localBufferIndex);
 
-				memset(localBuffer, localBufferIndex+newSizeOfPartialChunk, (byte)0,
-						dev.nDataBytesPerChunk - newSizeOfPartialChunk);
+				Unix.memset(localBuffer, localBufferIndex+newSizeOfPartialChunk, (byte)0,
+						dev.subField1.nDataBytesPerChunk - newSizeOfPartialChunk);
 
 				yaffs_WriteChunkDataToObject(in, lastChunk, localBuffer, localBufferIndex,
 						newSizeOfPartialChunk, true);
 
-				yaffs_ReleaseTempBuffer(dev, localBuffer, __LINE__());
+				yaffs_ReleaseTempBuffer(dev, localBuffer, Utils.__LINE__());
 			}
 
 			in.variant.fileVariant().fileSize = newSize;
@@ -4435,8 +4431,8 @@ public class yaffs_guts_C
 		 * show we've shrunk the file, if need be
 		 * Do this only if the file is not in the deleted directories.
 		 */
-		if (in.parent.objectId != YAFFS_OBJECTID_UNLINKED &&
-				in.parent.objectId != YAFFS_OBJECTID_DELETED) {
+		if (in.parent.objectId != Guts_H.YAFFS_OBJECTID_UNLINKED &&
+				in.parent.objectId != Guts_H.YAFFS_OBJECTID_DELETED) {
 			yaffs_UpdateObjectHeader(in, null, 0, false,
 					(newSize < oldFileSize) ? true : false, 0);
 		}
@@ -4449,13 +4445,13 @@ public class yaffs_guts_C
 		obj = yaffs_GetEquivalentObject(obj);
 
 		switch (obj.variantType) {
-			case YAFFS_OBJECT_TYPE_FILE:
-				return obj.variant.fileVariant().fileSize;
-			case YAFFS_OBJECT_TYPE_SYMLINK:
-				return yaffs_strlen(obj.variant.symLinkVariant().alias,
-						obj.variant.symLinkVariant().aliasIndex);
-			default:
-				return 0;
+		case Guts_H.YAFFS_OBJECT_TYPE_FILE:
+			return obj.variant.fileVariant().fileSize;
+		case Guts_H.YAFFS_OBJECT_TYPE_SYMLINK:
+			return ydirectenv.yaffs_strlen(obj.variant.symLinkVariant().alias,
+					obj.variant.symLinkVariant().aliasIndex);
+		default:
+			return 0;
 		}
 	}
 
@@ -4471,16 +4467,16 @@ public class yaffs_guts_C
 //				yfsd_WinFileTimeNow(in.win_mtime);
 //				#else
 
-				in.yst_mtime = Y_CURRENT_TIME();
+				in.yst_mtime = ydirectenv.Y_CURRENT_TIME();
 
 //				#endif
 			}
 
 			retVal =
 				(yaffs_UpdateObjectHeader(in, null, 0, false, false, 0) >=
-					0) ? YAFFS_OK : YAFFS_FAIL;
+					0) ? Guts_H.YAFFS_OK : Guts_H.YAFFS_FAIL;
 		} else {
-			retVal = YAFFS_OK;
+			retVal = Guts_H.YAFFS_OK;
 		}
 
 		return retVal;
@@ -4493,18 +4489,18 @@ public class yaffs_guts_C
 		/* First off, invalidate the file's data in the cache, without flushing. */
 		yaffs_InvalidateWholeChunkCache(in);
 
-		if (in.myDev.isYaffs2 && (in.parent != in.myDev.deletedDir)) {
+		if (in.myDev.subField1.isYaffs2 && (in.parent != in.myDev.deletedDir)) {
 			/* Move to the unlinked directory so we have a record that it was deleted. */
 			yaffs_ChangeObjectName(in, in.myDev.deletedDir, null, 0, false, 0);
 
 		}
 
 		yaffs_RemoveObjectFromDirectory(in);
-		yaffs_DeleteChunk(in.myDev, in.chunkId, true, __LINE__());
+		yaffs_DeleteChunk(in.myDev, in.chunkId, true, Utils.__LINE__());
 		in.chunkId = -1;
 
 		yaffs_FreeObject(in);
-		return YAFFS_OK;
+		return Guts_H.YAFFS_OK;
 
 	}
 
@@ -4534,12 +4530,12 @@ public class yaffs_guts_C
 				retVal =
 					yaffs_ChangeObjectName(in, in.myDev.deletedDir,
 							null, 0, false, 0);
-				T(YAFFS_TRACE_TRACING,
-						TSTR("yaffs: immediate deletion of file %d" + TENDSTR),
-						in.objectId);
-				in.deleted = true;
+				yportenv.T(yportenv.YAFFS_TRACE_TRACING,
+						("yaffs: immediate deletion of file %d" + ydirectenv.TENDSTR),
+						PrimitiveWrapperFactory.get(in.objectId));
+				in.sub.deleted = true;
 				in.myDev.nDeletedFiles++;
-				if (false && in.myDev.isYaffs2) {
+				if (false && in.myDev.subField1.isYaffs2) {
 					yaffs_ResizeFile(in, 0);
 				}
 				yaffs_SoftDeleteFile(in);
@@ -4555,43 +4551,43 @@ public class yaffs_guts_C
 
 	static boolean yaffs_DeleteFile(yaffs_Object  in)
 	{
-		boolean retVal = YAFFS_OK;
+		boolean retVal = Guts_H.YAFFS_OK;
 
 		if (in.nDataChunks > 0) {
 			/* Use soft deletion if there is data in the file */
-			if (!in.unlinked) {
+			if (!in.sub.unlinked) {
 				retVal = yaffs_UnlinkFile(in);
 			}
-			if (retVal == YAFFS_OK && in.unlinked && !in.deleted) {
-				in.deleted = true;
+			if (retVal == Guts_H.YAFFS_OK && in.sub.unlinked && !in.sub.deleted) {
+				in.sub.deleted = true;
 				in.myDev.nDeletedFiles++;
 				yaffs_SoftDeleteFile(in);
 			}
-			return in.deleted ? YAFFS_OK : YAFFS_FAIL;
+			return in.sub.deleted ? Guts_H.YAFFS_OK : Guts_H.YAFFS_FAIL;
 		} else {
 			/* The file has no data chunks so we toss it immediately */
 			yaffs_FreeTnode(in.myDev, in.variant.fileVariant().top);
 			in.variant.fileVariant().top = null;
 			yaffs_DoGenericObjectDeletion(in);
 
-			return YAFFS_OK;
+			return Guts_H.YAFFS_OK;
 		}
 	}
 
 	static boolean yaffs_DeleteDirectory(yaffs_Object  in)
 	{
 		/* First check that the directory is empty. */
-		if (list_empty(in.variant.directoryVariant().children)) {
+		if (devextras.list_empty(in.variant.directoryVariant().children)) {
 			return yaffs_DoGenericObjectDeletion(in);
 		}
 
-		return YAFFS_FAIL;
+		return Guts_H.YAFFS_FAIL;
 
 	}
 
 	static boolean yaffs_DeleteSymLink(yaffs_Object  in)
 	{
-		YFREE(in.variant.symLinkVariant().alias);
+		ydirectenv.YFREE(in.variant.symLinkVariant().alias);
 
 		return yaffs_DoGenericObjectDeletion(in);
 	}
@@ -4601,39 +4597,39 @@ public class yaffs_guts_C
 		/* remove this hardlink from the list assocaited with the equivalent
 		 * object
 		 */
-		list_del(in.hardLinks);
+		devextras.list_del(in.hardLinks);
 		return yaffs_DoGenericObjectDeletion(in);
 	}
 
 	static void yaffs_DestroyObject(yaffs_Object  obj)
 	{
 		switch (obj.variantType) {
-			case YAFFS_OBJECT_TYPE_FILE:
-				yaffs_DeleteFile(obj);
-				break;
-			case YAFFS_OBJECT_TYPE_DIRECTORY:
-				yaffs_DeleteDirectory(obj);
-				break;
-			case YAFFS_OBJECT_TYPE_SYMLINK:
-				yaffs_DeleteSymLink(obj);
-				break;
-			case YAFFS_OBJECT_TYPE_HARDLINK:
-				yaffs_DeleteHardLink(obj);
-				break;
-			case YAFFS_OBJECT_TYPE_SPECIAL:
-				yaffs_DoGenericObjectDeletion(obj);
-				break;
-			case YAFFS_OBJECT_TYPE_UNKNOWN:
-				break;		/* should not happen. */
+		case Guts_H.YAFFS_OBJECT_TYPE_FILE:
+			yaffs_DeleteFile(obj);
+			break;
+		case Guts_H.YAFFS_OBJECT_TYPE_DIRECTORY:
+			yaffs_DeleteDirectory(obj);
+			break;
+		case Guts_H.YAFFS_OBJECT_TYPE_SYMLINK:
+			yaffs_DeleteSymLink(obj);
+			break;
+		case Guts_H.YAFFS_OBJECT_TYPE_HARDLINK:
+			yaffs_DeleteHardLink(obj);
+			break;
+		case Guts_H.YAFFS_OBJECT_TYPE_SPECIAL:
+			yaffs_DoGenericObjectDeletion(obj);
+			break;
+		case Guts_H.YAFFS_OBJECT_TYPE_UNKNOWN:
+			break;		/* should not happen. */
 		}
 	}
 
 	static boolean yaffs_UnlinkWorker(yaffs_Object  obj)
 	{
 
-		if (obj.variantType == YAFFS_OBJECT_TYPE_HARDLINK) {
+		if (obj.variantType == Guts_H.YAFFS_OBJECT_TYPE_HARDLINK) {
 			return yaffs_DeleteHardLink(obj);
-		} else if (!list_empty(obj.hardLinks)) {
+		} else if (!devextras.list_empty(obj.hardLinks)) {
 			/* Curve ball: We're unlinking an object that has a hardlink.
 			 *
 			 * This problem arises because we are not strictly following
@@ -4650,41 +4646,41 @@ public class yaffs_guts_C
 
 			yaffs_Object hl;
 			boolean retVal;
-			/*YCHAR*/ byte[] name = new byte[YAFFS_MAX_NAME_LENGTH + 1];
+			/*YCHAR*/ byte[] name = new byte[Guts_H.YAFFS_MAX_NAME_LENGTH + 1];
 			final int nameIndex = 0;
 
 			hl = /*list_entry(obj.hardLinks.next, yaffs_Object, hardLinks)*/ (yaffs_Object)obj.parent;
 
-			list_del_init(hl.hardLinks);
-			list_del_init(hl.siblings);
+			devextras.list_del_init(hl.hardLinks);
+			devextras.list_del_init(hl.siblings);
 
-			yaffs_GetObjectName(hl, name, nameIndex, YAFFS_MAX_NAME_LENGTH + 1);
+			yaffs_GetObjectName(hl, name, nameIndex, Guts_H.YAFFS_MAX_NAME_LENGTH + 1);
 
 			retVal = yaffs_ChangeObjectName(obj, hl.parent, name, nameIndex, false, 0);
 
-			if (retVal == YAFFS_OK) {
+			if (retVal == Guts_H.YAFFS_OK) {
 				retVal = yaffs_DoGenericObjectDeletion(hl);
 			}
 			return retVal;
 
 		} else {
 			switch (obj.variantType) {
-				case YAFFS_OBJECT_TYPE_FILE:
-					return yaffs_UnlinkFile(obj);
-//					break;
-				case YAFFS_OBJECT_TYPE_DIRECTORY:
-					return yaffs_DeleteDirectory(obj);
-//					break;
-				case YAFFS_OBJECT_TYPE_SYMLINK:
-					return yaffs_DeleteSymLink(obj);
-//					break;
-				case YAFFS_OBJECT_TYPE_SPECIAL:
-					return yaffs_DoGenericObjectDeletion(obj);
-//					break;
-				case YAFFS_OBJECT_TYPE_HARDLINK:
-				case YAFFS_OBJECT_TYPE_UNKNOWN:
-				default:
-					return YAFFS_FAIL;
+			case Guts_H.YAFFS_OBJECT_TYPE_FILE:
+				return yaffs_UnlinkFile(obj);
+//				break;
+			case Guts_H.YAFFS_OBJECT_TYPE_DIRECTORY:
+				return yaffs_DeleteDirectory(obj);
+//				break;
+			case Guts_H.YAFFS_OBJECT_TYPE_SYMLINK:
+				return yaffs_DeleteSymLink(obj);
+//				break;
+			case Guts_H.YAFFS_OBJECT_TYPE_SPECIAL:
+				return yaffs_DoGenericObjectDeletion(obj);
+//				break;
+			case Guts_H.YAFFS_OBJECT_TYPE_HARDLINK:
+			case Guts_H.YAFFS_OBJECT_TYPE_UNKNOWN:
+			default:
+				return Guts_H.YAFFS_FAIL;
 			}
 		}
 	}
@@ -4697,7 +4693,7 @@ public class yaffs_guts_C
 			return yaffs_UnlinkWorker(obj);
 		}
 
-		return YAFFS_FAIL;
+		return Guts_H.YAFFS_FAIL;
 
 	}
 	static boolean yaffs_Unlink(yaffs_Object  dir, /*const YCHAR **/ byte[] name,
@@ -4735,7 +4731,7 @@ public class yaffs_guts_C
 		 */
 		obj =
 			yaffs_FindOrCreateObjectByNumber(dev, objId,
-					YAFFS_OBJECT_TYPE_FILE);
+					Guts_H.YAFFS_OBJECT_TYPE_FILE);
 		yaffs_AddObjectToDirectory(dev.unlinkedDir, obj);
 		obj.variant.fileVariant().shrinkSize = 0;
 		obj.valid = true;		/* So that we don't read any other info for this file */
@@ -4764,13 +4760,13 @@ public class yaffs_guts_C
 			if (in != null) {
 				/* Add the hardlink pointers */
 				hl.variant.hardLinkVariant().equivalentObject = in;
-				list_add(hl.hardLinks, in.hardLinks);
+				devextras.list_add(hl.hardLinks, in.hardLinks);
 			} else {
 				/* Todo Need to report/handle this better.
 				 * Got a problem... hardlink to a non-existant object
 				 */
 				hl.variant.hardLinkVariant().equivalentObject = null;
-				INIT_LIST_HEAD(hl.hardLinks);
+				devextras.INIT_LIST_HEAD(hl.hardLinks);
 
 			}
 
@@ -4796,89 +4792,91 @@ public class yaffs_guts_C
 
 	}
 
+	static yaffs_ExtendedTags tags = new yaffs_ExtendedTags();
+	static int blk;
+	static int blockIterator;
+	static int startIterator;
+	static int endIterator;
+	static int nBlocksToScan = 0;
+	static boolean result;
+
+	static int chunk;
+	static int c;
+	static int deleted;
+	static /*yaffs_BlockState*/ int state;
+	static yaffs_Object hardList = null;
+	static yaffs_Object hl;
+	static yaffs_BlockInfo bi;
+	static long sequenceNumber;
+	static yaffs_ObjectHeader oh;
+	static yaffs_Object in;
+	static yaffs_Object parent;
+	static yaffs_BlockIndex[] blockIndex = null;
+	static /*__u8 **/ byte[] chunkData;
+	static final int chunkDataIndex = 0;
+
 	static boolean yaffs_Scan(yaffs_Device dev)
 	{
-		yaffs_ExtendedTags tags = new yaffs_ExtendedTags();
-		int blk;
-		int blockIterator;
-		int startIterator;
-		int endIterator;
-		int nBlocksToScan = 0;
-		boolean result;
+		nBlocksToScan = 0;
+		hardList = null;
+		blockIndex = null;
 
-		int chunk;
-		int c;
-		int deleted;
-		/*yaffs_BlockState*/ int state;
-		yaffs_Object hardList = null;
-		yaffs_Object hl;
-		yaffs_BlockInfo bi;
-		long sequenceNumber;
-		yaffs_ObjectHeader oh;
-		yaffs_Object in;
-		yaffs_Object parent;
-		int nBlocks = dev.internalEndBlock - dev.internalStartBlock + 1;
-
-		/*__u8 **/ byte[] chunkData;
-		final int chunkDataIndex;
-
-		yaffs_BlockIndex[] blockIndex = null;
-
-		if (dev.isYaffs2) {
-			T(YAFFS_TRACE_SCAN,
-					TSTR("yaffs_Scan is not for YAFFS2!" + TENDSTR));
-			return YAFFS_FAIL;
+		int nBlocks = dev.subField2.internalEndBlock - dev.subField2.internalStartBlock + 1;
+		if (dev.subField1.isYaffs2) {
+			yportenv.T(yportenv.YAFFS_TRACE_SCAN,
+					("yaffs_Scan is not for YAFFS2!" + ydirectenv.TENDSTR));
+			return Guts_H.YAFFS_FAIL;
 		}
 
 		//TODO  Throw all the yaffs2 stuuf out of yaffs_Scan since it is only for yaffs1 format.
 
-		T(YAFFS_TRACE_SCAN,
-				TSTR("yaffs_Scan starts  intstartblk %d intendblk %d..." + TENDSTR),
-				dev.internalStartBlock, dev.internalEndBlock);
+		yportenv.T(yportenv.YAFFS_TRACE_SCAN,
+				("yaffs_Scan starts  intstartblk %d intendblk %d..." + ydirectenv.TENDSTR),
+				PrimitiveWrapperFactory.get(dev.subField2.internalStartBlock), PrimitiveWrapperFactory.get(dev.subField2.internalEndBlock));
 
-		chunkData = yaffs_GetTempBuffer(dev, __LINE__());
-		chunkDataIndex = 0;
+		chunkData = yaffs_GetTempBuffer(dev, Utils.__LINE__());
+//		chunkDataIndex = 0;
 
-		dev.sequenceNumber = YAFFS_LOWEST_SEQUENCE_NUMBER;
+		dev.sequenceNumber = Guts_H.YAFFS_LOWEST_SEQUENCE_NUMBER;
 
-		if (dev.isYaffs2) {
-			blockIndex = YMALLOC_BLOCKINDEX(nBlocks/* * sizeof(yaffs_BlockIndex)*/ );
+		if (dev.subField1.isYaffs2) {
+			blockIndex = ydirectenv.YMALLOC_BLOCKINDEX(nBlocks/* * sizeof(yaffs_BlockIndex)*/ );
 		}
 
 		/* Scan all the blocks to determine their state */
-		for (blk = dev.internalStartBlock; blk <= dev.internalEndBlock; blk++) {
-			bi = yaffs_GetBlockInfo(dev, blk);
+		for (blk = dev.subField2.internalStartBlock; blk <= dev.subField2.internalEndBlock; blk++) {
+			bi = Guts_H.yaffs_GetBlockInfo(dev, blk);
 			yaffs_ClearChunkBits(dev, blk);
 			bi.setPagesInUse(0);
 			bi.setSoftDeletions(0);
 
 			IntegerPointer statePointer = new IntegerPointer();
 			IntegerPointer sequenceNumberPointer = new IntegerPointer();
-			yaffs_QueryInitialBlockState(dev, blk, statePointer, sequenceNumberPointer);
+			yaffs_nand_C.yaffs_QueryInitialBlockState(dev, blk, statePointer, sequenceNumberPointer);
 			state = statePointer.dereferenced;
 			sequenceNumber = sequenceNumberPointer.dereferenced;
 
 			bi.setBlockState(state);
 			bi.setSequenceNumber((int)sequenceNumber);
 
-			T(YAFFS_TRACE_SCAN_DEBUG,
-					TSTR("Block scanning block %d state %d seq %l" + TENDSTR), blk,
-					state, sequenceNumber);
+			yportenv.T(yportenv.YAFFS_TRACE_SCAN_DEBUG,
+					("Block scanning block %d state %d seq %d" + ydirectenv.TENDSTR), PrimitiveWrapperFactory.get(blk),
+					PrimitiveWrapperFactory.get(state), PrimitiveWrapperFactory.get((int)sequenceNumber));
 
-			if (state == YAFFS_BLOCK_STATE_DEAD) {
-				T(YAFFS_TRACE_BAD_BLOCKS,
-						TSTR("block %d is bad" + TENDSTR), blk);
-			} else if (state == YAFFS_BLOCK_STATE_EMPTY) {
-				T(YAFFS_TRACE_SCAN_DEBUG,
-						(TSTR("Block empty " + TENDSTR)));
-				dev.nErasedBlocks++;
-				dev.nFreeChunks += dev.nChunksPerBlock;
-			} else if (state == YAFFS_BLOCK_STATE_NEEDS_SCANNING) {
+			if (state == Guts_H.YAFFS_BLOCK_STATE_DEAD) {
+				yportenv.T(yportenv.YAFFS_TRACE_BAD_BLOCKS,
+						("block %d is bad" + ydirectenv.TENDSTR), PrimitiveWrapperFactory.get(blk));
+			} else if (state == Guts_H.YAFFS_BLOCK_STATE_EMPTY) {
+				yportenv.T(yportenv.YAFFS_TRACE_SCAN_DEBUG,
+						(("Block empty " + ydirectenv.TENDSTR)));
+				dev.subField3.nErasedBlocks++;
+				dev.subField3.nFreeChunks += dev.subField1.nChunksPerBlock;
+			} else if (state == Guts_H.YAFFS_BLOCK_STATE_NEEDS_SCANNING) {
 
 				/* Determine the highest sequence number */
-				if (dev.isYaffs2 &&
-						sequenceNumber >= YAFFS_LOWEST_SEQUENCE_NUMBER &&
-						sequenceNumber < YAFFS_HIGHEST_SEQUENCE_NUMBER) {
+				if (dev.subField1.isYaffs2 &&
+						sequenceNumber >= Guts_H.YAFFS_LOWEST_SEQUENCE_NUMBER &&
+						sequenceNumber < Guts_H.YAFFS_HIGHEST_SEQUENCE_NUMBER) {
 
 					blockIndex[nBlocksToScan].seq = (int)sequenceNumber;
 					blockIndex[nBlocksToScan].block = blk;
@@ -4888,12 +4886,12 @@ public class yaffs_guts_C
 					if (sequenceNumber >= dev.sequenceNumber) {
 						dev.sequenceNumber = sequenceNumber;
 					}
-				} else if (dev.isYaffs2) {
+				} else if (dev.subField1.isYaffs2) {
 					/* TODO: Nasty sequence number! */
-					T(YAFFS_TRACE_SCAN,
-							TSTR
-							("Block scanning block %d has bad sequence number %l"
-									+ TENDSTR), blk, sequenceNumber);
+					yportenv.T(yportenv.YAFFS_TRACE_SCAN,
+
+							("Block scanning block %d has bad sequence number %d"
+									+ ydirectenv.TENDSTR), PrimitiveWrapperFactory.get(blk), PrimitiveWrapperFactory.get((int)sequenceNumber));
 
 				}
 			}
@@ -4902,7 +4900,7 @@ public class yaffs_guts_C
 		/* Sort the blocks
 		 * Dungy old bubble sort for now...
 		 */
-		if (dev.isYaffs2) {
+		if (dev.subField1.isYaffs2) {
 			yaffs_BlockIndex temp = new yaffs_BlockIndex();
 			int i;
 			int j;
@@ -4917,50 +4915,54 @@ public class yaffs_guts_C
 		}
 
 		/* Now scan the blocks looking at the data. */
-		if (dev.isYaffs2) {
+		if (dev.subField1.isYaffs2) {
 			startIterator = 0;
 			endIterator = nBlocksToScan - 1;
-			T(YAFFS_TRACE_SCAN_DEBUG,
-					TSTR("%d blocks to be scanned" + TENDSTR), nBlocksToScan);
+			yportenv.T(yportenv.YAFFS_TRACE_SCAN_DEBUG,
+					("%d blocks to be scanned" + ydirectenv.TENDSTR), PrimitiveWrapperFactory.get(nBlocksToScan));
 		} else {
-			startIterator = dev.internalStartBlock;
-			endIterator = dev.internalEndBlock;
+			startIterator = dev.subField2.internalStartBlock;
+			endIterator = dev.subField2.internalEndBlock;
 		}
+		return yaffs_Scan_Sub1(dev);
+	}
 
+	static boolean yaffs_Scan_Sub1(yaffs_Device dev)
+	{
 		/* For each block.... */
 		for (blockIterator = startIterator; blockIterator <= endIterator;
 		blockIterator++) {
 
-			if (dev.isYaffs2) {
+			if (dev.subField1.isYaffs2) {
 				/* get the block to scan in the correct order */
 				blk = blockIndex[blockIterator].block;
 			} else {
 				blk = blockIterator;
 			}
 
-			bi = yaffs_GetBlockInfo(dev, blk);
+			bi = Guts_H.yaffs_GetBlockInfo(dev, blk);
 			state = bi.blockState();
 
 			deleted = 0;
 
 			/* For each chunk in each block that needs scanning....*/
-			for (c = 0; c < dev.nChunksPerBlock &&
-			state == YAFFS_BLOCK_STATE_NEEDS_SCANNING; c++) {
+			for (c = 0; c < dev.subField1.nChunksPerBlock &&
+			state == Guts_H.YAFFS_BLOCK_STATE_NEEDS_SCANNING; c++) {
 				/* Read the tags and decide what to do */
-				chunk = blk * dev.nChunksPerBlock + c;
+				chunk = blk * dev.subField1.nChunksPerBlock + c;
 
-				result = yaffs_ReadChunkWithTagsFromNAND(dev, chunk, null, 0,
+				result = yaffs_nand_C.yaffs_ReadChunkWithTagsFromNAND(dev, chunk, null, 0,
 						tags);
 
 				/* Let's have a good look at this chunk... */
 
-				if (!dev.isYaffs2 && tags.chunkDeleted) {
+				if (!dev.subField1.isYaffs2 && tags.chunkDeleted) {
 					/* YAFFS1 only...
 					 * A deleted chunk
 					 */
 					deleted++;
-					dev.nFreeChunks++;
-					/*T((" %d %d deleted\n",blk,c)); */
+					dev.subField3.nFreeChunks++;
+					/*yportenv.T((" %d %d deleted\n",blk,c)); */
 				} else if (!tags.chunkUsed) {
 					/* An unassigned chunk in the block
 					 * This means that either the block is empty or 
@@ -4969,35 +4971,35 @@ public class yaffs_guts_C
 
 					if (c == 0) {
 						/* We're looking at the first chunk in the block so the block is unused */
-						state = YAFFS_BLOCK_STATE_EMPTY;
-						dev.nErasedBlocks++;
+						state = Guts_H.YAFFS_BLOCK_STATE_EMPTY;
+						dev.subField3.nErasedBlocks++;
 					} else {
 						/* this is the block being allocated from */
-						T(YAFFS_TRACE_SCAN,
-								TSTR
-								(" Allocating from %d %d" + TENDSTR),
-								blk, c);
-						state = YAFFS_BLOCK_STATE_ALLOCATING;
-						dev.allocationBlock = blk;
-						dev.allocationPage = c;
-						dev.allocationBlockFinder = blk;	
+						yportenv.T(yportenv.YAFFS_TRACE_SCAN,
+
+								(" Allocating from %d %d" + ydirectenv.TENDSTR),
+								PrimitiveWrapperFactory.get(blk), PrimitiveWrapperFactory.get(c));
+						state = Guts_H.YAFFS_BLOCK_STATE_ALLOCATING;
+						dev.subField3.allocationBlock = blk;
+						dev.subField3.allocationPage = c;
+						dev.subField3.allocationBlockFinder = blk;	
 						/* Set it to here to encourage the allocator to go forth from here. */
 
 						/* Yaffs2 sanity check:
 						 * This should be the one with the highest sequence number
 						 */
-						if (dev.isYaffs2
+						if (dev.subField1.isYaffs2
 								&& (dev.sequenceNumber !=
-									intAsUnsignedInt(bi.sequenceNumber()))) {
-							T(YAFFS_TRACE_ALWAYS,
-									TSTR
+									Utils.intAsUnsignedInt(bi.sequenceNumber()))) {
+							yportenv.T(yportenv.YAFFS_TRACE_ALWAYS,
+
 									("yaffs: Allocation block %d was not highest sequence id:" +
-											" block seq = %l, dev seq = %l"
-											+ TENDSTR), blk,intAsUnsignedInt(bi.sequenceNumber()),dev.sequenceNumber);
+											" block seq = %d, dev seq = %d"
+											+ ydirectenv.TENDSTR), PrimitiveWrapperFactory.get(blk),PrimitiveWrapperFactory.get((int)bi.sequenceNumber()),PrimitiveWrapperFactory.get((int)dev.sequenceNumber));
 						}
 					}
 
-					dev.nFreeChunks += (dev.nChunksPerBlock - c);
+					dev.subField3.nFreeChunks += (dev.subField1.nChunksPerBlock - c);
 				} else if (tags.chunkId > 0) {
 					/* chunkId > 0 so it is a data chunk... */
 					/*unsigned int*/ int endpos;
@@ -5007,21 +5009,21 @@ public class yaffs_guts_C
 
 					in = yaffs_FindOrCreateObjectByNumber(dev,
 							tags.objectId,
-							YAFFS_OBJECT_TYPE_FILE);
+							Guts_H.YAFFS_OBJECT_TYPE_FILE);
 					/* PutChunkIntoFile checks for a clash (two data chunks with
 					 * the same chunkId).
 					 */
 					yaffs_PutChunkIntoFile(in, tags.chunkId, chunk,
 							1);
 					endpos =
-						(tags.chunkId - 1) * dev.nDataBytesPerChunk +
+						(tags.chunkId - 1) * dev.subField1.nDataBytesPerChunk +
 						tags.byteCount;
-					if (in.variantType == YAFFS_OBJECT_TYPE_FILE
+					if (in.variantType == Guts_H.YAFFS_OBJECT_TYPE_FILE
 							&& in.variant.fileVariant().scannedFileSize <
 							endpos) {
 						in.variant.fileVariant().
 						scannedFileSize = endpos;
-						if (!dev.useHeaderFileSize) {
+						if (!dev.subField1.useHeaderFileSize) {
 							in.variant.fileVariant().
 							fileSize =
 								in.variant.fileVariant().
@@ -5029,217 +5031,15 @@ public class yaffs_guts_C
 						}
 
 					}
-					/* T((" %d %d data %d %d\n",blk,c,tags.objectId,tags.chunkId));   */
+					/* yportenv.T((" %d %d data %d %d\n",blk,c,tags.objectId,tags.chunkId));   */
 				} else {
-					/* chunkId == 0, so it is an ObjectHeader.
-					 * Thus, we read in the object header and make the object
-					 */
-					yaffs_SetChunkBit(dev, blk, c);
-					bi.setPagesInUse(bi.pagesInUse()+1);
-
-					result = yaffs_ReadChunkWithTagsFromNAND(dev, chunk,
-							chunkData, chunkDataIndex,
-							null);
-
-					oh = /*(yaffs_ObjectHeader *) chunkData*/ 
-						new yaffs_ObjectHeader(chunkData, chunkDataIndex);
-
-					in = yaffs_FindObjectByNumber(dev,
-							tags.objectId);
-					if (in != null && in.variantType != oh.type()) {
-						/* This should not happen, but somehow
-						 * Wev'e ended up with an objectId that has been reused but not yet 
-						 * deleted, and worse still it has changed type. Delete the old object.
-						 */
-
-						yaffs_DestroyObject(in);
-
-						in = null;
-					}
-
-					in = yaffs_FindOrCreateObjectByNumber(dev,
-							tags.objectId,
-							oh.type());
-
-					if (oh.shadowsObject() > 0) {
-						yaffs_HandleShadowedObject(dev,
-								oh.shadowsObject(),
-								false);
-					}
-
-					if (in.valid) {
-						/* We have already filled this one. We have a duplicate and need to resolve it. */
-
-						/*unsigned*/ int existingSerial = byteAsUnsignedByte(in.serial);
-						/*unsigned*/ int newSerial = tags.serialNumber;
-
-						if (dev.isYaffs2 ||
-								((existingSerial + 1) & 3) ==
-									newSerial) {
-							/* Use new one - destroy the exisiting one */
-							yaffs_DeleteChunk(dev,
-									in.chunkId,
-									true, __LINE__());
-							in.valid = false;
-						} else {
-							/* Use existing - destroy this one. */
-							yaffs_DeleteChunk(dev, chunk, true,
-									__LINE__());
-						}
-					}
-
-					if (!in.valid &&
-							(tags.objectId == YAFFS_OBJECTID_ROOT ||
-									tags.objectId == YAFFS_OBJECTID_LOSTNFOUND)) {
-						/* We only load some info, don't fiddle with directory structure */
-						in.valid = true;
-						in.variantType = oh.type();
-
-						in.yst_mode = oh.yst_mode();
-//						#ifdef CONFIG_YAFFS_WINCE
-//						in.win_atime[0] = oh.win_atime[0];
-//						in.win_ctime[0] = oh.win_ctime[0];
-//						in.win_mtime[0] = oh.win_mtime[0];
-//						in.win_atime[1] = oh.win_atime[1];
-//						in.win_ctime[1] = oh.win_ctime[1];
-//						in.win_mtime[1] = oh.win_mtime[1];
-//						#else
-						in.yst_uid = oh.yst_uid();
-						in.yst_gid = oh.yst_gid();
-						in.yst_atime = oh.yst_atime();
-						in.yst_mtime = oh.yst_mtime();
-						in.yst_ctime = oh.yst_ctime();
-						in.yst_rdev = oh.yst_rdev();
-//						#endif
-						in.chunkId = chunk;
-
-					} else if (!in.valid) {
-						/* we need to load this info */
-
-						in.valid = true;
-						in.variantType = oh.type();
-
-						in.yst_mode = oh.yst_mode();
-//						#ifdef CONFIG_YAFFS_WINCE
-//						in.win_atime[0] = oh.win_atime[0];
-//						in.win_ctime[0] = oh.win_ctime[0];
-//						in.win_mtime[0] = oh.win_mtime[0];
-//						in.win_atime[1] = oh.win_atime[1];
-//						in.win_ctime[1] = oh.win_ctime[1];
-//						in.win_mtime[1] = oh.win_mtime[1];
-//						#else
-						in.yst_uid = oh.yst_uid();
-						in.yst_gid = oh.yst_gid();
-						in.yst_atime = oh.yst_atime();
-						in.yst_mtime = oh.yst_mtime();
-						in.yst_ctime = oh.yst_ctime();
-						in.yst_rdev = oh.yst_rdev();
-//						#endif
-						in.chunkId = chunk;
-
-						yaffs_SetObjectName(in, oh.name(), oh.nameIndex());
-						in.dirty = false;
-
-						/* directory stuff...
-						 * hook up to parent
-						 */
-
-						parent =
-							yaffs_FindOrCreateObjectByNumber
-							(dev, oh.parentObjectId(),
-									YAFFS_OBJECT_TYPE_DIRECTORY);
-						if (parent.variantType ==
-							YAFFS_OBJECT_TYPE_UNKNOWN) {
-							/* Set up as a directory */
-							parent.variantType =
-								YAFFS_OBJECT_TYPE_DIRECTORY;
-							INIT_LIST_HEAD(parent.variant.
-									directoryVariant().
-									children);
-						} else if (parent.variantType !=
-							YAFFS_OBJECT_TYPE_DIRECTORY)
-						{
-							/* Hoosterman, another problem....
-							 * We're trying to use a non-directory as a directory
-							 */
-
-							T(YAFFS_TRACE_ERROR,
-									TSTR
-									("yaffs tragedy: attempting to use non-directory as" +
-											" a directory in scan. Put in lost+found."
-											+ TENDSTR));
-							parent = dev.lostNFoundDir;
-						}
-
-						yaffs_AddObjectToDirectory(parent, in);
-
-						if (false && (parent == dev.deletedDir ||
-								parent == dev.unlinkedDir)) {
-							in.deleted = true;	/* If it is unlinked at start up then it wants deleting */
-							dev.nDeletedFiles++;
-						}
-						/* Note re hardlinks.
-						 * Since we might scan a hardlink before its equivalent object is scanned
-						 * we put them all in a list.
-						 * After scanning is complete, we should have all the objects, so we run through this
-						 * list and fix up all the chains.              
-						 */
-
-						switch (in.variantType) {
-							case YAFFS_OBJECT_TYPE_UNKNOWN:	
-								/* Todo got a problem */
-								break;
-							case YAFFS_OBJECT_TYPE_FILE:
-								if (dev.isYaffs2
-										&& oh.isShrink()) {
-									/* Prune back the shrunken chunks */
-									yaffs_PruneResizedChunks
-									(in, oh.fileSize());
-									/* Mark the block as having a shrinkHeader */
-									bi.setHasShrinkHeader(true);
-								}
-
-								if (dev.useHeaderFileSize)
-
-									in.variant.fileVariant().
-									fileSize =
-										oh.fileSize();
-
-								break;
-							case YAFFS_OBJECT_TYPE_HARDLINK:
-								in.variant.hardLinkVariant().
-								equivalentObjectId =
-									oh.equivalentObjectId();
-								in.hardLinks.next =
-									/*(list_head)*/ 
-									hardList;
-								hardList = in;
-								break;
-							case YAFFS_OBJECT_TYPE_DIRECTORY:
-								/* Do nothing */
-								break;
-							case YAFFS_OBJECT_TYPE_SPECIAL:
-								/* Do nothing */
-								break;
-							case YAFFS_OBJECT_TYPE_SYMLINK:
-								// XXX PORT Dynamic memory allocation, but this is during scan.
-								in.variant.symLinkVariant().alias =
-									yaffs_CloneString(oh.alias(), oh.aliasIndex());
-								in.variant.symLinkVariant().aliasIndex = 0;
-								break;
-						}
-
-						if (parent == dev.deletedDir) {
-							yaffs_DestroyObject(in);
-							bi.setHasShrinkHeader(true);
-						}
-					}
+					yaffs_Scan_Sub11(dev);
 				}
 			}
 
-			if (state == YAFFS_BLOCK_STATE_NEEDS_SCANNING) {
+			if (state == Guts_H.YAFFS_BLOCK_STATE_NEEDS_SCANNING) {
 				/* If we got this far while scanning, then the block is fully allocated.*/
-				state = YAFFS_BLOCK_STATE_FULL;
+				state = Guts_H.YAFFS_BLOCK_STATE_FULL;
 			}
 
 			bi.setBlockState(state);
@@ -5247,14 +5047,14 @@ public class yaffs_guts_C
 			/* Now let's see if it was dirty */
 			if (bi.pagesInUse() == 0 &&
 					!bi.hasShrinkHeader() &&
-					bi.blockState() == YAFFS_BLOCK_STATE_FULL) {
+					bi.blockState() == Guts_H.YAFFS_BLOCK_STATE_FULL) {
 				yaffs_BlockBecameDirty(dev, blk);
 			}
 
 		}
 
 		if (blockIndex != null) {
-			YFREE(blockIndex);
+			ydirectenv.YFREE(blockIndex);
 		}
 
 
@@ -5290,12 +5090,224 @@ public class yaffs_guts_C
 			}
 		}
 
-		yaffs_ReleaseTempBuffer(dev, chunkData, __LINE__());
+		yaffs_ReleaseTempBuffer(dev, chunkData, Utils.__LINE__());
 
-		T(YAFFS_TRACE_SCAN, (TSTR("yaffs_Scan ends" + TENDSTR)));
+		yportenv.T(yportenv.YAFFS_TRACE_SCAN, (("yaffs_Scan ends" + ydirectenv.TENDSTR)));
 
-		return YAFFS_OK;
+		return Guts_H.YAFFS_OK;
 	}
+
+	// begin
+
+	static void yaffs_Scan_Sub11(yaffs_Device dev)
+	{
+		/* chunkId == 0, so it is an ObjectHeader.
+		 * Thus, we read in the object header and make the object
+		 */
+		yaffs_SetChunkBit(dev, blk, c);
+		bi.setPagesInUse(bi.pagesInUse()+1);
+
+		result = yaffs_nand_C.yaffs_ReadChunkWithTagsFromNAND(dev, chunk,
+				chunkData, chunkDataIndex,
+				null);
+
+		oh = /*(yaffs_ObjectHeader *) chunkData*/ 
+			new yaffs_ObjectHeader(chunkData, chunkDataIndex);
+
+		in = yaffs_FindObjectByNumber(dev,
+				tags.objectId);
+		if (in != null && in.variantType != oh.type()) {
+			/* This should not happen, but somehow
+			 * Wev'e ended up with an objectId that has been reused but not yet 
+			 * deleted, and worse still it has changed type. Delete the old object.
+			 */
+
+			yaffs_DestroyObject(in);
+
+			in = null;
+		}
+
+		in = yaffs_FindOrCreateObjectByNumber(dev,
+				tags.objectId,
+				oh.type());
+
+		if (oh.shadowsObject() > 0) {
+			yaffs_HandleShadowedObject(dev,
+					oh.shadowsObject(),
+					false);
+		}
+
+		if (in.valid) {
+			/* We have already filled this one. We have a duplicate and need to resolve it. */
+
+			/*unsigned*/ int existingSerial = Utils.byteAsUnsignedByte(in.serial);
+			/*unsigned*/ int newSerial = tags.serialNumber;
+
+			if (dev.subField1.isYaffs2 ||
+					((existingSerial + 1) & 3) ==
+						newSerial) {
+				/* Use new one - destroy the exisiting one */
+				yaffs_DeleteChunk(dev,
+						in.chunkId,
+						true, Utils.__LINE__());
+				in.valid = false;
+			} else {
+				/* Use existing - destroy this one. */
+				yaffs_DeleteChunk(dev, chunk, true,
+						Utils.__LINE__());
+			}
+		}
+
+		if (!in.valid &&
+				(tags.objectId == Guts_H.YAFFS_OBJECTID_ROOT ||
+						tags.objectId == Guts_H.YAFFS_OBJECTID_LOSTNFOUND)) {
+			/* We only load some info, don't fiddle with directory structure */
+			in.valid = true;
+			in.variantType = oh.type();
+
+			in.yst_mode = oh.yst_mode();
+//			#ifdef CONFIG_YAFFS_WINCE
+//			in.win_atime[0] = oh.win_atime[0];
+//			in.win_ctime[0] = oh.win_ctime[0];
+//			in.win_mtime[0] = oh.win_mtime[0];
+//			in.win_atime[1] = oh.win_atime[1];
+//			in.win_ctime[1] = oh.win_ctime[1];
+//			in.win_mtime[1] = oh.win_mtime[1];
+//			#else
+			in.yst_uid = oh.yst_uid();
+			in.yst_gid = oh.yst_gid();
+			in.yst_atime = oh.yst_atime();
+			in.yst_mtime = oh.yst_mtime();
+			in.yst_ctime = oh.yst_ctime();
+			in.yst_rdev = oh.yst_rdev();
+//			#endif
+			in.chunkId = chunk;
+
+		} else if (!in.valid) {
+			/* we need to load this info */
+
+			in.valid = true;
+			in.variantType = oh.type();
+
+			in.yst_mode = oh.yst_mode();
+//			#ifdef CONFIG_YAFFS_WINCE
+//			in.win_atime[0] = oh.win_atime[0];
+//			in.win_ctime[0] = oh.win_ctime[0];
+//			in.win_mtime[0] = oh.win_mtime[0];
+//			in.win_atime[1] = oh.win_atime[1];
+//			in.win_ctime[1] = oh.win_ctime[1];
+//			in.win_mtime[1] = oh.win_mtime[1];
+//			#else
+			in.yst_uid = oh.yst_uid();
+			in.yst_gid = oh.yst_gid();
+			in.yst_atime = oh.yst_atime();
+			in.yst_mtime = oh.yst_mtime();
+			in.yst_ctime = oh.yst_ctime();
+			in.yst_rdev = oh.yst_rdev();
+//			#endif
+			in.chunkId = chunk;
+
+			yaffs_SetObjectName(in, oh.name(), oh.nameIndex());
+			in.dirty = false;
+
+			/* directory stuff...
+			 * hook up to parent
+			 */
+
+			parent =
+				yaffs_FindOrCreateObjectByNumber
+				(dev, oh.parentObjectId(),
+						Guts_H.YAFFS_OBJECT_TYPE_DIRECTORY);
+			if (parent.variantType ==
+				Guts_H.YAFFS_OBJECT_TYPE_UNKNOWN) {
+				/* Set up as a directory */
+				parent.variantType =
+					Guts_H.YAFFS_OBJECT_TYPE_DIRECTORY;
+				devextras.INIT_LIST_HEAD(parent.variant.
+						directoryVariant().
+						children);
+			} else if (parent.variantType !=
+				Guts_H.YAFFS_OBJECT_TYPE_DIRECTORY)
+			{
+				/* Hoosterman, another problem....
+				 * We're trying to use a non-directory as a directory
+				 */
+
+				yportenv.T(yportenv.YAFFS_TRACE_ERROR,
+
+						("yaffs tragedy: attempting to use non-directory as" +
+								" a directory in scan. Put in lost+found."
+								+ ydirectenv.TENDSTR));
+				parent = dev.lostNFoundDir;
+			}
+		}
+
+		yaffs_AddObjectToDirectory(parent, in);
+
+		if (false && (parent == dev.deletedDir ||
+				parent == dev.unlinkedDir)) {
+			in.sub.deleted = true;	/* If it is unlinked at start up then it wants deleting */
+			dev.nDeletedFiles++;
+		}
+		/* Note re hardlinks.
+		 * Since we might scan a hardlink before its equivalent object is scanned
+		 * we put them all in a list.
+		 * After scanning is complete, we should have all the objects, so we run through this
+		 * list and fix up all the chains.              
+		 */
+
+		switch (in.variantType) {
+		case Guts_H.YAFFS_OBJECT_TYPE_UNKNOWN:	
+			/* Todo got a problem */
+			break;
+		case Guts_H.YAFFS_OBJECT_TYPE_FILE:
+			if (dev.subField1.isYaffs2
+					&& oh.isShrink()) {
+				/* Prune back the shrunken chunks */
+				yaffs_PruneResizedChunks
+				(in, oh.fileSize());
+				/* Mark the block as having a shrinkHeader */
+				bi.setHasShrinkHeader(true);
+			}
+
+			if (dev.subField1.useHeaderFileSize)
+
+				in.variant.fileVariant().
+				fileSize =
+					oh.fileSize();
+
+			break;
+		case Guts_H.YAFFS_OBJECT_TYPE_HARDLINK:
+			in.variant.hardLinkVariant().
+			equivalentObjectId =
+				oh.equivalentObjectId();
+			in.hardLinks.next =
+				/*(list_head)*/ 
+				hardList;
+			hardList = in;
+			break;
+		case Guts_H.YAFFS_OBJECT_TYPE_DIRECTORY:
+			/* Do nothing */
+			break;
+		case Guts_H.YAFFS_OBJECT_TYPE_SPECIAL:
+			/* Do nothing */
+			break;
+		case Guts_H.YAFFS_OBJECT_TYPE_SYMLINK:
+			// XXX PORT Dynamic memory allocation, but this is during scan.
+			in.variant.symLinkVariant().alias =
+				yaffs_CloneString(oh.alias(), oh.aliasIndex());
+			in.variant.symLinkVariant().aliasIndex = 0;
+			break;
+		}
+
+		if (parent == dev.deletedDir) {
+			yaffs_DestroyObject(in);
+			bi.setHasShrinkHeader(true);
+		}
+	}
+
+
+	// end
 
 	static void yaffs_CheckObjectDetailsLoaded(yaffs_Object in)
 	{
@@ -5306,17 +5318,17 @@ public class yaffs_guts_C
 		boolean result;
 
 //		#if 0
-//		T(YAFFS_TRACE_SCAN,(TSTR("details for object %d %s loaded" + TENDSTR),
+//		yportenv.T(yportenv.YAFFS_TRACE_SCAN,(("details for object %d %s loaded" + ydirectenv.TENDSTR),
 //		in.objectId,
 //		in.lazyLoaded ? "not yet" : "already"));
 //		#endif
 
 		if(in.lazyLoaded){
 			in.lazyLoaded = false;
-			chunkData = yaffs_GetTempBuffer(dev, __LINE__());
+			chunkData = yaffs_GetTempBuffer(dev, Utils.__LINE__());
 			chunkDataIndex = 0;
 
-			result = yaffs_ReadChunkWithTagsFromNAND(dev,in.chunkId,chunkData,chunkDataIndex,tags);
+			result = yaffs_nand_C.yaffs_ReadChunkWithTagsFromNAND(dev,in.chunkId,chunkData,chunkDataIndex,tags);
 			oh = /*(yaffs_ObjectHeader *) chunkData*/ new yaffs_ObjectHeader(chunkData,chunkDataIndex);		
 
 			in.yst_mode = oh.yst_mode();
@@ -5338,122 +5350,129 @@ public class yaffs_guts_C
 //			#endif
 			yaffs_SetObjectName(in, oh.name(),oh.nameIndex());
 
-			if(in.variantType == YAFFS_OBJECT_TYPE_SYMLINK)
+			if(in.variantType == Guts_H.YAFFS_OBJECT_TYPE_SYMLINK)
 			{
 				in.variant.symLinkVariant().alias =
 					yaffs_CloneString(oh.alias(),oh.aliasIndex());
 				in.variant.symLinkVariant().aliasIndex = 0;
 			}
 
-			yaffs_ReleaseTempBuffer(dev,chunkData, __LINE__());
+			yaffs_ReleaseTempBuffer(dev,chunkData, Utils.__LINE__());
 		}
 	}
 
+	static boolean itsUnlinked;
+	static int fileSize;
+	static boolean isShrink;
+	static boolean foundChunksInBlock;
+	static int equivalentObjectId;
+	static boolean altBlockIndex = false;
+
 	static boolean yaffs_ScanBackwards(yaffs_Device dev)
 	{
-		yaffs_ExtendedTags tags = new yaffs_ExtendedTags();
-		int blk;
-		int blockIterator;
-		int startIterator;
-		int endIterator;
-		int nBlocksToScan = 0;
+		tags = new yaffs_ExtendedTags();
+//		int blk;
+//		int blockIterator;
+//		int startIterator;
+//		int endIterator;
+		nBlocksToScan = 0;
 
-		int chunk;
-		boolean result;
-		int c;
-		boolean deleted;
-		/*yaffs_BlockState*/ int state;
-		yaffs_Object hardList = null;
-		yaffs_BlockInfo bi;
-		long sequenceNumber;
-		yaffs_ObjectHeader oh;
-		yaffs_Object in;
-		yaffs_Object parent;
-		int nBlocks = dev.internalEndBlock - dev.internalStartBlock + 1;
-		boolean itsUnlinked;
-		/*__u8 **/ byte[] chunkData;
-		final int chunkDataIndex;
+//		int chunk;
+//		boolean result;
+//		int c;
+//		boolean deleted;
+//		/*yaffs_BlockState*/ int state;
+		hardList = null;
+//		yaffs_BlockInfo bi;
+//		long sequenceNumber;
+//		yaffs_ObjectHeader oh;
+//		yaffs_Object in;
+//		yaffs_Object parent;
+		int nBlocks = dev.subField2.internalEndBlock - dev.subField2.internalStartBlock + 1;
+//		boolean itsUnlinked;
+//		/*__u8 **/ byte[] chunkData;
+//		final int chunkDataIndex;
 
-		int fileSize;
-		boolean isShrink;
-		boolean foundChunksInBlock;
-		int equivalentObjectId;
+//		int fileSize;
+//		boolean isShrink;
+//		boolean foundChunksInBlock;
+//		int equivalentObjectId;
 
 
-		yaffs_BlockIndex blockIndex[] = null;
-		boolean altBlockIndex = false;
+		blockIndex = null;
+		altBlockIndex = false;
 
-		if (!dev.isYaffs2) {
-			T(YAFFS_TRACE_SCAN,
-					(TSTR("yaffs_ScanBackwards is only for YAFFS2!" + TENDSTR)));
-			return YAFFS_FAIL;
+		if (!dev.subField1.isYaffs2) {
+			yportenv.T(yportenv.YAFFS_TRACE_SCAN,
+					(("yaffs_ScanBackwards is only for YAFFS2!" + ydirectenv.TENDSTR)));
+			return Guts_H.YAFFS_FAIL;
 		}
 
-		T(YAFFS_TRACE_SCAN,
-				TSTR
+		yportenv.T(yportenv.YAFFS_TRACE_SCAN,
+
 				("yaffs_ScanBackwards starts  intstartblk %d intendblk %d..."
-						+ TENDSTR), dev.internalStartBlock, dev.internalEndBlock);
+						+ ydirectenv.TENDSTR), PrimitiveWrapperFactory.get(dev.subField2.internalStartBlock), PrimitiveWrapperFactory.get(dev.subField2.internalEndBlock));
 
 
-		dev.sequenceNumber = YAFFS_LOWEST_SEQUENCE_NUMBER;
+		dev.sequenceNumber = Guts_H.YAFFS_LOWEST_SEQUENCE_NUMBER;
 
-		blockIndex = YMALLOC_BLOCKINDEX(nBlocks/* * sizeof(yaffs_BlockIndex)*/);
+		blockIndex = ydirectenv.YMALLOC_BLOCKINDEX(nBlocks/* * sizeof(yaffs_BlockIndex)*/);
 
 		if(!(blockIndex != null)) {
-			blockIndex = YMALLOC_ALT_BLOCKINDEX(nBlocks/* * sizeof(yaffs_BlockIndex)*/);
+			blockIndex = ydirectenv.YMALLOC_ALT_BLOCKINDEX(nBlocks/* * sizeof(yaffs_BlockIndex)*/);
 			altBlockIndex = true;
 		}
 
 		if(!(blockIndex != null)) {
-			T(YAFFS_TRACE_SCAN,
-					(TSTR("yaffs_Scan() could not allocate block index!" + TENDSTR)));
-			return YAFFS_FAIL;
+			yportenv.T(yportenv.YAFFS_TRACE_SCAN,
+					(("yaffs_Scan() could not allocate block index!" + ydirectenv.TENDSTR)));
+			return Guts_H.YAFFS_FAIL;
 		}
 
-		chunkData = yaffs_GetTempBuffer(dev, __LINE__());
-		chunkDataIndex = 0;
+		chunkData = yaffs_GetTempBuffer(dev, Utils.__LINE__());
+		//chunkDataIndex = 0; XXX
 
 		/* Scan all the blocks to determine their state */
-		for (blk = dev.internalStartBlock; blk <= dev.internalEndBlock; blk++) {
-			bi = yaffs_GetBlockInfo(dev, blk);
+		for (blk = dev.subField2.internalStartBlock; blk <= dev.subField2.internalEndBlock; blk++) {
+			bi = Guts_H.yaffs_GetBlockInfo(dev, blk);
 			yaffs_ClearChunkBits(dev, blk);
 			bi.setPagesInUse(0);
 			bi.setSoftDeletions(0);
 
 			IntegerPointer statePointer = new IntegerPointer();
 			IntegerPointer sequenceNumberPointer = new IntegerPointer();
-			yaffs_QueryInitialBlockState(dev, blk, statePointer, sequenceNumberPointer);
+			yaffs_nand_C.yaffs_QueryInitialBlockState(dev, blk, statePointer, sequenceNumberPointer);
 			state = statePointer.dereferenced;
 			sequenceNumber = sequenceNumberPointer.dereferenced;
 
 			bi.setBlockState(state);
 			bi.setSequenceNumber((int)sequenceNumber);
 
-			if(bi.sequenceNumber() == YAFFS_SEQUENCE_CHECKPOINT_DATA)
-				bi.setBlockState(state = YAFFS_BLOCK_STATE_CHECKPOINT);
+			if(bi.sequenceNumber() == Guts_H.YAFFS_SEQUENCE_CHECKPOINT_DATA)
+				bi.setBlockState(state = Guts_H.YAFFS_BLOCK_STATE_CHECKPOINT);
 
-			T(YAFFS_TRACE_SCAN_DEBUG,
-					TSTR("Block scanning block %d state %d seq %d" + TENDSTR), blk,
-					state, sequenceNumber);
+			yportenv.T(yportenv.YAFFS_TRACE_SCAN_DEBUG,
+					("Block scanning block %d state %d seq %d" + ydirectenv.TENDSTR), PrimitiveWrapperFactory.get(blk),
+					PrimitiveWrapperFactory.get(state), PrimitiveWrapperFactory.get((int)sequenceNumber));
 
 
-			if(state == YAFFS_BLOCK_STATE_CHECKPOINT){
+			if(state == Guts_H.YAFFS_BLOCK_STATE_CHECKPOINT){
 				/* todo .. fix free space ? */
 
-			} else if (state == YAFFS_BLOCK_STATE_DEAD) {
-				T(YAFFS_TRACE_BAD_BLOCKS,
-						TSTR("block %d is bad" + TENDSTR), blk);
-			} else if (state == YAFFS_BLOCK_STATE_EMPTY) {
-				T(YAFFS_TRACE_SCAN_DEBUG,
-						TSTR("Block empty " + TENDSTR));
-				dev.nErasedBlocks++;
-				dev.nFreeChunks += dev.nChunksPerBlock;
-			} else if (state == YAFFS_BLOCK_STATE_NEEDS_SCANNING) {
+			} else if (state == Guts_H.YAFFS_BLOCK_STATE_DEAD) {
+				yportenv.T(yportenv.YAFFS_TRACE_BAD_BLOCKS,
+						("block %d is bad" + ydirectenv.TENDSTR), PrimitiveWrapperFactory.get(blk));
+			} else if (state == Guts_H.YAFFS_BLOCK_STATE_EMPTY) {
+				yportenv.T(yportenv.YAFFS_TRACE_SCAN_DEBUG,
+						("Block empty " + ydirectenv.TENDSTR));
+				dev.subField3.nErasedBlocks++;
+				dev.subField3.nFreeChunks += dev.subField1.nChunksPerBlock;
+			} else if (state == Guts_H.YAFFS_BLOCK_STATE_NEEDS_SCANNING) {
 
 				/* Determine the highest sequence number */
-				if (dev.isYaffs2 &&
-						sequenceNumber >= YAFFS_LOWEST_SEQUENCE_NUMBER &&
-						sequenceNumber < YAFFS_HIGHEST_SEQUENCE_NUMBER) {
+				if (dev.subField1.isYaffs2 &&
+						sequenceNumber >= Guts_H.YAFFS_LOWEST_SEQUENCE_NUMBER &&
+						sequenceNumber < Guts_H.YAFFS_HIGHEST_SEQUENCE_NUMBER) {
 
 					blockIndex[nBlocksToScan].seq = (int)sequenceNumber;
 					blockIndex[nBlocksToScan].block = blk;
@@ -5463,23 +5482,23 @@ public class yaffs_guts_C
 					if (sequenceNumber >= dev.sequenceNumber) {
 						dev.sequenceNumber = sequenceNumber;
 					}
-				} else if (dev.isYaffs2) {
+				} else if (dev.subField1.isYaffs2) {
 					/* TODO: Nasty sequence number! */
-					T(YAFFS_TRACE_SCAN,
-							TSTR
+					yportenv.T(yportenv.YAFFS_TRACE_SCAN,
+
 							("Block scanning block %d has bad sequence number %d"
-									+ TENDSTR), blk, sequenceNumber);
+									+ ydirectenv.TENDSTR), PrimitiveWrapperFactory.get(blk), PrimitiveWrapperFactory.get((int)sequenceNumber));
 
 				}
 			}
 		}
 
-		T(YAFFS_TRACE_SCAN,
-				TSTR("%d blocks to be sorted..." + TENDSTR), nBlocksToScan);
+		yportenv.T(yportenv.YAFFS_TRACE_SCAN,
+				("%d blocks to be sorted..." + ydirectenv.TENDSTR), PrimitiveWrapperFactory.get(nBlocksToScan));
 
 
 
-		YYIELD();
+		ydirectenv.YYIELD();
 
 		/* Sort the blocks */	// XXX use the qsort impl. taken from http://www.google.com/codesearch?hl=en&q=+lang:java+quicksort+show:GbJN4YS8fv4:bWk7RV6TTho:R2hTeVo7FHc&sa=N&cd=2&ct=rc&cs_p=http://ftp.mozilla.org/pub/mozilla.org/mozilla/releases/mozilla1.8a3/src/mozilla-source-1.8a3.tar.bz2&cs_f=mozilla/gc/boehm/leaksoup/QuickSort.java#a0
 //		#ifndef CONFIG_YAFFS_USE_OWN_SORT
@@ -5505,42 +5524,47 @@ public class yaffs_guts_C
 		}
 //		#endif
 
-		YYIELD();
+		ydirectenv.YYIELD();
 
-		T(YAFFS_TRACE_SCAN, TSTR("...done" + TENDSTR));
+		yportenv.T(yportenv.YAFFS_TRACE_SCAN, ("...done" + ydirectenv.TENDSTR));
 
 		/* Now scan the blocks looking at the data. */
 		startIterator = 0;
 		endIterator = nBlocksToScan - 1;
-		T(YAFFS_TRACE_SCAN_DEBUG,
-				TSTR("%d blocks to be scanned" + TENDSTR), nBlocksToScan);
+		yportenv.T(yportenv.YAFFS_TRACE_SCAN_DEBUG,
+				("%d blocks to be scanned" + ydirectenv.TENDSTR), PrimitiveWrapperFactory.get(nBlocksToScan));
 
+		return yaffs_ScanBackward_Sub0(dev);
+	}
+
+	static boolean yaffs_ScanBackward_Sub0(yaffs_Device dev)
+	{
 		/* For each block.... backwards */
 		for (blockIterator = endIterator; blockIterator >= startIterator;
 		blockIterator--) {
 			/* Cooperative multitasking! This loop can run for so
 			   long that watchdog timers expire. */
-			YYIELD();
+			ydirectenv.YYIELD();
 
 			/* get the block to scan in the correct order */
 			blk = blockIndex[blockIterator].block;
 
-			bi = yaffs_GetBlockInfo(dev, blk);
+			bi = Guts_H.yaffs_GetBlockInfo(dev, blk);
 			state = bi.blockState();
 
-			deleted = false;
+			deleted = 0;
 
 			/* For each chunk in each block that needs scanning.... */
 			foundChunksInBlock = false;
-			for (c = dev.nChunksPerBlock - 1; c >= 0 &&
-			(state == YAFFS_BLOCK_STATE_NEEDS_SCANNING ||
-					state == YAFFS_BLOCK_STATE_ALLOCATING); c--) {
+			for (c = dev.subField1.nChunksPerBlock - 1; c >= 0 &&
+			(state == Guts_H.YAFFS_BLOCK_STATE_NEEDS_SCANNING ||
+					state == Guts_H.YAFFS_BLOCK_STATE_ALLOCATING); c--) {
 				/* Scan backwards... 
 				 * Read the tags and decide what to do
 				 */
-				chunk = blk * dev.nChunksPerBlock + c;
+				chunk = blk * dev.subField1.nChunksPerBlock + c;
 
-				result = yaffs_ReadChunkWithTagsFromNAND(dev, chunk, null, 0,
+				result = yaffs_nand_C.yaffs_ReadChunkWithTagsFromNAND(dev, chunk, null, 0,
 						tags);
 
 				/* Let's have a good look at this chunk... */
@@ -5561,23 +5585,23 @@ public class yaffs_guts_C
 
 					} else if (c == 0) {
 						/* We're looking at the first chunk in the block so the block is unused */
-						state = YAFFS_BLOCK_STATE_EMPTY;
-						dev.nErasedBlocks++;
+						state = Guts_H.YAFFS_BLOCK_STATE_EMPTY;
+						dev.subField3.nErasedBlocks++;
 					} else {
-						if (state == YAFFS_BLOCK_STATE_NEEDS_SCANNING ||
-								state == YAFFS_BLOCK_STATE_ALLOCATING) {
-							if(dev.sequenceNumber == intAsUnsignedInt(bi.sequenceNumber())) {
+						if (state == Guts_H.YAFFS_BLOCK_STATE_NEEDS_SCANNING ||
+								state == Guts_H.YAFFS_BLOCK_STATE_ALLOCATING) {
+							if(dev.sequenceNumber == Utils.intAsUnsignedInt(bi.sequenceNumber())) {
 								/* this is the block being allocated from */
 
-								T(YAFFS_TRACE_SCAN,
-										TSTR
-										(" Allocating from %d %d"
-												+ TENDSTR), blk, c);
+								yportenv.T(yportenv.YAFFS_TRACE_SCAN,
 
-								state = YAFFS_BLOCK_STATE_ALLOCATING;
-								dev.allocationBlock = blk;
-								dev.allocationPage = c;
-								dev.allocationBlockFinder = blk;	
+										(" Allocating from %d %d"
+												+ ydirectenv.TENDSTR), PrimitiveWrapperFactory.get(blk), PrimitiveWrapperFactory.get(c));
+
+								state = Guts_H.YAFFS_BLOCK_STATE_ALLOCATING;
+								dev.subField3.allocationBlock = blk;
+								dev.subField3.allocationPage = c;
+								dev.subField3.allocationBlockFinder = blk;	
 							}
 							else {
 								/* This is a partially written block that is not
@@ -5588,22 +5612,22 @@ public class yaffs_guts_C
 								bi.setNeedsRetiring(true);
 								bi.setGcPrioritise(true);
 
-								T(YAFFS_TRACE_ALWAYS,
-										TSTR("Partially written block %d being set for retirement" + TENDSTR),
-										blk);
+								yportenv.T(yportenv.YAFFS_TRACE_ALWAYS,
+										("Partially written block %d being set for retirement" + ydirectenv.TENDSTR),
+										PrimitiveWrapperFactory.get(blk));
 							}
 
 						}
 
 					}
 
-					dev.nFreeChunks++;
+					dev.subField3.nFreeChunks++;
 
 				} else if (tags.chunkId > 0) {
 					/* chunkId > 0 so it is a data chunk... */
 					/*unsigned int*/ int endpos;
 					/*__u32*/ int chunkBase =
-						(tags.chunkId - 1) * dev.nDataBytesPerChunk;
+						(tags.chunkId - 1) * dev.subField1.nDataBytesPerChunk;
 
 					foundChunksInBlock = true;
 
@@ -5614,10 +5638,10 @@ public class yaffs_guts_C
 					in = yaffs_FindOrCreateObjectByNumber(dev,
 							tags.
 							objectId,
-							YAFFS_OBJECT_TYPE_FILE);
-					if (in.variantType == YAFFS_OBJECT_TYPE_FILE
+							Guts_H.YAFFS_OBJECT_TYPE_FILE);
+					if (in.variantType == Guts_H.YAFFS_OBJECT_TYPE_FILE
 							&& chunkBase <
-							intAsUnsignedInt(in.variant.fileVariant().shrinkSize)) {
+							Utils.intAsUnsignedInt(in.variant.fileVariant().shrinkSize)) {
 						/* This has not been invalidated by a resize */
 						yaffs_PutChunkIntoFile(in, tags.chunkId,
 								chunk, -1);
@@ -5627,7 +5651,7 @@ public class yaffs_guts_C
 						 */
 						endpos =
 							(tags.chunkId -
-									1) * dev.nDataBytesPerChunk +
+									1) * dev.subField1.nDataBytesPerChunk +
 									tags.byteCount;
 
 						if (!in.valid &&	/* have not got an object header yet */
@@ -5643,7 +5667,7 @@ public class yaffs_guts_C
 
 					} else {
 						/* This chunk has been invalidated by a resize, so delete */
-						yaffs_DeleteChunk(dev, chunk, true, __LINE__());
+						yaffs_DeleteChunk(dev, chunk, true, Utils.__LINE__());
 
 					}
 				} else {
@@ -5670,8 +5694,8 @@ public class yaffs_guts_C
 //							#endif
 							tags.extraShadows ||
 							(!in.valid &&
-									(tags.objectId == YAFFS_OBJECTID_ROOT ||
-											tags.objectId == YAFFS_OBJECTID_LOSTNFOUND))
+									(tags.objectId == Guts_H.YAFFS_OBJECTID_ROOT ||
+											tags.objectId == Guts_H.YAFFS_OBJECTID_LOSTNFOUND))
 					) {
 
 						/* If we don't have  valid info then we need to read the chunk
@@ -5679,7 +5703,7 @@ public class yaffs_guts_C
 						 * living with invalid data until needed.
 						 */
 
-						result = yaffs_ReadChunkWithTagsFromNAND(dev,
+						result = yaffs_nand_C.yaffs_ReadChunkWithTagsFromNAND(dev,
 								chunk,
 								chunkData, chunkDataIndex,
 								null);
@@ -5694,261 +5718,21 @@ public class yaffs_guts_C
 
 					if (!(in != null)) {
 						/* TODO Hoosterman we have a problem! */
-						T(YAFFS_TRACE_ERROR,
-								TSTR
+						yportenv.T(yportenv.YAFFS_TRACE_ERROR,
+
 								("yaffs tragedy: Could not make object for object  %d  " +
 										"at chunk %d during scan"
-										+ TENDSTR), tags.objectId, chunk);
+										+ ydirectenv.TENDSTR), PrimitiveWrapperFactory.get(tags.objectId), PrimitiveWrapperFactory.get(chunk));
 
 					}
 
-					if (in.valid) {
-						/* We have already filled this one.
-						 * We have a duplicate that will be discarded, but 
-						 * we first have to suck out resize info if it is a file.
-						 */
-
-						if ((in.variantType == YAFFS_OBJECT_TYPE_FILE) && 
-								((oh != null && 
-										oh.type() == YAFFS_OBJECT_TYPE_FILE)||
-										(tags.extraHeaderInfoAvailable  &&
-												tags.extraObjectType == YAFFS_OBJECT_TYPE_FILE))
-						) {
-							/*__u32*/ int thisSize =
-								(oh != null) ? oh.fileSize() : tags.
-										extraFileLength;
-								/*__u32*/ int parentObjectId =
-									(oh != null) ? oh.
-											parentObjectId() : tags.
-											extraParentObjectId;
-//											XXX allowed in C?
-											// PORT changed the name of the inner variable 
-											/*unsigned*/ boolean isShrinkInner =	
-												(oh != null) ? oh.isShrink() : tags.
-														extraIsShrinkHeader;
-
-												/* If it is deleted (unlinked at start also means deleted)
-												 * we treat the file size as being zeroed at this point.
-												 */
-												if (parentObjectId ==
-													YAFFS_OBJECTID_DELETED
-													|| parentObjectId ==
-														YAFFS_OBJECTID_UNLINKED) {
-													thisSize = 0;
-													isShrinkInner = true;
-												}
-
-												if (isShrinkInner &&
-														intAsUnsignedInt(in.variant.fileVariant().
-														shrinkSize) > thisSize) {
-													in.variant.fileVariant().
-													shrinkSize =
-														thisSize;
-												}
-
-												if (isShrinkInner) {
-													bi.setHasShrinkHeader(true);
-												}
-
-						}
-						/* Use existing - destroy this one. */
-						yaffs_DeleteChunk(dev, chunk, true, __LINE__());
-
-					}
-
-					if (!in.valid &&
-							(tags.objectId == YAFFS_OBJECTID_ROOT ||
-									tags.objectId ==
-										YAFFS_OBJECTID_LOSTNFOUND)) {
-						/* We only load some info, don't fiddle with directory structure */
-						in.valid = true;
-
-						if(oh != null) {
-							in.variantType = oh.type();
-
-							in.yst_mode = oh.yst_mode();
-//							#ifdef CONFIG_YAFFS_WINCE
-//							in.win_atime[0] = oh.win_atime[0];
-//							in.win_ctime[0] = oh.win_ctime[0];
-//							in.win_mtime[0] = oh.win_mtime[0];
-//							in.win_atime[1] = oh.win_atime[1];
-//							in.win_ctime[1] = oh.win_ctime[1];
-//							in.win_mtime[1] = oh.win_mtime[1];
-//							#else
-							in.yst_uid = oh.yst_uid();
-							in.yst_gid = oh.yst_gid();
-							in.yst_atime = oh.yst_atime();
-							in.yst_mtime = oh.yst_mtime();
-							in.yst_ctime = oh.yst_ctime();
-							in.yst_rdev = oh.yst_rdev();
-
-//							#endif
-						} else {
-							in.variantType = tags.extraObjectType;
-							in.lazyLoaded = true;
-						}
-
-						in.chunkId = chunk;
-
-					} else if (!in.valid) {
-						/* we need to load this info */
-
-						in.valid = true;
-						in.chunkId = chunk;
-
-						if(oh != null) {
-							in.variantType = oh.type();
-
-							in.yst_mode = oh.yst_mode();
-//							#ifdef CONFIG_YAFFS_WINCE
-//							in.win_atime[0] = oh.win_atime[0];
-//							in.win_ctime[0] = oh.win_ctime[0];
-//							in.win_mtime[0] = oh.win_mtime[0];
-//							in.win_atime[1] = oh.win_atime[1];
-//							in.win_ctime[1] = oh.win_ctime[1];
-//							in.win_mtime[1] = oh.win_mtime[1];
-//							#else
-							in.yst_uid = oh.yst_uid();
-							in.yst_gid = oh.yst_gid();
-							in.yst_atime = oh.yst_atime();
-							in.yst_mtime = oh.yst_mtime();
-							in.yst_ctime = oh.yst_ctime();
-							in.yst_rdev = oh.yst_rdev();
-//							#endif
-
-							if (oh.shadowsObject() > 0) 
-								yaffs_HandleShadowedObject(dev,
-										oh.
-										shadowsObject(),
-										true);
-
-
-							yaffs_SetObjectName(in, oh.name(), oh.nameIndex());
-							parent =
-								yaffs_FindOrCreateObjectByNumber
-								(dev, oh.parentObjectId(),
-										YAFFS_OBJECT_TYPE_DIRECTORY);
-
-							fileSize = oh.fileSize();
-							isShrink = oh.isShrink();
-							equivalentObjectId = oh.equivalentObjectId();
-
-						}
-						else {
-							in.variantType = tags.extraObjectType;
-							parent =
-								yaffs_FindOrCreateObjectByNumber
-								(dev, tags.extraParentObjectId,
-										YAFFS_OBJECT_TYPE_DIRECTORY);
-							fileSize = tags.extraFileLength;
-							isShrink = tags.extraIsShrinkHeader;
-							equivalentObjectId = tags.extraEquivalentObjectId;
-							in.lazyLoaded = true;
-
-						}
-						in.dirty = false;
-
-						/* directory stuff...
-						 * hook up to parent
-						 */
-
-						if (parent.variantType ==
-							YAFFS_OBJECT_TYPE_UNKNOWN) {
-							/* Set up as a directory */
-							parent.variantType =
-								YAFFS_OBJECT_TYPE_DIRECTORY;
-							INIT_LIST_HEAD(parent.variant.
-									directoryVariant().
-									children);
-						} else if (parent.variantType !=
-							YAFFS_OBJECT_TYPE_DIRECTORY)
-						{
-							/* Hoosterman, another problem....
-							 * We're trying to use a non-directory as a directory
-							 */
-
-							T(YAFFS_TRACE_ERROR,
-									TSTR
-									("yaffs tragedy: attempting to use non-directory as" +
-											" a directory in scan. Put in lost+found."
-											+ TENDSTR));
-							parent = dev.lostNFoundDir;
-						}
-
-						yaffs_AddObjectToDirectory(parent, in);
-
-						itsUnlinked = (parent == dev.deletedDir) ||
-						(parent == dev.unlinkedDir);
-
-						if (isShrink) {
-							/* Mark the block as having a shrinkHeader */
-							bi.setHasShrinkHeader(true);
-						}
-
-						/* Note re hardlinks.
-						 * Since we might scan a hardlink before its equivalent object is scanned
-						 * we put them all in a list.
-						 * After scanning is complete, we should have all the objects, so we run
-						 * through this list and fix up all the chains.              
-						 */
-
-						switch (in.variantType) {
-							case YAFFS_OBJECT_TYPE_UNKNOWN:	
-								/* Todo got a problem */
-								break;
-							case YAFFS_OBJECT_TYPE_FILE:
-
-								if (in.variant.fileVariant().
-										scannedFileSize < fileSize) {
-									/* This covers the case where the file size is greater
-									 * than where the data is
-									 * This will happen if the file is resized to be larger 
-									 * than its current data extents.
-									 */
-									in.variant.fileVariant().fileSize = fileSize;
-									in.variant.fileVariant().scannedFileSize =
-										in.variant.fileVariant().fileSize;
-								}
-
-								if (isShrink &&
-										intAsUnsignedInt(in.variant.fileVariant().shrinkSize) > fileSize) {
-									in.variant.fileVariant().shrinkSize = fileSize;
-								}
-
-								break;
-							case YAFFS_OBJECT_TYPE_HARDLINK:
-								if(!itsUnlinked) {
-									in.variant.hardLinkVariant().equivalentObjectId =
-										equivalentObjectId;
-									in.hardLinks.next =
-										/*(list_head)*/ hardList;
-									hardList = in;
-								}
-								break;
-							case YAFFS_OBJECT_TYPE_DIRECTORY:
-								/* Do nothing */
-								break;
-							case YAFFS_OBJECT_TYPE_SPECIAL:
-								/* Do nothing */
-								break;
-							case YAFFS_OBJECT_TYPE_SYMLINK:
-								if(oh != null)
-								{
-									in.variant.symLinkVariant().alias =
-										yaffs_CloneString(oh.
-												alias(), oh.aliasIndex());
-									in.variant.symLinkVariant().aliasIndex = 0;
-								}
-								break;
-						}
-
-					}
+					yaffs_ScanBackward_Subminus1(dev);
 				}
 			}
 
-			if (state == YAFFS_BLOCK_STATE_NEEDS_SCANNING) {
+			if (state == Guts_H.YAFFS_BLOCK_STATE_NEEDS_SCANNING) {
 				/* If we got this far while scanning, then the block is fully allocated. */
-				state = YAFFS_BLOCK_STATE_FULL;
+				state = Guts_H.YAFFS_BLOCK_STATE_FULL;
 			}
 
 			bi.setBlockState(state);
@@ -5956,16 +5740,264 @@ public class yaffs_guts_C
 			/* Now let's see if it was dirty */
 			if (bi.pagesInUse() == 0 &&
 					!bi.hasShrinkHeader() &&
-					bi.blockState() == YAFFS_BLOCK_STATE_FULL) {
+					bi.blockState() == Guts_H.YAFFS_BLOCK_STATE_FULL) {
 				yaffs_BlockBecameDirty(dev, blk);
 			}
 
 		}
+		return yaffs_ScanBackward_Sub1(dev);
+	}
+
+	static void yaffs_ScanBackward_Subminus1(yaffs_Device dev)
+	{
+		if (in.valid) {
+			/* We have already filled this one.
+			 * We have a duplicate that will be discarded, but 
+			 * we first have to suck out resize info if it is a file.
+			 */
+
+			if ((in.variantType == Guts_H.YAFFS_OBJECT_TYPE_FILE) && 
+					((oh != null && 
+							oh.type() == Guts_H.YAFFS_OBJECT_TYPE_FILE)||
+							(tags.extraHeaderInfoAvailable  &&
+									tags.extraObjectType == Guts_H.YAFFS_OBJECT_TYPE_FILE))
+			) {
+				/*__u32*/ int thisSize =
+					(oh != null) ? oh.fileSize() : tags.
+							extraFileLength;
+					/*__u32*/ int parentObjectId =
+						(oh != null) ? oh.
+								parentObjectId() : tags.
+								extraParentObjectId;
+								// PORT changed the name of the inner variable 
+								/*unsigned*/ boolean isShrinkInner =	
+									(oh != null) ? oh.isShrink() : tags.
+											extraIsShrinkHeader;
+
+									/* If it is deleted (unlinked at start also means deleted)
+									 * we treat the file size as being zeroed at this point.
+									 */
+									if (parentObjectId ==
+										Guts_H.YAFFS_OBJECTID_DELETED
+										|| parentObjectId ==
+											Guts_H.YAFFS_OBJECTID_UNLINKED) {
+										thisSize = 0;
+										isShrinkInner = true;
+									}
+
+									if (isShrinkInner &&
+											Utils.intAsUnsignedInt(in.variant.fileVariant().
+													shrinkSize) > thisSize) {
+										in.variant.fileVariant().
+										shrinkSize =
+											thisSize;
+									}
+
+									if (isShrinkInner) {
+										bi.setHasShrinkHeader(true);
+									}
+
+			}
+			/* Use existing - destroy this one. */
+			yaffs_DeleteChunk(dev, chunk, true, Utils.__LINE__());
+
+		}
+
+		if (!in.valid &&
+				(tags.objectId == Guts_H.YAFFS_OBJECTID_ROOT ||
+						tags.objectId ==
+							Guts_H.YAFFS_OBJECTID_LOSTNFOUND)) {
+			/* We only load some info, don't fiddle with directory structure */
+			in.valid = true;
+
+			if(oh != null) {
+				in.variantType = oh.type();
+
+				in.yst_mode = oh.yst_mode();
+//				#ifdef CONFIG_YAFFS_WINCE
+//				in.win_atime[0] = oh.win_atime[0];
+//				in.win_ctime[0] = oh.win_ctime[0];
+//				in.win_mtime[0] = oh.win_mtime[0];
+//				in.win_atime[1] = oh.win_atime[1];
+//				in.win_ctime[1] = oh.win_ctime[1];
+//				in.win_mtime[1] = oh.win_mtime[1];
+//				#else
+				in.yst_uid = oh.yst_uid();
+				in.yst_gid = oh.yst_gid();
+				in.yst_atime = oh.yst_atime();
+				in.yst_mtime = oh.yst_mtime();
+				in.yst_ctime = oh.yst_ctime();
+				in.yst_rdev = oh.yst_rdev();
+
+//				#endif
+			} else {
+				in.variantType = tags.extraObjectType;
+				in.lazyLoaded = true;
+			}
+
+			in.chunkId = chunk;
+
+		} else if (!in.valid) {
+			/* we need to load this info */
+
+			in.valid = true;
+			in.chunkId = chunk;
+
+			if(oh != null) {
+				in.variantType = oh.type();
+
+				in.yst_mode = oh.yst_mode();
+//				#ifdef CONFIG_YAFFS_WINCE
+//				in.win_atime[0] = oh.win_atime[0];
+//				in.win_ctime[0] = oh.win_ctime[0];
+//				in.win_mtime[0] = oh.win_mtime[0];
+//				in.win_atime[1] = oh.win_atime[1];
+//				in.win_ctime[1] = oh.win_ctime[1];
+//				in.win_mtime[1] = oh.win_mtime[1];
+//				#else
+				in.yst_uid = oh.yst_uid();
+				in.yst_gid = oh.yst_gid();
+				in.yst_atime = oh.yst_atime();
+				in.yst_mtime = oh.yst_mtime();
+				in.yst_ctime = oh.yst_ctime();
+				in.yst_rdev = oh.yst_rdev();
+//				#endif
+
+				if (oh.shadowsObject() > 0) 
+					yaffs_HandleShadowedObject(dev,
+							oh.
+							shadowsObject(),
+							true);
+
+
+				yaffs_SetObjectName(in, oh.name(), oh.nameIndex());
+				parent =
+					yaffs_FindOrCreateObjectByNumber
+					(dev, oh.parentObjectId(),
+							Guts_H.YAFFS_OBJECT_TYPE_DIRECTORY);
+
+				fileSize = oh.fileSize();
+				isShrink = oh.isShrink();
+				equivalentObjectId = oh.equivalentObjectId();
+
+			}
+			else {
+				in.variantType = tags.extraObjectType;
+				parent =
+					yaffs_FindOrCreateObjectByNumber
+					(dev, tags.extraParentObjectId,
+							Guts_H.YAFFS_OBJECT_TYPE_DIRECTORY);
+				fileSize = tags.extraFileLength;
+				isShrink = tags.extraIsShrinkHeader;
+				equivalentObjectId = tags.extraEquivalentObjectId;
+				in.lazyLoaded = true;
+
+			}
+			in.dirty = false;
+
+			/* directory stuff...
+			 * hook up to parent
+			 */
+
+			if (parent.variantType ==
+				Guts_H.YAFFS_OBJECT_TYPE_UNKNOWN) {
+				/* Set up as a directory */
+				parent.variantType =
+					Guts_H.YAFFS_OBJECT_TYPE_DIRECTORY;
+				devextras.INIT_LIST_HEAD(parent.variant.
+						directoryVariant().
+						children);
+			} else if (parent.variantType !=
+				Guts_H.YAFFS_OBJECT_TYPE_DIRECTORY)
+			{
+				/* Hoosterman, another problem....
+				 * We're trying to use a non-directory as a directory
+				 */
+
+				yportenv.T(yportenv.YAFFS_TRACE_ERROR,
+
+						("yaffs tragedy: attempting to use non-directory as" +
+								" a directory in scan. Put in lost+found."
+								+ ydirectenv.TENDSTR));
+				parent = dev.lostNFoundDir;
+			}
+
+			yaffs_AddObjectToDirectory(parent, in);
+
+			itsUnlinked = (parent == dev.deletedDir) ||
+			(parent == dev.unlinkedDir);
+
+			if (isShrink) {
+				/* Mark the block as having a shrinkHeader */
+				bi.setHasShrinkHeader(true);
+			}
+
+			/* Note re hardlinks.
+			 * Since we might scan a hardlink before its equivalent object is scanned
+			 * we put them all in a list.
+			 * After scanning is complete, we should have all the objects, so we run
+			 * through this list and fix up all the chains.              
+			 */
+
+			switch (in.variantType) {
+			case Guts_H.YAFFS_OBJECT_TYPE_UNKNOWN:	
+				/* Todo got a problem */
+				break;
+			case Guts_H.YAFFS_OBJECT_TYPE_FILE:
+
+				if (in.variant.fileVariant().
+						scannedFileSize < fileSize) {
+					/* This covers the case where the file size is greater
+					 * than where the data is
+					 * This will happen if the file is resized to be larger 
+					 * than its current data extents.
+					 */
+					in.variant.fileVariant().fileSize = fileSize;
+					in.variant.fileVariant().scannedFileSize =
+						in.variant.fileVariant().fileSize;
+				}
+
+				if (isShrink &&
+						Utils.intAsUnsignedInt(in.variant.fileVariant().shrinkSize) > fileSize) {
+					in.variant.fileVariant().shrinkSize = fileSize;
+				}
+
+				break;
+			case Guts_H.YAFFS_OBJECT_TYPE_HARDLINK:
+				if(!itsUnlinked) {
+					in.variant.hardLinkVariant().equivalentObjectId =
+						equivalentObjectId;
+					in.hardLinks.next =
+						/*(list_head)*/ hardList;
+					hardList = in;
+				}
+				break;
+			case Guts_H.YAFFS_OBJECT_TYPE_DIRECTORY:
+				/* Do nothing */
+				break;
+			case Guts_H.YAFFS_OBJECT_TYPE_SPECIAL:
+				/* Do nothing */
+				break;
+			case Guts_H.YAFFS_OBJECT_TYPE_SYMLINK:
+				if(oh != null)
+				{
+					in.variant.symLinkVariant().alias =
+						yaffs_CloneString(oh.
+								alias(), oh.aliasIndex());
+					in.variant.symLinkVariant().aliasIndex = 0;
+				}
+				break;
+			}
+		}
+	}
+
+	static boolean yaffs_ScanBackward_Sub1(yaffs_Device dev)
+	{
 
 		if (altBlockIndex) 
-			YFREE_ALT(blockIndex);
+			ydirectenv.YFREE_ALT(blockIndex);
 		else
-			YFREE(blockIndex);
+			ydirectenv.YFREE(blockIndex);
 
 		/* Ok, we've done all the scanning.
 		 * Fix up the hard link chains.
@@ -6015,11 +6047,11 @@ public class yaffs_guts_C
 			}
 		}
 
-		yaffs_ReleaseTempBuffer(dev, chunkData, __LINE__());
+		yaffs_ReleaseTempBuffer(dev, chunkData, Utils.__LINE__());
 
-		T(YAFFS_TRACE_SCAN, (TSTR("yaffs_ScanBackwards ends" + TENDSTR)));
+		yportenv.T(yportenv.YAFFS_TRACE_SCAN, (("yaffs_ScanBackwards ends" + ydirectenv.TENDSTR)));
 
-		return YAFFS_OK;
+		return Guts_H.YAFFS_OK;
 	}
 
 	/*------------------------------  Directory Functions ----------------------------- */
@@ -6028,10 +6060,10 @@ public class yaffs_guts_C
 	{
 		yaffs_Device dev = obj.myDev;
 
-		if(dev != null && dev.removeObjectCallback != null)
-			dev.removeObjectCallback.yaffsfs_RemoveObjectCallback(obj);
+		if(dev != null && dev.subField1.removeObjectCallback != null)
+			dev.subField1.removeObjectCallback.yaffsfs_RemoveObjectCallback(obj);
 
-		list_del_init(obj.siblings);
+		devextras.list_del_init(obj.siblings);
 		obj.parent = null;
 	}
 
@@ -6041,35 +6073,35 @@ public class yaffs_guts_C
 	{
 
 		if (!(directory != null)) {
-			T(YAFFS_TRACE_ALWAYS,
-					TSTR
+			yportenv.T(yportenv.YAFFS_TRACE_ALWAYS,
+
 					("tragedy: Trying to add an object to a null pointer directory"
-							+ TENDSTR));
+							+ ydirectenv.TENDSTR));
 			yaffs2.utils.Globals.portConfiguration.YBUG();
 		}
-		if (directory.variantType != YAFFS_OBJECT_TYPE_DIRECTORY) {
-			T(YAFFS_TRACE_ALWAYS,
-					TSTR
+		if (directory.variantType != Guts_H.YAFFS_OBJECT_TYPE_DIRECTORY) {
+			yportenv.T(yportenv.YAFFS_TRACE_ALWAYS,
+
 					("tragedy: Trying to add an object to a non-directory"
-							+ TENDSTR));
+							+ ydirectenv.TENDSTR));
 			yaffs2.utils.Globals.portConfiguration.YBUG();
 		}
 
 		if (obj.siblings.prev == null) {
 			/* Not initialised */
-			INIT_LIST_HEAD(obj.siblings);
+			devextras.INIT_LIST_HEAD(obj.siblings);
 
-		} else if (!list_empty(obj.siblings)) {
+		} else if (!devextras.list_empty(obj.siblings)) {
 			/* If it is holed up somewhere else, un hook it */
 			yaffs_RemoveObjectFromDirectory(obj);
 		}
 		/* Now add it */
-		list_add(obj.siblings, directory.variant.directoryVariant().children);
+		devextras.list_add(obj.siblings, directory.variant.directoryVariant().children);
 		obj.parent = directory;
 
 		if (directory == obj.myDev.unlinkedDir
 				|| directory == obj.myDev.deletedDir) {
-			obj.unlinked = true;
+			obj.sub.unlinked = true;
 			obj.myDev.nUnlinkedFiles++;
 			obj.renameAllowed = false;
 		}
@@ -6081,7 +6113,7 @@ public class yaffs_guts_C
 		short sum;
 
 		list_head i;
-		/*YCHAR buffer[YAFFS_MAX_NAME_LENGTH + 1]*/ byte[] buffer = new byte[YAFFS_MAX_NAME_LENGTH + 1];
+		/*YCHAR buffer[Guts_H.YAFFS_MAX_NAME_LENGTH + 1]*/ byte[] buffer = new byte[Guts_H.YAFFS_MAX_NAME_LENGTH + 1];
 		final int bufferIndex = 0;
 
 		yaffs_Object l;
@@ -6091,16 +6123,16 @@ public class yaffs_guts_C
 		}
 
 		if (!(directory != null)) {
-			T(YAFFS_TRACE_ALWAYS,
-					(TSTR
+			yportenv.T(yportenv.YAFFS_TRACE_ALWAYS,
+					(
 							("tragedy: yaffs_FindObjectByName: null pointer directory"
-									+ TENDSTR)));
+									+ ydirectenv.TENDSTR)));
 			yaffs2.utils.Globals.portConfiguration.YBUG();
 		}
-		if (directory.variantType != YAFFS_OBJECT_TYPE_DIRECTORY) {
-			T(YAFFS_TRACE_ALWAYS,
-					(TSTR
-							("tragedy: yaffs_FindObjectByName: non-directory" + TENDSTR)));
+		if (directory.variantType != Guts_H.YAFFS_OBJECT_TYPE_DIRECTORY) {
+			yportenv.T(yportenv.YAFFS_TRACE_ALWAYS,
+					(
+							("tragedy: yaffs_FindObjectByName: non-directory" + ydirectenv.TENDSTR)));
 			yaffs2.utils.Globals.portConfiguration.YBUG();
 		}
 
@@ -6115,18 +6147,18 @@ public class yaffs_guts_C
 				yaffs_CheckObjectDetailsLoaded(l);
 
 				/* Special case for lost-n-found */
-				if (l.objectId == YAFFS_OBJECTID_LOSTNFOUND) {
-					if (yaffs_strcmp(name, nameIndex, YAFFS_LOSTNFOUND_NAME, 0) == 0) {
+				if (l.objectId == Guts_H.YAFFS_OBJECTID_LOSTNFOUND) {
+					if (ydirectenv.yaffs_strcmp(name, nameIndex, ydirectenv.YAFFS_LOSTNFOUND_NAME, 0) == 0) {
 						return l;
 					}
-				} else if (yaffs_SumCompare(l.sum, sum) || l.chunkId <= 0)	
+				} else if (ydirectenv.yaffs_SumCompare(l.sum, sum) || l.chunkId <= 0)	
 				{
 					/* LostnFound cunk called Objxxx
 					 * Do a real check
 					 */
 					yaffs_GetObjectName(l, buffer, bufferIndex,
-							YAFFS_MAX_NAME_LENGTH);
-					if (yaffs_strcmp(name, nameIndex, buffer, bufferIndex) == 0) {
+							Guts_H.YAFFS_MAX_NAME_LENGTH);
+					if (ydirectenv.yaffs_strcmp(name, nameIndex, buffer, bufferIndex) == 0) {
 						return l;
 					}
 
@@ -6146,16 +6178,16 @@ public class yaffs_guts_C
 //	yaffs_Object l;
 
 //	if (!theDir) {
-//	T(YAFFS_TRACE_ALWAYS,
+//	yportenv.T(yportenv.YAFFS_TRACE_ALWAYS,
 //	(TSTR
 //	("tragedy: yaffs_FindObjectByName: null pointer directory"
-//	+ TENDSTR)));
+//	+ ydirectenv.TENDSTR)));
 //	YBUG();
 //	}
-//	if (theDir.variantType != YAFFS_OBJECT_TYPE_DIRECTORY) {
-//	T(YAFFS_TRACE_ALWAYS,
+//	if (theDir.variantType != Guts_H.YAFFS_OBJECT_TYPE_DIRECTORY) {
+//	yportenv.T(yportenv.YAFFS_TRACE_ALWAYS,
 //	(TSTR
-//	("tragedy: yaffs_FindObjectByName: non-directory" + TENDSTR)));
+//	("tragedy: yaffs_FindObjectByName: non-directory" + ydirectenv.TENDSTR)));
 //	YBUG();
 //	}
 
@@ -6163,12 +6195,12 @@ public class yaffs_guts_C
 //	if (i) {
 //	l = list_entry(i, yaffs_Object, siblings);
 //	if (l && !fn(l)) {
-//	return YAFFS_FAIL;
+//	return Guts_H.YAFFS_FAIL;
 //	}
 //	}
 //	}
 
-//	return YAFFS_OK;
+//	return Guts_H.YAFFS_OK;
 
 //	}
 //	#endif
@@ -6179,7 +6211,7 @@ public class yaffs_guts_C
 
 	static yaffs_Object yaffs_GetEquivalentObject(yaffs_Object  obj)
 	{
-		if (obj != null && obj.variantType == YAFFS_OBJECT_TYPE_HARDLINK) {
+		if (obj != null && obj.variantType == Guts_H.YAFFS_OBJECT_TYPE_HARDLINK) {
 			/* We want the object id of the equivalent object, not this one */
 			obj = obj.variant.hardLinkVariant().equivalentObject;
 		}
@@ -6190,48 +6222,49 @@ public class yaffs_guts_C
 	static int yaffs_GetObjectName(yaffs_Object  obj, /*YCHAR **/ byte[] name, 
 			int nameIndex,int buffSize)
 	{
-		memset(name, nameIndex, (byte)0, buffSize/* * sizeof(YCHAR)*/ );
+		Unix.memset(name, nameIndex, (byte)0, buffSize/* * sizeof(YCHAR)*/ );
 
 		yaffs_CheckObjectDetailsLoaded(obj);
 
-		if (obj.objectId == YAFFS_OBJECTID_LOSTNFOUND) {
-			yaffs_strncpy(name, nameIndex, YAFFS_LOSTNFOUND_NAME, 0, buffSize - 1);
+		if (obj.objectId == Guts_H.YAFFS_OBJECTID_LOSTNFOUND) {
+			ydirectenv.yaffs_strncpy(name, nameIndex, ydirectenv.YAFFS_LOSTNFOUND_NAME, 0, buffSize - 1);
 		} else if (obj.chunkId <= 0) {
 			/*YCHAR locName[20]*/ byte[] locName = new byte[20];
 			final int locNameIndex = 0;
 			/* make up a name */
-			yaffs_sprintf(locName, locNameIndex,
-					"%a%d", YAFFS_LOSTNFOUND_PREFIX, 0,
-					obj.objectId);
-			yaffs_strncpy(name, nameIndex, locName, locNameIndex, buffSize - 1);
+			Unix.xprintfArgs[0] = PrimitiveWrapperFactory.get(ydirectenv.YAFFS_LOSTNFOUND_PREFIX); 
+			Unix.xprintfArgs[1] = PrimitiveWrapperFactory.get(0);
+			Unix.xprintfArgs[2] = PrimitiveWrapperFactory.get(obj.objectId);
+			Unix.sprintf(locName, locNameIndex, "%a%d");
+			ydirectenv.yaffs_strncpy(name, nameIndex, locName, locNameIndex, buffSize - 1);
 
 		}
 //		#ifdef CONFIG_YAFFS_SHORT_NAMES_IN_RAM
 		else if (obj.shortName[obj.shortNameIndex] != 0) {
-			yaffs_strcpy(name, nameIndex, obj.shortName, obj.shortNameIndex);
+			ydirectenv.yaffs_strcpy(name, nameIndex, obj.shortName, obj.shortNameIndex);
 		}
 //		#endif
 		else {
 			boolean result;
-			/*__u8 **/ byte[] buffer = yaffs_GetTempBuffer(obj.myDev, __LINE__());
+			/*__u8 **/ byte[] buffer = yaffs_GetTempBuffer(obj.myDev, Utils.__LINE__());
 			final int bufferIndex = 0;
 
 			yaffs_ObjectHeader oh = /*(yaffs_ObjectHeader) buffer*/ 
 				new yaffs_ObjectHeader(buffer, bufferIndex);
 
-			memset(buffer, bufferIndex, (byte)0, obj.myDev.nDataBytesPerChunk);
+			Unix.memset(buffer, bufferIndex, (byte)0, obj.myDev.subField1.nDataBytesPerChunk);
 
 			if (obj.chunkId >= 0) {
-				result = yaffs_ReadChunkWithTagsFromNAND(obj.myDev,
+				result = yaffs_nand_C.yaffs_ReadChunkWithTagsFromNAND(obj.myDev,
 						obj.chunkId, buffer, bufferIndex,
 						null);
 			}
-			yaffs_strncpy(name, nameIndex, oh.name(), oh.nameIndex(), buffSize - 1);
+			ydirectenv.yaffs_strncpy(name, nameIndex, oh.name(), oh.nameIndex(), buffSize - 1);
 
-			yaffs_ReleaseTempBuffer(obj.myDev, buffer, __LINE__());
+			yaffs_ReleaseTempBuffer(obj.myDev, buffer, Utils.__LINE__());
 		}
 
-		return yaffs_strlen(name, nameIndex);
+		return ydirectenv.yaffs_strlen(name, nameIndex);
 	}
 
 	static int yaffs_GetObjectFileLength(yaffs_Object  obj)
@@ -6240,15 +6273,15 @@ public class yaffs_guts_C
 		/* Dereference any hard linking */
 		obj = yaffs_GetEquivalentObject(obj);
 
-		if (obj.variantType == YAFFS_OBJECT_TYPE_FILE) {
+		if (obj.variantType == Guts_H.YAFFS_OBJECT_TYPE_FILE) {
 			return obj.variant.fileVariant().fileSize;
 		}
-		if (obj.variantType == YAFFS_OBJECT_TYPE_SYMLINK) {
-			return yaffs_strlen(obj.variant.symLinkVariant().alias,
+		if (obj.variantType == Guts_H.YAFFS_OBJECT_TYPE_SYMLINK) {
+			return ydirectenv.yaffs_strlen(obj.variant.symLinkVariant().alias,
 					obj.variant.symLinkVariant().aliasIndex);
 		} else {
 			/* Only a directory should drop through to here */
-			return obj.myDev.nDataBytesPerChunk;
+			return obj.myDev.subField1.nDataBytesPerChunk;
 		}
 	}
 
@@ -6257,7 +6290,7 @@ public class yaffs_guts_C
 		int count = 0;
 		list_head i;
 
-		if (!obj.unlinked) {
+		if (!obj.sub.unlinked) {
 			count++;	/* the object itself */
 		}
 //		list_for_each(i, &obj.hardLinks) {
@@ -6280,37 +6313,37 @@ public class yaffs_guts_C
 		obj = yaffs_GetEquivalentObject(obj);
 
 		switch (obj.variantType) {
-			case YAFFS_OBJECT_TYPE_FILE:
-				return DT_REG;
-//				break;
-			case YAFFS_OBJECT_TYPE_DIRECTORY:
-				return DT_DIR;
-//				break;
-			case YAFFS_OBJECT_TYPE_SYMLINK:
-				return DT_LNK;
-//				break;
-			case YAFFS_OBJECT_TYPE_HARDLINK:
-				return DT_REG;
-//				break;
-			case YAFFS_OBJECT_TYPE_SPECIAL:
-				if (S_ISFIFO(obj.yst_mode))
-					return DT_FIFO;
-				if (S_ISCHR(obj.yst_mode))
-					return DT_CHR;
-				if (S_ISBLK(obj.yst_mode))
-					return DT_BLK;
-				if (S_ISSOCK(obj.yst_mode))
-					return DT_SOCK;
-			default:
-				return DT_REG;
+		case Guts_H.YAFFS_OBJECT_TYPE_FILE:
+			return devextras.DT_REG;
 //			break;
+		case Guts_H.YAFFS_OBJECT_TYPE_DIRECTORY:
+			return devextras.DT_DIR;
+//			break;
+		case Guts_H.YAFFS_OBJECT_TYPE_SYMLINK:
+			return devextras.DT_LNK;
+//			break;
+		case Guts_H.YAFFS_OBJECT_TYPE_HARDLINK:
+			return devextras.DT_REG;
+//			break;
+		case Guts_H.YAFFS_OBJECT_TYPE_SPECIAL:
+			if (Unix.S_ISFIFO(obj.yst_mode))
+				return devextras.DT_FIFO;
+			if (Unix.S_ISCHR(obj.yst_mode))
+				return devextras.DT_CHR;
+			if (Unix.S_ISBLK(obj.yst_mode))
+				return devextras.DT_BLK;
+			if (Unix.S_ISSOCK(obj.yst_mode))
+				return devextras.DT_SOCK;
+		default:
+			return devextras.DT_REG;
+//		break;
 		}
 	}
 
 	static /*YCHAR **/ byte[] yaffs_GetSymlinkAlias(yaffs_Object  obj)
 	{
 		obj = yaffs_GetEquivalentObject(obj);
-		if (obj.variantType == YAFFS_OBJECT_TYPE_SYMLINK) {
+		if (obj.variantType == Guts_H.YAFFS_OBJECT_TYPE_SYMLINK) {
 			return yaffs_CloneString(obj.variant.symLinkVariant().alias,
 					obj.variant.symLinkVariant().aliasIndex);
 		} else {
@@ -6324,26 +6357,26 @@ public class yaffs_guts_C
 	{
 		/*unsigned int*/ int valid = attr.ia_valid;
 
-		if ((valid & ATTR_MODE) != 0)
+		if ((valid & devextras.ATTR_MODE) != 0)
 			obj.yst_mode = attr.ia_mode;
-		if ((valid & ATTR_UID) != 0)
+		if ((valid & devextras.ATTR_UID) != 0)
 			obj.yst_uid = attr.ia_uid;
-		if ((valid & ATTR_GID) != 0)
+		if ((valid & devextras.ATTR_GID) != 0)
 			obj.yst_gid = attr.ia_gid;
 
-		if ((valid & ATTR_ATIME) != 0)
-			obj.yst_atime = Y_TIME_CONVERT(attr.ia_atime);
-		if ((valid & ATTR_CTIME) != 0)
-			obj.yst_ctime = Y_TIME_CONVERT(attr.ia_ctime);
-		if ((valid & ATTR_MTIME) != 0)
-			obj.yst_mtime = Y_TIME_CONVERT(attr.ia_mtime);
+		if ((valid & devextras.ATTR_ATIME) != 0)
+			obj.yst_atime = /*Y_TIME_CONVERyportenv.T(*/ attr.ia_atime/*)*/;
+		if ((valid & devextras.ATTR_CTIME) != 0)
+			obj.yst_ctime = /*Y_TIME_CONVERyportenv.T(*/ attr.ia_ctime/*)*/;
+		if ((valid & devextras.ATTR_MTIME) != 0)
+			obj.yst_mtime = /*Y_TIME_CONVERyportenv.T(*/ attr.ia_mtime/*)*/;
 
-		if ((valid & ATTR_SIZE) != 0)
+		if ((valid & devextras.ATTR_SIZE) != 0)
 			yaffs_ResizeFile(obj, attr.ia_size);
 
 		yaffs_UpdateObjectHeader(obj, null, 0, true, false, 0);
 
-		return YAFFS_OK;
+		return Guts_H.YAFFS_OK;
 
 	}
 	static boolean yaffs_GetAttributes(yaffs_Object  obj, iattr attr)
@@ -6351,26 +6384,25 @@ public class yaffs_guts_C
 		/*unsigned int*/ int valid = 0;
 
 		attr.ia_mode = obj.yst_mode;
-		valid |= ATTR_MODE;
+		valid |= devextras.ATTR_MODE;
 		attr.ia_uid = obj.yst_uid;
-		valid |= ATTR_UID;
+		valid |= devextras.ATTR_UID;
 		attr.ia_gid = obj.yst_gid;
-		valid |= ATTR_GID;
+		valid |= devextras.ATTR_GID;
 
-		// XXX either remove all Y_TIME_CONVERT(), or...
-		/*Y_TIME_CONVERT(*/ attr.ia_atime/*)*/ = obj.yst_atime;
-		valid |= ATTR_ATIME;
-		/*Y_TIME_CONVERT(*/ attr.ia_ctime/*)*/ = obj.yst_ctime;
-		valid |= ATTR_CTIME;
-		/*Y_TIME_CONVERT(*/ attr.ia_mtime/*)*/ = obj.yst_mtime;
-		valid |= ATTR_MTIME;
+		/*Y_TIME_CONVERyportenv.T(*/ attr.ia_atime/*)*/ = obj.yst_atime;
+		valid |= devextras.ATTR_ATIME;
+		/*Y_TIME_CONVERyportenv.T(*/ attr.ia_ctime/*)*/ = obj.yst_ctime;
+		valid |= devextras.ATTR_CTIME;
+		/*Y_TIME_CONVERyportenv.T(*/ attr.ia_mtime/*)*/ = obj.yst_mtime;
+		valid |= devextras.ATTR_MTIME;
 
 		attr.ia_size = yaffs_GetFileSize(obj);
-		valid |= ATTR_SIZE;
+		valid |= devextras.ATTR_SIZE;
 
 		attr.ia_valid = valid;
 
-		return YAFFS_OK;
+		return Guts_H.YAFFS_OK;
 
 	}
 
@@ -6383,15 +6415,15 @@ public class yaffs_guts_C
 
 //	yaffs_GetObjectName(obj, name, 256);
 
-//	T(YAFFS_TRACE_ALWAYS,
+//	yportenv.T(yportenv.YAFFS_TRACE_ALWAYS,
 //	(TSTR
 //	("Object %d, inode %d \"%s\"\n dirty %d valid %d serial %d sum %d"
 //	" chunk %d type %d size %d\n"
-//	+ TENDSTR), obj.objectId, yaffs_GetObjectInode(obj), name,
+//	+ ydirectenv.TENDSTR), obj.objectId, yaffs_GetObjectInode(obj), name,
 //	obj.dirty, obj.valid, obj.serial, obj.sum, obj.chunkId,
 //	yaffs_GetObjectType(obj), yaffs_GetObjectFileLength(obj)));
 
-//	return YAFFS_OK;
+//	return Guts_H.YAFFS_OK;
 //	}
 //	#endif
 
@@ -6401,27 +6433,27 @@ public class yaffs_guts_C
 	{
 
 		/* Common functions, gotta have */
-		if (!(dev.eraseBlockInNAND != null) || !(dev.initialiseNAND != null))
+		if (!(dev.subField1.eraseBlockInNAND != null) || !(dev.subField1.initialiseNAND != null))
 			return false;
 
 //		#ifdef CONFIG_YAFFS_YAFFS2
 
 		/* Can use the "with tags" style interface for yaffs1 or yaffs2 */
-		if (dev.writeChunkWithTagsToNAND != null &&
-				dev.readChunkWithTagsFromNAND != null &&
-				!(dev.writeChunkToNAND != null) &&
-				!(dev.readChunkFromNAND != null) &&
-				dev.markNANDBlockBad != null && dev.queryNANDBlock != null)
+		if (dev.subField1.writeChunkWithTagsToNAND != null &&
+				dev.subField1.readChunkWithTagsFromNAND != null &&
+				!(dev.subField1.writeChunkToNAND != null) &&
+				!(dev.subField1.readChunkFromNAND != null) &&
+				dev.subField1.markNANDBlockBad != null && dev.subField1.queryNANDBlock != null)
 			return true;
 //		#endif
 
 		/* Can use the "spare" style interface for yaffs1 */
-		if (!dev.isYaffs2 &&
-				!(dev.writeChunkWithTagsToNAND != null) &&
-				!(dev.readChunkWithTagsFromNAND != null) &&
-				dev.writeChunkToNAND != null &&
-				dev.readChunkFromNAND != null &&
-				!(dev.markNANDBlockBad != null) && !(dev.queryNANDBlock != null))
+		if (!dev.subField1.isYaffs2 &&
+				!(dev.subField1.writeChunkWithTagsToNAND != null) &&
+				!(dev.subField1.readChunkWithTagsFromNAND != null) &&
+				dev.subField1.writeChunkToNAND != null &&
+				dev.subField1.readChunkFromNAND != null &&
+				!(dev.subField1.markNANDBlockBad != null) && !(dev.subField1.queryNANDBlock != null))
 			return true;
 
 		return false;		/* bad */
@@ -6436,95 +6468,98 @@ public class yaffs_guts_C
 		dev.unlinkedDir = dev.deletedDir = null;
 
 		dev.unlinkedDir =
-			yaffs_CreateFakeDirectory(dev, YAFFS_OBJECTID_UNLINKED, S_IFDIR);
+			yaffs_CreateFakeDirectory(dev, Guts_H.YAFFS_OBJECTID_UNLINKED, Unix.S_IFDIR);
 		dev.deletedDir =
-			yaffs_CreateFakeDirectory(dev, YAFFS_OBJECTID_DELETED, S_IFDIR);
+			yaffs_CreateFakeDirectory(dev, Guts_H.YAFFS_OBJECTID_DELETED, Unix.S_IFDIR);
 
 		dev.rootDir =
-			yaffs_CreateFakeDirectory(dev, YAFFS_OBJECTID_ROOT,
-					YAFFS_ROOT_MODE | S_IFDIR);
+			yaffs_CreateFakeDirectory(dev, Guts_H.YAFFS_OBJECTID_ROOT,
+					ydirectenv.YAFFS_ROOT_MODE | Unix.S_IFDIR);
 		dev.lostNFoundDir =
-			yaffs_CreateFakeDirectory(dev, YAFFS_OBJECTID_LOSTNFOUND,
-					YAFFS_LOSTNFOUND_MODE | S_IFDIR);
+			yaffs_CreateFakeDirectory(dev, Guts_H.YAFFS_OBJECTID_LOSTNFOUND,
+					ydirectenv.YAFFS_LOSTNFOUND_MODE | Unix.S_IFDIR);
 		yaffs_AddObjectToDirectory(dev.rootDir, dev.lostNFoundDir);
 	}
 
+	// XXX mark staticialized variables
+	/*unsigned*/ static int x;
+	static int bits;
+	
 	static boolean yaffs_GutsInitialise(yaffs_Device dev)
 	{
-		/*unsigned*/ int x;
-		int bits;
 
-		T(YAFFS_TRACE_TRACING, (TSTR("yaffs: yaffs_GutsInitialise()" + TENDSTR)));
+
+		yportenv.T(yportenv.YAFFS_TRACE_TRACING, (("yaffs: yaffs_GutsInitialise()" + ydirectenv.TENDSTR)));
 
 		/* Check stuff that must be set */
 
 		if (!(dev != null)) {
-			T(YAFFS_TRACE_ALWAYS, (TSTR("yaffs: Need a device" + TENDSTR)));
-			return YAFFS_FAIL;
+			yportenv.T(yportenv.YAFFS_TRACE_ALWAYS, (("yaffs: Need a device" + ydirectenv.TENDSTR)));
+			return Guts_H.YAFFS_FAIL;
 		}
 
-		dev.internalStartBlock = dev.startBlock;
-		dev.internalEndBlock = dev.endBlock;
-		dev.blockOffset = 0;
-		dev.chunkOffset = 0;
-		dev.nFreeChunks = 0;
+		dev.subField2.internalStartBlock = dev.subField1.startBlock;
+		dev.subField2.internalEndBlock = dev.subField1.endBlock;
+		dev.subField2.blockOffset = 0;
+		dev.subField2.chunkOffset = 0;
+		dev.subField3.nFreeChunks = 0;
 
-		if (dev.startBlock == 0) {
-			dev.internalStartBlock = dev.startBlock + 1;
-			dev.internalEndBlock = dev.endBlock + 1;
-			dev.blockOffset = 1;
-			dev.chunkOffset = dev.nChunksPerBlock;
+		if (dev.subField1.startBlock == 0) {
+			dev.subField2.internalStartBlock = dev.subField1.startBlock + 1;
+			dev.subField2.internalEndBlock = dev.subField1.endBlock + 1;
+			dev.subField2.blockOffset = 1;
+			dev.subField2.chunkOffset = dev.subField1.nChunksPerBlock;
 		}
 
 		/* Check geometry parameters. */
 
-		if ((dev.isYaffs2 && dev.nDataBytesPerChunk < 1024) || 
-				(!dev.isYaffs2 && dev.nDataBytesPerChunk != 512) || 
-				dev.nChunksPerBlock < 2 || 
-				dev.nReservedBlocks < 2 || 
-				dev.internalStartBlock <= 0 || 
-				dev.internalEndBlock <= 0 || 
-				dev.internalEndBlock <= (dev.internalStartBlock + dev.nReservedBlocks + 2)	// otherwise it is too small
+		if ((dev.subField1.isYaffs2 && dev.subField1.nDataBytesPerChunk < 1024) || 
+				(!dev.subField1.isYaffs2 && dev.subField1.nDataBytesPerChunk != 512) || 
+				dev.subField1.nChunksPerBlock < 2 || 
+				dev.subField1.nReservedBlocks < 2 || 
+				dev.subField2.internalStartBlock <= 0 || 
+				dev.subField2.internalEndBlock <= 0 || 
+				dev.subField2.internalEndBlock <= (dev.subField2.internalStartBlock + dev.subField1.nReservedBlocks + 2)	// otherwise it is too small
 		) {
-			T(YAFFS_TRACE_ALWAYS,
-					TSTR
+			yportenv.T(yportenv.YAFFS_TRACE_ALWAYS,
+
 					("yaffs: NAND geometry problems: chunk size %d, type is yaffs%s "
-							+ TENDSTR), dev.nDataBytesPerChunk, dev.isYaffs2 ? "2" : "");
-			return YAFFS_FAIL;
+							+ ydirectenv.TENDSTR), PrimitiveWrapperFactory.get(dev.subField1.nDataBytesPerChunk), PrimitiveWrapperFactory.get(dev.subField1.isYaffs2 ? "2" : ""));
+			return Guts_H.YAFFS_FAIL;
 		}
 
-		if (yaffs_InitialiseNAND(dev) != YAFFS_OK) {
-			T(YAFFS_TRACE_ALWAYS,
-					(TSTR("yaffs: InitialiseNAND failed" + TENDSTR)));
-			return YAFFS_FAIL;
+		if (yaffs_nand_C.yaffs_InitialiseNAND(dev) != Guts_H.YAFFS_OK) {
+			yportenv.T(yportenv.YAFFS_TRACE_ALWAYS,
+					(("yaffs: InitialiseNAND failed" + ydirectenv.TENDSTR)));
+			return Guts_H.YAFFS_FAIL;
 		}
 
 		/* Got the right mix of functions? */
 		if (!yaffs_CheckDevFunctions(dev)) {
 			/* Function missing */
-			T(YAFFS_TRACE_ALWAYS,
-					(TSTR
-							("yaffs: device function(s) missing or wrong\n" + TENDSTR)));
+			yportenv.T(yportenv.YAFFS_TRACE_ALWAYS,
+					(
+							("yaffs: device function(s) missing or wrong\n" + ydirectenv.TENDSTR)));
 
-			return YAFFS_FAIL;
+			return Guts_H.YAFFS_FAIL;
 		}
 
 		/* This is really a compilation check. */
 		if (!yaffs_CheckStructures()) {
-			T(YAFFS_TRACE_ALWAYS,
-					(TSTR("yaffs_CheckStructures failed\n" + TENDSTR)));
-			return YAFFS_FAIL;
+			yportenv.T(yportenv.YAFFS_TRACE_ALWAYS,
+					(("yaffs_CheckStructures failed\n" + ydirectenv.TENDSTR)));
+			return Guts_H.YAFFS_FAIL;
 		}
 
-		if (dev.isMounted) {
-			T(YAFFS_TRACE_ALWAYS,
-					(TSTR("yaffs: device already mounted\n" + TENDSTR)));
-			return YAFFS_FAIL;
+		if (dev.subField2.isMounted) {
+			yportenv.T(yportenv.YAFFS_TRACE_ALWAYS,
+					(("yaffs: device already mounted\n" + ydirectenv.TENDSTR)));
+			return Guts_H.YAFFS_FAIL;
 		}
 
 		/* Finished with most checks. One or two more checks happen later on too. */
 
-		dev.isMounted = true;
+		dev.subField2.isMounted = true;
 
 
 
@@ -6534,47 +6569,51 @@ public class yaffs_guts_C
 		 *  Calculate all the chunk size manipulation numbers: 
 		 */
 		/* Start off assuming it is a power of 2 */
-		dev.chunkShift = ShiftDiv(dev.nDataBytesPerChunk);
-		dev.chunkMask = (1<<dev.chunkShift) - 1;
+		dev.subField2.chunkShift = ShiftDiv(dev.subField1.nDataBytesPerChunk);
+		dev.subField2.chunkMask = (1<<dev.subField2.chunkShift) - 1;
 
-		if(dev.nDataBytesPerChunk == (dev.chunkMask + 1)){
+		if(dev.subField1.nDataBytesPerChunk == (dev.subField2.chunkMask + 1)){
 			/* Yes it is a power of 2, disable crumbs */
-			dev.crumbMask = 0;
-			dev.crumbShift = 0;
-			dev.crumbsPerChunk = 0;
+			dev.subField2.crumbMask = 0;
+			dev.subField2.crumbShift = 0;
+			dev.subField2.crumbsPerChunk = 0;
 		} else {
 			/* Not a power of 2, use crumbs instead */
-			dev.crumbShift = ShiftDiv(yaffs_PackedTags2TagsPart.SERIALIZED_LENGTH);
-			dev.crumbMask = (1<<dev.crumbShift)-1;
-			dev.crumbsPerChunk = dev.nDataBytesPerChunk/(1 << dev.crumbShift);
-			dev.chunkShift = 0;
-			dev.chunkMask = 0;
+			dev.subField2.crumbShift = ShiftDiv(yaffs_PackedTags2TagsPart.SERIALIZED_LENGTH);
+			dev.subField2.crumbMask = (1<<dev.subField2.crumbShift)-1;
+			dev.subField2.crumbsPerChunk = dev.subField1.nDataBytesPerChunk/(1 << dev.subField2.crumbShift);
+			dev.subField2.chunkShift = 0;
+			dev.subField2.chunkMask = 0;
 		}
 
-
+		return yaffs_GutsInitialise_Sub0(dev);
+	}
+	
+	protected static boolean yaffs_GutsInitialise_Sub0(yaffs_Device dev)
+	{
 		/*
 		 * Calculate chunkGroupBits.
 		 * We need to find the next power of 2 > than internalEndBlock
 		 */
 
-		x = dev.nChunksPerBlock * (dev.internalEndBlock + 1);	// XXX understand, I'm too tired now
+		x = dev.subField1.nChunksPerBlock * (dev.subField2.internalEndBlock + 1);	// XXX understand, I'm too tired now
 
 		bits = ShiftsGE(x);
 
 		/* Set up tnode width if wide tnodes are enabled. */
-		if(!dev.wideTnodesDisabled){
+		if(!dev.subField1.wideTnodesDisabled){
 			/* bits must be even so that we end up with 32-bit words */
 			if((bits & 1) != 0)
 				bits++;
 			if(bits < 16)
-				dev.tnodeWidth = 16;
+				dev.subField2.tnodeWidth = 16;
 			else
-				dev.tnodeWidth = bits;
+				dev.subField2.tnodeWidth = bits;
 		}
 		else
-			dev.tnodeWidth = 16;
+			dev.subField2.tnodeWidth = 16;
 
-		dev.tnodeMask = (1<<dev.tnodeWidth)-1;
+		dev.subField2.tnodeMask = (1<<dev.subField2.tnodeWidth)-1;
 
 		/* Level0 Tnodes are 16 bits or wider (if wide tnodes are enabled),
 		 * so if the bitwidth of the
@@ -6582,70 +6621,70 @@ public class yaffs_guts_C
 		 * to figure out chunk shift and chunkGroupSize
 		 */
 
-		if (bits <= dev.tnodeWidth)
-			dev.chunkGroupBits = 0;
+		if (bits <= dev.subField2.tnodeWidth)
+			dev.subField1.chunkGroupBits = 0;
 		else
-			dev.chunkGroupBits = bits - dev.tnodeWidth;
+			dev.subField1.chunkGroupBits = bits - dev.subField2.tnodeWidth;
 
 
-		dev.chunkGroupSize = 1 << dev.chunkGroupBits;
+		dev.subField1.chunkGroupSize = 1 << dev.subField1.chunkGroupBits;
 
-		if (dev.nChunksPerBlock < dev.chunkGroupSize) {
+		if (dev.subField1.nChunksPerBlock < dev.subField1.chunkGroupSize) {
 			/* We have a problem because the soft delete won't work if
 			 * the chunk group size > chunks per block.
 			 * This can be remedied by using larger "virtual blocks".
 			 */
-			T(YAFFS_TRACE_ALWAYS,
-					(TSTR("yaffs: chunk group too large\n" + TENDSTR)));
+			yportenv.T(yportenv.YAFFS_TRACE_ALWAYS,
+					(("yaffs: chunk group too large\n" + ydirectenv.TENDSTR)));
 
-			return YAFFS_FAIL;
+			return Guts_H.YAFFS_FAIL;
 		}
 
 		/* OK, we've finished verifying the device, lets continue with initialisation */
 
 		/* More device initialisation */
-		dev.garbageCollections = 0;
-		dev.passiveGarbageCollections = 0;
-		dev.currentDirtyChecker = 0;
+		dev.subField3.garbageCollections = 0;
+		dev.subField3.passiveGarbageCollections = 0;
+		dev.subField3.currentDirtyChecker = 0;
 		dev.bufferedBlock = -1;
 		dev.doingBufferedBlockRewrite = 0;
 		dev.nDeletedFiles = 0;
 		dev.nBackgroundDeletions = 0;
 		dev.nUnlinkedFiles = 0;
-		dev.eccFixed = 0;
-		dev.eccUnfixed = 0;
-		dev.tagsEccFixed = 0;
+		dev.subField3.eccFixed = 0;
+		dev.subField3.eccUnfixed = 0;
+		dev.subField3.tagsEccFixed = 0;
 		dev.tagsEccUnfixed = 0;
-		dev.nErasureFailures = 0;
-		dev.nErasedBlocks = 0;
-		dev.isDoingGC = false;
+		dev.subField3.nErasureFailures = 0;
+		dev.subField3.nErasedBlocks = 0;
+		dev.subField3.isDoingGC = false;
 		dev.hasPendingPrioritisedGCs = true; /* Assume the worst for now, will get fixed on first GC */
 
 		/* Initialise temporary buffers and caches. */
 		{
 			int i;
-			for (i = 0; i < YAFFS_N_TEMP_BUFFERS; i++) {
+			for (i = 0; i < Guts_H.YAFFS_N_TEMP_BUFFERS; i++) {
 				dev.tempBuffer[i].line = 0;	/* not in use */
 				dev.tempBuffer[i].buffer =
-					YMALLOC_DMA(dev.nDataBytesPerChunk);
+					ydirectenv.YMALLOC_DMA(dev.subField1.nDataBytesPerChunk);
 			}
 		}
 
-		if (dev.nShortOpCaches > 0) {
+		if (dev.subField1.nShortOpCaches > 0) {
 			int i;
 
-			if (dev.nShortOpCaches > YAFFS_MAX_SHORT_OP_CACHES) {
-				dev.nShortOpCaches = YAFFS_MAX_SHORT_OP_CACHES;
+			if (dev.subField1.nShortOpCaches > Guts_H.YAFFS_MAX_SHORT_OP_CACHES) {
+				dev.subField1.nShortOpCaches = Guts_H.YAFFS_MAX_SHORT_OP_CACHES;
 			}
 
 			dev.srCache =
-				YMALLOC_CHUNKCACHE(dev.nShortOpCaches/* * sizeof(yaffs_ChunkCache)*/);
+				ydirectenv.YMALLOC_CHUNKCACHE(dev.subField1.nShortOpCaches/* * sizeof(yaffs_ChunkCache)*/);
 
-			for (i = 0; i < dev.nShortOpCaches; i++) {
+			for (i = 0; i < dev.subField1.nShortOpCaches; i++) {
 				dev.srCache[i].object = null;
 				dev.srCache[i].lastUse = 0;
 				dev.srCache[i].dirty = false;
-				dev.srCache[i].data = YMALLOC_DMA(dev.nDataBytesPerChunk);
+				dev.srCache[i].data = ydirectenv.YMALLOC_DMA(dev.subField1.nDataBytesPerChunk);
 				dev.srCache[i].dataIndex = 0;
 			}
 			dev.srLastUse = 0;
@@ -6653,10 +6692,10 @@ public class yaffs_guts_C
 
 		dev.cacheHits = 0;
 
-		dev.gcCleanupList = YMALLOC_INT(dev.nChunksPerBlock /*sizeof(__u32)*/);
+		dev.subField3.gcCleanupList = ydirectenv.YMALLOC_INT(dev.subField1.nChunksPerBlock /*sizeof(__u32)*/);
 
-		if (dev.isYaffs2) {
-			dev.useHeaderFileSize = true;
+		if (dev.subField1.isYaffs2) {
+			dev.subField1.useHeaderFileSize = true;
 		}
 
 		yaffs_InitialiseBlocks(dev);
@@ -6667,10 +6706,10 @@ public class yaffs_guts_C
 
 
 		/* Now scan the flash. */
-		if (dev.isYaffs2) {
+		if (dev.subField1.isYaffs2) {
 			if(yaffs_CheckpointRestore(dev)) {
-				T(YAFFS_TRACE_ALWAYS,
-						(TSTR("yaffs: restored from checkpoint" + TENDSTR)));
+				yportenv.T(yportenv.YAFFS_TRACE_ALWAYS,
+						(("yaffs: restored from checkpoint" + ydirectenv.TENDSTR)));
 			} else {
 
 				/* Clean up the mess caused by an aborted checkpoint load 
@@ -6690,46 +6729,45 @@ public class yaffs_guts_C
 			yaffs_Scan(dev);
 
 		/* Zero out stats */
-		dev.nPageReads = 0;
-		dev.nPageWrites = 0;
-		dev.nBlockErasures = 0;
-		dev.nGCCopies = 0;
-		dev.nRetriedWrites = 0;
+		dev.subField3.nPageReads = 0;
+		dev.subField3.nPageWrites = 0;
+		dev.subField3.nBlockErasures = 0;
+		dev.subField3.nGCCopies = 0;
+		dev.subField3.nRetriedWrites = 0;
 
-		dev.nRetiredBlocks = 0;
+		dev.subField3.nRetiredBlocks = 0;
 
 		yaffs_VerifyFreeChunks(dev);
 
-		T(YAFFS_TRACE_TRACING,
-				(TSTR("yaffs: yaffs_GutsInitialise() done.\n" + TENDSTR)));
-		return YAFFS_OK;
-
+		yportenv.T(yportenv.YAFFS_TRACE_TRACING,
+				(("yaffs: yaffs_GutsInitialise() done.\n" + ydirectenv.TENDSTR)));
+		return Guts_H.YAFFS_OK;
 	}
 
 	static void yaffs_Deinitialise(yaffs_Device dev)
 	{
-		if (dev.isMounted) {
+		if (dev.subField2.isMounted) {
 			int i;
 
 			yaffs_DeinitialiseBlocks(dev);
 			yaffs_DeinitialiseTnodes(dev);
 			yaffs_DeinitialiseObjects(dev);
-			if (dev.nShortOpCaches > 0) {
+			if (dev.subField1.nShortOpCaches > 0) {
 
-				for (i = 0; i < dev.nShortOpCaches; i++) {
-					YFREE(dev.srCache[i].data);
+				for (i = 0; i < dev.subField1.nShortOpCaches; i++) {
+					ydirectenv.YFREE(dev.srCache[i].data);
 				}
 
-				YFREE(dev.srCache);
+				ydirectenv.YFREE(dev.srCache);
 			}
 
-			YFREE(dev.gcCleanupList);
+			ydirectenv.YFREE(dev.subField3.gcCleanupList);
 
-			for (i = 0; i < YAFFS_N_TEMP_BUFFERS; i++) {
-				YFREE(dev.tempBuffer[i].buffer);
+			for (i = 0; i < Guts_H.YAFFS_N_TEMP_BUFFERS; i++) {
+				ydirectenv.YFREE(dev.tempBuffer[i].buffer);
 			}
 
-			dev.isMounted = false;
+			dev.subField2.isMounted = false;
 		}
 
 	}
@@ -6741,21 +6779,21 @@ public class yaffs_guts_C
 
 		yaffs_BlockInfo blk;
 
-		for (nFree = 0, b = dev.internalStartBlock; b <= dev.internalEndBlock;
+		for (nFree = 0, b = dev.subField2.internalStartBlock; b <= dev.subField2.internalEndBlock;
 		b++) {
-			blk = yaffs_GetBlockInfo(dev, b);
+			blk = Guts_H.yaffs_GetBlockInfo(dev, b);
 
 			switch (blk.blockState()) {
-				case YAFFS_BLOCK_STATE_EMPTY:
-				case YAFFS_BLOCK_STATE_ALLOCATING:
-				case YAFFS_BLOCK_STATE_COLLECTING:
-				case YAFFS_BLOCK_STATE_FULL:
-					nFree +=
-						(dev.nChunksPerBlock - blk.pagesInUse() +
-								blk.softDeletions());
-					break;
-				default:
-					break;
+			case Guts_H.YAFFS_BLOCK_STATE_EMPTY:
+			case Guts_H.YAFFS_BLOCK_STATE_ALLOCATING:
+			case Guts_H.YAFFS_BLOCK_STATE_COLLECTING:
+			case Guts_H.YAFFS_BLOCK_STATE_FULL:
+				nFree +=
+					(dev.subField1.nChunksPerBlock - blk.pagesInUse() +
+							blk.softDeletions());
+				break;
+			default:
+				break;
 			}
 
 		}
@@ -6772,7 +6810,7 @@ public class yaffs_guts_C
 		int blocksForCheckpoint;
 
 //		#if 1
-		nFree = dev.nFreeChunks;
+		nFree = dev.subField3.nFreeChunks;
 //		#else
 //		nFree = yaffs_CountFreeChunks(dev);
 //		#endif
@@ -6783,7 +6821,7 @@ public class yaffs_guts_C
 
 		{
 			int i;
-			for (nDirtyCacheChunks = 0, i = 0; i < dev.nShortOpCaches; i++) {
+			for (nDirtyCacheChunks = 0, i = 0; i < dev.subField1.nShortOpCaches; i++) {
 				if (dev.srCache[i].dirty)
 					nDirtyCacheChunks++;
 			}
@@ -6791,14 +6829,14 @@ public class yaffs_guts_C
 
 		nFree -= nDirtyCacheChunks;
 
-		nFree -= ((dev.nReservedBlocks + 1) * dev.nChunksPerBlock);
+		nFree -= ((dev.subField1.nReservedBlocks + 1) * dev.subField1.nChunksPerBlock);
 
 		/* Now we figure out how much to reserve for the checkpoint and report that... */
-		blocksForCheckpoint = dev.nCheckpointReservedBlocks - dev.blocksInCheckpoint;
+		blocksForCheckpoint = dev.subField1.nCheckpointReservedBlocks - dev.subField2.blocksInCheckpoint;
 		if(blocksForCheckpoint < 0)
 			blocksForCheckpoint = 0;
 
-		nFree -= (blocksForCheckpoint * dev.nChunksPerBlock);
+		nFree -= (blocksForCheckpoint * dev.subField1.nChunksPerBlock);
 
 		if (nFree < 0)
 			nFree = 0;
@@ -6813,12 +6851,12 @@ public class yaffs_guts_C
 	{
 		int counted = yaffs_CountFreeChunks(dev);
 
-		int difference = dev.nFreeChunks - counted;
+		int difference = dev.subField3.nFreeChunks - counted;
 
 		if (difference != 0) {
-			T(YAFFS_TRACE_ALWAYS,
-					TSTR("Freechunks verification failure %d %d %d" + TENDSTR),
-					dev.nFreeChunks, counted, difference);
+			yportenv.T(yportenv.YAFFS_TRACE_ALWAYS,
+					("Freechunks verification failure %d %d %d" + ydirectenv.TENDSTR),
+					PrimitiveWrapperFactory.get(dev.subField3.nFreeChunks), PrimitiveWrapperFactory.get(counted), PrimitiveWrapperFactory.get(difference));
 			yaffs_freeVerificationFailures++;
 		}
 	}
@@ -6828,17 +6866,17 @@ public class yaffs_guts_C
 //	#define yaffs_CheckStruct(structure,syze, name) \
 //	if(sizeof(structure) != syze) \
 //	{ \
-//	T(YAFFS_TRACE_ALWAYS,(TSTR("%s should be %d but is %d\n" + TENDSTR),\
+//	yportenv.T(yportenv.YAFFS_TRACE_ALWAYS,(("%s should be %d but is %d\n" + ydirectenv.TENDSTR),\
 //	name,syze,sizeof(structure))); \
-//	return YAFFS_FAIL; \
+//	return Guts_H.YAFFS_FAIL; \
 //	}
 
 	static boolean yaffs_CheckStruct(int structureSize, int syze, String name)
 	{
 		if(/*sizeof(structure)*/ structureSize != syze)
 		{ 
-			T(YAFFS_TRACE_ALWAYS,TSTR("%s should be %d but is %d\n" + TENDSTR),
-					name,syze,/*sizeof(structure)*/ structureSize); 
+			yportenv.T(yportenv.YAFFS_TRACE_ALWAYS,("%s should be %d but is %d\n" + ydirectenv.TENDSTR),
+					PrimitiveWrapperFactory.get(name),PrimitiveWrapperFactory.get(syze),/*sizeof(structure)*/ PrimitiveWrapperFactory.get(structureSize)); 
 			return false; 
 		}
 		return true;
@@ -6852,7 +6890,7 @@ public class yaffs_guts_C
 		/*      yaffs_CheckStruct(yaffs_TagsUnion,8,"yaffs_TagsUnion") */
 		/*      yaffs_CheckStruct(yaffs_Spare,16,"yaffs_Spare") */
 //		#ifndef CONFIG_YAFFS_TNODE_LIST_DEBUG
-		(yaffs_CheckStruct(yaffs_Tnode.SERIALIZED_LENGTH, 2 * YAFFS_NTNODES_LEVEL0, "yaffs_Tnode") &&
+		(yaffs_CheckStruct(yaffs_Tnode.SERIALIZED_LENGTH, 2 * Guts_H.YAFFS_NTNODES_LEVEL0, "yaffs_Tnode") &&
 //				#endif
 				yaffs_CheckStruct(yaffs_ObjectHeader.SERIALIZED_LENGTH, 512, "yaffs_ObjectHeader"));
 	}

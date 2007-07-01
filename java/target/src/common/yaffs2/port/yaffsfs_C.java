@@ -1,20 +1,10 @@
 // XXX some = 0 initializations are wrong
-// XXX some type issues - long - int -
 // CHECK needs verification
 
 package yaffs2.port;
 
 import yaffs2.utils.*;
-
-import static yaffs2.utils.Unix.*;
-
-import static yaffs2.port.Guts_H.*;
-import static yaffs2.port.CFG_H.*;
-import static yaffs2.port.yportenv.*;
-import static yaffs2.port.ydirectenv.*;
-import static yaffs2.port.yaffsfs_H.*;
-import static yaffs2.port.yaffs_guts_C.*;
-import static yaffs2.port.devextras.*;
+import yaffs2.utils.factory.PrimitiveWrapperFactory;
 
 public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 {
@@ -48,7 +38,7 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 //	#endif
 
 
-	static final String yaffsfs_c_version="$Id: yaffsfs_C.java,v 1.1 2007/06/07 14:37:29 peter.hilber Exp $";
+	static final String yaffsfs_c_version="$Id: yaffsfs_C.java,v 1.2 2007/07/01 01:08:51 alexander.dejaco Exp $";
 
 //	 configurationList is the list of devices that are supported
 	static yaffsfs_DeviceConfiguration[] yaffsfs_configurationList;
@@ -76,7 +66,7 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 	static yaffsfs_Handle[] yaffsfs_handle;
 	
 	static {
-		 yaffsfs_handle = new yaffsfs_Handle[YAFFSFS_N_HANDLES];
+		 yaffsfs_handle = new yaffsfs_Handle[CFG_H.YAFFSFS_N_HANDLES];
 		 for (int i = 0; i < yaffsfs_handle.length; i++)
 			 yaffsfs_handle[i] = new yaffsfs_Handle();
 	}
@@ -87,7 +77,7 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 	static int yaffsfs_InitHandles()
 	{
 		int i;
-		for(i = 0; i < YAFFSFS_N_HANDLES; i++)
+		for(i = 0; i < CFG_H.YAFFSFS_N_HANDLES; i++)
 		{
 			yaffsfs_handle[i].inUse = false;
 			yaffsfs_handle[i].obj = null;
@@ -97,7 +87,7 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 
 	static yaffsfs_Handle yaffsfs_GetHandlePointer(int h)
 	{
-		if(h < 0 || h >= YAFFSFS_N_HANDLES)
+		if(h < 0 || h >= CFG_H.YAFFSFS_N_HANDLES)
 		{
 			return null;
 		}
@@ -127,7 +117,7 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 		int i;
 		yaffsfs_Handle h;
 		
-		for(i = 0; i < YAFFSFS_N_HANDLES; i++)
+		for(i = 0; i < CFG_H.YAFFSFS_N_HANDLES; i++)
 		{
 			h = yaffsfs_GetHandlePointer(i);
 			if(!(h != null))
@@ -136,7 +126,7 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 			}
 			if(!h.inUse)
 			{
-				memset(h/*,0,sizeof(yaffsfs_Handle)*/ );
+				Unix.memset(h/*,0,sizeof(yaffsfs_Handle)*/ );
 				h.inUse=true;
 				return i;
 			}
@@ -197,7 +187,7 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 			thisMatchLength = 0;
 			
 			while(p[pIndex] != 0 &&  //unmatched part of prefix 
-			      strcmp(p,pIndex,new byte[]{'/',0},0) != 0 && // the rest of the prefix is not / (to catch / at end)
+			      Unix.strcmp(p,pIndex,new byte[]{'/',0},0) != 0 && // the rest of the prefix is not / (to catch / at end)
 			      leftOver[leftOverIndex] != 0 && 
 			      yaffsfs_Match(p[pIndex],leftOver[leftOverIndex]))
 			{
@@ -205,7 +195,7 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 				leftOverIndex++;
 				thisMatchLength++;
 			}
-			if((!(p[pIndex] != 0) || strcmp(p,pIndex,new byte[]{'/',0},0) == 0) &&      // end of prefix
+			if((!(p[pIndex] != 0) || Unix.strcmp(p,pIndex,new byte[]{'/',0},0) == 0) &&      // end of prefix
 			   (!(leftOver[leftOverIndex] != 0) || leftOver[leftOverIndex] == '/') && // no more in this path name part
 			   (thisMatchLength > longestMatch))
 			{
@@ -226,7 +216,7 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 		yaffs_Device dev;
 		
 		dev= yaffsfs_FindDevice(path,pathIndex,restOfPath);
-		if(dev != null && dev.isMounted)
+		if(dev != null && dev.subField2.isMounted)
 		{
 			return dev.rootDir;
 		}
@@ -236,7 +226,7 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 	static yaffs_Object yaffsfs_FollowLink(yaffs_Object obj,int symDepth)
 	{
 
-		while(obj != null && obj.variantType == YAFFS_OBJECT_TYPE_SYMLINK)
+		while(obj != null && obj.variantType == Guts_H.YAFFS_OBJECT_TYPE_SYMLINK)
 		{
 			byte[] alias = obj.variant.symLinkVariant().alias;
 			int aliasIndex = obj.variant.symLinkVariant().aliasIndex;
@@ -265,7 +255,7 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 	{
 		yaffs_Object dir;
 		byte[] restOfPath; int restOfPathIndex;
-		byte[] str = new byte[YAFFS_MAX_NAME_LENGTH+1];
+		byte[] str = new byte[Guts_H.YAFFS_MAX_NAME_LENGTH+1];
 		final int strIndex = 0;
 		int i;
 		
@@ -303,7 +293,7 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 			
 			while(restOfPath[restOfPathIndex] != 0 && restOfPath[restOfPathIndex] != '/')
 			{
-				if (i < YAFFS_MAX_NAME_LENGTH)
+				if (i < Guts_H.YAFFS_MAX_NAME_LENGTH)
 				{
 					str[strIndex+i] = restOfPath[restOfPathIndex];
 					str[strIndex+i+1] = '\0';
@@ -319,26 +309,26 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 			}
 			else
 			{
-				if(strcmp(str,strIndex,new byte[]{'.',0},0) == 0)
+				if(Unix.strcmp(str,strIndex,new byte[]{'.',0},0) == 0)
 				{
 					// Do nothing
 				}
-				else if(strcmp(str,strIndex,new byte[]{'.','.',0},0) == 0)
+				else if(Unix.strcmp(str,strIndex,new byte[]{'.','.',0},0) == 0)
 				{
 					dir = dir.parent;
 				}
 				else
 				{
-					dir = yaffs_FindObjectByName(dir,str,strIndex);
+					dir = yaffs_guts_C.yaffs_FindObjectByName(dir,str,strIndex);
 					
-					while(dir != null && dir.variantType == YAFFS_OBJECT_TYPE_SYMLINK)
+					while(dir != null && dir.variantType == Guts_H.YAFFS_OBJECT_TYPE_SYMLINK)
 					{
 					
 						dir = yaffsfs_FollowLink(dir,symDepth);
 			
 					}
 					
-					if(dir != null && dir.variantType != YAFFS_OBJECT_TYPE_DIRECTORY)
+					if(dir != null && dir.variantType != Guts_H.YAFFS_OBJECT_TYPE_DIRECTORY)
 					{
 						dir = null;
 					}
@@ -368,7 +358,7 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 		
 		if(dir != null && name[nameIndex] != 0)
 		{
-			return yaffs_FindObjectByName(dir,name,nameIndex);
+			return yaffs_guts_C.yaffs_FindObjectByName(dir,name,nameIndex);
 		}
 		
 		return dir;
@@ -407,7 +397,7 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 			// try to find the exisiting object
 			obj = yaffsfs_FindObject(null,path,pathIndex,0);
 			
-			if(obj != null && obj.variantType == YAFFS_OBJECT_TYPE_SYMLINK)
+			if(obj != null && obj.variantType == Guts_H.YAFFS_OBJECT_TYPE_SYMLINK)
 			{
 			
 				obj = yaffsfs_FollowLink(obj,symDepth++);
@@ -419,7 +409,7 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 				alreadyOpen = alreadyExclusive = false;
 				
 //				for(i = 0; i <= YAFFSFS_N_HANDLES; i++) // PORT a yaffs bug imho
-				for(i = 0; i < YAFFSFS_N_HANDLES; i++)
+				for(i = 0; i < CFG_H.YAFFSFS_N_HANDLES; i++)
 				{
 					
 					if(i != handle &&
@@ -434,41 +424,41 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 					 }
 				}
 
-				if(((oflag & O_EXCL) != 0 && alreadyOpen) || alreadyExclusive)
+				if(((oflag & yaffsfs_H.O_EXCL) != 0 && alreadyOpen) || alreadyExclusive)
 				{
 					openDenied = true;
 				}
 				
-				// Open should fail if O_CREAT and O_EXCL are specified
-				if((oflag & O_EXCL) != 0 && (oflag & O_CREAT) != 0)
+				// Open should fail if O_CREAT and yaffsfs_H.O_EXCL are specified
+				if((oflag & yaffsfs_H.O_EXCL) != 0 && (oflag & yaffsfs_H.O_CREAT) != 0)
 				{
 					openDenied = true;
-					yaffs2.utils.Globals.configuration.yaffsfs_SetError(-EEXIST);
+					yaffs2.utils.Globals.configuration.yaffsfs_SetError(-yaffsfs_H.EEXIST);
 					errorReported = true;
 				}
 				
 				// Check file permissions
-				if( (oflag & (O_RDWR | O_WRONLY)) == 0 &&     // ie O_RDONLY
-				   !((obj.yst_mode & S_IREAD) != 0))
+				if( (oflag & (yaffsfs_H.O_RDWR | yaffsfs_H.O_WRONLY)) == 0 &&     // ie O_RDONLY
+				   !((obj.yst_mode & yaffsfs_H.S_IREAD) != 0))
 				{
 					openDenied = true;
 				}
 
-				if( (oflag & O_RDWR) != 0 && 
-				   !((obj.yst_mode & S_IREAD) != 0))
+				if( (oflag & yaffsfs_H.O_RDWR) != 0 && 
+				   !((obj.yst_mode & yaffsfs_H.S_IREAD) != 0))
 				{
 					openDenied = true;
 				}
 
-				if( (oflag & (O_RDWR | O_WRONLY)) != 0 && 
-				   !((obj.yst_mode & S_IWRITE) != 0))
+				if( (oflag & (yaffsfs_H.O_RDWR | yaffsfs_H.O_WRONLY)) != 0 && 
+				   !((obj.yst_mode & yaffsfs_H.S_IWRITE) != 0))
 				{
 					openDenied = true;
 				}
 				
 			}
 			
-			else if((oflag & O_CREAT) != 0)
+			else if((oflag & yaffsfs_H.O_CREAT) != 0)
 			{
 				// Let's see if we can create this fil
 				ArrayPointer namePointer = new ArrayPointer();
@@ -477,11 +467,11 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 				
 				if(dir != null)
 				{
-					obj = yaffs_MknodFile(dir,name,nameIndex,mode,0,0);	
+					obj = yaffs_guts_C.yaffs_MknodFile(dir,name,nameIndex,mode,0,0);	
 				}
 				else
 				{
-					yaffs2.utils.Globals.configuration.yaffsfs_SetError(-ENOTDIR);
+					yaffs2.utils.Globals.configuration.yaffsfs_SetError(-yaffsfs_H.ENOTDIR);
 				}
 			}
 			
@@ -489,16 +479,16 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 			{
 				h.obj = obj;
 				h.inUse = true;
-		    	h.readOnly = (oflag & (O_WRONLY | O_RDWR)) != 0 ? false : true;
-				h.append =  (oflag & O_APPEND) != 0 ? true : false;
-				h.exclusive = (oflag & O_EXCL) != 0 ? true : false;
+		    	h.readOnly = (oflag & (yaffsfs_H.O_WRONLY | yaffsfs_H.O_RDWR)) != 0 ? false : true;
+				h.append =  (oflag & yaffsfs_H.O_APPEND) != 0 ? true : false;
+				h.exclusive = (oflag & yaffsfs_H.O_EXCL) != 0 ? true : false;
 				h.position = 0;
 				
 				obj.inUse++;
-				if((oflag & O_TRUNC) != 0 && !h.readOnly)
+				if((oflag & yaffsfs_H.O_TRUNC) != 0 && !h.readOnly)
 				{
 					//todo truncate
-					yaffs_ResizeFile(obj,0);
+					yaffs_guts_C.yaffs_ResizeFile(obj,0);
 				}
 				
 			}
@@ -507,7 +497,7 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 				yaffsfs_PutHandle(handle);
 				if(!errorReported)
 				{
-					yaffs2.utils.Globals.configuration.yaffsfs_SetError(-EACCESS);
+					yaffs2.utils.Globals.configuration.yaffsfs_SetError(-yaffsfs_H.EACCESS);
 					errorReported = true;
 				}
 				handle = -1;
@@ -532,11 +522,11 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 		if(h != null && h.inUse)
 		{
 			// clean up
-			yaffs_FlushFile(h.obj,true);
+			yaffs_guts_C.yaffs_FlushFile(h.obj,true);
 			h.obj.inUse--;
-			if(h.obj.inUse <= 0 && h.obj.unlinked)
+			if(h.obj.inUse <= 0 && h.obj.sub.unlinked)
 			{
-				yaffs_DeleteFile(h.obj);
+				yaffs_guts_C.yaffs_DeleteFile(h.obj);
 			}
 			yaffsfs_PutHandle(fd);
 			retVal = 0;
@@ -544,7 +534,7 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 		else
 		{
 			// bad handle
-			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-EBADF);		
+			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-yaffsfs_H.EBADF);		
 			retVal = -1;
 		}
 		
@@ -569,14 +559,14 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 		if(!(h != null) || !(obj != null))
 		{
 			// bad handle
-			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-EBADF);		
+			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-yaffsfs_H.EBADF);		
 		}
 		else if(h != null && obj != null)
 		{
 			pos=  h.position;
-			if(yaffs_GetObjectFileLength(obj) > pos)
+			if(yaffs_guts_C.yaffs_GetObjectFileLength(obj) > pos)
 			{
-				maxRead = yaffs_GetObjectFileLength(obj) - pos;
+				maxRead = yaffs_guts_C.yaffs_GetObjectFileLength(obj) - pos;
 			}
 			else
 			{
@@ -591,7 +581,7 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 			
 			if(nbyte > 0)
 			{
-				nRead = yaffs_ReadDataFromFile(obj,buf,bufIndex,pos,nbyte);
+				nRead = yaffs_guts_C.yaffs_ReadDataFromFile(obj,buf,bufIndex,pos,nbyte);
 				if(nRead >= 0)
 				{
 					h.position = pos + nRead;
@@ -631,7 +621,7 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 		if(!(h != null) || !(obj != null))
 		{
 			// bad handle
-			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-EBADF);		
+			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-yaffsfs_H.EBADF);		
 		}
 		else if( h != null && obj != null && h.readOnly)
 		{
@@ -641,14 +631,14 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 		{
 			if(h.append)
 			{
-				pos =  yaffs_GetObjectFileLength(obj);
+				pos =  yaffs_guts_C.yaffs_GetObjectFileLength(obj);
 			}
 			else
 			{
 				pos = h.position;
 			}
 			
-			nWritten = yaffs_WriteDataToFile(obj,buf,bufIndex,pos,nbyte,writeThrough);
+			nWritten = yaffs_guts_C.yaffs_WriteDataToFile(obj,buf,bufIndex,pos,nbyte,writeThrough);
 			
 			if(nWritten >= 0)
 			{
@@ -681,12 +671,12 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 		if(!(h != null) || !(obj != null))
 		{
 			// bad handle
-			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-EBADF);		
+			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-yaffsfs_H.EBADF);		
 		}
 		else
 		{
 			// resize the file
-			result = yaffs_ResizeFile(obj,newSize);
+			result = yaffs_guts_C.yaffs_ResizeFile(obj,newSize);
 		}	
 		yaffs2.utils.Globals.configuration.yaffsfs_Unlock();
 		
@@ -709,25 +699,25 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 		if(!(h != null) || !(obj != null))
 		{
 			// bad handle
-			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-EBADF);		
+			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-yaffsfs_H.EBADF);		
 		}
-		else if(whence == SEEK_SET)
+		else if(whence == yaffsfs_H.SEEK_SET)
 		{
 			if(offset >= 0)
 			{
 				pos = offset;
 			}
 		}
-		else if(whence == SEEK_CUR)
+		else if(whence ==yaffsfs_H. SEEK_CUR)
 		{
 			if( (h.position + offset) >= 0)
 			{
 				pos = (h.position + offset);
 			}
 		}
-		else if(whence == SEEK_END)
+		else if(whence == yaffsfs_H.SEEK_END)
 		{
-			fSize = yaffs_GetObjectFileLength(obj);
+			fSize = yaffs_guts_C.yaffs_GetObjectFileLength(obj);
 			if(fSize >= 0 && (fSize + offset) >= 0)
 			{
 				pos = fSize + offset;
@@ -755,7 +745,7 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 		yaffs_Object dir = null;
 		yaffs_Object obj = null;
 		byte[] name; int nameIndex;
-		boolean result = YAFFS_FAIL;
+		boolean result = Guts_H.YAFFS_FAIL;
 		
 		yaffs2.utils.Globals.configuration.yaffsfs_Lock();
 
@@ -766,27 +756,27 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 		
 		if(!(dir != null))
 		{
-			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-ENOTDIR);
+			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-yaffsfs_H.ENOTDIR);
 		}
 		else if(!(obj != null))
 		{
-			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-ENOENT);
+			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-yaffsfs_H.ENOENT);
 		}
-		else if(!isDirectory && obj.variantType == YAFFS_OBJECT_TYPE_DIRECTORY)
+		else if(!isDirectory && obj.variantType == Guts_H.YAFFS_OBJECT_TYPE_DIRECTORY)
 		{
-			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-EISDIR);
+			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-yaffsfs_H.EISDIR);
 		}
-		else if(isDirectory && obj.variantType != YAFFS_OBJECT_TYPE_DIRECTORY)
+		else if(isDirectory && obj.variantType != Guts_H.YAFFS_OBJECT_TYPE_DIRECTORY)
 		{
-			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-ENOTDIR);
+			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-yaffsfs_H.ENOTDIR);
 		}
 		else
 		{
-			result = yaffs_Unlink(dir,name,nameIndex);
+			result = yaffs_guts_C.yaffs_Unlink(dir,name,nameIndex);
 			
-			if(result == YAFFS_FAIL && isDirectory)
+			if(result == Guts_H.YAFFS_FAIL && isDirectory)
 			{
-				yaffs2.utils.Globals.configuration.yaffsfs_SetError(-ENOTEMPTY);
+				yaffs2.utils.Globals.configuration.yaffsfs_SetError(-yaffsfs_H.ENOTEMPTY);
 			}
 		}
 		
@@ -794,7 +784,7 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 		
 		// todo error
 		
-		return (result == YAFFS_FAIL) ? -1 : 0;
+		return (result == Guts_H.YAFFS_FAIL) ? -1 : 0;
 	}
 	static int yaffs_rmdir(byte[] path, int pathIndex) 
 	{
@@ -813,7 +803,7 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 		yaffs_Object obj = null;
 		byte[] oldname; int oldnameIndex;
 		byte[] newname; int newnameIndex;
-		boolean result= YAFFS_FAIL;
+		boolean result= Guts_H.YAFFS_FAIL;
 		boolean renameAllowed = true;
 		
 		yaffs2.utils.Globals.configuration.yaffsfs_Lock();
@@ -831,17 +821,17 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 		if(!(olddir != null) || !(newdir != null) || !(obj != null))
 		{
 			// bad file
-			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-EBADF);	
+			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-yaffsfs_H.EBADF);	
 			renameAllowed = false;	
 		}
 		else if(olddir.myDev != newdir.myDev)
 		{
 			// oops must be on same device
 			// todo error
-			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-EXDEV);
+			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-yaffsfs_H.EXDEV);
 			renameAllowed = false;	
 		}
-		else if(obj != null && obj.variantType == YAFFS_OBJECT_TYPE_DIRECTORY)
+		else if(obj != null && obj.variantType == Guts_H.YAFFS_OBJECT_TYPE_DIRECTORY)
 		{
 			// It is a directory, check that it is not being renamed to 
 			// being its own decendent.
@@ -857,17 +847,17 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 				}
 				xx = xx.parent;
 			}
-			if(!renameAllowed) yaffs2.utils.Globals.configuration.yaffsfs_SetError(-EACCESS);
+			if(!renameAllowed) yaffs2.utils.Globals.configuration.yaffsfs_SetError(-yaffsfs_H.EACCESS);
 		}
 		
 		if(renameAllowed)
 		{
-			result = yaffs_RenameObject(olddir,oldname,oldnameIndex,newdir,newname,newnameIndex);
+			result = yaffs_guts_C.yaffs_RenameObject(olddir,oldname,oldnameIndex,newdir,newname,newnameIndex);
 		}
 		
 		yaffs2.utils.Globals.configuration.yaffsfs_Unlock();
 		
-		return (result == YAFFS_FAIL) ? -1 : 0;	
+		return (result == Guts_H.YAFFS_FAIL) ? -1 : 0;	
 	}
 
 
@@ -877,34 +867,34 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 
 		if(obj != null)
 		{
-			obj = yaffs_GetEquivalentObject(obj);
+			obj = yaffs_guts_C.yaffs_GetEquivalentObject(obj);
 		}
 
 		if(obj != null && buf != null)
 		{
-	    	buf.st_dev = (int)obj.myDev.genericDevice;
+	    	buf.st_dev = (int)obj.myDev.subField1.genericDevice;
 	    	buf.st_ino = obj.objectId;
-	    	buf.st_mode = obj.yst_mode & ~S_IFMT; // clear out file type bits
+	    	buf.st_mode = obj.yst_mode & ~yaffsfs_H.S_IFMT; // clear out file type bits
 		
-			if(obj.variantType == YAFFS_OBJECT_TYPE_DIRECTORY) 
+			if(obj.variantType == Guts_H.YAFFS_OBJECT_TYPE_DIRECTORY) 
 			{
-				buf.st_mode |= S_IFDIR;
+				buf.st_mode |= Unix.S_IFDIR;
 			}
-			else if(obj.variantType == YAFFS_OBJECT_TYPE_SYMLINK) 
+			else if(obj.variantType == Guts_H.YAFFS_OBJECT_TYPE_SYMLINK) 
 			{
-				buf.st_mode |= S_IFLNK;
+				buf.st_mode |= yaffsfs_H.S_IFLNK;
 			}
-			else if(obj.variantType == YAFFS_OBJECT_TYPE_FILE)
+			else if(obj.variantType == Guts_H.YAFFS_OBJECT_TYPE_FILE)
 			{
-				buf.st_mode |= S_IFREG;
+				buf.st_mode |= yaffsfs_H.S_IFREG;
 			}
 			
-	    	buf.st_nlink = yaffs_GetObjectLinkCount(obj);
+	    	buf.st_nlink = yaffs_guts_C.yaffs_GetObjectLinkCount(obj);
 	    	buf.st_uid = 0;    
 	    	buf.st_gid = 0;;     
 	    	buf.st_rdev = obj.yst_rdev;
-	    	buf.st_size = yaffs_GetObjectFileLength(obj);
-			buf.st_blksize = obj.myDev.nDataBytesPerChunk;
+	    	buf.st_size = yaffs_guts_C.yaffs_GetObjectFileLength(obj);
+			buf.st_blksize = obj.myDev.subField1.nDataBytesPerChunk;
 	    	buf.st_blocks = (buf.st_size + buf.st_blksize -1)/buf.st_blksize;
 	    	buf.yst_atime = obj.yst_atime; 
 	    	buf.yst_ctime = obj.yst_ctime; 
@@ -914,7 +904,6 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 		return retVal;
 	}
 
-	// XXX what does L mean? -i dont see no L- the one in the method name	
 	static int yaffsfs_DoStatOrLStat(byte[] path, int pathIndex, yaffs_stat buf, 
 			boolean doLStat)
 	{
@@ -937,7 +926,7 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 		else
 		{
 			// todo error not found
-			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-ENOENT);
+			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-yaffsfs_H.ENOENT);
 		}
 		
 		yaffs2.utils.Globals.configuration.yaffsfs_Unlock();
@@ -972,7 +961,7 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 		else
 		{
 			// bad handle
-			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-EBADF);		
+			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-yaffsfs_H.EBADF);		
 		}
 		
 		yaffs2.utils.Globals.configuration.yaffsfs_Unlock();
@@ -986,17 +975,17 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 
 		if(obj != null)
 		{
-			obj = yaffs_GetEquivalentObject(obj);
+			obj = yaffs_guts_C.yaffs_GetEquivalentObject(obj);
 		}
 		
 		if(obj != null)
 		{
 			obj.yst_mode = mode;
 			obj.dirty = true;
-			result = yaffs_FlushFile(obj,false);
+			result = yaffs_guts_C.yaffs_FlushFile(obj,false);
 		}
 		
-		return result == YAFFS_OK ? 0 : -1;
+		return result == Guts_H.YAFFS_OK ? 0 : -1;
 	}
 
 
@@ -1016,7 +1005,7 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 		else
 		{
 			// todo error not found
-			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-ENOENT);
+			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-yaffsfs_H.ENOENT);
 		}
 		
 		yaffs2.utils.Globals.configuration.yaffsfs_Unlock();
@@ -1042,7 +1031,7 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 		else
 		{
 			// bad handle
-			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-EBADF);		
+			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-yaffsfs_H.EBADF);		
 		}
 		
 		yaffs2.utils.Globals.configuration.yaffsfs_Unlock();
@@ -1064,14 +1053,14 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 		name = namePointer.array; nameIndex = namePointer.index;
 		
 		if(parent != null)
-			dir = yaffs_MknodDirectory(parent,name,nameIndex,mode,0,0);
+			dir = yaffs_guts_C.yaffs_MknodDirectory(parent,name,nameIndex,mode,0,0);
 		if(dir != null)
 		{
 			retVal = 0;
 		}
 		else
 		{
-			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-ENOSPC); // just assume no space for now
+			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-yaffsfs_H.ENOSPC); // just assume no space for now
 			retVal = -1;
 		}
 		
@@ -1083,11 +1072,11 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 	static int yaffs_mount(byte[] path, int pathIndex)
 	{
 		int retVal=-1;
-		boolean result=YAFFS_FAIL;
+		boolean result=Guts_H.YAFFS_FAIL;
 		yaffs_Device dev=null;
 //		byte[] dummy; int dummyIndex;
 		
-		T(YAFFS_TRACE_ALWAYS,"yaffs: Mounting %a\n",path,pathIndex);
+		yportenv.T(yportenv.YAFFS_TRACE_ALWAYS,"yaffs: Mounting %a\n",PrimitiveWrapperFactory.get(path),PrimitiveWrapperFactory.get(pathIndex));
 		
 		yaffs2.utils.Globals.configuration.yaffsfs_Lock();
 		ArrayPointer dummyPointer = new ArrayPointer();
@@ -1096,13 +1085,13 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 		
 		if(dev != null)
 		{
-			if(!dev.isMounted)
+			if(!dev.subField2.isMounted)
 			{
-				result = yaffs_GutsInitialise(dev);
-				if(result == YAFFS_FAIL)
+				result = yaffs_guts_C.yaffs_GutsInitialise(dev);
+				if(result == Guts_H.YAFFS_FAIL)
 				{
 					// todo error - mount failed
-					yaffs2.utils.Globals.configuration.yaffsfs_SetError(-ENOMEM);
+					yaffs2.utils.Globals.configuration.yaffsfs_SetError(-yaffsfs_H.ENOMEM);
 				}
 				retVal = result ? 0 : -1;
 				
@@ -1110,13 +1099,13 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 			else
 			{
 				//todo error - already mounted.
-				yaffs2.utils.Globals.configuration.yaffsfs_SetError(-EBUSY);
+				yaffs2.utils.Globals.configuration.yaffsfs_SetError(-yaffsfs_H.EBUSY);
 			}
 		}
 		else
 		{
 			// todo error - no device
-			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-ENODEV);
+			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-yaffsfs_H.ENODEV);
 		}
 		yaffs2.utils.Globals.configuration.yaffsfs_Unlock();
 		return retVal;
@@ -1136,15 +1125,15 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 		
 		if(dev != null)
 		{
-			if(dev.isMounted)
+			if(dev.subField2.isMounted)
 			{
 				int i;
 				boolean inUse = false;
 				
-				yaffs_FlushEntireDeviceCache(dev);
-				yaffs_CheckpointSave(dev);
+				yaffs_guts_C.yaffs_FlushEntireDeviceCache(dev);
+				yaffs_guts_C.yaffs_CheckpointSave(dev);
 				
-				for(i = 0; i < YAFFSFS_N_HANDLES && !inUse; i++)
+				for(i = 0; i < CFG_H.YAFFSFS_N_HANDLES && !inUse; i++)
 				{
 					if(yaffsfs_handle[i].inUse && yaffsfs_handle[i].obj.myDev == dev)
 					{
@@ -1154,28 +1143,28 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 				
 				if(!inUse)
 				{
-					yaffs_Deinitialise(dev);
+					yaffs_guts_C.yaffs_Deinitialise(dev);
 						
 					retVal = 0;
 				}
 				else
 				{
 					// todo error can't unmount as files are open
-					yaffs2.utils.Globals.configuration.yaffsfs_SetError(-EBUSY);
+					yaffs2.utils.Globals.configuration.yaffsfs_SetError(-yaffsfs_H.EBUSY);
 				}
 				
 			}
 			else
 			{
 				//todo error - not mounted.
-				yaffs2.utils.Globals.configuration.yaffsfs_SetError(-EINVAL);
+				yaffs2.utils.Globals.configuration.yaffsfs_SetError(-yaffsfs_H.EINVAL);
 				
 			}
 		}
 		else
 		{
 			// todo error - no device
-			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-ENODEV);
+			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-yaffsfs_H.ENODEV);
 		}	
 		yaffs2.utils.Globals.configuration.yaffsfs_Unlock();
 		return retVal;
@@ -1194,15 +1183,15 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 		dev = yaffsfs_FindDevice(path,pathIndex,dummyPointer);
 //		dummy = dummyPointer.array;	dummyIndex = dummyPointer.index;
 		
-		if(dev != null && dev.isMounted)
+		if(dev != null && dev.subField2.isMounted)
 		{
-			retVal = yaffs_GetNumberOfFreeChunks(dev);
-			retVal = retVal * dev.nDataBytesPerChunk;		
+			retVal = yaffs_guts_C.yaffs_GetNumberOfFreeChunks(dev);
+			retVal = retVal * dev.subField1.nDataBytesPerChunk;		
 			
 		}
 		else
 		{
-			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-EINVAL);
+			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-yaffsfs_H.EINVAL);
 		}
 		
 		yaffs2.utils.Globals.configuration.yaffsfs_Unlock();
@@ -1226,8 +1215,8 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 		
 		while(cfg != null && cfg[cfgIndex].prefix != null && cfg[cfgIndex].dev != null)
 		{
-			cfg[cfgIndex].dev.isMounted = false;
-			cfg[cfgIndex].dev.removeObjectCallback = callbackInstance;
+			cfg[cfgIndex].dev.subField2.isMounted = false;
+			cfg[cfgIndex].dev.subField1.removeObjectCallback = callbackInstance;
 			cfgIndex++;
 		}
 		
@@ -1264,11 +1253,11 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 	{
 		if(dsc != null &&
 		   dsc.dirObj != null &&
-		   dsc.dirObj.variantType == YAFFS_OBJECT_TYPE_DIRECTORY){
+		   dsc.dirObj.variantType == Guts_H.YAFFS_OBJECT_TYPE_DIRECTORY){
 		   
 		   dsc.offset = 0;
 		   
-		   if(list_empty(dsc.dirObj.variant.directoryVariant.children)){
+		   if(devextras.list_empty(dsc.dirObj.variant.directoryVariant.children)){
 		   	dsc.nextReturn = null;
 		   } else {
 		      	dsc.nextReturn = /*list_entry(dsc.dirObj.variant.directoryVariant.children.next,
@@ -1284,10 +1273,10 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 	{
 		if(dsc != null &&
 		   dsc.dirObj != null &&
-		   dsc.dirObj.variantType == YAFFS_OBJECT_TYPE_DIRECTORY){
+		   dsc.dirObj.variantType == Guts_H.YAFFS_OBJECT_TYPE_DIRECTORY){
 		   
 		   if( dsc.nextReturn == null ||
-		       list_empty(dsc.dirObj.variant.directoryVariant.children)){
+		       devextras.list_empty(dsc.dirObj.variant.directoryVariant.children)){
 		   	dsc.nextReturn = null;
 		   } else {
 			   list_head next = dsc.nextReturn.siblings.next();
@@ -1338,24 +1327,24 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 		
 		obj = yaffsfs_FindObject(null,dirname,dirnameIndex,0);
 		
-		if(obj != null && obj.variantType == YAFFS_OBJECT_TYPE_DIRECTORY)
+		if(obj != null && obj.variantType == Guts_H.YAFFS_OBJECT_TYPE_DIRECTORY)
 		{
 			
 			dsc = /*YMALLOC(sizeof(yaffsfs_DirectorySearchContext))*/ new yaffsfs_DirectorySearchContext();
 			dir = (yaffs_DIR)dsc;
 			if(dsc != null)
 			{
-//				memset(dsc,0,sizeof(yaffsfs_DirectorySearchContext)); // TODO CHECK: do as serializable?
-				memset(dsc);
-				dsc.magic = YAFFS_MAGIC;
+//				Unix.memset(dsc,0,sizeof(yaffsfs_DirectorySearchContext)); // TODO CHECK: do as serializable?
+				Unix.memset(dsc);
+				dsc.magic = Guts_H.YAFFS_MAGIC;
 				dsc.dirObj = obj;
-				strncpy(dsc.name,dsc.nameIndex,dirname,dirnameIndex,NAME_MAX);
-				INIT_LIST_HEAD(dsc.others);
+				Unix.strncpy(dsc.name,dsc.nameIndex,dirname,dirnameIndex,yaffsfs_H.NAME_MAX);
+				devextras.INIT_LIST_HEAD(dsc.others);
 				
 				if(!(search_contexts.next != null))
-					INIT_LIST_HEAD(/*&*/search_contexts);
+					devextras.INIT_LIST_HEAD(/*&*/search_contexts);
 					
-				list_add(/*&*/dsc.others,/*&*/search_contexts);	
+				devextras.list_add(/*&*/dsc.others,/*&*/search_contexts);	
 				yaffsfs_SetDirRewound(dsc);		}
 		
 		}
@@ -1372,17 +1361,17 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 		
 		yaffs2.utils.Globals.configuration.yaffsfs_Lock();
 		
-		if(dsc != null && dsc.magic == YAFFS_MAGIC){
+		if(dsc != null && dsc.magic == Guts_H.YAFFS_MAGIC){
 			yaffs2.utils.Globals.configuration.yaffsfs_SetError(0);
 			if(dsc.nextReturn != null){
-				dsc.de.d_ino = yaffs_GetEquivalentObject(dsc.nextReturn).objectId;
+				dsc.de.d_ino = yaffs_guts_C.yaffs_GetEquivalentObject(dsc.nextReturn).objectId;
 				dsc.de.d_dont_use = /*(unsigned)*/dsc.nextReturn;
 				dsc.de.d_off = dsc.offset++;
-				yaffs_GetObjectName(dsc.nextReturn,dsc.de.d_name,dsc.de.d_nameIndex,NAME_MAX);
-				if(strlen(dsc.de.d_name, dsc.de.d_nameIndex) == 0)
+				yaffs_guts_C.yaffs_GetObjectName(dsc.nextReturn,dsc.de.d_name,dsc.de.d_nameIndex,yaffsfs_H.NAME_MAX);
+				if(Unix.strlen(dsc.de.d_name, dsc.de.d_nameIndex) == 0)
 				{
 					// this should not happen!
-					strcpy(dsc.de.d_name,dsc.de.d_nameIndex,new byte[]{'z','z',0},0);
+					Unix.strcpy(dsc.de.d_name,dsc.de.d_nameIndex,new byte[]{'z','z',0},0);
 				}
 //				dsc.de.d_reclen = sizeof(struct yaffs_dirent); // PORT ??? 
 				retVal = dsc.de;
@@ -1392,7 +1381,7 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 		}
 		else
 		{
-			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-EBADF);
+			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-yaffsfs_H.EBADF);
 		}
 		
 		yaffs2.utils.Globals.configuration.yaffsfs_Unlock();
@@ -1420,8 +1409,8 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 			
 		yaffs2.utils.Globals.configuration.yaffsfs_Lock();
 		dsc.magic = 0;
-		list_del(dsc.others); /* unhook from list */
-		YFREE(dsc);
+		devextras.list_del(dsc.others); /* unhook from list */
+		ydirectenv.YFREE(dsc);
 		yaffs2.utils.Globals.configuration.yaffsfs_Unlock();
 		return 0;
 	}
@@ -1442,14 +1431,14 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 		parent = yaffsfs_FindDirectory(null,newpath,newpathIndex,namePointer,0);
 		name = namePointer.array; nameIndex = namePointer.index;
 		
-		obj = yaffs_MknodSymLink(parent,name,nameIndex,mode,0,0,oldpath,oldpathIndex);
+		obj = yaffs_guts_C.yaffs_MknodSymLink(parent,name,nameIndex,mode,0,0,oldpath,oldpathIndex);
 		if(obj != null)
 		{
 			retVal = 0;
 		}
 		else
 		{
-			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-ENOSPC); // just assume no space for now
+			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-yaffsfs_H.ENOSPC); // just assume no space for now
 			retVal = -1;
 		}
 		
@@ -1471,20 +1460,20 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 		
 		if(!(obj != null))
 		{
-			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-ENOENT);
+			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-yaffsfs_H.ENOENT);
 			retVal = -1;
 		}
-		else if(obj.variantType != YAFFS_OBJECT_TYPE_SYMLINK)
+		else if(obj.variantType != Guts_H.YAFFS_OBJECT_TYPE_SYMLINK)
 		{
-			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-EINVAL);
+			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-yaffsfs_H.EINVAL);
 			retVal = -1;
 		}
 		else
 		{
 			byte[] alias = obj.variant.symLinkVariant.alias;
 			int aliasIndex = obj.variant.symLinkVariant.aliasIndex;
-			memset(buf,bufIndex,(byte)0,bufsiz);
-			strncpy(buf,bufIndex,alias,aliasIndex,bufsiz-1);
+			Unix.memset(buf,bufIndex,(byte)0,bufsiz);
+			Unix.strncpy(buf,bufIndex,alias,aliasIndex,bufsiz-1);
 			retVal = 0;
 		}
 		yaffs2.utils.Globals.configuration.yaffsfs_Unlock();
@@ -1506,12 +1495,12 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 		
 		if(!(obj != null))
 		{
-			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-ENOENT);
+			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-yaffsfs_H.ENOENT);
 			retVal = -1;
 		}
 		else if(target != null)
 		{
-			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-EEXIST);
+			yaffs2.utils.Globals.configuration.yaffsfs_SetError(-yaffsfs_H.EEXIST);
 			retVal = -1;
 		}
 		else	
@@ -1527,22 +1516,22 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 			
 			if(!(newdir != null))
 			{
-				yaffs2.utils.Globals.configuration.yaffsfs_SetError(-ENOTDIR);
+				yaffs2.utils.Globals.configuration.yaffsfs_SetError(-yaffsfs_H.ENOTDIR);
 				retVal = -1;
 			}
 			else if(newdir.myDev != obj.myDev)
 			{
-				yaffs2.utils.Globals.configuration.yaffsfs_SetError(-EXDEV);
+				yaffs2.utils.Globals.configuration.yaffsfs_SetError(-yaffsfs_H.EXDEV);
 				retVal = -1;
 			}
-			if(newdir != null && strlen(newname,newnameIndex) > 0)
+			if(newdir != null && Unix.strlen(newname,newnameIndex) > 0)
 			{
-				link = yaffs_Link(newdir,newname,newnameIndex,obj);
+				link = yaffs_guts_C.yaffs_Link(newdir,newname,newnameIndex,obj);
 				if(link != null)
 					retVal = 0;
 				else
 				{
-					yaffs2.utils.Globals.configuration.yaffsfs_SetError(-ENOSPC);
+					yaffs2.utils.Globals.configuration.yaffsfs_SetError(-yaffsfs_H.ENOSPC);
 					retVal = -1;
 				}
 
@@ -1567,21 +1556,21 @@ public class yaffsfs_C implements yaffs_Device.removeObjectCallbackInterface
 		{
 			yaffs_Device dev = obj.myDev;
 			
-			printf("\n" +
+			Unix.xprintfArgs[0] = PrimitiveWrapperFactory.get(dev.subField3.nPageWrites);
+			Unix.xprintfArgs[1] = PrimitiveWrapperFactory.get(dev.subField3.nPageReads);
+			Unix.xprintfArgs[2] = PrimitiveWrapperFactory.get(dev.subField3.nBlockErasures);
+			Unix.xprintfArgs[3] = PrimitiveWrapperFactory.get(dev.subField3.nGCCopies);
+			Unix.xprintfArgs[4] = PrimitiveWrapperFactory.get(dev.subField3.garbageCollections);
+			Unix.xprintfArgs[5] = PrimitiveWrapperFactory.get(dev.subField3.passiveGarbageCollections);
+ 
+			Unix.printf("\n" +
 				   "nPageWrites.......... %d\n" +
 				   "nPageReads........... %d\n" +
 				   "nBlockErasures....... %d\n" +
 				   "nGCCopies............ %d\n" +
 				   "garbageCollections... %d\n" +
 				   "passiveGarbageColl'ns %d\n" +
-				   "\n",
-					dev.nPageWrites,
-					dev.nPageReads,
-					dev.nBlockErasures,
-					dev.nGCCopies,
-					dev.garbageCollections,
-					dev.passiveGarbageCollections
-			);
+				   "\n");
 			
 		}
 		return 0;

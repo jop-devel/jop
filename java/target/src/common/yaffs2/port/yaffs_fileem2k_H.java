@@ -22,16 +22,16 @@ public class yaffs_fileem2k_H
 
 //	#if 1
 
-	static final int SIZE_IN_MB = 128;
+	public static final int SIZE_IN_MB = 128;
 //	#define SIZE_IN_MB 8000
-	static final int PAGE_DATA_SIZE = (2048);
-	static final int PAGE_SPARE_SIZE =  (64);
-	static final int PAGE_SIZE =  (PAGE_DATA_SIZE + PAGE_SPARE_SIZE);
-	static final int PAGES_PER_BLOCK = (64);
-	static final int BLOCK_DATA_SIZE = (PAGE_DATA_SIZE * PAGES_PER_BLOCK);
-	static final int BLOCK_SIZE = (PAGES_PER_BLOCK * (PAGE_SIZE));
-	static final int BLOCKS_PER_MB = ((1024*1024)/BLOCK_DATA_SIZE);
-	static final int SIZE_IN_BLOCKS = (BLOCKS_PER_MB * SIZE_IN_MB);
+	public static final int PAGE_DATA_SIZE = (2048);
+	public static final int PAGE_SPARE_SIZE =  (64);
+	public static final int PAGE_SIZE =  (PAGE_DATA_SIZE + PAGE_SPARE_SIZE);
+	public static final int PAGES_PER_BLOCK = (64);
+	public static final int BLOCK_DATA_SIZE = (PAGE_DATA_SIZE * PAGES_PER_BLOCK);
+	public static final int BLOCK_SIZE = (PAGES_PER_BLOCK * (PAGE_SIZE));
+	public static final int BLOCKS_PER_MB = ((1024*1024)/BLOCK_DATA_SIZE);
+	public static final int SIZE_IN_BLOCKS = (BLOCKS_PER_MB * SIZE_IN_MB);
 
 //	#else
 //
