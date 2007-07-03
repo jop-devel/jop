@@ -5,6 +5,8 @@
 -- 110507: * arbiter that can be used with prefered number of masters
 --				 * full functional arbiter with two masters
 --				 * short modelsim test with 3 masters carried out
+-- 190607: Problem found: Both CPU1 and CPU2 start to read cache line!!!
+-- 030707: Several bugs are fixed now. CMP with 3 running masters functions!
 
 
 library ieee;
@@ -61,6 +63,8 @@ architecture rtl of arbiter is
 	
 	type set_type is array (0 to cpu_cnt-1) of std_logic;
 	signal set : set_type;
+	signal waiting : set_type;
+	signal masterWaiting : std_logic;
 	
 	
 begin
@@ -86,119 +90,164 @@ gen_register: for i in 0 to cpu_cnt-1 generate
 	end process;
 end generate;
 
+-- Register for masterWaiting
+process(clk, reset)
+	begin
+		if reset = '1' then
+			masterWaiting <= '0';
+		elsif rising_edge(clk) then
+			for i in 0 to cpu_cnt-1 loop
+				if waiting(i) = '1' then
+					masterWaiting <= '1';
+					exit;
+				else
+					masterWaiting <= '0';
+				end if;
+			end loop;
+		end if;
+	end process;
+	
 -- Generates next state of the FSM for each master
 gen_next_state: for i in 0 to cpu_cnt-1 generate
-	process(reset, state, arb_out, mem_in, this_state, reg_in)	 
+	process(reset, state, arb_out, mem_in, this_state, reg_in, masterWaiting)	 
 	begin
 
 		next_state(i) <= state(i);
-	
+		waiting(i) <= '0';
+
 		case state(i) is
 			when idle =>
-				
-				if this_state(i) = serv then -- checks if this CPU is on turn
+			
+				-- checks if this CPU is on turn (pipelined access)
+				if this_state(i) = serv then
+					-- pipelined access
 					if mem_in.rdy_cnt = 1 and arb_out(i).rd = '1' then
 						next_state(i) <= read;
-					elsif (mem_in.rdy_cnt = 0) and (arb_out(i).rd = '1' 
-					or arb_out(i).wr = '1') then
-						for k in 0 to cpu_cnt-1 loop
-							if arb_out(k).rd = '1' or arb_out(k).wr = '1' then
-								if i<=k then
-									if arb_out(i).rd = '1' then
-										next_state(i) <= read;
-									elsif arb_out(i).wr = '1' then
-										next_state(i) <= write;
-									end if;
-								else
-									if arb_out(i).rd = '1' then
-										next_state(i) <= waitingR;
-										exit;
-									elsif arb_out(i).wr = '1' then
-										next_state(i) <= waitingW;
-										exit;
-									end if;
-								end if;
-							elsif reg_in(k).rd = '1' or reg_in(k).wr = '1' then
-								if arb_out(i).rd = '1' then
-									next_state(i) <= waitingR;
-									exit;
-								elsif arb_out(i).wr = '1' then
-									next_state(i) <= waitingW;
-									exit;
-								end if;
-							else
-								if arb_out(i).rd = '1' then
-									next_state(i) <= read;
-								elsif arb_out(i).wr = '1' then
-									next_state(i) <= write;
-								end if;	
-							end if;
-						end loop;
-					end if;
-				else
-					for j in 0 to cpu_cnt-1 loop
-						if this_state(j) = serv then 
-							if mem_in.rdy_cnt = 1 and arb_out(j).rd = '1' and
-							arb_out(i).rd = '1' then
+							
+					elsif (mem_in.rdy_cnt = 0 and (arb_out(i).rd = '1' or arb_out(i).wr = '1')) then
+						
+						-- check if some master is waiting
+						if masterWaiting = '1' then
+							if arb_out(i).rd = '1' then
 								next_state(i) <= waitingR;
-								exit;
-							elsif mem_in.rdy_cnt = 1 and arb_out(j).rd = '1' and
-							arb_out(i).wr = '1' then
+								waiting(i) <= '1';
+							elsif arb_out(i).wr = '1' then
 								next_state(i) <= waitingW;
-								exit;
+								waiting(i) <= '1';
 							end if;
+								
+						-- check if parallel access		
 						else
-							if mem_in.rdy_cnt = 0 then
+							for j in 0 to cpu_cnt-1 loop
 								if arb_out(j).rd = '1' or arb_out(j).wr = '1' then
 									if i<=j then
 										if arb_out(i).rd = '1' then
 											next_state(i) <= read;
+											exit;
 										elsif arb_out(i).wr = '1' then
 											next_state(i) <= write;				
+											exit;
 										end if;
 									else
 										if arb_out(i).rd = '1' then
 											next_state(i) <= waitingR;
+											waiting(i) <= '1';
 											exit;
 										elsif arb_out(i).wr = '1' then
 											next_state(i) <= waitingW;
+											waiting(i) <= '1';
 											exit;
 										end if;
 									end if;
-								elsif arb_out(i).rd = '1' then
-									next_state(i) <= read;
-								elsif arb_out(i).wr = '1' then
-									next_state(i) <= write;
 								end if;
-							else
-								if arb_out(i).rd = '1' then
-									next_state(i) <= waitingR;
-									exit;
-								elsif arb_out(i).wr = '1' then
-									next_state(i) <= waitingW;
-									exit;
-								end if;
-							end if;
+							end loop;
 						end if;
-					end loop;
-				end if;
+							
+					-- all other kinds of rdy_cnt
+					else
+						if arb_out(i).rd = '1' then
+							next_state(i) <= waitingR;
+							waiting(i) <= '1';
+						elsif arb_out(i).wr = '1' then
+							next_state(i) <= waitingW;
+							waiting(i) <= '1';
+						end if;
+					end if;
+
+				-- CPU is not on turn (no pipelined access possible)
+				else
+					if (mem_in.rdy_cnt = 0 and (arb_out(i).rd = '1' or arb_out(i).wr = '1')) then
+						-- check if some master is waiting
+						if masterWaiting = '1' then
+							if arb_out(i).rd = '1' then
+								next_state(i) <= waitingR;
+								waiting(i) <= '1';
+							elsif arb_out(i).wr = '1' then
+								next_state(i) <= waitingW;
+								waiting(i) <= '1';
+							end if;
+								
+						-- check if parallel access		
+						else
+							for j in 0 to cpu_cnt-1 loop
+								if arb_out(j).rd = '1' or arb_out(j).wr = '1' then
+									if i<=j then
+										if arb_out(i).rd = '1' then
+											next_state(i) <= read;
+											exit;
+										elsif arb_out(i).wr = '1' then
+											next_state(i) <= write;				
+											exit;
+										end if;
+									else
+										if arb_out(i).rd = '1' then
+											next_state(i) <= waitingR;
+											waiting(i) <= '1';
+											exit;
+										elsif arb_out(i).wr = '1' then
+											next_state(i) <= waitingW;
+											waiting(i) <= '1';
+											exit;
+										end if;
+									end if;
+								-- if no parallel access, master can access
+								else
+									if arb_out(i).rd = '1' then
+										next_state(i) <= read;
+									elsif arb_out(i).wr = '1' then
+										next_state(i) <= write;	
+									end if;
+								end if;
+							end loop;
+						end if;
 					
+					-- rdy_cnt != 0	
+					else
+						if arb_out(i).rd = '1' then
+							next_state(i) <= waitingR;
+							waiting(i) <= '1';
+						elsif arb_out(i).wr = '1' then
+							next_state(i) <= waitingW;
+							waiting(i) <= '1';
+						end if;	
+					end if;
+				end if;
+						
+				
 			when read =>
 				next_state(i) <= idle;
 				
 			when write =>
 				next_state(i) <= idle;
 			
-			when waitingR =>
+			when waitingR =>				
 				if mem_in.rdy_cnt = 0 then				
 				-- checks which CPU in waitingR has highest priority
 					for j in 0 to cpu_cnt-1 loop
-						if arb_out(j).rd = '1' or arb_out(j).wr = '1' then
-							next_state(i) <= waitingR;
-							exit;
-						elsif state(j) = waitingR or state(j) = waitingW then
+						if (state(j) = waitingR) or (state(j) = waitingW) then
 							if j<i then
 								next_state(i) <= waitingR;
+								waiting(i) <= '1';
 								exit;
 							elsif j=i then
 								next_state(i) <= sendR;
@@ -213,17 +262,20 @@ gen_next_state: for i in 0 to cpu_cnt-1 generate
 					end loop;
 				else
 					next_state(i) <= waitingR;
+					waiting(i) <= '1';
 				end if;
 			
 			when sendR =>
 				next_state(i) <= idle;
 				
 			when waitingW =>
+
 				if mem_in.rdy_cnt = 0 then 
 					for j in 0 to cpu_cnt-1 loop
-						if state(j) = waitingR or state(j) = waitingW then
+						if (state(j) = waitingR) or (state(j) = waitingW) then
 							if j<i then
 								next_state(i) <= waitingW;
+								waiting(i) <= '1';
 								exit;
 							elsif j=i then
 								next_state(i) <= sendW;
@@ -238,6 +290,7 @@ gen_next_state: for i in 0 to cpu_cnt-1 generate
 					end loop;
 				else
 					next_state(i) <= waitingW;
+					waiting(i) <= '1';
 				end if;
 			
 			when sendW =>
@@ -318,7 +371,7 @@ gen_serve: for i in 0 to cpu_cnt-1 generate
 				end if;
 			when serv =>
 				follow_state(i) <= serv;
-				if mem_in.rdy_cnt = 0 then
+				if mem_in.rdy_cnt = 0 and set(i) = '0' then
 					follow_state(i) <= idl;
 				end if;
 		end case;
