@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.2"?>
+
+<plugin>
+   <extension
+         point="org.eclipse.core.resources.builders"
+         id="com.jopdesign.jopeclipse.JOPizer"
+         name="JOP Project Builder">
+      <builder
+            hasNature="true">
+         <run
+               class="com.jopdesign.jopeclipse.internal.builder.JOPizer">
+         </run>
+      </builder>
+   </extension>
+   
+   <extension id="com.jopdesign.jopeclipse.JOPProperties" name="JOP Properties"
+	           point="org.eclipse.ui.propertyPages">
+	  <page name="JOP Properties" 
+	        class="com.jopdesign.jopeclipse.internal.ui.preferences.JOPPropertyPage"
+	        id="com.jopdesign.jopeclipse.internal.ui.propertyPage">
+	  </page>
+	</extension>
+   
+   <extension
+         point="org.eclipse.core.resources.natures"
+         id="com.jopdesign.jopeclipse.JOPNature"
+         name="JOP Project Nature">
+      <runtime>
+         <run
+               class="com.jopdesign.jopeclipse.internal.JOPNature">
+         </run>
+      </runtime>
+      <builder
+            id="com.jopdesign.jopeclipse.JOPizer">
+      </builder>
+   </extension>
+   
+   <extension
+         point="org.eclipse.ui.popupMenus">
+      <objectContribution
+            adaptable="true"
+            objectClass="org.eclipse.core.resources.IProject"
+            nameFilter="*"
+            id="com.jopdesign.jopeclipse.internal.Contribution1">
+         <action
+               label="Add/Remove JOP Nature"
+               class="com.jopdesign.jopeclipse.internal.ToggleJOPNatureAction"
+               menubarPath="additions"
+               enablesFor="+"
+               id="com.jopdesign.jopeclipse.AddRemoveJOPNatureAction">
+         </action>
+      </objectContribution>
+   </extension>
+   
+   <extension 
+   		point="org.eclipse.debug.core.launchConfigurationTypes">
+      <launchConfigurationType
+            category="org.eclipse.ui.externaltools"
+            id="com.jopdesign.jopeclipse.JOPLaunchConfigurationType"
+            delegate="com.jopdesign.jopeclipse.internal.ui.launchConfigurations.JavaDownLaunchConfigurationDelegate"
+            modes="run"
+            name="JOP Application">
+      </launchConfigurationType>
+   </extension>
+   
+   <extension 
+   		point="org.eclipse.debug.ui.launchConfigurationTabGroups">
+      <launchConfigurationTabGroup
+				id="com.jopdesign.jopeclipse.JOPTabGroup"
+				type="com.jopdesign.jopeclipse.JOPLaunchConfigurationType"
+				class="com.jopdesign.jopeclipse.internal.ui.launchConfigurations.JOPTabGroup" 
+				description="Build JOP and download as JOP application" />
+   </extension>
+   
+   <extension 
+   		point="org.eclipse.debug.ui.launchConfigurationTypeImages">
+      <launchConfigurationTypeImage
+            icon="icons/xul-16.gif"
+            configTypeID="com.jopdesign.jopeclipse.JOPLaunchConfigurationType"
+            id="com.jopdesign.jopeclipse.JOPLaunchConfigurationTypeImage"/>
+   </extension>
+   
+   <extension 
+   		point="org.eclipse.debug.ui.launchShortcuts">
+      <shortcut
+				id="com.jopdesign.jopeclipse.JOPLaunchShortcut"
+				label="JOP Application"
+				class="com.jopdesign.jopeclipse.internal.ui.launchConfigurations.JOPLaunchShortcut"
+				modes="run">
+			<contextualLaunch>
+            <enablement>
+               <with variable="selection">
+                  <count value="1" />
+                  
+                  <iterate>
+                      <test property="com.jopdesign.jopeclipse.hasJOPNature" />
+                  </iterate>	                  
+               </with>
+            </enablement>
+         </contextualLaunch>
+		</shortcut>
+   </extension>
+   
+   <extension 
+   		point="org.eclipse.core.expressions.propertyTesters">
+      <propertyTester
+            id="com.jopdesign.jopeclipse.JOPNaturePropertyTester"
+            type="org.eclipse.core.runtime.IAdaptable"
+      		namespace="com.jopdesign.jopeclipse"
+            properties="hasJOPNature"
+            class="com.jopdesign.jopeclipse.internal.JOPNaturePropertyTester" />
+   </extension>  
+</plugin>

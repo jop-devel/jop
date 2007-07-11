@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry exported="true" kind="lib" path="lib/bcel-5.2.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/jop-tools.jar"/>
+	<classpathentry exported="true" kind="lib" path="lib/RXTXcomm.jar"/>
+	<classpathentry kind="lib" path="C:/java/lib/bcel-5.2/bcel-5.2.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="con" path="org.eclipse.pde.core.requiredPlugins"/>
+	<classpathentry kind="lib" path="C:/cygwin/home/johan/jop/java/tools/dist/lib/jop-tools.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>

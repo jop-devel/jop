@@ -1,0 +1,25 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: JOP Eclipse Plug-in
+Bundle-SymbolicName: com.jopdesign.jopeclipse; singleton:=true
+Bundle-Version: 1.0.0
+Bundle-Activator: com.jopdesign.jopeclipse.JOPUIPlugin
+Bundle-Vendor: JopDesign
+Bundle-Localization: plugin
+Require-Bundle: org.eclipse.core.expressions,
+ org.eclipse.core.runtime,
+ org.eclipse.debug.ui,
+ org.eclipse.jdt.launching,
+ org.eclipse.jdt.debug.ui,
+ org.eclipse.ui,
+ org.eclipse.core.variables,
+ org.eclipse.ant.core,
+ org.eclipse.jdt.core,
+ org.apache.ant,
+ org.eclipse.sdk,
+ org.eclipse.ui.externaltools
+Eclipse-LazyStart: true
+Bundle-ClassPath: .,
+ lib/RXTXcomm.jar,
+ lib/jop-tools.jar,
+ lib/bcel-5.2.jar
