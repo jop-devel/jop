@@ -114,7 +114,7 @@ public class JavaDown implements IApplication {
         int nwords = 0; // Total number of words to process
 
         // FIXME debug
-        serialOut = new FileOutputStream(file.addFileExtension("tmp").toFile());
+        serialOut = new FileOutputStream(file.addFileExtension(".down").toFile());
         serialIn = new InputStream() {
 
             @Override
