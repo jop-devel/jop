@@ -21,11 +21,10 @@ public class RXTXCommUtils {
     public static Set<CommPortIdentifier> getAvailablePorts(
             int commPortIdentifier) {
         Set<CommPortIdentifier> identifiers = new HashSet<CommPortIdentifier>();
-        Enumeration portIdentifiers = CommPortIdentifier.getPortIdentifiers();
+        Enumeration<CommPortIdentifier> portIdentifiers = CommPortIdentifier.getPortIdentifiers();
 
         while (portIdentifiers.hasMoreElements()) {
-            CommPortIdentifier com = (CommPortIdentifier) portIdentifiers
-                    .nextElement();
+            CommPortIdentifier com = portIdentifiers.nextElement();
 
             if (com.getPortType() == commPortIdentifier) {
                 try {
