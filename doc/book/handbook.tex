@@ -13,14 +13,30 @@
 
 %\input{intro/abstract}
 
-%\pagestyle{scrheadings} \pagenumbering{roman}
+\pagestyle{scrheadings} \pagenumbering{roman}
 
 \tableofcontents \cleardoublepage
-% \listoftables \newpage \listoffigures
-% \newpage \lstlistoflistings \newpage
+ \listoftables \newpage \listoffigures
+ \newpage \lstlistoflistings \newpage
+
+\chapter*{Foreword}
+
+This book is about JOP, the Java Optimized Processor. JOP began as
+research project for a PhD thesis. JOP has been used in several
+industrial applications and, due to the fact that it is an
+open-source project, has a growing user base. This book is written
+for all of you who build this living community. The book is based to
+some extent on the PhD thesis. For a long time the thesis, some
+research papers, and the web site  have been the only available
+documentation for JOP. A thesis is quite different to a user manual.
+Its focus is on research results and implementation details are
+usually omitted. This book fills the gap and provides inside into
+the implementation of JOP and the accompanying Java virtual machine
+(JVM). It also gives you an idea how to build an embedded real-time
+system based on JOP.
 
 
-%\pagestyle{scrheadings} \pagenumbering{arabic}
+\pagestyle{scrheadings} \pagenumbering{arabic}
 
 
 %-----------------------------------------------------------------
@@ -30,6 +46,21 @@
 \chapter{Introduction}
 \label{chap:intro}
 %    \input{intro/intro}
+\section{Is JOP the Solution for Your Problem?}
+
+\emph{TODO: move is to the correct place.}
+
+I had a lot of fun, and still have, developing and using JOP, but
+should you use JOP? JOP is a processor design intended as a time
+predictable solution for hard real-time systems. If your application
+or research focus is on those systems and you prefer Java as
+programming language JOP is the right choice. If you are interested
+in larger, dynamic systems JOP is the wrong choice. If average
+performance is important for you and you do not care about
+worst-case performance other solutions will probably do a better
+job.
+
+
 \input{intro/directory}
 
 \chapter{Introduction into the Design Flow}
