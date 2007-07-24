@@ -59,6 +59,8 @@ IPDEST=192.168.0.123
 P1=test
 P2=test
 P3=HelloWorld
+# The test program for Basio and the NAND Flash
+#P3=FlashBaseio
 
 #P2=wcet
 #P3=Loop
