@@ -189,7 +189,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 	 * @param pmiss true if cacle is misses and false if a cache hit
 	 * @return wcet cycle count or -1 if wcet not available
 	 */
-	static int getCycles(int opcode, boolean pmiss, int n) {
+	public static int getCycles(int opcode, boolean pmiss, int n) {
 		int wcet = 0;
 		int b = -1;
 
@@ -1159,10 +1159,74 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 		return wcet;
 	}
 
-	static boolean isInJava(int opcode) {
+	public static boolean isInJava(int opcode) {
 		
 		switch (opcode) {
+			case org.apache.bcel.Constants.FCONST_0:
+				return true;
+			case org.apache.bcel.Constants.FCONST_1:
+				return true;
+			case org.apache.bcel.Constants.FCONST_2:
+				return true;
+			case org.apache.bcel.Constants.LADD:
+				return true;
+			case org.apache.bcel.Constants.FADD:
+				return true;
+			case org.apache.bcel.Constants.LSUB:
+				return true;
+			case org.apache.bcel.Constants.FSUB:
+				return true;
+			case org.apache.bcel.Constants.LMUL:
+				return true;
+			case org.apache.bcel.Constants.IDIV:
+				return true;
+			case org.apache.bcel.Constants.LDIV:
+				return true;
+			case org.apache.bcel.Constants.IREM:
+				return true;
+			case org.apache.bcel.Constants.LREM:
+				return true;
+			case org.apache.bcel.Constants.LNEG:
+				return true;
+			case org.apache.bcel.Constants.LSHL:
+				return true;
+			case org.apache.bcel.Constants.LSHR:
+				return true;
+			case org.apache.bcel.Constants.LUSHR:
+				return true;
+			case org.apache.bcel.Constants.LAND:
+				return true;
+			case org.apache.bcel.Constants.LOR:
+				return true;
+			case org.apache.bcel.Constants.LXOR:
+				return true;
+			case org.apache.bcel.Constants.I2L:
+				return true;
+			case org.apache.bcel.Constants.F2I:
+				return true;
+			case org.apache.bcel.Constants.I2B:
+				return true;
+			case org.apache.bcel.Constants.I2S:
+				return true;
+			case org.apache.bcel.Constants.LCMP:
+				return true;
+			case org.apache.bcel.Constants.TABLESWITCH:
+				return true;
+			case org.apache.bcel.Constants.LOOKUPSWITCH:
+				return true;
 			case org.apache.bcel.Constants.NEW:
+				return true;
+			case org.apache.bcel.Constants.NEWARRAY:
+				return true;
+			case org.apache.bcel.Constants.ANEWARRAY:
+				return true;
+			case org.apache.bcel.Constants.ATHROW:
+				return true;
+			case org.apache.bcel.Constants.CHECKCAST:
+				return true;
+			case org.apache.bcel.Constants.INSTANCEOF:
+				return true;
+			case org.apache.bcel.Constants.MULTIANEWARRAY:
 				return true;
 			default:
 				return false;
