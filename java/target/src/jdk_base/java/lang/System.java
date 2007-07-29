@@ -97,7 +97,7 @@ public final class System {
 
 	}
 	public static void gc() {
-		// TODO: invoke GC.gc()
+		GC.gc();
 	}
 
 
