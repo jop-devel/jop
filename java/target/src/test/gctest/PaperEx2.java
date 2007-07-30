@@ -142,7 +142,7 @@ public class PaperEx2 {
 				}
 				synchronized (mutex) {
 					// dump the results
-					GC.dump();
+//					GC.dump();
 					System.exit(0);
 				}
 			}
