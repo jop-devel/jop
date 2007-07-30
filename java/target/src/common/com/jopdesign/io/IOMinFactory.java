@@ -6,14 +6,10 @@ public class IOMinFactory {
 		mypp = (ParallelPort) PPmagic(PP_ADDRESS);
 	};
 	
-	static IOMinFactory single;
+	static IOMinFactory single = new IOMinFactory();;
 	
 	public static IOMinFactory getIOMinFactory() {
 		
-		// TODO: get the shit clinit with new done!!!!
-		if (single==null) {
-			single = new IOMinFactory();
-		}
 		return single;
 	}
 	
