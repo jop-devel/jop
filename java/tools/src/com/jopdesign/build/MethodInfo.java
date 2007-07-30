@@ -74,6 +74,7 @@ public class MethodInfo {
 //			System.err.println(" ++++++++++++ "+methodId+" --> mlocals ="+mlocals+" margs ="+margs);
 			len = (m.getCode().getCode().length + 3)/4;
 
+			// TODO: couldn't len=JOP...MAX_SIZE/4 be ok?
 			if (len>=JOPizer.METHOD_MAX_SIZE/4 || mreallocals>31 || margs>31) {
 				// we interprete clinit on JOP - no size restriction
 				if (!m.getName().equals("<clinit>")) {
@@ -96,7 +97,7 @@ public class MethodInfo {
 
 	public void dumpMethodStruct(PrintWriter out, int addr) {
 		
-		if (methodId.equals(JOPizer.clinitSig)) {
+		if (methodId.equals(JOPizer.clinitSig) && len>=JOPizer.METHOD_MAX_SIZE/4) {
 			out.println("\t// no size for <clinit> - we iterpret it and allow larger methods!");
 		}
 		// java_lang_String
@@ -119,8 +120,9 @@ public class MethodInfo {
 		out.println("\t\t//\tlocals: "+(mreallocals+margs)+" args size: "+margs);
 
 		int word1 = codeAddress << 10 | len;
-		// we allow only large <clinit> methods
-		if (methodId.equals(JOPizer.clinitSig)) {
+		// no length on large <clinit> methods
+		// get interpreted at start - see Startup.clazzinit()
+		if (methodId.equals(JOPizer.clinitSig) && len>=JOPizer.METHOD_MAX_SIZE/4) {
 			word1 = codeAddress << 10;
 		}
 		int word2 = cli.cpoolAddress << 10 |  mreallocals << 5 |  margs;

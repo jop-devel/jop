@@ -22,6 +22,7 @@ public class Native {
 	public static native void ext2intMem(int[] extAdr, int intAdr, int cnt);
 	public static native long makeLong(int hWord, int lWord);
 	public static native void invoke(int arg, int ptr);
+	public static native void invoke(int ptr);
 	public static native int toInt(Object o);
 	public static native Object toObject(int i);
 	public static native int toInt(float f);

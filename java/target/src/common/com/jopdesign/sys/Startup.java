@@ -162,7 +162,11 @@ public class Startup {
 			cp >>>= 10;
 //			System.out.print("start=");
 //			System.out.println(var);
-			interpret();
+			if (len<256) {	// see JOPizer constant on max. method length
+				Native.invoke(addr);
+			} else {
+				interpret();				
+			}
 		}
 	}
 
