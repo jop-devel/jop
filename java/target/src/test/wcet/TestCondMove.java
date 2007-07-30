@@ -12,22 +12,24 @@ public class TestCondMove {
 	 */
 	public static void main(String[] args) {
 
-		System.out.println(Native.condMove(1, 2, true));
-		System.out.println(Native.condMove(1, 2, false));
+		// Native.condMove() is disabled now
 		
-		ts = Native.rdMem(Const.IO_CNT);
-		te = Native.rdMem(Const.IO_CNT);
-		to = te-ts;
-
-		ts = Native.rdMem(Const.IO_CNT);
-		Native.condMove(1, 2, true);
-		te = Native.rdMem(Const.IO_CNT);
-		System.out.println(te-ts-to);
-
-		ts = Native.rdMem(Const.IO_CNT);
-		Native.condMove(1, 2, false);
-		te = Native.rdMem(Const.IO_CNT);
-		System.out.println(te-ts-to);
+//		System.out.println(Native.condMove(1, 2, true));
+//		System.out.println(Native.condMove(1, 2, false));
+//		
+//		ts = Native.rdMem(Const.IO_CNT);
+//		te = Native.rdMem(Const.IO_CNT);
+//		to = te-ts;
+//
+//		ts = Native.rdMem(Const.IO_CNT);
+//		Native.condMove(1, 2, true);
+//		te = Native.rdMem(Const.IO_CNT);
+//		System.out.println(te-ts-to);
+//
+//		ts = Native.rdMem(Const.IO_CNT);
+//		Native.condMove(1, 2, false);
+//		te = Native.rdMem(Const.IO_CNT);
+//		System.out.println(te-ts-to);
 	}
 
 }
