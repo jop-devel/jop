@@ -17,6 +17,8 @@ static int[] a = { 0, 1, 2, 3, 4, 5, -1 };
 
 static int[] b = { 123, -123, 456, -456, 50000, -50000 };
 
+static Object o = new Object();
+
 	public String getName() {
 		return "Clinit";
 	}
@@ -43,6 +45,8 @@ static int[] b = { 123, -123, 456, -456, 50000, -50000 };
 		if (b[3]!=-456) ok = false;
 		if (b[4]!=50000) ok = false;
 		if (b[5]!=-50000) ok = false;
+		
+		if (o==null) ok = false;
 
 		return ok;
 
