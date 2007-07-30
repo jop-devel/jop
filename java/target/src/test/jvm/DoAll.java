@@ -34,6 +34,7 @@ public class DoAll {
 				new InstanceCheckcast(),
 //				new Except(),
 				new SystemCopy(),
+				new CheckCast()
 		};
 		
 		for (int i=0; i<tc.length; ++i) {
