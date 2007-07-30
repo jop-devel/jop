@@ -1,25 +1,32 @@
 package com.jopdesign.io;
 
 public class IOMinFactory {
+	
+	SysDevice sys;
+	SerialPort sp;
+
+	private final static int SYS_ADDRESS = 0xffff0000;
+	private final static int SERIAL_ADDRESS = 0xffff0010;
 
 	IOMinFactory() {
-		mypp = (ParallelPort) PPmagic(PP_ADDRESS);
+		sys = (SysDevice) JVMIOMagic(SYS_ADDRESS);
+		sp = (SerialPort) JVMIOMagic(SERIAL_ADDRESS);
 	};
 	
 	static IOMinFactory single = new IOMinFactory();;
 	
-	public static IOMinFactory getIOMinFactory() {
-		
+	public static IOMinFactory getIOMinFactory() {		
 		return single;
 	}
 	
-	final static int PP_ADDRESS = 0x300;
-	ParallelPort mypp;
+	public SerialPort getSerialPort() {
+		return sp;
+	}
 	
-	public ParallelPort getParallelPort() {
-		return mypp;
+	public SysDevice getSysDevice() {
+		return sys;
 	}
 	
 	// here comes the magic!!!
-	native Object PPmagic(int address);
+	native Object JVMIOMagic(int address);
 }

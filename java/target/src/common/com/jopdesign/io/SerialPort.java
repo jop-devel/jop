@@ -1,6 +1,6 @@
 package com.jopdesign.io;
 
-public final class ParallelPort extends IODevice {
+public class SerialPort extends IODevice {
 	
 	public int data;
 	public int control;
