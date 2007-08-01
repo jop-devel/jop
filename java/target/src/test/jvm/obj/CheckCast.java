@@ -1,6 +1,5 @@
 /*
- * Created on 30.07.2005
- *
+ * failes for interfaces
  */
 package jvm.obj;
 
