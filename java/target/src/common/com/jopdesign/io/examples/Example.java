@@ -4,22 +4,20 @@ import com.jopdesign.io.*;
 
 public class Example {
 
-	/**
-	 * @param args
-	 */
 	public static void main(String[] args) {
 
-		IOMinFactory fact = IOMinFactory.getIOMinFactory();
+		IOMinFactory fact = IOMinFactory.getFactory();		
+		SerialPort sp = fact.getSerialPort();
 		
-		ParallelPort pp = fact.getParallelPort();
+		String hello = "Hello World!";
 		
-		// set upper byte as output
-		pp.control = 0xff00;
-		// write 0x12 to the output port
-		pp.data = 0x1200;
-		// read the lower byte
-		int val = pp.data;
-		
+		// Hello world with low-level device access
+		for (int i=0; i<hello.length(); ++i) {
+			// busy wait on transmit buffer empty
+			while ((sp.status & SerialPort.MASK_TDRE) == 0)
+				;
+			// write a character
+			sp.data = hello.charAt(i);
+		}
 	}
-
 }
