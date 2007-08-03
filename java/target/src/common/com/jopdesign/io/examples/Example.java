@@ -6,10 +6,12 @@ public class Example {
 
 	public static void main(String[] args) {
 
-		IOMinFactory fact = IOMinFactory.getFactory();		
+		System.out.println("Hello World");
+
+		IOFactory fact = IOFactory.getFactory();		
 		SerialPort sp = fact.getSerialPort();
 		
-		String hello = "Hello World!";
+		String hello = "Hello World via Hardware Objects!";
 		
 		// Hello world with low-level device access
 		for (int i=0; i<hello.length(); ++i) {

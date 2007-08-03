@@ -1,6 +1,6 @@
 package com.jopdesign.io;
 
-public class SerialPort extends IODevice {
+public final class SerialPort extends IODevice {
 	
 	// Some constants for the status port
 	public static final int MASK_TDRE = 1;
@@ -10,6 +10,7 @@ public class SerialPort extends IODevice {
 	public volatile int data;
 	
 
+	public void init(int baudRate) {}
 	/**
 	 * Non-blocking read of a character. If the input buffer
 	 * is empty, the last value is returned.

@@ -28,5 +28,7 @@ public class IOMinFactory {
 	}
 	
 	// here comes the magic!!!
-	native Object JVMIOMagic(int address);
+	Object JVMIOMagic(int address) {
+		return new Object();
+	}
 }
