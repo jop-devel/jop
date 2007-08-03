@@ -17,10 +17,11 @@ import org.apache.bcel.classfile.*;
  * Class struct:
  * 
  *  0: instance size (class reference)
- *  1: GC info field (one bit per field)
- *  2: pointer to super class
- *  3: pointer to interface table
- * 4+: method table, two words per entry
+ *  1: pointer to static primitiv fields (if any)
+ *  2: GC info field (one bit per field)
+ *  3: pointer to super class
+ *  4: pointer to interface table
+ * 5+: method table, two words per entry
  *   : class reference (pointer back to class info)
  *   : constant pool (cp)
  *   : optional interface table
@@ -39,7 +40,7 @@ public class ClassInfo {
 	 * If changed than also change in GC.java and JVM.java
 	 * (checkcast, instanceof). 
 	 */
-	static final int CLS_HEAD = 4;
+	static final int CLS_HEAD = 5;
 	/**
 	 * Size of a method table entry.
 	 */
@@ -568,6 +569,7 @@ public class ClassInfo {
 				out.println("\t\t\t\t//\t"+clft.idx[i]+" "+clft.key[i]);				
 			}
 		}
+		out.println("\t\t"+staticValueVarAddress+",\t//\tpointer to static primitive fields");
 		if (instSize>31) {
 			System.err.println("Error: Object of "+clazz.getClassName()+" to big!");
 			System.exit(-1);

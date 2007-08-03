@@ -637,7 +637,7 @@ class JVM {
 			if (p==cons) {
 				return objref;
 			} else {
-				p = Native.rdMem(p+2);	// super class ptr
+				p = Native.rdMem(p+3);	// super class ptr
 				if (p==0) break;		// we are at Object
 			}
 		}
@@ -660,7 +660,7 @@ class JVM {
 			if (p==cons) {
 				return 1;
 			} else {
-				p = Native.rdMem(p+2);
+				p = Native.rdMem(p+3);
 				if (p==0) break;		// we are at Object
 			}
 		}

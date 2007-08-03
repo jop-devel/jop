@@ -21,7 +21,7 @@ public class GC {
 	 * Size of class header part.
 	 * Difference between class struct and method table
 	 */
-	static final int CLASS_HEADR = 4;
+	static final int CLASS_HEADR = 5;
 	/**
 	 * GC_INFO field relativ to start of MTAB.
 	 */
