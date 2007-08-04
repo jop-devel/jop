@@ -53,6 +53,7 @@ public class Const {
 	//	=> 8 different IO devices
 	//	=> each device can contain up to 16 registers
 
+	public static final int IO_SYS_DEVICE = IO_BASE+0;
 	// scio_min.vhd
 	public static final int IO_CNT = IO_BASE+0;
 	public static final int IO_INT_ENA = IO_BASE+0;
