@@ -1,5 +1,7 @@
 package com.jopdesign.io.examples;
 
+import util.Timer;
+
 import com.jopdesign.io.*;
 
 public class Example {
@@ -10,6 +12,7 @@ public class Example {
 
 		IOFactory fact = IOFactory.getFactory();		
 		SerialPort sp = fact.getSerialPort();
+		SysDevice sys = fact.getSysDevice();
 		
 		String hello = "Hello World via Hardware Objects!";
 		
@@ -20,6 +23,12 @@ public class Example {
 				;
 			// write a character
 			sp.data = hello.charAt(i);
+		}
+		
+		for (int i=0; i<20; ++i) {
+			Timer.wd();
+			int t = Timer.getTimeoutMs(200);
+			while (!Timer.timeout(t)) ;
 		}
 	}
 }
