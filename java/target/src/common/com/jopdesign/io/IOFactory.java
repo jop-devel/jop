@@ -6,9 +6,13 @@ public class IOFactory {
 	
 	private SerialPort sp;
 
-	private final static int SP_BASE_ADDRESS = 0xffffff90;
+	// Handles should be the first static fields!
 	private static int SP_PTR;
 	private static int SP_MTAB;
+
+	// declare all constants AFTER the static fields for
+	// the HW Object handles
+	private final static int SP_BASE_ADDRESS = 0xffffff90;
 
 	IOFactory() {
 		sp = (SerialPort) makeHWObject(new SerialPort(),
@@ -31,7 +35,7 @@ public class IOFactory {
 		int cp = Native.rdIntMem(1);
 		int p = Native.rdMem(cp-1);
 		p = Native.rdMem(p+1);
-		p += idx*2+1; // number of final static
+		p += idx*2;
 		Native.wrMem(address, p);
 		Native.wrMem(pcl, p+1);
 		return Native.toObject(p);
