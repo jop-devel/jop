@@ -3,7 +3,7 @@ package util;
 /**
 *	A VERY simple timer and WD handling.
 *
-*	A little excures in modulo clac:
+*	A little excures in modulo calculation:
 *
 *		get the difference of to values (on wrap over):
 *
@@ -12,43 +12,45 @@ package util;
 *	thats WRONG:	val < Native.rd(Native.IO_CNT);
 */
 
-import com.jopdesign.sys.Const;
-import com.jopdesign.sys.Native;
+import com.jopdesign.io.IOFactory;
+import com.jopdesign.io.SysDevice;
 
 public class Timer {
+
+	private static SysDevice sys = IOFactory.getFactory().getSysDevice();
 
 	private static boolean blink;
 
 	public static int cnt() {
 
-		return Native.rd(Const.IO_CNT);
+		return sys.cntInt;
 	}
 
 	public static int us() {
 
-		return Native.rd(Const.IO_US_CNT);
+		return sys.uscntTimer;
 	}
 
 	public static boolean timeout(int val) {
 
-		return val-Native.rd(Const.IO_US_CNT) < 0;
+		return val-sys.uscntTimer < 0;
 	}
 	public static int getTimeoutMs(int msOff) {
 
-		return Native.rd(Const.IO_US_CNT) + 1000*msOff;
+		return sys.uscntTimer + 1000*msOff;
 	}
 	public static int getTimeoutSec(int sec) {
 
-		return Native.rd(Const.IO_US_CNT) + 1000*1000*sec;
+		return sys.uscntTimer + 1000*1000*sec;
 	}
 
 	public static void wd() {
 
 		if (blink) {
-			Native.wr(1, Const.IO_WD);
+			sys.wd = 1;
 			blink = false;
 		} else {
-			Native.wr(0, Const.IO_WD);
+			sys.wd = 0;
 			blink = true;
 		}
 	}
@@ -59,9 +61,9 @@ public class Timer {
 	// for Amd.progam()
 	public static void usleep(int t) {
 
-		int j = Native.rd(Const.IO_US_CNT);
+		int j = sys.uscntTimer;
 		j += t;
-		while (j-Native.rd(Const.IO_US_CNT) >= 0)
+		while (j-sys.uscntTimer >= 0)
 			;
 	}
 
@@ -80,7 +82,7 @@ public class Timer {
 	public static void loop() {
 		
 		if (!started) init();
-		if (next-Native.rd(Const.IO_US_CNT) < 0) {
+		if (next-sys.uscntTimer < 0) {
 			++s; ++second;
 			if (second==86400) {
 				second = 0;
@@ -108,7 +110,7 @@ public class Timer {
 	private static void init() {
 		
 		day = second = s = 0;
-		next = Native.rd(Const.IO_US_CNT)+1000000;
+		next = sys.uscntTimer+1000000;
 		started = true;
 	}
 }
