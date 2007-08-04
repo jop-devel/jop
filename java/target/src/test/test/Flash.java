@@ -1,7 +1,5 @@
 package test;
 
-import util.Dbg;
-
 import com.jopdesign.sys.Native;
 
 /**
@@ -14,8 +12,6 @@ public class Flash {
 
 		int i, j, k;
 
-		Dbg.initSerWait();
-		Dbg.lf();
 
 		/* Read ID from Flash */
 		Native.wrMem(0xaa, 0x80555);
@@ -26,13 +22,15 @@ public class Flash {
 		Native.wrMem(0x55, 0x802aa);
 		Native.wrMem(0x90, 0x80555);
 		j = Native.rdMem(0x80001);
-		Dbg.wr("Flash ");
-		Dbg.hexVal(i);
-		Dbg.hexVal(j);
+		System.out.print("Flash ");
+		System.out.print(i);
+		System.out.print(" ");
+		System.out.print(j);
+		System.out.print(" ");
 		if (i==0x01 & j==0x4f) {
-			Dbg.wr("AMD Am29LV040B\n");
+			System.out.println(" AMD Am29LV040B");
 		} else {
-			Dbg.wr("error reading Flash\n");
+			System.out.println(" error reading Flash");
 		}
 
 /* read ID  and status from NAND */
@@ -44,27 +42,29 @@ public class Flash {
 //
 		i = Native.rdMem(0x100000);	// Manufacturer
 		j = Native.rdMem(0x100000);	// Size
-		Dbg.wr("NAND ");
-		Dbg.hexVal(i);
-		Dbg.hexVal(j);
+		System.out.print("NAND ");
+		System.out.print(i);
+		System.out.print(" ");
+		System.out.print(j);
+		System.out.print(" ");
 		if (i==0x198) {
-			Dbg.wr("Toshiba ");
+			System.out.print("Toshiba ");
 		} else if (i==0x120) {
-			Dbg.wr("ST ");
+			System.out.print("ST ");
 		} else {
-			Dbg.wr("Unknown manufacturer\n");
+			System.out.println("Unknown manufacturer");
 		}
 			
 		if (j==0x173) {
-			Dbg.wr("16 MB\n");
+			System.out.println("16 MB");
 		} else if (j==0x175) {
-			Dbg.wr("32 MB\n");
+			System.out.println("32 MB");
 		} else if (j==0x176) {
-			Dbg.wr("64 MB\n");
+			System.out.println("64 MB");
 		} else if (j==0x179) {
-			Dbg.wr("128 MB\n");
+			System.out.println("128 MB");
 		} else {
-			Dbg.wr("error reading NAND\n");
+			System.out.println("error reading NAND");
 		}
 
 //
@@ -73,12 +73,14 @@ public class Flash {
 		Native.wrMem(0x70, 0x100001);
 		i = Native.rdMem(0x100000)&0x1c1;
 		j = Native.rdMem(0x100000)&0x1c1;
-		Dbg.hexVal(i);
-		Dbg.hexVal(j);
+		System.out.print(i);
+		System.out.print(" ");
+		System.out.print(j);
+		System.out.print(" ");
 		if (i==0x1c0 && j==0x1c0) {
-			Dbg.wr("status OK\n");
+			System.out.println("status OK");
 		} else {
-			Dbg.wr("error reading NAND status\n");
+			System.out.println("error reading NAND status");
 		}
 
 	}
