@@ -188,6 +188,24 @@ for (fp=10530; fp<=10700; ++fp) {
 */
 	}
 
+	/**
+	 * Install a handle in two static fields for a hardware object
+	 * @param o a 'real' instance of the HW object for the class reference
+	 * @param address IO address of the hardware device
+	 * @param idx index of the static fields
+	 * @param cp address of constant pool of the factory class
+	 * @return reference to the HW object
+	 */
+	public static Object makeHWObject(Object o, int address, int idx, int cp) {
+		int ref = Native.toInt(o);
+		int pcl = Native.rdMem(ref+1);
+		int p = Native.rdMem(cp-1);
+		p = Native.rdMem(p+1);
+		p += idx*2;
+		Native.wrMem(address, p);
+		Native.wrMem(pcl, p+1);
+		return Native.toObject(p);
+	}
 
 	static void wrByte(int i) {
 
