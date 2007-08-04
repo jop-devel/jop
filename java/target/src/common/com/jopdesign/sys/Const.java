@@ -54,6 +54,8 @@ public class Const {
 	//	=> each device can contain up to 16 registers
 
 	public static final int IO_SYS_DEVICE = IO_BASE+0;
+	public static final int IO_USB = IO_BASE+0x20;
+	
 	// scio_min.vhd
 	public static final int IO_CNT = IO_BASE+0;
 	public static final int IO_INT_ENA = IO_BASE+0;
@@ -105,8 +107,8 @@ public class Const {
 	//
 	// use a better address some time (higher address)
 	//
-	public static final int IO_USB_STATUS = IO_BASE+0x20;
-	public static final int IO_USB_DATA = IO_BASE+0x20+1;
+	public static final int IO_USB_STATUS = IO_USB;
+	public static final int IO_USB_DATA = IO_USB+1;
 
 	// Wishbone base address
 	public static final int WB_BASE = IO_BASE;
