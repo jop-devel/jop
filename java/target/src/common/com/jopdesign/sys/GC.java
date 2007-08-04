@@ -17,15 +17,6 @@ public class GC {
 	// for our RT-GC tests
 	static int full_heap_size;
 	
-	/**
-	 * Size of class header part.
-	 * Difference between class struct and method table
-	 */
-	static final int CLASS_HEADR = 5;
-	/**
-	 * GC_INFO field relativ to start of MTAB.
-	 */
-	static final int MTAB2GC_INFO = -3;
 
 	/**
 	 * Fields in the handle structure.
@@ -358,7 +349,7 @@ public class GC {
 				// get pointer to method table
 				flags = Native.rdMem(ref+OFF_MTAB_ALEN);
 				// get real flags
-				flags = Native.rdMem(flags+MTAB2GC_INFO);
+				flags = Native.rdMem(flags+Const.MTAB2GC_INFO);
 				for (i=0; flags!=0; ++i) {
 					if ((flags&1)!=0) {
 						push(Native.rdMem(addr+i));
@@ -537,7 +528,7 @@ public class GC {
 			// ref. flags used for array marker
 			Native.wrMem(IS_OBJ, ref+OFF_TYPE);
 			// pointer to method table in the handle
-			Native.wrMem(cons+CLASS_HEADR, ref+OFF_MTAB_ALEN);
+			Native.wrMem(cons+Const.CLASS_HEADR, ref+OFF_MTAB_ALEN);
 		}
 
 		return ref;

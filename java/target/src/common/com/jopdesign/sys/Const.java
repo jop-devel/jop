@@ -14,6 +14,29 @@ package com.jopdesign.sys;
  */
 public class Const {
 	
+	// Constants for the class structure
+	
+	/**
+	 * Size of class header part.
+	 * Difference between class struct and method table
+	 */
+	static final int CLASS_HEADR = 5;
+	/**
+	 * GC_INFO field relativ to start of MTAB.
+	 */
+	static final int MTAB2GC_INFO = -3;
+	/**
+	 * Pointer to super class relativ to class struct
+	 */
+	static final int CLASS_SUPER = 3;
+	
+	// Constants for JVM registers (on-chip RAM)
+	
+	/**
+	 * Constant pool pointer
+	 */
+	public static final int RAM_CP = 1;
+
 	// Exception numbers - 1-7 reserved for HW generated exceptions
 	public static final int EXC_SPOV = 1;
 	public static final int EXC_NP = 2;

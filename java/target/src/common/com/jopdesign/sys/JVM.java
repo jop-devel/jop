@@ -631,13 +631,13 @@ class JVM {
 		}
 
 		int p = Native.rdMem(objref+GC.OFF_MTAB_ALEN);	// ptr to MTAB
-		p -= GC.CLASS_HEADR;							// start of class info
+		p -= Const.CLASS_HEADR;							// start of class info
 
 		for (;;) {
 			if (p==cons) {
 				return objref;
 			} else {
-				p = Native.rdMem(p+3);	// super class ptr
+				p = Native.rdMem(p+Const.CLASS_SUPER);	// super class ptr
 				if (p==0) break;		// we are at Object
 			}
 		}
@@ -654,13 +654,13 @@ class JVM {
 			return 0;
 		}
 		int p = Native.rdMem(objref+GC.OFF_MTAB_ALEN);	// handle indirection
-		p -= GC.CLASS_HEADR;							// start of class info
+		p -= Const.CLASS_HEADR;							// start of class info
 
 		for (;;) {
 			if (p==cons) {
 				return 1;
 			} else {
-				p = Native.rdMem(p+3);
+				p = Native.rdMem(p+Const.CLASS_SUPER);
 				if (p==0) break;		// we are at Object
 			}
 		}
