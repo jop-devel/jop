@@ -33,18 +33,6 @@ import org.apache.bcel.classfile.*;
 
 public class ClassInfo {
 
-	/**
-	 * Size of the class header.
-	 * Difference between class pointer and mtab pointer.
-	 * 
-	 * If changed than also change in GC.java and JVM.java
-	 * (checkcast, instanceof). 
-	 */
-	static final int CLS_HEAD = 5;
-	/**
-	 * Size of a method table entry.
-	 */
-	static final int METH_STR = 2;
 
 	static class IT {
 		int nr;
@@ -260,7 +248,7 @@ public class ClassInfo {
 		// class head contains the instance size and
 		// a pointer to the inteface table
 		// class references point to the instance size
-		addr += CLS_HEAD;
+		addr += ClassStructConstants.CLS_HEAD;
 		// start of the method table, objects contain a pointer
 		// to the start of this table (at ref-1)
 		methodsAddress = addr;
@@ -278,7 +266,7 @@ public class ClassInfo {
 					mainAddress = addr;
 				}
 			}
-			addr += METH_STR;
+			addr += ClassStructConstants.METH_STR;
 		}
 		// back reference from cp-1 to class struct
 		addr += 1;
@@ -296,10 +284,10 @@ public class ClassInfo {
 
 		// add method count of class Object !
 		if (clazz.getClassName().equals(JOPizer.jvmClass)) {
-			jvmAddress = methodsAddress+nrObjMethods*METH_STR;
+			jvmAddress = methodsAddress+nrObjMethods*ClassStructConstants.METH_STR;
 		}
 		if (clazz.getClassName().equals(JOPizer.helpClass)) {
-			jvmHelpAddress = methodsAddress+nrObjMethods*METH_STR;
+			jvmHelpAddress = methodsAddress+nrObjMethods*ClassStructConstants.METH_STR;
 		}
 		return addr;
 	}
@@ -476,7 +464,7 @@ public class ClassInfo {
 							} else {
 								// offest in method table
 								// (index*2) plus number of arguments (without this!)
-								cpoolArry[pos] = (vpos*METH_STR<<8) + (minf.margs-1);
+								cpoolArry[pos] = (vpos*ClassStructConstants.METH_STR<<8) + (minf.margs-1);
 								
 							}
 							cpoolComments[pos] = comment+" index: "+vpos+
@@ -593,7 +581,7 @@ public class ClassInfo {
 		int addr = methodsAddress;
 		for(i=0; i < clvt.len; i++) {
 			clvt.mi[i].dumpMethodStruct(out, addr);
-			addr += METH_STR;
+			addr += ClassStructConstants.METH_STR;
 		}
 		
 		out.println();
@@ -629,7 +617,7 @@ public class ClassInfo {
 					}
 				}
 				if (j!=clvt.len) {
-					out.print("\t\t"+(methodsAddress+j*METH_STR)+",");
+					out.print("\t\t"+(methodsAddress+j*ClassStructConstants.METH_STR)+",");
 				} else {
 					out.print("\t\t"+0+",\t");
 				}
