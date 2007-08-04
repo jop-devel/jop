@@ -207,6 +207,15 @@ for (fp=10530; fp<=10700; ++fp) {
 		return Native.toObject(p);
 	}
 
+	public static int[] makeHWArray(int len, int address, int idx, int cp) {
+		int p = Native.rdMem(cp-1);
+		p = Native.rdMem(p+1);
+		p += idx*2;
+		Native.wrMem(address, p);
+		Native.wrMem(len, p+1);
+		return Native.toIntArray(p);
+	}
+
 	static void wrByte(int i) {
 
 		wr('0'+i/100);

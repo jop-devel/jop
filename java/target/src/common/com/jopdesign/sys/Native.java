@@ -25,6 +25,7 @@ public class Native {
 	public static native void invoke(int ptr);
 	public static native int toInt(Object o);
 	public static native Object toObject(int i);
+	public static native int[] toIntArray(int i);
 	public static native int toInt(float f);
 	public static native float toFloat(int i);
 	public static native long toLong(double d);

@@ -388,6 +388,7 @@ public class JopInstr{
 			"toInt", "jopsys_nop",
 			"toFloat", "jopsys_nop",
 			"toObject", "jopsys_nop",
+			"toIntArray", "jopsys_nop",
 			"toLong", "jopsys_nop",
 			"toInt", "jopsys_nop",
 			"toDouble", "jopsys_nop",
