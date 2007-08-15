@@ -85,17 +85,17 @@ process(clk_i, reset_i)
 begin
 
 	if (reset_i='1') then
-		start_i <= '0';
+--		start_i <= '0';
 	elsif rising_edge(clk_i) then
 
-		if rd_i='1' then
-			-- that's our very simple address decoder
-			if address_i="0011" then
-				start_i <= '1';
-			end if;
-		else
-			start_i <= '0';
-		end if;
+--		if rd_i='1' then
+--			-- that's our very simple address decoder
+--			if address_i="0011" then
+--				start_i <= '1';
+--			end if;
+--		else
+--			start_i <= '0';
+--		end if;
 	end if;
 
 end process;
@@ -125,7 +125,9 @@ begin
 		opa_i <= (others => '0');
 		opb_i <= (others => '0');
 		fpu_op_i <= (others => '0');
+		start_i <= '0';
 	elsif rising_edge(clk_i) then
+		start_i <= '0';
 
 		if wr_i='1' then
 			if address_i="0000" then
@@ -134,6 +136,7 @@ begin
 					opb_i <= wr_data_i;
 			elsif address_i="0010" then
 					fpu_op_i <=wr_data_i(2 downto 0); 
+					start_i <= '1';
 			end if;
 		end if;
 
