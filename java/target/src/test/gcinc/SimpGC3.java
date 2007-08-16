@@ -18,7 +18,7 @@ public class SimpGC3 implements Runnable {
 			}
 			nr = 1;
 		} else if (nr==1) {
-			System.out.println(length);
+			//System.out.println(length);
 			// check the list
 			if (list.size()!=length) throw new Error("Size changed");
 			testObject to;
@@ -43,14 +43,14 @@ public class SimpGC3 implements Runnable {
 	 */
 	public static void main(String[] args) {
 		a = new SimpGC3(10);
-		b = new SimpGC3(26);
+		b = new SimpGC3(10);
 		c = new SimpGC3(10);
 		//GC.setConcurrent();	
 		for (;;) {
 			a.run();
 			b.run();
 			c.run();
-			System.out.println("I'm running");
+		//	System.out.println("I'm running");
 		}
 	}
 

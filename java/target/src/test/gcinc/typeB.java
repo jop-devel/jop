@@ -1,11 +1,11 @@
 package gcinc;
-public class typeB implements testObject{
-	int myInt1,myInt2,myInt3;
+public class typeB extends testObject{
+	
 	
 	public boolean testYourself(int i){
 		boolean isOk;	
-		isOk= (myInt1/i)/i==i && (myInt2-i)/4==i && (((myInt3-6)/i)-5)/(4*i)==i;  
-		return true;	
+		isOk= (myInt1/i)/i==i && (myInt2-i)/4==i && (((myInt3-6)/i)-5)/(4)==i;  
+		return isOk;	
 	}
 	
 	public typeB(int i){

@@ -1,8 +1,7 @@
 package gcinc;
-public class typeA implements testObject{
+public class typeA extends testObject{
 
-	private int myInt1,myInt2,myInt3; 
-	
+		
 	public boolean testYourself(int i){
 		boolean isOk;
 		isOk=myInt1==i && myInt2/i==i && (myInt3-myInt2)/i==i;
