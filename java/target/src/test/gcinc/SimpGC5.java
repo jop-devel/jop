@@ -36,10 +36,7 @@ public class SimpGC5 {
 			throw new Error("Something wrong");
 		}
 		
-		for(;;){
-			
 		System.out.println("Everything is fine");
-		}
 	}
 
 }

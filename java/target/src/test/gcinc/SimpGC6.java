@@ -54,10 +54,6 @@ public class SimpGC6  {
 		}
 		
 		
-		for (;;) {
-			
-			//System.out.println("I'm running");
-		}
 	}
 
 }
