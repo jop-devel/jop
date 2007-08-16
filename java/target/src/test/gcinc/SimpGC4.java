@@ -49,11 +49,11 @@ public class SimpGC4 implements Runnable {
 		
 		for (;;) {
 			a.run();
-			GC.gc();
+			System.gc();
 			b.run();
-			GC.gc();
+			System.gc();
 			c.run();
-			GC.gc();
+			System.gc();
 		}
 	}
 

@@ -20,7 +20,6 @@ public class SimpGC2 {
 	public static void main(String[] args) {
 		SimpGC2 sgc= new SimpGC2();
 		sgc.createObjects();
-		for(;;){}
 	}
 
 }
