@@ -13,6 +13,7 @@ public class Test
 			new yaffs2.platform.jop.PortConfiguration(),
 			null);
 		
+		yaffs2.utils.Globals.configuration.yaffs_StartUp();
 	}
 
 }
