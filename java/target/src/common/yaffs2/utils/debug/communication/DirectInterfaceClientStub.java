@@ -14,6 +14,7 @@ public class DirectInterfaceClientStub extends Transceiver implements Yaffs1NAND
 	public DirectInterfaceClientStub(yaffs_Device dev, InputStream rx, OutputStream tx)
 	{
 		super(rx, tx);
+		this.dev = dev;
 	}
 	
 	public yaffs_Device deviceIdToDevice(int deviceId)

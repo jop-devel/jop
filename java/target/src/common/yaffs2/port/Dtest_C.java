@@ -633,7 +633,7 @@ public class Dtest_C {
 	}
 
 
-	static int long_test(/*int argc, char *argv[]*/)
+	public static int long_test(/*int argc, char *argv[]*/)
 	{
 
 		int f;
@@ -886,7 +886,7 @@ public class Dtest_C {
 	}
 	
 
-	static int huge_directory_test_on_path(String path)
+	public static int huge_directory_test_on_path(String path)
 	{
 
 		yaffs_DIR d;
@@ -954,7 +954,7 @@ public class Dtest_C {
 //	}
 //
 //
-	static void rename_over_test(String mountpt)
+	public static void rename_over_test(String mountpt)
 	{
 		int i;
 		byte[] a = new byte[100]; final int aIndex = 0;
@@ -979,7 +979,7 @@ public class Dtest_C {
 		
 	}
 	
-	static int resize_stress_test(String path)
+	public static int resize_stress_test(String path)
 	{
 	   int a,b,i,j;
 	   int x;
@@ -1043,7 +1043,7 @@ public class Dtest_C {
 	}
 
 	
-	static int resize_stress_test_no_grow_complex(String path,int iters)
+	public static int resize_stress_test_no_grow_complex(String path,int iters)
 	{
 	   int a,b,i,j;
 	   int x;
@@ -1225,7 +1225,7 @@ public class Dtest_C {
 //		
 //	}
 //
-	static int cache_read_test()
+	public static int cache_read_test()
 	{
 		int a,b,c;
 		int i;
@@ -1309,7 +1309,7 @@ public class Dtest_C {
 //	}
 //
 
-	static int free_space_check()
+	public static int free_space_check()
 	{
 		int f;
 		
@@ -1322,7 +1322,7 @@ public class Dtest_C {
 		    return 1;
 	}
 
-	static int truncate_test()
+	public static int truncate_test()
 	{
 		int a;
 		int r;
@@ -1387,7 +1387,7 @@ public class Dtest_C {
 
 
 
-	static void lookup_test(String mountpt)
+	public static void lookup_test(String mountpt)
 	{
 		int i;
 		int h;
@@ -1452,7 +1452,7 @@ public class Dtest_C {
 		
 	}
 
-	static void link_test(String mountpt)
+	public static void link_test(String mountpt)
 	{
 		int i;
 		int h;
@@ -1495,7 +1495,7 @@ public class Dtest_C {
 		
 	}
 
-	static void freespace_test(String mountpt)
+	public static void freespace_test(String mountpt)
 	{
 		int i;
 		int h;
@@ -1538,7 +1538,7 @@ public class Dtest_C {
 		
 	}
 
-	static void simple_rw_test(String mountpt)
+	public static void simple_rw_test(String mountpt)
 	{
 		int i;
 		int h;
@@ -1593,7 +1593,7 @@ public class Dtest_C {
 	}
 
 
-	static void scan_deleted_files_test(String mountpt)
+	public static void scan_deleted_files_test(String mountpt)
 	{
 		byte[] fn = new byte[100]; final int fnIndex = 0;
 		byte[] sub = new byte[100]; final int subIndex = 0;
@@ -1724,7 +1724,7 @@ public class Dtest_C {
 	}
 
 	
-	static void check_resize_gc_bug(String mountpt)
+	public static void check_resize_gc_bug(String mountpt)
 	{
 
 		byte[] a = new byte[30]; final int aIndex = 0;
@@ -1759,7 +1759,7 @@ public class Dtest_C {
 	}
 
 
-	static void multi_mount_test(String mountpt,int nmounts)
+	public static void multi_mount_test(String mountpt,int nmounts)
 	{
 
 		byte[] a = new byte[30]; final int aIndex = 0;
@@ -1827,7 +1827,7 @@ public class Dtest_C {
 	}
 
 
-	static void small_mount_test(String mountpt,int nmounts)
+	public static void small_mount_test(String mountpt,int nmounts)
 	{
 
 		byte[] a = new byte[30]; final int aIndex = 0;
@@ -1907,7 +1907,7 @@ public class Dtest_C {
 
 	static byte[] _STATIC_LOCAL_small_overwrite_test_xx = new byte[8000];
 	
-	static void small_overwrite_test(String mountpt,int nmounts)
+	public static void small_overwrite_test(String mountpt,int nmounts)
 	{
 
 		byte[] a = new byte[30]; final int aIndex = 0;
@@ -1973,7 +1973,7 @@ public class Dtest_C {
 	}
 	
 // TODO needs testing
-	static void checkpoint_fill_test(String mountpt, int nmounts)
+	public static void checkpoint_fill_test(String mountpt, int nmounts)
 	{
 
 		byte[] a = new byte[50]; final int aIndex = 0;
@@ -2050,7 +2050,7 @@ public class Dtest_C {
 //
 //	extern void SetCheckpointReservedBlocks(int n);
 
-	static void checkpoint_upgrade_test(String mountpt,int nmounts)
+	public static void checkpoint_upgrade_test(String mountpt,int nmounts)
 	{
 
 		byte[] a = new byte[50]; final int aIndex = 0;
@@ -2107,7 +2107,7 @@ public class Dtest_C {
 		}
 	}
 	
-	static void huge_array_test(String mountpt,int n)
+	public static void huge_array_test(String mountpt,int n)
 	{
 
 		byte[] a = new byte[50]; final int aIndex = 0;
