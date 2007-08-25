@@ -7,15 +7,15 @@
 
 % don't use textheight... with koma-script
 \documentclass[%draft,
-    a4paper,12pt, % 'Standard'
-%    11pt, % use explicit paper format for Java book format
+%    a4paper,12pt, % 'Standard'
+    11pt, % use explicit paper format for Java book format
 %    b5paper,10pt, % B5 printout
     % use BCOR to compensate for the two-side margin!
 %    a4paper,12pt,BCOR37pt,DIV15,
 %    a4paper,12pt,BCOR40pt,DIV14,
 %    b5paper,10pt,DIV12,
     headinclude, footexclude,
-%    twoside, % this produces strange margins!
+    twoside, % this produces strange margins!
     openright, % for new chapters
     cleardoubleempty,
 % normalheadings - smaller chapter or smallheadings - too small
@@ -56,8 +56,9 @@
 
 % for book
 % 'Java-format' 526pt x 660pt (Ghostscript)
-%\setlength{\paperwidth}{185mm} \setlength{\paperheight}{232mm}
-%\areaset[13.75mm]{130mm}{200mm} % Java book format
+\setlength{\paperwidth}{185mm} \setlength{\paperheight}{232mm}
+% use that BCOR setting with twoside to compensate the margin
+\areaset[13.75mm]{130mm}{200mm} % Java book format
 
 % for book to A4 conversion:
 % Set the following sizes and export with
@@ -117,12 +118,12 @@
 %\areaset[17.05mm]{142mm}{219mm}
 \newfont{\javatt}{cmss12}
 \newfont{\javattb}{cmssdc10 scaled 1200}
+% TODO find an italic
+\newfont{\javatti}{cmss12}
 \newcommand{\javatext}{\javatt}
 
 \newcommand{\picscale}{1}
 \newcommand{\excelwidth}{12cm}
-% NOT used anymore!
-
 
 
 % for chapter head without a number
@@ -174,7 +175,7 @@ showstringspaces=false,captionpos=b}
 
 % für die Umlaute in der Kurzfassung
 % bekomme ich dadurch Probleme???
-\usepackage[ansinew]{inputenc}
+%\usepackage[ansinew]{inputenc}
 
 
 \usepackage{capt-of}
@@ -195,13 +196,16 @@ showstringspaces=false,captionpos=b}
 \newcommand{\code}[1]{{\javatext#1}} % for LaTeX
 \newcommand{\cmd}[1]{{\texttt{#1}}}
 \newcommand{\dirent}[1]{{\texttt{#1}}}
-\newcommand{\menuitem}[1]{\textsf{\textbf{#1}}}
+%\newcommand{\menuitem}[1]{\textsf{\textbf{#1}}}
+\newcommand{\menuitem}[1]{\textsf{\textsl{#1}}}
 
 % for flow.tex - part of index helper
 \newcommand{\eei}[1]{%
 \index{extension!\texttt{#1}}\texttt{#1}}
 
-
+% JVs et al
+%\newcommand{\ea}{et al.\xspace}
+\newcommand{\ea}{et al.\ }
 
 %\begin{htmlonly}
 %\renewcommand{\code}[1]{{\texttt{#1}}} % for html2LaTeX
@@ -233,4 +237,3 @@ showstringspaces=false,captionpos=b}
         \end{tabular}
     \end{table}
 }
-

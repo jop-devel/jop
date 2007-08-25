@@ -1,0 +1,130 @@
+%\input{../preamble}
+
+
+
+\begin{table}[htb]
+    \centering
+{\small
+    \begin{tabular}{lrrrrr}
+        \toprule
+
+& JOP & leJOS & TINI & Komodo & JStamp \\
+        \midrule
+Frequency [MHz] & 100 & 16 & 40 & 33 & 73.728 \\
+        \midrule
+%geom. Mean Micro & 5026748 & 9347 & 19820 & 554313 & 739697 \\
+iload iadd  & 49,344,000 & 19,140 & 50,724 & 4,111,569 & 1,934,642 \\
+iinc          & 9,078,000 & 37,925 & 103,044 & 8,318,030 & 1,789,378 \\
+ldc           & 10,010,000 & 11,941 & 35,463 & 825,446 & 1,101,445 \\
+if\_icmplt taken & 16,644,000 & 9,941 & 31,629 & 1,372,264 & 1,747,626 \\
+if\_icmplt not taken & 16,710,000 & 10,529 & 33,032 & 1,375,754 & 1,833,174 \\
+getfield & 4,002,000 & 8,515 & 16,684 & 687,877 & 518,071 \\
+getstatic & 5,874,000 & 9,547 & 8,962 & 412,723 & 723,155 \\
+iaload & 3,328,000 & 14,787 & 25,924 & 1,180,501 & 992,969 \\
+invoke        & 781,935 & 3,362 & 6,159 & 85,874 & 211,406 \\
+invoke static & 989,222 & 4,129 & 6,815 & 48,510 & 271,933 \\
+invoke interface & 684,896 & 3,141 & 5,885 & 20402 & 138,847 \\
+Sieve & 4,286 & 7 & 15 & 627 & 564 \\
+Kfl & 14,222 & 25 & 64 & 924 & 2,221 \\
+UDP/IP & 6,050 & 13 & 29 & 520 & 1,004 \\
+        \midrule
+geom. Mean App & 9,276 & 18 & 43 & 693 & 1,493 \\
+        \midrule
+geom. Mean App/MHz & 79 & 1 & 1 & 21 & 20 \\
+        \bottomrule
+    \end{tabular}
+}
+    \caption{Raw data of all benchmarks in [iterations/s] I.}
+    \label{tab:appendix:bench:all1}
+
+\end{table}
+
+\begin{table}[htb]
+    \centering
+{\footnotesize
+    \begin{tabular}{lrrrrr}
+        \toprule
+
+     & SaJe & EJC & Sun jvm & gcj & Xint \\
+        \midrule
+Frequency [MHz] & 103 & 74 & 266 & 266 & 266 \\
+        \midrule
+
+% geom. Mean Micro & 4265320 & 10040052 & 84020831 & 50399644 & 6679510 \\
+iload iadd  & 12,710,000 & 72,315,000 & 84,307,000 & 248,551,000 & 15,363,000 \\
+iinc          & 9,320,000 & 36,002,000 & 296,941,000 & 88,069,000 & 122,228,000 \\
+ldc           & 11,275,000 & 23,967,000 & 132,626,000 &  & 8,719,000 \\
+if\_icmplt taken & 5,652,000 & 35,925,000 & 128,561,000 & 86,480,000 & 7,449,000 \\
+if\_icmplt not taken & 7,281,000 & 71,697,000 & 246,723,000 & 89,240,000 & 7,206,000 \\
+getfield & 4,433,000 & 7,212,000 & 90,687,000 & 122,016,000 & 6,853,000 \\
+getstatic & 6,786,000 & 17,962,000 & 86,703,000 & 241,398,000 & 6,700,000 \\
+iaload & 7,854,000 & 5,966,000 & 65,536,000 & 23,967,000 & 8,962,000 \\
+invoke       & 894,689 & 1,703,000 & 10,022,000 & 20,092,000 & 1,458,381 \\
+invoke static & 1,084,359 & 309,132 & 270,600,000 & 7,898,000 & 1,620,673 \\
+invoke interface & 674,759 & 1,598,000 & 10,010,000 & 5,588,000 & 1,381,523 \\
+
+Sieve & 3,972 & 9,475 & 52,681 & 39,432 & 6,601 \\
+Kfl & 14,148 & 9,893 & 212,952 & 139,884 & 17,310 \\
+UDP/IP & 6,415 & 2,822 & 91,851 & 38,460 & 8,747 \\
+        \midrule
+geom. Mean App & 9,527 & 5,284 & 139,857 & 73,348 & 12,305 \\
+        \midrule
+App/MHz & 92 & 71 & 526 & 276 & 46 \\
+        \bottomrule
+    \end{tabular}
+}
+    \caption{Raw data of all benchmarks in [iterations/s] II.}
+    \label{tab:appendix:bench:all2}
+
+\end{table}
+
+\begin{table}[htb]
+    \centering
+{\small
+    \begin{tabular}{lcccccc}
+    \toprule
+    & & & & \multicolumn{3}{c}{Memory access time} \\
+    \cmidrule{5-7}
+    Type & Size & MBIB & MTIB & SRAM & SDRAM & DDR \\
+    \midrule
+
+    Prefetch buffer & 8 B & 1.37 & 0.342                 & 1.02 & 2.05 & 1.71 \\
+    Single method cache & 1 KB & 2.32 & 0.021            & 1.18 & 0.69 & 0.39 \\
+    Two block cache & 2 KB & 1.21 & 0.013                & 0.62 & 0.37 & 0.21 \\
+    Four block cache & 4 KB & 0.90 & 0.010               & 0.46 & 0.27 & 0.16 \\
+    Direct-mapped 8 bytes & 1 KB & 0.28 & 0.035          & 0.18 & 0.25 & 0.19 \\
+    Direct-mapped 16 bytes & 1 KB & 0.38 & 0.024         & 0.22 & 0.22 & 0.16 \\
+    Direct-mapped 32 bytes & 1 KB & 0.58 & 0.018         & 0.31 & 0.24 & 0.15 \\
+    Direct-mapped 8 bytes & 2 KB & 0.17 & 0.022          & 0.11 & 0.15 & 0.12 \\
+    Direct-mapped 16 bytes & 2 KB & 0.25 & 0.015         & 0.14 & 0.14 & 0.10 \\
+    Direct-mapped 32 bytes & 2 KB & 0.41 & 0.013         & 0.22 & 0.17 & 0.11 \\
+    Direct-mapped 8 bytes & 4 KB & 0.00 & 0.001          & 0.00 & 0.00 & 0.00 \\
+    Direct-mapped 16 bytes & 4 KB & 0.01 & 0.000         & 0.00 & 0.00 & 0.00 \\
+    Direct-mapped 32 bytes & 4 KB & 0.01 & 0.000         & 0.00 & 0.00 & 0.00 \\
+    Variable block cache 8 blocks & 1 KB & 0.80 & 0.009  & 0.41 & 0.24 & 0.14 \\
+    Variable block cache 16 blocks & 1 KB & 0.71 & 0.008 & 0.36 & 0.22 & 0.12 \\
+    Variable block cache 32 blocks & 1 KB & 0.70 & 0.008 & 0.36 & 0.21 & 0.12 \\
+    Variable block cache 64 blocks & 1 KB & 0.70 & 0.008 & 0.36 & 0.21 & 0.12 \\
+    Variable block cache 8 blocks & 2 KB & 0.73 & 0.008  & 0.37 & 0.22 & 0.13 \\
+    Variable block cache 16 blocks & 2 KB & 0.37 & 0.004 & 0.19 & 0.11 & 0.06 \\
+    Variable block cache 32 blocks & 2 KB & 0.24 & 0.003 & 0.12 & 0.08 & 0.04 \\
+    Variable block cache 64 blocks & 2 KB & 0.12 & 0.001 & 0.06 & 0.04 & 0.02 \\
+    Variable block cache 8 blocks & 4 KB & 0.73 & 0.008  & 0.37 & 0.22 & 0.13 \\
+    Variable block cache 16 blocks & 4 KB & 0.25 & 0.003 & 0.13 & 0.08 & 0.05 \\
+    Variable block cache 32 blocks & 4 KB & 0.01 & 0.000 & 0.00 & 0.00 & 0.00 \\
+    Variable block cache 64 blocks & 4 KB & 0.00 & 0.000 & 0.00 & 0.00 & 0.00 \\
+
+    \bottomrule
+
+    \end{tabular}
+}
+    \caption[Cache performance compared]{Cache performance in MBIB and MTIB of all variations of
+    the method cache and a conventional direct-mapped cache. Average
+    memory access time per instruction byte for three different main
+    memory technologies. Memory access times are in clock cycles.
+    }
+    \label{tab_cache_all}
+\end{table}
+
+
+%\end{document}

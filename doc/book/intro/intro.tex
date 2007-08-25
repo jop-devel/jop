@@ -1,0 +1,302 @@
+
+
+This handbook introduces the concept of a Java processor for
+embedded real-time systems, in particular the design of a small
+processor for resource-constrained devices with time-predictable
+execution of Java programs. This Java processor is called JOP --
+which stands for Java Optimized Processor --, based on the
+assumption that a full native implementation of all Java bytecode
+instructions is not a useful approach.
+
+%\section{Motivation}
+\section{Justification for Development}
+
+To justify Java's use in embedded real-time systems we quote from a
+document published by the National Institute of Standards and
+Technology \cite{nist99}:
+
+\begin{itemize}
+    \item Java's higher level of abstraction allows for increased programmer
+productivity (although recognizing that the tradeoff is runtime
+efficiency)
+    \item Java is relatively easier to master than C++
+    \item Java is relatively secure, keeping software components (including
+the JVM itself) protected from one another
+    \item Java supports dynamic loading of new classes
+    \item Java is highly dynamic, supporting object and thread creation at
+runtime
+    \item Java is designed to support component integration and reuse
+    \item The Java technologies have been developed with careful
+consideration, erring on the conservative side using concepts and
+techniques that have been scrutinized by the community
+    \item The Java programming language and Java platforms support
+application portability
+    \item The Java technologies support distributed applications
+    \item Java provides well-defined execution semantics
+\end{itemize}
+
+Based on the NIST document, the Real-Time for Java Experts Group has
+published the Real Time Specification for Java (RTSJ) \cite{rtsj} to
+add real-time extensions to Java.
+
+Despite the above, to date Java is rarely used in embedded real-time
+systems. High resource requirements for the Java virtual machine and
+unpredictable real-time behavior are the main issues surrounding the
+use of Java for embedded systems. JOP addresses both issues, and the
+proposed Java processor makes a strong case for the use of Java in
+embedded systems.
+
+\section{Embedded Real-Time Systems}
+
+An embedded system is a special-purpose computer system that is part
+of a larger system or machine. An embedded system is designed to
+perform a narrow range of functions with no, or minimal user
+intervention.
+
+Since many embedded systems are produced in large quantities, the
+need to reduce costs is a major concern. Embedded systems often have
+significant energy constraints, and many are battery-powered. As a
+result of these constraints, embedded systems use a slow processor
+and small memory size to minimize costs and energy consumption.
+
+Embedded systems interact with the environment and often have to
+produce output within a given timeframe. Therefore, most embedded
+systems are real-time systems. Here is a general definition of a
+real-time system (John A. Stankovic \cite{50811}):
+
+\begin{quote}
+In real-time computing the correctness of the system depends not
+only on the logical result of the computation but also on the time
+at which the result is produced.
+\end{quote}
+
+%(Donald Gillies \cite{rt:definition}):
+%% realtime FAQ - Donald Gillies
+%A real-time system is one in which the correctness of the
+%computations not only depends upon the logical correctness of the
+%computation but also upon the time at which the result is produced.
+%If the timing constraints of the system are not met, system failure
+%is said to have occurred.
+% Donald W. Gillies website
+%In a hard real-time system the correctness of a computation depends
+%not only on the computed results but also on the time at which they
+%are produced. A result produced on or after the deadline is
+%typically useless.
+%
+However, it should be noted that `real-time' does not mean `really
+fast'. In pure real-time systems (i.e.\ without non real-time
+tasks), there is no additional value in producing results earlier
+than required.
+
+Embedded real-time systems often have to handle concurrent tasks,
+such as communication, calculating values for a control loop, user
+interface and supervision. A natural way to handle these concurrent
+jobs is to model them as individual tasks. These tasks are executed
+on a preemptive multi-tasking system. Each task is assigned a
+priority and the multi-tasking system is responsible for scheduling
+individual tasks according to their priority.
+%A schedulability test shows that all tasks would meet their deadlines.
+
+%\subsection{Scheduling}
+
+To fulfil the time constraints for a real-time system, an
+appropriate schedule needs to be found. This problem was solved in
+the classic paper by Liu and Layland \cite{321743} on independent
+periodic tasks. The optimal priority assignment for a set of tasks
+is called the rate monotonic priority order, in which a task with a
+shorter period is assigned a higher priority. If the Worst-Case
+Execution Time (WCET) of each task is known, the schedule is
+feasible and all tasks will meet their deadline\footnote{The period
+of a periodic task is the time between consecutive activations of
+the task. The deadline of the task is assumed to be at the end of
+the tasks period.}, if:
+
+\begin{samepage}
+\begin{equation}
+\nonumber
+    \frac{C_1}{T_1}+\dots+\frac{C_n}{T_n} \le U(n) = n(2^{\frac{1}{n}}-1)
+\end{equation}
+%
+where
+\begin{equation}
+\nonumber
+    \begin{split}
+        C_i & = \mbox{worst-case execution time of } task_i \\
+        T_i & = \mbox{period of } task_i \\
+        U(n) & = \mbox{utilization bound for $n$ tasks.}
+    \end{split}
+\end{equation}
+\end{samepage}
+%
+In theory, this test is both elegant and simple. For concrete
+systems, two issues have to be solved:
+%
+\begin{itemize}
+    \item There are very few systems in existence that do not require
+    communication between tasks.
+    As a result, tasks cannot be seen as independent and blocking
+    needs to be incorporated into the schedulability analysis.
+    \item The WCET of each task has to be known. This is not a
+    trivial task. Simple measurements of execution times never fully
+    guarantee a correct value. The tasks therefore have to be analyzed
+    using  the correct model of the target system. It is almost
+    impossible to provide an accurate and correct model of modern
+    processors and memory systems.
+\end{itemize}
+%
+Several standard textbooks on real-time systems \cite{
+book:klein-real-time-analysis-ratetm, 558498} deal with the first
+issue. JOP is intended to resolve the second issue. It should be
+noted that there are a number of scheduling approaches and
+schedulability tests. However, as a rule, these approaches all
+assume that the WCET of each task is known.
+
+
+\section{Research Objectives and Contributions}
+
+
+This book presents a hardware implementation of the Java Virtual
+Machine (JVM), targeting small embedded systems with real-time
+constraints. The processor is designed from the ground up for low
+WCET of bytecodes, in order to give tasks low WCET values. The
+following list summarizes the research objectives for the proposed
+Java processor:
+%
+\paragraph{Primary Objectives:}
+    \begin{itemize}
+        \item Time-predictable Java platform for embedded real-time
+        systems
+        \item Small design that fits into a low-cost FPGA
+        \item A working processor, not merely a proposed architecture
+    \end{itemize}
+\paragraph{Secondary Objectives:}
+    \begin{itemize}
+        \item Acceptable performance compared with mainstream non
+        real-time Java systems
+        \item A flexible architecture that allows different
+        configurations for different application domains
+        \item Definition of a real-time profile for Java
+    \end{itemize}
+
+\subsubsection{Contributions:}
+
+JOP is a stack computer with its own instruction set, called
+microcode in this book. Java bytecodes are translated into microcode
+instructions or sequences of microcode. The difference between the
+JVM and JOP is best described as the following:
+\begin{quote}
+The JVM is a CISC stack architecture, whereas JOP is a RISC stack
+architecture.
+\end{quote}
+
+
+JOP will help to increase the acceptance of Java for embedded
+real-time systems. JOP is implemented as a soft-core in a Field
+Programmable Gate Array (FPGA). Using an FPGA as the processor for
+embedded systems is uncommon, because of the high costs, compared
+with a microcontroller. However, if the core is small enough, unused
+FPGA resources can be used to implement periphery in the FPGA,
+resulting in a lower chip count and hence lower overall costs.
+
+The main contributions are as follows:
+
+\begin{itemize}
+
+    \item
+The execution time for Java bytecodes can be exactly predicted in
+terms of the number of clock cycles.
+%The execution time for Java bytecodes is known cycle-accurate.
+There is no mutual dependency between consecutive bytecodes.
+Therefore, no pipeline analysis -- with possible unbound timing
+effects -- is necessary. These properties greatly simplify low-level
+WCET analysis.
+
+In order to fill the gap between processor speed and the memory
+access time, caches are mandatory. In Section~\ref{sec:cache}, a
+novel way to organize an instruction cache, as \emph{method cache},
+is provided. This method cache is simple to analyze with respect to
+worst-case behavior and still provides a substantial performance
+gain when compared against a solution without an instruction cache.
+
+The proposed processor architecture results in a predictable and
+high-performance
+% fast
+execution of real-time tasks in Java, without the resource
+implications and unpredictability of a JIT-compiler.
+
+    \item
+JOP is microprogrammed using a novel way of mapping bytecodes to
+microcode addresses. This mapping has zero overheads, even for
+complex bytecodes.
+
+A two-level stack cache, described in Section~\ref{sec:stack}, which
+fits to the embedded memory technologies of current FPGAs and ASICs,
+ensures the fast execution of basic instructions with minimum
+resource requirements. Fill and spill of the stack cache is
+subjected to microcode control and therefore time-predictable.
+
+JOP is the smallest hardware implementation of the JVM available to
+date. This fact enables low-cost FPGAs to be used in embedded
+systems. The resource usage of JOP can be configured to trade size
+against performance for different application domains.
+
+    \item
+The definition of standard Java does not fit hard real-time
+applications. Therefore, a real-time profile for Java (with
+restrictions) is defined in Section~\ref{sec:rtprof} and implemented
+on JOP. Tight integration of the scheduler and the hardware that
+generates schedule events results in low latency and low jitter of
+the task dispatch.
+
+In this profile, hardware interrupts are represented as asynchronous
+events with associated threads. These events are subject to the
+control of the scheduler and can be incorporated into the priority
+assignment and schedulability analysis in the same way as normal
+application tasks.
+
+    \item
+One contribution made as part of this work is the concrete
+implementation of the proposed architecture. The author is aware
+that it is not usually considered necessary to provide a complete
+implementation in a research project. However, it is the opinion of
+the author that a simulation-only approach would lead to mistakes or
+small glitches. By providing a concrete implementation, we are not
+only confronted with the full complexity of real-life processes, but
+also with one or more major issues that would often be generously
+overlooked in a simulation. In Section~\ref{sec:applications}, the
+usage of JOP in a real-world application is described.
+
+\end{itemize}
+
+\section{Outline of the Book}
+
+Chapter~\ref{chap:java} provides background information on the Java
+programming language and the execution environment, the Java virtual
+machine, for Java applications.
+
+The related work is presented in Chapter~\ref{chap:related}.
+Different hardware solutions from both academia and industry for
+accelerating Java in embedded systems are analyzed. This chapter
+concludes with the research question.
+
+Standard Java is not suitable for the resource-constrained world of
+embedded systems. Chapter~\ref{chap:rtjava} gives an overview of the
+different restrictions of Java for embedded and real-time systems.
+
+Chapter~\ref{chap:arch} is the main chapter in which the
+architecture of JOP is described. The motivation behind different
+design decisions is given.
+
+A Java processor alone is not a complete JVM.
+Chapter~\ref{chap:runtime} describes the runtime environment on top
+of JOP, including the definition of a real-time profile for Java and
+a framework for a user-defined scheduler in Java.
+
+In Chapter~\ref{chap:results}, JOP is evaluated with respect to
+size, performance and WCET. This is followed by a description of the
+first commercial real-world application of JOP.
+
+Finally, in Chapter~\ref{chap:conclusions}, the work undertaken is
+reviewed and the major contributions are presented. This chapter
+concludes with directions for future research using JOP and
+real-time Java.

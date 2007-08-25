@@ -1,18 +1,57 @@
-all:
-	cd ../bib && make
+SOURCEPATH=../../java/target/src
+SP1=$(SOURCEPATH)/common
+SP2=$(SOURCEPATH)/bench
+SOURCE=$(SP1)\;$(SP2)
+PACKAGES=util:ejip:com:joprt:jbe
+EXCLUDE=ejip.jtcpip
+
+all: jdoc 
 	cd appendix && make
 	pdfLatex handbook
-#	bibtex handbook
-#	pdfLatex handbook
-#	pdfLatex handbook
+	bibtex handbook
+	pdfLatex handbook
+	pdfLatex handbook
+
+# bib is a local target for my machine, so we're not
+# including it in all
+bib:
+	cd ../bib && make
+
+# that was the original one
+# -docletpath ../lib/texdoclet.jar  -doclet org.wonderly.doclets.TexDoclet \
+# we use the patched version from:
+#http://www.infosun.fim.uni-passau.de/br/lehrstuhl/Kurse/sep_ws0405/doclet.html
+
+jdoc:
+	javadoc 								\
+		-docletpath ../lib/doclet.jar -doclet com.c2_tech.doclets.TexDoclet \
+		-sourcepath $(SOURCE)				\
+		-subpackages $(PACKAGES) -exclude $(EXCLUDE)
+	tail +84 docs.tex | sed '$$,$$ d' > classes/classes.tex
+	rm docs.tex
+
+htmldoc: javadoc
+	javadoc 								\
+		-d ../javadoc 						\
+		-sourcepath $(SOURCE)				\
+		-subpackages $(PACKAGES) -exclude $(EXCLUDE)
+
+javadoc:
+	-mkdir ../javadoc
 
 clean:
 	-rm *.aux
 	-rm *.log
+	-rm *.lof
+	-rm *.lol
+	-rm *.lot
 	-rm *.out
 	-rm *.blg
 	-rm *.bbl
 	-rm *.bak
+	-rm */*.bak
 	-rm *.toc
 	-rm *.pdf
 	cd appendix && make clean
+	-rm -r ../javadoc
+	-rm classes/classes.tex

@@ -10,4 +10,4 @@ clean:
 	-rm *.log
 	-rm *.out
 	-rm *.bak
-	-rm *.pdf
+	-rm timing.pdf
