@@ -45,7 +45,7 @@
 \makebox[\textwidth][l]{#2 #3}%
 }%
 \newcommand{\membername}[1]{{\it #1}\linebreak}
-\newcommand{\divideents}[1]{\vskip -1em\indent\rule{2in}{.5mm}}
+\newcommand{\divideents}[1]{\vskip -1em\indent\rule{2in}{.2mm}}
 \newcommand{\refdefined}[1]{
 \expandafter\ifx\csname r@#1\endcsname\relax
 \relax\else
@@ -54,14 +54,12 @@
 \newcommand{\startsection}[4]{
 \gdef\classname{#2}
 \subsection{\label{#3}{\bf {\sc #1} #2}}{
-\rule[1em]{\hsize}{4pt}\vskip -1em
-\vskip .1in
-#4
+\rule[1em]{\hsize}{1.5pt}\vskip -1em \vskip .1in #4
 }%
 }
 \newcommand{\startsubsubsection}[2]{
 \subsubsection{\sc #1}{%
-\rule[1em]{\hsize}{2pt}%
+\rule[1em]{\hsize}{1pt}%
 #2}
 }
 \usepackage{color}
