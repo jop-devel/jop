@@ -1,0 +1,39 @@
+\section{Interrupts}
+\label{sec:interrupt}
+
+This is a working document for changes in the interrupt system. That
+means extending the simple timer interrupt and exception interrupt
+system to a full interrupt controller including inter-processor
+interrupts.
+
+see page 8-41 of Intel document for interrupt handling with priority
+and EOI signalling.
+
+Questions:
+\begin{itemize}
+    \item Do we need interrupts within interrupts for our RT based
+    interrupt system? I don't think so -- than interrupt priority
+    classes and enabling is not an issue
+    \item Shall we try to avoid a new interrupt shortly after EOI
+    signalling (stack issue)?
+    \item Do we need an ack signal to the peripheral device? I don't
+    think so
+\end{itemize}
+
+BTW: restricting interarrival time in HW is not that new --
+Wikipedia talks about it ;-)
+
+Also IA-32e mode can specify task priorities that disable classes of
+interrupts.
+
+Check also:
+\begin{itemize}
+    \item LEON/SPARC docu
+    \item NIOS docu
+    \item MicroBlaze? ARM?
+\end{itemize}
+
+\subsection{Current State}
+
+describe what is function of the current interrupt system (including
+VHDL and Java source)

@@ -1,0 +1,147 @@
+\subsection{Test Cases for JOP's GC}
+
+\subsubsection{SimpGC1}
+
+\begin{description}
+    \item[Purpose:]
+Check if the GC triggers the allocation of memory.
+Check if the GC uses all the available heap memory.
+    \item[Expected Results:]
+The tester should see a message reporting that
+the garbage collector was triggered. The tester should see a message reporting
+the memory size that should match the heap memory size reported at initialization of the
+GC.
+    \item[Description:]
+The application consists of just one thread which continuously
+allocates memory for new objects in the heap. The objects contain
+only two integer fields and a constructor that initializes them. The
+references to objects are not stored in any variable. The objective
+is to have an idea of how many objects of a certain class are
+necessary to fill the heap. This measure should be useful for
+inducing GC allocation in the next test cases.
+    \item[Results Observed:]
+9728 objects were created before GC was triggered. GC seems to free
+the same amount of memory every time it runs (it always triggers
+after the allocation of 9728 objects).
+\end{description}
+
+\subsubsection{SimpGC2}
+
+\begin{description}
+    \item[Purpose:]
+Check if the GC triggers the allocation of memory. Check if
+unreferenced local (method scope) objects are garbage collected.
+    \item[Expected Results:]
+The tester should a set of messages reporting that the garbage
+collector was triggered.
+    \item[Description:]
+Similar to the previous test case. The difference here is that the
+allocation of memory is performed through several method calls.
+After each method call the objects created are unreferenced. After
+GC is activated it should be possible to create the same number of
+objects as before allocating any object.
+    \item[Results Observed:]
+29190 objects were created, 9730 objects before GC triggers, each
+time.
+
+\emph{Run out of handles in new Object!}
+
+\emph{GC allocation triggered}
+
+Thus, all the unreferenced objects local to the method were garbage
+collected each time GC run.
+
+\end{description}
+
+\subsubsection{SimpGC3}
+
+\begin{description}
+    \item[Purpose:]
+Test concurrent request of memory from different threads (now using
+inheritance instead of interfaces).
+    \item[Expected Results:]
+The tester should see no exceptions and but several GC messages as
+explained below.
+    \item[Description:]
+We have two threads each creating a linked list. Both threads
+add(concurrently) a certain amount of elements to the linked list.
+Each element in the linked list has a field with a number. Each
+thread keeps an increasing order (with no duplication) of those
+fields.  GC is triggered. The Linked lists are checked to see if
+they remain correct. We alternate among creation and verification of
+the elements in the list, so eventually we run out of memory and GC
+is triggered.
+    \item[Results Observed:]
+No exceptions were thrown during execution, thus object integrity is
+fine.
+\end{description}
+
+\subsubsection{SimpGC4}
+
+\begin{description}
+    \item[Purpose:]
+Check the behaviour of the GC when several references to an object
+are present.
+    \item[Expected Results:]
+The tester should see no exceptions.
+    \item[Description:]
+An object is created and then a reference to the object is "taken"
+by one thread each time. A reference to the object is always present
+but stored in different places each time. At first the reference is
+stored in a static field, then it is stored in a thread's class
+variable. The static variable is set to null when a thread acquires
+the object reference. In the same way when a thread releases the
+object it sets its reference to null. Every time that the reference
+is changed, GC is triggered and the object integrity is verified.
+    \item[Results Observed:]
+GC seems to work fine with this test case. Anyway I think that a
+finer granularity in the interaction of threads could make a better
+scenario for obtaining a better test (I believe that granularity
+here is fixed by the length of the run() method of each runnable
+thread).
+\end{description}
+
+\subsubsection{SimpGC5}
+
+\begin{description}
+    \item[Purpose:]
+Check if the GC correctly detects garbage objects.
+    \item[Expected Results:]
+The tester should see a message verifying that non-garbage objects
+are alive.
+    \item[Description:]
+A data structure similar to a tree is created then references to
+certain levels of the tree are stored in class variables. GC is
+triggered. The code checks that the objects below the level of the
+node for which a reference is held are still alive(and correct).
+    \item[Results Observed:]
+No issues arose when the test case was run.
+
+Note: It's easy to run out of memory when initializing the tree
+(i.e. making the tree "grow" ). I used a binary tree with a depth of
+8.
+
+\end{description}
+
+\subsubsection{SimpGC6}
+
+\begin{description}
+    \item[Purpose:]
+Check if the GC detects cycles.
+    \item[Expected Results:]
+The tester should verify that the same amount of memory is available
+before and after the creation of a set of chained objects.
+    \item[Description:]
+A cycle is formed by a closed chain of objects, one holding a
+reference to the next. To verify that the unreferenced chained
+objects are garbage collected, we measure the maximum allocable
+object size before and after the allocation of the chained objects.
+They should match.
+    \item[Results Observed:]
+The amount of objects created before GC allocation is triggered was
+measured before and after the creation of a set of chained objects.
+Through a log file it was verified that the number was the same. For
+the Cyclone board and JOP version 01/08/07, the number was 9723.
+Note: To obtain a logfile, make japp > myLogfile.
+
+\end{description}

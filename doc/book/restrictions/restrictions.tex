@@ -1,0 +1,1037 @@
+Java was created as a part of the Green project specifically for an
+embedded device, a handheld wireless PDA. The device was never
+released as a product and Java was launched as the new language for
+the Internet. Over the time, Java got very popular to build desktop
+applications and web services. However, embedded systems are still
+programmed in C or C++. The pragmatic approach of Java to object
+orientation, the huge standard library and enhancements over C lead
+to a productivity increase, which now also attracts embedded system
+programmers. A built-in concurrency model and an elegant language
+construct to express synchronization between threads also simplify
+typical programming idioms in this area.
+
+On the other hand, there are some issues with Java in an embedded
+system. Embedded systems are usually too small for JIT-compilation
+resulting in a slow interpreting execution model. Moreover, a major
+problem for embedded systems, which are usually also real-time
+systems, is the under specification of the scheduler. Even an
+implementation without preemption is allowed. The intention for this
+\textit{loose} definition of the scheduler is to be able to
+implement the JVM on many platforms where no good multitasking
+support is available. The Real Time Specification for Java (RTSJ)
+\cite{rtsj}  addresses many of these problems.
+
+This section summarizes the issues with standard Java on embedded
+systems and describes various definitions for small devices given by
+Sun. It is followed by an overview of the two real-time extensions
+of Java and approaches for restricting the RTSJ for high-integrity
+applications. If, and how, these specifications are sufficient for
+small embedded systems in general and specifically for JOP is
+analyzed. The missing definition for small embedded real-time
+systems is provided in Section~\ref{sec:rtprof}.
+
+\section{Java Support for Embedded Systems}
+
+When not using the cyclic executive approach, programming of
+embedded (real-time) systems is all about concurrent programming
+with time constraints. The basic functions can be summarized as:
+
+\begin{itemize}
+    \item Threads
+    \item Communication
+    \item Activation
+    \item Low level hardware access
+\end{itemize}
+
+\paragraph{Threads and Communication}
+
+Java has a built-in model for concurrency, the class \code{Thread}.
+All threads share the same heap resulting in a shared memory
+communication model. Mutual exclusion can be defined on methods or
+code blocks with the keyword \code{synchronized}. Synchronized
+methods acquire a lock on the object of the method. For synchronized
+code blocks, the object to be locked is explicitly stated.
+
+
+\paragraph{Activation}
+
+Every object inherits the methods \code{wait()}, \code{notify()} and
+\code{notifyAll()} from \code{Object}. These methods in conjunction
+with synchronization on the object support activation.
+
+
+The classes \code{java.util.TimerTask} and
+\code{java.util.Timer} (since JDK 1.3) can be used to schedule
+tasks for future execution in a background thread.
+
+\section{Issues with Java in Embedded Systems}
+
+Although Java has language features that simplify concurrent
+programming the definition of these features is too vague for
+real-time systems.
+
+
+\paragraph{Threads and Synchronization}
+
+Java, as described in \cite{JavaLangSpec2}, defines a very loose
+behavior of threads and scheduling. For example, the specification
+allows even low priority threads to preempt high priority threads.
+This protects threads from starvation in general purpose
+applications, but is not acceptable in real-time programming. Wakeup
+of a single thread with \code{notify()} is not precisely defined:
+\textit{the choice is arbitrary and occurs at the discretion of the
+implementation.} It is not mandatory for a JVM to deal with the
+priority inversion problem.
+
+No notation of periodic activities, which are common in embedded
+systems programming, is available with the standard \code{Thread}
+class.
+
+\paragraph{Garbage Collector}
+
+Garbage collection greatly simplifies programming and helps to avoid
+classic programming errors (e.g.\ memory leaks). Although real-time
+garbage collectors evolve, they are usually avoided in hard
+real-time systems. A more conservative approach to memory allocation
+is necessary.
+
+\paragraph{WCET on Interfaces (OOP)}
+
+Method overriding and Interfaces, the simplified concept of multiple
+inheritance in Java, are the key concepts in Java to support object
+oriented programming. Like function pointers in C, the dynamic
+selection of the actual function at runtime complicates WCET
+analysis. Implementation of interface look up usually requires a
+search of the class hierarchy at runtime or very large dispatch
+tables.
+
+\paragraph{Dynamic Class Loading}
+
+Dynamic class loading requires the resolution and verification of
+classes. This is a function that is usually too complex (and
+consumes too much memory) for embedded devices. An upper bound of
+execution time for this function is almost impossible to predict (or
+too large). This results in the complete avoidance of dynamic class
+loading in real-time systems.
+
+\paragraph{Standard Library}
+
+For an implementation to be Java-conformant, it must include the
+full library (JDK). The JAR files for this library constitute about
+15MB (in JDK 1.3, without native libraries), which is far too large
+for many embedded systems. Since Java was designed to be a safe
+language with a safe execution environment, no classes are defined
+for low-level access of hardware features. The standard library was
+not defined and coded with real-time applications in mind.
+
+\paragraph{Execution Model}
+
+The first execution model for the JVM was an interpreter. The
+interpreter is now enhanced with Just-In-Time (JIT) compilation.
+Interpreting Java bytecodes is too slow and JIT compilation is not
+applicable in real-time systems. The time for the compilation
+process had to be included in the WCET, resulting in impracticable
+values.
+
+\paragraph{Implementation Issues}
+\label{para:restrict:clinit}
+
+The problems mentioned in this section are not \emph{absolute}
+problems for real-time systems. However, they result in a slower
+execution model with a higher WCET.
+
+According to \cite{jvm} the static initializers of a class C are
+executed immediately before one of the following occurs: (i) an
+instance of C is created; (ii) a static method of C is invoked or
+(iii) a static field of C is used or assigned. The issue with this
+definition is that it is not allowed to invoke the static
+initializers at JVM startup and it is not so obvious when it gets
+invoked.
+
+It follows that the bytecodes \code{getstatic}, \code{putstatic},
+\code{invokestatic} and \code{new} can lead to class initialization
+and the possibility of high WCET values. In the JVM, it is necessary
+to check every execution of these bytecodes if the class is already
+initialized. This leads to a loss of performance and is violated in
+some existing implementations of the JVM. For example in CACAO
+\cite{cacao} the static initializer is called at compilation time.
+Listing~\ref{lst:retrict:clinit} shows an example of this problem.
+
+\begin{lstlisting}[float,caption={Class initialization can occur very late},
+label=lst:retrict:clinit]
+    public class Problem {
+
+        private static Abc a;
+        public static int cnt; // implicitly set to 0
+
+        static {
+            // do some class initializaion
+            a = new Abc();  //even this is ok.
+        }
+
+        public Problem() {
+            ++cnt;
+        }
+    }
+
+    // anywhere in some other class, in situation,
+    // when no instance of Problem has been created
+    // the following code can lead to
+    // the execution of the initializer
+    int nrOfProblems = Problem.cnt;
+
+\end{lstlisting}
+
+Synchronization is possible with methods and on code blocks. Each
+object has a monitor associated with it and there are two different
+ways to gain and release ownership of a monitor. Bytecodes
+\code{monitorenter} and \code{monitorexit} explicitly handle
+synchronization. In other cases, synchronized methods are marked in
+the class file with the access flags. This means that all bytecodes
+for method invocation and return must check this access flag. This
+results in an unnecessary overhead on methods without
+synchronization. It would be preferable to encapsulate the bytecode
+of synchronized methods with bytecodes \code{monitorenter} and
+\code{monitorexit}. This solution is used in Suns picoJava-II
+\cite{pjProgRef}. The code is manipulated in the class loader. Two
+different ways of coding synchronization, in the bytecode stream and
+as access flags, are inconsistent.
+
+\section{Java Micro Edition}
+\label{sec:j2me}
+
+The definition of Java also includes the definition of the class
+library (JDK). This is a huge library\footnote{In JDK 1.4 the main
+runtime library, rt.jar, is 25MB.} and too large for some systems.
+To compensate for this Sun has defined the \textit{Java 2 Platform,
+Micro Edition} (J2ME) \cite{J2ME}. As Sun has changed the focus of
+Java targets several times, the specifications reflect this through
+their slightly chaotic manner. J2ME reduces the function of the JVM
+(e.g. no floating point support) to make implementation easier on
+smaller processors. It also reduces the library (API). J2ME defines
+three layers of software built upon the host operating system of the
+device:
+%
+\begin{description}
+    \item[Java Virtual Machine:] This layer is just the JVM as in every Java
+implementation. Sun has assumed that the JVM will be implemented on
+top of a host operating system. There are no additional definitions
+for the J2ME in this layer.
+
+    \item[Configuration:] The configuration defines the minimum set of JVM features
+and Java class libraries available on a particular category of
+devices. In a way, a configuration defines the lowest common
+denominator of the Java platform features and libraries that the
+developers can assume to be available on all devices.
+
+    \item[Profile:] The profile defines the minimum set of Application
+Programming Interfaces (APIs) available on a particular family of
+devices. Profiles are implemented upon a particular configuration.
+Applications are written for a particular profile and are thus
+portable to any device that supports that profile. A device can
+support multiple profiles.
+
+\end{description}
+%
+There is an overlap of the layers \textit{configuration} and
+\textit{profile}: Both define/restrict Java class libraries. Sun
+states: `\textit{A profile is an additional way of specifying the
+subset of Java APIs, class libraries, and virtual machine features
+that targets a specific family of devices.'} However, in the current
+available definitions JVM features are only specified in
+\textit{configurations}.
+
+\subsection{Connected Limited Device Configuration (CLDC)}
+\label{subsec:cldc}
+
+CLDC is a configuration for connected devices with at least 192KB of
+total memory and a 16-bit or 32-bit processor. As the main target
+devices are cellular phones, this configuration has become very
+popular (Sun: `\textit{CLDC was designed to meet the rigorous memory
+footprint requirements of cellular phones.}'). The CLDC is composed
+of the K Virtual Machine (KVM) and core class libraries. The
+following features have been removed from the Java language
+definition:
+%
+\begin{itemize}
+    \item Floating point support
+    \item Finalization
+\end{itemize}
+%
+Error handling has been altered so that the JVM halts in an
+implementation-specific manner. The following features have been
+removed from the JVM:
+%
+\begin{itemize}
+    \item Floating point support
+    \item Java Native Interface (JNI)
+    \item Reflection
+    \item Finalization
+    \item Weak references
+    \item User-defined class loaders
+    \item Thread groups and daemon threads
+    \item Asynchronous exceptions
+    \item Data type \code{long} is optional
+\end{itemize}
+%
+These restrictions are defined in the final version 1.0 of CLDC. A
+newer version (1.1) again adds floating-point support. All currently
+available devices (as listed by Sun) support version 1.0.
+
+The CLDC defines a subset of the following Java class libraries:
+\code{java.io}, \code{java.lang}, \code{java.lang.ref} and
+\code{java.util}. An additional library
+(\code{javax.\linebreak[4]microedition.io}) defines a simpler
+interface for communication than \code{java.io} and \code{java.net}.
+Examples of connections are: HTTP, datagrams, sockets and
+communication ports.
+
+A small-footprint JVM, known as K Virtual Machine (KVM), is part of
+the CLDC distribution. KVM is suitable for 16/32-bit microprocessors
+with a total memory budget of about 128KB.
+
+When implementing CLDC, one may choose to preload/prelink some
+classes. A utility (\textit{JavaCodeCompact}) combines one or more
+Java class files and produces a C file that can be compiled and
+linked directly with the KVM.
+
+There is only one profile defined under CLDC: the Mobile Information
+Device Profile (MIDP) defines a user interface for LC displays,
+a media player and a game API.
+
+\subsection{Connected Device Configuration (CDC)}
+
+The CDC defines a configuration for devices with network connection
+and assumes a minimum of a 32-bit processor and 2MB memory. CDC
+defines no restrictions for the JVM. A virtual machine, the CVM, is
+part of the distribution. The CVM expects the following
+functionality from the underlying OS:
+%
+\begin{itemize}
+    \item Threads
+    \item Synchronization (mutexes and condition variables)
+    \item Dynamic linking
+    \item malloc (POSIX memory allocation utility) or equivalent
+    \item Input/output (I/O) functions
+    \item Berkeley Standard Distribution (BSD) sockets
+    \item File system support
+    \item Function libraries must be thread-safe. A thread blocking in a library should not block any other VM threads.
+\end{itemize}
+%
+The tools \textit{JavaCodeCompact} and \textit{JavaMemberDepend} are
+part of the distribution. \textit{JavaMemberDepend} generates lists
+of dependencies at the class member level. The existence of
+\textit{JavaCodeCompact} implies that preloading of classes is
+allowed in CDC. Three profiles are defined for CDC:
+%
+\begin{description}
+    \item[Foundation Profile] is a set of Java APIs that support resource-constrained
+devices without a standards-based GUI system. The basic class
+libraries from the Java standard edition (\code{java.io},
+\code{java.lang} and \code{java.net}) are supported and a connection
+framework (\code{javax.microedition.io}) is added.
+
+    \item[Personal Basis Profile] is a set of Java APIs that support
+resource-constrained devices with a standards-based GUI framework
+based on lightweight components. It adds some parts of the Abstract
+Window Toolkit (AWT) support (relative to JDK 1.1 AWT).
+
+    \item[Personal Profile] completes the AWT libraries and includes support for the
+applet interface.
+
+\end{description}
+%
+Although a device can support multiple profiles additional libraries
+for RMI and ODBC are known as \textit{optional packages}.
+
+\subsection{Additional Specifications}
+
+The following specifications do not fit into the layer scheme of
+J2ME. However, they are defined in the same way as the above:
+subsets of the JVM and subsets/extensions of Java classes (API):
+%
+\begin{description}
+    \item[Java Card] is a definition for the resource-constrained world of smart
+cards. The execution lifetime of the JVM is the lifetime of the
+card. The JVM is highly restricted (e.g. no threads, data type
+\code{int} is optional) and defines a different instructions set
+(i.e. new bytecodes to support smaller integer types).
+
+    \item[Java Embedded Server] is an API definition for services such as HTTP.
+
+    \item[Personal Java] was intended as a Java platform on Windows CE
+and is now marked as end of life.
+
+    \item[Java TV] is an extension to produce interactive
+television content and manage digital media. The description states
+that the JVM runs on top of an RTOS, but no real-time specific
+extensions are defined.
+
+\end{description}
+%
+Other than Sun's, the few specifications that exist for embedded
+Java are:
+%
+\begin{description}
+    \item[leJOS] \cite{lejos} is a JVM for Lego Mindstorm with stronger restrictions
+on the core classes than the CLDC.
+
+    \item[RTDA] \cite{rtda01} although named `Real-Time Data Access' the
+definition consists of two parts:
+
+    \begin{itemize}
+        \item An I/O data access API specification applicable
+        for real-time and non real-time applications.
+        \item A minimal set of real-time extensions to enable
+        the I/O data access also to cover hard real-time capable
+        response handling.
+    \end{itemize}
+\end{description}
+
+\subsection{Discussion}
+
+Many of the specifications (i.e.\ \textit{configurations} and
+\textit{profiles}) are developed using the Java Community Process
+(JCP). JCP is not an open standard nor is it part of the open-source
+concept. Although the acronym J2ME implies Java version 2 (i.e. JDK
+1.2 and later) almost all technologies under J2ME are still based on
+JDK 1.1.
+
+Besides Java Card, CLDC is the `smallest' definition from Sun. It
+assumes an operating system and is quite large (the JAR file for the
+classes is about 450KB). There are no API definitions for low-level
+hardware access. CLDC is not suitable for small embedded devices.
+Java Card defines a different JVM instruction set and thus
+compromises basic ideas of Java. A more restricted definition with
+following features is needed:
+%
+\begin{itemize}
+    \item JVM restrictions, such as in CLDC 1.0
+    \item A package for low-level hardware access
+    \item A minimum subset of core libraries
+    \item Additional profiles for different application domains
+\end{itemize}
+
+
+\section{Real-Time Extensions}
+
+In 1999, a document defining the requirements for real-time Java was
+published by NIST \cite{nist99}. Based on these requirements, two
+groups defined specifications for real-time Java. A comparison of
+these two specifications and a comparison with Ada 95's Real-Time
+Annex can be found in \cite{507579}. The following section gives an
+overview of these specifications and additional defined restrictions
+of the RTSJ.
+
+\subsection{Real-Time Core Extension}
+
+The Real-Time Core Extension \cite{JCons00} is a specification
+published under the J Consortium. It is still in a draft version.
+
+
+Two execution environments are defined: the \textit{Core}
+environment is the special real-time component. It can be combined
+with a traditional JVM, the \textit{Baseline}. For communication
+between these two domains, every Core object has two APIs, one for
+the Core domain and one for the Baseline domain. Baseline components
+can synchronize with Core components via semaphores.
+
+Two forms of source code are supported to annotate attributes:
+\textit{stylized} code with calls of static methods of special
+classes and \textit{syntactic} code with new keywords. Syntactic
+code has to be processed by
+a special compiler or preprocessor.
+
+\paragraph{Memory}
+
+A new object hierarchy with \code{CoreObject} as root is introduced.
+To override final methods from \code{Object} the semantics of the
+class loader is changed. It replaces these methods with special
+named methods from \code{CoreObject}. A Core task is only allowed to
+allocate instances of \code{CoreObject} and its subclasses. These
+objects are allocated in a special allocation context or on the
+stack. The objects are not garbage collected. However, an allocation
+context can be explicit freed by the application.
+
+\paragraph{Tasks and Asynchrony}
+
+Core tasks represent the analog of \code{java.lang.Threads}. All
+real-time tasks must extend \code{CoreTask} or one of its
+subclasses. No interface such as \code{java.lang.Runnable} is
+defined. Tasks are scheduled preemptive priority-based (128 levels)
+with FIFO order within priorities. Time slicing can be supported,
+but is not required.
+
+
+Although \code{stop()} is depreciated in Java 2 it is allowed in the
+\code{CoreTask} for the asynchronous transfer of control (besides a
+class \code{ATCEvent}). To prevent the problem of inconsistent
+objects after stopping a task an \textit{atomic synchronized} region
+defers abortion. A special task class is defined to implement
+interrupt service routines. The code for this handler is executed
+\textit{atomically} and must be WCET analyzable. \code{SporadicTask}
+is used to implement responses to sporadic events, triggered by
+invoking the \code{trigger()} method of the task. No enforcement of
+a minimum time between arrivals of events is available. No special
+events or task types are defined for periodic work. The methods
+\code{sleep()} and \code{sleepUntil()} of CoreTask can be used to
+program periodic activities.
+
+\paragraph{Exceptions}
+
+References from the \code{java.lang.Throwable} class hierarchy are
+silently replaced by the class loader with references to \code{Core}
+classes. A new scoped exception, which needs special support from
+the JVM, is defined.
+
+\paragraph{Synchronization}
+
+
+Javas \code{synchronized} is only allowed on \emph{this}. To
+compensate for this restriction additional synchronization objects
+such as semaphores and mutexes are defined. Queues on monitors,
+locks and semaphores are priority and FIFO ordered. Priority
+inversion is avoided by using the priority ceiling emulation
+protocol. To allow locks to be implemented without waiting queues, a
+Core task is not allowed to execute a blocking operation while it
+holds a lock.
+
+\paragraph{Helper Classes}
+
+The standard representation of time is a long (64-bit) integer with
+nanosecond resolution. A \code{Time} class with static methods is
+provided for conversions. A helper class supports treating signed
+integers as unsigned values. Low-level hardware ports can be
+accessed via \code{IOPort}.
+
+
+\subsection{Discussion of the RT Core}
+
+A new introduced object hierarchy and new language keywords lead to
+changes in the class verifier and loader semantics. The behavior of
+the JVM has changed, so it would make sense to change the methods of
+\code{Object} to fit to the Core definition. This would result in a
+single object hierarchy. The restriction on \code{synchronized}
+disables the elegant style of expressing general synchronization
+problems in Java.
+
+
+Although Nilsen lead the group, NewMonics PERC systems \cite{PERC}
+supports a different API.
+
+
+\subsection{Real-Time Specification for Java}
+\label{sec:rtsj}
+
+The Real-Time Specification for Java (RTSJ) defines a new API with
+support from the JVM \cite{rtsj}. The following guiding principles
+led to the definition:
+%
+\begin{itemize}
+    \item No restriction of the Java runtime environment
+    \item Backward compatibility for non-real-time Java programs
+    \item No syntactic extension to the Java
+language or new keywords
+    \item Predictable execution
+    \item Address current real-time system practice
+    \item Allow future implementations to add advanced features
+\end{itemize}
+%
+A Reference Implementation (RI) of the RTSJ forms part of the
+specification. The RTSJ is backward compatible with existing
+non-real-time Java programs, which implies that the RTSJ is intended
+to run on top of J2SE (and not on J2ME). The following section
+presents an overview of the RTSJ.
+
+\paragraph{Threads and Scheduling}
+
+The behavior of the scheduler is clearer defined as in standard
+Java. A priority-based, preemptive scheduler with at least 28
+real-time priorities is defined as base scheduler. Additional levels
+(ten) for the traditional Java threads need to be available. Threads
+with the same priority are queued in FIFO order. Additional
+schedulers (e.g. EDF) can be dynamically loaded. The class Scheduler
+and associated classes provide optional support for feasibility
+analysis.
+
+
+Any instances of classes that implement the interface
+\code{Schedulable} are scheduled. In the RTSJ \code{RealtimeThread},
+\code{NoHeapRealtimeThread}, and \code{AsyncEventHandler} are
+\textit{schedulable objects}. \code{NoHeapRealtimeThread} has and
+\code{AsyncEventHandler} can have a priority higher than the garbage
+collector. As the available release-parameters indicate, threads are
+either periodic or bound to asynchronous events. Threads can be
+grouped together to bind the execution cost and deadline for a
+period.
+
+\paragraph{Memory}
+
+As garbage collection is problematic in real-time applications, the
+RTSJ defines new memory areas:
+%
+\begin{description}
+    \item[Scoped memory] is a memory area with bounded lifetime. When a scope is
+entered (with a new thread or through \code{enter()}), all new
+objects are allocated in this memory area. Scoped memory areas can
+be nested and shared among threads. On exit of the last thread from
+a scope, all finalizers of the allocated objects are invoked and the
+memory area is freed.
+    \item[Physical memory] is used to control allocation in memories with
+different access time.
+    \item[Raw memory] allows byte-level access to physical memory or memory-mapped I/O.
+    \item[Immortal memory] is a memory area shared between
+all threads without a garbage collector. All objects created in this
+memory area have the same lifetime as the application (a new
+definition of \textit{immortal}).
+    \item[Heap memory] is the traditional garbage collected memory area.
+\end{description}
+%
+Maximum memory usage and the maximum allocation rate per thread can
+be limited. Strict assignment rules between the different memory
+areas have to be checked by the implementation.
+
+\paragraph{Synchronization}
+
+The implementation of \code{synchronized} has to include an
+algorithm to prevent priority inversion. The priority inheritance
+protocol is the default and the priority ceiling emulation protocol
+can be used on request. Threads waiting to enter a synchronized
+block are priority ordered and FIFO ordered within each priority.
+Wait free queues are provided for communication between instances of
+\code{java.lang.Thread} and \code{RealtimeThread}.
+
+\paragraph{Time and Timers}
+
+Classes to represent relative and absolute time with nanosecond
+accuracy are defined. All time parameters are split to a \code{long}
+for milliseconds and an \code{int} for nanoseconds within those
+milliseconds. Each time object has an associated \code{Clock}
+object. Multiple clocks can represent different sources of time and
+resolution. This allows for the reduction of queue management
+overheads for tasks with different tolerance for jitter. A new type,
+rationale time, can be used to describe periods with a requested
+resolution over a longer period (i.e. allowing release jitter
+between the points of the \textit{outer} period). Timer classes can
+generate time-triggered events (one shot and periodic).
+
+\paragraph{Asynchrony}
+
+Program logic representing external world events is scheduled and
+dispatched by the scheduler. An \code{AsyncEvent} object represents
+an external event (such as a POSIX signal or a hardware interrupt)
+or an internal event (through call of \code{fire()}). Event handlers
+are associated to these events and can be bound to a regular
+real-time thread or represent something \textit{similar} to a
+thread. The relationship between events and handlers can be
+many-to-many. Release of handlers can be restricted to a minimum
+interarrival time.
+
+
+Java's exception handling is extended to represent asynchronous
+transfer of control (ATC). \code{RealtimeThread} overloads
+\code{interrupt()} to generate an
+\code{AsynchronousInterruptedException} (AIE). The AIE is deferred
+until the execution of a method that is willing to accept an ATC.
+The method indicates this by including AIE in its throw clause. The
+semantics of \code{catch} is changed so that, even when it catches
+an AIE, the AIE is still propagated until the \code{happened()}
+method of the AIE is invoked. \code{Timed}, a subclass of AIE,
+simplifies the programming of timeouts.
+
+\paragraph{Support for the RTSJ}
+
+Implementations of the RTSJ are still rare and under development:
+%
+\begin{description}
+    \item[RI]
+is the freely available reference implementation for a Linux system
+\cite{rtsj-ri}.
+
+    \item[jRate]
+is an open-source implementation \cite{701668} based on
+ahead-of-time compilation with the GNU compiler for Java.
+
+    \item[FLEX]
+is a compiler infrastructure for embedded systems developed at MIT
+\cite{flex}. Real-time Java is implemented with region-based memory
+management and a scheduler framework.
+
+    \item[OVM]
+is an open-source framework for Java \cite{ovmir2003}. The emphasis
+is on a JVM that is compliant with the RTSJ. RTSJ support is based
+on the translation of the complete Java application (including the
+library) to C and then compiling it into a native executable.
+
+    \item[aJile] will support the RTSJ with CLDC 1.0 on top of
+    the aJ-80 and aJ-100 chips.
+\end{description}
+
+
+\subsection{Discussion of the RTSJ}
+
+The RTSJ is a complex specification leading to a big memory
+footprint. The following list shows the size of the main components
+of the RI on Linux:
+%
+\begin{itemize}
+    \item Classes in javax/realtime: 343KB
+    \item All classes in library foundation.jar: 2MB
+    \item Timesys JVM executable: 2.6MB
+\end{itemize}
+%
+The RTSJ assumes an RTOS and the RI runs on a heavyweight RT-Linux
+system. The RTSJ is too complex for low-end embedded systems. This
+complexity also hampers programming of high-integrity applications.
+The runtime memory allocation of the RTSJ classes has not been
+documented.
+
+\paragraph{Threads and Scheduling}
+
+If a real-time thread is preempted by a higher priority thread, it
+is not defined if the preempted thread is placed in front or back of
+the waiting queue. It is not specified whether the default scheduler
+performs, or has to perform, time slicing between
+threads of equal priority.
+
+\paragraph{Memory}
+
+
+It would be ideal if real-time systems were able to allocate all
+memory during the initialization phase and forbid dynamic memory
+allocation in the mission phase. However, this restricts many of
+Java's library functions.
+
+
+The solution to this problem in the RTSJ is \code{ScopedMemory}, a
+memory space with limited lifetime. However, it can only be used as
+a parameter for thread creation or with \code{enter(Runnable r)}. In
+a system without dynamic thread creation, using scoped memory at
+creation time of the thread leads to the same behavior as using
+immortal memory.
+
+The syntax with \code{enter()} leads to a cumbersome programming
+style: for each code part where limited lifetime memory is needed, a
+new class has to be defined and a single instance of this class
+allocated at initialization time. Trying to solve this problem
+elegantly with anonymous classes, as in
+Listing~\ref{lst:restr:wrong:scoped} (example from \cite{558498}, p.
+623), leads to an error.
+
+\begin{lstlisting}[float,caption={Scoped memory usage with a memory leak},label=lst:restr:wrong:scoped]
+    import javax.realtime.*;
+    public class ThreadCode implements Runnable
+    {
+        private void computation()
+        {
+            final int min = 1*1024;
+            final int max = 1*1024;
+            final LTMemory myMem = new LTMemeory(min, max);
+            myMem.enter(new Runnable()
+            {
+                public void run()
+                {
+                    // access to temporary memory
+                {
+            } );
+        }
+
+        public void run()
+        {
+            ...
+            computation();
+            ...
+        }
+    }
+\end{lstlisting}
+
+
+On every call of \code{computation()}, an object of the anonymous
+class (and a \code{LTMemory} object) is allocated in immortal
+memory, leading to a memory leak. The correct usage of scoped memory
+is shown as a code fragment in
+Listing~\ref{lst:restr:correct:scoped}. The class \code{UseMem} only
+exists to execute the method \code{run()} in scoped memory. One
+instance of this class is created outside of the scoped memory.
+
+\begin{lstlisting}[float,caption={Correct usage of scoped memory in the RTSJ},
+label=lst:restr:correct:scoped]
+    class UseMem implements Runnable {
+
+        public void run() {
+            // inside scoped memory
+            Integer[] = new Integer[100];
+            ...
+        }
+    }
+
+    // outside of scoped memory
+    // in immortal? at initialization?
+    LTMemory mem = new LTMemory(1024, 1024);
+    UseMem um = new UseMem();
+
+    // usage
+    computation() {
+        mem.enter(um);
+    }
+\end{lstlisting}
+
+
+
+A simpler\footnote{This syntax is \emph{not} part of the RTSJ. Is is
+a suggested change and part of the real-time profile defined in
+Section~\ref{sec:rtprof}.} syntax is shown in
+Listing~\ref{lst:restr:simple:scoped}. The main drawback of this
+syntax is that the programmer is responsible for its correct usage.
+
+\begin{lstlisting}[float,caption={Simpler syntax for scoped memory}
+,label=lst:restr:simple:scoped]
+    LTMemory myMem;
+
+    // Create the memory object once
+    // in the constructor
+    MyThread() {
+        myMem = new LTMemeory(min, max);
+        ...
+    }
+
+    public void run() {
+        ...
+        myMem.enter();
+        {   // A new code block disables access
+            // to new objects in outer scope.
+            // Access to temporary memory:
+            Abc a = new Abc();
+            ...
+        }
+        myMem.exit();
+        ...
+    }
+\end{lstlisting}
+
+New objects and arrays of objects have to be initialized to their
+default value after allocation \cite{jvm}. This usually results in
+zeroing the memory at the JVM level and leads to variable (but
+linear) allocation time. This is the reason for the type
+\code{LTMemoryArea} in the RTSJ. As suggested in \cite{701668}, this
+initialization could be lumped together with the creation time and
+exit time of the scoped memory. This results in constant time for
+allocation (and usually faster zeroing of the memory).
+
+
+With the RTSJ memory areas, it is difficult to move data from one
+area to another \cite{Niessner03}. This results in a completely
+different programming model from that of standard Java. This can
+result in the programmer developing his/her own memory management.
+
+\paragraph{Time and Timers }
+
+Why is the time split into milliseconds and nanoseconds? In the RI,
+it is converted to ns for add/subtract. After all mapping and
+converting (\code{AbsoluteTime}, \code{HighResolutionTime},
+\code{Clock} and \code{RealTimeClock}) the
+\code{System.currentTimeMillis()} time, with a ms resolution, is
+used.
+
+Since time triggered release of tasks can be modeled with periodic
+threads, the additional concept of timers is superfluous.
+
+\paragraph{Asynchrony}
+
+An unbound \code{AsyncEventHandler} is not allowed to \code{enter()}
+a scoped memory. However, it is not clear if scoped memory is
+allowed as a parameter in the construction of a handler.
+
+An unbound \code{AsyncEventHandler} leads to the implicit start of a
+thread on an event. This can (and, in the RI, does -- see
+\cite{701668}) lead to substantial overheads. From the application
+perspective, bound and unbound event handlers behave in the same
+way. This is an implementation hint expressed through different
+classes. A consistent way to express the \textit{importance} of
+events would be a scheduling parameter for the minimum allowed
+latency of the handler.
+
+The syntax that is used in the throws clause of a method to state
+that ATC will be accepted is misleading. Exceptions in \code{throws}
+clauses of a method are usually \emph{generated} in that method and
+not \textit{accepted}.
+
+\paragraph{J2SE Library}
+
+It is not specified which classes are safe to be used in
+\linebreak[4]\code{RealTimeThread} and \code{NoHeapRealTimeThread}.
+Several operating system functions can cause unbound blocking and
+their usage should be avoided. The memory allocation in standard JDK
+methods is not documented and their use in immortal memory context
+can lead to memory leaks.
+
+\paragraph{Missing Features}
+
+There is no concept such as start mission. Changing scheduling
+parameters during runtime can lead to inconsistent scheduling
+behavior.
+
+There is no provision for low-level blocking such as disabling
+interrupts. This is a common technique in device drivers where some
+hardware operations have to be atomic without affecting the priority
+level of the requesting thread (e.g.\ a low priority thread for a
+flash file system shall not get preempted during sector write as the
+chip internal write starts after a timeout).
+
+\paragraph{On Small Systems}
+
+Many embedded systems are still built with 8 or 16-bit CPUs. 32-bit
+processors are seldom used. Java's default integer type is 32-bit,
+still large enough for almost all data types needed in embedded
+systems. The design decision in the RTSJ to use (often expensive)
+64-bit \code{long} data is questionable.
+
+\subsection{Subsets of the RTSJ}
+\label{subsec:restr:rtsj}
+
+The RTSJ is complex to implement and applications developed with the
+RTSJ are difficult to analyze (because of some of the sophisticated
+features of the RTSJ). Various profiles have been suggested for
+high-integrity real-time applications that result in restrictions of
+the RTSJ.
+
+\subsubsection{A Profile for High-Integrity Real-Time Java Programs}
+
+
+In \cite{Pusch01}, a subset of the RTSJ for the high-integrity
+application domain with hard real-time constraints is proposed. It
+is inspired by the Ravenscar profile for Ada \cite{289525} and
+focuses on exact temporal predictability.
+%
+\begin{description}
+\item[Application structure:] The application is divided in two
+different phases: \textit{initialization} and \textit{mission}. All
+non time-critical initialization, global object allocations, thread
+creation and startup are performed in the initialization phase. All
+classes need to be loaded and initialized in this phase. The mission
+phase starts after returning from \code{main()}, which is assumed to
+execute with maximum priority. The number of threads is fixed and
+the assigned priorities remain unchanged.
+
+\item[Threads:] Two types of tasks are defined: \textit{Periodic
+time-triggered activities} execute an infinite loop with at least
+one call of \code{waitForNextPeriod()}. \textit{Sporadic activities}
+are modeled with a new class \code{SporadicEvent}. A
+\code{SporadicEvent} is bound to a thread and an external event on
+creation. Unbound event handlers are not allowed. It is not clear if
+the event can also be triggered by software (invocation of
+\code{fire()}). A restriction for a minimum interarrival time of
+events is not defined. Timers are not supported as time-triggered
+activities are well supported by periodic threads. Asynchronous
+transfers of control, overrun and miss handles and calls to
+\code{sleep()} are not allowed.
+
+\item[Concurrency:] Synchronized methods with priority ceiling emulation protocol
+provide mutual exclusion to shared resources. Threads are dispatched
+in FIFO order within each priority level. Sporadic events are used
+instead of \code{wait()}, \code{notify()} and \code{notifyAll()} for
+signaling.
+
+\item[Memory:] Since garbage collection is still not
+time-predictable, it is not supported. This implicitly converts the
+traditional heap to immortal memory. Scoped memory (\code{LTMemory})
+is provided for object allocation during the mission phase.
+\code{LTMemory} has to be created during the initialization phase
+with initial size equal maximum size.
+
+\item[Implementation:] For each thread and for the operations
+of the JVM the WCET must be computable. Code is restricted to bound
+loops and bound recursions. Annotations for WCET analysis are
+suggested. The JVM needs to check the timing of events and thread
+execution. It is not stated how the JVM should react to a timing
+error.
+
+\end{description}
+
+\subsubsection{Ravenscar-Java}
+\label{subsec:rj}
+
+The Ravenscar-Java (RJ) profile \cite{583825} is a restricted subset
+of the RTSJ and is based on the work mentioned above. As the name
+implies it resembles Ravenscar Ada \cite{289525} concepts in Java.
+
+
+To simplify the initialization phase, RJ defines \code{Initializer},
+a class that has to be extended by the application class which
+contains \code{main()}. The use of time scoped memory is further
+restricted. \code{LTMemory} areas are not allowed to be nested nor
+shared between threads. Traditional Java threads are disallowed by
+changing the class \code{java.lang.Thread}. The same is true for all
+schedulable objects from the RTSJ. Two new classes are defined:
+\begin{itemize}
+    \item \code{PeriodicThread} where \code{run()} gets called periodically,
+removing the loop construct with \code{waitForNextPeriod()}.
+    \item \code{SporadicEventHandler} binds a single thread with a
+single event. The event can be an interrupt or a software event.
+
+\end{itemize}
+
+\subsubsection{Criticisms of Subsets of the RTSJ}
+
+If a new real-time profile is defined as a subset of the RTSJ it is
+harder for the programmer to find out which functions are available
+or not. This form of \textit{compatibility} causes confusion. The
+use of different classes for a different specification is clearer
+and less error prone.
+
+Ravenscar-Java, as a subset of the RTSJ, claims to be compatible
+with the RTSJ, in the sense that programs written according to the
+profile are valid RTSJ programs. However, mandatory usages of new
+classes such as \code{PeriodicThread} need an emulation layer to run
+on an RTSJ system. In this case, it is better to define complete new
+classes for a subset and provide the mapping to the RTSJ. This
+allows a clearer distinction to be made between the two definitions.
+
+It is not necessary to distinguish between heap and immortal memory.
+Without a garbage collector, the heap implicitly equals to immortal
+memory.
+
+Objects are allocated in immortal memory in the initialization
+phase. In the mission phase, no objects should be allocated in
+immortal memory. Scoped memory can be entered and subsequent new
+objects are allocated in the scoped memory area. Since there are no
+circumstances in which allocation in these two memory areas are
+mixed, no \code{newInstance()} such as those in the RTSJ or
+Ravenscar-Java are necessary.
+
+\subsection{Extensions to the RTSJ}
+
+The Distributed Real-Time Specification for Java \cite{Jensen00}
+extends RMI within the RTSJ. In 2000, it was accepted in the Sun
+Community Process as JSR-50. This specification is still under
+development. According to \cite{WellRTSJRMI}, three levels of
+integration between the RTSJ and RMI are defined:
+%
+\begin{description}
+    \item[Level 0:] No changes in RMI and the RTSJ are necessary. The proxy thread
+on the server acts as an ordinary Java thread. Real-time threads
+cannot assume timely delivery of the RMI request.
+
+    \item[Level 1:] RMI is extended to Real-Time RMI. The server
+thread is a real-time thread that inherits scheduling parameters
+from the calling client.
+
+    \item[Level 2:] RMI and the RTSJ are extended to form the
+concept of \textit{distributed real-time threads}. These threads
+have a unique system-wide identifier and can move freely in the
+distributed system.
+
+\end{description}
+
+\section{Summary}
+
+In this section, we described definitions for embedded devices given
+by Sun. Most of these definitions are targeted for the mobile phone
+market and not for classical embedded systems.
+
+Standard Java is under-specified for real-time systems. Two
+competing definitions, the `Real-Time Core Extension' and the `Real
+Time Specification for Java', address this problem. The RTSJ has
+been further restricted for high-integrity applications. A similar
+definition that avoids inheritance of complex RTSJ classes is
+provided in Section~\ref{sec:rtprof}.

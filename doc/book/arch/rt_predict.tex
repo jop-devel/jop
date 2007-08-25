@@ -1,0 +1,355 @@
+
+\section{Real-Time Predictability}
+\label{sec:rtpredict}
+
+
+%\subsection{Time Predictable Architecture}
+%
+%Worst case execution time (WCET) analysis of real-time programs is
+%essential for any schedulability analysis. To provide a tight WCET
+%value a good model of the processor is necessary. However, the
+%architectural advancement in modern processor designs is dominated
+%by the rule: '\emph{Make the common case fast}`. This is the
+%opposite to: '\emph{Reduce the worst case}` and complicates WCET
+%analysis. JOP was designed to provide an architecture that can be
+%exactly modeled. Execution time of bytecodes is known cycle
+%accurate. It is possible to analyze the timing on the bytecode level
+%without the uncertainties of an interpreting JVM or generated native
+%code from ahead-of-time compilers for Java.
+%
+%
+%Common architectural components, such as branch prediction and
+%branch target buffers enhance average performance, but have usually
+%a very pessimistic WCET. In JOP, branch prediction is avoided. This
+%results in pressure on the pipeline length. The processor has a
+%minimal pipeline length of four stages resulting in a four cycle
+%execution time for a bytecode branch.
+%
+%The stack is a frequently accessed memory area and therefore
+%implemented in on-chip memory and serving as data cache. Data
+%exchange between internal stack and main memory is under microcode
+%control and therefore WCET analyzable.
+%
+%Instruction cache is mandatory to bridge the growing gap between CPU
+%speed and main memory access time. Standard cache organizations
+%improve average execution time, but are hard to predict for worst
+%case execution time (WCET) analysis. We tackled this problem from
+%the architectural side: An instruction cache organization where
+%simpler and more accurate WCET analysis is more important than
+%average case performance.
+%
+%JOP has a novel instruction cache: A \emph{method cache}. A complete
+%method is loaded in the cache on invocation and on return. This
+%cache fill strategy lumps all cache misses together and is very
+%simple to analyze. Cache block replacement depends on the call tree
+%instead of instruction addresses and is therefore WCET analyzable.
+%
+%
+%Comparing this cache organization quantitative with a benchmark
+%derived from a real-time application we have seen that the proposed
+%\emph{method cache} performs similar or even better to a traditional
+%direct mapped cache with respect to the bytes that have to be filled
+%an a cache miss. The number of memory transactions, which result in a
+%high miss penalty on memories with high latency, are lower with the
+%proposed cache solution than in a traditional cache.
+%
+%
+
+
+General-purpose processors are optimized for average throughput and
+non real-time operating systems are responsible for fair and
+efficient scheduling of resources. Real-time systems need a
+processor with low and known WCET of instructions. Real-time
+operating systems have properties, such as fast interrupt response,
+rapid context switch, short blocking times and a scheduler that
+implements a simple, in most cases strict priority driven,
+scheduling algorithm. This section describes design decisions for
+JOP to support such real-time systems.
+
+\subsection{Interrupts}
+
+Interrupts are usually associated with low-level programming of
+device drivers. The priorities of interrupts and their handler
+functions are above task priorities and yield to an immediate
+context switch. In this form, interrupts cannot be integrated in a
+schedule with \emph{normal} tasks. The execution time of the
+interrupt handler has to be integrated in the schedulability
+analysis as additional blocking time. A better solution is to handle
+interrupts, which represent external events, as schedulable objects
+with priority levels in the range of real-time tasks, as suggested
+in the RTSJ.
+
+\paragraph{The Timer Interrupt}
+
+The timer or clock interrupt has a different semantic than other
+interrupts. The main purpose of the timer interrupt is
+representation of time and release of periodic or time triggered
+tasks. One common implementation is a clock tick. The interrupt
+occurs at a regular interval (e.g.\ 10 ms) and a decision has to be
+taken whether a task has to be released. This approach is simple to
+implement, but there are two major drawbacks: The resolution of
+timed events is bound by the resolution of the clock tick and clock
+ticks without a task switch are a waste of execution time.
+
+A better approach, used in JOP, is to generate timer interrupts at
+the release times of the tasks. The scheduler is now responsible for
+reprogramming the timer after each occurrence of a timer interrupt.
+The list of sleeping threads has to be searched to find the nearest
+release time in the future of a higher priority thread than the one
+that will be released now. This time is used for the next timer
+interrupt.
+
+\paragraph{External Events}
+
+Hardware interrupts, other than the timer interrupt, are represented
+as asynchronous events with an associated thread. This means that
+the event is a \emph{normal} schedulable object under the control of
+the scheduler. With a minimum interarrival time, enforced by
+hardware, these events can be incorporated into the priority
+assignment and schedulability analysis in the same way as periodic
+tasks.
+
+\paragraph{Software Interrupts}
+
+The common software generated interrupts, such as illegal memory
+access or divide by zero, are represented by Java runtime exceptions
+and need no special handler. They can be detected with a try-catch
+block.
+
+Asynchronous notification from the program is supported, in the same
+way as an external event, as a schedulable object with an associated
+thread. The event is triggered through the call of \code{fire()}.
+The thread with the handler is placed in the runnable state and
+scheduled according to priority.
+
+\paragraph{Hardware Failures}
+
+Serious hardware failures, such as illegal opcode or parity error
+from the memory systems, lead to a shutdown of the system. However,
+a \emph{last try} to call a handler that changes the state of the
+system to a safe state and inform an upper level system, can improve
+the integrity of the overall system.
+
+\subsection{Task Switch}
+
+An important issue in real-time systems is the time for a task
+switch. A task switch consists of two actions:
+\begin{itemize}
+    \item \emph{Scheduling} is the selection of the task order and timing
+    \item \emph{Dispatching} is the term for the context switch between tasks
+\end{itemize}
+
+\paragraph{Scheduling}
+
+Most real-time systems use a fixed-priority preemptive scheduler.
+Tasks with the same priority are usually scheduled in a FIFO order.
+Two common ways to assign priorities are rate monotonic or, in a
+more general form, deadline monotonic assignment. When two tasks get
+the same priority, we can choose one of them and assign a higher
+priority to that task and the task set is still schedulable. We get
+a strictly monotonic priority order and do not have to deal with
+FIFO order. This eliminates queues for each priority level and
+results in a single, priority ordered task list.
+
+Strictly fixed priority schedulers suffer from a problem called
+\emph{priority inversion} \cite{626613}. The problem where a low
+priority task blocks a high priority task on a shared resource is
+solved by raising the priority of the low priority task. Two
+standard priority inversion avoidance protocols are common:
+%
+\begin{description}
+    \item[Priority Inheritance Protocol:] A lock assigns the priority
+of the highest-priority waiting task to the task holding the lock
+until that task releases the resource.
+
+    \item[Priority Ceiling Emulation Protocol:] A lock gets a priority
+assigned above the priority of the highest-priority task that will
+ever acquire the lock. Every task will be immediately assigned the
+priority of that lock when acquiring it.
+\end{description}
+%
+The priority inheritance protocol is more complex to implement and
+the time when the priority of a task is raised is not so obvious. It
+is not raised because the task does anything, but because another
+task reaches some point in its execution path.
+
+Using priority ceiling emulation with unique priorities, different
+from task priorities, the priority order is still strictly
+monotonic. The priority ordered task list is expanded with slots for
+each lock. If a task acquires a lock, it is placed in the
+corresponding slot. With this extension to the task list, scheduling
+is still simple and can be efficiently implemented.
+
+\paragraph{Dispatching}
+
+
+The time for a context switch depends on the size of the state of
+the tasks. For a stack machine it is not so obvious what belongs to
+the state of a task. If the stack resides in main memory, only a few
+registers (e.g. program counter and stack pointer) need to be saved
+and restored. However, the stack is a frequently accessed memory
+region of the JVM. The stack can be seen as a data cache and should
+be placed near the execution unit (in this case, \emph{near} means
+on the chip and not in external memory). However, on-chip memory is
+usually too small to hold the stack content for all tasks. This
+means that the stack is part of the execution context and has to be
+saved and restored on a context switch.
+
+In JOP, the stack is placed in local (on-chip) FPGA memory with
+single cycle access time. With this configuration, the next question
+is how much of the stack to place there. Either the complete stack
+of a thread or only the stack frame of the current method can reside
+locally. If the complete stack of a thread is stored in local
+memory, the invocation of methods and returns are fast, but the
+context is large. For fast context switches, it is preferable to
+have only a short stack in local memory. This results in less data
+being transferred to and from main memory, but more memory transfers
+on method invocation and return. The local stack can be further
+divided into small pieces, each holding only one stack frame of one
+thread. During the context switch, only the stack pointer needs to
+be saved and restored. The outcome of this is a very fast context
+switch, although the size of the local memory limits the maximum
+number of threads.
+
+Since JOP is a soft-core processor, these different solutions can be
+configured for different application requirements. It is even
+possible to mix of these policies: some stack slots can be assigned
+to \emph{important} threads, while the remaining threads share one
+slot. This stack slot only needs to be exchanged with the main
+memory when switching \emph{to} a less \emph{important} thread.
+
+\subsection{Architectural Design Decisions}
+
+In hard real-time systems, meeting temporal requirements is of the
+same importance as functional correctness. This results in different
+architectural constraints than in a design for a non real-time
+system. A low upper bound of the execution time is of premium
+importance. Good average execution time is useless for a pure hard
+real-time system.
+
+Common architectural components, found in general purpose processors
+to enhance average performance, are usually problematic for the WCET
+analysis. A pragmatic approach to this problem is to ignore these
+features for the analysis. With a processor designed for real-time
+applications, these features have to be substituted by predictable
+architecture enhancements.
+
+\paragraph{Branch Prediction}
+
+As the pipelines of current general-purpose processors get longer to
+support higher clock rates the penalty of branches get too high.
+This is compensated by branch prediction logic with branch target
+buffers. However, the upper bound of the branch execution time is
+the same as without this feature. In JOP, branch prediction is
+avoided. This results in pressure on the pipeline length. The core
+processor has a pipeline length of as little as three stages
+resulting in a branch execution time of three cycles in microcode.
+The two slots in the branch delay can be filled with instructions or
+\emph{nop}. With the additional bytecode fetch and translation
+stage, the overall pipeline is four stages and results in a four
+cycle execution time for a bytecode branch.
+
+\paragraph{Caches and Instruction Prefetch}
+
+To reduce the growing gap between the clock frequency of the
+processor and memory access times multi-level cache architectures
+are commonly used. Since even a single level cache is problematic
+for WCET analysis, more levels in the memory architecture are almost
+not analyzable. The additional levels also increase the latency of
+memory access on a cache miss.
+
+In a stack machine, the stack is a frequently accessed memory area.
+This makes the stack an ideal candidate to be placed near the
+execution unit in the memory hierarchy. In JOP the stack is
+implemented as internal memory with the two top elements as explicit
+registers. This single cycle memory can be seen as a data cache.
+However, unlike in picoJava, this limited memory is not
+automatically spilled and filled. Automatically spill and fill
+introduces unpredictable access to the main memory. Data exchange
+between internal stack and main memory is under program control and
+can be done on method invocation/return or on a thread switch.
+
+The next most accessed memory area is the code area. A simple
+prefetch queue, as it is found in older processors, could increase
+instruction throughput after executing a multi-cycle bytecode. For a
+stream of single cycle bytecodes, prefetching is useless and the
+frequent occurrence of branches and method invocations, about
+12--23\% (see Section~\ref{sec:bench:jvm}) in typical Java programs,
+reduces the performance gain. The prefetch queue also results in
+(probably unbounded) execution time dependencies over a stream of
+instructions, which complicates timing analysis.
+
+JOP has a method cache with a novel replace policy. Since typical
+methods in Java programs are short and there are only relative
+branches in a method, a complete method is loaded in the cache on
+invocation and on return. This cache fill strategy lumps all cache
+misses together and is very simple to analyze. It also simplifies
+the hardware of the cache since no tag memory or address translation
+is necessary. The \emph{romizer} tool JavaCodeCompact checks the
+maximum allowed method size. Section~\ref{sec:cache} describes the
+proposed cache solution in detail. Memory areas for the heap and
+class description with the constant pool are not cached in JOP.
+
+\paragraph{Superscalar Processors}
+
+A superscalar processor consists of several execution units and
+tries to extract instruction level parallelism (ILP) with out of
+order execution. Again, this is a nightmare for timing analysis. The
+code for a stack machine has less implicit parallelism than a
+register machine.
+
+One form of enhancement, usually implemented in stack machines, is
+instruction folding. The instruction stream is scanned to find
+frequent patterns like load-load-add-store and substitutes these
+four instructions with one, RISC-like, operation. There are two
+issues with instruction folding in JOP: The combined instruction
+needs two read and one write access to the stack in a single cycle.
+This would result in doubling of the internal memory usage in the
+FPGA. It also needs, at minimum, four bytes read access to the
+method cache. To overcome word boundaries, prefetching has to be
+introduced after the method cache. This results in an additional
+pipeline stage, time dependency of instructions with a more complex
+analysis and more hardware resources for the multiplexers.
+
+Programs for embedded and real-time systems are usually
+multi-threaded. In future work, it will be investigated if the
+additional hardware resources needed for ILP can be better used with
+additional processor cores utilizing this implicit thread-level
+parallelism.
+
+\paragraph{Garbage Collection}
+
+As use of the heap is avoided in hard real-time systems, no garbage
+collector is implemented. Without a garbage collector, the memory
+layout of objects can be simplified. Every reference points directly
+to the object. No indirection through a handle, which would simplify
+memory compaction in the garbage collector, is needed. This reduces
+access time to object fields and methods.
+
+\paragraph{Time-Predictable Instructions}
+
+A good model of a processor with accurate timing information is
+essential for a tight WCET analysis. The architecture of JOP and the
+microcode are designed with this in mind. Execution time of
+bytecodes is known cycle accurately (see Section~\ref{sec:wcet} and
+Appendix~\ref{appx:bytecode}). It is possible to analyze the WCET on
+the bytecode level \cite{R:Bernat:2000a} without the uncertainties
+of an interpreting JVM \cite{R:Bate:2000a} or generated native code
+from ahead-of-time compilers for Java.
+
+\subsection{Summary}
+
+In this section, we argued that, while common techniques in
+processor architectures increase average throughput, they are not
+feasible for real-time systems. The influence of these architectural
+enhancements is at best hardly WCET-analyzable.
+
+The proposed alternatives influence the processor architecture, as
+described in earlier sections, as well as the software architecture
+that will be described in Section~\ref{sec:rtprof}.
+
+However, the most important architectural enhancement for pipelined
+machines is caching, which is necessary even in embedded systems. We
+have shown in Section~\ref{sec:stack} how a time-predictable data
+cache for a stack machine can be implemented. In the following
+section, we will propose a time-predictable cache for instructions.

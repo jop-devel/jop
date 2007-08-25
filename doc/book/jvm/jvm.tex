@@ -1,0 +1,175 @@
+\section{JVM Architecture}
+
+This section presents the details of the implementation of the JVM
+on JOP. The representation of objects and the stack frame is chosen
+to support JOP as processor for real-time systems. However, since
+the data structures are realized through microcode they can be
+easily changed for a system with different needs. For example: to
+simplify a compacting GC a handle to an object can be implemented by
+changing the microcode of \code{getfield}, \code{putfield} and
+\code{new}.
+
+\subsection{Runtime Data Structures}
+
+Memory is addressed as 32-bit data, which means that memory pointers
+are incremented for every four bytes. No single byte or 16-bit
+access is necessary. The abstract type reference is a pointer to
+memory that represents the object or an array. The reference is
+pushed on the stack before an instruction can operate on it. A null
+reference is represented by the value 0.
+
+\subsubsection{Stack Frame}
+
+On invocation of a method, the invoker's context is saved in a newly
+allocated frame on the stack. It is restored when the method
+returns. The saved context consists of following registers:
+
+\begin{description}
+
+\item[SP:] Immediately before invocation the stack pointer points to
+the last argument for the called function. This value is reduced by
+the argument count (i.e. the arguments are consumed) and saved in
+the new stack frame.
+
+\item[PC:] The pointer to the next bytecode instruction after the invoke
+instruction.
+
+\item[VP:] The pointer to the memory area on the stack that contains
+the locals.
+
+\item[CP:] The pointer to the constant pool of the class from the invoking
+method.
+
+\item[MP:] The pointer to the method structure of the invoking method.
+
+\end{description}
+
+SP, PC and VP are registers in JOP while CP and MP are local
+variables of the JVM. \figurename~\ref{fig_jvm_stack_invoke}
+provides an example of the stack before and after invoking a method.
+In this example, the called method has two arguments and contains
+two local variables. If the method is a virtual one, the first
+argument is the reference to the object (the \emph{this}-pointer).
+The arguments implicit become locals in the called method and are
+accessed in the same way as local variables. The start of the stack
+frame (\emph{Frame} in the figure) needs not to be saved. It is not
+needed during execution of the method or on return. To access the
+starting address of the frame (e.g. for an exception) it can be
+calculated with information from the method structure:
+
+\[Frame = VP + arg\_cnt + locals\_cnt\]
+
+\begin{figure}
+    \centering
+    \includegraphics[scale=\picscale]{jvm/jvm_stack_invocation}
+    \caption{Stack change on method invocation}
+    \label{fig_jvm_stack_invoke}
+\end{figure}
+
+\subsubsection{Object Layout}
+
+\figurename~\ref{fig_jvm_object} shows the representation of an
+object in memory. The object reference points to the first instance
+variable of the object. At the offset $-1$, a pointer is located to
+access class information. To speed-up method invocation, it points
+directly to the method table of the objects class instead of the
+beginning of the class data.
+
+\begin{figure}
+    \centering
+    \includegraphics[scale=\picscale]{jvm/jvm_object}
+    \caption{Object format}
+    \label{fig_jvm_object}
+\end{figure}
+
+\subsubsection{Array Layout}
+
+\figurename~\ref{fig_jvm_array} shows the representation of an array
+in memory. The object reference points to the first element of the
+array. At the offset $-1$, the length of the array can be found.
+
+\begin{figure}
+    \centering
+    \includegraphics[scale=\picscale]{jvm/jvm_array}
+    \caption{Array format}
+    \label{fig_jvm_array}
+\end{figure}
+
+
+\subsubsection{Class Structure}
+
+Runtime class information, as shown in Figure~\ref{fig_jvm_class},
+consists of the class variables, the dispatch table for the methods,
+the constant pool and an optional interface table.
+
+\begin{figure}
+    \centering
+    \includegraphics[scale=\picscale]{jvm/jvm_class}
+    \caption{Runtime class structure}
+    \label{fig_jvm_class}
+\end{figure}
+
+
+The class reference is obtained from the constant pool when a new
+object is created. The method vector base pointer is a reference
+from an object to its class (see Figure~\ref{fig_jvm_object}). It is
+used on \code{invokevirtual} with an index retrieved from the
+constant pool. A pointer to the method structure of the current
+method is saved in the JVM variable MP. The method structure, as
+shown in Figure~\ref{fig_jvm_method}, contains the starting address
+and length of the method (in 32-bit words), argument and local
+variable count and a pointer to the constant pool of the class.
+Since the constant pool is an often accessed memory area, a pointer
+to it is kept in the JVM variable CP.
+
+\begin{figure*}
+    \centering
+    \includegraphics[scale=\picscale]{jvm/jvm_method}
+    \caption{Method structure}
+    \label{fig_jvm_method}
+\end{figure*}
+
+
+The interface table contains references to the method structures of
+the implementation. Only classes that implement an interface contain
+this table. To avoid searching the class hierarchy on
+\code{invokeinterface}, each interface method is assigned a unique
+index. This provides constant execution time, but can lead to large
+interface tables.
+
+The constant pool contains various constants of a class. The entry
+at index 0 is the length of the pool. All constants, which are
+symbolic in the class files, are resolved on class loading or during
+pre-linking. The different constant types and their values after
+resolving are listed in \tablename~\ref{tab_jvm_const_pool}. The
+names for the types are the same as in the JVM specification
+\cite{jvm}.
+
+
+\begin{table}[htbp]
+    \centering
+    \begin{tabular}{ll}
+        \toprule
+        Constant type &  Description \\
+        \midrule
+        Class &  A pointer to a class (class reference) \\
+        Fieldref &   For static fields: a direct pointer to the field \\
+                &   For object fields: the position relative to the object \\
+                & reference \\
+        Methodref &  For static methods: a direct pointer to the method structure \\
+                & For virtual methods: the offset in the method table \\
+                & (= index*2) and the number of arguments \\
+        InterfaceMethodref &  A system wide unique index into the interface table \\
+        String  & A pointer to the string object that represents the string \\
+                & constant \\
+        Integer & The constant value \\
+        Float   & The constant value \\
+        Long    & This constant value spans two entries in the constant pool \\
+        Double  & Same as for long constants \\
+        NameAndType & Not used \\
+        Utf8    & Not used \\
+        \bottomrule
+    \end{tabular}
+    \caption{Constant pool entries}
+    \label{tab_jvm_const_pool}
+\end{table}

@@ -1,0 +1,15 @@
+
+digraph sort {
+  /* node [shape = box]; */
+  B1 -> B2 [label="1"];
+  B2 -> B3 [label="4"];
+  B2 -> B9 [label="1"];
+  B3 -> B4 [label="4"];
+  B4 -> B5 [label="10"];
+  B4 -> B8 [label="4"];
+  B5 -> B6 [label="0-10"];
+  B5 -> B7 [label="0-10"];
+  B6 -> B7 [label="0-10"];
+  B7 -> B4 [label="10"];
+  B8 -> B2 [label="4"];
+}

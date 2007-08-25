@@ -1,0 +1,53 @@
+\subsection{Bootind the JVM}
+
+One interesting issue for an embedded system is the how the startup
+or boot-up is performed. On power-up, the FPGA starts the
+configuration state machine to read the FPGA configuration data
+either from a Flash or via a download cable (for development). When
+the configuration has finished an internal reset is generated. After
+that reset, microcode instructions are executed starting from
+address 0. At this stage, we have not yet loaded any application
+program (Java bytecode). The first sequence in microcode performs
+this task. The Java application can be loaded from an external Flash
+or via a serial line (or USB port) from a PC. The microcode assembly
+configured the mode. Consequently, the Java application is loaded
+into the main memory. To simplify the startup code we perform the
+rest of the startup in Java itself, even when some parts of the JVM
+are not yet setup.
+
+In the next step, a minimal stack frame is generated and the special
+method \code{Startup.boot()} is invoked. From now on JOP runs in
+Java mode. The method \code{boot()} performs the following steps:
+\begin{samepage}
+\begin{itemize}
+    \item Send a greeting message to \emph{stdout}
+    \item Detect the size of the main memory
+    \item Initialize the data structures for the garbage collector
+    \item Initialize \code{java.lang.System}
+    \item Print out JOP's version number, detected clock speed, and
+    memory size
+    \item Invoke the static class initializers in a predefined order
+    \item Invoke the \code{main} method of the application class
+\end{itemize}
+\end{samepage}
+
+%\subsubsection{CMP Boot}
+%
+%The boot-up process is the same for all processors until the
+%generation of the internal reset and the execution of the first
+%microcode instruction. From that point on, we have to take care that
+%\emph{only one} processor performs the initialization steps.
+%
+%All processors in the CMP are functionally identical. Only one
+%processor is designated to boot-up and initialize the whole system.
+%Therefore, it is necessary to distinguish between the different
+%CPUs. We assign a unique CPU identity number (CPU ID) to each
+%processor. Only processor CPU0 is designated to do all the boot-up
+%and initialization work. The other CPUs have to wait until CPU0
+%completes the boot-up and initialization sequence. At the beginning
+%of the booting sequence, CPU0 loads the Java application. Meanwhile,
+%all other processors are waiting for an \emph{initialization
+%finished} signal of CPU0. This busy wait is performed in microcode.
+%When the other CPUs are enabled, they will run the same sequence as
+%CPU0. Therefore, the initialization steps are guarded by a condition
+%on the CPU ID.
