@@ -46,7 +46,7 @@ public class IOFactory {
 		return JVMHelp.makeHWArray(len, address, idx, cp);
 	}
 	
-	private static IOFactory single = new IOFactory();;
+	private static IOFactory single = new IOFactory();
 	
 	/**
 	 * Get the factory singleton
@@ -54,6 +54,10 @@ public class IOFactory {
 	 */
 	public static IOFactory getFactory() {		
 		return single;
+	}
+	
+	public void registerInterruptHandler(String happening, Runnable logic) {
+		// do the system specific regitering
 	}
 	
 	/**
