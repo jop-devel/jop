@@ -114,7 +114,11 @@ public class Startup {
 	static void version() {
 
 		// BTW: why not using System.out.println()?
-		int version = Native.rdIntMem(64);
+		int version = Native.rdIntMem(64-2);
+		if (version==0x12345678) {
+			// not in the new location, try the old one
+			version = Native.rdIntMem(64);
+		}
 		JVMHelp.wr(" V ");
 		// take care with future GC - JVMHelp.intVal allocates
 		// a buffer!

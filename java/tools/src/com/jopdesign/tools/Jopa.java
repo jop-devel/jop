@@ -35,7 +35,7 @@ public class Jopa {
 	static final int BRBITS = ADDRBITS;
 	static final int OPDBITS = 5;
 	static final int CONST_ADDR = 32;
-	static final int VER_ADDR = 64;
+	static final int VER_ADDR = 64-2;
 	static final int RAM_LEN = 256;
 	static final int ROM_LEN = 1<<ADDRBITS;
 	private String srcDir;
@@ -590,7 +590,7 @@ public class Jopa {
 			line = "--\n";
 			line += "--\tram.mif\n";
 			line += "--\n";
-			line += "depth = 256;\n";
+			line += "depth = "+RAM_LEN+";\n";
 			line += "width = 32;\n";
 			line += "\n";
 			line += "content\n";
@@ -623,6 +623,11 @@ public class Jopa {
 			line += "-- "+constMap.size()+" consts\n";
 			line += "--\n\n";
 			ram.write( line );
+			
+			if (constMap.size()>VER_ADDR-CONST_ADDR) {
+				System.out.println("error: too many constants");
+				System.exit(-1);
+			}
 
 			//
 			//	Constants
@@ -646,7 +651,7 @@ public class Jopa {
 			}
 			ramData[VER_ADDR] = version;
 			ramData[VER_ADDR+1] = 0;
-			ram.write("\n\n--\tVersion\n");
+			ram.write("\n\n--\tVersion now in the constant area\n");
 			line = "\t";
 			line += hex(VER_ADDR, 4) + " : " ;
 			line += hex(version, 8) + ";\t--\t";
