@@ -170,10 +170,16 @@ public class Latency {
 //	public static final int PERIOD_MEDIUM = 1000;
 //	public static final int PERIOD_LOW = 10000;
 //	public static final int PERIOD_GC = 200000;
-	public static final int PERIOD_HIGH = 107; // 211; // 107;
-	public static final int PERIOD_MEDIUM = 1009;
-	public static final int PERIOD_LOW = 10853;
-	public static final int PERIOD_GC = 200183;
+//	public static final int PERIOD_HIGH = 107; // 211; // 107;
+//	public static final int PERIOD_MEDIUM = 1009;
+//	public static final int PERIOD_LOW = 10853;
+//	public static final int PERIOD_GC = 200183;
+	
+	// for slower JOP versions (<100MHz)
+	public static final int PERIOD_HIGH = 200; // 211; // 107;
+	public static final int PERIOD_MEDIUM = 2000;
+	public static final int PERIOD_LOW = 20000;
+	public static final int PERIOD_GC = 400000;
 	
 	/**
 	 * @param args
