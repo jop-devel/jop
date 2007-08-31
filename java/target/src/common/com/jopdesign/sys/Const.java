@@ -34,6 +34,9 @@ public class Const {
 	 * Size of the on-chip stack cache including the area
 	 * for JVM microcode scratch registers and microcode
 	 * constant.
+	 * <p>
+	 * Used in @link RtThreadImpl
+	 * 
 	 */
 	public static final int STACK_SIZE = 256;
 	

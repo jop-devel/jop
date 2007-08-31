@@ -61,7 +61,7 @@ public class RtThreadImpl {
 	protected final static int DEAD = 3;
 	private int state;
 
-	private final static int MAX_STACK = 128;
+//	private final static int MAX_STACK = 128;
 
 	private static boolean initDone;
 	static boolean mission;
@@ -135,11 +135,11 @@ public class RtThreadImpl {
 		}
 //System.out.println("b");
 
-		stack = new int[MAX_STACK];
-		sp = 128;	// default empty stack for GC before startMission()
+		stack = new int[Const.STACK_SIZE-Const.STACK_OFF];
+		sp = Const.STACK_OFF;	// default empty stack for GC before startMission()
 //		System.out.print(MAX_STACK);
 //		System.out.println("c");
-for (int i=0; i<MAX_STACK; ++i) {
+for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 //	System.out.print(i);
 	stack[i] = 1234567;
 }
@@ -208,7 +208,6 @@ public static int ts0, ts1, ts2, ts3, ts4;
 	static void schedule() {
 
 		int i, j, k;
-		int[] mem;
 		int diff;
 
 		// we have not called doInit(), which means
@@ -217,20 +216,11 @@ public static int ts0, ts1, ts2, ts3, ts4;
 
 		Native.wr(0, Const.IO_INT_ENA);
 		// synchronized(monitor) {
-// RtThread.ts1 = Native.rd(Const.IO_US_CNT);
 			// save stack
 			i = Native.getSP();
 			RtThreadImpl th = ref[active];
 			th.sp = i;
-/*
-			mem = th.stack;
-			for (j=128; j<=i; ++j) {
-				mem[j-128] = Native.rdIntMem(j);
-			}
-*/
-			Native.int2extMem(128, th.stack, i-127);	// cnt is i-128+1
-
-// RtThread.ts2 = Native.rd(Const.IO_US_CNT);
+			Native.int2extMem(Const.STACK_OFF, th.stack, i-Const.STACK_OFF+1);	// cnt is i-128+1
 
 			// SCHEDULE
 			//	cnt should NOT contain idle thread
@@ -260,24 +250,15 @@ public static int ts0, ts1, ts2, ts3, ts4;
 			// set next int time to now+(min(diff)) (j, k)
 			tim = j+k;
 
-// RtThread.ts3 = Native.rd(Const.IO_US_CNT);
 			// restore stack
 			s1 = ref[i].sp;
 			Native.setVP(s1+2);		// +2 for shure ???
 			Native.setSP(s1+7);		// +5 locals, take care to use only the first 5!!
 
 			i = s1;
-/*
-			mem = ref[active].stack;				// can't use th since VP is changed, use static active
-			for (j=128; j<=i; ++j) {
-				Native.wrIntMem(mem[j-128], j);
-			}
-*/
 			// can't use s1-127 as count,
 			// don't know why I have to store it in a local.
-			Native.ext2intMem(ref[active].stack, 128, i-127);		// cnt is i-128+1
-
-// RtThread.ts4 = Native.rd(Const.IO_US_CNT);
+			Native.ext2intMem(ref[active].stack, Const.STACK_OFF, i-Const.STACK_OFF+1);		// cnt is i-128+1
 
 			j = Native.rd(Const.IO_US_CNT);
 			// check if next timer value is too early (or allready missed)
@@ -344,7 +325,7 @@ public static int ts0, ts1, ts2, ts3, ts4;
 
 	/**
 	*	Create stack for the new thread.
-	*	Copy stack frame of of main.
+	*	Copy stack frame of main thread.
 	*	Could be reduced to copy only frames from 
 	*	createStack() and startThread() and adjust the
 	*	frames to new position.
@@ -357,18 +338,18 @@ public static int ts0, ts1, ts2, ts3, ts4;
 		j = Native.rdIntMem(i-4);			// sp of calling function
 		j = Native.rdIntMem(j-4);			// one more level of indirection
 
-		sp = i-j+128;
+		sp = i-j+Const.STACK_OFF;
 		k = j;
 		for (; j<=i; ++j) {
 			stack[j-k] = Native.rdIntMem(j);
 		}
 		//	adjust stack frames
-		k -= 128;	// now difference between main stack and new stack
-		stack[sp-128-2] -= k;				// saved vp
-		stack[sp-128-4] -= k;				// saved sp
-		j = stack[sp-128-4];
-		stack[j-128-2] -= k;
-		stack[j-128-4] -= k;
+		k -= Const.STACK_OFF;	// now difference between main stack and new stack
+		stack[sp-Const.STACK_OFF-2] -= k;				// saved vp
+		stack[sp-Const.STACK_OFF-4] -= k;				// saved sp
+		j = stack[sp-Const.STACK_OFF-4];
+		stack[j-Const.STACK_OFF-2] -= k;
+		stack[j-Const.STACK_OFF-4] -= k;
 		
 /*	this is the save version
 		i = Native.getSP();
