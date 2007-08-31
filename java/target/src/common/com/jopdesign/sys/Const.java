@@ -1,16 +1,15 @@
 /*
  * Created on 12.04.2004
  *
- * To change the template for this generated file go to
- * Window&gt;Preferences&gt;Java&gt;Code Generation&gt;Code and Comments
  */
 package com.jopdesign.sys;
 
 /**
+ * Constants for the class structure, hardware configuration,
+ * and IO addresses.
+ *
  * @author martin
  *
- * To change the template for this generated type comment go to
- * Window&gt;Preferences&gt;Java&gt;Code Generation&gt;Code and Comments
  */
 public class Const {
 	
@@ -30,28 +29,61 @@ public class Const {
 	 */
 	static final int CLASS_SUPER = 3;
 	
-	// Constants for JVM registers (on-chip RAM)
 	
 	/**
-	 * Constant pool pointer
+	 * Size of the on-chip stack cache including the area
+	 * for JVM microcode scratch registers and microcode
+	 * constant.
+	 */
+	public static final int STACK_SIZE = 256;
+	
+	/**
+	 * Offset of the real stack in the on-chip RAM.
+	 */
+	public static final int STACK_OFF = 128;
+	
+
+	/**
+	 * Constant pool pointer offset in on-chip stack cache.
+	 * Constants for JVM register (on-chip RAM)
 	 */
 	public static final int RAM_CP = 1;
 
 	// Exception numbers - 1-7 reserved for HW generated exceptions
+	/**
+	 * Hardware generated excpetion number for stack overflow.
+	 */
 	public static final int EXC_SPOV = 1;
+	/**
+	 * Hardware generated excpetion number for
+	 * null pointer assignment.
+	 */
 	public static final int EXC_NP = 2;
+	/**
+	 * Hardware generated excpetion number for
+	 * out of bounds exception.
+	 */
 	public static final int EXC_AB = 3;
 	
+	/**
+	 * Software generated divide by zero exception.
+	 */
 	public static final int EXC_DIVZ = 8;
 	
-	// use neagitve base address for fast constant load
-	// with bipush
+	/**
+	 * Base address for all IO devices. We use a negative
+	 * address for a fast constant load with <code>bipush</code>.
+	 * 
+	 * All IO devices are decoded from address(6 downto 4).
+	 *
+	 * Depends on scio_*.vhd
+	 *	    => 8 different IO devices
+	 *  	=> each device can contain up to 16 registers
+ 
+	 * 
+	 */
 	public static final int IO_BASE = 0xffffff80;
 
-	// all IO devices are decoded from address(6 downto 4)
-	//	depends on scio_*.vhd
-	//	=> 8 different IO devices
-	//	=> each device can contain up to 16 registers
 
 	public static final int IO_SYS_DEVICE = IO_BASE+0;
 	public static final int IO_USB = IO_BASE+0x20;
