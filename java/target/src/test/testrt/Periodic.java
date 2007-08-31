@@ -10,8 +10,6 @@ public class Periodic {
 
 	public static void main(String[] args) {
 
-		Dbg.initSerWait();				// use serial line for debug output
-
 		RtThread rt = new RtThread(10, 100000) {
 			public void run() {
 

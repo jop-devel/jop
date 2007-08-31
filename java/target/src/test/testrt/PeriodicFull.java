@@ -33,7 +33,6 @@ w = per*12/100;
 	
 	public static void main(String[] args) {
 
-		Dbg.initSer();				// use serial line for debug output
 		System.out.println("PeriodicFull test");
 
 		RtThread rt = new RtThread(10, 100000) {

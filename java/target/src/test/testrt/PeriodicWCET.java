@@ -14,8 +14,6 @@ public class PeriodicWCET {
 
 	public static void main(String[] args) {
 
-		Dbg.initSer();				// use serial line for debug output
-
 		RtThread rt = new RtThread(10, 100000) {
 			public void run() {
 				// f1();	does NOT work!!!
@@ -190,7 +188,7 @@ Timer.cnt();
 
 				void loop() {
 					for (;;) {
-Dbg.wr('*');
+						System.out.print('*');
 						waitForNextPeriod();
 						int ts = Native.rd(Const.IO_US_CNT) + 890000;
 						while (ts-Native.rd(Const.IO_US_CNT)>0)
