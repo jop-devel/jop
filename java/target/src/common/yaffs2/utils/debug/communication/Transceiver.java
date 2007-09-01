@@ -11,8 +11,6 @@ import yaffs2.utils.DebugUtils;
 
 public abstract class Transceiver
 {
-	static final Object sync = new Object(); // FIXME
-	
 	static final int CMD_READCHUNKFROMNAND = 1;
 	static final int CMD_WRITECHUNKTONAND = 2;
 	static final int CMD_ERASEBLOCKINNAND = 3;
@@ -59,17 +57,6 @@ public abstract class Transceiver
 			
 			tx.flush();
 			
-			try
-			{
-				synchronized(sync) 
-				{
-					sync.wait();
-				}
-			}
-			catch (Exception e)
-			{
-				throw new UnexpectedException();
-			}
 		}
 		catch (IOException e)
 		{
@@ -123,11 +110,6 @@ public abstract class Transceiver
 					if (endDelim != END_DELIMITER[0])
 						throw new UnexpectedException("Failed to receive message!");
 					
-					synchronized (sync)
-					{
-						sync.notify();
-					}
-
 					processInput(command, (dev), chunkInNAND, blockInNAND, 
 							dataPresent ? data : null, dataIndex, sparePresent ? spare : null);
 				}
