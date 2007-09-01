@@ -29,6 +29,7 @@
 --	2004-10-08	moved bsy/pcwait from decode to fetch
 --	2006-01-12	new ar for local memory addressing: star, ldmi, stmi
 --				stioa, stiod, ldiod removed
+--	2006-08-31	use addr_width for signal dir
 --
 
 
@@ -163,7 +164,7 @@ begin
 
 -- select for rd/wr address muxes
 
-	dir <= "000" & ir(4 downto 0);
+	dir <= std_logic_vector(to_unsigned(0, addr_width-5)) & ir(4 downto 0);
 
 	sel_rda <= "110";					-- sp
 	if (ir(7 downto 3)="11101") then	-- ld, ldn, ldmi
@@ -174,7 +175,8 @@ begin
 	end if;
 	if (ir(7 downto 5)="110") then		-- ldi
 		sel_rda <= "111";
-		dir <= "001" & ir(4 downto 0);	-- addr > 31 constants
+		dir <= std_logic_vector(to_unsigned(1, addr_width-5)) & 
+			ir(4 downto 0);	-- addr > 31 constants
 	end if;
 
 	sel_wra <= "110";					-- spp
