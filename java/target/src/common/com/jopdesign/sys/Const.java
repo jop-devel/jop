@@ -35,13 +35,18 @@ public class Const {
 	 * for JVM microcode scratch registers and microcode
 	 * constant.
 	 * <p>
+	 * Change also (dependent on):<ul>
+	 * 	<li>RAM_LEN in Jopa.java</li>
+	 * </ul>
+	 * <p>
 	 * Used in @link RtThreadImpl
 	 * 
 	 */
 	public static final int STACK_SIZE = 256;
 	
 	/**
-	 * Offset of the real stack in the on-chip RAM.
+	 * Offset of the real stack in the on-chip RAM. Is set in
+	 * <code>jvm.asm</code>.
 	 */
 	public static final int STACK_OFF = 128;
 	

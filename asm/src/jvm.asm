@@ -92,6 +92,7 @@
 //				aastore in JVM.java
 //	2007-06-17	new instruction jopsys_memcpy, jopsys_cond_move disabled
 //				speed-up ext2int and int2ext
+//	2007-08-31	non wrapping stack pointer, version at new address (62)
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -101,7 +102,12 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20070617
+version		= 20070831
+
+//
+//	start of stack area in the on-chip RAM
+//
+stack_init	= 128
 
 //
 //	io address are negativ memory addresses
@@ -163,7 +169,7 @@ addr		?			// address used for bc load from flash
 			nop			// this gets never executed
 			nop			// for shure during reset (perhaps two times executed)
 
-			ldi	128
+			ldi	stack_init
 			nop			// written in adr/read stage!
 			stsp		// someting strange in stack.vhd A->B !!!
 

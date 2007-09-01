@@ -17,6 +17,7 @@
 --	2003-02-12	added mux for 8 and 16 bit unsigned bytecode operand
 --	2004-10-07	new alu selection with sel_sub, sel_amux and ena_a
 --	2006-01-12	new ar for local memory addressing, sp and vp MSB fix at '1'
+--	2007-08-31	change stack addressing without wrapping, generate sp_ov on max_stack-8
 --
 
 
@@ -126,7 +127,7 @@ end component;
 	signal mmux		: std_logic_vector(width-1 downto 0);
 
 	signal rmux		: std_logic_vector(jpc_width-1 downto 0);
-	signal smux		: std_logic_vector(addr_width-2 downto 0);
+	signal smux		: std_logic_vector(addr_width-1 downto 0);
 	signal vpadd	: std_logic_vector(addr_width-1 downto 0);
 	signal wraddr	: std_logic_vector(addr_width-1 downto 0);
 	signal rdaddr	: std_logic_vector(addr_width-1 downto 0);
@@ -304,16 +305,15 @@ process(a, sp, spm, spp, sel_smux)
 
 begin
 
-	-- sp(addr_width-1) == '1'
 	case sel_smux is
 		when "00" =>
-			smux <= sp(addr_width-2 downto 0);
+			smux <= sp;
 		when "01" =>
-			smux <= spm(addr_width-2 downto 0);
+			smux <= spm;
 		when "10" =>
-			smux <= spp(addr_width-2 downto 0);
+			smux <= spp;
 		when "11" =>
-			smux <= a(addr_width-2 downto 0);
+			smux <= a(addr_width-1 downto 0);
 		when others =>
 			null;
 	end case;
@@ -373,41 +373,39 @@ process(clk, reset)
 
 begin
 	if (reset='1') then
---
---	sp is 'strange' (0xfe) after reset, after stsp all is ok
---
---		sp <= std_logic_vector(to_unsigned(0, addr_width));		
---		spp <= std_logic_vector(to_unsigned(0, addr_width));	-- just for the compiler
---		spm <= std_logic_vector(to_unsigned(0, addr_width));	-- just for the compiler
-sp <= "10000000";
-spp <= "10000001";
-spm <= "11111111";
-sp_ov <= '0';
+		-- a reasonable start value for the stack addressing
+		-- will be overwritten by the first microcode instructions
+		sp <= std_logic_vector(to_unsigned(128, addr_width));		
+		spp <= std_logic_vector(to_unsigned(129, addr_width));
+		spm <= std_logic_vector(to_unsigned(127, addr_width));
+		sp_ov <= '0';
 		vp0 <= std_logic_vector(to_unsigned(0, addr_width));
 		vp1 <= std_logic_vector(to_unsigned(0, addr_width));
 		vp2 <= std_logic_vector(to_unsigned(0, addr_width));
 		vp3 <= std_logic_vector(to_unsigned(0, addr_width));
 		ar <= (others => '0');
-		vpadd <= std_logic_vector(to_unsigned(0, addr_width));	-- just for the compiler
-		immval <= std_logic_vector(to_unsigned(0, width));		-- just for the compiler
-		opddly <= std_logic_vector(to_unsigned(0, 16));			-- just for the compiler
+		vpadd <= std_logic_vector(to_unsigned(0, addr_width));
+		immval <= std_logic_vector(to_unsigned(0, width));
+		opddly <= std_logic_vector(to_unsigned(0, 16));
 	elsif rising_edge(clk) then
-		spp <= "1" & std_logic_vector(unsigned(smux) + 1);
-		spm <= "1" & std_logic_vector(unsigned(smux) - 1);
-		sp <= "1" & smux;
-		if sp="11111111" then
+		spp <= std_logic_vector(unsigned(smux) + 1);
+		spm <= std_logic_vector(unsigned(smux) - 1);
+		sp <= smux;
+		-- Value depends on code in JVMHelp.exception() and how much
+		-- usefull information can be printed out
+		if sp=std_logic_vector(to_unsigned(2**addr_width-1-8, addr_width)) then
 			sp_ov <= '1';
 		end if;
 		if (ena_vp = '1') then
-			vp0 <= "1" & a(addr_width-2 downto 0);
-			vp1 <= "1" & std_logic_vector(unsigned(a(addr_width-2 downto 0)) + 1);
-			vp2 <= "1" & std_logic_vector(unsigned(a(addr_width-2 downto 0)) + 2);
-			vp3 <= "1" & std_logic_vector(unsigned(a(addr_width-2 downto 0)) + 3);
+			vp0 <= a(addr_width-1 downto 0);
+			vp1 <= std_logic_vector(unsigned(a(addr_width-1 downto 0)) + 1);
+			vp2 <= std_logic_vector(unsigned(a(addr_width-1 downto 0)) + 2);
+			vp3 <= std_logic_vector(unsigned(a(addr_width-1 downto 0)) + 3);
 		end if;
 		if ena_ar = '1' then
 			ar <= a(addr_width-1 downto 0);
 		end if;
-		vpadd <= "1" & std_logic_vector(unsigned(vp0(addr_width-2 downto 0)) + unsigned(opd(6 downto 0)));
+		vpadd <= std_logic_vector(unsigned(vp0(addr_width-1 downto 0)) + unsigned(opd(6 downto 0)));
 		opddly <= opd;
 		immval <= imux;
 	end if;

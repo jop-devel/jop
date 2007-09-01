@@ -69,42 +69,16 @@ wrByte(pc);
 	
 	/**
 	 * Invoked on a hardware generated exception.
-	 * Currently only on stack overflow and integer
-	 * division, remainder by zero.
 	 */
 	static void except() {
-		
-		int i;
-		i = Native.rdMem(Const.IO_EXCPT);
-		JVMHelp.wr("\nException: ");
-		if (i==Const.EXC_SPOV) {
-			JVMHelp.wr("Stack overflow\n");
-		} else if (i==Const.EXC_NP) {
-			JVMHelp.wr("Null pointer exception\n");
-		} else if (i==Const.EXC_AB) {
-			JVMHelp.wr("Array out of bounds exception\n");
-		} else if (i==Const.EXC_DIVZ) {
-			JVMHelp.wr("ArithmeticException\n");
+		if (Native.rdMem(Const.IO_EXCPT)==Const.EXC_SPOV) {
+			// reset stack pointer
+			Native.setSP(Const.STACK_OFF);
 		}
-
-		int sp = Native.getSP();			// sp of ();
-		int pc = Native.rdIntMem(sp-3);		// pc is not exact (depends on instruction)
-		wr("sp=");
-		wrSmall(sp);
-		wr("pc=");
-		wrSmall(pc);
-		i = Native.rdIntMem(sp);			// mp
-		wr("mp=");
-		wrSmall(i);
-		int start = Native.rdMem(i)>>>10;	// address of method
-		wr("start=");
-		wrSmall(start);
-
-		trace();
-
-		for (;;);
+		// we have more stack available now for the stack overflow
+		handleExcpetion();
 	}
-
+	
 	static void noim() {
 
 		int i;
@@ -142,6 +116,43 @@ synchronized (o) {
 }
 	}
 
+	static void handleExcpetion() {
+		
+		int i;
+		i = Native.rdMem(Const.IO_EXCPT);
+		wr("\nException: ");
+		if (i==Const.EXC_SPOV) {
+			wr("Stack overflow\n");
+			// nothing more to do on stack overflow
+			for (;;);
+		} else if (i==Const.EXC_NP) {
+			wr("Null pointer exception\n");
+		} else if (i==Const.EXC_AB) {
+			wr("Array out of bounds exception\n");
+		} else if (i==Const.EXC_DIVZ) {
+			wr("ArithmeticException\n");
+		}
+
+		int sp = Native.getSP();			// sp of ();
+		sp = Native.rdIntMem(sp-4);			// sp of calling function
+		int pc = Native.rdIntMem(sp-3);		// pc is not exact (depends on instruction)
+		wr("sp=");
+		wrSmall(sp);
+		wr("pc=");
+		wrSmall(pc);
+		i = Native.rdIntMem(sp);			// mp
+		wr("mp=");
+		wrSmall(i);
+		int start = Native.rdMem(i)>>>10;	// address of method
+		wr("start=");
+		wrSmall(start);
+
+		trace();
+
+		for (;;);
+	}
+
+
 
 	static void trace() {
 
@@ -156,6 +167,9 @@ synchronized (o) {
 //		while does not work anymore as sp and vp are
 //		wrapping around (only 7 bits)
 //		while (fp>128+5) {	// stop befor 'fist' method
+		// TODO: change back to non wrapping version and use
+		// Const constants.
+		wr("TODO: trace is not correct!");
 		for (int cnt=0; cnt<10; ++cnt) {
 			mp = Native.rdIntMem(((fp+4)&0x7f)|0x80);
 			vp = Native.rdIntMem(((fp+2)&0x7f)|0x80);
