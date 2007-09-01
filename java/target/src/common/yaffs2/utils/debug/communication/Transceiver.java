@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import yaffs2.port.yaffs_Device;
-import yaffs2.port.yaffs_Spare;
 import yaffs2.utils.UnexpectedException;
 import yaffs2.utils.DebugUtils;
 
@@ -33,8 +31,12 @@ public abstract class Transceiver
 		this.tx = tx;
 	}
 
-	public void send(int command, yaffs_Device dev, int chunkInNAND, int blockInNAND,
-			byte[] data, int dataIndex, yaffs_Spare spare)
+	public void send(int command, 
+			int deviceGenericDevice, 
+			int devicenDataBytesPerChunk, 
+			int chunkInNAND, 
+			int blockInNAND,
+			byte[] data, int dataIndex, byte[] spare, int spareIndex)
 	{
 		try
 		{
@@ -43,15 +45,14 @@ public abstract class Transceiver
 			tx.write(DebugUtils.intToByteArray(++txSequenceNumber));
 
 			tx.write(DebugUtils.intToByteArray(command));
-			tx.write(DebugUtils.intToByteArray(dev.subField1.genericDevice));
 			tx.write(DebugUtils.intToByteArray(chunkInNAND));
 			tx.write(DebugUtils.intToByteArray(blockInNAND));
 			tx.write(DebugUtils.intToByteArray(data != null ? 1 : 0));
 			if (data != null)
-				tx.write(data, dataIndex, dev.subField1.nDataBytesPerChunk);
+				tx.write(data, dataIndex, devicenDataBytesPerChunk);
 			tx.write(DebugUtils.intToByteArray(spare != null ? 1 : 0));
 			if (spare != null)
-				tx.write(spare.serialized, spare.offset, spare.SERIALIZED_LENGTH);
+				tx.write(spare, spareIndex, DebugSettings.SPARE_SERIALIZED_LENGTH);
 
 			tx.write(END_DELIMITER);			
 			
@@ -64,12 +65,12 @@ public abstract class Transceiver
 		}
 	}
 
-	public abstract yaffs_Device deviceIdToDevice(int deviceId);
+	protected abstract void processInput(int command,
+			int deviceGenericDevice, 
+			int devicenDataBytesPerChunk, int chunkInNAND, int blockInNAND, 
+			byte[] data, int dataIndex, byte[] spare, int spareIndex);
 
-	protected abstract void processInput(int command, yaffs_Device dev, int chunkInNAND, int blockInNAND, 
-			byte[] data, int dataIndex, yaffs_Spare spare);
-
-	public void receive(boolean loop, byte[] data, int dataIndex, yaffs_Spare spare)
+	public void receive(boolean loop, byte[] data, int dataIndex, byte[] spare, int spareIndex)
 	{
 		try
 		{
@@ -93,25 +94,27 @@ public abstract class Transceiver
 						throw new UnexpectedException("Sequence number mismatch!");
 
 					int command = DebugUtils.readIntFromInputStream(rx);
-					yaffs_Device dev = deviceIdToDevice(DebugUtils.readIntFromInputStream(rx));
 					int chunkInNAND = DebugUtils.readIntFromInputStream(rx);
 					int blockInNAND = DebugUtils.readIntFromInputStream(rx);
 					
 					boolean dataPresent = DebugUtils.readIntFromInputStream(rx) != 0;
 					if (dataPresent)
-						rx.read(data, dataIndex, dev.subField1.nDataBytesPerChunk);
+						rx.read(data, dataIndex, DebugSettings.NDATABYTESPERCHUNK);
 
 					boolean sparePresent = DebugUtils.readIntFromInputStream(rx) != 0;
 					if (sparePresent)
-						rx.read(spare.serialized, spare.offset, spare.SERIALIZED_LENGTH);
+						rx.read(spare, spareIndex, DebugSettings.SPARE_SERIALIZED_LENGTH);
 
 					int endDelim = rx.read();
 
 					if (endDelim != END_DELIMITER[0])
 						throw new UnexpectedException("Failed to receive message!");
 					
-					processInput(command, (dev), chunkInNAND, blockInNAND, 
-							dataPresent ? data : null, dataIndex, sparePresent ? spare : null);
+					processInput(command, DebugSettings.GENERIC_DEVICE, 
+							DebugSettings.NDATABYTESPERCHUNK,
+							chunkInNAND, blockInNAND, 
+							dataPresent ? data : null, dataIndex, 
+									sparePresent ? spare : null, spareIndex);
 				}
 			} while (loop);
 		}

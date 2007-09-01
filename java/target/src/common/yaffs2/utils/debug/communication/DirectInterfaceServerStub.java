@@ -3,50 +3,46 @@ package yaffs2.utils.debug.communication;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import yaffs2.port.yaffs_Device;
-import yaffs2.port.yaffs_Spare;
 import yaffs2.utils.UnexpectedException;
-import yaffs2.utils.Yaffs1NANDInterface;
+import yaffs2.utils.Yaffs1NANDInterfacePrimitives;
 
 
 public class DirectInterfaceServerStub extends Transceiver
 {
-	yaffs2.utils.Yaffs1NANDInterface implementation;
-	yaffs_Device dev;
+	yaffs2.utils.Yaffs1NANDInterfacePrimitives implementation;
 	
-	public DirectInterfaceServerStub(yaffs_Device dev, Yaffs1NANDInterface implementation,
+	public DirectInterfaceServerStub(Yaffs1NANDInterfacePrimitives implementation,
 			InputStream rx, OutputStream tx)
 	{
 		super(rx, tx);
 		this.implementation = implementation;
-		this.dev = dev;
-	}
-	
-	public yaffs_Device deviceIdToDevice(int deviceId)
-	{
-		return dev; 
 	}
 	
 	/* (non-Javadoc)
 	 * @see yaffs2.utils.debug.communication.ServerStub#translate(int, int, int, int, byte[], yaffs2.port.yaffs_Spare)
 	 */
-	protected void processInput(int command, yaffs_Device dev, int chunkInNAND, int blockInNAND, 
-			byte[] data, int dataIndex,	yaffs_Spare spare)
+	protected void processInput(int command, int deviceGenericDevice, 
+			int devicenDataBytesPerChunk, int chunkInNAND, int blockInNAND, 
+			byte[] data, int dataIndex,	byte[] spare, int spareIndex)
 	{
 		switch (command)
 		{
 			case CMD_ERASEBLOCKINNAND:
-				implementation.eraseBlockInNAND(dev, blockInNAND);
+				implementation.eraseBlockInNAND(deviceGenericDevice, devicenDataBytesPerChunk, blockInNAND);
 				break;
 			case CMD_INITIALISENAND:
-				implementation.initialiseNAND(dev);
+				implementation.initialiseNAND(deviceGenericDevice, devicenDataBytesPerChunk);
 				break;
 			case CMD_READCHUNKFROMNAND:
-				implementation.readChunkFromNAND(dev, chunkInNAND, data, dataIndex, spare);
-				send(REPLY_READCHUNKFROMNAND, dev, chunkInNAND, blockInNAND, data, dataIndex, spare);
+				implementation.readChunkFromNAND(deviceGenericDevice, devicenDataBytesPerChunk, 
+						chunkInNAND, data, dataIndex, spare, spareIndex);
+				send(REPLY_READCHUNKFROMNAND, deviceGenericDevice, devicenDataBytesPerChunk, 
+						chunkInNAND, blockInNAND, data, dataIndex, 
+						spare, spareIndex);
 				break;
 			case CMD_WRITECHUNKTONAND:
-				implementation.writeChunkToNAND(dev, chunkInNAND, data, dataIndex, spare);
+				implementation.writeChunkToNAND(deviceGenericDevice, devicenDataBytesPerChunk, 
+						chunkInNAND, data, dataIndex, spare, spareIndex);
 				break;
 			default:
 				throw new UnexpectedException();

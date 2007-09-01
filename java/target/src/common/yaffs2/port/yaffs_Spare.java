@@ -15,6 +15,14 @@ public class yaffs_Spare extends yaffs2.utils.SerializableObject
 	{
 		super(SERIALIZED_LENGTH);
 	}
+	
+	/**
+	 * Only for simulation.
+	 */
+	public yaffs_Spare(byte[] array, int offset)
+	{
+		super(array, offset);
+	}
 
 	public static final int SERIALIZED_LENGTH = 16; 
 

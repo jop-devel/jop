@@ -2,10 +2,11 @@ package yaffs2.utils.debug.pc;
 
 import java.net.*;
 
-import yaffs2.port.port_fileem2k_C;
 import yaffs2.port.yaffs_Device;
-import yaffs2.port.yaffs_Spare;
+import yaffs2.port.port_fileem2k_C;
+import yaffs2.utils.Yaffs1NANDInterfacePrimitivesWrapper;
 import yaffs2.utils.debug.communication.DebugDevice;
+import yaffs2.utils.debug.communication.DebugSettings;
 import yaffs2.utils.debug.communication.DirectInterfaceServerStub;
 
 public class DebugInterfaceServer
@@ -20,11 +21,13 @@ public class DebugInterfaceServer
 		Socket socket = serverSocket.accept();
 		
 		yaffs_Device dev = DebugDevice.createDebugDevice();
+		byte[] spare = new byte[DebugSettings.SPARE_SERIALIZED_LENGTH];
 		
-		new DirectInterfaceServerStub(dev, port_fileem2k_C.instance, 
+		new DirectInterfaceServerStub(new Yaffs1NANDInterfacePrimitivesWrapper(
+				dev, port_fileem2k_C.instance), 
 				socket.getInputStream(),
 				socket.getOutputStream()).
-				receive(true, new byte[dev.subField1.nDataBytesPerChunk], 0, new yaffs_Spare());
+				receive(true, new byte[DebugSettings.NDATABYTESPERCHUNK], 0, spare, 0);
 	}
 
 }
