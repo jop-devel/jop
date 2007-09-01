@@ -24,7 +24,7 @@ import com.jopdesign.sys.*;
 public class JopSim {
 
 	static final int MAX_MEM = 1024*1024/4;
-	static final int MAX_STACK = 256;	// with internal memory
+	static final int MAX_STACK = Const.STACK_SIZE;	// with internal memory
 	static final int MEM_TEST_OFF = 256;
 	
 	static final int MIN_WB_ADDRESS = -128;
@@ -138,7 +138,7 @@ public class JopSim {
 		intEna = false;
 
 		pc = vp = 0;
-		sp = 128;
+		sp = Const.STACK_OFF;
 		int ptr = readMem(1);
 		jjp = readMem(ptr+1);
 		jjhp = readMem(ptr+2);
