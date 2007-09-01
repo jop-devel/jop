@@ -20,7 +20,7 @@ public class yaffs_guts_C
 	 */
 
 	static final String yaffs_guts_c_version =
-		"$Id: yaffs_guts_C.java,v 1.4 2007/07/01 01:29:50 alexander.dejaco Exp $";
+		"$Id: yaffs_guts_C.java,v 1.5 2007/09/01 12:28:23 peter.hilber Exp $";
 
 	/*#include "yportenv.h"
 
@@ -378,7 +378,7 @@ public class yaffs_guts_C
 	{
 
 		boolean retval = Guts_H.YAFFS_OK;
-		byte[] data = yaffs_GetTempBuffer(dev, Utils.__LINE__());
+		byte[] data = yaffs_GetTempBuffer(dev, 1 /*Utils.__LINE__()*/);
 		final int dataIndex = 0;
 		yaffs_ExtendedTags tags = new yaffs_ExtendedTags();
 		boolean result;
@@ -395,7 +395,7 @@ public class yaffs_guts_C
 			retval = Guts_H.YAFFS_FAIL;
 		}
 
-		yaffs_ReleaseTempBuffer(dev, data, Utils.__LINE__());
+		yaffs_ReleaseTempBuffer(dev, data, 2 /*Utils.__LINE__()*/);
 
 		return retval;
 
@@ -442,7 +442,7 @@ public class yaffs_guts_C
 				 */
 
 				if(bi.gcPrioritise()){
-					yaffs_DeleteChunk(dev, chunk, true, Utils.__LINE__());
+					yaffs_DeleteChunk(dev, chunk, true, 3 /*Utils.__LINE__()*/);
 				} else {
 					/*#ifdef CONFIG_YAFFS_ALWAYS_CHECK_CHUNK_ERASED
 
@@ -581,7 +581,7 @@ public class yaffs_guts_C
 		}
 
 		/* Delete the chunk */
-		yaffs_DeleteChunk(dev, chunkInNAND, true, Utils.__LINE__());
+		yaffs_DeleteChunk(dev, chunkInNAND, true, 4 /*Utils.__LINE__()*/);
 	}
 
 
@@ -1130,7 +1130,7 @@ public class yaffs_guts_C
 						if (foundChunk > 0) {
 							yaffs_DeleteChunk(dev,
 									foundChunk, true,
-									Utils.__LINE__());
+									5 /*Utils.__LINE__()*/);
 							in.nDataChunks--;
 							if (limit != null) {
 								limit.dereferenced = limit.dereferenced - 1;
@@ -2456,7 +2456,7 @@ public class yaffs_guts_C
 			yaffs_BlockBecameDirty(dev, block);
 		} else {
 
-			byte[] buffer = yaffs_GetTempBuffer(dev, Utils.__LINE__());
+			byte[] buffer = yaffs_GetTempBuffer(dev, 6 /*Utils.__LINE__()*/);
 
 			for (chunkInBlock = 0, oldChunk = block * dev.subField1.nChunksPerBlock;
 			chunkInBlock < dev.subField1.nChunksPerBlock
@@ -2569,12 +2569,12 @@ public class yaffs_guts_C
 						}
 					}
 
-					yaffs_DeleteChunk(dev, oldChunk, markNAND, Utils.__LINE__());
+					yaffs_DeleteChunk(dev, oldChunk, markNAND, 7 /*Utils.__LINE__()*/);
 
 				}
 			}
 
-			yaffs_ReleaseTempBuffer(dev, buffer, Utils.__LINE__());
+			yaffs_ReleaseTempBuffer(dev, buffer, 8 /*Utils.__LINE__()*/);
 
 
 			/* Do any required cleanups */
@@ -2851,7 +2851,7 @@ public class yaffs_guts_C
 				yaffs2.utils.Globals.portConfiguration.YBUG();
 			}
 
-			yaffs_DeleteChunk(dev, chunkInNAND, true, Utils.__LINE__());
+			yaffs_DeleteChunk(dev, chunkInNAND, true, 9 /*Utils.__LINE__()*/);
 			return Guts_H.YAFFS_OK;
 		}
 
@@ -2924,14 +2924,14 @@ public class yaffs_guts_C
 					 * Delete the old one and drop through to update the tnode
 					 */
 					yaffs_DeleteChunk(dev, existingChunk, true,
-							Utils.__LINE__());
+							10 /*Utils.__LINE__()*/);
 				} else {
 					/* Backward scanning or we want to use the existing one
 					 * Use existing.
 					 * Delete the new one and return early so that the tnode isn't changed
 					 */
 					yaffs_DeleteChunk(dev, chunkInNAND, true,
-							Utils.__LINE__());
+							11 /*Utils.__LINE__()*/);
 					return Guts_H.YAFFS_OK;
 				}
 			}
@@ -3063,7 +3063,7 @@ public class yaffs_guts_C
 			yaffs_PutChunkIntoFile(in, chunkInInode, newChunkId, 0);
 
 			if (prevChunkId >= 0) {
-				yaffs_DeleteChunk(dev, prevChunkId, true, Utils.__LINE__());
+				yaffs_DeleteChunk(dev, prevChunkId, true, 12 /*Utils.__LINE__()*/);
 
 			}
 
@@ -3100,7 +3100,7 @@ public class yaffs_guts_C
 
 			yaffs_CheckGarbageCollection(dev);
 
-			buffer = yaffs_GetTempBuffer(in.myDev, Utils.__LINE__());
+			buffer = yaffs_GetTempBuffer(in.myDev, 13 /*Utils.__LINE__()*/);
 			oh = /*(yaffs_ObjectHeader *) buffer*/ new yaffs_ObjectHeader(buffer,0);
 
 			prevChunkId = in.chunkId;
@@ -3207,7 +3207,7 @@ public class yaffs_guts_C
 
 				if (prevChunkId >= 0) {
 					yaffs_DeleteChunk(dev, prevChunkId, true,
-							Utils.__LINE__());
+							14 /*Utils.__LINE__()*/);
 				}
 
 				if(!yaffs_ObjectHasCachedWriteData(in))
@@ -3227,7 +3227,7 @@ public class yaffs_guts_C
 		}
 
 		if (buffer != null)
-			yaffs_ReleaseTempBuffer(dev, buffer, Utils.__LINE__());
+			yaffs_ReleaseTempBuffer(dev, buffer, 15 /*Utils.__LINE__()*/);
 
 		return retVal;
 	}
@@ -4076,7 +4076,7 @@ public class yaffs_guts_C
 					/* Read into the local buffer then copy..*/
 
 					/*__u8 **/ byte[] localBuffer =
-						yaffs_GetTempBuffer(dev, Utils.__LINE__());
+						yaffs_GetTempBuffer(dev, 17 /*Utils.__LINE__()*/);
 					final int localBufferIndex = 0;
 					yaffs_ReadChunkDataFromObject(in, chunk,
 							localBuffer, localBufferIndex);
@@ -4089,7 +4089,7 @@ public class yaffs_guts_C
 //					yfsd_LockYAFFS(TRUE);
 //					#endif
 					yaffs_ReleaseTempBuffer(dev, localBuffer,
-							Utils.__LINE__());
+							18 /*Utils.__LINE__()*/);
 				}
 
 			} else {
@@ -4246,7 +4246,7 @@ public class yaffs_guts_C
 					 */
 
 					/*__u8 **/ byte[] localBuffer =
-						yaffs_GetTempBuffer(dev, Utils.__LINE__());
+						yaffs_GetTempBuffer(dev, 19 /*Utils.__LINE__()*/);
 					final int localBufferIndex = 0;
 
 					yaffs_ReadChunkDataFromObject(in, chunk,
@@ -4268,7 +4268,7 @@ public class yaffs_guts_C
 								false);
 
 					yaffs_ReleaseTempBuffer(dev, localBuffer,
-							Utils.__LINE__());
+							20 /*Utils.__LINE__()*/);
 
 				}
 
@@ -4359,7 +4359,7 @@ public class yaffs_guts_C
 							PrimitiveWrapperFactory.get(chunkId), PrimitiveWrapperFactory.get(i));
 				} else {
 					in.nDataChunks--;
-					yaffs_DeleteChunk(dev, chunkId, true, Utils.__LINE__());
+					yaffs_DeleteChunk(dev, chunkId, true, 21 /*Utils.__LINE__()*/);
 				}
 			}
 		}
@@ -4401,7 +4401,7 @@ public class yaffs_guts_C
 			if (newSizeOfPartialChunk != 0) {
 				int lastChunk = 1 + newFullChunks;
 
-				/*__u8 **/ byte[] localBuffer = yaffs_GetTempBuffer(dev, Utils.__LINE__());
+				/*__u8 **/ byte[] localBuffer = yaffs_GetTempBuffer(dev, 22 /*Utils.__LINE__()*/);
 				final int localBufferIndex = 0;
 
 				/* Got to read and rewrite the last chunk with its new size and zero pad */
@@ -4414,7 +4414,7 @@ public class yaffs_guts_C
 				yaffs_WriteChunkDataToObject(in, lastChunk, localBuffer, localBufferIndex,
 						newSizeOfPartialChunk, true);
 
-				yaffs_ReleaseTempBuffer(dev, localBuffer, Utils.__LINE__());
+				yaffs_ReleaseTempBuffer(dev, localBuffer, 23 /*Utils.__LINE__()*/);
 			}
 
 			in.variant.fileVariant().fileSize = newSize;
@@ -4496,7 +4496,7 @@ public class yaffs_guts_C
 		}
 
 		yaffs_RemoveObjectFromDirectory(in);
-		yaffs_DeleteChunk(in.myDev, in.chunkId, true, Utils.__LINE__());
+		yaffs_DeleteChunk(in.myDev, in.chunkId, true, 24 /*Utils.__LINE__()*/);
 		in.chunkId = -1;
 
 		yaffs_FreeObject(in);
@@ -4834,7 +4834,7 @@ public class yaffs_guts_C
 				("yaffs_Scan starts  intstartblk %d intendblk %d..." + ydirectenv.TENDSTR),
 				PrimitiveWrapperFactory.get(dev.subField2.internalStartBlock), PrimitiveWrapperFactory.get(dev.subField2.internalEndBlock));
 
-		chunkData = yaffs_GetTempBuffer(dev, Utils.__LINE__());
+		chunkData = yaffs_GetTempBuffer(dev, 25 /*Utils.__LINE__()*/);
 //		chunkDataIndex = 0;
 
 		dev.sequenceNumber = Guts_H.YAFFS_LOWEST_SEQUENCE_NUMBER;
@@ -5090,7 +5090,7 @@ public class yaffs_guts_C
 			}
 		}
 
-		yaffs_ReleaseTempBuffer(dev, chunkData, Utils.__LINE__());
+		yaffs_ReleaseTempBuffer(dev, chunkData, 26 /*Utils.__LINE__()*/);
 
 		yportenv.T(yportenv.YAFFS_TRACE_SCAN, (("yaffs_Scan ends" + ydirectenv.TENDSTR)));
 
@@ -5149,12 +5149,12 @@ public class yaffs_guts_C
 				/* Use new one - destroy the exisiting one */
 				yaffs_DeleteChunk(dev,
 						in.chunkId,
-						true, Utils.__LINE__());
+						true, 27 /*Utils.__LINE__()*/);
 				in.valid = false;
 			} else {
 				/* Use existing - destroy this one. */
 				yaffs_DeleteChunk(dev, chunk, true,
-						Utils.__LINE__());
+						28 /*Utils.__LINE__()*/);
 			}
 		}
 
@@ -5325,7 +5325,7 @@ public class yaffs_guts_C
 
 		if(in.lazyLoaded){
 			in.lazyLoaded = false;
-			chunkData = yaffs_GetTempBuffer(dev, Utils.__LINE__());
+			chunkData = yaffs_GetTempBuffer(dev, 29 /*Utils.__LINE__()*/);
 			chunkDataIndex = 0;
 
 			result = yaffs_nand_C.yaffs_ReadChunkWithTagsFromNAND(dev,in.chunkId,chunkData,chunkDataIndex,tags);
@@ -5357,7 +5357,7 @@ public class yaffs_guts_C
 				in.variant.symLinkVariant().aliasIndex = 0;
 			}
 
-			yaffs_ReleaseTempBuffer(dev,chunkData, Utils.__LINE__());
+			yaffs_ReleaseTempBuffer(dev,chunkData, 30 /*Utils.__LINE__()*/);
 		}
 	}
 
@@ -5429,7 +5429,7 @@ public class yaffs_guts_C
 			return Guts_H.YAFFS_FAIL;
 		}
 
-		chunkData = yaffs_GetTempBuffer(dev, Utils.__LINE__());
+		chunkData = yaffs_GetTempBuffer(dev, 31 /*Utils.__LINE__()*/);
 		//chunkDataIndex = 0; XXX
 
 		/* Scan all the blocks to determine their state */
@@ -5667,7 +5667,7 @@ public class yaffs_guts_C
 
 					} else {
 						/* This chunk has been invalidated by a resize, so delete */
-						yaffs_DeleteChunk(dev, chunk, true, Utils.__LINE__());
+						yaffs_DeleteChunk(dev, chunk, true, 32 /*Utils.__LINE__()*/);
 
 					}
 				} else {
@@ -5799,7 +5799,7 @@ public class yaffs_guts_C
 
 			}
 			/* Use existing - destroy this one. */
-			yaffs_DeleteChunk(dev, chunk, true, Utils.__LINE__());
+			yaffs_DeleteChunk(dev, chunk, true, 34 /*Utils.__LINE__()*/);
 
 		}
 
@@ -6047,7 +6047,7 @@ public class yaffs_guts_C
 			}
 		}
 
-		yaffs_ReleaseTempBuffer(dev, chunkData, Utils.__LINE__());
+		yaffs_ReleaseTempBuffer(dev, chunkData, 35 /*Utils.__LINE__()*/);
 
 		yportenv.T(yportenv.YAFFS_TRACE_SCAN, (("yaffs_ScanBackwards ends" + ydirectenv.TENDSTR)));
 
@@ -6246,7 +6246,7 @@ public class yaffs_guts_C
 //		#endif
 		else {
 			boolean result;
-			/*__u8 **/ byte[] buffer = yaffs_GetTempBuffer(obj.myDev, Utils.__LINE__());
+			/*__u8 **/ byte[] buffer = yaffs_GetTempBuffer(obj.myDev, 36 /*Utils.__LINE__()*/);
 			final int bufferIndex = 0;
 
 			yaffs_ObjectHeader oh = /*(yaffs_ObjectHeader) buffer*/ 
@@ -6261,7 +6261,7 @@ public class yaffs_guts_C
 			}
 			ydirectenv.yaffs_strncpy(name, nameIndex, oh.name(), oh.nameIndex(), buffSize - 1);
 
-			yaffs_ReleaseTempBuffer(obj.myDev, buffer, Utils.__LINE__());
+			yaffs_ReleaseTempBuffer(obj.myDev, buffer, 37 /*Utils.__LINE__()*/);
 		}
 
 		return ydirectenv.yaffs_strlen(name, nameIndex);
