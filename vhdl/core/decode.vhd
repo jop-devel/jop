@@ -29,7 +29,8 @@
 --	2004-10-08	moved bsy/pcwait from decode to fetch
 --	2006-01-12	new ar for local memory addressing: star, ldmi, stmi
 --				stioa, stiod, ldiod removed
---	2006-08-31	use addr_width for signal dir
+--	2007-08-31	use addr_width for signal dir
+--	2007-09-01	use ram_width from jop_config instead of parameter
 --
 
 
@@ -37,10 +38,11 @@ library ieee ;
 use ieee.std_logic_1164.all ;
 use ieee.numeric_std.all ;
 
+use work.jop_config.all;
+
 entity decode is
 generic (
 	i_width		: integer;		-- instruction width
-	addr_width	: integer;		-- address bits of internal ram (sp,...)
 	exta_width	: integer		-- address bits of internal io (or 5/4)
 );
 
@@ -57,7 +59,7 @@ port (
 	ext_addr	: out std_logic_vector(exta_width-1 downto 0);
 	rd, wr		: out std_logic;
 
-	dir			: out std_logic_vector(addr_width-1 downto 0);
+	dir			: out std_logic_vector(ram_width-1 downto 0);
 
 	sel_sub		: out std_logic;						-- 0..add, 1..sub
 	sel_amux		: out std_logic;						-- 0..sum, 1..lmux
@@ -164,7 +166,7 @@ begin
 
 -- select for rd/wr address muxes
 
-	dir <= std_logic_vector(to_unsigned(0, addr_width-5)) & ir(4 downto 0);
+	dir <= std_logic_vector(to_unsigned(0, ram_width-5)) & ir(4 downto 0);
 
 	sel_rda <= "110";					-- sp
 	if (ir(7 downto 3)="11101") then	-- ld, ldn, ldmi
@@ -175,7 +177,7 @@ begin
 	end if;
 	if (ir(7 downto 5)="110") then		-- ldi
 		sel_rda <= "111";
-		dir <= std_logic_vector(to_unsigned(1, addr_width-5)) & 
+		dir <= std_logic_vector(to_unsigned(1, ram_width-5)) & 
 			ir(4 downto 0);	-- addr > 31 constants
 	end if;
 

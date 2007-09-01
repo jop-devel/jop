@@ -35,6 +35,7 @@
 --	2004-10-08	mul operands from a and b, single instruction
 --	2006-01-12	new ar for local memory addressing
 --	2006-12-29	changed rom size to 2K
+--	2007-09-01	use ram_width from jop_config instead of parameter
 --
 
 
@@ -43,6 +44,7 @@ use ieee.std_logic_1164.all ;
 use ieee.numeric_std.all ;
 
 use work.jop_types.all;
+use work.jop_config.all;
 
 entity core is
 
@@ -50,7 +52,6 @@ generic (
 	jpc_width	: integer;			-- address bits of java bytecode pc
 
 	width		: integer := 32;	-- one data word
-	addr_width	: integer := 8;		-- address bits of internal ram (sp,...)
 	exta_width	: integer := 3;		-- address bits of internal io (or 5/4)
 	pc_width	: integer := 11;	-- address bits of internal instruction rom (upper half)
 	i_width		: integer := 8		-- instruction width
@@ -132,12 +133,12 @@ port (
 end component;
 
 component stack is
-generic (width : integer; addr_width : integer; jpc_width : integer);
+generic (width : integer; jpc_width : integer);
 port (
 	clk, reset	: in std_logic;
 
 	din			: in std_logic_vector(width-1 downto 0);
-	dir			: in std_logic_vector(addr_width-1 downto 0);
+	dir			: in std_logic_vector(ram_width-1 downto 0);
 	opd			: in std_logic_vector(15 downto 0);		-- index for vp load opd
 	jpc			: in std_logic_vector(jpc_width-1 downto 0);	-- jpc read
 
@@ -174,7 +175,7 @@ port (
 end component;
 
 component decode is
-generic (i_width : integer; addr_width : integer; exta_width : integer);
+generic (i_width : integer; exta_width : integer);
 port (
 	clk, reset	: in std_logic;
 
@@ -188,7 +189,7 @@ port (
 	ext_addr	: out std_logic_vector(exta_width-1 downto 0);
 	rd, wr		: out std_logic;
 
-	dir			: out std_logic_vector(addr_width-1 downto 0);
+	dir			: out std_logic_vector(ram_width-1 downto 0);
 
 	sel_sub		: out std_logic;						-- 0..add, 1..sub
 	sel_amux		: out std_logic;						-- 0..sum, 1..lmux
@@ -237,7 +238,7 @@ end component;
 --
 -- stack connections
 --
-	signal dir			: std_logic_vector(addr_width-1 downto 0);
+	signal dir			: std_logic_vector(ram_width-1 downto 0);
 
 	signal sel_sub		: std_logic;						-- 0..add, 1..sub
 	signal sel_amux		: std_logic;						-- 0..sum, 1..lmux
@@ -281,7 +282,7 @@ begin
 		port map (clk, reset, jfetch, jopdfetch,
 			br, bsy, jpaddr, instr);
 
-	cmp_stk: stack generic map (width, addr_width, jpc_width)
+	cmp_stk: stack generic map (width, jpc_width)
 		port map (clk, reset, din, dir, opd, jpc_out,
 			sel_sub, sel_amux, ena_a,
 			sel_bmux, sel_log, sel_shf, sel_lmux, sel_imux, sel_rmux, sel_smux,
@@ -290,7 +291,7 @@ begin
 			sp_ov,
 			stk_zf, stk_nf, stk_eq, stk_lt, stk_aout, stk_bout);
 
-	cmp_dec: decode generic map (i_width, addr_width, exta_width)
+	cmp_dec: decode generic map (i_width, exta_width)
 		port map (clk, reset, instr, stk_zf, stk_nf, stk_eq, stk_lt,
 			br, jbr,
 			ext_addr, rd, wr,

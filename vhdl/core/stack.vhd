@@ -18,6 +18,7 @@
 --	2004-10-07	new alu selection with sel_sub, sel_amux and ena_a
 --	2006-01-12	new ar for local memory addressing, sp and vp MSB fix at '1'
 --	2007-08-31	change stack addressing without wrapping, generate sp_ov on max_stack-8
+--	2007-09-01	use ram_width from jop_config instead of parameter
 --
 
 
@@ -25,18 +26,19 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+use work.jop_config.all;
+
 entity stack is
 
 generic (
 	width		: integer := 32;	-- one data word
-	addr_width	: integer := 8;		-- address bits of internal ram (sp,...)
 	jpc_width	: integer := 10		-- address bits of java byte code pc
 );
 port (
 	clk, reset	: in std_logic;
 
 	din			: in std_logic_vector(width-1 downto 0);
-	dir			: in std_logic_vector(addr_width-1 downto 0);
+	dir			: in std_logic_vector(ram_width-1 downto 0);
 	opd			: in std_logic_vector(15 downto 0);		-- index for vp load opd
 	jpc			: in std_logic_vector(jpc_width-1 downto 0);	-- jpc read
 
@@ -98,8 +100,8 @@ component ram is
 generic (width : integer; addr_width : integer);
 port (
 	data		: in std_logic_vector(width-1 downto 0);
-	wraddress	: in std_logic_vector(addr_width-1 downto 0);
-	rdaddress	: in std_logic_vector(addr_width-1 downto 0);
+	wraddress	: in std_logic_vector(ram_width-1 downto 0);
+	rdaddress	: in std_logic_vector(ram_width-1 downto 0);
 	wren		: in std_logic;
 	clock		: in std_logic;
 
@@ -110,10 +112,10 @@ end component;
 	signal a, b			: std_logic_vector(width-1 downto 0);
 	signal ram_dout		: std_logic_vector(width-1 downto 0);
 
-	signal sp, spp, spm	: std_logic_vector(addr_width-1 downto 0);
+	signal sp, spp, spm	: std_logic_vector(ram_width-1 downto 0);
 	signal vp0, vp1, vp2, vp3
-						: std_logic_vector(addr_width-1 downto 0);
-	signal ar			: std_logic_vector(addr_width-1 downto 0);
+						: std_logic_vector(ram_width-1 downto 0);
+	signal ar			: std_logic_vector(ram_width-1 downto 0);
 
 	signal sum, diff, temp	: std_logic_vector(width-1 downto 0);
 	signal sout			: std_logic_vector(width-1 downto 0);
@@ -127,16 +129,16 @@ end component;
 	signal mmux		: std_logic_vector(width-1 downto 0);
 
 	signal rmux		: std_logic_vector(jpc_width-1 downto 0);
-	signal smux		: std_logic_vector(addr_width-1 downto 0);
-	signal vpadd	: std_logic_vector(addr_width-1 downto 0);
-	signal wraddr	: std_logic_vector(addr_width-1 downto 0);
-	signal rdaddr	: std_logic_vector(addr_width-1 downto 0);
+	signal smux		: std_logic_vector(ram_width-1 downto 0);
+	signal vpadd	: std_logic_vector(ram_width-1 downto 0);
+	signal wraddr	: std_logic_vector(ram_width-1 downto 0);
+	signal rdaddr	: std_logic_vector(ram_width-1 downto 0);
 	signal ci : std_logic_vector(width-1 downto 0);
 begin
 
 	cmp_shf: shift generic map (width) port map (b, a(4 downto 0), sel_shf, sout);
 
-	cmp_ram: ram generic map(width, addr_width)
+	cmp_ram: ram generic map(width, ram_width)
 			port map(mmux, wraddr, rdaddr, wr_ena, clk, ram_dout);
 
 
@@ -313,7 +315,7 @@ begin
 		when "10" =>
 			smux <= spp;
 		when "11" =>
-			smux <= a(addr_width-1 downto 0);
+			smux <= a(ram_width-1 downto 0);
 		when others =>
 			null;
 	end case;
@@ -375,16 +377,16 @@ begin
 	if (reset='1') then
 		-- a reasonable start value for the stack addressing
 		-- will be overwritten by the first microcode instructions
-		sp <= std_logic_vector(to_unsigned(128, addr_width));		
-		spp <= std_logic_vector(to_unsigned(129, addr_width));
-		spm <= std_logic_vector(to_unsigned(127, addr_width));
+		sp <= std_logic_vector(to_unsigned(128, ram_width));		
+		spp <= std_logic_vector(to_unsigned(129, ram_width));
+		spm <= std_logic_vector(to_unsigned(127, ram_width));
 		sp_ov <= '0';
-		vp0 <= std_logic_vector(to_unsigned(0, addr_width));
-		vp1 <= std_logic_vector(to_unsigned(0, addr_width));
-		vp2 <= std_logic_vector(to_unsigned(0, addr_width));
-		vp3 <= std_logic_vector(to_unsigned(0, addr_width));
+		vp0 <= std_logic_vector(to_unsigned(0, ram_width));
+		vp1 <= std_logic_vector(to_unsigned(0, ram_width));
+		vp2 <= std_logic_vector(to_unsigned(0, ram_width));
+		vp3 <= std_logic_vector(to_unsigned(0, ram_width));
 		ar <= (others => '0');
-		vpadd <= std_logic_vector(to_unsigned(0, addr_width));
+		vpadd <= std_logic_vector(to_unsigned(0, ram_width));
 		immval <= std_logic_vector(to_unsigned(0, width));
 		opddly <= std_logic_vector(to_unsigned(0, 16));
 	elsif rising_edge(clk) then
@@ -393,19 +395,19 @@ begin
 		sp <= smux;
 		-- Value depends on code in JVMHelp.exception() and how much
 		-- usefull information can be printed out
-		if sp=std_logic_vector(to_unsigned(2**addr_width-1-8, addr_width)) then
+		if sp=std_logic_vector(to_unsigned(2**ram_width-1-8, ram_width)) then
 			sp_ov <= '1';
 		end if;
 		if (ena_vp = '1') then
-			vp0 <= a(addr_width-1 downto 0);
-			vp1 <= std_logic_vector(unsigned(a(addr_width-1 downto 0)) + 1);
-			vp2 <= std_logic_vector(unsigned(a(addr_width-1 downto 0)) + 2);
-			vp3 <= std_logic_vector(unsigned(a(addr_width-1 downto 0)) + 3);
+			vp0 <= a(ram_width-1 downto 0);
+			vp1 <= std_logic_vector(unsigned(a(ram_width-1 downto 0)) + 1);
+			vp2 <= std_logic_vector(unsigned(a(ram_width-1 downto 0)) + 2);
+			vp3 <= std_logic_vector(unsigned(a(ram_width-1 downto 0)) + 3);
 		end if;
 		if ena_ar = '1' then
-			ar <= a(addr_width-1 downto 0);
+			ar <= a(ram_width-1 downto 0);
 		end if;
-		vpadd <= std_logic_vector(unsigned(vp0(addr_width-1 downto 0)) + unsigned(opd(6 downto 0)));
+		vpadd <= std_logic_vector(unsigned(vp0(ram_width-1 downto 0)) + unsigned(opd(6 downto 0)));
 		opddly <= opd;
 		immval <= imux;
 	end if;
