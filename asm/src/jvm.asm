@@ -93,6 +93,7 @@
 //	2007-06-17	new instruction jopsys_memcpy, jopsys_cond_move disabled
 //				speed-up ext2int and int2ext
 //	2007-08-31	non wrapping stack pointer, version at new address (62)
+//				start stack at 64 instead of 128
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -107,7 +108,7 @@ version		= 20070831
 //
 //	start of stack area in the on-chip RAM
 //
-stack_init	= 128
+stack_init	= 64
 
 //
 //	io address are negativ memory addresses

@@ -37,6 +37,7 @@ public class Const {
 	 * <p>
 	 * Change also (dependent on):<ul>
 	 * 	<li>RAM_LEN in Jopa.java</li>
+	 * 	<li>addr_width in ???</li>
 	 * </ul>
 	 * <p>
 	 * Used in @link RtThreadImpl
@@ -48,7 +49,7 @@ public class Const {
 	 * Offset of the real stack in the on-chip RAM. Is set in
 	 * <code>jvm.asm</code>.
 	 */
-	public static final int STACK_OFF = 128;
+	public static final int STACK_OFF = 64;
 	
 
 	/**
