@@ -113,7 +113,7 @@ public class Simulation_yaffscfg2k_C implements yaffs2.port.yaffscfg2k_C
 //	#include "yaffs_nandemul2k.h"
 
 //	public static yaffs_Device ramDev = new yaffs_Device();
-	public static yaffs_Device bootDev = DebugDevice.createDebugDevice(); // new yaffs_Device(); 
+	public static yaffs_Device bootDev = DebugDevice.getDebugDevice(); // new yaffs_Device(); 
 //	public static yaffs_Device flashDev = new yaffs_Device();
 //	public static yaffs_Device ram2kDev = new yaffs_Device();
 

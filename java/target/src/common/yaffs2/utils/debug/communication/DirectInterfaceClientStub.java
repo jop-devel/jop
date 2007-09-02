@@ -5,6 +5,7 @@ import java.io.OutputStream;
 
 import yaffs2.port.yaffs_Device;
 import yaffs2.port.yaffs_Spare;
+import yaffs2.utils.UnexpectedException;
 import yaffs2.utils.Yaffs1NANDInterface;
 
 public class DirectInterfaceClientStub extends Transceiver implements Yaffs1NANDInterface
@@ -28,6 +29,14 @@ public class DirectInterfaceClientStub extends Transceiver implements Yaffs1NAND
 			byte[] data, int dataIndex, byte[] spare, int spareIndex)
 	{
 		// ignored
+		switch (command)
+		{
+			case REPLY_DONE:
+			case REPLY_READCHUNKFROMNAND:
+				break;
+			default:
+				throw new UnexpectedException();
+		}
 	}
 	
 	public boolean readChunkFromNAND(yaffs_Device dev, int chunkInNAND,
@@ -49,6 +58,7 @@ public class DirectInterfaceClientStub extends Transceiver implements Yaffs1NAND
 		send(CMD_WRITECHUNKTONAND, dev.subField1.genericDevice,
 				dev.subField1.nDataBytesPerChunk, chunkInNAND, -1, data, dataIndex, 
 				spare == null ? null : spare.serialized, spare == null ? 0 : spare.offset);
+		receive(false, null, 0, null, 0);
 		return true;
 	}
 
@@ -56,13 +66,15 @@ public class DirectInterfaceClientStub extends Transceiver implements Yaffs1NAND
 	{
 		send(CMD_ERASEBLOCKINNAND, dev.subField1.genericDevice,
 				dev.subField1.nDataBytesPerChunk, -1, blockInNAND, null, 0, null, 0);
+		receive(false, null, 0, null, 0);
 		return true;
 	}
 
 	public boolean initialiseNAND(yaffs_Device dev)
 	{
 		send(CMD_INITIALISENAND, dev.subField1.genericDevice,
-				dev.subField1.nDataBytesPerChunk, -1, -1, null, 0, null, 0); 
+				dev.subField1.nDataBytesPerChunk, -1, -1, null, 0, null, 0);
+		receive(false, null, 0, null, 0);
 		return true;
 	}
 

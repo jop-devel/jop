@@ -1,12 +1,10 @@
 package yaffs2.utils.debug.pc;
 
 import java.io.*;
-import java.util.*;
 import javax.comm.*;
 
 public class SerialInterface /* implements Runnable, SerialPortEventListener */ {
     CommPortIdentifier portId;
-    Enumeration portList;
 
     SerialPort serialPort;
 //    Thread readThread;

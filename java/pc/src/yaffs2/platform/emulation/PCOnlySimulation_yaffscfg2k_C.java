@@ -1,7 +1,5 @@
 package yaffs2.platform.emulation;
 
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
 import java.io.*;
 
 import yaffs2.port.*;
@@ -10,7 +8,6 @@ import yaffs2.utils.UnexpectedException;
 import yaffs2.utils.Yaffs1NANDInterface;
 import yaffs2.utils.debug.communication.DebugDevice;
 import yaffs2.utils.debug.communication.DirectInterfaceClientStub;
-import yaffs2.utils.debug.pc.SerialInterface;
 import yaffs2.utils.Utils;
 
 public class PCOnlySimulation_yaffscfg2k_C implements yaffs2.port.yaffscfg2k_C
@@ -117,7 +114,7 @@ public class PCOnlySimulation_yaffscfg2k_C implements yaffs2.port.yaffscfg2k_C
 //	#include "yaffs_nandemul2k.h"
 
 //	public static yaffs_Device ramDev = new yaffs_Device();
-	public static yaffs_Device bootDev = DebugDevice.createDebugDevice(); // new yaffs_Device(); 
+	public static yaffs_Device bootDev = DebugDevice.getDebugDevice(); // new yaffs_Device(); 
 //	public static yaffs_Device flashDev = new yaffs_Device();
 //	public static yaffs_Device ram2kDev = new yaffs_Device();
 

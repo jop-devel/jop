@@ -37,7 +37,7 @@ public class ECC_C
 	 */
 
 	static final String yaffs_ecc_c_version =
-	    "$Id: ECC_C.java,v 1.3 2007/07/01 01:29:50 alexander.dejaco Exp $";
+	    "$Id: ECC_C.java,v 1.4 2007/09/02 20:58:38 peter.hilber Exp $";
 
 	static final byte[] column_parity_table = {
 		(byte)0x00, (byte)0x55, (byte)0x59, (byte)0x0c, (byte)0x65, (byte)0x30, (byte)0x3c, (byte)0x69,
@@ -82,7 +82,7 @@ public class ECC_C
 		while (x != 0) {
 			if ((x & 1) != 0)
 				r++;
-			x >>>= 1;
+			x = (byte)((x & 0xff) >>> 1);
 		}
 		return r;
 	}
@@ -99,7 +99,7 @@ public class ECC_C
 	}
 
 	/* Calculate the ECC for a 256-byte block of data */
-	static void yaffs_ECCCalculate(byte[] data, int dataIndex, 
+	public static void yaffs_ECCCalculate(byte[] data, int dataIndex, 
 			byte[] ecc, int eccIndex)
 	{
 		int i;
@@ -173,7 +173,7 @@ public class ECC_C
 
 	/* Correct the ECC on a 256 byte block of data */
 
-	static int yaffs_ECCCorrect(byte[] data, int dataIndex, 
+	public static int yaffs_ECCCorrect(byte[] data, int dataIndex, 
 			byte[] read_ecc, int read_eccIndex,
 			byte[] test_ecc, int test_eccIndex)
 	{
@@ -256,7 +256,7 @@ public class ECC_C
 	/*
 	 * ECCxxxOther does ECC calcs on arbitrary n bytes of data
 	 */
-	static void yaffs_ECCCalculateOther(SerializableObject data/*, int nBytes*/ ,
+	public static void yaffs_ECCCalculateOther(SerializableObject data/*, int nBytes*/ ,
 				     yaffs_ECCOther eccOther)
 	{
 		int nBytes = data.getSerializedLength();	// PORT
@@ -284,7 +284,7 @@ public class ECC_C
 		eccOther.setlineParityPrime(line_parity_prime);
 	}
 
-	static int yaffs_ECCCorrectOther(SerializableObject data/*, int nBytes*/ ,
+	public static int yaffs_ECCCorrectOther(SerializableObject data/*, int nBytes*/ ,
 				  yaffs_ECCOther read_ecc,
 				  yaffs_ECCOther test_ecc)
 	{

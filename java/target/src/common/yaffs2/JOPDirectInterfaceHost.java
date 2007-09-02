@@ -1,9 +1,7 @@
 package yaffs2;
 
-import yaffs2.platform.jop.InternalNANDYaffs1NANDInterface;
-import yaffs2.port.yaffs_Device;
-import yaffs2.port.yaffs_Spare;
-import yaffs2.utils.debug.communication.DebugDevice;
+import yaffs2.platform.jop.InternalNANDYaffs1NANDInterfacePrimitives;
+import yaffs2.utils.debug.communication.DebugSettings;
 import yaffs2.utils.debug.communication.DirectInterfaceServerStub;
 
 public class JOPDirectInterfaceHost
@@ -14,14 +12,12 @@ public class JOPDirectInterfaceHost
 	 */
 	public static void main(String[] args)
 	{
-		yaffs_Device dev = DebugDevice.createDebugDevice();
-		
-		new DirectInterfaceServerStub(dev, 
-			new InternalNANDYaffs1NANDInterface(),
+		new DirectInterfaceServerStub( 
+			InternalNANDYaffs1NANDInterfacePrimitives.instance,
 			System.in,
 			System.out)
-		.receive(true, new byte[dev.subField1.nDataBytesPerChunk], 
-				0, new yaffs_Spare());			
+		.receive(true, new byte[DebugSettings.NDATABYTESPERCHUNK], 
+				0, new byte[DebugSettings.SPARE_SERIALIZED_LENGTH], 0);			
 	}
 
 }

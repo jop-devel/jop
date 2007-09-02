@@ -18,7 +18,7 @@ public class DirectInterfaceHost
 	{
 		SerialInterface serialInterface = new SerialInterface("COM1");
 		
-		final yaffs_Device dev = DebugDevice.createDebugDevice();
+		final yaffs_Device dev = DebugDevice.getDebugDevice();
 		
 		new DirectInterfaceServerStub(dev, port_fileem2k_C.instance, 
 				new BufferedInputStream(serialInterface.getInputStream()),

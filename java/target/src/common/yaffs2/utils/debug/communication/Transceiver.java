@@ -14,7 +14,8 @@ public abstract class Transceiver
 	static final int CMD_ERASEBLOCKINNAND = 3;
 	static final int CMD_INITIALISENAND = 4;
 
-	static final int REPLY_READCHUNKFROMNAND = 5;	
+	static final int REPLY_READCHUNKFROMNAND = 5;
+	static final int REPLY_DONE = 6;
 
 
 	static final byte[] START_DELIMITER = { 0x1 };
@@ -76,10 +77,15 @@ public abstract class Transceiver
 		{
 			int ch; 
 
+			char[] log = new char[200];
+			int logIndex = 0;
+			
 			do
-			{
+			{								
 				while ((ch = rx.read()) != -1 && ch != START_DELIMITER[0])
 				{
+					if (logIndex < 200)
+						log[logIndex++] = (char)ch;
 					System.out.write(ch);
 				}
 

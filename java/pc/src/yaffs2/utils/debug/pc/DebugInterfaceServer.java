@@ -20,7 +20,7 @@ public class DebugInterfaceServer
 		ServerSocket serverSocket = new ServerSocket(7777, 0, InetAddress.getByName("127.0.0.1"));	
 		Socket socket = serverSocket.accept();
 		
-		yaffs_Device dev = DebugDevice.createDebugDevice();
+		yaffs_Device dev = DebugDevice.getDebugDevice();
 		byte[] spare = new byte[DebugSettings.SPARE_SERIALIZED_LENGTH];
 		
 		new DirectInterfaceServerStub(new Yaffs1NANDInterfacePrimitivesWrapper(

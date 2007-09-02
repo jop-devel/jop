@@ -29,9 +29,13 @@ public class DirectInterfaceServerStub extends Transceiver
 		{
 			case CMD_ERASEBLOCKINNAND:
 				implementation.eraseBlockInNAND(deviceGenericDevice, devicenDataBytesPerChunk, blockInNAND);
+				send(REPLY_DONE, deviceGenericDevice, devicenDataBytesPerChunk,
+						0, 0, null, 0, null, 0);
 				break;
 			case CMD_INITIALISENAND:
 				implementation.initialiseNAND(deviceGenericDevice, devicenDataBytesPerChunk);
+				send(REPLY_DONE, deviceGenericDevice, devicenDataBytesPerChunk,
+						0, 0, null, 0, null, 0);
 				break;
 			case CMD_READCHUNKFROMNAND:
 				implementation.readChunkFromNAND(deviceGenericDevice, devicenDataBytesPerChunk, 
@@ -39,10 +43,13 @@ public class DirectInterfaceServerStub extends Transceiver
 				send(REPLY_READCHUNKFROMNAND, deviceGenericDevice, devicenDataBytesPerChunk, 
 						chunkInNAND, blockInNAND, data, dataIndex, 
 						spare, spareIndex);
+//				System.out.println("Reply complete."); // XXX
 				break;
 			case CMD_WRITECHUNKTONAND:
 				implementation.writeChunkToNAND(deviceGenericDevice, devicenDataBytesPerChunk, 
 						chunkInNAND, data, dataIndex, spare, spareIndex);
+				send(REPLY_DONE, deviceGenericDevice, devicenDataBytesPerChunk,
+						0, 0, null, 0, null, 0);
 				break;
 			default:
 				throw new UnexpectedException();

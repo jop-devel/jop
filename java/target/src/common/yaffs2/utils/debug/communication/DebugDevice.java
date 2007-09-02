@@ -4,7 +4,9 @@ import yaffs2.port.yaffs_Device;
 
 public class DebugDevice
 {
-	public static yaffs_Device createDebugDevice()
+	protected static yaffs_Device dev = createDebugDevice();
+	
+	protected static yaffs_Device createDebugDevice()
 	{
 		yaffs_Device bootDev = new yaffs_Device();
 		
@@ -18,6 +20,11 @@ public class DebugDevice
 		bootDev.subField1.nShortOpCaches = 10; // Use caches
 		bootDev.subField1.genericDevice = /*(void *)*/ DebugSettings.GENERIC_DEVICE;	// Used to identify the device in fstat.
 		
-		return bootDev;
+		return bootDev;		
+	}
+	
+	public static yaffs_Device getDebugDevice()
+	{
+		return dev;
 	}
 }
