@@ -94,6 +94,7 @@
 //				speed-up ext2int and int2ext
 //	2007-08-31	non wrapping stack pointer, version at new address (62)
 //				start stack at 64 instead of 128
+//	2007-09-02	new instructions for hardware floating point operation with FPU
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -134,6 +135,14 @@ usb_data	=	-95
 
 ua_rdrf		= 	2
 ua_tdre		= 	1
+
+#ifdef FPU_ATTACHED
+// assuming we've attached the FPU as IO_FPU=IO_BASE+0x70=-16
+fpu_const_a   = -16
+fpu_const_b   = -15
+fpu_const_op  = -14
+fpu_const_res = -13
+#endif
 
 
 //
@@ -866,6 +875,100 @@ imul_loop:					// plus 1 for the ldi 5... to many cycles?
 // 
 
 
+// Floating point operations in HW with FPU
+#ifdef FPU_ATTACHED
+fadd:
+		ldi fpu_const_b   // load address: FPU_B
+		stmwa             // store memory address
+		stmwd             // store memory data - b already on stack
+		wait
+		wait              // execute 1+nws
+		ldi fpu_const_a   // load address: FPU_A
+		stmwa             // store memory data
+		stmwd             // store memory data - a already on stack
+		wait
+		wait              // execute 1+nws
+		ldi 0             // load FPU_OP_ADD (data)
+		ldi fpu_const_op  // load FPU_OP (address)
+		stmwa             // store FPU_OP
+		stmwd             // store FPU_OP_ADD
+		wait
+		wait              // execute 1+nws
+		ldi fpu_const_res // load address of FPU_RES
+		stmra             // read memory
+		wait
+		wait              // execute 1+nws
+		ldmrd nxt         // read ext. mem
+
+fsub:
+		ldi fpu_const_b   // load address: FPU_B
+		stmwa             // store memory address
+		stmwd             // store memory data - b already on stack
+		wait
+		wait              // execute 1+nws
+		ldi fpu_const_a   // load address: FPU_A
+		stmwa             // store memory data
+		stmwd             // store memory data - a already on stack
+		wait
+		wait              // execute 1+nws
+		ldi 1             // load FPU_OP_ADD (data)
+		ldi fpu_const_op  // load FPU_OP (address)
+		stmwa             // store FPU_OP
+		stmwd             // store FPU_OP_ADD
+		wait
+		wait              // execute 1+nws
+		ldi fpu_const_res // load address of FPU_RES
+		stmra             // read memory
+		wait
+		wait              // execute 1+nws
+		ldmrd nxt         // read ext. mem
+
+fmul:
+		ldi fpu_const_b   // load address: FPU_B
+		stmwa             // store memory address
+		stmwd             // store memory data - b already on stack
+		wait
+		wait              // execute 1+nws
+		ldi fpu_const_a   // load address: FPU_A
+		stmwa             // store memory data
+		stmwd             // store memory data - a already on stack
+		wait
+		wait              // execute 1+nws
+		ldi 2             // load FPU_OP_ADD (data)
+		ldi fpu_const_op  // load FPU_OP (address)
+		stmwa             // store FPU_OP
+		stmwd             // store FPU_OP_ADD
+		wait
+		wait              // execute 1+nws
+		ldi fpu_const_res // load address of FPU_RES
+		stmra             // read memory
+		wait
+		wait              // execute 1+nws
+		ldmrd nxt         // read ext. mem
+
+fdiv:
+		ldi fpu_const_b   // load address: FPU_B
+		stmwa             // store memory address
+		stmwd             // store memory data - b already on stack
+		wait
+		wait              // execute 1+nws
+		ldi fpu_const_a   // load address: FPU_A
+		stmwa             // store memory data
+		stmwd             // store memory data - a already on stack
+		wait
+		wait              // execute 1+nws
+		ldi 3             // load FPU_OP_ADD (data)
+		ldi fpu_const_op  // load FPU_OP (address)
+		stmwa             // store FPU_OP
+		stmwd             // store FPU_OP_ADD
+		wait
+		wait              // execute 1+nws
+		ldi fpu_const_res // load address of FPU_RES
+		stmra             // read memory
+		wait
+		wait              // execute 1+nws
+		ldmrd nxt         // read ext. mem
+#endif
 
 
 
