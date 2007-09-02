@@ -95,7 +95,11 @@ TARGET=java/target
 TOOLS_CP=$(EXT_CP)\;$(TOOLS)/dist/lib/jop-tools.jar
 TARGET_SOURCE=$(TARGET)/src/common\;$(TARGET)/src/jdk_base\;$(TARGET)/src/jdk11\;$(TARGET)/src/rtapi\;$(TARGET_APP_SOURCE_PATH)
 TARGET_JFLAGS=-d $(TARGET)/dist/classes -sourcepath $(TARGET_SOURCE) -bootclasspath "" -extdirs "" -classpath "" -source 1.4
+GCC_PARAMS=""
 
+# uncomment this if you want floating point operations in hardware
+# ATTN: be sure to choose 'cycfpu' as QPROJ else no FPU will be available
+#GCC_PARAMS="-DFPU_ATTACHED"
 
 #
 #	application optimization with ProGuard:
@@ -224,7 +228,7 @@ pc:
 #	project.jbc fiels are used to boot from the serial line
 #
 jopser:
-	cd asm && ./jopser.bat
+	cd asm && export GCC_PARAMS=$(GCC_PARAMS) && ./jopser.bat
 	@echo $(QPROJ)
 	for target in $(QPROJ); do \
 		make qsyn -e QBT=$$target; \
@@ -239,7 +243,7 @@ jopser:
 #	project.jbc fiels are used to boot from the USB interface
 #
 jopusb:
-	cd asm && ./jopusb.bat
+	cd asm && export GCC_PARAMS=$(GCC_PARAMS) && ./jopusb.bat
 	@echo $(QPROJ)
 	for target in $(QPROJ); do \
 		make qsyn -e QBT=$$target; \
