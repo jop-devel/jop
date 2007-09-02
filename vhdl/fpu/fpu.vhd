@@ -103,8 +103,8 @@ end fpu;
 architecture rtl of fpu is
     
 
-	constant MUL_SERIAL: integer range 0 to 1 := 0; -- 0 for parallel multiplier, 1 for serial
-	constant MUL_COUNT: integer:= 11; --11 for parallel multiplier, 34 for serial
+	constant MUL_SERIAL: integer range 0 to 1 := 1; -- 0 for parallel multiplier, 1 for serial
+	constant MUL_COUNT: integer:= 34; --11 for parallel multiplier, 34 for serial
 		
 	-- Input/output registers
 	signal s_opa_i, s_opb_i : std_logic_vector(FP_WIDTH-1 downto 0);
@@ -410,9 +410,9 @@ begin
 			elsif fpu_op_i="011" then
 				s_output1 	<= post_norm_div_output;
 				s_ine_o 		<= post_norm_div_ine;		
-			elsif fpu_op_i="100" then
-				s_output1 	<= post_norm_sqrt_output;
-				s_ine_o 	<= post_norm_sqrt_ine_o;			
+--			elsif fpu_op_i="100" then
+--				s_output1 	<= post_norm_sqrt_output;
+--				s_ine_o 	<= post_norm_sqrt_ine_o;			
 			else
 				s_output1 	<= (others => '0');
 				s_ine_o 		<= '0';
