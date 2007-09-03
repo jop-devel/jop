@@ -143,6 +143,8 @@ measured before and after the creation of a set of chained objects.
 Through a log file it was verified that the number was the same. For
 the Cyclone board and JOP version 01/08/07, the number was 9723.
 Note: To obtain a logfile, make japp > myLogfile.
+\end{description}
+
 
 \subsubsection{Ifacmp}
 \begin{description}
@@ -168,4 +170,96 @@ We see there that both eq and ne conditions are produced.
 The test run Ok.
 \end{description}
 
+\subsubsection{BranchTest1}
+\begin{description}
+   \item[Purpose:]
+Test Branchs on reference comparison.
+   \item[Description:]
+The test case works by testing the following bytecodes:
+\newline If\_acmp\textless cond\textgreater, Ifnonnull, Ifnull. All
+conditions are provided(both true and false) to every variant of the
+bytecodes (i.e., eq or neq). In this way, every possibile execution
+is covered.
+  \item[Results Observed:]
+The test run Ok.
+\end{description}
+
+\subsubsection{BranchTest2}
+\begin{description}
+   \item[Purpose:]
+Test Branch on int comparison.
+   \item[Description:]
+The test case works by testing the following bytecode: \newline
+If\_icmp\textless cond\textgreater. All conditions are provided(both
+true and false) to every variant of the bytecode (i.e., eq, neq, gt,
+lt, etc). In this way, every possibile execution is covered.
+  \item[Results Observed:]
+The test run Ok.
+\end{description}
+
+
+\subsubsection{BranchTest3}
+\begin{description}
+   \item[Purpose:]
+Test Branch on int comparison with zero(if\textless
+cond\textgreater).
+   \item[Description:]
+The test case works by testing the following bytecode: \newline
+If\textless cond\textgreater. All conditions are provided(both true
+and false) to every variant of the bytecode (i.e., eq, neq, gt, lt,
+etc). In this way, every possibile execution is covered.
+  \item[Results Observed:]
+The test run Ok.
+\end{description}
+
+
+
+
+\subsubsection{ArrayTest2}
+\begin{description}
+   \item[Purpose:]
+Test arrays of references. Test array initialization, length,
+storing and loading reference values to and from arrays of
+references. Test array related features of the following bytecodes:
+arraylength, aastore.
+   \item[Description:]
+A set of arrays of related types is created, then operations are
+performed on them. By storing elements in the arrays, all cases of
+aastore are produced. As a means of verification, the elements
+stored in the array are checked in the code.
+
+   \item[Results Observed:]
+The test run Ok. Issue related to CheckCast.
+\end{description}
+
+\subsubsection{ArrayTest3}
+\begin{description}
+   \item[Purpose:]
+Test arrays of primitives. Test array initialization, length,
+storing and loading reference values to and from arrays of
+references. Test array related features of the following bytecodes:
+baload, caload, iaload, laload, saload,
+bastore,castore,iastore,lastore.
+   \item[Description:]
+A set of arrays of primitive types is created, then load and store
+operations are performed on them. By storing and loading elements
+into and from the arrays, all supported Xastore and Xaload
+instruction are exercised. As a means of verification, the elements
+stored in the array are checked in the code.
+  \item[Note:]
+The throw of NullPointerException still needs to be tested.
+   \item[Results Observed:]
+The test run Ok.
+\end{description}
+
+\subsubsection{Conversion}
+\begin{description}
+   \item[Purpose:]
+Test primitive type conversion. Bytecodes exercised: i2b, i2c, i2l,
+i2s, l2i.
+   \item[Description:]
+This testcase extends the existent Conversion testcase to include
+conversion between all the supported primitive types.
+   \item[Results Observed:]
+The test run Ok.
 \end{description}
