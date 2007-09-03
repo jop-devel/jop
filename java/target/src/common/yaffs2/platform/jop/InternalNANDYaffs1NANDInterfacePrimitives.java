@@ -46,7 +46,7 @@ public class InternalNANDYaffs1NANDInterfacePrimitives implements Yaffs1NANDInte
 		int j;
 		while(((j = Native.rdMem(0x100000)) & 0x100) != 0x100)	// wait if rdy signal is 0
 		{i++;}
-		System.out.print(msg);System.out.println(i);
+		//System.out.print(msg);System.out.println(i);
 		//Dbg.wr(msg);Dbg.hexVal(i);Dbg.wr("\n");
 		return j;
 	}
@@ -90,9 +90,13 @@ public class InternalNANDYaffs1NANDInterfacePrimitives implements Yaffs1NANDInte
 		{
 				// waitForNandReady("data written."); shall we wait before writing?
 				int column = 0, pointer = 80, addr0, addr1;
+				
+				// (chunkInNAND % (PAGES_PER_BLOCK)) address in block
+				addr0 = (chunkInNAND % 32) & 0x1f;
 
-				addr0 = 0;
-				addr1 = 0;
+				// (chunkInNAND / (PAGES_PER_BLOCK) block address
+				addr0 = (addr0 & 0x1f) | (((chunkInNAND / 32) << 5) & 0xe0);
+				addr1 = ((chunkInNAND / 32) >>> 3) & 0xff;
 
 				Native.wrMem(pointer, IO_NAND + CLE); // pointer op.
 				Native.wrMem(COMMAND_PROGRAM, IO_NAND + CLE); // page program command
@@ -117,14 +121,14 @@ public class InternalNANDYaffs1NANDInterfacePrimitives implements Yaffs1NANDInte
 	{		
 		int addr0 = (blockNumber & 0x07) << 5; // only A14-A26 matters: the block address
 		int addr1 = (blockNumber >>> 3) & 0xff;
-		
+/*		
 		System.out.print("blockNumber: ");
 		System.out.println(blockNumber);
 		System.out.print("addr0: ");
 		System.out.println(Integer.toHexString(addr0));
 		System.out.print("addr1: ");
 		System.out.println(Integer.toHexString(addr1));
-		
+*/	
 		Native.wrMem(COMMAND_ERASE, IO_NAND+CLE);
 		Native.wrMem(addr0, IO_NAND+ALE);	// address 9-16
 		Native.wrMem(addr1, IO_NAND+ALE);	// address 17-24
