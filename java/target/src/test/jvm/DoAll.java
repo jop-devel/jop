@@ -21,6 +21,8 @@ public class DoAll {
 				new TypeMix(),
 				new Static(),
 				new Array(),
+				new ArrayTest2(),
+				new ArrayTest3(),
 				new Clinit(),
 				new Iface(),
 				new Conversion(),
@@ -35,7 +37,10 @@ public class DoAll {
 //				new Except(),
 				new SystemCopy(),
 				new CheckCast(),
-				new Ifacmp()
+				new Ifacmp(),
+				new BranchTest1(),
+				new BranchTest2(),
+				new BranchTest3()
 		};
 		
 		for (int i=0; i<tc.length; ++i) {
