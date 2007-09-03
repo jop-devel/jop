@@ -144,4 +144,28 @@ Through a log file it was verified that the number was the same. For
 the Cyclone board and JOP version 01/08/07, the number was 9723.
 Note: To obtain a logfile, make japp > myLogfile.
 
+\subsubsection{Ifacmp}
+\begin{description}
+   \item[Purpose:]
+Test if\_acmp
+   \item[Description:]
+The test case works by testing both an equal and a non
+equal(ifacmpeq = 165 and 0xa5 ifacmpne) with true and false
+conditions(like a branch and condition coverage test). This leads to
+4 if branches.
+
+Following, we have an extract of the .class :
+
+36:aload\_2 \newline 37:aload\_3 \newline 38:if\_acmpne       43 $
+\longleftarrow $ \newline 41:iconst\_0\newline 42:istore\_1\newline
+43:aload\_3 \newline 44:astore\_2\newline 45:aload\_2\newline
+46:aload\_3        \newline 47:if\_acmpeq       52 $ \longleftarrow
+$ \newline 50:iconst\_0        \newline 51:istore\_1        \newline
+52:iload\_1         \newline 53:ireturn         \newline
+
+We see there that both eq and ne conditions are produced.
+   \item[Results Observed:]
+The test run Ok.
+\end{description}
+
 \end{description}

@@ -4,6 +4,7 @@
  */
 package jvm;
 
+import yaffs2.port.iattr;
 import jvm.math.*;
 import jvm.obj.*;
 
@@ -34,7 +35,8 @@ public class DoAll {
 				new InstanceCheckcast(),
 //				new Except(),
 				new SystemCopy(),
-				new CheckCast()
+				new CheckCast(),
+				new Ifacmp()
 		};
 		
 		for (int i=0; i<tc.length; ++i) {
