@@ -3,7 +3,7 @@ package test;
 
 import util.Dbg;
 
-class O {
+class Oo {
 
 	public static void main( String s[] ) {
 
