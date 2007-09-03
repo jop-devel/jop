@@ -28,7 +28,7 @@ set_global_assignment -name DEVICE "EPM3064ATC44-10"
 set_global_assignment -name TOP_LEVEL_ENTITY pld
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION "6.0 SP1"
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "17:23:00  JANUARY 19, 2007"
-set_global_assignment -name LAST_QUARTUS_VERSION "6.0 SP1"
+set_global_assignment -name LAST_QUARTUS_VERSION 7.1
 set_global_assignment -name DEVICE_FILTER_PIN_COUNT 44
 set_global_assignment -name DEVICE_FILTER_PACKAGE TQFP
 set_location_assignment PIN_37 -to clk
