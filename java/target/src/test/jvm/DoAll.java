@@ -4,7 +4,6 @@
  */
 package jvm;
 
-import yaffs2.port.iattr;
 import jvm.math.*;
 import jvm.obj.*;
 
