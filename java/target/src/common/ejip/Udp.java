@@ -239,12 +239,6 @@ Dbg.intVal(port);
 		int i;
 		int[] buf = p.buf;
 
-		// read ethernet header from CS8900 driver
-/*
-		for (i=0; i<7; ++i) {
-			p.llh[i] = CS8900.llh[i];
-		}
-*/
 		// IP header
 		// TODO unique id for sent packet
 		buf[0] = 0x45000000 + p.len;		// ip length	(header without options)
@@ -266,14 +260,6 @@ Dbg.intVal(port);
 		buf[2] = (0x20<<24) + (PROTOCOL<<16);	// ttl, protocol, clear checksum
 		buf[2] |= TcpIp.chkSum(buf, 0, 20);
 
-		// a VERY dummy arp/routing!
-		// should this be in the cs8900 ?
-// TODO: This works ONLY if this packet was a RECEIVED packet!!!!!
-//		so it's more ore less useless here
-// PLEASE add at minimum a simple ARP cache in the ethernet driver.
-		p.llh[0] = p.llh[3];
-		p.llh[1] = p.llh[4];
-		p.llh[2] = p.llh[5];
 		p.llh[6] = 0x0800;
 		p.setStatus(Packet.SND);	// mark packet ready to send
 	}

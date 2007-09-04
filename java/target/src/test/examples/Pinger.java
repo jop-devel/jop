@@ -139,6 +139,8 @@ class Worker extends RtThread {
 			int check = TcpIp.chkSum(buf, 5, 3*4);
 			buf[5] |= check;
 			
+			p.llh[6] = 0x0800;
+
 			p.setStatus(Packet.SND);	// mark packet ready to send
 
 			

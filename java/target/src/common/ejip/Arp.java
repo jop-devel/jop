@@ -51,7 +51,9 @@ class Entry {
 // TODO: use this one when the merge is finished
 //	final static int ENTRY_CNT = StackParameters.ARP_ENTRY_POOL_SIZE + 1;
 	static Entry[] list;
-	static int ageCnt;
+
+//	TODO: not used - age wraps around after 4 billion requests
+//	static int ageCnt;
 
 	int ip;
 	int[] mac;		// could be optimized to use 16-bit words
@@ -72,10 +74,9 @@ class Entry {
 		list[0].mac[3] = 0xFF;
 		list[0].mac[4] = 0xFF;
 		list[0].mac[5] = 0xFF;
-//		list[0].valid = true;
-//		list[0].age = 1; // Never gets checked ... MS: is this true?
+		list[0].valid = true;
+		list[0].age = 1;
 
-		ageCnt = 0;
 	}
 	
 	Entry() {
@@ -93,24 +94,25 @@ class Entry {
 
 		int ip_src = (p.buf[3]<<16) + (p.buf[4]>>>16);
 
-		int nr = 0;
-		int oldest = ageCnt-list[0].age;
+		int nr = -1;
+		int oldest = list[0].age;
+		int youngest = oldest;
 		for (int i=0; i<ENTRY_CNT; ++i) {
 			if (list[i].ip==ip_src) {
 				// we have an entry for this IP
 				// address
-System.out.println("found at add entry");
 				nr = i;
-				break;
 			}
-			// TODO: avoid removing broadcast entry
-			if (ageCnt-list[i].age>oldest) {
-				oldest = ageCnt-list[i].age;
-				nr = i;
+			if (list[i].age<oldest) {
+				oldest = list[i].age;
+				// replace the oldest entry
+				if (nr==-1) {
+					nr = i;					
+				}
+			} else if (list[i].age>youngest) {
+				youngest = list[i].age;
 			}
 		}
-		ageCnt++;
-		// replace the oldest entry
 
 		Entry e = list[nr];
 		e.ip = ip_src;
@@ -123,17 +125,14 @@ System.out.println("found at add entry");
 		e.mac[5] = (p.buf[3]>>>16)&0xff;
 		
 		e.valid = true;
-		e.age = ageCnt;
+		e.age = youngest++;
 		dump(nr);
 	}
 	
 	static Entry find(int ip) {
 		
-System.out.print("find ");
-System.out.println(ip);
 		for (int i=0; i<ENTRY_CNT; ++i) {
 			if (list[i].ip==ip && list[i].valid) {
-System.out.println("found in list");
 				return list[i];
 			}
 		}
@@ -171,6 +170,7 @@ public class Arp {
 //		Dbg.wr('A');
 
 		if (p.buf[6]==ip) {
+//			System.out.println("ARP receive");
 
 
 /*
@@ -200,9 +200,9 @@ public class Arp {
 			Entry.add(p);	// Add the entry anyway
 			
 			if (arp_op==1) {
-//				Dbg.wr("ARP request");
+				// System.out.println("request");
 			} else if (arp_op==2) {
-//				Dbg.wr("ARP reply");
+				// System.out.println("reply");
 				p.setStatus(Packet.FREE);			// mark packet free
 				return;
 			} else {
@@ -251,7 +251,6 @@ public class Arp {
 	 */
 	protected static void sendRequest(Packet p) {
 		
-System.out.println("ARP send request");
 		int ip_dest = p.buf[4];
 		
 		p.buf[0] = 0x00010800;	// hw addr. space 1, Protocol add. space IP 
