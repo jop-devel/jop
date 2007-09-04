@@ -72,8 +72,8 @@ class Entry {
 		list[0].mac[3] = 0xFF;
 		list[0].mac[4] = 0xFF;
 		list[0].mac[5] = 0xFF;
-		list[0].valid = true;
-		list[0].age = 0; // Never gets checked ... MS: is this true?
+//		list[0].valid = true;
+//		list[0].age = 1; // Never gets checked ... MS: is this true?
 
 		ageCnt = 0;
 	}
@@ -86,7 +86,7 @@ class Entry {
 	}
 	
 	/**
-	 * Add en entry into the ARP table
+	 * Add an entry into the ARP table
 	 * @param p A received ARP request or reply
 	 */
 	static void add(Packet p) {
@@ -99,9 +99,11 @@ class Entry {
 			if (list[i].ip==ip_src) {
 				// we have an entry for this IP
 				// address
+System.out.println("found at add entry");
 				nr = i;
 				break;
 			}
+			// TODO: avoid removing broadcast entry
 			if (ageCnt-list[i].age>oldest) {
 				oldest = ageCnt-list[i].age;
 				nr = i;
@@ -127,8 +129,11 @@ class Entry {
 	
 	static Entry find(int ip) {
 		
+System.out.print("find ");
+System.out.println(ip);
 		for (int i=0; i<ENTRY_CNT; ++i) {
 			if (list[i].ip==ip && list[i].valid) {
+System.out.println("found in list");
 				return list[i];
 			}
 		}
@@ -246,6 +251,7 @@ public class Arp {
 	 */
 	protected static void sendRequest(Packet p) {
 		
+System.out.println("ARP send request");
 		int ip_dest = p.buf[4];
 		
 		p.buf[0] = 0x00010800;	// hw addr. space 1, Protocol add. space IP 
