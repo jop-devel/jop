@@ -31,7 +31,6 @@
 
 package ejip.jtcpip;
 
-import util.Dbg;
 /**
  * Encapsulating methods to handle a Payload as a TCP Packet. All methods are
  * static and get a {@link Payload} as a parameter. There are get and set
@@ -40,7 +39,7 @@ import util.Dbg;
  * @author Tobias Kellner
  * @author Ulrich Feichter
  * @author Christof Rath
- * @version $Rev: 939 $ $Date: 2007/01/24 19:37:07 $
+ * @version $Rev: 939 $ $Date: 2007/09/04 00:56:05 $
  */
 public class TCPPacket
 {

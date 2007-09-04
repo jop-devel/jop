@@ -43,7 +43,7 @@ import ejip.jtcpip.util.NumFunctions;
  * @author Tobias Kellner
  * @author Ulrich Feichter
  * @author Christof Rath
- * @version $Rev: 989 $ $Date: 2007/01/24 19:37:07 $
+ * @version $Rev: 989 $ $Date: 2007/09/04 00:56:05 $
  */
 public class TCPConnection
 {
@@ -517,6 +517,7 @@ public class TCPConnection
 	{
 		int randPort = NumFunctions.rand.nextInt() & 0xFFFF;
 	
+		// FIXME: I don't like recursive calls
 		for (int i = 0; i < StackParameters.TCP_CONNECTION_POOL_SIZE; i++)
 			if (pool[i] != null && pool[i].status == TCP_CONN_USED && pool[i].localPort == randPort)
 				return newLocalPort();

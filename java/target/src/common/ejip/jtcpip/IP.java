@@ -31,7 +31,6 @@
 
 package ejip.jtcpip;
 
-import util.Dbg;
 import ejip.Net;
 import ejip.Packet;
 import ejip.jtcpip.util.Debug;
@@ -48,7 +47,7 @@ import ejip.jtcpip.util.NumFunctions;
  * @author Tobias Kellner
  * @author Ulrich Feichter
  * @author Christof Rath
- * @version $Rev: 994 $ $Date: 2007/01/24 19:37:07 $
+ * @version $Rev: 994 $ $Date: 2007/09/04 00:56:05 $
  */
 public class IP {
 	/** Default Time To Live Value */

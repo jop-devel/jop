@@ -79,7 +79,7 @@ public class TestConnectSingleThread {
 		short port = 4444;
 
 		try {
-			tmp = TCP.connect("129.168.0.5", port); // send syn flag
+			tmp = TCP.connect("192.168.0.5", port); // send syn flag
 		} catch (JtcpipException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
