@@ -111,8 +111,6 @@ architecture rtl of sc_lego is
 	constant audio_input_width : integer := 8;
 
 
-    signal xyz			: std_logic_vector(31 downto 0);
-
 	-- pld	
 	
     signal pld_out_pins : FORWARDED_PINS;
@@ -211,7 +209,6 @@ begin
 					when "1001" =>
 						rd_data(motor_dout_width*2-1 downto 0) <= motor1_buf_bemf;
                 	when others => 
-                    	rd_data <= xyz;
                 end case;
             end if;
         end if;
@@ -227,8 +224,6 @@ begin
     begin
 
         if (reset='1') then
-            xyz <= (others => '0');
-
 			pld_out_pins <= (others => '0');
 
             motor0_state      <= LEGO_MOTOR_STATE_OFF;
@@ -246,7 +241,6 @@ begin
         elsif rising_edge(clk) then
 
             if wr='1' then
-                xyz <= wr_data;
 
 				case address(2 downto 0) is
 				    -- leds
@@ -283,6 +277,7 @@ begin
 						pld_out_pins(unused2) <= wr_data(2);
 						pld_out_pins(unused1) <= wr_data(1);
 						pld_out_pins(unused0) <= wr_data(0);
+						pld_out_pins(10 downto 4) <= "0000000";
 					when "111" =>
 						audio_input <= wr_data(audio_input_width-1 downto 0);
 					when others =>

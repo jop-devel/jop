@@ -122,48 +122,48 @@ begin
   
   asynch: process(counter, duty_cycle)
   begin
-		if counter(duty_cycle_width-1 downto 0) = duty_cycle then
-			pwm_out <= '0';
-		elsif counter(duty_cycle_width-1 downto 0) = (duty_cycle_width-1 downto 0 => '0') then
-			pwm_out <= '1';
-		end if;
-		
-		-- this causes Java program to crash, reason unknown
-        --if counter(duty_cycle_width-1 downto 0) <= duty_cycle then
-        --    pwm_out <= '1';
-        --else
-        --    pwm_out <= '0';
-        --end if;
+        if counter(duty_cycle_width-1 downto 0) <= duty_cycle then
+            pwm_out <= '1';
+        else
+            pwm_out <= '0';
+        end if;
    end process;
 
 
-  output: process(power_off, pwm_out, state)                     
+  output: process(clk, reset)
                                                                  
   begin
-    men <= '0';
-    mdir <= '0';
-    mbreak <= '0';
-
-	if state = LEGO_MOTOR_STATE_BRAKE then
-		men <= '1';
-		mbreak <= '1';
-	else    
-      if power_off = '1' then
-	    null;
-      else
-        if pwm_out = '1' then
-          case state is
-            when LEGO_MOTOR_STATE_BACKWARD =>
-		  	  men <= '1';
-			  mdir <= '1';
-            when LEGO_MOTOR_STATE_FORWARD => 
-              men <= '1';
-            when others =>
-		  	  null;
-          end case;
+    if reset = '1' then
+      men <= '0';
+      mdir <= '0';
+      mbreak <= '0';
+    elsif rising_edge(clk) then
+      men <= '0';
+      mdir <= '0';
+      mbreak <= '0';
+  
+  	  if state = LEGO_MOTOR_STATE_BRAKE then
+  		men <= '1';
+  		mbreak <= '1';
+  	  else    
+        if power_off = '1' then
+  	    null;
+        else
+          if pwm_out = '1' then
+            case state is
+              when LEGO_MOTOR_STATE_BACKWARD =>
+  		  	  men <= '1';
+  			  mdir <= '1';
+              when LEGO_MOTOR_STATE_FORWARD => 
+                men <= '1';
+              when others =>
+  		  	  null;
+            end case;
+          end if;
         end if;
-      end if;
-	end if;
+  	  end if;
+
+    end if;
   end process output;
 
 end rtl;

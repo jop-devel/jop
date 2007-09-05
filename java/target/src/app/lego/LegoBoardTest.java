@@ -140,7 +140,7 @@ public class LegoBoardTest
 			  flag = false;	
 			  value = 10;
 			  
-			new RtThread(10, 1*100) {
+			new RtThread(10, 1*1000) {
 				public void run() {
 					for (;;) {
 						speakerLoop();
@@ -155,15 +155,14 @@ public class LegoBoardTest
 		{
 			public void run()
 			{
-				StringBuffer output = new StringBuffer(500);
 				do
 				{					
-					output.setLength(0);
-					
-					output.append("New measurement...\n\n");
+					System.out.println("New measurement...");
+					System.out.println();
 					if (FREEMEMORY)
 					{
-						output.append("Free memory: ").append(GC.freeMemory()).append("\n");
+						System.out.print("Free memory: ");
+						System.out.println(GC.freeMemory());
 					}
 					if (BUTTONS)
 					{
@@ -173,18 +172,27 @@ public class LegoBoardTest
 							//System.out.println("Button " + i + ": " + Buttons.getButton(i));
 							// uncomment this to have fun with JOP
 							//System.out.println("Button " + i + ": " + new Boolean(Buttons.getButton(i)));
-							output.append("Button ").append(i).append(": ").append(Buttons.getButton(i) ? "Down" : "Up").append("\n");
+							System.out.print("Button ");
+							System.out.print(i);
+							System.out.print(": ");
+							System.out.println(Buttons.getButton(i) ? "Down" : "Up");
 						}
 					}
 					if (DIGITALINPUTS)
 					{
-						for (int i = 0; i < 3; i++)
-							output.append("Digital input ").append(i).append(": ").append(DigitalInputs.getDigitalInput(i) ? "1" : "0").append("\n");
+						for (int i = 0; i < 3; i++) {
+							System.out.print("Digital input ");
+							System.out.print(i);
+							System.out.print(": ");
+							System.out.println(DigitalInputs.getDigitalInput(i) ? "1" : "0");
+			
+						}
+							//output.append("Digital input ").append(i).append(": ").append(DigitalInputs.getDigitalInput(i) ? "1" : "0").append("\n");
 					}
 					if (FUTUREUSE)
 					{
-						output.append("Unknown input: 0x").append(
-								Integer.toHexString((FutureUse.readPins()))).append("\n");
+						System.out.print("Unknown input: 0x");
+						System.out.println(Integer.toHexString((FutureUse.readPins())));
 					}
 					if (LEDS)
 					{
@@ -192,34 +200,47 @@ public class LegoBoardTest
 					}
 					if (MICROPHONE)
 					{
-						output.append("Microphone: ").append(Microphone.readMicrophone()).append("\n");
+						System.out.print("Microphone: ");
+						System.out.println(Microphone.readMicrophone());
 					}
 					if (MOTORS)
 					{
 						Motor.synchronizedReadBackEMF();
 						for (int i = 0; i < 2; i++)
 						{
+							// MS: two times new to read the back EMF!!!
 							int[] backEMF = new Motor(i).getSynchronizedBackEMF();
-							output.append(
-									"Motor ").append(i).append(" back-emf measurement: ").append(backEMF[0] - 0x100).append(", ").append(backEMF[1] - 0x100).append("\n");
+							System.out.print("Motor ");
+							System.out.print(i);
+							System.out.print(" back-emf measurement: ");
+							System.out.print(backEMF[0] - 0x100);
+							System.out.print(", ");
+							System.out.println(backEMF[1] - 0x100);
 						}
 					}			
 					if (SENSORS)
 					{
 						Sensors.synchronizedReadSensors();
-						for (int i = 0; i < 3; i++)
-							output.append("Analog sensor ").append(i).append(": ").append(Sensors.getBufferedSensor(i)).append(
-								" (").append(Sensors.readSensorValueAsPercentage(i)).append(("%)")).append("\n");
+						for (int i = 0; i < 3; i++) {
+							System.out.print("Analog sensor ");
+							System.out.print(i);
+							System.out.print(" : ");
+							System.out.print(Sensors.getBufferedSensor(i));
+							System.out.print(" (");
+							System.out.print(Sensors.readSensorValueAsPercentage(i));
+							System.out.println("%)");
+						}
 					}
 					if (PLD_RAW_INPUT)
 					{
-						output.append("PLD raw input: ").append(Native.rd(Const.IO_LEGO + 7)).append("\n");
+						System.out.print("PLD raw input: ");
+						System.out.println(Native.rd(Const.IO_LEGO + 7));
 					}
 
-					output.append("\nMeasurement finished.\n\n");
+					System.out.println();
+					System.out.println("Measurement finished.");
 					//output.append("Length: ").append(output.length()).append(" Capacity: " ).append(output.capacity()).append("\n");
 					
-					System.out.print(output);
 					if (!REPEAT)
 						break;
 					waitForNextPeriod();
