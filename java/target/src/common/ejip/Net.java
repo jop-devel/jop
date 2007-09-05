@@ -30,6 +30,7 @@
 
 package ejip;
 
+import util.Dbg;
 import ejip.LinkLayer;
 
 /**
@@ -37,6 +38,8 @@ import ejip.LinkLayer;
 */
 
 public class Net {
+	
+	public static final int PROT_ICMP = 1;
 	
 	/**
 	 * Holds a reference to the actual LinkLayer to abstract the source of the
@@ -77,7 +80,7 @@ public class Net {
 
 
 /**
-*	Look for received packets and call TcpIp.
+*	Look for received packets and invoke receive.
 *	Mark them to be sent if returned with len!=0 from TcpIp layer.
 */
 	public void loop() {
@@ -87,9 +90,54 @@ public class Net {
 		// is a received packet in the pool?
 		p = Packet.getPacket(Packet.RCV, Packet.ALLOC);
 		if (p!=null) {					// got one received Packet from pool
-			TcpIp.receive(p);
+			receive(p);
 		} else {
 			Udp.loop();
 		}
 	}
+	
+	/**
+	 * Process one IP packet. Change buffer and set length to get a packet sent
+	 * back. called from Net.loop().
+	 */
+	public static void receive(Packet p) {
+
+		int i, j;
+		int ret = 0;
+		int[] buf = p.buf;
+		int len;
+
+		i = buf[0];
+		len = i & 0xffff; // len from IP header
+		// NO options are assumed in ICMP/TCP/IP...
+		// => copy if options present
+		if (len > p.len || (i >>> 24 != 0x45)) {
+			p.setStatus(Packet.FREE); // packet to short or ip options => drop
+										// it
+			return;
+		} else {
+			p.len = len; // correct for to long packets
+		}
+
+		// TODO fragmentation
+		if (TcpIp.chkSum(buf, 0, 20) != 0) {
+			p.setStatus(Packet.FREE);
+			Dbg.wr("wrong IP checksum ");
+			return;
+		}
+
+		int prot = (buf[2] >> 16) & 0xff; // protocol
+		if (prot == PROT_ICMP) {
+			TcpIp.doICMP(p);
+			TcpIp.doIp(p, prot);
+		} else if (prot == TcpIp.PROTOCOL) {
+			TcpIp.doTCP(p);
+			TcpIp.doIp(p, prot);
+		} else if (prot == Udp.PROTOCOL) {
+			Udp.process(p); // Udp generates the reply
+		} else {
+			p.setStatus(Packet.FREE); // mark packet free
+		}
+	}
+
 }

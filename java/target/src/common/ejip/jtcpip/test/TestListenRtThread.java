@@ -74,7 +74,6 @@ public class TestListenRtThread {
 		ejip.jtcpip.TCPOutputStream.init();
 		ejip.jtcpip.util.NumFunctions.init();
 		ejip.jtcpip.IP.init();
-		ejip.Arp.init();
 
 		ListenThread listenThread = new ListenThread(8, 10000);
 		//

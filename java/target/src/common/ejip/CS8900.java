@@ -516,7 +516,6 @@ public class CS8900 extends LinkLayer {
 		if (single != null)
 			return single; // allready called init()
 
-		Arp.init();
 		txFree = true;
 
 		eth = new int[6];

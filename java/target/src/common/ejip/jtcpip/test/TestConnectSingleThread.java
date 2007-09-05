@@ -73,7 +73,6 @@ public class TestConnectSingleThread {
 		ejip.jtcpip.TCPOutputStream.init();
 		ejip.jtcpip.util.NumFunctions.init();
 		ejip.jtcpip.IP.init();
-		ejip.Arp.init();
 
 		TCPConnection tmp = null;
 		short port = 4444;

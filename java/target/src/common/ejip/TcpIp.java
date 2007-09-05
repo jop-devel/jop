@@ -47,9 +47,7 @@ import util.Dbg;
 
 public class TcpIp {
 
-	private static final int PROT_ICMP = 1;
-
-	private static final int PROT_TCP = 6;
+	public static final int PROTOCOL = 6;
 
 	static final int FL_URG = 0x20;
 
@@ -120,54 +118,11 @@ public class TcpIp {
 		return ip_id;
 	}
 
-	/**
-	 * process one ip packet. change buffer and set length to get a packet sent
-	 * back. called from Net.run().
-	 */
-	public static void receive(Packet p) {
-
-		int i, j;
-		int ret = 0;
-		int[] buf = p.buf;
-		int len;
-
-		i = buf[0];
-		len = i & 0xffff; // len from IP header
-		// NO options are assumed in ICMP/TCP/IP...
-		// => copy if options present
-		if (len > p.len || (i >>> 24 != 0x45)) {
-			p.setStatus(Packet.FREE); // packet to short or ip options => drop
-										// it
-			return;
-		} else {
-			p.len = len; // correct for to long packets
-		}
-
-		// TODO fragmentation
-		if (chkSum(buf, 0, 20) != 0) {
-			p.setStatus(Packet.FREE);
-			Dbg.wr("wrong IP checksum ");
-			return;
-		}
-
-		int prot = (buf[2] >> 16) & 0xff; // protocol
-		if (prot == PROT_ICMP) {
-			doICMP(p);
-			doIp(p, prot);
-		} else if (prot == PROT_TCP) {
-			doTCP(p);
-			doIp(p, prot);
-		} else if (prot == Udp.PROTOCOL) {
-			Udp.process(p); // Udp generates the reply
-		} else {
-			p.setStatus(Packet.FREE); // mark packet free
-		}
-	}
 
 	/**
 	 * very simple generation of IP header. just swap source and destination.
 	 */
-	private static void doIp(Packet p, int prot) {
+	static void doIp(Packet p, int prot) {
 
 		int[] buf = p.buf;
 		int len = p.len;
@@ -195,7 +150,7 @@ public class TcpIp {
 	/**
 	 * the famous ping.
 	 */
-	private static void doICMP(Packet p) {
+	static void doICMP(Packet p) {
 
 		int type_code = p.buf[5] >>> 16;
 		Dbg.wr('P');
@@ -329,7 +284,7 @@ public class TcpIp {
 		buf[7] = rcvcnt;
 		buf[8] = 0x50000000 + (fl << 16) + WINDOW; // hlen = 20, no options
 		buf[9] = 0; // clear checksum field
-		buf[2] = (PROT_TCP << 16) + p.len - 20; // set protocol and tcp length
+		buf[2] = (PROTOCOL << 16) + p.len - 20; // set protocol and tcp length
 												// in iph checksum for tcp
 												// checksum
 		buf[9] = chkSum(buf, 2, p.len - 8) << 16;

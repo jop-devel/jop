@@ -71,7 +71,6 @@ public class TestListenSingleThread {
 		ejip.jtcpip.TCPOutputStream.init();
 		ejip.jtcpip.util.NumFunctions.init();
 		ejip.jtcpip.IP.init();
-		ejip.Arp.init();
 
 		boolean once = true; // only write once
 		short port = 44;

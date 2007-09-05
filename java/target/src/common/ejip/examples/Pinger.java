@@ -6,7 +6,7 @@
  *
  */
 
-package examples;
+package ejip.examples;
 
 import joprt.RtThread;
 import util.Dbg;

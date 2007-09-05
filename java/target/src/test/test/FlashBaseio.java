@@ -9,7 +9,7 @@ public class FlashBaseio {
 	public static void main(String[] args) {
 
 		Flash.main(args);
-		ejip.test.Main.main(args);
+		ejip.examples.Main.main(args);
 
 	}
 

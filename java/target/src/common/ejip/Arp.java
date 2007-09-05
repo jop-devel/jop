@@ -45,109 +45,6 @@ package ejip;
 
 import util.Dbg;
 
-class Entry {
-
-	final static int ENTRY_CNT = 4;
-// TODO: use this one when the merge is finished
-//	final static int ENTRY_CNT = StackParameters.ARP_ENTRY_POOL_SIZE + 1;
-	static Entry[] list;
-
-//	TODO: not used - age wraps around after 4 billion requests
-//	static int ageCnt;
-
-	int ip;
-	int[] mac;		// could be optimized to use 16-bit words
-					// in intel byte oreder for CS8900
-	boolean valid;
-	int age;
-
-	static void init() {
-		if (list!=null) return;
-		
-		list = new Entry[ENTRY_CNT];
-		for (int i=0; i<ENTRY_CNT; ++i) list[i] = new Entry();
-		// Static ARP entry: IP Broadcast -> Ethernet Broadcast
-		list[0].ip = 0xFFFFFFFF; // 255.255.255.255
-		list[0].mac[0] = 0xFF; // -> resolves to FF:FF:FF:FF:FF:FF
-		list[0].mac[1] = 0xFF;
-		list[0].mac[2] = 0xFF;
-		list[0].mac[3] = 0xFF;
-		list[0].mac[4] = 0xFF;
-		list[0].mac[5] = 0xFF;
-		list[0].valid = true;
-		list[0].age = 1;
-
-	}
-	
-	Entry() {
-		mac = new int[6];
-		ip = 0;
-		valid = false;
-		age = 0;
-	}
-	
-	/**
-	 * Add an entry into the ARP table
-	 * @param p A received ARP request or reply
-	 */
-	static void add(Packet p) {
-
-		int ip_src = (p.buf[3]<<16) + (p.buf[4]>>>16);
-
-		int nr = -1;
-		int oldest = list[0].age;
-		int youngest = oldest;
-		for (int i=0; i<ENTRY_CNT; ++i) {
-			if (list[i].ip==ip_src) {
-				// we have an entry for this IP
-				// address
-				nr = i;
-			}
-			if (list[i].age<oldest) {
-				oldest = list[i].age;
-				// replace the oldest entry
-				if (nr==-1) {
-					nr = i;					
-				}
-			} else if (list[i].age>youngest) {
-				youngest = list[i].age;
-			}
-		}
-
-		Entry e = list[nr];
-		e.ip = ip_src;
-		
-		e.mac[0] = p.buf[2]>>>24;
-		e.mac[1] = (p.buf[2]>>>16)&0xff;
-		e.mac[2] = (p.buf[2]>>>8)&0xff;
-		e.mac[3] = (p.buf[2])&0xff;
-		e.mac[4] = (p.buf[3]>>>24);
-		e.mac[5] = (p.buf[3]>>>16)&0xff;
-		
-		e.valid = true;
-		e.age = youngest++;
-		dump(nr);
-	}
-	
-	static Entry find(int ip) {
-		
-		for (int i=0; i<ENTRY_CNT; ++i) {
-			if (list[i].ip==ip && list[i].valid) {
-				return list[i];
-			}
-		}
-		return null;
-	}
-	
-	static void dump(int nr) {
-		
-		Dbg.wr("add ARP IP=");
-		Dbg.hexVal(list[nr].ip);
-		for (int i=0; i<6; ++i) {
-			Dbg.hexVal(list[nr].mac[i]);
-		}
-	}
-}
 
 /**
 *	handle ARP request.
@@ -155,10 +52,111 @@ class Entry {
 
 public class Arp {
 	
-	
-	// TODO: change back to package visible
-	
-	public static void init() {
+	static class Entry {
+
+		final static int ENTRY_CNT = 4;
+//	 TODO: use this one when the merge is finished
+//		final static int ENTRY_CNT = StackParameters.ARP_ENTRY_POOL_SIZE + 1;
+		static Entry[] list;
+
+//		TODO: not used - age wraps around after 4 billion requests
+//		static int ageCnt;
+
+		int ip;
+		int[] mac;		// could be optimized to use 16-bit words
+						// in intel byte oreder for CS8900
+		boolean valid;
+		int age;
+
+		static void init() {
+			if (list!=null) return;
+			
+			list = new Entry[ENTRY_CNT];
+			for (int i=0; i<ENTRY_CNT; ++i) list[i] = new Entry();
+			// Static ARP entry: IP Broadcast -> Ethernet Broadcast
+			list[0].ip = 0xFFFFFFFF; // 255.255.255.255
+			list[0].mac[0] = 0xFF; // -> resolves to FF:FF:FF:FF:FF:FF
+			list[0].mac[1] = 0xFF;
+			list[0].mac[2] = 0xFF;
+			list[0].mac[3] = 0xFF;
+			list[0].mac[4] = 0xFF;
+			list[0].mac[5] = 0xFF;
+			list[0].valid = true;
+			list[0].age = 1;
+
+		}
+		
+		Entry() {
+			mac = new int[6];
+			ip = 0;
+			valid = false;
+			age = 0;
+		}
+		
+		/**
+		 * Add an entry into the ARP table
+		 * @param p A received ARP request or reply
+		 */
+		static void add(Packet p) {
+
+			int ip_src = (p.buf[3]<<16) + (p.buf[4]>>>16);
+
+			int nr = -1;
+			int oldest = list[0].age;
+			int youngest = oldest;
+			for (int i=0; i<ENTRY_CNT; ++i) {
+				if (list[i].ip==ip_src) {
+					// we have an entry for this IP
+					// address
+					nr = i;
+				}
+				if (list[i].age<oldest) {
+					oldest = list[i].age;
+					// replace the oldest entry
+					if (nr==-1) {
+						nr = i;					
+					}
+				} else if (list[i].age>youngest) {
+					youngest = list[i].age;
+				}
+			}
+
+			Entry e = list[nr];
+			e.ip = ip_src;
+			
+			e.mac[0] = p.buf[2]>>>24;
+			e.mac[1] = (p.buf[2]>>>16)&0xff;
+			e.mac[2] = (p.buf[2]>>>8)&0xff;
+			e.mac[3] = (p.buf[2])&0xff;
+			e.mac[4] = (p.buf[3]>>>24);
+			e.mac[5] = (p.buf[3]>>>16)&0xff;
+			
+			e.valid = true;
+			e.age = youngest++;
+			dump(nr);
+		}
+		
+		static Entry find(int ip) {
+			
+			for (int i=0; i<ENTRY_CNT; ++i) {
+				if (list[i].ip==ip && list[i].valid) {
+					return list[i];
+				}
+			}
+			return null;
+		}
+		
+		static void dump(int nr) {
+			
+			Dbg.wr("add ARP IP=");
+			Dbg.hexVal(list[nr].ip);
+			for (int i=0; i<6; ++i) {
+				Dbg.hexVal(list[nr].mac[i]);
+			}
+		}
+	}
+
+	static {
 		Entry.init();
 	}
 
