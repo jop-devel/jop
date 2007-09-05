@@ -650,6 +650,30 @@ set_global_assignment -name LOGICLOCK_INCREMENTAL_COMPILE_ASSIGNMENT OFF
 # end ENTITY(jop)
 # ---------------
 
+# -----------------
+# start ENTITY(jop)
+
+# timing constraints for SRAM
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to ram*_a
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to ram*_d
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to ram*_noe
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to ram*_d
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to ram*_ncs
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to ram*_nwe
+set_instance_assignment -name TCO_REQUIREMENT "3 ns" -to ram*_a
+set_instance_assignment -name TCO_REQUIREMENT "3 ns" -to ram*_d
+set_instance_assignment -name TCO_REQUIREMENT "3 ns" -to ram*_noe
+set_instance_assignment -name TCO_REQUIREMENT "3 ns" -to ram*_ncs
+set_instance_assignment -name TCO_REQUIREMENT "3 ns" -to ram*_nwe
+set_instance_assignment -name TSU_REQUIREMENT "2.2 ns" -to ram*_d
+
+# other default timings
+set_global_assignment -name TSU_REQUIREMENT "5 ns"
+set_global_assignment -name TCO_REQUIREMENT "10 ns"
+
+# end ENTITY(jop)
+# ---------------
+
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_20.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/jop_types.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_pack.vhd

@@ -212,12 +212,34 @@ set_global_assignment -name STRATIX_DEVICE_IO_STANDARD LVCMOS
 set_global_assignment -name RESERVE_ASDO_AFTER_CONFIGURATION "AS INPUT TRI-STATED"
 set_global_assignment -name DEVICE_MIGRATION_LIST "EP1C6Q240C8,EP1C12Q240C8"
 set_global_assignment -name IGNORE_CLOCK_SETTINGS ON
-set_global_assignment -name TSU_REQUIREMENT "2.5 ns"
-set_global_assignment -name TCO_REQUIREMENT "2.5 ns"
 
 set_global_assignment -name RESERVE_ALL_UNUSED_PINS_NO_OUTPUT_GND "AS INPUT TRI-STATED"
 
 set_global_assignment -name CYCLONE_OPTIMIZATION_TECHNIQUE SPEED
+
+# -----------------
+# start ENTITY(jop)
+
+# timing constraints for SRAM
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to ram*_a
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to ram*_d
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to ram*_noe
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to ram*_d
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to ram*_ncs
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to ram*_nwe
+set_instance_assignment -name TCO_REQUIREMENT "3 ns" -to ram*_a
+set_instance_assignment -name TCO_REQUIREMENT "3 ns" -to ram*_d
+set_instance_assignment -name TCO_REQUIREMENT "3 ns" -to ram*_noe
+set_instance_assignment -name TCO_REQUIREMENT "3 ns" -to ram*_ncs
+set_instance_assignment -name TCO_REQUIREMENT "3 ns" -to ram*_nwe
+set_instance_assignment -name TSU_REQUIREMENT "2.2 ns" -to ram*_d
+
+# other default timings
+set_global_assignment -name TSU_REQUIREMENT "5 ns"
+set_global_assignment -name TCO_REQUIREMENT "10 ns"
+
+# end ENTITY(jop)
+# ---------------
 
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_80.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/jop_types.vhd

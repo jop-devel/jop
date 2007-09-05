@@ -438,8 +438,6 @@ set_instance_assignment -name SLOW_SLEW_RATE OFF -to io_l[19]
 
 set_global_assignment -name FMAX_REQUIREMENT "20 MHz" -section_id clk_input
 set_instance_assignment -name CLOCK_SETTINGS clk_input -to clk
-set_instance_assignment -name TCO_REQUIREMENT "9 ns" -from * -to ram*
-set_instance_assignment -name TSU_REQUIREMENT "9 ns" -from * -to ram*
 
 set_location_assignment PIN_120 -to vga_rgb[0]
 set_location_assignment PIN_62 -to vga_rgb[1]
@@ -453,6 +451,32 @@ set_instance_assignment -name PARTITION_HIERARCHY no_file_for_top_partition -to 
 set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
 set_global_assignment -name ON_CHIP_BITSTREAM_DECOMPRESSION ON
 set_global_assignment -name RESERVE_ALL_UNUSED_PINS_NO_OUTPUT_GND "AS INPUT TRI-STATED"
+
+# -----------------
+# start ENTITY(jop)
+
+# timing constraints for SRAM
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to ram*_a
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to ram*_d
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to ram*_noe
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to ram*_d
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to ram*_ncs
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to ram*_nwe
+set_instance_assignment -name TCO_REQUIREMENT "3 ns" -to ram*_a
+set_instance_assignment -name TCO_REQUIREMENT "3 ns" -to ram*_d
+set_instance_assignment -name TCO_REQUIREMENT "3 ns" -to ram*_noe
+set_instance_assignment -name TCO_REQUIREMENT "3 ns" -to ram*_ncs
+set_instance_assignment -name TCO_REQUIREMENT "3 ns" -to ram*_nwe
+set_instance_assignment -name TSU_REQUIREMENT "2.2 ns" -to ram*_d
+
+# other default timings
+set_global_assignment -name TSU_REQUIREMENT "5 ns"
+set_global_assignment -name TCO_REQUIREMENT "10 ns"
+
+# end ENTITY(jop)
+# ---------------
+
+
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_60.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/jop_types.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_pack.vhd

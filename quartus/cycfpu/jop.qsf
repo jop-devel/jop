@@ -222,8 +222,6 @@ set_location_assignment PIN_166 -to wd
 # ==================
 set_global_assignment -name IGNORE_CLOCK_SETTINGS ON
 set_global_assignment -name INCLUDE_EXTERNAL_PIN_DELAYS_IN_FMAX_CALCULATIONS OFF
-set_global_assignment -name TSU_REQUIREMENT "2.5 ns"
-set_global_assignment -name TCO_REQUIREMENT "2.5 ns"
 
 # Analysis & Synthesis Assignments
 # ================================
@@ -462,26 +460,36 @@ set_global_assignment -name HUB_INSTANCE_NAME SLD_HUB_INST
 # ============================
 set_global_assignment -name LOGICLOCK_INCREMENTAL_COMPILE_ASSIGNMENT OFF
 
+set_global_assignment -name OPTIMIZE_HOLD_TIMING OFF
+
+
+set_global_assignment -name FMAX_REQUIREMENT "20 MHz" -section_id clk_in
+set_instance_assignment -name CLOCK_SETTINGS clk_in -to clk
+
 # -----------------
 # start ENTITY(jop)
 
-	# Pin & Location Assignments
-	# ==========================
+# timing constraints for SRAM
 set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to ram*_a
 set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to ram*_d
 set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to ram*_noe
 set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to ram*_d
 set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to ram*_ncs
 set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to ram*_nwe
+set_instance_assignment -name TCO_REQUIREMENT "3 ns" -to ram*_a
+set_instance_assignment -name TCO_REQUIREMENT "3 ns" -to ram*_d
+set_instance_assignment -name TCO_REQUIREMENT "3 ns" -to ram*_noe
+set_instance_assignment -name TCO_REQUIREMENT "3 ns" -to ram*_ncs
+set_instance_assignment -name TCO_REQUIREMENT "3 ns" -to ram*_nwe
+set_instance_assignment -name TSU_REQUIREMENT "2.2 ns" -to ram*_d
+
+# other default timings
+set_global_assignment -name TSU_REQUIREMENT "5 ns"
+set_global_assignment -name TCO_REQUIREMENT "10 ns"
 
 # end ENTITY(jop)
 # ---------------
 
-set_global_assignment -name OPTIMIZE_HOLD_TIMING OFF
-
-
-set_global_assignment -name FMAX_REQUIREMENT "20 MHz" -section_id clk_in
-set_instance_assignment -name CLOCK_SETTINGS clk_in -to clk
 
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_100.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/jop_types.vhd
