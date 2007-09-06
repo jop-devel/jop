@@ -213,7 +213,7 @@ public class JOPPrintStream extends PrintStream {
 		if (buffer == null)
 			throw new IOException("io.JOPPrintStream: buffer is null");
 		for (int i = 0; i < len; i++) {
-			wr(buffer[i]);
+			JVMHelp.wr((char) (buffer[offset+i] & 0xff));
 		}
 	}
 
@@ -228,7 +228,6 @@ public class JOPPrintStream extends PrintStream {
 	public void write(int oneByte) {
 
 		JVMHelp.wr((char) (oneByte & 0xff));
-
 	}
 
 
