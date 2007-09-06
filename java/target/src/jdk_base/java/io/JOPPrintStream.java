@@ -227,7 +227,7 @@ public class JOPPrintStream extends PrintStream {
 	 */
 	public void write(int oneByte) {
 
-		wr(oneByte & 0xff);
+		JVMHelp.wr((char) (oneByte & 0xff));
 
 	}
 

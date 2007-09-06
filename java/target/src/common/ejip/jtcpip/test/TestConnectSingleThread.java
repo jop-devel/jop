@@ -75,7 +75,7 @@ public class TestConnectSingleThread {
 		ejip.jtcpip.IP.init();
 
 		TCPConnection tmp = null;
-		short port = 4444;
+		short port = 1234;
 
 		try {
 			tmp = TCP.connect("192.168.0.5", port); // send syn flag
@@ -84,17 +84,15 @@ public class TestConnectSingleThread {
 			e.printStackTrace();
 		}
 
-		for (;;) {
+		for (int i=0;;++i) {
 
 			if (tmp.getState() == TCPConnection.STATE_ESTABLISHED) {
 				Dbg.wr("writing");
 				try {
-					tmp.oStream.write("Hello World\n".getBytes());
+					tmp.oStream.write(("Hello World"+i+"\n").getBytes());
 				} catch (NullPointerException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				} catch (IOException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
