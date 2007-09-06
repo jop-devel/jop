@@ -1,8 +1,5 @@
 package jvm.math;
 
-import com.jopdesign.sys.Const;
-import com.jopdesign.sys.Native;
-
 import jvm.TestCase;
 
 public class LongTest extends TestCase {

@@ -40,7 +40,8 @@ public class DoAll {
 				new Ifacmp(),
 				new BranchTest1(),
 				new BranchTest2(),
-				new BranchTest3()
+				new BranchTest3(),
+				new Switch2()
 		};
 		
 		for (int i=0; i<tc.length; ++i) {
