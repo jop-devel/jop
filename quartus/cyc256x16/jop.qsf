@@ -28,7 +28,7 @@ set_global_assignment -name DEVICE EP1C6Q240C8
 set_global_assignment -name TOP_LEVEL_ENTITY jop
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION "6.0 SP1"
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "20:32:02  AUGUST 07, 2006"
-set_global_assignment -name LAST_QUARTUS_VERSION 7.0
+set_global_assignment -name LAST_QUARTUS_VERSION 7.1
 set_global_assignment -name DEVICE_FILTER_PIN_COUNT 240
 
 # Pin & Location Assignments
@@ -232,7 +232,9 @@ set_instance_assignment -name TCO_REQUIREMENT "3 ns" -to ram*_d
 set_instance_assignment -name TCO_REQUIREMENT "3 ns" -to ram*_noe
 set_instance_assignment -name TCO_REQUIREMENT "3 ns" -to ram*_ncs
 set_instance_assignment -name TCO_REQUIREMENT "3 ns" -to ram*_nwe
-set_instance_assignment -name TSU_REQUIREMENT "2.2 ns" -to ram*_d
+# setup relaxed due to input MUX on 16-bit memory
+# we use 80 MHz anyway
+set_instance_assignment -name TSU_REQUIREMENT "2.5 ns" -to ram*_d
 
 # other default timings
 set_global_assignment -name TSU_REQUIREMENT "5 ns"
