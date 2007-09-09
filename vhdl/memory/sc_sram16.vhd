@@ -19,6 +19,7 @@
 --	2006-08-16	Rebuilding the already working (lost) version
 --				Use wait_state, din register without MUX
 --	2007-06-04	changed SimpCon to records
+--	2007-09-09	Additional input register for high data (correct SimpCon violation)
 --
 
 Library IEEE;
@@ -76,8 +77,8 @@ architecture rtl of sc_mem_if is
 	signal inc_addr			: std_logic;
 	signal wr_low			: std_logic;
 
-	signal ram_dout_low	: std_logic_vector(15 downto 0);
-	signal ram_din_low		: std_logic_vector(15 downto 0);
+	signal ram_dout_low		: std_logic_vector(15 downto 0);
+	signal ram_din_high		: std_logic_vector(15 downto 0);
 
 	signal ram_din_reg	: std_logic_vector(31 downto 0);
 
@@ -113,12 +114,15 @@ begin
 		if wr_low='1' then
 			ram_dout <= ram_dout_low;
 		end if;
+		-- use an addtional input register to adhire the SimpCon spec
+		-- to not change rd_data untill the full new word is available
+		-- results in input MUX at RAM data input
 		if rd_data_ena_h='1' then
-			ram_din_reg(15 downto 0) <= ram_din;
+			ram_din_high <= ram_din;
 		end if;
 		if rd_data_ena_l='1' then
 			-- move first word to higher half
-			ram_din_reg(31 downto 16) <= ram_din_reg(15 downto 0);
+			ram_din_reg(31 downto 16) <= ram_din_high;
 			-- read second word
 			ram_din_reg(15 downto 0) <= ram_din;
 		end if;
