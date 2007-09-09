@@ -181,6 +181,7 @@ public class JavaDown {
 				if (iStream.available() != 0) {
 					char ch = (char) iStream.read();
 					sysoutStream.print(ch);
+					sysoutStream.flush();
 					eb.append(ch);
 					eb.deleteCharAt(0);
 				}
