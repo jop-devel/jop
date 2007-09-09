@@ -16,6 +16,11 @@
 			all, japp ... USB or serial download
 			target-app-path, main-class ... your target application
 
+		There is a shortcut for the target app:
+			p1 ... source directory
+			p2 ... package name for the main class (with / delimiter)
+			p3 ... class that contains the main method
+
 		for a quick change you can also use command line arguments when invoking Ant:
 			ant -Dqproj=cycwrk -Dtarget-app-path=java/target/src/bench -Dmain-class=jbe/DoAll japp
 
@@ -422,21 +427,34 @@
 	</target>
 
 	<target name="download">
-		<!-- <java classname="com.jopdesign.tools.JavaDown" failonerror="true" fork="true"> -->
-		<!-- 	<classpath> -->
-		<!-- 		<pathelement location="java/tools/dist/lib/jop-tools.jar"/> -->
-		<!-- 		<pathelement location="java/lib/RXTXcomm.jar"/> -->
-		<!-- 	</classpath> -->
-		<!-- 	<arg line="${com-flag} java/target/dist/bin/${jopbin} ${com-port}"/> -->
-		<!-- </java> -->
+<!--
+	Ant's way to logging is very annoying!
 
-		<!-- this is the download version with down.exe -->
-		<exec executable="down" failonerror="true">
+	that's the JavaDown version
+
+		<java classname="com.jopdesign.tools.JavaDown" failonerror="true">
+			<classpath>
+				<pathelement location="java/tools/dist/lib/jop-tools.jar"/>
+				<pathelement location="java/lib/RXTXcomm.jar"/>
+			</classpath>
+			<arg line="${com-flag} java/target/dist/bin/${jopbin} ${com-port}"/>
+		</java>
+
+	this is the download version with down.exe
+
+		<exec executable="down" spawn="true">
 			<arg line="${com-flag} java/target/dist/bin/${jopbin} ${com-port}"/>
 		</exec>
+-->
+		<!-- But we just generate a dl.bat as Ant logging need line feeds -->
 		
+		<echo message="down ${com-flag} java/target/dist/bin/${jopbin} ${com-port}" file="dl.bat"/>
+
 	</target>
 	
+
+
+
 	<target name="prog-flash" depends="java-app" description="Flash programming">
 		
 		<exec executable="quartus_pgm" failonerror="true">
