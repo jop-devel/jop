@@ -103,7 +103,7 @@ set_instance_assignment -name TCO_REQUIREMENT "3 ns" -to ram*_ncs
 set_instance_assignment -name TCO_REQUIREMENT "3 ns" -to ram*_nwe
 # relex tsu for the RAM input MUX
 # we have 10ns SRAMs and use two cycles to access them
-set_instance_assignment -name TSU_REQUIREMENT "2.5 ns" -to ram*_d
+set_instance_assignment -name TSU_REQUIREMENT "3 ns" -to ram*_d
 
 # other default timings
 set_global_assignment -name TSU_REQUIREMENT "5 ns"
