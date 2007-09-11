@@ -31,21 +31,20 @@
 package ejip.examples;
 
 
-import ejip.CS8900;
-import ejip.LinkLayer;
-import ejip.Net;
-import ejip.Packet;
-import ejip.TcpHandler;
+import ejip.*;
 import util.Dbg;
 import util.Timer;
 
 /**
  * Test main for TCP.
  */	
-public class TestTcp extends TcpHandler {
+public class Telnet extends TcpHandler {
 
 	static Net net;
 	static LinkLayer ipLink;
+	
+	StringBuffer sb = new StringBuffer();
+	StringBuffer cmd = new StringBuffer();
 
 	/**
 	*	Start network and enter forever loop.
@@ -59,6 +58,9 @@ public class TestTcp extends TcpHandler {
 		int[] eth = {0x00, 0xe0, 0x98, 0x33, 0xb0, 0xf8};
 		int ip = (192<<24) + (168<<16) + (0<<8) + 123;
 		ipLink = CS8900.init(eth, ip);
+		
+		// a telnet server
+		Tcp.addHandler(23, new Telnet());
 
 		forever();
 	}
@@ -75,5 +77,27 @@ public class TestTcp extends TcpHandler {
 	}
 
 	public void request(Packet p) {
+
+		StringBuffer nix = new StringBuffer();
+		StringBuffer hello = new StringBuffer("Hello from JOP\r\n");
+		Ip.getData(p, Tcp.DATA, sb);
+		StringBuffer resp = sb;
+		if (sb.length()!=0) {
+			System.out.print("Telnet data:");
+			System.out.println(sb);
+			for (int i=0; i<sb.length(); ++i) {
+				char ch = sb.charAt(i);
+				if (ch!='\n' && ch!='\r') {
+					cmd.append(ch);
+				} else {
+					String s = cmd.toString();
+					if (s.equals("hello")) {
+						resp = hello;
+					}
+					cmd.setLength(0);
+				}
+			}
+		}
+		Ip.setData(p, Tcp.DATA, resp);
 	}
 }

@@ -7,15 +7,13 @@
 package tal;
 
 import util.Dbg;
-import ejip.Packet;
-import ejip.Udp;
-import ejip.UdpHandler;
+import ejip.*;
 
 /**
  * @author martin
  *
- * To change the template for this generated type comment go to
- * Window&gt;Preferences&gt;Java&gt;Code Generation&gt;Code and Comments
+ *	Changelog:
+ *		2007-09-11	Changed set/get UDP data to Ip for ejip change
  */
 public class Fwp {
 
@@ -46,10 +44,10 @@ public class Fwp {
 		uh = new UdpHandler() {
 			public void request(Packet p) {
 
-				Udp.getData(p, in);
+				Ip.getData(p, Udp.DATA, in);
 				handle();
 				if (out.length()!=0) {
-					Udp.setData(p, out);
+					Ip.setData(p, Udp.DATA, out);
 					Udp.reply(p);
 				} else{
 					p.setStatus(Packet.FREE);

@@ -64,6 +64,8 @@ public class Packet {
 	public final static int ALLOC = 1;
 	public final static int SND = 2;
 	public final static int RCV = 3;
+	/** TCP connection if it's a TCP packet */
+	TcpConnection tcpConn;
 
 	private static Object monitor;
 
@@ -74,6 +76,7 @@ public class Packet {
 		len = 0;
 		status = FREE;
 		interf = null;
+		tcpConn = null;
 	}
 
 	private static boolean initOk;

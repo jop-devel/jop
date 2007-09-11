@@ -11,19 +11,6 @@ package ejip;
 
 public class TcpConnection {
 	
-	public final static int FREE = -1;
-	public final static int CLOSED = 0;
-	public final static int LISTEN = 1;
-	public final static int SYN_RCVD = 2;
-	public final static int SYN_SENT = 3;
-	public final static int ESTABLISHED = 4;
-	public final static int CLOSE_WAIT = 5;
-	public final static int LAST_ACK = 6;
-	public final static int FIN_WAIT_1 = 7;
-	public final static int FIN_WAIT_2 = 8;
-	public final static int CLOSING = 9;
-	public final static int TIME_WAIT = 10;
-	
 	/**
 	 * State of the TCP connection.
 	 */
@@ -59,7 +46,7 @@ public class TcpConnection {
 	
 	
 	private TcpConnection() {
-		state = FREE;
+		state = Tcp.FREE;
 	}
 	
 	public static TcpConnection findConnection(Packet p) {
@@ -78,7 +65,7 @@ public class TcpConnection {
 		synchronized (mutex) {
 			for (int i=0; i<CNT; ++i) {
 				TcpConnection tc = connections[i];
-				if (tc.state!=FREE) {
+				if (tc.state!=Tcp.FREE) {
 					if (dstPort==tc.localPort &&
 						srcPort==tc.remotePort &&
 						src==tc.remoteIP &&
@@ -97,7 +84,7 @@ public class TcpConnection {
 			if (conn==null) {
 				conn = free;
 				if (free!=null) {
-					free.state = CLOSED;
+					free.state = Tcp.CLOSED;
 					free.localPort = dstPort;
 					free.remotePort = srcPort;
 					free.remoteIP = src;

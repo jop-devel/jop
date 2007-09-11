@@ -182,32 +182,6 @@ Dbg.intVal(port);
 		}
 	}
 	
-
-	public static void getData(Packet p, StringBuffer s) {
-		
-		int[] buf = p.buf;
-		s.setLength(0);
-		for (int i = Udp.DATA*4; i < p.len; i++) {
-			s.append((char) ((buf[i>>2]>>(24 - ((i&3)<<3))) & 0xff));
-		}
-	}
-	
-	public static void setData(Packet p, StringBuffer s) {
-		
-		int[] buf = p.buf;
-		int cnt = s.length();
-		// copy buffer
-		int k = 0;
-		for (int i=0; i<cnt; i+=4) {
-			for (int j=0; j<4; ++j) {
-				k <<= 8;
-				if (i+j < cnt) k += s.charAt(i+j);
-			}
-			buf[Udp.DATA + (i>>>2)] = k;
-		}
-
-		p.len = Udp.DATA*4+cnt;
-	}
 	/**
 	 * Generate a reply with IP src/dst exchanged.
 	 * @param p

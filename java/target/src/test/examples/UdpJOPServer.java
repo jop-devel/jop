@@ -54,11 +54,11 @@ class MyServer extends UdpHandler {
 		System.out.print("reveived: ");
 		// nasty manipulation of the int[] buffer
 		// when dealing with byte characters :-(
-		Udp.getData(p, sb);
+		Ip.getData(p, Udp.DATA, sb);
 		Dbg.wr(sb);
 		System.out.println();
 		sb.append(answer);
-		Udp.setData(p, sb);
+		Ip.setData(p, Udp.DATA, sb);
 		// and return it to port 1234
 		Udp.build(p, p.buf[3], 1234);
 	};

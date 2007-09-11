@@ -32,6 +32,7 @@ package ejip;
 
 public class Ip {
 
+	public final static int CHKSUM = 2;
 	public final static int SOURCE = 3;
 	public final static int DESTINATION = 4;
 	
@@ -97,6 +98,45 @@ public class Ip {
 		sum = (~sum) & 0xffff;
 	
 		return sum;
+	}
+
+	/**
+	 * Copy packet data into a StringBuffer
+	 * @param p packet
+	 * @param off offset in 32-bit words
+	 * @param s StringBuffer destination
+	 */
+	public static void getData(Packet p, int off, StringBuffer s) {
+		
+		int[] buf = p.buf;
+		int len = p.len;
+		s.setLength(0);
+		for (int i = off<<2; i < len; i++) {
+			s.append((char) ((buf[i>>2]>>(24 - ((i&3)<<3))) & 0xff));
+		}
+	}
+
+	/**
+	 * Set data from StringBuffer into the packet
+	 * @param p packet
+	 * @param off offset in 32-bit words
+	 * @param s StringBuffer source
+	 */
+	public static void setData(Packet p, int off, StringBuffer s) {
+		
+		int[] buf = p.buf;
+		int cnt = s.length();
+		// copy buffer
+		int k = 0;
+		for (int i=0; i<cnt; i+=4) {
+			for (int j=0; j<4; ++j) {
+				k <<= 8;
+				if (i+j < cnt) k += s.charAt(i+j);
+			}
+			buf[off + (i>>>2)] = k;
+		}
+	
+		p.len = (off<<2)+cnt;
 	}
 
 

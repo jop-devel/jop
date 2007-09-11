@@ -45,8 +45,37 @@ import util.Dbg;
 
 public class Tcp {
 
+	/**
+	 * TCP protocl number
+	 */
 	public static final int PROTOCOL = 6;
 
+	// TCP connection states
+	public final static int FREE = -1;
+
+	public final static int CLOSED = 0;
+
+	public final static int LISTEN = 1;
+
+	public final static int SYN_RCVD = 2;
+
+	public final static int SYN_SENT = 3;
+
+	public final static int ESTABLISHED = 4;
+
+	public final static int CLOSE_WAIT = 5;
+
+	public final static int LAST_ACK = 6;
+
+	public final static int FIN_WAIT_1 = 7;
+
+	public final static int FIN_WAIT_2 = 8;
+
+	public final static int CLOSING = 9;
+
+	public final static int TIME_WAIT = 10;
+
+	// TCP flags
 	static final int FL_URG = 0x20;
 
 	static final int FL_ACK = 0x10;
@@ -73,6 +102,7 @@ public class Tcp {
 	public static final int ACKNR = 7;
 	public static final int FLAGS = 8;
 	public static final int CHKSUM = 9;
+	public static final int OPTION = 10;
 	/**
 	 * Offset of data in words when no options present
 	 */
@@ -150,24 +180,13 @@ public class Tcp {
 	*/
 	static void process(Packet p) {
 
-		int i, j;
 		int[] buf = p.buf;
-
-		int port = buf[HEAD];
-		int remport = port >>> 16;
-		port &= 0xffff;
 
 		// TODO add options on checksum
 		
-		buf[2] = (PROTOCOL<<16) + p.len - 20; 		// set protocol and TCP length in iph checksum for tcp checksum
+		buf[Ip.CHKSUM] = (PROTOCOL<<16) + p.len - 20; 		// set protocol and TCP length in iph checksum for tcp checksum
 		if (Ip.chkSum(buf, 2, p.len-8)!=0) {
-			Dbg.intVal(p.len);
-			Dbg.wr(" : ");
-			for (int k = 0; k < (p.len+3)/4; k++) {
-				Dbg.hexVal(buf[k]);
-			}
 			p.setStatus(Packet.FREE);	// mark packet free
-Dbg.wr("wrong TCP checksum ");
 			return;
 		}
 
@@ -177,27 +196,33 @@ Dbg.wr("wrong TCP checksum ");
 			p.setStatus(Packet.FREE);
 			return;
 		}
-		
-		if (handleState(p, tc)==false) {
-			return;
-		}
-		
+		p.tcpConn = tc;
+		TcpHandler th = null;
+		// is a handler registered for that port?
 		if (list!=null) {
-			for (i=0; i<MAX_HANDLER; ++i) {
+			for (int i=0; i<MAX_HANDLER; ++i) {
 				if (list[i]!=null && ports[i]==tc.localPort) {
-					list[i].request(p);
+					th = list[i];
 					break;
 				}
 			}
-			if (i==MAX_HANDLER) {
-				p.setStatus(Packet.FREE);	// mark packet free
+		}
+		// no handler found
+		if (th==null) {
+			p.setStatus(Packet.FREE);
 Dbg.lf();
 Dbg.wr('T');
-Dbg.intVal(port);
-			}
-		} else {
-			p.setStatus(Packet.FREE);
+Dbg.intVal(buf[HEAD] & 0xffff);
+			return;
 		}
+		// we change the TCP state here - not that good
+		// should be collected in a single state machine
+		if (tc.state==Tcp.CLOSED) {
+			tc.state = Tcp.LISTEN;
+		}
+		
+		// do the TCP state machine
+		handleState(p, th);
 	}
 	
 	/**
@@ -206,12 +231,10 @@ Dbg.intVal(port);
 	 * @param tc connection
 	 * @return false means nothing more to do
 	 */
-	private static boolean handleState(Packet p, TcpConnection tc) {
+	private static void handleState(Packet p, TcpHandler th) {
 		
+		TcpConnection tc = p.tcpConn;
 		int state = tc.state;
-		
-		System.out.print("TCP state: ");
-		System.out.print(state);
 		
 		int buf[] = p.buf;
 		
@@ -226,48 +249,97 @@ Dbg.intVal(port);
 		System.out.println(datlen);
 		
 		switch(state) {
-		case TcpConnection.CLOSED:
+		case Tcp.CLOSED:
+			// we should not receive a packet in state CLOSED
+			// that means no one is listening
+			// shall we send a RST?
+			p.setStatus(Packet.FREE);
+			tc.setStatus(Tcp.FREE);
+			break;
+		case Tcp.LISTEN:
 			if ((flags&FL_SYN) == 0) {
 				p.setStatus(Packet.FREE);
-				tc.setStatus(TcpConnection.FREE);
+				tc.setStatus(Tcp.FREE);
 				System.out.println("dropped non SYN packet");
-				return false;
+				return;
 			}
+			// TODO: read options (MSS)
 			tc.rcvNxt = buf[SEQNR]+1;
 			tc.sndNxt = 123;	// TODO: get time dependent initial seqnrs
-			fillHeader(p, tc, FL_SYN|FL_ACK);
-			tc.state = TcpConnection.LISTEN;
+			buf[OPTION] = 0x02040000 + 512;	// set MSS to 512
+			p.len = (OPTION+1)<<2;	// len in bytes
+			// TODO: do we need to retransmit the SYN if we don't get the ACK?
+			fillHeader(p, tc, FL_SYN|FL_ACK, true);
+			tc.sndNxt++;		// SYN send counts for one
+			tc.state = Tcp.SYN_RCVD;
+			// TODO: retransmit the SYN on timeout of ACK
 			break;
-		case TcpConnection.LISTEN:
-		case TcpConnection.SYN_RCVD:
-		case TcpConnection.SYN_SENT:
-		case TcpConnection.ESTABLISHED:
-		case TcpConnection.CLOSE_WAIT:
-		case TcpConnection.LAST_ACK:
-		case TcpConnection.FIN_WAIT_1:
-		case TcpConnection.FIN_WAIT_2:
-		case TcpConnection.CLOSING:
-		case TcpConnection.TIME_WAIT:
+		case Tcp.SYN_RCVD:
+			if ((flags&FL_ACK) != 0) {
+				if (buf[ACKNR]==tc.sndNxt) {
+					tc.state = Tcp.ESTABLISHED;
+				}
+			}
+			// nothing to do for now
+			p.setStatus(Packet.FREE);
+			break;
+		case Tcp.SYN_SENT:
+			break;
+		case Tcp.ESTABLISHED:
+			if ((flags&FL_FIN)!=0) {
+				System.out.println("do FIN");
+				// TODO check SEQNR
+				tc.rcvNxt = buf[SEQNR]+1;
+				p.len = DATA<<2;
+				fillHeader(p, tc, FL_ACK|FL_FIN, false);
+				tc.state = LAST_ACK;
+				break;
+			}
+			// again ignored any options
+			int len = p.len-(DATA<<2);
+			if (buf[SEQNR]==tc.rcvNxt) {
+				tc.rcvNxt += len;
+				System.out.println("do request");
+				th.request(p);
+				fillHeader(p, tc, FL_ACK, false);
+				tc.sndNxt += p.len-(DATA<<2);
+			} else {
+				// TODO ack last segment
+			}
+			break;
+		case Tcp.CLOSE_WAIT:
+			break;
+		case Tcp.LAST_ACK:
+			break;
+		case Tcp.FIN_WAIT_1:
+			break;
+		case Tcp.FIN_WAIT_2:
+			break;
+		case Tcp.CLOSING:
+			break;
+		case Tcp.TIME_WAIT:
 			break;
 		}
-		return false;
 	}
 	
-	static void fillHeader(Packet p, TcpConnection tc, int fl) {
+	static void fillHeader(Packet p, TcpConnection tc, int fl, boolean mss) {
 
 		int buf[] = p.buf;
 		buf[HEAD] = (tc.localPort << 16) + tc.remotePort;
 		buf[SEQNR] = tc.sndNxt;
 		buf[ACKNR] = tc.rcvNxt;
 		// TODO: set window according to buffer
-		buf[FLAGS] = 0x50000000 + (fl << 16) + 512; // hlen = 20, no options
+		if (mss) {
+			buf[FLAGS] = 0x60000000 + (fl << 16) + 512; // hlen = 24, mss option						
+		} else {
+			buf[FLAGS] = 0x50000000 + (fl << 16) + 512; // hlen = 20, no options			
+		}
 		buf[CHKSUM] = 0; // clear checksum field
 		buf[2] = (PROTOCOL << 16) + p.len - 20; // set protocol and tcp length
 												// in iph checksum for tcp
 												// checksum
 		buf[CHKSUM] = Ip.chkSum(buf, 2, p.len - 8) << 16;
 		// TODO: set to 0xffff if 0, or is this only in UDP?
-		p.len = CHKSUM*4;
 		// fill in IP header, swap IP addresses and mark for send
 		// TODO: use our own build to avoid method invokation
 		// see also copy from UDP code
@@ -278,31 +350,6 @@ Dbg.intVal(port);
 /* ==================================================================== */
 /* this code is a copy from Udp.java!!!!! TODO: adapt it                */
 	
-	public static void getData(Packet p, StringBuffer s) {
-		
-		int[] buf = p.buf;
-		s.setLength(0);
-		for (int i = Tcp.DATA*4; i < p.len; i++) {
-			s.append((char) ((buf[i>>2]>>(24 - ((i&3)<<3))) & 0xff));
-		}
-	}
-	
-	public static void setData(Packet p, StringBuffer s) {
-		
-		int[] buf = p.buf;
-		int cnt = s.length();
-		// copy buffer
-		int k = 0;
-		for (int i=0; i<cnt; i+=4) {
-			for (int j=0; j<4; ++j) {
-				k <<= 8;
-				if (i+j < cnt) k += s.charAt(i+j);
-			}
-			buf[Tcp.DATA + (i>>>2)] = k;
-		}
-
-		p.len = Tcp.DATA*4+cnt;
-	}
 	/**
 	 * Generate a reply with IP src/dst exchanged.
 	 * @param p
@@ -358,4 +405,5 @@ Dbg.intVal(port);
 		p.llh[6] = 0x0800;
 		p.setStatus(Packet.SND);	// mark packet ready to send
 	}
+
 }
