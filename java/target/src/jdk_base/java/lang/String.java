@@ -361,9 +361,7 @@ public final class String {
 	}
 
 	public boolean equals(Object anObject) {
-		// TODO instanceOf not implemeted
-		// if (!(anObject instanceof String))
-		// return false;
+		if (!(anObject instanceof String)) return false;
 		String str2 = (String) anObject;
 		if (value.length != str2.value.length)
 			return false;
