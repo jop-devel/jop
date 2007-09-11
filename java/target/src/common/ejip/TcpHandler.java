@@ -31,24 +31,22 @@
 package ejip;
 
 /**
-*	UdpHandler.java
 *
-*	Handler for UDP request (server)
+*	Handler for TCP request (server)
 */
 
 
-/**
-*	UdpHandler.
-*/
+public abstract class TcpHandler implements Runnable {
 
-public abstract class UdpHandler {
-
-/**
-*	handle one request of registered port.
-*/
+	/**
+	*	handle one request on the registered port.
+	*/
 	public abstract void request(Packet p);
 
-	// TODO: shouldn't this be a run() from Runnable?
-	public void loop() {
+	/**
+	 * Application logic that gets invoked periodically
+	 */
+	public void run() {
+		
 	}
 }

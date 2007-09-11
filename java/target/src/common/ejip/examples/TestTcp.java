@@ -28,27 +28,52 @@
  *
  */
 
-package ejip;
+package ejip.examples;
+
+
+import ejip.CS8900;
+import ejip.LinkLayer;
+import ejip.Net;
+import ejip.Packet;
+import ejip.TcpHandler;
+import util.Dbg;
+import util.Timer;
 
 /**
-*	UdpHandler.java
-*
-*	Handler for UDP request (server)
-*/
+ * Test main for TCP.
+ */	
+public class TestTcp extends TcpHandler {
 
+	static Net net;
+	static LinkLayer ipLink;
 
-/**
-*	UdpHandler.
-*/
+	/**
+	*	Start network and enter forever loop.
+	*/
+	public static void main(String[] args) {
 
-public abstract class UdpHandler {
+		// use serial line for debugging
+		Dbg.initSerWait();
 
-/**
-*	handle one request of registered port.
-*/
-	public abstract void request(Packet p);
+		net = Net.init();
+		int[] eth = {0x00, 0xe0, 0x98, 0x33, 0xb0, 0xf8};
+		int ip = (192<<24) + (168<<16) + (0<<8) + 123;
+		ipLink = CS8900.init(eth, ip);
 
-	// TODO: shouldn't this be a run() from Runnable?
-	public void loop() {
+		forever();
+	}
+
+	private static void forever() {
+
+		for (;;) {
+			for (int i=0; i<1000; ++i) {
+				ipLink.loop();
+				net.loop();
+			}
+			Timer.wd();
+		}
+	}
+
+	public void request(Packet p) {
 	}
 }

@@ -32,54 +32,72 @@ package ejip;
 
 /*
 *   Changelog:
-*		2002-10-24	creation.
-*
-*	TODO: in Udp, TcpIp.... when to use the packet with automatic reply?
 */
 
 import util.Dbg;
 
 /**
+ * TCP functions.
+ * 
  * @author martin
  *
- * To change the template for this generated type comment go to
- * Window&gt;Preferences&gt;Java&gt;Code Generation&gt;Code and Comments
  */
-/**
-*	UDP functions.
-*/
 
-public class Udp {
+public class Tcp {
 
-	public static final int PROTOCOL = 17;
+	public static final int PROTOCOL = 6;
 
-	public static final int HEAD = 5;	// offset of udp header in words
-	public static final int DATA = 7;	// offset of data in words
+	static final int FL_URG = 0x20;
+
+	static final int FL_ACK = 0x10;
+
+	static final int FL_PSH = 0x8;
+
+	static final int FL_RST = 0x4;
+
+	static final int FL_SYN = 0x2;
+
+	static final int FL_FIN = 0x1;
+
+	/**
+	 * Offset of TCP header in words.
+	 */
+	public static final int HEAD = 5;
+	/**
+	 * Offset of sequence number.
+	 */
+	public static final int SEQNR = 6;
+	/**
+	 * Offset of acknowledgment number.
+	 */
+	public static final int ACKNR = 7;
+	public static final int FLAGS = 8;
+	public static final int CHKSUM = 9;
+	/**
+	 * Offset of data in words when no options present
+	 */
+	public static final int DATA = 10;
+	
 
 	private static Object monitor;
 
 	public static final int MAX_HANDLER = 8;
-	private static UdpHandler[] list;
+	private static TcpHandler[] list;
 	private static int[] ports;
 	private static int loopCnt;
 
-	public static void init() {
-
-		if (monitor!=null) return;
+	static {
 		monitor = new Object();
-		list = new UdpHandler[MAX_HANDLER];
+		list = new TcpHandler[MAX_HANDLER];
 		ports = new int[MAX_HANDLER];
-		loopCnt = 0;
-
-		addHandler(Tftp.PORT, new Tftp());
+		loopCnt = 0;		
 	}
 	/**
-	*	add a handler for UDP requests.
+	*	add a handler for TCP requests.
 	*	returns false if list is full.
 	*/
-	public static boolean addHandler(int port, UdpHandler h) {
+	public static boolean addHandler(int port, TcpHandler h) {
 
-		if (monitor==null) init();
 
 		synchronized(monitor) {
 			for (int i=0; i<MAX_HANDLER; ++i) {
@@ -94,12 +112,10 @@ public class Udp {
 	}
 
 	/**
-	*	remove a handler for UDP requests.
+	*	remove a handler for TCP requests.
 	*	returns false if it was not in the list.
 	*/
 	public static boolean removeHandler(int port) {
-
-		if (monitor==null) init();
 
 		synchronized(monitor) {
 			for (int i=0; i<MAX_HANDLER; ++i) {
@@ -121,7 +137,7 @@ public class Udp {
 		int i = loopCnt;
 
 		if (list[i]!=null) {
-			list[i].loop();
+			list[i].run();
 			++i;
 			if (i==MAX_HANDLER) i=0;
 		} else {
@@ -141,7 +157,9 @@ public class Udp {
 		int remport = port >>> 16;
 		port &= 0xffff;
 
-		buf[2] = (PROTOCOL<<16) + p.len - 20; 		// set protocol and udp length in iph checksum for tcp checksum
+		// TODO add options on checksum
+		
+		buf[2] = (PROTOCOL<<16) + p.len - 20; 		// set protocol and TCP length in iph checksum for tcp checksum
 		if (Ip.chkSum(buf, 2, p.len-8)!=0) {
 			Dbg.intVal(p.len);
 			Dbg.wr(" : ");
@@ -149,45 +167,122 @@ public class Udp {
 				Dbg.hexVal(buf[k]);
 			}
 			p.setStatus(Packet.FREE);	// mark packet free
-Dbg.wr("wrong UDP checksum ");
+Dbg.wr("wrong TCP checksum ");
 			return;
 		}
 
-		if (port == 1625) {
-
-			// do the Dgb thing!
-			i = Dbg.readBuffer(buf, 7);
-			p.len = 28+i;
-			// generate a reply with IP src/dst exchanged
-			Udp.build(p, buf[4], buf[3], remport);
-
-		} else {
-
-			if (list!=null) {
-				for (i=0; i<MAX_HANDLER; ++i) {
-					if (list[i]!=null && ports[i]==port) {
-						list[i].request(p);
-						break;
-					}
+		TcpConnection tc = TcpConnection.findConnection(p);
+		// connection pool is empty, drop the packet
+		if (tc==null) {
+			p.setStatus(Packet.FREE);
+			return;
+		}
+		
+		if (handleState(p, tc)==false) {
+			return;
+		}
+		
+		if (list!=null) {
+			for (i=0; i<MAX_HANDLER; ++i) {
+				if (list[i]!=null && ports[i]==tc.localPort) {
+					list[i].request(p);
+					break;
 				}
-				if (i==MAX_HANDLER) {
-					p.setStatus(Packet.FREE);	// mark packet free
-Dbg.lf();
-Dbg.wr('U');
-Dbg.intVal(port);
-				}
-			} else {
-				p.setStatus(Packet.FREE);
 			}
+			if (i==MAX_HANDLER) {
+				p.setStatus(Packet.FREE);	// mark packet free
+Dbg.lf();
+Dbg.wr('T');
+Dbg.intVal(port);
+			}
+		} else {
+			p.setStatus(Packet.FREE);
 		}
 	}
 	
+	/**
+	 * Handle the TCP state machine
+	 * @param p incomming packet
+	 * @param tc connection
+	 * @return false means nothing more to do
+	 */
+	private static boolean handleState(Packet p, TcpConnection tc) {
+		
+		int state = tc.state;
+		
+		System.out.print("TCP state: ");
+		System.out.print(state);
+		
+		int buf[] = p.buf;
+		
+		int i = buf[8] >>> 16;
+		int flags = i & 0xff;
+		int hlen = i >>> 12;
+		int datlen = p.len - 20 - (hlen << 2);
 
+		System.out.print("TCP state: ");
+		System.out.print(state);
+		System.out.print(" len ");
+		System.out.println(datlen);
+		
+		switch(state) {
+		case TcpConnection.CLOSED:
+			if ((flags&FL_SYN) == 0) {
+				p.setStatus(Packet.FREE);
+				tc.setStatus(TcpConnection.FREE);
+				System.out.println("dropped non SYN packet");
+				return false;
+			}
+			tc.rcvNxt = buf[SEQNR]+1;
+			tc.sndNxt = 123;	// TODO: get time dependent initial seqnrs
+			fillHeader(p, tc, FL_SYN|FL_ACK);
+			tc.state = TcpConnection.LISTEN;
+			break;
+		case TcpConnection.LISTEN:
+		case TcpConnection.SYN_RCVD:
+		case TcpConnection.SYN_SENT:
+		case TcpConnection.ESTABLISHED:
+		case TcpConnection.CLOSE_WAIT:
+		case TcpConnection.LAST_ACK:
+		case TcpConnection.FIN_WAIT_1:
+		case TcpConnection.FIN_WAIT_2:
+		case TcpConnection.CLOSING:
+		case TcpConnection.TIME_WAIT:
+			break;
+		}
+		return false;
+	}
+	
+	static void fillHeader(Packet p, TcpConnection tc, int fl) {
+
+		int buf[] = p.buf;
+		buf[HEAD] = (tc.localPort << 16) + tc.remotePort;
+		buf[SEQNR] = tc.sndNxt;
+		buf[ACKNR] = tc.rcvNxt;
+		// TODO: set window according to buffer
+		buf[FLAGS] = 0x50000000 + (fl << 16) + 512; // hlen = 20, no options
+		buf[CHKSUM] = 0; // clear checksum field
+		buf[2] = (PROTOCOL << 16) + p.len - 20; // set protocol and tcp length
+												// in iph checksum for tcp
+												// checksum
+		buf[CHKSUM] = Ip.chkSum(buf, 2, p.len - 8) << 16;
+		// TODO: set to 0xffff if 0, or is this only in UDP?
+		p.len = CHKSUM*4;
+		// fill in IP header, swap IP addresses and mark for send
+		// TODO: use our own build to avoid method invokation
+		// see also copy from UDP code
+		Ip.doIp(p, PROTOCOL);
+	}
+
+
+/* ==================================================================== */
+/* this code is a copy from Udp.java!!!!! TODO: adapt it                */
+	
 	public static void getData(Packet p, StringBuffer s) {
 		
 		int[] buf = p.buf;
 		s.setLength(0);
-		for (int i = Udp.DATA*4; i < p.len; i++) {
+		for (int i = Tcp.DATA*4; i < p.len; i++) {
 			s.append((char) ((buf[i>>2]>>(24 - ((i&3)<<3))) & 0xff));
 		}
 	}
@@ -203,10 +298,10 @@ Dbg.intVal(port);
 				k <<= 8;
 				if (i+j < cnt) k += s.charAt(i+j);
 			}
-			buf[Udp.DATA + (i>>>2)] = k;
+			buf[Tcp.DATA + (i>>>2)] = k;
 		}
 
-		p.len = Udp.DATA*4+cnt;
+		p.len = Tcp.DATA*4+cnt;
 	}
 	/**
 	 * Generate a reply with IP src/dst exchanged.
@@ -215,7 +310,7 @@ Dbg.intVal(port);
 	public static void reply(Packet p) {
 		
 		int[] buf = p.buf;
-		Udp.build(p, buf[4], buf[3], buf[HEAD]>>>16);
+		Tcp.build(p, buf[4], buf[3], buf[HEAD]>>>16);
 	}
 
 	/**

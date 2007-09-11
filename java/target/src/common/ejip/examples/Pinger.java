@@ -118,13 +118,13 @@ class Worker extends RtThread {
 			// this is the IP header
 			
 			buf[0] = 0x45000000 + len;			// ip length	(header without options)
-			buf[1] = TcpIp.getId();				// identification, no fragmentation
+			buf[1] = Ip.getId();				// identification, no fragmentation
 			buf[2] = (0x20<<24) + (prot<<16);	// ttl, protocol, clear checksum
 			// source ip address
 			buf[3] = Pinger.ipLink.getIpAddress();
 			// destination ip address
 			buf[4] = (192<<24) + (168<<16) + (0<<8) + 5;
-			buf[2] |= TcpIp.chkSum(buf, 0, 20);
+			buf[2] |= Ip.chkSum(buf, 0, 20);
 
 			
 			// this is the ICMP header
@@ -136,7 +136,7 @@ class Worker extends RtThread {
 			++seqnr;			// increment sequence number
 			buf[7] = 0x20202030 + 1;	// data: '   1'
 			// checksum covers whole ICMP packet
-			int check = TcpIp.chkSum(buf, 5, 3*4);
+			int check = Ip.chkSum(buf, 5, 3*4);
 			buf[5] |= check;
 			
 			p.llh[6] = 0x0800;

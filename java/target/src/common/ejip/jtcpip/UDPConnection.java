@@ -50,7 +50,7 @@ import ejip.jtcpip.util.StringFunctions;
  * @author Ulrich Feichter
  * @author Tobias Kellner
  * @author Christof Rath
- * @version $Rev: 984 $ $Date: 2007/01/24 19:37:07 $
+ * @version $Rev: 984 $ $Date: 2007/09/11 00:16:50 $
  */
 public class UDPConnection
 {
@@ -355,7 +355,7 @@ public class UDPConnection
 	/**
 	 * @return a random unused port number
 	 */
-	protected static short newLocalPort()
+	public static short newLocalPort()
 	{
 		int randPort = NumFunctions.rand.nextInt() & 0xFFFF;
 

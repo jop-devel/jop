@@ -47,7 +47,7 @@ import ejip.jtcpip.util.NumFunctions;
  * @author Tobias Kellner
  * @author Ulrich Feichter
  * @author Christof Rath
- * @version $Rev: 994 $ $Date: 2007/09/04 00:56:05 $
+ * @version $Rev: 994 $ $Date: 2007/09/11 00:16:50 $
  */
 public class IP {
 	/** Default Time To Live Value */
@@ -225,35 +225,6 @@ public class IP {
 		pay.setOffset(StackParameters.PAYLOAD_MAX_DATA_SIZE); // No fragments
 		// stored yet
 		rsmblStore(pay, pay); // move the payload to the correct position
-	}
-
-	/**
-	 * Hands a Packet to the upper (transport) layer. Which layer that is is
-	 * read from the Protocol entry in the IP header. If the protocol is unknown
-	 * (not handled), the packet is dropped.
-	 * 
-	 * NOTE: this function has been inlined!!
-	 * 
-	 * @param pay
-	 *            Packet
-	 */
-	private static void handlePayload(Payload pay) {
-		byte prot = IPPacket.getProtocol(pay);
-
-		switch (prot) {
-
-		case PROT_TCP:
-			TCP.receivePayload(pay);
-			break;
-
-		case PROT_UDP:
-			UDP.receivePayload(pay);
-			break;
-
-		case PROT_ICMP:
-			ICMP.receivePayload(pay);
-			break;
-		}
 	}
 
 	/**

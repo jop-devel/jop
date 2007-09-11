@@ -29,7 +29,7 @@
  *  POSSIBILITY  OF SUCH DAMAGE.
  */
 
-package ejip.jtcpip;
+package ejip.jtcpip.unused;
 
 import java.io.IOException;
 
@@ -40,6 +40,10 @@ import javax.microedition.io.DatagramConnection;
 
 import com.sun.cldc.io.ConnectionBaseInterface;
 
+import ejip.jtcpip.DatagramPacket;
+import ejip.jtcpip.JtcpipException;
+import ejip.jtcpip.StackParameters;
+import ejip.jtcpip.UDPConnection;
 import ejip.jtcpip.util.StringFunctions;
 
 /**
@@ -50,7 +54,7 @@ import ejip.jtcpip.util.StringFunctions;
  * @author Ulrich Feichter
  * @author Tobias Kellner
  * @author Christof Rath
- * @version $Rev: 994 $ $Date: 2007/01/24 19:37:07 $
+ * @version $Rev: 994 $ $Date: 2007/09/11 00:16:51 $
  */
 public class DatagramSocket implements DatagramConnection, ConnectionBaseInterface
 {

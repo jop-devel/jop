@@ -93,6 +93,7 @@ public class Net {
 			receive(p);
 		} else {
 			Udp.loop();
+			Tcp.loop();
 		}
 	}
 	
@@ -112,6 +113,7 @@ public class Net {
 		// NO options are assumed in ICMP/TCP/IP...
 		// => copy if options present
 		if (len > p.len || (i >>> 24 != 0x45)) {
+			Dbg.wr("IP options -> discard");
 			p.setStatus(Packet.FREE); // packet to short or ip options => drop
 										// it
 			return;
@@ -120,7 +122,7 @@ public class Net {
 		}
 
 		// TODO fragmentation
-		if (TcpIp.chkSum(buf, 0, 20) != 0) {
+		if (Ip.chkSum(buf, 0, 20) != 0) {
 			p.setStatus(Packet.FREE);
 			Dbg.wr("wrong IP checksum ");
 			return;
@@ -129,10 +131,16 @@ public class Net {
 		int prot = (buf[2] >> 16) & 0xff; // protocol
 		if (prot == PROT_ICMP) {
 			TcpIp.doICMP(p);
-			TcpIp.doIp(p, prot);
-		} else if (prot == TcpIp.PROTOCOL) {
-			TcpIp.doTCP(p);
-			TcpIp.doIp(p, prot);
+			Ip.doIp(p, prot);
+		} else if (prot == Tcp.PROTOCOL) {
+			if ((buf[5] & 0xffff) == 80) {
+				// still do our simple HTML server
+				TcpIp.doTCP(p);
+				Ip.doIp(p, prot);
+			} else {
+				// that's the new upcomming TCP processing
+				Tcp.process(p);				
+			}
 		} else if (prot == Udp.PROTOCOL) {
 			Udp.process(p); // Udp generates the reply
 		} else {

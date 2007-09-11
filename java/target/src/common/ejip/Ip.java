@@ -30,25 +30,74 @@
 
 package ejip;
 
-/**
-*	UdpHandler.java
-*
-*	Handler for UDP request (server)
-*/
+public class Ip {
 
+	public final static int SOURCE = 3;
+	public final static int DESTINATION = 4;
+	
+	static int ip_id = 0x12340000;
 
-/**
-*	UdpHandler.
-*/
-
-public abstract class UdpHandler {
-
-/**
-*	handle one request of registered port.
-*/
-	public abstract void request(Packet p);
-
-	// TODO: shouldn't this be a run() from Runnable?
-	public void loop() {
+	/**
+	 * very simple generation of IP header. just swap source and destination.
+	 */
+	static void doIp(Packet p, int prot) {
+	
+		int[] buf = p.buf;
+		int len = p.len;
+		int i;
+	
+		if (len == 0) {
+			p.setStatus(Packet.FREE); // mark packet free
+		} else {
+			buf[0] = 0x45000000 + len; // ip length (header without options)
+			buf[1] = Ip.getId(); // identification, no fragmentation
+			buf[2] = (0x20 << 24) + (prot << 16); // ttl, protocol, clear
+													// checksum
+			i = buf[3]; // swap ip addresses
+			buf[3] = buf[4];
+			buf[4] = i;
+			buf[2] |= Ip.chkSum(buf, 0, 20);
+	
+			p.llh[6] = 0x0800;
+	
+			p.setStatus(Packet.SND); // mark packet ready to send
+	
+		}
 	}
+
+	/**
+	 * return IP id in upper 16 bit.
+	 */
+	public static int getId() {
+	
+		Ip.ip_id += 0x10000;
+		return Ip.ip_id;
+	}
+
+	/**
+	 * calc ip check sum. assume (32 bit) word boundries. rest of buffer is 0.
+	 * off offset in buffer (in words) cnt length in bytes
+	 */
+	public static int chkSum(int[] buf, int off, int cnt) {
+	
+		int i;
+		int sum = 0;
+		cnt = (cnt + 3) >> 2; // word count
+		while (cnt != 0) {
+			i = buf[off];
+			sum += i & 0xffff;
+			sum += i >>> 16;
+			++off;
+			--cnt;
+		}
+	
+		while ((sum >> 16) != 0)
+			sum = (sum & 0xffff) + (sum >> 16);
+	
+		sum = (~sum) & 0xffff;
+	
+		return sum;
+	}
+
+
 }

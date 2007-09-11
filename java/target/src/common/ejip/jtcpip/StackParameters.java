@@ -37,7 +37,7 @@ package ejip.jtcpip;
  * @author Ulrich Feichter
  * @author Tobias Kellner
  * @author Christof Rath
- * @version $Rev: 991 $ $Date: 2007/01/24 19:37:07 $
+ * @version $Rev: 991 $ $Date: 2007/09/11 00:16:50 $
  */
 public class StackParameters
 {
@@ -134,7 +134,7 @@ public class StackParameters
 	protected final static int UDP_CONNECTION_RCV_BUFFER_SIZE = 1000;
 
 	/** Size of a UDP packet */
-	protected final static int UDP_DATA_SIZE = PAYLOAD_MAX_DATA_SIZE - 8;
+	public final static int UDP_DATA_SIZE = PAYLOAD_MAX_DATA_SIZE - 8;
 		// minus 8 bytes UDP header
 
 	/** The timeout in milli seconds to wait for an ARP response */

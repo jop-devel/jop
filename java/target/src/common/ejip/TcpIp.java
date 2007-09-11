@@ -61,7 +61,7 @@ public class TcpIp {
 
 	static final int FL_FIN = 0x1;
 
-	static int ip_id, tcb_port; // ip id, tcp port
+	static int tcb_port; //  tcp port
 
 	static int tcb_st; // state
 
@@ -77,74 +77,10 @@ public class TcpIp {
 
 	static final int WINDOW = 2680;
 
-	/**
-	 * calc ip check sum. assume (32 bit) word boundries. rest of buffer is 0.
-	 * off offset in buffer (in words) cnt length in bytes
-	 */
-	public static int chkSum(int[] buf, int off, int cnt) {
-
-		int i;
-		int sum = 0;
-		cnt = (cnt + 3) >> 2; // word count
-		while (cnt != 0) {
-			i = buf[off];
-			sum += i & 0xffff;
-			sum += i >>> 16;
-			++off;
-			--cnt;
-		}
-
-		while ((sum >> 16) != 0)
-			sum = (sum & 0xffff) + (sum >> 16);
-
-		sum = (~sum) & 0xffff;
-
-		return sum;
-	}
-
 	public static void init() {
 
 		tcb_st = ST_LISTEN; // select();
-		ip_id = 0x12340000;
 		Html.init();
-	}
-
-	/**
-	 * return IP id in upper 16 bit.
-	 */
-	public static int getId() {
-
-		ip_id += 0x10000;
-		return ip_id;
-	}
-
-
-	/**
-	 * very simple generation of IP header. just swap source and destination.
-	 */
-	static void doIp(Packet p, int prot) {
-
-		int[] buf = p.buf;
-		int len = p.len;
-		int i;
-
-		if (len == 0) {
-			p.setStatus(Packet.FREE); // mark packet free
-		} else {
-			buf[0] = 0x45000000 + len; // ip length (header without options)
-			buf[1] = getId(); // identification, no fragmentation
-			buf[2] = (0x20 << 24) + (prot << 16); // ttl, protocol, clear
-													// checksum
-			i = buf[3]; // swap ip addresses
-			buf[3] = buf[4];
-			buf[4] = i;
-			buf[2] |= chkSum(buf, 0, 20);
-
-			p.llh[6] = 0x0800;
-
-			p.setStatus(Packet.SND); // mark packet ready to send
-
-		}
 	}
 
 	/**
@@ -158,7 +94,7 @@ public class TcpIp {
 		if (type_code == 0x0800) {
 			// TODO check received ICMP checksum
 			p.buf[5] = 0; // echo replay plus clear checksu,
-			p.buf[5] = chkSum(p.buf, 5, p.len - 20); // echo replay (0x0000)
+			p.buf[5] = Ip.chkSum(p.buf, 5, p.len - 20); // echo replay (0x0000)
 														// plus checksum
 		} else {
 			p.len = 0;
@@ -287,7 +223,7 @@ public class TcpIp {
 		buf[2] = (PROTOCOL << 16) + p.len - 20; // set protocol and tcp length
 												// in iph checksum for tcp
 												// checksum
-		buf[9] = chkSum(buf, 2, p.len - 8) << 16;
+		buf[9] = Ip.chkSum(buf, 2, p.len - 8) << 16;
 
 	}
 }
