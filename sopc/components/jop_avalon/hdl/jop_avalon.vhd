@@ -190,7 +190,7 @@ begin
 		)
 		port map (clk_int, int_res,
 			sc_mem_out, sc_mem_in,
-
+  
 			ram_addr => ram_addr,
 			ram_dout => ram_dout,
 			ram_din => ram_din,

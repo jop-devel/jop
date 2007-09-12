@@ -183,22 +183,6 @@ begin
 			b => open
 		);
 
-	cmp_scm: entity work.sc_mem_if
-		generic map (
-			ram_ws => ram_cnt-1,
-			addr_bits => 18
-		)
-		port map (clk_int, int_res,
-			sc_mem_out, sc_mem_in,
-
-			ram_addr => ram_addr,
-			ram_dout => ram_dout,
-			ram_din => ram_din,
-			ram_dout_en	=> ram_dout_en,
-			ram_ncs => ram_ncs,
-			ram_noe => ram_noe,
-			ram_nwe => ram_nwe
-		);
 
 	sc2av: sc2avalon
 		generic map (
@@ -208,7 +192,8 @@ begin
 			clk => clk_int,
 			reset => int_res,
 
-			sc_address => sc_mem_out.address,
+			sc_address(20 downto 0) => sc_mem_out.address,
+			sc_address(23 downto 21) => "000",
 			sc_wr_data => sc_mem_out.wr_data,
 			sc_rd => sc_mem_out.rd,
 			sc_wr => sc_mem_out.wr,
