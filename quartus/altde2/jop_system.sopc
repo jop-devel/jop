@@ -1,0 +1,585 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<system name="jop_system">
+    <parameter valueString="4059709926" name="systemHash"/>
+    <parameter valueString="1189603606871" name="timeStamp"/>
+    <parameter valueString="false" name="generateLegacySDK"/>
+    <parameter name="bonusData">bonusData 
+{
+   element sdram.s1
+   {
+      datum baseAddress
+      {
+         value = "0";
+         type = "long";
+      }
+   }
+   element tri_state_bridge_0.avalon_slave
+   {
+      datum baseAddress
+      {
+         value = "0";
+         type = "long";
+      }
+   }
+   element onchip_memory_0
+   {
+      datum _enabled
+      {
+         value = "0";
+         type = "boolean";
+      }
+      datum _sortIndex
+      {
+         value = "3";
+         type = "int";
+      }
+   }
+   element sdram
+   {
+      datum _enabled
+      {
+         value = "1";
+         type = "boolean";
+      }
+      datum _sortIndex
+      {
+         value = "4";
+         type = "int";
+      }
+   }
+   element clk.clk
+   {
+      datum clock_domain
+      {
+         value = "clk";
+         type = "String";
+      }
+   }
+   element tri_state_bridge_0
+   {
+      datum _enabled
+      {
+         value = "1";
+         type = "boolean";
+      }
+      datum _sortIndex
+      {
+         value = "1";
+         type = "int";
+      }
+   }
+   element ext_ram
+   {
+      datum _enabled
+      {
+         value = "1";
+         type = "boolean";
+      }
+      datum _sortIndex
+      {
+         value = "2";
+         type = "int";
+      }
+   }
+   element jop_avalon_0
+   {
+      datum _enabled
+      {
+         value = "1";
+         type = "boolean";
+      }
+      datum _sortIndex
+      {
+         value = "0";
+         type = "int";
+      }
+   }
+   element ext_ram.sram_tristate_slave
+   {
+      datum baseAddress
+      {
+         value = "16777216";
+         type = "long";
+      }
+   }
+}
+</parameter>
+    <parameter valueString="false" name="hardcopyCompatible"/>
+    <parameter valueString="CYCLONEII" name="deviceFamily"/>
+    <parameter valueString="false" name="generateLegacySim"/>
+    <parameter valueString="VHDL" name="hdlLanguage"/>
+    <module version="7.1" name="clk" kind="clock_source">
+        <parameter valueString="true" name="clockFrequencyKnown"/>
+        <parameter valueString="100000000" name="clockFrequency"/>
+    </module>
+    <module version="1.0" name="jop_avalon_0" kind="jop_avalon">
+        <parameter valueString="" name="sharedPorts"/>
+        <parameter name="instancePTF">MODULE jop_avalon_0
+{
+   class = "jop_avalon";
+   class_version = "1.0";
+   SYSTEM_BUILDER_INFO 
+   {
+      Instantiate_In_System_Module = "1";
+      Has_Clock = "1";
+      Top_Level_Ports_Are_Enumerated = "1";
+      Is_Enabled = "1";
+      Clock_Source = "clk";
+      View 
+      {
+         MESSAGES 
+         {
+         }
+         Is_Collapsed = "0";
+      }
+   }
+   COMPONENT_BUILDER 
+   {
+      GLS_SETTINGS 
+      {
+      }
+   }
+   PORT_WIRING 
+   {
+      PORT clk
+      {
+         width = "1";
+         width_expression = "";
+         direction = "input";
+         type = "clk";
+         is_shared = "0";
+         vhdl_record_name = "";
+         vhdl_record_type = "";
+      }
+      PORT reset
+      {
+         width = "1";
+         width_expression = "";
+         direction = "input";
+         type = "reset";
+         is_shared = "0";
+         vhdl_record_name = "";
+         vhdl_record_type = "";
+      }
+   }
+   WIZARD_SCRIPT_ARGUMENTS 
+   {
+      hdl_parameters 
+      {
+         addr_bits = "24";
+         exta_width = "3";
+         io_addr_bits = "7";
+         jpc_width = "12";
+         block_bits = "4";
+      }
+   }
+   SIMULATION 
+   {
+      DISPLAY 
+      {
+      }
+   }
+   MASTER avalon_master
+   {
+      SYSTEM_BUILDER_INFO 
+      {
+         Bus_Type = "avalon";
+         Address_Group = "1";
+         Has_Clock = "0";
+         Address_Width = "26";
+         Data_Width = "32";
+         Do_Stream_Reads = "0";
+         Do_Stream_Writes = "0";
+         Is_Asynchronous = "0";
+         Has_IRQ = "0";
+         Irq_Scheme = "none";
+         Interrupt_Range = "";
+         Is_Readable = "1";
+         Is_Writable = "1";
+         Is_Big_Endian = "1";
+         Register_Outgoing_Signals = "0";
+         Adapts_To = "";
+      }
+      COMPONENT_BUILDER 
+      {
+         AVM_SETTINGS 
+         {
+            stream_reads = "0";
+            stream_writes = "0";
+            irq_width = "0";
+            irq_number_width = "0";
+            irq_scheme = "none";
+            Is_Asynchronous = "0";
+            Is_Big_Endian = "1";
+         }
+      }
+      PORT_WIRING 
+      {
+         PORT ser_txd
+         {
+            width = "1";
+            width_expression = "";
+            direction = "output";
+            type = "export";
+            is_shared = "0";
+            vhdl_record_name = "";
+            vhdl_record_type = "";
+         }
+         PORT ser_rxd
+         {
+            width = "1";
+            width_expression = "";
+            direction = "input";
+            type = "export";
+            is_shared = "0";
+            vhdl_record_name = "";
+            vhdl_record_type = "";
+         }
+         PORT wd
+         {
+            width = "1";
+            width_expression = "";
+            direction = "output";
+            type = "export";
+            is_shared = "0";
+            vhdl_record_name = "";
+            vhdl_record_type = "";
+         }
+         PORT address
+         {
+            width = "26";
+            width_expression = "(((addr_bits - 1) + 2)) - (0) + 1";
+            direction = "output";
+            type = "address";
+            is_shared = "0";
+            vhdl_record_name = "";
+            vhdl_record_type = "";
+         }
+         PORT writedata
+         {
+            width = "32";
+            width_expression = "";
+            direction = "output";
+            type = "writedata";
+            is_shared = "0";
+            vhdl_record_name = "";
+            vhdl_record_type = "";
+         }
+         PORT byteenable
+         {
+            width = "4";
+            width_expression = "";
+            direction = "output";
+            type = "byteenable";
+            is_shared = "0";
+            vhdl_record_name = "";
+            vhdl_record_type = "";
+         }
+         PORT readdata
+         {
+            width = "32";
+            width_expression = "";
+            direction = "input";
+            type = "readdata";
+            is_shared = "0";
+            vhdl_record_name = "";
+            vhdl_record_type = "";
+         }
+         PORT read
+         {
+            width = "1";
+            width_expression = "";
+            direction = "output";
+            type = "read";
+            is_shared = "0";
+            vhdl_record_name = "";
+            vhdl_record_type = "";
+         }
+         PORT write
+         {
+            width = "1";
+            width_expression = "";
+            direction = "output";
+            type = "write";
+            is_shared = "0";
+            vhdl_record_name = "";
+            vhdl_record_type = "";
+         }
+         PORT waitrequest
+         {
+            width = "1";
+            width_expression = "";
+            direction = "input";
+            type = "waitrequest";
+            is_shared = "0";
+            vhdl_record_name = "";
+            vhdl_record_type = "";
+         }
+      }
+   }
+   HDL_INFO 
+   {
+      Synthesis_HDL_Files = "__PROJECT_DIRECTORY__/jop_types.vhd,__PROJECT_DIRECTORY__/jop_avalon.vhd, __PROJECT_DIRECTORY__/jop_avalon_0.vhd";
+   }
+}
+</parameter>
+    </module>
+    <module version="7.1" name="tri_state_bridge_0" kind="altera_avalon_tri_state_bridge">
+        <parameter valueString="true" name="registerIncomingSignals"/>
+    </module>
+    <module version="1.0" name="ext_ram" kind="sram_256k_x_16bit">
+        <parameter name="sharedPorts">sram_tristate_slave/data,sram_tristate_slave/address,sram_tristate_slave/byteenable_n</parameter>
+        <parameter name="instancePTF">MODULE ext_ram
+{
+   class = "sram_256k_x_16bit";
+   class_version = "1.0";
+   SYSTEM_BUILDER_INFO 
+   {
+      Instantiate_In_System_Module = "0";
+      Has_Clock = "0";
+      Top_Level_Ports_Are_Enumerated = "1";
+      Is_Enabled = "1";
+      View 
+      {
+         MESSAGES 
+         {
+         }
+         Is_Collapsed = "1";
+      }
+      Clock_Source = "clk";
+   }
+   COMPONENT_BUILDER 
+   {
+      GLS_SETTINGS 
+      {
+      }
+   }
+   PORT_WIRING 
+   {
+   }
+   WIZARD_SCRIPT_ARGUMENTS 
+   {
+      hdl_parameters 
+      {
+      }
+   }
+   SIMULATION 
+   {
+      DISPLAY 
+      {
+         SIGNAL x101
+         {
+            name = "SRAM 256K x 16bit/global_signals";
+            format = "Divider";
+         }
+         SIGNAL x102
+         {
+            name = "SRAM 256K x 16bit/sram_tristate_slave";
+            format = "Divider";
+         }
+         SIGNAL x103
+         {
+            name = "data";
+            radix = "hexadecimal";
+         }
+         SIGNAL x104
+         {
+            name = "address";
+            radix = "hexadecimal";
+         }
+         SIGNAL x105
+         {
+            name = "byteenable_n";
+            format = "Logic";
+         }
+         SIGNAL x106
+         {
+            name = "chipselect_n";
+         }
+         SIGNAL x107
+         {
+            name = "write_n";
+         }
+         SIGNAL x108
+         {
+            name = "read_n";
+         }
+      }
+   }
+   SLAVE sram_tristate_slave
+   {
+      SYSTEM_BUILDER_INFO 
+      {
+         Bus_Type = "avalon_tristate";
+         Address_Group = "1";
+         Has_Clock = "0";
+         Address_Width = "18";
+         Address_Alignment = "dynamic";
+         Data_Width = "16";
+         Has_Base_Address = "1";
+         Has_IRQ = "0";
+         Setup_Time = "0ns";
+         Hold_Time = "2ns";
+         Read_Wait_States = "18ns";
+         Write_Wait_States = "10ns";
+         Read_Latency = "0";
+         Maximum_Pending_Read_Transactions = "0";
+         Active_CS_Through_Read_Latency = "0";
+         Is_Printable_Device = "0";
+         Is_Memory_Device = "1";
+         Is_Readable = "1";
+         Is_Writable = "1";
+         Minimum_Uninterrupted_Run_Length = "1";
+         MASTERED_BY tri_state_bridge_0/tristate_master
+         {
+            priority = "1";
+         }
+         Base_Address = "0x01000000";
+      }
+      COMPONENT_BUILDER 
+      {
+         ATS_SETTINGS 
+         {
+            Setup_Value = "0";
+            Read_Wait_Value = "18";
+            Write_Wait_Value = "10";
+            Hold_Value = "2";
+            Timing_Units = "ns";
+            Read_Latency_Value = "0";
+            Minimum_Arbitration_Shares = "1";
+            Active_CS_Through_Read_Latency = "0";
+            Max_Pending_Read_Transactions_Value = "1";
+            Address_Alignment = "dynamic";
+            Is_Printable_Device = "0";
+            Interleave_Bursts = "0";
+            interface_name = "Avalon Tristate Slave";
+            external_wait = "0";
+            Is_Memory_Device = "1";
+         }
+      }
+      PORT_WIRING 
+      {
+         PORT data
+         {
+            width = "16";
+            width_expression = "";
+            direction = "inout";
+            type = "data";
+            is_shared = "1";
+            vhdl_record_name = "";
+            vhdl_record_type = "";
+         }
+         PORT address
+         {
+            width = "18";
+            width_expression = "";
+            direction = "input";
+            type = "address";
+            is_shared = "1";
+            vhdl_record_name = "";
+            vhdl_record_type = "";
+         }
+         PORT byteenable_n
+         {
+            width = "2";
+            width_expression = "";
+            direction = "input";
+            type = "byteenable_n";
+            is_shared = "1";
+            vhdl_record_name = "";
+            vhdl_record_type = "";
+         }
+         PORT chipselect_n
+         {
+            width = "1";
+            width_expression = "";
+            direction = "input";
+            type = "chipselect_n";
+            is_shared = "0";
+            vhdl_record_name = "";
+            vhdl_record_type = "";
+         }
+         PORT write_n
+         {
+            width = "1";
+            width_expression = "";
+            direction = "input";
+            type = "write_n";
+            is_shared = "0";
+            vhdl_record_name = "";
+            vhdl_record_type = "";
+         }
+         PORT read_n
+         {
+            width = "1";
+            width_expression = "";
+            direction = "input";
+            type = "read_n";
+            is_shared = "0";
+            vhdl_record_name = "";
+            vhdl_record_type = "";
+         }
+      }
+   }
+}
+</parameter>
+    </module>
+    <module version="7.1" name="onchip_memory_0" kind="altera_avalon_onchip_memory2">
+        <parameter valueString="32" name="dataWidth"/>
+        <parameter valueString="false" name="dualPort"/>
+        <parameter valueString="false" name="simAllowMRAMContentsFile"/>
+        <parameter valueString="true" name="writable"/>
+        <parameter valueString="M4K" name="blockType"/>
+        <parameter valueString="32768" name="memorySize"/>
+        <parameter valueString="false" name="useShallowMemBlocks"/>
+        <parameter valueString="1" name="slave1Latency"/>
+        <parameter valueString="true" name="initMemContent"/>
+        <parameter valueString="onchip_memory_0" name="initializationFileName"/>
+        <parameter valueString="false" name="useNonDefaultInitFile"/>
+        <parameter valueString="1" name="slave2Latency"/>
+    </module>
+    <module version="7.1" name="sdram" kind="altera_avalon_new_sdram_controller">
+        <parameter valueString="20.0" name="TRP"/>
+        <parameter valueString="16" name="dataWidth"/>
+        <parameter valueString="12" name="rowWidth"/>
+        <parameter valueString="70.0" name="TRFC"/>
+        <parameter valueString="true" name="registerDataIn"/>
+        <parameter valueString="3" name="casLatency"/>
+        <parameter valueString="100.0" name="powerUpDelay"/>
+        <parameter valueString="false" name="generateSimulationModel"/>
+        <parameter valueString="2" name="initRefreshCommands"/>
+        <parameter valueString="" name="masteredTristateBridgeSlave"/>
+        <parameter valueString="3" name="TMRD"/>
+        <parameter valueString="14.0" name="TWR"/>
+        <parameter valueString="0.0" name="initNOPDelay"/>
+        <parameter valueString="15.625" name="refreshPeriod"/>
+        <parameter valueString="5.5" name="TAC"/>
+        <parameter valueString="8" name="columnWidth"/>
+        <parameter valueString="4" name="numberOfBanks"/>
+        <parameter valueString="1" name="numberOfChipSelects"/>
+        <parameter valueString="false" name="pinsSharedViaTriState"/>
+        <parameter valueString="20.0" name="TRCD"/>
+        <parameter valueString="custom" name="model"/>
+        <parameter valueString="8388608" name="size"/>
+    </module>
+    <connection version="7.1" start="clk.clk" kind="clock" end="jop_avalon_0.clk"/>
+    <connection version="7.1" start="clk.clk" kind="clock" end="tri_state_bridge_0.clk"/>
+    <connection version="7.1" start="clk.clk" kind="clock" end="sdram.clk"/>
+    <connection version="6.1" start="jop_avalon_0.avalon_master" kind="avalon" end="tri_state_bridge_0.avalon_slave">
+        <parameter valueString="1" name="arbitrationPriority"/>
+        <parameter valueString="0x0000" name="baseAddress"/>
+    </connection>
+    <connection version="7.1" start="tri_state_bridge_0.tristate_master" kind="avalon_tristate" end="ext_ram.sram_tristate_slave">
+        <parameter valueString="1" name="arbitrationPriority"/>
+        <parameter valueString="0x01000000" name="baseAddress"/>
+    </connection>
+    <connection version="6.1" start="jop_avalon_0.avalon_master" kind="avalon" end="onchip_memory_0.s1">
+        <parameter valueString="1" name="arbitrationPriority"/>
+        <parameter valueString="0x0000" name="baseAddress"/>
+    </connection>
+    <connection version="6.1" start="jop_avalon_0.avalon_master" kind="avalon" end="sdram.s1">
+        <parameter valueString="1" name="arbitrationPriority"/>
+        <parameter valueString="0x0000" name="baseAddress"/>
+    </connection>
+</system>
+
