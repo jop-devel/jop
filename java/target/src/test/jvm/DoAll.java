@@ -41,7 +41,10 @@ public class DoAll {
 				new BranchTest1(),
 				new BranchTest2(),
 				new BranchTest3(),
-				new Switch2()
+				new Switch2(),
+				new Logic1(),
+				new Logic2(),
+				new Logic3()
 		};
 		
 		for (int i=0; i<tc.length; ++i) {
