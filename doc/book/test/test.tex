@@ -170,6 +170,7 @@ We see there that both eq and ne conditions are produced.
 The test run Ok.
 \end{description}
 
+
 \subsubsection{BranchTest1}
 \begin{description}
    \item[Purpose:]
@@ -260,6 +261,53 @@ i2s, l2i.
    \item[Description:]
 This testcase extends the existent Conversion testcase to include
 conversion between all the supported primitive types.
+   \item[Results Observed:]
+The test run Ok.
+\end{description}
+
+
+\subsubsection{Logic1}
+\begin{description}
+   \item[Purpose:]
+Test shift operators. Bytecodes exercised: ishl, ishr, iushr.
+   \item[Description:]
+   \item[Results Observed:]
+The test run Ok.
+\end{description}
+
+
+\subsubsection{Logic2}
+\begin{description}
+   \item[Purpose:]
+Test arithmetic and logic operations. Bytecodes exercised: ineg,
+ior, irem, isub, ixor, iand.
+   \item[Description:]
+Basic bit levels operations are performed.
+   \item[Results Observed:]
+The test run Ok. The throw of the proper exceptions was manually
+verified.
+\end{description}
+
+
+\subsubsection{Logic3}
+\begin{description}
+   \item[Purpose:]
+Test arithmetic and logic operations.
+   \item[Description:]
+Jump based on int comparison is tested.
+   \item[Results Observed:]
+Issue arrised: Some comparisons failed due to a failure handling the
+overflow.
+\end{description}
+
+
+\subsubsection{Switch2}
+\begin{description}
+   \item[Purpose:]
+Test switch statement. Bytecodes exercised: tableswitch,
+lookupswitch.
+   \item[Description:]
+Two switch expression are used to test switch related bytecodes.
    \item[Results Observed:]
 The test run Ok.
 \end{description}
