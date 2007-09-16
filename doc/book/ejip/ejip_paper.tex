@@ -1,0 +1,30 @@
+\documentclass[a4paper,12pt]{scrartcl}
+\usepackage{pslatex} % -- times instead of computer modern
+
+\usepackage[colorlinks=true,linkcolor=black,citecolor=black]{hyperref}
+\usepackage{booktabs}
+\usepackage{graphicx}
+
+\usepackage[latin1]{inputenc}
+
+\newcommand{\code}[1]{{\textsf{#1}}}
+\newcommand{\grpath}{.}
+\hyphenation{SimpCon}
+
+\begin{document}
+
+\title{ejip}
+\author{Martin Schoeberl\\ martin@jopdesign.com}
+\maketitle \thispagestyle{empty}
+
+%\begin{abstract}
+%This document describes the ejip TCP/IP stack.
+%\end{abstract}
+
+
+\input{ejip}
+
+\bibliographystyle{plain}
+\bibliography{../../bib/all.bib}
+
+\end{document}

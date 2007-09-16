@@ -1,0 +1,173 @@
+The following section describes \emph{ejip}, a small TCP/IP stack
+written entirely in Java for small, resource constraint devices.
+
+%\section{Introduction}
+%
+%About ejip....
+
+\section{TCP/IP Decisions}
+
+\begin{itemize}
+    \item Ignore IP options (TODO copy the data)
+    \item Ignore Fragmentation
+    \begin{itemize}
+        \item Can we do this?
+        \item Use and accept TCP max. length
+        \item Restrict UDP/TCP to 512 bytes
+        \item What is than the point for 1500 bytes Ethernet
+        packages?
+    \end{itemize}
+    \item Should we go for simple routing?
+    \item TCP/IP as stop \& go (like TFTP) -- but do a window probe
+    (p 329)
+    \begin{itemize}
+        \item Sending: send segment and wait for ack
+        \item Ignore out-of-order packets -- drop packets with not
+        expected sequence \#
+        \item Use the notion of TCPConnection
+    \end{itemize}
+    \item Don't bother with half close
+    \item Do an event based API for TCP/IP and hide it by an
+    optional Layer (Stream)
+    \item Zero copy design: use the packet up to the application
+    (e.g.\ TCP server)
+    \item MSS at SYN (for MTU) -- use 512 byte data and check the
+    link layer MTU (e.g.\ Slip, Ppp)
+    \item Do the buffering at application level
+    \begin{itemize}
+        \item Really decided?
+        \item Get data with sequence \#!
+        \item Can be hidden by a stream as in jtcpip
+    \end{itemize}
+    \item There is no such thing as UDPConnection. UDP is
+    connectionless!
+\end{itemize}
+\section{Notes}
+
+\begin{itemize}
+    \item Use smaller (and more) buffers and hold the buffer until
+    ack or timeout.
+    \item Keep the small web server (Html.java) as stateless (single) web
+    page (probably with applet in code byte array)
+    \item Interaction diagram would be helpful.
+    \item Do timeouts on a simple 500~ms timer. Invoke
+    System.currentTimeMillis() only once for the timer tick
+    \item Check for minimal size (get rid of JDK code)
+    \item Each part of the stack should implement Runable for the
+    loop
+    \item Event driven mode does not support blocking wait
+    abstraction
+    \item Prepare for performance measurements
+    \begin{itemize}
+        \item UDP (small/large) packages, multithreaded on PC
+        \item TCP (small/large)
+        \item Compare with jtcpip
+        \item Where is the bottleneck (checksum, copy in jtcpip)
+    \end{itemize}
+    \item protothread switch expansion is very interesting for
+    non-blocking (no wFNP()) profiles
+\end{itemize}
+
+Further (requested) properties of ejip:
+\begin{itemize}
+    \item Can run as single thread application -- don't use blocking
+    (stop-and-wait) semantics of sockets -- fits even for SJC level
+    0
+    \item Invoking the application on a packet is event driven
+    handling
+    \item WCET analyzable! Check it with WCA and Volta
+\end{itemize}
+
+\subsection{Buffer Handling}
+
+Should we use lists instead of linear search? Linear
+    search is WCET predictable.
+
+\begin{itemize}
+    \item Application send:
+    \begin{enumerate}
+        \item Request a packet from the pool
+        \item Fill it with data
+        \item Return it to the pool for processing
+    \end{enumerate}
+    \item Interface receive:
+    \begin{enumerate}
+        \item Request a packet
+        \item Fill it
+        \item Return it to the pool for stack handling
+    \end{enumerate}
+    \item Interface send ready:
+    \begin{enumerate}
+        \item Grab a send read packet
+        \item Send it
+        \item Free the packet
+    \end{enumerate}
+    \item Grab a received packet:
+    \begin{enumerate}
+        \item Check IP header
+        \item Invoke UDP/TCP/ICMP method
+        \item Question: who frees the packet?
+    \end{enumerate}
+    \item Application receive invoked by the network code
+\end{itemize}
+
+\section{TCP/IP}
+
+Two possibilities:
+\begin{enumerate}
+    \item TCP packets are kept in retransmission state till ack
+    arrives
+    \item The application has to reproduce the data (uip)
+\end{enumerate}
+
+The control is static (singleton), bit the data is OO.
+
+\subsection{To Check}
+
+\begin{itemize}
+    \item Implement simple HTTP server with jtcpip
+    \item Check uip -- done
+    \item Check original TCP/IP source
+\end{itemize}
+
+\subsection{Start TCP/IP}
+
+\begin{itemize}
+    \item Start ejip documentation + do Javadoc
+    \item Start with simple telnet/HTTP requests and get connection
+    established working
+    \begin{itemize}
+        \item Basic done
+        \item Retransmit a lost SYN missing
+        \item Active open missing
+    \end{itemize}
+    \item Get a simple notion of time
+    (Util/System.currentTimeMillis())
+\end{itemize}
+
+TCP/IP has to act on:
+\begin{enumerate}
+    \item Rcv package
+    \item Write data from app
+    \item Timeout (check connections)
+\end{enumerate}
+
+\subsection{TCP/IP Handler}
+
+Event based and provides hooks for:
+\begin{itemize}
+    \item Connect
+    \item Rcv data
+    \item TX free?
+    \item Close
+    \item timeout?
+\end{itemize}
+
+Questions:
+\begin{itemize}
+    \item Is the application allowed to send data only when called
+    form ejip or also independent?
+    \item Application state in TCPConnection? or retransmission
+    states?
+    \item Stop/restart TCP/IP machine for application flow control?
+\end{itemize}
