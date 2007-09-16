@@ -9,8 +9,8 @@ public class Logic3  extends TestCase{
 	public boolean test() {	
 		boolean Ok=true;
 		int i,j; 
-		i= 2^31;
-		j= -(2^31);
+		i= 1073741828;
+		j= -1073741824;
 		
 		//test branch on integer comparison
 		//issue when  i-j>=2^31

@@ -35,7 +35,7 @@ public class Switch2  extends TestCase{
 		   	}
 	   }
 	   //check that the loop executed completely
-	   Ok=Ok && i==(2^20);
+	   Ok=Ok && i==(2^10);
 	   	   
 	   //lookup switch
 	   //-2147483648, avoid overflow
