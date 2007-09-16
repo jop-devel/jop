@@ -143,6 +143,8 @@ The control is static (singleton), bit the data is OO.
     \end{itemize}
     \item Get a simple notion of time
     (Util/System.currentTimeMillis())
+    \item on retransmission: add a new state for packet - sent, but
+    not acked -- goes down to driver that send the data!
 \end{itemize}
 
 TCP/IP has to act on:
@@ -170,4 +172,11 @@ Questions:
     \item Application state in TCPConnection? or retransmission
     states?
     \item Stop/restart TCP/IP machine for application flow control?
+\end{itemize}
+
+\section{TODO}
+
+\begin{itemize}
+    \item Is checksum generation correct? (setting to 0xffff when 0,
+    only in UDP?)
 \end{itemize}
