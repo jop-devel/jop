@@ -60,11 +60,12 @@ public class Packet {
 	public int len;
 	/** usage of packet */
 	private int status;
+	/** The packet is free to use */
 	public final static int FREE = 0;
 	public final static int ALLOC = 1;
 	public final static int SND = 2;
 	public final static int RCV = 3;
-	/** TCP connection if it's a TCP packet */
+	/** TCP connection if it's a TCP packet - do we need this? */
 	TcpConnection tcpConn;
 
 	private static Object monitor;

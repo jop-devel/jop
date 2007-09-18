@@ -324,7 +324,18 @@ Dbg.intVal(buf[HEAD] & 0xffff);
 	
 	static void fillHeader(Packet p, TcpConnection tc, int fl, boolean mss) {
 
+		// Do we really free it here?
+		if (p.len==0) {
+			p.setStatus(Packet.FREE); // mark packet free
+			return;
+		}
 		int buf[] = p.buf;
+		// IP header (without checksum)
+		buf[0] = 0x45000000 + p.len; // ip length (header without options)
+		buf[1] = Ip.getId(); // identification, no fragmentation
+		buf[Ip.SOURCE] = tc.localIP;
+		buf[Ip.DESTINATION] = tc.remoteIP;
+
 		buf[HEAD] = (tc.localPort << 16) + tc.remotePort;
 		buf[SEQNR] = tc.sndNxt;
 		buf[ACKNR] = tc.rcvNxt;
@@ -335,75 +346,20 @@ Dbg.intVal(buf[HEAD] & 0xffff);
 			buf[FLAGS] = 0x50000000 + (fl << 16) + 512; // hlen = 20, no options			
 		}
 		buf[CHKSUM] = 0; // clear checksum field
-		buf[2] = (PROTOCOL << 16) + p.len - 20; // set protocol and tcp length
+		buf[Ip.CHKSUM] = (PROTOCOL << 16) + p.len - 20; // set protocol and tcp length
 												// in iph checksum for tcp
 												// checksum
 		buf[CHKSUM] = Ip.chkSum(buf, 2, p.len - 8) << 16;
 		// TODO: set to 0xffff if 0, or is this only in UDP?
 		// fill in IP header, swap IP addresses and mark for send
-		// TODO: use our own build to avoid method invokation
-		// see also copy from UDP code
-		Ip.doIp(p, PROTOCOL);
-	}
-
-
-/* ==================================================================== */
-/* this code is a copy from Udp.java!!!!! TODO: adapt it                */
-	
-	/**
-	 * Generate a reply with IP src/dst exchanged.
-	 * @param p
-	 */
-	public static void reply(Packet p) {
 		
-		int[] buf = p.buf;
-		Tcp.build(p, buf[4], buf[3], buf[HEAD]>>>16);
-	}
-
-	/**
-	*	Get source IP from interface and build IP/UDP header.
-	*/
-	public static void build(Packet p, int dstIp, int port) {
-
-		int srcIp = p.interf.getIpAddress();
-		if (srcIp==0) {						// interface is down
-			p.setStatus(Packet.FREE);		// mark packet free
-		} else {
-			build(p, srcIp, dstIp, port);
-		}
-	}
-
-	/**
-	*	Fill UDP and IP header and mark packet ready to send.
-	*/
-	public static void build(Packet p, int srcIp, int dstIp, int port) {
-
-		int i;
-		int[] buf = p.buf;
-
-		// IP header
-		// TODO unique id for sent packet
-		buf[0] = 0x45000000 + p.len;		// ip length	(header without options)
-		buf[1] = Ip.getId();				// identification, no fragmentation
-		buf[3] = srcIp;
-		buf[4] = dstIp;
-
-		// UDP header
-		// 'set' port numbers
-		buf[HEAD] = ((port+10000)<<16) + port;		// src port = dst port + 10000
-		// Fill in UDP header
-		buf[HEAD+1] = (p.len-20)<<16;
-		buf[2] = (PROTOCOL<<16) + p.len - 20; 		// set protocol and udp length in iph checksum for tcp checksum
-		i = Ip.chkSum(buf, 2, p.len-8);
-		if (i==0) i = 0xffff;
-		buf[HEAD+1] |= i;
-
-		// for UDP checksum used field of IP header
-		buf[2] = (0x20<<24) + (PROTOCOL<<16);	// ttl, protocol, clear checksum
-		buf[2] |= Ip.chkSum(buf, 0, 20);
-
+		// for TCP checksum used field of IP header
+		buf[Ip.CHKSUM] = (0x20 << 24) + (PROTOCOL << 16); // ttl, protocol, clear checksum
+		buf[Ip.CHKSUM] |= Ip.chkSum(buf, 0, 20);
+	
 		p.llh[6] = 0x0800;
-		p.setStatus(Packet.SND);	// mark packet ready to send
+	
+		p.setStatus(Packet.SND); // mark packet ready to send
+		
 	}
-
 }

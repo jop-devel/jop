@@ -38,7 +38,7 @@ import util.Timer;
 /**
  * Test main for TCP.
  */	
-public class Telnet extends TcpHandler {
+public class Telnetd extends TcpHandler {
 
 	static Net net;
 	static LinkLayer ipLink;
@@ -60,7 +60,7 @@ public class Telnet extends TcpHandler {
 		ipLink = CS8900.init(eth, ip);
 		
 		// a telnet server
-		Tcp.addHandler(23, new Telnet());
+		Tcp.addHandler(23, new Telnetd());
 
 		forever();
 	}
@@ -78,10 +78,9 @@ public class Telnet extends TcpHandler {
 
 	public void request(Packet p) {
 
-		StringBuffer nix = new StringBuffer();
 		StringBuffer hello = new StringBuffer("Hello from JOP\r\n");
 		Ip.getData(p, Tcp.DATA, sb);
-		StringBuffer resp = sb;
+		StringBuffer resp = null;
 		if (sb.length()!=0) {
 			System.out.print("Telnet data:");
 			System.out.println(sb);
@@ -98,6 +97,10 @@ public class Telnet extends TcpHandler {
 				}
 			}
 		}
-		Ip.setData(p, Tcp.DATA, resp);
+		if (resp!=null) {
+			Ip.setData(p, Tcp.DATA, resp);
+		} else {
+			p.len = Tcp.DATA<<2;
+		}
 	}
 }
