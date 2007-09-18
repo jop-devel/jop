@@ -54,17 +54,25 @@ public class Packet {
 	public LinkLayer interf;
 	/** place for link layer data */
 	public int[] llh;
-	/** ip datagram */
+	/** Buffer for the ip datagram */
 	public int[] buf;
-	/** length in bytes */
+	/** Packet length in bytes */
 	public int len;
-	/** usage of packet */
+	/** Current status of the packet. */
 	private int status;
-	/** The packet is free to use */
+	/** The packet is free to use. */
 	public final static int FREE = 0;
+	/** Allocated and either under interpretation or under construction. */
 	public final static int ALLOC = 1;
+	/** Ready to be sent by the link layer. */
 	public final static int SND = 2;
+	/** Received packet ready to be processed by the network stack. */
 	public final static int RCV = 3;
+	/** A TCP packet ready to be sent. This will go to TCP_ONFLY after sending. */
+	public final static int SND_TCP = 4;
+	/** A sent and not acked TCP packet. Can be resent after a timeout. */
+	public final static int TCP_ONFLY = 5;
+	
 	/** TCP connection if it's a TCP packet - do we need this? */
 	TcpConnection tcpConn;
 
@@ -83,19 +91,14 @@ public class Packet {
 	private static boolean initOk;
 	private static Packet[] packets;
 
-	// a small race condition on init
-	public static void init() {
-
-		if (initOk) return;
+	static {
 		monitor = new Object();
 
-		synchronized (monitor) {
-			initOk = true;
-			packets = new Packet[CNT];
-			for (int i=0; i<CNT; ++i) {
-				packets[i] = new Packet();
-			}
+		packets = new Packet[CNT];
+		for (int i=0; i<CNT; ++i) {
+			packets[i] = new Packet();
 		}
+		
 	}
 
 private static void dbg() {
@@ -118,9 +121,6 @@ private static void dbg() {
 		int i;
 		Packet p;
 
-		if (!initOk) {
-			init();
-		}
 		synchronized (monitor) {
 			for (i=0; i<CNT; ++i) {
 				if (packets[i].status==type) {
@@ -146,9 +146,6 @@ if (type==FREE) Dbg.wr('!');
 		int i;
 		Packet p;
 
-		if (!initOk) {
-			init();
-		}
 		synchronized (monitor) {
 			for (i=0; i<CNT; ++i) {
 				if (packets[i].status==type) {
@@ -175,9 +172,6 @@ if (type==FREE) Dbg.wr('!');
 		int i;
 		Packet p;
 
-		if (!initOk) {
-			init();
-		}
 		synchronized (monitor) {
 			for (i=0; i<CNT; ++i) {
 				if (packets[i].status==type && packets[i].interf==s) {
@@ -192,6 +186,15 @@ if (type==FREE) Dbg.wr('!');
 		}
 // dbg();
 		return p;
+	}
+	/**
+	 * Get a packet with either status SND or SND_TCP.
+	 * Sets the status to allocated.
+	 * @param s link layer for this packet.
+	 * @return a Packet
+	 */
+	public static Packet getTxPacket(LinkLayer s) {
+		return null;
 	}
 
 	public void setStatus(int v) {

@@ -45,7 +45,7 @@ import ejip.jtcpip.util.Debug;
  * @author Ulrich Feichter
  * @author Tobias Kellner
  * @author Christof Rath
- * @version $Rev: 984 $ $Date: 2007/01/24 19:37:07 $
+ * @version $Rev: 984 $ $Date: 2007/09/18 17:53:48 $
  */
 public class NwLoopThread // extends RtThread
 {
@@ -81,7 +81,6 @@ public class NwLoopThread // extends RtThread
 	 *            Delay in milli seconds between two calls
 	 */
 	private NwLoopThread(LinkLayer linkLayer, int msDelay) {
-		Packet.init();
 		this.linkLayer = linkLayer;
 	}
 

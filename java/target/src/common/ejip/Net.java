@@ -70,7 +70,6 @@ public class Net {
 		if (single != null) return single;			// allready called init()
 
 		Udp.init();
-		Packet.init();
 		TcpIp.init();
 
 		single = new Net();

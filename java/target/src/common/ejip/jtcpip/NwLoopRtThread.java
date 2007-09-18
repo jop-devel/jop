@@ -45,7 +45,7 @@ import ejip.jtcpip.util.Debug;
  * @author Ulrich Feichter
  * @author Tobias Kellner
  * @author Christof Rath
- * @version $Rev: 984 $ $Date: 2007/01/24 19:37:07 $
+ * @version $Rev: 984 $ $Date: 2007/09/18 17:53:48 $
  */
 public class NwLoopRtThread extends RtThread {
 	public static TCPConnection conn = null;
@@ -81,7 +81,6 @@ public class NwLoopRtThread extends RtThread {
 	 */
 	private NwLoopRtThread(LinkLayer linkLayer, int msDelay) {
 		super(10, 10000);
-		Packet.init();
 		this.linkLayer = linkLayer;
 	}
 
