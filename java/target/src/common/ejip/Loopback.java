@@ -98,7 +98,8 @@ public class Loopback extends LinkLayer {
 		//
 		// get a ready to send packet with source from this driver.
 		//
-		p = Packet.getPacket(single, Packet.SND, Packet.ALLOC);
+		p = Packet.getPacket(single, Packet.SND_DGRAM, Packet.ALLOC);
+		// TODO: we need to copy a TCP packet
 		if (p!=null) {
 			//
 			// and simple mark it as received packet.

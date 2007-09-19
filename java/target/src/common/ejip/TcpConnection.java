@@ -29,12 +29,21 @@ public class TcpConnection {
 	 * The last sent sequence number.
 	 */
 	int sndNxt;
+	/**
+	 * The outstandig packet. We only allow one packet on the fly.
+	 */
+	Packet outStanding;
+	/**
+	 * Timeout for retransmit of the outstanding packet. Will be
+	 * decremented and retransmit on 0
+	 */
+	int timeout;
 	
 	/**
 	 * Maximum number of active TCP connections
 	 */
 	final static int CNT = 10;
-	private static TcpConnection[] connections;
+	static TcpConnection[] connections;
 	
 	private static Object mutex = new Object();
 	static {
@@ -47,6 +56,7 @@ public class TcpConnection {
 	
 	private TcpConnection() {
 		state = Tcp.FREE;
+		outStanding = null;
 	}
 	
 	public static TcpConnection findConnection(Packet p) {

@@ -108,8 +108,20 @@ public class Tcp {
 	 */
 	public static final int DATA = 10;
 	
+	/**
+	 * 500 ms timer tick for the timout handlers
+	 */
+	public static final int TIMER_TICK = 500;
+	/**
+	 * Timout for retransmit in timer ticks.
+	 */
+	public static final int TIMEOUT = 4;
+	/**
+	 * The timer.
+	 */
+	private static int timer;
 
-	private static Object monitor;
+	private static Object mutex;
 
 	public static final int MAX_HANDLER = 8;
 	private static TcpHandler[] list;
@@ -117,10 +129,11 @@ public class Tcp {
 	private static int loopCnt;
 
 	static {
-		monitor = new Object();
+		mutex = new Object();
 		list = new TcpHandler[MAX_HANDLER];
 		ports = new int[MAX_HANDLER];
-		loopCnt = 0;		
+		loopCnt = 0;
+		timer = ((int) System.currentTimeMillis()) + TIMER_TICK;
 	}
 	/**
 	*	add a handler for TCP requests.
@@ -129,7 +142,7 @@ public class Tcp {
 	public static boolean addHandler(int port, TcpHandler h) {
 
 
-		synchronized(monitor) {
+		synchronized(mutex) {
 			for (int i=0; i<MAX_HANDLER; ++i) {
 				if (list[i]==null) {
 					ports[i] = port;
@@ -147,7 +160,7 @@ public class Tcp {
 	*/
 	public static boolean removeHandler(int port) {
 
-		synchronized(monitor) {
+		synchronized(mutex) {
 			for (int i=0; i<MAX_HANDLER; ++i) {
 				if (list[i]!=null) {
 					if (ports[i] == port) {
@@ -164,16 +177,41 @@ public class Tcp {
 	*/
 	static void loop() {
 
-		int i = loopCnt;
+		int i;
 
-		if (list[i]!=null) {
-			list[i].run();
-			++i;
-			if (i==MAX_HANDLER) i=0;
+		if (timer - ((int) System.currentTimeMillis())<0) {
+			// do the TCP timeout
+			timer = ((int) System.currentTimeMillis()) + TIMER_TICK;
+			for (i=0; i<TcpConnection.CNT; ++i) {
+				synchronized (mutex) {
+					TcpConnection tc = TcpConnection.connections[i];
+					if (tc.outStanding!=null) {
+						tc.timeout--;
+						if (tc.timeout==0) {
+							// TODO: exponential backoff and cancel connection
+							// after some time (2-7 minutes)
+							tc.timeout = TIMEOUT;
+							// let it retransmit
+							System.out.println("retransmit");
+							tc.outStanding.setStatus(Packet.SND_TCP);
+						}
+					}					
+				}
+			}
 		} else {
-			i = 0;
+			// do an application poll
+			i = loopCnt;
+			synchronized (mutex) {
+				if (list[i]!=null) {
+					list[i].run();
+					++i;
+					if (i==MAX_HANDLER) i=0;
+				} else {
+					i = 0;
+				}				
+			}
+			loopCnt = i;
 		}
-		loopCnt = i;
 	}
 	/**
 	*	process packet and generate reply if necessary.
@@ -196,15 +234,16 @@ public class Tcp {
 			p.setStatus(Packet.FREE);
 			return;
 		}
-		p.tcpConn = tc;
+		// We could add the handler to the connection to find
+		// it faster
 		TcpHandler th = null;
 		// is a handler registered for that port?
-		if (list!=null) {
-			for (int i=0; i<MAX_HANDLER; ++i) {
+		for (int i=0; i<MAX_HANDLER; ++i) {
+			synchronized (mutex) {
 				if (list[i]!=null && ports[i]==tc.localPort) {
 					th = list[i];
 					break;
-				}
+				}			
 			}
 		}
 		// no handler found
@@ -215,14 +254,9 @@ Dbg.wr('T');
 Dbg.intVal(buf[HEAD] & 0xffff);
 			return;
 		}
-		// we change the TCP state here - not that good
-		// should be collected in a single state machine
-		if (tc.state==Tcp.CLOSED) {
-			tc.state = Tcp.LISTEN;
-		}
 		
 		// do the TCP state machine
-		handleState(p, th);
+		handleState(p, th, tc);
 	}
 	
 	/**
@@ -231,9 +265,16 @@ Dbg.intVal(buf[HEAD] & 0xffff);
 	 * @param tc connection
 	 * @return false means nothing more to do
 	 */
-	private static void handleState(Packet p, TcpHandler th) {
+	private static void handleState(Packet p, TcpHandler th, TcpConnection tc) {
 		
-		TcpConnection tc = p.tcpConn;
+		// TODO: do we need synchronized for handle state?
+		// or synchronized handling of connection change?
+		
+		// we only come into this when a handler is registered
+		// so there is no use of state closed
+		if (tc.state==Tcp.CLOSED) {
+			tc.state = Tcp.LISTEN;
+		}
 		int state = tc.state;
 		
 		int buf[] = p.buf;
@@ -247,6 +288,19 @@ Dbg.intVal(buf[HEAD] & 0xffff);
 		System.out.print(state);
 		System.out.print(" len ");
 		System.out.println(datlen);
+
+		synchronized (mutex) {
+			if ((flags&FL_ACK) !=0 && tc.outStanding!=null) {
+				if (buf[ACKNR]==tc.sndNxt) {
+					System.out.println("ack received");
+					tc.outStanding = null;
+				} else {
+					// not the correct ACK - drop it
+					p.setStatus(Packet.FREE);
+					return;
+				}
+			}			
+		}
 		
 		switch(state) {
 		case Tcp.CLOSED:
@@ -268,20 +322,20 @@ Dbg.intVal(buf[HEAD] & 0xffff);
 			tc.sndNxt = 123;	// TODO: get time dependent initial seqnrs
 			buf[OPTION] = 0x02040000 + 512;	// set MSS to 512
 			p.len = (OPTION+1)<<2;	// len in bytes
-			// TODO: do we need to retransmit the SYN if we don't get the ACK?
 			fillHeader(p, tc, FL_SYN|FL_ACK, true);
 			tc.sndNxt++;		// SYN send counts for one
 			tc.state = Tcp.SYN_RCVD;
-			// TODO: retransmit the SYN on timeout of ACK
 			break;
 		case Tcp.SYN_RCVD:
-			if ((flags&FL_ACK) != 0) {
-				if (buf[ACKNR]==tc.sndNxt) {
-					tc.state = Tcp.ESTABLISHED;
-				}
+			if ((flags&FL_ACK) != 0 && buf[ACKNR]==tc.sndNxt) {
+				System.out.println("SYN acked");
+				tc.state = Tcp.ESTABLISHED;
+				th.established(p);
+				fillHeader(p, tc, FL_ACK, false);
+				tc.sndNxt += p.len-(DATA<<2);
+			} else {
+				p.setStatus(Packet.FREE);				
 			}
-			// nothing to do for now
-			p.setStatus(Packet.FREE);
 			break;
 		case Tcp.SYN_SENT:
 			break;
@@ -292,6 +346,7 @@ Dbg.intVal(buf[HEAD] & 0xffff);
 				tc.rcvNxt = buf[SEQNR]+1;
 				p.len = DATA<<2;
 				fillHeader(p, tc, FL_ACK|FL_FIN, false);
+				tc.sndNxt++;		// FIN send counts for one
 				tc.state = LAST_ACK;
 				break;
 			}
@@ -304,6 +359,8 @@ Dbg.intVal(buf[HEAD] & 0xffff);
 				fillHeader(p, tc, FL_ACK, false);
 				tc.sndNxt += p.len-(DATA<<2);
 			} else {
+				System.out.println("dropped wrong SEQNR");
+				p.setStatus(Packet.FREE);
 				// TODO ack last segment
 			}
 			break;
@@ -359,7 +416,21 @@ Dbg.intVal(buf[HEAD] & 0xffff);
 	
 		p.llh[6] = 0x0800;
 	
-		p.setStatus(Packet.SND); // mark packet ready to send
+		System.out.print("Flags ");
+		System.out.println(fl);
+		// packets with data or the SYN/FIN set
+		// need to be retransmitted
+		if (p.len>(DATA<<2) || (fl & (FL_SYN|FL_FIN))!=0) {
+			System.out.println("a TCP packet");
+			synchronized (mutex) {
+				tc.outStanding = p;
+				tc.timeout = TIMEOUT;				
+			}
+			p.setStatus(Packet.SND_TCP); // mark packet ready to send			
+		} else {
+			// probably just an ACK
+			p.setStatus(Packet.SND_DGRAM); // mark packet ready to send			
+		}
 		
 	}
 }

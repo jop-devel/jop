@@ -64,8 +64,8 @@ public class Packet {
 	public final static int FREE = 0;
 	/** Allocated and either under interpretation or under construction. */
 	public final static int ALLOC = 1;
-	/** Ready to be sent by the link layer. */
-	public final static int SND = 2;
+	/** A datagram packet ready to be sent by the link layer. */
+	public final static int SND_DGRAM = 2;
 	/** Received packet ready to be processed by the network stack. */
 	public final static int RCV = 3;
 	/** A TCP packet ready to be sent. This will go to TCP_ONFLY after sending. */
@@ -73,10 +73,7 @@ public class Packet {
 	/** A sent and not acked TCP packet. Can be resent after a timeout. */
 	public final static int TCP_ONFLY = 5;
 	
-	/** TCP connection if it's a TCP packet - do we need this? */
-	TcpConnection tcpConn;
-
-	private static Object monitor;
+	private static Object mutex;
 
 	//	no direct construction
 	private Packet() {
@@ -85,14 +82,12 @@ public class Packet {
 		len = 0;
 		status = FREE;
 		interf = null;
-		tcpConn = null;
 	}
 
-	private static boolean initOk;
 	private static Packet[] packets;
 
 	static {
-		monitor = new Object();
+		mutex = new Object();
 
 		packets = new Packet[CNT];
 		for (int i=0; i<CNT; ++i) {
@@ -103,7 +98,7 @@ public class Packet {
 
 private static void dbg() {
 
-	synchronized (monitor) {
+	synchronized (mutex) {
 		Dbg.wr('|');
 		for (int i=0; i<CNT; ++i) {
 			Dbg.wr('0'+packets[i].status);
@@ -121,7 +116,7 @@ private static void dbg() {
 		int i;
 		Packet p;
 
-		synchronized (monitor) {
+		synchronized (mutex) {
 			for (i=0; i<CNT; ++i) {
 				if (packets[i].status==type) {
 					break;
@@ -146,7 +141,7 @@ if (type==FREE) Dbg.wr('!');
 		int i;
 		Packet p;
 
-		synchronized (monitor) {
+		synchronized (mutex) {
 			for (i=0; i<CNT; ++i) {
 				if (packets[i].status==type) {
 					break;
@@ -170,36 +165,52 @@ if (type==FREE) Dbg.wr('!');
 	public static Packet getPacket(LinkLayer s, int type, int newType) {
 
 		int i;
-		Packet p;
+		Packet p = null;
 
-		synchronized (monitor) {
+		synchronized (mutex) {
 			for (i=0; i<CNT; ++i) {
-				if (packets[i].status==type && packets[i].interf==s) {
+				p = packets[i];
+				if (p.status==type && packets[i].interf==s) {
+					p.status = newType;
 					break;
 				}
 			}
-			if (i==CNT) {
-				return null;
-			}
-			packets[i].status = newType;
-			p = packets[i];
 		}
-// dbg();
+		if (i==CNT) {
+			p = null;
+		}
+			
 		return p;
 	}
 	/**
 	 * Get a packet with either status SND or SND_TCP.
-	 * Sets the status to allocated.
+	 * Keep the status as it is needed in the link layer.
 	 * @param s link layer for this packet.
 	 * @return a Packet
 	 */
 	public static Packet getTxPacket(LinkLayer s) {
-		return null;
+		int i;
+		Packet p = null;
+
+		synchronized (mutex) {
+			for (i=0; i<CNT; ++i) {
+				p = packets[i];
+				if ((p.status==SND_DGRAM || p.status==SND_TCP)
+						&& packets[i].interf==s) {
+					break;
+				}
+			}
+		}
+		if (i==CNT) {
+			p = null;
+		}
+			
+		return p;
 	}
 
 	public void setStatus(int v) {
 
-		synchronized (monitor) {
+		synchronized (mutex) {
 			status = v;
 		}
 // dbg();
@@ -211,5 +222,27 @@ if (type==FREE) Dbg.wr('!');
 
 	public LinkLayer getLinkLayer() {
 		return interf;
+	}
+
+
+	/**
+	 * Make a deep copy from Packet p. Used just for ARP requests
+	 * with a TCP packet as the TCP packet is kept in the connection.
+	 * @param p
+	 */
+	public void copy(Packet p) {
+
+		int i;
+		
+		synchronized (mutex) {
+			this.len = p.len;
+			this.interf = p.interf;
+			for (i=0; i<MAXLLH; ++i) {
+				this.llh[i] = p.llh[i];
+			}
+			for (i=0; i<MAXW; ++i) {
+				this.buf[i] = p.buf[i];
+			}
+		}
 	}
 }

@@ -45,7 +45,7 @@ import ejip.jtcpip.util.Debug;
  * @author Ulrich Feichter
  * @author Tobias Kellner
  * @author Christof Rath
- * @version $Rev: 984 $ $Date: 2007/09/18 17:53:48 $
+ * @version $Rev: 984 $ $Date: 2007/09/19 19:08:19 $
  */
 public class NwLoopRtThread extends RtThread {
 	public static TCPConnection conn = null;
@@ -250,7 +250,7 @@ public class NwLoopRtThread extends RtThread {
 				int addrPos = p.llh[6] == 0x0806 ? 6 : 4;
 				p.buf[addrPos] = firstHopDest;
 			}
-			p.setStatus(Packet.SND);
+			p.setStatus(Packet.SND_DGRAM);
 		}
 
 		if (offset > 0)

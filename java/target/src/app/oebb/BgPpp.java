@@ -655,7 +655,7 @@ Dbg.wr('\n');
 				//
 				// get a ready to send packet with source from this driver.
 				//
-				Packet p = Packet.getPacket(single, Packet.SND, Packet.ALLOC);
+				Packet p = Packet.getPacket(single, Packet.SND_DGRAM, Packet.ALLOC);
 				if (p!=null) {
 					sendIp(p);			// send one packet
 				}
@@ -697,7 +697,7 @@ Dbg.wr('\n');
 	*/
 	void dropIp() {
 
-		Packet p = Packet.getPacket(single, Packet.SND, Packet.ALLOC);
+		Packet p = Packet.getPacket(single, Packet.SND_DGRAM, Packet.ALLOC);
 		if (p!=null) {
 			p.setStatus(Packet.FREE);		// mark packet free
 		}
@@ -1016,7 +1016,11 @@ Dbg.wr('\n');
 			sbuf[i+4+2] = (k>>>8)&0xff;
 			sbuf[i+4+3] = k&0xff;
 		}
-		p.setStatus(Packet.FREE);		// mark packet free
+		if (p.getStatus()==Packet.SND_TCP) {
+			p.setStatus(Packet.TCP_ONFLY);		// mark on the fly
+		} else {
+			p.setStatus(Packet.FREE);		// mark packet free			
+		}
 
 		checksum(slen+4);
 	}

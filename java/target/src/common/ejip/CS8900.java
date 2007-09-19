@@ -500,10 +500,14 @@ public class CS8900 extends LinkLayer {
 			//
 			// get a ready to send packet with source from this driver.
 			//
-			p = Packet.getPacket(single, Packet.SND, Packet.ALLOC);
+			p = Packet.getTxPacket(single);
 			if (p != null) {
-				Arp.fillMAC(p); // fill in dest MAC
-				send(p); // send one packet
+				System.out.print("Packet state=");
+				System.out.println(p.getStatus());
+				p = Arp.fillMAC(p); // fill in dest MAC
+				if (p!=null) {
+					send(p); // send one packet					
+				}
 			}
 		}
 	}
@@ -875,7 +879,11 @@ public class CS8900 extends LinkLayer {
 		writeHead(p);
 		/* Write the contents of the packet */
 		writeData(p);
-		p.setStatus(Packet.FREE);
+		if (p.getStatus()==Packet.SND_TCP) {
+			p.setStatus(Packet.TCP_ONFLY);		// mark on the fly
+		} else {
+			p.setStatus(Packet.FREE);		// mark packet free			
+		}
 		txFree = false;
 
 		//

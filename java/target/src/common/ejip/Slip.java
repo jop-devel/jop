@@ -210,7 +210,7 @@ Dbg.wr('r');
 			//
 			// get a ready to send packet with source from this driver.
 			//
-			p = Packet.getPacket(single, Packet.SND, Packet.ALLOC);
+			p = Packet.getTxPacket(single);
 			if (p!=null) {
 				send(p);				// send one packet
 			}
@@ -297,7 +297,11 @@ return;
 			sbuf[i+2] = (k>>>8)&0xff;
 			sbuf[i+3] = k&0xff;
 		}
-		p.setStatus(Packet.FREE);		// mark packet free
+		if (p.getStatus()==Packet.SND_TCP) {
+			p.setStatus(Packet.TCP_ONFLY);		// mark on the fly
+		} else {
+			p.setStatus(Packet.FREE);		// mark packet free			
+		}
 	}
 
 /* warum geht das nicht !!!!!

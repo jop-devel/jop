@@ -47,7 +47,7 @@ import ejip.jtcpip.util.NumFunctions;
  * @author Tobias Kellner
  * @author Ulrich Feichter
  * @author Christof Rath
- * @version $Rev: 994 $ $Date: 2007/09/11 00:16:50 $
+ * @version $Rev: 994 $ $Date: 2007/09/19 19:08:19 $
  */
 public class IP {
 	/** Default Time To Live Value */
@@ -554,7 +554,7 @@ public class IP {
 
 		payloadToPacket(pay, p);
 		Payload.freePayload(pay);
-		p.setStatus(Packet.SND);
+		p.setStatus(Packet.SND_DGRAM);
 
 		return true;
 	}

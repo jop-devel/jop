@@ -61,7 +61,7 @@ public class Ip {
 	
 			p.llh[6] = 0x0800;
 	
-			p.setStatus(Packet.SND); // mark packet ready to send
+			p.setStatus(Packet.SND_DGRAM); // mark packet ready to send
 	
 		}
 	}

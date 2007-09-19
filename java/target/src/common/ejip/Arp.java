@@ -234,7 +234,7 @@ public class Arp {
 			p.llh[1] = p.llh[4];
 			p.llh[2] = p.llh[5];
 			p.llh[6] = 0x0806;			// ARP frame
-			p.setStatus(Packet.SND);	// mark packet ready to send
+			p.setStatus(Packet.SND_DGRAM);	// mark packet ready to send
 		} else {
 			p.setStatus(Packet.FREE);			// mark packet free
 		}
@@ -279,11 +279,13 @@ public class Arp {
 	/**
 	 * Fill in the destination MAC address. If not in
 	 * the cache use this packet for a ARP request.
-	 * The IP packet get's lost.
+	 * The IP packet get's lost when not a TCP packet.
+	 * Returns the original or created copy for the link
+	 * layer to send. Can be null!
 	 * 
 	 * @param p
 	 */
-	static void fillMAC(Packet p) {
+	static Packet fillMAC(Packet p) {
 
 		Entry e;
 		// IP destination address (without gateway) is
@@ -301,7 +303,22 @@ public class Arp {
 
 
 		if (e == null) {
-			sendRequest(p);
+			// If it's a TCP packet we need to make a copy,
+			// set the status to on-the-fly and rely on the
+			// TCP timout retransmission
+			if (p.getStatus()==Packet.SND_TCP) {
+				Packet ap = Packet.getPacket(Packet.FREE, Packet.ALLOC);
+				if (ap!=null) {
+					ap.copy(p);
+					sendRequest(ap);
+					// avoid transmit from the link layer again
+					// before the ARP reply comes in
+					p.setStatus(Packet.TCP_ONFLY);
+					return ap;
+				}
+			} else {
+				sendRequest(p);				
+			}
 		} else {
 			int[] mac = e.mac;
 			// intel byte order !!!
@@ -311,6 +328,7 @@ public class Arp {
 
 		}
 
+		return p;
 	}
 	
 	/**
