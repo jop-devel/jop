@@ -43,7 +43,6 @@ library ieee ;
 use ieee.std_logic_1164.all ;
 use ieee.numeric_std.all ;
 
-use work.jop_types.all;
 use work.wb_pack.all;
 
 entity sc2wb is
