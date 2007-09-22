@@ -28,18 +28,18 @@
 #		use -usb to download the Java application
 #		without the echo 'protocol' on USB
 #
-COM_PORT=COM1
+COM_PORT=COM2
 COM_FLAG=-e
 #COM_PORT=COM6
 #COM_FLAG=-e -usb
 
-BLASTER_TYPE=ByteBlasterMV
-#BLASTER_TYPE=USB-Blaster
+#BLASTER_TYPE=ByteBlasterMV
+BLASTER_TYPE=USB-Blaster
 
 # 'some' different Quartus projects
 QPROJ=cycmin cycbaseio cycbg dspio lego cycfpu cyc256x16 sopcmin
 # if you want to build only one Quartus project use e.q.:
-QPROJ=cycmin
+QPROJ=altde2sram
 
 # Nelson uncomment this
 #QPROJ=cyc12baseio
@@ -58,7 +58,7 @@ IPDEST=192.168.0.123
 
 P1=test
 P2=test
-P3=HelloWorld
+P3=DoAll
 # The test program for Basio and the NAND Flash
 #P3=FlashBaseio
 
@@ -163,7 +163,7 @@ japp: java_app config_byteblast download
 # use this for USB download of FPGA configuration
 # and Java program download
 #all: directories tools jopusb japp
-#
+
 #japp: java_app config_usb download
 
 

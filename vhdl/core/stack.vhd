@@ -104,7 +104,8 @@ port (
 	rdaddress	: in std_logic_vector(ram_width-1 downto 0);
 	wren		: in std_logic;
 	clock		: in std_logic;
-
+        reset           : in std_logic;
+        
 	q			: out std_logic_vector(width-1 downto 0)
 );
 end component;
@@ -139,7 +140,7 @@ begin
 	cmp_shf: shift generic map (width) port map (b, a(4 downto 0), sel_shf, sout);
 
 	cmp_ram: ram generic map(width, ram_width)
-			port map(mmux, wraddr, rdaddr, wr_ena, clk, ram_dout);
+			port map(mmux, wraddr, rdaddr, wr_ena, clk, reset, ram_dout);
 
 
 -- a version that 'could' be better in Spartan
