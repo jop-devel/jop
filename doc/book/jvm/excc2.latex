@@ -1,0 +1,71 @@
+\setlength{\unitlength}{3276sp}%
+%
+\begingroup\makeatletter\ifx\SetFigFont\undefined%
+\gdef\SetFigFont#1#2#3#4#5{%
+  \reset@font\fontsize{#1}{#2pt}%
+  \fontfamily{#3}\fontseries{#4}\fontshape{#5}%
+  \selectfont}%
+\fi\endgroup%
+\begin{picture}(3005,3406)(2295,-5248)
+\thinlines
+\put(3938,-3436){\framebox(1350,338){}}
+\put(4275,-3098){\line( 0,-1){338}}
+\put(4613,-3098){\line( 0,-1){338}}
+\put(4950,-3098){\line( 0,-1){338}}
+\put(5119,-3323){\makebox(0,0)[b]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}$l_5$}}}}
+\put(4107,-3323){\makebox(0,0)[b]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}$f_4$}}}}
+\put(4950,-3998){\line( 0,-1){338}}
+\put(4613,-3998){\line( 0,-1){338}}
+\put(4275,-3998){\line( 0,-1){338}}
+\put(3938,-4336){\framebox(1350,338){}}
+\put(5119,-4223){\makebox(0,0)[b]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}$f_5$}}}}
+\put(4782,-4223){\makebox(0,0)[b]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}$f_6$}}}}
+\put(4444,-4223){\makebox(0,0)[b]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}$l_7$}}}}
+\put(4107,-4223){\makebox(0,0)[b]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}$f_4$}}}}
+\put(3938,-5236){\framebox(1350,338){}}
+\put(4275,-4898){\line( 0,-1){338}}
+\put(4613,-4898){\line( 0,-1){338}}
+\put(4950,-4898){\line( 0,-1){338}}
+\put(4950,-2198){\line( 0,-1){338}}
+\put(4613,-2198){\line( 0,-1){338}}
+\put(4275,-2198){\line( 0,-1){338}}
+\put(3938,-2536){\framebox(1350,338){}}
+\put(2644,-3098){\line( 0,-1){338}}
+\put(2982,-3098){\line( 0,-1){338}}
+\put(3319,-3098){\line( 0,-1){338}}
+\put(2307,-3436){\framebox(1350,338){}}
+\put(2307,-4336){\framebox(1350,338){}}
+\put(3319,-3998){\line( 0,-1){338}}
+\put(2982,-3998){\line( 0,-1){338}}
+\put(2644,-3998){\line( 0,-1){338}}
+\put(2644,-4898){\line( 0,-1){338}}
+\put(2982,-4898){\line( 0,-1){338}}
+\put(3319,-4898){\line( 0,-1){338}}
+\put(2307,-5236){\framebox(1350,338){}}
+\put(3488,-3323){\makebox(0,0)[b]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}$g_1$}}}}
+\put(3151,-3323){\makebox(0,0)[b]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}$g_2$}}}}
+\put(2813,-3323){\makebox(0,0)[b]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}$g_3$}}}}
+\put(2476,-3323){\makebox(0,0)[b]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}$f_4$}}}}
+\put(2306,-2929){\makebox(0,0)[lb]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}in the middle of the cycle}}}}
+\put(3488,-4223){\makebox(0,0)[b]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}$g_1$}}}}
+\put(3151,-4223){\makebox(0,0)[b]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}$g_2$}}}}
+\put(2813,-4223){\makebox(0,0)[b]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}$g_3$}}}}
+\put(2476,-4223){\makebox(0,0)[b]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}$f_4$}}}}
+\put(2306,-3829){\makebox(0,0)[lb]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}at the end (before flip)}}}}
+\put(2476,-5123){\makebox(0,0)[b]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}$f_4$}}}}
+\put(2813,-5123){\makebox(0,0)[b]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}$l_7$}}}}
+\put(3151,-5123){\makebox(0,0)[b]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}$f_6$}}}}
+\put(3488,-5123){\makebox(0,0)[b]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}$f_5$}}}}
+\put(2306,-4729){\makebox(0,0)[lb]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}after the flip}}}}
+\put(2644,-2198){\line( 0,-1){338}}
+\put(2982,-2198){\line( 0,-1){338}}
+\put(3319,-2198){\line( 0,-1){338}}
+\put(2307,-2536){\framebox(1350,338){}}
+\put(3995,-2676){\makebox(0,0)[lb]{\smash{{\SetFigFont{7}{8.4}{\rmdefault}{\mddefault}{\itdefault}to-space}}}}
+\put(2306,-2029){\makebox(0,0)[lb]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}at the begin of the GC cycle}}}}
+\put(2363,-2676){\makebox(0,0)[lb]{\smash{{\SetFigFont{7}{8.4}{\rmdefault}{\mddefault}{\itdefault}from-space}}}}
+\put(2476,-2423){\makebox(0,0)[b]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}$l_4$}}}}
+\put(2813,-2423){\makebox(0,0)[b]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}$g_3$}}}}
+\put(3151,-2423){\makebox(0,0)[b]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}$g_2$}}}}
+\put(3488,-2423){\makebox(0,0)[b]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}$g_1$}}}}
+\end{picture}%

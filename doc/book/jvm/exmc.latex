@@ -1,0 +1,67 @@
+\setlength{\unitlength}{3276sp}%
+%
+\begingroup\makeatletter\ifx\SetFigFont\undefined%
+\gdef\SetFigFont#1#2#3#4#5{%
+  \reset@font\fontsize{#1}{#2pt}%
+  \fontfamily{#3}\fontseries{#4}\fontshape{#5}%
+  \selectfont}%
+\fi\endgroup%
+\begin{picture}(2724,3406)(2295,-5248)
+\thinlines
+\put(2644,-4898){\line( 0,-1){338}}
+\put(2982,-4898){\line( 0,-1){338}}
+\put(3319,-4898){\line( 0,-1){338}}
+\put(2307,-5236){\framebox(2700,338){}}
+\put(3657,-4898){\line( 0,-1){338}}
+\put(3994,-4898){\line( 0,-1){338}}
+\put(4332,-4898){\line( 0,-1){338}}
+\put(4669,-4898){\line( 0,-1){338}}
+\put(3488,-5123){\makebox(0,0)[b]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}$l_7$}}}}
+\put(3151,-5123){\makebox(0,0)[b]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}$f_6$}}}}
+\put(2813,-5123){\makebox(0,0)[b]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}$f_5$}}}}
+\put(2476,-5123){\makebox(0,0)[b]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}$f_4$}}}}
+\put(2306,-4729){\makebox(0,0)[lb]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}after compaction}}}}
+\put(4669,-3998){\line( 0,-1){337}}
+\put(4332,-3998){\line( 0,-1){337}}
+\put(3994,-3998){\line( 0,-1){337}}
+\put(3657,-3998){\line( 0,-1){337}}
+\put(2307,-4335){\framebox(2700,337){}}
+\put(3319,-3998){\line( 0,-1){337}}
+\put(2982,-3998){\line( 0,-1){337}}
+\put(2644,-3998){\line( 0,-1){337}}
+\put(4501,-4223){\makebox(0,0)[b]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}$l_7$}}}}
+\put(4163,-4223){\makebox(0,0)[b]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}$f_6$}}}}
+\put(3826,-4223){\makebox(0,0)[b]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}$f_5$}}}}
+\put(3488,-4223){\makebox(0,0)[b]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}$f_4$}}}}
+\put(2306,-3829){\makebox(0,0)[lb]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}before compaction}}}}
+\put(3151,-4223){\makebox(0,0)[b]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}$g_3$}}}}
+\put(2813,-4223){\makebox(0,0)[b]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}$g_2$}}}}
+\put(2476,-4223){\makebox(0,0)[b]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}$g_1$}}}}
+\put(2644,-3098){\line( 0,-1){337}}
+\put(2982,-3098){\line( 0,-1){337}}
+\put(3319,-3098){\line( 0,-1){337}}
+\put(2307,-3435){\framebox(2700,337){}}
+\put(3657,-3098){\line( 0,-1){337}}
+\put(3994,-3098){\line( 0,-1){337}}
+\put(4332,-3098){\line( 0,-1){337}}
+\put(4669,-3098){\line( 0,-1){337}}
+\put(3826,-3323){\makebox(0,0)[b]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}$l_5$}}}}
+\put(3488,-3323){\makebox(0,0)[b]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}$f_4$}}}}
+\put(2306,-2930){\makebox(0,0)[lb]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}in the middle (marking)}}}}
+\put(2476,-3323){\makebox(0,0)[b]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}$g_1$}}}}
+\put(2813,-3323){\makebox(0,0)[b]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}$g_2$}}}}
+\put(3151,-3323){\makebox(0,0)[b]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}$g_3$}}}}
+\put(2644,-2198){\line( 0,-1){338}}
+\put(2982,-2198){\line( 0,-1){338}}
+\put(3319,-2198){\line( 0,-1){338}}
+\put(2307,-2536){\framebox(2700,338){}}
+\put(3657,-2198){\line( 0,-1){338}}
+\put(3994,-2198){\line( 0,-1){338}}
+\put(4332,-2198){\line( 0,-1){338}}
+\put(4669,-2198){\line( 0,-1){338}}
+\put(2476,-2423){\makebox(0,0)[b]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}$g_1$}}}}
+\put(2813,-2423){\makebox(0,0)[b]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}$g_2$}}}}
+\put(3151,-2423){\makebox(0,0)[b]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}$g_3$}}}}
+\put(3488,-2423){\makebox(0,0)[b]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}$l_4$}}}}
+\put(2306,-2029){\makebox(0,0)[lb]{\smash{{\SetFigFont{8}{9.6}{\rmdefault}{\mddefault}{\updefault}at the begin of the GC cycle}}}}
+\end{picture}%
