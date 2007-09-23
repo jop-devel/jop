@@ -34,4 +34,24 @@ public class FileListPool implements IFileList {
     public void addFileList(IFileList fl){
 	this.fileList.add(fl);
     }
+    /* (non-Javadoc)
+     * @see wcet.components.graphbuilder.util.IFileList#getAllFiles()
+     */
+    public HashSet<String> getAllFiles() {
+	HashSet<String> result = new HashSet<String>();
+	for(Iterator<IFileList> iterator=this.fileList.iterator();iterator.hasNext();){
+	    result.addAll(iterator.next().getAllFiles());
+	}
+	return result;
+    }
+    /* (non-Javadoc)
+     * @see wcet.components.graphbuilder.util.IFileList#getSize()
+     */
+    public int getSize() {
+	int result = 0;
+	for(Iterator<IFileList> iterator=this.fileList.iterator();iterator.hasNext();){
+	    result += iterator.next().getSize();
+	}
+	return result;
+    }
 }

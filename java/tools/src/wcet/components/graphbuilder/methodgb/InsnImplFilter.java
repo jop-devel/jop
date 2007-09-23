@@ -158,9 +158,9 @@ public class InsnImplFilter implements ClassVisitor, IAnalyserComponent {
          */
 	private void handleJOPInstruction(int opCode) {
 	    // setting in the xml config file take preference
-	   if (IImplementationConfig.JOP_INSN_IMPL_DEFAULT[opCode] == IImplementationConfig.JAVA) {
+	  // if (IImplementationConfig.JOP_INSN_IMPL_DEFAULT[opCode] == IImplementationConfig.JAVA) {
 		
-	   // if(WCETInstruction.isInJava(opCode)){
+	   if(WCETInstruction.isInJava(opCode)){
 //		 call the method
 		String name = "f_" + OpCodes.OPCODE_NAMES[opCode];
 		// QUESTION invokestatic or invoke special (private)
@@ -308,14 +308,7 @@ public class InsnImplFilter implements ClassVisitor, IAnalyserComponent {
 		    this.visitJOPInsn(opCode);
 	    } else {
 		this.handleJOPInstruction(oc);
-		// TODO bad - infinite loop - log in JVM - WORKAROUND
-		/*
-                 * if ((owner.endsWith("JVMHelp") && (name.equals("wr")) &&
-                 * (desc .equals("(Ljava/lang/String;)V")))) return;
-                 */
 		if (this.mv != null)
-		    // if (!owner
-		    // .equals(IGraphBuilderConstants.JOP_SYSTEM_PACKAGE_NAME+IGraphBuilderConstants.NATIVECLASS_NAME))
 		    this.mv.visitMethodInsn(oc, owner, name, desc);
 	    }
 

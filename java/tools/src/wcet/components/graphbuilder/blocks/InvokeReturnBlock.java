@@ -6,7 +6,7 @@ package wcet.components.graphbuilder.blocks;
 import com.jopdesign.wcet.WCETInstruction;
 
 //import wcet.components.graphbuilder.instruction.ICacheMemoryConstants;
-import wcet.components.graphbuilder.methodgb.MethodKey;
+import wcet.framework.hierarchy.MethodKey;
 import wcet.framework.interfaces.instruction.IAnalysisInstruction;
 
 /**

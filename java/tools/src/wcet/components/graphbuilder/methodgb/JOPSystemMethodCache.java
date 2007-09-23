@@ -13,6 +13,7 @@ import wcet.components.graphbuilder.IGraphBuilderConstants;
 import wcet.components.graphbuilder.util.IFileList;
 import wcet.components.graphbuilder.util.MethodBlockCache;
 import wcet.framework.exceptions.TaskInitException;
+import wcet.framework.hierarchy.MethodKey;
 import wcet.framework.interfaces.instruction.IImplementationConfig;
 import wcet.framework.interfaces.instruction.OpCodes;
 

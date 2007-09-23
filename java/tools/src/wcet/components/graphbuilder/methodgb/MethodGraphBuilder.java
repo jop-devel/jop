@@ -14,10 +14,12 @@ import wcet.components.graphbuilder.util.IFileList;
 //import wcet.components.graphbuilder.util.MethodBlockCache;
 import wcet.components.graphbuilder.util.ZipFileList;
 import wcet.framework.exceptions.InitException;
+import wcet.framework.hierarchy.MethodKey;
 import wcet.framework.interfaces.general.IAnalyserComponent;
 import wcet.framework.interfaces.general.IDataStore;
 import wcet.framework.interfaces.general.IDataStoreKeys;
 import wcet.framework.interfaces.general.IGlobalComponentOrder;
+import wcet.framework.interfaces.hierarchy.IHierarchy;
 
 /**
  * @author Elena Axamitova
@@ -73,6 +75,7 @@ public class MethodGraphBuilder implements IAnalyserComponent {
     public void init() throws InitException {
 	this.initClassFileList();
 	this.methodBlockCacheVisitor = new MBCacheVisitor(this.classFileList);
+	this.dataStore.storeObject(IGraphBuilderConstants.FILE_LIST_KEY, this.classFileList);
 	this.dataStore.storeObject(IGraphBuilderConstants.LAST_MB_CLASS_VISITOR_KEY, this.methodBlockCacheVisitor);
 	MethodBlock.setMBCache(this.methodBlockCacheVisitor);
     }
@@ -92,6 +95,9 @@ public class MethodGraphBuilder implements IAnalyserComponent {
 	String mainMethodDescriptor = this.dataStore.getMainMethodDescriptor();
 	//create the root method block - read in from class file and store keys (only keys)
 	//of all methods called in it - its children
+	IHierarchy hierarchy = (IHierarchy) this.dataStore.getObject(IGraphBuilderConstants.HIERARCHY_KEY);
+	if(hierarchy != null)
+	    MethodBlock.setHierarchy(hierarchy);
 	MethodKey rootKey = new MethodKey(
 		className,
 		//use default values if not else provided

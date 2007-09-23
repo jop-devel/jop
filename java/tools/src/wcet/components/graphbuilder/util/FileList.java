@@ -8,6 +8,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.StringTokenizer;
 
 import wcet.framework.exceptions.InitException;
@@ -148,6 +149,20 @@ public class FileList implements IFileList {
     private String getNameWithoutSuffix(String fileName) {
 	fileName = fileName.replace('\\', '/');
 	return fileName.substring(0, fileName.lastIndexOf('.'));
+    }
+
+    /* (non-Javadoc)
+     * @see wcet.components.graphbuilder.util.IFileList#getAllFiles()
+     */
+    public HashSet<String> getAllFiles() {
+	return new HashSet<String>(this.files.keySet());
+    }
+
+    /* (non-Javadoc)
+     * @see wcet.components.graphbuilder.util.IFileList#getSize()
+     */
+    public int getSize() {
+	return this.files.size();
     }
 
 }

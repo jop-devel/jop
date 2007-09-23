@@ -4,6 +4,7 @@
 package wcet.components.graphbuilder.util;
 
 import java.io.InputStream;
+import java.util.HashSet;
 
 /**
  * @author Elena Axamitova
@@ -18,4 +19,8 @@ public interface IFileList {
      * @return InputStream of the file fileName
      */
     public InputStream getFileInputStream(String fileName);
+    
+    public int getSize();
+    
+    public HashSet<String> getAllFiles();
 }

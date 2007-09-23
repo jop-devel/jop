@@ -5,6 +5,7 @@ package wcet.components.graphbuilder.methodgb;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 
@@ -15,6 +16,8 @@ import org.objectweb.asm.tree.MethodNode;
 import wcet.components.graphbuilder.basicblockgb.JOPInsnNode;
 import wcet.components.graphbuilder.util.IMethodBlockCache;
 import wcet.framework.exceptions.TaskInitException;
+import wcet.framework.hierarchy.MethodKey;
+import wcet.framework.interfaces.hierarchy.IHierarchy;
 import wcet.framework.interfaces.instruction.IJOPMethodVisitor;
 
 /**
@@ -27,11 +30,13 @@ import wcet.framework.interfaces.instruction.IJOPMethodVisitor;
 
 // TODO find all possible implementations of a method - in resolve() if possible
 // TODO handle inner classes - enclosed in a method (?method parameter access)
-public class MethodBlock extends MethodNode implements IJOPMethodVisitor{
+public class MethodBlock extends MethodNode implements IJOPMethodVisitor {
     /**
          * cache used to search for method block
          */
     private static IMethodBlockCache methodCache;
+
+    private static IHierarchy hierarchy;
 
     /**
          * enclosing class of the method
@@ -75,10 +80,14 @@ public class MethodBlock extends MethodNode implements IJOPMethodVisitor{
 
     }
 
-    public static void setMBCache(IMethodBlockCache cache){
+    public static void setMBCache(IMethodBlockCache cache) {
 	MethodBlock.methodCache = cache;
     }
-    
+
+    public static void setHierarchy(IHierarchy hierarchy) {
+	MethodBlock.hierarchy = hierarchy;
+    }
+
     /**
          * @return method enclosing class
          */
@@ -133,7 +142,7 @@ public class MethodBlock extends MethodNode implements IJOPMethodVisitor{
     // * @param l1 - first label
     // * @param l2 - second label
     // * @return 0 if equal, positive if l1 before l2, negative if l1 after
-        // l2
+    // l2
     // */
     // public int compareLabelPosition(Label l1, Label l2) {
     // int idx1 = this.labels.indexOf(l1);
@@ -179,8 +188,8 @@ public class MethodBlock extends MethodNode implements IJOPMethodVisitor{
     @Override
     public void visitMethodInsn(final int opcode, final String owner,
 	    final String name, final String desc) {
-	    this.children.put(new MethodKey(owner, name, desc), null);
-	    instructions.add(new MethodInsnNode(opcode, owner, name, desc));
+	this.children.put(new MethodKey(owner, name, desc), null);
+	instructions.add(new MethodInsnNode(opcode, owner, name, desc));
     }
 
     @Override
@@ -218,13 +227,15 @@ public class MethodBlock extends MethodNode implements IJOPMethodVisitor{
 	this.labels.add(label);
     }
 
-    /* (non-Javadoc)
-     * @see wcet.framework.interfaces.instruction.IJOPMethodVisitor#visitJOPInsn(int)
-     */
+    /*
+         * (non-Javadoc)
+         * 
+         * @see wcet.framework.interfaces.instruction.IJOPMethodVisitor#visitJOPInsn(int)
+         */
     public void visitJOPInsn(int opCode) {
 	instructions.add(new JOPInsnNode(opCode));
     }
-    
+
     public boolean isJumpLabel(Label label) {
 	return this.labels.contains(label);
     }
@@ -237,6 +248,7 @@ public class MethodBlock extends MethodNode implements IJOPMethodVisitor{
          */
     private void constructChildren() throws TaskInitException {
 	Iterator<MethodKey> keyIterator = this.children.keySet().iterator();
+	LinkedHashMap<MethodKey, MethodBlock> helpMap = new LinkedHashMap<MethodKey, MethodBlock>();
 	while (keyIterator.hasNext()) {
 	    MethodKey currKey = keyIterator.next();
 	    MethodBlock currChild = methodCache.getMethodBlock(currKey);
@@ -245,14 +257,34 @@ public class MethodBlock extends MethodNode implements IJOPMethodVisitor{
 	    // Maybe I will try it later.
 	    // System.out.println(currKey.getOwner()
 	    // +":"+currKey.getName()+":"+currKey.getDecription());
-	    this.children.put(currKey, currChild);
+	    if ((hierarchy != null)
+		    && (!currKey.getOwner().equals(hierarchy.getSuperclassName(this
+			    .getOwner())))) {
+		this.constructDoppelgaengers(currKey, helpMap);
+	    } else {
+		this.children.put(currKey, currChild);
+	    }
+	}
+	this.children.putAll(helpMap);
+    }
+
+    private void constructDoppelgaengers(MethodKey key,LinkedHashMap<MethodKey, MethodBlock> map)
+	    throws TaskInitException {
+	HashSet<MethodKey> dgKeys = hierarchy.getAllMethodImpls(key);
+	for (Iterator<MethodKey> iterator = dgKeys.iterator(); iterator
+		.hasNext();) {
+	    MethodKey currKey = iterator.next();
+	    MethodBlock currDG = methodCache.getMethodBlock(currKey);
+	    map.put(currKey, currDG);
 	}
     }
-    
-    protected void replaceChild(MethodKey oldChild, MethodKey newChild){
-	if (this.children.containsKey(oldChild)&&(this.children.get(oldChild)==null) ){
+
+    protected void replaceChild(MethodKey oldChild, MethodKey newChild) {
+	if (this.children.containsKey(oldChild)
+		&& (this.children.get(oldChild) == null)) {
 	    this.children.remove(oldChild);
-	    if(newChild!=null) this.children.put(newChild, null);
+	    if (newChild != null)
+		this.children.put(newChild, null);
 	}
     }
 }

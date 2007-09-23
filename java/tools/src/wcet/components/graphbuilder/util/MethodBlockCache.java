@@ -16,8 +16,8 @@ import org.objectweb.asm.tree.ClassNode;
 
 import wcet.components.graphbuilder.IGraphBuilderConstants;
 import wcet.components.graphbuilder.methodgb.MethodBlock;
-import wcet.components.graphbuilder.methodgb.MethodKey;
 import wcet.framework.exceptions.TaskInitException;
+import wcet.framework.hierarchy.MethodKey;
 
 /**
  * @author Elena Axamitova

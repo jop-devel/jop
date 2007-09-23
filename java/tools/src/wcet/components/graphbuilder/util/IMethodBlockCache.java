@@ -4,8 +4,8 @@
 package wcet.components.graphbuilder.util;
 
 import wcet.components.graphbuilder.methodgb.MethodBlock;
-import wcet.components.graphbuilder.methodgb.MethodKey;
 import wcet.framework.exceptions.TaskInitException;
+import wcet.framework.hierarchy.MethodKey;
 
 /**
  * @author Elena Axamitova
