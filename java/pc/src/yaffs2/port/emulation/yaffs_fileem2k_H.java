@@ -1,4 +1,4 @@
-package yaffs2.port;
+package yaffs2.port.emulation;
 
 public class yaffs_fileem2k_H
 {

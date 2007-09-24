@@ -1,7 +1,12 @@
-package yaffs2.port;
+package yaffs2.port.emulation;
 
 import java.io.RandomAccessFile; 
 
+import yaffs2.port.yaffs_DIR;
+import yaffs2.port.yaffs_dirent;
+import yaffs2.port.yaffs_stat;
+import yaffs2.port.yaffsfs_C;
+import yaffs2.port.yaffsfs_H;
 import yaffs2.utils.*;
 import yaffs2.utils.emulation.*;
 import yaffs2.utils.factory.PrimitiveWrapperFactory;

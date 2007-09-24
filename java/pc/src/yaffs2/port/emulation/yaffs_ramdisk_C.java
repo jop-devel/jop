@@ -1,5 +1,16 @@
-package yaffs2.port;
+package yaffs2.port.emulation;
 
+import yaffs2.port.Guts_H;
+import yaffs2.port.yaffs_Device;
+import yaffs2.port.yaffs_ExtendedTags;
+import yaffs2.port.yaffs_PackedTags1;
+import yaffs2.port.yaffs_packedtags1_C;
+import yaffs2.port.ydirectenv;
+import yaffs2.port.yportenv;
+import yaffs2.port.yaffs_Device.eraseBlockInNANDInterface;
+import yaffs2.port.yaffs_Device.initialiseNANDInterface;
+import yaffs2.port.yaffs_Device.readChunkWithTagsFromNANDInterface;
+import yaffs2.port.yaffs_Device.writeChunkWithTagsToNANDInterface;
 import yaffs2.utils.*;
 import yaffs2.utils.factory.PrimitiveWrapperFactory;
 
@@ -33,7 +44,7 @@ public class yaffs_ramdisk_C implements
 //	 * Use this with dev->useNANDECC enabled, then ECC overheads are not required.
 //	 */
 //
-//	const char *yaffs_ramdisk_c_version = "$Id: yaffs_ramdisk_C.java,v 1.3 2007/07/01 01:29:51 alexander.dejaco Exp $";
+//	const char *yaffs_ramdisk_c_version = "$Id: yaffs_ramdisk_C.java,v 1.1 2007/09/24 13:31:33 peter.hilber Exp $";
 //
 //
 //	#include "yportenv.h"

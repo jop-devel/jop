@@ -18,9 +18,9 @@ public class InternalNANDYaffs1NANDInterfacePrimitives implements Yaffs1NANDInte
 	static final int COMMAND_ERASE_CONFIRM = 0xD0;
 	static final int COMMAND_PROGRAM = 0x80;
 	static final int COMMAND_PROGRAM_CONFIRM = 0x10;
-	static final int POINTER_AREA_A = 00;
-	static final int POINTER_AREA_B = 01;
-	static final int POINTER_AREA_C = 50;
+	static final int COMMAND_READA = 00;
+	static final int COMMAND_READB = 01;
+	static final int COMMAND_READC = 50;
 	
 	static final int nPagesPerBlock = 32;
 	
@@ -62,10 +62,11 @@ public class InternalNANDYaffs1NANDInterfacePrimitives implements Yaffs1NANDInte
 	{
 		if (data != null) {
 			int column = 0, pointer = 0, addr0, addr1;
-			
-			pointer = POINTER_AREA_A;
-			// (chunkInNAND / (PAGES_PER_BLOCK) block address
+
+			// (chunkInNAND % (PAGES_PER_BLOCK)) address in block
 			addr0 = (chunkInNAND % 32) & 0x1f;
+
+			// (chunkInNAND / (PAGES_PER_BLOCK) block address
 			addr0 = (addr0 & 0x1f) | (((chunkInNAND / 32) << 5) & 0xe0);
 			addr1 = ((chunkInNAND / 32) >>> 3) & 0xff;
 
@@ -88,11 +89,12 @@ public class InternalNANDYaffs1NANDInterfacePrimitives implements Yaffs1NANDInte
 		if (spare != null)
 		{
 				// waitForNandReady("data written."); shall we wait before writing?
-				int column = 0, pointer = 0, addr0, addr1;
+				int column = 0, pointer = 80, addr0, addr1;
 				
-				pointer = POINTER_AREA_C;
-				// (chunkInNAND / (PAGES_PER_BLOCK) block address
+				// (chunkInNAND % (PAGES_PER_BLOCK)) address in block
 				addr0 = (chunkInNAND % 32) & 0x1f;
+
+				// (chunkInNAND / (PAGES_PER_BLOCK) block address
 				addr0 = (addr0 & 0x1f) | (((chunkInNAND / 32) << 5) & 0xe0);
 				addr1 = ((chunkInNAND / 32) >>> 3) & 0xff;
 
@@ -117,7 +119,7 @@ public class InternalNANDYaffs1NANDInterfacePrimitives implements Yaffs1NANDInte
 	public boolean eraseBlockInNAND(int deviceGenericDevice, 
 			int devicenDataBytesPerChunk, int blockNumber)
 	{		
-		int addr0 = (blockNumber & 0x07) << 5; // only A14-A26 matter: the block address
+		int addr0 = (blockNumber & 0x07) << 5; // only A14-A26 matters: the block address
 		int addr1 = (blockNumber >>> 3) & 0xff;
 /*		
 		System.out.print("blockNumber: ");
@@ -136,17 +138,17 @@ public class InternalNANDYaffs1NANDInterfacePrimitives implements Yaffs1NANDInte
 		return !errorOccurred();
 	}
 	
+	
+	/*public byte[] readFromNAND(int chunkInNAND) */
 	public boolean readChunkFromNAND(int deviceGenericDevice, 
 			int devicenDataBytesPerChunk, int chunkInNAND, byte[] data, int dataIndex, 
 			byte[] spare, int spareIndex)
 	{
 		int column = 0, pointer = 0, addr0, addr1;
-		
-		if (data != null)
-		{
-			pointer = POINTER_AREA_A;
-			// (chunkInNAND / (PAGES_PER_BLOCK) block address
+		if (data != null) {
+			// (chunkInNAND % (PAGES_PER_BLOCK)) address in block
 			addr0 = (chunkInNAND % 32) & 0x1f;
+			// (chunkInNAND / (PAGES_PER_BLOCK) block address
 			addr0 = (addr0 & 0x1f) | (((chunkInNAND / 32) << 5) & 0xe0);
 			addr1 = ((chunkInNAND / 32) >>> 3) & 0xff;
 
@@ -167,8 +169,7 @@ public class InternalNANDYaffs1NANDInterfacePrimitives implements Yaffs1NANDInte
 		
 		if (spare != null)
 		{
-			pointer = POINTER_AREA_C;
-			// (chunkInNAND / (PAGES_PER_BLOCK) block address
+			pointer = 80;
 			addr0 = (chunkInNAND % 32) & 0x1f;
 			addr0 = (addr0 & 0x1f) | (((chunkInNAND / 32) << 5) & 0xe0);
 			addr1 = ((chunkInNAND / 32) >>> 3) & 0xff;

@@ -111,10 +111,10 @@ public abstract class Guts_H
 	/* Stuff used for extended tags in YAFFS2 */
 
 	//typedef enum {
-	static final int YAFFS_ECC_RESULT_UNKNOWN = 0;
-	static final int YAFFS_ECC_RESULT_NO_ERROR = 1;
-	static final int YAFFS_ECC_RESULT_FIXED = 2;
-	static final int YAFFS_ECC_RESULT_UNFIXED = 3;
+	public static final int YAFFS_ECC_RESULT_UNKNOWN = 0;
+	public static final int YAFFS_ECC_RESULT_NO_ERROR = 1;
+	public static final int YAFFS_ECC_RESULT_FIXED = 2;
+	public static final int YAFFS_ECC_RESULT_UNFIXED = 3;
 	//} yaffs_ECCResult;
 
 	//typedef enum {
@@ -139,10 +139,10 @@ public abstract class Guts_H
 	/* Block data in RAM */
 
 	//typedef enum {
-		static final int YAFFS_BLOCK_STATE_UNKNOWN = 0;
+		public static final int YAFFS_BLOCK_STATE_UNKNOWN = 0;
 
-		static final int YAFFS_BLOCK_STATE_SCANNING = 1;
-		static final int YAFFS_BLOCK_STATE_NEEDS_SCANNING = 2;
+		public static final int YAFFS_BLOCK_STATE_SCANNING = 1;
+		public static final int YAFFS_BLOCK_STATE_NEEDS_SCANNING = 2;
 		/* The block might have something on it (ie it is allocating or full, perhaps empty)
 		 * but it needs to be scanned to determine its true state.
 		 * This state is only valid during yaffs_Scan.
@@ -150,33 +150,33 @@ public abstract class Guts_H
 		 * However, if this state is returned on a YAFFS2 device, then we expect a sequence number
 		 */
 
-		static final int YAFFS_BLOCK_STATE_EMPTY = 3;
+		public static final int YAFFS_BLOCK_STATE_EMPTY = 3;
 		/* This block is empty */
 
-		static final int YAFFS_BLOCK_STATE_ALLOCATING = 4;
+		public static final int YAFFS_BLOCK_STATE_ALLOCATING = 4;
 		/* This block is partially allocated. 
 		 * At least one page holds valid data.
 		 * This is the one currently being used for page
 		 * allocation. Should never be more than one of these
 		 */
 
-		static final int YAFFS_BLOCK_STATE_FULL = 5;	
+		public static final int YAFFS_BLOCK_STATE_FULL = 5;	
 		/* All the pages in this block have been allocated.
 		 */
 
-		static final int YAFFS_BLOCK_STATE_DIRTY = 6;
+		public static final int YAFFS_BLOCK_STATE_DIRTY = 6;
 		/* All pages have been allocated and deleted. 
 		 * Erase me, reuse me.
 		 */
 
-		static final int YAFFS_BLOCK_STATE_CHECKPOINT = 7;	
+		public static final int YAFFS_BLOCK_STATE_CHECKPOINT = 7;	
 		/* This block is assigned to holding checkpoint data.
 		 */
 
-		static final int YAFFS_BLOCK_STATE_COLLECTING = 8;	
+		public static final int YAFFS_BLOCK_STATE_COLLECTING = 8;	
 		/* This block is being garbage collected */
 
-		static final int YAFFS_BLOCK_STATE_DEAD	= 9;
+		public static final int YAFFS_BLOCK_STATE_DEAD	= 9;
 		/* This block has failed and is not in use */
 	//} yaffs_BlockState;
 

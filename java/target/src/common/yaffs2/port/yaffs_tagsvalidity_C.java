@@ -18,7 +18,7 @@ public class yaffs_tagsvalidity_C {
 
 //	#include "yaffs_tagsvalidity.h"
 	
-	static void yaffs_InitialiseTags(yaffs_ExtendedTags tags)
+	public static void yaffs_InitialiseTags(yaffs_ExtendedTags tags)
 	{
 		Unix.memset(tags);
 		tags.validMarker0 = 0xAAAAAAAA;

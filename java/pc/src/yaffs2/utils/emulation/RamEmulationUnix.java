@@ -1,7 +1,7 @@
 package yaffs2.utils.emulation;
 
-import yaffs2.port.yramdisk_Block;
-import yaffs2.port.yramdisk_Page;
+import yaffs2.port.emulation.yramdisk_Block;
+import yaffs2.port.emulation.yramdisk_Page;
 
 public abstract class RamEmulationUnix
 {

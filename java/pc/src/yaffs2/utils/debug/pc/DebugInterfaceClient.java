@@ -3,7 +3,7 @@ package yaffs2.utils.debug.pc;
 import java.net.*;
 
 import yaffs2.platform.emulation.PortConfiguration;
-import yaffs2.port.Dtest_C;
+import yaffs2.port.emulation.Dtest_C;
 
 public class DebugInterfaceClient
 {

@@ -1,22 +1,32 @@
-package yaffs2.port;
+package yaffs2.port.emulation;
 
 import java.io.RandomAccessFile;
 
-/*import yaffs2.port.yaffs_Device.eraseBlockInNANDInterface;
+import yaffs2.port.Guts_H;
+import yaffs2.port.yaffs_Device;
+import yaffs2.port.yaffs_ExtendedTags;
+import yaffs2.port.yaffs_PackedTags2;
+import yaffs2.port.yaffs_packedtags2_C;
+import yaffs2.port.yaffs_tagsvalidity_C;
+import yaffs2.port.yaffsfs_H;
+import yaffs2.port.ydirectenv;
+import yaffs2.port.yportenv;
+import yaffs2.port.yaffs_Device.eraseBlockInNANDInterface;
 import yaffs2.port.yaffs_Device.initialiseNANDInterface;
-import yaffs2.port.yaffs_Device.readChunkFromNANDInterface;
-import yaffs2.port.yaffs_Device.writeChunkToNANDInterface;
-import yaffs2.utils.Yaffs1NANDInterface;*/
-import yaffs2.utils.factory.PrimitiveWrapperFactory;
-import yaffs2.port.*;
-
+import yaffs2.port.yaffs_Device.markNANDBlockBadInterface;
+import yaffs2.port.yaffs_Device.queryNANDBlockInterface;
+import yaffs2.port.yaffs_Device.readChunkWithTagsFromNANDInterface;
+import yaffs2.port.yaffs_Device.writeChunkWithTagsToNANDInterface;
 import yaffs2.utils.*;
+import yaffs2.utils.factory.PrimitiveWrapperFactory;
 import yaffs2.utils.emulation.*;
 
-public class port_fileem2k_C implements Yaffs1NANDInterface
+public class yaffs_fileem2k_C implements readChunkWithTagsFromNANDInterface,
+	markNANDBlockBadInterface, eraseBlockInNANDInterface, initialiseNANDInterface, 
+	queryNANDBlockInterface, writeChunkWithTagsToNANDInterface
 {
 	// PORT
-	public static final port_fileem2k_C instance = new port_fileem2k_C(); 
+	public static final yaffs_fileem2k_C instance = new yaffs_fileem2k_C(); 
 	
 	/*
 	 * YAFFS: Yet Another Flash File System. A NAND-flash specific file system.
@@ -36,7 +46,7 @@ public class port_fileem2k_C implements Yaffs1NANDInterface
 	 * This is only intended as test code to test persistence etc.
 	 */
 
-	static final String yaffs_flashif_c_version = "$Id: port_fileem2k_C.java,v 1.2 2007/07/01 01:29:50 alexander.dejaco Exp $";
+	static final String yaffs_flashif_c_version = "$Id: yaffs_fileem2k_C.java,v 1.1 2007/09/24 13:31:33 peter.hilber Exp $";
 
 
 //	#include "yportenv.h"
@@ -168,10 +178,8 @@ public class port_fileem2k_C implements Yaffs1NANDInterface
 		return filedisk.nBlocks;
 	}
 
-	public boolean writeChunkToNAND(yaffs_Device dev, int chunkInNAND, 
-			byte[] data, int dataIndex, yaffs_Spare spare)
-//	public boolean /*yflash_*/writeChunkWithTagsToNAND(yaffs_Device dev,int chunkInNAND,
-//			/*const __u8 **/ byte[] data, int dataIndex, yaffs_ExtendedTags tags)
+	public boolean /*yflash_*/writeChunkWithTagsToNAND(yaffs_Device dev,int chunkInNAND,
+			/*const __u8 **/ byte[] data, int dataIndex, yaffs_ExtendedTags tags)
 	{
 		int written;
 		int pos;
@@ -179,9 +187,8 @@ public class port_fileem2k_C implements Yaffs1NANDInterface
 		int i;
 		int nRead;
 		int error;
-
 		
-		yportenv.T(yportenv.YAFFS_TRACE_MTD,("write chunk %d data %x tags %x"+ydirectenv.TENDSTR),PrimitiveWrapperFactory.get(chunkInNAND),/*(unsigned)*/PrimitiveWrapperFactory.get(yaffs2.utils.Utils.hashCode(data)), /*(unsigned)*/PrimitiveWrapperFactory.get(yaffs2.utils.Utils.hashCode(spare)));
+		yportenv.T(yportenv.YAFFS_TRACE_MTD,("write chunk %d data %x tags %x"+ydirectenv.TENDSTR),PrimitiveWrapperFactory.get(chunkInNAND),/*(unsigned)*/PrimitiveWrapperFactory.get(yaffs2.utils.Utils.hashCode(data)), /*(unsigned)*/PrimitiveWrapperFactory.get(yaffs2.utils.Utils.hashCode(tags)));
 
 		CheckInit();
 		
@@ -198,8 +205,7 @@ public class port_fileem2k_C implements Yaffs1NANDInterface
 				if(yaffs2.utils.Utils.byteAsUnsignedByte(localBuffer[localBufferIndex+i]) != 0xFF){
 					//FIXME
 					yportenv.T(yportenv.PORT_TRACE_NANDSIM, "nand simulation: chunk %d data byte %d was %02x\n",
-							PrimitiveWrapperFactory.get(chunkInNAND),PrimitiveWrapperFactory.get(i),PrimitiveWrapperFactory.get(Utils.byteAsUnsignedByte(localBuffer[localBufferIndex+i])));
-
+							PrimitiveWrapperFactory.get(chunkInNAND),PrimitiveWrapperFactory.get(i),PrimitiveWrapperFactory.get(yaffs2.utils.Utils.byteAsUnsignedByte(localBuffer[localBufferIndex+i])));
 //					printf("nand simulation: chunk %d data byte %d was %02x\n", // PORT I think %0x2 is a typo.
 //						chunkInNAND,i,byteAsUnsignedByte(localBuffer[localBufferIndex+i]));
 					
@@ -239,56 +245,54 @@ public class port_fileem2k_C implements Yaffs1NANDInterface
 			if(written != dev.subField1.nDataBytesPerChunk) return Guts_H.YAFFS_FAIL;
 		}
 		
-		if(spare != null)
+		if(tags != null)
 		{
 			pos = (chunkInNAND % (yaffs_fileem2k_H.PAGES_PER_BLOCK * BLOCKS_PER_HANDLE)) * yaffs_fileem2k_H.PAGE_SIZE + yaffs_fileem2k_H.PAGE_DATA_SIZE ;
 			h = filedisk.handle[(chunkInNAND / (yaffs_fileem2k_H.PAGES_PER_BLOCK * BLOCKS_PER_HANDLE))];
 			
 			FileEmulationUnix.lseek(h,pos,yaffsfs_H.SEEK_SET);
 
-//			if( false && dev.isYaffs2)
-//			{
-//				
-//				byte[] tagsBuf = new byte[yaffs_ExtendedTags.SERIALIZED_LENGTH];
-//				tags.writeTagsToByteArray(tagsBuf, 0);
-//				written = write(h,tagsBuf,0,yaffs_ExtendedTags.SERIALIZED_LENGTH);
-//				if(written != yaffs_ExtendedTags.SERIALIZED_LENGTH) return YAFFS_FAIL;
-//			}
-//			else
+			if( false && dev.subField1.isYaffs2)
 			{
-//				yaffs_PackedTags2 pt = new yaffs_PackedTags2();
-//				yaffs_PackTags2(pt,tags);
-//				/*__u8 **/ byte[] ptab = /*(__u8 *)&*/ pt.serialized;
-//				final int ptabIndex = pt.offset; 
+				
+				byte[] tagsBuf = new byte[yaffs_ExtendedTags.SERIALIZED_LENGTH];
+				tags.writeTagsToByteArray(tagsBuf, 0);
+				written = FileEmulationUnix.write(h,tagsBuf,0,yaffs_ExtendedTags.SERIALIZED_LENGTH);
+				if(written != yaffs_ExtendedTags.SERIALIZED_LENGTH) return Guts_H.YAFFS_FAIL;
+			}
+			else
+			{
+				yaffs_PackedTags2 pt = new yaffs_PackedTags2();
+				yaffs_packedtags2_C.yaffs_PackTags2(pt,tags);
+				/*__u8 **/ byte[] ptab = /*(__u8 *)&*/ pt.serialized;
+				final int ptabIndex = pt.offset; 
 
-				nRead = FileEmulationUnix.read(h,localBuffer,localBufferIndex,spare.SERIALIZED_LENGTH);
-				for(i = error = 0; i < spare.SERIALIZED_LENGTH && !(error != 0); i++){
+				nRead = FileEmulationUnix.read(h,localBuffer,localBufferIndex,pt.SERIALIZED_LENGTH);
+				for(i = error = 0; i < pt.SERIALIZED_LENGTH && !(error != 0); i++){
 					if(yaffs2.utils.Utils.byteAsUnsignedByte(localBuffer[i]) != 0xFF){
 						
 //						FIXME
 						yportenv.T(yportenv.PORT_TRACE_NANDSIM, "nand simulation: chunk %d oob byte %d was %02x\n",
-								PrimitiveWrapperFactory.get(chunkInNAND),PrimitiveWrapperFactory.get(i),PrimitiveWrapperFactory.get(Utils.byteAsUnsignedByte(localBuffer[i])));					
-
+								PrimitiveWrapperFactory.get(chunkInNAND),PrimitiveWrapperFactory.get(i),PrimitiveWrapperFactory.get(yaffs2.utils.Utils.byteAsUnsignedByte(localBuffer[i])));					
 //						printf("nand simulation: chunk %d oob byte %d was %02x\n", // PORT I think %0x2 is a typo.
 //							chunkInNAND,i,byteAsUnsignedByte(localBuffer[i]));
 							error = 1;
 					}
 				}
 			
-				for(i = 0; i < spare.SERIALIZED_LENGTH; i++)
-				  localBuffer[i] &= spare.serialized[spare.offset+i];
+				for(i = 0; i < pt.SERIALIZED_LENGTH; i++)
+				  localBuffer[i] &= ptab[ptabIndex+i];
 				 
-				if(Unix.memcmp(localBuffer,localBufferIndex,spare.serialized,spare.offset,
-						spare.SERIALIZED_LENGTH) != 0)
+				if(Unix.memcmp(localBuffer,localBufferIndex,pt.serialized,pt.offset,
+						pt.SERIALIZED_LENGTH) != 0)
 //					FIXME					
-
-					yportenv.T(yportenv.PORT_TRACE_NANDSIM, "nand sim: tags corruption\n", null, null, null);			
+					yportenv.T(yportenv.PORT_TRACE_NANDSIM, "nand sim: tags corruption\n");		
 //					printf("nand sim: tags corruption\n");
 					
 				FileEmulationUnix.lseek(h,pos,yaffsfs_H.SEEK_SET);
 				
-				written = FileEmulationUnix.write(h,localBuffer,localBufferIndex,spare.SERIALIZED_LENGTH);
-				if(written != spare.SERIALIZED_LENGTH) return Guts_H.YAFFS_FAIL;
+				written = FileEmulationUnix.write(h,localBuffer,localBufferIndex,pt.SERIALIZED_LENGTH);
+				if(written != pt.SERIALIZED_LENGTH) return Guts_H.YAFFS_FAIL;
 			}
 		}
 		
@@ -314,13 +318,14 @@ public class port_fileem2k_C implements Yaffs1NANDInterface
 
 	static int failRead10 = 2;
 
-	public boolean readChunkFromNAND(yaffs_Device dev, int chunkInNAND, byte[] data, int dataIndex, yaffs_Spare spare)
+	public boolean /*yflash_*/ readChunkWithTagsFromNAND(yaffs_Device dev,int chunkInNAND, 
+			/*__u8 **/ byte[] data, int dataIndex, yaffs_ExtendedTags tags)
 	{
 		int nread;
 		int pos;
 		RandomAccessFile h;
 		
-		yportenv.T(yportenv.YAFFS_TRACE_MTD,("read chunk %d data %x tags %x"+ydirectenv.TENDSTR),PrimitiveWrapperFactory.get(chunkInNAND),/*(unsigned)*/PrimitiveWrapperFactory.get(Utils.hashCode(data)), /*(unsigned)*/PrimitiveWrapperFactory.get(Utils.hashCode(spare)));
+		yportenv.T(yportenv.YAFFS_TRACE_MTD,("read chunk %d data %x tags %x"+ydirectenv.TENDSTR),PrimitiveWrapperFactory.get(chunkInNAND),/*(unsigned)*/PrimitiveWrapperFactory.get(yaffs2.utils.Utils.hashCode(data)), /*(unsigned)*/PrimitiveWrapperFactory.get(yaffs2.utils.Utils.hashCode(tags)));
 		
 		CheckInit();
 		
@@ -338,57 +343,57 @@ public class port_fileem2k_C implements Yaffs1NANDInterface
 			if(nread != dev.subField1.nDataBytesPerChunk) return Guts_H.YAFFS_FAIL;
 		}
 		
-		if(spare != null)
+		if(tags != null)
 		{
 			pos = (chunkInNAND % (yaffs_fileem2k_H.PAGES_PER_BLOCK * BLOCKS_PER_HANDLE)) * yaffs_fileem2k_H.PAGE_SIZE + yaffs_fileem2k_H.PAGE_DATA_SIZE;
 			h = filedisk.handle[(chunkInNAND / (yaffs_fileem2k_H.PAGES_PER_BLOCK * BLOCKS_PER_HANDLE))];		
 			FileEmulationUnix.lseek(h,pos,yaffsfs_H.SEEK_SET);
 
-//			if(false && dev.isYaffs2)
-//			{
-//				byte[] tagsBuf = new byte[yaffs_ExtendedTags.SERIALIZED_LENGTH];
-//				
-//				nread= read(h,tagsBuf,0,yaffs_ExtendedTags.SERIALIZED_LENGTH);
-//				if(nread != yaffs_ExtendedTags.SERIALIZED_LENGTH) return YAFFS_FAIL;
-//				if(yaffs_CheckAllFF(/*(__u8 *)*/tagsBuf,0,yaffs_ExtendedTags.SERIALIZED_LENGTH))
-//				{
-//					tags.readTagsFromByteArray(tagsBuf, 0);
-//					yaffs2.port.yaffs_tagsvalidity_C.yaffs_InitialiseTags(tags);
-//				}
-//				else
-//				{
-//					tags.readTagsFromByteArray(tagsBuf, 0);
-//					tags.chunkUsed = true;
-//				}
-//			}
-//			else
+			if(false && dev.subField1.isYaffs2)
 			{
-				nread= FileEmulationUnix.read(h,spare.serialized,spare.offset,spare.SERIALIZED_LENGTH);
-
-				// XXX simulate failures
-//	if (SIMULATE_FAILURES)
-//	{
-//				if((chunkInNAND >> 6) == 100) {
-//				    if(fail300 != 0 && tags.eccResult == YAFFS_ECC_RESULT_NO_ERROR){
-//				       tags.eccResult = YAFFS_ECC_RESULT_FIXED;
-//				       fail300 = 0;
-//				    }
-//				    
-//				}
-//				if((chunkInNAND >> 6) == 110) {
-//				    if(fail320 != 0 && tags.eccResult == YAFFS_ECC_RESULT_NO_ERROR){
-//				       tags.eccResult = YAFFS_ECC_RESULT_FIXED;
-//				       fail320 = 0;
-//				    }
-//				}
-//	}
-////	#endif
+				byte[] tagsBuf = new byte[yaffs_ExtendedTags.SERIALIZED_LENGTH];
+				
+				nread= FileEmulationUnix.read(h,tagsBuf,0,yaffs_ExtendedTags.SERIALIZED_LENGTH);
+				if(nread != yaffs_ExtendedTags.SERIALIZED_LENGTH) return Guts_H.YAFFS_FAIL;
+				if(yaffs_CheckAllFF(/*(__u8 *)*/tagsBuf,0,yaffs_ExtendedTags.SERIALIZED_LENGTH))
+				{
+					tags.readTagsFromByteArray(tagsBuf, 0);
+					yaffs2.port.yaffs_tagsvalidity_C.yaffs_InitialiseTags(tags);
+				}
+				else
+				{
+					tags.readTagsFromByteArray(tagsBuf, 0);
+					tags.chunkUsed = true;
+				}
+			}
+			else
+			{
+				yaffs_PackedTags2 pt = new yaffs_PackedTags2();
+				nread= FileEmulationUnix.read(h,pt.serialized,pt.offset,pt.SERIALIZED_LENGTH);
+				yaffs_packedtags2_C.yaffs_UnpackTags2(tags,pt);
+	if (SIMULATE_FAILURES)
+	{
+				if((chunkInNAND >> 6) == 100) {
+				    if(fail300 != 0 && tags.eccResult == Guts_H.YAFFS_ECC_RESULT_NO_ERROR){
+				       tags.eccResult = Guts_H.YAFFS_ECC_RESULT_FIXED;
+				       fail300 = 0;
+				    }
+				    
+				}
+				if((chunkInNAND >> 6) == 110) {
+				    if(fail320 != 0 && tags.eccResult == Guts_H.YAFFS_ECC_RESULT_NO_ERROR){
+				       tags.eccResult = Guts_H.YAFFS_ECC_RESULT_FIXED;
+				       fail320 = 0;
+				    }
+				}
+	}
+//	#endif
 				if(failRead10>0 && chunkInNAND == 10){
 					failRead10--;
 					nread = 0;
 				}
 				
-				if(nread != spare.SERIALIZED_LENGTH) return Guts_H.YAFFS_FAIL;
+				if(nread != pt.SERIALIZED_LENGTH) return Guts_H.YAFFS_FAIL;
 			}
 		}
 		
@@ -398,27 +403,26 @@ public class port_fileem2k_C implements Yaffs1NANDInterface
 	}
 
 
-	// PORT not needed for spare style interface 
-//	public boolean /*yflash_*/ markNANDBlockBad(yaffs_Device dev, int blockNo)
-//	{
-//		int written;
-//		RandomAccessFile h;
-//		
-//		yaffs_PackedTags2 pt = new yaffs_PackedTags2();
-//
-//		CheckInit();
-//		
-//		memset(pt,(byte)0);
-//		h = filedisk.handle[(blockNo / ( BLOCKS_PER_HANDLE))];
-//		lseek(h,((blockNo % BLOCKS_PER_HANDLE) * dev.nChunksPerBlock) * PAGE_SIZE + PAGE_DATA_SIZE,SEEK_SET);
-//		written = write(h,pt.serialized,pt.offset,pt.SERIALIZED_LENGTH);
-//			
-//		if(written != pt.SERIALIZED_LENGTH) return YAFFS_FAIL;
-//		
-//		
-//		return YAFFS_OK;
-//		
-//	}
+	public boolean /*yflash_*/ markNANDBlockBad(yaffs_Device dev, int blockNo)
+	{
+		int written;
+		RandomAccessFile h;
+		
+		yaffs_PackedTags2 pt = new yaffs_PackedTags2();
+
+		CheckInit();
+		
+		Unix.memset(pt,(byte)0);
+		h = filedisk.handle[(blockNo / ( BLOCKS_PER_HANDLE))];
+		FileEmulationUnix.lseek(h,((blockNo % BLOCKS_PER_HANDLE) * dev.subField1.nChunksPerBlock) * yaffs_fileem2k_H.PAGE_SIZE + yaffs_fileem2k_H.PAGE_DATA_SIZE,yaffsfs_H.SEEK_SET);
+		written = FileEmulationUnix.write(h,pt.serialized,pt.offset,pt.SERIALIZED_LENGTH);
+			
+		if(written != pt.SERIALIZED_LENGTH) return Guts_H.YAFFS_FAIL;
+		
+		
+		return Guts_H.YAFFS_OK;
+		
+	}
 
 	public boolean /*yflash_*/ eraseBlockInNAND(yaffs_Device dev, int blockNumber)
 	{
@@ -428,9 +432,7 @@ public class port_fileem2k_C implements Yaffs1NANDInterface
 			
 		CheckInit();
 		
-
 		yportenv.T(yportenv.YAFFS_TRACE_ERASE,"erase block %d\n",PrimitiveWrapperFactory.get(blockNumber));
-
 //		printf("erase block %d\n",blockNumber);
 		
 		if(blockNumber == 320)
@@ -475,30 +477,29 @@ public class port_fileem2k_C implements Yaffs1NANDInterface
 
 
 
-	// PORT not needed for spare style interface
-//	public boolean /*yflash_*/ queryNANDBlock(yaffs_Device dev, int blockNo, /*yaffs_BlockState*/ IntegerPointer state, IntegerPointer sequenceNumber)
-//	{
-//		yaffs_ExtendedTags tags = new yaffs_ExtendedTags();
-//		int chunkNo;
-//
-//		sequenceNumber.dereferenced = 0;
-//		
-//		chunkNo = blockNo * dev.nChunksPerBlock;
-//		
-//		/*yflash_*/ readChunkFromNAND(dev,chunkNo,null,0,tags);
-//		if(tags.blockBad)
-//		{
-//			state.dereferenced = YAFFS_BLOCK_STATE_DEAD;
-//		}
-//		else if(!tags.chunkUsed)
-//		{
-//			state.dereferenced = YAFFS_BLOCK_STATE_EMPTY;
-//		}
-//		else if(tags.chunkUsed)
-//		{
-//			state.dereferenced = YAFFS_BLOCK_STATE_NEEDS_SCANNING;
-//			sequenceNumber.dereferenced = tags.sequenceNumber;
-//		}
-//		return YAFFS_OK;
-//	}
+	public boolean /*yflash_*/ queryNANDBlock(yaffs_Device dev, int blockNo, /*yaffs_BlockState*/ IntegerPointer state, IntegerPointer sequenceNumber)
+	{
+		yaffs_ExtendedTags tags = new yaffs_ExtendedTags();
+		int chunkNo;
+
+		sequenceNumber.dereferenced = 0;
+		
+		chunkNo = blockNo * dev.subField1.nChunksPerBlock;
+		
+		/*yflash_*/ readChunkWithTagsFromNAND(dev,chunkNo,null,0,tags);
+		if(tags.blockBad)
+		{
+			state.dereferenced = Guts_H.YAFFS_BLOCK_STATE_DEAD;
+		}
+		else if(!tags.chunkUsed)
+		{
+			state.dereferenced = Guts_H.YAFFS_BLOCK_STATE_EMPTY;
+		}
+		else if(tags.chunkUsed)
+		{
+			state.dereferenced = Guts_H.YAFFS_BLOCK_STATE_NEEDS_SCANNING;
+			sequenceNumber.dereferenced = tags.sequenceNumber;
+		}
+		return Guts_H.YAFFS_OK;
+	}
 }

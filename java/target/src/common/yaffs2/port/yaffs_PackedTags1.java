@@ -100,7 +100,7 @@ public class yaffs_PackedTags1 extends yaffs2.utils.SerializableObject
 
 //	} yaffs_PackedTags1;
 
-	static final int SERIALIZED_LENGTH = 8+4;
+	public static final int SERIALIZED_LENGTH = 8+4;
 
 	public int getSerializedLength()
 	{

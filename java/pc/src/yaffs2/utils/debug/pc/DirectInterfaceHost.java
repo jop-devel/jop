@@ -2,9 +2,9 @@ package yaffs2.utils.debug.pc;
 
 import java.io.BufferedInputStream;
 
-import yaffs2.port.port_fileem2k_C;
 import yaffs2.port.yaffs_Device;
 import yaffs2.port.yaffs_Spare;
+import yaffs2.port.emulation.port_fileem2k_C;
 import yaffs2.utils.debug.communication.DebugDevice;
 import yaffs2.utils.debug.communication.DirectInterfaceServerStub;
 

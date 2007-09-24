@@ -157,10 +157,10 @@ public class yaffscfg2k_C implements yaffs2.port.yaffscfg2k_C
 //		ramDev.readChunkWithTagsFromNAND = yramdisk_ReadChunkWithTagsFromNAND;
 //		ramDev.eraseBlockInNAND = yramdisk_EraseBlockInNAND;
 //		ramDev.initialiseNAND = yramdisk_InitialiseNAND;
-		ramDev.subField1.writeChunkWithTagsToNAND = yaffs2.port.yaffs_ramdisk_C.instance;
-		ramDev.subField1.readChunkWithTagsFromNAND = yaffs2.port.yaffs_ramdisk_C.instance;
-		ramDev.subField1.eraseBlockInNAND = yaffs2.port.yaffs_ramdisk_C.instance;
-		ramDev.subField1.initialiseNAND = yaffs2.port.yaffs_ramdisk_C.instance;
+		ramDev.subField1.writeChunkWithTagsToNAND = yaffs2.port.emulation.yaffs_ramdisk_C.instance;
+		ramDev.subField1.readChunkWithTagsFromNAND = yaffs2.port.emulation.yaffs_ramdisk_C.instance;
+		ramDev.subField1.eraseBlockInNAND = yaffs2.port.emulation.yaffs_ramdisk_C.instance;
+		ramDev.subField1.initialiseNAND = yaffs2.port.emulation.yaffs_ramdisk_C.instance;
 
 		// /boot
 //		memset(bootDev);
@@ -181,19 +181,19 @@ public class yaffscfg2k_C implements yaffs2.port.yaffscfg2k_C
 		
 		if (!USE_SPARE_TAGS)
 		{
-			bootDev.subField1.writeChunkWithTagsToNAND = yaffs2.port.yaffs_fileem2k_C.instance;
-			bootDev.subField1.readChunkWithTagsFromNAND = yaffs2.port.yaffs_fileem2k_C.instance;
-			bootDev.subField1.eraseBlockInNAND = yaffs2.port.yaffs_fileem2k_C.instance;
-			bootDev.subField1.initialiseNAND = yaffs2.port.yaffs_fileem2k_C.instance;
-			bootDev.subField1.markNANDBlockBad = yaffs2.port.yaffs_fileem2k_C.instance;
-			bootDev.subField1.queryNANDBlock = yaffs2.port.yaffs_fileem2k_C.instance;
+			bootDev.subField1.writeChunkWithTagsToNAND = yaffs2.port.emulation.yaffs_fileem2k_C.instance;
+			bootDev.subField1.readChunkWithTagsFromNAND = yaffs2.port.emulation.yaffs_fileem2k_C.instance;
+			bootDev.subField1.eraseBlockInNAND = yaffs2.port.emulation.yaffs_fileem2k_C.instance;
+			bootDev.subField1.initialiseNAND = yaffs2.port.emulation.yaffs_fileem2k_C.instance;
+			bootDev.subField1.markNANDBlockBad = yaffs2.port.emulation.yaffs_fileem2k_C.instance;
+			bootDev.subField1.queryNANDBlock = yaffs2.port.emulation.yaffs_fileem2k_C.instance;
 		}
 		else
 		{
-			bootDev.subField1.writeChunkToNAND = yaffs2.port.port_fileem2k_C.instance;
-			bootDev.subField1.readChunkFromNAND = yaffs2.port.port_fileem2k_C.instance;
-			bootDev.subField1.eraseBlockInNAND = yaffs2.port.port_fileem2k_C.instance;
-			bootDev.subField1.initialiseNAND = yaffs2.port.port_fileem2k_C.instance;
+			bootDev.subField1.writeChunkToNAND = yaffs2.port.emulation.port_fileem2k_C.instance;
+			bootDev.subField1.readChunkFromNAND = yaffs2.port.emulation.port_fileem2k_C.instance;
+			bootDev.subField1.eraseBlockInNAND = yaffs2.port.emulation.port_fileem2k_C.instance;
+			bootDev.subField1.initialiseNAND = yaffs2.port.emulation.port_fileem2k_C.instance;
 		}
 
 

@@ -1,7 +1,6 @@
 package yaffs2.port;
 
 import yaffs2.utils.*;
-import yaffs2.utils.factory.PrimitiveWrapper;
 
 public class ydirectenv
 {
@@ -70,20 +69,20 @@ public class ydirectenv
 	{
 		return new int[x];
 	}
-	static void YFREE(byte[] x)
+	public static void YFREE(byte[] x)
 	{		
 		// XXX cant do anything
 	}
-	static void YFREE(int[] x)
+	public static void YFREE(int[] x)
 	{
 		// XXX cant do anything
 	}
-	static void YFREE(Object x)
+	public static void YFREE(Object x)
 	{
 		// XXX cant do anything
 	}
 	
-	static void YFREE_ALT(Object x)
+	public static void YFREE_ALT(Object x)
 	{
 		// XXX get rid of the calls
 	}

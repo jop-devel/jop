@@ -2,8 +2,6 @@ package yaffs2.port;
 
 import yaffs2.utils.*;
 
-import yaffs2.utils.*;
-
 public class ECC_C
 {
 	/*
@@ -37,7 +35,7 @@ public class ECC_C
 	 */
 
 	static final String yaffs_ecc_c_version =
-	    "$Id: ECC_C.java,v 1.4 2007/09/02 20:58:38 peter.hilber Exp $";
+	    "$Id: ECC_C.java,v 1.5 2007/09/24 13:30:33 peter.hilber Exp $";
 
 	static final byte[] column_parity_table = {
 		(byte)0x00, (byte)0x55, (byte)0x59, (byte)0x0c, (byte)0x65, (byte)0x30, (byte)0x3c, (byte)0x69,

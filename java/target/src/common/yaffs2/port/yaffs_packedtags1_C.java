@@ -20,7 +20,7 @@ public class yaffs_packedtags1_C
 //	#include "yaffs_packedtags1.h"
 //	#include "yportenv.h"
 
-	static void yaffs_PackTags1(yaffs_PackedTags1 pt, yaffs_ExtendedTags t)
+	public static void yaffs_PackTags1(yaffs_PackedTags1 pt, yaffs_ExtendedTags t)
 	{
 		pt.setChunkId(t.chunkId);
 		pt.setSerialNumber((byte)t.serialNumber);
@@ -36,7 +36,7 @@ public class yaffs_packedtags1_C
 	static final byte[] allFF =
      { (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff,
 		(byte)0xff };
-	static void yaffs_UnpackTags1(yaffs_ExtendedTags t, yaffs_PackedTags1 pt)
+	public static void yaffs_UnpackTags1(yaffs_ExtendedTags t, yaffs_PackedTags1 pt)
 	{
 //		static const __u8 allFF[] =
 //		    { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,

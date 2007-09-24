@@ -1,6 +1,5 @@
-package yaffs2.utils;
+package yaffs2.port.emulation;
 
-import yaffs2.port.yramdisk_Block;
 
 public class yramdisk_BlockPointer {
 	

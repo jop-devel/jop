@@ -1,7 +1,6 @@
 package yaffs2.port;
 
 import yaffs2.utils.*;
-import yaffs2.utils.factory.PrimitiveWrapper;
 import yaffs2.utils.factory.PrimitiveWrapperFactory;
 
 public class yaffs_guts_C
@@ -20,7 +19,7 @@ public class yaffs_guts_C
 	 */
 
 	static final String yaffs_guts_c_version =
-		"$Id: yaffs_guts_C.java,v 1.5 2007/09/01 12:28:23 peter.hilber Exp $";
+		"$Id: yaffs_guts_C.java,v 1.6 2007/09/24 13:30:33 peter.hilber Exp $";
 
 	/*#include "yportenv.h"
 

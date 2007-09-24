@@ -63,7 +63,7 @@ public class yaffs_packedtags2_C
 
 	}
 
-	static void yaffs_PackTags2(yaffs_PackedTags2 pt, yaffs_ExtendedTags t)
+	public static void yaffs_PackTags2(yaffs_PackedTags2 pt, yaffs_ExtendedTags t)
 	{
 		pt.t.setChunkId(t.chunkId);
 		pt.t.setSequenceNumber(t.sequenceNumber);
@@ -107,7 +107,7 @@ public class yaffs_packedtags2_C
 //	#endif
 	}
 
-	static void yaffs_UnpackTags2(yaffs_ExtendedTags t, yaffs_PackedTags2 pt)
+	public static void yaffs_UnpackTags2(yaffs_ExtendedTags t, yaffs_PackedTags2 pt)
 	{
 
 		Unix.memset(t/*, 0, sizeof(yaffs_ExtendedTags)*/);

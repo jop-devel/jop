@@ -1,4 +1,5 @@
-package yaffs2.port;
+package yaffs2.port.emulation;
+
 
 public class yflash_Page
 {
