@@ -146,7 +146,7 @@ public class Simulation_yaffscfg2k_C implements yaffs2.port.yaffscfg2k_C
 
 		// PORT remainder already set up in array initialization
 		
-		Yaffs1NANDInterface stub = new DirectInterfaceClientStub(bootDev, System.in, System.out);
+		Yaffs1NANDInterface stub = new DirectInterfaceClientStub(bootDev, System.in, System.out, "JOP");
 		
 		bootDev.subField1.writeChunkToNAND = stub;
 		bootDev.subField1.readChunkFromNAND = stub;

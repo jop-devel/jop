@@ -12,9 +12,10 @@ public class DirectInterfaceClientStub extends Transceiver implements Yaffs1NAND
 {
 	yaffs_Device dev;
 	
-	public DirectInterfaceClientStub(yaffs_Device dev, InputStream rx, OutputStream tx)
+	public DirectInterfaceClientStub(yaffs_Device dev, InputStream rx, OutputStream tx,
+			String nodeName)
 	{
-		super(rx, tx);
+		super(rx, tx, nodeName);
 		this.dev = dev;
 	}
 	

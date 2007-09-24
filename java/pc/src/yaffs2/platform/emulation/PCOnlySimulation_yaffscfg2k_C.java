@@ -165,7 +165,7 @@ public class PCOnlySimulation_yaffscfg2k_C implements yaffs2.port.yaffscfg2k_C
 			Yaffs1NANDInterface stub = 
 				new DirectInterfaceClientStub(bootDev, 
 						in, 
-						out);
+						out, "PC");
 			
 			bootDev.subField1.writeChunkToNAND = stub;
 			bootDev.subField1.readChunkFromNAND = stub;

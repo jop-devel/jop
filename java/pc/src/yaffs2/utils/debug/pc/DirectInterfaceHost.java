@@ -22,7 +22,7 @@ public class DirectInterfaceHost
 		
 		new DirectInterfaceServerStub(dev, port_fileem2k_C.instance, 
 				new BufferedInputStream(serialInterface.getInputStream()),
-			serialInterface.getOutputStream()).receive(true, new byte[dev.subField1.nDataBytesPerChunk], 0, new yaffs_Spare());
+			serialInterface.getOutputStream(), "PC").receive(true, new byte[dev.subField1.nDataBytesPerChunk], 0, new byte[yaffs_Spare.SERIALIZED_LENGTH], 0);
 	}
 
 }

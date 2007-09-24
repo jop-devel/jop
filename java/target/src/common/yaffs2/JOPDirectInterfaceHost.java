@@ -15,7 +15,7 @@ public class JOPDirectInterfaceHost
 		new DirectInterfaceServerStub( 
 			InternalNANDYaffs1NANDInterfacePrimitives.instance,
 			System.in,
-			System.out)
+			System.out, "JOP")
 		.receive(true, new byte[DebugSettings.NDATABYTESPERCHUNK], 
 				0, new byte[DebugSettings.SPARE_SERIALIZED_LENGTH], 0);			
 	}

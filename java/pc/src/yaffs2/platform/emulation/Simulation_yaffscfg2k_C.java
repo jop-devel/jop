@@ -159,7 +159,7 @@ public class Simulation_yaffscfg2k_C implements yaffs2.port.yaffscfg2k_C
 			
 
 			SerialInterface serialInterface = new SerialInterface(serialPort);
-			Yaffs1NANDInterface stub = new DirectInterfaceClientStub(bootDev, serialInterface.getInputStream(), serialInterface.getOutputStream());
+			Yaffs1NANDInterface stub = new DirectInterfaceClientStub(bootDev, serialInterface.getInputStream(), serialInterface.getOutputStream(), "PC");
 			
 			bootDev.subField1.writeChunkToNAND = stub;
 			bootDev.subField1.readChunkFromNAND = stub;

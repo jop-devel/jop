@@ -12,9 +12,9 @@ public class DirectInterfaceServerStub extends Transceiver
 	yaffs2.utils.Yaffs1NANDInterfacePrimitives implementation;
 	
 	public DirectInterfaceServerStub(Yaffs1NANDInterfacePrimitives implementation,
-			InputStream rx, OutputStream tx)
+			InputStream rx, OutputStream tx, String nodeName)
 	{
-		super(rx, tx);
+		super(rx, tx, nodeName);
 		this.implementation = implementation;
 	}
 	

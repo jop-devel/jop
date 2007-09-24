@@ -26,7 +26,7 @@ public class DebugInterfaceServer
 		new DirectInterfaceServerStub(new Yaffs1NANDInterfacePrimitivesWrapper(
 				dev, port_fileem2k_C.instance), 
 				socket.getInputStream(),
-				socket.getOutputStream()).
+				socket.getOutputStream(), "PC").
 				receive(true, new byte[DebugSettings.NDATABYTESPERCHUNK], 0, spare, 0);
 	}
 
