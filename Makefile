@@ -39,7 +39,7 @@ BLASTER_TYPE=USB-Blaster
 # 'some' different Quartus projects
 QPROJ=cycmin cycbaseio cycbg dspio lego cycfpu cyc256x16 sopcmin
 # if you want to build only one Quartus project use e.q.:
-QPROJ=altde2sram
+QPROJ=cycmin
 
 # Nelson uncomment this
 #QPROJ=cyc12baseio
@@ -70,6 +70,12 @@ P3=DoAll
 #P3=StartKfl
 WCET_METHOD=main
 WCET_METHOD=measure
+
+P1=common
+P2=ejip/jtcpip/test
+P3=HTTPServer
+P2=ejip/examples
+P3=Telnet
 
 #P2=jdk
 #P3=DoAll
@@ -159,6 +165,8 @@ all: directories tools jopser japp
 
 japp: java_app config_byteblast download
 
+eapp: ecl_app config_byteblast download
+
 
 # use this for USB download of FPGA configuration
 # and Java program download
@@ -208,6 +216,17 @@ java_app:
 	javac $(TARGET_JFLAGS) $(TARGET_APP)
 	cd $(TARGET)/dist/classes && jar cf ../lib/classes.zip *
 	$(OPTIMIZE)
+	java $(TOOLS_CP) -Dmgci=false com.jopdesign.build.JOPizer \
+		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/dist/bin/$(JOPBIN) $(MAIN_CLASS)
+	java $(TOOLS_CP) com.jopdesign.tools.jop2dat $(TARGET)/dist/bin/$(JOPBIN)
+	cp *.dat modelsim
+	rm -f *.dat
+
+#
+# do it from my eclipse workspace
+#
+ecl_app:
+	cd ../../workspace/cvs_jop_target/classes && jar cf ../../../cpu/jop/java/target/dist/lib/classes.zip *
 	java $(TOOLS_CP) -Dmgci=false com.jopdesign.build.JOPizer \
 		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/dist/bin/$(JOPBIN) $(MAIN_CLASS)
 	java $(TOOLS_CP) com.jopdesign.tools.jop2dat $(TARGET)/dist/bin/$(JOPBIN)
