@@ -20,6 +20,11 @@ public class DoAll {
 		TestCase tc[] = {
 				new HashCode(),
 				new TestVector(),
+				new BArrayInputStream(),
+				new BArrayOutputStream(),
+				new DInputStream(),
+				new DOutputStream(),
+				new PrimitiveClasses(),
 		};
 				
 		for (int i=0; i<tc.length; ++i) {
