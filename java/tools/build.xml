@@ -1,0 +1,659 @@
+<!--
+/*******************************************************************************
+
+    An implementation of the Java Debug Wire Protocol (JDWP) for JOP
+    Copyright (C) 2007 Paulo Abadie Guedes
+
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; either
+    version 2.1 of the License, or (at your option) any later version.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+*******************************************************************************/
+-->
+<!--
+  =======================================================================
+   Build file  for the Jop Debugger project
+  =======================================================================
+
+!!!! Does not work at the moment in this directory !!!!
+added temporary for a fix.
+-->
+
+<project name="JopDebugger" default="help" basedir=".">
+    <description>
+        Build file for the JOP Debugger project
+    </description>
+
+  <!-- set global properties for this build -->
+  <property name="src" location="source"/>
+  <property name="build" location="build"/>
+  <property name="dist"  location="dist"/>
+  <property name="lib"  location="lib"/>
+
+  <property name="html.folder.1" location="${build}/html_1"/>
+  <property name="html.folder.2" location="${build}/html_2"/>
+
+  <!--
+  <property name="JDWP_log_folder"  location="doc/session_2_debug_JopSim"/>
+  -->
+  <property name="JDWP_log_folder"  location="doc/session_3_debug_HelloWorld"/>
+  <property name="Symbols_folder"  location="doc/SymbolFile_example"/>
+
+  <!-- set parameters for the network logger -->
+  <property name="serverFile"  value="serverJDWPMessages.dat"/>
+  <property name="clientFile"  value="clientJDWPMessages.dat"/>
+  <property name="inputPort"  value="8000"/>
+  <property name="outputPort"  value="8001"/>
+
+  <property name="serverFileDefault"  value="serverFile:${serverFile}"/>
+  <property name="clientFileDefault"  value="clientFile:${clientFile}"/>
+  <property name="inputPortDefault"   value="inputPort:${inputPort}"/>
+  <property name="outputPortDefault"  value="outputPort:${outputPort}"/>
+
+  <property name="dumpFile"  location="${build}/packet_dump.txt"/>
+
+  <property name="debugSettings"
+            value="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,address="/>
+
+  <property name="debugSettings_8000" value="${debugSettings}8000"/>
+  <property name="debugSettings_8001" value="${debugSettings}8001"/>
+  <property name="debugSettings_8002" value="${debugSettings}8002"/>
+  <property name="debugSettings_8003" value="${debugSettings}8003"/>
+
+
+  <!-- set JOP properties for this build -->
+  <property name="JOP_folder"  location="../jop"/>
+  <property name="JOP_dist_lib_folder"  location="${JOP_folder}/java/target/dist/lib"/>
+  <property name="JOP_tools_lib_folder"  location="${JOP_folder}/java/tools/dist/lib"/>
+
+  <property name="jopizer.lib"  location="${lib}/jop-tools.jar"/>
+
+  <property name="p1" value="source"/>
+  <property name="p2" value="com.jopdesign.debug.jdwp.test"/>
+  <property name="p3" value="TestJopDebugKernel"/>
+
+  <!-- property name="main-class"  location="com.jopdesign.debug.jdwp.test.TestJopDebugKernel"/-->
+  <property name="main-class" value="${p2}/${p3}"/>
+
+  <fileset dir="${JDWP_log_folder}" id="JDWP_LOG_FILES">
+    <include name="**/*.dat"/>
+  </fileset>
+  
+  <path id="class.files.path">
+    <fileset dir="${build}" id="class.files">
+      <include name="**/*.class"/>
+    </fileset>
+  </path>
+
+<!--
+  <pathconvert property="class.files.path.converted"
+  -->
+
+  <pathconvert 
+      pathsep="${line.separator}||   " dirsep="/     "
+      property="class_converted"
+      refid="class.files"
+  >
+    <chainedmapper>
+      <globmapper from="${build}/*.class" to="*.class"/>
+    </chainedmapper>
+  </pathconvert>
+
+
+<!--
+    <path refid="CLASS_FILES_PATH"/>
+      <flattenmapper/>
+      <globmapper from=";" to="    "/>
+-->
+	 
+<!--
+  <property name="class.set" refid="CLASS_FILES_PATH"/>
+  <property name="class.set" refid="class_converted"/>
+-->
+
+
+  <!-- Just any name that the .jop file gets. -->
+  <property name="jopbin" value="${p3}.jop"/>
+
+
+  <!--
+    <property name="buildfile"  location="${dist}/lib/JopDebugger_${DSTAMP}__${TSTAMP}.jar"/>
+  -->
+  <property name="buildFilename"  location="JopDebugger.jar"/>
+  <property name="buildfile"  location="${build}/JopDebugger.jar"/>
+
+  <fileset dir="${build}" id="BuildLib">
+    <include name="**/*.jar"/>
+  </fileset>
+
+  <fileset dir="${Symbols_folder}" id="SYMBOL_FILES">
+    <include name="**/*.sym"/>
+  </fileset>
+
+  <!--
+    The class paths starts here.
+    Should be defined only AFTER all properties and file sets to avoid
+    problems with the sequence of definition and evaluation.
+  -->
+
+  <path id="ext-cp">
+
+    <fileset dir="${JOP_folder}/java/lib">
+      <include name="bcel-5.1.jar"/>
+      <include name="jakarta-regexp-1.3.jar"/>
+      <include name="RXTXcomm.jar"/>
+      <include name="lpsolve55j.jar"/>
+    </fileset>
+    <fileset dir="${JOP_folder}/java/tools/dist/lib" id="JopTools">
+      <include name="jop-tools.jar"/>
+    </fileset>
+
+  </path>
+
+  <path id="tools-cp">
+  
+    <path refid="ext-cp"/>
+    <pathelement location="${lib}/jop-tools.jar"/>
+
+  </path>
+
+  <path id="project.class.path">
+
+    <path refid="tools-cp"/>
+
+    <!--
+      the line below works but it's better to point to the lib.
+      <pathelement location="${build}"/>
+    -->
+    <pathelement location="${buildfile}"/>
+
+  </path>
+
+  <!--
+    The target list starts here
+  -->
+  <target name="help"
+        description="Help about this Ant build script with some common targets" >
+
+    <echo>
+      ------------------------------------------------------------
+        Common targets:
+
+        all   - Build the project and copy resources if needed
+        lib   - Create the .jar file from the compiled project.
+        clean - Remove and recreate the build folder
+
+        help  - A list of common targets to be used directly.
+                If you add new targets, please update this help
+                (but don't include internal targets).
+
+        PacketLogger - Test to launch the network logger.
+                       This can be used to log JDWP packets.
+
+        PacketCounter - Test to show information about JDWP packets. Allow to
+          query specific types of packets and its respective answer based on
+          the command set and command.
+
+        PacketPrinter - Test to print information about JDWP packet logs.
+
+        HelloWorld - Launch the "hello world" program to be debugged
+          through the network using JDWP. The JVM will start and wait
+          for a JDWP connection. Can be used to test a debugger and
+          also to test the packet logger.
+
+        LogTest - Instructions about how to test debugging through
+          the network.
+
+        jdb - how to launch "jdb" to test HelloWorld and the packet logger.
+
+        TestJopServer - Launch a test to check if JopServer is working.
+        
+        Class2HTML_1 - Launch a (BCEL) tool to build an HTML description
+                     of the compiled .class files inside the build folder.
+                     
+        Class2HTML_2 - Same as Class2HTML_1 but the files are created 
+                      in another folder. Useful to compare class
+                      bytecodes before and after code transformations.
+      ------------------------------------------------------------
+    </echo>
+  </target>
+
+  <target name="all" depends="compile, copyJDWPLogs, copySymbols"
+          description="Default target to compile the source " >
+  </target>
+
+  <target name="init">
+  
+    <!-- Create the time stamp -->
+    <tstamp>
+      <format property="touch.time" pattern="yyyy_dd_MM__hh_mm"/>
+      <format property="DSTAMP" pattern="yyyy_MM_dd"/>
+      <format property="TSTAMP" pattern="hh_mm"/>
+      <!--
+        <format property="touch.time" pattern="MM/dd/yyyy hh:mm aa"
+              offset="-5" unit="hour"/>
+      -->
+    </tstamp>
+    <!-- Create the build file name based on the calculated timestamp -->
+    <!-- property name="buildfile"  location="${dist}/lib/JopDebugger_${DSTAMP}__${TSTAMP}.jar"/
+       <property name="buildfile"  location="${build}/JopDebugger_${DSTAMP}__${TSTAMP}.jar"/>
+    -->
+
+    <!-- Create the build directory structure used by compile -->
+    <mkdir dir="${build}"/>
+
+  </target>
+
+  <target name="compile" depends="init"
+          description="compile the source " >
+          
+    <!-- Compile the java code from ${src} into ${build} -->
+    <javac
+      srcdir="${src}"
+      destdir="${build}"
+      classpathref="tools-cp"
+      classpath="${lib}/JOP_classes.zip"
+      debug="on"
+      source="1.4"
+    />
+    
+  </target>
+
+  <target name="rebuild" depends="clean, all"
+        description="Target to rebuild the source " >
+  </target>
+
+  <target name="copyJDWPLogs" depends="compile"
+          description="copy the JDWP logs" >
+          
+    <!-- Copy the log files for analysis -->
+    <copy todir="${build}">
+      <fileset refid="JDWP_LOG_FILES"/>
+    </copy>
+
+  </target>
+
+  <target name="copySymbols" depends="compile"
+          description="copy the symbol files" >
+
+    <!-- Copy the symbol files for testing -->
+    <copy todir="${build}">
+      <fileset refid="SYMBOL_FILES"/>
+    </copy>
+
+  </target>
+
+  <target name="lib" depends="compile"
+          description="Create the library" >
+
+    <!-- Put files from the "${build}/com" folder into the jar file. -->
+    <delete file="${buildfile}"/>
+    <jar jarfile="${buildfile}" basedir="${build}" includes="com/**"/>
+
+  </target>
+
+  <target name="PacketCounter" depends="copyJDWPLogs,compile"
+          description="Analyse the packet list on the files provided." >
+
+    <java
+      classname="com.jopdesign.debug.jdwp.util.PacketCounter"
+      failonerror="true"
+      fork="true"
+      dir = "${build}"
+      >
+      <arg line="${serverFile} ${clientFile}"/>
+      <!--
+        <jvmarg line = "-Xprof"/>
+      -->
+    </java>
+    
+  </target>
+
+  <target name="PacketPrinter" depends="copyJDWPLogs,compile"
+          description="Print the packet list on the files provided." >
+          
+    <java
+      classname="com.jopdesign.debug.jdwp.util.PacketPrinter"
+      failonerror="true"
+      fork="true"
+      dir = "${build}"
+      output = "${dumpFile}"
+      >
+      <arg line="${serverFile} ${clientFile}"/>
+      <!--
+        <jvmarg line = "-Xprof"/>
+      -->
+    </java>
+    <echo>
+      Created output file: ${dumpFile}.
+      To inspect the content, use a text editor or "less" as mentioned below:
+      (may not work under Cygwin due to the path format)
+
+      less ${dumpFile}
+    </echo>
+    
+  </target>
+
+  <target name="PacketLogger" depends="compile"
+          description="Log network packets to the disk." >
+          
+    <echo>
+      Please launch a Java debugger toward network port 8000.
+      If everything is properly set, the logger will record
+      all network traffic.
+    </echo>
+    <java
+        classname="com.jopdesign.debug.jdwp.sniffer.SocketSniffer"
+        fork="true"
+        spawn="false"
+        dir="${build}"
+    >
+      <arg value="${serverFileDefault}"/>
+      <arg value="${clientFileDefault}"/>
+      <arg value="${inputPortDefault}"/>
+      <arg value="${outputPortDefault}"/>
+    </java>
+
+  </target>
+
+  <target name="HelloWorld" depends="compile"
+          description="Run HelloWorld (to be debugger through the network)." >
+          
+    <echo>
+      Run HelloWorld, to be debugger through the network (port 8001).
+      Please launch the remote debugger now.
+    </echo>
+    <!--
+    <echo>
+      Spawning a new thread which will outlive ant execution.
+      If further tests fail, check processes to ensure that
+      there is no "zombie" task locking a network port.
+    </echo>
+    -->
+    <java
+        classname="com.jopdesign.debug.jdwp.util.HelloWorld"
+        fork="true"
+        spawn="false"
+        dir="${build}"
+    >
+    <jvmarg line = "${debugSettings_8001}"/>
+    </java>
+    
+  </target>
+
+
+  <target name="jdb" depends="compile"
+          description="How to run jdb to debug through the network.">
+
+    <echo>
+      Here is how to use jdb to debug HelloWorld through the network:
+      jdb -connect com.sun.jdi.SocketAttach:hostname=localhost,port=8001
+    </echo>
+    <!--
+    Unfortunately I don't know how to make ant work properly with jdb.
+    The line below launch jdb but does not allow the user to
+    type commands to control it.
+    <exec executable="jdb" vmlauncher="false">
+      <arg line="-connect com.sun.jdi.SocketAttach:hostname=localhost,port=8001"/>
+    </exec>
+    -->
+
+  </target>
+
+  <target name="LogTest"
+          description="Instructions about how to run a small test
+          to demonstrate the logger execution">
+
+    <!--
+      cannot launch concurrent tasks without the risk of leaving zombie
+      processes running. It`s better to let the user launch tasks
+      in different shells to prevent this issue.
+    <antcall target="HelloWorld"/>
+    <antcall target="PacketLogger"/>
+    -->
+    <echo>
+      To test network debugging:
+      1) Launch the "HelloWorld" target.
+      2) Run a debugger with the same network port (8001 for this example).
+         See "jdb" target.
+
+    </echo>
+    <echo>
+      To test network debugging and logging:
+      1) Launch the "HelloWorld" target.
+      2) Launch the "PacketLogger" target using another shell.
+      3) Run a debugger using the same network port (8000 for this example).
+         See "jdb" target (below).
+    </echo>
+    <antcall target="jdb"/>
+
+  </target>
+
+  <target name="TestJopServer" depends="compile, lib"
+          description="Run TestJopServer, to test the JopDebugKernel
+          through the network." >
+
+    <echo>
+      Run TestJopServer, to test the JopServer and JopDebugKernel
+      through the network.
+      Please make sure the JopServer was launched before.
+    </echo>
+    <java
+        classname="com.jopdesign.debug.jdwp.test.TestJopServer"
+        fork="true"
+        spawn="false"
+        dir="${build}"
+        classpathref="project.class.path"
+    >
+    <!--
+      <jvmarg line = "${debugSettings_8001}"/>
+    -->
+    </java>
+
+  </target>
+
+  <target name="TestSymbols" depends="lib, copySymbols"
+          description="Run TestSymbols, to test loading of a symbol file." >
+
+    <echo>
+      Run TestSymbols, to test loading of a symbol file.
+      Please make sure that there is a symbol file available.
+    </echo>
+    <java
+        classname="com.jopdesign.debug.jdwp.test.TestSymbols"
+        fork="true"
+        spawn="false"
+        dir="${build}"
+        classpathref="project.class.path"
+    >
+    <!--
+      <jvmarg line = "${debugSettings_8001}"/>
+    -->
+    </java>
+
+  </target>
+
+
+  <macrodef name="makeHTML">
+    <attribute name="outputFolder"/>
+    <attribute name="sourceFolder"/>
+
+    <sequential>
+
+      <delete dir="@{outputFolder}"/>
+
+      <java
+          classname="com.jopdesign.debug.jdwp.bcel.Class2HTMLHelper"
+          fork="true"
+          spawn="false"
+          dir="${build}"
+          classpathref="project.class.path"
+      >
+      <!--
+        <jvmarg line = "${debugSettings_8001}"/>
+      -->
+        <arg value="-d"/>
+        <arg value="@{outputFolder}"/>
+        <arg value="@{sourceFolder}"/>
+      </java>
+
+    </sequential>
+  </macrodef>
+
+  <target name="Class2HTML_1" depends="lib" description="Run Class2HTML" >
+    <makeHTML sourceFolder="." outputFolder="${html.folder.1}"/>
+  </target>
+
+  <target name="Class2HTML_2" depends="lib" description="Run Class2HTML" >
+    <makeHTML sourceFolder="." outputFolder="${html.folder.2}"/>
+  </target>
+
+  <target name="InsertNOPBytecodes" depends="lib"
+    description="Insert NOP bytecodes in all classes." >
+    <java
+        classname="com.jopdesign.debug.jdwp.bcel.BytecodeHandler"
+        fork="true"
+        spawn="false"
+        dir="${build}"
+        classpathref="project.class.path"
+    >
+    <!--
+      <jvmarg line = "${debugSettings_8001}"/>
+    -->
+    </java>
+  </target>
+
+  <target name="TestCodeTransformation" depends="lib"
+          description="Test the code transformation">
+
+    <echo>
+      Run Class2HTML_1 target, then apply a code transformation and finally
+      run the Class2HTML_2 target.
+      This allows to compare what happened after the transformation by
+      looking at the internal state before and after it was performed.
+    </echo>
+
+    <antcall target="Class2HTML_1" />
+    <antcall target="InsertNOPBytecodes" />
+    <antcall target="Class2HTML_2" />
+
+  </target>
+
+
+<!--
+  <target name="Class2HTML" depends="compile"
+          description="Run Class2HTML" >
+
+    <echo>
+      Run Class2HTML, a tool from BCEL library responsible to build a set
+      of HTML files with a detailed description of each
+      class file in the build folder.
+
+      class set:
+
+      ${class.set}
+
+
+
+      Class files:
+
+      ${class.files.path.converted}
+
+
+    </echo>
+    <delete dir="${html.folder}"/>
+    <java
+        classname="com.jopdesign.debug.jdwp.bcel.Class2HTMLHelper"
+        fork="true"
+        spawn="false"
+        dir="${build}"
+        classpathref="project.class.path"
+    >
+      <arg value="-d"/>
+      <arg value="${html.folder}"/>
+      <arg value="."/>
+
+    </java>
+
+  </target>
+-->
+
+<!--
+jdb -connect com.sun.jdi.SocketAttach:hostname=localhost,port=8001
+
+  <target name="jopizer" depends="lib"
+        description="generate the .jop file" >
+    <java
+      classpathref="tools-cp"
+      classname="com.jopdesign.build.JOPizer"
+      failonerror="true"
+      fork="true">
+      <sysproperty key="mgci" value="false"/>
+      <arg line="-cp ${lib}/JOP_classes.zip;${build} -o ${build}/${jopbin} ${main-class}"/>
+    </java>
+  </target>
+
+
+  <target name="jsim" depends="jopizer"
+     description="Run JopSim"
+  >
+    <java classname="com.jopdesign.tools.JopSim"
+      failonerror="true"
+      fork="true"
+      classpathref="tools-cp"
+    >
+      <sysproperty key="log" value="false"/>
+      <arg line="${build}/${jopbin}"/>
+    </java>
+  </target>
+-->
+
+  <target name="clean" depends="cleanHTML" description="clean up" >
+
+    <!-- Delete the ${build} and ${dist} directory trees -->
+    <delete dir="${build}"/>
+    <delete dir="${dist}"/>
+
+    <!-- Delete the ${build} and ${dist} directory trees -->
+    <mkdir dir="${build}"/>
+
+  </target>
+
+  <target name="cleanHTML" description="clean up HTML folder" >
+
+    <!-- Delete the ${build} and ${dist} directory trees -->
+    <delete dir="${html.folder}"/>
+  </target>
+
+  <target name="copyDist" depends="lib"
+          description="Copy the build to JOP tree for testing" >
+
+    <!-- Copy the lib files for testing -->
+    <copy todir="${JOP_tools_lib_folder}">
+      <fileset refid="BuildLib"/>
+    </copy>
+
+  </target>
+
+  <target name="updateLibs" depends="copyDist"
+          description="Copy the last created libs for testing" >
+
+    <copy todir="${lib}">
+      <fileset refid="JopTools"/>
+    </copy>
+
+  </target>
+
+</project>
+
+
