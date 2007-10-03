@@ -311,3 +311,173 @@ Two switch expression are used to test switch related bytecodes.
    \item[Results Observed:]
 The test run Ok.
 \end{description}
+
+\subsubsection{JDK Test Cases}
+\begin{description}
+    \item[Note on name convention]
+
+: to avoid collision among the name of the test case and the name of
+the class being tested, we just use the first capital letter of the
+first word of the class under test. So the test case for
+ByteArrayInputStream is named BArrayInputStream.
+    \item[Package: java.io]
+
+    \item[Missing Classes]
+The following is a list of missing classes as for the Jdk 1.1.8
+version.
+Package java.io\\
+BufferedInputStream, BufferedOutputStream, BufferedReader, BufferedWriter.\\
+\large \bf \begin{center} Package java.io \end{center}
+
+\end{description}
+
+\subsubsection{BArrayInputStream}
+\begin{description}
+   \item[Purpose:]
+Test the ByteArrayInputStream class of JDK.
+    \item[Description:]
+Two objects of the ByteArrayInputStream class are created and
+initialized. All the method are excercised under multiple conditions
+and verified.
+    \item[Results Observed:]
+    The test run ok.
+    \item[Coverage:]
+    method: 78\%(7/9), block: 86\%(122/142), line: 80\%(23,9/30).
+    \item[Note:]
+The behaviour of the mark(int) method is different from that in the
+JDK 1.1.8 specification. The API specification states that the
+method should update the current mark in the stream to the provided
+parameter, but the result observed is that the mark is set to the
+current position.
+
+\end{description}
+
+\subsubsection{BArrayOutputStream}
+\begin{description}
+   \item[Purpose:]
+Test the ByteArrayInputStream class of JDK.
+    \item[Description:]
+Two objects of the ByteArrayInputStream class are created and
+initialized. All the method are excercised under multiple conditions
+and verified to produce the proper output.
+    \item[Results Observed:]
+    The test run ok. \\ The following methods were not found:\\
+    \textbullet toString(String)\\
+    \textbullet writeTo(OutputStream)
+    It was necessary to remove the try-catch for UnsupportedEncodingException in the
+    String toString() method in ByteArrayInputStream in order for the testcase to compile.
+    \item[Coverage:]
+    method: 100\%(9/9), block: 75\%(93/124), line: 81\%(25/31).
+    \item[Note:]
+Accordding to JDK 1.1.8 specification, the toString(int) method is
+deprecated. This method was
+not tested.\\
+Accordding to JDK 1.1.8 specification, the constructor String(byte
+bytes[],int offset,int length) in class String should not throw the
+UnsupportedEncodingException exception.
+
+
+\end{description}
+
+
+
+\subsubsection{DInputStream}
+\begin{description}
+   \item[Purpose:]
+Test the DataInputStream class of JDK.
+    \item[Description:]
+An object of the myInputStream class is created. The myInputStream
+class extends the InputStream class and is used to simulate an
+InputStream. Methods in the myInputStream
+class are included to produce necessary testing conditions as follows:\\
+\textbullet setError() : simulates an I/O error
+and causes an exception to be thrown when trying to read from the Stream.\\
+\textbullet SetCorrect() : disables the effect of the previous method.\\
+\textbullet setEndReached(): simulates an end of
+stream. The call to this methods results in a -1 returned from the read() method.\\
+\textbullet SetEndNotReached() : disables the effect of the previous method.\\
+
+All the method are excercised under multiple conditions and verified
+to produce the proper output.
+    \item[Results Observed:]
+    The test run ok.
+    \item[Coverage:]
+    method: 96\%(25/26), block: 69\%(345/498), line: 72\%(65/90).
+    \item[Note:]
+    Comment and uncomment the methods above to manually test the Exception behaviour.
+\end{description}
+
+\subsubsection{DOutputStream}
+\begin{description}
+   \item[Purpose:]
+Test the DataOutputStream class of JDK.
+    \item[Description:]
+An object of the myOutputStream class is created. The myOutputStream
+class extends the OutputStream class and is used to simulate an
+OutputStream. Methods in the myOutputStream
+class are included to produce necessary testing conditions as follows:\\
+\textbullet setError() : simulates an I/O error
+and causes an exception to be thrown when trying to write to the Stream.\\
+\textbullet SetCorrect() : disables the effect of the previous method.\\
+The following methods are used to verify contents written to the OutputStream:\\
+\textbullet checkData(byte data,int position): returns a boolean value of true\\
+if the provided data is found at that position in the stream.\\
+\textbullet checkData(byte data[],int offset, int len): returns true if the data\\
+of the provided array is found in the OutputStream starting at the
+provided offset. All the method are excercised under several
+conditions and verified to produce the proper output.
+    \item[Results Observed:]
+    The test run ok. \\ The following methods were not found:\\
+    \textbullet int size()\\
+    \item[Coverage:]
+    method: 93\%(13/14), block: 70\%(284/406), line: 78\%(62/80).
+    \item[Note:]
+Comment and uncomment the methods above to manually test the
+Exception behaviour.
+
+\large \bf \begin{center} Package java.lang \end{center}
+\end{description}
+
+\subsubsection{PrimitiveClasses}
+\begin{description}
+   \item[Purpose:]
+Test the primitive types wrapper classes of JDK.
+    \item[Description:]
+We create objects of the primitive wrapper classes and perform operations on them.\\
+Class methods are excercised under several conditions and verified
+to produce the proper output.
+    \item[Results Observed:]
+    Possible issue in constructor Boolean(String): according to JVM specification
+    1.1.8 when the argument to the method is something different from the string "true"
+    a Boolean representing false is allocated.\\
+    The problem arises when the argument is the null pointer. An exception is thrown in
+    JOP in that case. According to the specification, this constructor should not throw
+    any exception, it just must create a Boolean representing false.\\
+    When running on Sun's JVM the constructor creates the false Boolean as expected.\\
+    The constructor also fails to create a proper true object when given a string as an argument.
+    It should ignore case, but "tRue" gives a different result from "true", when they should both
+    produce a Boolean true object.\\
+    Also the static method valueOf should receive a string instead of a boolean as its argument.\\
+    The constructor Byte(String) was not found.
+    \item[Coverage:]
+    Found in table 1.
+    \item[Note:]
+The method Boolean.valueOf(boolean) was not tested.
+\end{description}
+
+\begin{table}
+\begin{center}
+\caption{\label{MyTable} Testing Coverage Results}
+\begin{tabular}[t]{|l|l|l|l|l|}
+\hline
+Package & Class & Method & Block & Line \\
+\hline
+java.lang &  &  &  &  \\
+\hline
+  & Boolean & 88\% (7/8) & 91\% (64/70)  & 93\% (13/14) \\
+\hline
+  & Byte & 88\% (7/8) & 91\% (64/70)  & 93\% (13/14) \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
