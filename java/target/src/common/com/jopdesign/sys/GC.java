@@ -1,6 +1,6 @@
 /*******************************************************************************
 
-    Real-time garbage collection for JOP-
+    Real-time garbage collection for JOP
     Copyright (C) 2005 Martin Schoeberl (martin@jopdesign.com)
 
     This library is free software; you can redistribute it and/or
