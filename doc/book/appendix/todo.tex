@@ -176,6 +176,194 @@ other titles:
     \item Browser other books for structural ideas
 \end{itemize}
 
+\section{Debugger Description}
+
+\begin{verbatim}
+
+------------------------------------------------------------
+Attachments: - Modified_jop_files.zip
+  Some modified files needed to run the debugger
+
+  Changed files:
+  Makefile
+  java/tools/source/com/jopdesign/build/MethodInfo.java
+  java/tools/source/com/jopdesign/build/JOPizer.java
+  java/tools/source/com/jopdesign/build/ClassInfo.java
+  (there's no need to change RtThreadImpl anymore)
+
+  Added (to the development tree):
+  java/target/source/test/JopDebugKernel/
+  java/tools/dist/lib/JopDebugger.jar   (after "make tools" run)
+
+- JopDebugger.zip
+  Latest development version of the debugger module.
+
+- JopDebugKernel.zip
+  This will run inside JOP.
+
+
+  The changes in the makefile are to allow it to debug JOPizer and JopSim
+  through the network and to create the symbol file.
+  The last change modify one step in the build process,
+  to call JOPizer from another class which will create the symbol file
+  right after JOPizer runs.
+
+------------------------------------------------------------
+
+
+
+Instructions to run the example:
+
+- Open two shells (one for Jop, other for the JopDebugger) - Shell
+1: Download a clean development tree from Jop CVS.
+
+- Copy modified Jop classes (from Modified_jop_files.zip)
+  in the correct folders.
+  Those small changes I did in the tool set were just to allow
+  serialization and access to some fields.
+  Copy also the "Makefile" included over your Makefile.
+
+- Build the modified tools: make tools
+
+- Shell 2:
+  Decompress the attached JopDebugger.zip in a sibling folder.
+
+- Build the project lib: cd JopDebugger; ant lib
+
+- Copy the file JopDebugger.jar into java\tools\dist\lib
+  Remeber that if you run "make tools" it will erase the
+  lib folder, which will remove JopDebugger.jar.
+
+- Unpack "JopDebugKernel.zip" and move it into
+  jop\java\target\src\test\JopDebugKernel
+  (but don't put it into JopDebugKernel\JopDebugKernel,
+  this is a common mistake).
+
+- Run the line below.
+  This test will run a stand-alone test under JopSim. If it runs and print some
+  simple messages, then it's possible to test the methods which access JOP's
+  internal structures.
+
+  make jsim -e P1=test/JopDebugKernel/source P2=debug P3=TestJopDebugKernel
+
+This will build all the system as usual: compile all, run JOPizer,
+bild the symbols file and launch JopSim.
+
+However, there are a few differences in this makefile. 1) It allows
+anyone to debug JopSim remotely (manually changing the makefile) 2)
+It allows anyone to debug JOPizer remotely (manually changing the
+makefile) 3) The modified makefile also change the build process to
+store a symbol table by calling JOPizer from another tool (symbol
+storage and loading is working) 4) It can connect JopSim to the
+network by calling JopSim from another tool (a JopServer)
+
+
+This test will run for a few seconds
+ while and then will stop to wait for input, showing the text below.
+
+ ----------------------------------------
+ test4_read_write()
+ Debug server. Current stack depth: 2
+ ----------------------------------------
+
+When this happens, force it to stop (ctrl-C). The remaining of the
+test needs commands from a server (through the network), explained
+next.
+
+
+To connect JopSim to the network using JopServer:
+--------------------------------------------------
+
+- Open the .jop file created in the previous run.
+
+- Locate two method pointers:
+  search for: "TestJopDebugKernel.printValue(I)V" and also
+  for "TestJopDebugKernel.printLine()V".
+
+- Update the file com.jopdesign.debug.jdwp.test.TestJopServer
+  (lines 152 and 162) with those addresses.
+
+- Run the line below:
+
+  make jsim_server -e P1=test/JopDebugKernel/source P2=debug P3=TestJopDebugKernel
+
+- Wait until the server is running.
+  It will print a message: "Server launched at port: 8004"
+
+- After the Jop server start running, go back to the other shell and
+  launch the ant target "TestJopServer". It should recompile the modified
+  java sources and launch the test.
+
+  ant TestJopServer
+
+If the methods addresses are not corrected, there is a big chance
+that the test will break with an error message like this: "Calling
+method now: make: *** [jsim] Error 25584194"
+
+Everytime JOPizer run, new method addresses are calculated when
+classes change. This error is just due to a couple wrong method
+pointers. So, if you want to change anything in the code which will
+run inside Jop, it's necessary to fix this test (or comment the
+method invocation calls). Otherwise it will break.
+
+To fix method pointers: - Open the .jop file - Search for the two
+method signatures printed by the TestJopServer class - Extract
+manually the two method addresses (hey, this is not finished yet;)
+it's just a test, you know). - Open class
+com.jopdesign.debug.jdwp.test.TestJopServer. - Change the code by
+pasting the method addresses
+
+Launch again the JopServer using make Run again TestJopServer.
+
+You may see that it's working by choosing other static void methods
+to call. This works for static methods with one or zero parameters
+only. Support for more is very easy to implement but was not needed
+now, so I didn't (yet). Returned values are currently ignored.
+
+--------------------------------------------------------------------------------
+Well, that's it. There are a lot of details and other small tools,
+but I hope now you have a much better idea about how my development
+effort is going until here.
+
+Those changes were tested on JOP from Sep. 11, so unless there was
+some big change in the last days, they should work ok on the latest
+version.
+
+The first test I mentioned shows you evidence of methods that access
+JOP structures.
+
+The test with JopServer shows that it's possible to connect JopSim
+to the network and send/receive commands which access and change JOP
+internal structures. Since this was accomplished without changing
+JopSim, it should be possible (at least in thery) to switch it with
+an FPGA running JOP and get the same results.
+
+This shows it's possible to control JOP from the network and perform
+some tasks related to debugging (such as get/set values).
+
+It's possible also to run another test which launch a real debugger
+which connects to a server, handshake and receive JDWP commands. But
+this test still does not do much, so I don't know if you want to see
+it.
+
+There's also a test to check the symbol file content.
+
+About the JOP side, it's still necessary to write code to set/reset
+breakpoints and handle interruptions properly.
+
+It's also necessary to glue together the symbol file, the Jop debug
+server and the JDWP module to control debugging. In short, it's a
+lot of work.
+
+If you need help to run or test it or if you have questions, please
+let me know.
+
+Regards, Paulo
+
+
+\end{verbatim}
+
+
 \section{TODO JOP}
 
 \begin{itemize}
