@@ -219,6 +219,11 @@ tools:
 	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/build/*.java
 	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/tools/*.java
 	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/wcet/*.java
+# quick hack to get the tools with the debugger ok
+# the build.xml from the debugger contains the correct info
+# but also some more (old?) stuff
+# does not work as some Sun classes for JDWP are missing
+#	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/debug/jdwp/*.java
 	cd $(TOOLS)/dist/classes && jar cf ../lib/jop-tools.jar *
 
 #	old version with batch file
@@ -238,7 +243,7 @@ java_app:
 	javac $(TARGET_JFLAGS) $(TARGET_APP)
 	cd $(TARGET)/dist/classes && jar cf ../lib/classes.zip *
 	$(OPTIMIZE)
-# use SymbolManager for Paulos version of JOPizer instead
+# use SymbolManager for Paulo's version of JOPizer instead
 	java $(DEBUG_JOPIZER) $(TOOLS_CP) -Dmgci=false com.jopdesign.build.JOPizer \
 		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/dist/bin/$(JOPBIN) $(MAIN_CLASS)
 #	java $(DEBUG_JOPIZER) $(TOOLS_CP) -Dmgci=false com.jopdesign.debug.jdwp.jop.JopSymbolManager \
