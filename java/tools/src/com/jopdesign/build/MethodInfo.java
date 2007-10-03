@@ -8,6 +8,7 @@ package com.jopdesign.build;
 
 import java.util.*;
 import java.io.PrintWriter;
+import java.io.Serializable;
 
 import org.apache.bcel.classfile.*;
 import org.apache.bcel.classfile.Method;
@@ -18,7 +19,9 @@ import org.apache.bcel.generic.Type;
  * @author Flavius, Martin
  *
  */
-public class MethodInfo {
+public class MethodInfo implements Serializable{
+
+  private static final long serialVersionUID = 1L;
 
 	static List clinitList = new LinkedList();
 	String methodId;
@@ -96,7 +99,7 @@ public class MethodInfo {
 	}
 
 	public void dumpMethodStruct(PrintWriter out, int addr) {
-		
+
 		if (methodId.equals(JOPizer.clinitSig) && len>=JOPizer.METHOD_MAX_SIZE/4) {
 			out.println("\t// no size for <clinit> - we iterpret it and allow larger methods!");
 		}
@@ -163,5 +166,18 @@ public class MethodInfo {
 		}
 	}
 
+  public int getCodeAddress()
+  {
+    return codeAddress;
+  }
 
+  public Method getMethod()
+  {
+    return method;
+  }
+
+  public Code getCode()
+  {
+    return code;
+  }
 }

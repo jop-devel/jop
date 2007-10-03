@@ -5,6 +5,7 @@
 package com.jopdesign.build;
 
 import java.io.PrintWriter;
+import java.io.Serializable;
 import java.util.*;
 
 import org.apache.bcel.Constants;
@@ -31,10 +32,14 @@ import org.apache.bcel.classfile.*;
  *    
  */
 
-public class ClassInfo {
+public class ClassInfo implements Serializable{
+
+  private static final long serialVersionUID = 1L;
 
 
-	static class IT {
+	static class IT implements Serializable{
+    private static final long serialVersionUID = 1L;
+
 		int nr;
 		String key;
 		MethodInfo meth;
@@ -54,19 +59,22 @@ public class ClassInfo {
 
 
 	// virtual method table
-	class ClVT {
+	class ClVT implements Serializable{
+    private static final long serialVersionUID = 1L;
+
 		int len;
 		// Method name plus signature is the key
 		String[] key;
 		MethodInfo mi[];
 	}
-	
+
 	/**
 	 * Field table
 	 * @author Martin
 	 *
 	 */
-	class ClFT {
+	class ClFT implements Serializable{
+    private static final long serialVersionUID = 1L;
 		int len;
 		int instSize;
 		// fieldname and signature

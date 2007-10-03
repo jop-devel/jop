@@ -21,6 +21,17 @@
 #
 
 
+# Added flags for development with JDWP
+#DEBUG_PORT = 8000
+DEBUG_PORT = 8001
+DEBUG_PARAMETERS= -Xdebug -Xrunjdwp:transport=dt_socket,server=y,address=$(DEBUG_PORT)
+#DEBUG_PARAMETERS= 
+
+#DEBUG_JOPIZER=$(DEBUG_PARAMETERS)
+DEBUG_JOPIZER=
+
+#DEBUG_JOPSIM=$(DEBUG_PARAMETERS)
+DEBUG_JOPSIM=
 
 #
 #	com1 is the usual serial port
@@ -28,13 +39,13 @@
 #		use -usb to download the Java application
 #		without the echo 'protocol' on USB
 #
-COM_PORT=COM2
+COM_PORT=COM1
 COM_FLAG=-e
 #COM_PORT=COM6
 #COM_FLAG=-e -usb
 
-#BLASTER_TYPE=ByteBlasterMV
-BLASTER_TYPE=USB-Blaster
+BLASTER_TYPE=ByteBlasterMV
+#BLASTER_TYPE=USB-Blaster
 
 # 'some' different Quartus projects
 QPROJ=cycmin cycbaseio cycbg dspio lego cycfpu cyc256x16 sopcmin
@@ -58,7 +69,7 @@ IPDEST=192.168.0.123
 
 P1=test
 P2=test
-P3=DoAll
+P3=HelloWorld
 # The test program for Basio and the NAND Flash
 #P3=FlashBaseio
 
@@ -71,11 +82,11 @@ P3=DoAll
 WCET_METHOD=main
 WCET_METHOD=measure
 
-P1=common
-P2=ejip/jtcpip/test
-P3=HTTPServer
-P2=ejip/examples
-P3=Telnet
+#P1=common
+#P2=ejip/jtcpip/test
+#P3=HTTPServer
+#P2=ejip/examples
+#P3=Telnet
 
 #P2=jdk
 #P3=DoAll
@@ -95,10 +106,21 @@ P3=Telnet
 #
 TOOLS=java/tools
 EXT_CP=-classpath java/lib/bcel-5.1.jar\;java/lib/jakarta-regexp-1.3.jar\;java/lib/RXTXcomm.jar\;java/lib/lpsolve55j.jar
-TOOLS_JFLAGS=-d $(TOOLS)/dist/classes $(EXT_CP) -sourcepath $(TOOLS)/src\;$(TARGET)/src/common
+
+# The line below makes the compilation crash, because it causes JOPizer to include a *lot*
+# of classes which are actually not necessary.
+#EXT_CP=-classpath java/jopeclipse/com.jopdesign.jopeclipse/lib/bcel-5.2.jar\;java/lib/jakarta-regexp-1.3.jar\;java/lib/RXTXcomm.jar\;java/lib/lpsolve55j.jar
+#EXT_CP=-classpath java/lib/recompiled_bcel-5.2.jar\;java/lib/jakarta-regexp-1.3.jar\;java/lib/RXTXcomm.jar\;java/lib/lpsolve55j.jar
+
+#TOOLS_JFLAGS=-d $(TOOLS)/dist/classes $(EXT_CP) -sourcepath $(TOOLS)/src\;$(TARGET)/src/common
+TOOLS_JFLAGS=-g -d $(TOOLS)/dist/classes $(EXT_CP) -sourcepath $(TOOLS)/src\;$(TARGET)/src/common
 
 TARGET=java/target
-TOOLS_CP=$(EXT_CP)\;$(TOOLS)/dist/lib/jop-tools.jar
+
+# changed to add another class to the tool chain
+#TOOLS_CP=$(EXT_CP)\;$(TOOLS)/dist/lib/jop-tools.jar
+TOOLS_CP=$(EXT_CP)\;$(TOOLS)/dist/lib/jop-tools.jar\;$(TOOLS)/dist/lib/JopDebugger.jar
+
 TARGET_SOURCE=$(TARGET)/src/common\;$(TARGET)/src/jdk_base\;$(TARGET)/src/jdk11\;$(TARGET)/src/rtapi\;$(TARGET_APP_SOURCE_PATH)
 TARGET_JFLAGS=-d $(TARGET)/dist/classes -sourcepath $(TARGET_SOURCE) -bootclasspath "" -extdirs "" -classpath "" -source 1.4
 GCC_PARAMS=""
@@ -165,13 +187,13 @@ all: directories tools jopser japp
 
 japp: java_app config_byteblast download
 
+# shortcut for my work in Eclipse on TCP/IP
 eapp: ecl_app config_byteblast download
-
 
 # use this for USB download of FPGA configuration
 # and Java program download
 #all: directories tools jopusb japp
-
+#
 #japp: java_app config_usb download
 
 
@@ -216,8 +238,11 @@ java_app:
 	javac $(TARGET_JFLAGS) $(TARGET_APP)
 	cd $(TARGET)/dist/classes && jar cf ../lib/classes.zip *
 	$(OPTIMIZE)
-	java $(TOOLS_CP) -Dmgci=false com.jopdesign.build.JOPizer \
+# use SymbolManager for Paulos version of JOPizer instead
+	java $(DEBUG_JOPIZER) $(TOOLS_CP) -Dmgci=false com.jopdesign.build.JOPizer \
 		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/dist/bin/$(JOPBIN) $(MAIN_CLASS)
+#	java $(DEBUG_JOPIZER) $(TOOLS_CP) -Dmgci=false com.jopdesign.debug.jdwp.jop.JopSymbolManager \
+#		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/dist/bin/$(JOPBIN) $(MAIN_CLASS)
 	java $(TOOLS_CP) com.jopdesign.tools.jop2dat $(TARGET)/dist/bin/$(JOPBIN)
 	cp *.dat modelsim
 	rm -f *.dat
@@ -313,8 +338,19 @@ sim: java_app
 #		without the tools
 #
 jsim: java_app
-	java -cp java/tools/dist/lib/jop-tools.jar -Dlog="false" \
+	java $(DEBUG_JOPSIM) -cp java/tools/dist/lib/jop-tools.jar -Dlog="false" \
 	com.jopdesign.tools.JopSim java/target/dist/bin/$(JOPBIN)
+
+
+#
+#	JopServer target
+#		without the tools
+#
+jsim_server: java_app
+	java $(DEBUG_JOPSIM) \
+	-cp java/tools/dist/lib/jop-tools.jar\;$(TOOLS)/dist/lib/JopDebugger.jar -Dlog="false" \
+	com.jopdesign.debug.jdwp.jop.JopServer java/target/dist/bin/$(JOPBIN)
+
 
 config_byteblast:
 	cd quartus/$(DLPROJ) && quartus_pgm -c $(BLASTER_TYPE) -m JTAG jop.cdf

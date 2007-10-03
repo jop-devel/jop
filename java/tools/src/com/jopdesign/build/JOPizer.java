@@ -14,7 +14,10 @@ import org.apache.bcel.classfile.*;
  * @author flavius, martin
  *
  */
-public class JOPizer {
+public class JOPizer implements Serializable{
+
+  // needed to avoid issues related to store/load of serializable content
+  private static final long serialVersionUID = 1307508540685275006L;
 	
 	public final static String nativeClass = "com.jopdesign.sys.Native";
 	public final static String startupClass = "com.jopdesign.sys.Startup";
@@ -43,13 +46,14 @@ public class JOPizer {
 
 	public static boolean dumpMgci = false;
 
-	PrintWriter out;
-	
-	org.apache.bcel.util.ClassPath classpath; // = ClassPath.SYSTEM_CLASS_PATH;
+//	PrintWriter out;
+  transient PrintWriter out;
+
+	org.apache.bcel.util.ClassPath classpath;
 	/**
 	 * Loaded classes, type is ClassInfo
 	 */
-	List clazzes = new LinkedList();
+	public List clazzes = new LinkedList();
 	/**
 	 * Mapping from JavaClass to the ClassInfo
 	 */
@@ -91,7 +95,9 @@ public class JOPizer {
 	 */
 	int clinfoAddr;
 
-	
+  // TODO: added to implement the symbol manager
+	public static JOPizer jz;
+
 	public JOPizer() {
 		
 		classpath = new org.apache.bcel.util.ClassPath(".");
@@ -127,7 +133,7 @@ public class JOPizer {
 			}
 		}	
 	}
-	
+
 	private void iterate(Visitor v) {
 
 		Iterator it = clazzes.iterator();
@@ -136,9 +142,9 @@ public class JOPizer {
 			JavaClass clz = ((ClassInfo) it.next()).clazz;
 //System.err.println("it:"+clz.getClassName());
 			new DescendingVisitor(clz, v).visit();
-		}	
+		}
 	}
-	
+
 	/**
 	 * @param clazz
 	 */
@@ -146,23 +152,25 @@ public class JOPizer {
 		for (JavaClass scl=clazz.getSuperClass(); scl!=null; scl=scl.getSuperClass()) {
 			if (!clazzes.contains(scl)) {
 				clazzes.add(scl);
-				System.out.println(scl.getClassName());					
+				System.out.println(scl.getClassName());
 			}
 		}
 	}
 */
 	public static void main(String[] args) {
 		String outFile = "/tmp/test.jop";
-		
+
 		dumpMgci = System.getProperty("mgci", "false").equals("true");
-		
-		JOPizer jz = new JOPizer();
+
+    // TODO: small change to implement quickly the symbol manager
+//		JOPizer jz = new JOPizer();
+    jz = new JOPizer();
 		HashSet clsArgs = new HashSet();
 
 		clsArgs.add(startupClass);
 		clsArgs.add(jvmClass);
 		clsArgs.add(helpClass);
-		
+
 		try {
 			if(args.length == 0) {
 				System.err.println("JOPizer arguments: [-cp classpath] [-o file] class [class]*");
@@ -263,7 +271,7 @@ public class JOPizer {
 				
 				// Finally we can write the .jop file....
 				new JopWriter(jz).write();
-				
+
 			}
 		} catch(Exception e) { e.printStackTrace();}
 	}
