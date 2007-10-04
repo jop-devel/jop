@@ -56,7 +56,11 @@ public class TcpConnection {
 	
 	private TcpConnection() {
 		state = Tcp.FREE;
+		Packet os = outStanding;
 		outStanding = null;
+		if (os!=null) {
+			os.setStatus(Packet.FREE);			
+		}
 	}
 	
 	public static TcpConnection findConnection(Packet p) {
@@ -103,6 +107,15 @@ public class TcpConnection {
 			}
 		}
 		
+		int cnt=0;
+		for (int i=0; i<CNT; ++i ) {
+			if (connections[i].state!=Tcp.FREE) {
+				++cnt;
+			}
+		}
+		System.out.print("getCon: con in use:");
+		System.out.println(cnt);
+		
 		return conn;
 	}
 	
@@ -113,9 +126,14 @@ public class TcpConnection {
 		return null;
 	}
 
-	public void setStatus(int s) {
+	/**
+	 * Close the connection and return it to the pool.
+	 *
+	 */
+	public void close() {
 		synchronized (mutex) {
-			state = s;
+			state = Tcp.FREE;
+			outStanding = null;
 		}
 	}
 }

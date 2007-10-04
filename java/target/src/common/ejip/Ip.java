@@ -139,5 +139,27 @@ public class Ip {
 		p.len = (off<<2)+cnt;
 	}
 
+	/**
+	 * Set data from String into the packet
+	 * @param p packet
+	 * @param off offset in 32-bit words
+	 * @param s String source
+	 */
+	public static void setData(Packet p, int off, String s) {
+		
+		int[] buf = p.buf;
+		int cnt = s.length();
+		// copy buffer
+		int k = 0;
+		for (int i=0; i<cnt; i+=4) {
+			for (int j=0; j<4; ++j) {
+				k <<= 8;
+				if (i+j < cnt) k += s.charAt(i+j);
+			}
+			buf[off + (i>>>2)] = k;
+		}
+	
+		p.len = (off<<2)+cnt;
+	}
 
 }

@@ -105,7 +105,6 @@ public class Telnetd extends TcpHandler {
 	}
 
 	public void established(Packet p) {
-		// TODO Auto-generated method stub
-		
+		Ip.setData(p, Tcp.DATA, "Welcome to JOP\r\n");
 	}
 }

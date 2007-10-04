@@ -249,6 +249,7 @@ public class Tcp {
 		// no handler found
 		if (th==null) {
 			p.setStatus(Packet.FREE);
+			tc.close();
 Dbg.lf();
 Dbg.wr('T');
 Dbg.intVal(buf[HEAD] & 0xffff);
@@ -292,8 +293,17 @@ Dbg.intVal(buf[HEAD] & 0xffff);
 		synchronized (mutex) {
 			if ((flags&FL_ACK) !=0 && tc.outStanding!=null) {
 				if (buf[ACKNR]==tc.sndNxt) {
-					System.out.println("ack received");
+					System.out.println("ACK received");
+					Packet os = tc.outStanding;
 					tc.outStanding = null;
+					os.setStatus(Packet.FREE);
+					if (flags==FL_ACK && p.len==DATA<<2 &&
+							state == ESTABLISHED) {
+						// only ack - no more action
+						System.out.println("just an ACK");
+						p.setStatus(Packet.FREE);
+						return;
+					}
 				} else {
 					// not the correct ACK - drop it
 					p.setStatus(Packet.FREE);
@@ -302,18 +312,26 @@ Dbg.intVal(buf[HEAD] & 0xffff);
 			}			
 		}
 		
+		if (tc.outStanding!=null) {
+			// we handle only one packet at a time
+			// so we have to drop it.
+			System.out.println("waiting on ACK - dropped");
+			p.setStatus(Packet.FREE);
+			return;
+		}
+		
 		switch(state) {
 		case Tcp.CLOSED:
 			// we should not receive a packet in state CLOSED
 			// that means no one is listening
 			// shall we send a RST?
 			p.setStatus(Packet.FREE);
-			tc.setStatus(Tcp.FREE);
-			break;
+			tc.close();
+			return;
 		case Tcp.LISTEN:
 			if ((flags&FL_SYN) == 0) {
 				p.setStatus(Packet.FREE);
-				tc.setStatus(Tcp.FREE);
+				tc.close();
 				System.out.println("dropped non SYN packet");
 				return;
 			}
@@ -322,7 +340,7 @@ Dbg.intVal(buf[HEAD] & 0xffff);
 			tc.sndNxt = 123;	// TODO: get time dependent initial seqnrs
 			buf[OPTION] = 0x02040000 + 512;	// set MSS to 512
 			p.len = (OPTION+1)<<2;	// len in bytes
-			fillHeader(p, tc, FL_SYN|FL_ACK, true);
+			fillHeader(p, tc, FL_SYN|FL_ACK);
 			tc.sndNxt++;		// SYN send counts for one
 			tc.state = Tcp.SYN_RCVD;
 			break;
@@ -331,7 +349,7 @@ Dbg.intVal(buf[HEAD] & 0xffff);
 				System.out.println("SYN acked");
 				tc.state = Tcp.ESTABLISHED;
 				th.established(p);
-				fillHeader(p, tc, FL_ACK, false);
+				fillHeader(p, tc, FL_ACK);
 				tc.sndNxt += p.len-(DATA<<2);
 			} else {
 				p.setStatus(Packet.FREE);				
@@ -345,7 +363,7 @@ Dbg.intVal(buf[HEAD] & 0xffff);
 				// TODO check SEQNR
 				tc.rcvNxt = buf[SEQNR]+1;
 				p.len = DATA<<2;
-				fillHeader(p, tc, FL_ACK|FL_FIN, false);
+				fillHeader(p, tc, FL_ACK|FL_FIN);
 				tc.sndNxt++;		// FIN send counts for one
 				tc.state = LAST_ACK;
 				break;
@@ -356,7 +374,7 @@ Dbg.intVal(buf[HEAD] & 0xffff);
 				tc.rcvNxt += len;
 				System.out.println("do request");
 				th.request(p);
-				fillHeader(p, tc, FL_ACK, false);
+				fillHeader(p, tc, FL_ACK);
 				tc.sndNxt += p.len-(DATA<<2);
 			} else {
 				System.out.println("dropped wrong SEQNR");
@@ -365,8 +383,17 @@ Dbg.intVal(buf[HEAD] & 0xffff);
 			}
 			break;
 		case Tcp.CLOSE_WAIT:
+			// we do not need this state as we are not interested
+			// in half open connetions
+			System.out.println("CLOSE_WAIT");
 			break;
 		case Tcp.LAST_ACK:
+			p.setStatus(Packet.FREE);
+			System.out.println("LAST_ACK");
+			if (tc.outStanding==null) {
+				System.out.println("we received the last ACK");
+				tc.close();
+			}
 			break;
 		case Tcp.FIN_WAIT_1:
 			break;
@@ -379,7 +406,7 @@ Dbg.intVal(buf[HEAD] & 0xffff);
 		}
 	}
 	
-	static void fillHeader(Packet p, TcpConnection tc, int fl, boolean mss) {
+	static void fillHeader(Packet p, TcpConnection tc, int fl) {
 
 		// Do we really free it here?
 		if (p.len==0) {
@@ -397,7 +424,7 @@ Dbg.intVal(buf[HEAD] & 0xffff);
 		buf[SEQNR] = tc.sndNxt;
 		buf[ACKNR] = tc.rcvNxt;
 		// TODO: set window according to buffer
-		if (mss) {
+		if ((fl&FL_SYN)!=0) {
 			buf[FLAGS] = 0x60000000 + (fl << 16) + 512; // hlen = 24, mss option						
 		} else {
 			buf[FLAGS] = 0x50000000 + (fl << 16) + 512; // hlen = 20, no options			
@@ -416,12 +443,9 @@ Dbg.intVal(buf[HEAD] & 0xffff);
 	
 		p.llh[6] = 0x0800;
 	
-		System.out.print("Flags ");
-		System.out.println(fl);
 		// packets with data or the SYN/FIN set
 		// need to be retransmitted
 		if (p.len>(DATA<<2) || (fl & (FL_SYN|FL_FIN))!=0) {
-			System.out.println("a TCP packet");
 			synchronized (mutex) {
 				tc.outStanding = p;
 				tc.timeout = TIMEOUT;				
