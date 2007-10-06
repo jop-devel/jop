@@ -36,25 +36,23 @@ public class ClinitOrder extends MyVisitor {
 		super.visitJavaClass(clazz);
 		MethodInfo mi = cli.getMethodInfo(JOPizer.clinitSig);
 		if (mi!=null) {
-			System.out.println(clazz.getClassName());
 			Set depends = findDependencies(mi.getMethod());
-			Iterator it = depends.iterator();
-			while(it.hasNext()) {
-				ClassInfo clf = (ClassInfo) it.next();
-				System.out.println("\tDepends on "+clf.clazz.getClassName());
-			}
 			clinit.put(cli, depends);
 		}
 	}	
 	
-	public void findOrder() {
+	/**
+	 * Print the dependency for debugging. Not used at the moment.
+	 *
+	 */
+	private void printDependency() {
 
 		Set cliSet = clinit.keySet();
 		Iterator itCliSet = cliSet.iterator();
 		while (itCliSet.hasNext()) {
 		
 			ClassInfo clinf = (ClassInfo) itCliSet.next();
-			System.out.println("Class "+cli.clazz.getClassName());
+			System.out.println("Class "+clinf.clazz.getClassName());
 			Set depends = (Set) clinit.get(clinf);
 				
 			Iterator it = depends.iterator();
@@ -63,7 +61,46 @@ public class ClinitOrder extends MyVisitor {
 				System.out.println("\tdepends "+clf.clazz.getClassName());
 			}
 		}
+	}
+	/**
+	 * Find a 'correct' oder for the static <clinit>.
+	 * Throws an error on cyclic dependencies.
+	 * 
+	 * @return the ordered list of classes
+	 */
+	public List findOrder() {
+
+		Set cliSet = clinit.keySet();
+		List order = new LinkedList();
+		int maxIter = cliSet.size();
+
+		// maximum loop bound detects cyclic dependency
+		for (int i=0; i<maxIter && cliSet.size()!=0; ++i) {
+
+			Iterator itCliSet = cliSet.iterator();
+			while (itCliSet.hasNext()) {			
+				ClassInfo clinf = (ClassInfo) itCliSet.next();
+				Set depends = (Set) clinit.get(clinf);
+				if (depends.size()==0) {
+					order.add(clinf);
+					// check all depends sets and remove the added
+					// element (a leave in the dependent tree
+					Iterator itCliSetInner = clinit.keySet().iterator();
+					while (itCliSetInner.hasNext()) {
+						ClassInfo clinfInner = (ClassInfo) itCliSetInner.next();
+						Set dep = (Set) clinit.get(clinfInner);
+						dep.remove(clinf);
+					}
+					itCliSet.remove();
+				}
+			}
+		}
 		
+		if (cliSet.size()!=0) {
+			throw new Error("Cyclic dependency in <clinit>");
+		}
+		
+		return order;
 	}
 	
 	private Set findDependencies(Method method) {

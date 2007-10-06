@@ -71,7 +71,7 @@ public class FindUsedConstants extends MyVisitor {
 	}
 
 
-	private Method find(Method method) {
+	private void find(Method method) {
 		
 		boolean replace = false;
 		
@@ -108,8 +108,6 @@ public class FindUsedConstants extends MyVisitor {
 		}
 		
 		il.dispose();
-		
-		return mg.getMethod();
 	}
 	
 	

@@ -131,7 +131,7 @@ public class JopWriter {
 		out.println("\t\t"+MethodInfo.clinitList.size()+",\t//\tnumber of methods");
 		Iterator it = MethodInfo.clinitList.iterator();
 		while (it.hasNext()) {
-			MethodInfo mi = (MethodInfo) it.next();
+			MethodInfo mi = ((ClassInfo) it.next()).getMethodInfo(JOPizer.clinitSig);
 			out.println("\t\t"+mi.structAddress+",\t//\t"+mi.cli.clazz.getClassName());
 		}
 	}

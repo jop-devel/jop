@@ -41,7 +41,7 @@ public class SetMethodInfo extends MyVisitor {
 	          addr += GCRTMethodInfo.gcLength(mi);    
 	        }
 
-	        mi.setMethod(m, addr);
+	        mi.setInfo(addr);
 	        addr += mi.getLength();
 		}
 		

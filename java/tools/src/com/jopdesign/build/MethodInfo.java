@@ -23,7 +23,7 @@ public class MethodInfo implements Serializable{
 
   private static final long serialVersionUID = 1L;
 
-	static List clinitList = new LinkedList();
+	static List clinitList;
 	String methodId;
 	ClassInfo cli;
 	Method method;
@@ -45,18 +45,23 @@ public class MethodInfo implements Serializable{
 		
 //		vindex = 0;
 //		codedumped = false;
-		if (mid.equals(JOPizer.clinitSig)) {
-			clinitList.add(this);
-		}
 	}
 
 	/**
+	 * Set on SetClassInfo
 	 * @param m
 	 */
-	public void setMethod(Method m, int addr) {
+	public void setMethod(Method m) {
         method = m;
-        code = m.getCode();
+        code = m.getCode();		
+	}
+	/**
+	 * @param m
+	 */
+	public void setInfo(int addr) {
         codeAddress = addr;
+        
+        Method m = method;
         
         margs = 0;
         Type at[] = m.getArgumentTypes();

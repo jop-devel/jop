@@ -46,8 +46,10 @@ public class JOPizer implements Serializable{
 
 	public static boolean dumpMgci = false;
 
-//	PrintWriter out;
-  transient PrintWriter out;
+	/** .jop output file */
+	transient PrintWriter out;
+	/** text file for additional information */
+	transient PrintWriter outTxt;
 
 	org.apache.bcel.util.ClassPath classpath;
 	/**
@@ -198,6 +200,7 @@ public class JOPizer implements Serializable{
 				System.out.println("CLASSPATH="+jz.classpath+"\tmain class="+mainClass);
 				
 				jz.out = new PrintWriter(new FileOutputStream(outFile));
+				jz.outTxt = new PrintWriter(new FileOutputStream(outFile+".txt"));
 
 				jz.load(clsArgs);
 // System.out.println(jz.clazz2cli);
@@ -212,6 +215,7 @@ public class JOPizer implements Serializable{
 		          jz.iterate(new SetGCRTMethodInfo(jz));
 		        }
 		        
+		        // dump of BCEL info to a text file
 				// jz.iterate(new Dump(jz));
 
 				// BuildVT was after SetMethodInfo
@@ -226,6 +230,11 @@ public class JOPizer implements Serializable{
 				// by Sun's javac 1.5
 				jz.iterate(new ReplaceIinc(jz));
 				
+				// find all <clinit> methods and their dependency,
+				// resolve the depenency and generate the list
+				ClinitOrder cliOrder = new  ClinitOrder(jz);
+				jz.iterate(cliOrder);
+				MethodInfo.clinitList = cliOrder.findOrder();
 				
 				// change methods - replace Native calls
 				// TODO: also change the index into the cp for the

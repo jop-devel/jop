@@ -1,8 +1,4 @@
 /*
- * Created on 04.06.2005
- *
- * TODO To change the template for this generated file go to
- * Window - Preferences - Java - Code Style - Code Templates
  */
 package com.jopdesign.build;
 
@@ -12,28 +8,17 @@ import org.apache.bcel.classfile.*;
 /**
  * @author martin
  *
- * TODO To change the template for this generated type comment go to
- * Window - Preferences - Java - Code Style - Code Templates
+ * Just dump all methods to the debug text file
  */
-public class Dump extends EmptyVisitor {
-
-	private JOPizer jz;
-	private ClassInfo cli;
-	private JavaClass clazz;
+public class Dump extends MyVisitor {
 
 	public Dump(JOPizer jz) {
-		this.jz = jz;
+		super(jz);
 	}
 	
-	public void visitJavaClass(JavaClass clazz) {
-
-		this.clazz = clazz;
-		cli = ClassInfo.getClassInfo(clazz.getClassName());
-	}
-
 	public void visitMethod(Method method) {
 
-		jz.out.println(clazz.getClassName()+":"+method.getName()+method.getSignature());
-		jz.out.println(method.getCode());
+		jz.outTxt.println(clazz.getClassName()+":"+method.getName()+method.getSignature());
+		jz.outTxt.println(method.getCode());
 	}
 }
