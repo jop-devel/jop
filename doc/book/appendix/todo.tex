@@ -176,6 +176,24 @@ other titles:
     \item Browser other books for structural ideas
 \end{itemize}
 
+\section{JOPizer Description}
+
+JOPizer is the tool to link all Java classes and translate the
+application to a executable image for JOP. The output is a .jop file
+(in ASCII with comments to debug the class structure). The
+executable image is either downloaded via serial or USB interface of
+programmed into a Flash. The image is located at address 0.
+
+JOPizer performs following steps:
+
+\begin{enumerate}
+    \item Find the transitive hull of all needed classes starting
+    from the class that contains the main method.
+    \item ...
+    \item Find a static class initializer order
+    (\code{ClinitOrder}). Throws an error on a cyclic dependency.
+    \item Dump the application to the image file
+\end{enumerate}
 \section{Debugger Description}
 
 \begin{verbatim}
