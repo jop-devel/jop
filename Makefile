@@ -234,11 +234,11 @@ tools:
 #	compile and JOPize the application
 #
 java_app:
-	-rm -rf $(TARGET)/dist
-	mkdir $(TARGET)/dist
-	mkdir $(TARGET)/dist/classes
-	mkdir $(TARGET)/dist/lib
-	mkdir $(TARGET)/dist/bin
+#	-rm -rf $(TARGET)/dist
+	-mkdir $(TARGET)/dist
+	-mkdir $(TARGET)/dist/classes
+	-mkdir $(TARGET)/dist/lib
+	-mkdir $(TARGET)/dist/bin
 	javac $(TARGET_JFLAGS) $(TARGET)/src/common/com/jopdesign/sys/*.java
 	javac $(TARGET_JFLAGS) $(TARGET_APP)
 	cd $(TARGET)/dist/classes && jar cf ../lib/classes.zip *
