@@ -24,6 +24,7 @@ public class DoAll {
 				new ArrayTest2(),
 				new ArrayTest3(),
 				new Clinit(),
+				new Clinit2(),
 				new Iface(),
 				new Conversion(),
 				new FloatTest(),
