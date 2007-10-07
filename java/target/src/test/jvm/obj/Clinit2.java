@@ -14,6 +14,7 @@ public class Clinit2 extends TestCase {
 	
 	static int abc = 123;
 	static int invsta = 0;
+	static int indir = 0;
 
 	static {
 		abc = 456;
@@ -24,6 +25,14 @@ public class Clinit2 extends TestCase {
 		
 		// <clinit> Clinit2_invsta should run before
 		invsta = Clinit2_invstat.getS();
+		
+		// <clinit> Clinit2_indir2 should run before
+		// results in cyclic dependency when
+		// static var indir is changed there
+		// new Clinit2_indir();
+		// Clinit2_indir.foo();
+		
+		indir += 10;
 	}
 	
 	public String getName() {
@@ -42,6 +51,7 @@ public class Clinit2 extends TestCase {
 		if (Clinit2_X.result_z!=4) ok = false;
 		if (Clinit2_invstat.getS()!=4711) ok = false;
 		if (invsta!=4711) ok = false;
+		if (indir!=20) ok = false;
 		
 		return ok;
 
@@ -104,5 +114,26 @@ class Clinit2_invstat {
 	}
 	static int getS() {
 		return s;
+	}
+}
+
+class Clinit2_indir {
+	
+	static void foo() {
+		Clinit2_indir2.foo();		
+	}
+	
+	Clinit2_indir() {
+		Clinit2_indir2.foo();
+	}
+}
+
+class Clinit2_indir2 {
+	
+	static int xxx = 0;
+	static void foo() {};
+	static {
+		xxx = 333;
+		Clinit2.indir = 10;
 	}
 }

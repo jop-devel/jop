@@ -29,6 +29,9 @@ public class SetClassInfo extends MyVisitor {
 		if (clazz.getClassName().equals("java.lang.Object")) {
 			// Object has no super class
 			cli.superClass = null;
+		} else {
+			// add this ClassInfo as a known sub class to the super class
+			cli.superClass.addSubClass(ClassInfo.getClassInfo(clazz.getClassName()));
 		}
 		// this one searches in the application CLASSPATH!!!
 		/*

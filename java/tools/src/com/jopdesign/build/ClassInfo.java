@@ -104,6 +104,8 @@ public class ClassInfo implements Serializable{
 	
 	public JavaClass clazz;
 	public ClassInfo superClass;
+	
+	private Set subClasses = new HashSet();
 
 	private HashMap usedMethods = new HashMap();
 	// Methods in a list
@@ -641,6 +643,14 @@ public class ClassInfo implements Serializable{
 	 */
 	public static ClassInfo getClassInfo(String className) {
 		return (ClassInfo) mapClassNames.get(className);
+	}
+	
+	public void addSubClass(ClassInfo cli) {
+		subClasses.add(cli);
+	}
+	
+	public Set getSubClasses() {
+		return subClasses;
 	}
 	
 }
