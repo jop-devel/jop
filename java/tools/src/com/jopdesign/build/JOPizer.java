@@ -42,6 +42,9 @@ public class JOPizer implements Serializable{
 	public static final int CLINITS_OFFSET = 11;
 
 	// TODO add all changes???
+	/**
+	 * maximum method size (for minimum cache) in bytes
+	 */
 	public static final int METHOD_MAX_SIZE = 1024;
 
 	public static boolean dumpMgci = false;
@@ -216,7 +219,7 @@ public class JOPizer implements Serializable{
 		        }
 		        
 		        // dump of BCEL info to a text file
-				// jz.iterate(new Dump(jz));
+				jz.iterate(new Dump(jz));
 
 				// BuildVT was after SetMethodInfo
 				// we need it for replace of field offsets
