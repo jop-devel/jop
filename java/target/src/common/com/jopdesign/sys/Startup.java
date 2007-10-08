@@ -166,8 +166,11 @@ public class Startup {
 			cp >>>= 10;
 //			System.out.print("start=");
 //			System.out.println(var);
-			if (len<256) {	// see JOPizer constant on max. method length
+//			System.out.println("len=");
+//			System.out.println(len);
+			if (len<256 && len!=0) {	// see JOPizer constant on max. method length
 				Native.invoke(addr);
+			// len=0 means interpret it
 			} else {
 				interpret();				
 			}
@@ -254,6 +257,10 @@ public class Startup {
 					break;
 				case 177 :		// return
 					return;
+				case 178 :		// getstatic
+				case 224 :		// resE0 - getstatic_ref
+					getstatic();
+					break;
 				case 221 :		// jopsys_nop
 					break;
 				case 179 :		// putstatic
