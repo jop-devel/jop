@@ -1,7 +1,7 @@
 package yaffs2.utils.debug.pc;
 
 import yaffs2.platform.emulation.PortConfiguration;
-import yaffs2.port.emulation.Dtest_C;
+import yaffs2.port.Dtest_C;
 
 public class DirectInterfaceClient
 {

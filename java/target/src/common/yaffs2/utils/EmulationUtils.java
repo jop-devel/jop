@@ -1,4 +1,4 @@
-package yaffs2.utils.emulation;
+package yaffs2.utils;
 
 import yaffs2.utils.*;
 

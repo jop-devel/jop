@@ -55,7 +55,7 @@ public class yaffscfg2k implements yaffs2.port.yaffscfg2k_C
 //		yportenv.PORT_TRACE_NANDSIM |
 //	    yportenv.PORT_TRACE_TNODE |
 		yportenv.YAFFS_TRACE_ALWAYS |
-//		(~0) |
+		(~0) |
 
 		0;
 	}
