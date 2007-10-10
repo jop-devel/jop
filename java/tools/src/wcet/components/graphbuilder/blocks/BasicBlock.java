@@ -9,7 +9,6 @@ package wcet.components.graphbuilder.blocks;
 import wcet.components.graphbuilder.instruction.exectime.ITimeAnalysisInstruction;
 import wcet.framework.interfaces.cfg.IVertexData;
 import wcet.framework.interfaces.instruction.IAnalysisInstruction;
-import wcet.framework.interfaces.instruction.OpCodes;
 
 /**
  * @author Elena Axamitova
@@ -51,15 +50,12 @@ public class BasicBlock implements IVertexData {
      * this block bytecode size in bytes
      */
     protected int size;
-    
-    protected StringBuffer toString;
 
     public BasicBlock() {
 	// this.instructions = new ArrayList<ITimeAnalysisInstruction>();
 	this.value = 0;
 	this.type = BasicBlock.SIMPLE_BB;
 	this.size = 0;
-	this.toString = new StringBuffer();
     }
 
     /**
@@ -78,8 +74,6 @@ public class BasicBlock implements IVertexData {
 	    }
 	}
 	this.size += timeInsn.get8BitLength();
-	this.toString.append(OpCodes.OPCODE_NAMES[insn.getOpcode()]);
-	this.toString.append(" ");
     }
 
    /**
@@ -110,7 +104,7 @@ public int getType(){
      */
     @Override
     public String toString(){
-	return "SimpleBB:"+this.size+", "+this.value+this.toString.toString();
+	return "SimpleBB:"+this.size+", "+this.value;
     }
     
     

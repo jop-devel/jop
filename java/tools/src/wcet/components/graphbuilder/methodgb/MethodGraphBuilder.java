@@ -5,21 +5,16 @@ package wcet.components.graphbuilder.methodgb;
 
 import java.io.File;
 
-import org.objectweb.asm.ClassVisitor;
-
 import wcet.components.graphbuilder.IGraphBuilderConstants;
+import wcet.components.graphbuilder.blocks.MethodBlock;
 import wcet.components.graphbuilder.util.FileList;
-import wcet.components.graphbuilder.util.FileListPool;
 import wcet.components.graphbuilder.util.IFileList;
-//import wcet.components.graphbuilder.util.MethodBlockCache;
 import wcet.components.graphbuilder.util.ZipFileList;
 import wcet.framework.exceptions.InitException;
-import wcet.framework.hierarchy.MethodKey;
 import wcet.framework.interfaces.general.IAnalyserComponent;
 import wcet.framework.interfaces.general.IDataStore;
 import wcet.framework.interfaces.general.IDataStoreKeys;
 import wcet.framework.interfaces.general.IGlobalComponentOrder;
-import wcet.framework.interfaces.hierarchy.IHierarchy;
 
 /**
  * @author Elena Axamitova
@@ -42,7 +37,10 @@ public class MethodGraphBuilder implements IAnalyserComponent {
      */
     private IFileList classFileList = null;
 
-    private MBCacheVisitor methodBlockCacheVisitor;
+    /**
+     * first block in the graph (block the analysed method)
+     */
+    private MethodBlock rootBlock = null;
 
     public MethodGraphBuilder(IDataStore dataStore) {
 	this.dataStore = dataStore;
@@ -73,67 +71,16 @@ public class MethodGraphBuilder implements IAnalyserComponent {
          * @see wcet.interfaces.general.IAnalyserComponent#init()
          */
     public void init() throws InitException {
-	this.initClassFileList();
-	this.methodBlockCacheVisitor = new MBCacheVisitor(this.classFileList);
-	this.dataStore.storeObject(IGraphBuilderConstants.FILE_LIST_KEY, this.classFileList);
-	this.dataStore.storeObject(IGraphBuilderConstants.LAST_MB_CLASS_VISITOR_KEY, this.methodBlockCacheVisitor);
-	MethodBlock.setMBCache(this.methodBlockCacheVisitor);
-    }
-
-    /*
-         * (non-Javadoc)
-         * 
-         * @see java.util.concurrent.Callable#call()
-         */
-    public String call() throws Exception {
-//	close the method visitor chain
-	ClassVisitor filter = (ClassVisitor)this.dataStore.getObject(IGraphBuilderConstants.LAST_MB_CLASS_VISITOR_KEY);
-	this.methodBlockCacheVisitor.setFilter(filter);
-	//change task name to java internal name conform
-	String className = this.dataStore.getTask().replace('.', '/');
-	String mainMethodName = this.dataStore.getMainMethodName();
-	String mainMethodDescriptor = this.dataStore.getMainMethodDescriptor();
-	//create the root method block - read in from class file and store keys (only keys)
-	//of all methods called in it - its children
-	IHierarchy hierarchy = (IHierarchy) this.dataStore.getObject(IGraphBuilderConstants.HIERARCHY_KEY);
-	if(hierarchy != null)
-	    MethodBlock.setHierarchy(hierarchy);
-	MethodKey rootKey = new MethodKey(
-		className,
-		//use default values if not else provided
-		mainMethodName == null ? IGraphBuilderConstants.MAIN_METHOD_NAME_DEFAULT
-			: mainMethodName,
-		mainMethodDescriptor == null ? IGraphBuilderConstants.MAIN_METHOD_DESCRIPTOR_DEFAULT
-			: mainMethodDescriptor);
-	MethodBlock rootBlock = this.methodBlockCacheVisitor.getMethodBlock(rootKey);
-	//construct children - create method blocks for stored method keys
-	rootBlock.resolve();
-	this.dataStore.storeObject(
-		IGraphBuilderConstants.METHOD_BLOCK_TREE_ROOT_KEY,
-		rootBlock);
-	return "+++ The MethodBlockBuilder component ended successfully.+++\n";
-    }
-    
-    private void initClassFileList()throws InitException{
-//	if classpath given, construct file list that searches for 
+	//if classpath given, construct file list that searches for 
 	//class files in the directories on the classpath 
 	if (this.dataStore.getClasspath() != null) {
-	    //init application classes file lisr
-	    FileListPool flPool = new FileListPool();
 	    String classPath = this.dataStore.getClasspath()
 		    + File.pathSeparator
 		    + this.dataStore
 			    .getObject(IGraphBuilderConstants.JOP_JDK_CLASSPATH_KEY);
-	    FileList classFileList = new FileList(classPath, ".class");
-	    classFileList.findAllFiles();
-	    flPool.addFileList(classFileList);
-	    
-	    //init jop system classes file list
-	    String jopSystemPath = (String)this.dataStore.getObject(IGraphBuilderConstants.JOP_SYSTEM_CLASSPATH_KEY);
-	    FileList jopSystemFileList = new FileList(jopSystemPath, ".class");
-	    jopSystemFileList.findAllFiles();
-	    flPool.addFileList(jopSystemFileList);
-	    this.classFileList = flPool;
+	    FileList fileList = new FileList(classPath, ".class");
+	    fileList.findAllFiles();
+	    this.classFileList = fileList;
 	} else {
 	    //else if zip file path given, create ZipFileList for the zip file path
 	    String zipPath = (String) this.dataStore
@@ -151,6 +98,34 @@ public class MethodGraphBuilder implements IAnalyserComponent {
 		this.classFileList = new ZipFileList(zipPathDefault, ".class");
 	    }
 	}
+    }
+
+    /*
+         * (non-Javadoc)
+         * 
+         * @see java.util.concurrent.Callable#call()
+         */
+    public String call() throws Exception {
+	//change task name to java internal name conform
+	String className = this.dataStore.getTask().replace('.', '/');
+	String mainMethodName = this.dataStore.getMainMethodName();
+	String mainMethodDescriptor = this.dataStore.getMainMethodDescriptor();
+	//create the root method block - read in from class file and store keys (only keys)
+	//of all methods called in it - its children
+	MethodKey rootKey = new MethodKey(
+		className,
+		//use default values if not else provided
+		mainMethodName == null ? IGraphBuilderConstants.MAIN_METHOD_NAME_DEFAULT
+			: mainMethodName,
+		mainMethodDescriptor == null ? IGraphBuilderConstants.MAIN_METHOD_DESCRIPTOR_DEFAULT
+			: mainMethodDescriptor);
+	this.rootBlock = MethodBlock.getRootBlock(rootKey, this.classFileList);
+	//construct children - create method blocks for stored method keys
+	this.rootBlock.resolve();
+	this.dataStore.storeObject(
+		IGraphBuilderConstants.METHOD_BLOCK_TREE_ROOT_KEY,
+		this.rootBlock);
+	return "+++ The MethodBlockBuilder component ended successfully.+++\n";
     }
 
 }

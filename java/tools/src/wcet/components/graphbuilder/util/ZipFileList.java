@@ -6,7 +6,6 @@ package wcet.components.graphbuilder.util;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Enumeration;
-import java.util.HashSet;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -18,15 +17,15 @@ import wcet.framework.exceptions.InitException;
  * 
  * Provides InputStream for files stored in a zip file.
  */
-public class ZipFileList implements IFileList {
+public class ZipFileList implements IFileList{
     /**
-         * zip file containing files of the application
-         */
+     * zip file containing files of the application
+     */
     private ZipFile zipFile;
 
     /**
-         * file extension of the files
-         */
+     * file extension of the files
+     */
     private String extension = null;
 
     public ZipFileList(String p, String e) throws InitException {
@@ -43,18 +42,16 @@ public class ZipFileList implements IFileList {
 	}
     }
 
-    /*
-         * (non-Javadoc)
-         * 
-         * @see wcet.components.graphbuilder.util.IFileList#getFileInputStream(java.lang.String)
-         */
+    /* (non-Javadoc)
+     * @see wcet.components.graphbuilder.util.IFileList#getFileInputStream(java.lang.String)
+     */
     public InputStream getFileInputStream(String fileName) {
 	String namePlusExt = fileName + this.extension;
-	// complete file name provided
+	//complete file name provided
 	ZipEntry zipEntry = this.zipFile.getEntry(namePlusExt);
 	if (zipEntry == null)
-	    // only part of the fileName given, find
-	    // zip entry that matches
+	    //only part of the fileName given, find 
+	    //zip entry that matches
 	    zipEntry = this.searchFor(fileName);
 	if (zipEntry == null)
 	    return null;
@@ -66,14 +63,12 @@ public class ZipFileList implements IFileList {
 	    }
     }
 
-    /* P R I V A T E M E T H O D S */
+    /* P R I V A T E   M E T H O D S */
     /**
-         * Search for a file whose name ends with the given fileName
-         * 
-         * @param fileName -
-         *                name of the file to search for
-         * @return - the corresponding zip entry, null when not found
-         */
+     * Search for a file whose name ends with the given fileName
+     * @param fileName - name of the file to search for
+     * @return - the corresponding zip entry, null when not found
+     */
     private ZipEntry searchFor(String fileName) {
 	Enumeration<? extends ZipEntry> entries = zipFile.entries();
 	while (entries.hasMoreElements()) {
@@ -82,28 +77,5 @@ public class ZipFileList implements IFileList {
 		return entry;
 	}
 	return null;
-    }
-
-    /*
-         * (non-Javadoc)
-         * 
-         * @see wcet.components.graphbuilder.util.IFileList#getAllFiles()
-         */
-    public HashSet<String> getAllFiles() {
-	HashSet<String> result = new HashSet<String>();
-	for (Enumeration<? extends ZipEntry> enumeration = this.zipFile
-		.entries(); enumeration.hasMoreElements();) {
-	    result.add(enumeration.nextElement().getName());
-	}
-	return result;
-    }
-
-    /*
-         * (non-Javadoc)
-         * 
-         * @see wcet.components.graphbuilder.util.IFileList#getSize()
-         */
-    public int getSize() {
-	return this.zipFile.size();
     }
 }

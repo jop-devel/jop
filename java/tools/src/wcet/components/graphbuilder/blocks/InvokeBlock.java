@@ -4,7 +4,7 @@
 package wcet.components.graphbuilder.blocks;
 
 import wcet.components.graphbuilder.instruction.exectime.MethodTimeAnalysisInsn;
-import wcet.framework.hierarchy.MethodKey;
+import wcet.components.graphbuilder.methodgb.MethodKey;
 import wcet.framework.interfaces.instruction.IAnalysisInstruction;
 
 /**

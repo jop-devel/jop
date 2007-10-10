@@ -3,10 +3,8 @@
  */
 package wcet.components.graphbuilder.instruction.exectime;
 
-import com.jopdesign.wcet.WCETInstruction;
-
 import wcet.framework.instruction.cache.LdcAnalysisInsn;
-//import wcet.framework.interfaces.instruction.OpCodes;
+import wcet.framework.interfaces.instruction.OpCodes;
 
 /**
  * @author Elena Axamitova
@@ -26,8 +24,7 @@ public class LdcTimeAnalysisInsn extends LdcAnalysisInsn implements
          * @see wcet.components.graphbuilder.instuctions.exectime.ITimeAnalysisInstruction#getCycles()
          */
     public int getCycles() {
-	return WCETInstruction.getCycles(this.opcode, false, 0);
-	/*switch (this.opcode) {
+	switch (this.opcode) {
 	case OpCodes.LDC:
 	    return 7 + ITimeAnalysisInstruction.rws;
 	case OpCodes.LDC_W:
@@ -44,6 +41,6 @@ public class LdcTimeAnalysisInsn extends LdcAnalysisInsn implements
 	    return retValue;
 	default:
 	    return ITimeAnalysisInstruction.CYCLES_UNKNOWN;
-	}*/
+	}
     }
 }
