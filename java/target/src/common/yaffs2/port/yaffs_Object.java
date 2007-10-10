@@ -54,7 +54,7 @@ public class yaffs_Object implements list_head_or_yaffs_Object
 
 	//#ifdef CONFIG_YAFFS_SHORT_NAMES_IN_RAM
 		public byte[] shortName = new byte[Guts_H.YAFFS_SHORT_NAME_LENGTH + 1];
-		public final int shortNameIndex = 0;
+		public final static int shortNameIndex = 0;
 	//#endif
 
 	//#ifndef __KERNEL__
