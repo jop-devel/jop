@@ -359,7 +359,7 @@ public class Object
   public final native Class getClass();
 */
   public final Class getClass() {
-	  throw new Error("NYI");
+	  throw new Error("getClass() NYI");
   }
 
   /**
