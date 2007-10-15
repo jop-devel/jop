@@ -1,50 +1,35 @@
 
 \input{preamble}
 
-\input{classes/jdoc_preamble}
+
+% makes problems with extra title info!!!!
+%\input{classes/jdoc_preamble}
 
 
 \begin{document}
 
 
+
+\frontmatter \pagestyle{empty}
+
+\extratitle{JOP Reference Handbook\\
+Building Embedded Systems with a Java Processor}
+
+\subject{Test Subject}
 \title{JOP Reference Handbook\\
 \ \\
 \Large Building Embedded Systems with a Java Processor}
 \author{Martin Schoeberl\\martin@jopdesign.com}
-\maketitle \thispagestyle{empty}
+\maketitle \cleardoublepage
 
-
-% How many pages is the frontmatter? 2, 4, or 6?
 \input{intro/frontmatter}
 
-
-
-\pagestyle{scrheadings} \pagenumbering{roman} \setcounter{page}{5}
-
+\pagestyle{scrheadings}
 
 \tableofcontents \cleardoublepage
- \listoftables \newpage \listoffigures
- \newpage \lstlistoflistings \newpage
 
-\chapter*{Foreword}
-
-This book is about JOP, the Java Optimized Processor. JOP began as
-research project for a PhD thesis. JOP has been used in several
-industrial applications and, due to the fact that it is an
-open-source project, has a growing user base. This book is written
-for all of you who build this lively community. The book is based to
-some extent on the PhD thesis. For a long time the thesis, some
-research papers, and the web site  have been the only available
-documentation for JOP. A thesis is quite different to a user manual.
-Its focus is on research results and implementation details are
-usually omitted. This book fills the gap and provides inside into
-the implementation of JOP and the accompanying Java virtual machine
-(JVM). It also gives you an idea how to build an embedded real-time
-system based on JOP.
-
-
-\pagestyle{scrheadings} \pagenumbering{arabic}
-
+%\pagestyle{scrheadings} \pagenumbering{arabic} \setcounter{page}{1}
+\mainmatter
 
 %-----------------------------------------------------------------
 % here we start to work
@@ -52,6 +37,7 @@ system based on JOP.
 
 \chapter{Introduction}
 \label{chap:intro}
+
 
 \emph{Copy some stuff from the thesis and rewrite it.}
     \input{intro/intro}
@@ -188,13 +174,9 @@ shorten it)}
     \input{outro/outro}
 
 
-%\printindex
 %\pagestyle{empty}
 %\chaptermark{} % remove chapter mark in the heading, but it does it on the
                % last page too!
-\bibliographystyle{plain}
-%\bibliographystyle{plnnolow} % changed plain.bst to keep upper case in titles
-\bibliography{../bib/all}
 
 
 
@@ -224,6 +206,12 @@ shorten it)}
 \input{appendix/cycore}
 
 %\input{classes/classes}
+
+\bibliographystyle{plain}
+%\bibliographystyle{plnnolow} % changed plain.bst to keep upper case in titles
+\bibliography{../bib/all}
+
+\printindex
 
 % uncomment for IKT book ;-)
 \chapter{TODO Lists}

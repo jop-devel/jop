@@ -1,29 +1,102 @@
+% just for now for the printout with old title page
+\setcounter{page}{1}
 
-\begin{center}
-how do we get an initial spacing done?\\
-{\Large
-\bigskip
-\bigskip
-\bigskip
-\bigskip
+\begin{flushleft}
+\pagestyle{empty}
+\ \\
+\vspace{1cm}
+{\usekomafont{title}\mdseries\Large JOP Reference Handbook\\
+\medskip
+\large Building Embedded Systems with a Java Processor}
+\cleardoublepage
+\end{flushleft}
+
+
+\begin{flushleft}
+\pagestyle{empty}
+\ \\
+\vspace{1cm}
 {\usekomafont{title}\huge JOP Reference Handbook\\
-\bigskip \bigskip
-\Large Building Embedded Systems with a Java Processor} \\
+\mdseries
+{\Large Building Embedded Systems with a Java Processor}\\
 \bigskip
+{\large\itshape Alpha Edition}\\
 \bigskip
-\bigskip
-\bigskip
-} {\sc Martin Schoeberl\\}
+{\usekomafont{title}\Large Martin Schoeberl}
+\medskip\\
+{\large\itshape martin@jopdesign.com} }
+
+
+\vspace{10cm} \emph{Version: \today}
+\newpage
+\end{flushleft}
+
+
+
+
+\thispagestyle{empty}
+\begin{flushleft}
+{\small
+
+Copyright \copyright \ 2007 Martin Schoeberl
 \medskip
-martin@jopdesign.com\\
+
+Martin Schoeberl\\
+Strausseng. 2-10/2/55\\
+A-1050 Vienna, Austria\\
 \medskip
+
+Email: \url{martin@jopdesign.com}\\
+Visit the accompanying web site on \url{http://www.jopdesign.com/}
+\medskip
+
+Published 2007 by Virtualbookworm.com Publishing Inc.,\\
+P.O. Box 9949, College Station, TX 77842, US.
+\medskip
+
+Published 2007, Alpha edition 2007 (preprint)
+\medskip
+
+All rights reserved. No part of this publication may be reproduced,
+stored in a retrieval system, or transmitted in any form or by any
+means, electronic, mechanical, recording or otherwise, without the
+prior written permission of Martin Schoeberl.
+\medskip
+
+%``JOP Reference Handbook" by Martin Schoeberl. .
+
+\textbf{Library of Congress Cataloging-in-Publication Data}
+\medskip
+
+Schoeberl, Martin
+\begin{quote}
+    JOP Reference Handbook : Building Embedded Systems\\
+    with a Java Processor / Martin Schoeberl\\
+    Includes bibliographical references and index.\\
+    ISBN 978-1-60264-XXX
+\end{quote}
+
 \bigskip
-\bigskip
-\bigskip
 
 
+Manufactured in the United States of America.
 
-\pagestyle{empty} \emph{Version: \today}
-\end{center}
+Typeset in 10pt Times by Martin Schoeberl }
+\end{flushleft}
 
-\cleardoublepage % empty second page!
+
+\addchap{Foreword}
+
+This book is about JOP, the Java Optimized Processor. JOP began as
+research project for a PhD thesis. JOP has been used in several
+industrial applications and, due to the fact that it is an
+open-source project, has a growing user base. This book is written
+for all of you who build this lively community. The book is based to
+some extent on the PhD thesis. For a long time the thesis, some
+research papers, and the web site  have been the only available
+documentation for JOP. A thesis is quite different to a reference
+manual. Its focus is on research results and implementation details
+are usually omitted. This book fills the gap and provides inside
+into the implementation of JOP and the accompanying Java virtual
+machine (JVM). It also gives you an idea how to build an embedded
+real-time system based on JOP.

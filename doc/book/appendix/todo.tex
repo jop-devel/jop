@@ -1,8 +1,18 @@
+\section{TODO Order}
+
+\begin{enumerate}
+    \item Cleanup current chapters/sections
+    \item Move sections according to structure (see below)
+    \item Frontmatter
+    \item Cover
+    \item Quick tour on JOP
+\end{enumerate}
+
 \section{TODO Handbook}
 
 \begin{itemize}
     \item OOHW copy
-    \item HWO copy
+    \item HWO copy or low level access w Native.rdMem()
     \item Update Results section (and decide on a different name)
     \item rewrite user scheduler to a scheduler description
     \item restructure with background info and related work in each
@@ -11,6 +21,8 @@
     didn't take them
     \item jHISC to related work
     \item derived work
+    \item Figure from Slides on configuration (FPGA + serial/USB
+    channel)
 \end{itemize}
 
 \subsection{Add Section}
@@ -21,7 +33,8 @@
     \item WCET analysis description + usage (remove from Results
     section)
     \item SCJ definition (+ implementation)
-    \item Mission modes + implementation
+    \item (Mission modes + implementation)
+    \item Teaching (aids)
     \item Examples section
     \begin{itemize}
         \item RtThread examples
@@ -39,11 +52,9 @@
     \item SC Java
 \end{itemize}
 
-\subsection{Addition or Cleanup Done}
+\subsection{Addition}
 
 \begin{itemize}
-    \item Real-Time GC
-    \item SimpCon description
     \item Javadoc of some classes
 \end{itemize}
 
@@ -138,6 +149,8 @@ other titles:
     \item Virtex-5 User Guide
     \item Libraries Guide (Xilinx)
 \end{itemize}
+
+
 \subsection{A Possible Structure of the Book}
 
 \begin{itemize}
@@ -162,8 +175,12 @@ other titles:
         \item Real-time systems
     \end{itemize}
     \item Real-time threads
+    \item Tools
+    \begin{itemize}
+        \item WCET Analyzer
+        \item Library: util, ejip, YAFFS,...
+    \end{itemize}
     \item JOPizer
-    \item Library: util, ejip,...
     \item JDK + support
     \item Board descriptions
     \item Appendix
@@ -177,6 +194,7 @@ other titles:
 \end{itemize}
 
 \section{JOPizer Description}
+\index{JOPizer}
 
 JOPizer is the tool to link all Java classes and translate the
 application to a executable image for JOP. The output is a .jop file
@@ -194,6 +212,13 @@ JOPizer performs following steps:
     (\code{ClinitOrder}). Throws an error on a cyclic dependency.
     \item Dump the application to the image file
 \end{enumerate}
+
+\section{YAFFS Notes}
+
+\begin{itemize}
+    \item new in yaffs2.port.yaffs\_guts\_C.yaffs\_GetObjectName(...)
+\end{itemize}
+
 \section{Debugger Description}
 
 \begin{verbatim}

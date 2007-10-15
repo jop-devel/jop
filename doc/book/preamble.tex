@@ -1,31 +1,28 @@
-
-% a changed copy from the thesis
-
-%\documentclass[a4paper,10pt,twocolumn]{article}
-% use option draft to check for typesetting problems.
-% similar to original word document
-
-% don't use textheight... with koma-script
 \documentclass[%draft,
-%    a4paper,12pt, % 'Standard'
-    11pt, % use explicit paper format for Java book format
-%    b5paper,10pt, % B5 printout
-    % use BCOR to compensate for the two-side margin!
-%    a4paper,12pt,BCOR37pt,DIV15,
-%    a4paper,12pt,BCOR40pt,DIV14,
-%    b5paper,10pt,DIV12,
+    10pt, % use explicit paper size
     headinclude, footexclude,
     twoside, % this produces strange margins!
     openright, % for new chapters
+    notitlepage,
     cleardoubleempty,
-% normalheadings - smaller chapter or smallheadings - too small
-    % abstracton, % the author of koma-script argues against the title
     headsepline,
-%    5headlines, % standard is 1.25 -- wirkt net!
     pointlessnumbers,
-    ]{scrreprt}
+    bibtotoc, idxtotoc,
+    ]{scrbook}
 
-%\usepackage{html}
+
+% that's for virtualbookworm trim size
+\setlength{\paperwidth}{6in} \setlength{\paperheight}{9in}
+\usepackage{pslatex} % -- times instead of computer modern
+% pslatex should be replaced by this:
+%\usepackage{mathptmx}
+%\usepackage[scaled=.90]{helvet}
+%\usepackage{courier}
+% pslatex does not work with T1 encoding. <> Problem?
+
+% typeare{calc} results to a DIV of 16 for 11pt
+% but too large margin for 10pt
+\typearea[0.32in]{18}
 
 % headings
 \usepackage{scrpage2} % for headers
@@ -52,28 +49,17 @@
 % Engblom: 120x188 (without head)
 % Java: 127x187 (without head)
 % 1pt = 1/72.27 in = 0.351 mm
+% Thesis is 232mm x 185mm (9,1in x 7,28in) with 11pt
+% Springer is 9,2in x 6in with 10pt
+% Altera Quaruts handbook is 9in x 7in with 9pt
 
 
 % for book
 % 'Java-format' 526pt x 660pt (Ghostscript)
-\setlength{\paperwidth}{185mm} \setlength{\paperheight}{232mm}
+%\setlength{\paperwidth}{185mm} \setlength{\paperheight}{232mm}
 % use that BCOR setting with twoside to compensate the margin
-\areaset[13.75mm]{130mm}{200mm} % Java book format
+%\areaset[13.75mm]{130mm}{200mm} % Java book format
 
-% that's for virtualbookworm trim size
-%\areaset[0.5in][6in][9in]
-
-% for book to A4 conversion:
-% Set the following sizes and export with
-% 'Variable Page Size' in gs.
-% Print with 'fit to paper' in Acrobat - results in 110%
-% and an effective text area of 142x215
-%\setlength{\paperwidth}{180mm} \setlength{\paperheight}{232mm}
-%\areaset[12.5mm]{130mm}{200mm} % Java book format
-
-% for two page printout in .pdf
-%\setlength{\paperwidth}{134mm} \setlength{\paperheight}{206mm}
-%\areaset[1mm]{130mm}{200mm} % Java book format
 
 
 % use 10pt for code instead of 11pt - but I still would prefer Lucida Typewriter
@@ -116,13 +102,10 @@
 
 
 
-% for A4
-% 12pt A4 scaled from book
-%\areaset[17.05mm]{142mm}{219mm}
-\newfont{\javatt}{cmss12}
-\newfont{\javattb}{cmssdc10 scaled 1200}
+\newfont{\javatt}{cmss10}
+\newfont{\javattb}{cmssdc10}
 % TODO find an italic
-\newfont{\javatti}{cmss12}
+\newfont{\javatti}{cmss10}
 \newcommand{\javatext}{\javatt}
 
 \newcommand{\picscale}{1}
@@ -147,12 +130,6 @@
 % is this a correction for the <> problem?
 % \usepackage[T1]{fontenc}
 
-\usepackage{pslatex} % -- times instead of computer modern
-% pslatex should be replaced by this:
-%\usepackage{mathptmx}
-%\usepackage[scaled=.90]{helvet}
-%\usepackage{courier}
-% pslatex does not work with T1 encoding. <> Problem?
 
 
 \usepackage{latexsym}
@@ -181,19 +158,14 @@ showstringspaces=false,captionpos=b}
 \newcommand{\cc}[1]{\multicolumn{1}{c}{#1}}
 \newcolumntype{d}[1]{D{.}{.}{#1}}
 
-% für die Umlaute in der Kurzfassung
-% bekomme ich dadurch Probleme???
-%\usepackage[ansinew]{inputenc}
-
 
 \usepackage{capt-of}
-\usepackage[colorlinks=true,linkcolor=black,citecolor=black]{hyperref}
-%\usepackage{hyperref}
+\usepackage[colorlinks=true,urlcolor=black,linkcolor=black,citecolor=black]{hyperref}
 
 % ----------------------
 
-%\usepackage{makeidx}
-%\makeindex
+\usepackage{makeidx}
+\makeindex
 
 
 \usepackage{import} % for subimport text and graphics from subdirectory
