@@ -3,8 +3,10 @@
  */
 package wcet.components.graphbuilder.instruction.exectime;
 
+import com.jopdesign.wcet.WCETInstruction;
+
 import wcet.framework.instruction.cache.VarAnalysisInsn;
-import wcet.framework.interfaces.instruction.OpCodes;
+//import wcet.framework.interfaces.instruction.OpCodes;
 
 /**
  * @author Elena Axamitova
@@ -24,7 +26,8 @@ public class VarTimeAnalysisInsn extends VarAnalysisInsn implements
          * @see wcet.components.graphbuilder.instuctions.exectime.ITimeAnalysisInstruction#getCycles()
          */
     public int getCycles() {
-	switch (this.opcode) {
+	return WCETInstruction.getCycles(this.opcode, false, 0);
+	/*switch (this.opcode) {
 	case OpCodes.ILOAD:
 	    return 2;
 	case OpCodes.LLOAD:
@@ -49,6 +52,6 @@ public class VarTimeAnalysisInsn extends VarAnalysisInsn implements
 	    return ITimeAnalysisInstruction.CYCLES_UNKNOWN;
 	default:
 	    return ITimeAnalysisInstruction.CYCLES_UNKNOWN;
-	}
+	}*/
     }
 }

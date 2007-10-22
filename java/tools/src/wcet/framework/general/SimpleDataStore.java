@@ -6,7 +6,7 @@ package wcet.framework.general;
 import java.util.Hashtable;
 import java.util.Vector;
 
-import wcet.framework.interfaces.constraints.IConstraint;
+import wcet.framework.interfaces.solver.IConstraint;
 
 
 /**

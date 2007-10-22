@@ -9,9 +9,9 @@ import java.util.List;
 import java.util.Vector;
 
 import wcet.framework.interfaces.cfg.IControlFlowGraph;
-import wcet.framework.interfaces.constraints.IConstraint;
 import wcet.framework.interfaces.general.IDataStore;
 import wcet.framework.interfaces.general.IDataStoreKeys;
+import wcet.framework.interfaces.solver.IConstraint;
 
 /**
  * @author Elena

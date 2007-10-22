@@ -87,13 +87,36 @@ public class MBCacheVisitor implements ClassVisitor, IMethodBlockCache {
 		if (insnNode.getOpcode() == OpCodes.NEW)
 		    insnNode = new FieldInsnNode(OpCodes.GETFIELD,
 			    "java/lang/String", "value", "[C");
-		if (insnNode.getOpcode() == OpCodes.INVOKESPECIAL)
-		    insnNode = new FieldInsnNode(OpCodes.GETFIELD,
-			    "java/lang/String", "value", "[C");
+		if ((insnNode.getType() == AbstractInsnNode.METHOD_INSN)) {
+		    MethodInsnNode methodInsnNode = (MethodInsnNode) insnNode;
+		    if (((methodInsnNode.owner.equals("com/jopdesign/sys/JVM"))
+			    && (methodInsnNode.name.equals("f_new")) && (methodInsnNode.desc
+			    .equals("(I)I")))
+			    || ((methodInsnNode.owner
+				    .equals("java/lang/StringIndexOutOfBoundsException"))
+				    && (methodInsnNode.name.equals("<init>")) && (methodInsnNode.desc
+				    .equals("(I)V")))
+			    || ((methodInsnNode.owner
+				    .equals("com/jopdesign/sys/JVM"))
+				    && (methodInsnNode.name.equals("f_athrow")) && (methodInsnNode.desc
+				    .equals("(Ljava/lang/Throwable;)Ljava/lang/Throwable;")))) {
+			FieldInsnNode tempInsnNode = new FieldInsnNode(OpCodes.GETFIELD,
+				"java/lang/String", "value", "[C");
+			result.instructions.insertBefore(methodInsnNode, tempInsnNode);
+			result.instructions.remove(methodInsnNode);
+		    }
+		}
 	    }
-	    result.replaceChild(new MethodKey("com/jopdesign/sys/JVM","f_new","(I)I"), null);
-	    result.replaceChild(new MethodKey("com/jopdesign/sys/JVM","f_athrow","(Ljava/lang/Throwable;)Ljava/lang/Throwable;"), null);
-	    result.replaceChild(new MethodKey("java/lang/StringIndexOutOfBoundsException","<init>","(I)V"), null);
+	    result.replaceChild(new MethodKey("com/jopdesign/sys/JVM", "f_new",
+		    "(I)I"), null);
+	    result.replaceChild(
+		    new MethodKey("com/jopdesign/sys/JVM", "f_athrow",
+			    "(Ljava/lang/Throwable;)Ljava/lang/Throwable;"),
+		    null);
+	    result.replaceChild(new MethodKey(
+		    "java/lang/StringIndexOutOfBoundsException", "<init>",
+		    "(I)V"), null);
+
 	} else {
 	    result = this.methodBlockCache.getMethodBlock(key);
 	    if ((key.getOwner().endsWith("JVMHelp")
@@ -113,9 +136,36 @@ public class MBCacheVisitor implements ClassVisitor, IMethodBlockCache {
 			}
 		    }
 		}
-		MethodKey oldKey = new MethodKey("java/lang/String", "charAt", "(I)C");
-		MethodKey newKey = new MethodKey(IGraphBuilderConstants.JOP_SYSTEM_PACKAGE_NAME+"WorkAroundString", "charAt", "(I)C");
+		MethodKey oldKey = new MethodKey("java/lang/String", "charAt",
+			"(I)C");
+		MethodKey newKey = new MethodKey(
+			IGraphBuilderConstants.JOP_SYSTEM_PACKAGE_NAME
+				+ "WorkAroundString", "charAt", "(I)C");
 		result.replaceChild(oldKey, newKey);
+	    } else if (key.getOwner().endsWith("com/jopdesign/sys/Startup")
+		    && key.getName().equals("exit")
+		    && (key.getDecription().equals("()V"))) {
+		Iterator insnIterator = result.instructions.iterator();
+		while (insnIterator.hasNext()) {
+		    AbstractInsnNode insnNode = (AbstractInsnNode) insnIterator
+			    .next();
+		    if (insnNode.getType() == AbstractInsnNode.METHOD_INSN) {
+			MethodInsnNode methodInsnNode = (MethodInsnNode) insnNode;
+			if ((methodInsnNode.owner
+				.endsWith("com/jopdesign/sys/JVM"))
+				&& (methodInsnNode.name.equals("f_athrow"))
+				&& (methodInsnNode.desc
+					.equals("(Ljava/lang/Throwable;)Ljava/lang/Throwable;"))) {
+			    FieldInsnNode tempInsnNode = new FieldInsnNode(OpCodes.GETFIELD,
+					"java/lang/String", "value", "[C");
+				result.instructions.insertBefore(methodInsnNode, tempInsnNode);
+				result.instructions.remove(methodInsnNode);
+			}
+		    }
+		}
+		result.replaceChild(new MethodKey("com/jopdesign/sys/JVM",
+			"f_athrow",
+			"(Ljava/lang/Throwable;)Ljava/lang/Throwable;"), null);
 	    }
 	}
 	// result.resolve();

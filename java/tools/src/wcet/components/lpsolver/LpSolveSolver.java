@@ -13,13 +13,14 @@ import java.util.Random;
 import lpsolve.LpSolve;
 import lpsolve.LpSolveException;
 import wcet.components.constraintsgen.IConstraintsGeneratorConstants;
-import wcet.framework.constraints.ObjectiveFunction;
 import wcet.framework.exceptions.InitException;
-import wcet.framework.interfaces.constraints.IConstraint;
-import wcet.framework.interfaces.constraints.IConstraintTerm;
 import wcet.framework.interfaces.general.IAnalyserComponent;
 import wcet.framework.interfaces.general.IDataStore;
 import wcet.framework.interfaces.general.IGlobalComponentOrder;
+import wcet.framework.interfaces.solver.IConstraint;
+import wcet.framework.interfaces.solver.IConstraintTerm;
+import wcet.framework.solver.LpSolveResult;
+import wcet.framework.solver.ObjectiveFunction;
 
 /**
  * @author Elena Axamitova
@@ -108,8 +109,10 @@ public class LpSolveSolver implements IAnalyserComponent {
     private void solveLpProblem() throws LpSolveException {
 	this.lpSolve.solve();
 	/* a solution is calculated, now lets get some results */
+	LpSolveResult result = new LpSolveResult();
+	result.fill(this.lpSolve);
 	this.dataStore.storeObject(ILpSolverConstants.LPSOLVE_RESULT_KEY,
-		this.lpSolve);
+		result);
     }
 
     private void createLpProblem() throws LpSolveException {

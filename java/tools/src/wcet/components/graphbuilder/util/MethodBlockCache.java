@@ -11,13 +11,13 @@ import java.util.List;
 import java.util.Map;
 
 import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.tree.ClassNode;
 
 import wcet.components.graphbuilder.IGraphBuilderConstants;
-import wcet.components.graphbuilder.blocks.MethodBlock;
-import wcet.components.graphbuilder.methodgb.MethodKey;
+import wcet.components.graphbuilder.methodgb.MethodBlock;
 import wcet.framework.exceptions.TaskInitException;
+import wcet.framework.hierarchy.MethodKey;
 
 /**
  * @author Elena Axamitova
@@ -28,7 +28,7 @@ import wcet.framework.exceptions.TaskInitException;
  * least recently accessed strategy when removing the oldest entry.
  */
 // TODO does not handle Interfaces and abstract classes (? here ?)
-public class MethodBlockCache {
+public class MethodBlockCache implements IMethodBlockCache{
     /**
      * load factor of the map storing method blocks.
      */
@@ -43,7 +43,11 @@ public class MethodBlockCache {
      * the method map (all method blocks of a class) cache
      */
     private LinkedHashMap<String, MethodMap> classMap = null;
+    
+    private ClassVisitor filer;
 
+    private ClassNode currClassNode;
+    
     /**
      * Construct a new cache that uses the provided file list
      * @param fl - file list to get class input streams from
@@ -60,7 +64,7 @@ public class MethodBlockCache {
 	    }
 	};
     }
-
+    
     /**
      * Get MethodBlock for the method key. If not in cache, read the class, store
      * all method blocks of the class in cache.
@@ -79,6 +83,14 @@ public class MethodBlockCache {
 	return classMethods.getNode(key);
     }
 
+    public ClassNode getCurrClassNode(){
+	return this.currClassNode;
+    }
+    
+    public void setFilter(ClassVisitor f){
+	this.filer = f;
+    }
+    
     /**
      * Constructs a cache entry (map of all method blocks of this class) for
      * the given class name.
@@ -99,22 +111,13 @@ public class MethodBlockCache {
 	}
 //	works as a normal ClassNode, only instead of MethodNodes
 	//creates MethodBlocks
-	ClassNode classNode = new ClassNode() {
-	    @SuppressWarnings("unchecked")
-	    @Override
-	    public MethodVisitor visitMethod(final int access,
-		    final String name, final String desc,
-		    final String signature, final String[] exceptions) {
-		MethodBlock mn = new MethodBlock(this.name, this.sourceFile,
-			access, name, desc, signature, exceptions);
-		methods.add(mn);
-		return mn;
-	    }
-	};
-	// If line info not needed
-	// classReader.accept(classNode, ClassReader.SKIP_DEBUG);
-	classReader.accept(classNode, ClassReader.SKIP_FRAMES);
-	return classNode;
+	this.currClassNode = new MethodBlockClassNode();
+	if(this.filer!=null)
+	    classReader.accept(this.filer, ClassReader.SKIP_FRAMES);
+	else
+	    classReader.accept(this.currClassNode, ClassReader.SKIP_FRAMES);
+	
+	return this.currClassNode;
     }
 
     /**

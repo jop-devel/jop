@@ -44,7 +44,7 @@ import wcet.framework.interfaces.instruction.IJOPMethodVisitor;
 // QUESTION move all this to MethodBlock (read in constructChildren())
 public class CommentsAnnotationReader implements IAnalyserComponent,
 	ClassVisitor {
-    private static final String[] LOOP_WCA_ANNOTATIONS = { "WCA_loop" };
+   private static final String[] LOOP_WCA_ANNOTATIONS = { "WCA loop" };
 
     private static final int CAPACITY = 20;
 
@@ -103,7 +103,7 @@ public class CommentsAnnotationReader implements IAnalyserComponent,
          */
     public void init() throws InitException {
 	this.lastVisitor = (ClassVisitor) this.dataStore
-		.getObject(IGraphBuilderConstants.LAST_CLASS_VISITOR_KEY);
+		.getObject(IGraphBuilderConstants.LAST_BB_CLASS_VISITOR_KEY);
 	String path = this.dataStore.getSourcepath();
 	String jopPath = (String)this.dataStore.getObject(IGraphBuilderConstants.JOP_HOME_KEY);
 	if (!jopPath.endsWith("/")) jopPath+="/";
@@ -112,7 +112,7 @@ public class CommentsAnnotationReader implements IAnalyserComponent,
 	this.fileList = new FileList(path, ".java");
 	this.fileList.findAllFiles();
 	this.dataStore.storeObject(
-		IGraphBuilderConstants.LAST_CLASS_VISITOR_KEY, this);
+		IGraphBuilderConstants.LAST_BB_CLASS_VISITOR_KEY, this);
     }
 
     /*

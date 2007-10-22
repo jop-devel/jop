@@ -4,7 +4,8 @@
 package wcet.components.graphbuilder.instruction.exectime;
 
 import wcet.framework.instruction.cache.IntAnalysisInsn;
-import wcet.framework.interfaces.instruction.OpCodes;
+
+import com.jopdesign.wcet.WCETInstruction;
 
 /**
  * @author Elena Axamitova
@@ -25,7 +26,8 @@ public class IntTimeAnalysisInsn extends IntAnalysisInsn implements
          * @see wcet.components.graphbuilder.instuctions.exectime.ITimeAnalysisInstruction#getCycles()
          */
     public int getCycles() {
-	switch (this.opcode) {
+	 return WCETInstruction.getCycles(this.opcode, false, 0);
+	 /*switch (this.opcode) {
 	case OpCodes.BIPUSH:
 	    return 2;
 	case OpCodes.SIPUSH:
@@ -34,7 +36,7 @@ public class IntTimeAnalysisInsn extends IntAnalysisInsn implements
 	    return ITimeAnalysisInstruction.CYCLES_OF_LAST_METHOD;
 	default:
 	    return ITimeAnalysisInstruction.CYCLES_UNKNOWN;
-	}
+	}*/
     }
 
     public int getOperand() {

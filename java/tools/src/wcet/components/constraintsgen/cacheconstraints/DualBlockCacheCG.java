@@ -13,16 +13,16 @@ import wcet.components.constraintsgen.graphtracer.IGraphTracerClient;
 import wcet.components.graphbuilder.blocks.BasicBlock;
 import wcet.components.graphbuilder.blocks.InvokeBlock;
 import wcet.components.graphbuilder.blocks.InvokeReturnBlock;
-import wcet.components.graphbuilder.methodgb.MethodKey;
-import wcet.framework.constraints.BasicConstraint;
-import wcet.framework.constraints.BasicConstraintTerm;
 import wcet.framework.exceptions.InitException;
+import wcet.framework.hierarchy.MethodKey;
 import wcet.framework.interfaces.cfg.IControlFlowGraph;
 import wcet.framework.interfaces.cfg.IVertex;
-import wcet.framework.interfaces.constraints.IConstraint;
 import wcet.framework.interfaces.general.IAnalyserComponent;
 import wcet.framework.interfaces.general.IDataStore;
 import wcet.framework.interfaces.general.IGlobalComponentOrder;
+import wcet.framework.interfaces.solver.IConstraint;
+import wcet.framework.solver.BasicConstraint;
+import wcet.framework.solver.BasicConstraintTerm;
 
 /**
  * @author Elena Axamitova
@@ -39,12 +39,12 @@ public class DualBlockCacheCG implements IAnalyserComponent, IGraphTracerClient 
     private IGraphTracerClient nextClient;
 
     /**
-     * Shared data store.
-     */
+         * Shared data store.
+         */
     private IDataStore dataStore;
 
     /**
-         * Method key(owner, name and descriptor) of last invoked method
+         * Method key(owner, name and descriptor) of the last invoked method
          */
     private MethodKey lastInvokedMethod;
 
@@ -76,14 +76,15 @@ public class DualBlockCacheCG implements IAnalyserComponent, IGraphTracerClient 
     private int inLoopOfNode;
 
     /**
-     * Mapping of child loop controler ids (inner loop) to father loop controler 
-     * ids (outer loop).
-     */
+         * Mapping of child loop controler ids (inner loop) to father loop
+         * controler ids (outer loop).
+         */
     private HashMap<Integer, Integer> childToFatherLCIdMap;
 
     /**
-     * Mapping of loop controler id to the first invoked method key in its loop path.
-     */
+         * Mapping of loop controler id to the first invoked method key in its
+         * loop path.
+         */
     private HashMap<Integer, IVertex<BasicBlock>> lcIdToFirstInvokeMap;
 
     public DualBlockCacheCG(IDataStore ds) {
@@ -109,7 +110,7 @@ public class DualBlockCacheCG implements IAnalyserComponent, IGraphTracerClient 
          * @see wcet.framework.interfaces.general.IAnalyserComponent#getOrder()
          */
     public int getOrder() {
-	//called from graph tracer in chain
+	// called from graph tracer in chain
 	return IGlobalComponentOrder.NOT_EXECUTED;
     }
 
@@ -149,21 +150,24 @@ public class DualBlockCacheCG implements IAnalyserComponent, IGraphTracerClient 
     }
 
     /**
-     * Creates special cache constraints if a single leaf method is invoked in
-     * a loop - only in the first iteration the invoke results in a cache miss, the
-     * rest are cache hits.
-     */
+         * Creates special cache constraints if a single leaf method is invoked
+         * in a loop - only in the first iteration the invoke results in a cache
+         * miss, the rest are cache hits.
+         */
     private void createSpecialLoopConstraints() {
 	for (Iterator<Integer> iterator = this.lcIdToFirstInvokeMap.keySet()
 		.iterator(); iterator.hasNext();) {
 	    int lcId = iterator.next();
 	    IVertex<BasicBlock> firstInvoke = this.lcIdToFirstInvokeMap
 		    .get(lcId);
-	    //if a loop controler id is not contained in the lcIdToFirstInvokeMap,
-	    //there are no invokes in its loop path(s). If the mapping is 
-	    //<code>null</null> either there is more than one invoke in any of its 
-	    //loop paths, or the single invokes in its loop paths invoke different 
-	    //methods.
+	    // if a loop controler id is not contained in the
+                // lcIdToFirstInvokeMap,
+	    // there are no invokes in its loop path(s). If the mapping is
+	    // <code>null</null> either there is more than one invoke in any
+                // of its
+	    // loop paths, or the single invokes in its loop paths invoke
+                // different
+	    // methods.
 	    if (firstInvoke != null) {
 		// f<id> - invoke inflow - only one edge
 		int inEdgeId = firstInvoke.getIncomingEdges().iterator().next();
@@ -249,6 +253,7 @@ public class DualBlockCacheCG implements IAnalyserComponent, IGraphTracerClient 
 		this.lcIdToFirstInvokeMap.put(fatherLCId, null);
 	    }
 	}
+	this.inLoopOfNode = this.childToFatherLCIdMap.get(nodeId);
 	if (this.nextClient != null)
 	    this.nextClient.endLoopPath(nodeId);
     }
@@ -297,8 +302,10 @@ public class DualBlockCacheCG implements IAnalyserComponent, IGraphTracerClient 
          * @see wcet.components.constraintsgen.graphtracer.IGraphTracerClient#startLoopPath(int)
          */
     public void startLoopPath(int nodeId) {
-	this.childToFatherLCIdMap.put(nodeId, this.inLoopOfNode);
-	this.inLoopOfNode = nodeId;
+	if (nodeId != this.inLoopOfNode) {
+	    this.childToFatherLCIdMap.put(nodeId, this.inLoopOfNode);
+	    this.inLoopOfNode = nodeId;
+	}
 	if (this.nextClient != null)
 	    this.nextClient.startLoopPath(nodeId);
     }
@@ -371,18 +378,21 @@ public class DualBlockCacheCG implements IAnalyserComponent, IGraphTracerClient 
     }
 
     /**
-     * Creates execution time constraint for invoke and return nodes - cache load
-     * time constraint. Uses incoming edges.
-     * @param currNode - node object to create constraint for
-     * @param cacheHit - <code>true</true> if guaranteed cache hit, <code>false</code>
+         * Creates execution time constraint for invoke and return nodes - cache
+         * load time constraint. Uses incoming edges.
+         * 
+         * @param currNode -
+         *                node object to create constraint for
+         * @param cacheHit -
+         *                <code>true</true> if guaranteed cache hit, <code>false</code>
      * otherwise
-     */
+         */
     private void createCacheConstraints(IVertex<BasicBlock> currNode,
 	    boolean cacheHit) {
 	HashSet<Integer> inEdges = currNode.getIncomingEdges();
 	InvokeReturnBlock currBasicBlock = (InvokeReturnBlock) currNode
 		.getData();
-	//compute method cache load penalty
+	// compute method cache load penalty
 	int cacheLoadPenalty;
 	if (cacheHit)
 	    cacheLoadPenalty = currBasicBlock.getCacheHitExecTime();
@@ -401,11 +411,13 @@ public class DualBlockCacheCG implements IAnalyserComponent, IGraphTracerClient 
     }
 
     /**
-     * Creates execution time constraint for a start node if it is invoke.
-     * A start node is guaranteed miss. Requires special handling, since a start
-     * node has no incoming edges.
-     * @param currNode - start node object to create constraint for
-     */
+         * Creates execution time constraint for a start node if it is invoke. A
+         * start node is guaranteed miss. Requires special handling, since a
+         * start node has no incoming edges.
+         * 
+         * @param currNode -
+         *                start node object to create constraint for
+         */
     private void createStartNodeCacheConstraint(IVertex<BasicBlock> currNode) {
 	InvokeReturnBlock currBasicBlock = (InvokeReturnBlock) currNode
 		.getData();
@@ -418,34 +430,43 @@ public class DualBlockCacheCG implements IAnalyserComponent, IGraphTracerClient 
 	this.cacheConstraints.add(execTimeConstraint);
     }
 
-    /* (non-Javadoc)
-     * @see wcet.components.constraintsgen.graphtracer.IGraphTracerClient#stillInLoop(int)
-     */
+    /*
+         * (non-Javadoc)
+         * 
+         * @see wcet.components.constraintsgen.graphtracer.IGraphTracerClient#stillInLoop(int)
+         */
     public void stillInLoop(int nodeId) {
 	this.inLoopOfNode = nodeId;
 	if (this.nextClient != null)
 	    this.nextClient.stillInLoop(nodeId);
     }
 
-    /* (non-Javadoc)
-     * @see wcet.components.constraintsgen.graphtracer.IGraphTracerClient#endCatchPath(int)
-     */
+    /*
+         * (non-Javadoc)
+         * 
+         * @see wcet.components.constraintsgen.graphtracer.IGraphTracerClient#endCatchPath(int)
+         */
     public void endCatchPath(int nodeId) {
 	if (this.nextClient != null)
 	    this.nextClient.endCatchPath(nodeId);
     }
 
-    /* (non-Javadoc)
-     * @see wcet.components.constraintsgen.graphtracer.IGraphTracerClient#startCatchPath(int, int, int)
-     */
+    /*
+         * (non-Javadoc)
+         * 
+         * @see wcet.components.constraintsgen.graphtracer.IGraphTracerClient#startCatchPath(int,
+         *      int, int)
+         */
     public void startCatchPath(int nodeId, int startEdgeId, int endEdgeId) {
 	if (this.nextClient != null)
 	    this.nextClient.startCatchPath(nodeId, startEdgeId, endEdgeId);
     }
 
-    /* (non-Javadoc)
-     * @see wcet.components.constraintsgen.graphtracer.IGraphTracerClient#stillInCatch(int)
-     */
+    /*
+         * (non-Javadoc)
+         * 
+         * @see wcet.components.constraintsgen.graphtracer.IGraphTracerClient#stillInCatch(int)
+         */
     public void stillInCatch(int nodeId) {
 	if (this.nextClient != null)
 	    this.nextClient.stillInCatch(nodeId);

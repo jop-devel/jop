@@ -60,8 +60,8 @@ public class TimeInstructionGenerator implements IInstructionGenerator, IAnalyse
     /* (non-Javadoc)
      * @see wcet.framework.interfaces.instruction.IInstructionGenerator#getIincInsn(int, int)
      */
-    public IAnalysisInstruction getIincInsn(int opcode, int inc) {
-	return new IincTimeAnalysisInsn(opcode);
+    public IAnalysisInstruction getIincInsn(int var, int inc) {
+	return new IincTimeAnalysisInsn(OpCodes.IINC);
     }
 
     /* (non-Javadoc)

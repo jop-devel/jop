@@ -1,14 +1,17 @@
 package wcet.framework.general;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Properties;
+import java.util.StringTokenizer;
 
 import wcet.framework.exceptions.InitException;
 import wcet.framework.exceptions.TaskException;
 import wcet.framework.interfaces.general.IAnalyser;
 import wcet.framework.interfaces.general.IDataStoreKeys;
+import wcet.framework.util.ClassLoaderSingleton;
 
 /**
  * Defines some usefull functions needed in most analyser executions.
@@ -16,7 +19,7 @@ import wcet.framework.interfaces.general.IDataStoreKeys;
  * @author Elena Axamitova
  * @version 0.3
  */
-public final class AnalyserMain {
+public final class AnalyserMain{
 
 	/**
 	 * the analyser to run
@@ -71,6 +74,8 @@ public final class AnalyserMain {
 	 * arguments specified either in command line or in the property file
 	 */
 	private Properties arguments = null;
+
+	private String analyserClass;
 	/**
 	 * Process the command line arguments
 	 * 
@@ -106,7 +111,7 @@ public final class AnalyserMain {
 	 */
 	private void processTasks() {
 		try {
-		    this.analyser.init(this.arguments);
+		    this.init(this.arguments);
 			Iterator<String> iterator = this.classes.iterator();
 			while (iterator.hasNext()) {
 			    this.analyser.setTask(iterator.next());
@@ -166,8 +171,30 @@ public final class AnalyserMain {
 			AnalyserMain mainObject = new AnalyserMain();
 			mainObject.parseArguments(args);
 			mainObject.getAllArguments();
-			mainObject.analyser = new AnalyserWrapper(args[0]);
+			mainObject.analyserClass= args[0];
 			mainObject.processTasks();
 		}
 	}
+
+   
+    private void init(Properties arguments) throws InitException {
+	try {
+	    if(this.librarypath!=null) 
+		this.loadJars();
+	    Class clazz = ClassLoaderSingleton.getInstance().loadClass(
+		    this.analyserClass);
+	    this.analyser = (IAnalyser) clazz.newInstance();
+	    this.analyser.init(arguments);
+	} catch (Exception e) {
+	    throw new InitException(e);
+	}
+
+    }
+
+    private void loadJars() throws InitException {
+	StringTokenizer strtok = new StringTokenizer(this.librarypath, File.pathSeparator);
+	while(strtok.hasMoreTokens()){
+	    ClassLoaderSingleton.addLibrary(strtok.nextToken());
+	}
+    }
 }

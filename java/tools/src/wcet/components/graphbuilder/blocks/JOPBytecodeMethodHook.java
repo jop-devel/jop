@@ -3,6 +3,7 @@
  */
 package wcet.components.graphbuilder.blocks;
 
+import wcet.components.graphbuilder.methodgb.MethodBlock;
 import wcet.framework.interfaces.instruction.IAnalysisInstruction;
 
 /**

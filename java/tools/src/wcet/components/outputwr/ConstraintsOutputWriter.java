@@ -8,10 +8,10 @@ import java.util.Iterator;
 import java.util.List;
 
 import wcet.framework.exceptions.InitException;
-import wcet.framework.interfaces.constraints.IConstraint;
 import wcet.framework.interfaces.general.IAnalyserComponent;
 import wcet.framework.interfaces.general.IDataStore;
 import wcet.framework.interfaces.general.IGlobalComponentOrder;
+import wcet.framework.interfaces.solver.IConstraint;
 
 /**
  * @author Elena Axamitova

@@ -3,8 +3,10 @@
  */
 package wcet.components.graphbuilder.instruction.exectime;
 
+import com.jopdesign.wcet.WCETInstruction;
+
 import wcet.framework.instruction.cache.JOPAnalysisInsn;
-import wcet.framework.interfaces.instruction.OpCodes;
+//import wcet.framework.interfaces.instruction.OpCodes;
 
 /**
  * @author Elena Axamitova
@@ -20,7 +22,9 @@ implements ITimeAnalysisInstruction {
 	 * @see wcet.components.graphbuilder.instuctions.exectime.ITimeAnalysisInstruction#getCycles()
 	 */
 	public int getCycles() {
-	    switch(this.opcode){
+//	  TODO where do I get the 'n'from
+	    return WCETInstruction.getCycles(this.opcode, false, 0);
+	    /*switch(this.opcode){
 		case OpCodes.JOPSYS_RD:
 		    return 4+ITimeAnalysisInstruction.rws;
 		case OpCodes.JOPSYS_WR:
@@ -42,9 +46,9 @@ implements ITimeAnalysisInstruction {
 		case OpCodes.JOPSYS_SETVP:
 		    return 2;
 		case OpCodes.JOPSYS_INT2EXT:
-		    return 14+ITimeAnalysisInstruction.rws+/*n * */(23+ITimeAnalysisInstruction.wws);//TODO where do I get the 'n'from
+		    return 14+ITimeAnalysisInstruction.rws+ n * (23+ITimeAnalysisInstruction.wws);//TODO where do I get the 'n'from
 		case OpCodes.JOPSYS_EXT2INT:
-		    return 14+ITimeAnalysisInstruction.rws+/*n * */(23+ITimeAnalysisInstruction.wws);//TODO where do I get the 'n'from
+		    return 14+ITimeAnalysisInstruction.rws+ n * (23+ITimeAnalysisInstruction.wws);//TODO where do I get the 'n'from
 		case OpCodes.JOPSYS_NOP:
 		    return 1;
 		    //TODO get cycles
@@ -78,7 +82,7 @@ implements ITimeAnalysisInstruction {
 		    return ITimeAnalysisInstruction.CYCLES_UNKNOWN;
 		default:
 		    return ITimeAnalysisInstruction.CYCLES_UNKNOWN;
-		}
+		}*/
 	    
 	}
 }

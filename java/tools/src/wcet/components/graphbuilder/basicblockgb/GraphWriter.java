@@ -4,7 +4,6 @@
 package wcet.components.graphbuilder.basicblockgb;
 
 // import java.io.File;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -26,19 +25,19 @@ import org.objectweb.asm.Type;
 import wcet.components.graphbuilder.IGraphBuilderConstants;
 import wcet.components.graphbuilder.blocks.BasicBlock;
 import wcet.components.graphbuilder.blocks.InvokeBlock;
-import wcet.components.graphbuilder.blocks.MethodBlock;
 import wcet.components.graphbuilder.blocks.MethodHook;
 import wcet.components.graphbuilder.blocks.ReturnBlock;
-import wcet.components.graphbuilder.methodgb.MethodKey;
+import wcet.components.graphbuilder.methodgb.MethodBlock;
 import wcet.framework.cfg.BasicControlFlowGraph;
 import wcet.framework.exceptions.InitException;
 import wcet.framework.exceptions.TaskExecutionException;
-import wcet.framework.exceptions.TaskInitException;
+import wcet.framework.hierarchy.MethodKey;
 import wcet.framework.interfaces.cfg.IEdge;
 import wcet.framework.interfaces.cfg.IVertex;
 import wcet.framework.interfaces.general.IAnalyserComponent;
 import wcet.framework.interfaces.general.IDataStore;
 import wcet.framework.interfaces.general.IGlobalComponentOrder;
+import wcet.framework.interfaces.hierarchy.IHierarchy;
 import wcet.framework.interfaces.instruction.IAnalysisInstruction;
 import wcet.framework.interfaces.instruction.IInstructionGenerator;
 import wcet.framework.interfaces.instruction.IJOPMethodVisitor;
@@ -52,13 +51,13 @@ import wcet.framework.interfaces.instruction.OpCodes;
 public class GraphWriter implements IAnalyserComponent, ClassVisitor {
 
     /**
-     * Instruction generator for the currently used instruction set
-     */
+         * Instruction generator for the currently used instruction set
+         */
     protected IInstructionGenerator instructionGenerator;
 
     /**
-     * Next visitor in chain
-     */
+         * Next visitor in chain
+         */
     protected ClassVisitor lastVisitor;
 
     protected MethodBlock currMethBlock;
@@ -68,25 +67,27 @@ public class GraphWriter implements IAnalyserComponent, ClassVisitor {
     protected Queue<MethodHook> methodHookQueue;
 
     /**
-     * Control flow graph
-     */
+         * Control flow graph
+         */
     protected BasicControlFlowGraph cfg;
 
     /**
-     * Shared data store
-     */
+         * Shared data store
+         */
     protected IDataStore dataStore;
 
     /**
-     * Error messages submitted during the execution
-     */
+         * Error messages submitted during the execution
+         */
     protected String errorMessages = "";
+
+    private IHierarchy hierarchy;
 
     public GraphWriter(IDataStore ds) {
 	this.dataStore = ds;
 	this.methodHookQueue = new LinkedList<MethodHook>();
 	this.dataStore.storeObject(
-		IGraphBuilderConstants.LAST_CLASS_VISITOR_KEY, this);
+		IGraphBuilderConstants.LAST_BB_CLASS_VISITOR_KEY, this);
     }
 
     public boolean getOnlyOne() {
@@ -100,7 +101,7 @@ public class GraphWriter implements IAnalyserComponent, ClassVisitor {
 
     public void init() throws InitException {
 	this.lastVisitor = (ClassVisitor) this.dataStore
-		.getObject(IGraphBuilderConstants.LAST_CLASS_VISITOR_KEY);
+		.getObject(IGraphBuilderConstants.LAST_BB_CLASS_VISITOR_KEY);
 	if (this.lastVisitor == null) {
 	    throw new InitException(
 		    "GraphWriter: no last visitor in the chain specified.");
@@ -111,6 +112,8 @@ public class GraphWriter implements IAnalyserComponent, ClassVisitor {
 	    throw new InitException(
 		    "GraphWriter: no instruction generator specified.");
 	}
+	this.hierarchy = (IHierarchy) this.dataStore
+		.getObject(IGraphBuilderConstants.HIERARCHY_KEY);
     }
 
     public String call() throws Exception {
@@ -122,11 +125,11 @@ public class GraphWriter implements IAnalyserComponent, ClassVisitor {
 	    this.currMethBlock.accept(lastVisitor);
 	}
 
-	if (!this.errorMessages.equals("")) {
+	/*if (!this.errorMessages.equals("")) {
 	    throw new TaskExecutionException(this.errorMessages);
-	} else {
+	} else {*/
 	    this.dataStore.setGraph(this.cfg);
-	}
+	//}
 	return "+++Graph writer comleted successfully.+++\n";
     }
 
@@ -142,8 +145,8 @@ public class GraphWriter implements IAnalyserComponent, ClassVisitor {
 		.getObject(IGraphBuilderConstants.METHOD_BLOCK_TREE_ROOT_KEY);
 	InvokeBlock invBB = new InvokeBlock(new MethodKey(currMB.getOwner(),
 		currMB.name, currMB.desc));
-	
-	//select the correct invoke instruction - used for cache load time
+
+	// select the correct invoke instruction - used for cache load time
 	int oc = 0;
 	if ((currMB.access & org.objectweb.asm.Opcodes.ACC_INTERFACE) != 0)
 	    oc = OpCodes.INVOKEINTERFACE;
@@ -195,7 +198,7 @@ public class GraphWriter implements IAnalyserComponent, ClassVisitor {
 
 	protected HashMap<Integer, Integer> retBBIdToInvBBIdMap;
 
-	private JOPSystemMethodMap jopMethodsMap;
+	// private JOPSystemMethodCache jopMethodsMap;
 
 	private TreeMap<Label, Label> catchHandleToStartMap;
 
@@ -206,16 +209,14 @@ public class GraphWriter implements IAnalyserComponent, ClassVisitor {
 	protected GraphWriterVisitor() {
 	    this.childrensReturnBlocks = new ArrayList<ReturnBlock>();
 	    this.labelTracker = new LabelTracker();
-	    try {
-		this.jopMethodsMap = new JOPSystemMethodMap(
-			(String) dataStore
-				.getObject(IGraphBuilderConstants.JOP_SYSTEM_CLASSPATH_KEY)
-				+ File.pathSeparator
-				+ dataStore
-					.getObject(IGraphBuilderConstants.JOP_JDK_CLASSPATH_KEY));
-	    } catch (InitException e) {
-		// ignore;
-	    }
+	    /*
+                 * try { this.jopMethodsMap = new JOPSystemMethodCache( (String)
+                 * dataStore
+                 * .getObject(IGraphBuilderConstants.JOP_SYSTEM_CLASSPATH_KEY) +
+                 * File.pathSeparator + dataStore
+                 * .getObject(IGraphBuilderConstants.JOP_JDK_CLASSPATH_KEY)); }
+                 * catch (InitException e) { // ignore; }
+                 */
 	    this.lccIdToLabelMap = new HashMap<Integer, Label>();
 	    this.lineNrToLoopControlerIdMap = new TreeMap<Integer, Integer>();
 	    this.annotationValues = new ArrayList<Integer>();
@@ -345,8 +346,8 @@ public class GraphWriter implements IAnalyserComponent, ClassVisitor {
 		    // the candidate is not a loop controler
 		    lccIds.remove();
 		} else {
-		    //now I have to find all outgoing edges that go to
-		    //the loop body
+		    // now I have to find all outgoing edges that go to
+		    // the loop body
 		    HashSet<Integer> lccBodyOutEdges = new HashSet<Integer>();
 		    for (Iterator<Integer> iterator = currLCC
 			    .getOutgoingEdges().iterator(); iterator.hasNext();) {
@@ -364,11 +365,11 @@ public class GraphWriter implements IAnalyserComponent, ClassVisitor {
 			else if (currLCCOutEdgeToVertexId != endVertexId)
 			    currPathVertexesToVisit.add(currLCCOutEdge
 				    .getToVertex());
-			//if an outgoing edge of a loop controler
-			//can be followed to it again, without using
-			//any of the loop controler notInLoopEdges(found 
-			//in previous step - nested loops), it goes into 
-			//the loop body.
+			// if an outgoing edge of a loop controler
+			// can be followed to it again, without using
+			// any of the loop controler notInLoopEdges(found
+			// in previous step - nested loops), it goes into
+			// the loop body.
 			while (!currPathVertexesToVisit.isEmpty()) {
 			    int currVertexId = currPathVertexesToVisit.poll();
 			    IVertex currVertex = cfg
@@ -469,13 +470,13 @@ public class GraphWriter implements IAnalyserComponent, ClassVisitor {
 		errorMessages += "Not correctly annotated method "
 			+ currMethBlock.getOwner() + "->"
 			+ currMethHook.getMethodBlock().name
-			+ "- too few annotations";
+			+ "- too few annotations.\n";
 	    }
 	    if (annotationValuesIterator.hasNext()) {
 		errorMessages += "Not correctly annotated method "
 			+ currMethBlock.getOwner() + "->"
 			+ currMethHook.getMethodBlock().name
-			+ "- too many annotations";
+			+ "- too many annotations.\n";
 	    }
 	    this.annotationValues.clear();
 
@@ -575,53 +576,67 @@ public class GraphWriter implements IAnalyserComponent, ClassVisitor {
 	}
 
 	public void visitLabel(Label label) {
-	    this.endBasicBlock();
-	    this.currLabel = label;
-	    this.labelTracker.addLabelToLineNrMapping(label, this.currLineNr);
+	    if (currMethBlock.isJumpLabel(label)) {
+		this.endBasicBlock();
+		this.currLabel = label;
+		this.labelTracker.addLabelToLineNrMapping(label,
+			this.currLineNr);
+	    }
 	}
 
 	public void visitMethodInsn(int oc, String owner, String name,
 		String desc) {
 	    this.addInstruction(instructionGenerator.getMethodInsn(oc, owner,
 		    name, desc));
-
+	    this.endBasicBlock();
 	    MethodKey newKey = new MethodKey(owner, name, desc);
-	    InvokeBlock invBB = new InvokeBlock(newKey);
-	    int invBBId = cfg.addVertex(invBB);
 	    ReturnBlock retBB = new ReturnBlock(new MethodKey(currMethBlock
 		    .getOwner(), currMethBlock.name, currMethBlock.desc));
 	    this.childrensReturnBlocks.add(retBB);
 	    int retBBId = cfg.addVertex(retBB);
+	    InvokeBlock invBB;
+	    int invBBId = -1;
+	    MethodBlock newMethBlock;
+	    if ((hierarchy == null)||(oc == OpCodes.INVOKESPECIAL)) {
+		invBB = new InvokeBlock(newKey);
+		invBBId = cfg.addVertex(invBB);
+		newMethBlock = currMethBlock.getChild(newKey);
+		invBB.setAnalyserInstruction(lastInstruction);
+		cfg.addEdge(this.lastVertexId, invBBId);
+
+		MethodHook newMethHook = new MethodHook(invBBId, retBBId,
+			newMethBlock);
+		methodHookQueue.add(newMethHook);
+	    } else {
+		for (Iterator<MethodKey> iterator = hierarchy
+			.getAllMethodImpls(newKey).iterator(); iterator
+			.hasNext();) {
+		    MethodKey currKey = iterator.next();
+		    invBB = new InvokeBlock(currKey);
+		    invBBId = cfg.addVertex(invBB);
+		    newMethBlock = currMethBlock.getChild(currKey);
+		    invBB.setAnalyserInstruction(lastInstruction);
+		    cfg.addEdge(this.lastVertexId, invBBId);
+
+		    MethodHook newMethHook = new MethodHook(invBBId, retBBId,
+			    newMethBlock);
+		    methodHookQueue.add(newMethHook);
+		}
+	    }
+
 	    // I need both mappings, since the loop detection algorithm
 	    // traces edges in both directions
 	    this.invBBIdToRetBBIdMap.put(invBBId, retBBId);
 	    this.retBBIdToInvBBIdMap.put(retBBId, invBBId);
 
-	    MethodBlock newMethBlock = null;
-	    if (owner.equals(IGraphBuilderConstants.JVMCLASS_INTERNAL_NAME)) {
-		try {
-		    newMethBlock = this.jopMethodsMap.getJOPMethodBlock(newKey);
-		} catch (TaskInitException e) {
-		    errorMessages += e.getMessage();
-		}
-	    } else {
-		newMethBlock = currMethBlock.getChild(newKey);
-		invBB.setAnalyserInstruction(lastInstruction);
-	    }
-
-	    MethodHook newMethHook = new MethodHook(invBBId, retBBId,
-		    newMethBlock);
-	    methodHookQueue.add(newMethHook);
-
 	    this.endBasicBlock();
-	    cfg.addEdge(this.lastVertexId, invBBId);
 	    this.lastVertexId = retBBId;
 	    this.currBlockInRow = true;
 	}
 
 	public void visitTryCatchBlock(Label start, Label end, Label handle,
 		String desc) {
-	    //save the data to be used later
+	    // save the data to be used later
 	    this.catchHandleToStartMap.put(handle, start);
 	    this.catchHandleToEndMap.put(handle, end);
 	}
@@ -630,8 +645,8 @@ public class GraphWriter implements IAnalyserComponent, ClassVisitor {
 	    // RET not used
 	    this.addInstruction(instructionGenerator.getInsn(oc));
 	    if ((oc >= OpCodes.IRETURN) && (oc <= OpCodes.RETURN)) {
-		//rnd the current basic block and connect it to 
-		//this methods return block
+		// rnd the current basic block and connect it to
+		// this methods return block
 		this.endBasicBlock();
 		this.currBlockInRow = false;
 		cfg.addEdge(this.lastVertexId, currMethHook.getReturnBlock());
@@ -717,7 +732,7 @@ public class GraphWriter implements IAnalyserComponent, ClassVisitor {
 	    // I saw the
 	    // version was never high enough.
 	    // useful, stack state known
-	    System.out.println("I am here");//it is not called
+	    System.out.println("I am here");// it is not called
 	}
 
 	public AnnotationVisitor visitAnnotation(String desc, boolean arg1) {

@@ -7,7 +7,7 @@ import java.io.PrintStream;
 import java.util.List;
 
 import wcet.framework.interfaces.cfg.IControlFlowGraph;
-import wcet.framework.interfaces.constraints.IConstraint;
+import wcet.framework.interfaces.solver.IConstraint;
 
 /**
  * DataStore object is used to store information needed across component boundaries.

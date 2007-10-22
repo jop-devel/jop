@@ -3,6 +3,8 @@
  */
 package wcet.components.graphbuilder.blocks;
 
+import wcet.components.graphbuilder.methodgb.MethodBlock;
+
 
 /**
  * @author Elena Axamitova

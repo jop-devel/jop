@@ -6,6 +6,7 @@ package wcet.components.outputwr;
 import java.io.PrintStream;
 import java.util.Iterator;
 
+import wcet.components.lpsolver.ILpSolverConstants;
 import wcet.framework.exceptions.InitException;
 import wcet.framework.interfaces.cfg.IControlFlowGraph;
 import wcet.framework.interfaces.cfg.IEdge;
@@ -13,6 +14,7 @@ import wcet.framework.interfaces.cfg.IVertex;
 import wcet.framework.interfaces.general.IAnalyserComponent;
 import wcet.framework.interfaces.general.IDataStore;
 import wcet.framework.interfaces.general.IGlobalComponentOrder;
+import wcet.framework.interfaces.solver.ILpResult;
 
 /**
  * @author Elena Axamitova
@@ -22,28 +24,33 @@ import wcet.framework.interfaces.general.IGlobalComponentOrder;
  */
 public class DotGraphOutputWriter implements IAnalyserComponent {
     /**
-     * Generated control flow graph
-     */
+         * Generated control flow graph
+         */
     private IControlFlowGraph cfg;
 
     /**
-     * Shared data store.
-     */
+         * Shared data store.
+         */
     private IDataStore dataStore;
 
     /**
-     * All ouput messages buffered
-     */
-    private StringBuffer result;
+         * All ouput messages buffered
+         */
+    private StringBuffer buffer;
 
     /**
-     * Analyser output
-     */
+         * Analyser output
+         */
     private PrintStream output;
+
+    /**
+         * LP solver result
+         */
+    private ILpResult lpResult;
 
     public DotGraphOutputWriter(IDataStore ds) {
 	this.dataStore = ds;
-	this.result = new StringBuffer();
+	this.buffer = new StringBuffer();
     }
 
     /*
@@ -80,37 +87,54 @@ public class DotGraphOutputWriter implements IAnalyserComponent {
          */
     public String call() throws Exception {
 	this.cfg = this.dataStore.getGraph();
+	this.lpResult = (ILpResult) this.dataStore
+		.getObject(ILpSolverConstants.LPSOLVE_RESULT_KEY);
 	this.printGraph();
-	this.output.print(this.result.toString());
+	this.output.print(this.buffer.toString());
 	this.output.flush();
 	return "+++Dot Graph Writer Completed Successfully.+++\n";
     }
 
     /**
-     * Creates textual representation of the control flow graph in dot format
-     * and saves it in the result buffer.
-     */
+         * Creates textual representation of the control flow graph in dot
+         * format and saves it in the result buffer.
+         */
     private void printGraph() {
 
-	this.result.append("digraph G {\n");
-	this.result.append("size = \"10,7.5\"\n");
+	this.buffer.append("digraph G {\n");
+	this.buffer.append("size = \"10,7.5\"\n");
 
-	//System.out.println("******************");
+	// System.out.println("******************");
 
 	Iterator iter = this.cfg.getAllVertices().iterator();
 	while (iter.hasNext()) {
 	    IVertex v = (IVertex) iter.next();
-	    //System.out.println(v);
+	    // System.out.println(v);
 	    for (Iterator eit = v.getOutgoingEdges().iterator(); eit.hasNext();) {
-		IEdge outEdge = this.cfg.findEdgeByIndex((Integer)eit.next());
+		IEdge outEdge = this.cfg.findEdgeByIndex((Integer) eit.next());
 		Integer sucId = outEdge.getToVertex();
 		IVertex suc = this.cfg.findVertexByIndex(sucId);
-		char labelChar = outEdge.isExceptionEdge()?'e':'f';
-		this.result.append("\t\"" + v.toString() + "\" -> \""
-			+ suc.toString() + "\" [label=\""+labelChar+outEdge.getIndex()+"\"]"+"\n");
+		char labelChar = outEdge.isExceptionEdge() ? 'e' : 'f';
+		int edgeId = outEdge.getIndex();
+		double edgeVar = 0;
+		if(this.lpResult!=null){
+		    edgeVar = this.lpResult.getVarValue("f" + edgeId);
+		}
+		if (edgeVar > 0) {
+		    this.buffer.append("\t edge[color=red,labelfontcolor=red];\n");
+		    this.buffer.append("\t\"" + v.toString() + "\" -> \""
+			    + suc.toString() + "\" [label=\"" + labelChar
+			    + edgeId + "=" + edgeVar + "\"];" + "\n");
+		} else {
+		    this.buffer.append("\t edge[color=black,labelfontcolor=black];\n");
+		    this.buffer.append("\t\"" + v.toString() + "\" -> \""
+			    + suc.toString() + "\" [label=\"" + labelChar
+			    + edgeId + "\"];" + "\n");
+		}
+
 	    }
 	}
 
-	this.result.append("}\n");
+	this.buffer.append("}\n");
     }
 }

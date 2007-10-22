@@ -31,17 +31,23 @@ public class Hierarchy implements IHierarchyConstructor, IHierarchy {
          */
     public HashSet<MethodKey> getAllMethodImpls(MethodKey key) {
 	HashSet<MethodKey> result = new HashSet<MethodKey>();
+	//get the method called when dynamic type equals the declared one 
+	/*ClassInfo currClass = this.getClassInfo(key.getOwner());
+	while ((currClass != null)
+		&& (!currClass.hasMethod(key.getName(), key.getDecription()))) {
+	    currClass = currClass.getSuperclass();
+	}
+	result.add(new MethodKey(currClass.getInternalName(), key.getName(),
+		key.getDecription()));*/
+	result.add(key);
+	//get all method implementation in subtypes
 	HashSet<String> types = this.getAllSubtypes(key.getOwner());
 	for (Iterator<String> iterator = types.iterator(); iterator.hasNext();) {
 	    String typeName = iterator.next();
 	    ClassInfo currClass = this.classes.get(typeName);
-	    while ((currClass != null)
-		    && (!currClass
-			    .hasMethod(key.getName(), key.getDecription()))) {
-		currClass.getSuperclass();
-	    }
-	    result.add(new MethodKey(typeName, key.getName(), key
-		    .getDecription()));
+	    if (currClass.hasMethod(key.getName(), key.getDecription()))
+		result.add(new MethodKey(currClass.getInternalName(), key
+			.getName(), key.getDecription()));
 	}
 	return result;
     }

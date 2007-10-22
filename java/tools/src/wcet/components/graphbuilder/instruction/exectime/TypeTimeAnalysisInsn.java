@@ -3,8 +3,10 @@
  */
 package wcet.components.graphbuilder.instruction.exectime;
 
+import com.jopdesign.wcet.WCETInstruction;
+
 import wcet.framework.instruction.cache.TypeAnalysisInsn;
-import wcet.framework.interfaces.instruction.OpCodes;
+//import wcet.framework.interfaces.instruction.OpCodes;
 
 /**
  * @author Elena Axamitova
@@ -24,7 +26,8 @@ public class TypeTimeAnalysisInsn extends TypeAnalysisInsn implements
          * @see wcet.components.graphbuilder.instuctions.exectime.ITimeAnalysisInstruction#getCycles()
          */
     public int getCycles() {
-	switch (this.opcode) {
+	return WCETInstruction.getCycles(this.opcode, false, 0);
+	/*switch (this.opcode) {
 	case OpCodes.NEW:
 	    return ITimeAnalysisInstruction.CYCLES_OF_LAST_METHOD;
 	case OpCodes.ANEWARRAY:
@@ -35,7 +38,7 @@ public class TypeTimeAnalysisInsn extends TypeAnalysisInsn implements
 	    return ITimeAnalysisInstruction.CYCLES_OF_LAST_METHOD;
 	default:
 	    return ITimeAnalysisInstruction.CYCLES_UNKNOWN;
-	}
+	}*/
     }
 
 }

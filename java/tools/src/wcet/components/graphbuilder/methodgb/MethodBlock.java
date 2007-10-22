@@ -3,6 +3,8 @@
  */
 package wcet.components.graphbuilder.methodgb;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -19,6 +21,7 @@ import wcet.framework.exceptions.TaskInitException;
 import wcet.framework.hierarchy.MethodKey;
 import wcet.framework.interfaces.hierarchy.IHierarchy;
 import wcet.framework.interfaces.instruction.IJOPMethodVisitor;
+import wcet.framework.interfaces.instruction.OpCodes;
 
 /**
  * @author Elena Axamitova
@@ -28,8 +31,6 @@ import wcet.framework.interfaces.instruction.IJOPMethodVisitor;
  * cotrol flow graph creaion.
  */
 
-// TODO find all possible implementations of a method - in resolve() if possible
-// TODO handle inner classes - enclosed in a method (?method parameter access)
 public class MethodBlock extends MethodNode implements IJOPMethodVisitor {
     /**
          * cache used to search for method block
@@ -58,7 +59,12 @@ public class MethodBlock extends MethodNode implements IJOPMethodVisitor {
          */
     private LinkedHashMap<MethodKey, MethodBlock> children;
 
+    private HashSet<MethodKey> specials;
+
     private boolean resolved = false;
+
+    // DEBUG
+    private FileWriter debug;
 
     /**
          * Get method blocks of method's children. Before this method is called,
@@ -189,6 +195,11 @@ public class MethodBlock extends MethodNode implements IJOPMethodVisitor {
     public void visitMethodInsn(final int opcode, final String owner,
 	    final String name, final String desc) {
 	this.children.put(new MethodKey(owner, name, desc), null);
+	if (opcode == OpCodes.INVOKESPECIAL) {
+	    if (this.specials == null)
+		this.specials = new HashSet<MethodKey>();
+	    this.specials.add(new MethodKey(owner, name, desc));
+	}
 	instructions.add(new MethodInsnNode(opcode, owner, name, desc));
     }
 
@@ -249,6 +260,22 @@ public class MethodBlock extends MethodNode implements IJOPMethodVisitor {
     private void constructChildren() throws TaskInitException {
 	Iterator<MethodKey> keyIterator = this.children.keySet().iterator();
 	LinkedHashMap<MethodKey, MethodBlock> helpMap = new LinkedHashMap<MethodKey, MethodBlock>();
+	// DEBUG
+	if (this.debug == null) {
+	    try {
+		this.debug = new FileWriter("debug.txt");
+	    } catch (IOException e) {
+		e.printStackTrace();
+	    }
+
+	}
+	try {
+	    this.debug.write("Resolving method:" + this.owner + "." + this.name
+		    + "(" + this.desc + ")\n");
+	    this.debug.flush();
+	} catch (IOException e) {
+	    e.printStackTrace();
+	}
 	while (keyIterator.hasNext()) {
 	    MethodKey currKey = keyIterator.next();
 	    MethodBlock currChild = methodCache.getMethodBlock(currKey);
@@ -257,9 +284,8 @@ public class MethodBlock extends MethodNode implements IJOPMethodVisitor {
 	    // Maybe I will try it later.
 	    // System.out.println(currKey.getOwner()
 	    // +":"+currKey.getName()+":"+currKey.getDecription());
-	    if ((hierarchy != null)
-		    && (!currKey.getOwner().equals(hierarchy.getSuperclassName(this
-			    .getOwner())))) {
+	    if ((hierarchy != null)&&((this.specials==null)||(this.specials != null)
+		    && (!this.specials.contains(currKey)))) {
 		this.constructDoppelgaengers(currKey, helpMap);
 	    } else {
 		this.children.put(currKey, currChild);
@@ -268,8 +294,8 @@ public class MethodBlock extends MethodNode implements IJOPMethodVisitor {
 	this.children.putAll(helpMap);
     }
 
-    private void constructDoppelgaengers(MethodKey key,LinkedHashMap<MethodKey, MethodBlock> map)
-	    throws TaskInitException {
+    private void constructDoppelgaengers(MethodKey key,
+	    LinkedHashMap<MethodKey, MethodBlock> map) throws TaskInitException {
 	HashSet<MethodKey> dgKeys = hierarchy.getAllMethodImpls(key);
 	for (Iterator<MethodKey> iterator = dgKeys.iterator(); iterator
 		.hasNext();) {

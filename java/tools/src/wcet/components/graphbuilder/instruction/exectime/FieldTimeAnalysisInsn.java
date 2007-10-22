@@ -4,7 +4,8 @@
 package wcet.components.graphbuilder.instruction.exectime;
 
 import wcet.framework.instruction.cache.FieldAnalysisInsn;
-import wcet.framework.interfaces.instruction.OpCodes;
+
+import com.jopdesign.wcet.WCETInstruction;
 
 /**
  * @author Elena Axamitova
@@ -21,8 +22,10 @@ public class FieldTimeAnalysisInsn extends FieldAnalysisInsn
 	 * @see wcet.components.graphbuilder.instuctions.exectime.ITimeAnalysisInstruction#getCycles()
 	 */
 	public int getCycles() {
-		switch(this.opcode){
+	    return WCETInstruction.getCycles(this.opcode, false, 0);
+		/*switch(this.opcode){
 		case OpCodes.PUTSTATIC:
+		   // WCETInstruction.getCycles();
 		    return 13+ITimeAnalysisInstruction.rws+ITimeAnalysisInstruction.wws;
 		case OpCodes.GETSTATIC:
 		    return 12+2*ITimeAnalysisInstruction.rws;
@@ -32,7 +35,7 @@ public class FieldTimeAnalysisInsn extends FieldAnalysisInsn
 		    return 17+2*ITimeAnalysisInstruction.rws;
 		 default:
 		     return ITimeAnalysisInstruction.CYCLES_UNKNOWN;
-		}
+		}*/
 	}
 
 }

@@ -3,8 +3,10 @@
  */
 package wcet.components.graphbuilder.blocks;
 
-import wcet.components.graphbuilder.instruction.ICacheMemoryConstants;
-import wcet.components.graphbuilder.methodgb.MethodKey;
+import com.jopdesign.wcet.WCETInstruction;
+
+//import wcet.components.graphbuilder.instruction.ICacheMemoryConstants;
+import wcet.framework.hierarchy.MethodKey;
 import wcet.framework.interfaces.instruction.IAnalysisInstruction;
 
 /**
@@ -57,18 +59,23 @@ public abstract class InvokeReturnBlock extends BasicBlock {
      * @return cycles needed to load this instruction in case of cache hit
      */
     public int getCacheHitExecTime(){
-	int retVal = 0;
+	int retVal =  WCETInstruction.calculateB(true, this.getCacheSize());
+	return this.substractHiddenCycles(retVal);
+	/*int retVal = 0;
 	retVal = 4;
 	return this.substractHiddenCycles(retVal);
+	*/
     }
     
     /**
      * @return cycles needed to load this instruction in case of cache miss
      */
     public int getCacheMissExecTime(){
-	int retVal = 0;
-	retVal = 6+ ((this.getCacheSize())+1)*(2+ICacheMemoryConstants.cws);
+	int retVal =  WCETInstruction.calculateB(false, this.getCacheSize());
 	return this.substractHiddenCycles(retVal);
+	/*int retVal = 0;
+	retVal = 6+ ((this.getCacheSize())+1)*(2+ICacheMemoryConstants.cws);
+	return this.substractHiddenCycles(retVal);*/
     }
     
     /**

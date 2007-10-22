@@ -3,6 +3,8 @@
  */
 package wcet.components.graphbuilder.instruction.exectime;
 
+import com.jopdesign.wcet.WCETInstruction;
+
 import wcet.framework.instruction.cache.InsnAnalysisInstruction;
 import wcet.framework.interfaces.instruction.OpCodes;
 
@@ -36,9 +38,10 @@ public class InsnTimeAnalysisInsn extends InsnAnalysisInstruction implements
          * @see wcet.components.graphbuilder.instuctions.exectime.ITimeAnalysisInstruction#getCycles()
          */
     public int getCycles() {
-	int retVal;
+	int retVal = WCETInstruction.getCycles(this.opcode, false, 0);
+	int b = WCETInstruction.calculateB(false, 0);
 	switch (this.opcode) {
-	case OpCodes.NOP:
+	/*case OpCodes.NOP:
 	    return 1;
 	case OpCodes.ACONST_NULL:
 	    return 1;
@@ -232,44 +235,46 @@ public class InsnTimeAnalysisInsn extends InsnAnalysisInstruction implements
 	case OpCodes.DCMPL:
 	    return ITimeAnalysisInstruction.CYCLES_UNKNOWN;
 	case OpCodes.DCMPG:
-	    return ITimeAnalysisInstruction.CYCLES_UNKNOWN;
+	    return ITimeAnalysisInstruction.CYCLES_UNKNOWN;*/
 	case OpCodes.IRETURN:
-	    retVal =23;
+	    /*retVal =23;
 	    if(ITimeAnalysisInstruction.rws>3){
 		retVal += ITimeAnalysisInstruction.rws-3;
 	    }
-	    return retVal;
+	    return retVal;*/
 	case OpCodes.LRETURN:
-	    retVal =25;
+	    /*retVal =25;
 	    if(ITimeAnalysisInstruction.rws>3){
 		retVal += ITimeAnalysisInstruction.rws-3;
 	    }
-	    return retVal;
+	    return retVal;*/
 	case OpCodes.FRETURN:
-	    retVal =23;
+	    /*retVal =23;
 	    if(ITimeAnalysisInstruction.rws>3){
 		retVal += ITimeAnalysisInstruction.rws-3;
 	    }
-	    return retVal;
+	    return retVal;*/
 	case OpCodes.DRETURN:
-	    retVal =25;
+	    /*retVal =25;
 	    if(ITimeAnalysisInstruction.rws>3){
 		retVal += ITimeAnalysisInstruction.rws-3;
 	    }
-	    return retVal;
+	    return retVal;*/
 	case OpCodes.ARETURN:
-	    retVal =23;
+	    /*retVal =23;
 	    if(ITimeAnalysisInstruction.rws>3){
 		retVal += ITimeAnalysisInstruction.rws-3;
 	    }
-	    return retVal;
+	    return retVal;*/
 	case OpCodes.RETURN:
-	    retVal =21;
+	    /*retVal =21;
 	    if(ITimeAnalysisInstruction.rws>3){
 		retVal += ITimeAnalysisInstruction.rws-3;
-	    }
-	    return retVal;
-	case OpCodes.ARRAYLENGTH:
+	    }*/
+	    if(b>this.getHiddenCycles())
+		retVal -= b - this.getHiddenCycles();
+	    break;
+	/*case OpCodes.ARRAYLENGTH:
 	    return 6+ITimeAnalysisInstruction.rws;
 	case OpCodes.ATHROW:
 	    return ITimeAnalysisInstruction.CYCLES_OF_LAST_METHOD;
@@ -278,8 +283,9 @@ public class InsnTimeAnalysisInsn extends InsnAnalysisInstruction implements
 	case OpCodes.MONITOREXIT:
 	    return 16;//TODO ??? 10/16
 	default:
-	    return ITimeAnalysisInstruction.CYCLES_UNKNOWN;
+	    return ITimeAnalysisInstruction.CYCLES_UNKNOWN;*/
 	}
+	return retVal;
     }
     
     public int getHiddenCycles(){

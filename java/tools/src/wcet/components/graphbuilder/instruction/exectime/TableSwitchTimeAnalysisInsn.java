@@ -3,6 +3,8 @@
  */
 package wcet.components.graphbuilder.instruction.exectime;
 
+import com.jopdesign.wcet.WCETInstruction;
+
 import wcet.framework.instruction.cache.TableSwitchAnalysisInsn;
 
 /**
@@ -20,7 +22,8 @@ public class TableSwitchTimeAnalysisInsn extends TableSwitchAnalysisInsn
 	 * @see wcet.components.graphbuilder.instuctions.exectime.ITimeAnalysisInstruction#getCycles()
 	 */
 	public int getCycles() {
-		return ITimeAnalysisInstruction.CYCLES_OF_LAST_METHOD;
+	    return WCETInstruction.getCycles(this.opcode, false, 0);
+		//return ITimeAnalysisInstruction.CYCLES_OF_LAST_METHOD;
 	}
 
 }

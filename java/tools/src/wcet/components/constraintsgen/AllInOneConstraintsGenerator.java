@@ -9,19 +9,19 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Queue;
 
-import wcet.framework.constraints.BasicConstraint;
-import wcet.framework.constraints.BasicConstraintTerm;
-import wcet.framework.constraints.ObjectiveFunction;
 import wcet.framework.exceptions.InitException;
 import wcet.framework.interfaces.cfg.IControlFlowGraph;
 import wcet.framework.interfaces.cfg.IEdge;
 import wcet.framework.interfaces.cfg.IVertex;
 import wcet.framework.interfaces.cfg.IVertexData;
-import wcet.framework.interfaces.constraints.IConstraint;
-import wcet.framework.interfaces.constraints.IConstraintTerm;
 import wcet.framework.interfaces.general.IAnalyserComponent;
 import wcet.framework.interfaces.general.IDataStore;
 import wcet.framework.interfaces.general.IGlobalComponentOrder;
+import wcet.framework.interfaces.solver.IConstraint;
+import wcet.framework.interfaces.solver.IConstraintTerm;
+import wcet.framework.solver.BasicConstraint;
+import wcet.framework.solver.BasicConstraintTerm;
+import wcet.framework.solver.ObjectiveFunction;
 
 /**
  * @author Elena Axamitova

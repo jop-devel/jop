@@ -7,6 +7,7 @@ import java.io.PrintStream;
 import java.util.Iterator;
 
 import wcet.components.graphbuilder.blocks.BasicBlock;
+import wcet.components.lpsolver.ILpSolverConstants;
 import wcet.framework.exceptions.InitException;
 import wcet.framework.interfaces.cfg.IControlFlowGraph;
 import wcet.framework.interfaces.cfg.IEdge;
@@ -14,6 +15,7 @@ import wcet.framework.interfaces.cfg.IVertex;
 import wcet.framework.interfaces.general.IAnalyserComponent;
 import wcet.framework.interfaces.general.IDataStore;
 import wcet.framework.interfaces.general.IGlobalComponentOrder;
+import wcet.framework.interfaces.solver.ILpResult;
 
 /**
  * @author Elena Axamitova
@@ -35,16 +37,18 @@ public class SpecialDotGraphOutputWriter implements IAnalyserComponent {
     /**
          * All ouput messages buffered
          */
-    private StringBuffer result;
+    private StringBuffer buffer;
 
     /**
          * Analyser output
          */
     private PrintStream output;
 
+    private ILpResult lpResult;
+
     public SpecialDotGraphOutputWriter(IDataStore ds) {
 	this.dataStore = ds;
-	this.result = new StringBuffer();
+	this.buffer = new StringBuffer();
     }
 
     /*
@@ -81,8 +85,10 @@ public class SpecialDotGraphOutputWriter implements IAnalyserComponent {
          */
     public String call() throws Exception {
 	this.cfg = this.dataStore.getGraph();
+	this.lpResult = (ILpResult) this.dataStore
+		.getObject(ILpSolverConstants.LPSOLVE_RESULT_KEY);
 	this.printGraph();
-	this.output.print(this.result.toString());
+	this.output.print(this.buffer.toString());
 	this.output.flush();
 	return "+++Special Dot Graph Writer Completed Successfully.+++\n";
     }
@@ -93,8 +99,8 @@ public class SpecialDotGraphOutputWriter implements IAnalyserComponent {
          */
     private void printGraph() {
 
-	this.result.append("digraph G {\n");
-	this.result.append("size = \"10,7.5\"\n");
+	this.buffer.append("digraph G {\n");
+	this.buffer.append("size = \"10,7.5\"\n");
 
 	// System.out.println("******************");
 
@@ -114,12 +120,48 @@ public class SpecialDotGraphOutputWriter implements IAnalyserComponent {
 			    .getOutgoingEdges().iterator().next());
 		    Integer succId = (Integer) outEdge.getToVertex();
 		    IVertex succ = this.cfg.findVertexByIndex(succId);
-		    char labelChar = inEdge.isExceptionEdge() ? 'e' : 'f';
-		    this.result.append("\t\"" + pred.toString() + "\" -> \""
-			    + succ.toString() + "\" [label=\"" + labelChar
-			    + inEdge.getIndex() + "_h" + "\"]" + "\n");
-		    this.result.append("\t\"" + v.toString() + "\" -> \""
-			    + succ.toString() + "\"\n");
+		    double outEdgeVar = 0, hitEdgeVar = 0;
+		    if (this.lpResult != null) {
+			outEdgeVar = this.lpResult.getVarValue("f"
+				+ outEdge.getIndex());
+			hitEdgeVar = this.lpResult.getVarValue("f"
+				+ inEdge.getIndex() + "_ch");
+		    }
+		    if (hitEdgeVar > 0) {
+			this.buffer
+				.append("\t edge[color=red,labelfontcolor=red];\n");
+			char inLabelChar = inEdge.isExceptionEdge() ? 'e' : 'f';
+			this.buffer.append("\t\"" + pred.toString()
+				+ "\" -> \"" + succ.toString() + "\" [label=\""
+				+ inLabelChar + inEdge.getIndex() + "_h" + "="
+				+ hitEdgeVar + "\"]" + "\n");
+		    } else {
+			this.buffer
+				.append("\t edge[color=black,labelfontcolor=black];\n");
+			char inLabelChar = inEdge.isExceptionEdge() ? 'e' : 'f';
+			this.buffer.append("\t\"" + pred.toString()
+				+ "\" -> \"" + succ.toString() + "\" [label=\""
+				+ inLabelChar + inEdge.getIndex() + "_h"
+				+ "\"]" + "\n");
+		    }
+		    if (outEdgeVar > 0) {
+			this.buffer
+				.append("\t edge[color=red,labelfontcolor=red];\n");
+			char outLabelChar = inEdge.isExceptionEdge() ? 'e'
+				: 'f';
+			this.buffer.append("\t\"" + v.toString() + "\" -> \""
+				+ succ.toString() + "\"[label=\""
+				+ outLabelChar + outEdge.getIndex() + "="
+				+ (outEdgeVar-hitEdgeVar) + "\"]\n");
+		    } else {
+			this.buffer
+				.append("\t edge[color=black,labelfontcolor=black];\n");
+			char outLabelChar = inEdge.isExceptionEdge() ? 'e'
+				: 'f';
+			this.buffer.append("\t\"" + v.toString() + "\" -> \""
+				+ succ.toString() + "\"[label=\""
+				+ outLabelChar + outEdge.getIndex() + "\"]\n");
+		    }
 		}
 	    } else {
 		// System.out.println(v);
@@ -130,21 +172,64 @@ public class SpecialDotGraphOutputWriter implements IAnalyserComponent {
 		    Integer sucId = outEdge.getToVertex();
 		    IVertex suc = this.cfg.findVertexByIndex(sucId);
 		    BasicBlock sucBB = (BasicBlock) suc.getData();
+		    double edgeVar = 0, missEdgeVar = 0;
+		    if (this.lpResult != null) {
+			edgeVar = this.lpResult.getVarValue("f"
+				+ outEdge.getIndex());
+			missEdgeVar = this.lpResult.getVarValue("f"
+				+ outEdge.getIndex()+"_cm");
+		    }
 		    char labelChar = outEdge.isExceptionEdge() ? 'e' : 'f';
 		    if ((sucBB.getType() == BasicBlock.INVOKE_BB)
 			    || (sucBB.getType() == BasicBlock.RETURN_BB)) {
-			this.result.append("\t\"" + v.toString() + "\" -> \""
-				+ suc.toString() + "\" [label=\"" + labelChar
-				+ outEdge.getIndex() + "_m \"]" + "\n");
+			if (missEdgeVar > 0) {
+			    this.buffer
+				    .append("\t edge[color=red,labelfontcolor=red];\n");
 
-		    } else
-			this.result.append("\t\"" + v.toString() + "\" -> \""
-				+ suc.toString() + "\" [label=\"" + labelChar
-				+ outEdge.getIndex() + "\"]" + "\n");
+			    this.buffer.append("\t\"" + v.toString()
+				    + "\" -> \"" + suc.toString()
+				    + "\" [label=\"" + labelChar
+				    + outEdge.getIndex() + "_m=" + missEdgeVar
+				    + "\"]" + "\n");
+			} else if (edgeVar>0){
+			    this.buffer
+				    .append("\t edge[color=red,labelfontcolor=red];\n");
+			    this.buffer.append("\t\"" + v.toString()
+				    + "\" -> \"" + suc.toString()
+				    + "\" [label=\"" + labelChar
+				    + outEdge.getIndex() + "_m=" + edgeVar
+				    + "\"]" + "\n");
+			}else {
+			    this.buffer
+			    .append("\t edge[color=black,labelfontcolor=black];\n");
+		    this.buffer.append("\t\"" + v.toString()
+			    + "\" -> \"" + suc.toString()
+			    + "\" [label=\"" + labelChar
+			    + outEdge.getIndex() + "_m\"]\n");
+			}
+
+		    } else {
+			if (edgeVar > 0) {
+			    this.buffer
+				    .append("\t edge[color=red,labelfontcolor=red];\n");
+			    this.buffer.append("\t\"" + v.toString()
+				    + "\" -> \"" + suc.toString()
+				    + "\" [label=\"" + labelChar
+				    + outEdge.getIndex() + "=" + edgeVar
+				    + "\"]" + "\n");
+			} else {
+			    this.buffer
+				    .append("\t edge[color=black,labelfontcolor=black];\n");
+			    this.buffer.append("\t\"" + v.toString()
+				    + "\" -> \"" + suc.toString()
+				    + "\" [label=\"" + labelChar
+				    + outEdge.getIndex() + "\"]" + "\n");
+			}
+		    }
 		}
 	    }
 	}
 
-	this.result.append("}\n");
+	this.buffer.append("}\n");
     }
 }
