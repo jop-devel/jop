@@ -35,10 +35,17 @@ added temporary for a fix.
     </description>
 
   <!-- set global properties for this build -->
-  <property name="src" location="source"/>
+  <property name="src" location="src"/>
+
+  <!--
   <property name="build" location="build"/>
   <property name="dist"  location="dist"/>
   <property name="lib"  location="lib"/>
+  -->
+
+  <property name="build" location="dist"/>
+  <property name="dist"  location="dist"/>
+  <property name="lib"  location="dist/lib"/>
 
   <property name="html.folder.1" location="${build}/html_1"/>
   <property name="html.folder.2" location="${build}/html_2"/>
@@ -72,11 +79,11 @@ added temporary for a fix.
 
 
   <!-- set JOP properties for this build -->
-  <property name="JOP_folder"  location="../jop"/>
+  <property name="JOP_folder"  location="../.."/>
   <property name="JOP_dist_lib_folder"  location="${JOP_folder}/java/target/dist/lib"/>
   <property name="JOP_tools_lib_folder"  location="${JOP_folder}/java/tools/dist/lib"/>
 
-  <property name="jopizer.lib"  location="${lib}/jop-tools.jar"/>
+  <property name="jop.tools.jar"  location="${lib}/jop-tools.jar"/>
 
   <property name="p1" value="source"/>
   <property name="p2" value="com.jopdesign.debug.jdwp.test"/>
@@ -88,18 +95,19 @@ added temporary for a fix.
   <fileset dir="${JDWP_log_folder}" id="JDWP_LOG_FILES">
     <include name="**/*.dat"/>
   </fileset>
-  
+
+<!--
   <path id="class.files.path">
     <fileset dir="${build}" id="class.files">
       <include name="**/*.class"/>
     </fileset>
   </path>
-
+-->
 <!--
   <pathconvert property="class.files.path.converted"
   -->
-
-  <pathconvert 
+<!--
+  <pathconvert
       pathsep="${line.separator}||   " dirsep="/     "
       property="class_converted"
       refid="class.files"
@@ -108,7 +116,7 @@ added temporary for a fix.
       <globmapper from="${build}/*.class" to="*.class"/>
     </chainedmapper>
   </pathconvert>
-
+-->
 
 <!--
     <path refid="CLASS_FILES_PATH"/>
@@ -146,6 +154,8 @@ added temporary for a fix.
     problems with the sequence of definition and evaluation.
   -->
 
+  <property name="tools" value="${JOP_folder}/java/tools"/>
+
   <path id="ext-cp">
 
     <fileset dir="${JOP_folder}/java/lib">
@@ -154,14 +164,17 @@ added temporary for a fix.
       <include name="RXTXcomm.jar"/>
       <include name="lpsolve55j.jar"/>
     </fileset>
+<!--
     <fileset dir="${JOP_folder}/java/tools/dist/lib" id="JopTools">
       <include name="jop-tools.jar"/>
     </fileset>
-
+-->
   </path>
+  
+  <property name="target" value="${JOP_folder}/java/target"/>
 
   <path id="tools-cp">
-  
+
     <path refid="ext-cp"/>
     <pathelement location="${lib}/jop-tools.jar"/>
 
@@ -233,7 +246,7 @@ added temporary for a fix.
   </target>
 
   <target name="init">
-  
+
     <!-- Create the time stamp -->
     <tstamp>
       <format property="touch.time" pattern="yyyy_dd_MM__hh_mm"/>
@@ -256,26 +269,36 @@ added temporary for a fix.
 
   <target name="compile" depends="init"
           description="compile the source " >
-          
+
     <!-- Compile the java code from ${src} into ${build} -->
     <javac
-      srcdir="${src}"
-      destdir="${build}"
-      classpathref="tools-cp"
-      classpath="${lib}/JOP_classes.zip"
-      debug="on"
-      source="1.4"
-    />
-    
+      destdir="${build}/classes"
+      classpathref="ext-cp"
+      debug="true"
+    >
+      <src path="${tools}/src"/>
+      <src path="${target}/src/common"/>
+      
+      <include name="*.java"/>
+			<include name="com/jopdesign/build/*.java"/>
+			<include name="com/jopdesign/tools/*.java"/>
+			<include name="com/jopdesign/wcet/*.java"/>
+			<include name="com/jopdesign/debug/**/*.java"/>
+    </javac>
+
   </target>
 
   <target name="rebuild" depends="clean, all"
         description="Target to rebuild the source " >
   </target>
 
+  <target name="tools" depends="clean, compile, lib"
+        description="Rebuilds all the (Java) tools" >
+  </target>
+
   <target name="copyJDWPLogs" depends="compile"
           description="copy the JDWP logs" >
-          
+
     <!-- Copy the log files for analysis -->
     <copy todir="${build}">
       <fileset refid="JDWP_LOG_FILES"/>
@@ -297,8 +320,12 @@ added temporary for a fix.
           description="Create the library" >
 
     <!-- Put files from the "${build}/com" folder into the jar file. -->
+    <!--
     <delete file="${buildfile}"/>
     <jar jarfile="${buildfile}" basedir="${build}" includes="com/**"/>
+    <jar basedir="${tools}/dist/classes" destfile="${tools}/dist/lib/jop-tools.jar"/>
+    -->
+    <jar basedir="${tools}/dist/classes" destfile="${jop.tools.jar}"/>
 
   </target>
 
@@ -618,21 +645,27 @@ jdb -connect com.sun.jdi.SocketAttach:hostname=localhost,port=8001
   </target>
 -->
 
-  <target name="clean" depends="cleanHTML" description="clean up" >
+  <target name="clean" description="Clean up the build folder." >
 
     <!-- Delete the ${build} and ${dist} directory trees -->
+    <echo>
+     Will remove and recreate the tools "build" folder, currently at:
+     ${build}"
+    </echo>
     <delete dir="${build}"/>
-    <delete dir="${dist}"/>
 
-    <!-- Delete the ${build} and ${dist} directory trees -->
+    <!-- Create the ${build} directory trees - ->
+    <delete dir="${build}"/>  -->
     <mkdir dir="${build}"/>
-
+    <mkdir dir="${build}/lib"/>
+    <mkdir dir="${build}/classes"/>
   </target>
 
-  <target name="cleanHTML" description="clean up HTML folder" >
+  <target name="cleanHTML" description="clean up HTML folders" >
 
-    <!-- Delete the ${build} and ${dist} directory trees -->
-    <delete dir="${html.folder}"/>
+    <!-- Delete the HTML directory trees -->
+    <delete dir="${html.folder.1}"/>
+    <delete dir="${html.folder.2}"/>
   </target>
 
   <target name="copyDist" depends="lib"
