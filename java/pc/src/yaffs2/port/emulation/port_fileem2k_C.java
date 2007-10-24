@@ -36,7 +36,7 @@ public class port_fileem2k_C implements Yaffs1NANDInterface
 	 * This is only intended as test code to test persistence etc.
 	 */
 
-	static final String yaffs_flashif_c_version = "$Id: port_fileem2k_C.java,v 1.1 2007/09/24 13:31:33 peter.hilber Exp $";
+	static final String yaffs_flashif_c_version = "$Id: port_fileem2k_C.java,v 1.2 2007/10/24 11:00:34 peter.hilber Exp $";
 
 
 //	#include "yportenv.h"
@@ -217,8 +217,8 @@ public class port_fileem2k_C implements Yaffs1NANDInterface
 			written = FileEmulationUnix.write(h,localBuffer,localBufferIndex,dev.subField1.nDataBytesPerChunk);
 			
 			// TODO FIXME
-			if ((yportenv.PORT_TRACE_CHECKSUMS & yaffs2.utils.Globals.yaffs_traceMask) != 0)
-				CheckSum.checksumOfBytes(localBuffer,localBufferIndex,dev.subField1.nDataBytesPerChunk);
+//			if ((yportenv.PORT_TRACE_CHECKSUMS & yaffs2.utils.Globals.yaffs_traceMask) != 0)
+//				CheckSum.checksumOfBytes(localBuffer,localBufferIndex,dev.subField1.nDataBytesPerChunk);
 				
 			if(yaffs_testPartialWrite){
 				FileEmulationUnix.close(h);
@@ -320,7 +320,7 @@ public class port_fileem2k_C implements Yaffs1NANDInterface
 		int pos;
 		RandomAccessFile h;
 		
-		yportenv.T(yportenv.YAFFS_TRACE_MTD,("read chunk %d data %x tags %x"+ydirectenv.TENDSTR),PrimitiveWrapperFactory.get(chunkInNAND),/*(unsigned)*/PrimitiveWrapperFactory.get(Utils.hashCode(data)), /*(unsigned)*/PrimitiveWrapperFactory.get(Utils.hashCode(spare)));
+//		yportenv.T(yportenv.YAFFS_TRACE_MTD,("read chunk %d data %x tags %x"+ydirectenv.TENDSTR),PrimitiveWrapperFactory.get(chunkInNAND),/*(unsigned)*/PrimitiveWrapperFactory.get(Utils.hashCode(data)), /*(unsigned)*/PrimitiveWrapperFactory.get(Utils.hashCode(spare)));
 		
 		CheckInit();
 		
@@ -429,7 +429,7 @@ public class port_fileem2k_C implements Yaffs1NANDInterface
 		CheckInit();
 		
 
-		yportenv.T(yportenv.YAFFS_TRACE_ERASE,"erase block %d\n",PrimitiveWrapperFactory.get(blockNumber));
+//		yportenv.T(yportenv.YAFFS_TRACE_ERASE,"erase block %d\n",PrimitiveWrapperFactory.get(blockNumber));
 
 //		printf("erase block %d\n",blockNumber);
 		

@@ -14,7 +14,7 @@ public class EraseNAND
 		InternalNANDYaffs1NANDInterface.instance.initialiseNAND(
 				DebugDevice.getDebugDevice());
 		
-		for (int i = 0; i < 32; i++)
+		for (int i = DebugDevice.getDebugDevice().subField1.startBlock; i <= DebugDevice.getDebugDevice().subField1.endBlock; i++)
 			InternalNANDYaffs1NANDInterface.instance.eraseBlockInNAND(
 					DebugDevice.getDebugDevice(),
 					i);

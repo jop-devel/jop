@@ -38,7 +38,7 @@ public class yaffscfg2k implements yaffs2.port.yaffscfg2k_C
 	
 	public /*unsigned*/ int yaffs_traceMask()
 	{
-		return
+		return 
 		yportenv.YAFFS_TRACE_SCAN |  
 		yportenv.YAFFS_TRACE_GC | yportenv.YAFFS_TRACE_GC_DETAIL | 
 		yportenv.YAFFS_TRACE_WRITE  | yportenv.YAFFS_TRACE_ERASE | 

@@ -58,7 +58,7 @@ public class yaffscfg2k_C implements yaffs2.port.yaffscfg2k_C
 //		yportenv.PORT_TRACE_NANDSIM |
 //	    yportenv.PORT_TRACE_TNODE |
 		yportenv.YAFFS_TRACE_ALWAYS |
-//		(~0) |
+		(~0) |
 
 		0;
 	}
@@ -167,7 +167,7 @@ public class yaffscfg2k_C implements yaffs2.port.yaffscfg2k_C
 		bootDev.subField1.nDataBytesPerChunk = 512;
 		bootDev.subField1.nChunksPerBlock = 32;
 		bootDev.subField1.nReservedBlocks = 5;
-		bootDev.subField1.startBlock = 0; // Can use block 0
+		bootDev.subField1.startBlock = 1; // Can use block 0
 		bootDev.subField1.endBlock = 63; // Last block
 		//bootDev.useNANDECC = 0; // use YAFFS's ECC
 		bootDev.subField1.nShortOpCaches = 10; // Use caches
