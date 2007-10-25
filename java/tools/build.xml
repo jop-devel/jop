@@ -96,47 +96,9 @@ added temporary for a fix.
     <include name="**/*.dat"/>
   </fileset>
 
-<!--
-  <path id="class.files.path">
-    <fileset dir="${build}" id="class.files">
-      <include name="**/*.class"/>
-    </fileset>
-  </path>
--->
-<!--
-  <pathconvert property="class.files.path.converted"
-  -->
-<!--
-  <pathconvert
-      pathsep="${line.separator}||   " dirsep="/     "
-      property="class_converted"
-      refid="class.files"
-  >
-    <chainedmapper>
-      <globmapper from="${build}/*.class" to="*.class"/>
-    </chainedmapper>
-  </pathconvert>
--->
-
-<!--
-    <path refid="CLASS_FILES_PATH"/>
-      <flattenmapper/>
-      <globmapper from=";" to="    "/>
--->
-	 
-<!--
-  <property name="class.set" refid="CLASS_FILES_PATH"/>
-  <property name="class.set" refid="class_converted"/>
--->
-
-
   <!-- Just any name that the .jop file gets. -->
   <property name="jopbin" value="${p3}.jop"/>
 
-
-  <!--
-    <property name="buildfile"  location="${dist}/lib/JopDebugger_${DSTAMP}__${TSTAMP}.jar"/>
-  -->
   <property name="buildFilename"  location="JopDebugger.jar"/>
   <property name="buildfile"  location="${build}/JopDebugger.jar"/>
 
@@ -148,13 +110,15 @@ added temporary for a fix.
     <include name="**/*.sym"/>
   </fileset>
 
-  <!--
+<!--
+  =============================================================================
     The class paths starts here.
     Should be defined only AFTER all properties and file sets to avoid
     problems with the sequence of definition and evaluation.
-  -->
-
+  =============================================================================
+-->
   <property name="tools" value="${JOP_folder}/java/tools"/>
+
 
   <path id="ext-cp">
 
@@ -164,14 +128,12 @@ added temporary for a fix.
       <include name="RXTXcomm.jar"/>
       <include name="lpsolve55j.jar"/>
     </fileset>
-<!--
-    <fileset dir="${JOP_folder}/java/tools/dist/lib" id="JopTools">
-      <include name="jop-tools.jar"/>
-    </fileset>
--->
+
   </path>
-  
+
+
   <property name="target" value="${JOP_folder}/java/target"/>
+
 
   <path id="tools-cp">
 
@@ -180,23 +142,22 @@ added temporary for a fix.
 
   </path>
 
+
   <path id="project.class.path">
 
     <path refid="tools-cp"/>
 
-    <!--
-      the line below works but it's better to point to the lib.
-      <pathelement location="${build}"/>
-    -->
-    <pathelement location="${buildfile}"/>
-
   </path>
 
-  <!--
-    The target list starts here
-  -->
+
+<!--
+  =============================================================================
+    The target list starts here.
+  =============================================================================
+-->
+
   <target name="help"
-        description="Help about this Ant build script with some common targets" >
+    description="Help about this Ant build script with some common targets" >
 
     <echo>
       ------------------------------------------------------------
@@ -230,18 +191,18 @@ added temporary for a fix.
         jdb - how to launch "jdb" to test HelloWorld and the packet logger.
 
         TestJopServer - Launch a test to check if JopServer is working.
-        
+
         Class2HTML_1 - Launch a (BCEL) tool to build an HTML description
                      of the compiled .class files inside the build folder.
-                     
-        Class2HTML_2 - Same as Class2HTML_1 but the files are created 
+
+        Class2HTML_2 - Same as Class2HTML_1 but the files are created
                       in another folder. Useful to compare class
                       bytecodes before and after code transformations.
       ------------------------------------------------------------
     </echo>
   </target>
 
-  <target name="all" depends="compile, copyJDWPLogs, copySymbols"
+  <target name="all" depends="compile, lib, copyJDWPLogs, copySymbols"
           description="Default target to compile the source " >
   </target>
 
@@ -257,15 +218,12 @@ added temporary for a fix.
               offset="-5" unit="hour"/>
       -->
     </tstamp>
-    <!-- Create the build file name based on the calculated timestamp -->
-    <!-- property name="buildfile"  location="${dist}/lib/JopDebugger_${DSTAMP}__${TSTAMP}.jar"/
-       <property name="buildfile"  location="${build}/JopDebugger_${DSTAMP}__${TSTAMP}.jar"/>
-    -->
 
     <!-- Create the build directory structure used by compile -->
     <mkdir dir="${build}"/>
 
   </target>
+  
 
   <target name="compile" depends="init"
           description="compile the source " >
@@ -278,7 +236,7 @@ added temporary for a fix.
     >
       <src path="${tools}/src"/>
       <src path="${target}/src/common"/>
-      
+
       <include name="*.java"/>
 			<include name="com/jopdesign/build/*.java"/>
 			<include name="com/jopdesign/tools/*.java"/>
@@ -288,11 +246,11 @@ added temporary for a fix.
 
   </target>
 
-  <target name="rebuild" depends="clean, all"
-        description="Target to rebuild the source " >
+  <target name="tools" depends="rebuild"
+        description="Rebuilds all the (Java) tools. Same as 'rebuild' target." >
   </target>
 
-  <target name="tools" depends="clean, compile, lib"
+  <target name="rebuild" depends="clean, compile, lib"
         description="Rebuilds all the (Java) tools" >
   </target>
 
@@ -300,9 +258,14 @@ added temporary for a fix.
           description="copy the JDWP logs" >
 
     <!-- Copy the log files for analysis -->
+    <!--
     <copy todir="${build}">
       <fileset refid="JDWP_LOG_FILES"/>
     </copy>
+
+      Commented for now. Used only for development.
+      If it's necesary to add the log files to CVS, fix me.
+    -->
 
   </target>
 
@@ -310,26 +273,33 @@ added temporary for a fix.
           description="copy the symbol files" >
 
     <!-- Copy the symbol files for testing -->
+    <!--
     <copy todir="${build}">
       <fileset refid="SYMBOL_FILES"/>
     </copy>
+
+      Commented for now. Used only for development.
+      If it's necesary to add the log files to CVS, fix me.
+    -->
 
   </target>
 
   <target name="lib" depends="compile"
           description="Create the library" >
+    <echo>
+      Will update the lib file, if needed:
+      ${jop.tools.jar}
+    </echo>
 
-    <!-- Put files from the "${build}/com" folder into the jar file. -->
-    <!--
-    <delete file="${buildfile}"/>
-    <jar jarfile="${buildfile}" basedir="${build}" includes="com/**"/>
-    <jar basedir="${tools}/dist/classes" destfile="${tools}/dist/lib/jop-tools.jar"/>
+    <!-- Update the .jar file. -->
+    <!-- 
+    <delete file="${jop.tools.jar}"/>
     -->
     <jar basedir="${tools}/dist/classes" destfile="${jop.tools.jar}"/>
 
   </target>
 
-  <target name="PacketCounter" depends="copyJDWPLogs,compile"
+  <target name="PacketCounter" depends="copyJDWPLogs,lib"
           description="Analyse the packet list on the files provided." >
 
     <java
@@ -337,16 +307,17 @@ added temporary for a fix.
       failonerror="true"
       fork="true"
       dir = "${build}"
+      classpathref="project.class.path"
       >
       <arg line="${serverFile} ${clientFile}"/>
       <!--
         <jvmarg line = "-Xprof"/>
       -->
     </java>
-    
+
   </target>
 
-  <target name="PacketPrinter" depends="copyJDWPLogs,compile"
+  <target name="PacketPrinter" depends="copyJDWPLogs,lib"
           description="Print the packet list on the files provided." >
           
     <java
@@ -354,6 +325,7 @@ added temporary for a fix.
       failonerror="true"
       fork="true"
       dir = "${build}"
+      classpathref="project.class.path"
       output = "${dumpFile}"
       >
       <arg line="${serverFile} ${clientFile}"/>
@@ -373,17 +345,19 @@ added temporary for a fix.
 
   <target name="PacketLogger" depends="compile"
           description="Log network packets to the disk." >
-          
+
     <echo>
       Please launch a Java debugger toward network port 8000.
       If everything is properly set, the logger will record
-      all network traffic.
+      all network traffic. File(s) will be recorded here:
+      ${build}
     </echo>
     <java
         classname="com.jopdesign.debug.jdwp.sniffer.SocketSniffer"
         fork="true"
         spawn="false"
         dir="${build}"
+        classpathref="project.class.path"
     >
       <arg value="${serverFileDefault}"/>
       <arg value="${clientFileDefault}"/>
@@ -393,9 +367,9 @@ added temporary for a fix.
 
   </target>
 
-  <target name="HelloWorld" depends="compile"
+  <target name="HelloWorld" depends="lib"
           description="Run HelloWorld (to be debugger through the network)." >
-          
+
     <echo>
       Run HelloWorld, to be debugger through the network (port 8001).
       Please launch the remote debugger now.
@@ -412,20 +386,37 @@ added temporary for a fix.
         fork="true"
         spawn="false"
         dir="${build}"
+        classpathref="project.class.path"
     >
     <jvmarg line = "${debugSettings_8001}"/>
     </java>
     
   </target>
 
-
-  <target name="jdb" depends="compile"
+  <target name="jdb"
           description="How to run jdb to debug through the network.">
 
+    <!--
+      The portable way of showing the source folder is as below.
+      Unfortunately, ant does not expand the path in a consistent way:
+      under cygwin it will mix \ and / in the same string, which is odd.
+
+      jdb -connect com.sun.jdi.SocketAttach:hostname=localhost,port=8000 -sourcepath ${tools}/src
+      
+      The issue is with the "${tools}/src" portion: ${tools} is not properly 
+      printed under windows.
+    -->
     <echo>
-      Here is how to use jdb to debug HelloWorld through the network:
-      jdb -connect com.sun.jdi.SocketAttach:hostname=localhost,port=8001
+      Here is how to use jdb to debug HelloWorld through the network
+      (run it from the "tools" folder):
+      jdb -connect com.sun.jdi.SocketAttach:hostname=localhost,port=8000 -sourcepath src
+      
+      A few useful commands for jdb:
+        step -> run one line of code.
+        list -> list a code snippet to show where the program is.
+        run  -> let the program run freely, until it ends or a breakpoint is reached.
     </echo>
+
     <!--
     Unfortunately I don't know how to make ant work properly with jdb.
     The line below launch jdb but does not allow the user to
@@ -551,7 +542,7 @@ added temporary for a fix.
         classname="com.jopdesign.debug.jdwp.bcel.BytecodeHandler"
         fork="true"
         spawn="false"
-        dir="${build}"
+        dir="${build}/classes"
         classpathref="project.class.path"
     >
     <!--
@@ -578,50 +569,10 @@ added temporary for a fix.
 
 
 <!--
-  <target name="Class2HTML" depends="compile"
-          description="Run Class2HTML" >
-
-    <echo>
-      Run Class2HTML, a tool from BCEL library responsible to build a set
-      of HTML files with a detailed description of each
-      class file in the build folder.
-
-      class set:
-
-      ${class.set}
-
-
-
-      Class files:
-
-      ${class.files.path.converted}
-
-
-    </echo>
-    <delete dir="${html.folder}"/>
-    <java
-        classname="com.jopdesign.debug.jdwp.bcel.Class2HTMLHelper"
-        fork="true"
-        spawn="false"
-        dir="${build}"
-        classpathref="project.class.path"
-    >
-      <arg value="-d"/>
-      <arg value="${html.folder}"/>
-      <arg value="."/>
-
-    </java>
-
-  </target>
--->
-
-<!--
-jdb -connect com.sun.jdi.SocketAttach:hostname=localhost,port=8001
-
   <target name="jopizer" depends="lib"
         description="generate the .jop file" >
     <java
-      classpathref="tools-cp"
+      classpathref="project.class.path"
       classname="com.jopdesign.build.JOPizer"
       failonerror="true"
       fork="true">
@@ -637,7 +588,7 @@ jdb -connect com.sun.jdi.SocketAttach:hostname=localhost,port=8001
     <java classname="com.jopdesign.tools.JopSim"
       failonerror="true"
       fork="true"
-      classpathref="tools-cp"
+      classpathref="project.class.path"
     >
       <sysproperty key="log" value="false"/>
       <arg line="${build}/${jopbin}"/>
@@ -650,7 +601,7 @@ jdb -connect com.sun.jdi.SocketAttach:hostname=localhost,port=8001
     <!-- Delete the ${build} and ${dist} directory trees -->
     <echo>
      Will remove and recreate the tools "build" folder, currently at:
-     ${build}"
+     ${build}
     </echo>
     <delete dir="${build}"/>
 
@@ -664,27 +615,13 @@ jdb -connect com.sun.jdi.SocketAttach:hostname=localhost,port=8001
   <target name="cleanHTML" description="clean up HTML folders" >
 
     <!-- Delete the HTML directory trees -->
+    <echo>
+      Will remove the following folders:
+      ${html.folder.1}
+      ${html.folder.2}
+    </echo>
     <delete dir="${html.folder.1}"/>
     <delete dir="${html.folder.2}"/>
-  </target>
-
-  <target name="copyDist" depends="lib"
-          description="Copy the build to JOP tree for testing" >
-
-    <!-- Copy the lib files for testing -->
-    <copy todir="${JOP_tools_lib_folder}">
-      <fileset refid="BuildLib"/>
-    </copy>
-
-  </target>
-
-  <target name="updateLibs" depends="copyDist"
-          description="Copy the last created libs for testing" >
-
-    <copy todir="${lib}">
-      <fileset refid="JopTools"/>
-    </copy>
-
   </target>
 
 </project>
