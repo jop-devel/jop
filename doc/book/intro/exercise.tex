@@ -1,0 +1,179 @@
+\section{The JOP ``Hello World" Exercise}
+
+The exercise gives an introduction into the design flow of JOP. JOP
+will be built from the sources and a simple \emph{Hello World}
+program will run on it.
+
+To understand the build process you have to run the build manually.
+This understanding will help you to find the correct files for
+changes in JOP and to adjust the \code{Makefile} for your needs.
+
+\subsection{Manual build}
+
+Manual build does not mean entering all commands, but calling the
+correct make target with the required arguments (if any) in the
+correct order. The idea of this exercise is to get knowledge of the
+directory structure and the dependency of various design units.
+
+Inspect the Makefile targets and the one that are called from it
+before running them.
+
+\begin{enumerate}
+    \item Create your working directory
+    \item Download the sources from the opencores CVS server
+    \item Connect the FPGA board (with the bread board expansion) to the PC and the power supply
+    \item Perform the build as described in the \emph{Getting Started} section
+    from Chapter~\ref{chap:build}
+\end{enumerate}
+
+As result you should see a message at your command prompt.
+% and a blinking LED on the FPGA board.
+
+\subsection{Using make}
+
+In the root directory (\code{jop}) there is a \code{Makefile}. Open
+it with an editor and try to find the corresponding lines of code
+for the steps you did in first exercise. Reset the FPGA by
+unplugging and plugging the power and run the build with a simple
+\begin{verbatim}
+    make
+\end{verbatim}
+
+The whole process should run without errors and the result should be
+identical to the previous exercise.
+
+\subsection{Change the Java Program}
+
+The whole build process is not necessary when changing the Java
+application. Once the processor is built a Java application can be
+built and downloaded with the following make target:
+\begin{verbatim}
+    make japp
+\end{verbatim}
+Change \code{HelloWorld.java} and run it on JOP. Now change the
+class name that contains the \code{main()} methods
+(\code{HelloWorld.java}) to \code{Hello.java} and rerun the Java
+application build. Now an embedded version of ``Hello World" should
+run on JOP. Besides the usual greeting on the standard output the
+LED on the FPGA board should blink at a frequency of 1~Hz. The first
+periodic task, an essential abstraction for real-time systems, is
+running on JOP!
+
+\subsection{Change the Microcode}
+
+The JVM is written in microcode and several \code{.vhdl} files are
+generated during assembly. For a test change only the version
+string\footnote{The actual version date will probably be different
+on the actual sources.} in \code{jvm.asm} to the actual date and run
+a full make.
+\begin{verbatim}
+    version     = 20070831
+\end{verbatim}
+    change to:
+\begin{verbatim}
+    version     = 20110101
+\end{verbatim}
+The start message should reflect your change. As the microcode was
+changed a full make run is necessary. The microcode assembly
+generates VHDL files and the complete processor has to be rebuilt.
+
+
+\subsection{Use a Different Target Board}
+
+In this exercise will alter the \code{Makefile} for a different
+target board. Disconnect the first board and connect the board with
+an USB port (e.g.\ the dspio or lego board) and the ByteBlaster
+cable.
+
+Table~\ref{tab:boards} lists the  differences between the first
+board (simpexp) and the new one (called dspio).
+%
+\begin{table}
+    \centering
+
+\begin{tabular}{lll}
+    \toprule
+       & simpexp & dspio \\
+    \midrule
+    FPGA & EP1C6 & EP1C12 \\
+    IO & UART & UART, USB, audio codec, sigma-delta codec \\
+    FPGA configuration & ByteBlaster & still ByteBlaster \\
+    Java download & serial line & USB \\
+
+    \bottomrule
+
+\end{tabular}
+    \caption{Differences between the two target boards}
+    \label{tab:boards}
+
+\end{table}
+%
+The correct FPGA is already selected in the Quartus project files
+(\code{jop.qpf}). Alter the \code{Makefile} as follows:
+
+\begin{enumerate}
+    \item Change the Quartus project from \code{cycmin} to
+    \code{usbmin}
+    \item The Java download is now over USB instead of the serial
+    line. Change the main target (\code{all}) to use sub target
+    \code{jopusb} instead of \code{jopser}
+    \item Change the parameters for the download via \code{down.exe}
+    to use the virtual com-port of the USB driver (look into Windows
+    hardware manager to get the correct number). Add the switch
+    \code{-usb} for the download
+\end{enumerate}
+
+Now build the whole project with \code{make}. Change the Java
+program and perform only the necessary build step.
+
+\subsection{Compile a Different Java Application}
+
+The class that contains the main method is described by three
+arguments:
+\begin{enumerate}
+    \item The first directory relative to \code{java/target/src}
+    (e.g. \code{app} or \code{test})
+    \item The package name (e.g. \code{dsp})
+    \item The main class (e.g. \code{HalloWorld})
+\end{enumerate}
+
+These three values are used by the \code{Makeile} and are set in the
+variables \code{P1}, \code{P2}, and \code{P3} in the
+\code{Makefile}.
+
+Change the \code{Makefile} to compile the embedded Java benchmark
+\code{jbe.DoAll}. The parameters for the Java application can also
+be given to the \code{make} with following command line arguments:
+\begin{verbatim}
+    make -e P1=bench P2=jbe P3=DoAll
+\end{verbatim}
+
+The three variables \code{P1}, \code{P2}, and \code{P3} are a
+shortcut to set the main class of the application. You can also
+directly set the variables \code{TARGET\_APP\_PATH} and
+\code{MAIN\_CLASS}.
+
+
+\subsection{Simulation}
+
+This optional exercise will give you a full view on the
+possibilities to debug JOP system code or the processor itself.
+There are two ways to simulate JOP: A simple debugging JVM written
+in Java (\code{JopSim} as part of the tool package) that can execute
+\emph{jopized} applications and VHDL level simulation with ModelSim.
+The make targets are \code{jsim} and \code{sim}.
+
+\subsection{WCET Analysis}
+
+An important step in real-time system development is the analysis of
+the WCET of the individual tasks. Compile and run the WCET example
+\code{Loop.java} in package \code{wcet}. You can analyze the WCET of
+the method \code{measure()} with following make command:
+\begin{verbatim}
+    make wcet -e P1=test P2=wcet P3=Loop
+\end{verbatim}
+Change the code in \code{Loop.java} to enable measurement of the
+execution time and compare it with the output of the static
+analysis. In this simple example the WCET can be measured. However,
+be prepared that most non-trivial code needs static analysis for
+safe estimates of WCET values.
