@@ -176,8 +176,8 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 		
 		for (int i=0; i<256; ++i) {
 			int cnt = getCycles(i, false, 0);
-			if (cnt==-1) cnt = 0;
-			System.out.println(cnt);
+			if (cnt==-1) cnt = 1000;
+			System.out.println(i+"\t"+cnt);
 		}
 	}
 	
@@ -190,7 +190,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 	 * @return wcet cycle count or -1 if wcet not available
 	 */
 	public static int getCycles(int opcode, boolean pmiss, int n) {
-		int wcet = 0;
+		int wcet = -1;
 		int b = -1;
 
 		// cache load time
@@ -1148,13 +1148,14 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			break;
 
 		case 223: // conditional move 
-		default:
 			wcet = 5;
 			break;
+		default:
+			wcet = -1;
 		}
 		// TODO: Add the JOP speciffic codes?
 		if (isInJava(opcode)) {
-			return 0;
+			return -1;
 		}
 		return wcet;
 	}
