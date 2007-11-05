@@ -109,18 +109,13 @@ single \emph{native} instruction set, the so-called microcode.
 During execution, every Java bytecode is translated to either one,
 or a sequence of microcode instructions. This translation merely
 adds one pipeline stage to the core processor and results in no
-execution overheads. With this solution, we are free to define the
-JOP instruction set to map smoothly to the stack architecture of the
+execution overheads (except for a bytecode branch that takes 4
+instead of 3 cycles to execute). The area overhead of the
+translation stage is 290~LCs, or about 15\% of the LCs of a typical
+JOP configuration. With this solution, we are free to define the JOP
+instruction set to map smoothly to the stack architecture of the
 JVM, and to find an instruction coding that can be implemented with
 minimal hardware.
-
-\figurename~\ref{fig_arch_data_flow} gives an example of this data
-flow from the Java program counter to JOP microcode. The fetched
-bytecode acts as an index for the jump table. The jump table
-contains the start addresses for the JVM implementation in
-microcode. This address is loaded into the JOP program counter for
-every bytecode executed.
-
 
 \begin{figure}
     \centering
@@ -129,14 +124,34 @@ every bytecode executed.
     \label{fig_arch_data_flow}
 \end{figure}
 
-Every bytecode is translated to an address in the microcode that
-implements the JVM. If there exists an equivalent JOP instruction
-for the bytecode, it is executed in one cycle and the next bytecode
-is translated. For a more complex bytecode, JOP just continues to
-execute microcode in the subsequent cycles. The end of this sequence
-is coded in the microcode instruction (as the \emph{nxt} bit).
-%This translation needs an extra pipeline stage but has zero
-%overheads for complex JVM instructions.
+
+Figure~\ref{fig_arch_data_flow} gives an example of the data flow
+from the Java program counter to JOP microcode. The figure
+represents the two pipeline stages bytecode fetch/translate and
+microcode fetch. The fetched bytecode acts as an index for the jump
+table. The jump table contains the start addresses for the bytecode
+implementation in microcode. This address is loaded into the JOP
+program counter for every bytecode executed. JOP executes the
+sequence of microcode until the last one. The last one is marked
+with \emph{nxt} in microcode assembler. This \emph{nxt} bit in the
+microcode ROM triggers a new translation i.e., a new address is
+loaded into the JOP program counter. In
+Figure~\ref{fig_arch_data_flow} the implementation of bytecode
+\code{idiv} is an example of a longer sequence that ends with
+microcode instruction \code{ldm c nxt}.
+
+The difference to other forms of instruction translation in hardware
+is that the proposed solution is time predictable. The translation
+takes one cycle (one pipeline stage) for each bytecode, independent
+from the execution history. Instruction folding, e.g., implemented
+in picoJava \cite{pJ1,pjMicroArch}, is also a form of instruction
+translation in hardware. Folding is used to translate several (stack
+oriented) bytecode instructions to a RISC type instruction. This
+translation needs an instruction buffer and the fill level of this
+instruction buffer depends on the execution history. The length of
+this history that has to be considered for analysis is not bounded.
+Therefore this form of instruction translation is not exactly time
+predictable.
 
 
 \subsection{Compact Microcode}
@@ -163,7 +178,10 @@ control flow decisions at the microcode level. For optimum use of
 the available memory resources, all instructions are 8 bits long.
 There are no variable-length instructions and every instruction,
 with the exception of \code{wait}, is executed in a single cycle. To
-keep the instruction set this dense, two concepts are applied:
+keep the instruction set this dense, following concept is applied:
+immediate values and branch offsets are addressed through one
+indirection. The instruction just contains an index for the
+constants.
 
 Two types of operands, immediate values and branch distances,
 normally force an instruction set to be longer than 8 bits. The
@@ -176,11 +194,14 @@ distances.
 
 In the current realization of JOP, the different immediate values
 are collected while the microcode is being assembled and are put
-into the initialization file for the local RAM. These constants are
-accessed indirectly in the same way as the local variables. They are
-similar to initialized variables, apart from the fact that there are
-no operations to change their value during runtime, which would
-serve no purpose and would waste instruction codes.
+into the initialization file for the on-chip memory. These constants
+are accessed indirectly in the same way as the local variables. They
+are similar to initialized variables, apart from the fact that there
+are no operations to change their value during runtime, which would
+serve no purpose and would waste instruction codes.  The microcode
+local variables, the microcode constants and the stack share the
+same on-chip memory. Using a single memory block simplifies the
+multiplexer in the execution stage.
 
 A similar solution is used for branch distances. The assembler
 generates a VHDL file with a table for all found branch constants.
@@ -202,7 +223,7 @@ instruction, the selection is directly encoded in the instruction.
 
 \subsection{Instruction Set}
 
-JOP implements 43 different microcode instructions. These
+JOP implements 45 different microcode instructions. These
 instructions are encoded in 8 bits. With the addition of the
 \emph{nxt} and \emph{opd} bits in every instruction, the effective
 instruction length is 10 bits.
@@ -220,12 +241,12 @@ result in one cycle execution time for the bytecode (except
 The first 16 words in the internal stack memory are reserved for
 internal variables. The next 16 words contain constants. These
 memory locations are accessed using the following instructions:
-\code{stm}, \code{ldm}, \code{ldi}
+\code{stm}, \code{stmi}, \code{ldm}, \code{ldmi}, \code{ldi}
 
     \item[Register manipulation:]
 The stack pointer, the variable pointer and the Java program counter
 are loaded or stored with: \code{stvp}, \code{stjpc}, \code{stsp},
-\code{ldvp}, \code{ldjpc}, \code{ldsp}
+\code{ldvp}, \code{ldjpc}, \code{ldsp}, \code{star}
 
     \item[Bytecode operand:]
 The operand is loaded from the bytecode RAM, converted to a 32-bit
@@ -233,13 +254,10 @@ word and pushed on the stack with: \code{ld\_opd\_8s},
 \code{ld\_opd\_8u}, \code{ld\_opd\_16s}, \code{ld\_opd\_16u}
 
     \item[External memory access:]
-The autonomous memory subsystem is accessed using the following
-instructions: \code{stmra}, \code{stmwa}, \code{stmwd}, \code{wait},
-\code{ldmrd}, \code{stbcrd}, \code{ldbcstart}
-
-    \item[IO device access:]
-The following instructions permit access to the IO subsystem:
-\code{stioa}, \code{stiod}, \code{ldiod}
+The autonomous memory subsystem and the IO subsystem are accessed by
+using the following instructions: \code{stmra}, \code{stmwa},
+\code{stmwd}, \code{wait}, \code{ldmrd}, \code{stbcrd},
+\code{ldbcstart}, \code{stald}, \code{stast},
 
     \item[Multiplier:]
 The multiplier is accessed with: \code{stmul}, \code{ldmul}
@@ -259,13 +277,16 @@ Appendix~\ref{appx:jop:instr}.
 
 \subsection{Bytecode Example}
 
-The example in Listing~\ref{lst:arch:micro1} shows the
-implementation of a single cycle bytecode and an infrequent bytecode
-as a sequence of JOP instructions. In this example, the \code{dup}
-bytecode is mapped to the equivalent \code{dup} microcode and
-executed in a single cycle, whereas \code{dup\_x1} takes five cycles
-to execute, and after the last instruction (\code{ldm a nxt}), the
-first instruction for the next bytecode is executed.
+The example in Figure~\ref{lst:arch:micro1} shows the implementation
+of a single cycle bytecode and an infrequent bytecode as a sequence
+of JOP instructions. The suffix \code{nxt} marks the last
+instruction of the microcode sequence. In this example, the
+\code{dup} bytecode is mapped to the equivalent \code{dup} microcode
+and executed in a single cycle, whereas \code{dup\_x1} takes five
+cycles to execute, and after the last instruction (\code{ldm a
+nxt}), the first instruction for the next bytecode is executed. The
+scratch variables, as shown in the second example, are stored in the
+on-chip memory that is shared with the stack cache.
 
 \begin{lstlisting}[caption={Implementation of \code{dup} and \code{dup\_x1}},
 label=lst:arch:micro1]
@@ -291,10 +312,12 @@ read of an operand byte is coded in the JOP instruction (an
 
 In Listing~\ref{lst:arch:micro2}, the implementation of
 \code{sipush} is shown. The bytecode is followed by a two-byte
-operand. Since the access to bytecode memory is only one byte per
-cycle, \emph{opd} and \emph{nxt} are not allowed at the same time.
-This implies a minimum execution time of $n+1$ cycles for a bytecode
-with $n$ operand bytes.
+operand. Since the access to bytecode memory is only
+one\footnote{The decision is to avoid buffers that would introduce
+time dependencies over bytecode boundaries.} byte per cycle,
+\emph{opd} and \emph{nxt} are not allowed at the same time. This
+implies a minimum execution time of $n+1$ cycles for a bytecode with
+$n$ operand bytes.
 
 \begin{lstlisting}[caption={Bytecode operand load},
 label=lst:arch:micro2]
@@ -305,22 +328,30 @@ label=lst:arch:micro2]
 
 
 \subsection{Flexible Implementation of Bytecodes}
+\label{subsec:flex:bc}
 
 As mentioned above, some Java bytecodes are very complex. One
 solution already described is to emulate them through a sequence of
 microcode instructions. However, some of the more complex bytecodes
 are very seldom used. To further reduce the resource implications
 for JOP, in this case local memory, bytecodes can even be
-implemented by \emph{using} Java bytecodes. During the assembly of
-the JVM, all labels that represent an entry point for the bytecode
-implementation are used to generate the translation table. For all
-bytecodes for which no such label is found, i.e.\ there is no
-implementation in microcode, a \emph{not-implemented} address is
-generated. The instruction sequence at this address invokes a static
-method from a system class (\code{com.jopdesign.sys.JVM}). This
-class contains 256 static methods, one for each possible bytecode,
-ordered by the bytecode value. The bytecode is used as the index in
-the method table of this system class. As described in
+implemented by \emph{using} Java bytecodes. That means bytecodes
+(e.g., \code{new} or floating point operations) can be implemented
+in Java. This feature also allows for the easy configuration of
+resource usage versus performance.
+
+During the assembly of the JVM, all labels that represent an entry
+point for the bytecode implementation are used to generate the
+translation table. For all bytecodes for which no such label is
+found, i.e.\ there is no implementation in microcode, a
+\emph{not-implemented} address is generated. The instruction
+sequence at this address invokes a static method from a system
+class. This class contains 256 static methods, one for each possible
+bytecode, ordered by the bytecode value. The bytecode is used as the
+index in the method table of this system class. A single empty
+static method consumes three 32-bit words in memory. Therefore, the
+overhead of this special class is 3~KB, which is 9\% of a minimal
+\emph{hello world} program (34~KB memory footprint). As described in
 Section~\ref{sec:hwsw:co}, this feature also allows for the easy
 configuration of resource usage versus performance.
 
@@ -332,36 +363,21 @@ set, the so-called microcode. This microcode is still an instruction
 set for a stack machine, but more RISC-like than the CISC-like JVM
 bytecodes.
 
-In the next section we will see how this translation is handled in
-JOP's pipeline and how it can simplify interrupt handling.
-
-
-%\subsubsection{old text:}
-%There is a great variation in complexity of Java bytecodes, the
-%instructions of the JVM. There are simple instructions like
-%arithmetic and logic operations on the stack. However, the semantics
-%of instructions like \emph{new} or \emph{invokestatic} can result in
-%class loading (even over a network) and verification. Because of
-%this variation, not every JVM instruction can be implemented in
-%hardware. One common solution, used in Suns picoJava
-%\cite{pjMicroArch}, is to execute a subset of the bytecode native
-%and trap on the more complex one. This solution has a minimum
-%overhead of 16 cycles in picoJava for the software trap.
-%
-%The approach to this problem in JOP is different. JOP has its own
-%instruction set (the so called microcode). Some bytecodes have a 1
-%to 1 mapping to JOP instructions, for the more complex a sequence of
-%JOP instructions is necessary. Every bytecode is translated to an
-%address in the microcode that implements the JVM.
+At the time of this writing 43 of the 201 different bytecodes are
+implemented by a single microcode instruction, 93 by a microcode
+sequence, and 40 bytecodes are implemented in Java. In the next
+section we will see how this translation is handled in JOP's
+pipeline and how it can simplify interrupt handling.
 
 
 \section{The Processor Pipeline}
 \label{sec:pipeline}
 
 JOP is a fully pipelined architecture with single cycle execution of
-microcode instructions and a novel approach to mapping Java bytecode
-to these instructions. Figure~\ref{fig_arch_pipeline} shows the
-datapath for JOP.
+microcode instructions and a novel approach of translation from Java
+bytecode to these instructions. Figure~\ref{fig_arch_pipeline} shows
+the datapath for JOP, representing the pipeline from left to right.
+Blocks arranged vertically belong to the same pipeline stage.
 
 \begin{figure}
     \centering
@@ -370,34 +386,34 @@ datapath for JOP.
     \label{fig_arch_pipeline}
 \end{figure}
 
-Three stages form the JOP core, executing microcode instructions. An
-additional stage in the front of the core pipeline fetches Java
-bytecodes -- the instructions of the JVM -- and translates these
-bytecodes into addresses in microcode. Bytecode branches are also
-decoded and executed in this stage. The second pipeline stage
-fetches JOP instructions from the internal microcode memory and
-executes microcode branches. Besides the usual decode function, the
-third pipeline stage also generates addresses for the stack RAM. As
-every stack machine instruction has either \emph{pop} or \emph{push}
-characteristics, it is possible to generate fill or spill addresses
-for the \emph{following} instruction at this stage. The last
-pipeline stage performs ALU operations, load, store and stack spill
-or fill. At the execution stage, operations are performed with the
-two topmost elements of the stack.
+Three stages form the JOP core pipeline, executing microcode
+instructions. An additional stage in the front of the core pipeline
+fetches Java bytecodes -- the instructions of the JVM -- and
+translates these bytecodes into addresses in microcode. Bytecode
+branches are also decoded and executed in this stage. The second
+pipeline stage fetches JOP instructions from the internal microcode
+memory and executes microcode branches. Besides the usual decode
+function, the third pipeline stage also generates addresses for the
+stack RAM (the stack cache). As every stack machine microcode
+instruction (except \code{nop}, \code{wait}, and \code{jbr}) has
+either \emph{pop} or \emph{push} characteristics, it is possible to
+generate fill or spill addresses for the \emph{following}
+instruction at this stage. The last pipeline stage performs ALU
+operations, load, store and stack spill or fill. At the execution
+stage, operations are performed with the two topmost elements of the
+stack.
 
 The stack architecture allows for a short pipeline, which results in
 short branch delays. Two branch delay slots are available after a
-conditional microcode branch.
+conditional microcode branch. A stack machine with two explicit
+registers for the two topmost stack elements and automatic
+fill/spill to the stack cache needs neither an extra write-back
+stage nor any data forwarding. See Section~\ref{sec:stack} for a
+detailed description.
 
-The method cache (\emph{Bytecode RAM}), microcode ROM, and stack RAM
-are implemented with single cycle access in the FPGA's internal
+The method cache (\emph{Bytecode Cache}), microcode ROM, and stack
+RAM are implemented with single cycle access in the FPGA's internal
 memories.
-
-%Through full pipelining each JOP instruction is executed in one
-%cycle.
-%Every JOP instruction takes one cycle. Conditional branches have an
-%additional delay of two cycles. These two branch delay slots can be
-%used for instructions or \emph{nop}.
 
 
 \subsection{Java Bytecode Fetch}
@@ -563,21 +579,23 @@ stack architecture are described in Section~\ref{sec:stack}.
 \subsection{Interrupt Logic}
 \label{sec:interrupt}
 
-Interrupts are considered hard to handle in a pipelined processor,
-meaning implementation tends to be complex (and therefore resource
-consuming). In JOP, the bytecode-microcode translation is used
-cleverly to avoid having to handle interrupts in the core pipeline.
+Interrupts and (precise) exceptions are considered hard to implement
+in a pipelined processor \cite{Hennessy02}, meaning implementation
+tends to be complex (and therefore resource consuming). In JOP, the
+bytecode-microcode translation is used cleverly to avoid having to
+handle interrupts and exceptions (e.g., stack overflow) in the core
+pipeline.
 
 Interrupts are implemented as special bytecodes. These bytecodes are
 inserted by the hardware in the Java instruction stream. When an
-interrupt is pending and the next fetched byte from the bytecode RAM
-is an instruction (as indicated by the \emph{nxt} bit in the
+interrupt is pending and the next fetched byte from the bytecode
+cache is an instruction (as indicated by the \emph{nxt} bit in the
 microcode), the associated special bytecode is used instead of the
-instruction from the bytecode RAM. The result is that interrupts are
-accepted at bytecode boundaries. The worst-case preemption delay is
-the execution time of the \emph{slowest} bytecode that is
-implemented in microcode. Bytecodes that are implemented in Java can
-be interrupted.
+instruction from the bytecode cache. The result is that interrupts
+are accepted at bytecode boundaries. The worst-case preemption delay
+is the execution time of the \emph{slowest} bytecode that is
+implemented in microcode. Bytecodes that are implemented in Java
+(see Section \ref{subsec:flex:bc}) can be interrupted.
 
 The implementation of interrupts at the bytecode-microcode mapping
 stage keeps interrupts transparent in the core pipeline and avoids
@@ -587,7 +605,13 @@ as standard bytecodes are implemented i.e.\ in microcode or Java.
 This special bytecode can result in a call of a JVM internal method
 in the context of the interrupted thread. This mechanism implicitly
 stores almost the complete context of the current active thread on
-the stack.
+the stack. This feature is used to implement the preemptive, fixed
+priority real-time scheduler in Java \cite{jop:javasched}.
+
+The main source for an interrupt is the $\mu$s accurate timer
+interrupt used by the real-time scheduler. Hardware generated
+exceptions, such as stack overflow or array bounds checks, generate
+a system interrupt. The exception reason can be found in a register.
 
 \subsection{Summary}
 

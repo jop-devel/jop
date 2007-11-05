@@ -1,4 +1,16 @@
-\subsection{Test Cases for JOP's GC}
+
+Several different test cases are used for a regression test of the
+processor, system code, the JVM, and the JDK implementation. Most
+test cases can be found in \dirent{target/src/test/jvm} and
+\dirent{target/src/test/jdk}. Package \code{testrt} contains exmples
+to test the real-time scheduler of JOP. The description covers only
+newer test cases. Additional test cases can be found in the
+according packages.
+
+\section{Garbage Collection}
+
+GC test cases can be found in package \code{gctest} and
+\code{gcinc}.
 
 \subsubsection{SimpGC1}
 
@@ -145,6 +157,9 @@ the Cyclone board and JOP version 01/08/07, the number was 9723.
 Note: To obtain a logfile, make japp > myLogfile.
 \end{description}
 
+\section{JVM Functions}
+
+The following sections list results from additional test cases:
 
 \subsubsection{Ifacmp}
 \begin{description}
@@ -312,7 +327,8 @@ Two switch expression are used to test switch related bytecodes.
 The test run Ok.
 \end{description}
 
-\subsubsection{JDK Test Cases}
+\section{JDK Test Cases}
+
 \begin{description}
     \item[Note on name convention]
 

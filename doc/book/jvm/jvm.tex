@@ -73,7 +73,9 @@ object in memory. The object reference points to the first instance
 variable of the object. At the offset $-1$, a pointer is located to
 access class information. To speed-up method invocation, it points
 directly to the method table of the objects class instead of the
-beginning of the class data.
+beginning of the class data. With the GC the object is accessed via
+one indirection, the handle (see Chapter~\ref{chap:rtgc}). The
+pointer to the method vector base if part of the handle.
 
 \begin{figure}
     \centering
@@ -87,6 +89,9 @@ beginning of the class data.
 \figurename~\ref{fig_jvm_array} shows the representation of an array
 in memory. The object reference points to the first element of the
 array. At the offset $-1$, the length of the array can be found.
+With the GC the array is accessed via one indirection, the handle
+(see Chapter~\ref{chap:rtgc}). The size fields is part of the
+handle.
 
 \begin{figure}
     \centering

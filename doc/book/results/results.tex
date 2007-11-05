@@ -25,15 +25,15 @@ respectively.
 
     \hline
          & Target  & Size & Speed & Java     & Min.  & Year \\
-         & technology &      & [MHz] & standard & CPI  & \\
+         & technology &      & (MHz) & standard & CPI  & \\
     \hline
-    JOP & Altera, Xilinx FPGA & 1830 LCs, 3KB RAM & 100 & J2ME CLDC & 1 & 2001 \\
+    JOP & Altera, Xilinx FPGA & 1830 LCs, 3 KB RAM & 100 & J2ME CLDC & 1 & 2001 \\
     \hline
     picoJava & No realization & 128K gates + memory &  & Full & 1 & 1999 \\
     \hline
     aJile & ASIC 0.25$\mu$ & 25K gates + ROM & 100 & J2ME CLDC &  &  2000 \\
     \hline
-    Moon & Altera FPGA & 3660 LCs, 4KB RAM &  &  &  &  2000 \\
+    Moon & Altera FPGA & 3660 LCs, 4 KB RAM &  &  &  &  2000 \\
     \hline
     Lightfoot & Xilinx FPGA & 3400 LCs & 40 &  &  &  2001 \\
     \hline
@@ -85,7 +85,7 @@ be programmed from the FPGA. This allows for upgrades of the Java
 program and even the processor core itself in the field. The board
 is slightly different from other FPGA prototyping boards, in that
 its connectors are on the bottom side. Therefore, it can be used as
-a module (60mm x 48mm), i.e.\ as part of a larger board that
+a module (60~mm x 48~mm), i.e.\ as part of a larger board that
 contains the periphery. The Cyclone board contains:
 %
 %\begin{samepage}
@@ -107,7 +107,7 @@ contains the periphery. The Cyclone board contains:
 The RAM consists of two independent 16-bit banks (with their own
 address and control lines). Both RAM chips are on the bottom side of
 the PCB, directly under the FPGA pins. As the traces are very short
-(under 10mm), it is possible to use the RAMs at full speed without
+(under 10~mm), it is possible to use the RAMs at full speed without
 reflection problems. The two banks can be combined to form 32-bit
 RAM or support two independent CPU cores. Pictures and the schematic
 of the board can be found in Appendix~\ref{appx:cycore}.
@@ -116,112 +116,128 @@ An expansion board hosts the CPU module and provides a complete Java
 processor system with Internet connection. A step down switching
 regulator with a large AC/DC input range supplies the core board.
 All input and output pins are EMC/ESD-protected and routed to large
-connectors (5.08mm Phoenix). Analog comparators can be used to build
-sigma-delta ADCs. For FPGA projects with a network connection, a
-CS8900 Ethernet controller with an RJ45 connector is included on the
-expansion board.
+connectors (5.08~mm Phoenix). Analog comparators can be used to
+build sigma-delta ADCs. For FPGA projects with a network connection,
+a CS8900 Ethernet controller with an RJ45 connector is included on
+the expansion board.
 
 \section{Resource Usage}
 
-Cost, alongside energy consumption, is an important issue for
-embedded systems. The cost of a chip is directly related to the die
-size (the cost per die is roughly proportional to the square of the
-die area \cite{Hennessy02}). Chips with fewer gates also consume
-less energy. Processors for embedded systems are therefore optimized
-for minimum chip size. In this section, we will compare JOP with
-different processors in terms of size.
+Cost is an important issue for embedded systems. The cost of a chip
+is directly related to the die size (the cost per die is roughly
+proportional to the square of the die area \cite{Hennessy02}).
+Processors for embedded systems are therefore optimized for minimum
+chip size. In this section, we will compare JOP with different
+processors in terms of size.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\excelwidth]{results/size}
+    \caption{Size in logic cells (LC) of different soft-core
+    processors}
+    \label{fig:size}
+\end{figure}
 
 One major design objective in the development of JOP was to create a
-small system that could be implemented in a low-cost FPGA.
-\tablename~\ref{tab_results_compare} shows the resource usage for
-different configurations of JOP and different soft-core processors
-implemented in an Altera EP1C6 FPGA \cite{AltCyc}. Estimating
-equivalent gate counts for designs in an FPGA is problematic. It is
-therefore better to compare the two basic structures, LC (logic
-cell) and memory.
+small system that can be implemented in a low-cost FPGA.
+Figure~\ref{fig:size} and \tablename~\ref{tab_results_compare} show
+the resource usage for different configurations of JOP and different
+soft-core processors implemented in an Altera EP1C6 FPGA
+\cite{AltCyc}. Estimating equivalent gate counts for designs in an
+FPGA is problematic. It is therefore better to compare the two basic
+structures, Logic Cells (LC) and embedded memory blocks. The maximum
+frequency for all soft-core processors is in the same technology or
+normalized (SPEAR) to the technology.
 
-\begin{table}
-    \centering
-    \begin{tabular}{lcD{.}{.}{1.2}D{.}{.}{1}}
-        \toprule
-        Processor & Resources & \multicolumn{1}{c}{Memory} & \multicolumn{1}{c}{fmax} \\
-                  &  [LC]    &  \multicolumn{1}{c}{[KB]} &  \multicolumn{1}{c}{[MHz]} \\
-        \midrule
-        JOP Minimal & 1,077 & 3.25 & 98 \\
-        JOP Basic & 1,452 & 3.25 & 98 \\
-        JOP Typical & 1,831 & 3.25 & 101 \\
-        Lightfoot\footnotemark  & 3,400 & 1 & 40 \\
-        NIOS A & 1,828 & 6.2 & 120 \\
-        NIOS B & 2,923 & 5.5 & 119 \\
-        SPEAR\footnotemark & 1,700 & 8 & 80 \\
-        \bottomrule
-    \end{tabular}
-    \caption{FPGA soft-core processors}
-    \label{tab_results_compare}
-\end{table}
-
-\addtocounter{footnote}{-1} \footnotetext[1]{The data for the
-Lightfoot processor is taken from the data sheet \cite{Lightfoot}.
-The frequency used is that in a Vertex-II device from Xilinx. JOP
-can be clocked at 100MHz in the Vertex-II device, making this
-comparison valid.}
-
-\stepcounter{footnote} \footnotetext[2]{As SPEAR uses internal
-memory blocks in asynchronous mode it is not possible to synthesize
-it without modification for the Cyclone FPGA. The clock frequency of
-SPEAR in an Altera Cyclone is an estimate based on following facts:
-SPEAR can be clocked at 40MHz in an APEX device and JOP can be
-clocked at 50MHz in the same device.}
-
-All configurations of JOP contain a memory interface to a 32-bit
-static RAM and an 8-bit FLASH for the Java program and configuration
-data. The minimum configuration implements multiplication and the
-shift operations in microcode. In the basic configuration, these
-operations are implemented as a sequential Booth multiplier and a
-single-cycle barrel shifter. The typical configuration contains a
-variable block instruction cache (1KB, 4 blocks -- see
-Section~\ref{sec:cache:var}) and some useful I/O devices such as an
-UART and a timer with interrupt logic for multi-threading. The
-typical configuration of JOP needs about 30\% of the LCs in a
+All configurations of JOP contain the on-chip microcode memory, the
+1~KB stack cache, a 1~KB method cache, a memory interface to a
+32-bit static RAM, and an 8-bit FLASH interface for the Java program
+and the FPGA configuration data. The minimum configuration
+implements multiplication and the shift operations in microcode. In
+the typical configuration, these operations are implemented as a
+sequential Booth multiplier and a single-cycle barrel shifter. The
+typical configuration also contains some useful I/O devices such as
+an UART and a timer with interrupt logic for multi-threading. The
+typical configuration of JOP consumes about 30\% of the LCs in a
 Cyclone EP1C6, thus leaving enough resources free for
 application-specific logic.
 
-Lightfoot \cite{Lightfoot} is a commercial Java processor, targeted
-at Xilinx FPGA architectures. We can see from
-Table~\ref{tab_results_compare} that this processor needs about
-twice the resources of JOP.
-
 As a reference, NIOS \cite{NIOS}, Altera's popular RISC soft-core,
-is also included in the list. NIOS has a 16-bit instruction set, a
-5-stage pipeline and can be configured with a 16 or 32-bit datapath.
-Version A is the minimum configuration of NIOS. Version B adds an
-external memory interface, multiplication support and a timer.
-Version A is comparable with the minimal configuration of JOP, and
-Version B with its typical configuration.
+is also included in \tablename~\ref{tab_results_compare}. NIOS has a
+16-bit instruction set, a 5-stage pipeline and can be configured
+with a 16 or 32-bit datapath. Version A is the minimum configuration
+of NIOS. Version B adds an external memory interface, multiplication
+support and a timer. Version A is comparable with the minimal
+configuration of JOP, and Version B with its typical configuration.
+
+LEON3 \cite{LEON}, the open-source implementation of the SPARC V8
+architecture, has been ported to the exact same hardware that was
+used for the JOP numbers. LEON3 is a representative of a RISC
+processor that is used in embedded real-time systems (e.g., by ESA
+for space missions).
+
+\begin{table}
+    \centering
+    \begin{tabular}{lD{.}{.}{1}D{.}{.}{1.2}D{.}{.}{1}}
+        \toprule
+        Processor & Resources & \multicolumn{1}{c}{Memory} & \multicolumn{1}{c}{fmax} \\
+                  &  (LC)    &  \multicolumn{1}{c}{(KB)} &  \multicolumn{1}{c}{(MHz)} \\
+        \midrule
+
+        JOP Minimal & 1077 & 3.25 & 98 \\
+        JOP Typical & 2049 & 3.25 & 100 \\
+        Lightfoot\footnotemark \cite{Lightfoot} & 3400 & 4 & 40 \\
+        picoJava-II \cite{pjfpga} & 27543 & 47.6 & 43 \\
+        NIOS A \cite{NIOS} & 1828 & 6.2 & 120 \\
+        NIOS B \cite{NIOS} & 2923 & 5.5 & 119 \\
+        LEON3 \cite{LEON} & 7978 & 10.9 & 35 \\
+        SPEAR\footnotemark \cite{Delvai:ECRTS2003} & 1700 & 8 & 80 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Size and maximum frequency of FPGA soft-core processors}
+    \label{tab_results_compare}
+\end{table}
+
+\addtocounter{footnote}{-1} \footnotetext{The data for the Lightfoot
+processor is taken from the data sheet \cite{Lightfoot}. The
+frequency used is that in a Virtex-II device from Xilinx. JOP can be
+clocked at 100~MHz in the Virtex-II device, making this comparison
+valid.}
+
+\stepcounter{footnote} \footnotetext{As SPEAR uses internal memory
+blocks in asynchronous mode it is not possible to synthesize it
+without modification for the Cyclone FPGA. The clock frequency of
+SPEAR in an Altera Cyclone is an estimate based on following facts:
+SPEAR can be clocked at 40~MHz in an APEX device and JOP can be
+clocked at 50~MHz in the same device.}
 
 SPEAR \cite{Delvai:ECRTS2003} (Scalable Processor for Embedded
 Applications in Real-time Environments) is a 16-bit processor with
 deterministic execution times. SPEAR contains predicated
-instructions to support single-path programming. SPEAR is included
-in the list as it is also a processor designed for real-time
-systems.
+instructions to support single-path programming
+\cite{Puschner:WORDS2005}. SPEAR is included in the list as it is
+also a processor designed for real-time systems.
 
 To prove that the VHDL code for JOP is as portable as possible, JOP
-was also implemented in a Xilinx Spartan-3 FPGA. Only the
-instantiation and initialization code for the on-chip memories is
-vendor-specific, whilst the rest of the VHDL code can be shared for
-the different targets. JOP consumes about the same LC count (1844
-LCs) in the Spartan device, but has a slower clock frequency
-(83MHz).
+was also implemented in a Xilinx Spartan-3 FPGA \cite{Spartan3}.
+Only the instantiation and initialization code for the on-chip
+memories is vendor-specific, whilst the rest of the VHDL code can be
+shared for the different targets. JOP consumes about the same LC
+count (1844~LCs) in the Spartan device, but has a slower clock
+frequency (83~MHz).
 
 From this comparison we can see that we have achieved our objective
-of designing a small processor. The Java processor, Lightfoot, is
-2.3 times larger (and 2.5 times slower) than JOP in the basic
-configuration. A typical 32-bit RISC processor consumes about 1.6 to
-1.8 times the resources of JOP. However, the RISC processor can be
-clocked 20\% faster than JOP in the same technology. The only
-processor that is similar in size is SPEAR. However, while SPEAR is
-a 16-bit processor, JOP contains a 32-bit datapath.
+of designing a small processor. The commercial Java processor,
+Lightfoot, consumes 1.7 times the logic resources of JOP in the
+typical configuration (with a lower clock frequency). A typical
+32-bit RISC processor (NIOS) consumes about 1.5 times (LEON about
+four times) the resources of JOP. However, the NIOS processor can be
+clocked 20\% faster than JOP in the same technology. The vendor
+independent and open-source RISC processor LEON can be clocked only
+with 35\% of JOP's frequency. The only processor that is similar in
+size is SPEAR. However, while SPEAR is a 16-bit processor, JOP
+contains a 32-bit datapath.
+
 
 %\begin{table}
 %    \centering
@@ -255,6 +271,7 @@ a 16-bit processor, JOP contains a 32-bit datapath.
 %    picoJava: ROM/RAM - 1Bit = 1 gate
 %
 %    JOP: 1831 LCs, 3.25KB: 1831*6 + 26624*1.5 = 11K + 39k
+%    JOP: 2050*6 + 3.5*1024*8*1.5 = 12K + 43K
 %    Pentium MMX: 4.5 Mio. Transistors -> 1100K
 
 Table~\ref{tab:results:gate:count} provides gate count estimates for
@@ -266,7 +283,7 @@ Chapter~\ref{chap:related} and from the resource estimates in
 Section~\ref{sec:stack}.} varies between 5.5 and 7.4 -- we chose a
 factor of 6 gates per LC and 1.5 gates per memory bit for the
 estimated gate count for JOP in the table. JOP is listed in the
-typical configuration that consumes 1831 LCs. The Pentium MMX
+typical configuration that consumes 2050 LCs. The Pentium MMX
 contains 4.5M transistors \cite{pentium:mmx} that are equivalent to
 1125K gates.
 
@@ -277,7 +294,7 @@ contains 4.5M transistors \cite{pentium:mmx} that are equivalent to
         Processor & \multicolumn{1}{c}{Core} & \multicolumn{1}{c}{Memory} & \multicolumn{1}{c}{Sum.} \\
         & \multicolumn{1}{c}{[gate]} & \multicolumn{1}{c}{[gate]} & \multicolumn{1}{c}{[gate]}\\
         \midrule
-        JOP & 11K & 39K & 50K\\
+        JOP & 12K & 43K & 55K\\
         picoJava & 128K & 314K & 442K\\
         aJile & 25K & 912K & 937K\\
         Pentium MMX & & & 1125K\\
@@ -302,9 +319,13 @@ a low WCET for all operations, its general performance is still
 important. In the first section, we will evaluate JOP's average
 performance.
 
-In the section that follows it, the implementation of the simple
-real-time profile, as described in Section~\ref{sec:rtprof}, on JOP
-is compared to the RI of the RTSJ on top of Linux.
+%In the section that follows it, the implementation of the simple
+%real-time profile, as described in Section~\ref{sec:rtprof}, on JOP
+%is compared to the RI of the RTSJ on top of Linux.
+
+The comparison the implementation of the simple real-time profile,
+as described in Section~\ref{sec:rtprof}, on JOP with the RI of the
+RTSJ on top of Linux can be found in \cite{jop:rtjava}.
 
 \subsection{General Performance}
 
@@ -312,27 +333,32 @@ Running benchmarks is problematic, both generally and especially in
 the case of embedded systems. The best benchmark would be the
 application that is intended to run on the system being tested. To
 get comparable results SPEC provides benchmarks for various systems.
-However, the one for Java, the SPECjvm98 \cite{SPECJvm98}, is
-usually too large for embedded systems.
+However, the one for Java, the SPECjvm98 \cite{SPECJvm98}, needs
+more functionality than what is usually available in a CLDC
+compliant device (e.g., a filesystem and \code{java.net}). Some
+benchmarks from the SPECjvm98 suits also need several MB of heap.
 
 Due to the absence of a \emph{standard} Java benchmark for embedded
-systems, a small benchmark suit that should run on even the smallest
-device is provided here. It contains several micro-benchmarks for
-evaluating CPI for single bytecodes or short sequences of bytecodes,
-a synthetic benchmark (the Sieve of Eratosthenes) and two
+systems, a small benchmark suite that should run on even the
+smallest device is provided here. It contains several
+micro-benchmarks for evaluating the number of clock cycles for
+single bytecodes or short sequences of bytecodes, and two
 application benchmarks.
 
 To provide a realistic workload for embedded systems, a real-time
 application was adapted to create the first application benchmark
 (Kfl). The application is taken from one of the nodes of a
-distributed motor control system \cite{jop:wises03} (see
-Section~\ref{sec:app:kfl}). A simulation of both the environment
-(sensors and actors) and the communication system (commands from the
-master station) forms part of the benchmark, so as to simulate the
+distributed motor control system \cite{jop:wises03} (the first
+industrial application of JOP). The application is written as a
+cyclic executive. A simulation of both the environment (sensors and
+actors) and the communication system (commands from the master
+station) forms part of the benchmark, so as to simulate the
 real-world workload. The second application benchmark is an
-adaptation of a tiny TCP/IP stack (Ejip) for embedded Java. This
-benchmark contains two UDP server/clients, exchanging messages via a
-loopback device.
+adaptation of a tiny TCP/IP stack for embedded Java. This benchmark
+contains two UDP server/clients, exchanging messages via a loopback
+device. The Kfl benchmark consists of 511 methods and 14~KB code,
+the UDP/IP benchmark of 508 methods and 13~KB code (including the
+supporting library).
 
 As we will see, there is a great variation in processing power
 across different embedded systems. To cater for this variation, all
@@ -344,31 +370,57 @@ The loop count adapts itself until the benchmark runs for more than
 a second. The number of iterations per second is then calculated,
 which means that higher values indicate better performance.
 
-The benchmark framework only needs two system functions: one to
-measure time in millisecond resolution and one to print the results.
-These functions are encapsulated in \code{LowLevel.java} and can be
-adapted to environments, in which the full Java library is not
-available. For example, the leJOS system has very limited output
-capabilities and there is therefore a special \code{LowLevel.java}
-for this device. The following list gives a brief description of the
-Java systems that were benchmarked:
+%Teilweise Wiederholung
+
+All the benchmarks measure how often a function is executed per
+second. In the Kfl benchmark, this function contains the main loop
+of the application that is executed in a periodic cycle in the
+original application. In the benchmark the wait for the next period
+is omitted, so that the time measured solely represents execution
+time. The UDP benchmark contains the generation of a request,
+transmitting it through the UDP/IP stack, generating the answer and
+transmitting it back as a benchmark function. The iteration count is
+the number of received answers per second.
+
+The accuracy of the measurement depends on the resolution of the
+system time. For the measurements under Linux, the system time has a
+resolution of 10ms, resulting in an inaccuracy of 1\%. The accuracy
+of the system time on leJOS, TINI and the aJile is not known, but is
+considered to be in the same range. For JOP, a $\mu$s counter is
+used for time measurement.
+
+
+The following list gives a brief description of the Java systems
+that were benchmarked:
 
 \begin{description}
     \item[JOP]
-is implemented in a Cyclone FPGA, running at 100MHz. The main memory
-is a 32-bit static RAM (15ns) with an access time of 3 clock cycles.
+is implemented in a Cyclone FPGA \cite{AltCyc}, running at 100~MHz.
+The main memory is a 32-bit SRAM (15ns) with an access time of 2
+clock cycles. The benchmarked configuration of JOP contains a 4~KB
+method cache organized in 16 blocks.
 
     \item[leJOS]
 As an example for a low-end embedded device we use the RCX robot
 controller from the LEGO MindStorms series. It contains a 16-bit
-Hitachi H8300 microcontroller \cite{hitachi:h8}, running at 16MHz.
+Hitachi H8300 microcontroller \cite{hitachi:h8}, running at 16~MHz.
 leJOS \cite{lejos} is a tiny interpreting JVM for the RCX.
+
+    \item[KVM]
+is a port of the Sun's KVM that is part of the Connected Limited
+Device Configuration (CLDC) \cite{J2ME} to Alteras NIOS II processor
+on MicroC Linux. NIOS is implemented on a Cyclone FPGA and clocked
+with 50~MHz. Besides the different clock frequency this is a good
+comparison of an interpreting JVM running in the same FPGA as JOP.
 
     \item[TINI]
 is an enhanced 8051 clone running a software JVM. The results were
-taken from a custom board with a 20MHz crystal, and the chip's PLL
-is set to a factor of 2. The TINIOS firmware revision running on the
-board is 1.12p9.
+taken from a custom board with a 20~MHz crystal, and the chip's PLL
+is set to a factor of 2.
+
+    \item[Cjip]
+The measured system \cite{SNAP} is a replacement of the TINI board
+and contains a Cjip \cite{Cjip} clocked with 80~MHz and 8~MB DRAM.
 
     \item[Komodo]
 Komodo \cite{komodo2003} is a Java processor as a basis for research
@@ -379,33 +431,24 @@ simulation of Komodo. The values are obtained without garbage
 collection. According to Pfeffer, Komodo can be clocked with 33MHz
 in a Xlinix XCV800.
 
-    \item[JStamp]
+    \item[aJile]
 aJile's JEMCore is a direct-execution Java processor that is
-available in two different versions: the aJ-80 and the aJ-100
-\cite{aJile}. The aJ-100 provides a generic 8-bit, 16-bit or 32-bit
-external bus interface, while the aJ-80 only provides an 8-bit
-interface. A development system, the JStamp \cite{JStamp}, was used
-for this benchmark. It contains the aJ-80, clocked at 74MHz.
+available in two different versions: the \textbf{aJ80} and the
+\textbf{aJ100} \cite{aJile}. The aJ100 provides a generic 8-bit,
+16-bit or 32-bit external bus interface, while the aJ80 only
+provides an 8-bit interface.
 
-    \item[SaJe] is a board that contains the aJ-100 clocked with
-    100MHz and 10ns SRAM.
 
     \item[EJC]
-The EJC (Embedded Java Controller) platform \cite{EJC} is a typical
+The Embedded Java Controller (EJC) platform \cite{EJC} is a typical
 example of a JIT system on a RISC processor. The system is based on
-a 32-bit ARM720T processor running at 74MHz. It contains up to 64 MB
-SDRAM and up to 16 MB of NOR flash.
-
-    \item[SUN jvm]
-is the Sun JVM 1.4.1, running on a 266MHz Pentium MMX under Linux.
+a 32-bit ARM720T processor running at 74~MHz. It contains up to
+64~MB SDRAM and up to 16~MB of NOR flash.
 
     \item[gcj]
 is the GNU compiler for Java. This configuration represents the
-batch compiler solution, running on a 266MHz Pentium.
-
-    \item[Xint]
-As a reference the benchmark is also run with the Sun JVM in
-interpreting mode (with option -Xint).
+batch compiler solution, running on a 266~MHz Pentium MMX under
+Linux.
 
     \item[MB]
 is the realization of Java on a RISC processor for an FPGA (Xilinx
@@ -414,64 +457,12 @@ compiler for real-time systems \cite{Java2C} and the C program is
 compiled with the standard GNU toolchain.
 
 \end{description}
-%
-In Figure~\ref{fig:results:app:bench}, the geometric mean of the two
-application benchmarks is shown. The unit used for the result is
-iterations per second. Note that the vertical axis is logarithmic,
-in order to obtain useful figures to show the great variation in
-performance. The top diagram shows absolute performance, while the
-bottom diagram shows the same results scaled to a 1MHz clock
-frequency. The results of the application benchmarks and the
-geometric mean are shown in \tablename~\ref{tab:results:bench:app}.
-The raw data for all benchmarks can be found in
-Appendix~\ref{appx:bench}.
-% at \tablename~\ref{tab:appendix:bench:all1} and
-% \ref{tab:appendix:bench:all2}.
 
-It should be noted that scaling to a single clock frequency could
-prove problematic. The relation between processor clock frequency
-and memory access time cannot always be maintained. To give an
-example, if we were to increase the results of the 100MHz JOP to
-1GHz, this would also involve reducing the memory access time from
-15ns to 1.5ns. Processors with 1GHz clock frequency are already
-available, but the fastest asynchronous SRAM to date has an access
-time of 10ns.
-
-To compare the performance relatively to the size of the different
-systems, Figure~\ref{fig:results:app:bench:double:scaled} shows the
-performance of JOP, the aJ100 and the two PC versions relative to
-the gate count (from Table~\ref{tab:results:gate:count}) and clock
-frequency. Relative to size and clock frequency, JOP outperforms the
-aJile processor by a factor of 19 and even the JIT-compiler on the
-Pentium MMX by a factor of 4.
-
-
-All the benchmarks measure how often a function is executed per
-second. Therefore, execution time is only measured indirectly -- a
-higher value means shorter execution time. In the Kfl benchmark,
-this function contains the main loop of the application (see
-Listing~\ref{lst:results:main}) that is executed in a periodic cycle
-in the original application. In the benchmark the wait for the next
-period is omitted, so that the time measured solely represents
-execution time. The UDP benchmark contains the generation of a
-request, transmitting it through the UDP/IP stack, generating the
-answer and transmitting it back as a benchmark function. The
-iteration count is the number of received answers per second.
-
-In the application benchmarks, the main function is executed in a
-loop until one second (or a longer period of time) has elapsed. For
-the application benchmark, there is no `overhead' loop. This feature
-is only used in the micro-benchmarks. As the benchmark is
-self-adjusting, the measured time can also be longer than one
-second. The result is the iteration count, scaled to one second.
-
-The accuracy of the measurement depends on the resolution of the
-system time. For the measurements under Linux, the system time has a
-resolution of 10ms, resulting in an inaccuracy of 1\%. The accuracy
-of the system time on leJOS, TINI and the aJile is not known, but is
-considered to be in the same range. For JOP, a $\mu$s counter is
-used for time measurement.
-
+It would be interesting to include the other soft-core Java
+processors (Moon, Lightfoot, and FemtoJava) in this comparison.
+However, it was not possible to obtain the benchmark data. The
+company that produced Moon seems to be disappeared and FemtoJava
+could not run all benchmarks.
 
 
 \begin{figure}
@@ -485,36 +476,70 @@ used for time measurement.
     of the two benchmarks in iterations per second -- a higher
     value means higher performance. The top diagram shows
     absolute performance, while the bottom diagram shows the result
-    scaled to 1MHz clock frequency.
+    scaled to 1~MHz clock frequency.
     }
     \label{fig:results:app:bench}
 \end{figure}
 
 
+In Figure~\ref{fig:results:app:bench}, the geometric mean of the two
+application benchmarks is shown. The unit used for the result is
+iterations per second. Note that the vertical axis is logarithmic,
+in order to obtain useful figures to show the great variation in
+performance. The top diagram shows absolute performance, while the
+bottom diagram shows the same results scaled to a 1~MHz clock
+frequency. The results of the application benchmarks and the
+geometric mean are shown in \tablename~\ref{tab:results:bench:app}.
+
+
+It should be noted that scaling to a single clock frequency could
+prove problematic. The relation between processor clock frequency
+and memory access time cannot always be maintained. To give an
+example, if we were to increase the results of the 100~MHz JOP to
+1~GHz, this would also involve reducing the memory access time from
+15~ns to 1.5~ns. Processors with 1~GHz clock frequency are already
+available, but the fastest asynchronous SRAM to date has an access
+time of 10~ns.
+
+%To compare the performance relatively to the size of the different
+%systems, Figure~\ref{fig:results:app:bench:double:scaled} shows the
+%performance of JOP, the aJ100 and the gcj PC versions relative to
+%the gate count (from Table~\ref{tab:results:gate:count}) and clock
+%frequency. Relative to size and clock frequency, JOP outperforms the
+%aJile processor by a factor of 20 and even the gcj-compiler on the
+%Pentium MMX by a factor of 8.
+
+
+
+
+
 \begin{table}
     \centering
-    \begin{tabular}{lD{.}{.}{2}rrD{.}{.}{2}D{.}{.}{2}}
+    \begin{tabular*}{\columnwidth}{@{\extracolsep{\fill}}lD{.}{.}{2}rrD{.}{.}{2}D{.}{.}{2}}
+%    \begin{tabular}{lrrrrrr}
         \toprule
 
  & \multicolumn{1}{c}{Frequency} & \multicolumn{1}{c}{Kfl} & \multicolumn{1}{c}{UDP/IP}
-    & \multicolumn{1}{c}{Geom. Mean} & \multicolumn{1}{c}{Per MHz}\\
- &  \multicolumn{1}{c}{[MHz]} &  \multicolumn{4}{c}{[Iterations/s]}\\
+    & \multicolumn{1}{c}{Geom. Mean} & \multicolumn{1}{c}{Scaled}\\
+ &  \multicolumn{1}{c}{(MHz)} &  \multicolumn{4}{c}{(Iterations/s)}\\
         \midrule
-JOP & 100 & 14,222 & 6,050 & 9,276 & 93\\
-leJOS & 16 & 25 & 13 & 18 & 1\\
-TINI & 40 & 64 & 29 & 43 & 1\\
+JOP & 100 & 17111 & 6781 & 10772 & 108\\
+leJOS & 16 & 25 & 13 & 18 & 1.1\\
+TINI & 40 & 64 & 29 & 43 & 1.1\\
+KVM & 50 & 36 & 16 & 24 & 0.5\\
+Cjip & 80 & 176 & 91 & 127 & 1.6\\
 Komodo & 33 & 924 & 520 & 693 & 21\\
-JStamp & 74 & 2,221 & 1,004 & 1,493 & 20\\
-SaJe & 103 & 14,148 & 6,415 & 9,527 & 92\\
-EJC & 74 & 9,893 & 2,822 & 5,284 & 71\\
-Sun jvm & 266 & 212,952 & 91,851 & 139,857 & 526\\
-gcj & 266 & 139,884 & 38,460 & 73,348 & 276\\
-Xint & 266 & 17,310 & 8,747 & 12,305 & 46\\
-MB 2KB/0KB & 100 & 3,792 &  &  & \\
+aJ80 & 74 & 2221 & 1004 & 1493 & 20\\
+aJ100 & 103 & 14148 & 6415 & 9527 & 92\\
+EJC & 74 & 9893 & 2822 & 5284 & 71\\
+%Sun jvm & 266 & 212,952 & 91,851 & 139,857 & 526\\
+gcj & 266 & 139884 & 38460 & 73348 & 276\\
+%Xint & 266 & 17,310 & 8,747 & 12,305 & 46\\
+MB & 100 & 3792 &  &  & \\
 % MB 8KB/8KB & 100 & 25,090 &  &  & \\
         \bottomrule
 
-    \end{tabular}
+    \end{tabular*}
     \caption{Application benchmarks on different Java systems.
     The table shows the benchmark results in
     iterations per second -- a higher
@@ -523,103 +548,103 @@ MB 2KB/0KB & 100 & 3,792 &  &  & \\
     \label{tab:results:bench:app}
 \end{table}
 
-\begin{figure}
-    \centering
-    \includegraphics[width=\excelwidth]{results/results_app_bench_double_scaled}
-    \caption{Performance comparison of different Java systems with
-    application benchmarks. The diagram shows the result scaled to
-    the chip size (Kgates) and clock frequency (MHz).
-    }
-    \label{fig:results:app:bench:double:scaled}
-\end{figure}
+% not
+%\begin{figure}
+%    \centering
+%    \includegraphics[width=\excelwidth]{results_app_bench_double_scaled}
+%    \caption{Performance comparison of different Java systems with
+%    application benchmarks. The diagram shows the result scaled to
+%    the chip size (Kgates) and clock frequency (MHz).
+%    }
+%    \label{fig:results:app:bench:double:scaled}
+%\end{figure}
 
 
-\subsubsection{Discussion}
+\subsection{Discussion}
+\label{sec:perf:disc}
 
-When comparing JOP and the aJile processor against leJOS and TINI,
-we can see that a Java processor is up to 500 times faster than an
-interpreting JVM on a standard processor for an embedded system. The
-average performance of JOP is a little bit better than a
+When comparing JOP and the aJile processor against leJOS, KVM, and
+TINI, we can see that a Java processor is up to 500 times faster
+than an interpreting JVM on a standard processor for an embedded
+system. The average performance of JOP is even better than a
 JIT-compiler solution on an embedded system, as represented by the
 EJC system.
 
-Even when scaled to the same clock frequency, each compiling JVM on
-a PC (Sun jvm and gcj) is much faster than either embedded solution.
-However, as we saw in Section~\ref{sec:cache}, the kernel of the
-application is smaller than 4KB. It therefore fits in the level one
-cache of the Pentium MMX (16KB + 16KB level one cache). For a
-comparison with a Pentium class processor we would need a larger
-application.
+Even when scaled to the same clock frequency, the compiling JVM on a
+PC (gcj) is much faster than either embedded solution. However, the
+kernel of the application is smaller than 4~KB
+\cite{jop:jtres_cache}. It therefore fits in the level one cache of
+the Pentium MMX. For a comparison with a Pentium class processor we
+would need a larger application.
 
-JOP is about 6 times faster than the aJ80 Java processor on the
+JOP is about 7 times faster than the aJ80 Java processor on the
 popular JStamp board. However, the aJ80 processor only contains an
 8-bit memory interface, and suffers from this bottleneck. The SaJe
-system contains the aJ100 with 32-bit, 10ns SRAMs and is as fast as
-JOP with its 15ns SRAMs.
+system contains the aJ100 with 32-bit, 10~ns SRAMs. JOP with its
+15~ns SRAMs is about 12\% faster than the aJ100 processor.
 
 The MicroBlaze system is a representation of a Java
 batch-compilation system for a RISC processor. MicroBlaze is
-configured with the same cache\footnote{The MicroBlaze with a 8KB
-data and 8KB instruction cache is about 2.5 times faster than JOP.
-However, a 16KB memory is not available in low-cost FPGAs and is an
-unbalanced system with respect to the LC/memory relation.
-Furthermore, the benchmark fits into a 4KB cache and the resulting
-measurement does not include main memory access.} as JOP and clocked
-at the same frequency. JOP is about three times faster than this
-solution, thus showing that native execution of Java bytecodes is
-faster than batch-compiled Java on a similar system. However, the
-results of the MicroBlaze solution are at a preliminary
+configured with the same cache\footnote{The MicroBlaze with a 8~KB
+data and 8~KB instruction cache is about 1.5 times faster than JOP.
+However, a 16~KB memory is not available in low-cost FPGAs and is an
+unbalanced system with respect to the LC/memory relation.} as JOP
+and clocked at the same frequency. JOP is about four times faster
+than this solution, thus showing that native execution of Java
+bytecodes is faster than batch-compiled Java on a similar system.
+However, the results of the MicroBlaze solution are at a preliminary
 stage\footnote{As not all language constructs can be compiled, only
-the Kfl benchmark was measured.}, as the Java2C compiler
-\cite{Java2C} is still under development.
+the Kfl benchmark was measured. Therefore, the bars for MicroBlaze
+are missing in \figurename~\ref{fig:results:app:bench}.}, as the
+Java2C compiler \cite{Java2C} is still under development.
 
 The micro-benchmarks are intended to give insight into the
 implementation of the JVM. In Table~\ref{tab:results:bench:clock},
 we can see the execution time in clock cycles of various bytecodes.
 As almost all bytecodes manipulate the stack, it is not possible to
-measure the execution time for a single bytecode. As a minimum
-requirement, a second instruction is necessary to reverse the stack
-operation.
+measure the execution time for a single bytecode in the benchmark
+loop. The single bytecode would trash the stack. As a minimum
+requirement, a second instruction is necessary in the loop to
+reverse the stack operation.
 
 \begin{table}
     \centering
-    \begin{tabular}{lrrrrrrr}
+    \begin{tabular*}{\columnwidth}{@{\extracolsep{\fill}}lrrrrrrrr}
         \toprule
 
- & JOP & leJOS & TINI & Komodo & JStamp & SaJe & Xint\\
+                      & JOP & leJOS & TINI  & Cjip & Komodo & aJ80 & aJ100 \\
         \midrule
-iload iadd  & 2 & 836 & 789 & 8 & 38 & 8 & 17\\
-iinc          & 11 & 422 & 388 & 4 & 41 & 11 & 2\\
-ldc           & 10 & 1,340 & 1,128 & 40 & 67 & 9 & 31\\
-if\_icmplt taken & 6 & 1,609 & 1,265 & 24 & 42 & 18 & 36\\
-if\_icmplt not taken & 6 & 1,520 & 1,211 & 24 & 40 & 14 & 37\\
-getfield & 25 & 1,879 & 2,398 & 48 & 142 & 23 & 39\\
-getstatic & 17 & 1,676 & 4,463 & 80 & 102 & 15 & 40\\
-iaload & 30 & 1,082 & 1,543 & 28 & 74 & 13 & 30\\
-invoke        & 128 & 4,759 & 6,495 & 384 & 349 & 112 & 182\\
-invoke static & 101 & 3,875 & 5,869 & 680 & 271 & 92 & 164\\
-invoke interface & 146 & 5,094 & 6,797 & 1617 & 531 & 148 & 193\\
+    iload iadd         & 2 & 836 & 789      & 55 & 8 & 38 & 8 \\
+    iinc               & 8 & 422 & 388      & 46 & 4 & 41 & 11 \\
+    ldc                & 9 & 1340 & 1128  & 670 & 40 & 67 & 9 \\
+    if\_icmplt taken   & 6 & 1609 & 1265  & 157 & 24 & 42 & 18 \\
+    if\_icmplt n/taken & 6 & 1520 & 1211  & 132 & 24 & 40 & 14 \\
+    getfield           & 22 & 1879 & 2398 & 320 & 48 & 142 & 23 \\
+    getstatic          & 15 & 1676 & 4463 & 3911 & 80 & 102 & 15 \\
+    iaload             & 36 & 1082 & 1543 & 139 & 28 & 74 & 13 \\
+    invoke             & 128 & 4759 & 6495& 5772 & 384 & 349 & 112 \\
+    invoke static      & 100 & 3875 & 5869& 5479 & 680 & 271 & 92 \\
+    invoke interface   & 144 & 5094 & 6797& 5908 & 1617 & 531 & 148 \\
 
         \bottomrule
-    \end{tabular}
+    \end{tabular*}
     \caption{Execution time in clock cycles for various JVM bytecodes}
     \label{tab:results:bench:clock}
 \end{table}
 
-For JOP we can deduce that the WCET for simple bytecodes (as given
-in Appendix~\ref{appx:bytecode}) is also the average execution time.
-We can see that the combination of \code{iload} and \code{iadd}
-executes in two cycles, which means that each of these two
-operations is executed in a single cycle. The \code{iinc} bytecode
-is one of the few instructions that do not manipulate the stack and
-can be measured alone. As \code{iinc} is not implemented in
-hardware, we have a total of 11 cycles that are executed in
-microcode. It is fair to assume that this comprises too great an
-overhead for an instruction that is found in every iterative loop
-with an integer index. However, the decision to implement this
-instruction in microcode was derived from the observation that the
-dynamic instruction count for \code{iinc} is only 2\% (see
-Section~\ref{sec:bench:jvm}).
+For JOP we can deduce that the WCET for simple bytecodes  is also
+the average execution time. We can see that the combination of
+\code{iload} and \code{iadd} executes in two cycles, which means
+that each of these two operations is executed in a single cycle. The
+\code{iinc} bytecode is one of the few instructions that do not
+manipulate the stack and can be measured alone. As \code{iinc} is
+not implemented in hardware, we have a total of 8 cycles that are
+executed in microcode. It is fair to assume that this comprises too
+great an overhead for an instruction that is found in every
+iterative loop with an integer index. However, the decision to
+implement this instruction in microcode was derived from the
+observation that the dynamic instruction count for \code{iinc} is
+only 2\% (see Section~\ref{sec:bench:jvm}).
 
 The sequence for the branch benchmark (\code{if\_icmplt}) contains
 the two load instructions that push the arguments onto the stack.
@@ -627,13 +652,25 @@ The arguments are then consumed by the branch instruction. This
 benchmark verifies that a branch requires a constant four cycles on
 JOP, whether it is taken or not.
 
+The Cjip implements the JVM with a stack oriented instruction set.
+It is the only example (except JOP) where the instruction set is
+documented \emph{including} the execution time \cite{CjipRef}. We
+will therefore check some of the results with the numbers provided
+in the documentation. The execution time is given in ns, assuming a
+66~MHz clock. The execution time for the basic integer add operation
+is given as 180~ns resulting in 12 cycles. The load of a local
+variable (when it is one of the first four) takes 35 cycles. In the
+micro-benchmark we measure 55 cycles instead of the theoretical 47
+(\code{iadd} + \code{iload\_n}). We assume that we have to add some
+cycles for the fetch of the bytecodes from memory.
+
 For compiling versions of the JVM, these micro-benchmarks do not
 produce useful results. The compiler performs optimizations that
 make it impossible to measure execution times at this fine a
 granularity.
 
 During the evaluation of the aJile system, unexpected behavior was
-observed. The aJ80 on the JStamp board is clocked at 7.3728MHz and
+observed. The aJ80 on the JStamp board is clocked at 7.3728~MHz and
 the internal frequency can be set with a PLL. The aJ80 is rated for
 80MHz and the maximum PLL factor that can be used is therefore ten.
 Running the benchmarks with different PLL settings gave some strange
@@ -647,8 +684,8 @@ faster with a PLL factor of 1 and 2.4\% faster with a factor of ten
 -- a property we would not expect on a processor that is marketed
 for real-time systems.
 
-The SaJe board is also clocked with 7.3728MHz and the PLL factor is
-set to 14. This gives a 103.2192MHz internal clock frequency.
+The SaJe board is also clocked with 7.3728~MHz and the PLL factor is
+set to 14. This gives a 103.2192~MHz internal clock frequency.
 However, it is not known how accurate the internal time is in this
 setting. The results for the SaJe board can also suffer from the
 problem described above.
@@ -656,7 +693,10 @@ problem described above.
 % aJ80 at 7.3728MHz: internal 11' are external 8'57'' ... 1.23 times too fast
 % aJ80 at 73.728MHz: internal 21' are external 20'30'' ... 1.024 times too fast
 
-\subsubsection{Execution Time Jitter}
+
+
+
+\subsection{Execution Time Jitter}
 
 For real-time systems, the worst-case of the execution time is of
 primary importance. We have measured the execution times of several
@@ -716,523 +756,323 @@ WCET analysis tool is available, it can give some insight into the
 WCET behavior of different systems.
 
 
-\subsection{Real-Time Performance}
-\label{subsec:rt:perf}
-
-In this section, the implementation of the simple real-time profile
-(from Section~\ref{sec:rtprof}) with JOP is compared with the
-Reference Implementation (RI) of the RTSJ (see
-Section~~\ref{sec:rtsj}) on top of Linux. We use the Linux platform
-for the comparison, as it is the only platform for which the RTSJ is
-available. The RI is an interpreting implementation of the JVM that
-is, however, not optimized for performance. A commercial version of
-the RTSJ, JTime by TimeSys, should perform better. However, it was
-not possible to get a license of JTime for research purposes. JOP is
-implemented in Altera's low-cost Cyclone EP1C6 FPGA, and clocked
-with 100MHz. The test results for the RI were obtained on an Intel
-Pentium MMX 266MHz, running Linux with two different kernels: a
-generic kernel version 2.4.20 and the real-time kernel from TimeSys
-\cite{TimeSysLinux}, as recommended for the RI. For each test, 500
-measurements were taken. Time was measured using a hardware counter
-in JOP and the time stamp counter of the Pentium processor under
-Linux.
-
-\subsubsection{Periodic Threads}
-
-
-Many activities in real-time systems must be performed periodically.
-Low release jitter is of major importance for tasks such as control
-loops. The test setting is similar to the periodic thread test in
-\cite{828497}. A single real-time thread only calls
-\code{waitForNextPeriod()} in a loop and records the time between
-subsequent calls. A second idle thread, with a lower priority,
-merely consumes processing time. This test setting results in two
-context switches per period.
-\tablename~\ref{tab_results_periodic_jop} shows the average,
-standard deviation and extreme values for different period times on
-JOP. The same values are shown in
-\tablename~\ref{tab_results_periodic_ri} for the RI. Please note
-that the values are in $\mu$s for JOP and in ms for the RI.
-
-\begin{table}
-    \centering
-    \begin{tabular}{rrd{2.0}rr}
-        \toprule
-        \cc{Period} & \cc{Avg.} & \cc{Std. Dev.} &  \cc{Min.} &   \cc{Max.} \\
-        \cc{[$\mu$s]} & \cc{[$\mu$s]} & \cc{[$\mu$s]} & \cc{[$\mu$s]} & \cc{[$\mu$s]} \\
-        \midrule
-%        50   & 50  & 14 &  36  &  66\\ & pre cache version
-        50   & 50  & 13 &  35  &  63\\
-        70   & 70  &  0   & 70 & 70\\
-        100  & 100  & 0   & 100&  100\\
-        500  & 500  & 0   & 500 & 500\\
-        1,000 & 1,000&  0   &  1,000 &  1,000\\
-        \bottomrule
-    \end{tabular}
-    \caption{Jitter of periodic threads with JOP}
-    \label{tab_results_periodic_jop}
-\end{table}
-
-
-
-\begin{table}
-    \centering
-    \begin{tabular}{d{1}d{2}d{2.3}d{3}d{2}}
-        \toprule
-        \cc{Period} & \cc{Avg.} & \cc{Std. Dev.} &  \cc{Min.} &   \cc{Max.} \\
-        \cc{[ms]} & \cc{[ms]} & \cc{[ms]} & \cc{[ms]} & \cc{[ms]} \\
-        \midrule
-        5  & 4.0    & 7.92  &0.017  &   19.90 \\
-        10  & 6.6   & 9.34  &0.019  &   19.94 \\
-        20  & 20.0   & 0.015  &   19.87  &   20.14 \\
-        35  & 35.0   & 5.001  &   29.75  &   40.25 \\
-        50  & 50.0   & 0.018  &   49.95  &   50.06 \\
-        100  & 100.0   & 0.002  &   99.94  &   100.1 \\
-        \bottomrule
-    \end{tabular}
-    \caption{Jitter of periodic threads with RI/RTSJ}
-    \label{tab_results_periodic_ri}
-\end{table}
-
-
-Using microsecond accurate timer interrupts, programmed by the
-scheduler, results in excellent performance of periodic threads in
-JOP. No jitter from the scheduler can be seen with a single thread
-at periods longer than 70$\mu$s.
-
-The measurement for the RI excludes the first values measured. The
-first values are misleading as the RI behaves unpredictably at
-\emph{startup}. The RI performs inaccurately at periods below 20ms.
-This effect has also been observed in \cite{701668}. Larger periods
-that are multiples of 10ms have very low jitter. However, using a
-period such as 35ms shows a standard deviation of five ms. A
-detailed look into the collected samples only shows values of 30 and
-40ms. This implies a timer tick of 10ms in the underlying operating
-system. No significant difference is observed when running this test
-on the generic Linux kernel and the TimeSys kernel. The commercial
-version of the TimeSys Linux kernel should perform better as the
-resolution of the timer tick is 1ms and a programmable time can be
-used for periodic threads. However, it was not possible to obtain a
-license to evaluate the combination of JTime on the commercial Linux
-kernel. \tablename~\ref{tab_results_periodic_ri} represents the
-measurements on the generic kernel. This comparison shows the
-advantage of an adjustable timer interrupt over a fixed timer tick.
-
-\subsubsection{Context Switch}
-
-This test setting consists of two threads. A low priority thread
-continuously stores the current time in a shared variable. A high
-priority periodic thread measures the time difference between this
-value and the time immediately after \code{waitForNextPeriod()}.
-\tablename~\ref{tab_results_context} gives the times for the context
-switch in processor clock cycles.
-
-
-\begin{table}
-    \centering
-    \begin{tabular}{lrd{1}rr}
-        \toprule
-         & \cc{Avg.} & \cc{Std. Dev.} & \cc{Min.} & \cc{Max.} \\
-        \midrule
-%        JOP & 2,878 & 7.97 & 2,876 & 2,909 \\
-%        JOP & 2,878 & 8 & 2,876 & 2,909 \\ % pre cache version
-        JOP & 2,686 & 14 & 2,676 & 2,709 \\
-        RI Linux & 4,253 & 1,239 & 3,232 & 19,628 \\
-        RI TS Linux & 12,923 & 1,145 & 11,529 & 21,090 \\
-        \bottomrule
-    \end{tabular}
-    \caption{Time for a thread switch in clock cycles}
-    \label{tab_results_context}
-\end{table}
-
-
-
-This test did not produce the expected behavior from the RI on the
-generic Linux kernel. When the low priority thread ran in this tight
-loop, the high priority thread was not scheduled. After inserting a
-\code{Thread.yield()} and an operating system call, such as
-\code{System.out.print()}, in this loop, the test performed as
-expected. This indicates a major problem in either the RI or the
-operating system scheduler. This problem did not occur when the RI
-was run on the TimeSys Linux kernel. However, the context switch
-time on the TimeSys kernel is three times longer than on the
-standard kernel.
-
-\subsubsection{Asynchronous Event Handler}
-
-In this test setting, a high priority event handler is triggered by
-a low priority periodic thread. As \code{AsynchEventHandler}
-performs poorly in the RI (see \cite{701668}), a
-\code{BoundAsynchEventHandler} is used for the RI test program. The
-time elapsed between the invocation of \code{fire()} and the first
-statement of the event handler was measured.
-\tablename~\ref{tab_results_event} shows the elapsed times in clock
-cycles for JOP and the RTSJ RI.
-
-
-\begin{table}
-    \centering
-    \begin{tabular}{lrd{1}rr}
-        \toprule
-         & \cc{Avg.} & \cc{Std. Dev.} & \cc{Min.} & \cc{Max.} \\
-        \midrule
-%        JOP & 2,986 & 7.3 & 2,822 & 2,986 \\
-%        JOP & 2,986 & 7 & 2,822 & 2,986 \\ % pre cache version
-        JOP & 2,935 & 7 & 2,773 & 2,935 \\
-        RI Linux & 53,685 & 7,014 & 47,400 & 87,196 \\
-        RI TS Linux & 69,273 & 7,832 & 63,060 & 101,292 \\
-        \bottomrule
-    \end{tabular}
-    \caption{Dispatch latency of event handlers in clock cycles}
-    \label{tab_results_event}
-\end{table}
-
-
-The time taken to dispatch an asynchronous event is similar to the
-context switch time in JOP. This is to be expected as events are
-scheduled and dispatched as threads. The minimum value only occurred
-in the first event, all following events having been dispatched in
-the maximum time.
-
-In the RI, the dispatch time is about 12 times larger than a context
-switch with a significant variation in time. This indicates that the
-implementation of \code{fire()} and the communication of the event
-to the underlying operating system are not optimal. The time factor
-between context switch and event handling on the TimeSys kernel is
-lower than on the standard kernel, but is nevertheless still
-significant.
-
-\subsubsection{Summary}
-
-In this section, we have compared the RTSJ on top of Linux with the
-implementation of a simple real-time profile on top of JOP. The RTSJ
-addresses several issues relating to the use of Java for real-time
-systems. However, the RTSJ is a specification too large and complex
-to be implemented in small embedded systems. We therefore use the
-simpler real-time profile for JOP. Tight integration of the
-real-time scheduler with the supporting processor results in an
-efficient platform for Java in embedded real-time systems. A
-performance comparison between this implementation and the RTSJ
-showed that a dedicated Java processor without an underlying
-operating system is more predictable than trying to adopt a general
-purpose OS for real-time systems. Time will show if an
-implementation of the RTSJ on a \emph{real} RTOS will outperform the
-presented solution.
-
-\section{WCET}
-\label{sec:wcet}
-
-Worst-case execution time (WCET) estimates of tasks are essential
-for designing and verifying real-time systems. WCET estimates can be
-obtained either by measurement or static analysis. The problem with
-using measurements is that the execution times of tasks tend to be
-sensitive to their inputs. As a rule, measurement does not guarantee
-safe WCET estimates. Instead, static analysis is necessary for hard
-real-time systems. Static analysis is usually divided into a number
-of different phases:
+%%%%%%%%%%% JSA version is in it's own Chapter %%%%%%%
 %
-\begin{description}
-    \item[Path analysis] generates the control flow graph (a directed
-    graph of basic blocks) of the program and annotates (manual or
-    automatic) loops with bounds.
-    \item[Low-level analysis] determines the execution time of basic
-    blocks obtained by the path analysis. A model of the processor
-    and the pipeline provides the execution time for the instruction
-    sequence.
-    \item[Global low-level analysis] determines the influence of
-    hardware features such as caches on program execution time. This
-    analysis can use information from the path analysis to provide less
-    pessimistic values.
-    \item[WCET Calculation] collapses the control flow graph to
-    provide the final WCET estimate. Alternative paths in the graph
-    are collapsed to a single value (the largest of the alternatives)
-    and loops are collapsed once the loop bound is known.
-\end{description}
 %
-For the low-level analysis, a good timing model of the processor is
-needed. The main problem for the low-level analysis is the execution
-time dependency of instructions in modern processors that are not
-designed for real-time systems. JOP is designed to be an easy target
-for WCET analysis. The WCET of each bytecode can be predicted in
-terms of number of cycles it requires. There are no dependencies
-between bytecodes.
-
-Each bytecode is implemented by microcode. We can obtain the WCET of
-a single bytecode by performing WCET analysis at the microcode
-level. To prove that there are no time dependencies between
-bytecodes, we have to show that no processor states are
-\emph{shared} between different bytecodes.
-
-\subsection{Microcode Path Analysis}
-
-To obtain the WCET values for the individual bytecodes we perform
-the path analysis at the microcode level. First, we have to ensure
-that a number of restrictions (from \cite{84850}) of the code are
-fulfilled:
+%\section{WCET}
+%\label{sec:wcet}
 %
-\begin{itemize}
-    \item Programs must not contain unbounded recursion. This property
-    is satisfied by the fact that there exists no call instruction in
-    microcode.
-    \item Function pointers and computed \code{gotos} complicate the
-    path analysis and should therefore be avoided. Only simple conditional
-    branches are available at the microcode level.
-    \item The upper bound of each loop has to be known. This is the only
-    point that has to be verified by inspection of the microcode.
-\end{itemize}
+%Worst-case execution time (WCET) estimates of tasks are essential
+%for designing and verifying real-time systems. WCET estimates can be
+%obtained either by measurement or static analysis. The problem with
+%using measurements is that the execution times of tasks tend to be
+%sensitive to their inputs. As a rule, measurement does not guarantee
+%safe WCET estimates. Instead, static analysis is necessary for hard
+%real-time systems. Static analysis is usually divided into a number
+%of different phases:
+%%
+%\begin{description}
+%    \item[Path analysis] generates the control flow graph (a directed
+%    graph of basic blocks) of the program and annotates (manual or
+%    automatic) loops with bounds.
+%    \item[Low-level analysis] determines the execution time of basic
+%    blocks obtained by the path analysis. A model of the processor
+%    and the pipeline provides the execution time for the instruction
+%    sequence.
+%    \item[Global low-level analysis] determines the influence of
+%    hardware features such as caches on program execution time. This
+%    analysis can use information from the path analysis to provide less
+%    pessimistic values.
+%    \item[WCET Calculation] collapses the control flow graph to
+%    provide the final WCET estimate. Alternative paths in the graph
+%    are collapsed to a single value (the largest of the alternatives)
+%    and loops are collapsed once the loop bound is known.
+%\end{description}
+%%
+%For the low-level analysis, a good timing model of the processor is
+%needed. The main problem for the low-level analysis is the execution
+%time dependency of instructions in modern processors that are not
+%designed for real-time systems. JOP is designed to be an easy target
+%for WCET analysis. The WCET of each bytecode can be predicted in
+%terms of number of cycles it requires. There are no dependencies
+%between bytecodes.
 %
-To detect loops in the microcode we have to find all backward
-branches (e.g.\ with a negative branch offset). The branch offsets
-can be found in a VHDL file (\code{offtbl.vhd}) that is generated
-during microcode assembly. In the current implementation of the JVM
-there are ten different negative offsets. However, not each offset
-represents a loop. Most of these branches are used to share common
-code. All backward branches found in \code{jvm.asm} are summarized
-below:
-\begin{itemize}
-    \item Three branches are found in the initialization code of the
-    JVM. They are not part of a bytecode implementation and can be
-    ignored.
-    \item Five branches are used by exceptions, the interrupt
-    bytecode, and for the call of Java implemented bytecodes. The target
-    of these branches is found in the implementation of \code{invoke}
-    to share part of the microcode sequence. These branches are therefore not
-    part of a loop.
-    \item One branch is found in the implementation of \code{imul} to
-    perform a fixed delay. The iteration count for this loop is constant.
-    \item Two backward branches share the same offset and are used
-    in loops to move data between the stack memory and main memory.
-    This loop is not part of a regular bytecode. It is contained in
-    a system function used by the scheduler for the task switch.
-    The bound for this loop has to be determined in the scheduler
-    code.
-\end{itemize}
+%Each bytecode is implemented by microcode. We can obtain the WCET of
+%a single bytecode by performing WCET analysis at the microcode
+%level. To prove that there are no time dependencies between
+%bytecodes, we have to show that no processor states are
+%\emph{shared} between different bytecodes.
 %
-A few bytecodes are implemented in Java. The implementation can be
-found in the class \code{com.jopdesign.sys.JVM} and can be analyzed
-in the same way as application code. The bytecodes \code{idiv} and
-\code{irem} contain a constant loop. The bytecodes \code{new} and
-\code{anewarray} contain loops to initialize (with zero values) new
-objects or arrays. The loop is bound by the size of the object or
-array. The bytecode
-\code{lookupswitch}\footnote{\codefoot{lookupswitch} is one way of
-implementing the Java \codefoot{switch} statement. The other
-bytecode, \codefoot{tableswitch}, uses an index in the table of
-branch offsets and has therefore a constant execution time.}
-performs a linear search through a table of branch offsets. The WCET
-depends on the table size that can be found as part of the
-instruction.
-
-As the microcode sequences are very short, the calculation of the
-control flow graph for each bytecode is done manually.
-
-\subsection{Microcode Low-level Analysis}
-
-To calculate the execution time of basic blocks in the microcode, we
-need to establish the timing of microcode instructions on JOP. All
-microcode instructions except \code{wait} execute in a single cycle,
-reducing the low-level analysis to a case of merely counting the
-instructions.
-
-The \code{wait} instruction is used to stall the processor and wait
-for the memory subsystem to finish a memory transaction. The
-execution time of the \code{wait} instruction depends on the memory
-system and, if the memory system is predictable, has a known WCET. A
-main memory consisting of SRAM chips can provide this predictability
-and this solution is therefore advised. The predictable handling of
-DMA, which is used for the instruction cache fill, is explained in
-Section~\ref{sec:cache:wcet}. The \code{wait} instruction is the
-only way to stall the processor. Hardware events, such as interrupts
-(see Section~\ref{sec:interrupt}), do not stall the processor.
-
-Microcode is stored in on-chip memory with single cycle access. Each
-microcode instruction is a single word long and there is no need for
-either caching or prefetching at this stage. We can therefore omit
-performing a low-level analysis. No pipeline analysis
-\cite{EngblomPhD}, with its possible unbound timing effects, is
-necessary.
-
-\subsection{Bytecode Independency}
-
-We have seen that all microcode instructions except \code{wait} take
-one cycle to execute and are therefore independent of other
-instructions. This property directly translates to independency of
-bytecode instructions.
-
-The \code{wait} microcode instruction provides a convenient way to
-hide memory access time. A memory read or write can be triggered in
-microcode (with \code{stmra} and \code{stmwd}) and the processor can
-continue with microcode instructions. When the data from a memory
-read is needed, the processor explicitly waits until it becomes
-available.
-
-For a memory store, this wait can be deferred until the memory
-system is used next. It is possible to initiate the store in a
-bytecode such as \code{putfield} and continue with the execution of
-the next bytecode, even when the store has not been completed. In
-this case, we introduce a dependency over bytecode boundaries, as
-the state of the memory system is \emph{shared}. To avoid these
-dependencies that are difficult to analyze, each bytecode that
-accesses memory waits (preferably at the end of the microcode
-sequence) for the memory system.
-
-Furthermore, the deferring of \code{wait} in a store operation
-results in an additional \code{wait} in every read operation. Since
-read operations are more frequent than write operations (15\% vs.
-2.5\%, see Section~\ref{sec:bench:jvm}), the performance gain from
-the hidden memory store is lost.
-
-\subsection{WCET of Bytecodes}
-
-The control flow of the individual bytecodes together with the basic
-block length (that directly corresponds with the execution time) and
-the time for memory access result in the WCET (and BCET) values of
-the bytecodes. These values can be found in
-Appendix~\ref{appx:bytecode}.
-
-\subsection{Evaluation}
-
-\begin{lstlisting}[float,caption={Bubble Sort in Java},
-label=lst:results:wcet:sort:prog]
-    final static int N = 5;
-
-    static void sort(int[] a) {
-
-        int i, j, v1, v2;
-        // loop count = N-1
-        for (i=N-1; i>0; --i) {
-            // loop count = (N-1)*N/2
-            for (j=1; j<=i; ++j) {
-                v1 = a[j-1];
-                v2 = a[j];
-                if (v1 > v2) {
-                    a[j] = v1;
-                    a[j-1] = v2;
-                }
-            }
-        }
-    }
-\end{lstlisting}
-
-We conclude this section with a worst and best case analysis of a
-classic example, the Bubble Sort algorithm. The values calculated
-are compared with the measurements of the execution time on JOP on
-all permutations of the input data.
-\figurename~\ref{lst:results:wcet:sort:prog} shows the test program
-in Java. The algorithm contains two nested loops and one condition.
-We use an array of five elements to perform the measurements for all
-permutations (i.e. $5!=120$) of the input data. The number of
-iterations of the outer loop is one less than the array size:
-$c_1=N-1$, in this case four. The inner loop is executed $c_2 =
-\sum_{i=1}^{c_1}i = c_1(c_1+1)/2$ times, i.e.\ ten times in our
-example.
-
-
-The compiled version, i.e.\ the bytecodes of the test program, split
-into basic blocks, is given in
-\tablename~\ref{tab:results:bubble:wcet}. The fourth column contains
-the execution time of the bytecodes and the basic blocks in clock
-cycles.
-
-The annotated control flow graph (CFG) of the example is shown in
-Figure~\ref{fig:results:wcet:cfg}. The edges contain labels showing
-how often the path between two nodes is taken. We can identify the
-outer loop, containing the blocks B2, B3, B4 and B8. The inner loop
-consists of blocks B4, B5, B6 and B7. Block B6 is executed when the
-condition of the \code{if} statement is true. The path from B5 to B7
-is the only path that depends on the input data.
-
-% the long table 'should' begin on a new page
-%\pagebreak[4]
-\pagebreak[3]
-\begin{longtable}{lllrrrrr}
-    \toprule
-    & & & & \multicolumn{2}{c}{WCET} & \multicolumn{2}{c}{BCET} \\
-    Block & Addr. & Bytecode & Cycles & Count & Total & Count & Total \\
-    \midrule
-    \endhead
-    \caption{WCET and BCET in clock cycles of the Bubble Sort test
-    program\label{tab:results:bubble:wcet}}
-    \endfoot
-    % table is two pages long, so don't use last caption in list
-    % of tables works
-    \caption[]{WCET and BCET in clock cycles of the Bubble Sort test
-    program}
-    \endlastfoot
-    \input{results/bubble}
-    \bottomrule
-\end{longtable}
-
-
-\begin{figure}
-    \centering
-    \includegraphics[height=\excelwidth]{results/results_wcet_cfg}
-    \caption{The control flow graph of the Bubble Sort example}
-    \label{fig:results:wcet:cfg}
-\end{figure}
-
-
-The values in the fifth and seventh columns (Count) of
-\tablename~\ref{tab:results:bubble:wcet} are derived from the CFG
-and show how often the basic blocks are executed in the worst and
-best cases. The WCET and BCET value for each block is calculated by
-multiplying the clock cycles by the execution frequency. The overall
-WCET and BCET values are calculated by summing the values of the
-individual blocks B1 to B8. The last block (B9) is omitted, as the
-measurement does not contain the return statement.
-
-The execution time of the program is measured using the cycle
-counter in JOP. The current time is taken at both the entry of the
-method and at the end, resulting in a measurement spanning from
-block B1 to the beginning of block B9. The last statement, the
-\code{return}, is not part of the measurement. The difference
-between these two values (less the additional 8 cycles introduced by
-the measurement itself) is given as the execution time in clock
-cycles (the last row in \tablename~\ref{tab:results:bubble:wcet}).
-The measured WCET and BCET values are exactly the same as the
-calculated values.
-
-In Figure~\ref{fig:results:wcet:sort}, the measured execution times
-for all 120 permutations of the input data are shown. The vertical
-axis shows the execution time in clock cycles and the horizontal
-axis the number of the test run. The first input sample is an
-already sorted array and results in the lowest execution time. The
-last sample is the worst-case value resulting from the reversely
-ordered input data. We can also see the 11 different execution times
-that result from executing basic block B6 (which performs the
-element exchange and takes 73 clock cycles) between 0 and 10 times.
-
-\begin{figure}
-    \centering
-    \includegraphics[width=\excelwidth]{results/results_wcet_sort}
-    \caption{Execution time in clock cycles of the Bubble Sort program}
-    \label{fig:results:wcet:sort}
-\end{figure}
-
-This example has demonstrated that JOP is a simple target for the
-WCET analysis. Most bytecodes have a single execution time (WCET =
-BCET), and the WCET of a task depends only on the control flow. No
-pipeline or data dependencies complicate the low-level part of the
-WCET analysis.
-
-%\subsection{Notes for targets}
+%\subsection{Microcode Path Analysis}
 %
-%\subsubsection{JStamp}
+%To obtain the WCET values for the individual bytecodes we perform
+%the path analysis at the microcode level. First, we have to ensure
+%that a number of restrictions (from \cite{pusch:maxt:jnl}) of the
+%code are fulfilled:
+%%
+%\begin{itemize}
+%    \item Programs must not contain unbounded recursion. This property
+%    is satisfied by the fact that there exists no call instruction in
+%    microcode.
+%    \item Function pointers and computed \code{gotos} complicate the
+%    path analysis and should therefore be avoided. Only simple conditional
+%    branches are available at the microcode level.
+%    \item The upper bound of each loop has to be known. This is the only
+%    point that has to be verified by inspection of the microcode.
+%\end{itemize}
+%%
+%To detect loops in the microcode we have to find all backward
+%branches (e.g.\ with a negative branch offset). The branch offsets
+%can be found in a VHDL file (\code{offtbl.vhd}) that is generated
+%during microcode assembly. In the current implementation of the JVM
+%there are ten different negative offsets. However, not each offset
+%represents a loop. Most of these branches are used to share common
+%code. All backward branches found in \code{jvm.asm} are summarized
+%below:
+%\begin{itemize}
+%    \item Three branches are found in the initialization code of the
+%    JVM. They are not part of a bytecode implementation and can be
+%    ignored.
+%    \item Five branches are used by exceptions, the interrupt
+%    bytecode, and for the call of Java implemented bytecodes. The target
+%    of these branches is found in the implementation of \code{invoke}
+%    to share part of the microcode sequence. These branches are therefore not
+%    part of a loop.
+%    \item One branch is found in the implementation of \code{imul} to
+%    perform a fixed delay. The iteration count for this loop is constant.
+%    \item Two backward branches share the same offset and are used
+%    in loops to move data between the stack memory and main memory.
+%    This loop is not part of a regular bytecode. It is contained in
+%    a system function used by the scheduler for the task switch.
+%    The bound for this loop has to be determined in the scheduler
+%    code.
+%\end{itemize}
+%%
+%A few bytecodes are implemented in Java. The implementation can be
+%found in the class \code{com.jopdesign.sys.JVM} and can be analyzed
+%in the same way as application code. The bytecodes \code{idiv} and
+%\code{irem} contain a constant loop. The bytecodes \code{new} and
+%\code{anewarray} contain loops to initialize (with zero values) new
+%objects or arrays. The loop is bound by the size of the object or
+%array. The bytecode
+%\code{lookupswitch}\footnote{\codefoot{lookupswitch} is one way of
+%implementing the Java \codefoot{switch} statement. The other
+%bytecode, \codefoot{tableswitch}, uses an index in the table of
+%branch offsets and has therefore a constant execution time.}
+%performs a linear search through a table of branch offsets. The WCET
+%depends on the table size that can be found as part of the
+%instruction.
 %
-%\begin{verbatim}
-%    aJile project in \usr2\ajile\bench
-%    Sources from JOP target
-%    LowLevel.java from directory aJile
-%    Remove .class in ...\dist\classes
-%    Generate .class with \bat\ajc.bat in source directory
-%        destination is ...\dist\classes
-%        e.g. in ...\src\bench: ajc jbe/DoAll
-%    aJile ChemBuilder (bench.ajp) use COM1 for System.out
-%    Terminal on Serial A, 9600 baud
-%        Did not get the System.out in Charade (but it worked some
-%        time ago)
-%    Charade: Reset, File-Load \usr2\ajile\bench\build.bin
-%\end{verbatim}
+%As the microcode sequences are very short, the calculation of the
+%control flow graph for each bytecode is done manually.
+%
+%\subsection{Microcode Low-level Analysis}
+%
+%To calculate the execution time of basic blocks in the microcode, we
+%need to establish the timing of microcode instructions on JOP. All
+%microcode instructions except \code{wait} execute in a single cycle,
+%reducing the low-level analysis to a case of merely counting the
+%instructions.
+%
+%The \code{wait} instruction is used to stall the processor and wait
+%for the memory subsystem to finish a memory transaction. The
+%execution time of the \code{wait} instruction depends on the memory
+%system and, if the memory system is predictable, has a known WCET. A
+%main memory consisting of SRAM chips can provide this predictability
+%and this solution is therefore advised. The predictable handling of
+%DMA, which is used for the instruction cache fill, is explained in
+%Section~\ref{sec:cache:wcet}. The \code{wait} instruction is the
+%only way to stall the processor. Hardware events, such as interrupts
+%(see Section~\ref{sec:interrupt}), do not stall the processor.
+%
+%Microcode is stored in on-chip memory with single cycle access. Each
+%microcode instruction is a single word long and there is no need for
+%either caching or prefetching at this stage. We can therefore omit
+%performing a low-level analysis. No pipeline analysis
+%\cite{EngblomPhD}, with its possible unbound timing effects, is
+%necessary.
+%
+%\subsection{Bytecode Independency}
+%
+%We have seen that all microcode instructions except \code{wait} take
+%one cycle to execute and are therefore independent of other
+%instructions. This property directly translates to independency of
+%bytecode instructions.
+%
+%The \code{wait} microcode instruction provides a convenient way to
+%hide memory access time. A memory read or write can be triggered in
+%microcode (with \code{stmra} and \code{stmwd}) and the processor can
+%continue with microcode instructions. When the data from a memory
+%read is needed, the processor explicitly waits until it becomes
+%available.
+%
+%For a memory store, this wait can be deferred until the memory
+%system is used next. It is possible to initiate the store in a
+%bytecode such as \code{putfield} and continue with the execution of
+%the next bytecode, even when the store has not been completed. In
+%this case, we introduce a dependency over bytecode boundaries, as
+%the state of the memory system is \emph{shared}. To avoid these
+%dependencies that are difficult to analyze, each bytecode that
+%accesses memory waits (preferably at the end of the microcode
+%sequence) for the memory system.
+%
+%Furthermore, the deferring of \code{wait} in a store operation
+%results in an additional \code{wait} in every read operation. Since
+%read operations are more frequent than write operations (15\% vs.
+%2.5\%, see Section~\ref{sec:bench:jvm}), the performance gain from
+%the hidden memory store is lost.
+%
+%\subsection{WCET of Bytecodes}
+%
+%The control flow of the individual bytecodes together with the basic
+%block length (that directly corresponds with the execution time) and
+%the time for memory access result in the WCET (and BCET) values of
+%the bytecodes. These values can be found in
+%Appendix~\ref{appx:bytecode}.
+%
+%\subsection{Evaluation}
+%
+%\begin{lstlisting}[float,caption={Bubble Sort in Java},
+%label=lst:results:wcet:sort:prog]
+%    final static int N = 5;
+%
+%    static void sort(int[] a) {
+%
+%        int i, j, v1, v2;
+%        // loop count = N-1
+%        for (i=N-1; i>0; --i) {
+%            // loop count = (N-1)*N/2
+%            for (j=1; j<=i; ++j) {
+%                v1 = a[j-1];
+%                v2 = a[j];
+%                if (v1 > v2) {
+%                    a[j] = v1;
+%                    a[j-1] = v2;
+%                }
+%            }
+%        }
+%    }
+%\end{lstlisting}
+%
+%We conclude this section with a worst and best case analysis of a
+%classic example, the Bubble Sort algorithm. The values calculated
+%are compared with the measurements of the execution time on JOP on
+%all permutations of the input data.
+%\figurename~\ref{lst:results:wcet:sort:prog} shows the test program
+%in Java. The algorithm contains two nested loops and one condition.
+%We use an array of five elements to perform the measurements for all
+%permutations (i.e. $5!=120$) of the input data. The number of
+%iterations of the outer loop is one less than the array size:
+%$c_1=N-1$, in this case four. The inner loop is executed $c_2 =
+%\sum_{i=1}^{c_1}i = c_1(c_1+1)/2$ times, i.e.\ ten times in our
+%example.
+%
+%
+%The compiled version, i.e.\ the bytecodes of the test program, split
+%into basic blocks, is given in
+%\tablename~\ref{tab:results:bubble:wcet}. The fourth column contains
+%the execution time of the bytecodes and the basic blocks in clock
+%cycles.
+%
+%The annotated control flow graph (CFG) of the example is shown in
+%Figure~\ref{fig:results:wcet:cfg}. The edges contain labels showing
+%how often the path between two nodes is taken. We can identify the
+%outer loop, containing the blocks B2, B3, B4 and B8. The inner loop
+%consists of blocks B4, B5, B6 and B7. Block B6 is executed when the
+%condition of the \code{if} statement is true. The path from B5 to B7
+%is the only path that depends on the input data.
+%
+%% the long table 'should' begin on a new page
+%%\pagebreak[4]
+%\pagebreak[3]
+%\begin{longtable}{lllrrrrr}
+%    \toprule
+%    & & & & \multicolumn{2}{c}{WCET} & \multicolumn{2}{c}{BCET} \\
+%    Block & Addr. & Bytecode & Cycles & Count & Total & Count & Total \\
+%    \midrule
+%    \endhead
+%    \caption{WCET and BCET in clock cycles of the Bubble Sort test
+%    program\label{tab:results:bubble:wcet}}
+%    \endfoot
+%    % table is two pages long, so don't use last caption in list
+%    % of tables works
+%    \caption[]{WCET and BCET in clock cycles of the Bubble Sort test
+%    program}
+%    \endlastfoot
+%    \input{results/bubble}
+%    \bottomrule
+%\end{longtable}
+%
+%
+%\begin{figure}
+%    \centering
+%    \includegraphics[height=\excelwidth]{results/results_wcet_cfg}
+%    \caption{The control flow graph of the Bubble Sort example}
+%    \label{fig:results:wcet:cfg}
+%\end{figure}
+%
+%
+%The values in the fifth and seventh columns (Count) of
+%\tablename~\ref{tab:results:bubble:wcet} are derived from the CFG
+%and show how often the basic blocks are executed in the worst and
+%best cases. The WCET and BCET value for each block is calculated by
+%multiplying the clock cycles by the execution frequency. The overall
+%WCET and BCET values are calculated by summing the values of the
+%individual blocks B1 to B8. The last block (B9) is omitted, as the
+%measurement does not contain the return statement.
+%
+%The execution time of the program is measured using the cycle
+%counter in JOP. The current time is taken at both the entry of the
+%method and at the end, resulting in a measurement spanning from
+%block B1 to the beginning of block B9. The last statement, the
+%\code{return}, is not part of the measurement. The difference
+%between these two values (less the additional 8 cycles introduced by
+%the measurement itself) is given as the execution time in clock
+%cycles (the last row in \tablename~\ref{tab:results:bubble:wcet}).
+%The measured WCET and BCET values are exactly the same as the
+%calculated values.
+%
+%In Figure~\ref{fig:results:wcet:sort}, the measured execution times
+%for all 120 permutations of the input data are shown. The vertical
+%axis shows the execution time in clock cycles and the horizontal
+%axis the number of the test run. The first input sample is an
+%already sorted array and results in the lowest execution time. The
+%last sample is the worst-case value resulting from the reversely
+%ordered input data. We can also see the 11 different execution times
+%that result from executing basic block B6 (which performs the
+%element exchange and takes 73 clock cycles) between 0 and 10 times.
+%
+%\begin{figure}
+%    \centering
+%    \includegraphics[width=\excelwidth]{results/results_wcet_sort}
+%    \caption{Execution time in clock cycles of the Bubble Sort program}
+%    \label{fig:results:wcet:sort}
+%\end{figure}
+%
+%This example has demonstrated that JOP is a simple target for the
+%WCET analysis. Most bytecodes have a single execution time (WCET =
+%BCET), and the WCET of a task depends only on the control flow. No
+%pipeline or data dependencies complicate the low-level part of the
+%WCET analysis.
+%
+%%\subsection{Notes for targets}
+%%
+%%\subsubsection{JStamp}
+%%
+%%\begin{verbatim}
+%%    aJile project in \usr2\ajile\bench
+%%    Sources from JOP target
+%%    LowLevel.java from directory aJile
+%%    Remove .class in ...\dist\classes
+%%    Generate .class with \bat\ajc.bat in source directory
+%%        destination is ...\dist\classes
+%%        e.g. in ...\src\bench: ajc jbe/DoAll
+%%    aJile ChemBuilder (bench.ajp) use COM1 for System.out
+%%    Terminal on Serial A, 9600 baud
+%%        Did not get the System.out in Charade (but it worked some
+%%        time ago)
+%%    Charade: Reset, File-Load \usr2\ajile\bench\build.bin
+%%\end{verbatim}
 
 
 \section{Applications}

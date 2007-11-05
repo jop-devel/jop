@@ -27,40 +27,26 @@
 
 \chapter{Introduction}
 \label{chap:intro}
-
-
-\emph{Copy some stuff from the thesis and rewrite it.}
     \input{intro/intro}
 
-\section{Is JOP the Solution for Your Problem?}
-
-\emph{TODO: move is to the correct place.}
-
-I had a lot of fun, and still have, developing and using JOP, but
-should you use JOP? JOP is a processor design intended as a time
-predictable solution for hard real-time systems. If your application
-or research focus is on those systems and you prefer Java as
-programming language JOP is the right choice. If you are interested
-in larger, dynamic systems JOP is the wrong choice. If average
-performance is important for you and you do not care about
-worst-case performance other solutions will probably do a better
-job.
 
 
 
 
-\chapter{Introduction into the Design Flow}
+
+\chapter{The Design Flow}
 \label{chap:build}
 \input{build/flow}
 \input{intro/directory}
+\input{intro/exercise}
 
 \chapter{Java and the Java Virtual Machine}
 \label{chap:java}
 \input{intro/java}
 
-\chapter{Restrictions of Java for Embedded Real-Time Systems}
-\emph{Shall we keep this one? Or better SCJ/RtThread description
-(with some of general Java ME related stuff -- shorter.}
+\chapter{Java for Embedded Real-Time Systems}
+%\emph{Shall we keep this one? Or better SCJ/RtThread description
+%(with some of general Java ME related stuff -- shorter.}
 
 \label{chap:rtjava}
     \input{restrictions/restrictions}
@@ -70,7 +56,7 @@ job.
 
     \input{arch/arch_intro}
     \input{arch/jvm_bench}
-%\clearpage or pagebreak[x]
+\clearpage %or pagebreak[x]
     \input{arch/arch_jop}
 
 \clearpage
@@ -94,13 +80,19 @@ job.
     \input{runtime/rt_intro}
     \input{runtime/rt_profile}
     \input{runtime/rt_user}
-    \input{runtime/scjava}
+% rewrite scjava
+%    \input{runtime/scjava}
+\clearpage
     \input{jvm/jvm}
     \input{jvm/boot}
 
 \chapter{Real-Time Garbage Collection}
 \label{chap:rtgc}
     \input{jvm/gc}
+
+\chapter{Worst-Case Execution Time}
+\label{chap:wcet}
+    \input{wcet/wcet}
 
 \chapter{The SimpCon Interconnect}
 \label{chap:simpcon}
@@ -110,18 +102,18 @@ job.
 \input{simpcon/simpcon_intro}
 \input{simpcon/simpcon_text}
 
-\chapter{The Embedded Java TCP/IP Stack}
-\label{chap:ejip}
-\newcommand{\grpath}{ejip}
-\input{ejip/ejip}
+%\chapter{The Embedded Java TCP/IP Stack}
+%\label{chap:ejip}
+%\newcommand{\grpath}{ejip}
+%\input{ejip/ejip}
 
-\chapter{Ongoing Work}
-\label{chap:ongoing}
-    \input{ongoing/interrupt}
+%\chapter{Ongoing Work}
+%\label{chap:ongoing}
+%    \input{ongoing/interrupt}
 
 \chapter{Results}
-\emph{Copy some stuff from the thesis (and JSA). Change this chapter
-to new form... Update with actual numbers!}
+%\emph{Copy some stuff from the thesis (and JSA). Change this chapter
+%to new form... Update with actual numbers!}
 
 \label{chap:results}
     \input{results/results}
@@ -129,34 +121,10 @@ to new form... Update with actual numbers!}
 \chapter{Related Work}
 \label{chap:related}
 
-\emph{Update with JSA writing and remove old, not used stuff (or
-shorten it)}
+%\emph{Update with JSA writing and remove old, not used stuff (or
+%shorten it)}
     \input{related/related}
 
-
-\chapter{Notes - to be moved}
-
-\section{Testing JOP}
-
-\input{test/test}
-
-\section{Dependencies}
-
-\subsection{Changing the Class Format}
-
-\begin{itemize}
-    \item JOPizer: CLS\_HEAD, dump()
-    \item GC.java uses CLASS\_HEADR
-    \item JMV.java uses CLASS\_HEADR + offset (checkcast, instanceof)
-\end{itemize}
-
-\subsection{Stack Size}
-
-\begin{itemize}
-    \item \code{ram\_width} in \code{jop\_config\_xx.vhd}
-    \item \code{STACK\_SIZE} in \code{com.jopdesign.sys.Const}
-    \item \code{RAM\_LEN} in \code{com.jopdesign.sys.Jopa}
-\end{itemize}
 
 \chapter{Summary}
 \label{chap:conclusions}
@@ -189,8 +157,12 @@ shorten it)}
 \chapter{Bytecode Execution Time} \label{appx:bytecode}
 \input{appendix/bytetable}
 
-\chapter{Benchmark Results} \label{appx:bench}
-\input{appendix/benchmarks}
+%\chapter{Benchmark Results} \label{appx:bench}
+%\input{appendix/benchmarks}
+
+%\chapter{Regression Tests} \label{appx:test}
+%\input{test/test}
+
 
 \chapter{Cyclone FPGA Board} \label{appx:cycore}
 \input{appendix/cycore}
@@ -201,11 +173,12 @@ shorten it)}
 %\bibliographystyle{plnnolow} % changed plain.bst to keep upper case in titles
 \bibliography{../bib/all}
 
-\printindex
+% in the real book version we should add an index
+%\printindex
 
 % uncomment for IKT book ;-)
-\chapter{TODO Lists}
-\input{appendix/todo}
+%\chapter{TODO Lists}
+%\input{appendix/todo}
 
 
 \end{document}

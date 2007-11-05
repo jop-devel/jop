@@ -475,11 +475,13 @@ reserved bits in the object reference can be used for a write
 barrier trap.
 
 The architecture of picoJava is a stack-based CISC processor
-implementing 341 different instructions \cite{624084} and is the
-most complex Java processor available. The processor can be
-implemented \cite{Sekar2000} in about 440K gates (128K for the logic
-and 314K for the memory components: 284x80 bits microcode ROM,
-2x192x64 bits FPU ROM and 2x16KB caches).
+implementing 341 different instructions \cite{pJ1} and is the most
+complex Java processor available. The processor can be implemented
+\cite{Sekar2000} in about 440K gates (128K for the logic and 314K
+for the memory components: 284x80 bits microcode ROM, 2x192x64 bits
+FPU ROM and 2x16~KB caches). We have implemented picoJava-II in a
+Cyclone-II FPGA \cite{pjfpga} and the design consumed 27500~LCs and
+48~KB on-chip memory.
 
 \subsection{aJile JEMCore}
 
@@ -676,6 +678,25 @@ used. The resulting resource usage of the FPGA varies between 1000
 and 2000 LCs. With the reduction of the datapath to 16 bits the
 processor is not Java conformant.
 
+\subsection{jHISC}
+
+The jHISC project \cite{jHISC:jnl2006} proposes a high-level
+instruction set architecture for Java. This project is closely
+related to picoJava. The processor consumes 15500~LCs in an FPGA and
+the maximum frequency in a Xilinx Virtex FPGA is 30~MHz.
+%
+%However, the resulting design is probably not very well balanced.
+%The processor consumes 15500 LCs compared to about 3000 LCs for JOP.
+%The maximum frequency in a Xilinx Virtex FPGA is 30 MHz compared to
+%100 MHz for JOP.
+%
+According to \cite{jHISC:jnl2006} the prototype can only run simple
+programs and the performance is estimated with a simulation. In
+\cite{jHISC2006} the clocks per instruction (CPI) values for jHISC
+are compared against picoJava and JOP. However, it is not explained
+with which application the CPI values are collected. We assume that
+the CPI values for picoJava and JOP are derived from the manual and
+do not include any effects of pipeline stalls or cache misses.
 
 \section{Additional Comments}
 
@@ -823,25 +844,25 @@ configurable processor in which we can trade size for performance
 provides the flexibility for a variety of application domains. The
 aim of the architecture of JOP is to support this flexibility.
 
-\section{Derived Work}
-\label{sec:derived}
-
-Quite common for open-source projects are derived projects.
-Especially the research community appreciates open-source projects.
-Following list describes projects that are either completely based
-on JOP or influenced to a great extent.
-
-JOP triggered research on implementation of the JVM in hardware for
-real-time systems. The publications on JOP and also the fact that
-JOP is open-source made the project and ideas easy accessible for
-other researchers. Several research projects are directly or
-indirectly based on the research project JOP:
-
-\begin{itemize}
-    \item Lund -- Flavius
-    \item Dresden
-    \item Graz
-    \item Albertos MS thesis
-    \item \cite{conf/iscas/KoT07} JOP based dual-issue Javaprocessor
-    \item WCET work by Rasmus, Trevor, Elena, and upcoming CISS
-\end{itemize}
+%\section{Derived Work}
+%\label{sec:derived}
+%
+%Quite common for open-source projects are derived projects.
+%Especially the research community appreciates open-source projects.
+%Following list describes projects that are either completely based
+%on JOP or influenced to a great extent.
+%
+%JOP triggered research on implementation of the JVM in hardware for
+%real-time systems. The publications on JOP and also the fact that
+%JOP is open-source made the project and ideas easy accessible for
+%other researchers. Several research projects are directly or
+%indirectly based on the research project JOP:
+%
+%\begin{itemize}
+%    \item Lund -- Flavius
+%    \item Dresden
+%    \item Graz
+%    \item Albertos MS thesis
+%    \item \cite{conf/iscas/KoT07} JOP based dual-issue Javaprocessor
+%    \item WCET work by Rasmus, Trevor, Elena, and upcoming CISS
+%\end{itemize}

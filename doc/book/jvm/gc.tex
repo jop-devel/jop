@@ -214,16 +214,13 @@ Section~\ref{sec:wc:live} for an example where the worst-case
 lifetime is two periods.}, but very common as we can see in the
 following code fragment.
 \begin{samepage}
-%
-{\small
-\begin{verbatim}
+\begin{lstlisting}
     for (;;) {
         Node n = new Node();
         work(n);
         waitForNextPeriod();
     }
-\end{verbatim}
-}
+\end{lstlisting}
 \end{samepage}
 The object \code{Node} is allocated at the start of the period and
 \code{n} will reference it until the next period when a new
@@ -1048,14 +1045,12 @@ contains allocated memory from the periodic threads.
 
 \subsubsection{Object Lifetime} \label{sec:wc:live}
 
-Figure~\ref{fig:bcnode} shows our Java example of a periodic thread
+Listing~\ref{lst:bcnode} shows our Java example of a periodic thread
 that allocates an object in the main loop and the resulting
 bytecodes.
 
-\begin{figure}
-\begin{center}
-{\footnotesize
-\begin{verbatim}
+\begin{lstlisting}[float, caption={Example periodic thread and the corresponding Java bytecodes},
+label=lst:bcnode]
     public void run() {
 
         for (;;) {
@@ -1077,11 +1072,7 @@ public void run();
    13:  invokevirtual   #30; //wFNP:()Z
    16:  pop
    17:  goto    0
-\end{verbatim}
-    \caption{Example periodic thread and the corresponding Java bytecodes}
-\label{fig:bcnode} }
-\end{center}
-\end{figure}
+\end{lstlisting}
 
 There is a time between allocation of \code{Node} and the assignment
 to \code{n} where a reference to the former \code{Node} (from the
@@ -1100,13 +1091,6 @@ therefore not as complex as explicit freeing of objects. Objects
 that are created inside \code{work} in our example do not need to be
 \emph{freed} in this way as the reference to the object gets
 \emph{lost} on return from the method.
-
-
-
-
-
-
-
 
 \section{SCJ Simplifications} \label{sec:scj:simple}
 
@@ -1355,8 +1339,7 @@ implementation. As can be seen, the implementation is quite short.
 \paragraph{Flip} involves manipulation of a few pointers and changes
 the meaning of black (\code{toSpace}) and white.
 %
-{\small
-\begin{verbatim}
+\begin{lstlisting}
     synchronized (mutex) {
         useA = !useA;
         if (useA) {
@@ -1370,29 +1353,26 @@ the meaning of black (\code{toSpace}) and white.
         }
         allocPtr = copyPtr+semi_size;
     }
-\end{verbatim}
-}
+\end{lstlisting}
+
 
 \paragraph{Root Marking} When the GC runs in concurrent mode only
 the static reference fields form the root set and are scanned. The
 stop-the-world mode of the GC also scans all stacks from all
 threads.
 %
-{\small
-\begin{verbatim}
+\begin{lstlisting}
     int addr = Native.rdMem(addrStaticRefs);
     int cnt = Native.rdMem(addrStaticRefs+1);
     for (i=0; i<cnt; ++i) {
         push(Native.rdMem(addr+i));
     }
-\end{verbatim}
-}
+\end{lstlisting}
 
 \paragraph{Push} All gray objects are pushed on a grey stack. The
 gray stack is a list threaded within the handle structure.
 %
-{\small
-\begin{verbatim}
+\begin{lstlisting}
     if (Native.rdMem(ref+OFF_GREY)!=0) {
         return;
     }
@@ -1401,14 +1381,12 @@ gray stack is a list threaded within the handle structure.
         Native.wrMem(greyList, ref+OFF_GREY);
         greyList = ref;
     }
-\end{verbatim}
-}
+\end{lstlisting}
 
 \paragraph{Mark and Copy} The following code snippet shows the
 central GC loop.
 %
-{\small
-\begin{verbatim}
+\begin{lstlisting}
     for (;;) {
 
         // pop one object from the gray list
@@ -1418,7 +1396,8 @@ central GC loop.
                 break;
             }
             greyList = Native.rdMem(ref+OFF_GREY);
-            Native.wrMem(0, ref+OFF_GREY);      // mark as not in list
+            // mark as not in list
+            Native.wrMem(0, ref+OFF_GREY);
         }
 
         // push all childs
@@ -1459,15 +1438,13 @@ central GC loop.
             copyPtr += size;
         }
     }
-\end{verbatim}
-}
+\end{lstlisting}
 
 \paragraph{Sweep Handles} At the end of the mark and copy phase the
 handle area is swept to find all unused handles (the one that still
 point into \code{fromSpace}) and add them to the free list.
 %
-{\small
-\begin{verbatim}
+\begin{lstlisting}
     synchronized (mutex) {
         ref = useList;      // get start of the list
         useList = 0;        // new uselist starts empty
@@ -1494,19 +1471,16 @@ point into \code{fromSpace}) and add them to the free list.
         }
         ref = next;
     }
-\end{verbatim}
-}
+\end{lstlisting}
 
 \paragraph{Clear Fromspace} The last step of the GC clears the
 fromspace to provide a constant time allocation after the next flip.
 %
-{\small
-\begin{verbatim}
+\begin{lstlisting}
         for (int i=fromSpace; i<fromSpace+semi_size; ++i) {
             Native.wrMem(0, i);
         }
-\end{verbatim}
-}
+\end{lstlisting}
 
 \subsection{The Mutator}
 
@@ -1530,8 +1504,7 @@ argument applies to the chosen write barrier. The following code
 shows our simple implementation of bytecode \code{new}:
 
 \begin{samepage}
-{\small
-\begin{verbatim}
+\begin{lstlisting}
 synchronized (mutex) {
     // we allocate from the upper part
     allocPtr -= size;
@@ -1541,8 +1514,7 @@ synchronized (mutex) {
     // pointer to method table in the handle
     Native.wrMem(cons+CLASS_HEADR, ref+OFF_MTAB_ALEN);
 }
-\end{verbatim}
-}
+\end{lstlisting}
 \end{samepage}
 
 As the old fromspace is cleared by the GC we do not need to
@@ -1589,9 +1561,9 @@ write barrier in the mutator to not foil the collector. According to
 The usual choice is snapshot-at-beginning with atomic root scan of
 all thread stacks to avoid write barriers on locals. Assume
 following assignment of a reference:
-\begin{verbatim}
+\begin{lstlisting}
     o.r = ref;
-\end{verbatim}
+\end{lstlisting}
 There are three references involved that can be manipulated:
 \begin{itemize}
     \item The old value of \code{o.r}
@@ -1602,24 +1574,24 @@ The three possible write barriers are:
 \begin{enumerate}
     \item
 Snapshot-at-beginning/weak tri-color invariant:
-\begin{verbatim}
+\begin{lstlisting}
     if (white(o.r)) markGrey(o.r);
     o.r = ref;
-\end{verbatim}
+\end{lstlisting}
     \item
 Incremental/strong tri-color invariant with push forward
-\begin{verbatim}
+\begin{lstlisting}
     if (black(o) && white(ref)) markGrey(ref);
     o.r = ref;
-\end{verbatim}
+\end{lstlisting}
 This barrier can be optimized to only check if \code{ref} is white.
 
     \item
 Incremental/strong tri-color invariant with push back
-\begin{verbatim}
+\begin{lstlisting}
     if (black(o) && white(ref)) markGrey(o);
     o.r = ref;
-\end{verbatim}
+\end{lstlisting}
 
 \end{enumerate}
 
@@ -1637,8 +1609,7 @@ or an array. The \emph{to be overwritten} field is pushed on the
 mark stack when it points to a white object. The following code
 shows the implementation of \code{putfield} for reference fields:
 
-{\small
-\begin{verbatim}
+\begin{lstlisting}
 private static void f_putfield_ref(int ref, int val,
                                     int index) {
 
@@ -1659,8 +1630,7 @@ private static void f_putfield_ref(int ref, int val,
         Native.wrMem(val, ref+index);
     }
 }
-\end{verbatim}
-}
+\end{lstlisting}
 
 The shown code is part of a special class (\code{com.jopdesign.sys.JVM})
 where Java bytecodes that are not directly implemented by JOP can be
@@ -1701,15 +1671,13 @@ examples\footnote{It has to be noted that measuring execution time
 is not a safe method to estimate WCET values.}.
 
 
-Figure~\ref{fig:excode} shows our worker thread with the busy loop.
+Listing~\ref{lst:excode} shows our worker thread with the busy loop.
 The data is allocated at the start of the period and freed after the
 simulated execution. \code{waitForNextPeriod} blocks till the next
 release time for the periodic thread.
 
-\begin{figure}
-\begin{center}
-{\footnotesize
-\begin{verbatim}
+\begin{lstlisting}[float, caption={Example periodic thread with a busy loop},
+label=lst:excode]
     public void run() {
 
         for (;;) {
@@ -1744,13 +1712,7 @@ release time for the periodic thread.
             }
         }
     }
-
-\end{verbatim}
-}
-    \caption{Example periodic thread with a busy loop}
-\label{fig:excode}
-\end{center}
-\end{figure}
+\end{lstlisting}
 
 For the busy loop to simulate \emph{real} execution time, and not
 elapsed time, the constant \code{MIN\_US} has to be less than the
@@ -1939,9 +1901,9 @@ blocking time introduced  by the GC due to atomic code sections.
 This blocking time will be seen as release time jitter on the
 real-time threads. Therefore we want to measure this jitter.
 
-\begin{figure}
-{\small
-\begin{verbatim}
+\begin{lstlisting}[float, caption={Measuring release time jitter},
+label=lst:measure]
+
 public boolean run() {
 
     int t = Native.rdMem(Const.IO_US_CNT);
@@ -1958,12 +1920,9 @@ public boolean run() {
 
     return true;
 }
-\end{verbatim} }
-    \caption{Measuring release time jitter}
-    \label{lst:measure}
-\end{figure}
+\end{lstlisting}
 
-Figure~\ref{lst:measure} shows how we measure the jitter. Method
+Listing~\ref{lst:measure} shows how we measure the jitter. Method
 \code{run()} is the main method of the real-time thread and executed
 on each periodic release. Within the real-time thread we have no
 notion about the start time of the thread. As a solution we measure

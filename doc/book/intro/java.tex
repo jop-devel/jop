@@ -215,11 +215,11 @@ specification \cite{jvm} defines three elements:
     contains valid programs
 \end{itemize}
 %
-In the solution presented in this thesis, the class files are
+In the solution presented in this book, the class files are
 verified, linked and transformed into an internal representation
 before being executed on JOP. This transformation is performed with
-\code{JavaCodeCompact} and is not executed on JOP. We will therefore
-omit the description of the class file and the verification process.
+\cmd{JOPizer} and is not executed on JOP. We will therefore omit the
+description of the class file and the verification process.
 
 The instruction set of the JVM is stack-based. All operations take
 their arguments from the stack and put the result onto the stack.
@@ -475,17 +475,52 @@ capability to execute C/C++ programs.
 
 \end{description}
 
-\section{Embedded Java}
-
-Figure~\ref{fig:java:embedded} show variations of Java
-implementations in embedded systems.
+\subsection{Embedded Java}
 
 \begin{figure}
     \centering
-    \includegraphics{visio/jvmall}
-    \caption{Implementations of Java in embedded systems}\label{fig:java:embedded}
+    \includegraphics[width=\textwidth]{visio/jvmall}
+    \caption{Implementation variations of Java in embedded systems}\label{fig:java:embedded}
 \end{figure}
 
+In embedded systems the architecture of JVMs are more diverse than
+on desktop or server systems. Figure~\ref{fig:java:embedded} shows
+variations of Java implementations in embedded systems and an
+example of the control flow for a web server application. The
+standard approach of a JVM running on top of an operating system
+(OS) is shown in sub-figure (a). A network connection bypasses the
+JVM via native functions and uses the TCP/IP stack implementation
+and the device drivers of the OS.
+
+A JVM without and OS is shown in sub-figure (b). This solution is
+often called \emph{running on the bare metal}. The JVM acts as the
+OS and provides the thread scheduling and the low-level access to
+the hardware. In that case the network stack can be written entirely
+in Java. JNode\footnote{\url{http://www.jnode.org/}} is an approach
+to implement the OS entirely in Java. This solution becomes popular
+even in server
+applications\footnote{\url{http://www.bea.com/framework.jsp?CNT=index.htm&FP=/content/products/weblogic/virtual_server}
+}.
+
+Sub-figure (c) shows an embedded solution where the JVM is part of
+the hardware layer. That means it is implemented in a Java
+processor. With this solution the native layer can be completely
+avoided and all code (application and system code) is written
+entirely in Java.
+
+Figure~\ref{fig:java:embedded} shows how the flow from the
+application goes down to the hardware. The example consists of a web
+server and an Internet connection via Ethernet. In case (a) the
+application web server talks with \code{java.net} in the JDK. The
+flow goes down via a native interface to the TCP/IP implementation
+and the Ethernet device driver within the OS (usually written in C).
+The device driver talks with the Ethernet chip. In (b) the OS layer
+is omitted: the TCP/IP layer and the Ethernet device driver are now
+part of the Java library. In (c) the JVM is part of the hardware
+layer and a direct access from the Ethernet driver to the Ethernet
+hardware is mandatory. Note how part of the network stack moves up
+from the OS layer to the Java library. Version (c) shows a pure Java
+implementation of the whole network stack.
 
 
 \section{Summary}

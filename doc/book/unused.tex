@@ -13,5 +13,209 @@
 \emph{Copy some stuff from the thesis and rewrite it.}
     \input{intro/intro_diss}
 
+\subsection{Real-Time Performance}
+\label{subsec:rt:perf}
+
+In this section, the implementation of the simple real-time profile
+(from Section~\ref{sec:rtprof}) with JOP is compared with the
+Reference Implementation (RI) of the RTSJ (see
+Section~~\ref{sec:rtsj}) on top of Linux. We use the Linux platform
+for the comparison, as it is the only platform for which the RTSJ is
+available. The RI is an interpreting implementation of the JVM that
+is, however, not optimized for performance. A commercial version of
+the RTSJ, JTime by TimeSys, should perform better. However, it was
+not possible to get a license of JTime for research purposes. JOP is
+implemented in Altera's low-cost Cyclone EP1C6 FPGA, and clocked
+with 100MHz. The test results for the RI were obtained on an Intel
+Pentium MMX 266MHz, running Linux with two different kernels: a
+generic kernel version 2.4.20 and the real-time kernel from TimeSys
+\cite{TimeSysLinux}, as recommended for the RI. For each test, 500
+measurements were taken. Time was measured using a hardware counter
+in JOP and the time stamp counter of the Pentium processor under
+Linux.
+
+\subsubsection{Periodic Threads}
+
+
+Many activities in real-time systems must be performed periodically.
+Low release jitter is of major importance for tasks such as control
+loops. The test setting is similar to the periodic thread test in
+\cite{828497}. A single real-time thread only calls
+\code{waitForNextPeriod()} in a loop and records the time between
+subsequent calls. A second idle thread, with a lower priority,
+merely consumes processing time. This test setting results in two
+context switches per period.
+\tablename~\ref{tab_results_periodic_jop} shows the average,
+standard deviation and extreme values for different period times on
+JOP. The same values are shown in
+\tablename~\ref{tab_results_periodic_ri} for the RI. Please note
+that the values are in $\mu$s for JOP and in ms for the RI.
+
+\begin{table}
+    \centering
+    \begin{tabular}{rrd{2.0}rr}
+        \toprule
+        \cc{Period} & \cc{Avg.} & \cc{Std. Dev.} &  \cc{Min.} &   \cc{Max.} \\
+        \cc{[$\mu$s]} & \cc{[$\mu$s]} & \cc{[$\mu$s]} & \cc{[$\mu$s]} & \cc{[$\mu$s]} \\
+        \midrule
+%        50   & 50  & 14 &  36  &  66\\ & pre cache version
+        50   & 50  & 13 &  35  &  63\\
+        70   & 70  &  0   & 70 & 70\\
+        100  & 100  & 0   & 100&  100\\
+        500  & 500  & 0   & 500 & 500\\
+        1,000 & 1,000&  0   &  1,000 &  1,000\\
+        \bottomrule
+    \end{tabular}
+    \caption{Jitter of periodic threads with JOP}
+    \label{tab_results_periodic_jop}
+\end{table}
+
+
+
+\begin{table}
+    \centering
+    \begin{tabular}{d{1}d{2}d{2.3}d{3}d{2}}
+        \toprule
+        \cc{Period} & \cc{Avg.} & \cc{Std. Dev.} &  \cc{Min.} &   \cc{Max.} \\
+        \cc{[ms]} & \cc{[ms]} & \cc{[ms]} & \cc{[ms]} & \cc{[ms]} \\
+        \midrule
+        5  & 4.0    & 7.92  &0.017  &   19.90 \\
+        10  & 6.6   & 9.34  &0.019  &   19.94 \\
+        20  & 20.0   & 0.015  &   19.87  &   20.14 \\
+        35  & 35.0   & 5.001  &   29.75  &   40.25 \\
+        50  & 50.0   & 0.018  &   49.95  &   50.06 \\
+        100  & 100.0   & 0.002  &   99.94  &   100.1 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Jitter of periodic threads with RI/RTSJ}
+    \label{tab_results_periodic_ri}
+\end{table}
+
+
+Using microsecond accurate timer interrupts, programmed by the
+scheduler, results in excellent performance of periodic threads in
+JOP. No jitter from the scheduler can be seen with a single thread
+at periods longer than 70$\mu$s.
+
+The measurement for the RI excludes the first values measured. The
+first values are misleading as the RI behaves unpredictably at
+\emph{startup}. The RI performs inaccurately at periods below 20ms.
+This effect has also been observed in \cite{701668}. Larger periods
+that are multiples of 10ms have very low jitter. However, using a
+period such as 35ms shows a standard deviation of five ms. A
+detailed look into the collected samples only shows values of 30 and
+40ms. This implies a timer tick of 10ms in the underlying operating
+system. No significant difference is observed when running this test
+on the generic Linux kernel and the TimeSys kernel. The commercial
+version of the TimeSys Linux kernel should perform better as the
+resolution of the timer tick is 1ms and a programmable time can be
+used for periodic threads. However, it was not possible to obtain a
+license to evaluate the combination of JTime on the commercial Linux
+kernel. \tablename~\ref{tab_results_periodic_ri} represents the
+measurements on the generic kernel. This comparison shows the
+advantage of an adjustable timer interrupt over a fixed timer tick.
+
+\subsubsection{Context Switch}
+
+This test setting consists of two threads. A low priority thread
+continuously stores the current time in a shared variable. A high
+priority periodic thread measures the time difference between this
+value and the time immediately after \code{waitForNextPeriod()}.
+\tablename~\ref{tab_results_context} gives the times for the context
+switch in processor clock cycles.
+
+
+\begin{table}
+    \centering
+    \begin{tabular}{lrd{1}rr}
+        \toprule
+         & \cc{Avg.} & \cc{Std. Dev.} & \cc{Min.} & \cc{Max.} \\
+        \midrule
+%        JOP & 2,878 & 7.97 & 2,876 & 2,909 \\
+%        JOP & 2,878 & 8 & 2,876 & 2,909 \\ % pre cache version
+        JOP & 2,686 & 14 & 2,676 & 2,709 \\
+        RI Linux & 4,253 & 1,239 & 3,232 & 19,628 \\
+        RI TS Linux & 12,923 & 1,145 & 11,529 & 21,090 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Time for a thread switch in clock cycles}
+    \label{tab_results_context}
+\end{table}
+
+
+
+This test did not produce the expected behavior from the RI on the
+generic Linux kernel. When the low priority thread ran in this tight
+loop, the high priority thread was not scheduled. After inserting a
+\code{Thread.yield()} and an operating system call, such as
+\code{System.out.print()}, in this loop, the test performed as
+expected. This indicates a major problem in either the RI or the
+operating system scheduler. This problem did not occur when the RI
+was run on the TimeSys Linux kernel. However, the context switch
+time on the TimeSys kernel is three times longer than on the
+standard kernel.
+
+\subsubsection{Asynchronous Event Handler}
+
+In this test setting, a high priority event handler is triggered by
+a low priority periodic thread. As \code{AsynchEventHandler}
+performs poorly in the RI (see \cite{701668}), a
+\code{BoundAsynchEventHandler} is used for the RI test program. The
+time elapsed between the invocation of \code{fire()} and the first
+statement of the event handler was measured.
+\tablename~\ref{tab_results_event} shows the elapsed times in clock
+cycles for JOP and the RTSJ RI.
+
+
+\begin{table}
+    \centering
+    \begin{tabular}{lrd{1}rr}
+        \toprule
+         & \cc{Avg.} & \cc{Std. Dev.} & \cc{Min.} & \cc{Max.} \\
+        \midrule
+%        JOP & 2,986 & 7.3 & 2,822 & 2,986 \\
+%        JOP & 2,986 & 7 & 2,822 & 2,986 \\ % pre cache version
+        JOP & 2,935 & 7 & 2,773 & 2,935 \\
+        RI Linux & 53,685 & 7,014 & 47,400 & 87,196 \\
+        RI TS Linux & 69,273 & 7,832 & 63,060 & 101,292 \\
+        \bottomrule
+    \end{tabular}
+    \caption{Dispatch latency of event handlers in clock cycles}
+    \label{tab_results_event}
+\end{table}
+
+
+The time taken to dispatch an asynchronous event is similar to the
+context switch time in JOP. This is to be expected as events are
+scheduled and dispatched as threads. The minimum value only occurred
+in the first event, all following events having been dispatched in
+the maximum time.
+
+In the RI, the dispatch time is about 12 times larger than a context
+switch with a significant variation in time. This indicates that the
+implementation of \code{fire()} and the communication of the event
+to the underlying operating system are not optimal. The time factor
+between context switch and event handling on the TimeSys kernel is
+lower than on the standard kernel, but is nevertheless still
+significant.
+
+\subsubsection{Summary}
+
+In this section, we have compared the RTSJ on top of Linux with the
+implementation of a simple real-time profile on top of JOP. The RTSJ
+addresses several issues relating to the use of Java for real-time
+systems. However, the RTSJ is a specification too large and complex
+to be implemented in small embedded systems. We therefore use the
+simpler real-time profile for JOP. Tight integration of the
+real-time scheduler with the supporting processor results in an
+efficient platform for Java in embedded real-time systems. A
+performance comparison between this implementation and the RTSJ
+showed that a dedicated Java processor without an underlying
+operating system is more predictable than trying to adopt a general
+purpose OS for real-time systems. Time will show if an
+implementation of the RTSJ on a \emph{real} RTOS will outperform the
+presented solution.
+
+
 
 \end{document}

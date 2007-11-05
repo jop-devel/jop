@@ -106,7 +106,6 @@ this memory transfer, the entire variable area (the arguments
 stack. However, in the invoked method, the arguments are buried deep
 in the stack.
 
-\emph{Listing issue!!!}
 \begin{lstlisting}[float,caption={Example of parameter passing and access},label={lst:stack:param:pass}]
 The Java source:
 
@@ -160,7 +159,6 @@ variable area.
 
 \begin{figure}
     \centering
-%    \includegraphics[width=\columnwidth]{stack/stack_invocation} columnwidth only for two columns useful
     \includegraphics[scale=\picscale]{stack/stack_invocation}
     \caption{Stack change on method invocation}
     \label{fig_stack_invoke}
@@ -635,7 +633,7 @@ architectures.
         \multicolumn{2}{c}{Cache}&
         Memory& fmax & Size\\
          & LCs& Reg.& LCs&
-        Reg.& [bit]& [MHz] & [word]\\
+        Reg.& (bit)& (MHz) & (word)\\
         \midrule
 %        ALU only& 194& 0& -& -& -&- &-\\
         Testbed w.\ ALU& 261& 166& -& -& -&237 & - \\
@@ -657,7 +655,7 @@ needs 194 LCs. In the first line, the testbed is combined with the
 ALU without any stack caching, as a reference design. With this
 configuration, we can obtain the maximum possible speed of the
 registered ALU in this FPGA technology, in this case an operating
-frequency of 237MHz or a 4.2 ns delay. This value is an upper bound
+frequency of 237~MHz or a 4.2~ns delay. This value is an upper bound
 of the system frequency. Every pipelined architecture needs one or
 more multiplexer in the ALU path, either for data forwarding or for
 operand selection, resulting in a longer delay. The fourth and fifth
@@ -672,20 +670,21 @@ the register file is automatically implemented in two 32-bits
 embedded RAM blocks. Two different RAM blocks are necessary to
 provide two read ports and one write port. In both versions, the
 delay time to read the register file (delay through the 16:1 MUX of
-4.9 ns or RAM access time of 4.6 ns) is in the same order as the
+4.9~ns or RAM access time of 4.6~ns) is in the same order as the
 delay time through the ALU, resulting in a system frequency of half
 the theoretical frequency of that with the ALU alone. As the
 structure of the version with the embedded RAM block is very similar
 with the SRAM cache, only the version with the discrete registers is
 shown in Table~\ref{tab_stack_resources}.
 
-The stack cache with a RAM and registers on the RAM output (the additional
-pipeline stage) performs better than the first solution. However, the 3:1
-MUX in the critical path still adds 2.3 ns to the delay time. Compared with
-the proposed solution (in the last line), we see that double the amount of
-RAM is needed for the two read ports.
+The stack cache with a RAM and registers on the RAM output (the
+additional pipeline stage) performs better than the first solution.
+However, the 3:1 MUX in the critical path still adds 2.3~ns to the
+delay time. Compared with the proposed solution (in the last line),
+we see that double the amount of RAM is needed for the two read
+ports.
 
-The two-level stack cache solution performs at 213MHz, i.e.\ almost
+The two-level stack cache solution performs at 213~MHz, i.e.\ almost
 the theoretical system frequency (in practice, about 10{\%} slower).
 Only a 2:1 MUX is added to the critical path. The single read port
 memory needs half the number of memory bits of the other two

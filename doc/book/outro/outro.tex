@@ -5,57 +5,10 @@ new and active research area. This chapter is completed by
 suggestions for future research, based on the proposed Java
 processor.
 
-\section{Conclusions}
-
-In the following list, we draw conclusions about the Java processor
-presented in this document, in relation to the problem stated in
-Section~\ref{sec:resques}:
-\begin{enumerate}
-    \item
-A time-predictable Java platform has been demonstrated. As shown in
-Section~\ref{sec:rtpredict} and \ref{sec:cache}, the architectural
-design decisions and a time-predictable cache provide the basis for
-a time-predictable Java processor. In Section~\ref{sec:wcet}, it was
-shown that all bytecodes have a known WCET and there are no pipeline
-dependencies. JOP's architecture can therefore be modeled
-cycle-accurately for the low-level WCET analysis.
-    \item
-The implementation of a RISC-style stack architecture, with a novel
-mapping of Java bytecodes to microcode addresses (see
-Section~\ref{sec:microcode}), and the analysis of the JVM stack
-usage pattern (see Section~\ref{sec:stack}) with the
-resource-efficient two-level stack cache resulted in a small design.
-In fact, JOP is the smallest implementation of the JVM in hardware
-available to date.
-    \item
-The usage of JOP in real-world applications, as described in
-Section~\ref{sec:applications}, shows that JOP is a working
-processor and not only a theoretical architecture.
-    \item
-Comparing JOP with various embedded Java solutions in
-Section~\ref{sec:performance} showed that the time-predictable
-processor architecture does not need to be slow. JOP's average
-performance is similar to that of non real-time Java systems.
-    \item
-The flexibility of an FPGA allows for a HW/SW-co-design approach,
-with the aim of generating application-specific configurations of
-JOP.
-    \item
-In Section~\ref{sec:rtprof}, a simple real-time profile for Java was
-defined. This profile solves a number of issues that arise from
-using standard Java for real-time systems. This profile was
-elaborated upon in Section~\ref{sec:usersched} to create a framework
-for a user-defined scheduler in Java, thus enabling the
-implementation of advanced scheduling concepts at the application
-level.
-\end{enumerate}
-
-\section{Summary of Contributions}
-
 The research contributions made by this work are related to two
 areas: real-time Java and resource-constrained embedded systems.
 
-\subsubsection{A Real-Time Java Processor}
+\section{A Real-Time Java Processor}
 
 The goal of time-predictable execution of Java programs was a
 first-class guiding principle throughout the development of JOP:
@@ -159,7 +112,7 @@ given.
 
 
 
-\subsubsection{A Resource-Constrained Processor}
+\section{A Resource-Constrained Processor}
 
 Embedded systems are usually very resource-constrained. Using a
 low-cost FPGA as the main target technology forced the design to be
@@ -253,7 +206,7 @@ Some suggestions are given below:
 %
 \begin{description}
     \item[Real-time garbage collector:]
-In Section~\ref{sec:gc}, a real-time garbage collector was
+In Section~\ref{chap:rtgc}, a real-time garbage collector was
 presented. Hardware support of a real-time GC would be an
 interesting topic for further research.
 
@@ -343,7 +296,7 @@ Another issue here is the paging mechanism in virtual memory system,
 which has to be redesigned for a Java computer. For this, we need to
 merge the virtual memory management with the GC. It does not make
 sense to have a virtual memory manager that works with plain (e.g.\
-4KB) memory pages without knowledge about object lifetime. We
+4~KB) memory pages without knowledge about object lifetime. We
 therefore need to incorporate the virtual memory paging with a
 generational GC. The GC knows which objects have not been accessed
 for a long time and can be swapped out to the disc. Handling paging

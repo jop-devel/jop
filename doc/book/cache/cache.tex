@@ -1,13 +1,13 @@
 \label{sec:cache}
 
 
-Worst-case execution time (WCET) analysis \cite{84850} of real-time
-programs is essential for any schedulability analysis. To provide a
-low WCET value, a good processor model is necessary. However, the
-architectural advancement in modern processor designs is dominated
-by the rule: '\emph{Make the common case fast}`. This is the
-opposite of '\emph{Reduce the worst case}` and complicates WCET
-analysis.
+Worst-case execution time (WCET) analysis \cite{pusch:maxt:jnl} of
+real-time programs is essential for any schedulability analysis. To
+provide a low WCET value, a good processor model is necessary.
+However, the architectural advancement in modern processor designs
+is dominated by the rule: '\emph{Make the common case fast}`. This
+is the opposite of '\emph{Reduce the worst case}` and complicates
+WCET analysis.
 
 Cache memory for the instructions and data is a classic example of
 this paradigm. Avoiding or ignoring this feature in real-time

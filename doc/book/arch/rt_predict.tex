@@ -2,6 +2,7 @@
 \section{Real-Time Predictability}
 \label{sec:rtpredict}
 
+%%% part of that intro is found in the cache section
 
 %\subsection{Time Predictable Architecture}
 %
@@ -54,6 +55,8 @@
 %proposed cache solution than in a traditional cache.
 %
 %
+
+
 
 
 General-purpose processors are optimized for average throughput and
@@ -316,15 +319,6 @@ multi-threaded. In future work, it will be investigated if the
 additional hardware resources needed for ILP can be better used with
 additional processor cores utilizing this implicit thread-level
 parallelism.
-
-\paragraph{Garbage Collection}
-
-As use of the heap is avoided in hard real-time systems, no garbage
-collector is implemented. Without a garbage collector, the memory
-layout of objects can be simplified. Every reference points directly
-to the object. No indirection through a handle, which would simplify
-memory compaction in the garbage collector, is needed. This reduces
-access time to object fields and methods.
 
 \paragraph{Time-Predictable Instructions}
 

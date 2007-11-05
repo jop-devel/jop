@@ -2,10 +2,6 @@
 
 \begin{enumerate}
     \item Cleanup current chapters/sections
-    \item Move sections according to structure (see below)
-    \item Frontmatter
-    \item Cover
-    \item Quick tour on JOP
 \end{enumerate}
 
 \section{TODO Handbook}
@@ -19,8 +15,7 @@
     chapter
     \item Document design alternatives you didn't take and why you
     didn't take them
-    \item jHISC to related work
-    \item derived work
+    \item derived work: Flavius BlueJEP, Christof, Dresden!
     \item Figure from Slides on configuration (FPGA + serial/USB
     channel)
 \end{itemize}
@@ -29,9 +24,7 @@
 
 \begin{itemize}
     \item VHDL Hello world with cycore
-    \item RTS Introduction
-    \item WCET analysis description + usage (remove from Results
-    section)
+    \item RTS Introduction (based on thesis intro)
     \item SCJ definition (+ implementation)
     \item (Mission modes + implementation)
     \item Teaching (aids)
@@ -47,7 +40,6 @@
 \subsection{Cleanup Following Sections}
 
 \begin{itemize}
-    \item Introduction
     \item Conclusions
     \item SC Java
 \end{itemize}
@@ -56,6 +48,46 @@
 
 \begin{itemize}
     \item Javadoc of some classes
+    \item Embedded Java section
+    \begin{itemize}
+        \item Add Sun/IBM solution to the class initialization issue in
+        Chapter~\ref{chap:rtjava} and a detailed description how JOPizer
+        handles it. Give a simple example of a cyclic dependency.
+        \item Check if the Micro Edition layers are still used by
+        Sun
+        \item check the Sun statement on profiles and provide a
+        reference
+        \item add PhoneME
+        \item Still only one profile (MIDP) defined for the CLDC?
+        \item Check if CDC definition is still true
+        \item RTSJ implementations: add Angelo and York to jRate and
+        additional RTSJ implementations (aicas, IBM, appogee, Sun)
+        \item add SCJ in Subsets of the RTSJ
+        \item check status of JSR-50
+    \end{itemize}
+    \item JOP Runtime System
+    \begin{itemize}
+        \item SCJ to the real-time profile (plus implementation) --
+        the JTRES text (Jan!) is commented out in the handbook
+        \item Update object, array, and class layout!
+    \end{itemize}
+    \item Describe ejip (it's now commented out in handbook in intro)
+    \item Update performance section with actual numbers
+    \begin{itemize}
+        \item use text from oohw paper for
+    the explanation of the benchmark
+        \item own jbe section?
+        \item picoJava, jamuth
+    \end{itemize}
+    \item Update WCET chapter with JTRES paper and references to
+    Elena and Trevors work + further reading section
+    \item IFAC paper into application section
+    \item Related Work
+    \begin{itemize}
+        \item Cut it down
+        \item Add jHISC, jamuth
+        \item Add derived work (again)
+    \end{itemize}
 \end{itemize}
 
 \subsection{IKT}
@@ -79,8 +111,7 @@ Copy stuff from JSA paper. However, only paragraphs to avoid
 
 \subsection{Publishing the Book}
 
-Target is real book with ISBN (= publication). The copyright should
-still be open-source.
+Target is real book with ISBN (= publication).
 
 \begin{itemize}
     \item \url{http://www.virtualbookworm.com/} \$ 360 -- \$ 440, incl. Amazon only, 4 computer
@@ -130,25 +161,6 @@ No go's:
     \item http://www.ubooks.de/
 \end{itemize}
 
-\subsection{Possible Titles}
-
-\begin{itemize}
-    \item JOP Handbook
-    \item The JOP User's Manual
-    \item JOP Reference Handbook
-\end{itemize}
-
-other titles:
-\begin{itemize}
-    \item Quartus II Version 7.1 Handbook
-    \item The LEON Processor User’s Manual
-    \item GRLIB IP Library User’s Manual
-    \item DSP Builder User Guide
-    \item Nios II Processor Reference Handbook
-    \item Cyclone III Device Handbook, Volume 1
-    \item Virtex-5 User Guide
-    \item Libraries Guide (Xilinx)
-\end{itemize}
 
 
 \subsection{A Possible Structure of the Book}
@@ -162,6 +174,7 @@ other titles:
         \item A Quick Start (Hello World) or Getting Started
         \item A Short History
         \item About this handbook (based on, organization)
+        \item VHDL Hello World
     \end{itemize}
     \item Architecture (HW)
     \item Architecture (SW)
@@ -174,14 +187,15 @@ other titles:
         \item Related Work
         \item Real-time systems
     \end{itemize}
+    \item WCET
     \item Real-time threads
     \item Tools
     \begin{itemize}
+        \item JOPizer
         \item WCET Analyzer
-        \item Library: util, ejip, YAFFS,...
     \end{itemize}
-    \item JOPizer
     \item JDK + support
+    \item Library: util, ejip, YAFFS,...
     \item Board descriptions
     \item Appendix
     \begin{itemize}
@@ -190,7 +204,7 @@ other titles:
         \item Javadoc for classes
     \end{itemize}
     \item Further reading (related work) at the end of each chapter
-    \item Browser other books for structural ideas
+    \item Browse other books for structural ideas
 \end{itemize}
 
 \section{JOPizer Description}

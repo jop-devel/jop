@@ -1,5 +1,5 @@
 
-This document describes the design flow for JOP --- how to build the
+This section describes the design flow for JOP --- how to build the
 Java processor and a Java application from scratch (the VHDL and
 Java sources) and download the processor to an FPGA and the Java
 application to the processor.
@@ -19,26 +19,29 @@ simple
 \end{verbatim}
 %
 should build everything from the sources and download a \emph{Hello
-World} example. However, to costumize the \code{Makefile} for a
+World} example. However, to customize the \code{Makefile} for a
 different target it is necessary to understand the complete design
-flow.
+flow. It should be noted that an
+Ant\footnote{\url{http://ant.apache.org/}} based build process is
+also available and will in the future substitute the \cmd{make}
+based build.
 
 \subsection{Tools}
 
 All needed tools are freely available.
 %
 \begin{itemize}
-    \item  \href{http://java.sun.com/j2se/1.4.2/download.html}%
-{Java 2 Platform 1.4, Standard Edition}  Java compiler and runtime
+    \item  \href{http://java.sun.com/javase/downloads/index.jsp}%
+{Java SE Development Kit (JDK)}  Java compiler and runtime
     \item  \href{http://www.cygwin.com/}%
 {Cygwin} GNU tools for Windows. Packages cvs, gcc and make are
 needed
     \item  \href{https://www.altera.com/support/software/download/altera_design/quartus_we/dnl-quartus_we.jsp}%
 {Quarts II Web Edition} VHDL synthesis, place and route for Altera
 FPGAs
-    \item  \href{https://www.altera.com/support/software/download/programming/jam/dnl-byte_code_player.jsp}%
-{Jam STAPL Byte-Code Player} FPGA configuration in batch mode
-(\cmd{jbi32.exe})
+%    \item  \href{https://www.altera.com/support/software/download/programming/jam/dnl-byte_code_player.jsp}%
+%{Jam STAPL Byte-Code Player} FPGA configuration in batch mode
+%(\cmd{jbi32.exe})
 
 \end{itemize}
 %
@@ -52,7 +55,6 @@ jbi32). Check the PATH at the command prompt with:
     make
     cvs
     quartus_map
-    jbi32
 \end{verbatim}
 %
 All the executables should be found and usually report their usage.
@@ -71,7 +73,8 @@ Create a working directory and download JOP from the
 \url{www.opencores.org} CVS server:
 
 \begin{verbatim}
- cvs -d :pserver:anonymous@cvs.opencores.org:/cvsroot/anonymous -z9 co -P jop
+ cvs -d :pserver:anonymous@cvs.opencores.org:/cvsroot/anonymous \
+    -z9 co -P jop
 \end{verbatim}
 
 All sources are downloaded to a directory \dirent{jop}. For the
@@ -83,7 +86,9 @@ directories with:
 
 \subsubsection{Tools}
 
-The tools are built with following make command:
+The tools contain \cmd{Jopa} the microcode assembler, \cmd{JopSim} a
+Java based simulation of JOP, and \cmd{JOPizer} the application
+builder. The tools are built with following make command:
 
 \begin{verbatim}
     make tools
@@ -118,8 +123,7 @@ in the Makefile. It is built and downloaded to JOP with:
     make japp
 \end{verbatim}
 
-The "Hello World" message should be printed in the command window
-and the LED on the board should blink.
+The ``Hello World" message should be printed in the command window.
 
 For a different application change the Makefile targets or override
 the \code{make} variables at the command line. Following example
@@ -129,29 +133,48 @@ builds and runs some benchmarks on JOP:
     make japp -e P1=bench P2=jbe P3=DoAll
 \end{verbatim}
 
-
+The three variables \code{P1}, \code{P2}, and \code{P3} are a
+shortcut to set the directory, the package name, and the main class
+of the application.
 
 \subsection{Xilinx Spartan-3 Starter Kit}
 
-For the Xilinx starter kit the design flow is very similar:
+The Xilinx tool chain is still not well supported by the Makefile or
+the Ant design flow. Here a short list how to build JOP for a Xilinx
+board:
 
-\begin{enumerate}
-    \item Compile the ISE project under \dirent{xilinx/s3sk}
-    \item Download JOP to the FPGA
-    \item Connect a serial cable from the board to your PC
-    \item Open a command prompt in \dirent{java/target}
-    \item Change the COM-port in \cmd{doit.bat} and disable the line
-    with \cmd{jbi32.exe}
-    \item type: \code{doit test test Hello}
-\end{enumerate}
+\begin{verbatim}
+    make tools
+    cd asm
+    jopser
+    cd ..
+\end{verbatim}
+
+
+Now start the Xilinx IDE on the project file \code{jop.npl}. It will
+be converted to a new (binary) \code{jop.ise} project. The
+\code{.npl} project file is used as it is simple to edit (ASCII).
+
+\begin{itemize}
+    \item Generate JOP by double clicking 'Generate PROM, ACE, or JTAG File'
+    \item Configure the FPGA according to the board type
+\end{itemize}
+
+The above is a one step build for the processor. The Java
+application is built and downloaded by:
+
+\begin{verbatim}
+    make java_app
+    make download
+\end{verbatim}
 
 Now your first Java program runs on JOP/Spartan-3!
 
 \section{Booting JOP --- How Your Application Starts}
 
-Basically this is a two step process: a.) configure the FPGA and b.)
-load the Java application. There are different ways to perform these
-steps.
+Basically this is a two step process: (a) configuration of the FPGA
+and (b) downloading the Java application. There are different ways
+to perform these steps.
 
 \subsection{FPGA Configuration}
 
@@ -201,18 +224,26 @@ is generated and the complete processor has to be built. The
 generation is performed by the C preprocessor (\cmd{gcc}) on
 \code{jvm.asm}. The serial version is generated by default, the USB
 or Flash version are generated by defining the preprocessor
-variables \code{USB} or \code{FLASH}. To speed up simulation in
-ModelSim there is a forth method where the Java application is
-loaded by the test bench instead of JOP. This version is generated
-by defining \code{SIMULATION}. There are four small batch-files in
-directory \dirent{asm} that perform the JVM generation:
-\cmd{jopser}, \cmd{jopusb}, \cmd{jopflash}, and \cmd{jopsim}.
+variables \code{USB} or \code{FLASH}.
+
+\paragraph{VHDL Simulation}
+
+To speed up the VHDL simulation in ModelSim there is a forth method
+where the Java application is loaded by the test bench instead of
+JOP. This version is generated by defining \code{SIMULATION}. The
+actual Java application is written by \cmd{jop2dat} into a plain
+text file (\code{mem\_main.dat}) and read by the simulation test
+bench into the simulated main memory.
+
+There are four small batch-files in directory \dirent{asm} that
+perform the JVM generation: \cmd{jopser}, \cmd{jopusb},
+\cmd{jopflash}, and \cmd{jopsim}.
 
 \subsection{Combinations}
 
-Theoretically all ways to configure the FPGA can be combined with
-all ways to download the Java application. However, only two
-combinations are useful:
+Theoretically all variants to configure the FPGA can be combined
+with all variation to download the Java application. However, only
+two combinations are useful:
 
 \begin{enumerate}
     \item For VHDL or Java development configure the FPGA
@@ -235,12 +266,12 @@ There are a few tools necessary to build and download JOP to the
 FPGA boards. Most of them are written in Java. Only the tools that
 access the serial line are written in C\footnote{The Java JDK still
 comes without the javax.comm package and getting this optional
-package correct installed is not that easy --- Blame Sun.}.
+package correctly installed is not that easy.}.
 
 \subsubsection{Downloading}
 
 These little programs are already compiled and the binaries are
-checked in in the CVS. The sources can be found in directory
+checked in into the CVS. The sources can be found in directory
 \dirent{c\_src}.
 
 \begin{description}
@@ -274,7 +305,7 @@ files are in \code{jop-tools.jar} in directory
     to VHDL files for a Xilinx FPGA.
     \item[\eei{JOPizer}] links a Java application and converts the
     class information to the format that JOP expects (a \code{.jop} file).
-    JOPizer uses the bytecode engineering library (BCEL).
+    \cmd{JOPizer} uses the bytecode engineering library\footnote{\url{http://jakarta.apache.org/bcel/}} (BCEL).
 
 \end{description}
 
@@ -299,10 +330,14 @@ boards. The main distribution contains the ports for the FPGAs:
     \item Altera Acex 1K30 or 1K50
     \item Altera Cyclone EP1C6 or EP1C12
     \item Xilinx Spartan-3
+    \item Altera Cyclone-II (Altera DE2 board)
+    \item Xilinx Virtex-4 (ML40x board)
+    \item Xilinx Spartan-3E (Digilent Nexys 2 board)
 \end{itemize}
 
-Besides the ports to different FPGAs there are ports to different
-boards.
+For an actual list of the supported FPGA boards see the list at the
+web site. Besides the ports to different FPGAs there are ports to
+different boards.
 
 \subsubsection{ACEX EP1K50C144 Jopcore}
 
@@ -429,7 +464,7 @@ Add the libraries from \dirent{.../jop/java/lib} (as external
 archives) to the build path of the project
 \dirent{joptools}\footnote{Eclipse can't use path variables for
 external .jar files -- annoying}. If you prefer your workspace to be
-out of the JOP directory tree just copy the content of
+not within the JOP directory tree just copy the content of
 \dirent{.../jop/eclipse} to your Eclipse workspace and import the
 projects from there.
 
@@ -459,22 +494,23 @@ is necessary. To speed-up the simulation a little bit a simulation
 of the uart output, which is used for \code{System.out.print()}, is
 also part of the package.
 
-Table~\ref{tab:simfiles} lists the simulation files for JOP and
-which program generates the initialization data. The non-generated
+Table~\ref{tab:simfiles} lists the simulation files for JOP and the
+programs that generates the initialization data. The non-generated
 VHDL files can be found in directory \dirent{vhdl/simulation}.
 %
 \begin{table}
+\small
     \centering
 
     \begin{tabular}{llll}
         \toprule
-        VHDL file & Function & Initilization file & Generator \\
+        VHDL file & Function & Initialization file & Generator \\
         \midrule
         \code{sim\_jop\_types\_100.vhd} & JOP constant definitions & - & - \\
         \code{sim\_rom.vhd} & JVM microcode ROM & \code{mem\_rom.dat} & \cmd{Jopa} \\
         \code{sim\_ram.vhd} & Stack RAM & \code{mem\_ram.dat} & \cmd{Jopa} \\
         \code{sim\_jbc.vhd} & Bytecode memory (cache) & - & - \\
-        \code{sim\_memory.vhd} & Main memory (Java application) & \code{mem\_main.dat} & \cmd{jop2dat} \\
+        \code{sim\_memory.vhd} & Main memory & \code{mem\_main.dat} & \cmd{jop2dat} \\
         \code{sim\_pll.vhd} & A dummy entity for the PLL & - & - \\
         \code{sim\_uart.vhd} & Print characters to stdio & - & - \\
         \bottomrule
@@ -490,8 +526,8 @@ The needed VHDL files and the compile order can be found in
 
 
 The actual version of JOP contains all necessary files to run a
-simulation with ModelSim (or is there another VHDL simulator
-available?). In directory \dirent{vhdl/simulation} you will find:
+simulation with ModelSim. In directory \dirent{vhdl/simulation} you
+will find:
 %
 \begin{itemize}
     \item A test bench: \code{tb\_jop.vhd} with a serial receiver to
@@ -502,17 +538,15 @@ available?). In directory \dirent{vhdl/simulation} you will find:
 %
 \cmd{Jopa} generates various \code{mem\_xxx.dat} files that are read
 by the simulation. The JVM that is generated with \code{jopsim.bat}
-assumes the Java application preloaded in the main memory.
+assumes that the Java application is preloaded in the main memory.
 \cmd{jop2dat} generates a memory initialization file from the Java
-application file (\code{package\_App.jop}) that is read by the
+application file (\code{MainClass.jop}) that is read by the
 simulation of the main memory (\code{sim\_memory.vhd}).
 
 In directory \dirent{modelsim} you will find a small batch file
 (\cmd{sim.bat}) that compiles JOP and the test bench in the correct
-order and starts ModelSim.
-
-The whole simulation process (including generation of the correct
-microcode) is started with:
+order and starts ModelSim. The whole simulation process (including
+generation of the correct microcode) is started with:
 
 \begin{verbatim}
     make sim
@@ -523,12 +557,12 @@ printed in ModelSims command window.
 
 \section{Files Types You Might Encounter}
 
-As there are various tools involved in the complete build, you will
-find files with various extensions. The following list explains the
-file types you might encounter when changing and building JOP.
+As there are various tools involved in the complete build process,
+you will find files with various extensions. The following list
+explains the file types you might encounter when changing and
+building JOP.
 
-The list is far from being complete --- it's just a start. The
-following files are the \emph{source} files:
+The following files are the \emph{source} files:
 
 \begin{description}
 
@@ -544,15 +578,16 @@ Used more in the US.
 
 \item[\eei{.asm}] JOP microcode. The JVM is written in this stack
 oriented assembler. Files are assembled with \cmd{Jopa}. The result
-are VHDL files, .mif files, and .dat files for ModelSim.
+are VHDL files, \code{.mif} files, and \code{.dat} files for
+ModelSim.
 
 \item[\eei{.bat}] Usage of these DOS batch files still prohibit
 running the JOP build under Unix. However, these files get less used
 as the \code{Makefile} progresses.
 
-\item[\eei{.xml}] Project files for Ant. Not used anymore --- they
-are out dated.
-
+\item[\eei{.xml}] Project files for Ant. Ant is an attractive
+substitution to \cmd{make}. Future distributions on JOP will be
+\cmd{ant} based.
 
 \end{description}
 
@@ -591,10 +626,10 @@ sources:
 ancillary information and is executed by the JVM.
 
 \item[\eei{.jar}] The Java Archive file format enables you to bundle multiple files
-into a single archive file. Typically a \code{.jar} file will
-contain the class files and auxiliary resources. A \code{.jar} file
-is essentially a zip file that contains an optional
-\dirent{META-INF} directory.
+into a single archive file. Typically a \code{.jar} file contains
+the class files and auxiliary resources. A \code{.jar} file is
+essentially a zip file that contains an optional \dirent{META-INF}
+directory.
 
 \end{description}
 
@@ -608,13 +643,13 @@ runns on JOP. It is generated by \cmd{JOPizer} and can be either
 downloaded (serial line or USB) or stored in the Flash (or used by
 the simulation with \cmd{JopSim} or ModelSim)
 
-\item[\eei{.mif}] Memory Initialization File. Describe the initial
+\item[\eei{.mif}] Memory Initialization File. Defines the initial
 content of on-chip block memories for Altera devices.
 
 \item[\eei{.dat}] memory initialization files for the simulation
 with ModelSim.
 
-\item[\eei{.sof}] SRAM Output File. Configuration for Altera
+\item[\eei{.sof}] SRAM Output File. Configuration file for Altera
 devices. Used by the Quartus programmer or by \cmd{quartus\_pgm}.
 Can be converted to various (or too many) different format. Some are
 listed below.
@@ -633,14 +668,17 @@ devices. Used by flash programming utilities (\cmd{amd} and
 devices. Used by the USB download utility (\cmd{USBRunner}) to
 configure the dspio board via the USB connection.
 
-\item[\eei{.bit}] Bitstream File. Configuration for Xilinx
+\item[\eei{.bit}] Bitstream File. Configuration file for Xilinx
 devices.
 
 \end{description}
 
 \section{Porting JOP}
 
-Add a description about the files (memory).
+Porting JOP to a different FPGA platform or board usually consists
+of adapting pin definitions and selection of the correct memory
+interface. Memory interfaces for the SimpCon interconnect can be
+found in directory \dirent{vhdl/memory}.
 
 \subsection{Test Utilities}
 
@@ -727,13 +765,14 @@ debugging. The \emph{real} microcode is added in \code{jvm.asm} with
 a label for the special byctecode. The naming convention is
 \code{jopsys\_name}. In \code{Native.java} provide a method
 signature for the native method and enter the mapping between this
-signature and the name in \code{jvm.asm} in \code{JopInstr.java}.
-Provide the execution time in \code{WCETInstruction.java} for the
-WCET analysis.
+signature and the name in \code{jvm.asm} and in
+\code{JopInstr.java}. Provide the execution time in
+\code{WCETInstruction.java} for the WCET analysis.
 
 The native method is accessed by the method provided in
 \code{Native.java}. There is no calling overhead involved in the
-mechanism.
+mechanism. The \emph{native} method gets substituted by
+\cmd{JOPizer} with a \emph{special} bytecode.
 
 \subsection{A new Peripheral Device}
 
@@ -747,16 +786,16 @@ All peripheral components in JOP are connected with the SimpCon
 \cite{simpcon} interface. For a device that implements the Wishbone
 \cite{soc:wishbone} bus, a SimpCon-Wishbone bridge
 (\code{sc2wb.vhd}) is available (e.g.\ it is used to connect the
-AC97 interface in the dspio project).
+AC97 interface in the \code{dspio} project).
 
-A simple start is using an example and change it to your needs. Take
-a look into \code{sc\_test\_slave.vhd}. All peripheral components
-(SimpCon slaves) are connected in one module usually named
-\code{scio\_xxx.vhd}. Browse the examples and copy one that best
-fits your needs. In this module the address of your peripheral
+For an easy start use an existing example and change it to your
+needs. Take a look into \code{sc\_test\_slave.vhd}. All peripheral
+components (SimpCon slaves) are connected in one module usually
+named \code{scio\_xxx.vhd}. Browse the examples and copy one that
+best fits your needs. In this module the address of your peripheral
 device is defined (e.g. 0x10 for the primary UART). This IO address
 is mapped to a negative memory address for JOP. That means
-0xffffff80 is added to the address.
+0xffffff80 is added as a base to the IO address.
 
 By convention this address mapping is defined in
 \code{com.jopdesign.sys.Const}. Here is the UART example:
@@ -773,60 +812,98 @@ By convention this address mapping is defined in
 The IO devices are accessed from Java by
 \emph{native}\footnote{These are not real functions and are
 substituted by special bytecodes on application building with
-JOPizer.} functions: \code{com.jopdesign.sys.Native.rd()} and
-\code{wr()}. Again an example with the UART:
+JOPizer.} functions: \code{Native.rdMem()} and \code{Native.wrMem()}
+in pacakge \code{com.jopdesign.sys}. Again an example with the UART:
 
 \begin{verbatim}
     // busy wait on free tx buffer
     // no wait on an open serial line, just wait
     // on the baud rate
-    while ((Native.rd(Const.IO_STATUS)&1)==0) {
+    while ((Native.rdMem(Const.IO_STATUS)&1)==0) {
         ;
     }
-    Native.wr(c, Const.IO_UART);
+    Native.wrMem(c, Const.IO_UART);
 \end{verbatim}
 
 Best practise is to create a new IO configuration
 \code{scio\_xxx.vhdl} and a new Quartus project for this
-configuration. So the changes are not mixed up with a new version of
-JOP. For the new Quartus project only the three files jop.cdf,
-jop.qpf, and jop.qsf have to be copied in a new directory under
-\dirent{quartus}. This new directory is the project name that has to
-be set in the Makefile:
+configuration. This avoids the mixup of the changes with a new
+version of JOP. For the new Quartus project only the three files
+\code{jop.cdf}, \code{jop.qpf}, and \code{jop.qsf} have to be copied
+in a new directory under \dirent{quartus}. This new directory is the
+project name that has to be set in the Makefile:
 
 \begin{verbatim}
     QPROJ=yourproject
 \end{verbatim}
 
 The new VHDL module and the \code{scio\_xxx.vhdl} are added in
-jop.qsf. This file is a plain ASCII file and can be edit with a
-standard editor or within Quartus.
+\code{jop.qsf}. This file is a plain ASCII file and can be edit with
+a standard editor or within Quartus.
 
+\subsection{A Customized Instruction}
 
+A customized instruction can be simply added by implementing it in
+microcode and map it to a native function as described before. If
+you want to include a hardware module that implements this
+instruction a new microinstruction has to be introduced. Besides
+mapping this instruction to a native method the instruction has also
+be added to the microcode assembler \cmd{Jopa}.
+
+\subsection{Dependencies}
+
+Changes to central (data) structures needs an update in several
+files.
+
+\subsubsection{Changing the Class Format}
+
+\begin{itemize}
+    \item JOPizer: CLS\_HEAD, dump()
+    \item GC.java uses CLASS\_HEADR
+    \item JMV.java uses CLASS\_HEADR + offset (checkcast, instanceof)
+\end{itemize}
+
+\subsubsection{Stack Size}
+
+\begin{itemize}
+    \item \code{ram\_width} in \code{jop\_config\_xx.vhd}
+    \item \code{STACK\_SIZE} in \code{com.jopdesign.sys.Const}
+    \item \code{RAM\_LEN} in \code{com.jopdesign.sys.Jopa}
+\end{itemize}
 
 \section{Acknowledgments}
 
 Ed Anuff wrote \code{testmon.asm} to perform a memory interface test
-and \code{BlockGen.java} to convert Altera .mif files to Xilinx
-memory blocks. \code{BlockGen.java} was the key tool to port JOP to
-Xilinx FPGAs in general and the Spartan-3 more specific. Flavius
-Gruian wrote JOPizer to generate the .jop file from the application
-classes. JOPizer is based on the open source BCEL and a substitute
-to Sun's proprietary \code{JavaCodeCompact}.
+and \code{BlockGen.java} to convert Altera \code{.mif} files to
+Xilinx memory blocks. \code{BlockGen.java} was the key tool to port
+JOP to Xilinx FPGAs in general and the Spartan-3 more specific.
+Flavius Gruian wrote the initial version of \cmd{JOPizer} to
+generate the \code{.jop} file from the application classes.
+\cmd{JOPizer} is based on the open source BCEL and is a substitute
+to the former used \code{JavaCodeCompact} from Sun.
 
-\section{Notes}
+\section{Information on the Web}
 
-TODO:
+Further information on JOP and the build process can be found in the
+Internet at following places:
 
 \begin{itemize}
-    \item pcsim
-    \item JopSim
+    \item \url{http://www.jopdesign.com/} is the main web site for
+    JOP
+    \item \url{http://www.jopwiki.com/} is a Wiki that can be freely
+    edited by JOP users.
+    \item \url{http://tech.groups.yahoo.com/group/java-processor/}
+    hosts a mail list for discussions on Java processors in general
+    and mostly on JOP related topics
 \end{itemize}
+
+%\section{Notes}
+%
+%TODO:
+%
+%\begin{itemize}
+%    \item pcsim
+%    \item JopSim
+%\end{itemize}
 %Formating ideas -- see Latax intro p 27
 %\url{http://www.ctan.org/tex-archive/info/lshort/english/lshort.pdf}\\
-
-
-\subsection{A Customized Instruction}
-
-Add a description how to implement a customized \emph{microcode}
-instruction with hardware support on JOP.

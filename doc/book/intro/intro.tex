@@ -1,184 +1,188 @@
 
 
-This handbook introduces the concept of a Java processor for
-embedded real-time systems, in particular the design of a small
-processor for resource-constrained devices with time-predictable
-execution of Java programs. This Java processor is called JOP --
-which stands for Java Optimized Processor --, based on the
-assumption that a full native implementation of all Java bytecode
-instructions is not a useful approach.
+This handbook introduces a Java processor for embedded real-time
+systems, in particular the design of a small processor for
+resource-constrained devices with time-predictable execution of Java
+programs. This Java processor is called JOP -- which stands for Java
+Optimized Processor --, based on the assumption that a full native
+implementation of all Java bytecode instructions is not a useful
+approach.
 
-%\section{Motivation}
-\section{Justification for Development}
+\section{A Quick Tour on JOP}
 
-To justify Java's use in embedded real-time systems we quote from a
-document published by the National Institute of Standards and
-Technology \cite{nist99}:
+In the following section we will give a quick overview on JOP and a
+short description how to get JOP running within an FPGA. A detailed
+description of the build process can be found in
+Chapter~\ref{chap:build}.
 
-\begin{itemize}
-    \item Java's higher level of abstraction allows for increased programmer
-productivity (although recognizing that the tradeoff is runtime
-efficiency)
-    \item Java is relatively easier to master than C++
-    \item Java is relatively secure, keeping software components (including
-the JVM itself) protected from one another
-    \item Java supports dynamic loading of new classes
-    \item Java is highly dynamic, supporting object and thread creation at
-runtime
-    \item Java is designed to support component integration and reuse
-    \item The Java technologies have been developed with careful
-consideration, erring on the conservative side using concepts and
-techniques that have been scrutinized by the community
-    \item The Java programming language and Java platforms support
-application portability
-    \item The Java technologies support distributed applications
-    \item Java provides well-defined execution semantics
-\end{itemize}
-
-Based on the NIST document, the Real-Time for Java Experts Group has
-published the Real Time Specification for Java (RTSJ) \cite{rtsj} to
-add real-time extensions to Java.
-
-Despite the above, to date Java is rarely used in embedded real-time
-systems. High resource requirements for the Java virtual machine and
-unpredictable real-time behavior are the main issues surrounding the
-use of Java for embedded systems. JOP addresses both issues, and the
-proposed Java processor makes a strong case for the use of Java in
-embedded systems.
-
-\section{Embedded Real-Time Systems}
-
-An embedded system is a special-purpose computer system that is part
-of a larger system or machine. An embedded system is designed to
-perform a narrow range of functions with no, or minimal user
-intervention.
-
-Since many embedded systems are produced in large quantities, the
-need to reduce costs is a major concern. Embedded systems often have
-significant energy constraints, and many are battery-powered. As a
-result of these constraints, embedded systems use a slow processor
-and small memory size to minimize costs and energy consumption.
-
-Embedded systems interact with the environment and often have to
-produce output within a given timeframe. Therefore, most embedded
-systems are real-time systems. Here is a general definition of a
-real-time system (John A. Stankovic \cite{50811}):
-
-\begin{quote}
-In real-time computing the correctness of the system depends not
-only on the logical result of the computation but also on the time
-at which the result is produced.
-\end{quote}
-
-%(Donald Gillies \cite{rt:definition}):
-%% realtime FAQ - Donald Gillies
-%A real-time system is one in which the correctness of the
-%computations not only depends upon the logical correctness of the
-%computation but also upon the time at which the result is produced.
-%If the timing constraints of the system are not met, system failure
-%is said to have occurred.
-% Donald W. Gillies website
-%In a hard real-time system the correctness of a computation depends
-%not only on the computed results but also on the time at which they
-%are produced. A result produced on or after the deadline is
-%typically useless.
-%
-However, it should be noted that `real-time' does not mean `really
-fast'. In pure real-time systems (i.e.\ without non real-time
-tasks), there is no additional value in producing results earlier
-than required.
-
-Embedded real-time systems often have to handle concurrent tasks,
-such as communication, calculating values for a control loop, user
-interface and supervision. A natural way to handle these concurrent
-jobs is to model them as individual tasks. These tasks are executed
-on a preemptive multi-tasking system. Each task is assigned a
-priority and the multi-tasking system is responsible for scheduling
-individual tasks according to their priority.
-%A schedulability test shows that all tasks would meet their deadlines.
-
-%\subsection{Scheduling}
-
-To fulfil the time constraints for a real-time system, an
-appropriate schedule needs to be found. This problem was solved in
-the classic paper by Liu and Layland \cite{321743} on independent
-periodic tasks. The optimal priority assignment for a set of tasks
-is called the rate monotonic priority order, in which a task with a
-shorter period is assigned a higher priority. If the Worst-Case
-Execution Time (WCET) of each task is known, the schedule is
-feasible and all tasks will meet their deadline\footnote{The period
-of a periodic task is the time between consecutive activations of
-the task. The deadline of the task is assumed to be at the end of
-the tasks period.}, if:
-
-\begin{samepage}
-\begin{equation}
-\nonumber
-    \frac{C_1}{T_1}+\dots+\frac{C_n}{T_n} \le U(n) = n(2^{\frac{1}{n}}-1)
-\end{equation}
-%
-where
-\begin{equation}
-\nonumber
-    \begin{split}
-        C_i & = \mbox{worst-case execution time of } task_i \\
-        T_i & = \mbox{period of } task_i \\
-        U(n) & = \mbox{utilization bound for $n$ tasks.}
-    \end{split}
-\end{equation}
-\end{samepage}
-%
-In theory, this test is both elegant and simple. For concrete
-systems, two issues have to be solved:
-%
-\begin{itemize}
-    \item There are very few systems in existence that do not require
-    communication between tasks.
-    As a result, tasks cannot be seen as independent and blocking
-    needs to be incorporated into the schedulability analysis.
-    \item The WCET of each task has to be known. This is not a
-    trivial task. Simple measurements of execution times never fully
-    guarantee a correct value. The tasks therefore have to be analyzed
-    using  the correct model of the target system. It is almost
-    impossible to provide an accurate and correct model of modern
-    processors and memory systems.
-\end{itemize}
-%
-Several standard textbooks on real-time systems \cite{
-book:klein-real-time-analysis-ratetm, 558498} deal with the first
-issue. JOP is intended to resolve the second issue. It should be
-noted that there are a number of scheduling approaches and
-schedulability tests. However, as a rule, these approaches all
-assume that the WCET of each task is known.
+JOP is the soft-core written in VHDL plus tools, a simplified Java
+library (JDK), and some application examples. JOP is delivered in
+source only. The source contains a bunch of VHDL files for the
+processor core and Java files. The JOP sources are hosted at
+Opencores\footnote{\url{http://www.opencores.org/projects.cgi/web/jop}}.
 
 
-\section{Research Objectives and Contributions}
+\subsection{Building JOP and Running ``Hello World"}
+
+To build JOP you first have to download the source tree from
+Opencores. A \emph{Makefile} (or an Ant file) contains all necessary
+steps to build the tools, the processor, and the application.
+Configuration of the FPGA and downloading the Java application is
+also part of the Makefile.
+
+In this description we assume the FPGA board Cycore (see
+Appendix~\ref{appx:cycore}). This board is the default target for
+the Makefile. The board has to be connected to the power supply and
+to the PC via a ByteBlaster download cable and a serial cable.
+
+The FPGA is configured via the ByteBlaster cable. The Java
+application is downloaded after the FPGA configuration via the
+serial cable. Besides the download the serial cable is also used as
+communication link between JOP and the PC. \code{System.out} and
+\code{System.in} represent this serial link on JOP.
+
+In order to build the whole system you need a Java
+compiler\footnote{Download the Java SE Development Kit (JDK) from
+\url{http://java.sun.com/javase/downloads/index.jsp}.} and an FPGA
+compiler. In our case we use the free web edition of Quartus from
+Altera\footnote{\url{http://www.altera.com/}}. As we use \cmd{make}
+and the preprocessor from the GNU compiler collection
+Cygwin\footnote{\url{http://www.cygwin.com/}} should be installed
+under Windows.
+
+When all tools are setup correctly\footnote{Check at the command
+prompt that \cmd{javac} is in the path.} a simple \cmd{make} should
+build the tools, the processor, compile the ``Hello World" example,
+configure the FPGA and download the application. The whole build
+process will take a few minutes. After typing
+\begin{verbatim}
+    make
+\end{verbatim}
+you should see a lot of messages from the various tools. However,
+the last lines should be actual messages received from JOP. It
+should look similar to the following:
+\begin{verbatim}
+    JOP start
+    ...
+    V 20070831 - 60 MHz, 1024 KB RAM
+    Hello World from JOP!
+
+    JVM exit!
+\end{verbatim}
+Note that JOP prints some internal information, such as version and
+memory size, at the startup. After that, the message ``Hello World
+from JOP!" can be seen. Our first program runs on JOP!
+
+As next step locate the hello world example in the source
+tree\footnote{\dirent{.../jop/java/target/src/test/test/HelloWorld.java}}
+and change the output message. The tools and the processor have been
+built already. So we do not need to compile everything from scratch.
+Use the following make target to just compile the Java application
+and download the processor and the application:
+\begin{verbatim}
+    make japp
+\end{verbatim}
+The compile process should now be way faster and the output similar
+to before.
+
+The hello world application is the default target in the Makefile.
+See Chapter~\ref{chap:build} for a description how this target can
+be changed. In case you use a different FPGA board you find
+information how to change the build process also in
+Chapter~\ref{chap:build}.
+
+\subsection{The Design Structure}
+
+Browsing the source tree of JOP can give the impression that the
+design is complex. However, the basic structure is not that complex.
+The design consists of three entities:
+\begin{enumerate}
+    \item The processor JOP
+    \item Supporting tools
+    \item The Java library and application
+\end{enumerate}
+
+The different entities are also reflected during the configuration
+and download process. The download is a two step process:
+\begin{enumerate}
+    \item Configuration of the FPGA: JOP is downloaded via a
+    FPGA download cable (e.g.\ ByteBlaster on the PCs parallel
+    port). After FPGA configuration the processor automatically starts and
+    listens to the second channel (the serial line) for the software download.
+    \item Java application download: the compiled and linked
+    application is downloaded usually via a serial line. JOP stores
+    the application in the main memory and starts execution at
+    \code{main()} after the download.
+\end{enumerate}
+
+Further details of the source structure can be found in
+Section~\ref{sec:directory}.
+
+\section{A Short History}
+
+The first version of JOP was created in 2000 based on the adaption
+of earlier processor designs created between 1995 and 2000. The
+first version was written in Altera's proprietary AHDL language. The
+first \emph{program} (3 bytecode instructions) run on JOP October 2,
+2000. The first approach was general purpose accu/register machine
+with 16-bit instructions, 32-bit registers, and a pipeline length of
+3. It used the on-chip block memory to implement (somehow unusual)
+1024 registers.
+
+The JVM was implemented in the assembler of that machine. That
+concept was similar to the microcode in the current JOP version. The
+decoding of the bytecode was performed by a long jump table. In the
+best case (assuming a local, single cycle memory) a simple bytecode
+(e.g.\ \code{iadd}) took 12 cycles for fetch and decode and
+additional 11 cycles for execution.
 
 
-This book presents a hardware implementation of the Java Virtual
-Machine (JVM), targeting small embedded systems with real-time
+A redesign followed in April 2001, now coded in VHDL. The version 2
+of JOP introduced features to speedup the implementation of the JVM
+with specific instructions for the stack access and a dedicated
+stack pointer. The register file was reduced to 16 entries and the
+instruction width reduced to 8 bit. The pipeline contained 5 stages
+and special support for decoding bytecode instruction was added -- a
+first version of the dynamic bytecode to microcode address
+translation as it is used in the current version of JOP. The
+enhancements within JOP2 resulted in the reduction of the execution
+time for a simple bytecode to 3 cycles. A great enhancement compared
+to the 23 cycles in JOP1.
+
+The next redesign (JOP3) followed in June 2001. The challenge was to
+execute simple bytecodes fully pipelined in a single cycle. The
+microcode instruction set was changed to implement a stack machine
+and the execution stage combined with the on-chip stack cache.
+Microcode instructions where coded in 16 bit and the pipeline was
+reduced to four stages. JOP3 is the basis of JOP as it is described
+in this handbook. The later changes have not been so radical to name
+them a redesign.
+
+The first real-world application of JOP was in the project
+\emph{Kippfahrleitung} (see Section~\ref{sec:app:kfl}). At the start
+of the project (October 2001) JOP could only execute a single static
+method stored in the on-chip memory. The project greatly pushed the
+development of JOP. After successful deployment of the JOP based
+control system in the field several projects followed (TeleAlarm,
+Lift, the railway control system). The source of the commercial
+applications is part of the JOP distribution. Some of these
+applications are now used as a test bench for embedded Java
+performance and to benchmark WCET analysis tools.
+
+More details and the sourc code of
+JOP1\footnote{\url{http://www.jopdesign.com/jop1.jsp}},
+JOP2\footnote{\url{http://www.jopdesign.com/jop2.jsp}} and the first
+JOP3\footnote{\url{http://www.jopdesign.com/jop3.jsp}} version are
+available on the web site.
+
+
+\section{JOP Features}
+
+This book presents a hardware implementation of the Java virtual
+machine (JVM), targeting small embedded systems with real-time
 constraints. The processor is designed from the ground up for low
-WCET of bytecodes, in order to give tasks low WCET values. The
-following list summarizes the research objectives for the proposed
-Java processor:
-%
-\paragraph{Primary Objectives:}
-    \begin{itemize}
-        \item Time-predictable Java platform for embedded real-time
-        systems
-        \item Small design that fits into a low-cost FPGA
-        \item A working processor, not merely a proposed architecture
-    \end{itemize}
-\paragraph{Secondary Objectives:}
-    \begin{itemize}
-        \item Acceptable performance compared with mainstream non
-        real-time Java systems
-        \item A flexible architecture that allows different
-        configurations for different application domains
-        \item Definition of a real-time profile for Java
-    \end{itemize}
-
-\subsubsection{Contributions:}
+worst-case execution time (WCET) of bytecodes, in order to give
+tasks low WCET values.
 
 JOP is a stack computer with its own instruction set, called
 microcode in this book. Java bytecodes are translated into microcode
@@ -189,114 +193,186 @@ The JVM is a CISC stack architecture, whereas JOP is a RISC stack
 architecture.
 \end{quote}
 
-
 JOP will help to increase the acceptance of Java for embedded
-real-time systems. JOP is implemented as a soft-core in a Field
-Programmable Gate Array (FPGA). Using an FPGA as the processor for
-embedded systems is uncommon, because of the high costs, compared
-with a microcontroller. However, if the core is small enough, unused
-FPGA resources can be used to implement periphery in the FPGA,
-resulting in a lower chip count and hence lower overall costs.
+real-time systems. JOP is implemented as a soft-core in a field
+programmable gate array (FPGA). Implementing a processor for
+embedded systems in an FPGA gives a lot of flexibility for the
+overall hardware design. The processor can easily be extended by
+peripheral components inside the same chip. Therefore, it is
+possible to customize the solution exactly to the needs of the
+system.
 
-The main contributions are as follows:
+JOP is designed from ground up with time predictable execution of
+Java bytecode as major design goal. All function units, and
+especially the interaction between them, are carefully designed to
+avoid any time dependency between bytecodes. The architectural
+features and highlights are:
 
 \begin{itemize}
 
     \item
 The execution time for Java bytecodes can be exactly predicted in
-terms of the number of clock cycles.
-%The execution time for Java bytecodes is known cycle-accurate.
-There is no mutual dependency between consecutive bytecodes.
-Therefore, no pipeline analysis -- with possible unbound timing
-effects -- is necessary. These properties greatly simplify low-level
-WCET analysis.
+terms of the number of clock cycles. There is no mutual dependency
+between consecutive bytecodes. Therefore, no pipeline analysis --
+with possible unbound timing effects -- is necessary. These
+properties result in a simple processor model for the low-level WCET
+analysis.
 
+    \item
 In order to fill the gap between processor speed and the memory
 access time, caches are mandatory. In Section~\ref{sec:cache}, a
 novel way to organize an instruction cache, as \emph{method cache},
-is provided. This method cache is simple to analyze with respect to
-worst-case behavior and still provides a substantial performance
-gain when compared against a solution without an instruction cache.
+is provided. The time predictable instruction cache caches whole
+methods. Only invoke and return instruction can result in a cache
+miss. All other instructions are guaranteed cache hits. This method
+cache is simple to analyze with respect to worst-case behavior and
+still provides a substantial performance gain.
 
-The proposed processor architecture results in a predictable and
-high-performance
-% fast
-execution of real-time tasks in Java, without the resource
-implications and unpredictability of a JIT-compiler.
+
+Prefetch buffers or store buffers that can introduce unbound time
+dependencies between instructions are completely avoided in the
+design. Even simple processors can contain an instruction prefetch
+buffer that prohibits exact WCET values. The design of the method
+cache and the translation unit avoids the variable latency of a
+prefetch buffer.
+
+
 
     \item
 JOP is microprogrammed using a novel way of mapping bytecodes to
-microcode addresses. This mapping has zero overheads, even for
-complex bytecodes.
+microcode addresses. This mapping has minimum overheads, even for
+complex bytecodes. CISC Java bytecodes are dynamically translation
+to a RISC, stack based instruction set (the microcode) that can be
+executed in a 3 stage pipeline.
 
+
+The translation takes exactly one cycle per bytecode and is
+therefore pipelined. Compared to other forms of dynamic code
+translation the proposed translation does not add any variable
+latency to the execution time and is therefore time predictable.
+
+    \item
+The short pipeline (4 stages) results in short conditional branch
+delays and a hard to analyze branch prediction logic or a branch
+target buffer can be avoided. All microcode instructions are
+executed in constant time (one cycle). There are no stalls in the
+microcode pipeline. Loads and stores of object fields are handled
+explicitly. Interrupts are inserted in the translation stage as
+special bytecodes and are transparent to the microcode pipeline.
+
+
+    \item
 A two-level stack cache, described in Section~\ref{sec:stack}, which
 fits to the embedded memory technologies of current FPGAs and ASICs,
 ensures the fast execution of basic instructions with minimum
-resource requirements. Fill and spill of the stack cache is
-subjected to microcode control and therefore time-predictable.
+resource requirements.
 
+
+The first level consists of the two topmost stack elements as
+discrete registers. Those two registers are the basis of the
+execution stage. The combination of the first level stack cache and
+the execution unit does not need a write back stage or any
+forwarding logic.
+
+
+The second level provides fast and time predictable access to local
+variables and the operand stack. Access to local variables is a
+guaranteed hit and no pipeline stall can happen. Fill and spill of
+the stack cache is subjected to microcode control and therefore
+analyzable.
+
+
+    \item
 JOP is the smallest hardware implementation of the JVM available to
-date. This fact enables low-cost FPGAs to be used in embedded
-systems. The resource usage of JOP can be configured to trade size
-against performance for different application domains.
+date. This fact enables usage of low-cost FPGAs in embedded systems.
+The resource usage of JOP can be configured to trade size against
+performance for different application domains.
+
+Avoidance of hard to analyze architectural features results in the
+very small design. Therefore, an available real estate can be used
+for a chip multi-processor version of JOP.
+
 
     \item
-The definition of standard Java does not fit hard real-time
-applications. Therefore, a real-time profile for Java (with
-restrictions) is defined in Section~\ref{sec:rtprof} and implemented
-on JOP. Tight integration of the scheduler and the hardware that
-generates schedule events results in low latency and low jitter of
-the task dispatch.
-
-In this profile, hardware interrupts are represented as asynchronous
-events with associated threads. These events are subject to the
-control of the scheduler and can be incorporated into the priority
-assignment and schedulability analysis in the same way as normal
-application tasks.
-
-    \item
-One contribution made as part of this work is the concrete
-implementation of the proposed architecture. The author is aware
-that it is not usually considered necessary to provide a complete
-implementation in a research project. However, it is the opinion of
-the author that a simulation-only approach would lead to mistakes or
-small glitches. By providing a concrete implementation, we are not
-only confronted with the full complexity of real-life processes, but
-also with one or more major issues that would often be generously
-overlooked in a simulation. In Section~\ref{sec:applications}, the
-usage of JOP in a real-world application is described.
+JOP is actually in use in several real-world applications showing
+that a Java based embedded system implemented in an FPGA is a viable
+option. In Section~\ref{sec:applications} the usage of JOP in a
+real-world application is described.
 
 \end{itemize}
 
+The proposed Java processor architecture results in time predictable
+and high-performance execution of real-time tasks in Java, without
+the resource implications and unpredictability of a JIT-compiler.
+
+\section{Is JOP the Solution for Your Problem?}
+
+I had a lot of fun, and still have, developing and using JOP.
+However, should you use JOP? JOP is a processor design intended as a
+time predictable solution for hard real-time systems. If your
+application or research focus is on those systems and you prefer
+Java as programming language JOP is the right choice. If you are
+interested in larger, dynamic systems JOP is the wrong choice. If
+average performance is important for you and you do not care about
+worst-case performance other solutions will probably do a better
+job.
+
 \section{Outline of the Book}
+
+Chapter~\ref{chap:build} gives a detailed introduction into the
+design flow of JOP. You find the explanation how the individual
+parts are compiled and which files have to be changed when you want
+to extend JOP or adapt it to a new hardware platform. The chapter is
+concluded by an exercise to evaluate the different steps in the
+design flow.
 
 Chapter~\ref{chap:java} provides background information on the Java
 programming language and the execution environment, the Java virtual
-machine, for Java applications.
-
-The related work is presented in Chapter~\ref{chap:related}.
-Different hardware solutions from both academia and industry for
-accelerating Java in embedded systems are analyzed. This chapter
-concludes with the research question.
+machine, for Java applications. If you are already familiar with
+Java and the JVM feel free to skip this chapter.
 
 Standard Java is not suitable for the resource-constrained world of
-embedded systems. Chapter~\ref{chap:rtjava} gives an overview of the
-different restrictions of Java for embedded and real-time systems.
+embedded systems. Chapter~\ref{chap:rtjava} gives an overview of
+various definitions embedded Java and the real-time specification of
+Java (RTSJ). It is an extended version of \cite{jop:rtjava} and
+Chapter~4 of \cite{jop:thesis}.
 
 Chapter~\ref{chap:arch} is the main chapter in which the
 architecture of JOP is described. The motivation behind different
-design decisions is given.
+design decisions is given. A Java processor alone is not a complete
+JVM. Chapter~\ref{chap:runtime} describes the runtime environment on
+top of JOP, including the definition of a real-time profile for Java
+and a framework for a user-defined scheduler in Java.
 
-A Java processor alone is not a complete JVM.
-Chapter~\ref{chap:runtime} describes the runtime environment on top
-of JOP, including the definition of a real-time profile for Java and
-a framework for a user-defined scheduler in Java.
 
-In Chapter~\ref{chap:results}, JOP is evaluated with respect to
-size, performance and WCET. This is followed by a description of the
-first commercial real-world application of JOP.
 
-Finally, in Chapter~\ref{chap:conclusions}, the work undertaken is
-reviewed and the major contributions are presented. This chapter
-concludes with directions for future research using JOP and
-real-time Java.
+Garbage collection (GC) is an important part of the Java technology.
+Even in real-time systems new real-time garbage collectors emerge.
+In Chapter~\ref{chap:rtgc} the formulas to calculate the correct
+scheduling of the GC thread are given and the implementation of the
+real-time GC for JOP is explained.
+
+In Chapter~\ref{chap:wcet} WCET analysis of the individual Java
+bytecodes is performed. It is shown how this bytecode instruction
+timings build the basis for the WCET analysis of Java applications.
+
+JOP uses a simple and efficient system-on-chip interconnection
+called SimpCon to connect the memory controller and peripheral
+devices to the processor pipeline. The definition of SimpCon and the
+rationale behind the SimpCon specification is given in
+Chapter~\ref{chap:simpcon}.
+
+%Chapter~\ref{chap:ejip} sketches the implementation of an embedded
+%TCP/IP stack called \code{ejip}.
+
+In Chapter~\ref{chap:results}, JOP is evaluated with respect to size
+and performance. This is followed by a description of some
+commercial real-world applications of JOP.
+
+Other solutions are presented in Chapter~\ref{chap:related}.
+Different hardware solutions from both academia and industry for
+accelerating Java in embedded systems are analyzed.
+
+Finally, in Chapter~\ref{chap:conclusions}, the work is summarized
+and the major contributions are presented. This chapter concludes
+with directions for future research using JOP and real-time Java.

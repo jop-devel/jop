@@ -1,4 +1,4 @@
-\subsection{Bootind the JVM}
+\subsection{Booting the JVM}
 
 One interesting issue for an embedded system is the how the startup
 or boot-up is performed. On power-up, the FPGA starts the
@@ -19,7 +19,7 @@ In the next step, a minimal stack frame is generated and the special
 method \code{Startup.boot()} is invoked. From now on JOP runs in
 Java mode. The method \code{boot()} performs the following steps:
 \begin{samepage}
-\begin{itemize}
+\begin{enumerate}
     \item Send a greeting message to \emph{stdout}
     \item Detect the size of the main memory
     \item Initialize the data structures for the garbage collector
@@ -28,7 +28,7 @@ Java mode. The method \code{boot()} performs the following steps:
     memory size
     \item Invoke the static class initializers in a predefined order
     \item Invoke the \code{main} method of the application class
-\end{itemize}
+\end{enumerate}
 \end{samepage}
 
 %\subsubsection{CMP Boot}

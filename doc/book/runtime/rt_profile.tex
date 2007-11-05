@@ -206,15 +206,18 @@ The profile does not support a garbage collector. All memory should
 be allocated at the initialization phase. Without a garbage
 collector, the heap implicitly becomes immortal memory (as defined
 by the RTSJ). For objects created during the mission phase, a scoped
-memory is provided. Each scoped memory area is assigned to one
-\code{RtThread}. A scoped memory area cannot be shared between
-threads. No references are allowed from the heap to scoped memory.
-Scoped memory is explicitly entered and left using invocations from
-the application logic. Memory areas are cleared both on creation and
-when leaving the scope (invocation of \code{exitMemory()}), leading
-to a memory area with constant allocation time, as opposed to memory
-with linear allocation time (as the memory type \code{LTMemory} in
-the RTSJ) \cite{Corsaro:2003:DPR}.
+memory is provided\footnote{As we now consider real-time GC as the
+better solution scopes are not supported in the current
+implementation of the profile}. Each scoped memory area is assigned
+to one \code{RtThread}. A scoped memory area cannot be shared
+between threads. No references are allowed from the heap to scoped
+memory. Scoped memory is explicitly entered and left using
+invocations from the application logic. Memory areas are cleared
+both on creation and when leaving the scope (invocation of
+\code{exitMemory()}), leading to a memory area with constant
+allocation time, as opposed to memory with linear allocation time
+(as the memory type \code{LTMemory} in the RTSJ)
+\cite{Corsaro:2003:DPR}.
 
 
 \subsection{Restriction of Java}
