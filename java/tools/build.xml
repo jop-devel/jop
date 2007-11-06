@@ -98,6 +98,11 @@ added temporary for a fix.
 
   <!-- Just any name that the .jop file gets. -->
   <property name="jopbin" value="${p3}.jop"/>
+  <property name="jopbin_folder" value="${JOP_folder}/java/target/dist/bin"/>
+  <property name="jop_binary" value="${jopbin_folder}/${jopbin}"/>
+
+  <property name="jopsymbols" value="${p3}.sym"/>
+  <property name="jop_symbol_file" value="${jopbin_folder}/${jopsymbols}"/>
 
   <property name="buildFilename"  location="JopDebugger.jar"/>
   <property name="buildfile"  location="${build}/JopDebugger.jar"/>
@@ -223,7 +228,7 @@ added temporary for a fix.
     <mkdir dir="${build}"/>
 
   </target>
-  
+
 
   <target name="compile" depends="init"
           description="compile the source " >
@@ -292,10 +297,34 @@ added temporary for a fix.
     </echo>
 
     <!-- Update the .jar file. -->
-    <!-- 
+    <!--
     <delete file="${jop.tools.jar}"/>
     -->
     <jar basedir="${tools}/dist/classes" destfile="${jop.tools.jar}"/>
+
+  </target>
+
+
+  <target name="JopServer" depends="lib"
+          description="Run JopServer." >
+
+    <echo>
+      Run JopServer. It is responsible to connect a debugger 
+      to JOP, through the network.
+    </echo>
+    <java
+        classname="com.jopdesign.debug.jdwp.jop.JopServer"
+        fork="true"
+        spawn="false"
+        dir="${jopbin_folder}"
+        classpathref="project.class.path"
+    >
+    <arg line="${jop_binary}"/>
+
+    <!--
+      <jvmarg line = "${debugSettings_8001}"/>
+    -->
+    </java>
 
   </target>
 
@@ -319,7 +348,7 @@ added temporary for a fix.
 
   <target name="PacketPrinter" depends="copyJDWPLogs,lib"
           description="Print the packet list on the files provided." >
-          
+
     <java
       classname="com.jopdesign.debug.jdwp.util.PacketPrinter"
       failonerror="true"
@@ -340,7 +369,7 @@ added temporary for a fix.
 
       less ${dumpFile}
     </echo>
-    
+
   </target>
 
   <target name="PacketLogger" depends="compile"
@@ -390,7 +419,7 @@ added temporary for a fix.
     >
     <jvmarg line = "${debugSettings_8001}"/>
     </java>
-    
+
   </target>
 
   <target name="jdb"
@@ -402,8 +431,8 @@ added temporary for a fix.
       under cygwin it will mix \ and / in the same string, which is odd.
 
       jdb -connect com.sun.jdi.SocketAttach:hostname=localhost,port=8000 -sourcepath ${tools}/src
-      
-      The issue is with the "${tools}/src" portion: ${tools} is not properly 
+
+      The issue is with the "${tools}/src" portion: ${tools} is not properly
       printed under windows.
     -->
     <echo>
@@ -473,6 +502,9 @@ added temporary for a fix.
         dir="${build}"
         classpathref="project.class.path"
     >
+      <arg line="${jop_symbol_file}"/>
+
+
     <!--
       <jvmarg line = "${debugSettings_8001}"/>
     -->
