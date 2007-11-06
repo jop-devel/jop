@@ -30,6 +30,7 @@ public class MethodInfo implements Serializable{
 	int codeAddress;
 	// struct address is ONLY useful for <clinit> methods
 	// and the boot/main methods!
+    // Now it's necessary for debugging too. 
 	int structAddress;
 	Code code;
 	int mstack, margs, mreallocals, len;
@@ -175,7 +176,12 @@ public class MethodInfo implements Serializable{
   {
     return codeAddress;
   }
-
+  
+  public int getStructAddress()
+  {
+    return structAddress;
+  }
+  
   public Method getMethod()
   {
     return method;
