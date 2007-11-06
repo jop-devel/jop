@@ -338,6 +338,28 @@ public class SymbolTable implements Serializable
     return methodInfo.getCodeAddress();
   }
   
+  public int getMethodStructPointer(String className, String methodSignature)
+  {
+    int methodId;
+    MethodInfo methodInfo;
+    
+    methodInfo = getMethodInfo(className, methodSignature);
+    methodId = methodInfo.getStructAddress();
+    
+    return methodId;
+  }
+  
+  public int getMethodSizeInWords(String className, String methodSignature)
+  {
+    int methodSize;
+    MethodInfo methodInfo;
+    
+    methodInfo = getMethodInfo(className, methodSignature);
+    methodSize = methodInfo.getLength();
+    
+    return methodSize;
+  }
+  
   public String getSourceFile(int typeId)
   {
     String sourceFile = null;
@@ -367,6 +389,30 @@ public class SymbolTable implements Serializable
     return table;
   }
   
+  public LineTable getLineTable(String className, String methodSignature)
+  {
+    MethodInfo methodInfo;
+    
+    methodInfo = getMethodInfo(className, methodSignature);
+    return getLineTable(methodInfo);
+  }
+  
+  /**
+   * @param className
+   * @param methodSignature
+   * @return
+   */
+  private MethodInfo getMethodInfo(String className, String methodSignature)
+  {
+    ClassInfo info;
+    MethodInfo methodInfo;
+    
+    info = getClassInfo(className);
+    methodInfo = info.getMethodInfo(methodSignature);
+    
+    return methodInfo;
+  }
+
   private MethodInfo getMethodInfo(int typeId, int methodId) throws JDWPException
   {
     MethodInfo methodInfo = null;
@@ -649,8 +695,8 @@ public class SymbolTable implements Serializable
     
     return id;
   }
-
-  private int getClassId(String className)
+  
+  public int getClassId(String className)
   {
     int index, id, size;
     
