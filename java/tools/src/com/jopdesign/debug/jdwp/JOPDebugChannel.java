@@ -427,4 +427,83 @@ public class JOPDebugChannel
 
     return methodPointer ;
   }
+  
+  /**
+   * Set a breakpoint at the given instruction offset inside a method.
+   * 
+   * @param methodStructPointer
+   * @param instructionOffset
+   * @return
+   * @throws IOException
+   */
+  public int setBreakPoint(int methodStructPointer, int instructionOffset)
+    throws IOException
+  {
+    checkConnection();
+    
+    int instruction;
+    // ------------------------------------------------------------
+    // request machine to set a breakpoint and return the old instruction
+    output.writeByte(15);
+    output.writeByte(1);
+    
+    // method pointer
+    output.writeInt(methodStructPointer);
+    output.writeInt(instructionOffset);
+    
+    // receive back the old instruction just to sync. If the answer is -1,
+    // then an error happened (such as an invalid address).
+    instruction = input.readInt();
+    if(instruction != -1)
+    {
+      System.out.println("  Old instruction: " + instruction);
+    }
+    else
+    {
+      System.out.println("  Failure! received: " + instruction);
+    }
+
+    return instruction;
+  }
+  
+  /**
+   * Clear a breakpoint at the given instruction offset inside a method.
+   * 
+   * @param methodStructPointer
+   * @param instructionOffset
+   * @return
+   * @throws IOException
+   */
+  public int clearBreakPoint(int methodStructPointer, int instructionOffset,
+    int oldInstruction)
+    throws IOException
+  {
+    checkConnection();
+    
+    int instruction;
+    // ------------------------------------------------------------
+    // request machine to set a breakpoint and return the old instruction
+    output.writeByte(15);
+    output.writeByte(2);
+    
+    // method pointer
+    output.writeInt(methodStructPointer);
+    output.writeInt(instructionOffset);
+    output.writeInt(oldInstruction);
+    
+    // receive back the instruction just to sync. If the answer is -1,
+    // then an error happened (such as an invalid address).
+    // In this case, the instruction SHOULD BE the breakpoint bytecode.
+    instruction = input.readInt();
+    if(instruction != -1)
+    {
+      System.out.println("  Old instruction: " + instruction);
+    }
+    else
+    {
+      System.out.println("  Failure! received: " + instruction);
+    }
+
+    return instruction;
+  }
 }
