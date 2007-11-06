@@ -298,4 +298,58 @@ public class SymbolManager implements Serializable
   {
     return table.getNestedTypesList(typeId);
   }
+  
+  /**
+   * Get the method address. 
+   * 
+   * @param className
+   * @param methodSignature
+   * @return
+   */
+  public int getMethodStructPointer(String className, String methodSignature)
+  {
+    SymbolTable table = getSymbolTable();
+    int methodId = table.getMethodStructPointer(className, methodSignature);
+    return methodId;
+  }
+  
+  /**
+   * Get the line table for the method. 
+   * 
+   * @param className
+   * @param methodSignature
+   * @return
+   */
+  public LineTable getLineTable(String className, String methodSignature)
+  {
+    SymbolTable table = getSymbolTable();
+    LineTable lineTable = table.getLineTable(className, methodSignature);
+    return lineTable;
+  }
+  
+  /**
+   * Get the method size in words. 
+   * 
+   * @param className
+   * @param methodSignature
+   * @return
+   */
+  public int getMethodSizeInWords(String className, String methodSignature)
+  {
+    SymbolTable table = getSymbolTable();
+    int methodId = table.getMethodSizeInWords(className, methodSignature);
+    return methodId;
+  }
+  
+  /**
+   * Get the method size in bytes.
+   * 
+   * @param className
+   * @param methodSignature
+   * @return
+   */
+  public int getMethodSizeInBytes(String className, String methodSignature)
+  {
+    return 4 * getMethodSizeInWords(className, methodSignature);
+  }
 }
