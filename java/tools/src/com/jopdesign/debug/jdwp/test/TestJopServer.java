@@ -24,7 +24,9 @@ package com.jopdesign.debug.jdwp.test;
 import java.io.IOException;
 
 import com.jopdesign.debug.jdwp.JOPDebugChannel;
+import com.jopdesign.debug.jdwp.SymbolManager;
 import com.jopdesign.debug.jdwp.model.FrameList;
+import com.jopdesign.debug.jdwp.model.LineTable;
 
 /**
  * TestJopServer.java
@@ -53,22 +55,48 @@ public class TestJopServer
 //  private DataInputStream input;
 //  private DataOutputStream output;
   
+  // class name to be used as reference
+  private static final String DEBUG_TEST_JOP_DEBUG_KERNEL = "debug.TestJopDebugKernel";
+  
+  // methods to be called
+  private static final String METHOD_NAME_PRINT_VALUE_I_V = "printValue(I)V";
+  private static final String METHOD_NAME_PRINT_LINE_V = "printLine()V";
+  
+  // the TestObject
+  private static final String DEBUG_TEST_OBJECT = "debug.TestObject";
+  
+  // the method signatures to be called.
+  private static final String METHOD_NAME_IDENTITY = "identity(I)I";
+  private static final String METHOD_NAME_INCREMENT = "increment(I)I";
+  private static final String METHOD_NAME_TEST_INC = "testInc()I";
+  private static final String METHOD_NAME_GET_CONSTANT = "getConstant()I";
+  
   private JOPDebugChannel debugChannel;
+  private SymbolManager manager;
   
   public TestJopServer()
   {
     debugChannel = new JOPDebugChannel();
+    manager = new SymbolManager();
   }
   
   /**
    * 
    * @param args
    * @throws IOException
+   * @throws ClassNotFoundException 
    */
   public static void main(String[] args) throws IOException
   {
+    if(args.length != 1)
+    {
+      System.out.println("  Usage: TestJopServer <symbol file>");
+      System.out.println();
+      return;
+    }
+    
     TestJopServer testObject = new TestJopServer();
-    testObject.testJopSimCommunication();
+    testObject.testJopSimCommunication(args[0]);
   }
   
 //  public void basicCommunicationTest() throws IOException
@@ -93,8 +121,9 @@ public class TestJopServer
   /**
    * 
    * @throws IOException
+   * @throws ClassNotFoundException 
    */
-  public void testJopSimCommunication() throws IOException
+  public void testJopSimCommunication(String symbolFile) throws IOException
   {
     int received = 2;
     int methodPointer;
@@ -103,8 +132,14 @@ public class TestJopServer
     
     try
     {
-      debugChannel.connect();
-//    handshake();
+      initialize(symbolFile);
+    }
+    catch(ClassNotFoundException exception)
+    {
+      System.out.println();
+      System.out.println("  Class not found.");
+      System.out.println(exception.getMessage());
+      return;      
     }
     catch (Exception exception)
     {
@@ -113,7 +148,204 @@ public class TestJopServer
       return;
     }
     
-    // Code below is working fine
+    testStackAccess();
+    testMethodCalls();
+    
+//    // this does not work, don't try it.
+//    System.out.println("Invoking the debug method now");
+////    methodPointer = 9207;
+////    methodPointer = 9119;
+////    methodPointer = 9556;
+//    debugChannel.invokeStaticMethod(methodPointer, 65);    
+//    System.out.println("Returning");
+////    debugChannel.requestExit(0);
+    
+    testGetStackFrameList();
+    
+//    testEmbeddedprinter();
+    
+//    System.out.println("Returning");
+//    debugChannel.requestExit();
+    
+    // this test worked fine.
+//    testSetBreakPoint_getConstant();
+    
+    received = testSetBreakPoint_identity();
+    
+    System.out.println("Resuming");
+    debugChannel.resume();
+//    
+////    System.out.println("If the next breakpoint it hit, shoud call 'printLine'now:");
+////    testInvokeStatic_2(DEBUG_TEST_JOP_DEBUG_KERNEL, METHOD_NAME_PRINT_LINE_V);
+//    
+    System.out.println("Will clear the previous breakpoint now:");
+    testClearBreakPoint_identity(received);
+    
+    debugChannel.resume();
+//    System.out.print("Available: ");
+//    System.out.println(input.available());
+  }
+  
+  /**
+   * @throws IOException 
+   * 
+   */
+  private void testSetBreakPoint_getConstant() throws IOException
+  {
+    String className, methodSignature;
+    int methodPointer;
+    LineTable table;
+    int offset = 0;
+    int oldInstruction;
+    int i, num;
+    
+    className = DEBUG_TEST_OBJECT;
+    methodSignature = METHOD_NAME_GET_CONSTANT;
+    methodPointer = manager.getMethodStructPointer(className, methodSignature);
+    table = manager.getLineTable(className, methodSignature);
+    
+    if(table.numLines() <= 0)
+    {
+      System.out.println("Failure: empty line table!");
+      return;
+    }
+    
+    // get the offset of the first line
+    offset = (int) table.getLine(0).getLineCodeIndex();
+    offset = 5;
+    
+    num = manager.getMethodSizeInBytes(className, methodSignature);
+    System.out.println("Method size: " + num);
+    for(i = 0; i < num; i++)
+    {
+      offset = i;
+      System.out.println("Will set a breakpoint!");
+      oldInstruction = debugChannel.setBreakPoint(methodPointer, offset);
+      
+      System.out.println("Will clear the breakpoint!");
+      oldInstruction = debugChannel.clearBreakPoint(methodPointer, offset, oldInstruction);
+    }
+  }
+  
+  private int testSetBreakPoint_identity() throws IOException
+  {
+    String className, methodSignature;
+    int methodPointer;
+    int offset = 0;
+    int oldInstruction;
+    
+    className = DEBUG_TEST_OBJECT;
+    methodSignature = METHOD_NAME_IDENTITY;
+    methodPointer = manager.getMethodStructPointer(className, methodSignature);
+    
+    offset = 0;
+    oldInstruction = debugChannel.setBreakPoint(methodPointer, offset);
+    
+    return oldInstruction;
+  }
+  
+  private void testClearBreakPoint_identity(int oldInstruction) throws IOException
+  {
+    String className, methodSignature;
+    int methodPointer;
+    int offset = 0;
+    
+    className = DEBUG_TEST_OBJECT;
+    methodSignature = METHOD_NAME_IDENTITY;
+    methodPointer = manager.getMethodStructPointer(className, methodSignature);
+    
+    offset = 0;
+    debugChannel.clearBreakPoint(methodPointer, offset, oldInstruction);
+  }
+
+  /**
+   * Test requests to invoke static methods through the network.
+   * 
+   * @throws IOException
+   */
+  private void testMethodCalls() throws IOException
+  {
+    System.out.println("Will request the machine to call some methods now.");
+    System.out.println("If an exception is thrown, check the method struct addresses.");
+    System.out.println("They should be correct since they came from the symbol file.");
+    System.out.println();
+    System.out.println("Methods to be called:");
+    System.out.println("  helloworld.TestJopDebugKernel.printValue(I)V");
+    System.out.println("  helloworld.TestJopDebugKernel.printLine()V");
+    
+    testInvokeStatic_1(DEBUG_TEST_JOP_DEBUG_KERNEL, METHOD_NAME_PRINT_VALUE_I_V);
+    testInvokeStatic_2(DEBUG_TEST_JOP_DEBUG_KERNEL, METHOD_NAME_PRINT_LINE_V);
+  }
+  
+  /**
+   * @throws IOException
+   */
+  private void testGetStackFrameList() throws IOException
+  {
+    FrameList list = debugChannel.getStackFrameList();
+    
+    System.out.println();
+    System.out.println("Frame list:");
+    System.out.println(list);
+  }
+  
+  /**
+   * Test invokeStatic method call.
+   * 
+   * @throws IOException
+   */
+  private void testInvokeStatic_2(String className, String methodName)
+    throws IOException
+  {
+    System.out.println(" Invoking a static method 4 times now...");
+    
+    int methodPointer;
+    // call the debug module from itself, just to see what happens
+    //  9270: debug.TestJopDebugKernel.printLine()V
+//    methodPointer = 11587;
+//    methodPointer = 11129;
+    methodPointer = manager.getMethodStructPointer(className, methodName);
+    
+    debugChannel.invokeStaticMethod(methodPointer);
+    debugChannel.invokeStaticMethod(methodPointer);
+    debugChannel.invokeStaticMethod(methodPointer);
+    debugChannel.invokeStaticMethod(methodPointer);
+  }
+  
+  /**
+   * Test invokeStatic method call.
+   * 
+   * @throws IOException
+   */
+  private void testInvokeStatic_1(String className, String methodName)
+    throws IOException
+  {
+    // be careful: method pointers change every time source code is changed
+    //  9266: debug.TestJopDebugKernel.printValue(I)V
+//    methodPointer = 11583;
+    //methodPointer = 11125;
+
+    int methodPointer;
+    methodPointer = manager.getMethodStructPointer(className, methodName);
+    debugChannel.invokeStaticMethod(methodPointer, 65);
+    debugChannel.invokeStaticMethod(methodPointer, 66);
+    debugChannel.invokeStaticMethod(methodPointer, 67);
+    debugChannel.invokeStaticMethod(methodPointer, 68);
+  }
+
+  /**
+   * Test access to the call stack. It get a local variable value,
+   * set it to a new value and query again.
+   * Then it print information on the stack frames currently on the stack.
+   * 
+   * @throws IOException
+   */
+  private void testStackAccess() throws IOException
+  {
+    int received;
+    int methodPointer;
+    int stackDepth;
+    int index;
     stackDepth = debugChannel.getStackDepth();
     
     received = debugChannel.getLocalVariableValue(0, 1);
@@ -138,59 +370,23 @@ public class TestJopServer
       System.out.print(" is: ");
       System.out.println(methodPointer);
     }
-    
-    
-    System.out.println("Will request the machine to call some methods now.");
-    System.out.println("If an exception is thrown, check the method addresses.");
-    System.out.println("They may change everytime JOPizer run, but are hardwired here.");
-    System.out.println("Methods to be called:");
-    System.out.println("  helloworld.TestJopDebugKernel.printValue(I)V");
-    System.out.println("  helloworld.TestJopDebugKernel.printLine()V");
-    // be careful: method pointers change every time source code is changed
-    //  9266: debug.TestJopDebugKernel.printValue(I)V
-//    methodPointer = 11583;
-    methodPointer = 11125;
-    debugChannel.invokeStaticMethod(methodPointer, 65);
-    debugChannel.invokeStaticMethod(methodPointer, 66);
-    debugChannel.invokeStaticMethod(methodPointer, 67);
-    debugChannel.invokeStaticMethod(methodPointer, 68);
-    
-    System.out.println(" Invoking a static method 4 times now...");
-    // call the debug module from itself, just to see what happens
-    //  9270: debug.TestJopDebugKernel.printLine()V
-//    methodPointer = 11587;
-    methodPointer = 11129;
-    debugChannel.invokeStaticMethod(methodPointer);
-    debugChannel.invokeStaticMethod(methodPointer);
-    debugChannel.invokeStaticMethod(methodPointer);
-    debugChannel.invokeStaticMethod(methodPointer);
-    
-//    // this does not work, don't try it.
-//    System.out.println("Invoking the debug method now");
-////    methodPointer = 9207;
-////    methodPointer = 9119;
-////    methodPointer = 9556;
-//    debugChannel.invokeStaticMethod(methodPointer, 65);    
-//    System.out.println("Returning");
-////    debugChannel.requestExit(0);
-    
-    FrameList list = debugChannel.getStackFrameList();
-    
-    System.out.println();
-    System.out.println("Frame list:");
-    System.out.println(list);
-    
-//    testEmbeddedprinter();
-    
-//    System.out.println("Returning");
-//    debugChannel.requestExit();
-    System.out.println("Resuming");
-    debugChannel.resume();
-    
-//    System.out.print("Available: ");
-//    System.out.println(input.available());
   }
 
+  /**
+   * @param symbolFile
+   * @throws IOException
+   * @throws ClassNotFoundException
+   */
+  private void initialize(String symbolFile) throws IOException, ClassNotFoundException
+  {
+    debugChannel.connect();
+//    handshake();
+    
+    // load symbols to know the method addresses 
+    manager.loadSymbolTable(symbolFile);
+    System.out.println("Loaded symbols.");
+  }
+  
   /**
    * @throws IOException 
    * 
