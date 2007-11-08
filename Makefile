@@ -187,15 +187,15 @@ all: directories tools jopser japp
 
 japp: java_app config_byteblast download
 
-# shortcut for my work in Eclipse on TCP/IP
-eapp: ecl_app config_byteblast download
-
 # use this for USB download of FPGA configuration
 # and Java program download
 #all: directories tools jopusb japp
 #
 #japp: java_app config_usb download
 
+
+# shortcut for my work in Eclipse on TCP/IP
+eapp: ecl_app config_byteblast download
 
 install:
 	@echo nothing to install
