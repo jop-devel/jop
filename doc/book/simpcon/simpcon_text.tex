@@ -42,18 +42,23 @@ not covered by this specification.
 
 \subsection{Basic Read Transaction}
 
-Figure~\ref{fig:sc:basic:rd} shows a basic read transaction for a
-slave with one cycle latency. The acknowledge signals are omitted
-from the figure. In the first cycle, the address phase, the
-\sign{rd} signals the slave to start the read transaction. The
-address is registered by the slave. During the following cycle, the
-read phase, the slave performs the read and registers the data. Due
-to the register in the slave the data is available in the third
-cycle, the result phase. To simplify the master, \sign{rd\_data}
-stays valid till the next read request response. It is therefore
-possible for a master to issue a pre-fetch command early. When the
-pre-fetched data arrives to early it is still valid when the master
-actually wants to read it.
+Figure~\ref{fig:sc:basic:rd} shows a basic read transaction for
+a slave with one cycle latency. The acknowledge signals are
+omitted from the figure. In the first cycle, the address phase,
+the \sign{rd} signals the slave to start the read transaction.
+The address is registered by the slave. During the following
+cycle, the read phase\footnote{It has to be noted that the read
+phase can be longer for devices with a high latency. For simple
+on-chip IO devices the read phase can be omitted completely (0
+cycles). In that case \sign{rdy\_cnt} will be zero in the cycle
+following the address phase.}, the slave performs the read and
+registers the data. Due to the register in the slave the data
+is available in the third cycle, the result phase. To simplify
+the master, \sign{rd\_data} stays valid till the next read
+request response. It is therefore possible for a master to
+issue a pre-fetch command early. When the pre-fetched data
+arrives to early it is still valid when the master actually
+wants to read it.
 
 \begin{figure}
     \centering
