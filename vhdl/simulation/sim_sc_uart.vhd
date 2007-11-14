@@ -1,7 +1,7 @@
 --
 --	sim_sc_uart.vhd
 --
---	Serial interface for the simulation
+--	Serial interface for the simulation (SimpCon version)
 --
 --	Just prints the send character to stdout.
 --	
