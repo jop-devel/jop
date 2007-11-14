@@ -90,7 +90,6 @@ process(clk)
 begin
 	if rising_edge(clk) then
 		if address(0)='1' and wr='1' then
-			char <= wr_data(7 downto 0);
 			write(l, character'val(to_integer(unsigned(wr_data(7 downto 0)))));
 			writeline(output, l);
 		end if;
