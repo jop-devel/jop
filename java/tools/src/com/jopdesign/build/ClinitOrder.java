@@ -110,9 +110,11 @@ public class ClinitOrder extends MyVisitor {
 				int sigidx = ((ConstantMethodref) co).getNameAndTypeIndex();
 				ConstantNameAndType signt = (ConstantNameAndType) cpool.getConstant(sigidx);
 				String sigstr = signt.getName(cpool)+signt.getSignature(cpool);
-				minfo = clinfo.getMethodInfo(sigstr);
-				if (clinfo!=null && minfo!=null) {
-					addDepends = findDependencies(clinfo, minfo, true);					
+				if (clinfo!=null) {
+					minfo = clinfo.getMethodInfo(sigstr);
+					if (minfo!=null) {
+						addDepends = findDependencies(clinfo, minfo, true);					
+					}
 				}
 				// check for all sub classes when no going up the hierarchy
 //				if (!inRec) {
@@ -135,11 +137,13 @@ public class ClinitOrder extends MyVisitor {
 			if (cocl!=null) {
 				clname = cocl.getBytes(cpool).replace('/','.');
 				ClassInfo clinf = (ClassInfo) ClassInfo.mapClassNames.get(clname);
-				if (clinf.getMethodInfo(JOPizer.clinitSig)!=null) {
-					// don't add myself as dependency
-					if (clinf!=cli) {
-						depends.add(clinf);
-					}
+				if (clinf!=null) {
+					if (clinf.getMethodInfo(JOPizer.clinitSig)!=null) {
+						// don't add myself as dependency
+						if (clinf!=cli) {
+							depends.add(clinf);
+						}
+					}					
 				}
 			}
 			
