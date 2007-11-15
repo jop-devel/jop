@@ -10,12 +10,10 @@ public class Event {
 
 	public static void main(String[] args) {
 
-		Dbg.initSer();				// use serial line for debug output
-
 		sev = new SwEvent(2, 10000) {
 
 			public void handle() {
-				Dbg.wr("fire!");
+				System.out.println("fire!");
 			}
 		};
 
@@ -26,9 +24,9 @@ public class Event {
 
 				for (i=0; i<CNT; ++i) {
 					waitForNextPeriod();
-					Dbg.wr("\nbefor");
+					System.out.println("befor");
 					sev.fire();
-					Dbg.wr("after");
+					System.out.println("after");
 				}
 			
 				for (;;) waitForNextPeriod();
