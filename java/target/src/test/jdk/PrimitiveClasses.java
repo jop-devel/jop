@@ -1,7 +1,6 @@
 package jdk;
+
 import jvm.TestCase;
-//import JOPlibrary.lang.Boolean;
-//import JOPlibrary.lang.Byte;
 
 public class PrimitiveClasses extends TestCase {
 
@@ -18,6 +17,7 @@ public class PrimitiveClasses extends TestCase {
 	//possible issue when parameter is null
 	Boolean myBoolean3=new Boolean(false);
 	Boolean myBoolean4=new Boolean("fAlSe");
+	
 	//test constructors
 	Ok=Ok&& myBoolean1.booleanValue();
 	Ok=Ok&& myBoolean2.booleanValue();
@@ -35,16 +35,21 @@ public class PrimitiveClasses extends TestCase {
 	Ok=Ok && myBoolean1.hashCode()!=myBoolean3.hashCode();
 
 	//toString
-	Ok=Ok&&(myBoolean1.toString()).equalsIgnoreCase("true");
-	Ok=Ok&&(myBoolean3.toString()).equalsIgnoreCase("false");
-	Ok=Ok&&!(myBoolean1.toString()).equalsIgnoreCase("false");
-	Ok=Ok&&!(myBoolean3.toString()).equalsIgnoreCase("true");
-	
+	//TODO:check String.equalsIgnoreCase, possible issue.
+	//Avoid the use of equalsIgnoreCase
+		
+	Ok=Ok && (myBoolean1.toString()).equals("true");
+	Ok=Ok && (myBoolean3.toString()).equals("false");
+	Ok=Ok &&!(myBoolean1.toString()).equals("false");
+	Ok=Ok &&!(myBoolean3.toString()).equals("true");
+		
 	//valueOf(String)
-	//Ok=Ok && (Boolean.valueOf("true")).equalsIgnoreCase("true");
+	//this method should receive a String instead of a boolean
+	//Ok=Ok && (Boolean.valueOf("true")).equals(myBoolean1);
 	
 	//BYTE
 	Byte myByte1=new Byte((byte)122);
+	Byte myByte2=new Byte((byte)122);
 	//The constructor Byte(string) is not defined
 	//Byte myByte2=new Byte("22");
 	Ok=Ok && ((byte)122)==myByte1.byteValue();
@@ -58,9 +63,23 @@ public class PrimitiveClasses extends TestCase {
 	Ok=Ok && -128==Byte.parseByte("-128");
 	Ok=Ok && !(123==Byte.parseByte("121"));
 	
+	//check for exception
+	//Ok=Ok && !(123==Byte.parseByte("129"));
 	
+	//equals(Object)
+	Byte myByte3=myByte2;
+	Ok=Ok && myByte2.equals(myByte3);
+	Ok=Ok && myByte2.equals(myByte1);
+	myByte3=new Byte((byte)123);
+	Ok=Ok && !myByte2.equals(myByte3);
+	
+	//hashCode
+	Ok=Ok && myByte1.hashCode()==myByte1.hashCode();
+	Ok=Ok && (myByte1.hashCode()==myByte2.hashCode());
+	Ok=Ok && !(myByte3.hashCode()==myByte1.hashCode());
+	
+	//toString
+	Ok=Ok && (myByte3.toString()).equals("123");
 	return Ok;
 	}
-	
-	
 }

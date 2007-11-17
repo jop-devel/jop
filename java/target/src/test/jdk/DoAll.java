@@ -25,6 +25,8 @@ public class DoAll {
 				new DInputStream(),
 				new DOutputStream(),
 				new PrimitiveClasses(),
+				new PrimitiveClasses2(),
+				new PrimitiveClasses3()
 		};
 				
 		for (int i=0; i<tc.length; ++i) {
