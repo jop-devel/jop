@@ -48,7 +48,7 @@ BLASTER_TYPE=ByteBlasterMV
 #BLASTER_TYPE=USB-Blaster
 
 # 'some' different Quartus projects
-QPROJ=cycmin cycbaseio cycbg dspio lego cycfpu cyc256x16 sopcmin
+QPROJ=cycmin cycbaseio cycbg dspio lego cycfpu cyc256x16 sopcmin cyccmp
 # if you want to build only one Quartus project use e.q.:
 QPROJ=cycmin
 
