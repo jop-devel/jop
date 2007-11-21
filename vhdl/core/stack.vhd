@@ -19,6 +19,7 @@
 --	2006-01-12	new ar for local memory addressing, sp and vp MSB fix at '1'
 --	2007-08-31	change stack addressing without wrapping, generate sp_ov on max_stack-8
 --	2007-09-01	use ram_width from jop_config instead of parameter
+--	2007-11-21	use 33 bit for the comparison (compare bug for diff > 2^31 corrected)
 --
 
 
@@ -118,7 +119,7 @@ end component;
 						: std_logic_vector(ram_width-1 downto 0);
 	signal ar			: std_logic_vector(ram_width-1 downto 0);
 
-	signal sum, diff, temp	: std_logic_vector(width-1 downto 0);
+	signal sum			: std_logic_vector(32 downto 0);
 	signal sout			: std_logic_vector(width-1 downto 0);
 	signal log			: std_logic_vector(width-1 downto 0);
 	signal immval		: std_logic_vector(width-1 downto 0);
@@ -166,23 +167,23 @@ begin
 process(a, b, sel_sub)
 begin
 
+	-- subtract with 33 bits to get the correct carry
 	if sel_sub='1' then
-		sum <= std_logic_vector(signed(b) - signed(a));
+		sum <= std_logic_vector(signed(b(31) & b) - signed(a(31) & a));
 	else
-		sum <= std_logic_vector(signed(b) + signed(a));
+		sum <= std_logic_vector(signed(b(31) & b) + signed(a(31) & a));
 	end if;
 
 end process;
 
---	lt <= diff(width-1);
-	lt <= sum(width-1);		-- default is subtract
+	lt <= sum(32);		-- default is subtract
 
 -- shift version from Flavius?
 
 --
 --	mux for stack register, alu
 --
-process(ram_dout, opddly, immval, sout, din, lmux, rmux, sp, vp0, jpc, sum, diff, log, a, b,
+process(ram_dout, opddly, immval, sout, din, lmux, rmux, sp, vp0, jpc, sum, log, a, b,
 		sel_log, sel_shf, sel_rmux, sel_lmux, sel_imux, sel_mmux, sel_amux)
 
 begin
@@ -260,7 +261,7 @@ begin
 	end if;
 
 	if sel_amux='0' then
-		amux <= sum;
+		amux <= sum(31 downto 0);
 	else
 		amux <= lmux;
 	end if;
