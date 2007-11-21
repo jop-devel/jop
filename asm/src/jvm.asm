@@ -96,6 +96,7 @@
 //				start stack at 64 instead of 128
 //	2007-09-02	new instructions for hardware floating point operation with FPU
 //	2007-11-21	stack tracing enabled, more space in stack.vhd
+//				use 33 bit for the comparison (compare bug for diff > 2^31 corrected)
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
