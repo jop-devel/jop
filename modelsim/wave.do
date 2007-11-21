@@ -5,6 +5,10 @@ add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/int_res
 add wave -noupdate -format Logic /tb_jop/cmp_jop/cmp_io/wd
 add wave -noupdate -format Literal -radix ascii /tb_jop/cmp_jop/cmp_io/cmp_ua/char
 add wave -noupdate -divider core
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_core/cmp_stk/a
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_core/cmp_stk/b
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_core/cmp_stk/sum
+add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_core/cmp_stk/lt
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_core/cmp_bcf/jpc
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_core/cmp_bcf/jinstr
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_core/cmp_fch/pc
@@ -19,7 +23,7 @@ add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cm
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_core/cmp_stk/vp2
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_core/cmp_stk/vp1
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_core/cmp_stk/vp0
-add wave -noupdate -format Literal -radix hexadecimal -expand /tb_jop/cmp_jop/cpm_cpu/cmp_core/cmp_stk/cmp_ram/ram
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_core/cmp_stk/cmp_ram/ram
 add wave -noupdate -divider io
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cmp_io/sel_reg
 add wave -noupdate -divider {io cnt}
@@ -55,7 +59,7 @@ add wave -noupdate -format Logic /tb_jop/cmp_jop/fl_noe
 add wave -noupdate -format Logic /tb_jop/cmp_jop/fl_nwe
 add wave -noupdate -format Logic /tb_jop/cmp_jop/fl_rdy
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {226600 ps} 0} {{Cursor 2} {693090000 ps} 0} {{Cursor 3} {3450000 ps} 0} {{Cursor 4} {3339704 ps} 0}
+WaveRestoreCursors {{Cursor 1} {226600 ps} 0} {{Cursor 2} {693090000 ps} 0} {{Cursor 3} {241391064 ps} 0} {{Cursor 4} {4032743 ps} 0}
 configure wave -namecolwidth 228
 configure wave -valuecolwidth 144
 configure wave -justifyvalue left
@@ -69,4 +73,4 @@ configure wave -gridperiod 1
 configure wave -griddelta 40
 configure wave -timeline 0
 update
-WaveRestoreZoom {536251649 ps} {684377984 ps}
+WaveRestoreZoom {30 ns} {12630 ns}
