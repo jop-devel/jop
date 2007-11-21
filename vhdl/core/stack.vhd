@@ -396,7 +396,9 @@ begin
 		sp <= smux;
 		-- Value depends on code in JVMHelp.exception() and how much
 		-- usefull information can be printed out
-		if sp=std_logic_vector(to_unsigned(2**ram_width-1-8, ram_width)) then
+		-- -8 was ok with just a plain print...
+		-- -10 (or -12) should be ok for a stack trace?
+		if sp=std_logic_vector(to_unsigned(2**ram_width-1-16, ram_width)) then
 			sp_ov <= '1';
 		end if;
 		if (ena_vp = '1') then
