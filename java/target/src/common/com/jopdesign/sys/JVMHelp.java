@@ -22,9 +22,7 @@ public class JVMHelp {
 Object o = new Object();
 synchronized (o) {
 		int i;
-		wr('n');
-		wr('p');
-		wr(' ');
+		wr("np trace not correct ");
 
 		int sp = Native.getSP();			// sp of ();
 		int pc = Native.rdIntMem(sp-3);		// pc is not exact (depends on instruction)
@@ -36,12 +34,13 @@ wrSmall(start);
 wr(' ');
 wrByte(pc);
 
-		trace();
+		trace(sp);
 
 		for (;;);
 }
 	}
 
+	// TODO: is this used anywhere?
 	public static void arrayBound() {
 
 Object o = new Object();
@@ -61,16 +60,18 @@ wrSmall(start);
 wr(' ');
 wrByte(pc);
 
-		trace();
+		trace(sp);
 
 		for (;;);
 }
 	}
 	
+	static int saved_sp;
 	/**
 	 * Invoked on a hardware generated exception.
 	 */
 	static void except() {
+		saved_sp = Native.getSP();
 		if (Native.rdMem(Const.IO_EXCPT)==Const.EXC_SPOV) {
 			// reset stack pointer
 			Native.setSP(Const.STACK_OFF);
@@ -110,7 +111,7 @@ synchronized (o) {
 		System.out.print(val);
 		System.out.println(" not implemented");
 
-		trace();
+		trace(sp);
 
 		for (;;);
 }
@@ -123,8 +124,6 @@ synchronized (o) {
 		wr("\nException: ");
 		if (i==Const.EXC_SPOV) {
 			wr("Stack overflow\n");
-			// nothing more to do on stack overflow
-			for (;;);
 		} else if (i==Const.EXC_NP) {
 			wr("Null pointer exception\n");
 		} else if (i==Const.EXC_AB) {
@@ -133,52 +132,44 @@ synchronized (o) {
 			wr("ArithmeticException\n");
 		}
 
-		int sp = Native.getSP();			// sp of ();
-		sp = Native.rdIntMem(sp-4);			// sp of calling function
-		int pc = Native.rdIntMem(sp-3);		// pc is not exact (depends on instruction)
-		wr("sp=");
-		wrSmall(sp);
-		wr("pc=");
-		wrSmall(pc);
-		i = Native.rdIntMem(sp);			// mp
-		wr("mp=");
-		wrSmall(i);
-		int start = Native.rdMem(i)>>>10;	// address of method
-		wr("start=");
-		wrSmall(start);
+		int sp = saved_sp;
 
-		trace();
+		trace(sp);
 
 		for (;;);
 	}
 
 
 
-	static void trace() {
+	static void trace(int sp) {
 
 		int fp, mp, vp, pc, addr, loc, args;
 		int val;
 
-		int sp = Native.getSP();			// sp after call of trace();
-		fp = sp-4;		// first frame point is easy, since last sp points to the end of the frame
-
+//		for (int i=0; i<1024; ++i) {
+//			wrSmall(i);
+//			wrSmall(Native.rdIntMem(i));
+//			wr('\n');
+//		}
+		wr("saved sp=");
+		wrSmall(sp);
 		wr('\n');
 
-//		while does not work anymore as sp and vp are
-//		wrapping around (only 7 bits)
-//		while (fp>128+5) {	// stop befor 'fist' method
-		// TODO: change back to non wrapping version and use
-		// Const constants.
-		wr("TODO: trace is not correct!");
-		for (int cnt=0; cnt<10; ++cnt) {
-			mp = Native.rdIntMem(((fp+4)&0x7f)|0x80);
-			vp = Native.rdIntMem(((fp+2)&0x7f)|0x80);
-			pc = Native.rdIntMem(((fp+1)&0x7f)|0x80);
+		fp = sp-4;		// first frame point is easy, since last sp points to the end of the frame
+
+		wr("  mp     pc     fp");
+		wr('\n');
+		
+
+		while (fp>Const.STACK_OFF+5) {
+			mp = Native.rdIntMem(fp+4);
+			vp = Native.rdIntMem(fp+2);
+			pc = Native.rdIntMem(fp+1);
 			val = Native.rdMem(mp);
 			addr = val>>>10;			// address of callee
 
 			wrSmall(mp);
-			wrSmall(addr);
+//			wrSmall(addr);
 			wrSmall(pc);
 			wrSmall(fp);
 			wr('\n');
@@ -186,20 +177,9 @@ synchronized (o) {
 			val = Native.rdMem(mp+1);	// cp, locals, args
 			args = val & 0x1f;
 			loc = (val>>>5) & 0x1f;
-			fp = ((vp+args+loc)&0x7f)|0x80;			// new fp can be calc. with vp and count of local vars
+			fp = vp+args+loc;			// new fp can be calc. with vp and count of local vars
 		}
 		wr('\n');
-/*
-for (fp=128; fp<=sp; ++fp) {
-	wrSmall(Native.rdIntMem(fp));
-}
-		wr('\n');
-*/
-/*
-for (fp=10530; fp<=10700; ++fp) {
-	wrSmall(Native.rdMem(fp));
-}
-*/
 	}
 
 	/**
