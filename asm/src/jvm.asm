@@ -95,6 +95,7 @@
 //	2007-08-31	non wrapping stack pointer, version at new address (62)
 //				start stack at 64 instead of 128
 //	2007-09-02	new instructions for hardware floating point operation with FPU
+//	2007-11-21	stack tracing enabled, more space in stack.vhd
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -104,7 +105,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20070831
+version		= 20071121
 
 //
 //	start of stack area in the on-chip RAM
