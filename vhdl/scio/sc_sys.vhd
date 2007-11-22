@@ -22,7 +22,7 @@
 --	2006-01-11	added exception
 --	2007-03-17	changed interrupts to records
 --  2007-06-01  changed name from sc_cnt to sc_sys
---
+--  2007-11-22  added global lock and bootup of CMP
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -53,7 +53,7 @@ port (
 	irq_in		: out irq_in_type;
 	exc_req		: in exception_type;
 	
-	sync_out : in sync_out_type;
+	sync_out : in sync_out_type := NO_SYNC;
 	sync_in	 : out sync_in_type;
 	
 	wd				: out std_logic
@@ -83,13 +83,14 @@ architecture rtl of sc_sys is
 	signal exc_type			: std_logic_vector(7 downto 0);
 		
 	signal cpu_identity	: std_logic_vector(31 downto 0);
-	
+	signal rdy_cnt_help : std_logic;
+
 	
 begin
 
 	cpu_identity <= std_logic_vector(to_unsigned(cpu_id,32));
-	rdy_cnt <= "00";	-- no wait states
-
+	rdy_cnt <= "11" when sync_out.release='1' else "00";
+	
 --
 --	read cnt values
 --
@@ -109,6 +110,9 @@ begin
 				when "100" =>
 					rd_data(7 downto 0) <= exc_type;
 					rd_data(31 downto 8) <= (others => '0');
+				when "101" =>
+					rd_data(0) <= rdy_cnt_help;
+					rd_data(31 downto 1) <= (others => '0');				
 				when "110" =>
 					rd_data <= cpu_identity;
 --				when "111" =>
@@ -206,6 +210,8 @@ begin
 		int_ack <= '0';
 		wd <= '0';
 		sync_in.s_in <= '0';
+		sync_in.lock <= '0';
+		rdy_cnt_help <= '0';
 
 		exc_type <= (others => '0');
 		irq_in.exc_int <= '0';
@@ -244,6 +250,9 @@ begin
 				when "100" =>
 					exc_type <= wr_data(7 downto 0);
 					irq_in.exc_int <= '1';
+				when "101" =>
+					sync_in.lock <= wr_data(0);	
+					rdy_cnt_help <= wr_data(0);			
 				when "110" =>
 					-- nothing, processor id is read only
 				when others =>
