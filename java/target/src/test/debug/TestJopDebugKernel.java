@@ -460,10 +460,22 @@ public class TestJopDebugKernel
       
 //      JopDebugKernel.breakpoint();
 //      EmbeddedOutputStream.testEmbeddedPrinter();
-      TestObject testObject = new TestObject();
-      System.out.print("TestObject value is: ");
-      System.out.println(testObject.getValue());
-      
-    test4_read_write();  
+    TestObject testObject = new TestObject();
+    System.out.print("TestObject value is: ");
+    System.out.println(testObject.getValue());
+    
+    test4_read_write();
+    
+    System.out.println("Will run method: identity");
+    x = TestObject.identity(x);
+    
+    System.out.println("Will run method: increment");
+    x = TestObject.increment(x);
+    
+    System.out.println("Will run method: testInc");
+    x = TestObject.testInc();
+    
+    System.out.println("Will run method: getConstant");
+    x = TestObject.getConstant();
   }
 }
