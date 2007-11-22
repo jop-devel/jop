@@ -52,6 +52,12 @@ public class JopDebugKernel
 //  private static final int STACK_BASE_POINTER = Const.STACK_SIZE + 6;
   private static final int STACK_BASE_POINTER = Const.STACK_OFF + 6;
   
+  private static final int MASK_FIRST_BYTE  = 0x00FFFFFF;
+  private static final int MASK_SECOND_BYTE = 0xFF00FFFF;
+  private static final int MASK_THIRD_BYTE  = 0xFFFF00FF;
+  private static final int MASK_FOURTH_BYTE = 0xFFFFFF00;
+  
+  private static final int INVALID_INSTRUCTION = -1;
   
   private static final int NOP_INSTRUCTION = 0x00;
   private static final int BREAKPOINT_INSTRUCTION = 0x00CA;
@@ -66,7 +72,7 @@ public class JopDebugKernel
 //    inputStream = new DataInputStream(System.in);
 //    outputStream = System.out;
 //  }
-  
+
   /**
    * This is the main method for this class. It is resposible
    * to answer debug requests from the desktop and can be used
@@ -99,7 +105,7 @@ public class JopDebugKernel
     }
     int commandset, command;
     
-    System.out.print("Debug server. Current stack depth: ");
+    System.out.print("Breakpoint! Current stack depth: ");
     System.out.println(getStackDepth());
     
     commandset = 0;
@@ -231,6 +237,9 @@ public class JopDebugKernel
           //TODO: now how can I run the bytecode that was standing where this
           // breakpoint is, now?
           
+//          // just for development,dump the call stack.
+//          TestJopDebugKernel.dumpCallStack();
+          
           // stop the loop
           break;
         }
@@ -307,6 +316,26 @@ public class JopDebugKernel
           System.out.println(count);
           
           outputStream.writeInt(count);
+          continue;
+        }
+        
+        // ----------------------
+        // breakpoint commands
+        // ----------------------
+        
+        // set breakpoint
+        if((commandset == 15) && (command == 1))
+        {
+          System.out.println("set breakpoint");
+          handleSetBreakPointCommand();
+          continue;
+        }
+        
+        // clear breakpoint
+        if((commandset == 15) && (command == 2))
+        {
+          System.out.println("clear breakpoint");
+          handleClearBreakPointCommand();
           continue;
         }
         
@@ -405,6 +434,8 @@ public class JopDebugKernel
         break;
       }
     }
+    
+    System.out.println("Returning from \"breakpoint\".");
   }
   
   /**
@@ -611,7 +642,6 @@ public class JopDebugKernel
     //    get variable at location
     //    print
     //    increment, set
-
     
     numLoc = getNumLocalsFromFrame(frame);
 //    System.out.println("  setField(int frame, int fieldIndex, value) frame = " + frame);
@@ -846,53 +876,172 @@ public class JopDebugKernel
    * Handle a "set breakpoint" command.
    * 
    * @return
+   * @throws IOException 
    */
-//  public static final boolean handleSetBreakPointCommand()
-//  {
-//    
-//  }
+  public static final boolean handleSetBreakPointCommand() throws IOException
+  {
+    int methodStructPointer;
+    int instructionOffset;
+    int result;
+    
+    // read the method pointer
+    methodStructPointer = inputStream.readInt();
+    
+    // read the instruction offset
+    instructionOffset = inputStream.readInt();
+    
+    System.out.println("Method body before:");
+    dumpMethodBody(methodStructPointer);
+    
+    // set the breakpoint
+    result = setBreakPoint(methodStructPointer, instructionOffset);
+    
+    System.out.println("Method body after:");
+    dumpMethodBody(methodStructPointer);
+    
+    // send an ack back to keep it in sync. This also inform which instruction
+    // was overwritten, so the debugger can undo it later. 
+    
+    outputStream.writeInt(result);
+    
+    if(result != INVALID_INSTRUCTION)
+    {
+      return true;
+    }
+    return false;
+  }
+  
+  /**
+   * Handle a "clear breakpoint" command.
+   * 
+   * @return
+   * @throws IOException 
+   */
+  public static final boolean handleClearBreakPointCommand() throws IOException
+  {
+    int methodStructPointer;
+    int instructionOffset;
+    int newInstruction;
+    int result;
+    
+    // read the method pointer
+    methodStructPointer = inputStream.readInt();
+    
+    // read the instruction offset
+    instructionOffset = inputStream.readInt();
+    
+    // read the new instruction
+    newInstruction = inputStream.readInt();
+    
+    System.out.println("Method body before:");
+    dumpMethodBody(methodStructPointer);
+    
+    // clear the breakpoint
+    result = clearBreakPoint(methodStructPointer, instructionOffset, newInstruction);
+    
+    System.out.println("Method body after:");
+    dumpMethodBody(methodStructPointer);
+    
+    // send an ack back to keep it in sync. This also inform which instruction
+    // was overwritten, so the debugger can undo it later. 
+    
+    outputStream.writeInt(result);
+    
+    if(result != INVALID_INSTRUCTION)
+    {
+      return true;
+    }
+    return false;
+  }
   
   /**
    * Set a breakpoint instruction.
-   * Still need to test it. 
+   * 
+   * Note: this method DOES NOT check instruction boundaries.
    * 
    * @param methodStructPointer pointer to the method structure
    * @param instruction
    * @return
    */
-  public static final boolean setBreakPoint(int methodStructPointer, int instructionOffset)
+  public static final int setBreakPoint(int methodStructPointer, int instructionOffset)
+  {
+    int instruction;
+    
+//    System.out.println("setBreakPoint(int methodPointer, int instructionOffset)");
+    
+    instruction = overwriteInstruction(methodStructPointer, instructionOffset,
+        BREAKPOINT_INSTRUCTION);
+    
+    return instruction;
+  }
+  
+  /**
+   * Clear a breakpoint instruction.
+   * 
+   * @param methodStructPointer pointer to the method structure
+   * @param instructionOffset
+   * @param newInstruction
+   * @return
+   */
+  public static final int clearBreakPoint(int methodStructPointer, 
+    int instructionOffset, int newInstruction)
+  {
+    int instruction;
+    
+//    System.out.println("clearBreakPoint(int methodStructPointer,int instructionOffset, int newInstruction)");
+    
+    instruction = overwriteInstruction(methodStructPointer, instructionOffset,
+        newInstruction);
+    
+    return instruction;
+  }
+  
+  /**
+   * Overwrite one method instruction and return the instruction which was
+   * set at that address previously.
+   * 
+   * This method DOES NOT check instruction boundaries, it just check 
+   * the method length. It allows changing anything inside the method body,
+   * as long as it fits inside. This includes bytecode parameters.
+   * 
+   * @param methodStructPointer
+   * @param instructionOffset
+   * @param instruction
+   * @return
+   */
+  private static final int overwriteInstruction(int methodStructPointer, 
+    int instructionOffset, int newInstruction)
   {
     int methodSize;
     int startAddress;
-    int instruction;
+    int instruction = INVALID_INSTRUCTION;
     int instructionAddress;
-    boolean result = false;
+    int word;
     
     System.out.println("setBreakPoint(int methodPointer, int instructionOffset)");
+    dumpMethodStruct(methodStructPointer);
     
     startAddress = getMethodStartAddress(methodStructPointer);
+    // beware: method sizes are in words, not in bytes. And 1 word = 4 bytes. 
     methodSize = getMethodSize(methodStructPointer);
+    // calculate the method size in bytes. 
+    methodSize *= 4;
     
-    // check if the address is correct
+    // check if the address is inside the method body.
     if(instructionOffset >= 0 && instructionOffset < methodSize)
     {
-      instructionAddress = startAddress + instructionOffset;
-      instruction = Native.rdMem(instructionAddress);
+      instruction = readByte(startAddress, instructionOffset);
+      System.out.println("Old instruction: " + instruction);
       
-      // the instruction to be overwritten SHOULD be NOP in this implementation
-      if(instruction == NOP_INSTRUCTION)
-      {
-        instruction = BREAKPOINT_INSTRUCTION;
-        Native.wrMem(instruction, instructionAddress);
-        
-        System.out.println("Wrote breakpoint!");
-        result = true;
-      }
-      else
-      {
-        System.out.print("Wrong instruction: NOP expected, but found this: ");
-        System.out.println(instruction);
-      }
+      writeByte(newInstruction, startAddress, instructionOffset);
+
+      
+//      instructionAddress = startAddress + instructionOffset;
+//      
+//      instruction = Native.rdMem(instructionAddress);
+//      System.out.println("Old instruction: " + instruction);
+//      
+//      Native.wrMem(newInstruction, instructionAddress);
     }
     else
     {
@@ -905,7 +1054,177 @@ public class JopDebugKernel
       System.out.println();
     }
     
+    return instruction;
+  }
+  
+  /**
+   * Read one byte from the method code.
+   *  
+   * Useful to manipulate compiled code, for operations 
+   * such as "set breakpoint" or "clear breakpoint".
+   * 
+   * @param startAddress
+   * @param instructionOffset
+   * @return
+   */
+  private static int readByte(int startAddress, int instructionOffset)
+  {
+    int word, index;
+    int data;
+    int address;
+    int result = 0;
+    
+    // divide by four. Same as the first line.
+//     word = instructionOffset / 4;  
+    word = instructionOffset >> 2;  
+    
+    // get the remainder. Same as the first line.
+//    index = instructionOffset % 4;
+    index = instructionOffset & 0x03;
+    
+    address = startAddress + word;
+    data = Native.rdMem(address);
+    
+//    System.out.println("Word:      " + word);
+//    System.out.println("Remainder: " + index);
+//    System.out.println("address:   " + address);
+//    System.out.print("data:      ");
+//    printIntHex(data);
+//    System.out.println();
+    
+    switch(index)
+    {
+      case 0:
+      {
+        result = data >>> (3 * 8);
+        break;
+      }
+      case 1:
+      {
+        result = data >>> (2 * 8);
+        break;
+      }
+      case 2:
+      {
+        result = data >>> (1 * 8);
+        break;
+      }
+      case 3:
+      default:
+      {
+        result = data;
+      }
+    }
+    
+    result = result & 0x00ff;
+    
+//    System.out.print("Result: ");
+//    printIntHex(result);
+//    System.out.println();
+    
     return result;
+  }
+  
+  /**
+   * Set one byte from the method code area.
+   *
+   * Basic approach to set a bytecode:
+   * - get the address of the word
+   * - read the word
+   * - clear the old byte
+   * - set the new byte
+   * - write back the word
+   * 
+   * @param newInstruction
+   * @param startAddress
+   * @param instructionOffset
+   */
+  private static void writeByte(int newInstruction, int startAddress, int instructionOffset)
+  {
+    int word, index;
+    int data;
+    int address;
+    int result = 0;
+    
+    // divide by four.
+    word = instructionOffset >> 2;  
+    
+    // get the remainder.
+    index = instructionOffset & 0x03;
+    
+    address = startAddress + word;
+    data = Native.rdMem(address);
+    
+//    System.out.println("Word:      " + word);
+//    System.out.println("Remainder: " + index);
+//    System.out.println("address:   " + address);
+    System.out.print("data:      ");
+    printIntHex(data);
+    System.out.println();
+    
+    // clear all the other bytes, just in case. 
+    newInstruction &= 0x00ff;
+    
+    // clear the old byte using a mask and shift the new byte accordingly
+    switch(index)
+    {
+      case 0:
+      {
+        newInstruction = newInstruction << (3 * 8);
+        data = data & MASK_FIRST_BYTE;
+        break;
+      }
+      case 1:
+      {
+        newInstruction = newInstruction << (2 * 8);
+        data = data & MASK_SECOND_BYTE;
+        break;
+      }
+      case 2:
+      {
+        newInstruction = newInstruction << (1 * 8);
+        data = data & MASK_THIRD_BYTE;
+        break;
+      }
+      case 3:
+      default:
+      {
+        data = data & MASK_FOURTH_BYTE;
+      }
+    }
+    // merge the (already shifted) new byte into the word
+    data = data | newInstruction;
+    
+    // finally, write it back into memory. Bytecode changed!
+    Native.wrMem(data, address);
+    
+    System.out.print("new data:  ");
+    printIntHex(data);
+    System.out.println();
+  }
+  
+  private static void printIntHex(int value)
+  {
+    EmbeddedOutputStream.printIntHex(value);
+  }
+  
+  private static void testReadInstruction(int instructionAddress)
+  {
+    int instruction;
+    
+    System.out.println("----------------------------------------");
+    instruction = Native.rdMem(instructionAddress + 1);
+    System.out.println("Instruction: " + instruction);
+    
+    instruction = Native.rdMem(instructionAddress + 1);
+    System.out.println("Instruction: " + instruction);
+    
+    instruction = Native.rdMem(instructionAddress + 2);
+    System.out.println("Instruction: " + instruction);
+    
+    instruction = Native.rdMem(instructionAddress + 3);
+    System.out.println("Instruction: " + instruction);
+    System.out.println("----------------------------------------");
   }
   
   /**
@@ -1007,7 +1326,7 @@ public class JopDebugKernel
     System.out.print("Start address: ");
     System.out.println(getMethodStartAddress(methodPointer));
     
-    System.out.print("  Method size: ");
+    System.out.print("Size (words):  ");
     System.out.println(getMethodSize(methodPointer));
     
     System.out.print("Constant pool: ");
