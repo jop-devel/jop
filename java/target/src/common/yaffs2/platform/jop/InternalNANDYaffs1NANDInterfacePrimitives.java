@@ -31,9 +31,9 @@ public class InternalNANDYaffs1NANDInterfacePrimitives implements Yaffs1NANDInte
 	static boolean errorOccurred()
 	{
 //		 07: read status register command, 100000 address, 1 = A0 = CLE
-		Native.wrMem(0x70, 0x100001);
+		Native.wrMem(0x70, IO_NAND+CLE/*0x100001*/);
 //		 S0=error bit S6=controller inactive S7=wr protection S8=nReady/Busy Signal
-		return ((Native.rdMem(0x100000)&0x01) == 0x01) ? true : false;
+		return ((Native.rdMem(IO_NAND)&0x01) == 0x01) ? true : false;
 	}
 	
 	/**
