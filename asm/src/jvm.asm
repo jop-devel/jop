@@ -129,6 +129,7 @@ io_int_ena	=	-128
 io_status	=	-112
 io_uart		=	-111
 
+io_lock = -123
 io_cpu_id = -122
 io_signal = -121
 
@@ -1384,7 +1385,15 @@ monitorenter:
 			add
 			wait
 			wait
-			stm	moncnt	nxt
+			stm	moncnt
+			// request the global lock
+			ldi	io_lock
+			stmwa				// write ext. mem address
+			ldi	1
+			stmwd				// write ext. mem data
+			wait
+			wait
+			nop nxt
 
 monitorexit:
 			pop					// we don't use the objref
@@ -1399,6 +1408,13 @@ monitorexit:
 			// some time....
 			// nop
 			// nop
+			// free the global lock
+			ldi	io_lock
+			stmwa				// write ext. mem address
+			ldi	0
+			stmwd				// write ext. mem data
+			wait
+			wait
 			ldi	io_int_ena
 			stmwa
 			ldi	1
