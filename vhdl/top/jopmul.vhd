@@ -37,7 +37,7 @@ generic (
 	rom_cnt		: integer := 15;	-- clock cycles for external rom for 100 MHz
 	jpc_width	: integer := 12;	-- address bits of java bytecode pc = cache size
 	block_bits	: integer := 4;		-- 2*block_bits is number of cache blocks
-	cpu_cnt		: integer := 3		-- number of cpus
+	cpu_cnt		: integer := 2		-- number of cpus
 );
 
 port (
@@ -255,6 +255,8 @@ end process;
 		cpu_cnt => cpu_cnt)
 		port map
 		(
+			clk => clk_int,
+			reset => int_res,
 			sync_in_array => sync_in_array,
 			sync_out_array => sync_out_array
 		);
