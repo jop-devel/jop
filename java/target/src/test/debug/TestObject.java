@@ -24,7 +24,13 @@ package debug;
 /**
  * TestObject.java
  * 
- * A simple object to test direct field access.
+ * A simple object to test direct field access and other operations.
+ * 
+ * Note:
+ * to get the details of the compiled class, it's possible to use javap
+ * like this:
+ * 
+ * javap  -c -l -s -private TestObject > TestObject.txt
  * 
  * @author Paulo Guedes
  * 21/05/2007 - 16:19:23
@@ -60,5 +66,62 @@ public class TestObject
   public void setValue(int x)
   {
     this.value = x;
+  }
+  
+  /**
+   * Method to calculate the identity function.
+   * 
+   *  Signature: (I)I
+   *  Code:
+   *   0:   iload_0
+   *   1:   ireturn
+   *   
+   *  LineNumberTable: 
+   *   line 87: 0
+   *  
+   * @param x
+   * @return
+   */
+  public static int identity(int x)
+  {
+    return x;
+  }
+  
+  public static int increment(int x)
+  {
+    x++;
+    
+    return x;
+  }
+  
+  public static int testInc()
+  {
+    int x;
+    
+    x = 0;
+    
+    x++;
+    x++;
+    x++;
+    x++;
+    x++;
+    x++;
+    
+    return x;
+  }
+  
+  public static int getConstant()
+  {
+    int x;
+    
+    x = 0;
+    
+    x++;
+    x++;
+    x++;
+    
+    x = 16;
+    
+    return x;
   }
 }
