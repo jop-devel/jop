@@ -30,8 +30,6 @@ public class SyncTest {
 			whoAmI.numberArray = new int [10];
 			
 			Native.wrMem(0x00000001, Const.IO_SIGNAL);
-			
-			System.out.println("Depp!!!");
 		
 			while(true)
 			{
