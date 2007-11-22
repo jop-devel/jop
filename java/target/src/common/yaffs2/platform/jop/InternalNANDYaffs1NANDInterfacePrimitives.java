@@ -44,7 +44,7 @@ public class InternalNANDYaffs1NANDInterfacePrimitives implements Yaffs1NANDInte
 	{
 		int i = 0;
 		int j;
-		while(((j = Native.rdMem(0x100000)) & 0x100) != 0x100)	// wait if rdy signal is 0
+		while(((j = Native.rdMem(IO_NAND)) & 0x100) != 0x100)	// wait if rdy signal is 0
 		{i++;}
 		//System.out.print(msg);System.out.println(i);
 		//Dbg.wr(msg);Dbg.hexVal(i);Dbg.wr("\n");
