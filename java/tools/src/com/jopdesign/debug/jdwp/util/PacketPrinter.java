@@ -26,7 +26,6 @@ import java.io.IOException;
 
 import com.jopdesign.debug.jdwp.constants.JDWPConstants;
 import com.jopdesign.debug.jdwp.sniffer.PacketInputStreamReader;
-import com.sun.tools.jdi.Packet;
 import com.sun.tools.jdi.PacketWrapper;
 
 /**
@@ -117,8 +116,8 @@ public class PacketPrinter
     
     for(i = 0; i < numPackets; i++)
     {
-      Packet packet = list.get(i);
-      PacketWrapper.printInformation(packet);
+      PacketWrapper packet = list.get(i);
+      packet.printInformation();
     }
   }
 
