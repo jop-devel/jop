@@ -24,7 +24,7 @@ package com.jopdesign.debug.jdwp.io;
 import java.io.IOException;
 import java.io.InputStream;
 
-import com.sun.tools.jdi.ConnectionService;
+import com.sun.tools.jdi.SocketConnectionWrapper;
 
 /**
  * ConnectionInputStream.java
@@ -37,15 +37,15 @@ import com.sun.tools.jdi.ConnectionService;
  */
 public class ConnectionInputStream extends InputStream
 {
-  private ConnectionService service;
+  private SocketConnectionWrapper connection;
   
-  public ConnectionInputStream(ConnectionService service)
+  public ConnectionInputStream(SocketConnectionWrapper service)
   {
-    this.service = service;
+    this.connection = service;
   }
   
   public int read() throws IOException
   {
-    return service.receiveByte();
+    return connection.receiveByte();
   }
 }

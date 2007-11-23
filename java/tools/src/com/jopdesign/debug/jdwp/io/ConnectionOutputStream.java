@@ -24,7 +24,7 @@ package com.jopdesign.debug.jdwp.io;
 import java.io.IOException;
 import java.io.OutputStream;
 
-import com.sun.tools.jdi.ConnectionService;
+import com.sun.tools.jdi.SocketConnectionWrapper;
 
 /**
  * 
@@ -38,17 +38,17 @@ import com.sun.tools.jdi.ConnectionService;
  */
 public class ConnectionOutputStream extends OutputStream
 {
-  private ConnectionService service;
+  private SocketConnectionWrapper connection;
   
-  public ConnectionOutputStream(ConnectionService service)
+  public ConnectionOutputStream(SocketConnectionWrapper service)
   {
-    this.service = service;
+    this.connection = service;
   }
 
   public void write(int b) throws IOException
   {
     // TODO: will this conversion be an issue?
-    service.sendByte((byte) b);
+    connection.sendByte((byte) b);
   }
 
 }
