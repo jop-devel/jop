@@ -29,12 +29,18 @@ import com.jopdesign.debug.jdwp.constants.JDWPConstants;
 import com.jopdesign.debug.jdwp.util.Util;
 
 /**
- * The main purpose of this class is to open public
- * access to the original Packet class. 
+ * An implementation of a JDWP packet. It can hold both data for 
+ * request and for reply packets and provide all basic services
+ * for packet manipulation.
+ * 
+ * The original purpose of this class was to open public
+ * access to the original Packet class.
+ * Currently it's an independent implementation, with 
+ * no dependencies to the original Packet class.
  * 
  * @author Paulo Abadie Guedes
  */
-public class PacketWrapper extends Packet
+public class PacketWrapper
 {
   public static final byte REPLY_FLAG = (byte) 0x80;
   
@@ -42,17 +48,30 @@ public class PacketWrapper extends Packet
   private static byte[] handshakeBytes = JDWPConstants.getJDWPHandshakeBytes();
   private static final int handshakeLength = handshakeBytes.length; 
   
+  private int command;
+  private int commandSet;
+  private int flags;
+  private int error;
+  
+  private boolean isReply;
+  private int packetID;
+  
+  private byte[] data;
+  
   /**
    * Build a new object based on a previously built
    * packet.
    * 
    * @param packet
    */
-  public PacketWrapper (Packet packet)
+  public PacketWrapper (PacketWrapper packet)
   {
     copy(packet);
   }
   
+  /**
+   * Build a new empty object.
+   */
   public PacketWrapper ()
   {
     
@@ -100,14 +119,14 @@ public class PacketWrapper extends Packet
     return isHandshakePacket;
   }
   
-  public void copy(Packet packet)
+  public void copy(PacketWrapper packet)
   {
-    cmdSet = packet.cmdSet;
-    cmd = packet.cmd;
+    commandSet = packet.commandSet;
+    command = packet.command;
     flags = packet.flags;
-    errorCode = packet.errorCode;
-    replied = packet.replied;
-    id = packet.id;
+    error = packet.error;
+    isReply = packet.isReply;
+    packetID = packet.packetID;
     
     //copying to stay on the safe side.
     data = Util.copyByteArray(packet.data);
@@ -122,24 +141,6 @@ public class PacketWrapper extends Packet
   {
     PacketWrapper packetWrapper = new PacketWrapper(this);
     return packetWrapper;
-  }
-  
-  /**
-   * @param packet
-   * @return
-   */
-  public static PacketWrapper convertToPacketWrapper(Packet packet)
-  {
-    PacketWrapper wrapper;
-    if(packet instanceof PacketWrapper)
-    {
-      wrapper = (PacketWrapper) packet;
-    }
-    else
-    {
-      wrapper = new PacketWrapper(packet);
-    }
-    return wrapper;
   }
   
   public byte[] getData()
@@ -166,22 +167,22 @@ public class PacketWrapper extends Packet
   
   public int getCmdSet()
   {
-    return cmdSet;
+    return commandSet;
   }
   
   public void setCommandSet(int commandSet)
   {
-    cmdSet = (short) commandSet;
+    this.commandSet = (short) commandSet;
   }
   
   public int getCmd()
   {
-    return cmd;
+    return command;
   }
   
   public void setCommand(int command)
   {
-    cmd = (short) command;
+    this.command = (short) command;
   }
   
   public int getFlags()
@@ -189,24 +190,29 @@ public class PacketWrapper extends Packet
     return flags;
   }
   
+  public void setFlags(int flags)
+  {
+    this.flags = flags;
+  }
+  
   public int getErrorCode()
   {
-    return errorCode;
+    return error;
   }
   
   public int getID()
   {
-    return id;
+    return packetID;
   }
   
   public void setID(int ID)
   {
-    this.id = ID;
+    this.packetID = ID;
   }
   
-  public void setID(Packet packet)
+  public void setID(PacketWrapper packet)
   {
-    this.id = packet.id;
+    this.packetID = packet.packetID;
   }
   
   public String getSetDescription()
@@ -258,7 +264,7 @@ public class PacketWrapper extends Packet
     
     if(isReply())
     {
-      if(id == packet.id)
+      if(packetID == packet.packetID)
       {
         isReply = true;
       }
@@ -282,11 +288,7 @@ public class PacketWrapper extends Packet
    */
   public void setError(int error)
   {
-    // ok, this may seem not very elegant at first glance.
-    // but is a simple and effective way to return the error
-    // and avoid creating another type just for that.
-    cmdSet = (short)((error >>> 8) & 0xff);
-    cmd = (short)(error & 0xff);
+    this.error = error;
   }
   
   public String toString()
@@ -300,12 +302,6 @@ public class PacketWrapper extends Packet
     return new String(bytes);
   }
   
-  public static void printInformation(Packet thisPacket)
-  {
-    PacketWrapper packet = convertToPacketWrapper(thisPacket);
-    packet.printInformation();
-  }
-
   public void printInformation()
   {
     printInformation(System.out);
