@@ -25,25 +25,14 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 import com.jopdesign.debug.jdwp.io.ConnectionOutputStream;
-import com.sun.tools.jdi.ConnectionService;
 import com.sun.tools.jdi.PacketWrapper;
 import com.sun.tools.jdi.SocketConnectionWrapper;
 
 public class PacketOutputStreamWriter extends OutputStream
 {
   private OutputStream output;
-  private ConnectionService connection;
+  private SocketConnectionWrapper connection;
 
-  public PacketOutputStreamWriter (ConnectionService connectionService) throws IOException
-  {
-    synchronized(this)
-    {
-      OutputStream outputStream = new ConnectionOutputStream(connectionService);
-      initializeOutputStream(outputStream);
-      connection = connectionService;
-    }
-  }
-  
   public PacketOutputStreamWriter (OutputStream outputStream) throws IOException
   {
     if(outputStream == null)
