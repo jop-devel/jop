@@ -24,7 +24,6 @@ package com.jopdesign.debug.jdwp.util;
 import java.util.List;
 import java.util.Vector;
 
-import com.sun.tools.jdi.Packet;
 import com.sun.tools.jdi.PacketWrapper;
 
 public class PacketList
@@ -39,35 +38,17 @@ public class PacketList
   }
   
   /**
-   * Add the given packet to the list, converting it into
-   * a PacketWrapper if necessary. If it is already an instance
-   * of PacketWrapper class, just delegate 
-   * the object to method "addPacketWrapper". 
-   * 
-   * Be careful: if needed, new objects will be created.
-   * So, after adding Packet objects, if their actual type
-   * is not PacketWrapper it will be converted.
-   * Hence, getting a packet which was just added may return
-   * an object which is different than the added one.
-   * 
+   * Add the given packet to the list.
    *  This method ignores null objects.
    * 
    * @param packet
    */
-  public synchronized void add(Packet packet)
+  public synchronized void add(PacketWrapper packet)
   {
-    PacketWrapper wrapper;
-    
     if(packet != null)
     {
-      wrapper = PacketWrapper.convertToPacketWrapper(packet);
-      addPacketWrapper(wrapper);
+      list.add(packet);
     }
-  }
-  
-  public synchronized void addPacketWrapper(PacketWrapper packet)
-  {
-    list.add(packet);
   }
 
   public synchronized PacketWrapper get(int index)
