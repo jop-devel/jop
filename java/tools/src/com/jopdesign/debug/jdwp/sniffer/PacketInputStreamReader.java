@@ -30,10 +30,8 @@ import java.io.InputStream;
 import java.net.Socket;
 
 import com.jopdesign.debug.jdwp.constants.JDWPConstants;
-import com.jopdesign.debug.jdwp.io.ConnectionInputStream;
 import com.jopdesign.debug.jdwp.util.PacketList;
 import com.jopdesign.debug.jdwp.util.Util;
-import com.sun.tools.jdi.ConnectionService;
 import com.sun.tools.jdi.PacketWrapper;
 import com.sun.tools.jdi.SocketConnectionWrapper;
 
@@ -67,23 +65,13 @@ import com.sun.tools.jdi.SocketConnectionWrapper;
 public class PacketInputStreamReader extends InputStream
 {
   private InputStream input;
-  private ConnectionService connection;
+  private SocketConnectionWrapper connection;
   
   // a small change to handle the protocol handshake.
   // I don't like this handshake because it does not
   // follow the regular packet structure. Anyway... ;)
   boolean firstRead = true;
   
-  public PacketInputStreamReader (ConnectionService connectionService) throws IOException
-  {
-    synchronized(this)
-    {
-      InputStream inputStream = new ConnectionInputStream(connectionService);
-      initializeInputStream(inputStream);
-      connection = connectionService;
-    }
-  }
-
   public PacketInputStreamReader (Socket socket) throws IOException
   {
     synchronized(this)
@@ -153,7 +141,7 @@ public class PacketInputStreamReader extends InputStream
     }
     else
     {
-      packet = new PacketWrapper(connection.receivePacket());
+      packet = connection.receivePacket();
     }
     
     return packet;
