@@ -21,7 +21,6 @@
 
 package com.jopdesign.debug.jdwp.util;
 
-import com.sun.tools.jdi.Packet;
 import com.sun.tools.jdi.PacketWrapper;
 
 /**
@@ -135,18 +134,6 @@ public class PacketQueue //extends Observable
     
     // notify everyone that may be waiting on the lock of this object
     notifyAll();
-  }
-  
-  /**
-   * Add a packet to the end of the queue.
-   */ 
-  public synchronized void add(Packet packet)
-  {
-    PacketWrapper packetWrapper;
-    packetWrapper = PacketWrapper.convertToPacketWrapper(packet);
-    
-    // no need to use the wait/notify mechanism since the call below does that.
-    add(packetWrapper);
   }
   
   /**
