@@ -28,7 +28,7 @@ import com.jopdesign.debug.jdwp.sniffer.PacketInputStreamReader;
 import com.jopdesign.debug.jdwp.util.BasicWorker;
 import com.jopdesign.debug.jdwp.util.Debug;
 import com.jopdesign.debug.jdwp.util.PacketQueue;
-import com.sun.tools.jdi.Packet;
+import com.sun.tools.jdi.PacketWrapper;
 
 /**
  * This communication interface is responsible for conversions from
@@ -86,7 +86,7 @@ public class PacketInputQueueManager extends BasicWorker
     {
       try
       {
-        Packet packet = input.readPacket();
+        PacketWrapper packet = input.readPacket();
         queue.add(packet);
         
         Debug.println("  Received packet! ");
