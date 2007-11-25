@@ -1,9 +1,12 @@
 SOURCEPATH=../../java/target/src
 SP1=$(SOURCEPATH)/common
 SP2=$(SOURCEPATH)/bench
-SOURCE=$(SP1)\;$(SP2)
-PACKAGES=util:ejip:com:joprt:jbe
-EXCLUDE=ejip.jtcpip
+SP3=$(SOURCEPATH)/jdk_base
+SP4=$(SOURCEPATH)/jdk11
+SOURCE=$(SP1)\;$(SP2)\;$(SP3)\;$(SP4)
+PACKAGES=util:ejip:com:joprt:jbe:java
+#EXCLUDE=ejip.jtcpip
+EXCLUDE=""
 
 all: jdoc 
 	cd appendix && make
