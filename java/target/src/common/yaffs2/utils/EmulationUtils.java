@@ -8,7 +8,12 @@ import yaffs2.utils.*;
  */
 public abstract class EmulationUtils
 {
-	
+	/**
+	 * 
+	 * @param array String, terminated with 0.
+	 * @param index
+	 * @return
+	 */
 	public static String byteArrayToString(byte[] array, int index)
 	{
 		int length = Unix.strlen(array, index);

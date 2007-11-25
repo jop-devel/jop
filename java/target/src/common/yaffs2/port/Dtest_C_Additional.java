@@ -836,14 +836,14 @@ public class Dtest_C_Additional extends Dtest_C {
 		
 		yaffs2.utils.Globals.configuration.yaffs_StartUp();
 		
-		yaffsfs_C.yaffs_mount(Utils.StringToByteArray("/flash/boot"), 0);
+		yaffsfs_C.yaffs_mount(Utils.StringToByteArray("/"), 0);
 		
-		make_a_file(Utils.StringToByteArray("/flash/boot/a"), 0, (byte)'a',sizeOfFiles);
-		make_a_file(Utils.StringToByteArray("/flash/boot/b"), 0, (byte)'b',sizeOfFiles);
+		make_a_file(Utils.StringToByteArray("/a"), 0, (byte)'a',sizeOfFiles);
+		make_a_file(Utils.StringToByteArray("/b"), 0, (byte)'b',sizeOfFiles);
 
-		a = yaffsfs_C.yaffs_open(Utils.StringToByteArray("/flash/boot/a"),0,yaffsfs_H.O_RDONLY,0);
-		b = yaffsfs_C.yaffs_open(Utils.StringToByteArray("/flash/boot/b"),0,yaffsfs_H.O_RDONLY,0);
-		c = yaffsfs_C.yaffs_open(Utils.StringToByteArray("/flash/boot/c"),0, yaffsfs_H.O_CREAT | yaffsfs_H.O_RDWR | yaffsfs_H.O_TRUNC, yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE);
+		a = yaffsfs_C.yaffs_open(Utils.StringToByteArray("/a"),0,yaffsfs_H.O_RDONLY,0);
+		b = yaffsfs_C.yaffs_open(Utils.StringToByteArray("/b"),0,yaffsfs_H.O_RDONLY,0);
+		c = yaffsfs_C.yaffs_open(Utils.StringToByteArray("/c"),0, yaffsfs_H.O_CREAT | yaffsfs_H.O_RDWR | yaffsfs_H.O_TRUNC, yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE);
 
 		do{
 			i = sizeOfFiles;
@@ -916,9 +916,9 @@ public class Dtest_C_Additional extends Dtest_C {
 		int f;
 		
 			yaffs2.utils.Globals.configuration.yaffs_StartUp();
-			yaffsfs_C.yaffs_mount(Utils.StringToByteArray("/flash/boot"),0);
-		    fill_disk(Utils.StringToByteArray("/flash/boot/"),0,2);
-		    f = yaffsfs_C.yaffs_freespace(Utils.StringToByteArray("/flash/boot"),0);
+			yaffsfs_C.yaffs_mount(Utils.StringToByteArray("/"),0);
+		    fill_disk(Utils.StringToByteArray("/"),0,2);
+		    f = yaffsfs_C.yaffs_freespace(Utils.StringToByteArray("/"),0);
 		    
 		    Unix.printf("%d free when disk full\n",PrimitiveWrapperFactory.get(f));           
 		    return 1;
@@ -935,11 +935,11 @@ public class Dtest_C_Additional extends Dtest_C {
 		byte[] tmp = new byte[1];
 
 		yaffs2.utils.Globals.configuration.yaffs_StartUp();
-		yaffsfs_C.yaffs_mount(Utils.StringToByteArray("/flash/boot"),0);
+		yaffsfs_C.yaffs_mount(Utils.StringToByteArray("/"),0);
 
-		yaffsfs_C.yaffs_unlink(Utils.StringToByteArray("/flash/boot/trunctest"),0);
+		yaffsfs_C.yaffs_unlink(Utils.StringToByteArray("/trunctest"),0);
 		
-		a = yaffsfs_C.yaffs_open(Utils.StringToByteArray("/flash/boot/trunctest"),0, yaffsfs_H.O_CREAT | yaffsfs_H.O_TRUNC | yaffsfs_H.O_RDWR,  yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE);
+		a = yaffsfs_C.yaffs_open(Utils.StringToByteArray("/trunctest"),0, yaffsfs_H.O_CREAT | yaffsfs_H.O_TRUNC | yaffsfs_H.O_RDWR,  yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE);
 		
 		yaffsfs_C.yaffs_write(a,Utils.StringToByteArray("abcdefghijklmnopqrstuvwzyz"),0,26);
 		

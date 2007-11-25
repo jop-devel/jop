@@ -12,6 +12,6 @@ public class JOPDirectInterfaceClient {
 
 		yaffs2.utils.Globals.configuration.yaffs_StartUp();
 		
-		Dtest_C.small_overwrite_test("/flash/boot",1);
+		Dtest_C.small_overwrite_test("/",1);
 	}
 }

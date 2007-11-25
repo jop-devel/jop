@@ -104,14 +104,14 @@ public class Dtest_C extends yaffs2.port.Dtest_C_Additional {
 		
 		yaffs2.utils.Globals.configuration.yaffs_StartUp();
 	
-		yaffsfs_C.yaffs_mount(Utils.StringToByteArray("/flash/boot"), 0);
+		yaffsfs_C.yaffs_mount(Utils.StringToByteArray("/"), 0);
 //		yaffsfs_C.yaffs_mount(Utils.StringToByteArray("/boot"), 0);
 //		yaffsfs_C.yaffs_mount(Utils.StringToByteArray("/data"), 0);
 //		yaffsfs_C.yaffs_mount(Utils.StringToByteArray("/flash"), 0);
 //		yaffsfs_C.yaffs_mount(Utils.StringToByteArray("/ram"), 0);
 		
-		Unix.printf("\nDirectory look-up of /flash/boot\n");
-		dumpDir(Utils.StringToByteArray("/flash/boot"), 0);
+		Unix.printf("\nDirectory look-up of /\n");
+		dumpDir(Utils.StringToByteArray("/"), 0);
 //		Unix.printf("\nDirectory look-up of /boot\n");
 //		dumpDir(Utils.StringToByteArray("/boot"), 0);
 //		Unix.printf("\nDirectory look-up of /data\n");
@@ -127,11 +127,11 @@ public class Dtest_C extends yaffs2.port.Dtest_C_Additional {
 
 		f = yaffsfs_C.yaffs_open(Utils.StringToByteArray("/flashboot/b1"), 0, yaffsfs_H.O_RDONLY,0);
 		
-		Unix.printf("open /flash/boot/b1 readonly, f=%d\n",PrimitiveWrapperFactory.get(f));
+		Unix.printf("open /b1 readonly, f=%d\n",PrimitiveWrapperFactory.get(f));
 		
-		f = yaffsfs_C.yaffs_open(Utils.StringToByteArray("/flash/boot/b1"), 0, yaffsfs_H.O_CREAT,yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE);
+		f = yaffsfs_C.yaffs_open(Utils.StringToByteArray("/b1"), 0, yaffsfs_H.O_CREAT,yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE);
 		
-		Unix.printf("open /flash/boot/b1 yaffsfs_H.O_CREAT, f=%d\n",PrimitiveWrapperFactory.get(f));
+		Unix.printf("open /b1 yaffsfs_H.O_CREAT, f=%d\n",PrimitiveWrapperFactory.get(f));
 		
 		
 		r = yaffsfs_C.yaffs_write(f,Utils.StringToByteArray("hello"),0,1);
@@ -141,9 +141,9 @@ public class Dtest_C extends yaffs2.port.Dtest_C_Additional {
 		
 		Unix.printf("close %d\n",PrimitiveWrapperFactory.get(r));
 
-		f = yaffsfs_C.yaffs_open(Utils.StringToByteArray("/flash/boot/b1"), 0, yaffsfs_H.O_RDWR,0);
+		f = yaffsfs_C.yaffs_open(Utils.StringToByteArray("/b1"), 0, yaffsfs_H.O_RDWR,0);
 		
-		Unix.printf("open /flash/boot/b1 yaffsfs_H.O_RDWR,f=%d\n",PrimitiveWrapperFactory.get(f));
+		Unix.printf("open /b1 yaffsfs_H.O_RDWR,f=%d\n",PrimitiveWrapperFactory.get(f));
 		
 		
 		r = yaffsfs_C.yaffs_write(f,Utils.StringToByteArray("hello"),0,2);
@@ -179,67 +179,67 @@ public class Dtest_C extends yaffs2.port.Dtest_C_Additional {
 		
 		Unix.printf("close %d\n",PrimitiveWrapperFactory.get(r));
 		
-		copy_in_a_file("/flash/boot/yyfile","xxx");
+		copy_in_a_file("/yyfile","xxx");
 		
 		// Create a file with a long name
 		
-		copy_in_a_file("/flash/boot/file with a long name","xxx");
+		copy_in_a_file("/file with a long name","xxx");
 		
 		
-		Unix.printf("\nDirectory look-up of /flash/boot\n");
-		dumpDir(Utils.StringToByteArray("/flash/boot"),0);
+		Unix.printf("\nDirectory look-up of /\n");
+		dumpDir(Utils.StringToByteArray("/"),0);
 
 		// Check stat
-		r = yaffsfs_C.yaffs_stat(Utils.StringToByteArray("/flash/boot/file with a long name"),0,ystat);
+		r = yaffsfs_C.yaffs_stat(Utils.StringToByteArray("/file with a long name"),0,ystat);
 		
 		// Check rename
 		
-		r = yaffsfs_C.yaffs_rename(Utils.StringToByteArray("/flash/boot/file with a long name"),0,Utils.StringToByteArray("/flash/boot/r1"),0);
+		r = yaffsfs_C.yaffs_rename(Utils.StringToByteArray("/file with a long name"),0,Utils.StringToByteArray("/r1"),0);
 		
-		Unix.printf("\nDirectory look-up of /flash/boot\n");
-		dumpDir(Utils.StringToByteArray("/flash/boot"),0);
+		Unix.printf("\nDirectory look-up of /\n");
+		dumpDir(Utils.StringToByteArray("/"),0);
 		
 		// Check unlink
-		r = yaffsfs_C.yaffs_unlink(Utils.StringToByteArray("/flash/boot/r1"),0);
+		r = yaffsfs_C.yaffs_unlink(Utils.StringToByteArray("/r1"),0);
 		
-		Unix.printf("\nDirectory look-up of /flash/boot\n");
-		dumpDir(Utils.StringToByteArray("/flash/boot"),0);
+		Unix.printf("\nDirectory look-up of /\n");
+		dumpDir(Utils.StringToByteArray("/"),0);
 
 		// Check mkdir
 		
-		r = yaffsfs_C.yaffs_mkdir(Utils.StringToByteArray("/flash/boot/directory1"),0,0);
+		r = yaffsfs_C.yaffs_mkdir(Utils.StringToByteArray("/directory1"),0,0);
 		
-		Unix.printf("\nDirectory look-up of /flash/boot\n");
-		dumpDir(Utils.StringToByteArray("/flash/boot"),0);
-		Unix.printf("\nDirectory look-up of /flash/boot/directory1\n");
-		dumpDir(Utils.StringToByteArray("/flash/boot/directory1"),0);
+		Unix.printf("\nDirectory look-up of /\n");
+		dumpDir(Utils.StringToByteArray("/"),0);
+		Unix.printf("\nDirectory look-up of /directory1\n");
+		dumpDir(Utils.StringToByteArray("/directory1"),0);
 
 		// add a file to the directory                  
-		copy_in_a_file("/flash/boot/directory1/file with a long name","xxx");
+		copy_in_a_file("/directory1/file with a long name","xxx");
 		
-		Unix.printf("\nDirectory look-up of /flash/boot\n");
-		dumpDir(Utils.StringToByteArray("/flash/boot"),0);
-		Unix.printf("\nDirectory look-up of /flash/boot/directory1\n");
-		dumpDir(Utils.StringToByteArray("/flash/boot/directory1"),0);
+		Unix.printf("\nDirectory look-up of /\n");
+		dumpDir(Utils.StringToByteArray("/"),0);
+		Unix.printf("\nDirectory look-up of /directory1\n");
+		dumpDir(Utils.StringToByteArray("/directory1"),0);
 		
 		//  Attempt to delete directory (should fail)
 		
-		r = yaffsfs_C.yaffs_rmdir(Utils.StringToByteArray("/flash/boot/directory1"),0);
+		r = yaffsfs_C.yaffs_rmdir(Utils.StringToByteArray("/directory1"),0);
 		
-		Unix.printf("\nDirectory look-up of /flash/boot\n");
-		dumpDir(Utils.StringToByteArray("/flash/boot"),0);
-		Unix.printf("\nDirectory look-up of /flash/boot/directory1\n");
-		dumpDir(Utils.StringToByteArray("/flash/boot/directory1"),0);
+		Unix.printf("\nDirectory look-up of /\n");
+		dumpDir(Utils.StringToByteArray("/"),0);
+		Unix.printf("\nDirectory look-up of /directory1\n");
+		dumpDir(Utils.StringToByteArray("/directory1"),0);
 		
 		// Delete file first, then rmdir should work
-		r = yaffsfs_C.yaffs_unlink(Utils.StringToByteArray("/flash/boot/directory1/file with a long name"),0);
-		r = yaffsfs_C.yaffs_rmdir(Utils.StringToByteArray("/flash/boot/directory1"),0);
+		r = yaffsfs_C.yaffs_unlink(Utils.StringToByteArray("/directory1/file with a long name"),0);
+		r = yaffsfs_C.yaffs_rmdir(Utils.StringToByteArray("/directory1"),0);
 		
 		
-		Unix.printf("\nDirectory look-up of /flash/boot\n");
-		dumpDir(Utils.StringToByteArray("/flash/boot"),0);
-		Unix.printf("\nDirectory look-up of /flash/boot/directory1\n");
-		dumpDir(Utils.StringToByteArray("/flash/boot/directory1"),0);
+		Unix.printf("\nDirectory look-up of /\n");
+		dumpDir(Utils.StringToByteArray("/"),0);
+		Unix.printf("\nDirectory look-up of /directory1\n");
+		dumpDir(Utils.StringToByteArray("/directory1"),0);
 
 //	#if 0
 //		fill_disk_and_delete("/boot",20,20);
@@ -248,81 +248,81 @@ public class Dtest_C extends yaffs2.port.Dtest_C_Additional {
 //		dumpDir("/boot");
 //	#endif
 
-		yaffsfs_C.yaffs_symlink(Utils.StringToByteArray("yyfile"),0,Utils.StringToByteArray("/flash/boot/slink"),0);
+		yaffsfs_C.yaffs_symlink(Utils.StringToByteArray("yyfile"),0,Utils.StringToByteArray("/slink"),0);
 		
-		yaffsfs_C.yaffs_readlink(Utils.StringToByteArray("/flash/boot/slink"),0,str,strIndex,100);
+		yaffsfs_C.yaffs_readlink(Utils.StringToByteArray("/slink"),0,str,strIndex,100);
 		Unix.printf("symlink alias is %s\n",PrimitiveWrapperFactory.get(EmulationUtils.byteArrayToString(str,0)));
 		
 
-		Unix.printf("\nDirectory look-up of /flash/boot\n");
-		dumpDir(Utils.StringToByteArray("/flash/boot"),0);
-		Unix.printf("\nDirectory look-up of /flash/boot (using stat instead of lstat)\n");
-		dumpDirFollow(Utils.StringToByteArray("/flash/boot"),0);
-		Unix.printf("\nDirectory look-up of /flash/boot/directory1\n");
-		dumpDir(Utils.StringToByteArray("/flash/boot/directory1"),0);
+		Unix.printf("\nDirectory look-up of /\n");
+		dumpDir(Utils.StringToByteArray("/"),0);
+		Unix.printf("\nDirectory look-up of / (using stat instead of lstat)\n");
+		dumpDirFollow(Utils.StringToByteArray("/"),0);
+		Unix.printf("\nDirectory look-up of /directory1\n");
+		dumpDir(Utils.StringToByteArray("/directory1"),0);
 
-		h = yaffsfs_C.yaffs_open(Utils.StringToByteArray("/flash/boot/slink"),0,yaffsfs_H.O_RDWR,0);
+		h = yaffsfs_C.yaffs_open(Utils.StringToByteArray("/slink"),0,yaffsfs_H.O_RDWR,0);
 		
 		Unix.printf("file length is %d\n",PrimitiveWrapperFactory.get((int)yaffsfs_C.yaffs_lseek(h,0,yaffsfs_H.SEEK_END)));
 		
 		yaffsfs_C.yaffs_close(h);
 		
-		yaffsfs_C.yaffs_unlink(Utils.StringToByteArray("/flash/boot/slink"),0);
+		yaffsfs_C.yaffs_unlink(Utils.StringToByteArray("/slink"),0);
 
 		
-		Unix.printf("\nDirectory look-up of /flash/boot\n");
-		dumpDir(Utils.StringToByteArray("/flash/boot"),0);
+		Unix.printf("\nDirectory look-up of /\n");
+		dumpDir(Utils.StringToByteArray("/"),0);
 		
 		// Check chmod
 		
-		yaffsfs_C.yaffs_stat(Utils.StringToByteArray("/flash/boot/yyfile"),0,ystat);
+		yaffsfs_C.yaffs_stat(Utils.StringToByteArray("/yyfile"),0,ystat);
 		temp_mode = ystat.st_mode;
 		
-		yaffsfs_C.yaffs_chmod(Utils.StringToByteArray("/flash/boot/yyfile"),0,0x55555);
-		Unix.printf("\nDirectory look-up of /flash/boot\n");
-		dumpDir(Utils.StringToByteArray("/flash/boot"),0);
+		yaffsfs_C.yaffs_chmod(Utils.StringToByteArray("/yyfile"),0,0x55555);
+		Unix.printf("\nDirectory look-up of /\n");
+		dumpDir(Utils.StringToByteArray("/"),0);
 		
-		yaffsfs_C.yaffs_chmod(Utils.StringToByteArray("/flash/boot/yyfile"),0,temp_mode);
-		Unix.printf("\nDirectory look-up of /flash/boot\n");
-		dumpDir(Utils.StringToByteArray("/flash/boot"),0);
+		yaffsfs_C.yaffs_chmod(Utils.StringToByteArray("/yyfile"),0,temp_mode);
+		Unix.printf("\nDirectory look-up of /\n");
+		dumpDir(Utils.StringToByteArray("/"),0);
 		
 		// Permission checks...
-		PermissionsCheck(Utils.StringToByteArray("/flash/boot/yyfile"),0,0, yaffsfs_H.O_WRONLY,0);
-		PermissionsCheck(Utils.StringToByteArray("/flash/boot/yyfile"),0,0, yaffsfs_H.O_RDONLY,0);
-		PermissionsCheck(Utils.StringToByteArray("/flash/boot/yyfile"),0,0, yaffsfs_H.O_RDWR,0);
+		PermissionsCheck(Utils.StringToByteArray("/yyfile"),0,0, yaffsfs_H.O_WRONLY,0);
+		PermissionsCheck(Utils.StringToByteArray("/yyfile"),0,0, yaffsfs_H.O_RDONLY,0);
+		PermissionsCheck(Utils.StringToByteArray("/yyfile"),0,0, yaffsfs_H.O_RDWR,0);
 
-		PermissionsCheck(Utils.StringToByteArray("/flash/boot/yyfile"),0,yaffsfs_H.S_IREAD, yaffsfs_H.O_WRONLY,0);
-		PermissionsCheck(Utils.StringToByteArray("/flash/boot/yyfile"),0,yaffsfs_H.S_IREAD, yaffsfs_H.O_RDONLY,1);
-		PermissionsCheck(Utils.StringToByteArray("/flash/boot/yyfile"),0,yaffsfs_H.S_IREAD, yaffsfs_H.O_RDWR,0);
+		PermissionsCheck(Utils.StringToByteArray("/yyfile"),0,yaffsfs_H.S_IREAD, yaffsfs_H.O_WRONLY,0);
+		PermissionsCheck(Utils.StringToByteArray("/yyfile"),0,yaffsfs_H.S_IREAD, yaffsfs_H.O_RDONLY,1);
+		PermissionsCheck(Utils.StringToByteArray("/yyfile"),0,yaffsfs_H.S_IREAD, yaffsfs_H.O_RDWR,0);
 
-		PermissionsCheck(Utils.StringToByteArray("/flash/boot/yyfile"),0,yaffsfs_H.S_IWRITE, yaffsfs_H.O_WRONLY,1);
-		PermissionsCheck(Utils.StringToByteArray("/flash/boot/yyfile"),0,yaffsfs_H.S_IWRITE, yaffsfs_H.O_RDONLY,0);
-		PermissionsCheck(Utils.StringToByteArray("/flash/boot/yyfile"),0,yaffsfs_H.S_IWRITE, yaffsfs_H.O_RDWR,0);
+		PermissionsCheck(Utils.StringToByteArray("/yyfile"),0,yaffsfs_H.S_IWRITE, yaffsfs_H.O_WRONLY,1);
+		PermissionsCheck(Utils.StringToByteArray("/yyfile"),0,yaffsfs_H.S_IWRITE, yaffsfs_H.O_RDONLY,0);
+		PermissionsCheck(Utils.StringToByteArray("/yyfile"),0,yaffsfs_H.S_IWRITE, yaffsfs_H.O_RDWR,0);
 		
-		PermissionsCheck(Utils.StringToByteArray("/flash/boot/yyfile"),0,yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE, yaffsfs_H.O_WRONLY,1);
-		PermissionsCheck(Utils.StringToByteArray("/flash/boot/yyfile"),0,yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE, yaffsfs_H.O_RDONLY,1);
-		PermissionsCheck(Utils.StringToByteArray("/flash/boot/yyfile"),0,yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE, yaffsfs_H.O_RDWR,1);
+		PermissionsCheck(Utils.StringToByteArray("/yyfile"),0,yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE, yaffsfs_H.O_WRONLY,1);
+		PermissionsCheck(Utils.StringToByteArray("/yyfile"),0,yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE, yaffsfs_H.O_RDONLY,1);
+		PermissionsCheck(Utils.StringToByteArray("/yyfile"),0,yaffsfs_H.S_IREAD | yaffsfs_H.S_IWRITE, yaffsfs_H.O_RDWR,1);
 
-		yaffsfs_C.yaffs_chmod(Utils.StringToByteArray("/flash/boot/yyfile"),0,temp_mode);
+		yaffsfs_C.yaffs_chmod(Utils.StringToByteArray("/yyfile"),0,temp_mode);
 		
 		//create a zero-length file and unlink it (test for scan bug)
 		
-		h = yaffsfs_C.yaffs_open(Utils.StringToByteArray("/flash/boot/zlf"),0,yaffsfs_H.O_CREAT | yaffsfs_H.O_TRUNC | yaffsfs_H.O_RDWR,0);
+		h = yaffsfs_C.yaffs_open(Utils.StringToByteArray("/zlf"),0,yaffsfs_H.O_CREAT | yaffsfs_H.O_TRUNC | yaffsfs_H.O_RDWR,0);
 		yaffsfs_C.yaffs_close(h);
 		
-		yaffsfs_C.yaffs_unlink(Utils.StringToByteArray("/flash/boot/zlf"),0);
+		yaffsfs_C.yaffs_unlink(Utils.StringToByteArray("/zlf"),0);
 		
 		
-		yaffsfs_C.yaffs_DumpDevStruct(Utils.StringToByteArray("/flash/boot"),0);
+		yaffsfs_C.yaffs_DumpDevStruct(Utils.StringToByteArray("/"),0);
 		
-		fill_disk_and_delete(Utils.StringToByteArray("/flash/boot"),0,20,20);
+		fill_disk_and_delete(Utils.StringToByteArray("/"),0,20,20);
 		
-		yaffsfs_C.yaffs_DumpDevStruct(Utils.StringToByteArray("/flash/boot"),0);
+		yaffsfs_C.yaffs_DumpDevStruct(Utils.StringToByteArray("/"),0);
 		
-		fill_files(Utils.StringToByteArray("/flash/boot"),0,1,10000,0);
-		fill_files(Utils.StringToByteArray("/flash/boot"),0,1,10000,5000);
-		fill_files(Utils.StringToByteArray("/flash/boot"),0,2,10000,0);
-		fill_files(Utils.StringToByteArray("/flash/boot"),0,2,10000,5000);
+		fill_files(Utils.StringToByteArray("/"),0,1,10000,0);
+		fill_files(Utils.StringToByteArray("/"),0,1,10000,5000);
+		fill_files(Utils.StringToByteArray("/"),0,2,10000,0);
+		fill_files(Utils.StringToByteArray("/"),0,2,10000,5000);
 		
 //		leave_unlinked_file(Utils.StringToByteArray("/data"),0,20000,0);
 //		leave_unlinked_file(Utils.StringToByteArray("/data"),0,20000,5000);
@@ -331,7 +331,7 @@ public class Dtest_C extends yaffs2.port.Dtest_C_Additional {
 //		leave_unlinked_file(Utils.StringToByteArray("/data"),0,20000,5000);
 //		leave_unlinked_file(Utils.StringToByteArray("/data"),0,20000,5000);
 		
-		yaffsfs_C.yaffs_DumpDevStruct(Utils.StringToByteArray("/flash/boot"),0);
+		yaffsfs_C.yaffs_DumpDevStruct(Utils.StringToByteArray("/"),0);
 //		yaffs_DumpDevStruct(Utils.StringToByteArray("/data"),0);
 		
 			
@@ -409,47 +409,47 @@ public class Dtest_C extends yaffs2.port.Dtest_C_Additional {
 				new yaffs2.platform.emulation.PortConfiguration(),
 				new yaffs2.platform.emulation.DebugConfiguration());
 		
-		small_overwrite_test("/flash/boot",1);
+		small_overwrite_test("/",1);
 		
 // PASSED:
 		
 		//cache_read_test();
-		//scan_pattern_test(Utils.StringToByteArray("/flash/boot"),0,10000,10);
-		//yaffs_backward_scan_test(Utils.StringToByteArray("/flash/boot"),0);
-		//scan_pattern_test(Utils.StringToByteArray("/flash/boot"),0,10000,100);
-		//yaffs_device_flush_test(Utils.StringToByteArray("/flash/boot"),0);
-		//short_scan_test(Utils.StringToByteArray("/flash/boot"),0,40000,10);
-		//short_scan_test(Utils.StringToByteArray("/flash/boot"),0,40000,20);
-		//short_scan_test(Utils.StringToByteArray("/flash/boot"),0,40000,100);
-		//small_overwrite_test("/flash/boot",100);
-		//small_overwrite_test("/flash/boot",10);
-		//checkpoint_fill_test("/flash/boot",10);
+		//scan_pattern_test(Utils.StringToByteArray("/"),0,10000,10);
+		//yaffs_backward_scan_test(Utils.StringToByteArray("/"),0);
+		//scan_pattern_test(Utils.StringToByteArray("/"),0,10000,100);
+		//yaffs_device_flush_test(Utils.StringToByteArray("/"),0);
+		//short_scan_test(Utils.StringToByteArray("/"),0,40000,10);
+		//short_scan_test(Utils.StringToByteArray("/"),0,40000,20);
+		//short_scan_test(Utils.StringToByteArray("/"),0,40000,100);
+		//small_overwrite_test("/",100);
+		//small_overwrite_test("/",10);
+		//checkpoint_fill_test("/",10);
 		//long_test();		
-		//resize_stress_test("/flash/boot");
-		//resize_stress_test_no_grow_complex("/flash/boot",1);
-		//resize_stress_test_no_grow_complex("/flash/boot",20);
-		//huge_array_test("/flash/boot",1);
-		//huge_array_test("/flash/boot",10);
-		//checkpoint_upgrade_test("/flash/boot",1);
-		//checkpoint_upgrade_test("/flash/boot",10);
-		//small_mount_test("/flash/boot",1);
-		//small_mount_test("/flash/boot",1000);
-		//multi_mount_test("/flash/boot",10);
-		//rename_over_test("/flash/boot");
+		//resize_stress_test("/");
+		//resize_stress_test_no_grow_complex("/",1);
+		//resize_stress_test_no_grow_complex("/",20);
+		//huge_array_test("/",1);
+		//huge_array_test("/",10);
+		//checkpoint_upgrade_test("/",1);
+		//checkpoint_upgrade_test("/",10);
+		//small_mount_test("/",1);
+		//small_mount_test("/",1000);
+		//multi_mount_test("/",10);
+		//rename_over_test("/");
 		//truncate_test();
-		//huge_directory_test_on_path("/flash/boot");
-		//scan_deleted_files_test("/flash/boot");
-		//check_resize_gc_bug("/flash/boot");
-		//lookup_test("/flash/boot");
-		//simple_rw_test("/flash/boot");
+		//huge_directory_test_on_path("/");
+		//scan_deleted_files_test("/");
+		//check_resize_gc_bug("/");
+		//lookup_test("/");
+		//simple_rw_test("/");
 		//free_space_check();
-		//freespace_test("/flash/boot");
-		//link_test("/flash/boot");
-		//fill_disk_test("/flash/boot");
+		//freespace_test("/");
+		//link_test("/");
+		//fill_disk_test("/");
 		
 // MAY NEED RETESTING:
 		
-		//small_overwrite_test("/flash/boot",1000);		
+		//small_overwrite_test("/",1000);		
 		//(should be fine, takes about half a day on my windows)		
 		
 // TO DO:

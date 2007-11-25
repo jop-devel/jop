@@ -113,7 +113,7 @@ public class Simulation_yaffscfg2k_C implements yaffs2.port.yaffscfg2k_C
 //	#include "yaffs_nandemul2k.h"
 
 //	public static yaffs_Device ramDev = new yaffs_Device();
-	public static yaffs_Device bootDev = DebugDevice.getDebugDevice(); // new yaffs_Device(); 
+	public static yaffs_Device device = DebugDevice.getDebugDevice(); // new yaffs_Device(); 
 //	public static yaffs_Device flashDev = new yaffs_Device();
 //	public static yaffs_Device ram2kDev = new yaffs_Device();
 
@@ -128,7 +128,7 @@ public class Simulation_yaffscfg2k_C implements yaffs2.port.yaffscfg2k_C
 //		#else
 		return new yaffsfs_DeviceConfiguration[] {
 //				new yaffsfs_DeviceConfiguration(Utils.StringToByteArray("/"), 0, ramDev), // XXX bad style for demo
-				new yaffsfs_DeviceConfiguration(Utils.StringToByteArray("/flash/boot"), 0, bootDev),
+				new yaffsfs_DeviceConfiguration(Utils.StringToByteArray("/"), 0, device),
 //				new yaffsfs_DeviceConfiguration(Utils.StringToByteArray("/flash/flash"), 0, flashDev),
 //				new yaffsfs_DeviceConfiguration(Utils.StringToByteArray("/ram2k"), 0, ram2kDev),
 				new yaffsfs_DeviceConfiguration(null, 0, null) /* Null entry to terminate list */
@@ -159,12 +159,12 @@ public class Simulation_yaffscfg2k_C implements yaffs2.port.yaffscfg2k_C
 			
 
 			SerialInterface serialInterface = new SerialInterface(serialPort);
-			Yaffs1NANDInterface stub = new DirectInterfaceClientStub(bootDev, serialInterface.getInputStream(), serialInterface.getOutputStream(), "PC");
+			Yaffs1NANDInterface stub = new DirectInterfaceClientStub(device, serialInterface.getInputStream(), serialInterface.getOutputStream(), "PC");
 			
-			bootDev.subField1.writeChunkToNAND = stub;
-			bootDev.subField1.readChunkFromNAND = stub;
-			bootDev.subField1.eraseBlockInNAND = stub;
-			bootDev.subField1.initialiseNAND = stub;
+			device.subField1.writeChunkToNAND = stub;
+			device.subField1.readChunkFromNAND = stub;
+			device.subField1.eraseBlockInNAND = stub;
+			device.subField1.initialiseNAND = stub;
 
 			yaffs2.port.yaffsfs_C.yaffs_initialise(yaffsfs_config());
 

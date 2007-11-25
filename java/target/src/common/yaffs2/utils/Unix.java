@@ -510,12 +510,16 @@ public class Unix
 					{
 						int val = xprintfArgs[argsIndex]._int;
 
+						if (val < 0)
+						{
+							s[sOffset++] = '-';
+						}
+						
 						int buf;
 
-
-						buf = val;
+						buf = Math.abs(val);
 						int digits = 1;
-						while (Math.abs(buf) >= 10)
+						while (buf >= 10)
 						{
 							digits++;
 							buf /= 10;
@@ -526,7 +530,7 @@ public class Unix
 							s[sOffset++] = padWithZeroes ? (byte)'0' : (byte)' ';
 						}
 
-						buf = val;
+						buf = Math.abs(val);
 						for (int i = 0; i < digits; i++)
 						{							
 							s[sOffset + (digits-1-i)] = (byte)('0' + (buf % 10));

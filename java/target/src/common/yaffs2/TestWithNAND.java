@@ -14,7 +14,7 @@ public class TestWithNAND {
 				new yaffs2.platform.jop.PortConfiguration(),
 				null);
 		
-		yaffs2.port.Dtest_C.small_overwrite_test("/flash/boot",1);
+		yaffs2.port.Dtest_C.small_overwrite_test("/",1);
 
 		System.out.println("Finished test.");
 	}

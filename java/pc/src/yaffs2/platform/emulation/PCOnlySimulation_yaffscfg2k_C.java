@@ -129,7 +129,7 @@ public class PCOnlySimulation_yaffscfg2k_C implements yaffs2.port.yaffscfg2k_C
 //		#else
 		return new yaffsfs_DeviceConfiguration[] {
 //				new yaffsfs_DeviceConfiguration(Utils.StringToByteArray("/"), 0, ramDev), // XXX bad style for demo
-				new yaffsfs_DeviceConfiguration(Utils.StringToByteArray("/flash/boot"), 0, bootDev),
+				new yaffsfs_DeviceConfiguration(Utils.StringToByteArray("/"), 0, bootDev),
 //				new yaffsfs_DeviceConfiguration(Utils.StringToByteArray("/flash/flash"), 0, flashDev),
 //				new yaffsfs_DeviceConfiguration(Utils.StringToByteArray("/ram2k"), 0, ram2kDev),
 				new yaffsfs_DeviceConfiguration(null, 0, null) /* Null entry to terminate list */
