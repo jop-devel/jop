@@ -24,7 +24,6 @@ package com.jopdesign.debug.jdwp.sniffer;
 import java.io.IOException;
 import java.io.OutputStream;
 
-import com.jopdesign.debug.jdwp.io.ConnectionOutputStream;
 import com.sun.tools.jdi.PacketWrapper;
 import com.sun.tools.jdi.SocketConnectionWrapper;
 
@@ -35,12 +34,7 @@ public class PacketOutputStreamWriter extends OutputStream
 
   public PacketOutputStreamWriter (OutputStream outputStream) throws IOException
   {
-    if(outputStream == null)
-    {
-      throw new IOException("  Invalid NULL output stream.");
-    }
-    
-    output = outputStream;
+    initializeOutputStream(outputStream);
     
     // create a socket for write-only
     MockSocket mockSocket = new MockSocket(null, output);
