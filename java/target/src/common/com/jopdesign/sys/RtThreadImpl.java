@@ -429,8 +429,6 @@ public static int ts0, ts1, ts2, ts3, ts4;
 		Native.wr(startTime, Const.IO_TIMER);
 		// enable int
 		Native.wr(1, Const.IO_INT_ENA);
-		// release global lock if hold
-		Native.wr(0, Const.IO_LOCK);
 
 	}
 
