@@ -349,6 +349,14 @@ added temporary for a fix.
   <target name="PacketPrinter" depends="copyJDWPLogs,lib"
           description="Print the packet list on the files provided." >
 
+    <echo>
+      Will create output file: ${dumpFile}.
+      To inspect the content, use a text editor or "less" as mentioned below:
+      (may not work under Cygwin due to the path format)
+
+      less ${dumpFile}
+    </echo>
+
     <java
       classname="com.jopdesign.debug.jdwp.util.PacketPrinter"
       failonerror="true"
@@ -362,14 +370,6 @@ added temporary for a fix.
         <jvmarg line = "-Xprof"/>
       -->
     </java>
-    <echo>
-      Created output file: ${dumpFile}.
-      To inspect the content, use a text editor or "less" as mentioned below:
-      (may not work under Cygwin due to the path format)
-
-      less ${dumpFile}
-    </echo>
-
   </target>
 
   <target name="PacketLogger" depends="compile"
@@ -489,28 +489,50 @@ added temporary for a fix.
   <target name="TestJopServer" depends="compile, lib"
           description="Run TestJopServer, to test the JopDebugKernel
           through the network." >
-
-    <echo>
-      Run TestJopServer, to test the JopServer and JopDebugKernel
-      through the network.
-      Please make sure the JopServer was launched before.
-    </echo>
-    <java
-        classname="com.jopdesign.debug.jdwp.test.TestJopServer"
-        fork="true"
-        spawn="false"
-        dir="${build}"
-        classpathref="project.class.path"
-    >
-      <arg line="${jop_symbol_file}"/>
-
-
-    <!--
-      <jvmarg line = "${debugSettings_8001}"/>
-    -->
-    </java>
-
+    <launchTestJopServer symbolFile="${jop_symbol_file}" secondParameter=""/>
   </target>
+
+  <target name="TestJopServerInteractively" depends="compile, lib"
+          description="Run TestJopServer, to test the JopDebugKernel
+          through the network in an interactive way." >
+    <launchTestJopServer symbolFile="${jop_symbol_file}" secondParameter="-i"/>
+  </target>
+
+  <macrodef name="launchTestJopServer">
+    <attribute name="symbolFile"/>
+    <attribute name="secondParameter"/>
+    <!--
+      Setting fork="false" may make it run faster since Ant will not
+      launch a new JVM. But fork="true" is necessary in order to
+      debug it through the network, using the commented
+      jvmarg line.
+      By the way, in case the "dir" argument is necessary,
+      the fork="true" flag is needed too.
+    -->
+    <sequential>
+
+      <echo>
+        Run TestJopServer, to test the JopServer and JopDebugKernel
+        through the network.
+        Please make sure the JopServer was launched before.
+      </echo>
+
+      <java
+          classname="com.jopdesign.debug.jdwp.test.TestJopServer"
+          fork="true"
+          spawn="false"
+          dir="${build}"
+          classpathref="project.class.path"
+      >
+        <arg line="@{symbolFile} @{secondParameter}"/>
+        
+      <!--
+        <jvmarg line = "${debugSettings_8001}"/>
+      -->
+      </java>
+
+    </sequential>
+  </macrodef>
 
   <target name="TestSymbols" depends="lib, copySymbols"
           description="Run TestSymbols, to test loading of a symbol file." >
