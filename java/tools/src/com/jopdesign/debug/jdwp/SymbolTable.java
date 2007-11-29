@@ -335,18 +335,18 @@ public class SymbolTable implements Serializable
   
   private int getMethodId(MethodInfo methodInfo)
   {
-    return methodInfo.getCodeAddress();
+    return MethodTable.getMethodId(methodInfo);
   }
   
   public int getMethodStructPointer(String className, String methodSignature)
   {
-    int methodId;
+    int methodStructPointer;
     MethodInfo methodInfo;
     
     methodInfo = getMethodInfo(className, methodSignature);
-    methodId = methodInfo.getStructAddress();
+    methodStructPointer = methodInfo.getStructAddress();
     
-    return methodId;
+    return methodStructPointer;
   }
   
   public int getMethodSizeInWords(String className, String methodSignature)
@@ -907,5 +907,24 @@ public class SymbolTable implements Serializable
       }
     }
     return classes;
+  }
+
+  /**
+   * Check if a method pointer is valid or not.
+   * 
+   * @param methodPointer
+   * @return
+   */
+  public boolean isValidMethodStructurePointer(int methodPointer)
+  {
+    boolean isValid;
+    MethodInfo info;
+    
+    // check if there is any method registered with this pointer.
+    // if it's not, then this is an invalid method pointer.
+    info = getMethodInfo(methodPointer);
+    isValid = (info != null);
+    
+    return isValid;
   }
 }
