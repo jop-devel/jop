@@ -288,7 +288,12 @@ public class SymbolManager implements Serializable
   {
     return table.isValidStaticFieldId(classId, fieldId);
   }
-
+  
+  public boolean isValidMethodStructurePointer(int methodPointer)
+  {
+    return table.isValidMethodStructurePointer(methodPointer);
+  }
+  
   /**
    * 
    * @param typeId
