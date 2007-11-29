@@ -180,7 +180,7 @@ public class JOPDebugInterface
     if(isSuspended())
     {
       threadSuspendCounter = 0;
-      jopDebugChannel.resume();
+      jopDebugChannel.sendResumeCommand();
     }
   }
   
@@ -241,7 +241,7 @@ public class JOPDebugInterface
   public void exitJavaMachine(int exitCode) throws IOException
   {
     
-    jopDebugChannel.requestExit(exitCode);
+    jopDebugChannel.sendExitCommand(exitCode);
   }
 
   public int createString(String data)
@@ -674,7 +674,7 @@ public class JOPDebugInterface
 
   private void requestThreadResume(long objectId) throws IOException
   {
-    jopDebugChannel.resume();
+    jopDebugChannel.sendResumeCommand();
   }
 
   public int getThreadStatus(long objectId) throws JDWPException
