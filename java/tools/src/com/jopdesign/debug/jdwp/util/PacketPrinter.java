@@ -82,6 +82,8 @@ public class PacketPrinter
       {
         System.out.println("Failure: " + exception.getMessage());
         exception.printStackTrace();
+        // exit with failure
+        System.exit(-1);
       }
     }
   }
