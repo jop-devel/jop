@@ -117,9 +117,26 @@ public class JOPDebugChannel
     }
   }
   
-  public boolean isConnected()
+  /**
+   * Test the internal flag to check if it has connected.
+   * 
+   * This method CANNOT BE USED to test if the server closed
+   * the connection. It should be used only to test if 
+   * this object started a connection some time ago.
+   * Just this. 
+   * 
+   * @return
+   */
+  private boolean isConnected()
   {
     return connected;
+    
+    // the code below can't be used to test if the server closed
+    // the connection. It seems that the only way to find out
+    // this is to try to write to the socket and look for 
+    // an exception.
+//    return socket != null && socket.isConnected() && 
+//    (socket.isClosed() == false);
   }
   
   /**
@@ -135,7 +152,7 @@ public class JOPDebugChannel
     }
   }
   
-  public void requestExit(int exitCode) throws IOException
+  public void sendExitCommand(int exitCode) throws IOException
   {
     checkConnection();
     //------------------------------------------------------------
@@ -171,7 +188,7 @@ public class JOPDebugChannel
     input.readInt();    
   }
   
-  public void resume() throws IOException
+  public void sendResumeCommand() throws IOException
   {
     checkConnection();
     //------------------------------------------------------------
@@ -247,6 +264,39 @@ public class JOPDebugChannel
     
     received = input.readInt();
     System.out.println("  Stack depth: " + received);
+    
+    return received;
+  }
+  
+  public int printStackFrames() throws IOException
+  {
+    checkConnection();
+    
+    int received;
+    //------------------------------------------------------------
+    // request to print all stack frames
+    output.writeByte(11);
+    output.writeByte(13);
+    
+    received = input.readInt();
+//    System.out.println("  Stack depth: " + received);
+    
+    return received;
+  }
+  
+  public int printStackFrame(int frameIndex) throws IOException
+  {
+    checkConnection();
+    
+    int received;
+    //------------------------------------------------------------
+    // request to print all stack frames
+    output.writeByte(11);
+    output.writeByte(14);
+    
+    output.writeInt(frameIndex);
+    
+    received = input.readInt();
     
     return received;
   }
@@ -335,6 +385,34 @@ public class JOPDebugChannel
     
     received = input.readInt();
     System.out.println("  Variable value: " + received);
+  }
+  
+  /**
+   * Get the number of local variables in a given stack frame,
+   * as reported by JOP (not using the symbol file).
+   * 
+   * @param frameIndex
+   * @return
+   * @throws IOException
+   */
+  public int getNumberOfLocalVariables(int frameIndex) throws IOException
+  {
+    checkConnection();
+    
+    int received;
+    //------------------------------------------------------------
+    // query the second local variable (index 1) on the first frame (index 0)
+    output.writeByte(16);
+    output.writeByte(5);
+    
+    // frame 0 (main method call)
+//    output.writeInt(0);
+    output.writeInt(frameIndex);
+    
+    received = input.readInt();
+    System.out.println("  Number of local variables: " + received);
+    
+    return received;
   }
   
   /*
