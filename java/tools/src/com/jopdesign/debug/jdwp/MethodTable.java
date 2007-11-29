@@ -77,7 +77,7 @@ public class MethodTable implements Serializable
    */
   public int addMethod(MethodInfo method)
   {
-    int methodId = method.getCodeAddress();
+    int methodId = getMethodId(method);
     if(isValidIndex(methodId) == false)
     {
       // increase the size so it can hold the new element.
@@ -87,5 +87,17 @@ public class MethodTable implements Serializable
     methodList.setElementAt(method, methodId);
     
     return methodId;
+  }
+  
+  /**
+   * Return the method ID.
+   * 
+   * @param methodInfo
+   * @return
+   */
+  public static int getMethodId(MethodInfo methodInfo)
+  {
+    //return methodInfo.getCodeAddress();
+    return methodInfo.getStructAddress();
   }
 }
