@@ -41,7 +41,7 @@ import com.jopdesign.sys.Native;
  * 03/06/2007 - 12:00:48
  * 
  */
-public class JopDebugKernel
+public final class JopDebugKernel
 {
   private static DataInputStream inputStream;
   private static DataOutputStream outputStream;
@@ -61,6 +61,9 @@ public class JopDebugKernel
   
   private static final int NOP_INSTRUCTION = 0x00;
   private static final int BREAKPOINT_INSTRUCTION = 0x00CA;
+  
+  // currently the maximum number of local variables is 32.
+  private static final int MAX_LOCAL_VARIABLES = 32;
   
   private static boolean initialized = false;
   
@@ -97,7 +100,7 @@ public class JopDebugKernel
    * @throws IOException 
    * 
    */
-  public static void breakpoint()
+  public static final void breakpoint()
   {
     if(initialized == false)
     {
@@ -125,13 +128,8 @@ public class JopDebugKernel
         // exit from this method.
         if((commandset == 1) && (command == 10))
         {
-          // acknowledge the command and exit.
-          outputStream.writeInt(0);
-          
-          System.out.println(" Received \"Exit (10)\" command.");
-          System.out.println(" Shutting down...     ");
-          
-          System.exit(0);
+          System.out.println("Exit: stop execution.");
+          handleExitCommmand();
           break;
         }
         
@@ -181,64 +179,16 @@ public class JopDebugKernel
         // invoke a static method with one integer parameter on the stack 
         if((commandset == 3) && (command == 3))
         {
-          int methodId = inputStream.readInt();
-//          int numArguments = inputStream.readInt();
-          int argument = inputStream.readInt();
-          
-          System.out.print(" Method ID: " );
-          System.out.print(methodId);
-          System.out.print(" Argument: " );
-          System.out.println(argument);
-          
-          if(breakpointMethodPointer == methodId)
-          {
-            System.out.println("Invalid method pointer!");
-            System.out.println("Cannot call breakpoint from itself.");
-          }
-          else
-          {
-            int sp = Native.getSP();
-            System.out.print("SP = ");
-            System.out.println(sp);
-//          sp++;
-//          Native.wrIntMem(argument, sp);
-//        Native.setSP(sp);
-//        test just to see if it breaks. It doesn't if SP is restored later.
-//          Native.setSP(sp + 4);
-            
-            System.out.println("Calling method now:");
-            Native.invoke(argument, methodId);
-            
-            // now restore SP to its previous value. Doing this without
-            // getting the top value just ignores anything left on the stack.
-//          sp = sp - 1;
-            Native.setSP(sp);
-            
-//          System.out.println("Right after return.");
-//          sp = Native.getSP();
-//          System.out.print("SP = ");
-//          System.out.println(sp);
-          }
-          
-          // return the argument just to sync with the caller and inform that
-          // execution has finished.
-          outputStream.writeInt(argument);
+          System.out.println("Invoke static");
+          handleInvokeStaticCommand();
           continue;
         }
         
         // resume execution. Finish this method and continue.
         if((commandset == 11) && (command == 3))
         {
-          // acknowledge the command and resume execution.
-          outputStream.writeInt(0);
-          
-          System.out.println(" Received \"Resume (11, 3)\" command.");
-          
-          //TODO: now how can I run the bytecode that was standing where this
-          // breakpoint is, now?
-          
-//          // just for development,dump the call stack.
-//          TestJopDebugKernel.dumpCallStack();
+          System.out.println("Resume execution");
+          handleResumeExecutionCommand();
           
           // stop the loop
           break;
@@ -247,60 +197,8 @@ public class JopDebugKernel
         // return a list of all stack frame locations
         if((commandset == 11) && (command == 6))
         {
-          System.out.println(" Will read startFrame");
-          
-          int startFrame = inputStream.readInt();
-          System.out.print("  startFrame: ");
-          System.out.println(startFrame);
-          
-          // get current stack depth (this frame)
-          int count = getStackDepth();
-          int framePointer = getCurrentFramePointer();
-          
-//          if(startFrame > -1)
-//          {
-//            for(int i = 0; i < (count - startFrame); i++)
-//            {
-//              pointer = getNextFramePointer(pointer);
-//              count --;
-//            }
-//          }
-//          count = 1;
-          System.out.print(" Stack depth:");
-          System.out.println(count);
-          
-          outputStream.writeInt(count);
-          
-          boolean shouldContinue = true;
-          while(shouldContinue)
-          {
-            int programCounter = getPCFromPreviousMethodCall(framePointer);
-            
-//            System.out.print("  Program counter: ");
-//            System.out.println(programCounter);
-            outputStream.writeInt(programCounter);
-            int methodPointer = getMPFromPreviousMethodCall(framePointer);
-            
-//            System.out.print("  Method pointer: ");
-//            System.out.println(methodPointer);
-            outputStream.writeInt(methodPointer);
-            
-            framePointer = getNextFramePointer(framePointer);
-            
-//            System.out.print("  Frame Pointer: ");
-//            System.out.println(framePointer);
-            outputStream.writeInt(framePointer);
-            
-//            System.out.println(" Sent frame.");
-//            System.out.println();
-            
-            if(isFirstFrame(framePointer))
-            {
-              shouldContinue = false;
-            }
-          }
-          
-          System.out.println("Done! ");
+          System.out.println("Get stack frames");
+          handleGetStackFramesCommand();
           
           continue;
         }
@@ -308,14 +206,26 @@ public class JopDebugKernel
         // calculate the stack depth of the caller method.
         if((commandset == 11) && (command == 7))
         {
-          // get current stack depth (this frame)
-          int count = getStackDepth();
-          // remove one to return the caller's depth
-          count --;
-          System.out.print(" Stack depth of caller method: " );
-          System.out.println(count);
-          
-          outputStream.writeInt(count);
+          System.out.println("Get stack depth");
+          handleGetStackDepthCommand();
+          continue;
+        }
+        
+        // dump the call stack. For development ONLY.
+        // NOT a standard JDWP command set/command pair.
+        if((commandset == 11) && (command == 13))
+        {
+          System.out.println("Print the call stack.");
+          handlePrintCallStackCommand();
+          continue;
+        }
+        
+        // dump one stack frame. For development ONLY.
+        // NOT a standard JDWP command set/command pair.
+        if((commandset == 11) && (command == 14))
+        {
+          System.out.println("Print a stack frame.");
+          handlePrintStackFrameCommand();
           continue;
         }
         
@@ -342,82 +252,36 @@ public class JopDebugKernel
         // get the method pointer from a stack frame
         if((commandset == 16) && (command == 0))
         {
-          int frameIndex = inputStream.readInt();
+          System.out.println("Get method pointer");
+          handleGetStackFrameMPCommand();
           
-          System.out.print(" Frame index: " );
-          System.out.print(frameIndex);
-          
-          int count = getStackDepth();
-          int pointer = getCurrentFramePointer();
-          for(int i = 0; i < (count - (frameIndex + 1)); i++)
-          {
-            pointer = getNextFramePointer(pointer);
-          }
-          pointer = getMPFromPreviousMethodCall(pointer);
-          
-          System.out.print("  Method pointer: ");
-          System.out.println(pointer);
-          
-          outputStream.writeInt(pointer);
           continue;
         }
         
         // get a local variable value
         if((commandset == 16) && (command == 1))
         {
-          int frameIndex = inputStream.readInt();
-          int fieldIndex = inputStream.readInt();
+          System.out.println("Get local variable");
+          handleGetLocalVariableCommand();
           
-          System.out.print(" Frame index: " );
-          System.out.print(frameIndex);
-          System.out.print(" Variable index: " );
-          System.out.println(fieldIndex);
-          
-          
-          int count = getStackDepth();
-          int pointer = getCurrentFramePointer();
-          for(int i = 0; i < (count - frameIndex); i++)
-          {
-            pointer = getNextFramePointer(pointer);
-          }
-          count = getLocalVariable(pointer, fieldIndex);
-          
-          System.out.print("  Value: ");
-          System.out.println(count);
-          System.out.print(" Pointer: ");
-          System.out.println(pointer);
-          
-          outputStream.writeInt(count);
           continue;
         }
+        
         // set a local variable value
         if((commandset == 16) && (command == 2))
         {
-          int frameIndex = inputStream.readInt();
-          int fieldIndex = inputStream.readInt();
-          int value = inputStream.readInt();
+          System.out.println("Set local variable");
+          handleSetLocalVariableCommand();
           
-          System.out.print(" Frame index: " );
-          System.out.print(frameIndex);
-          System.out.print(" Variable index: " );
-          System.out.println(fieldIndex);
+          continue;
+        }
+        
+        // return the nuber of local variables
+        if((commandset == 16) && (command == 5))
+        {
+          System.out.println("Get number of local variables");
+          handleGetNumberOfLocalVariablesCommand();
           
-          
-          int count = getStackDepth();
-          int pointer = getCurrentFramePointer();
-          for(int i = 0; i < (count - frameIndex); i++)
-          {
-            pointer = getNextFramePointer(pointer);
-          }
-          setLocalVariable(pointer, fieldIndex, value);
-          
-          System.out.print("  Value: ");
-          System.out.println(value);
-          System.out.print(" Pointer: ");
-          System.out.println(pointer);
-          
-//          writeInt(4);
-          outputStream.writeInt(value);
           continue;
         }
         System.out.println("Received invalid command or command set! ");
@@ -437,6 +301,217 @@ public class JopDebugKernel
     
     System.out.println("Returning from \"breakpoint\".");
   }
+
+  /**
+   * @throws IOException
+   */
+  private static void handleGetStackDepthCommand() throws IOException
+  {
+    // get current stack depth (this frame)
+    int count = getStackDepth();
+    // remove one to return the caller's depth
+    count --;
+    System.out.print(" Stack depth of caller method: " );
+    System.out.println(count);
+    
+    outputStream.writeInt(count);
+  }
+  
+  /**
+   * @throws IOException
+   */
+  private static void handlePrintCallStackCommand() throws IOException
+  {
+    // get current stack depth (this frame)
+    int count = getStackDepth();
+    
+    prettyPrintStack();
+    
+    // just for development
+    //TestJopDebugKernel.dumpCallStack();
+    
+    outputStream.writeInt(count);
+  }
+  
+  private static void handlePrintStackFrameCommand() throws IOException
+  {
+    // get stack frame index to be printed (this frame)
+    int frameIndex;
+    int previousFrameIndex;
+    int framePointer,previousFramePointer;
+    
+//    System.out.println("Starting handlePrintStackFrameCommand");
+    
+    frameIndex = inputStream.readInt();
+    previousFrameIndex = frameIndex + 1;
+    
+//    System.out.print("Frame index to print: ");
+//    System.out.println(frameIndex);
+    
+    if(previousFrameIndex < getStackDepth())
+    {
+      previousFramePointer = getFramePointerAtIndex(previousFrameIndex);
+      framePointer = getNextFramePointer(previousFramePointer);
+      
+      prettyPrintStackFrame(framePointer, previousFramePointer);
+    }
+    else
+    {
+      System.out.println("Failure: invalid index -> " + frameIndex);
+    }
+    
+    //  Will return the frame index just to sync
+    outputStream.writeInt(frameIndex);
+  }
+  
+  /**
+   * Handle the "Frames" command.
+   * 
+   * @throws IOException
+   */
+  private static void handleGetStackFramesCommand() throws IOException
+  {
+    System.out.println(" Will read startFrame");
+    
+    int startFrame = inputStream.readInt();
+    System.out.print("  startFrame: ");
+    System.out.println(startFrame);
+    
+    // get current stack depth (this frame)
+    int count = getStackDepth();
+    int framePointer = getCurrentFramePointer();
+    
+//    if(startFrame > -1)
+//    {
+//      for(int i = 0; i < (count - startFrame); i++)
+//      {
+//        pointer = getNextFramePointer(pointer);
+//        count --;
+//      }
+//    }
+//    count = 1;
+    System.out.print(" Stack depth:");
+    System.out.println(count);
+    
+    outputStream.writeInt(count);
+    
+    boolean shouldContinue = true;
+    while(shouldContinue)
+    {
+      int programCounter = getPCFromFrame(framePointer);
+      
+//      System.out.print("  Program counter: ");
+//      System.out.println(programCounter);
+      outputStream.writeInt(programCounter);
+      int methodPointer = getMPFromFrame(framePointer);
+      
+//      System.out.print("  Method pointer: ");
+//      System.out.println(methodPointer);
+      outputStream.writeInt(methodPointer);
+      
+      framePointer = getNextFramePointer(framePointer);
+      
+//      System.out.print("  Frame Pointer: ");
+//      System.out.println(framePointer);
+      outputStream.writeInt(framePointer);
+      
+//      System.out.println(" Sent frame.");
+//      System.out.println();
+      
+      if(isFirstFrame(framePointer))
+      {
+        shouldContinue = false;
+      }
+    }
+    
+    System.out.println("Done! ");
+  }
+  
+  /**
+   * Handle the "Resume execution" command.
+   * 
+   * @throws IOException
+   */
+  private static void handleResumeExecutionCommand() throws IOException
+  {
+    // acknowledge the command and resume execution.
+    outputStream.writeInt(0);
+    
+    System.out.println(" Received \"Resume (11, 3)\" command.");
+    
+    //TODO: now how can I run the bytecode that was standing where this
+    // breakpoint is, now?
+    
+    // just for development,dump the call stack.
+    TestJopDebugKernel.dumpCallStack();
+  }
+  
+  /**
+   * Handle the "Invoke static" command.
+   * 
+   * @throws IOException
+   */
+  private static void handleInvokeStaticCommand() throws IOException
+  {
+    int methodId = inputStream.readInt();
+//  int numArguments = inputStream.readInt();
+    int argument = inputStream.readInt();
+    
+    System.out.print(" Method ID: " );
+    System.out.print(methodId);
+    System.out.print(" Argument: " );
+    System.out.println(argument);
+    
+    if(breakpointMethodPointer == methodId)
+    {
+      System.out.println("Invalid method pointer!");
+      System.out.println("Cannot call breakpoint from itself.");
+    }
+    else
+    {
+      int sp = Native.getSP();
+      System.out.print("SP = ");
+      System.out.println(sp);
+//          sp++;
+//          Native.wrIntMem(argument, sp);
+//        Native.setSP(sp);
+//        test just to see if it breaks. It doesn't if SP is restored later.
+//          Native.setSP(sp + 4);
+      
+      System.out.println("Calling method now:");
+      Native.invoke(argument, methodId);
+      
+      // now restore SP to its previous value. Doing this without
+      // getting the top value just ignores anything left on the stack.
+//          sp = sp - 1;
+      Native.setSP(sp);
+      
+//          System.out.println("Right after return.");
+//          sp = Native.getSP();
+//          System.out.print("SP = ");
+//          System.out.println(sp);
+    }
+    
+    // return the argument just to sync with the caller and inform that
+    // execution has finished.
+    outputStream.writeInt(argument);
+  }
+
+  /**
+   * Handle the "Exit" command.
+   * 
+   * @throws IOException
+   */
+  private static void handleExitCommmand() throws IOException
+  {
+    // acknowledge the command and exit.
+    outputStream.writeInt(0);
+    
+    System.out.println(" Received \"Exit (10)\" command.");
+    System.out.println(" Shutting down...     ");
+    
+    System.exit(0);
+  }
   
   /**
    * Set the default debug streams.
@@ -447,10 +522,12 @@ public class JopDebugKernel
   private static void initialize()
   {
     breakpointMethodPointer = 
-      getMPFromPreviousMethodCall(getCurrentFramePointer());
+      getMPFromFrame(getCurrentFramePointer());
     
     EmbeddedOutputStream embeddedStream = new EmbeddedOutputStream(System.out);
     setDebugStreams(System.in, embeddedStream);
+    
+    initialized = true;
   }
   
   /**
@@ -464,60 +541,63 @@ public class JopDebugKernel
   {
     inputStream = new DataInputStream(in);
     outputStream = new DataOutputStream(out);
-    
-    initialized = true;
+
   }
   
-  public static final int getMPFromPreviousMethodCall(int frame)
-  {
-//    System.out.println("getMPFromPreviousMethodCall(int frame)");
-    return Native.rdIntMem(frame + 4);
-  }
-
-  public static final int getCPLocalsArgsFromMP(int mp)
+  private static int getCPLocalsArgsFromMP(int mp)
   {
     return Native.rdMem(mp + 1); // cp, locals, args
   }
 
-  public static final int getArgCountFromVal(int val)
+  private static int getArgCountFromVal(int val)
   {
     return val & 0x1f;
   }
 
-  public static final int getLocalsCountFromVal(int val)
+  private static int getLocalsCountFromVal(int val)
   {
     return ((val >>> 5) & 0x1f);
   }
 
-  public static final int getCPFromMP(int mp)
+  private static int getCPFromMP(int mp)
   {
     int value = getCPLocalsArgsFromMP(mp);
     value = value >>> 10;
     return value; // cp
   }
-
-  public static int getCPFromFrame(int frame)
+  
+  private static int getMPFromFrame(int frame)
+  {
+    return Native.rdIntMem(frame + 4);
+  }
+  
+  private static int getCPFromFrame(int frame)
   {
     return Native.rdIntMem(frame + 3);
   }
 
-  public static int getVPFromFrame(int frame)
+  private static int getVPFromFrame(int frame)
   {
     return Native.rdIntMem(frame + 2);
   }
 
-  public static int getSPFromFrame(int frame)
+  private static int getPCFromFrame(int frame)
+  {
+    return Native.rdIntMem(frame + 1);
+  }
+  
+  private static int getSPFromFrame(int frame)
   {
     return Native.rdIntMem(frame);
   }
-
+  
   /**
    * Return the frame pointer on the previous stack frame,
    * based on the given frame pointer.
    * 
    * @param framePointer the pointer to the frame under inspection
    * @return
-   */  
+   */
   public static final int getNextFramePointer(int framePointer)
   {
     int vp, args, loc;
@@ -532,7 +612,7 @@ public class JopDebugKernel
     }
     else
     {
-      mp = getMPFromPreviousMethodCall(framePointer);
+      mp = getMPFromFrame(framePointer);
       
       val= getCPLocalsArgsFromMP(mp);
       args = getArgCountFromVal(val);
@@ -543,32 +623,33 @@ public class JopDebugKernel
       return vp + args + loc;
     }
   }
-
+  
   /**
    * Calculate the number of local variables based on the 
    * frame pointer to a call stack frame.
-   * Does not consider the "this" reference or parameters:
-   * it just count the number of locals as declared on the source. 
+   * It consider the "this" reference, parameters and locals. 
    * 
    * @param frame
    * @return
    */
-  public static final int getNumLocalsFromFrame(int frame)
+  private static int getNumLocalsAndParametersFromFrame(int frame)
   {
     int loc;
     
     int localsPointer = getLocalsPointerFromFrame(frame);
     loc = frame - localsPointer;
     
-//    int mp, val;
-//    mp = getMPFromFrame(frame);
-//    System.out.println("mp = getMPFromFrame(frame); : " + mp);
+//    System.out.print("Frame: ");
+//    System.out.print(frame);
+//    System.out.print("  localsPointer: ");
+//    System.out.print(localsPointer);
 //    
-//    val= getCPLocalsArgsFromMP(mp);
-//    System.out.println("val= getCPLocalsArgsFromMP(mp); : " + val);
-//    
-//    loc = getLocalsCountFromVal(val);
-//    System.out.println("loc = getLocalsCountFromVal(val); : " + loc);
+//    System.out.print("  loc: ");
+//    System.out.print(loc);
+//    if(isFirstFrame(frame))
+//    {
+//      System.out.println("First frame!");
+//    }
     
     return loc;
   }
@@ -584,7 +665,7 @@ public class JopDebugKernel
    * @param frame
    * @return
    */
-  public static int getLocalsPointerFromFrame(int frame)
+  private static int getLocalsPointerFromFrame(int frame)
   {
     int previous_sp = getSPFromFrame(frame);
     int localsPointer = previous_sp + 1;
@@ -597,7 +678,7 @@ public class JopDebugKernel
     int vp;
     int value = 0;
     
-    numLoc = getNumLocalsFromFrame(frame);
+    numLoc = getNumLocalsAndParametersFromFrame(frame);
 //    System.out.println("  getField(int frame, int fieldIndex) frame = " + frame);
 //    System.out.println("Num. Locals: " + numLoc);
     if(fieldIndex < numLoc && fieldIndex >= 0)
@@ -643,7 +724,7 @@ public class JopDebugKernel
     //    print
     //    increment, set
     
-    numLoc = getNumLocalsFromFrame(frame);
+    numLoc = getNumLocalsAndParametersFromFrame(frame);
 //    System.out.println("  setField(int frame, int fieldIndex, value) frame = " + frame);
 //    System.out.println("Num. Locals: " + numLoc);
     if(fieldIndex < numLoc && fieldIndex >= 0)
@@ -682,25 +763,7 @@ public class JopDebugKernel
     return getVPFromFrame(frame);
   }
   
-  public static int getPCFromPreviousMethodCall(int framePointer)
-  {
-//    System.out.println("getPCFromPreviousMethodCall(int framePointer)");
-//    return framePointer + 1;
-    return Native.rdIntMem(framePointer + 1);
-  }
-  
-//  public static int getSPFromFrameStart(int frame)
-//  {
-//    return frame;
-//  }
-//
-//  public static int getMethodPointrFromStackPointer(int sp)
-//  {
-//    int mp = Native.rdIntMem(sp);
-//    return mp;
-//  }
-
-  public static int getFramePointerOfCallerMethod()
+  public static final int getFramePointerOfCallerMethod()
   {
     int frame;
     
@@ -719,7 +782,7 @@ public class JopDebugKernel
    * method. Consider the call stack frame for "main"
    * as the first one in the stack.  
    */
-  public static boolean isFirstFrame(int framePointer)
+  public static final boolean isFirstFrame(int framePointer)
   {
     // assume it's not the first and try to show otherwise
     boolean result = false;
@@ -835,19 +898,19 @@ public class JopDebugKernel
    * 
    * @return
    */
-  public static final int getStackDepth()
+  private static int getStackDepth()
   {
     int framePointer = getFramePointerOfCallerMethod();
     return getStackDepth(framePointer);
   }
 
-  public static int getInstanceSize(int object)
+  private static int getInstanceSize(int object)
   {
     int classReference = getClassReference(object);
     return Native.rdMem(classReference);
   }
 
-  public static int getClassReference(int object)
+  private static int getClassReference(int object)
   {
     int classreference = 0;
     
@@ -862,7 +925,7 @@ public class JopDebugKernel
     return classreference;
   }
 
-  public static int getConstantPoolFromClassReference(int classReference)
+  private static int getConstantPoolFromClassReference(int classReference)
   {
     // get reference to the first method. There will always be some,
     // due to generated/synthetic methods such as the default constructur
@@ -878,7 +941,7 @@ public class JopDebugKernel
    * @return
    * @throws IOException 
    */
-  public static final boolean handleSetBreakPointCommand() throws IOException
+  private static boolean handleSetBreakPointCommand() throws IOException
   {
     int methodStructPointer;
     int instructionOffset;
@@ -917,7 +980,7 @@ public class JopDebugKernel
    * @return
    * @throws IOException 
    */
-  public static final boolean handleClearBreakPointCommand() throws IOException
+  private static boolean handleClearBreakPointCommand() throws IOException
   {
     int methodStructPointer;
     int instructionOffset;
@@ -955,6 +1018,139 @@ public class JopDebugKernel
   }
   
   /**
+   * Handle a "get method pointer" command.
+   * 
+   * This is not a standard JDWP command but is necessary to implement
+   * debugging support in JOP.
+   * 
+   * @throws IOException
+   */
+  private static void handleGetStackFrameMPCommand() throws IOException
+  {
+    int frameIndex = inputStream.readInt();
+    
+    System.out.print(" Frame index: " );
+    System.out.print(frameIndex);
+    
+    int count = getStackDepth();
+    int pointer = getCurrentFramePointer();
+    for(int i = 0; i < (count - (frameIndex + 1)); i++)
+    {
+      pointer = getNextFramePointer(pointer);
+    }
+    pointer = getMPFromFrame(pointer);
+    
+    System.out.print("  Method pointer: ");
+    System.out.println(pointer);
+    
+    outputStream.writeInt(pointer);
+  }
+  
+  /**
+   * Handle a "Get local variable" command.
+   * 
+   * @throws IOException
+   */
+  private static void handleGetLocalVariableCommand() throws IOException
+  {
+    int frameIndex = inputStream.readInt();
+    int fieldIndex = inputStream.readInt();
+    int value;
+    int pointer;
+    
+    System.out.print(" Frame index: " );
+    System.out.print(frameIndex);
+    System.out.print(" Variable index: " );
+    System.out.println(fieldIndex);
+    
+    pointer = getFramePointerAtIndex(frameIndex);
+    value = getLocalVariable(pointer, fieldIndex);
+    
+    System.out.print("  Value: ");
+    System.out.println(value);
+    System.out.print(" Pointer: ");
+    System.out.println(pointer);
+    
+    outputStream.writeInt(value);
+  }
+
+  /**
+   * Get the frame pointer at the given index.
+   * 
+   * This method allows accesing the call stack as an array,
+   * with the stack frame for the "main" method call
+   * at index zero, the next method (called inside main) at
+   * index one and so on.
+   * 
+   * @param frameIndex
+   * @return
+   */
+  private static int getFramePointerAtIndex(int frameIndex)
+  {
+    int count = getStackDepth();
+    int pointer = getCurrentFramePointer();
+    
+    // traverse the stack to find the frame pointer
+    for(int i = 0; i < (count - frameIndex); i++)
+    {
+      pointer = getNextFramePointer(pointer);
+    }
+    return pointer;
+  }
+  
+  /**
+   * Handle a "Set local variable" command.
+   * 
+   * @throws IOException
+   */
+  private static void handleSetLocalVariableCommand() throws IOException
+  {
+    int frameIndex = inputStream.readInt();
+    int fieldIndex = inputStream.readInt();
+    int value = inputStream.readInt();
+    int pointer;
+    
+    System.out.print(" Frame index: " );
+    System.out.print(frameIndex);
+    System.out.print(" Variable index: " );
+    System.out.println(fieldIndex);
+    
+    pointer = getFramePointerAtIndex(frameIndex);
+    setLocalVariable(pointer, fieldIndex, value);
+    
+    System.out.print("  Value: ");
+    System.out.println(value);
+    System.out.print(" Pointer: ");
+    System.out.println(pointer);
+    
+//    writeInt(4);
+    outputStream.writeInt(value);
+  }
+  
+  /**
+   * Handle a "Get number of local variables" command.
+   * 
+   * @throws IOException
+   */
+  private static void handleGetNumberOfLocalVariablesCommand() throws IOException
+  {
+    int frameIndex = inputStream.readInt();
+    int framePointer;
+    int numLocals;
+    
+    System.out.print(" Frame index: " );
+    System.out.print(frameIndex);
+    
+    framePointer = getFramePointerAtIndex(frameIndex);
+    numLocals = getNumLocalsAndParametersFromFrame(framePointer);
+    
+    System.out.print(" Number of local variables: " );
+    System.out.println(numLocals);
+    
+    outputStream.writeInt(numLocals);
+  }
+  
+  /**
    * Set a breakpoint instruction.
    * 
    * Note: this method DOES NOT check instruction boundaries.
@@ -963,7 +1159,7 @@ public class JopDebugKernel
    * @param instruction
    * @return
    */
-  public static final int setBreakPoint(int methodStructPointer, int instructionOffset)
+  private static int setBreakPoint(int methodStructPointer, int instructionOffset)
   {
     int instruction;
     
@@ -983,7 +1179,7 @@ public class JopDebugKernel
    * @param newInstruction
    * @return
    */
-  public static final int clearBreakPoint(int methodStructPointer, 
+  private static int clearBreakPoint(int methodStructPointer, 
     int instructionOffset, int newInstruction)
   {
     int instruction;
@@ -1009,7 +1205,7 @@ public class JopDebugKernel
    * @param instruction
    * @return
    */
-  private static final int overwriteInstruction(int methodStructPointer, 
+  private static int overwriteInstruction(int methodStructPointer, 
     int instructionOffset, int newInstruction)
   {
     int methodSize;
@@ -1233,7 +1429,7 @@ public class JopDebugKernel
    * @param methodPointer
    * @return
    */
-  public static int getMethodStartAddress(int methodPointer)
+  private static int getMethodStartAddress(int methodPointer)
   {
     int startAddress;
     
@@ -1252,7 +1448,7 @@ public class JopDebugKernel
    * @param methodPointer
    * @return
    */
-  public static int getMethodSize(int methodPointer)
+  private static int getMethodSize(int methodPointer)
   {
     int startAddress;
     int methodSize;
@@ -1265,7 +1461,7 @@ public class JopDebugKernel
     return methodSize;
   }
   
-  public static int getMethodConstantPool(int methodPointer)
+  private static int getMethodConstantPool(int methodPointer)
   {
     int data;
     
@@ -1279,7 +1475,7 @@ public class JopDebugKernel
     return data;
   }
   
-  public static int getMethodArgCount(int methodPointer)
+  public static final int getMethodArgCount(int methodPointer)
   {
     int data;
     
@@ -1292,7 +1488,7 @@ public class JopDebugKernel
     return data;
   }
   
-  public static int getMethodLocalsCount(int methodPointer)
+  public static final int getMethodLocalsCount(int methodPointer)
   {
     int data;
     
@@ -1307,7 +1503,7 @@ public class JopDebugKernel
     return data;
   }
   
-  public static void dumpMethodStruct(int methodPointer)
+  public static final void dumpMethodStruct(int methodPointer)
   {
     int data;
     
@@ -1349,14 +1545,14 @@ public class JopDebugKernel
     data = getCurrentFramePointer();
     
     // get the method pointer from the previous method directly from the stack
-    data = getMPFromPreviousMethodCall(data);
+    data = getMPFromFrame(data);
     
 //    System.out.println("getCurrentMethodPointer()");
     
     return data;
   }
   
-  public static void dumpMethodBody(int methodPointer)
+  public static final void dumpMethodBody(int methodPointer)
   {
     int index, start, size, data;
     
@@ -1381,6 +1577,217 @@ public class JopDebugKernel
     }
     
     System.out.println();
+    System.out.println();
+  }
+  
+  /**
+   * Methods to print the stack content in a way that is
+   * easy to inspect.
+   * 
+   * @param frame
+   * @param previousFrame
+   */
+  private static void prettyPrintStack()
+  {
+    int frame;
+    int previousFrame;
+    
+//    previousFrame = getCurrentFramePointer();
+//    frame = getNextFramePointer(previousFrame);
+    
+    frame = getCurrentFramePointer();
+    
+    while(isFirstFrame(frame) == false)
+    {
+      previousFrame = frame;
+      frame = getNextFramePointer(previousFrame);
+      
+      if(isFirstFrame(frame))
+      {
+        System.out.println("Stack frame for main method (next):");
+      }
+      
+      prettyPrintStackFrame(frame, previousFrame);
+    }
+    // almost done now, but still need to do the last step:
+    // print information for the frame of the main method. 
+//    prettyPrintStackFrame(frame, previousFrame);
+  }
+  
+  /**
+   * Pretty print method to show a stack frame internal structure.
+   * Useful for debugging.
+   * 
+   * @param frame
+   */
+  private static void prettyPrintStackFrame(int frame, int previousFrame)
+  {
+    TestJopDebugKernel.printLine();
+    
+    printVariablesFromFrame(frame);
+    System.out.println();
+    
+    printRegistersFromFrame(frame);
+    System.out.println();
+    
+    printLocalStackFromFrame(frame, previousFrame);
+    
+    TestJopDebugKernel.printLine();
+  }
+  
+  /**
+   * @param frame
+   */
+  private static void printVariablesFromFrame(int frame)
+  {
+    int localPointer;
+    int length;
+    
+    localPointer = getLocalsPointerFromFrame(frame);
+    length = frame - localPointer;
+    
+//    System.out.print("  Local pointer: ");
+//    System.out.print(localPointer);
+//    System.out.print("  Frame pointer: ");
+//    System.out.print(frame);
+//    System.out.print("  Length: ");
+//    System.out.print(length);
+//    System.out.println();
+    
+    if(length < 0 || length > MAX_LOCAL_VARIABLES)
+    {
+      System.out.println("FAILURE!!! wrong local pointer!");
+      System.out.print("  Local pointer: ");
+      System.out.print(localPointer);
+      
+      System.out.print("  Frame: ");
+      System.out.print(frame);
+      
+      System.out.print("  Max. variables: ");
+      System.out.print(MAX_LOCAL_VARIABLES);
+      return;
+    }
+    
+    System.out.println("Local variables:");
+    
+    // print all variables before the frame pointer
+    printStackArea(localPointer, length);
+  }
+  
+  /**
+   * Print the five register fields based on the frame pointer. 
+   * 
+   * @param frame
+   */
+  private static void printRegistersFromFrame(int frame)
+  {
+    int value;
+    
+    System.out.print("Previous registers - SP: ");
+    value = getSPFromFrame(frame);
+    System.out.print(value);
+    
+    System.out.print("  PC: ");
+    value = getPCFromFrame(frame);
+    System.out.print(value);
+    
+    System.out.print("  VP: ");
+    value = getVPFromFrame(frame);
+    System.out.print(value);
+    
+    System.out.print("  CP: ");
+    value = getCPFromFrame(frame);
+    System.out.print(value);
+    
+    System.out.print("  MP: ");
+    value = getMPFromFrame(frame);
+    System.out.print(value);
+    
+    System.out.println();
+  }
+  
+  /**
+   * Print the local execution stack based on the current frame.
+   * 
+   * The previousFrame parameter points to the frame on top of
+   * the one pointed by frame. It is used to delimit the local stack.
+   * It should be greater than frame. 
+   * 
+   * @param frame
+   */
+  private static void printLocalStackFromFrame(int frame, int previousFrame)
+  {
+    int localStackPointer, length;
+    
+    // the pointer to the local stack, right after the five frame fields.
+    // Be careful here: this is *NOT* the SP field 
+    // (which points to the previous stack top).
+    localStackPointer = frame + 5;
+    
+    // the local execution stack (after a method call has started)
+    // goes from the 5th byte (right after "previous MP" location)
+    // until the position pointed by the "previous SP" field of the
+    // next stack frame (the one of the called method).
+    // Since the "previous SP" in the next frame points to the
+    // stack top, it will point to the "previous MP" in the
+    // current frame when the local stack is empty.
+    length = getSPFromFrame(previousFrame) - localStackPointer + 1;
+    
+//    System.out.print("Frame: ");
+//    System.out.print(frame);
+//    System.out.print("  localStackPointer: ");
+//    System.out.print(localStackPointer);
+//    System.out.print("  previousFrame: ");
+//    System.out.print(previousFrame);
+//    
+//    System.out.print("  length: ");
+//    System.out.print(length);
+    
+    if(length > 0)
+    {
+      System.out.print("Local execution stack size: ");
+      System.out.println(length);
+      printStackArea(localStackPointer, length);
+    }
+    else
+    {
+      System.out.println("Local execution stack: empty");
+      // System.out.println("Length: " + length);
+    }
+  }
+  
+  /**
+   * Print a set of stack positions in hex format.
+   * It formats the output by inserting a new line for every 
+   * 8 words printed.
+   * 
+   * @param initialPosition the initial position to be printed.
+   * @param length the number of stack slots to be printed.
+   */
+  private static void printStackArea(int initialPosition, int length)
+  {
+    int index, data;
+    
+    if(length <= 0)
+    {
+      return;
+    }
+    
+    // print a set of stack words. Do nothing and return, in case of a negative
+    // value for length.
+    for(index = 0; index < length; index++)
+    {
+      data = Native.rdIntMem(initialPosition + index);
+      printIntHex(data);
+      System.out.print(" ");
+      
+      if(((index + 1)% 0x08) == 0)
+      {
+//        System.out.print("Index:");
+//        System.out.println(index);
+        System.out.println();
+      }
+    }
     System.out.println();
   }
 }
