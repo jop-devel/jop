@@ -6,15 +6,18 @@ import com.jopdesign.sys.*;
 //	Measure time with a full thread queue
 
 public class PeriodicFull {
+	
+	static final int NUM_THREADS = 6;
 
 	static class Busy extends RtThread {
 
-		private int w, c;
+		private int w;
+		private char c;
 
-		Busy(int per, int ch) {
+		Busy(int per, char ch) {
 			super(5, per);
-			w = per*90/100;
-w = per*12/100;
+			// w = per*90/100;
+			w = per/(NUM_THREADS+2); // some time for main thread
 			c = ch;
 		}
 
@@ -44,15 +47,15 @@ w = per*12/100;
 				for (;;) {
 					waitForNextPeriod();
 					int ts = Native.rd(Const.IO_US_CNT);
+//					System.out.print('*');
 //					Result.printPeriod(ts_old, ts);
 					ts_old = ts;
 				}
 			}
 		};
 
-		int i;
-		for (i=0; i<6; ++i) {
-			new Busy(1000000, i+'a');
+		for (int i=0; i<NUM_THREADS; ++i) {
+			new Busy(1000000, (char) (i+'a'));
 		}
 
 		RtThread.startMission();
