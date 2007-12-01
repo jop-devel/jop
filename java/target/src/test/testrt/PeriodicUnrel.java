@@ -3,7 +3,7 @@ import util.*;
 import joprt.*;
 import com.jopdesign.sys.*;
 
-//	use differnet (unrelated) period to find WC Jitter
+//	use different (unrelated) period to find WC jitter
 
 public class PeriodicUnrel {
 
@@ -18,15 +18,12 @@ public class PeriodicUnrel {
 
 		public void run() {
 			for (;;) {
-//				Dbg.wr(c);
 				waitForNextPeriod();
 			}
 		}
 	}
 	
 	public static void main(String[] args) {
-
-		Dbg.initSer();				// use serial line for debug output
 
 		RtThread rt = new RtThread(10, 100000) {
 			public void run() {
@@ -52,7 +49,7 @@ public class PeriodicUnrel {
 
 		// sleep
 		for (;;) {
-			Dbg.wr('M');
+			System.out.print('M');
 			Timer.wd();
 			for (;;) ;
 			// try { Thread.sleep(1200); } catch (Exception e) {}
