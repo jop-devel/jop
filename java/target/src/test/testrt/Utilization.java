@@ -49,7 +49,9 @@ public class Utilization {
 				Timer.wd();
 				t2 -= timeout;
 				System.out.print(t2);
+				System.out.print(" ");
 				System.out.print(idle);
+				System.out.print(" ");
 				idle *= 100;
 				idle /= t2;
 				idle = 100-idle;
