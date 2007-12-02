@@ -22,6 +22,7 @@
 --				different mux for jpc and jbc rdaddr, register jump address calculation
 --	2004-09-11	move jbc to mem
 --	2005-01-17	move interrupt mux to jtbl.vhd (mux after the table)
+--	2007-12-01	move most interrupt processing to sc_sys
 --
 --	TODO:	use 'running' bit and generate jbr here!
 --
@@ -100,15 +101,11 @@ end component;
 --
 --	signals for interrupt handling
 --
-	signal irq_gate		: std_logic;
-	signal irq_dly		: std_logic;
-	signal trig			: std_logic;
 	signal int_pend		: std_logic;
-	signal sys_int		: std_logic;
+	signal int_taken	: std_logic;
 
-	signal exc_dly		: std_logic;
 	signal exc_pend		: std_logic;
-	signal sys_exc		: std_logic;
+	signal exc_taken	: std_logic;
 
 	signal bytecode		: std_logic_vector(7 downto 0);
 
@@ -120,51 +117,41 @@ begin
 process(clk, reset) begin
 
 	if (reset='1') then
-		irq_dly <= '0';
 		int_pend <= '0';
-
-		exc_dly <= '0';
 		exc_pend <= '0';
 
 	elsif rising_edge(clk) then
 
-		irq_dly <= irq_gate;
-		exc_dly <= irq_in.exc_int;
-
-		if trig='1' then
+		if irq_in.irq='1' then
 			int_pend <= '1';
---		elsif sys_int='1' or irq_in.irq_ena='0' then
-		elsif sys_int='1' then
+		elsif int_taken='1' then
 			int_pend <= '0';
 		end if;
 
-		if irq_in.exc_int='1' and exc_dly='0' then
+		if irq_in.exc='1' then
 			exc_pend <= '1';
-		elsif sys_exc='1' then
+		elsif exc_taken='1' then
 			exc_pend <= '0';
 		end if;
 	end if;
 
 end process;
 
-	irq_gate <= irq_in.irq and irq_in.irq_ena;
-	trig <= irq_gate and not irq_dly;
-	sys_int <= int_pend and jfetch;
+	int_taken <= int_pend and jfetch;
+	exc_taken <= exc_pend and jfetch;
 
-	sys_exc <= exc_pend and jfetch;
+	irq_out.ack_irq <= int_taken;
+	irq_out.ack_exc <= exc_taken;
 
 --
 --	bytecode mux on interrupt
---		jpc is one too high after generating sys_int
+--		jpc is one too high after generating int_taken
 --		this is corrected in jvm.asm
 --
---	we do not depend on sys_int in this mux for jfetch (do we?)
---	jfetch is allready used in the mux after the jump table
---
---	interrupt mux is now in jtbl.vhd
 
 --
 --	java byte code fetch and branch
+--		interrupt and exception mux are in jtbl
 --
 
 	bytecode <= jbc_q;		-- register this for an additional pipeline stage

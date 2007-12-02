@@ -23,6 +23,8 @@
 --	2007-03-17	changed interrupts to records
 --  2007-06-01  changed name from sc_cnt to sc_sys
 --  2007-11-22  added global lock and bootup of CMP
+--	2007-12-02	interrupt processing redesign
+--
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -72,12 +74,11 @@ architecture rtl of sc_sys is
 
 	signal timer_int		: std_logic;
 	signal yield_int		: std_logic;
-	signal int_ack			: std_logic;
 
 	signal timer			: std_logic;
 	signal yield			: std_logic;
 
-	signal irq_cnt			: std_logic_vector(31 downto 0);
+	signal timer_cnt		: std_logic_vector(31 downto 0);
 	signal timer_equ		: std_logic;
 	signal timer_dly		: std_logic;
 
@@ -87,6 +88,16 @@ architecture rtl of sc_sys is
 	signal rdy_cnt_help : std_logic;
 
 	
+--
+--	signals for interrupt handling
+--
+	signal int_pend		: std_logic;
+	signal int_ena		: std_logic;
+	signal exc_pend		: std_logic;
+	signal irq_gate		: std_logic;
+	signal irq_dly		: std_logic;
+	signal exc_dly		: std_logic;
+
 begin
 
 	cpu_identity <= std_logic_vector(to_unsigned(cpu_id,32));
@@ -130,9 +141,9 @@ end process;
 --	compare timer value and us counter
 --	and generate single shot
 --
-process(us_cnt, irq_cnt) begin
+process(us_cnt, timer_cnt) begin
 	timer_equ <= '0';
-	if us_cnt = irq_cnt then
+	if us_cnt = timer_cnt then
 		timer_equ <= '1';
 	end if;
 end process;
@@ -150,13 +161,13 @@ end process;
 --
 --	int processing from timer and yield request
 --
-process(clk, reset, timer_int, yield_int) begin
+process(clk, reset) begin
 
 	if (reset='1') then
 		timer <= '0';
 		yield <= '0';
 	elsif rising_edge(clk) then
-		if int_ack='1' then
+		if irq_out.ack_irq='1' then
 			timer <= '0';
 			yield <= '0';
 		else
@@ -171,7 +182,30 @@ process(clk, reset, timer_int, yield_int) begin
 
 end process;
 
-	irq_in.irq <= timer or yield;
+	int_pend <= timer or yield;
+
+--
+--	interrupt processing
+--
+process(clk, reset) begin
+
+	if (reset='1') then
+		irq_dly <= '0';
+		exc_dly <= '0';
+
+	elsif rising_edge(clk) then
+
+		irq_dly <= irq_gate;
+		exc_dly <= exc_pend;
+
+	end if;
+
+end process;
+
+	irq_gate <= int_pend and int_ena;
+	irq_in.irq <= irq_gate and not irq_dly;
+	irq_in.exc <= exc_pend and not exc_dly;
+
 
 
 --
@@ -206,51 +240,53 @@ process(clk, reset)
 begin
 	if (reset='1') then
 
-		irq_in.irq_ena <= '0';
-		irq_cnt <= (others => '0');
-		int_ack <= '0';
+		int_ena <= '0';
+		timer_cnt <= (others => '0');
 		wd <= '0';
 		sync_in.s_in <= '0';
 		sync_in.lock <= '0';
 		rdy_cnt_help <= '0';
 
 		exc_type <= (others => '0');
-		irq_in.exc_int <= '0';
+		exc_pend <= '0';
 
 	elsif rising_edge(clk) then
 
-		int_ack <= '0';
 		yield_int <= '0';
+		exc_pend <= '0';
 
-		irq_in.exc_int <= '0';
+		-- disable interrupts on a taken interrupt or excption
+		if irq_out.ack_irq='1' or irq_out.ack_exc='1' then
+			int_ena <= '0';
+		end if;
 
+		-- exceptions from core or memory
 		if exc_req.spov='1' then
 			exc_type(2 downto 0) <= EXC_SPOV;
-			irq_in.exc_int <= '1';
+			exc_pend <= '1';
 		end if;
 		if exc_req.np='1' then
 			exc_type(2 downto 0) <= EXC_NP;
-			irq_in.exc_int <= '1';
+			exc_pend <= '1';
 		end if;
 		if exc_req.ab='1' then
 			exc_type(2 downto 0) <= EXC_AB;
-			irq_in.exc_int <= '1';
+			exc_pend <= '1';
 		end if;
 
 		if wr='1' then
 			case address(2 downto 0) is
 				when "000" =>
-					irq_in.irq_ena <= wr_data(0);
+					int_ena <= wr_data(0);
 				when "001" =>
-					irq_cnt <= wr_data;
-					int_ack <= '1';
+					timer_cnt <= wr_data;
 				when "010" =>
 					yield_int <= '1';
 				when "011" =>
 					wd <= wr_data(0);
 				when "100" =>
 					exc_type <= wr_data(7 downto 0);
-					irq_in.exc_int <= '1';
+					exc_pend <= '1';
 				when "101" =>
 					sync_in.lock <= wr_data(0);	
 					rdy_cnt_help <= wr_data(0);			

@@ -59,13 +59,13 @@ package jop_types is
 	constant EXC_NP		: std_logic_vector(2 downto 0) := "010";
 	constant EXC_AB		: std_logic_vector(2 downto 0) := "011";
 
+	-- interrupt and exception request to bcfetch
 	type irq_bcf_type is record
 		irq			: std_logic;	-- interrupt request, single cycle
-		irq_ena		: std_logic;	-- interrupt enable (pendig int is fired on ena)
-
-		exc_int		: std_logic;	-- exception request, singel cycle
+		exc			: std_logic;	-- exception request, singel cycle
 	end record;
 
+	-- interrupt and exception ack when jfetch the interrupt bytecode
 	type irq_ack_type is record
 		ack_irq		: std_logic;	-- interrupt ack from bcfetch, single cycle
 		ack_exc		: std_logic;	-- exception ack from bcfetch
