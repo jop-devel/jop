@@ -51,7 +51,8 @@ port (
 --
 --	Interrupts from IO devices
 --
-	irq_in			: out irq_in_type;
+	irq_in			: out irq_bcf_type;
+	irq_out			: in irq_ack_type;
 	exc_req			: in exception_type;
 
 -- CMP
@@ -162,6 +163,7 @@ begin
 			rdy_cnt => sc_rdy_cnt(0),
 
 			irq_in => irq_in,
+			irq_out => irq_out,
 			exc_req => exc_req,
 			
 			sync_out => sync_out,

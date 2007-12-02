@@ -59,12 +59,18 @@ package jop_types is
 	constant EXC_NP		: std_logic_vector(2 downto 0) := "010";
 	constant EXC_AB		: std_logic_vector(2 downto 0) := "011";
 
-	type irq_in_type is record
-		irq			: std_logic;	-- interrupt request (positiv edge sensitive)
+	type irq_bcf_type is record
+		irq			: std_logic;	-- interrupt request, single cycle
 		irq_ena		: std_logic;	-- interrupt enable (pendig int is fired on ena)
 
-		exc_int		: std_logic;	-- exception interrupt
+		exc_int		: std_logic;	-- exception request, singel cycle
 	end record;
+
+	type irq_ack_type is record
+		ack_irq		: std_logic;	-- interrupt ack from bcfetch, single cycle
+		ack_exc		: std_logic;	-- exception ack from bcfetch
+	end record;
+
 
 	type ser_in_type is record
 		rxd			: std_logic;
@@ -83,7 +89,8 @@ package jop_types is
 		b	: std_logic_vector(10 downto 1);
 	end record;
 
-	type irq_in_array_type is array (integer range <>) of irq_in_type;
+	type irq_in_array_type is array (integer range <>) of irq_bcf_type;
+	type irq_out_array_type is array (integer range <>) of irq_ack_type;
 	type exception_array_type is array (integer range <>) of exception_type;
 	
 	-- CMP synchronization

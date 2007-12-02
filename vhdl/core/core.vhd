@@ -74,7 +74,8 @@ port (
 
 -- interrupt from io
 
-	irq_in		: in irq_in_type;
+	irq_in		: in irq_bcf_type;
+	irq_out		: out irq_ack_type;
 
 	sp_ov		: out std_logic;
 
@@ -110,7 +111,8 @@ port (
 
 	jbr			: in std_logic;
 
-	irq_in		: in irq_in_type;
+	irq_in		: in irq_bcf_type;
+	irq_out		: out irq_ack_type;
 
 	jpaddr		: out std_logic_vector(pc_width-1 downto 0);	-- address for JVM
 	opd			: out std_logic_vector(15 downto 0)				-- operands
@@ -275,7 +277,7 @@ begin
 			jbc_addr, jbc_data,
 			jfetch, jopdfetch,
 			stk_zf, stk_nf, stk_eq, stk_lt, jbr,
-			irq_in,
+			irq_in, irq_out,
 			jpaddr, opd);
 
 	cmp_fch: fetch generic map (pc_width, i_width)

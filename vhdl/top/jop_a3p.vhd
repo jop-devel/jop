@@ -59,7 +59,8 @@ architecture rtl of jop is
 --
 	signal sc_io_out		: sc_io_out_type;
 	signal sc_io_in			: sc_in_type;
-	signal irq_in			: irq_in_type;
+	signal irq_in			: irq_bcf_type;
+	signal irq_out			: irq_ack_type;
 	signal exc_req			: exception_type;
 
 --
@@ -150,6 +151,7 @@ cmp_cpu: entity work.jopcpu
     sc_io_out => sc_io_out,
     sc_io_in => sc_io_in,
     irq_in => irq_in,
+    irq_out => irq_out,
     exc_req => exc_req);
 
 cmp_io: entity work.scio 
@@ -159,6 +161,7 @@ cmp_io: entity work.scio
     sc_io_out => sc_io_out,
     sc_io_in => sc_io_in,
     irq_in => irq_in,
+    irq_out => irq_out,
     exc_req => exc_req,
     txd => open,
     rxd => rxd,

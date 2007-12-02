@@ -3,7 +3,7 @@
 --
 --	counter, interrrupt handling and watchdog bit
 --
---	Author: Martin Schoeberl	martin@good-ear.com
+--	Author: Martin Schoeberl	martin@jopdesign.com
 --
 --		address map:
 --
@@ -50,7 +50,8 @@ port (
 --
 --	Interrupts from IO devices
 --
-	irq_in		: out irq_in_type;
+	irq_in		: out irq_bcf_type;
+	irq_out		: in irq_ack_type;
 	exc_req		: in exception_type;
 	
 	sync_out : in sync_out_type := NO_SYNC;

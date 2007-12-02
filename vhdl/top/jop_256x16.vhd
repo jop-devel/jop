@@ -88,7 +88,8 @@ end component;
 	signal sc_mem_in		: sc_in_type;
 	signal sc_io_out		: sc_io_out_type;
 	signal sc_io_in			: sc_in_type;
-	signal irq_in			: irq_in_type;
+	signal irq_in			: irq_bcf_type;
+	signal irq_out			: irq_ack_type;
 	signal exc_req			: exception_type;
 
 --
@@ -156,12 +157,12 @@ end process;
 		port map(clk_int, int_res,
 			sc_mem_out, sc_mem_in,
 			sc_io_out, sc_io_in,
-			irq_in, exc_req);
+			irq_in, irq_out, exc_req);
 
 	cmp_io: entity work.scio 
 		port map (clk_int, int_res,
 			sc_io_out, sc_io_in,
-			irq_in, exc_req,
+			irq_in, irq_out, exc_req,
 
 			txd => ser_txd,
 			rxd => ser_rxd,

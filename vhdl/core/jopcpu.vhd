@@ -41,9 +41,10 @@ port (
 	sc_io_in		: in sc_in_type;
 
 --
---	Interrupts from IO devices
+--	Interrupts from sc_sys
 --
-	irq_in			: in irq_in_type;
+	irq_in			: in irq_bcf_type;
+	irq_out			: out irq_ack_type;
 	exc_req			: out exception_type
 );
 end jopcpu;
@@ -89,7 +90,7 @@ begin
 			stack_din, ext_addr,
 			rd, wr,
 			jbc_addr, jbc_data,
-			irq_in, sp_ov,
+			irq_in, irq_out, sp_ov,
 			stack_tos, stack_nos
 		);
 

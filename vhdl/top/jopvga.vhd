@@ -138,7 +138,8 @@ end component;
 	signal sc_mem_in		: sc_in_type;
 	signal sc_io_out		: sc_io_out_type;
 	signal sc_io_in			: sc_in_type;
-	signal irq_in			  : irq_in_type;
+	signal irq_in			: irq_bcf_type;
+	signal irq_out			: irq_ack_type;
 	signal exc_req			: exception_type;
 
 --
@@ -201,7 +202,7 @@ end process;
 		port map(clk_int, int_res,
 			sc_arb_out(1), sc_arb_in(1),
 			sc_io_out, sc_io_in,
-			irq_in, exc_req);
+			irq_in, irq_out, exc_req);
 			
 	cmp_vga: entity work.vga
 		port map(clk_int, int_res,
@@ -252,7 +253,7 @@ end process;
 		)
 		port map (clk_int, int_res,
 			sc_io_out, sc_io_in,
-			irq_in, exc_req,
+			irq_in, irq_out, exc_req,
 
 			txd => ser_txd,
 			rxd => ser_rxd,

@@ -59,7 +59,8 @@ port (
 
 	jbr			: in std_logic;
 
-	irq_in		: in irq_in_type;
+	irq_in		: in irq_bcf_type;
+	irq_out		: out irq_ack_type;
 
 	jpaddr		: out std_logic_vector(pc_width-1 downto 0);	-- address for JVM
 	opd			: out std_logic_vector(15 downto 0)				-- operands
@@ -132,7 +133,8 @@ process(clk, reset) begin
 
 		if trig='1' then
 			int_pend <= '1';
-		elsif sys_int='1' or irq_in.irq_ena='0' then
+--		elsif sys_int='1' or irq_in.irq_ena='0' then
+		elsif sys_int='1' then
 			int_pend <= '0';
 		end if;
 

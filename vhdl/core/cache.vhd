@@ -129,9 +129,9 @@ begin
 -- remove the comment to force a single method
 -- block cache
 --
--- block_addr <= (others => '0');
--- in_cache <= '0';
--- state <= s2;
+ block_addr <= (others => '0');
+ in_cache <= '0';
+ state <= s2;
 
 			-- correct tag memory on a miss
 			when s2 =>

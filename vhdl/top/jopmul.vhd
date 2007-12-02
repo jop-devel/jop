@@ -133,6 +133,7 @@ end component;
 	signal sc_io_out		: sc_io_out_array_type(0 to cpu_cnt-1);
 	signal sc_io_in			: sc_in_array_type(0 to cpu_cnt-1);
 	signal irq_in			  : irq_in_array_type(0 to cpu_cnt-1);
+	signal irq_out			  : irq_out_array_type(0 to cpu_cnt-1);
 	signal exc_req			: exception_array_type(0 to cpu_cnt-1);
 
 --
@@ -212,7 +213,7 @@ end process;
 			port map(clk_int, int_res,
 				sc_arb_out(i), sc_arb_in(i),
 				sc_io_out(i), sc_io_in(i),
-				irq_in(i), exc_req(i));
+				irq_in(i), irq_out(i), exc_req(i));
 	end generate;
 			
 	cmp_arbiter: entity work.arbiter
@@ -267,7 +268,7 @@ end process;
 		)
 		port map (clk_int, int_res,
 			sc_io_out(0), sc_io_in(0),
-			irq_in(0), exc_req(0),
+			irq_in(0), irq_out(0), exc_req(0),
 
 			sync_out => sync_out_array(0),
 			sync_in => sync_in_array(0),
@@ -302,6 +303,7 @@ end process;
 			rdy_cnt => sc_io_in(i).rdy_cnt,
 			
 			irq_in => irq_in(i),
+			irq_out => irq_out(i),
 			exc_req => exc_req(i),
 			
 			sync_out => sync_out_array(i),
