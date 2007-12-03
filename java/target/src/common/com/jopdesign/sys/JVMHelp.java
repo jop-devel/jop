@@ -11,9 +11,23 @@ public class JVMHelp {
 	//	interrupt gets called from jvm.asm
 	//
 	public static void interrupt() {
+		int nr = Native.rd(Const.IO_INTNR);
+//		wr('!');
+//		wr('0'+nr);
 // RtThread.ts0 = Native.rd(Const.IO_US_CNT);
-		RtThreadImpl.schedule();
-// Scheduler.schedInt();
+		if (nr==0) {
+			RtThreadImpl.schedule();			
+		} else {
+			// TODO add handlers
+		}
+// Scheduler.schedInt(); ... was user scheduler
+		
+		// enable interrupts again only for tests
+		// each interrupt handler shall do it - or do it here for sure?
+		Native.wr(1, Const.IO_INT_ENA);
+
+		
+
 	}
 
 

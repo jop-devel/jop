@@ -8,7 +8,7 @@
 --		address map:
 --
 --			0	read clk counter, write irq ena
---			1	read 1 MHz counter, write timer val (us) + irq ack
+--			1	read 1 MHz counter, write timer val (us)
 --			2	write generates sw-int (for yield())
 --			3	write wd port
 --			4	write generates SW exception, read exception reason
@@ -26,6 +26,57 @@
 --	2007-12-02	interrupt processing redesign
 --
 
+
+--
+--	state for a single interrupt
+--
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+entity intstate is
+
+port (
+	clk		: in std_logic;
+	reset	: in std_logic;
+
+	irq		: in std_logic;		-- external request
+	ena		: in std_logic;		-- local enable
+	ack		: in std_logic;		-- is served
+	clear	: in std_logic;		-- reset pending interrupt
+	pending	: out std_logic		-- the output request
+);
+end intstate;
+
+architecture rtl of intstate is
+
+	signal flag		: std_logic;
+
+begin
+
+--	TODO: add minimum interarrival time
+
+process(clk, reset) begin
+
+	if reset='1' then
+		flag <= '0';
+	elsif rising_edge(clk) then
+		if ack='1' or clear='1' then
+			flag <= '0';
+		elsif irq='1' then
+			flag <= '1';
+		end if;
+	end if;
+
+end process;
+
+	pending <= flag and ena;
+
+end rtl;
+
+--
+--	the sc_sys component
+--
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -36,7 +87,8 @@ entity sc_sys is
 
 generic (addr_bits : integer;
 	clk_freq : integer;
-	cpu_id	 : integer);
+	cpu_id	 : integer;
+	num_io_int : integer := 2);
 port (
 	clk		: in std_logic;
 	reset	: in std_logic;
@@ -55,6 +107,8 @@ port (
 	irq_in		: out irq_bcf_type;
 	irq_out		: in irq_ack_type;
 	exc_req		: in exception_type;
+
+	io_int		: in std_logic_vector(num_io_int-1 downto 0) := "00";
 	
 	sync_out : in sync_out_type := NO_SYNC;
 	sync_in	 : out sync_in_type;
@@ -73,10 +127,6 @@ architecture rtl of sc_sys is
 	constant div_val	: integer := clk_freq/1000000-1;
 
 	signal timer_int		: std_logic;
-	signal yield_int		: std_logic;
-
-	signal timer			: std_logic;
-	signal yield			: std_logic;
 
 	signal timer_cnt		: std_logic_vector(31 downto 0);
 	signal timer_equ		: std_logic;
@@ -98,6 +148,20 @@ architecture rtl of sc_sys is
 	signal irq_dly		: std_logic;
 	signal exc_dly		: std_logic;
 
+--
+--	signals for interrupt source state machines
+--
+	constant NUM_INT	: integer := num_io_int+1;		-- plus timer interrupt
+	signal hwreq		: std_logic_vector(NUM_INT-1 downto 0);
+	signal swreq		: std_logic_vector(NUM_INT-1 downto 0);
+	signal intreq		: std_logic_vector(NUM_INT-1 downto 0);
+	signal mask			: std_logic_vector(NUM_INT-1 downto 0);
+	signal ack			: std_logic_vector(NUM_INT-1 downto 0);
+	signal pending		: std_logic_vector(NUM_INT-1 downto 0);
+	signal prioint		: std_logic_vector(4 downto 0);
+	signal intnr		: std_logic_vector(4 downto 0);		-- processing int number
+	signal clearall		: std_logic;
+
 begin
 
 	cpu_identity <= std_logic_vector(to_unsigned(cpu_id,32));
@@ -109,7 +173,7 @@ begin
 process(clk, reset)
 begin
 
-	if (reset='1') then
+	if reset='1' then
 		rd_data <= (others => '0');
 	elsif rising_edge(clk) then
 
@@ -119,6 +183,9 @@ begin
 					rd_data <= clock_cnt;
 				when "001" =>
 					rd_data <= us_cnt;
+				when "010" =>
+					rd_data(4 downto 0) <= intnr;
+					rd_data(31 downto 5) <= (others => '0');
 				when "100" =>
 					rd_data(7 downto 0) <= exc_type;
 					rd_data(31 downto 8) <= (others => '0');
@@ -148,8 +215,8 @@ process(us_cnt, timer_cnt) begin
 	end if;
 end process;
 
-process(clk, reset, timer_equ) begin
-	if (reset='1') then
+process(clk, reset) begin
+	if reset='1' then
 		timer_dly <= '0';
 	elsif rising_edge(clk) then
 		timer_dly <= timer_equ;
@@ -161,42 +228,61 @@ end process;
 --
 --	int processing from timer and yield request
 --
-process(clk, reset) begin
 
-	if (reset='1') then
-		timer <= '0';
-		yield <= '0';
-	elsif rising_edge(clk) then
-		if irq_out.ack_irq='1' then
-			timer <= '0';
-			yield <= '0';
-		else
-			if timer_int='1' then
-				timer <= '1';
-			end if;
-			if yield_int='1' then
-				yield <= '1';
-			end if;
-		end if;
-	end if;
+	hwreq(0) <= timer_int;
+	hwreq(NUM_INT-1 downto 1) <= io_int;
 
+process(prioint, irq_out.ack_irq) begin
+	ack <= (others => '0');
+	ack(to_integer(unsigned(prioint))) <= irq_out.ack_irq;
 end process;
 
-	int_pend <= timer or yield;
+	gen_int: for i in 0 to NUM_INT-1 generate
+		intreq(i) <= hwreq(i) or swreq(i);
+		cis: entity work.intstate
+			port map(clk, reset,
+				irq => intreq(i),
+				ena => mask(i),
+				ack => ack(i),
+				clear => clearall,
+				pending => pending(i)
+			);
+
+		
+	end generate;
+
+-- find highest priority pending interrupt
+process(pending) begin
+
+	int_pend <= '0';
+	prioint <= (others => '0');
+	for i in NUM_INT-1 downto 0 loop
+		if pending(i)='1' then
+			int_pend <= '1';
+			prioint <= std_logic_vector(to_unsigned(i, 5));
+			exit;
+		end if;
+	end loop;
+end process;
 
 --
 --	interrupt processing
 --
 process(clk, reset) begin
 
-	if (reset='1') then
+	if reset='1' then
 		irq_dly <= '0';
 		exc_dly <= '0';
+		intnr <= (others => '0');
 
 	elsif rising_edge(clk) then
 
 		irq_dly <= irq_gate;
 		exc_dly <= exc_pend;
+		-- save processing interrupt number
+		if irq_out.ack_irq='1' then
+			intnr <= prioint;
+		end if;
 
 	end if;
 
@@ -250,10 +336,15 @@ begin
 		exc_type <= (others => '0');
 		exc_pend <= '0';
 
+		swreq <= (others => '0');
+		mask <= (others => '0');
+		clearall <= '0';
+
 	elsif rising_edge(clk) then
 
-		yield_int <= '0';
 		exc_pend <= '0';
+		swreq <= (others => '0');
+		clearall <= '0';
 
 		-- disable interrupts on a taken interrupt or excption
 		if irq_out.ack_irq='1' or irq_out.ack_exc='1' then
@@ -275,26 +366,30 @@ begin
 		end if;
 
 		if wr='1' then
-			case address(2 downto 0) is
-				when "000" =>
+			case address(3 downto 0) is
+				when "0000" =>
 					int_ena <= wr_data(0);
-				when "001" =>
+				when "0001" =>
 					timer_cnt <= wr_data;
-				when "010" =>
-					yield_int <= '1';
-				when "011" =>
+				when "0010" =>
+					swreq(to_integer(unsigned(wr_data))) <= '1';
+				when "0011" =>
 					wd <= wr_data(0);
-				when "100" =>
+				when "0100" =>
 					exc_type <= wr_data(7 downto 0);
 					exc_pend <= '1';
-				when "101" =>
+				when "0101" =>
 					sync_in.lock <= wr_data(0);	
 					rdy_cnt_help <= wr_data(0);			
-				when "110" =>
+				when "0110" =>
 					-- nothing, processor id is read only
-				when others =>
---				when "111" =>
+				when "0111" =>
 					sync_in.s_in <= wr_data(0);
+				when "1000" =>
+					mask <= wr_data(NUM_INT-1 downto 0);
+--				when "1001" =>
+				when others =>
+					clearall <= '1';
 			end case;
 		end if;
 		

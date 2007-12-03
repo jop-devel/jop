@@ -7,8 +7,6 @@ add wave -noupdate -format Literal -radix ascii /tb_jop/cmp_jop/cmp_io/cmp_ua/ch
 add wave -noupdate -divider core
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_core/cmp_stk/a
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_core/cmp_stk/b
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_core/cmp_stk/sum
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_core/cmp_stk/lt
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_core/cmp_bcf/jpc
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_core/cmp_bcf/jinstr
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_core/cmp_fch/pc
@@ -19,11 +17,31 @@ add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cm
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_core/cmp_stk/spp
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_core/cmp_stk/spm
 add wave -noupdate -format Logic /tb_jop/cmp_jop/cpm_cpu/cmp_core/cmp_stk/sp_ov
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_core/cmp_stk/vp3
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_core/cmp_stk/vp2
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_core/cmp_stk/vp1
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_core/cmp_stk/vp0
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_core/cmp_stk/cmp_ram/ram
+add wave -noupdate -divider interrupt
+add wave -noupdate -format Logic /tb_jop/cmp_jop/cmp_io/cmp_sys/timer_equ
+add wave -noupdate -format Logic /tb_jop/cmp_jop/cmp_io/cmp_sys/timer_int
+add wave -noupdate -format Literal -expand /tb_jop/cmp_jop/cmp_io/cmp_sys/hwreq
+add wave -noupdate -format Literal -expand /tb_jop/cmp_jop/cmp_io/cmp_sys/swreq
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cmp_io/cmp_sys/prioint
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cmp_io/cmp_sys/intnr
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cmp_io/cmp_sys/ack
+add wave -noupdate -format Literal -expand /tb_jop/cmp_jop/cmp_io/cmp_sys/pending
+add wave -noupdate -format Logic /tb_jop/cmp_jop/cmp_io/cmp_sys/int_pend
+add wave -noupdate -format Logic /tb_jop/cmp_jop/cmp_io/cmp_sys/int_ena
+add wave -noupdate -format Logic /tb_jop/cmp_jop/cmp_io/cmp_sys/exc_pend
+add wave -noupdate -format Logic /tb_jop/cmp_jop/cmp_io/cmp_sys/irq_gate
+add wave -noupdate -format Logic /tb_jop/cmp_jop/cmp_io/cmp_sys/irq_dly
+add wave -noupdate -format Logic /tb_jop/cmp_jop/cmp_io/cmp_sys/exc_dly
+add wave -noupdate -format Literal -expand /tb_jop/cmp_jop/cmp_io/cmp_sys/irq_in
+add wave -noupdate -format Literal -expand /tb_jop/cmp_jop/cmp_io/cmp_sys/irq_out
+add wave -noupdate -divider {bcfetch interrupt}
+add wave -noupdate -format Logic /tb_jop/cmp_jop/cpm_cpu/cmp_core/cmp_bcf/int_pend
+add wave -noupdate -format Logic /tb_jop/cmp_jop/cpm_cpu/cmp_core/cmp_bcf/int_taken
+add wave -noupdate -format Logic /tb_jop/cmp_jop/cpm_cpu/cmp_core/cmp_bcf/exc_pend
+add wave -noupdate -format Logic /tb_jop/cmp_jop/cpm_cpu/cmp_core/cmp_bcf/exc_taken
+add wave -noupdate -format Logic /tb_jop/cmp_jop/cpm_cpu/cmp_core/cmp_bcf/jfetch
 add wave -noupdate -divider io
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cmp_io/sel_reg
 add wave -noupdate -divider {io cnt}
@@ -59,7 +77,7 @@ add wave -noupdate -format Logic /tb_jop/cmp_jop/fl_noe
 add wave -noupdate -format Logic /tb_jop/cmp_jop/fl_nwe
 add wave -noupdate -format Logic /tb_jop/cmp_jop/fl_rdy
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {226600 ps} 0} {{Cursor 2} {693090000 ps} 0} {{Cursor 3} {241391064 ps} 0} {{Cursor 4} {4032743 ps} 0}
+WaveRestoreCursors {{Cursor 1} {226600 ps} 0}
 configure wave -namecolwidth 228
 configure wave -valuecolwidth 144
 configure wave -justifyvalue left
@@ -73,4 +91,4 @@ configure wave -gridperiod 1
 configure wave -griddelta 40
 configure wave -timeline 0
 update
-WaveRestoreZoom {30 ns} {12630 ns}
+WaveRestoreZoom {1415113 ps} {2905676 ps}

@@ -242,7 +242,7 @@ public static int ts0, ts1, ts2, ts3, ts4;
 
 			// just schedule an interrupt
 			// schedule() gets called.
-			Native.wr(1, Const.IO_SWINT);
+			Native.wr(0, Const.IO_SWINT);
 			// will arrive befor return statement,
 			// just after monitorexit
 		}

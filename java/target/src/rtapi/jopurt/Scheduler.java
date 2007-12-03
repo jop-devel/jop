@@ -146,7 +146,7 @@ public abstract class Scheduler {
 		
 		// just schedule an interrupt
 		// schedule() gets called.
-		Native.wr(1, Const.IO_SWINT);
+		Native.wr(0, Const.IO_SWINT);
 	}
 
 	protected static final void enableInt() {

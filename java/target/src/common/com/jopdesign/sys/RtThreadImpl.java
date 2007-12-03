@@ -180,7 +180,7 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 		
 		// just schedule an interrupt
 		// schedule() gets called.
-		Native.wr(1, Const.IO_SWINT);
+		Native.wr(0, Const.IO_SWINT);
 		for (int j=0;j<10;++j) ;
 	}
 
@@ -425,9 +425,13 @@ public static int ts0, ts1, ts2, ts3, ts4;
 		// set moncnt in jvm.asm to zero to enable int's
 		// on monitorexit from now on
 		Native.wrIntMem(0, 5);
-		// ack any 'pending' int and schedule timer in 100 ms
+		// clear all pending interrupts (e.g. timer after reset)
+		Native.wr(1, Const.IO_INTCLEARALL);
+		// schedule timer in 100 ms
 		Native.wr(startTime, Const.IO_TIMER);
-		// enable int
+
+		// enable all interrupts int
+		Native.wr(-1, Const.IO_INTMASK);		
 		Native.wr(1, Const.IO_INT_ENA);
 
 	}
@@ -453,7 +457,7 @@ public static int ts0, ts1, ts2, ts3, ts4;
 
 			// just schedule an interrupt
 			// schedule() gets called.
-			Native.wr(1, Const.IO_SWINT);
+			Native.wr(0, Const.IO_SWINT);
 			for (int j=0;j<10;++j) ;
 			// will arrive befor return statement,
 			// just after monitorexit
