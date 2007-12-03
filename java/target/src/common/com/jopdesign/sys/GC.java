@@ -147,12 +147,12 @@ public class GC {
 		heapStartA = mem_start+handle_cnt*HANDLE_SIZE;
 		heapStartB = heapStartA+semi_size;
 		
-		log("");
-		log("memory size", mem_size);
-		log("handle start ", mem_start);
-		log("heap start (toSpace)", heapStartA);
-		log("fromSpace", heapStartB);
-		log("heap size (bytes)", semi_size*4*2);
+//		log("");
+//		log("memory size", mem_size);
+//		log("handle start ", mem_start);
+//		log("heap start (toSpace)", heapStartA);
+//		log("fromSpace", heapStartB);
+//		log("heap size (bytes)", semi_size*4*2);
 		
 		useA = true;
 		copyPtr = heapStartA;
