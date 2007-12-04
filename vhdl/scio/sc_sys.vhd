@@ -23,7 +23,7 @@
 --	2007-03-17	changed interrupts to records
 --  2007-06-01  changed name from sc_cnt to sc_sys
 --  2007-11-22  added global lock and bootup of CMP
---	2007-12-02	interrupt processing redesign
+--	2007-12-03	prioritized interrupt processing
 --
 
 
@@ -88,7 +88,7 @@ entity sc_sys is
 generic (addr_bits : integer;
 	clk_freq : integer;
 	cpu_id	 : integer;
-	num_io_int : integer := 2);
+	num_io_int : integer := 2);		-- a default value to play with SW interrupts
 port (
 	clk		: in std_logic;
 	reset	: in std_logic;
