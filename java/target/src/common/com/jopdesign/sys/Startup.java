@@ -31,6 +31,12 @@ public class Startup {
 	 */
 	static void boot() {
 		
+		// set moncnt in jvm.asm to zero to enable int's
+		// on monitorexit from now on
+		Native.wrIntMem(0, 5);
+		// disable all interrupts locally
+		Native.wr(0, Const.IO_INTMASK);
+		
 		// only CPU 0 does the initialization stuff
 		if (Native.rdMem(Const.IO_CPU_ID) == 0)	{
 			started = false;
@@ -54,14 +60,8 @@ public class Startup {
 
 		}
 		
-		// set moncnt in jvm.asm to zero to enable int's
-		// on monitorexit from now on
-		Native.wrIntMem(0, 5);
 		// clear all pending interrupts (e.g. timer after reset)
 		Native.wr(1, Const.IO_INTCLEARALL);
-
-		// disable all interrupts locally
-		Native.wr(0, Const.IO_INTMASK);
 		// set global enable
 		Native.wr(1, Const.IO_INT_ENA);
 		
