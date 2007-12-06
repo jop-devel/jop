@@ -7,10 +7,10 @@
 package com.jopdesign.sys;
 
 /**
- * @author martin
+ * @author Martin martin@jopdesign.com
  *
- * To change the template for this generated type comment go to
- * Window&gt;Preferences&gt;Java&gt;Code Generation&gt;Code and Comments
+ * Starup code and very simple JVM interpreter for large <clinit>
+ * methods.
  */
 public class Startup {
 	
@@ -47,7 +47,23 @@ public class Startup {
 			version();
 			started = true;
 			clazzinit();
+
+			for (var=0; var<Const.NUM_INTERRUPTS; ++var) {
+				JVMHelp.addInterruptHandler(var, new DummyHandler());
+			}			
+
 		}
+		
+		// set moncnt in jvm.asm to zero to enable int's
+		// on monitorexit from now on
+		Native.wrIntMem(0, 5);
+		// clear all pending interrupts (e.g. timer after reset)
+		Native.wr(1, Const.IO_INTCLEARALL);
+
+		// disable all interrupts locally
+		Native.wr(0, Const.IO_INTMASK);
+		// set global enable
+		Native.wr(1, Const.IO_INT_ENA);
 		
 		// call main()
 		var = Native.rdMem(1);		// pointer to 'special' pointers
@@ -56,6 +72,13 @@ public class Startup {
 		exit();
 	}
 	
+	static class DummyHandler implements Runnable {
+
+		public void run() {
+			// do nothing
+		}
+		
+	}
 
 	static void msg() {
 

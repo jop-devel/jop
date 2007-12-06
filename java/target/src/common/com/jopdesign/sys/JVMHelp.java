@@ -6,6 +6,12 @@ package com.jopdesign.sys;
 // class JVMHelp {
 public class JVMHelp {
 
+	/**
+	 * The list of the interrupt handlers.
+	 * 
+	 * TODO: How do we handle this for a CMP version of JOP?
+	 */
+	static Runnable ih[] = new Runnable[Const.NUM_INTERRUPTS];
 	//
 	// DON'T change order of first functions!!!
 	//	interrupt gets called from jvm.asm
@@ -18,7 +24,7 @@ public class JVMHelp {
 		if (nr==0) {
 			RtThreadImpl.schedule();			
 		} else {
-			// TODO add handlers
+			ih[nr].run();
 		}
 // Scheduler.schedInt(); ... was user scheduler
 		
@@ -222,6 +228,12 @@ synchronized (o) {
 		Native.wrMem(address, p);
 		Native.wrMem(len, p+1);
 		return Native.toIntArray(p);
+	}
+	
+	public static void addInterruptHandler(int nr, Runnable r) {
+		if (nr>=0 && nr<ih.length) {
+			ih[nr] = r;
+		}
 	}
 
 	static void wrByte(int i) {

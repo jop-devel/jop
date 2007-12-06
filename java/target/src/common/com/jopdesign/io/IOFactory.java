@@ -56,8 +56,8 @@ public class IOFactory {
 		return single;
 	}
 	
-	public void registerInterruptHandler(String happening, Runnable logic) {
-		// do the system specific regitering
+	public void registerInterruptHandler(int nr, Runnable logic) {
+		JVMHelp.addInterruptHandler(nr, logic);
 	}
 	
 	/**

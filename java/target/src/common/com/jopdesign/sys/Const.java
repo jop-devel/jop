@@ -88,7 +88,6 @@ public class Const {
 	 * Depends on scio_*.vhd
 	 *	    => 8 different IO devices
 	 *  	=> each device can contain up to 16 registers
- 
 	 * 
 	 */
 	public static final int IO_BASE = 0xffffff80;
@@ -99,9 +98,15 @@ public class Const {
 	
 	// scio_min.vhd
 	public static final int IO_CNT = IO_BASE+0;
+	/**
+	 * Global interrupt enable
+	 */
 	public static final int IO_INT_ENA = IO_BASE+0;
 	public static final int IO_US_CNT = IO_BASE+1;
 	public static final int IO_TIMER = IO_BASE+1;
+	/**
+	 * Trigger a SW interrupt
+	 */
 	public static final int IO_SWINT = IO_BASE+2;
 	public static final int IO_INTNR = IO_BASE+2;
 	public static final int IO_WD = IO_BASE+3;
@@ -109,8 +114,21 @@ public class Const {
 	public static final int IO_LOCK = IO_BASE+5;
 	public static final int IO_CPU_ID = IO_BASE+6;
 	public static final int IO_SIGNAL = IO_BASE+7;
+	/**
+	 * Interrupt mask for individual interrupts
+	 */
 	public static final int IO_INTMASK = IO_BASE+8;
+	/**
+	 * Clear all pending interrupts
+	 */
 	public static final int IO_INTCLEARALL = IO_BASE+9;
+	
+	/**
+	 * Number of available interrupts depends on the parameter
+	 * in sc_sys.vhd. 3 is the default: one timer interrupt
+	 * and 2 software interrupts.
+	 */
+	public static final int NUM_INTERRUPTS = 3;
 
 	public static final int IO_STATUS = IO_BASE+0x10;
 	public static final int IO_UART = IO_BASE+0x10+1;
