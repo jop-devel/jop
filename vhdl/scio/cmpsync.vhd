@@ -4,6 +4,7 @@
 --	Author: CP
 --
 --  2007-11-22  Global lock synchronization and bootup of CMP
+--  2007-12-07  redesign of global lock synchronization
 
 
 library ieee;
@@ -44,31 +45,22 @@ begin
   	
   		case state is
   			when idle =>
-  				-- the smallest CPU number wins when multiple requests for lock  
+					next_locked_id <= cpu_cnt; -- means no CPU_ID is locked
+				
+  				-- the smallest CPU number wins when multiple lock requests  
   				for i in 0 to cpu_cnt-1 loop
-  					if sync_in_array(i).lock = '1' then 
+  					if sync_in_array(i).lock_req = '1' then 
   						next_state <= locked;
   						next_locked_id <= i;
   						exit;
-  					else
-  						next_state <= idle;
-  						next_locked_id <= cpu_cnt; -- means no CPU_ID is locked
   					end if;
   				end loop;
   				
   			when locked =>
   				-- CPU frees the lock
-  				if sync_in_array(locked_id).lock = '0' then
-  					for i in 0 to cpu_cnt-1 loop
-  						if sync_in_array(i).lock = '1' then
-  							next_state <= locked;
-  							next_locked_id <= i;
-  							exit;
-  						else
-  							next_state <= idle;
-  							next_locked_id <= cpu_cnt;
-  						end if;
-  					end loop;
+  				if sync_in_array(locked_id).lock_req = '0' then
+  					next_state <= idle;
+  					next_locked_id <= cpu_cnt;
   				end if;
   		end case;
   	end process;
@@ -88,30 +80,25 @@ begin
   -- output
   process (next_state, next_locked_id, sync_in_array)
   begin
+
+	for i in 0 to cpu_cnt-1 loop
+		sync_out_array(i).s_out <= sync_in_array(0).s_in;  -- Bootup
+	end loop;
+	
   	case next_state is
   		when idle =>
   			for i in 0 to cpu_cnt-1 loop
-  				sync_out_array(i).s_out <= sync_in_array(0).s_in;  -- Bootup
-  				sync_out_array(i).release <= '0';
+  				sync_out_array(i).halted <= '0';
   			end loop;
   			
   		when locked =>
   			for i in 0 to cpu_cnt-1 loop
   				if (i = next_locked_id) then
-  					sync_out_array(i).s_out <= sync_in_array(0).s_in;  -- Bootup
-  					sync_out_array(i).release <= '0';
+  					sync_out_array(i).halted <= '0';
   				else
-  					-- all CPUs request lock eventhough it is locked
-  					if sync_in_array(i).lock = '1' then 
-  						sync_out_array(i).s_out <= sync_in_array(0).s_in;  -- Bootup
-  						sync_out_array(i).release <= '1';
-  					else
-  						sync_out_array(i).s_out <= sync_in_array(0).s_in;  -- Bootup
-  						sync_out_array(i).release <= '0';
-  					end if;
+  					sync_out_array(i).halted <= '1';
   				end if;
-  			end loop;
-  				
+  			end loop;	
   	end case;
   end process;
 
