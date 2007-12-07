@@ -96,15 +96,15 @@ package jop_types is
 	-- CMP synchronization
 	type sync_in_type is record
 		s_in		: std_logic;
-		lock		: std_logic;
+		lock_req	: std_logic;
 	end record;
 	
 	type sync_out_type is record
 		s_out	: std_logic;
-		release : std_logic;
+		halted  : std_logic;
 	end record;
 	
-	constant NO_SYNC : sync_out_type := (s_out => '0', release => '0');
+	constant NO_SYNC : sync_out_type := (s_out => '0', halted => '0');
 	type sync_in_array_type is array (integer range <>) of sync_in_type;
 	type sync_out_array_type is array (integer range <>) of sync_out_type;
 

@@ -24,7 +24,7 @@
 --  2007-06-01  changed name from sc_cnt to sc_sys
 --  2007-11-22  added global lock and bootup of CMP
 --	2007-12-03	prioritized interrupt processing
---
+--  2007-12-07  global lock redesign
 
 
 --
@@ -134,8 +134,8 @@ architecture rtl of sc_sys is
 
 	signal exc_type			: std_logic_vector(7 downto 0);
 		
-	signal cpu_identity	: std_logic_vector(31 downto 0);
-	signal rdy_cnt_help : std_logic;
+	signal cpu_identity		: std_logic_vector(31 downto 0);
+	signal lock_reqest		: std_logic;
 
 	
 --
@@ -165,7 +165,7 @@ architecture rtl of sc_sys is
 begin
 
 	cpu_identity <= std_logic_vector(to_unsigned(cpu_id,32));
-	rdy_cnt <= "11" when sync_out.release='1' else "00";
+	rdy_cnt <= "11" when (sync_out.halted='1' and lock_reqest='1') else "00";
 	
 --
 --	read cnt values
@@ -190,7 +190,7 @@ begin
 					rd_data(7 downto 0) <= exc_type;
 					rd_data(31 downto 8) <= (others => '0');
 				when "101" =>
-					rd_data(0) <= rdy_cnt_help;
+					rd_data(0) <= lock_reqest;
 					rd_data(31 downto 1) <= (others => '0');				
 				when "110" =>
 					rd_data <= cpu_identity;
@@ -330,8 +330,8 @@ begin
 		timer_cnt <= (others => '0');
 		wd <= '0';
 		sync_in.s_in <= '0';
-		sync_in.lock <= '0';
-		rdy_cnt_help <= '0';
+		sync_in.lock_req <= '0';
+		lock_reqest <= '0';
 
 		exc_type <= (others => '0');
 		exc_pend <= '0';
@@ -379,8 +379,8 @@ begin
 					exc_type <= wr_data(7 downto 0);
 					exc_pend <= '1';
 				when "0101" =>
-					sync_in.lock <= wr_data(0);	
-					rdy_cnt_help <= wr_data(0);			
+					sync_in.lock_req <= wr_data(0);	
+					lock_reqest <= wr_data(0);			
 				when "0110" =>
 					-- nothing, processor id is read only
 				when "0111" =>
