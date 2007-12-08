@@ -13,7 +13,6 @@ public class JVMHelp {
 	 */
 	static Runnable ih[] = new Runnable[Const.NUM_INTERRUPTS];
 	static Runnable dh;
-	static int interruptMask;
 	static class DummyHandler implements Runnable {
 
 		public void run() {
@@ -36,16 +35,14 @@ public class JVMHelp {
 		int nr = Native.rd(Const.IO_INTNR);
 //		wr('!');
 //		wr('0'+nr);
-// RtThread.ts0 = Native.rd(Const.IO_US_CNT);
 		if (nr==0) {
 			RtThreadImpl.schedule();			
 		} else {
 			ih[nr].run();
 		}
-// Scheduler.schedInt(); ... was user scheduler
 		
-		// enable interrupts again only for tests
-		// each interrupt handler shall do it - or we do it here for sure?
+		// enable interrupts again
+		// each interrupt handler can do it - we do it here for sure
 		Native.wr(1, Const.IO_INT_ENA);
 	}
 
@@ -261,17 +258,6 @@ synchronized (o) {
 		if (nr>=0 && nr<ih.length) {
 			ih[nr] = dh;
 		}
-	}
-	/**
-	 * Individual interrupt enable
-	 * @param nr
-	 */
-	public static void enableInterrupt(int nr) {
-		interruptMask |= 1 << nr;
-		Native.wr(interruptMask, Const.IO_INTMASK);
-	}
-	public static void disableInterrupt(int nr) {
-		
 	}
 	
 

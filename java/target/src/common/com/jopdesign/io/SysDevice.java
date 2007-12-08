@@ -1,7 +1,7 @@
 package com.jopdesign.io;
 
 /**
- * Not used - just the paper example
+ * Representation of the system device (sc_sy.vhd)
  * @author martin
  *
  */
@@ -17,12 +17,44 @@ public final class SysDevice extends IODevice {
 	 */
 	public volatile int uscntTimer;
 	/**
-	 * SW interrupt
+	 * SW interrupt on write
+	 * Interrupt number on read
 	 */
 	public volatile int swInterrupt;
 	/**
 	 * Watchdog
 	 */
 	public volatile int wd;
-	// some more...
+	
+	/**
+	 * Exception register
+	 */
+	public volatile int exception;
+	
+	/**
+	 * Global lock
+	 */
+	public volatile int lock;
+	
+	/**
+	 * Processor number
+	 */
+	public volatile int cpuId;
+	
+	/**
+	 * CMP sync???
+	 */
+	public volatile int signal;
+	
+	/**
+	 * Interrupt mask for individual interrupts
+	 * a write only register
+	 */
+	public volatile int intMask;
+	
+	/**
+	 * Clear all pending interrupts
+	 * a write only register
+	 */
+	public volatile int clearInt;
 }

@@ -66,6 +66,36 @@ public class IOFactory {
 	}
 	
 	/**
+	 * Remove the Runnable
+	 * @param nr interrupt number
+	 */
+	public void deregisterInterruptHandler(int nr) {
+		JVMHelp.removeInterruptHandler(nr);
+	}
+	
+	static int interruptMask;
+
+	/**
+	 * Individual interrupt enable
+	 * @param nr interrupt number
+	 */
+	public void enableInterrupt(int nr) {
+		interruptMask |= 1 << nr;
+		sys.intMask = interruptMask;
+	}
+	/**
+	 * Individual interrupt disable
+	 * @param nr interrupt number
+	 */
+	public void disableInterrupt(int nr) {
+		int mask = 1 << nr;
+		mask = ~mask;
+		interruptMask &= mask;
+		sys.intMask = interruptMask;
+	}
+
+	
+	/**
 	 * The main serial port (= System.out)
 	 * @return
 	 */
