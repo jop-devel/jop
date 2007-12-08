@@ -12,6 +12,22 @@ public class JVMHelp {
 	 * TODO: How do we handle this for a CMP version of JOP?
 	 */
 	static Runnable ih[] = new Runnable[Const.NUM_INTERRUPTS];
+	static Runnable dh;
+	static int interruptMask;
+	static class DummyHandler implements Runnable {
+
+		public void run() {
+			// do nothing
+		}
+		
+	}
+	static {
+		dh = new DummyHandler();
+		for (int var=0; var<Const.NUM_INTERRUPTS; ++var) {
+			JVMHelp.addInterruptHandler(var, dh);
+		}					
+	}
+
 	//
 	// DON'T change order of first functions!!!
 	//	interrupt gets called from jvm.asm
@@ -29,11 +45,8 @@ public class JVMHelp {
 // Scheduler.schedInt(); ... was user scheduler
 		
 		// enable interrupts again only for tests
-		// each interrupt handler shall do it - or do it here for sure?
+		// each interrupt handler shall do it - or we do it here for sure?
 		Native.wr(1, Const.IO_INT_ENA);
-
-		
-
 	}
 
 
@@ -230,11 +243,37 @@ synchronized (o) {
 		return Native.toIntArray(p);
 	}
 	
+	/**
+	 * Add a Runnable as a first level interrupt handler
+	 * @param nr interrupt number
+	 * @param r Runnable the represents the interrupt handler
+	 */
 	public static void addInterruptHandler(int nr, Runnable r) {
 		if (nr>=0 && nr<ih.length) {
 			ih[nr] = r;
 		}
 	}
+	/**
+	 * Remove the interrupt handler
+	 * @param nr interrupt number
+	 */
+	public static void removeInterruptHandler(int nr) {
+		if (nr>=0 && nr<ih.length) {
+			ih[nr] = dh;
+		}
+	}
+	/**
+	 * Individual interrupt enable
+	 * @param nr
+	 */
+	public static void enableInterrupt(int nr) {
+		interruptMask |= 1 << nr;
+		Native.wr(interruptMask, Const.IO_INTMASK);
+	}
+	public static void disableInterrupt(int nr) {
+		
+	}
+	
 
 	static void wrByte(int i) {
 

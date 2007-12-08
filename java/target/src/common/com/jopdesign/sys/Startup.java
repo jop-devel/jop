@@ -54,10 +54,6 @@ public class Startup {
 			started = true;
 			clazzinit();
 
-			for (var=0; var<Const.NUM_INTERRUPTS; ++var) {
-				JVMHelp.addInterruptHandler(var, new DummyHandler());
-			}			
-
 		}
 		
 		// clear all pending interrupts (e.g. timer after reset)
@@ -72,13 +68,6 @@ public class Startup {
 		exit();
 	}
 	
-	static class DummyHandler implements Runnable {
-
-		public void run() {
-			// do nothing
-		}
-		
-	}
 
 	static void msg() {
 
