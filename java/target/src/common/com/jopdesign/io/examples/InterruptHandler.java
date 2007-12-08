@@ -18,13 +18,14 @@ public class InterruptHandler implements Runnable {
 		
 		// should be a function in some system class to
 		// set individual enables and remember the mask
-		Native.wr(0x02, Const.IO_INTMASK);
+		Native.wr(-1, Const.IO_INTMASK);
 
 		for (int i=0; i<20; ++i) {
 			Timer.wd();
 			int t = Timer.getTimeoutMs(200);
 			while (!Timer.timeout(t));
 			Native.wr(1, Const.IO_SWINT);
+			Native.wr(2, Const.IO_SWINT);
 		}
 	}
 

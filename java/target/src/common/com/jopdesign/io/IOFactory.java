@@ -56,6 +56,11 @@ public class IOFactory {
 		return single;
 	}
 	
+	/**
+	 * Add a Runnable as a first level interrupt handler
+	 * @param nr interrupt number
+	 * @param r Runnable the represents the interrupt handler
+	 */
 	public void registerInterruptHandler(int nr, Runnable logic) {
 		JVMHelp.addInterruptHandler(nr, logic);
 	}
