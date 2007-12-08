@@ -12,15 +12,18 @@ public final class SysDevice extends IODevice {
 	 * counter and interrupt
 	 */
 	public volatile int cntInt;
+	
 	/**
 	 * us counter and timer
 	 */
 	public volatile int uscntTimer;
+	
 	/**
 	 * SW interrupt on write
 	 * Interrupt number on read
 	 */
 	public volatile int swInterrupt;
+	
 	/**
 	 * Watchdog
 	 */
