@@ -1,10 +1,7 @@
-package com.jopdesign.io;
+package com.jopdesign.io.paper;
 
-/**
- * Not used - just the paper example
- * @author martin
- *
- */
+import com.jopdesign.io.SerialPort;
+
 public class IOMinFactory {
 	
 	private SysDevice sys;

@@ -1,10 +1,4 @@
-package com.jopdesign.io;
-
-/**
- * Not used - just the paper example
- * @author martin
- *
- */
+package com.jopdesign.io.paper;
 
 public final class ParallelPort extends IODevice {
 	

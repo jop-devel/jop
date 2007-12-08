@@ -1,9 +1,6 @@
-package com.jopdesign.io;
-/**
- * Not used - just the paper example
- * @author martin
- *
- */
+package com.jopdesign.io.paper;
+
+import com.jopdesign.io.Ethernet;
 
 public class IOTALFactory extends IOMinFactory {
 	
