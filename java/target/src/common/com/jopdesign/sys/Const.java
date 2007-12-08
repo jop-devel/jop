@@ -21,11 +21,11 @@ public class Const {
 	 */
 	static final int CLASS_HEADR = 5;
 	/**
-	 * GC_INFO field relativ to start of MTAB.
+	 * GC_INFO field relative to start of MTAB.
 	 */
 	static final int MTAB2GC_INFO = -3;
 	/**
-	 * Pointer to super class relativ to class struct
+	 * Pointer to super class relative to class struct
 	 */
 	static final int CLASS_SUPER = 3;
 	
