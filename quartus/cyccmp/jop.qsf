@@ -28,7 +28,7 @@
 set_global_assignment -name SMART_RECOMPILE OFF
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION 4.0
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "02:05:59  APRIL 04, 2004"
-set_global_assignment -name LAST_QUARTUS_VERSION 7.1
+set_global_assignment -name LAST_QUARTUS_VERSION 7.2
 
 # Pin & Location Assignments
 # ==========================
@@ -477,6 +477,10 @@ set_global_assignment -name TCO_REQUIREMENT "10 ns"
 # ---------------
 
 
+
+set_global_assignment -name PARTITION_COLOR 2147039 -section_id Top
+set_global_assignment -name LL_ROOT_REGION ON -section_id "Root Region"
+set_global_assignment -name LL_MEMBER_STATE LOCKED -section_id "Root Region"
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_60.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/jop_types.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_pack.vhd
@@ -485,7 +489,7 @@ set_global_assignment -name VHDL_FILE ../../vhdl/scio/fifo.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_sys.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_uart.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_usb.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/scio/scio_cmp.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/scio_dspiomin.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/cmpsync.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/offtbl.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/jtbl.vhd
