@@ -58,13 +58,29 @@ public class JOPDebugChannel
   private Socket socket;
   
   private boolean connected = false;
-
+  
+  /**
+   * Connect this channel to the debug client (inside JOP),
+   * which will have its own communication channel
+   * on the other side.
+   * 
+   * @throws IOException
+   */
   public void connect() throws IOException
   {
     connect(NetworkConstants.DEFAULT_HOST,
       NetworkConstants.DEFAULT_JOP_SERVER_PORT_NUMBER);
   }
   
+  /**
+   * Connect this channel to the debug client (inside JOP),
+   * which will have its own communication channel
+   * on the other side.
+   * 
+   * @param host
+   * @param port
+   * @throws IOException
+   */
   public void connect(String host, int port) throws IOException
   {
     if(isConnected())
@@ -96,6 +112,11 @@ public class JOPDebugChannel
     output.write(JDWPConstants.JDWP_HANDSHAKE_BYTES);
   }
   
+  /**
+   * Close the communication channel.
+   * 
+   * @throws IOException
+   */
   public void close() throws IOException
   {
     checkConnection();
@@ -152,6 +173,13 @@ public class JOPDebugChannel
     }
   }
   
+  /**
+   * Send the "exit" command. 
+   * Request JOP to stop execution by calling "System.exit();".
+   * 
+   * @param exitCode the exit code
+   * @throws IOException thrown if the connection is not open.
+   */
   public void sendExitCommand(int exitCode) throws IOException
   {
     checkConnection();
@@ -166,9 +194,20 @@ public class JOPDebugChannel
     input.readInt();
   }
   
+  /**
+   * Request the Java machine to suspend execution and 
+   * start listening for JDWP requests.
+   * 
+   * This method should be called before any other JDWP
+   * request can be sent to the Java machine.
+   * 
+   * @throws IOException
+   */
   public void suspendJavaMachine() throws IOException
   {
     checkConnection();
+    
+    // TODO: check the internal machine state before sending this command.
     //------------------------------------------------------------
     // send "suspend" command
     output.writeByte(1);
@@ -177,6 +216,16 @@ public class JOPDebugChannel
     input.readInt();    
   }
   
+  /**
+   * Send a request to stop listening for JDWP requests and 
+   * resume execution. It's a "resume JVM" command.
+   * 
+   * This command asks JOP to continue running, until a new
+   * "suspend" command is sent, a breakpoint is hit or 
+   * execution is done: whatever happens first.
+   *  
+   * @throws IOException
+   */
   public void resumeJavaMachine() throws IOException
   {
     checkConnection();
@@ -188,6 +237,16 @@ public class JOPDebugChannel
     input.readInt();    
   }
   
+  /**
+   * Send a request to resume execution of one specific Thread.  
+   * 
+   * This command asks JOP to allow one specific Thread to be
+   * scheduled again. This has the effect to allow it 
+   * to continue, until a breakpoint it hit, execution
+   * finishes or JOP is suspended, whatever happens first.
+   * 
+   * @throws IOException
+   */
   public void sendResumeCommand() throws IOException
   {
     checkConnection();
@@ -199,6 +258,13 @@ public class JOPDebugChannel
     input.readInt();
   }
   
+  /**
+   * Send a "suspend" request toward one specific Thread.
+   * If accepted, the Thread will not be scheduled until
+   * a new "ResumeCommand" is sent, allowing it to continue.
+   * 
+   * @throws IOException
+   */
   public void suspendThread() throws IOException
   {
     checkConnection();
@@ -210,6 +276,12 @@ public class JOPDebugChannel
     input.readInt();    
   }
   
+  /**
+   * Query the current list of stack frames for a given Thread.
+   * 
+   * @return
+   * @throws IOException
+   */
   public FrameList getStackFrameList() throws IOException
   {
     int framePointer;
@@ -252,6 +324,12 @@ public class JOPDebugChannel
     return list;
   }
   
+  /**
+   * Query the current stack depth for a given Thread.
+   * 
+   * @return
+   * @throws IOException
+   */
   public int getStackDepth() throws IOException
   {
     checkConnection();
@@ -268,6 +346,13 @@ public class JOPDebugChannel
     return received;
   }
   
+  /**
+   * Print information about all the stack frames currently 
+   * on the call stack.
+   * 
+   * @return
+   * @throws IOException
+   */
   public int printStackFrames() throws IOException
   {
     checkConnection();
@@ -284,6 +369,15 @@ public class JOPDebugChannel
     return received;
   }
   
+  /**
+   * Print information about one specific stack frame.
+   * The frame for the "main" method has index 0, the next
+   * one has index 1 and so on. 
+   * 
+   * @param frameIndex
+   * @return
+   * @throws IOException
+   */
   public int printStackFrame(int frameIndex) throws IOException
   {
     checkConnection();
@@ -301,6 +395,17 @@ public class JOPDebugChannel
     return received;
   }
   
+  /**
+   * Query JOP for information on the value of one local variable.
+   * All frame and variable indexes start with zero. This can return
+   * information about the "this" value, local variables and 
+   * parameters.
+   * 
+   * @param frameIndex
+   * @param variableIndex
+   * @return
+   * @throws IOException
+   */
   public int getLocalVariableValue(int frameIndex, int variableIndex) throws IOException
   {
     checkConnection();
@@ -325,9 +430,16 @@ public class JOPDebugChannel
     return received;
   }
   
-  // read a chunk of memory and return it.
-  // size must be a multiple of 4 (each word is 4 bytes).
-  // if it's not, it will be increased to the next multiple of four.
+  /**
+   * Read a chunk of memory and return it.
+   * size must be a multiple of 4 (each word is 4 bytes).
+   * if it's not, it will be increased to the next multiple of four.
+   * 
+   * @param address
+   * @param size
+   * @return
+   * @throws IOException
+   */
   public byte[] readMemory(int address, int size) throws IOException
   {
     int numWords = size / 4;
@@ -360,6 +472,16 @@ public class JOPDebugChannel
     return data;
   }
   
+  /**
+   * Ask JOP to set the value of one local variable.
+   * All frame and variable indexes start with zero. This can set
+   * the "this" value, local variables and parameters.
+   * 
+   * @param frameIndex
+   * @param variableIndex
+   * @param value
+   * @throws IOException
+   */
   public void setLocalVariableValue(int frameIndex, int variableIndex,
       int value) throws IOException
   {
@@ -415,7 +537,7 @@ public class JOPDebugChannel
     return received;
   }
   
-  /*
+  /**
    * Request the machine to invoke a static method.
    * 
    * The static method is supposed to receive one parameter, which is
