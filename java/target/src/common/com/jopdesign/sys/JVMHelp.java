@@ -13,13 +13,6 @@ public class JVMHelp {
 	 */
 	static Runnable ih[] = new Runnable[Const.NUM_INTERRUPTS];
 	static Runnable dh;
-	static class DummyHandler implements Runnable {
-
-		public void run() {
-			// do nothing
-		}
-		
-	}
 	static {
 		dh = new DummyHandler();
 		for (int var=0; var<Const.NUM_INTERRUPTS; ++var) {
@@ -334,4 +327,12 @@ synchronized (o) {
 		wr(' ');
 	}
 
+}
+
+class DummyHandler implements Runnable {
+
+	public void run() {
+		// do nothing
+	}
+	
 }
