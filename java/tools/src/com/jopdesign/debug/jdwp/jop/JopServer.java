@@ -27,7 +27,6 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Arrays;
 
 import com.jopdesign.debug.jdwp.constants.JDWPConstants;
 import com.jopdesign.debug.jdwp.constants.NetworkConstants;
