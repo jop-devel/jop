@@ -37,7 +37,7 @@ public class Const {
 	 * <p>
 	 * Change also (dependent on):<ul>
 	 * 	<li>RAM_LEN in Jopa.java</li>
-	 * 	<li>addr_width in core.vhd - should be a global constant</li>
+	 * 	<li>ram_width in jop_config_xxx.vhd</li>
 	 * </ul>
 	 * <p>
 	 * Used in @link RtThreadImpl
