@@ -343,6 +343,7 @@ public class TestJopDebugKernel
    */
   private static void test5_checkJopSimIO()
   {
+    EmbeddedOutputStream stream = new EmbeddedOutputStream(System.out);
     try
     {
       int test = System.in.read();
@@ -352,10 +353,10 @@ public class TestJopDebugKernel
       System.out.println(test);
       
 //      sendPacketPrintByte((byte)test);
-      EmbeddedOutputStream.writeInt((byte)test);
+      stream.writeInt((byte)test);
       
       test = 0x0f0f0f0f;
-      EmbeddedOutputStream.writeInt(test);
+      stream.writeInt(test);
     }
     catch (IOException exception)
     {
