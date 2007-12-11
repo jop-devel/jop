@@ -59,19 +59,27 @@ import java.io.PrintStream;
  */
 public class EmbeddedOutputStream extends OutputStream
 {
-  private PrintStream printStream;
-  public static final String TOKEN = "JDWP_DATA_PREFIX:";
+  public static final String DEFAULT_TOKEN = "JDWP_DATA_PREFIX:";
   public static final byte[] hexTable = {'0', '1', '2', '3', '4', '5', '6', 
   '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
   
+  private PrintStream printStream;
+  private String token;
+  
   public EmbeddedOutputStream (OutputStream outputStream)
   {
-    printStream = new PrintStream(outputStream);
+    this(new PrintStream(outputStream));
   }
 
   public EmbeddedOutputStream (PrintStream outputStream)
   {
+    this(outputStream, DEFAULT_TOKEN);
+  }
+  
+  public EmbeddedOutputStream (PrintStream outputStream, String token)
+  {
     printStream = outputStream;
+    this.token = token;
   }
   
   /* (non-Javadoc)
@@ -85,14 +93,14 @@ public class EmbeddedOutputStream extends OutputStream
     // If this is done, the inserted text will be interpreted as
     // data fields on the other side, which will break the receiver.
     
-    printStream.print(TOKEN);
+    printStream.print(token);
     printStream.print("0002");
     printHex((byte)data, printStream);
     
     //------------------------------------------------------------
   }
   
-  public static void testEmbeddedOutputStreamSendBytes()
+  public void testEmbeddedOutputStreamSendBytes()
     {
       int index;
       int num;
@@ -108,13 +116,13 @@ public class EmbeddedOutputStream extends OutputStream
   //    for(index = 0; index < num; index++)
   //    {
   //      printHex((byte) index);
-  //      System.out.print(" ");
+  //      printStream.print(" ");
   //    }
   //    printHex((byte)128);
   //    testShiftRight();
     }
 
-  public static void testEmbeddedOutputStream()
+  public void testEmbeddedOutputStream()
   {
     int index;
     int num;
@@ -131,7 +139,7 @@ public class EmbeddedOutputStream extends OutputStream
    * 
    * @param data
    */
-  public static void writeByte(byte data)
+  public void writeByte(byte data)
   {
     //------------------------------------------------------------
     // WARNING: don't print ANYTHING to the standard output between 
@@ -139,68 +147,52 @@ public class EmbeddedOutputStream extends OutputStream
     // If this is done, the inserted text will be interpreted as
     // data fields on the other side, which will break the receiver.
     
-    System.out.print(TOKEN);
-    System.out.print("0002");
+    printStream.print(token);
+    printStream.print("0002");
     printHex(data);
     
     //------------------------------------------------------------
   }
 
-  public static void writeInt(int data)
-    {
-  //    System.err.println("writeInt(int data): " + data);
-  //    buffer.setLength(0);
-  //    buffer = new StringBuffer();
-  //    System.err.println("Buffer ok.");
-      
-      //------------------------------------------------------------
-      // WARNING: don't print ANYTHING to the standard output between 
-      // the three calls below or the protocol will be broken.
-  
-      System.out.print(TOKEN);
-  //    System.err.println("Token delivered.");
-      
-      System.out.print("0008");
-  //    System.err.println("Size delivered.");
-      
-      printIntHex(data);
-  //    System.err.println("Data delivered.");
-      //------------------------------------------------------------
-      
-  //    System.err.println(buffer);
-  //    System.err.println("Finished printing data.");
-    }
-
-  public static void printIntHex(int data)
-    {
-      // WARNING this method is used to send embedded data. 
-      // Don't print debug information inside it.
-  //    buffer.append("public static void printHex(int data)");
-  //    buffer.append("((data >> 24)& 0xff): ");
-  //    buffer.append((byte)((data >> 24)& 0xff));
-  //    buffer.append("  ");
-  //    
-  //    buffer.append("(byte)((data >> 16)& 0xff): ");
-  //    buffer.append((byte)((data >> 16)& 0xff));
-  //    buffer.append("  ");
-  //    
-  //    buffer.append("(byte)((data >> 8)& 0xff): ");
-  //    buffer.append((byte)((data >> 8)& 0xff));
-  //    buffer.append("  ");
-  //    
-  //    buffer.append("(byte)(data & 0xff): ");
-  //    buffer.append((byte)(data & 0xff));
-  //    buffer.append("  ");
-      
-      printHex((byte)((data >> 24)& 0xff));
-      printHex((byte)((data >> 16)& 0xff));
-      printHex((byte)((data >> 8)& 0xff));
-      printHex((byte)(data & 0xff));
-    }
-
-  public static void printHex(byte data)
+  public void writeInt(int data)
   {
-    printHex(data, System.out);
+    //------------------------------------------------------------
+    // WARNING: don't print ANYTHING to the standard output between 
+    // the three calls below or the protocol will be broken.
+  
+    printStream.print(token);
+    // System.err.println("Token delivered.");
+      
+    printStream.print("0008");
+    //  System.err.println("Size delivered.");
+      
+    printIntHex(data);
+    // System.err.println("Data delivered.");
+    //------------------------------------------------------------
+  }
+
+  public void printIntHex(int data)
+  {
+    // WARNING this method is used to send embedded data. 
+    // Don't print debug information inside it.
+    
+    printHex((byte)((data >> 24)& 0xff));
+    printHex((byte)((data >> 16)& 0xff));
+    printHex((byte)((data >> 8)& 0xff));
+    printHex((byte)(data & 0xff));
+  }
+
+  public static void printIntHex(int data, PrintStream stream)
+  {
+    printHex((byte)((data >> 24)& 0xff), stream);
+    printHex((byte)((data >> 16)& 0xff), stream);
+    printHex((byte)((data >> 8)& 0xff), stream);
+    printHex((byte)(data & 0xff), stream);    
+  }
+  
+  public void printHex(byte data)
+  {
+    printHex(data, printStream);
   }
 
   public static void printHex(byte data, PrintStream printStream)
@@ -226,7 +218,7 @@ public class EmbeddedOutputStream extends OutputStream
 //    
 //    //TODO: check if the length is greater than 9999 and handle it
 //    
-//    printStream.print(TOKEN);
+//    printStream.print(token);
 //    if(len < 1000)
 //    {
 //      printStream.print("0");
