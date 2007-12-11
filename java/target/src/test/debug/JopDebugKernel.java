@@ -30,6 +30,7 @@ import java.io.OutputStream;
 import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 
+import debug.io.DebugKernelChannel;
 import debug.io.EmbeddedOutputStream;
 
 /**
@@ -71,6 +72,8 @@ public final class JopDebugKernel
   
   private static int breakpointMethodPointer = 0;
   
+  private static DebugKernelChannel debugChannel;
+  
 //  the code below does not work. Why?
 //  static
 //  {
@@ -108,6 +111,13 @@ public final class JopDebugKernel
     {
       initialize();
     }
+    
+    // notify the debug server that a breakpoint was reached.
+    // Use the current frame pointer because this is the frame 
+    // which holds data related to the previous method call. 
+//    int framePointer = getCurrentFramePointer();
+//    sendBreakpointEvent(framePointer);
+    
     int commandset, command;
     
     System.out.print("Breakpoint! Current stack depth: ");
@@ -152,7 +162,7 @@ public final class JopDebugKernel
 //          while(size > 0)
 //          {
 //            value = Native.rdMem(address);
-//            outputStream.writeInt(value);
+//            writeInt(value);
 //            size --;
 //            address ++;
 //          }
@@ -303,6 +313,63 @@ public final class JopDebugKernel
     
     System.out.println("Returning from \"breakpoint\".");
   }
+  
+  /**
+   * Send a breakpoint event to the debug server.
+   * 
+   * By using the frame pointer as unique reference, it's
+   * possible to send arbitrary breakpoint events related
+   * to any frames present in the call stack. That's good.
+   */
+  private static void sendBreakpointEvent(int framePointer)
+  {
+    int typeTag, classId, methodId, methodLocation; 
+    
+    // calculate all fields needed to be sent through the channel
+    typeTag = getTypeTag(framePointer);
+    classId = getClassReferenceFromFrame(framePointer);
+    methodId = getMPFromFrame(framePointer);
+    methodLocation = getPCFromFrame(framePointer);
+    
+    // request the channel to send a message to the debug server.
+    try
+    {
+      debugChannel.sendBreakpointEvent(typeTag, classId, methodId, methodLocation);
+    }
+    catch (IOException exception)
+    {
+      System.out.println("Failure: " + exception.getMessage());
+      exception.printStackTrace();
+    }
+  }
+  
+  /**
+   * @param framePointer
+   * @return
+   */
+  private static int getTypeTag(int framePointer)
+  {
+    // for now, just return 1 (CLASS)
+    return 1;
+  }
+  
+  /**
+   * @param framePointer
+   * @return
+   */
+  private static int getClassReferenceFromFrame(int framePointer)
+  {
+    int cp; 
+    
+    // get the pointer to the constant pool
+    cp = getCPFromFrame(framePointer);
+    
+    //go back one word. Now it points to the class reference!
+    cp --;
+    
+    // return a pointer to the class structure.
+    return Native.rdMem(cp);
+  }
 
   /**
    * @throws IOException
@@ -316,7 +383,7 @@ public final class JopDebugKernel
     System.out.print(" Stack depth of caller method: " );
     System.out.println(count);
     
-    outputStream.writeInt(count);
+    writeInt(count);
   }
   
   /**
@@ -332,7 +399,7 @@ public final class JopDebugKernel
     // just for development
     //TestJopDebugKernel.dumpCallStack();
     
-    outputStream.writeInt(count);
+    writeInt(count);
   }
   
   private static void handlePrintStackFrameCommand() throws IOException
@@ -363,7 +430,7 @@ public final class JopDebugKernel
     }
     
     //  Will return the frame index just to sync
-    outputStream.writeInt(frameIndex);
+    writeInt(frameIndex);
   }
   
   /**
@@ -383,19 +450,10 @@ public final class JopDebugKernel
     int count = getStackDepth();
     int framePointer = getCurrentFramePointer();
     
-//    if(startFrame > -1)
-//    {
-//      for(int i = 0; i < (count - startFrame); i++)
-//      {
-//        pointer = getNextFramePointer(pointer);
-//        count --;
-//      }
-//    }
-//    count = 1;
     System.out.print(" Stack depth:");
     System.out.println(count);
     
-    outputStream.writeInt(count);
+    writeInt(count);
     
     boolean shouldContinue = true;
     while(shouldContinue)
@@ -404,18 +462,18 @@ public final class JopDebugKernel
       
 //      System.out.print("  Program counter: ");
 //      System.out.println(programCounter);
-      outputStream.writeInt(programCounter);
+      writeInt(programCounter);
       int methodPointer = getMPFromFrame(framePointer);
       
 //      System.out.print("  Method pointer: ");
 //      System.out.println(methodPointer);
-      outputStream.writeInt(methodPointer);
+      writeInt(methodPointer);
       
       framePointer = getNextFramePointer(framePointer);
       
 //      System.out.print("  Frame Pointer: ");
 //      System.out.println(framePointer);
-      outputStream.writeInt(framePointer);
+      writeInt(framePointer);
       
 //      System.out.println(" Sent frame.");
 //      System.out.println();
@@ -437,7 +495,7 @@ public final class JopDebugKernel
   private static void handleResumeExecutionCommand() throws IOException
   {
     // acknowledge the command and resume execution.
-    outputStream.writeInt(0);
+    writeInt(0);
     
     System.out.println(" Received \"Resume (11, 3)\" command.");
     
@@ -496,9 +554,9 @@ public final class JopDebugKernel
     
     // return the argument just to sync with the caller and inform that
     // execution has finished.
-    outputStream.writeInt(argument);
+    writeInt(argument);
   }
-
+  
   /**
    * Handle the "Exit" command.
    * 
@@ -507,12 +565,23 @@ public final class JopDebugKernel
   private static void handleExitCommmand() throws IOException
   {
     // acknowledge the command and exit.
-    outputStream.writeInt(0);
+    writeInt(0);
     
     System.out.println(" Received \"Exit (10)\" command.");
     System.out.println(" Shutting down...     ");
     
     System.exit(0);
+  }
+  
+  /**
+   * Write one int value to the output stream.
+   * 
+   * @param value
+   * @throws IOException
+   */
+  private static void writeInt(int value) throws IOException
+  {
+    outputStream.writeInt(value);
   }
   
   /**
@@ -529,6 +598,21 @@ public final class JopDebugKernel
     EmbeddedOutputStream embeddedStream = new EmbeddedOutputStream(System.out);
     setDebugStreams(System.in, embeddedStream);
     
+    // initialize the debug channel
+    debugChannel = new DebugKernelChannel(inputStream, outputStream);
+    
+    // send a VM Start event
+//    try
+//    {
+//      // TODO uncomment to send this event!
+//      debugChannel.sendVMStartEvent();
+//    }
+//    catch (IOException exception)
+//    {
+//      System.out.println("Failure: " + exception.getMessage());
+//      exception.printStackTrace();
+//    }
+    
     initialized = true;
   }
   
@@ -543,7 +627,6 @@ public final class JopDebugKernel
   {
     inputStream = new DataInputStream(in);
     outputStream = new DataOutputStream(out);
-
   }
   
   private static int getCPLocalsArgsFromMP(int mp)
@@ -967,7 +1050,7 @@ public final class JopDebugKernel
     // send an ack back to keep it in sync. This also inform which instruction
     // was overwritten, so the debugger can undo it later. 
     
-    outputStream.writeInt(result);
+    writeInt(result);
     
     if(result != INVALID_INSTRUCTION)
     {
@@ -1010,7 +1093,7 @@ public final class JopDebugKernel
     // send an ack back to keep it in sync. This also inform which instruction
     // was overwritten, so the debugger can undo it later. 
     
-    outputStream.writeInt(result);
+    writeInt(result);
     
     if(result != INVALID_INSTRUCTION)
     {
@@ -1034,18 +1117,15 @@ public final class JopDebugKernel
     System.out.print(" Frame index: " );
     System.out.print(frameIndex);
     
-    int count = getStackDepth();
-    int pointer = getCurrentFramePointer();
-    for(int i = 0; i < (count - (frameIndex + 1)); i++)
-    {
-      pointer = getNextFramePointer(pointer);
-    }
+    int pointer;
+    
+    pointer = getFramePointerAtIndex(frameIndex + 1);
     pointer = getMPFromFrame(pointer);
     
     System.out.print("  Method pointer: ");
     System.out.println(pointer);
     
-    outputStream.writeInt(pointer);
+    writeInt(pointer);
   }
   
   /**
@@ -1073,7 +1153,7 @@ public final class JopDebugKernel
     System.out.print(" Pointer: ");
     System.out.println(pointer);
     
-    outputStream.writeInt(value);
+    writeInt(value);
   }
 
   /**
@@ -1126,7 +1206,7 @@ public final class JopDebugKernel
     System.out.println(pointer);
     
 //    writeInt(4);
-    outputStream.writeInt(value);
+    writeInt(value);
   }
   
   /**
@@ -1149,7 +1229,7 @@ public final class JopDebugKernel
     System.out.print(" Number of local variables: " );
     System.out.println(numLocals);
     
-    outputStream.writeInt(numLocals);
+    writeInt(numLocals);
   }
   
   /**
@@ -1228,10 +1308,10 @@ public final class JopDebugKernel
     // check if the address is inside the method body.
     if(instructionOffset >= 0 && instructionOffset < methodSize)
     {
-      instruction = readByte(startAddress, instructionOffset);
+      instruction = readBytecode(startAddress, instructionOffset);
       System.out.println("Old instruction: " + instruction);
       
-      writeByte(newInstruction, startAddress, instructionOffset);
+      writeBytecode(newInstruction, startAddress, instructionOffset);
 
       
 //      instructionAddress = startAddress + instructionOffset;
@@ -1265,7 +1345,7 @@ public final class JopDebugKernel
    * @param instructionOffset
    * @return
    */
-  private static int readByte(int startAddress, int instructionOffset)
+  private static int readBytecode(int startAddress, int instructionOffset)
   {
     int word, index;
     int data;
@@ -1337,7 +1417,7 @@ public final class JopDebugKernel
    * @param startAddress
    * @param instructionOffset
    */
-  private static void writeByte(int newInstruction, int startAddress, int instructionOffset)
+  private static void writeBytecode(int newInstruction, int startAddress, int instructionOffset)
   {
     int word, index;
     int data;
@@ -1403,7 +1483,7 @@ public final class JopDebugKernel
   
   private static void printIntHex(int value)
   {
-    EmbeddedOutputStream.printIntHex(value);
+    EmbeddedOutputStream.printIntHex(value, System.out);
   }
   
   private static void testReadInstruction(int instructionAddress)
@@ -1512,10 +1592,10 @@ public final class JopDebugKernel
     System.out.print("Method structure:  ");
     
     data = Native.rdMem(methodPointer);
-    EmbeddedOutputStream.printIntHex(data);
+    EmbeddedOutputStream.printIntHex(data, System.out);
     
     data = Native.rdMem(methodPointer + 1);
-    EmbeddedOutputStream.printIntHex(data);
+    EmbeddedOutputStream.printIntHex(data, System.out);
     
     System.out.println();
     
@@ -1567,7 +1647,7 @@ public final class JopDebugKernel
     for(index = 0; index < size; index++)
     {
       data = Native.rdMem(start + index);
-      EmbeddedOutputStream.printIntHex(data);
+      EmbeddedOutputStream.printIntHex(data, System.out);
       System.out.print(" ");
 //      if((index & 0x07) == 0 && (index > 0))
       if(((index + 1)% 0x08) == 0)
