@@ -25,6 +25,8 @@ import java.io.IOException;
 
 import com.jopdesign.sys.Native;
 
+import debug.io.EmbeddedOutputStream;
+
 public class TestJopDebugKernel
 {
   public static void test1()

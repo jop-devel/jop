@@ -30,6 +30,8 @@ import java.io.OutputStream;
 import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 
+import debug.io.EmbeddedOutputStream;
+
 /**
  * JopDebugKernel.java
  * 
