@@ -21,8 +21,6 @@
 
 package com.jopdesign.debug.jdwp.io;
 
-import java.io.IOException;
-import java.io.OutputStream;
 import java.io.PrintStream;
 
 import com.jopdesign.debug.jdwp.jop.CharQueue;
@@ -81,38 +79,48 @@ public class FilterPrintStream extends PrintStream
   private PrintStream firstStream;
   private PrintStream secondStream;
   
+  public static final String DEFAULT_TOKEN = "JDWP_DATA_PREFIX:";
+  
   // the header token. Fixed by now.
-  public static final String TOKEN = "JDWP_DATA_PREFIX:";
-  private static final char[] TOKEN_CHARS = TOKEN.toCharArray();
-  private static final byte[] TOKEN_BYTES= TOKEN.getBytes();
+  private String token;
+  private char[] TOKEN_CHARS;
   
   // the size of the "length" field.
   public static final int SIZE_OF_LENGTH_FIELD = 4;
   
-  private static final int BUFFER_SIZE = TOKEN.length() + SIZE_OF_LENGTH_FIELD;
-//  private char[] buffer;
   private int bytesToPrint;
   
   private boolean useFirstStream = true;
   private CharQueue queue;
   
   /**
+   * The default constructor.
    * 
    * @param first
    * @param second
    */
   public FilterPrintStream(PrintStream first, PrintStream second)
   {
+    this(first, second, DEFAULT_TOKEN);
+  }
+  
+  public FilterPrintStream(PrintStream first, PrintStream second, String ID)
+  {
     super(first);
     
-//    buffer = new char[BUFFER_SIZE];
+    int bufferSize;
+    
+    this.token = ID;
+    TOKEN_CHARS = token.toCharArray();
+    bufferSize = token.length() + SIZE_OF_LENGTH_FIELD;
+    
     bytesToPrint = 0;
     useFirstStream = true;
     
     firstStream = first;
     secondStream = second;
     
-    queue = new CharQueue(BUFFER_SIZE);
+    queue = new CharQueue(bufferSize);
   }
   
   /**
@@ -263,15 +271,15 @@ public class FilterPrintStream extends PrintStream
     return length;
   }
     
-  public static void sendPacketPrintByte(byte data, OutputStream outputStream) throws IOException
-  {
-    outputStream.write(TOKEN_BYTES);
-    outputStream.write(0);
-    outputStream.write(1);
-    
-    outputStream.write(data);
-  }
-  
+//  public void sendPacketPrintByte(byte data, OutputStream outputStream) throws IOException
+//  {
+//    outputStream.write(TOKEN_BYTES);
+//    outputStream.write(0);
+//    outputStream.write(1);
+//    
+//    outputStream.write(data);
+//  }
+//  
   public void flush()
   {
     firstStream.flush();
