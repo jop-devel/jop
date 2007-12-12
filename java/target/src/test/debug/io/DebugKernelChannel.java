@@ -164,11 +164,11 @@ public final class DebugKernelChannel
   }
   
   /**
-   * Write the default ThreadId (currently 0).
+   * Write the default ThreadId (currently 1).
    */
   private void writeDefaultThreadId()
   {
-    writeThreadId(0);
+    writeThreadId(1);
   }
   
   /**
@@ -211,7 +211,7 @@ public final class DebugKernelChannel
    */
   private void writeTypeTag(int typeTag)
   {
-    outputPacket.write(typeTag);
+    outputPacket.writeByte(typeTag);
   }
   
   private void writeClassId(int classId)
@@ -240,7 +240,7 @@ public final class DebugKernelChannel
    */
   private void writeEventKindAndRequestId(int eventKind, int requestId)
   {
-    outputPacket.write(eventKind);
+    outputPacket.writeByte(eventKind);
     outputPacket.writeInt(requestId);
   }
   
@@ -262,8 +262,8 @@ public final class DebugKernelChannel
     // discard previous data and create a new event header
     outputPacket.createEventHeader();
     
-    // write the suspend policy. Currently, ALL (threads)
-    outputPacket.write(SuspendPolicyConstants.ALL);
+    // write the suspend policy.
+    outputPacket.writeByte(suspendPolicy);
     
     // write the number of events. 
     outputPacket.writeInt(events);
@@ -274,7 +274,7 @@ public final class DebugKernelChannel
    * 
    * @throws IOException
    */
-  public synchronized void sendPacket() throws IOException
+  private synchronized void sendPacket() throws IOException
   {
     outputPacket.writePacket(outputStream);
   }
@@ -292,5 +292,140 @@ public final class DebugKernelChannel
   public synchronized void receivePacket() throws IOException
   {
     inputPacket.readPacket(inputStream);
+  }
+  
+  /**
+   * Create an empty reply packet, based on the content of the last 
+   * received packet. It will report a successful result.
+   * 
+   * @throws IOException
+   */
+  private synchronized void createEmptyReplyPacket() throws IOException
+  {
+    createEmptyReplyPacket(0);
+  }
+  
+  /**
+  * Create an empty reply packet, based on the content of the last 
+  * received packet. It can report an error or a successful result.
+  * 
+  * @throws IOException
+  */
+  private synchronized void createEmptyReplyPacket(int errorCode) throws IOException
+  {
+    outputPacket.createReplyHeader(inputPacket);
+    outputPacket.setErrorCode(errorCode);
+  }
+  
+  /**
+   * Create a reply packet based on the last received packet.
+   * Add the given int as internal data.
+   * 
+   * @param value
+   * @throws IOException
+   */
+  private synchronized void createIntReplyPacket(int value) throws IOException
+  {
+    // create a reply packet based on the received packet.
+    // the content will be the given int.
+    createEmptyReplyPacket();
+    outputPacket.writeInt(value);
+  }
+  
+  /**
+   * Send a reply packet based on the last received packet.
+   * Insert no data. Usually it's used just as an acknowledge,
+   * to report that the last request was correctly executed.
+   * 
+   * @param frameCount
+   * @throws IOException
+   */
+  public synchronized void sendReply() throws IOException
+  {
+    // create a reply packet based on the received packet.
+    createEmptyReplyPacket();
+    sendPacket();
+  }
+  
+  /**
+   * Send a reply packet based on the last received packet.
+   * Insert the frame count in the data.
+   * 
+   * @param frameCount
+   * @throws IOException
+   */
+  public synchronized void sendReplyFrameCount(int frameCount) throws IOException
+  {
+    // create a reply packet based on the received packet.
+    // the content will be the frame count.
+    createIntReplyPacket(frameCount);
+    sendPacket();
+  }
+  
+  /**
+   * Send a reply packet with an error code, based on the last received packet.
+   * The error code will be sent in the "error" field, to inform the error to
+   * the server.
+   * 
+   * @param frameCount
+   * @throws IOException
+   */
+  public synchronized void sendReplyWithErrorCode(int errorCode) throws IOException
+  {
+    // create and send a reply packet based on the last received packet.
+    createEmptyReplyPacket(errorCode);
+    sendPacket();
+  }
+  
+  /**
+   * Provide access to the "command set" field of the input packet.
+   * 
+   * @return
+   * @throws IOException
+   */
+  public synchronized int readInputCommandSet() throws IOException
+  {
+    return inputPacket.getCommandSet();
+  }
+  
+  /**
+   * Provide access to the "command" field of the input packet.
+   * 
+   * @return
+   * @throws IOException
+   */
+  public synchronized int readInputCommand() throws IOException
+  {
+    return inputPacket.getCommand();
+  }
+  
+  /**
+   * Read one int value from the input packet.
+   * 
+   * @return
+   */
+  public synchronized int readIntValue()
+  {
+    return inputPacket.readInt();
+  }
+  
+  /**
+   * Read one short value from the input packet.
+   * 
+   * @return
+   */
+  public synchronized int readShortValue()
+  {
+    return inputPacket.readShort();
+  }
+  
+  /**
+   * Read one byte value from the input packet.
+   * 
+   * @return
+   */
+  public synchronized int readByteValue()
+  {
+    return inputPacket.readInt();
   }
 }
