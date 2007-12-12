@@ -69,6 +69,10 @@ public final class JavaDebugPacket
   // varibles to hold the packet content
   private RandomAccessByteArrayOutputStream arrayOutputStream;
   
+  // an internal index to be used when it's necessary to read data
+  // from this stream.
+  private int readIndex;
+  
   // a buffer to read packets without creating too many new objects
   // for every byte read.
   private static final int READ_BUFFER_SIZE = 512;
@@ -84,6 +88,16 @@ public final class JavaDebugPacket
     
     // allocate at least an empty header
     createEmptyHeader();
+    
+    rewindReadIndexToDataSection();
+  }
+  
+  /**
+   * Set the read index to the beginning of the data section.
+   */
+  private void rewindReadIndexToDataSection()
+  {
+    readIndex = JDWP_HEADER_SIZE;
   }
   
   /**
@@ -102,7 +116,7 @@ public final class JavaDebugPacket
     
     //the flags, command set and command
     writeShort(0);
-    write(0);
+    writeByte(0);
   }
   
   /**
@@ -130,14 +144,58 @@ public final class JavaDebugPacket
    * 
    * @param value
    */
-  public synchronized void write(int value)
+  public synchronized void writeByte(int value)
   {
     arrayOutputStream.write(value);
   }
   
   /**
+   * Read an int value from this packet content. 
+   * 
+   * @param value
+   */
+  public synchronized int readInt()
+  {
+    int value;
+    
+    value = arrayOutputStream.readInt(this.readIndex);
+    readIndex += 4;
+    return value;
+  }
+  
+  /**
+   * Read a short value from this packet content.
+   * 
+   * @param value
+   */
+  public synchronized int readShort()
+  {
+    int value;
+    
+    value = arrayOutputStream.readShort(this.readIndex);
+    readIndex += 2;
+    return value;
+  }
+  
+  /**
+   * Read a byte value from this packet content.
+   * 
+   * @param value
+   */
+  public synchronized int readByte()
+  {
+    int value;
+    
+    value = arrayOutputStream.readByte(this.readIndex);
+    readIndex += 1;
+    return value;
+  }
+  
+  /**
    * Read an entire packet from the given input and store its content
    * in memory for later access. Discard previous data.
+   * 
+   * Set the read index to the beginning of the packet data area.
    * 
    * @param input
    * @throws IOException
@@ -180,6 +238,9 @@ public final class JavaDebugPacket
       
       count = count + data;
     }
+    
+    // set the read index to the beginning of the data section.
+    rewindReadIndexToDataSection();
   }
   
   /**
@@ -331,6 +392,21 @@ public final class JavaDebugPacket
   }
   
   /**
+   * Set the content of the "Error code" field of this packet.
+   * Beware: the error code is present *only* in reply packets.
+   * 
+   * For regular packets, this method is not valid.
+   * Instead, use the "setCommand" and
+   * "setCommandSet" methods.
+   * 
+   * @return
+   */
+  public synchronized void setErrorCode(int errorCode)
+  {
+    overwriteBytes(ERROR_CODE_INDEX, ERROR_CODE_SIZE, errorCode);
+  }
+  
+  /**
    * Read a set of bytes from the buffer.
    * 
    * @param location
@@ -365,6 +441,42 @@ public final class JavaDebugPacket
     }
     
     return value;
+  }
+  
+  /**
+   * Write a set of bytes on the buffer. 
+   * 
+   * Be careful: it does not write beyond the current size.
+   * Should be used to OVERWRITE ONLY.
+   * 
+   * @param location
+   * @param size
+   * @return
+   */
+  private synchronized void overwriteBytes(int location, int size, int value)
+  {
+    switch(size)
+    {
+      case 4:
+      {
+        arrayOutputStream.overwriteInt(value, location);
+        break;
+      }
+      case 2:
+      {
+        arrayOutputStream.overwriteShort(value, location);
+        break;
+      }
+      case 1:
+      {
+        arrayOutputStream.overwriteByte(value, location);
+        break;
+      }
+      default:
+      {
+        throw new ArrayIndexOutOfBoundsException("Wrong size! " + size);
+      }
+    }
   }
   
   /**
@@ -426,7 +538,7 @@ public final class JavaDebugPacket
    */
   public synchronized int getCommandSet()
   {
-    return  arrayOutputStream.readByte(COMMAND_SET_INDEX);
+    return  readBytes(COMMAND_SET_INDEX, COMMAND_SET_SIZE);
   }
   
   /**
@@ -436,7 +548,6 @@ public final class JavaDebugPacket
    */
   public synchronized int getCommand()
   {
-    //return  arrayOutputStream.readByte(COMMAND_INDEX);
     return  readBytes(COMMAND_INDEX, COMMAND_SIZE);
   }
   
@@ -476,5 +587,35 @@ public final class JavaDebugPacket
     // set the "command set" and "command" fields 
     setCommandSet(commandSet);
     setCommand(command);
+  }
+  
+  /**
+   * Create a reply header based on the given parameters
+   * 
+   * @param id
+   * @param commandSet
+   * @param command
+   */
+  private synchronized void createReplyHeader(int id, int commandSet, int command)
+  {
+    createHeader(id, REPLY_FLAG, commandSet, command);
+  }
+  
+  /**
+   * Create a header for reply packet, based on the given packet. 
+   * 
+   * @param packet
+   */
+  public synchronized void createReplyHeader(JavaDebugPacket packet)
+  {
+    int id;
+    int commandSet;
+    int command;
+    
+    id = packet.getId();
+    commandSet = packet.getCommandSet();
+    command = packet.getCommand();
+    
+    createReplyHeader(id, commandSet, command);
   }
 }
