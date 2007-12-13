@@ -100,6 +100,17 @@ public class SocketConnectionWrapper
    */
   public PacketWrapper receivePacket() throws IOException
   {
+    return receivePacket(input);
+  }
+  
+  /**
+   * Read a JDWP packet from the data input stream.
+   * 
+   * @return the new packet.
+   * @throws IOException
+   */
+  public static PacketWrapper receivePacket(DataInputStream input) throws IOException
+  {
     PacketWrapper packet = new PacketWrapper();
     
     int length;
@@ -174,13 +185,24 @@ public class SocketConnectionWrapper
     
     return packet;
   }
-
+  
   /**
    * Send a packet through the socket.
    * 
    * @param packet the object to be sent through the socket.
    */
   public void sendPacket(PacketWrapper packet) throws IOException
+  {
+    sendPacket(packet, output);
+  }
+  
+  /**
+   * Send a packet through the socket.
+   * 
+   * @param packet the object to be sent through the socket.
+   */
+  public static void sendPacket(PacketWrapper packet, DataOutputStream output)
+    throws IOException
   {
     int length;
     int id;
