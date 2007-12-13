@@ -34,6 +34,8 @@ import com.jopdesign.debug.jdwp.io.HexadecimalInputStream;
 import com.jopdesign.debug.jdwp.model.Frame;
 import com.jopdesign.debug.jdwp.model.FrameList;
 import com.jopdesign.debug.jdwp.model.Location;
+import com.sun.tools.jdi.PacketWrapper;
+import com.sun.tools.jdi.SocketConnectionWrapper;
 
 /**
  * JOPDebugChannel.java
@@ -53,6 +55,9 @@ import com.jopdesign.debug.jdwp.model.Location;
  */
 public class JOPDebugChannel
 {
+  private static final int JOP_DEBUG_COMMAND_SET = 100;
+  private static final int JOP_DEBUG_COMMAND_TEST_JDWP = 1;
+  
   private DataInputStream input;
   private DataOutputStream output;
   private Socket socket;
@@ -705,5 +710,42 @@ public class JOPDebugChannel
     }
 
     return instruction;
+  }
+  
+  /**
+   * Method for development ONLY.
+   * Request JOP to send a sample of all possible JDWP packets.
+   * @throws IOException 
+   */
+  public void testJDWPPackets() throws IOException
+  {
+    // Vendor-defined commands and extensions start at 128.
+    checkConnection();
+    
+    int i, numOfPackets;
+    PacketWrapper packet;
+    
+    // ------------------------------------------------------------
+    // request machine to set a breakpoint and return the old instruction
+    output.writeByte(JOP_DEBUG_COMMAND_SET);
+    output.writeByte(JOP_DEBUG_COMMAND_TEST_JDWP);
+    
+    // read the number of packets
+    numOfPackets = input.readInt();
+    
+    System.out.println("Packets to receive: " + numOfPackets);
+    
+    // receive all packets and print information about them
+    for(i = 0; i < numOfPackets; i++)
+    {
+      packet = SocketConnectionWrapper.receivePacket(input);
+      
+      System.out.println("New packet received:");
+      packet.printInformation();
+    }
+    
+    System.out.println();
+    System.out.println("Done!");
+    System.out.println();
   }
 }
