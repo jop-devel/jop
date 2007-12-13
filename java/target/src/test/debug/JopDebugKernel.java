@@ -296,6 +296,16 @@ public final class JopDebugKernel
           
           continue;
         }
+        
+        // specific command just to help development.
+        if((commandset == 100) && (command == 1))
+        {
+          System.out.println("Debug development command: Send JDWP packets");
+          handleTestSendJDWPPackets();
+          
+          continue;
+        }
+        
         System.out.println("Received invalid command or command set! ");
         System.out.print("Command: ");
         System.out.print(command);
@@ -1230,6 +1240,25 @@ public final class JopDebugKernel
     System.out.println(numLocals);
     
     writeInt(numLocals);
+  }
+  
+  /**
+   * Test to check if all types of packets are being properly 
+   * created.
+   * @throws IOException 
+   */
+  private static void handleTestSendJDWPPackets() throws IOException
+  {
+    int framePointer = getCurrentFramePointer();
+    
+    
+    int numPackets = 3;
+    
+    writeInt(numPackets);
+    
+    debugChannel.sendVMStartEvent();
+    sendBreakpointEvent(framePointer);
+    debugChannel.sendVMDeathEvent();
   }
   
   /**
