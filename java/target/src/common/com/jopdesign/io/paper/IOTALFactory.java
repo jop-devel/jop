@@ -17,7 +17,7 @@ public class IOTALFactory extends IOMinFactory {
 	
 	static IOTALFactory single = new IOTALFactory();
 	
-	static IOTALFactory getFectory() { return single; }
+	public static IOTALFactory getFactory() { return single; }
 	
 	public TALPins getPins() { return pins; }
 	public LEDPort getLEDs() { return leds; }
