@@ -15,21 +15,16 @@ public class IOMinFactory {
 		sp = (SerialPort) JVMIOMagic(SERIAL_ADDRESS);
 	};
 	
-	static IOMinFactory single = new IOMinFactory();;
+	static IOMinFactory single = new IOMinFactory();
 	
 	public static IOMinFactory getFactory() {		
 		return single;
 	}
 	
-	public SerialPort getSerialPort() {
-		return sp;
-	}
+	public SerialPort getSerialPort() { return sp; }
+	public SysDevice getSysDevice() { return sys; }
 	
-	public SysDevice getSysDevice() {
-		return sys;
-	}
-	
-	// here comes the magic!!!
+	// here comes the magic!
 	Object JVMIOMagic(int address) {
 		return new Object();
 	}
