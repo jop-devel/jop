@@ -84,6 +84,7 @@ public class TestJopServer
   private static final int INVOKE_STATIC_METHOD = 6;
   private static final int RESUME_EXECUTION = 7;
   private static final int EXIT_OPTION = 8;
+  private static final int TEST_JDWP_PACKETS = 9;
   
 //  private static final int SET_BREAKPOINT = 9;
 //  private static final int CLEAR_BREAKPOINT = 10;
@@ -244,6 +245,12 @@ public class TestJopServer
         }
         // case SET_BREAKPOINT: { break; }
         //        case CLEAR_BREAKPOINT: {               break; }
+        
+        case TEST_JDWP_PACKETS:
+        {
+          interactiveTestForJDWPPackets();
+          break;
+        }
         
         case INVALID_OPTION:
         default:
@@ -454,6 +461,16 @@ public class TestJopServer
   }
   
   /**
+   * @throws IOException 
+   * 
+   */
+  private void interactiveTestForJDWPPackets()
+    throws IOException
+  {
+    debugChannel.testJDWPPackets();
+  }
+  
+  /**
    * Print an object to the standard output and flush the buffer.
    * Created to better interact with Ant.
    * 
@@ -570,6 +587,10 @@ public class TestJopServer
     
     print(EXIT_OPTION);
     println(". Terminate execution: call System.exit()");
+    
+    print(TEST_JDWP_PACKETS);
+    println(". Test JDWP packet creation.");
+    
 //    print(SET_BREAKPOINT);
 //    println(". ");
 //    print(CLEAR_BREAKPOINT);
