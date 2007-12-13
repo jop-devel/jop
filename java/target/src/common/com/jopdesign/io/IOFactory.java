@@ -29,6 +29,16 @@ public class IOFactory {
 	private static int ARR_LENGTH;
 
 	IOFactory() {
+		
+		// TODO: can I avoid the cp trick and just pass
+		// a pointer to this to JVMHelp.make....
+		// IOFactory x = this;
+		// that would have following benefits:
+		//		1. no Native.rd
+		//		2. we could check if the class is indeed a
+		//			IOFactory to avoid misuse of the public
+		//			JVMHelp.makeHWObject
+		
 		sp = (SerialPort) makeHWObject(new SerialPort(),
 				Const.IO_UART1_BASE, 0);
 		sys = (SysDevice) makeHWObject(new SysDevice(),
