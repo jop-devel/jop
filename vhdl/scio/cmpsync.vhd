@@ -45,7 +45,7 @@ begin
   	
   		case state is
   			when idle =>
-					next_locked_id <= cpu_cnt; -- means no CPU_ID is locked
+				next_locked_id <= cpu_cnt; -- means no CPU_ID is locked
 				
   				-- the smallest CPU number wins when multiple lock requests  
   				for i in 0 to cpu_cnt-1 loop
