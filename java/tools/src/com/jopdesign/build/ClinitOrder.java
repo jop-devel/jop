@@ -82,9 +82,12 @@ public class ClinitOrder extends MyVisitor {
 				cocl = (ConstantClass) co;
 				clname = cocl.getBytes(cpool).replace('/','.');
 				clinfo = ClassInfo.getClassInfo(clname);
-				minfo = clinfo.getMethodInfo("<init>()V");
-				if (clinfo!=null && minfo!=null) {
-					addDepends = findDependencies(clinfo, minfo, true);					
+				
+				if (clinfo!=null) {
+					minfo = clinfo.getMethodInfo("<init>()V");
+					if (minfo!=null) {
+						addDepends = findDependencies(clinfo, minfo, true);
+					}
 				}
 				// check for all sub classes when no going up the hierarchy
 //				if (!inRec) {
