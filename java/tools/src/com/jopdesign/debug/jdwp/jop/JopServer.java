@@ -154,7 +154,7 @@ public class JopServer implements Runnable
   
   /**
    * Handshake here, just to avoid that a faster client start sending data
-   * before the streams we ready and the machine up and running.
+   * before the streams are ready, and the machine is up and running.
    * 
    * @throws IOException 
    * 
