@@ -349,12 +349,38 @@ public class SymbolTable implements Serializable
     return methodStructPointer;
   }
   
+  /**
+   * Return the method size in words. On the Java Machine, 
+   * each word has 4 bytes.
+   * 
+   * @param className
+   * @param methodSignature
+   * @return
+   */
   public int getMethodSizeInWords(String className, String methodSignature)
   {
     int methodSize;
     MethodInfo methodInfo;
     
     methodInfo = getMethodInfo(className, methodSignature);
+    methodSize = methodInfo.getLength();
+    
+    return methodSize;
+  }
+  
+  /**
+   * Return the method size in words. On the Java Machine, 
+   * each word has 4 bytes.
+   * 
+   * @param methodPointer
+   * @return
+   */
+  public int getMethodSizeInWords(int methodPointer)
+  {
+    int methodSize;
+    MethodInfo methodInfo;
+    
+    methodInfo = getMethodInfo(methodPointer);
     methodSize = methodInfo.getLength();
     
     return methodSize;
