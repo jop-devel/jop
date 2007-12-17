@@ -162,7 +162,33 @@ public class PacketReader
     }
     return data;
   }
-
+  
+  /**
+   * Skip some bytes from the packet data. Return true on success, and
+   * false otherwise.
+   * 
+   * @param numBytes
+   * @return
+   */
+  public boolean skip(int numBytes)
+  {
+	boolean result = true;
+	
+    try
+    {
+      dataInputStream.skipBytes(numBytes);
+    }
+    catch(IOException exception)
+    {
+      // this should not happen
+      System.out.println("  Failure: skip");
+      exception.printStackTrace();
+      result = false;
+    }
+    
+    return result;
+  }
+  
   public long readLong()
   {
     long data = 0;
