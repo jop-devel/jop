@@ -221,7 +221,26 @@ public class PacketWriter
     
     return packet;
   }
-
+  
+  /**
+   * Create a new packet object with the main fields already set.
+   * 
+   * @param commandSet
+   * @param command
+   * @param ID
+   * @return
+   */
+  public PacketWrapper createPacket(int commandSet, int command, int packetId)
+  {
+    PacketWrapper packet = createPacket();
+    
+    packet.setCommandSet(commandSet);
+    packet.setCommand(command);
+    packet.setID(packetId);
+    
+    return packet;
+  }
+  
   public void writeID(long typeID, int idSize)
   {
     int i;
