@@ -147,6 +147,20 @@ public class Debug
     debug.out.flush();
   }
   
+  public static void print(int data)
+  {
+    Debug debug = getDebug();
+    debug.out.print(data);
+    debug.out.flush();
+  }
+  
+  public static void println(int data)
+  {
+    Debug debug = getDebug();
+    debug.out.println(data);
+    debug.out.flush();
+  }
+  
   public static void setDebugging(boolean value)
   {
     Debug debug = getDebug();
