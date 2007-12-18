@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import debug.JopDebugKernel;
 import debug.constants.EventKindConstants;
 import debug.constants.SuspendPolicyConstants;
 
@@ -196,7 +197,7 @@ public final class DebugKernelChannel
    * @param methodId
    * @param methodLocation
    */
-  private void writeExecutableLocation(int typeTag, int classId,
+  public void writeExecutableLocation(int typeTag, int classId,
     int methodId, int methodLocation)
   {
     writeTypeTag(typeTag);
@@ -220,9 +221,25 @@ public final class DebugKernelChannel
     outputPacket.writeInt(classId);
   }
   
+  private void writeFieldId(int fieldId)
+  {
+    outputPacket.writeInt(fieldId);
+  }
+  
   private void writeMethodId(int methodId)
   {
     outputPacket.writeInt(methodId);
+  }
+  
+  private void writeObjectId(int objectId)
+  {
+	outputPacket.writeInt(0);
+    outputPacket.writeInt(objectId);
+  }
+  
+  private void writeFrameId(int frameId)
+  {
+    outputPacket.writeInt(frameId);
   }
   
   private void writeMethodLocation(int location)
@@ -277,6 +294,12 @@ public final class DebugKernelChannel
   private synchronized void sendPacket() throws IOException
   {
     outputPacket.writePacket(outputStream);
+    
+    JopDebugKernel.debugPrint("Packet sent!   ");
+    if(JopDebugKernel.shouldPrintInternalMessages())
+    {
+      printOutputPacketDescription();
+    }
   }
   
   /**
@@ -292,6 +315,12 @@ public final class DebugKernelChannel
   public synchronized void receivePacket() throws IOException
   {
     inputPacket.readPacket(inputStream);
+    
+    JopDebugKernel.debugPrint("Packet arrived!");
+    if(JopDebugKernel.shouldPrintInternalMessages())
+    {
+      printInputPacketDescription();
+    }
   }
   
   /**
@@ -363,6 +392,61 @@ public final class DebugKernelChannel
   }
   
   /**
+   * Send a reply packet based on the last received packet.
+   * Insert the local variable content in the data.
+   * 
+   * @param value
+   * @throws IOException
+   */
+  public synchronized void sendReplyGetLocalVariable(int value) throws IOException
+  {
+    // the content will be the local variable value.
+    // currently there's support to provide only one local variable.  
+    createIntReplyPacket(1);
+    outputPacket.writeInt(value);
+    
+    sendPacket();
+  }
+  
+  /**
+   * Send a reply packet based on the last received packet.
+   * Insert the number of local variables.
+   * 
+   * @param localVariableCount
+   * @throws IOException
+   */
+  public synchronized void sendReplyLocalVariableCount(int localVariableCount) throws IOException
+  {
+    // create a reply packet based on the received packet.
+    // the content will be the number of local variables.
+    createIntReplyPacket(localVariableCount);
+    sendPacket();
+  }
+  
+  /**
+   * Send a reply packet based on the last received packet.
+   * Insert the overwritten instruction.
+   * 
+   * @param instruction
+   * @throws IOException
+   */
+  public synchronized void sendReplySetBreakpoint(int instruction) throws IOException
+  {
+    // create a reply packet based on the received packet.
+    // the content will be the overwritten instruction
+    createIntReplyPacket(instruction);
+    sendPacket();
+  }
+  
+  public synchronized void sendReplyTestJDWPPackets(int numPackets) throws IOException
+  {
+    // create a reply packet based on the received packet.
+    // the content will be the number of packets that will follow.
+    createIntReplyPacket(numPackets);
+    sendPacket();
+  }
+  
+  /**
    * Send a reply packet with an error code, based on the last received packet.
    * The error code will be sent in the "error" field, to inform the error to
    * the server.
@@ -426,6 +510,84 @@ public final class DebugKernelChannel
    */
   public synchronized int readByteValue()
   {
-    return inputPacket.readInt();
+    return inputPacket.readByte();
+  }
+  
+  /**
+   * Skip some bytes from the input packet.
+   * 
+   * @param numBytes
+   */
+  public synchronized void skipBytes(int numBytes)
+  {
+    inputPacket.skipBytes(numBytes);
+  }
+  
+  /**
+   * Skip four bytes from the input packet.
+   * 
+   * @param numBytes
+   */
+  public synchronized void skipInt()
+  {
+    skipBytes(4);
+  }
+  
+  /**
+   * Print information about the input packet.
+   */
+  private void printInputPacketDescription()
+  {
+    inputPacket.printPacketHeader(System.out);
+  }
+  
+  private void printOutputPacketDescription()
+  {
+    outputPacket.printPacketHeader(System.out);
+  }
+
+//  Unfortunately there's no simple way to do this with one method call
+//  (and without using dynamic lists), because the stack size changes
+//  during execution.
+//  So, the debug kernel uses the three methods below. 
+//  It does this for every "getstack frame list" command:
+//  
+// - call prepareStackFrameListPacket once
+// - call many times writeStackFrameInformation
+// - call sendStackFrameListReply once
+// 
+  /**
+   * Prepare the reply for the "get stack frame list" command.
+   * 
+   * @param count
+   * @throws IOException 
+   */
+  public void prepareStackFrameListPacket(int count) throws IOException
+  {
+	// create a reply packet based on the received packet.
+    createEmptyReplyPacket();
+    
+    // write the number of stack frames.
+    outputPacket.writeInt(count);
+  }
+  
+  /**
+   * Write information related to one stack frame to the output packet.
+   * 
+   * @param framePointer
+   */
+  public synchronized void writeStackFrameId(int framePointer)
+  {
+	outputPacket.writeInt(framePointer);
+  }
+  
+  /**
+   * Send the packet with data about stack frmaes to the server.
+   * 
+   * @throws IOException 
+   */
+  public synchronized void sendStackFrameListReply() throws IOException
+  {
+	sendPacket();
   }
 }
