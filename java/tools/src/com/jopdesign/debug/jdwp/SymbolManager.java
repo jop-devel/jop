@@ -347,6 +347,27 @@ public class SymbolManager implements Serializable
   }
   
   /**
+   * Get the method size in words. If the method pointer is not valid,
+   * return -1.
+   * 
+   * @param methodPointer
+   * @return
+   */
+  public int getMethodSizeInWords(int methodPointer)
+  {
+    if(isValidMethodStructurePointer(methodPointer))
+    {
+      SymbolTable table = getSymbolTable();
+      int methodId = table.getMethodSizeInWords(methodPointer);
+      return methodId;
+    }
+    else
+    {
+      return -1;
+    }
+  }
+  
+  /**
    * Get the method size in bytes.
    * 
    * @param className
@@ -356,5 +377,39 @@ public class SymbolManager implements Serializable
   public int getMethodSizeInBytes(String className, String methodSignature)
   {
     return 4 * getMethodSizeInWords(className, methodSignature);
+  }
+  
+  /**
+   * Get the method size in bytes.
+   * 
+   * @param methodPointer
+   * @return
+   */
+  public int getMethodSizeInBytes(int methodPointer)
+  {
+    return 4 * getMethodSizeInWords(methodPointer);
+  }
+
+  /**
+   * Check if a given offset is valid for a method pointer.
+   * 
+   * @param methodStructPointer
+   * @param offset
+   * @return
+   */
+  public boolean isValidInstructionOffset(int methodStructPointer, int offset)
+  {
+    boolean result = false;
+    
+    if(isValidMethodStructurePointer(methodStructPointer))
+    {
+      int size = getMethodSizeInBytes(methodStructPointer);
+      if(0 <= offset && offset < size)
+      {
+        result = true;
+      }
+    }
+    
+    return result;
   }
 }
