@@ -19,12 +19,21 @@ public class JVMHelp {
 			JVMHelp.addInterruptHandler(var, dh);
 		}					
 	}
+	
+	/**
+	 * time stamp variable for measuerments
+	 */
+	public static int ts;
 
 	//
 	// DON'T change order of first functions!!!
 	//	interrupt gets called from jvm.asm
 	//
-	public static void interrupt() {
+	static void interrupt() {
+		
+		// take a time stamp
+		ts = Native.rdMem(Const.IO_CNT);
+
 		int nr = Native.rd(Const.IO_INTNR);
 //		wr('!');
 //		wr('0'+nr);
