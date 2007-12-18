@@ -24,8 +24,10 @@ package debug.io;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.PrintStream;
 
 import debug.constants.CommandConstants;
+import debug.constants.ErrorConstants;
 
 /**
  * This class model a JDWP packet for JOP.
@@ -160,6 +162,10 @@ public final class JavaDebugPacket
     
     value = arrayOutputStream.readInt(this.readIndex);
     readIndex += 4;
+    
+    //JopDebugKernel.debugPrint("ReadInt: ");
+    //JopDebugKernel.debugPrintln(value);
+    
     return value;
   }
   
@@ -189,6 +195,20 @@ public final class JavaDebugPacket
     value = arrayOutputStream.readByte(this.readIndex);
     readIndex += 1;
     return value;
+  }
+  
+  /**
+   * Skip some bytes from the packet content.
+   * The numBytes parameter should be positive or will be ignored.
+   * 
+   * @param numBytes
+   */
+  public synchronized void skipBytes(int numBytes)
+  {
+    if(numBytes > 0)
+    {
+      readIndex += numBytes;
+    }
   }
   
   /**
@@ -368,7 +388,7 @@ public final class JavaDebugPacket
    */
   public synchronized void setFlags(int value)
   {
-    arrayOutputStream.overwriteInt(value, FLAGS_INDEX);
+    arrayOutputStream.overwriteByte(value, FLAGS_INDEX);
   }
   
   /**
@@ -404,6 +424,21 @@ public final class JavaDebugPacket
   public synchronized void setErrorCode(int errorCode)
   {
     overwriteBytes(ERROR_CODE_INDEX, ERROR_CODE_SIZE, errorCode);
+  }
+  
+  /**
+   * Check if this is a reply package which has no error set.
+   * 
+   * This method can be used only for reply packets.
+   * It has no meaning for regular request packets: in this
+   * case, it will always return "false". 
+   *  
+   * @return
+   */
+  public boolean hasNoError()
+  {
+    // check if it's a reply packet and also if there's no error set.
+    return isReply() && (getErrorCode() == ErrorConstants.ERROR_NONE);
   }
   
   /**
@@ -617,5 +652,62 @@ public final class JavaDebugPacket
     command = packet.getCommand();
     
     createReplyHeader(id, commandSet, command);
+  }
+  
+  public void printPacketHeader(PrintStream out)
+  {
+    printPacketHeader(this, out);
+  }
+  
+  public static void printPacketHeader(JavaDebugPacket packet, PrintStream out)
+  {
+    int id;
+    int commandSet;
+    int command;
+    int size;
+    int flags;
+    
+    size = packet.getLength();
+    id = packet.getId();
+    flags = packet.getFlags();
+    commandSet = packet.getCommandSet();
+    command = packet.getCommand();
+    
+    out.print("  Size: ");
+    out.print(size);
+    
+    out.print("  ID: ");
+    out.print(id);
+    
+    out.print("  Flags: ");
+    out.print(flags);
+    
+    
+    if(packet.isReply() == false)
+    {
+      out.print("  Command Set: ");
+      out.print(commandSet);
+      out.print("  ");
+      out.print(CommandConstants.getSetDescription(commandSet));
+      
+      out.print("  Command: ");
+      out.print(command);
+      out.print("  ");
+      out.println(CommandConstants.getCommandDescription(commandSet, command));
+    }
+    else
+    {
+      out.print("  Error code: ");
+      if(packet.hasNoError())
+      {
+        out.println("None");
+      }
+      else
+      {
+        int error = packet.getErrorCode();
+        out.println(error);
+      }
+    }
+    out.println();
   }
 }
