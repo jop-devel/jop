@@ -31,6 +31,9 @@ public class Startup {
 	 */
 	static void boot() {
 		
+		// use local variable - statics are not CMP save!
+		int val;
+		
 		// set moncnt in jvm.asm to zero to enable int's
 		// on monitorexit from now on
 		Native.wrIntMem(0, 5);
@@ -44,16 +47,15 @@ public class Startup {
 			mem_size = getRamSize();
 			// mem(0) is the length of the application
 			// or in other words the heap start
-			var = Native.rdMem(1);		// pointer to 'special' pointers
+			val = Native.rdMem(1);		// pointer to 'special' pointers
 			// first initialize the GC with the address of static ref. fields
-			GC.init(mem_size, var+4);
+			GC.init(mem_size, val+4);
 			// place for some initialization:
 			// could be placed in <clinit> in the future
 			System.init();
 			version();
 			started = true;
 			clazzinit();
-
 		}
 		
 		// clear all pending interrupts (e.g. timer after reset)
@@ -62,9 +64,9 @@ public class Startup {
 		Native.wr(1, Const.IO_INT_ENA);
 		
 		// call main()
-		var = Native.rdMem(1);		// pointer to 'special' pointers
-		var = Native.rdMem(var+3);	// pointer to main method struct
-		Native.invoke(0, var);		// call main (with null pointer on TOS
+		val = Native.rdMem(1);		// pointer to 'special' pointers
+		val = Native.rdMem(val+3);	// pointer to main method struct
+		Native.invoke(0, val);		// call main (with null pointer on TOS
 		exit();
 	}
 	
