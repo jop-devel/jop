@@ -25,6 +25,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
+import debug.JopDebugKernel;
+
 /**
  * RandomAccessByteArrayOutputStream.java
  * 
@@ -139,13 +141,18 @@ public class RandomAccessByteArrayOutputStream extends ByteArrayOutputStream
    */
   private synchronized int readBytes(int location, int size)
   {
-
+//    JopDebugKernel.debugPrint("Read bytes - Location:");
+//    JopDebugKernel.debugPrint(location);
+//    JopDebugKernel.debugPrint("  Size:");
+//    JopDebugKernel.debugPrint(size);
+    
     int value;
     int i;
     
-    if((size < 1) || (size > 4) || (location + size >= buf.length))
+    if((size < 1) || (size > 4) || (location + size > buf.length))
     {
-      throw new ArrayIndexOutOfBoundsException("Wrong location or size! " + location);
+      throw new ArrayIndexOutOfBoundsException("Wrong location(" + location + 
+          ") or size(" + size + ")!");
     }
     
     value = 0;
@@ -153,9 +160,14 @@ public class RandomAccessByteArrayOutputStream extends ByteArrayOutputStream
     {
       // the first shift does nothing, but the others do.
       value <<= 8;
-      value = value | buf[location];
+      // be careful! need to cut the first byte ONLY because the machine
+      // work with int values (see the next "or"). 
+      value = value | (buf[location] & 0x00ff);
       location++;
     }
+    
+//    JopDebugKernel.debugPrint("  value:");
+//    JopDebugKernel.debugPrintln(value);
     
     return value;
   }
