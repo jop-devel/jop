@@ -85,9 +85,12 @@ public class TestJopServer
   private static final int RESUME_EXECUTION = 7;
   private static final int EXIT_OPTION = 8;
   private static final int TEST_JDWP_PACKETS = 9;
+  private static final int TEST_JDWP_PACKETS_SENT = 10;
+  private static final int SET_BREAKPOINT = 11;
+  private static final int CLEAR_BREAKPOINT = 12;
+  private static final int GET_STACK_LIST = 13;
   
-//  private static final int SET_BREAKPOINT = 9;
-//  private static final int CLEAR_BREAKPOINT = 10;
+  private static final int INVALID_BYTECODE = -1;
   
   private JOPDebugChannel debugChannel;
   private SymbolManager manager;
@@ -99,6 +102,11 @@ public class TestJopServer
   }
   
   /**
+   * A test class for the JOP server. It works in two modes:
+   * the first is a simple, automatic test to check connection.
+   * The second is a simple interactive menu which can be used
+   * to test basic services and help during the development of
+   * other services.
    * 
    * @param args
    * @throws IOException
@@ -119,12 +127,14 @@ public class TestJopServer
     }
     
     TestJopServer testObject = new TestJopServer();
+    // create a reader to make it easy to read lines from the input
+    BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
     
     try
     {
       if(args.length == 1)
       {
-        testObject.testJopSimCommunication(args[0]);
+        testObject.testJopSimCommunication(args[0], reader);
       }
       else
       {
@@ -132,11 +142,11 @@ public class TestJopServer
         {
           try
           {
-            testObject.testJopDebugKernelInteractively(args[0]);
+            testObject.testJopDebugKernelInteractively(args[0], reader);
           }
           catch(SocketException exception)
           {
-            println("Interrupted. Connection closed by the server.");
+            println("Could not connect or connection was closed by the server.");
           }
         }
         else
@@ -172,14 +182,12 @@ public class TestJopServer
 //    }
 //  }
   
-  public void testJopDebugKernelInteractively(String symbolFile) throws IOException, ClassNotFoundException
+  public void testJopDebugKernelInteractively(String symbolFile,
+	BufferedReader reader) throws IOException, ClassNotFoundException
   {
     int command;
     boolean shouldContinue;
-    initialize(symbolFile);
-    
-    // create a reader to make it easy to read lines from the input
-    BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+    initialize(symbolFile, reader);
     
     // flag to control interactive loop
     shouldContinue = true;
@@ -252,6 +260,30 @@ public class TestJopServer
           break;
         }
         
+        case TEST_JDWP_PACKETS_SENT:
+        {
+          interactiveTestForJDWPPacketsSent();
+          break;
+        }
+        
+        case SET_BREAKPOINT:
+        {
+          interactiveTestSetBreakpoint(reader);
+          break;
+        }
+        
+        case CLEAR_BREAKPOINT:
+        {
+          interactiveTestClearBreakpoint(reader);
+          break;
+        }
+        
+        case GET_STACK_LIST:
+        {
+          testGetStackFrameList();
+          break;
+        }
+        
         case INVALID_OPTION:
         default:
         {
@@ -265,6 +297,8 @@ public class TestJopServer
   }
   
   /**
+   * Test method to get a local variable.
+   * 
    * @param reader 
    * @throws IOException 
    * 
@@ -356,7 +390,6 @@ public class TestJopServer
   /**
    * @param reader 
    * @throws IOException 
-   * 
    */
   private void interactiveTestSetLocalVariable(BufferedReader reader) throws IOException
   {
@@ -390,6 +423,83 @@ public class TestJopServer
     debugChannel.setLocalVariableValue(frameIndex, variableIndex, value);
     
     println("Value updated.");
+  }
+  
+  private void interactiveTestSetBreakpoint(BufferedReader reader) throws IOException
+  {
+    int methodPointer, instructionOffset;
+    int bytecode;
+    
+    println("Please input the method struct pointer: ");
+    methodPointer = readNonNegativeInteger(reader);
+    
+    if(isValidMethodPointer(methodPointer) == false)
+    {
+      println("Failure: invalid method pointer -> " + methodPointer);
+      println();
+      return;
+    }
+    
+    // get and test the instruction offset
+    print("Please input the instruction offset: ");
+    instructionOffset = readNonNegativeInteger(reader);
+    
+    if(isValidInstructionOffset(methodPointer, instructionOffset) == false)
+    {
+      println("Failure: invalid instruction offset -> " + instructionOffset);
+      println();
+      return;
+    }
+    
+    bytecode = debugChannel.setBreakPoint(methodPointer, instructionOffset);
+    if (bytecode != INVALID_BYTECODE)
+    {
+      println("Success. Breakpoint set. Previous bytecode: " + bytecode);
+    }
+    else
+    {
+      println("Failure . Breakpoint *not* set.");
+    }
+  }
+  
+  private void interactiveTestClearBreakpoint(BufferedReader reader) throws IOException
+  {
+    int methodPointer, instructionOffset;
+    int bytecode;
+    
+    println("Please input the method struct pointer: ");
+    methodPointer = readNonNegativeInteger(reader);
+    
+    if(isValidMethodPointer(methodPointer) == false)
+    {
+      println("Failure: invalid method pointer -> " + methodPointer);
+      println();
+      return;
+    }
+    
+    // get and test the instruction offset
+    print("Please input the instruction offset: ");
+    instructionOffset = readNonNegativeInteger(reader);
+    
+    if(isValidInstructionOffset(methodPointer, instructionOffset) == false)
+    {
+      println("Failure: invalid instruction offset -> " + instructionOffset);
+      println();
+      return;
+    }
+    
+    print("Please input the previous bytecode: ");
+    bytecode = readNonNegativeInteger(reader);
+    
+    int result = debugChannel.clearBreakPoint(methodPointer, instructionOffset, bytecode);
+    if (result != INVALID_BYTECODE)
+    {
+      println("Success. Breakpoint cleared.");
+    }
+    else
+    {
+      println("Failure . Breakpoint *not* cleared.");
+    }
   }
   
   /**
@@ -471,6 +581,16 @@ public class TestJopServer
   }
   
   /**
+   * @throws IOException 
+   * 
+   */
+  private void interactiveTestForJDWPPacketsSent()
+    throws IOException
+  {
+    debugChannel.testJDWPPacketsSent();
+  }
+  
+  /**
    * Print an object to the standard output and flush the buffer.
    * Created to better interact with Ant.
    * 
@@ -539,6 +659,15 @@ public class TestJopServer
   }
   
   /**
+   * @param methodStructPointer
+   * @return
+   */
+  private boolean isValidInstructionOffset(int methodStructPointer, int offset)
+  {
+    return manager.isValidInstructionOffset(methodStructPointer, offset);
+  }
+  
+  /**
    * @throws IOException 
    * 
    */
@@ -554,7 +683,7 @@ public class TestJopServer
    */
   private void interactiveTestExit(BufferedReader reader) throws IOException
   {
-    debugChannel.sendExitCommand(0);
+    debugChannel.sendExitCommand(16);
   }
   
   /**
@@ -591,10 +720,17 @@ public class TestJopServer
     print(TEST_JDWP_PACKETS);
     println(". Test JDWP packet creation.");
     
-//    print(SET_BREAKPOINT);
-//    println(". ");
-//    print(CLEAR_BREAKPOINT);
-//    println(". ");
+    print(TEST_JDWP_PACKETS_SENT);
+    println(". Test JDWP packet reply.");
+    
+    print(SET_BREAKPOINT);
+    println(". Set breakpoint");
+    
+    print(CLEAR_BREAKPOINT);
+    println(". Clear breakpoint");
+    
+    print(GET_STACK_LIST);
+    println(". Get the list of stack frames");
     
     println();
     printLine();
@@ -647,19 +783,22 @@ public class TestJopServer
   }
 
   /**
+   * Automatic test to check communication with JOP. 
    * 
+   * @param symbolFile
+   * @param reader
    * @throws IOException
-   * @throws ClassNotFoundException 
-   * @throws ClassNotFoundException 
+   * @throws ClassNotFoundException
    */
-  public void testJopSimCommunication(String symbolFile) throws IOException, ClassNotFoundException
+  public void testJopSimCommunication(String symbolFile, BufferedReader reader)
+    throws IOException, ClassNotFoundException
   {
     int received = 2;
     int methodPointer;
     int stackDepth;
     int index;
     
-    initialize(symbolFile);
+    initialize(symbolFile, reader);
     
     testStackAccess();
     testMethodCalls();
@@ -889,22 +1028,43 @@ public class TestJopServer
    * Connect to the server and load the symbol file.
    * 
    * @param symbolFile
+   * @param reader 
    * @throws IOException
    * @throws ClassNotFoundException
    */
-  private void initialize(String symbolFile) throws IOException, ClassNotFoundException
+  private void initialize(String symbolFile, BufferedReader reader)
+    throws IOException, ClassNotFoundException
   {
-    try
+	boolean shouldRetry;
+	
+	shouldRetry = true;
+    do
     {
-      debugChannel.connect();
+      try
+      {
+    	debugChannel.connect();
+    	shouldRetry = false;
 //    handshake();
+      }
+      catch (IOException exception)
+      {
+    	println();
+    	println("Connection failure. Please make sure the server is running.");
+    	println("Retry? (y/n)");
+    	String data = reader.readLine();
+    	data = data.trim().toLowerCase();
+    	if("y".equals(data) == false)
+    	{
+    	  shouldRetry = false;
+    	  throw exception;
+    	}
+    	else
+    	{
+    	  shouldRetry = true;
+    	}
+      }
     }
-    catch (IOException exception)
-    {
-      println();
-      println("Connection failure. Please make sure the server is running.");
-      throw exception;
-    }
+    while(shouldRetry);
     
     // load symbols to know the method addresses
     try
