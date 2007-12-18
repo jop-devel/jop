@@ -25,6 +25,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 
 import com.jopdesign.debug.jdwp.constants.CommandConstants;
+import com.jopdesign.debug.jdwp.constants.ErrorConstants;
 import com.jopdesign.debug.jdwp.constants.JDWPConstants;
 import com.jopdesign.debug.jdwp.util.Util;
 
@@ -291,6 +292,21 @@ public class PacketWrapper
     this.error = error;
   }
   
+  /**
+   * Check if this is a reply package which has no error set.
+   * 
+   * This method can be used only for reply packets.
+   * It has no meaning for regular request packets: in this
+   * case, it will always return "false". 
+   *  
+   * @return
+   */
+  public boolean hasNoError()
+  {
+    // check if it's a reply packet and also if there's no error set.
+    return isReply() && (getErrorCode() == ErrorConstants.ERROR_NONE);
+  }
+  
   public String toString()
   {
     ByteArrayOutputStream arrayOutputStream = new ByteArrayOutputStream();
@@ -328,17 +344,33 @@ public class PacketWrapper
       stream.print("  Size:");
       stream.print(size());
       
-      int set = getCmdSet();
-      stream.print("  Command set: ");
-      stream.print(set);
-      stream.print("  ");
-      stream.print(CommandConstants.getSetDescription(set));
-      
-      int cmd = getCmd();
-      stream.print("  Command: ");
-      stream.print(cmd);
-      stream.print("  ");
-      stream.println(CommandConstants.getCommandDescription(set, cmd));
+      if(isReply() == false)
+      {
+        int set = getCmdSet();
+        stream.print("  Command set: ");
+        stream.print(set);
+        stream.print("  ");
+        stream.print(CommandConstants.getSetDescription(set));
+        
+        int cmd = getCmd();
+        stream.print("  Command: ");
+        stream.print(cmd);
+        stream.print("  ");
+        stream.println(CommandConstants.getCommandDescription(set, cmd));
+      }
+      else
+      {
+        stream.print("  Error code: ");
+        if(hasNoError())
+        {
+          stream.println("None");
+        }
+        else
+        {
+          int error = getErrorCode();
+          stream.println(error);
+        }
+      }
       
       stream.print("  Data (as String): ");
       stream.println(data);
