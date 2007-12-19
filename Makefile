@@ -337,6 +337,8 @@ qsyn:
 sim: java_app
 	cd asm && ./jopsim.bat
 	cd modelsim && ./sim.bat
+	# for simulation of CMP 
+	# cd modelsim && ./sim_cmp.bat
 
 #
 #	JopSim target
