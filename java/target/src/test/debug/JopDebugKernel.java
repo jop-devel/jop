@@ -27,9 +27,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import debug.constants.TagConstants;
 import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 
+import debug.constants.CommandConstants;
+import debug.constants.ErrorConstants;
 import debug.io.DebugKernelChannel;
 import debug.io.EmbeddedOutputStream;
 
@@ -74,6 +77,13 @@ public final class JopDebugKernel
   
   private static DebugKernelChannel debugChannel;
   
+  // a variable to hold the frame pointer of the breakpoint method
+  private static int breakpointFramePointer;
+  
+  // internal flag to turn on/off tracing messages
+  //private static boolean shouldPrintInternalMessages = false;
+  private static boolean shouldPrintInternalMessages = true;
+  
 //  the code below does not work. Why?
 //  static
 //  {
@@ -112,6 +122,12 @@ public final class JopDebugKernel
       initialize();
     }
     
+    // for tracing.
+    enableDevelopmentInternalMessages();
+    
+    // update the frame pointer for the breakpoint method.
+    breakpointFramePointer = getCurrentFramePointer();
+    
     // notify the debug server that a breakpoint was reached.
     // Use the current frame pointer because this is the frame 
     // which holds data related to the previous method call. 
@@ -120,8 +136,8 @@ public final class JopDebugKernel
     
     int commandset, command;
     
-    System.out.print("Breakpoint! Current stack depth: ");
-    System.out.println(getStackDepth());
+    debugPrint("Breakpoint! Current stack depth: ");
+    debugPrintln(getStackDepth());
     
     commandset = 0;
     while(commandset >= 0)
@@ -129,18 +145,26 @@ public final class JopDebugKernel
       TestJopDebugKernel.printLine();
       try
       {
-        commandset = inputStream.read();
-        command = inputStream.read();
+        // receive the next JDWP packet
+        debugChannel.receivePacket();
         
-        System.out.print("CommandSet:");
-        System.out.print(commandset);
-        System.out.print("  Command:");
-        System.out.println(command);
+        // get the "command set" and "command" fields
+        commandset = debugChannel.readInputCommandSet();
+        command = debugChannel.readInputCommand();
+
+//        commandset = inputStream.read();
+//        command = inputStream.read();
+        
+        debugPrint("CommandSet:");
+        debugPrint(commandset);
+        debugPrint("  Command:");
+        debugPrintln(command);
         
         // exit from this method.
-        if((commandset == 1) && (command == 10))
+        if((commandset == CommandConstants.VirtualMachine_Command_Set) &&
+           (command == CommandConstants.VirtualMachine_Exit))
         {
-          System.out.println("Exit: stop execution.");
+          debugPrintln("Exit: stop execution.");
           handleExitCommmand();
           break;
         }
@@ -191,7 +215,7 @@ public final class JopDebugKernel
         // invoke a static method with one integer parameter on the stack 
         if((commandset == 3) && (command == 3))
         {
-          System.out.println("Invoke static");
+          debugPrintln("Invoke static");
           handleInvokeStaticCommand();
           continue;
         }
@@ -199,18 +223,18 @@ public final class JopDebugKernel
         // resume execution. Finish this method and continue.
         if((commandset == 11) && (command == 3))
         {
-          System.out.println("Resume execution");
+          debugPrintln("Resume execution");
           handleResumeExecutionCommand();
           
           // stop the loop
           break;
         }
-
+        
         // return a list of all stack frame locations
         if((commandset == 11) && (command == 6))
         {
-          System.out.println("Get stack frames");
-          handleGetStackFramesCommand();
+          debugPrintln("Get stack frames");
+          handleGetStackFramesCommand(breakpointFramePointer);
           
           continue;
         }
@@ -218,8 +242,9 @@ public final class JopDebugKernel
         // calculate the stack depth of the caller method.
         if((commandset == 11) && (command == 7))
         {
-          System.out.println("Get stack depth");
-          handleGetStackDepthCommand();
+          debugPrintln("Get stack depth");
+          handleGetStackDepthCommand(breakpointFramePointer);
+          
           continue;
         }
         
@@ -227,7 +252,7 @@ public final class JopDebugKernel
         // NOT a standard JDWP command set/command pair.
         if((commandset == 11) && (command == 13))
         {
-          System.out.println("Print the call stack.");
+          debugPrintln("Print the call stack.");
           handlePrintCallStackCommand();
           continue;
         }
@@ -236,7 +261,7 @@ public final class JopDebugKernel
         // NOT a standard JDWP command set/command pair.
         if((commandset == 11) && (command == 14))
         {
-          System.out.println("Print a stack frame.");
+          debugPrintln("Print a stack frame.");
           handlePrintStackFrameCommand();
           continue;
         }
@@ -248,7 +273,7 @@ public final class JopDebugKernel
         // set breakpoint
         if((commandset == 15) && (command == 1))
         {
-          System.out.println("set breakpoint");
+          debugPrintln("set breakpoint");
           handleSetBreakPointCommand();
           continue;
         }
@@ -256,15 +281,16 @@ public final class JopDebugKernel
         // clear breakpoint
         if((commandset == 15) && (command == 2))
         {
-          System.out.println("clear breakpoint");
+          debugPrintln("clear breakpoint");
           handleClearBreakPointCommand();
           continue;
         }
         
         // get the method pointer from a stack frame
+        // TODO: STILL NEED TO BE FIXED
         if((commandset == 16) && (command == 0))
         {
-          System.out.println("Get method pointer");
+          debugPrintln("Get method pointer");
           handleGetStackFrameMPCommand();
           
           continue;
@@ -273,16 +299,17 @@ public final class JopDebugKernel
         // get a local variable value
         if((commandset == 16) && (command == 1))
         {
-          System.out.println("Get local variable");
+          debugPrintln("Get local variable");
           handleGetLocalVariableCommand();
           
           continue;
         }
         
         // set a local variable value
-        if((commandset == 16) && (command == 2))
+        if((commandset == CommandConstants.StackFrame_Command_Set) &&
+           (command == CommandConstants.StackFrame_SetValues))
         {
-          System.out.println("Set local variable");
+          debugPrintln("Set local variable");
           handleSetLocalVariableCommand();
           
           continue;
@@ -291,7 +318,7 @@ public final class JopDebugKernel
         // return the nuber of local variables
         if((commandset == 16) && (command == 5))
         {
-          System.out.println("Get number of local variables");
+          debugPrintln("Get number of local variables");
           handleGetNumberOfLocalVariablesCommand();
           
           continue;
@@ -300,28 +327,38 @@ public final class JopDebugKernel
         // specific command just to help development.
         if((commandset == 100) && (command == 1))
         {
-          System.out.println("Debug development command: Send JDWP packets");
+          debugPrintln("Debug development command: Send JDWP packets");
           handleTestSendJDWPPackets();
           
           continue;
         }
         
-        System.out.println("Received invalid command or command set! ");
-        System.out.print("Command: ");
-        System.out.print(command);
-        System.out.print(" Command set: ");
-        System.out.print(commandset);
-        System.out.println();
+        // specific command just to help development.
+        // TODO: STILL NEED TO BE FIXED
+        if((commandset == 100) && (command == 2))
+        {
+          debugPrintln("Debug development command: receive JDWP packets");
+          handleTestReceiveJDWPPackets(breakpointFramePointer);
+          
+          continue;
+        }
+        
+        debugPrintln("Received invalid command or command set! ");
+        debugPrint("Command: ");
+        debugPrint(command);
+        debugPrint(" Command set: ");
+        debugPrint(commandset);
+        debugPrintln();
       }
       catch(IOException exception)
       {
-        System.out.println("Failure: " + exception.getMessage());
+        debugPrintln("Failure: " + exception.getMessage());
         exception.printStackTrace();
         break;
       }
     }
     
-    System.out.println("Returning from \"breakpoint\".");
+    debugPrintln("Returning from \"breakpoint\".");
   }
   
   /**
@@ -380,20 +417,21 @@ public final class JopDebugKernel
     // return a pointer to the class structure.
     return Native.rdMem(cp);
   }
-
+  
   /**
+   * @param breakpointFramePointer 
    * @throws IOException
    */
-  private static void handleGetStackDepthCommand() throws IOException
+  private static void handleGetStackDepthCommand(int breakpointFramePointer)
+    throws IOException
   {
-    // get current stack depth (this frame)
-    int count = getStackDepth();
-    // remove one to return the caller's depth
-    count --;
-    System.out.print(" Stack depth of caller method: " );
-    System.out.println(count);
+    // get stack depth of the breakpoint method
+    int count = getStackDepth(breakpointFramePointer);
     
-    writeInt(count);
+    debugPrint(" Stack depth of caller method: ");
+    debugPrintln(count);
+    
+    debugChannel.sendReplyFrameCount(count);
   }
   
   /**
@@ -401,15 +439,12 @@ public final class JopDebugKernel
    */
   private static void handlePrintCallStackCommand() throws IOException
   {
-    // get current stack depth (this frame)
-    int count = getStackDepth();
-    
     prettyPrintStack();
     
     // just for development
     //TestJopDebugKernel.dumpCallStack();
     
-    writeInt(count);
+    debugChannel.sendReply();
   }
   
   private static void handlePrintStackFrameCommand() throws IOException
@@ -419,13 +454,15 @@ public final class JopDebugKernel
     int previousFrameIndex;
     int framePointer,previousFramePointer;
     
-//    System.out.println("Starting handlePrintStackFrameCommand");
+//    debugPrintln("Starting handlePrintStackFrameCommand");
     
-    frameIndex = inputStream.readInt();
+    debugChannel.skipInt();
+    frameIndex = debugChannel.readIntValue();
+    
     previousFrameIndex = frameIndex + 1;
     
-//    System.out.print("Frame index to print: ");
-//    System.out.println(frameIndex);
+//    debugPrint("Frame index to print: ");
+//    debugPrintln(frameIndex);
     
     if(previousFrameIndex < getStackDepth())
     {
@@ -433,68 +470,115 @@ public final class JopDebugKernel
       framePointer = getNextFramePointer(previousFramePointer);
       
       prettyPrintStackFrame(framePointer, previousFramePointer);
+      
+      debugChannel.sendReply();
     }
     else
     {
-      System.out.println("Failure: invalid index -> " + frameIndex);
+      debugPrintln("Failure: invalid index -> " + frameIndex);
+      
+      debugChannel.sendReplyWithErrorCode(ErrorConstants.ERROR_INVALID_FRAMEID);
     }
-    
-    //  Will return the frame index just to sync
-    writeInt(frameIndex);
   }
   
   /**
-   * Handle the "Frames" command.
+   * Handle the "Frames" command. 
+   * The current implementation of this method always answer 
+   * with the entire stack: it just ignore partial requests
+   * (and the internal fields).
    * 
    * @throws IOException
    */
-  private static void handleGetStackFramesCommand() throws IOException
+  private static void handleGetStackFramesCommand(int breakpointFramePointer)
+    throws IOException
   {
-    System.out.println(" Will read startFrame");
+    debugPrintln(" Will read startFrame");
     
-    int startFrame = inputStream.readInt();
-    System.out.print("  startFrame: ");
-    System.out.println(startFrame);
+    int startFrame;
+//    int numFrames;
     
-    // get current stack depth (this frame)
-    int count = getStackDepth();
-    int framePointer = getCurrentFramePointer();
+    // for now, ignore the thread ID and startFrame
+    debugChannel.skipInt();
     
-    System.out.print(" Stack depth:");
-    System.out.println(count);
+    startFrame = debugChannel.readIntValue();
+//    debugChannel.skipInt();
+    debugPrint("  startFrame: ");
+    debugPrintln(startFrame);
     
-    writeInt(count);
+    //numFrames =  debugChannel.readIntValue();
+    // for now, ignore the number of frames. Consider always "all frames".
+    debugChannel.skipInt();
+    
+    int framePointer, count;
+    
+    // get the (current) maximum value for the stack depth
+    count = getStackDepth(breakpointFramePointer);
+    
+    // index out of valid bounds. Ignore request, send error message and return.
+    if(startFrame < 0 || startFrame >= count)
+    {
+      debugChannel.sendReplyWithErrorCode(ErrorConstants.ERROR_INVALID_THREAD);
+      return;
+    }
+    // now we know it's a valid start frame index.
+    // get the first frame pointer and send all frames to the server
+    //framePointer = getFramePointerAtIndex(startFrame);
+    
+    // just to test. The line below will expose also the frame for breakpoint.
+    //framePointer = getCurrentFramePointer();
+    framePointer = breakpointFramePointer;
+    count = getStackDepth(framePointer);
+    
+    debugPrint(" Stack depth:");
+    debugPrintln(count);
+    
+    debugChannel.prepareStackFrameListPacket(count);
     
     boolean shouldContinue = true;
     while(shouldContinue)
     {
-      int programCounter = getPCFromFrame(framePointer);
+      debugPrintln(" Will add one frame.");
+      // all registers inside the frame are related to the previous frame
+      // context. So, send data about one frame based on the 
+      // frame pointer right above it.
       
-//      System.out.print("  Program counter: ");
-//      System.out.println(programCounter);
-      writeInt(programCounter);
-      int methodPointer = getMPFromFrame(framePointer);
+      // write the pointer for the next frame
+      debugChannel.writeStackFrameId(getNextFramePointer(framePointer));
       
-//      System.out.print("  Method pointer: ");
-//      System.out.println(methodPointer);
-      writeInt(methodPointer);
+      // write the register values which are inside this frame
+      writeLocation(framePointer);
       
+      // walk to the next stack position
       framePointer = getNextFramePointer(framePointer);
-      
-//      System.out.print("  Frame Pointer: ");
-//      System.out.println(framePointer);
-      writeInt(framePointer);
-      
-//      System.out.println(" Sent frame.");
-//      System.out.println();
-      
       if(isFirstFrame(framePointer))
       {
         shouldContinue = false;
       }
+      
+      // just for development.
+      //prettyPrintStack();
     }
     
-    System.out.println("Done! ");
+    // and finally send the reply packet with all data inside.
+    debugChannel.sendStackFrameListReply();
+//  debugPrintln(" Sent frame.");
+//  debugPrintln();
+    
+    debugPrintln("Done! ");
+  }
+  
+  private static void writeLocation(int framePointer)
+  {
+    int typeTag, classId, methodId, methodLocation; 
+    
+    // calculate all fields needed to be sent through the channel
+    typeTag = getTypeTag(framePointer);
+    classId = getClassReferenceFromFrame(framePointer);
+    methodId = getMPFromFrame(framePointer);
+    methodLocation = getPCFromFrame(framePointer);
+    
+    debugChannel.writeExecutableLocation(typeTag, classId, methodId, 
+      methodLocation);
   }
   
   /**
@@ -505,9 +589,9 @@ public final class JopDebugKernel
   private static void handleResumeExecutionCommand() throws IOException
   {
     // acknowledge the command and resume execution.
-    writeInt(0);
+    debugChannel.sendReply();
     
-    System.out.println(" Received \"Resume (11, 3)\" command.");
+    debugPrintln(" Received \"Resume (11, 3)\" command.");
     
     //TODO: now how can I run the bytecode that was standing where this
     // breakpoint is, now?
@@ -523,32 +607,34 @@ public final class JopDebugKernel
    */
   private static void handleInvokeStaticCommand() throws IOException
   {
-    int methodId = inputStream.readInt();
-//  int numArguments = inputStream.readInt();
-    int argument = inputStream.readInt();
+    int methodId;
+    int argument;
     
-    System.out.print(" Method ID: " );
-    System.out.print(methodId);
-    System.out.print(" Argument: " );
-    System.out.println(argument);
+    methodId = debugChannel.readIntValue();
+    argument = debugChannel.readIntValue();
+    
+    debugPrint(" Method ID: " );
+    debugPrint(methodId);
+    debugPrint(" Argument: " );
+    debugPrintln(argument);
     
     if(breakpointMethodPointer == methodId)
     {
-      System.out.println("Invalid method pointer!");
-      System.out.println("Cannot call breakpoint from itself.");
+      debugPrintln("Invalid method pointer!");
+      debugPrintln("Cannot call breakpoint from itself.");
     }
     else
     {
       int sp = Native.getSP();
-      System.out.print("SP = ");
-      System.out.println(sp);
+      debugPrint("SP = ");
+      debugPrintln(sp);
 //          sp++;
 //          Native.wrIntMem(argument, sp);
 //        Native.setSP(sp);
 //        test just to see if it breaks. It doesn't if SP is restored later.
 //          Native.setSP(sp + 4);
       
-      System.out.println("Calling method now:");
+      debugPrintln("Calling method now:");
       Native.invoke(argument, methodId);
       
       // now restore SP to its previous value. Doing this without
@@ -556,15 +642,14 @@ public final class JopDebugKernel
 //          sp = sp - 1;
       Native.setSP(sp);
       
-//          System.out.println("Right after return.");
+//          debugPrintln("Right after return.");
 //          sp = Native.getSP();
-//          System.out.print("SP = ");
-//          System.out.println(sp);
+//          debugPrint("SP = ");
+//          debugPrintln(sp);
     }
     
-    // return the argument just to sync with the caller and inform that
-    // execution has finished.
-    writeInt(argument);
+    // send a reply packet to report that this command finished successfully.
+    debugChannel.sendReply();
   }
   
   /**
@@ -574,13 +659,21 @@ public final class JopDebugKernel
    */
   private static void handleExitCommmand() throws IOException
   {
+    int exitCode;
+    
+    exitCode = debugChannel.readIntValue();
     // acknowledge the command and exit.
-    writeInt(0);
+    debugChannel.sendReply();
     
-    System.out.println(" Received \"Exit (10)\" command.");
-    System.out.println(" Shutting down...     ");
+    // TODO: where is the proper place to send a VMDeath event?
+    // maybe after the main method return, too? ;)
+    debugChannel.sendVMDeathEvent();
+
+    debugPrint(" Received \"Exit (10)\" command. Code: ");
+    debugPrintln(exitCode);
+    debugPrintln(" Shutting down...     ");
     
-    System.exit(0);
+    System.exit(exitCode);
   }
   
   /**
@@ -591,6 +684,8 @@ public final class JopDebugKernel
    */
   private static void writeInt(int value) throws IOException
   {
+	// TODO: remove this method in the future.
+	System.out.println("WARNING!!! don't use this method directly!");
     outputStream.writeInt(value);
   }
   
@@ -619,7 +714,7 @@ public final class JopDebugKernel
 //    }
 //    catch (IOException exception)
 //    {
-//      System.out.println("Failure: " + exception.getMessage());
+//      debugPrintln("Failure: " + exception.getMessage());
 //      exception.printStackTrace();
 //    }
     
@@ -698,8 +793,8 @@ public final class JopDebugKernel
     int vp, args, loc;
     int mp, val;
     
-//    System.out.print("getNextFramePointer(int frame)");
-//    System.out.println(framePointer);
+//    debugPrint("getNextFramePointer(int frame)");
+//    debugPrintln(framePointer);
     if(isFirstFrame(framePointer))
     {
       System.err.println(" Error! called getNextFramePointer with first pointer.");
@@ -734,16 +829,16 @@ public final class JopDebugKernel
     int localsPointer = getLocalsPointerFromFrame(frame);
     loc = frame - localsPointer;
     
-//    System.out.print("Frame: ");
-//    System.out.print(frame);
-//    System.out.print("  localsPointer: ");
-//    System.out.print(localsPointer);
+//    debugPrint("Frame: ");
+//    debugPrint(frame);
+//    debugPrint("  localsPointer: ");
+//    debugPrint(localsPointer);
 //    
-//    System.out.print("  loc: ");
-//    System.out.print(loc);
+//    debugPrint("  loc: ");
+//    debugPrint(loc);
 //    if(isFirstFrame(frame))
 //    {
-//      System.out.println("First frame!");
+//      debugPrintln("First frame!");
 //    }
     
     return loc;
@@ -774,25 +869,25 @@ public final class JopDebugKernel
     int value = 0;
     
     numLoc = getNumLocalsAndParametersFromFrame(frame);
-//    System.out.println("  getField(int frame, int fieldIndex) frame = " + frame);
-//    System.out.println("Num. Locals: " + numLoc);
+//    debugPrintln("  getField(int frame, int fieldIndex) frame = " + frame);
+//    debugPrintln("Num. Locals: " + numLoc);
     if(fieldIndex < numLoc && fieldIndex >= 0)
     {
 //      vp = getVPFromFrame(frame);
       vp = getLocalsPointerFromFrame(frame);
-//      System.out.println("  Calculating VP: " + vp);
+//      debugPrintln("  Calculating VP: " + vp);
       
 //      value = Native.rdMem(vp + fieldIndex);
       value = Native.rdIntMem(vp + fieldIndex);
-//      System.out.println("  Value read from stack frame is: " + value);
+//      debugPrintln("  Value read from stack frame is: " + value);
       
 //      value ++;
 //      Native.wrMem(value, vp + fieldIndex);
     }
     else
     {
-      System.out.println("  Invalid index: " + fieldIndex);
-      System.out.println("  Num. locals is: " + numLoc);
+      debugPrintln("  Invalid index: " + fieldIndex);
+      debugPrintln("  Num. locals is: " + numLoc);
     }
     return value;
   }
@@ -820,22 +915,22 @@ public final class JopDebugKernel
     //    increment, set
     
     numLoc = getNumLocalsAndParametersFromFrame(frame);
-//    System.out.println("  setField(int frame, int fieldIndex, value) frame = " + frame);
-//    System.out.println("Num. Locals: " + numLoc);
+//    debugPrintln("  setField(int frame, int fieldIndex, value) frame = " + frame);
+//    debugPrintln("Num. Locals: " + numLoc);
     if(fieldIndex < numLoc && fieldIndex >= 0)
     {
 //      vp = getVPFromFrame(frame);
       vp = getLocalsPointerFromFrame(frame);
-//      System.out.println("  Calculating VP: " + vp);
+//      debugPrintln("  Calculating VP: " + vp);
       
 //      value = Native.rdMem(vp + fieldIndex);
       Native.wrIntMem(value, vp + fieldIndex);
-//      System.out.println("  Value written to stack frame is: " + value);
+//      debugPrintln("  Value written to stack frame is: " + value);
     }
     else
     {
-      System.out.println("  Invalid index: " + fieldIndex);
-      System.out.println("  Num. locals is: " + numLoc);
+      debugPrintln("  Invalid index: " + fieldIndex);
+      debugPrintln("  Num. locals is: " + numLoc);
     }
   }
 
@@ -882,14 +977,14 @@ public final class JopDebugKernel
     // assume it's not the first and try to show otherwise
     boolean result = false;
     
-//    System.out.println("isFirstFrame()");
+//    debugPrintln("isFirstFrame()");
     if(mainMethodFramePointer == 0)
     {
       //called only once to calculate the main method pointer.
       mainMethodFramePointer = calculateMainMethodFramePointer();
       
-//      System.out.print("main method calculated: ");
-//      System.out.println(mainMethodFramePointer);
+//      debugPrint("main method calculated: ");
+//      debugPrintln(mainMethodFramePointer);
     }
     
     if(framePointer <= mainMethodFramePointer)
@@ -926,21 +1021,21 @@ public final class JopDebugKernel
     // Then comes the location of the first frame pointer.
     
     int var = Native.rdMem(1);      // pointer to 'special' pointers
-    System.out.println("Pointer to 'special' pointers:" + var);
+    debugPrintln("Pointer to 'special' pointers:" + var);
     
     var = Native.rdMem(var+3);  // pointer to main method struct
-    System.out.println("Pointer to main method struct:" + var);
+    debugPrintln("Pointer to main method struct:" + var);
     
     
     var= getCPLocalsArgsFromMP(var); // get val from 'main' method structure
     
-    System.out.println("Main arguments:" + getArgCountFromVal(var));
-    System.out.println("Main locals:" + getLocalsCountFromVal(var));
+    debugPrintln("Main arguments:" + getArgCountFromVal(var));
+    debugPrintln("Main locals:" + getLocalsCountFromVal(var));
     
     // get the number of local variables in the stack frame
     var = getArgCountFromVal(var) + getLocalsCountFromVal(var);
     
-    System.out.println("Stack base pointer: " + STACK_BASE_POINTER);
+    debugPrintln("Stack base pointer: " + STACK_BASE_POINTER);
     
     // return the main method pointer using the stack base pointer as reference
     return (STACK_BASE_POINTER + var);
@@ -1043,30 +1138,32 @@ public final class JopDebugKernel
     int result;
     
     // read the method pointer
-    methodStructPointer = inputStream.readInt();
+    methodStructPointer = debugChannel.readIntValue();
     
     // read the instruction offset
-    instructionOffset = inputStream.readInt();
+    instructionOffset = debugChannel.readIntValue();
     
-    System.out.println("Method body before:");
+    debugPrintln("Method body before:");
     dumpMethodBody(methodStructPointer);
     
     // set the breakpoint
     result = setBreakPoint(methodStructPointer, instructionOffset);
     
-    System.out.println("Method body after:");
+    debugPrintln("Method body after:");
     dumpMethodBody(methodStructPointer);
     
     // send an ack back to keep it in sync. This also inform which instruction
     // was overwritten, so the debugger can undo it later. 
-    
-    writeInt(result);
-    
     if(result != INVALID_INSTRUCTION)
     {
+      debugChannel.sendReplySetBreakpoint(result);
       return true;
     }
-    return false;
+    else
+    {
+      debugChannel.sendReplyWithErrorCode(ErrorConstants.ERROR_INVALID_LOCATION);
+      return false;
+    }
   }
   
   /**
@@ -1083,33 +1180,34 @@ public final class JopDebugKernel
     int result;
     
     // read the method pointer
-    methodStructPointer = inputStream.readInt();
+    methodStructPointer = debugChannel.readIntValue();
     
     // read the instruction offset
-    instructionOffset = inputStream.readInt();
+    instructionOffset = debugChannel.readIntValue();
     
     // read the new instruction
-    newInstruction = inputStream.readInt();
+    newInstruction = debugChannel.readIntValue();
     
-    System.out.println("Method body before:");
+    debugPrintln("Method body before:");
     dumpMethodBody(methodStructPointer);
     
     // clear the breakpoint
     result = clearBreakPoint(methodStructPointer, instructionOffset, newInstruction);
     
-    System.out.println("Method body after:");
+    debugPrintln("Method body after:");
     dumpMethodBody(methodStructPointer);
     
-    // send an ack back to keep it in sync. This also inform which instruction
-    // was overwritten, so the debugger can undo it later. 
-    
-    writeInt(result);
-    
+    // inform if execution was successful or not.
     if(result != INVALID_INSTRUCTION)
     {
+      debugChannel.sendReply();
       return true;
     }
-    return false;
+    else
+    {
+      debugChannel.sendReplyWithErrorCode(ErrorConstants.ERROR_INVALID_LOCATION);
+      return false;
+    }
   }
   
   /**
@@ -1124,16 +1222,16 @@ public final class JopDebugKernel
   {
     int frameIndex = inputStream.readInt();
     
-    System.out.print(" Frame index: " );
-    System.out.print(frameIndex);
+    debugPrint(" Frame index: " );
+    debugPrint(frameIndex);
     
     int pointer;
     
     pointer = getFramePointerAtIndex(frameIndex + 1);
     pointer = getMPFromFrame(pointer);
     
-    System.out.print("  Method pointer: ");
-    System.out.println(pointer);
+    debugPrint("  Method pointer: ");
+    debugPrintln(pointer);
     
     writeInt(pointer);
   }
@@ -1145,27 +1243,40 @@ public final class JopDebugKernel
    */
   private static void handleGetLocalVariableCommand() throws IOException
   {
-    int frameIndex = inputStream.readInt();
-    int fieldIndex = inputStream.readInt();
+    int frameIndex;
+    int fieldIndex;
     int value;
     int pointer;
     
-    System.out.print(" Frame index: " );
-    System.out.print(frameIndex);
-    System.out.print(" Variable index: " );
-    System.out.println(fieldIndex);
+    // skip the thread index for now...
+    debugChannel.skipBytes(4);
+    
+    // read the frame index
+    frameIndex = debugChannel.readIntValue();
+    
+    // skip the number of variables for now. Assume just one.
+    debugChannel.skipBytes(4);
+    
+    // read the field index
+    fieldIndex = debugChannel.readIntValue();
+    
+    
+    debugPrint(" Frame index: " );
+    debugPrint(frameIndex);
+    debugPrint(" Variable index: " );
+    debugPrintln(fieldIndex);
     
     pointer = getFramePointerAtIndex(frameIndex);
     value = getLocalVariable(pointer, fieldIndex);
     
-    System.out.print("  Value: ");
-    System.out.println(value);
-    System.out.print(" Pointer: ");
-    System.out.println(pointer);
+    debugPrint("  Value: ");
+    debugPrintln(value);
+    debugPrint(" Pointer: ");
+    debugPrintln(pointer);
     
-    writeInt(value);
+    debugChannel.sendReplyGetLocalVariable(value);
   }
-
+  
   /**
    * Get the frame pointer at the given index.
    * 
@@ -1197,26 +1308,130 @@ public final class JopDebugKernel
    */
   private static void handleSetLocalVariableCommand() throws IOException
   {
-    int frameIndex = inputStream.readInt();
-    int fieldIndex = inputStream.readInt();
-    int value = inputStream.readInt();
+    int frameIndex;
+    int fieldIndex;
+    int slotId;
+    int value;
     int pointer;
+    boolean error = false;
     
-    System.out.print(" Frame index: " );
-    System.out.print(frameIndex);
-    System.out.print(" Variable index: " );
-    System.out.println(fieldIndex);
+    // just to make the compier happy;)
+    value = 0;
     
+    // skip the thread ID for now
+    debugChannel.skipInt();
+    
+    frameIndex = debugChannel.readIntValue();
+    
+    // skip the number of variables for now. Assume 1 always.
+    debugChannel.skipInt();
+    
+    // get the field index
+    fieldIndex = debugChannel.readIntValue();
+    
+    // get the frame pointer
     pointer = getFramePointerAtIndex(frameIndex);
-    setLocalVariable(pointer, fieldIndex, value);
     
-    System.out.print("  Value: ");
-    System.out.println(value);
-    System.out.print(" Pointer: ");
-    System.out.println(pointer);
+    // get the field type
+    slotId = debugChannel.readByteValue();
     
-//    writeInt(4);
-    writeInt(value);
+    debugPrint(" Frame index: " );
+    debugPrint(frameIndex);
+    debugPrint(" Variable index: " );
+    debugPrint(fieldIndex);
+    debugPrint(" Slot ID: " );
+    debugPrint(slotId);
+    debugPrint(" Pointer: " );
+    debugPrintln(pointer);
+    
+    switch (slotId)
+    {
+      // 1 byte:
+      case TagConstants.BOOLEAN:
+      case TagConstants.BYTE:
+      {
+        debugPrintln("1 byte: ");
+        
+        value = debugChannel.readByteValue();
+        setLocalVariable(pointer, fieldIndex, value);
+        break;
+      }
+      
+      // 2 bytes:
+      case TagConstants.CHAR:
+      case TagConstants.SHORT:
+      {
+        debugPrintln("2 bytes: ");
+        
+        value = debugChannel.readShortValue();
+        setLocalVariable(pointer, fieldIndex, value);
+        break;
+      }
+      
+      // 4 bytes:
+      case TagConstants.OBJECT:
+      case TagConstants.ARRAY:
+      case TagConstants.STRING:
+      case TagConstants.FLOAT:
+      case TagConstants.INT:
+      {
+        debugPrintln("4 bytes: ");
+        
+        value = debugChannel.readIntValue();
+        setLocalVariable(pointer, fieldIndex, value);
+        break;
+      }
+      
+      // 8 bytes:
+      case TagConstants.DOUBLE:
+      case TagConstants.LONG:
+      {
+        debugPrintln("8 bytes: ");
+        
+        value = debugChannel.readIntValue();
+        setLocalVariable(pointer, fieldIndex, value);
+        
+        value = debugChannel.readIntValue();
+        setLocalVariable(pointer, fieldIndex + 1, value);
+        break;
+      }
+      
+      // error: those values should not happen.
+      case TagConstants.VOID:
+      case TagConstants.THREAD:
+      case TagConstants.THREAD_GROUP:
+      case TagConstants.CLASS_LOADER:
+      case TagConstants.CLASS_OBJECT:
+      default:
+      {
+        debugPrint("Error. ");
+        
+        error = true;
+        break;
+      }
+    }
+    
+    if(error == false)
+    {
+      debugPrint("  Value: ");
+      debugPrintln(value);
+      debugPrint(" Pointer: ");
+      debugPrintln(pointer);
+    }
+    else
+    {
+      debugPrintln("  Failure setting a local variable!");
+    }
+    
+    // finally, send a reply to report success or failure.
+    if(error)
+    {
+      debugChannel.sendReplyWithErrorCode(ErrorConstants.ERROR_INVALID_FRAMEID);
+    }
+    else
+    {
+      debugChannel.sendReply();
+    }
   }
   
   /**
@@ -1226,41 +1441,94 @@ public final class JopDebugKernel
    */
   private static void handleGetNumberOfLocalVariablesCommand() throws IOException
   {
-    int frameIndex = inputStream.readInt();
+    int frameIndex;
     int framePointer;
     int numLocals;
     
-    System.out.print(" Frame index: " );
-    System.out.print(frameIndex);
+    frameIndex = debugChannel.readIntValue();
+    
+    debugPrint(" Frame index: " );
+    debugPrint(frameIndex);
     
     framePointer = getFramePointerAtIndex(frameIndex);
     numLocals = getNumLocalsAndParametersFromFrame(framePointer);
     
-    System.out.print(" Number of local variables: " );
-    System.out.println(numLocals);
+    debugPrint(" Number of local variables: " );
+    debugPrintln(numLocals);
     
-    writeInt(numLocals);
+    debugChannel.sendReplyFrameCount(numLocals);
   }
   
   /**
-   * Test to check if all types of packets are being properly 
+   * Test to check if some types of packets are being properly 
    * created.
    * @throws IOException 
    */
   private static void handleTestSendJDWPPackets() throws IOException
   {
     int framePointer = getCurrentFramePointer();
-    
-    
     int numPackets = 3;
     
-    writeInt(numPackets);
+    debugChannel.sendReplyTestJDWPPackets(numPackets);
     
     debugChannel.sendVMStartEvent();
     sendBreakpointEvent(framePointer);
     debugChannel.sendVMDeathEvent();
   }
   
+  /**
+   * Another test. 
+   * 
+   * @throws IOException 
+   */
+  private static void handleTestReceiveJDWPPackets(int framePointer) throws IOException
+  {
+    int commandSet, command;
+    
+    debugChannel.receivePacket();
+    
+    commandSet = debugChannel.readInputCommandSet();
+    command = debugChannel.readInputCommand();
+    
+    handleJDWPRequest(commandSet, command, framePointer);
+  }
+  
+  /**
+   * @param commandSet
+   * @param command
+   * @throws IOException 
+   */
+  private static void handleJDWPRequest(int commandSet, int command,
+    int framePointer) throws IOException
+  {
+    if((commandSet == 1) && (command == 10))
+    {
+      debugPrintln("Exit: stop execution.");
+      debugChannel.sendReply();
+      
+      // TODO: where is the proper place to send a VMDeath event?
+      // maybe after the main method return, too? ;)
+      debugChannel.sendVMDeathEvent();
+      
+      System.exit(0);
+    }
+    
+    // calculate the stack depth of the caller method.
+    if((commandSet == CommandConstants.ThreadReference_Command_Set) &&
+       (command == CommandConstants.ThreadReference_FrameCount))
+    {
+      debugPrintln("Get stack depth");
+      
+      // get stack depth of the frame for the breakpoint call
+      int frameCount = getStackDepth(framePointer);
+      
+      debugPrint(" Stack depth of caller method: ");
+      debugPrintln(frameCount);
+
+      debugChannel.sendReplyFrameCount(frameCount);
+    }
+  }
+    
   /**
    * Set a breakpoint instruction.
    * 
@@ -1274,7 +1542,7 @@ public final class JopDebugKernel
   {
     int instruction;
     
-//    System.out.println("setBreakPoint(int methodPointer, int instructionOffset)");
+//    debugPrintln("setBreakPoint(int methodPointer, int instructionOffset)");
     
     instruction = overwriteInstruction(methodStructPointer, instructionOffset,
         BREAKPOINT_INSTRUCTION);
@@ -1295,7 +1563,7 @@ public final class JopDebugKernel
   {
     int instruction;
     
-//    System.out.println("clearBreakPoint(int methodStructPointer,int instructionOffset, int newInstruction)");
+//    debugPrintln("clearBreakPoint(int methodStructPointer,int instructionOffset, int newInstruction)");
     
     instruction = overwriteInstruction(methodStructPointer, instructionOffset,
         newInstruction);
@@ -1325,12 +1593,12 @@ public final class JopDebugKernel
     int instructionAddress;
     int word;
     
-    System.out.println("setBreakPoint(int methodPointer, int instructionOffset)");
+    debugPrintln("setBreakPoint(int methodPointer, int instructionOffset)");
     dumpMethodStruct(methodStructPointer);
     
     startAddress = getMethodStartAddress(methodStructPointer);
     // beware: method sizes are in words, not in bytes. And 1 word = 4 bytes. 
-    methodSize = getMethodSize(methodStructPointer);
+    methodSize = getMethodSizeInWords(methodStructPointer);
     // calculate the method size in bytes. 
     methodSize *= 4;
     
@@ -1338,7 +1606,7 @@ public final class JopDebugKernel
     if(instructionOffset >= 0 && instructionOffset < methodSize)
     {
       instruction = readBytecode(startAddress, instructionOffset);
-      System.out.println("Old instruction: " + instruction);
+      debugPrintln("Old instruction: " + instruction);
       
       writeBytecode(newInstruction, startAddress, instructionOffset);
 
@@ -1346,19 +1614,19 @@ public final class JopDebugKernel
 //      instructionAddress = startAddress + instructionOffset;
 //      
 //      instruction = Native.rdMem(instructionAddress);
-//      System.out.println("Old instruction: " + instruction);
+//      debugPrintln("Old instruction: " + instruction);
 //      
 //      Native.wrMem(newInstruction, instructionAddress);
     }
     else
     {
-      System.out.print("Wrong instruction offset: ");
-      System.out.println(instructionOffset);
+      debugPrint("Wrong instruction offset: ");
+      debugPrintln(instructionOffset);
       
-      System.out.print("Method size:");
-      System.out.println(methodSize);
+      debugPrint("Method size:");
+      debugPrintln(methodSize);
       
-      System.out.println();
+      debugPrintln();
     }
     
     return instruction;
@@ -1392,12 +1660,12 @@ public final class JopDebugKernel
     address = startAddress + word;
     data = Native.rdMem(address);
     
-//    System.out.println("Word:      " + word);
-//    System.out.println("Remainder: " + index);
-//    System.out.println("address:   " + address);
-//    System.out.print("data:      ");
+//    debugPrintln("Word:      " + word);
+//    debugPrintln("Remainder: " + index);
+//    debugPrintln("address:   " + address);
+//    debugPrint("data:      ");
 //    printIntHex(data);
-//    System.out.println();
+//    debugPrintln();
     
     switch(index)
     {
@@ -1425,9 +1693,9 @@ public final class JopDebugKernel
     
     result = result & 0x00ff;
     
-//    System.out.print("Result: ");
+//    debugPrint("Result: ");
 //    printIntHex(result);
-//    System.out.println();
+//    debugPrintln();
     
     return result;
   }
@@ -1462,12 +1730,12 @@ public final class JopDebugKernel
     address = startAddress + word;
     data = Native.rdMem(address);
     
-//    System.out.println("Word:      " + word);
-//    System.out.println("Remainder: " + index);
-//    System.out.println("address:   " + address);
-    System.out.print("data:      ");
+//    debugPrintln("Word:      " + word);
+//    debugPrintln("Remainder: " + index);
+//    debugPrintln("address:   " + address);
+    debugPrint("data:      ");
     printIntHex(data);
-    System.out.println();
+    debugPrintln();
     
     // clear all the other bytes, just in case. 
     newInstruction &= 0x00ff;
@@ -1505,9 +1773,9 @@ public final class JopDebugKernel
     // finally, write it back into memory. Bytecode changed!
     Native.wrMem(data, address);
     
-    System.out.print("new data:  ");
+    debugPrint("new data:  ");
     printIntHex(data);
-    System.out.println();
+    debugPrintln();
   }
   
   private static void printIntHex(int value)
@@ -1519,19 +1787,19 @@ public final class JopDebugKernel
   {
     int instruction;
     
-    System.out.println("----------------------------------------");
+    debugPrintln("----------------------------------------");
     instruction = Native.rdMem(instructionAddress + 1);
-    System.out.println("Instruction: " + instruction);
+    debugPrintln("Instruction: " + instruction);
     
     instruction = Native.rdMem(instructionAddress + 1);
-    System.out.println("Instruction: " + instruction);
+    debugPrintln("Instruction: " + instruction);
     
     instruction = Native.rdMem(instructionAddress + 2);
-    System.out.println("Instruction: " + instruction);
+    debugPrintln("Instruction: " + instruction);
     
     instruction = Native.rdMem(instructionAddress + 3);
-    System.out.println("Instruction: " + instruction);
-    System.out.println("----------------------------------------");
+    debugPrintln("Instruction: " + instruction);
+    debugPrintln("----------------------------------------");
   }
   
   /**
@@ -1559,7 +1827,7 @@ public final class JopDebugKernel
    * @param methodPointer
    * @return
    */
-  private static int getMethodSize(int methodPointer)
+  private static int getMethodSizeInWords(int methodPointer)
   {
     int startAddress;
     int methodSize;
@@ -1618,7 +1886,7 @@ public final class JopDebugKernel
   {
     int data;
     
-    System.out.print("Method structure:  ");
+    debugPrint("Method structure:  ");
     
     data = Native.rdMem(methodPointer);
     EmbeddedOutputStream.printIntHex(data, System.out);
@@ -1626,26 +1894,26 @@ public final class JopDebugKernel
     data = Native.rdMem(methodPointer + 1);
     EmbeddedOutputStream.printIntHex(data, System.out);
     
-    System.out.println();
+    debugPrintln();
     
-    System.out.println();
+    debugPrintln();
     
-    System.out.print("Start address: ");
-    System.out.println(getMethodStartAddress(methodPointer));
+    debugPrint("Start address: ");
+    debugPrintln(getMethodStartAddress(methodPointer));
     
-    System.out.print("Size (words):  ");
-    System.out.println(getMethodSize(methodPointer));
+    debugPrint("Size (words):  ");
+    debugPrintln(getMethodSizeInWords(methodPointer));
     
-    System.out.print("Constant pool: ");
-    System.out.println(getMethodConstantPool(methodPointer));
+    debugPrint("Constant pool: ");
+    debugPrintln(getMethodConstantPool(methodPointer));
     
-    System.out.print("Local count:   ");
-    System.out.println(getMethodLocalsCount(methodPointer));
+    debugPrint("Local count:   ");
+    debugPrintln(getMethodLocalsCount(methodPointer));
     
-    System.out.print("Arg count:     ");
-    System.out.println(getMethodArgCount(methodPointer));
+    debugPrint("Arg count:     ");
+    debugPrintln(getMethodArgCount(methodPointer));
     
-    System.out.println();
+    debugPrintln();
   }
   
   public static final int getCurrentMethodPointer()
@@ -1658,7 +1926,7 @@ public final class JopDebugKernel
     // get the method pointer from the previous method directly from the stack
     data = getMPFromFrame(data);
     
-//    System.out.println("getCurrentMethodPointer()");
+//    debugPrintln("getCurrentMethodPointer()");
     
     return data;
   }
@@ -1668,27 +1936,37 @@ public final class JopDebugKernel
     int index, start, size, data;
     
     start = getMethodStartAddress(methodPointer);
-    size = getMethodSize(methodPointer);
+    size = getMethodSizeInWords(methodPointer);
     
-    System.out.println("Method body:");
-    System.out.println();
+    debugPrintln("Method body:");
+    debugPrintln();
     
     for(index = 0; index < size; index++)
     {
       data = Native.rdMem(start + index);
       EmbeddedOutputStream.printIntHex(data, System.out);
-      System.out.print(" ");
+      debugPrint(" ");
 //      if((index & 0x07) == 0 && (index > 0))
       if(((index + 1)% 0x08) == 0)
       {
-//        System.out.print("Index:");
-//        System.out.println(index);
-        System.out.println();
+//        debugPrint("Index:");
+//        debugPrintln(index);
+        debugPrintln();
       }
     }
     
-    System.out.println();
-    System.out.println();
+    debugPrintln();
+    debugPrintln();
+  }
+  
+  /**
+   * Methods to print the stack content in a way that is
+   * easy to inspect.
+   */
+  private static void prettyPrintStack()
+  {
+    int framePointer = getCurrentFramePointer();
+    prettyPrintStack(framePointer);
   }
   
   /**
@@ -1698,9 +1976,8 @@ public final class JopDebugKernel
    * @param frame
    * @param previousFrame
    */
-  private static void prettyPrintStack()
+  private static void prettyPrintStack(int frame)
   {
-    int frame;
     int previousFrame;
     
 //    previousFrame = getCurrentFramePointer();
@@ -1715,7 +1992,7 @@ public final class JopDebugKernel
       
       if(isFirstFrame(frame))
       {
-        System.out.println("Stack frame for main method (next):");
+        debugPrintln("Stack frame for main method (next):");
       }
       
       prettyPrintStackFrame(frame, previousFrame);
@@ -1736,10 +2013,10 @@ public final class JopDebugKernel
     TestJopDebugKernel.printLine();
     
     printVariablesFromFrame(frame);
-    System.out.println();
+    debugPrintln();
     
     printRegistersFromFrame(frame);
-    System.out.println();
+    debugPrintln();
     
     printLocalStackFromFrame(frame, previousFrame);
     
@@ -1757,29 +2034,29 @@ public final class JopDebugKernel
     localPointer = getLocalsPointerFromFrame(frame);
     length = frame - localPointer;
     
-//    System.out.print("  Local pointer: ");
-//    System.out.print(localPointer);
-//    System.out.print("  Frame pointer: ");
-//    System.out.print(frame);
-//    System.out.print("  Length: ");
-//    System.out.print(length);
-//    System.out.println();
+//    debugPrint("  Local pointer: ");
+//    debugPrint(localPointer);
+//    debugPrint("  Frame pointer: ");
+//    debugPrint(frame);
+//    debugPrint("  Length: ");
+//    debugPrint(length);
+//    debugPrintln();
     
     if(length < 0 || length > MAX_LOCAL_VARIABLES)
     {
-      System.out.println("FAILURE!!! wrong local pointer!");
-      System.out.print("  Local pointer: ");
-      System.out.print(localPointer);
+      debugPrintln("FAILURE!!! wrong local pointer!");
+      debugPrint("  Local pointer: ");
+      debugPrint(localPointer);
       
-      System.out.print("  Frame: ");
-      System.out.print(frame);
+      debugPrint("  Frame: ");
+      debugPrint(frame);
       
-      System.out.print("  Max. variables: ");
-      System.out.print(MAX_LOCAL_VARIABLES);
+      debugPrint("  Max. variables: ");
+      debugPrint(MAX_LOCAL_VARIABLES);
       return;
     }
     
-    System.out.println("Local variables:");
+    debugPrintln("Local variables:");
     
     // print all variables before the frame pointer
     printStackArea(localPointer, length);
@@ -1794,27 +2071,27 @@ public final class JopDebugKernel
   {
     int value;
     
-    System.out.print("Previous registers - SP: ");
+    debugPrint("Previous registers - SP: ");
     value = getSPFromFrame(frame);
-    System.out.print(value);
+    debugPrint(value);
     
-    System.out.print("  PC: ");
+    debugPrint("  PC: ");
     value = getPCFromFrame(frame);
-    System.out.print(value);
+    debugPrint(value);
     
-    System.out.print("  VP: ");
+    debugPrint("  VP: ");
     value = getVPFromFrame(frame);
-    System.out.print(value);
+    debugPrint(value);
     
-    System.out.print("  CP: ");
+    debugPrint("  CP: ");
     value = getCPFromFrame(frame);
-    System.out.print(value);
+    debugPrint(value);
     
-    System.out.print("  MP: ");
+    debugPrint("  MP: ");
     value = getMPFromFrame(frame);
-    System.out.print(value);
+    debugPrint(value);
     
-    System.out.println();
+    debugPrintln();
   }
   
   /**
@@ -1844,26 +2121,26 @@ public final class JopDebugKernel
     // current frame when the local stack is empty.
     length = getSPFromFrame(previousFrame) - localStackPointer + 1;
     
-//    System.out.print("Frame: ");
-//    System.out.print(frame);
-//    System.out.print("  localStackPointer: ");
-//    System.out.print(localStackPointer);
-//    System.out.print("  previousFrame: ");
-//    System.out.print(previousFrame);
+//    debugPrint("Frame: ");
+//    debugPrint(frame);
+//    debugPrint("  localStackPointer: ");
+//    debugPrint(localStackPointer);
+//    debugPrint("  previousFrame: ");
+//    debugPrint(previousFrame);
 //    
-//    System.out.print("  length: ");
-//    System.out.print(length);
+//    debugPrint("  length: ");
+//    debugPrint(length);
     
     if(length > 0)
     {
-      System.out.print("Local execution stack size: ");
-      System.out.println(length);
+      debugPrint("Local execution stack size: ");
+      debugPrintln(length);
       printStackArea(localStackPointer, length);
     }
     else
     {
-      System.out.println("Local execution stack: empty");
-      // System.out.println("Length: " + length);
+      debugPrintln("Local execution stack: empty");
+      // debugPrintln("Length: " + length);
     }
   }
   
@@ -1890,15 +2167,88 @@ public final class JopDebugKernel
     {
       data = Native.rdIntMem(initialPosition + index);
       printIntHex(data);
-      System.out.print(" ");
+      debugPrint(" ");
       
       if(((index + 1)% 0x08) == 0)
       {
-//        System.out.print("Index:");
-//        System.out.println(index);
-        System.out.println();
+//        debugPrint("Index:");
+//        debugPrintln(index);
+        debugPrintln();
       }
     }
-    System.out.println();
+    debugPrintln();
+  }
+  
+  public static void debugPrint(Object data)
+  {
+    if(shouldPrintInternalMessages)
+    {
+      System.out.print(data);
+    }
+  }
+  
+  public static void debugPrintln(Object data)
+  {
+    if(shouldPrintInternalMessages)
+    {
+      System.out.print(data);
+      System.out.println();
+    }
+  }
+  
+  public static void debugPrint(int data)
+  {
+    if(shouldPrintInternalMessages)
+    {
+      System.out.print(data);
+    }
+  }
+  
+  public static void debugPrintln(int data)
+  {
+    if(shouldPrintInternalMessages)
+    {
+      System.out.println(data);
+    }
+  }
+  
+  public static void debugPrintln()
+  {
+    debugPrintln("");
+  }
+  
+  /**
+   * For JDWP support development ONLY.
+   * 
+   * This method enable internal messages. 
+   * It turn on the tracing flag, so internal messages
+   * will be sent to the standard output to help during
+   * development. 
+   */
+  private static void enableDevelopmentInternalMessages()
+  {
+    shouldPrintInternalMessages = true;
+  }
+  
+  /**
+   * For JDWP support development ONLY.
+   * 
+   * This method disable internal messages. 
+   * It turn off the tracing flag, so internal messages
+   * will *not* be sent to the standard output. 
+   */
+  private static void disableDevelopmentInternalMessages()
+  {
+    shouldPrintInternalMessages = true;
+  }
+  
+  /**
+   * Inform if should print or not messages related to development.
+   *  
+   * @return
+   */
+  public static boolean shouldPrintInternalMessages()
+  {
+	return shouldPrintInternalMessages;
   }
 }
