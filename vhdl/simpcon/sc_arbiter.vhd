@@ -81,7 +81,7 @@ gen_register: for i in 0 to cpu_cnt-1 generate
 			reg_in(i).address <= (others => '0');
 		elsif rising_edge(clk) then
 			if arb_out(i).rd = '1' or arb_out(i).wr = '1' then
-		  	reg_in(i).rd <= arb_out(i).rd;
+				reg_in(i).rd <= arb_out(i).rd;
 				reg_in(i).wr <= arb_out(i).wr;
 				reg_in(i).address <= arb_out(i).address;
 				reg_in(i).wr_data <= arb_out(i).wr_data;

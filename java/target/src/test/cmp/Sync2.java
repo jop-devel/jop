@@ -8,6 +8,7 @@ package cmp;
 
 import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
+import jbe.LowLevel;
 import cmp.IntegerClass;
 
 public class Sync2 {		
@@ -29,12 +30,19 @@ public class Sync2 {
 			
 			while(true)
 			{
-				for(int i = 0; i<100; i++);
-		
-				synchronized(lock1)
-				{
+				
+//				synchronized(lock1)
+//				{
 					print_02d(whoAmI.number);
-				}
+//				}
+				
+				for(int i = 0; i<100; i++);
+				
+//				synchronized(lock1)
+//				{
+//					whoAmI.number = cpu_id;
+//				}
+				
 			}
 		}
 		else
@@ -43,7 +51,7 @@ public class Sync2 {
 			{	
 				while(true)
 				{
-					for(int i = 0; i<10; i++);
+					for(int i = 0; i<31; i++);
 
 					synchronized(lock1)
 					{
@@ -55,7 +63,8 @@ public class Sync2 {
 			{
 				while(true)
 				{
-					for(int i = 0; i<1; i++);
+					for(int i = 0; i<7; i++);
+					
 					synchronized(lock1)
 					{
 						whoAmI.number = cpu_id;
