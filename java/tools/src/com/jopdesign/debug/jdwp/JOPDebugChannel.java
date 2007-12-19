@@ -28,12 +28,17 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 
+import com.jopdesign.debug.jdwp.constants.CommandConstants;
 import com.jopdesign.debug.jdwp.constants.JDWPConstants;
 import com.jopdesign.debug.jdwp.constants.NetworkConstants;
+import com.jopdesign.debug.jdwp.constants.TagConstants;
 import com.jopdesign.debug.jdwp.io.HexadecimalInputStream;
+import com.jopdesign.debug.jdwp.io.PacketReader;
+import com.jopdesign.debug.jdwp.io.PacketWriter;
 import com.jopdesign.debug.jdwp.model.Frame;
 import com.jopdesign.debug.jdwp.model.FrameList;
 import com.jopdesign.debug.jdwp.model.Location;
+import com.jopdesign.debug.jdwp.util.Debug;
 import com.sun.tools.jdi.PacketWrapper;
 import com.sun.tools.jdi.SocketConnectionWrapper;
 
@@ -57,12 +62,28 @@ public class JOPDebugChannel
 {
   private static final int JOP_DEBUG_COMMAND_SET = 100;
   private static final int JOP_DEBUG_COMMAND_TEST_JDWP = 1;
+  private static final int JOP_DEBUG_COMMAND_TEST_JDWP_SENT = 2;
+  
+  // a static variable to create packet ID's. 
+  private static int packetCounter = 1;
   
   private DataInputStream input;
   private DataOutputStream output;
   private Socket socket;
   
   private boolean connected = false;
+  
+  // two objects to help during packet creation and reading.
+  private PacketWriter writer;
+  private PacketReader reader;
+  
+  private PacketWrapper lastPacket;
+  
+  public JOPDebugChannel()
+  {
+    writer = new PacketWriter();
+    reader = new PacketReader();
+  }
   
   /**
    * Connect this channel to the debug client (inside JOP),
@@ -190,13 +211,15 @@ public class JOPDebugChannel
     checkConnection();
     //------------------------------------------------------------
     // send "exit" command
-    output.writeByte(1);
-    output.writeByte(10);
+    PacketWrapper packet = createRequestExit(exitCode);
+    sendPacket(packet);
     
-    // does not make much sense here, but...
-//    output.writeByte(exitCode);
+    // receive an answer, just to sync
+    packet = receivePacket();
     
-    input.readInt();
+    // TODO: later handle properly the VMDeath event.
+    // for now, just consume it.
+    packet = receivePacket();
   }
   
   /**
@@ -235,11 +258,12 @@ public class JOPDebugChannel
   {
     checkConnection();
     //------------------------------------------------------------
-    // send "resume" command
-    output.writeByte(1);
-    output.writeByte(9);
+    // send "resume virtual machine" command
+    PacketWrapper packet = createRequestResumeVirtualMachine();
+    sendPacket(packet);
     
-    input.readInt();    
+    // receive an answer, just to sync
+    packet = receivePacket();
   }
   
   /**
@@ -256,11 +280,12 @@ public class JOPDebugChannel
   {
     checkConnection();
     //------------------------------------------------------------
-    // send "resume" command
-    output.writeByte(11);
-    output.writeByte(3);
+    // send "resume thread" command
+    PacketWrapper packet = createRequestResumeThread();
+    sendPacket(packet);
     
-    input.readInt();
+    // receive an answer, just to sync
+    packet = receivePacket();
   }
   
   /**
@@ -289,41 +314,84 @@ public class JOPDebugChannel
    */
   public FrameList getStackFrameList() throws IOException
   {
-    int framePointer;
+    int threadId;
+    int startFrame;
+    int length;
     
+    checkConnection();
     //------------------------------------------------------------
     // request stack information
-    output.writeByte(11);
-    output.writeByte(6);
     
-    // request all frames:
-    output.writeInt(-1);
+    // the default thread ID
+    threadId = 1;
     
-    // read the number of frames
-    int numFrames = input.readInt();
+    // get the index of the top frame
+    startFrame = getStackDepth() - 1;
+    
+    // standard value to request all remaining frames
+    length = -1;
+    
+    PacketWrapper packet;
+    packet = createRequestStackFrameList(threadId, startFrame, length);
+    sendPacket(packet);
+    
+    // receive an answer with information about the stack frames
+    packet = receivePacket();
+    reader.setPacket(packet);
+    
     FrameList list = new FrameList();
-    int index;
-    for(index = 0; index < numFrames; index++)
+    if(packet.hasNoError() == false)
     {
-      Location location = new Location();
-      Frame frame = new Frame(location);
+      // the answer has an error.
+      // TODO: handle the error packet here
+      Debug.print("Failure: ");
+      Debug.println(packet.getErrorCode());
+    }
+    else
+    {
+      // the answer has no error. So, fill the frame list.
       
-      // read the program counter, method pointer and frame pointer
-      int programCounter = input.readInt();
-      location.setIndex(programCounter);
+      // read the number of frames
+      int numFrames;
       
-      int methodPointer = input.readInt();
-      location.setMethodId(methodPointer);
+      numFrames = reader.readInt();
       
-      framePointer = input.readInt();
-      frame.setFrameId(framePointer);
+      int frameId;
       
-//      System.out.println("  Program counter: " + programCounter);
-//      System.out.println("  Method pointer: " + methodPointer);
-//      System.out.println("  Frame Pointer: " + framePointer);
-      System.out.println(frame);
+      int classId;
+      int methodId;
+      int methodIndex;
       
-      list.add(frame);
+      int index;
+      for(index = 0; index < numFrames; index++)
+      {
+    	Location location = new Location();
+    	Frame frame = new Frame(location);
+    	
+    	frameId = reader.readInt();
+    	frame.setFrameId(frameId);
+    	
+    	// get the tag
+    	byte tag = reader.readByte();
+    	location.setTag(tag);
+    	
+    	// read the class ID, method ID and the method index.
+    	classId = reader.readInt();
+    	methodId = reader.readInt();
+    	
+    	reader.skip(4);
+    	methodIndex = reader.readInt();
+    	
+    	// set the values...
+    	location.setClassId(classId);
+    	location.setMethodId(methodId);
+    	location.setIndex(methodIndex);
+    	
+    	// for development
+    	Debug.println(frame);
+    	
+    	list.add(frame);
+      }
     }
     
     return list;
@@ -340,13 +408,19 @@ public class JOPDebugChannel
     checkConnection();
     
     int received;
+    PacketWrapper packet;
     //------------------------------------------------------------
     // query the stack depth
-    output.writeByte(11);
-    output.writeByte(7);
+    packet = createRequestThreadReferenceFrameCount();
+    sendPacket(packet);
     
-    received = input.readInt();
-    System.out.println("  Stack depth: " + received);
+    // receive an answer with the variable value
+    packet = receivePacket();
+    
+    reader.setPacket(packet);
+    received = reader.readInt();
+
+    Debug.println("  Stack depth: " + received);
     
     return received;
   }
@@ -355,23 +429,20 @@ public class JOPDebugChannel
    * Print information about all the stack frames currently 
    * on the call stack.
    * 
-   * @return
    * @throws IOException
    */
-  public int printStackFrames() throws IOException
+  public void printStackFrames() throws IOException
   {
     checkConnection();
     
-    int received;
     //------------------------------------------------------------
     // request to print all stack frames
-    output.writeByte(11);
-    output.writeByte(13);
+    PacketWrapper packet;
+    packet = createRequestPrintStackFrames(1);
+    sendPacket(packet);
     
-    received = input.readInt();
-//    System.out.println("  Stack depth: " + received);
-    
-    return received;
+    // receive an answer
+    packet = receivePacket();
   }
   
   /**
@@ -383,21 +454,18 @@ public class JOPDebugChannel
    * @return
    * @throws IOException
    */
-  public int printStackFrame(int frameIndex) throws IOException
+  public void printStackFrame(int frameIndex) throws IOException
   {
     checkConnection();
     
-    int received;
     //------------------------------------------------------------
-    // request to print all stack frames
-    output.writeByte(11);
-    output.writeByte(14);
+    // request to print one stack frame
+    PacketWrapper packet;
+    packet = createRequestPrintStackFrame(1, frameIndex);
+    sendPacket(packet);
     
-    output.writeInt(frameIndex);
-    
-    received = input.readInt();
-    
-    return received;
+    // receive an answer
+    packet = receivePacket();
   }
   
   /**
@@ -413,24 +481,27 @@ public class JOPDebugChannel
    */
   public int getLocalVariableValue(int frameIndex, int variableIndex) throws IOException
   {
-    checkConnection();
-    
     int received;
+    PacketWrapper packet;
+    
+    checkConnection();
     //------------------------------------------------------------
+    // send "stack frame -> get values" command.
+    //
+    // All indexes are zero based. So, frameIndex = 0 and variableIndex = 1 will
     // query the second local variable (index 1) on the first frame (index 0)
-    output.writeByte(16);
-    output.writeByte(1);
     
-    // frame 0 (main method call)
-//    output.writeInt(0);
-    output.writeInt(frameIndex);
+    packet = createRequestStackFrameGetValues(1, frameIndex, variableIndex);
+    sendPacket(packet);
     
-    // local variable 1 (x variable)
-//    output.writeInt(1);
-    output.writeInt(variableIndex);
-
-    received = input.readInt();
-    System.out.println("  Variable value: " + received);
+    // receive an answer with the variable value
+    packet = receivePacket();
+    
+    reader.setPacket(packet);
+    reader.skip(4);
+    received = reader.readInt();
+    
+    Debug.println("  Variable value: " + received);
     
     return received;
   }
@@ -491,27 +562,27 @@ public class JOPDebugChannel
       int value) throws IOException
   {
     checkConnection();
-    
-    int received;
     //------------------------------------------------------------
-    // set the second local variable (index 1) on the first frame (index 0)
-    output.writeByte(16);
-    output.writeByte(2);
+    // send "stack frame -> set values" command.
+    //
+    // All indexes are zero based. So, frameIndex = 0 and variableIndex = 1 will
+    // query the second local variable (index 1) on the first frame (index 0)
     
-    // frame 0 (main method call)
-//    output.writeInt(0);
-    output.writeInt(frameIndex);
+    PacketWrapper packet;
+    packet = createRequestStackFrameSetValues(1, frameIndex, variableIndex, value);
+    sendPacket(packet);
     
-    // local variable 1 (x variable)
-//    output.writeInt(1);
-    output.writeInt(variableIndex);
-
-    // local variable value to be set: 32 (x variable)
-//    output.writeInt(32);
-    output.writeInt(value);
+    // receive an answer with the variable value
+    packet = receivePacket();
     
-    received = input.readInt();
-    System.out.println("  Variable value: " + received);
+    if(packet.hasNoError())
+    {
+      System.out.println("  Variable value set.");
+    }
+    else
+    {
+      System.out.println("  Error during variable setting.");
+    }
   }
   
   /**
@@ -528,16 +599,18 @@ public class JOPDebugChannel
     
     int received;
     //------------------------------------------------------------
-    // query the second local variable (index 1) on the first frame (index 0)
-    output.writeByte(16);
-    output.writeByte(5);
+    // query the number of local variables from the given stack frame
+    PacketWrapper packet;
     
-    // frame 0 (main method call)
-//    output.writeInt(0);
-    output.writeInt(frameIndex);
+    packet = createRequestNumberOfLocalVariables(frameIndex);
+    sendPacket(packet);
     
-    received = input.readInt();
-    System.out.println("  Number of local variables: " + received);
+    // receive an answer with the data
+    packet = receivePacket();
+    reader.setPacket(packet);
+    received = reader.readInt();
+    
+    Debug.println("  Number of local variables: " + received);
     
     return received;
   }
@@ -564,33 +637,26 @@ public class JOPDebugChannel
    * @return
    * @throws IOException
    */
-  public int invokeStaticMethod(int methodStructPointer, int parameter)
+  public void invokeStaticMethod(int methodStructPointer, int parameter)
       throws IOException
   {
     checkConnection();
     
-    int received;
     // ------------------------------------------------------------
     // request machine to invoke one static method with one parameter.
     // wait until it return.
-    output.writeByte(3);
-    output.writeByte(3);
-
-    // method ID
-    // output.writeInt(622);
-    // output.writeInt(9216); // 9218: helloworld.TestJopDebugKernel.printValue(I)V
-    // output.writeInt(9222); // 9222: helloworld.TestJopDebugKernel.printLine()V
-    output.writeInt(methodStructPointer);
-
-    // method argument to be printed:
-    // output.writeInt(65);
-    output.writeInt(parameter);
-
-    // receive back the argument just to sync
-    received = input.readInt();
-    System.out.println("  Variable value: " + received);
-
-    return received;
+    //
+    // some methods for testing (search for the address inside the .jop file):
+    //   9218: debug.TestJopDebugKernel.printValue(I)V
+    //   9222: debug.TestJopDebugKernel.printLine()V
+    
+    PacketWrapper packet;
+    
+    packet = createRequestInvokeStatic(methodStructPointer, parameter);
+    sendPacket(packet);
+    
+    // receive an answer, just to sync
+    packet = receivePacket();
   }
   
   /**
@@ -598,13 +664,12 @@ public class JOPDebugChannel
    * no parameter.
    * 
    * @param methodStructPointer
-   * @return
    * @throws IOException
    */
-  public int invokeStaticMethod(int methodStructPointer)
+  public void invokeStaticMethod(int methodStructPointer)
   throws IOException
   {
-    return invokeStaticMethod(methodStructPointer, 0);
+    invokeStaticMethod(methodStructPointer, 0);
   }
 
   /**
@@ -628,7 +693,7 @@ public class JOPDebugChannel
     
     // receive back the argument just to sync
     methodPointer = input.readInt();
-    System.out.println("  Method pointer: " + methodPointer);
+    Debug.println("  Method pointer: " + methodPointer);
 
     return methodPointer ;
   }
@@ -649,25 +714,27 @@ public class JOPDebugChannel
     int instruction;
     // ------------------------------------------------------------
     // request machine to set a breakpoint and return the old instruction
-    output.writeByte(15);
-    output.writeByte(1);
+    PacketWrapper packet;
+    packet = createRequestSetBreakpoint(methodStructPointer, instructionOffset);
+    sendPacket(packet);
     
-    // method pointer
-    output.writeInt(methodStructPointer);
-    output.writeInt(instructionOffset);
-    
-    // receive back the old instruction just to sync. If the answer is -1,
+    // receive the old instruction. If the answer is -1,
     // then an error happened (such as an invalid address).
-    instruction = input.readInt();
-    if(instruction != -1)
+    packet = receivePacket();
+    reader.setPacket(packet);
+    
+    if(packet.hasNoError())
     {
-      System.out.println("  Old instruction: " + instruction);
+      instruction = reader.readInt();
+      Debug.println("  Old instruction: " + instruction);
     }
     else
     {
-      System.out.println("  Failure! received: " + instruction);
+      Debug.println("  Failure! error code: " + packet.getErrorCode());
+      instruction = -1;
     }
-
+    
+    // TODO: ensure the instruction is stored, to be restored later.
     return instruction;
   }
   
@@ -676,6 +743,7 @@ public class JOPDebugChannel
    * 
    * @param methodStructPointer
    * @param instructionOffset
+   * @param oldInstruction
    * @return
    * @throws IOException
    */
@@ -688,27 +756,26 @@ public class JOPDebugChannel
     int instruction;
     // ------------------------------------------------------------
     // request machine to set a breakpoint and return the old instruction
-    output.writeByte(15);
-    output.writeByte(2);
+    PacketWrapper packet;
+    packet = createRequestClearBreakpoint(methodStructPointer, 
+      instructionOffset, oldInstruction);
+    sendPacket(packet);
     
-    // method pointer
-    output.writeInt(methodStructPointer);
-    output.writeInt(instructionOffset);
-    output.writeInt(oldInstruction);
+    // receive an answer
+    packet = receivePacket();
+    reader.setPacket(packet);
     
-    // receive back the instruction just to sync. If the answer is -1,
-    // then an error happened (such as an invalid address).
-    // In this case, the instruction SHOULD BE the breakpoint bytecode.
-    instruction = input.readInt();
-    if(instruction != -1)
+    if(packet.hasNoError())
     {
-      System.out.println("  Old instruction: " + instruction);
+      instruction = 0;
+      Debug.println("  Old instruction: " + instruction);
     }
     else
     {
-      System.out.println("  Failure! received: " + instruction);
+      Debug.println("  Failure! error code: " + packet.getErrorCode());
+      instruction = -1;
     }
-
+    
     return instruction;
   }
   
@@ -727,25 +794,454 @@ public class JOPDebugChannel
     
     // ------------------------------------------------------------
     // request machine to set a breakpoint and return the old instruction
-    output.writeByte(JOP_DEBUG_COMMAND_SET);
-    output.writeByte(JOP_DEBUG_COMMAND_TEST_JDWP);
+    packet = createRequestTestJDWP();
+    sendPacket(packet);
+    
+    packet = receivePacket();
+    reader.setPacket(packet);
     
     // read the number of packets
-    numOfPackets = input.readInt();
+    numOfPackets = reader.readInt();
     
     System.out.println("Packets to receive: " + numOfPackets);
     
     // receive all packets and print information about them
     for(i = 0; i < numOfPackets; i++)
     {
-      packet = SocketConnectionWrapper.receivePacket(input);
+      packet = receivePacket();
       
       System.out.println("New packet received:");
       packet.printInformation();
     }
     
-    System.out.println();
-    System.out.println("Done!");
-    System.out.println();
+    Debug.println();
+    Debug.println("Done!");
+    Debug.println();
+  }
+  
+  /**
+   * Method for development ONLY.
+   * Request JOP to send a sample of all possible JDWP packets.
+   * @throws IOException 
+   */
+  public void testJDWPPacketsSent() throws IOException
+  {
+    // Vendor-defined commands and extensions start at 128.
+    checkConnection();
+    
+    int error;
+    PacketWrapper packet, reply;
+    
+    // ------------------------------------------------------------
+    // request machine to set a breakpoint and return the old instruction
+    packet = createRequestTestJDWPSent();
+    sendPacket(packet);
+    
+    // send a packet to read the number of stack frames
+    packet = createRequestThreadReferenceFrameCount();
+    sendPacket(packet);
+    
+    // receive another packet with the answer 
+    reply = receivePacket();
+    reader.setPacket(reply);
+    
+    error = reply.getErrorCode();
+    if(error != 0)
+    {
+      Debug.println("Error: " + error);
+    }
+    else
+    {
+      int size = reader.readInt();
+      Debug.println("Size: " + size);
+    }
+    
+    Debug.println("Content: ");
+    reply.printInformation();
+  }
+  
+  private void sendPacket(PacketWrapper packet) throws IOException
+  {
+    printPacket("Will send a packet:", packet);
+    SocketConnectionWrapper.sendPacket(packet, output);
+  }
+  
+  private PacketWrapper receivePacket() throws IOException
+  {
+    PacketWrapper packet;
+    
+    packet = SocketConnectionWrapper.receivePacket(input);
+    printPacket("Received a packet:", packet);
+    
+    // store the last packet to handle error status later
+    lastPacket = packet;
+    return packet;
+  }
+  
+  /**
+   * Print information about an incoming or outgoing packet.
+   * Just for debugging.
+   * 
+   * @param packet
+   * @param commment
+   */
+  private static void printPacket(String comment, PacketWrapper packet)
+  {
+    System.out.println("--------------------------------------------------");
+    System.out.println(comment);
+    packet.printInformation();
+    System.out.println("--------------------------------------------------");
+  }
+  
+  private static int getNextId()
+  {
+    return packetCounter++;
+  }
+  
+  private PacketWrapper createRequestThreadReferenceFrameCount()
+  {
+    return createRequestThreadReferenceFrameCount(1);
+  }
+  
+  /**
+   * Build a request packet, based on the content previously stored
+   * on the packet writer.
+   * 
+   * @param commandSet
+   * @param command
+   * @return
+   */
+  private PacketWrapper buildRequestPacket(int commandSet, int command)
+  {
+    PacketWrapper packet;
+    
+    packet = writer.createPacket(commandSet, command, getNextId());
+
+    return packet;
+  }
+  
+  /**
+   * Clear the packet writer content and build a new request packet,
+   * with only one int inside.
+   * 
+   * @param commandSet
+   * @param command
+   * @param value
+   * @return
+   */
+  private PacketWrapper createRequestPacket(int commandSet, int command,
+    int value)
+  {
+    PacketWrapper packet;
+    
+    writer.clear();
+    writer.writeInt(value);
+    
+    packet = buildRequestPacket(commandSet, command);
+    
+    return packet;
+  }
+  
+  private PacketWrapper createRequestThreadReferenceFrameCount(int threadId)
+  {
+    PacketWrapper packet;
+    
+    packet = createRequestPacket(CommandConstants.ThreadReference_Command_Set,
+      CommandConstants.ThreadReference_FrameCount, threadId);
+    
+    return packet;
+  }
+  
+  private PacketWrapper createRequestExit(int exitCode)
+  {
+    PacketWrapper packet;
+    
+    writer.clear();
+    writer.writeInt(exitCode);
+    
+    packet = buildRequestPacket(CommandConstants.VirtualMachine_Command_Set,
+      CommandConstants.VirtualMachine_Exit);
+    
+    return packet;
+  }
+  
+  private PacketWrapper createRequestInvokeStatic(int methodPointer, int value)
+  {
+    PacketWrapper packet;
+    
+    writer.clear();
+    writer.writeInt(methodPointer);
+    writer.writeInt(value);
+    
+    packet = buildRequestPacket(CommandConstants.ClassType_Command_Set,
+      CommandConstants.ClassType_InvokeMethod);
+    
+    return packet;
+  }
+  
+  private PacketWrapper createRequestResumeVirtualMachine()
+  {
+    PacketWrapper packet;
+    
+    writer.clear();
+    
+    packet = buildRequestPacket(CommandConstants.VirtualMachine_Command_Set,
+      CommandConstants.VirtualMachine_Resume);
+    
+    return packet;
+  }
+  
+  private PacketWrapper createRequestResumeThread()
+  {
+    PacketWrapper packet;
+    
+    writer.clear();
+    
+    packet = buildRequestPacket(CommandConstants.ThreadReference_Command_Set,
+      CommandConstants.ThreadReference_Resume);
+    
+    return packet;
+  }
+  
+  private PacketWrapper createRequestNumberOfLocalVariables(int frameIndex)
+  {
+    PacketWrapper packet;
+    
+    writer.clear();
+    writer.writeInt(frameIndex);
+    
+    packet = buildRequestPacket(CommandConstants.StackFrame_Command_Set, 5);
+      // TODO: create a class to hold non-standard constants.
+      //For instance: StackFrame_GetNumberOfValues = 5
+    
+    return packet;
+  }
+  
+  /**
+   * Build a request for one local variable inside one stack frame. 
+   * 
+   * @param threadId
+   * @param frameIndex
+   * @param fieldIndex
+   * @return
+   */
+  private PacketWrapper createRequestStackFrameGetValues(int threadId, 
+    int frameIndex, int fieldIndex)
+  {
+    PacketWrapper packet;
+    
+    writer.clear();
+    writer.writeInt(threadId);
+    writer.writeInt(frameIndex);
+    writer.writeInt(1);
+    
+    writer.writeInt(fieldIndex);
+    writer.writeByte(TagConstants.INT);
+    
+    packet = buildRequestPacket(CommandConstants.StackFrame_Command_Set,
+      CommandConstants.StackFrame_GetValues);
+    
+    return packet;
+  }
+  
+  /**
+   * Build a request to set one local variable inside one stack frame. 
+   * 
+   * @param threadId
+   * @param frameIndex
+   * @param fieldIndex
+   * @param value
+   * @return
+   */
+  private PacketWrapper createRequestStackFrameSetValues(int threadId, 
+    int frameIndex, int fieldIndex, int value)
+  {
+    PacketWrapper packet;
+    
+    writer.clear();
+    writer.writeInt(threadId);
+    writer.writeInt(frameIndex);
+    writer.writeInt(1);
+    
+    writer.writeInt(fieldIndex);
+    
+    // write the slot ID. Currently, just send "int".
+    writer.writeByte(TagConstants.INT);
+    writer.writeInt(value);
+    
+    packet = buildRequestPacket(CommandConstants.StackFrame_Command_Set,
+      CommandConstants.StackFrame_SetValues);
+    
+    return packet;
+  }
+  
+  /**
+   * Build a request to print information about the call stack. 
+   * 
+   * @param threadId
+   * @return
+   */
+  private PacketWrapper createRequestPrintStackFrames(int threadId)
+  {
+    PacketWrapper packet;
+    
+    writer.clear();
+    writer.writeInt(threadId);
+    
+    // TODO: extract non-standard constant!
+    packet = buildRequestPacket(CommandConstants.ThreadReference_Command_Set,
+      13);
+    
+    return packet;
+  }
+  
+  /**
+   * Build a request to print information about one stack frame
+   * on the call stack. 
+   * 
+   * @param threadId
+   * @return
+   */
+  private PacketWrapper createRequestPrintStackFrame(int threadId, int frameIndex)
+  {
+    PacketWrapper packet;
+    
+    writer.clear();
+    writer.writeInt(threadId);
+    writer.writeInt(frameIndex);
+    
+    // TODO: extract non-standard constant!
+    packet = buildRequestPacket(CommandConstants.ThreadReference_Command_Set,
+      14);
+    
+    return packet;
+  }
+  
+  /**
+   * Build a request to set a breakpoint.
+   * This is NOT a standard JDWP packet (different format), 
+   * but is good enough for now, since only breakpoint
+   * events can be set/cleared in JOP.
+   * 
+   * A few other events may be generated without requests. 
+   * 
+   * @param methodStructPointer
+   * @param offset
+   * @return
+   */
+  private PacketWrapper createRequestSetBreakpoint(int methodStructPointer, 
+    int instructionOffset)
+  {
+    PacketWrapper packet;
+    
+    writer.clear();
+    writer.writeInt(methodStructPointer);
+    writer.writeInt(instructionOffset);
+    
+    packet = buildRequestPacket(CommandConstants.EventRequest_Command_Set,
+      CommandConstants.EventRequest_Set);
+    
+    return packet;
+  }
+  
+  /**
+   * Build a request to clear a breakpoint.
+   * This is NOT a standard JDWP packet (different format), 
+   * but is good enough for now, since only breakpoint
+   * events can be set/cleared in JOP.
+   * 
+   * A few other events may be generated without requests. 
+   * 
+   * @param methodStructPointer
+   * @param offset
+   * @return
+   */
+  private PacketWrapper createRequestClearBreakpoint(int methodStructPointer, 
+    int instructionOffset, int oldInstruction)
+  {
+    PacketWrapper packet;
+    
+    writer.clear();
+    writer.writeInt(methodStructPointer);
+    writer.writeInt(instructionOffset);
+    writer.writeInt(oldInstruction);
+    
+    packet = buildRequestPacket(CommandConstants.EventRequest_Command_Set,
+      CommandConstants.EventRequest_Clear);
+    
+    return packet;
+  }
+  
+  /**
+   * Create a test packet, just to help during development.
+   * 
+   * @return
+   */
+  private PacketWrapper createRequestTestJDWP()
+  {
+    PacketWrapper packet;
+    
+    writer.clear();
+    packet = buildRequestPacket(JOP_DEBUG_COMMAND_SET, 
+      JOP_DEBUG_COMMAND_TEST_JDWP);
+    
+    return packet;
+  }
+  
+  /**
+   * Create a test packet, just to help during development.
+   * 
+   * @return
+   */
+  private PacketWrapper createRequestTestJDWPSent()
+  {
+    PacketWrapper packet;
+    
+    writer.clear();
+    packet = buildRequestPacket(JOP_DEBUG_COMMAND_SET, 
+      JOP_DEBUG_COMMAND_TEST_JDWP_SENT);
+    
+    return packet;
+  }
+  
+  /**
+   * Create a request for the list of stack frames.
+   * 
+   * @return
+   */
+  private PacketWrapper createRequestStackFrameList(int threadId, int startFrame,
+	int length)
+  {
+    PacketWrapper packet;
+    
+    writer.clear();
+    // request all frames at once
+//    writer.writeInt(-1);
+    
+    writer.writeInt(threadId);
+    writer.writeInt(startFrame);
+    writer.writeInt(length);
+    
+    packet = buildRequestPacket(CommandConstants.ThreadReference_Command_Set, 
+      CommandConstants.ThreadReference_Frames);
+    
+    return packet;
+  }
+  
+  /**
+   * Check if the last request caused an error.
+   * 
+   * @return
+   */
+  public boolean lastPacketHasNoError()
+  {
+	boolean result = true;
+	
+	if(lastPacket != null)
+	{
+	  result = lastPacket.hasNoError();
+	}
+	
+	return result;
   }
 }
