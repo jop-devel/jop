@@ -179,7 +179,6 @@ public final class DebugKernelChannel
    */
   private void writeThreadId(int threadId)
   {
-    outputPacket.writeInt(0);
     outputPacket.writeInt(threadId);
   }
   
@@ -189,8 +188,11 @@ public final class DebugKernelChannel
    * - one byte type tag 
    * - followed by a a classID 
    * - followed by a methodID 
-   * - followed by an unsigned eight-byte index, which identifies 
+   * - followed by an unsigned 8-byte index, which identifies 
    *   the location within the method.
+   *   
+   * The type tag is one byte long. Class and method ID's 
+   * are 4 bytes long. The index is 8 bytes long. 
    * 
    * @param typeTag
    * @param classId
@@ -217,7 +219,7 @@ public final class DebugKernelChannel
   
   private void writeClassId(int classId)
   {
-    outputPacket.writeInt(0);
+    //outputPacket.writeInt(0);
     outputPacket.writeInt(classId);
   }
   
@@ -233,7 +235,6 @@ public final class DebugKernelChannel
   
   private void writeObjectId(int objectId)
   {
-	outputPacket.writeInt(0);
     outputPacket.writeInt(objectId);
   }
   
