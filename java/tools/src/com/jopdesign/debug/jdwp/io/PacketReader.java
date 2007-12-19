@@ -164,8 +164,19 @@ public class PacketReader
   }
   
   /**
-   * Skip some bytes from the packet data. Return true on success, and
-   * false otherwise.
+   * Skip an int from the packet data. Return true 
+   * on success, and false otherwise.
+   * 
+   * @param numBytes
+   * @return
+   */
+  public boolean skipInt()
+  {
+	return skip(4);
+  }
+  /**
+   * Skip some bytes from the packet data. Return true
+   * on success, and false otherwise.
    * 
    * @param numBytes
    * @return
