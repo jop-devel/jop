@@ -5,6 +5,8 @@
 --
 --  2007-11-22  Global lock synchronization and bootup of CMP
 --  2007-12-07  redesign of global lock synchronization
+--  2007-12-19  included new lock arbitration in state "locked".
+--							Otherwise wrong output if two CPUs are waiting for lock!
 
 
 library ieee;
@@ -61,6 +63,15 @@ begin
   				if sync_in_array(locked_id).lock_req = '0' then
   					next_state <= idle;
   					next_locked_id <= cpu_cnt;
+						
+						-- new lock request
+						for i in 0 to cpu_cnt-1 loop
+							if sync_in_array(i).lock_req = '1' then 
+								next_state <= locked;
+								next_locked_id <= i;
+								exit;
+							end if;
+						end loop;
   				end if;
   		end case;
   	end process;

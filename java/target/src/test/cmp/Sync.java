@@ -1,9 +1,12 @@
 /*
- * Created on 28.02.2005
+ * Created on 20.12.2007
  *
- * TODO To change the template for this generated file go to
- * Window - Preferences - Java - Code Style - Code Templates
+ * Test der Synchronisation von mehreren CPUs.
+ * CPU1 und CPU2 schreiben auf ein shared Array. 
+ * CPU0 gibt das Feld aus.
+ * 
  */
+
 package cmp;
 
 import com.jopdesign.sys.Const;
@@ -25,41 +28,40 @@ public class Sync {
 		if (cpu_id == 0x00000000)
 		{
 			whoAmI = new IntegerClass();
-			whoAmI.numberArray = new int [10];
+			whoAmI.numberArray = new int [5];
 			lock1 = new Object();
 			Native.wrMem(0x00000001, Const.IO_SIGNAL);
+			int ausgabe = 3;
 			
 			while(true)
 			{
-				
 				synchronized(lock1)
-				{
-					for (int i=0; i<10; i++)
+				{	
+					if(whoAmI.numberArray[0] != ausgabe)
 					{
-						print_02d(whoAmI.numberArray[i]);
+						for (int i=0; i<5; i++)
+						{
+							print_02d(whoAmI.numberArray[i]);
+						}
+						ausgabe = whoAmI.numberArray[0];
 					}
 				}
 				
-				for(int i = 0; i<2381; i++);
-				
-//				synchronized(lock1)
-//				{
-//					whoAmI.number = cpu_id;
-//				}
+				for(int i = 0; i<102197; i++); // 1627
 				
 			}
 		}
 		else
 		{
 			if (cpu_id == 0x00000001)
-			{	
+			{	 
 				while(true)
 				{
-					for(int i = 0; i<67; i++);
+					for(int i = 0; i<499; i++); //499
 
 					synchronized(lock1)
 					{
-						for (int i=0; i<10; i++)
+						for (int i=0; i<5; i++)
 						{
 							whoAmI.numberArray[i] = cpu_id;
 						}
@@ -70,11 +72,11 @@ public class Sync {
 			{
 				while(true)
 				{
-					for(int i = 0; i<53; i++);
+					for(int i = 0; i<317; i++); //317
 					
 					synchronized(lock1)
 					{
-						for (int i=0; i<10; i++)
+						for (int i=0; i<5; i++)
 						{
 							whoAmI.numberArray[i] = cpu_id;
 						}
@@ -87,9 +89,9 @@ public class Sync {
 	
 		static void print_02d(int i) {
 
-		int j;
-		for (j=0;i>9;++j) i-= 10;
-		print_char(j+'0');
+		//int j;
+		//for (j=0;i>9;++j) i-= 10;
+		//print_char(j+'0');
 		print_char(i+'0');
 	}
 	

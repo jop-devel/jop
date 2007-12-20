@@ -51,18 +51,18 @@ begin
 		reset => s_reset,
 	
 		sync_in_array(0).s_in => s_in0,
-		sync_in_array(0).lock => s_lock0,
+		sync_in_array(0).lockreq => s_lock0,
 		sync_in_array(1).s_in => s_in1,
-		sync_in_array(1).lock => s_lock1,
+		sync_in_array(1).lockreq => s_lock1,
 		sync_in_array(2).s_in => s_in2,
-		sync_in_array(2).lock => s_lock2,
+		sync_in_array(2).lockreq => s_lock2,
 			
 		sync_out_array(0).s_out => r_out0,
-		sync_out_array(0).release => r_release0,
+		sync_out_array(0).locked => r_release0,
 		sync_out_array(1).s_out => r_out1,
-		sync_out_array(1).release => r_release1,
+		sync_out_array(1).locked => r_release1,
 		sync_out_array(2).s_out => r_out2,
-		sync_out_array(2).release => r_release2
+		sync_out_array(2).locked => r_release2
 		
     );
  
