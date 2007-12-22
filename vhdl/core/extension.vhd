@@ -22,6 +22,7 @@
 --				All IO devices are now memory mapped
 --	2007-04-13	Changed memory connection to records
 --				New array instructions
+--	2007-12-22	Correction of data MUX bug for array read access
 --
 
 
@@ -207,7 +208,7 @@ begin
 				mem_scio_wr <= '1';		-- start memory or io write
 			elsif ext_addr=STALD then
 				mem_in.iaload <= '1';	-- start an array load
-				was_a_iaload <= '0';
+				was_a_iaload <= '1';
 			elsif ext_addr=STAST then
 				mem_in.iastore <= '1';	-- start an array store
 			elsif ext_addr=STMUL then
