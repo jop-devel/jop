@@ -109,6 +109,9 @@ end component;
 
 	signal bytecode		: std_logic_vector(7 downto 0);
 
+-- synthesis translate_off 
+-- synthesis translate_on 
+
 begin
 
 --
@@ -345,6 +348,11 @@ begin
 end process;
 
 	opd <= jopd;
+
+-- synthesis translate_off 
+	-- show jinstr with bytecode mnemonic
+	bc: entity work.bytecode port map(jinstr);
+-- synthesis translate_on 
 
 end rtl;
 

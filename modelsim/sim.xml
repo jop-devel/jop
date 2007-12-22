@@ -51,6 +51,10 @@
 			<arg line="${jopdir}/simulation/sim_memory.vhd"/>
 		</vcom>
 
+		<vcom>
+			<arg line="${jopdir}/simulation/bytecode.vhd"/>
+		</vcom>
+
 		<!-- <vcom> -->
 		<!-- 	<arg line="${jopdir}/scio/fifo.vhd"/> -->
 		<!-- </vcom> -->
@@ -132,7 +136,7 @@
 		</vcom>
 
 		<vcom>
-			<arg line="${jopdir}/scio/sc_cnt.vhd"/>
+			<arg line="${jopdir}/scio/sc_sys.vhd"/>
 		</vcom>
 
 		<vcom>

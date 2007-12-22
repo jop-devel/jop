@@ -25,6 +25,7 @@ vcom %options% %jopdir%/simulation/sim_pll.vhd
 vcom %options% %jopdir%/simulation/sim_jbc.vhd
 vcom %options% %jopdir%/simulation/sim_rom.vhd
 vcom %options% %jopdir%/simulation/sim_memory.vhd
+vcom %options% %jopdir%/simulation/bytecode.vhd
 rem vcom %options% %jopdir%/scio/fifo.vhd
 rem vcom %options% %jopdir%/scio/sc_uart.vhd
 vcom %options% %jopdir%/simulation/sim_sc_uart.vhd

@@ -409,6 +409,13 @@ public class JopInstr{
 
 	public static void main(String[] args) {
 
+		for (int i=0; i<256/8; ++i) {
+			System.out.print("\t\t\t");
+			for (int j=0; j<8; ++j) {
+				System.out.print(name(i*8+j)+", ");
+			}
+			System.out.println();
+		}
 		for (int i=0; i<256; ++i) {
 			System.out.print(i+"; ");
 			System.out.print(JopInstr.name(i)+"; ");
