@@ -33,5 +33,6 @@ public class ArrayIssue {
 	     t1 = Native.rd(Const.IO_CNT)-t1;
 	     JVMHelp.wr('-');
 	     System.out.println(t1-diff);
+	     
 	}
 }
