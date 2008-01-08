@@ -24,11 +24,15 @@ public class ArrayIssue {
 
 	     JVMHelp.wr('*');
 	     
+	     int[] ia = new int[1];
+	     
 	     t1 = Native.rd(Const.IO_CNT);
 //	     int tmp0 = block[0][0];
+//	     block[0][0] = 0;
+	     ia[0] = 0;
 
-	     int x[] = block[0];
-	     int i = x[0];
+//	     int x[] = block[0];
+//	     int i = x[0];
 	     
 	     t1 = Native.rd(Const.IO_CNT)-t1;
 	     JVMHelp.wr('-');
