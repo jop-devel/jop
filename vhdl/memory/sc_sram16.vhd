@@ -150,7 +150,7 @@ end process;
 --
 --	next state logic
 --
-process(state, sc_mem_out.rd, sc_mem_out.wr, wait_state)
+process(state, sc_mem_out, wait_state)
 
 begin
 
