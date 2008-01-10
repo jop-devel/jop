@@ -78,6 +78,10 @@ port (
 	r			: inout std_logic_vector(20 downto 1);
 	t			: inout std_logic_vector(6 downto 1);
 	b			: inout std_logic_vector(10 downto 1)
+	
+-- remove the comment for RAM access counting
+-- ram_cnt 	: in std_logic
+	
 );
 end scio;
 
@@ -159,7 +163,9 @@ end component;
 
 	signal ac97_wb_adr	: std_logic_vector(31 downto 0);
 	signal not_reset : std_logic; -- for sim
-
+	
+-- remove the comment for RAM access counting 
+-- signal ram_count : std_logic;
 
 begin
 
@@ -227,7 +233,12 @@ begin
 			sync_in => sync_in,
 			
 			wd => wd
+			-- remove the comment for RAM access counting
+			-- ram_count => ram_count
 		);
+		
+		-- remove the comment for RAM access counting
+		-- ram_count <= ram_cnt;
 
 	cmp_ua: entity work.sc_uart generic map (
 			addr_bits => SLAVE_ADDR_BITS,

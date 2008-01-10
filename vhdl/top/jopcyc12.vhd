@@ -150,6 +150,10 @@ end component;
 	signal ram_ncs			: std_logic;
 	signal ram_noe			: std_logic;
 	signal ram_nwe			: std_logic;
+	
+-- remove the comment for RAM access counting
+-- signal ram_count		: std_logic;
+
 
 begin
 
@@ -208,6 +212,8 @@ end process;
 			r => io_r,
 			t => io_t,
 			b => io_b
+			-- remove the comment for RAM access counting
+			-- ram_cnt => ram_count
 		);
 
 	cmp_scm: entity work.sc_mem_if
@@ -248,6 +254,10 @@ end process;
 	end process;
 
 	ram_din <= ramb_d & rama_d;
+	
+-- remove the comment for RAM access counting
+-- ram_count <= ram_ncs;
+
 
 --
 --	To put this RAM address in an output register

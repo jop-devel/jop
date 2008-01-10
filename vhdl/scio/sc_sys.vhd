@@ -114,6 +114,9 @@ port (
 	sync_in	 : out sync_in_type;
 	
 	wd				: out std_logic
+	
+	-- remove the comment for RAM access counting
+	-- ram_count	: in std_logic
 
 );
 end sc_sys ;
@@ -136,6 +139,9 @@ architecture rtl of sc_sys is
 		
 	signal cpu_identity		: std_logic_vector(31 downto 0);
 	signal lock_reqest		: std_logic;
+	
+	-- remove the comment for RAM access counting
+	-- signal ram_counter	: std_logic_vector(31 downto 0);
 
 	
 --
@@ -178,26 +184,30 @@ begin
 	elsif rising_edge(clk) then
 
 		if rd='1' then
-			case address(2 downto 0) is
-				when "000" =>
+			case address(3 downto 0) is
+				when "0000" =>
 					rd_data <= clock_cnt;
-				when "001" =>
+				when "0001" =>
 					rd_data <= us_cnt;
-				when "010" =>
+				when "0010" =>
 					rd_data(4 downto 0) <= intnr;
 					rd_data(31 downto 5) <= (others => '0');
-				when "100" =>
+				when "0100" =>
 					rd_data(7 downto 0) <= exc_type;
 					rd_data(31 downto 8) <= (others => '0');
-				when "101" =>
+				when "0101" =>
 					rd_data(0) <= lock_reqest;
 					rd_data(31 downto 1) <= (others => '0');				
-				when "110" =>
+				when "0110" =>
 					rd_data <= cpu_identity;
---				when "111" =>
-				when others =>
+				when "0111" =>
 					rd_data(0) <= sync_out.s_out;
 					rd_data(31 downto 1) <= (others => '0');
+				-- remove the comment for RAM access counting
+				-- when "1010" =>
+				--	rd_data(31 downto 0) <= ram_counter;
+				when others =>
+					-- nothing
 			end case;
 		end if;
 	end if;
@@ -387,13 +397,27 @@ begin
 					sync_in.s_in <= wr_data(0);
 				when "1000" =>
 					mask <= wr_data(NUM_INT-1 downto 0);
---				when "1001" =>
-				when others =>
+				when "1001" =>
 					clearall <= '1';
+				when "1010" =>
+					-- nothing, ram_counter is read only
+				when others =>
 			end case;
 		end if;
 		
 	end if;
 end process;
+
+-- remove the comment for RAM access counting
+-- process(clk, reset)
+-- begin
+--	if reset = '1' then
+--		ram_counter <= (others => '0');
+--	elsif rising_edge(clk) then
+--		if (ram_count='0') then
+--			ram_counter <= std_logic_vector(unsigned(ram_counter) + 1);
+--		end if;
+--	end if;
+-- end process;
 
 end rtl;
