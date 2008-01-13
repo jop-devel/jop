@@ -15,19 +15,15 @@ import com.jopdesign.sys.Const;
 public class IOSimMin {
 	
 	JopSim js;
-	boolean log;
 	//	find JVM exit
 	static String exitStr = "JVM exit!";
 	char[] exitBuf = new char[exitStr.length()];
 
-	public IOSimMin() {
-		log = System.getProperty("log", "false").equals("true");
-	}
 	
 	public void setJopSimRef(JopSim jsRef) {
 		js = jsRef;		
 	}
-
+	
 	//
 	//	Mapping of the second serial line to the PCs
 	//	com port. See ejip.MainSlipUart2 for an example.
@@ -146,9 +142,9 @@ public class IOSimMin {
 
 		switch (addr) {
 			case Const.IO_UART:
-				if (log) System.out.print("\t->");
+				if (JopSim.log) System.out.print("\t->");
 				System.out.print((char) val);
-				if (log) System.out.println("<-");
+				if (JopSim.log) System.out.println("<-");
 				// check the output for JVM exit!
 				for (int i=0; i<exitStr.length()-1; ++i) {
 					exitBuf[i] = exitBuf[i+1];

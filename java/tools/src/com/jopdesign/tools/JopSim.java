@@ -1534,8 +1534,9 @@ System.out.println(sum+" instructions, "+sumcnt+" cycles, "+instrBytesCnt+" byte
 //		js.portName = System.getProperty("port", "COM1");
 //		js.openSerialPort();
 
+		log = System.getProperty("log", "false").equals("true");
+		
 		String ioDevice = System.getProperty("ioclass");
-		System.out.println(ioDevice);
 		// select the IO simulation
 		if (ioDevice!=null) {
 			try {
@@ -1547,6 +1548,8 @@ System.out.println(sum+" instructions, "+sumcnt+" cycles, "+instrBytesCnt+" byte
 		} else {
 			io = new IOSimMin();			
 		}
+		
+
 
 		if (args.length==1) {
 			js = new JopSim(args[0], io);
