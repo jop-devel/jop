@@ -18,7 +18,7 @@ public class SimpleLoop {
 		// WCET measured: 2312
 		// WCET analysed: 2377
 		measure();
-//		System.out.println(te-ts-to);
+		System.out.println(te-ts-to);
 	}
 	
 	static void measure() {
