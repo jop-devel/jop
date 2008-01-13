@@ -45,7 +45,7 @@ public class Cache {
 //
 //	don't use direct mapped now!!!
 //
-// we can't use all cache variants in one run as the pc is used different!!!
+// we can't use all cache variants in one run as the pc is used differently!!!
 /*
 		test.add(new PrefetchBuffer(main, js));
 		test.add(new SimpleCache(main, js));
@@ -75,7 +75,7 @@ public class Cache {
 		test.add(new DirectMapped(main, js, 4, 32));
 */
 //		test.add(new VarBlockCache(main, js, 1, 8, false));
-		test.add(new VarBlockCache(main, js, 1, 16, false));
+		test.add(new VarBlockCache(main, js, 4, 16, false));
 //		test.add(new VarBlockCache(main, js, 1, 32, false));
 //		test.add(new VarBlockCache(main, js, 1, 64, false));
 //		test.add(new VarBlockCache(main, js, 2, 8, false));
