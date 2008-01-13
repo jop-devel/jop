@@ -1529,12 +1529,24 @@ System.out.println(sum+" instructions, "+sumcnt+" cycles, "+instrBytesCnt+" byte
 	public static void main(String args[]) {
 
 		JopSim js = null;
+		IOSimMin io = null;
 
 //		js.portName = System.getProperty("port", "COM1");
 //		js.openSerialPort();
-		
+
+		String ioDevice = System.getProperty("ioclass");
+		System.out.println(ioDevice);
 		// select the IO simulation
-		IOSimMin io = new IOSimMin();
+		if (ioDevice!=null) {
+			try {
+				io = (IOSimMin) Class.forName("com.jopdesign.tools."+ioDevice).newInstance();
+			} catch (Exception e) {
+				e.printStackTrace();
+				io = new IOSimMin();
+			}			
+		} else {
+			io = new IOSimMin();			
+		}
 
 		if (args.length==1) {
 			js = new JopSim(args[0], io);
