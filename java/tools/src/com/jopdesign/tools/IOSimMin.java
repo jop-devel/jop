@@ -2,6 +2,11 @@ package com.jopdesign.tools;
 
 import com.jopdesign.sys.Const;
 
+//uncomment for usage of the PCs com port
+//import javax.comm.CommPortIdentifier;
+//import javax.comm.SerialPort;
+//import javax.comm.UnsupportedCommOperationException;
+
 /**
  * Simulation of the minimal IO devices
  * @author martin
@@ -15,10 +20,12 @@ public class IOSimMin {
 	static String exitStr = "JVM exit!";
 	char[] exitBuf = new char[exitStr.length()];
 
+	public IOSimMin() {
+		log = System.getProperty("log", "false").equals("true");
+	}
 	
-	public IOSimMin(JopSim jsRef, boolean doLog) {
-		js = jsRef;
-		log = doLog;
+	public void setJopSimRef(JopSim jsRef) {
+		js = jsRef;		
 	}
 
 	//
@@ -65,7 +72,7 @@ public class IOSimMin {
 //		}
 //	}
 	
-	int sysRd(int addr) {
+	int read(int addr) {
 
 		int val;
 		int i;
@@ -112,7 +119,7 @@ public class IOSimMin {
 					val = js.clkCnt;
 					break;
 				case Const.IO_US_CNT:
-					val = js.usCnt();
+					val = JopSim.usCnt();
 					break;
 				case 1234:
 					// trigger cache debug output
@@ -131,7 +138,7 @@ public class IOSimMin {
 		return val;
 	}
 
-	void sysWr(int addr, int val) {
+	void write(int addr, int val) {
 
 		switch (addr) {
 			case Const.IO_UART:
@@ -183,17 +190,17 @@ public class IOSimMin {
 				break;
 				
 			case Const.IO_INT_ENA:
-				js.intEna = (val==0) ? false : true;
+				JopSim.intEna = (val==0) ? false : true;
 				break;
 			case Const.IO_TIMER:
-				js.intPend = false;		// reset pending interrupt
-				js.interrupt = false;		// for shure ???
-				js.nextTimerInt = val;
+				JopSim.intPend = false;		// reset pending interrupt
+				JopSim.interrupt = false;		// for shure ???
+				JopSim.nextTimerInt = val;
 				break;
 			case Const.IO_SWINT:
-				if (!js.intPend) {
-					js.interrupt = true;
-					js.intPend = true;
+				if (!JopSim.intPend) {
+					JopSim.interrupt = true;
+					JopSim.intPend = true;
 				}
 				break;
 			default:

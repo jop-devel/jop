@@ -14,12 +14,9 @@ package com.jopdesign.tools;
 
 import java.io.*;
 
-// uncomment for usage of the PCs com port
-//import javax.comm.CommPortIdentifier;
-//import javax.comm.SerialPort;
-//import javax.comm.UnsupportedCommOperationException;
 
 import com.jopdesign.sys.*;
+import com.jopdesign.wcet.WCETInstruction;
 
 public class JopSim {
 
@@ -27,7 +24,7 @@ public class JopSim {
 	static final int MAX_STACK = Const.STACK_SIZE;	// with internal memory
 	static final int MEM_TEST_OFF = 256;
 	
-	static final int MIN_WB_ADDRESS = -128;
+	static final int MIN_IO_ADDRESS = -128;
 
 	static final int SYS_INT = 0xf0;
 
@@ -35,6 +32,7 @@ public class JopSim {
 	int[] mem = new int[MAX_MEM];
 	int[] stack = new int[MAX_STACK];
 	Cache cache;
+	IOSimMin io;
 
 	int pc, cp, vp, sp, mp;
 	int heap;
@@ -54,9 +52,6 @@ public class JopSim {
 	static boolean interrupt;
 	static boolean intEna;
 
-	//	find JVM exit
-	static String exitStr = "JVM exit!";
-	static char[] exitBuf = new char[exitStr.length()];
 	
 	static boolean exit = false;
 	static boolean stopped = false;
@@ -64,67 +59,70 @@ public class JopSim {
 	//
 	//	only for statistics
 	//
-	int ioCnt;
 
+	int[] bcTiming = new int[256];
 	int[] bcStat = new int[256];
 	int rdMemCnt;
 	int wrMemCnt;
 	int maxInstr;
 	int instrCnt;
+	int clkCnt;
 	int maxSp;
 
-	JopSim(String fn, int max) {
+	JopSim(String fn, IOSimMin ioSim, int max) {
 		maxInstr = max;
-		init(fn);
-	}
-
-	JopSim(String fn) {
-		this(fn, 0);
-	}
-
-	void init(String fn) {
-
 		heap = 0;
 		moncnt = 1;
-
+		
 		try {
 			StreamTokenizer in = new StreamTokenizer(new FileReader(fn));
-
+		
 			in.wordChars( '_', '_' );
 			in.wordChars( ':', ':' );
 			in.eolIsSignificant(true);
 			in.slashStarComments(true);
 			in.slashSlashComments(true);
 			in.lowerCaseMode(true);
-
+		
 			
 			while (in.nextToken()!=StreamTokenizer.TT_EOF) {
 				if (in.ttype == StreamTokenizer.TT_NUMBER) {
 					mem_load[heap++] = (int) in.nval;
 				}
 			}
-
+		
 		} catch (IOException e) {
 			System.out.println(e.getMessage());
 			System.exit(-1);
 		}
-
+		
 		int instr = mem_load[0];
 		System.out.println("Program: "+fn);
 		System.out.println(instr + " instruction word ("+(instr*4/1024)+" KB)");
 		System.out.println(heap + " words mem read ("+(heap*4/1024)+" KB)");
 		empty_heap = heap;
-
+		
 		cache = new Cache(mem, this);
 
+		io = ioSim;
+		
+		for (int i=0; i<256; ++i) {
+			int j = WCETInstruction.getCycles(i, false, 0);
+			if (j==-1) j = 80; // rough estimate for invokation of Java implementation
+			bcTiming[i] = j;
+		}
+	}
+
+	JopSim(String fn, IOSimMin ioSim) {
+		this(fn, ioSim, 0);
 	}
 
 	void start() {
 
-		ioCnt = 0;
 		rdMemCnt = 0;
 		wrMemCnt = 0;
 		instrCnt = 0;
+		clkCnt = 0;
 		maxSp = 0;
 		for (int i=0; i<256; ++i) bcStat[i] = 0;
 
@@ -193,7 +191,6 @@ System.out.println(mp+" "+pc);
 	int readInstrMem(int addr) {
 
 // System.out.println(addr+" "+mem[addr]);
-		ioCnt += 12;
 
 		if (addr>MAX_MEM || addr<0) {
 			System.out.println("readInstrMem: wrong address: "+addr);
@@ -207,14 +204,13 @@ System.out.println(mp+" "+pc);
 
 // System.out.println(addr+" "+mem[addr]);
 		rdMemCnt++;
-		ioCnt += 12;
 
-		if (addr>MAX_MEM+MEM_TEST_OFF || addr<MIN_WB_ADDRESS) {
+		if (addr>MAX_MEM+MEM_TEST_OFF || addr<MIN_IO_ADDRESS) {
 			System.out.println("readMem: wrong address: "+addr);
 			System.exit(-1);
 		}
 		if (addr<0) {
-			return sysRd(addr);
+			return io.read(addr);
 		}
 
 		return mem[addr%MAX_MEM];
@@ -222,15 +218,14 @@ System.out.println(mp+" "+pc);
 	void writeMem(int addr, int data) {
 
 		wrMemCnt++;
-		ioCnt += 12;
 
-		if (addr>MAX_MEM+MEM_TEST_OFF || addr<MIN_WB_ADDRESS) {
+		if (addr>MAX_MEM+MEM_TEST_OFF || addr<MIN_IO_ADDRESS) {
 			System.out.println("writeMem: wrong address: "+addr);
 			System.exit(-1);
 		}
 
 		if (addr<0) {
-			sysWr(addr, data);
+			io.write(addr, data);
 			return; // no Simulation of the Wishbone devices
 		}
 		mem[addr%MAX_MEM] = data;
@@ -262,188 +257,11 @@ System.out.println(mp+" "+pc);
 		return cache.bc(pc++)&0x0ff;
 	}
 
-	int usCnt() {
+	static int usCnt() {
+		// return ((int) (System.nanoTime()/1000)); // does not really work as expected
 		return ((int) System.currentTimeMillis())*1000;
 	}
 	
-	//
-	//	Mapping of the second serial line to the PCs
-	//	com port. See ejip.MainSlipUart2 for an example.
-	//	Uncommented as javax.comm is NOT part of the standard
-	//	JDK - Blame Sun!
-	
-//	private String portName;
-//	private CommPortIdentifier portId;
-//	private InputStream is = null;
-//	private OutputStream os = null;
-//	private SerialPort serialPort;
-//
-//	private void openSerialPort() {
-//		try {
-//			if (portId!=null) {
-//				try {
-//					is.close();
-//					os.close();
-//					is = null;
-//					os = null;
-//				} catch (Exception e1) {
-//				}
-//				serialPort.close();
-//			}
-//			portId = CommPortIdentifier.getPortIdentifier(portName);
-//			serialPort = (SerialPort) portId.open(getClass().toString(), 2000);
-//			serialPort.setFlowControlMode(SerialPort.FLOWCONTROL_RTSCTS_OUT
-//										| SerialPort.FLOWCONTROL_RTSCTS_IN);
-//			serialPort.setSerialPortParams(115200,
-//				SerialPort.DATABITS_8,
-//				SerialPort.STOPBITS_1,
-//				SerialPort.PARITY_NONE);
-//			is = serialPort.getInputStream();
-//			os = serialPort.getOutputStream();
-//System.out.println("open"+portName);
-//		} catch (Exception e) {
-//			is = null;
-//			os = null;
-//			System.out.println("Problem with serial port "+portName);
-//			System.out.println(e.getMessage());
-//			// System.exit(-1);
-//		}
-//	}
-	
-	int sysRd(int addr) {
-
-		int val;
-		int i;
-
-		try {
-			switch (addr) {
-				case Const.IO_STATUS:
-					val = Const.MSK_UA_TDRE;
-					if (System.in.available()!=0) {
-						val |= Const.MSK_UA_RDRF;
-					}
-					break;
-				case Const.IO_STATUS2:
-					i = 0;
-//					if (is!=null) {
-//						try {
-//							if (is.available()!=0) {
-//								i |= Const.MSK_UA_RDRF;
-//							}
-//						} catch (IOException e1) {
-//							e1.printStackTrace();
-//						}	// rdrf
-//					}
-//					i |= Const.MSK_UA_TDRE;							// tdre is alwais true on OutputStream
-					val = i;
-					break;
-				case Const.IO_UART:
-					if (System.in.available()!=0) {
-						val = System.in.read();
-					} else {
-						val = '_';
-					}
-					break;
-				case Const.IO_UART2:
-					i=0;
-//					try {
-//						i =  is.read();
-//					} catch (IOException e) {
-//						e.printStackTrace();
-//					}
-					val = i;
-					break;
-				case Const.IO_CNT:
-					val = ioCnt;
-					break;
-				case Const.IO_US_CNT:
-					val = usCnt();
-					break;
-				case 1234:
-					// trigger cache debug output
-//					cache.rawData();
-//					cache.resetCnt();
-					val = 0;
-					break;
-				default:
-					val = 0;
-			}
-		} catch (Exception e) {
-			System.out.println(e);
-			val = 0;
-		}
-		
-		return val;
-	}
-
-	void sysWr(int addr, int val) {
-
-		switch (addr) {
-			case Const.IO_UART:
-				if (log) System.out.print("\t->");
-				System.out.print((char) val);
-				if (log) System.out.println("<-");
-				// check the output for JVM exit!
-				for (int i=0; i<exitStr.length()-1; ++i) {
-					exitBuf[i] = exitBuf[i+1];
-				}
-				exitBuf[exitBuf.length-1] = (char) val;
-				if (new String(exitBuf).equals(exitStr)) {
-					exit = true;
-				}
-				break;
-			case Const.IO_UART2:
-//				if (os==null) return;
-//				try {
-//					os.write(val&0xff);
-//				} catch (IOException e) {
-//					e.printStackTrace();
-//				}
-				break;
-			case Const.IO_STATUS2:
-//				if (serialPort!=null) {
-//					serialPort.setDTR(val==1);
-//					try {
-//						if ((val&0x04)==0) {
-//							serialPort.setSerialPortParams(2400,
-//								SerialPort.DATABITS_8,
-//								SerialPort.STOPBITS_1,
-//								SerialPort.PARITY_NONE);
-//						} else {
-//							serialPort.setSerialPortParams(115200,
-//								SerialPort.DATABITS_8,
-//								SerialPort.STOPBITS_1,
-//								SerialPort.PARITY_NONE);
-//						}
-//						if ((val&0x02)==0) {
-//							serialPort.setFlowControlMode(SerialPort.FLOWCONTROL_NONE);
-//						} else {
-//							serialPort.setFlowControlMode(SerialPort.FLOWCONTROL_RTSCTS_OUT
-//														| SerialPort.FLOWCONTROL_RTSCTS_IN);
-//						}
-//					} catch (UnsupportedCommOperationException e1) {
-//						e1.printStackTrace();
-//					}
-//				}
-				break;
-				
-			case Const.IO_INT_ENA:
-				intEna = (val==0) ? false : true;
-				break;
-			case Const.IO_TIMER:
-				intPend = false;		// reset pending interrupt
-				interrupt = false;		// for shure ???
-				nextTimerInt = val;
-				break;
-			case Const.IO_SWINT:
-				if (!intPend) {
-					interrupt = true;
-					intPend = true;
-				}
-				break;
-			default:
-		}
-	}
 //
 //	start of JVM :-)
 //
@@ -652,18 +470,6 @@ System.out.println(mp+" "+pc);
 
 		for (;;) {
 
-//
-//	check for endless loop and stop
-//
-/*
-			if (pc==old_pc && mp==old_mp) {
-				System.out.println();
-				System.out.println("endless loop");
-				break;
-			}
-			old_pc = pc;
-			old_mp = mp;
-*/
 			if (maxInstr!=0 && instrCnt>=maxInstr) {
 				break;
 			}
@@ -694,7 +500,9 @@ System.out.println(mp+" "+pc);
 
 // stat
 			bcStat[instr]++;
-			ioCnt += JopInstr.cnt(instr);
+			// TODO add cache miss timing and a different timing info for
+			// Java implemented bytecodes
+			clkCnt += bcTiming[instr];
 
 			if (log) {
 				String spc = (pc-1)+" ";
@@ -1711,22 +1519,33 @@ System.out.println(sum+" instructions, "+sumcnt+" cycles, "+instrBytesCnt+" byte
 		stopped = true;
 	}
 
+	/**
+	 * Signal detection of JVM exit!
+	 */
+	public static void exit() {
+		exit = true;
+	}
+	
 	public static void main(String args[]) {
 
 		JopSim js = null;
+
+//		js.portName = System.getProperty("port", "COM1");
+//		js.openSerialPort();
+		
+		// select the IO simulation
+		IOSimMin io = new IOSimMin();
+
 		if (args.length==1) {
-			js = new JopSim(args[0]);
+			js = new JopSim(args[0], io);
 		} else if (args.length==2) {
-			js = new JopSim(args[0], Integer.parseInt(args[1]));
+			js = new JopSim(args[0], io, Integer.parseInt(args[1]));
 		} else {
 			System.out.println("usage: java JopSim file.bin [max instr]");
 			System.exit(-1);
 		}
-
-		log = System.getProperty("log", "false").equals("true");
-//		js.portName = System.getProperty("port", "COM1");
-//		js.openSerialPort();
-
+		
+		io.setJopSimRef(js);
 		
 		for (int i=0; i<js.cache.cnt(); ++i) {
 			js.cache.use(i);
@@ -1740,4 +1559,5 @@ System.out.println(sum+" instructions, "+sumcnt+" cycles, "+instrBytesCnt+" byte
 			js.cache.stat();
 		}
 	}
+
 }
