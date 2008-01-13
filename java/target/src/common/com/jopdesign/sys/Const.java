@@ -182,7 +182,11 @@ public class Const {
 	// Wishbone base address
 	public static final int WB_BASE = IO_BASE;
 	// AC97 interface
-	public static final int WB_AC97 = WB_BASE+0x30;
+	// public static final int WB_AC97 = WB_BASE+0x30;
+	// new version with SPI interface - scio_dspio.vhd is missing!
+	public static final int WB_AC97 = WB_BASE+0x40;
+	public static final int WB_SPI = WB_BASE+0x30;
+
 
 	// LEGO stuff (scio_lego.vhd)
 	public static final int IO_LEGO = IO_BASE+0x30;
