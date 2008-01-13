@@ -85,6 +85,10 @@ public class IOSimMin {
 						val |= Const.MSK_UA_RDRF;
 					}
 					break;
+				// for sure when USB TX status is used
+				case Const.IO_USB_STATUS:
+					val = Const.MSK_UA_TDRE;
+					break;
 				case Const.IO_STATUS2:
 					i = 0;
 //					if (is!=null) {
