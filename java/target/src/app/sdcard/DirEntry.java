@@ -1,4 +1,4 @@
-package dsp;
+package sdcard;
 
 public class DirEntry 
 {
