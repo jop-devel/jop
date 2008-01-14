@@ -11,7 +11,8 @@
 --		0x00 0-3		system clock counter, us counter, timer int, wd bit
 --		0x10 0-1		uart (download)
 --		0x20 0-1		USB connection (download)
---		0x30 0-f		AC97 connection
+-- 		0x30			SPI con
+--		0x40 0-f		AC97 connection
 --
 --	status word in uart and usb:
 --		0	uart transmit data register empty
@@ -53,8 +54,7 @@ port (
 --
 --	Interrupts from IO devices
 --
-	irq_in			: out irq_bcf_type;
-	irq_out			: in irq_ack_type;
+	irq_in			: out irq_in_type;
 	exc_req			: in exception_type;
 		
 -- CMP
@@ -78,10 +78,6 @@ port (
 	r			: inout std_logic_vector(20 downto 1);
 	t			: inout std_logic_vector(6 downto 1);
 	b			: inout std_logic_vector(10 downto 1)
-	
--- remove the comment for RAM access counting
--- ram_cnt 	: in std_logic
-	
 );
 end scio;
 
@@ -122,9 +118,51 @@ port (
 end component;
 
 
-	constant SLAVE_CNT : integer := 4;
+
+component simple_spi_top is
+port (
+
+	clk_i			: in std_logic;
+	rst_i			: in std_logic;
+
+-- WISHBONE SLAVE INTERFACE 
+	adr_i		: in std_logic_vector(1 downto 0);         --// lower address bits
+	dat_i		: in std_logic_vector(31 downto 0);        --// databus input
+	dat_o		: out std_logic_vector(31 downto 0);        --// databus output
+--	sel_i		: in std_logic_vector(3 downto 0);         --// byte select inputs
+	we_i			: in std_logic;          --// write enable input
+	stb_i		: in std_logic;         --// stobe/core select signal
+	cyc_i		: in std_logic;         --// valid bus cycle input
+	ack_o		: out std_logic;         --// bus cycle acknowledge output
+--	err_o		: out std_logic ;         --// termination w/ error
+	inta_o		: out std_logic;         --// interrupt request signal output
+
+
+
+
+-- Misc Signals
+--	dma_req_o		: out std_logic_vector(8 downto 0);
+--	dma_ack_i		: in std_logic_vector(8 downto 0);
+-- Suspend Resume Interface
+--	suspended_o		: out std_logic;
+
+
+ --// SPI Interface                                     
+	ss_o  		: out std_logic;        --// slave select
+	sck_o		: out std_logic;       --// serial clock
+	mosi_o		: out std_logic;       --// master out slave in
+	miso_i		: in std_logic       --// master in slave out
+
+);
+end component;
+
+
+
+
+
+	constant SLAVE_CNT : integer := 5;
 	-- SLAVE_CNT <= 2**DECODE_BITS
-	constant DECODE_BITS : integer := 2;
+	constant DECODE_BITS : integer := 3;
 	-- number of bits that can be used inside the slave
 	constant SLAVE_ADDR_BITS : integer := 4;
 
@@ -138,6 +176,16 @@ end component;
 	signal sc_rdy_cnt		: slave_rdy_cnt;
 
 	signal sel, sel_reg		: integer range 0 to 2**DECODE_BITS-1;
+
+
+
+
+
+
+
+
+
+
 
 	-- Wishbone interface for the AC97
 	signal wb_out			: wb_master_out_type;
@@ -163,9 +211,38 @@ end component;
 
 	signal ac97_wb_adr	: std_logic_vector(31 downto 0);
 	signal not_reset : std_logic; -- for sim
-	
--- remove the comment for RAM access counting 
--- signal ram_count : std_logic;
+
+
+
+
+	-- Wishbone interface for the SPI
+	signal wb_out2			: wb_master_out_type;
+	signal wb_in2			: wb_master_in_type;
+
+
+	type wbs_in_array2 is array(0 to WB_SLAVE_CNT-1) of wb_slave_in_type;
+	signal wbs_in2		: wbs_in_array;
+	type wbs_out_array2 is array(0 to WB_SLAVE_CNT-1) of wb_slave_out_type;
+	signal wbs_out2		: wbs_out_array;
+
+
+
+
+--
+--	SPI Signals
+--
+
+	constant WB_SPI : integer := 0;
+
+	--signal spi_ss  		: std_logic_vector(7 downto 0);      --// slave select
+	signal spi_sclk		: std_logic;       --// serial clock
+	signal spi_mosi		: std_logic;       --// master out slave in
+	signal spi_miso		: std_logic; 
+	signal spi_ss		: std_logic;   
+
+	signal spi_wb_adr	: std_logic_vector(31 downto 0);
+	--signal not_reset : std_logic; -- for sim
+
 
 begin
 
@@ -173,7 +250,7 @@ begin
 --	unused and input pins tri state
 --
 	l(20 downto 5) <= (others => 'Z');
-	r(20 downto 14) <= (others => 'Z');
+	--r(20 downto 14) <= (others => 'Z');
 	t <= (others => 'Z');
 	b <= (others => 'Z');
 
@@ -226,19 +303,13 @@ begin
 			rdy_cnt => sc_rdy_cnt(0),
 
 			irq_in => irq_in,
-			irq_out => irq_out,
 			exc_req => exc_req,
 			
 			sync_out => sync_out,
 			sync_in => sync_in,
 			
 			wd => wd
-			-- remove the comment for RAM access counting
-			-- ram_count => ram_count
 		);
-		
-		-- remove the comment for RAM access counting
-		-- ram_count <= ram_cnt;
 
 	cmp_ua: entity work.sc_uart generic map (
 			addr_bits => SLAVE_ADDR_BITS,
@@ -289,8 +360,10 @@ begin
 			nsi => r(13)
 	);
 
-	-- SimpCon Wishbone bridge
-	cmp_wb: entity work.sc2wb generic map (
+
+
+	-- SimpCon Wishbone bridge for Simple SPI
+	cmp_wbspi: entity work.sc2wb generic map (
 			addr_bits => SLAVE_ADDR_BITS
 		)
 		port map(
@@ -304,12 +377,33 @@ begin
 			rd_data => sc_dout(3),
 			rdy_cnt => sc_rdy_cnt(3),
 
+			wb_out => wb_out2,
+			wb_in => wb_in2
+	);
+
+
+	-- SimpCon Wishbone bridge for AC97
+	cmp_wb: entity work.sc2wb generic map (
+			addr_bits => SLAVE_ADDR_BITS
+		)
+		port map(
+			clk => clk,
+			reset => reset,
+
+			address => sc_io_out.address(SLAVE_ADDR_BITS-1 downto 0),
+			wr_data => sc_io_out.wr_data,
+			rd => sc_rd(4),
+			wr => sc_wr(4),
+			rd_data => sc_dout(4),
+			rdy_cnt => sc_rdy_cnt(4),
+
 			wb_out => wb_out,
 			wb_in => wb_in
 	);
 
+
 	--
-	-- master/slave connection
+	-- master/slave connection for AC97
 	--
 	gwsl: for i in 0 to WB_SLAVE_CNT-1 generate
 		wbs_in(i).dat_i <= wb_out.dat_o;
@@ -318,11 +412,42 @@ begin
 		wbs_in(i).cyc_i <= wb_out.cyc_o;
 	end generate;
 
-	-- no address decoding for the single Wishbone slave
 
-		wbs_in(0).stb_i <= wb_out.stb_o;
-		wb_in.dat_i <= wbs_out(0).dat_o;
-		wb_in.ack_i <= wbs_out(0).ack_o;
+	gwsl2: for i in 0 to WB_SLAVE_CNT-1 generate
+		wbs_in2(i).dat_i <= wb_out2.dat_o;
+		wbs_in2(i).we_i <= wb_out2.we_o;
+		wbs_in2(i).adr_i <= wb_out2.adr_o(S_ADDR_SIZE-1 downto 0);
+		wbs_in2(i).cyc_i <= wb_out2.cyc_o;
+	end generate;
+
+
+			wbs_in(WB_AC97).stb_i <= wb_out.stb_o;
+			wb_in.dat_i <= wbs_out(WB_AC97).dat_o;
+			wb_in.ack_i <= wbs_out(WB_AC97).ack_o;
+
+			wbs_in2(WB_SPI).stb_i <= wb_out2.stb_o;
+			wb_in2.dat_i <= wbs_out2(WB_SPI).dat_o;
+			wb_in2.ack_i <= wbs_out2(WB_SPI).ack_o;
+
+
+--process(wb_out, wbs_out)
+--begin
+
+--	if wb_out.adr_o(S_ADDR_SIZE)='0' then
+--		wbs_in(0).stb_i <= wb_out.stb_o;
+--		wbs_in(1).stb_i <= '0';
+--		wb_in.dat_i <= wbs_out(0).dat_o;
+--		wb_in.ack_i <= wbs_out(0).ack_o;
+--	else
+--		wbs_in(0).stb_i <= '0';
+--		wbs_in(1).stb_i <= wb_out.stb_o;
+--		wb_in.dat_i <= wbs_out(1).dat_o;
+--		wb_in.ack_i <= wbs_out(1).ack_o;
+--	end if;
+
+--end process;
+
+
 
 	-- AC97 Wishbone component
 	ac97_wb_adr <= "00000000000000000000000000"
@@ -366,6 +491,46 @@ begin
 	l(3) <= 'Z';
 	l(4) <= ac97_syn;
 	l(5) <= ac97_nres;
+
+	
+	
+	-- SPI Wishbone component
+	spi_wb_adr <= "0000000000000000000000000000"
+					& wbs_in2(WB_SPI).adr_i  ;
+
+	wbspi: simple_spi_top  port map(
+
+	clk_i			=> clk,
+	rst_i			=> not_reset,
+
+-- WISHBONE SLAVE INTERFACE 
+	adr_i		=> spi_wb_adr(1 downto 0),         --// lower address bits
+	dat_i		=> wbs_in2(WB_SPI).dat_i,        --// databus input
+	dat_o		=> wbs_out2(WB_SPI).dat_o,        --// databus output
+--	sel_i		=> "1111",         --// byte select inputs
+	we_i		=> wbs_in2(WB_SPI).we_i,          --// write enable input
+	stb_i		=> wbs_in2(WB_SPI).stb_i,        --// stobe/core select signal
+	cyc_i		=> wbs_in2(WB_SPI).cyc_i,         --// valid bus cycle input
+	ack_o		=> wbs_out2(WB_SPI).ack_o,         --// bus cycle acknowledge output
+--	err_o		=> open,         --// termination w/ error
+	inta_o		=> open,         --// interrupt request signal output
+
+
+
+ --// SPI Interface                                     
+	--ss_pad_o  		=>   spi_ss,      --// slave select
+	sck_o		=>   spi_sclk,    --// serial clock
+	mosi_o		=>   spi_mosi,    --// master out slave in
+	miso_i		=>   spi_miso,    --// master in slave out
+	ss_o		=>	 spi_ss
+	);
+
+	r(16) <= spi_mosi;
+	r(17) <= spi_sclk;	-- this one is inout on AC97/AD1981BL
+	--l(2) <= 'Z';
+	spi_miso <= r(18);
+	r(18) <= 'Z';
+	r(15) <= spi_ss;
 
 
 end rtl;
