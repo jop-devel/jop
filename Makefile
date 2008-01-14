@@ -105,7 +105,7 @@ WCET_METHOD=measure
 #	some variables
 #
 TOOLS=java/tools
-EXT_CP=-classpath java/lib/bcel-5.1.jar\;java/lib/jakarta-regexp-1.3.jar\;java/lib/RXTXcomm.jar\;java/lib/lpsolve55j.jar
+EXT_CP=-classpath java/lib/bcel-5.1.jar\;java/lib/jakarta-regexp-1.3.jar\;java/lib/RXTXcomm.jar\;java/lib/lpsolve55j.jar\;java/lib/log4j-1.2.15.jar
 
 # The line below makes the compilation crash, because it causes JOPizer to include a *lot*
 # of classes which are actually not necessary.
@@ -130,14 +130,7 @@ GCC_PARAMS=""
 #GCC_PARAMS="-DFPU_ATTACHED"
 
 #
-#	application optimization with ProGuard:
-#	proguard.sourceforge.net/
-#	uncomment following line to use it
-#OPTIMIZE=mv java/target/dist/lib/classes.zip java/target/dist/lib/in.zip; java -jar java/lib/proguard.jar @optimize.pro
-
-
-#
-#	Add your application source pathes and class that contains the 
+#	Add your application source pathes and class that contains the
 #	main method here. We are using those simple P1/2/3 variables for
 #		P1=directory, P2=package name, and P3=main class
 #	for sources 'inside' the JOP source tree
@@ -182,6 +175,22 @@ JOPBIN=$(P3).jop
 # for WCET testing
 TARGET_APP_SOURCE_PATH=$(TARGET_APP_PATH)\;$(TARGET)/src/app\;$(TARGET)/src/bench
 
+
+#
+#	application optimization with ProGuard:
+#	proguard.sourceforge.net/
+#	uncomment following line to use it
+#OPTIMIZE=mv java/target/dist/lib/classes.zip java/target/dist/lib/in.zip; java -jar java/lib/proguard.jar @optimize.pro
+
+#
+#	application optimization with JOPtimizer
+#	uncomment the following lines to use it
+#
+#OPTIMIZE=java $(EXT_CP)\;$(TOOLS)/dist/lib/joptimizer.jar joptimizer.JOPtimizerRunner \
+#	 -config jar:file:$(TOOLS)/dist/lib/joptimizer.jar!/jop.conf $(MAIN_CLASS) && \
+#	cd $(TARGET)/dist/classes && jar cf ../lib/classes.zip *
+
+
 # use this for serial download
 all: directories tools jopser japp
 
@@ -219,6 +228,8 @@ tools:
 	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/build/*.java
 	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/tools/*.java
 	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/wcet/*.java
+# Build libgraph and joptimizer
+	#make joptimizer -e TOOLS_JFLAGS="$(TOOLS_JFLAGS)" TOOLS="$(TOOLS)"
 # quick hack to get the tools with the debugger ok
 # the build.xml from the debugger contains the correct info
 # but also some more (old?) stuff
@@ -228,6 +239,31 @@ tools:
 
 #	old version with batch file
 #	cd java/tools && ./build.bat
+
+
+#
+#	Build joptimizer and libgraph
+#
+joptimizer:
+	make compile_java -e JAVAC_FLAGS="$(TOOLS_JFLAGS)" JAVA_DIR=$(TOOLS)/src/com/jopdesign/libgraph
+	make compile_java -e JAVAC_FLAGS="$(TOOLS_JFLAGS)" JAVA_DIR=$(TOOLS)/src/joptimizer
+	#cd $(TOOLS)/dist/classes && jar cfm ../lib/joptimizer.jar ../../src/joptimizer/MANIFEST.MF \
+	cd $(TOOLS)/dist/classes && jar cf ../lib/joptimizer.jar \
+		joptimizer com/jopdesign/libgraph \
+		-C ../../src/joptimizer log4j.properties \
+		-C ../../src/joptimizer jop.conf
+
+#
+#	A helper target to compile all java files in a directory and all subdirs
+#	Dont know how to 'find' on windows, so going the long way..
+#
+ifneq ($(JAVA_DIR),)
+  jdirs := $(subst :,,$(shell ls -R $(JAVA_DIR) | grep ":"))
+  jfiles := $(foreach dir,$(jdirs),$(wildcard $(dir)/*.java))
+endif
+compile_java:
+	@echo "Compiling files in $(JAVA_DIR) .."
+	@javac $(JAVAC_FLAGS) $(jfiles)
 
 
 #
