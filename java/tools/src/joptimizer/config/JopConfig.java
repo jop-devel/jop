@@ -62,13 +62,13 @@ public class JopConfig implements AppConfig {
     }
 
     public JopConfig(Properties config) {
-        this.config = config;
+        this.config = config == null ? new Properties() : config;
         this.classPath = new ClassPath(".");
         setArchConfig(getArchConfigFileName());
     }
 
     public JopConfig(Properties config, ClassPath classPath, String mainClass) {
-        this.config = config;
+        this.config = config == null ? new Properties() : config;
         this.classPath = classPath;
         this.mainClass = mainClass;
         setArchConfig(getArchConfigFileName());
@@ -136,7 +136,9 @@ public class JopConfig implements AppConfig {
     }
 
     public void setArchConfig(String config) {
-        this.config.put(CONF_ARCH_CONFIG, config);
+        if ( config != null ) {
+            this.config.put(CONF_ARCH_CONFIG, config);
+        }
         this.archConfig = new ArchConfig(config);
     }
 
