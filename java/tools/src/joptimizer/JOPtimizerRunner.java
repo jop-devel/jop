@@ -29,12 +29,10 @@ import org.apache.bcel.util.ClassPath;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
-import java.io.BufferedInputStream;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintStream;
+import java.io.*;
 import java.net.URL;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -102,8 +100,8 @@ public class JOPtimizerRunner {
         out.println("    -cmdline                Run in interactive cmdline mode. No default ");
         out.println("                            actions will be executed.");
         out.println("    -skipload               Do not load classes on startup.");
-        out.println("    -config <configfile>    A properties-file which may contain any of the ");
-        out.println("                            following options.");
+        out.println("    -config <configfile>    An url to a properties-file which may contain");
+        out.println("                            any of the following options.");
 
         for (Iterator it = options.values().iterator(); it.hasNext();) {
             ArgOption option = (ArgOption) it.next();
@@ -150,11 +148,12 @@ public class JOPtimizerRunner {
                     }
 
                     // not using class.getResource() here as the config file is usually outside the classpath.
-                    InputStream reader = new BufferedInputStream(new FileInputStream(filename));
+                    URL file = new URL(filename);
+                    Reader reader = new BufferedReader(new InputStreamReader(file.openStream()));
                     propfile.load(reader);
 
                 } catch (IOException e) {
-                    logger.error("Could not load configfile {"+filename+"}.", e);
+                    throw new ArgumentException("Could not load configfile {"+filename+"}.", e);
                 }
 
                 // Quick hack to allow usage of environment variables in config.
