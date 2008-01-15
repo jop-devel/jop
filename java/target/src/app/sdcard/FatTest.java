@@ -240,7 +240,7 @@ public class FatTest {
 		long[] Size = new long[1];
 		Size[0] = 0;
 
-		String namea = new String("TEST/TUCME.TXT");
+		String namea = new String("TUCME.TXT");
 
 		System.out.println(FOS.FileOutputStream(namea));
 		namea = null;
@@ -256,7 +256,7 @@ public class FatTest {
 
 		System.out.println("danach");
 
-		String nameb = new String("TEST/TUCME.TXT");
+		String nameb = new String("TUCME.TXT");
 
 		FatInterface.fat_load_reset();
 
