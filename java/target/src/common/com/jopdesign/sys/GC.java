@@ -262,17 +262,15 @@ public class GC {
 	 *
 	 */
 	static void getStackRoots() {
-
-
 		int i, j, cnt;
 		// only pushing stack roots need to be atomic
 		synchronized (mutex) {
 			// add complete stack of the current thread to the root list
 //			roots = GCStkWalk.swk(RtThreadImpl.getActive(),true,false);
 			i = Native.getSP();			
-			for (j = 128; j <= i; ++j) {
+			for (j = Const.STACK_OFF; j <= i; ++j) {
 				// disable the if when not using gc stack info
-//				if (roots[j - 128] == 1) {
+//				if (roots[j - STACK_BASE] == 1) {
 					push(Native.rdIntMem(j));
 //				}
 			}
@@ -282,7 +280,8 @@ public class GC {
 			for (i = 0; i < cnt; ++i) {
 				if (i != RtThreadImpl.getActive()) {
 					int[] mem = RtThreadImpl.getStack(i);
-					int sp = RtThreadImpl.getSP(i) - 128; // sp starts at 128
+					 // sp starts at Const.STACK_OFF
+					int sp = RtThreadImpl.getSP(i) - Const.STACK_OFF;
 
 //					roots = GCStkWalk.swk(i, false, false);
 
