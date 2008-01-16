@@ -12,6 +12,10 @@ import jbe.BenchUdpIp;
 
 // Benchmark of CMP with 3 JOPs
 
+// If the Round Robin Arbiter is used, it neccessary to enable the printfs of 
+// CPU1 and CPU2. Consequently, they are still accessing memory and CPU0 can 
+// print out the results.
+
 public class BenchCMP3 {
 
 	public static int signal = 0; 
@@ -54,11 +58,19 @@ public class BenchCMP3 {
 			{	
 				lift1 = Execute.performResult(bm1);
 				signal++;
+				
+				// Enable for use with Round Robin Arbiter
+				// for (int i = 0; i<5; i++)
+				// LowLevel.msg("Wait until JOP0 doesnt want to access the memory anymore!");
 			}
 			else
 			{
 				lift2 = Execute.performResult(bm2);
 				signal++;
+				
+				// Enable for use with Round Robin Arbiter
+				// for (int i = 0; i<5; i++)
+				// LowLevel.msg("Wait until JOP0 doesnt want to access the memory anymore!");
 			}
 		}
 	}

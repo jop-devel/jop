@@ -35,9 +35,9 @@ generic (
 	ram_cnt		: integer := 2;		-- clock cycles for external ram
 --	rom_cnt		: integer := 3;		-- clock cycles for external rom OK for 20 MHz
 	rom_cnt		: integer := 15;	-- clock cycles for external rom for 100 MHz
-	jpc_width	: integer := 12;	-- address bits of java bytecode pc = cache size
+	jpc_width	: integer := 10;	-- address bits of java bytecode pc = cache size
 	block_bits	: integer := 4;		-- 2*block_bits is number of cache blocks
-	cpu_cnt		: integer := 2		-- number of cpus
+	cpu_cnt		: integer := 3		-- number of cpus
 );
 
 port (
@@ -223,7 +223,10 @@ end process;
 		)
 		port map(clk_int, int_res,
 			sc_arb_out, sc_arb_in,
-			sc_mem_out, sc_mem_in);
+			sc_mem_out, sc_mem_in
+			-- Enable for use with Round Robin Arbiter
+			-- sync_out_array(1)
+			);
 
 	cmp_scm: entity work.sc_mem_if
 		generic map (
