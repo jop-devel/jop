@@ -27,8 +27,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import org.apache.bcel.Constants;
-
 import debug.constants.TagConstants;
 import com.jopdesign.sys.Const;
 import com.jopdesign.sys.GC;
@@ -1837,7 +1835,8 @@ public final class JopDebugKernel
 	synchronized(GC.getMutex())
 	{
 	  //return (Native.rdMem(objectHandle + GC.OFF_TYPE) == GC.IS_REFARR);
-	  return (Native.rdMem(objectHandle + GC.OFF_TYPE) == Constants.T_ARRAY);
+	  //return (Native.rdMem(objectHandle + GC.OFF_TYPE) == Constants.T_ARRAY);
+	  return (Native.rdMem(objectHandle + GC.OFF_TYPE) == 13);
 	}
   }
   
