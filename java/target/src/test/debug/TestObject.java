@@ -40,32 +40,42 @@ public class TestObject
 {
   public static int staticValue = 0;
   
-  public long teste;
-  
-  private int value;
-  
+  private int value0;
+  public int value1;
   public int value2;
   public int value3;
-  public int value4;
+  
+  public long test;
+  
+  private int intArray[];
   
   public TestObject()
   {
-    value = 0;
+    value0 = 0;
+    value1 = 1;
+    value2 = 2;
+    value3 = 3;
     
-    value2 = 0;
-    value3 = 0;
-    value4 = 0;
-    teste = 0;
+    test = 4;
+    
+    intArray = new int[8];
+    
+    // just put some values. This will help to test code for array access.
+    for(value0 = 0; value0 < intArray.length; value0++)
+    {
+      intArray[value0] = 2 * value0;
+    }
+    value0 = 0;
   }
 
-  public int getValue()
+  public int getValue0()
   {
-    return value;
+    return value0;
   }
 
-  public void setValue(int x)
+  public void setValue0(int x)
   {
-    this.value = x;
+    this.value0 = x;
   }
   
   /**
@@ -123,5 +133,16 @@ public class TestObject
     x = 16;
     
     return x;
+  }
+  
+  /**
+   * A small test for the array element.
+   * 
+   * @param index
+   * @return
+   */
+  public int getArrayElement(int index)
+  {
+	return intArray[index];
   }
 }
