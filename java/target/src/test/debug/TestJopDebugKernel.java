@@ -465,7 +465,7 @@ public class TestJopDebugKernel
 //      EmbeddedOutputStream.testEmbeddedPrinter();
     TestObject testObject = new TestObject();
     System.out.print("TestObject value is: ");
-    System.out.println(testObject.getValue());
+    System.out.println(testObject.getValue0());
     
     test4_read_write();
     
