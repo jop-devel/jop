@@ -27,8 +27,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import org.apache.bcel.Constants;
+
 import debug.constants.TagConstants;
 import com.jopdesign.sys.Const;
+import com.jopdesign.sys.GC;
 import com.jopdesign.sys.Native;
 
 import debug.constants.CommandConstants;
@@ -79,6 +82,10 @@ public final class JopDebugKernel
   
   // a variable to hold the frame pointer of the breakpoint method
   private static int breakpointFramePointer;
+  
+  // an internal flag to inform error codes during object access.
+  // used to avoid memory allocation when creating exceptions.
+  private static int errorCodeForInstanceFieldAccess;
   
   // internal flag to turn on/off tracing messages
   //private static boolean shouldPrintInternalMessages = false;
@@ -217,6 +224,22 @@ public final class JopDebugKernel
         {
           debugPrintln("Invoke static");
           handleInvokeStaticCommand();
+          continue;
+        }
+        
+        // get a field from an object 
+        if((commandset == 9) && (command == 2))
+        {
+          debugPrintln("GetValues (2)");
+          handleGetInstanceVariable();
+          continue;
+        }
+        
+        // set a field into an object 
+        if((commandset == 9) && (command == 3))
+        {
+          debugPrintln("SetValues (3)");
+          handleSetInstanceVariable();
           continue;
         }
         
@@ -722,7 +745,7 @@ public final class JopDebugKernel
   }
   
   /**
-   * This method can be used in the future to set the streams which will be
+   * This method can be used in the future, to set the streams which will be
    * used to communicate with the JOP machine.
    * 
    * @param in
@@ -730,8 +753,23 @@ public final class JopDebugKernel
    */
   private static void setDebugStreams(InputStream in, OutputStream out)
   {
-    inputStream = new DataInputStream(in);
-    outputStream = new DataOutputStream(out);
+    if(in instanceof DataInputStream)
+    {
+      inputStream = (DataInputStream) in;
+    }
+    else
+    {
+      inputStream = new DataInputStream(in);
+    }
+    
+    if(out instanceof DataOutputStream)
+    {
+      outputStream = (DataOutputStream) out;
+    }
+    else
+    {
+      outputStream = new DataOutputStream(out);
+    }    
   }
   
   private static int getCPLocalsArgsFromMP(int mp)
@@ -1063,27 +1101,6 @@ public final class JopDebugKernel
   }
   
   /**
-   * Get the framePointer at the given index.
-   * The depth of the first frame (for the main method) is zero.
-   * Methods called inside "main" will have depth = 1
-   * and so on.
-   * 
-   * @param framePointer
-   * @return
-   */
-//  public static final int getFramePointerAt(int framePointer, int index)
-//  {
-//    int count = getStackDepth();
-//    while(isFirstFrame(framePointer) == false && (index < count))
-//    {
-//      count--;
-//      framePointer = getNextFramePointer(framePointer);
-//    }
-//    
-//    return framePointer;
-//  }
-  
-  /**
    * Return the current stack depth.
    * 
    * @return
@@ -1093,36 +1110,189 @@ public final class JopDebugKernel
     int framePointer = getFramePointerOfCallerMethod();
     return getStackDepth(framePointer);
   }
-
-  private static int getInstanceSize(int object)
+  
+  private static int getInstanceSizeFromClass(int classReference)
   {
-    int classReference = getClassReference(object);
     return Native.rdMem(classReference);
   }
-
-  private static int getClassReference(int object)
+  
+  private static int getPointerToStaticPrimitiveFields(int classReference)
   {
-    int classreference = 0;
-    
-    // return one byte and read the pointer to the virtual method table
-    object --;
-    classreference = Native.rdMem(object);
-    
-    // adjust to point to the "instance size" field
-    classreference--;
-    classreference--;
-    
-    return classreference;
+	classReference++;
+    return Native.rdMem(classReference);
   }
-
-  private static int getConstantPoolFromClassReference(int classReference)
+  
+  private static int getPointerToSuperclass(int classReference)
   {
-    // get reference to the first method. There will always be some,
-    // due to generated/synthetic methods such as the default constructur
-    int methodReference = Native.rdMem(classReference + 2);
-    int constantPoolReference = getCPFromMP(methodReference);
-    
-    return constantPoolReference;
+	classReference+=3;
+    return Native.rdMem(classReference);
+  }
+  
+  /**
+   * Return the class pointer from an object.
+   * Be careful: if a handle to an array is passed, this method will
+   * return zero. Hence, DON't USE IT WITH ARRAYS!!! it just DOES NOT WORK.
+   * 
+   * @param objectHandle
+   * @return
+   */
+  private static int getClassPointerFromObjectHandle(int objectHandle)
+  {
+	int classPointer = 0;
+	if(isArrayType(objectHandle) == false)
+	{
+      synchronized(GC.getMutex())
+      {
+    	classPointer = getMethodTablePointerOrArrayLength(objectHandle);
+    	// fix the offset to point to the class structure (instance size)
+    	classPointer -= 5;
+      }
+	}
+	
+    return classPointer;
+  }
+  
+  /**
+   * Get the value of one instance field.
+   * 
+   * @param objectHandle
+   * @param fieldIndex
+   * @return
+   */
+  private static int getInstanceField(int objectHandle, int fieldIndex)
+  {
+	int size;
+	int value = 0;
+	int objectPointer;
+	
+	synchronized(GC.getMutex())
+	{
+	  // for development only
+	  printObjectHandle(objectHandle);
+	  
+	  // clear the error flag
+	  clearFlagForInstanceFieldAccess();
+	  
+	  // get the object size
+	  size = getObjectSize(objectHandle);
+	  
+	  debugPrint("  object size: ");
+	  debugPrintln(size);
+	  
+	  // check if the field index makes sense. Access only if it's a valid one.
+	  if(fieldIndex >= 0 && fieldIndex < size)
+	  {
+		// get the object pointer
+		objectPointer = getObjectPointer(objectHandle);
+		
+		//use it to access the object content
+		value = Native.rdMem(objectPointer + fieldIndex);
+	  }
+	  else
+	  {
+		// set an error code to inform that this operation failed.
+		setErrorCodeForInstanceFieldAccess(ErrorConstants.ERROR_INVALID_FIELDID);
+		
+		debugPrint("  Invalid index: ");
+		debugPrintln(fieldIndex);
+		
+		debugPrint("  Num. instance locals is: ");
+		debugPrintln(size);
+	  }
+	}
+	
+    return value;
+  }
+  
+  /**
+   * Set the value of one instance field.
+   * 
+   * @param objectHandle
+   * @param fieldIndex
+   * @param fieldValue
+   * @return
+   */
+  private static void setInstanceField(int objectHandle, int fieldIndex,
+	  int fieldValue)
+  {
+	int size;
+	int objectPointer;
+	
+	synchronized(GC.getMutex())
+	{
+	  // for development only
+	  printObjectHandle(objectHandle);
+	  
+	  // clear the error flag
+	  clearFlagForInstanceFieldAccess();
+	  
+	  // get the object size
+	  size = getObjectSize(objectHandle);
+	  
+	  debugPrint("  object size: ");
+	  debugPrintln(size);
+	  
+	  // check if the field index makes sense. Access only if it's a valid one.
+	  if(fieldIndex >= 0 && fieldIndex < size)
+	  {
+		// get the object pointer
+		objectPointer = getObjectPointer(objectHandle);
+		
+		//use it to access the object content
+		Native.wrMem(fieldValue, objectPointer + fieldIndex);
+	  }
+	  else
+	  {
+		// set an error code to inform that this operation failed.
+		setErrorCodeForInstanceFieldAccess(ErrorConstants.ERROR_INVALID_FIELDID);
+		
+		debugPrint("  Invalid index: ");
+		debugPrintln(fieldIndex);
+		
+		debugPrint("  Num. instance locals is: ");
+		debugPrintln(size);
+	  }
+	}
+  }
+  
+  /**
+   * Clear the error flag. Setup for next access.
+   */
+  private static void clearFlagForInstanceFieldAccess()
+  {
+	errorCodeForInstanceFieldAccess = 0;
+  }
+  
+  /**
+   * Set an error code to inform that something went wrong.
+   * 
+   * @param errorCode
+   */
+  private static void setErrorCodeForInstanceFieldAccess(int errorCode)
+  {
+	errorCodeForInstanceFieldAccess = errorCode;
+  }
+  
+  /**
+   * Return the error code, if any.
+   * 
+   * @return
+   */
+  private static int getErrorCodeForInstanceFieldAccess()
+  {
+	return errorCodeForInstanceFieldAccess;
+  }
+  
+  /**
+   * Check if the last operation of "instance field access"
+   * was successful or not. If the error code is zero, then
+   * report success. 
+   * 
+   * @return
+   */
+  private static boolean isSuccessfulLastInstanceFieldAccess()
+  {
+	return (errorCodeForInstanceFieldAccess == 0);
   }
   
   /**
@@ -1457,6 +1627,218 @@ public final class JopDebugKernel
     debugPrintln(numLocals);
     
     debugChannel.sendReplyFrameCount(numLocals);
+  }
+  
+  /**
+   * Handle a "Get instance variable" command.
+   * 
+   * @throws IOException
+   */
+  private static void  handleGetInstanceVariable() throws IOException
+  {
+    int objectHandle;
+    int counter;
+    int numFields;
+    int fieldIndex;
+    int fieldValue;
+    
+    // read the object handle
+    objectHandle = debugChannel.readIntValue();
+    
+    // What happens if the GC is working and change the pointers 
+    // before or during an access? Let's stay on the safe size.
+    // Lock the GC while manipulating objects directly.
+    synchronized(GC.getMutex())
+    {
+      // check if the reference type is a valid one.
+      if(GC.isValidObjectHandle(objectHandle) == false)
+      {
+    	debugPrint("Failure: invalid object handle.");
+    	debugPrint(objectHandle);
+    	debugPrintln();
+    	
+    	// send a packet with an error code and return.
+    	debugChannel.sendReplyWithErrorCode(ErrorConstants.ERROR_INVALID_OBJECT);
+    	return;
+      }
+      
+      // read the number of fields to be accessed.
+      numFields = debugChannel.readIntValue();
+      
+      // prepare the reply packet
+      debugChannel.prepareInstanceValuesPacket(numFields);
+      
+      // fill in the packet with all information requested
+      for(counter = 0; counter < numFields; counter++)
+      {
+    	fieldIndex = debugChannel.readIntValue();
+    	fieldValue = getInstanceField(objectHandle, fieldIndex);
+    	
+    	// check if an error happened during field access.
+    	// if so, stop the loop and send an error packet.
+    	if(isSuccessfulLastInstanceFieldAccess() == false)
+    	{
+    	  debugPrint("Failure accessing field # ");
+    	  debugPrint(counter);
+    	  debugPrint(". field index: ");
+    	  debugPrint(fieldIndex);
+    	  debugPrintln();
+    	  
+    	  break;
+    	}
+    	
+    	debugChannel.writeInstanceFieldValue(fieldValue);
+      }
+    }
+    // end of synchronized block. Now the GC can work freely.
+    
+    // check the error flag. If there's an error, send an error code.
+    // otherwise, all data is correct. Send it to the server.
+    if(isSuccessfulLastInstanceFieldAccess() == false)
+    {
+      // send a packet with an error code.
+      debugChannel.sendReplyWithErrorCode(getErrorCodeForInstanceFieldAccess());
+    }
+    else
+    {
+      // great! packet ready. Send it to the server.
+      debugChannel.sendInstanceFieldValuesReply();
+    }
+  }
+  
+  /**
+   * Handle a "Set instance variable" command.
+   * 
+   * @throws IOException
+   */
+  private static void  handleSetInstanceVariable() throws IOException
+  {
+    int objectHandle;
+    int counter;
+    int numFields;
+    int fieldIndex;
+    int fieldValue;
+    
+    // read the object handle
+    objectHandle = debugChannel.readIntValue();
+    
+    // What happens if the GC is working and change the pointers 
+    // before or during an access? Let's stay on the safe size.
+    // Lock the GC while manipulating objects directly.
+    synchronized(GC.getMutex())
+    {
+      // check if the reference type is a valid one.
+      if(GC.isValidObjectHandle(objectHandle) == false)
+      {
+    	debugPrint("Failure: invalid object handle.");
+    	debugPrint(objectHandle);
+    	debugPrintln();
+    	
+    	// send a packet with an error code and return.
+    	debugChannel.sendReplyWithErrorCode(ErrorConstants.ERROR_INVALID_OBJECT);
+    	return;
+      }
+      
+      // read the number of fields to be accessed.
+      numFields = debugChannel.readIntValue();
+      
+      // fill in the packet with all information requested
+      for(counter = 0; counter < numFields; counter++)
+      {
+    	fieldIndex = debugChannel.readIntValue();
+    	fieldValue = debugChannel.readIntValue();
+    	setInstanceField(objectHandle, fieldIndex, fieldValue);
+    	
+    	// check if an error happened during field access.
+    	// if so, stop the loop and send an error packet.
+    	if(isSuccessfulLastInstanceFieldAccess() == false)
+    	{
+    	  debugPrint("Failure accessing field # ");
+    	  debugPrint(counter);
+    	  debugPrint(". field index: ");
+    	  debugPrint(fieldIndex);
+    	  debugPrint(". new field value: ");
+    	  debugPrint(fieldValue);
+    	  debugPrintln();
+    	  
+    	  break;
+    	}
+      }
+    }
+    // end of synchronized block. Now the GC can work freely.
+    
+    // check the error flag. If there's an error, send an error code.
+    // otherwise, all data is correct. Send it to the server.
+    if(isSuccessfulLastInstanceFieldAccess() == false)
+    {
+      // send a packet with an error code.
+      debugChannel.sendReplyWithErrorCode(getErrorCodeForInstanceFieldAccess());
+    }
+    else
+    {
+      // great! all operations were done. Send an ack to the server.
+      debugChannel.sendReply();
+    }
+  }
+  
+  /**
+   * Return the actual object pointer
+   * @param objectHandle
+   * @return
+   */
+  private static final int getObjectPointer(int objectHandle)
+  {
+	// let's synchronize on the GC to avoid concurrency problems.
+	synchronized(GC.getMutex())
+	{
+	  return Native.rdMem(objectHandle + GC.OFF_PTR);
+	}
+  }
+  
+  /**
+   * Return the instance size.
+   * 
+   * @param handle
+   * @return
+   */
+  private static final int getObjectSize(int objectHandle)
+  {
+	// let's synchronize on the GC to avoid concurrency problems.
+	synchronized(GC.getMutex())
+	{
+	  return 	Native.rdMem(objectHandle + GC.OFF_SIZE);
+	}
+  }
+  
+  /**
+   * Return the method table pointer (or array length if it's an array).
+   * 
+   * @param handle
+   * @return
+   */
+  private static final int getMethodTablePointerOrArrayLength(int objectHandle)
+  {
+	// let's synchronize on the GC to avoid concurrency problems.
+	synchronized(GC.getMutex())
+	{
+	  return 	Native.rdMem(objectHandle + GC.OFF_MTAB_ALEN);
+	}
+  }
+  
+  /**
+   * Check if the handle control an array object.
+   * 
+   * @param handle
+   * @return
+   */
+  private static final boolean isArrayType(int objectHandle)
+  {
+	// let's synchronize on the GC to avoid concurrency problems.
+	synchronized(GC.getMutex())
+	{
+	  //return (Native.rdMem(objectHandle + GC.OFF_TYPE) == GC.IS_REFARR);
+	  return (Native.rdMem(objectHandle + GC.OFF_TYPE) == Constants.T_ARRAY);
+	}
   }
   
   /**
@@ -2250,5 +2632,91 @@ public final class JopDebugKernel
   public static boolean shouldPrintInternalMessages()
   {
 	return shouldPrintInternalMessages;
+  }
+  
+  /**
+   * Print information about one object handle.
+   * 
+   * @param handle
+   */
+  private static final void printObjectHandle(int handle)
+  {
+//    * According to GC class, the handle contains following data:
+//    * 0 pointer to the object in the heap or 0 when the handle is free
+//    * 1 pointer to the method table or length of an array
+//    * 2 size - could be in class info
+//    * 3 type info: object, primitve array or ref array
+//    * 4 pointer to next handle of same type (used or free)
+//    * 5 gray list
+//    * 6 space marker - either toSpace or fromSpace
+	
+    int data, type;
+  
+    // let's synchronize on the GC to avoid concurrency problems.
+    synchronized(GC.getMutex())
+    {
+      System.out.print("Handle content:  ");
+      
+      for(data = 0; data < 8; data ++)
+      {
+    	int value = Native.rdMem(handle + data);
+    	EmbeddedOutputStream.printIntHex(value, System.out);
+    	debugPrint(" ");
+      }
+      
+      System.out.println();
+      
+      data = Native.rdMem(handle + GC.OFF_PTR);
+      type = Native.rdMem(handle + GC.OFF_TYPE);
+      
+      if(data == 0)
+      {
+      System.out.println("Free handle: ");
+      System.out.println(handle);
+      }
+      else
+      {
+      System.out.print("Object pointer:  ");
+      System.out.println(data);
+      }
+      
+      data = Native.rdMem(handle + GC.OFF_MTAB_ALEN);
+      if(type == GC.IS_OBJ)
+      {
+      System.out.print("Method table:    ");
+      System.out.println(data);
+      }
+      else
+      {
+      System.out.print("Array length:    ");
+      System.out.println(data);    
+      }
+      
+      // this is the last access to the handle content.
+      // close synchronization block and release GC lock.
+      data = Native.rdMem(handle + GC.OFF_SIZE);
+    }
+    
+    System.out.print("Instance size:   ");
+    System.out.println(data);
+    
+    System.out.print("Type: ");
+    System.out.print(type);
+    System.out.print("  ");
+  
+    if(type == GC.IS_OBJ)
+    {
+      System.out.print("Type:   Object (not an array) - ");
+      System.out.println(type);
+    }
+    if(type == GC.IS_REFARR)
+    {
+      System.out.println("Type:   Array");
+      System.out.println(type);
+    }
+    
+    // for now, don't print the remaining fields. Not yet necessary.
+    // if more fields were added, remember to include on the sync block above.
+    System.out.println("");
   }
 }
