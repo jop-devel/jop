@@ -81,14 +81,16 @@ public class TestJopServer
   private static final int PRINT_STACK_FRAME = 3;
   private static final int GET_LOCAL_VARIABLE = 4;
   private static final int SET_LOCAL_VARIABLE = 5;
-  private static final int INVOKE_STATIC_METHOD = 6;
-  private static final int RESUME_EXECUTION = 7;
-  private static final int EXIT_OPTION = 8;
-  private static final int TEST_JDWP_PACKETS = 9;
-  private static final int TEST_JDWP_PACKETS_SENT = 10;
-  private static final int SET_BREAKPOINT = 11;
-  private static final int CLEAR_BREAKPOINT = 12;
-  private static final int GET_STACK_LIST = 13;
+  private static final int GET_INSTANCE_VARIABLE = 6;
+  private static final int SET_INSTANCE_VARIABLE = 7;
+  private static final int INVOKE_STATIC_METHOD = 8;
+  private static final int RESUME_EXECUTION = 9;
+  private static final int EXIT_OPTION = 10;
+  private static final int TEST_JDWP_PACKETS = 11;
+  private static final int TEST_JDWP_PACKETS_SENT = 12;
+  private static final int SET_BREAKPOINT = 13;
+  private static final int CLEAR_BREAKPOINT = 14;
+  private static final int GET_STACK_LIST = 15;
   
   private static final int INVALID_BYTECODE = -1;
   
@@ -211,6 +213,18 @@ public class TestJopServer
         case SET_LOCAL_VARIABLE:
         {
           interactiveTestSetLocalVariable(reader);
+          break;
+        }
+        
+        case GET_INSTANCE_VARIABLE:
+        {
+          interactiveTestGetInstanceVariable(reader);
+          break;
+        }
+        
+        case SET_INSTANCE_VARIABLE:
+        {
+          interactiveTestSetInstanceVariable(reader);
           break;
         }
         
@@ -423,6 +437,73 @@ public class TestJopServer
     debugChannel.setLocalVariableValue(frameIndex, variableIndex, value);
     
     println("Value updated.");
+  }
+  
+  /**
+   * Test method to get an instance variable.
+   * 
+   * @param reader 
+   * @throws IOException 
+   * 
+   */
+  private void interactiveTestGetInstanceVariable(BufferedReader reader)
+    throws IOException
+  {
+    int objectIndex, variableIndex;
+    int value;
+    
+    // get the object handle
+    print("Please input the object handle: ");
+    objectIndex = readNonNegativeInteger(reader);
+    
+    // get and test the instance variable index
+    print("Please input the instance variable index: ");
+    variableIndex = readNonNegativeInteger(reader);
+    
+    // get a local variable value
+    value = debugChannel.getInstanceVariableValue(objectIndex, variableIndex);
+    
+    print("Value: ");
+    println(value);
+  }
+  
+  /**
+   * Test method to set an instance variable.
+   * 
+   * @param reader 
+   * @throws IOException 
+   * 
+   */
+  private void interactiveTestSetInstanceVariable(BufferedReader reader)
+    throws IOException
+  {
+    int objectIndex, variableIndex, variableValue;
+    int errorCode;
+    
+    // get the instance variable index
+    print("Please input the object handle: ");
+    objectIndex = readNonNegativeInteger(reader);
+    
+    // get the instance variable index
+    print("Please input the instance variable index: ");
+    variableIndex = readNonNegativeInteger(reader);
+    
+    // get the new instance variable value
+    print("Please input the new instance variable value: ");
+    variableValue = readNonNegativeInteger(reader);
+    
+    // set a local variable value
+    errorCode = debugChannel.setInstanceVariableValue(objectIndex, variableIndex,
+    	variableValue);
+    
+    if(errorCode == 0)
+    {
+      println("Success! Value set!");
+    }
+    else
+    {
+      print("Failure.");
+    }
   }
   
   private void interactiveTestSetBreakpoint(BufferedReader reader) throws IOException
@@ -707,6 +788,12 @@ public class TestJopServer
     
     print(SET_LOCAL_VARIABLE);
     println(". Set a local variable");
+    
+    print(GET_INSTANCE_VARIABLE);
+    println(". Get an instance variable");
+    
+    print(SET_INSTANCE_VARIABLE);
+    println(". Set an instance variable");
     
     print(INVOKE_STATIC_METHOD);
     println(". Invoke a static method");
