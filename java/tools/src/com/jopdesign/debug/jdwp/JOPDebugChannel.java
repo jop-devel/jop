@@ -507,6 +507,106 @@ public class JOPDebugChannel
   }
   
   /**
+   * This method query JOP for information about one instance 
+   * variable of a specific object. Variable index start in zero.
+   * 
+   * @param objectReference
+   * @param variableIndex
+   * @return
+   * @throws IOException
+   */
+  public int getInstanceVariableValue(int objectReference, int variableIndex)
+    throws IOException
+  {
+    int numFields = 0;
+	int received = 0;
+    PacketWrapper packet;
+    
+    checkConnection();
+    //------------------------------------------------------------
+    // send "Object reference -> get values (2)" command.
+    //
+    // All indexes are zero based. So, variableIndex = 1 will
+    // query the second instance variable (index 1) on the object pointed
+    // by objectReference.
+    
+    packet = createRequestObjectReferenceGetValues(objectReference, variableIndex);
+    sendPacket(packet);
+    
+    // receive an answer with the variable value
+    packet = receivePacket();
+    
+    reader.setPacket(packet);
+    
+    // check if there was an error.
+    if(packet.hasNoError() == false)
+    {
+      // the answer has an error.
+      // TODO: handle the error packet here
+      Debug.print("Failure: ");
+      Debug.println(packet.getErrorCode());
+    }
+    else
+    {
+      // the number of fields should be 1, since only one was requested.
+      numFields = reader.readInt();
+      if(numFields != 1)
+      {
+    	Debug.println("  Failure! number of fields should be 1");
+      }
+      else
+      {
+    	received = reader.readInt();
+    	Debug.println("  Variable value: " + received);
+      }
+    }
+    
+    return received;
+  }
+  
+  /**
+   * This method request JOP to set one instance 
+   * variable of a specific object. Variable index start in zero.
+   * 
+   * @param objectReference the object handle
+   * @param variableIndex the variable index
+   * @param variableValue the new variable value
+   * @return the error code (zero when the operation was successfully)
+   * @throws IOException
+   */
+  public int setInstanceVariableValue(int objectReference, int variableIndex,
+	  int variableValue) throws IOException
+  {
+    PacketWrapper packet;
+    
+    checkConnection();
+    //------------------------------------------------------------
+    // send "Object reference -> set values (3)" command.
+    //
+    // All indexes are zero based. So, variableIndex = 1 will
+    // reference the second instance variable (index 1) on the object pointed
+    // by objectReference.
+    
+    packet = createRequestObjectReferenceSetValues(objectReference, 
+    	variableIndex, variableValue);
+    sendPacket(packet);
+    
+    // receive an answer with the variable value
+    packet = receivePacket();
+    
+    // check if there was an error.
+    if(packet.hasNoError() == false)
+    {
+      // the answer has an error.
+      // TODO: handle the error packet here
+      Debug.print("Failure: ");
+      Debug.println(packet.getErrorCode());
+    }
+    
+    return packet.getErrorCode();
+  }
+  
+  /**
    * Read a chunk of memory and return it.
    * size must be a multiple of 4 (each word is 4 bytes).
    * if it's not, it will be increased to the next multiple of four.
@@ -1040,6 +1140,54 @@ public class JOPDebugChannel
     
     packet = buildRequestPacket(CommandConstants.StackFrame_Command_Set,
       CommandConstants.StackFrame_GetValues);
+    
+    return packet;
+  }
+  
+  /**
+   * Build a request for one instance variable inside one object.
+   * 
+   * @param objectId
+   * @param fieldIndex
+   * @return
+   */
+  private PacketWrapper createRequestObjectReferenceGetValues(int objectId, 
+    int fieldIndex)
+  {
+    PacketWrapper packet;
+    
+    writer.clear();
+    writer.writeInt(objectId);
+    writer.writeInt(1);
+    writer.writeInt(fieldIndex);
+    
+    packet = buildRequestPacket(CommandConstants.ObjectReference_Command_Set,
+      CommandConstants.ObjectReference_GetValues);
+    
+    return packet;
+  }
+  
+  /**
+   * Build a request to set one instance variable inside one object.
+   * 
+   * @param objectId
+   * @param fieldIndex
+   * @param fieldValue
+   * @return
+   */
+  private PacketWrapper createRequestObjectReferenceSetValues(int objectId, 
+    int fieldIndex, int fieldValue)
+  {
+    PacketWrapper packet;
+    
+    writer.clear();
+    writer.writeInt(objectId);
+    writer.writeInt(1);
+    writer.writeInt(fieldIndex);
+    writer.writeInt(fieldValue);
+    
+    packet = buildRequestPacket(CommandConstants.ObjectReference_Command_Set,
+      CommandConstants.ObjectReference_SetValues);
     
     return packet;
   }
