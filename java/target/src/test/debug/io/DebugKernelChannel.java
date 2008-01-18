@@ -80,7 +80,15 @@ public final class DebugKernelChannel
       throw new NullPointerException("Debug channel not initialized: Null stream(s)!");
     }
     
-    inputStream = new DataInputStream(input);
+    if(input instanceof DataInputStream)
+    {
+      inputStream = (DataInputStream) input;
+    }
+    else
+    {
+      inputStream = new DataInputStream(input);
+    }
+    
     outputStream = output;
     
     inputPacket = new JavaDebugPacket();
@@ -583,11 +591,46 @@ public final class DebugKernelChannel
   }
   
   /**
-   * Send the packet with data about stack frmaes to the server.
+   * Send the packet with data about stack frames to the server.
    * 
    * @throws IOException 
    */
   public synchronized void sendStackFrameListReply() throws IOException
+  {
+	sendPacket();
+  }
+  
+  /**
+   * Prepare the reply for the "get instance values" command.
+   * 
+   * @param count
+   * @throws IOException 
+   */
+  public void prepareInstanceValuesPacket(int count) throws IOException
+  {
+	// create a reply packet based on the received packet.
+    createEmptyReplyPacket();
+    
+    // write the number of instance field values.
+    outputPacket.writeInt(count);
+  }
+  
+  /**
+   * Write information related to one instance field on the output packet.
+   * 
+   * @param framePointer
+   */
+  public synchronized void writeInstanceFieldValue(int fieldValue)
+  {
+	outputPacket.writeInt(fieldValue);
+  }
+  
+  /**
+   * Send the packet with data about instance field values to the server.
+   * 
+   * @throws IOException 
+   */
+  public synchronized void sendInstanceFieldValuesReply() throws IOException
   {
 	sendPacket();
   }
