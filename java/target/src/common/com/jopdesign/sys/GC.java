@@ -270,7 +270,7 @@ public class GC {
 			i = Native.getSP();			
 			for (j = Const.STACK_OFF; j <= i; ++j) {
 				// disable the if when not using gc stack info
-//				if (roots[j - STACK_BASE] == 1) {
+//				if (roots[j - Const.STACK_OFF] == 1) {
 					push(Native.rdIntMem(j));
 //				}
 			}
