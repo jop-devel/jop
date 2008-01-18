@@ -57,9 +57,9 @@ public class GC {
 	 * !!! be carefule when changing the handle structure, it's
 	 * used in System.arraycopy() and probably in jvm.asm!!!
 	 */
-	static final int OFF_PTR = 0;
-	static final int OFF_MTAB_ALEN = 1;
-	static final int OFF_SIZE = 2;
+	public static final int OFF_PTR = 0;
+	public static final int OFF_MTAB_ALEN = 1;
+	public static final int OFF_SIZE = 2;
 	public static final int OFF_TYPE = 3;
 	
 	// size != array length (think about long/double)
@@ -68,8 +68,8 @@ public class GC {
 	// our addition:
 	// 1 reference
 	// 0 a plain object
-	static final int IS_OBJ = 0;
-	static final int IS_REFARR = 1;
+	public static final int IS_OBJ = 0;
+	public static final int IS_REFARR = 1;
 	
 	/**
 	 * Free and Use list.
@@ -628,6 +628,56 @@ public class GC {
 	 */
 	public static int totalMemory() {
 		return semi_size*4;
+	}
+	
+	/**
+	 * Check if a given value is a valid handle.
+	 * 
+	 * This method traverse the list of handles (in use) to check
+	 * if the handle provided belong to the list.
+	 * 
+	 * It does *not* check the free handle list.
+	 * 
+	 * One detail: the result may state that a handle to a 
+	 * (still unknown garbage) object is valid, in case 
+	 * the object is not reachable but still present 
+	 * on the use list.
+	 * This happens in case the object becomes unreachable
+	 * during execution, but GC has not reclaimed it yet.
+	 * Anyway, it's still a valid object handle.
+	 * 
+	 * @param handle the value to be checked.
+	 * @return
+	 */
+	public static final boolean isValidObjectHandle(int handle)
+	{
+	  boolean isValid;
+	  int handlePointer;
+	  
+	  // assume it's not valid and try to show otherwise 
+	  isValid = false;
+	  
+	  // synchronize on the GC lock
+	  synchronized (mutex) {
+		// start on the first element of the list
+	    handlePointer = useList;
+	    
+	    // traverse the list until the element is found or the list is over
+	    while(handlePointer != 0)
+	    {
+	      if(handle == handlePointer)
+	      {
+	    	// found it! hence, it's a valid handle. Stop the search.
+	    	isValid = true;
+	    	break;
+	      }
+	      
+	      // not found yet. Let's go to the next element and try again. 
+	      handlePointer = Native.rdMem(handlePointer+OFF_NEXT);
+	    }
+	  }
+	  
+	  return isValid;
 	}
 	
 /************************************************************************************************/
