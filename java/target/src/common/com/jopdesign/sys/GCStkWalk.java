@@ -63,6 +63,9 @@ public class GCStkWalk {
 	public static int[] swk(int num, boolean active, boolean info) {
 //    int ts=Timer.us();
 //    int ts1=0;
+		
+	  if (MAXSTACK==128)
+		throw new Error("GCStkWalk needs to be updated for configurable stack size");
 
     if(info){
 		  System.out.print("GCStkWalk.swk called(num=");
