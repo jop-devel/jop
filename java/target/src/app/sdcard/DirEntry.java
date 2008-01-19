@@ -1,5 +1,8 @@
 package sdcard;
 
+
+//  Directory Entry Struct
+
 public class DirEntry 
 {
 	public static int[]	DIR_Name = new int[11];     //8 chars filename

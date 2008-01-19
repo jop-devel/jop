@@ -13,12 +13,28 @@ public class FileInputStream {
 	public static FatMmc MmcInterface = new FatMmc();
 
 
+	public static int[] FIStream_Buffer  = new int [512];
+	public static long[] FIStream_size  = new long [1];
+	public static int[] FIStream_startcluster = new int [1];
+	public static long[] FIStream_offset_from_start = new long [1];
 
 
 //####################################################################################
 //					 FileInputStream Section Begin
 //####################################################################################	
 
+
+
+
+/*****************************************************************
+*  public FileInputStream(String name)
+*	Creates a FileInputStream by opening a connection to an actual file, the file named by the path name name in the file system.
+*
+*	If the named file does not exist, is a directory rather than a regular file, or for some other reason cannot be opened for reading then ??????????????????????? 
+*
+*	Parameters:
+*	name 		Directories and files are seperated with "/". Do not write the leading "/" in the filename string.
+*****************************************************************/
 public static boolean FileInputStream(String file)
 {
 	int [] Clustervar = new int[1];
@@ -150,6 +166,18 @@ public static boolean FileInputStream(String file)
 }
 
 
+
+
+/*****************************************************************
+*  public int read(byte[] b)
+*    	Reads up to b.length bytes of data from this input stream into an array of bytes. 
+*	This method blocks until some input is available. 
+*
+*  Parameters:
+*	b - the buffer into which the data is read. 
+*  Returns:
+*	the total number of bytes read into the buffer, or -1 if there is no more data because the end of the file has been reached. 
+*****************************************************************/
 public static int read ()
 {
 int block;
@@ -157,7 +185,7 @@ int byte_count;
 
 if (FIStream_offset_from_start[0] >=  FIStream_size[0])
 {
-	return (0xFFFFFFFF);
+	return (-1);
 }
 
 
@@ -173,13 +201,32 @@ return ((int) FIStream_Buffer[byte_count]);
 }
 
 
+
+
+/****************************************************************
+*  public int read(byte[] b)
+*   	Reads up to b.length bytes of data from this input stream into an array of bytes. 
+*	This method blocks until some input is available. 
+*
+*  Parameters:
+*	b - the buffer into which the data is read. 
+*  Returns:
+*	the total number of bytes read into the buffer, or -1 if there is no more data because the end of the file has been reached. 
+****************************************************************/
 public static int read (byte b[])
 {
 int block=0xFFFFFFFF, block_alt;
 int byte_count, i=0;
 
 
-while (! (FIStream_offset_from_start[0] >=  FIStream_size[0]))
+
+if (FIStream_offset_from_start[0] >=  FIStream_size[0])
+{
+	return (-1);
+}
+
+
+while (! (FIStream_offset_from_start[0] >=  FIStream_size[0]) && (i<b.length))
 {
 
 
@@ -204,11 +251,35 @@ return(i);
 }
 
 
+
+
+
+/****************************************************************
+*  public int read(byte[] b,
+*      	int off,
+*      	int len)
+*	Reads up to len bytes of data from this input stream into an array of bytes. 
+*	This method blocks until some input is available. 
+*
+*  Parameters:
+*	b - the buffer into which the data is read.
+*	off - the start offset of the data.
+*	len - the maximum number of bytes read. 
+*  Returns:
+*	the total number of bytes read into the buffer, or -1 if there is no more data because the end of the file has been reached. 
+****************************************************************/
 public static int read (byte b[], int off, int len)
 {
-if ((FIStream_offset_from_start[0]+off) > FIStream_size[0])
+
+
+if (FIStream_offset_from_start[0] >=  FIStream_size[0])
 {
-	return (0);
+	return (-1);
+}
+
+if ((FIStream_offset_from_start[0]+off) >= FIStream_size[0])
+{
+	return (-1);
 }
 
 FIStream_offset_from_start[0] =FIStream_offset_from_start[0]+off;
@@ -218,7 +289,7 @@ int block=0xFFFFFFFF, block_alt;
 int byte_count, i=0;
 
 
-while ( (! (FIStream_offset_from_start[0] >=  FIStream_size[0])) && (i<len))
+while ( (! (FIStream_offset_from_start[0] >=  FIStream_size[0])) && (i<len) && (i<b.length))
 {
 
 
@@ -244,19 +315,46 @@ return(i);
 }
 
 
+/*****************************************************************
+*  public long skip(long n)
+*      	Skips over and discards n bytes of data from the input stream. 
+*	The skip method may, for a variety of reasons, end up skipping over some smaller number of bytes, possibly 0. 
+*	The actual number of bytes skipped is returned. 
+* 
+* 
+*  Parameters:
+*  n - the number of bytes to be skipped. 
+*  Returns:
+*  the actual number of bytes skipped. 
+***************************************************************/
+
 public static long skip (long n)
 {
+long k=0;
 
-if ((FIStream_offset_from_start[0]+n) > FIStream_size[0])
+if (FIStream_offset_from_start[0] >=FIStream_size[0])
 {
 	return (0);
 }
 
-FIStream_offset_from_start[0] =FIStream_offset_from_start[0]+n;
 
-return (FIStream_offset_from_start[0]);
+if ((FIStream_offset_from_start[0]+n) > FIStream_size[0])
+{
+	k= FIStream_size[0] - FIStream_offset_from_start[0];
+	FIStream_offset_from_start[0]=FIStream_offset_from_start[0]+k;
+	return (k);
 }
 
+FIStream_offset_from_start[0] =FIStream_offset_from_start[0]+n;
+
+return (n);
+}
+
+
+/**************************************************************
+*  public void close()
+ *     	Closes this file input stream and releases any system resources associated with the stream. 
+**************************************************************/
 
 public static void close()
 {
@@ -264,13 +362,11 @@ FIStream_Buffer =null;
 FIStream_size =null;
 FIStream_startcluster =null;
 FIStream_offset_from_start =null;
+FatInterface =null;
+MmcInterface =null;
 }
 
 
-public static int[] FIStream_Buffer  = new int [512];
-public static long[] FIStream_size  = new long [1];
-public static int[] FIStream_startcluster = new int [1];
-public static long[] FIStream_offset_from_start = new long [1];
 //####################################################################################
 //					 FileOutputStream Section End
 //####################################################################################	

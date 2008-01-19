@@ -11,7 +11,13 @@ public class FileOutputStream {
 
 	public static FatItS FatInterface = new FatItS();
 	public static FatMmc MmcInterface = new FatMmc();
-
+	public static int[] FOStream_Buffer  = new int [512];
+	public static long[] FOStream_size  = new long [1];
+	public static int[] FOStream_startcluster = new int [1];
+	public static long[] FOStream_offset_from_start = new long [1];
+	public static int[] FOStream_Filename = new int [13];
+	public static int FOStream_Dir_Attr;
+	public static int FOStream_Dir_cluster;
 
 
 
@@ -20,7 +26,19 @@ public class FileOutputStream {
 //					 FileOutputStream Section Begin
 //####################################################################################	
 
-public static boolean FileOutputStream(String file)
+
+
+/******************************************************************
+*  public FileOutputStream(String file)
+*  	Creates an output file stream to write to the file with the specified name. 
+*
+*	If the file exists but is a directory rather than a regular file, does not exist but cannot be created, 
+*	or cannot be opened for any other reason then a ?????????????????????????????. 
+*
+*  Parameters:
+*	file - Directories and files are seperated with "/". Do not write the leading "/" in the filename string.
+******************************************************************/
+public static boolean FileOutputStream(String file, boolean append)
 {
 	int [] Clustervar = new int[1];
 	long [] Size = new long[1];
@@ -128,8 +146,8 @@ public static boolean FileOutputStream(String file)
 		
 	}
 	
-	FatInterface.printf( filename,'s');
-	System.out.println();
+	//xxxxxxxFatInterface.printf( filename,'s');
+	//xxxxxxxSystem.out.println();
 	
 	//System.out.println("Vor File Found!");
 	
@@ -138,7 +156,7 @@ public static boolean FileOutputStream(String file)
 	
 	if (FatInterface.fat_search_file(filename,Clustervar,Size,Dir_Attrib,FOStream_Buffer) == 1)
 	{
-		System.out.println("File Found!");
+		//xxxxxxxxxxxxxSystem.out.println("File Found!");
 		
 		for (int h=0; h<13;h++)
 		{
@@ -159,7 +177,7 @@ public static boolean FileOutputStream(String file)
 	else
 	{
 		
-		System.out.println("Try to Create File !"+tmp);
+		//xxxxxxxxSystem.out.println("Try to Create File !"+tmp);
 		
 		Clustervar[0] = tmp;
 		//Clustervar[0] = 0;
@@ -167,7 +185,7 @@ public static boolean FileOutputStream(String file)
 		
 		if (FatInterface.fat_add_file_ent( Clustervar, filename,  FOStream_Buffer) == 1)
 		{
-			System.out.println("Create File !");
+			//xxxxxxxxxxxxSystem.out.println("Create File !");
 			
 			for (int h=0; h<13;h++)
 			{
@@ -179,7 +197,7 @@ public static boolean FileOutputStream(String file)
 				}
 			}
 			
-			FOStream_size[0] = 1;
+			FOStream_size[0] = 0;
 			FOStream_startcluster[0] = Clustervar[0];
 			FOStream_offset_from_start[0] =0;
 			FOStream_Dir_Attr = 0x20;
@@ -191,33 +209,86 @@ public static boolean FileOutputStream(String file)
 		}
 	}
 	
-	return (true);
-}
+	
 
-public static boolean FileOutputStream(String filename, boolean append)
+if (append == false)
+{	
+	
+	int Cluster=0;
+	long [] tmp1 = new long [1];
+	int [] tmp2 = new int [1];
+	
+	
+	for (int a = 0;a < 100;a++)
 {
-
-	if (!append)
-	{
-		return( FileOutputStream( filename));
-	}
-
-	else
-	{
-		if (!FileOutputStream( filename))
+	//System.out.println("a in search = "+a);
+	Cluster = FatInterface.fat_read_dir_ent(FOStream_Dir_cluster,a,tmp1,tmp2,FOStream_Buffer);
+	if (Cluster == 0xffff)
 		{
-			return (false);
+		//System.out.println("a in search aus = "+a);
+		tmp1 = null;
+		tmp2 = null;
+		return(false); //File not Found
 		}
-		
-		FOStream_offset_from_start[0] = FOStream_size[0];
+	if(FatInterface.strcasecmp(FOStream_Filename,FOStream_Buffer) == 0)
+		{
+		FatInterface.fat_set_dir_ent(FOStream_Dir_cluster,a, 0,FOStream_Dir_Attr, FOStream_Buffer) ;	
+		FatInterface.fat_load_reset();
+		//System.out.println("a in search found = "+a);
+		FOStream_size[0] = 0;
+		break;
+		}
+}
+	
+	tmp1 = null;
+	tmp2 = null;
+}
+	
+if (append == true)	
+	{
+	FOStream_offset_from_start[0] = FOStream_size[0];
 	}
 	
 	return (true);
 }
 
 
+
+
+/******************************************************************
+*  public FileOutputStream(String filename,
+*                        boolean append)
+*    	Creates an output file stream to write to the file with the specified name. 
+*	If the second argument is true, then bytes will be written to the end of the file rather than the beginning. 
+*
+*	If the file exists but is a directory rather than a regular file, does not exist but cannot be created, 
+*	or cannot be opened for any other reason then a ?????????????????????????????. 
+*
+*  Parameters:
+*	file - Directories and files are seperated with "/". Do not write the leading "/" in the filename string.
+*	append - if true, then bytes will be written to the end of the file rather than the beginning 
+******************************************************************/
+public static boolean FileOutputStream(String filename)
+{
+	return( FileOutputStream( filename, false));
+}
+
+
+
+
+
+
+
+/******************************************************************
+*  public void close()
+*	Closes this file output stream and releases any system resources associated with this stream. 
+*	This file output stream may no longer be used for writing bytes. 
+******************************************************************/
 public static boolean close ()
 {
+
+
+
 
 FOStream_Buffer  = null;
 FOStream_size  = null;
@@ -228,11 +299,22 @@ return (true);
 }
 
 
+
+
+
+
+/******************************************************************
+*  public void write(byte[] b)
+*   	Writes b.length or  while (b[i++] != 0) bytes from the specified byte array to this file output stream. 
+*
+*  Parameters:
+*	b - the data. 
+******************************************************************/
 public static boolean write (byte[] b)
 {
 int i=0;
 
-while (b[i] != 0)
+while ((b[i] != 0)&&(i<b.length))
 {
 	i++;
 }
@@ -245,6 +327,22 @@ return (true);
 
 
 
+
+
+
+/******************************************************************
+*  public void write(byte[] b,
+*                  int off,
+*                  int len)
+*	Writes len bytes from the specified byte array starting at offset off to this file output stream. 
+*
+*  Overrides:
+*	write in class OutputStream
+*  Parameters:
+*	b - the data.
+*	off - the start offset in the data.
+*	len - the number of bytes to write. 
+******************************************************************/
 public static boolean write (byte[] b, int off , int len)
 {
 
@@ -256,19 +354,25 @@ int [] tmp2 = new int [1];
 
 
 
+if (b.length < len)
+{
+	len = b.length;
+}
+
+
 //System.out.println("FOStream_size[0] = "+FOStream_size[0]);
 //System.out.println("off = "+off);
-if ((((long)(off+len)) )> (FOStream_size[0]+1 ))
+if ((( FOStream_offset_from_start[0]+(long)(off+len)) )> (FOStream_size[0]+1 ))
 {
 	
 	//System.out.println("in here ");
 	
-	if ((((long)(off+len))/FatInterface.BlockSize )!= (FOStream_size[0]/FatInterface.BlockSize ))
+	if ((( FOStream_offset_from_start[0]+(long)(off+len))/FatInterface.BlockSize )!= (FOStream_size[0]/FatInterface.BlockSize ))
 	{
 		
 		
 		
-		int diff = ((int)((long)(off+len))/FatInterface.BlockSize ) - (int)(FOStream_size[0]/FatInterface.BlockSize );
+		int diff = ((int)( FOStream_offset_from_start[0]+(long)(off+len))/FatInterface.BlockSize ) - (int)(FOStream_size[0]/FatInterface.BlockSize );
 	
 		//System.out.println("in there diff="+diff);
 		
@@ -294,10 +398,13 @@ if ((((long)(off+len)) )> (FOStream_size[0]+1 ))
 			if(FatInterface.strcasecmp(FOStream_Filename,FOStream_Buffer) == 0)
 			{
 				//System.out.println("in set");
-		
+				//System.out.println("FOStream_size[0] = "+FOStream_size[0]);
 				//System.out.println("off = "+off);
-				FOStream_size[0]=(long) (off+len-1);
-				FatInterface.fat_set_dir_ent(FOStream_Dir_cluster,a,(long) (off+len-1),FOStream_Dir_Attr, FOStream_Buffer) ;	
+				//System.out.println("FOStream_offset_from_start[0] = "+FOStream_offset_from_start[0]);
+				
+				
+				FOStream_size[0]= FOStream_offset_from_start[0]+(long) (off+len-1);
+				FatInterface.fat_set_dir_ent(FOStream_Dir_cluster,a,FOStream_size[0],FOStream_Dir_Attr, FOStream_Buffer) ;	
 				FatInterface.fat_load_reset();
 				//System.out.println("a in search found = "+a);
 				break;
@@ -312,7 +419,7 @@ if ((((long)(off+len)) )> (FOStream_size[0]+1 ))
 
 
 
-FOStream_offset_from_start[0]=(long) off;
+FOStream_offset_from_start[0]= FOStream_offset_from_start[0] +(long)off;
 //System.out.println("for for");
 
 int k=0;
@@ -406,6 +513,15 @@ return (true);
 
 
 
+
+
+/******************************************************************
+*  public void write(int b)
+*   	Writes the specified byte to this file output stream. Implements the write method of OutputStream. 
+*
+*  Parameters:
+*	b - the byte to be written. 
+******************************************************************/
 public static boolean write (int b)
 {
 
@@ -457,6 +573,8 @@ for (int a = 0;a < 100;a++)
 	if (Cluster == 0xffff)
 		{
 		//System.out.println("a in search aus = "+a);
+		tmp1 = null; 
+		tmp2 = null;
 		return(false); //File not Found
 		}
 	if(FatInterface.strcasecmp(FOStream_Filename,FOStream_Buffer) == 0)
@@ -464,11 +582,16 @@ for (int a = 0;a < 100;a++)
 		FatInterface.fat_set_dir_ent(FOStream_Dir_cluster,a, (FOStream_size[0]-1),FOStream_Dir_Attr, FOStream_Buffer) ;	
 		FatInterface.fat_load_reset();
 		//System.out.println("a in search found = "+a);
+		tmp1 = null; 
+		tmp2 = null;
 		break;
 		}
 }
 	// System.out.println("we");   
+
+
 }
+
 
 
 return (true);
@@ -476,13 +599,7 @@ return (true);
 
 
 
-public static int[] FOStream_Buffer  = new int [512];
-public static long[] FOStream_size  = new long [1];
-public static int[] FOStream_startcluster = new int [1];
-public static long[] FOStream_offset_from_start = new long [1];
-public static int[] FOStream_Filename = new int [13];
-public static int FOStream_Dir_Attr;
-public static int FOStream_Dir_cluster;
+
 //####################################################################################
 //					 FileOutputStream Section End
 //####################################################################################	

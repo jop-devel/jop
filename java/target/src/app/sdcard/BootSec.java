@@ -1,5 +1,7 @@
 package sdcard;
 
+//  Boot Sector Struct
+
 public class BootSec 
 {
 	public static int[]	BS_jmpBoot = new int[3];
