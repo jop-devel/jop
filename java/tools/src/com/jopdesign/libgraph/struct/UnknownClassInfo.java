@@ -19,6 +19,7 @@
 package com.jopdesign.libgraph.struct;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Collections;
 import java.util.Set;
 
@@ -51,7 +52,8 @@ public class UnknownClassInfo extends ClassInfo {
         return null;
     }
 
-    public void writeClassFile(String filename) throws IOException {
+    public void writeClassFile(OutputStream outputStream) throws IOException {
+        throw new IOException("Writing not implemented.");
     }
 
     protected Set loadInterfaces() {

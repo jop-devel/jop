@@ -21,7 +21,7 @@ package com.jopdesign.libgraph.struct;
 import com.jopdesign.libgraph.struct.type.MethodSignature;
 import org.apache.log4j.Logger;
 
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 
 /**
@@ -102,11 +102,35 @@ public abstract class ClassInfo implements ModifierInfo {
 
     /**
      * write this class to a java class file.
+     * The directory will be created if it does not exist.
      *
      * @param filename the filename of the new file.
      * @throws IOException if the file could not be stored.
      */
-    public abstract void writeClassFile(String filename) throws IOException;
+    public void writeClassFile(String filename) throws IOException {
+
+        File file = new File(filename);
+        String parent = file.getParent();
+
+        if(parent != null) {
+            File dir = new File(parent);
+
+            if(dir != null)
+                dir.mkdirs();
+        }
+
+        BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(file));
+
+        writeClassFile(out);
+    }
+
+    /**
+     * write this class to an outputstream.
+     *
+     * @param outputStream the outputstream to write to.
+     * @throws java.io.IOException if any error occurs during writing to the stream.
+     */
+    public abstract void writeClassFile(OutputStream outputStream) throws IOException;
 
     /**
      * find a method by a full method name as created by {@link com.jopdesign.libgraph.struct.type.MethodSignature#createFullName(String,String)} )

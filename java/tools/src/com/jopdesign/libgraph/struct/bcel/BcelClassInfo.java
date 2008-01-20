@@ -27,7 +27,9 @@ import org.apache.bcel.generic.ClassGen;
 import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.log4j.Logger;
 
+import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -168,9 +170,9 @@ public class BcelClassInfo extends ClassInfo {
 
     }
 
-    public void writeClassFile(String filename) throws IOException {
+    public void writeClassFile(OutputStream out) throws IOException {
         updateClass();
-        javaClass.dump(filename);
+        javaClass.dump(new DataOutputStream(out));
     }
 
     public ConstantPoolGen getConstantPoolGen() {
