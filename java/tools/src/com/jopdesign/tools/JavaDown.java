@@ -8,6 +8,7 @@ import gnu.io.*;
 //import javax.comm.*;
 
 public class JavaDown {
+
 	static boolean echo = false;
 
 	static boolean usb = false;
@@ -31,15 +32,6 @@ public class JavaDown {
 	final static char prog_char[] = { '|', '/', '-', '\\', '|', '/', '-', '\\' };
 
 	public static void main(String[] args) {
-		/*    String driverName = "com.sun.comm.Win32Driver";
-		 try {
-		 CommDriver commdriver = (CommDriver) Class.forName(driverName)
-		 .newInstance();
-		 commdriver.initialize();
-		 } catch (Exception e2) {
-		 e2.printStackTrace();
-		 }
-		 */
 		sysoutStream = System.out;
 		sysinStream = System.in;
 
@@ -77,6 +69,7 @@ public class JavaDown {
 		try {
 			serialPort.setSerialPortParams(115200, SerialPort.DATABITS_8,
 					SerialPort.STOPBITS_1, SerialPort.PARITY_NONE);
+			serialPort.setFlowControlMode(SerialPort.FLOWCONTROL_NONE);
 		} catch (UnsupportedCommOperationException e) {
 			sysoutStream.println(e);
 		}
@@ -92,7 +85,6 @@ public class JavaDown {
 	}
 
 	static public boolean downLoad(String fname) {
-		sysoutStream.println("TEST");
 		FileReader fileIn = null;
 		try {
 			fileIn = new FileReader(fname);
@@ -138,11 +130,14 @@ public class JavaDown {
 				if ((cnt & 0x3f) == 0) {
 					sysoutStream.print(prog_char[(cnt >> 6) & 0x07] + "\r");
 				}
-
 			}
-			while (rplyCnt > 0) {
-				iStream.read();
-				--rplyCnt;
+
+			if (!usb) {
+			        while (rplyCnt > 0) {
+   			               sysoutStream.print(rplyCnt+" ");
+				       sysoutStream.println((char)iStream.read());
+				       --rplyCnt;
+				}
 			}
 
 			sysoutStream.println(cnt + " words external RAM (" + (cnt / 256)
@@ -158,6 +153,7 @@ public class JavaDown {
 	}
 
 	static public void echo() {
+
 		// start monitoring System.in in seperate thread
 		new Thread() {
 			public void run() {
@@ -197,21 +193,5 @@ public class JavaDown {
 
 		// who closes the serial port now?
 		// serialPort.close();
-	}
-
-	public static void setOutputStream(OutputStream outputStream) {
-		JavaDown.outputStream = outputStream;
-	}
-
-	public static void setIStream(InputStream stream) {
-		JavaDown.iStream = stream;
-	}
-
-	public static void setSysoutStream(PrintStream sysoutStream) {
-		JavaDown.sysoutStream = sysoutStream;
-	}
-
-	public static void setSysinStream(InputStream sysinStream) {
-		JavaDown.sysinStream = sysinStream;
 	}
 }
