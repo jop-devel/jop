@@ -190,7 +190,7 @@
 
 	<!-- use this for USB download of FPGA configuration and Java program download -->
 	<!-- <target name="all" depends="directories, tools, jopusb, japp"/> -->
-	<!-- <target name="japp" depends="javaapp, config-usb, download"/> -->
+	<!-- <target name="japp" depends="java-app, config-usb, download"/> -->
 	
 	<target name="clean">
 		<echo message="This is specific for my configuration ;-)"/>
@@ -421,7 +421,7 @@
 	</target>
 	
 	<target name="config-usb">
-		<exec executable="USBRunner" dir="rbf" failonerror="true">
+		<exec executable="USBRunner" resolveexecutable="true" dir="rbf" failonerror="true">
 			<arg line="${dlproj}.rbf"/>
 		</exec>
 	</target>
