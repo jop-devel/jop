@@ -99,7 +99,6 @@ public class JavaDown {
 			in.slashSlashComments(true);
 			in.whitespaceChars(',', ',');
 			byte adword[] = new byte[4];
-			int rplyCnt = 0;
 			int cnt = 0;
 			for (; in.nextToken() != StreamTokenizer.TT_EOF; ++cnt) {
 				// in.nval contains the next 32 bit word to be sent
@@ -112,31 +111,19 @@ public class JavaDown {
 				}
 				for (int i = 0; i < 4; i++) {
 					byte b = (byte) (l >> ((3 - i) * 8));
-					++rplyCnt;
 					outputStream.write(b);
-
-					if (!usb) {
-						if (cnt == i) {
-							// TODO check reply
-							iStream.read();
-							--rplyCnt;
-						} else if (iStream.available() != 0) {
-							iStream.read();
-							--rplyCnt;
-						}
-					}
 				}
-
+				if (!usb) {
+				    int r = 0;
+				    for (int i = 0; i < 4; i++) {
+					r = (r << 8) | (iStream.read() & 0xff);
+				    }
+				    if (r != l) {
+					sysoutStream.println("received word differs from sent word");
+				    }
+				}
 				if ((cnt & 0x3f) == 0) {
 					sysoutStream.print(prog_char[(cnt >> 6) & 0x07] + "\r");
-				}
-			}
-
-			if (!usb) {
-			        while (rplyCnt > 0) {
-   			               sysoutStream.print(rplyCnt+" ");
-				       sysoutStream.println((char)iStream.read());
-				       --rplyCnt;
 				}
 			}
 
