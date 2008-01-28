@@ -164,7 +164,7 @@ public class GCTwoSpaceMarkSweepCompact {
 			}
 			// add complete stack to the root list
 			int i = Native.getSP();
-			for (int j=128; j<=i; ++j) {
+			for (int j=Const.STACK_OFF; j<=i; ++j) {
 				push(Native.rdIntMem(j));
 			}
 		}
