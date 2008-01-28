@@ -220,7 +220,7 @@ public static int ts0, ts1, ts2, ts3, ts4;
 			i = Native.getSP();
 			RtThreadImpl th = ref[active];
 			th.sp = i;
-			Native.int2extMem(Const.STACK_OFF, th.stack, i-Const.STACK_OFF+1);	// cnt is i-128+1
+			Native.int2extMem(Const.STACK_OFF, th.stack, i-Const.STACK_OFF+1);	// cnt is i-Const.STACK_OFF+1
 
 			// SCHEDULE
 			//	cnt should NOT contain idle thread
@@ -252,13 +252,13 @@ public static int ts0, ts1, ts2, ts3, ts4;
 
 			// restore stack
 			s1 = ref[i].sp;
-			Native.setVP(s1+2);		// +2 for shure ???
+			Native.setVP(s1+2);		// +2 for sure ???
 			Native.setSP(s1+7);		// +5 locals, take care to use only the first 5!!
 
 			i = s1;
 			// can't use s1-127 as count,
 			// don't know why I have to store it in a local.
-			Native.ext2intMem(ref[active].stack, Const.STACK_OFF, i-Const.STACK_OFF+1);		// cnt is i-128+1
+			Native.ext2intMem(ref[active].stack, Const.STACK_OFF, i-Const.STACK_OFF+1);		// cnt is i-Const.STACK_OFF+1
 
 			j = Native.rd(Const.IO_US_CNT);
 			// check if next timer value is too early (or allready missed)
@@ -354,8 +354,8 @@ public static int ts0, ts1, ts2, ts3, ts4;
 /*	this is the save version
 		i = Native.getSP();
 		sp = i;
-		for (j=128; j<=i; ++j) {
-			stack[j-128] = Native.rdIntMem(j);
+		for (j=Const.STACK_OFF; j<=i; ++j) {
+			stack[j-Const.STACK_OFF] = Native.rdIntMem(j);
 		}
 */
 	}
@@ -560,7 +560,7 @@ public static void debug() {
 			util.Dbg.wr('\n');
 			util.Dbg.intVal(ref[i].sp);
 			util.Dbg.wr('\n');
-			for (j=0; j<=ref[i].sp-128; ++j) {
+			for (j=0; j<=ref[i].sp-Const.STACK_OFF; ++j) {
 				util.Dbg.intVal(ref[i].stack[j]);
 			}
 			util.Dbg.wr('\n');
@@ -595,9 +595,9 @@ static void trace(int[] stack, int sp) {
 
 	fp = sp-4;		// first frame point is easy, since last sp points to the end of the frame
 
-	while (fp>128+5) {	// stop befor 'fist' method
-		mp = stack[fp+4-128];
-		vp = stack[fp+2-128];
+	while (fp>Const.STACK_OFF+5) {	// stop befor 'fist' method
+		mp = stack[fp+4-Const.STACK_OFF];
+		vp = stack[fp+2-Const.STACK_OFF];
 		val = Native.rdMem(mp);
 		addr = val>>>10;			// address of callee
 		util.Dbg.intVal(addr);
