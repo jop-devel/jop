@@ -47,6 +47,12 @@ COM_FLAG=-e
 BLASTER_TYPE=ByteBlasterMV
 #BLASTER_TYPE=USB-Blaster
 
+ifeq ($(WINDIR),)
+	USBRUNNER=./USBRunner
+else
+	USBRUNNER=USBRunner.exe
+endif
+
 # 'some' different Quartus projects
 QPROJ=cycmin cycbaseio cycbg dspio lego cycfpu cyc256x16 sopcmin cyccmp
 # if you want to build only one Quartus project use e.q.:
@@ -399,7 +405,7 @@ config_byteblast:
 	cd quartus/$(DLPROJ) && quartus_pgm -c $(BLASTER_TYPE) -m JTAG jop.cdf
 
 config_usb:
-	cd rbf && ../USBRunner $(DLPROJ).rbf
+	cd rbf && ../$(USBRUNNER) $(DLPROJ).rbf
 
 download:
 #	java -cp java/tools/dist/lib/jop-tools.jar\;java/lib/RXTXcomm.jar com.jopdesign.tools.JavaDown \
@@ -418,7 +424,7 @@ prog_flash: java_app
 	java -cp java/pc/dist/lib/jop-pc.jar udp.Flash java/target/dist/bin/$(JOPBIN) $(IPDEST)
 	java -cp java/pc/dist/lib/jop-pc.jar udp.Flash ttf/$(FLPROJ).ttf $(IPDEST)
 	quartus_pgm -c $(BLASTER_TYPE) -m JTAG -o p\;quartus/cycconf/cyc_conf.pof
-	
+
 #
 #	flash programming for the BG hardware as an example
 #
@@ -430,7 +436,7 @@ prog_flash: java_app
 #	java -cp java/pc/dist/lib/jop-pc.jar udp.Flash java/target/dist/bin/oebb_Main.jop 192.168.1.2
 #	java -cp java/pc/dist/lib/jop-pc.jar udp.Flash ttf/$(FLPROJ).ttf 192.168.1.2
 #	quartus_pgm -c $(BLASTER_TYPE) -m JTAG -o p\;quartus/cycconf/cyc_conf.pof
-	
+
 erase_flash:
 	java -cp java/pc/dist/lib/jop-pc.jar udp.Erase $(IPDEST)
 

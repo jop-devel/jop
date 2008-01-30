@@ -38,6 +38,13 @@
 	<property name="blaster-type" value="ByteBlasterMV"/>
 	<!-- <property name="blaster-type" value="USB-Blaster"/> -->
 
+	<condition property="usbrunner" value="./USBRunner">
+	  <os family="unix" name="linux"/>
+	</condition>
+	<condition property="usbrunner" value="USBRunner.exe">
+	  <os family="windows"/>
+	</condition>
+
 	<!-- 'some' different Quartus projects -->
 	<!-- <property name="qproj" value="cycbaseio"/> -->
 	<!-- <property name="qproj" value="cycbg"/> -->
@@ -185,7 +192,6 @@
 	
 	<!-- use this for serial download -->
 	<target name="all" depends="directories, tools, jopser, japp" description="Use this for serial download"/>
-
 	<target name="japp" depends="java-app, config-byteblast, download"/>
 
 	<!-- use this for USB download of FPGA configuration and Java program download -->
@@ -421,7 +427,7 @@
 	</target>
 	
 	<target name="config-usb">
-		<exec executable="USBRunner" resolveexecutable="true" dir="rbf" failonerror="true">
+		<exec executable="${usbrunner}" resolveexecutable="true" dir="rbf" failonerror="true">
 			<arg line="${dlproj}.rbf"/>
 		</exec>
 	</target>
