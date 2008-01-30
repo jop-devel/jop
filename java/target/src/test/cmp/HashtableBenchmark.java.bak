@@ -1,0 +1,123 @@
+package cmp;
+
+import java.util.*;
+import com.jopdesign.sys.Const;
+import com.jopdesign.sys.Native;
+
+
+public class HashtableBenchmark {
+
+	/**
+	 * @param args
+	 */
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+		
+		int cpu_id;
+		cpu_id = Native.rdMem(Const.IO_CPU_ID);
+		
+		if (cpu_id == 0x00000000)
+		{
+			System.out.println("current time: " + System.currentTimeMillis());
+			System.out.println("current time: " + System.currentTimeMillis());
+			System.out.println("current time: " + System.currentTimeMillis());
+
+		
+			// test Hashtable
+			System.out.println("Hashtable test");
+			Hashtable vc = new Hashtable();
+			Integer i = new Integer(1);
+			vc.put("one", i);
+			vc.put("two", new Integer(2));
+			vc.put("three", new Integer(3));
+			System.out.println("Hashtable.toString():");
+			System.out.println(vc.toString());
+			System.out.println(vc.toString());
+    	
+			if (vc.containsKey("two")) {
+				System.out.println("OK");
+			} else {
+				System.out.println("ERROR Hashtable");
+			}
+			if (vc.contains(i)) {
+				System.out.println("OK");
+			} else {
+				System.out.println("ERROR Hashtable");
+			}
+    	
+			if (!vc.containsKey(new Object())) {
+				System.out.println("OK");
+			} else {
+				System.out.println("ERROR Hashtable");
+			}
+    	
+			if (!vc.isEmpty()) {
+				System.out.println("OK");
+			} else {
+				System.out.println("ERROR Hashtable");
+			}
+    	
+			Enumeration hashenum;
+    	
+			// TODO: JOP says readMem: wrong address
+    	
+			// hashenum = vc.elements();
+			// System.out.println("Hashtable value Enumeration:");
+			// while (hashenum.hasMoreElements()) {
+			// // System.out.println(hashenum.nextElement().toString());
+			// }
+			//
+			// hashenum = vc.keys();
+			// System.out.println("Hashtable key Enumeration:");
+			// while (hashenum.hasMoreElements()) {
+			// System.out.println(hashenum.nextElement().toString());
+			// }
+    	
+			if (vc.get("one").equals(i)) {
+				System.out.println("OK");
+			} else {
+				System.out.println("ERROR Hashtable");
+			}
+			if (vc.size() == 3) {
+				System.out.println("OK");
+			} else {
+				System.out.println("ERROR Hashtable");
+			}
+			if (i.equals(vc.remove("one"))) {
+				System.out.println("OK");
+			} else {
+				System.out.println("ERROR Hashtable");
+			}
+			if (!(vc.size() == 3)) {
+				System.out.println("OK");
+			} else {
+				System.out.println("ERROR Hashtable");
+			}
+			if (vc.size() == 2) {
+				System.out.println("OK");
+			} else {
+				System.out.println("ERROR Hashtable");
+			}
+    	
+			System.out.println("Hashtable.toString():");
+			System.out.println(vc.toString());
+    	
+			vc.clear();
+			if (vc.isEmpty()) {
+				System.out.println("OK");
+			} else {
+				System.out.println("ERROR Hashtable");
+			}
+    	
+			System.out.println("Hashtable test END");
+		} 
+		else                                       
+    {		                                   
+	  	if (cpu_id == 0x00000001)            
+    	{	                                   
+    		lift1 = Execute.performResult(bm1);
+    		signal = true;                     
+    	}                                    
+    }                                      
+  }
+}
