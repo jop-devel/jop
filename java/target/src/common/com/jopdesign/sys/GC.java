@@ -679,7 +679,91 @@ public class GC {
 	  
 	  return isValid;
 	}
-	
+  
+  /**
+   * Write barrier for an object field. May be used with regular objects
+   * and reference arrays.
+   * 
+   * @param handle the object handle
+   * @param index the field index
+   */
+  public static final void writeBarrier(int handle, int index)
+  {
+    boolean shouldExecuteBarrier = false;
+    int gcInfo;
+    
+//    log("WriteBarrier: snapshot-at-beginning.");
+    
+    if (handle == 0)
+    {
+      throw new NullPointerException();
+    }
+    
+    synchronized (GC.mutex)
+    {
+      // ignore objects with size zero (is this correct?)
+      if(Native.rdMem(handle) == 0)
+      {
+//        log("ignore objects with size zero");
+        return;
+      }
+      
+      // get information on the object type.
+      int type = Native.rdMem(handle + GC.OFF_TYPE);
+      
+      // if it's an object or reference array, execute the barrier
+      if(type == GC.IS_REFARR)
+      {
+//        log("Reference array.");
+        shouldExecuteBarrier = true;
+      }
+      
+      if(type == GC.IS_OBJ)
+      {
+//        log("Regular object.");
+        // get the object GC info from the class structure. 
+        gcInfo = Native.rdMem(handle + GC.OFF_MTAB_ALEN) + Const.MTAB2GC_INFO;
+        
+        // if the correct bit is set for the field, it may hold a reference.
+        // then, execute the write barrier.
+        if((gcInfo & (0x01 << index)) != 0)
+        {
+//          log("Field can hold a reference. Execute barrier!");
+          shouldExecuteBarrier = true;
+        }
+      }
+      
+      // execute the write barrier, if necessary.
+      if(shouldExecuteBarrier)
+      {
+        // handle indirection
+        handle = Native.rdMem(handle);
+        // snapshot-at-beginning barrier
+        int oldVal = Native.rdMem(handle+index);
+        
+//        log("Old val:       ", oldVal);
+//        if(oldVal != 0)
+//        {
+//          log("Current space: ", Native.rdMem(oldVal+GC.OFF_SPACE));
+//        }
+//        else
+//        {
+//          log("Current space: NULL object.");
+//        }
+//        log("toSpace:       ", GC.toSpace);
+        
+        if (oldVal!=0 && Native.rdMem(oldVal+GC.OFF_SPACE)!=GC.toSpace) {
+//          log("Executing write barrier for old handle: ", handle);
+          GC.push(oldVal);
+        }
+      }
+//      else
+//      {
+//        log("Should not execute the barrier.");
+//      }
+    }
+  }
+  
 /************************************************************************************************/
 	
 
