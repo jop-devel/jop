@@ -110,8 +110,7 @@ public class Runtime
    */
   public long freeMemory()
   {
-	  // TODO: not implemented
-    return 0;
+	  return com.jopdesign.sys.GC.freeMemory();
   }
 
   /**
@@ -122,8 +121,7 @@ public class Runtime
    */
   public long totalMemory()
   {
-	  //TODO: not implemented
-    return 0;
+	  return com.jopdesign.sys.GC.totalMemory();
   }
 
   /**
