@@ -1,4 +1,4 @@
-\documentclass[a4paper,12pt,twocolumn]{scrartcl}
+\documentclass[a4paper,12pt]{scrartcl}
 \usepackage{pslatex} % -- times instead of computer modern
 
 \usepackage[colorlinks=true,linkcolor=black,citecolor=black]{hyperref}
@@ -8,10 +8,12 @@
 
 \begin{document}
 
-\title{Comments on the handbook}
+\title{Comments on the Handbook}
 \maketitle \thispagestyle{empty}
 
-\subsection*{Paulo 20.12.2007}
+\section{User Suggestions}
+
+\subsection{Paulo 20.12.2007}
 
 
 
@@ -39,5 +41,98 @@ I missed, then sorry;). If I got it right, currently it's like this:
 Of course it can be depicted in a bit more detail, for some of the
 structures above. How about that?
 
+\subsection{Lutz 15.1.2008}
+
+\begin{verbatim}
+
+Hi Martin,
+for me as JAVA beginner:
+Do you have a more detailed overview or link about the function of
+com.jopdesign.sys.native (see below)?
+What are the differences between the multiple rd and wr accesses (e.g.
+rd,rdMem,rdIntMem)?
+Where can i find JopInstr.java?
+
+Lutz
+
+package com.jopdesign.sys;
+
+/**
+* native functions in JOP JVM.
+* Mapping is defined in JopInstr.java
+*/
+
+public class Native {
+
+public static native int rd(int adr);
+public static native void wr(int val, int adr);
+public static native int rdMem(int adr);
+public static native void wrMem(int val, int adr);
+public static native int rdIntMem(int adr);
+public static native void wrIntMem(int val, int adr);
+public static native int getSP();
+public static native void setSP(int val);
+public static native int getVP();
+public static native void setVP(int val);
+public static native void int2extMem(int intAdr, int[] extAdr, int cnt);
+public static native void ext2intMem(int[] extAdr, int intAdr, int cnt);
+public static native long makeLong(int hWord, int lWord);
+public static native void invoke(int arg, int ptr);
+public static native void invoke(int ptr);
+public static native int toInt(Object o);
+public static native Object toObject(int i);
+public static native int[] toIntArray(int i);
+public static native int toInt(float f);
+public static native float toFloat(int i);
+public static native long toLong(double d);
+public static native double toDouble(long l);
+// public static native int condMove(int a, int b, boolean cond);
+/**
+*
+* @param src memory source address
+* @param dest memory destination address
+* @param cnt number of words (cnt must be >0!)
+*/
+public static native void memCopy(int src, int dest, int cnt);
+
+}
+
+
+Hi Lutz,
+
+> for me as JAVA beginner:
+> Do you have a more detailed overview or link about the function of
+> com.jopdesign.sys.native (see below)?
+
+It's not about Java beginner, it's missing info from my side ;-)
+Actual those are very low-level functions and should only be
+used when accessing IO devices. A better solution (HW-Objects)
+is on the way.
+
+> What are the differences between the multiple rd and wr accesses (e.g.
+> rd,rdMem,rdIntMem)?
+
+rd and rdMem, as wr and wrMem are actually the same. rd()/wr()
+should be removed - it's a history thing where I had different
+memory areas for main memory and IO device.
+
+The functions access directly the main memory or IO devices.
+IO device addresses are defined in Const.java
+
+rdIntMem() and wrIntMem() provides access to the on-chip
+stack and is only used for a thread switch and stack trace
+on an Exception. Absolute no use in an application code.
+
+
+> Where can i find JopInstr.java?
+
+in java/tools/src/com/jopdesign/tools
+
+Cheers,
+Martin
+
+PS: I'll take a note that I should comment Native.java
+
+\end{verbatim}
 
 \end{document}
