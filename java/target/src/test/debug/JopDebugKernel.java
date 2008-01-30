@@ -34,6 +34,7 @@ import com.jopdesign.sys.Native;
 
 import debug.constants.CommandConstants;
 import debug.constants.ErrorConstants;
+import debug.constants.JOPConstants;
 import debug.io.DebugKernelChannel;
 import debug.io.EmbeddedOutputStream;
 
@@ -1111,19 +1112,17 @@ public final class JopDebugKernel
   
   private static int getInstanceSizeFromClass(int classReference)
   {
-    return Native.rdMem(classReference);
+    return Native.rdMem(classReference + JOPConstants.CLASS_OFFSET_INSTANCE_SIZE);
   }
   
   private static int getPointerToStaticPrimitiveFields(int classReference)
   {
-	classReference++;
-    return Native.rdMem(classReference);
+    return Native.rdMem(classReference + JOPConstants.CLASS_OFFSET_STATIC_PRIMITIVE_FIELDS);
   }
   
   private static int getPointerToSuperclass(int classReference)
   {
-	classReference+=3;
-    return Native.rdMem(classReference);
+    return Native.rdMem(classReference + JOPConstants.CLASS_OFFSET_SUPERCLASS_POINTER);
   }
   
   /**
@@ -1141,12 +1140,12 @@ public final class JopDebugKernel
 	{
       synchronized(GC.getMutex())
       {
-    	classPointer = getMethodTablePointerOrArrayLength(objectHandle);
-    	// fix the offset to point to the class structure (instance size)
-    	classPointer -= 5;
+      	classPointer = getMethodTablePointerOrArrayLength(objectHandle);
+      	// fix the offset to point to the class structure (instance size)
+        classPointer -= JOPConstants.CLASS_HEADER_SIZE;
       }
-	}
-	
+  }
+  
     return classPointer;
   }
   
@@ -1159,46 +1158,46 @@ public final class JopDebugKernel
    */
   private static int getInstanceField(int objectHandle, int fieldIndex)
   {
-	int size;
-	int value = 0;
-	int objectPointer;
-	
-	synchronized(GC.getMutex())
-	{
-	  // for development only
-	  printObjectHandle(objectHandle);
-	  
-	  // clear the error flag
-	  clearFlagForInstanceFieldAccess();
-	  
-	  // get the object size
-	  size = getObjectSize(objectHandle);
-	  
-	  debugPrint("  object size: ");
-	  debugPrintln(size);
-	  
-	  // check if the field index makes sense. Access only if it's a valid one.
-	  if(fieldIndex >= 0 && fieldIndex < size)
-	  {
-		// get the object pointer
-		objectPointer = getObjectPointer(objectHandle);
-		
-		//use it to access the object content
-		value = Native.rdMem(objectPointer + fieldIndex);
-	  }
-	  else
-	  {
-		// set an error code to inform that this operation failed.
-		setErrorCodeForInstanceFieldAccess(ErrorConstants.ERROR_INVALID_FIELDID);
-		
-		debugPrint("  Invalid index: ");
-		debugPrintln(fieldIndex);
-		
-		debugPrint("  Num. instance locals is: ");
-		debugPrintln(size);
-	  }
-	}
-	
+  int size;
+  int value = 0;
+  int objectPointer;
+  
+  synchronized(GC.getMutex())
+  {
+    // for development only
+    debugPrintObjectHandle(objectHandle);
+    
+    // clear the error flag
+    clearFlagForInstanceFieldAccess();
+    
+    // get the object size
+    size = getObjectSize(objectHandle);
+    
+    debugPrint("  object size: ");
+    debugPrintln(size);
+    
+    // check if the field index makes sense. Access only if it's a valid one.
+    if(fieldIndex >= 0 && fieldIndex < size)
+    {
+    // get the object pointer
+    objectPointer = getObjectPointer(objectHandle);
+    
+    //use it to access the object content
+    value = Native.rdMem(objectPointer + fieldIndex);
+    }
+    else
+    {
+    // set an error code to inform that this operation failed.
+    setErrorCodeForInstanceFieldAccess(ErrorConstants.ERROR_INVALID_FIELDID);
+    
+    debugPrint("  Invalid index: ");
+    debugPrintln(fieldIndex);
+    
+    debugPrint("  Num. instance locals is: ");
+    debugPrintln(size);
+    }
+  }
+  
     return value;
   }
   
@@ -1211,46 +1210,72 @@ public final class JopDebugKernel
    * @return
    */
   private static void setInstanceField(int objectHandle, int fieldIndex,
-	  int fieldValue)
+    int fieldValue)
   {
-	int size;
-	int objectPointer;
-	
-	synchronized(GC.getMutex())
-	{
-	  // for development only
-	  printObjectHandle(objectHandle);
-	  
-	  // clear the error flag
-	  clearFlagForInstanceFieldAccess();
-	  
-	  // get the object size
-	  size = getObjectSize(objectHandle);
-	  
-	  debugPrint("  object size: ");
-	  debugPrintln(size);
-	  
-	  // check if the field index makes sense. Access only if it's a valid one.
-	  if(fieldIndex >= 0 && fieldIndex < size)
-	  {
-		// get the object pointer
-		objectPointer = getObjectPointer(objectHandle);
-		
-		//use it to access the object content
-		Native.wrMem(fieldValue, objectPointer + fieldIndex);
-	  }
-	  else
-	  {
-		// set an error code to inform that this operation failed.
-		setErrorCodeForInstanceFieldAccess(ErrorConstants.ERROR_INVALID_FIELDID);
-		
-		debugPrint("  Invalid index: ");
-		debugPrintln(fieldIndex);
-		
-		debugPrint("  Num. instance locals is: ");
-		debugPrintln(size);
-	  }
-	}
+    int size;
+    int objectPointer;
+    
+    synchronized(GC.getMutex())
+    {
+      // for development only
+      debugPrintObjectHandle(objectHandle);
+      
+      // clear the error flag
+      clearFlagForInstanceFieldAccess();
+      
+      // get the object size
+      size = getObjectSize(objectHandle);
+      
+      debugPrint("  object size: ");
+      debugPrintln(size);
+      
+      // check if the field index makes sense. Access only if it's a valid one.
+      if(fieldIndex >= 0 && fieldIndex < size)
+      {
+          // get the object pointer
+          objectPointer = getObjectPointer(objectHandle);
+          
+//          // get the correspoding class pointer.
+//        int classPointer = getClassPointerFromObjectHandle(objectHandle);
+//
+//        // get the object GC info from the class structure.
+//        int gcInfo = Native.rdMem(classPointer
+//            + JOPConstants.CLASS_OFFSET_GC_INFO);
+//
+//        // check for references. If the field is a reference,
+//        // execute a snapshot-at-beginning write barrier
+//        if((gcInfo & (0x01 << fieldIndex)) != 0)
+//        {
+//          int oldVal = Native.rdMem(objectPointer + fieldIndex);
+//          if(oldVal != 0 && Native.rdMem(oldVal + GC.OFF_SPACE) != GC.toSpace)
+//          {
+//            GC.push(oldVal);
+//          }
+//        }
+          
+          debugPrint("Handle: ");
+          debugPrint(objectHandle);
+          debugPrint("  index: ");
+          debugPrintln(fieldIndex);
+          
+          // request GC to execute the write barrier, if needed.
+          GC.writeBarrier(objectHandle, fieldIndex);
+          
+          // finally, set the field content
+          Native.wrMem(fieldValue, objectPointer + fieldIndex);
+      }
+      else
+      {
+        // set an error code to inform that this operation failed.
+        setErrorCodeForInstanceFieldAccess(ErrorConstants.ERROR_INVALID_FIELDID);
+        
+        debugPrint("  Invalid index: ");
+        debugPrintln(fieldIndex);
+        
+        debugPrint("  Num. instance locals is: ");
+        debugPrintln(size);
+      }
+    }
   }
   
   /**
@@ -1258,7 +1283,7 @@ public final class JopDebugKernel
    */
   private static void clearFlagForInstanceFieldAccess()
   {
-	errorCodeForInstanceFieldAccess = 0;
+    errorCodeForInstanceFieldAccess = 0;
   }
   
   /**
@@ -1268,7 +1293,7 @@ public final class JopDebugKernel
    */
   private static void setErrorCodeForInstanceFieldAccess(int errorCode)
   {
-	errorCodeForInstanceFieldAccess = errorCode;
+    errorCodeForInstanceFieldAccess = errorCode;
   }
   
   /**
@@ -1278,7 +1303,7 @@ public final class JopDebugKernel
    */
   private static int getErrorCodeForInstanceFieldAccess()
   {
-	return errorCodeForInstanceFieldAccess;
+    return errorCodeForInstanceFieldAccess;
   }
   
   /**
@@ -1290,7 +1315,7 @@ public final class JopDebugKernel
    */
   private static boolean isSuccessfulLastInstanceFieldAccess()
   {
-	return (errorCodeForInstanceFieldAccess == 0);
+    return (errorCodeForInstanceFieldAccess == 0);
   }
   
   /**
@@ -1651,13 +1676,13 @@ public final class JopDebugKernel
       // check if the reference type is a valid one.
       if(GC.isValidObjectHandle(objectHandle) == false)
       {
-    	debugPrint("Failure: invalid object handle.");
-    	debugPrint(objectHandle);
-    	debugPrintln();
-    	
-    	// send a packet with an error code and return.
-    	debugChannel.sendReplyWithErrorCode(ErrorConstants.ERROR_INVALID_OBJECT);
-    	return;
+        debugPrint("Failure: invalid object handle.");
+        debugPrint(objectHandle);
+        debugPrintln();
+        
+        // send a packet with an error code and return.
+        debugChannel.sendReplyWithErrorCode(ErrorConstants.ERROR_INVALID_OBJECT);
+        return;
       }
       
       // read the number of fields to be accessed.
@@ -1669,23 +1694,23 @@ public final class JopDebugKernel
       // fill in the packet with all information requested
       for(counter = 0; counter < numFields; counter++)
       {
-    	fieldIndex = debugChannel.readIntValue();
-    	fieldValue = getInstanceField(objectHandle, fieldIndex);
-    	
-    	// check if an error happened during field access.
-    	// if so, stop the loop and send an error packet.
-    	if(isSuccessfulLastInstanceFieldAccess() == false)
-    	{
-    	  debugPrint("Failure accessing field # ");
-    	  debugPrint(counter);
-    	  debugPrint(". field index: ");
-    	  debugPrint(fieldIndex);
-    	  debugPrintln();
-    	  
-    	  break;
-    	}
-    	
-    	debugChannel.writeInstanceFieldValue(fieldValue);
+        fieldIndex = debugChannel.readIntValue();
+        fieldValue = getInstanceField(objectHandle, fieldIndex);
+        
+        // check if an error happened during field access.
+        // if so, stop the loop and send an error packet.
+        if(isSuccessfulLastInstanceFieldAccess() == false)
+        {
+          debugPrint("Failure accessing field # ");
+          debugPrint(counter);
+          debugPrint(". field index: ");
+          debugPrint(fieldIndex);
+          debugPrintln();
+          
+          break;
+        }
+        
+        debugChannel.writeInstanceFieldValue(fieldValue);
       }
     }
     // end of synchronized block. Now the GC can work freely.
@@ -1728,13 +1753,13 @@ public final class JopDebugKernel
       // check if the reference type is a valid one.
       if(GC.isValidObjectHandle(objectHandle) == false)
       {
-    	debugPrint("Failure: invalid object handle.");
-    	debugPrint(objectHandle);
-    	debugPrintln();
-    	
-    	// send a packet with an error code and return.
-    	debugChannel.sendReplyWithErrorCode(ErrorConstants.ERROR_INVALID_OBJECT);
-    	return;
+        debugPrint("Failure: invalid object handle.");
+        debugPrint(objectHandle);
+        debugPrintln();
+        
+        // send a packet with an error code and return.
+        debugChannel.sendReplyWithErrorCode(ErrorConstants.ERROR_INVALID_OBJECT);
+        return;
       }
       
       // read the number of fields to be accessed.
@@ -1743,24 +1768,24 @@ public final class JopDebugKernel
       // fill in the packet with all information requested
       for(counter = 0; counter < numFields; counter++)
       {
-    	fieldIndex = debugChannel.readIntValue();
-    	fieldValue = debugChannel.readIntValue();
-    	setInstanceField(objectHandle, fieldIndex, fieldValue);
-    	
-    	// check if an error happened during field access.
-    	// if so, stop the loop and send an error packet.
-    	if(isSuccessfulLastInstanceFieldAccess() == false)
-    	{
-    	  debugPrint("Failure accessing field # ");
-    	  debugPrint(counter);
-    	  debugPrint(". field index: ");
-    	  debugPrint(fieldIndex);
-    	  debugPrint(". new field value: ");
-    	  debugPrint(fieldValue);
-    	  debugPrintln();
-    	  
-    	  break;
-    	}
+        fieldIndex = debugChannel.readIntValue();
+        fieldValue = debugChannel.readIntValue();
+        setInstanceField(objectHandle, fieldIndex, fieldValue);
+        
+        // check if an error happened during field access.
+        // if so, stop the loop and send an error packet.
+        if(isSuccessfulLastInstanceFieldAccess() == false)
+        {
+          debugPrint("Failure accessing field # ");
+          debugPrint(counter);
+          debugPrint(". field index: ");
+          debugPrint(fieldIndex);
+          debugPrint(". new field value: ");
+          debugPrint(fieldValue);
+          debugPrintln();
+          
+          break;
+        }
       }
     }
     // end of synchronized block. Now the GC can work freely.
@@ -1786,11 +1811,11 @@ public final class JopDebugKernel
    */
   private static final int getObjectPointer(int objectHandle)
   {
-	// let's synchronize on the GC to avoid concurrency problems.
-	synchronized(GC.getMutex())
-	{
-	  return Native.rdMem(objectHandle + GC.OFF_PTR);
-	}
+    // let's synchronize on the GC to avoid concurrency problems.
+    synchronized(GC.getMutex())
+    {
+      return Native.rdMem(objectHandle + GC.OFF_PTR);
+    }
   }
   
   /**
@@ -1801,11 +1826,11 @@ public final class JopDebugKernel
    */
   private static final int getObjectSize(int objectHandle)
   {
-	// let's synchronize on the GC to avoid concurrency problems.
-	synchronized(GC.getMutex())
-	{
-	  return 	Native.rdMem(objectHandle + GC.OFF_SIZE);
-	}
+    // let's synchronize on the GC to avoid concurrency problems.
+    synchronized(GC.getMutex())
+    {
+      return Native.rdMem(objectHandle + GC.OFF_SIZE);
+    }
   }
   
   /**
@@ -1816,11 +1841,11 @@ public final class JopDebugKernel
    */
   private static final int getMethodTablePointerOrArrayLength(int objectHandle)
   {
-	// let's synchronize on the GC to avoid concurrency problems.
-	synchronized(GC.getMutex())
-	{
-	  return 	Native.rdMem(objectHandle + GC.OFF_MTAB_ALEN);
-	}
+    // let's synchronize on the GC to avoid concurrency problems.
+    synchronized(GC.getMutex())
+    {
+      return Native.rdMem(objectHandle + GC.OFF_MTAB_ALEN);
+    }
   }
   
   /**
@@ -1831,13 +1856,16 @@ public final class JopDebugKernel
    */
   private static final boolean isArrayType(int objectHandle)
   {
-	// let's synchronize on the GC to avoid concurrency problems.
-	synchronized(GC.getMutex())
-	{
-	  //return (Native.rdMem(objectHandle + GC.OFF_TYPE) == GC.IS_REFARR);
-	  //return (Native.rdMem(objectHandle + GC.OFF_TYPE) == Constants.T_ARRAY);
-	  return (Native.rdMem(objectHandle + GC.OFF_TYPE) == 13);
-	}
+    // let's synchronize on the GC to avoid concurrency problems.
+    synchronized(GC.getMutex())
+    {
+      int type = Native.rdMem(objectHandle + GC.OFF_TYPE);
+      
+      //return (Native.rdMem(objectHandle + GC.OFF_TYPE) == GC.IS_REFARR);
+      //return (Native.rdMem(objectHandle + GC.OFF_TYPE) == Constants.T_ARRAY);
+      
+      return (type == 13 || type == GC.IS_REFARR);
+    }
   }
   
   /**
@@ -2630,7 +2658,28 @@ public final class JopDebugKernel
    */
   public static boolean shouldPrintInternalMessages()
   {
-	return shouldPrintInternalMessages;
+    return shouldPrintInternalMessages;
+  }
+  
+  /**
+   * Print information about the object and its class.
+   * For development only.
+   * 
+   * @param handle
+   */
+  private static final void debugPrintObjectHandle(int objectHandle)
+  {
+    if(shouldPrintInternalMessages())
+    {
+      debugPrintln("Handle information:");
+      printObjectHandle(objectHandle);
+      debugPrintln();
+      
+      int classPointer = getClassPointerFromObjectHandle(objectHandle);
+      debugPrintln("Class struct information:");
+      printClassHeader(classPointer);
+      debugPrintln();
+    }
   }
   
   /**
@@ -2648,9 +2697,9 @@ public final class JopDebugKernel
 //    * 4 pointer to next handle of same type (used or free)
 //    * 5 gray list
 //    * 6 space marker - either toSpace or fromSpace
-	
-    int data, type;
   
+    int data, type;
+    
     // let's synchronize on the GC to avoid concurrency problems.
     synchronized(GC.getMutex())
     {
@@ -2658,9 +2707,9 @@ public final class JopDebugKernel
       
       for(data = 0; data < 8; data ++)
       {
-    	int value = Native.rdMem(handle + data);
-    	EmbeddedOutputStream.printIntHex(value, System.out);
-    	debugPrint(" ");
+        int value = Native.rdMem(handle + data);
+        EmbeddedOutputStream.printIntHex(value, System.out);
+        debugPrint(" ");
       }
       
       System.out.println();
@@ -2670,52 +2719,168 @@ public final class JopDebugKernel
       
       if(data == 0)
       {
-      System.out.println("Free handle: ");
-      System.out.println(handle);
+        System.out.println("Free handle: ");
+        System.out.println(handle);
       }
       else
       {
-      System.out.print("Object pointer:  ");
-      System.out.println(data);
+        System.out.print("Object pointer:  ");
+        System.out.println(data);
       }
       
       data = Native.rdMem(handle + GC.OFF_MTAB_ALEN);
       if(type == GC.IS_OBJ)
       {
-      System.out.print("Method table:    ");
-      System.out.println(data);
+        System.out.print("Method table:    ");
       }
       else
       {
-      System.out.print("Array length:    ");
-      System.out.println(data);    
+        if(type == GC.IS_REFARR)
+        {
+          System.out.print("Array length:    ");
+        }
+        else
+        {
+          System.out.print("Unknown data: ");
+        }
+      }
+      System.out.println(data);
+      
+      data = Native.rdMem(handle + GC.OFF_SIZE);
+      
+      System.out.print("Instance size:   ");
+      System.out.println(data);
+      
+//      System.out.print("Type: ");
+//      System.out.print(type);
+//      System.out.print("  ");
+      
+      if(type == GC.IS_OBJ)
+      {
+        System.out.print("Type:            Object (not an array) - ");
+        System.out.println(type);
+      }
+      else
+      {
+        if(type == GC.IS_REFARR)
+        {
+          System.out.println("Type:            Array -> ");
+        }
+        else
+        {
+          System.out.println("Type: (?)        ");
+        }
+        System.out.println(type);
       }
       
-      // this is the last access to the handle content.
+      //next handle
+      data = Native.rdMem(handle + 4);
+      System.out.print("Next handle:     ");
+      System.out.println(data);
+      
+      // gray list
+      data = Native.rdMem(handle + 5);
+      System.out.print("Gray list :      ");
+      System.out.println(data);
+      
+      // space marker
+      data = Native.rdMem(handle + 6);
+      System.out.print("Space marker:    ");
+      System.out.println(data);
+//      if(data == GC.toSpace)
+      
+//      System.out.println("GC class:");
+//    the code below does not compile: there's one class missing.
+//      System.out.println(GC.class);
+      
+      // this was the last access to the handle content.
       // close synchronization block and release GC lock.
-      data = Native.rdMem(handle + GC.OFF_SIZE);
     }
     
-    System.out.print("Instance size:   ");
+    // if more fields were added, remember to include on the sync block above.
+  }
+  
+  /**
+   * Print information about a class structure.
+   * 
+   * Since GC does not affect (modify) classes, it's 
+   * not necessary to sync on the GC lock.
+   * 
+   * @param classPointer
+   */
+  private static final void printClassHeader(int classPointer)
+  {
+//    * According to information on the JOP file, the class structure 
+//  contains the following data: (the JOP file is verbose, which helps a lot!)
+//  
+//    * 0 instance size
+//    * 1 pointer to static primitive fields
+//    * 2 instance GC info
+//    * 3 pointer to super class
+//    * 4 pointer to interface table
+  
+    int data;
+    
+    if(isValidClassPointer(classPointer) == false)
+    {
+      System.out.print("Failure: invalid class pointer! -> ");
+      System.out.println(classPointer);
+      return;
+    }
+    
+    data = Native.rdMem(classPointer + JOPConstants.CLASS_OFFSET_INSTANCE_SIZE);
+    System.out.print("Instance size:  ");
     System.out.println(data);
     
-    System.out.print("Type: ");
-    System.out.print(type);
-    System.out.print("  ");
-  
-    if(type == GC.IS_OBJ)
+    data = Native.rdMem(classPointer + JOPConstants.CLASS_OFFSET_STATIC_PRIMITIVE_FIELDS);
+    System.out.print("Pointer to static primitive fields:  ");
+    System.out.println(data);
+    
+    data = Native.rdMem(classPointer + JOPConstants.CLASS_OFFSET_GC_INFO);
+    System.out.print("Instance GC info:  ");
+    System.out.println(data);
+    
+    data = Native.rdMem(classPointer + JOPConstants.CLASS_OFFSET_SUPERCLASS_POINTER);
+    System.out.print("Pointer to superclass:  ");
+    System.out.println(data);
+    
+    data = Native.rdMem(classPointer + JOPConstants.CLASS_OFFSET_INTERFACE_TABLE_POINTER);
+    System.out.print("Pointer to interface table:  ");
+    System.out.println(data);
+  }
+
+  /**
+   * Check if the class pointer may be valid or not.
+   * 
+   * @param classPointer
+   * @return
+   */
+  private static boolean isValidClassPointer(int classPointer)
+  {
+    int size, specialPointers;
+    int staticReferencePointer, numReferences;
+    
+    // get the application size
+    size = Native.rdMem(0);
+    
+    // get the special pointers
+    specialPointers = Native.rdMem(1);
+    
+    // get reference info
+    staticReferencePointer = Native.rdMem(specialPointers + 4);
+    numReferences = Native.rdMem(specialPointers + 5);
+    
+    // if the pointer is before the end of the static reference area
+    // or after the application size, it's surely a wrong pointer.
+    // Otherwise, it MAY be a valid class pointer, but we can't be sure...
+    if(classPointer < (staticReferencePointer + numReferences) || 
+       classPointer > size)
     {
-      System.out.print("Type:   Object (not an array) - ");
-      System.out.println(type);
-    }
-    if(type == GC.IS_REFARR)
-    {
-      System.out.println("Type:   Array");
-      System.out.println(type);
+      // outside the valid range. It's a wrong pointer, for sure.
+      return false;
     }
     
-    // for now, don't print the remaining fields. Not yet necessary.
-    // if more fields were added, remember to include on the sync block above.
-    System.out.println("");
+    //in the valid range. Probably a valid pointer, but may not be.
+    return true;
   }
 }
