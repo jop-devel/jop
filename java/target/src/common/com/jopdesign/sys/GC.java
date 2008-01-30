@@ -723,6 +723,9 @@ public class GC {
 //        log("Regular object.");
         // get the object GC info from the class structure. 
         gcInfo = Native.rdMem(handle + GC.OFF_MTAB_ALEN) + Const.MTAB2GC_INFO;
+        gcInfo = Native.rdMem(gcInfo);
+        
+//        log("GCInfo field: ", gcInfo);
         
         // if the correct bit is set for the field, it may hold a reference.
         // then, execute the write barrier.
