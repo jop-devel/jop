@@ -35,8 +35,6 @@
 /*				 dspio setup. At the end it will be deleted again */
 /******************************************************************/
 
-#include <iostream.h>
-#include <tchar.h>
 #include <windows.h>
 #include <stdio.h>
 #include <stdlib.h>
