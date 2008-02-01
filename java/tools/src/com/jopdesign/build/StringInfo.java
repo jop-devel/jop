@@ -102,7 +102,14 @@ public class StringInfo {
 		out.println("\t"+string.length()+",\t// array length in the handle");
 		out.println("\t"+(addr+2)+",\t//\tchar ref. points to char[] handle");
 			
-		byte chrsp[] = string.getBytes();
+		byte chrsp[] = null;
+
+		try {
+		    chrsp = string.getBytes("ISO-8859-1");
+		} catch(java.io.UnsupportedEncodingException e) {
+		    System.err.println(e);
+		    System.exit(-1);
+		}
 		out.print("\t");
 		for(int i=0;i<chrsp.length;i++) {
 			out.print(chrsp[i]+", ");
