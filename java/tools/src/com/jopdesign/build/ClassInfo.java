@@ -569,7 +569,7 @@ public class ClassInfo implements Serializable{
 		}
 		out.println("\t\t"+staticValueVarAddress+",\t//\tpointer to static primitive fields");
 		if (instSize>31) {
-			System.err.println("Error: Object of "+clazz.getClassName()+" to big!");
+			System.err.println("Error: Object of "+clazz.getClassName()+" to big! Size="+instSize);
 			System.exit(-1);
 		}
 		out.println("\t\t"+instGCinfo+",\t//\tinstance GC info");
