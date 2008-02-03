@@ -127,7 +127,7 @@ public class Const {
 	 * Read RAM counter
 	 */
 	// remove the comment for RAM access counting
-	//public static final int IO_RAMCNT = IO_BASE+10;
+	public static final int IO_RAMCNT = IO_BASE+10;
 	
 	/**
 	 * Number of available interrupts depends on the parameter
