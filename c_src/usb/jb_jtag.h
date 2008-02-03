@@ -25,11 +25,6 @@
 #define BUFFER_ON 1
 #define BUFFER_OFF 0
 
-/* Macro for port number */
-#define PORT_0	   0
-#define PORT_1	   1
-#define PORT_2	   2
-
 /* JTAG Configuration Signals */
 #define SIG_TCK  0 /* TCK */
 #define SIG_TMS  1 /* TMS */
@@ -60,41 +55,50 @@
 #define OE_REG		1
 #define OUT_REG		2
 
-extern const int JI_EXTEST;       //= 0x000;
-extern const int JI_PROGRAM;      //= 0x002;
-extern const int JI_STARTUP;      //= 0x003;
-extern const int JI_CHECK_STATUS; //= 0x004;
-extern const int JI_SAMPLE;       //= 0x005;
-extern const int JI_IDCODE;       //= 0x006;
-extern const int JI_USERCODE;     //= 0x007;
-extern const int JI_BYPASS;       //= 0x3FF;
-extern const int JI_PULSE_NCONFIG;//= 0x001;
-extern const int JI_CONFIG_IO;	  //= 0x00D;
-extern const int JI_HIGHZ;		  //= 0x00B;
-extern const int JI_CLAMP;		  //= 0x00A;
+/* JTAG Instructions */
+/* Notice that for Stratix II and Cyclone II, EXTEST Instruction code = 0x00F */
+#define JI_EXTEST        0x000	
+#define JI_PROGRAM       0x002
+#define JI_STARTUP       0x003
+#define JI_CHECK_STATUS  0x004
+#define JI_SAMPLE        0x005
+#define JI_IDCODE        0x006
+#define JI_USERCODE      0x007
+#define JI_BYPASS        0x3FF
+#define JI_PULSE_NCONFIG 0x001
+#define JI_CONFIG_IO	 0x00D
+#define JI_HIGHZ	 0x00B
+#define JI_CLAMP	 0x00A
 
-int  AdvanceJSM(int);
-int  ReadTDO(int bits,int data,int inst);
-void PrintJS();
-void SetupChain(int dev_count,int dev_seq,int* ji_info,int action);
+extern int ji_info[MAX_DEVICE_ALLOW];
 
-int  LoadJI(int inst,int dev_count,int* ji_info);
-int  Ji_Extest(int device,int* ji_info);
-int  Ji_Program(int device,int* ji_info);
-int  Ji_Startup(int device,int* ji_info);
-int  Ji_Checkstatus(int device,int* ji_info);
-int  Ji_Sample(int device,int* ji_info);
-int  Ji_Idcode(int device,int* ji_info);
-int  Ji_Usercode(int device,int* ji_info);
-int  Ji_Bypass(int device,int* ji_info);
-int  Ji_Pulse_nConfig(int device,int* ji_info);
-int  Ji_Config_IO(int device,int* ji_info);
-int  Ji_HighZ(int device,int* ji_info);
-int  Ji_Clamp(int device,int* ji_info);
+int  advance_jsm(int);
+int  read_tdo(int bits, int data, int inst);
+void print_js();
 
-void Js_Reset();
-void Js_Runidle();
-int  Js_Shiftdr();
-int  Js_Updatedr();
+void setup_chain(int dev_count, int dev_seq, int* ji_info, int action);
+int  verify_chain();
+
+void startup(int dev_seq);
+int  check_status(int dev_seq);
+
+int  load_ji(int inst, int dev_count, int* ji_info);
+int  ji_extest(int device, int* ji_info);
+int  ji_program(int device, int* ji_info);
+int  ji_startup(int device, int* ji_info);
+int  ji_checkstatus(int device, int* ji_info);
+int  ji_sample(int device, int* ji_info);
+int  ji_idcode(int device, int* ji_info);
+int  ji_usercode(int device, int* ji_info);
+int  ji_bypass(int device, int* ji_info);
+int  ji_pulse_nConfig(int device, int* ji_info);
+int  ji_config_IO(int device, int* ji_info);
+int  ji_highZ(int device, int* ji_info);
+int  ji_clamp(int device, int* ji_info);
+
+void js_reset();
+void js_runidle();
+int  js_shiftdr();
+int  js_updatedr();
 
 #endif

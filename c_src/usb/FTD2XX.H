@@ -37,13 +37,13 @@ Revision History:
 #ifndef FTD2XX_H
 #define FTD2XX_H
 
-// The following ifdef block is the standard way of creating macros
-// which make exporting from a DLL simpler.  All files within this DLL
-// are compiled with the FTD2XX_EXPORTS symbol defined on the command line.
-// This symbol should not be defined on any project that uses this DLL.
-// This way any other project whose source files include this file see
-// FTD2XX_API functions as being imported from a DLL, whereas this DLL
-// sees symbols defined with this macro as being exported.
+/* The following ifdef block is the standard way of creating macros */
+/* which make exporting from a DLL simpler.  All files within this DLL */
+/* are compiled with the FTD2XX_EXPORTS symbol defined on the command line. */
+/* This symbol should not be defined on any project that uses this DLL. */
+/* This way any other project whose source files include this file see */
+/* FTD2XX_API functions as being imported from a DLL, whereas this DLL */
+/* sees symbols defined with this macro as being exported. */
 
 #ifdef FTD2XX_EXPORTS
 #define FTD2XX_API __declspec(dllexport)
@@ -55,9 +55,7 @@ Revision History:
 typedef PVOID	FT_HANDLE;
 typedef ULONG	FT_STATUS;
 
-//
-// Device status
-//
+/* Device status */
 enum {
     FT_OK,
     FT_INVALID_HANDLE,
@@ -84,17 +82,13 @@ enum {
 
 #define FT_SUCCESS(status) ((status) == FT_OK)
 
-//
-// FT_OpenEx Flags
-//
+/* FT_OpenEx Flags */
 
 #define FT_OPEN_BY_SERIAL_NUMBER    1
 #define FT_OPEN_BY_DESCRIPTION      2
 #define FT_OPEN_BY_LOCATION			4
 
-//
-// FT_ListDevices Flags (used in conjunction with FT_OpenEx Flags
-//
+/* FT_ListDevices Flags (used in conjunction with FT_OpenEx Flags */
 
 #define FT_LIST_NUMBER_ONLY			0x80000000
 #define FT_LIST_BY_INDEX			0x40000000
@@ -102,9 +96,7 @@ enum {
 
 #define FT_LIST_MASK (FT_LIST_NUMBER_ONLY|FT_LIST_BY_INDEX|FT_LIST_ALL)
 
-//
-// Baud Rates
-//
+/* Baud Rates */
 
 #define FT_BAUD_300			300
 #define FT_BAUD_600			600
@@ -121,26 +113,20 @@ enum {
 #define FT_BAUD_460800		460800
 #define FT_BAUD_921600		921600
 
-//
-// Word Lengths
-//
+/* Word Lengths */
 
 #define FT_BITS_8			(UCHAR) 8
 #define FT_BITS_7			(UCHAR) 7
 #define FT_BITS_6			(UCHAR) 6
 #define FT_BITS_5			(UCHAR) 5
 
-//
-// Stop Bits
-//
+/* Stop Bits */
 
 #define FT_STOP_BITS_1		(UCHAR) 0
 #define FT_STOP_BITS_1_5	(UCHAR) 1
 #define FT_STOP_BITS_2		(UCHAR) 2
 
-//
-// Parity
-//
+/* Parity */
 
 #define FT_PARITY_NONE		(UCHAR) 0
 #define FT_PARITY_ODD		(UCHAR) 1
@@ -148,40 +134,31 @@ enum {
 #define FT_PARITY_MARK		(UCHAR) 3
 #define FT_PARITY_SPACE		(UCHAR) 4
 
-//
-// Flow Control
-//
+/* Flow Control */
 
 #define FT_FLOW_NONE        0x0000
 #define FT_FLOW_RTS_CTS     0x0100
 #define FT_FLOW_DTR_DSR     0x0200
 #define FT_FLOW_XON_XOFF    0x0400
 
-//
-// Purge rx and tx buffers
-//
+/* Purge rx and tx buffers */
+
 #define FT_PURGE_RX         1
 #define FT_PURGE_TX         2
 
-//
-// Events
-//
+/* Events */
 
 typedef void (*PFT_EVENT_HANDLER)(DWORD,DWORD);
 
 #define FT_EVENT_RXCHAR		    1
 #define FT_EVENT_MODEM_STATUS   2
 
-//
-// Timeouts
-//
+/* Timeouts */
 
 #define FT_DEFAULT_RX_TIMEOUT   300
 #define FT_DEFAULT_TX_TIMEOUT   300
 
-//
-// Device types
-//
+/* Device types */
 
 typedef ULONG	FT_DEVICE;
 
@@ -401,59 +378,58 @@ FT_STATUS WINAPI FT_EraseEE(
     FT_HANDLE ftHandle
 	);
 
-//
-// structure to hold program data for FT_Program function
-//
+/* structure to hold program data for FT_Program function */
+
 typedef struct ft_program_data {
 
-	DWORD Signature1;			// Header - must be 0x00000000 
-	DWORD Signature2;			// Header - must be 0xffffffff
-	DWORD Version;				// Header - FT_PROGRAM_DATA version
-								//          0 = original
-	                            //          1 = FT2232C extensions
+	DWORD Signature1;			/* Header - must be 0x00000000  */
+	DWORD Signature2;			/* Header - must be 0xffffffff */
+	DWORD Version;				/* Header - FT_PROGRAM_DATA version */
+                                                /*          0 = original */
+                                                /*          1 = FT2232C extensions */
 
-	WORD VendorId;				// 0x0403
-	WORD ProductId;				// 0x6001
-	char *Manufacturer;			// "FTDI"
-	char *ManufacturerId;		// "FT"
-	char *Description;			// "USB HS Serial Converter"
-	char *SerialNumber;			// "FT000001" if fixed, or NULL
-	WORD MaxPower;				// 0 < MaxPower <= 500
-	WORD PnP;					// 0 = disabled, 1 = enabled
-	WORD SelfPowered;			// 0 = bus powered, 1 = self powered
-	WORD RemoteWakeup;			// 0 = not capable, 1 = capable
-	//
-	// Rev4 extensions
-	//
-	UCHAR Rev4;					// non-zero if Rev4 chip, zero otherwise
-	UCHAR IsoIn;				// non-zero if in endpoint is isochronous
-	UCHAR IsoOut;				// non-zero if out endpoint is isochronous
-	UCHAR PullDownEnable;		// non-zero if pull down enabled
-	UCHAR SerNumEnable;			// non-zero if serial number to be used
-	UCHAR USBVersionEnable;		// non-zero if chip uses USBVersion
-	WORD USBVersion;			// BCD (0x0200 => USB2)
-	//
-	// FT2232C extensions
-	//
-	UCHAR Rev5;					// non-zero if Rev5 chip, zero otherwise
-	UCHAR IsoInA;				// non-zero if in endpoint is isochronous
-	UCHAR IsoInB;				// non-zero if in endpoint is isochronous
-	UCHAR IsoOutA;				// non-zero if out endpoint is isochronous
-	UCHAR IsoOutB;				// non-zero if out endpoint is isochronous
-	UCHAR PullDownEnable5;		// non-zero if pull down enabled
-	UCHAR SerNumEnable5;		// non-zero if serial number to be used
-	UCHAR USBVersionEnable5;	// non-zero if chip uses USBVersion
-	WORD USBVersion5;			// BCD (0x0200 => USB2)
-	UCHAR AIsHighCurrent;		// non-zero if interface is high current
-	UCHAR BIsHighCurrent;		// non-zero if interface is high current
-	UCHAR IFAIsFifo;			// non-zero if interface is 245 FIFO
-	UCHAR IFAIsFifoTar;			// non-zero if interface is 245 FIFO CPU target
-	UCHAR IFAIsFastSer;			// non-zero if interface is Fast serial
-	UCHAR AIsVCP;				// non-zero if interface is to use VCP drivers
-	UCHAR IFBIsFifo;			// non-zero if interface is 245 FIFO
-	UCHAR IFBIsFifoTar;			// non-zero if interface is 245 FIFO CPU target
-	UCHAR IFBIsFastSer;			// non-zero if interface is Fast serial
-	UCHAR BIsVCP;				// non-zero if interface is to use VCP drivers
+	WORD VendorId;				/* 0x0403 */
+	WORD ProductId;				/* 0x6001 */
+	char *Manufacturer;			/* "FTDI" */
+	char *ManufacturerId;		        /* "FT" */
+	char *Description;			/* "USB HS Serial Converter" */
+	char *SerialNumber;			/* "FT000001" if fixed, or NULL */
+	WORD MaxPower;				/* 0 < MaxPower <= 500 */
+	WORD PnP;				/* 0 = disabled, 1 = enabled */
+	WORD SelfPowered;			/* 0 = bus powered, 1 = self powered */
+	WORD RemoteWakeup;			/* 0 = not capable, 1 = capable */
+
+	/* Rev4 extensions */
+
+	UCHAR Rev4;			      	/* non-zero if Rev4 chip, zero otherwise */
+	UCHAR IsoIn;				/* non-zero if in endpoint is isochronous */
+	UCHAR IsoOut;				/* non-zero if out endpoint is isochronous */
+	UCHAR PullDownEnable;		        /* non-zero if pull down enabled */
+	UCHAR SerNumEnable;			/* non-zero if serial number to be used */
+	UCHAR USBVersionEnable;		        /* non-zero if chip uses USBVersion */
+	WORD USBVersion;			/* BCD (0x0200 => USB2) */
+
+	/* FT2232C extensions */
+
+	UCHAR Rev5;			       	/* non-zero if Rev5 chip, zero otherwise */
+	UCHAR IsoInA;				/* non-zero if in endpoint is isochronous */
+	UCHAR IsoInB;				/* non-zero if in endpoint is isochronous */
+	UCHAR IsoOutA;				/* non-zero if out endpoint is isochronous */
+	UCHAR IsoOutB;				/* non-zero if out endpoint is isochronous */
+	UCHAR PullDownEnable5;		        /* non-zero if pull down enabled */
+	UCHAR SerNumEnable5;		        /* non-zero if serial number to be used */
+	UCHAR USBVersionEnable5;	        /* non-zero if chip uses USBVersion */
+	WORD USBVersion5;			/* BCD (0x0200 => USB2) */
+	UCHAR AIsHighCurrent;		        /* non-zero if interface is high current */
+	UCHAR BIsHighCurrent;		        /* non-zero if interface is high current */
+	UCHAR IFAIsFifo;			/* non-zero if interface is 245 FIFO */
+	UCHAR IFAIsFifoTar;			/* non-zero if interface is 245 FIFO CPU target */
+	UCHAR IFAIsFastSer;			/* non-zero if interface is Fast serial */
+	UCHAR AIsVCP;				/* non-zero if interface is to use VCP drivers */
+	UCHAR IFBIsFifo;			/* non-zero if interface is 245 FIFO */
+	UCHAR IFBIsFifoTar;			/* non-zero if interface is 245 FIFO CPU target */
+	UCHAR IFBIsFastSer;			/* non-zero if interface is Fast serial */
+	UCHAR BIsVCP;				/* non-zero if interface is to use VCP drivers */
 } FT_PROGRAM_DATA, *PFT_PROGRAM_DATA;
 
 FTD2XX_API
@@ -578,9 +554,7 @@ FT_STATUS WINAPI FT_CyclePort(
     );
 
 
-//
-// Win32-type functions
-//
+/* Win32-type functions */
 
 FTD2XX_API
 FT_HANDLE WINAPI FT_W32_CreateFile(
@@ -635,9 +609,9 @@ BOOL WINAPI FT_W32_CancelIo(
     );
 
 
-//
-// Win32 COMM API type functions
-//
+
+/* Win32 COMM API type functions */
+
 typedef struct _FTCOMSTAT {
     DWORD fCtsHold : 1;
     DWORD fDsrHold : 1;
@@ -771,9 +745,7 @@ BOOL WINAPI FT_W32_WaitCommEvent(
     );
 
 
-//
-// Device information
-//
+/* Device information */
 
 typedef struct _ft_device_list_info_node {
 	ULONG Flags;
