@@ -77,6 +77,7 @@ public class HashtableBenchCMP2 {
 			}
 
 			while(true){
+				util.Timer.usleep(500);
 				synchronized(lock)
 				{
 					if (wait == true)

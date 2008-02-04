@@ -73,6 +73,7 @@ public class HashtableBenchCMP8{
 			}
 
 			while(true){
+				util.Timer.usleep(500);
 				synchronized(lock)
 				{
 					if (signal == 7)

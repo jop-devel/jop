@@ -79,6 +79,7 @@ public class HashtableBenchCMP8_RamCounter{
 			}
 
 			while(true){
+				util.Timer.usleep(500);
 				synchronized(lock)
 				{
 					if (signal == 7)

@@ -88,6 +88,7 @@ public class HashtableBenchCMP2_RamCounter {
 			// wait = true;
 			// Wait for CPU1
 			while(true){
+				util.Timer.usleep(500);
 				synchronized(lock)
 				{
 					if (wait == true)
