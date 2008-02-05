@@ -832,7 +832,7 @@ if (enterCnt<0) {
 	private static void f_resE9() { JVMHelp.noim();}
 	private static void f_resEA() { JVMHelp.noim();}
 	private static void f_resEB() { JVMHelp.noim();}
-	private static void f_resEC() { JVMHelp.noim();}
+	private static void f_invokesuper() { JVMHelp.noim(); /* jvm.asm */ }
 	private static void f_resED() { JVMHelp.noim();}
 	private static void f_resEE() { JVMHelp.noim();}
 	private static void f_resEF() { JVMHelp.noim();}

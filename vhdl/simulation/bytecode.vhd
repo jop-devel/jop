@@ -55,7 +55,7 @@ architecture sim of bytecode is
 			jopsys_null, jopsys_rd, jopsys_wr, jopsys_rdmem, jopsys_wrmem, jopsys_rdint, jopsys_wrint, jopsys_getsp, 
 			jopsys_setsp, jopsys_getvp, jopsys_setvp, jopsys_int2ext, jopsys_ext2int, jopsys_nop, jopsys_invoke, resDF, 
 			getstatic_ref, putstatic_ref, getfield_ref, putfield_ref, getstatic_long, putstatic_long, getfield_long, putfield_long, 
-			jopsys_memcpy, resE9, resEA, resEB, resEC, resED, resEE, resEF, 
+			jopsys_memcpy, resE9, resEA, resEB, invokesuper, resED, resEE, resEF, 
 			sys_int, sys_exc, resF2, resF3, resF4, resF5, resF6, resF7, 
 			resF8, resF9, resFA, resFB, resFC, resFD, sys_noim, sys_init 
 	);

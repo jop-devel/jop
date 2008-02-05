@@ -1750,6 +1750,7 @@ intext_loop:
 			wait
 
 nop	// to keep offtbl.vhd short enough....
+nop	// to keep offtbl.vhd short enough....
 			bnz		intext_loop
 			ldi	-1	// decrement in branch slot
 			add
@@ -1786,6 +1787,7 @@ extint_loop:
 
 			dup
 			nop
+nop	// to keep offtbl.vhd short enough....
 			bnz		extint_loop
 			ldi	-1	// decrement in branch slot
 			add

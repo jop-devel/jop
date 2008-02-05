@@ -92,6 +92,18 @@ public class ReplaceNativeAndCPIdx extends MyVisitor {
 					}
 				}
 			}
+
+ 			if (ii instanceof INVOKESPECIAL) {			    
+ 				// not an initializer
+ 				if (!ii.getMethodName(cpoolgen).equals("<init>")) {
+ 					// not in the same class, must be super
+ 					if (!cli.clazz.getClassName().equals(ii.getClassName(cpoolgen))) {
+ 						first.setInstruction(new JOPSYS_INVOKESUPER((short) ii.getIndex()));
+ 						// System.err.println("invokesuper "+ii.getClassName(cpoolgen)+"."+ii.getMethodName(cpoolgen));
+ 					}
+ 			    	}
+ 			}
+
 		}
 
 		f = new InstructionFinder(il);
@@ -310,6 +322,20 @@ public class ReplaceNativeAndCPIdx extends MyVisitor {
 		}
 
 		public void accept(org.apache.bcel.generic.Visitor v) {
+		}
+	}
+
+	class JOPSYS_INVOKESUPER extends InvokeInstruction {
+		public JOPSYS_INVOKESUPER(short index) {
+			super((short) JopInstr.get("invokesuper"), index);
+		}
+
+		public void accept(org.apache.bcel.generic.Visitor v) {
+		}
+
+		// could be copied from INVOKESPECIAL
+		public Class[] getExceptions() {
+		       return null;
 		}
 	}
 }

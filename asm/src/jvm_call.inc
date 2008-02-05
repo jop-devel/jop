@@ -118,8 +118,70 @@ invokeinterface:
 			nop
 			nop
 
+invokesuper:						// this was invokespecial, replaced in JOPizer when calling super methods
+			ldm	cp opd
+			nop	opd
+			ld_opd_16u
+			add
 
+			stmra				// read constant
+			wait
+			wait
+			ldmrd		 		// read ext. mem
 
+			dup
+			ldi	255
+			and
+			stm	a			// arg count (without objectref)
+			ldi	8
+			ushr
+			stm	b			// offset in method table
+
+			ldsp				// one increment but still one to low ('real' sp is sp+2 because of registers)
+			ldi	1			// 'real' sp			da sp auf rd adr zeigt
+			add
+			ldm	a
+			sub
+
+			ldvp
+			stm	old_vp
+			stvp				// address in vp
+			nop				// ???
+			ld0				// read objectref
+			// objectref is now on TOS
+
+ 			dup				// null pointer check
+ 			nop				// could be interleaved with
+ 			bz	null_pointer		// following code
+ 			nop
+ 			nop
+
+			ldi	1			// at address ref+1 (in the handle) is the pointer to method table
+			add
+
+			stmra				// read pointer to method table of this
+			wait
+			wait
+			ldmrd		 		// read ext. mem
+
+			ldi	-2			// superclass pointer is at vt-2
+	                add
+
+			stmra				// read pointer to superclass
+			wait
+			wait
+			ldmrd		 		// read ext. mem
+
+			ldi	5			// "super" method table is at superclass+5
+	                add
+
+	                ldi	1
+//			nop		// mp is != 0
+			bnz	invoke_addoffset
+			nop
+			nop
+
+nop	// to keep offtbl.vhd short enough....
 
 invokevirtual:
 
@@ -168,6 +230,7 @@ invokevirtual:
 			wait
 			ldmrd		 		// read ext. mem
 
+invoke_addoffset:
 			ldm	b
 			add					// add offset
 

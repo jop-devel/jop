@@ -269,6 +269,25 @@ System.out.println(mp+" "+pc);
 		invokestatic();				// what's the difference?
 	}
 
+	void invokesuper() {
+		int idx = readOpd16u();
+		int off = readMem(cp+idx);	// index in vt and arg count (-1)
+		int args = off & 0xff;		// this is args count without obj-ref
+		off >>>= 8;
+		int ref = stack[sp-args];
+		// pointer to method table in handle at offset 1
+		int vt = readMem(ref+1);
+		// pointer to super class in method table at offset -2
+		// == -Const.CLASS_HEADR+Const.CLASS_SUPER
+		int sup = readMem(vt-2);
+		// the real VT is located at offset 5
+		// == Const.CLASS_HEADR
+		vt = sup+5;
+
+// System.err.println("invsuper: cp: "+cp+" off: "+off+" args: "+args+" ref: "+ref+" vt: "+vt+" addr: "+(vt+off));
+		invoke(vt+off);
+	}
+
 	void invokevirtual() {
 
 		int idx = readOpd16u();
@@ -1407,8 +1426,8 @@ System.out.println("new heap: "+heap);
 				case 235 :		// resEB
 					noim(235);
 					break;
-				case 236 :		// resEC
-					noim(236);
+				case 236 :		// invokesuper
+					invokesuper();
 					break;
 				case 237 :		// resED
 					noim(237);

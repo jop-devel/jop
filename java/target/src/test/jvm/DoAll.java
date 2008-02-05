@@ -45,7 +45,8 @@ public class DoAll {
 				new Switch2(),
 				new Logic1(),
 				new Logic2(),
-				new Logic3()
+				new Logic3(),
+				new InvokeSpecial()
 		};
 		
 		for (int i=0; i<tc.length; ++i) {

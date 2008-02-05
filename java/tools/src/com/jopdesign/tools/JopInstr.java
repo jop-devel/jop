@@ -341,7 +341,7 @@ public class JopInstr{
 		new JopInstr("resE9", 1, IMP_NO, 1),			// 0xE9
 		new JopInstr("resEA", 1, IMP_NO, 1),			// 0xEA
 		new JopInstr("resEB", 1, IMP_NO, 1),			// 0xEB
-		new JopInstr("resEC", 1, IMP_NO, 1),			// 0xEC
+		new JopInstr("invokesuper", 3, IMP_ASM, 30),			// 0xEC
 		new JopInstr("resED", 1, IMP_NO, 1),			// 0xED
 		new JopInstr("resEE", 1, IMP_NO, 1),			// 0xEE
 		new JopInstr("resEF", 1, IMP_NO, 1),			// 0xEF

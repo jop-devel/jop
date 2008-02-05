@@ -10,7 +10,7 @@ public class DoAll {
 		
 		jvm.DoAll.main(args);
 		jdk.DoAll.main(args);
-		Flash.main(args);
+// 		Flash.main(args);
 		jbe.DoAll.main(args);
 		
 	}
