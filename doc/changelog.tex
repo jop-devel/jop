@@ -183,6 +183,12 @@ Change stack pointer handling: no wrapping, exception generation at
 maxstack-8, use constants for stack size and start, changed start to
 64. With 512 stack words LC is 2948 (instead of 2906).
 
+\subsubsection*{2008-02-05}
+
+Added invokesuper bytecode: the case of invoking the method of a
+super-class was not handled correctly by invokespecial. JOPizer
+replaces invokespecial with invokesuper where appropriate.
+
 \section{Performance Tracker}
 
 Table~\ref{tab:perf} shows the changing performance due to changes
