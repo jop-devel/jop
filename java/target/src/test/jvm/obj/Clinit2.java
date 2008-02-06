@@ -32,7 +32,7 @@ public class Clinit2 extends TestCase {
 		// new Clinit2_indir();
 		// Clinit2_indir.foo();
 		
-		indir += 10;
+		indir += 7;
 	}
 	
 	public String getName() {
@@ -43,15 +43,22 @@ public class Clinit2 extends TestCase {
 
 		boolean ok = true;
 		
-		// we cannot resolve this issue!
-		// if (abc!=789) ok = false;
-		
+		// we cannot resolve this issue here!
+		// Clinit2_X is initialized after this point in Sun's JVM, but at the beginning in JOP
+// 		if (abc!=789) ok = false; // true for Sun JVM
+// 		if (abc!=456) ok = false; // true for JOP
+
 		// but that should be possible
 		if (Clinit2_X.result_y!=2) ok = false;
 		if (Clinit2_X.result_z!=4) ok = false;
 		if (Clinit2_invstat.getS()!=4711) ok = false;
 		if (invsta!=4711) ok = false;
-		if (indir!=20) ok = false;
+
+		// Clinit2_X should be initialized for Sun's JVM and JOP here
+ 		if (abc!=789) ok = false;
+
+		// Clinit2_indir never used, should be 7
+  		if (indir!=7) ok = false;
 		
 		return ok;
 
@@ -63,7 +70,7 @@ public class Clinit2 extends TestCase {
 		// force our transitive hull generater to put
 		// those <clinit> in the wrong order
 		// ... not really possible as it is a HashSet
-		new Clinit2_X();
+// 		new Clinit2_X();
 		
 		System.out.print(clinit.getName());
 		if (clinit.test()) {
