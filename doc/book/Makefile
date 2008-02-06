@@ -10,10 +10,10 @@ EXCLUDE=""
 
 all: jdoc 
 	cd appendix && make
-	pdfLatex handbook
+	pdflatex handbook
 	bibtex handbook
-	pdfLatex handbook
-	pdfLatex handbook
+	pdflatex handbook
+	pdflatex handbook
 
 # bib is a local target for my machine, so we're not
 # including it in all
