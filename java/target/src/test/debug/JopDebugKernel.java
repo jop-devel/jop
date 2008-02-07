@@ -219,7 +219,8 @@ public final class JopDebugKernel
 //        }
         
         // invoke a static method with one integer parameter on the stack 
-        if((commandset == 3) && (command == 3))
+        if((commandset == CommandConstants.ClassType_Command_Set) &&
+           (command == CommandConstants.ClassType_InvokeMethod))
         {
           debugPrintln("Invoke static");
           handleInvokeStaticCommand();
@@ -227,7 +228,8 @@ public final class JopDebugKernel
         }
         
         // get a field from an object 
-        if((commandset == 9) && (command == 2))
+        if((commandset == CommandConstants.ObjectReference_Command_Set) &&
+           (command == CommandConstants.ObjectReference_GetValues))
         {
           debugPrintln("GetValues (2)");
           handleGetInstanceVariable();
@@ -235,7 +237,8 @@ public final class JopDebugKernel
         }
         
         // set a field into an object 
-        if((commandset == 9) && (command == 3))
+        if((commandset == CommandConstants.ObjectReference_Command_Set) &&
+           (command == CommandConstants.ObjectReference_SetValues))
         {
           debugPrintln("SetValues (3)");
           handleSetInstanceVariable();
@@ -243,7 +246,8 @@ public final class JopDebugKernel
         }
         
         // resume execution. Finish this method and continue.
-        if((commandset == 11) && (command == 3))
+        if((commandset == CommandConstants.ThreadReference_Command_Set) &&
+           (command == CommandConstants.ThreadReference_Resume))
         {
           debugPrintln("Resume execution");
           handleResumeExecutionCommand();
@@ -253,7 +257,8 @@ public final class JopDebugKernel
         }
         
         // return a list of all stack frame locations
-        if((commandset == 11) && (command == 6))
+        if((commandset == CommandConstants.ThreadReference_Command_Set) &&
+           (command == CommandConstants.ThreadReference_Frames))
         {
           debugPrintln("Get stack frames");
           handleGetStackFramesCommand(breakpointFramePointer);
@@ -262,7 +267,8 @@ public final class JopDebugKernel
         }
         
         // calculate the stack depth of the caller method.
-        if((commandset == 11) && (command == 7))
+        if((commandset == CommandConstants.ThreadReference_Command_Set) &&
+           (command == CommandConstants.ThreadReference_FrameCount))
         {
           debugPrintln("Get stack depth");
           handleGetStackDepthCommand(breakpointFramePointer);
@@ -272,7 +278,8 @@ public final class JopDebugKernel
         
         // dump the call stack. For development ONLY.
         // NOT a standard JDWP command set/command pair.
-        if((commandset == 11) && (command == 13))
+        if((commandset == CommandConstants.ThreadReference_Command_Set) &&
+           (command == 13))
         {
           debugPrintln("Print the call stack.");
           handlePrintCallStackCommand();
@@ -281,7 +288,8 @@ public final class JopDebugKernel
         
         // dump one stack frame. For development ONLY.
         // NOT a standard JDWP command set/command pair.
-        if((commandset == 11) && (command == 14))
+        if((commandset == CommandConstants.ThreadReference_Command_Set) &&
+            (command == 14))
         {
           debugPrintln("Print a stack frame.");
           handlePrintStackFrameCommand();
@@ -293,7 +301,8 @@ public final class JopDebugKernel
         // ----------------------
         
         // set breakpoint
-        if((commandset == 15) && (command == 1))
+        if((commandset == CommandConstants.EventRequest_Command_Set) &&
+           (command == CommandConstants.EventRequest_Set))
         {
           debugPrintln("set breakpoint");
           handleSetBreakPointCommand();
@@ -301,7 +310,8 @@ public final class JopDebugKernel
         }
         
         // clear breakpoint
-        if((commandset == 15) && (command == 2))
+        if((commandset == CommandConstants.EventRequest_Command_Set) &&
+           (command == CommandConstants.EventRequest_Clear))
         {
           debugPrintln("clear breakpoint");
           handleClearBreakPointCommand();
@@ -310,7 +320,8 @@ public final class JopDebugKernel
         
         // get the method pointer from a stack frame
         // TODO: STILL NEED TO BE FIXED
-        if((commandset == 16) && (command == 0))
+        if((commandset == CommandConstants.StackFrame_Command_Set) &&
+           (command == 0))
         {
           debugPrintln("Get method pointer");
           handleGetStackFrameMPCommand();
@@ -319,7 +330,8 @@ public final class JopDebugKernel
         }
         
         // get a local variable value
-        if((commandset == 16) && (command == 1))
+        if((commandset == CommandConstants.StackFrame_Command_Set) &&
+           (command == CommandConstants.StackFrame_GetValues))
         {
           debugPrintln("Get local variable");
           handleGetLocalVariableCommand();
@@ -338,7 +350,8 @@ public final class JopDebugKernel
         }
         
         // return the nuber of local variables
-        if((commandset == 16) && (command == 5))
+        if((commandset == CommandConstants.StackFrame_Command_Set) &&
+           (command == 5))
         {
           debugPrintln("Get number of local variables");
           handleGetNumberOfLocalVariablesCommand();
@@ -347,7 +360,8 @@ public final class JopDebugKernel
         }
         
         // specific command just to help development.
-        if((commandset == 100) && (command == 1))
+        if((commandset == CommandConstants.Event_Composite) &&
+           (command == 1))
         {
           debugPrintln("Debug development command: Send JDWP packets");
           handleTestSendJDWPPackets();
@@ -357,7 +371,8 @@ public final class JopDebugKernel
         
         // specific command just to help development.
         // TODO: STILL NEED TO BE FIXED
-        if((commandset == 100) && (command == 2))
+        if((commandset == CommandConstants.Event_Composite) &&
+           (command == 2))
         {
           debugPrintln("Debug development command: receive JDWP packets");
           handleTestReceiveJDWPPackets(breakpointFramePointer);
@@ -1120,9 +1135,19 @@ public final class JopDebugKernel
     return Native.rdMem(classReference + JOPConstants.CLASS_OFFSET_STATIC_PRIMITIVE_FIELDS);
   }
   
+  private static int getGCInfo(int classReference)
+  {
+    return Native.rdMem(classReference + JOPConstants.CLASS_OFFSET_GC_INFO);
+  }
+  
   private static int getPointerToSuperclass(int classReference)
   {
     return Native.rdMem(classReference + JOPConstants.CLASS_OFFSET_SUPERCLASS_POINTER);
+  }
+  
+  private static int getPointerToInterfaceTable(int classReference)
+  {
+    return Native.rdMem(classReference + JOPConstants.CLASS_OFFSET_INTERFACE_TABLE_POINTER);
   }
   
   /**
@@ -2828,27 +2853,27 @@ public final class JopDebugKernel
       return;
     }
     
-    data = Native.rdMem(classPointer + JOPConstants.CLASS_OFFSET_INSTANCE_SIZE);
+    data = getInstanceSizeFromClass(classPointer);
     System.out.print("Instance size:  ");
     System.out.println(data);
     
-    data = Native.rdMem(classPointer + JOPConstants.CLASS_OFFSET_STATIC_PRIMITIVE_FIELDS);
+    data = getPointerToStaticPrimitiveFields(classPointer);
     System.out.print("Pointer to static primitive fields:  ");
     System.out.println(data);
     
-    data = Native.rdMem(classPointer + JOPConstants.CLASS_OFFSET_GC_INFO);
+    data = getGCInfo(classPointer);
     System.out.print("Instance GC info:  ");
     System.out.println(data);
     
-    data = Native.rdMem(classPointer + JOPConstants.CLASS_OFFSET_SUPERCLASS_POINTER);
+    data = getPointerToSuperclass(classPointer);
     System.out.print("Pointer to superclass:  ");
     System.out.println(data);
     
-    data = Native.rdMem(classPointer + JOPConstants.CLASS_OFFSET_INTERFACE_TABLE_POINTER);
+    data = getPointerToInterfaceTable(classPointer);
     System.out.print("Pointer to interface table:  ");
     System.out.println(data);
   }
-
+  
   /**
    * Check if the class pointer may be valid or not.
    * 
