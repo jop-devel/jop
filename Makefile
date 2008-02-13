@@ -21,28 +21,25 @@
 #
 
 
-# Added flags for development with JDWP
-#DEBUG_PORT = 8000
-DEBUG_PORT = 8001
-DEBUG_PARAMETERS= -Xdebug -Xrunjdwp:transport=dt_socket,server=y,address=$(DEBUG_PORT)
-#DEBUG_PARAMETERS= 
+#
+#	Set USB to true for an USB based board (dspio, usbmin, lego)
+#
+USB=false
 
-#DEBUG_JOPIZER=$(DEBUG_PARAMETERS)
-DEBUG_JOPIZER=
-
-#DEBUG_JOPSIM=$(DEBUG_PARAMETERS)
-DEBUG_JOPSIM=
 
 #
 #	com1 is the usual serial port
-#	com6 is the FTDI VCOM for the USB download
+#	com5 is the FTDI VCOM for the USB download
 #		use -usb to download the Java application
 #		without the echo 'protocol' on USB
 #
-COM_PORT=COM1
-COM_FLAG=-e
-#COM_PORT=COM6
-#COM_FLAG=-e -usb
+ifeq ($(USB),true)
+	COM_PORT=COM5
+	COM_FLAG=-e -usb
+else
+	COM_PORT=COM1
+	COM_FLAG=-e
+endif
 
 BLASTER_TYPE=ByteBlasterMV
 #BLASTER_TYPE=USB-Blaster
@@ -54,20 +51,18 @@ else
 endif
 
 # 'some' different Quartus projects
-QPROJ=cycmin cycbaseio cycbg dspio lego cycfpu cyc256x16 sopcmin cyccmp
+QPROJ=cycmin cycbaseio cycbg dspio lego cycfpu cyc256x16 sopcmin usbmin cyccmp
 # if you want to build only one Quartus project use e.q.:
-QPROJ=cycmin
-
-# Nelson uncomment this
-#QPROJ=cyc12baseio
-
-# Jens & Mikael uncomment this
-#QPROJ=mikjen
+ifeq ($(USB),true)
+	QPROJ=usbmin
+else
+	QPROJ=cycmin
+endif
 
 # Which project do you want to be downloaded?
 DLPROJ=$(QPROJ)
 # Which project do you want to be programmed into the flash?
-FLPROJ=$(DLProj)
+FLPROJ=$(DLPROJ)
 # IP address for Flash programming
 IPDEST=192.168.1.2
 IPDEST=192.168.0.123
@@ -81,31 +76,7 @@ P3=HelloWorld
 
 #P2=wcet
 #P3=Loop
-
-#P2=wcet
-#P3=StartLineFollower
-#P3=StartKfl
-WCET_METHOD=main
 WCET_METHOD=measure
-
-#P1=common
-#P2=ejip/jtcpip/test
-#P3=HTTPServer
-#P2=ejip/examples
-#P3=Telnet
-
-#P2=jdk
-#P3=DoAll
-
-# Jens & Mikael uncomment this
-#P1=app
-#P2=dsp
-#P3=SigDel
-
-# Nelson uncomment this
-#P1=common
-#P2=ejip
-#P3=Main
 
 #
 #	some variables
@@ -150,23 +121,8 @@ MAIN_CLASS=$(P2)/$(P3)
 
 # here an example how to define an application outside
 # from the jop directory tree
-# Rasmus's distributed SVM (see www.dsvm.org)
-
-#TARGET_APP_PATH=/usrx/jop_rasmus/dsvm_hw/DSVMFP/src
-#MAIN_CLASS=dsvmfp/TestSMO
-#MAIN_CLASS=test/TestSMO
-
-# and the version for Rasmus's machine ;-)
-#P1=src
-#P2=dsvmfp
-#P3=TestSMO
-#TARGET_APP_PATH=C:/eclipse/workspace/DSVMFP/src
-#MAIN_CLASS=dsvmfp/TestSMO
-
-# Jame's APT system (see www.muvium.com)
 #TARGET_APP_PATH=/usr2/muvium/jopaptalone/src
 #MAIN_CLASS=com/muvium/eclipse/PeriodicTimer/JOPBootstrapLauncher
-
 
 
 #	add more directoies here when needed
@@ -178,8 +134,21 @@ TARGET_APP=$(TARGET_APP_PATH)/$(MAIN_CLASS).java
 JOPBIN=$(P3).jop
 
 
-# for WCET testing
-TARGET_APP_SOURCE_PATH=$(TARGET_APP_PATH)\;$(TARGET)/src/app\;$(TARGET)/src/bench
+#
+#	Debugger stuff
+#
+# Added flags for development with JDWP
+#DEBUG_PORT = 8000
+DEBUG_PORT = 8001
+DEBUG_PARAMETERS= -Xdebug -Xrunjdwp:transport=dt_socket,server=y,address=$(DEBUG_PORT)
+#DEBUG_PARAMETERS= 
+
+#DEBUG_JOPIZER=$(DEBUG_PARAMETERS)
+DEBUG_JOPIZER=
+
+#DEBUG_JOPSIM=$(DEBUG_PARAMETERS)
+DEBUG_JOPSIM=
+
 
 
 #
@@ -197,20 +166,29 @@ TARGET_APP_SOURCE_PATH=$(TARGET_APP_PATH)\;$(TARGET)/src/app\;$(TARGET)/src/benc
 #	cd $(TARGET)/dist/classes && jar cf ../lib/classes.zip *
 
 
-# use this for serial download
-all: directories tools jopser japp
+# build everything from scratch
+all:
+	make directories
+	make tools
+ifeq ($(USB),true)
+	make jopusb
+else
+	make jopser
+endif
+	make japp
 
-japp: java_app config_byteblast download
-
-# use this for USB download of FPGA configuration
-# and Java program download
-#all: directories tools jopusb japp
-#
-#japp: java_app config_usb download
-
+# build the Java application and download it
+japp:
+	make java_app
+ifeq ($(USB),true)
+	make config_usb
+else
+	make config_byteblaster
+endif
+	make download
 
 # shortcut for my work in Eclipse on TCP/IP
-eapp: ecl_app config_byteblast download
+eapp: ecl_app config_byteblaster download
 
 install:
 	@echo nothing to install
@@ -243,10 +221,6 @@ tools:
 #	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/debug/jdwp/*.java
 	cd $(TOOLS)/dist/classes && jar cf ../lib/jop-tools.jar *
 
-#	old version with batch file
-#	cd java/tools && ./build.bat
-
-
 #
 #	Build joptimizer and libgraph
 #
@@ -276,7 +250,7 @@ compile_java:
 #	compile and JOPize the application
 #
 java_app:
-#	-rm -rf $(TARGET)/dist
+	-rm -rf $(TARGET)/dist
 	-mkdir $(TARGET)/dist
 	-mkdir $(TARGET)/dist/classes
 	-mkdir $(TARGET)/dist/lib
@@ -316,7 +290,7 @@ pc:
 	cd java/pc && ./build.bat
 
 #
-#	project.jbc fiels are used to boot from the serial line
+#	project.sof fiels are used to boot from the serial line
 #
 jopser:
 	cd asm && export GCC_PARAMS=$(GCC_PARAMS) && ./jopser.bat
@@ -324,14 +298,12 @@ jopser:
 	for target in $(QPROJ); do \
 		make qsyn -e QBT=$$target; \
 		cd quartus/$$target; \
-		quartus_cpf -c jop.cdf ../../jbc/$$target.jbc; \
-		quartus_cpf -c jop.sof ../../rbf/$$target.rbf; \
 		cd ../..; \
 	done
 
 
 #
-#	project.jbc fiels are used to boot from the USB interface
+#	project.rbf fiels are used to boot from the USB interface
 #
 jopusb:
 	cd asm && export GCC_PARAMS=$(GCC_PARAMS) && ./jopusb.bat
@@ -339,7 +311,6 @@ jopusb:
 	for target in $(QPROJ); do \
 		make qsyn -e QBT=$$target; \
 		cd quartus/$$target; \
-		quartus_cpf -c jop.cdf ../../jbc/$$target.jbc; \
 		quartus_cpf -c jop.sof ../../rbf/$$target.rbf; \
 		cd ../..; \
 	done
@@ -401,7 +372,7 @@ jsim_server: java_app
 	com.jopdesign.debug.jdwp.jop.JopServer java/target/dist/bin/$(JOPBIN)
 
 
-config_byteblast:
+config_byteblaster:
 	cd quartus/$(DLPROJ) && quartus_pgm -c $(BLASTER_TYPE) -m JTAG jop.cdf
 
 config_usb:
