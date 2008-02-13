@@ -39,6 +39,11 @@ import ejip.LinkLayer;
 
 public class Net {
 	
+	/**
+	 * Enable the experimental TCP implementation
+	 */
+	public static final boolean TCP_ENABLE = false;
+	
 	public static final int PROT_ICMP = 1;
 	
 	/**
@@ -92,7 +97,7 @@ public class Net {
 			receive(p);
 		} else {
 			Udp.loop();
-			Tcp.loop();
+			if (TCP_ENABLE)	Tcp.loop();
 		}
 	}
 	
@@ -137,8 +142,12 @@ public class Net {
 				TcpIp.doTCP(p);
 				Ip.doIp(p, prot);
 			} else {
-				// that's the new upcomming TCP processing
-				Tcp.process(p);				
+				if (TCP_ENABLE) {
+					// that's the new upcomming TCP processing
+					Tcp.process(p);					
+				} else {
+					p.setStatus(Packet.FREE); // mark packet free					
+				}
 			}
 		} else if (prot == Udp.PROTOCOL) {
 			Udp.process(p); // Udp generates the reply
