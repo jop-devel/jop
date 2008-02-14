@@ -20,7 +20,7 @@ package joptimizer.framework.visit;
 
 import com.jopdesign.libgraph.struct.ClassInfo;
 import com.jopdesign.libgraph.struct.MethodInfo;
-import com.jopdesign.libgraph.struct.MethodInvokation;
+import com.jopdesign.libgraph.struct.MethodInvocation;
 
 /**
  * Interface for classes which are used to execute something while walking through the
@@ -48,7 +48,7 @@ public interface StructVisitor {
 
     void visitMethod(MethodInfo methodInfo);
 
-    void visitMethodInvokation(MethodInvokation invoke);
+    void visitMethodInvocation(MethodInvocation invoke);
 
     void finish();
 

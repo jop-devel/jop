@@ -18,6 +18,10 @@
  */
 package joptimizer.actions;
 
+import com.jopdesign.libgraph.struct.ClassInfo;
+import com.jopdesign.libgraph.struct.MethodInfo;
+import com.jopdesign.libgraph.struct.MethodInvocation;
+import com.jopdesign.libgraph.struct.TypeException;
 import joptimizer.config.ConfigurationException;
 import joptimizer.config.IntOption;
 import joptimizer.config.JopConfig;
@@ -26,17 +30,22 @@ import joptimizer.framework.JOPtimizer;
 import joptimizer.framework.actions.AbstractAction;
 import joptimizer.framework.actions.ActionException;
 import joptimizer.framework.visit.EmptyStructVisitor;
-import joptimizer.framework.visit.MethodInvokationTraverser;
+import joptimizer.framework.visit.MethodInvocationTraverser;
 import joptimizer.framework.visit.StatisticsVisitor;
 import joptimizer.framework.visit.StructVisitorList;
-import com.jopdesign.libgraph.struct.ClassInfo;
-import com.jopdesign.libgraph.struct.MethodInfo;
-import com.jopdesign.libgraph.struct.MethodInvokation;
-import com.jopdesign.libgraph.struct.TypeException;
 import org.apache.log4j.Logger;
 
-import java.io.*;
-import java.util.*;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.Stack;
 
 /**
  * @author Stefan Hepp, e0026640@student.tuwien.ac.at
@@ -82,7 +91,7 @@ public class CallTreePrinter extends AbstractAction {
             depth.pop();
         }
 
-        public void visitMethodInvokation(MethodInvokation invoke) {
+        public void visitMethodInvocation(MethodInvocation invoke) {
             StringBuffer prefix = new StringBuffer();
 
             for (int i = 1; i < depth.size(); i++) {
@@ -96,7 +105,7 @@ public class CallTreePrinter extends AbstractAction {
             printMethod(invoke.getInvokedClass(), invoke.getInvokedMethod(), invoke, prefix.toString());
         }
 
-        private void printMethod(ClassInfo classInfo, MethodInfo methodInfo, MethodInvokation invoke, String prefix) {
+        private void printMethod(ClassInfo classInfo, MethodInfo methodInfo, MethodInvocation invoke, String prefix) {
             out.print(prefix);
             if ( invoke != null ) out.print("+ ");
             out.print(classInfo.getClassName());
@@ -166,7 +175,7 @@ public class CallTreePrinter extends AbstractAction {
             }
         }
 
-        public void visitMethodInvokation(MethodInvokation invoke) {
+        public void visitMethodInvocation(MethodInvocation invoke) {
 
             // ignore already visited invokers and subtree
             if ( skipDepth != -1 ) {
@@ -179,7 +188,7 @@ public class CallTreePrinter extends AbstractAction {
 
             String invokeEdge = invoker + " -> " + invoked;
 
-            // skip multiple invokations from one method
+            // skip multiple invocations from one method
             if ( visitedInvokes.contains(invokeEdge) ) {
                 return;
             }
@@ -358,7 +367,7 @@ public class CallTreePrinter extends AbstractAction {
         StatisticsVisitor statVisitor = new StatisticsVisitor();
         vList.addVisitor(statVisitor);
 
-        MethodInvokationTraverser traverser = new MethodInvokationTraverser(vList);
+        MethodInvocationTraverser traverser = new MethodInvocationTraverser(vList);
 
         // TODO option to enable recursion check in traverser
 

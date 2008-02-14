@@ -20,7 +20,7 @@ package joptimizer.framework.visit;
 
 import com.jopdesign.libgraph.struct.ClassInfo;
 import com.jopdesign.libgraph.struct.MethodInfo;
-import com.jopdesign.libgraph.struct.MethodInvokation;
+import com.jopdesign.libgraph.struct.MethodInvocation;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -85,9 +85,9 @@ public class StructVisitorList implements StructVisitor {
         }
     }
 
-    public void visitMethodInvokation(MethodInvokation invoke) {
+    public void visitMethodInvocation(MethodInvocation invoke) {
         for (int i = 0; i < visitors.size(); i++) {
-            ((StructVisitor) visitors.get(i)).visitMethodInvokation(invoke);
+            ((StructVisitor) visitors.get(i)).visitMethodInvocation(invoke);
         }
     }
 

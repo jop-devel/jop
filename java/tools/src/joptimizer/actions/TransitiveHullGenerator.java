@@ -18,20 +18,35 @@
  */
 package joptimizer.actions;
 
+import com.jopdesign.libgraph.struct.ClassInfo;
+import com.jopdesign.libgraph.struct.bcel.BcelClassInfo;
+import joptimizer.config.BoolOption;
 import joptimizer.config.JopConfig;
 import joptimizer.framework.JOPtimizer;
 import joptimizer.framework.actions.AbstractClassAction;
 import joptimizer.framework.actions.ActionException;
-import com.jopdesign.libgraph.struct.ClassInfo;
-import com.jopdesign.libgraph.struct.bcel.BcelClassInfo;
 import org.apache.bcel.Constants;
-import org.apache.bcel.classfile.*;
+import org.apache.bcel.classfile.ConstantCP;
+import org.apache.bcel.classfile.ConstantClass;
+import org.apache.bcel.classfile.ConstantFieldref;
+import org.apache.bcel.classfile.ConstantInterfaceMethodref;
+import org.apache.bcel.classfile.ConstantMethodref;
+import org.apache.bcel.classfile.ConstantNameAndType;
+import org.apache.bcel.classfile.ConstantPool;
+import org.apache.bcel.classfile.DescendingVisitor;
+import org.apache.bcel.classfile.EmptyVisitor;
+import org.apache.bcel.classfile.JavaClass;
 import org.apache.bcel.generic.ObjectType;
 import org.apache.bcel.generic.Type;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Go through all currently loaded classes and load all referenced classes. <br>
@@ -187,7 +202,7 @@ public class TransitiveHullGenerator extends AbstractClassAction {
                 return false;
             }
 
-            if ( false && getJopConfig().isNativeClassName(className) ) {
+            if ( ignoreNative && getJopConfig().isNativeClassName(className) ) {
                 if (logger.isInfoEnabled()) logger.info("Ignored system class {" + className + "}.");
                 return false;
             }
@@ -199,13 +214,19 @@ public class TransitiveHullGenerator extends AbstractClassAction {
 
     public static final String ACTION_NAME = "loadtransitivehull";
 
+    public static final String CONF_NATIVE = "nonative";
+
     private static final Logger logger = Logger.getLogger(TransitiveHullGenerator.class);
+
+    private boolean ignoreNative;
 
     public TransitiveHullGenerator(String name, JOPtimizer joptimizer) {
         super(name, joptimizer);
+        ignoreNative = false;
     }
 
     public void appendActionArguments(String prefix, List options) {
+        options.add( new BoolOption(CONF_NATIVE, "Do not load native classes.") );
     }
 
     public String getActionDescription() {
@@ -217,6 +238,9 @@ public class TransitiveHullGenerator extends AbstractClassAction {
     }
 
     public boolean configure(String prefix, JopConfig config) {
+
+        ignoreNative = config.isEnabled(prefix + CONF_NATIVE);
+
         return true;
     }
 

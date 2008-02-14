@@ -20,7 +20,7 @@ package joptimizer.framework.visit;
 
 import com.jopdesign.libgraph.struct.ClassInfo;
 import com.jopdesign.libgraph.struct.MethodInfo;
-import com.jopdesign.libgraph.struct.MethodInvokation;
+import com.jopdesign.libgraph.struct.MethodInvocation;
 
 /**
  * An empty implementation of StructVisitor, can be used to define only implemented methods.
@@ -49,7 +49,7 @@ public class EmptyStructVisitor implements StructVisitor {
     public void visitMethod(MethodInfo methodInfo) {
     }
 
-    public void visitMethodInvokation(MethodInvokation invoke) {
+    public void visitMethodInvocation(MethodInvocation invoke) {
     }
 
     public void finish() {

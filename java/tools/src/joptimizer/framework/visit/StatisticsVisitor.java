@@ -21,7 +21,7 @@ package joptimizer.framework.visit;
 import com.jopdesign.libgraph.struct.ClassInfo;
 import com.jopdesign.libgraph.struct.MethodCode;
 import com.jopdesign.libgraph.struct.MethodInfo;
-import com.jopdesign.libgraph.struct.MethodInvokation;
+import com.jopdesign.libgraph.struct.MethodInvocation;
 
 /**
  * A simple visitor which collects some statistics as it goes along.
@@ -72,6 +72,6 @@ public class StatisticsVisitor extends EmptyStructVisitor {
         }
     }
 
-    public void visitMethodInvokation(MethodInvokation invoke) {
+    public void visitMethodInvocation(MethodInvocation invoke) {
     }
 }

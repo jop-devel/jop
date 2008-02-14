@@ -18,8 +18,8 @@
  */
 package joptimizer.framework.actions;
 
-import joptimizer.framework.JOPtimizer;
 import com.jopdesign.libgraph.struct.ClassInfo;
+import joptimizer.framework.JOPtimizer;
 
 import java.util.Iterator;
 

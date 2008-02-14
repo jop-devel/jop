@@ -18,15 +18,15 @@
  */
 package joptimizer.actions;
 
+import com.jopdesign.libgraph.struct.ClassInfo;
+import com.jopdesign.libgraph.struct.MethodInfo;
+import com.jopdesign.libgraph.struct.TypeException;
 import joptimizer.config.JopConfig;
 import joptimizer.framework.JOPtimizer;
 import joptimizer.framework.actions.AbstractAction;
 import joptimizer.framework.actions.ActionException;
 import joptimizer.framework.actions.ClassAction;
 import joptimizer.framework.actions.MethodAction;
-import com.jopdesign.libgraph.struct.ClassInfo;
-import com.jopdesign.libgraph.struct.MethodInfo;
-import com.jopdesign.libgraph.struct.TypeException;
 
 import java.util.Collection;
 import java.util.Iterator;
