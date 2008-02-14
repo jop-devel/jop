@@ -21,7 +21,11 @@ package com.jopdesign.libgraph.cfg.variable;
 import com.jopdesign.libgraph.cfg.ControlFlowGraph;
 import com.jopdesign.libgraph.struct.ConstantValue;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author Stefan Hepp, e0026640@student.tuwien.ac.at
@@ -116,6 +120,16 @@ public class VariableTable {
         variableNames.put(name, var);
         
         return var;
+    }
+
+    /**
+     * Create an new variable at the end of the table with a default name.
+     * 
+     * @see #getDefaultLocalVariable(int)
+     * @return a new variable.
+     */
+    public Variable createVariable() {
+        return getDefaultLocalVariable(variables.size());
     }
 
     /**

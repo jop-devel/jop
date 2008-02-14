@@ -51,10 +51,10 @@ public class StackGetField extends GetfieldStmt implements StackStatement, Stack
     public QuadStatement[] getQuadCode(TypeInfo[] stack, VariableTable varTable) {
         if ( isStatic() ) {
             Variable s0 = varTable.getDefaultStackVariable(stack.length);
-            return new QuadStatement[] { new QuadGetfield(getFieldConstant(), s0) };
+            return new QuadStatement[] { new QuadGetfield(getConstantField(), s0) };
         } else {
             Variable s0 = varTable.getDefaultStackVariable(stack.length - 1);
-            return new QuadStatement[] { new QuadGetfield(getFieldConstant(), s0, s0) };
+            return new QuadStatement[] { new QuadGetfield(getConstantField(), s0, s0) };
         }
     }
 

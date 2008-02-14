@@ -23,21 +23,17 @@ import com.jopdesign.libgraph.struct.type.TypeHelper;
 import org.apache.log4j.Logger;
 
 import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Set;
 
 /**
  * @author Stefan Hepp, e0026640@student.tuwien.ac.at
  */
-public abstract class MethodInfo implements ModifierInfo {
+public abstract class MethodInfo implements ClassElement {
 
     private boolean initialzed;
 
     private ClassInfo classInfo;
     private MethodSignature methodSignature;
-
-    private Set invoker;
 
     private MethodInfo superMethod;
     private Set overwriters;
@@ -46,7 +42,6 @@ public abstract class MethodInfo implements ModifierInfo {
 
     public MethodInfo(ClassInfo classInfo) {
         this.classInfo = classInfo;
-        this.invoker = new HashSet();
         this.overwriters = new HashSet();
         methodSignature = null;
         initialzed = false;
@@ -67,14 +62,6 @@ public abstract class MethodInfo implements ModifierInfo {
         return methodSignature;
     }
 
-    public abstract String getName();
-
-    /**
-     * Get the signature of a method (without its name).
-     * @return the signature of parameters and returntype of this method.
-     */
-    public abstract String getSignature();
-
     public abstract boolean isSynchronized();
 
     public abstract boolean isInterface();
@@ -88,22 +75,7 @@ public abstract class MethodInfo implements ModifierInfo {
     public abstract boolean isAbstract();
 
     public void reload() throws TypeException {
-
-        // set this method as caller to called methods
-        MethodCode methodCode = getMethodCode();
-
-        if ( methodCode != null ) {
-            List invoked = methodCode.getInvokedMethods();
-            for (Iterator it = invoked.iterator(); it.hasNext();) {
-                MethodInvokation invoke = (MethodInvokation) it.next();
-                invoke.getInvokedMethod().addInvoker(invoke);
-
-                if ( logger.isDebugEnabled() ) {
-                    logger.debug(invoke);
-                }
-            }
-        }
-
+        
         // check if this method overwrites another method.
         superMethod = classInfo.getInheritedMethodInfo(getMethodSignature().getFullName(), true, true);
         if ( superMethod != null ) {
@@ -127,6 +99,10 @@ public abstract class MethodInfo implements ModifierInfo {
      */
     public String getFQMethodName() {
         return createFQMethodName(classInfo.getClassName(), getName(), getSignature());
+    }
+
+    public boolean isSameMethod(MethodInfo methodInfo) {
+        return getFQMethodName().equals(methodInfo.getFQMethodName());
     }
 
     /**
@@ -195,22 +171,8 @@ public abstract class MethodInfo implements ModifierInfo {
        return hasSuperMethod() || isOverwritten();
     }
 
-    public void addInvoker(MethodInvokation invokation) {
-        // TODO avoid dups, or clear invoker list if new reload round has been started
-        invoker.add(invokation);
-    }
-
     public void addOverwriter(MethodInfo method) {
         overwriters.add(method);
-    }
-
-    /**
-     * Get list of all known invoker of this method.
-     * Do not modify this set.
-     * @return a set of MethodInvokations which call this method.
-     */
-    public Set getInvoker() {
-        return invoker;
     }
 
     public int getAccessType() {

@@ -25,15 +25,23 @@ public class ConstantClass {
 
     private ClassInfo classInfo;
     private String className;
+    private boolean cInterface;
 
     public ConstantClass(ClassInfo classInfo) {
         this.classInfo = classInfo;
         className = null;
+        cInterface = false;
     }
 
     public ConstantClass(String className) {
         classInfo = null;
         this.className = className;
+        cInterface = false;
+    }
+
+    public ConstantClass(String className, boolean isInterface) {
+        this.className = className;
+        this.cInterface = isInterface;
     }
 
     public ClassInfo getClassInfo() {
@@ -46,5 +54,9 @@ public class ConstantClass {
     
     public boolean isAnonymous() {
         return classInfo == null;
+    }
+
+    public boolean isInterface() {
+        return classInfo != null ? classInfo.isInterface() : cInterface;
     }
 }

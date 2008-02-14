@@ -21,7 +21,9 @@ package com.jopdesign.libgraph.cfg.statements.quad;
 import com.jopdesign.libgraph.cfg.statements.AssignStmt;
 import com.jopdesign.libgraph.cfg.statements.VariableStmt;
 import com.jopdesign.libgraph.cfg.statements.common.InvokeStmt;
-import com.jopdesign.libgraph.cfg.statements.stack.*;
+import com.jopdesign.libgraph.cfg.statements.stack.StackInvoke;
+import com.jopdesign.libgraph.cfg.statements.stack.StackLoad;
+import com.jopdesign.libgraph.cfg.statements.stack.StackStatement;
 import com.jopdesign.libgraph.cfg.variable.Variable;
 import com.jopdesign.libgraph.cfg.variable.VariableTable;
 import com.jopdesign.libgraph.struct.ConstantMethod;
@@ -95,12 +97,7 @@ public class QuadInvoke extends InvokeStmt implements QuadStatement, AssignStmt,
             stmts[cnt++] = new StackLoad(types[i], params[i]);
         }
 
-        switch (getInvokeType()) {
-            case TYPE_STATIC:  stmts[cnt++] = new StackInvokeStatic(getMethodConstant()); break;
-            case TYPE_INTERFACE: stmts[cnt++] = new StackInvokeInterface(getMethodConstant()); break;
-            case TYPE_SPECIAL: stmts[cnt++] = new StackInvokeSpecial(getMethodConstant()); break;
-            case TYPE_VIRTUAL: stmts[cnt++] = new StackInvokeVirtual(getMethodConstant()); break;
-        }
+        stmts[cnt++] = new StackInvoke(getMethodConstant(), getInvokeType());
 
         if ( result != null ) {
             stmts[cnt] = QuadHelper.createStore(this); 

@@ -19,6 +19,7 @@
 package com.jopdesign.libgraph.cfg.statements;
 
 import com.jopdesign.libgraph.struct.ClassInfo;
+import com.jopdesign.libgraph.struct.ConstantField;
 import com.jopdesign.libgraph.struct.FieldInfo;
 
 /**
@@ -29,6 +30,8 @@ public interface FieldStmt extends Statement {
     ClassInfo getClassInfo();
     
     FieldInfo getFieldInfo();
+
+    ConstantField getConstantField();
 
     boolean isStatic();
 

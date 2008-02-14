@@ -42,8 +42,16 @@ public interface ModifierInfo {
 
     void setFinal(boolean val);
 
+    /**
+     * Get the access type of this object.
+     * @return one of {@link #ACC_PRIVATE}, {@link #ACC_PROTECTED}, {@link #ACC_PACKAGE} or {@link #ACC_PUBLIC}.
+     */
     int getAccessType();
 
+    /**
+     * Set the access type of this object.
+     * @param type one of {@link #ACC_PRIVATE}, {@link #ACC_PROTECTED}, {@link #ACC_PACKAGE} or {@link #ACC_PUBLIC}.
+     */
     void setAccessType(int type);
 
     String getModifierString();

@@ -44,7 +44,7 @@ public abstract class PutfieldStmt extends AbstractStatement implements FieldStm
         return fieldInfo;
     }
 
-    public ConstantField getFieldConstant() {
+    public ConstantField getConstantField() {
         return new ConstantField(classInfo, fieldInfo);
     }
 

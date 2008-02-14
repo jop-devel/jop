@@ -16,36 +16,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package com.jopdesign.libgraph.cfg.block;
-
-import com.jopdesign.libgraph.cfg.statements.quad.QuadStatement;
+package com.jopdesign.libgraph.struct;
 
 /**
+ * This interface is for fields and methods (and maybe attributes in the future) of a class.
+ *
  * @author Stefan Hepp, e0026640@student.tuwien.ac.at
  */
-public class QuadCode extends CodeBlock {
+public interface ClassElement extends ModifierInfo {
 
-    public QuadCode(BasicBlock block) {
-        super(block);
-    }
+    ClassInfo getClassInfo();
 
-    public void addStatement(QuadStatement quadStmt) {
-        addStatement(size(), quadStmt);
-    }
+    String getName();
 
-    public void insertStatement(int pos, QuadStatement quadStmt) {
-        addStatement(pos, quadStmt);
-    }
+    /**
+     * Get the signature of a field or method (without its name).
+     * @return the signature of parameters of methods and returntype of this method or field.
+     */
+    String getSignature();
 
-    public QuadStatement deleteQuadStatement(int pos) {
-        return (QuadStatement) deleteStatement(pos);
-    }
-
-    public QuadStatement getQuadStatement(int pos) {
-        return (QuadStatement) getStatement(pos);
-    }
-
-    public void setQuadStatement(int i, QuadStatement stmt) {
-        setStatement(i, stmt);
-    }
 }

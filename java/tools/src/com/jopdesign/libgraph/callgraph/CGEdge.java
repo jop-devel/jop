@@ -16,36 +16,36 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package com.jopdesign.libgraph.cfg.block;
-
-import com.jopdesign.libgraph.cfg.statements.quad.QuadStatement;
+package com.jopdesign.libgraph.callgraph;
 
 /**
  * @author Stefan Hepp, e0026640@student.tuwien.ac.at
  */
-public class QuadCode extends CodeBlock {
+public abstract class CGEdge {
 
-    public QuadCode(BasicBlock block) {
-        super(block);
+    private boolean recursion;
+    private CGMethod invokedMethod;
+
+    public CGEdge(CGMethod invokedMethod) {
+        this.invokedMethod = invokedMethod;
+        recursion = false;
     }
 
-    public void addStatement(QuadStatement quadStmt) {
-        addStatement(size(), quadStmt);
+    public abstract CGInvoke getInvoke();
+
+    public CGMethod getInvokedMethod() {
+        return invokedMethod;
     }
 
-    public void insertStatement(int pos, QuadStatement quadStmt) {
-        addStatement(pos, quadStmt);
+    public boolean isRecursion() {
+        return recursion;
     }
 
-    public QuadStatement deleteQuadStatement(int pos) {
-        return (QuadStatement) deleteStatement(pos);
+    public void setRecursion(boolean recursion) {
+        this.recursion = recursion;
     }
 
-    public QuadStatement getQuadStatement(int pos) {
-        return (QuadStatement) getStatement(pos);
-    }
-
-    public void setQuadStatement(int i, QuadStatement stmt) {
-        setStatement(i, stmt);
+    public boolean remove() {
+        return getInvoke().removeEdge(this);
     }
 }

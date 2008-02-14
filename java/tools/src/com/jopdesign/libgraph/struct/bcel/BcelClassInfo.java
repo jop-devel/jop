@@ -22,7 +22,12 @@ import com.jopdesign.libgraph.struct.AppStruct;
 import com.jopdesign.libgraph.struct.ClassInfo;
 import com.jopdesign.libgraph.struct.ConstantPoolInfo;
 import com.jopdesign.libgraph.struct.TypeException;
-import org.apache.bcel.classfile.*;
+import org.apache.bcel.Constants;
+import org.apache.bcel.classfile.DescendingVisitor;
+import org.apache.bcel.classfile.EmptyVisitor;
+import org.apache.bcel.classfile.Field;
+import org.apache.bcel.classfile.JavaClass;
+import org.apache.bcel.classfile.Method;
 import org.apache.bcel.generic.ClassGen;
 import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.log4j.Logger;
@@ -102,35 +107,48 @@ public class BcelClassInfo extends ClassInfo {
     }
 
     public boolean isPublic() {
-        return javaClass.isPublic();
+        return classGen.isPublic();
     }
 
     public boolean isPrivate() {
-        return javaClass.isPrivate();
+        return classGen.isPrivate();
     }
 
     public boolean isProtected() {
-        return javaClass.isProtected();
+        return classGen.isProtected();
     }
 
     public boolean isFinal() {
-        return javaClass.isFinal();
+        return classGen.isFinal();
     }
 
     public boolean isStatic() {
-        return javaClass.isStatic();
+        return classGen.isStatic();
     }
 
     public boolean isSynchronized() {
-        return javaClass.isSynchronized();
+        return classGen.isSynchronized();
     }
 
     public void setFinal(boolean val) {
-        //
+        int af = classGen.getModifiers();
+        if ( val ) {
+            classGen.setModifiers(af | Constants.ACC_FINAL);
+        } else {
+            classGen.setModifiers(af & (~Constants.ACC_FINAL));
+        }
+        modified = true;
     }
 
     public void setAccessType(int type) {
-        //To change body of implemented methods use File | Settings | File Templates.
+        int af = classGen.getAccessFlags() & ~(Constants.ACC_PRIVATE|Constants.ACC_PROTECTED|Constants.ACC_PUBLIC);
+        switch (type) {
+            case ACC_PRIVATE: af |= Constants.ACC_PRIVATE; break;
+            case ACC_PROTECTED: af |= Constants.ACC_PROTECTED; break;
+            case ACC_PUBLIC: af |= Constants.ACC_PUBLIC; break;
+        }
+        classGen.setAccessFlags(af);
+        modified = true;
     }
 
     public String getClassName() {

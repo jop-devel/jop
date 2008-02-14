@@ -20,6 +20,7 @@ package com.jopdesign.libgraph.struct.bcel;
 
 import com.jopdesign.libgraph.struct.MethodCode;
 import com.jopdesign.libgraph.struct.MethodInfo;
+import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.Method;
 import org.apache.bcel.generic.ConstantPoolGen;
 
@@ -68,11 +69,22 @@ public class BcelMethodInfo extends MethodInfo {
     }
 
     public void setFinal(boolean val) {
-        //To change body of implemented methods use File | Settings | File Templates.
+        int af = method.getModifiers();
+        if ( val ) {
+            method.setModifiers(af | Constants.ACC_FINAL);
+        } else {
+            method.setModifiers(af & (~Constants.ACC_FINAL));
+        }
     }
 
     public void setAccessType(int type) {
-        //To change body of implemented methods use File | Settings | File Templates.
+        int af = method.getAccessFlags() & ~(Constants.ACC_PRIVATE|Constants.ACC_PROTECTED|Constants.ACC_PUBLIC);
+        switch (type) {
+            case ACC_PRIVATE: af |= Constants.ACC_PRIVATE; break;
+            case ACC_PROTECTED: af |= Constants.ACC_PROTECTED; break;
+            case ACC_PUBLIC: af |= Constants.ACC_PUBLIC; break;
+        }
+        method.setAccessFlags(af);
     }
 
     public boolean isFinal() {

@@ -21,10 +21,24 @@ package com.jopdesign.libgraph.struct;
 import com.jopdesign.libgraph.struct.type.MethodSignature;
 import org.apache.log4j.Logger;
 
-import java.io.*;
-import java.util.*;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
+ * This class represents a fully loaded class or interface.
+ * 
  * @author Stefan Hepp, e0026640@student.tuwien.ac.at
  */
 public abstract class ClassInfo implements ModifierInfo {
@@ -72,16 +86,76 @@ public abstract class ClassInfo implements ModifierInfo {
         return superClass;
     }
 
+    /**
+     * Get a set of all subclasses of this class.
+     * If this is an interface, get all implementing classes and extending interfaces.
+     *
+     * @return a set of {@link ClassInfo}s.
+     */
     public Set getSubClasses() {
         return subClasses;
     }
 
     /**
      * return a list of classInfos which are interfaces this class implements.
-     * @return a set of ClassInfo.
+     * @return a set of {@link ClassInfo}s.
      */
     public Set getInterfaces() {
         return interfaces;
+    }
+
+    /**
+     * Check if this class is a subclass of a given class. This function does not
+     * check if this is the same class or if the class is an interface.
+     *
+     * @see #castsTo(ClassInfo)
+     * @param classInfo the parent class.
+     * @return true if the classInfo is a superclass of this class.
+     */
+    public boolean isSubclassOf(ClassInfo classInfo) {
+        if ( classInfo == null || classInfo.isInterface() ) {
+            return false;
+        }
+        ClassInfo sup = getSuperClass();
+        while ( sup != null ) {
+            if ( sup.isSameClass(classInfo) ) {
+                return true;
+            }
+            sup = sup.getSuperClass();
+        }
+        return false;
+    }
+
+    public boolean hasInterface(ClassInfo classInfo) {
+        if ( !classInfo.isInterface() ) {
+            return false;
+        }
+        if ( isSameClass(classInfo) ) {
+            return true;
+        }
+
+        List queue = new LinkedList(interfaces);
+        Set visited = new HashSet(interfaces.size());
+
+        while ( !queue.isEmpty() ) {
+            ClassInfo info = (ClassInfo) queue.remove(0);
+            if ( visited.contains(info.getClassName()) ) {
+                continue;
+            }
+
+            if ( info.isSameClass(classInfo) ) {
+                return true;
+            }
+
+            visited.add(info.getClassName());
+            queue.addAll(info.getInterfaces());
+        }
+
+        return false;
+    }
+
+    public boolean castsTo(ClassInfo classInfo) {
+        return isSameClass(classInfo) || isSubclassOf(classInfo) || hasInterface(classInfo);
     }
 
     /**
@@ -100,6 +174,83 @@ public abstract class ClassInfo implements ModifierInfo {
 
     public abstract ConstantPoolInfo getConstantPoolInfo();
 
+    public String getPackageName() {
+        String cln = getClassName();
+        int i = cln.lastIndexOf('.');
+        return i == -1 ? "" : cln.substring(0, i);
+    }
+
+    /**
+     * Check if this is the same class as another class (not necessarily the same classInfo instance).
+     *
+     * @param classInfo the class to check.
+     * @return true if the classnames are identical.
+     */
+    public boolean isSameClass(ClassInfo classInfo) {
+        return classInfo != null && classInfo.getClassName().equals(getClassName());
+    }
+
+    /**
+     * Check if two classes have the same package.
+     * @param classInfo the class to check.
+     * @return true if both classes have the same package name.
+     */
+    public boolean isSamePackage(ClassInfo classInfo) {
+        return classInfo != null && classInfo.getPackageName().equals(getPackageName());
+    }
+
+    /**
+     * Check if a class is accessible from this class, according to the JVM Specs 2, chapter 5.5.4.
+     * @param classInfo the class to check.
+     * @return true if the class can be accessed.
+     */
+    public boolean canAccess(ClassInfo classInfo) {
+        return classInfo.isPublic() || isSamePackage(classInfo);
+    }
+
+    /**
+     * Check if a method or field is accessible from this class, according to the JVM Specs 2, chapter 5.5.4.
+     * This method also checks the class can be accessed too.
+     *
+     * @see #canAccess(ClassElement, boolean)
+     * @see #canAccess(ClassInfo)
+     * @param element the elemement to check.
+     * @return true if the element can be accessed.
+     */
+    public boolean canAccess(ClassElement element) {
+        return canAccess(element, true);
+    }
+
+    /**
+     * Check if a method or field is accessible from this class, according to the JVM Specs 2, chapter 5.5.4.
+     * 
+     * @see #canAccess(ClassInfo)
+     * @param element the elemement to check.
+     * @param classCheck if true, the class access will be checked too.
+     * @return true if the element can be accessed.
+     */
+    public boolean canAccess(ClassElement element, boolean classCheck) {
+
+        ClassInfo classInfo = element.getClassInfo();
+
+        if ( classCheck && !canAccess(classInfo) ) {
+            return false;
+        }
+
+        if ( element.isPublic() ) {
+            return true;
+        }
+        if ( element.isPrivate() ) {
+            return isSameClass(classInfo);
+        }
+        if ( element.isProtected() && castsTo(classInfo) ) {
+            return true;
+        }
+
+        // remaining cases are protected (and not sub-class) or package visible
+        return isSamePackage(classInfo);
+    }
+
     /**
      * write this class to a java class file.
      * The directory will be created if it does not exist.
@@ -114,9 +265,7 @@ public abstract class ClassInfo implements ModifierInfo {
 
         if(parent != null) {
             File dir = new File(parent);
-
-            if(dir != null)
-                dir.mkdirs();
+            dir.mkdirs();
         }
 
         BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(file));

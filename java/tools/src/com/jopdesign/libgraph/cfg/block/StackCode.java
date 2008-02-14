@@ -18,83 +18,41 @@
  */
 package com.jopdesign.libgraph.cfg.block;
 
-import com.jopdesign.libgraph.cfg.statements.ControlFlowStmt;
-import com.jopdesign.libgraph.cfg.statements.Statement;
-import com.jopdesign.libgraph.cfg.statements.StmtHandle;
 import com.jopdesign.libgraph.cfg.statements.stack.StackStatement;
 import com.jopdesign.libgraph.struct.type.TypeInfo;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * @author Stefan Hepp, e0026640@student.tuwien.ac.at
  */
-public class StackCode implements CodeBlock {
+public class StackCode extends CodeBlock {
 
-    private BasicBlock block;
-    private List stmts;
     private TypeInfo[] startStack;
     private TypeInfo[] endStack;
 
     public StackCode(BasicBlock block) {
-        this.block = block;
-        stmts = new ArrayList();
-    }
-
-    public BasicBlock getBasicBlock() {
-        return block;
-    }
-
-    /**
-     * Get a list of all stackstatements of this codeblock.
-     * Do not modify this list.
-     * @return a list of stackstatements.
-     *
-     * @see CodeBlock#getStatements()
-     */
-    public List getStatements() {
-        return stmts;
-    }
-
-    public ControlFlowStmt getControlFlowStmt() {
-        if ( stmts.size() > 0 ) {
-            Statement stmt = (Statement) stmts.get(stmts.size() - 1);
-            if ( stmt instanceof ControlFlowStmt ) {
-                return (ControlFlowStmt) stmt;
-            }
-        }
-        return null;
-    }
-
-    public int size() {
-        return stmts.size();
-    }
-
-    public StmtHandle getStmtHandle(int stmt) {
-        return new StmtHandle(this, stmt, (Statement) stmts.get(stmt));
+        super(block);
     }
 
     public void addStatement(StackStatement stackStmt) {
-        stmts.add(stackStmt);
+        addStatement(size(), stackStmt);
     }
 
     public void insertStatement(int pos, StackStatement stackStmt) {
-        stmts.add(pos, stackStmt);
+        addStatement(pos, stackStmt);
     }
 
-    public void setStatement(int pos, StackStatement stackStmt) {
-        stmts.set(pos, stackStmt);
-    }
-
-    public Statement deleteStatement(int pos) {
-        return deleteStackStatement(pos);
+    public void setStackStatement(int pos, StackStatement stackStmt) {
+        setStatement(pos, stackStmt);
     }
 
     public StackStatement deleteStackStatement(int pos) {
-        return (StackStatement) stmts.remove(pos);
+        return (StackStatement) deleteStatement(pos);
     }
     
+    public StackStatement getStackStatement(int pos) {
+        return (StackStatement) getStatement(pos);
+    }
+
     public TypeInfo[] getStartStack() {
         return startStack;
     }
@@ -111,7 +69,4 @@ public class StackCode implements CodeBlock {
         this.endStack = endStack;
     }
 
-    public StackStatement getStatement(int pos) {
-        return (StackStatement) stmts.get(pos);
-    }
 }

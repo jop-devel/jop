@@ -25,6 +25,7 @@ import com.jopdesign.libgraph.struct.TypeException;
 import com.jopdesign.libgraph.struct.type.StringType;
 import com.jopdesign.libgraph.struct.type.TypeHelper;
 import com.jopdesign.libgraph.struct.type.TypeInfo;
+import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.Field;
 
 /**
@@ -74,11 +75,22 @@ public class BcelFieldInfo extends FieldInfo {
     }
 
     public void setFinal(boolean val) {
-
+        int af = field.getModifiers();
+        if ( val ) {
+            field.setModifiers(af | Constants.ACC_FINAL);
+        } else {
+            field.setModifiers(af & (~Constants.ACC_FINAL));
+        }
     }
 
     public void setAccessType(int type) {
-        //To change body of implemented methods use File | Settings | File Templates.
+        int af = field.getAccessFlags() & ~(Constants.ACC_PRIVATE|Constants.ACC_PROTECTED|Constants.ACC_PUBLIC);
+        switch (type) {
+            case ACC_PRIVATE: af |= Constants.ACC_PRIVATE; break;
+            case ACC_PROTECTED: af |= Constants.ACC_PROTECTED; break;
+            case ACC_PUBLIC: af |= Constants.ACC_PUBLIC; break;
+        }
+        field.setAccessFlags(af);
     }
 
     public boolean isFinal() {

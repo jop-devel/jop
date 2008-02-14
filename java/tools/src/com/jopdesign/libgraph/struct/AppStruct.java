@@ -18,6 +18,7 @@
  */
 package com.jopdesign.libgraph.struct;
 
+import com.jopdesign.libgraph.struct.type.MethodSignature;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
@@ -134,6 +135,65 @@ public class AppStruct {
 
     public ClassInfo getClassInfo(String className) {
         return (ClassInfo) classInfos.get(className);
+    }
+
+    public ClassInfo getClassInfo(String className, boolean ignoreMissing) throws TypeException {
+        ClassInfo classInfo = getClassInfo(className);
+        if ( classInfo == null ) {
+            classInfo = tryLoadMissingClass(className);
+        }
+        if ( classInfo == null && !ignoreMissing ) {
+            throw new TypeException("Could not load required class {"+className+"}.");
+        }
+        return classInfo;
+    }
+
+    /**
+     * A small helper to create a constantclass for a classname.
+     * This function tries to load the class with {@link #getClassInfo(String)} and {@link #tryLoadMissingClass(String)}
+     * and creates an anonymous constantclass if the class could not be loaded.
+     *
+     * @param className the classname of the class to load.
+     * @param isInterface true, if the class is an interface; only used if anonymous constantclass is created.
+     * @return the new constantclass for this class.
+     * @throws TypeException if the class could not be loaded and anonymous classes are disabled.
+     */
+    public ConstantClass getConstantClass(String className, boolean isInterface) throws TypeException {
+        ClassInfo classInfo = getClassInfo(className);
+        if ( classInfo == null ) {
+            classInfo = tryLoadMissingClass(className);
+        }
+        ConstantClass cls;
+        if ( classInfo == null ) {
+            cls = new ConstantClass(className, isInterface);
+        } else {
+            cls = new ConstantClass(classInfo);
+        }
+        return cls;
+    }
+
+    public ConstantMethod getConstantMethod(ConstantClass clazz, String methodName, String signature) throws TypeException {
+
+        ConstantMethod method;
+
+        ClassInfo info = clazz.getClassInfo();
+        if ( info != null ) {
+
+            String fullName = MethodSignature.createFullName(methodName, signature);
+            MethodInfo methodInfo = info.getInheritedMethodInfo(fullName, false, true);
+
+            if ( methodInfo != null ) {
+                method = new ConstantMethod(info, methodInfo);
+            } else {
+                throw new TypeException("Could not find method {"+methodName+"} with signature {"+signature+"} in class {" +
+                info.getClassName()+"}");
+            }
+
+        } else {
+            method = new ConstantMethod(clazz.getClassName(), methodName, signature, clazz.isInterface());
+        }
+
+        return method;
     }
 
     public void addClass(ClassInfo classInfo) {

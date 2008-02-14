@@ -21,9 +21,14 @@ package com.jopdesign.libgraph.cfg.bcel;
 import com.jopdesign.libgraph.cfg.statements.CmpStmt;
 import com.jopdesign.libgraph.cfg.statements.IdentityStmt;
 import com.jopdesign.libgraph.cfg.statements.common.BinopStmt;
+import com.jopdesign.libgraph.cfg.statements.common.InvokeStmt;
 import com.jopdesign.libgraph.cfg.statements.stack.*;
 import com.jopdesign.libgraph.cfg.variable.VariableTable;
-import com.jopdesign.libgraph.struct.*;
+import com.jopdesign.libgraph.struct.AppStruct;
+import com.jopdesign.libgraph.struct.ConstantClass;
+import com.jopdesign.libgraph.struct.ConstantPoolInfo;
+import com.jopdesign.libgraph.struct.ConstantValue;
+import com.jopdesign.libgraph.struct.TypeException;
 import com.jopdesign.libgraph.struct.type.ObjectRefType;
 import com.jopdesign.libgraph.struct.type.RefTypeInfo;
 import com.jopdesign.libgraph.struct.type.TypeHelper;
@@ -661,16 +666,16 @@ public class BcelStmtFactory {
                     new StackPutField(cp.getFieldReference(((PUTFIELD)instruction).getIndex()))
                 };
             case 0xb6: return new StackStatement[] {
-                    new StackInvokeVirtual(cp.getMethodReference(((INVOKEVIRTUAL)instruction).getIndex()))
+                    new StackInvoke(cp.getMethodReference(((INVOKEVIRTUAL)instruction).getIndex()), InvokeStmt.TYPE_VIRTUAL)
                 };
             case 0xb7: return new StackStatement[] {
-                    new StackInvokeSpecial(cp.getMethodReference(((INVOKESPECIAL)instruction).getIndex()))
+                    new StackInvoke(cp.getMethodReference(((INVOKESPECIAL)instruction).getIndex()), InvokeStmt.TYPE_SPECIAL)
                 };
             case 0xb8: return new StackStatement[] {
-                    new StackInvokeStatic(cp.getMethodReference(((INVOKESTATIC)instruction).getIndex()))
+                    new StackInvoke(cp.getMethodReference(((INVOKESTATIC)instruction).getIndex()), InvokeStmt.TYPE_STATIC)
                 };
             case 0xb9: return new StackStatement[] {
-                    new StackInvokeInterface(cp.getMethodReference(((INVOKEINTERFACE)instruction).getIndex()))
+                    new StackInvoke(cp.getMethodReference(((INVOKEINTERFACE)instruction).getIndex()), InvokeStmt.TYPE_INTERFACE)
                 };
             case 0xbb: return new StackStatement[] {
                     new StackNew(cp.getClassReference(((NEW)instruction).getIndex()))
@@ -966,9 +971,9 @@ public class BcelStmtFactory {
             StackGetField getfield = (StackGetField) stmt;
             Instruction is;
             if ( getfield.isStatic() ) {
-                is = new GETSTATIC(cp.addConstant(getfield.getFieldConstant()));
+                is = new GETSTATIC(cp.addConstant(getfield.getConstantField()));
             } else {
-                is = new GETFIELD(cp.addConstant(getfield.getFieldConstant()));
+                is = new GETFIELD(cp.addConstant(getfield.getConstantField()));
             }
             return new Instruction[] { is };
         }
@@ -1215,9 +1220,9 @@ public class BcelStmtFactory {
             StackPutField putfield = (StackPutField) stmt;
             Instruction is;
             if ( putfield.isStatic() ) {
-                is = new PUTSTATIC(cp.addConstant(putfield.getFieldConstant()));
+                is = new PUTSTATIC(cp.addConstant(putfield.getConstantField()));
             } else {
-                is = new PUTFIELD(cp.addConstant(putfield.getFieldConstant()));
+                is = new PUTFIELD(cp.addConstant(putfield.getConstantField()));
             }
             return new Instruction[] { is };
         }

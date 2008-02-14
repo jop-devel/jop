@@ -24,7 +24,7 @@ import com.jopdesign.libgraph.struct.type.TypeInfo;
  * A container for a field of a class.
  * @author Stefan Hepp, e0026640@student.tuwien.ac.at
  */
-public abstract class FieldInfo implements ModifierInfo {
+public abstract class FieldInfo implements ClassElement {
     
     private ClassInfo classInfo;
 
@@ -36,17 +36,13 @@ public abstract class FieldInfo implements ModifierInfo {
         return classInfo;
     }
 
-    public abstract String getName();
+    public abstract boolean isSynchronized();
 
     public abstract TypeInfo getType();
-
-    public abstract String getSignature();
 
     public abstract ConstantValue getConstantValue();
 
     public abstract boolean isVolatile();
-
-    public abstract boolean isSynchronized();
 
     public abstract boolean isTransient();
 

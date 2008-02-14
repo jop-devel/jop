@@ -22,11 +22,19 @@ import com.jopdesign.libgraph.cfg.ControlFlowGraph;
 import com.jopdesign.libgraph.cfg.GraphException;
 import com.jopdesign.libgraph.cfg.bcel.BcelGraphCompiler;
 import com.jopdesign.libgraph.cfg.bcel.BcelGraphCreator;
-import com.jopdesign.libgraph.struct.*;
+import com.jopdesign.libgraph.struct.ClassInfo;
+import com.jopdesign.libgraph.struct.MethodCode;
+import com.jopdesign.libgraph.struct.MethodInfo;
+import com.jopdesign.libgraph.struct.MethodInvocation;
+import com.jopdesign.libgraph.struct.TypeException;
 import com.jopdesign.libgraph.struct.type.MethodSignature;
 import org.apache.bcel.classfile.Code;
 import org.apache.bcel.classfile.Method;
-import org.apache.bcel.generic.*;
+import org.apache.bcel.generic.ConstantPoolGen;
+import org.apache.bcel.generic.Instruction;
+import org.apache.bcel.generic.InstructionList;
+import org.apache.bcel.generic.InvokeInstruction;
+import org.apache.bcel.generic.ObjectType;
 import org.apache.log4j.Logger;
 
 import java.util.ArrayList;
@@ -71,7 +79,7 @@ public class BcelMethodCode extends MethodCode {
     /**
      * get a list of all invoked methods of this method.
      * TODO return also instruction-nr, constantpool-nr?; also return invocations outside loaded classes?
-     * @return a list of MethodInvokation classes for invoked methods.
+     * @return a list of MethodInvocation classes for invoked methods.
      * @throws com.jopdesign.libgraph.struct.TypeException if referenced class is missing
      */
     public List getInvokedMethods() throws TypeException {
@@ -84,7 +92,9 @@ public class BcelMethodCode extends MethodCode {
 
         for (int i = 0; i < instructions.length; i++) {
             if ( instructions[i] instanceof InvokeInstruction) {
-                MethodInvokation invoke = createMethodInvoke(cpg, (InvokeInstruction) instructions[i]);
+                InvokeInstruction instruction = (InvokeInstruction) instructions[i];
+                boolean special = instruction.getOpcode() == 0xb7;
+                MethodInvocation invoke = createMethodInvoke(cpg, instruction, special);
 
                 if ( invoke != null ) {
                     invoke.setInstructionIndex(i);
@@ -130,14 +140,16 @@ public class BcelMethodCode extends MethodCode {
         methodInfo.setMethod(method);
     }
 
-    private MethodInvokation createMethodInvoke(ConstantPoolGen cpg, InvokeInstruction invoke) throws TypeException {
+    private MethodInvocation createMethodInvoke(ConstantPoolGen cpg, InvokeInstruction invoke, boolean special)
+            throws TypeException
+    {
 
         // get class of invoked method
         ObjectType type = invoke.getClassType(cpg);
 
         if ( getAppStruct().getConfig().isNativeClassName(type.getClassName()) ) {
             if (logger.isInfoEnabled()) {
-                logger.info("Ignoring invokation of native class method {" + invoke.getMethodName(cpg) + "} in {" +
+                logger.info("Ignoring invocation of native class method {" + invoke.getMethodName(cpg) + "} in {" +
                         methodInfo.getFQMethodName() + "}.");
             }
             return null;
@@ -169,7 +181,7 @@ public class BcelMethodCode extends MethodCode {
             return null;
         }
 
-        return new MethodInvokation(methodInfo, invokedClass, invoked);
+        return new MethodInvocation(methodInfo, invokedClass, invoked, special);
     }
 
 }

@@ -24,39 +24,52 @@ import com.jopdesign.libgraph.cfg.block.CodeBlock;
 /**
  * @author Stefan Hepp, e0026640@student.tuwien.ac.at
  */
-public class StmtHandle {
+public abstract class StmtHandle {
 
-    private CodeBlock code;
-    private int pos;
-    private Statement stmt;
-
-    public StmtHandle(CodeBlock code, int pos, Statement stmt) {
-        this.code = code;
-        this.pos = pos;
-        this.stmt = stmt;
+    public StmtHandle() {
     }
 
     public BasicBlock getBlock() {
-        return code.getBasicBlock();
+        return getCode().getBasicBlock();
     }
 
-    public CodeBlock getCode() {
-        return code;
+    public abstract CodeBlock getCode();
+
+    public abstract int getPosition();
+
+    /**
+     * Check if the statementhandle still refers to a valid statement.
+     * @return true if the statement is still valid.
+     */
+    public boolean isValid() {
+        return getStatement() != null;
     }
 
-    public int getPosition() {
-        return pos;
+    /**
+     * Delete the statement. This makes this handle invalid.
+     */
+    public void delete() {
+        getCode().deleteStatement(getPosition());
     }
 
-    public Statement getStatement() {
-        return stmt;
-    }
+    /**
+     * Dispose this handle. This makes the handle invalid, but
+     * does not delete the statement.
+     * <p>This should be called when the handle is not used anymore to free resources.</p>
+     */
+    public abstract void dispose();
+
+    /**
+     * Get the current statement. If the handle is invalid, returns null.
+     * @return the statement, or null if the handle is invalid.
+     */
+    public abstract Statement getStatement();
 
     public BasicBlock splitBefore() {
-        return code.getBasicBlock().splitBlock(pos);
+        return getCode().getBasicBlock().splitBlock(getPosition());
     }
 
     public BasicBlock splitAfter() {
-        return code.getBasicBlock().splitBlock(pos+1);
+        return getCode().getBasicBlock().splitBlock(getPosition()+1);
     }
 }

@@ -57,13 +57,13 @@ public class QuadGetfield extends GetfieldStmt implements QuadStatement, AssignS
     public StackStatement[] getStackCode(VariableTable varTable) {
         if ( isStatic() ) {
             return new StackStatement[] {
-                new StackGetField(getFieldConstant()),
+                new StackGetField(getConstantField()),
                 QuadHelper.createStore(this)
             };
         } else {
             return new StackStatement[] {
                 QuadHelper.createLoad(this, 0),
-                new StackGetField(getFieldConstant()),
+                new StackGetField(getConstantField()),
                 QuadHelper.createStore(this)
             };
         }

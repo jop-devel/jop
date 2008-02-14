@@ -31,7 +31,7 @@ import com.jopdesign.libgraph.struct.type.TypeInfo;
 /**
  * @author Stefan Hepp, e0026640@student.tuwien.ac.at
  */
-public abstract class StackInvoke extends InvokeStmt implements StackStatement, StackAssign {
+public class StackInvoke extends InvokeStmt implements StackStatement, StackAssign {
 
     public StackInvoke(ConstantMethod method, int invokeType) throws TypeException {
         super(method, invokeType);
@@ -60,6 +60,10 @@ public abstract class StackInvoke extends InvokeStmt implements StackStatement, 
         TypeInfo retType = getResultType();
         return retType != null && retType.getType() != TypeInfo.TYPE_VOID ?
                 new TypeInfo[] {retType} : new TypeInfo[0];
+    }
+
+    public int getClockCycles() {
+        return 0;
     }
 
     public QuadStatement[] getQuadCode(TypeInfo[] stack, VariableTable varTable) throws TypeException {

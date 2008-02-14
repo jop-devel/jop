@@ -118,8 +118,9 @@ public abstract class MethodCode {
     /**
      * get a list of all invoked methods of this method.
      * TODO return also instruction-nr, constantpool-nr?; also return invocations outside loaded classes?
-     * @return a list of MethodInvokation classes for invoked methods.
+     * @return a list of {@link MethodInvocation} classes for invoked methods.
      * @throws TypeException if referenced class is missing
+     * @throws TypeException if any type is used which cannot be loaded
      */
     public abstract List getInvokedMethods() throws TypeException;
 

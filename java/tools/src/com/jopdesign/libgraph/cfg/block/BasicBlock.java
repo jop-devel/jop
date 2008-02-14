@@ -18,7 +18,11 @@
  */
 package com.jopdesign.libgraph.cfg.block;
 
-import com.jopdesign.libgraph.cfg.*;
+import com.jopdesign.libgraph.cfg.ControlFlowGraph;
+import com.jopdesign.libgraph.cfg.ExceptionTable;
+import com.jopdesign.libgraph.cfg.Features;
+import com.jopdesign.libgraph.cfg.GraphException;
+import com.jopdesign.libgraph.cfg.StackEmulator;
 import com.jopdesign.libgraph.cfg.statements.ControlFlowStmt;
 import com.jopdesign.libgraph.cfg.statements.Statement;
 import com.jopdesign.libgraph.cfg.statements.quad.QuadStatement;
@@ -26,7 +30,12 @@ import com.jopdesign.libgraph.cfg.statements.stack.StackStatement;
 import com.jopdesign.libgraph.struct.ConstantClass;
 import com.jopdesign.libgraph.struct.TypeException;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Basic class for a basic block..
@@ -358,6 +367,18 @@ public abstract class BasicBlock {
         return edge;
     }
 
+    /**
+     * Create a new block and set as target.
+     * 
+     * @param i the new target number of the block, will be inserted
+     * @return the edge to the new target
+     */
+    public Edge createTarget(int i) {
+        BasicBlock block = getGraph().createBlock(getBlockIndex()+1);
+        block.copyExceptionHandlersFrom(this);
+        return addTarget(i, block);
+    }
+
     public void removeTarget(int i) {
         if ( i >= targets.size() ) {
             return;
@@ -446,6 +467,16 @@ public abstract class BasicBlock {
         exceptionHandlers.clear();
     }
 
+    public void copyExceptionHandlersFrom(BasicBlock block) {
+
+        clearExceptionHandlers();
+
+        for (Iterator it = block.getExceptionHandlers().iterator(); it.hasNext();) {
+            ExceptionHandler handler = (ExceptionHandler) it.next();
+            addExceptionHandler(handler);
+        }
+    }
+
     public int getJSRTargetCount() {
         // TODO implement JSR edges
         return 0;
@@ -489,7 +520,9 @@ public abstract class BasicBlock {
     }
 
     /**
-     * Split this block, starting with instruction at index i.
+     * Split this block, starting with instruction at index pos
+     * and copy all exception handlers to new block.
+     *
      * @param pos the index of the first instruction in the new block.
      * @return the new block.
      */
@@ -500,8 +533,8 @@ public abstract class BasicBlock {
         // relink targets
         if ( nextBlock != null ) {
             next.setNextBlock(nextBlock.getIngoingEdgeIndex(), nextBlock.getTargetBlock());
-            setNextBlock(next);
         }
+        setNextBlock(next);
         for ( int i = 0; i < getTargetCount(); i++ ) {
             Edge target = getTargetEdge(i);
             if ( target != null ) {
@@ -512,18 +545,16 @@ public abstract class BasicBlock {
 
         // move code
         if ( stackCode != null ) {
-            int size = stackCode.size();
-            for ( int i = pos; i < size; i++ ) {
-                next.getStackCode().addStatement(stackCode.deleteStackStatement(pos));
-            }
+            stackCode.moveStatements(pos, stackCode.size(), next.getStackCode(), 0);
+            // TODO if feature is set, simulate stack, set stack
             getGraph().getFeatures().removeFeature(Features.FEATURE_STACK_INFO);
         }
         if ( quadCode != null ) {
-            int size = quadCode.size();
-            for ( int i = pos; i < size; i++ ) {
-                next.getQuadCode().addStatement(quadCode.deleteQuadStatement(pos));
-            }
+            quadCode.moveStatements(pos, quadCode.size(), next.getQuadCode(), 0);
         }
+
+        // copy exception handler
+        next.copyExceptionHandlersFrom(this);
 
         return next;
     }

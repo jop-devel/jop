@@ -75,7 +75,7 @@ public abstract class InvokeStmt extends AbstractStatement {
     }
 
     /**
-     * Get a map of variable slots for each parameter of this invokation, depending on the
+     * Get a map of variable slots for each parameter of this invocation, depending on the
      * length of the parameter types.
      *
      * @return a map with the slot number for each parameter, starting at 0.
