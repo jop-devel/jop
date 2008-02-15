@@ -23,6 +23,13 @@ import com.jopdesign.libgraph.struct.ClassInfo;
 import com.jopdesign.libgraph.struct.ConstantPoolInfo;
 import com.jopdesign.libgraph.struct.TypeException;
 import org.apache.bcel.Constants;
+import org.apache.bcel.classfile.ConstantCP;
+import org.apache.bcel.classfile.ConstantClass;
+import org.apache.bcel.classfile.ConstantFieldref;
+import org.apache.bcel.classfile.ConstantInterfaceMethodref;
+import org.apache.bcel.classfile.ConstantMethodref;
+import org.apache.bcel.classfile.ConstantNameAndType;
+import org.apache.bcel.classfile.ConstantPool;
 import org.apache.bcel.classfile.DescendingVisitor;
 import org.apache.bcel.classfile.EmptyVisitor;
 import org.apache.bcel.classfile.Field;
@@ -30,6 +37,8 @@ import org.apache.bcel.classfile.JavaClass;
 import org.apache.bcel.classfile.Method;
 import org.apache.bcel.generic.ClassGen;
 import org.apache.bcel.generic.ConstantPoolGen;
+import org.apache.bcel.generic.ObjectType;
+import org.apache.bcel.generic.Type;
 import org.apache.log4j.Logger;
 
 import java.io.DataOutputStream;
@@ -42,6 +51,97 @@ import java.util.Set;
  * @author Stefan Hepp, e0026640@student.tuwien.ac.at
  */
 public class BcelClassInfo extends ClassInfo {
+
+    /**
+     * A simple class reference finder using BCEL visitors.
+     *
+     * This implementation uses some code from com.jopdesign.build.TransitiveHull
+     * to resolve references in the ClassFinder.
+     */
+    private class ClassRefFinder extends EmptyVisitor {
+
+        private Set visited;
+        private ConstantPool cp;
+
+        public ClassRefFinder(ConstantPool cp) {
+            visited = new HashSet();
+            this.cp = cp;
+        }
+
+        public Set getVisited() {
+            return visited;
+        }
+
+        public void visitConstantMethodref(ConstantMethodref obj) {
+            visitRef(obj, true);
+        }
+
+        public void visitConstantInterfaceMethodref(ConstantInterfaceMethodref obj) {
+            visitRef(obj, true);
+        }
+
+        public void visitConstantFieldref(ConstantFieldref obj) {
+            visitRef(obj, false);
+        }
+
+        public void visitConstantClass(ConstantClass obj) {
+
+            // TODO check: bcel-5.2 goes nuts here, loads *everything*
+
+            String className = (String) obj.getConstantValue(cp);
+            if (logger.isDebugEnabled()) {
+                logger.debug("Found class reference {" + className + "}.");
+            }
+            addClass(className);
+        }
+
+        private void visitRef(ConstantCP ccp, boolean method) {
+
+            // add referenced class
+            String className = ccp.getClass(cp);
+
+            ConstantNameAndType cnat = (ConstantNameAndType)cp.
+                getConstant(ccp.getNameAndTypeIndex(), Constants.CONSTANT_NameAndType);
+
+            // add types referenced by signature
+            String signature = cnat.getSignature(cp);
+
+            if (logger.isDebugEnabled()) {
+                logger.debug("Found field/method reference {" + cnat.getName(cp) + signature +
+                        "} of class {" + className + "}");
+            }
+
+            addClass(className);
+
+            if(method) {
+                Type type = Type.getReturnType(signature);
+
+                if(type instanceof ObjectType) {
+                    addClass(((ObjectType)type).getClassName());
+                }
+
+                Type[] types = Type.getArgumentTypes(signature);
+
+                for(int i = 0; i < types.length; i++) {
+                    type = types[i];
+                    if(type instanceof ObjectType) {
+                        addClass(((ObjectType)type).getClassName());
+                    }
+                }
+            } else {
+                Type type = Type.getType(signature);
+                if(type instanceof ObjectType) {
+                    addClass(((ObjectType)type).getClassName());
+                }
+            }
+
+        }
+
+        private void addClass(String className) {
+            className = className.replace('/','.');
+            visited.add(className);
+        }
+    }
 
     private class MethodVisitor extends EmptyVisitor {
 
@@ -165,6 +265,15 @@ public class BcelClassInfo extends ClassInfo {
 
     public ConstantPoolInfo getConstantPoolInfo() {
         return constantPool;
+    }
+
+    public Set getReferencedClassNames() {
+        updateClass();
+
+        ClassRefFinder finder = new ClassRefFinder(javaClass.getConstantPool());
+        new DescendingVisitor(javaClass, finder).visit();
+
+        return finder.getVisited();
     }
 
     /**

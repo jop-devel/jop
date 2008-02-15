@@ -25,15 +25,19 @@ import java.io.IOException;
  */
 public interface AppClassLoader {
 
+    String getClassPath();
+
+    void setClassPath(String path);
+
     /**
      * Create a new class for a given classname.
      * The packages must be separated by dots.
      *
+     * @param appStruct the AppStruct which will be used by the new class.
      * @param className the fully qualified name of the class.
      * @return the classinfo for this class or null if this class should not be loaded.
-     * @throws TypeException if the class cannot be found.
      * @throws java.io.IOException if classfile cannot be loaded.
      */
-    ClassInfo createClassInfo(String className) throws TypeException, IOException;
+    ClassInfo createClassInfo(AppStruct appStruct, String className) throws IOException;
 
 }

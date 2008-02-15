@@ -32,8 +32,6 @@ import java.util.Map;
  * loaded application and libraries.
  *
  * This class provides methods to access and modify this struct.
- * TODO provide methods to walk through parts of the class struct (following given order)?
- * NOTICE merge classinfo/methodinfo with jopizer.classinfo/methodinfo?
  *
  * @author Stefan Hepp, e0026640@student.tuwien.ac.at
  */
@@ -53,6 +51,27 @@ public class AppStruct {
 
     public AppConfig getConfig() {
         return config;
+    }
+
+    public String getClassPath() {
+        return loader.getClassPath();
+    }
+
+    /**
+     * Set the current classpath to use for loading classes.
+     * This does not change or reload already loaded classes.
+     * @param path the new path to use.
+     */
+    public void setClassPath(String path) {
+        loader.setClassPath(path);
+    }
+
+    public ClassInfo createClassInfo(String className) throws TypeException {
+        try {
+            return loader.createClassInfo(this, className);
+        } catch (IOException e) {
+            throw new TypeException("Could not create class {"+className+"}", e);
+        }
     }
 
     /**
@@ -94,7 +113,7 @@ public class AppStruct {
         ClassInfo info;
 
         try {
-            info = loader.createClassInfo(className);
+            info = loader.createClassInfo(this, className);
         } catch (IOException e) {
             if ( config.doAllowIncompleteCode() ) {
                 logger.warn("Could not load class {"+className+"}, ignoring.", e);

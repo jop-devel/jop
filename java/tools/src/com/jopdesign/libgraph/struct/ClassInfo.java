@@ -174,6 +174,12 @@ public abstract class ClassInfo implements ModifierInfo {
 
     public abstract ConstantPoolInfo getConstantPoolInfo();
 
+    /**
+     * Get a set of all referenced methods currently used in this class.
+     * @return a set of classname strings of classes referenced by this class.
+     */
+    public abstract Set getReferencedClassNames();
+
     public String getPackageName() {
         String cln = getClassName();
         int i = cln.lastIndexOf('.');
