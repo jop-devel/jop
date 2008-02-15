@@ -215,15 +215,17 @@ public class InlineHelper {
     }
 
     public void changeToPublic(Collection changePublic) {
+
         for (Iterator it = changePublic.iterator(); it.hasNext();) {
             ModifierInfo mod = (ModifierInfo) it.next();
 
             // set private methods to final, just to make sure (fields won't be overloaded the same way a method is).
-            if ( mod instanceof MethodInfo && mod.isPrivate() ) {
+            if ( mod instanceof MethodInfo && mod.isPrivate() && !((MethodInfo)mod).getName().equals("<init>") ) {
                 mod.setFinal(true);
             }
-
+            
             mod.setAccessType(ModifierInfo.ACC_PUBLIC);
         }
+
     }
 }
