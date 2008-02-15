@@ -28,7 +28,6 @@ import com.jopdesign.libgraph.struct.MethodInfo;
 import com.jopdesign.libgraph.struct.MethodInvocation;
 import com.jopdesign.libgraph.struct.TypeException;
 import com.jopdesign.libgraph.struct.type.MethodSignature;
-import org.apache.bcel.classfile.Code;
 import org.apache.bcel.classfile.Method;
 import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.Instruction;
@@ -48,7 +47,6 @@ public class BcelMethodCode extends MethodCode {
 
     private BcelMethodInfo methodInfo;
     private Method method;
-    private Code code;
 
     private static final Logger logger = Logger.getLogger(BcelMethodCode.class);
     
@@ -56,15 +54,14 @@ public class BcelMethodCode extends MethodCode {
         super(methodInfo);
         this.methodInfo = methodInfo;
         this.method = method;
-        this.code = method.getCode();
     }
 
     public int getMaxStackSize() {
-        return code.getMaxStack();
+        return method.getCode().getMaxStack();
     }
 
     public int getMaxLocals() {
-        return code.getMaxLocals();
+        return method.getCode().getMaxLocals();
     }
 
     /**
@@ -72,7 +69,7 @@ public class BcelMethodCode extends MethodCode {
      * @return current code size in bytes.
      */
     public int getCodeSize() {
-        return code.getCode().length;
+        return method.getCode().getCode().length;
     }
 
 
@@ -87,7 +84,7 @@ public class BcelMethodCode extends MethodCode {
         ConstantPoolGen cpg = methodInfo.getConstantPoolGen();
         List invoked = new ArrayList();
 
-        InstructionList il = new InstructionList(code.getCode());
+        InstructionList il = new InstructionList(method.getCode().getCode());
         Instruction[] instructions = il.getInstructions();
 
         for (int i = 0; i < instructions.length; i++) {
@@ -121,7 +118,7 @@ public class BcelMethodCode extends MethodCode {
         ControlFlowGraph graph;
         try {
             creator = new BcelGraphCreator(methodInfo);
-            graph = creator.createGraph(code);
+            graph = creator.createGraph(method.getCode());
         } catch (TypeException e) {
             throw new GraphException("Could not initialize graph-creator", e);
         }
