@@ -57,7 +57,11 @@ public class BottomUpInlineStrategy extends AbstractInlineStrategy {
 
     private class PriorityComparator implements Comparator {
         public int compare(Object o1, Object o2) {
-            return ((ResultContainer)o1).priority - ((ResultContainer)o2).priority;
+            int i = ((ResultContainer) o1).priority - ((ResultContainer) o2).priority;
+            if ( i == 0 ) {
+                i = o1.hashCode() - o2.hashCode();
+            }
+            return i;
         }
     }
 

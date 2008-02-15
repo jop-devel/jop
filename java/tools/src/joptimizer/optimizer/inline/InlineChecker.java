@@ -54,6 +54,7 @@ public class InlineChecker {
     private int maxLocals;
     private int maxStackSize;
     private int maxCodesize;
+    private int maxInlineSize;
     private boolean assumeDynLoading;
     private boolean useCheckCode;
     private boolean changeAccess;
@@ -68,6 +69,7 @@ public class InlineChecker {
         maxLocals = config.getMaxLocalVars();
         maxStackSize = config.getMaxStackSize();
         maxCodesize = config.getMaxMethodSize();
+        maxInlineSize = 0;
     }
 
     public AppStruct getAppStruct() {
@@ -135,6 +137,22 @@ public class InlineChecker {
     }
 
     /**
+     * Get the maximum size for methods which will be inlined.
+     * @return max size of methods to inline, or 0 if all methods will be inlined.
+     */
+    public int getMaxInlineSize() {
+        return maxInlineSize;
+    }
+
+    /**
+     * Set the maximum size of methods to inline.
+     * @param maxInlineSize the max size of methods to inline, or 0 for all methods.
+     */
+    public void setMaxInlineSize(int maxInlineSize) {
+        this.maxInlineSize = maxInlineSize;
+    }
+
+    /**
      * Check if a method call can be inlined, depending on the configuration and the class structs.
      * The invoked method must be resolved first, and it must be ensured that this method is the only (known)
      * method which can be called (p.e. by calling invoked.{@link com.jopdesign.libgraph.struct.MethodInfo#isOverwritten()})
@@ -172,7 +190,7 @@ public class InlineChecker {
 
         // check if dynamic classloading may cause troubles, do not inline if no checkcode is used in this case
         boolean unsafeInline = !( invoked.isStatic() || invoked.isPrivate() || invoked.isFinal() ||
-                assumeDynLoading );
+                !assumeDynLoading );
         if ( unsafeInline && !useCheckCode ) {
             return null;
         }
@@ -183,6 +201,10 @@ public class InlineChecker {
         try {
             MethodCode code = invoked.getMethodCode();
             ControlFlowGraph srcGraph = code.createGraph();
+
+            if ( !checkCodesize(code.getCodeSize(), srcGraph, localsOffset) ) {
+                return null;
+            }
 
             Set makePublic = checkGraph(caller, invoked, srcGraph);
 
@@ -199,6 +221,16 @@ public class InlineChecker {
         }
 
         return rs;
+    }
+
+    private boolean checkCodesize(int codeSize, ControlFlowGraph srcGraph, int localsOffset) {
+        if ( codeSize > maxCodesize || (maxInlineSize > 0 && codeSize > maxInlineSize) ) {
+            return false;
+        }
+        if ( srcGraph.getVariableTable().size() + localsOffset > maxLocals ) {
+            return false;
+        }
+        return true;
     }
 
     private Set checkGraph(MethodInfo caller, MethodInfo invoked, ControlFlowGraph srcGraph)

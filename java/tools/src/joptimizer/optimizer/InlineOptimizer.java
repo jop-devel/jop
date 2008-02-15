@@ -55,6 +55,8 @@ public class InlineOptimizer extends AbstractGraphAction {
 
     public static final String CONF_CHANGE_ACCESS = "changeaccess";
 
+    public static final String CONF_MAX_INLINE_SIZE = "maxsize";
+
     private static final Logger logger = Logger.getLogger(InlineOptimizer.class);
 
     private InlineStrategy strategy;
@@ -73,6 +75,8 @@ public class InlineOptimizer extends AbstractGraphAction {
         options.add(new BoolOption(prefix + CONF_CHANGE_ACCESS,
                 "Allow changing of access modifiers to public access to enable inlining. " +
                 "Should be used with care if dynamic class loading is used."));
+        options.add(new StringOption(prefix + CONF_MAX_INLINE_SIZE,
+                "Maximum size of methods to inline in bytes, 0 for unlimited.", "size"));
     }
 
 
@@ -103,6 +107,13 @@ public class InlineOptimizer extends AbstractGraphAction {
             ignorepkg = config.getArchConfig().getNativeClassName();
         }
         checker.setIgnorePrefix(ignorepkg.split(","));
+
+        String maxSize = config.getOption(prefix + CONF_MAX_INLINE_SIZE, "0");
+        try {
+            checker.setMaxInlineSize( Integer.parseInt(maxSize) );
+        } catch (NumberFormatException e) {
+            logger.warn("Invalid "+prefix+CONF_MAX_INLINE_SIZE+" {"+maxSize+"}, ignored.");
+        }
 
         boolean checkCode = config.isEnabled(prefix + CONF_INLINE_CHECK);
         
