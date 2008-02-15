@@ -18,6 +18,11 @@
  */
 package joptimizer.framework;
 
+import com.jopdesign.libgraph.struct.AppStruct;
+import com.jopdesign.libgraph.struct.ClassInfo;
+import com.jopdesign.libgraph.struct.MethodInfo;
+import com.jopdesign.libgraph.struct.TypeException;
+import com.jopdesign.libgraph.struct.bcel.BcelClassLoader;
 import joptimizer.actions.ClassInfoLoader;
 import joptimizer.actions.TransitiveHullGenerator;
 import joptimizer.config.ConfigurationException;
@@ -26,22 +31,20 @@ import joptimizer.framework.actions.Action;
 import joptimizer.framework.actions.ActionException;
 import joptimizer.framework.actions.ClassAction;
 import joptimizer.framework.actions.MethodAction;
-import com.jopdesign.libgraph.struct.*;
-import com.jopdesign.libgraph.struct.bcel.BcelClassInfo;
-import org.apache.bcel.classfile.ClassParser;
-import org.apache.bcel.classfile.JavaClass;
 import org.apache.log4j.Logger;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 
 /**
  * This is the main class for the optimizer.
  *
  * @author Stefan Hepp, e0026640@student.tuwien.ac.at
  */
-public class JOPtimizer implements AppClassLoader {
+public class JOPtimizer {
 
     // Just some helper classes to ease logging..
     private interface  ActionRunner {
@@ -117,7 +120,7 @@ public class JOPtimizer implements AppClassLoader {
     public JOPtimizer(JopConfig config) {
         jopConfig = config;
         actionFactory = new ActionFactory(this);
-        appStruct = new AppStruct(this, jopConfig);
+        appStruct = new AppStruct(new BcelClassLoader(), jopConfig);
     }
 
 
@@ -138,52 +141,51 @@ public class JOPtimizer implements AppClassLoader {
      * This clears the currently loaded classes.
      *
      * @param rootClasses a set of root class names to load.
-     * @throws IOException if a class could not be read.
+     * @throws TypeException if a class could not be read.
      */
-    public void loadTransitiveHull(Set rootClasses) throws IOException, ActionException {
-
-        Collection root = createJavaClasses(rootClasses);
+    public void loadTransitiveHull(Set rootClasses) throws ActionException, TypeException {
 
         appStruct.clear();
-        addClasses(root);
+        addClasses(createClasses(rootClasses));
 
         Action loader = actionFactory.createAction(TransitiveHullGenerator.ACTION_NAME);
         executeAction(loader);
 
     }
 
-    public ClassInfo createClassInfo(String className) throws TypeException, IOException {
-
-        JavaClass jc = createJavaClass(className);
-        if ( jc == null ) {
-            return null;
+    public Collection createClasses(Collection classNames) throws TypeException {
+        List classes = new ArrayList(classNames.size());
+        for (Iterator it = classNames.iterator(); it.hasNext();) {
+            String className =  it.next().toString();
+            classes.add(appStruct.createClassInfo(className));
         }
-
-        return new BcelClassInfo(appStruct, jc);
+        return classes;
     }
 
     /**
      * Add a set of javaclasses to the appStruct container.
-     * @param jc a collection of BCEL JavaClasses to add.
+     * The methods are only added if they are not excluded by the current configuration.
+     *
+     * @param classes a collection of {@link ClassInfo} to add.
      */
-    public void addClasses(Collection jc) {
+    public void addClasses(Collection classes) {
 
         // check if any 'optimistic' optimizations are enabled.
         boolean doReflectTest = !jopConfig.doAssumeReflection() && actionFactory.getOptimizationLevel() > 1;
 
-        for (Iterator it = jc.iterator(); it.hasNext();) {
-            JavaClass jclass = (JavaClass) it.next();
+        for (Iterator it = classes.iterator(); it.hasNext();) {
+            ClassInfo classInfo = (ClassInfo) it.next();
+            String className = classInfo.getClassName();
 
-            String reason = jopConfig.doExcludeClassName(jclass.getClassName());
+            String reason = jopConfig.doExcludeClassName(className);
             if ( reason == null ) {
 
-                if ( doReflectTest && jclass.getClassName().startsWith("java.lang.reflect.") ) {
-                    logger.warn("Found reflection class {"+jclass.getClassName()+"}, some optimizations "+
+                if ( doReflectTest && className.startsWith("java.lang.reflect.") ) {
+                    logger.warn("Found reflection class {"+className+"}, some optimizations "+
                             "may produce invalid code.");
                 }
 
-                ClassInfo info = new BcelClassInfo(appStruct, jclass);
-                appStruct.addClass(info);
+                appStruct.addClass(classInfo);
             } else {
                 if (logger.isInfoEnabled()) {
                     logger.info(reason);
@@ -193,9 +195,9 @@ public class JOPtimizer implements AppClassLoader {
     }
 
     /**
-     * load the class infos of all known classes.
+     * reload the classinfos of all known classes.
      */
-    public void loadClassInfos() throws ActionException {
+    public void reloadClassInfos() throws ActionException {
 
         Action loader = actionFactory.createAction(ClassInfoLoader.ACTION_NAME);
         executeAction(loader);
@@ -212,37 +214,6 @@ public class JOPtimizer implements AppClassLoader {
             executeAction( (Action) actions.get(i) );
         }
 
-    }
-
-    /**
-     * create Bcel JavaClasses from a list of classnames using the configured classpath.
-     *
-     * @param classNames a set of FQ-classnames to load.
-     * @return a collection of Bcel-JavaClasses containing the given classes.
-     * @throws IOException if reading a class fails.
-     */
-    public Collection createJavaClasses(Set classNames) throws IOException {
-        List jc = new LinkedList();
-
-        Iterator i = classNames.iterator();
-        for (int nr=0; i.hasNext(); ++nr) {
-            String clname = (String) i.next();
-            jc.add( createJavaClass(clname) );
-        }
-
-        return jc;
-    }
-
-    /**
-     * create a Bcel JavaClass from a classname using the configured classpath.
-     *
-     * @param className the name of the class to load.
-     * @return the bcel class.
-     * @throws IOException if reading the class fails.
-     */
-    public JavaClass createJavaClass(String className) throws IOException {
-        InputStream is = jopConfig.getClassPath().getInputStream(className);
-        return new ClassParser(is, className).parse();
     }
 
     /**

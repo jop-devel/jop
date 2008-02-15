@@ -26,7 +26,6 @@ import joptimizer.config.JopConfig;
 import joptimizer.framework.actions.Action;
 import joptimizer.framework.actions.ActionCollection;
 import joptimizer.framework.actions.ActionException;
-import org.apache.bcel.util.ClassPath;
 import org.apache.log4j.Logger;
 
 import java.io.BufferedReader;
@@ -120,7 +119,7 @@ public class CmdLine {
     public void printConfig(PrintStream out) {
 
         out.print("Classpath: ");
-        out.println(joptimizer.getJopConfig().getClassPath().toString());
+        out.println(joptimizer.getAppStruct().getClassPath());
 
         out.print("Main class: ");
         out.println(joptimizer.getJopConfig().getMainClassName());
@@ -372,7 +371,7 @@ public class CmdLine {
                 out.println("Missing classpath.");
                 return false;
             }
-            joptimizer.getJopConfig().setClassPath(new ClassPath(args[1]));
+            joptimizer.getAppStruct().setClassPath(args[1]);
 
         } else if ( "rootclasses".equals(args[0]) ) {
             Set rootClasses = new HashSet(args.length + 2);
@@ -424,7 +423,7 @@ public class CmdLine {
         } else if ( "reload".equals(args[0]) ) {
             try {
                 joptimizer.loadTransitiveHull(joptimizer.getJopConfig().getRootClasses());
-                joptimizer.loadClassInfos();
+                joptimizer.reloadClassInfos();
             } catch (Exception e) {
                 out.print("Error loading classinfos: ");
                 out.println(e.getMessage());

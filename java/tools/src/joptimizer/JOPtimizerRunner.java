@@ -18,6 +18,7 @@
  */
 package joptimizer;
 
+import com.jopdesign.libgraph.struct.TypeException;
 import joptimizer.config.ArgOption;
 import joptimizer.config.ArgumentException;
 import joptimizer.config.JopConfig;
@@ -25,7 +26,6 @@ import joptimizer.config.StringOption;
 import joptimizer.framework.CmdLine;
 import joptimizer.framework.JOPtimizer;
 import joptimizer.framework.actions.ActionException;
-import org.apache.bcel.util.ClassPath;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
@@ -209,9 +209,9 @@ public class JOPtimizerRunner {
 
     /**
      * initialize log4j from a configfile.
-     * @param configFile
+     * @param configFile the filename of a log4j property file
      */
-    private static void setupLogger(String configFile) throws ArgumentException {
+    public static void setupLogger(String configFile) throws ArgumentException {
         URL configUrl = JOPtimizerRunner.class.getResource(configFile);
         if ( configUrl != null ) {
             PropertyConfigurator.configure(configUrl);
@@ -221,6 +221,7 @@ public class JOPtimizerRunner {
     }
 
     /**
+     * Main method.
 	 * @param args cmdline arguments.
 	 */
 	public static void main(String[] args) {
@@ -256,13 +257,13 @@ public class JOPtimizerRunner {
             System.exit(2);
         }
 
-        ClassPath classPath = new ClassPath(config.getProperty(CONF_CLASSPATH, "."));
+        String classPath = config.getProperty(CONF_CLASSPATH, ".");
+        joptimizer.getAppStruct().setClassPath(classPath);
 
         // setup config
         rootClasses.addAll(jopConfig.getArchConfig().getSystemClasses());
 
         jopConfig.setProperties(config);
-        jopConfig.setClassPath(classPath);
         jopConfig.setMainClassName(mainClass);
         jopConfig.setRootClasses(rootClasses);
 
@@ -270,8 +271,8 @@ public class JOPtimizerRunner {
         if ( mainClass != null && !doSkipLoad ) {
             try {
                 joptimizer.loadTransitiveHull(rootClasses);
-                joptimizer.loadClassInfos();
-            } catch (IOException e) {
+                joptimizer.reloadClassInfos();
+            } catch (TypeException e) {
                 logger.error("Error initializing classinfos.", e);
                 System.exit(1);
             } catch (ActionException e) {

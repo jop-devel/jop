@@ -19,9 +19,12 @@
 package joptimizer.config;
 
 import com.jopdesign.libgraph.struct.AppConfig;
-import org.apache.bcel.util.ClassPath;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
 
 /**
  * Main configuration container class.
@@ -34,7 +37,6 @@ public class JopConfig implements AppConfig {
 
     private Properties config;
     private Set rootClasses;
-    private ClassPath classPath;
     private String mainClass;
     private ArchConfig archConfig;
 
@@ -54,22 +56,21 @@ public class JopConfig implements AppConfig {
 
     public static final String CONF_IGNORE_ACTION_ERRORS = "ignore-errors";
 
+    public static final String CONF_SKIP_NATIVE_CLASS = "skip-nativeclass";
+
     public JopConfig() {
         this.config = new Properties();
-        this.classPath = new ClassPath(".");
         this.rootClasses = new HashSet();
         setArchConfig(null);
     }
 
     public JopConfig(Properties config) {
         this.config = config == null ? new Properties() : config;
-        this.classPath = new ClassPath(".");
         setArchConfig(getArchConfigFileName());
     }
 
-    public JopConfig(Properties config, ClassPath classPath, String mainClass) {
+    public JopConfig(Properties config, String mainClass) {
         this.config = config == null ? new Properties() : config;
-        this.classPath = classPath;
         this.mainClass = mainClass;
         setArchConfig(getArchConfigFileName());
     }
@@ -97,6 +98,8 @@ public class JopConfig implements AppConfig {
                 CONF_ALLOW_INCOMPLETE_CODE + " is not set.", "pkg"));
         optionList.add( new BoolOption(CONF_IGNORE_ACTION_ERRORS,
                 "Continue if any action throws an error."));
+        optionList.add( new BoolOption(CONF_SKIP_NATIVE_CLASS,
+                "Do not load native system classes."));
     }
 
     public void setProperties(Properties config) {
@@ -144,14 +147,6 @@ public class JopConfig implements AppConfig {
 
     public String getMainMethodSignature() {
         return "main([Ljava/lang/String;)V";
-    }
-
-    public ClassPath getClassPath() {
-        return classPath;
-    }
-
-    public void setClassPath(ClassPath classPath) {
-        this.classPath = classPath;
     }
 
     public boolean isEnabled(String option) {
@@ -217,7 +212,7 @@ public class JopConfig implements AppConfig {
 
     public String doExcludeClassName(String className) {
 
-        if (isNativeClassName(className)) {
+        if ( isNativeClassName(className) && isEnabled(CONF_SKIP_NATIVE_CLASS) ) {
             return "Skipping native class {" + className + "}.";
         }
 
