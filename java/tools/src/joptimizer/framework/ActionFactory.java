@@ -300,7 +300,7 @@ public class ActionFactory {
 
                 // some extrawürscht for graph actions, to transform code in a single step
                 // and therefore there is no need to keep all CFGs in memory of all methods.
-                if ( action instanceof GraphAction ) {
+                if ( action instanceof GraphAction && false ) {
 
                     // on first graph action, create container action
                     // NOTICE this does not keep the correct order for non-graph actions
