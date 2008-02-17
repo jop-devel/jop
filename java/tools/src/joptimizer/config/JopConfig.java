@@ -81,24 +81,24 @@ public class JopConfig implements AppConfig {
      * @param optionList a list where options as ArgOption will be added.
      */
     public static void createOptions(List optionList) {
-        optionList.add(new StringOption(CONF_OUTPUTPATH,
+        optionList.add(new StringOption(null, CONF_OUTPUTPATH,
                 "Set default output path for all generated files.", "path"));
-        optionList.add(new StringOption(CONF_ARCH_CONFIG,
+        optionList.add(new StringOption(null, CONF_ARCH_CONFIG,
                 "Load an architecture configuration from a config file.", "file"));
-        optionList.add(new BoolOption(CONF_ASSUME_DYNAMIC_LOADING,
+        optionList.add(new BoolOption(null, CONF_ASSUME_DYNAMIC_LOADING,
                 "Assume that dynamic class loading is used (disables some optimizations)."));
-        optionList.add(new BoolOption(CONF_ASSUME_REFLECTION,
+        optionList.add(new BoolOption(null, CONF_ASSUME_REFLECTION,
                 "Assume that reflection is used (disables some optimizations)."));
-        optionList.add(new BoolOption(CONF_ALLOW_INCOMPLETE_CODE,
+        optionList.add(new BoolOption(null, CONF_ALLOW_INCOMPLETE_CODE,
                 "Ignore missing classes. Some features will not work when this option is set."));
-        optionList.add( new BoolOption( CONF_ALLOW_LOADDEMAND,
+        optionList.add( new BoolOption(null, CONF_ALLOW_LOADDEMAND,
                 "Allow class loading on demand. Disables automatic transitive hull loading."));
-        optionList.add( new StringOption( CONF_IGNORE_PATH,
+        optionList.add( new StringOption(null, CONF_IGNORE_PATH,
                 "Comma-separated list of packages or classes which will not be loaded. Ignored if " +
                 CONF_ALLOW_INCOMPLETE_CODE + " is not set.", "pkg"));
-        optionList.add( new BoolOption(CONF_IGNORE_ACTION_ERRORS,
+        optionList.add( new BoolOption(null, CONF_IGNORE_ACTION_ERRORS,
                 "Continue if any action throws an error."));
-        optionList.add( new BoolOption(CONF_SKIP_NATIVE_CLASS,
+        optionList.add( new BoolOption(null, CONF_SKIP_NATIVE_CLASS,
                 "Do not load native system classes."));
     }
 
@@ -149,8 +149,28 @@ public class JopConfig implements AppConfig {
         return "main([Ljava/lang/String;)V";
     }
 
+    /**
+     * Check if the given option is set. This also returns true, if the option
+     * has the value of FALSE.
+     *
+     * @see #isEnabled(String)
+     * @param option the name of the option.
+     * @return true, if the option has been set.
+     */
+    public boolean isSet(String option) {
+        return config.contains(option);
+    }
+
     public boolean isEnabled(String option) {
         return Boolean.valueOf(config.getProperty(option)).booleanValue();
+    }
+
+    public boolean isEnabled(String name, String id, String option) {
+        String on = getOptionName(id, option);
+        if ( isSet(on) ) {
+            return isEnabled(on);
+        }
+        return isEnabled(getOptionName(name, option));
     }
 
     public void setOption(String option, String value) {
@@ -163,6 +183,22 @@ public class JopConfig implements AppConfig {
 
     public String getOption(String option, String defaultvalue) {
         return config.getProperty(option, defaultvalue);
+    }
+
+    public String getOptionName(String prefix, String option) {
+        return prefix + "." + option;
+    }
+
+    public String getActionOption(String name, String id, String option) {
+        return getActionOption(name, id, option, null);
+    }
+
+    public String getActionOption(String name, String id, String option, String defaultvalue) {
+        String value = getOption(getOptionName(id, option), null);
+        if ( value != null ) {
+            return value;
+        }
+        return getOption(getOptionName(name, option), defaultvalue);
     }
 
     /**

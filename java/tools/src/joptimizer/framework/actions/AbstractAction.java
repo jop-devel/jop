@@ -29,15 +29,21 @@ import joptimizer.framework.JOPtimizer;
 public abstract class AbstractAction implements Action {
 
     private String name;
+    private String id;
     private JOPtimizer joptimizer;
 
-    public AbstractAction(String name, JOPtimizer joptimizer) {
+    public AbstractAction(String name, String id, JOPtimizer joptimizer) {
         this.name = name;
+        this.id = id;
         this.joptimizer = joptimizer;
     }
 
     public String getActionName() {
         return name;
+    }
+
+    public String getActionId() {
+        return id != null ? id : name;
     }
 
     public JOPtimizer getJoptimizer() {
@@ -67,5 +73,16 @@ public abstract class AbstractAction implements Action {
      */
     public void finishAction() throws ActionException {
     }
-    
+
+    protected String getActionOption(JopConfig config, String option) {
+        return getActionOption(config, option, null);
+    }
+
+    protected String getActionOption(JopConfig config, String option, String defaultValue) {
+        return config.getActionOption(getActionName(), getActionId(), option, defaultValue);
+    }
+
+    protected boolean isActionEnabled(JopConfig config, String option) {
+        return config.isEnabled(getActionName(), getActionId(), option);
+    }
 }

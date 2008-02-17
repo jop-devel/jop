@@ -42,6 +42,12 @@ public interface Action {
     String getActionName();
 
     /**
+     * Get the id by which multiple instances of the same action can be distinguised.
+     * @return the id of this action used for configuration.
+     */
+    String getActionId();
+
+    /**
      * Get the Joptimizer instance which this action uses.
      *
      * @return the Joptimizer instance.
@@ -57,16 +63,15 @@ public interface Action {
 
     /**
      * append arguments for this action to the given map.
-     * This may be called before {@link #configure(String, joptimizer.config.JopConfig)} is called.
+     * This may be called before {@link #configure(joptimizer.config.JopConfig)} is called.
      *
-     * @param prefix prefix for arguments (including any spacing charater like '.' or '-' ).
      * @param options argument-map with option-name as key and an ArgOption as value.
      */
-    void appendActionArguments(String prefix, List options);
+    void appendActionArguments(List options);
 
     /**
      * get a descriptive short text about what this action does.
-     * This may be called before {@link #configure(String, joptimizer.config.JopConfig)} is called.
+     * This may be called before {@link #configure(joptimizer.config.JopConfig)} is called.
      *
      * @return a description showed in the usage message.
      */
@@ -74,7 +79,7 @@ public interface Action {
 
     /**
      * returns true if this action may modifiy the classes anyhow.
-     * This may be called before {@link #configure(String, joptimizer.config.JopConfig)} is called.
+     * This may be called before {@link #configure(joptimizer.config.JopConfig)} is called.
      *
      * @return true if this modifies the classes.
      */
@@ -83,12 +88,11 @@ public interface Action {
     /**
      * configure an action by configuration and check if this action can be executed.
      *
-     * @param prefix prefix of the config names for this action.
      * @param config the configuration to use.
      * @return true if this action is now fully configured and ready to use, else false.
      * @throws joptimizer.config.ConfigurationException
      */
-    boolean configure(String prefix, JopConfig config) throws ConfigurationException;
+    boolean configure(JopConfig config) throws ConfigurationException;
 
     /**
      * Start an action. <br>

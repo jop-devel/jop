@@ -21,6 +21,7 @@ package joptimizer.optimizer;
 import com.jopdesign.libgraph.cfg.ControlFlowGraph;
 import com.jopdesign.libgraph.struct.MethodInfo;
 import joptimizer.config.BoolOption;
+import joptimizer.config.IntOption;
 import joptimizer.config.JopConfig;
 import joptimizer.config.StringOption;
 import joptimizer.framework.JOPtimizer;
@@ -61,21 +62,21 @@ public class InlineOptimizer extends AbstractGraphAction {
 
     private InlineStrategy strategy;
 
-    public InlineOptimizer(String name, JOPtimizer joptimizer) {
-        super(name, joptimizer);
+    public InlineOptimizer(String name, String id, JOPtimizer joptimizer) {
+        super(name, id, joptimizer);
     }
 
-    public void appendActionArguments(String prefix, List options) {
-        options.add(new StringOption(prefix + CONF_INLINE_IGNORE,
+    public void appendActionArguments(List options) {
+        options.add(new StringOption(getActionId(), CONF_INLINE_IGNORE,
                 "Do not inline code from the given package or class prefix. Give classes as comma-separated list.",
                 "packages"));
-        options.add(new BoolOption(prefix + CONF_INLINE_CHECK,
+        options.add(new BoolOption(getActionId(), CONF_INLINE_CHECK,
                 "Insert check code before inlined code to ensure correct devirtualization (NYI). " +
                 "Defaults to true if dynamic class loading is assumed to be disabled."));
-        options.add(new BoolOption(prefix + CONF_CHANGE_ACCESS,
+        options.add(new BoolOption(getActionId(), CONF_CHANGE_ACCESS,
                 "Allow changing of access modifiers to public access to enable inlining. " +
                 "Should be used with care if dynamic class loading is used."));
-        options.add(new StringOption(prefix + CONF_MAX_INLINE_SIZE,
+        options.add(new IntOption(getActionId(), CONF_MAX_INLINE_SIZE,
                 "Maximum size of methods to inline in bytes, 0 for unlimited.", "size"));
     }
 
@@ -88,7 +89,7 @@ public class InlineOptimizer extends AbstractGraphAction {
         return true;
     }
 
-    public boolean configure(String prefix, JopConfig config) {
+    public boolean configure(JopConfig config) {
 
         // NOTICE make strategy selectable by option
         strategy = new BottomUpInlineStrategy();
@@ -100,7 +101,7 @@ public class InlineOptimizer extends AbstractGraphAction {
         strategy.setup(helper, getJoptimizer().getAppStruct(), getJopConfig());
 
         // configure checker and inliner
-        String ignorepkg = config.getOption(prefix + CONF_INLINE_IGNORE);
+        String ignorepkg = getActionOption(config, CONF_INLINE_IGNORE);
         if ( ignorepkg != null && !ignorepkg.isEmpty() ) {
             ignorepkg += "," + config.getArchConfig().getNativeClassName();
         } else {
@@ -108,19 +109,19 @@ public class InlineOptimizer extends AbstractGraphAction {
         }
         checker.setIgnorePrefix(ignorepkg.split(","));
 
-        String maxSize = config.getOption(prefix + CONF_MAX_INLINE_SIZE, "0");
+        String maxSize = getActionOption(config, CONF_MAX_INLINE_SIZE, "0");
         try {
             checker.setMaxInlineSize( Integer.parseInt(maxSize) );
         } catch (NumberFormatException e) {
-            logger.warn("Invalid "+prefix+CONF_MAX_INLINE_SIZE+" {"+maxSize+"}, ignored.");
+            logger.warn("Invalid "+CONF_MAX_INLINE_SIZE+" {"+maxSize+"}, ignored.");
         }
 
-        boolean checkCode = config.isEnabled(prefix + CONF_INLINE_CHECK);
+        boolean checkCode = isActionEnabled(config, CONF_INLINE_CHECK);
         
         inliner.setInsertCheckCode(checkCode);
         checker.setUseCheckCode(checkCode);
         checker.setAssumeDynamicLoading(config.doAssumeDynamicLoading());
-        checker.setChangeAccess(config.isEnabled(prefix + CONF_CHANGE_ACCESS));
+        checker.setChangeAccess(isActionEnabled(config, CONF_CHANGE_ACCESS));
         
         return true;
     }
@@ -135,7 +136,7 @@ public class InlineOptimizer extends AbstractGraphAction {
         }
     }
 
-    public int getDefaultStage() {
+    public int getGraphStage() {
         return STAGE_STACK_TO_QUAD;
     }
 

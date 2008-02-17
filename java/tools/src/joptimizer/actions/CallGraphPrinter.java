@@ -50,9 +50,9 @@ import java.util.Stack;
 /**
  * @author Stefan Hepp, e0026640@student.tuwien.ac.at
  */
-public class CallTreePrinter extends AbstractAction {
+public class CallGraphPrinter extends AbstractAction {
 
-    public static final String ACTION_NAME = "printcalltree";
+    public static final String ACTION_NAME = "printcallgraph";
 
     public static final String CONF_CTROOT = "start";
     public static final String CONF_CTDEPTH = "maxdepth";
@@ -60,7 +60,7 @@ public class CallTreePrinter extends AbstractAction {
     public static final String CONF_CTOUTFILE = "outfile";
     public static final String CONF_CTIGNORE = "ignore";
 
-    private static Logger logger = Logger.getLogger(CallTreePrinter.class);
+    private static Logger logger = Logger.getLogger(CallGraphPrinter.class);
 
     /**
      * a text format writer implementation.
@@ -253,21 +253,21 @@ public class CallTreePrinter extends AbstractAction {
     private String[] ignore;
     private int maxDepth;
 
-    public CallTreePrinter(String name, JOPtimizer joptimizer) {
-        super(name, joptimizer);
+    public CallGraphPrinter(String name, String id, JOPtimizer joptimizer) {
+        super(name, id, joptimizer);
     }
 
-    public void appendActionArguments(String prefix, List options) {
+    public void appendActionArguments(List options) {
 
-        options.add(new IntOption(prefix + CONF_CTDEPTH,
+        options.add(new IntOption(getActionId(), CONF_CTDEPTH,
                 "Set the maximum depth of the calltree to print.", "depth"));
-        options.add(new StringOption(prefix + CONF_CTROOT,
+        options.add(new StringOption(getActionId(), CONF_CTROOT,
                 "Set the root method for the calltree as 'class#method'.", "method"));
-        options.add(new StringOption(prefix + CONF_CTFORMAT,
+        options.add(new StringOption(getActionId(), CONF_CTFORMAT,
                 "Set the format for the calltree output as comma-separated list (txt,dot).", "format"));
-        options.add(new StringOption(prefix + CONF_CTOUTFILE,
+        options.add(new StringOption(getActionId(), CONF_CTOUTFILE,
                 "Output file name without extension, default is stdout for txt and 'outputpath/calltree' for dot.", "outfile"));
-        options.add(new StringOption(prefix + CONF_CTIGNORE,
+        options.add(new StringOption(getActionId(), CONF_CTIGNORE,
                 "Comma separated list of package-prefixes to ignore.", "packages"));
         
     }
@@ -281,9 +281,9 @@ public class CallTreePrinter extends AbstractAction {
         return false;
     }
 
-    public boolean configure(String prefix, JopConfig config) throws ConfigurationException {
+    public boolean configure(JopConfig config) throws ConfigurationException {
 
-        outfile = config.getOption(prefix + CONF_CTOUTFILE);
+        outfile = getActionOption(config, CONF_CTOUTFILE);
         if ( outfile == null ) {
             outfile = config.getDefaultOutputPath() + File.separator + "calltree";
             useStdout = true;
@@ -291,7 +291,7 @@ public class CallTreePrinter extends AbstractAction {
             useStdout = false;
         }
 
-        String root = config.getOption(prefix + CONF_CTROOT);
+        String root = getActionOption(config, CONF_CTROOT);
         if ( root != null ) {
             MethodInfo info = MethodInfo.parseFQMethodName(getJoptimizer().getAppStruct(), root);
             if ( info == null ) {
@@ -312,15 +312,15 @@ public class CallTreePrinter extends AbstractAction {
             }
         }
 
-        format = config.getOption(prefix + CONF_CTFORMAT, "txt");
+        format = getActionOption(config, CONF_CTFORMAT, "txt");
 
         try {
-            maxDepth = Integer.parseInt(config.getOption(prefix + CONF_CTDEPTH, "10"));
+            maxDepth = Integer.parseInt(getActionOption(config, CONF_CTDEPTH, "10"));
         } catch (NumberFormatException e) {
             throw new ConfigurationException("Could not parse maxdepth option.",e);
         }
 
-        String ignore = config.getOption(prefix + CONF_CTIGNORE);
+        String ignore = getActionOption(config, CONF_CTIGNORE);
         if ( ignore != null ) {
             this.ignore = ignore.split(",");
         } else {

@@ -18,12 +18,12 @@
  */
 package joptimizer.actions;
 
+import com.jopdesign.libgraph.struct.ClassInfo;
 import joptimizer.config.JopConfig;
 import joptimizer.config.StringOption;
 import joptimizer.framework.JOPtimizer;
 import joptimizer.framework.actions.AbstractClassAction;
 import joptimizer.framework.actions.ActionException;
-import com.jopdesign.libgraph.struct.ClassInfo;
 import org.apache.log4j.Logger;
 
 import java.io.File;
@@ -46,13 +46,13 @@ public class ClassWriter extends AbstractClassAction {
 
     private static Logger logger = Logger.getLogger(ClassWriter.class);
 
-    public ClassWriter(String name, JOPtimizer joptimizer) {
-        super(name, joptimizer);
+    public ClassWriter(String name, String id, JOPtimizer joptimizer) {
+        super(name, id, joptimizer);
     }
 
-    public void appendActionArguments(String prefix, List options) {
+    public void appendActionArguments(List options) {
 
-        options.add(new StringOption(prefix + CONF_OUTCLASSPATH,
+        options.add(new StringOption(getActionId(), CONF_OUTCLASSPATH,
                 "Output-directory for generated class files, defaults to common outpath.", "path"));
 
         // TODO option to write to .jar file.
@@ -68,8 +68,8 @@ public class ClassWriter extends AbstractClassAction {
         return false;
     }
 
-    public boolean configure(String prefix, JopConfig config) {
-        outdir = config.getOption(prefix + CONF_OUTCLASSPATH);
+    public boolean configure(JopConfig config) {
+        outdir = getActionOption(config, CONF_OUTCLASSPATH);
         if ( outdir == null ) {
             outdir = config.getDefaultOutputPath();
         }

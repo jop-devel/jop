@@ -18,13 +18,13 @@
  */
 package joptimizer.optimizer;
 
+import com.jopdesign.libgraph.struct.ClassInfo;
 import joptimizer.config.ConfigurationException;
 import joptimizer.config.JopConfig;
 import joptimizer.framework.JOPtimizer;
 import joptimizer.framework.actions.AbstractAction;
 import joptimizer.framework.actions.ActionException;
 import joptimizer.framework.actions.ClassAction;
-import com.jopdesign.libgraph.struct.ClassInfo;
 
 import java.util.List;
 
@@ -35,8 +35,8 @@ public class CodeStripper extends AbstractAction implements ClassAction {
 
     public static final String ACTION_NAME = "stripcode";
 
-    public CodeStripper(String name, JOPtimizer joptimizer) {
-        super(name, joptimizer);
+    public CodeStripper(String name, String id, JOPtimizer joptimizer) {
+        super(name, id, joptimizer);
     }
 
 
@@ -44,14 +44,14 @@ public class CodeStripper extends AbstractAction implements ClassAction {
         return "Remove all unused methods, constants and classes.";
     }
 
-    public void appendActionArguments(String prefix, List options) {
+    public void appendActionArguments(List options) {
     }
 
     public boolean doModifyClasses() {
         return true;
     }
 
-    public boolean configure(String prefix, JopConfig config) throws ConfigurationException {
+    public boolean configure(JopConfig config) throws ConfigurationException {
         return false;
     }
 

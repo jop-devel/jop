@@ -129,11 +129,11 @@ public class TransitiveHullGenerator extends AbstractClassAction {
 
     private static final Logger logger = Logger.getLogger(TransitiveHullGenerator.class);
 
-    public TransitiveHullGenerator(String name, JOPtimizer joptimizer) {
-        super(name, joptimizer);
+    public TransitiveHullGenerator(String name, String id, JOPtimizer joptimizer) {
+        super(name, id, joptimizer);
     }
 
-    public void appendActionArguments(String prefix, List options) {
+    public void appendActionArguments(List options) {
     }
 
     public String getActionDescription() {
@@ -144,7 +144,7 @@ public class TransitiveHullGenerator extends AbstractClassAction {
         return false;
     }
 
-    public boolean configure(String prefix, JopConfig config) {
+    public boolean configure(JopConfig config) {
         return true;
     }
 

@@ -18,6 +18,10 @@
  */
 package joptimizer.actions;
 
+import com.jopdesign.libgraph.cfg.ControlFlowGraph;
+import com.jopdesign.libgraph.cfg.GraphException;
+import com.jopdesign.libgraph.struct.MethodCode;
+import com.jopdesign.libgraph.struct.MethodInfo;
 import joptimizer.config.ConfigurationException;
 import joptimizer.config.JopConfig;
 import joptimizer.framework.JOPtimizer;
@@ -25,13 +29,12 @@ import joptimizer.framework.actions.AbstractMethodAction;
 import joptimizer.framework.actions.ActionCollection;
 import joptimizer.framework.actions.ActionException;
 import joptimizer.framework.actions.GraphAction;
-import com.jopdesign.libgraph.cfg.ControlFlowGraph;
-import com.jopdesign.libgraph.cfg.GraphException;
-import com.jopdesign.libgraph.struct.MethodCode;
-import com.jopdesign.libgraph.struct.MethodInfo;
 import org.apache.log4j.Logger;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * This is a {@link joptimizer.framework.actions.MethodAction} which
@@ -45,25 +48,23 @@ public class MethodTransformAction extends AbstractMethodAction implements Actio
     public static final String ACTION_NAME = "codetransform";
 
     private List[] actions;
-    private Map actionPrefix;
 
     private static final Logger logger = Logger.getLogger(MethodTransformAction.class);
 
-    public MethodTransformAction(String name, JOPtimizer joptimizer) {
-        super(name, joptimizer);
+    public MethodTransformAction(String name, String id, JOPtimizer joptimizer) {
+        super(name, id, joptimizer);
 
         actions = new List[3];
         for (int i = 0; i < actions.length; i++) {
             actions[i] = new LinkedList();
         }
-        actionPrefix = new HashMap();
     }
 
-    public void appendActionArguments(String prefix, List options) {
-        // NOTICE maybe append own prefix to sub-action prefixes?
-        for (Iterator it = actionPrefix.entrySet().iterator(); it.hasNext();) {
-            Map.Entry entry = (Map.Entry) it.next();
-            ((GraphAction)entry.getKey()).appendActionArguments((String) entry.getValue(), options );
+    public void appendActionArguments(List options) {
+        for (int i = 0; i < actions.length; i++) {
+            for (Iterator it = actions[i].iterator(); it.hasNext();) {
+                ((GraphAction)it.next()).appendActionArguments(options);
+            }
         }
     }
 
@@ -75,12 +76,13 @@ public class MethodTransformAction extends AbstractMethodAction implements Actio
         return true;
     }
 
-    public boolean configure(String prefix, JopConfig config) throws ConfigurationException {
+    public boolean configure(JopConfig config) throws ConfigurationException {
         boolean configured = true;
-        for (Iterator it = actionPrefix.entrySet().iterator(); it.hasNext();) {
-            Map.Entry entry = (Map.Entry) it.next();
-            boolean ret = ((GraphAction)entry.getKey()).configure((String) entry.getValue(), config);
-            configured &= ret;
+        for (int i = 0; i < actions.length; i++) {
+            for (Iterator it = actions[i].iterator(); it.hasNext();) {
+                boolean ret = ((GraphAction)it.next()).configure(config);
+                configured &= ret;
+            }
         }
         return configured;
     }
@@ -89,12 +91,10 @@ public class MethodTransformAction extends AbstractMethodAction implements Actio
      * add a graph to the transformation stage, as defined by the
      * constants in {@link GraphAction}.
      * @param stage the stage during which this action should be executed.
-     * @param prefix the configuraion prefix of this action
      * @param action the action to execute.
      */
-    public void addAction(int stage, String prefix, GraphAction action) {
+    public void addAction(int stage, GraphAction action) {
         actions[stage].add(action);
-        actionPrefix.put(action,prefix);
     }
 
 

@@ -29,22 +29,44 @@ public abstract class ArgOption {
 
     private String name;
     private String description;
+    private String prefix;
+    private String optionName;
+    private boolean visible;
 
-    protected ArgOption(String name, String description) {
-        this.name = name;
+    protected ArgOption(String prefix, String option, String description) {
+        this.prefix = prefix;
+        optionName = option;
+        this.name = prefix != null ? prefix + "." + option : option;
         this.description = description;
+        visible = true;
     }
 
-    public String getName() {
+    public String getFullName() {
         return name;
+    }
+
+    public String getPrefix() {
+        return prefix;
+    }
+
+    public String getOptionName() {
+        return optionName;
     }
 
     public String getDescription() {
         return description;
     }
 
+    public boolean isVisible() {
+        return visible;
+    }
+
+    public void setVisible(boolean visible) {
+        this.visible = visible;
+    }
+
     /**
-     * parse the current argument, update properties accordingly.
+     * Parse the current argument, update properties accordingly.
      *
      * @param option the name by which this option is invoked.
      * @param args an array of all arguments.
@@ -55,14 +77,15 @@ public abstract class ArgOption {
     public abstract int parse(String option, String[] args, int pos, Properties props) throws ArgumentException;
 
     /**
-     * print help about this option.
+     * Print help about this option.
      * @param prefix a prefix to print before the option text.
      * @param out the stream to print the help message to.
      */
     public abstract void printHelp(String prefix, PrintStream out);
 
     /**
-     * small helper to format a help text with option name and description.
+     * Small helper to format a help text with option name and description.
+     * @param prefix a text to print before the option name.
      * @param option the option name with format.
      * @param description the description of this option
      * @return a complete intended help text line.
@@ -113,7 +136,7 @@ public abstract class ArgOption {
     }
 
     /**
-     * parse a string and replace occurences of ${..} with variable values.
+     * Parse a string and replace occurences of ${..} with variable values.
      * The value is fetched from system properties, or if not set from the environment variables.
      * If the value is not set, the placeholder is left as it is.
      *

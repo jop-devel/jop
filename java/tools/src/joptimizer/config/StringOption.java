@@ -29,8 +29,8 @@ public class StringOption extends ArgOption {
 
     private String argName;
 
-    public StringOption(String name, String description, String argName) {
-        super(name, description);
+    public StringOption(String prefix, String option, String description, String argName) {
+        super(prefix, option, description);
         this.argName = argName;
     }
 
@@ -38,11 +38,11 @@ public class StringOption extends ArgOption {
         if ( pos + 1 >= args.length ) {
             throw new ArgumentException("Missing text for argument '-" + option + "'.");
         }
-        props.setProperty( getName(), replaceVariables(args[pos+1], props));
+        props.setProperty( getFullName(), replaceVariables(args[pos+1], props));
         return 1;
     }
 
     public void printHelp(String prefix, PrintStream out) {
-        out.println( formatOption(prefix, getName() + " <" + argName + ">", getDescription() ) );
+        out.println( formatOption(prefix, getFullName() + " <" + argName + ">", getDescription() ) );
     }
 }

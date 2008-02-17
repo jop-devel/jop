@@ -18,12 +18,12 @@
  */
 package joptimizer.optimizer;
 
+import com.jopdesign.libgraph.cfg.ControlFlowGraph;
+import com.jopdesign.libgraph.struct.MethodInfo;
 import joptimizer.config.JopConfig;
 import joptimizer.framework.JOPtimizer;
 import joptimizer.framework.actions.AbstractGraphAction;
 import joptimizer.framework.actions.ActionException;
-import com.jopdesign.libgraph.cfg.ControlFlowGraph;
-import com.jopdesign.libgraph.struct.MethodInfo;
 
 import java.util.List;
 
@@ -36,11 +36,11 @@ public class PeepholeOptimizer extends AbstractGraphAction {
     
     public static final String ACTION_NAME = "peephole";
 
-    public PeepholeOptimizer(String name, JOPtimizer joptimizer) {
-        super(name, joptimizer);
+    public PeepholeOptimizer(String name, String id, JOPtimizer joptimizer) {
+        super(name, id, joptimizer);
     }
 
-    public void appendActionArguments(String prefix, List options) {
+    public void appendActionArguments(List options) {
     }
 
     public String getActionDescription() {
@@ -51,11 +51,11 @@ public class PeepholeOptimizer extends AbstractGraphAction {
         return true;
     }
 
-    public boolean configure(String prefix, JopConfig config) {
+    public boolean configure(JopConfig config) {
         return false;
     }
 
-    public int getDefaultStage() {
+    public int getGraphStage() {
         return STAGE_STACK_TO_BYTECODE;
     }
 

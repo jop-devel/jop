@@ -28,8 +28,8 @@ import java.util.Iterator;
  */
 public abstract class AbstractClassAction extends AbstractAction implements ClassAction {
 
-    public AbstractClassAction(String name, JOPtimizer joptimizer) {
-        super(name, joptimizer);
+    public AbstractClassAction(String name, String id, JOPtimizer joptimizer) {
+        super(name, id, joptimizer);
     }
 
     /**

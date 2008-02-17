@@ -180,7 +180,9 @@ public class JOPtimizer {
             String reason = jopConfig.doExcludeClassName(className);
             if ( reason == null ) {
 
-                if ( doReflectTest && className.startsWith("java.lang.reflect.") ) {
+                if ( doReflectTest && (className.startsWith("java.lang.reflect.") ||
+                             className.equals("java.lang.Class") ) )
+                {
                     logger.warn("Found reflection class {"+className+"}, some optimizations "+
                             "may produce invalid code.");
                 }

@@ -47,8 +47,6 @@ import java.util.Set;
 /**
  * A commandline wrapper for the optimizer.
  *
- * TODO extend AppInfo class
- *
  * @author Stefan Hepp, e0026640@student.tuwien.ac.at
  */
 public class JOPtimizerRunner {
@@ -68,7 +66,7 @@ public class JOPtimizerRunner {
 
         List optionList = new LinkedList();
 
-        optionList.add(new StringOption(CONF_CLASSPATH,
+        optionList.add(new StringOption(null, CONF_CLASSPATH,
                 "Set the classpath, default is '.'.", "classpath"));
 
         JopConfig.createOptions(optionList);
@@ -79,7 +77,7 @@ public class JOPtimizerRunner {
         options = new LinkedHashMap();
         for (int i = 0; i < optionList.size(); i++) {
             ArgOption option = (ArgOption) optionList.get(i);
-            options.put(option.getName(), option);
+            options.put(option.getFullName(), option);
         }
 
     }
@@ -107,7 +105,9 @@ public class JOPtimizerRunner {
 
         for (Iterator it = options.values().iterator(); it.hasNext();) {
             ArgOption option = (ArgOption) it.next();
-            option.printHelp("    -", out);
+            if ( option.isVisible() ) {
+                option.printHelp("    -", out);
+            }
         }
         
         out.println();

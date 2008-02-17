@@ -29,8 +29,8 @@ public class IntOption extends ArgOption {
 
     private String argName;
 
-    public IntOption(String name, String description, String argName) {
-        super(name, description);
+    public IntOption(String prefix, String option, String description, String argName) {
+        super(prefix, option, description);
         this.argName = argName;
     }
 
@@ -41,7 +41,7 @@ public class IntOption extends ArgOption {
         String value = replaceVariables(args[pos + 1], props);
 
         try {
-            props.setProperty( getName(), Integer.valueOf(value).toString());
+            props.setProperty( getFullName(), Integer.valueOf(value).toString());
         } catch (NumberFormatException e) {
             throw new ArgumentException("Not a valid integer argument: " + value);
         }
@@ -50,7 +50,7 @@ public class IntOption extends ArgOption {
     }
 
     public void printHelp(String prefix, PrintStream out) {
-        out.println( formatOption(prefix, getName() + " #" + argName, getDescription() ) );
+        out.println( formatOption(prefix, getFullName() + " #" + argName, getDescription() ) );
     }
 }
 

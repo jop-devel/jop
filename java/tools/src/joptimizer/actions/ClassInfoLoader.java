@@ -44,12 +44,12 @@ public class ClassInfoLoader extends AbstractAction implements ClassAction, Meth
      */
     private boolean forceReload;
 
-    public ClassInfoLoader(String name, JOPtimizer joptimizer) {
-        super(name, joptimizer);
+    public ClassInfoLoader(String name, String id, JOPtimizer joptimizer) {
+        super(name, id, joptimizer);
         forceReload = false;
     }
 
-    public void appendActionArguments(String prefix, List options) {
+    public void appendActionArguments(List options) {
     }
 
 
@@ -61,7 +61,7 @@ public class ClassInfoLoader extends AbstractAction implements ClassAction, Meth
         return false;
     }
 
-    public boolean configure(String prefix, JopConfig config) {
+    public boolean configure(JopConfig config) {
         return true;
     }
 

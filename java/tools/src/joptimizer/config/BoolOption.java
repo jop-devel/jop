@@ -27,16 +27,16 @@ import java.util.Properties;
  */
 public class BoolOption extends ArgOption {
 
-    public BoolOption(String name, String description) {
-        super(name, description);
+    public BoolOption(String prefix, String option, String description) {
+        super(prefix, option, description);
     }
 
     public int parse(String option, String[] args, int pos, Properties props) {
-        props.setProperty( getName(), "TRUE");
+        props.setProperty( getFullName(), "TRUE");
         return 0;
     }
 
     public void printHelp(String prefix, PrintStream out) {
-        out.println( formatOption(prefix, getName(), getDescription() ));
+        out.println( formatOption(prefix, getFullName(), getDescription() ));
     }
 }

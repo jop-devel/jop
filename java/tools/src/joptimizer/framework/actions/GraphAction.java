@@ -34,7 +34,7 @@ public interface GraphAction extends Action {
      * get the default stage, during which this action should be performed.
      * @return the default graph transform stage of this action.
      */
-    int getDefaultStage();
+    int getGraphStage();
 
     /**
      * get the required graph form for this optimization to work, as defined

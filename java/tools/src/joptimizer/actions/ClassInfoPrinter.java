@@ -18,12 +18,12 @@
  */
 package joptimizer.actions;
 
+import com.jopdesign.libgraph.struct.ClassInfo;
 import joptimizer.config.JopConfig;
 import joptimizer.framework.JOPtimizer;
 import joptimizer.framework.actions.AbstractAction;
 import joptimizer.framework.actions.ActionException;
 import joptimizer.framework.actions.ClassAction;
-import com.jopdesign.libgraph.struct.ClassInfo;
 
 import java.util.List;
 
@@ -35,11 +35,11 @@ public class ClassInfoPrinter extends AbstractAction implements ClassAction {
 
     public static final String ACTION_NAME = "printclassinfo";
 
-    public ClassInfoPrinter(String name, JOPtimizer joptimizer) {
-        super(name, joptimizer);
+    public ClassInfoPrinter(String name, String id, JOPtimizer joptimizer) {
+        super(name, id, joptimizer);
     }
 
-    public void appendActionArguments(String prefix, List options) {
+    public void appendActionArguments(List options) {
     }
 
 
@@ -51,7 +51,7 @@ public class ClassInfoPrinter extends AbstractAction implements ClassAction {
         return false;
     }
 
-    public boolean configure(String prefix, JopConfig config) {
+    public boolean configure(JopConfig config) {
         return false;
     }
 

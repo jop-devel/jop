@@ -18,6 +18,10 @@
  */
 package joptimizer.actions;
 
+import com.jopdesign.libgraph.cfg.ControlFlowGraph;
+import com.jopdesign.libgraph.cfg.GraphException;
+import com.jopdesign.libgraph.struct.MethodCode;
+import com.jopdesign.libgraph.struct.MethodInfo;
 import joptimizer.config.BoolOption;
 import joptimizer.config.ConfigurationException;
 import joptimizer.config.JopConfig;
@@ -25,10 +29,6 @@ import joptimizer.config.StringOption;
 import joptimizer.framework.JOPtimizer;
 import joptimizer.framework.actions.AbstractMethodAction;
 import joptimizer.framework.actions.ActionException;
-import com.jopdesign.libgraph.cfg.ControlFlowGraph;
-import com.jopdesign.libgraph.cfg.GraphException;
-import com.jopdesign.libgraph.struct.MethodCode;
-import com.jopdesign.libgraph.struct.MethodInfo;
 
 import java.util.List;
 
@@ -46,14 +46,14 @@ public class GraphHelper extends AbstractMethodAction {
     private String transform;
     private boolean setModified;
 
-    public GraphHelper(String name, JOPtimizer joptimizer) {
-        super(name, joptimizer);
+    public GraphHelper(String name, String id, JOPtimizer joptimizer) {
+        super(name, id, joptimizer);
     }
 
-    public void appendActionArguments(String prefix, List options) {
-        options.add(new StringOption(prefix + CONF_TRANSFORM,
+    public void appendActionArguments(List options) {
+        options.add(new StringOption(getActionId(), CONF_TRANSFORM,
                 "Transform the graph to the requested form (stack,quad,bytecode)", "form"));
-        options.add(new BoolOption(prefix + CONF_MODIFY,
+        options.add(new BoolOption(getActionId(), CONF_MODIFY,
                 "Set the modified flag to the graph."));
     }
 
@@ -65,9 +65,9 @@ public class GraphHelper extends AbstractMethodAction {
         return true;
     }
 
-    public boolean configure(String prefix, JopConfig config) throws ConfigurationException {
-        transform = config.getOption(prefix + CONF_TRANSFORM);
-        setModified = config.isEnabled(prefix + CONF_MODIFY);
+    public boolean configure(JopConfig config) throws ConfigurationException {
+        transform = getActionOption(config, CONF_TRANSFORM);
+        setModified = isActionEnabled(config, CONF_MODIFY);
         return true;
     }
 

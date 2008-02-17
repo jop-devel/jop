@@ -18,9 +18,9 @@
  */
 package joptimizer.framework.actions;
 
-import joptimizer.framework.JOPtimizer;
 import com.jopdesign.libgraph.cfg.GraphException;
 import com.jopdesign.libgraph.struct.MethodInfo;
+import joptimizer.framework.JOPtimizer;
 
 /**
  * An abstract class for Graphactions, which implements a single transformation on a
@@ -30,8 +30,8 @@ import com.jopdesign.libgraph.struct.MethodInfo;
  */
 public abstract class AbstractGraphAction extends AbstractMethodAction implements GraphAction {
 
-    public AbstractGraphAction(String name, JOPtimizer joptimizer) {
-        super(name, joptimizer);
+    public AbstractGraphAction(String name, String id, JOPtimizer joptimizer) {
+        super(name, id, joptimizer);
     }
 
     public void execute(MethodInfo methodInfo) throws ActionException {

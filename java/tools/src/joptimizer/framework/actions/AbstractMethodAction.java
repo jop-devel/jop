@@ -18,9 +18,9 @@
  */
 package joptimizer.framework.actions;
 
-import joptimizer.framework.JOPtimizer;
 import com.jopdesign.libgraph.struct.ClassInfo;
 import com.jopdesign.libgraph.struct.MethodInfo;
+import joptimizer.framework.JOPtimizer;
 
 import java.util.Iterator;
 
@@ -32,8 +32,8 @@ import java.util.Iterator;
  */
 public abstract class AbstractMethodAction extends AbstractClassAction implements MethodAction {
 
-    public AbstractMethodAction(String name, JOPtimizer joptimizer) {
-        super(name, joptimizer);
+    public AbstractMethodAction(String name, String id, JOPtimizer joptimizer) {
+        super(name, id, joptimizer);
     }
 
     /**
