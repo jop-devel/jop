@@ -67,4 +67,13 @@ public class ConstantField {
     public boolean isAnonymous() {
         return classInfo == null || fieldInfo == null;
     }
+
+    public boolean equals(Object obj) {
+        if ( !(obj instanceof ConstantField) ) {
+            return false;
+        }
+        ConstantField o = (ConstantField) obj;
+
+        return o.getClassName().equals(getClassName()) && o.getFieldName().equals(getFieldName());
+    }
 }

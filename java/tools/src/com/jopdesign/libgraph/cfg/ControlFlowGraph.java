@@ -24,7 +24,12 @@ import com.jopdesign.libgraph.cfg.statements.common.ReturnStmt;
 import com.jopdesign.libgraph.cfg.variable.VariableTable;
 import com.jopdesign.libgraph.struct.type.MethodSignature;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
 
 /**
  * @author Stefan Hepp, e0026640@student.tuwien.ac.at
@@ -119,6 +124,10 @@ public class ControlFlowGraph {
 
     public BasicBlock getBlock(int i) {
         return (BasicBlock) blocks.get(i);
+    }
+
+    public int getBlockCount() {
+        return blocks.size();
     }
 
     /**

@@ -72,4 +72,23 @@ public abstract class StmtHandle {
     public BasicBlock splitAfter() {
         return getCode().getBasicBlock().splitBlock(getPosition()+1);
     }
+
+    /**
+     * Get the next statement after this one in the block of the statement, if any.
+     * @return the next statement handle in this block, or null if last one or invalid.
+     */
+    public StmtHandle getNext() {
+
+        if ( !isValid() ) {
+            return null;
+        }
+
+        if ( getCode().size() <= getPosition() + 2 ) {
+            return null;
+        }
+
+        return getCode().getStmtHandle(getPosition() + 1);
+    }
+
+    public abstract void setStatement(Statement stmt);
 }

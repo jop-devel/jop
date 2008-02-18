@@ -21,12 +21,22 @@ package com.jopdesign.libgraph.struct.type;
 import com.jopdesign.libgraph.struct.ConstantClass;
 
 /**
+ * Base type for all reference types.
+ *
  * @author Stefan Hepp, e0026640@student.tuwien.ac.at
  */
 public abstract class RefTypeInfo extends AbstractType {
 
+    private boolean virtual;
+
     public RefTypeInfo(byte type) {
         super(type);
+        virtual = true;
+    }
+
+    protected RefTypeInfo(byte type, boolean virtual) {
+        super(type);
+        this.virtual = virtual;
     }
 
     public String getMachineTypeName() {
@@ -38,4 +48,15 @@ public abstract class RefTypeInfo extends AbstractType {
     }
 
     public abstract ConstantClass getClassConstant();
+
+    /**
+     * Check if this is a reference to a virtual class which may be overloaded at runtime or
+     * if this is a concrete implementation.
+     *
+     * @return true if this type may refer to any subclass.
+     */
+    public boolean isVirtual() {
+        return virtual;
+    }
+
 }

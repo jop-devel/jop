@@ -58,6 +58,13 @@ public class CodeBlock {
             return stmt;
         }
 
+        public void setStatement(Statement stmt) {
+            if ( stmt == null ) {
+                return;
+            }
+            code.setStatement(pos, stmt);
+        }
+
         public void dispose() {
             code.handles.remove(new Integer(pos));
             stmt = null;
