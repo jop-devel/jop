@@ -125,8 +125,8 @@ public class ActionConfigurator {
 
         // TODO load action list from config, add options to add action-instances
 
-        addOptimizeAction(confActions, PeepholeOptimizer.ACTION_NAME, optLevel, 1);
         addOptimizeAction(confActions, InlineOptimizer.ACTION_NAME, optLevel, 2);
+        addOptimizeAction(confActions, PeepholeOptimizer.ACTION_NAME, optLevel, 1);
         addOptimizeAction(confActions, CodeStripper.ACTION_NAME, optLevel, 3);
     
         addOptionalAction(confActions, CallGraphPrinter.ACTION_NAME);

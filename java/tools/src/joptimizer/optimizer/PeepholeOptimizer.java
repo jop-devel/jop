@@ -19,12 +19,21 @@
 package joptimizer.optimizer;
 
 import com.jopdesign.libgraph.cfg.ControlFlowGraph;
+import com.jopdesign.libgraph.cfg.block.CodeBlock;
+import com.jopdesign.libgraph.cfg.statements.StmtHandle;
 import com.jopdesign.libgraph.struct.MethodInfo;
 import joptimizer.config.JopConfig;
 import joptimizer.framework.JOPtimizer;
 import joptimizer.framework.actions.AbstractGraphAction;
 import joptimizer.framework.actions.ActionException;
+import joptimizer.optimizer.peephole.PeepGetfield;
+import joptimizer.optimizer.peephole.PeepGoto;
+import joptimizer.optimizer.peephole.PeepNop;
+import joptimizer.optimizer.peephole.PeepOptimization;
+import org.apache.log4j.Logger;
 
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -35,6 +44,11 @@ import java.util.List;
 public class PeepholeOptimizer extends AbstractGraphAction {
     
     public static final String ACTION_NAME = "peephole";
+
+    private List optimizer;
+    private int[] matches;
+
+    private static final Logger logger = Logger.getLogger(PeepholeOptimizer.class);
 
     public PeepholeOptimizer(String name, String id, JOPtimizer joptimizer) {
         super(name, id, joptimizer);
@@ -52,7 +66,16 @@ public class PeepholeOptimizer extends AbstractGraphAction {
     }
 
     public boolean configure(JopConfig config) {
-        return false;
+
+        optimizer = new LinkedList();
+
+        // TODO get list of used optimizers from config
+
+        optimizer.add(new PeepNop());
+        optimizer.add(new PeepGoto());
+        optimizer.add(new PeepGetfield());
+
+        return true;
     }
 
     public int getGraphStage() {
@@ -63,6 +86,65 @@ public class PeepholeOptimizer extends AbstractGraphAction {
         return 0;
     }
 
+    public void startAction() throws ActionException {
+        for (Iterator it = optimizer.iterator(); it.hasNext();) {
+            PeepOptimization optimization = (PeepOptimization) it.next();
+            optimization.startOptimizer();
+        }
+        matches = new int[optimizer.size()];
+    }
+
+    public void finishAction() throws ActionException {
+        int m = 0;
+        for (Iterator it = optimizer.iterator(); it.hasNext();) {
+            PeepOptimization optimization = (PeepOptimization) it.next();
+            optimization.finishOptimizer();
+            
+            if (logger.isInfoEnabled()) {
+                logger.info("Found {" + matches[m] + "} matches for {" + optimization.getClass().getName() + "}.");
+            }
+        }
+    }
+
     public void execute(MethodInfo methodInfo, ControlFlowGraph graph) throws ActionException {
+
+        int m = 0;
+        for (Iterator it = optimizer.iterator(); it.hasNext();) {
+            PeepOptimization optimization = (PeepOptimization) it.next();
+
+            if ( !optimization.startGraph(graph) ) {
+                logger.warn("Could not start optimization {"+optimization.getClass().getName()+"}, skipped.");
+                continue;
+            }
+
+            Class firstClass = optimization.getFirstStmtClass();
+
+            for (int i = 0; i < graph.getBlockCount(); i++ ) {
+
+                CodeBlock code = graph.getBlock(i).getCodeBlock();
+
+                for (int j = 0; j < code.size(); j++) {
+                    StmtHandle handle = code.getStmtHandle(j);
+
+                    if ( firstClass == null || firstClass.isAssignableFrom( handle.getStatement().getClass() ) ) {
+                        StmtHandle next = optimization.processStatement(handle);
+
+                        if ( next != null ) {
+                            matches[m]++;
+
+                            // TODO set loop to next
+                            next.dispose();
+                        }
+                        
+                    }
+
+                    handle.dispose();
+                }
+
+            }
+
+            m++;
+        }
+
     }
 }
