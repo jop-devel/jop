@@ -624,7 +624,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			break;
 		// IMUL = 104
 		case org.apache.bcel.Constants.IMUL:
-			wcet = 35;
+			wcet = 19;
 			break;
 		// LMUL = 105
 		case org.apache.bcel.Constants.LMUL:

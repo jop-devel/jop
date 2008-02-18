@@ -651,17 +651,19 @@ iushr:		ushr nxt
 
 imul:
 			stmul			// store both operands and start
-			pop				// pop second operand
+			pop			// pop second operand
 
-			ldi	5			// 6*5+3 wait ok!!
-imul_loop:					// plus 1 for the ldi 5... to many cycles?
+			ldi	2		// 2*7+2 wait ok!
+imul_loop:
+			ldi	-1
+			add
 			dup
 			nop
 			bnz	imul_loop
-			ldi	-1			// decrement in branch slot
-			add
-
-			pop				// remove counter
+			nop
+			nop
+	
+			pop			// remove counter
 
 			ldmul	nxt
 

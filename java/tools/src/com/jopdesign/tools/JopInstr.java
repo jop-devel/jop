@@ -190,7 +190,7 @@ public class JopInstr{
 		new JopInstr("fsub", 1, IMP_NO, 1),		// 0x66
 		new JopInstr("dsub", 1, IMP_NO, 1),		// 0x67
 
-		new JopInstr("imul", 1, IMP_ASM, 37),		// 0x68
+		new JopInstr("imul", 1, IMP_ASM, 19),		// 0x68
 		new JopInstr("lmul", 1, IMP_NO, 1),		// 0x69
 		new JopInstr("fmul", 1, IMP_NO, 1),		// 0x6A
 		new JopInstr("dmul", 1, IMP_NO, 1),		// 0x6B

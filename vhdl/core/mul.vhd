@@ -1,7 +1,7 @@
 --
 --	mul.vhd
 --
---	booth multiplier
+--	bit-serial multiplier
 --	
 --	resources on ACEX1K
 --
@@ -11,6 +11,7 @@
 --	2002-03-22	first version
 --	2004-10-07	changed to Koljas version
 --	2004-10-08	mul operands from a and b, single instruction
+--      2008-02-15      changed from booth to bit-serial
 --
 
 
@@ -27,11 +28,11 @@ generic (
 );
 
 port (
-	clk			: in std_logic;
+	clk		: in std_logic;
 
-	ain			: in std_logic_vector(width-1 downto 0);
-	bin			: in std_logic_vector(width-1 downto 0);
-	wr			: in std_logic;		-- write starts multiplier
+	ain		: in std_logic_vector(width-1 downto 0);
+	bin		: in std_logic_vector(width-1 downto 0);
+	wr		: in std_logic;		-- write starts multiplier
 	dout		: out std_logic_vector(width-1 downto 0)
 );
 end mul;
@@ -41,47 +42,40 @@ architecture rtl of mul is
 --
 --	Signals
 --
-	signal count	: integer range 0 to width+1;  -- 5 luts can be saved by implementing this in a SR16
-	signal ci    : integer range 0 to 1;
-	signal a32	: std_logic;
-	signal a, b, t, t2, s, s2: unsigned(width-1 downto 0);
-
+	signal count : integer range 0 to width/2;
+        signal p     : unsigned(width-1 downto 0);
+        signal a, b  : unsigned(width-1 downto 0);
+        
 begin
-
-t <=     b when a(0) = '0' and a32 = '1' else
-		  not	b when a(0) = '1' and a32 = '0' else
-		  to_unsigned(0, 32);
-ci <=   0 when a(0) = '0' and a32 = '1' else
-		  1 when a(0) = '1' and a32 = '0' else
-		  0;
-t2 <= unsigned(s + t + to_unsigned(ci,width));
 
 process(clk)
+  
+variable prod : unsigned(width-1 downto 0);
 
 begin
+  if rising_edge(clk) then
+    if wr='1' then
+      p <= (others => '0');
+      a <= unsigned(ain);
+      b <= unsigned(bin);
+    else
 
+      prod := p;
+      if b(0) = '1' then
+        prod := prod + a;
+      end if;          
+      if b(1) = '1' then
+        prod := (prod(width-1 downto 1) + a(width-2 downto 0)) & prod(0);
+      end if;          
+      p <= prod;
 
-	if rising_edge(clk) then
-		if wr='1' then
-			a <= unsigned(ain);
-			b <= unsigned(bin);
-			count <= width;
-			s  <= to_unsigned(0,32);	-- reset unconditionally to save logic
-			a32 <= '0';
-		else
---
---	multiply
---			
-			s <= t2(31) & t2(31 downto 1);
-			a32 <= a(0);
-			if count > 0 then
-				a <= t2(0) & a(width-1 downto 1);
-				count <= count - 1;
-			end if;					
-		end if;
-	end if;
+      a <= a(width-3 downto 0) & "00";
+      b <= "00" & b(width-1 downto 2);
+      
+    end if;
+  end if;
 end process;
 
-	dout <= std_logic_vector(a);
+dout <= std_logic_vector(p);
 
 end rtl;
