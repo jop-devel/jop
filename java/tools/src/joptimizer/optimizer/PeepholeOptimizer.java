@@ -103,6 +103,7 @@ public class PeepholeOptimizer extends AbstractGraphAction {
             if (logger.isInfoEnabled()) {
                 logger.info("Found {" + matches[m] + "} matches for {" + optimization.getClass().getName() + "}.");
             }
+            m++;
         }
     }
 
