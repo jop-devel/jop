@@ -207,7 +207,7 @@ class JVM {
 		for (int i=0; i<32; ++i) {
 			c <<= 1;
 			r <<= 1;
-			if ((a & 0x80000000)!=0) {
+			if (a < 0) {
 				r |= 1;
 			}
 			a <<= 1;
@@ -249,7 +249,7 @@ class JVM {
 		for (int i=0; i<64; ++i) {
 			c <<= 1;
 			r <<= 1;
-			if ((a & 0x8000000000000000L)!=0) {
+			if (a < 0) {
 				r |= 1;
 			}
 			a <<= 1;
@@ -295,7 +295,7 @@ class JVM {
 		int r = 0;
 		for (int i=0; i<32; ++i) {
 			r <<= 1;
-			if ((a & 0x80000000)!=0) {
+			if (a < 0) {
 				r |= 1;
 			}
 			a <<= 1;
@@ -332,7 +332,7 @@ class JVM {
 		long r = 0;
 		for (int i=0; i<64; ++i) {
 			r <<= 1;
-			if ((a & 0x8000000000000000L)!=0) {
+			if (a < 0) {
 				r |= 1;
 			}
 			a <<= 1;
@@ -483,8 +483,8 @@ class JVM {
 		int ah = (int)(a>>>32);
 		int bh = (int)(b>>>32);
 		//overflow, underflow, if a and b have different signs
-		if(((ah & 0x80000000)==0)&&((bh & 0x80000000)!=0)) return 1;
-		if(((ah & 0x80000000)!=0)&&((bh & 0x80000000)==0)) return -1;
+		if((ah >= 0)&&(bh < 0)) return 1;
+		if((ah < 0)&&(bh >= 0)) return -1;
 		// I didn't have it in my first implementation
 		
 		a -= b;
@@ -492,7 +492,7 @@ class JVM {
 		ah = (int) (a>>>32);
 
 		if ((ah | al)==0) return 0;
-		if ((ah & 0x80000000)==0) {
+		if (ah >= 0) {
 			return 1;
 		} else {
 			return -1;
