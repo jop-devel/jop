@@ -61,7 +61,7 @@ public class PeepGetfield implements PeepOptimization {
             return null;
         }
 
-        if ( get.getConstantField().isAnonymous() || get.getConstantField().getFieldInfo().isSynchronized() ) {
+        if ( get.getConstantField().isAnonymous() || get.getConstantField().getFieldInfo().isVolatile() ) {
             return null;
         }
 
