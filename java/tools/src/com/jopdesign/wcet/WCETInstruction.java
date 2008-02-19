@@ -970,11 +970,11 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			break;
 		// GETFIELD = 180
 		case org.apache.bcel.Constants.GETFIELD:
-			wcet = 17 + 2 * r;
+			wcet = 11 + 2 * r;
 			break;
 		// PUTFIELD = 181
 		case org.apache.bcel.Constants.PUTFIELD:
-			wcet = 20 + r + w;
+			wcet = 13 + r + w;
 			break;
 		// INVOKEVIRTUAL = 182
 		case org.apache.bcel.Constants.INVOKEVIRTUAL:

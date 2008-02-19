@@ -36,7 +36,6 @@ entity jop is
 
 generic (
 	clk_freq	: integer := 30000000;	-- 30 MHz clock frequency
-	exta_width	: integer := 3;		-- address bits of internal io
 	ram_cnt		: integer := 3;		-- clock cycles for external ram
 	jpc_width	: integer := 10	-- address bits of java byte code pc
 );
@@ -106,7 +105,7 @@ port (
 
 	bsy			: in std_logic;
 	din			: in std_logic_vector(31 downto 0);
-	ext_addr	: out std_logic_vector(exta_width-1 downto 0);
+	ext_addr	: out std_logic_vector(EXTA_WIDTH-1 downto 0);
 	rd, wr		: out std_logic;
 
 -- jbc connections
@@ -127,7 +126,6 @@ port (
 end component;
 
 component extension is
-generic (exta_width : integer);
 port (
 	clk, reset	: in std_logic;
 
@@ -135,7 +133,7 @@ port (
 
 	ain			: in std_logic_vector(31 downto 0);		-- from stack
 	bin			: in std_logic_vector(31 downto 0);		-- from stack
-	ext_addr	: in std_logic_vector(exta_width-1 downto 0);
+	ext_addr	: in std_logic_vector(EXTA_WIDTH-1 downto 0);
 	rd, wr		: in std_logic;
 	bsy			: out std_logic;
 	dout		: out std_logic_vector(31 downto 0);	-- to stack
@@ -247,7 +245,7 @@ end component;
 	signal stack_tos		: std_logic_vector(31 downto 0);
 	signal stack_nos		: std_logic_vector(31 downto 0);
 	signal rd, wr			: std_logic;
-	signal ext_addr			: std_logic_vector(exta_width-1 downto 0);
+	signal ext_addr			: std_logic_vector(EXTA_WIDTH-1 downto 0);
 	signal stack_din		: std_logic_vector(31 downto 0);
 
 	signal mem_rd			: std_logic;
@@ -324,7 +322,7 @@ end process;
 			stack_tos, stack_nos
 		);
 
-	cmp_ext: extension generic map (exta_width)
+	cmp_ext: extension
 		port map (clk_int, int_res, stack_tos, stack_nos,
 			ext_addr, rd, wr, bsy, stack_din,
 			mem_rd, mem_wr, mem_addr_wr, mem_bc_rd,

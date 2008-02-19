@@ -989,7 +989,8 @@ iinc:
 			add
 			stmi nxt
 
-i2c:		ldi	65535
+i2c:
+			ldi	65535
 			and	nxt
 
 ifnull:
@@ -1000,7 +1001,7 @@ iflt:
 ifge:
 ifgt:
 ifle:
-			nop	opd
+			nop opd
 			jbr opd
 			pop
 			nop nxt
@@ -1013,12 +1014,13 @@ if_icmplt:
 if_icmpge:
 if_icmpgt:
 if_icmple:
-			nop	opd
+			nop opd
 			jbr opd
 			pop
 			pop nxt
 
-goto:		nop opd
+goto:
+			nop opd
 			jbr opd
 			nop
 			nop nxt
@@ -1080,10 +1082,10 @@ putstatic:
 			stmra				// read ext. mem, mem_bsy comes one cycle later
 			wait
 			wait
-			ldmrd		 	// read ext. mem
+			ldmrd		 		// read ext. mem
 
 			stmwa				// write ext. mem address
-//			nop					// ??? tos is val
+//			nop				// ??? tos is val
 			stmwd				// write ext. mem data
 			wait
 			wait
@@ -1094,6 +1096,15 @@ putstatic:
 			// at the moment it's just a copy of the original
 getfield_ref:
 getfield:
+			nop	opd			// push index
+			nop	opd
+			ld_opd_16u
+			stgf				// let the HW do the work
+			pop
+			wait
+			wait
+			ldmrd nxt			// read result
+
 //*******************************
 // test for oohw change
 //			ldi	2			// 3*5+2+2=19
@@ -1116,34 +1127,43 @@ getfield:
 				// stack[sp] = readMem(ref+off);
 
 
-			dup				// null pointer check
-			nop				// could be interleaved with
-			bz	null_pointer	// following code
-			nop
-			nop
+//			dup				// null pointer check
+//			nop				// could be interleaved with
+//			bz	null_pointer	// following code
+//			nop
+//			nop
 
-			stmra				// read handle indirection
-			wait				// for the GC
-			wait
-			ldmrd
+//			stmra				// read handle indirection
+//			wait				// for the GC
+//			wait
+//			ldmrd
 
 			// TODO: why does flag opd has to be immediatley
 			// before usage by ld_opd?
 			// We cannot optimize this instruction as far as
 			// we want to!
-			nop	opd
-			nop	opd
-			ld_opd_16u
-			add					// +objectref
+//			nop	opd
+//			nop	opd
+//			ld_opd_16u
+//			add					// +objectref
 
-			stmra				// read ext. mem, mem_bsy comes one cycle later
-			wait
-			wait
-			ldmrd		 nxt	// read ext. mem
-
-
+//			stmra				// read ext. mem, mem_bsy comes one cycle later
+//			wait
+//			wait
+//			ldmrd		 nxt	// read ext. mem				
 
 putfield:
+			stm	a opd			// push index
+			nop	opd
+			ld_opd_16u
+			ldm	a
+			stpf				// let the HW do the work
+			pop
+			wait
+			wait
+			pop nxt
+
+
 //*******************************
 // test for oohw change
 //			ldi	3			// 4*5+2=22
@@ -1164,30 +1184,30 @@ putfield:
 				// }
 				// writeMem(ref+off, val);
 
-			stm	a				// save value
+// 			stm	a				// save value
 
-			dup				// null pointer check
-			nop				// could be interleaved with
-			bz	null_pointer	// following code
-			nop
-			nop
+// 			dup				// null pointer check
+// 			nop				// could be interleaved with
+// 			bz	null_pointer	// following code
+// 			nop
+// 			nop
 
-			stmra				// read handle indirection
-			wait				// for the GC
-			wait
-			ldmrd
+// 			stmra				// read handle indirection
+// 			wait				// for the GC
+// 			wait
+// 			ldmrd
 
-			nop	opd
-			nop	opd
-			ld_opd_16u
-			add					// +objectref
+// 			nop	opd
+// 			nop	opd
+// 			ld_opd_16u
+// 			add					// +objectref
 
-			stmwa				// write ext. mem address
-			ldm	a				// restore value
-			stmwd				// write ext. mem data
-			wait
-			wait
-			nop	nxt
+// 			stmwa				// write ext. mem address
+// 			ldm	a				// restore value
+// 			stmwd				// write ext. mem data
+// 			wait
+// 			wait
+// 			nop	nxt
 
 newarray:
 			nop opd

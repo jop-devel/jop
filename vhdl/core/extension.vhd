@@ -35,18 +35,16 @@ use work.sc_pack.all;
 
 entity extension is
 
-generic (exta_width : integer);
-
 port (
 	clk, reset	: in std_logic;
 
 -- core interface
 
-	ain			: in std_logic_vector(31 downto 0);		-- TOS
-	bin			: in std_logic_vector(31 downto 0);		-- NOS
+	ain		: in std_logic_vector(31 downto 0);		-- TOS
+	bin		: in std_logic_vector(31 downto 0);		-- NOS
 	ext_addr	: in std_logic_vector(exta_width-1 downto 0);
 	rd, wr		: in std_logic;
-	bsy			: out std_logic;
+	bsy		: out std_logic;
 	dout		: out std_logic_vector(31 downto 0);	-- to stack
 
 -- mem interface
@@ -96,6 +94,7 @@ end component mul;
 	signal was_a_mem_rd			: std_logic;
 
 	signal was_a_iaload			: std_logic;	-- select memory for array load
+	signal was_a_getfield			: std_logic;	-- select memory for getfield
 
 	signal wr_dly				: std_logic;	-- generate a bsy with delayed wr
 
@@ -149,7 +148,7 @@ begin
 	elsif rising_edge(clk) then
 
 		if (ext_addr=LDMRD) then
-			if was_a_mem_rd='1' or was_a_iaload='1' then
+			if was_a_mem_rd='1' or was_a_iaload='1' or was_a_getfield='1' then
 				exr <= mem_out.dout;
 			else
 				exr <= sc_io_in.rd_data;
@@ -177,9 +176,12 @@ begin
 		mem_in.bc_rd <= '0';
 		mem_in.iaload <= '0';
 		mem_in.iastore <= '0';
+                mem_in.getfield <= '0';
+                mem_in.putfield <= '0';
 		mul_wr <= '0';
 		wr_dly <= '0';
 		was_a_iaload <= '0';
+                was_a_getfield <= '0';
 
 
 	elsif rising_edge(clk) then
@@ -189,6 +191,8 @@ begin
 		mem_in.bc_rd <= '0';
 		mem_in.iaload <= '0';
 		mem_in.iastore <= '0';
+                mem_in.getfield <= '0';
+                mem_in.putfield <= '0';
 		mul_wr <= '0';
 
 		wr_dly <= wr;
@@ -199,6 +203,7 @@ begin
 --
 		if wr='1' then
 			was_a_iaload <= '0';
+			was_a_getfield <= '0';
 
 			if ext_addr=STMRA then
 				mem_scio_rd <= '1';		-- start memory or io read
@@ -207,10 +212,15 @@ begin
 			elsif ext_addr=STMWD then
 				mem_scio_wr <= '1';		-- start memory or io write
 			elsif ext_addr=STALD then
-				mem_in.iaload <= '1';	-- start an array load
+				mem_in.iaload <= '1';	        -- start an array load
 				was_a_iaload <= '1';
 			elsif ext_addr=STAST then
-				mem_in.iastore <= '1';	-- start an array store
+				mem_in.iastore <= '1';	        -- start an array store
+                        elsif ext_addr=STGF then
+                                mem_in.getfield <= '1';         -- start getfield
+				was_a_getfield<= '1';
+                        elsif ext_addr=STPF then
+                                mem_in.putfield <= '1';         -- start getfield
 			elsif ext_addr=STMUL then
 				mul_wr <= '1';			-- start multiplier
 			-- elsif ext_addr=STBCR then

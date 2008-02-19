@@ -39,11 +39,11 @@ use ieee.std_logic_1164.all ;
 use ieee.numeric_std.all ;
 
 use work.jop_config.all;
+use work.jop_types.all;
 
 entity decode is
 generic (
-	i_width		: integer;		-- instruction width
-	exta_width	: integer		-- address bits of internal io (or 5/4)
+	i_width		: integer		-- instruction width
 );
 
 port (
@@ -56,7 +56,7 @@ port (
 	br			: out std_logic;
 	jbr			: out std_logic;
 
-	ext_addr	: out std_logic_vector(exta_width-1 downto 0);
+	ext_addr	: out std_logic_vector(EXTA_WIDTH-1 downto 0);
 	rd, wr		: out std_logic;
 
 	dir			: out std_logic_vector(ram_width-1 downto 0);
@@ -101,7 +101,7 @@ begin
 
 	ir <= instr;		-- registered in fetch
 
-	ext_addr <= ir(exta_width-1 downto 0);	-- address for extension select
+	ext_addr <= ir(EXTA_WIDTH-1 downto 0);	-- address for extension select
 
 --
 --	branch, jbranch
@@ -158,7 +158,7 @@ begin
 		rd <= '1';
 	end if;
 	wr <= '0';
-	if ir(7 downto 3)="00001" then		-- st memio
+	if ir(7 downto 0)="00000111" or ir(7 downto 3)="00001" then -- st memio
 		wr <= '1';
 	end if;
 

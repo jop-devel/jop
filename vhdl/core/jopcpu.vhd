@@ -51,8 +51,6 @@ end jopcpu;
 
 architecture rtl of jopcpu is
 
-	constant EXTA_WIDTH : integer := 3;
-
 --
 --	Signals
 --
@@ -97,7 +95,6 @@ begin
 	exc_req.spov <= sp_ov;
 
 	cmp_ext: entity work.extension 
-		generic map (exta_width => EXTA_WIDTH)
 		port map (
 			clk => clk,
 			reset => reset,

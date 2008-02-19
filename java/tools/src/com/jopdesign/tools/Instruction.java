@@ -36,15 +36,20 @@ public class Instruction {
 		new Instruction("add", 0x04, false, false),
 		new Instruction("sub", 0x05, false, false),
 
-//	extension 'address' selects function 3 bits
+//	extension 'address' selects function 4 bits
+		new Instruction("stmwa", 0x07, false, false),
+
 		new Instruction("stmra", 0x08+0, false, false),
-		new Instruction("stmwa", 0x08+1, false, false),
-		new Instruction("stmwd", 0x08+2, false, false),
-		new Instruction("stald", 0x08+3, false, false),
-		new Instruction("stast", 0x08+4, false, false),
-		// space for array instrucion
-		new Instruction("stmul", 0x08+5, false, false),
-		// one instruction free
+		new Instruction("stmwd", 0x08+1, false, false),
+		// array instructions
+		new Instruction("stald", 0x08+2, false, false),
+		new Instruction("stast", 0x08+3, false, false),
+		// getfield/putfield
+		new Instruction("stgf",  0x08+4, false, false),
+		new Instruction("stpf",  0x08+5, false, false),
+		// multiplication
+		new Instruction("stmul", 0x08+6, false, false),
+		// bytecode read
 		new Instruction("stbcrd", 0x08+7, false, false),
 
 //	st (vp)	3 bits
@@ -88,9 +93,9 @@ public class Instruction {
 
 		new Instruction("ldi", 0xc0, true, false),
 
-//		extension 'address' selects function 3 bits
+//		extension 'address' selects function 4 bits
 		new Instruction("ldmrd", 0xe0+0, false, false),
-		new Instruction("ldmul", 0xe0+5, false, false),
+		new Instruction("ldmul", 0xe0+6, false, false),
 		new Instruction("ldbcstart", 0xe0+7, false, false),
 
 //	ld (vp)	3 bits

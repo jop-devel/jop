@@ -52,7 +52,6 @@ generic (
 	jpc_width	: integer;			-- address bits of java bytecode pc
 
 	width		: integer := 32;	-- one data word
-	exta_width	: integer := 3;		-- address bits of internal io (or 5/4)
 	pc_width	: integer := 11;	-- address bits of internal instruction rom (upper half)
 	i_width		: integer := 8		-- instruction width
 );
@@ -64,7 +63,7 @@ port (
 
 	bsy			: in std_logic;
 	din			: in std_logic_vector(width-1 downto 0);
-	ext_addr	: out std_logic_vector(exta_width-1 downto 0);
+	ext_addr	: out std_logic_vector(EXTA_WIDTH-1 downto 0);
 	rd, wr		: out std_logic;
 
 -- jbc connections
@@ -177,7 +176,7 @@ port (
 end component;
 
 component decode is
-generic (i_width : integer; exta_width : integer);
+generic (i_width : integer);
 port (
 	clk, reset	: in std_logic;
 
@@ -188,7 +187,7 @@ port (
 	br			: out std_logic;
 	jbr			: out std_logic;
 
-	ext_addr	: out std_logic_vector(exta_width-1 downto 0);
+	ext_addr	: out std_logic_vector(EXTA_WIDTH-1 downto 0);
 	rd, wr		: out std_logic;
 
 	dir			: out std_logic_vector(ram_width-1 downto 0);
@@ -293,7 +292,7 @@ begin
 			sp_ov,
 			stk_zf, stk_nf, stk_eq, stk_lt, stk_aout, stk_bout);
 
-	cmp_dec: decode generic map (i_width, exta_width)
+	cmp_dec: decode generic map (i_width)
 		port map (clk, reset, instr, stk_zf, stk_nf, stk_eq, stk_lt,
 			br, jbr,
 			ext_addr, rd, wr,

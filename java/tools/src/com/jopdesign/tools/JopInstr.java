@@ -273,10 +273,10 @@ public class JopInstr{
 
 		new JopInstr("areturn", 1, IMP_ASM, 1),		// 0xB0
 		new JopInstr("return", 1, IMP_ASM, 10),		// 0xB1
-		new JopInstr("getstatic", 3, IMP_ASM, 11),	// 0xB2		// derzeit!!!
-		new JopInstr("putstatic", 3, IMP_ASM, 11),	// 0xB3
-		new JopInstr("getfield", 3, IMP_ASM, 30),		// 0xB4
-		new JopInstr("putfield", 3, IMP_ASM, 30),		// 0xB5
+		new JopInstr("getstatic", 3, IMP_ASM, 14),	// 0xB2		// derzeit!!!
+		new JopInstr("putstatic", 3, IMP_ASM, 15),	// 0xB3
+		new JopInstr("getfield", 3, IMP_ASM, 13),		// 0xB4
+		new JopInstr("putfield", 3, IMP_ASM, 15),		// 0xB5
 		new JopInstr("invokevirtual", 3, IMP_ASM, 30),	// 0xB6
 		new JopInstr("invokespecial", 3, IMP_ASM, 30),	// 0xB7
 
@@ -329,9 +329,9 @@ public class JopInstr{
 //		new JopInstr("jopsys_cond_move", 1, IMP_NO, 1),			// 0xDF
 		new JopInstr("resDF", 1, IMP_NO, 1),			// 0xDF
 
-		new JopInstr("getstatic_ref", 3, IMP_ASM, 30),   // 0xE0
+		new JopInstr("getstatic_ref", 3, IMP_ASM, 14),   // 0xE0
 		new JopInstr("putstatic_ref", 3, IMP_ASM, 30),			// 0xE1
-		new JopInstr("getfield_ref", 3, IMP_ASM, 30),			// 0xE2
+		new JopInstr("getfield_ref", 3, IMP_ASM, 13),			// 0xE2
 		new JopInstr("putfield_ref", 3, IMP_ASM, 30),			// 0xE3
 		new JopInstr("getstatic_long", 3, IMP_ASM, 30),			// 0xE4
 		new JopInstr("putstatic_long", 3, IMP_ASM, 30),			// 0xE5

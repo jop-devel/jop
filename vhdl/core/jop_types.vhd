@@ -9,44 +9,55 @@ use ieee.std_logic_1164.all;
 
 package jop_types is
 
+	constant EXTA_WIDTH : integer := 4;
+  
 --
---	extension address constants (used in extension.vhd and Instrucion.java)
+--	extension address constants (used in extension.vhd and Instruction.java)
 --
---		0	st	mem_rd_addr		start read
---		0	ld	mem_rd_data		read data
---		1	st	wraddr		store write address
---		2	st	mem_wr_data		start write
---		5	st	mul operand a, b and start mul
---		5	ld	mul result
---		6	free
---		7	st	start bytecode load (or cache)
---		7	ld	read new pc base (for cache version)
---
-	constant STMRA	: std_logic_vector(2 downto 0) := "000"; 
-	constant STMWA	: std_logic_vector(2 downto 0) := "001"; 
-	constant STMWD	: std_logic_vector(2 downto 0) := "010"; 
-	constant STALD	: std_logic_vector(2 downto 0) := "011"; 
-	constant STAST	: std_logic_vector(2 downto 0) := "100"; 
-	constant STMUL	: std_logic_vector(2 downto 0) := "101"; 
-	constant STBCR	: std_logic_vector(2 downto 0) := "111"; 
+--		  7	st	wraddr		        store write address        
 
-	constant LDMRD	: std_logic_vector(2 downto 0) := "000"; 
-	constant LDMUL	: std_logic_vector(2 downto 0) := "101"; 
-	constant LDBCSTART	: std_logic_vector(2 downto 0) := "111"; 
+--	        8+0	st	mem_rd_addr		start read
+--	          0	ld	mem_rd_data		read data
+--	        8+1	st	mem_wr_data		start write
+--              8+2     st      start array load
+--              8+3     st      start array store
+--	        8+4	st      start getfield
+--	        8+5	st      start putfield
+--	        8+6	st	mul operand a, b and start mul
+--	          6	ld	mul result        
+--	        8+7	st	start bytecode load (or cache)
+--	          7	ld	read new pc base (for cache version)
+--
+	constant STMWA	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "0111"; 
+
+        constant STMRA	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "1000"; 
+	constant STMWD	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "1001"; 
+	constant STALD	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "1010"; 
+	constant STAST	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "1011"; 
+	constant STGF	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "1100"; 
+	constant STPF	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "1101"; 
+	constant STMUL	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "1110";   
+	constant STBCR	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "1111"; 
+
+	constant LDMRD	        : std_logic_vector(EXTA_WIDTH-1 downto 0) := "0000"; 
+	constant LDMUL	        : std_logic_vector(EXTA_WIDTH-1 downto 0) := "0110"; 
+	constant LDBCSTART      : std_logic_vector(EXTA_WIDTH-1 downto 0) := "0111"; 
 
 	type mem_in_type is record
 		rd		: std_logic;
 		wr		: std_logic;
-		addr_wr	: std_logic;
-		bc_rd	: std_logic;
-		iaload	: std_logic;
-		iastore	: std_logic;
+		addr_wr	        : std_logic;
+		bc_rd           : std_logic;
+		iaload          : std_logic;
+		iastore	        : std_logic;
+                getfield        : std_logic;
+                putfield        : std_logic;
 	end record;
 
 	type mem_out_type is record
 		dout		: std_logic_vector(31 downto 0);
 		bcstart		: std_logic_vector(31 downto 0); 	-- start of method in bc cache
-		bsy			: std_logic;
+		bsy		: std_logic;
 	end record;
 
 	type exception_type is record

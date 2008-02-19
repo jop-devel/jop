@@ -32,8 +32,8 @@ port (
 
 	clk, reset	: in std_logic;
 
-	ain			: in std_logic_vector(31 downto 0);		-- TOS
-	bin			: in std_logic_vector(31 downto 0);		-- NOS
+	ain		: in std_logic_vector(31 downto 0);		-- TOS
+	bin		: in std_logic_vector(31 downto 0);		-- NOS
 
 -- exceptions
 
@@ -66,15 +66,15 @@ port (
 
 	clk, reset	: in std_logic;
 
-	bc_len		: in std_logic_vector(jpc_width-3 downto 0);		-- length of method in words
+	bc_len		: in std_logic_vector(jpc_width-3 downto 0);	-- length of method in words
 	bc_addr		: in std_logic_vector(17 downto 0);		-- memory address of bytecode
 
-	find		: in std_logic;							-- start lookup
+	find		: in std_logic;					-- start lookup
 
 	bcstart		: out std_logic_vector(jpc_width-3 downto 0); 	-- start of method in bc cache
 
-	rdy			: out std_logic;						-- lookup finished
-	in_cache	: out std_logic							-- method is in cache
+	rdy		: out std_logic;				-- lookup finished
+	in_cache	: out std_logic					-- method is in cache
 
 );
 end component;
@@ -95,12 +95,12 @@ end component;
 component jbc is
 generic (jpc_width : integer);
 port (
-	clk			: in std_logic;
+	clk		: in std_logic;
 	data		: in std_logic_vector(31 downto 0);
 	rd_addr		: in std_logic_vector(jpc_width-1 downto 0);
 	wr_addr		: in std_logic_vector(jpc_width-3 downto 0);
 	wr_en		: in std_logic;
-	q			: out std_logic_vector(7 downto 0)
+	q		: out std_logic_vector(7 downto 0)
 );
 end component;
 
@@ -114,6 +114,8 @@ end component;
 							iald0, iald1, iald2, iald3, iald4,
 							iasrd, ialrb,
 							iast0, iaswb, iasrb, iasst, iasw,
+                                                        gf0, gf1, gf2, gf3, gf4,
+                                                        pf0, pf3, pf4,
 							npexc, abexc, excw
 						);
 	signal state 		: state_type;
@@ -129,22 +131,25 @@ end component;
 	signal ram_addr		: std_logic_vector(MEM_ADDR_SIZE-1 downto 0);
 	signal ram_wr_data	: std_logic_vector(31 downto 0);
 
-	signal bcl_arr_bsy		: std_logic;
-
+--
+--      signals for access from the state machine
+--
+	signal state_bsy	: std_logic;
+	signal state_rd		: std_logic;
+	signal state_wr		: std_logic;
 
 --
---	signals for array access
+--	signals for object and array access
 --
-	signal index		: std_logic_vector(MEM_ADDR_SIZE-1 downto 0);	-- array index
-	signal addr_calc	: unsigned(MEM_ADDR_SIZE-1 downto 0);			-- adder
-	signal value		: std_logic_vector(31 downto 0);				-- store value
-
-	signal iastore_nxt	: std_logic;
-	signal was_a_store	: std_logic;
-	signal arr_wr		: std_logic;
+	signal index		: std_logic_vector(MEM_ADDR_SIZE-1 downto 0);	-- array or field index
+	signal addr_calc	: unsigned(MEM_ADDR_SIZE-1 downto 0);		-- adder
+	signal value		: std_logic_vector(31 downto 0);		-- store value
 
 	signal null_pointer	: std_logic;
 	signal bounds_error	: std_logic;
+
+	signal store_nxt	: std_logic;
+	signal was_a_store	: std_logic;
 
 --
 --	values for bytecode read/cache
@@ -152,31 +157,29 @@ end component;
 --	len is in words, 10 bits range is 'hardcoded' in JOPWriter.java
 --	start is address in external memory (rest of the word)
 --
-	signal bc_len			: unsigned(jpc_width-3 downto 0);	-- length of method in words
-	signal inc_addr_reg		: std_logic;
-	signal dec_len			: std_logic;
-	signal bc_wr_addr		: unsigned(jpc_width-3 downto 0);	-- address for jbc (in words!)
-	signal bc_wr_data		: std_logic_vector(31 downto 0);	-- write data for jbc
-	signal bc_wr_ena		: std_logic;
-
-	signal bc_arr_rd		: std_logic;
+	signal bc_len		: unsigned(jpc_width-3 downto 0);	-- length of method in words
+	signal inc_addr_reg	: std_logic;
+	signal dec_len		: std_logic;
+	signal bc_wr_addr	: unsigned(jpc_width-3 downto 0);	-- address for jbc (in words!)
+	signal bc_wr_data	: std_logic_vector(31 downto 0);	-- write data for jbc
+	signal bc_wr_ena	: std_logic;
 
 --
 --	signals for cache connection
 --
-	signal cache_rdy		: std_logic;
+	signal cache_rdy	: std_logic;
 	signal cache_in_cache	: std_logic;
 	signal cache_bcstart	: std_logic_vector(jpc_width-3 downto 0);
 
 begin
 
-process(sc_mem_in, bcl_arr_bsy, state)
+process(sc_mem_in, state_bsy, state)
 begin
 	mem_out.bsy <= '0';
 	if sc_mem_in.rdy_cnt=3 then
 		mem_out.bsy <= '1';
 	else
-		if state/=ialrb and state/=iasw and bcl_arr_bsy='1' then
+		if state/=ialrb and state/=iasw and state/=gf4 and state/=pf4 and state_bsy='1' then
 			mem_out.bsy <= '1';
 		end if;
 	end if;
@@ -218,11 +221,10 @@ end process;
 --	SimpCon connections
 --
 
-
 	sc_mem_out.address <= ram_addr;
 	sc_mem_out.wr_data <= ram_wr_data;
-	sc_mem_out.rd <= mem_in.rd or bc_arr_rd;
-	sc_mem_out.wr <= mem_in.wr or arr_wr;
+	sc_mem_out.rd <= mem_in.rd or state_rd;
+	sc_mem_out.wr <= mem_in.wr or state_wr;
 	mem_out.dout <= sc_mem_in.rd_data;
 
 
@@ -241,7 +243,7 @@ begin
 		addr_reg <= (others => '0');
 		index <= (others => '0');
 		value <= (others => '0');
-		iastore_nxt <= '0';
+		store_nxt <= '0';
 		was_a_store <= '0';
 		bc_len <= (others => '0');
 
@@ -267,41 +269,40 @@ begin
 			end if;
 		end if;
 
-		iastore_nxt <= '0';
+		store_nxt <= '0';
 		-- save array address and index
-		if mem_in.iaload='1' or iastore_nxt='1' then
+		if mem_in.iaload='1' or mem_in.getfield='1' or store_nxt='1' then
 			addr_reg <= unsigned(bin(MEM_ADDR_SIZE-1 downto 0));	-- store address for store and np check
 			index <= ain(MEM_ADDR_SIZE-1 downto 0);		-- store array index
 		end if;
-		if mem_in.iastore='1' then
+		if mem_in.iastore='1' or mem_in.putfield='1' then
 			value <= ain;
 			-- get reference and index in next cycle
-			iastore_nxt <= '1';
+			store_nxt <= '1';
 		end if;
-
-		if mem_in.iaload='1' then
+                
+		if mem_in.iaload='1' or mem_in.getfield='1' then
 			was_a_store <= '0';
-		elsif mem_in.iastore='1' then
+		elsif mem_in.iastore='1' or mem_in.putfield='1' then
 			was_a_store <= '1';
 		end if;
 
-		if state=iald3 then
+		if state=iald3 or state=gf2 then
 			addr_reg <= addr_calc;
 		end if;
-	end if;
+        end if;
 end process;
 
 
 --
 --	RAM address MUX (combinational)
 --
-process(ain, addr_reg, mem_in, value)
+process(ain, addr_reg, mem_in, state)
 begin
 	if mem_in.rd='1' then
 		ram_addr <= ain(MEM_ADDR_SIZE-1 downto 0);
 	else
-		-- default is the registered address
-		-- for wr, bc load, and array access
+		-- default is the registered address for wr, bc load
 		ram_addr <= std_logic_vector(addr_reg(MEM_ADDR_SIZE-1 downto 0));
 	end if;
 end process;
@@ -344,6 +345,10 @@ begin
 				next_state <= bc_cc;
 			elsif mem_in.iaload='1' then
 				next_state <= iald0;
+			elsif mem_in.getfield='1' then
+				next_state <= gf0;
+			elsif mem_in.putfield='1' then
+				next_state <= pf0;
 			elsif mem_in.iastore='1' then
 				next_state <= iast0;
 			end if;
@@ -440,7 +445,7 @@ begin
 		when iald1 =>
 			-- w. pipeline level 2
 			-- would waste one cycle in a single cycle memory (similar
-			-- to bc load) - SimpCon rd comes from registered bc_arr_rd.
+			-- to bc load) - SimpCon rd comes from registered state_rd.
 			if sc_mem_in.rdy_cnt/=3 then
 				next_state <= iald2;
 			end if;
@@ -499,6 +504,44 @@ begin
 				next_state <= idl;
 			end if;
 
+
+		when gf0 =>
+			if addr_reg=0 then
+				next_state <= npexc;
+			else
+				next_state <= gf1;
+			end if;
+		when gf1 =>
+			-- either 1 or 0
+			if sc_mem_in.rdy_cnt(1)='0' then
+				next_state <= gf2;
+			end if;
+		when gf2 =>
+			next_state <= gf3;
+                        if was_a_store='1' then
+                          next_state <= pf3;
+                        end if;
+		when gf3 =>
+			next_state <= gf4;
+		when gf4 =>
+			-- either 1 or 0
+			if sc_mem_in.rdy_cnt(1)='0' then
+				next_state <= idl;
+			end if;
+
+       		when pf0 =>
+			-- just one cycle wait to store the value
+                        next_state <= gf0;
+                -- states pf1 and pf2 are shared with getfield
+		when pf3 =>
+			next_state <= pf4;
+		when pf4 =>
+			-- either 1 or 0
+			if sc_mem_in.rdy_cnt(1)='0' then
+				next_state <= idl;
+			end if;
+
+                        
 		when npexc =>
 			next_state <= excw;
 
@@ -525,11 +568,11 @@ begin
 		bc_wr_ena <= '0';
 		inc_addr_reg <= '0';
 		dec_len <= '0';
-		bc_arr_rd <= '0';
-		bcl_arr_bsy <= '0';
+		state_rd <= '0';
+		state_bsy <= '0';
 		null_pointer <= '0';
 		bounds_error <= '0';
-		arr_wr <= '0';
+		state_wr <= '0';
 
 	elsif rising_edge(clk) then
 
@@ -538,22 +581,22 @@ begin
 		bc_wr_ena <= '0';
 		inc_addr_reg <= '0';
 		dec_len <= '0';
-		bc_arr_rd <= '0';
+		state_rd <= '0';
 		null_pointer <= '0';
 		bounds_error <= '0';
-		arr_wr <= '0';
+		state_wr <= '0';
 
 		case next_state is
 
 			when idl =>
-				bcl_arr_bsy <= '0';
+				state_bsy <= '0';
 
 			when rd1 =>
 
 			when wr1 =>
 
 			when bc_cc =>
-				bcl_arr_bsy <= '1';
+				state_bsy <= '1';
 				-- cache check
 
 			when bc_r1 =>
@@ -561,7 +604,7 @@ begin
 				bc_wr_addr <= unsigned(cache_bcstart);
 				-- first memory read
 				inc_addr_reg <= '1';
-				bc_arr_rd <= '1';
+				state_rd <= '1';
 
 			when bc_w =>
 				-- wait
@@ -570,7 +613,7 @@ begin
 				-- following memory reads
 				inc_addr_reg <= '1';
 				dec_len <= '1';
-				bc_arr_rd <= '1';
+				state_rd <= '1';
 
 			when bc_wr =>
 				-- BC write
@@ -580,24 +623,24 @@ begin
 				-- wait for last (unnecessary read)
 
 			when iast0 =>
-				bcl_arr_bsy <= '1';
+				state_bsy <= '1';
 
 			when iald0 =>
-				bc_arr_rd <= '1';
-				bcl_arr_bsy <= '1';
+				state_rd <= '1';
+				state_bsy <= '1';
 				inc_addr_reg <= '1';
 
 			when iald1 =>
 
 			when iald2 =>
-				bc_arr_rd <= '1';
+				state_rd <= '1';
 
 			when iald3 =>
 
 			when iald4 =>
 
 			when iasrd =>
-				bc_arr_rd <= '1';
+				state_rd <= '1';
 
 			when ialrb =>
 
@@ -606,9 +649,30 @@ begin
 			when iasrb =>
 
 			when iasst =>
-				arr_wr <= '1';
+				state_wr <= '1';
 
 			when iasw =>
+
+			when gf0 =>
+				state_rd <= '1';
+				state_bsy <= '1';
+
+			when gf1 =>
+
+			when gf2 =>
+
+			when gf3 =>
+				state_rd <= '1';
+                          
+			when gf4 =>
+
+                        when pf0 =>
+				state_bsy <= '1';
+
+			when pf3 =>
+				state_wr <= '1';
+                          
+			when pf4 =>
 
 			when npexc =>
 				null_pointer <= '1';
