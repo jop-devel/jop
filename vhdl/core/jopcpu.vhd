@@ -5,7 +5,6 @@
 --
 --	2007-03-16	creation
 --	2007-04-13	Changed memory connection to records
---	2008-02-20	memory - I/O muxing after the memory controller (mem_sc)
 --
 --	todo: clean up: substitute all signals by records
 
