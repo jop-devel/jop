@@ -100,6 +100,7 @@
 //	2007-11-22	update for JOP CMP version (by CP)
 //	2007-12-03	new interrupt logic
 //	2008-02-19	WP: field access in HW
+//	2008-02-20	IO modules after the memory controller (mem_sc) to keep HWO working
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -109,7 +110,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20080219
+version		= 20080220
 
 //
 //	start of stack area in the on-chip RAM

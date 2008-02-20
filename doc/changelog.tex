@@ -241,6 +241,7 @@ in JOP.
         31.08.2007 & 20070831 & 18347 & 8371 & 16425 & 2930 & use more stack \\
         04.12.2007 & 20071203 & 18347 & 8308 & 16425 & 3091 & added interrupt controller \\
         19.02.2008 & 20080219 & 18357 & 8511 & 18778 & 3092 & getfield/putfield HW support \\
+        20.02.2008 & 20080220 & 18347 & 8511 & 18767 & 3136 & IO/memory MUX after mem\_sc \\
         \bottomrule
 
     \end{tabular}
@@ -306,8 +307,15 @@ RtThread scheduling.
 access -- was set to IO after an IO access, array read did not set
 it.
 
-\paragraph{20080218} Faster multiplier: 15\% larger, but twice as
+\paragraph{20080218} WP: Faster multiplier: 15\% larger, but twice as
 fast; \code{imul} now takes 19 cycles.
+
+\paragraph{20080219} WP: getfield and putfield in hardware
+(\code{mem\_sc}).
+
+\paragraph{20080220} MS: Moved IO/memory muxing after the memory controller into
+\code{jopcpu} to keep the hardware objects working. Hurts fmax a
+little bit (92~MHz).
 
 \subsection{Software}
 

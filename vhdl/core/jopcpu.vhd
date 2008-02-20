@@ -5,6 +5,7 @@
 --
 --	2007-03-16	creation
 --	2007-04-13	Changed memory connection to records
+--	2008-02-20	memory - I/O muxing after the memory controller (mem_sc)
 --
 --	todo: clean up: substitute all signals by records
 
@@ -66,6 +67,12 @@ architecture rtl of jopcpu is
 	signal mem_in			: mem_in_type;
 	signal mem_out			: mem_out_type;
 
+	signal sc_ctrl_mem_out	: sc_out_type;
+	signal sc_ctrl_mem_in	: sc_in_type;
+
+	signal mux_mem			: std_logic;
+	signal mem_access		: std_logic;
+
 	signal bsy				: std_logic;
 
 	signal jbc_addr			: std_logic_vector(jpc_width-1 downto 0);
@@ -108,10 +115,7 @@ begin
 			dout => stack_din,
 
 			mem_in => mem_in,
-			mem_out => mem_out,
-	
-			sc_io_out => sc_io_out,
-			sc_io_in => sc_io_in
+			mem_out => mem_out
 		);
 
 	cmp_mem: entity work.mem_sc
@@ -134,8 +138,55 @@ begin
 			jbc_addr => jbc_addr,
 			jbc_data => jbc_data,
 
-			sc_mem_out => sc_mem_out,
-			sc_mem_in => sc_mem_in
+			sc_mem_out => sc_ctrl_mem_out,
+			sc_mem_in => sc_ctrl_mem_in
 		);
+
+
+	--
+	--	Select and mux for memory and IO
+	--
+
+process(clk, reset)
+begin
+	if (reset='1') then
+		mux_mem <= '0';
+	elsif rising_edge(clk) then
+
+		if sc_ctrl_mem_out.rd='1' or sc_ctrl_mem_out.wr='1' then
+			-- highest address bit decides between IO and memory
+			if sc_ctrl_mem_out.address(SC_ADDR_SIZE-1)='0' then
+				mux_mem <= '1';
+			else
+				mux_mem <= '0';
+			end if;
+		end if;
+	end if;
+end process;
+
+process(mux_mem, sc_ctrl_mem_out, sc_ctrl_mem_in, sc_mem_in, sc_io_in)
+begin
+
+	sc_ctrl_mem_in <= sc_mem_in;
+	mem_access <= '1';
+
+	if mux_mem='0' then
+		sc_ctrl_mem_in <= sc_io_in;
+	end if;
+
+	if sc_ctrl_mem_out.address(SC_ADDR_SIZE-1)='1' then
+		mem_access <= '0';
+	end if;
+end process;
+
+	sc_mem_out.address <= sc_ctrl_mem_out.address;
+	sc_mem_out.wr_data <= sc_ctrl_mem_out.wr_data;
+	sc_mem_out.wr <= sc_ctrl_mem_out.wr and mem_access;
+	sc_mem_out.rd <= sc_ctrl_mem_out.rd and mem_access;
+
+	sc_io_out.address <= sc_ctrl_mem_out.address;
+	sc_io_out.wr_data <= sc_ctrl_mem_out.wr_data;
+	sc_io_out.wr <= sc_ctrl_mem_out.wr and not mem_access;
+	sc_io_out.rd <= sc_ctrl_mem_out.rd and not mem_access;
 
 end rtl;
