@@ -31,13 +31,13 @@ port (
 --
 --	SimpCon memory interface
 --
-	sc_mem_out		: out sc_mem_out_type;
+	sc_mem_out		: out sc_out_type;
 	sc_mem_in		: in sc_in_type;
 
 --
 --	SimpCon IO interface
 --
-	sc_io_out		: out sc_io_out_type;
+	sc_io_out		: out sc_out_type;
 	sc_io_in		: in sc_in_type;
 
 --

@@ -55,9 +55,9 @@ begin
 	ahbsi.hsel(1 to NAHBSLV-1) <= (others => '0');	-- we use only slave 0
 	ahbsi.hsel(0) <= scmo.rd or scmo.wr;			-- slave select
 	-- do we need to store the addrsss in a register?
-	ahbsi.haddr(MEM_ADDR_SIZE-1+2 downto 2) <= scmo.address;	-- address bus (byte)
+	ahbsi.haddr(SC_ADDR_SIZE-1+2 downto 2) <= scmo.address;	-- address bus (byte)
 	ahbsi.haddr(1 downto 0) <= (others => '0');
-	ahbsi.haddr(31 downto MEM_ADDR_SIZE+2) <= (others => '0');
+	ahbsi.haddr(31 downto SC_ADDR_SIZE+2) <= (others => '0');
 	ahbsi.hwrite <= scmo.wr;						-- read/write
 	ahbsi.htrans <= HTRANS_NONSEQ;					-- transfer type
 	ahbsi.hsize <= "010";							-- transfer size 32 bits

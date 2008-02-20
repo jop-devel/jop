@@ -16,30 +16,22 @@ use ieee.numeric_std.all;
 
 package sc_pack is
 
-	constant MEM_ADDR_SIZE : integer := 21;
-	constant IO_ADDR_SIZE : integer := 7;
+	constant SC_ADDR_SIZE : integer := 21;
 	constant RDY_CNT_SIZE : integer := 2;
 
-	type sc_mem_out_type is record
-		address		: std_logic_vector(MEM_ADDR_SIZE-1 downto 0);
+	type sc_out_type is record
+		address		: std_logic_vector(SC_ADDR_SIZE-1 downto 0);
 		wr_data		: std_logic_vector(31 downto 0);
 		rd			: std_logic;
 		wr			: std_logic;
 	end record;
 
-	type sc_io_out_type is record
-		address		: std_logic_vector(IO_ADDR_SIZE-1 downto 0);
-		wr_data		: std_logic_vector(31 downto 0);
-		rd			: std_logic;
-		wr			: std_logic;
-	end record;
-	
 	type sc_in_type is record
 		rd_data		: std_logic_vector(31 downto 0);
 		rdy_cnt		: unsigned(RDY_CNT_SIZE-1 downto 0);
 	end record;
 	
-	type sc_io_out_array_type is array (integer range <>) of sc_io_out_type;
+	type sc_out_array_type is array (integer range <>) of sc_out_type;
 	type sc_in_array_type is array (integer range <>) of sc_in_type;
 	
 end sc_pack;

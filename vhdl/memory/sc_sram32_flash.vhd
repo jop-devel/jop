@@ -39,7 +39,7 @@ port (
 --
 --	SimpCon memory interface
 --
-	sc_mem_out		: in sc_mem_out_type;
+	sc_mem_out		: in sc_out_type;
 	sc_mem_in		: out sc_in_type;
 
 -- memory interface
@@ -101,7 +101,7 @@ architecture rtl of sc_mem_if is
 
 begin
 
-	assert MEM_ADDR_SIZE>=21 report "Too less address bits";
+	assert SC_ADDR_SIZE>=21 report "Too less address bits";
 	ram_dout_en <= dout_ena;
 
 	sc_mem_in.rdy_cnt <= cnt;

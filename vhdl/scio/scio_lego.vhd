@@ -47,7 +47,7 @@ generic (cpu_id : integer := 0);
 --
 --	SimpCon IO interface
 --
-	sc_io_out		: in sc_io_out_type;
+	sc_io_out		: in sc_out_type;
 	sc_io_in		: out sc_in_type;
 
 --

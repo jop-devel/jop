@@ -57,7 +57,7 @@ architecture rtl of jop is
 --
 --	jopcpu connections
 --
-	signal sc_io_out		: sc_io_out_type;
+	signal sc_io_out		: sc_out_type;
 	signal sc_io_in			: sc_in_type;
 	signal irq_in			: irq_bcf_type;
 	signal irq_out			: irq_ack_type;

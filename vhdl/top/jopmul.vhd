@@ -127,7 +127,7 @@ end component;
 	signal sc_arb_out		: arb_out_type(0 to cpu_cnt-1);
 	signal sc_arb_in		: arb_in_type(0 to cpu_cnt-1);
 	
-	signal sc_mem_out		: sc_mem_out_type;
+	signal sc_mem_out		: sc_out_type;
 	signal sc_mem_in		: sc_in_type;
 	
 	signal sc_io_out		: sc_io_out_array_type(0 to cpu_cnt-1);

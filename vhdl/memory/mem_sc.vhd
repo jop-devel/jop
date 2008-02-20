@@ -14,6 +14,7 @@
 --				len decrement in bc_rn and exit from bc_wr
 --	2007-04-13	Changed memory connection to records
 --	2007-04-14	xaload and xastore in hardware
+--	2008-02-19	put/getfield in hardware
 --
 
 Library IEEE;
@@ -51,7 +52,7 @@ port (
 
 -- SimpCon interface
 
-	sc_mem_out	: out sc_mem_out_type;
+	sc_mem_out	: out sc_out_type;
 	sc_mem_in	: in sc_in_type
 
 );
@@ -125,10 +126,10 @@ end component;
 	-- should also be considered in the cacheable range
 
 	-- addr_reg used to 'store' the address for wr, bc load, and array access
-	signal addr_reg		: unsigned(MEM_ADDR_SIZE-1 downto 0);
+	signal addr_reg		: unsigned(SC_ADDR_SIZE-1 downto 0);
 
 	-- MUX for SimpCon address and write data
-	signal ram_addr		: std_logic_vector(MEM_ADDR_SIZE-1 downto 0);
+	signal ram_addr		: std_logic_vector(SC_ADDR_SIZE-1 downto 0);
 	signal ram_wr_data	: std_logic_vector(31 downto 0);
 
 --
@@ -141,8 +142,8 @@ end component;
 --
 --	signals for object and array access
 --
-	signal index		: std_logic_vector(MEM_ADDR_SIZE-1 downto 0);	-- array or field index
-	signal addr_calc	: unsigned(MEM_ADDR_SIZE-1 downto 0);		-- adder
+	signal index		: std_logic_vector(SC_ADDR_SIZE-1 downto 0);	-- array or field index
+	signal addr_calc	: unsigned(SC_ADDR_SIZE-1 downto 0);		-- adder
 	signal value		: std_logic_vector(31 downto 0);		-- store value
 
 	signal null_pointer	: std_logic;
@@ -249,7 +250,7 @@ begin
 
 	elsif rising_edge(clk) then
 		if mem_in.addr_wr='1' then
-			addr_reg <= unsigned(ain(MEM_ADDR_SIZE-1 downto 0));
+			addr_reg <= unsigned(ain(SC_ADDR_SIZE-1 downto 0));
 		end if;
 
 		if mem_in.bc_rd='1' then
@@ -257,8 +258,8 @@ begin
 			addr_reg(17 downto 0) <= unsigned(ain(27 downto 10));
 
 			-- addr_bits is 17
-			if MEM_ADDR_SIZE>18 then
-				addr_reg(MEM_ADDR_SIZE-1 downto 18) <= (others => '0');
+			if SC_ADDR_SIZE>18 then
+				addr_reg(SC_ADDR_SIZE-1 downto 18) <= (others => '0');
 			end if;
 		else
 			if inc_addr_reg='1' then
@@ -272,8 +273,8 @@ begin
 		store_nxt <= '0';
 		-- save array address and index
 		if mem_in.iaload='1' or mem_in.getfield='1' or store_nxt='1' then
-			addr_reg <= unsigned(bin(MEM_ADDR_SIZE-1 downto 0));	-- store address for store and np check
-			index <= ain(MEM_ADDR_SIZE-1 downto 0);		-- store array index
+			addr_reg <= unsigned(bin(SC_ADDR_SIZE-1 downto 0));	-- store address for store and np check
+			index <= ain(SC_ADDR_SIZE-1 downto 0);		-- store array index
 		end if;
 		if mem_in.iastore='1' or mem_in.putfield='1' then
 			value <= ain;
@@ -300,10 +301,10 @@ end process;
 process(ain, addr_reg, mem_in, state)
 begin
 	if mem_in.rd='1' then
-		ram_addr <= ain(MEM_ADDR_SIZE-1 downto 0);
+		ram_addr <= ain(SC_ADDR_SIZE-1 downto 0);
 	else
 		-- default is the registered address for wr, bc load
-		ram_addr <= std_logic_vector(addr_reg(MEM_ADDR_SIZE-1 downto 0));
+		ram_addr <= std_logic_vector(addr_reg(SC_ADDR_SIZE-1 downto 0));
 	end if;
 end process;
 
@@ -321,7 +322,7 @@ begin
 end process;
 
 
-	addr_calc <= unsigned(sc_mem_in.rd_data(MEM_ADDR_SIZE-1 downto 0))+unsigned(index);
+	addr_calc <= unsigned(sc_mem_in.rd_data(SC_ADDR_SIZE-1 downto 0))+unsigned(index);
 
 
 --
@@ -436,7 +437,7 @@ begin
 		when iald0 =>
 			if addr_reg=0 then
 				next_state <= npexc;
-			elsif index(MEM_ADDR_SIZE-1)='1' then
+			elsif index(SC_ADDR_SIZE-1)='1' then
 				next_state <= abexc;
 			else
 				next_state <= iald1;
@@ -476,7 +477,7 @@ begin
 
 		when ialrb =>
 			-- can we optimize this when we increment index at some state?
-			if unsigned(index) >= unsigned(sc_mem_in.rd_data(MEM_ADDR_SIZE-1 downto 0)) then
+			if unsigned(index) >= unsigned(sc_mem_in.rd_data(SC_ADDR_SIZE-1 downto 0)) then
 				next_state <= abexc;
 			-- either 1 or 0
 			elsif sc_mem_in.rdy_cnt(1)='0' then
@@ -491,7 +492,7 @@ begin
 		when iasrb =>
 			next_state <= iasst;
 			-- can we optimize this when we increment index at some state?
-			if unsigned(index) >= unsigned(sc_mem_in.rd_data(MEM_ADDR_SIZE-1 downto 0)) then
+			if unsigned(index) >= unsigned(sc_mem_in.rd_data(SC_ADDR_SIZE-1 downto 0)) then
 				next_state <= abexc;
 			end if;
 

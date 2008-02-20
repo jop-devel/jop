@@ -53,7 +53,7 @@ port (
 
 -- SimpCon master io interface
 
-	sc_io_out		: out sc_io_out_type;
+	sc_io_out		: out sc_out_type;
 	sc_io_in		: in sc_in_type
 );
 end extension;
@@ -104,7 +104,7 @@ end component mul;
 --	SimpCon specific signals
 --
 	-- SimpCon IO write address
-	signal sc_wr_addr			: std_logic_vector(IO_ADDR_SIZE-1 downto 0);
+	signal sc_wr_addr			: std_logic_vector(SC_ADDR_SIZE-1 downto 0);
 	signal sc_bsy				: std_logic;
 	signal sc_rd				: std_logic;
 
@@ -264,7 +264,7 @@ begin
 
 		if wraddr_wr='1' then
 			-- store SimpCon write address
-			sc_wr_addr <= ain(IO_ADDR_SIZE-1 downto 0);
+			sc_wr_addr <= ain(SC_ADDR_SIZE-1 downto 0);
 			wraddr_msb <= ain(31);
 		end if;
 
@@ -298,7 +298,7 @@ end process;
 process(ain, sc_wr_addr, sc_rd)
 begin
 	if sc_rd='1' then
-		sc_io_out.address <= ain(IO_ADDR_SIZE-1 downto 0);
+		sc_io_out.address <= ain(SC_ADDR_SIZE-1 downto 0);
 	else
 		sc_io_out.address <= sc_wr_addr;
 	end if;

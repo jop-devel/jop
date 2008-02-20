@@ -39,7 +39,7 @@ port (
 --
 --	SimpCon memory interface
 --
-	sc_mem_out		: in sc_mem_out_type;
+	sc_mem_out		: in sc_out_type;
 	sc_mem_in		: out sc_in_type;
 
 -- memory interface
