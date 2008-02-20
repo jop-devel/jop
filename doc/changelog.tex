@@ -239,7 +239,8 @@ in JOP.
         change (Q 7.0)\\
         14.04.2007 & 20070414 & 18347 & 8520 & 16425 & 2906 & array HW \\
         31.08.2007 & 20070831 & 18347 & 8371 & 16425 & 2930 & use more stack \\
-        04.12.2007 & 20071203 & 16347 & 8308 & 16425 & 3091 & added interrupt controller \\
+        04.12.2007 & 20071203 & 18347 & 8308 & 16425 & 3091 & added interrupt controller \\
+        19.02.2008 & 20080219 & 18357 & 8511 & 18778 & 3092 & getfield/putfield HW support \\
         \bottomrule
 
     \end{tabular}
@@ -247,6 +248,26 @@ in JOP.
     \label{tab:perf}
 
 \end{table}
+
+Nokia 6300 with Jazelle is the real target ;-)
+
+\begin{verbatim}
+    ARM9 237 MHz
+    iaload_3 iadd 81840000 1/s 3 cycles
+    iinc 83886000 1/s 3 cycles
+    ldc 11066000 1/s 22 cycles
+    if_icmplt 28149000 1/s 8 cycles
+    if_icmplt not taken 47662000 1/s 5 cycles
+    getfield 45221000 1/s 5 cycles
+    getstatic 32704000 1/s 7 cycles
+    iaload 35544000 1/s 7 cycles
+    invoke 1836000 1/s 129 cycles
+    invokestatic 1967000 1/s 120 cycles
+    invokeinterface 1855000 1/s 127 cycles
+    Sieve 26068 1/s
+    Kfl 43229 1/s
+    UDP/IP 11595 1/s
+\end{verbatim}
 
 \section{Changelog}
 
