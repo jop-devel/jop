@@ -99,6 +99,7 @@
 //				use 33 bit for the comparison (compare bug for diff > 2^31 corrected)
 //	2007-11-22	update for JOP CMP version (by CP)
 //	2007-12-03	new interrupt logic
+//	2008-02-19	WP: field access in HW
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -108,7 +109,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20071203
+version		= 20080219
 
 //
 //	start of stack area in the on-chip RAM
