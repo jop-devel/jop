@@ -21,6 +21,7 @@ package joptimizer.framework.actions;
 import com.jopdesign.libgraph.cfg.GraphException;
 import com.jopdesign.libgraph.struct.MethodInfo;
 import joptimizer.framework.JOPtimizer;
+import org.apache.log4j.Logger;
 
 /**
  * An abstract class for Graphactions, which implements a single transformation on a
@@ -41,7 +42,12 @@ public abstract class AbstractGraphAction extends AbstractMethodAction implement
         try {
             execute(methodInfo, methodInfo.getMethodCode().getGraph());
         } catch (GraphException e) {
-            throw new ActionException("Could not get graph for method {"+methodInfo.getFQMethodName()+"}.", e);
+            if ( getJopConfig().doIgnoreActionErrors() ) {
+                Logger.getLogger(this.getClass()).warn("Could not get graph of {"+
+                        methodInfo.getFQMethodName()+"}, skipping.", e);
+            } else {
+                throw new ActionException("Could not get graph for method {"+methodInfo.getFQMethodName()+"}.", e);
+            }
         }
     }
 }

@@ -27,11 +27,11 @@ import joptimizer.config.StringOption;
 import joptimizer.framework.JOPtimizer;
 import joptimizer.framework.actions.AbstractGraphAction;
 import joptimizer.framework.actions.ActionException;
-import joptimizer.optimizer.inline.BottomUpInlineStrategy;
 import joptimizer.optimizer.inline.CodeInliner;
 import joptimizer.optimizer.inline.InlineChecker;
 import joptimizer.optimizer.inline.InlineHelper;
 import joptimizer.optimizer.inline.InlineStrategy;
+import joptimizer.optimizer.inline.LocalInlineStrategy;
 import org.apache.log4j.Logger;
 
 import java.util.List;
@@ -78,6 +78,9 @@ public class InlineOptimizer extends AbstractGraphAction {
                 "Should be used with care if dynamic class loading is used."));
         options.add(new IntOption(getActionId(), CONF_MAX_INLINE_SIZE,
                 "Maximum size of methods to inline in bytes, 0 for unlimited.", "size"));
+
+        // TODO bit of a hack here, find a nicer solution to get options from (all) strategies
+        new LocalInlineStrategy().appendActionArguments(getActionId(), options);
     }
 
 
@@ -92,7 +95,10 @@ public class InlineOptimizer extends AbstractGraphAction {
     public boolean configure(JopConfig config) {
 
         // NOTICE make strategy selectable by option
-        strategy = new BottomUpInlineStrategy();
+        strategy = new LocalInlineStrategy();
+        if ( !strategy.configure(getActionName(), getActionId(), config) ) {
+            return false;
+        }
 
         InlineChecker checker = new InlineChecker(getJoptimizer().getAppStruct(), config.getArchConfig());
         CodeInliner inliner = new CodeInliner(getJoptimizer().getAppStruct());

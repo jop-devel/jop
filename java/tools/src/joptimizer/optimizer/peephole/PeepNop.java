@@ -23,6 +23,8 @@ import com.jopdesign.libgraph.cfg.statements.StmtHandle;
 import com.jopdesign.libgraph.cfg.statements.common.NopStmt;
 
 /**
+ * A simple peephole optimization which removes NOPs.
+ * 
  * @author Stefan Hepp, e0026640@student.tuwien.ac.at
  */
 public class PeepNop implements PeepOptimization {

@@ -24,6 +24,8 @@ import com.jopdesign.libgraph.struct.MethodInfo;
 import joptimizer.config.JopConfig;
 import joptimizer.framework.actions.ActionException;
 
+import java.util.List;
+
 /**
  * This interface will be used to implement the inlining strategy.
  *
@@ -38,6 +40,10 @@ public interface InlineStrategy {
     AppStruct getAppStruct();
 
     InvokeResolver getInvokeResolver();
+
+    void appendActionArguments(String actionId, List options);
+
+    boolean configure(String actionName, String actionId, JopConfig config);
 
     /**
      * Initialize the algorithm. Called when the action is started.

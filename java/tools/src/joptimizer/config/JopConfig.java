@@ -97,7 +97,7 @@ public class JopConfig implements AppConfig {
                 "Comma-separated list of packages or classes which will not be loaded. Ignored if " +
                 CONF_ALLOW_INCOMPLETE_CODE + " is not set.", "pkg"));
         optionList.add( new BoolOption(null, CONF_IGNORE_ACTION_ERRORS,
-                "Continue if any action throws an error."));
+                "Continue with next method, class or action if any action throws an error."));
         optionList.add( new BoolOption(null, CONF_SKIP_NATIVE_CLASS,
                 "Do not load native system classes."));
     }

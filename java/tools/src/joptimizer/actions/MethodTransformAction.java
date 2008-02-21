@@ -129,7 +129,14 @@ public class MethodTransformAction extends AbstractMethodAction implements Actio
         try {
             graph = code.getGraph();
         } catch (GraphException e) {
-            throw new ActionException("Could not create graph.", e);
+            if ( getJopConfig().doIgnoreActionErrors() ) {
+                Logger.getLogger(this.getClass()).warn("Could not create graph of {"+
+                        methodInfo.getFQMethodName()+"}, skipping.", e);
+                return;
+            } else {
+                throw new ActionException("Could not create graph for method {"+
+                        methodInfo.getFQMethodName()+"}.", e);
+            }
         }
 
         if (logger.isInfoEnabled()) {
@@ -149,7 +156,14 @@ public class MethodTransformAction extends AbstractMethodAction implements Actio
 
                 graph.transformTo(ControlFlowGraph.TYPE_STACK);
             } catch (GraphException e) {
-                throw new ActionException("Could not transform graph to quad-form.", e);
+                if ( getJopConfig().doIgnoreActionErrors() ) {
+                    Logger.getLogger(this.getClass()).warn("Could not transform graph to quad-form of {"+
+                            methodInfo.getFQMethodName()+"}, skipping.", e);
+                    return;
+                } else {
+                    throw new ActionException("Could not transform graph to quad-form for method {"+
+                            methodInfo.getFQMethodName()+"}.", e);
+                }
             }
         }
 
@@ -158,7 +172,12 @@ public class MethodTransformAction extends AbstractMethodAction implements Actio
         try {
             code.compileGraph();
         } catch (GraphException e) {
-            throw new ActionException("Could not compile graph.", e);
+            if ( getJopConfig().doIgnoreActionErrors() ) {
+                Logger.getLogger(this.getClass()).warn("Could not compile graph of {"+
+                        methodInfo.getFQMethodName()+"}, skipping.", e);
+            } else {
+                throw new ActionException("Could not compile graph for method {"+methodInfo.getFQMethodName()+"}.", e);
+            }
         }
     }
 

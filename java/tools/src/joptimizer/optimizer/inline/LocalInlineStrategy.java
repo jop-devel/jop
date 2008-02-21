@@ -26,6 +26,7 @@ import com.jopdesign.libgraph.struct.ClassInfo;
 import com.jopdesign.libgraph.struct.MethodCode;
 import com.jopdesign.libgraph.struct.MethodInfo;
 import com.jopdesign.libgraph.struct.TypeException;
+import joptimizer.config.BoolOption;
 import joptimizer.config.JopConfig;
 import joptimizer.framework.actions.ActionException;
 import org.apache.log4j.Logger;
@@ -42,7 +43,7 @@ import java.util.TreeSet;
  *
  * @author Stefan Hepp, e0026640@student.tuwien.ac.at
  */
-public class BottomUpInlineStrategy extends AbstractInlineStrategy {
+public class LocalInlineStrategy extends AbstractInlineStrategy {
 
     private class ResultContainer {
 
@@ -65,19 +66,41 @@ public class BottomUpInlineStrategy extends AbstractInlineStrategy {
         }
     }
 
+    private static final String CONF_TOPDOWN = "topdown";
+
     private InvokeResolver resolver;
     private CallGraph callgraph;
     private int inlineCount;
+    private boolean topDown;
 
-    private static final Logger logger = Logger.getLogger(BottomUpInlineStrategy.class);
+    private static final Logger logger = Logger.getLogger(LocalInlineStrategy.class);
 
-    public BottomUpInlineStrategy() {
+    public LocalInlineStrategy() {
         // TODO extend/wrap with own resolver, do callgraph thinning, use callgraph infos for resolving too
         resolver = new BasicInvokeResolver();
+        topDown = false;
     }
 
     public InvokeResolver getInvokeResolver() {
         return resolver;
+    }
+
+    public void appendActionArguments(String actionId, List options) {
+        options.add(new BoolOption(actionId, CONF_TOPDOWN,
+                "Run callgraph in top-down order instead of bottom-up order."));
+    }
+
+    public boolean configure(String actionName, String actionId, JopConfig config) {
+        topDown = config.isEnabled(actionName, actionId, CONF_TOPDOWN);
+        return true;
+    }
+
+    public boolean doTopDown() {
+        return topDown;
+    }
+
+    public void setTopDown(boolean topDown) {
+        this.topDown = topDown;
     }
 
     public void initialize() throws ActionException {
@@ -125,7 +148,13 @@ public class BottomUpInlineStrategy extends AbstractInlineStrategy {
         // walk through the call graph in reverse order, exec inlining on all methods and compile the graphs
         int i = callgraph.getMethodCount();
         while (i > 0) {
-            CGMethod method = callgraph.getMethod(--i);
+            CGMethod method;
+
+            if ( topDown ) {
+                method = callgraph.getMethod(callgraph.getMethodCount() - (i--) );
+            } else {
+                method = callgraph.getMethod(--i);
+            }
 
             MethodInfo methodInfo = method.getMethodInfo();
             if ( methodInfo.isAbstract() ) {
@@ -139,8 +168,11 @@ public class BottomUpInlineStrategy extends AbstractInlineStrategy {
                 methodCode.compileGraph();
 
             } catch (GraphException e) {
-                // TODO maybe ignore single errors, just don't do inlining?
-                throw new ActionException("Could not get CFG for method.", e);
+                if ( getJopConfig().doIgnoreActionErrors() ) {
+                    logger.warn("Could not inline method, skipping.", e);
+                } else {
+                    throw new ActionException("Could not get CFG for method.", e);
+                }
             }
         }
 
