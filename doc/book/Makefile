@@ -12,6 +12,7 @@ all: jdoc
 	cd appendix && make
 	pdflatex handbook
 	bibtex handbook
+	makeindex handbook
 	pdflatex handbook
 	pdflatex handbook
 
