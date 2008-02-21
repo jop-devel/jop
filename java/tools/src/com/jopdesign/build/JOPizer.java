@@ -217,6 +217,15 @@ public class JOPizer implements Serializable{
 		        if(dumpMgci){
 		          jz.iterate(new SetGCRTMethodInfo(jz));
 		        }
+
+		        // replace the wide instrucitons generated
+				// by Sun's javac 1.5
+				jz.iterate(new ReplaceIinc(jz));
+				
+				// add monitorenter and exit for synchronized
+				// methods
+				jz.iterate(new InsertSynchronized(jz));
+				
 		        
 		        // dump of BCEL info to a text file
 				jz.iterate(new Dump(jz));
@@ -228,10 +237,6 @@ public class JOPizer implements Serializable{
 				// Build the virtual tables
 				BuildVT vt = new BuildVT(jz);
 				jz.iterate(vt);
-				
-				// replace the wide instrucitons generated
-				// by Sun's javac 1.5
-				jz.iterate(new ReplaceIinc(jz));
 				
 				// find all <clinit> methods and their dependency,
 				// resolve the depenency and generate the list
