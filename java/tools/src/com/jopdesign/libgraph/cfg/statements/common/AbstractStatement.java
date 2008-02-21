@@ -20,15 +20,20 @@ package com.jopdesign.libgraph.cfg.statements.common;
 
 import com.jopdesign.libgraph.cfg.statements.Statement;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * @author Stefan Hepp, e0026640@student.tuwien.ac.at
  */
 public abstract class AbstractStatement implements Statement {
 
     private int lineNr;
+    private Map props;
 
     protected AbstractStatement() {
         lineNr = -1;
+        props = null;
     }
 
     public void setLineNumber(int nr) {
@@ -41,5 +46,30 @@ public abstract class AbstractStatement implements Statement {
 
     public int getLineNumber() {
         return lineNr;
+    }
+
+    public Object setProperty(Object key, Object value) {
+        if ( props == null ) {
+            props = new HashMap(1);
+        }
+        return props.put(key, value);
+    }
+
+    public Object getProperty(Object key) {
+        if ( props == null ) {
+            return null;
+        }
+        return props.get(key);
+    }
+
+    public Object removeProperty(Object key) {
+        if ( props == null ) {
+            return null;
+        }
+        return props.remove(key);
+    }
+
+    public boolean containsProperty(Object key) {
+        return props != null && props.containsKey(key);
     }
 }

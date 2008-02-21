@@ -16,31 +16,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package com.jopdesign.libgraph.cfg.statements;
-
-import com.jopdesign.libgraph.struct.PropertyContainer;
+package com.jopdesign.libgraph.struct;
 
 /**
+ * A common interface for all classes which can contain some arbitrary user properties as map.
+ *
  * @author Stefan Hepp, e0026640@student.tuwien.ac.at
  */
-public interface Statement extends Cloneable, PropertyContainer {
-
-    void setLineNumber(int nr);
+public interface PropertyContainer {
 
     /**
-     * Get the line number in the original code of this code.
-     * @return the line number in the source, or -1 if unknown.
+     * Set a new property, returns the old value.
+     * @param key the key of the property.
+     * @param value the new value of the property.
+     * @return the old value, or null if not set.
      */
-    int getLineNumber();
+    Object setProperty(Object key, Object value);
 
-    boolean canThrowException();
+    Object getProperty(Object key);
 
-    /**
-     * get a verbose code line for this statement.
-     * @return a string representation of the statement.
-     */
-    String getCodeLine();
+    Object removeProperty(Object key);
 
-    Object clone() throws CloneNotSupportedException;
-        
+    boolean containsProperty(Object key);
 }

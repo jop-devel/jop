@@ -25,13 +25,14 @@ import com.jopdesign.libgraph.struct.TypeException;
 import com.jopdesign.libgraph.struct.type.TypeInfo;
 
 /**
- * Interface for all statements in stack-form.
+ * Interface for all instructions in stack-form.
+ * 
  * @author Stefan Hepp, e0026640@student.tuwien.ac.at
  */
 public interface StackStatement extends Statement {
 
     /**
-     * get the types of the values this stmt pops from the stack.
+     * Get the types of the values this stmt pops from the stack.
      * @return the types of the values removed from the stack before new values are pushed.
      */
     TypeInfo[] getPopTypes();
@@ -51,7 +52,12 @@ public interface StackStatement extends Statement {
     int getClockCycles();
 
     /**
-     * get the quadruple code for this statement
+     * Get the quadruple code for this statement.
+     * If this statement is a control-flow statement, the last statement of the returned list must also
+     * be a controlflow statement.
+     *
+     * @param stack    the current types on the stack.
+     * @param varTable the current variable table, used to get variables for stack-depth.
      * @return a list of quad statements
      */
     QuadStatement[] getQuadCode(TypeInfo[] stack, VariableTable varTable) throws TypeException;

@@ -28,13 +28,16 @@ import com.jopdesign.libgraph.cfg.statements.Statement;
 import com.jopdesign.libgraph.cfg.statements.quad.QuadStatement;
 import com.jopdesign.libgraph.cfg.statements.stack.StackStatement;
 import com.jopdesign.libgraph.struct.ConstantClass;
+import com.jopdesign.libgraph.struct.PropertyContainer;
 import com.jopdesign.libgraph.struct.TypeException;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -42,7 +45,7 @@ import java.util.Set;
  * 
  * @author Stefan Hepp, e0026640@student.tuwien.ac.at
  */
-public abstract class BasicBlock {
+public abstract class BasicBlock implements PropertyContainer {
 
     public class Edge {
 
@@ -198,6 +201,7 @@ public abstract class BasicBlock {
     private List targets;
     private List exceptionHandlers;
     private Set handledExceptions;
+    private Map props;
 
     protected BasicBlock(int type) {
         if ( type == ControlFlowGraph.TYPE_QUAD ) {
@@ -213,6 +217,7 @@ public abstract class BasicBlock {
         targets = new ArrayList(1);
         exceptionHandlers = new ArrayList(1);
         handledExceptions = new HashSet(1);
+        props = new HashMap(1);
     }
 
     public abstract ControlFlowGraph getGraph();
@@ -480,6 +485,22 @@ public abstract class BasicBlock {
     public int getJSRTargetCount() {
         // TODO implement JSR edges
         return 0;
+    }
+
+    public Object setProperty(Object key, Object value) {
+        return props.put(key, value);
+    }
+
+    public Object getProperty(Object key) {
+        return props.get(key);
+    }
+
+    public Object removeProperty(Object key) {
+        return props.remove(key);
+    }
+
+    public boolean containsProperty(Object key) {
+        return props.containsKey(key);
     }
 
     /**

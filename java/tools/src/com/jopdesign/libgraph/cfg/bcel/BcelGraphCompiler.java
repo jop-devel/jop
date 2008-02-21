@@ -28,7 +28,14 @@ import com.jopdesign.libgraph.cfg.variable.VariableTable;
 import com.jopdesign.libgraph.struct.ClassInfo;
 import com.jopdesign.libgraph.struct.TypeException;
 import org.apache.bcel.classfile.Method;
-import org.apache.bcel.generic.*;
+import org.apache.bcel.generic.BranchInstruction;
+import org.apache.bcel.generic.ConstantPoolGen;
+import org.apache.bcel.generic.GOTO;
+import org.apache.bcel.generic.Instruction;
+import org.apache.bcel.generic.InstructionHandle;
+import org.apache.bcel.generic.InstructionList;
+import org.apache.bcel.generic.MethodGen;
+import org.apache.bcel.generic.NOP;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -69,6 +76,9 @@ public class BcelGraphCompiler {
 
         if ( !graph.getFeatures().hasFeature(Features.FEATURE_VAR_ALLOC) ) {
             throw new GraphException("Cannot compile graph: variables not correctly allocated.");
+        }
+        if ( graph.getExceptionTable().getExceptionHandlers().size() > 0 ) {
+            throw new GraphException("Compiling of graphs with exception handlers currently not supported.");
         }
 
         InstructionList il = new InstructionList();

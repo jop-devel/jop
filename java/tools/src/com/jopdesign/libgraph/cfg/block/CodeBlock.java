@@ -39,11 +39,13 @@ public class CodeBlock {
         private CodeBlock code;
         private int pos;
         private Statement stmt;
+        private int refCnt;
 
         public BasicStmtHandle(CodeBlock code, int pos, Statement stmt) {
             this.code = code;
             this.pos = pos;
             this.stmt = stmt;
+            refCnt = 1;
         }
 
         public CodeBlock getCode() {
@@ -66,8 +68,12 @@ public class CodeBlock {
         }
 
         public void dispose() {
-            code.handles.remove(new Integer(pos));
-            stmt = null;
+            if ( refCnt == 1 ) {
+                code.handles.remove(new Integer(pos));
+                stmt = null;
+            } else {
+                refCnt--;
+            }
         }
     }
 
@@ -120,10 +126,12 @@ public class CodeBlock {
     }
 
     public StmtHandle getStmtHandle(int stmt) {
-        StmtHandle handle = (StmtHandle) handles.get(new Integer(stmt));
+        BasicStmtHandle handle = (BasicStmtHandle) handles.get(new Integer(stmt));
         if ( handle == null ) {
             handle = new BasicStmtHandle(this, stmt, (Statement) stmts.get(stmt));
             handles.put(new Integer(stmt), handle);
+        } else {
+            handle.refCnt++;
         }
         return handle;
     }
@@ -143,7 +151,7 @@ public class CodeBlock {
 
     public void moveStatement(int srcPos, CodeBlock toCode, int targetPos) {
         BasicStmtHandle handle = (BasicStmtHandle) handles.get(new Integer(srcPos));
-
+        // TODO implement
     }
 
     public void moveStatements(int srcPos, int toPos, CodeBlock toCode, int targetPos) {
