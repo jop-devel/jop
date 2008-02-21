@@ -133,14 +133,14 @@ begin
 	end generate;
 
 	--
-	--	Register read mux selector
+	--	Register read and write mux selector
 	--
 	process(clk, reset)
 	begin
 		if (reset='1') then
 			sel_reg <= 0;
 		elsif rising_edge(clk) then
-			if sc_io_out.rd='1' then
+			if sc_io_out.rd='1' or sc_io_out.wr='1' then
 				sel_reg <= sel;
 			end if;
 		end if;
