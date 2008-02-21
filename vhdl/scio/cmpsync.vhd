@@ -7,6 +7,7 @@
 --  2007-12-07  redesign of global lock synchronization
 --  2007-12-19  included new lock arbitration in state "locked".
 --							Otherwise wrong output if two CPUs are waiting for lock!
+--  2008-02-20	Removed exit from the loop logic by inverting the range of the loop
 
 
 library ieee;
@@ -50,11 +51,10 @@ begin
 				next_locked_id <= cpu_cnt; -- means no CPU_ID is locked
 				
   				-- the smallest CPU number wins when multiple lock requests  
-  				for i in 0 to cpu_cnt-1 loop
+  				for i in cpu_cnt-1 downto 0 loop
   					if sync_in_array(i).lock_req = '1' then 
   						next_state <= locked;
   						next_locked_id <= i;
-  						exit;
   					end if;
   				end loop;
   				
@@ -65,11 +65,10 @@ begin
   					next_locked_id <= cpu_cnt;
 						
 						-- new lock request
-						for i in 0 to cpu_cnt-1 loop
+						for i in cpu_cnt-1 downto 0 loop
 							if sync_in_array(i).lock_req = '1' then 
 								next_state <= locked;
 								next_locked_id <= i;
-								exit;
 							end if;
 						end loop;
   				end if;
