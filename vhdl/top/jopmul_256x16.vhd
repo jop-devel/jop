@@ -27,7 +27,7 @@ generic (
 	rom_cnt		: integer := 15;	-- clock cycles for external rom for 100 MHz
 	jpc_width	: integer := 10;	-- address bits of java bytecode pc = cache size
 	block_bits	: integer := 4;		-- 2*block_bits is number of cache blocks
-	cpu_cnt		: integer := 8		-- number of cpus
+	cpu_cnt		: integer := 2		-- number of cpus
 );
 
 port (
@@ -92,10 +92,10 @@ end component;
 	signal sc_mem_out		: sc_out_type;
 	signal sc_mem_in		: sc_in_type;
 	
-	signal sc_io_out		: sc_io_out_array_type(0 to cpu_cnt-1);
+	signal sc_io_out		: sc_out_array_type(0 to cpu_cnt-1);
 	signal sc_io_in			: sc_in_array_type(0 to cpu_cnt-1);
 	signal irq_in			  : irq_in_array_type(0 to cpu_cnt-1);
-	signal irq_out			  : irq_out_array_type(0 to cpu_cnt-1);
+	signal irq_out			: irq_out_array_type(0 to cpu_cnt-1);
 	signal exc_req			: exception_array_type(0 to cpu_cnt-1);
 
 --
@@ -125,6 +125,9 @@ end component;
 -- not available at this board:
 	signal ser_ncts			: std_logic;
 	signal ser_nrts			: std_logic;
+	
+-- remove the comment for RAM access counting
+-- signal ram_count		: std_logic;
 
 begin
 
@@ -158,8 +161,17 @@ end process;
 	);
 -- clk_int <= clk;
 
-	wd <= wd_out(0);
+-- process(wd_out)
+-- variable wd_help : std_logic;
+-- 	begin
+-- 		wd_help := '0';
+-- 		for i in 0 to cpu_cnt-1 loop
+-- 			wd_help := wd_help or wd_out(i);
+-- 		end loop;
+-- 		wd <= wd_help;
+-- end process;
 
+	wd <= wd_out(0);
 
 	gen_cpu: for i in 0 to cpu_cnt-1 generate
 		cmp_cpu: entity work.jopcpu
@@ -175,7 +187,7 @@ end process;
 	
 	cmp_arbiter: entity work.arbiter
 		generic map(
-			addr_bits => 21,
+			addr_bits => SC_ADDR_SIZE,
 			cpu_cnt => cpu_cnt
 		)
 		port map(clk_int, int_res,
@@ -202,6 +214,8 @@ end process;
 			r => open,
 			t => open,
 			b => open
+			-- remove the comment for RAM access counting
+			-- ram_cnt => ram_count
 		);
 		
 	-- io for processors with only sc_sys
@@ -218,6 +232,7 @@ end process;
 			wr_data => sc_io_out(i).wr_data,
 			rd => sc_io_out(i).rd,
 			wr => sc_io_out(i).wr,
+			atomic => sc_io_out(i).atomic,
 			rd_data => sc_io_in(i).rd_data,
 			rdy_cnt => sc_io_in(i).rdy_cnt,
 			
@@ -228,6 +243,8 @@ end process;
 			sync_out => sync_out_array(i),
 			sync_in => sync_in_array(i),
 			wd => wd_out(i)
+			-- remove the comment for RAM access counting
+			-- ram_count => ram_count
 		);
 	end generate;
 
@@ -271,6 +288,9 @@ end process;
 	end process;
 
 	ram_din <= rama_d;
+	
+	-- remove the comment for RAM access counting
+	-- ram_count <= ram_ncs;
 
 --
 --	To put this RAM address in an output register
