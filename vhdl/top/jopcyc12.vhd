@@ -126,7 +126,6 @@ end component;
 --
 	signal sc_mem_out		: sc_out_type;
 	signal sc_mem_in		: sc_in_type;
-	signal atomic				: std_logic;
 	signal sc_io_out		: sc_out_type;
 	signal sc_io_in			: sc_in_type;
 	signal irq_in			: irq_bcf_type;

@@ -300,7 +300,6 @@ begin
 			wr_data => sc_io_out.wr_data,
 			rd => sc_rd(0),
 			wr => sc_wr(0),
-			atomic => sc_io_out.atomic,
 			rd_data => sc_dout(0),
 			rdy_cnt => sc_rdy_cnt(0),
 
@@ -331,7 +330,6 @@ begin
 			wr_data => sc_io_out.wr_data,
 			rd => sc_rd(1),
 			wr => sc_wr(1),
-			atomic => sc_io_out.atomic,
 			rd_data => sc_dout(1),
 			rdy_cnt => sc_rdy_cnt(1),
 
@@ -353,7 +351,6 @@ begin
 			wr_data => sc_io_out.wr_data,
 			rd => sc_rd(2),
 			wr => sc_wr(2),
-			atomic => sc_io_out.atomic,
 			rd_data => sc_dout(2),
 			rdy_cnt => sc_rdy_cnt(2),
 

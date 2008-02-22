@@ -37,7 +37,6 @@ port (
 	address		: in std_logic_vector(addr_bits-1 downto 0);
 	wr_data		: in std_logic_vector(31 downto 0);
 	rd, wr		: in std_logic;
-	atomic		: in std_logic;
 	rd_data		: out std_logic_vector(31 downto 0);
 	rdy_cnt		: out unsigned(1 downto 0);
 
