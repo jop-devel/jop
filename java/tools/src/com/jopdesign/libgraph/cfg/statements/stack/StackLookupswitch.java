@@ -54,6 +54,15 @@ public class StackLookupswitch extends LookupswitchStmt implements StackStatemen
         return new QuadStatement[] { new QuadLookupswitch(getMatchs(), s0) };
     }
 
+    public int getOpcode() {
+        return 0xab;
+    }
+
+    public int getBytecodeSize() {
+        // may be smaller depending on position in code, calculating with 3 bytes as pad
+        return 12 + getMatchs().length * 8;
+    }
+
     public String getCodeLine() {
         return "lookupswitch\n" + getTable();
     }

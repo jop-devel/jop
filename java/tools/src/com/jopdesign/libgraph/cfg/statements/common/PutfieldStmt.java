@@ -28,24 +28,22 @@ import com.jopdesign.libgraph.struct.FieldInfo;
  */
 public abstract class PutfieldStmt extends AbstractStatement implements FieldStmt {
 
-    private ClassInfo classInfo;
-    private FieldInfo fieldInfo;
+    private ConstantField fieldInfo;
 
-    public PutfieldStmt(ClassInfo classInfo, FieldInfo fieldInfo) {
-        this.classInfo = classInfo;
+    public PutfieldStmt(ConstantField fieldInfo) {
         this.fieldInfo = fieldInfo;
     }
 
     public ClassInfo getClassInfo() {
-        return classInfo;
+        return fieldInfo.getClassInfo();
     }
 
     public FieldInfo getFieldInfo() {
-        return fieldInfo;
+        return fieldInfo.getFieldInfo();
     }
 
     public ConstantField getConstantField() {
-        return new ConstantField(classInfo, fieldInfo);
+        return fieldInfo;
     }
 
     public boolean isStatic() {

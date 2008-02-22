@@ -61,4 +61,17 @@ public interface StackStatement extends Statement {
      * @return a list of quad statements
      */
     QuadStatement[] getQuadCode(TypeInfo[] stack, VariableTable varTable) throws TypeException;
+
+    /**
+     * Get the bytecode opcode of the corresponding jvm instruction of this statement.
+     * @return the opcode of the corresponding jvm instruction, or -1 for statements which do not compile to JVM instructions.
+     */
+    int getOpcode();
+
+    /**
+     * Get the size of this instruction in bytes.
+     * @return the size of this instruction in bytes or 0 for statements which are not compiled.
+     */
+    int getBytecodeSize();
+
 }

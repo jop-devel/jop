@@ -31,7 +31,6 @@ import com.jopdesign.libgraph.struct.type.TypeInfo;
  */
 public class StackJSR extends JSRStmt implements StackStatement {
 
-
     public StackJSR() {
         super(null);
     }
@@ -54,5 +53,15 @@ public class StackJSR extends JSRStmt implements StackStatement {
 
     public QuadStatement[] getQuadCode(TypeInfo[] stack, VariableTable varTable) throws TypeException {
         return new QuadStatement[] { new QuadJSR(getTarget()) };
+    }
+
+    public int getOpcode() {
+        // NOTICE check for JSR_W
+        return 0xa8;
+    }
+
+    public int getBytecodeSize() {
+        // NOTICE check for JSR_W
+        return 3;
     }
 }

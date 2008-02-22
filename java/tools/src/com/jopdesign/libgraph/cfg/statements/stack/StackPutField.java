@@ -23,9 +23,7 @@ import com.jopdesign.libgraph.cfg.statements.quad.QuadPutfield;
 import com.jopdesign.libgraph.cfg.statements.quad.QuadStatement;
 import com.jopdesign.libgraph.cfg.variable.Variable;
 import com.jopdesign.libgraph.cfg.variable.VariableTable;
-import com.jopdesign.libgraph.struct.ClassInfo;
 import com.jopdesign.libgraph.struct.ConstantField;
-import com.jopdesign.libgraph.struct.FieldInfo;
 import com.jopdesign.libgraph.struct.TypeException;
 import com.jopdesign.libgraph.struct.type.TypeInfo;
 
@@ -34,12 +32,8 @@ import com.jopdesign.libgraph.struct.type.TypeInfo;
  */
 public class StackPutField extends PutfieldStmt implements StackStatement {
     
-    public StackPutField(ClassInfo classInfo, FieldInfo fieldInfo) {
-        super(classInfo, fieldInfo);
-    }
-
     public StackPutField(ConstantField field) {
-        super(field.getClassInfo(), field.getFieldInfo());
+        super(field);
     }
 
     public TypeInfo[] getPopTypes() {
@@ -58,15 +52,23 @@ public class StackPutField extends PutfieldStmt implements StackStatement {
     public QuadStatement[] getQuadCode(TypeInfo[] stack, VariableTable varTable) throws TypeException {
         if ( isStatic() ) {
             Variable s0 = varTable.getDefaultStackVariable(stack.length - 1);
-            return new QuadStatement[] { new QuadPutfield(getClassInfo(), getFieldInfo(), s0) };
+            return new QuadStatement[] { new QuadPutfield(getConstantField(), s0) };
         } else {
             Variable s0 = varTable.getDefaultStackVariable(stack.length - 2);
             Variable s1 = varTable.getDefaultStackVariable(stack.length - 1);
-            return new QuadStatement[] { new QuadPutfield(getClassInfo(), getFieldInfo(), s0, s1) };
+            return new QuadStatement[] { new QuadPutfield(getConstantField(), s0, s1) };
         }
     }
 
+    public int getOpcode() {
+        return isStatic() ? 0xb3 : 0xb5;
+    }
+
+    public int getBytecodeSize() {
+        return 3;
+    }
+
     public String getCodeLine() {
-        return "putfield " + getClassInfo().getClassName() + "." + getFieldInfo().getName();
+        return "putfield " + getConstantField().getFQName();
     }
 }

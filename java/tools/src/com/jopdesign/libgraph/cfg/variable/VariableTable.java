@@ -32,6 +32,25 @@ import java.util.Map;
  */
 public class VariableTable {
 
+    private class TableVar extends Variable {
+
+        protected TableVar(String name) {
+            super(name);
+        }
+
+        protected TableVar(String name, ConstantValue constantValue) {
+            super(name, constantValue);
+        }
+
+        public VariableTable getVariableTable() {
+            return VariableTable.this;
+        }
+
+        public int getIndex() {
+            return VariableTable.this.getIndex(this);
+        }
+    }
+
     private ControlFlowGraph graph;
     private List variables;
     private Map variableNames;
@@ -79,7 +98,7 @@ public class VariableTable {
     public Variable getVariable(String name, boolean create) {
         Variable var = (Variable) variableNames.get(name);
         if ( var == null && create ) {
-            var = new Variable(name);
+            var = new TableVar(name);
             variables.add(var);
             variableNames.put(name, var);
         }
@@ -111,7 +130,7 @@ public class VariableTable {
      * @return the new variable.
      */
     public Variable createVariable(int pos, String name) {
-        Variable var = new Variable(name);
+        Variable var = new TableVar(name);
 
         for ( int i = variables.size(); i <= pos; i++ ) {
             variables.add(null);
@@ -158,7 +177,7 @@ public class VariableTable {
     public Variable getDefaultConstant(ConstantValue value) {
         Variable var = (Variable) constants.get(value);
         if ( var == null ) {
-            var = new ConstantVariable(CONST_VAR_PREFIX + constants.size(),value);
+            var = new TableVar(CONST_VAR_PREFIX + constants.size(), value);
             constants.put(value, var);
         }
         return var;

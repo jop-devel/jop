@@ -52,4 +52,12 @@ public class StackParamAssign extends ParamAssignStmt implements StackStatement,
         return new QuadStatement[] { new QuadParamAssign(getType(), getParamVar(), getParamNr()) };
     }
 
+    public int getOpcode() {
+        return -1;
+    }
+
+    public int getBytecodeSize() {
+        return 0;
+    }
+
 }

@@ -54,6 +54,14 @@ public class StackNewArray extends NewArrayStmt implements StackStatement, Stack
         return new QuadStatement[] { new QuadNewArray(getArrayType(), s0, s0) };
     }
 
+    public int getOpcode() {
+        return getArrayType().getMachineType() == TypeInfo.TYPE_REFERENCE ? 0xbd : 0xbc;
+    }
+
+    public int getBytecodeSize() {
+        return getArrayType().getMachineType() == TypeInfo.TYPE_REFERENCE ? 3 : 2;
+    }
+
     public String getCodeLine() {
         return "newarray " + getArrayType().getTypeName();
     }

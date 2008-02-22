@@ -49,6 +49,14 @@ public class StackAddressAssign extends AddressAssignStmt implements StackStatem
         return new QuadStatement[] { new QuadAddressAssign( varTable.getDefaultStackVariable( stack.length )) };
     }
 
+    public int getOpcode() {
+        return -1;
+    }
+
+    public int getBytecodeSize() {
+        return 0;
+    }
+
     public String getCodeLine() {
         return "push @returnAddress";
     }

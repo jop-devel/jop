@@ -51,6 +51,14 @@ public class StackArrayLength extends ArraylengthStmt implements StackStatement,
         return new QuadStatement[] { new QuadArrayLength(var, var) };
     }
 
+    public int getOpcode() {
+        return 0xbe;
+    }
+
+    public int getBytecodeSize() {
+        return 1;
+    }
+
     public String getCodeLine() {
         return "arraylength";
     }

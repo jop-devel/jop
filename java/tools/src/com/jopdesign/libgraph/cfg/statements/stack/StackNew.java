@@ -55,6 +55,14 @@ public class StackNew extends NewObjectStmt implements StackStatement, StackAssi
         return new QuadStatement[]  { new QuadNew(getObjectClass(), s0) };
     }
 
+    public int getOpcode() {
+        return 0xbb;
+    }
+
+    public int getBytecodeSize() {
+        return 3;
+    }
+
     public ConstantValue[] getConstantValues(ConstantValue[] input) {
         return new ConstantValue[0];
     }

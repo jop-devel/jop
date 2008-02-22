@@ -35,6 +35,21 @@ public class StackPush extends AbstractStatement implements StackStatement, Stac
     private TypeInfo type;
     private ConstantValue value;
 
+    public static final byte OP_ACONST_NULL = 0x01;
+    public static final byte OP_ICONST_0 = 0x03;
+    public static final byte OP_LCONST_0 = 0x09;
+    public static final byte OP_LCONST_1 = 0x0a;
+    public static final byte OP_FCONST_0 = 0x0b;
+    public static final byte OP_FCONST_1 = 0x0c;
+    public static final byte OP_FCONST_2 = 0x0d;
+    public static final byte OP_DCONST_0 = 0x0e;
+    public static final byte OP_DCONST_1 = 0x0f;
+    public static final byte OP_BIPUSH   = 0x10;
+    public static final byte OP_SIPUSH   = 0x11;
+    public static final byte OP_LDC      = 0x12;
+    public static final byte OP_LDC_W    = 0x13;
+    public static final byte OP_LDC2_W   = 0x14;
+
     public StackPush(ConstantValue value) {
         this.type = value.getType();
         this.value = value;
@@ -72,6 +87,70 @@ public class StackPush extends AbstractStatement implements StackStatement, Stac
         Variable s0 = varTable.getDefaultStackVariable(stack.length);
         Variable cval = varTable.getDefaultConstant(value);
         return new QuadStatement[] { new QuadCopy(type, s0, cval) };
+    }
+
+    public int getOpcode() {
+        switch ( value.getType().getMachineType() ) {
+            case TypeInfo.TYPE_INT:
+                int iValue = value.getIntValue();
+                if ( iValue >= -1 && iValue <= 5 ) {
+                    return OP_ICONST_0 + iValue;
+                } else if ( iValue >= -128 && iValue <= 127 ) {
+                    return OP_BIPUSH;
+                } else if ( iValue >= -32768 && iValue <= 32767 ) {
+                    return OP_SIPUSH;
+                } else {
+                    return OP_LDC;
+                }
+            case TypeInfo.TYPE_LONG:
+                long lValue = value.getLongValue();
+                if ( lValue == 0 ) {
+                    return OP_LCONST_0;
+                } else if ( lValue == 1 ) {
+                    return OP_LCONST_1;
+                } else {
+                    return OP_LDC2_W;
+                }
+            case TypeInfo.TYPE_FLOAT:
+                float fValue = value.getFloatValue();
+                if ( fValue == 0.0f ) {
+                    return OP_FCONST_0;
+                } else if ( fValue == 1.0f ) {
+                    return OP_FCONST_1;
+                } else if ( fValue == 2.0f ) {
+                    return OP_FCONST_2;
+                } else {
+                    return OP_LDC;
+                }
+            case TypeInfo.TYPE_DOUBLE:
+                double dValue = value.getDoubleValue();
+                if ( dValue == 0.0 ) {
+                    return OP_DCONST_0;
+                } else if ( dValue == 1.0 ) {
+                    return OP_DCONST_1;
+                } else {
+                    return OP_LDC2_W;
+                }
+            case TypeInfo.TYPE_REFERENCE:
+                String txt = value.getTxtValue();
+                if ( txt == null ) {
+                    return OP_ACONST_NULL;
+                } else {
+                    return OP_LDC;
+                }
+        }
+        return -1;
+    }
+
+    public int getBytecodeSize() {
+        switch (getOpcode()) {
+            case OP_BIPUSH: return 2;
+            case OP_SIPUSH: return 3;
+            case OP_LDC: return 2;
+            case OP_LDC_W: return 3;
+            case OP_LDC2_W: return 3;
+            default: return 1;
+        }
     }
 
     public ConstantValue[] getConstantValues(ConstantValue[] input) {

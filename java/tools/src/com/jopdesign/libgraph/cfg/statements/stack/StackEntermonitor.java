@@ -51,6 +51,14 @@ public class StackEntermonitor extends MonitorStmt implements StackStatement {
         return new QuadStatement[] { new QuadMonitor(MONITOR_ENTER, s0) };
     }
 
+    public int getOpcode() {
+        return 0xc2;
+    }
+
+    public int getBytecodeSize() {
+        return 1;
+    }
+
     public String getCodeLine() {
         return "monitorenter";
     }

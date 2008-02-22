@@ -24,8 +24,7 @@ import com.jopdesign.libgraph.cfg.statements.stack.StackPutField;
 import com.jopdesign.libgraph.cfg.statements.stack.StackStatement;
 import com.jopdesign.libgraph.cfg.variable.Variable;
 import com.jopdesign.libgraph.cfg.variable.VariableTable;
-import com.jopdesign.libgraph.struct.ClassInfo;
-import com.jopdesign.libgraph.struct.FieldInfo;
+import com.jopdesign.libgraph.struct.ConstantField;
 import com.jopdesign.libgraph.struct.type.TypeInfo;
 
 /**
@@ -36,14 +35,14 @@ public class QuadPutfield extends PutfieldStmt implements QuadStatement, Variabl
     private Variable instance;
     private Variable value;
 
-    public QuadPutfield(ClassInfo classInfo, FieldInfo fieldInfo, Variable instance, Variable value) {
-        super(classInfo, fieldInfo);
+    public QuadPutfield(ConstantField fieldInfo, Variable instance, Variable value) {
+        super(fieldInfo);
         this.instance = instance;
         this.value = value;
     }
 
-    public QuadPutfield(ClassInfo classInfo, FieldInfo fieldInfo, Variable value) {
-        super(classInfo, fieldInfo);
+    public QuadPutfield(ConstantField fieldInfo, Variable value) {
+        super(fieldInfo);
         this.value = value;
         instance = null;
     }
@@ -57,13 +56,13 @@ public class QuadPutfield extends PutfieldStmt implements QuadStatement, Variabl
         if ( isStatic() ) {
             return new StackStatement[] {
                     QuadHelper.createLoad(this, 0),
-                    new StackPutField(getClassInfo(), getFieldInfo())
+                    new StackPutField(getConstantField())
             };
         } else {
             return new StackStatement[] {
                     QuadHelper.createLoad(this, 0),
                     QuadHelper.createLoad(this, 1),
-                    new StackPutField(getClassInfo(), getFieldInfo())
+                    new StackPutField(getConstantField())
             };
         }
     }

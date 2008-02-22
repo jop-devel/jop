@@ -58,6 +58,14 @@ public class StackGetField extends GetfieldStmt implements StackStatement, Stack
         }
     }
 
+    public int getOpcode() {
+        return isStatic() ? 0xb2: 0xb4;
+    }
+
+    public int getBytecodeSize() {
+        return 3;
+    }
+
     public String getCodeLine() {
         return "getfield " + getClassInfo().getClassName() + "." + getFieldInfo().getName();
     }

@@ -58,6 +58,23 @@ public class StackLoad extends AbstractStatement implements StackStatement, Stac
         return new QuadStatement[] { new QuadCopy(type, s0, variable) };
     }
 
+    public int getOpcode() {
+        int index = variable.getIndex();
+        switch ( getType().getMachineType() ) {
+            case TypeInfo.TYPE_INT: return index > 3 ? 0x15 : 0x1a + index;
+            case TypeInfo.TYPE_LONG: return index > 3 ? 0x16 : 0x1e + index;
+            case TypeInfo.TYPE_FLOAT: return index > 3 ? 0x17 : 0x22 + index;
+            case TypeInfo.TYPE_DOUBLE: return index > 3 ? 0x18 : 0x26 + index;
+            case TypeInfo.TYPE_REFERENCE: return index > 3 ? 0x19 : 0x2a + index;
+        }
+
+        return -1;
+    }
+
+    public int getBytecodeSize() {
+        return variable.getIndex() <= 3 ? 1 : 2;
+    }
+
     public TypeInfo getType() {
         return type;
     }

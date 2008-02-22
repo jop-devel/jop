@@ -29,6 +29,9 @@ import com.jopdesign.libgraph.struct.type.TypeInfo;
  */
 public class StackGoto extends GotoStmt implements StackStatement {
 
+    public StackGoto() {
+    }
+
     public TypeInfo[] getPopTypes() {
         return new TypeInfo[0];
     }
@@ -43,5 +46,15 @@ public class StackGoto extends GotoStmt implements StackStatement {
 
     public QuadStatement[] getQuadCode(TypeInfo[] stack, VariableTable varTable) {
         return new QuadStatement[] { new QuadGoto() };
+    }
+
+    public int getOpcode() {
+        // NOTICE check for GOTO_W
+        return 0xa7;
+    }
+
+    public int getBytecodeSize() {
+        // NOTICE check for GOTO_W
+        return 3;
     }
 }

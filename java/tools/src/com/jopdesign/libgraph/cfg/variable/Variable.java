@@ -28,7 +28,7 @@ import java.util.Set;
 /**
  * @author Stefan Hepp, e0026640@student.tuwien.ac.at
  */
-public class Variable {
+public abstract class Variable {
 
     private ConstantValue constantValue;
     private TypeInfo type;
@@ -36,7 +36,7 @@ public class Variable {
     private Set uses;
     private String name;
 
-    public Variable(String name) {
+    protected Variable(String name) {
         this.name = name;
         constantValue = null;
         type = null;
@@ -44,16 +44,30 @@ public class Variable {
         uses = new HashSet();
     }
 
+    protected Variable(String name, ConstantValue constantValue) {
+        this.name = name;
+        this.constantValue = constantValue;
+        type = null;
+        defs = new HashSet();
+        uses = new HashSet();
+    }
+
+    public abstract VariableTable getVariableTable();
+
+    public abstract int getIndex();
 
     public String getName() {
         return name;
     }
 
     public boolean hasType() {
-        return type != null;
+        return type != null || constantValue != null;
     }
 
     public TypeInfo getType() {
+        if ( type == null && constantValue != null ) {
+            return constantValue.getType();
+        }
         return type;
     }
 

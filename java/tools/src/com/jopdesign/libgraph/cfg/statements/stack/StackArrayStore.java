@@ -54,6 +54,23 @@ public class StackArrayStore extends ArrayStoreStmt implements StackStatement {
         return new QuadStatement[] { new QuadArrayStore(getArrayType(), s0, s1, s2) };
     }
 
+    public int getOpcode() {
+        switch (getArrayType().getType()) {
+            case TypeInfo.TYPE_INT: return 0x4f;
+            case TypeInfo.TYPE_LONG: return 0x50;
+            case TypeInfo.TYPE_FLOAT: return 0x51;
+            case TypeInfo.TYPE_DOUBLE: return 0x52;
+            case TypeInfo.TYPE_BYTE: return 0x54;
+            case TypeInfo.TYPE_CHAR: return 0x55;
+            case TypeInfo.TYPE_SHORT: return 0x56;
+            default: return 0x53;
+        }
+    }
+
+    public int getBytecodeSize() {
+        return 1;
+    }
+
     public String getCodeLine() {
         return "arraystore."+getArrayType().getTypeName();
     }

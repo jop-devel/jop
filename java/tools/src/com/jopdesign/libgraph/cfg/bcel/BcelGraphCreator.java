@@ -32,17 +32,37 @@ import com.jopdesign.libgraph.cfg.statements.stack.StackParamAssign;
 import com.jopdesign.libgraph.cfg.statements.stack.StackStatement;
 import com.jopdesign.libgraph.cfg.statements.stack.StackThisAssign;
 import com.jopdesign.libgraph.cfg.variable.VariableTable;
-import com.jopdesign.libgraph.struct.*;
+import com.jopdesign.libgraph.struct.ClassInfo;
+import com.jopdesign.libgraph.struct.ConstantClass;
+import com.jopdesign.libgraph.struct.ConstantPoolInfo;
+import com.jopdesign.libgraph.struct.MethodInfo;
+import com.jopdesign.libgraph.struct.TypeException;
 import com.jopdesign.libgraph.struct.type.MethodSignature;
 import com.jopdesign.libgraph.struct.type.ObjectRefType;
 import com.jopdesign.libgraph.struct.type.TypeInfo;
 import org.apache.bcel.classfile.Code;
 import org.apache.bcel.classfile.CodeException;
 import org.apache.bcel.classfile.LineNumberTable;
-import org.apache.bcel.generic.*;
+import org.apache.bcel.generic.ATHROW;
+import org.apache.bcel.generic.GotoInstruction;
+import org.apache.bcel.generic.IfInstruction;
+import org.apache.bcel.generic.Instruction;
+import org.apache.bcel.generic.InstructionHandle;
+import org.apache.bcel.generic.InstructionList;
+import org.apache.bcel.generic.InstructionTargeter;
+import org.apache.bcel.generic.JSR;
+import org.apache.bcel.generic.JsrInstruction;
+import org.apache.bcel.generic.RET;
+import org.apache.bcel.generic.ReturnInstruction;
+import org.apache.bcel.generic.Select;
 import org.apache.log4j.Logger;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.Stack;
 
 /**
  * @author Stefan Hepp, e0026640@student.tuwien.ac.at
@@ -427,29 +447,35 @@ public class BcelGraphCreator {
         // create statements
         for ( int i = ihIndex; i <= lastPos; i++ ) {
             TypeInfo[] stack = emu.getCurrentStack();
-            StackStatement[] stmts;
+            StackStatement stmt;
 
             try {
-                stmts = stmtFactory.getStackStatements(ih[i].getInstruction(), varTable,
+                stmt = stmtFactory.getStackStatement(ih[i].getInstruction(), varTable,
                         stack, stack.length - 1);
             } catch (TypeException e) {
                 throw new GraphException( "Could not create stackcode.", e);
             }
 
-            for (int j = 0; j < stmts.length; j++) {
-                StackStatement stmt = stmts[j];
+            if ( stmt == null ) {
+                // read next stmt first
+                logger.warn("Skipped instruction opcode {"+ih[i].getInstruction().getOpcode()+"}.");
+                continue;
+            }
+            if ( stmt.getOpcode() != ih[i].getInstruction().getOpcode() ) {
+                throw new GraphException("Opcode of created stackcode {"+stmt.getOpcode()+
+                        "} does not match BCEL opcode {"+ih[i].getInstruction().getOpcode()+"}.");
+            }
 
-                emu.processStmt(stmt);
-                if ( lineTable != null ) {
-                    stmt.setLineNumber(lineTable.getSourceLine(ih[i].getPosition()));
-                }
-                block.getStackCode().addStatement(stmt);
+            emu.processStmt(stmt);
+            if ( lineTable != null ) {
+                stmt.setLineNumber(lineTable.getSourceLine(ih[i].getPosition()));
+            }
+            block.getStackCode().addStatement(stmt);
 
-                // something special for JSRs
-                if ( stmt instanceof JSRStmt ) {
-                    StmtHandle sh = block.getStackCode().getStmtHandle(block.getStackCode().size() - 1);
-                    linkJSR(handle, sh, ih[i]);
-                }
+            // something special for JSRs
+            if ( stmt instanceof JSRStmt ) {
+                StmtHandle sh = block.getStackCode().getStmtHandle(block.getStackCode().size() - 1);
+                linkJSR(handle, sh, ih[i]);
             }
         }
 
@@ -534,7 +560,7 @@ public class BcelGraphCreator {
 
     private boolean isBlockStart(InstructionHandle instructionHandle) {
 
-        // check if this instruction
+        // check if this instruction is referenced somewhere in the code
         if ( instructionHandle.getTargeters() != null ) {
             return true;
         }

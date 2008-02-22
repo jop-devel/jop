@@ -51,6 +51,14 @@ public class StackExitmonitor extends MonitorStmt implements StackStatement {
         return new QuadStatement[] { new QuadMonitor(MONITOR_EXIT, s0) };
     }
 
+    public int getOpcode() {
+        return 0xc3;
+    }
+
+    public int getBytecodeSize() {
+        return 1;
+    }
+
     public String getCodeLine() {
         return "monitorexit";
     }

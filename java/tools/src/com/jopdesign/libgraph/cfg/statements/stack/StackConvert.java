@@ -52,6 +52,47 @@ public class StackConvert extends ConvertStmt implements StackStatement, StackAs
         return new QuadStatement[] { new QuadConvert(getFromType(), getToType(), s0, s0) };
     }
 
+    public int getOpcode() {
+        switch (getFromType().getMachineType()) {
+            case TypeInfo.TYPE_INT:
+                switch (getToType().getType()) {
+                    case TypeInfo.TYPE_LONG: return 0x85;
+                    case TypeInfo.TYPE_FLOAT: return 0x86;
+                    case TypeInfo.TYPE_DOUBLE: return 0x87;
+                    case TypeInfo.TYPE_BYTE: return 0x91;
+                    case TypeInfo.TYPE_CHAR: return 0x92;
+                    case TypeInfo.TYPE_SHORT: return 0x93;
+                }
+                break;
+            case TypeInfo.TYPE_LONG:
+                switch (getToType().getType()) {
+                    case TypeInfo.TYPE_INT: return 0x88;
+                    case TypeInfo.TYPE_FLOAT: return 0x89;
+                    case TypeInfo.TYPE_DOUBLE: return 0x8a;
+                }
+                break;
+            case TypeInfo.TYPE_FLOAT:
+                switch (getToType().getType()) {
+                    case TypeInfo.TYPE_INT: return 0x8b;
+                    case TypeInfo.TYPE_LONG: return 0x8c;
+                    case TypeInfo.TYPE_DOUBLE: return 0x8d;
+                }
+                break;
+            case TypeInfo.TYPE_DOUBLE:
+                switch (getToType().getType()) {
+                    case TypeInfo.TYPE_INT: return 0x8e;
+                    case TypeInfo.TYPE_LONG: return 0x8f;
+                    case TypeInfo.TYPE_FLOAT: return 0x90;
+                }
+                break;
+        }
+        return -1;
+    }
+
+    public int getBytecodeSize() {
+        return 1;
+    }
+
     public String getCodeLine() {
         return "convert." + getFromType().getTypeName() + "2" + getToType().getTypeName();
     }

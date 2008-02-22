@@ -54,6 +54,14 @@ public class StackJSRReturn extends JSRReturnStmt implements StackStatement, Var
         return new QuadStatement[] { new QuadJSRReturn(retAddress) };
     }
 
+    public int getOpcode() {
+        return 0xa9;
+    }
+
+    public int getBytecodeSize() {
+        return 2;
+    }
+
     public String getCodeLine() {
         return "ret " + retAddress.getName();
     }

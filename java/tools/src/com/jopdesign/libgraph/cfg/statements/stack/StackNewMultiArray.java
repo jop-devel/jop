@@ -69,6 +69,14 @@ public class StackNewMultiArray extends NewMultiArrayStmt implements StackStatem
         return new QuadStatement[] { new QuadNewMultiArray(getArrayClass(), getDimensions(), s0, params) };
     }
 
+    public int getOpcode() {
+        return 0xc5;
+    }
+
+    public int getBytecodeSize() {
+        return 4;
+    }
+
     public String getCodeLine() {
         StringBuffer code = new StringBuffer("multinewarray ");
 

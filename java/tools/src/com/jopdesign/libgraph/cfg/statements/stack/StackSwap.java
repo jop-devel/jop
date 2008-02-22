@@ -58,6 +58,14 @@ public class StackSwap extends CopyStmt implements StackStatement, StackAssign {
         return new QuadStatement[] { new QuadCopy(type1, s1, s0), new QuadCopy(type2, s0, s1) };
     }
 
+    public int getOpcode() {
+        return type1.getLength() == 1 ? 0x5f : -1;
+    }
+
+    public int getBytecodeSize() {
+        return 1;
+    }
+
     public int[] getCopyMap() {
         return new int[] {1, 0};
     }

@@ -53,690 +53,306 @@ public class BcelStmtFactory {
     /**
      * create one or more stackstatements from an instruction.
      * @param instruction the instruction to parse.
+     * @param varTable the current variable table.
      * @param stack the current types on the stack.
      * @param tos the index in the array for the top of the stack.
-     * @return a list of stackstatements, or null if the next instruction must be read to complete the stackstatement.
+     * @return a stackstatement, or null if the next instruction must be read to complete the stackstatement.
      * @throws com.jopdesign.libgraph.struct.TypeException if instruction not known or NYI.
      */
-    public StackStatement[] getStackStatements(Instruction instruction, VariableTable varTable,
+    public StackStatement getStackStatement(Instruction instruction, VariableTable varTable,
                                                TypeInfo[] stack, int tos) throws TypeException
     {
         ConstantValue val;
         ConstantClass clazz;
 
         switch ( instruction.getOpcode() ) {
-            case 0x00: return new StackStatement[] {
-                    new StackNop()
-                };
-            case 0x01: return new StackStatement[] {
-                    new StackPush(ConstantValue.CONST_NULL)
-                };
-            case 0x02: return new StackStatement[] {
-                    new StackPush(ConstantValue.CONST_I_MINUS_ONE)
-                };
-            case 0x03: return new StackStatement[] {
-                    new StackPush(ConstantValue.CONST_I_ZERO)
-                };
-            case 0x04: return new StackStatement[] {
-                    new StackPush(ConstantValue.CONST_I_ONE)
-                };
-            case 0x05: return new StackStatement[] {
-                    new StackPush(ConstantValue.CONST_I_TWO)
-                };
-            case 0x06: return new StackStatement[] {
-                    new StackPush(ConstantValue.CONST_I_THREE)
-                };
-            case 0x07: return new StackStatement[] {
-                    new StackPush(ConstantValue.CONST_I_FOUR)
-                };
-            case 0x08: return new StackStatement[] {
-                    new StackPush(ConstantValue.CONST_I_FIVE)
-                };
-            case 0x09: return new StackStatement[] {
-                    new StackPush(ConstantValue.CONST_L_ZERO)
-                };
-            case 0x0a: return new StackStatement[] {
-                    new StackPush(ConstantValue.CONST_L_ONE)
-                };
-            case 0x0b: return new StackStatement[] {
-                    new StackPush(ConstantValue.CONST_F_ZERO)
-                };
-            case 0x0c: return new StackStatement[] {
-                    new StackPush(ConstantValue.CONST_F_ONE)
-                };
-            case 0x0d: return new StackStatement[] {
-                    new StackPush(ConstantValue.CONST_F_TWO)
-                };
-            case 0x0e: return new StackStatement[] {
-                    new StackPush(ConstantValue.CONST_D_ZERO)
-                };
-            case 0x0f: return new StackStatement[] {
-                    new StackPush(ConstantValue.CONST_D_ONE)
-                };
-            case 0x10: return new StackStatement[] {
-                    new StackPush(new ConstantValue(TypeInfo.CONST_BYTE,
-                            ((BIPUSH)instruction).getValue().byteValue() ))
-                };
-            case 0x11: return new StackStatement[] {
-                    new StackPush(new ConstantValue(TypeInfo.CONST_SHORT,
-                            ((SIPUSH)instruction).getValue().shortValue() ))
-                };
+            case 0x00: return new StackNop();
+            case 0x01: return new StackPush(ConstantValue.CONST_NULL);
+            case 0x02: return new StackPush(ConstantValue.CONST_I_MINUS_ONE);
+            case 0x03: return new StackPush(ConstantValue.CONST_I_ZERO);
+            case 0x04: return new StackPush(ConstantValue.CONST_I_ONE);
+            case 0x05: return new StackPush(ConstantValue.CONST_I_TWO);
+            case 0x06: return new StackPush(ConstantValue.CONST_I_THREE);
+            case 0x07: return new StackPush(ConstantValue.CONST_I_FOUR);
+            case 0x08: return new StackPush(ConstantValue.CONST_I_FIVE);
+            case 0x09: return new StackPush(ConstantValue.CONST_L_ZERO);
+            case 0x0a: return new StackPush(ConstantValue.CONST_L_ONE);
+            case 0x0b: return new StackPush(ConstantValue.CONST_F_ZERO);
+            case 0x0c: return new StackPush(ConstantValue.CONST_F_ONE);
+            case 0x0d: return new StackPush(ConstantValue.CONST_F_TWO);
+            case 0x0e: return new StackPush(ConstantValue.CONST_D_ZERO);
+            case 0x0f: return new StackPush(ConstantValue.CONST_D_ONE);
+            case 0x10:
+                val = new ConstantValue(TypeInfo.CONST_BYTE, ((BIPUSH)instruction).getValue().byteValue() );
+                return new StackPush(val);
+            case 0x11:
+                val = new ConstantValue(TypeInfo.CONST_SHORT, ((SIPUSH)instruction).getValue().shortValue() );
+                return new StackPush(val);
             case 0x12:  // ldc
                 val = cp.getConstant(((LDC)instruction).getIndex());
-                return new StackStatement[] {
-                    new StackPush(val)
-                };
+                return new StackPush(val);
             case 0x13:
                 val = cp.getConstant(((LDC_W)instruction).getIndex());
-                return new StackStatement[] {
-                    new StackPush(val)
-                };
+                return new StackPush(val);
             case 0x14:
                 val = cp.getConstant( ((LDC2_W)instruction).getIndex());
-                return new StackStatement[] {
-                    new StackPush(val)
-                };
-            case 0x15: return new StackStatement[] {
-                    new StackLoad(TypeInfo.CONST_INT, varTable.getDefaultLocalVariable(((ILOAD)instruction).getIndex()))
-                };
-            case 0x16: return new StackStatement[] {
-                    new StackLoad(TypeInfo.CONST_LONG, varTable.getDefaultLocalVariable(((LLOAD)instruction).getIndex()))
-                };
-            case 0x17: return new StackStatement[] {
-                    new StackLoad(TypeInfo.CONST_FLOAT, varTable.getDefaultLocalVariable(((FLOAD)instruction).getIndex()))
-                };
-            case 0x18: return new StackStatement[] {
-                    new StackLoad(TypeInfo.CONST_DOUBLE, varTable.getDefaultLocalVariable(((DLOAD)instruction).getIndex()))
-                };
-            case 0x19: return new StackStatement[] {
-                    new StackLoad(TypeInfo.CONST_OBJECTREF, varTable.getDefaultLocalVariable(((ALOAD)instruction).getIndex()))
-                };
-            case 0x1a: return new StackStatement[] {
-                    new StackLoad(TypeInfo.CONST_INT, varTable.getDefaultLocalVariable(0))
-                };
-            case 0x1b: return new StackStatement[] {
-                    new StackLoad(TypeInfo.CONST_INT, varTable.getDefaultLocalVariable(1))
-                };
-            case 0x1c: return new StackStatement[] {
-                    new StackLoad(TypeInfo.CONST_INT, varTable.getDefaultLocalVariable(2))
-                };
-            case 0x1d: return new StackStatement[] {
-                    new StackLoad(TypeInfo.CONST_INT, varTable.getDefaultLocalVariable(3))
-                };
-            case 0x1e: return new StackStatement[] {
-                    new StackLoad(TypeInfo.CONST_LONG, varTable.getDefaultLocalVariable(0))
-                };
-            case 0x1f: return new StackStatement[] {
-                    new StackLoad(TypeInfo.CONST_LONG, varTable.getDefaultLocalVariable(1))
-                };
-            case 0x20: return new StackStatement[] {
-                    new StackLoad(TypeInfo.CONST_LONG, varTable.getDefaultLocalVariable(2))
-                };
-            case 0x21: return new StackStatement[] {
-                    new StackLoad(TypeInfo.CONST_LONG, varTable.getDefaultLocalVariable(3))
-                };
-            case 0x22: return new StackStatement[] {
-                    new StackLoad(TypeInfo.CONST_FLOAT, varTable.getDefaultLocalVariable(0))
-                };
-            case 0x23: return new StackStatement[] {
-                    new StackLoad(TypeInfo.CONST_FLOAT, varTable.getDefaultLocalVariable(1))
-                };
-            case 0x24: return new StackStatement[] {
-                    new StackLoad(TypeInfo.CONST_FLOAT, varTable.getDefaultLocalVariable(2))
-                };
-            case 0x25: return new StackStatement[] {
-                    new StackLoad(TypeInfo.CONST_FLOAT, varTable.getDefaultLocalVariable(3))
-                };
-            case 0x26: return new StackStatement[] {
-                    new StackLoad(TypeInfo.CONST_DOUBLE, varTable.getDefaultLocalVariable(0))
-                };
-            case 0x27: return new StackStatement[] {
-                    new StackLoad(TypeInfo.CONST_DOUBLE, varTable.getDefaultLocalVariable(1))
-                };
-            case 0x28: return new StackStatement[] {
-                    new StackLoad(TypeInfo.CONST_DOUBLE, varTable.getDefaultLocalVariable(2))
-                };
-            case 0x29: return new StackStatement[] {
-                    new StackLoad(TypeInfo.CONST_DOUBLE, varTable.getDefaultLocalVariable(3))
-                };
-            case 0x2a: return new StackStatement[] {
-                    new StackLoad(TypeInfo.CONST_OBJECTREF, varTable.getDefaultLocalVariable(0))
-                };
-            case 0x2b: return new StackStatement[] {
-                    new StackLoad(TypeInfo.CONST_OBJECTREF, varTable.getDefaultLocalVariable(1))
-                };
-            case 0x2c: return new StackStatement[] {
-                    new StackLoad(TypeInfo.CONST_OBJECTREF, varTable.getDefaultLocalVariable(2))
-                };
-            case 0x2d: return new StackStatement[] {
-                    new StackLoad(TypeInfo.CONST_OBJECTREF, varTable.getDefaultLocalVariable(3))
-                };
-            case 0x2e: return new StackStatement[] {
-                    new StackArrayLoad(TypeInfo.CONST_INT)
-                };
-            case 0x2f: return new StackStatement[] {
-                    new StackArrayLoad(TypeInfo.CONST_LONG)
-                };
-            case 0x30: return new StackStatement[] {
-                    new StackArrayLoad(TypeInfo.CONST_FLOAT)
-                };
-            case 0x31: return new StackStatement[] {
-                    new StackArrayLoad(TypeInfo.CONST_DOUBLE)
-                };
-            case 0x32: return new StackStatement[] {
-                    new StackArrayLoad(TypeInfo.CONST_OBJECTREF)
-                };
-            case 0x33: return new StackStatement[] {
-                    // NOTICE this can also be of type BOOLEAN!
-                    new StackArrayLoad(TypeInfo.CONST_BYTE)
-                };
-            case 0x34: return new StackStatement[] {
-                    new StackArrayLoad(TypeInfo.CONST_CHAR)
-                };
-            case 0x35: return new StackStatement[] {
-                    new StackArrayLoad(TypeInfo.CONST_SHORT)
-                };
-            case 0x36: return new StackStatement[] {
-                    new StackStore(TypeInfo.CONST_INT, varTable.getDefaultLocalVariable(((ISTORE)instruction).getIndex()))
-                };
-            case 0x37: return new StackStatement[] {
-                    new StackStore(TypeInfo.CONST_LONG, varTable.getDefaultLocalVariable(((LSTORE)instruction).getIndex()))
-                };
-            case 0x38: return new StackStatement[] {
-                    new StackStore(TypeInfo.CONST_FLOAT, varTable.getDefaultLocalVariable(((FSTORE)instruction).getIndex()))
-                };
-            case 0x39: return new StackStatement[] {
-                    new StackStore(TypeInfo.CONST_DOUBLE, varTable.getDefaultLocalVariable(((DSTORE)instruction).getIndex()))
-                };
+                return new StackPush(val);
+            case 0x15: return new StackLoad(TypeInfo.CONST_INT, varTable.getDefaultLocalVariable(((ILOAD)instruction).getIndex()));
+            case 0x16: return new StackLoad(TypeInfo.CONST_LONG, varTable.getDefaultLocalVariable(((LLOAD)instruction).getIndex()));
+            case 0x17: return new StackLoad(TypeInfo.CONST_FLOAT, varTable.getDefaultLocalVariable(((FLOAD)instruction).getIndex()));
+            case 0x18: return new StackLoad(TypeInfo.CONST_DOUBLE, varTable.getDefaultLocalVariable(((DLOAD)instruction).getIndex()));
+            case 0x19: return new StackLoad(TypeInfo.CONST_OBJECTREF, varTable.getDefaultLocalVariable(((ALOAD)instruction).getIndex()));
+            case 0x1a: return new StackLoad(TypeInfo.CONST_INT, varTable.getDefaultLocalVariable(0));
+            case 0x1b: return new StackLoad(TypeInfo.CONST_INT, varTable.getDefaultLocalVariable(1));
+            case 0x1c: return new StackLoad(TypeInfo.CONST_INT, varTable.getDefaultLocalVariable(2));
+            case 0x1d: return new StackLoad(TypeInfo.CONST_INT, varTable.getDefaultLocalVariable(3));
+            case 0x1e: return new StackLoad(TypeInfo.CONST_LONG, varTable.getDefaultLocalVariable(0));
+            case 0x1f: return new StackLoad(TypeInfo.CONST_LONG, varTable.getDefaultLocalVariable(1));
+            case 0x20: return new StackLoad(TypeInfo.CONST_LONG, varTable.getDefaultLocalVariable(2));
+            case 0x21: return new StackLoad(TypeInfo.CONST_LONG, varTable.getDefaultLocalVariable(3));
+            case 0x22: return new StackLoad(TypeInfo.CONST_FLOAT, varTable.getDefaultLocalVariable(0));
+            case 0x23: return new StackLoad(TypeInfo.CONST_FLOAT, varTable.getDefaultLocalVariable(1));
+            case 0x24: return new StackLoad(TypeInfo.CONST_FLOAT, varTable.getDefaultLocalVariable(2));
+            case 0x25: return new StackLoad(TypeInfo.CONST_FLOAT, varTable.getDefaultLocalVariable(3));
+            case 0x26: return new StackLoad(TypeInfo.CONST_DOUBLE, varTable.getDefaultLocalVariable(0));
+            case 0x27: return new StackLoad(TypeInfo.CONST_DOUBLE, varTable.getDefaultLocalVariable(1));
+            case 0x28: return new StackLoad(TypeInfo.CONST_DOUBLE, varTable.getDefaultLocalVariable(2));
+            case 0x29: return new StackLoad(TypeInfo.CONST_DOUBLE, varTable.getDefaultLocalVariable(3));
+            case 0x2a: return new StackLoad(TypeInfo.CONST_OBJECTREF, varTable.getDefaultLocalVariable(0));
+            case 0x2b: return new StackLoad(TypeInfo.CONST_OBJECTREF, varTable.getDefaultLocalVariable(1));
+            case 0x2c: return new StackLoad(TypeInfo.CONST_OBJECTREF, varTable.getDefaultLocalVariable(2));
+            case 0x2d: return new StackLoad(TypeInfo.CONST_OBJECTREF, varTable.getDefaultLocalVariable(3));
+            case 0x2e: return new StackArrayLoad(TypeInfo.CONST_INT);
+            case 0x2f: return new StackArrayLoad(TypeInfo.CONST_LONG);
+            case 0x30: return new StackArrayLoad(TypeInfo.CONST_FLOAT);
+            case 0x31: return new StackArrayLoad(TypeInfo.CONST_DOUBLE);
+            case 0x32: return new StackArrayLoad(TypeInfo.CONST_OBJECTREF);
+                // NOTICE this can also be of type BOOLEAN!
+            case 0x33: return new StackArrayLoad(TypeInfo.CONST_BYTE);
+            case 0x34: return new StackArrayLoad(TypeInfo.CONST_CHAR);
+            case 0x35: return new StackArrayLoad(TypeInfo.CONST_SHORT);
+            case 0x36: return new StackStore(TypeInfo.CONST_INT,
+                    varTable.getDefaultLocalVariable(((ISTORE)instruction).getIndex()));
+            case 0x37: return new StackStore(TypeInfo.CONST_LONG,
+                    varTable.getDefaultLocalVariable(((LSTORE)instruction).getIndex()));
+            case 0x38: return new StackStore(TypeInfo.CONST_FLOAT,
+                    varTable.getDefaultLocalVariable(((FSTORE)instruction).getIndex()));
+            case 0x39: return new StackStore(TypeInfo.CONST_DOUBLE,
+                    varTable.getDefaultLocalVariable(((DSTORE)instruction).getIndex()));
             case 0x3a:
                 if ( stack[tos].getMachineType() != TypeInfo.TYPE_REFERENCE ) {
                     throw new TypeException("Expected reference type on stack for store instruction");
                 }
-                return new StackStatement[] {
-                    new StackStore(stack[tos], varTable.getDefaultLocalVariable(((ASTORE)instruction).getIndex()))
-                };
-            case 0x3b: return new StackStatement[] {
-                    new StackStore(TypeInfo.CONST_INT, varTable.getDefaultLocalVariable(0))
-                };
-            case 0x3c: return new StackStatement[] {
-                    new StackStore(TypeInfo.CONST_INT, varTable.getDefaultLocalVariable(1))
-                };
-            case 0x3d: return new StackStatement[] {
-                    new StackStore(TypeInfo.CONST_INT, varTable.getDefaultLocalVariable(2))
-                };
-            case 0x3e: return new StackStatement[] {
-                    new StackStore(TypeInfo.CONST_INT, varTable.getDefaultLocalVariable(3))
-                };
-            case 0x3f: return new StackStatement[] {
-                    new StackStore(TypeInfo.CONST_LONG, varTable.getDefaultLocalVariable(0))
-                };
-            case 0x40: return new StackStatement[] {
-                    new StackStore(TypeInfo.CONST_LONG, varTable.getDefaultLocalVariable(1))
-                };
-            case 0x41: return new StackStatement[] {
-                    new StackStore(TypeInfo.CONST_LONG, varTable.getDefaultLocalVariable(2))
-                };
-            case 0x42: return new StackStatement[] {
-                    new StackStore(TypeInfo.CONST_LONG, varTable.getDefaultLocalVariable(3))
-                };
-            case 0x43: return new StackStatement[] {
-                    new StackStore(TypeInfo.CONST_FLOAT, varTable.getDefaultLocalVariable(0))
-                };
-            case 0x44: return new StackStatement[] {
-                    new StackStore(TypeInfo.CONST_FLOAT, varTable.getDefaultLocalVariable(1))
-                };
-            case 0x45: return new StackStatement[] {
-                    new StackStore(TypeInfo.CONST_FLOAT, varTable.getDefaultLocalVariable(2))
-                };
-            case 0x46: return new StackStatement[] {
-                    new StackStore(TypeInfo.CONST_FLOAT, varTable.getDefaultLocalVariable(3))
-                };
-            case 0x47: return new StackStatement[] {
-                    new StackStore(TypeInfo.CONST_DOUBLE, varTable.getDefaultLocalVariable(0))
-                };
-            case 0x48: return new StackStatement[] {
-                    new StackStore(TypeInfo.CONST_DOUBLE, varTable.getDefaultLocalVariable(1))
-                };
-            case 0x49: return new StackStatement[] {
-                    new StackStore(TypeInfo.CONST_DOUBLE, varTable.getDefaultLocalVariable(2))
-                };
-            case 0x4a: return new StackStatement[] {
-                    new StackStore(TypeInfo.CONST_DOUBLE, varTable.getDefaultLocalVariable(3))
-                };
+                return new StackStore(stack[tos],
+                        varTable.getDefaultLocalVariable(((ASTORE)instruction).getIndex()));
+            case 0x3b: return new StackStore(TypeInfo.CONST_INT, varTable.getDefaultLocalVariable(0));
+            case 0x3c: return new StackStore(TypeInfo.CONST_INT, varTable.getDefaultLocalVariable(1));
+            case 0x3d: return new StackStore(TypeInfo.CONST_INT, varTable.getDefaultLocalVariable(2));
+            case 0x3e: return new StackStore(TypeInfo.CONST_INT, varTable.getDefaultLocalVariable(3));
+            case 0x3f: return new StackStore(TypeInfo.CONST_LONG, varTable.getDefaultLocalVariable(0));
+            case 0x40: return new StackStore(TypeInfo.CONST_LONG, varTable.getDefaultLocalVariable(1));
+            case 0x41: return new StackStore(TypeInfo.CONST_LONG, varTable.getDefaultLocalVariable(2));
+            case 0x42: return new StackStore(TypeInfo.CONST_LONG, varTable.getDefaultLocalVariable(3));
+            case 0x43: return new StackStore(TypeInfo.CONST_FLOAT, varTable.getDefaultLocalVariable(0));
+            case 0x44: return new StackStore(TypeInfo.CONST_FLOAT, varTable.getDefaultLocalVariable(1));
+            case 0x45: return new StackStore(TypeInfo.CONST_FLOAT, varTable.getDefaultLocalVariable(2));
+            case 0x46: return new StackStore(TypeInfo.CONST_FLOAT, varTable.getDefaultLocalVariable(3));
+            case 0x47: return new StackStore(TypeInfo.CONST_DOUBLE, varTable.getDefaultLocalVariable(0));
+            case 0x48: return new StackStore(TypeInfo.CONST_DOUBLE, varTable.getDefaultLocalVariable(1));
+            case 0x49: return new StackStore(TypeInfo.CONST_DOUBLE, varTable.getDefaultLocalVariable(2));
+            case 0x4a: return new StackStore(TypeInfo.CONST_DOUBLE, varTable.getDefaultLocalVariable(3));
             case 0x4b:
                 if ( stack[tos].getMachineType() != TypeInfo.TYPE_REFERENCE ) {
                     throw new TypeException("Expected reference type on stack for store instruction");
                 }
-                return new StackStatement[] {
-                    new StackStore(stack[tos], varTable.getDefaultLocalVariable(0))
-                };
+                return new StackStore(stack[tos], varTable.getDefaultLocalVariable(0));
             case 0x4c:
                 if ( stack[tos].getMachineType() != TypeInfo.TYPE_REFERENCE ) {
                     throw new TypeException("Expected reference type on stack for store instruction");
                 }
-                return new StackStatement[] {
-                    new StackStore(stack[tos], varTable.getDefaultLocalVariable(1))
-                };
+                return new StackStore(stack[tos], varTable.getDefaultLocalVariable(1));
             case 0x4d:
                 if ( stack[tos].getMachineType() != TypeInfo.TYPE_REFERENCE ) {
                     throw new TypeException("Expected reference type on stack for store instruction");
                 }
-                return new StackStatement[] {
-                    new StackStore(stack[tos], varTable.getDefaultLocalVariable(2))
-                };
+                return new StackStore(stack[tos], varTable.getDefaultLocalVariable(2));
             case 0x4e:
                 if ( stack[tos].getMachineType() != TypeInfo.TYPE_REFERENCE ) {
                     throw new TypeException("Expected reference type on stack for store instruction");
                 }
-                return new StackStatement[] {
-                    new StackStore(stack[tos], varTable.getDefaultLocalVariable(3))
-                };
-            case 0x4f: return new StackStatement[] {
-                    new StackArrayStore(TypeInfo.CONST_INT)
-                };
-            case 0x50: return new StackStatement[] {
-                    new StackArrayStore(TypeInfo.CONST_LONG)
-                };
-            case 0x51: return new StackStatement[] {
-                    new StackArrayStore(TypeInfo.CONST_FLOAT)
-                };
-            case 0x52: return new StackStatement[] {
-                    new StackArrayStore(TypeInfo.CONST_DOUBLE)
-                };
-            case 0x53: return new StackStatement[] {
-                    new StackArrayStore(TypeInfo.CONST_OBJECTREF)
-                };
-            case 0x54: return new StackStatement[] {
-                    new StackArrayStore(TypeInfo.CONST_BYTE)
-                };
-            case 0x55: return new StackStatement[] {
-                    new StackArrayStore(TypeInfo.CONST_CHAR)
-                };
-            case 0x56: return new StackStatement[] {
-                    new StackArrayStore(TypeInfo.CONST_SHORT)
-                };
-            case 0x57: return new StackStatement[] {
-                    new StackPop(stack[tos])
-                };
-            case 0x58: return new StackStatement[] {
-                    // POP2: pop two values of length 1 or one value of length 2
-                    new StackPop(stack[tos], stack[tos].getLength() == 1 ? 2 : 1)
-                };
-            case 0x59: return new StackStatement[] {
-                    new StackDup(stack[tos])
-                };
-            case 0x5a: return new StackStatement[] {
-                    new StackDup(stack[tos], stack[tos-1])
-                };
-            case 0x5b: return new StackStatement[] {
+                return new StackStore(stack[tos], varTable.getDefaultLocalVariable(3));
+            case 0x4f: return new StackArrayStore(TypeInfo.CONST_INT);
+            case 0x50: return new StackArrayStore(TypeInfo.CONST_LONG);
+            case 0x51: return new StackArrayStore(TypeInfo.CONST_FLOAT);
+            case 0x52: return new StackArrayStore(TypeInfo.CONST_DOUBLE);
+            case 0x53: return new StackArrayStore(TypeInfo.CONST_OBJECTREF);
+            case 0x54: return new StackArrayStore(TypeInfo.CONST_BYTE);
+            case 0x55: return new StackArrayStore(TypeInfo.CONST_CHAR);
+            case 0x56: return new StackArrayStore(TypeInfo.CONST_SHORT);
+            case 0x57: return new StackPop(stack[tos]);
+            case 0x58:
+                // POP2: pop two values of length 1 or one value of length 2
+                if ( stack[tos].getLength() == 1 ) {
+                    return new StackPop(new TypeInfo[] {stack[tos-1], stack[tos]});
+                } else {
+                    return new StackPop(new TypeInfo[] {stack[tos]});
+                }
+            case 0x59: return new StackDup(stack[tos]);
+            case 0x5a: return new StackDup(stack[tos], stack[tos-1]);
+            case 0x5b:
                     // DUP_x2: top is category 1, insert down 2 slots
-                    new StackDup(new TypeInfo[] {stack[tos]},
+                    return new StackDup(new TypeInfo[] {stack[tos]},
                         stack[tos-1].getLength() == 2 ? 
                               new TypeInfo[] {stack[tos-1]} :
                               new TypeInfo[] {stack[tos-2],stack[tos-1]}
-                    )
-                };
-            case 0x5c: return new StackStatement[] {
+                    );
+            case 0x5c:
                     // DUP2: duplicate two top slots
-                    new StackDup( stack[tos].getLength() == 2 ?
+                    return new StackDup( stack[tos].getLength() == 2 ?
                         new TypeInfo[] {stack[tos]} :
                         new TypeInfo[] {stack[tos-1],stack[tos]}
-                    )
-                };
-            case 0x5d: return new StackStatement[] {
+                    );
+            case 0x5d:
                     // DUP2_X1: dup two top slots one slot down
-                    new StackDup( stack[tos].getLength() == 2 ?
+                    return new StackDup( stack[tos].getLength() == 2 ?
                         new TypeInfo[] {stack[tos]} :
                         new TypeInfo[] {stack[tos-1],stack[tos]}
-                        , new TypeInfo[] {stack[tos-2]} )
-
-                };
-            case 0x5e: return new StackStatement[] {
+                        , new TypeInfo[] {stack[tos-2]}
+                    );
+            case 0x5e:
                     // DUP2_X2: dup two top slots two slots down
-                    new StackDup( stack[tos].getLength() == 2 ?
+                    return new StackDup( stack[tos].getLength() == 2 ?
                         new TypeInfo[] {stack[tos]} :
                         new TypeInfo[] {stack[tos-1],stack[tos]}
                         , stack[tos-2].getLength() == 2 ?
                           new TypeInfo[] {stack[tos-2]} :
                           new TypeInfo[] {stack[tos-3],stack[tos-2]}
-                    )
-                };
-            case 0x5f: return new StackStatement[] {
-                    new StackSwap(stack[tos-1], stack[tos])
-            };
-            case 0x60: return new StackStatement[] {
-                    new StackBinop(TypeInfo.CONST_INT, BinopStmt.OP_ADD)
-                };
-            case 0x61: return new StackStatement[] {
-                    new StackBinop(TypeInfo.CONST_LONG, BinopStmt.OP_ADD)
-                };
-            case 0x62: return new StackStatement[] {
-                    new StackBinop(TypeInfo.CONST_FLOAT, BinopStmt.OP_ADD)
-                };
-            case 0x63: return new StackStatement[] {
-                    new StackBinop(TypeInfo.CONST_DOUBLE, BinopStmt.OP_ADD)
-                };
-            case 0x64: return new StackStatement[] {
-                    new StackBinop(TypeInfo.CONST_INT, BinopStmt.OP_SUB)
-                };
-            case 0x65: return new StackStatement[] {
-                    new StackBinop(TypeInfo.CONST_LONG, BinopStmt.OP_SUB)
-                };
-            case 0x66: return new StackStatement[] {
-                    new StackBinop(TypeInfo.CONST_FLOAT, BinopStmt.OP_SUB)
-                };
-            case 0x67: return new StackStatement[] {
-                    new StackBinop(TypeInfo.CONST_DOUBLE, BinopStmt.OP_SUB)
-                };
-            case 0x68: return new StackStatement[] {
-                    new StackBinop(TypeInfo.CONST_INT, BinopStmt.OP_MUL)
-                };
-            case 0x69: return new StackStatement[] {
-                    new StackBinop(TypeInfo.CONST_LONG, BinopStmt.OP_MUL)
-                };
-            case 0x6a: return new StackStatement[] {
-                    new StackBinop(TypeInfo.CONST_FLOAT, BinopStmt.OP_MUL)
-                };
-            case 0x6b: return new StackStatement[] {
-                    new StackBinop(TypeInfo.CONST_DOUBLE, BinopStmt.OP_MUL)
-                };
-            case 0x6c: return new StackStatement[] {
-                    new StackBinop(TypeInfo.CONST_INT, BinopStmt.OP_DIV)
-                };
-            case 0x6d: return new StackStatement[] {
-                    new StackBinop(TypeInfo.CONST_LONG, BinopStmt.OP_DIV)
-                };
-            case 0x6e: return new StackStatement[] {
-                    new StackBinop(TypeInfo.CONST_FLOAT, BinopStmt.OP_DIV)
-                };
-            case 0x6f: return new StackStatement[] {
-                    new StackBinop(TypeInfo.CONST_DOUBLE, BinopStmt.OP_DIV)
-                };
-            case 0x70: return new StackStatement[] {
-                    new StackBinop(TypeInfo.CONST_INT, BinopStmt.OP_REMINDER)
-                };
-            case 0x71: return new StackStatement[] {
-                    new StackBinop(TypeInfo.CONST_LONG, BinopStmt.OP_REMINDER)
-                };
-            case 0x72: return new StackStatement[] {
-                    new StackBinop(TypeInfo.CONST_FLOAT, BinopStmt.OP_REMINDER)
-                };
-            case 0x73: return new StackStatement[] {
-                    new StackBinop(TypeInfo.CONST_DOUBLE, BinopStmt.OP_REMINDER)
-                };
-            case 0x74: return new StackStatement[] {
-                    new StackNegate(TypeInfo.CONST_INT)
-                };
-            case 0x75: return new StackStatement[] {
-                    new StackNegate(TypeInfo.CONST_LONG)
-                };
-            case 0x76: return new StackStatement[] {
-                    new StackNegate(TypeInfo.CONST_FLOAT)
-                };
-            case 0x77: return new StackStatement[] {
-                    new StackNegate(TypeInfo.CONST_DOUBLE)
-                };
-            case 0x78: return new StackStatement[] {
-                    new StackBinop(TypeInfo.CONST_INT, BinopStmt.OP_SHIFT_LEFT)
-                };
-            case 0x79: return new StackStatement[] {
-                    new StackBinop(TypeInfo.CONST_LONG, BinopStmt.OP_SHIFT_LEFT)
-                };
-            case 0x7a: return new StackStatement[] {
-                    new StackBinop(TypeInfo.CONST_INT, BinopStmt.OP_SHIFT_RIGHT)
-                };
-            case 0x7b: return new StackStatement[] {
-                    new StackBinop(TypeInfo.CONST_LONG, BinopStmt.OP_SHIFT_RIGHT)
-                };
-            case 0x7c: return new StackStatement[] {
-                    new StackBinop(TypeInfo.CONST_INT, BinopStmt.OP_LOGIC_SHIFT_RIGHT)
-                };
-            case 0x7d: return new StackStatement[] {
-                    new StackBinop(TypeInfo.CONST_LONG, BinopStmt.OP_LOGIC_SHIFT_RIGHT)
-                };
-            case 0x7e: return new StackStatement[] {
-                    new StackBinop(TypeInfo.CONST_INT, BinopStmt.OP_AND)
-                };
-            case 0x7f: return new StackStatement[] {
-                    new StackBinop(TypeInfo.CONST_LONG, BinopStmt.OP_AND)
-                };
-            case 0x80: return new StackStatement[] {
-                    new StackBinop(TypeInfo.CONST_INT, BinopStmt.OP_OR)
-                };
-            case 0x81: return new StackStatement[] {
-                    new StackBinop(TypeInfo.CONST_LONG, BinopStmt.OP_OR)
-                };
-            case 0x82: return new StackStatement[] {
-                    new StackBinop(TypeInfo.CONST_INT, BinopStmt.OP_XOR)
-                };
-            case 0x83: return new StackStatement[] {
-                    new StackBinop(TypeInfo.CONST_LONG, BinopStmt.OP_XOR)
-                };
-            case 0x84: return new StackStatement[] {
-                    new StackIInc(varTable.getDefaultLocalVariable(((IINC)instruction).getIndex()),
-                            ((IINC)instruction).getIncrement())
-                };
-            case 0x85: return new StackStatement[] {
-                    new StackConvert(TypeInfo.CONST_INT, TypeInfo.CONST_LONG)
-                };
-            case 0x86: return new StackStatement[] {
-                    new StackConvert(TypeInfo.CONST_INT, TypeInfo.CONST_FLOAT)
-                };
-            case 0x87: return new StackStatement[] {
-                    new StackConvert(TypeInfo.CONST_INT, TypeInfo.CONST_DOUBLE)
-                };
-            case 0x88: return new StackStatement[] {
-                    new StackConvert(TypeInfo.CONST_LONG, TypeInfo.CONST_INT)
-                };
-            case 0x89: return new StackStatement[] {
-                    new StackConvert(TypeInfo.CONST_LONG, TypeInfo.CONST_FLOAT)
-                };
-            case 0x8a: return new StackStatement[] {
-                    new StackConvert(TypeInfo.CONST_LONG, TypeInfo.CONST_DOUBLE)
-                };
-            case 0x8b: return new StackStatement[] {
-                    new StackConvert(TypeInfo.CONST_FLOAT, TypeInfo.CONST_INT)
-                };
-            case 0x8c: return new StackStatement[] {
-                    new StackConvert(TypeInfo.CONST_FLOAT, TypeInfo.CONST_LONG)
-                };
-            case 0x8d: return new StackStatement[] {
-                    new StackConvert(TypeInfo.CONST_FLOAT, TypeInfo.CONST_DOUBLE)
-                };
-            case 0x8e: return new StackStatement[] {
-                    new StackConvert(TypeInfo.CONST_DOUBLE, TypeInfo.CONST_INT)
-                };
-            case 0x8f: return new StackStatement[] {
-                    new StackConvert(TypeInfo.CONST_DOUBLE, TypeInfo.CONST_LONG)
-                };
-            case 0x90: return new StackStatement[] {
-                    new StackConvert(TypeInfo.CONST_DOUBLE, TypeInfo.CONST_FLOAT)
-                };
-            case 0x91: return new StackStatement[] {
-                    new StackConvert(TypeInfo.CONST_INT, TypeInfo.CONST_BYTE)
-                };
-            case 0x92: return new StackStatement[] {
-                    new StackConvert(TypeInfo.CONST_INT, TypeInfo.CONST_CHAR)
-                };
-            case 0x93: return new StackStatement[] {
-                    new StackConvert(TypeInfo.CONST_INT, TypeInfo.CONST_SHORT)
-                };
-            case 0x94: return new StackStatement[] {
-                    new StackBinop(TypeInfo.CONST_LONG, BinopStmt.OP_CMP)
-                };
-            case 0x95: return new StackStatement[] {
-                    new StackBinop(TypeInfo.CONST_FLOAT, BinopStmt.OP_CMPL)
-                };
-            case 0x96: return new StackStatement[] {
-                    new StackBinop(TypeInfo.CONST_DOUBLE, BinopStmt.OP_CMPG)
-                };
-            case 0x97: return new StackStatement[] {
-                    new StackBinop(TypeInfo.CONST_FLOAT, BinopStmt.OP_CMPL)
-                };
-            case 0x98: return new StackStatement[] {
-                    new StackBinop(TypeInfo.CONST_DOUBLE, BinopStmt.OP_CMPG)
-                };
-            case 0x99: return new StackStatement[] {
-                    new StackIfZero(TypeInfo.CONST_INT, CmpStmt.OP_EQUAL)
-            };
-            case 0x9a: return new StackStatement[] {
-                    new StackIfZero(TypeInfo.CONST_INT, CmpStmt.OP_NOTEQUAL)
-                };
-            case 0x9b: return new StackStatement[] {
-                    new StackIfZero(TypeInfo.CONST_INT, CmpStmt.OP_LESS)
-                };
-            case 0x9c: return new StackStatement[] {
-                    new StackIfZero(TypeInfo.CONST_INT, CmpStmt.OP_GREATER_OR_EQUAL)
-                };
-            case 0x9d: return new StackStatement[] {
-                    new StackIfZero(TypeInfo.CONST_INT, CmpStmt.OP_GREATER)
-                };
-            case 0x9e: return new StackStatement[] {
-                    new StackIfZero(TypeInfo.CONST_INT, CmpStmt.OP_LESS_OR_EQUAL)
-                };
-            case 0x9f: return new StackStatement[] {
-                    new StackIfCmp(TypeInfo.CONST_INT, CmpStmt.OP_EQUAL)
-                };
-            case 0xa0: return new StackStatement[] {
-                    new StackIfCmp(TypeInfo.CONST_INT, CmpStmt.OP_NOTEQUAL)
-                };
-            case 0xa1: return new StackStatement[] {
-                    new StackIfCmp(TypeInfo.CONST_INT, CmpStmt.OP_LESS)
-                };
-            case 0xa2: return new StackStatement[] {
-                    new StackIfCmp(TypeInfo.CONST_INT, CmpStmt.OP_GREATER_OR_EQUAL)
-                };
-            case 0xa3: return new StackStatement[] {
-                    new StackIfCmp(TypeInfo.CONST_INT, CmpStmt.OP_GREATER)
-                };
-            case 0xa4: return new StackStatement[] {
-                    new StackIfCmp(TypeInfo.CONST_INT, CmpStmt.OP_LESS_OR_EQUAL)
-                };
-            case 0xa5: return new StackStatement[] {
-                    new StackIfCmp(TypeInfo.CONST_OBJECTREF, CmpStmt.OP_EQUAL)
-                };
-            case 0xa6: return new StackStatement[] {
-                    new StackIfCmp(TypeInfo.CONST_OBJECTREF, CmpStmt.OP_NOTEQUAL)
-                };
-            case 0xa7: return new StackStatement[] {
-                    new StackGoto()
-                };
-            case 0xa8: return new StackStatement[] {
-                    new StackJSR()
-                };
-            case 0xa9: return new StackStatement[] {
-                    new StackJSRReturn(varTable.getDefaultLocalVariable(((RET)instruction).getIndex() ))
-                };
+                    );
+            case 0x5f: return new StackSwap(stack[tos-1], stack[tos]);
+            case 0x60: return new StackBinop(TypeInfo.CONST_INT, BinopStmt.OP_ADD);
+            case 0x61: return new StackBinop(TypeInfo.CONST_LONG, BinopStmt.OP_ADD);
+            case 0x62: return new StackBinop(TypeInfo.CONST_FLOAT, BinopStmt.OP_ADD);
+            case 0x63: return new StackBinop(TypeInfo.CONST_DOUBLE, BinopStmt.OP_ADD);
+            case 0x64: return new StackBinop(TypeInfo.CONST_INT, BinopStmt.OP_SUB);
+            case 0x65: return new StackBinop(TypeInfo.CONST_LONG, BinopStmt.OP_SUB);
+            case 0x66: return new StackBinop(TypeInfo.CONST_FLOAT, BinopStmt.OP_SUB);
+            case 0x67: return new StackBinop(TypeInfo.CONST_DOUBLE, BinopStmt.OP_SUB);
+            case 0x68: return new StackBinop(TypeInfo.CONST_INT, BinopStmt.OP_MUL);
+            case 0x69: return new StackBinop(TypeInfo.CONST_LONG, BinopStmt.OP_MUL);
+            case 0x6a: return new StackBinop(TypeInfo.CONST_FLOAT, BinopStmt.OP_MUL);
+            case 0x6b: return new StackBinop(TypeInfo.CONST_DOUBLE, BinopStmt.OP_MUL);
+            case 0x6c: return new StackBinop(TypeInfo.CONST_INT, BinopStmt.OP_DIV);
+            case 0x6d: return new StackBinop(TypeInfo.CONST_LONG, BinopStmt.OP_DIV);
+            case 0x6e: return new StackBinop(TypeInfo.CONST_FLOAT, BinopStmt.OP_DIV);
+            case 0x6f: return new StackBinop(TypeInfo.CONST_DOUBLE, BinopStmt.OP_DIV);
+            case 0x70: return new StackBinop(TypeInfo.CONST_INT, BinopStmt.OP_REMINDER);
+            case 0x71: return new StackBinop(TypeInfo.CONST_LONG, BinopStmt.OP_REMINDER);
+            case 0x72: return new StackBinop(TypeInfo.CONST_FLOAT, BinopStmt.OP_REMINDER);
+            case 0x73: return new StackBinop(TypeInfo.CONST_DOUBLE, BinopStmt.OP_REMINDER);
+            case 0x74: return new StackNegate(TypeInfo.CONST_INT);
+            case 0x75: return new StackNegate(TypeInfo.CONST_LONG);
+            case 0x76: return new StackNegate(TypeInfo.CONST_FLOAT);
+            case 0x77: return new StackNegate(TypeInfo.CONST_DOUBLE);
+            case 0x78: return new StackBinop(TypeInfo.CONST_INT, BinopStmt.OP_SHIFT_LEFT);
+            case 0x79: return new StackBinop(TypeInfo.CONST_LONG, BinopStmt.OP_SHIFT_LEFT);
+            case 0x7a: return new StackBinop(TypeInfo.CONST_INT, BinopStmt.OP_SHIFT_RIGHT);
+            case 0x7b: return new StackBinop(TypeInfo.CONST_LONG, BinopStmt.OP_SHIFT_RIGHT);
+            case 0x7c: return new StackBinop(TypeInfo.CONST_INT, BinopStmt.OP_LOGIC_SHIFT_RIGHT);
+            case 0x7d: return new StackBinop(TypeInfo.CONST_LONG, BinopStmt.OP_LOGIC_SHIFT_RIGHT);
+            case 0x7e: return new StackBinop(TypeInfo.CONST_INT, BinopStmt.OP_AND);
+            case 0x7f: return new StackBinop(TypeInfo.CONST_LONG, BinopStmt.OP_AND);
+            case 0x80: return new StackBinop(TypeInfo.CONST_INT, BinopStmt.OP_OR);
+            case 0x81: return new StackBinop(TypeInfo.CONST_LONG, BinopStmt.OP_OR);
+            case 0x82: return new StackBinop(TypeInfo.CONST_INT, BinopStmt.OP_XOR);
+            case 0x83: return new StackBinop(TypeInfo.CONST_LONG, BinopStmt.OP_XOR);
+            case 0x84: return new StackIInc(varTable.getDefaultLocalVariable(((IINC)instruction).getIndex()),
+                            ((IINC)instruction).getIncrement());
+            case 0x85: return new StackConvert(TypeInfo.CONST_INT, TypeInfo.CONST_LONG);
+            case 0x86: return new StackConvert(TypeInfo.CONST_INT, TypeInfo.CONST_FLOAT);
+            case 0x87: return new StackConvert(TypeInfo.CONST_INT, TypeInfo.CONST_DOUBLE);
+            case 0x88: return new StackConvert(TypeInfo.CONST_LONG, TypeInfo.CONST_INT);
+            case 0x89: return new StackConvert(TypeInfo.CONST_LONG, TypeInfo.CONST_FLOAT);
+            case 0x8a: return new StackConvert(TypeInfo.CONST_LONG, TypeInfo.CONST_DOUBLE);
+            case 0x8b: return new StackConvert(TypeInfo.CONST_FLOAT, TypeInfo.CONST_INT);
+            case 0x8c: return new StackConvert(TypeInfo.CONST_FLOAT, TypeInfo.CONST_LONG);
+            case 0x8d: return new StackConvert(TypeInfo.CONST_FLOAT, TypeInfo.CONST_DOUBLE);
+            case 0x8e: return new StackConvert(TypeInfo.CONST_DOUBLE, TypeInfo.CONST_INT);
+            case 0x8f: return new StackConvert(TypeInfo.CONST_DOUBLE, TypeInfo.CONST_LONG);
+            case 0x90: return new StackConvert(TypeInfo.CONST_DOUBLE, TypeInfo.CONST_FLOAT);
+            case 0x91: return new StackConvert(TypeInfo.CONST_INT, TypeInfo.CONST_BYTE);
+            case 0x92: return new StackConvert(TypeInfo.CONST_INT, TypeInfo.CONST_CHAR);
+            case 0x93: return new StackConvert(TypeInfo.CONST_INT, TypeInfo.CONST_SHORT);
+            case 0x94: return new StackBinop(TypeInfo.CONST_LONG, BinopStmt.OP_CMP);
+            case 0x95: return new StackBinop(TypeInfo.CONST_FLOAT, BinopStmt.OP_CMPL);
+            case 0x96: return new StackBinop(TypeInfo.CONST_FLOAT, BinopStmt.OP_CMPG);
+            case 0x97: return new StackBinop(TypeInfo.CONST_DOUBLE, BinopStmt.OP_CMPL);
+            case 0x98: return new StackBinop(TypeInfo.CONST_DOUBLE, BinopStmt.OP_CMPG);
+            case 0x99: return new StackIfZero(TypeInfo.CONST_INT, CmpStmt.OP_EQUAL);
+            case 0x9a: return new StackIfZero(TypeInfo.CONST_INT, CmpStmt.OP_NOTEQUAL);
+            case 0x9b: return new StackIfZero(TypeInfo.CONST_INT, CmpStmt.OP_LESS);
+            case 0x9c: return new StackIfZero(TypeInfo.CONST_INT, CmpStmt.OP_GREATER_OR_EQUAL);
+            case 0x9d: return new StackIfZero(TypeInfo.CONST_INT, CmpStmt.OP_GREATER);
+            case 0x9e: return new StackIfZero(TypeInfo.CONST_INT, CmpStmt.OP_LESS_OR_EQUAL);
+            case 0x9f: return new StackIfCmp(TypeInfo.CONST_INT, CmpStmt.OP_EQUAL);
+            case 0xa0: return new StackIfCmp(TypeInfo.CONST_INT, CmpStmt.OP_NOTEQUAL);
+            case 0xa1: return new StackIfCmp(TypeInfo.CONST_INT, CmpStmt.OP_LESS);
+            case 0xa2: return new StackIfCmp(TypeInfo.CONST_INT, CmpStmt.OP_GREATER_OR_EQUAL);
+            case 0xa3: return new StackIfCmp(TypeInfo.CONST_INT, CmpStmt.OP_GREATER);
+            case 0xa4: return new StackIfCmp(TypeInfo.CONST_INT, CmpStmt.OP_LESS_OR_EQUAL);
+            case 0xa5: return new StackIfCmp(TypeInfo.CONST_OBJECTREF, CmpStmt.OP_EQUAL);
+            case 0xa6: return new StackIfCmp(TypeInfo.CONST_OBJECTREF, CmpStmt.OP_NOTEQUAL);
+            case 0xa7: return new StackGoto();
+            case 0xa8: return new StackJSR();
+            case 0xa9: return new StackJSRReturn(varTable.getDefaultLocalVariable(((RET)instruction).getIndex() ));
             case 0xaa:
                 int[] matchs = ((TABLESWITCH)instruction).getMatchs();
-                return new StackStatement[] {
-                    new StackTableswitch(matchs[0], matchs[matchs.length-1])
-                };
-            case 0xab: return new StackStatement[] {
-                    new StackLookupswitch(((LOOKUPSWITCH)instruction).getMatchs())
-                };
-            case 0xac: return new StackStatement[] {
-                    new StackReturn(TypeInfo.CONST_INT)
-                };
-            case 0xad: return new StackStatement[] {
-                    new StackReturn(TypeInfo.CONST_LONG)
-                };
-            case 0xae: return new StackStatement[] {
-                    new StackReturn(TypeInfo.CONST_FLOAT)
-                };
-            case 0xaf: return new StackStatement[] {
-                    new StackReturn(TypeInfo.CONST_DOUBLE)
-                };
-            case 0xb0: return new StackStatement[] {
-                    new StackReturn(TypeInfo.CONST_OBJECTREF)
-                };
-            case 0xb1: return new StackStatement[] {
-                    new StackReturn()
-                };
-            case 0xb2: return new StackStatement[] {
-                    new StackGetField(cp.getFieldReference(((GETSTATIC)instruction).getIndex()))
-                };
-            case 0xb3: return new StackStatement[] {
-                    new StackPutField(cp.getFieldReference(((PUTSTATIC)instruction).getIndex()))
-                };
-            case 0xb4: return new StackStatement[] {
-                    new StackGetField(cp.getFieldReference(((GETFIELD)instruction).getIndex()))
-                };
-            case 0xb5: return new StackStatement[] {
-                    new StackPutField(cp.getFieldReference(((PUTFIELD)instruction).getIndex()))
-                };
-            case 0xb6: return new StackStatement[] {
-                    new StackInvoke(cp.getMethodReference(((INVOKEVIRTUAL)instruction).getIndex()), InvokeStmt.TYPE_VIRTUAL)
-                };
-            case 0xb7: return new StackStatement[] {
-                    new StackInvoke(cp.getMethodReference(((INVOKESPECIAL)instruction).getIndex()), InvokeStmt.TYPE_SPECIAL)
-                };
-            case 0xb8: return new StackStatement[] {
-                    new StackInvoke(cp.getMethodReference(((INVOKESTATIC)instruction).getIndex()), InvokeStmt.TYPE_STATIC)
-                };
-            case 0xb9: return new StackStatement[] {
-                    new StackInvoke(cp.getMethodReference(((INVOKEINTERFACE)instruction).getIndex()), InvokeStmt.TYPE_INTERFACE)
-                };
-            case 0xbb: return new StackStatement[] {
-                    new StackNew(cp.getClassReference(((NEW)instruction).getIndex()))
-                };
-            case 0xbc: return new StackStatement[] {
-                    new StackNewArray(TypeHelper.parseType( appStruct,
-                            BasicType.getType( ((NEWARRAY)instruction).getTypecode() ) ))
-                };
+                return new StackTableswitch(matchs[0], matchs[matchs.length-1]);
+            case 0xab: return new StackLookupswitch(((LOOKUPSWITCH)instruction).getMatchs());
+            case 0xac: return new StackReturn(TypeInfo.CONST_INT);
+            case 0xad: return new StackReturn(TypeInfo.CONST_LONG);
+            case 0xae: return new StackReturn(TypeInfo.CONST_FLOAT);
+            case 0xaf: return new StackReturn(TypeInfo.CONST_DOUBLE);
+            case 0xb0: return new StackReturn(TypeInfo.CONST_OBJECTREF);
+            case 0xb1: return new StackReturn();
+            case 0xb2: return new StackGetField(cp.getFieldReference(((GETSTATIC)instruction).getIndex()));
+            case 0xb3: return new StackPutField(cp.getFieldReference(((PUTSTATIC)instruction).getIndex()));
+            case 0xb4: return new StackGetField(cp.getFieldReference(((GETFIELD)instruction).getIndex()));
+            case 0xb5: return new StackPutField(cp.getFieldReference(((PUTFIELD)instruction).getIndex()));
+            case 0xb6: return new StackInvoke(cp.getMethodReference(((INVOKEVIRTUAL)instruction).getIndex()), InvokeStmt.TYPE_VIRTUAL);
+            case 0xb7: return new StackInvoke(cp.getMethodReference(((INVOKESPECIAL)instruction).getIndex()), InvokeStmt.TYPE_SPECIAL);
+            case 0xb8: return new StackInvoke(cp.getMethodReference(((INVOKESTATIC)instruction).getIndex()), InvokeStmt.TYPE_STATIC);
+            case 0xb9: return new StackInvoke(cp.getMethodReference(((INVOKEINTERFACE)instruction).getIndex()), InvokeStmt.TYPE_INTERFACE);
+            // 0xba unused
+            case 0xbb: return new StackNew(cp.getClassReference(((NEW)instruction).getIndex()));
+            case 0xbc: return new StackNewArray(TypeHelper.parseType( appStruct,
+                            BasicType.getType( ((NEWARRAY)instruction).getTypecode() ) ));
             case 0xbd:
                 clazz = cp.getClassReference( ((ANEWARRAY)instruction).getIndex() );
-                return new StackStatement[] {
-                    new StackNewArray(new ObjectRefType(clazz))
-                };
-            case 0xbe: return new StackStatement[] {
-                    new StackArrayLength()
-                };
-            case 0xbf: return new StackStatement[] {
-                    new StackThrow()
-                };
-            case 0xc0: return new StackStatement[] {
-                    new StackCheckcast(cp.getClassReference(((CHECKCAST)instruction).getIndex()))
-                };
-            case 0xc1: return new StackStatement[] {
-                    new StackInstanceof(cp.getClassReference(((INSTANCEOF)instruction).getIndex()))
-                };
-            case 0xc2: return new StackStatement[] {
-                    new StackEntermonitor()
-                };
-            case 0xc3: return new StackStatement[] {
-                    new StackExitmonitor()
-                };
+                return new StackNewArray(new ObjectRefType(clazz));
+            case 0xbe: return new StackArrayLength();
+            case 0xbf: return new StackThrow();
+            case 0xc0: return new StackCheckcast(cp.getClassReference(((CHECKCAST)instruction).getIndex()));
+            case 0xc1: return new StackInstanceof(cp.getClassReference(((INSTANCEOF)instruction).getIndex()));
+            case 0xc2: return new StackEntermonitor();
+            case 0xc3: return new StackExitmonitor();
             case 0xc5:
                 clazz = cp.getClassReference( ((MULTIANEWARRAY)instruction).getIndex() );
-                return new StackStatement[] {
-                    new StackNewMultiArray(clazz, ((MULTIANEWARRAY)instruction).getDimensions())
-                };
-            case 0xc6: return new StackStatement[] {
-                    new StackIfZero(TypeInfo.CONST_OBJECTREF, CmpStmt.OP_EQUAL)
-                };
-            case 0xc7: return new StackStatement[] {
-                    new StackIfZero(TypeInfo.CONST_OBJECTREF, CmpStmt.OP_NOTEQUAL)
-                };
-            case 0xc8: return new StackStatement[] {
-                    new StackGoto()
-                };
-            case 0xc9: throw new TypeException("JSR is currently not supported."); 
-                //return new StackStatement[] {
-                    // TODO resolve basicblock
-                //    new StackJSR(null)
-                //};
-            case 0xca: return new StackStatement[] {
-                    new StackBreakpoint()
-                };
+                return new StackNewMultiArray(clazz, ((MULTIANEWARRAY)instruction).getDimensions());
+            case 0xc6: return new StackIfZero(TypeInfo.CONST_OBJECTREF, CmpStmt.OP_EQUAL);
+            case 0xc7: return new StackIfZero(TypeInfo.CONST_OBJECTREF, CmpStmt.OP_NOTEQUAL);
+            case 0xc8: return new StackGoto();
+            case 0xc9: throw new TypeException("JSR is currently not supported.");
+                // TODO resolve basicblock
+                //return new StackJSR(null);
+            case 0xca: return new StackBreakpoint();
             default: throw new TypeException("Invalid or unsupported opcode {"+instruction.getOpcode()+"}.");
         }
     }
 
-    public Instruction[] getInstructions(StackStatement stmt, VariableTable varTable, InstructionHandle[] targets) throws TypeException {
+    public Instruction getInstruction(StackStatement stmt, VariableTable varTable, InstructionHandle[] targets) throws TypeException {
 
         if ( stmt instanceof StackArrayLength ) {
-            return new Instruction[] { new ARRAYLENGTH() };
+            return new ARRAYLENGTH();
         }
         if ( stmt instanceof StackArrayLoad ) {
             Instruction is;
@@ -757,7 +373,7 @@ public class BcelStmtFactory {
                 }
             }
 
-            return new Instruction[] { is };
+            return is;
         }
         if ( stmt instanceof StackArrayStore ) {
             Instruction is;
@@ -777,7 +393,7 @@ public class BcelStmtFactory {
                             ((StackArrayStore)stmt).getArrayType().getTypeName()+"}");
                 }
             }
-            return new Instruction[] { is };
+            return is;
         }
         if ( stmt instanceof StackBinop ) {
             StackBinop binop = (StackBinop) stmt;
@@ -881,16 +497,14 @@ public class BcelStmtFactory {
             if ( is == null ) {
                 throw new TypeException("Invalid operand or type.");
             }
-            return new Instruction[] { is };
+            return is;
         }
         if ( stmt instanceof StackBreakpoint ) {
-            Instruction is = new BREAKPOINT();
-            return new Instruction[] { is };
+            return new BREAKPOINT();
         }
         if ( stmt instanceof StackCheckcast ) {
             StackCheckcast cast = (StackCheckcast) stmt;
-            Instruction is = new CHECKCAST(cp.addConstant(cast.getClassConstant()));
-            return new Instruction[] { is };
+            return new CHECKCAST(cp.addConstant(cast.getClassConstant()));
         }
         if ( stmt instanceof StackConvert ) {
             StackConvert convert = (StackConvert) stmt;
@@ -932,7 +546,7 @@ public class BcelStmtFactory {
             if ( is == null ) {
                 throw new TypeException("Invalid conversion type.");
             }
-            return new Instruction[] { is };
+            return is;
         }
         if ( stmt instanceof StackDup ) {
             StackDup dup = (StackDup) stmt;
@@ -957,15 +571,13 @@ public class BcelStmtFactory {
                 throw new TypeException("Invalid type {"+dup.getTypeLength()+"} or down {"+
                         dup.getDownLength()+"} length.");
             }
-            return new Instruction[] { is };
+            return is;
         }
         if ( stmt instanceof StackEntermonitor ) {
-            Instruction is = new MONITORENTER();
-            return new Instruction[] { is };
+            return new MONITORENTER();
         }
         if ( stmt instanceof StackExitmonitor ) {
-            Instruction is = new MONITOREXIT();
-            return new Instruction[] { is };
+            return new MONITOREXIT();
         }
         if ( stmt instanceof StackGetField ) {
             StackGetField getfield = (StackGetField) stmt;
@@ -975,14 +587,13 @@ public class BcelStmtFactory {
             } else {
                 is = new GETFIELD(cp.addConstant(getfield.getConstantField()));
             }
-            return new Instruction[] { is };
+            return is;
         }
         if ( stmt instanceof StackGoto ) {
             if ( targets.length < 1 ) {
                 throw new TypeException("No target for goto defined.");
             }
-            Instruction is = new GOTO(targets[0]);
-            return new Instruction[] { is };
+            return new GOTO(targets[0]);
         }
         if ( stmt instanceof StackIfCmp ) {
             if ( targets.length < 1 ) {
@@ -1011,7 +622,7 @@ public class BcelStmtFactory {
             if ( is == null ) {
                 throw new TypeException("Invalid operand or type for ifcmp");
             }
-            return new Instruction[] { is };
+            return is;
         }
         if ( stmt instanceof StackIfZero ) {
             if ( targets.length < 1 ) {
@@ -1040,16 +651,14 @@ public class BcelStmtFactory {
             if ( is == null ) {
                 throw new TypeException("Invalid operand or type for if");
             }
-            return new Instruction[] { is };
+            return is;
         }
         if ( stmt instanceof StackIInc ) {
             StackIInc inc = (StackIInc) stmt;
-            Instruction is = new IINC( varTable.getIndex(inc.getIncVariable()),inc.getIncrement());
-            return new Instruction[] { is };
+            return new IINC( varTable.getIndex(inc.getIncVariable()),inc.getIncrement());
         }
         if ( stmt instanceof StackInstanceof ) {
-            Instruction is = new INSTANCEOF(cp.addConstant(((StackInstanceof)stmt).getClassConstant()));
-            return new Instruction[] { is };
+            return new INSTANCEOF(cp.addConstant(((StackInstanceof)stmt).getClassConstant()));
         }
         if ( stmt instanceof StackInvoke ) {
             StackInvoke invoke = (StackInvoke) stmt;
@@ -1068,31 +677,29 @@ public class BcelStmtFactory {
                 case StackInvoke.TYPE_STATIC: is = new INVOKESTATIC(cls); break;
                 case StackInvoke.TYPE_VIRTUAL: is = new INVOKEVIRTUAL(cls); break;
             }
-            return new Instruction[] { is };
+            return is;
         }
         if ( stmt instanceof StackJSR ) {
-            Instruction is = new JSR(null);
-            return new Instruction[] { is };
+            return new JSR(null);
         }
         if ( stmt instanceof StackJSRReturn ) {
-            Instruction is = new RET( varTable.getIndex(((StackJSRReturn)stmt).getRetAddressVar()) );
-            return new Instruction[] { is };
+            return new RET( varTable.getIndex(((StackJSRReturn)stmt).getRetAddressVar()) );
         }
         if ( stmt instanceof StackLoad ) {
             StackLoad load = (StackLoad) stmt;
-            int var = varTable.getIndex(load.getVariable());
+            int index = varTable.getIndex(load.getVariable());
             Instruction is = null;
             switch ( load.getType().getMachineType() ) {
-                case TypeInfo.TYPE_INT: is = new ILOAD(var); break;
-                case TypeInfo.TYPE_LONG: is = new LLOAD(var); break;
-                case TypeInfo.TYPE_FLOAT: is = new FLOAD(var); break;
-                case TypeInfo.TYPE_DOUBLE: is = new DLOAD(var); break;
-                case TypeInfo.TYPE_REFERENCE: is = new ALOAD(var); break;
+                case TypeInfo.TYPE_INT: is = new ILOAD(index); break;
+                case TypeInfo.TYPE_LONG: is = new LLOAD(index); break;
+                case TypeInfo.TYPE_FLOAT: is = new FLOAD(index); break;
+                case TypeInfo.TYPE_DOUBLE: is = new DLOAD(index); break;
+                case TypeInfo.TYPE_REFERENCE: is = new ALOAD(index); break;
             }
             if ( is == null ) {
                 throw new TypeException("Invalid type for load.");
             }
-            return new Instruction[] { is };
+            return is;
         }
         if ( stmt instanceof StackLookupswitch ) {
             StackLookupswitch ls = (StackLookupswitch) stmt;
@@ -1102,8 +709,7 @@ public class BcelStmtFactory {
             }
             InstructionHandle[] mTargets = new InstructionHandle[matchs.length];
             System.arraycopy(targets, 1, mTargets, 0, mTargets.length);
-            Instruction is = new LOOKUPSWITCH(matchs, mTargets, targets[0]);
-            return new Instruction[] { is };
+            return new LOOKUPSWITCH(matchs, mTargets, targets[0]);
         }
         if ( stmt instanceof StackNegate ) {
             Instruction is = null;
@@ -1116,11 +722,10 @@ public class BcelStmtFactory {
             if ( is == null ) {
                 throw new TypeException("Invalid type for negate.");
             }
-            return new Instruction[] { is };
+            return is;
         }
         if ( stmt instanceof StackNew ) {
-            Instruction is = new NEW(cp.addConstant( ((StackNew)stmt).getObjectClass() ));
-            return new Instruction[] { is };
+            return new NEW(cp.addConstant( ((StackNew)stmt).getObjectClass() ));
         }
         if ( stmt instanceof StackNewArray ) {
             StackNewArray newArray = (StackNewArray) stmt;
@@ -1130,27 +735,25 @@ public class BcelStmtFactory {
             } else {
                 is = new NEWARRAY( getBcelType( newArray.getArrayType() ).getType() );
             }
-            return new Instruction[] { is };
+            return is;
         }
         if ( stmt instanceof StackNewMultiArray ) {
             StackNewMultiArray ma = (StackNewMultiArray) stmt;
-            Instruction is = new MULTIANEWARRAY( cp.addConstant(ma.getArrayClass()), ma.getDimensions() );
-            return new Instruction[] { is };
+            return new MULTIANEWARRAY( cp.addConstant(ma.getArrayClass()), ma.getDimensions() );
         }
         if ( stmt instanceof StackNop ) {
-            Instruction is = new NOP();
-            return new Instruction[] { is };
+            return new NOP();
         }
         if ( stmt instanceof StackPop ) {
             Instruction is = null;
-            switch ( ((StackPop)stmt).getPopCount() ) {
+            switch ( ((StackPop)stmt).getPopSize() ) {
                 case 1: is = new POP(); break;
                 case 2: is = new POP2(); break;
             }
             if ( is == null ) {
-                throw new TypeException("Invalid pop count {" + ((StackPop)stmt).getPopCount() + "}.");
+                throw new TypeException("Invalid pop size {" + ((StackPop)stmt).getPopSize() + "}.");
             }
-            return new Instruction[] { is };
+            return is;
         }
         if ( stmt instanceof StackPush ) {
             StackPush push = (StackPush) stmt;
@@ -1214,7 +817,7 @@ public class BcelStmtFactory {
             if ( is == null ) {
                 throw new TypeException("Unknown type {"+push.getType().getTypeName()+"} of pushed value.");
             }
-            return new Instruction[] { is };
+            return is;
         }
         if ( stmt instanceof StackPutField ) {
             StackPutField putfield = (StackPutField) stmt;
@@ -1224,7 +827,7 @@ public class BcelStmtFactory {
             } else {
                 is = new PUTFIELD(cp.addConstant(putfield.getConstantField()));
             }
-            return new Instruction[] { is };
+            return is;
         }
         if ( stmt instanceof StackReturn ) {
             StackReturn ret = (StackReturn) stmt;
@@ -1240,27 +843,26 @@ public class BcelStmtFactory {
                     case TypeInfo.TYPE_REFERENCE: is = new ARETURN(); break;
                 }
             }
-            return new Instruction[] { is };
+            return is;
         }
         if ( stmt instanceof StackStore ) {
             StackStore store = (StackStore) stmt;
-            int var = varTable.getIndex(store.getVariable());
+            int index = varTable.getIndex(store.getVariable());
             Instruction is = null;
             switch ( store.getType().getMachineType() ) {
-                case TypeInfo.TYPE_INT: is = new ISTORE(var); break;
-                case TypeInfo.TYPE_LONG: is = new LSTORE(var); break;
-                case TypeInfo.TYPE_FLOAT: is = new FSTORE(var); break;
-                case TypeInfo.TYPE_DOUBLE: is = new DSTORE(var); break;
-                case TypeInfo.TYPE_REFERENCE: is = new ASTORE(var); break;
+                case TypeInfo.TYPE_INT: is = new ISTORE(index); break;
+                case TypeInfo.TYPE_LONG: is = new LSTORE(index); break;
+                case TypeInfo.TYPE_FLOAT: is = new FSTORE(index); break;
+                case TypeInfo.TYPE_DOUBLE: is = new DSTORE(index); break;
+                case TypeInfo.TYPE_REFERENCE: is = new ASTORE(index); break;
             }
             if ( is == null ) {
                 throw new TypeException("Invalid type for store.");
             }
-            return new Instruction[] { is };
+            return is;
         }
         if ( stmt instanceof StackSwap ) {
-            Instruction is = new SWAP();
-            return new Instruction[] { is };
+            return new SWAP();
         }
         if ( stmt instanceof StackTableswitch ) {
             int[] matchs = ((StackTableswitch)stmt).createMatchs();
@@ -1269,18 +871,16 @@ public class BcelStmtFactory {
             }
             InstructionHandle[] mTargets = new InstructionHandle[matchs.length];
             System.arraycopy(targets, 1, mTargets, 0, mTargets.length);
-            Instruction is = new TABLESWITCH(matchs, mTargets, targets[0]);
-            return new Instruction[] { is };
+            return new TABLESWITCH(matchs, mTargets, targets[0]);
         }
         if ( stmt instanceof StackThrow ) {
-            Instruction is = new ATHROW();
-            return new Instruction[] { is };
+            return new ATHROW();
         }
         if ( stmt instanceof IdentityStmt) {
-            return new Instruction[0];
+            return null;
         }
 
-        return new Instruction[0];
+        return null;
     }
 
     public static Type getBcelType(TypeInfo type) {

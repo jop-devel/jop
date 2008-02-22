@@ -62,23 +62,13 @@ public class StackDup extends CopyStmt implements StackStatement {
 
     private void initialize() {
         popTypes = new TypeInfo[types.length + down.length];
-        for ( int i = 0; i < down.length; i++ ) {
-            popTypes[i] = down[i];
-        }
-        for ( int i = 0; i < types.length; i++ ) {
-            popTypes[down.length+i] = types[i];
-        }
+        System.arraycopy(down, 0, popTypes, 0, down.length);
+        System.arraycopy(types, 0, popTypes, down.length, types.length);
 
         pushTypes = new TypeInfo[2*types.length + down.length];
-        for ( int i = 0; i < types.length; i++ ) {
-            pushTypes[i] = types[i];
-        }
-        for ( int i = 0; i < down.length; i++ ) {
-            pushTypes[types.length+i] = down[i];
-        }
-        for ( int i = 0; i < types.length; i++ ) {
-            pushTypes[types.length+down.length+i] = types[i];
-        }
+        System.arraycopy(types, 0, pushTypes, 0, types.length);
+        System.arraycopy(down, 0, pushTypes, types.length, down.length);
+        System.arraycopy(types, 0, pushTypes, types.length + down.length, types.length);
     }
 
     public TypeInfo[] getPopTypes() {
@@ -149,6 +139,32 @@ public class StackDup extends CopyStmt implements StackStatement {
             }
         }
         return stmts;
+    }
+
+    public int getOpcode() {
+
+        switch ( getTypeLength() ) {
+            case 1:
+                switch ( getDownLength() ) {
+                    case 0: return 0x59; // DUP
+                    case 1: return 0x5a; // DUP_X1
+                    case 2: return 0x5b; // DUP_X2
+                }
+                break;
+            case 2:
+                switch ( getDownLength() ) {
+                    case 0: return 0x5c; // DUP2
+                    case 1: return 0x5d; // DUP2_X1
+                    case 2: return 0x5e; // DUP2_X2
+                }
+                break;
+        }
+
+        return -1;
+    }
+
+    public int getBytecodeSize() {
+        return 1;
     }
 
     public int[] getCopyMap() {

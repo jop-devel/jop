@@ -29,17 +29,14 @@ import com.jopdesign.libgraph.struct.type.TypeInfo;
  */
 public class StackPop extends AbstractStatement implements StackStatement {
 
-    private TypeInfo type;
-    private int cnt;
+    private TypeInfo[] types;
 
     public StackPop(TypeInfo type) {
-        this.type = type;
-        cnt = 1;
+        this.types = new TypeInfo[] { type };
     }
 
-    public StackPop(TypeInfo type, int cnt) {
-        this.type = type;
-        this.cnt = cnt;
+    public StackPop(TypeInfo[] types) {
+        this.types = types;
     }
 
     public boolean canThrowException() {
@@ -47,21 +44,17 @@ public class StackPop extends AbstractStatement implements StackStatement {
     }
 
     public String getCodeLine() {
-        if ( cnt > 1 ) {
-            return "pop" + cnt;
+        if ( types.length > 1 ) {
+            return "pop" + types.length;
         }
         return "pop";
     }
 
     public int getPopCount() {
-        return cnt;
+        return types.length;
     }
 
     public TypeInfo[] getPopTypes() {
-        TypeInfo[] types = new TypeInfo[cnt];
-        for (int i = 0; i < types.length; i++) {
-            types[i] = type;
-        }
         return types;
     }
 
@@ -75,5 +68,25 @@ public class StackPop extends AbstractStatement implements StackStatement {
 
     public QuadStatement[] getQuadCode(TypeInfo[] stack, VariableTable varTable) throws TypeException {
         return new QuadStatement[0];
+    }
+
+    public int getOpcode() {
+        int popSize = getPopSize();
+        if ( popSize > 2 ) {
+            return -1;
+        }
+        return popSize == 2 ? 0x58 : 0x57;
+    }
+
+    public int getBytecodeSize() {
+        return 1;
+    }
+
+    public int getPopSize() {
+        int size = 0;
+        for (int i = 0; i < types.length; i++) {
+            size += types[i].getLength();
+        }
+        return size;
     }
 }

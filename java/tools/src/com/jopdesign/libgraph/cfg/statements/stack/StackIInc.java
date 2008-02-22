@@ -23,7 +23,6 @@ import com.jopdesign.libgraph.cfg.statements.VariableStmt;
 import com.jopdesign.libgraph.cfg.statements.common.IncStmt;
 import com.jopdesign.libgraph.cfg.statements.quad.QuadBinop;
 import com.jopdesign.libgraph.cfg.statements.quad.QuadStatement;
-import com.jopdesign.libgraph.cfg.variable.ConstantVariable;
 import com.jopdesign.libgraph.cfg.variable.Variable;
 import com.jopdesign.libgraph.cfg.variable.VariableTable;
 import com.jopdesign.libgraph.struct.ConstantValue;
@@ -57,7 +56,15 @@ public class StackIInc extends IncStmt implements StackStatement, VariableStmt, 
 
     public QuadStatement[] getQuadCode(TypeInfo[] stack, VariableTable varTable) {
         return new QuadStatement[] { new QuadBinop(TypeInfo.CONST_INT, QuadBinop.OP_ADD, variable, variable,
-                new ConstantVariable("inc", new ConstantValue(TypeInfo.CONST_INT, getIncrement()))) };
+                varTable.getDefaultConstant( new ConstantValue(TypeInfo.CONST_INT, getIncrement())) ) };
+    }
+
+    public int getOpcode() {
+        return 0x84;
+    }
+
+    public int getBytecodeSize() {
+        return 3;
     }
 
     public String getCodeLine() {

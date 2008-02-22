@@ -51,6 +51,32 @@ public class StackIfZero extends IfStmt implements StackStatement {
         return new QuadStatement[] { new QuadIfZero(getType(), getOperand(), s0) };
     }
 
+    public int getOpcode() {
+        switch (getType().getMachineType()) {
+            case TypeInfo.TYPE_INT:
+                switch (getOperand()) {
+                    case OP_EQUAL: return 0x99;
+                    case OP_NOTEQUAL: return 0x9a;
+                    case OP_LESS: return 0x9b;
+                    case OP_GREATER_OR_EQUAL: return 0x9c;
+                    case OP_GREATER: return 0x9d;
+                    case OP_LESS_OR_EQUAL: return 0x9e;
+                }
+                break;
+            case TypeInfo.TYPE_REFERENCE:
+                switch (getOperand()) {
+                    case OP_EQUAL: return 0xc6;
+                    case OP_NOTEQUAL: return 0xc7;
+                }
+                break;
+        }
+        return -1;
+    }
+
+    public int getBytecodeSize() {
+        return 3;
+    }
+
     public String getCodeLine() {
         return "if" + getOperandName() + ": goto #0";
     }

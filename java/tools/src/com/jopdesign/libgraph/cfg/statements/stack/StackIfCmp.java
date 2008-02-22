@@ -52,6 +52,32 @@ public class StackIfCmp extends IfStmt implements StackStatement {
         return new QuadStatement[] { new QuadIfCmp(getType(), getOperand(), s0, s1) };
     }
 
+    public int getOpcode() {
+        switch (getType().getMachineType()) {
+            case TypeInfo.TYPE_INT:
+                switch (getOperand()) {
+                    case OP_EQUAL: return 0x9f;
+                    case OP_NOTEQUAL: return 0xa0;
+                    case OP_LESS: return 0xa1;
+                    case OP_GREATER_OR_EQUAL: return 0xa2;
+                    case OP_GREATER: return 0xa3;
+                    case OP_LESS_OR_EQUAL: return 0xa4;
+                }
+                break;
+            case TypeInfo.TYPE_REFERENCE:
+                switch (getOperand()) {
+                    case OP_EQUAL: return 0xa5;
+                    case OP_NOTEQUAL: return 0xa6;
+                }
+                break;
+        }
+        return -1;
+    }
+
+    public int getBytecodeSize() {
+        return 3;
+    }
+
     public String getCodeLine() {
         return "if_cmp" + getOperandName() + ": goto #0";
     }

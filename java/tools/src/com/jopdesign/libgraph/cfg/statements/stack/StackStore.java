@@ -66,6 +66,23 @@ public class StackStore extends AbstractStatement implements StackStatement, Ass
         return new QuadStatement[] { new QuadCopy(type, variable, s0) };
     }
 
+    public int getOpcode() {
+        int index = variable.getIndex();
+        switch ( getType().getMachineType() ) {
+            case TypeInfo.TYPE_INT: return index > 3 ? 0x36 : 0x3b + index;
+            case TypeInfo.TYPE_LONG: return index > 3 ? 0x37 : 0x3f + index;
+            case TypeInfo.TYPE_FLOAT: return index > 3 ? 0x38 : 0x43 + index;
+            case TypeInfo.TYPE_DOUBLE: return index > 3 ? 0x39 : 0x47 + index;
+            case TypeInfo.TYPE_REFERENCE: return index > 3 ? 0x3a : 0x4b + index;
+        }
+
+        return -1;
+    }
+
+    public int getBytecodeSize() {
+        return variable.getIndex() <= 3 ? 1 : 2;
+    }
+
     public TypeInfo getType() {
         return type;
     }

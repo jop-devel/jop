@@ -48,4 +48,12 @@ public class StackNop extends NopStmt implements StackStatement {
     public QuadStatement[] getQuadCode(TypeInfo[] stack, VariableTable varTable) throws TypeException {
         return new QuadStatement[] { new QuadNop() };
     }
+
+    public int getOpcode() {
+        return 0x00;
+    }
+
+    public int getBytecodeSize() {
+        return 1;
+    }
 }

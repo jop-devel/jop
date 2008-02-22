@@ -52,6 +52,15 @@ public class StackTableswitch extends TableswitchStmt implements StackStatement 
         return new QuadStatement[] { new QuadTableswitch(getLowValue(), getHighValue(), s0) };
     }
 
+    public int getOpcode() {
+        return 0xaa;
+    }
+
+    public int getBytecodeSize() {
+        // may be smaller depending on position in code, calculating with 3 bytes as pad
+        return 16 + (getHighValue() - getLowValue() + 1) * 4;
+    }
+
     public String getCodeLine() {
         return "tableswitch\n" + getTable();
     }

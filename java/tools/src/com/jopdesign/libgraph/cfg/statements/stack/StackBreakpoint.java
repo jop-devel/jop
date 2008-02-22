@@ -47,4 +47,12 @@ public class StackBreakpoint extends BreakpointStmt implements StackStatement {
     public QuadStatement[] getQuadCode(TypeInfo[] stack, VariableTable varTable) {
         return new QuadStatement[] { new QuadBreakpoint() };
     }
+
+    public int getOpcode() {
+        return 0xca;
+    }
+
+    public int getBytecodeSize() {
+        return 1;
+    }
 }

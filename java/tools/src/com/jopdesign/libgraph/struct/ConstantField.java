@@ -76,4 +76,12 @@ public class ConstantField {
 
         return o.getClassName().equals(getClassName()) && o.getFieldName().equals(getFieldName());
     }
+
+    public boolean isStatic() {
+        return fieldInfo != null ? fieldInfo.isStatic() : false;
+    }
+
+    public String getFQName() {
+        return getClassName() + "#" + getFieldName();
+    }
 }

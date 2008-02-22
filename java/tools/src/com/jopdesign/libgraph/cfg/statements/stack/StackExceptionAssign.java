@@ -52,6 +52,14 @@ public class StackExceptionAssign extends ExceptionAssignStmt implements StackSt
         return new QuadStatement[] { new QuadExceptionAssign(s0) };
     }
 
+    public int getOpcode() {
+        return -1;
+    }
+
+    public int getBytecodeSize() {
+        return 0;
+    }
+
     public String getCodeLine() {
         return "push @exception";
     }

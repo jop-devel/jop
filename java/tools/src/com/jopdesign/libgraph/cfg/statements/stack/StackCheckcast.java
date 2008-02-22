@@ -53,6 +53,14 @@ public class StackCheckcast extends CheckcastStmt implements StackStatement {
         return new QuadStatement[] { new QuadCheckcast(getClassConstant(), s0) };
     }
 
+    public int getOpcode() {
+        return 0xc0;
+    }
+
+    public int getBytecodeSize() {
+        return 3;
+    }
+
     public String getCodeLine() {
         return "checkcast "+ getClassConstant().getClassName();
     }

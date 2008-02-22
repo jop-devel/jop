@@ -66,6 +66,25 @@ public class StackReturn extends ReturnStmt implements StackStatement {
         }
     }
 
+    public int getOpcode() {
+        if ( getType() == null ) {
+            return 0xb1;
+        } else {
+            switch (getType().getMachineType()) {
+                case TypeInfo.TYPE_INT: return 0xac;
+                case TypeInfo.TYPE_LONG: return 0xad;
+                case TypeInfo.TYPE_FLOAT: return 0xae;
+                case TypeInfo.TYPE_DOUBLE: return 0xaf;
+                case TypeInfo.TYPE_REFERENCE: return 0xb0;
+            }
+        }
+        return -1;
+    }
+
+    public int getBytecodeSize() {
+        return 1;
+    }
+
     public String getCodeLine() {
         return "return" + (getType() != null ? "." + getType().getTypeName() : "");
     }

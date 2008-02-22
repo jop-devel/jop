@@ -124,7 +124,9 @@ public class BcelGraphCompiler {
      * @param ih the last instruction before the block code.
      * @param targetList the first instruction handle per block.
      */
-    private void appendCode(BcelStmtFactory factory, BasicBlock block, InstructionList il, InstructionHandle ih, List targetList) throws TypeException {
+    private void appendCode(BcelStmtFactory factory, BasicBlock block, InstructionList il, 
+                            InstructionHandle ih, List targetList) throws TypeException, GraphException
+    {
 
         StackCode code = block.getStackCode();
         VariableTable varTable = block.getGraph().getVariableTable();
@@ -142,14 +144,20 @@ public class BcelGraphCompiler {
 
         for (Iterator it = code.getStatements().iterator(); it.hasNext();) {
             StackStatement stmt = (StackStatement) it.next();
-            Instruction[] is = factory.getInstructions(stmt, varTable, targets);
+            Instruction is = factory.getInstruction(stmt, varTable, targets);
 
-            for (int i = 0; i < is.length; i++) {
-                if ( is[i] instanceof BranchInstruction ) {
-                    ih = il.append(ih, (BranchInstruction)is[i]);
-                } else {
-                    ih = il.append(ih, is[i]);
-                }
+            if ( is == null ) {
+                continue;
+            }
+            if ( is.getOpcode() != stmt.getOpcode() ) {
+                throw new GraphException("Created BCEL instruction opcode {"+is.getOpcode()+
+                        "} does not match opcode of stack-code {"+stmt.getOpcode()+"}.");
+            }
+
+            if ( is instanceof BranchInstruction ) {
+                ih = il.append(ih, (BranchInstruction)is);
+            } else {
+                ih = il.append(ih, is);
             }
         }
 

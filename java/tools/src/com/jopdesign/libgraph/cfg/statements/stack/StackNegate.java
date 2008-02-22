@@ -61,6 +61,20 @@ public class StackNegate extends NegateStmt implements StackStatement, StackAssi
         return new QuadStatement[] { new QuadNegate(getType(), s0, s0) };
     }
 
+    public int getOpcode() {
+        switch ( getType().getMachineType() ) {
+            case TypeInfo.TYPE_INT: return 0x74;
+            case TypeInfo.TYPE_LONG: return 0x75;
+            case TypeInfo.TYPE_FLOAT: return 0x76;
+            case TypeInfo.TYPE_DOUBLE: return 0x77;
+        }
+        return -1;
+    }
+
+    public int getBytecodeSize() {
+        return 1;
+    }
+
     public boolean isConstant() {
         return false;
     }

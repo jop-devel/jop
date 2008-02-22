@@ -54,6 +54,23 @@ public class StackArrayLoad extends ArrayLoadStmt implements StackStatement, Sta
         return new QuadStatement[] { new QuadArrayLoad(getArrayType(), s0, s0, s1) };
     }
 
+    public int getOpcode() {
+        switch (getArrayType().getType()) {
+            case TypeInfo.TYPE_INT: return 0x2e;
+            case TypeInfo.TYPE_LONG: return 0x2f;
+            case TypeInfo.TYPE_FLOAT: return 0x30;
+            case TypeInfo.TYPE_DOUBLE: return 0x31;
+            case TypeInfo.TYPE_BYTE: return 0x33;
+            case TypeInfo.TYPE_CHAR: return 0x34;
+            case TypeInfo.TYPE_SHORT: return 0x35;
+            default: return 0x32;
+        }
+    }
+
+    public int getBytecodeSize() {
+        return 1;
+    }
+
     public String getCodeLine() {
         return "arrayload."+getArrayType().getTypeName();
     }

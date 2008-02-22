@@ -51,6 +51,14 @@ public class StackThrow extends ThrowStmt implements StackStatement {
         return new QuadStatement[] { new QuadThrow(s0) };
     }
 
+    public int getOpcode() {
+        return 0xbf;
+    }
+
+    public int getBytecodeSize() {
+        return 1;
+    }
+
     public String getCodeLine() {
         return "throw";
     }

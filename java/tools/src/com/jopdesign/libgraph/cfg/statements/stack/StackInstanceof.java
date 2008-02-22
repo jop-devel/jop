@@ -53,6 +53,14 @@ public class StackInstanceof extends InstanceofStmt implements StackStatement, S
         return new QuadStatement[] { new QuadInstanceof(getClassConstant(), s0, s0) };
     }
 
+    public int getOpcode() {
+        return 0xc1;
+    }
+
+    public int getBytecodeSize() {
+        return 3;
+    }
+
     public String getCodeLine() {
         return "instanceof " + getClassConstant().getClassName();
     }

@@ -52,4 +52,12 @@ public class StackThisAssign extends ThisAssignStmt implements StackStatement, A
     public QuadStatement[] getQuadCode(TypeInfo[] stack, VariableTable varTable) throws TypeException {
         return new QuadStatement[] { new QuadThisAssign(getThisClass(), getVariable()) };
     }
+
+    public int getOpcode() {
+        return -1;
+    }
+
+    public int getBytecodeSize() {
+        return 0;
+    }
 }

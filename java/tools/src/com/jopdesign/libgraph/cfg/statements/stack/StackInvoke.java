@@ -66,6 +66,10 @@ public class StackInvoke extends InvokeStmt implements StackStatement, StackAssi
         return 0;
     }
 
+    public int getClockCycles(boolean cached) {
+        return 0;
+    }
+
     public QuadStatement[] getQuadCode(TypeInfo[] stack, VariableTable varTable) throws TypeException {
         TypeInfo[] paramTypes = getParameterTypes();
         Variable[] params = new Variable[paramTypes.length];
@@ -83,6 +87,26 @@ public class StackInvoke extends InvokeStmt implements StackStatement, StackAssi
             return new QuadStatement[] { new QuadInvoke(getMethodConstant(), getInvokeType(),
                 getPushTypes().length != 0 ? s0 : null, s0, params) };
         }
+    }
+
+    public int getOpcode() {
+        switch (getInvokeType()) {
+            case TYPE_VIRTUAL: return 0xb6;
+            case TYPE_SPECIAL: return 0xb7;
+            case TYPE_STATIC: return 0xb8;
+            case TYPE_INTERFACE: return 0xb9;
+        }
+        return -1;
+    }
+
+    public int getBytecodeSize() {
+        switch (getInvokeType()) {
+            case TYPE_VIRTUAL: return 3;
+            case TYPE_SPECIAL: return 3;
+            case TYPE_STATIC: return 3;
+            case TYPE_INTERFACE: return 5;
+        }
+        return 0;
     }
 
     public String getCodeLine() {
