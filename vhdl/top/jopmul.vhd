@@ -307,7 +307,6 @@ end process;
 			wr_data => sc_io_out(i).wr_data,
 			rd => sc_io_out(i).rd,
 			wr => sc_io_out(i).wr,
-			atomic => sc_io_out(i).atomic,
 			rd_data => sc_io_in(i).rd_data,
 			rdy_cnt => sc_io_in(i).rdy_cnt,
 			

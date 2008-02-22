@@ -27,7 +27,7 @@ generic (
 	rom_cnt		: integer := 15;	-- clock cycles for external rom for 100 MHz
 	jpc_width	: integer := 10;	-- address bits of java bytecode pc = cache size
 	block_bits	: integer := 4;		-- 2*block_bits is number of cache blocks
-	cpu_cnt		: integer := 2		-- number of cpus
+	cpu_cnt		: integer := 3		-- number of cpus
 );
 
 port (
@@ -232,7 +232,6 @@ end process;
 			wr_data => sc_io_out(i).wr_data,
 			rd => sc_io_out(i).rd,
 			wr => sc_io_out(i).wr,
-			atomic => sc_io_out(i).atomic,
 			rd_data => sc_io_in(i).rd_data,
 			rdy_cnt => sc_io_in(i).rdy_cnt,
 			
