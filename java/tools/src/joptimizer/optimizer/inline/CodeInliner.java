@@ -40,6 +40,7 @@ import com.jopdesign.libgraph.cfg.statements.quad.QuadStatement;
 import com.jopdesign.libgraph.cfg.statements.quad.QuadThisAssign;
 import com.jopdesign.libgraph.cfg.statements.quad.QuadThrow;
 import com.jopdesign.libgraph.cfg.statements.stack.StackDup;
+import com.jopdesign.libgraph.cfg.statements.stack.StackGoto;
 import com.jopdesign.libgraph.cfg.statements.stack.StackIfZero;
 import com.jopdesign.libgraph.cfg.statements.stack.StackInvoke;
 import com.jopdesign.libgraph.cfg.statements.stack.StackNew;
@@ -171,8 +172,29 @@ public class CodeInliner {
     }
 
     public int getDeltaBytecode(InvokeStmt stmt, boolean unsafeInline) {
-        // TODO get correct bytecode size change
-        return 0;
+        int size = 0;
+
+        // invoke is removed
+        if (stmt.getInvokeType() == InvokeStmt.TYPE_INTERFACE) {
+            size -= StackInvoke.BYTE_SIZE_INTERFACE;
+        } else {
+            size -= StackInvoke.BYTE_SIZE;
+        }
+
+        // parameter assignment
+        int[] slots = stmt.getParamSlots();
+        for (int i = 0; i < slots.length; i++) {
+            // NOTICE: code may be removed anyway, and lower slots may be stored with smaller version of store.
+            size += StackStore.BYTE_SIZE;            
+        }
+
+        // size of Nullpointer-checkcode
+        if ( stmt.getInvokeType() != InvokeStmt.TYPE_STATIC ) {
+            size += StackDup.BYTE_SIZE + StackIfZero.BYTE_SIZE + StackGoto.BYTE_SIZE;
+            size += StackNew.BYTE_SIZE + StackDup.BYTE_SIZE + StackInvoke.BYTE_SIZE + StackThrow.BYTE_SIZE;
+        }
+
+        return size;
     }
 
     /**
@@ -324,6 +346,7 @@ public class CodeInliner {
      * Insert a NPE check code at the beginning of the given code, using the current top of stack.
      * @param code the code where the npe check should be inserted.
      * @param thisRef the type of the checked value.
+     * @param newBlocks a list of {@link BasicBlock}s, to which all created blocks will be added.
      * @return number of new blocks.
      * @throws TypeException if code could not be created.
      */
