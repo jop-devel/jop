@@ -131,7 +131,7 @@ public class BcelGraphCompiler {
         StackCode code = block.getStackCode();
         VariableTable varTable = block.getGraph().getVariableTable();
 
-        // build targets
+        // get target instructions
         InstructionHandle[] targets = new InstructionHandle[block.getTargetCount()];
         for ( int i = 0; i < block.getTargetCount(); i++ ) {
             BasicBlock.Edge edge = block.getTargetEdge(i);
@@ -140,7 +140,7 @@ public class BcelGraphCompiler {
             }
         }
 
-        // TODO build targets for jsr
+        // TODO get targets for jsr
 
         for (Iterator it = code.getStatements().iterator(); it.hasNext();) {
             StackStatement stmt = (StackStatement) it.next();

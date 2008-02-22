@@ -30,6 +30,8 @@ import com.jopdesign.libgraph.struct.type.TypeInfo;
  * @author Stefan Hepp, e0026640@student.tuwien.ac.at
  */
 public class StackThrow extends ThrowStmt implements StackStatement {
+    
+    public static final int BYTE_SIZE = 1;
 
     public StackThrow() {
     }
@@ -47,7 +49,7 @@ public class StackThrow extends ThrowStmt implements StackStatement {
     }
 
     public QuadStatement[] getQuadCode(TypeInfo[] stack, VariableTable varTable) throws TypeException {
-        Variable s0 = varTable.getDefaultStackVariable(stack.length - 1);
+        Variable s0 = varTable.getDefaultStackVariable(stack.length - BYTE_SIZE);
         return new QuadStatement[] { new QuadThrow(s0) };
     }
 
@@ -56,7 +58,7 @@ public class StackThrow extends ThrowStmt implements StackStatement {
     }
 
     public int getBytecodeSize() {
-        return 1;
+        return BYTE_SIZE;
     }
 
     public String getCodeLine() {

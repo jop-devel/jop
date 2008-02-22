@@ -125,6 +125,20 @@ public class CodeBlock {
         return stmts.size();
     }
 
+    /**
+     * Check if the code needs a goto at the end of the block.
+     * This may be needed if the next-block edge is not the next block
+     * in the block list. Therefore the result depends on the current order of the blocks.
+     *
+     * @return true, if the graph-compiler will insert a goto after this block, else false.
+     */
+    public boolean needsGoto() {
+        if ( !block.hasNextBlock() ) {
+            return false;
+        }
+        return block.getNextBlockEdge().getTargetBlock().getBlockIndex() != block.getBlockIndex() + 1;
+    }
+
     public StmtHandle getStmtHandle(int stmt) {
         BasicStmtHandle handle = (BasicStmtHandle) handles.get(new Integer(stmt));
         if ( handle == null ) {

@@ -30,6 +30,8 @@ import com.jopdesign.libgraph.struct.type.TypeInfo;
  */
 public class StackDup extends CopyStmt implements StackStatement {
 
+    public static final int BYTE_SIZE = 1;
+
     private TypeInfo[] types;
     private TypeInfo[] down;
 
@@ -164,7 +166,7 @@ public class StackDup extends CopyStmt implements StackStatement {
     }
 
     public int getBytecodeSize() {
-        return 1;
+        return BYTE_SIZE;
     }
 
     public int[] getCopyMap() {

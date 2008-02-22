@@ -34,6 +34,8 @@ import com.jopdesign.libgraph.struct.type.TypeInfo;
  */
 public class StackNew extends NewObjectStmt implements StackStatement, StackAssign {
 
+    public static final int BYTE_SIZE = 3;
+
     public StackNew(ConstantClass clazz) {
         super(clazz);
     }
@@ -60,7 +62,7 @@ public class StackNew extends NewObjectStmt implements StackStatement, StackAssi
     }
 
     public int getBytecodeSize() {
-        return 3;
+        return BYTE_SIZE;
     }
 
     public ConstantValue[] getConstantValues(ConstantValue[] input) {

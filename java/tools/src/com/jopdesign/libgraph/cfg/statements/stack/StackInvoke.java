@@ -33,6 +33,10 @@ import com.jopdesign.libgraph.struct.type.TypeInfo;
  */
 public class StackInvoke extends InvokeStmt implements StackStatement, StackAssign {
 
+    public static final int BYTE_SIZE = 3;
+    
+    public static final int BYTE_SIZE_INTERFACE = 5;
+
     public StackInvoke(ConstantMethod method, int invokeType) throws TypeException {
         super(method, invokeType);
     }
@@ -101,10 +105,10 @@ public class StackInvoke extends InvokeStmt implements StackStatement, StackAssi
 
     public int getBytecodeSize() {
         switch (getInvokeType()) {
-            case TYPE_VIRTUAL: return 3;
-            case TYPE_SPECIAL: return 3;
-            case TYPE_STATIC: return 3;
-            case TYPE_INTERFACE: return 5;
+            case TYPE_VIRTUAL: return BYTE_SIZE;
+            case TYPE_SPECIAL: return BYTE_SIZE;
+            case TYPE_STATIC: return BYTE_SIZE;
+            case TYPE_INTERFACE: return BYTE_SIZE_INTERFACE;
         }
         return 0;
     }

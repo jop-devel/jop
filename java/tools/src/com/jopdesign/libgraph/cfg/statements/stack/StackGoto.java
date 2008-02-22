@@ -28,6 +28,8 @@ import com.jopdesign.libgraph.struct.type.TypeInfo;
  * @author Stefan Hepp, e0026640@student.tuwien.ac.at
  */
 public class StackGoto extends GotoStmt implements StackStatement {
+    
+    public static final int BYTE_SIZE = 3;
 
     public StackGoto() {
     }
@@ -55,6 +57,6 @@ public class StackGoto extends GotoStmt implements StackStatement {
 
     public int getBytecodeSize() {
         // NOTICE check for GOTO_W
-        return 3;
+        return BYTE_SIZE;
     }
 }

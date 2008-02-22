@@ -29,6 +29,8 @@ import com.jopdesign.libgraph.struct.type.TypeInfo;
  * @author Stefan Hepp, e0026640@student.tuwien.ac.at
  */
 public class StackIfZero extends IfStmt implements StackStatement {
+    
+    public static final int BYTE_SIZE = 3;
 
     public StackIfZero(TypeInfo type, int operand) {
         super(type, operand, true);
@@ -74,7 +76,7 @@ public class StackIfZero extends IfStmt implements StackStatement {
     }
 
     public int getBytecodeSize() {
-        return 3;
+        return BYTE_SIZE;
     }
 
     public String getCodeLine() {

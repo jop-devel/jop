@@ -268,6 +268,10 @@ public abstract class BasicBlock implements PropertyContainer {
         }
     }
 
+    public boolean hasNextBlock() {
+        return nextBlock != null;
+    }
+
     /**
      * Set the next block which will be executed if the last statement does not change the control-flow.
      * The new edge will be inserted into the targetblocks edgelist at a given position.

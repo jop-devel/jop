@@ -195,4 +195,24 @@ public class ControlFlowGraph {
         return true;
     }
 
+    /**
+     * Get the size of the bytecode of the current graph.
+     * This only works if the current graph type is {@link #TYPE_STACK}.
+     *
+     * @return the size of the corresponding bytecode in bytes or 0 if the graph is not in stack-form.
+     */
+    public int getBytecodeSize() {
+        if ( graphType != TYPE_STACK ) {
+            return 0;
+        }
+
+        int size = 0;
+        for (Iterator it = blocks.iterator(); it.hasNext();) {
+            BasicBlock block = (BasicBlock) it.next();
+            size += block.getStackCode().getBytecodeSize();
+        }
+
+        return size;
+    }
+
 }

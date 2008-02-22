@@ -33,6 +33,10 @@ import com.jopdesign.libgraph.struct.type.TypeInfo;
  */
 public class StackStore extends AbstractStatement implements StackStatement, AssignStmt {
 
+    public static final int BYTE_SIZE = 2;
+
+    public static final int BYTE_SIZE_CONST = 1;
+
     private TypeInfo type;
     private Variable variable;
 
@@ -80,7 +84,7 @@ public class StackStore extends AbstractStatement implements StackStatement, Ass
     }
 
     public int getBytecodeSize() {
-        return variable.getIndex() <= 3 ? 1 : 2;
+        return variable.getIndex() <= 3 ? BYTE_SIZE_CONST : BYTE_SIZE;
     }
 
     public TypeInfo getType() {
