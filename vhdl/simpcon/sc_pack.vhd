@@ -28,6 +28,7 @@ package sc_pack is
 		wr_data		: std_logic_vector(31 downto 0);
 		rd			: std_logic;
 		wr			: std_logic;
+		atomic	: std_logic;
 	end record;
 
 	type sc_in_type is record

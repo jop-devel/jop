@@ -54,7 +54,6 @@ port (
 
 	sc_mem_out	: out sc_out_type;
 	sc_mem_in	: in sc_in_type
-
 );
 end mem_sc;
 
@@ -574,6 +573,7 @@ begin
 		null_pointer <= '0';
 		bounds_error <= '0';
 		state_wr <= '0';
+		sc_mem_out.atomic	<= '0';
 
 	elsif rising_edge(clk) then
 
@@ -586,6 +586,7 @@ begin
 		null_pointer <= '0';
 		bounds_error <= '0';
 		state_wr <= '0';
+		sc_mem_out.atomic	<= '0';
 
 		case next_state is
 
@@ -606,19 +607,27 @@ begin
 				-- first memory read
 				inc_addr_reg <= '1';
 				state_rd <= '1';
+				sc_mem_out.atomic	<= '1';
 
 			when bc_w =>
 				-- wait
+				sc_mem_out.atomic	<= '1';
 
 			when bc_rn =>
 				-- following memory reads
 				inc_addr_reg <= '1';
 				dec_len <= '1';
 				state_rd <= '1';
+				sc_mem_out.atomic	<= '1';
 
 			when bc_wr =>
 				-- BC write
 				bc_wr_ena <= '1';
+				sc_mem_out.atomic	<= '1';
+				
+				if bc_len=to_unsigned(1, jpc_width-3) then
+					sc_mem_out.atomic	<= '0';				
+				end if;
 
 			when bc_wl =>
 				-- wait for last (unnecessary read)
@@ -630,50 +639,68 @@ begin
 				state_rd <= '1';
 				state_bsy <= '1';
 				inc_addr_reg <= '1';
+				sc_mem_out.atomic <= '1';
 
 			when iald1 =>
+				sc_mem_out.atomic <= '1';
 
 			when iald2 =>
 				state_rd <= '1';
+				sc_mem_out.atomic <= '1';
 
 			when iald3 =>
+				sc_mem_out.atomic <= '1';
 
 			when iald4 =>
+				sc_mem_out.atomic <= '1';
 
 			when iasrd =>
 				state_rd <= '1';
+				sc_mem_out.atomic <= '1';
 
 			when ialrb =>
+				sc_mem_out.atomic <= '1';
 
 			when iaswb =>
+				sc_mem_out.atomic <= '1';
 
 			when iasrb =>
-
+				sc_mem_out.atomic <= '1';
+				
 			when iasst =>
 				state_wr <= '1';
+				sc_mem_out.atomic <= '1';
 
 			when iasw =>
+				sc_mem_out.atomic <= '1';
 
 			when gf0 =>
 				state_rd <= '1';
 				state_bsy <= '1';
+				sc_mem_out.atomic <= '1';
 
 			when gf1 =>
+				sc_mem_out.atomic <= '1';
 
 			when gf2 =>
+				sc_mem_out.atomic <= '1';
 
 			when gf3 =>
 				state_rd <= '1';
+				sc_mem_out.atomic <= '1';
                           
 			when gf4 =>
-
+				sc_mem_out.atomic <= '1';
+				
                         when pf0 =>
 				state_bsy <= '1';
 
 			when pf3 =>
 				state_wr <= '1';
+				sc_mem_out.atomic <= '1';
                           
 			when pf4 =>
+				sc_mem_out.atomic <= '1';
 
 			when npexc =>
 				null_pointer <= '1';

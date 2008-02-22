@@ -77,6 +77,9 @@ port (
 	r			: inout std_logic_vector(20 downto 1);
 	t			: inout std_logic_vector(6 downto 1);
 	b			: inout std_logic_vector(10 downto 1)
+	
+-- remove the comment for RAM access counting
+-- ram_cnt 	: in std_logic
 );
 end scio;
 
@@ -100,6 +103,9 @@ architecture rtl of scio is
 	signal sc_rdy_cnt		: slave_rdy_cnt;
 
 	signal sel, sel_reg		: integer range 0 to 2**DECODE_BITS-1;
+	
+	-- remove the comment for RAM access counting 
+	-- signal ram_count : std_logic;
 
 begin
 
@@ -156,6 +162,7 @@ begin
 			wr_data => sc_io_out.wr_data,
 			rd => sc_rd(0),
 			wr => sc_wr(0),
+			atomic => sc_io_out.atomic,
 			rd_data => sc_dout(0),
 			rdy_cnt => sc_rdy_cnt(0),
 
@@ -167,7 +174,12 @@ begin
 			sync_in => sync_in,
 			
 			wd => wd
+			-- remove the comment for RAM access counting
+			-- ram_count => ram_count
 		);
+		
+	-- remove the comment for RAM access counting
+	-- ram_count <= ram_cnt;
 
 	cmp_ua: entity work.sc_uart generic map (
 			addr_bits => SLAVE_ADDR_BITS,
@@ -186,6 +198,7 @@ begin
 			wr_data => sc_io_out.wr_data,
 			rd => sc_rd(1),
 			wr => sc_wr(1),
+			atomic => sc_io_out.atomic,
 			rd_data => sc_dout(1),
 			rdy_cnt => sc_rdy_cnt(1),
 
@@ -207,6 +220,7 @@ begin
 			wr_data => sc_io_out.wr_data,
 			rd => sc_rd(2),
 			wr => sc_wr(2),
+			atomic => sc_io_out.atomic,
 			rd_data => sc_dout(2),
 			rdy_cnt => sc_rdy_cnt(2),
 
