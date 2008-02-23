@@ -18,17 +18,24 @@
  */
 package com.jopdesign.libgraph.callgraph;
 
+import com.jopdesign.libgraph.struct.PropertyContainer;
+
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * @author Stefan Hepp, e0026640@student.tuwien.ac.at
  */
-public abstract class CGEdge {
+public abstract class CGEdge implements PropertyContainer {
 
     private boolean recursion;
     private CGMethod invokedMethod;
+    private Map props;
 
     public CGEdge(CGMethod invokedMethod) {
         this.invokedMethod = invokedMethod;
         recursion = false;
+        props = null;
     }
 
     public abstract CGInvoke getInvoke();
@@ -48,4 +55,30 @@ public abstract class CGEdge {
     public boolean remove() {
         return getInvoke().removeEdge(this);
     }
+
+    public Object setProperty(Object key, Object value) {
+        if ( props == null ) {
+            props = new HashMap();
+        }
+        return props.put(key, value);
+    }
+
+    public Object getProperty(Object key) {
+        if ( props == null ) {
+            return null;
+        }
+        return props.get(key);
+    }
+
+    public Object removeProperty(Object key) {
+        if ( props == null ) {
+            return null;
+        }
+        return props.remove(key);
+    }
+
+    public boolean containsProperty(Object key) {
+        return props != null && props.containsKey(key);
+    }
+
 }

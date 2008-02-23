@@ -20,27 +20,32 @@ package com.jopdesign.libgraph.callgraph;
 
 import com.jopdesign.libgraph.struct.ClassInfo;
 import com.jopdesign.libgraph.struct.MethodInfo;
+import com.jopdesign.libgraph.struct.PropertyContainer;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author Stefan Hepp, e0026640@student.tuwien.ac.at
  */
-public abstract class CGInvoke {
+public abstract class CGInvoke implements PropertyContainer {
     
     private ClassInfo invokedClass;
     private MethodInfo invokedMethod;
     private int count;
     private List methods;
+    private Map props;
 
     protected CGInvoke(ClassInfo invokedClass, MethodInfo invokedMethod) {
         this.invokedClass = invokedClass;
         this.invokedMethod = invokedMethod;
         this.methods = new LinkedList();
         count = 1;
+        props = null;
     }
 
     public abstract CGMethod getMethod();
@@ -120,6 +125,31 @@ public abstract class CGInvoke {
             unlinkEdge(edge);
         }
         methods.clear();
+    }
+
+    public Object setProperty(Object key, Object value) {
+        if ( props == null ) {
+            props = new HashMap();
+        }
+        return props.put(key, value);
+    }
+
+    public Object getProperty(Object key) {
+        if ( props == null ) {
+            return null;
+        }
+        return props.get(key);
+    }
+
+    public Object removeProperty(Object key) {
+        if ( props == null ) {
+            return null;
+        }
+        return props.remove(key);
+    }
+
+    public boolean containsProperty(Object key) {
+        return props != null && props.containsKey(key);
     }
 
     protected abstract CGEdge createEdge(CGMethod method);

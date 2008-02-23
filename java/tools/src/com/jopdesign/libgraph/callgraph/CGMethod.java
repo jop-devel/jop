@@ -20,6 +20,7 @@ package com.jopdesign.libgraph.callgraph;
 
 import com.jopdesign.libgraph.struct.ClassInfo;
 import com.jopdesign.libgraph.struct.MethodInfo;
+import com.jopdesign.libgraph.struct.PropertyContainer;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -34,7 +35,7 @@ import java.util.Set;
 /**
  * @author Stefan Hepp, e0026640@student.tuwien.ac.at
  */
-public abstract class CGMethod {
+public abstract class CGMethod implements PropertyContainer {
 
     private class Invoke extends CGInvoke {
 
@@ -72,12 +73,14 @@ public abstract class CGMethod {
     private Map invokes;
     private List invokeList;
     private Set invoker;
+    private Map props;
 
     protected CGMethod(MethodInfo method) {
         this.methodInfo = method;
         this.invokes = new HashMap();
         this.invokeList = new ArrayList();
         this.invoker = new HashSet();
+        props = null;
     }
 
     public abstract CallGraph getGraph();
@@ -191,6 +194,31 @@ public abstract class CGMethod {
             sum += invoke.getCount();
         }
         return sum;
+    }
+
+    public Object setProperty(Object key, Object value) {
+        if ( props == null ) {
+            props = new HashMap();
+        }
+        return props.put(key, value);
+    }
+
+    public Object getProperty(Object key) {
+        if ( props == null ) {
+            return null;
+        }
+        return props.get(key);
+    }
+
+    public Object removeProperty(Object key) {
+        if ( props == null ) {
+            return null;
+        }
+        return props.remove(key);
+    }
+
+    public boolean containsProperty(Object key) {
+        return props != null && props.containsKey(key);
     }
 
     private Object getKey(CGInvoke invoke) {
