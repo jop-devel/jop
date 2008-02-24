@@ -60,7 +60,7 @@ public class MainPppLoop {
 	private static final int IPLINK_PRIO = 9;
 	private static final int IPLINK_PERIOD = 100000;
 	private static final int IPSER_PRIO = 10;
-	private static final int IPSER_PERIOD = 10000;
+	private static final int IPSER_PERIOD = 3000;
 
 
 /**
@@ -99,7 +99,9 @@ public class MainPppLoop {
 		new RtThread(IPSER_PRIO, IPSER_PERIOD) {
 			public void run() {
 				for (;;) {
-					waitForNextPeriod();
+					if (!waitForNextPeriod()) {
+						System.out.print("missed");
+					}
 					ser.loop();
 				}
 			}
@@ -116,7 +118,7 @@ public class MainPppLoop {
 
 		ipLink = Ppp.init(ser, pppThre); 
 		
-		new RtThread(8, 100000) {
+		new RtThread(20, 100000) {
 			public void run() {
 				int i = 0;
 				for (;;) {
@@ -142,6 +144,8 @@ public class MainPppLoop {
 		RtThread.startMission();
 				
 //		forever();
+		// TODO: there is an issue when this loop is not
+		// executed and the main thread terminates.
 		for (;;) {
 			int t = Timer.getTimeoutMs(800);
 			while (!Timer.timeout(t)) {
