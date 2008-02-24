@@ -18,26 +18,28 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/*
- * Created on 28.02.2005
- *
- * TODO To change the template for this generated file go to
- * Window - Preferences - Java - Code Style - Code Templates
- */
 package test;
 
+import util.Timer;
+import joprt.RtThread;
 
-/**
- * @author martin
- *
- * JOP can also say 'Hello World'
- */
-public class HelloWorld {
+public class RtHello {
 
 	public static void main(String[] args) {
 
-		int val;
-
-		System.out.println("Hello World from JOP!");
+		System.out.println("Hello from JOP!");
+		
+		new RtThread(10, 500000) {
+			
+			public void run() {
+				for (;;) {
+					Timer.wd();
+					waitForNextPeriod();					
+				}
+			}
+		};
+		
+		RtThread.startMission();
 	}
+
 }
