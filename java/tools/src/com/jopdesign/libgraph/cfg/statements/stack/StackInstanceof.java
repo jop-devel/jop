@@ -44,10 +44,6 @@ public class StackInstanceof extends InstanceofStmt implements StackStatement, S
         return new TypeInfo[] { TypeInfo.CONST_BOOL };
     }
 
-    public int getClockCycles() {
-        return 0;
-    }
-
     public QuadStatement[] getQuadCode(TypeInfo[] stack, VariableTable varTable) {
         Variable s0 = varTable.getDefaultStackVariable(stack.length - 1);
         return new QuadStatement[] { new QuadInstanceof(getClassConstant(), s0, s0) };

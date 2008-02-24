@@ -44,14 +44,6 @@ public interface StackStatement extends Statement {
     TypeInfo[] getPushTypes();
 
     /**
-     * Get the number of clock cycles for this statement.
-     * Returns 0 for statements which do not compile into bytecode.
-     *
-     * @return the number of clock cycles, or -1 if not known.
-     */
-    int getClockCycles();
-
-    /**
      * Get the quadruple code for this statement.
      * If this statement is a control-flow statement, the last statement of the returned list must also
      * be a controlflow statement.

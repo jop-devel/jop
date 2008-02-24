@@ -31,6 +31,8 @@ public class StackGoto extends GotoStmt implements StackStatement {
     
     public static final int BYTE_SIZE = 3;
 
+    public static final StackGoto GOTO = new StackGoto();
+
     public StackGoto() {
     }
 
@@ -40,10 +42,6 @@ public class StackGoto extends GotoStmt implements StackStatement {
 
     public TypeInfo[] getPushTypes() {
         return new TypeInfo[0];
-    }
-
-    public int getClockCycles() {
-        return 0;
     }
 
     public QuadStatement[] getQuadCode(TypeInfo[] stack, VariableTable varTable) {

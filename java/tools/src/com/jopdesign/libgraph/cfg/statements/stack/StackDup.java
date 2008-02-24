@@ -81,11 +81,6 @@ public class StackDup extends CopyStmt implements StackStatement {
         return pushTypes;
     }
 
-    public int getClockCycles() {
-        return 0;
-    }
-
-
     public TypeInfo[] getTypes() {
         return types;
     }

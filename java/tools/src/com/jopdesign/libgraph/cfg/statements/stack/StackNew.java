@@ -48,10 +48,6 @@ public class StackNew extends NewObjectStmt implements StackStatement, StackAssi
         return new TypeInfo[] { new ObjectRefType(getObjectClass()) };
     }
 
-    public int getClockCycles() {
-        return 0;
-    }
-
     public QuadStatement[] getQuadCode(TypeInfo[] stack, VariableTable varTable) throws TypeException {
         Variable s0 = varTable.getDefaultStackVariable(stack.length);
         return new QuadStatement[]  { new QuadNew(getObjectClass(), s0) };

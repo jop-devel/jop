@@ -44,10 +44,6 @@ public class StackGetField extends GetfieldStmt implements StackStatement, Stack
         return new TypeInfo[] { getFieldInfo().getType() };
     }
 
-    public int getClockCycles() {
-        return 0;
-    }
-
     public QuadStatement[] getQuadCode(TypeInfo[] stack, VariableTable varTable) {
         if ( isStatic() ) {
             Variable s0 = varTable.getDefaultStackVariable(stack.length);

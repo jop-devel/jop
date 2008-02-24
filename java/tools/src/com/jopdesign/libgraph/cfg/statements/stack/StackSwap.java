@@ -48,10 +48,6 @@ public class StackSwap extends CopyStmt implements StackStatement, StackAssign {
         return new TypeInfo[] { type2, type1 };
     }
 
-    public int getClockCycles() {
-        return 0;
-    }
-
     public QuadStatement[] getQuadCode(TypeInfo[] stack, VariableTable varTable) throws TypeException {
         Variable s0 = varTable.getDefaultStackVariable(stack.length - 2);
         Variable s1 = varTable.getDefaultStackVariable(stack.length - 1);

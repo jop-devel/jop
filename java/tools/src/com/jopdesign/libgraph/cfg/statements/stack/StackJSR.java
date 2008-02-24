@@ -47,10 +47,6 @@ public class StackJSR extends JSRStmt implements StackStatement {
         return new TypeInfo[0];
     }
 
-    public int getClockCycles() {
-        return 0;
-    }
-
     public QuadStatement[] getQuadCode(TypeInfo[] stack, VariableTable varTable) throws TypeException {
         return new QuadStatement[] { new QuadJSR(getTarget()) };
     }

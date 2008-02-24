@@ -42,10 +42,6 @@ public class StackArrayLength extends ArraylengthStmt implements StackStatement,
         return new TypeInfo[] { TypeInfo.CONST_INT };
     }
 
-    public int getClockCycles() {
-        return 0;
-    }
-
     public QuadStatement[] getQuadCode(TypeInfo[] stack, VariableTable varTable) {
         Variable var = varTable.getDefaultStackVariable(stack.length - 1);
         return new QuadStatement[] { new QuadArrayLength(var, var) };

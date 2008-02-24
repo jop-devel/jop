@@ -44,10 +44,6 @@ public class StackThrow extends ThrowStmt implements StackStatement {
         return new TypeInfo[0];
     }
 
-    public int getClockCycles() {
-        return 0;
-    }
-
     public QuadStatement[] getQuadCode(TypeInfo[] stack, VariableTable varTable) throws TypeException {
         Variable s0 = varTable.getDefaultStackVariable(stack.length - BYTE_SIZE);
         return new QuadStatement[] { new QuadThrow(s0) };

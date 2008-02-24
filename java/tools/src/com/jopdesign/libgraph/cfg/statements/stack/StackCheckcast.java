@@ -44,10 +44,6 @@ public class StackCheckcast extends CheckcastStmt implements StackStatement {
         return new TypeInfo[] { new ObjectRefType(getClassConstant()) };
     }
 
-    public int getClockCycles() {
-        return 0;
-    }
-
     public QuadStatement[] getQuadCode(TypeInfo[] stack, VariableTable varTable) {
         Variable s0 = varTable.getDefaultStackVariable(stack.length - 1);
         return new QuadStatement[] { new QuadCheckcast(getClassConstant(), s0) };

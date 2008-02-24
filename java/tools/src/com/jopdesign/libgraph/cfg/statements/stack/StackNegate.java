@@ -52,10 +52,6 @@ public class StackNegate extends NegateStmt implements StackStatement, StackAssi
         return new TypeInfo[] { getType() };
     }
 
-    public int getClockCycles() {
-        return 0;
-    }
-
     public QuadStatement[] getQuadCode(TypeInfo[] stack, VariableTable varTable) throws TypeException {
         Variable s0 = varTable.getDefaultStackVariable(stack.length - 1);
         return new QuadStatement[] { new QuadNegate(getType(), s0, s0) };

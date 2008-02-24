@@ -70,20 +70,6 @@ public class StackCode extends CodeBlock {
         this.endStack = endStack;
     }
 
-    public int getClockCycles() {
-        int cycles = 0;
-
-        for (int i = 0; i < size(); i++ ) {
-            cycles += getStackStatement(i).getClockCycles();
-        }
-
-        if ( needsGoto() ) {
-            cycles += new StackGoto().getClockCycles();
-        }
-        
-        return cycles;
-    }
-
     public int getBytecodeSize() {
         int size = 0;
 

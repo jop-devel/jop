@@ -45,10 +45,6 @@ public class StackPutField extends PutfieldStmt implements StackStatement {
         return new TypeInfo[0];
     }
 
-    public int getClockCycles() {
-        return 0;
-    }
-
     public QuadStatement[] getQuadCode(TypeInfo[] stack, VariableTable varTable) throws TypeException {
         if ( isStatic() ) {
             Variable s0 = varTable.getDefaultStackVariable(stack.length - 1);

@@ -45,10 +45,6 @@ public class StackNewArray extends NewArrayStmt implements StackStatement, Stack
         return new TypeInfo[] { new ArrayRefType(1, getArrayType()) };
     }
 
-    public int getClockCycles() {
-        return 0;
-    }
-
     public QuadStatement[] getQuadCode(TypeInfo[] stack, VariableTable varTable) throws TypeException {
         Variable s0 = varTable.getDefaultStackVariable(stack.length - 1);
         return new QuadStatement[] { new QuadNewArray(getArrayType(), s0, s0) };

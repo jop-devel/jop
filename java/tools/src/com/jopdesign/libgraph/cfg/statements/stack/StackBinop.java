@@ -51,10 +51,6 @@ public class StackBinop extends BinopStmt implements StackStatement, StackAssign
         return new TypeInfo[] { getType() };
     }
 
-    public int getClockCycles() {
-        return 0;
-    }
-
     public QuadStatement[] getQuadCode(TypeInfo[] stack, VariableTable varTable) {
         Variable s0 = varTable.getDefaultStackVariable(stack.length - 2);
         Variable s1 = varTable.getDefaultStackVariable(stack.length - 1);

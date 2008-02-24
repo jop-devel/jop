@@ -21,7 +21,6 @@ package com.jopdesign.libgraph.cfg.statements.common;
 import com.jopdesign.libgraph.struct.ClassInfo;
 import com.jopdesign.libgraph.struct.ConstantMethod;
 import com.jopdesign.libgraph.struct.MethodInfo;
-import com.jopdesign.libgraph.struct.TypeException;
 import com.jopdesign.libgraph.struct.type.TypeInfo;
 
 /**
@@ -37,7 +36,7 @@ public abstract class InvokeStmt extends AbstractStatement {
     private ConstantMethod method;
     private int invokeType;
 
-    public InvokeStmt(ConstantMethod methodInfo, int invokeType) throws TypeException {
+    public InvokeStmt(ConstantMethod methodInfo, int invokeType) {
         this.method = methodInfo;
         this.invokeType = invokeType;
     }

@@ -41,10 +41,6 @@ public class StackAddressAssign extends AddressAssignStmt implements StackStatem
         return new TypeInfo[] { TypeInfo.CONST_ADDRESSREF };
     }
 
-    public int getClockCycles() {
-        return 0;
-    }
-
     public QuadStatement[] getQuadCode(TypeInfo[] stack, VariableTable varTable) {
         return new QuadStatement[] { new QuadAddressAssign( varTable.getDefaultStackVariable( stack.length )) };
     }

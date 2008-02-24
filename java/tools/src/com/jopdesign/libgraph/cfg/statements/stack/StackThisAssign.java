@@ -45,10 +45,6 @@ public class StackThisAssign extends ThisAssignStmt implements StackStatement, A
         return new TypeInfo[0];
     }
 
-    public int getClockCycles() {
-        return 0;
-    }
-
     public QuadStatement[] getQuadCode(TypeInfo[] stack, VariableTable varTable) throws TypeException {
         return new QuadStatement[] { new QuadThisAssign(getThisClass(), getVariable()) };
     }

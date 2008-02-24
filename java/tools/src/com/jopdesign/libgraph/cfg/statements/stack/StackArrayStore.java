@@ -43,10 +43,6 @@ public class StackArrayStore extends ArrayStoreStmt implements StackStatement {
         return new TypeInfo[0];
     }
 
-    public int getClockCycles() {
-        return 0;
-    }
-
     public QuadStatement[] getQuadCode(TypeInfo[] stack, VariableTable varTable) {
         Variable s0 = varTable.getDefaultStackVariable(stack.length - 3);
         Variable s1 = varTable.getDefaultStackVariable(stack.length - 2);

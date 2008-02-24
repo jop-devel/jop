@@ -49,10 +49,6 @@ public class StackLoad extends AbstractStatement implements StackStatement, Stac
         return new TypeInfo[] {type};
     }
 
-    public int getClockCycles() {
-        return 0;
-    }
-
     public QuadStatement[] getQuadCode(TypeInfo[] stack, VariableTable varTable) throws TypeException {
         Variable s0 = varTable.getDefaultStackVariable(stack.length);
         return new QuadStatement[] { new QuadCopy(type, s0, variable) };

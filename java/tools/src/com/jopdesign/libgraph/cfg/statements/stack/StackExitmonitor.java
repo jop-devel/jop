@@ -42,10 +42,6 @@ public class StackExitmonitor extends MonitorStmt implements StackStatement {
         return new TypeInfo[0];
     }
 
-    public int getClockCycles() {
-        return 0;
-    }
-
     public QuadStatement[] getQuadCode(TypeInfo[] stack, VariableTable varTable) {
         Variable s0 = varTable.getDefaultStackVariable(stack.length - 1);
         return new QuadStatement[] { new QuadMonitor(MONITOR_EXIT, s0) };

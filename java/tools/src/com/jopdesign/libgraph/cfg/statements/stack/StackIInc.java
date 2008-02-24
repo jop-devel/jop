@@ -50,10 +50,6 @@ public class StackIInc extends IncStmt implements StackStatement, VariableStmt, 
         return new TypeInfo[0];
     }
 
-    public int getClockCycles() {
-        return 0;
-    }
-
     public QuadStatement[] getQuadCode(TypeInfo[] stack, VariableTable varTable) {
         return new QuadStatement[] { new QuadBinop(TypeInfo.CONST_INT, QuadBinop.OP_ADD, variable, variable,
                 varTable.getDefaultConstant( new ConstantValue(TypeInfo.CONST_INT, getIncrement())) ) };

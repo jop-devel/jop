@@ -30,6 +30,8 @@ import com.jopdesign.libgraph.struct.type.TypeInfo;
  */
 public class StackNop extends NopStmt implements StackStatement {
 
+    public static final StackNop NOP = new StackNop();
+
     public StackNop() {
     }
 
@@ -39,10 +41,6 @@ public class StackNop extends NopStmt implements StackStatement {
 
     public TypeInfo[] getPushTypes() {
         return new TypeInfo[0];
-    }
-
-    public int getClockCycles() {
-        return 0;
     }
 
     public QuadStatement[] getQuadCode(TypeInfo[] stack, VariableTable varTable) throws TypeException {

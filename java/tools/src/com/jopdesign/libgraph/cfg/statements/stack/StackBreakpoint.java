@@ -40,10 +40,6 @@ public class StackBreakpoint extends BreakpointStmt implements StackStatement {
         return new TypeInfo[0];
     }
 
-    public int getClockCycles() {
-        return -1;
-    }
-
     public QuadStatement[] getQuadCode(TypeInfo[] stack, VariableTable varTable) {
         return new QuadStatement[] { new QuadBreakpoint() };
     }

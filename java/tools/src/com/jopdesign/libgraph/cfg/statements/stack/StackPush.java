@@ -79,10 +79,6 @@ public class StackPush extends AbstractStatement implements StackStatement, Stac
         return new TypeInfo[] { type };
     }
 
-    public int getClockCycles() {
-        return 0;
-    }
-
     public QuadStatement[] getQuadCode(TypeInfo[] stack, VariableTable varTable) throws TypeException {
         Variable s0 = varTable.getDefaultStackVariable(stack.length);
         Variable cval = varTable.getDefaultConstant(value);

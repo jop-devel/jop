@@ -43,10 +43,6 @@ public class StackExceptionAssign extends ExceptionAssignStmt implements StackSt
         return new TypeInfo[] { TypeInfo.CONST_OBJECTREF };
     }
 
-    public int getClockCycles() {
-        return 0;
-    }
-
     public QuadStatement[] getQuadCode(TypeInfo[] stack, VariableTable varTable) {
         Variable s0 = varTable.getDefaultStackVariable(stack.length - 1);
         return new QuadStatement[] { new QuadExceptionAssign(s0) };

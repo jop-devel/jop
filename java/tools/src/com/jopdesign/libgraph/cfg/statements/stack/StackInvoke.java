@@ -37,7 +37,7 @@ public class StackInvoke extends InvokeStmt implements StackStatement, StackAssi
     
     public static final int BYTE_SIZE_INTERFACE = 5;
 
-    public StackInvoke(ConstantMethod method, int invokeType) throws TypeException {
+    public StackInvoke(ConstantMethod method, int invokeType) {
         super(method, invokeType);
     }
 
@@ -52,9 +52,7 @@ public class StackInvoke extends InvokeStmt implements StackStatement, StackAssi
             types = new TypeInfo[params.length+1];
 
             types[0] = TypeInfo.CONST_OBJECTREF;
-            for (int i = 0; i < params.length; i++ ) {
-                types[i+1] = params[i];
-            }
+            System.arraycopy(params, 0, types, 1, params.length);
         }
 
         return types;
@@ -64,14 +62,6 @@ public class StackInvoke extends InvokeStmt implements StackStatement, StackAssi
         TypeInfo retType = getResultType();
         return retType != null && retType.getType() != TypeInfo.TYPE_VOID ?
                 new TypeInfo[] {retType} : new TypeInfo[0];
-    }
-
-    public int getClockCycles() {
-        return 0;
-    }
-
-    public int getClockCycles(boolean cached) {
-        return 0;
     }
 
     public QuadStatement[] getQuadCode(TypeInfo[] stack, VariableTable varTable) throws TypeException {
