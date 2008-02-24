@@ -51,6 +51,10 @@ public class InlineHelper {
         this.resolver = resolver;
     }
 
+    public CodeInliner getCodeInliner() {
+        return inliner;
+    }
+
     /**
      * Find all invocations in a given code range, check if they can be inlined, and return
      * the results as list. <br>

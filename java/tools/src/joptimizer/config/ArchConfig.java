@@ -18,16 +18,22 @@
  */
 package joptimizer.config;
 
-import java.util.Set;
 import java.util.HashSet;
+import java.util.Set;
 
 /**
  * @author Stefan Hepp, e0026640@student.tuwien.ac.at
  */
 public class ArchConfig {
 
-    public ArchConfig(String filename) {
+    private ArchTiming timing;
 
+    public ArchConfig(String filename) {
+        timing = new JopTimings(this);
+    }
+
+    public ArchTiming getArchTiming() {
+        return timing;
     }
 
     public String getNativeClassName() {
@@ -74,5 +80,13 @@ public class ArchConfig {
 
     public int getMaxStackSize() {
         return 31;
+    }
+
+    public int getRamReadCycles() {
+        return 2;
+    }
+
+    public int getRamWriteCycles() {
+        return 2;
     }
 }
