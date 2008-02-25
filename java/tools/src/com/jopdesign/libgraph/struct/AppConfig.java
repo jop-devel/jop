@@ -38,8 +38,19 @@ public interface AppConfig {
     /**
      * Check if this class is implemented by the JVM. As
      * these classes cannot be loaded, they must always be ignored.
+     *
      * @param className the classname of the class to test.
      * @return true for classes implemented by the native JVM.
      */
     boolean isNativeClassName(String className);
+
+    /**
+     * Check if this class is part of a library. Library code can be used by the
+     * application, but the library must not use code from the application.
+     * Library code should be ignored.
+     *
+     * @param className the classname to check.
+     * @return true if the class is part of a library (i.e. code that is not related to the application code).
+     */
+    boolean isLibraryClassName(String className);
 }
