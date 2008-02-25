@@ -48,7 +48,7 @@ port
 	
 	-- SimpCon interface
 
-	address		: out std_logic_vector(20 downto 0);
+	address		: out std_logic_vector(22 downto 0);
 	wr_data		: out std_logic_vector(31 downto 0);
 	rd, wr		: out std_logic;
 	rd_data		: in std_logic_vector(31 downto 0);
@@ -160,7 +160,7 @@ signal q_b   : std_logic_vector(31 downto 0);
 
 signal counter_write : unsigned (7 downto 0);
 signal counter_read  : unsigned (7 downto 0);
-signal mem_vga_counter : unsigned(20 downto 0) := "000101000000000000000";
+signal mem_vga_counter : unsigned(22 downto 0) := "00000101000000000000000";
 signal counter8 : unsigned (3 downto 0);
 signal wait_counter : unsigned (15 downto 0);
 signal reset_counter : unsigned (29 downto 0);
@@ -328,7 +328,7 @@ begin
 		counter_read <= (others => '0');
 		counter_write <= (others => '0');
 		counter8 <= (others => '0');
-		mem_vga_counter <= "000101000000000000000"; -- first address of the ext mem for VGA
+		mem_vga_counter <= "00000101000000000000000"; -- first address of the ext mem for VGA
 		wr <= '0';
 		rd <= '0';
 		spread_cnt <= "0000";
@@ -434,7 +434,7 @@ begin
 				spread_cnt <= "0000";
 			
 			when RES_A =>
-				mem_vga_counter <= "000101000000000000000";
+				mem_vga_counter <= "00000101000000000000000";
 				
 			when READ_B =>
 			-- READ FROM EXT MEM
@@ -531,7 +531,7 @@ begin
 				spread_cnt <= "0000";
 				
 			when RES_B =>
-				mem_vga_counter <= "000101000000000000000";
+				mem_vga_counter <= "00000101000000000000000";
 				
 			when STOP =>  
 				if rgb_en = '1' and h_enable = '1' then
@@ -583,7 +583,7 @@ wait_counter, v_state, h_state, hsync_counter, access_scheme, spread_cnt)
 					follow_state <= READ_A;
 				
 			when CHANGE_A =>
-				if mem_vga_counter = "001000000000000000000" then	
+				if mem_vga_counter = "00001000000000000000000" then	
 					follow_state <= RES_A;
 				else
 					follow_state <= READ_B;
@@ -621,7 +621,7 @@ wait_counter, v_state, h_state, hsync_counter, access_scheme, spread_cnt)
 					follow_state <= READ_B;
 					
 			when CHANGE_B =>
-				if mem_vga_counter = "001000000000000000000" then
+				if mem_vga_counter = "00001000000000000000000" then
 					follow_state <= RES_B;
 				else
 					follow_state <= READ_A;

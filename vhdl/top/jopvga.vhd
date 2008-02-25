@@ -236,7 +236,7 @@ end process;
 			
 	cmp_arbiter: entity work.arbiter
 		generic map(
-			addr_bits => 21,
+			addr_bits => SC_ADDR_SIZE,
 			cpu_cnt => cpu_cnt
 		)
 		port map(clk_int, int_res,
