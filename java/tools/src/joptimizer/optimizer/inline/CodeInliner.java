@@ -363,7 +363,7 @@ public class CodeInliner {
 
         // create a new NPE and throw it manually
         ConstantClass newEx = appStruct.getConstantClass("java.lang.NullPointerException", false);
-        ConstantMethod newInit = appStruct.getConstantMethod(newEx, "<init>", "()V");
+        ConstantMethod newInit = appStruct.getConstantMethod(newEx, "<init>", "()V", false);
 
         newCode.addStatement(new StackNew(newEx));
         newCode.addStatement(new StackDup(TypeInfo.CONST_OBJECTREF));
@@ -384,7 +384,7 @@ public class CodeInliner {
         newBlocks.add(targetBlock);
 
         ConstantClass newEx = appStruct.getConstantClass("java.lang.NullPointerException", false);
-        ConstantMethod newInit = appStruct.getConstantMethod(newEx, "init", "()V");
+        ConstantMethod newInit = appStruct.getConstantMethod(newEx, "init", "()V", false);
 
         Variable newVar = code.getBasicBlock().getGraph().getVariableTable().createVariable();
         newCode.addStatement(new QuadNew(newEx, newVar));

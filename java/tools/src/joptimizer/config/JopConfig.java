@@ -208,7 +208,7 @@ public class JopConfig implements AppConfig {
      * @return true, if the option has been set.
      */
     public boolean isSet(String option) {
-        return config.contains(option);
+        return config.containsKey(option);
     }
 
     public boolean isEnabled(String option) {

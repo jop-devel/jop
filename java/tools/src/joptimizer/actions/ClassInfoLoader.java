@@ -100,7 +100,11 @@ public class ClassInfoLoader extends AbstractAction implements ClassAction, Meth
 
     public void execute(ClassInfo classInfo) throws ActionException {
         if ( forceReload || !classInfo.isInitialized() ) {
-            classInfo.reload();
+            try {
+                classInfo.reload();
+            } catch (TypeException e) {
+                throw new ActionException("Could not reload class {"+classInfo.getClassName()+"}.", e);
+            }
         }
     }
 

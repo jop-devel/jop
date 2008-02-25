@@ -99,6 +99,7 @@ public class CmdLine {
         out.println("  help                  Show this help.");
         out.println("  exit                  Terminate the program.");
         out.println("  load <configfile>     Load all values from a property-file as options.");
+        out.println("                        The argument must be a valid url (like file:<path>).");
         out.println("  list <type>           List one of the following:");
         out.println("                         actions          list of all actions.");
         out.println("                         execactions      list all actions executed by runall.");

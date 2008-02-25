@@ -100,6 +100,7 @@ public class ArchConfig {
         try {
             Reader reader = new BufferedReader(new InputStreamReader(config.openStream()));
             props.load(reader);
+            reader.close();
         } catch (IOException e) {
             throw new ConfigurationException("Could not read configuration file.", e);
         }

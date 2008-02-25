@@ -154,14 +154,14 @@ public class InlineHelper {
      */
     public InlineResult doInline(CheckResult check) throws ActionException {
 
+        changeToPublic( check.getChangePublic() );
+
         InlineResult result;
         try {
             result = inliner.doInline(check);
         } catch (GraphException e) {
             throw new ActionException("Could not perform inlining.", e);
         }
-
-        changeToPublic( check.getChangePublic() );
 
         return result;
     }

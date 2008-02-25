@@ -20,6 +20,7 @@ package joptimizer.actions;
 
 import com.jopdesign.libgraph.struct.ClassInfo;
 import com.jopdesign.libgraph.struct.TypeException;
+import com.jopdesign.libgraph.struct.type.TypeHelper;
 import joptimizer.config.JopConfig;
 import joptimizer.framework.JOPtimizer;
 import joptimizer.framework.actions.AbstractClassAction;
@@ -86,6 +87,14 @@ public class TransitiveHullGenerator extends AbstractClassAction {
 
         private void addClass(String className) {
 
+            // get class from array classes
+            if ( className.startsWith("[") ) {
+                className = TypeHelper.getClassName(className);
+                if ( className == null ) {
+                    return;
+                }
+            }
+
             if ( visited.contains(className) ) {
                 return;
             } else {
@@ -114,9 +123,11 @@ public class TransitiveHullGenerator extends AbstractClassAction {
 
         private boolean doEnqueueClass(String className) {
 
-            // ignore array classes
-            if ( className.startsWith("[") ) {
-                if (logger.isInfoEnabled()) logger.info("Ingored array class {" + className + "}.");
+            String reason = getJopConfig().doExcludeClassName(className);
+            if ( reason != null ) {
+                if ( logger.isInfoEnabled() ) {
+                    logger.info(reason);
+                }
                 return false;
             }
 

@@ -29,6 +29,7 @@ import joptimizer.config.StringOption;
 import joptimizer.framework.JOPtimizer;
 import joptimizer.framework.actions.AbstractMethodAction;
 import joptimizer.framework.actions.ActionException;
+import org.apache.log4j.Logger;
 
 import java.util.List;
 
@@ -77,36 +78,45 @@ public class GraphHelper extends AbstractMethodAction {
             return;
         }
 
-        if ( setModified ) {
-            try {
-                code.getGraph().setModified(true);
-            } catch (GraphException e) {
-                throw new ActionException("Could not get graph from method {"+methodInfo.getFQMethodName()+"}.", e);
-            }
-        }
-
-        if ( "bytecode".equals(transform) ) {
-            try {
-                code.compileGraph();
-            } catch (GraphException e) {
-                throw new ActionException("Could not compile graph to bytecode.", e);
-            }
-        } else if ( transform != null && !"".equals(transform) ) {
-            ControlFlowGraph graph;
-            try {
-                graph = code.getGraph();
-            } catch (GraphException e) {
-                throw new ActionException("Could not get graph from method {"+methodInfo.getFQMethodName()+"}.", e);
-            }
-
-            try {
-                if ( "stack".equals(transform) ) {
-                    graph.transformTo(ControlFlowGraph.TYPE_STACK);
-                } else if ( "quad".equals(transform) ) {
-                    graph.transformTo(ControlFlowGraph.TYPE_QUAD);
+        try {
+            if ( setModified ) {
+                try {
+                    code.getGraph().setModified(true);
+                } catch (GraphException e) {
+                    throw new ActionException("Could not get graph from method {"+methodInfo.getFQMethodName()+"}.", e);
                 }
-            } catch (GraphException e) {
-                throw new ActionException("Could not transform graph.", e);
+            }
+
+            if ( "bytecode".equals(transform) ) {
+                try {
+                    code.compileGraph();
+                } catch (GraphException e) {
+                    throw new ActionException("Could not compile graph to bytecode.", e);
+                }
+            } else if ( transform != null && !"".equals(transform) ) {
+                ControlFlowGraph graph;
+                try {
+                    graph = code.getGraph();
+                } catch (GraphException e) {
+                    throw new ActionException("Could not get graph from method {"+methodInfo.getFQMethodName()+"}.", e);
+                }
+
+                try {
+                    if ( "stack".equals(transform) ) {
+                        graph.transformTo(ControlFlowGraph.TYPE_STACK);
+                    } else if ( "quad".equals(transform) ) {
+                        graph.transformTo(ControlFlowGraph.TYPE_QUAD);
+                    }
+                } catch (GraphException e) {
+                    throw new ActionException("Could not transform graph.", e);
+                }
+            }
+        } catch (ActionException e) {
+            if ( getJopConfig().doIgnoreActionErrors() ) {
+                Logger.getLogger(getClass()).warn("Error running action on graph of {"+
+                        methodInfo.getFQMethodName()+"}: " + e.getMessage(), e);
+            } else {
+                throw e;
             }
         }
     }

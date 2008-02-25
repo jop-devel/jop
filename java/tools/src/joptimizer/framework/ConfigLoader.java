@@ -104,8 +104,10 @@ public class ConfigLoader {
 
             // not using class.getResource() here as the config file is usually outside the classpath.
             URL file = new URL(filename);
-            Reader reader = new BufferedReader(new InputStreamReader(file.openStream()));
+            InputStreamReader fileStream = new InputStreamReader(file.openStream());
+            Reader reader = new BufferedReader(fileStream);
             propfile.load(reader);
+            reader.close();
 
         } catch (IOException e) {
             if (logger.isDebugEnabled()) {
