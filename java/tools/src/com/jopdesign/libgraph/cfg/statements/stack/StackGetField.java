@@ -41,7 +41,7 @@ public class StackGetField extends GetfieldStmt implements StackStatement, Stack
     }
 
     public TypeInfo[] getPushTypes() {
-        return new TypeInfo[] { getFieldInfo().getType() };
+        return new TypeInfo[] { getConstantField().getType() };
     }
 
     public QuadStatement[] getQuadCode(TypeInfo[] stack, VariableTable varTable) {
@@ -63,7 +63,7 @@ public class StackGetField extends GetfieldStmt implements StackStatement, Stack
     }
 
     public String getCodeLine() {
-        return "getfield " + getClassInfo().getClassName() + "." + getFieldInfo().getName();
+        return "getfield " + getConstantField().getFQName();
     }
 
     public ConstantValue[] getConstantValues(ConstantValue[] input) {

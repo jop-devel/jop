@@ -18,6 +18,8 @@
  */
 package com.jopdesign.libgraph.struct;
 
+import com.jopdesign.libgraph.struct.type.ArrayRefType;
+
 /**
  * @author Stefan Hepp, e0026640@student.tuwien.ac.at
  */
@@ -26,6 +28,7 @@ public class ConstantClass {
     private ClassInfo classInfo;
     private String className;
     private boolean cInterface;
+    private ArrayRefType arrayType;
 
     public ConstantClass(ClassInfo classInfo) {
         this.classInfo = classInfo;
@@ -44,6 +47,15 @@ public class ConstantClass {
         this.cInterface = isInterface;
     }
 
+    /**
+     * Create an array class.
+     * @param arrayType the type of the array (including the array itself).
+     */
+    public ConstantClass(ArrayRefType arrayType) {
+        className = arrayType.getDescriptor();
+        this.arrayType = arrayType;
+    }
+
     public ClassInfo getClassInfo() {
         return classInfo;
     }
@@ -58,5 +70,13 @@ public class ConstantClass {
 
     public boolean isInterface() {
         return classInfo != null ? classInfo.isInterface() : cInterface;
+    }
+
+    public boolean isArray() {
+        return arrayType != null;
+    }
+
+    public ArrayRefType getArrayType() {
+        return arrayType;
     }
 }

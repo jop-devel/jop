@@ -18,13 +18,25 @@
  */
 package com.jopdesign.libgraph.struct.bcel;
 
-import com.jopdesign.libgraph.struct.*;
 import com.jopdesign.libgraph.struct.ConstantClass;
+import com.jopdesign.libgraph.struct.ConstantField;
+import com.jopdesign.libgraph.struct.ConstantMethod;
+import com.jopdesign.libgraph.struct.ConstantPoolInfo;
 import com.jopdesign.libgraph.struct.ConstantValue;
+import com.jopdesign.libgraph.struct.TypeException;
 import com.jopdesign.libgraph.struct.type.StringType;
 import com.jopdesign.libgraph.struct.type.TypeInfo;
 import org.apache.bcel.Constants;
-import org.apache.bcel.classfile.*;
+import org.apache.bcel.classfile.Constant;
+import org.apache.bcel.classfile.ConstantCP;
+import org.apache.bcel.classfile.ConstantDouble;
+import org.apache.bcel.classfile.ConstantFloat;
+import org.apache.bcel.classfile.ConstantInteger;
+import org.apache.bcel.classfile.ConstantLong;
+import org.apache.bcel.classfile.ConstantNameAndType;
+import org.apache.bcel.classfile.ConstantPool;
+import org.apache.bcel.classfile.ConstantString;
+import org.apache.bcel.classfile.ConstantUtf8;
 import org.apache.bcel.generic.ConstantPoolGen;
 
 /**
@@ -76,61 +88,37 @@ public class BcelConstantPoolInfo extends ConstantPoolInfo {
                 (org.apache.bcel.classfile.ConstantClass)cp.getConstant(pos);
 
         String className = ((ConstantUtf8)cp.getConstant(cmr.getNameIndex())).getBytes().replace('/','.');
-        ClassInfo classInfo = loadClassInfo(className);
 
-        if ( classInfo == null ) {
-            return new ConstantClass(className);
-        }
-
-        return new ConstantClass(classInfo);
+        return getAppStruct().getConstantClass(className, false);
     }
 
-    public ConstantMethod getMethodReference(int pos) throws TypeException {
+    public ConstantMethod getMethodReference(int pos, boolean isStatic) throws TypeException {
         ConstantPool cp = cpg.getConstantPool();
         ConstantCP cmr  = (ConstantCP)cp.getConstant(pos);
         ConstantNameAndType cnat = (ConstantNameAndType)cp.getConstant(cmr.getNameAndTypeIndex());
+
         String signature = ((ConstantUtf8)cp.getConstant(cnat.getSignatureIndex())).getBytes();
         String name = ((ConstantUtf8)cp.getConstant(cnat.getNameIndex())).getBytes();
 
         String className = getClassName(cp, cmr);
-        ClassInfo classInfo = loadClassInfo(className);
+        boolean isInterface = cmr.getTag() == Constants.CONSTANT_InterfaceMethodref;
 
-        if ( classInfo == null ) {            
-            return new ConstantMethod(className, name, signature,
-                    cmr.getTag() == Constants.CONSTANT_InterfaceMethodref);
-        }
-
-        MethodInfo methodInfo = classInfo.getVirtualMethodInfo(name, signature);
-        if ( methodInfo == null ) {
-            // Hu, method not found, although classes are fully loaded!
-            throw new TypeException("Could not find method {"+name+"} by signature {" +
-                    signature + "} in class {" + className + "}");
-        }
-
-        return new ConstantMethod(classInfo, methodInfo);
+        ConstantClass cClass = getAppStruct().getConstantClass(className, isInterface);
+        return getAppStruct().getConstantMethod(cClass, name, signature, isStatic);
     }
 
-    public ConstantField getFieldReference(int pos) throws TypeException {
+    public ConstantField getFieldReference(int pos, boolean isStatic) throws TypeException {
         ConstantPool cp = cpg.getConstantPool();
         ConstantCP cmr  = (ConstantCP)cp.getConstant(pos);
         ConstantNameAndType cnat = (ConstantNameAndType)cp.getConstant(cmr.getNameAndTypeIndex());
+
         String name = ((ConstantUtf8)cp.getConstant(cnat.getNameIndex())).getBytes();
+        String signature = ((ConstantUtf8)cp.getConstant(cnat.getSignatureIndex())).getBytes();
 
         String className = getClassName(cp, cmr);
-        ClassInfo classInfo = loadClassInfo(className);
 
-        if ( classInfo == null ) {
-            // if classInfo is null, create emtpy fieldInfo with strings as className and types.
-            String signature = ((ConstantUtf8)cp.getConstant(cnat.getSignatureIndex())).getBytes();
-            return new ConstantField(className, name, signature);
-        }
-
-        FieldInfo fieldInfo = classInfo.getVirtualFieldInfo(name);
-        if ( fieldInfo == null ) {
-            throw new TypeException("Could not find field {"+name+"} in class {"+classInfo.getClassName()+"}");
-        }
-
-        return new ConstantField(classInfo, fieldInfo);
+        ConstantClass cClass = getAppStruct().getConstantClass(className, false);
+        return getAppStruct().getConstantField(cClass, name, signature, isStatic);
     }
 
 
@@ -183,13 +171,4 @@ public class BcelConstantPoolInfo extends ConstantPoolInfo {
                 org.apache.bcel.Constants.CONSTANT_Class).replace('/', '.');
     }
 
-    protected ClassInfo loadClassInfo(String className) throws TypeException {
-
-        ClassInfo classInfo = getAppStruct().getClassInfo(className);
-        if ( classInfo == null ) {
-            classInfo = getAppStruct().tryLoadMissingClass(className);
-        }
-
-        return classInfo;
-    }
 }

@@ -37,9 +37,9 @@ public abstract class ConstantPoolInfo {
 
     public abstract ConstantClass getClassReference(int pos) throws TypeException;
 
-    public abstract ConstantMethod getMethodReference(int pos) throws TypeException;
+    public abstract ConstantMethod getMethodReference(int pos, boolean isStatic) throws TypeException;
 
-    public abstract ConstantField getFieldReference(int pos) throws TypeException;
+    public abstract ConstantField getFieldReference(int pos, boolean isStatic) throws TypeException;
 
     /**
      * Add a constant to the constantpool. Return the index of the constant.

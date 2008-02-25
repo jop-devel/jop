@@ -39,6 +39,13 @@ public class ConstantMethod {
 
     private static final Logger logger = Logger.getLogger(ConstantMethod.class);
     private boolean cInterface;
+    private boolean cStatic;
+
+    public ConstantMethod(MethodInfo methodInfo) throws TypeException {
+        this.classInfo = methodInfo.getClassInfo();
+        this.methodInfo = methodInfo;
+        this.signature = methodInfo.getMethodSignature();
+    }
 
     public ConstantMethod(ClassInfo classInfo, MethodInfo methodInfo) throws TypeException {
         this.classInfo = classInfo;
@@ -46,10 +53,12 @@ public class ConstantMethod {
         this.signature = methodInfo.getMethodSignature();
     }
 
-
-    public ConstantMethod(String className, String methodName, String signature, boolean isInterface) {
+    public ConstantMethod(String className, String methodName, String signature, boolean isInterface, 
+                          boolean isStatic)
+    {
         this.className = className;
         this.cInterface = isInterface;
+        this.cStatic = isStatic;
         try {
             this.signature = TypeHelper.parseSignature(null, methodName, signature);
         } catch (TypeException e) {
@@ -98,5 +107,17 @@ public class ConstantMethod {
 
     public boolean isInterface() {
         return classInfo != null ? classInfo.isInterface() : cInterface;
+    }
+
+    public boolean isStatic() {
+        return methodInfo != null ? methodInfo.isStatic() : cStatic;
+    }
+
+    public String getFQMethodName() {
+        return MethodInfo.createFQMethodName(getClassName(), getMethodName(), getSignature());
+    }
+
+    public String toString() {
+        return getFQMethodName();
     }
 }

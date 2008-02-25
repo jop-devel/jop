@@ -90,7 +90,9 @@ public class BcelClassLoader implements AppClassLoader {
      */
     public JavaClass createJavaClass(String className) throws IOException {
         InputStream is = classPath.getInputStream(className);
-        return new ClassParser(is, className).parse();
+        JavaClass javaClass = new ClassParser(is, className).parse();
+        is.close();
+        return javaClass;
     }
 
 }

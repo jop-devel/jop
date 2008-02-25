@@ -126,7 +126,7 @@ public class BcelMethodCode extends MethodCode {
         return graph;
     }
 
-    public void compileGraph(ControlFlowGraph graph) throws GraphException {
+    protected void compileGraph(ControlFlowGraph graph) throws GraphException {
 
         ConstantPoolGen cpg = methodInfo.getConstantPoolGen();
 

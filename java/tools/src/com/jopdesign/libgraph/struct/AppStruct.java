@@ -18,7 +18,8 @@
  */
 package com.jopdesign.libgraph.struct;
 
-import com.jopdesign.libgraph.struct.type.MethodSignature;
+import com.jopdesign.libgraph.struct.type.ArrayRefType;
+import com.jopdesign.libgraph.struct.type.TypeHelper;
 import org.apache.log4j.Logger;
 
 import java.io.IOException;
@@ -87,6 +88,13 @@ public class AppStruct {
      */
     public ClassInfo tryLoadMissingClass(String className) throws TypeException {
 
+        if ( config.isLibraryClassName(className) ) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("Skipping post-loading of library class {" + className + "}");
+            }
+            return null;
+        }
+
         if ( !config.doLoadOnDemand() ) {
             if ( config.doAllowIncompleteCode() || config.isNativeClassName(className) ) {
                 if (logger.isTraceEnabled()) {
@@ -152,10 +160,26 @@ public class AppStruct {
         return classInfos.values();
     }
 
+    /**
+     * Get a known classInfo by name.
+     * This does not try to load unkown classes. 
+     *
+     * @see #getClassInfo(String, boolean)
+     * @param className the fully qualified classname.
+     * @return the classinfo if found, else null.
+     */
     public ClassInfo getClassInfo(String className) {
         return (ClassInfo) classInfos.get(className);
     }
 
+    /**
+     * Get a classInfo and try to load it if not found.
+     *
+     * @param className the fully qualified class name of the class to load.
+     * @param ignoreMissing if the class is not loaded, throw an exception.
+     * @return the classInfo or null if class not found and ignoreMissing is true.
+     * @throws TypeException if the class should be loaded but was not found.
+     */
     public ClassInfo getClassInfo(String className, boolean ignoreMissing) throws TypeException {
         ClassInfo classInfo = getClassInfo(className);
         if ( classInfo == null ) {
@@ -168,7 +192,7 @@ public class AppStruct {
     }
 
     /**
-     * A small helper to create a constantclass for a classname.
+     * A function to create a constantclass for a classname.
      * This function tries to load the class with {@link #getClassInfo(String)} and {@link #tryLoadMissingClass(String)}
      * and creates an anonymous constantclass if the class could not be loaded.
      *
@@ -178,6 +202,13 @@ public class AppStruct {
      * @throws TypeException if the class could not be loaded and anonymous classes are disabled.
      */
     public ConstantClass getConstantClass(String className, boolean isInterface) throws TypeException {
+
+        // This is an array-class
+        if ( className.startsWith("[") ) {
+            ArrayRefType type = (ArrayRefType) TypeHelper.parseType(this, className);
+            return new ConstantClass(type);            
+        }
+
         ClassInfo classInfo = getClassInfo(className);
         if ( classInfo == null ) {
             classInfo = tryLoadMissingClass(className);
@@ -191,28 +222,56 @@ public class AppStruct {
         return cls;
     }
 
-    public ConstantMethod getConstantMethod(ConstantClass clazz, String methodName, String signature) throws TypeException {
-
-        ConstantMethod method;
+    public ConstantMethod getConstantMethod(ConstantClass clazz, String methodName, String signature,
+                                            boolean isStatic) throws TypeException
+    {
+        ConstantMethod method = null;
 
         ClassInfo info = clazz.getClassInfo();
         if ( info != null ) {
 
-            String fullName = MethodSignature.createFullName(methodName, signature);
-            MethodInfo methodInfo = info.getInheritedMethodInfo(fullName, false, true);
+            MethodInfo methodInfo = info.getVirtualMethodInfo(methodName, signature);
 
             if ( methodInfo != null ) {
                 method = new ConstantMethod(info, methodInfo);
             } else {
-                throw new TypeException("Could not find method {"+methodName+"} with signature {"+signature+"} in class {" +
-                info.getClassName()+"}");
+                // TODO check if class really extends unloaded classes, else throw exception
+                //throw new TypeException("Could not find method {" + methodName + "} with signature {" +
+                //        signature + "} in class {" + info.getClassName() + "}");
             }
+        }
 
-        } else {
-            method = new ConstantMethod(clazz.getClassName(), methodName, signature, clazz.isInterface());
+        if ( method == null ) {
+            method = new ConstantMethod(clazz.getClassName(), methodName, signature, clazz.isInterface(), isStatic);
         }
 
         return method;
+    }
+
+    public ConstantField getConstantField(ConstantClass clazz, String fieldName, String signature,
+                                          boolean isStatic) throws TypeException
+    {
+        ConstantField field = null;
+
+        ClassInfo info = clazz.getClassInfo();
+        if ( info != null ) {
+
+            FieldInfo fieldInfo = info.getVirtualFieldInfo(fieldName);
+
+            if ( fieldInfo != null ) {
+                field = new ConstantField(info, fieldInfo);
+            } else {
+                // TODO check if class really extends unloaded classes, else throw exception
+                //throw new TypeException("Could not find field {"+fieldName+"} in class {"+info.getClassName()+"}.");
+            }
+
+        }
+
+        if ( field == null ) {
+            field = new ConstantField(clazz.getClassName(), fieldName, signature, isStatic);
+        }
+
+        return field;
     }
 
     public void addClass(ClassInfo classInfo) {

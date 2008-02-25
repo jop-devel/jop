@@ -35,6 +35,7 @@ import org.apache.bcel.classfile.EmptyVisitor;
 import org.apache.bcel.classfile.Field;
 import org.apache.bcel.classfile.JavaClass;
 import org.apache.bcel.classfile.Method;
+import org.apache.bcel.generic.ArrayType;
 import org.apache.bcel.generic.ClassGen;
 import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.ObjectType;
@@ -114,27 +115,25 @@ public class BcelClassInfo extends ClassInfo {
             addClass(className);
 
             if(method) {
-                Type type = Type.getReturnType(signature);
-
-                if(type instanceof ObjectType) {
-                    addClass(((ObjectType)type).getClassName());
-                }
+                addType( Type.getReturnType(signature) );
 
                 Type[] types = Type.getArgumentTypes(signature);
 
                 for(int i = 0; i < types.length; i++) {
-                    type = types[i];
-                    if(type instanceof ObjectType) {
-                        addClass(((ObjectType)type).getClassName());
-                    }
+                    addType( types[i] );
                 }
             } else {
-                Type type = Type.getType(signature);
-                if(type instanceof ObjectType) {
-                    addClass(((ObjectType)type).getClassName());
-                }
+                addType( Type.getType(signature) );
             }
 
+        }
+
+        private void addType(Type type) {
+            if ( type instanceof ObjectType ) {
+                addClass(((ObjectType)type).getClassName());
+            } else if ( type instanceof ArrayType ) {
+                addType(((ArrayType)type).getElementType());
+            }
         }
 
         private void addClass(String className) {
@@ -190,15 +189,19 @@ public class BcelClassInfo extends ClassInfo {
         return javaClass;
     }
 
-    protected Set loadInterfaces() {
+    protected Set loadInterfaces() throws TypeException {
         String[] names = javaClass.getInterfaceNames();
         Set interfaces = new HashSet(names.length);
 
         for (int i = 0; i < names.length; i++) {
             String name = names[i];
-            ClassInfo cls = getAppStruct().getClassInfo(name);
+            ClassInfo cls = getAppStruct().getClassInfo(name, true);
             if ( cls == null ) {
-                logger.error("Could not find interface class {"+name+"} for class {" + getClassName() + "}" );
+                // TODO set interface as ConstantClass, set class to 'incomplete' state (errors are thrown by getClassInfo)
+
+                if (logger.isInfoEnabled()) {
+                    logger.info("Could not find interface class {" + name + "} for class {" + getClassName() + "}");
+                }
             } else {
                 interfaces.add(cls);
             }

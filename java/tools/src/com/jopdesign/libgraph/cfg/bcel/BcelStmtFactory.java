@@ -90,13 +90,13 @@ public class BcelStmtFactory {
                 return new StackPush(val);
             case 0x12:  // ldc
                 val = cp.getConstant(((LDC)instruction).getIndex());
-                return new StackPush(val);
+                return new StackPush(val, ((LDC)instruction).getIndex());
             case 0x13:
                 val = cp.getConstant(((LDC_W)instruction).getIndex());
-                return new StackPush(val);
+                return new StackPush(val, ((LDC_W)instruction).getIndex());
             case 0x14:
                 val = cp.getConstant( ((LDC2_W)instruction).getIndex());
-                return new StackPush(val);
+                return new StackPush(val, ((LDC2_W)instruction).getIndex());
             case 0x15: return new StackLoad(TypeInfo.CONST_INT, varTable.getDefaultLocalVariable(((ILOAD)instruction).getIndex()));
             case 0x16: return new StackLoad(TypeInfo.CONST_LONG, varTable.getDefaultLocalVariable(((LLOAD)instruction).getIndex()));
             case 0x17: return new StackLoad(TypeInfo.CONST_FLOAT, varTable.getDefaultLocalVariable(((FLOAD)instruction).getIndex()));
@@ -314,14 +314,18 @@ public class BcelStmtFactory {
             case 0xaf: return new StackReturn(TypeInfo.CONST_DOUBLE);
             case 0xb0: return new StackReturn(TypeInfo.CONST_OBJECTREF);
             case 0xb1: return new StackReturn();
-            case 0xb2: return new StackGetField(cp.getFieldReference(((GETSTATIC)instruction).getIndex()));
-            case 0xb3: return new StackPutField(cp.getFieldReference(((PUTSTATIC)instruction).getIndex()));
-            case 0xb4: return new StackGetField(cp.getFieldReference(((GETFIELD)instruction).getIndex()));
-            case 0xb5: return new StackPutField(cp.getFieldReference(((PUTFIELD)instruction).getIndex()));
-            case 0xb6: return new StackInvoke(cp.getMethodReference(((INVOKEVIRTUAL)instruction).getIndex()), InvokeStmt.TYPE_VIRTUAL);
-            case 0xb7: return new StackInvoke(cp.getMethodReference(((INVOKESPECIAL)instruction).getIndex()), InvokeStmt.TYPE_SPECIAL);
-            case 0xb8: return new StackInvoke(cp.getMethodReference(((INVOKESTATIC)instruction).getIndex()), InvokeStmt.TYPE_STATIC);
-            case 0xb9: return new StackInvoke(cp.getMethodReference(((INVOKEINTERFACE)instruction).getIndex()), InvokeStmt.TYPE_INTERFACE);
+            case 0xb2: return new StackGetField(cp.getFieldReference(((GETSTATIC)instruction).getIndex(), true));
+            case 0xb3: return new StackPutField(cp.getFieldReference(((PUTSTATIC)instruction).getIndex(), true));
+            case 0xb4: return new StackGetField(cp.getFieldReference(((GETFIELD)instruction).getIndex(), false));
+            case 0xb5: return new StackPutField(cp.getFieldReference(((PUTFIELD)instruction).getIndex(), false));
+            case 0xb6: return new StackInvoke(cp.getMethodReference(((INVOKEVIRTUAL)instruction).getIndex(), false),
+                    InvokeStmt.TYPE_VIRTUAL);
+            case 0xb7: return new StackInvoke(cp.getMethodReference(((INVOKESPECIAL)instruction).getIndex(), false),
+                    InvokeStmt.TYPE_SPECIAL);
+            case 0xb8: return new StackInvoke(cp.getMethodReference(((INVOKESTATIC)instruction).getIndex(), false),
+                    InvokeStmt.TYPE_STATIC);
+            case 0xb9: return new StackInvoke(cp.getMethodReference(((INVOKEINTERFACE)instruction).getIndex(), false),
+                    InvokeStmt.TYPE_INTERFACE);
             // 0xba unused
             case 0xbb: return new StackNew(cp.getClassReference(((NEW)instruction).getIndex()));
             case 0xbc: return new StackNewArray(TypeHelper.parseType( appStruct,
@@ -666,12 +670,8 @@ public class BcelStmtFactory {
             Instruction is = null;
             switch ( invoke.getInvokeType() ) {
                 case StackInvoke.TYPE_INTERFACE:
-                    int[] args = invoke.getParamSlots();
-                    int nargs = 0;
-                    for (int i = 0; i < args.length; i++) {
-                        nargs += args[i];
-                    }                    
-                    is = new INVOKEINTERFACE(cls, nargs);
+                    int count = invoke.getParamSlotCount();
+                    is = new INVOKEINTERFACE(cls, count);
                     break;
                 case StackInvoke.TYPE_SPECIAL: is = new INVOKESPECIAL(cls); break;
                 case StackInvoke.TYPE_STATIC: is = new INVOKESTATIC(cls); break;

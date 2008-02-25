@@ -47,7 +47,7 @@ public abstract class GetfieldStmt extends AbstractStatement implements FieldStm
     }
 
     public boolean isStatic() {
-        return field.getFieldInfo() != null && field.getFieldInfo().isStatic();
+        return field.isStatic();
     }
 
     public boolean canThrowException() {

@@ -34,6 +34,7 @@ public class StackPush extends AbstractStatement implements StackStatement, Stac
     
     private TypeInfo type;
     private ConstantValue value;
+    private int poolIndex;
 
     public static final byte OP_ACONST_NULL = 0x01;
     public static final byte OP_ICONST_0 = 0x03;
@@ -50,9 +51,18 @@ public class StackPush extends AbstractStatement implements StackStatement, Stac
     public static final byte OP_LDC_W    = 0x13;
     public static final byte OP_LDC2_W   = 0x14;
 
+    public static final int MAX_BYTE = 255;
+
     public StackPush(ConstantValue value) {
         this.type = value.getType();
         this.value = value;
+        this.poolIndex = 0;
+    }
+
+    public StackPush(ConstantValue value, int poolIndex) {
+        this.type = value.getType();
+        this.value = value;
+        this.poolIndex = poolIndex;
     }
 
     public TypeInfo getType() {
@@ -96,7 +106,7 @@ public class StackPush extends AbstractStatement implements StackStatement, Stac
                 } else if ( iValue >= -32768 && iValue <= 32767 ) {
                     return OP_SIPUSH;
                 } else {
-                    return OP_LDC;
+                    return poolIndex <= MAX_BYTE ? OP_LDC : OP_LDC_W;
                 }
             case TypeInfo.TYPE_LONG:
                 long lValue = value.getLongValue();
@@ -116,7 +126,7 @@ public class StackPush extends AbstractStatement implements StackStatement, Stac
                 } else if ( fValue == 2.0f ) {
                     return OP_FCONST_2;
                 } else {
-                    return OP_LDC;
+                    return poolIndex <= MAX_BYTE ? OP_LDC : OP_LDC_W;
                 }
             case TypeInfo.TYPE_DOUBLE:
                 double dValue = value.getDoubleValue();
@@ -132,7 +142,7 @@ public class StackPush extends AbstractStatement implements StackStatement, Stac
                 if ( txt == null ) {
                     return OP_ACONST_NULL;
                 } else {
-                    return OP_LDC;
+                    return poolIndex <= MAX_BYTE ? OP_LDC : OP_LDC_W;
                 }
         }
         return -1;

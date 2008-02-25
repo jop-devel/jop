@@ -87,6 +87,24 @@ public class TypeHelper {
         return new MethodSignature(name, retType, paramTypes);
     }
 
+    /**
+     * Get the first classname within this type string.
+     * @param type the type string to be searched.
+     * @return the first classname or null if not found.
+     */
+    public static String getClassName(String type) {
+        int start = type.indexOf("L");
+        if ( start == -1 ) {
+            return null;
+        }
+        int end = type.indexOf(";", ++start);
+        if ( end == -1 ) {
+            return null;
+        }
+
+        return type.substring(start, end).replace("/",".");
+    }
+
     private static RetType parseType(AppStruct appStruct, String type, int pos) throws TypeException {
 
         char c = type.charAt(pos++);

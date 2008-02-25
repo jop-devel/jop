@@ -331,6 +331,7 @@ public abstract class ClassInfo implements ModifierInfo {
      * @return the method if found, else null.
      * @see #getMethodInfo(String)
      * @see #getInheritedMethodInfo(String, boolean, boolean)
+     * @see #findInterfaceMethodInfo(String)
      */
     public MethodInfo getVirtualMethodInfo(String methodName, String signature) {
         return getVirtualMethodInfo(MethodSignature.createFullName(methodName, signature));
@@ -346,9 +347,15 @@ public abstract class ClassInfo implements ModifierInfo {
      * @return the method if found, else null.
      * @see #getMethodInfo(String)
      * @see #getInheritedMethodInfo(String, boolean, boolean)
+     * @see #findInterfaceMethodInfo(String)
      */
     public MethodInfo getVirtualMethodInfo(String method) {
-        return getInheritedMethodInfo(method, false, true);
+        MethodInfo methodInfo = getInheritedMethodInfo(method, false, true);
+        if ( methodInfo == null ) {
+            // maybe defined in interfaces
+            methodInfo = findInterfaceMethodInfo(method);
+        }
+        return methodInfo;
     }
 
     /**
@@ -370,7 +377,7 @@ public abstract class ClassInfo implements ModifierInfo {
 
             // check if this method can be overwritten.
             if (inheritedOnly && method != null) {
-                if (method.isPrivate() || method.isStatic()) {
+                if (method.isPrivate()) {
                     method = null;
                 }
             }
@@ -379,6 +386,36 @@ public abstract class ClassInfo implements ModifierInfo {
         }
 
         return method;
+    }
+
+    /**
+     * Find the (first) interface this class implements and which defines the given method.
+     *
+     * @param methodName full method name as created by {@link com.jopdesign.libgraph.struct.type.MethodSignature#createFullName(String,String)} ).
+     * @return the method of the (first) interface which defines the method, or null if no matching interface is found.
+     */
+    public MethodInfo findInterfaceMethodInfo(String methodName) {
+
+        List queue = new LinkedList(interfaces);
+        Set visited = new HashSet(interfaces.size());
+
+        while ( !queue.isEmpty() ) {
+
+            ClassInfo info = (ClassInfo) queue.remove(0);
+            if ( visited.contains(info.getClassName()) ) {
+                continue;
+            }
+
+            MethodInfo method = info.getMethodInfo(methodName);
+            if ( method != null ) {
+                return method;
+            }
+
+            visited.add(info.getClassName());
+            queue.addAll(info.getInterfaces());
+        }
+
+        return null;
     }
 
     public FieldInfo getFieldInfo(String name) {
@@ -398,7 +435,7 @@ public abstract class ClassInfo implements ModifierInfo {
             field = sup.getFieldInfo(name);
 
             if ( inheritedOnly && field != null ) {
-                if ( field.isPrivate() || field.isStatic() ) {
+                if ( field.isPrivate() ) {
                     field = null;
                 }
             }
@@ -413,7 +450,7 @@ public abstract class ClassInfo implements ModifierInfo {
      * (re)load all class informations from javaClass.
      * @return true if references have changed.
      */
-    public boolean reload() {
+    public boolean reload() throws TypeException {
         boolean refChanged = false;
 
         boolean complete = true;
@@ -421,14 +458,16 @@ public abstract class ClassInfo implements ModifierInfo {
         // get super class (null if this is java.lang.Object)
         String superClassName = getSuperClassName();
         if ( superClassName != null ) {
-            superClass = appStruct.getClassInfo(superClassName);
+            superClass = appStruct.getClassInfo(superClassName, true);
             if ( superClass != null ) {
                 refChanged = superClass.addSubClass(this) || refChanged;
                 refChanged = references.add(superClass) || refChanged;
             } else {
                 complete = false;
-                logger.warn("Could not find superclass {" + superClassName +
-                        "} for class {" + getClassName() + "}.");
+                if (logger.isInfoEnabled()) {
+                    logger.info("Could not load superclass {" + superClassName +
+                                "} for class {" + getClassName() + "}.");
+                }
             }
         }
 
@@ -520,7 +559,7 @@ public abstract class ClassInfo implements ModifierInfo {
         return out.toString();
     }
 
-    protected abstract Set loadInterfaces();
+    protected abstract Set loadInterfaces() throws TypeException;
 
     protected abstract void loadMethodInfos();
 

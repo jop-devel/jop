@@ -18,6 +18,10 @@
  */
 package com.jopdesign.libgraph.struct;
 
+import com.jopdesign.libgraph.struct.type.TypeHelper;
+import com.jopdesign.libgraph.struct.type.TypeInfo;
+import org.apache.log4j.Logger;
+
 /**
  * Container for a reference to a field.
  * As the reference may refer to a subclass of the class which defines the field,
@@ -32,16 +36,18 @@ public class ConstantField {
     private String className;
     private String fieldName;
     private String signature;
+    private boolean isStatic;
 
     public ConstantField(ClassInfo classInfo, FieldInfo fieldInfo) {
         this.classInfo = classInfo;
         this.fieldInfo = fieldInfo;
     }
 
-    public ConstantField(String className, String fieldName, String signature) {
+    public ConstantField(String className, String fieldName, String signature, boolean isStatic) {
         this.className = className;
         this.fieldName = fieldName;
         this.signature = signature;
+        this.isStatic = isStatic;
     }
 
     public ClassInfo getClassInfo() {
@@ -78,10 +84,22 @@ public class ConstantField {
     }
 
     public boolean isStatic() {
-        return fieldInfo != null ? fieldInfo.isStatic() : false;
+        return fieldInfo != null ? fieldInfo.isStatic() : isStatic;
     }
 
     public String getFQName() {
         return getClassName() + "#" + getFieldName();
+    }
+
+    public TypeInfo getType() {
+        if ( fieldInfo != null ) {
+            return fieldInfo.getType();
+        }
+        try {
+            return TypeHelper.parseType(null, getSignature());
+        } catch (TypeException e) {
+            Logger.getLogger(this.getClass()).error("Could not create anonymous type for {"+getSignature()+"}.");
+        }
+        return null;
     }
 }

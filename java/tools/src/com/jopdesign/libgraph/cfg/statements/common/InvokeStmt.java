@@ -104,6 +104,22 @@ public abstract class InvokeStmt extends AbstractStatement {
         return slots;
     }
 
+    /**
+     * Get the number of stack-entries or local variables the parameters of this invocation
+     * need. The object-reference is included, too.
+     *
+     * @return number of slots for all parameters of the incokation.
+     */
+    public int getParamSlotCount() {
+        TypeInfo[] params = getParameterTypes();
+        int slots = isStatic() ? 0 : 1;
+
+        for (int i = 0; i < params.length; i++) {
+            slots += params[i].getLength();
+        }
+        return slots;
+    }
+
     public String getInvokeName() {
         String name = "";
         switch (invokeType) {
