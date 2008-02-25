@@ -153,11 +153,26 @@ public class JOPtimizer {
 
     }
 
+    /**
+     * Create and load classInfos from classnames. Excluded classes will not be created.
+     *
+     * @param classNames a list of strings of classnames to load.
+     * @return a collection of {@link ClassInfo}s.
+     * @throws TypeException
+     */
     public Collection createClasses(Collection classNames) throws TypeException {
         List classes = new ArrayList(classNames.size());
         for (Iterator it = classNames.iterator(); it.hasNext();) {
             String className =  it.next().toString();
-            classes.add(appStruct.createClassInfo(className));
+
+            String reason = jopConfig.doExcludeClassName(className);
+            if ( reason == null ) {
+                classes.add(appStruct.createClassInfo(className));
+            } else {
+                if ( logger.isInfoEnabled() ) {
+                    logger.info(reason);
+                }
+            }
         }
         return classes;
     }

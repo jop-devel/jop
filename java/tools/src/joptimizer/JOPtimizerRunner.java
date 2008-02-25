@@ -21,27 +21,20 @@ package joptimizer;
 import com.jopdesign.libgraph.struct.TypeException;
 import joptimizer.config.ArgOption;
 import joptimizer.config.ArgumentException;
+import joptimizer.config.ConfigurationException;
 import joptimizer.config.JopConfig;
-import joptimizer.config.StringOption;
 import joptimizer.framework.CmdLine;
+import joptimizer.framework.ConfigLoader;
 import joptimizer.framework.JOPtimizer;
 import joptimizer.framework.actions.ActionException;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.PrintStream;
-import java.io.Reader;
 import java.net.URL;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
 
 /**
@@ -53,34 +46,11 @@ public class JOPtimizerRunner {
 
     public static Logger logger = Logger.getLogger(JOPtimizerRunner.class);
 
-    private static Map options;
+    private static List options;
     private static String mainClass;
 
     private static boolean doCmdLine;
     private static boolean doSkipLoad;
-
-    public static final String CONF_LOGCONF_FILE = "logconf";
-    public static final String CONF_CLASSPATH = "cp";
-
-    private static void initArguments(JOPtimizer joptimizer) {
-
-        List optionList = new LinkedList();
-
-        optionList.add(new StringOption(null, CONF_CLASSPATH,
-                "Set the classpath, default is '.'.", "classpath"));
-
-        JopConfig.createOptions(optionList);
-
-        optionList.addAll(joptimizer.getActionFactory().createActionArguments());
-
-        // hash options by name
-        options = new LinkedHashMap();
-        for (int i = 0; i < optionList.size(); i++) {
-            ArgOption option = (ArgOption) optionList.get(i);
-            options.put(option.getFullName(), option);
-        }
-
-    }
 
     /**
      * Print out a usage text about this tool.
@@ -103,7 +73,7 @@ public class JOPtimizerRunner {
         out.println("    -config <configfile>    An url to a properties-file which may contain");
         out.println("                            any of the following options.");
 
-        for (Iterator it = options.values().iterator(); it.hasNext();) {
+        for (Iterator it = options.iterator(); it.hasNext();) {
             ArgOption option = (ArgOption) it.next();
             if ( option.isVisible() ) {
                 option.printHelp("    -", out);
@@ -118,12 +88,12 @@ public class JOPtimizerRunner {
      * The last classname will be set in mainClass.
      *
      * @param args the arguments to read.
-     * @param config the configuration which will be updated with the parsed options.
+     * @param config the configuration loader which will be used to parse and store the options.
      * @param startClasses a set of classnames which will be filled with the given start class names.
      * @throws ArgumentException
      * @return false, if the program should terminate without executing anything, else true.
      */
-    public static boolean parseArguments(String[] args, Properties config, Set startClasses) throws ArgumentException {
+    public static boolean parseArguments(String[] args, ConfigLoader config, Set startClasses) throws ArgumentException {
 
         for (int i = 0; i < args.length; i++) {
 
@@ -141,45 +111,15 @@ public class JOPtimizerRunner {
                 if ( args.length <= i + 1 ) {
                     throw new ArgumentException("Missing configfile argument for '-config'.");
                 }
-
-                Properties propfile = new Properties();
-                String filename = args[++i];
-                try {
-                    if ( logger.isInfoEnabled() ) {
-                        logger.info("Reading configuration file {"+filename+"}.");
-                    }
-
-                    // not using class.getResource() here as the config file is usually outside the classpath.
-                    URL file = new URL(filename);
-                    Reader reader = new BufferedReader(new InputStreamReader(file.openStream()));
-                    propfile.load(reader);
-
-                } catch (IOException e) {
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("Error loading configfile {" + filename + "}.", e);
-                    }
-                    throw new ArgumentException("Could not load configfile {"+filename+"}: " + e.getMessage());
-                }
-
-                // Quick hack to allow usage of environment variables in config.
-                for (Iterator it = propfile.entrySet().iterator(); it.hasNext();) {
-                    Map.Entry entry = (Map.Entry) it.next();
-                    String arg = entry.getKey().toString();
-
-                    if (logger.isInfoEnabled() ) {
-                        logger.info("Found option {"+entry.getKey()+"} with value {"+entry.getValue()+"}");
-                    }
-
-                    loadOption(arg, new String[] {arg, entry.getValue().toString()}, 0, config);
-                }
-
+                config.loadOptionFile(args[++i]);
                 continue;
             }
 
             // check if argument is a configuration option
+            // TODO handling of quotes and '='
             if ( args[i].startsWith("-") ) {
                 String arg = args[i].substring(1);                
-                i+= loadOption(arg, args, i, config);
+                i+= config.loadOption(arg, args, i);
                 continue;
             }
 
@@ -190,21 +130,6 @@ public class JOPtimizerRunner {
         }
 
         return true;
-    }
-
-    private static int loadOption(String arg, String[] args, int pos, Properties config) throws ArgumentException {
-
-        int ret;
-        ArgOption option = (ArgOption) options.get(arg);
-
-        if ( option != null ) {
-
-            ret = option.parse(arg, args, pos, config);
-
-        } else {
-            throw new ArgumentException("Unrecognized option '" + arg + "'.");
-        }
-        return ret;
     }
 
     /**
@@ -230,7 +155,7 @@ public class JOPtimizerRunner {
         JopConfig jopConfig = new JopConfig();
         JOPtimizer joptimizer = new JOPtimizer(jopConfig);
 
-        initArguments(joptimizer);
+        options = ConfigLoader.getDefaultOptions(joptimizer);
 
         // need at least one argument for root class.
 		if ( args.length == 0 ) {
@@ -238,7 +163,7 @@ public class JOPtimizerRunner {
 			return;
 		}
 
-        Properties config = new Properties();
+        ConfigLoader config = new ConfigLoader( options );
         Set rootClasses = new HashSet();
 
         // parse args into properties, set rootclasses
@@ -257,13 +182,17 @@ public class JOPtimizerRunner {
             System.exit(2);
         }
 
-        String classPath = config.getProperty(CONF_CLASSPATH, ".");
-        joptimizer.getAppStruct().setClassPath(classPath);
+        try {
+            config.storeConfig(joptimizer);
+        } catch (ConfigurationException e) {
+            System.err.println("Could not parse options: " + e.getMessage());
+            logger.info("Could not parse options.", e);
+            System.exit(2);
+        }
 
         // setup config
         rootClasses.addAll(jopConfig.getArchConfig().getSystemClasses());
 
-        jopConfig.setProperties(config);
         jopConfig.setMainClassName(mainClass);
         jopConfig.setRootClasses(rootClasses);
 

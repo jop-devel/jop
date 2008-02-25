@@ -22,6 +22,8 @@ import com.jopdesign.libgraph.struct.ClassInfo;
 import com.jopdesign.libgraph.struct.FieldInfo;
 import com.jopdesign.libgraph.struct.MethodInfo;
 import joptimizer.config.ArgOption;
+import joptimizer.config.ArgumentException;
+import joptimizer.config.ConfigurationException;
 import joptimizer.config.JopConfig;
 import joptimizer.framework.actions.Action;
 import joptimizer.framework.actions.ActionCollection;
@@ -32,6 +34,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -95,6 +98,7 @@ public class CmdLine {
     public void printHelp(PrintStream out) {
         out.println("  help                  Show this help.");
         out.println("  exit                  Terminate the program.");
+        out.println("  load <configfile>     Load all values from a property-file as options.");
         out.println("  list <type>           List one of the following:");
         out.println("                         actions          list of all actions.");
         out.println("                         execactions      list all actions executed by runall.");
@@ -105,6 +109,7 @@ public class CmdLine {
         out.println("  info <classname>      Print some infos about the structure of a class.");
         out.println("  get <var>             Get the value of an option.");
         out.println("  set <var> <val>       Set an option to a given value.");
+        out.println("  unset <var>           Unset the given option.");
         out.println("  run <action>          Execute an action on all loaded classes.");
         out.println("  run <action> <class> [<method>] ");
         out.println("                        Run an action only on a single class or a single method.");
@@ -112,8 +117,9 @@ public class CmdLine {
         out.println("                        on the current optimization level.");
         out.println("  classpath <path>      Set classpath to new path.");
         out.println("  mainclass <cls>       Set main classname.");
-        out.println("  rootclasses <cls>     Set new list of root classes.");
-        out.println("  reload                Reload root classes from current classpath.");
+        out.println("  rootclasses <cls>     Set new list of root classes and reloads systemclasses");
+        out.println("                        from the architecture configuration.");
+        out.println("  reload                Reload root classes from the current classpath.");
     }
 
     public void printConfig(PrintStream out) {
@@ -281,6 +287,26 @@ public class CmdLine {
         out.println();
     }
 
+    public void loadConfigFile(String filename, PrintStream out) {
+
+        ConfigLoader configLoader = new ConfigLoader( ConfigLoader.getDefaultOptions(joptimizer) );
+        try {
+            configLoader.loadOptionFile(filename);
+        } catch (ArgumentException e) {
+            out.println("Could not load configuration file: " + e.getMessage());
+            if (logger.isInfoEnabled()) {
+                logger.info("Could not load configuration file {" + filename + "}.", e);
+            }
+        }
+
+        try {
+            configLoader.storeConfig(joptimizer);
+        } catch (ConfigurationException e) {
+            out.println("Could not load options: " + e.getMessage());
+            logger.info("Could not load options.", e);
+        }
+    }
+
     public void runAction(Action action, String[] args, int firstArg, PrintStream out) {
 
         ClassInfo classInfo = null;
@@ -319,6 +345,7 @@ public class CmdLine {
     /**
      * exec a command.
      * @param args the command as args[0] and its options
+     * @param out the printstream to print the output to.
      * @return true if this is an exit command, else false.
      */
     public boolean execCmd(String[] args, PrintStream out) {
@@ -350,6 +377,12 @@ public class CmdLine {
                 out.println("Unknown action: "+args[1]);
                 return false;
             }
+        } else if ( "load".equals(args[0]) ) {
+            if ( args.length < 2 ) {
+                out.println("Missing filename.");
+                return false;
+            }
+            loadConfigFile(args[1], out);
         } else if ( "info".equals(args[0]) ) {
             if ( args.length < 2 ) {
                 out.println("Missing classname.");
@@ -377,11 +410,10 @@ public class CmdLine {
             Set rootClasses = new HashSet(args.length + 2);
             JopConfig jopConfig = joptimizer.getJopConfig();
 
+            rootClasses.add(jopConfig.getMainClassName());
             rootClasses.addAll(jopConfig.getArchConfig().getSystemClasses());
 
-            for (int i = 1; i < args.length; i++ ) {
-                rootClasses.add(args[i]);
-            }
+            rootClasses.addAll(Arrays.asList(args).subList(1, args.length));
 
             jopConfig.setRootClasses(rootClasses);
 
@@ -390,7 +422,12 @@ public class CmdLine {
                 out.println("Syntax is: set <option> <value>");
                 return false;
             }
-            joptimizer.getJopConfig().setOption(args[1], args[2]);
+            try {
+                joptimizer.getJopConfig().setOption(args[1], args[2]);
+            } catch (ConfigurationException e) {
+                out.println("Could not set option: " + e.getMessage());
+                logger.info("Could not set option.", e);
+            }
 
         } else if ( "get".equals(args[0]) ) {
             for (int i = 1; i < args.length; i++) {
@@ -400,6 +437,18 @@ public class CmdLine {
                 } else {
                     out.println("Option not set: " + args[i]);
                 }
+            }
+
+        } else if ( "unset".equals(args[0]) ) {
+            if ( args.length != 2 ) {
+                out.println("Syntax is: unset <option>");
+                return false;
+            }
+            try {
+                joptimizer.getJopConfig().setOption(args[1], null);
+            } catch (ConfigurationException e) {
+                out.println("Could not unset option: " + e.getMessage());
+                logger.info("Could not unset option.", e);
             }
 
         } else if ( "run".equals(args[0]) ) {

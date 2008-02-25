@@ -18,7 +18,15 @@
  */
 package joptimizer.config;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.net.URL;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.Properties;
 import java.util.Set;
 
 /**
@@ -27,8 +35,22 @@ import java.util.Set;
 public class ArchConfig {
 
     private ArchTiming timing;
+    private Set systemClasses;
+    private String nativeClass;
 
-    public ArchConfig(String filename) {
+    public static final String CONF_SYSTEM_CLASSES = "systemclasses";
+
+    public static final String CONF_NATIVE_CLASS = "nativeclass";
+
+    public ArchConfig() {
+        systemClasses = Collections.EMPTY_SET;
+        nativeClass = "";
+        timing = new JopTimings(this);
+    }
+
+    public ArchConfig(URL configfile) throws ConfigurationException {
+        loadConfig(configfile);
+        // TODO get timings from configuration too
         timing = new JopTimings(this);
     }
 
@@ -37,19 +59,7 @@ public class ArchConfig {
     }
 
     public String getNativeClassName() {
-        return "com.jopdesign.sys.Native";
-    }
-
-    public String getStartupClassName() {
-        return "com.jopdesign.sys.Startup";
-    }
-
-    public String getJvmClassName() {
-        return "com.jopdesign.sys.JVM";
-    }
-
-    public String getHelpClassName() {
-        return "com.jopdesign.sys.JVMHelp";
+        return nativeClass;
     }
 
     /**
@@ -59,14 +69,6 @@ public class ArchConfig {
      * @return a set of classnames as string.
      */
     public Set getSystemClasses() {
-        Set systemClasses = new HashSet();
-
-        systemClasses.add(getStartupClassName());
-        systemClasses.add(getJvmClassName());
-        systemClasses.add(getHelpClassName());
-
-        //systemClasses.add("java.lang.NullPointerException");
-
         return systemClasses;
     }
 
@@ -88,5 +90,32 @@ public class ArchConfig {
 
     public int getRamWriteCycles() {
         return 2;
+    }
+
+    private void loadConfig(URL config) throws ConfigurationException {
+
+        systemClasses = new HashSet();
+
+        Properties props = new Properties();
+        try {
+            Reader reader = new BufferedReader(new InputStreamReader(config.openStream()));
+            props.load(reader);
+        } catch (IOException e) {
+            throw new ConfigurationException("Could not read configuration file.", e);
+        }
+
+        Object sys = props.get(CONF_SYSTEM_CLASSES);
+        if ( sys != null && !"".equals(sys.toString()) ) {
+            String[] sysclasses = String.valueOf(sys).split(",");
+            systemClasses.addAll(Arrays.asList(sysclasses));
+        }
+
+        Object nat = props.get(CONF_NATIVE_CLASS);
+        if ( nat != null ) {
+            nativeClass = String.valueOf(nat);
+        } else {
+            nativeClass = "";
+        }
+        
     }
 }

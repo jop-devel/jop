@@ -20,7 +20,10 @@ package joptimizer.config;
 
 import com.jopdesign.libgraph.struct.AppConfig;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -28,7 +31,6 @@ import java.util.Set;
 
 /**
  * Main configuration container class.
- * TODO make 'Architecture'-conf-file option, load sys/default classnames, max-code/stack/locals,.. from prop-file
  *
  * @author Stefan Hepp, e0026640@student.tuwien.ac.at
  * @noinspection InconsistentJavaDoc
@@ -39,6 +41,8 @@ public class JopConfig implements AppConfig {
     private Set rootClasses;
     private String mainClass;
     private ArchConfig archConfig;
+    private String[] libraries;
+    private String[] ignore;
 
     public static final String CONF_OUTPUTPATH = "o";
 
@@ -50,7 +54,11 @@ public class JopConfig implements AppConfig {
 
     public static final String CONF_ALLOW_LOADDEMAND = "allow-loaddemand";
 
+    public static final String CONF_ARCH = "arch";
+
     public static final String CONF_ARCH_CONFIG = "arch-config";
+
+    public static final String CONF_LIBRARY_PATH = "libraries";
 
     public static final String CONF_IGNORE_PATH = "skip";
 
@@ -59,20 +67,30 @@ public class JopConfig implements AppConfig {
     public static final String CONF_SKIP_NATIVE_CLASS = "skip-nativeclass";
 
     public JopConfig() {
+        initialize(null, null);
+    }
+
+    public JopConfig(Properties config) throws ConfigurationException {
+        initialize(config, null);
+        if ( config != null ) {
+            setProperties(config);
+        }
+    }
+
+    public JopConfig(Properties config, String mainClass) throws ConfigurationException {
+        initialize(config, mainClass);
+        if ( config != null ) {
+            setProperties(config);
+        }
+    }
+
+    private void initialize(Properties config, String mainClass) {
         this.config = new Properties();
-        this.rootClasses = new HashSet();
-        setArchConfig(null);
-    }
-
-    public JopConfig(Properties config) {
-        this.config = config == null ? new Properties() : config;
-        setArchConfig(getArchConfigFileName());
-    }
-
-    public JopConfig(Properties config, String mainClass) {
-        this.config = config == null ? new Properties() : config;
         this.mainClass = mainClass;
-        setArchConfig(getArchConfigFileName());
+        this.rootClasses = new HashSet();
+        libraries = new String[0];
+        ignore = new String[0];
+        archConfig = new ArchConfig();
     }
 
     /**
@@ -81,8 +99,12 @@ public class JopConfig implements AppConfig {
      * @param optionList a list where options as ArgOption will be added.
      */
     public static void createOptions(List optionList) {
+
         optionList.add(new StringOption(null, CONF_OUTPUTPATH,
                 "Set default output path for all generated files.", "path"));
+        optionList.add(new StringOption(null, CONF_ARCH,
+                "Initialize options with default values for an architecture if not set, and load " +
+                "internal architecture configfile. Currently supported: jop,jvm", "arch"));
         optionList.add(new StringOption(null, CONF_ARCH_CONFIG,
                 "Load an architecture configuration from a config file.", "file"));
         optionList.add(new BoolOption(null, CONF_ASSUME_DYNAMIC_LOADING,
@@ -93,6 +115,9 @@ public class JopConfig implements AppConfig {
                 "Ignore missing classes. Some features will not work when this option is set."));
         optionList.add( new BoolOption(null, CONF_ALLOW_LOADDEMAND,
                 "Allow class loading on demand. Disables automatic transitive hull loading."));
+        optionList.add( new StringOption(null, CONF_LIBRARY_PATH,
+                "Comma-separated list of packages or classes which are part of libraries and should " +
+                "not be loaded.", "pkg"));
         optionList.add( new StringOption(null, CONF_IGNORE_PATH,
                 "Comma-separated list of packages or classes which will not be loaded. Ignored if " +
                 CONF_ALLOW_INCOMPLETE_CODE + " is not set.", "pkg"));
@@ -102,8 +127,11 @@ public class JopConfig implements AppConfig {
                 "Do not load native system classes."));
     }
 
-    public void setProperties(Properties config) {
-        this.config.putAll(config);
+    public void setProperties(Map config) throws ConfigurationException {
+        for (Iterator it = config.entrySet().iterator(); it.hasNext();) {
+            Map.Entry entry = (Map.Entry) it.next();
+            setOption(String.valueOf(entry.getKey()), String.valueOf(entry.getValue()));
+        }
     }
 
     public String getMainClassName() {
@@ -138,11 +166,33 @@ public class JopConfig implements AppConfig {
         return getOption(CONF_ARCH_CONFIG);
     }
 
-    public void setArchConfig(String config) {
+    public void setArchConfig(URL config) throws ConfigurationException {
         if ( config != null ) {
-            this.config.put(CONF_ARCH_CONFIG, config);
+            this.archConfig = new ArchConfig(config);
+            this.config.put(CONF_ARCH_CONFIG, config.toString());
+        } else {
+            this.archConfig = new ArchConfig();
+            this.config.remove(CONF_ARCH_CONFIG);
         }
-        this.archConfig = new ArchConfig(config);
+    }
+
+    public void initArchitecture(String arch) throws ConfigurationException {
+        if ( "jop".equals(arch) ) {
+            URL config = getClass().getResource("jop-arch.properties");
+            setArchConfig(config);
+
+        } else if ( "jvm".equals(arch) ) {
+
+            URL config = getClass().getResource("jvm-arch.properties");
+            setArchConfig(config);
+
+            if ( !isSet(CONF_LIBRARY_PATH) ) {
+                setOption(CONF_LIBRARY_PATH, "java,sun");
+            }
+
+        } else {
+            throw new ConfigurationException("Unknown architecture {"+arch+"}.");
+        }
     }
 
     public String getMainMethodSignature() {
@@ -173,8 +223,40 @@ public class JopConfig implements AppConfig {
         return isEnabled(getOptionName(name, option));
     }
 
-    public void setOption(String option, String value) {
-        config.setProperty(option, value);
+    public void setOption(String option, String value) throws ConfigurationException {
+        if ( CONF_ARCH_CONFIG.equals(option) ) {
+            try {
+                setArchConfig(new URL(value));
+            } catch (MalformedURLException e) {
+                throw new ConfigurationException("Invalid configuration file url {"+value+"}.", e);
+            }
+        } else if ( CONF_ARCH.equals(option) ) {
+            initArchitecture(value);
+        } else {
+            if ( value != null ) {
+                config.setProperty(option, value);
+            } else {
+                config.remove(option);
+            }
+        }
+
+        if ( CONF_IGNORE_PATH.equals(option) ) {
+
+            if ( value != null && !"".equals(value) ) {
+                ignore = value.split(",");
+            } else {
+                ignore = new String[0];
+            }
+
+        } else if ( CONF_LIBRARY_PATH.equals(option) ) {
+
+            if ( value != null && !"".equals(value) ) {
+                libraries = value.split(",");
+            } else {
+                libraries = new String[0];
+            }
+
+        }
     }
 
     public String getOption(String option) {
@@ -246,14 +328,33 @@ public class JopConfig implements AppConfig {
                 "java.lang.Class".equals(className);
     }
 
+    public boolean isLibraryClassName(String className) {
+        for (int i = 0; i < libraries.length; i++) {
+            if ( className.startsWith(libraries[i]) ) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public String doExcludeClassName(String className) {
 
         if ( isNativeClassName(className) && isEnabled(CONF_SKIP_NATIVE_CLASS) ) {
             return "Skipping native class {" + className + "}.";
         }
 
+        if ( isLibraryClassName(className) ) {
+            return "Skipping library class {" + className + "}";
+        }
+
         if ( doAllowIncompleteCode() ) {
-            // TODO check for jopConfig.ignore_path
+
+            for (int i = 0; i < ignore.length; i++) {
+                if ( className.startsWith(ignore[i]) ) {
+                    return "Skipping excluded class {"+ className + "}";
+                }
+            }
+
         }
 
         return null;
