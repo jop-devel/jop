@@ -108,12 +108,18 @@ public class InlineOptimizer extends AbstractGraphAction {
 
         // configure checker and inliner
         String ignorepkg = getActionOption(config, CONF_INLINE_IGNORE);
-        if ( ignorepkg != null && !ignorepkg.isEmpty() ) {
-            ignorepkg += "," + config.getArchConfig().getNativeClassName();
-        } else {
-            ignorepkg = config.getArchConfig().getNativeClassName();
+        String nativeClass = config.getArchConfig().getNativeClassName();
+
+        if ( nativeClass != null && !nativeClass.isEmpty() ) {
+            if ( ignorepkg != null && !ignorepkg.isEmpty() ) {
+                ignorepkg += "," + nativeClass;
+            } else {
+                ignorepkg = nativeClass;
+            }
         }
-        checker.setIgnorePrefix(ignorepkg.split(","));
+        if ( ignorepkg != null && !ignorepkg.isEmpty() ) {
+            checker.setIgnorePrefix(ignorepkg.split(","));
+        }
 
         String maxSize = getActionOption(config, CONF_MAX_INLINE_SIZE, "0");
         try {
