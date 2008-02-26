@@ -192,15 +192,15 @@ public class CodeBlock {
         updateStmtHandles(toPos, -count);
     }
 
+    public Statement getStatement(int pos) {
+        return (Statement) stmts.get(pos);
+    }
+
     // TODO maybe make them public?
 
     protected void addStatement(int pos, Statement stmt) {
         stmts.add(pos, stmt);
         updateStmtHandles(pos, 1);
-    }
-
-    protected Statement getStatement(int pos) {
-        return (Statement) stmts.get(pos);
     }
 
     protected Statement setStatement(int pos, Statement stmt) {

@@ -57,6 +57,10 @@ public abstract class InvokeStmt extends AbstractStatement {
         return invokeType;
     }
 
+    public void setInvokeType(int type) {
+        this.invokeType = type;
+    }
+
     public boolean canThrowException() {
         return true;
     }
@@ -130,4 +134,5 @@ public abstract class InvokeStmt extends AbstractStatement {
         }
         return name;
     }
+
 }
