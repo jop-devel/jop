@@ -37,10 +37,25 @@ public class ArchConfig {
     private ArchTiming timing;
     private Set systemClasses;
     private String nativeClass;
+    private int maxMethodSize;
+    private int maxLocalVars;
+    private int maxStackSize;
+    private int ramReadCycles;
+    private int ramWriteCycles;
 
     public static final String CONF_SYSTEM_CLASSES = "systemclasses";
 
     public static final String CONF_NATIVE_CLASS = "nativeclass";
+
+    public static final String CONF_MAX_METHOD_SIZE = "maxmethodsize";
+
+    public static final String CONF_MAX_LOCALS = "maxlocalvars";
+
+    public static final String CONF_MAX_STACK_SIZE = "maxstacksize";
+
+    public static final String CONF_RAM_READ_CYCLES = "ramreadcycles";
+
+    public static final String CONF_RAM_WRITE_CYCLES = "ramwritecycles";
 
     public ArchConfig() {
         systemClasses = Collections.EMPTY_SET;
@@ -73,23 +88,23 @@ public class ArchConfig {
     }
 
     public int getMaxMethodSize() {
-        return 256;
+        return maxMethodSize;
     }
 
     public int getMaxLocalVars() {
-        return 31;
+        return maxLocalVars;
     }
 
     public int getMaxStackSize() {
-        return 31;
+        return maxStackSize;
     }
 
     public int getRamReadCycles() {
-        return 2;
+        return ramReadCycles;
     }
 
     public int getRamWriteCycles() {
-        return 2;
+        return ramWriteCycles;
     }
 
     private void loadConfig(URL config) throws ConfigurationException {
@@ -117,6 +132,25 @@ public class ArchConfig {
         } else {
             nativeClass = "";
         }
-        
+
+        maxMethodSize = loadIntConfig(props, CONF_MAX_METHOD_SIZE, 65535);
+        maxLocalVars = loadIntConfig(props, CONF_MAX_LOCALS, 1024);
+        maxStackSize = loadIntConfig(props, CONF_MAX_STACK_SIZE, 1024);
+        ramReadCycles = loadIntConfig(props, CONF_RAM_READ_CYCLES, 1);
+        ramWriteCycles = loadIntConfig(props, CONF_RAM_WRITE_CYCLES, 1);
+    }
+
+    private int loadIntConfig(Properties props, String name, int defaultValue) throws ConfigurationException {
+
+        Object val = props.get(name);
+        if ( val == null ) {
+            return defaultValue;
+        }
+
+        try {
+            return Integer.parseInt(String.valueOf(val));
+        } catch (NumberFormatException e) {
+            throw new ConfigurationException("Invalid number {"+val+"} for key {"+name+"}.");
+        }
     }
 }
