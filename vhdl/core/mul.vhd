@@ -1,8 +1,8 @@
 --
---
 --  This file is a part of JOP, the Java Optimized Processor
 --
 --  Copyright (C) 2001-2008, Martin Schoeberl (martin@jopdesign.com)
+--  Copyright (C) 2008, Wolfgang Puffitsch
 --
 --  This program is free software: you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -24,15 +24,12 @@
 --
 --	bit-serial multiplier
 --	
---	resources on ACEX1K
---
---	
 --		244 LCs only mul
 --
 --	2002-03-22	first version
 --	2004-10-07	changed to Koljas version
 --	2004-10-08	mul operands from a and b, single instruction
---      2008-02-15      changed from booth to bit-serial
+--	2008-02-15	changed from booth to bit-serial
 --
 
 
@@ -64,9 +61,9 @@ architecture rtl of mul is
 --	Signals
 --
 	signal count : integer range 0 to width/2;
-        signal p     : unsigned(width-1 downto 0);
-        signal a, b  : unsigned(width-1 downto 0);
-        
+	signal p     : unsigned(width-1 downto 0);
+	signal a, b  : unsigned(width-1 downto 0);
+	
 begin
 
 process(clk)
@@ -83,11 +80,11 @@ begin
 
       prod := p;
       if b(0) = '1' then
-        prod := prod + a;
-      end if;          
+	prod := prod + a;
+      end if;	  
       if b(1) = '1' then
-        prod := (prod(width-1 downto 1) + a(width-2 downto 0)) & prod(0);
-      end if;          
+	prod := (prod(width-1 downto 1) + a(width-2 downto 0)) & prod(0);
+      end if;	  
       p <= prod;
 
       a <= a(width-3 downto 0) & "00";
