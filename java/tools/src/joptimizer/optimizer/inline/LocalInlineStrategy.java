@@ -179,7 +179,7 @@ public class LocalInlineStrategy extends AbstractInlineStrategy {
 
             } catch (GraphException e) {
                 if ( getJopConfig().doIgnoreActionErrors() ) {
-                    logger.warn("Could not inline method, skipping.", e);
+                    logger.warn("Could not inline method {"+methodInfo.getFQMethodName()+"}, skipping.", e);
                 } else {
                     throw new ActionException("Could not get CFG for method.", e);
                 }
