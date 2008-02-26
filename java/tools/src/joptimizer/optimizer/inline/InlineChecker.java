@@ -200,7 +200,7 @@ public class InlineChecker {
         // check if graph can be created without exceptions
         try {
             MethodCode code = invoked.getMethodCode();
-            ControlFlowGraph srcGraph = code.createGraph();
+            ControlFlowGraph srcGraph = code.getGraph();
 
             if ( !checkCodesize(code.getCodeSize(), srcGraph, localsOffset) ) {
                 return null;

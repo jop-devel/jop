@@ -179,11 +179,17 @@ public class JopConfig implements AppConfig {
     public void initArchitecture(String arch) throws ConfigurationException {
         if ( "jop".equals(arch) ) {
             URL config = getClass().getResource("jop-arch.properties");
+            if ( config == null ) {
+                throw new ConfigurationException("Could not find resource {jop-arch.properties}.");
+            }
             setArchConfig(config);
 
         } else if ( "jvm".equals(arch) ) {
 
             URL config = getClass().getResource("jvm-arch.properties");
+            if ( config == null ) {
+                throw new ConfigurationException("Could not find resource {jwm-arch.properties}.");
+            }
             setArchConfig(config);
 
             if ( !isSet(CONF_LIBRARY_PATH) ) {

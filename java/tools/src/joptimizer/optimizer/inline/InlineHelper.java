@@ -23,8 +23,10 @@ import com.jopdesign.libgraph.cfg.Features;
 import com.jopdesign.libgraph.cfg.GraphException;
 import com.jopdesign.libgraph.cfg.block.BasicBlock;
 import com.jopdesign.libgraph.cfg.block.CodeBlock;
+import com.jopdesign.libgraph.cfg.statements.Statement;
 import com.jopdesign.libgraph.cfg.statements.StmtHandle;
 import com.jopdesign.libgraph.cfg.statements.common.InvokeStmt;
+import com.jopdesign.libgraph.struct.ClassInfo;
 import com.jopdesign.libgraph.struct.MethodInfo;
 import com.jopdesign.libgraph.struct.ModifierInfo;
 import joptimizer.framework.actions.ActionException;
@@ -218,18 +220,70 @@ public class InlineHelper {
         graph.getFeatures().removeFeature(Features.FEATURE_STACK_INFO);
     }
 
-    public void changeToPublic(Collection changePublic) {
+    public boolean changeToPublic(Collection changePublic) {
 
         for (Iterator it = changePublic.iterator(); it.hasNext();) {
             ModifierInfo mod = (ModifierInfo) it.next();
 
             // set private methods to final, just to make sure (fields won't be overloaded the same way a method is).
             if ( mod instanceof MethodInfo && mod.isPrivate() && !((MethodInfo)mod).getName().equals("<init>") ) {
+
+                try {
+                    setVirtual((MethodInfo)mod);
+                } catch (GraphException e) {
+                    return false;
+                }
+
                 mod.setFinal(true);
             }
             
             mod.setAccessType(ModifierInfo.ACC_PUBLIC);
         }
 
+        return true;
     }
+
+    private void setVirtual(MethodInfo method) throws GraphException {
+
+        ClassInfo classInfo = method.getClassInfo();
+        Collection methods = classInfo.getMethodInfos();
+
+        for (Iterator it = methods.iterator(); it.hasNext();) {
+            MethodInfo methodInfo = (MethodInfo) it.next();
+            if ( methodInfo.isAbstract() ) {
+                continue;
+            }
+            ControlFlowGraph graph = methodInfo.getMethodCode().getGraph();
+            boolean modified = false;
+
+            for (Iterator it2 = graph.getBlocks().iterator(); it2.hasNext();) {
+                BasicBlock block = (BasicBlock) it2.next();
+                CodeBlock code = block.getCodeBlock();
+
+                for (int i = 0; i < code.size(); i++) {
+                    Statement stmt = code.getStatement(i);
+                    if ( stmt instanceof InvokeStmt ) {
+                        InvokeStmt invoke = (InvokeStmt) stmt;
+
+                        MethodInfo invoked = invoke.getMethodInfo();
+                        if ( invoke.getInvokeType() != InvokeStmt.TYPE_SPECIAL ||
+                                invoked == null || !method.isSameMethod(invoked) )
+                        {
+                            continue;
+                        }
+
+                        invoke.setInvokeType(InvokeStmt.TYPE_VIRTUAL);
+                        modified = true;
+                    }
+                }
+            }
+
+            if ( modified ) {
+                graph.setModified(true);
+                methodInfo.getMethodCode().compileGraph();
+            }
+
+        }
+    }
+
 }
