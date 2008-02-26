@@ -770,7 +770,10 @@ public class BcelStmtFactory {
                     } else if ( iValue >= -32768 && iValue <= 32767 ) {
                         is = new SIPUSH((short)iValue);
                     } else {
-                        is = new LDC( cp.addConstant(value) );
+                        int index = cp.addConstant(value);
+                        // TODO not a very nice hack, make somewhat generic??
+                        push.setPoolIndex(index);
+                        is = new LDC(index);
                     }
                     break;
                 case TypeInfo.TYPE_LONG:
@@ -780,7 +783,9 @@ public class BcelStmtFactory {
                     } else if ( lValue == 1 ) {
                         is = InstructionConstants.LCONST_1;
                     } else {
-                        is = new LDC2_W( cp.addConstant(value) );
+                        int index = cp.addConstant(value);
+                        push.setPoolIndex(index);
+                        is = new LDC2_W(index);
                     }
                     break;
                 case TypeInfo.TYPE_FLOAT:
@@ -792,7 +797,9 @@ public class BcelStmtFactory {
                     } else if ( fValue == 2.0f ) {
                         is = InstructionConstants.FCONST_2;
                     } else {
-                        is = new LDC( cp.addConstant(value) );
+                        int index = cp.addConstant(value);
+                        push.setPoolIndex(index);
+                        is = new LDC(index);
                     }
                     break;
                 case TypeInfo.TYPE_DOUBLE:
@@ -802,7 +809,9 @@ public class BcelStmtFactory {
                     } else if ( dValue == 1.0 ) {
                         is = InstructionConstants.DCONST_1;
                     } else {
-                        is = new LDC2_W( cp.addConstant(value) );
+                        int index = cp.addConstant(value);
+                        push.setPoolIndex(index);
+                        is = new LDC2_W(index);
                     }
                     break;
                 case TypeInfo.TYPE_REFERENCE:

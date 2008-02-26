@@ -77,6 +77,14 @@ public class StackPush extends AbstractStatement implements StackStatement, Stac
         return false;
     }
 
+    public int getPoolIndex() {
+        return poolIndex;
+    }
+
+    public void setPoolIndex(int poolIndex) {
+        this.poolIndex = poolIndex;
+    }
+
     public String getCodeLine() {
         return "push." + type.getTypeName() + " " + value.toString();
     }
