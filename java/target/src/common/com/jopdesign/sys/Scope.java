@@ -43,6 +43,9 @@ public class Scope {
 		synchronized (this) {
 			++cnt;
 		}
+		if (cnt!=1) {
+			throw new Error("No cyclic enter - no sharing between threads");
+		}
 		// activate the memory area
 		outer = GC.getCurrentArea();
 		GC.setCurrentArea(this);
