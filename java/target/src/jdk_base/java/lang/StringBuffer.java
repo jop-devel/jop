@@ -105,12 +105,11 @@ public final class StringBuffer {
 //	}
 
   private static final int MAX_TMP = 32;
-  private static char[] tmp;			// a generic buffer
+  private static char[] tmp = new char[MAX_TMP];	// a generic buffer
 
 
   public synchronized StringBuffer append(int val)
   {
-  	if (tmp==null) tmp = new char[MAX_TMP];
 
 	int i;
 	// When the value is MIN_VALUE, it overflows when made positive
