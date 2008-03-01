@@ -2,7 +2,7 @@
   This file is part of JOP, the Java Optimized Processor
     see <http://www.jopdesign.com/>
 
-  Copyright (C) 2001-2008, Martin Schoeberl (martin@jopdesign.com)
+  Copyright (C) 2005-2008, Martin Schoeberl (martin@jopdesign.com)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -18,32 +18,13 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/*******************************************************************************
-
-    Real-time garbage collection for JOP
-    Copyright (C) 2005 Martin Schoeberl (martin@jopdesign.com)
-
-    This library is free software; you can redistribute it and/or
-    modify it under the terms of the GNU Lesser General Public
-    License as published by the Free Software Foundation; either
-    version 2.1 of the License, or (at your option) any later version.
-
-    This library is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    Lesser General Public License for more details.
-
-    You should have received a copy of the GNU Lesser General Public
-    License along with this library; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-    
-*******************************************************************************/
-
 
 package com.jopdesign.sys;
 
 
 /**
+ *     Real-time garbage collection for JOP
+ *     
  * @author Martin Schoeberl (martin@jopdesign.com)
  *
  */
@@ -501,6 +482,17 @@ public class GC {
 		return allocPtr-copyPtr;
 	}
 
+	// TODO this has to be exchanged on a thread switch
+	// TODO add the javax.realtime classes to the CVS
+	static Scope currentArea;
+	public static Scope getCurrentArea() {
+		return currentArea;
+	}
+
+	public static void setCurrentArea(Scope sc) {
+		currentArea = sc;
+	}
+
 	/**
 	 * Allocate a new Object. Invoked from JVM.f_new(cons);
 	 * @param cons pointer to class struct
@@ -510,6 +502,24 @@ public class GC {
 
 		int size = Native.rdMem(cons);			// instance size
 		
+		// allocate in scope
+		Scope sc = currentArea;
+		if (sc!=null) {
+			int rem = sc.backingStore.length - sc.allocPtr;
+			if (size+2 > rem) {
+				log("Out of memory in scoped memory");
+				System.exit(1);
+			}
+			int ref = sc.allocPtr;
+			sc.allocPtr += size+2;
+			int ptr = Native.toInt(sc.backingStore);
+			ptr = Native.rdMem(ptr);
+			ptr += ref;
+			sc.backingStore[ref] = ptr+2;
+			sc.backingStore[ref+1] = cons+Const.CLASS_HEADR;
+			return ptr;
+		}
+
 		// that's the stop-the-world GC
 		synchronized (mutex) {
 			if (copyPtr+size >= allocPtr) {
@@ -579,6 +589,24 @@ public class GC {
 		if((type==11)||(type==7)) size <<= 1;
 		// reference array type is 1 (our convention)
 		
+		// allocate in scope
+		Scope sc = currentArea;
+		if (sc!=null) {
+			int rem = sc.backingStore.length - sc.allocPtr;
+			if (size+2 > rem) {
+				log("Out of memory in scoped memory");
+				System.exit(1);
+			}
+			int ref = sc.allocPtr;
+			sc.allocPtr += size+2;
+			int ptr = Native.toInt(sc.backingStore);
+			ptr = Native.rdMem(ptr);
+			ptr += ref;
+			sc.backingStore[ref] = ptr+2;
+			sc.backingStore[ref+1] = arrayLength;
+			return ptr;
+		}
+
 		synchronized (mutex) {
 			if (copyPtr+size >= allocPtr) {
 				gc_alloc();
@@ -800,4 +828,5 @@ public class GC {
 		JVMHelp.wr(s);
 		JVMHelp.wr("\n");
 	}
+
 }
