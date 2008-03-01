@@ -30,6 +30,12 @@ package com.jopdesign.sys;
  */
 public class GC {
 	
+	/**
+	 * Use either scoped memories or a GC.
+	 * Combining scopes and the GC needs some extra work.
+	 */
+	final static boolean USE_SCOPES = false;
+	
 	
 	static int mem_start;		// read from memory
 	// get a effective heap size with fixed handle count
@@ -458,6 +464,10 @@ public class GC {
 	static void gc_alloc() {
 		log("");
 		log("GC allocation triggered");
+		if (USE_SCOPES) {
+			log("No GC when scopes are used");
+			System.exit(1);
+		}
 		if (concurrentGc) {
 			log("meaning out of memory for RT-GC");
 			System.exit(1);	
@@ -502,22 +512,24 @@ public class GC {
 
 		int size = Native.rdMem(cons);			// instance size
 		
-		// allocate in scope
-		Scope sc = currentArea;
-		if (sc!=null) {
-			int rem = sc.backingStore.length - sc.allocPtr;
-			if (size+2 > rem) {
-				log("Out of memory in scoped memory");
-				System.exit(1);
-			}
-			int ref = sc.allocPtr;
-			sc.allocPtr += size+2;
-			int ptr = Native.toInt(sc.backingStore);
-			ptr = Native.rdMem(ptr);
-			ptr += ref;
-			sc.backingStore[ref] = ptr+2;
-			sc.backingStore[ref+1] = cons+Const.CLASS_HEADR;
-			return ptr;
+		if (USE_SCOPES) {
+			// allocate in scope
+			Scope sc = currentArea;
+			if (sc!=null) {
+				int rem = sc.backingStore.length - sc.allocPtr;
+				if (size+2 > rem) {
+					log("Out of memory in scoped memory");
+					System.exit(1);
+				}
+				int ref = sc.allocPtr;
+				sc.allocPtr += size+2;
+				int ptr = Native.toInt(sc.backingStore);
+				ptr = Native.rdMem(ptr);
+				ptr += ref;
+				sc.backingStore[ref] = ptr+2;
+				sc.backingStore[ref+1] = cons+Const.CLASS_HEADR;
+				return ptr;
+			}			
 		}
 
 		// that's the stop-the-world GC
@@ -589,22 +601,24 @@ public class GC {
 		if((type==11)||(type==7)) size <<= 1;
 		// reference array type is 1 (our convention)
 		
-		// allocate in scope
-		Scope sc = currentArea;
-		if (sc!=null) {
-			int rem = sc.backingStore.length - sc.allocPtr;
-			if (size+2 > rem) {
-				log("Out of memory in scoped memory");
-				System.exit(1);
-			}
-			int ref = sc.allocPtr;
-			sc.allocPtr += size+2;
-			int ptr = Native.toInt(sc.backingStore);
-			ptr = Native.rdMem(ptr);
-			ptr += ref;
-			sc.backingStore[ref] = ptr+2;
-			sc.backingStore[ref+1] = arrayLength;
-			return ptr;
+		if (USE_SCOPES) {
+			// allocate in scope
+			Scope sc = currentArea;
+			if (sc!=null) {
+				int rem = sc.backingStore.length - sc.allocPtr;
+				if (size+2 > rem) {
+					log("Out of memory in scoped memory");
+					System.exit(1);
+				}
+				int ref = sc.allocPtr;
+				sc.allocPtr += size+2;
+				int ptr = Native.toInt(sc.backingStore);
+				ptr = Native.rdMem(ptr);
+				ptr += ref;
+				sc.backingStore[ref] = ptr+2;
+				sc.backingStore[ref+1] = arrayLength;
+				return ptr;
+			}			
 		}
 
 		synchronized (mutex) {

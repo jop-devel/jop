@@ -123,11 +123,16 @@ class JVM {
 		synchronized (GC.mutex) {
 			// handle indirection
 			ref = Native.rdMem(ref);
-			// snapshot-at-beginning barrier
-			int oldVal = Native.rdMem(ref+index);
-			if (oldVal!=0 && Native.rdMem(oldVal+GC.OFF_SPACE)!=GC.toSpace) {
-				GC.push(oldVal);
+			if (GC.USE_SCOPES) {
+				// TODO Scope check
+			} else {
+				// snapshot-at-beginning barrier
+				int oldVal = Native.rdMem(ref+index);
+				if (oldVal!=0 && Native.rdMem(oldVal+GC.OFF_SPACE)!=GC.toSpace) {
+					GC.push(oldVal);
+				}
 			}
+
 			Native.wrMem(value, ref+index);
 		}
 	}
@@ -809,11 +814,16 @@ if (enterCnt<0) {
 	private static void f_putstatic_ref(int val, int addr) {
 		
 		synchronized (GC.mutex) {
-			// snapshot-at-beginning barrier
-			int oldVal = Native.rdMem(addr);
-			if (oldVal!=0 && Native.rdMem(oldVal+GC.OFF_SPACE)!=GC.toSpace) {
-				GC.push(oldVal);
+			if (GC.USE_SCOPES) {
+				// TODO Scope check
+			} else {
+				// snapshot-at-beginning barrier
+				int oldVal = Native.rdMem(addr);
+				if (oldVal!=0 && Native.rdMem(oldVal+GC.OFF_SPACE)!=GC.toSpace) {
+					GC.push(oldVal);
+				}
 			}
+
 			Native.wrMem(val, addr);			
 		}
 	}
@@ -835,10 +845,14 @@ if (enterCnt<0) {
 			
 			// handle indirection
 			ref = Native.rdMem(ref);
-			// snapshot-at-beginning barrier
-			int oldVal = Native.rdMem(ref+index);
-			if (oldVal!=0 && Native.rdMem(oldVal+GC.OFF_SPACE)!=GC.toSpace) {
-				GC.push(oldVal);
+			if (GC.USE_SCOPES) {
+				// TODO Scope check
+			} else {
+				// snapshot-at-beginning barrier
+				int oldVal = Native.rdMem(ref+index);
+				if (oldVal!=0 && Native.rdMem(oldVal+GC.OFF_SPACE)!=GC.toSpace) {
+					GC.push(oldVal);
+				}				
 			}
 			
 			Native.wrMem(val, ref+index);			
