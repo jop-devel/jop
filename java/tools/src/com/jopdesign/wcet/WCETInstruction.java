@@ -561,7 +561,9 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			break;
 		// AASTORE = 83
 		case org.apache.bcel.Constants.AASTORE:
-			wcet = 10+2*r+w;
+			// wcet = 10+2*r+w;
+			// now with write barrier
+			wcet = -1;
 			break;
 		// BASTORE = 84
 		case org.apache.bcel.Constants.BASTORE:
