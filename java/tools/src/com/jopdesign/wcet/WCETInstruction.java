@@ -609,7 +609,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			break;
 		// SWAP = 95
 		case org.apache.bcel.Constants.SWAP:
-			wcet = -1;
+			wcet = 4;
 			break;
 		// IADD = 96
 		case org.apache.bcel.Constants.IADD:
@@ -1266,6 +1266,26 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 		else
 			return true;
 	}
+	
+	/**
+	 * Get an estimation of the bytecode execution time.
+	 * 
+	 * TODO: measure Java implemented bytecodes and add the numbers.
+	 * @param opcode
+	 * @param pmiss
+	 * @param n
+	 * @return
+	 */
+	public static int getCyclesEstimate(int opcode, boolean pmiss, int n) {
+		
+		int ret = getCycles(opcode, pmiss, n);
+		// VERY rough estimate
+		if (ret==WCETNOTAVAILABLE) {
+			ret = 200;
+		}
+		return ret;
+	}
+
 
 	/**
 	 * Method load time on invoke or return if there is a cache miss (see pMiss).
