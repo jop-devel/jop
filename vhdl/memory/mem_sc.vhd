@@ -348,7 +348,7 @@ end process;
 --
 --	next state logic
 --
-process(state, mem_in, sc_mem_in.rdy_cnt,
+process(state, mem_in, sc_mem_in,
 	cache_rdy, cache_in_cache, bc_len, addr_calc, value, index, 
 	addr_reg, was_a_store)
 begin
