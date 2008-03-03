@@ -48,19 +48,31 @@ add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cmp_io/sel
 add wave -noupdate -divider {io cnt}
 add wave -noupdate -divider mem_sc
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_mem/mem_in
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_mem/mem_out
+add wave -noupdate -format Literal -radix hexadecimal -expand /tb_jop/cmp_jop/cpm_cpu/cmp_mem/mem_out
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_mem/next_state
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_mem/state
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_mem/bcl_arr_bsy
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_mem/addr_reg
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_mem/index
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_mem/addr_calc
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_mem/value
 add wave -noupdate -format Logic /tb_jop/cmp_jop/cpm_cpu/cmp_mem/was_a_store
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_mem/iastore_nxt
 add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_mem/null_pointer
 add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_mem/bounds_error
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/main_mem/data
+add wave -noupdate -divider spm
+add wave -noupdate -format Literal -radix hexadecimal -expand /tb_jop/cmp_jop/cpm_cpu/sc_scratch_out
+add wave -noupdate -format Literal -radix hexadecimal -expand /tb_jop/cmp_jop/cpm_cpu/sc_scratch_in
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/mux_mem
+add wave -noupdate -format Logic /tb_jop/cmp_jop/cpm_cpu/cmp_scm/wrclk
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_scm/data
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_scm/wraddress
+add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_scm/wren
+add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_scm/rdclk
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_scm/rdaddress
+add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_scm/rden
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_scm/dout
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_scm/reg_dout
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_scm/ram
 add wave -noupdate -divider SimpCon
 add wave -noupdate -format Literal -radix hexadecimal -expand /tb_jop/cmp_jop/cpm_cpu/sc_mem_out
 add wave -noupdate -format Literal -radix hexadecimal -expand /tb_jop/cmp_jop/cpm_cpu/sc_mem_in
@@ -78,7 +90,7 @@ add wave -noupdate -format Logic /tb_jop/cmp_jop/fl_noe
 add wave -noupdate -format Logic /tb_jop/cmp_jop/fl_nwe
 add wave -noupdate -format Logic /tb_jop/cmp_jop/fl_rdy
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {226600 ps} 0}
+WaveRestoreCursors {{Cursor 1} {35999622 ps} 0}
 configure wave -namecolwidth 228
 configure wave -valuecolwidth 144
 configure wave -justifyvalue left
@@ -92,4 +104,4 @@ configure wave -gridperiod 1
 configure wave -griddelta 40
 configure wave -timeline 0
 update
-WaveRestoreZoom {8583966 ps} {10074529 ps}
+WaveRestoreZoom {35182869 ps} {36714581 ps}

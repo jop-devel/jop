@@ -37,6 +37,7 @@ public class Startup {
 	// use static vars, don't waste stack space
 	static int var;
 	static int mem_size;
+	static int spm_size;
 
 	// a stack for the interpreter mode
 	static int[] stack;
@@ -64,7 +65,8 @@ public class Startup {
 		if (Native.rdMem(Const.IO_CPU_ID) == 0)	{
 			started = false;
 			msg();
-			mem_size = getRamSize();
+			spm_size = getRamSize(Const.SCRATCHPAD_ADDRESS);
+			mem_size = getRamSize(0);
 			// mem(0) is the length of the application
 			// or in other words the heap start
 			val = Native.rdMem(1);		// pointer to 'special' pointers
@@ -100,25 +102,27 @@ public class Startup {
 	/**
 	 * @return RAM size in 32 bit words
 	 */
-	static int getRamSize() {
+	static int getRamSize(int offset) {
 		
 		int size = 0;
-		int firstWord = Native.rd(0);
+		int firstWord = Native.rd(offset+0);
 		int val;
 		
-		// increment in 1024 Bytes
-		for (size=256; ; size+=256) {
-			val = Native.rd(size);
-			Native.wr(0xaaaa5555, size);
-			if (Native.rd(size)!=0xaaaa5555) break;
-			Native.wr(0x12345678, size);
-			if (Native.rd(size)!=0x12345678) break;
-			if (Native.rd(0)!=firstWord) break;
+		// increment in 512 Bytes
+		for (size=0; ; size+=128) {
+			val = Native.rd(offset+size);
+			Native.wr(0xaaaa5555, offset+size);
+			if (Native.rd(offset+size)!=0xaaaa5555) break;
+			Native.wr(0x12345678, offset+size);
+			if (Native.rd(offset+size)!=0x12345678) break;
+			if (size!=0) {
+				if (Native.rd(offset+0)!=firstWord) break;				
+			}
 			// restore current word
-			Native.wr(val, size);
+			Native.wr(val, offset+size);
 		}
 		// restore the first word
-		Native.wr(firstWord, 0);
+		Native.wr(firstWord, offset+0);
 		return size;
 	}
 	
@@ -161,12 +165,18 @@ public class Startup {
 		} else {
 			JVMHelp.intVal(version);
 		}
-		JVMHelp.wr("- ");
+		JVMHelp.wr("\r\n");
 		int speed = getSpeed();
 		JVMHelp.intVal(speed);
 		JVMHelp.wr("MHz, ");
 		JVMHelp.intVal(mem_size/1024*4);
-		JVMHelp.wr("KB RAM\r\n");
+		JVMHelp.wr("KB RAM");
+		if (spm_size!=0) {
+			JVMHelp.wr(", ");
+			JVMHelp.intVal(spm_size*4);
+			JVMHelp.wr("Byte on-chip RAM");
+		}
+		JVMHelp.wr("\r\n");
 	}
 
 	public static void exit() {

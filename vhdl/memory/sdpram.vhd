@@ -23,14 +23,21 @@
 --
 --	Simple dual port ram with read and write port
 --		and independent clocks
+--	Read and write address, write data is registered. Output is not
+--	registered. Read enable gates the read address. Is compatible
+--	with SimpCon.
 --
 --	When using different clocks following warning is generated:
 --		Functionality differs from the original design.
 --	Read during write at the same address is undefined.
 --
+--	If read enable is used a discrete output register is synthesized.
+--	Without read enable the 
+--
 --	Author: Martin Schoeberl (martin@jopdesign.com)
 --
 --	2006-08-03	adapted from simulation only version
+--	2008-03-02	added read enable
 --
 
 library ieee;
@@ -47,6 +54,7 @@ port (
 
 	rdclk		: in std_logic;
 	rdaddress	: in std_logic_vector(addr_width-1 downto 0);
+	rden		: in std_logic;
 	dout		: out std_logic_vector(width-1 downto 0)
 );
 end sdpram ;
@@ -75,9 +83,12 @@ end process;
 process (rdclk)
 begin
 	if rising_edge(rdclk) then
-		reg_dout <= ram(to_integer(unsigned(rdaddress)));
-		dout <= reg_dout;
+		if rden='1' then
+			reg_dout <= ram(to_integer(unsigned(rdaddress)));
+		end if;
 	end if;
 end process;
+
+	dout <= reg_dout;
 
 end rtl;

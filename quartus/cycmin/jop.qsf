@@ -506,6 +506,7 @@ set_global_assignment -name VHDL_FILE ../../vhdl/core/fetch.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/memory/sc_sram32_flash.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc_jbc.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/memory/mem_sc.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/memory/sdpram.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/extension.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/cache.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/mul.vhd

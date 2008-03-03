@@ -71,6 +71,12 @@ public class Const {
 	 */
 	public static final int STACK_OFF = 64;
 	
+	/**
+	 * Start address of scratchpad RAM. Depends on number of
+	 * address bits used to decode (see sc_pack.vhd).
+	 */
+	public static final int SCRATCHPAD_ADDRESS = 0x400000;
+	
 
 	/**
 	 * Constant pool pointer offset in on-chip stack cache.

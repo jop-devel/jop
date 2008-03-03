@@ -35,6 +35,7 @@ vcom %options% %jopdir%/core/cache.vhd
 vcom %options% %jopdir%/memory/sc_sram32_flash.vhd
 rem vcom %options% %jopdir%/memory/sc_sram16.vhd
 vcom %options% %jopdir%/memory/mem_sc.vhd
+vcom %options% %jopdir%/memory/sdpram.vhd
 vcom %options% %jopdir%/core/mul.vhd
 vcom %options% %jopdir%/core/extension.vhd
 vcom %options% %jopdir%/core/bcfetch.vhd

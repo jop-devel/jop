@@ -27,6 +27,7 @@
 --	2007-03-16	creation
 --	2007-04-13	Changed memory connection to records
 --	2008-02-20	memory - I/O muxing after the memory controller (mem_sc)
+--	2008-03-03	added scratchpad RAM
 --
 --	todo: clean up: substitute all signals by records
 
@@ -43,7 +44,8 @@ entity jopcpu is
 
 generic (
 	jpc_width	: integer;			-- address bits of java bytecode pc = cache size
-	block_bits	: integer			-- 2*block_bits is number of cache blocks
+	block_bits	: integer;			-- 2*block_bits is number of cache blocks
+	spm_width	: integer := 0		-- size of scratchpad RAM (in number of address bits)
 );
 
 port (
@@ -91,8 +93,13 @@ architecture rtl of jopcpu is
 	signal sc_ctrl_mem_out	: sc_out_type;
 	signal sc_ctrl_mem_in	: sc_in_type;
 
-	signal mux_mem			: std_logic;
+	signal sc_scratch_out	: sc_out_type;
+	signal sc_scratch_in	: sc_in_type;
+
+	signal mux_mem			: std_logic_vector(1 downto 0);
 	signal mem_access		: std_logic;
+	signal scratch_access	: std_logic;
+	signal io_access		: std_logic;
 
 	signal bsy				: std_logic;
 
@@ -165,39 +172,73 @@ begin
 
 
 	--
-	--	Select and mux for memory and IO
+	-- Generate scratchpad memory when size is != 0.
+	-- Results in warnings when the size is 0.
+	--
+	sc1: if spm_width /= 0 generate
+		cmp_scm: entity work.sdpram
+			generic map (
+				width => 32,
+				addr_width => spm_width
+			)
+			port map (
+				wrclk => clk,
+				data => sc_scratch_out.wr_data,
+				wraddress => sc_scratch_out.address(spm_width-1 downto 0),
+				wren => sc_scratch_out.wr,
+				rdclk => clk,
+				rdaddress => sc_scratch_out.address(spm_width-1 downto 0),
+				rden => sc_scratch_out.rd,
+				dout => sc_scratch_in.rd_data
+		);
+	end generate;
+
+	sc_scratch_in.rdy_cnt <= (others => '0');
+
+	--
+	--	Select for the read mux
 	--
 
 process(clk, reset)
 begin
 	if (reset='1') then
-		mux_mem <= '0';
+		mux_mem <= (others => '0');
 	elsif rising_edge(clk) then
 
 		if sc_ctrl_mem_out.rd='1' or sc_ctrl_mem_out.wr='1' then
-			-- highest address bit decides between IO and memory
-			if sc_ctrl_mem_out.address(SC_ADDR_SIZE-1)='0' then
-				mux_mem <= '1';
-			else
-				mux_mem <= '0';
-			end if;
+			-- highest address bits decides between IO, memory, and on-chip memory
+			mux_mem <= sc_ctrl_mem_out.address(SC_ADDR_SIZE-1 downto SC_ADDR_SIZE-2);
 		end if;
 	end if;
 end process;
 
-process(mux_mem, sc_ctrl_mem_out, sc_ctrl_mem_in, sc_mem_in, sc_io_in)
+process(mux_mem, sc_ctrl_mem_out, sc_ctrl_mem_in, sc_mem_in, sc_io_in, sc_scratch_in)
 begin
 
-	sc_ctrl_mem_in <= sc_mem_in;
-	mem_access <= '1';
+	mem_access <= '0';
+	scratch_access <= '0';
+	io_access <= '0';
 
-	if mux_mem='0' then
-		sc_ctrl_mem_in <= sc_io_in;
-	end if;
+	-- read MUX
+	case mux_mem is
+		when "10" =>
+			sc_ctrl_mem_in <= sc_scratch_in;
+		when "11" =>
+			sc_ctrl_mem_in <= sc_io_in;
+		when others =>
+			sc_ctrl_mem_in <= sc_mem_in;
+	end case;
 
-	if sc_ctrl_mem_out.address(SC_ADDR_SIZE-1)='1' then
-		mem_access <= '0';
-	end if;
+	-- select
+	case sc_ctrl_mem_out.address(SC_ADDR_SIZE-1 downto SC_ADDR_SIZE-2) is
+		when "10" =>
+			scratch_access <= '1';
+		when "11" =>
+			io_access <= '1';
+		when others =>
+			mem_access <= '1';
+	end case;
+
 end process;
 
 	sc_mem_out.address <= sc_ctrl_mem_out.address;
@@ -205,9 +246,14 @@ end process;
 	sc_mem_out.wr <= sc_ctrl_mem_out.wr and mem_access;
 	sc_mem_out.rd <= sc_ctrl_mem_out.rd and mem_access;
 
+	sc_scratch_out.address <= sc_ctrl_mem_out.address;
+	sc_scratch_out.wr_data <= sc_ctrl_mem_out.wr_data;
+	sc_scratch_out.wr <= sc_ctrl_mem_out.wr and scratch_access;
+	sc_scratch_out.rd <= sc_ctrl_mem_out.rd and scratch_access;
+
 	sc_io_out.address <= sc_ctrl_mem_out.address;
 	sc_io_out.wr_data <= sc_ctrl_mem_out.wr_data;
-	sc_io_out.wr <= sc_ctrl_mem_out.wr and not mem_access;
-	sc_io_out.rd <= sc_ctrl_mem_out.rd and not mem_access;
+	sc_io_out.wr <= sc_ctrl_mem_out.wr and io_access;
+	sc_io_out.rd <= sc_ctrl_mem_out.rd and io_access;
 
 end rtl;
