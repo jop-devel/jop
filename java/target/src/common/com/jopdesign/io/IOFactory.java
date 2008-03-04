@@ -23,6 +23,7 @@ package com.jopdesign.io;
 import com.jopdesign.sys.JVMHelp;
 import com.jopdesign.sys.Native;
 import com.jopdesign.sys.Const;
+import com.jopdesign.sys.GC;
 
 /**
  * Base class for all IO device factories
@@ -40,14 +41,14 @@ public class IOFactory {
 	
 	private static int SYS_PTR;
 	private static int SYS_MTAB;
-	// declare all constants AFTER the static fields for
-	// the HW Object handles
-	
 	// test serial port access via array
-	private int[] arrTest;
+	private int[] spMem;
 	private static int ARR_PRT;
 	private static int ARR_LENGTH;
 
+	// declare all constants AFTER the static fields for
+	// the HW Object handles
+	
 	IOFactory() {
 		
 		// TODO: can I avoid the cp trick and just pass
@@ -63,7 +64,7 @@ public class IOFactory {
 				Const.IO_UART1_BASE, 0);
 		sys = (SysDevice) makeHWObject(new SysDevice(),
 				Const.IO_SYS_DEVICE, 1);
-		arrTest = makeHWArray(2, Const.IO_UART1_BASE, 2);
+		spMem = makeHWArray(GC.getScratchpadSize(), Const.SCRATCHPAD_ADDRESS, 2);
 	};
 	// that has to be overridden by each sub class to get
 	// the correct cp
@@ -133,7 +134,7 @@ public class IOFactory {
 	
 	public SysDevice getSysDevice() { return sys; }
 	
-	public int[] getArray() { return arrTest; }
+	public int[] getScratchpadMemory() { return spMem; }
 	
 	
 }
