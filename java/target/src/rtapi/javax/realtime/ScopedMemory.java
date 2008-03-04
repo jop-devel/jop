@@ -7,7 +7,7 @@ public abstract class ScopedMemory extends MemoryArea {
 	Scope sc;
 
 	public ScopedMemory(long size) {
-		// super does nothing
+		// super does nothing, but we have to invoke it
 		super(size);
 		sc = new Scope(size);
 	}

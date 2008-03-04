@@ -39,12 +39,22 @@ public class Scope {
 		allocPtr = 0;
 	}
 
+	public Scope(int[] localMem) {
+		backingStore = localMem;
+		cnt = 0;
+		allocPtr = 0;
+	}
+	
+	public int getSize() {
+		return backingStore.length*4;
+	}
+
 	public void enter(Runnable logic) {
 		synchronized (this) {
 			++cnt;
 		}
 		if (cnt!=1) {
-			throw new Error("No cyclic enter - no sharing between threads");
+			throw new Error("No cyclic enter and no sharing between threads");
 		}
 		// activate the memory area
 		outer = GC.getCurrentArea();

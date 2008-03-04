@@ -20,65 +20,33 @@
 
 package examples.scopes;
 
-import javax.realtime.LTMemory;
 import javax.realtime.ScopedMemory;
+import javax.realtime.ScratchpadScope;
 
-public class SimpleScope {
+public class LocalScope {
 
-	static class Abc {
-		Object ref;
-	}
-	static class MyRunner implements Runnable {
-		
-		ScopedMemory outer;
-		
-		public void run() {
-			System.out.println(abcref);
-			for (int i=0; i<10; ++i) {
-				String s = "i="+i;
-			}
-			// this should throw an exception
-			// sa.ref = abcref;
-			// Besides being recursive it is not
-			// allowed to reenter a scope again
-			// outer.enter(this);
-		}
-		Abc abcref;
-		void setAbc(Abc abc) {
-			abcref = abc;
-		}
-		void setOuter(ScopedMemory sc) {
-			outer = sc;
-		}
-	}
-	
-	static Abc sa = new Abc();
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) {
 
-		final ScopedMemory scope = new LTMemory(0, 20000L);
+		
+		ScopedMemory scope = new ScratchpadScope();
+		System.out.print("Size of the scratchpad RAM is ");
+		System.out.println(scope.size());
 		Runnable run = new Runnable() {
 			public void run() {
-				ScopedMemory inner = new LTMemory(0, 2000L);
-				MyRunner r = new MyRunner();
-				for (int i=0; i<100; ++i) {
-					Abc abc = new Abc();
-					r.setAbc(abc);
-					r.setOuter(scope);
-					for (int j=0; j<10; ++j) {
-						inner.enter(r);
-					}
+				// just generate garbage
+				for (int i=0; i<5; ++i) {
+					System.out.print("i="+i+" ");
+					System.out.println();
 				}
 			}			
 		};
 
-		for (int i=0; i<20; ++i) {
-			System.out.println("*");
+		for (int i=0; i<5; ++i) {
+			System.out.println("enter");
 			scope.enter(run);
-			// this is a dangling reference
-			// sa.ref.toString();
 		}
 	}
 
