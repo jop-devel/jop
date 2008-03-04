@@ -101,8 +101,7 @@ end component;
 
 
 component memory is
-	generic(add_bits : integer := 12;
-		data_bits : integer := 32);
+	generic(add_bits : integer; data_bits : integer);
 	port(
 		addr	: in std_logic_vector(add_bits-1 downto 0);
 		data	: inout std_logic_vector(data_bits-1 downto 0);
@@ -128,6 +127,11 @@ end component;
 
 	signal txd			: std_logic;
 
+	-- size of main memory simulation in 32-bit words.
+	-- change it to less memory to speedup the simulation
+	-- minimum is 64 KB, 14 bits
+	constant  MEM_BITS	: integer := 15;
+
 begin
 
 	cmp_jop: jop port map(
@@ -144,8 +148,8 @@ begin
 		rama_nwe => ram_nwr
 	);
 
-	main_mem: memory generic map(15, 32) port map(
-			addr => ram_addr(14 downto 0),
+	main_mem: memory generic map(MEM_BITS, 32) port map(
+			addr => ram_addr(MEM_BITS-1 downto 0),
 			data => ram_data,
 			ncs => ram_ncs,
 			noe => ram_noe,
