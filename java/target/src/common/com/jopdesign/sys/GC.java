@@ -502,6 +502,14 @@ public class GC {
 	public static void setCurrentArea(Scope sc) {
 		currentArea = sc;
 	}
+	
+	/**
+	 * Size of scratchpad memory in 32-bit words
+	 * @return
+	 */
+	public static int getScratchpadSize() {
+		return Startup.spm_size;
+	}
 
 	/**
 	 * Allocate a new Object. Invoked from JVM.f_new(cons);
