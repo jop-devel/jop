@@ -58,6 +58,7 @@ generic (
 	rom_cnt		: integer := 15;	-- clock cycles for external rom for 100 MHz
 	jpc_width	: integer := 10;	-- address bits of java bytecode pc = cache size
 	block_bits	: integer := 4;		-- 2*block_bits is number of cache blocks
+	spm_width	: integer := 0;		-- size of scratchpad RAM (in number of address bits for 32-bit words)
 	cpu_cnt		: integer := 3		-- number of cpus
 );
 
@@ -233,7 +234,8 @@ end process;
 		cmp_cpu: entity work.jopcpu
 			generic map(
 				jpc_width => jpc_width,
-				block_bits => block_bits
+				block_bits => block_bits,
+				spm_width => spm_width
 			)
 			port map(clk_int, int_res,
 				sc_arb_out(i), sc_arb_in(i),
