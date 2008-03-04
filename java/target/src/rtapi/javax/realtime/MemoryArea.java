@@ -9,7 +9,11 @@ public abstract class MemoryArea {
 
 	public void enter(Runnable logic) {
 
-
+	}
+	
+	public long size() {
+		// dummy return
+		return 0L;
 	}
 
 }

@@ -12,10 +12,19 @@ public abstract class ScopedMemory extends MemoryArea {
 		sc = new Scope(size);
 	}
 
+	public ScopedMemory(int[] localMem) {
+		// super does nothing
+		super(0);
+		sc = new Scope(localMem);
+	}
 	public void enter(Runnable logic) throws RuntimeException {
 
 		sc.enter(logic);
 		
+	}
+	
+	public long size() {
+		return sc.getSize();
 	}
 
 }
