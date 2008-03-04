@@ -56,7 +56,7 @@ public class Example {
 			usb.write(hello.charAt(i));
 		}
 
-		int [] sa = fact.getArray();
+//		int [] sa = fact.getArray();
 		// array does not work
 		// xaload/xastore or implemented in the memory interface
 		// no connection to IO SimpCon!
