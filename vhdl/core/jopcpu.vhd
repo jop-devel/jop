@@ -98,7 +98,10 @@ architecture rtl of jopcpu is
 	signal sc_scratch_in	: sc_in_type;
 
 	signal next_mux_mem		: std_logic_vector(1 downto 0);
+	signal dly_mux_mem		: std_logic_vector(1 downto 0);
 	signal mux_mem			: std_logic_vector(1 downto 0);
+	signal is_pipelined		: std_logic;
+
 	signal mem_access		: std_logic;
 	signal scratch_access	: std_logic;
 	signal io_access		: std_logic;
@@ -206,28 +209,45 @@ begin
 process(clk, reset)
 begin
 	if (reset='1') then
-		mux_mem <= (others => '0');
+		dly_mux_mem <= (others => '0');
 		next_mux_mem <= (others => '0');
+		is_pipelined <= '0';
 	elsif rising_edge(clk) then
 
 		if sc_ctrl_mem_out.rd='1' or sc_ctrl_mem_out.wr='1' then
 			-- highest address bits decides between IO, memory, and on-chip memory
 			-- save the mux selection on read or write
 			next_mux_mem <= sc_ctrl_mem_out.address(SC_ADDR_SIZE-1 downto SC_ADDR_SIZE-2);
+			-- a read or write with rdy_cnt of 1 means pipelining
+			if sc_ctrl_mem_in.rdy_cnt(1) = '0' then
+				is_pipelined <= '1';
+			end if;
 		end if;
-		-- take the mux selection over for the next cycle
+		-- delayed mux selection for pipelined access
 		if sc_ctrl_mem_in.rdy_cnt(1) = '0' then
-			mux_mem <= next_mux_mem;
+			dly_mux_mem <= next_mux_mem;
 		end if;
+		-- pipelining is over
+		if sc_ctrl_mem_in.rdy_cnt = "00" then
+			is_pipelined <= '0';
+		end if;
+
 	end if;
 end process;
 
-process(mux_mem, sc_ctrl_mem_out, sc_ctrl_mem_in, sc_mem_in, sc_io_in, sc_scratch_in)
+process(next_mux_mem, dly_mux_mem, sc_ctrl_mem_out, sc_ctrl_mem_in, sc_mem_in, sc_io_in, sc_scratch_in)
 begin
 
 	mem_access <= '0';
 	scratch_access <= '0';
 	io_access <= '0';
+
+	-- for one cycle peripherals we need to set the mux from next_mux_mem
+	mux_mem <= next_mux_mem;
+	-- for pipelining we need to delay the mux selection
+	if is_pipelined='1' then
+		mux_mem <= dly_mux_mem;
+	end if;
 
 	-- read MUX
 	case mux_mem is
