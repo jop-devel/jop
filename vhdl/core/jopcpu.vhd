@@ -96,6 +96,7 @@ architecture rtl of jopcpu is
 	signal sc_scratch_out	: sc_out_type;
 	signal sc_scratch_in	: sc_in_type;
 
+	signal next_mux_mem		: std_logic_vector(1 downto 0);
 	signal mux_mem			: std_logic_vector(1 downto 0);
 	signal mem_access		: std_logic;
 	signal scratch_access	: std_logic;
@@ -198,16 +199,24 @@ begin
 	--
 	--	Select for the read mux
 	--
+	--	TODO: this mux selection works ONLY for two cycle pipelining!
+	--
 
 process(clk, reset)
 begin
 	if (reset='1') then
 		mux_mem <= (others => '0');
+		next_mux_mem <= (others => '0');
 	elsif rising_edge(clk) then
 
 		if sc_ctrl_mem_out.rd='1' or sc_ctrl_mem_out.wr='1' then
 			-- highest address bits decides between IO, memory, and on-chip memory
-			mux_mem <= sc_ctrl_mem_out.address(SC_ADDR_SIZE-1 downto SC_ADDR_SIZE-2);
+			-- save the mux selection on read or write
+			next_mux_mem <= sc_ctrl_mem_out.address(SC_ADDR_SIZE-1 downto SC_ADDR_SIZE-2);
+		end if;
+		-- take the mux selection over for the next cycle
+		if sc_ctrl_mem_in.rdy_cnt(1) = '0' then
+			mux_mem <= next_mux_mem;
 		end if;
 	end if;
 end process;
