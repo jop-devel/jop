@@ -43,6 +43,7 @@ public class JopSim {
 	static final int MAX_MEM = 1024*1024/4;
 	static final int MAX_STACK = Const.STACK_SIZE;	// with internal memory
 	static final int MEM_TEST_OFF = 256;
+	static final int MAX_SCRATCHPAD = 256;	// 1 KB scratchpad memory
 	
 	static final int MIN_IO_ADDRESS = -128;
 
@@ -51,6 +52,7 @@ public class JopSim {
 	int[] mem_load = new int[MAX_MEM];
 	int[] mem = new int[MAX_MEM];
 	int[] stack = new int[MAX_STACK];
+	int[] scratchMem = new int[MAX_SCRATCHPAD];
 	Cache cache;
 	IOSimMin io;
 
@@ -225,6 +227,10 @@ System.out.println(mp+" "+pc);
 // System.out.println(addr+" "+mem[addr]);
 		rdMemCnt++;
 
+		// that's an access to our scratchpad memory
+		if (addr >= Const.SCRATCHPAD_ADDRESS && addr <= Const.SCRATCHPAD_ADDRESS+MEM_TEST_OFF) {
+			return mem[addr%MAX_SCRATCHPAD];
+		}
 		if (addr>MAX_MEM+MEM_TEST_OFF || addr<MIN_IO_ADDRESS) {
 			System.out.println("readMem: wrong address: "+addr);
 			System.exit(-1);
@@ -239,6 +245,11 @@ System.out.println(mp+" "+pc);
 
 		wrMemCnt++;
 
+		// that's an access to our scratchpad memory
+		if (addr >= Const.SCRATCHPAD_ADDRESS && addr <= Const.SCRATCHPAD_ADDRESS+MEM_TEST_OFF) {
+			mem[addr%MAX_SCRATCHPAD] = data;
+			return;
+		}
 		if (addr>MAX_MEM+MEM_TEST_OFF || addr<MIN_IO_ADDRESS) {
 			System.out.println("writeMem: wrong address: "+addr);
 			System.exit(-1);
