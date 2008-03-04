@@ -28,6 +28,7 @@
 --	2007-04-13	Changed memory connection to records
 --	2008-02-20	memory - I/O muxing after the memory controller (mem_sc)
 --	2008-03-03	added scratchpad RAM
+--	2008-03-04	correct MUX selection
 --
 --	todo: clean up: substitute all signals by records
 

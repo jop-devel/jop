@@ -122,6 +122,7 @@
 //	2008-02-20	IO modules after the memory controller (mem_sc) to keep HWO working
 //	2008-02-24	Changed license to GPL
 //	2008-03-03	Added scratchpad RAM
+//	2008-03-04	correct MUX selection
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -131,7 +132,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20080303
+version		= 20080304
 
 //
 //	start of stack area in the on-chip RAM
