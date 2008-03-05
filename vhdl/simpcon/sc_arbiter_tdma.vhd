@@ -103,15 +103,15 @@ begin
 
 -- test numbers
 
-period <= 60;
-cpu_time(0) <= 20;
-cpu_time(1) <= 40;
-cpu_time(2) <= 59;
+period <= 600;
+cpu_time(0) <= 200;
+cpu_time(1) <= 400;
+cpu_time(2) <= 599;
 
 
 -- Generates the input register and saves incoming data for each master
 gen_register: for i in 0 to cpu_cnt-1 generate
-	process(clk, reset)
+	process(clk)
 	begin
 		if reset = '1' then
 			reg_in(i).rd <= '0';
@@ -155,13 +155,14 @@ process(clk, reset)
 			counter <= 0;
 		elsif rising_edge(clk) then
 			counter <= counter + 1;
-			if counter = period then
+			if counter = period-1 then
 				counter <= 0;
 			end if;
 		end if;
 end process;
 				
-		
+-- A time slot is assigned for each CPU 
+	
 process(counter, cpu_time)
 	begin
 		for j in 0 to cpu_cnt-1 loop
@@ -181,7 +182,7 @@ end process;
 	
 -- Generates next state of the FSM for each master
 gen_next_state: for i in 0 to cpu_cnt-1 generate
-	process(reset, state, arb_out, mem_in, this_state, reg_in, masterWaiting, slot, counter)	 
+	process(reset, state, arb_out, mem_in, this_state, reg_in, masterWaiting, slot, counter, cpu_time)	 
 	begin
 
 		next_state(i) <= state(i);
@@ -193,10 +194,10 @@ gen_next_state: for i in 0 to cpu_cnt-1 generate
 				-- checks if this CPU is on turn (pipelined access)
 				if (this_state(i) = serv) and (slot(i) = '1') then
 					-- pipelined access
-					if (mem_in.rdy_cnt = 1) and (arb_out(i).rd = '1') and (counter < cpu_time(i)-3) then
+					if (mem_in.rdy_cnt = 1) and (arb_out(i).rd = '1') and (counter < cpu_time(i)-4) then
 						next_state(i) <= read;
 							
-					elsif ((mem_in.rdy_cnt = 0) and (arb_out(i).rd = '1' or arb_out(i).wr = '1') and (slot(i) = '1') and (counter < cpu_time(i)-3)) then
+					elsif ((mem_in.rdy_cnt = 0) and (arb_out(i).rd = '1' or arb_out(i).wr = '1') and (slot(i) = '1') and (counter < cpu_time(i)-4)) then
 						
 						if arb_out(i).rd = '1' then
 							next_state(i) <= read;
@@ -217,7 +218,7 @@ gen_next_state: for i in 0 to cpu_cnt-1 generate
 
 				-- CPU is not on turn (no pipelined access possible)
 				else
-					if ((mem_in.rdy_cnt = 0) and (arb_out(i).rd = '1' or arb_out(i).wr = '1') and (slot(i) = '1') and (counter < cpu_time(i)-3)) then
+					if ((mem_in.rdy_cnt = 0) and (arb_out(i).rd = '1' or arb_out(i).wr = '1') and (slot(i) = '1') and (counter < cpu_time(i)-4)) then
 						
 						-- master wants to access immediately
 						if arb_out(i).rd = '1' then
@@ -226,7 +227,7 @@ gen_next_state: for i in 0 to cpu_cnt-1 generate
 							next_state(i) <= write;				
 						end if;
 						
-					-- has to wait for rdy_cnt = 0 and counter = i
+					-- has to wait for rdy_cnt = 0
 					elsif (arb_out(i).rd = '1' or arb_out(i).wr = '1') then
 						if arb_out(i).rd = '1' then
 							next_state(i) <= waitingR;
@@ -246,7 +247,7 @@ gen_next_state: for i in 0 to cpu_cnt-1 generate
 				next_state(i) <= idle;
 			
 			when waitingR =>				
-				if ((mem_in.rdy_cnt = 0) and (slot(i) = '1') and (counter < cpu_time(i)-3)) then
+				if ((mem_in.rdy_cnt = 0) and (slot(i) = '1') and (counter < cpu_time(i)-4)) then
 					next_state(i) <= sendR;
 				else
 					next_state(i) <= waitingR;
@@ -257,7 +258,7 @@ gen_next_state: for i in 0 to cpu_cnt-1 generate
 				next_state(i) <= idle;
 				
 			when waitingW =>
-				if ((mem_in.rdy_cnt = 0) and (slot(i) = '1') and (counter < cpu_time(i)-3)) then
+				if ((mem_in.rdy_cnt = 0) and (slot(i) = '1') and (counter < cpu_time(i)-4)) then
 					next_state(i) <= sendW;
 				else
 					next_state(i) <= waitingW;
@@ -373,6 +374,7 @@ gen_rdy_cnt: for i in 0 to cpu_cnt-1 generate
 					when idl =>
 						arb_in(i).rdy_cnt <= "00";
 					when serv =>
+						--- Here is happens something thats wrong!!!!
 				end case;
 				
 			when read =>
