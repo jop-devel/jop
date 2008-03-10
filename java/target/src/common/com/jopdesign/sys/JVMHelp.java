@@ -61,11 +61,10 @@ public class JVMHelp {
 			RtThreadImpl.schedule();			
 		} else {
 			ih[nr].run();
+			// enable interrupts again
+			// each interrupt handler shall do it - we do it here for sure
+			Native.wr(1, Const.IO_INT_ENA);
 		}
-		
-		// enable interrupts again
-		// each interrupt handler can do it - we do it here for sure
-		Native.wr(1, Const.IO_INT_ENA);
 	}
 
 
