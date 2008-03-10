@@ -56,6 +56,7 @@ public class DbgSerial extends Dbg {
 		}
 */
 		Native.wr(c, Const.IO_UART);
+		Native.wr(c, Const.IO_USB_DATA);
 	}
 
 
