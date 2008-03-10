@@ -43,6 +43,7 @@ import util.Serial;
 import util.Timer;
 
 import com.jopdesign.sys.Const;
+import com.jopdesign.sys.JVMHelp;
 import com.jopdesign.sys.Native;
 
 import ejip.*;
@@ -69,20 +70,6 @@ public class MainPppLoop {
 	public static void main(String[] args) {
 
 		Dbg.initSerWait();
-		
-//		for (int i=0; i<100; ++i) {
-//			System.out.println(i+" "+Native.rd(Const.IO_STATUS2)+" "+Native.rd(Const.IO_UART2));
-////			if ((Native.rd(Const.IO_STATUS2) & Const.MSK_UA_TDRE)!=0) {
-//				Native.wr(i+'0', Const.IO_UART2);
-////			}
-//		}
-//		
-//		for (;;) {
-//			if ((Native.rd(Const.IO_STATUS2) & Const.MSK_UA_RDRF)!=0) {
-//				System.out.println("char: "+((char) Native.rd(Const.IO_UART2)));
-//			}
-//		}
-
 
 		//
 		//	initialize TCP/IP
@@ -99,9 +86,7 @@ public class MainPppLoop {
 		new RtThread(IPSER_PRIO, IPSER_PERIOD) {
 			public void run() {
 				for (;;) {
-					if (!waitForNextPeriod()) {
-						System.out.print("missed");
-					}
+					waitForNextPeriod();
 					ser.loop();
 				}
 			}
@@ -144,12 +129,10 @@ public class MainPppLoop {
 		RtThread.startMission();
 				
 //		forever();
-		// TODO: there is an issue when this loop is not
-		// executed and the main thread terminates.
 		for (;;) {
 			int t = Timer.getTimeoutMs(800);
 			while (!Timer.timeout(t)) {
-				;
+				RtThread.sleepMs(10);
 			}
 			System.out.print("M");
 		}

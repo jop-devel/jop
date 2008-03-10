@@ -64,8 +64,8 @@ public class MainSlipUart2 {
 */
 	public static void main(String[] args) {
 
-		Dbg.initSer();
-
+		Dbg.initSerWait();
+		
 		//
 		//	start TCP/IP and all (four) threads
 		//
@@ -104,7 +104,7 @@ public class MainSlipUart2 {
 				}
 			}
 		};
-		new RtThread(10, 3000) {
+		new RtThread(10, 10000) {
 			public void run() {
 				for (;;) {
 					waitForNextPeriod();
@@ -130,10 +130,10 @@ public class MainSlipUart2 {
 		//
 		for (;;) {
 			for (int i=0; i<10; ++i) {
-				int val = Native.rd(Const.IO_IN);
-				Native.wr(val, Const.IO_LED);
 				RtThread.sleepMs(50);
+
 			}
+			System.out.print("*");
 			Timer.wd();
 		}
 	}
