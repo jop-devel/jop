@@ -95,6 +95,7 @@ package jop_types is
 	type irq_bcf_type is record
 		irq			: std_logic;	-- interrupt request, single cycle
 		exc			: std_logic;	-- exception request, singel cycle
+		ena			: std_logic;	-- globale enable
 	end record;
 
 	-- interrupt and exception ack when jfetch the interrupt bytecode

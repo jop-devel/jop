@@ -123,6 +123,7 @@ end component;
 --	signals for interrupt handling
 --
 	signal int_pend		: std_logic;
+	signal int_req		: std_logic;
 	signal int_taken	: std_logic;
 
 	signal exc_pend		: std_logic;
@@ -161,7 +162,11 @@ process(clk, reset) begin
 
 end process;
 
-	int_taken <= int_pend and jfetch;
+--
+--	TODO: exception and int in the same cycle: int gets lost
+--
+	int_req <= int_pend and irq_in.ena;
+	int_taken <= int_req and jfetch;
 	exc_taken <= exc_pend and jfetch;
 
 	irq_out.ack_irq <= int_taken;
@@ -180,7 +185,7 @@ end process;
 
 	bytecode <= jbc_q;		-- register this for an additional pipeline stage
 
-	cmp_jtbl: jtbl port map(bytecode, int_pend, exc_pend, jpaddr);
+	cmp_jtbl: jtbl port map(bytecode, int_req, exc_pend, jpaddr);
 
 	jbc_addr <= jbc_mux;
 	jbc_q <= jbc_data;

@@ -123,6 +123,7 @@
 //	2008-02-24	Changed license to GPL
 //	2008-03-03	Added scratchpad RAM
 //	2008-03-04	correct MUX selection
+//	2008-03-11	Interrupt enable also in bcfetch (bug fix)
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -132,7 +133,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20080304
+version		= 20080311
 
 //
 //	start of stack area in the on-chip RAM

@@ -164,6 +164,8 @@ architecture rtl of sc_sys is
 	-- remove the comment for RAM access counting
 	-- signal ram_counter	: std_logic_vector(31 downto 0);
 
+
+	signal cnt_ena			: unsigned(31 downto 0);
 	
 --
 --	signals for interrupt handling
@@ -322,6 +324,7 @@ end process;
 	irq_gate <= int_pend and int_ena;
 	irq_in.irq <= irq_gate and not irq_dly;
 	irq_in.exc <= exc_pend and not exc_dly;
+	irq_in.ena <= int_ena;
 
 
 
