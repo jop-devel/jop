@@ -214,7 +214,7 @@ public static int ts0, ts1, ts2, ts3, ts4;
 	// timer offset to ensure that no timer int happens just
 	// after monitorexit in this method and the new thread
 	// has a minimum time to run.
-	private final static int TIM_OFF = 100;
+	private final static int TIM_OFF = 20;
 //	private final static int TIM_OFF = 2; // for 100 MHz version 20 or even lower
 										 // 2 is minimum
 
