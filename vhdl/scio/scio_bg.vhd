@@ -462,7 +462,8 @@ end scio;
 
 architecture rtl of scio is
 
-	constant SLAVE_CNT : integer := 7;
+-- full decode
+	constant SLAVE_CNT : integer := 8;
 	-- SLAVE_CNT <= 2**DECODE_BITS
 	constant DECODE_BITS : integer := 3;
 	-- number of bits that can be used inside the slave
@@ -511,6 +512,8 @@ begin
 	-- slave 2 is reserved for USB and System.out writes to it!!!
 	sc_rdy_cnt(2) <= (others => '0');
 	sc_dout(2) <= (others => '0');
+	sc_rdy_cnt(7) <= (others => '0');
+	sc_dout(7) <= (others => '0');
 
 
 	--
