@@ -13,7 +13,7 @@ import util.*;
 import ejip.*;
 import joprt.*;
 
-public class Comm extends RtThread {
+public class CommX extends RtThread {
 
 	// UDP destination ports
 	public static final int BG_REQUEST = 2000;

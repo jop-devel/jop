@@ -74,8 +74,10 @@ public class Main {
 	private static final int DISPLAY_PERIOD = 5000;
 	private static final int WD_PRIO = 5;
 	private static final int WD_PERIOD = 25000;
-	private static final int COMM_PRIO = 6;
-	private static final int COMM_PERIOD = 100000;
+//	private static final int COMM_PRIO = 6;
+//	private static final int COMM_PERIOD = 100000;
+	private static final int STATE_PRIO = 6;
+	private static final int STATE_PERIOD = 100000;
 	private static final int NET_PRIO = 7;
 	private static final int NET_PERIOD = 10000;
 	private static final int GPSSER_PRIO = 8;
@@ -89,6 +91,8 @@ public class Main {
 	static LinkLayer ipLink;
 	static Serial ser, ser2;
 	static RtThread pppThre;
+	
+	static State state;
 
 
 	static boolean reset;
@@ -185,9 +189,9 @@ public class Main {
 			// use second SLIP subnet for 'COs test'
 			ipLink = Slip.init(ser, (192<<24) + (168<<16) + (2<<8) + 2); 
 		} else {
-			ipLink = BgPpp.init(ser, pppThre); 
-//			System.out.println("SLIP is default!!");
-//			ipLink = Slip.init(ser,	(192<<24) + (168<<16) + (1<<8) + 2); 
+//			ipLink = BgPpp.init(ser, pppThre); 
+			System.out.println("SLIP is default!!");
+			ipLink = Slip.init(ser,	(192<<24) + (168<<16) + (1<<8) + 2); 
 		}
 
 		//
@@ -213,10 +217,26 @@ public class Main {
 		// to find a Strecke
 		new Strecke(STRECKE_PRIO, STRECKE_PERIOD);
 
+//		//
+//		//	create Communication thread
+//		//
+//		Comm.init(Flash.getId(), COMM_PRIO, COMM_PERIOD, ipLink);
+
 		//
-		//	create Communication thread
-		//
-		Comm.init(Flash.getId(), COMM_PRIO, COMM_PERIOD, ipLink);
+		//	Crate state object and the periodic thread.
+		state = new State(ipLink);
+		state.bgid = Flash.getId();
+		state.versionStrecke = Flash.getVer();
+		Udp.addHandler(State.ZLB_RCV_PORT, state);
+		
+		new RtThread(STATE_PRIO, STATE_PERIOD) {
+			public void run() {
+				for (;;) {
+					state.run();
+					waitForNextPeriod();
+				}
+			}
+		};
 
 		//
 		//	create Display and Keyboard thread.
@@ -251,11 +271,9 @@ public class Main {
 			}
 		};
 
-//System.out.println("startMission");
 		//
 		//	start all threads
 		//
-
 
 		RtThread.startMission();
 

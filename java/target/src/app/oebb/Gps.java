@@ -221,8 +221,10 @@ Dbg.wr('*');
 	}
 
 
-private static void checkStrMelnr() {
+	private static void checkStrMelnr() {
 
+		State state = Main.state;
+		
 		if (Status.strNr<=0) {
 			if (Strecke.idle) {
 				Strecke.idle = false;
@@ -232,7 +234,7 @@ private static void checkStrMelnr() {
 				Strecke.find.fire();
 			}
 		} else {
-			int melnr = getMelnr(Status.strNr, last_lat, last_lon);
+			int melnr = getMelnr(state.strnr, last_lat, last_lon);
 			
 			Status.doCommAlarm = Flash.isCommAlarm(melnr, last_lat, last_lon);
 //			if (Status.doCommAlarm) {
@@ -241,7 +243,7 @@ private static void checkStrMelnr() {
 //				Dbg.wr("no communication Alarm");
 //			}
 
-			if (melnr != Status.melNr) {
+			if (melnr != state.pos) {
 Dbg.wr("Melderaum: ");
 Dbg.intVal(melnr);
 Dbg.wr("\n");
@@ -251,8 +253,9 @@ Dbg.wr("\n");
 				if (melnr!=-1) {
 					// change only if previous unknown or
 					// we're moving
-					if (Status.melNr<=0 || speed>MIN_SPEED) {
-						Status.melNr = melnr;
+					if (state.pos<=0 || speed>MIN_SPEED) {
+						state.pos = melnr;
+						state.requestSend();
 Dbg.wr("Melderaum: ");
 Dbg.intVal(melnr);
 Dbg.wr(" nun aktiv\n");
@@ -265,14 +268,14 @@ Dbg.wr(" nun aktiv\n");
 			} else {
 				// check direction only if no melNr change
 				// and we have a valid melNr
-				if (Status.melNr>0) {
+				if (state.pos>0) {
 					checkDir();
 				}
 			}
 			//
 			//	check the timeout for a change to 'Bereit'
 			//
-			if (Status.melNr>=0) {
+			if (state.pos>=0) {
 				if (melnr==-1) {
 					if (Timer.secTimeout(melNrTimeout)) {
 						changeToBereit = true;
@@ -424,7 +427,7 @@ Dbg.lf();
 		int lat_diff = lat-last_lat;
 		int lon_diff = lon-last_lon;
 		
-		old_lat = last_lat;			// remeber for direction check
+		old_lat = last_lat;			// remember for direction check
 		old_lon = last_lon;
 
 		if (i!=0) {
@@ -438,11 +441,15 @@ Dbg.lf();
 			}
 		}
 
-		if (i!=last_fix) {
-			if (Status.connOk) {
-				Comm.gpsStatus(i, last_lat, last_lon);
-			} 
-		}
+//		if (i!=last_fix) {
+//			if (Status.connOk) {
+//				Comm.gpsStatus(i, last_lat, last_lon);
+//			} 
+//		}
+
+		Main.state.gpsLat = last_lat;
+		Main.state.gpsLong = last_lon;
+
 		// delay fix one message
 		if (last_fix!=0) {
 			last_fix = i;
@@ -451,6 +458,7 @@ Dbg.lf();
 			last_fix = i;
 			fix = 0;
 		}
+		
 
 		// time diff in seconds
 		i = (ts-last_ts+500000)/1000000;
@@ -591,7 +599,7 @@ Dbg.wr("m/s \n");
 			direction = DIR_UNKNOWN;
 			return;
 		} 
-		Flash.Point p = Flash.getPoint(Status.melNr);
+		Flash.Point p = Flash.getPoint(Main.state.pos);
 		if (p==null) return;
 		
 		int dold = dist(p.lat-old_lat, p.lon-old_lon);
@@ -651,21 +659,22 @@ Dbg.wr("m/s \n");
 */
 	public static void dgps(Packet p) {
 
-		int len = p.len - Comm.OFF_DATA*4;
-
-		if (len > ser.txFreeCnt()) {
-Dbg.wr('d');
-			return;										// just drop it
-		}
-
-Dbg.wr('D');
-
-		int i;
-		int[] buf = p.buf;
-
-		for (i=0; i<len; ++i) {
-			ser.wr((buf[Comm.OFF_DATA+(i>>2)]>>(24-(i&3)*8)) & 0xff);
-		}
+		// TODO
+//		int len = p.len - Comm.OFF_DATA*4;
+//
+//		if (len > ser.txFreeCnt()) {
+//Dbg.wr('d');
+//			return;										// just drop it
+//		}
+//
+//Dbg.wr('D');
+//
+//		int i;
+//		int[] buf = p.buf;
+//
+//		for (i=0; i<len; ++i) {
+//			ser.wr((buf[Comm.OFF_DATA+(i>>2)]>>(24-(i&3)*8)) & 0xff);
+//		}
 	}
 
 

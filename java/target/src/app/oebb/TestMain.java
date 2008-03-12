@@ -126,7 +126,14 @@ public class TestMain {
 		new RtThread(1, 100000) {
 			public void run() {
 				State msg = new State(ipLink);
-				Udp.addHandler(2005, msg);
+				msg.destIp = (192 << 24) + (168 << 16) + (0 << 8) + 5;
+				msg.bgid = 0x1234;
+				msg.strnr = 155;
+				msg.zugnr = 4711;
+				msg.pos = 43;
+				msg.type = State.TYPE_ZUG;
+
+				Udp.addHandler(State.ZLB_RCV_PORT, msg);
 				for (;;) {
 					msg.run();
 					waitForNextPeriod();

@@ -43,24 +43,32 @@ public class State extends ejip.UdpHandler implements Runnable {
 	int time;
 	int strnr;
 	int zugnr;
-	int pos;
+	volatile int pos;	// set in Gps.checkStrMelnr()
 	int start;
 	int end;
 	int startNF;
 	int ankVerl;
-	int type;
+	volatile int type;	// changed at anmelden, on Verschub
 	int alarmFlags;
 	int cmdAck;
 	int versionStrecke;
-	int gpsLat;
-	int gpsLong;
+	// set in Gps.process()
+	volatile int gpsLat;
+	volatile int gpsLong;
 
-	final static int TYPE_ZUG = 1;
-	final static int TYPE_NF = 2;
+	final static int TYPE_UNKNOWN = 0;
+	final static int TYPE_ZUG = 1;		// fix in menu
+	final static int TYPE_NF = 2;		// fix in menu
 	final static int TYPE_VERSCH = 3;
 	final static int TYPE_LERN = 4;
 	final static int TYPE_ES221 = 5;
 	final static int TYPE_UPDATE = 6;
+	final static int TYPE_INFO = 7;
+	
+	final static int BG_SND_PORT = 2004;
+	final static int ZLB_RCV_PORT = 2005;
+	
+	int destIp;
 	
 	// Alarme vom BG zur Zentrale
 	final static int AFLAG_MLR =		0x00000001; // Melderaum ueberfahren
@@ -69,6 +77,8 @@ public class State extends ejip.UdpHandler implements Runnable {
 	final static int AFLAG_ES221 =		0x00000008;	// ES221 Mode
 	final static int AFLAG_NOTQUIT =	0x00000010;	// NOTHALT Quit
 	final static int AFLAG_ZIEL =		0x00000020;	// Ziel Erreicht
+	final static int AFLAG_ANK =		0x00000040;	// Ankunft
+	final static int AFLAG_VERL =		0x00000080;	// Verlassen
 	
 	// Meldungen von der Zentrale zum BG
 	final static int CFLAG_ABM =	0x00000001;		// Abmelden
@@ -107,9 +117,19 @@ public class State extends ejip.UdpHandler implements Runnable {
 	 */
 	int zlbTimer;
 	private LinkLayer ipLink;
+	
+	/**
+	 * FWR was acknowledged by TFZF
+	 */
+	boolean fwrQuitPending;
 
 	/**
-	 * some statistics
+	 * NOTHALT was acknowledged by TFZF
+	 */
+	boolean nothaltQuitPending;
+
+	/**
+	 * some network statistics
 	 */
 	private int[] stat;
 
@@ -121,11 +141,6 @@ public class State extends ejip.UdpHandler implements Runnable {
 		sendTimer = Timer.getTimeoutSec(SEND_PERIOD);
 		stat = new int[5];
 
-		bgid = 0x1234;
-		strnr = 155;
-		zugnr = 4711;
-		pos = 43;
-		type = TYPE_ZUG;
 		/*
 		 * start = 1; end = 2; startNF = 3; ankVerl = 4; type = 5; alarmFlags =
 		 * 2; cmdAck = 4; versionStrecke = 789; gpsLat = 6; gpsLong = 7;
@@ -143,6 +158,7 @@ public class State extends ejip.UdpHandler implements Runnable {
 		int gpsFix = Gps.fix;
 		if (gpsFix == -1)
 			gpsFix = 0;
+		// TODO: BgPpp.getConnType();
 		arr[off + 6] = (ankVerl << 16) + (type << 13) + (gpsFix << 11);
 		arr[off + 7] = alarmFlags;
 		arr[off + 8] = cmdAck;
@@ -180,11 +196,13 @@ public class State extends ejip.UdpHandler implements Runnable {
 
 		setUDPData(p.buf, Udp.DATA);
 		p.len = (Udp.DATA + 12) << 2;
+		
 
-		Dbg.wr("send packet ");
+		Dbg.wr("BG:  ");
+		printMsg(p);
 
 		// and send it
-		Udp.build(p, (192 << 24) + (168 << 16) + (0 << 8) + 5, 2004);
+		Udp.build(p, destIp, BG_SND_PORT);
 		return true;
 	}
 
@@ -250,9 +268,62 @@ public class State extends ejip.UdpHandler implements Runnable {
 		
 		int cmd = buf[Udp.DATA+8];
 		if (cmd!=cmdAck) {
-			// todo check a cmd change
+			// TODO check a cmd change
+			
+			// send the ack
+			requestSend();
 		}
-		cmdAck = cmd;
+		
+		// type
+		int val = (buf[Udp.DATA+6]&0xffff)>>>13;
+		// all state update synchronized
+		synchronized (this) {
+			// update when Verschub
+			if (val==TYPE_VERSCH) {
+				type = val;
+			}
+			// update ack with cmd
+			cmdAck = cmd;
+			
+			// FWR
+			if ((cmd & CFLAG_FWR)!=0) {
+				if (!fwrQuitPending) {
+					// we cannot ack it, reset the flag
+					cmdAck &= ~CFLAG_FWR;
+				}
+			} else {
+				// reset pending when FWR flag was reset by ZLB
+				fwrQuitPending = false;
+			}
+
+			// NOTHALT
+			if ((cmd & CFLAG_NOT)!=0) {
+				if (!nothaltQuitPending) {
+					// we cannot ack it, reset the flag
+					cmdAck &= ~CFLAG_NOT;
+				}
+			} else {
+				// reset pending when NOT flag was reset by ZLB
+				nothaltQuitPending = false;
+			}
+		}
+		
+		// Alarm flag quits
+		int alarmAck = buf[Udp.DATA+7];
+		synchronized (this) {
+			if (alarmAck==alarmFlags) {
+				// we can reset some of the flags here
+				if ((alarmAck & AFLAG_ANK)!=0) {
+					alarmFlags &= ~AFLAG_ANK;
+					ankVerl = 0;
+				}
+				if ((alarmAck & AFLAG_VERL)!=0) {
+					alarmFlags &= ~AFLAG_VERL;
+					ankVerl = 0;
+				}
+			}
+		}
+
 		Dbg.wr("ZLB: ");
 		printMsg(p);
 		p.setStatus(Packet.FREE);
@@ -326,7 +397,9 @@ public class State extends ejip.UdpHandler implements Runnable {
 	public void run() {
 		if (Timer.timeout(sendTimer)) {
 			sendTimer = Timer.getTimeoutSec(SEND_PERIOD);
-			send();
+			if (ipLink.getIpAddress()!=0) {
+				send();				
+			}
 		} else {
 			if (zlbMsg!=null) {
 				handleMsg();
@@ -341,12 +414,146 @@ public class State extends ejip.UdpHandler implements Runnable {
 			ipLink.reconnect();
 			Status.connOk = false;
 			Status.commErr = 1;
-			Dbg.wr("conection lost");
+			Dbg.wr("connection lost");
 		}
 	}
 
+	/**
+	 * Request to send a message immediately.
+	 */
 	public void requestSend() {
 		sendTimer = Timer.getTimeoutSec(0);
+	}
+
+	public void sendZiel() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	public boolean isVerschub() {
+		
+		return type==TYPE_VERSCH;
+	}
+	
+	public boolean anmOk() {
+		return (cmdAck & CFLAG_ANMOK) != 0;
+	}
+
+	/**
+	 * Set alarm flag
+	 * @param alarmType
+	 */
+	public void setAlarm(int alarmType) {
+		// TODO Auto-generated method stub
+//		if (alarmType==Cmd.ALARM_UEBERF) {
+//			Display.write("", "ZIEL ÜBERFAHREN", "");
+//		} else if (alarmType==Cmd.ALARM_FAEHRT) {
+//			Display.write("KEINE", "FAHRERLAUBNIS", "");
+//		} else if (alarmType==Cmd.ALARM_RICHTUNG) {
+//			Display.write("Falsche", "Richtung", "");
+//		} else {
+//			Display.write("Alarm", "Nummer", alarmType, "");
+//		}
+		
+		if (alarmType==0) {
+			// reset the alarm
+			// or better mark it as reset alarm pending
+			// we should not loose a alarm message due to a
+			// too fast quite from the TFZF
+		}
+
+		requestSend();
+		
+	}
+
+	/**
+	 * Quit FWR flag after Enter from TFZF
+	 */
+	public void fwrQuit() {
+		fwrQuitPending = true;
+		requestSend();
+	}
+
+	/**
+	 * Quit NOT flag after Enter from TFZF
+	 */
+	public void nothaltQuit() {
+		nothaltQuitPending = true;
+		requestSend();
+	}
+
+	/**
+	 * Flag Ankunft at position melnr
+	 * @param melnr
+	 */
+	public void ankunft(int melnr) {
+		synchronized(this) {
+			ankVerl = melnr;
+			alarmFlags |= AFLAG_ANK;
+			// reset a pending verl
+			if ((alarmFlags & AFLAG_VERL)!=0) {
+				alarmFlags &= ~AFLAG_VERL;
+			}
+		}
+		requestSend();
+	}
+
+	/**
+	 * Flag Verlassen at position melnr
+	 * @param melnr
+	 */
+	public void verlassen(int melnr) {
+		synchronized(this) {
+			ankVerl = melnr;
+			alarmFlags |= AFLAG_VERL;
+			// reset a pending verl
+			if ((alarmFlags & AFLAG_ANK)!=0) {
+				alarmFlags &= ~AFLAG_ANK;
+			}
+		}
+		requestSend();
+	}
+	
+	/**
+	 * Got ack for ANK from ZLB so flag is reset
+	 * @return
+	 */
+	public boolean ankuftAck() {
+		return (alarmFlags & AFLAG_ANK) == 0;
+	}
+
+	/**
+	 * Got ack for VERL from ZLB so flag is reset
+	 * @return
+	 */
+	public boolean verlassenAck() {
+		return (alarmFlags & AFLAG_VERL) == 0;
+	}
+
+	public void setInfo() {
+		type = TYPE_INFO;
+	}
+
+	public void resetInfo() {
+		type = TYPE_UNKNOWN;
+	}
+
+	public void setLern() {
+		type = TYPE_LERN;
+	}
+
+	public void resetLern() {
+		type = TYPE_UNKNOWN;		
+	}
+
+	public void lern(int melnr, int latAvg, int lonAvg) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	public void setESAlarm() {
+		// TODO Auto-generated method stub
+		
 	}
 
 }

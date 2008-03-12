@@ -37,10 +37,7 @@ public class Status {
 	static final int DEAKT = 19;
 	
 	volatile static int state;
-	
-	static final int ZUG_NORMAL = 1;
-	static final int ZUG_NF = 2;
-	
+		
 	/**
 	 * wenn esMode is true we work local without
 	 * Internet connection.
@@ -69,24 +66,10 @@ public class Status {
 	volatile static int dlPercent;
 
 /**
-*	Set after ANM/ANM_RPL and ANMOK
-*/
-	volatile static boolean anmOk;
-
-/**
 *	Set after lern msg got a repley
 */
 	volatile static boolean lernOk;
 
-/**
-*	Set after ankunft msg got a repley
-*/
-	volatile static boolean ankunftOk;
-
-/**
-*	Set after verlassen msg got a repley
-*/
-	volatile static boolean verlassenOk;
 
 /**
 *	display menu
@@ -113,10 +96,6 @@ public class Status {
 *	aktueller Melderaum
 */
 	volatile static int melNr;
-/**
-*	zuletzt gesendeter Melderaum
-*/
-	volatile static int melNrSent;
 	
 	/**
 	*	send a communication alarm
@@ -143,14 +122,4 @@ public class Status {
 	static Object dirMutex;
 	volatile static int direction;
 
-/**
-*	Verschub
-*/
-	volatile static int von, bis;
-
-
-/**
- *	Fahrttype
- */
-	volatile static int art;
 }

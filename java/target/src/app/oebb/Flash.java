@@ -547,7 +547,7 @@ System.out.println("ES Strecke:");
 
 	/**
 	*	Start dial up and
-	*	set IP address in Comm.
+	*	set IP address in State.
 	*/
 	static boolean startComm(int strnr) {
 
@@ -568,12 +568,19 @@ System.out.println("ES Strecke:");
 			addr += STR_LEN+intVal(addr+STR_CNT)*PT_LEN;		// find next Strecke
 		}
 		if (i==cnt) return false;
-		Comm.startConnection(dstIp, connStr);
+//		Comm.startConnection(dstIp, connStr);
+		
+		System.out.println("xxx");
+		Main.state.destIp = dstIp;
+		System.out.println("yyy");
+		Main.ipLink.startConnection(connStr[0], connStr[1], connStr[2], connStr[3]);
+		System.out.println("zzz");
+
 Dbg.wr("IP dest: ");
-Dbg.intVal((Comm.dst_ip>>>24)&0xff);
-Dbg.intVal((Comm.dst_ip>>>16)&0xff);
-Dbg.intVal((Comm.dst_ip>>>8)&0xff);
-Dbg.intVal((Comm.dst_ip>>>0)&0xff);
+Dbg.intVal((dstIp>>>24)&0xff);
+Dbg.intVal((dstIp>>>16)&0xff);
+Dbg.intVal((dstIp>>>8)&0xff);
+Dbg.intVal((dstIp>>>0)&0xff);
 Dbg.wr('\n');
 for (i=0; i<4; ++i) {
 Dbg.wr('\"');
