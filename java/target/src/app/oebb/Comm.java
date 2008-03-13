@@ -13,7 +13,7 @@ import util.*;
 import ejip.*;
 import joprt.*;
 
-public class CommX extends RtThread {
+public class Comm extends RtThread {
 
 	// UDP destination ports
 	public static final int BG_REQUEST = 2000;
@@ -592,7 +592,7 @@ Dbg.lf();
 			sendReply(p);
 		} else if (nr==Cmd.FLAN) {
 			Status.angabe = p.buf[OFF_DATA+1];
-			Status.state = Status.ANGABE;
+			Logic.state = Status.ANGABE;
 			sendReply(p);
 		} else if (nr==Cmd.FERL) {
 			synchronized (Status.dirMutex) {
@@ -606,20 +606,20 @@ Dbg.intVal(Status.melNrStart);
 Dbg.intVal(Status.melNrZiel);
 Dbg.lf();
 
-			Status.state = Status.ERLAUBNIS;
+			Logic.state = Logic.ERLAUBNIS;
 			Status.sendFerlQuit = true;
 			sendReply(p);
 		} else if (nr==Cmd.FWR) {
 			Status.melNrZiel = Status.melNr;
-			Status.state = Status.WIDERRUF;
+			Logic.state = Logic.WIDERRUF;
 			sendReply(p);
 		} else if (nr==Cmd.ABM) {
-			Status.state = Status.ABGEMELDET;
+			Logic.state = Logic.ABGEMELDET;
 			Status.anmOk = false;
 			sendReply(p);
 		} else if (nr==Cmd.NOT) {
 			Status.melNrZiel = Status.melNr;
-			Status.state = Status.NOTHALT;
+			Logic.state = Logic.NOTHALT;
 			sendReply(p);
 		} else if (nr==Cmd.DLSTAT) {
 			Status.dlType = p.buf[OFF_DATA];

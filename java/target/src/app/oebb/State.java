@@ -187,7 +187,7 @@ public class State extends ejip.UdpHandler implements Runnable {
 	boolean send() {
 
 		// get an IP packet
-		Packet p = Packet.getPacket(Packet.FREE, Packet.ALLOC, TestMain.ipLink);
+		Packet p = Packet.getPacket(Packet.FREE, Packet.ALLOC, ipLink);
 		if (p == null) { // got no free buffer!
 			Dbg.wr('!');
 			Dbg.wr('b');
@@ -197,7 +197,6 @@ public class State extends ejip.UdpHandler implements Runnable {
 		setUDPData(p.buf, Udp.DATA);
 		p.len = (Udp.DATA + 12) << 2;
 		
-
 		Dbg.wr("BG:  ");
 		printMsg(p);
 
@@ -228,6 +227,8 @@ public class State extends ejip.UdpHandler implements Runnable {
 	/**
 	 * Handle a message received from the ZLB.
 	 * zlbMsg point to the received package
+	 * 
+	 * TODO: check timestamp
 	 */
 	private void handleMsg() {
 		
@@ -324,6 +325,22 @@ public class State extends ejip.UdpHandler implements Runnable {
 			}
 		}
 
+		// TODO: any sanity checks? action on change of start/end?
+		synchronized (this) {
+			start = buf[Udp.DATA+4]&0xffff;
+			end = buf[Udp.DATA+5]>>>16;
+			startNF = buf[Udp.DATA+5]&0xffff;
+		}
+		if (start!=0 && (Logic.state==Logic.ANM_OK || Logic.state==Logic.ZIEL)) {
+			// this is now a FERL event
+			synchronized (Status.dirMutex) {
+				// let Logik.check() update the direction
+				Status.direction = Gps.DIR_UNKNOWN;
+			}
+			Logic.state = Logic.ERLAUBNIS;			
+		}
+
+
 		Dbg.wr("ZLB: ");
 		printMsg(p);
 		p.setStatus(Packet.FREE);
@@ -397,7 +414,7 @@ public class State extends ejip.UdpHandler implements Runnable {
 	public void run() {
 		if (Timer.timeout(sendTimer)) {
 			sendTimer = Timer.getTimeoutSec(SEND_PERIOD);
-			if (ipLink.getIpAddress()!=0) {
+			if (ipLink.getIpAddress()!=0 && destIp!=0) {
 				send();				
 			}
 		} else {

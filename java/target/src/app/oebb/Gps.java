@@ -225,7 +225,7 @@ Dbg.wr('*');
 
 		State state = Main.state;
 		
-		if (Status.strNr<=0) {
+		if (Main.state.strnr<=0) {
 			if (Strecke.idle) {
 				Strecke.idle = false;
 				// set coordinates

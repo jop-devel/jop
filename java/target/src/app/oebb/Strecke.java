@@ -106,7 +106,7 @@ System.out.println();
 Dbg.wr("found: ");
 Dbg.intVal(nr);
 Dbg.wr("\n");
-				Status.strNr = nr;
+				Main.state.strnr = nr;
 				
 			} else if (foundCnt>1 ) {
 				Status.selectStr = true;
@@ -116,7 +116,7 @@ Dbg.wr("\n");
 			}
 			
 		} else {
-			Status.strNr = 0;
+			Main.state.strnr = 0;
 Dbg.wr("nothing found\n");		
 		}
 

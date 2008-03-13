@@ -568,13 +568,9 @@ System.out.println("ES Strecke:");
 			addr += STR_LEN+intVal(addr+STR_CNT)*PT_LEN;		// find next Strecke
 		}
 		if (i==cnt) return false;
-//		Comm.startConnection(dstIp, connStr);
 		
-		System.out.println("xxx");
 		Main.state.destIp = dstIp;
-		System.out.println("yyy");
 		Main.ipLink.startConnection(connStr[0], connStr[1], connStr[2], connStr[3]);
-		System.out.println("zzz");
 
 Dbg.wr("IP dest: ");
 Dbg.intVal((dstIp>>>24)&0xff);
