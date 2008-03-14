@@ -75,10 +75,9 @@ public class State extends ejip.UdpHandler implements Runnable {
 	final static int AFLAG_RICHTUNG =	0x00000002;	// Falsche Richtung
 	final static int AFLAG_FERL =		0x00000004;	// Keine Fahrerlaubnis
 	final static int AFLAG_ES221 =		0x00000008;	// ES221 Mode
-	final static int AFLAG_NOTQUIT =	0x00000010;	// NOTHALT Quit
-	final static int AFLAG_ZIEL =		0x00000020;	// Ziel Erreicht
-	final static int AFLAG_ANK =		0x00000040;	// Ankunft
-	final static int AFLAG_VERL =		0x00000080;	// Verlassen
+	final static int AFLAG_ANK =		0x00000010;	// Ankunft
+	final static int AFLAG_VERL =		0x00000020;	// Verlassen
+	final static int AFLAG_ZIEL =		0x00000040;	// Ziel Erreicht
 	
 	// Meldungen von der Zentrale zum BG
 	final static int CFLAG_ABM =	0x00000001;		// Abmelden
