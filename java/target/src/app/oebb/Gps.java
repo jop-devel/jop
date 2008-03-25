@@ -243,7 +243,7 @@ Dbg.wr('*');
 //				Dbg.wr("no communication Alarm");
 //			}
 
-			if (melnr != state.pos) {
+			if (melnr != state.getPos()) {
 Dbg.wr("Melderaum: ");
 Dbg.intVal(melnr);
 Dbg.wr("\n");
@@ -253,8 +253,8 @@ Dbg.wr("\n");
 				if (melnr!=-1) {
 					// change only if previous unknown or
 					// we're moving
-					if (state.pos<=0 || speed>MIN_SPEED) {
-						state.pos = melnr;
+					if (state.getPos()<=0 || speed>MIN_SPEED) {
+						state.setPos(melnr);
 						state.requestSend();
 Dbg.wr("Melderaum: ");
 Dbg.intVal(melnr);
@@ -268,14 +268,14 @@ Dbg.wr(" nun aktiv\n");
 			} else {
 				// check direction only if no melNr change
 				// and we have a valid melNr
-				if (state.pos>0) {
+				if (state.getPos()>0) {
 					checkDir();
 				}
 			}
 			//
 			//	check the timeout for a change to 'Bereit'
 			//
-			if (state.pos>=0) {
+			if (state.getPos()>=0) {
 				if (melnr==-1) {
 					if (Timer.secTimeout(melNrTimeout)) {
 						changeToBereit = true;
@@ -599,7 +599,7 @@ Dbg.wr("m/s \n");
 			direction = DIR_UNKNOWN;
 			return;
 		} 
-		Flash.Point p = Flash.getPoint(Main.state.pos);
+		Flash.Point p = Flash.getPoint(Main.state.getPos());
 		if (p==null) return;
 		
 		int dold = dist(p.lat-old_lat, p.lon-old_lon);

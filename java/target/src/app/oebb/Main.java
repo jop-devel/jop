@@ -93,6 +93,7 @@ public class Main {
 	static RtThread pppThre;
 	
 	static State state;
+	static Logic logic;
 
 
 	static boolean reset;
@@ -246,7 +247,7 @@ public class Main {
 		//
 		//	create Logic thread.
 		//
-		new Logic(LOGIC_PRIO, LOGIC_PERIOD, ipLink);
+		logic = new Logic(LOGIC_PRIO, LOGIC_PERIOD, ipLink);
 		
 		//
 		//	watch dog in it's own thread

@@ -66,6 +66,10 @@ public class Logic extends RtThread {
 	private boolean isVerschub;
 	
 	private int alarmType;
+	
+	private boolean alarmZielQuit;
+	private boolean alarmFaehrtQuit;
+	private boolean alarmRichtungQuit;
 
 	private int[] buf;
 	// length is one display line without status character
@@ -285,6 +289,16 @@ System.out.println("Logic.initVals()");
 // Dbg.intVal(com.jopdesign.sys.Native.getSP());
 		return true;
 	}
+	
+	/**
+	 * Send a postion change event from State.
+	 * Reset alarm quit fields.
+	 */
+	void posChanged() {
+		alarmFaehrtQuit = false;
+		alarmRichtungQuit = false;
+		alarmZielQuit = false;
+	}
 
 	/**
 	 * 'calculate' what to check from the state we are in.
@@ -292,8 +306,8 @@ System.out.println("Logic.initVals()");
 	 */
 	private void updateStates() {
 		
-		if (Main.state.pos>0) {
-			Flash.Point p = Flash.getPoint(Main.state.pos);
+		if (Main.state.getPos()>0) {
+			Flash.Point p = Flash.getPoint(Main.state.getPos());
 			checkDirection = p.checkDirection;
 			// Stillstand: Enable checkMove
 			if (Gps.speed<Gps.MIN_SPEED && Logic.state!=Logic.ERLAUBNIS) {
@@ -315,7 +329,7 @@ System.out.println("Logic.initVals()");
 		State state = Main.state;
 		int pos, start, end;
 		synchronized (state) {
-			pos = state.pos;
+			pos = state.getPos();
 			start = state.start;
 			end = state.end;
 		}
@@ -326,13 +340,13 @@ System.out.println("Logic.initVals()");
 		//		direction check also in ZIEL
 		//
 		if (checkMelnr && !isVerschub && Logic.state!=Logic.ALARM
-				&& Main.state.pos!=-1) {
+				&& Main.state.getPos()!=-1) {
 
 			synchronized (Status.dirMutex) {
 				if (Status.direction==Gps.DIR_UNKNOWN) {
-					if (Main.state.end > Main.state.start) {		// going from left to rigth.
+					if (Main.state.end > Main.state.start) {		// going from left to right.
 						Status.direction = Gps.DIR_FORWARD;
-					} else if (Main.state.end < Main.state.start) {		// going from left to rigth.
+					} else if (Main.state.end < Main.state.start) {		// going from left to right.
 						Status.direction = Gps.DIR_BACK;
 					}
 				}
@@ -340,28 +354,25 @@ System.out.println("Logic.initVals()");
 
 			if (Status.direction==Gps.DIR_FORWARD) {		// going from left to rigth.
 				// check direction with melnr
-				if (checkDirection && Main.state.pos<Main.state.start) {				
+				if (checkDirection && Main.state.getPos()<Main.state.start) {				
 					// FERL bleibt
 					stateAfterQuit = Logic.state;
 					Logic.state = Logic.ALARM;
 					alarmType = Cmd.ALARM_RICHTUNG;
 					return false;						
 				}
-				// check Melderaum
+				// check Melderaum Ziel
 //				if (Main.state.pos<Main.state.start || Main.state.pos>Main.state.end) {
 				// change 13.12.2006 - Ziel only in the direction
-				if (Main.state.pos>Main.state.end) {
+				if (Main.state.getPos()>Main.state.end && Main.state.end!=0 && !alarmZielQuit) {
 					stateAfterQuit = Logic.state;
 					Logic.state = Logic.ALARM;
 					alarmType = Cmd.ALARM_UEBERF;
-// TODO: find a new way to not trigger ziel uberfahren to often
-//					Main.state.start = Main.state.pos;
-//					Main.state.end = Main.state.pos;
 					return false;
 				}
 				// check direction
 				if (checkDirection && Gps.direction==Gps.DIR_BACK &&
-					!(state.type==State.TYPE_NF && Main.state.pos==Main.state.end)) {
+					!(state.type==State.TYPE_NF && Main.state.getPos()==Main.state.end)) {
 
 					// FERL bleibt
 					stateAfterQuit = Logic.state;
@@ -371,7 +382,7 @@ System.out.println("Logic.initVals()");
 				}
 			} else {										// going from right to left
 				// check direction with melnr
-				if (checkDirection && Main.state.pos>Main.state.start) {				
+				if (checkDirection && Main.state.getPos()>Main.state.start) {				
 					// FERL bleibt
 					stateAfterQuit = Logic.state;
 					Logic.state = Logic.ALARM;
@@ -381,7 +392,7 @@ System.out.println("Logic.initVals()");
 				// check Melderaum
 				// change 13.12.2006 - Ziel only in the direction
 //				if (Main.state.pos>Main.state.start || Main.state.pos<Main.state.end) {
-				if (Main.state.pos<Main.state.end) {
+				if (Main.state.getPos()<Main.state.end && Main.state.end!=0 && !alarmZielQuit) {
 					stateAfterQuit = Logic.state;
 					Logic.state = Logic.ALARM;
 					alarmType = Cmd.ALARM_UEBERF;
@@ -389,7 +400,7 @@ System.out.println("Logic.initVals()");
 				}
 				// check direction
 				if (checkDirection && Gps.direction==Gps.DIR_FORWARD &&
-					!(state.type==State.TYPE_NF && Main.state.pos==Main.state.end)) {
+					!(state.type==State.TYPE_NF && Main.state.getPos()==Main.state.end)) {
 						stateAfterQuit = Logic.state;
 // FERL bleibt
 //						stateAfterQuit = Status.ANM_OK;
@@ -428,7 +439,7 @@ System.out.println("Logic.initVals()");
 		//	Ziel erreicht
 		//
 		if (Logic.state == Logic.ERLAUBNIS && 
-			Main.state.pos == Main.state.end &&
+			Main.state.getPos() == Main.state.end &&
 			state.type==State.TYPE_ZUG) {
 
 			Logic.state = Logic.ZIEL;
@@ -607,7 +618,7 @@ System.out.println("waitGps");
 		
 		// wait for GPS melnr found
 		for (;;) {
-			if (Main.state.pos>0) {
+			if (Main.state.getPos()>0) {
 				// now we can check for a change of Melnr
 				checkMelnr = true;
 				break;
@@ -844,7 +855,7 @@ System.out.println("Download server connect timeout");
 				tim = Timer.getTimeoutSec(5);
 			}
 
-			Flash.Point p = Flash.getPoint(Main.state.pos);
+			Flash.Point p = Flash.getPoint(Main.state.getPos());
 			if (p==null || !(p.anmelden)) {
 				Display.write("Anmelden bei", "dieser Position", "nicht möglich");				
 			} else {
@@ -1019,6 +1030,15 @@ Dbg.lf();
 			// wait for Enter to quit Alarm
 			if (waitEnter()) break;
 		}
+		if (alarmType==Cmd.ALARM_UEBERF) {
+			alarmZielQuit = true;
+		} else if (alarmType==Cmd.ALARM_FAEHRT) {
+			alarmFaehrtQuit = true;
+		} else if (alarmType==Cmd.ALARM_RICHTUNG) {
+			alarmRichtungQuit = true;
+		} else {
+			Display.write("Alarm", "Nummer", alarmType, "");
+		}
 		Led.alarmOff();
 		if (Status.connOk) {
 			// reset alarm - even is not quit?
@@ -1046,12 +1066,12 @@ Dbg.lf();
 
 	private void ziel() {
 
-		Flash.Point p = Flash.getPoint(Main.state.pos);
+		Flash.Point p = Flash.getPoint(Main.state.getPos());
 		if (Status.esMode) {
 			Display.write("Ziel erreicht:", p.stationLine1, "(HP-Ausw. Pfeilt.)");
 			setGpsData();
 			tmpStr.append("Ziel erreicht: ");
-			tmpStr.append(Main.state.pos);
+			tmpStr.append(Main.state.getPos());
 			tmpStr.append("\n");
 			Flash.log(tmpStr);
 			if (waitAnyKey()) {
@@ -1110,7 +1130,7 @@ Dbg.lf();
 		if (Status.esMode) {
 			setGpsData();
 			tmpStr.append("Neustart: ");
-			tmpStr.append(Main.state.pos);
+			tmpStr.append(Main.state.getPos());
 			tmpStr.append("\n");
 			Flash.log(tmpStr);
 		}
@@ -1122,7 +1142,7 @@ Dbg.lf();
 		Display.write("Deaktiviert", "", "Aktivieren mit [E]");
 		setGpsData();
 		tmpStr.append("Deaktiviert: ");
-		tmpStr.append(Main.state.pos);
+		tmpStr.append(Main.state.getPos());
 		tmpStr.append("\n");
 		Flash.log(tmpStr);
 		initVals();
@@ -1154,13 +1174,13 @@ Dbg.lf();
 		int tim;
 
 // System.out.println("AnkVerl");
-		if (Main.state.pos<=0 || Main.state.start<=0 || Main.state.end<=0 ||
+		if (Main.state.getPos()<=0 || Main.state.start<=0 || Main.state.end<=0 ||
 				Status.direction == Gps.DIR_UNKNOWN) {
 			Display.write("Bei dieser Position", "keine Meldung", "möglich!");
 			waitEnter(5);
 			return;
 		}
-		Flash.Point p = Flash.getPoint(Main.state.pos);
+		Flash.Point p = Flash.getPoint(Main.state.getPos());
 		if (p==null) {
 			Display.write("Bei dieser Position", "keine Meldung", "möglich!");
 			waitEnter(5);
@@ -1203,13 +1223,13 @@ Dbg.lf();
 		int tim;
 
 // System.out.println("AnkVerl");
-		if (Main.state.pos<=0 || Main.state.start<=0 || Main.state.end<=0 ||
+		if (Main.state.getPos()<=0 || Main.state.start<=0 || Main.state.end<=0 ||
 				Status.direction == Gps.DIR_UNKNOWN) {
 			Display.write("Bei dieser Position", "keine Meldung", "möglich!");
 			waitEnter(5);
 			return;
 		}
-		Flash.Point p = Flash.getPoint(Main.state.pos);
+		Flash.Point p = Flash.getPoint(Main.state.getPos());
 		if (p==null || !p.verlassen) {
 			Display.write("Bei dieser Position", "keine Meldung", "möglich!");
 			waitEnter(5);
@@ -1316,7 +1336,7 @@ Dbg.lf();
 			if (i<1000) tmpStr.append(' ');
 			if (i<100) tmpStr.append(' ');
 			tmpStr.append("MNr: ");
-			Display.write(20, tmpStr, Main.state.pos);
+			Display.write(20, tmpStr, Main.state.getPos());
 			Display.write(40, Gps.text);
 		}
 	}
@@ -1432,7 +1452,7 @@ System.out.println("esInit");
 		// is it necessary to do esStr() on ES Strecken befor findStr()?
 		synchronized(this) {
 			Flash.esStr();			
-			Main.state.pos = -1;
+			Main.state.setPos(-1);
 			// disable till Gps finds the new Melnr for the
 			// changed Strecke
 			checkMelnr = false;
@@ -1450,11 +1470,11 @@ System.out.println("esInit");
 		Logic.state = Logic.ES_RDY;
 		
 		for (;;) {
-			if (Main.state.pos>0) {
+			if (Main.state.getPos()>0) {
 				// now we can check for a change of Melnr
 				checkMelnr = true;
-				Main.state.start = Main.state.pos;
-				Main.state.end = Main.state.pos;
+				Main.state.start = Main.state.getPos();
+				Main.state.end = Main.state.getPos();
 				break;
 			}
 			loop();
@@ -1487,7 +1507,7 @@ System.out.println("ES Rdy");
 			i = Flash.getNext(i);
 			if (i!=-1) {
 				melnr = i;
-				if (melnr>=Main.state.pos) {
+				if (melnr>=Main.state.getPos()) {
 					p = Flash.getPoint(melnr);
 					break;
 				}
@@ -1537,7 +1557,7 @@ System.out.println("ES Rdy");
 				
 				// The left point is the station
 				// smaller melnr is start
-				Main.state.start = Main.state.pos;
+				Main.state.start = Main.state.getPos();
 				Main.state.end = melnr;
 				Logic.state = Logic.ERLAUBNIS;
 				Main.state.type = State.TYPE_ZUG;
@@ -1580,15 +1600,15 @@ System.out.println("ES Rdy");
 
 		setGpsData();
 		tmpStr.append("Verschub: ");
-		tmpStr.append(Main.state.pos);
+		tmpStr.append(Main.state.getPos());
 		tmpStr.append("\n");
 		Flash.log(tmpStr);
 
 		Logic.state = Logic.ES_VERSCHUB;
 		checkMelnr = false;
 		while (loop()) {
-			Main.state.start = Main.state.pos;
-			Main.state.end = Main.state.pos;
+			Main.state.start = Main.state.getPos();
+			Main.state.end = Main.state.getPos();
 		}
 		checkMelnr = true;
 
@@ -1604,7 +1624,7 @@ System.out.println("ES Rdy");
 			if (Keyboard.rd()==Keyboard.E) {
 				Logic.state = Logic.INIT;
 				Main.state.strnr = 0;
-				Main.state.pos = 0;
+				Main.state.setPos(0);
 				return;
 			}
 		}

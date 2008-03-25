@@ -130,7 +130,7 @@ public class TestMain {
 				msg.bgid = 0x1234;
 				msg.strnr = 155;
 				msg.zugnr = 4711;
-				msg.pos = 43;
+				msg.setPos(43);
 				msg.type = State.TYPE_ZUG;
 
 				Udp.addHandler(State.ZLB_RCV_PORT, msg);

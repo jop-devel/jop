@@ -43,7 +43,7 @@ public class State extends ejip.UdpHandler implements Runnable {
 	int time;
 	int strnr;
 	int zugnr;
-	volatile int pos;	// set in Gps.checkStrMelnr()
+	private volatile int pos;	// set in Gps.checkStrMelnr()
 	int start;
 	int end;
 	int startNF;
@@ -135,7 +135,7 @@ public class State extends ejip.UdpHandler implements Runnable {
 	public State(LinkLayer link) {
 
 		ipLink = link;
-		setTimestamp(2001, 1, 1, 0, 0, 0, 0);
+		setTimestamp(2001, 1, 1, 0, 0, 0, 1);
 
 		sendTimer = Timer.getTimeoutSec(SEND_PERIOD);
 		stat = new int[5];
@@ -152,7 +152,7 @@ public class State extends ejip.UdpHandler implements Runnable {
 		arr[off + 1] = date;
 		arr[off + 2] = time;
 		arr[off + 3] = (strnr << 20) + zugnr;
-		arr[off + 4] = (pos << 16) + start;
+		arr[off + 4] = (getPos() << 16) + start;
 		arr[off + 5] = (end << 16) + startNF;
 		int gpsFix = Gps.fix;
 		if (gpsFix == -1)
@@ -183,6 +183,8 @@ public class State extends ejip.UdpHandler implements Runnable {
 		this.time += (1 << 32 - 28);
 	}
 
+	static int cnt;
+	
 	boolean send() {
 
 		// get an IP packet
@@ -191,6 +193,12 @@ public class State extends ejip.UdpHandler implements Runnable {
 			Dbg.wr('!');
 			Dbg.wr('b');
 			return false;
+		}
+
+		// TODO: workaround for first connect
+		if (!contactZLB) {
+			++cnt;
+			setTimestamp(2001, 1, 1, 0, 0, 0, cnt);			
 		}
 
 		setUDPData(p.buf, Udp.DATA);
@@ -324,18 +332,25 @@ public class State extends ejip.UdpHandler implements Runnable {
 			}
 		}
 
-		// TODO: any sanity checks? action on change of start/end?
+		boolean ferlChanged = false;
 		synchronized (this) {
-			start = buf[Udp.DATA+4]&0xffff;
-			end = buf[Udp.DATA+5]>>>16;
-			startNF = buf[Udp.DATA+5]&0xffff;
+			val = buf[Udp.DATA+4]&0xffff;
+			if (val!=start) ferlChanged = true;
+			start = val;
+			val = buf[Udp.DATA+5]>>>16;
+			if (val!=end) ferlChanged = true;
+			end = val;
+			val = buf[Udp.DATA+5]&0xffff;
+			if (val!=startNF) ferlChanged = true;
+			startNF = val;
 		}
-		if (start!=0 && (Logic.state==Logic.ANM_OK || Logic.state==Logic.ZIEL)) {
+		if (start!=0 && ferlChanged && (Logic.state==Logic.ANM_OK || Logic.state==Logic.ZIEL)) {
 			// this is now a FERL event
 			synchronized (Status.dirMutex) {
 				// let Logik.check() update the direction
 				Status.direction = Gps.DIR_UNKNOWN;
 			}
+			Dbg.wr("set FERL");
 			Logic.state = Logic.ERLAUBNIS;			
 		}
 
@@ -570,6 +585,20 @@ public class State extends ejip.UdpHandler implements Runnable {
 	public void setESAlarm() {
 		// TODO Auto-generated method stub
 		
+	}
+
+	void setPos(int pos) {
+		int oldPos = this.pos;
+		this.pos = pos;
+		// trigger actions on position change
+		if (pos != oldPos) {
+			requestSend();
+			Main.logic.posChanged();
+		}
+	}
+
+	int getPos() {
+		return pos;
 	}
 
 }
