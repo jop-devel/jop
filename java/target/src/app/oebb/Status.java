@@ -6,6 +6,8 @@ package oebb;
 *	Author: Martin Schoeberl (martin.schoeberl@chello.at)
 *
 *   Changelog:
+*   
+*   TODO: should be moved to Logic.
 *
 */
 

@@ -70,20 +70,35 @@ public class State extends ejip.UdpHandler implements Runnable {
 	
 	int destIp;
 	
-	// Alarme vom BG zur Zentrale
-	final static int AFLAG_MLR =		0x00000001; // Melderaum ueberfahren
-	final static int AFLAG_RICHTUNG =	0x00000002;	// Falsche Richtung
-	final static int AFLAG_FERL =		0x00000004;	// Keine Fahrerlaubnis
-	final static int AFLAG_ES221 =		0x00000008;	// ES221 Mode
-	final static int AFLAG_ANK =		0x00000010;	// Ankunft
-	final static int AFLAG_VERL =		0x00000020;	// Verlassen
-	final static int AFLAG_ZIEL =		0x00000040;	// Ziel Erreicht
+	
+	// Alarm and flags
+	public static final int ALARM_UEBERF = 1;
+	public static final int ALARM_RICHTUNG = 2;
+	public static final int ALARM_FAEHRT = 3;
+	public static final int ALARM_ES221 = 4;
+	public static final int FLAG_ANK = 5;
+	public static final int FLAG_VERL = 6;
+	public static final int FLAG_ZIEL = 7;
+	public static final int ALARM_MLR = 8;
+	
+	private final static int AFLAG_ANK = 1<<(FLAG_ANK-1);
+	private final static int AFLAG_VERL = 1<<(FLAG_VERL-1);
+	private final static int AFLAG_ZIEL = 1<<(FLAG_ZIEL-1);
+	
+	private final static int ALARM_MSK = (1<<(ALARM_UEBERF-1)) |
+	(1<<(ALARM_RICHTUNG-1)) | (1<<(ALARM_FAEHRT-1)) | (1<<(ALARM_ES221-1)) | (1<<(ALARM_MLR-1));
 	
 	// Meldungen von der Zentrale zum BG
 	final static int CFLAG_ABM =	0x00000001;		// Abmelden
 	final static int CFLAG_FWR =	0x00000002;		// Fahrtwiderruf
 	final static int CFLAG_NOT =	0x00000004;		// Nothalt
 	final static int CFLAG_ANMOK =	0x00000008;		// Anmelden OK
+
+	/**
+	 * The alarm was ack by the TFZ. Set the flags to zero when
+	 * FDL has also acked the alarm.
+	 */
+	private boolean alarmQuit;
 
 
 	// local states
@@ -316,7 +331,7 @@ public class State extends ejip.UdpHandler implements Runnable {
 			}
 		}
 		
-		// Alarm flag quits
+		// Alarm and flag quits
 		int alarmAck = buf[Udp.DATA+7];
 		synchronized (this) {
 			if (alarmAck==alarmFlags) {
@@ -328,6 +343,15 @@ public class State extends ejip.UdpHandler implements Runnable {
 				if ((alarmAck & AFLAG_VERL)!=0) {
 					alarmFlags &= ~AFLAG_VERL;
 					ankVerl = 0;
+				}
+				if ((alarmAck & AFLAG_ZIEL)!=0) {
+					alarmFlags &= ~AFLAG_ZIEL;
+				}
+				// Alarm has been reset by FDL and seen by ZLB
+				// we can reset it in the flags
+				if (alarmQuit) {
+					alarmFlags &= ~ALARM_MSK;
+					alarmQuit = false;
 				}
 			}
 		}
@@ -457,7 +481,10 @@ public class State extends ejip.UdpHandler implements Runnable {
 	}
 
 	public void sendZiel() {
-		// TODO Auto-generated method stub
+		synchronized (this) {
+			alarmFlags |= AFLAG_ZIEL;			
+		}
+		requestSend();
 		
 	}
 
@@ -475,22 +502,11 @@ public class State extends ejip.UdpHandler implements Runnable {
 	 * @param alarmType
 	 */
 	public void setAlarm(int alarmType) {
-		// TODO Auto-generated method stub
-//		if (alarmType==Cmd.ALARM_UEBERF) {
-//			Display.write("", "ZIEL ÜBERFAHREN", "");
-//		} else if (alarmType==Cmd.ALARM_FAEHRT) {
-//			Display.write("KEINE", "FAHRERLAUBNIS", "");
-//		} else if (alarmType==Cmd.ALARM_RICHTUNG) {
-//			Display.write("Falsche", "Richtung", "");
-//		} else {
-//			Display.write("Alarm", "Nummer", alarmType, "");
-//		}
 		
 		if (alarmType==0) {
-			// reset the alarm
-			// or better mark it as reset alarm pending
-			// we should not loose a alarm message due to a
-			// too fast quite from the TFZF
+			alarmQuit = true;
+		} else {
+			alarmFlags |= 1<<(alarmType-1);			
 		}
 
 		requestSend();
@@ -546,7 +562,7 @@ public class State extends ejip.UdpHandler implements Runnable {
 	}
 	
 	/**
-	 * Got ack for ANK from ZLB so flag is reset
+	 * Got ack for ANK from ZLB
 	 * @return
 	 */
 	public boolean ankuftAck() {
@@ -554,7 +570,7 @@ public class State extends ejip.UdpHandler implements Runnable {
 	}
 
 	/**
-	 * Got ack for VERL from ZLB so flag is reset
+	 * Got ack for VERL from ZLB
 	 * @return
 	 */
 	public boolean verlassenAck() {

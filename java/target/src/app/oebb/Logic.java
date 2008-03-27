@@ -70,6 +70,7 @@ public class Logic extends RtThread {
 	private boolean alarmZielQuit;
 	private boolean alarmFaehrtQuit;
 	private boolean alarmRichtungQuit;
+	private boolean alarmMlrQuit;
 
 	private int[] buf;
 	// length is one display line without status character
@@ -298,6 +299,7 @@ System.out.println("Logic.initVals()");
 		alarmFaehrtQuit = false;
 		alarmRichtungQuit = false;
 		alarmZielQuit = false;
+		alarmMlrQuit = false;
 	}
 
 	/**
@@ -340,7 +342,7 @@ System.out.println("Logic.initVals()");
 		//		direction check also in ZIEL
 		//
 		if (checkMelnr && !isVerschub && Logic.state!=Logic.ALARM
-				&& Main.state.getPos()!=-1) {
+				&& pos!=-1) {
 
 			synchronized (Status.dirMutex) {
 				if (Status.direction==Gps.DIR_UNKNOWN) {
@@ -354,58 +356,72 @@ System.out.println("Logic.initVals()");
 
 			if (Status.direction==Gps.DIR_FORWARD) {		// going from left to rigth.
 				// check direction with melnr
-				if (checkDirection && Main.state.getPos()<Main.state.start) {				
+				if (checkDirection && pos<Main.state.start && !alarmRichtungQuit) {				
 					// FERL bleibt
 					stateAfterQuit = Logic.state;
 					Logic.state = Logic.ALARM;
-					alarmType = Cmd.ALARM_RICHTUNG;
+					alarmType = State.ALARM_RICHTUNG;
 					return false;						
+				}
+				// check melnr in the other direction
+				if (pos<Main.state.start && Main.state.start!=0 && !alarmMlrQuit) {
+					stateAfterQuit = Logic.state;
+					Logic.state = Logic.ALARM;
+					alarmType = State.ALARM_MLR;
+					return false;
 				}
 				// check Melderaum Ziel
 //				if (Main.state.pos<Main.state.start || Main.state.pos>Main.state.end) {
 				// change 13.12.2006 - Ziel only in the direction
-				if (Main.state.getPos()>Main.state.end && Main.state.end!=0 && !alarmZielQuit) {
+				if (pos>Main.state.end && Main.state.end!=0 && !alarmZielQuit) {
 					stateAfterQuit = Logic.state;
 					Logic.state = Logic.ALARM;
-					alarmType = Cmd.ALARM_UEBERF;
+					alarmType = State.ALARM_UEBERF;
 					return false;
 				}
 				// check direction
 				if (checkDirection && Gps.direction==Gps.DIR_BACK &&
-					!(state.type==State.TYPE_NF && Main.state.getPos()==Main.state.end)) {
+					!(state.type==State.TYPE_NF && pos==Main.state.end) &&!alarmRichtungQuit) {
 
 					// FERL bleibt
 					stateAfterQuit = Logic.state;
 					Logic.state = Logic.ALARM;
-					alarmType = Cmd.ALARM_RICHTUNG;
+					alarmType = State.ALARM_RICHTUNG;
 					return false;					
 				}
 			} else {										// going from right to left
 				// check direction with melnr
-				if (checkDirection && Main.state.getPos()>Main.state.start) {				
+				if (checkDirection && pos>Main.state.start && !alarmRichtungQuit) {				
 					// FERL bleibt
 					stateAfterQuit = Logic.state;
 					Logic.state = Logic.ALARM;
-					alarmType = Cmd.ALARM_RICHTUNG;
+					alarmType = State.ALARM_RICHTUNG;
 					return false;						
+				}
+				// check melnr in the other direction
+				if (pos>Main.state.start && Main.state.start!=0 && !alarmMlrQuit) {
+					stateAfterQuit = Logic.state;
+					Logic.state = Logic.ALARM;
+					alarmType = State.ALARM_MLR;
+					return false;
 				}
 				// check Melderaum
 				// change 13.12.2006 - Ziel only in the direction
 //				if (Main.state.pos>Main.state.start || Main.state.pos<Main.state.end) {
-				if (Main.state.getPos()<Main.state.end && Main.state.end!=0 && !alarmZielQuit) {
+				if (pos<Main.state.end && Main.state.end!=0 && !alarmZielQuit) {
 					stateAfterQuit = Logic.state;
 					Logic.state = Logic.ALARM;
-					alarmType = Cmd.ALARM_UEBERF;
+					alarmType = State.ALARM_UEBERF;
 					return false;
 				}
 				// check direction
 				if (checkDirection && Gps.direction==Gps.DIR_FORWARD &&
-					!(state.type==State.TYPE_NF && Main.state.getPos()==Main.state.end)) {
+					!(state.type==State.TYPE_NF && pos==Main.state.end) && !alarmRichtungQuit) {
 						stateAfterQuit = Logic.state;
 // FERL bleibt
 //						stateAfterQuit = Status.ANM_OK;
 						Logic.state = Logic.ALARM;
-						alarmType = Cmd.ALARM_RICHTUNG;
+						alarmType = State.ALARM_RICHTUNG;
 						return false;					
 				}
 			}
@@ -417,18 +433,18 @@ System.out.println("Logic.initVals()");
 			Logic.state!=Logic.NOTHALT && Logic.state!=Logic.NOTHALT_OK &&
 			Logic.state!=Logic.INFO && Logic.state!=Logic.LERN &&
 			Logic.state!=Logic.ES_VERSCHUB &&
-			checkMove && Gps.speed>Gps.MIN_SPEED) {
+			checkMove && Gps.speed>Gps.MIN_SPEED && !alarmFaehrtQuit) {
 			stateAfterQuit = Logic.state;
 			Logic.state = Logic.ALARM;
-			alarmType = Cmd.ALARM_FAEHRT;
+			alarmType = State.ALARM_FAEHRT;
 			checkMove = false;		// disable further Alarms
 			return false;
 		}
 		// check Verschub
-		if (isVerschub && Logic.state!=Logic.ALARM) {
+		if (isVerschub && Logic.state!=Logic.ALARM && !alarmMlrQuit) {
 			if (pos>end || pos<start) {
 				Logic.state = Logic.ALARM;
-				alarmType = Cmd.ALARM_UEBERF;
+				alarmType = State.ALARM_MLR;
 				isVerschub = false;	// clear Verschub
 				stateAfterQuit = Logic.FDL_CONN;
 				return false;
@@ -439,7 +455,7 @@ System.out.println("Logic.initVals()");
 		//	Ziel erreicht
 		//
 		if (Logic.state == Logic.ERLAUBNIS && 
-			Main.state.getPos() == Main.state.end &&
+			pos == Main.state.end &&
 			state.type==State.TYPE_ZUG) {
 
 			Logic.state = Logic.ZIEL;
@@ -1002,12 +1018,14 @@ System.out.println("comm err ignored");
 Dbg.wr("Alarm ");
 Dbg.intVal(alarmType);
 Dbg.lf();
-		if (alarmType==Cmd.ALARM_UEBERF) {
+		if (alarmType==State.ALARM_UEBERF) {
 			Display.write("", "ZIEL ÜBERFAHREN", "");
-		} else if (alarmType==Cmd.ALARM_FAEHRT) {
+		} else if (alarmType==State.ALARM_FAEHRT) {
 			Display.write("KEINE", "FAHRERLAUBNIS", "");
-		} else if (alarmType==Cmd.ALARM_RICHTUNG) {
+		} else if (alarmType==State.ALARM_RICHTUNG) {
 			Display.write("Falsche", "Richtung", "");
+		} else if (alarmType==State.ALARM_MLR) {
+			Display.write("Falscher", "Melderaum", "");
 		} else {
 			Display.write("Alarm", "Nummer", alarmType, "");
 		}
@@ -1030,12 +1048,14 @@ Dbg.lf();
 			// wait for Enter to quit Alarm
 			if (waitEnter()) break;
 		}
-		if (alarmType==Cmd.ALARM_UEBERF) {
+		if (alarmType==State.ALARM_UEBERF) {
 			alarmZielQuit = true;
-		} else if (alarmType==Cmd.ALARM_FAEHRT) {
+		} else if (alarmType==State.ALARM_FAEHRT) {
 			alarmFaehrtQuit = true;
-		} else if (alarmType==Cmd.ALARM_RICHTUNG) {
+		} else if (alarmType==State.ALARM_RICHTUNG) {
 			alarmRichtungQuit = true;
+		} else if (alarmType==State.ALARM_MLR) {
+			alarmMlrQuit = true;
 		} else {
 			Display.write("Alarm", "Nummer", alarmType, "");
 		}
