@@ -122,7 +122,7 @@ public abstract class Dbg {
 	public static void hexVal(int val) {
 
 		int i, j;
-		if (val<16) wr('0');
+		if (val<16 && val>=0) wr('0');
 		for (i=0; i<MAX_TMP-1; ++i) {
 			j = val & 0x0f;
 			if (j<10) {
