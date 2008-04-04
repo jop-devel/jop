@@ -31,29 +31,45 @@ int ftdi_setup(FTDI_HANDLE_T *handle)
 
   for (list = ftdi_devlist; list != NULL; list = list->next)
     {
+      char manufacturer[100], description[100], serial[20];
+      status = ftdi_usb_get_strings(handle, list->dev, manufacturer, 100,
+                                    description, 100, serial, 20);
+      if (status != FTDI_OK)
+        {
+          fprintf(stderr, "Error: ftdi_usb_get_strings() failed (%d)\n", status);
+          fprintf(stderr, "Error: %s\n", ftdi_get_error_string(handle));
+          return -1;
+        }
+
+      fprintf(stdout,"Info: manufacturer: %s\nInfo: description: %s\n"
+              "Info: serial: %s\n", manufacturer, description, serial);
+
       status = ftdi_usb_open_dev(handle, list->dev);
       if (status != FTDI_OK)
-	{
-	  fprintf(stderr, "Error: ftdi_usb_open_dev() failed (%d)\n", status);
-	  return -1;
-	}
+        {
+          fprintf(stderr, "Error: ftdi_usb_open_dev() failed (%d)\n", status);
+          fprintf(stderr, "Error: %s\n", ftdi_get_error_string(handle));
+          return -1;
+        }
       status = ftdi_set_baudrate(handle, BAUDRATE);
       if (status != FTDI_OK)
-	{
-	  fprintf(stderr, "Error: ftdi_set_baudrate() failed (%d)\n", status);
-	  return -1;
-	}
+        {
+          fprintf(stderr, "Error: ftdi_set_baudrate() failed (%d)\n", status);
+          fprintf(stderr, "Error: %s\n", ftdi_get_error_string(handle));
+          return -1;
+        }
       
       status = ftdi_set_bitmode(handle, BITMASK, RESET_MODE);
       status = ftdi_set_bitmode(handle, BITMASK, ASYN_BITBANG_MODE);
       if (status != FTDI_OK)
-	{
-	  fprintf(stderr,"Error: Asynchronous Bit Bang Mode inactive! \n");
-	}
+        {
+          fprintf(stderr,"Error: Asynchronous Bit Bang Mode inactive! \n");
+          fprintf(stderr, "Error: %s\n", ftdi_get_error_string(handle));
+        }
       else
-	{
-	  fprintf(stdout,"Info: Asynchronous Bit Bang Mode active! \n");
-	}
+        {
+          fprintf(stdout,"Info: Asynchronous Bit Bang Mode active! \n");
+        }
     }
 
   return 0;

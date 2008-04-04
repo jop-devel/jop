@@ -1,3 +1,4 @@
+CC=gcc
 CFLAGS=-ansi -pedantic -Wall
 
 ifeq ($(WINDIR),)
@@ -9,7 +10,7 @@ endif
 all: USBRunner
 
 USBRunner: usbRunner.o jb_const.o jb_device.o jb_io.o jb_jtag.o compat.o
-	gcc $(LDFLAGS) -o $@ $^ $(LDLIBS)
+	$(CC) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 compat.o: compat.c compat.h FTD2XX.H
 jb_const.o: jb_const.c jb_const.h jb_io.h compat.h
