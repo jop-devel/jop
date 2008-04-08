@@ -231,7 +231,9 @@ joptimizer:
 	cd $(TOOLS)/dist/classes && jar cf ../lib/joptimizer.jar \
 		joptimizer com/jopdesign/libgraph \
 		-C ../../src/joptimizer log4j.properties \
-		-C ../../src/joptimizer jop.conf
+		-C ../../src/joptimizer jop.conf \
+		-C ../../src joptimizer/config/jop-arch.properties \
+		-C ../../src joptimizer/config/jvm-arch.properties
 
 #
 #	A helper target to compile all java files in a directory and all subdirs
