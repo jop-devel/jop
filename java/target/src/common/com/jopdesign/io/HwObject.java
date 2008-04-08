@@ -20,7 +20,7 @@
 
 package com.jopdesign.io;
 
-public abstract class IODevice {
+public abstract class HwObject {
 	
-	IODevice() {};
+	HwObject() {};
 }

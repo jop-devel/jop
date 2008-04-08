@@ -20,7 +20,7 @@
 
 package com.jopdesign.io;
 
-public final class SerialPort extends IODevice {
+public final class SerialPort extends HwObject {
 	
 	// Some constants for the status port
 	public static final int MASK_TDRE = 1;
