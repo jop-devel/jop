@@ -97,7 +97,7 @@ public class CmdLine {
 
     public void printHelp(PrintStream out) {
         out.println("  help                  Show this help.");
-        out.println("  exit                  Terminate the program.");
+        out.println("  quit                  Terminate the program.");
         out.println("  load <configfile>     Load all values from a property-file as options.");
         out.println("                        The argument must be a valid url (like file:<path>).");
         out.println("  list <type>           List one of the following:");
@@ -351,7 +351,7 @@ public class CmdLine {
      */
     public boolean execCmd(String[] args, PrintStream out) {
 
-        if ( "exit".equals(args[0]) ) {
+        if ( "quit".equals(args[0]) ) {
             return true;
 
         } else if ( "help".equals(args[0]) ) {

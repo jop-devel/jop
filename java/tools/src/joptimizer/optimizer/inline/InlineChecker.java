@@ -272,6 +272,11 @@ public class InlineChecker {
 
                 if ( stmt instanceof FieldStmt ) {
                     FieldInfo field = ((FieldStmt)stmt).getFieldInfo();
+                    if ( field == null ) {
+                        // this is a field of an unknown class, don't inline to be on the safe side
+                        // TODO perform basic check on classnames if field is already public
+                        return null;
+                    }
 
                     // check if fields need to be set to public
                     if ( checkNeedsPublic(caller, invoked, field.getClassInfo(), field, changePublic) == 0 ) {
