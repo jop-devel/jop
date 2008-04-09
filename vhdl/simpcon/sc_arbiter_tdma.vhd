@@ -35,6 +35,7 @@
 --				 * changed set to 2 bits
 --				 * changed serv to servR and servW
 --				 * added signal pipelined
+--				 * added rd_data register for each CPU
 -- 140308: Working version
 
 -- TODO:  - Add atomic for Wolfgang

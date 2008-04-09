@@ -80,7 +80,7 @@ public class LiftBenchCMP3 {
 				bm1.test(5461);
 				synchronized(lock){
 					signal++;}
-				
+
 				while(true);
 			}
 			else
@@ -90,7 +90,7 @@ public class LiftBenchCMP3 {
 					bm2.test(5461);
 					synchronized(lock){
 						signal++;}
-					
+
 					while(true);
 				}
 			}
