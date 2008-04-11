@@ -229,7 +229,7 @@ System.out.println(mp+" "+pc);
 
 		// that's an access to our scratchpad memory
 		if (addr >= Const.SCRATCHPAD_ADDRESS && addr <= Const.SCRATCHPAD_ADDRESS+MEM_TEST_OFF) {
-			return mem[addr%MAX_SCRATCHPAD];
+			return scratchMem[addr%MAX_SCRATCHPAD];
 		}
 		if (addr>MAX_MEM+MEM_TEST_OFF || addr<MIN_IO_ADDRESS) {
 			System.out.println("readMem: wrong address: "+addr);
@@ -247,7 +247,7 @@ System.out.println(mp+" "+pc);
 
 		// that's an access to our scratchpad memory
 		if (addr >= Const.SCRATCHPAD_ADDRESS && addr <= Const.SCRATCHPAD_ADDRESS+MEM_TEST_OFF) {
-			mem[addr%MAX_SCRATCHPAD] = data;
+			scratchMem[addr%MAX_SCRATCHPAD] = data;
 			return;
 		}
 		if (addr>MAX_MEM+MEM_TEST_OFF || addr<MIN_IO_ADDRESS) {
