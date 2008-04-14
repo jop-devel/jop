@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-ansi -pedantic -Wall
+CFLAGS=-pedantic -Wall
 
 ifeq ($(WINDIR),)
 	LDLIBS=-lftdi
