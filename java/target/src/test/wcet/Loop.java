@@ -33,8 +33,8 @@ public class Loop {
 
 	public static int measure(boolean b, int val) {
 		
-		// measured: 2009
-		// wcet: 2033
+		// measured: 1529
+		// wcet: 1553
 		// difference is 24 cycles:
 		//		iload_1		1
 		//		ireturn		23
@@ -54,7 +54,7 @@ public class Loop {
 					val *= val;
 				}
 			} else {
-				for (j=0; j<7; ++j) {	//@WCA loop=7
+				for (j=0; j<4; ++j) {	//@WCA loop=4
 					val += val;
 				}
 			}
