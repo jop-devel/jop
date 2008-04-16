@@ -90,7 +90,7 @@ public class HashtableBenchCMP2_RamCounter {
 			// Read Table
 			for (int i=0; i<max/2; i++)
 			{
-				if (htable.contains(string + i))
+				if (htable.contains(data[i].value))
 				{
 					data[i].value = (String)htable.get(data[i].key);
 				}
@@ -134,7 +134,7 @@ public class HashtableBenchCMP2_RamCounter {
 		{		                                   
 			if (cpu_id == 0x00000001)            
 			{
-				String string = new String("Test");
+				
 				// Fill Hashtable
 				for (int j=max/2; j<max; j++)
 				{
@@ -150,7 +150,7 @@ public class HashtableBenchCMP2_RamCounter {
 				// Read Table
 				for (int i=max/2; i<max; i++)
 				{
-					if (htable.contains(string + i))
+					if (htable.contains(data[i].value))
 					{
 						data[i].value = (String)htable.get(data[i].key);
 					}
@@ -164,8 +164,7 @@ public class HashtableBenchCMP2_RamCounter {
 						htable.remove(data[i].key);
 					}
 				}
-				
-				
+
 				
 				synchronized(lock){
 					wait = true;}

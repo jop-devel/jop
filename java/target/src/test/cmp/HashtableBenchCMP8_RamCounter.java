@@ -83,7 +83,7 @@ public class HashtableBenchCMP8_RamCounter{
 			// Read Table
 			for (int i=0; i<max/8; i++)
 			{
-				if (htable.contains(string + i))
+				if (htable.contains(data[i].value))
 				{
 					data[i].value = (String)htable.get(data[i].key);
 				}
@@ -175,7 +175,6 @@ public class HashtableBenchCMP8_RamCounter{
 	
 	static void startCPU1()
 	{
-		String string = new String("Test");
 		// Fill Hashtable
 		for (int j=max/8; j<max/4; j++)
 		{
@@ -188,7 +187,7 @@ public class HashtableBenchCMP8_RamCounter{
 		// Read Table
 		for (int i=max/8; i<max/4; i++)
 		{
-			if (htable.contains(string + i))
+			if (htable.contains(data[i].value))
 			{
 				data[i].value = (String)htable.get(data[i].key);
 			}
@@ -210,7 +209,6 @@ public class HashtableBenchCMP8_RamCounter{
 	
 	static void startCPU2()
 	{
-		String string = new String("Test");
 		// Fill Hashtable
 		for (int j=max/4; j<(3*max/8); j++)
 		{
@@ -223,7 +221,7 @@ public class HashtableBenchCMP8_RamCounter{
 		// Read Table
 		for (int i=max/4; i<(3*max/8); i++)
 		{
-			if (htable.contains(string + i))
+			if (htable.contains(data[i].value))
 			{
 				data[i].value = (String)htable.get(data[i].key);
 			}
@@ -246,7 +244,6 @@ public class HashtableBenchCMP8_RamCounter{
 	
 	static void startCPU3()
 	{
-		String string = new String("Test");
 		// Fill Hashtable
 		for (int j=(3*max/8); j<max/2; j++)
 		{
@@ -259,7 +256,7 @@ public class HashtableBenchCMP8_RamCounter{
 		// Read Table
 		for (int i=(3*max/8); i<max/2; i++)
 		{
-			if (htable.contains(string + i))
+			if (htable.contains(data[i].value))
 			{
 				data[i].value = (String)htable.get(data[i].key);
 			}
@@ -282,7 +279,6 @@ public class HashtableBenchCMP8_RamCounter{
 	
 	static void startCPU4()
 	{
-		String string = new String("Test");
 		// Fill Hashtable
 		for (int j=max/2; j<(5*max/8); j++)
 		{
@@ -295,7 +291,7 @@ public class HashtableBenchCMP8_RamCounter{
 		// Read Table
 		for (int i=max/2; i<(5*max/8); i++)
 		{
-			if (htable.contains(string + i))
+			if (htable.contains(data[i].value))
 			{
 				data[i].value = (String)htable.get(data[i].key);
 			}
@@ -317,7 +313,6 @@ public class HashtableBenchCMP8_RamCounter{
 	
 	static void startCPU5()
 	{
-		String string = new String("Test");
 		// Fill Hashtable
 		for (int j=(5*max/8); j<(3*max/4); j++)
 		{
@@ -330,7 +325,7 @@ public class HashtableBenchCMP8_RamCounter{
 		// Read Table
 		for (int i=(5*max/8); i<(3*max/4); i++)
 		{
-			if (htable.contains(string + i))
+			if (htable.contains(data[i].value))
 			{
 				data[i].value = (String)htable.get(data[i].key);
 			}
@@ -353,7 +348,6 @@ public class HashtableBenchCMP8_RamCounter{
 	
 	static void startCPU6()
 	{
-		String string = new String("Test");
 		// Fill Hashtable
 		for (int j=(3*max/4); j<(7*max/8); j++)
 		{
@@ -366,7 +360,7 @@ public class HashtableBenchCMP8_RamCounter{
 		// Read Table
 		for (int i=(3*max/4); i<(7*max/8); i++)
 		{
-			if (htable.contains(string + i))
+			if (htable.contains(data[i].value))
 			{
 				data[i].value = (String)htable.get(data[i].key);
 			}
@@ -389,7 +383,6 @@ public class HashtableBenchCMP8_RamCounter{
 	
 	static void startCPU7()
 	{
-		String string = new String("Test");
 		// Fill Hashtable
 		for (int j=(7*max/8); j<max; j++)
 		{
@@ -402,7 +395,7 @@ public class HashtableBenchCMP8_RamCounter{
 		// Read Table
 		for (int i=(7*max/8); i<max; i++)
 		{
-			if (htable.contains(string + i))
+			if (htable.contains(data[i].value))
 			{
 				data[i].value = (String)htable.get(data[i].key);
 			}

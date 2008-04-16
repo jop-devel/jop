@@ -34,7 +34,7 @@ public class HashtableBenchmark {
 	public static boolean wait = false;
 	public static Hashtable htable;
 	public static DataClass[] data;
-	public static int max = 100;
+	public static int max = 512;
 	public static int test0 = 0;
 	public static int test1 = 0;
 	public static int test2 = 0;
@@ -110,7 +110,7 @@ public class HashtableBenchmark {
 			System.out.println("Hashtable Size: " + htable.size());
 			
 			// Read out Hashtable
-			for (int i = 0; i<max; i++)
+			/*for (int i = 0; i<max; i++)
 			{
 				if (htable.containsKey(data[i].key)) 
 				{
@@ -121,7 +121,7 @@ public class HashtableBenchmark {
 				{
 					System.out.println("Key: " + data[i].key + " not contained!");
 				}
-			}
+			}*/
 
 			//System.out.println(htable.toString());
 			//htable.clear();
@@ -134,12 +134,12 @@ public class HashtableBenchmark {
 			System.out.println("CPU0: " + test0 + " mal");
 			System.out.println("CPU1: " + test1 + " mal");
 			
-			deleteInsertKeys(3);
-			System.out.println("Size of Hashtable:" + htable.size());
-			searchValue(15);
-			System.out.println("Deleted Value Keys: " + test2);
-			insertOverwriteKeys(57);
-			System.out.println("Inserted Keys: " + test3);
+			//deleteInsertKeys(3);
+			//System.out.println("Size of Hashtable:" + htable.size());
+			//searchValue(15);
+			//System.out.println("Deleted Value Keys: " + test2);
+			//insertOverwriteKeys(57);
+			//System.out.println("Inserted Keys: " + test3);
 		} 
 		else                                       
 		{		                                   
@@ -232,74 +232,3 @@ public class HashtableBenchmark {
 	}
 
 }
-
-
-/*if (htable.contains(i)) {
-System.out.println("OK");
-} else {
-System.out.println("ERROR Hashtable");
-}
-
-if (!htable.containsKey(new Object())) {
-System.out.println("OK");
-} else {
-System.out.println("ERROR Hashtable");
-}
-
-if (!htable.isEmpty()) {
-System.out.println("OK");
-} else {
-System.out.println("ERROR Hashtable");
-}
-
-Enumeration hashenum;
-
-// TODO: JOP says readMem: wrong address
-
-// hashenum = vc.elements();
-// System.out.println("Hashtable value Enumeration:");
-// while (hashenum.hasMoreElements()) {
-// // System.out.println(hashenum.nextElement().toString());
-// }
-//
-// hashenum = vc.keys();
-// System.out.println("Hashtable key Enumeration:");
-// while (hashenum.hasMoreElements()) {
-// System.out.println(hashenum.nextElement().toString());
-// }
-
-if (htable.get("one").equals(i)) {
-System.out.println("OK");
-} else {
-System.out.println("ERROR Hashtable");
-}
-if (htable.size() == 3) {
-System.out.println("OK");
-} else {
-System.out.println("ERROR Hashtable");
-}
-if (i.equals(htable.remove("one"))) {
-System.out.println("OK");
-} else {
-System.out.println("ERROR Hashtable");
-}
-if (!(htable.size() == 3)) {
-System.out.println("OK");
-} else {
-System.out.println("ERROR Hashtable");
-}
-if (htable.size() == 2) {
-System.out.println("OK");
-} else {
-System.out.println("ERROR Hashtable");
-}
-
-System.out.println("Hashtable.toString():");
-System.out.println(htable.toString());
-
-htable.clear();
-if (htable.isEmpty()) {
-System.out.println("OK");
-} else {
-System.out.println("ERROR Hashtable");
-}*/

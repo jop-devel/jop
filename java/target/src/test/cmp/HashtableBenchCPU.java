@@ -71,7 +71,7 @@ public class HashtableBenchCPU{
 			// Read Table
 			for (int i=0; i<max; i++)
 			{
-				if (htable.contains(string + i))
+				if (htable.contains(data[i].value))
 				{
 					data[i].value = (String)htable.get(data[i].key);
 				}
