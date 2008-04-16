@@ -36,24 +36,41 @@ public class RunBench {
 	 */
 	public static void main(String[] args) {
 
-		BenchMark bm = new BenchKfl();
+//		foo();
 		
-		// remove the following to avoid initializing the JDK
-		System.out.print("Banchmerk ");
-		System.out.print(bm.getName());
-		System.out.println(" started");
+
+		BenchMark bm[] = {
+			new BenchKfl(),
+			new BenchUdpIp(),
+			new BenchLift()				
+		};
 		
-		// start measurement here
-//		int t1 = (int) System.currentTimeMillis();
-//		int cyc1 = com.jopdesign.sys.Native.rdMem(com.jopdesign.sys.Const.IO_CNT);
-		bm.test(10000);
-		// stop measurement here
-//		int cyc2 = com.jopdesign.sys.Native.rdMem(com.jopdesign.sys.Const.IO_CNT);
-//		int t2 = (int) System.currentTimeMillis();
-//		System.out.print("cycles: ");
-//		System.out.println(cyc2-cyc1);
-//		System.out.print("ms: ");
-//		System.out.println(t2-t1);
+		for (int i=0; i<bm.length; ++i) {
+			// remove the following to avoid initializing the JDK
+			System.out.print("Benchmark ");
+			System.out.print(bm[i].getName());
+			System.out.println(" started");
+			
+			// start measurement here
+			int t1 = (int) System.currentTimeMillis();
+			int cyc1 = com.jopdesign.sys.Native.rdMem(com.jopdesign.sys.Const.IO_CNT);
+			bm[i].test(10000);
+//			bm[i].test(10);
+			// stop measurement here
+			int cyc2 = com.jopdesign.sys.Native.rdMem(com.jopdesign.sys.Const.IO_CNT);
+			int t2 = (int) System.currentTimeMillis();
+			System.out.print("cycles: ");
+			System.out.println(cyc2-cyc1);
+			System.out.print("ms: ");
+			System.out.println(t2-t1);			
+		}
+
+	}
+	
+	
+	
+	static void foo() {
+		System.out.println("Hello foo");
 	}
 
 }
