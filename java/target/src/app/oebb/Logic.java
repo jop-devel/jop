@@ -310,11 +310,13 @@ System.out.println("Logic.initVals()");
 		
 		if (Main.state.getPos()>0) {
 			Flash.Point p = Flash.getPoint(Main.state.getPos());
-			checkDirection = p.checkDirection;
-			// Stillstand: Enable checkMove
-			if (Gps.speed<Gps.MIN_SPEED && Logic.state!=Logic.ERLAUBNIS) {
-				checkMove = p.checkMove;
-			}	
+			if (p!=null) {
+				checkDirection = p.checkDirection;
+				// Stillstand: Enable checkMove
+				if (Gps.speed<Gps.MIN_SPEED && Logic.state!=Logic.ERLAUBNIS) {
+					checkMove = p.checkMove;
+				}					
+			}
 		}
 		
 		if (Logic.state!=Logic.ERLAUBNIS) {
@@ -1080,13 +1082,18 @@ Dbg.lf();
 
 		checkMove = false;
 		Flash.Point p = Flash.getPoint(Main.state.end);
-		Display.write("Fahrerlaubnis", p.stationLine1, p.stationLine2);
+		if (p==null) {
+			Display.write("Falsche", "Fahrerlaubnis", "");				
+		} else {
+			Display.write("Fahrerlaubnis", p.stationLine1, p.stationLine2);			
+		}
 
 	}
 
 	private void ziel() {
 
 		Flash.Point p = Flash.getPoint(Main.state.getPos());
+		if (p==null) return;
 		if (Status.esMode) {
 			Display.write("Ziel erreicht:", p.stationLine1, "(HP-Ausw. Pfeilt.)");
 			setGpsData();
@@ -1391,7 +1398,11 @@ Dbg.lf();
 
 			Display.write(0, "Lernbetrieb ", melnr);
 			Flash.Point p = Flash.getPoint(melnr);
-			Display.write(20, p.stationLine1);
+			if (p==null) {
+				Display.write(20, "Falscher Punkt");				
+			} else {
+				Display.write(20, p.stationLine1);				
+			}
 
 			Display.write(40, Gps.text);
 
