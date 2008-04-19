@@ -20,6 +20,7 @@ public class Display extends RtThread {
 	static boolean gpsOk;
 	static boolean dgpsOk;
 	static boolean inetOk;
+	static boolean hbOk;
 
 	static final int ESC = 0x1b;
 	// Language for 7 bit encoding
@@ -90,12 +91,20 @@ public class Display extends RtThread {
 		inetOk = val;
 		setStatus();
 	}
+	
+	public static void setHbOk(boolean val) {
+		hbOk = val;
+		setStatus();
+	}
 
 	private static void setStatus() {
 
 		fb[19+FB_OFF] = gpsOk ? '*' : ' ';
 		fb[39+FB_OFF] = dgpsOk ? '+' : ' ';
 		fb[59+FB_OFF] = inetOk ? '#' : ' ';
+		if (hbOk) {
+			fb[59+FB_OFF] = 'H';
+		}
 	}
 			
 

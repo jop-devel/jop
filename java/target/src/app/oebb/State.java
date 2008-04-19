@@ -142,6 +142,16 @@ public class State extends ejip.UdpHandler implements Runnable {
 	 */
 	boolean nothaltQuitPending;
 
+	// save some fields and use static
+	// reset not yet used - we have a reset function in Logic.
+//	/**
+//	 * RESET timer
+//	 */
+//	private static int rtim;
+//	/**
+//	 * reset pending
+//	 */
+//	private static boolean scheduleReset;
 	/**
 	 * some network statistics
 	 */
@@ -296,6 +306,7 @@ public class State extends ejip.UdpHandler implements Runnable {
 			// send the ack
 			requestSend();
 		}
+
 		
 		// type
 		int val = (buf[Udp.DATA+6]&0xffff)>>>13;
@@ -305,11 +316,26 @@ public class State extends ejip.UdpHandler implements Runnable {
 			if (val==TYPE_VERSCH) {
 				type = val;
 			}
-			// update ack with cmd
+			// update ack with cmd as default action
 			cmdAck = cmd;
-			
+			// but keep some when not acked from TFZF or Loigc
+	
+			// Abmelden
+			if ((cmd & CFLAG_ABM)!=0) {
+				Logic.state = Logic.ABGEMELDET;
+			}
+
+			// Angemeldet
+			if ((cmd & CFLAG_ANMOK)!=0) {
+//				if (Main.logic.state!=Logic.ANM_OK) {
+//					// not yet seen in Logic
+//					cmdAck &= ~CFLAG_ANMOK;
+//				}
+			}
+
 			// FWR
 			if ((cmd & CFLAG_FWR)!=0) {
+				Logic.state = Logic.WIDERRUF;
 				if (!fwrQuitPending) {
 					// we cannot ack it, reset the flag
 					cmdAck &= ~CFLAG_FWR;
@@ -321,6 +347,7 @@ public class State extends ejip.UdpHandler implements Runnable {
 
 			// NOTHALT
 			if ((cmd & CFLAG_NOT)!=0) {
+				Logic.state = Logic.NOTHALT;
 				if (!nothaltQuitPending) {
 					// we cannot ack it, reset the flag
 					cmdAck &= ~CFLAG_NOT;
@@ -394,7 +421,7 @@ public class State extends ejip.UdpHandler implements Runnable {
 		stat[2]++;
 		stat[3] += p.len;
 		if (p.len != ((Udp.DATA+9)*4)) {		// fix length
-			Status.commErr = 2;
+			Status.commErr = Logic.COMM_SHORT;
 			Dbg.wr("wl");
 			Dbg.intVal(p.len);
 			Dbg.wr('\n');
@@ -402,7 +429,7 @@ public class State extends ejip.UdpHandler implements Runnable {
 			return false;
 		}
 		if (p.buf[Udp.DATA + 0] != bgid) {
-			Status.commErr = 4;
+			Status.commErr = Logic.COMM_WRBGID;
 			Dbg.wr('w');
 			Dbg.wr('i');
 			Dbg.intVal(p.buf[Udp.DATA+0]);
@@ -468,9 +495,19 @@ public class State extends ejip.UdpHandler implements Runnable {
 			// force a reconnect in Ppp-Modem
 			ipLink.reconnect();
 			Status.connOk = false;
-			Status.commErr = 1;
+			Status.commErr = Logic.COMM_FDLERR;
 			Dbg.wr("connection lost");
 		}
+		
+		// not yet used
+//		if (scheduleReset) {
+//			Dbg.wr('$');
+//			++rtim;
+//			if (rtim==20) {
+//				Main.reset = true;
+//			}
+//		}
+
 	}
 
 	/**
@@ -599,8 +636,7 @@ public class State extends ejip.UdpHandler implements Runnable {
 	}
 
 	public void setESAlarm() {
-		// TODO Auto-generated method stub
-		
+		setAlarm(ALARM_ES221);
 	}
 
 	void setPos(int pos) {

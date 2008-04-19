@@ -41,6 +41,11 @@ public class Logic extends RtThread {
 	 * State of the Logic
 	 */
 	volatile static int state;
+	
+	/**
+	 * We are in a manual mode
+	 */
+	volatile boolean hilfsbtr;
 
 	/**
 	*	Next state after alarm quit.
@@ -79,7 +84,7 @@ public class Logic extends RtThread {
 	private String[] mnuBereit;
 	private static final int MNU_BEREIT_CNT = 2;
 	private String[] mnuTxt;
-	private static final int MNU_CNT = 6;
+	private static final int MNU_CNT = 8;
 	private String[] mnuESTxt;
 	private static final int MNU_ES_CNT = 3;
 	
@@ -110,6 +115,8 @@ public class Logic extends RtThread {
 		mnuTxt[3] = "Lernbetrieb";
 		mnuTxt[4] = "Umschalten -> ES221";
 		mnuTxt[5] = "Neustart";
+		mnuTxt[6] = "Hilfsbetrieb";
+		mnuTxt[7] = "Fahrerlaubnis";
 		mnuESTxt = new String[MNU_ES_CNT];
 		mnuESTxt[0] = "Haltepunkt";
 		mnuESTxt[1] = "Verschub";
@@ -133,6 +140,8 @@ System.out.println("Logic.initVals()");
 		Status.direction = Gps.DIR_UNKNOWN;
 
 		Status.dispMenu = false;
+		
+		hilfsbtr = false;
 
 		stateAfterQuit = Logic.state;
 		connSent = false;
@@ -256,9 +265,16 @@ System.out.println("Logic.initVals()");
 		//
 		// set status in display
 		//
-		Display.setInetOk(ipLink.getIpAddress()!=0);
+		Display.setInetOk(ipLink.getIpAddress()!=0 && Status.connOk);
+		Display.setHbOk(hilfsbtr);
 		Display.setGpsOk(Gps.fix>0);
 		Display.setDgpsOk(Gps.fix==2);
+		
+		// reset Hilfsbetrieb when connection is ok
+		if (Status.connOk) {
+			// TODO some synchronization?
+			hilfsbtr = false;
+		}
 
 		//
 		//	do the LED and Beep thing
@@ -482,8 +498,8 @@ System.out.println("Logic.initVals()");
 		
 		if (Logic.state==Logic.DL_CHECK ||
 			Logic.state==Logic.INIT  ||
-			Logic.state==Logic.GPS_OK  ||
-			Logic.state==Logic.CONNECT) {
+			Logic.state==Logic.GPS_OK) {
+//			Logic.state==Logic.CONNECT) {
 				bereit = true;
 			}
 
@@ -568,7 +584,25 @@ System.out.println("Logic.initVals()");
 					} else if (cnt==5) {
 						Display.write("Neustart", "", "");
 						restart();
-					}			
+					} else if (cnt==6) {
+						// Hilfsbetrieb
+						if (Status.connOk || Gps.speed>Gps.MIN_SPEED) {
+							Display.write("", "Nicht möglich", "");
+							waitEnter();							
+						} else {
+							Display.write("Wechsel zu", "Hilfsbetrieb?", "(Quitt. [E])");
+							if (waitEnter()) {
+								hilfsbtr = true;
+							}							
+						}
+					} else if (cnt==7) {
+						// HB Ferl
+						if (!hilfsbtr) {
+							Display.write("", "Nicht möglich", "");
+							waitEnter();							
+						}
+						hbFerl();
+					}
 				}
 
 				return;
@@ -753,7 +787,10 @@ System.out.println("Download server connect timeout");
 	}
 
 	
-	
+	/**
+	 * Start the connection. In Hilsbetrieb the connection start is
+	 * 'faked'.
+	 */
 	private void startConn() {
 
 		Display.write("Verbindungsaufbau", "", "");
@@ -770,14 +807,19 @@ System.out.println("Download server connect timeout");
 			if (ipLink.getIpAddress()!=0) {
 				break;
 			}
+			if (hilfsbtr) {
+				break;
+			}
 		}
+		
+		if (Status.dispMenu) return;
 		
 		Display.write("Verbinden zu", "", "");
 		Display.ipVal(40, Main.state.destIp);
 		// CONN is sent in check()
 		// Here we wait for the reply
 		while (loop()) {
-			if (Status.connOk) {
+			if (Status.connOk || hilfsbtr) {
 				Logic.state = Logic.FDL_CONN;
 				break;
 			}
@@ -926,7 +968,7 @@ System.out.println("Download server connect timeout");
 				if (Logic.state!=Logic.FDL_CONN) return;
 				// wait for Anmelden OK or we already got a FERL
 				while (loop()) {
-					if (state.anmOk() || state.start!=0) {
+					if (state.anmOk() || state.start!=0 || hilfsbtr) {
 						Logic.state = Logic.ANM_OK;
 						break;
 					} else if (Logic.state == Logic.ABGEMELDET) {
@@ -954,12 +996,18 @@ System.out.println("Download server connect timeout");
 		}
 	}
 	
+	final static int COMM_NOERR = 0;
+	final static int COMM_FDLERR = 1;
+	final static int COMM_SHORT = 2;
+	final static int COMM_WRCMD = 3;
+	final static int COMM_WRBGID = 4;
+	
 	private void commError() {
 
-// System.out.println("Comm Error");
 		// In ES mode or when checking the download
 		// server we just ignore the communication error
-		if (Status.esMode || Logic.state == Logic.DL_CHECK) {
+		// 19.4.2008 also ZLB not responsing ignored!
+		if (Status.esMode || Logic.state == Logic.DL_CHECK || Status.commErr==COMM_FDLERR) {
 			Status.commErr = 0;
 System.out.println("comm err ignored");
 			return;
@@ -968,11 +1016,11 @@ System.out.println("comm err ignored");
 			int nr = Status.commErr;
 			Led.shortBeep();
 			Led.startBlinking();
-			if (nr==2) {
+			if (nr==COMM_SHORT) {
 				Display.write("FDL Msg Fehler", "Paket zu kurz", "");
-			} else if (nr==3) {
+			} else if (nr==COMM_WRBGID) {
 				Display.write("FDL Msg Fehler", "falsches CMD", "");
-			} else if (nr==4) {
+			} else if (nr==COMM_WRBGID) {
 				Display.write("FDL Msg Fehler", "falsche bgid", "");
 			} else {
 				Display.write("FDL Rechner", "antwortet nicht", "(FDL verständigen)");
@@ -1644,6 +1692,98 @@ System.out.println("ES Rdy");
 		checkMelnr = true;
 
 	}
+	
+	/**
+	 * HB mode ferl
+	 *
+	 */
+	private void hbFerl() {
+		
+
+		int val = 0;
+		int i = 0;
+		
+System.out.println("HB Ferl");
+		int melnr = Flash.getFirst(Main.state.strnr);
+		Flash.Point p = Flash.getPoint(melnr);
+
+		for (;;) {
+			i = Flash.getNext(melnr);
+			i = Flash.getNext(i);
+			if (i!=-1) {
+				melnr = i;
+				if (melnr>=Main.state.getPos()) {
+					p = Flash.getPoint(melnr);
+					break;
+				}
+			} else {
+				i = 0;
+				break;
+			}
+		}
+
+		while (loop()) {
+
+			// check for going back to 'Bereit'
+			if (Gps.changeToBereit) {
+				reset();
+			}
+
+			Display.write("Haltepunkt ausw.:", p.stationLine1, p.stationLine2);
+
+			val = Keyboard.rd();
+			if (val==-1) {
+				continue;
+			}
+			if (val==Keyboard.B) {
+				Keyboard.unread(val);
+				return;
+			}
+
+			// display only the left point text
+
+			if (val==Keyboard.UP) {
+				i = Flash.getNext(melnr);
+				i = Flash.getNext(i);
+				if (i!=-1) {
+					melnr = i;
+					p = Flash.getPoint(melnr);
+				}
+			}
+			if (val==Keyboard.DOWN) {
+				i = Flash.getPrev(melnr);
+				i = Flash.getPrev(i);
+				if (i!=-1) {
+					melnr = i;
+					p = Flash.getPoint(melnr);
+				}
+			}
+			if (val==Keyboard.E) {
+				
+				// The left point is the station
+				// smaller melnr is start
+				Main.state.start = Main.state.getPos();
+				Main.state.end = melnr;
+				Logic.state = Logic.ERLAUBNIS;
+				Main.state.type = State.TYPE_ZUG;
+				Status.direction = Gps.DIR_UNKNOWN;
+
+				setGpsData();
+				tmpStr.append("HB Fahrt von ");
+				tmpStr.append(Main.state.start);
+				tmpStr.append(" nach ");
+				tmpStr.append(Main.state.end);
+				tmpStr.append("\n");
+				Flash.log(tmpStr);
+
+
+				return;
+			}
+			
+		}
+
+	}
+
 	
 
 	/**

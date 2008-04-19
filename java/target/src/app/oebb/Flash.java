@@ -424,6 +424,7 @@ Dbg.lf();
 
 Dbg.lf();
 Dbg.intVal(p.melnr);
+Dbg.intVal(p.flags);
 
 			// TODO: this earlier init is not
 			// part of the current BG SW (1.05)
@@ -568,7 +569,7 @@ System.out.println("ES Strecke:");
 			addr += STR_LEN+intVal(addr+STR_CNT)*PT_LEN;		// find next Strecke
 		}
 		if (i==cnt) return false;
-		
+
 		Main.state.destIp = dstIp;
 		Main.ipLink.startConnection(connStr[0], connStr[1], connStr[2], connStr[3]);
 

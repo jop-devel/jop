@@ -529,6 +529,7 @@ Dbg.wr("m/s \n");
 		//
 		while (nr!=-1) {
 			Flash.Point p = Flash.getPoint(nr);
+			if (p==null) return -1;
 			if (p.lat!=0 && p.lon!=0) {
 				int i = dist(p.lat-last_lat, p.lon-last_lon);
 				if (i<diff) {
@@ -567,6 +568,8 @@ Dbg.wr("m/s \n");
 		Flash.Point pa = Flash.getPoint(a);
 		Flash.Point pb = Flash.getPoint(b);
 		Flash.Point pc = Flash.getPoint(c);
+		
+		if (pa==null || pb==null || pc==null) return -1;
 		
 		int xa = dist(pa.lat-lat, pa.lon-lon);
 		int xb = dist(pb.lat-lat, pb.lon-lon);
