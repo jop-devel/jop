@@ -30,12 +30,7 @@
 -- 150108: Quasi Round Robin Arbiter -- added sync signal to arbiter
 -- 160108: First tests running with new Round Robin Arbiter
 
--- Functioning: Added counter that counts the clk cycles and divides
--- them by the number of cpu_cnt. As a consequence only the CPU that equals the
--- counter is allowed to access the memory. At the start CPU0 has to initialize 
--- and set up the whole CMP system, therefore the counter starts when the sync_out.s_out = '1'.
--- This is set in the application by CPU0. Pipelined access is supported. The counter
--- increases but the rdy_cnt does not become 0 and therefore the pipelined access functions.
+-- Functioning: See description of SIES08 paper
 
 
 
@@ -151,12 +146,25 @@ process(clk, reset)
 			counter <= 0;
 		elsif rising_edge(clk) then
 			counter <= counter + 1;
+			
 			for i in 0 to cpu_cnt-1 loop
 				if arb_out(i).atomic = '1' and counter = i then	
 					counter <= counter;
 					exit;
 				else
-					if counter = cpu_cnt-1 then
+					if follow_state(i) = serv then
+						if mem_in.rdy_cnt = 1 and arb_out(i).rd = '0' then
+							if counter = cpu_cnt-1 then
+								counter <= 0;
+							else
+								counter <= counter + 1;
+							end if;
+							exit;
+						else
+							counter <= counter;
+							exit;
+						end if;
+					elsif counter = cpu_cnt-1 then
 						counter <= 0;
 					end if;
 				end if;
