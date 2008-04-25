@@ -946,8 +946,7 @@ System.out.println("Download server connect timeout");
 		// also return on a comm error
 		if (!loop()) return;
 
-		state.zugnr = nr;
-		state.type = val;
+		int type = val;
 
 		if (val==1) {
 			Display.write("StreckenNr: ", state.strnr, "ZugNr: ",state.zugnr ,
@@ -964,6 +963,8 @@ System.out.println("Download server connect timeout");
 				continue;
 			}
 			if (val==Keyboard.E) {
+				state.zugnr = nr;
+				state.type = type;
 				Display.write("Anmelden", "", "(bitte warten)");
 				if (Logic.state!=Logic.FDL_CONN) return;
 				// wait for Anmelden OK or we already got a FERL
