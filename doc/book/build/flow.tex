@@ -426,20 +426,22 @@ Retrocomputing board.
 
 \section{Eclipse}
 
-In folder \dirent{eclipse} there are several Eclipse projects that
-you can import into your Eclipse workspace. All projects use the
-Eclipse path variable\footnote{Eclipse (path) variables are
-workspace specific.} \code{JOP\_HOME} that has to point to the root
-directory of the JOP sources. Under \menuitem{Window --
+In folder \dirent{eclipse} there are four Eclipse projects that you
+can import into your Eclipse workspace. All projects use the Eclipse
+path variable\footnote{Eclipse (path) variables are workspace
+specific.} \code{JOP\_HOME} that has to point to the root directory
+(\dirent{.../jop}) of the JOP sources. Under \menuitem{Window --
 Preferences...} select \menuitem{General -- Workspace -- Linked
 Resources} and create the path variable \code{JOP\_HOME} with
 \menuitem{New...}.
 
 Import the projects with \menuitem{File -- Import..} and
-\menuitem{Existing Projects into Workspace}. Select as root
-directory \dirent{.../jop/eclipse}, select the projects you want to
-import and press \menuitem{Finish}. Table~\ref{tab:eclipse} shows
-all available projects.
+\menuitem{Existing Projects into Workspace}. It is suggested to an
+Eclipse workspace that is not part of the jop source tree. Select as
+root directory \dirent{.../jop/eclipse}, select the projects you want
+to import, select \menuitem{Copy projects into workspace}, and press
+\menuitem{Finish}. Table~\ref{tab:eclipse} shows all available
+projects.
 
 \begin{table}
     \centering
@@ -461,12 +463,9 @@ all available projects.
 \end{table}
 
 Add the libraries from \dirent{.../jop/java/lib} (as external
-archives) to the build path of the project
-\dirent{joptools}\footnote{Eclipse can't use path variables for
-external .jar files -- annoying}. If you prefer your workspace to be
-not within the JOP directory tree just copy the content of
-\dirent{.../jop/eclipse} to your Eclipse workspace and import the
-projects from there.
+archives) to the build path (right click on the \dirent{joptools}
+project) of the project \dirent{joptools}\footnote{Eclipse can't use
+path variables for external .jar files -- annoying}.
 
 \section{Simulation}
 
