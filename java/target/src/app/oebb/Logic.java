@@ -968,8 +968,9 @@ System.out.println("Download server connect timeout");
 				if (Logic.state!=Logic.FDL_CONN) return;
 				// wait for Anmelden OK or we already got a FERL
 				while (loop()) {
-					if (state.anmOk() || state.start!=0 || hilfsbtr) {
+					if (Events.anmeldenOk || state.start!=0 || hilfsbtr) {
 						Logic.state = Logic.ANM_OK;
+						Events.anmeldenOk = false;
 						break;
 					} else if (Logic.state == Logic.ABGEMELDET) {
 						abmelden();

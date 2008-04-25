@@ -327,10 +327,7 @@ public class State extends ejip.UdpHandler implements Runnable {
 
 			// Angemeldet
 			if ((cmd & CFLAG_ANMOK)!=0) {
-//				if (Main.logic.state!=Logic.ANM_OK) {
-//					// not yet seen in Logic
-//					cmdAck &= ~CFLAG_ANMOK;
-//				}
+				Events.anmeldenOk = true;
 			}
 
 			// FWR
@@ -530,10 +527,6 @@ public class State extends ejip.UdpHandler implements Runnable {
 		return type==TYPE_VERSCH;
 	}
 	
-	public boolean anmOk() {
-		return (cmdAck & CFLAG_ANMOK) != 0;
-	}
-
 	/**
 	 * Set alarm flag
 	 * @param alarmType

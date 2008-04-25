@@ -662,22 +662,21 @@ Dbg.wr("m/s \n");
 */
 	public static void dgps(Packet p) {
 
-		// TODO
-//		int len = p.len - Comm.OFF_DATA*4;
-//
-//		if (len > ser.txFreeCnt()) {
-//Dbg.wr('d');
-//			return;										// just drop it
-//		}
-//
-//Dbg.wr('D');
-//
-//		int i;
-//		int[] buf = p.buf;
-//
-//		for (i=0; i<len; ++i) {
-//			ser.wr((buf[Comm.OFF_DATA+(i>>2)]>>(24-(i&3)*8)) & 0xff);
-//		}
+		int len = p.len - Udp.DATA*4;
+
+		if (len > ser.txFreeCnt()) {
+Dbg.wr('d');
+			return;										// just drop it
+		}
+
+Dbg.wr('D');
+
+		int i;
+		int[] buf = p.buf;
+
+		for (i=0; i<len; ++i) {
+			ser.wr((buf[Udp.DATA+(i>>2)]>>(24-(i&3)*8)) & 0xff);
+		}
 	}
 
 

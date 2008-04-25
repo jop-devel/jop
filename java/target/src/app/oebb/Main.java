@@ -62,7 +62,7 @@ public class Main {
 
 	// SW version
 	public static final int VER_MAJ = 2;
-	public static final int VER_MIN = 2;
+	public static final int VER_MIN = 3;
 
 	private static final int STRECKE_PRIO = 1;
 	private static final int STRECKE_PERIOD = 100000;
@@ -152,6 +152,9 @@ public class Main {
 		// split to more writes!!!
 		Udp.addHandler(BgTftp.PORT, tftpHandler);
 		ser = new Serial(Const.IO_UART_BG_MODEM_BASE);
+		
+		// Handler for DGPS data
+		Udp.addHandler(DgpsHandler.PORT, new DgpsHandler());
 
 		//
 		//	Create serial, PPP/SLIP and TCP/IP threads
