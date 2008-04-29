@@ -264,13 +264,10 @@
 			<!-- We want to force bootclasspath, extdirs, and classpath to be empty, but Ant makes this difficult. -->
 			<!-- If any of these are an empty string, Ant uses the default instead. So, we give them dummy values. -->
 			<!-- This works for all but classpath, for which Ant removes any non-existent paths. -->
-<!-- MS: I did this for Java 1.5 tests with the collection classes
-	don't remember if it is necessary for 1.5 - probably cleaner
-	for building a target with its own JDK
+			<!-- MS: this is needed for Java 1.5 -->
 			<bootclasspath path="${empty.dir}"/>
 			<extdirs path="${empty.dir}"/>
 			<classpath path="${empty.dir}"/>
--->
 			<src path="${basedir}"/> 
 			<include name="${target-app}"/> 
 		</javac>
