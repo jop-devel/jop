@@ -57,6 +57,10 @@ public class Instruction {
 		new Instruction("sub", 0x05, false, false),
 
 //	extension 'address' selects function 4 bits
+
+		// multiplication
+		new Instruction("stmul", 0x06, false, false),
+
 		new Instruction("stmwa", 0x07, false, false),
 
 		new Instruction("stmra", 0x08+0, false, false),
@@ -67,23 +71,23 @@ public class Instruction {
 		// getfield/putfield
 		new Instruction("stgf",  0x08+4, false, false),
 		new Instruction("stpf",  0x08+5, false, false),
-		// multiplication
-		new Instruction("stmul", 0x08+6, false, false),
+		// magic copying
+		new Instruction("stcp",  0x08+6, false, false),
 		// bytecode read
-		new Instruction("stbcrd", 0x08+7, false, false),
+		new Instruction("stbcrd",0x08+7, false, false),
 
 //	st (vp)	3 bits
-		new Instruction("st0", 0x10+0, false, false),
-		new Instruction("st1", 0x10+1, false, false),
-		new Instruction("st2", 0x10+2, false, false),
-		new Instruction("st3", 0x10+3, false, false),
-		new Instruction("st",  0x10+4, false, false),
+		new Instruction("st0",   0x10+0, false, false),
+		new Instruction("st1",   0x10+1, false, false),
+		new Instruction("st2",   0x10+2, false, false),
+		new Instruction("st3",   0x10+3, false, false),
+		new Instruction("st",    0x10+4, false, false),
 		new Instruction("stmi",  0x10+5, false, false),
 
-		new Instruction("stvp", 0x18, false, false),
+		new Instruction("stvp",  0x18, false, false),
 		new Instruction("stjpc", 0x19, false, false),
-		new Instruction("star", 0x1a, false, false),
-		new Instruction("stsp", 0x1b, false, false),
+		new Instruction("star",  0x1a, false, false),
+		new Instruction("stsp",  0x1b, false, false),
 
 //	shift
 		new Instruction("ushr", 0x1c, false, false),

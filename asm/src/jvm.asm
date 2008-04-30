@@ -675,7 +675,7 @@ iushr:		ushr nxt
 
 
 imul:
-			stmul			// store both operands and start
+			stmul		// store both operands and start
 			pop			// pop second operand
 
 			ldi	2		// 2*7+2 wait ok!
@@ -1844,35 +1844,39 @@ nop	// to keep offtbl.vhd short enough....
 //	public static native void memCopy(int src, int dest, int cnt);
 
 jopsys_memcpy:
-			ldi	-1
-			add
-			stm c	// counter-1
-			stm b	// destination
-			stm a	// source
-			ldm	c	// keep counter on the stack
+// 			ldi	-1
+// 			add
+// 			stm c	// counter-1
+// 			stm b	// destination
+// 			stm a	// source
+// 			ldm	c	// keep counter on the stack
 
-memcpy_loop:
-			dup
-			ldm	a
-			add
-			stmra
-			dup
-			ldm	b
-			add
-			stmwa	// should be ok
-			wait
-			wait
-			ldmrd
-			stmwd
-			dup
-			wait
-			wait
+// memcpy_loop:
+// 			dup
+// 			ldm	a
+// 			add
+// 			stmra
+// 			dup
+// 			ldm	b
+// 			add
+// 			stmwa	// should be ok
+// 			wait
+// 			wait
+// 			ldmrd
+// 			stmwd
+// 			dup
+// 			wait
+// 			wait
 
-			bnz	memcpy_loop
-			ldi	-1	// decrement in branch slot
-			add
+// 			bnz	memcpy_loop
+// 			ldi	-1	// decrement in branch slot
+// 			add
 
-			pop	nxt	// remove counter
+			stcp
+			pop
+			wait
+			wait
+			pop nxt
 
 
 

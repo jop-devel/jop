@@ -188,6 +188,7 @@ begin
 		mem_in.iastore <= '0';
 		mem_in.getfield <= '0';
 		mem_in.putfield <= '0';
+		mem_in.copy <= '0';
 		mul_wr <= '0';
 
 		wr_dly <= wr;
@@ -205,18 +206,20 @@ begin
 			elsif ext_addr=STMWD then
 				mem_scio_wr <= '1';		-- start memory or io write
 			elsif ext_addr=STALD then
-				mem_in.iaload <= '1';		-- start an array load
+				mem_in.iaload <= '1';	-- start an array load
 			elsif ext_addr=STAST then
-				mem_in.iastore <= '1';		-- start an array store
+				mem_in.iastore <= '1';	-- start an array store
 			elsif ext_addr=STGF then
-				mem_in.getfield <= '1';	 -- start getfield
+				mem_in.getfield <= '1';	-- start getfield
 			elsif ext_addr=STPF then
-				mem_in.putfield <= '1';	 -- start getfield
+				mem_in.putfield <= '1';	-- start getfield
+			elsif ext_addr=STCP then
+				mem_in.copy <= '1';		-- start copy
 			elsif ext_addr=STMUL then
 				mul_wr <= '1';			-- start multiplier
 			-- elsif ext_addr=STBCR then
 			else
-				mem_in.bc_rd <= '1';		-- start bc read
+				mem_in.bc_rd <= '1';	-- start bc read
 			end if;
 		end if;
 

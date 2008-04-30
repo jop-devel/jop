@@ -83,7 +83,7 @@ port (
 	dir			: out std_logic_vector(ram_width-1 downto 0);
 
 	sel_sub		: out std_logic;						-- 0..add, 1..sub
-	sel_amux		: out std_logic;						-- 0..sum, 1..lmux
+	sel_amux	: out std_logic;						-- 0..sum, 1..lmux
 	ena_a		: out std_logic;						-- 1..store new value
 	sel_bmux	: out std_logic;						-- 0..a, 1..mem
 	sel_log		: out std_logic_vector(1 downto 0);		-- pop/st, and, or, xor
@@ -179,7 +179,9 @@ begin
 		rd <= '1';
 	end if;
 	wr <= '0';
-	if ir(7 downto 0)="00000111" or ir(7 downto 3)="00001" then -- st memio
+	if ir(7 downto 0)="00000110"
+		or ir(7 downto 0)="00000111"
+		or ir(7 downto 3)="00001" then -- st memio
 		wr <= '1';
 	end if;
 

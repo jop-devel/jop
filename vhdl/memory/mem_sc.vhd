@@ -36,6 +36,7 @@
 --	2007-04-13	Changed memory connection to records
 --	2007-04-14	xaload and xastore in hardware
 --	2008-02-19	put/getfield in hardware
+--	2008-04-30  copy step in hardware
 --
 
 Library IEEE;
@@ -134,9 +135,11 @@ end component;
 							bc_cc, bc_r1, bc_w, bc_rn, bc_wr, bc_wl,
 							iald0, iald1, iald2, iald3, iald4,
 							iasrd, ialrb,
-							iast0, iaswb, iasrb, iasst, iasw,
-                                                        gf0, gf1, gf2, gf3, gf4,
-                                                        pf0, pf3, pf4,
+							iast0, iaswb, iasrb, iasst,
+							gf0, gf1, gf2, gf3,
+							pf0, pf3,
+							cp0, cp1, cp2, cp3, cp4, cpstop,
+							last,
 							npexc, abexc, excw
 						);
 	signal state 		: state_type;
@@ -163,13 +166,11 @@ end component;
 --	signals for object and array access
 --
 	signal index		: std_logic_vector(SC_ADDR_SIZE-1 downto 0);	-- array or field index
-	signal addr_calc	: unsigned(SC_ADDR_SIZE-1 downto 0);		-- adder
 	signal value		: std_logic_vector(31 downto 0);		-- store value
 
 	signal null_pointer	: std_logic;
 	signal bounds_error	: std_logic;
 
-	signal store_nxt	: std_logic;
 	signal was_a_store	: std_logic;
 
 --
@@ -192,6 +193,17 @@ end component;
 	signal cache_in_cache	: std_logic;
 	signal cache_bcstart	: std_logic_vector(jpc_width-3 downto 0);
 
+--
+-- signals for copying and address translation
+--
+	signal src_reg		: unsigned(SC_ADDR_SIZE-1 downto 0);
+	signal dest_reg		: unsigned(SC_ADDR_SIZE-1 downto 0);
+	signal pos_reg		: unsigned(SC_ADDR_SIZE-1 downto 0);
+	signal cp_stopbit   : std_logic;
+
+	signal src_pos		: unsigned(SC_ADDR_SIZE-1 downto 0);
+	signal dest_pos		: unsigned(SC_ADDR_SIZE-1 downto 0);
+
 begin
 
 process(sc_mem_in, state_bsy, state)
@@ -200,7 +212,7 @@ begin
 	if sc_mem_in.rdy_cnt=3 then
 		mem_out.bsy <= '1';
 	else
-		if state/=ialrb and state/=iasw and state/=gf4 and state/=pf4 and state_bsy='1' then
+		if state/=ialrb and state/=last and state_bsy='1' then
 			mem_out.bsy <= '1';
 		end if;
 	end if;
@@ -242,7 +254,19 @@ end process;
 --	SimpCon connections
 --
 
-	sc_mem_out.address <= ram_addr;
+-- address translation
+src_pos <= src_reg+pos_reg;
+dest_pos <= dest_reg+pos_reg;
+
+process(pos_reg, ram_addr)
+begin
+	if unsigned(ram_addr) >= src_reg and unsigned(ram_addr) < src_pos then
+		sc_mem_out.address <= std_logic_vector(unsigned(ram_addr) - src_reg+dest_reg);
+	else
+		sc_mem_out.address <= ram_addr;
+	end if;
+end process;
+	
 	sc_mem_out.wr_data <= ram_wr_data;
 	sc_mem_out.rd <= mem_in.rd or state_rd;
 	sc_mem_out.wr <= mem_in.wr or state_wr;
@@ -264,7 +288,6 @@ begin
 		addr_reg <= (others => '0');
 		index <= (others => '0');
 		value <= (others => '0');
-		store_nxt <= '0';
 		was_a_store <= '0';
 		bc_len <= (others => '0');
 
@@ -290,28 +313,57 @@ begin
 			end if;
 		end if;
 
-		store_nxt <= '0';
 		-- save array address and index
-		if mem_in.iaload='1' or mem_in.getfield='1' or store_nxt='1' then
+		if mem_in.iaload='1' or mem_in.getfield='1' then
 			addr_reg <= unsigned(bin(SC_ADDR_SIZE-1 downto 0));	-- store address for store and np check
 			index <= ain(SC_ADDR_SIZE-1 downto 0);		-- store array index
 		end if;
+		-- first step of three-operand operations
 		if mem_in.iastore='1' or mem_in.putfield='1' then
 			value <= ain;
-			-- get reference and index in next cycle
-			store_nxt <= '1';
 		end if;
-                
+		-- get reference and index for putfield and array stores
+		if state=pf0 or state=iast0 then
+			addr_reg <= unsigned(bin(SC_ADDR_SIZE-1 downto 0));	-- store address for store and np check
+			index <= ain(SC_ADDR_SIZE-1 downto 0);		-- store array index			
+		end if;
+
+		-- address calculations
+		if state=iald3 or state=gf2 then
+			addr_reg <= unsigned(sc_mem_in.rd_data(SC_ADDR_SIZE-1 downto 0))+unsigned(index);
+		end if;
+
+		-- get source and index for copying
+		if mem_in.copy='1' then
+			src_reg <= unsigned(bin(SC_ADDR_SIZE-1 downto 0));
+			pos_reg <= unsigned(ain(SC_ADDR_SIZE-1 downto 0));
+			cp_stopbit <= ain(31);
+		end if;
+		-- get destination for copying
+		if state=cp0 then
+			dest_reg <= unsigned(bin(SC_ADDR_SIZE-1 downto 0));
+		end if;
+
+		-- address and data tweaking for copying
+		if state=cp0 then
+			addr_reg <= src_pos;
+		end if;		
+		if state=cp3 then
+			addr_reg <= dest_pos;
+			pos_reg <= pos_reg+1;
+			value <= sc_mem_in.rd_data;
+		end if;
+		if state=cpstop then
+			pos_reg <= (others => '0');
+		end if;
+
+		-- set flag for state sharing
 		if mem_in.iaload='1' or mem_in.getfield='1' then
 			was_a_store <= '0';
 		elsif mem_in.iastore='1' or mem_in.putfield='1' then
 			was_a_store <= '1';
-		end if;
-
-		if state=iald3 or state=gf2 then
-			addr_reg <= addr_calc;
-		end if;
-        end if;
+		end if;		
+	end if;
 end process;
 
 
@@ -342,15 +394,12 @@ begin
 end process;
 
 
-	addr_calc <= unsigned(sc_mem_in.rd_data(SC_ADDR_SIZE-1 downto 0))+unsigned(index);
-
-
 --
 --	next state logic
 --
 process(state, mem_in, sc_mem_in,
-	cache_rdy, cache_in_cache, bc_len, addr_calc, value, index, 
-	addr_reg, was_a_store)
+	cache_rdy, cache_in_cache, bc_len, value, index, 
+	addr_reg, cp_stopbit, was_a_store)
 begin
 
 	next_state <= state;
@@ -370,6 +419,8 @@ begin
 				next_state <= gf0;
 			elsif mem_in.putfield='1' then
 				next_state <= pf0;
+			elsif mem_in.copy='1' then
+				next_state <= cp0;				
 			elsif mem_in.iastore='1' then
 				next_state <= iast0;
 			end if;
@@ -438,7 +489,7 @@ begin
 				end if;
 			end if;
 
-		-- wait fot the last ack
+		-- wait for the last ack
 		when bc_wl =>
 			if sc_mem_in.rdy_cnt(1)='0' then
 				next_state <= idl;
@@ -517,14 +568,7 @@ begin
 			end if;
 
 		when iasst =>
-			next_state <= iasw;
-
-		when iasw =>
-			-- either 1 or 0
-			if sc_mem_in.rdy_cnt(1)='0' then
-				next_state <= idl;
-			end if;
-
+			next_state <= last;
 
 		when gf0 =>
 			if addr_reg=0 then
@@ -539,30 +583,44 @@ begin
 			end if;
 		when gf2 =>
 			next_state <= gf3;
-                        if was_a_store='1' then
-                          next_state <= pf3;
-                        end if;
+			if was_a_store='1' then
+				next_state <= pf3;
+			end if;
 		when gf3 =>
-			next_state <= gf4;
-		when gf4 =>
-			-- either 1 or 0
-			if sc_mem_in.rdy_cnt(1)='0' then
-				next_state <= idl;
-			end if;
+			next_state <= last;
 
-       		when pf0 =>
+		when pf0 =>
 			-- just one cycle wait to store the value
-                        next_state <= gf0;
-                -- states pf1 and pf2 are shared with getfield
+			next_state <= gf0;
+			-- states pf1 and pf2 are shared with getfield
 		when pf3 =>
-			next_state <= pf4;
-		when pf4 =>
+			next_state <= last;
+
+		when cp0 =>
+			next_state <= cp1;
+			if cp_stopbit = '1' then
+				next_state <= cpstop;
+			end if;
+		when cp1 =>
+			next_state <= cp2;
+		when cp2 =>
+			-- either 1 or 0
+			if sc_mem_in.rdy_cnt(1)='0' then
+				next_state <= cp3;
+			end if;
+		when cp3 =>
+			next_state <= cp4;
+		when cp4 =>
+			next_state <= last;
+		when cpstop =>
+			next_state <= idl;
+			
+		when last =>
 			-- either 1 or 0
 			if sc_mem_in.rdy_cnt(1)='0' then
 				next_state <= idl;
 			end if;
 
-                        
 		when npexc =>
 			next_state <= excw;
 
@@ -692,9 +750,6 @@ begin
 				state_wr <= '1';
 				sc_mem_out.atomic <= '1';
 
-			when iasw =>
-				sc_mem_out.atomic <= '1';
-
 			when gf0 =>
 				state_rd <= '1';
 				state_bsy <= '1';
@@ -710,17 +765,34 @@ begin
 				state_rd <= '1';
 				sc_mem_out.atomic <= '1';
                           
-			when gf4 =>
-				sc_mem_out.atomic <= '1';
-				
-                        when pf0 =>
+			when pf0 =>
 				state_bsy <= '1';
 
 			when pf3 =>
 				state_wr <= '1';
 				sc_mem_out.atomic <= '1';
                           
-			when pf4 =>
+			when cp0 =>
+				sc_mem_out.atomic <= '1';
+				state_bsy <= '1';
+
+			when cp1 =>
+				state_rd <= '1';
+				sc_mem_out.atomic <= '1';
+				
+			when cp2 =>
+				sc_mem_out.atomic <= '1';
+
+			when cp3 =>
+				sc_mem_out.atomic <= '1';
+
+			when cp4 =>
+				state_wr <= '1';
+				sc_mem_out.atomic <= '1';
+
+			when cpstop =>
+
+			when last =>
 				sc_mem_out.atomic <= '1';
 
 			when npexc =>

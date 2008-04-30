@@ -53,10 +53,10 @@ public class Native {
 //	public static native int condMove(int a, int b, boolean cond);
 	/**
 	 * 
-	 * @param src memory source address
 	 * @param dest memory destination address
-	 * @param cnt number of words (cnt must be >0!)
+	 * @param src memory source address
+	 * @param pos position to copy
 	 */
-	public static native void memCopy(int src, int dest, int cnt);
+	public static native void memCopy(int dest, int src, int pos);
 
 }

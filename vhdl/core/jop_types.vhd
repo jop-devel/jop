@@ -49,15 +49,16 @@ package jop_types is
 --	        8+7	st	start bytecode load (or cache)
 --	          7	ld	read new pc base (for cache version)
 --
+	constant STMUL	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "0110";
 	constant STMWA	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "0111"; 
 
-        constant STMRA	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "1000"; 
+	constant STMRA	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "1000"; 
 	constant STMWD	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "1001"; 
 	constant STALD	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "1010"; 
 	constant STAST	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "1011"; 
 	constant STGF	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "1100"; 
 	constant STPF	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "1101"; 
-	constant STMUL	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "1110";   
+	constant STCP	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "1110"; 
 	constant STBCR	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "1111"; 
 
 	constant LDMRD	        : std_logic_vector(EXTA_WIDTH-1 downto 0) := "0000"; 
@@ -71,8 +72,9 @@ package jop_types is
 		bc_rd           : std_logic;
 		iaload          : std_logic;
 		iastore	        : std_logic;
-                getfield        : std_logic;
-                putfield        : std_logic;
+		getfield        : std_logic;
+		putfield        : std_logic;
+		copy            : std_logic;
 	end record;
 
 	type mem_out_type is record

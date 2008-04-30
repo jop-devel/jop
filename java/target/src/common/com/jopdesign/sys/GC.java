@@ -181,8 +181,9 @@ public class GC {
 			Native.wrMem(0, ref+OFF_SPACE);
 		}
 		// clean the heap
-		for (int i=0; i<2*semi_size; ++i) {
-			Native.wrMem(0, heapStartA+i);
+		int end = heapStartA+2*semi_size;
+		for (int i=heapStartA; i<end; ++i) {
+			Native.wrMem(0, i);
 		}
 		concurrentGc = false;
 		
@@ -382,24 +383,33 @@ public class GC {
 				}				
 			}
 			
-			// now copy it - color it BLACK
-			
-			int size = Native.rdMem(ref+OFF_SIZE);
-			synchronized (mutex) {
-				// update object pointer to the new location
-				Native.wrMem(copyPtr, ref+OFF_PTR);
+			// now copy it - color it BLACK			
+			int size;
+			int dest;
+
+			synchronized(mutex) {
+				size = Native.rdMem(ref+OFF_SIZE);
+				dest = copyPtr;
+				copyPtr += size;			
+
 				// set it BLACK
 				Native.wrMem(toSpace, ref+OFF_SPACE);
-				if (size>0) {
-					// copy it
-//					for (i=size-1; i>=0; --i) {
-//						Native.wrMem(Native.rdMem(addr+i), copyPtr+i);
-//					}
-					Native.memCopy(addr, copyPtr, size);					
-				}
-				copyPtr += size;			
 			}
-		
+
+			if (size>0) {
+				// copy it
+				for (i=0; i<size; i++) {
+//  					Native.wrMem(Native.rdMem(addr+i), dest+i);
+  					Native.memCopy(dest, addr, i);					
+				}
+			}
+
+			// update object pointer to the new location
+			Native.wrMem(dest, ref+OFF_PTR);
+			// wait until everybody uses the new location
+			for (i = 0; i < 10; i++);
+			// turn off address translation
+			Native.memCopy(dest, dest, -1);		
 		}
 	}
 	
@@ -447,7 +457,8 @@ public class GC {
 
 		// clean the from-space to prepare for the next
 		// flip
-		for (int i=fromSpace; i<fromSpace+semi_size; ++i) {
+		int end = fromSpace+semi_size;
+		for (int i=fromSpace; i<end; ++i) {
 			Native.wrMem(0, i);
 		}
 		// for tests clean also the remainig memory in the to-space
