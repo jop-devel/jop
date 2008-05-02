@@ -222,10 +222,19 @@ System.out.println(mp+" "+pc);
 		return mem[addr];
 	}
 	
+	int copy_src = 0;
+	int copy_dest = 0;
+	int copy_pos = 0;
+
 	int readMem(int addr) {
 
 // System.out.println(addr+" "+mem[addr]);
 		rdMemCnt++;
+
+		// translate addresses
+		if (addr >= copy_src && addr < copy_src+copy_pos) {
+			addr = addr - copy_src + copy_pos;
+		}
 
 		// that's an access to our scratchpad memory
 		if (addr >= Const.SCRATCHPAD_ADDRESS && addr <= Const.SCRATCHPAD_ADDRESS+MEM_TEST_OFF) {
@@ -1443,10 +1452,16 @@ System.out.println("new heap: "+heap);
 					a = stack[sp--];
 					b = stack[sp--];
 					c = stack[sp--];
-					for (int i=a-1; i>=0; --i) {
-						writeMem(b+i, readMem(c+i));
+					if (a >= 0) {
+						writeMem(c+a, readMem(b+a));
+						copy_src = b;
+						copy_dest = c;
+						copy_pos = a+1;
+					} else {
+						copy_src = b;
+						copy_dest = c;
+						copy_pos = 0;
 					}
-
 					break;
 				case 233 :		// resE9
 					noim(233);
