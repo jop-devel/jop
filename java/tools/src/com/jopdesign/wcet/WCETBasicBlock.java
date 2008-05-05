@@ -583,13 +583,15 @@ class WCETBasicBlock {
   public String toLSS(WCETBasicBlock wcbb){
     StringBuffer ls = new StringBuffer();
     if(nodetype == WCETBasicBlock.SNODE){
-      if(wcbb == null)
+      if(wcbb == null) {
         ls.append(getIDS()+": 1 = f"+getIDS()+"_"+sucbb.getIDS()+"; // S flow\n");
-      else{ // connect the two cache paths
+        ls.append("t"+getIDS()+" = 0; // force to zero\n");
+      }else{ // connect the two cache paths
         ls.append(getIDS()+": fch"+ wcbb.getIDS()+"_"+ getIDS() + "+ fcm"+ wcbb.getIDS()+"_"+ getIDS()+" = f"+getIDS()+"_"+sucbb.getIDS()+"; // S flow\n");
-        if(wcbb.getCacheInvokeMiss()==0)
-          ls.append("// ");
-        ls.append("t"+getIDS()+" = "+wcbb.getCacheInvokeMiss()+" fcm"+ wcbb.getIDS()+"_"+ getIDS()+"; // S cache miss time\n");
+        if (wcbb.getCacheInvokeMiss() == 0)
+          ls.append("t"+getIDS()+" = 0; // S cache miss time\n");
+        else
+          ls.append("t"+getIDS()+" = "+wcbb.getCacheInvokeMiss()+" fcm"+ wcbb.getIDS()+"_"+ getIDS()+"; // S cache miss time\n");
       }
     }
     else{
@@ -613,17 +615,20 @@ class WCETBasicBlock {
         if(titer.hasNext())
           ls.append(" + ");
       }
-      if(wcbb == null)
+      if(wcbb == null) {
         ls.append(" = 1; // T flow\n");
-      else{
+		ls.append("t"+getIDS()+" = 0; // force to zero\n");		
+      }else{
         ls.append(" = f"+getIDS()+"_"+wcbb.getIDS()+";// T interconnect flow\n");
         // hit on return if it is a leaf
-        if(wcmb.leaf)
-          ls.append("// t"+getIDS()+" = 0 f"+getIDS()+"_"+wcbb.getIDS()+"; // T cache hit (leaf)\n");
+        if(wcmb.leaf) {
+          ls.append("t"+getIDS()+" = 0; // T cache hit (leaf)\n");
+        }
         else{
-          if(wcbb.getCacheReturnMiss()==0)
-            ls.append("// ");
-          ls.append("t"+getIDS()+" = "+wcbb.getCacheReturnMiss()+" f"+getIDS()+"_"+wcbb.getIDS()+"; // T cache miss (not leaf)\n");
+          if (wcbb.getCacheReturnMiss() == 0)
+            ls.append("t"+getIDS()+" = 0;\n");
+          else
+            ls.append("t"+getIDS()+" = "+wcbb.getCacheReturnMiss()+" f"+getIDS()+"_"+wcbb.getIDS()+"; // T cache miss (not leaf)\n");
         }
       }
       
