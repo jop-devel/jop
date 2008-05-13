@@ -323,10 +323,10 @@ public class GC {
 		
 		int i, ref;
 		
-		getStaticRoots();
 		if (!concurrentGc) {
 			getStackRoots();			
 		}
+		getStaticRoots();
 		for (;;) {
 			
 			// pop one object from the gray list
