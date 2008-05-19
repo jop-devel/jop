@@ -17,6 +17,7 @@ public class Logic extends RtThread {
 
 	// values for state
 	static final int DL_CHECK = -1;
+	static final int ANM_WAIT = 19;
 	static final int DEAKT = 18;
 	static final int ES_VERSCHUB = 17;
 	static final int ES_RDY = 16;
@@ -189,6 +190,9 @@ System.out.println("Logic.initVals()");
 						break;
 					case Logic.FDL_CONN:
 						anmelden();
+						break;
+					case Logic.ANM_WAIT:
+						anmeldenWait();
 						break;
 					case Logic.ANM_OK:
 						if (Status.esMode) {
@@ -597,11 +601,12 @@ System.out.println("Logic.initVals()");
 						}
 					} else if (cnt==7) {
 						// HB Ferl
-						if (!hilfsbtr) {
+						if (!hilfsbtr || Main.state.zugnr==0) {
 							Display.write("", "Nicht möglich", "");
-							waitEnter();							
+							waitEnter();
+						} else {
+							hbFerl();							
 						}
-						hbFerl();
 					}
 				}
 
@@ -949,10 +954,10 @@ System.out.println("Download server connect timeout");
 		int type = val;
 
 		if (val==1) {
-			Display.write("StreckenNr: ", state.strnr, "ZugNr: ",state.zugnr ,
+			Display.write("StreckenNr: ", state.strnr, "ZugNr: ",nr ,
 					"(Anmelden mit [E])");
 		} else {
-			Display.write("StreckenNr: ", state.strnr, "Nebenfahrt: N", state.zugnr,
+			Display.write("StreckenNr: ", state.strnr, "Nebenfahrt: N", nr,
 					"(Anmelden mit [E])");
 		}
 
@@ -965,22 +970,26 @@ System.out.println("Download server connect timeout");
 			if (val==Keyboard.E) {
 				state.zugnr = nr;
 				state.type = type;
-				Display.write("Anmelden", "", "(bitte warten)");
-				if (Logic.state!=Logic.FDL_CONN) return;
-				// wait for Anmelden OK or we already got a FERL
-				while (loop()) {
-					if (Events.anmeldenOk || state.start!=0 || hilfsbtr) {
-						Logic.state = Logic.ANM_OK;
-						Events.anmeldenOk = false;
-						break;
-					} else if (Logic.state == Logic.ABGEMELDET) {
-						abmelden();
-					}
-				}
-
+				Logic.state = Logic.ANM_WAIT;
+//				if (Logic.state!=Logic.FDL_CONN) return;
 				return;
 			} else if (val==Keyboard.C) {
 				return;
+			}
+		}
+	}
+	
+	private void anmeldenWait() {
+		
+		while (loop()) {
+			Display.write("Anmelden", "", "(bitte warten)");
+			// wait for Anmelden OK or we already got a FERL
+			if (Events.anmeldenOk || Main.state.start!=0 || hilfsbtr) {
+				Logic.state = Logic.ANM_OK;
+				Events.anmeldenOk = false;
+				break;
+			} else if (Logic.state == Logic.ABGEMELDET) {
+				abmelden();
 			}
 		}
 	}
