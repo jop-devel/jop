@@ -1715,23 +1715,28 @@ System.out.println("ES Rdy");
 		int i = 0;
 		
 System.out.println("HB Ferl");
-		int melnr = Flash.getFirst(Main.state.strnr);
+//		int melnr = Flash.getFirst(Main.state.strnr);
+		int melnr = Main.state.getPos();
 		Flash.Point p = Flash.getPoint(melnr);
-
-		for (;;) {
-			i = Flash.getNext(melnr);
-			i = Flash.getNext(i);
-			if (i!=-1) {
-				melnr = i;
-				if (melnr>=Main.state.getPos()) {
-					p = Flash.getPoint(melnr);
-					break;
-				}
-			} else {
-				i = 0;
-				break;
-			}
+		if (p==null) {
+System.out.println("np Problem");
+			return;
 		}
+
+//		for (;;) {
+//			i = Flash.getNext(melnr);
+//			i = Flash.getNext(i);
+//			if (i!=-1) {
+//				melnr = i;
+//				if (melnr>=Main.state.getPos()) {
+//					p = Flash.getPoint(melnr);
+//					break;
+//				}
+//			} else {
+//				i = 0;
+//				break;
+//			}
+//		}
 
 		while (loop()) {
 
@@ -1751,28 +1756,38 @@ System.out.println("HB Ferl");
 				return;
 			}
 
-			// display only the left point text
+			boolean found = false;
 
 			if (val==Keyboard.UP) {
-				i = Flash.getNext(melnr);
-				i = Flash.getNext(i);
-				if (i!=-1) {
-					melnr = i;
-					p = Flash.getPoint(melnr);
+				while (!found) {
+					i = Flash.getNext(melnr);
+					if (i!=-1) {
+						melnr = i;
+						p = Flash.getPoint(melnr);
+						if (p.station || p.verlassen) {
+							found = true;
+						}
+					} else {
+						break;
+					}
 				}
 			}
 			if (val==Keyboard.DOWN) {
-				i = Flash.getPrev(melnr);
-				i = Flash.getPrev(i);
-				if (i!=-1) {
-					melnr = i;
-					p = Flash.getPoint(melnr);
+				while (!found) {
+					i = Flash.getPrev(melnr);
+					if (i!=-1) {
+						melnr = i;
+						p = Flash.getPoint(melnr);
+						if (p.station || p.verlassen) {
+							found = true;
+						}
+					} else {
+						break;
+					}
 				}
 			}
 			if (val==Keyboard.E) {
 				
-				// The left point is the station
-				// smaller melnr is start
 				Main.state.start = Main.state.getPos();
 				Main.state.end = melnr;
 				Logic.state = Logic.ERLAUBNIS;
