@@ -223,7 +223,7 @@ set_global_assignment -name DEVICE_FILTER_PACKAGE "ANY QFP"
 set_global_assignment -name DEVICE_FILTER_PIN_COUNT 240
 set_global_assignment -name FAMILY Cyclone
 set_global_assignment -name TOP_LEVEL_ENTITY jop
-set_global_assignment -name AUTO_ENABLE_SMART_COMPILE On
+set_global_assignment -name AUTO_ENABLE_SMART_COMPILE ON
 
 # Fitter Assignments
 # ==================
@@ -419,10 +419,9 @@ set_global_assignment -name STRATIX_DEVICE_IO_STANDARD LVCMOS
 
 # Assembler Assignments
 # =====================
-set_global_assignment -name ON_CHIP_BITSTREAM_DECOMPRESSION OFF
+set_global_assignment -name ON_CHIP_BITSTREAM_DECOMPRESSION ON
 set_global_assignment -name USE_CONFIGURATION_DEVICE OFF
 set_global_assignment -name GENERATE_TTF_FILE ON
-set_global_assignment -name RESERVE_ALL_UNUSED_PINS_NO_OUTPUT_GND "AS INPUT TRI-STATED"
 set_global_assignment -name AUTO_RESTART_CONFIGURATION OFF
 
 # Simulator Assignments
@@ -438,7 +437,7 @@ set_global_assignment -name DRC_REPORT_FANOUT_EXCEEDING OFF
 # ========================
 set_global_assignment -name HUB_ENTITY_NAME SLD_HUB
 set_global_assignment -name HUB_INSTANCE_NAME SLD_HUB_INST
-set_global_assignment -name ENABLE_SIGNALTAP Off
+set_global_assignment -name ENABLE_SIGNALTAP OFF
 
 # LogicLock Region Assignments
 # ============================
@@ -449,203 +448,203 @@ set_global_assignment -name LOGICLOCK_INCREMENTAL_COMPILE_ASSIGNMENT OFF
 
 	# Fitter Assignments
 	# ==================
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to clk
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to dummy_gnd
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to dummy_gnd[0]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to dummy_gnd[1]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to dummy_gnd[2]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to dummy_gnd[3]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to dummy_gnd[4]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to dummy_gnd[5]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to dummy_vccint
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to dummy_vccint[0]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to dummy_vccint[1]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to dummy_vccint[2]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to dummy_vccint[3]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to dummy_vccint[4]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to dummy_vccint[5]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_a
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_a[0]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_a[10]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_a[11]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_a[12]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_a[13]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_a[14]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_a[15]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_a[16]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_a[17]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_a[18]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_a[1]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_a[2]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_a[3]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_a[4]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_a[5]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_a[6]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_a[7]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_a[8]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_a[9]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_d
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_d[0]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_d[1]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_d[2]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_d[3]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_d[4]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_d[5]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_d[6]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_d[7]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_ncs
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_ncsb
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_noe
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_nwe
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_rdy
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to freeio
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_b
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_b[10]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_b[1]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_b[2]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_b[3]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_b[4]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_b[5]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_b[6]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_b[7]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_b[8]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_b[9]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_l
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_l[10]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_l[11]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_l[12]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_l[13]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_l[14]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_l[15]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_l[16]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_l[17]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_l[18]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_l[19]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_l[1]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_l[20]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_l[2]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_l[3]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_l[4]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_l[5]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_l[6]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_l[7]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_l[8]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_l[9]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_r
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_r[10]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_r[11]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_r[12]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_r[13]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_r[14]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_r[15]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_r[16]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_r[17]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_r[18]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_r[19]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_r[1]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_r[20]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_r[2]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_r[3]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_r[4]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_r[5]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_r[6]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_r[7]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_r[8]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_r[9]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_t
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_t[1]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_t[2]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_t[3]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_t[4]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_t[5]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_t[6]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_a
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_a[0]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_a[10]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_a[11]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_a[12]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_a[13]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_a[14]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_a[15]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_a[16]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_a[17]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_a[1]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_a[2]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_a[3]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_a[4]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_a[5]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_a[6]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_a[7]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_a[8]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_a[9]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_d
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_d[0]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_d[10]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_d[11]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_d[12]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_d[13]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_d[14]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_d[15]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_d[1]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_d[2]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_d[3]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_d[4]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_d[5]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_d[6]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_d[7]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_d[8]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_d[9]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_ncs
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_nlb
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_noe
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_nub
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_nwe
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_a
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_a[0]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_a[10]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_a[11]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_a[12]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_a[13]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_a[14]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_a[15]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_a[16]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_a[17]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_a[1]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_a[2]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_a[3]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_a[4]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_a[5]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_a[6]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_a[7]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_a[8]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_a[9]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_d
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_d[0]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_d[10]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_d[11]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_d[12]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_d[13]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_d[14]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_d[15]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_d[1]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_d[2]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_d[3]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_d[4]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_d[5]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_d[6]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_d[7]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_d[8]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_d[9]
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_ncs
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_nlb
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_noe
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_nub
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_nwe
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ser_ncts
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ser_nrts
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ser_rxd
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ser_txd
-	set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to wd
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to clk
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to dummy_gnd
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to dummy_gnd[0]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to dummy_gnd[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to dummy_gnd[2]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to dummy_gnd[3]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to dummy_gnd[4]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to dummy_gnd[5]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to dummy_vccint
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to dummy_vccint[0]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to dummy_vccint[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to dummy_vccint[2]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to dummy_vccint[3]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to dummy_vccint[4]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to dummy_vccint[5]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_a
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_a[0]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_a[10]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_a[11]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_a[12]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_a[13]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_a[14]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_a[15]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_a[16]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_a[17]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_a[18]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_a[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_a[2]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_a[3]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_a[4]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_a[5]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_a[6]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_a[7]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_a[8]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_a[9]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_d
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_d[0]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_d[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_d[2]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_d[3]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_d[4]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_d[5]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_d[6]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_d[7]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_ncs
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_ncsb
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_noe
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_nwe
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to fl_rdy
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to freeio
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_b
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_b[10]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_b[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_b[2]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_b[3]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_b[4]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_b[5]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_b[6]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_b[7]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_b[8]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_b[9]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_l
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_l[10]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_l[11]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_l[12]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_l[13]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_l[14]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_l[15]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_l[16]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_l[17]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_l[18]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_l[19]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_l[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_l[20]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_l[2]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_l[3]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_l[4]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_l[5]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_l[6]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_l[7]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_l[8]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_l[9]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_r
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_r[10]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_r[11]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_r[12]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_r[13]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_r[14]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_r[15]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_r[16]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_r[17]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_r[18]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_r[19]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_r[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_r[20]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_r[2]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_r[3]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_r[4]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_r[5]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_r[6]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_r[7]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_r[8]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_r[9]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_t
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_t[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_t[2]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_t[3]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_t[4]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_t[5]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to io_t[6]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_a
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_a[0]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_a[10]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_a[11]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_a[12]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_a[13]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_a[14]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_a[15]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_a[16]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_a[17]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_a[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_a[2]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_a[3]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_a[4]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_a[5]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_a[6]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_a[7]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_a[8]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_a[9]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_d
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_d[0]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_d[10]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_d[11]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_d[12]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_d[13]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_d[14]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_d[15]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_d[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_d[2]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_d[3]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_d[4]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_d[5]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_d[6]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_d[7]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_d[8]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_d[9]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_ncs
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_nlb
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_noe
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_nub
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to rama_nwe
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_a
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_a[0]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_a[10]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_a[11]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_a[12]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_a[13]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_a[14]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_a[15]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_a[16]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_a[17]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_a[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_a[2]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_a[3]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_a[4]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_a[5]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_a[6]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_a[7]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_a[8]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_a[9]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_d
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_d[0]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_d[10]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_d[11]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_d[12]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_d[13]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_d[14]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_d[15]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_d[1]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_d[2]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_d[3]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_d[4]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_d[5]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_d[6]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_d[7]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_d[8]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_d[9]
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_ncs
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_nlb
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_noe
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_nub
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ramb_nwe
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ser_ncts
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ser_nrts
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ser_rxd
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to ser_txd
+set_instance_assignment -name CURRENT_STRENGTH_NEW "STRENGTH 2MA" -to wd
 
 # end ENTITY(jop)
 # ---------------
@@ -660,11 +659,11 @@ set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to ram*_noe
 set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to ram*_d
 set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to ram*_ncs
 set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to ram*_nwe
-set_instance_assignment -name TCO_REQUIREMENT "3 ns" -to ram*_a
-set_instance_assignment -name TCO_REQUIREMENT "3 ns" -to ram*_d
-set_instance_assignment -name TCO_REQUIREMENT "3 ns" -to ram*_noe
-set_instance_assignment -name TCO_REQUIREMENT "3 ns" -to ram*_ncs
-set_instance_assignment -name TCO_REQUIREMENT "3 ns" -to ram*_nwe
+set_instance_assignment -name TCO_REQUIREMENT "4.5 ns" -to ram*_a
+set_instance_assignment -name TCO_REQUIREMENT "4.5 ns" -to ram*_d
+set_instance_assignment -name TCO_REQUIREMENT "4.5 ns" -to ram*_noe
+set_instance_assignment -name TCO_REQUIREMENT "4.5 ns" -to ram*_ncs
+set_instance_assignment -name TCO_REQUIREMENT "4.5 ns" -to ram*_nwe
 set_instance_assignment -name TSU_REQUIREMENT "2.2 ns" -to ram*_d
 
 # other default timings
@@ -674,7 +673,7 @@ set_global_assignment -name TCO_REQUIREMENT "10 ns"
 # end ENTITY(jop)
 # ---------------
 
-set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_20.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_60.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/jop_types.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_pack.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc_pll.vhd
@@ -702,3 +701,6 @@ set_global_assignment -name VHDL_FILE ../../vhdl/core/stack.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/jopcpu.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jopcyc.vhd
 set_global_assignment -name CDF_FILE jop.cdf
+
+set_global_assignment -name LL_ROOT_REGION ON -section_id "Root Region"
+set_global_assignment -name LL_MEMBER_STATE LOCKED -section_id "Root Region"
