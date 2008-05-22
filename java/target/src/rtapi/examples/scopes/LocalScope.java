@@ -30,8 +30,10 @@ public class LocalScope {
 	 */
 	public static void main(String[] args) {
 
-		
-		ScopedMemory scope = new ScratchpadScope();
+		// This was my version with automatic sizing
+		// ScopedMemory scope = new ScratchpadScope();
+		// Andy's version
+		ThreadLocalScope scope = new ThreadLocalScope(1000);
 		System.out.print("Size of the scratchpad RAM is ");
 		System.out.println(scope.size());
 		Runnable run = new Runnable() {
