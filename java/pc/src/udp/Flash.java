@@ -40,6 +40,10 @@
 *		0x50000 :	CYC config
 *		0x60000 :	ACX, CYC config
 *		0x70000 :	ACX, CYC config
+*
+*	Changelog:
+*		2008-05-22	ACEX configuration disabled as we use a compressed bitstream for
+*					the Cyclone and size detection does not work.
 */
 package udp;
 import java.io.*;
@@ -113,7 +117,8 @@ public class Flash extends FlashConst {
 			} else if (s.equals(".ttf")) {
 				isTtf = true;
 				// TODO: should be changed to an option
-				start= START_ACX_TTF;		// assume a file for Jopcore (ACEX)
+//				start= START_ACX_TTF;		// assume a file for Jopcore (ACEX)
+				start = START_CYC_TTF;
 			} else {
 				System.out.println("wrong file type: '"+s+"'");
 				System.exit(-1);
@@ -154,9 +159,9 @@ public class Flash extends FlashConst {
 				}
 				in.close();
 
-				if (len>MAX_ACEX) {							// file is big, so it must be for Cyclone
-					start= START_CYC_TTF;					// change start address
-				}
+//				if (len>MAX_ACEX) {							// file is big, so it must be for Cyclone
+//					start= START_CYC_TTF;					// change start address
+//				}
 
 			} else {					// 'binary' file
 
