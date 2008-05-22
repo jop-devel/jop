@@ -67,16 +67,27 @@ FLPROJ=$(DLPROJ)
 IPDEST=192.168.1.2
 IPDEST=192.168.0.123
 
-
 P1=test
 P2=test
 P3=HelloWorld
+
+#P1=bench
+#P2=jbe
+#P3=DoApp
 # The test program for Basio and the NAND Flash
 #P3=FlashBaseio
+
+#P1=app
+#P2=oebb
+#P3=Main
 
 #P2=wcet
 #P3=Loop
 WCET_METHOD=measure
+
+#P1=.
+#P2=dsvmmcp
+#P3=TestDSVMMCP
 
 #
 #	some variables
@@ -91,6 +102,10 @@ EXT_CP=-classpath java/lib/bcel-5.1.jar\;java/lib/jakarta-regexp-1.3.jar\;java/l
 
 #TOOLS_JFLAGS=-d $(TOOLS)/dist/classes $(EXT_CP) -sourcepath $(TOOLS)/src\;$(TARGET)/src/common
 TOOLS_JFLAGS=-g -d $(TOOLS)/dist/classes $(EXT_CP) -sourcepath $(TOOLS)/src\;$(TARGET)/src/common
+
+PCTOOLS=java/pc
+PCTOOLS_JFLAGS=-g -d $(PCTOOLS)/dist/classes -sourcepath $(PCTOOLS)/src
+
 
 TARGET=java/target
 
@@ -127,8 +142,12 @@ MAIN_CLASS=$(P2)/$(P3)
 
 #	add more directoies here when needed
 #		(and use \; to escape the ';' when using a list!)
-TARGET_APP_SOURCE_PATH=$(TARGET_APP_PATH)
+TARGET_APP_SOURCE_PATH=$(TARGET_APP_PATH)\;$(TARGET)/src/bench
 TARGET_APP=$(TARGET_APP_PATH)/$(MAIN_CLASS).java
+
+
+# setting for rup DSVM on JopCMP
+#TARGET_APP_PATH=/usrx/DSVMFP/src
 
 # just any name that the .jop file gets.
 JOPBIN=$(P3).jop
@@ -248,6 +267,22 @@ compile_java:
 	@javac $(JAVAC_FLAGS) $(jfiles)
 
 
+# we moved the pc stuff to it's own target to be
+# NOT built on make all.
+# It depends on javax.comm which is NOT installed
+# by default - Blame SUN on this!
+#
+#	TODO: change it to RXTXcomm if it's working ok
+#
+pc:
+	-rm -rf $(PCTOOLS)/dist
+	mkdir $(PCTOOLS)/dist
+	mkdir $(PCTOOLS)/dist/lib
+	mkdir $(PCTOOLS)/dist/classes
+#	make compile_java -e JAVA_DIR=$(PCTOOLS)/src
+	javac $(PCTOOLS_JFLAGS) $(PCTOOLS)/src/udp/*.java
+	cd $(PCTOOLS)/dist/classes && jar cf ../lib/jop-pc.jar *
+
 #
 #	compile and JOPize the application
 #
@@ -280,16 +315,6 @@ ecl_app:
 	java $(TOOLS_CP) com.jopdesign.tools.jop2dat $(TARGET)/dist/bin/$(JOPBIN)
 	cp *.dat modelsim
 	rm -f *.dat
-
-# we moved the pc stuff to it's own target to be
-# NOT built on make all.
-# It depends on javax.comm which is NOT installed
-# by default - Blame SUN on this!
-#
-#	TODO: change it to RXTXcomm if it's working ok
-#
-pc:
-	cd java/pc && ./build.bat
 
 #
 #	project.sof fiels are used to boot from the serial line
