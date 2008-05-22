@@ -717,9 +717,11 @@ System.out.println("waitGps");
 				for (i=0; i<cnt; ++i) {
 					if (nr==Flash.getStrNr(i)) {
 						Flash.loadStr(nr);
-						if (Flash.getIp()==0) {
-							Flash.esStr();
-						}
+						Flash.loadStrNames(nr, 0, 0);
+
+//						if (Flash.getIp()==0) {
+//							Flash.esStr();
+//						}
 						break;
 					}
 				}
@@ -1541,7 +1543,7 @@ System.out.println("esInit");
 		// question: when shall be do the esStr()?
 		// is it necessary to do esStr() on ES Strecken befor findStr()?
 		synchronized(this) {
-			Flash.esStr();			
+//			Flash.esStr();			
 			Main.state.setPos(-1);
 			// disable till Gps finds the new Melnr for the
 			// changed Strecke
@@ -1593,18 +1595,16 @@ System.out.println("ES Rdy");
 		Flash.Point p = Flash.getPoint(melnr);
 
 		for (;;) {
-			i = Flash.getNext(melnr);
-			i = Flash.getNext(i);
-			if (i!=-1) {
-				melnr = i;
-				if (melnr>=Main.state.getPos()) {
-					p = Flash.getPoint(melnr);
-					break;
-				}
-			} else {
-				i = 0;
+			if (p.station && melnr>=Main.state.getPos()) {
 				break;
 			}
+			i = Flash.getNext(melnr);
+			if (i!=-1) {
+				melnr = i;
+			} else {
+				break;
+			}
+			p = Flash.getPoint(melnr);
 		}
 
 		while (loop()) {
@@ -1625,24 +1625,59 @@ System.out.println("ES Rdy");
 				return;
 			}
 
-			// display only the left point text
+			// TODO: the following is almost a copy from HB select
+			// just use different flags
+			boolean found = false;
 
 			if (val==Keyboard.UP) {
-				i = Flash.getNext(melnr);
-				i = Flash.getNext(i);
-				if (i!=-1) {
-					melnr = i;
-					p = Flash.getPoint(melnr);
+				while (!found) {
+					i = Flash.getNext(melnr);
+					if (i!=-1) {
+						melnr = i;
+						p = Flash.getPoint(melnr);
+						if (p.station) {
+							found = true;
+						}
+					} else {
+						break;
+					}
 				}
 			}
 			if (val==Keyboard.DOWN) {
-				i = Flash.getPrev(melnr);
-				i = Flash.getPrev(i);
-				if (i!=-1) {
-					melnr = i;
-					p = Flash.getPoint(melnr);
+				while (!found) {
+					i = Flash.getPrev(melnr);
+					if (i!=-1) {
+						melnr = i;
+						p = Flash.getPoint(melnr);
+						if (p.station) {
+							found = true;
+						}
+					} else {
+						break;
+					}
 				}
 			}
+
+
+// that's the old ES select with ES strecke change
+//			// display only the left point text
+//
+//			if (val==Keyboard.UP) {
+//				i = Flash.getNext(melnr);
+//				i = Flash.getNext(i);
+//				if (i!=-1) {
+//					melnr = i;
+//					p = Flash.getPoint(melnr);
+//				}
+//			}
+//			if (val==Keyboard.DOWN) {
+//				i = Flash.getPrev(melnr);
+//				i = Flash.getPrev(i);
+//				if (i!=-1) {
+//					melnr = i;
+//					p = Flash.getPoint(melnr);
+//				}
+//			}
 			if (val==Keyboard.E) {
 				
 				// The left point is the station

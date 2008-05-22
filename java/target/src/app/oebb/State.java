@@ -160,7 +160,7 @@ public class State extends ejip.UdpHandler implements Runnable {
 	public State(LinkLayer link) {
 
 		ipLink = link;
-		setTimestamp(2001, 1, 1, 0, 0, 0, 1);
+//		setTimestamp(2001, 1, 1, 0, 0, 0, 1);
 
 		sendTimer = Timer.getTimeoutSec(SEND_PERIOD);
 		stat = new int[5];
@@ -192,20 +192,29 @@ public class State extends ejip.UdpHandler implements Runnable {
 		arr[off + 11] = gpsLong;
 	}
 
-	public void setTimestamp(int year, int month, int day, int hour,
-			int minute, int second, int milli) {
+//	public void setTimestamp(int year, int month, int day, int hour,
+//			int minute, int second, int milli) {
+//
+//		date = (year << 16) + (month << 8) + day;
+//		time = (hour << (32 - 6)) + (minute << (32 - 12))
+//				+ (second << (32 - 18)) + (milli << 32 - 28);
+//	}
+//
+//	public void setTimestamp(int date, int time) {
+//
+//		this.date = date;
+//		this.time = time;
+//		// increment millis
+//		this.time += (1 << 32 - 28);
+//	}
+	
+	void setTimestamp() {
 
-		date = (year << 16) + (month << 8) + day;
-		time = (hour << (32 - 6)) + (minute << (32 - 12))
-				+ (second << (32 - 18)) + (milli << 32 - 28);
-	}
-
-	public void setTimestamp(int date, int time) {
-
-		this.date = date;
-		this.time = time;
-		// increment millis
-		this.time += (1 << 32 - 28);
+		int d = Gps.getDate();
+		int t = Gps.getTime();
+		date = (((d%100) + 2000) << 16) + ((d/100%100) << 8) + d/10000%100;
+		time = (t/10000000%100 << (32 - 6)) + (t/100000%100 << (32 - 12))
+				+ (t/1000%100 << (32 - 18)) + (t%1000 << 32 - 28);
 	}
 
 	static int cnt;
@@ -221,10 +230,11 @@ public class State extends ejip.UdpHandler implements Runnable {
 		}
 
 		// TODO: workaround for first connect
-		if (!contactZLB) {
-			++cnt;
-			setTimestamp(2001, 1, 1, 0, 0, 0, cnt);			
-		}
+//		if (!contactZLB) {
+//			++cnt;
+//			setTimestamp(2001, 1, 1, 0, 0, 0, cnt);			
+//		}
+		setTimestamp();
 
 		setUDPData(p.buf, Udp.DATA);
 		p.len = (Udp.DATA + 12) << 2;
@@ -291,7 +301,7 @@ public class State extends ejip.UdpHandler implements Runnable {
 		Status.connOk = true;
 
 		// just now - use the ZLB time for our message timing
-		setTimestamp(date, time);
+//		setTimestamp(date, time);
 		
 		int[] buf = p.buf;
 		// extract data
@@ -442,8 +452,10 @@ public class State extends ejip.UdpHandler implements Runnable {
 	 */
 	private void printMsg(Packet p) {
 		int[] buf = p.buf;
-		Dbg.wr("seconds=");
-		Dbg.intVal((p.buf[Udp.DATA+2]>>14) & 0x3f);
+		Dbg.wr("time=");
+		Dbg.intVal(Gps.getTime());
+//		Dbg.wr("seconds=");
+//		Dbg.intVal((p.buf[Udp.DATA+2]>>14) & 0x3f);
 		Dbg.wr("strnr=");
 		Dbg.intVal(buf[Udp.DATA+3]>>>20);
 		Dbg.wr("zugnr=");

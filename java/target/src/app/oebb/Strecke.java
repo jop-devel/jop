@@ -64,9 +64,11 @@ System.out.println(" Strecken");
 				continue;
 			}
 			Flash.loadStr(nr);
-			if (Flash.getIp()==0) {
-				Flash.esStr();
-			}
+			Flash.loadStrNames(nr, 0, 0);
+// we changed ES mode to be like Hilsbetrieb
+//			if (Flash.getIp()==0) {
+//				Flash.esStr();
+//			}
 
 Dbg.intVal(nr);
 
@@ -100,9 +102,11 @@ System.out.println();
 			if (foundCnt==1) {
 				nr = Flash.getStrNr(foundIdx);
 				Flash.loadStr(nr);
-				if (Flash.getIp()==0) {
-					Flash.esStr();
-				}
+				Flash.loadStrNames(nr, 0, 0);
+
+//				if (Flash.getIp()==0) {
+//					Flash.esStr();
+//				}
 Dbg.wr("found: ");
 Dbg.intVal(nr);
 Dbg.wr("\n");

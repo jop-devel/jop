@@ -13,6 +13,8 @@ import util.*;
 import ejip.*;
 import joprt.*;
 
+import com.jopdesign.io.IOFactory;
+import com.jopdesign.io.SysDevice;
 import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 
@@ -118,6 +120,23 @@ public class Gps extends RtThread {
  *	GPS RMC line for the logbook 
  */
 	static StringBuffer lastRMC;
+	
+	/**
+	 * Time as integer in format hhmmss
+	 */
+	private static int gpsTime;
+	/**
+	 * us timestamp of last GGA message
+	 */
+	private static int gpsTimestamp;
+	/**
+	 * Date as integer in format ddmmyy
+	 */
+	private static int gpsDate;
+	
+	private static Object timMutex = new Object();
+	
+	private static SysDevice sys;
 
 /**
 *	private because it's a singleton Thread.
@@ -151,6 +170,8 @@ public class Gps extends RtThread {
 		// start serial buffer thread
 		
 		ser = serPort;
+		
+		sys = IOFactory.getFactory().getSysDevice();
 
 		//
 		//	start my own thread
@@ -347,6 +368,20 @@ Dbg.wr(" nun aktiv\n");
 			}
 		}
 
+		// get date
+		for (i=51; i<=56; ++i) {
+			rxBuf[i] -= '0'; 
+		}
+		i = rxBuf[51] * 100000;
+		i += rxBuf[52] * 10000;
+		i += rxBuf[53] * 1000;
+		i += rxBuf[54] * 100;
+		i += rxBuf[55] * 10;
+		i += rxBuf[56];
+		synchronized (timMutex) {
+			gpsDate = i;
+		}
+
 		knt = 0;
 		for (i=0; i<5; ++i) {
 			val = rxBuf[41+i];
@@ -380,7 +415,10 @@ Dbg.lf();
 	*/
 	private static void process() {
 
+		
 		int i, j, lat, lon;
+
+		int tmpTS = sys.uscntTimer;
 
 		synchronized (lastGGA) {
 			lastGGA.setLength(0);
@@ -388,6 +426,8 @@ Dbg.lf();
 				lastGGA.append((char) rxBuf[i]);
 			}
 		}
+
+		// text is for info and lern mode
 		j = 0;
 		for (i=14; i<23; ++i) {
 			text[j++]=rxBuf[i];
@@ -395,6 +435,22 @@ Dbg.lf();
 		text[j++] = ' ';
 		for (i=27; i<36; ++i) {
 			text[j++]=rxBuf[i];
+		}
+
+		// get time
+		for (i=7; i<=12; ++i) {
+			rxBuf[i] -= '0'; 
+		}
+
+		i = rxBuf[7] * 100000;
+		i += rxBuf[8] * 10000;
+		i += rxBuf[9] * 1000;
+		i += rxBuf[10] * 100;
+		i += rxBuf[11] * 10;
+		i += rxBuf[12];
+		synchronized (timMutex) {
+			gpsTime = i;
+			gpsTimestamp = tmpTS;			
 		}
 
 		for (i=14; i<40; ++i) {
@@ -677,6 +733,37 @@ Dbg.wr('D');
 		for (i=0; i<len; ++i) {
 			ser.wr((buf[Udp.DATA+(i>>2)]>>(24-(i&3)*8)) & 0xff);
 		}
+	}
+
+
+	/**
+	 * @return date in ddmmyy
+	 */
+	public static int getDate() {
+	
+		int i;
+		synchronized (timMutex) {
+			i = gpsDate;
+		}
+		return i;
+	}
+
+
+	/**
+	 * TODO: time and date format could be in the message format time
+	 * 
+	 * @return time in hhmmssmmm
+	 */
+	public static int getTime() {
+		
+		int off = sys.uscntTimer;
+		int i;
+		synchronized (timMutex) {
+			off -= gpsTimestamp;
+			i = gpsTime;
+		}
+		off /= 1000; // in ms
+		return i*100 + off;
 	}
 
 

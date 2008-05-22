@@ -474,7 +474,7 @@ Dbg.lf();
 	 * in ES mode!
 	 *
 	 */
-	static boolean esStr() {
+	static boolean esStrNotUsedAnymore() {
 
 		int i, j, k;
 		int txtPtr = -1;
