@@ -37,7 +37,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 	// ram_cnt - 1
 	public static final int r = 1;
 
-	public static final int w = 1;
+	public static final int w = r+1;
 	
 	// cache read wait state (r-1)
 	public static final int c = 0;

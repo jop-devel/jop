@@ -20,7 +20,7 @@
 
 
 --
---	sc_sram32_flash.vhd
+--	sc_sram32_flash_wr_2ws.vhd
 --
 --	SimpCon compliant external memory interface
 --	for 32-bit SRAM (e.g. Cyclone board)
@@ -41,7 +41,7 @@
 --
 --	2005-11-22	first version
 --	2005-12-02	added flash interface
---
+--	2008-05-22	nwe on pos edge, additional wait state for write
 
 Library IEEE;
 use IEEE.std_logic_1164.all;
@@ -93,7 +93,7 @@ architecture rtl of sc_mem_if is
 --	signals for mem interface
 --
 	type state_type		is (
-							idl, rd1, rd2, wr1,
+							idl, rd1, rd2, wr1, wr2, wr3,
 							fl_rd1, fl_rd2, fl_wr1, fl_wr2
 						);
 	signal state 		: state_type;
@@ -119,9 +119,13 @@ architecture rtl of sc_mem_if is
 	signal ram_access	: std_logic;
 	-- selection for Flash/NAND ncs
 	signal sel_flash	: std_logic;
+	
+	signal ram_ws_wr	: integer;
 
 begin
 
+	ram_ws_wr <= ram_ws+1; -- additional wait state for SRAM
+	
 	assert SC_ADDR_SIZE>=21 report "Too less address bits";
 	ram_dout_en <= dout_ena;
 
@@ -214,21 +218,6 @@ begin
 end process;
 
 --
---	'delay' nwe 1/2 cycle -> change on falling edge
---
-process(clk, reset)
-
-begin
-	if (reset='1') then
-		ram_nwe <= '1';
-	elsif falling_edge(clk) then
-		ram_nwe <= nwr_int;
-	end if;
-
-end process;
-
-
---
 --	next state logic
 --
 process(state, sc_mem_out, trans_ram, wait_state)
@@ -285,13 +274,13 @@ begin
 			
 		-- the WS state
 		when wr1 =>
--- TODO: check what happens on ram_ws=0
--- TODO: do we need a write pipelining?
---	not at the moment, but parhaps later when
---	we write the stack content to main memory
-			if wait_state=1 then
-				next_state <= idl;
-			end if;
+			next_state <= wr2;
+		
+		when wr2 =>
+			next_state <= wr3;
+			
+		when wr3 =>
+			next_state <= idl;
 
 		when fl_rd1 =>
 			if wait_state=2 then
@@ -327,6 +316,7 @@ begin
 		ram_ncs <= '1';
 		ram_noe <= '1';
 		ram_data_ena <= '0';
+		ram_nwe <= '1';
 
 		fl_noe <= '1';
 		fl_nwe <= '1';
@@ -340,6 +330,7 @@ begin
 		ram_ncs <= '1';
 		ram_noe <= '1';
 		ram_data_ena <= '0';
+		ram_nwe <= '1';
 
 		fl_noe <= '1';
 		fl_nwe <= '1';
@@ -365,7 +356,14 @@ begin
 			-- the WS state
 			when wr1 =>
 				ram_ncs <= '0';
+				
+			when wr2 => 
+				ram_nwe <= '0';
 				dout_ena <= '1';
+				ram_ncs <= '0';
+				
+			when wr3 =>
+				ram_ncs <= '0';
 
 			when fl_rd1 =>
 				fl_noe <= '0';
@@ -384,20 +382,6 @@ begin
 		end case;
 					
 	end if;
-end process;
-
---
---	nwr combinatorial processing
---	for the negativ edge
---
-process(next_state, state)
-begin
-
-	nwr_int <= '1';
-	if next_state=wr1 then
-		nwr_int <= '0';
-	end if;
-
 end process;
 
 --
@@ -421,11 +405,25 @@ begin
 			cnt <= wait_state(1 downto 0)-1;
 		end if;
 
-		if sc_mem_out.rd='1' or sc_mem_out.wr='1' then
+		if sc_mem_out.rd='1' then
 			if trans_ram='1' then
 				wait_state <= to_unsigned(ram_ws+1, 4);
 				if ram_ws<3 then
 					cnt <= to_unsigned(ram_ws+1, 2);
+				else
+					cnt <= "11";
+				end if;
+			else
+				wait_state <= to_unsigned(rom_ws+1, 4);
+				cnt <= "11";
+			end if;
+		end if;
+		
+		if sc_mem_out.wr='1' then
+			if trans_ram='1' then
+				wait_state <= to_unsigned(ram_ws_wr+1, 4);
+				if ram_ws_wr<3 then
+					cnt <= to_unsigned(ram_ws_wr+1, 2);
 				else
 					cnt <= "11";
 				end if;
