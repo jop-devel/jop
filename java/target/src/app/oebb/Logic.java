@@ -1246,10 +1246,10 @@ Dbg.lf();
 	private void reset() {
 		// wait some time to send outstanding messages
 		// and reply
-		int tim = Timer.getTimeoutSec(4);
-		while (!Timer.timeout(tim)) {
-			loop();
-		}
+//		int tim = Timer.getTimeoutSec(4);
+//		while (!Timer.timeout(tim)) {
+//			loop();
+//		}
 		// wait for reset
 		Main.reset = true;
 		for (;;) {

@@ -763,7 +763,7 @@ Dbg.wr('D');
 			i = gpsTime;
 		}
 		off /= 1000; // in ms
-		return i*100 + off;
+		return i*1000 + off;
 	}
 
 

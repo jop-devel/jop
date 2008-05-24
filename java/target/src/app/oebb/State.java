@@ -93,6 +93,7 @@ public class State extends ejip.UdpHandler implements Runnable {
 	final static int CFLAG_FWR =	0x00000002;		// Fahrtwiderruf
 	final static int CFLAG_NOT =	0x00000004;		// Nothalt
 	final static int CFLAG_ANMOK =	0x00000008;		// Anmelden OK
+	final static int CFLAG_IGNORE =	0x00000020;		// ignore message 
 
 	/**
 	 * The alarm was ack by the TFZ. Set the flags to zero when
@@ -270,7 +271,6 @@ public class State extends ejip.UdpHandler implements Runnable {
 	 * Handle a message received from the ZLB.
 	 * zlbMsg point to the received package
 	 * 
-	 * TODO: check timestamp
 	 */
 	private void handleMsg() {
 		
@@ -300,8 +300,6 @@ public class State extends ejip.UdpHandler implements Runnable {
 		zlbTimer = Timer.getTimeoutSec(ZLB_TIMEOUT);
 		Status.connOk = true;
 
-		// just now - use the ZLB time for our message timing
-//		setTimestamp(date, time);
 		
 		int[] buf = p.buf;
 		// extract data
@@ -310,6 +308,16 @@ public class State extends ejip.UdpHandler implements Runnable {
 		int zugnr = strPos & 0xfffff;
 		
 		int cmd = buf[Udp.DATA+8];
+		
+		// ack just this flag, but ignore the rest
+		if ((cmd & CFLAG_IGNORE)!=0) {
+			cmdAck |= CFLAG_IGNORE;
+			Dbg.wr("ZLB ignored");
+			Dbg.lf();
+			p.setStatus(Packet.FREE);
+			return;
+		}
+
 		if (cmd!=cmdAck) {
 			// TODO check a cmd change
 			
@@ -328,7 +336,7 @@ public class State extends ejip.UdpHandler implements Runnable {
 			}
 			// update ack with cmd as default action
 			cmdAck = cmd;
-			// but keep some when not acked from TFZF or Loigc
+			// but keep some when not acked from TFZF or Logic
 	
 			// Abmelden
 			if ((cmd & CFLAG_ABM)!=0) {

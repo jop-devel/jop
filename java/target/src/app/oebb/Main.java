@@ -62,7 +62,7 @@ public class Main {
 
 	// SW version
 	public static final int VER_MAJ = 2;
-	public static final int VER_MIN = 7;
+	public static final int VER_MIN = 8;
 
 	private static final int STRECKE_PRIO = 1;
 	private static final int STRECKE_PERIOD = 100000;
