@@ -53,8 +53,8 @@ public class Flash {
 	static final int PT_FLG_NO_MOVE = 16;
 	static final int PT_FLG_ANM = 32;
 	
-	static final int NO_COMM_ALARM_START = -1;
-	static final int NO_COMM_ALARM_END = -2;
+//	static final int NO_COMM_ALARM_START = -1;
+//	static final int NO_COMM_ALARM_END = -2;
 
 	static class Point {
 		int melnr;
@@ -73,7 +73,7 @@ public class Flash {
 		StringBuffer verschubBis;
 		
 		// start of Funkschatten hack
-		int fs1_lat, fs1_lon, fs2_lat, fs2_lon;
+//		int fs1_lat, fs1_lon, fs2_lat, fs2_lon;
 
 		Point() {
 			stationLine1 = new StringBuffer(19);
@@ -238,9 +238,9 @@ System.out.println("getFirst: wrong strnr");
 			if (str[i].melnr == melnr) {
 				for(; i<lenStr; ++i) {
 					// Funkschatten hack
-					if (str[i].melnr==0) {
-						continue;
-					}
+//					if (str[i].melnr==0) {
+//						continue;
+//					}
 					if (str[i].melnr != melnr) {
 						return str[i].melnr;
 					}
@@ -277,13 +277,14 @@ System.out.println("getFirst: wrong strnr");
 		boolean ret = true;
 		Point p = Flash.getPoint(melnr);
 		if (p!=null) {
-			// Funkschatten hack
-			int len = Gps.dist(p.fs1_lat-p.fs2_lat, p.fs1_lon-p.fs2_lon);
-			int a = Gps.dist(p.fs1_lat-lat, p.fs1_lon-lon);
-			int b = Gps.dist(p.fs2_lat-lat, p.fs2_lon-lon);
-			if (a<len && b<len) {
-				ret = false;
-			}
+// Funkschatten disabled
+//			// Funkschatten hack
+//			int len = Gps.dist(p.fs1_lat-p.fs2_lat, p.fs1_lon-p.fs2_lon);
+//			int a = Gps.dist(p.fs1_lat-lat, p.fs1_lon-lon);
+//			int b = Gps.dist(p.fs2_lat-lat, p.fs2_lon-lon);
+//			if (a<len && b<len) {
+//				ret = false;
+//			}
 			// was the original clean version
 //			ret = !(p.ptr==NO_COMM_ALARM_START);
 		}
@@ -360,34 +361,35 @@ possible stack overfolw!!!
 					// Funkschatten hack
 					// Charly sets melrn to LAST one if not
 					// set in the CSV!!!!
-					if (p.ptr<0) {
-						p.melnr = 0;
-					}
+//					if (p.ptr<0) {
+//						p.melnr = 0;
+//					}
 					p.flags = intVal(addr+PT_FLAGS);
 					p.station = (p.flags & PT_FLG_STATION)!=0;
 					p.anmelden = (p.flags & PT_FLG_ANM)!=0;
 					p.verlassen = (p.flags & PT_FLG_VERL)!=0;
 					p.checkDirection = (p.flags & PT_FLG_NO_DIR)==0;
 					p.checkMove = (p.flags & PT_FLG_NO_MOVE)==0;
-					p.fs1_lat = 0;
-					p.fs1_lon = 0;
-					p.fs2_lat = 0;
-					p.fs2_lon = 0;
-					// Funkschatten hack
-					if (p.melnr!=0) {
-						// a real new point
-						last = p;
-					} else if (last!=null){
-						k = intVal(addr+PT_PTR); // type
-						if (k==NO_COMM_ALARM_START) {
-							last.fs1_lat = intVal(addr+PT_LAT);
-							last.fs1_lon = intVal(addr+PT_LON);
-						}
-						if (k==NO_COMM_ALARM_END) {
-							last.fs2_lat = intVal(addr+PT_LAT);
-							last.fs2_lon = intVal(addr+PT_LON);							
-						}
-					}
+					last = p;
+//					p.fs1_lat = 0;
+//					p.fs1_lon = 0;
+//					p.fs2_lat = 0;
+//					p.fs2_lon = 0;
+//					// Funkschatten hack
+//					if (p.melnr!=0) {
+//						// a real new point
+//						last = p;
+//					} else if (last!=null){
+//						k = intVal(addr+PT_PTR); // type
+//						if (k==NO_COMM_ALARM_START) {
+//							last.fs1_lat = intVal(addr+PT_LAT);
+//							last.fs1_lon = intVal(addr+PT_LON);
+//						}
+//						if (k==NO_COMM_ALARM_END) {
+//							last.fs2_lat = intVal(addr+PT_LAT);
+//							last.fs2_lon = intVal(addr+PT_LON);							
+//						}
+//					}
 
 					
 					addr += PT_LEN;

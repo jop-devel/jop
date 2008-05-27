@@ -80,10 +80,12 @@ public class State extends ejip.UdpHandler implements Runnable {
 	public static final int FLAG_VERL = 6;
 	public static final int FLAG_ZIEL = 7;
 	public static final int ALARM_MLR = 8;
+	public static final int FLAG_LERN = 9;
 	
 	private final static int AFLAG_ANK = 1<<(FLAG_ANK-1);
 	private final static int AFLAG_VERL = 1<<(FLAG_VERL-1);
 	private final static int AFLAG_ZIEL = 1<<(FLAG_ZIEL-1);
+	private final static int AFLAG_LERN = 1<<(FLAG_LERN-1);
 	
 	private final static int ALARM_MSK = (1<<(ALARM_UEBERF-1)) |
 	(1<<(ALARM_RICHTUNG-1)) | (1<<(ALARM_FAEHRT-1)) | (1<<(ALARM_ES221-1)) | (1<<(ALARM_MLR-1));
@@ -93,6 +95,7 @@ public class State extends ejip.UdpHandler implements Runnable {
 	final static int CFLAG_FWR =	0x00000002;		// Fahrtwiderruf
 	final static int CFLAG_NOT =	0x00000004;		// Nothalt
 	final static int CFLAG_ANMOK =	0x00000008;		// Anmelden OK
+	final static int CFLAG_ZLB_INT= 0x00000010;		// used only internally by ZLB
 	final static int CFLAG_IGNORE =	0x00000020;		// ignore message 
 
 	/**
@@ -389,6 +392,10 @@ public class State extends ejip.UdpHandler implements Runnable {
 				if ((alarmAck & AFLAG_ZIEL)!=0) {
 					alarmFlags &= ~AFLAG_ZIEL;
 				}
+				if ((alarmAck & AFLAG_LERN)!=0) {
+					alarmFlags &= ~AFLAG_LERN;
+					Status.lernOk = true;
+				}
 				// Alarm has been reset by FDL and seen by ZLB
 				// we can reset it in the flags
 				if (alarmQuit) {
@@ -644,6 +651,14 @@ public class State extends ejip.UdpHandler implements Runnable {
 	}
 
 	public void lern(int melnr, int latAvg, int lonAvg) {
+		
+		synchronized (this) {
+			pos = melnr;
+			gpsLat = latAvg;
+			gpsLong = lonAvg;
+			alarmFlags |= AFLAG_LERN;
+		}
+		
 		// TODO Auto-generated method stub
 		
 	}

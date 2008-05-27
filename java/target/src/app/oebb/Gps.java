@@ -275,11 +275,13 @@ Dbg.wr("\n");
 					// change only if previous unknown or
 					// we're moving
 					if (state.getPos()<=0 || speed>MIN_SPEED) {
-						state.setPos(melnr);
-						state.requestSend();
+						if (Main.logic.state!=Logic.LERN) {
+							state.setPos(melnr);
+							state.requestSend();
 Dbg.wr("Melderaum: ");
 Dbg.intVal(melnr);
-Dbg.wr(" nun aktiv\n");
+Dbg.wr(" nun aktiv\n");							
+						}
 						// enable Alarm checking again
 						// is disabled again!!!
 						// Status.checkMove = true;
@@ -503,8 +505,10 @@ Dbg.lf();
 //			} 
 //		}
 
-		Main.state.gpsLat = last_lat;
-		Main.state.gpsLong = last_lon;
+		if (Main.logic.state!=Logic.LERN) {
+			Main.state.gpsLat = last_lat;
+			Main.state.gpsLong = last_lon;			
+		}
 
 		// delay fix one message
 		if (last_fix!=0) {

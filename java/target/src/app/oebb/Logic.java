@@ -984,7 +984,7 @@ System.out.println("Download server connect timeout");
 	private void anmeldenWait() {
 		
 		while (loop()) {
-			Display.write("Anmelden", "", "(bitte warten)");
+			Display.write("Anmelden", "(bitte warten)", "(Fdl verständigen)");
 			// wait for Anmelden OK or we already got a FERL
 			if (Events.anmeldenOk || Main.state.start!=0 || hilfsbtr) {
 				Logic.state = Logic.ANM_OK;
@@ -1437,20 +1437,23 @@ Dbg.lf();
 		Display.write("Lerne", "Strecke","");
 		checkMelnr = false;
 
+		val = Main.state.strnr;
+		
 		Main.state.strnr = getNumber(8, 3);
 		if (Main.state.strnr == -1) return;
-		Flash.loadStr(Main.state.strnr);
+		
+		if (val!=Main.state.strnr || !Status.connOk) {
+			Flash.loadStr(Main.state.strnr);
+			Flash.loadStrNames(Main.state.strnr, 0, 0);
 
+			startConn();			
+		}
 		int melnr = Flash.getFirst(Main.state.strnr);
 		if (melnr==-1) {
 			Display.write("Strecke", "nicht gefunden", "");
 			waitEnterAndInit();
 			return;
 		}
-
-		Flash.loadStrNames(Main.state.strnr, 0, 0);
-
-		startConn();
 		// Conn changes to FLD_CONN
 		Logic.state = Logic.LERN;
 		Main.state.setLern();
