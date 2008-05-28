@@ -53,6 +53,7 @@
 --				for uart_tal
 --	2007-03-28	use records
 --	2008-05-22	changed modem baudrate to 115 kbit
+--	2008-05-28	back to 38.4 kbit
 --
 
 
@@ -599,7 +600,8 @@ begin
 	cmp_ua2: entity work.sc_uart generic map (
 			addr_bits => SLAVE_ADDR_BITS,
 			clk_freq => clk_freq,
-			baud_rate => 115200,
+			baud_rate => 38400,
+--			baud_rate => 115200,
 			txf_depth => 16,
 			txf_thres => 2,
 			rxf_depth => 50,
