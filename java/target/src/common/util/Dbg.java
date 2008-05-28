@@ -22,6 +22,7 @@ package util;
 
 /**
 *	serial output for debug on uart 1.
+*
 */
 
 public abstract class Dbg {
@@ -32,34 +33,25 @@ public abstract class Dbg {
 	private static Dbg st;
 
 	private static final int MAX_TMP = 32;
-	private static int[] tmp;			// a generic buffer
+	private static int[] tmp = new int[MAX_TMP];			// a generic buffer
 
 
 	/** init serial or UDP Debugging */
 	public static void init() {
 
-		if (st==null) {
-			tmp = new int[MAX_TMP];
-			st = new DbgUdp();
-		}
+		st = new DbgUdp();
 	}
 
 	/** force serial Debugging */
 	public static void initSer() {
 
-		if (st==null) {
-			tmp = new int[MAX_TMP];
-			st = new DbgSerial();
-		}
+		st = new DbgSerial();
 	}
 
 	/** force serial Debugging with waiting */
 	public static void initSerWait() {
 
-		if (st==null) {
-			tmp = new int[MAX_TMP];
-			st = new DbgSerial(true);
-		}
+		st = new DbgSerial(true);
 	}
 
 	public static void wr(int c) { st.dbgWr(c); }
