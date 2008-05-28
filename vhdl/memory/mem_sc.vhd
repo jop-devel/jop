@@ -150,6 +150,7 @@ end component;
 
 	-- addr_reg used to 'store' the address for wr, bc load, and array access
 	signal addr_reg		: unsigned(SC_ADDR_SIZE-1 downto 0);
+	signal addr_next	: unsigned(SC_ADDR_SIZE-1 downto 0);
 
 	-- MUX for SimpCon address and write data
 	signal ram_addr		: std_logic_vector(SC_ADDR_SIZE-1 downto 0);
@@ -196,13 +197,11 @@ end component;
 --
 -- signals for copying and address translation
 --
-	signal src_reg		: unsigned(SC_ADDR_SIZE-1 downto 0);
-	signal dest_reg		: unsigned(SC_ADDR_SIZE-1 downto 0);
+	signal base_reg		: unsigned(SC_ADDR_SIZE-1 downto 0);
 	signal pos_reg		: unsigned(SC_ADDR_SIZE-1 downto 0);
+    signal offset_reg	: unsigned(SC_ADDR_SIZE-1 downto 0);
+	signal translate_bit : std_logic;
 	signal cp_stopbit   : std_logic;
-
-	signal src_pos		: unsigned(SC_ADDR_SIZE-1 downto 0);
-	signal dest_pos		: unsigned(SC_ADDR_SIZE-1 downto 0);
 
 begin
 
@@ -254,19 +253,7 @@ end process;
 --	SimpCon connections
 --
 
--- address translation
-src_pos <= src_reg+pos_reg;
-dest_pos <= dest_reg+pos_reg;
-
-process(pos_reg, ram_addr)
-begin
-	if unsigned(ram_addr) >= src_reg and unsigned(ram_addr) < src_pos then
-		sc_mem_out.address <= std_logic_vector(unsigned(ram_addr) - src_reg+dest_reg);
-	else
-		sc_mem_out.address <= ram_addr;
-	end if;
-end process;
-	
+	sc_mem_out.address <= ram_addr;
 	sc_mem_out.wr_data <= ram_wr_data;
 	sc_mem_out.rd <= mem_in.rd or state_rd;
 	sc_mem_out.wr <= mem_in.wr or state_wr;
@@ -291,23 +278,14 @@ begin
 		was_a_store <= '0';
 		bc_len <= (others => '0');
 
+		base_reg <= (others => '0');
+		pos_reg <= (others => '0');
+		offset_reg <= (others => '0');
+		
 	elsif rising_edge(clk) then
-		if mem_in.addr_wr='1' then
-			addr_reg <= unsigned(ain(SC_ADDR_SIZE-1 downto 0));
-		end if;
-
 		if mem_in.bc_rd='1' then
 			bc_len <= unsigned(ain(jpc_width-3 downto 0));
-			addr_reg(17 downto 0) <= unsigned(ain(27 downto 10));
-
-			-- addr_bits is 17
-			if SC_ADDR_SIZE>18 then
-				addr_reg(SC_ADDR_SIZE-1 downto 18) <= (others => '0');
-			end if;
 		else
-			if inc_addr_reg='1' then
-				addr_reg <= addr_reg+1;
-			end if;
 			if dec_len='1' then
 				bc_len <= bc_len-1;
 			end if;
@@ -315,7 +293,6 @@ begin
 
 		-- save array address and index
 		if mem_in.iaload='1' or mem_in.getfield='1' then
-			addr_reg <= unsigned(bin(SC_ADDR_SIZE-1 downto 0));	-- store address for store and np check
 			index <= ain(SC_ADDR_SIZE-1 downto 0);		-- store array index
 		end if;
 		-- first step of three-operand operations
@@ -324,39 +301,37 @@ begin
 		end if;
 		-- get reference and index for putfield and array stores
 		if state=pf0 or state=iast0 then
-			addr_reg <= unsigned(bin(SC_ADDR_SIZE-1 downto 0));	-- store address for store and np check
 			index <= ain(SC_ADDR_SIZE-1 downto 0);		-- store array index			
-		end if;
-
-		-- address calculations
-		if state=iald3 or state=gf2 then
-			addr_reg <= unsigned(sc_mem_in.rd_data(SC_ADDR_SIZE-1 downto 0))+unsigned(index);
 		end if;
 
 		-- get source and index for copying
 		if mem_in.copy='1' then
-			src_reg <= unsigned(bin(SC_ADDR_SIZE-1 downto 0));
-			pos_reg <= unsigned(ain(SC_ADDR_SIZE-1 downto 0));
+			base_reg <= unsigned(bin(SC_ADDR_SIZE-1 downto 0));
+			pos_reg <= unsigned(ain(SC_ADDR_SIZE-1 downto 0)) + unsigned(bin(SC_ADDR_SIZE-1 downto 0));
 			cp_stopbit <= ain(31);
 		end if;
 		-- get destination for copying
 		if state=cp0 then
-			dest_reg <= unsigned(bin(SC_ADDR_SIZE-1 downto 0));
+			offset_reg <= unsigned(bin(SC_ADDR_SIZE-1 downto 0)) - base_reg;
 		end if;
 
 		-- address and data tweaking for copying
-		if state=cp0 then
-			addr_reg <= src_pos;
-		end if;		
 		if state=cp3 then
-			addr_reg <= dest_pos;
 			pos_reg <= pos_reg+1;
 			value <= sc_mem_in.rd_data;
 		end if;
 		if state=cpstop then
-			pos_reg <= (others => '0');
+			pos_reg <= base_reg;
 		end if;
 
+		-- precompute address translation
+		if addr_next >= base_reg and addr_next < pos_reg then
+			translate_bit <= '1';
+		else
+			translate_bit <= '0';
+		end if;
+		addr_reg <= addr_next;
+		
 		-- set flag for state sharing
 		if mem_in.iaload='1' or mem_in.getfield='1' then
 			was_a_store <= '0';
@@ -370,15 +345,72 @@ end process;
 --
 --	RAM address MUX (combinational)
 --
-process(ain, addr_reg, mem_in, state)
+process(ain, addr_reg, offset_reg, mem_in)
 begin
 	if mem_in.rd='1' then
-		ram_addr <= ain(SC_ADDR_SIZE-1 downto 0);
+		if unsigned(ain(SC_ADDR_SIZE-1 downto 0)) >= base_reg and unsigned(ain(SC_ADDR_SIZE-1 downto 0)) < pos_reg then
+			ram_addr <= std_logic_vector(unsigned(ain(SC_ADDR_SIZE-1 downto 0)) + offset_reg);
+		else
+			ram_addr <= ain(SC_ADDR_SIZE-1 downto 0);
+		end if;
 	else
 		-- default is the registered address for wr, bc load
-		ram_addr <= std_logic_vector(addr_reg(SC_ADDR_SIZE-1 downto 0));
+		if translate_bit='1' then
+			ram_addr <= std_logic_vector(addr_reg(SC_ADDR_SIZE-1 downto 0) + offset_reg);
+		else
+			ram_addr <= std_logic_vector(addr_reg(SC_ADDR_SIZE-1 downto 0));
+		end if;
 	end if;
 end process;
+
+--
+-- prepare RAM address registering
+--
+process(addr_reg, mem_in, ain, bin, state, inc_addr_reg, index, pos_reg, offset_reg)
+begin
+
+	-- default values
+	addr_next <= addr_reg;	
+	if inc_addr_reg='1' then
+		addr_next <= addr_reg+1;
+	end if;
+
+	-- computations that depend on mem_in
+	if mem_in.addr_wr='1' then
+		addr_next <= unsigned(ain(SC_ADDR_SIZE-1 downto 0));
+	end if;
+	
+	if mem_in.bc_rd='1' then
+		addr_next(17 downto 0) <= unsigned(ain(27 downto 10));
+		-- addr_bits is 17
+		if SC_ADDR_SIZE>18 then
+			addr_next(SC_ADDR_SIZE-1 downto 18) <= (others => '0');
+		end if;
+	end if;
+	
+	if mem_in.iaload='1' or mem_in.getfield='1' then
+		addr_next <= unsigned(bin(SC_ADDR_SIZE-1 downto 0));
+	end if;
+
+	-- computations that depend on the state
+	if state=pf0 or state=iast0 then
+		addr_next <= unsigned(bin(SC_ADDR_SIZE-1 downto 0));
+	end if;
+
+	if state=iald3 or state=gf2 then
+		addr_next <= unsigned(sc_mem_in.rd_data(SC_ADDR_SIZE-1 downto 0))+unsigned(index);
+	end if;
+
+	if state=cp0 then
+		addr_next <= pos_reg;
+	end if;		
+
+	if state=cp3 then
+		addr_next <= pos_reg + offset_reg;
+	end if;
+	
+end process;
+
 
 --
 --	RAM write data MUX (combinational)
