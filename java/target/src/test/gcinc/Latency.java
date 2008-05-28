@@ -22,6 +22,8 @@ package gcinc;
 
 import java.util.Vector;
 
+import util.Dbg;
+
 import com.jopdesign.sys.Const;
 import com.jopdesign.sys.GC;
 import com.jopdesign.sys.Native;
@@ -140,13 +142,18 @@ public class Latency {
 		
 		public void run() {
 			for (;;) {
-				System.out.print("G");
+				Dbg.wr('G');
 				GC.gc();
 				waitForNextPeriod();
 			}
 		}
 	}
 	
+	/**
+	 * Use Dbg instead 
+	 * @author martin
+	 *
+	 */
 	static class LogThread extends RtThread {
 	
 		public LogThread(int prio, int us) {
@@ -158,17 +165,16 @@ public class Latency {
 				waitForNextPeriod();
 				System.out.println();
 				if (hft!=null) {
-					System.out.print("hft max=");
-					System.out.println(hft.max);
-					System.out.print("hft min=");
-					System.out.println(hft.min);					
-					
+					Dbg.wr("hft max=", hft.max);
+					Dbg.lf();
+					Dbg.wr("hft min=", hft.min);
+					Dbg.lf();
 				}
 				if (mft!=null) {
-					System.out.print("mft max=");
-					System.out.println(mft.max);
-					System.out.print("mft min=");
-					System.out.println(mft.min);											
+					Dbg.wr("mft max=", mft.max);
+					Dbg.lf();
+					Dbg.wr("mft min=", mft.min);
+					Dbg.lf();
 				}
 			}
 		}
@@ -206,6 +212,7 @@ public class Latency {
 	 */
 	public static void main(String[] args) {
 
+		Dbg.initSerWait();
 //		v = new Vector(20);
 		sl = new SimpleList();
 		
