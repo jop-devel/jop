@@ -366,7 +366,7 @@ end process;
 --
 -- prepare RAM address registering
 --
-process(addr_reg, mem_in, ain, bin, state, inc_addr_reg, index, pos_reg, offset_reg)
+process(addr_reg, sc_mem_in, mem_in, ain, bin, state, inc_addr_reg, index, pos_reg, offset_reg)
 begin
 
 	-- default values
