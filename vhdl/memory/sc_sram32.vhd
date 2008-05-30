@@ -36,6 +36,7 @@
 --
 --	2005-11-22	first version
 --	2007-03-17	changed SimpCon to records
+--	2008-05-29	nwe on pos edge, additional wait state for write
 --
 
 Library IEEE;
@@ -78,19 +79,22 @@ architecture rtl of sc_mem_if is
 --
 	type state_type		is (
 							idl, rd1, rd2,
-							wr1
+							wr1, wr2, wr3
 						);
 	signal state 		: state_type;
 	signal next_state	: state_type;
 
-	signal nwr_int		: std_logic;
 	signal wait_state	: unsigned(3 downto 0);
 	signal cnt			: unsigned(1 downto 0);
 
 	signal dout_ena		: std_logic;
 	signal rd_data_ena	: std_logic;
+	
+	signal ram_ws_wr	: integer;
 
 begin
+	
+	ram_ws_wr <= ram_ws+1; -- additional wait state for SRAM
 
 	assert SC_ADDR_SIZE>=addr_bits report "Too less address bits";
 	ram_dout_en <= dout_ena;
@@ -122,21 +126,6 @@ begin
 
 	end if;
 end process;
-
---
---	'delay' nwe 1/2 cycle -> change on falling edge
---
-process(clk, reset)
-
-begin
-	if (reset='1') then
-		ram_nwe <= '1';
-	elsif falling_edge(clk) then
-		ram_nwe <= nwr_int;
-	end if;
-
-end process;
-
 
 --
 --	next state logic
@@ -186,13 +175,13 @@ begin
 			
 		-- the WS state
 		when wr1 =>
--- TODO: check what happens on ram_ws=0
--- TODO: do we need a write pipelining?
---	not at the moment, but parhaps later when
---	we write the stack content to main memory
-			if wait_state=1 then
-				next_state <= idl;
-			end if;
+			next_state <= wr2;
+		
+		when wr2 =>
+			next_state <= wr3;
+			
+		when wr3 =>
+			next_state <= idl;
 
 	end case;
 				
@@ -211,6 +200,8 @@ begin
 		ram_ncs <= '1';
 		ram_noe <= '1';
 		rd_data_ena <= '0';
+		ram_nwe <= '1';
+		
 	elsif rising_edge(clk) then
 
 		state <= next_state;
@@ -218,7 +209,8 @@ begin
 		ram_ncs <= '1';
 		ram_noe <= '1';
 		rd_data_ena <= '0';
-
+		ram_nwe <= '1';
+		
 		case next_state is
 
 			when idl =>
@@ -234,29 +226,21 @@ begin
 				ram_noe <= '0';
 				rd_data_ena <= '1';
 				
-				
 			-- the WS state
 			when wr1 =>
 				ram_ncs <= '0';
+				
+			when wr2 => 
+				ram_nwe <= '0';
 				dout_ena <= '1';
+				ram_ncs <= '0';
+				
+			when wr3 =>
+				ram_ncs <= '0';
 
 		end case;
 					
 	end if;
-end process;
-
---
---	nwr combinatorial processing
---	for the negativ edge
---
-process(next_state, state)
-begin
-
-	nwr_int <= '1';
-	if next_state=wr1 then
-		nwr_int <= '0';
-	end if;
-
 end process;
 
 --
@@ -280,10 +264,19 @@ begin
 			cnt <= wait_state(1 downto 0)-1;
 		end if;
 
-		if sc_mem_out.rd='1' or sc_mem_out.wr='1' then
+		if sc_mem_out.rd='1' then
 			wait_state <= to_unsigned(ram_ws+1, 4);
 			if ram_ws<3 then
 				cnt <= to_unsigned(ram_ws+1, 2);
+			else
+				cnt <= "11";
+			end if;
+		end if;
+		
+		if sc_mem_out.wr='1' then
+			wait_state <= to_unsigned(ram_ws_wr+1, 4);
+			if ram_ws_wr<3 then
+				cnt <= to_unsigned(ram_ws_wr+1, 2);
 			else
 				cnt <= "11";
 			end if;

@@ -20,7 +20,7 @@
 
 
 --
---	sc_sram32_flash_wr_2ws.vhd
+--	sc_sram32_flash.vhd
 --
 --	SimpCon compliant external memory interface
 --	for 32-bit SRAM (e.g. Cyclone board)
@@ -99,7 +99,6 @@ architecture rtl of sc_mem_if is
 	signal state 		: state_type;
 	signal next_state	: state_type;
 
-	signal nwr_int		: std_logic;
 	signal wait_state	: unsigned(3 downto 0);
 	signal cnt			: unsigned(1 downto 0);
 
