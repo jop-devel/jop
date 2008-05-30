@@ -41,6 +41,7 @@
 --				Use wait_state, din register without MUX
 --	2007-06-04	changed SimpCon to records
 --	2007-09-09	Additional input register for high data (correct SimpCon violation)
+--	2008-05-29	nwe on pos edge, additional wait state for write
 --
 
 Library IEEE;
@@ -83,12 +84,12 @@ architecture rtl of sc_mem_if is
 --
 	type state_type		is (
 							idl, rd1_h, rd2_h, rd1_l, rd2_l,
-							wr_h, wr_idl, wr_l
+							wr1_h, wr2_h, wr3_h, wr_idl, 
+							wr1_l, wr2_l, wr3_l
 						);
 	signal state 		: state_type;
 	signal next_state	: state_type;
 
-	signal nwr_int		: std_logic;
 	signal wait_state	: unsigned(3 downto 0);
 	signal cnt			: unsigned(1 downto 0);
 
@@ -102,11 +103,13 @@ architecture rtl of sc_mem_if is
 	signal ram_din_high		: std_logic_vector(15 downto 0);
 
 	signal ram_din_reg	: std_logic_vector(31 downto 0);
+	
+	signal ram_ws_wr	: integer;
 
 begin
 
+	ram_ws_wr <= ram_ws+1; -- additional wait state for SRAM
 	ram_dout_en <= dout_ena;
-
 	sc_mem_in.rdy_cnt <= cnt;
 
 --
@@ -153,20 +156,6 @@ end process;
 
 	sc_mem_in.rd_data <= ram_din_reg;
 
---
---	'delay' nwe 1/2 cycle -> change on falling edge
---
-process(clk, reset)
-
-begin
-	if (reset='1') then
-		ram_nwe <= '1';
-	elsif falling_edge(clk) then
-		ram_nwe <= nwr_int;
-	end if;
-
-end process;
-
 
 --
 --	next state logic
@@ -188,7 +177,7 @@ begin
 					next_state <= rd1_h;
 				end if;
 			elsif sc_mem_out.wr='1' then
-				next_state <= wr_h;
+				next_state <= wr1_h;
 			end if;
 
 		-- the WS state
@@ -225,27 +214,40 @@ begin
 					next_state <= rd1_h;
 				end if;
 			elsif sc_mem_out.wr='1' then
-				next_state <= wr_h;
+				next_state <= wr1_h;
 			end if;
 			
-		-- the WS state
-		when wr_h =>
--- TODO: check what happens on ram_ws=0
--- TODO: do we need a write pipelining?
---	not at the moment, but parhaps later when
---	we write the stack content to main memory
-			if wait_state=1 then
-				next_state <= wr_idl;
-			end if;
-
-		-- one idle state for nwr to go high
+		when wr1_h =>
+			next_state <= wr2_h;
+			
+		when wr2_h =>
+			next_state <= wr3_h;
+		
+		when wr3_h =>
+			next_state <= wr_idl;
+			
 		when wr_idl =>
-			next_state <= wr_l;
-
-		-- the WS state
-		when wr_l =>
-			if wait_state=1 then
-				next_state <= idl;
+			next_state <= wr1_l;
+		
+		when wr1_l =>
+			next_state <= wr2_l;
+			
+		when wr2_l =>
+			next_state <= wr3_l;
+			
+		when wr3_l =>
+			next_state <= idl;
+			-- This should do to give us a pipeline
+			-- level of 2 for read
+			if sc_mem_out.rd='1' then
+				if ram_ws=0 then
+					-- then we omit state rd1!
+					next_state <= rd2_h;
+				else
+					next_state <= rd1_h;
+				end if;
+			elsif sc_mem_out.wr='1' then
+				next_state <= wr1_h;
 			end if;
 
 	end case;
@@ -268,6 +270,7 @@ begin
 		rd_data_ena_l <= '0';
 		inc_addr <= '0';
 		wr_low <= '0';
+		ram_nwe <= '1';
 	elsif rising_edge(clk) then
 
 		state <= next_state;
@@ -278,6 +281,7 @@ begin
 		rd_data_ena_l <= '0';
 		inc_addr <= '0';
 		wr_low <= '0';
+		ram_nwe <= '1';
 
 		case next_state is
 
@@ -306,10 +310,16 @@ begin
 				ram_noe <= '0';
 				rd_data_ena_l <= '1';
 				
-			-- the WS state
-			when wr_h =>
+			when wr1_h =>
 				ram_ncs <= '0';
+				
+			when wr2_h =>
+				ram_nwe <= '0';
 				dout_ena <= '1';
+				ram_ncs <= '0';
+				
+			when wr3_h =>
+				ram_ncs <= '0';
 
 			-- high word last write state
 			when wr_idl =>
@@ -318,37 +328,22 @@ begin
 				inc_addr <= '1';
 				wr_low <= '1';
 
-			-- the WS state
-			when wr_l =>
+			when wr1_l =>
 				ram_ncs <= '0';
+				
+			when wr2_l =>
+				ram_nwe <= '0';
 				dout_ena <= '1';
+				ram_ncs <= '0';
+				
+			when wr3_l =>
+				ram_ncs <= '0';
 
 		end case;
 					
 	end if;
 end process;
 
---
---	nwr combinatorial processing
---	for the negativ edge
---
-process(next_state, state)
-begin
-
-	nwr_int <= '1';
-	-- this is the 'correct' version wich needs
-	-- at minimum 2 cycles for the RAM access
---	if (state=wr_l and next_state=wr_l) or 
---		(state=wr_h and next_state=wr_h) then
-	-- Slightly out of the SRAM spec. nwr goes
-	-- low befor ncs to allow single cycle
-	-- access
-	if next_state=wr_l or next_state=wr_h then
-
-		nwr_int <= '0';
-	end if;
-
-end process;
 
 --
 -- wait_state processing
@@ -367,11 +362,15 @@ begin
 			cnt <= "00";
 		end if;
 
-		if sc_mem_out.rd='1' or sc_mem_out.wr='1' then
+		if sc_mem_out.rd='1' then
 			wait_state <= to_unsigned(ram_ws+1, 4);
 		end if;
+		
+		if sc_mem_out.wr='1' then
+			wait_state <= to_unsigned(ram_ws_wr+1, 4);
+		end if;
 
-		if state=rd2_h or state=wr_idl then
+		if state=rd2_h then
 			wait_state <= to_unsigned(ram_ws+1, 4);
 			if ram_ws<3 then
 				cnt <= to_unsigned(ram_ws+1, 2);
@@ -379,8 +378,17 @@ begin
 				cnt <= "11";
 			end if;
 		end if;
+			
+		if state=wr_idl then
+			wait_state <= to_unsigned(ram_ws_wr+1, 4);
+			if ram_ws_wr<3 then
+				cnt <= to_unsigned(ram_ws_wr+1, 2);
+			else
+				cnt <= "11";
+			end if;
+		end if;
 
-		if state=rd1_l or state=rd2_l or state=wr_l then
+		if state=rd1_l or state=rd2_l or state=wr1_l or state=wr2_l or state=wr3_l then
 			-- take care for pipelined cach transfer
 			-- there is no idl state and cnt should
 			-- go back to "11"
