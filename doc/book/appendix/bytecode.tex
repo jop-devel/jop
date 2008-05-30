@@ -45,14 +45,14 @@
 44 & aload\_2 & hw & 1 \\
 45 & aload\_3 & hw & 1 \\
 %46 & iaload\footnotemark[46] & mc & 32+3*r \\
-46 & iaload\footnotemark[46] & mc & 7+3*r \\
+46 & iaload\footnotemark[46] & hw & 7+3*r \\
 47 & laload & mc & 43+4*r \\
-48 & faload\footnotemark[46] & mc & 7+3*r \\
+48 & faload\footnotemark[46] & hw & 7+3*r \\
 49 & daload & - &  \\
-50 & aaload\footnotemark[46] & mc & 7+3*r \\
-51 & baload\footnotemark[46] & mc & 7+3*r \\
-52 & caload\footnotemark[46] & mc & 7+3*r \\
-53 & saload\footnotemark[46] & mc & 7+3*r \\
+50 & aaload\footnotemark[46] & hw & 7+3*r \\
+51 & baload\footnotemark[46] & hw & 7+3*r \\
+52 & caload\footnotemark[46] & hw & 7+3*r \\
+53 & saload\footnotemark[46] & hw & 7+3*r \\
 54 & istore & mc & 2 \\
 55 & lstore & mc & 11 \\
 56 & fstore & mc & 2 \\
@@ -79,14 +79,14 @@
 77 & astore\_2 & hw & 1 \\
 78 & astore\_3 & hw & 1 \\
 %79 & iastore\footnotemark[79] & mc & 35+2*r+w \\
-79 & iastore\footnotemark[79] & mc & 10+2*r+w \\
+79 & iastore\footnotemark[79] & hw & 10+2*r+w \\
 80 & lastore\footnotemark[1] & mc & 48+2*r+2*w \\
-81 & fastore\footnotemark[79] & mc & 10+2*r+w \\
+81 & fastore\footnotemark[79] & hw & 10+2*r+w \\
 82 & dastore & - &  \\
 83 & aastore & Java & \\
-84 & bastore\footnotemark[79] & mc & 10+2*r+w \\
-85 & castore\footnotemark[79] & mc & 10+2*r+w \\
-86 & sastore\footnotemark[79] & mc & 10+2*r+w \\
+84 & bastore\footnotemark[79] & hw & 10+2*r+w \\
+85 & castore\footnotemark[79] & hw & 10+2*r+w \\
+86 & sastore\footnotemark[79] & hw & 10+2*r+w \\
 87 & pop & hw & 1 \\
 88 & pop2 & mc & 2 \\
 89 & dup & hw & 1 \\
@@ -180,8 +180,8 @@
 177 & return\footnotemark[177] & mc &  21+r+l \\
 178 & getstatic & mc & 12+2*r \\
 179 & putstatic & mc & 13+r+w \\
-180 & getfield & mc & 17+2*r \\
-181 & putfield & mc & 20+r+w \\
+180 & getfield & hw & 11+2*r \\
+181 & putfield & hw & 13+r+w \\
 182 & invokevirtual\footnotemark[182] & mc & 100+4r+l \\
 183 & invokespecial\footnotemark[183] & mc &  74+3*r+l \\
 184 & invokestatic\footnotemark[183] & mc &  74+3*r+l \\
@@ -194,8 +194,8 @@
 191 & athrow\footnotemark[3] & Java &  \\
 192 & checkcast & Java &  \\
 193 & instanceof & Java &  \\
-194 & monitorenter & mc & 18 \\
-195 & monitorexit & mc & 20 \\
+194 & monitorenter & mc & 19 \\
+195 & monitorexit & mc & 22 \\
 196 & wide & \emph{not used} &  \\
 197 & multianewarray\footnotemark[4] & Java &  \\
 198 & ifnull & mc & 4 \\
@@ -224,15 +224,15 @@
 221 & jopsys\_nop & mc & 1 \\
 222 & jopsys\_invoke & mc &  \\
 223 & jopsys\_cond\_move & mc & 5 \\
-224 & getstatic\_ref & mc & \\
-225 & putstatic\_ref & mc & \\
-226 & getfield\_ref & mc & \\
-227 & putfield\_ref & mc & \\
+224 & getstatic\_ref & mc & 12+2*r \\
+225 & putstatic\_ref & Java & \\
+226 & getfield\_ref & mc & 11+2*r \\
+227 & putfield\_ref & Java & \\
 228 & getstatic\_long & mc & \\
 229 & putstatic\_long & mc & \\
 230 & getfield\_long & mc & \\
 231 & putfield\_long & mc & \\
-232 & reserved & - \\
+232 & jopsys\_memcpy & mc &  \\
 233 & reserved & - \\
 234 & reserved & - \\
 235 & reserved & - \\
