@@ -32,6 +32,7 @@ vcom %options% %jopdir%/offtbl.vhd
 vcom %options% %jopdir%/core/cache.vhd
 vcom %options% %jopdir%/memory/sc_sram32_flash.vhd
 vcom %options% %jopdir%/memory/mem_sc.vhd
+vcom %options% %jopdir%/memory/sdpram.vhd
 vcom %options% %jopdir%/core/mul.vhd
 vcom %options% %jopdir%/core/extension.vhd
 vcom %options% %jopdir%/core/bcfetch.vhd
@@ -43,7 +44,7 @@ vcom %options% %jopdir%/core/core.vhd
 vcom %options% %jopdir%/scio/sc_sys.vhd
 vcom %options% %jopdir%/scio/scio_min.vhd
 vcom %options% %jopdir%/simpcon/sc_arbiter_pack.vhd
-vcom %options% %jopdir%/simpcon/sc_arbiter.vhd
+vcom %options% %jopdir%/simpcon/sc_arbiter_tdma.vhd
 vcom %options% %jopdir%/scio/cmpsync.vhd
 vcom %options% %jopdir%/core/jopcpu.vhd
 vcom %options% %jopdir%/top/jopmul.vhd
