@@ -169,6 +169,7 @@ System.out.println("Logic.initVals()");
 			if (Status.commErr!=0) {
 				commError();
 			} else if (Status.download) {
+				// TODO: not used at the moment -- should we use it again?
 				download();
 			} else if (Status.dispMenu) {
 				menu();
@@ -499,6 +500,7 @@ System.out.println("Logic.initVals()");
 		cnt = 0;
 		tim = Timer.getTimeoutSec(10);
 		boolean bereit = false;
+		boolean download = Main.state.isDownloading();
 		
 		if (Logic.state==Logic.DL_CHECK ||
 			Logic.state==Logic.INIT  ||
@@ -557,10 +559,20 @@ System.out.println("Logic.initVals()");
 					} else if (cnt==1) {
 						Logic.state = Logic.ES_VERSCHUB;
 					} else if (cnt==2) {
+						if (download) {
+							Display.write("Download", "Nicht erlaubt", "");
+							waitEnter();
+							return;
+						}
 						Display.write("Neustart", "", "");
 						restart();
 					}
 				} else if (bereit) {
+					if (download) {
+						Display.write("Download", "Nicht erlaubt", "");
+						waitEnter();
+						return;
+					}
 					if (cnt==0) {
 						Logic.state = Logic.DEAKT;
 					} else if (cnt==1) {
@@ -568,6 +580,13 @@ System.out.println("Logic.initVals()");
 						restart();
 					}
 				} else {
+					// only ES mode is allowed
+					if (download && cnt!=4) {
+						Display.write("Download", "Nicht erlaubt", "");
+						waitEnter();
+						return;
+					}
+
 					if (cnt==0) {
 						ankunft();
 						return;
@@ -914,6 +933,16 @@ System.out.println("Download server connect timeout");
 		// Strecke is known!!!
 
 		while (loop()) {
+			
+			// did we reset and get the data from the ZLB?
+			if (state.zugnr!=0 && state.type!=0) {
+				if (state.start!=state.end) {
+					Logic.state = Logic.ERLAUBNIS;										
+				} else {
+					Logic.state = Logic.ANM_OK;					
+				}
+				return;
+			}
 
 			if (askVerschub && Timer.timeout(tim)) {
 				askVerschub = verschub();
@@ -1753,7 +1782,6 @@ System.out.println("ES Rdy");
 		int i = 0;
 		
 System.out.println("HB Ferl");
-//		int melnr = Flash.getFirst(Main.state.strnr);
 		int melnr = Main.state.getPos();
 		Flash.Point p = Flash.getPoint(melnr);
 		if (p==null) {
@@ -1782,6 +1810,8 @@ System.out.println("np Problem");
 			if (Gps.changeToBereit) {
 				reset();
 			}
+
+			Flash.loadStrNames(Main.state.strnr, Main.state.getPos(), melnr);
 
 			Display.write("Haltepunkt ausw.:", p.stationLine1, p.stationLine2);
 
@@ -1841,6 +1871,10 @@ System.out.println("np Problem");
 				Flash.log(tmpStr);
 
 
+				return;
+			}
+			
+			if (val==Keyboard.C) {
 				return;
 			}
 			

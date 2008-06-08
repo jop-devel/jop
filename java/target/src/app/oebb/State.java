@@ -97,6 +97,7 @@ public class State extends ejip.UdpHandler implements Runnable {
 	final static int CFLAG_ANMOK =	0x00000008;		// Anmelden OK
 	final static int CFLAG_ZLB_INT= 0x00000010;		// used only internally by ZLB
 	final static int CFLAG_IGNORE =	0x00000020;		// ignore message 
+	final static int CFLAG_DOWNLOAD = 0x00000040;	// downloadind SW or Strecke 
 
 	/**
 	 * The alarm was ack by the TFZ. Set the flags to zero when
@@ -196,21 +197,6 @@ public class State extends ejip.UdpHandler implements Runnable {
 		arr[off + 11] = gpsLong;
 	}
 
-//	public void setTimestamp(int year, int month, int day, int hour,
-//			int minute, int second, int milli) {
-//
-//		date = (year << 16) + (month << 8) + day;
-//		time = (hour << (32 - 6)) + (minute << (32 - 12))
-//				+ (second << (32 - 18)) + (milli << 32 - 28);
-//	}
-//
-//	public void setTimestamp(int date, int time) {
-//
-//		this.date = date;
-//		this.time = time;
-//		// increment millis
-//		this.time += (1 << 32 - 28);
-//	}
 	
 	void setTimestamp() {
 
@@ -233,11 +219,6 @@ public class State extends ejip.UdpHandler implements Runnable {
 			return false;
 		}
 
-		// TODO: workaround for first connect
-//		if (!contactZLB) {
-//			++cnt;
-//			setTimestamp(2001, 1, 1, 0, 0, 0, cnt);			
-//		}
 		setTimestamp();
 
 		setUDPData(p.buf, Udp.DATA);
@@ -307,8 +288,17 @@ public class State extends ejip.UdpHandler implements Runnable {
 		int[] buf = p.buf;
 		// extract data
 		int strPos = buf[Udp.DATA + 3];
-		int str = strPos >> 20;
-		int zugnr = strPos & 0xfffff;
+		// use data from ZLB if not yet set
+		if (strnr==0) {
+			// that one will probably never happen
+			strnr = strPos >> 20;
+		}
+		if (zugnr==0) {
+			zugnr = strPos & 0xfffff;
+		}
+		if (type==TYPE_UNKNOWN) {
+			type = (buf[Udp.DATA+6]&0xffff)>>>13;
+		}
 		
 		int cmd = buf[Udp.DATA+8];
 		
@@ -632,6 +622,10 @@ public class State extends ejip.UdpHandler implements Runnable {
 	 */
 	public boolean verlassenAck() {
 		return (alarmFlags & AFLAG_VERL) == 0;
+	}
+	
+	public boolean isDownloading() {
+		return (cmdAck & CFLAG_DOWNLOAD) != 0;
 	}
 
 	public void setInfo() {

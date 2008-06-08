@@ -102,7 +102,9 @@ public class Display extends RtThread {
 		fb[19+FB_OFF] = gpsOk ? '*' : ' ';
 		fb[39+FB_OFF] = dgpsOk ? '+' : ' ';
 		fb[59+FB_OFF] = inetOk ? '#' : ' ';
-		if (hbOk) {
+		if (Main.state.isDownloading()) {
+			fb[59+FB_OFF] = 'D';			
+		} else if (hbOk) {
 			fb[59+FB_OFF] = 'H';
 		}
 	}
