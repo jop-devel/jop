@@ -71,8 +71,8 @@ public class Latency {
 		}
 		
 		void result() {
-			System.out.println("max="+max);
-			System.out.println("min="+min);
+			Dbg.wr("max=", max);
+			Dbg.wr("max=", min);
 			for (;;);
 		}
 	}
@@ -163,18 +163,14 @@ public class Latency {
 		public void run() {
 			for (;;) {
 				waitForNextPeriod();
-				System.out.println();
+				Dbg.lf();
 				if (hft!=null) {
 					Dbg.wr("hft max=", hft.max);
-					Dbg.lf();
 					Dbg.wr("hft min=", hft.min);
-					Dbg.lf();
 				}
 				if (mft!=null) {
 					Dbg.wr("mft max=", mft.max);
-					Dbg.lf();
 					Dbg.wr("mft min=", mft.min);
-					Dbg.lf();
 				}
 			}
 		}
@@ -184,28 +180,26 @@ public class Latency {
 	static HFThread hft;
 	static MFThread mft;
 
-	// 200 is without jitter when running it alone
-	// 500 without jitter when a second dummy thread runs
-	// change to 200us on the 100 MHz version
-	// at 100 MHz, RtThreadImp TIM_OFF at 2:
-	// 200 us without jitter when run alone
+	// Changes in the scheduler to get low latency values:
+	//		TIM_OFF to 2
+	//		omit time adjustments on a missed deadline in
+	//		waitForNextPeriod()
+	// Results for 100 MHz:
+	// 		107 is without jitter when running it alone
+	// TODO verify the following results:
 	// with output thread 10 us
 	// with prod/cons threads (no GC) 16 us
 	// with GC 72 us (77 us)
-//	public static final int PERIOD_HIGH = 100;
-//	public static final int PERIOD_MEDIUM = 1000;
-//	public static final int PERIOD_LOW = 10000;
-//	public static final int PERIOD_GC = 200000;
-//	public static final int PERIOD_HIGH = 107; // 211; // 107;
-//	public static final int PERIOD_MEDIUM = 1009;
-//	public static final int PERIOD_LOW = 10853;
-//	public static final int PERIOD_GC = 200183;
+	public static final int PERIOD_HIGH = 107; // 211; // 107;
+	public static final int PERIOD_MEDIUM = 1009;
+	public static final int PERIOD_LOW = 10853;
+	public static final int PERIOD_GC = 200183;
 	
 	// for slower JOP versions (<100MHz)
-	public static final int PERIOD_HIGH = 200; // 211; // 107;
-	public static final int PERIOD_MEDIUM = 2000;
-	public static final int PERIOD_LOW = 20000;
-	public static final int PERIOD_GC = 400000;
+//	public static final int PERIOD_HIGH = 200;
+//	public static final int PERIOD_MEDIUM = 2000;
+//	public static final int PERIOD_LOW = 20000;
+//	public static final int PERIOD_GC = 400000;
 	
 	/**
 	 * @param args
@@ -217,16 +211,16 @@ public class Latency {
 		sl = new SimpleList();
 		
 		hft = new HFThread(5, PERIOD_HIGH);
+		new LogThread (2, 1000*1000);
+		
 		mft = new MFThread(4, PERIOD_MEDIUM);
 		new LFThread(3, PERIOD_LOW);
-		
 		new GCThread();
 		
-		new LogThread (2, 1000*1000);
 				
 		RtThread.startMission();
 		
-		// that one is mandatary to get low latency!
+		// that one is mandatory to get low latency!
 		// check RtThreadImpl why.
 		for (;;);
 	}
