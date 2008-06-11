@@ -163,7 +163,6 @@ public class Latency {
 		public void run() {
 			for (;;) {
 				waitForNextPeriod();
-				Dbg.lf();
 				if (hft!=null) {
 					Dbg.wr("hft max=", hft.max);
 					Dbg.wr("hft min=", hft.min);
