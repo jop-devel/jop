@@ -124,6 +124,7 @@
 //	2008-03-03	Added scratchpad RAM
 //	2008-03-04	correct MUX selection
 //	2008-03-11	Interrupt enable also in bcfetch (bug fix)
+//	2008-06-11	Remove offtbl adjustment nops
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -133,7 +134,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20080311
+version		= 20080611
 
 //
 //	start of stack area in the on-chip RAM
@@ -1796,8 +1797,6 @@ intext_loop:
 			wait
 			wait
 
-nop	// to keep offtbl.vhd short enough....
-nop	// to keep offtbl.vhd short enough....
 			bnz		intext_loop
 			ldi	-1	// decrement in branch slot
 			add
@@ -1834,7 +1833,6 @@ extint_loop:
 
 			dup
 			nop
-nop	// to keep offtbl.vhd short enough....
 			bnz		extint_loop
 			ldi	-1	// decrement in branch slot
 			add
