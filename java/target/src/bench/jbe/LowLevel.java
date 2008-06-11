@@ -32,10 +32,10 @@ package jbe;
 public class LowLevel {
 
 	/**
-	 * Clock frequency for the target to calculate clock cycles
+	 * Clock frequency (in MHz) for the target to calculate clock cycles
 	 * of the micro benchmarks. Set to 0 if not known.
-	 * Works only up to 2 GHz (integer overflow). However, that
-	 * should be ok for embedded devices ;-)
+	 * Clock cycle calculation works only up to 2 GHz (integer overflow).
+	 * For > 2 GHz leave it 0 and do the clock cycle calculation offline.
 	 */
 	public static final int FREQ = 0;
 
