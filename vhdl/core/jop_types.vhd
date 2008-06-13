@@ -143,5 +143,8 @@ package jop_types is
 	type sync_in_array_type is array (integer range <>) of sync_in_type;
 	type sync_out_array_type is array (integer range <>) of sync_out_type;
 
-
+	-- constant for method length bits
+	-- changes here require also the object layout to be changed
+	constant METHOD_SIZE_BITS : integer := 10;
+	
 end jop_types;

@@ -42,6 +42,8 @@ Library IEEE;
 use IEEE.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+use work.jop_types.all;
+
 -- 2**jpc_width is the caches size in bytes
 -- 2**block_bits is the number of blocks
 
@@ -52,7 +54,7 @@ port (
 
 	clk, reset	: in std_logic;
 
-	bc_len		: in std_logic_vector(jpc_width-3 downto 0);		-- length of method in words
+	bc_len		: in std_logic_vector(METHOD_SIZE_BITS-1 downto 0);		-- length of method in words
 	bc_addr		: in std_logic_vector(17 downto 0);		-- memory address of bytecode
 
 	find		: in std_logic;							-- start lookup
@@ -99,7 +101,7 @@ begin
 	bcstart <= block_addr & std_logic_vector(to_unsigned(0, jpc_width-2-block_bits));
 	use_addr <= bc_addr(tag_width-1 downto 0);
 
-	nr_of_blks <= unsigned(bc_len(jpc_width-3 downto jpc_width-3-block_bits+1));
+	nr_of_blks <= resize(unsigned(bc_len(METHOD_SIZE_BITS-1 downto jpc_width-2-block_bits)), block_bits);
 
 process(clk, reset, find)
 

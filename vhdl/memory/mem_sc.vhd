@@ -88,7 +88,7 @@ port (
 
 	clk, reset	: in std_logic;
 
-	bc_len		: in std_logic_vector(jpc_width-3 downto 0);	-- length of method in words
+	bc_len		: in std_logic_vector(METHOD_SIZE_BITS-1 downto 0);	-- length of method in words
 	bc_addr		: in std_logic_vector(17 downto 0);		-- memory address of bytecode
 
 	find		: in std_logic;					-- start lookup
@@ -180,7 +180,7 @@ end component;
 --	len is in words, 10 bits range is 'hardcoded' in JOPWriter.java
 --	start is address in external memory (rest of the word)
 --
-	signal bc_len		: unsigned(jpc_width-3 downto 0);	-- length of method in words
+	signal bc_len		: unsigned(METHOD_SIZE_BITS-1 downto 0);	-- length of method in words
 	signal inc_addr_reg	: std_logic;
 	signal dec_len		: std_logic;
 	signal bc_wr_addr	: unsigned(jpc_width-3 downto 0);	-- address for jbc (in words!)
@@ -284,7 +284,7 @@ begin
 		
 	elsif rising_edge(clk) then
 		if mem_in.bc_rd='1' then
-			bc_len <= unsigned(ain(jpc_width-3 downto 0));
+			bc_len <= unsigned(ain(METHOD_SIZE_BITS-1 downto 0));
 		else
 			if dec_len='1' then
 				bc_len <= bc_len-1;
