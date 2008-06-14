@@ -32,6 +32,10 @@ import joprt.RtThread;
 
 public class Latency {
 
+	final static boolean USE_ARRAY = true;
+//	final static int ARRAY_SIZE = 1*1024/4;
+	final static int ARRAY_SIZE = 256/4;
+	
 	static class HFThread extends RtThread {
 
 		public HFThread(int prio, int us) {
@@ -89,7 +93,11 @@ public class Latency {
 		}
 		
 		void work() {
-			sl.append(new Integer(nr));
+			if (USE_ARRAY) {
+				sl.append(new int[ARRAY_SIZE]);
+			} else {
+				sl.append(new Integer(nr));				
+			}
 //			synchronized (v) {
 //				v.addElement(new Integer(nr));				
 //			}
@@ -108,10 +116,17 @@ public class Latency {
 			
 			Object o;
 			while ((o = sl.remove())!=null) {
-				if (((Integer) o).intValue()!=expNr) {
-					System.out.println("List problem");					
+				if (!USE_ARRAY) {
+					if (((Integer) o).intValue()!=expNr) {
+						System.out.println("List problem");					
+					}
+				} else {
+//					int[] ia = (int []) o;
+//					if (ia[0]!=expNr) {
+//						System.out.println("List problem");											
+//					}
 				}
-				++expNr;
+				++expNr;					
 			}
 //			int size;
 //			synchronized (v) {
@@ -190,9 +205,9 @@ public class Latency {
 	// with prod/cons threads (no GC) 16 us
 	// with GC 72 us (77 us)
 	public static final int PERIOD_HIGH = 107; // 211; // 107;
-	public static final int PERIOD_MEDIUM = 1009;
+	public static final int PERIOD_MEDIUM = 2003; // 1009;
 	public static final int PERIOD_LOW = 10853;
-	public static final int PERIOD_GC = 200183;
+	public static final int PERIOD_GC = 50021; // 200183;
 	
 	// for slower JOP versions (<100MHz)
 //	public static final int PERIOD_HIGH = 200;
