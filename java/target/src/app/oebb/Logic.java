@@ -168,11 +168,11 @@ System.out.println("Logic.initVals()");
 			
 			if (Status.commErr!=0) {
 				commError();
-			} else if (Status.download) {
-				// TODO: not used at the moment -- should we use it again?
-				download();
 			} else if (Status.dispMenu) {
 				menu();
+			} else if (Main.state.isDownloading() && Logic.state!=ES221
+					&& Logic.state!=ES_RDY && !Status.esMode) {
+				download();
 			} else {
 
 				switch (Logic.state) {
@@ -787,7 +787,7 @@ System.out.println("Link timeout");
 		// Here we wait for the reply
 		for (;;) {
 			if (Status.connOk) {
-				if (Status.download) {
+				if (Main.state.isDownloading()) {
 					// go the normal way to download
 					Logic.state = Logic.FDL_CONN;
 					return;
@@ -933,7 +933,11 @@ System.out.println("Download server connect timeout");
 		// Strecke is known!!!
 
 		while (loop()) {
-			
+
+			// stop loop when downloading
+			if (state.isDownloading()) {
+				return;
+			}
 			// did we reset and get the data from the ZLB?
 			if (state.zugnr!=0 && state.type!=0) {
 				if (state.start!=state.end) {
@@ -993,6 +997,10 @@ System.out.println("Download server connect timeout");
 		}
 
 		while (loop()) {
+			// stop loop when downloading
+			if (state.isDownloading()) {
+				return;
+			}
 			val = Keyboard.rd();
 			if (val==Keyboard.B) {
 				Keyboard.unread(val);
@@ -1391,7 +1399,11 @@ Dbg.lf();
 		int cnt = 0;
 
 // System.out.println("Download");
-		Display.write("Übertragung", "", "");
+		Display.write("Übertragung", "ES221 möglich", "");
+		while (loop()) {
+			;
+		}
+/* not type no percentage
 		for (;;) {
 			loop();			// there is no exit from download state!
 			if (Status.dlType!=dlType) {
@@ -1416,8 +1428,10 @@ Dbg.lf();
 				}
 			}
 		}
-	}
 
+*/
+	}
+	
 	private void info() {
 
 		int i, j;

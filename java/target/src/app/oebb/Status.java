@@ -32,13 +32,6 @@ public class Status {
 *	Set after CONN/CONN_RPL
 */
 	volatile static boolean connOk;
-/**
-*	Set after CONN/CONN_RPL when download will follow.
-*/
-	volatile static boolean download;
-
-	volatile static int dlType;
-	volatile static int dlPercent;
 
 /**
 *	Set after lern msg got a repley

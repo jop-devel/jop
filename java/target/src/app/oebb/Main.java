@@ -62,8 +62,10 @@ public class Main {
 
 	// SW version
 	public static final int VER_MAJ = 2;
-	public static final int VER_MIN = 13;
+	public static final int VER_MIN = 14;
 
+	private static final int LOG_PRIO = 1;
+	private static final int LOG_PERIOD = 1000000;
 	private static final int STRECKE_PRIO = 1;
 	private static final int STRECKE_PERIOD = 100000;
 	private static final int LOGIC_PRIO = 2;
@@ -185,6 +187,18 @@ public class Main {
 				}
 			}
 		};
+
+		// create logging thread
+		final Logging log = new Logging();
+		new RtThread(LOG_PRIO, LOG_PERIOD) {
+			public void run() {
+				for (;;) {
+					waitForNextPeriod();
+					log.run();
+				}
+			}
+		};
+		
 
 		if (val==Keyboard.K3) {
 			// SLIP for simpler tests
