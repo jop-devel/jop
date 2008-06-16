@@ -500,7 +500,7 @@ System.out.println("Logic.initVals()");
 		cnt = 0;
 		tim = Timer.getTimeoutSec(10);
 		boolean bereit = false;
-		boolean download = Main.state.isDownloading();
+		boolean download = Main.state.isDownloadSticky();
 		
 		if (Logic.state==Logic.DL_CHECK ||
 			Logic.state==Logic.INIT  ||
@@ -559,7 +559,7 @@ System.out.println("Logic.initVals()");
 					} else if (cnt==1) {
 						Logic.state = Logic.ES_VERSCHUB;
 					} else if (cnt==2) {
-						if (download) {
+						if (Main.state.isDownloading()) {
 							Display.write("Download", "Nicht erlaubt", "");
 							waitEnter();
 							return;
@@ -787,7 +787,7 @@ System.out.println("Link timeout");
 		// Here we wait for the reply
 		for (;;) {
 			if (Status.connOk) {
-				if (Main.state.isDownloading()) {
+				if (Main.state.isDownloadSticky()) {
 					// go the normal way to download
 					Logic.state = Logic.FDL_CONN;
 					return;
@@ -935,7 +935,7 @@ System.out.println("Download server connect timeout");
 		while (loop()) {
 
 			// stop loop when downloading
-			if (state.isDownloading()) {
+			if (state.isDownloadSticky()) {
 				return;
 			}
 			// did we reset and get the data from the ZLB?
@@ -998,7 +998,7 @@ System.out.println("Download server connect timeout");
 
 		while (loop()) {
 			// stop loop when downloading
-			if (state.isDownloading()) {
+			if (state.isDownloadSticky()) {
 				return;
 			}
 			val = Keyboard.rd();

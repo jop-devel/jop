@@ -627,6 +627,15 @@ public class State extends ejip.UdpHandler implements Runnable {
 	public boolean isDownloading() {
 		return (cmdAck & CFLAG_DOWNLOAD) != 0;
 	}
+	
+	boolean stickyDl;
+	
+	public boolean isDownloadSticky() {
+		if ((cmdAck & CFLAG_DOWNLOAD)!=0) {
+			stickyDl = true;
+		}
+		return stickyDl;
+	}
 
 	public void setInfo() {
 		type = TYPE_INFO;
