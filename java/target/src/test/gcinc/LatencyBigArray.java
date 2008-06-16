@@ -32,7 +32,7 @@ import joprt.RtThread;
 
 public class LatencyBigArray {
 
-	final static int ARRAY_LENGTH = 1*1024/4;
+	final static int ARRAY_LENGTH = 256*1024/4;
 	final static int ARRAY_SIZE = ARRAY_LENGTH*4;
 	final static int HEAP_SIZE = 300*1024;
 	
@@ -145,6 +145,8 @@ public class LatencyBigArray {
 //		v = new Vector(20);
 		sl = new SimpleList();
 		
+		System.out.print("Number of arrays: ");
+		System.out.println(HEAP_SIZE/ARRAY_SIZE);
 		for (int i=0; i<HEAP_SIZE/ARRAY_SIZE; ++i) {
 			sl.append(new int[ARRAY_LENGTH]);
 		}
