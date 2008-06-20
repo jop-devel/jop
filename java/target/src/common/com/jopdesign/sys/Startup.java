@@ -176,6 +176,9 @@ public class Startup {
 			JVMHelp.intVal(spm_size*4);
 			JVMHelp.wr("Byte on-chip RAM");
 		}
+		JVMHelp.wr(", ");
+		JVMHelp.intVal(Native.rdMem(Const.IO_CPUCNT));
+		JVMHelp.wr("CPUs");
 		JVMHelp.wr("\r\n");
 	}
 

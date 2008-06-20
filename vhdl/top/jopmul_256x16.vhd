@@ -219,7 +219,8 @@ end process;
 
 	-- io for processor 0
 	cmp_io: entity work.scio generic map (
-			cpu_id => 0
+			cpu_id => 0,
+			cpu_cnt => cpu_cnt
 		)
 		port map (clk_int, int_res,
 			sc_io_out(0), sc_io_in(0),
@@ -246,7 +247,8 @@ end process;
 		cmp_io2: entity work.sc_sys generic map (
 			addr_bits => 4,
 			clk_freq => clk_freq,
-			cpu_id => i
+			cpu_id => i,
+			cpu_cnt => cpu_cnt
 		)
 		port map(
 			clk => clk_int,

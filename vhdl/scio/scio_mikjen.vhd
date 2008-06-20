@@ -218,7 +218,7 @@ use work.jop_config.all;
 use work.sc_pack.all;
 
 entity scio is
-generic (cpu_id : integer := 0);
+generic (cpu_id : integer := 0; cpu_cnt : integer := 1);
 port (
 	clk		: in std_logic;
 	reset	: in std_logic;
@@ -340,7 +340,8 @@ begin
 	cmp_sys: entity work.sc_sys generic map (
 			addr_bits => SLAVE_ADDR_BITS,
 			clk_freq => clk_freq,
-			cpu_id => cpu_id
+			cpu_id => cpu_id,
+			cpu_cnt => cpu_cnt
 		)
 		port map(
 			clk => clk,

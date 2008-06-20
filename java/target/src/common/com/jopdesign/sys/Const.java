@@ -154,7 +154,9 @@ public class Const {
 	 */
 	// remove the comment for RAM access counting
 	public static final int IO_RAMCNT = IO_BASE+10;
-	
+
+	public static final int IO_CPUCNT = IO_BASE+11;
+
 	/**
 	 * Number of available interrupts depends on the parameter
 	 * in sc_sys.vhd. 3 is the default: one timer interrupt

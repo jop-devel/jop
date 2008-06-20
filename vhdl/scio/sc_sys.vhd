@@ -109,6 +109,7 @@ entity sc_sys is
 generic (addr_bits : integer;
 	clk_freq : integer;
 	cpu_id	 : integer;
+	cpu_cnt  : integer;
 	num_io_int : integer := 2);		-- a default value to play with SW interrupts
 port (
 	clk		: in std_logic;
@@ -229,6 +230,8 @@ begin
 				-- remove the comment for RAM access counting
 				-- when "1010" =>
 				--	rd_data(31 downto 0) <= ram_counter;
+				when "1011" =>
+					rd_data <= std_logic_vector(to_unsigned(cpu_cnt, 32));
 				when others =>
 					-- nothing
 			end case;

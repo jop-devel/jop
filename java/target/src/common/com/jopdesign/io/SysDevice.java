@@ -80,4 +80,14 @@ public final class SysDevice extends HwObject {
 	 * a write only register
 	 */
 	public volatile int clearInt;
+	
+	/**
+	 * Ram access counter - notused
+	 */
+	public volatile int ramCnt;
+	
+	/**
+	 * Number of CPUs
+	 */
+	public volatile int nrCpu;
 }
