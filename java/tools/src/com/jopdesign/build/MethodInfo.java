@@ -48,7 +48,9 @@ public class MethodInfo implements Serializable{
     // Now it's necessary for debugging too. 
 	int structAddress;
 	Code code;
-	int mstack, margs, mreallocals, len;
+	CodeException[] exctab;
+	int mstack, margs, mreallocals;
+	int len, exclen;
 	int vtindex;
 	
 	public MethodInfo(ClassInfo jc, String mid) {
@@ -90,13 +92,16 @@ public class MethodInfo implements Serializable{
 			margs++;
 		}
 		if (m.isAbstract()) {
-			mstack = mreallocals = len = 0;
+			mstack = mreallocals = len = exclen = 0;
+			exctab = null;
 		} else {
 			mstack = m.getCode().getMaxStack();
 			// the 'real' locals - means without arguments
 			mreallocals = m.getCode().getMaxLocals() - margs;
 //			System.err.println(" ++++++++++++ "+methodId+" --> mlocals ="+mlocals+" margs ="+margs);
 			len = (m.getCode().getCode().length + 3)/4;
+			exctab = m.getCode().getExceptionTable();
+			exclen = exctab != null ? exctab.length : 0;
 
 			// TODO: couldn't len=JOP...MAX_SIZE/4 be ok?
 			if (len>=JOPizer.METHOD_MAX_SIZE/4 || mreallocals>31 || margs>31) {
@@ -116,7 +121,7 @@ public class MethodInfo implements Serializable{
 
 	public int getLength() {
 
-		return len;
+		return method.isAbstract() ? 0 : len + 1 + 2*exclen;
 	}
 
 	public void dumpMethodStruct(PrintWriter out, int addr) {
@@ -183,6 +188,27 @@ public class MethodInfo implements Serializable{
 		}
 		if(i!=3) {
 			word = word << (i+1)*8;
+			out.println("\t"+word+",\t"+post);
+		}
+
+		word = method.isSynchronized() ? 1 : 0;
+		word = word << 16 | (exclen & 0xFFFF);
+
+ 		out.println("\t"+word+",\t//\tsynchronized?, exception table length");
+
+		for (i = 0; i < exclen; i++) {
+			int pos = cli.cpoolUsed.indexOf(exctab[i].getCatchType())+1;
+			
+			word = exctab[i].getStartPC();
+			post = "// start: "+exctab[i].getStartPC();
+			word = word << 16 | exctab[i].getEndPC();
+			post += "\tend: "+exctab[i].getEndPC();
+			out.println("\t"+word+",\t"+post);
+			
+			word = exctab[i].getHandlerPC();
+			post = "// target: "+exctab[i].getHandlerPC();
+			word = word << 16 | pos;
+			post += "\ttype: "+pos;
 			out.println("\t"+word+",\t"+post);
 		}
 	}

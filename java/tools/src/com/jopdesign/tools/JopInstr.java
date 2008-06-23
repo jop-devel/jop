@@ -412,6 +412,7 @@ public class JopInstr{
 			"toLong", "jopsys_nop",
 			"toInt", "jopsys_nop",
 			"toDouble", "jopsys_nop",
+			"monitorExit", "monitorexit",
 //			"condMove", "jopsys_cond_move",
 			"memCopy", "jopsys_memcpy"
 	};

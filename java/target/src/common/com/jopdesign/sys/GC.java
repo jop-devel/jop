@@ -137,6 +137,8 @@ public class GC {
 		
 	static int roots[];
 
+	static OutOfMemoryError OOMError;
+
 	static void init(int mem_size, int addr) {
 		
 		addrStaticRefs = addr;
@@ -189,6 +191,8 @@ public class GC {
 		
 		// allocate the monitor
 		mutex = new Object();
+
+		OOMError = new OutOfMemoryError();
 	}
 	
 	public static Object getMutex() {
@@ -231,7 +235,7 @@ public class GC {
 			// -- it's checked in the write barrier
 			// -- but not in mark....
 			if (Native.rdMem(ref+OFF_SPACE)==toSpace) {
-//				log("push: allready in toSpace");
+//				log("push: already in toSpace");
 				return;
 			}
 			
@@ -473,15 +477,14 @@ public class GC {
 		concurrentGc = true;
 	}
 	static void gc_alloc() {
-		log("");
 		log("GC allocation triggered");
 		if (USE_SCOPES) {
 			log("No GC when scopes are used");
 			System.exit(1);
 		}
 		if (concurrentGc) {
-			log("meaning out of memory for RT-GC");
-			System.exit(1);	
+			OOMError.fillInStackTrace();
+			throw OOMError;
 		} else {
 			gc();
 		}
@@ -537,8 +540,8 @@ public class GC {
 			if (sc!=null) {
 				int rem = sc.backingStore.length - sc.allocPtr;
 				if (size+2 > rem) {
-					log("Out of memory in scoped memory");
-					System.exit(1);
+					OOMError.fillInStackTrace();
+					throw OOMError;
 				}
 				int ref = sc.allocPtr;
 				sc.allocPtr += size+2;
@@ -557,27 +560,24 @@ public class GC {
 				gc_alloc();
 				if (copyPtr+size >= allocPtr) {
 					// still not enough memory
-					log("Out of memory error!");
-					System.exit(1);
+					OOMError.fillInStackTrace();
+					throw OOMError;
 				}
 			}			
 		}
 		synchronized (mutex) {
 			if (freeList==0) {
 				log("Run out of handles in new Object!");
-				// is this a good place to call gc????
-				// better check available handles on newObject
 				gc_alloc();
 				if (freeList==0) {
-					log("Still out of handles!");
-					System.exit(1);
+					OOMError.fillInStackTrace();
+					throw OOMError;
 				}
 			}			
 		}
 		
 		int ref;
 		
-
 		synchronized (mutex) {
 			// we allocate from the upper part
 			allocPtr -= size;
@@ -626,8 +626,8 @@ public class GC {
 			if (sc!=null) {
 				int rem = sc.backingStore.length - sc.allocPtr;
 				if (size+2 > rem) {
-					log("Out of memory in scoped memory");
-					System.exit(1);
+					OOMError.fillInStackTrace();
+					throw OOMError;
 				}
 				int ref = sc.allocPtr;
 				sc.allocPtr += size+2;
@@ -645,20 +645,18 @@ public class GC {
 				gc_alloc();
 				if (copyPtr+size >= allocPtr) {
 					// still not enough memory
-					log("Out of memory error!");
-					System.exit(1);
+					OOMError.fillInStackTrace();
+					throw OOMError;
 				}
 			}			
 		}
 		synchronized (mutex) {
 			if (freeList==0) {
 				log("Run out of handles in new array!");
-				// is this a good place to call gc????
-				// better check available handles on newObject
 				gc_alloc();
 				if (freeList==0) {
-					log("Still out of handles!");
-					System.exit(1);
+					OOMError.fillInStackTrace();
+					throw OOMError;
 				}
 			}			
 		}

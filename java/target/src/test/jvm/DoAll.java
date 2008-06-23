@@ -55,7 +55,7 @@ public class DoAll {
 				new MultiArray(),
 				new Switch(),
 				new InstanceCheckcast(),
-//				new Except(),
+				new Except(),
 				new SystemCopy(),
 				new CheckCast(),
 				new Ifacmp(),

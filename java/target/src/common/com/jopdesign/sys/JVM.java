@@ -638,13 +638,78 @@ class JVM {
 	private static void f_arraylength() { JVMHelp.noim(); /* jvm.asm */ }
 
 	private static Throwable f_athrow(Throwable t) {
-		JVMHelp.wr("Exception ");
+		
+		int i, j;
+
+		// get frame pointer
+		int fp = Native.getSP()-4;
+
+		while (fp > Const.STACK_OFF+5) {
+
+			// save frame information
+			int pc = Native.rdIntMem(fp+1)-1; // correct one-off
+			int vp = Native.rdIntMem(fp+2);
+			int cp = Native.rdIntMem(fp+3);
+			int mp = Native.rdIntMem(fp+4);
+
+			// locate exception table
+			i = Native.rdMem(mp);
+			int tabstart = (i >>> 10) + (i & 0x3ff);
+			i = Native.rdMem(tabstart);
+			int tablen = i & 0xffff;
+			int mode = i & 0x10000;
+			
+			// search exception table
+			for (j = tabstart+1; j < tabstart+1+2*tablen; j+=2) {
+				
+				// extract table entry
+				i = Native.rdMem(j);
+				int begin = i >> 16;
+				int end = i & 0xffff;
+				i = Native.rdMem(j+1);
+				int target = i >> 16;
+				int type = i & 0xffff;
+				
+				// check if applicable
+				if (pc >= begin && pc < end) {
+					if (type == 0
+						|| f_instanceof(Native.toInt(t), Native.rdMem(cp+type)) != 0) {
+						
+						// compute correct stack pointer
+						i = Native.rdMem(mp+1);
+						int sp = vp + (i & 0x1f) + ((i >>> 5) & 0x1f) + 4;
+
+						// fake return frame
+						Native.wrIntMem(sp, fp+0);
+						Native.wrIntMem(target, fp+1);
+
+						// return with faked frame
+						Native.setSP(fp+4);
+						return t;
+					}
+				}
+			}
+
+			// do monitorexit if necessary
+			if (mode != 0) {
+				i = Native.rdIntMem(fp+5); // reference is right above the frame
+				// TODO: object to lock is found somewhere else for static methods
+ 				Native.monitorExit(i);
+			}
+
+			// go up one frame
+			i = Native.rdMem(mp+1);
+			fp = vp + (i & 0x1f) + ((i >>> 5) & 0x1f);
+		}
+
+		JVMHelp.wr("Uncaught exception: ");
 		String s = t.getMessage();
 		if (s!=null) {
-			JVMHelp.wr(s);			
+			JVMHelp.wr(s);
 		}
-		JVMHelp.wr(" thrown\n");
-		JVMHelp.wr("catch not implemented!");
+		JVMHelp.wr("\n");
+		JVMHelp.trace(Native.getSP());
+
 		System.exit(1);
 		return t;
 	}
@@ -712,10 +777,10 @@ class JVM {
 */
 		// JVMHelp.wr('E');
 		--enterCnt;
-if (enterCnt<0) {
-	JVMHelp.wr('^');
-	for (;;);
-}
+		if (enterCnt<0) {
+			JVMHelp.wr('^');
+			for (;;);
+		}
 		if (enterCnt==0) {
 			Native.wr(1, Const.IO_INT_ENA);
 		}

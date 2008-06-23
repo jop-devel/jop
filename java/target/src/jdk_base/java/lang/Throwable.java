@@ -1,6 +1,8 @@
 
 package java.lang;
 
+import java.io.PrintStream;
+
 // public class Throwable implements Serializable
 public class Throwable
 {
@@ -10,6 +12,8 @@ public class Throwable
 
 //  private StackTraceElement[] stackTrace;
 
+  private int stack_pointer;
+
   public Throwable()
   {
     this((String) null);
@@ -17,7 +21,7 @@ public class Throwable
 
   public Throwable(String message)
   {
-//    fillInStackTrace();
+    fillInStackTrace();
     detailMessage = message;
   }
 
@@ -29,8 +33,7 @@ public class Throwable
 
   public Throwable(Throwable cause)
   {
-this("cause unknown");
-//    this(cause == null ? null : cause.toString(), cause);
+	  this(cause == null ? null : cause.toString(), cause);
   }
 
   public String getMessage()
@@ -38,19 +41,19 @@ this("cause unknown");
     return detailMessage;
   }
 
-/*
+
   public String getLocalizedMessage()
   {
     return getMessage();
   }
-*/
+
 
   public Throwable getCause()
   {
     return cause == this ? null : cause;
   }
 
-/*
+
   public Throwable initCause(Throwable cause)
   {
     if (cause == this)
@@ -60,7 +63,7 @@ this("cause unknown");
     this.cause = cause;
     return this;
   }
-*/
+
 
 /*
   public String toString()
@@ -72,14 +75,19 @@ this("cause unknown");
 
   public void printStackTrace()
   {
-//    printStackTrace(System.err);
+	  printStackTrace(System.err);
   }
 
-/*
+
   public void printStackTrace(PrintStream s)
   {
 //    s.print(stackTraceString());
   }
-*/
 
+
+  public Throwable fillInStackTrace()
+  {
+	  // TODO: do something useful here
+	  return this;
+  }
 }

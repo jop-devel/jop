@@ -40,6 +40,8 @@ import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.InstructionList;
 import org.apache.bcel.generic.InvokeInstruction;
 import org.apache.bcel.generic.MethodGen;
+import org.apache.bcel.generic.ObjectType;
+import org.apache.bcel.generic.CodeExceptionGen;
 import org.apache.bcel.generic.NOP;
 import org.apache.bcel.util.InstructionFinder;
 
@@ -126,6 +128,14 @@ public class FindUsedConstants extends MyVisitor {
 		}
 		
 		il.dispose();
+
+		CodeExceptionGen[] et = mg.getExceptionHandlers();
+		for (int i = 0; i < et.length; i++) {
+			ObjectType ctype = et[i].getCatchType();
+			if (ctype != null) {
+				cli.addUsedConst(cpool.lookupClass(ctype.getClassName()), 1);
+			}
+		}
 	}
 	
 	

@@ -1,4 +1,4 @@
-/* OutOfMemoryError.java -- thrown when a memory allocation fails
+/* StackOverflowError.java -- thrown when the stack depth is exceeded
    Copyright (C) 1998, 1999, 2001, 2002, 2005  Free Software Foundation, Inc.
 
 This file is part of GNU Classpath.
@@ -39,27 +39,25 @@ exception statement from your version. */
 package java.lang;
 
 /**
- * Thrown when the Java Virtual Machine is unable to allocate an object
- * because it is out of memory and no more memory could be made available
- * by the garbage collector.
+ * A <code>StackOverflowError</code> is thrown when the execution stack
+ * overflow occurs. This often occurs when a method enters infinit recursion.
  *
  * @author Brian Jones
  * @author Tom Tromey (tromey@cygnus.com)
  * @status updated to 1.4
  */
-public class OutOfMemoryError extends VirtualMachineError
+public class StackOverflowError extends VirtualMachineError
 {
   /**
    * Compatible with JDK 1.0+.
    */
-  private static final long serialVersionUID = 8228564086184010517L;
+  private static final long serialVersionUID = 8609175038441759607L;
 
   /**
    * Create an error without a message.
    */
-  public OutOfMemoryError()
+  public StackOverflowError()
   {
-	  super("OutOfMemoryError");
   }
 
   /**
@@ -67,7 +65,7 @@ public class OutOfMemoryError extends VirtualMachineError
    *
    * @param s the message
    */
-  public OutOfMemoryError(String s)
+  public StackOverflowError(String s)
   {
     super(s);
   }

@@ -81,14 +81,21 @@ public class InsertSynchronized extends MyVisitor {
 		for(Iterator iterator = f.search(retInstr); iterator.hasNext(); ) {
 			InstructionHandle[] match = (InstructionHandle[])iterator.next();
 			InstructionHandle   ih = match[0];
+			InstructionHandle   newh; // handle for inserted sequence
 
 			if (method.isStatic()) {
 				// il.insert(ih, new GET_CURRENT_CLASS());
 				throw new Error("synchronized on static methods not yet supported");
 			} else {
-				il.insert(ih, new ALOAD(0));
+				newh = il.insert(ih, new ALOAD(0));
 			}
 			il.insert(ih, new MONITOREXIT());
+
+			// correct jumps
+			InstructionTargeter[] it = ih.getTargeters();
+			for (int i = 0; it != null && i < it.length; i++) {
+				it[i].updateTarget(ih, newh);
+			}
 		}	
 		il.setPositions();
 
