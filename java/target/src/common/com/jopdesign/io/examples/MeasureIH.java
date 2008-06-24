@@ -65,7 +65,8 @@ public class MeasureIH implements Runnable {
 		te = Native.rdMem(Const.IO_CNT);
 		System.out.print(te-ts-to);
 		System.out.print(" ");
-		System.out.print(JVMHelp.ts-ts-to);
+// need to be set in JVMHelp
+//		System.out.print(JVMHelp.ts-ts-to);
 		System.out.print(" ");
 	}
 }

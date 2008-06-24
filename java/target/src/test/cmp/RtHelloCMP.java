@@ -30,7 +30,6 @@ import joprt.RtThread;
 
 import com.jopdesign.io.IOFactory;
 import com.jopdesign.io.SysDevice;
-import com.jopdesign.sys.Startup;
 
 /**
  * A real-time threaded version of Hello World for CMP
@@ -46,9 +45,9 @@ public class RtHelloCMP extends RtThread {
 
 	int id;
 	
-	static Vector msg;
+	public static Vector msg;
 	
-	final static int NR_THREADS = 3;
+	final static int NR_THREADS = 5;
 
 	/**
 	 * @param args
@@ -60,11 +59,10 @@ public class RtHelloCMP extends RtThread {
 		System.out.println("Hello World from CPU 0");
 		
 		SysDevice sys = IOFactory.getFactory().getSysDevice();
-//		for (int i=0; i<sys.nrCpu; ++i) {
 		for (int i=0; i<NR_THREADS; ++i) {
 			RtHelloCMP th = new RtHelloCMP(1, 1000*1000);
 			th.id = i;
-			th.setProcessor(i%sys.nrCpu);
+//			th.setProcessor(i%sys.nrCpu);
 		}
 		
 		System.out.println("Start mission");
@@ -74,12 +72,12 @@ public class RtHelloCMP extends RtThread {
 		
 		// print their messages
 		for (;;) {
-//			System.out.print("*");
-//			RtThread.sleepMs(500);
+			System.out.print("*");
+			RtThread.sleepMs(100);
 			int size = msg.size();
 			if (size!=0) {
 				StringBuffer sb = (StringBuffer) msg.remove(0);
-				System.out.println(sb);
+				System.out.print(sb);
 			}
 		}
 	}
@@ -89,13 +87,14 @@ public class RtHelloCMP extends RtThread {
 		StringBuffer sb = new StringBuffer();
 		sb.append("Thread start on CPU ");
 		sb.append(IOFactory.getFactory().getSysDevice().cpuId);
+		sb.append("\r\n");
 		msg.addElement(sb);
 		StringBuffer ping = new StringBuffer();
 		for (;;) {
 			ping.setLength(0);
 			ping.append((char) ('A'+id));
 			msg.addElement(ping);
-//			System.out.println("ping");
+			System.out.println("ping");
 			waitForNextPeriod();
 		}
 	}

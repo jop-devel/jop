@@ -27,44 +27,45 @@ package com.jopdesign.sys;
 public class JVMHelp {
 
 	/**
-	 * The list of the interrupt handlers.
+	 * The list of the interrupt handlers for all cores.
 	 * 
-	 * TODO: How do we handle this for a CMP version of JOP?
+	 * We cannot use HW object in clinit as they depend on JVMHelp.
 	 */
-	static Runnable ih[] = new Runnable[Const.NUM_INTERRUPTS];
+	static Runnable ih[][] = new Runnable[Native.rdMem(Const.IO_CPUCNT)][Const.NUM_INTERRUPTS];
 	static Runnable dh;
 	static {
 		dh = new DummyHandler();
-		for (int var=0; var<Const.NUM_INTERRUPTS; ++var) {
-			JVMHelp.addInterruptHandler(var, dh);
-		}					
+		for (int core=0; core<Native.rdMem(Const.IO_CPUCNT); ++core) {
+			for (int var=0; var<Const.NUM_INTERRUPTS; ++var) {
+				JVMHelp.addInterruptHandler(core, var, dh);
+			}								
+		}
 	}
 	
-	/**
-	 * time stamp variable for measuerments
-	 */
-	public static int ts;
 
 	//
 	// DON'T change order of first functions!!!
 	//	interrupt gets called from jvm.asm
 	//
+	/**
+	 * Dispatch an interrupt to the handler according to the core
+	 * and the interrupt number. Interrupt 0 is the scheduler.
+	 */
 	static void interrupt() {
 		
-		// take a time stamp
-		ts = Native.rdMem(Const.IO_CNT);
-
-		int nr = Native.rd(Const.IO_INTNR);
+//		int nr = Native.rd(Const.IO_INTNR);
+		ih[Native.rd(Const.IO_CPU_ID)][Native.rd(Const.IO_INTNR)].run();
+//		Native.wr(1, Const.IO_INT_ENA); // for sure?
 //		wr('!');
 //		wr('0'+nr);
-		if (nr==0) {
-			RtThreadImpl.schedule();			
-		} else {
-			ih[nr].run();
-			// enable interrupts again
-			// each interrupt handler shall do it - we do it here for sure
-			Native.wr(1, Const.IO_INT_ENA);
-		}
+//		if (nr==0) {
+//			RtThreadImpl.schedule();			
+//		} else {
+//			ih[sys.cpuId][nr].run();
+//			// enable interrupts again
+//			// each interrupt handler shall do it - we do it here for sure
+//			Native.wr(1, Const.IO_INT_ENA);
+//		}
 	}
 
 
@@ -257,13 +258,25 @@ synchronized (o) {
 	}
 	
 	/**
-	 * Add a Runnable as a first level interrupt handler
+	 * Add a Runnable as a first level interrupt handler.
+	 * Use the current core.
 	 * @param nr interrupt number
 	 * @param r Runnable the represents the interrupt handler
 	 */
 	public static void addInterruptHandler(int nr, Runnable r) {
 		if (nr>=0 && nr<ih.length) {
-			ih[nr] = r;
+			ih[Native.rdMem(Const.IO_CPU_ID)][nr] = r;
+		}
+	}
+	/**
+	 * Add a Runnable as first level interrupt handler for an individual core.
+	 * @param core
+	 * @param nr
+	 * @param r
+	 */
+	public static void addInterruptHandler(int core, int nr, Runnable r) {
+		if (nr>=0 && nr<ih.length) {
+			ih[core][nr] = r;
 		}
 	}
 	/**
@@ -272,7 +285,7 @@ synchronized (o) {
 	 */
 	public static void removeInterruptHandler(int nr) {
 		if (nr>=0 && nr<ih.length) {
-			ih[nr] = dh;
+			ih[Native.rdMem(Const.IO_CPU_ID)][nr] = dh;
 		}
 	}
 	
@@ -333,6 +346,7 @@ synchronized (o) {
 
 	static void intVal(int val) {
 
+		// tmp is used before clazzinit runs
 		if (tmp==null) tmp = new int[MAX_TMP];
 		int i;
 		if (val<0) {

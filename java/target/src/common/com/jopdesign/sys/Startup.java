@@ -65,10 +65,8 @@ public class Startup {
 		// use local variable - statics are not CMP save!
 		int val;
 		
-		// set moncnt in jvm.asm to zero to enable int's
-		// on monitorexit from now on
-		Native.wrIntMem(0, 5);
 		// disable all interrupts locally
+		// global enable and disable on monitorenter/exit don't hurt
 		Native.wr(0, Const.IO_INTMASK);
 		
 		// only CPU 0 does the initialization stuff

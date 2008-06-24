@@ -31,6 +31,8 @@ import com.jopdesign.io.SysDevice;
 import com.jopdesign.sys.Startup;
 
 /**
+ * A CMP version of Hello World
+ * 
  * @author martin
  *
  */

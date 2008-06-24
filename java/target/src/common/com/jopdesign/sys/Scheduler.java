@@ -53,7 +53,9 @@ class Scheduler implements Runnable {
 //	private final static int TIM_OFF = 2; // for 100 MHz version 20 or even lower
 										 // 2 is minimum
 	/**
-	 * This is the scheduler invoked as a plain interrupt handler from JVMHelp.interrupt().
+	 * This is the scheduler invoked as a plain interrupt handler
+	 * from JVMHelp.interrupt(). It gets invoked with interrupts
+	 * globally disabled.
 	 * 
 	 * This is the one and only function to switch threads
 	 * and should NEVER be called from somewhere else.
@@ -75,95 +77,91 @@ class Scheduler implements Runnable {
 		
 		// take care to NOT invoke a method with monitorexit
 		// can happen on the write barrier on reference assignment
-		Native.wr(0, Const.IO_INT_ENA);
-		// synchronized(monitor) {
 
-			// save stack
-			i = Native.getSP();
-			RtThreadImpl th = ref[active];
-			th.sp = i;
-			Native.int2extMem(Const.STACK_OFF, th.stack, i-Const.STACK_OFF+1);	// cnt is i-Const.STACK_OFF+1
+		// save stack
+		i = Native.getSP();
+		RtThreadImpl th = ref[active];
+		th.sp = i;
+		Native.int2extMem(Const.STACK_OFF, th.stack, i-Const.STACK_OFF+1);	// cnt is i-Const.STACK_OFF+1
 
-			// SCHEDULE
-			//	cnt should NOT contain idle thread
-			//	change this some time
-			k = IDL_TICK;
+		// SCHEDULE
+		//	cnt should NOT contain idle thread
+		//	change this some time
+		k = IDL_TICK;
 
-			// this is now
-			j = Native.rd(Const.IO_US_CNT);
+		// this is now
+		j = Native.rd(Const.IO_US_CNT);
 
-			for (i=cnt-1; i>0; --i) {
+		for (i=cnt-1; i>0; --i) {
 
-				if (event[i] == EV_FIRED) {
-					break;						// a pending event found
-				} else if (event[i] == NO_EVENT) {
-					diff = next[i]-j;			// check only periodic
-					if (diff < TIM_OFF) {
-						break;					// found a ready task
-					} else if (diff < k) {
-						k = diff;				// next interrupt time of higher priority thread
-					}
+			if (event[i] == EV_FIRED) {
+				break;						// a pending event found
+			} else if (event[i] == NO_EVENT) {
+				diff = next[i]-j;			// check only periodic
+				if (diff < TIM_OFF) {
+					break;					// found a ready task
+				} else if (diff < k) {
+					k = diff;				// next interrupt time of higher priority thread
 				}
 			}
-			// i is next ready thread (index into the list)
-			// If none is ready i points to idle task or main thread (fist in the list)
-			active = i;
+		}
+		// i is next ready thread (index into the list)
+		// If none is ready i points to idle task or main thread (fist in the list)
+		active = i;
 
-			// set next interrupt time to now+(min(diff)) (j, k)
-			// use JVM locals to get time and sp over the stack exchange
-			Native.wrIntMem(j+k, TIM_VAL_ADDR);
+		// set next interrupt time to now+(min(diff)) (j, k)
+		// use JVM locals to get time and sp over the stack exchange
+		Native.wrIntMem(j+k, TIM_VAL_ADDR);
 
-			
-			// restore stack
-			// We cannot use statics in a CMP setting!
-			Native.wrIntMem(ref[i].sp, SP_VAL_ADDR);
-			Native.setVP(Native.rdIntMem(SP_VAL_ADDR)+2);		// +2 for sure ???
-			Native.setSP(Native.rdIntMem(SP_VAL_ADDR)+9);		// +8 locals, take care to use only the first 5!!
-																// +9 works, +8 not
+		
+		// restore stack
+		// We cannot use statics in a CMP setting!
+		Native.wrIntMem(ref[i].sp, SP_VAL_ADDR);
+		Native.setVP(Native.rdIntMem(SP_VAL_ADDR)+2);		// +2 for sure ???
+		Native.setSP(Native.rdIntMem(SP_VAL_ADDR)+9);		// +8 locals, take care to use only the first 5!!
+															// +9 works, +8 not
 
-			// all locals are lost now, even this - reassign them
-			// get this back form the array of Schedulers
-			
-			i = Native.rdIntMem(SP_VAL_ADDR);
-						
-			s = sched[sys.cpuId];
-			// can't use s1-127 as count,
-			// don't know why I have to store it in a local.
-			Native.ext2intMem(s.ref[s.active].stack, Const.STACK_OFF, i-Const.STACK_OFF+1);		// cnt is i-Const.STACK_OFF+1
+		// all locals are lost now, even this - reassign them
+		// get this back form the array of Schedulers
+		
+		i = Native.rdIntMem(SP_VAL_ADDR);
+					
+		s = sched[sys.cpuId];
+		// can't use s1-127 as count,
+		// don't know why I have to store it in a local.
+		Native.ext2intMem(s.ref[s.active].stack, Const.STACK_OFF, i-Const.STACK_OFF+1);		// cnt is i-Const.STACK_OFF+1
 
-			j = Native.rd(Const.IO_US_CNT);
-			// check if next timer value is too early (or allready missed)
-			// ack int and schedule timer
-			if (Native.rdIntMem(TIM_VAL_ADDR)-j<TIM_OFF) {
-				// set timer to now plus some short time
-				Native.wr(j+TIM_OFF, Const.IO_TIMER);
-			} else {
-				Native.wr(Native.rdIntMem(TIM_VAL_ADDR), Const.IO_TIMER);
-			}
+		j = Native.rd(Const.IO_US_CNT);
+		// check if next timer value is too early (or allready missed)
+		// ack int and schedule timer
+		if (Native.rdIntMem(TIM_VAL_ADDR)-j<TIM_OFF) {
+			// set timer to now plus some short time
+			Native.wr(j+TIM_OFF, Const.IO_TIMER);
+		} else {
+			Native.wr(Native.rdIntMem(TIM_VAL_ADDR), Const.IO_TIMER);
+		}
 
-			Native.setSP(i);
-			// only return after setSP!
-			// WHY should this be true? We need a monitorexit AFTER setSP().
-			// It compiles to following:
-			//	invokestatic #32 <Method void setSP(int)>
-			//	aload 5
-			//	monitorexit
-			//	goto 283
-			//	...
- 			//	283 return
-			//
-			// for a 'real monitor' we have a big problem:
-			// aload 5 loads the monitor from the OLD stack!!!
-			//
-			// we can't access any 'old' locals now
-			//
-			// a solution: don't use a monitor here!
-			// disable and enable INT 'manual'
-			// and DON'T call a method with synchronized
-			// it would enable the INT on monitorexit
+		Native.setSP(i);
+		// only return after setSP!
+		// WHY should this be true? We need a monitorexit AFTER setSP().
+		// It compiles to following:
+		//	invokestatic #32 <Method void setSP(int)>
+		//	aload 5
+		//	monitorexit
+		//	goto 283
+		//	...
+		//	283 return
+		//
+		// for a 'real monitor' we have a big problem:
+		// aload 5 loads the monitor from the OLD stack!!!
+		//
+		// we can't access any 'old' locals now
+		//
+		// a solution: don't use a monitor here!
+		// disable and enable INT 'manual'
+		// and DON'T call a method with synchronized
+		// it would enable the INT on monitorexit
 		Native.wr(1, Const.IO_INT_ENA);
-		// }
-
 	}
 
 	/**
