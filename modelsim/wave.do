@@ -53,14 +53,13 @@ add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cm
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_mem/state
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_mem/addr_reg
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_mem/index
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_mem/addr_calc
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_mem/value
 add wave -noupdate -format Logic /tb_jop/cmp_jop/cpm_cpu/cmp_mem/was_a_store
 add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_mem/null_pointer
 add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_mem/bounds_error
 add wave -noupdate -format Logic /tb_jop/cmp_jop/cpm_cpu/cmp_mem/np_exc
 add wave -noupdate -format Logic /tb_jop/cmp_jop/cpm_cpu/cmp_mem/ab_exc
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_mem/sc_mem_out
+add wave -noupdate -format Literal -radix hexadecimal -expand /tb_jop/cmp_jop/cpm_cpu/cmp_mem/sc_mem_out
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cpm_cpu/cmp_mem/sc_mem_in
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/main_mem/data
 add wave -noupdate -divider spm
@@ -84,7 +83,7 @@ add wave -noupdate -format Logic /tb_jop/cmp_jop/fl_noe
 add wave -noupdate -format Logic /tb_jop/cmp_jop/fl_nwe
 add wave -noupdate -format Logic /tb_jop/cmp_jop/fl_rdy
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {35999622 ps} 0}
+WaveRestoreCursors {{Cursor 1} {35999 ns} 0}
 configure wave -namecolwidth 228
 configure wave -valuecolwidth 144
 configure wave -justifyvalue left
@@ -98,4 +97,4 @@ configure wave -gridperiod 1
 configure wave -griddelta 40
 configure wave -timeline 0
 update
-WaveRestoreZoom {10544874 ps} {12076586 ps}
+WaveRestoreZoom {7021558 ns} {7089094 ns}
