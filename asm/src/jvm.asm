@@ -125,6 +125,7 @@
 //	2008-03-04	correct MUX selection
 //	2008-03-11	Interrupt enable also in bcfetch (bug fix)
 //	2008-06-11	Remove offtbl adjustment nops
+//	2008-06-24	moncnt starts with 0, new CMP scheduler
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -134,7 +135,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20080611
+version		= 20080624
 
 //
 //	start of stack area in the on-chip RAM
@@ -277,9 +278,6 @@ addr		?			// address used for bc load from flash
 //			wait
 /////////
 
-
-			ldi	1			// disable int's
-			stm	moncnt		// monitor counter gets zeroed in startMission
 
 // Checks whether the cpu_id != 0, waits and jumps then further down to the invoke of the boot!!!
 
