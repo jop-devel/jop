@@ -66,6 +66,12 @@ public class Iface extends TestCase {
 		}
 		
 	}
+
+	static class E extends D {		
+	}
+
+	static class F extends D {		
+	}
 	
 	static class X implements A {
 
@@ -99,30 +105,58 @@ public class Iface extends TestCase {
 		boolean ok = true;
 		
 		D d = new D();
+		E e = new E();
+		F f = new F();
 		X x = new X();
 		Y y = new Y();
 		Z z = new Z();
-		
-		A a = d;
-		B b = d;
-		C c = d;
-	
+			
+		ok = ok && (f.funca()==1);
+		ok = ok && (f.funcb()==2);
+		ok = ok && (f.funcc()==3);
+		ok = ok && (e.funca()==1);
+		ok = ok && (e.funcb()==2);
+		ok = ok && (e.funcc()==3);
 		ok = ok && (d.funca()==1);
 		ok = ok && (d.funcb()==2);
 		ok = ok && (d.funcc()==3);
+		ok = ok && (x.funca()==11);
+		ok = ok && (y.funcb()==22);
+		ok = ok && (z.funca()==31);
+		ok = ok && (z.funcb()==32);
+
+		A a = d;
+		B b = d;
+		C c = d;
 		ok = ok && (c.funca()==1);
 		ok = ok && (c.funcb()==2);
 		ok = ok && (c.funcc()==3);
 		ok = ok && (a.funca()==1);
 		ok = ok && (b.funcb()==2);
-		ok = ok && (x.funca()==11);
-		ok = ok && (y.funcb()==22);
-		ok = ok && (z.funca()==31);
-		ok = ok && (z.funcb()==32);
+
+		a = e;
+		b = e;
+		c = e;
+		ok = ok && (c.funca()==1);
+		ok = ok && (c.funcb()==2);
+		ok = ok && (c.funcc()==3);
+		ok = ok && (a.funca()==1);
+		ok = ok && (b.funcb()==2);
+
+		a = f;
+		b = f;
+		c = f;
+		ok = ok && (c.funca()==1);
+		ok = ok && (c.funcb()==2);
+		ok = ok && (c.funcc()==3);
+		ok = ok && (a.funca()==1);
+		ok = ok && (b.funcb()==2);
+
 		a = x;
 		b = y;
 		ok = ok && (a.funca()==11);
 		ok = ok && (b.funcb()==22);
+
 		a = z;
 		b = z;
 		ok = ok && (a.funca()==31);

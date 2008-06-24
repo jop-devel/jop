@@ -602,6 +602,12 @@ public class ClassInfo implements Serializable{
 			superAddr = ((ClassInfo) mapClassNames.get(supname)).classRefAddress;
 		}
 		out.println("\t\t"+superAddr+",\t//\tpointer to super class - "+supname);
+
+		boolean useSuperInterfaceTable = false;
+		if ((iftableAddress == 0) && (superClass != null)) {
+			iftableAddress = ((ClassInfo) mapClassNames.get(supname)).iftableAddress;
+			useSuperInterfaceTable = true;
+		}			
 		out.println("\t\t"+iftableAddress+",\t//\tpointer to interface table");
 		
 		out.println("//");
@@ -632,7 +638,7 @@ public class ClassInfo implements Serializable{
 			out.println("\t\t"+cpoolArry[i]+",\t//\t"+cpoolComments[i]);
 		}
 		
-		if (iftableAddress!=0) {
+		if (iftableAddress!=0 && !useSuperInterfaceTable) {
 			out.println("//");
 			out.println("//\t"+iftableAddress+": "+clazz.getClassName()+
 					" interface table");
