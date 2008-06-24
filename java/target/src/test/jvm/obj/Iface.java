@@ -47,7 +47,6 @@ public class Iface extends TestCase {
 		int funcb();
 	}
 	static interface C extends  A, B {
-		
 		int funcc();
 	}
 	
@@ -67,12 +66,20 @@ public class Iface extends TestCase {
 		
 	}
 
-	static class E extends D {		
+	static class E extends D {
+
+		public int funca() {
+			return 111;
+		}
 	}
 
-	static class F extends D {		
+	static class F extends E {		
+
+		public int funca() {
+			return 1111;
+		}
 	}
-	
+
 	static class X implements A {
 
 		public int funca() {
@@ -111,15 +118,15 @@ public class Iface extends TestCase {
 		Y y = new Y();
 		Z z = new Z();
 			
-		ok = ok && (f.funca()==1);
-		ok = ok && (f.funcb()==2);
-		ok = ok && (f.funcc()==3);
-		ok = ok && (e.funca()==1);
-		ok = ok && (e.funcb()==2);
-		ok = ok && (e.funcc()==3);
 		ok = ok && (d.funca()==1);
 		ok = ok && (d.funcb()==2);
 		ok = ok && (d.funcc()==3);
+		ok = ok && (e.funca()==111);
+		ok = ok && (e.funcb()==2);
+		ok = ok && (e.funcc()==3);
+		ok = ok && (f.funca()==1111);
+		ok = ok && (f.funcb()==2);
+		ok = ok && (f.funcc()==3);
 		ok = ok && (x.funca()==11);
 		ok = ok && (y.funcb()==22);
 		ok = ok && (z.funca()==31);
@@ -137,19 +144,19 @@ public class Iface extends TestCase {
 		a = e;
 		b = e;
 		c = e;
-		ok = ok && (c.funca()==1);
+		ok = ok && (c.funca()==111);
 		ok = ok && (c.funcb()==2);
 		ok = ok && (c.funcc()==3);
-		ok = ok && (a.funca()==1);
+		ok = ok && (a.funca()==111);
 		ok = ok && (b.funcb()==2);
 
 		a = f;
 		b = f;
 		c = f;
-		ok = ok && (c.funca()==1);
+		ok = ok && (c.funca()==1111);
 		ok = ok && (c.funcb()==2);
 		ok = ok && (c.funcc()==3);
-		ok = ok && (a.funca()==1);
+		ok = ok && (a.funca()==1111);
 		ok = ok && (b.funcb()==2);
 
 		a = x;

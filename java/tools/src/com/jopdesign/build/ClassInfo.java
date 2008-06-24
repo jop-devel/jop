@@ -306,9 +306,20 @@ public class ClassInfo implements Serializable{
 //System.out.println(clazz.getClassName()+" cplen="+clazz.getConstantPool().getLength());
 		// the final size of the cp plus the length field
 		addr += cpoolUsed.size()+1;
+
 		// the optional interface table
 		iftableAddress = 0;
-		if (clazz.getInterfaceNames().length>0) {
+
+		boolean needsInterfaceTable = false;
+		for (i = 0; i < listIT.size(); i++) {
+			IT it = (IT)listIT.get(i);
+			boolean matchMethod = isMethodPresent(it.meth.methodId);
+			boolean matchInterface = implementsInterface(it.meth.cli.clazz.getClassName());
+			if (matchMethod && matchInterface) {
+				needsInterfaceTable = true;
+			}
+		}
+		if (needsInterfaceTable) {
 			iftableAddress = addr;
 			addr += listIT.size();
 		}
@@ -322,6 +333,27 @@ public class ClassInfo implements Serializable{
 		}
 		return addr;
 	}
+
+	private boolean implementsInterface(String ifname) {
+		ClassInfo cli = this;
+		do {
+			String[] interfaces = cli.clazz.getInterfaceNames();
+			for (int i = 0; i < interfaces.length; i++) {
+				if (ifname.equals(interfaces[i])) {
+					return true;
+				} else {
+					// an interface may have a super-interface
+					boolean match = getClassInfo(interfaces[i]).implementsInterface(ifname);
+					if (match) {
+						return true;
+					}
+				}
+			}
+			cli = cli.superClass;
+		} while (cli != null);
+		return false;
+	}
+
 
 	/**
 	 * generate GC info for the instance
