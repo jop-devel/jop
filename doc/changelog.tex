@@ -189,6 +189,12 @@ Added invokesuper bytecode: the case of invoking the method of a
 super-class was not handled correctly by invokespecial. JOPizer
 replaces invokespecial with invokesuper where appropriate.
 
+\subsubsection*{2008-06-23}
+
+Implemented athrow as specified by the JVM specification. Changed
+system code in a few places such that exceptions are throw instead of
+aborting immediately.
+
 \section{Performance Tracker}
 
 Table~\ref{tab:perf} shows the changing performance due to changes
@@ -338,11 +344,14 @@ fix).
 write wait state in \code{sc\_sram32\_flash.vhd}. \code{cycbg} at
 60~MHz, modem baud rate now 115 kbit.
 
+\paragraph{20080625} WP: Fixed method cache/program counter bug; changes in
+\code{bcfetch.vhd}, \code{core.vhd} and \code{stack.vhd}.
+
 \subsection{Software}
 
 \paragraph{20070911} Changes in ejip for TCP addition and some
-cleanup in packet manipulation. TCP connection works for a very
-simple Telnet server.
+cleanup in packet manipulation. TCP connection works for a very simple
+Telnet server.
 
 \paragraph{20071002} Add changes for the debugger (in JOPizer, ClassInfo, MethodInfo).
 Correct wrong Makefile (Wolfgang) and add debugger changes.
@@ -374,6 +383,8 @@ stop-the-world mode.
 
 \paragraph{20080221} JOPizer: insert monitorenter and monitorexit for
 synchronized (non-static) methods.
+
+\paragraph{20080624} JOPizer: interface tables are now generated correctly
 
 \subsection{Documentation}
 
