@@ -114,7 +114,7 @@ generic (jpc_width : integer; pc_width : integer);
 port (
 	clk, reset	: in std_logic;
 
-	jpc_out		: out std_logic_vector(jpc_width-1 downto 0);	-- jpc read
+	jpc_out		: out std_logic_vector(jpc_width downto 0);		-- jpc read
 	din			: in std_logic_vector(31 downto 0);				-- A from stack
 	jpc_wr		: in std_logic;
 
@@ -162,7 +162,7 @@ port (
 	din			: in std_logic_vector(width-1 downto 0);
 	dir			: in std_logic_vector(ram_width-1 downto 0);
 	opd			: in std_logic_vector(15 downto 0);		-- index for vp load opd
-	jpc			: in std_logic_vector(jpc_width-1 downto 0);	-- jpc read
+	jpc			: in std_logic_vector(jpc_width downto 0);	-- jpc read
 
 	sel_sub		: in std_logic;							-- 0..add, 1..sub
 	sel_amux		: in std_logic;							-- 0..sum, 1..lmux
@@ -253,7 +253,7 @@ end component;
 	signal jpaddr		: std_logic_vector(pc_width-1 downto 0);
 
 	signal opd			: std_logic_vector(15 downto 0);
-	signal jpc_out		: std_logic_vector(jpc_width-1 downto 0);
+	signal jpc_out		: std_logic_vector(jpc_width downto 0);
 	signal instr		: std_logic_vector(i_width-1 downto 0);
 	signal ena_jpc		: std_logic;
 

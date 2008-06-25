@@ -64,8 +64,8 @@ generic (
 port (
 	clk, reset	: in std_logic;
 
-	jpc_out		: out std_logic_vector(jpc_width-1 downto 0);	-- jpc read
-	din			: in std_logic_vector(31 downto 0);				-- A from stack
+	jpc_out		: out std_logic_vector(jpc_width downto 0);	-- jpc read
+	din			: in std_logic_vector(31 downto 0);			-- A from stack
 	jpc_wr		: in std_logic;
 
 --	connection to bytecode cache
@@ -106,12 +106,12 @@ port (
 end component;
 
 
-	signal jbc_mux	: std_logic_vector(jpc_width-1 downto 0);
+	signal jbc_mux	: std_logic_vector(jpc_width downto 0);
 	signal jbc_q	: std_logic_vector(7 downto 0);
 
-	signal jpc		: std_logic_vector(jpc_width-1 downto 0);
-	signal jpc_br	: std_logic_vector(jpc_width-1 downto 0);
-	signal jmp_addr	: std_logic_vector(jpc_width-1 downto 0);
+	signal jpc		: std_logic_vector(jpc_width downto 0);
+	signal jpc_br	: std_logic_vector(jpc_width downto 0);
+	signal jmp_addr	: std_logic_vector(jpc_width downto 0);
 
 	signal jinstr	: std_logic_vector(7 downto 0);
 	signal tp		: std_logic_vector(3 downto 0);
@@ -187,7 +187,7 @@ end process;
 
 	cmp_jtbl: jtbl port map(bytecode, int_req, exc_pend, jpaddr);
 
-	jbc_addr <= jbc_mux;
+	jbc_addr <= jbc_mux(jpc_width-1 downto 0);
 	jbc_q <= jbc_data;
 
 
@@ -318,12 +318,12 @@ process(clk, reset)
 begin
 	if (reset='1') then
 
-		jpc <= std_logic_vector(to_unsigned(0, jpc_width));
+		jpc <= std_logic_vector(to_unsigned(0, jpc_width+1));
 
 	elsif rising_edge(clk) then
 
 		if (jpc_wr='1') then
-			jpc <= din(jpc_width-1 downto 0);
+			jpc <= din(jpc_width downto 0);
 		elsif (jmp='1') then
 			jpc <= jmp_addr;
 		elsif (jfetch='1' or jopdfetch='1') then
@@ -350,7 +350,7 @@ begin
 
 		-- from jbc_q + jopd low!
 		jmp_addr <= std_logic_vector(unsigned(jpc_br) +
-			unsigned(jopd(jpc_width-1-8 downto 0) & jbc_q));
+			unsigned(jopd(jpc_width-8 downto 0) & jbc_q));
 
 		if (jfetch='1') then
 			jpc_br <= jpc;		-- save start address of instruction for branch

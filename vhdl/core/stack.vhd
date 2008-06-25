@@ -62,7 +62,7 @@ port (
 	din			: in std_logic_vector(width-1 downto 0);
 	dir			: in std_logic_vector(ram_width-1 downto 0);
 	opd			: in std_logic_vector(15 downto 0);		-- index for vp load opd
-	jpc			: in std_logic_vector(jpc_width-1 downto 0);	-- jpc read
+	jpc			: in std_logic_vector(jpc_width downto 0);	-- jpc read
 
 	sel_sub		: in std_logic;							-- 0..add, 1..sub
 	sel_amux	: in std_logic;							-- 0..sum, 1..lmux
@@ -151,7 +151,7 @@ end component;
 	signal imux		: std_logic_vector(width-1 downto 0);
 	signal mmux		: std_logic_vector(width-1 downto 0);
 
-	signal rmux		: std_logic_vector(jpc_width-1 downto 0);
+	signal rmux		: std_logic_vector(jpc_width downto 0);
 	signal smux		: std_logic_vector(ram_width-1 downto 0);
 	signal vpadd	: std_logic_vector(ram_width-1 downto 0);
 	signal wraddr	: std_logic_vector(ram_width-1 downto 0);
@@ -225,10 +225,10 @@ begin
 	case sel_rmux is
 		when "00" =>
 --			rmux <= "00" & sp;
-			rmux <= std_logic_vector(to_signed(to_integer(unsigned(sp)), jpc_width));
+			rmux <= std_logic_vector(to_signed(to_integer(unsigned(sp)), jpc_width+1));
 		when "01" =>
 --			rmux <= "00" & vp0;
-			rmux <= std_logic_vector(to_signed(to_integer(unsigned(vp0)), jpc_width));
+			rmux <= std_logic_vector(to_signed(to_integer(unsigned(vp0)), jpc_width+1));
 		when others =>
 			rmux <= jpc;
 	end case;
