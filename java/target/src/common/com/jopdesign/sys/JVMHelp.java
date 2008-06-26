@@ -27,45 +27,44 @@ package com.jopdesign.sys;
 public class JVMHelp {
 
 	/**
-	 * The list of the interrupt handlers for all cores.
+	 * The list of the interrupt handlers.
 	 * 
-	 * We cannot use HW object in clinit as they depend on JVMHelp.
+	 * TODO: How do we handle this for a CMP version of JOP?
 	 */
-	static Runnable ih[][] = new Runnable[Native.rdMem(Const.IO_CPUCNT)][Const.NUM_INTERRUPTS];
+	static Runnable ih[] = new Runnable[Const.NUM_INTERRUPTS];
 	static Runnable dh;
 	static {
 		dh = new DummyHandler();
-		for (int core=0; core<Native.rdMem(Const.IO_CPUCNT); ++core) {
-			for (int var=0; var<Const.NUM_INTERRUPTS; ++var) {
-				JVMHelp.addInterruptHandler(core, var, dh);
-			}								
-		}
+		for (int var=0; var<Const.NUM_INTERRUPTS; ++var) {
+			JVMHelp.addInterruptHandler(var, dh);
+		}					
 	}
 	
+	/**
+	 * time stamp variable for measuerments
+	 */
+	public static int ts;
 
 	//
 	// DON'T change order of first functions!!!
 	//	interrupt gets called from jvm.asm
 	//
-	/**
-	 * Dispatch an interrupt to the handler according to the core
-	 * and the interrupt number. Interrupt 0 is the scheduler.
-	 */
 	static void interrupt() {
 		
-//		int nr = Native.rd(Const.IO_INTNR);
-		ih[Native.rd(Const.IO_CPU_ID)][Native.rd(Const.IO_INTNR)].run();
-//		Native.wr(1, Const.IO_INT_ENA); // for sure?
+		// take a time stamp
+		ts = Native.rdMem(Const.IO_CNT);
+
+		int nr = Native.rd(Const.IO_INTNR);
 //		wr('!');
 //		wr('0'+nr);
-//		if (nr==0) {
-//			RtThreadImpl.schedule();			
-//		} else {
-//			ih[sys.cpuId][nr].run();
-//			// enable interrupts again
-//			// each interrupt handler shall do it - we do it here for sure
-//			Native.wr(1, Const.IO_INT_ENA);
-//		}
+		if (nr==0) {
+			RtThreadImpl.schedule();			
+		} else {
+			ih[nr].run();
+			// enable interrupts again
+			// each interrupt handler shall do it - we do it here for sure
+			Native.wr(1, Const.IO_INT_ENA);
+		}
 	}
 
 
@@ -129,7 +128,7 @@ wrByte(pc);
 			Native.setSP(Const.STACK_OFF);
 		}
 		// we have more stack available now for the stack overflow
-		handleException();
+		handleExcpetion();
 	}
 	
 	static void noim() {
@@ -169,19 +168,24 @@ synchronized (o) {
 }
 	}
 
-	static void handleException() {
+	static void handleExcpetion() {
 		
 		int i;
 		i = Native.rdMem(Const.IO_EXCPT);
+		wr("\nException: ");
 		if (i==Const.EXC_SPOV) {
-			throw new StackOverflowError();
+			wr("Stack overflow\n");
 		} else if (i==Const.EXC_NP) {
-			throw new NullPointerException();
+			wr("Null pointer exception\n");
 		} else if (i==Const.EXC_AB) {
-			throw new ArrayIndexOutOfBoundsException();
+			wr("Array out of bounds exception\n");
 		} else if (i==Const.EXC_DIVZ) {
-			throw new ArithmeticException();
+			wr("ArithmeticException\n");
 		}
+
+		int sp = saved_sp;
+
+		trace(sp);
 
 		for (;;);
 	}
@@ -258,25 +262,13 @@ synchronized (o) {
 	}
 	
 	/**
-	 * Add a Runnable as a first level interrupt handler.
-	 * Use the current core.
+	 * Add a Runnable as a first level interrupt handler
 	 * @param nr interrupt number
 	 * @param r Runnable the represents the interrupt handler
 	 */
 	public static void addInterruptHandler(int nr, Runnable r) {
 		if (nr>=0 && nr<ih.length) {
-			ih[Native.rdMem(Const.IO_CPU_ID)][nr] = r;
-		}
-	}
-	/**
-	 * Add a Runnable as first level interrupt handler for an individual core.
-	 * @param core
-	 * @param nr
-	 * @param r
-	 */
-	public static void addInterruptHandler(int core, int nr, Runnable r) {
-		if (nr>=0 && nr<ih.length) {
-			ih[core][nr] = r;
+			ih[nr] = r;
 		}
 	}
 	/**
@@ -285,7 +277,7 @@ synchronized (o) {
 	 */
 	public static void removeInterruptHandler(int nr) {
 		if (nr>=0 && nr<ih.length) {
-			ih[Native.rdMem(Const.IO_CPU_ID)][nr] = dh;
+			ih[nr] = dh;
 		}
 	}
 	
@@ -346,7 +338,6 @@ synchronized (o) {
 
 	static void intVal(int val) {
 
-		// tmp is used before clazzinit runs
 		if (tmp==null) tmp = new int[MAX_TMP];
 		int i;
 		if (val<0) {

@@ -126,6 +126,7 @@
 //	2008-03-11	Interrupt enable also in bcfetch (bug fix)
 //	2008-06-11	Remove offtbl adjustment nops
 //	2008-06-24	moncnt starts with 0, new CMP scheduler
+//	2008-06-25	WP: bug fix in cache controller
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -135,7 +136,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20080624
+version		= 20080625
 
 //
 //	start of stack area in the on-chip RAM

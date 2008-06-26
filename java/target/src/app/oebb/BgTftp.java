@@ -55,7 +55,7 @@ private static int simerr;
 	private static LinkLayer ipLink;
 	
 	final static int MAX_BLOCKS = 128;
-	private static int[] sector;
+	static int[] sector;
 
 	BgTftp() {
 		// +1 is for the final block on a 64KB write
@@ -344,7 +344,7 @@ System.out.print("Program "); System.out.print(cnt); System.out.println(" blocks
 		if (i!='f') return;			// filename not valid
 		base = ((fn&0xff)-'0')<<16;	// 64 KB sector
 // System.out.print("Erase sector "); System.out.println(base);
-//		synchronized (sector) {
+		synchronized (sector) {
 			Amd.erase(base);
 System.out.println("Program ");
 
@@ -360,7 +360,7 @@ System.out.println("Program ");
 					base += 4;
 				}
 			}	
-//		}
+		}
 	}
 
 	/**
@@ -384,9 +384,11 @@ System.out.println("Program ");
 
 			k = 0;
 			for (i=0; i<128; ++i) {
-				for (j=0; j<4; ++j) {
-					k <<= 8;
-					k += com.jopdesign.sys.Native.rdMem(base+(i<<2)+j);
+				synchronized (sector) {
+					for (j=0; j<4; ++j) {
+						k <<= 8;
+						k += com.jopdesign.sys.Native.rdMem(base+(i<<2)+j);
+					}					
 				}
 				buf[Udp.DATA+1+i] = k;
 			}
@@ -429,9 +431,11 @@ System.out.println("Program ");
 	static int intVal(int addr) {
 
 		int val = 0;
-		for (int i=0; i<4; ++i) {
-			val <<= 8;
-			val += Native.rdMem(addr+i);
+		synchronized (sector) {
+			for (int i=0; i<4; ++i) {
+				val <<= 8;
+				val += Native.rdMem(addr+i);
+			}			
 		}
 
 		return val;

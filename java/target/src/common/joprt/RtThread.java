@@ -64,14 +64,6 @@ public class RtThread {
 		return thr.waitForNextPeriod();
 	}
 
-	/**
-	 * Set the processor number
-	 * @param id
-	 */
-	public void setProcessor(int id) {
-		thr.setProcessor(id);
-	}
-
 
 	/**
 	*	dummy yield() for compatibility reason.

@@ -147,9 +147,11 @@ public class Flash {
 	public static int intVal(int addr) {
 
 		int val = 0;
-		for (int i=0; i<4; ++i) {
-			val <<= 8;
-			val += Native.rdMem(DATA_START+addr+i);
+		synchronized (BgTftp.sector) {
+			for (int i=0; i<4; ++i) {
+				val <<= 8;
+				val += Native.rdMem(DATA_START+addr+i);
+			}			
 		}
 
 		return val;
@@ -305,8 +307,11 @@ System.out.println("getFirst: wrong strnr");
 			return;
 		}
 
+		int val;
 		for (i=0; i<80; ++i) {
-			int val = Native.rdMem(DATA_START+addr+i);
+			synchronized (BgTftp.sector) {
+				val = Native.rdMem(DATA_START+addr+i);				
+			}
 			if (val==0) break;
 // Dbg.wr(val);
 			str.append((char) val);
@@ -445,7 +450,9 @@ Dbg.intVal(p.flags);
 			for (int j=0; j<6 && val!=0; ++j) {
 				tmpStr[j].setLength(0);
 				for (int k=0; k<19; ++k) {
-					val = Native.rdMem(DATA_START+idx+off);
+					synchronized (BgTftp.sector) {
+						val = Native.rdMem(DATA_START+idx+off);						
+					}
 					++off;
 					if (val==0 || val=='^') break;
 					tmpStr[j].append((char) val);
@@ -535,7 +542,9 @@ System.out.println("ES Strecke:");
 			int off = 0;
 			tmpStr[0].setLength(0);
 			for (k=0; k<19; ++k) {
-				val = Native.rdMem(DATA_START+idx+k);
+				synchronized (BgTftp.sector) {
+					val = Native.rdMem(DATA_START+idx+k);					
+				}
 				if (val==0 || val=='^') break;
 				tmpStr[0].append((char) val);
 			}
@@ -637,7 +646,9 @@ System.out.println("move logbook");
 		}
 		
 		for (logPtr=CONFIG_LEN; logPtr<0x10000; ++logPtr) {
-			j = Native.rdMem(BGID_START+logPtr);
+			synchronized (BgTftp.sector) {
+				j = Native.rdMem(BGID_START+logPtr);				
+			}
 			if (j==0xff) {
 				break;
 			}
@@ -686,7 +697,9 @@ System.out.println("move logbook");
 				Dbg.wr('\n');
 				Timer.wd();
 			}
-			Dbg.hexVal(Native.rdMem(DATA_START+i));
+			synchronized (BgTftp.sector) {
+				Dbg.hexVal(Native.rdMem(DATA_START+i));				
+			}
 			if ((i&0x03)==3) {
 				Dbg.intVal(intVal(i&0xfffc));
 			}
@@ -712,7 +725,9 @@ System.out.println("move logbook");
 			j = str.charAt(i);
 			System.out.print((char) j);
 			if (logPtr<0x10000) {
-				Amd.program(BGID_START-0x80000+logPtr, j);
+				synchronized (BgTftp.sector) {
+					Amd.program(BGID_START-0x80000+logPtr, j);					
+				}
 				++logPtr;
 			}
 			Timer.wd();

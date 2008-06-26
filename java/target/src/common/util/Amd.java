@@ -49,7 +49,7 @@ public class Amd {
 
 		addr += 0x80000;
 
-		Native.wr(0, Const.IO_INT_ENA);
+//		Native.wr(0, Const.IO_INT_ENA);
 		
 		Native.wrMem(0xaa, 0x80555);
 		Native.wrMem(0x55, 0x802aa);
@@ -65,7 +65,7 @@ public class Amd {
 			if (j-Native.rd(Const.IO_US_CNT) < 0) break;
 		}
 		
-		Native.wr(1, Const.IO_INT_ENA);
+//		Native.wr(1, Const.IO_INT_ENA);
 
 	}
 
@@ -78,7 +78,7 @@ public class Amd {
 
 		addr += 0x80000;
 
-		Native.wr(0, Const.IO_INT_ENA);
+//		Native.wr(0, Const.IO_INT_ENA);
 		
 		Native.wrMem(0xaa, 0x80555);
 		Native.wrMem(0x55, 0x802aa);
@@ -87,7 +87,7 @@ public class Amd {
 		Native.wrMem(0x55, 0x802aa);
 		Native.wrMem(0x30, addr);
 
-		Native.wr(1, Const.IO_INT_ENA);
+//		Native.wr(1, Const.IO_INT_ENA);
 
 		for (i=0; i<400; ++i) {					// maximum 40 s timeout
 			joprt.RtThread.sleepMs(100);
