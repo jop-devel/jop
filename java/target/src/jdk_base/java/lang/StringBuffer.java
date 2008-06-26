@@ -74,11 +74,11 @@ public final class StringBuffer {
 		return new String(this);
 	}
 
-	public void append(boolean b) {
+	public StringBuffer append(boolean b) {
 		if (b) {
-			append("true");
+			return append("true");
 		} else {
-			append("false");
+			return append("false");
 		}
 	}
 
