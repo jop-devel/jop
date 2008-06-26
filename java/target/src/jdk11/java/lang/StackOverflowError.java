@@ -58,6 +58,7 @@ public class StackOverflowError extends VirtualMachineError
    */
   public StackOverflowError()
   {
+	  super("StackOverflowError");
   }
 
   /**
