@@ -34,7 +34,7 @@ import com.jopdesign.sys.*;
 
 public class jop2dat {
 
-	static final int MAX_MEM = 128*1024/4;
+	static final int MAX_MEM = 1024*1024/4;
 	int[] mem = new int[MAX_MEM];
 	int heap;
 
