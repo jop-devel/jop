@@ -343,8 +343,8 @@ public class State extends ejip.UdpHandler implements Runnable {
 
 			// FWR
 			if ((cmd & CFLAG_FWR)!=0) {
-				Logic.state = Logic.WIDERRUF;
 				if (!fwrQuitPending) {
+					Logic.state = Logic.WIDERRUF;
 					// we cannot ack it, reset the flag
 					cmdAck &= ~CFLAG_FWR;
 				}
@@ -355,8 +355,8 @@ public class State extends ejip.UdpHandler implements Runnable {
 
 			// NOTHALT
 			if ((cmd & CFLAG_NOT)!=0) {
-				Logic.state = Logic.NOTHALT;
 				if (!nothaltQuitPending) {
+					Logic.state = Logic.NOTHALT;
 					// we cannot ack it, reset the flag
 					cmdAck &= ~CFLAG_NOT;
 				}

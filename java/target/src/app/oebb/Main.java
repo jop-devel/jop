@@ -62,7 +62,7 @@ public class Main {
 
 	// SW version
 	public static final int VER_MAJ = 2;
-	public static final int VER_MIN = 16;
+	public static final int VER_MIN = 17;
 
 	private static final int LOG_PRIO = 1;
 	private static final int LOG_PERIOD = 1000000;
@@ -76,8 +76,6 @@ public class Main {
 	private static final int DISPLAY_PERIOD = 5000;
 	private static final int WD_PRIO = 5;
 	private static final int WD_PERIOD = 25000;
-//	private static final int COMM_PRIO = 6;
-//	private static final int COMM_PERIOD = 100000;
 	private static final int STATE_PRIO = 6;
 	private static final int STATE_PERIOD = 100000;
 	private static final int NET_PRIO = 7;
@@ -234,11 +232,6 @@ public class Main {
 		// The SW handle fired by the GPS thread
 		// to find a Strecke
 		new Strecke(STRECKE_PRIO, STRECKE_PERIOD);
-
-//		//
-//		//	create Communication thread
-//		//
-//		Comm.init(Flash.getId(), COMM_PRIO, COMM_PERIOD, ipLink);
 
 		//
 		//	Crate state object and the periodic thread.
