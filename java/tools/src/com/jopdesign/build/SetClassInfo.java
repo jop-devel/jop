@@ -58,6 +58,11 @@ public class SetClassInfo extends MyVisitor {
 		*/
 // System.err.println("after visit getSuper");
 		cpool = clazz.getConstantPool();
+
+		if (clazz.isInterface()) {
+			cli.interfaceID = ++cli.interfaceCnt;
+			cli.interfaceList.add(cli.interfaceID-1, clazz.getClassName());
+		}
 	}
 
 	public void visitMethod(Method method) {

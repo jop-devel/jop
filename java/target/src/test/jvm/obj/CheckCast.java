@@ -35,17 +35,32 @@ public class CheckCast extends TestCase implements Runnable {
 		return "CheckCast";
 	}
 	
-	static interface A extends sup{}
+	static interface A extends sup {
+		public String foo();
+	}
 
 	static interface sup {}
 
-	static class B implements A {}
+	static class B implements A {
+		public String foo() {
+			return "B";
+		}
+	}
 
-	static class C implements A {}
-	
+	static class C implements A {
+		public String foo() {
+			return "C";
+		}
+	}
+
+	static interface X extends sup {
+		public String foo();
+	}
+
 	public boolean test() {
 		
 		boolean ok = true;
+		boolean trycheck;
 		
 		Object o = new CheckCast();
 		CheckCast cc;
@@ -58,12 +73,76 @@ public class CheckCast extends TestCase implements Runnable {
 		B b = new B();
 		C c = new C();
 
-		ok = ok && b instanceof A;
-		ok = ok && c instanceof A;
-		ok = ok && a instanceof Object;
-	
+		ok = ok && a instanceof sup;
 		ok = ok && a instanceof A; 
-		ok = ok && a instanceof sup; 
+		ok = ok && ((A)a).foo().equals("B");
+		ok = ok && a instanceof B; 
+		ok = ok && ((B)a).foo().equals("B");
+		ok = ok && a instanceof Object;
+
+		ok = ok && b instanceof sup;
+		ok = ok && b instanceof A;
+		ok = ok && ((A)b).foo().equals("B");
+		ok = ok && b instanceof B;
+		ok = ok && ((B)b).foo().equals("B");
+		ok = ok && b instanceof Object;
+
+		ok = ok && c instanceof sup;
+		ok = ok && c instanceof A;
+		ok = ok && ((A)c).foo().equals("C");
+		ok = ok && c instanceof C;
+		ok = ok && ((C)c).foo().equals("C");
+		ok = ok && c instanceof Object;
+
+		Object d = new B();
+		Object e = new C();
+
+		ok = ok && d instanceof sup;
+		ok = ok && d instanceof A;
+		ok = ok && ((A)d).foo().equals("B");
+		ok = ok && d instanceof B;
+		ok = ok && ((B)a).foo().equals("B");
+		ok = ok && !(d instanceof C);
+		trycheck = false;
+		try {
+			((C)d).foo();
+		} catch (ClassCastException exc) {
+			trycheck = true;
+		}
+		ok = ok && trycheck;
+		ok = ok && !(d instanceof X);
+		trycheck = false;
+		try {
+			((X)d).foo();
+		} catch (ClassCastException exc) {
+			trycheck = true;
+		}
+		ok = ok && trycheck;
+		ok = ok && d instanceof Object;
+
+		ok = ok && e instanceof sup;
+		ok = ok && e instanceof A;
+		ok = ok && ((A)e).foo().equals("C");
+		ok = ok && !(e instanceof B);
+		trycheck = false;
+		try {
+			((B)e).foo();
+		} catch (ClassCastException exc) {
+			trycheck = true;
+		}
+		ok = ok && trycheck;
+		ok = ok && e instanceof C;
+		ok = ok && ((C)e).foo().equals("C");
+		ok = ok && !(e instanceof X);
+		trycheck = false;
+		try {
+			((X)e).foo();
+		} catch (ClassCastException exc) {
+			trycheck = true;
+		}
+		ok = ok && trycheck;
+		ok = ok && e instanceof Object;
+
 		return ok;
 	}
 

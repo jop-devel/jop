@@ -48,6 +48,10 @@ public class Const {
 	 * Pointer to super class relative to class struct
 	 */
 	static final int CLASS_SUPER = 3;
+	/**
+	 * Pointer to super class relative to class struct
+	 */
+	static final int CLASS_IFTAB = 4;
 	
 	
 	/**

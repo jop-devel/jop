@@ -723,39 +723,68 @@ class JVM {
 		int p = Native.rdMem(objref+GC.OFF_MTAB_ALEN);	// ptr to MTAB
 		p -= Const.CLASS_HEADR;							// start of class info
 
+		// check against interface
+		int ifidx = Native.rdMem(cons+Const.CLASS_SUPER);
+		if (ifidx < 0) {
+			int iftab = Native.rdMem(p+Const.CLASS_IFTAB);
+			if (iftab == 0) {
+				// the class does not implement any interface
+				throw new ClassCastException();
+			} else {
+				// check if the appropriate bit is set
+				int i = Native.rdMem(iftab+(ifidx-31)/32);				
+				if (((i >>> (~ifidx & 0x1f)) & 1) != 0) {
+					return objref;
+				} else {
+					throw new ClassCastException();
+				}
+			}
+		}
+
+		// search for superclass
 		for (;;) {
 			if (p==cons) {
 				return objref;
 			} else {
 				p = Native.rdMem(p+Const.CLASS_SUPER);	// super class ptr
-				if (p==0) break;		// we are at Object
+				if (p==0) throw new ClassCastException();
 			}
-		}
-		
-		throw new ClassCastException();
-		
-//		return objref;
+		}		
+
 	}
+
 	private static int f_instanceof(int objref, int cons) {
 
-		// TODO: check if it works for interfaces
-		// TODO: simplify the code
 		if (objref==0) {
 			return 0;
 		}
 		int p = Native.rdMem(objref+GC.OFF_MTAB_ALEN);	// handle indirection
 		p -= Const.CLASS_HEADR;							// start of class info
 
+		// check against interface
+		int ifidx = Native.rdMem(cons+Const.CLASS_SUPER);
+		if (ifidx < 0) {
+			int iftab = Native.rdMem(p+Const.CLASS_IFTAB);
+			if (iftab == 0) {
+				// the class does not implement any interface
+				return 0;
+			} else {
+				// check if the appropriate bit is set
+				int i = Native.rdMem(iftab+(ifidx-31)/32);				
+				return (i >>> (~ifidx & 0x1f)) & 1;
+			}
+		}
+
+		// search for superclass
 		for (;;) {
 			if (p==cons) {
 				return 1;
 			} else {
 				p = Native.rdMem(p+Const.CLASS_SUPER);
-				if (p==0) break;		// we are at Object
+				if (p==0) return 0;
 			}
 		}
-		
-		return 0;
+
 	}
 
 

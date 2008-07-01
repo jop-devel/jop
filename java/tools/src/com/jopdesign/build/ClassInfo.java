@@ -68,13 +68,17 @@ public class ClassInfo implements Serializable{
 	
 	// 'global' interface table
 	static LinkedList listIT = new LinkedList();
+
+	// list of all interfaces
+	static ArrayList interfaceList = new ArrayList();
 	
 	static int nrObjMethods;
 	static int bootAddress;
 	static int jvmAddress;
 	static int jvmHelpAddress;
 	static int mainAddress;
-	
+	static int interfaceCnt;
+
 	// 'global' mapping of class names to ClassInfo 
 	static HashMap mapClassNames = new HashMap();
 
@@ -125,6 +129,7 @@ public class ClassInfo implements Serializable{
 	
 	public JavaClass clazz;
 	public ClassInfo superClass;
+	public int interfaceID;
 	
 	private Set subClasses = new HashSet();
 
@@ -282,22 +287,24 @@ public class ClassInfo implements Serializable{
 		addr += ClassStructConstants.CLS_HEAD;
 		// start of the method table, objects contain a pointer
 		// to the start of this table (at ref-1)
-		methodsAddress = addr;
-		for (i=0; i<clvt.len; ++i) {
-			MethodInfo m = clvt.mi[i];
-			m.vtindex = i;
-			m.structAddress = addr;
-			if (clazz.getClassName().equals(JOPizer.startupClass)) {
-				if (m.methodId.equals(JOPizer.bootMethod)) {
-					bootAddress = addr;
+		if (!clazz.isInterface()) {
+			methodsAddress = addr;
+			for (i=0; i<clvt.len; ++i) {
+				MethodInfo m = clvt.mi[i];
+				m.vtindex = i;
+				m.structAddress = addr;
+				if (clazz.getClassName().equals(JOPizer.startupClass)) {
+					if (m.methodId.equals(JOPizer.bootMethod)) {
+						bootAddress = addr;
+					}
 				}
-			}
-			if (clazz.getClassName().equals(JOPizer.mainClass)) {
-				if (m.methodId.equals(JOPizer.mainMethod)) {
-					mainAddress = addr;
+				if (clazz.getClassName().equals(JOPizer.mainClass)) {
+					if (m.methodId.equals(JOPizer.mainMethod)) {
+						mainAddress = addr;
+					}
 				}
+				addr += ClassStructConstants.METH_STR;
 			}
-			addr += ClassStructConstants.METH_STR;
 		}
 		// back reference from cp-1 to class struct
 		addr += 1;
@@ -319,9 +326,24 @@ public class ClassInfo implements Serializable{
 				needsInterfaceTable = true;
 			}
 		}
+
+		if (superClass != null) {
+			String [] interfaceNames = clazz.getInterfaceNames();
+			for (i = 0; i < interfaceNames.length; i++) {
+				if (!superClass.implementsInterface(interfaceNames[i])) {
+					needsInterfaceTable = true;
+				}
+			}
+		} else {
+			needsInterfaceTable = clazz.getInterfaceNames().length > 0;
+		}
+
 		if (needsInterfaceTable) {
+			addr += (interfaceCnt+31)/32;
 			iftableAddress = addr;
-			addr += listIT.size();
+			if (!clazz.isInterface()) {
+				addr += listIT.size();
+			}
 		}
 
 		// add method count of class Object !
@@ -633,7 +655,11 @@ public class ClassInfo implements Serializable{
 			supname = superClass.clazz.getClassName();
 			superAddr = ((ClassInfo) mapClassNames.get(supname)).classRefAddress;
 		}
-		out.println("\t\t"+superAddr+",\t//\tpointer to super class - "+supname);
+		if (!clazz.isInterface()) {
+			out.println("\t\t"+superAddr+",\t//\tpointer to super class - "+supname);
+		} else {
+			out.println("\t\t"+(-interfaceID)+",\t//\tinterface ID");
+		}
 
 		boolean useSuperInterfaceTable = false;
 		if ((iftableAddress == 0) && (superClass != null)) {
@@ -642,15 +668,21 @@ public class ClassInfo implements Serializable{
 		}			
 		out.println("\t\t"+iftableAddress+",\t//\tpointer to interface table");
 		
-		out.println("//");
-		out.println("//\t"+methodsAddress+": "+clazz.getClassName()+
-				" method table");
-		out.println("//");
+		if (!clazz.isInterface()) {
+			out.println("//");
+			out.println("//\t"+methodsAddress+": "+clazz.getClassName()+
+						" method table");
+			out.println("//");
 
-		int addr = methodsAddress;
-		for(i=0; i < clvt.len; i++) {
-			clvt.mi[i].dumpMethodStruct(out, addr);
-			addr += ClassStructConstants.METH_STR;
+			int addr = methodsAddress;
+			for(i=0; i < clvt.len; i++) {
+				clvt.mi[i].dumpMethodStruct(out, addr);
+				addr += ClassStructConstants.METH_STR;
+			}
+		} else {
+			out.println("//");
+			out.println("//\tno method table for interfaces");
+			out.println("//");
 		}
 		
 		out.println();
@@ -671,26 +703,49 @@ public class ClassInfo implements Serializable{
 		}
 		
 		if (iftableAddress!=0 && !useSuperInterfaceTable) {
+
+			out.println("//");
+			out.println("//\t"+(iftableAddress-(interfaceCnt+31)/32)+": "+clazz.getClassName()+
+						" implements table");
+			out.println("//");
+			for (i = (interfaceCnt+31)/32 - 1; i >= 0; i--) {
+				String comment = "";
+				int word = 0;
+				int j;
+				for (j = 31; j >= 0; j--) {
+					word <<= 1;
+					if ((i*32+j) < interfaceCnt) {
+						if (implementsInterface((String)interfaceList.get(i*32+j))) {
+							word |= 1;
+							comment += (String)interfaceList.get(i*32+j)+", ";
+						};						
+					}						
+				}
+				out.println("\t\t"+word+",\t//\t"+comment);
+			}
+
 			out.println("//");
 			out.println("//\t"+iftableAddress+": "+clazz.getClassName()+
-					" interface table");
+						" interface table");
 			out.println("//");
-			out.println("//\tTODO: is it enough to use methodId as key???");
-			out.println("//");
-			for (i=0; i<listIT.size(); ++i) {
-				IT it = (IT) listIT.get(i);
-				int j;
-				for (j = 0; j < clvt.len; j++) { 
-					if (clvt.key[j].equals(it.key)) {
-						break;
+			if (!clazz.isInterface()) {
+				out.println("//\tTODO: is it enough to use methodId as key???");
+				out.println("//");
+				for (i=0; i<listIT.size(); ++i) {
+					IT it = (IT) listIT.get(i);
+					int j;
+					for (j = 0; j < clvt.len; j++) { 
+						if (clvt.key[j].equals(it.key)) {
+							break;
+						}
 					}
+					if (j!=clvt.len) {
+						out.print("\t\t"+(methodsAddress+j*ClassStructConstants.METH_STR)+",");
+					} else {
+						out.print("\t\t"+0+",\t");
+					}
+					out.println("\t//\t"+it.meth.methodId);
 				}
-				if (j!=clvt.len) {
-					out.print("\t\t"+(methodsAddress+j*ClassStructConstants.METH_STR)+",");
-				} else {
-					out.print("\t\t"+0+",\t");
-				}
-				out.println("\t//\t"+it.meth.methodId);
 			}
 		}
 
