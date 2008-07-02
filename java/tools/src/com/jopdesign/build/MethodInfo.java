@@ -197,7 +197,8 @@ public class MethodInfo implements Serializable{
  		out.println("\t"+word+",\t//\tsynchronized?, exception table length");
 
 		for (i = 0; i < exclen; i++) {
-			int pos = cli.cpoolUsed.indexOf(exctab[i].getCatchType())+1;
+			Integer idx = new Integer(exctab[i].getCatchType());
+			int pos = cli.cpoolUsed.indexOf(idx)+1;
 			
 			word = exctab[i].getStartPC();
 			post = "// start: "+exctab[i].getStartPC();

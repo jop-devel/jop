@@ -447,6 +447,17 @@ public class ClassInfo implements Serializable{
 						cpoolArry[pos] = Float.floatToRawIntBits(fval);
 						cpoolComments[pos] = "Float: "+fval;
 						break;
+					case Constants.CONSTANT_Double:
+						double dval = ((ConstantDouble) co).getBytes();
+						long d_lval = Double.doubleToRawLongBits(dval);
+						// store LOW, HIGH words in this order
+						int d_loW = (new Long(0xFFFFFFFF & d_lval)).intValue();
+						int d_hiW = (new Long(d_lval >>> 32)).intValue();
+						cpoolArry[pos] = d_hiW;
+						cpoolArry[pos+1] = d_loW;
+						cpoolComments[pos] = "Double: "+dval;
+						cpoolComments[pos+1] = "";
+						break;
 					case Constants.CONSTANT_String:
 						String str = ((ConstantString) co).getBytes(cp);
 						StringInfo si = StringInfo.getStringInfo(str);
