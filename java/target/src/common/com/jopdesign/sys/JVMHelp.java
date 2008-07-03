@@ -73,7 +73,7 @@ public class JVMHelp {
 		throw new NullPointerException();
 	}
 
-	// used for array access of longs
+	// this is used for arrays of longs
 	public static void arrayBound() {
 
 		throw new ArrayIndexOutOfBoundsException();
@@ -90,7 +90,7 @@ public class JVMHelp {
 			Native.setSP(Const.STACK_OFF);
 		}
 		// we have more stack available now for the stack overflow
-		handleExcpetion();
+		handleException();
 	}
 	
 	static void noim() {
@@ -130,24 +130,19 @@ synchronized (o) {
 }
 	}
 
-	static void handleExcpetion() {
+	static void handleException() {
 		
 		int i;
 		i = Native.rdMem(Const.IO_EXCPT);
-		wr("\nException: ");
 		if (i==Const.EXC_SPOV) {
-			wr("Stack overflow\n");
+			throw new StackOverflowError();
 		} else if (i==Const.EXC_NP) {
-			wr("Null pointer exception\n");
+			throw new NullPointerException();
 		} else if (i==Const.EXC_AB) {
-			wr("Array out of bounds exception\n");
+			throw new ArrayIndexOutOfBoundsException();
 		} else if (i==Const.EXC_DIVZ) {
-			wr("ArithmeticException\n");
+			throw new ArithmeticException();
 		}
-
-		int sp = saved_sp;
-
-		trace(sp);
 
 		for (;;);
 	}
