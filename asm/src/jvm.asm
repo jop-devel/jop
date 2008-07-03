@@ -127,6 +127,7 @@
 //	2008-06-11	Remove offtbl adjustment nops
 //	2008-06-24	moncnt starts with 0, new CMP scheduler
 //	2008-06-25	WP: bug fix in cache controller
+//  2008-07-03	WP: Fixed null pointer handling of invokexxx instructions
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -136,7 +137,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20080625
+version		= 20080703
 
 //
 //	start of stack area in the on-chip RAM
@@ -1424,7 +1425,8 @@ saload:
 
 
 monitorenter:
-			pop					// we don't use the objref
+ 			pop					// drop reference
+//			bz null_pointer		// null pointer check
 			ldi	io_int_ena
 			stmwa				// write ext. mem address
 			ldi	0
@@ -1445,7 +1447,8 @@ monitorenter:
 			nop nxt
 
 monitorexit:
-			pop					// we don't use the objref
+			pop					// drop reference
+//			bz null_pointer		// null pointer check
 			ldm	moncnt
 			ldi	1
 			sub
@@ -1472,13 +1475,10 @@ monitorexit:
 			wait
 mon_no_ena:	nop		nxt
 
-
 //
 //	invoke and return functions
 //
 #include "jvm_call.inc"
-
-
 
 //
 //	null pointer
@@ -1521,7 +1521,9 @@ array_bound:
 			nop
 			nop
 
+//		
 // long bytecodes
+//
 #include "jvm_long.inc"
 
 //

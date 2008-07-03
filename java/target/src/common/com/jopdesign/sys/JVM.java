@@ -217,6 +217,12 @@ class JVM {
 			Native.wrMem(Const.EXC_DIVZ, Const.IO_EXCPT);
 			return 0;
 		}
+
+		if(b==0x80000000) {
+			if(a==0x80000000) return 1;
+			else return 0;
+		}
+
 		boolean neg = false;
 		if (a<0) {
 			neg = true;
@@ -250,14 +256,16 @@ class JVM {
 
 	private static long f_ldiv(long a, long b) {
 		
-	//	System.out.println("a="+((int)(a>>32))+" "+((int)a));
-	//	System.out.println("b="+((int)(b>>32))+" "+((int)b));
+		if (b==0) {
+			// division by zero exception
+			Native.wrMem(Const.EXC_DIVZ, Const.IO_EXCPT);
+			return 0;
+		}
 
-		if(b==0x8000000000000000L)
-			{
+		if(b==0x8000000000000000L) {
 			if(a==0x8000000000000000L) return 1;
 			else return 0;
-			}
+		}
 		
 		boolean neg = false;
 		if (a<0) {
@@ -308,6 +316,12 @@ class JVM {
 			Native.wrMem(Const.EXC_DIVZ, Const.IO_EXCPT);
 			return 0;
 		}
+
+		if(b==0x80000000) {
+			if(a==0x80000000) return 0;
+			else return a;
+		}
+
 		boolean neg = false;
 		if (a<0) {
 			neg = true;
@@ -339,10 +353,15 @@ class JVM {
 
 	private static long f_lrem(long a, long b) {
 
-		if(b==0x8000000000000000L)
-		{
-			if(a!=0x8000000000000000L) return a;
-			else return 0;
+		if (b==0) {
+			// division by zero exception
+			Native.wrMem(Const.EXC_DIVZ, Const.IO_EXCPT);
+			return 0;
+		}
+
+		if(b==0x8000000000000000L) {
+			if(a==0x8000000000000000L) return 0;
+			else return a;
 		}
 
 		boolean neg = false;
@@ -409,7 +428,7 @@ class JVM {
 		cnt &= 0x3F;
 		if (cnt==0) return Native.makeLong(ah, al);	
 		if (cnt>31) {
-			al = ah >>> (cnt-32);
+			al = ah >> (cnt-32);
 			if(ah<0)
 			  ah = -1;
 			else

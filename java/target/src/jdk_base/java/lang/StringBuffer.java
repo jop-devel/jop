@@ -112,13 +112,14 @@ public final class StringBuffer {
   {
 
 	int i;
+	int sign = 1;
 	// When the value is MIN_VALUE, it overflows when made positive
  	if (val<0) {
 		this.append('-');
-		val = -val;
+		sign = -1;
 	}
 	for (i=0; i<MAX_TMP-1; ++i) {
-		tmp[i] = (char) ((val%10)+'0');
+		tmp[i] = (char)(((val % 10) * sign)+'0');
 		val /= 10;
 		if (val==0) break;
 	}

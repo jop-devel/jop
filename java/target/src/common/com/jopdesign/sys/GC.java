@@ -614,6 +614,10 @@ public class GC {
 	
 	static int newArray(int size, int type) {
 		
+		if (size < 0) {
+			throw new NegativeArraySizeException();
+		}
+
 		int arrayLength = size;
 		
 		// long or double array

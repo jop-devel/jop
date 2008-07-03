@@ -70,51 +70,13 @@ public class JVMHelp {
 
 	public static void nullPoint() {
 
-Object o = new Object();
-synchronized (o) {
-		int i;
-		wr("np trace not correct ");
-
-		int sp = Native.getSP();			// sp of ();
-		int pc = Native.rdIntMem(sp-3);		// pc is not exact (depends on instruction)
-		i = Native.rdIntMem(sp);			// mp
-wrSmall(i);
-wr(' ');
-		int start = Native.rdMem(i)>>>10;	// address of method
-wrSmall(start);
-wr(' ');
-wrByte(pc);
-
-		trace(sp);
-
-		for (;;);
-}
+		throw new NullPointerException();
 	}
 
-	// TODO: is this used anywhere?
+	// used for array access of longs
 	public static void arrayBound() {
 
-Object o = new Object();
-synchronized (o) {
-		int i;
-		wr('a');
-		wr('b');
-		wr(' ');
-
-		int sp = Native.getSP();			// sp of ();
-		int pc = Native.rdIntMem(sp-3);		// pc is not exact (depends on instruction)
-		i = Native.rdIntMem(sp);			// mp
-wrSmall(i);
-wr(' ');
-		int start = Native.rdMem(i)>>>10;	// address of method
-wrSmall(start);
-wr(' ');
-wrByte(pc);
-
-		trace(sp);
-
-		for (;;);
-}
+		throw new ArrayIndexOutOfBoundsException();
 	}
 	
 	static int saved_sp;

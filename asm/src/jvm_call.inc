@@ -42,7 +42,7 @@ args		?
 varcnt		?
 
 
-invokespecial:			// is it really equivilant ????? (not really)
+invokespecial:			// is it really equivalent ????? (not really)
 						// there is an object ref on stack (but arg counts for it)
 						// is called for privat methods AND <init>!!!
 invokestatic:
@@ -91,24 +91,22 @@ invokeinterface:
 			ushr
 			stm	b				// offset in method table
 
-			ldsp		// one increment but still one to low ('real' sp is sp+2 because of registers)
-			ldi	1		// 'real' sp			da sp auf rd adr zeigt
+			ldsp				// one increment but still one to low ('real' sp is sp+2 because of registers)
+			ldi	1				// 'real' sp
 			add
 			ldm	a
 			sub
 
-			ldvp
-			stm	old_vp
-			stvp			// address in vp
-			nop				// ???
-			ld0				// read objectref
+			star				// address of objectref
+			nop
+			ldmi				// read objectref
 			// objectref is now on TOS
 
 			dup					// null pointer check
-			nop					// could be interleaved with
-			bz	null_pointer	// following code
 			nop
-			nop
+			bz	null_pointer
+			ldvp				// save vp in branch slot
+			stm	old_vp
 
 			ldi	1				// at address ref+1 (in the handle) is the pointer to method table
 			add
@@ -137,7 +135,7 @@ invokeinterface:
 			nop
 			nop
 
-invokesuper:						// this was invokespecial, replaced in JOPizer when calling super methods
+invokesuper:					// this was invokespecial, replaced in JOPizer when calling super methods
 			ldm	cp opd
 			nop	opd
 			ld_opd_16u
@@ -151,31 +149,29 @@ invokesuper:						// this was invokespecial, replaced in JOPizer when calling su
 			dup
 			ldi	255
 			and
-			stm	a			// arg count (without objectref)
+			stm	a				// arg count (without objectref)
 			ldi	8
 			ushr
-			stm	b			// offset in method table
+			stm	b				// offset in method table
 
 			ldsp				// one increment but still one to low ('real' sp is sp+2 because of registers)
-			ldi	1			// 'real' sp			da sp auf rd adr zeigt
+			ldi	1				// 'real' sp
 			add
 			ldm	a
 			sub
 
-			ldvp
-			stm	old_vp
-			stvp				// address in vp
-			nop				// ???
-			ld0				// read objectref
+			star				// address of objectref
+			nop
+			ldmi				// read objectref
 			// objectref is now on TOS
 
- 			dup				// null pointer check
- 			nop				// could be interleaved with
- 			bz	null_pointer		// following code
- 			nop
- 			nop
+			dup					// null pointer check
+			nop
+			bz	null_pointer
+			ldvp				// save vp in branch slot
+			stm	old_vp
 
-			ldi	1			// at address ref+1 (in the handle) is the pointer to method table
+			ldi	1				// at address ref+1 (in the handle) is the pointer to method table
 			add
 
 			stmra				// read pointer to method table of this
@@ -183,18 +179,18 @@ invokesuper:						// this was invokespecial, replaced in JOPizer when calling su
 			wait
 			ldmrd		 		// read ext. mem
 
-			ldi	-2			// superclass pointer is at vt-2
-	                add
+			ldi	-2				// superclass pointer is at vt-2
+			add
 
 			stmra				// read pointer to superclass
 			wait
 			wait
 			ldmrd		 		// read ext. mem
 
-			ldi	5			// "super" method table is at superclass+5
-	                add
+			ldi	5				// "super" method table is at superclass+5
+			add
 
-	                ldi	1
+			ldi	1
 //			nop		// mp is != 0
 			bnz	invoke_addoffset
 			nop
@@ -222,24 +218,22 @@ invokevirtual:
 			ushr
 			stm	b				// offset in method table
 
-			ldsp		// one increment but still one to low ('real' sp is sp+2 because of registers)
-			ldi	1		// 'real' sp			da sp auf rd adr zeigt
+			ldsp				// one increment but still one to low ('real' sp is sp+2 because of registers)
+			ldi	1				// 'real' sp
 			add
 			ldm	a
 			sub
 
-			ldvp
-			stm	old_vp
-			stvp			// address in vp
-			nop				// ???
-			ld0				// read objectref
+			star				// address of objectref
+			nop
+			ldmi				// read objectref
 			// objectref is now on TOS
 
 			dup					// null pointer check
-			nop					// could be interleaved with
-			bz	null_pointer	// following code
 			nop
-			nop
+			bz	null_pointer
+			ldvp				// save vp in branch slot
+			stm	old_vp
 
 			ldi	1				// at address ref+1 (in the handle) is the pointer to method table
 			add
