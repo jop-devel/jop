@@ -276,7 +276,8 @@ System.out.println("Logic.initVals()");
 		Display.setDgpsOk(Gps.fix==2);
 		
 		// reset Hilfsbetrieb when connection is ok
-		if (Status.connOk) {
+		// and ignore flag is not set
+		if (Status.connOk && !State.ignore) {
 			// TODO some synchronization?
 			hilfsbtr = false;
 		}

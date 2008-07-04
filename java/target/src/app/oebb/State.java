@@ -148,6 +148,10 @@ public class State extends ejip.UdpHandler implements Runnable {
 	boolean nothaltQuitPending;
 
 	// save some fields and use static
+	/**
+	 * Ignore flag is set
+	 */
+	static boolean ignore;
 	// reset not yet used - we have a reset function in Logic.
 //	/**
 //	 * RESET timer
@@ -280,9 +284,6 @@ public class State extends ejip.UdpHandler implements Runnable {
 			p.setStatus(Packet.FREE);
 			return;
 		}
-		// reset ZLB timeout
-		zlbTimer = Timer.getTimeoutSec(ZLB_TIMEOUT);
-		Status.connOk = true;
 
 		
 		int[] buf = p.buf;
@@ -301,15 +302,22 @@ public class State extends ejip.UdpHandler implements Runnable {
 		}
 		
 		int cmd = buf[Udp.DATA+8];
-		
+
+		// first set ignore flag, then connection state
+		ignore = (cmd & CFLAG_IGNORE)!=0;
+		// reset ZLB timeout
+		zlbTimer = Timer.getTimeoutSec(ZLB_TIMEOUT);
+		Status.connOk = true;
+
 		// ack just this flag, but ignore the rest
-		if ((cmd & CFLAG_IGNORE)!=0) {
+		if (ignore) {
 			cmdAck |= CFLAG_IGNORE;
 			Dbg.wr("ZLB ignored");
 			Dbg.lf();
 			p.setStatus(Packet.FREE);
 			return;
 		}
+
 
 		if (cmd!=cmdAck) {
 			// TODO check a cmd change
@@ -407,7 +415,8 @@ public class State extends ejip.UdpHandler implements Runnable {
 			if (val!=startNF) ferlChanged = true;
 			startNF = val;
 		}
-		if (start!=0 && ferlChanged && (Logic.state==Logic.ANM_OK || Logic.state==Logic.ZIEL)) {
+		if (start!=0 && ferlChanged && (Logic.state==Logic.ANM_OK || Logic.state==Logic.ZIEL
+				|| Logic.state==Logic.NOTHALT_OK)) {
 			// this is now a FERL event
 			synchronized (Status.dirMutex) {
 				// let Logik.check() update the direction
