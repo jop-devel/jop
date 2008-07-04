@@ -1001,7 +1001,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			break;
 		// INVOKEVIRTUAL = 182
 		case org.apache.bcel.Constants.INVOKEVIRTUAL:
-			wcet = 100 + 2 * r;
+			wcet = 98 + 2 * r;
 			if (r > 3) {
 				wcet += r - 3;
 			}
@@ -1042,7 +1042,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			break;
 		// INVOKEINTERFACE = 185
 		case org.apache.bcel.Constants.INVOKEINTERFACE:
-			wcet = 114 + 4 * r;
+			wcet = 112 + 4 * r;
 			if (r > 3) {
 				wcet += r - 3;
 			}
