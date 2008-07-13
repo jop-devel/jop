@@ -52,6 +52,9 @@ public class Flash {
 	static final int PT_FLG_NO_DIR = 8;
 	static final int PT_FLG_NO_MOVE = 16;
 	static final int PT_FLG_ANM = 32;
+	static final int PT_HB_RIGHT = 64;
+	static final int PT_HB_LEFT = 128;
+	
 	
 //	static final int NO_COMM_ALARM_START = -1;
 //	static final int NO_COMM_ALARM_END = -2;
@@ -67,6 +70,8 @@ public class Flash {
 		boolean verlassen;
 		boolean checkMove;
 		boolean checkDirection;
+		boolean hbRight;
+		boolean hbLeft;
 		StringBuffer stationLine1;
 		StringBuffer stationLine2;
 		StringBuffer verschubVon;
@@ -375,6 +380,8 @@ possible stack overfolw!!!
 					p.verlassen = (p.flags & PT_FLG_VERL)!=0;
 					p.checkDirection = (p.flags & PT_FLG_NO_DIR)==0;
 					p.checkMove = (p.flags & PT_FLG_NO_MOVE)==0;
+					p.hbRight = (p.flags & PT_HB_RIGHT)!=0;
+					p.hbLeft = (p.flags & PT_HB_LEFT)!=0;
 					last = p;
 //					p.fs1_lat = 0;
 //					p.fs1_lon = 0;

@@ -1284,10 +1284,10 @@ Dbg.lf();
 	private void reset() {
 		// wait some time to send outstanding messages
 		// and reply
-//		int tim = Timer.getTimeoutSec(4);
-//		while (!Timer.timeout(tim)) {
-//			loop();
-//		}
+		int tim = Timer.getTimeoutSec(10);
+		while (!Timer.timeout(tim)) {
+			loop();
+		}
 		// wait for reset
 		Main.reset = true;
 		for (;;) {
@@ -1804,21 +1804,6 @@ System.out.println("np Problem");
 			return;
 		}
 
-//		for (;;) {
-//			i = Flash.getNext(melnr);
-//			i = Flash.getNext(i);
-//			if (i!=-1) {
-//				melnr = i;
-//				if (melnr>=Main.state.getPos()) {
-//					p = Flash.getPoint(melnr);
-//					break;
-//				}
-//			} else {
-//				i = 0;
-//				break;
-//			}
-//		}
-
 		while (loop()) {
 
 			// check for going back to 'Bereit'
@@ -1840,14 +1825,20 @@ System.out.println("np Problem");
 			}
 
 			boolean found = false;
+			// select the correct destination when it depends on
+			// the direction
+			boolean right = melnr > Main.state.getPos();
 
 			if (val==Keyboard.UP) {
+				if (melnr==Main.state.getPos()) {
+					right = true;
+				}
 				while (!found) {
 					i = Flash.getNext(melnr);
 					if (i!=-1) {
 						melnr = i;
 						p = Flash.getPoint(melnr);
-						if (p.station || p.verlassen) {
+						if (p.station || (right && p.hbRight) || (!right && p.hbLeft)) {
 							found = true;
 						}
 					} else {
@@ -1856,12 +1847,15 @@ System.out.println("np Problem");
 				}
 			}
 			if (val==Keyboard.DOWN) {
+				if (melnr==Main.state.getPos()) {
+					right = false;
+				}
 				while (!found) {
 					i = Flash.getPrev(melnr);
 					if (i!=-1) {
 						melnr = i;
 						p = Flash.getPoint(melnr);
-						if (p.station || p.verlassen) {
+						if (p.station || (right && p.hbRight) || (!right && p.hbLeft)) {
 							found = true;
 						}
 					} else {

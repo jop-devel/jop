@@ -310,8 +310,12 @@ public class State extends ejip.UdpHandler implements Runnable {
 		Status.connOk = true;
 
 		// ack just this flag, but ignore the rest
+		// work-around: also Ack the download flag
 		if (ignore) {
 			cmdAck |= CFLAG_IGNORE;
+			// set the download flag
+			cmdAck &= ~CFLAG_DOWNLOAD;
+			cmdAck |= cmd & CFLAG_DOWNLOAD;
 			Dbg.wr("ZLB ignored");
 			Dbg.lf();
 			p.setStatus(Packet.FREE);
