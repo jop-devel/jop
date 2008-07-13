@@ -389,8 +389,13 @@ synchronized (non-static) methods.
 \paragraph{20080626} MS: Back to original scheduler, OEBB BG version
 2.16
 
-\paragraph{20080703}	WP: Fixed null pointer handling of invokexxx
+\paragraph{20080703} WP: Fixed null pointer handling of invokexxx
 instructions (\code{jvm\_call.inc}).
+
+\paragraph{20080713} MS: Native versions of getfield, putfield,
+arraylength, iaload, and iastore. TODO: use it in putfield\_ref, use
+hardware for long versions of get/putfield and array access to use
+the GC copy redirection!
 
 \subsection{Documentation}
 

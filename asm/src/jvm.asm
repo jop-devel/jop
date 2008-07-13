@@ -128,6 +128,7 @@
 //	2008-06-24	moncnt starts with 0, new CMP scheduler
 //	2008-06-25	WP: bug fix in cache controller
 //  2008-07-03	WP: Fixed null pointer handling of invokexxx instructions
+//	2008-07-13	MS: mapping of Native.put/getfield to jopsys version
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -137,7 +138,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20080703
+version		= 20080713
 
 //
 //	start of stack area in the on-chip RAM
@@ -1125,6 +1126,7 @@ getfield:
 			nop	opd			// push index
 			nop	opd
 			ld_opd_16u
+jopsys_getfield:				// version from Native
 			stgf				// let the HW do the work
 			pop
 			wait
@@ -1183,6 +1185,7 @@ putfield:
 			nop	opd
 			ld_opd_16u
 			ldm	a
+jopsys_putfield:				// Version from Native
 			stpf				// let the HW do the work
 			pop
 			wait

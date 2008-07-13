@@ -18,27 +18,37 @@ public class JeopardHello {
 		
 		JeopardHello jp = new JeopardHello();
 		jp.field = 123;
-		
+		ia[3] = 333;
+
+		// bytecode getfield from Java:
 		int ref = Native.toInt(jp);
-		
-		/************/
-		
-		Object o = Native.toObject(ref);
-		
-		// TODO: Native.getField(ref, off);
-		
-		// TODO: null pointer check
-		/* handle indirection */
-		int addr = Native.rdMem(ref);
-		int val = Native.rdMem(addr+FIELD_OFF);
+		int val = Native.getField(ref, FIELD_OFF);
 		System.out.println(val);
 		
+		// bytecode putfield from Java:
+		Native.putField(ref, FIELD_OFF, 456);
+		System.out.println(jp.field);
 		
+
+		// how to cast a integer reference (address) to an Object
+		Object o = Native.toObject(ref);
+
+		// get the reference of the array as integer (cast)
 		ref = Native.toInt(ia);
-		int length = Native.rdMem(ref+GC.OFF_MTAB_ALEN);
-		addr = Native.rdMem(ref);
-		System.out.println(addr);
+		
+		// bytecode arraylength in Java
+		int length = Native.arrayLength(ref);
 		System.out.println(length);
+
+		// bytecode iaload from Java:
+		val = Native.arrayLoad(ref, 3);
+		System.out.println(val);
+		
+		// bytecode iastore from Java:
+		Native.arrayStore(ref, 3, 333333);
+		System.out.println(ia[3]);
+
+		// Access to I/O devices via hardware objects
 		
 		// let's get the control channel from the factory
 		SerialPort cc = JeopardIOFactory.getJeopardIOFactory().getControlPort();

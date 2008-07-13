@@ -358,8 +358,8 @@ public class JopInstr{
 		new JopInstr("getfield_long", 3, IMP_ASM, 30),			// 0xE6
 		new JopInstr("putfield_long", 3, IMP_ASM, 30),			// 0xE7
 		new JopInstr("jopsys_memcpy", 1, IMP_ASM, 100),			// 0xE8
-		new JopInstr("resE9", 1, IMP_NO, 1),			// 0xE9
-		new JopInstr("resEA", 1, IMP_NO, 1),			// 0xEA
+		new JopInstr("jopsys_getfield", 1, IMP_ASM, 1),			// 0xE9
+		new JopInstr("jopsys_putfield", 1, IMP_ASM, 1),			// 0xEA
 		new JopInstr("resEB", 1, IMP_NO, 1),			// 0xEB
 		new JopInstr("invokesuper", 3, IMP_ASM, 30),			// 0xEC
 		new JopInstr("resED", 1, IMP_NO, 1),			// 0xED
@@ -414,7 +414,12 @@ public class JopInstr{
 			"toDouble", "jopsys_nop",
 			"monitorExit", "monitorexit",
 //			"condMove", "jopsys_cond_move",
-			"memCopy", "jopsys_memcpy"
+			"memCopy", "jopsys_memcpy",
+			"putField", "jopsys_putfield",
+			"getField", "jopsys_getfield",
+			"arrayLoad", "iaload",
+			"arrayStore", "iastore",
+			"arrayLength", "arraylength"
 	};
 
 	

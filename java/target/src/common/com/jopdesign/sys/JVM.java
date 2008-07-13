@@ -840,6 +840,7 @@ class JVM {
 	private static int f_multianewarray() {
 
 		JVMHelp.wr("multianewarray - GC issue?");
+		JVMHelp.wr("\r\n");
 		//
 		// be careful! We have to manipulate the stack frame.
 		// If the layout changes we have to change this method.
@@ -956,6 +957,10 @@ class JVM {
 			}
 			*/
 			
+			// TODO: use Native.pufField()
+			//	but wait till OEBB project is stabilized as it breaks
+			//	with the older JOP version
+			
 			// handle indirection
 			ref = Native.rdMem(ref);
 			if (GC.USE_SCOPES) {
@@ -976,8 +981,8 @@ class JVM {
 	private static void f_resE6() { JVMHelp.noim();}
 	private static void f_resE7() { JVMHelp.noim();}
 	private static void f_jopsys_memcpy() { JVMHelp.noim();}
-	private static void f_resE9() { JVMHelp.noim();}
-	private static void f_resEA() { JVMHelp.noim();}
+	private static void f_jopsys_getfield() { JVMHelp.noim();}
+	private static void f_jopsys_putfield() { JVMHelp.noim();}
 	private static void f_resEB() { JVMHelp.noim();}
 	private static void f_invokesuper() { JVMHelp.noim(); /* jvm.asm */ }
 	private static void f_resED() { JVMHelp.noim();}

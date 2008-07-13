@@ -59,5 +59,45 @@ public class Native {
 	 * @param pos position to copy
 	 */
 	public static native void memCopy(int dest, int src, int pos);
+	
+	/**
+	 * Maps to bytecode getfield, but with index on TOS.
+	 * @param ref
+	 * @param index
+	 * @return
+	 */
+	public static native int getField(int ref, int index);
+	
+	/**
+	 * Maps to bytecode putfield, but with index on NOS.
+	 * @param ref
+	 * @param index
+	 * @param value
+	 */
+	public static native void putField(int ref, int index, int value);
+	
+	/**
+	 * Direct map to iaload.
+	 * @param ref
+	 * @param index
+	 * @return
+	 */
+	public static native int arrayLoad(int ref, int index);
+	
+	/**
+	 * Direct map to iastore.
+	 * @param ref
+	 * @param index
+	 * @param value
+	 */
+	public static native void arrayStore(int ref, int index, int value);
+	
+	/**
+	 * Direct map to bytecode arraylength.
+	 * @param ref
+	 * @return
+	 */
+	public static native int arrayLength(int ref);
+	
 
 }

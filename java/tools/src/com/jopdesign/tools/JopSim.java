@@ -493,6 +493,25 @@ System.out.println(mp+" "+pc);
 		ref = readMem(ref);
 		stack[sp] = readMem(ref+off);
 	}
+	
+	void jopsys_getfield() {
+
+		int off = stack[sp--];
+		int ref = stack[sp];
+		// handle needs indirection
+		ref = readMem(ref);
+		stack[sp] = readMem(ref+off);
+	}
+
+	void jopsys_putfield() {
+
+		int val = stack[sp--];
+		int off = stack[sp--];
+		int ref = stack[sp--];
+		// handle needs indirection
+		ref = readMem(ref);
+		writeMem(ref+off, val);
+	}
 
 	void putfield_long() {
 
@@ -1463,11 +1482,11 @@ System.out.println("new heap: "+heap);
 						copy_pos = 0;
 					}
 					break;
-				case 233 :		// resE9
-					noim(233);
+				case 233 :		// resE9 - jopsys_getfield
+					jopsys_getfield();
 					break;
-				case 234 :		// resEA
-					noim(234);
+				case 234 :		// resEA - jopsys_putfield
+					jopsys_putfield();
 					break;
 				case 235 :		// resEB
 					noim(235);
