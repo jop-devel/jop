@@ -347,6 +347,10 @@ write wait state in \code{sc\_sram32\_flash.vhd}. \code{cycbg} at
 \paragraph{20080625} WP: Fixed method cache/program counter bug; changes in
 \code{bcfetch.vhd}, \code{core.vhd} and \code{stack.vhd}.
 
+\paragraph{20080721} MS: \code{nwe} in first two cycles, data out
+enable till the last cycle in \code{sc\_sram32\_flash.vhd}. TODO: use
+configurable wait states (again), adapt other two SRAM interfaces.
+
 \subsection{Software}
 
 \paragraph{20070911} Changes in ejip for TCP addition and some

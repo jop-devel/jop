@@ -129,6 +129,7 @@
 //	2008-06-25	WP: bug fix in cache controller
 //  2008-07-03	WP: Fixed null pointer handling of invokexxx instructions
 //	2008-07-13	MS: mapping of Native.put/getfield to jopsys version
+//	2008-08-21	MS: Corrected data out enable in SRAM/Flash interface
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -138,7 +139,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20080713
+version		= 20080821
 
 //
 //	start of stack area in the on-chip RAM

@@ -354,6 +354,8 @@ begin
 				
 			-- the WS state
 			when wr1 =>
+				ram_nwe <= '0';
+				dout_ena <= '1';
 				ram_ncs <= '0';
 				
 			when wr2 => 
@@ -362,6 +364,7 @@ begin
 				ram_ncs <= '0';
 				
 			when wr3 =>
+				dout_ena <= '1';
 				ram_ncs <= '0';
 
 			when fl_rd1 =>
