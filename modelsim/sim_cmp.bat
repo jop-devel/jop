@@ -16,7 +16,7 @@ rem vcom -work gaisler ../ext/gaisler/devices.vhd
 rem vcom -work techmap ../ext/gaisler/gencomp.vhd
 rem vcom -work gaisler ../ext/gaisler/memctrl.vhd
 rem vcom -work gaisler ../ext/gaisler/srctrl.vhd
-vcom %options% %jopdir%/simulation/sim_jop_config_40.vhd
+vcom %options% %jopdir%/simulation/sim_jop_config_100.vhd
 vcom %options% %jopdir%/core/jop_types.vhd
 vcom %options% %jopdir%/simpcon/sc_pack.vhd
 rem vcom %options% %jopdir%/simpcon/sc2ahbsl.vhd
