@@ -345,7 +345,7 @@ end process;
 --
 --	RAM address MUX (combinational)
 --
-process(ain, addr_reg, offset_reg, mem_in)
+process(ain, addr_reg, offset_reg, mem_in, base_reg, pos_reg, translate_bit)
 begin
 	if mem_in.rd='1' then
 		if unsigned(ain(SC_ADDR_SIZE-1 downto 0)) >= base_reg and unsigned(ain(SC_ADDR_SIZE-1 downto 0)) < pos_reg then
