@@ -302,8 +302,12 @@ begin
 
 end process;
 
-process(clk, sel_bmux, ram_dout, ena_a, ena_b) begin
-	if rising_edge(clk) then
+process(clk, reset) begin
+
+	if (reset='1') then
+		a <= (others => '0');
+		b <= (others => '0');
+	elsif rising_edge(clk) then
 
 		if ena_a='1' then
 			a <= amux;
