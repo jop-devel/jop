@@ -20,7 +20,7 @@
 
 
 --
---	scio_min.vhd
+--	scio_jeopard.vhd
 --
 --	io devices for minimal configuration
 --	only counter, wd and serial line, alle io pins are tri statet
@@ -145,7 +145,7 @@ begin
 --	unused and input pins tri state
 --
 	l <= (others => 'Z');
-	r <= (others => 'Z');
+	r(20 downto 14) <= (others => 'Z');
 	t <= (others => 'Z');
 	b <= (others => 'Z');
 
@@ -156,10 +156,6 @@ begin
 	-- What happens when sel_reg > SLAVE_CNT-1??
 	sc_io_in.rd_data <= sc_dout(sel_reg);
 	sc_io_in.rdy_cnt <= sc_rdy_cnt(sel_reg);
-
-	-- default for unused USB device
-	sc_dout(2) <= (others => '0');
-	sc_rdy_cnt(2) <= (others => '0');
 
 	--
 	-- Connect SLAVE_CNT simple test slaves
@@ -242,7 +238,31 @@ begin
 			ncts => '0',
 			nrts => nrts
 	);
-    scc : entity sc_control_channel generic map (
+
+	cmp_usb: entity work.sc_usb generic map (
+			addr_bits => SLAVE_ADDR_BITS,
+			clk_freq => clk_freq
+		)
+		port map(
+			clk => clk,
+			reset => reset,
+
+			address => sc_io_out.address(SLAVE_ADDR_BITS-1 downto 0),
+			wr_data => sc_io_out.wr_data,
+			rd => sc_rd(2),
+			wr => sc_wr(2),
+			rd_data => sc_dout(2),
+			rdy_cnt => sc_rdy_cnt(2),
+
+			data => r(8 downto 1),
+			nrxf => r(9),
+			ntxe => r(10),
+			nrd => r(11),
+			ft_wr => r(12),
+			nsi => r(13)
+	);
+
+    scc : entity work.sc_control_channel generic map (
 			addr_bits => SLAVE_ADDR_BITS)
         port map (
 			clk => clk,
