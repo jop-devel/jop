@@ -120,10 +120,10 @@ begin
 
 -- test numbers
 
-period <= 300;
-cpu_time(0) <= 100;
-cpu_time(1) <= 200;
-cpu_time(2) <= 299;
+period <= 45;
+cpu_time(0) <= 15;
+cpu_time(1) <= 30;
+cpu_time(2) <= 44;
 
 
 -- Generates the input register and saves incoming data for each master
