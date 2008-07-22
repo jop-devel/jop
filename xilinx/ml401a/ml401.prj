@@ -3,7 +3,7 @@ vhdl work  ../../vhdl/core/jop_types.vhd
 vhdl work  ../../vhdl/simpcon/sc_pack.vhd
 vhdl work  ../../vhdl/simpcon/sc_arbiter_pack.vhd
 vhdl work  ../../vhdl/simpcon/sc_arbiter_fair.vhd
-vhdl work  mac_coprocessor.vhd
+vhdl work  ../../vhdl/jeopard/mac_coprocessor.vhd
 vhdl work  ../../vhdl/scio/fifo.vhd
 vhdl work  ../../vhdl/scio/sc_uart.vhd
 vhdl work  ../../vhdl/scio/sc_control_channel.vhd
