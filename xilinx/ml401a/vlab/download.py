@@ -1,21 +1,24 @@
 #!/usr/bin/python
+# 
+# Example for JOP (Java Optimised Processor)
+# This program loads a bit file and then downloads a JOP
+# file using the JOP protocol. It then switches to a terminal
+# mode and echoes everything received from JOP.
+# 
 
 
 MAX_MEM	= 1048576/4
 BLOCK_SIZE = 1024
 EXIT_STRING = "JVM exit!"
-SERVICE_SETTINGS = { 
-        "relay_server" : "cynthia", 
-        "user_name" : "vltest", 
-        "board_name" : "burchtest", 
-        "private_key_file" : "vluser_key",
-    }
+BOARD_NAME = "burchtest"
+VL_KEY = "vluser.key"
 
 
-from vlab import Vlab
-import sys, collections, time
+import vlab, sys, collections
+from twisted.internet import reactor, defer
 
 
+@defer.inlineCallbacks
 def Main(bit_fname, jop_fname):
     # Open files
     fp = file(jop_fname)
@@ -52,19 +55,29 @@ def Main(bit_fname, jop_fname):
     print "%d words of Java bytecode (%d KB)" % (ram[1]-1, (ram[1]-1)/256)
 
     # Program FPGA and send JOP file
-    vl = Vlab()
     print 'Connecting to lab service...'
-    vl.Connect(**SERVICE_SETTINGS)
-    bid = vl.SendBitfile(bits)
+    auth = vlab.LoadAuthorisation(VL_KEY)
+    vlf = vlab.VlabClientFactory(auth)
+    reactor.connectTCP(auth.relay_server_name, 22, vlf)
+    vl = yield vlf.GetChannel()
+
+    uproto = vlab.VlabUARTProtocol()
+
+    print 'Connecting to board'
+    bid = yield vl.Connect(BOARD_NAME)
+
+    print 'Sending bit file (%u bytes)' % len(bits)
+    bid = yield vl.SendBitfile(bits)
     print 'Bitfile sent, bid %u' % bid
-    vl.ProgramFPGA(0, bid)
-    print 'FPGA Programming complete'
-    vl.SetUart(0, 115200)
+    rc = yield vl.ProgramFPGA(0, bid)
+    print 'Programming complete, rc %u' % rc
+    yield vl.SetUART(0, 115200)
+    print 'SetUART rc %u' % rc
+    rc = yield vl.OpenUART(0, uproto)
+    print 'OpenUART rc %u' % rc
 
     # Send the program
-    (rx_fd, tx_fd) = vl.UseUart(0, True)
-    tx_fd.write(byte_buffer)
-    tx_fd.flush()
+    uproto.write(byte_buffer)
 
     print 'JOP Programming complete'
     fifo = collections.deque()
@@ -72,7 +85,7 @@ def Main(bit_fname, jop_fname):
 
     # Terminal mode
     while ( not stop ):
-        byte = rx_fd.read(1)
+        byte = yield uproto.read(1)
         byte = ord(byte)
         if ( not (( byte in (10, 13))
         or ( 32 <= byte < 127 ))):
@@ -91,11 +104,18 @@ def Main(bit_fname, jop_fname):
     print ''
     print ''
 
+@defer.inlineCallbacks
+def Run():
+    try:
+        if ( len(sys.argv) != 3 ):
+            print 'Usage: %s <bit file> <jop file>' % sys.argv[ 0 ]
+        else:
+            yield Main(sys.argv[ 1 ], sys.argv[ 2 ])
+    finally:
+        reactor.stop()
 
 if ( __name__ == "__main__" ):
-    if ( len(sys.argv) != 3 ):
-        print 'Usage: %s <bit file> <jop file>' % sys.argv[ 0 ]
-    else:
-        Main(sys.argv[ 1 ], sys.argv[ 2 ])
+    reactor.addSystemEventTrigger('after', 'startup', Run)
+    reactor.run()
 
 
