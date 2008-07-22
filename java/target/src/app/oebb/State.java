@@ -152,6 +152,11 @@ public class State extends ejip.UdpHandler implements Runnable {
 	 * Ignore flag is set
 	 */
 	static boolean ignore;
+	
+	/**
+	 * Do the reset as we got back a message after ABM
+	 */
+	static boolean forceReset;
 	// reset not yet used - we have a reset function in Logic.
 //	/**
 //	 * RESET timer
@@ -324,8 +329,6 @@ public class State extends ejip.UdpHandler implements Runnable {
 
 
 		if (cmd!=cmdAck) {
-			// TODO check a cmd change
-			
 			// send the ack
 			requestSend();
 		}
@@ -347,6 +350,13 @@ public class State extends ejip.UdpHandler implements Runnable {
 			if ((cmd & CFLAG_ABM)!=0) {
 				Logic.state = Logic.ABGEMELDET;
 			}
+			// Hack for Charlys Abmelden issue:
+			// don't reset the ABM flag when reset is pending
+			if ((cmd & CFLAG_ABM)==0 && Logic.state==Logic.ABGEMELDET) {
+				cmdAck |= CFLAG_ABM;
+				forceReset = true;
+			}
+			
 
 			// Angemeldet
 			if ((cmd & CFLAG_ANMOK)!=0) {

@@ -1287,6 +1287,9 @@ Dbg.lf();
 		int tim = Timer.getTimeoutSec(10);
 		while (!Timer.timeout(tim)) {
 			loop();
+			if (State.forceReset) {
+				break;
+			}
 		}
 		// wait for reset
 		Main.reset = true;

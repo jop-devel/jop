@@ -62,7 +62,7 @@ public class Main {
 
 	// SW version
 	public static final int VER_MAJ = 2;
-	public static final int VER_MIN = 19;
+	public static final int VER_MIN = 20;
 
 	private static final int LOG_PRIO = 1;
 	private static final int LOG_PERIOD = 1000000;
