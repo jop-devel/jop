@@ -24,8 +24,10 @@
 
 package com.jopdesign.sys;
 
-import joprt.RtThread;
+import com.jopdesign.io.IOFactory;
+import com.jopdesign.io.SysDevice;
 
+import joprt.RtThread;
 
 /**
  * @author Martin
@@ -34,6 +36,52 @@ import joprt.RtThread;
  *
  */
 public class RtThreadImpl {
+	
+	/**
+	 * Helper class to start the other CPUs in a CMP system
+	 * @author martin
+	 *
+	 */
+	static class CMPStart implements Runnable {
+
+		volatile boolean started;
+		
+		/* (non-Javadoc)
+		 * @see java.lang.Runnable#run()
+		 */
+		public void run() {
+			
+			// Disable all interrupts globally and local - for sure
+			Native.wr(0, Const.IO_INT_ENA);
+			Native.wr(0, Const.IO_INTMASK);		
+
+			// startThread for all threads that belong to this CPU.
+			// This thread is already in state READY and not started.
+			Scheduler s = Scheduler.sched[sys.cpuId];
+			for (int i=0; i<s.cnt; ++i) {
+				s.ref[i].startThread();
+			}
+			// add scheduler for the core s
+			JVMHelp.addInterruptHandler(sys.cpuId, 0, s);
+
+			started = true;
+
+			// clear all pending interrupts (e.g. timer after reset)
+			Native.wr(1, Const.IO_INTCLEARALL);
+			// schedule timer in 10 ms
+			Native.wr(RtThreadImpl.startTime, Const.IO_TIMER);
+			Native.wr(1, Const.IO_INTCLEARALL);
+
+			// enable all interrupts
+			Native.wr(-1, Const.IO_INTMASK);		
+			Native.wr(1, Const.IO_INT_ENA);
+
+			// nothing to do in the main thread for the CMP cores 1 .. n-1
+			for (;;) {
+				;
+			}
+		}
+	}
 
 	// usual priority levels of java.lang.Thread
 	public final static int MIN_PRIORITY = 1;
@@ -44,50 +92,39 @@ public class RtThreadImpl {
 	protected final static int RT_BASE = 2;
 	protected final static int RT_IDLE = 1;
 
-	protected final static int IDL_TICK = 10000;
 
 	private RtThread rtt;		// reference to RtThread's run method
 	private int priority;
 	private int period;			// period in us
 	private int offset;			// offset in us
+	private boolean isEvent;	// it's a software event
+	
 
+	// only used in startMission
+	final static int CREATED = 0;
+	final static int READY = 1;		// READY means ready to run.
+	final static int WAITING = 2;		// active is the running thread.
+	final static int DEAD = 3;
+	int state;
+
+	int cpuId;			// core that the thread is running on
 	// index in next, ref and event
 	int nr;
-	private int[] stack;
-	private int sp;
-
-	// allocated and set in startMission
-	// ordered by priority
-	private static int next[];			// next time to change to state running
-	private static RtThreadImpl[] ref;		// references to threads
-
-	final static int NO_EVENT = 0;
-	final static int EV_FIRED = 1;
-	final static int EV_WAITING = 2;
-	static int event[];					// state of an event
-	boolean isEvent;
-
-	private static int cnt;
-	private static int active;					// active thread number
+	int[] stack;
+	int sp;
 
 	// linked list of threads in priority order
+	// used only at initialization time to collect the threads
 	private RtThreadImpl lower;
 	private static RtThreadImpl head;
 
-	// only used in startMission
-	protected final static int CREATED = 0;
-	protected final static int READY = 1;		// READY means ready to run.
-	protected final static int WAITING = 2;		// active is the running thread.
-	protected final static int DEAD = 3;
-	private int state;
 
-//	private final static int MAX_STACK = 128;
-
-	private static boolean initDone;
+	static boolean initDone;
 	static boolean mission;
 
 
-	protected static Object monitor;
+	static SysDevice sys = IOFactory.getFactory().getSysDevice();
+
 
 	//	no synchronization necessary:
 	//	doInit() is called on first new RtThread() =>
@@ -100,70 +137,37 @@ public class RtThreadImpl {
 		if (initDone==true) return;
 		initDone = true;
 		mission = false;
+		
+		// create scheduler objects for all cores
+		for (int i=0; i<sys.nrCpu; ++i) {
+			new Scheduler(i);
 
-		monitor = new Object();
-
-		active = 0;			// main thread (or idl thread) is first thread
-		cnt = 1;			// stays 1 till startMission
-
-		next = new int[1];
-		ref = new RtThreadImpl[1];
+		}
 
 		head = null;
-
-		//	thread struct for main
-		ref[0] = new RtThreadImpl(NORM_PRIORITY, 0);
-		ref[0].state = READY;		// main thread is READY
-		next[0] = 0;
-
-		//	create one idle thread with Thread prio 0
-		//	If we have a main thread with 'active' (yielding)
-		//	sleep() this is not necessary.
-		//
-		//	Should be replaced by a Thread scheduler with
-		//	RT_IDLE priority
-/* main is now our idle task
-		new RtThread(0, 0) {
-			public void run() {
-				for (;;) {
-					util.Dbg.wr('i');
-				}
-			}
-		};
-*/
 
 		// We have now more than one thread =>
 		// If we have 'normal' Threads we should start the timer!
 
 	}
 
-	// not necessary
-	// private RtThread() {};
-
-	private RtThreadImpl(int prio, int us) {
+	RtThreadImpl(int prio, int us) {
 	
 		this(null, prio, us, 0);
 	}
 
 	public RtThreadImpl(RtThread rtt, int prio, int us, int off) {
 
-//System.out.print("new Thread w prio ");
-//System.out.println(prio);
-//System.out.println("a");
 		if (!initDone) {
 			init();
 		}
-//System.out.println("b");
 
 		stack = new int[Const.STACK_SIZE-Const.STACK_OFF];
 		sp = Const.STACK_OFF;	// default empty stack for GC before startMission()
-//		System.out.print(MAX_STACK);
-//		System.out.println("c");
+		
 for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
-//	System.out.print(i);
 	stack[i] = 1234567;
 }
-//System.out.println("d");
 
 		this.rtt = rtt;
 		
@@ -171,7 +175,7 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 		offset = off;
 		if (us==0)	{					// this is NOT a RT thread
 			priority = prio;
-		} else {						// RT prio is above Thread prios.
+		} else {						// RT priority is above Thread priorities
 			priority = prio+MAX_PRIORITY+RT_BASE;
 		}
 		state = CREATED;
@@ -195,6 +199,13 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 		}
 	}
 
+	/**
+	 * Set the processor number
+	 * @param id
+	 */
+	public void setProcessor(int id) {
+		cpuId = id;
+	}
 
 	private static void genInt() {
 		
@@ -204,123 +215,14 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 		for (int j=0;j<10;++j) ;
 	}
 
-
-//	time stamps:
-public static int ts0, ts1, ts2, ts3, ts4;
-
-	private static int s1;		// helper var
-
-	private static int tim;		// next timer value
-	// timer offset to ensure that no timer int happens just
-	// after monitorexit in this method and the new thread
-	// has a minimum time to run.
-	private final static int TIM_OFF = 20;
-//	private final static int TIM_OFF = 2; // for 100 MHz version 20 or even lower
-										 // 2 is minimum
-
-	//	this is the one and only function to
-	//	switch threads.
-	//	schedule() is called from JVMHelp.interrupt()
-	//	and should NEVER be called from somewhere
-	//	else.
-	//	Interrupts (also yield/genInt()) should NEVER
-	//	ocour befor startMission is called (ref and active are set)
-	static void schedule() {
-
-		int i, j, k;
-		int diff;
-
-		// we have not called doInit(), which means
-		// we have only one thread => just return
-		if (!initDone) return;
-
-		Native.wr(0, Const.IO_INT_ENA);
-		// synchronized(monitor) {
-			// save stack
-			i = Native.getSP();
-			RtThreadImpl th = ref[active];
-			th.sp = i;
-			Native.int2extMem(Const.STACK_OFF, th.stack, i-Const.STACK_OFF+1);	// cnt is i-Const.STACK_OFF+1
-
-			// SCHEDULE
-			//	cnt should NOT contain idle thread
-			//	change this some time
-			k = IDL_TICK;
-
-			// this is now
-			j = Native.rd(Const.IO_US_CNT);
-
-			for (i=cnt-1; i>0; --i) {
-
-				if (event[i] == EV_FIRED) {
-					break;						// a pending event found
-				} else if (event[i] == NO_EVENT) {
-					diff = next[i]-j;			// check only periodic
-					if (diff < TIM_OFF) {
-						break;					// found a ready task
-					} else if (diff < k) {
-						k = diff;				// next int time of higher prio task
-					}
-				}
-			}
-			// i is next ready thread (index in new list)
-			// If none is ready i points to idle task or main thread (fist in the list)
-			active = i;	
-
-			// set next int time to now+(min(diff)) (j, k)
-			tim = j+k;
-
-			// restore stack
-			s1 = ref[i].sp;
-			Native.setVP(s1+2);		// +2 for sure ???
-			Native.setSP(s1+7);		// +5 locals, take care to use only the first 5!!
-
-			i = s1;
-			// can't use s1-127 as count,
-			// don't know why I have to store it in a local.
-			Native.ext2intMem(ref[active].stack, Const.STACK_OFF, i-Const.STACK_OFF+1);		// cnt is i-Const.STACK_OFF+1
-
-			j = Native.rd(Const.IO_US_CNT);
-			// check if next timer value is too early (or allready missed)
-			// ack int and schedule timer
-			if (tim-j<TIM_OFF) {
-				// set timer to now plus some short time
-				Native.wr(j+TIM_OFF, Const.IO_TIMER);
-			} else {
-				Native.wr(tim, Const.IO_TIMER);
-			}
-			Native.setSP(i);
-			// only return after setSP!
-			// WHY should this be true? We need a monitorexit AFTER setSP().
-			// It compiles to following:
-			//	invokestatic #32 <Method void setSP(int)>
-			//	aload 5
-			//	monitorexit
-			//	goto 283
-			//	...
- 			//	283 return
-			//
-			// for a 'real monitor' we have a big problem:
-			// aload 5 loads the monitor from the OLD stack!!!
-			//
-			// we can't access any 'old' locals now
-			//
-			// a solution: don't use a monitor here!
-			// disable and enable INT 'manual'
-			// and DON'T call a method with synchronized
-			// it would enable the INT on monitorexit
-		Native.wr(1, Const.IO_INT_ENA);
-		// }
-	}
-
 	private void startThread() {
 
-		if (state!=CREATED) return;		// allread called start
+		if (state!=CREATED) return;		// already called start
 
-		// if we have int enabled we have to synchronize
+		// if we have interrupts enabled we have to synchronize
 
 		if (period==0) {
-			state = READY;			// for the idle thread
+			state = READY;			// for the idle thread, but we're not using one
 		} else {
 			state = WAITING;
 		}
@@ -337,7 +239,7 @@ public static int ts0, ts1, ts2, ts3, ts4;
 			for (;;) {
 				// This will not work if we change stack like in Thread.java.
 				// Then we have no reference to this.
-				next[nr] = Native.rd(Const.IO_US_CNT) + 2*IDL_TICK;
+				Scheduler.sched[sys.cpuId].next[nr] = Native.rd(Const.IO_US_CNT) + 2*Scheduler.IDL_TICK;
 				genInt();
 			}
 		}
@@ -384,105 +286,154 @@ public static int ts0, ts1, ts2, ts3, ts4;
 //		;							// nothing to do
 //	}
 
+	/**
+	 * Static start time of scheduling used by all cores
+	 */
+	static int startTime;
 
 	public static void startMission() {
 
 
-		int i, c, startTime;
-		RtThreadImpl th, mth;
+		int i, j, c;
+		RtThreadImpl th;
+		Scheduler s;
 
 		if (!initDone) {
 			init();
 		}
+		
+		// TODO: we also disable acquiring the global lock - a running GC 
+		// (on a different core) is not
+		// protected for the write barriers at this time
+		// Disable all interrupts globally and local - for sure
+		Native.wr(0, Const.IO_INT_ENA);
+		Native.wr(0, Const.IO_INTMASK);		
+
+
 
 		// if we have int's enabled for Thread scheduling
+		// or using the Scheduler interrupt
 		// we have to place a monitorenter here
+		
+		// Collect number of thread for each core
 		th = head;
 		for (c=0; th!=null; ++c) {
+			Scheduler.sched[th.cpuId].cnt++;
 			th = th.lower;
 		}
 
-		mth = ref[0];		// this was our main thread
-
-		ref = new RtThreadImpl[c];
-		next = new int[c];
-		event = new int[c];
-
-		th = head;
-		// array is order according priority
+		for (i=0; i<sys.nrCpu; ++i) {
+			Scheduler.sched[i].allocArrays();
+		}
+		
+		// list is ordered with increasing priority
+		// array is reverse priority ordered per core
 		// top priority is last!
-		for (i=c-1; th!=null; --i) {
-			ref[i] = th;
-			th.nr = i;
+		for (th = head; th!=null; th = th.lower) {
+			s = Scheduler.sched[th.cpuId];
+			s.ref[s.tmp] = th;
+			th.nr = s.tmp;
 			if (th.isEvent) {
-				event[i] = EV_WAITING;
+				s.event[s.tmp] = Scheduler.EV_WAITING;
 			} else {
-				event[i] = NO_EVENT;
+				s.event[s.tmp] = Scheduler.NO_EVENT;
 			}
-			th = th.lower;
+			s.tmp--;
 		}
 
-		// change active if a lower priority
-		// thread is befor main
-		active = mth.nr;
+		for (i=0; i<sys.nrCpu; ++i) {
+			Scheduler.sched[i].addMain();
+		}
 
 		// running threads (state!=CREATED)
 		// are not started
 		// TODO: where are 'normal' Threads placed?
-		for (i=0; i<c; ++i) {
-			ref[i].startThread();
+		s = Scheduler.sched[sys.cpuId];
+		for (i=0; i<s.cnt; ++i) {
+			s.ref[i].startThread();
 		}
 
-		// wait 100 ms (for main Thread.debug())
-		startTime = Native.rd(Const.IO_US_CNT)+100000;
-		for (i=0; i<c; ++i) {
-			next[i] = startTime+ref[i].offset;
+		// wait 10 ms for the real start if the mission
+		startTime = Native.rd(Const.IO_US_CNT)+10000;		
+		for (i=0; i<sys.nrCpu; ++i) {
+			s = Scheduler.sched[i];
+			for (j=0; j<s.cnt; ++j) {
+				s.next[j] = startTime+s.ref[j].offset;
+			}
 		}
+		
+		// add scheduler for the first core
+		JVMHelp.addInterruptHandler(0, 0, Scheduler.sched[0]);
 
-		cnt = c;
+
+		CMPStart cmps[] = new CMPStart[sys.nrCpu-1];
+		// add the Runnables to start the other CPUs
+		for (i=0; i<sys.nrCpu-1; ++i) {
+			cmps[i] = new RtThreadImpl.CMPStart();
+			Startup.setRunnable(cmps[i], i);
+			
+		}
+		
+		// start the other CPUs
+		sys.signal = 1;
+
+		// busy wait for start threads of other cores
+		for (;;) {
+			boolean ready = true;
+			for (i=0; i<sys.nrCpu-1; ++i) {
+				ready = ready && cmps[i].started;
+			}
+			if (ready) {
+				break;
+			}
+		}
+		
 		mission = true;
 
-		// set moncnt in jvm.asm to zero to enable int's
-		// on monitorexit from now on
-		Native.wrIntMem(0, 5);
 		// clear all pending interrupts (e.g. timer after reset)
 		Native.wr(1, Const.IO_INTCLEARALL);
-		// schedule timer in 100 ms
+		// schedule timer in 10 ms
 		Native.wr(startTime, Const.IO_TIMER);
 
-		// enable all interrupts int
+		// enable all interrupts
 		Native.wr(-1, Const.IO_INTMASK);		
 		Native.wr(1, Const.IO_INT_ENA);
-
 	}
 
 
 	public boolean waitForNextPeriod() {
 
-		synchronized(monitor) {
-			int nxt, now;
+		int nxt, now;
+		Scheduler s = Scheduler.sched[sys.cpuId];
 
-			nxt = next[nr] + period;
+		Native.wr(0, Const.IO_INT_ENA);
 
-			now = Native.rd(Const.IO_US_CNT);
-			if (nxt-now < 0) {					// missed time!
-				next[nr] = now;					// correct next
-//				next[nr] = nxt;					// without correction!
-				return false;
-			} else {
-				next[nr] = nxt;
-			}
-			// state is not used in scheduling!
-			// state = WAITING;
+		nxt = s.next[nr] + period;
 
-			// just schedule an interrupt
-			// schedule() gets called.
-			Native.wr(0, Const.IO_SWINT);
-			for (int j=0;j<10;++j) ;
-			// will arrive befor return statement,
-			// just after monitorexit
+		now = Native.rd(Const.IO_US_CNT);
+		if (nxt-now < 0) {					// missed time!
+			s.next[nr] = now;				// correct next
+//			next[nr] = nxt;					// without correction!
+			Native.wr(1, Const.IO_INT_ENA);
+			return false;
+		} else {
+			s.next[nr] = nxt;
 		}
-		return true;
+		// state is not used in scheduling!
+		// state = WAITING;
+
+		// just schedule an interrupt
+		// schedule() gets called.
+		Native.wr(0, Const.IO_SWINT);
+		// will arrive before return statement,
+		// just after interrupt enable
+		// TODO: do we really need this loop?
+		for (int j=0;j<10;++j) ;
+		Native.wr(1, Const.IO_INT_ENA);
+
+		// This return should only be executed when we are
+		// scheduled again
+		return true;			
 	}
 
 	public void setEvent() {
@@ -490,15 +441,19 @@ public static int ts0, ts1, ts2, ts3, ts4;
 	}
 
 	public void fire() {
-		event[this.nr] = EV_FIRED;
+		Scheduler.sched[this.cpuId].event[this.nr] = Scheduler.EV_FIRED;
 		// if prio higher...
 // should not be allowed befor startMission
+		// TODO: for cross CPU event fire we need to generate the interrupt
+		// for the other core!
 		genInt();
 
 	}
 	
 	public void blockEvent() {
-		event[this.nr] = EV_WAITING;
+		Scheduler.sched[this.cpuId].event[this.nr] = Scheduler.EV_WAITING;
+		// TODO: for cross CPU event fire we need to generate the interrupt
+		// for the other core!
 		genInt();
 
 	}
@@ -551,62 +506,24 @@ public static int ts0, ts1, ts2, ts3, ts4;
 //  stack while assembling it. Then some writebarrier should protect the 
 //  references and downgrade the GC state from black to grey?
 
+	// TODO: make it CMP aware
 	static int[] getStack(int num) {
-		return ref[num].stack;
+		return Scheduler.sched[0].ref[num].stack;
 	}
 
 	static int getSP(int num) {
-		return ref[num].sp;
+		return Scheduler.sched[0].ref[num].sp;
 	}
 
 	static int getCnt() {
-		return cnt;
+		return Scheduler.sched[0].cnt;
 	}
 	
 	static int getActive() {
-		return active;
+		return Scheduler.sched[0].active;
 	}
 
 	
-// WARNING: debug can take a long time (xx ms)
-public static void debug() {
-
-	synchronized(monitor) {
-		
-
-		int i, j;
-		for (i=cnt-1; i>=0; --i) {
-
-			util.Dbg.wr('\n');
-			util.Dbg.intVal(ref[i].sp);
-			util.Dbg.wr('\n');
-			for (j=0; j<=ref[i].sp-Const.STACK_OFF; ++j) {
-				util.Dbg.intVal(ref[i].stack[j]);
-			}
-			util.Dbg.wr('\n');
-trace(ref[i].stack, ref[i].sp);
-		}
-/*
-		int i, tim;
-
-		tim = Native.rd(Native.IO_US_CNT);
-		util.Dbg.wr(' ');
-		util.Dbg.intVal(active);
-		util.Dbg.wr('-');
-		util.Dbg.wr(' ');
-		for (i=0; i<cnt; ++i) {
-			util.Dbg.intVal(ref[i].nr);
-			util.Dbg.intVal(ref[i].priority);
-			util.Dbg.intVal(ref[i].state);
-			util.Dbg.intVal(next[i]-tim);
-		}
-		util.Dbg.wr('\n');
-		tim = Native.rd(Native.IO_US_CNT)-tim;
-		util.Dbg.intVal(tim);
-		util.Dbg.wr('\n');
-*/
-	}
-}
 
 static void trace(int[] stack, int sp) {
 

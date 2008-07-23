@@ -44,7 +44,17 @@ public class Startup {
 	final static int MAX_STACK = 100;
 	static int sp, pc, cp;
 	
+	/**
+	 * How needs this field, and why?
+	 */
 	static boolean started;
+	
+	/**
+	 * The start method for CPU 1 to n-1.
+	 * 
+	 * Public just for a quick test.
+	 */
+	static Runnable[] cpuStart;
 	
 	/**
 	 * called from jvm.asm as first method.
@@ -55,10 +65,8 @@ public class Startup {
 		// use local variable - statics are not CMP save!
 		int val;
 		
-		// set moncnt in jvm.asm to zero to enable int's
-		// on monitorexit from now on
-		Native.wrIntMem(0, 5);
 		// disable all interrupts locally
+		// global enable and disable on monitorenter/exit don't hurt
 		Native.wr(0, Const.IO_INTMASK);
 		
 		// only CPU 0 does the initialization stuff
@@ -78,6 +86,8 @@ public class Startup {
 			version();
 			started = true;
 			clazzinit();
+			
+			cpuStart = new Runnable[Native.rdMem(Const.IO_CPUCNT)-1];
 		}
 		
 		// clear all pending interrupts (e.g. timer after reset)
@@ -85,11 +95,24 @@ public class Startup {
 		// set global enable
 		Native.wr(1, Const.IO_INT_ENA);
 		
-		// call main()
-		val = Native.rdMem(1);		// pointer to 'special' pointers
-		val = Native.rdMem(val+3);	// pointer to main method struct
-		Native.invoke(0, val);		// call main (with null pointer on TOS
-		exit();
+		// request CPU id
+		val = Native.rdMem(Const.IO_CPU_ID);
+		
+		if (val==0) {
+			// only CPU 0 invokes main()
+			val = Native.rdMem(1);		// pointer to 'special' pointers
+			val = Native.rdMem(val+3);	// pointer to main method structure
+			Native.invoke(0, val);		// call main (with null pointer on TOS
+			exit();			
+		} else {
+			// other CPUs invoke a Runnable
+			if (cpuStart[val-1]!=null) {
+				cpuStart[val-1].run();
+			}
+			for (;;) {
+				;			// busy loop for other CPUs exit
+			}
+		}
 	}
 	
 
@@ -97,6 +120,15 @@ public class Startup {
 
 		JVMHelp.wr("JOP start");
 		
+	}
+	
+	/**
+	 * Add a Runnable for the other CPUs
+	 * @param r
+	 * @param index
+	 */
+	public static void setRunnable(Runnable r, int index) {
+		cpuStart[index] = r;
 	}
 	
 	/**
