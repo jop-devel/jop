@@ -108,7 +108,7 @@ signal ram_addr 		: std_logic_vector(17 downto 0);
 --
 --	Signals
 --
-	signal clk_int			: std_logic;
+	signal clk_int, clk2    : std_logic;
 
 	signal int_res			: std_logic;
 	signal res_cnt			: unsigned(2 downto 0) := "000";	-- for the simulation
@@ -162,18 +162,20 @@ signal ram_addr 		: std_logic_vector(17 downto 0);
 
 	signal sc_arb_out		: arb_out_type(0 to master_cnt-1);
 	signal sc_arb_in		: arb_in_type(0 to master_cnt-1);
+
+    signal io_r	            : std_logic_vector(20 downto 1);
 begin
 
 --================================================--
 --============VIRTEX 4 SRAM SIGNALS===============--
 
-sram_feedback_clk <= not clk;
+sram_feedback_clk <= not clk2;
 sram_adv_ld_n <= '0';
 sram_mode <= '0';
 sram_cen <= '0';
 virtex_ram_addr <= "00000" & ram_addr;
 sram_zz <= '0';
-sram_clk <= not clk;
+sram_clk <= not clk2;
 --================================================--
 --================================================-- 
 
@@ -193,6 +195,13 @@ begin
 
 		int_res <= 
             not res_cnt(0) or not res_cnt(1) or not res_cnt(2);
+	end if;
+end process;
+
+process(clk)
+begin
+	if rising_edge(clk) then
+        clk2 <= not clk2;
 	end if;
 end process;
 
@@ -235,7 +244,7 @@ end process;
 --
 --	components of jop
 --
-	clk_int <= clk;
+	clk_int <= clk2;
 
 	wd <= wd_out;
 
@@ -271,7 +280,7 @@ end process;
 			nrts => ser_nrts,
 			wd => wd_out,
 			l => open,
-			r => open,
+			r => io_r,
 			t => open,
 			b => open,
 
@@ -312,6 +321,9 @@ end process;
 			ramb_d <= (others => 'Z');
 		end if;
 	end process;
+
+    io_r ( 9 ) <= '1' ;
+    io_r ( 10 ) <= '1' ;
 
 	ram_din <= ramb_d & rama_d;
 

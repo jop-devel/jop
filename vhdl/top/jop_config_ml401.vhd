@@ -30,7 +30,7 @@ use ieee.std_logic_1164.all;
 
 package jop_config is
 
-	constant clk_freq : integer := 100000000;
+	constant clk_freq : integer := 100000000/2;
 
 	-- constant for on-chip memory
 	constant ram_width : integer := 8;	-- address bits of internal ram (sp,...)
