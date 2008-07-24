@@ -2,9 +2,10 @@ vhdl work  ../../vhdl/top/jop_config_ml401.vhd
 vhdl work  ../../vhdl/core/jop_types.vhd
 vhdl work  ../../vhdl/simpcon/sc_pack.vhd
 vhdl work  ../../vhdl/simpcon/sc_arbiter_pack.vhd
-vhdl work  ../../vhdl/simpcon/sc_arbiter_fair.vhd
+vhdl work  ../../vhdl/simpcon/sc_arbiter_fixedpr.vhd
 vhdl work  ../../vhdl/jeopard/mac_coprocessor.vhd
 vhdl work  ../../vhdl/scio/fifo.vhd
+vhdl work  ../../vhdl/scio/sc_usb.vhd
 vhdl work  ../../vhdl/scio/sc_uart.vhd
 vhdl work  ../../vhdl/scio/sc_control_channel.vhd
 vhdl work  ../../vhdl/scio/sc_sys.vhd
