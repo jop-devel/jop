@@ -29,10 +29,10 @@
 -- 030707: Several bugs are fixed now. CMP with 3 running masters functions!
 -- 150108: Quasi Round Robin Arbiter -- added sync signal to arbiter
 -- 160108: First tests running with new Round Robin Arbiter
+-- 250408: Renaming of this_state to mode, follow_state to next_mode, reg_in to reg_out
+-- 240708: added data_reg for each CPU in arbiter
 
 -- Functioning: See description of SIES08 paper
-
-
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -52,15 +52,13 @@ port (
 			arb_in			: out arb_in_type(0 to cpu_cnt-1);
 			mem_out			: out sc_out_type;
 			mem_in			: in sc_in_type
-			--sync_in_array	: in sync_in_array_type(0 to cpu_cnt-1);
-			--sync_out_array	: in sync_out_array_type(0 to cpu_cnt-1)
 );
 end arbiter;
 
 
 architecture rtl of arbiter is
 
--- signals for the input register of each master
+-- stores the signals in a register of each master
 
 	type reg_type is record
 		rd : std_logic;
@@ -69,9 +67,14 @@ architecture rtl of arbiter is
 		address : std_logic_vector(addr_bits-1 downto 0);
 	end record; 
 	
-	type reg_array_type is array (0 to cpu_cnt-1) of reg_type;
-	signal reg_in : reg_array_type;
-
+	type reg_out_type is array (0 to cpu_cnt-1) of reg_type;
+	signal reg_out : reg_out_type;
+	
+-- register to CPU for rd_data
+	
+	type reg_in_type is array (0 to cpu_cnt-1) of std_logic_vector(31 downto 0);
+	signal reg_in_rd_data : reg_in_type;
+	
 -- one fsm for each CPU
 
 	type state_type is (idle, read, write, waitingR, sendR, 
@@ -82,21 +85,23 @@ architecture rtl of arbiter is
 	
 -- one fsm for each serve
 
-	type serve_type is (idl, serv);
+	type serve_type is (idl, servR, servW);
 	type serve_array is array (0 to cpu_cnt-1) of serve_type;
-	signal this_state : serve_array;
-	signal follow_state : serve_array;
+	signal mode : serve_array;
+	signal next_mode : serve_array;
 	
--- arbiter
+-- arbiter 
 	
-	type set_type is array (0 to cpu_cnt-1) of std_logic;
+	type set_type is array (0 to cpu_cnt-1) of std_logic_vector(1 downto 0);
 	signal set : set_type;
-	signal waiting : set_type;
-	signal masterWaiting : std_logic;
+	type pipelined_type is array (0 to cpu_cnt-1) of std_logic;
+	signal pipelined : pipelined_type;
 	
 -- counter
 	signal counter : integer;
-	
+	type slot_type is array (0 to cpu_cnt-1) of std_logic;
+	signal slot : slot_type; -- defines which CPU is on turn
+		
 	
 begin
 
@@ -106,38 +111,20 @@ gen_register: for i in 0 to cpu_cnt-1 generate
 	process(clk, reset)
 	begin
 		if reset = '1' then
-			reg_in(i).rd <= '0';
-			reg_in(i).wr <= '0';
-			reg_in(i).wr_data <= (others => '0'); 
-			reg_in(i).address <= (others => '0');
+			reg_out(i).rd <= '0';
+			reg_out(i).wr <= '0';
+			reg_out(i).wr_data <= (others => '0'); 
+			reg_out(i).address <= (others => '0');
 		elsif rising_edge(clk) then
 			if arb_out(i).rd = '1' or arb_out(i).wr = '1' then
-				reg_in(i).rd <= arb_out(i).rd;
-				reg_in(i).wr <= arb_out(i).wr;
-				reg_in(i).address <= arb_out(i).address;
-				reg_in(i).wr_data <= arb_out(i).wr_data;
+				reg_out(i).rd <= arb_out(i).rd;
+				reg_out(i).wr <= arb_out(i).wr;
+				reg_out(i).address <= arb_out(i).address;
+				reg_out(i).wr_data <= arb_out(i).wr_data;
 			end if;
 		end if;
 	end process;
 end generate;
-
--- Register for masterWaiting
-process(clk, reset)
-	begin
-		if reset = '1' then
-			masterWaiting <= '0';
-		elsif rising_edge(clk) then
-			for i in 0 to cpu_cnt-1 loop
-				if waiting(i) = '1' then
-					masterWaiting <= '1';
-					exit;
-				else
-					masterWaiting <= '0';
-				end if;
-			end loop;
-		end if;
-	end process;
-	
 	
 -- Generate Counter
 process(clk, reset)
@@ -148,116 +135,120 @@ process(clk, reset)
 			counter <= counter + 1;
 			
 			for i in 0 to cpu_cnt-1 loop
-				if arb_out(i).atomic = '1' and counter = i then	
-					counter <= counter;
-					exit;
-				else
-					if follow_state(i) = serv then
-						if mem_in.rdy_cnt = 1 and arb_out(i).rd = '0' then
-							if counter = cpu_cnt-1 then
-								counter <= 0;
-							else
-								counter <= counter + 1;
-							end if;
-							exit;
+				if next_mode(i) = servR or next_mode(i) = servW then
+					if mem_in.rdy_cnt = 1 and arb_out(i).rd = '0' then
+						if counter = cpu_cnt-1 then
+							counter <= 0;
 						else
-							counter <= counter;
-							exit;
+							counter <= counter+1;
 						end if;
-					elsif counter = cpu_cnt-1 then
-						counter <= 0;
+						exit;
+					else
+						counter <= counter;
+						exit;
 					end if;
+				elsif counter = cpu_cnt-1 then
+						counter <= 0;
 				end if;
 			end loop;
 		end if;
-	end process;
-			
+end process;
+				
+-- The slot is assigned depending on the counter 
+process(counter)
+	begin
+		for j in 0 to cpu_cnt-1 loop
+			if j = counter then
+				slot(j) <= '1';
+			else
+				slot(j) <= '0';
+			end if;
+		end loop;
+end process;	
+	
 	
 -- Generates next state of the FSM for each master
 gen_next_state: for i in 0 to cpu_cnt-1 generate
-	process(reset, state, arb_out, mem_in, this_state, reg_in, masterWaiting, counter)	 
+	process(state, mode, slot, mem_in, arb_out)	 
 	begin
 
 		next_state(i) <= state(i);
-		waiting(i) <= '0';
+		pipelined(i) <= '0';
 
 		case state(i) is
 			when idle =>
 			
-				-- checks if this CPU is on turn (pipelined access)
-				if this_state(i) = serv then
-					-- pipelined access
-					if mem_in.rdy_cnt = 1 and arb_out(i).rd = '1' then
+				-- is CPU allowed to access
+				if (slot(i) = '1') then
+					
+					-- pipelined read access
+					if (mode(i) = servR) and (mem_in.rdy_cnt = 1) and (arb_out(i).rd = '1') then
 						next_state(i) <= read;
-							
-					elsif ((mem_in.rdy_cnt = 0) and (arb_out(i).rd = '1' or arb_out(i).wr = '1') and (counter = i)) then
+						pipelined(i) <= '1';
 						
+					elsif (mode(i) = servR) and (mem_in.rdy_cnt = 0) then
+						if arb_out(i).rd = '1' then
+							next_state(i) <= read;
+						elsif arb_out(i).wr = '1' then
+							next_state(i) <= write;				
+						end if;
+					
+					elsif (mode(i) = servW) and (mem_in.rdy_cnt = 0) then
+						if arb_out(i).rd = '1' then
+							next_state(i) <= read;
+						elsif arb_out(i).wr = '1' then
+							next_state(i) <= write;				
+						end if;
+		
+					elsif (mode(i) = idl) and (mem_in.rdy_cnt = 0) then
 						if arb_out(i).rd = '1' then
 							next_state(i) <= read;
 						elsif arb_out(i).wr = '1' then
 							next_state(i) <= write;				
 						end if;
 											
-					-- all other kinds of rdy_cnt
+					-- all other kinds (can that happen at all?)
 					else
 						if arb_out(i).rd = '1' then
 							next_state(i) <= waitingR;
-							waiting(i) <= '1';
 						elsif arb_out(i).wr = '1' then
 							next_state(i) <= waitingW;
-							waiting(i) <= '1';
 						end if;
 					end if;
 
-				-- CPU is not on turn (no pipelined access possible)
+				-- CPU is not allowed to access
 				else
-					if ((mem_in.rdy_cnt = 0) and (arb_out(i).rd = '1' or arb_out(i).wr = '1') and (counter = i)) then
-						
-						-- master wants to access immediately
-						if arb_out(i).rd = '1' then
-							next_state(i) <= read;
-						elsif arb_out(i).wr = '1' then
-							next_state(i) <= write;				
-						end if;
-						
-					-- has to wait for rdy_cnt = 0 and counter = i
-					elsif (arb_out(i).rd = '1' or arb_out(i).wr = '1') then
-						if arb_out(i).rd = '1' then
-							next_state(i) <= waitingR;
-							waiting(i) <= '1';
-						elsif arb_out(i).wr = '1' then
-							next_state(i) <= waitingW;
-							waiting(i) <= '1';
-						end if;	
+					if arb_out(i).rd = '1' then
+						next_state(i) <= waitingR;
+					elsif arb_out(i).wr = '1' then
+						next_state(i) <= waitingW;
 					end if;
 				end if;
 						
-				
 			when read =>
 				next_state(i) <= idle;
+				if pipelined(i) = '1' then
+					pipelined(i) <= '1';
+				end if;
 				
 			when write =>
 				next_state(i) <= idle;
 			
-			when waitingR =>
-			-- Test of pipelining in arbiter!!!!				
-			if ((mem_in.rdy_cnt = 0) and (counter = i)) then
-			--	if (((mem_in.rdy_cnt = 0) or (mem_in.rdy_cnt = 1)) and (counter = i)) then				
+			when waitingR =>				
+				if ((mem_in.rdy_cnt = 0) and (slot(i) = '1')) then
 					next_state(i) <= sendR;
 				else
 					next_state(i) <= waitingR;
-					waiting(i) <= '1';
 				end if;
 			
 			when sendR =>
 				next_state(i) <= idle;
 				
 			when waitingW =>
-				if ((mem_in.rdy_cnt = 0) and (counter = i)) then
+				if ((mem_in.rdy_cnt = 0) and (slot(i) = '1')) then
 					next_state(i) <= sendW;
 				else
 					next_state(i) <= waitingW;
-					waiting(i) <= '1';
 				end if;
 			
 			when sendW =>
@@ -282,28 +273,28 @@ end generate;
 
 
 -- The arbiter output
-process (arb_out, reg_in, next_state)
+process (arb_out, reg_out, next_state)
 begin
 
 	mem_out.rd <= '0';
 	mem_out.wr <= '0';
 	mem_out.address <= (others => '0');
 	mem_out.wr_data <= (others => '0');
-  mem_out.atomic <= '0';
+	mem_out.atomic <= '0';
 	
 	for i in 0 to cpu_cnt-1 loop
-		set(i) <= '0';
+		set(i) <= "00";
 		
 		case next_state(i) is
 			when idle =>
 				
 			when read =>
-				set(i) <= '1';
+				set(i) <= "01";
 				mem_out.rd <= arb_out(i).rd;
 				mem_out.address <= arb_out(i).address;
 			
 			when write =>
-				set(i) <= '1';
+				set(i) <= "10";
 				mem_out.wr <= arb_out(i).wr;
 				mem_out.address <= arb_out(i).address;
 				mem_out.wr_data <= arb_out(i).wr_data;			
@@ -311,36 +302,43 @@ begin
 			when waitingR =>
 				
 			when sendR =>
-				set(i) <= '1';
-				mem_out.rd <= reg_in(i).rd;
-				mem_out.address <= reg_in(i).address;
+				set(i) <= "01";
+				mem_out.rd <= reg_out(i).rd;
+				mem_out.address <= reg_out(i).address;
 			
 			when waitingW =>
 			
 			when sendW =>
-				set(i) <= '1';
-				mem_out.wr <= reg_in(i).wr;
-				mem_out.address <= reg_in(i).address;
-				mem_out.wr_data <= reg_in(i).wr_data;
+				set(i) <= "10";
+				mem_out.wr <= reg_out(i).wr;
+				mem_out.address <= reg_out(i).address;
+				mem_out.wr_data <= reg_out(i).wr_data;
 				
 		end case;
 	end loop;
 end process;
 
--- generation of follow_state
+-- generation of next_mode
 gen_serve: for i in 0 to cpu_cnt-1 generate
-	process(mem_in, set, this_state)
+	process(mem_in, set, mode)
 	begin
-		case this_state(i) is
+		case mode(i) is
 			when idl =>
-				follow_state(i) <= idl;
-				if set(i) = '1' then 
-					follow_state(i) <= serv;
+				next_mode(i) <= idl;
+				if set(i) = "01" then 
+					next_mode(i) <= servR;
+				elsif set(i) = "10" then
+					next_mode(i) <= servW;
 				end if;
-			when serv =>
-				follow_state(i) <= serv;
-				if mem_in.rdy_cnt = 0 and set(i) = '0' then
-					follow_state(i) <= idl;
+			when servR =>
+				next_mode(i) <= servR;
+				if mem_in.rdy_cnt = 0 and set(i) = "00" then
+					next_mode(i) <= idl;
+				end if;
+			when servW =>
+				next_mode(i) <= servW;
+				if mem_in.rdy_cnt = 0 and set(i) = "00" then
+					next_mode(i) <= idl;
 				end if;
 		end case;
 	end process;
@@ -350,33 +348,67 @@ gen_serve2: for i in 0 to cpu_cnt-1 generate
 	process (clk, reset)
 	begin
 		if (reset = '1') then
-			this_state(i) <= idl;
+			mode(i) <= idl;
   	elsif (rising_edge(clk)) then
-			this_state(i) <= follow_state(i);	
+			mode(i) <= next_mode(i);	
 		end if;
 	end process;
 end generate;
-				 
+
+
+
+-- Registers rd_data for each CPU
+gen_reg_in: for i in 0 to cpu_cnt-1 generate
+	process(clk, reset)
+	begin
+		if reset = '1' then
+			reg_in_rd_data(i) <= (others => '0'); 
+		elsif rising_edge(clk) then
+			if mode(i) = servR then
+				if mem_in.rdy_cnt = 0 then
+					reg_in_rd_data(i) <= mem_in.rd_data;
+				elsif mem_in.rdy_cnt = 2 and pipelined(i) = '1' then
+					reg_in_rd_data(i) <= mem_in.rd_data;
+				end if;			
+			end if;
+		end if;
+	end process;
+end generate;
+
+
+				
+-- Generates rdy_cnt and rd_data for all CPUs
 gen_rdy_cnt: for i in 0 to cpu_cnt-1 generate
-	process (mem_in, state, this_state)
+	process (mem_in, state, mode)
 	begin  
+		
+		arb_in(i).rd_data <= reg_in_rd_data(i);
 		arb_in(i).rdy_cnt <= mem_in.rdy_cnt;
-		arb_in(i).rd_data <= mem_in.rd_data;
 		
 		case state(i) is
 			when idle =>
-				case this_state(i) is
-					when idl =>
-						arb_in(i).rdy_cnt <= "00";
-					when serv =>
-				end case;
+				if (mode(i) = idl) then
+					arb_in(i).rdy_cnt <= "00";
+				elsif (mode(i) = servR) and (mem_in.rdy_cnt = 0) then
+					arb_in(i).rd_data <= mem_in.rd_data;
+				end if;
 				
 			when read =>
+				if (mode(i) = servR) then
+					if (mem_in.rdy_cnt = 0) then
+						arb_in(i).rd_data <= mem_in.rd_data;
+					elsif (mem_in.rdy_cnt = 2) and pipelined(i) = '1' then
+						arb_in(i).rd_data <= mem_in.rd_data;
+					end if;
+				end if;
 			
 			when write =>		
 			
 			when waitingR =>
 				arb_in(i).rdy_cnt <= "11";
+				if mode(i) = servR then
+					arb_in(i).rd_data <= mem_in.rd_data;
+				end if;
 				
 			when sendR =>
 			
