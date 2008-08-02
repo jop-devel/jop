@@ -436,9 +436,9 @@ Dbg.lf();
 			Point p = str[i];
 			p.ptr = intVal(addr+PT_PTR);
 
-Dbg.lf();
-Dbg.intVal(p.melnr);
-Dbg.intVal(p.flags);
+//Dbg.lf();
+//Dbg.intVal(p.melnr);
+//Dbg.intVal(p.flags);
 
 			// TODO: this earlier init is not
 			// part of the current BG SW (1.05)
@@ -464,7 +464,7 @@ Dbg.intVal(p.flags);
 					if (val==0 || val=='^') break;
 					tmpStr[j].append((char) val);
 				}
-Dbg.wr(tmpStr[j]);
+//Dbg.wr(tmpStr[j]);
 			}
 			// recycle first text if the second one is not set
 			off = line;
@@ -480,7 +480,7 @@ Dbg.wr(tmpStr[j]);
 			addr += PT_LEN;
 			
 		}
-Dbg.lf();
+//Dbg.lf();
 		textOk = true;
 		left2right = l2r;
 	}

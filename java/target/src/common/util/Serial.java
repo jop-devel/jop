@@ -31,8 +31,8 @@ import com.jopdesign.sys.Native;
 public class Serial {
 
 
-	private static final int BUF_LEN = 128;
-	private static final int BUF_MSK = 0x7f;
+	private static final int BUF_LEN = 256;
+	private static final int BUF_MSK = 0xff;
 
 	private static final int DATA = 1;
 	private static final int STATUS = 0;

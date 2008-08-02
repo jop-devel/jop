@@ -293,20 +293,27 @@ public class State extends ejip.UdpHandler implements Runnable {
 		
 		int[] buf = p.buf;
 		// extract data
-		int strPos = buf[Udp.DATA + 3];
-		// use data from ZLB if not yet set
-		if (strnr==0) {
-			// that one will probably never happen
-			strnr = strPos >> 20;
-		}
-		if (zugnr==0) {
-			zugnr = strPos & 0xfffff;
-		}
-		if (type==TYPE_UNKNOWN) {
-			type = (buf[Udp.DATA+6]&0xffff)>>>13;
+
+		// fist set cmd as it is used in isDownloading()
+		int cmd = buf[Udp.DATA+8];
+
+		int strZugnr = buf[Udp.DATA + 3];
+		// use data from ZLB if not yet set - synchronization if restarted
+		// but only if we are not in download check!
+		if (Logic.state!=Logic.DL_CHECK && !isDownloading() && !stickyDl &&
+				(strZugnr & 0xfffff)!=0) {
+			if (strnr==0) {
+				// that one will probably never happen
+				strnr = strZugnr >> 20;
+			}
+			if (zugnr==0) {
+				zugnr = strZugnr & 0xfffff;
+			}
+			if (type==TYPE_UNKNOWN) {
+				type = (buf[Udp.DATA+6]&0xffff)>>>13;
+			}			
 		}
 		
-		int cmd = buf[Udp.DATA+8];
 
 		// first set ignore flag, then connection state
 		ignore = (cmd & CFLAG_IGNORE)!=0;
@@ -480,10 +487,18 @@ public class State extends ejip.UdpHandler implements Runnable {
 	 */
 	private void printMsg(Packet p) {
 		int[] buf = p.buf;
+		int i;
+		Dbg.wr("date=");
+		i = p.buf[Udp.DATA+1];
+		Dbg.intVal(i>>>16);
+		Dbg.intVal((i>>8) & 0xff);
+		Dbg.intVal(i & 0xff);
 		Dbg.wr("time=");
-		Dbg.intVal(Gps.getTime());
-//		Dbg.wr("seconds=");
-//		Dbg.intVal((p.buf[Udp.DATA+2]>>14) & 0x3f);
+		i = p.buf[Udp.DATA+2];
+		Dbg.intVal((i>>26)&0x3f);
+		Dbg.intVal((i>>20)&0x3f);
+		Dbg.intVal((i>>14)&0x3f);
+		Dbg.intVal(i&0x3ff);
 		Dbg.wr("strnr=");
 		Dbg.intVal(buf[Udp.DATA+3]>>>20);
 		Dbg.wr("zugnr=");

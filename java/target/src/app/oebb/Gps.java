@@ -370,18 +370,31 @@ Dbg.wr(" nun aktiv\n");
 			}
 		}
 
-		// get date
-		for (i=51; i<=56; ++i) {
-			rxBuf[i] -= '0'; 
+		// find date position
+		val = 9;	// number of commas
+		for (i=0; i<BUF_LEN; ++i) {
+			if (rxBuf[i]==',') {
+				--val;
+			}
+			if (val==0) {
+				break;
+			}
 		}
-		i = rxBuf[51] * 100000;
-		i += rxBuf[52] * 10000;
-		i += rxBuf[53] * 1000;
-		i += rxBuf[54] * 100;
-		i += rxBuf[55] * 10;
-		i += rxBuf[56];
-		synchronized (timMutex) {
-			gpsDate = i;
+		val = i+1;	// start of date
+		if (val<BUF_LEN-10) {
+			// get date
+			for (i=val; i<val+6; ++i) {
+				rxBuf[i] -= '0'; 
+			}
+			i = rxBuf[val] * 100000;
+			i += rxBuf[val+1] * 10000;
+			i += rxBuf[val+2] * 1000;
+			i += rxBuf[val+3] * 100;
+			i += rxBuf[val+4] * 10;
+			i += rxBuf[val+5];
+			synchronized (timMutex) {
+				gpsDate = i;
+			}			
 		}
 
 		knt = 0;
@@ -725,18 +738,23 @@ Dbg.wr("m/s \n");
 		int len = p.len - Udp.DATA*4;
 
 		if (len > ser.txFreeCnt()) {
-Dbg.wr('d');
+Dbg.wr("DGPS droped\r\n");
 			return;										// just drop it
 		}
 
-Dbg.wr('D');
+Dbg.wr("DGPS ok\r\n");
+
 
 		int i;
 		int[] buf = p.buf;
 
-		for (i=0; i<len; ++i) {
+		// 12 is offset of DGPS data, first three fields
+		// are bgid, date, time as 32 bit words
+		for (i=12; i<len; ++i) {
+//Dbg.hexVal((buf[Udp.DATA+(i>>2)]>>(24-(i&3)*8)) & 0xff);
 			ser.wr((buf[Udp.DATA+(i>>2)]>>(24-(i&3)*8)) & 0xff);
 		}
+//Dbg.lf();
 	}
 
 

@@ -94,6 +94,9 @@ public class Logic extends RtThread {
 	
 	static final int DL_STRNR = 999;
 	static final int DL_TIMEOUT = 60;
+	static final int CHECK_TIMEOUT = 3;
+	
+	static boolean dlChecked;
 
 
 	Logic(int prio, int period, LinkLayer ipl) {
@@ -134,7 +137,7 @@ public class Logic extends RtThread {
 
 System.out.println("Logic.initVals()");
 		Logic.state = Logic.INIT;
-		Logic.state = Logic.DL_CHECK;
+		dlChecked = false;
 
 		Status.selectStr = false;
 		Status.doCommAlarm = false;
@@ -693,6 +696,8 @@ System.out.println("waitGps");
 	 */
 	private void bereit() {
 		
+		int tim = Timer.getSec()+CHECK_TIMEOUT;
+
 		// wait for GPS melnr found
 		for (;;) {
 			if (Main.state.getPos()>0) {
@@ -703,7 +708,13 @@ System.out.println("waitGps");
 			if (Main.state.strnr>0) {
 				Display.write("Betriebsbereit", "Strecke ", Main.state.strnr, "");
 			} else {
-				Display.write("Betriebsbereit", "","");				
+				Display.write("Betriebsbereit", "","");
+				// check for a download server after some seconds
+				// when no Strecke found
+				if (Timer.secTimeout(tim) && !dlChecked) {
+					Logic.state = Logic.DL_CHECK;
+					return;
+				}
 			}
 			if (Main.state.strnr<=0 && Status.selectStr) {
 				enterStrNr();
@@ -758,6 +769,10 @@ System.out.println("waitGps");
 
 	private void queryDownload() {
 
+		// just check it once from GPS_OK,
+		// but goes back to INIT
+		dlChecked = true;
+		
 		int tim = Timer.getSec()+DL_TIMEOUT;
 System.out.println("Check download server");
 		
