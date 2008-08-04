@@ -128,9 +128,13 @@ public class State extends ejip.UdpHandler implements Runnable {
 	 */
 	int lastMsgTimestamp;
 	/**
-	 * Get at least on message all 17 seconds.
+	 * Date of last message.
 	 */
-	final static int ZLB_TIMEOUT = 17;
+	int lastMsgDate;
+	/**
+	 * Get at least on message all 22 seconds.
+	 */
+	final static int ZLB_TIMEOUT = 22;
 	/**
 	 * Watch ZLB timer
 	 */
@@ -281,13 +285,19 @@ public class State extends ejip.UdpHandler implements Runnable {
 		int time = p.buf[Udp.DATA + 2];
 
 		if (!contactZLB) {
+			lastMsgDate = date;
 			lastMsgTimestamp = time;
 			contactZLB = true;
-		}
-		if (time - lastMsgTimestamp < 0) {
-			// it's a too old packet
-			p.setStatus(Packet.FREE);
-			return;
+		} else {
+			// check date and time of the message
+			if (date>lastMsgDate || (date==lastMsgDate && time>lastMsgTimestamp)) {
+				lastMsgDate = date;			
+				lastMsgTimestamp = time;
+			} else {
+				// it's a too old packet
+				p.setStatus(Packet.FREE);
+				return;
+			}			
 		}
 
 		
