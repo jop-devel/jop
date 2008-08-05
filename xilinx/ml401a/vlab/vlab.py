@@ -1,13 +1,8 @@
-"""
-Virtual Lab Client
-Twisted Python interface
- 
-In order to use this module, you will need to understand 
-Deferreds, a concept which is explained in the Twisted 
-Python documentation. 
-
-Version $Id: vlab.py,v 1.2 2008/07/22 15:41:15 jwhitham Exp $
-"""
+# 
+# Virtual Lab
+# Copyright (C) Jack Whitham 2008
+# $Id: vlab.py,v 1.3 2008/08/05 13:52:53 jwhitham Exp $
+# 
 
 from twisted.conch import error
 from twisted.conch.ssh import transport
@@ -42,7 +37,7 @@ class VlabErrorException(VlabException):
 
 class VlabBitfileException(Exception):
     """An exception that is raised if an invalid bit file is
-    supplied to the SendBitfile method. 
+    supplied to the sendBitfile method. 
 
     In this case, "invalid" means that the bit file did not
     pass validation on the board server, e.g. it was made for the
@@ -57,6 +52,8 @@ class VlabBitfileException(Exception):
         VLAB_RELAY_SERVER, VLAB_UART, VLAB_UNKNOWN ] = range(14)
 
 class VlabBitInfo:
+    """Holds information about a bit file, returned by the
+    getBitInfo method."""
     def __init__(self):
         self.bid = -1
         self.size_bits = ""
@@ -78,6 +75,8 @@ class VlabBitInfo:
                     self.syn_date, self.syn_time, self.part_name)
 
 class VlabUserInfo:
+    """Holds information about a virtual lab user, returned by the
+    getBoardUserInfo method."""
     def __init__(self):
         self.lock_count = 0
         self.user_name = None
@@ -94,22 +93,27 @@ class VlabUserInfo:
             return self.user_name
 
 class VlabVersion:
+    """Holds information about the software versions of various parts
+    of the virtual lab. Available as the "version" field of VlabChannel."""
     def __init__(self):
         self.client = CVERSION
         self.relay = None
         self.embedded = None
         self.mutexdaemon = None
 
-    def Lowest(self):
+    def lowest(self):
+        """Returns the lowest software version currently in use
+        within the virtual lab."""
         d = [ x for x in [ self.client, self.relay, 
                     self.embedded, self.mutexdaemon ] if x != None ]
         d.sort()
         return d[ 0 ]
 
     def __str__(self):
-        return str(self.Lowest())
+        return str(self.lowest())
 
 class VlabAuthorisation:
+    """Holds authorisation data for a virtual lab user."""
     def __init__(self):
         self.relay_server_host_key = None
         self.user_name = None
@@ -121,7 +125,7 @@ class VlabAuthorisation:
 AUTH_LEADIN = '--- BEGIN VIRTUAL LAB AUTHORISATION DATA ---'
 AUTH_LEADOUT = '--- END VIRTUAL LAB AUTHORISATION DATA ---'
 
-def SaveAuthorisation(auth, fname):
+def saveAuthorisation(auth, fname):
     """Save a VlabAuthorisation object to a disk file, for
     distribution to a virtual lab user."""
     assert isinstance(auth, VlabAuthorisation)
@@ -140,7 +144,9 @@ def SaveAuthorisation(auth, fname):
     out.write('\n')
     out.close()
 
-def LoadAuthorisation(fname):
+def loadAuthorisation(fname):
+    """Load a VlabAuthorisation object from disk. The object
+    is typically passed to VlabClientFactory."""
     code = []
     start = False
     for line in file(fname, 'rt'):
@@ -173,21 +179,21 @@ class VlabChannel(channel.SSHChannel):
         This __init__ method is normally called from the SSHConnection
         serviceStarted method."""
         channel.SSHChannel.__init__(self, **args2)
-        self.InitData(debug)
+        self.initData(debug)
         self.register_fn = register_fn
 
     # Requests and their protocol level (Cl*) functions.
-    def GetBoardUserInfo(self, board_name):
+    def getBoardUserInfo(self, board_name):
         """Request a list of users of the specified board_name.
 
         Returns a Deferred. The callback will be called with a list
         of VlabUserInfo objects, one for each instance of board_name."""
         self.userinfo_table = dict()
-        self.SendMessage(MSG_USERREQUEST, board_name)
+        self.sendMessage(MSG_USERREQUEST, board_name)
         assert self.stage == VLAB_RELAY_SERVER, (
             "This is only possible when connected to the relay shell." )
 
-        def Transform((command, parameters)):
+        def transform((command, parameters)):
             assert command == MSG_ENDLIST
             out = []
             i = 0
@@ -196,7 +202,7 @@ class VlabChannel(channel.SSHChannel):
                 i += 1
             return out
 
-        return self.AwaitEndMessage().addCallback(Transform)
+        return self.awaitEndMessage().addCallback(transform)
 
     def ClUserInfo(self, index, valid, user_name, lock_count):
         try:
@@ -214,16 +220,16 @@ class VlabChannel(channel.SSHChannel):
         else:
             uinfo.status = UINFO_AVAILABLE
 
-    def GetBitInfo(self):
+    def getBitInfo(self):
         """Request a list of bit file buffers on the board server.
 
         Returns a Deferred. The callback will be called with a list
         of VlabBitInfo objects, one for each bit file buffer."""
-        self.AssertProper("GetBitInfo")
+        self.assertProper("getBitInfo")
         self.bitinfo_table = dict()
-        self.SendMessage(MSG_SHOWBITS)
+        self.sendMessage(MSG_SHOWBITS)
 
-        def Transform((command, parameters)):
+        def transform((command, parameters)):
             assert command == MSG_ENDLIST
             out = []
             i = 0
@@ -232,7 +238,7 @@ class VlabChannel(channel.SSHChannel):
                 i += 1
             return out
 
-        return self.AwaitEndMessage().addCallback(Transform)
+        return self.awaitEndMessage().addCallback(transform)
 
     def ClReceiveBitInfo(self, index, bid, size_bits,
                 design_name, part_name, syn_date, syn_time, english):
@@ -261,39 +267,39 @@ class VlabChannel(channel.SSHChannel):
         else:
             binfo.status = BINFO_READY
 
-    def SetUART(self, uart_number, baud):
+    def setUART(self, uart_number, baud):
         """Set the baud rate for the specified UART.
 
         Returns a Deferred. The callback will be called with the OK
         message. The baud rate can be any of the standard RS232 baud rates,
         e.g. 9600, 38400, 115200."""
-        self.AssertProper("SetUART")
-        self.SendMessage(MSG_SETUART, uart_number, baud)
+        self.assertProper("setUART")
+        self.sendMessage(MSG_SETUART, uart_number, baud)
 
-        def Ack((command, parameter)):
+        def ack((command, parameter)):
             assert command == MSG_OK
             return True
             
-        return self.AwaitEndMessage().addCallback(Ack)
+        return self.awaitEndMessage().addCallback(ack)
 
-    def SendBitfile(self, bits, compress_level=9):
+    def sendBitfile(self, bits, compress_level=9):
         """Send a bit file to the board server.
 
         Returns a Deferred. The callback will be called with the bid 
         (bit file id), which is an integer. To load the bit file onto an
-        FPGA, you must call ProgramFPGA with the bid."""
-        self.AssertProper("SendBitfile")
+        FPGA, you must call programFPGA with the bid."""
+        self.assertProper("sendBitfile")
 
         self.stored_bid = None
-        transfer_complete = self.GetDeferred()
+        transfer_complete = self.getDeferred()
         cbits = [ '' ]
 
-        def Fail(ex_data):
+        def fail(ex_data):
             transfer_complete.errback(ex_data)
 
         # stage 3 - receive MSG_LOADED via ClLoaded;
-        # this calls Complete:
-        def Complete((command, bid, ok)):
+        # this calls complete:
+        def complete((command, bid, ok)):
             assert command == MSG_LOADED
             assert self.stored_bid == bid
             if ( ok ):
@@ -303,117 +309,118 @@ class VlabChannel(channel.SSHChannel):
                         VlabBitfileException("Bitfile did not validate."))
 
         # stage 2 - receive MSG_LOADREADY via ClLoadReady;
-        # this calls Transfer to send the data:
-        def Transfer((command, bid)):
+        # this calls transfer to send the data:
+        def transfer((command, bid)):
             assert command == MSG_LOADREADY
             self.stored_bid = bid
             self.write(cbits[ 0 ])
-            self.AwaitEndMessage().addCallback(Complete).addErrback(Fail)
+            self.awaitEndMessage().addCallback(complete).addErrback(fail)
 
         # stage 1 - send loadbits message
         # First, compress the bit file (you might be 
         # sending the file over a slow network connection)
-        def Start():
+        def start():
             cbits[ 0 ] = zlib.compress(bits, compress_level)
             size_bits = len(cbits[ 0 ]) * 8
-            self.SendMessage(MSG_LOADBITS, size_bits)
-            self.AwaitEndMessage().addCallback(Transfer).addErrback(Fail)
+            self.sendMessage(MSG_LOADBITS, size_bits)
+            self.awaitEndMessage().addCallback(transfer).addErrback(fail)
 
-        Start()
+        start()
         return transfer_complete
 
     def ClLoadReady(self, bid, num_bits, english):
-        self.Reply().callback((MSG_LOADREADY, bid))
+        self.reply().callback((MSG_LOADREADY, bid))
 
     def ClLoaded(self, bid, ok):
-        self.Reply().callback((MSG_LOADED, bid, ok))
+        self.reply().callback((MSG_LOADED, bid, ok))
 
-    def ProgramFPGA(self, fpga_num, bid):
+    def programFPGA(self, fpga_num, bid):
         """Schedule programming the specified bit file (bid) onto FPGA fpga_num.
 
         Returns a Deferred. The callback will be called with True
         as its parameter on success. The errback is called on failure."""
-        self.AssertProper("ProgramFPGA")
+        self.assertProper("programFPGA")
 
         self.stored_bid = bid
-        self.SendMessage(MSG_PROGRAM, fpga_num, bid)
+        self.sendMessage(MSG_PROGRAM, fpga_num, bid)
         # This is for the MSG_OK that is sent to say the bit file
         # is in the programming queue.
-        self.AwaitEndMessage() 
+        self.awaitEndMessage() 
         # This is for the MSG_PROGRAMOK.
-        return self.AwaitEndMessage()
+        return self.awaitEndMessage()
 
     def ClProgramOk(self, bid):
         # Check bid - very important to do this because
         # other ProgramOk messages might get through
         if ( bid == self.stored_bid ):
-            self.Reply().callback(True)
+            self.reply().callback(True)
 
     def ClProgramFailed(self, bid, shortname):
         # Check bid - see ClProgramOk
         if ( bid == self.stored_bid ):
-            self.Reply().errback(VlabErrorException(
-                    shortname, self.FindError(shortname)))
+            self.reply().errback(VlabErrorException(
+                    shortname, ERR_TABLE.get(shortname, 
+                        ERR_TABLE[ ERR_UNKNOWN ])))
 
-    def Connect(self, board_name):
+    def connect(self, board_name):
         """Connect to a board. This is only possible
         when you have a connection to a relay shell.
         
         Returns a Deferred. The callback will be called when the
         connection is made; its parameter will be True."""
         if ( self.stage != VLAB_RELAY_SERVER ):
-            raise VlabException("Connect() to a relay shell first.")
+            raise VlabException("connect() to a relay shell first.")
 
-        output = self.GetDeferred()
+        output = self.getDeferred()
 
-        def Success((command, parameters)):
+        def success((command, parameters)):
             assert command == MSG_OK
             self.stage = VLAB_BOARD_SERVER
-            self.SendMessage(MSG_REM, 'Client "%s" on %s %x' %
+            self.sendMessage(MSG_REM, 'Client "%s" on %s %x' %
                     (CVERSION, os.name, sys.hexversion))
             output.callback(True)
 
-        def TryAgain(ex_data):
+        def tryAgain(ex_data):
             if (( isinstance(ex_data.value, VlabErrorException) )
             and ( ex_data.value.errorcode == ERR_UNAVAILABLE )):
                 # do try again
-                self.SendMessage(MSG_CONNECT, board_name)
-                self.AwaitEndMessage().addCallback(Success).addErrback(TryAgain)
+                self.sendMessage(MSG_CONNECT, board_name)
+                self.awaitEndMessage().addCallback(success).addErrback(tryAgain)
             else:
                 # don't try again
                 output.errback(ex_data)
 
-        self.SendMessage(MSG_CONNECT, board_name)
-        self.AwaitEndMessage().addCallback(Success).addErrback(TryAgain)
+        self.sendMessage(MSG_CONNECT, board_name)
+        self.awaitEndMessage().addCallback(success).addErrback(tryAgain)
         return output
 
-    def Disconnect(self):
+    def disconnect(self):
         """Disconnect from a board or relay server.
         This method doesn't return anything."""
         self.loseConnection()
 
-    def OpenUART(self, uart_num, protocol):
+    def openUART(self, uart_num, protocol):
         """Connect the specified Protocol object to UART uart_num.
 
         Returns a Deferred. The callback will be called with parameter
         True once the action has completed.
-        OpenUART is only possible when the channel is connected to a
+        openUART is only possible when the channel is connected to a
         board server. It can only be done once. Once it is done,
         other commands are no longer possible. This means you will
         normally need a control connection (for commands) and a
         data connection (for UART data)."""
-        self.AssertProper("OpenUART")
-        self.SendMessage(MSG_USEUART, uart_num)
+        self.assertProper("openUART")
+        self.sendMessage(MSG_USEUART, uart_num)
         self.stage = VLAB_UNKNOWN
 
-        def Success((command, parameter)):
+        def success((command, parameter)):
             assert command == MSG_USINGUART
             self.uart_protocol = protocol
             self.stage = VLAB_UART
             self.uart_protocol.makeConnection(self) # I'm the transport.
             return True
 
-        return self.AwaitEndMessage().addCallback(Success)
+        return self.awaitEndMessage().addCallback(success)
 
     # Protocol level Cl* functions that aren't associated
     # with a particular type of request.
@@ -427,19 +434,19 @@ class VlabChannel(channel.SSHChannel):
         self.version.mutexdaemon = version
 
     def ClOk(self, p0):
-        self.Reply().callback((MSG_OK, p0))
+        self.reply().callback((MSG_OK, p0))
 
     def ClEndList(self):
-        self.Reply().callback((MSG_ENDLIST, ''))
+        self.reply().callback((MSG_ENDLIST, ''))
 
     def ClUsingUart(self):
-        self.Reply().callback((MSG_USINGUART, ''))
+        self.reply().callback((MSG_USINGUART, ''))
         
     def ClError(self, name, server_message): 
         if ( name == ERR_DISCONNECT ):
             return
         my_message = ERR_TABLE.get(name, ERR_TABLE[ ERR_UNKNOWN ])
-        self.Reply().errback(VlabErrorException(name,
+        self.reply().errback(VlabErrorException(name,
                 my_message))
 
     # Twisted level and data level functions
@@ -452,25 +459,25 @@ class VlabChannel(channel.SSHChannel):
         if ( self.register_fn != None ):
             self.register_fn(self)
 
-    def AssertProper(self, caller):
+    def assertProper(self, caller):
         assert self.stage == VLAB_BOARD_SERVER, (
             "%s is only possible when connected to a board server." % caller)
 
-    def AwaitEndMessage(self):
+    def awaitEndMessage(self):
         """Creates a Deferred that will be called when an "end" message
         is received. 
         
         "end" messages indicate that a command has been processed by the
         server. The "end" messages are: ok, endlist, usinguart, error."""
-        d = self.GetDeferred()
-        self.reply.append(d)
+        d = self.getDeferred()
+        self.reply_queue.append(d)
         return d
 
-    def GetDeferred(self):
+    def getDeferred(self):
         return defer.Deferred()
 
-    def Reply(self):
-        return self.reply.popleft()
+    def reply(self):
+        return self.reply_queue.popleft()
 
     def dataReceived(self, buffer):
         """Internal function; called when data is received via SSH."""
@@ -480,7 +487,7 @@ class VlabChannel(channel.SSHChannel):
 
         for ch in buffer:
             if ( ch in "\r\n" ):
-                self.ProcessMessage(''.join(self.message_buffer))
+                self.processMessage(''.join(self.message_buffer))
                 self.message_buffer = []
             elif ( ch in '\x08\x7f' ):
                 if ( len(self.message_buffer) != 0 ):
@@ -495,11 +502,10 @@ class VlabChannel(channel.SSHChannel):
 
     def connectionLost(self, reason):
         if ( self.stage == VLAB_UART ):
-            print 'uart connection is lost :('
             self.uart_protocol.connectionLost(reason)
 
-    def InitData(self, debug):
-        self.reply = collections.deque()
+    def initData(self, debug):
+        self.reply_queue = collections.deque()
         self.message_buffer = []
         self.userinfo_table = dict()
         self.version = VlabVersion()
@@ -509,17 +515,17 @@ class VlabChannel(channel.SSHChannel):
         self.register_fn = None
         self.debug = debug
 
-    def SendMessage(self, tag, *parameters):
+    def sendMessage(self, tag, *parameters):
         """Internal function; sends a message to the relay shell or board
         server."""
         assert self.stage in (VLAB_RELAY_SERVER, VLAB_BOARD_SERVER), (
-            "SendMessage is only possible when connected." )
+            "sendMessage is only possible when connected." )
         msg = '%s %s\n' % (tag, ' '.join([ str(p) for p in parameters]))
         if ( self.debug ):
             print 'VIRTUAL LAB Send: "%s"' % msg.strip()
         self.write(msg)
 
-    def ProcessMessage(self, msg):
+    def processMessage(self, msg):
         """Internal function; process a message that has been received via
         SSH."""
         if ( self.debug ):
@@ -582,9 +588,9 @@ class VlabUARTProtocol(protocol.Protocol):
         # Record newly received data
         self.read_buffer.append(data)
         self.total_bytes += received_nbytes
-        self.Consume()
+        self.consume()
 
-    def Consume(self):
+    def consume(self):
         """Send received data to consumers, if possible."""
         if ( len(self.consumers_waiting) == 0 ):
             return
@@ -643,7 +649,7 @@ class VlabUARTProtocol(protocol.Protocol):
 
         d = defer.Deferred()
         self.consumers_waiting.append((d, request_nbytes))
-        self.Consume()
+        self.consume()
         return d
 
     def discard(self):
@@ -662,7 +668,7 @@ class VlabClientFactory(protocol.ClientFactory):
 
     A typical usage of VlabClientFactory is as follows:
     >>> factory = VlabClientFactory(VlabAuthorisation())
-    >>> factory.GetChannel().addCallback(GotChannel)
+    >>> factory.getChannel().addCallback(GotChannel)
     >>> reactor.connectTCP('foobar.cs.york.ac.uk', 22, factory)
     In this example, GotChannel will be called when the
     channel is available. You could also add an errback
@@ -686,17 +692,17 @@ class VlabClientFactory(protocol.ClientFactory):
         pass
 
     def buildProtocol(self, addr):
-        return VlabClientTransport(self.RegisterVlabChannel, 
+        return VlabClientTransport(self.registerVlabChannel, 
                     self.auth_data, self.debug)
 
-    def RegisterVlabChannel(self, vlab_channel):
+    def registerVlabChannel(self, vlab_channel):
         assert isinstance(vlab_channel, VlabChannel)
         self.vlab_channel = vlab_channel
         while ( len(self.vlab_channel_get_queue) != 0 ):
             d = self.vlab_channel_get_queue.pop()
             d.callback(self.vlab_channel)
 
-    def GetChannel(self):
+    def getChannel(self):
         if ( self.vlab_channel != None ):
             return defer.success(self.vlab_channel)
         else:

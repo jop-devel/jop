@@ -56,24 +56,24 @@ def Main(bit_fname, jop_fname):
 
     # Program FPGA and send JOP file
     print 'Connecting to lab service...'
-    auth = vlab.LoadAuthorisation(VL_KEY)
+    auth = vlab.loadAuthorisation(VL_KEY)
     vlf = vlab.VlabClientFactory(auth)
     reactor.connectTCP(auth.relay_server_name, 22, vlf)
-    vl = yield vlf.GetChannel()
+    vl = yield vlf.getChannel()
 
     uproto = vlab.VlabUARTProtocol()
 
     print 'Connecting to board'
-    bid = yield vl.Connect(BOARD_NAME)
+    bid = yield vl.connect(BOARD_NAME)
 
     print 'Sending bit file (%u bytes)' % len(bits)
-    bid = yield vl.SendBitfile(bits)
+    bid = yield vl.sendBitfile(bits)
     print 'Bitfile sent, bid %u' % bid
-    rc = yield vl.ProgramFPGA(0, bid)
+    rc = yield vl.programFPGA(0, bid)
     print 'Programming complete, rc %u' % rc
-    yield vl.SetUART(0, 115200)
+    yield vl.setUART(0, 115200)
     print 'SetUART rc %u' % rc
-    rc = yield vl.OpenUART(0, uproto)
+    rc = yield vl.openUART(0, uproto)
     print 'OpenUART rc %u' % rc
 
     # Send the program
@@ -100,7 +100,7 @@ def Main(bit_fname, jop_fname):
             if ( ''.join(fifo) == EXIT_STRING ):
                 stop = True
 
-    vl.Disconnect()
+    vl.disconnect()
     print ''
     print ''
 
