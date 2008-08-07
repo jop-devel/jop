@@ -235,7 +235,7 @@ begin
 	end if;
 end process;
 
-process(next_mux_mem, dly_mux_mem, sc_ctrl_mem_out, sc_ctrl_mem_in, sc_mem_in, sc_io_in, sc_scratch_in)
+process(next_mux_mem, dly_mux_mem, sc_ctrl_mem_out, sc_ctrl_mem_in, sc_mem_in, sc_io_in, sc_scratch_in, is_pipelined, mux_mem)
 begin
 
 	mem_access <= '0';
