@@ -31,6 +31,7 @@
 -- 160108: First tests running with new Round Robin Arbiter
 -- 250408: Renaming of this_state to mode, follow_state to next_mode, reg_in to reg_out
 -- 240708: added data_reg for each CPU in arbiter
+-- 070808: removed combinatorial loop (pipelined bug)
 
 -- Functioning: See description of SIES08 paper
 
@@ -96,6 +97,7 @@ architecture rtl of arbiter is
 	signal set : set_type;
 	type pipelined_type is array (0 to cpu_cnt-1) of std_logic;
 	signal pipelined : pipelined_type;
+	signal next_pipelined : pipelined_type;
 	
 -- counter
 	signal counter : integer;
@@ -169,14 +171,14 @@ end process;
 	
 -- Generates next state of the FSM for each master
 gen_next_state: for i in 0 to cpu_cnt-1 generate
-	process(state, mode, slot, mem_in, arb_out)	 
+	process(state, mode, slot, mem_in, arb_out, pipelined)	 
 	begin
 
 		next_state(i) <= state(i);
-		pipelined(i) <= '0';
 
 		case state(i) is
 			when idle =>
+				next_pipelined(i) <= '0';
 			
 				-- is CPU allowed to access
 				if (slot(i) = '1') then
@@ -184,7 +186,7 @@ gen_next_state: for i in 0 to cpu_cnt-1 generate
 					-- pipelined read access
 					if (mode(i) = servR) and (mem_in.rdy_cnt = 1) and (arb_out(i).rd = '1') then
 						next_state(i) <= read;
-						pipelined(i) <= '1';
+						next_pipelined(i) <= '1';
 						
 					elsif (mode(i) = servR) and (mem_in.rdy_cnt = 0) then
 						if arb_out(i).rd = '1' then
@@ -227,14 +229,18 @@ gen_next_state: for i in 0 to cpu_cnt-1 generate
 						
 			when read =>
 				next_state(i) <= idle;
+				next_pipelined(i) <= '0';
+				
 				if pipelined(i) = '1' then
-					pipelined(i) <= '1';
+					next_pipelined(i) <= '1';
 				end if;
 				
 			when write =>
 				next_state(i) <= idle;
+				next_pipelined(i) <= '0';
 			
-			when waitingR =>				
+			when waitingR =>	
+				next_pipelined(i) <= '0';
 				if ((mem_in.rdy_cnt = 0) and (slot(i) = '1')) then
 					next_state(i) <= sendR;
 				else
@@ -243,8 +249,10 @@ gen_next_state: for i in 0 to cpu_cnt-1 generate
 			
 			when sendR =>
 				next_state(i) <= idle;
+				next_pipelined(i) <= '0';
 				
 			when waitingW =>
+				next_pipelined(i) <= '0';
 				if ((mem_in.rdy_cnt = 0) and (slot(i) = '1')) then
 					next_state(i) <= sendW;
 				else
@@ -253,6 +261,7 @@ gen_next_state: for i in 0 to cpu_cnt-1 generate
 			
 			when sendW =>
 				next_state(i) <= idle;
+				next_pipelined(i) <= '0';
 		
 		end case;
 	end process;
@@ -265,8 +274,10 @@ gen_state: for i in 0 to cpu_cnt-1 generate
 	begin
 		if (reset = '1') then
 			state(i) <= idle;
+			pipelined(i) <= '0';
   	elsif (rising_edge(clk)) then
 			state(i) <= next_state(i);	
+			pipelined(i) <= next_pipelined(i);
 		end if;
 	end process;
 end generate;
@@ -367,7 +378,7 @@ gen_reg_in: for i in 0 to cpu_cnt-1 generate
 			if mode(i) = servR then
 				if mem_in.rdy_cnt = 0 then
 					reg_in_rd_data(i) <= mem_in.rd_data;
-				elsif mem_in.rdy_cnt = 2 and pipelined(i) = '1' then
+				elsif mem_in.rdy_cnt = 2 and next_pipelined(i) = '1' then
 					reg_in_rd_data(i) <= mem_in.rd_data;
 				end if;			
 			end if;
@@ -379,7 +390,7 @@ end generate;
 				
 -- Generates rdy_cnt and rd_data for all CPUs
 gen_rdy_cnt: for i in 0 to cpu_cnt-1 generate
-	process (mem_in, state, mode)
+	process (mem_in, state, mode, reg_in_rd_data, next_pipelined)
 	begin  
 		
 		arb_in(i).rd_data <= reg_in_rd_data(i);
@@ -397,7 +408,7 @@ gen_rdy_cnt: for i in 0 to cpu_cnt-1 generate
 				if (mode(i) = servR) then
 					if (mem_in.rdy_cnt = 0) then
 						arb_in(i).rd_data <= mem_in.rd_data;
-					elsif (mem_in.rdy_cnt = 2) and pipelined(i) = '1' then
+					elsif (mem_in.rdy_cnt = 2) and next_pipelined(i) = '1' then
 						arb_in(i).rd_data <= mem_in.rd_data;
 					end if;
 				end if;
