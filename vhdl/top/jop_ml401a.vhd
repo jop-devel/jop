@@ -327,8 +327,7 @@ begin
 	end if;
 end process;
 
-    cp1 : entity mac
-        --generic map ( id => x"01", version => x"1234" )
+    cp1 : entity mac_coprocessor
         port map (
                 clk => clk_int,
                 reset => int_res,
