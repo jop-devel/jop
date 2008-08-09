@@ -47,7 +47,6 @@ port (
 	rd_data		: out std_logic_vector(31 downto 0);
 	rdy_cnt		: out unsigned(1 downto 0);
 
-    inhibit     : in std_logic;
     cc_out_data : out std_logic_vector(31 downto 0);
     cc_out_wr   : out std_logic;
     cc_out_rdy  : in std_logic;
@@ -60,12 +59,20 @@ end sc_control_channel;
 
 architecture rtl of sc_control_channel is
 
-	signal ua_wr, tdre		: std_logic;
+	signal tdre		        : std_logic;
 	signal rdrf		        : std_logic;
 	signal cc_in_full       : std_logic;
 	signal cc_in_reg        : std_logic_vector(31 downto 0);
 	signal cc_out_wr_d      : std_logic;
-    signal read_counter     : std_logic_vector(7 downto 0);
+	signal unlocked         : std_logic;
+
+
+    constant TDRE_BIT       : Natural := 0;
+    constant RDRF_BIT       : Natural := 1;
+    constant LOCK_BIT       : Natural := 2;
+    constant RELEASE_BIT    : Natural := 3;
+    constant ADVANCE_BIT    : Natural := 4;
+
 
 begin
 	rdy_cnt <= "00";	-- no wait states
@@ -78,7 +85,7 @@ begin
             cc_in_reg <= ( others => '0' ) ;
             cc_out_wr <= '0';
             cc_out_wr_d <= '0';
-            read_counter <= ( others => '0' ) ;
+            unlocked <= '1';
 
         elsif rising_edge(clk) then
 
@@ -92,26 +99,39 @@ begin
             if rd='1' then
                 rd_data <= ( others => '0' ) ;
                 -- UART-style address decoder:
-                -- 0: control
+                -- 0: control/status
                 -- 1: data
                 if address(0)='0' then
-                    rd_data(1 downto 0) <= rdrf & tdre;
-                    read_counter <= read_counter + 1 ;
+                    -- control/status (read)
+                    rd_data ( LOCK_BIT ) <= unlocked;
+                    rd_data ( TDRE_BIT ) <= tdre;
+                    rd_data ( RDRF_BIT ) <= rdrf;
+                    unlocked <= '0'; -- now it is locked.
                 else
+                    -- data (read data)
                     rd_data <= cc_in_reg;
-                    cc_in_full <= '0';
                 end if;
-            elsif ua_wr = '1' then
-                cc_out_data <= wr_data;
-                cc_out_wr_d <= '1';
+            elsif wr = '1' then
+                if address(0)='0' then
+                    -- control/status (write)
+                    if ( wr_data ( RELEASE_BIT ) = '1' ) then
+                        unlocked <= '1';
+                    end if;
+                    if ( wr_data ( ADVANCE_BIT ) = '1' ) then
+                        cc_in_full <= '0';
+                    end if;
+                else
+                    -- data (write data)
+                    cc_out_data <= wr_data;
+                    cc_out_wr_d <= '1';
+                end if;
             end if;
         end if;
     end process;
 
-	-- write is on address offest 1
-	ua_wr <= wr and address(0);
-    tdre <= cc_out_rdy and not inhibit;
-    rdrf <= cc_in_full or inhibit;
+
+    tdre <= cc_out_rdy;
+    rdrf <= cc_in_full;
     cc_in_rdy <= not cc_in_full ;
 
 
