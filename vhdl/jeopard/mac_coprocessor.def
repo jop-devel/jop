@@ -1,0 +1,10 @@
+
+
+COPROCESSOR mac_coprocessor
+METHOD mac1
+PARAMETER size int
+PARAMETER alpha int[]
+PARAMETER beta int[]
+RETURN int
+
+

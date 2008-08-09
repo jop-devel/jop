@@ -7,7 +7,7 @@ use ieee.std_logic_unsigned.all;
 use work.jop_types.all;
 use work.sc_pack.all;
 
-entity mac is
+entity mac_coprocessor is
     port (
             clk             : in std_logic;
             reset           : in std_logic;
@@ -31,9 +31,9 @@ entity mac is
             cc_in_wr        : in std_logic;
             cc_in_rdy       : out std_logic
         );
-end entity mac;
+end entity mac_coprocessor;
 
-architecture cp of mac is
+architecture cp of mac_coprocessor is
     signal method_mac1_param_size   : std_logic_vector ( 31 downto 0 );
     signal method_mac1_param_alpha  : std_logic_vector ( 23 downto 0 );
     signal method_mac1_param_beta   : std_logic_vector ( 23 downto 0 );
