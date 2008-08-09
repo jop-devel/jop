@@ -48,7 +48,7 @@ public class HWMethTest {
 
 		System.out.println("Let us begin.");
 
-        mac m = new mac () ;
+        mac_coprocessor m = new mac_coprocessor () ;
 
         // make the data to be mac'ed
         expect = 0 ;
