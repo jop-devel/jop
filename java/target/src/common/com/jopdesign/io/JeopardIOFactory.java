@@ -26,7 +26,7 @@ import com.jopdesign.sys.Native;
 
 public class JeopardIOFactory extends IOFactory {
 
-	private SerialPort cc;
+	private ControlChannel cc;
 
 	// Handles should be the first static fields!
 	private static int CC_PTR;
@@ -34,7 +34,7 @@ public class JeopardIOFactory extends IOFactory {
 
 	
 	JeopardIOFactory() {
-		cc = (SerialPort) makeHWObject(new SerialPort(),
+		cc = (ControlChannel) makeHWObject(new ControlChannel(),
 				// 0x30 is now hardcoded, it's the next IO address
 				// available after the USB System.out port which is
 				// written by System.out.print()
@@ -53,6 +53,6 @@ public class JeopardIOFactory extends IOFactory {
 		return single;
 	}
 
-	public SerialPort getControlPort() { return cc; }
+	public ControlChannel getControlPort() { return cc; }
 
 }
