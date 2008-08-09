@@ -24,9 +24,8 @@ import com.jopdesign.io.SerialPort;
 
 public class BaseBoard {
 	
-	private SerialPort sp;
-
 	private final static int SERIAL_ADDRESS = 0xffff0010;
+	private SerialPort sp;
 
 	BaseBoard() {
 		sp = (SerialPort) JVMIOMagic(SERIAL_ADDRESS);
@@ -34,7 +33,7 @@ public class BaseBoard {
 	
 	static BaseBoard single = new BaseBoard();
 	
-	public static BaseBoard getFactory() {		
+	public static BaseBoard getBaseFactory() {		
 		return single;
 	}
 	
