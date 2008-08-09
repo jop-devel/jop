@@ -91,7 +91,6 @@ port (
 	nrts		: out std_logic;
 
 -- control channel
-    inhibit     : in std_logic;
     cc_out_data : out std_logic_vector(31 downto 0);
     cc_out_wr   : out std_logic;
     cc_out_rdy  : in std_logic;
@@ -275,7 +274,6 @@ begin
 			rd_data => sc_dout(3),
 			rdy_cnt => sc_rdy_cnt(3),
 
-            inhibit => inhibit,
             cc_out_data => cc_out_data,
             cc_out_wr => cc_out_wr,
             cc_out_rdy => cc_out_rdy,

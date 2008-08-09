@@ -66,7 +66,7 @@ architecture cp of mac_coprocessor is
     signal state                    : State_Type;
 
 begin
-    m : entity mac_if 
+    m : entity mac_coprocessor_if 
         port map (
             clk => clk,
             reset => reset,
