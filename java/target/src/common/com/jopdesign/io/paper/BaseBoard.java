@@ -20,27 +20,28 @@
 
 package com.jopdesign.io.paper;
 
-import com.jopdesign.io.Ethernet;
+import com.jopdesign.io.SerialPort;
 
-public class IOTALFactory extends BaseBoard {
+public class BaseBoard {
 	
-	private TALPins pins;
-	private LEDPort leds;
-	private Ethernet cs8900;
+	private SerialPort sp;
+
+	private final static int SERIAL_ADDRESS = 0xffff0010;
+
+	BaseBoard() {
+		sp = (SerialPort) JVMIOMagic(SERIAL_ADDRESS);
+	};
 	
-	IOTALFactory() {
-		super();
-		pins = (TALPins) JVMIOMagic(0);
-		leds = (LEDPort) JVMIOMagic(0);
-		cs8900 = (Ethernet) JVMIOMagic(0);
+	static BaseBoard single = new BaseBoard();
+	
+	public static BaseBoard getFactory() {		
+		return single;
 	}
 	
-	static IOTALFactory single = new IOTALFactory();
+	public SerialPort getSerialPort() { return sp; }
 	
-	public static IOTALFactory getFactory() { return single; }
-	
-	public TALPins getPins() { return pins; }
-	public LEDPort getLEDs() { return leds; }
-	public Ethernet getEthernet() {return cs8900; }
-
+	// here comes the magic!
+	Object JVMIOMagic(int address) {
+		return new Object();
+	}
 }
