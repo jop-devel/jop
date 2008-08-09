@@ -1,7 +1,7 @@
 # 
 # Virtual Lab
 # Copyright (C) Jack Whitham 2008
-# $Id: vlab.py,v 1.3 2008/08/05 13:52:53 jwhitham Exp $
+# $Id: vlab.py,v 1.4 2008/08/09 12:31:23 jwhitham Exp $
 # 
 
 from twisted.conch import error
@@ -748,10 +748,21 @@ class VlabClientUserAuth(userauth.SSHUserAuthClient):
         return # this says we won't do password authentication
 
     def getPublicKey(self):
-        return self.__getKey().public().blob()
+        try:
+            # For use with recent versions of Conch
+            return self.__getKey().public().blob()
+        except AttributeError:
+            # For old versions
+            return keys.getPublicKeyString(data=self.auth_data.public_key)
 
     def getPrivateKey(self):
-        return defer.succeed(self.__getKey().keyObject)
+        try:
+            # For use with recent versions of Conch
+            return defer.succeed(self.__getKey().keyObject)
+        except AttributeError:
+            # For old versions
+            return defer.succeed(keys.getPrivateKeyObject(
+                                    data=self.auth_data.private_key))
 
     def __getKey(self):
         return keys.Key.fromString(data=self.auth_data.private_key)

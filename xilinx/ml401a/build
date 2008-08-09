@@ -9,6 +9,11 @@ then
     exit 1
 fi
 
+python mkchain.py || exit 1
+pushd ../../vhdl/jeopard || exit 1
+python build.py || exit 1
+popd
+
 rm -rf out
 mkdir out out/tmp || exit 1
 xst -intstyle ise -ifn ${NAME}.xst \

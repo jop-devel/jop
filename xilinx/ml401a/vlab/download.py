@@ -17,12 +17,8 @@ VL_KEY = "vluser.key"
 import vlab, sys, collections
 from twisted.internet import reactor, defer
 
-
-@defer.inlineCallbacks
-def Main(bit_fname, jop_fname):
-    # Open files
+def DecodeJOP(jop_fname):
     fp = file(jop_fname)
-    bits = file(bit_fname).read()
 
     # Decode JOP file
     ram = []
@@ -50,9 +46,15 @@ def Main(bit_fname, jop_fname):
             byte_buffer.append(chr(0xff & (
                     word >> (( 3 - j ) * 8 ))))
     byte_buffer = ''.join(byte_buffer)
-    file('bytes.bin', 'wt').write(byte_buffer)
-
     print "%d words of Java bytecode (%d KB)" % (ram[1]-1, (ram[1]-1)/256)
+    return byte_buffer
+
+
+@defer.inlineCallbacks
+def Main(bit_fname, jop_fname):
+    byte_buffer = DecodeJOP(jop_fname)
+    file('bytes.bin', 'wt').write(byte_buffer)
+    bits = file(bit_fname).read()
 
     # Program FPGA and send JOP file
     print 'Connecting to lab service...'
