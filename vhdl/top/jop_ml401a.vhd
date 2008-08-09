@@ -14,11 +14,13 @@ use work.jop_types.all;
 use work.sc_pack.all;
 use work.sc_arbiter_pack.all;
 use work.jop_config.all;
+use work.vlabifhw_pack.all;
 
 
 entity jop is
 
 generic (
+    debugger    : boolean := true;
 	ram_cnt		: integer := 4;		-- clock cycles for external ram
 	rom_cnt		: integer := 15;	-- not used for S3K
 	jpc_width	: integer := 11;	-- address bits of java bytecode pc = cache size
@@ -153,12 +155,25 @@ signal ram_addr 		: std_logic_vector(17 downto 0);
     signal cc_out_rdy       : std_logic;
     signal cc_in_data       : std_logic_vector(31 downto 0);
     signal cc_in_wr         : std_logic;
-    signal cc_2_rdy         : std_logic;
-    signal cc_2_data        : std_logic_vector(31 downto 0);
-    signal cc_2_wr          : std_logic;
     signal cc_in_rdy        : std_logic;
 
-    constant master_cnt : Integer := 3;
+    signal int_res2         : std_logic;
+    signal break_command    : std_logic_vector(2 downto 0);
+    signal breakpoint       : std_logic;
+    signal dc_out           : std_logic;
+    signal dc_in            : std_logic;
+    signal dc_control       : DC_Control_Wires;
+    signal start            : std_logic;
+    signal busy             : std_logic;
+    signal grab             : std_logic;
+    signal running          : std_logic;
+    signal reading          : std_logic;
+    signal terminal         : std_logic;
+    signal rdyc0            : std_logic_vector(1 downto 0);
+    signal rdyc1            : std_logic_vector(1 downto 0);
+    signal rdyc2            : std_logic_vector(1 downto 0);
+
+    constant master_cnt : Integer := 2;
 
 	signal sc_arb_out		: arb_out_type(0 to master_cnt-1);
 	signal sc_arb_in		: arb_in_type(0 to master_cnt-1);
@@ -179,7 +194,121 @@ sram_clk <= not clk2;
 --================================================--
 --================================================-- 
 
+
+ndbg : if ( not debugger ) generate
 	debug_ser_txd <= debug_ser_rxd;
+    process(clk)
+    begin
+        if rising_edge(clk) then
+            clk2 <= not clk2;
+        end if;
+    end process;
+
+end generate ndbg;
+
+dbg : if ( debugger ) generate
+    vlhw : entity vlabifhw
+        generic map (
+            ext_channels => 1 ,
+            fifo_depth => 1,
+            clock_freq => 100e6 )
+        port map (
+            -- External hardware connections
+            clk => clk,
+            reset => '0',
+            hw_tx => debug_ser_txd,
+            hw_rx => debug_ser_rxd,
+
+            -- Internal connections: these are not used in this example.
+            out_channel_data => open,
+            out_channel_wr => open,
+            out_channel_rdy => "1",
+
+            in_channel_data => x"00",
+            in_channel_wr => "0",
+            in_channel_rdy => open,
+
+            -- Activation signal: not used
+            active => open,
+
+            -- Controls for device under test
+            debug_clock => clk2,
+            debug_reset => int_res2,
+            breakpoint => breakpoint,
+
+            dc_control => dc_control,
+            dc_out => dc_out,
+            dc_in => dc_in
+        );
+
+    -- Automatically generated component
+    dc : entity Autogen_Debug_Entity
+        port map (
+            break_command => break_command,
+            breakpoint => breakpoint,
+
+            cc_out_data => cc_out_data,
+            cc_out_wr => cc_out_wr,
+            cc_out_rdy => cc_out_rdy,
+
+            cc_in_data => cc_in_data,
+            cc_in_wr => cc_in_wr,
+            cc_in_rdy => cc_in_rdy,
+
+            start => start,
+            busy => busy,
+            grab => grab,
+            running => running,
+            reading => reading,
+            terminal => terminal,
+
+            sc_arb_out_0_rd => sc_arb_out(0).rd,
+            sc_arb_out_0_wr => sc_arb_out(0).wr,
+            sc_arb_out_0_wr_data => sc_arb_out(0).wr_data,
+            sc_arb_out_0_atomic => sc_arb_out(0).atomic,
+            sc_arb_out_0_address => sc_arb_out(0).address,
+            sc_arb_in_0_rd_data => sc_arb_in(0).rd_data,
+            sc_arb_in_0_rdy_cnt => rdyc0,
+            sc_arb_out_1_rd => sc_arb_out(1).rd,
+            sc_arb_out_1_wr => sc_arb_out(1).wr,
+            sc_arb_out_1_wr_data => sc_arb_out(1).wr_data,
+            sc_arb_out_1_atomic => sc_arb_out(1).atomic,
+            sc_arb_out_1_address => sc_arb_out(1).address,
+            sc_arb_in_1_rd_data => sc_arb_in(1).rd_data,
+            sc_arb_in_1_rdy_cnt => rdyc1,
+            sc_mem_out_rd => sc_mem_out.rd,
+            sc_mem_out_wr => sc_mem_out.wr,
+            sc_mem_out_wr_data => sc_mem_out.wr_data,
+            sc_mem_out_atomic => sc_mem_out.atomic,
+            sc_mem_out_address => sc_mem_out.address,
+            sc_mem_in_rd_data => sc_mem_in.rd_data,
+            sc_mem_in_rdy_cnt => rdyc2,
+
+            dc_control => dc_control,
+            dc_in => dc_out,
+            dc_out => dc_in ) ;
+
+    rdyc0 <= std_logic_vector ( sc_arb_in(0).rdy_cnt ) ;
+    rdyc1 <= std_logic_vector ( sc_arb_in(1).rdy_cnt ) ;
+    rdyc2 <= std_logic_vector ( sc_mem_in.rdy_cnt ) ;
+
+    process ( break_command,
+            cc_out_wr, cc_in_wr, cc_in_rdy, start, sc_arb_out ) is
+    begin
+        case break_command is
+        when "000" => breakpoint <= sc_arb_out(0).rd;
+        when "001" => breakpoint <= sc_arb_out(0).wr;
+        when "010" => breakpoint <= sc_arb_out(1).rd;
+        when "011" => breakpoint <= sc_arb_out(1).wr;
+        when "100" => breakpoint <= sc_arb_out(0).rd or sc_arb_out(0).wr 
+                        or ( not sc_arb_in(0).rdy_cnt(0) ) ;
+        when others => breakpoint <= '0';
+        end case;
+    end process;
+
+end generate dbg;
+
+--================================================-- 
 
 	ser_ncts <= '0';
 --
@@ -193,23 +322,23 @@ begin
 			res_cnt <= res_cnt+1;
 		end if;
 
-		int_res <= 
-            not res_cnt(0) or not res_cnt(1) or not res_cnt(2);
+		int_res <= int_res2 or (
+            not res_cnt(0) or not res_cnt(1) or not res_cnt(2)) ;
 	end if;
 end process;
 
-process(clk)
-begin
-	if rising_edge(clk) then
-        clk2 <= not clk2;
-	end if;
-end process;
-
-    cp1 : entity mac_coprocessor 
-        generic map ( id => x"01", version => x"1234" )
+    cp1 : entity mac
+        --generic map ( id => x"01", version => x"1234" )
         port map (
                 clk => clk_int,
                 reset => int_res,
+
+                start => start,
+                busy => busy,
+                grab => grab,
+                running => running,
+                reading => reading,
+                terminal => terminal,
 
                 sc_mem_out => sc_arb_out(1), 
                 sc_mem_in => sc_arb_in(1),
@@ -218,28 +347,10 @@ end process;
                 cc_out_wr => cc_out_wr,
                 cc_out_rdy => cc_out_rdy,
 
-                cc_in_data => cc_2_data,
-                cc_in_wr => cc_2_wr,
-                cc_in_rdy => cc_2_rdy
-            );
-    cp2 : entity mac_coprocessor 
-        generic map ( id => x"02", version => x"abcd" )
-        port map (
-                clk => clk_int,
-                reset => int_res,
-
-                sc_mem_out => sc_arb_out(2), 
-                sc_mem_in => sc_arb_in(2),
-
-                cc_out_data => cc_2_data,
-                cc_out_wr => cc_2_wr,
-                cc_out_rdy => cc_2_rdy,
-
                 cc_in_data => cc_in_data,
                 cc_in_wr => cc_in_wr,
                 cc_in_rdy => cc_in_rdy
             );
-
 
 --
 --	components of jop
@@ -284,7 +395,6 @@ end process;
 			t => open,
 			b => open,
 
-            inhibit => '0',
             cc_out_data => cc_in_data,
             cc_out_wr => cc_in_wr,
             cc_out_rdy => cc_in_rdy,
