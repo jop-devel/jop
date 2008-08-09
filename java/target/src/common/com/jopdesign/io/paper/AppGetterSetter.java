@@ -20,7 +20,7 @@
 
 package com.jopdesign.io.paper;
 
-public final class AppGetterSetter extends IODevice {
+public final class AppGetterSetter  {
 	
 	private volatile int counter;
 	private volatile int timer;

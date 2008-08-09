@@ -20,7 +20,7 @@
 
 package com.jopdesign.io.paper;
 
-public final class ParallelPort extends IODevice {
+public final class ParallelPort  {
 	
 	public volatile int data;
 	public volatile int control;
