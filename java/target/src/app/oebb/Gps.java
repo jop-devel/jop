@@ -788,6 +788,13 @@ Dbg.wr("DGPS ok\r\n");
 		return i*1000 + off;
 	}
 
+	/**
+	 * GPS has a fix.
+	 * @return
+	 */
+	public static boolean ok() {
+		return fix>0;
+	}
 
 /* how to copy a char buffer to a packet buffer
 	would be nice method for Packet

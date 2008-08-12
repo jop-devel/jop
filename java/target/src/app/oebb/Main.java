@@ -62,7 +62,7 @@ public class Main {
 
 	// SW version
 	public static final int VER_MAJ = 2;
-	public static final int VER_MIN = 22;
+	public static final int VER_MIN = 23;
 
 	private static final int LOG_PRIO = 1;
 	private static final int LOG_PERIOD = 1000000;
@@ -94,6 +94,7 @@ public class Main {
 	
 	static State state;
 	static Logic logic;
+	static Logging logger;
 
 
 	static boolean reset;
@@ -187,12 +188,12 @@ public class Main {
 		};
 
 		// create logging thread
-		final Logging log = new Logging();
+		logger = new Logging();
 		new RtThread(LOG_PRIO, LOG_PERIOD) {
 			public void run() {
 				for (;;) {
 					waitForNextPeriod();
-					log.run();
+					logger.run();
 				}
 			}
 		};
@@ -320,8 +321,6 @@ public class Main {
 			}
 			if (t2-timeout>1000000) {
 				t2 -= timeout;
-//				System.out.print(t2);
-//				System.out.print(idle);
 				idle *= 100;
 				idle /= t2;
 				idle = 100-idle;

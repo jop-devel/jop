@@ -209,15 +209,17 @@ public class State extends ejip.UdpHandler implements Runnable {
 		arr[off + 10] = gpsLat;
 		arr[off + 11] = gpsLong;
 	}
-
 	
-	void setTimestamp() {
-
+	static int getDate() {
 		int d = Gps.getDate();
+		return (((d%100) + 2000) << 16) + ((d/100%100) << 8) + d/10000%100;
+		
+	}
+	
+	static int getTime() {
 		int t = Gps.getTime();
-		date = (((d%100) + 2000) << 16) + ((d/100%100) << 8) + d/10000%100;
-		time = (t/10000000%100 << (32 - 6)) + (t/100000%100 << (32 - 12))
-				+ (t/1000%100 << (32 - 18)) + (t%1000 << 32 - 28);
+		return (t/10000000%100 << (32 - 6)) + (t/100000%100 << (32 - 12))
+			+ (t/1000%100 << (32 - 18)) + (t%1000 << 32 - 28);		
 	}
 
 	static int cnt;
@@ -232,7 +234,8 @@ public class State extends ejip.UdpHandler implements Runnable {
 			return false;
 		}
 
-		setTimestamp();
+		date = getDate();
+		time = getTime();
 
 		setUDPData(p.buf, Udp.DATA);
 		p.len = (Udp.DATA + 12) << 2;
@@ -408,23 +411,25 @@ public class State extends ejip.UdpHandler implements Runnable {
 		// Alarm and flag quits
 		int alarmAck = buf[Udp.DATA+7];
 		synchronized (this) {
-			if (alarmAck==alarmFlags) {
-				// we can reset some of the flags here
-				if ((alarmAck & AFLAG_ANK)!=0) {
-					alarmFlags &= ~AFLAG_ANK;
-					ankVerl = 0;
-				}
-				if ((alarmAck & AFLAG_VERL)!=0) {
-					alarmFlags &= ~AFLAG_VERL;
-					ankVerl = 0;
-				}
-				if ((alarmAck & AFLAG_ZIEL)!=0) {
-					alarmFlags &= ~AFLAG_ZIEL;
-				}
-				if ((alarmAck & AFLAG_LERN)!=0) {
-					alarmFlags &= ~AFLAG_LERN;
-					Status.lernOk = true;
-				}
+			// we can reset some of the flags here
+			// check them individual as Charly does not
+			// always ack the whole flag field - but he should
+			if ((alarmAck & AFLAG_ANK)!=0) {
+				alarmFlags &= ~AFLAG_ANK;
+				ankVerl = 0;
+			}
+			if ((alarmAck & AFLAG_VERL)!=0) {
+				alarmFlags &= ~AFLAG_VERL;
+				ankVerl = 0;
+			}
+			if ((alarmAck & AFLAG_ZIEL)!=0) {
+				alarmFlags &= ~AFLAG_ZIEL;
+			}
+			if ((alarmAck & AFLAG_LERN)!=0) {
+				alarmFlags &= ~AFLAG_LERN;
+				Status.lernOk = true;
+			}
+			if ((alarmAck&ALARM_MSK)==(alarmFlags&ALARM_MSK)) {
 				// Alarm has been reset by FDL and seen by ZLB
 				// we can reset it in the flags
 				if (alarmQuit) {
@@ -435,20 +440,20 @@ public class State extends ejip.UdpHandler implements Runnable {
 		}
 
 		boolean ferlChanged = false;
-		synchronized (this) {
-			val = buf[Udp.DATA+4]&0xffff;
-			if (val!=start) ferlChanged = true;
-			start = val;
-			val = buf[Udp.DATA+5]>>>16;
-			if (val!=end) ferlChanged = true;
-			end = val;
-			val = buf[Udp.DATA+5]&0xffff;
-			if (val!=startNF) ferlChanged = true;
-			startNF = val;
-		}
-		if (start!=0 && ferlChanged && (Logic.state==Logic.ANM_OK || Logic.state==Logic.ZIEL
-				|| Logic.state==Logic.NOTHALT_OK)) {
-			// this is now a FERL event
+		val = buf[Udp.DATA+5]>>>16;
+		if (val!=end) ferlChanged = true;
+		val = buf[Udp.DATA+5]&0xffff;
+		if (val!=startNF) ferlChanged = true;
+		val = buf[Udp.DATA+4]&0xffff;
+		if (val!=start) ferlChanged = true;
+		if (val!=0 && ferlChanged && (Logic.state==Logic.ANM_OK || Logic.state==Logic.ZIEL
+				|| Logic.state==Logic.NOTHALT_OK || Logic.state==Logic.ERLAUBNIS)) {
+			// this is now a FERL event and we accept the change
+			synchronized (this) {
+				start = buf[Udp.DATA+4]&0xffff;
+				end = buf[Udp.DATA+5]>>>16;
+				startNF = buf[Udp.DATA+5]&0xffff;
+			}
 			synchronized (Status.dirMutex) {
 				// let Logik.check() update the direction
 				Status.direction = Gps.DIR_UNKNOWN;
@@ -473,19 +478,20 @@ public class State extends ejip.UdpHandler implements Runnable {
 		stat[2]++;
 		stat[3] += p.len;
 		if (p.len != ((Udp.DATA+9)*4)) {		// fix length
-			Status.commErr = Logic.COMM_SHORT;
-			Dbg.wr("wl");
+			// Status.commErr = Logic.COMM_SHORT;
+			Dbg.wr("wrong length");
 			Dbg.intVal(p.len);
-			Dbg.wr('\n');
+			Dbg.lf();
+			Main.logger.printHex("wrong length", p.len);
 			stat[4]++;
 			return false;
 		}
 		if (p.buf[Udp.DATA + 0] != bgid) {
-			Status.commErr = Logic.COMM_WRBGID;
-			Dbg.wr('w');
-			Dbg.wr('i');
+			// Status.commErr = Logic.COMM_WRBGID;
+			Dbg.wr("wrong bgid");
 			Dbg.intVal(p.buf[Udp.DATA+0]);
-			System.out.println("wrong bgid");
+			Dbg.lf();
+			Main.logger.printHex("wrong bgid", p.buf[Udp.DATA+0]);
 			return false;
 		}
 		return true;
@@ -539,6 +545,19 @@ public class State extends ejip.UdpHandler implements Runnable {
 	 * connection is still alive.
 	 */
 	public void run() {
+
+		// a hack for a lost bgid in the Flash
+		if (bgid==-1 && Gps.ok()) {
+			bgid = (getDate()<<16) + (getTime()>>>16);
+			Dbg.wr("bgid is -1 => set a new one");
+			Dbg.lf();
+			BgTftp.programBgid(bgid);
+			bgid = Flash.getId();
+			Main.logger.printHex("bgid is -1 set to", bgid);
+			// enough done this round
+			return;
+		}
+		
 		if (Timer.timeout(sendTimer)) {
 			sendTimer = Timer.getTimeoutSec(SEND_PERIOD);
 			if (ipLink.getIpAddress()!=0 && destIp!=0) {
@@ -558,6 +577,7 @@ public class State extends ejip.UdpHandler implements Runnable {
 			ipLink.reconnect();
 			Status.connOk = false;
 			Status.commErr = Logic.COMM_FDLERR;
+			Main.logger.print("connection lost");
 			Dbg.wr("connection lost");
 		}
 		

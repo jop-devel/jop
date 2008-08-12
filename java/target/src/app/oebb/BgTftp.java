@@ -403,8 +403,6 @@ System.out.println("Program ");
 	 * move log data
 	 * @author admin
 	 *
-	 * TODO To change the template for this generated type comment go to
-	 * Window - Preferences - Java - Code Style - Code Templates
 	 */
 	static void moveLog() {
 		
@@ -426,6 +424,25 @@ System.out.println("Program ");
 			fn = (((int)'f')<<8) + '3';
 			program(MAX_BLOCKS);
 //		}
+	}
+	
+	/**
+	 * Set bgid if it got lost
+	 * @param bgid
+	 */
+	static void programBgid(int bgid) {
+		
+		int i,j;
+		
+		Timer.wd();
+		j = sector.length;
+		for (i=0; i<j; ++i) {
+			sector[i] = -1;
+		}
+		sector[0] = bgid;
+		fn = (((int)'f')<<8) + '3';
+		program(1);
+
 	}
 	
 	static int intVal(int addr) {

@@ -1,5 +1,7 @@
 package oebb;
 
+import util.Timer;
+
 import com.jopdesign.sys.Native;
 
 import ejip.Ip;
@@ -11,43 +13,93 @@ public class Logging implements Runnable {
 	final static int SND_PORT = 2007;
 	final static int ACK_PORT = 2008;
 	
-	StringBuffer sb = new StringBuffer();
-	boolean nandSent = false;
-
+	final static int MIN_TIMOUT = 10;
+	
+	boolean nandChecked = false;
+	int timeOut;
+	
 	public Logging() {
-		System.out.println("Logging - check NAND");
-		testNAND();
+		timeOut = Timer.getTimeoutSec(MIN_TIMOUT);
 	}
 	
 	public void run() {
-		if (Status.connOk && !nandSent) {
-			sendMsg();
+		if (Gps.ok() && !nandChecked) {
+			testNAND();			
+		}
+		// Do a send check all MIN_TIMOUT seconds
+		if (Timer.timeout(timeOut)) {
+			if (Status.connOk) {
+				sendMsg();
+			}
+			timeOut = Timer.getTimeoutSec(MIN_TIMOUT);			
 		}
 	}
+	
+	void print(String s) {
+	
+		LogMsg lm = LogMsg.getFreeMsg();
+		if (lm==null) {
+			return;
+		}
+		lm.msg.append(s);
+		lm.addToSendList();
+	}
+	
+	void printHex(String s, int val) {
+		
+		LogMsg lm = LogMsg.getFreeMsg();
+		if (lm==null) {
+			return;
+		}
+		lm.msg.append(s);
+		lm.msg.append(" 0x");
+		for (int i=0; i<8; ++i) {
+			int j = (val>>(4*(7-i))) & 0x0f;
+			if (j<10) {
+				j += '0';
+			} else {
+				j += 'a'-10;
+			}
+			lm.msg.append((char) j);
+		}
+
+		lm.addToSendList();
+	}
+
 
 	private void sendMsg() {
 		
 		State state = Main.state;
+		LogMsg lm = LogMsg.getSendMsg();
+		if (lm==null) {
+			return;
+		}
 		Packet p = Packet.getPacket(Packet.FREE, Packet.ALLOC, Main.ipLink);
 		if (p==null) {
+			// requeue it again
+			lm.addToSendList();
 			return;
 		}
 		
 		p.buf[Udp.DATA+0] = state.bgid;
-		p.buf[Udp.DATA+1] = state.date;
-		p.buf[Udp.DATA+2] = state.time;
+		p.buf[Udp.DATA+1] = lm.date;
+		p.buf[Udp.DATA+2] = lm.time;
 		p.buf[Udp.DATA+3] = Main.ipLink.getIpAddress();
-		Ip.setData(p, Udp.DATA+4, sb);
+		Ip.setData(p, Udp.DATA+4, lm.msg);
 		
 		// and send it
 		Udp.build(p, state.destIp, SND_PORT);
-		nandSent = true;
+		lm.addToFreeList();
 	}
 	
 	private void testNAND() {
 		
 		int i, j;
-		sb.setLength(0);
+		
+		LogMsg lm = LogMsg.getFreeMsg();
+		if (lm==null) {
+			return;
+		}
 		
 		Native.wrMem(0x90, 0x100001);
 		Native.wrMem(0x00, 0x100002);
@@ -61,25 +113,25 @@ public class Logging implements Runnable {
 		System.out.print(" ");
 		System.out.print(j);
 		System.out.print(" ");
-		sb.append("NAND ");
+		lm.msg.append("NAND ");
 		if (i==0x198) {
-			sb.append("Toshiba ");
+			lm.msg.append("Toshiba ");
 		} else if (i==0x120) {
-			sb.append("ST ");
+			lm.msg.append("ST ");
 		} else {
-			sb.append("Unknown manufacturer ");
+			lm.msg.append("Unknown manufacturer ");
 		}
 			
 		if (j==0x173) {
-			sb.append("16 MB");
+			lm.msg.append("16 MB");
 		} else if (j==0x175) {
-			sb.append("32 MB");
+			lm.msg.append("32 MB");
 		} else if (j==0x176) {
-			sb.append("64 MB");
+			lm.msg.append("64 MB");
 		} else if (j==0x179) {
-			sb.append("128 MB");
+			lm.msg.append("128 MB");
 		} else {
-			sb.append("error reading NAND");
+			lm.msg.append("error reading NAND");
 		}
 
 //
@@ -89,11 +141,12 @@ public class Logging implements Runnable {
 		i = Native.rdMem(0x100000)&0x1c1;
 		j = Native.rdMem(0x100000)&0x1c1;
 		if (i==0x1c0 && j==0x1c0) {
-			sb.append(" status OK");
+			lm.msg.append(" status OK");
 		} else {
-			sb.append(" error reading NAND status");
+			lm.msg.append(" error reading NAND status");
 		}
-		System.out.println(sb);
-
+		System.out.println(lm.msg);
+		lm.addToSendList();
+		nandChecked = true;
 	}
 }

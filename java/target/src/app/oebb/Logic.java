@@ -836,6 +836,7 @@ System.out.println("Download server connect timeout");
 	private void startConn() {
 
 		Display.write("Verbindungsaufbau", "", "");
+		Main.logger.print("start connection");
 		
 		// Isn't Flash.java a strange point for communication start!
 		Flash.startComm(Main.state.strnr);
