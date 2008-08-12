@@ -30,13 +30,12 @@ public final class SerialPort extends HwObject {
 	public volatile int data;
 	
 
-	public void init(int baudRate) {}
 	/**
 	 * Non-blocking read of a character. If the input buffer
 	 * is empty, the last value is returned.
 	 * @return
 	 */
-	public int read() {
+	final public int read() {
 		return data;
 	}
 	
@@ -45,14 +44,14 @@ public final class SerialPort extends HwObject {
 	 * is full, the character is lost.
 	 * @param ch
 	 */
-	public void write(int ch) {
+	final public void write(int ch) {
 		data = ch;
 	}
 	/**
 	 * A character is available in the input buffer.
 	 * @return
 	 */
-	public boolean rxFull() {
+	final public boolean rxFull() {
 		return (status & MASK_RDRF) != 0;
 	}
 	
@@ -60,7 +59,7 @@ public final class SerialPort extends HwObject {
 	 * The transmit buffer is empty.
 	 * @return
 	 */
-	public boolean txEmpty() {
+	final public boolean txEmpty() {
 		return (status & MASK_TDRE) != 0;
 	}
 	
