@@ -114,26 +114,19 @@ class JVM {
 	private static void f_fastore() { JVMHelp.noim();}
 	private static void f_dastore() { JVMHelp.noim();}
 	private static void f_aastore(int ref, int index, int value) {
-		
-		if (ref==0) throw new NullPointerException();
-		if (index<0 || index>=Native.rdMem(ref+GC.OFF_MTAB_ALEN)) {	
-			throw new ArrayIndexOutOfBoundsException();
-		}
-		
+			
 		synchronized (GC.mutex) {
-			// handle indirection
-			ref = Native.rdMem(ref);
 			if (GC.USE_SCOPES) {
 				// TODO Scope check
 			} else {
 				// snapshot-at-beginning barrier
-				int oldVal = Native.rdMem(ref+index);
+				int oldVal = Native.arrayLoad(ref, index); 
 				if (oldVal!=0 && Native.rdMem(oldVal+GC.OFF_SPACE)!=GC.toSpace) {
 					GC.push(oldVal);
 				}
 			}
 
-			Native.wrMem(value, ref+index);
+			Native.arrayStore(ref, index, value);
 		}
 	}
 		
@@ -942,38 +935,22 @@ class JVM {
 		}
 	}
 	private static void f_resE2() { JVMHelp.noim();}
-	private static void f_putfield_ref(int ref, int val, int index) {
+	private static void f_putfield_ref(int ref, int value, int index) {
 		
-		if (ref==0) {
-			throw new NullPointerException();
-		}
 		synchronized (GC.mutex) {
-			/*
-			// push the object on mark stack if not
-			// black - that's the what kind of
-			// write barrier?
-			if (ref!=0 && Native.rdMem(ref+GC.OFF_SPACE)!=GC.toSpace) {
-				GC.push(ref);
-			}
-			*/
 			
-			// TODO: use Native.pufField()
-			//	but wait till OEBB project is stabilized as it breaks
-			//	with the older JOP version
-			
-			// handle indirection
-			ref = Native.rdMem(ref);
 			if (GC.USE_SCOPES) {
 				// TODO Scope check
 			} else {
 				// snapshot-at-beginning barrier
-				int oldVal = Native.rdMem(ref+index);
+				int oldVal = Native.getField(ref, index);
+				// Is it white?
 				if (oldVal!=0 && Native.rdMem(oldVal+GC.OFF_SPACE)!=GC.toSpace) {
+					// Mark grey
 					GC.push(oldVal);
 				}				
 			}
-			
-			Native.wrMem(val, ref+index);			
+			Native.putField(ref, index, value);
 		}
 	}
 	private static void f_resE4() { JVMHelp.noim();}
