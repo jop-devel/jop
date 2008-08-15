@@ -148,10 +148,10 @@ set_location_assignment PIN_33 -to rama_clk
 set_location_assignment PIN_104 -to rama_nwe
 set_location_assignment PIN_103 -to rama_ncas
 set_location_assignment PIN_101 -to rama_nras
-set_location_assignment PIN_98 -to rama_ba0
-set_location_assignment PIN_106 -to rama_ba1
-set_location_assignment PIN_6 -to rama_dml
-set_location_assignment PIN_13 -to rama_dmh
+set_location_assignment PIN_106 -to rama_ba0
+set_location_assignment PIN_98 -to rama_ba1
+set_location_assignment PIN_7 -to rama_dml
+set_location_assignment PIN_10 -to rama_dmh
 set_location_assignment PIN_68 -to usb_wub
 set_location_assignment PIN_67 -to usb_d[7]
 set_location_assignment PIN_76 -to usb_d[6]
@@ -171,8 +171,8 @@ set_location_assignment PIN_51 -to sd_d[1]
 set_location_assignment PIN_58 -to sd_d[0]
 set_location_assignment PIN_43 -to io_l[5]
 set_location_assignment PIN_42 -to io_l[4]
-set_location_assignment PIN_10 -to io_l[3]
-set_location_assignment PIN_7 -to io_l[2]
+set_location_assignment PIN_13 -to io_l[3]
+set_location_assignment PIN_6 -to io_l[2]
 set_location_assignment PIN_4 -to io_l[1]
 set_location_assignment PIN_22 -to clk
 set_location_assignment PIN_105 -to ser_txd
