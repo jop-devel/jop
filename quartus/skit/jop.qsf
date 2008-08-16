@@ -186,14 +186,17 @@ set_location_assignment PIN_77 -to led
 set_global_assignment -name TIMEQUEST_MULTICORNER_ANALYSIS ON
 set_global_assignment -name TIMEQUEST_DO_CCPP_REMOVAL ON
 set_location_assignment PIN_100 -to rama_ncs
+set_global_assignment -name USE_CONFIGURATION_DEVICE ON
+set_global_assignment -name RESERVE_DATA0_AFTER_CONFIGURATION "USE AS REGULAR IO"
+set_global_assignment -name RESERVE_DATA1_AFTER_CONFIGURATION "USE AS REGULAR IO"
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jopcyc3c25.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/memory/sc_sram16skit.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_80.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc3_pll.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/jop_types.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_pack.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/fifo.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/scio_skit.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/memory/sc_sdram_skit_x16.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_uart.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_usb.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_sys.vhd
@@ -216,6 +219,3 @@ set_global_assignment -name VHDL_FILE ../../vhdl/core/stack.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/jopcpu.vhd
 set_global_assignment -name CDF_FILE jop.cdf
 set_global_assignment -name VECTOR_WAVEFORM_FILE jop.vwf
-set_global_assignment -name USE_CONFIGURATION_DEVICE ON
-set_global_assignment -name RESERVE_DATA0_AFTER_CONFIGURATION "USE AS REGULAR IO"
-set_global_assignment -name RESERVE_DATA1_AFTER_CONFIGURATION "USE AS REGULAR IO"
