@@ -38,6 +38,7 @@ use work.jop_config.all;
 entity jop is
 
 generic (
+	addr_bits	: integer := 24;	-- address range for the avalone interface
 	ram_cnt		: integer := 2;		-- clock cycles for external ram
 	ram_addr_cnt: integer := 12;	-- RAM addr bits
 --	rom_cnt		: integer := 3;		-- clock cycles for external rom OK for 20 MHz
@@ -103,7 +104,19 @@ port (
 --	I/O pins of board
 --
 
-	io_l	: inout std_logic_vector(5 downto 1)
+	io_l	: inout std_logic_vector(5 downto 1);
+
+--
+-- Avalon interface
+--
+
+	address		: out std_logic_vector(addr_bits-1+2 downto 0);
+	writedata	: out std_logic_vector(31 downto 0);
+	byteenable	: out std_logic_vector(3 downto 0);
+	readdata	: in std_logic_vector(31 downto 0);
+	read		: out std_logic;
+	write		: out std_logic;
+	waitrequest	: in std_logic 
 
 );
 end jop;
@@ -113,6 +126,34 @@ architecture rtl of jop is
 --
 --	components:
 --
+
+component sc2avalon is
+generic (addr_bits : integer);
+
+port (
+
+	clk, reset	: in std_logic;
+
+-- SimpCon interface
+
+	sc_address		: in std_logic_vector(addr_bits-1 downto 0);
+	sc_wr_data		: in std_logic_vector(31 downto 0);
+	sc_rd, sc_wr	: in std_logic;
+	sc_rd_data		: out std_logic_vector(31 downto 0);
+	sc_rdy_cnt		: out unsigned(1 downto 0);
+
+-- Avalon interface
+
+	av_address		: out std_logic_vector(addr_bits-1+2 downto 0);
+	av_writedata	: out std_logic_vector(31 downto 0);
+	av_byteenable	: out std_logic_vector(3 downto 0);
+	av_readdata		: in std_logic_vector(31 downto 0);
+	av_read			: out std_logic;
+	av_write		: out std_logic;
+	av_waitrequest	: in std_logic
+
+);
+end component; 
 
 component pll is
 generic (multiply_by : natural; divide_by : natural);
@@ -234,87 +275,41 @@ end process;
 --			b => io_b
 		);
 
-	cmp_scm: entity work.sc_mem_if
-		generic map (
-			ram_ws => ram_cnt-1,
-			addr_bits => ram_addr_cnt
-			--rom_ws => rom_cnt-1
-		)
-		port map (clk_int, int_res,
-			sc_mem_out, sc_mem_in,
-
-			ram_addr => ram_addr,
-			ram_dout => ram_dout,
-			ram_din => ram_din,
-			ram_dout_en	=> ram_dout_en,
-			ram_ncs => ram_ncs,
---			ram_noe => ram_noe,
-			ram_nwe => ram_nwe,
-			
-			ram_ba0 => ram_ba0,
-			ram_ba1 => ram_ba1,
-			ram_dml => ram_dml,
-			ram_dmh => ram_dmh,
-			ram_ncas => ram_ncas,
-			ram_nras => ram_nras
-
---			fl_a => fl_a,
---			fl_d => fl_d,
---			fl_ncs => fl_ncs,
---			fl_ncsb => fl_ncsb,
---			fl_noe => fl_noe,
---			fl_nwe => fl_nwe,
---			fl_rdy => fl_rdy
-
-		);
-
-	process(ram_dout_en, ram_dout)
-	begin
-		if ram_dout_en='1' then
-			rama_d <= ram_dout(15 downto 0);
-			--rama_d <= ram_dout(15 downto 0);
-			--ramb_d <= ram_dout(31 downto 16);
-		else
-			rama_d <= (others => 'Z');
-			--ramb_d <= (others => 'Z');
-		end if;
-	end process;
-
-	ram_din <= rama_d;
-	--ram_din <= ramb_d & rama_d;
-
---
---	To put this RAM address in an output register
---	we have to make an assignment (FAST_OUTPUT_REGISTER)
---
-
-	rama_a <= ram_addr;
-	rama_ncs <= ram_ncs;
---	rama_noe <= ram_noe;
-	rama_nwe <= ram_nwe;
---	rama_nlb <= '0';
---	rama_nub <= '0';
-	
-	rama_ba0 <= ram_ba0;
-	rama_ba1 <= ram_ba1;
-	rama_dml <= ram_dml;
-	rama_dmh <= ram_dmh;
-	rama_ncas <= ram_ncas;
-	rama_nras <= ram_nras;
-
---	ramb_a <= ram_addr;
---	ramb_ncs <= ram_ncs;
---	ramb_noe <= ram_noe;
---	ramb_nwe <= ram_nwe;
---	ramb_nlb <= '0';
---	ramb_nub <= '0';
-
-
 --
 --	EP1C12 additional power pins as tristatet output on EP1C6
 --
 --	dummy_gnd <= (others => 'Z');
 --	dummy_vccint <= (others => 'Z');
 --	freeio <= 'Z';
+
+--
+-- avalon interface
+--
+
+sc2av: sc2avalon
+		generic map (
+			addr_bits => addr_bits
+		)
+		port map (
+			clk => clk_int,
+			reset => int_res,
+
+			sc_address(22 downto 0) => sc_mem_out.address,
+			sc_address(23) => '0',
+			sc_wr_data => sc_mem_out.wr_data,
+			sc_rd => sc_mem_out.rd,
+			sc_wr => sc_mem_out.wr,
+			sc_rd_data => sc_mem_in.rd_data,
+			sc_rdy_cnt => sc_mem_in.rdy_cnt,
+
+			av_address => address,
+			av_writedata => writedata,
+			av_byteenable => byteenable,
+			av_readdata => readdata,
+			av_read => read,
+			av_write => write,
+			av_waitrequest => waitrequest
+		);
+
 
 end rtl;
