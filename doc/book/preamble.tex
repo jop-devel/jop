@@ -1,5 +1,5 @@
 \documentclass[%draft,
-    10pt, % use explicit paper size
+    11pt, % use explicit paper size
     headinclude, footexclude,
     twoside, % this produces strange margins!
     openright, % for new chapters
@@ -12,7 +12,9 @@
 
 
 % that's for virtualbookworm trim size
-\setlength{\paperwidth}{6in} \setlength{\paperheight}{9in}
+%\setlength{\paperwidth}{6in} \setlength{\paperheight}{9in}
+% that's for CreateSpace trim size
+\setlength{\paperwidth}{7.5in} \setlength{\paperheight}{9.25in}
 \usepackage{pslatex} % -- times instead of computer modern
 % pslatex should be replaced by this:
 %\usepackage{mathptmx}
@@ -20,9 +22,12 @@
 %\usepackage{courier}
 % pslatex does not work with T1 encoding. <> Problem?
 
-% typeare{calc} results to a DIV of 16 for 11pt
-% but too large margin for 10pt
-\typearea[0.32in]{18}
+% typeare{calc} without BCOR results to a DIV of 8 for 11pt
+%\typearea[0.465in]{15}
+% the decision is 14
+\typearea[0.5in]{14}
+%\typearea[0.535in]{13}
+%\typearea[0.57in]{12}
 
 % headings
 \usepackage{scrpage2} % for headers
@@ -123,15 +128,6 @@
 \setkomafont{captionlabel}{\sffamily\bfseries}
 
 
-
-% Do I need this package?
-\usepackage{float}
-
-% is this a correction for the <> problem?
-% \usepackage[T1]{fontenc}
-
-
-
 \usepackage{latexsym}
 \usepackage{graphicx}
 \usepackage{amsmath}
@@ -215,9 +211,9 @@ showstringspaces=false,captionpos=b}
             \\ \\
             \textbf{Operation} & #2 \\ \\
             \textbf{Opcode} & \texttt{#3} \\ \\
-            \textbf{Dataflow} & \parbox[t]{9.5cm}{\(#4\)}\\ \\
-            \textbf{JVM equivalent} & \parbox[t]{9.5cm}{\code{#5}} \\ \\
-            \textbf{Description} & \parbox[t]{9.5cm}{#6}\\
+            \textbf{Dataflow} & \parbox[t]{10.5cm}{\(#4\)}\\ \\
+            \textbf{JVM equivalent} & \parbox[t]{10.5cm}{\code{#5}} \\ \\
+            \textbf{Description} & \parbox[t]{10.5cm}{#6}\\
         \end{tabular}
     \end{table}
 }
