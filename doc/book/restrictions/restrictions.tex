@@ -1,14 +1,14 @@
 Java was created as a part of the Green project specifically for an
 embedded device, a handheld wireless PDA. The device was never
-released as a product and Java was launched as the new language for
-the Internet. Over the time, Java got very popular to build desktop
-applications and web services. However, embedded systems are still
-programmed in C or C++. The pragmatic approach of Java to object
-orientation, the huge standard library and enhancements over C lead
-to a productivity increase, which now also attracts embedded system
-programmers. A built-in concurrency model and an elegant language
-construct to express synchronization between threads also simplify
-typical programming idioms in this area.
+released as a product and Java was launched as the \emph{new}
+language for the Internet. Over time, Java become very popular to
+build desktop applications and web services. However, embedded
+systems are still programmed in C or C++. The pragmatic approach of
+Java to object orientation, the huge standard library and
+enhancements over C lead to a productivity increase, which now also
+attracts embedded system programmers. A built-in concurrency model
+and an elegant language construct to express synchronization between
+threads also simplify typical programming idioms in this area.
 
 On the other hand, there are some issues with Java in an embedded
 system. Embedded systems are usually too small for JIT-compilation
@@ -23,12 +23,12 @@ support is available. The Real Time Specification for Java (RTSJ)
 
 This section summarizes the issues with standard Java on embedded
 systems and describes various definitions for small devices given by
-Sun. It is followed by an overview of the two real-time extensions
-of Java and approaches for restricting the RTSJ for high-integrity
+Sun. It is followed by an overview of the two real-time extensions of
+Java and approaches for restricting the RTSJ for high-integrity
 applications. If, and how, these specifications are sufficient for
-small embedded systems in general and specifically for JOP is
-analyzed. The missing definition for small embedded real-time
-systems is provided in Section~\ref{sec:rtprof}.
+small embedded systems in general, and specifically for JOP, is
+analyzed. The missing definition for small embedded real-time systems
+is provided in Section~\ref{sec:rtprof}.
 
 \section{Java Support for Embedded Systems}
 
@@ -65,7 +65,7 @@ background thread.
 \section{Issues with Java in Embedded Systems}
 
 Although Java has language features that simplify concurrent
-programming the definition of these features is too vague for
+programming, the definition of these features is too vague for
 real-time systems.
 
 
@@ -286,9 +286,9 @@ interface for communication than \code{java.io} and \code{java.net}.
 Examples of connections are: HTTP, datagrams, sockets and
 communication ports.
 
-A small-footprint JVM, known as K Virtual Machine (KVM), is part of
-the CLDC distribution. KVM is suitable for 16/32-bit microprocessors
-with a total memory budget of about 128~KB.
+A small-footprint JVM, known as the K Virtual Machine (KVM), is part
+of the CLDC distribution. KVM is suitable for 16/32-bit
+microprocessors with a total memory budget of about 128~KB.
 
 When implementing CLDC, one may choose to preload/prelink some
 classes. A utility (\textit{JavaCodeCompact}) combines one or more
@@ -301,11 +301,11 @@ a media player and a game API.
 
 \subsection{Connected Device Configuration (CDC)}
 
-The CDC defines a configuration for devices with network connection
+The CDC defines a configuration for devices with a network connection
 and assumes a minimum of a 32-bit processor and 2~MB memory. CDC
 defines no restrictions for the JVM. A virtual machine, the CVM, is
-part of the distribution. The CVM expects the following
-functionality from the underlying OS:
+part of the distribution. The CVM expects the following functionality
+from the underlying OS:
 %
 \begin{itemize}
     \item Threads
@@ -341,7 +341,7 @@ applet interface.
 
 \end{description}
 %
-Although a device can support multiple profiles additional libraries
+Although a device can support multiple profiles, additional libraries
 for RMI and ODBC are known as \textit{optional packages}.
 
 \subsection{Additional Specifications}
@@ -438,8 +438,8 @@ Two forms of source code are supported to annotate attributes:
 classes and \textit{syntactic} code with new keywords. Syntactic
 code has to be processed by a special compiler or preprocessor.
 
-The RT-Core as specification faded into history. Many of the
-proposed concepts can be found in NewMonics PERC systems
+The RT-Core as a specification faded into history. Many of the
+proposed concepts can be found in NewMonics (now Aonix) PERC systems
 \cite{PERC}. A more detailed description of the RT-Core extensions
 can be found in \cite{jop:rtjava}.
 
@@ -468,13 +468,13 @@ presents an overview of the RTSJ.
 
 \paragraph{Threads and Scheduling}
 
-The behavior of the scheduler is clearer defined as in standard
-Java. A priority-based, preemptive scheduler with at least 28
-real-time priorities is defined as base scheduler. Additional levels
-(ten) for the traditional Java threads need to be available. Threads
-with the same priority are queued in FIFO order. Additional
-schedulers (e.g. EDF) can be provided by the RTSJ implementation.
-The class \code{Scheduler} and associated classes provide optional
+The behavior of the scheduler is more clearly defined than in
+standard Java. A priority-based, preemptive scheduler with at least
+28 real-time priorities is defined as the base scheduler. Additional
+levels (ten) for the traditional Java threads need to be available.
+Threads with the same priority are queued in FIFO order. Additional
+schedulers (e.g. EDF) can be provided by the RTSJ implementation. The
+class \code{Scheduler} and associated classes provide optional
 support for feasibility analysis.
 
 
@@ -768,13 +768,13 @@ result in the programmer developing his/her own memory management.
 One solution to use scoped memory for communication is proposed in
 \cite{conf/isorc/PizloFHV04}. A \emph{wedge} thread has to keep the
 scope alive when data is added by the producer. The consumer has to
-notify this wedge thread when all data is consumed the exit the
-scope for the memory recycle. However, there is no single instant
-available where we can \emph{guarantee} that the list is empty. A
-possible solution for this problem is described in
-\cite{conf/isorc/PizloFHV04} as \emph{handoff} pattern. The pattern
-is similar to double buffering, but with an explicit copy of the
-data.
+notify this wedge thread when all data is consumed the exit the scope
+for the memory recycle. However, there is no single instant available
+where we can \emph{guarantee} that the list is empty. A possible
+solution for this problem is described in
+\cite{conf/isorc/PizloFHV04} as the \emph{handoff} pattern. The
+pattern is similar to double buffering, but with an explicit copy of
+the data.
 
 
 \paragraph{Time and Timers }
@@ -861,14 +861,15 @@ is inspired by the Ravenscar profile for Ada \cite{289525} and
 focuses on exact temporal predictability.
 %
 \begin{description}
-\item[Application structure:] The application is divided in two
-different phases: \textit{initialization} and \textit{mission}. All
-non time-critical initialization, global object allocations, thread
-creation and startup are performed in the initialization phase. All
-classes need to be loaded and initialized in this phase. The mission
-phase starts after returning from \code{main()}, which is assumed to
-execute with maximum priority. The number of threads is fixed and
-the assigned priorities remain unchanged.
+\item[Application structure:] The application is divided into two
+    different phases: \textit{initialization} and
+    \textit{mission}. All non time-critical initialization,
+    global object allocations, thread creation and startup are
+    performed in the initialization phase. All classes need to be
+    loaded and initialized in this phase. The mission phase
+    starts after returning from \code{main()}, which is assumed
+    to execute with maximum priority. The number of threads is
+    fixed and the assigned priorities remain unchanged.
 
 \item[Threads:] Two types of tasks are defined: \textit{Periodic
 time-triggered activities} execute an infinite loop with at least
@@ -955,13 +956,13 @@ It is not necessary to distinguish between heap and immortal memory.
 Without a garbage collector, the heap implicitly equals to immortal
 memory.
 
-Objects are allocated in immortal memory in the initialization
-phase. In the mission phase, no objects should be allocated in
-immortal memory. Scoped memory can be entered and subsequent new
-objects are allocated in the scoped memory area. Since there are no
-circumstances in which allocation in these two memory areas are
-mixed, no \code{newInstance()} such as those in the RTSJ or
-Ravenscar-Java are necessary.
+Objects are allocated in immortal memory in the initialization phase.
+In the mission phase, no objects should be allocated in immortal
+memory. Scoped memory can be entered and subsequent new objects are
+allocated in the scoped memory area. Since there are no circumstances
+in which allocation in these two memory areas are mixed, no
+\code{newInstance()}as defined in the RTSJ is not necessary in a
+Ravenscar-Java style profile.
 
 \subsection{Extensions to the RTSJ}
 

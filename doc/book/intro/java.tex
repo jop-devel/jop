@@ -7,7 +7,7 @@ anywhere} possible.
 The following chapter gives a short overview of the Java programming
 language. A more detailed description of the Java Virtual Machine
 (JVM) and the explanation of the JVM instruction set, the so-called
-bytecodes follows. The exploration of dynamic instruction counts of
+bytecodes, follows. The exploration of dynamic instruction counts of
 typical Java programs can be found in Section~\ref{sec:bench:jvm}.
 
 \section{Java}
@@ -16,14 +16,16 @@ Java is a relatively new and popular programming language. The main
 features that have helped Java achieve success are listed below:
 %
 \begin{description}
-    \item[Simple and object oriented:]
-Java is a simple programming language that appears very similar to
-C. This `look and feel' of C means that programmers that know C, can
-switch to Java without difficulty. Java provides a simplified object
-model with single inheritance\footnote{Java has \emph{single
-inheritance} of \emph{implementation} -- only one class can be
-extended. However, a class can implement several interfaces, which
-means that Java has \emph{multiple interface inheritance}.}.
+    \item[Simple and object oriented:] Java is a simple
+        programming language that appears very similar to C. This
+        `look and feel' of C means that programmers who know C,
+        can switch to Java without difficulty. Java provides a
+        simplified object model with single
+        inheritance\footnote{Java has \emph{single inheritance}
+        of \emph{implementation} -- only one class can be
+        extended. However, a class can implement several
+        interfaces, which means that Java has \emph{multiple
+        interface inheritance}.}.
 
     \item[Portability:]
 To accommodate the diversity of operating environments, the Java
@@ -34,18 +36,18 @@ operators. A Java interpreter, the Java virtual machine, is
 available on various platforms to help make `write once, run
 anywhere' possible.
 
-    \item[Availability:]
-Java is not only available for different operating systems, it is
-available at no cost. The runtime system and the compiler can be
-downloaded from Sun's website for Windows, Linux and Solaris.
-Sophisticated development environments, such as Netbeans or Eclipse,
-are available under the GNU Public License.
+    \item[Availability:] Java is not only available for different
+        operating systems, it is available at no cost. The
+        runtime system and the compiler can be downloaded from
+        Sun's website for Windows, Linux, and Solaris.
+        Sophisticated development environments, such as Netbeans
+        or Eclipse, are available under the GNU Public License.
 
-    \item[Library:]
-The complete Java system includes a rich class library to increase
-programming productivity. Besides the functionality from a C
-standard library, it also contains other tools, such as collection
-classes and a GUI toolkit.
+    \item[Library:] The complete Java system includes a rich
+        class library to increase programming productivity.
+        Besides the functionality of a C standard library, it
+        also contains other tools, such as collection classes and
+        a GUI toolkit.
 
     \item[Built-in multithreading:]
 Java supports multithreading at the language level: the library
@@ -83,8 +85,8 @@ of three main components:
     \item The Java programming language as defined in
     \cite{JavaLangSpec2}
     \item The class library, defined as part of the Java
-    specification. All implementations of Java have to contain the
-    library defined by Sun
+        specification. All implementations of Java have to
+        contain the library as defined by Sun
     \item The Java virtual machine (defined in \cite{jvm}) that loads,
      verifies and executes the binary representation (the
 \emph{class file}) of a Java program
@@ -266,9 +268,9 @@ to the same type of memory we will see in Section~\ref{sec:stack}
 that the argument-passing mechanism regulates the layout of the JVM
 stack.
 
-Local variables and the operand stack are accessed as frequently as
-registers in a standard processor. A Java processor shall provide
-some caching mechanism of this data area.
+Local variables and the operand stack are accessed as frequently
+as registers in a standard processor. A Java processor should
+provide some caching mechanism of this data area.
 
 \end{description}
 %
@@ -280,8 +282,8 @@ conventional processor.
 \subsection{JVM Instruction Set}
 
 The instruction set of the JVM contains 201 different instructions
-\cite{jvm}, the \emph{bytecodes} that can be grouped into the
-following categories:
+\cite{jvm}. This \emph{bytecodes} can be grouped into the following
+categories:
 %
 \begin{description}
     \item[Load and store:]
@@ -450,10 +452,11 @@ methods, the hot spots, are then compiled to native code.
 
 JIT compilation has several disadvantages for embedded systems,
 notably that a compiler (with the intrinsic memory overhead) is
-necessary on the target system. Due to compilation during runtime,
-execution times are not predictable\footnote{Even if the time for
-the compilation is known, the WCET for a method has to include the
-compile time!}.
+necessary on the target system. Due to compilation during
+runtime, execution times are hardly predictable.\footnote{Even if
+the time for the compilation is known, the WCET for a method has
+to include the compile time! Furthermore, WCET analysis has to
+know in advance what code will be produced by JIT compilation.}
 
     \item[Batch Compilation:]
 Java can be compiled, in advance, to the native instruction set of
@@ -480,7 +483,9 @@ capability to execute C/C++ programs.
 \begin{figure}
     \centering
     \includegraphics[width=\textwidth]{visio/jvmall}
-    \caption{Implementation variations of Java in embedded systems}\label{fig:java:embedded}
+    \caption{Implementation variations for an embedded JVM: (a) standard layers
+    for Java with an operating system -- equivalent to desktop configurations, (b) a JVM on the bare metal,
+    and (c) a JVM as a Java processor.}\label{fig:java:embedded}
 \end{figure}
 
 In embedded systems the architecture of JVMs are more diverse than
@@ -493,14 +498,15 @@ JVM via native functions and uses the TCP/IP stack implementation
 and the device drivers of the OS.
 
 A JVM without and OS is shown in sub-figure (b). This solution is
-often called \emph{running on the bare metal}. The JVM acts as the
-OS and provides the thread scheduling and the low-level access to
-the hardware. In that case the network stack can be written entirely
-in Java. JNode\footnote{\url{http://www.jnode.org/}} is an approach
-to implement the OS entirely in Java. This solution becomes popular
-even in server
-applications\footnote{\url{http://www.bea.com/framework.jsp?CNT=index.htm&FP=/content/products/weblogic/virtual_server}
-}.
+often called \emph{running on the bare metal}. The JVM acts as the OS
+and provides the thread scheduling and the low-level access to the
+hardware. In that case the network stack can be written entirely in
+Java. JNode\footnote{\url{http://www.jnode.org/}} is an approach to
+implement the OS entirely in Java. This solution becomes popular even
+in server applications.\footnote{BEA System offers the JVM LiquidVM
+that includes basic OS functions and does not need a guest OS.
+%\url{http://www.bea.com/framework.jsp?CNT=index.htm&FP=/content/products/weblogic/virtual_server}
+}
 
 Sub-figure (c) shows an embedded solution where the JVM is part of
 the hardware layer. That means it is implemented in a Java
@@ -512,14 +518,14 @@ Figure~\ref{fig:java:embedded} shows how the flow from the
 application goes down to the hardware. The example consists of a web
 server and an Internet connection via Ethernet. In case (a) the
 application web server talks with \code{java.net} in the JDK. The
-flow goes down via a native interface to the TCP/IP implementation
-and the Ethernet device driver within the OS (usually written in C).
-The device driver talks with the Ethernet chip. In (b) the OS layer
-is omitted: the TCP/IP layer and the Ethernet device driver are now
-part of the Java library. In (c) the JVM is part of the hardware
-layer and a direct access from the Ethernet driver to the Ethernet
-hardware is mandatory. Note how part of the network stack moves up
-from the OS layer to the Java library. Version (c) shows a pure Java
+flow goes through a native interface to the TCP/IP implementation and
+the Ethernet device driver within the OS (usually written in C). The
+device driver talks with the Ethernet chip. In (b) the OS layer is
+omitted: the TCP/IP layer and the Ethernet device driver are now part
+of the Java library. In (c) the JVM is part of the hardware layer and
+a direct access from the Ethernet driver to the Ethernet hardware is
+mandatory. Note how part of the network stack moves up from the OS
+layer to the Java library. Version (c) shows a pure Java
 implementation of the whole network stack.
 
 
