@@ -25,6 +25,7 @@ import com.jopdesign.libgraph.cfg.statements.common.PutfieldStmt;
 import com.jopdesign.libgraph.cfg.statements.stack.StackDup;
 
 /**
+ * TODO this optimization is not very effective, only works on static fields.
  * @author Stefan Hepp, e0026640@student.tuwien.ac.at
  */
 public class PeepGetfield implements PeepOptimization {
@@ -64,6 +65,10 @@ public class PeepGetfield implements PeepOptimization {
         if ( get.getConstantField().isAnonymous() || get.getConstantField().getFieldInfo().isVolatile() ) {
             return null;
         }
+
+	if ( !get.isStatic() || !put.isStatic() ) {
+	    return null;
+	}
 
         stmt.setStatement(new StackDup(put.getConstantField().getFieldInfo().getType()));
         nextStmt.setStatement(put);
