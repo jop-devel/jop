@@ -54,7 +54,7 @@ an associated thread class.
 
 \subsection{Data Structures}
 
-To implement a scheduler in Java, some JVM internal data structures
+To implement a scheduler in Java, some internal JVM data structures
 need to be accessible.
 
 \begin{description}
@@ -222,7 +222,7 @@ by the user scheduler. The root of the Java class hierarchy
 (\code{java.lang.Object}) contains a JVM internal reference of
 generic type Object that can be used by the scheduler to attach data
 structures for monitors. The first argument of these methods is the
-object that is used as monitor.
+object to be used as a monitor.
 
 \paragraph{Scheduler or Task}
 
@@ -247,11 +247,11 @@ called) is returned by this method.
 
 A basic structure for schedulable objects is shown in
 Listing~\ref{lst:arch:rt:user:task}. This class is usually extended
-to provide a thread implementation that fits to the user-defined
+to provide a thread implementation that fits in the user-defined
 scheduler. The class \code{Task} is intended to be minimal. To avoid
-inheriting methods that do not fit for some applications, it does
-not extend \code{java.lang.Thread}. However, \code{Task} can be used
-to \emph{implement} \code{java.lang.Thread}.
+inheriting methods that do not fit for some applications, it does not
+extend \code{java.lang.Thread}. However, \code{Task} can be used to
+\emph{implement} \code{java.lang.Thread}.
 
 \begin{lstlisting}[float,caption=A basic schedulable object,
 label=lst:arch:rt:user:task, emph={Task, start, enterMemory,
@@ -277,7 +277,7 @@ application to provide scoped memory for temporary allocated
 objects. \code{Task} provides a list of active tasks for the
 scheduler.
 
-One issue, raised by the implementation of the framework is the way
+One issue, raised by the implementation of the framework, is the way
 in which access rights to methods need to be defined in Java. All
 methods, except \code{start()}, should be \code{private} or
 \code{protected}. However, some methods, such as \code{schedule()},
@@ -373,7 +373,7 @@ scheduling was part of the thread class. Using the framework, these
 functions have to be split to two classes, extending \code{Task} and
 \code{Scheduler}. Both classes are placed in the same package to
 provide simpler information sharing with some protection from the
-rest of the application. For performance reasons data structures are
+rest of the application. For performance reasons, data structures are
 directly exposed from one class to the other.
 
 The resulting implementation is compatible with the first
@@ -488,7 +488,7 @@ JVM bytecode maps to one ore more microcode instructions. Every
 microcode instruction takes exactly one cycle to execute. Thus, the
 execution time at the bytecode level is known cycle accurately. The
 microcode contains no data dependent or unbound loops that would
-compromise the WCET analysis (see Section~\ref{sec:wcet}).
+compromise the WCET analysis (see Chapter~\ref{chap:wcet}).
 
 The worst-case time for dispatching is known cycle accurately on
 this architecture. Only the time behavior of the user scheduler

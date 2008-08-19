@@ -1,20 +1,19 @@
-%\input{../preamble}
-%\chapter{Results}
 
-
-In this chapter, we will present the evaluation results for JOP,
-with respect to size, performance and WCET.
+In this chapter, we will present the evaluation results for JOP, with
+respect to size, performance, and WCET.
 \tablename~\ref{tab_results_proc} compares JOP with other Java
 hardware solutions (see also Chapter~\ref{chap:related}). The column
-year indicates the first date at which the processor became
-available or the first publication about the processor. The research
-project Komodo has now ceased, while FemtoJava is still being used
-as a basis for active research.
+year indicates the first date at which the processor became available
+or the first publication about the processor. The research project
+Komodo has now ceased, while FemtoJava is still being used as a basis
+for active research.
 
 We can see that JOP is the smallest realization in an FPGA and also
-has the highest clock frequency. JOP also has a minimum CPI of 1
-while, for Komodo and FemtoJava, the minimum CPIs are four and three
-respectively.
+has the highest clock frequency of all soft-core implementations. JOP
+also has a minimum CPI of 1 while Komodo and FemtoJava have minimum
+CPIs of four and three respectively.
+
+\emph{TODO: CPI of four is not true anymore (for jamuth).}
 
 \begin{table}[tbh]
     \centering
@@ -162,17 +161,17 @@ typical configuration of JOP consumes about 30\% of the LCs in a
 Cyclone EP1C6, thus leaving enough resources free for
 application-specific logic.
 
-As a reference, NIOS \cite{NIOS}, Altera's popular RISC soft-core,
-is also included in \tablename~\ref{tab_results_compare}. NIOS has a
-16-bit instruction set, a 5-stage pipeline and can be configured
-with a 16 or 32-bit datapath. Version A is the minimum configuration
-of NIOS. Version B adds an external memory interface, multiplication
-support and a timer. Version A is comparable with the minimal
+As a reference, NIOS \cite{NIOS}, Altera's popular RISC soft-core, is
+also included in \tablename~\ref{tab_results_compare}. NIOS has a
+16-bit instruction set, a 5-stage pipeline and can be configured with
+a 16 or 32-bit datapath. Version A is the minimum configuration of
+NIOS. Version B adds an external memory interface, multiplication
+support, and a timer. Version A is comparable with the minimal
 configuration of JOP, and Version B with its typical configuration.
 
 LEON3 \cite{LEON}, the open-source implementation of the SPARC V8
 architecture, has been ported to the exact same hardware that was
-used for the JOP numbers. LEON3 is a representative of a RISC
+used for the JOP numbers. LEON3 is representative for a RISC
 processor that is used in embedded real-time systems (e.g., by ESA
 for space missions).
 
@@ -323,7 +322,7 @@ performance.
 %real-time profile, as described in Section~\ref{sec:rtprof}, on JOP
 %is compared to the RI of the RTSJ on top of Linux.
 
-The comparison the implementation of the simple real-time profile,
+The comparison of the implementation of the simple real-time profile,
 as described in Section~\ref{sec:rtprof}, on JOP with the RI of the
 RTSJ on top of Linux can be found in \cite{jop:rtjava}.
 
@@ -332,11 +331,11 @@ RTSJ on top of Linux can be found in \cite{jop:rtjava}.
 Running benchmarks is problematic, both generally and especially in
 the case of embedded systems. The best benchmark would be the
 application that is intended to run on the system being tested. To
-get comparable results SPEC provides benchmarks for various systems.
-However, the one for Java, the SPECjvm98 \cite{SPECJvm98}, needs
-more functionality than what is usually available in a CLDC
-compliant device (e.g., a filesystem and \code{java.net}). Some
-benchmarks from the SPECjvm98 suits also need several MB of heap.
+get comparable results, SPEC provides benchmarks for various systems.
+However, the one for Java, the SPECjvm98 \cite{SPECJvm98}, needs more
+functionality than what is usually available in a CLDC compliant
+device (e.g., a filesystem and \code{java.net}). Some benchmarks from
+the SPECjvm98 suites also need several megabaytes of heap.
 
 Due to the absence of a \emph{standard} Java benchmark for embedded
 systems, a small benchmark suite that should run on even the
@@ -373,14 +372,14 @@ which means that higher values indicate better performance.
 %Teilweise Wiederholung
 
 All the benchmarks measure how often a function is executed per
-second. In the Kfl benchmark, this function contains the main loop
-of the application that is executed in a periodic cycle in the
-original application. In the benchmark the wait for the next period
-is omitted, so that the time measured solely represents execution
-time. The UDP benchmark contains the generation of a request,
-transmitting it through the UDP/IP stack, generating the answer and
-transmitting it back as a benchmark function. The iteration count is
-the number of received answers per second.
+second. In the Kfl benchmark, this function contains the main loop of
+the application that is executed in a periodic cycle in the original
+application. In the benchmark, the wait for the next period is
+omitted, so that the time measured solely represents execution time.
+The UDP benchmark contains the generation of a request, transmitting
+it through the UDP/IP stack, generating the answer and transmitting
+it back as a benchmark function. The iteration count is the number of
+received answers per second.
 
 The accuracy of the measurement depends on the resolution of the
 system time. For the measurements under Linux, the system time has a
@@ -400,18 +399,20 @@ The main memory is a 32-bit SRAM (15ns) with an access time of 2
 clock cycles. The benchmarked configuration of JOP contains a 4~KB
 method cache organized in 16 blocks.
 
-    \item[leJOS]
-As an example for a low-end embedded device we use the RCX robot
-controller from the LEGO MindStorms series. It contains a 16-bit
-Hitachi H8300 microcontroller \cite{hitachi:h8}, running at 16~MHz.
-leJOS \cite{lejos} is a tiny interpreting JVM for the RCX.
+    \item[leJOS] As an example for a low-end embedded device, we
+        use the RCX robot controller from the LEGO MindStorms
+        series. It contains a 16-bit Hitachi H8300
+        microcontroller \cite{hitachi:h8}, running at 16~MHz.
+        leJOS \cite{lejos} is a tiny interpreting JVM for the
+        RCX.
 
-    \item[KVM]
-is a port of the Sun's KVM that is part of the Connected Limited
-Device Configuration (CLDC) \cite{J2ME} to Alteras NIOS II processor
-on MicroC Linux. NIOS is implemented on a Cyclone FPGA and clocked
-with 50~MHz. Besides the different clock frequency this is a good
-comparison of an interpreting JVM running in the same FPGA as JOP.
+    \item[KVM] is a port of Sun's KVM, is part of the Connected
+        Limited Device Configuration (CLDC) \cite{J2ME}, to
+        Altera's NIOS II processor on MicroC Linux. NIOS is
+        implemented on a Cyclone FPGA and clocked at 50~MHz.
+        Besides the different clock frequency, this is a good
+        comparison of an interpreting JVM running in the same
+        FPGA as JOP.
 
     \item[TINI]
 is an enhanced 8051 clone running a software JVM. The results were
@@ -431,12 +432,12 @@ simulation of Komodo. The values are obtained without garbage
 collection. According to Pfeffer, Komodo can be clocked with 33MHz
 in a Xlinix XCV800.
 
-    \item[aJile]
-aJile's JEMCore is a direct-execution Java processor that is
-available in two different versions: the \textbf{aJ80} and the
-\textbf{aJ100} \cite{aJile}. The aJ100 provides a generic 8-bit,
-16-bit or 32-bit external bus interface, while the aJ80 only
-provides an 8-bit interface.
+    \item[aJile] aJile's JEMCore is a direct-execution Java
+        processor that is available in two different versions:
+        the \textbf{aJ80} and the \textbf{aJ100} \cite{aJile}.
+        The aJ100 provides a generic 8-bit, 16-bit, or 32-bit
+        external bus interface, while the aJ80 only provides an
+        8-bit interface.
 
 
     \item[EJC]
@@ -461,7 +462,7 @@ compiled with the standard GNU toolchain.
 It would be interesting to include the other soft-core Java
 processors (Moon, Lightfoot, and FemtoJava) in this comparison.
 However, it was not possible to obtain the benchmark data. The
-company that produced Moon seems to be disappeared and FemtoJava
+company that produced Moon seems to have disappeared and FemtoJava
 could not run all benchmarks.
 
 
@@ -583,20 +584,20 @@ popular JStamp board. However, the aJ80 processor only contains an
 system contains the aJ100 with 32-bit, 10~ns SRAMs. JOP with its
 15~ns SRAMs is about 12\% faster than the aJ100 processor.
 
-The MicroBlaze system is a representation of a Java
-batch-compilation system for a RISC processor. MicroBlaze is
-configured with the same cache\footnote{The MicroBlaze with a 8~KB
-data and 8~KB instruction cache is about 1.5 times faster than JOP.
-However, a 16~KB memory is not available in low-cost FPGAs and is an
-unbalanced system with respect to the LC/memory relation.} as JOP
-and clocked at the same frequency. JOP is about four times faster
-than this solution, thus showing that native execution of Java
-bytecodes is faster than batch-compiled Java on a similar system.
-However, the results of the MicroBlaze solution are at a preliminary
-stage\footnote{As not all language constructs can be compiled, only
-the Kfl benchmark was measured. Therefore, the bars for MicroBlaze
-are missing in \figurename~\ref{fig:results:app:bench}.}, as the
-Java2C compiler \cite{Java2C} is still under development.
+The MicroBlaze system is a representation of a Java batch-compilation
+system for a RISC processor. MicroBlaze is configured with the same
+cache\footnote{The MicroBlaze with an 8~KB data and 8~KB instruction
+cache is about 1.5 times faster than JOP. However, a 16~KB memory is
+not available in low-cost FPGAs and is an unbalanced system with
+respect to the LC/memory relation.} as JOP and clocked at the same
+frequency. JOP is about four times faster than this solution, thus
+showing that native execution of Java bytecodes is faster than
+batch-compiled Java on a similar system. However, the results of the
+MicroBlaze solution are at a preliminary stage\footnote{As not all
+language constructs can be compiled, only the Kfl benchmark was
+measured. Therefore, the bars for MicroBlaze are missing in
+\figurename~\ref{fig:results:app:bench}.}, as the Java2C compiler
+\cite{Java2C} is still under development.
 
 The micro-benchmarks are intended to give insight into the
 implementation of the JVM. In Table~\ref{tab:results:bench:clock},
@@ -632,19 +633,19 @@ reverse the stack operation.
     \label{tab:results:bench:clock}
 \end{table}
 
-For JOP we can deduce that the WCET for simple bytecodes  is also
-the average execution time. We can see that the combination of
-\code{iload} and \code{iadd} executes in two cycles, which means
-that each of these two operations is executed in a single cycle. The
-\code{iinc} bytecode is one of the few instructions that do not
-manipulate the stack and can be measured alone. As \code{iinc} is
-not implemented in hardware, we have a total of 8 cycles that are
+For JOP we can deduce that the WCET for simple bytecodes  is also the
+average execution time. We can see that the combination of
+\code{iload} and \code{iadd} executes in two cycles, which means that
+each of these two operations is executed in a single cycle. The
+\code{iinc} bytecode is one of the few instructions that does not
+manipulate the stack and can be measured alone. As \code{iinc} is not
+implemented in hardware, we have a total of 8 cycles that are
 executed in microcode. It is fair to assume that this comprises too
-great an overhead for an instruction that is found in every
-iterative loop with an integer index. However, the decision to
-implement this instruction in microcode was derived from the
-observation that the dynamic instruction count for \code{iinc} is
-only 2\% (see Section~\ref{sec:bench:jvm}).
+great an overhead for an instruction that is found in every iterative
+loop with an integer index. However, the decision to implement this
+instruction in microcode was derived from the observation that the
+dynamic instruction count for \code{iinc} is only 2\% (see
+Section~\ref{sec:bench:jvm}).
 
 The sequence for the branch benchmark (\code{if\_icmplt}) contains
 the two load instructions that push the arguments onto the stack.
@@ -652,17 +653,17 @@ The arguments are then consumed by the branch instruction. This
 benchmark verifies that a branch requires a constant four cycles on
 JOP, whether it is taken or not.
 
-The Cjip implements the JVM with a stack oriented instruction set.
-It is the only example (except JOP) where the instruction set is
+The Cjip implements the JVM with a stack oriented instruction set. It
+is the only example (except JOP) where the instruction set is
 documented \emph{including} the execution time \cite{CjipRef}. We
-will therefore check some of the results with the numbers provided
-in the documentation. The execution time is given in ns, assuming a
-66~MHz clock. The execution time for the basic integer add operation
-is given as 180~ns resulting in 12 cycles. The load of a local
-variable (when it is one of the first four) takes 35 cycles. In the
-micro-benchmark we measure 55 cycles instead of the theoretical 47
-(\code{iadd} + \code{iload\_n}). We assume that we have to add some
-cycles for the fetch of the bytecodes from memory.
+will therefore check some of the results with the numbers provided in
+the documentation. The execution time is given in nanoseconds,
+assuming a 66~MHz clock. The execution time for the basic integer add
+operation is given as 180~ns resulting in 12 cycles. The load of a
+local variable (when it is one of the first four) takes 35 cycles. In
+the micro-benchmark we measure 55 cycles instead of the theoretical
+47 (\code{iadd} + \code{iload\_n}). We assume that we have to add
+some cycles for the fetch of the bytecodes from memory.
 
 For compiling versions of the JVM, these micro-benchmarks do not
 produce useful results. The compiler performs optimizations that
@@ -670,7 +671,7 @@ make it impossible to measure execution times at this fine a
 granularity.
 
 During the evaluation of the aJile system, unexpected behavior was
-observed. The aJ80 on the JStamp board is clocked at 7.3728~MHz and
+observed. The aJ80 on the JStamp board is clocked at 7.3728~MHz, and
 the internal frequency can be set with a PLL. The aJ80 is rated for
 80MHz and the maximum PLL factor that can be used is therefore ten.
 Running the benchmarks with different PLL settings gave some strange
@@ -678,11 +679,11 @@ results. For example, with a PLL multiplier setting of ten, the aJ80
 was about 12.8 times faster! Other PLL factors also resulted in a
 greater than linear speedup. The only explanation we could find was
 that the internal time, \code{System.currentTimeMillis()}, used for
-the benchmarks depends on the PLL setting. A comparison with the
-wall clock time showed that the internal time of the aJ80 is 23\%
-faster with a PLL factor of 1 and 2.4\% faster with a factor of ten
--- a property we would not expect on a processor that is marketed
-for real-time systems.
+the benchmarks depends on the PLL setting. A comparison with the wall
+clock time showed that the internal time of the aJ80 is 23\% faster
+with a PLL factor of 1 and 2.4\% faster with a factor of ten -- a
+property we would not expect on a processor that is marketed for
+real-time systems.
 
 The SaJe board is also clocked with 7.3728~MHz and the PLL factor is
 set to 14. This gives a 103.2192~MHz internal clock frequency.
@@ -733,13 +734,13 @@ simulation triggers the end sensor and the motor is stopped.
 
 The different execution times in the different modes of the
 application are inherent in the design of the simulation. However,
-the ratio between the longest and the shortest period is five for
-the JStamp, four for the gcj system and only three for JOP.
-Therefore, a system with an aJile processor needs to be 1.7 times
-faster than JOP in order to provide the same WCET for this
-measurement. At iteration 33, we can see a higher execution time for
-the JStamp system that is not seen on JOP. This variation at
-iteration 33 is not caused by the benchmark.
+the ratio between the longest and the shortest period is five for the
+JStamp, four for the gcj system, and only three for JOP. Therefore, a
+system with an aJile processor needs to be 1.7 times faster than JOP
+in order to provide the same WCET for this measurement. At iteration
+33, we can see a higher execution time for the JStamp system that is
+not seen on JOP. This variation at iteration 33 is not caused by the
+benchmark.
 
 The execution time under gcj on the Linux system showed some very
 high peaks (up to ten times the minimum, not shown in the figures).
@@ -1078,12 +1079,12 @@ WCET behavior of different systems.
 \section{Applications}
 \label{sec:applications}
 
-During the research for this thesis, the first working version of
-JOP was used in a real-world application. Using an architecture
-under development in a commercial project entails risks.
-Nevertheless, this was deemed to be the best way to prove the
-feasibility of the processor. In this section, the experiences of
-the first project involving JOP are summarized.
+During the research for the PhD thesis, the first working version of
+JOP was used in a real-world application. Using an architecture under
+development in a commercial project entails risks. Nevertheless, this
+was deemed to be the best way to prove the feasibility of the
+processor. In this section, the experiences of the first project
+involving JOP are summarized.
 
 \subsection{Motor Control}
 \label{sec:app:kfl}
@@ -1091,9 +1092,9 @@ the first project involving JOP are summarized.
 In rail cargo, a large amount of time is spent on loading and
 unloading of goods wagons. The contact wire above the wagons is the
 main obstacle. Balfour Beatty Austria developed and patented a
-technical solution, the so-called \emph{Kippfahrleitung}, to tilt
-up the contact wire. This is done on a line up to one kilometer. An
-asynchrony motor on each mast is used for this tilting. However, it
+technical solution, the so-called \emph{Kippfahrleitung}, to tilt up
+the contact wire. This is done on a line up to one kilometer. An
+asynchronous motor on each mast is used for this tilting. However, it
 has to be done synchronously on the whole line.
 
 Each motor is controlled by an embedded system. This system also
@@ -1140,11 +1141,11 @@ from the Flash into the external RAM. After the JVM is initialized,
 the program starts at \code{main()}.
 
 The motor is controlled by silicon switches connected to the FPGA
-with opto couplers. The position is measured with two end sensors
-and a revolving sensor. The processor supervises the voltage and
-current of the motor supply. A display and keyboard are attached to
-the base station for user interface. The communication bus (up to
-one kilometer) is attached via an isolated RS485 data interface.
+with opto couplers. The position is measured with two end sensors and
+a revolving sensor. The processor supervises the voltage and current
+of the motor supply. A display and keyboard are attached to the base
+station for the user interface. The communication bus (up to one
+kilometer) is attached via an isolated RS485 data interface.
 
 \subsubsection{Synthesized Hardware}
 
@@ -1178,7 +1179,7 @@ JOP. Because there was no multi-threading capability, and in the
 interests of simplicity, a simple infinite loop with constant time
 intervals was used. Listing~\ref{lst:results:main} shows the
 simplified program structure. After initialization and memory
-allocation, this loop was entered and did never exit.
+allocation, this loop enters and never exits.
 
 \begin{lstlisting}[float,caption=Simplified program structure,
 label=lst:results:main]
@@ -1208,11 +1209,11 @@ label=lst:results:main]
 
 \subsubsection{Communication}
 
-Communication is based on a client server structure. Only the base
-station is allowed to send a request to a single mast station. This
+Communication is based on a client-server structure. Only the base
+station is allowed to send a request to a single mast station. The
 station is then required to reply. The maximum reply time is bounded
-by two time intervals. The base station handles timeout and retry.
-If an irrecoverable error occurs, the base station switches off the
+by two time intervals. The base station handles timeout and retry. If
+an irrecoverable error occurs, the base station switches off the
 power to the mast stations, including the power supply to the motor.
 This is the safe state of the whole system.
 
@@ -1295,9 +1296,9 @@ JOP.
 
 Another application of JOP is in a communication device with soft
 real-time properties -- Austrian Railways' (\"OBB) new security
-system for single-track lines. Each locomotive is equipped with a
-GPS receiver and a communication device. The position of the train,
-differential correction data for GPS and commands are exchanged with
+system for single-track lines. Each locomotive is equipped with a GPS
+receiver and a communication device. The position of the train,
+differential correction data for GPS, and commands are exchanged with
 a server at the central station over a GPRS virtual private network.
 JOP is the heart of the communication device in the locomotive. The
 flexibility of the FPGA and an Internet connection to the embedded

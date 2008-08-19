@@ -1,7 +1,7 @@
 \section{Overview of JOP}
 
 This section gives an overview of JOP architecture.
-\figurename~\ref{fig:arch:jop:block} shows JOP's major function
+\figurename~\ref{fig:arch:jop:block} shows JOP's major functional
 units. A typical configuration of JOP contains the processor core, a
 memory interface and a number of IO devices. The module extension
 provides the link between the processor core, and the memory and IO
@@ -173,12 +173,12 @@ Some bytecodes, such as ALU operations and the short form access to
 \emph{locals}, are directly implemented by an equivalent microcode
 instruction (with a different encoding). Additional instructions are
 available to access internal registers, main memory and I/O devices.
-A relative conditional branch (zero/non zero of TOS) performs
-control flow decisions at the microcode level. For optimum use of
-the available memory resources, all instructions are 8 bits long.
-There are no variable-length instructions and every instruction,
-with the exception of \code{wait}, is executed in a single cycle. To
-keep the instruction set this dense, following concept is applied:
+A relative conditional branch (zero/non zero of TOS) performs control
+flow decisions at the microcode level. For optimum use of the
+available memory resources, all instructions are 8 bits long. There
+are no variable-length instructions and every instruction, with the
+exception of \code{wait}, is executed in a single cycle. To keep the
+instruction set this dense, the following concept is applied:
 immediate values and branch offsets are addressed through one
 indirection. The instruction just contains an index for the
 constants.
@@ -435,14 +435,14 @@ the microcode ROM.
 The fetched bytecode results in an absolute jump in the microcode
 (the second stage). If the bytecode is mapped one-to-one with a JOP
 instruction, the following fetched bytecode again results in a jump
-in the microcode in the following cycle. If the bytecode is a
-complex one, JOP continues to execute microcode. At the end of this
-instruction sequence the next bytecode, and therefore the new jump
+in the microcode in the following cycle. If the bytecode is a complex
+one, JOP continues to execute microcode. At the end of this
+instruction sequence, the next bytecode, and therefore the new jump
 address, is requested (signal \emph{nxt}).
 
-The bytecode RAM serves as instruction cache and is filled on method
-invoke and return. Details about this time-predictable instruction
-cache can be found in Section~\ref{sec:cache}.
+The bytecode RAM serves as the instruction cache and is filled on
+method invoke and return. Details about this time-predictable
+instruction cache can be found in Section~\ref{sec:cache}.
 
 The bytecode is also stored in a register for later use as an
 operand (requested by signal \emph{opd}). Bytecode branches are also

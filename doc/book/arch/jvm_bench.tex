@@ -1,9 +1,9 @@
 \section{Benchmarking the JVM}
 \label{sec:bench:jvm}
 
-The rationale behind this section is best introduced with the
-warning from Computer Architecture: A Quantitative Approach
-\cite{Hennessy02} p. 63:
+The rationale behind this section is best introduced with a warning
+from Computer Architecture: A Quantitative Approach \cite{Hennessy02}
+p. 63:
 
 \begin{quote}
 Virtually every practicing computer architect knows Amdahl’s Law.
@@ -145,18 +145,17 @@ were used as benchmarks to obtain the dynamic instruction count:
 JLex, KCJ and javac. JLex \cite{jlex} is a lexical analyzer
 generator, written for Java in Java. The data was collected by
 running JLex with the provided \code{sample.lex} as the input file.
-KJC \cite{kcj} is a Java compiler in Java, freely available under
-the terms of the GNU General Public License. javac is the Sun Java
+KJC \cite{kcj} is a Java compiler in Java, freely available under the
+terms of the GNU General Public License. javac is the Sun Java
 compiler. Both compilers were compiling part of the KJC sources
 during the benchmark. These benchmarks are similar to the benchmarks
 used in other reports and the results are therefore comparable.
 However, typical embedded applications can result in a slightly
 different instruction set usage pattern. Embedded applications are
 usually tightly connected with the environment and are therefore not
-available as stand-alone programs to serve as benchmark. An embedded
-application that was developed on JOP was adapted to serve as
-benchmark for Section~\ref{sec:cache} and
-Chapter~\ref{chap:results}.
+available as stand-alone programs to serve as benchmarks. An embedded
+application developed on JOP was adapted to serve as a benchmark for
+Section~\ref{sec:cache} and Chapter~\ref{chap:results}.
 
 %19,572,165 + 951,138,375 + 341,926,231 = 1,312,636,771
 
@@ -241,8 +240,8 @@ Chapter~\ref{chap:results}.
 
 In \cite{Dowling2002} the relationship between static and dynamic
 instruction frequency of 19 programs from the SPECjvm98
-\cite{SPECJvm98} and Java Grande benchmark suits were measured. The
-bytecodes categories were chosen different from the above
+\cite{SPECJvm98} and Java Grande benchmark suites were measured. The
+bytecodes categories were chosen differently from the above
 measurements, but detailed enough to verify our own measurements.
 \tablename~\ref{tab:java:instr:frequ:comp} shows the average dynamic
 execution frequency in percent\footnote{The values do not add up to
@@ -250,14 +249,14 @@ execution frequency in percent\footnote{The values do not add up to
 selected bytecode categories from the SPEC and Java Grande
 benchmarks, compared with the results obtained by our measurements.
 The numbers in bold are categories or sums of categories that are
-comparable. The frequency of the load \& const instructions is very
-similar to that in our measurements. However, field access, control
-instructions and method invocations are more frequent in our
+comparable. The frequency of the ``load \& const" instructions is
+very similar to that in our measurements. However, field access,
+control instructions and method invocations are more frequent in our
 measurements. The higher count on field access instructions and
 method invocation can result from a more object oriented programming
 style in our selected applications than in the SPEC and Java Grande
-benchmarks. The big difference, not seen in our measurements,
-between the invoke and return frequency in the SPEC and Java Grande
+benchmarks. The big difference, not seen in our measurements, between
+the invoke and return frequency in the SPEC and Java Grande
 benchmarks is not explained in \cite{Dowling2002}.
 
 In all measurements, the load of local variables and constants onto
@@ -319,15 +318,14 @@ a goto instruction with a wide index (\emph{goto\_w}) that takes a
 table) limit the size of a method to 65535 bytes.
 
 Radhakrishnan et al.\ \cite{365338} measured the dynamic method size
-of the SPEC suit. They observed a `tri-nodal' distribution, where
+of the SPEC suite. They observed a `tri-nodal' distribution, where
 most of the methods were 1, 9, or 26 bytecodes long. No explanation
 is given for the sizes of 9 or 26. The explanation of the 1 bytecode
 long methods as \emph{wrapper methods} is wrong. For a wrapper
-method, the method needs to contain a minimum of two instructions
-(an invoke and a return). A single instruction method can
-\emph{only} contain a return. However, this observation is in sharp
-contrast to the measurements obtained by Power and Waldron in
-\cite{Power2002}.
+method, the method needs to contain a minimum of two instructions (an
+invoke and a return). A single instruction method can \emph{only}
+contain a return. However, this observation is in sharp contrast to
+the measurements obtained by Power and Waldron in \cite{Power2002}.
 
 
 

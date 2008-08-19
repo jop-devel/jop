@@ -165,12 +165,12 @@ instruction fetch of the RISC processor. Simple Java bytecodes are
 translated to a sequence of RISC instructions. For native RISC code,
 the unit is bypassed. This architecture implements the expensive
 switch statement of a typical interpreter in hardware. A simulation
-of a SPARC processor with four execution units shows a speedup by
-the factor of 2.6 over JDK 1.2 JIT with SPECjvm98. Since the
-architecture is only evaluated in a software simulation, the impact
-of the inserted hardware on the clock frequency of the RISC
-processor is unknown. No estimation of the additional hardware cost
-for the translation unit is given.
+of a SPARC processor with four execution units shows a speedup by a
+factor of 2.6 over JDK 1.2 JIT with SPECjvm98. Since the architecture
+is only evaluated in a software simulation, the impact of the
+inserted hardware on the clock frequency of the RISC processor is
+unknown. No estimation of the additional hardware cost for the
+translation unit is given.
 
 
 \subsection{DELFT-JAVA Engine}
@@ -187,8 +187,8 @@ register file. The translation of JVM bytecode to the DELFT
 instruction set maps stack-based dependencies into pipeline
 dependencies. The author expects that these dependencies can be
 resolved with standard techniques such as register renaming and
-out-of-order execution. To accelerate dynamic linking a link
-translation buffer cache resolved entries from the constant pool.
+out-of-order execution. To accelerate dynamic linking, a link
+translation buffer cache resolves entries from the constant pool.
 
 
 The processor is validated through a C++ model. An experiment with a
@@ -225,13 +225,13 @@ target architecture in the last step.
 
 The quality of the generated code was tested with software versions
 of JIFFY for a CISC (80586) and a RISC (Alpha 21164) architecture.
-The resulting code is about 1.1 to 7.5 times faster than
-interpreting Java bytecode on the x86 architecture. The speedup is
-similar to Suns first JIT compiler (sunwjit in JDK 1.1). The
-compilation time is estimated to be 50 to 70 clock cycles for one
-bytecode. This is 10 times faster than the efficient CACAO JIT
-\cite{Krall98}. A first prototype implementation in an FPGA used
-3800 LCs and 8KBits RAM (80 \% of a Xilinx XC2S200).
+The resulting code is about 1.1 to 7.5 times faster than interpreting
+Java bytecode on the x86 architecture. The speedup is similar to
+Sun's first JIT compiler (sunwjit in JDK 1.1). The compilation time
+is estimated to be 50 to 70 clock cycles for one bytecode. This is 10
+times faster than the efficient CACAO JIT \cite{Krall98}. A first
+prototype implementation in an FPGA used 3800 LCs and 8KBits RAM (80
+\% of a Xilinx XC2S200).
 
 
 \subsection{Jazelle}
@@ -250,11 +250,11 @@ bytecodes, including the emulated sequences, are re-startable to
 enable a fast interrupt response time.
 
 
-A new ARM instruction puts the processor into Java state. Bytecodes
-are fetched and decoded in two stages, compared to a single stage in
-ARM state. Four registers of the ARM core are used to cache the top
-stack elements. Stack spill and fill is handled automatically by the
-hardware. Additional registers are reused for the Java stack
+A new ARM instruction puts the processor into the Java state.
+Bytecodes are fetched and decoded in two stages, compared to a single
+stage in ARM state. Four registers of the ARM core are used to cache
+the top stack elements. Stack spill and fill is handled automatically
+by the hardware. Additional registers are reused for the Java stack
 pointer, the variable pointer, the constant pool pointer and locale
 variable 0 (the \textit{this} pointer in methods). Keeping the
 complete state of the Java mode in ARM registers simplifies its
@@ -262,16 +262,16 @@ integration into existing operating systems.
 
 \subsection{JSTAR, JA108}
 
-Nozomi's JA108 \cite{JSTAR}, previously known as JSTAR, Java
-coprocessor sits between the native processor and the memory
+Nozomi's JA108 \cite{JSTAR}, previously known as JSTAR, is a Java
+coprocessor that sits between the native processor and the memory
 subsystem. JA108 fetches Java bytecodes from memory and translates
 them into native microprocessor instructions. JA108 acts as a
 pass-through when the core processor's native instructions are being
 executed. The JA108 is targeted for use in mobile phones to increase
 performance of Java multimedia applications. The coprocessor is
 available as standalone package or with included memory and can be
-operated up to 104MHz. The resource usage for the JSTAR is known to
-be about 30K gates plus 45Kbits for the microcode.
+operated up to 104~MHz. The resource usage for the JSTAR is known to
+be about 30K gates plus 45~Kbits for the microcode.
 
 \subsection{A Co-Designed Virtual Machine}
 
@@ -287,22 +287,21 @@ task, the add-on hardware can be used for non-Java applications.
 The critical issue in this approach is the partitioning of the JVM
 and the memory regions between hardware and software. Not all Java
 bytecodes can be executed in hardware. All object-oriented bytecodes
-are performed in software. However, once these bytecodes are
-replaced by their \textit{quick} variants, some of them can then be
-executed in hardware. The most accessed data structures, i.e.\ the
-method's bytecode, execution stack and local variables, are placed
-in the FPGA board memory. The constant pool and the heap reside in
-the PC's main memory. The software part of the JVM decides during
-runtime which instruction sequences can be executed by the hardware.
-Due to the high cost of a context switch, this is a critical
-decision. Kent explored various algorithms with different block
-sizes to find the optimum partitioning of the instructions between
-the host processor and the FPGA. Tests with small benchmarks on a
-simulation showed performance gains by a factor of 6 to 11, when
-compared with an interpreting JVM. Kent is now working on the
-concurrent use of the FPGA and the host system to execute Java
-applications. Additional performance increases are expected for
-multi-threaded applications.
+are performed in software. However, once these bytecodes are replaced
+by their \textit{quick} variants, some of them can then be executed
+in hardware. The most accessed data structures, i.e.\ the method's
+bytecode, execution stack, and local variables, are placed in the
+FPGA board memory. The constant pool and the heap reside in the PC's
+main memory. The software part of the JVM decides during runtime
+which instruction sequences can be executed by the hardware. Due to
+the high cost of a context switch, this is a critical decision. Kent
+explored various algorithms with different block sizes to find the
+optimum partitioning of the instructions between the host processor
+and the FPGA. Tests with small benchmarks on a simulation showed
+performance gains by a factor of 6 to 11, when compared with an
+interpreting JVM. Kent is now working on the concurrent use of the
+FPGA and the host system to execute Java applications. Additional
+performance increases are expected for multi-threaded applications.
 
 In our view, there are two potential problems with this approach.
 Firstly, the execution context for the hardware is too small. As
@@ -341,25 +340,25 @@ silicon, Sun licensed picoJava to Fujitsu, IBM, LG Semicon and NEC.
 However, these companies also did not produce a chip and Sun finally
 provided the full Verilog code under an open-source license.
 
-Sun introduced the first version of picoJava \cite{624084} in 1997.
-The processor was targeted at the embedded systems market as a pure
-Java processor with restricted support of C. picoJava-I contains
-four pipeline stages. A redesign followed in 1999, known as
-picoJava-II. This is the version described below. picoJava-II is now
-freely available with a rich set of documentation \cite{pjMicroArch,
+Sun introduced the first version of picoJava \cite{pJ1} in 1997. The
+processor was targeted at the embedded systems market as a pure Java
+processor with restricted support of C. picoJava-I contains four
+pipeline stages. A redesign followed in 1999, known as picoJava-II.
+This is the version described below. picoJava-II is now freely
+available with a rich set of documentation \cite{pjMicroArch,
 pjProgRef}.
 
-Simple Java bytecodes are directly implemented in hardware, most of
+Simple Java bytecodes are directly implemented in hardware; most of
 them execute in one to three cycles. Other performance critical
 instructions, for instance invoking a method, are implemented in
-microcode. picoJava traps on the remaining complex instructions,
-such as creation of an object, and emulates this instruction. To
-access memory, internal registers and for cache management picoJava
+microcode. picoJava traps on the remaining complex instructions, such
+as creation of an object, and emulates the instruction. To access
+memory, internal registers, and for cache management, picoJava
 implements 115 extended instructions with 2-byte opcodes. These
 instructions are necessary to write system-level code to support the
 JVM.
 
-Traps are generated on interrupts, exceptions and for instruction
+Traps are generated on interrupts, exceptions, and for instruction
 emulation. A trap is rather expensive and has a minimum overhead of
 16 clock cycles:
 
@@ -454,7 +453,7 @@ translates to the following bytecodes:
 \end{figure}
 %
 When all entries are contained in the stack cache, the picoJava core
-can fold these four instructions to one RISC-style single cycle
+can fold these four instructions into one RISC-style single cycle
 operation.
 
 picoJava contains a simple mechanism to speed-up the common case for
@@ -466,13 +465,13 @@ on the reference, these two bits are masked out by the hardware.
 Hardware registers cache up to two locks held by a single thread.
 
 To efficiently implement a generational or an incremental garbage
-collector picoJava offers hardware support for write barriers
+collector, picoJava offers hardware support for write barriers
 through memory segments. The hardware checks all stores of an object
 reference if this reference points to a different segment (compared
 to the store address). In this case, a trap is generated and the
 garbage collector can take the appropriate action. Additional two
-reserved bits in the object reference can be used for a write
-barrier trap.
+reserved bits in the object reference can be used for a write barrier
+trap.
 
 The architecture of picoJava is a stack-based CISC processor
 implementing 341 different instructions \cite{pJ1} and is the most
@@ -506,12 +505,12 @@ point operations (disassembly/assembly, overflow and NaN detection).
 The control store is a 4K by 56 ROM to hold the microcode that
 implements the Java bytecode. An additional RAM control store can be
 used for custom instructions. This feature is used to implement the
-basic synchronization and thread scheduling routines in microcode.
-This results in low execution overheads with thread-to-thread yield
-of less than one $\mu$s (at 100MHz). An optional Multiple JVM
-Manager (MJM) supports two independent, memory protected JVMs. The
-two JVMs execute time-sliced on the processor. According to aJile,
-the processor can be implemented in 25K gates (without the microcode
+basic synchronization and thread scheduling routines in microcode. It
+results in low execution overhead with a thread-to-thread yield in
+less than one $\mu$s (at 100~MHz). An optional Multiple JVM Manager
+(MJM) supports two independent, memory protected JVMs. The two JVMs
+execute time-sliced on the processor. According to aJile, the
+processor can be implemented in 25K gates (without the microcode
 ROM). The MJM needs additional 10K gates.
 
 Two silicon versions of JEM exist today: the aJ-80 and the aJ-100.
@@ -533,55 +532,53 @@ this processor with JOP.
 \subsection{Cjip}
 
 The Cjip processor \cite{Imsys, Cjip} supports multiple instruction
-sets, allowing Java, C, C++ and assembler to coexist. Internally,
+sets, allowing Java, C, C++, and assembler to coexist. Internally,
 the Cjip uses 72 bit wide microcode instructions, to support the
 different instruction sets. At its core, Cjip is a 16-bit CISC
 architecture with on-chip 36KB ROM and 18KB RAM for fixed and
 loadable microcode. Another 1KB RAM is used for eight independent
 register banks, string buffer and two stack caches. Cjip is
-implemented in 0.35-micron technology and can be clocked up to
-66MHz. The logic core consumes about 20\% of the
-1.4-million-transistor chip. The Cjip has 40 program controlled I/O
-pins, a high-speed 8 bit I/O bus with hardware DMA and an 8/16 bit
-DRAM interface.
+implemented in 0.35-micron technology and can be clocked up to 66MHz.
+The logic core consumes about 20\% of the 1.4-million-transistor
+chip. The Cjip has 40 program controlled I/O pins, a high-speed 8 bit
+I/O bus with hardware DMA and an 8/16 bit DRAM interface.
 
 
 The JVM is implemented largely in microcode (about 88\% of the Java
 bytecodes). Java thread scheduling and garbage collection are
 implemented as processes in microcode. Microcode is also used to
 implement virtual peripherals such as watchdog timers, display and
-keyboard interfaces, sound generators and multimedia codecs.
+keyboard interfaces, sound generators, and multimedia codecs.
 
-Microcode instructions execute in two or three cycles. A JVM
-bytecode requires several microcode instructions. The Cjip Java
-instruction set and the extensions are described in detail in
-\cite{CjipRef}. For example: a bytecode \code{nop} executes in 6
-cycles while an \code{iadd} takes 12 cycles. Conditional bytecode
-branches are executed in 33 to 36 cycles. Object oriented
-instructions such \code{getfield}, \code{putfield} or
-\code{invokevirtual} are not part of the instruction set.
+Microcode instructions execute in two or three cycles. A JVM bytecode
+requires several microcode instructions. The Cjip Java instruction
+set and the extensions are described in detail in \cite{CjipRef}. For
+example: a bytecode \code{nop} executes in 6 cycles while an
+\code{iadd} takes 12 cycles. Conditional bytecode branches are
+executed in 33 to 36 cycles. Object oriented instructions, such
+\code{getfield}, \code{putfield}, or \code{invokevirtual} are not
+part of the instruction set.
 
 
 \subsection{Ignite, PSC1000}
 
 The PSC1000 \cite{IGNITE} is a stack processor, based on ShBoom
-(originally designed by Chuck Moore \cite{ShBoom}), designed for
-high speed Forth applications. The PSC1000 was later renamed to
-Ignite and promoted as a Java-processor, though it has it roots in
-Forth. The instruction set, called ROSC (Removed Operand Set
-Computer), is different from Java bytecodes. A small JVM driver
-converts Java bytecode into the stack instruction set of the
-processor.
+(originally designed by Chuck Moore \cite{ShBoom}), designed for high
+speed Forth applications. The PSC1000 was later renamed to Ignite and
+promoted as a Java processor, though it has roots in Forth. The
+instruction set, called ROSC (Removed Operand Set Computer), is
+different from Java bytecodes. A small JVM driver converts Java
+bytecode into the stack instruction set of the processor.
 
 
 The processor contains two on-chip stacks, as usual in Forth
 processors \cite{Koopman89}, and additional 16 global registers. The
 first elements of the stacks are directly accessible. The bottleneck
 of instruction fetching without a cache is avoided by fetching up to
-four 8-bit instructions from a 32-bit memory. To simplify
-instruction decoding immediate values and branch offsets are placed
-right aligned in such an instruction group. The PSC1000 is available
-as ASIC at 80MHz and as a soft-core for Xilinx FPGAs (9700 LCs).
+four 8-bit instructions from a 32-bit memory. To simplify instruction
+decoding, immediate values and branch offsets are placed
+right-aligned in such an instruction group. The PSC1000 is available
+as an ASIC at 80~MHz and as a soft-core for Xilinx FPGAs (9700 LCs).
 
 
 \subsection{Moon}
@@ -603,24 +600,24 @@ implement 256 entries of the stack.
 \subsection{Lightfoot}
 
 The Lightfoot 32-bit core \cite{Lightfoot} is a hybrid 8/32-bit
-processor based on the Harvard architecture. Program memory is 8
-bits wide and data memory is 32 bits wide. The core contains a
-3-stage pipeline with an integer ALU, a barrel shifter and a 2-bit
-multiply step unit. There are two different stacks with top elements
-implemented as registers and memory extension. The data stack is
-used to hold temporary data -- it is not used to implement the JVM
-stack frame. As the name implies, the return stack holds return
-addresses for subroutines and it can be used as an auxiliary stack.
-The TOS element is also used to access memory. The processor
-architecture specifies three different instruction formats: soft
-bytecodes, non-returnable instructions and single-byte instructions
-that can be folded with a return instruction. Soft bytecode
-instructions cause the processor to branch to one of 128 locations
-in low program memory, where the implementation of the soft
-bytecodes resides. This operation has a single cycle overhead and
-the address of the following instruction is pushed onto the return
-stack. The instruction set implies that it is optimized to write an
-efficient interpreted JVM.
+processor based on the Harvard architecture. Program memory is 8 bits
+wide and data memory is 32 bits wide. The core contains a 3-stage
+pipeline with an integer ALU, a barrel shifter, and a 2-bit multiply
+step unit. There are two different stacks with the top elements
+implemented as registers and memory extension. The data stack is used
+to hold temporary data -- it is not used to implement the JVM stack
+frame. As the name implies, the return stack holds return addresses
+for subroutines and it can be used as an auxiliary stack. The TOS
+element is also used to access memory. The processor architecture
+specifies three different instruction formats: soft bytecodes,
+non-returnable instructions, and single-byte instructions that can be
+folded with a return instruction. Soft bytecode instructions cause
+the processor to branch to one of 128 locations in low program
+memory, where the implementation of the soft bytecodes resides. This
+operation has a single cycle overhead and the address of the
+following instruction is pushed onto the return stack. The
+instruction set implies that it is optimized to write an efficient
+interpreted JVM.
 
 
 The core is available in VHDL and can be implemented in less than
@@ -719,8 +716,8 @@ mechanism. An additional return stack provides no advantage for the
 JVM.
 
 In Forth only the top elements can be accessed, which results in a
-simple stack design with only one access port. In the JVM parameters
-for a method are explicitly pushed on the stack before invocation.
+simple stack design with only one access port. In the JVM, parameters
+for a method are explicitly pushed onto the stack before invocation.
 These parameters are then accessed in the method relative to a
 variable pointer. This mechanism needs a dual ported memory with
 simultaneous read and write access. These basic differences between
@@ -738,12 +735,12 @@ a Forth based processor.
 There are problems in getting information about commercial products.
 When new companies started developing Java processors, a lot of
 information was available. This information was usually more of a
-presentation of the concept, nevertheless it gave some insights into
+presentation of the concept; nevertheless it gave some insights into
 how they approached the different design problems. However, at the
 point at which the projects reached production quality, this
 information quietly disappeared from their websites. It was replaced
-with colorful marketing prospectuses about the wonderful world of
-the new Java-enabled mobile phones. Only one company, aJile Ltd.,
+with colorful marketing prospectuses about the wonderful world of the
+new Java-enabled mobile phones. Only one company, aJile Ltd.,
 presented information about their product in a refereed conference
 paper.
 
@@ -763,13 +760,13 @@ comparison with JOP.
 \label{sec:related:summary}
 
 In Table~\ref{tab:related:plus:minus}, features of selected Java
-processors are compared. Category `Predictability' means how well
-the processor is time-predictable. In category `Size', the chip size
-is estimated and category `Performance' means average performance.
-The category `JVM conformance' lists how complete the implementation
-of the JVM specification \cite{jvm} is. The `Flexibility' parameter
-indicates how well the processor can be adapted to different
-application domains.
+processors are compared. The category `Predictability' means how well
+the processor is time-predictable. In the category `Size', the chip
+size is estimated, and the category `Performance' means average
+performance. The category `JVM conformance' lists how complete the
+implementation of the JVM specification \cite{jvm} is. The
+`Flexibility' parameter indicates how well the processor can be
+adapted to different application domains.
 
 The assessment of the various parameters is, however, somewhat
 subjective as the information is mainly derived from written
@@ -809,12 +806,12 @@ As this processor is a commercial product and has been on the market
 for some time, it is expected that its JVM implementation would
 conform to Java standards, as defined by Sun.
 
-Komodos multithreading is similar to hyper-threading in modern
-processors that are trying to hide latencies in instruction
-fetching. However, this feature leads to very pessimistic WCET
-values (in effect rendering the performance gain useless). The fact
-that the pipeline clock is only a quarter of the system clock also
-wastes a considerable amount of potential performance.
+Komodo's multithreading is similar to hyper-threading in modern
+processors that are trying to hide latencies in instruction fetching.
+However, this feature leads to very pessimistic WCET values (in
+effect rendering the performance gain useless). The fact that the
+pipeline clock is only a quarter of the system clock also wastes a
+considerable amount of potential performance.
 
 FemtoJava is given a double plus for flexibility, due to the
 application-dependent generation of the processor. However,

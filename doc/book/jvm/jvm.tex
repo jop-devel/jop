@@ -1,13 +1,12 @@
 \section{JVM Architecture}
 
-This section presents the details of the implementation of the JVM
-on JOP. The representation of objects and the stack frame is chosen
-to support JOP as processor for real-time systems. However, since
-the data structures are realized through microcode they can be
-easily changed for a system with different needs. For example: to
-simplify a compacting GC a handle to an object can be implemented by
-changing the microcode of \code{getfield}, \code{putfield} and
-\code{new}.
+This section presents the details of the implementation of the JVM on
+JOP. The representation of objects and the stack frame is chosen to
+support JOP as a processor for real-time systems. However, since the
+data structures are realized through microcode they can be easily
+changed for a system with different needs. For example: to simplify a
+compacting GC a handle to an object can be implemented by changing
+the microcode of \code{getfield}, \code{putfield} and \code{new}.
 
 \subsection{Runtime Data Structures}
 
@@ -21,15 +20,15 @@ reference is represented by the value 0.
 \subsubsection{Stack Frame}
 
 On invocation of a method, the invoker's context is saved in a newly
-allocated frame on the stack. It is restored when the method
-returns. The saved context consists of following registers:
+allocated frame on the stack. It is restored when the method returns.
+The saved context consists of the following registers:
 
 \begin{description}
 
-\item[SP:] Immediately before invocation the stack pointer points to
-the last argument for the called function. This value is reduced by
-the argument count (i.e. the arguments are consumed) and saved in
-the new stack frame.
+\item[SP:] Immediately before invocation, the stack pointer
+    points to the last argument for the called function. This
+    value is reduced by the argument count (i.e. the arguments
+    are consumed) and saved in the new stack frame.
 
 \item[PC:] The pointer to the next bytecode instruction after the invoke
 instruction.
@@ -45,17 +44,17 @@ method.
 \end{description}
 
 SP, PC and VP are registers in JOP while CP and MP are local
-variables of the JVM. \figurename~\ref{fig_jvm_stack_invoke}
-provides an example of the stack before and after invoking a method.
-In this example, the called method has two arguments and contains
-two local variables. If the method is a virtual one, the first
-argument is the reference to the object (the \emph{this}-pointer).
-The arguments implicit become locals in the called method and are
-accessed in the same way as local variables. The start of the stack
-frame (\emph{Frame} in the figure) needs not to be saved. It is not
-needed during execution of the method or on return. To access the
-starting address of the frame (e.g. for an exception) it can be
-calculated with information from the method structure:
+variables of the JVM. \figurename~\ref{fig_jvm_stack_invoke} provides
+an example of the stack before and after invoking a method. In this
+example, the called method has two arguments and contains two local
+variables. If the method is a virtual one, the first argument is the
+reference to the object (the \emph{this}-pointer). The arguments
+implicitly become locals in the called method and are accessed in the
+same way as local variables. The start of the stack frame
+(\emph{Frame} in the figure) needs not to be saved. It is not needed
+during execution of the method or on return. To access the starting
+address of the frame (e.g. for an exception) it can be calculated
+with information from the method structure:
 
 \[Frame = VP + arg\_cnt + locals\_cnt\]
 
@@ -73,9 +72,9 @@ object in memory. The object reference points to the first instance
 variable of the object. At the offset $-1$, a pointer is located to
 access class information. To speed-up method invocation, it points
 directly to the method table of the objects class instead of the
-beginning of the class data. With the GC the object is accessed via
+beginning of the class data. With the GC, the object is accessed via
 one indirection, the handle (see Chapter~\ref{chap:rtgc}). The
-pointer to the method vector base if part of the handle.
+pointer to the method vector base is part of the handle.
 
 \begin{figure}
     \centering

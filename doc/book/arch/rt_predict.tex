@@ -59,15 +59,15 @@
 
 
 
-General-purpose processors are optimized for average throughput and
+General-purpose processors are optimized for average throughput, and
 non real-time operating systems are responsible for fair and
-efficient scheduling of resources. Real-time systems need a
-processor with low and known WCET of instructions. Real-time
-operating systems have properties, such as fast interrupt response,
-rapid context switch, short blocking times and a scheduler that
-implements a simple, in most cases strict priority driven,
-scheduling algorithm. This section describes design decisions for
-JOP to support such real-time systems.
+efficient scheduling of resources. Real-time systems need a processor
+with low and known WCET of instructions. Real-time operating systems
+have properties, such as fast interrupt response, rapid context
+switch, short blocking times and a scheduler that implements a
+simple, in most cases strictly priority driven, scheduling algorithm.
+This section describes design decisions for JOP to support such
+real-time systems.
 
 \subsection{Interrupts}
 
@@ -240,17 +240,17 @@ architecture enhancements.
 \paragraph{Branch Prediction}
 
 As the pipelines of current general-purpose processors get longer to
-support higher clock rates the penalty of branches get too high.
+support higher clock rates, the penalty of branches gets too high.
 This is compensated by branch prediction logic with branch target
-buffers. However, the upper bound of the branch execution time is
-the same as without this feature. In JOP, branch prediction is
-avoided. This results in pressure on the pipeline length. The core
-processor has a pipeline length of as little as three stages
-resulting in a branch execution time of three cycles in microcode.
-The two slots in the branch delay can be filled with instructions or
-\emph{nop}. With the additional bytecode fetch and translation
-stage, the overall pipeline is four stages and results in a four
-cycle execution time for a bytecode branch.
+buffers. However, the upper bound of the branch execution time is the
+same as without this feature. In JOP, branch prediction is avoided.
+This results in pressure on the pipeline length. The core processor
+has a pipeline length of as little as three stages resulting in a
+branch execution time of three cycles in microcode. The two slots in
+the branch delay can be filled with instructions or \emph{nop}. With
+the additional bytecode fetch and translation stage, the overall
+pipeline is four stages and results in a four cycle execution time
+for a bytecode branch.
 
 \paragraph{Caches and Instruction Prefetch}
 
@@ -266,11 +266,11 @@ This makes the stack an ideal candidate to be placed near the
 execution unit in the memory hierarchy. In JOP the stack is
 implemented as internal memory with the two top elements as explicit
 registers. This single cycle memory can be seen as a data cache.
-However, unlike in picoJava, this limited memory is not
-automatically spilled and filled. Automatically spill and fill
-introduces unpredictable access to the main memory. Data exchange
-between internal stack and main memory is under program control and
-can be done on method invocation/return or on a thread switch.
+However, unlike in picoJava, this limited memory is not automatically
+spilled and filled. Automatic spill and fill introduces unpredictable
+access to the main memory. Data exchange between internal stack and
+main memory is under program control and can be done on method
+invocation/return or on a thread switch.
 
 The next most accessed memory area is the code area. A simple
 prefetch queue, as it is found in older processors, could increase
@@ -324,12 +324,12 @@ parallelism.
 
 A good model of a processor with accurate timing information is
 essential for a tight WCET analysis. The architecture of JOP and the
-microcode are designed with this in mind. Execution time of
-bytecodes is known cycle accurately (see Section~\ref{sec:wcet} and
+microcode are designed with this in mind. Execution time of bytecodes
+is known cycle accurately (see Chapter~\ref{chap:wcet} and
 Appendix~\ref{appx:bytecode}). It is possible to analyze the WCET on
-the bytecode level \cite{R:Bernat:2000a} without the uncertainties
-of an interpreting JVM \cite{R:Bate:2000a} or generated native code
-from ahead-of-time compilers for Java.
+the bytecode level \cite{R:Bernat:2000a} without the uncertainties of
+an interpreting JVM \cite{R:Bate:2000a} or generated native code from
+ahead-of-time compilers for Java.
 
 \subsection{Summary}
 

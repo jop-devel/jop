@@ -15,9 +15,9 @@ to software and a smaller FPGA can be used. Let us examine these
 possibilities on a relatively expensive function:
 \emph{multiplication}.
 
-In Java bytecode \code{imul} performs a 32 bit signed multiplication
-with a 32 bit result. There are no exceptions on overflow. Since 32
-bit single cycle multiplications are far beyond the possibilities of
+Bytecode \code{imul} performs a 32 bit signed multiplication with a
+32 bit result. There are no exceptions on overflow. Since 32 bit
+single cycle multiplications are far beyond the possibilities of
 current, mainstream FPGAs the first solution is a sequential
 multiplier.
 
@@ -92,8 +92,8 @@ imul_loop:              // wait loop
 \paragraph{Multiplication in Microcode}
 
 If we run out of resources in the FPGA, we can move the function to
-microcode. The implementation of \code{imul} is almost identical
-with the Java code in Listing~\ref{lst:arch:hwsw:java} and needs 73
+microcode. The implementation of \code{imul} is almost identical to
+the Java code in Listing~\ref{lst:arch:hwsw:java} and needs 73
 microcode instructions.
 
 \paragraph{Bytecode imul in Java}
@@ -161,10 +161,10 @@ loaded from main memory into the bytecode cache.
 \end{table}
 
 Only a few lines of code have to be changed to select one of the
-three implementations. The shown principle can also be applied to
-other expensive bytecodes: e.g.\ \code{idiv}, \code{ishr},
-\code{iushr} and \code{ishl}. As a result, the resource usage of JOP
-is highly configurable and can be selected for each application
-according to the needs of the application. Treating VHDL as a
-software language allows easy movement of function blocks between
-hardware and software.
+three implementations. This principle can also be applied to other
+expensive bytecodes: e.g.\ \code{idiv}, \code{ishr}, \code{iushr} and
+\code{ishl}. As a result, the resource usage of JOP is highly
+configurable and can be selected for each application according to
+the needs of the application. Treating VHDL as a software language
+allows easy movement of function blocks between hardware and
+software.

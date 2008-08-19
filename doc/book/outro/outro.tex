@@ -1,9 +1,8 @@
 
 In this chapter we will undertake a short review of the project and
-summarize the contributions. Java for real-time systems is a very
-new and active research area. This chapter is completed by
-suggestions for future research, based on the proposed Java
-processor.
+summarize the contributions. Java for real-time systems is a very new
+and active research area. This chapter offers suggestions for future
+research, based on the proposed Java processor.
 
 The research contributions made by this work are related to two
 areas: real-time Java and resource-constrained embedded systems.
@@ -48,26 +47,28 @@ referred to as the \emph{stack cache} and described in
 Section~\ref{sec:stack}. Fill and spill of the stack cache is
 subjected to microcode control and therefore time-predictable.
 
-In Section~\ref{sec:cache}, a novel way to organize an instruction
-cache, as \emph{method cache}, is given. The cache stores complete
-methods, and cache misses only occur on method invocation and
-return. Cache block replacement depends on the call tree, instead of
-instruction addresses. This \emph{method cache} is easy to analyze
-with respect to worst-case behavior and still provides substantial
-performance gain when compared against a solution without an
-instruction cache.
+In Section~\ref{sec:cache}, a novel way to organize an
+instruction cache, as \emph{method cache}, is given. The cache
+stores complete methods, and cache misses only occur on method
+invocation and return. Cache block replacement depends on the
+call tree, instead of instruction addresses. This \emph{method
+cache} is easy to analyze with respect to worst-case behavior and
+still provides substantial performance gain when compared to a
+solution without an instruction cache.
 
-    \item
-The above described time-predictable processor provides the basis
-for real-time Java. The issues with standard Java and the Real-Time
-Specification for Java were analyzed in Chapter~\ref{chap:rtjava}.
-To enable real-time Java to operate on resource-constrained devices,
-a simple real-time profile was defined in Section~\ref{sec:rtprof}
-and implemented in Java on JOP. The beauty of this approach is in
-implementing functions usually associated with an RTOS in Java. This
-means that real-time Java is not based on an RTOS, and therefore not
-restricted to the functionality provided by the RTOS. With JOP, a
-self-contained real-time system in pure Java becomes possible.
+    \item The time-predictable processor described above provides
+        the basis for real-time Java. The issues with standard
+        Java and the Real-Time Specification for Java were
+        analyzed in Chapter~\ref{chap:rtjava}. To enable
+        real-time Java to operate on resource-constrained
+        devices, a simple real-time profile was defined in
+        Section~\ref{sec:rtprof} and implemented in Java on JOP.
+        The beauty of this approach is in implementing functions
+        usually associated with an RTOS in Java. This means that
+        real-time Java is not based on an RTOS, and therefore not
+        restricted to the functionality provided by the RTOS.
+        With JOP, a self-contained real-time system in pure Java
+        becomes possible.
 
 The tight integration of the scheduler and the hardware that
 generates schedule events results in low latency and low jitter of
@@ -92,7 +93,7 @@ analysis in the same way as normal application tasks.
 
 \end{itemize}
 
-The above-described contributions result in a time-predictable
+The contributions described above result in a time-predictable
 execution environment for real-time applications written in Java,
 without the resource implications and unpredictability of a
 JIT-compiler. The proposed processor architecture is a
@@ -127,15 +128,15 @@ The architecture of JOP is best described as:
     architecture.
 \end{quote}
 JOP contains its own instruction set, called microcode in this
-thesis, with a novel way of mapping bytecodes to microcode
+handbook, with a novel way of mapping bytecodes to microcode
 addresses. This mapping has zero overheads as described in
 Section~\ref{sec:microcode}. Basic bytecode instructions have a
-one-to-one mapping to microcode instructions and therefore execute
-in a single cycle. The stack architecture allows compact encoding of
-microinstructions in 8 bit to save internal memory.
+one-to-one mapping to microcode instructions and therefore
+execute in a single cycle. The stack architecture allows compact
+encoding of microinstructions in 8 bits to save internal memory.
 
 This approach allows flexible implementation of Java bytecodes in
-hardware, as a microcode sequence or even in Java itself.
+hardware, as a microcode sequence, or even in Java itself.
 
     \item
 The analysis of the JVM stack usage pattern in
@@ -144,11 +145,11 @@ two-level stack cache. This two-level stack cache fits to the
 embedded memory technologies of current FPGAs and ASICs and ensures
 fast execution of basic instructions.
 
-Part of the stack cache, which is implemented in an on-chip memory,
-is also used for microcode variables and constants. This resource
-sharing does not only reduce the number of memory blocks needed for
-the processor, but also the number of data paths to and from the
-execution unit.
+Part of the stack cache, which is implemented in an on-chip
+memory, is also used for microcode variables and constants. This
+resource sharing not only reduces the number of memory blocks
+needed for the processor, but also the number of data paths to
+and from the execution unit.
 
     \item
 Interrupts are considered hard to handle in a pipelined processor,
@@ -185,7 +186,7 @@ such as floating point operations, can be implemented in Java. The
 flexibility of an FPGA implementation also allows adding
 application-specific hardware accelerators to JOP.
 
-The small size of the processor allows usage of low-cost FPGAs in
+The small size of the processor allows the use of low-cost FPGAs in
 embedded systems that can compete against standard microcontroller.
 JOP has been implemented in several different FPGA families and is
 used in different real-world applications.
@@ -233,19 +234,22 @@ overheads can prove to be too high. A scheduler implemented in
 hardware can shorten this time, due to the parallel nature of the
 algorithm.
 
-    \item[Multiprocessor JVM:]
-In order to generate a small and predictable processor, several
-advanced and resource-consuming features (such as instruction
-folding or branch prediction) were omitted from the design. The
-resulting low resource usage of JOP makes it possible to integrate
-more than one processor in an FPGA. Since embedded applications are
-naturally multi-threaded systems, the performance can easily be
-enhanced using a multi-processor solution. A multi-processor JVM
-with shared memory offers following research possibilities:
-scheduling of Java threads and synchronization between the
-processors; WCET analysis for the shared memory access.
+    \item[Multiprocessor JVM:] In order to generate a small and
+        predictable processor, several advanced and
+        resource-consuming features (such as instruction folding
+        or branch prediction) were omitted from the design. The
+        resulting low resource usage of JOP makes it possible to
+        integrate more than one processor in an FPGA. Since
+        embedded applications are naturally multi-threaded
+        systems, the performance can easily be enhanced using a
+        multi-processor solution. A multi-processor JVM with
+        shared memory offers research possibilities such as:
+        scheduling of Java threads and synchronization between
+        the processors or WCET analysis for the shared memory
+        access.
 
-First results on a JOP CMP are described in \cite{jop:dma, jop:cmp}.
+Initial results on a JOP CMP are described in \cite{jop:dma,
+jop:cmp}.
 
     \item[Instruction cache:]
 The cache solution proposed in Section~\ref{sec:cache} provides
@@ -262,58 +266,62 @@ invoke and return. The infrequency of this decision means that more
 time is available for more advanced replacement algorithms.
 
 
-    \item[Real-time Java:]
-Although there is already a definition for real-time Java, i.e.\ the
-RTSJ \cite{rtsj}, this definition is not necessarily adequate. There
-is ongoing research on how memory should be managed for real-time
-Java applications: scoped memory, as suggested by the RTSJ, usage of
-a real-time GC, or application managed memory through memory pools.
-However, almost no research has been done into how the Java library
-which has proven a major part of Java's success, can be used in
-real-time systems or how it can be adapted to do so. The question of
-what the best memory management is for the Java standard library
-remains unanswered.
+    \item[Real-time Java:] Although there is already a definition
+        for real-time Java, i.e.\ the RTSJ \cite{rtsj}, this
+        definition is not necessarily adequate. There is ongoing
+        research on how memory should be managed for real-time
+        Java applications: scoped memory, as suggested by the
+        RTSJ, usage of a real-time GC, or application managed
+        memory through memory pools. However, almost no research
+        has been done into how the Java library, which is major
+        part of Java's success, can be used in real-time systems
+        or how it can be adapted to do so. The question of what
+        the best memory management is for the Java standard
+        library remains unanswered.
 
-    \item[Java computer:]
-How would a processor architecture and operating system architecture
-look in a `Java only' system? Here, we need to rethink our approach
-to processes, protection, kernel- and user-space, and virtual
-memory. The standard approach of using memory protection between
-different processes is necessary for applications that are
-programmed in languages that use memory addresses as data, i.e.\
-pointer usage and pointer manipulation. In Java, no memory addresses
-are visible and pointer manipulation is not possible. This very
-important feature of Java makes Java a \emph{safe} language.
-Therefore, an error-free JVM means we do not need memory protection
-between processes and we do not need to make a distinction between
-kernel and user space (with all the overhead) in a Java system.
-Another reason for using virtual addresses is link addresses.
-However, in Java this issue does not exist, as all classes are
-linked dynamically and the code itself (i.e.\ the bytecodes) only
-uses relative addressing.
+    \item[Java computer:] How would a processor architecture and
+        operating system architecture look in a `Java only'
+        system? Here, we need to rethink our approach to
+        processes, protection, kernel- and user-space, and
+        virtual memory. The standard approach of using memory
+        protection between different processes is necessary for
+        applications that are programmed in languages that use
+        memory addresses as data, i.e.\ pointer usage and pointer
+        manipulation. In Java, no memory addresses are visible
+        and pointer manipulation is not possible. This very
+        important feature of Java makes it a \emph{safe}
+        language. Therefore, an error-free JVM means we do not
+        need memory protection between processes and we do not
+        need to make a distinction between kernel and user space
+        (with all the overhead) in a Java system. Another reason
+        for using virtual addresses is link addresses. However,
+        in Java this issue does not exist, as all classes are
+        linked dynamically and the code itself (i.e.\ the
+        bytecodes) only uses relative addressing.
 
-Another issue here is the paging mechanism in virtual memory system,
-which has to be redesigned for a Java computer. For this, we need to
-merge the virtual memory management with the GC. It does not make
-sense to have a virtual memory manager that works with plain (e.g.\
-4~KB) memory pages without knowledge about object lifetime. We
-therefore need to incorporate the virtual memory paging with a
-generational GC. The GC knows which objects have not been accessed
-for a long time and can be swapped out to the disc. Handling paging
-as part of the GC process also avoids page fault exceptions and
-thereby simplifies the processor architecture.
+Another issue here is the paging mechanism in a virtual memory
+system, which has to be redesigned for a Java computer. For this,
+we need to merge the virtual memory management with the GC. It
+does not make sense to have a virtual memory manager that works
+with plain (e.g.\ 4~KB) memory pages without knowledge about
+object lifetime. We therefore need to incorporate the virtual
+memory paging with a generational GC. The GC knows which objects
+have not been accessed for a long time and can be swapped out to
+the hard disk. Handling paging as part of the GC process also
+avoids page fault exceptions and thereby simplifies the processor
+architecture.
 
-Another question is whether we can substitute the process notation
-with threads, or whether we need several JVMs on a Java only system.
-It depends. If we can live with the concept of shared static class
-members, we can substitute heavyweight processes with lightweight
-threads. It is also possible that we would have to define some
-further thread local data structures in the operation system.
+Another question is whether we can substitute the process
+notation with threads, or whether we need several JVMs on a Java
+only system. It depends. If we can live with the concept of
+shared static class members, we can substitute heavyweight
+processes with lightweight threads. It is also possible that we
+would have to define some further thread local data structures in
+the system.
 
 \end{description}
 %
-It is the opinion of the author that Java is a promising language
-for future real-time systems. However, a number of issues remain to
-be solved. JOP, with its time-predictable execution of Java
-bytecodes, is an important but nevertheless only a small part of a
-real-time Java system.
+It is the opinion of the author that Java is a promising language for
+future real-time systems. However, a number of issues remain to be
+solved. JOP, with its time-predictable execution of Java bytecodes,
+is an important part of a real-time Java system.

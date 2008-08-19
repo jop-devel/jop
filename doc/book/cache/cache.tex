@@ -292,10 +292,10 @@ units is only 10 bits, instead of 32 bits.
 
 The main disadvantage of this single method cache is the high
 overhead when a complete method is loaded into the cache and only a
-small fraction of the code is executed. This issue is similar to
-that encountered with unused data in a cache line. However, in
-extreme cases, this overhead can be very high. The second problem
-can be seen in following example:
+small fraction of the code is executed. This issue is similar to that
+encountered with unused data in a cache line. However, in extreme
+cases, this overhead can be very high. The second problem can be seen
+in the following example:
 %
 \begin{samepage}
 \begin{lstlisting}
@@ -691,19 +691,19 @@ memory latency.
     \label{tab_cache_direct}
 \end{table}
 
-Which configuration performs best depends on the relationship
-between memory bandwidth and memory latency. Examples of average
-memory access times in cycles per instruction byte for different
-memory technologies are provided in
-Table~\ref{tab_cache_direct_mem}. The third column shows the cache
-performance for a Static RAM (SRAM) that is very common in embedded
-systems. A latency of 1 clock cycle and an access time of 2 clock
-cycles per 32-bit word are assumed. For the synchronous DRAM (SDRAM)
-in the forth column, a latency of 5 cycles (3 cycle for the row
-address and 2 cycle CAS latency) is assumed. The memory delivers one
-word (4 bytes) per cycle. The Double Data Rate (DDR) SDRAM in the
-last column has an enhanced latency of 4.5 cycles and transfers data
-on both the rising and falling edge of the clock signal.
+Which configuration performs best depends on the relationship between
+memory bandwidth and memory latency. Examples of average memory
+access times in cycles per instruction byte for different memory
+technologies are provided in Table~\ref{tab_cache_direct_mem}. The
+third column shows the cache performance for a Static RAM (SRAM) that
+is very common in embedded systems. A latency of 1 clock cycle and an
+access time of 2 clock cycles per 32-bit word are assumed. For the
+synchronous DRAM (SDRAM) in the forth column, a latency of 5 cycles
+(3 cycles for the row address and 2 cycles for the CAS latency) is
+assumed. The memory delivers one word (4 bytes) per cycle. The Double
+Data Rate (DDR) SDRAM in the last column has an enhanced latency of
+4.5 cycles and transfers data on both the rising and falling edge of
+the clock signal.
 
 %
 %       simulate 32-bits (DDR) SDRAM
@@ -920,9 +920,8 @@ is slower than the direct-mapped cache in the 1KB configuration
 because of the higher MBIB (0.7 compared to 0.3-0.6), and performs
 very similarly at a cache size of 2KB.
 
-In Table~\ref{tab_cache_compared}, the different cache solutions
-with a size of 2KB are summarized. The detail results of all caches
-can be found in Appendix~\ref{appx:bench}.
+In Table~\ref{tab_cache_compared}, the different cache solutions with
+a size of 2KB are summarized.
 %
 \begin{table}
     \centering

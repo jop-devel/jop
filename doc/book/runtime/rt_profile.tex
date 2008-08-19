@@ -9,7 +9,7 @@ The guidelines of the specification are:
 
 \begin{itemize}
 \item High-integrity profile
-\item Easy syntax, simplicity
+\item Easy syntax
 \item Easy to implement
 \item Low runtime overhead
 \item No syntactic extension of Java
@@ -21,10 +21,11 @@ provided)
 \end{itemize}
 
 The real-time profile under discussion is inspired by the restricted
-versions of the RTSJ described in \cite{Pusch01} and \cite{583825}
-(see Section~\ref{subsec:restr:rtsj}). It is intended for
-high-integrity real-time applications and as a test case to evaluate
-the architecture of JOP as a Java processor for real-time systems.
+versions of the RTSJ described in \cite{Pusch01} and
+\cite{ravenscar:java} (see Section~\ref{subsec:restr:rtsj}). It is
+intended for high-integrity real-time applications and as a test case
+to evaluate the architecture of JOP as a Java processor for real-time
+systems.
 
 The proposed definition is not compatible with the RTSJ. Since the
 application domain for the RTSJ is different from high-integrity
@@ -55,17 +56,17 @@ avoids preemption delays of \emph{more important} real-time threads
 and events.
 
 %This specification is functional compatible with Ravenscar-Java (RJ)
-%\cite{583825}, but avoids inheritance of complex RTSJ classes. In
+%\cite{ravenscar:java}, but avoids inheritance of complex RTSJ classes. In
 %fact, it is possible (and has been done) to implement RJ with the
 %additional necessary RTSJ classes on top of it.
 
 To verify that this specification is expressive enough for
 high-integrity real-time applications, Ravenscar-Java (RJ)
-\cite{583825} (see Section~\ref{subsec:rj}), with the additional
-necessary RTSJ classes, has been implemented on top of it. However,
-RJ inherits some of the complexity of the RTSJ. Therefore, the
-implementation of RJ has a larger memory and runtime overhead than
-this simple specification.
+\cite{ravenscar:java} (see Section~\ref{subsec:rj}), with the
+additional necessary RTSJ classes, has been implemented on top of it.
+However, RJ inherits some of the complexity of the RTSJ. Therefore,
+the implementation of RJ has a larger memory and runtime overhead
+than this simple specification.
 
 \subsection{Application Structure}
 
@@ -204,40 +205,41 @@ analysis tool is available.
 
 The profile does not support a garbage collector. All memory should
 be allocated at the initialization phase. Without a garbage
-collector, the heap implicitly becomes immortal memory (as defined
-by the RTSJ). For objects created during the mission phase, a scoped
-memory is provided\footnote{As we now consider real-time GC as the
-better solution scopes are not supported in the current
-implementation of the profile}. Each scoped memory area is assigned
-to one \code{RtThread}. A scoped memory area cannot be shared
-between threads. No references are allowed from the heap to scoped
-memory. Scoped memory is explicitly entered and left using
-invocations from the application logic. Memory areas are cleared
-both on creation and when leaving the scope (invocation of
-\code{exitMemory()}), leading to a memory area with constant
-allocation time, as opposed to memory with linear allocation time
-(as the memory type \code{LTMemory} in the RTSJ)
-\cite{Corsaro:2003:DPR}.
+collector, the heap implicitly becomes immortal memory (as defined by
+the RTSJ). For objects created during the mission phase, a scoped
+memory is provided.\footnote{As we now consider real-time GC as the
+better solution, scopes are not supported in the current
+implementation of the profile.} Each scoped memory area is assigned
+to one \code{RtThread}. A scoped memory area cannot be shared between
+threads. No references are allowed from the heap to scoped memory.
+Scoped memory is explicitly entered and left using invocations from
+the application logic. Memory areas are cleared both on creation and
+when leaving the scope (invocation of \code{exitMemory()}), leading
+to a memory area with constant allocation time, as opposed to memory
+with linear allocation time (as the memory type \code{LTMemory} in
+the RTSJ) \cite{Corsaro:2003:DPR}.
 
 
-\subsection{Restriction of Java}
+\subsection{Restrictions on Java}
 
 A list of some of the language features that should be avoided for
 WCET analyzable real-time threads and bound memory usage:
 
 \begin{description}
-    \item[WCET:] Only analyzable language constructs are allowed (see \cite{84850}).
+    \item[WCET:] Only analyzable language constructs are allowed
+        (see \cite{pusch:maxt:jnl}).
 
     \item[Static class initialization:] Since the definition when
-to call the static class initializer is problematic (see
-Section~\ref{para:restrict:clinit}), they are disallowed. Move this
-code to a static method (e.g. \code{init()}) and invoke it explicit
-in the initialization phase.
+        to call the static class initializer is problematic (see
+        Section~\ref{para:restrict:clinit}), they are disallowed.
+        Move this code to a static method (e.g. \code{init()})
+        and invoke it explicitly in the initialization phase.
 
     \item[Inheritance:] Reduce usage of interfaces and overridden methods.
 
-    \item[String concatenation:] In immortal memory scope only string concatenation with string
-literals is allowed.
+    \item[String concatenation:] In the immortal memory scope,
+        only string concatenation with string literals is
+        allowed.
 
     \item[Finalization:] \code{finalize()} has a weak definition
 in Java. Because real-time systems run \emph{forever}, objects in
@@ -331,9 +333,9 @@ negligible. As a result, almost all of the scheduling is implemented
 in Java. Only a small part of the dispatcher, a memory copy, is
 implemented in microcode and exposed with a special bytecode.
 
-Experimental results of basic scheduling benchmarks, such as
-periodic thread jitter, context switch time for threads and
-asynchronous events, can be found in Section~\ref{subsec:rt:perf}.
+Experimental results of basic scheduling benchmarks, such as periodic
+thread jitter, context switch time for threads and asynchronous
+events, can be found in \cite{jop:rtjava}.
 
 To implement system functions, such as scheduling, in Java, access
 to JVM and processor internal data structures have to be available.

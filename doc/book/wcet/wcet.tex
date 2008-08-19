@@ -29,7 +29,7 @@ needed. The main problem for the low-level analysis is the execution
 time dependency of instructions in modern processors that are not
 designed for real-time systems. JOP is designed to be an easy target
 for WCET analysis. The WCET of each bytecode can be predicted in
-terms of number of cycles it requires. There are no dependencies
+terms of the number of cycles it requires. There are no dependencies
 between bytecodes.
 
 Each bytecode is implemented by microcode. We can obtain the WCET of
@@ -49,9 +49,9 @@ tool description in Section~\ref{sec:wcet:java}.
 
 
 It has to be noted that we cannot provide WCET values for the other
-Java systems from Section~\ref{sec:performance}, e.g.\ the aJile
-Java processor, as there is no information on the instruction timing
-available.
+Java systems from Section~\ref{sec:performance}, e.g.\ the aJile Java
+processor, as there is no information available on their instruction
+timing.
 
 
 \section{Microcode Path Analysis}
@@ -240,13 +240,12 @@ bytecode \code{ldc2\_w} in clock cycles:
     \end{array} \right.
 \end{equation*}}
 
-Thus, for a memory with two cycles access time ($r_{ws}=1)$, as we
-use it for a 100 MHz version of JOP with a 15 ns SRAM, the wait
-state is completely hidden by microcode instructions for this
-bytecode.
+Thus, for a memory with two-cycle access time ($r_{ws}=1)$, as used
+for a 100~MHz version of JOP with a 15~ns SRAM, the wait state is
+completely hidden by microcode instructions for this bytecode.
 
-Memory access time also determines the cache load time on a miss.
-For the current implementation the cache load time is calculated as
+Memory access time also determines the cache load time on a miss. For
+the current implementation, the cache load time is calculated as
 follows: the wait state $c_{ws}$ for a single word cache load is:
 %
 {\small
@@ -314,16 +313,16 @@ instruction cycle accurate.
 
 We conclude this section with a worst-case analysis (now at the
 bytecode level) of Java applications. First we provide manual
-analysis on a simple example and than a brief description of the
+analysis on a simple example and then a brief description of the
 automation through a WCET analyzer tool.
 
 \subsection{An Example} \label{subsec:wcet:eval}
 
 
-In this section we perform manually a worst and best case analysis
-of a classic example, the Bubble Sort algorithm. The values
-calculated are compared with the measurements of the execution time
-on JOP on all permutations of the input data.
+In this section we perform manually a worst and best case analysis of
+a classic example: the Bubble Sort algorithm. The values calculated
+are compared with the measurements of the execution time on JOP on
+all permutations of the input data.
 Listing~\ref{lst:results:wcet:sort:prog} shows the test program in
 Java. The algorithm contains two nested loops and one condition. We
 use an array of five elements to perform the measurements for all
@@ -494,23 +493,23 @@ element exchange and takes 73 clock cycles) between 0 and 10 times.
 \subsection{WCET Analyzer} \label{sec:wcet:java}
 
 In \cite{jop:wcet:jtres06} we have presented a static WCET analysis
-tool for Java. During the high-level analysis the the relevant
-information is extracted from the class files. The control flow
-graph (CFG) of the basic blocks\footnote{A basic block is a sequence
-of instructions without any jumps or jump targets within this
-sequence.} is extracted from the bytecodes. Annotations for the loop
-counts are extracted from comments in the source. Furthermore, the
-class hierarchy is examined to find all possible targets for a
-method invoke.
+tool for Java. During the high-level analysis the relevant
+information is extracted from the class files. The control flow graph
+(CFG) of the basic blocks\footnote{A basic block is a sequence of
+instructions without any jumps or jump targets within this sequence.}
+is extracted from the bytecodes. Annotations for the loop counts are
+extracted from comments in the source. Furthermore, the class
+hierarchy is examined to find all possible targets for a method
+invoke.
 
 The tool performs the low-level analysis at the bytecode level. The
 behavior of the method cache is integrated for a simpler form (a two
 block cache). The well known execution times of the different
-bytecodes (see Section~\ref{sec:wcet:bc}) simplifies this part of
-the WCET analysis, which is usually the most complex one, to a great
-extent. As there are no pipeline dependencies the calculation of the
-execution time for a basic block is merely just adding the
-individual cycles for each instruction.
+bytecodes (see Section~\ref{sec:wcet:bc}) simplify this part of the
+WCET analysis, which is usually the most complex one, to a great
+extent. As there are no pipeline dependencies, the calculation of the
+execution time for a basic block is merely just adding the individual
+cycles for each instruction.
 
 The actual calculation of the WCET is transformed to an integer
 linear programming problem, a well known technique for WCET analysis
@@ -541,8 +540,8 @@ WCET.
 \end{table}
 %
 The benchmarks \code{Lift} and \code{Kfl} are real-world examples
-that are in industrial use. \code{Kfl} and \code{UdpIp} are also
-part of an embedded Java benchmark suit that is used in
+that are in industrial use. \code{Kfl} and \code{UdpIp} are also part
+of an embedded Java benchmark suite that is used in
 Section~\ref{sec:performance}.
 
 Table~\ref{tab:wcet:compared} shows the measured execution time and
@@ -582,11 +581,11 @@ tool available.
 
 The WCET analysis tool, with the help of loop annotations, provides
 WCET values for the schedulability analysis. Besides the calculation
-of the WCET the tool provides user feedback by generating bytecode
+of the WCET, the tool provides user feedback by generating bytecode
 listings with timing information and a graphical representation of
-the CFG with timing and frequency information. This representation
-of the WCET path through the code can guide the developer to write
-WCET aware real-time code.
+the CFG with timing and frequency information. This representation of
+the WCET path through the code can guide the developer to write WCET
+aware real-time code.
 
 \section{Discussion}
 
@@ -600,22 +599,22 @@ analysis.
 
 
 The same analysis is not possible for other Java processors. Either
-the information on the bytecode execution time is
-missing\footnote{We tried hard to get this information for the aJile
-processor.} or some processor features (e.g., the high variability
-of the latency for a trap in picoJava) would result in very
-conservative WCET estimates. Another example that prohibits exact
-analysis is the mechanism to automatically fill and spill the stack
-cache in picoJava. The time when the memory (cache) is occupied by
-this spill/fill action depends on a long instruction history. Also
-the fill level of the 16-byte-deep prefetch buffer, which is needed
-for instruction folding, depends on the execution history. All this
-automatically buffering features have to be modeled quite
-conservative. A pragmatic solution is to assume empty buffers at the
-start of a basic block. As basic blocks are quite short most of the
+the information on the bytecode execution time is missing\footnote{We
+tried hard to get this information for the aJile processor.} or some
+processor features (e.g., the high variability of the latency for a
+trap in picoJava) would result in very conservative WCET estimates.
+Another example that prohibits exact analysis is the mechanism to
+automatically fill and spill the stack cache in picoJava. The time
+when the memory (cache) is occupied by this spill/fill action depends
+on a long instruction history. Also the fill level of the
+16-byte-deep prefetch buffer, which is needed for instruction
+folding, depends on the execution history. All these automatic
+buffering features have to be modeled quite conservatively. A
+pragmatic solution is to assume empty buffers at the start of a basic
+block. As basic blocks are quite short, most of the
 buffering/prefetching does not help to lower the WCET.
 
-Only for the Cjip processor the execution time is well documented
+Only for the Cjip processor is the execution time well documented
 \cite{CjipRef}. However, as seen in Section~\ref{sec:perf:disc}, the
 \emph{measured} execution time of some bytecodes is \emph{higher}
 than the documented values. Therefore the documentation is not

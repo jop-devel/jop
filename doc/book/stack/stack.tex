@@ -154,7 +154,7 @@ Figure~\ref{fig_stack_invoke}. A method with two arguments,
 \emph{this} pointer), is invoked in this example. The invoked method
 \emph{sees} the arguments as \code{var{\_}1} and \code{var{\_}2}.
 \code{var{\_}3} is the only local variable of the method. SP is a
-pointer to the top of stack and VP points to the start of the
+pointer to the top of the stack and VP points to the start of the
 variable area.
 
 \begin{figure}
@@ -169,7 +169,7 @@ variable area.
 
 The pipelined architecture of a Java processor executes basic
 instructions in a single cycle. A stack that contains the operand
-stack \emph{and} the local variables results in following access
+stack \emph{and} the local variables results in the following access
 patterns:
 %
 \begin{description}
@@ -182,12 +182,12 @@ for this operation are:\newline
     stack[sp] $\leftarrow $ result
 }
 
-\item[Variable Load:] Read of a data element deeper down in the stack,
-relative to a variable base address pointer (VP), and push this data
-on the top of the stack. This operation needs two pipeline
-stages:\newline \texttt{
-    value $\leftarrow $ stack[vp+offset], sp $\leftarrow $ sp+1\newline
-    stack[sp] $\leftarrow $ value
+\item[Variable Load:] Read a data element deeper down in the
+    stack, relative to a variable base address pointer (VP), and
+    push this data on the top of the stack. This operation needs
+    two pipeline stages:\newline \texttt{ value $\leftarrow $
+    stack[vp+offset], sp $\leftarrow $ sp+1\newline stack[sp]
+    $\leftarrow $ value
 }
 
 \item[Variable Store:] Pop the top element of the stack and write it in
@@ -205,10 +205,10 @@ register file (two read ports and one write port) is necessary.
 
 As the stack is a heavily accessed memory region, the stack -- or
 part of it -- has to be placed in the upper level of the memory
-hierarchy. This part of the stack is referred to as \emph{stack
-cache} in this thesis. As described in \cite{Hennessy02}, a typical
-memory hierarchy contains the following elements, with increasing
-access time and size:
+hierarchy. This part of the stack is referred to as a \emph{stack
+cache}. As described in \cite{Hennessy02}, a typical memory hierarchy
+contains the following elements, with increasing access time and
+size:
 %
 \begin{itemize}
 \item CPU register
@@ -226,17 +226,17 @@ been used and are described below.
 \subsubsection{The Register File as a Stack Cache}
 
 An example of a Java processor that uses a register file is Sun's
-picoJava \cite{pjMicroArch}. It contains 64 registers, organized as
-a circular buffer. To compensate for this \emph{small} stack cache,
-an automatic spill and fill circuit needs another read/write port to
-the register file. aJile's JEMCore \cite{880720} is a
-direct-execution Java processor core that contains 24 registers.
-Only six of them are used to cache the top elements of the stack.
-With this small register count, local variables are not part of the
-cache. The Ignite \cite{IGNITE} (formerly known as PSC1000) is a
-stack processor, originally designed as a Forth processor and now
-promoted as a Java processor, has an operand stack that contains 18
-registers with automatic spill and fill.
+picoJava \cite{pjMicroArch}. It contains 64 registers, organized as a
+circular buffer. To compensate for this \emph{small} stack cache, an
+automatic spill and fill circuit needs another read/write port to the
+register file. aJile's JEMCore \cite{880720} is a direct-execution
+Java processor core that contains 24 registers. Only six of them are
+used to cache the top elements of the stack. With this small register
+count, local variables are not part of the cache. Ignite
+\cite{IGNITE} (formerly known as PSC1000) is a stack processor,
+originally designed as a Forth processor and now promoted as a Java
+processor, and has an operand stack that contains 18 registers with
+automatic spill and fill.
 
 A basic pipeline for a stack processor with a register file contains the
 following stages:
@@ -335,7 +335,7 @@ blocks and each memory block provides a different read port.
 However, this solution also doubles the amount of memory.
 
 Both designs (Komodo and FemtoJava) avoid the memory doubling by
-serializing the two reads. This serialization results in minimum of
+serializing the two reads. This serialization results in a minimum of
 two clock cycles execution time for basic instructions or halves the
 clock frequency of the whole pipeline.
 
@@ -540,9 +540,9 @@ resulting three-stage pipeline, no data hazards will occur and no
 data forwarding is therefore necessary. This simplifies the decoding
 stage and reduces the number of multiplexers in the execution path.
 We will show that none of the three data hazard types
-\cite{Hennessy02} are an issue in this architecture. With
-instructions $i$ and $j$, where $i$ is issued before $j$, the data
-hazard types are:
+\cite{Hennessy02} is an issue in this architecture. With instructions
+$i$ and $j$, where $i$ is issued before $j$, the data hazard types
+are:
 
 \paragraph{Read after write:} $j$ reads a source before $i$ writes it. This
 is the most common type of hazard and, in the architectures
@@ -568,8 +568,8 @@ values are read, operated on and written back in the same cycle. No
 read that depends on TOS or TOS-1 suffers from a data hazard. Read
 and write access to a local variable is also performed in the same
 pipeline stage. Thus, the read after write order is not affected.
-However, there is also an additional hidden read and write - the
-fill and spill of register B:
+However, there is also an additional hidden read and write: the fill
+and spill of register B:
 
 
 
