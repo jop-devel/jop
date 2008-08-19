@@ -127,7 +127,7 @@ public class GC {
 	// TODO: useList is only used for a faster handle sweep
 	// do we need it?
 	static int useList;
-	static int greyList;
+	static int grayList;
 	
 	static int addrStaticRefs;
 	
@@ -171,7 +171,7 @@ public class GC {
 		
 		freeList = 0;
 		useList = 0;
-		greyList = GREY_END;
+		grayList = GREY_END;
 		for (int i=0; i<handle_cnt; ++i) {
 			int ref = mem_start+i*HANDLE_SIZE;
 			// pointer to former freelist head
@@ -239,12 +239,12 @@ public class GC {
 				return;
 			}
 			
-			// only objects not allready in the grey list
+			// only objects not allready in the gray list
 			// are added
 			if (Native.rdMem(ref+OFF_GREY)==0) {
 				// pointer to former gray list head
-				Native.wrMem(greyList, ref+OFF_GREY);
-				greyList = ref;			
+				Native.wrMem(grayList, ref+OFF_GREY);
+				grayList = ref;			
 			}			
 		}		
 	}
@@ -253,7 +253,7 @@ public class GC {
 	 */
 	static void flip() {
 		synchronized (mutex) {
-			if (greyList!=GREY_END) log("GC: grey list not empty");
+			if (grayList!=GREY_END) log("GC: gray list not empty");
 
 			useA = !useA;
 			if (useA) {
@@ -335,11 +335,11 @@ public class GC {
 			
 			// pop one object from the gray list
 			synchronized (mutex) {
-				ref = greyList;
+				ref = grayList;
 				if (ref==GREY_END) {
 					break;
 				}
-				greyList = Native.rdMem(ref+OFF_GREY);
+				grayList = Native.rdMem(ref+OFF_GREY);
 				Native.wrMem(0, ref+OFF_GREY);		// mark as not in list
 			}
 
@@ -347,7 +347,7 @@ public class GC {
 			// can this happen? - yes, as we do not check it in mark
 			// TODO: no, it's checked in push()
 			// What happens when the actuall scanning object is
-			// again pushed on the grey stack by the mutator?
+			// again pushed on the gray stack by the mutator?
 			if (Native.rdMem(ref+OFF_SPACE)==toSpace) {
 				// it happens 
 //				log("mark/copy allready in toSpace");
