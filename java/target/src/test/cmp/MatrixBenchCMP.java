@@ -20,14 +20,18 @@
 
 package cmp;
 
+import java.util.Hashtable;
 import java.util.Random;
 
 import jbe.LowLevel;
-
 import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 
-public class MatrixBenchCMP2 {
+import com.jopdesign.io.IOFactory;
+import com.jopdesign.io.SysDevice;
+import com.jopdesign.sys.Startup;
+
+public class MatrixBenchCMP implements Runnable {
 
 	// Shared Variables
 	public static int[][] arrayA;
@@ -39,55 +43,57 @@ public class MatrixBenchCMP2 {
 	public static int N = 100; // Number of columns of A, number of rows of B
 	public static int P = 100; // Number of columns of B	
 	static Object lock;
-	public static int test0 = 0;
-	public static int test1 = 0;
+	
+	int cpu_id;
+	
+	public MatrixBenchCMP (int identity){
+		cpu_id = identity;
+	}
 	
 	public static void main(String[] args) {		
 		
-		int cpu_id;
-		cpu_id = Native.rdMem(Const.IO_CPU_ID);
+		// Initialization for benchmarking 
+		int start = 0;
+		int stop = 0;
+		int time = 0;
 		
-		if (cpu_id == 0x00000000)
+		System.out.println("Matrix Benchmark:");
+			
+		long seed = 13;
+		initializeMultiplication(seed);
+		
+		SysDevice sys = IOFactory.getFactory().getSysDevice();
+			
+		for (int i=0; i<sys.nrCpu-1; i++) {
+			Runnable r = new MatrixBenchCMP(i+1);
+			Startup.setRunnable(r, i);
+		}
+		
+		// Start of measurement
+		start = LowLevel.timeMillis();
+					
+		// Start of all other CPUs
+		sys.signal = 1;
+			
+		// Start of CPU0
+		int test0 = processCalculation();
+			
+		while(true)
 		{
-			// Initialization for benchmarking 
-			int start = 0;
-			int stop = 0;
-			int time = 0;
-			
-			long seed = 13;
-			initializeMultiplication(seed);
-			
-			System.out.println("Application benchmarks:");
-			
-			start = LowLevel.timeMillis();	
-			Native.wrMem(0x00000001, Const.IO_SIGNAL);
-			
-			test0 = processCalculation();
-			
-			while(true)
+			synchronized(lock)
 			{
-				synchronized(lock)
-				{
-					if (endCalculation == N)
-						break;
-				}
+				if (endCalculation == N)
+					break;
 			}
-			
-			stop = LowLevel.timeMillis();
-			
-			System.out.println("StartTime: " + start);
-			System.out.println("StopTime: " + stop);
-			time = stop-start;
-			System.out.println("TimeSpent: " + time);
 		}
-		else
-		{
-			if (cpu_id == 0x00000001)            
-			{
-				test1 = processCalculation();
-				while(true);
-			}  
-		}
+		
+		// End of measurement
+		stop = LowLevel.timeMillis();
+			
+		System.out.println("StartTime: " + start);
+		System.out.println("StopTime: " + stop);
+		time = stop-start;
+		System.out.println("TimeSpent: " + time);
 			
 	}
 	
@@ -159,5 +165,9 @@ public class MatrixBenchCMP2 {
 			counter++;
 		}
 		return counter;
+	}
+
+	public void run() {
+		int test = processCalculation();
 	}
 }
