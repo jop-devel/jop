@@ -100,11 +100,12 @@ end component;
 --
 --	jopcpu connections
 --
-	signal sc_mem_out		: sc_mem_out_type;
+	signal sc_mem_out		: sc_out_type;
 	signal sc_mem_in		: sc_in_type;
-	signal sc_io_out		: sc_io_out_type;
+	signal sc_io_out		: sc_out_type;
 	signal sc_io_in			: sc_in_type;
-	signal irq_in			  : irq_in_type;
+	signal irq_in			: irq_bcf_type;
+	signal irq_out			: irq_ack_type;
 	signal exc_req			: exception_type;
 
 --
@@ -147,17 +148,18 @@ begin
 	cpm_cpu: entity work.jopcpu
 		generic map(
 			jpc_width => jpc_width,
-			block_bits => block_bits
+			block_bits => block_bits,
+			spm_width => 0
 		)
 		port map(clk_int, int_res,
 			sc_mem_out, sc_mem_in,
 			sc_io_out, sc_io_in,
-			irq_in, exc_req);
+			irq_in, irq_out, exc_req);
 
 	cmp_io: entity work.scio 
 		port map (clk_int, int_res,
 			sc_io_out, sc_io_in,
-			irq_in, exc_req,
+			irq_in, irq_out, exc_req,
 
 			txd => ser_txd,
 			rxd => ser_rxd,
@@ -195,8 +197,7 @@ begin
 			clk => clk_int,
 			reset => int_res,
 
-			sc_address(20 downto 0) => sc_mem_out.address,
-			sc_address(23 downto 21) => "000",
+			sc_address => "0" & sc_mem_out.address,
 			sc_wr_data => sc_mem_out.wr_data,
 			sc_rd => sc_mem_out.rd,
 			sc_wr => sc_mem_out.wr,
