@@ -30,7 +30,10 @@ vcom %options% %jopdir%/simulation/bytecode.vhd
 vcom %options% %jopdir%/jtbl.vhd
 vcom %options% %jopdir%/offtbl.vhd
 vcom %options% %jopdir%/core/cache.vhd
+
 vcom %options% %jopdir%/memory/sc_sram32_flash.vhd
+rem vcom %options% %jopdir%/memory/sc_sram16.vhd
+
 vcom %options% %jopdir%/memory/mem_sc.vhd
 vcom %options% %jopdir%/memory/sdpram.vhd
 vcom %options% %jopdir%/core/mul.vhd
@@ -47,6 +50,11 @@ vcom %options% %jopdir%/simpcon/sc_arbiter_pack.vhd
 vcom %options% %jopdir%/simpcon/sc_arbiter_fair.vhd
 vcom %options% %jopdir%/scio/cmpsync.vhd
 vcom %options% %jopdir%/core/jopcpu.vhd
+
 vcom %options% %jopdir%/top/jopmul.vhd
+rem vcom %options% %jopdir%/top/jopmul_256x16.vhd
+
 vcom %options% %jopdir%/simulation/tb_jop.vhd
+rem vcom %options% %jopdir%/simulation/tb_jop_sram16.vhd
+
 vsim -do sim_cmp.do tb_jop
