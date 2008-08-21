@@ -32,6 +32,9 @@
 -- 250408: Renaming of this_state to mode, follow_state to next_mode, reg_in to reg_out
 -- 240708: added data_reg for each CPU in arbiter
 -- 070808: removed combinatorial loop (pipelined bug)
+-- 210808: - reg_in_rd_data(i) also gets loaded when rdy_cnt = 3 using pipelined access
+--				 - arb_in(i).rd_data gets mem_in.rd_data when rdy_cnt 3 using pipelined access
+
 
 -- Functioning: See description of SIES08 paper
 
@@ -378,7 +381,10 @@ gen_reg_in: for i in 0 to cpu_cnt-1 generate
 			if mode(i) = servR then
 				if mem_in.rdy_cnt = 0 then
 					reg_in_rd_data(i) <= mem_in.rd_data;
-				elsif mem_in.rdy_cnt = 2 and next_pipelined(i) = '1' then
+				
+				-- added mem_in.rdy_cnt = 3. 
+				-- More correct would be: ((mem_in.rdy_cnt = ram_cnt) or (mem_in.rdy_cnt = 3))
+				elsif ((( mem_in.rdy_cnt = 2 ) or ( mem_in.rdy_cnt = 3 ))  and next_pipelined(i) = '1') then
 					reg_in_rd_data(i) <= mem_in.rd_data;
 				end if;			
 			end if;
@@ -408,7 +414,8 @@ gen_rdy_cnt: for i in 0 to cpu_cnt-1 generate
 				if (mode(i) = servR) then
 					if (mem_in.rdy_cnt = 0) then
 						arb_in(i).rd_data <= mem_in.rd_data;
-					elsif (mem_in.rdy_cnt = 2) and next_pipelined(i) = '1' then
+					-- added mem_in.rdy_cnt = 3
+					elsif ((( mem_in.rdy_cnt = 2 ) or ( mem_in.rdy_cnt = 3 ))  and next_pipelined(i) = '1') then
 						arb_in(i).rd_data <= mem_in.rd_data;
 					end if;
 				end if;
