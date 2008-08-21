@@ -384,7 +384,7 @@ gen_reg_in: for i in 0 to cpu_cnt-1 generate
 				
 				-- added mem_in.rdy_cnt = 3. 
 				-- More correct would be: ((mem_in.rdy_cnt = ram_cnt) or (mem_in.rdy_cnt = 3))
-				elsif ((( mem_in.rdy_cnt = 2 ) or ( mem_in.rdy_cnt = 3 ))  and next_pipelined(i) = '1') then
+				elsif ((( mem_in.rdy_cnt = 2 ) or ( mem_in.rdy_cnt = 3 )) and (next_pipelined(i) = '1')) then
 					reg_in_rd_data(i) <= mem_in.rd_data;
 				end if;			
 			end if;
@@ -396,7 +396,7 @@ end generate;
 				
 -- Generates rdy_cnt and rd_data for all CPUs
 gen_rdy_cnt: for i in 0 to cpu_cnt-1 generate
-	process (mem_in, state, mode, reg_in_rd_data, next_pipelined)
+	process (mem_in, state, mode, reg_in_rd_data, next_pipelined, reg_in_rd_data)
 	begin  
 		
 		arb_in(i).rd_data <= reg_in_rd_data(i);
@@ -415,7 +415,7 @@ gen_rdy_cnt: for i in 0 to cpu_cnt-1 generate
 					if (mem_in.rdy_cnt = 0) then
 						arb_in(i).rd_data <= mem_in.rd_data;
 					-- added mem_in.rdy_cnt = 3
-					elsif ((( mem_in.rdy_cnt = 2 ) or ( mem_in.rdy_cnt = 3 ))  and next_pipelined(i) = '1') then
+					elsif ((( mem_in.rdy_cnt = 2 ) or ( mem_in.rdy_cnt = 3 )) and (next_pipelined(i) = '1')) then
 						arb_in(i).rd_data <= mem_in.rd_data;
 					end if;
 				end if;
