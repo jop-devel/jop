@@ -93,7 +93,7 @@ architecture rtl of sc_mem_if is
 --	signals for mem interface
 --
 	type state_type		is (
-							idl, rd1, rd2, wr1, wr2, wr3,
+							idl, rd1, rd2, wr1, wr2,
 							fl_rd1, fl_rd2, fl_wr1, fl_wr2
 						);
 	signal state 		: state_type;
@@ -273,12 +273,12 @@ begin
 			
 		-- the WS state
 		when wr1 =>
-			next_state <= wr2;
-		
+			if wait_state=2 then
+				next_state <= wr2;
+			end if;
+
+		-- last write state
 		when wr2 =>
-			next_state <= wr3;
-			
-		when wr3 =>
 			next_state <= idl;
 
 		when fl_rd1 =>
@@ -358,12 +358,8 @@ begin
 				dout_ena <= '1';
 				ram_ncs <= '0';
 				
+			-- last write state
 			when wr2 => 
-				ram_nwe <= '0';
-				dout_ena <= '1';
-				ram_ncs <= '0';
-				
-			when wr3 =>
 				dout_ena <= '1';
 				ram_ncs <= '0';
 

@@ -217,24 +217,34 @@ begin
 				next_state <= wr1_h;
 			end if;
 			
+		-- first write state high word
 		when wr1_h =>
 			next_state <= wr2_h;
-			
-		when wr2_h =>
-			next_state <= wr3_h;
 		
+		-- wait state
+		when wr2_h =>
+			if wait_state=2 then
+				next_state <= wr3_h;
+			end if;
+		
+		-- last write state
 		when wr3_h =>
 			next_state <= wr_idl;
 			
 		when wr_idl =>
 			next_state <= wr1_l;
 		
+		-- first write state low word
 		when wr1_l =>
 			next_state <= wr2_l;
 			
+		-- wait state
 		when wr2_l =>
-			next_state <= wr3_l;
+			if wait_state=2 then
+				next_state <= wr3_l;
+			end if;
 			
+		-- last write state
 		when wr3_l =>
 			next_state <= idl;
 			-- This should do to give us a pipeline
@@ -317,11 +327,11 @@ begin
 				ram_nwe <= '0';
 				dout_ena <= '1';
 				ram_ncs <= '0';
-				
+			
+			-- high word last write state	
 			when wr3_h =>
 				ram_ncs <= '0';
 
-			-- high word last write state
 			when wr_idl =>
 				ram_ncs <= '1';
 				dout_ena <= '1';
