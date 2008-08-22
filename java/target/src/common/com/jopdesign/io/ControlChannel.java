@@ -20,7 +20,7 @@
 
 package com.jopdesign.io;
 
-public final class ControlChannel extends HwObject {
+public final class ControlChannel extends HardwareObject {
 	
 	// Some constants for the status port
 	public static final int MASK_TDRE = 1;

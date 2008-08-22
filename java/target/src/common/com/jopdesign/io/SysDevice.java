@@ -26,7 +26,7 @@ package com.jopdesign.io;
  *
  */
 
-public final class SysDevice extends HwObject {
+public final class SysDevice extends HardwareObject {
 	
 	/**
 	 * counter and interrupt

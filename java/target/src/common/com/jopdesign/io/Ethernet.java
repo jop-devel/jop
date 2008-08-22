@@ -26,6 +26,6 @@ package com.jopdesign.io;
  *
  */
 
-public class Ethernet extends HwObject {
+public class Ethernet extends HardwareObject {
 
 }
