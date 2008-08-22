@@ -240,6 +240,14 @@ write wait state in \code{sc\_sram32\_flash.vhd}. \code{cycbg} at
 enable till the last cycle in \code{sc\_sram32\_flash.vhd}. TODO: use
 configurable wait states (again), adapt other two SRAM interfaces.
 
+\paragraph{20080821} CP: Fixed bug in (\code{sc\_arbiter\_fair} and
+\code{sc\_arbiter\_tdma}) for pipelined memory access to a 16-bit
+SRAM.
+
+\paragraph{20080822} CP: Fixed the sram interfaces (\code{sc\_sram32\_flash.vhd},
+\code{sc\_sram32}, \code{sc\_sram16}) to be configurable depending on
+the wait sates.
+
 \subsection{Software}
 
 \paragraph{20050620}
