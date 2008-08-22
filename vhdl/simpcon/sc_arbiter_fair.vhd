@@ -396,7 +396,7 @@ end generate;
 				
 -- Generates rdy_cnt and rd_data for all CPUs
 gen_rdy_cnt: for i in 0 to cpu_cnt-1 generate
-	process (mem_in, state, mode, reg_in_rd_data, next_pipelined, reg_in_rd_data)
+	process (mem_in, state, mode, reg_in_rd_data, next_pipelined)
 	begin  
 		
 		arb_in(i).rd_data <= reg_in_rd_data(i);
