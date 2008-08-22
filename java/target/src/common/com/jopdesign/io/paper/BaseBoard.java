@@ -25,10 +25,10 @@ import com.jopdesign.io.SerialPort;
 public class BaseBoard {
 	
 	private final static int SERIAL_ADDRESS = 0xffff0010;
-	private SerialPort parallel;
+	private SerialPort serial;
 
 	BaseBoard() {
-		parallel = (SerialPort) JVMIOMagic(SERIAL_ADDRESS);
+		serial = (SerialPort) jvmHWOCreate(SERIAL_ADDRESS);
 	};
 	
 	static BaseBoard single = new BaseBoard();
@@ -37,10 +37,10 @@ public class BaseBoard {
 		return single;
 	}
 	
-	public SerialPort getSerialPort() { return parallel; }
+	public SerialPort getSerialPort() { return serial; }
 	
-	// here comes the magic!
-	Object JVMIOMagic(int address) {
+	// here comes the JVM internal mechanism
+	Object jvmHWOCreate(int address) {
 		return new Object();
 	}
 }

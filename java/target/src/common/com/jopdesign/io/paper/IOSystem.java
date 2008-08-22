@@ -26,12 +26,14 @@ public class IOSystem {
 	
 	private IOSystem() {}
 	
-	static native ParallelPort JVMPPMagic();
+	static native ParallelPort jvmPPCreate();
+	static native SerialPort jvmSPCreate(int nr);
 	
-	// do some JVM magic to create the object
-	private static ParallelPort pp = JVMPPMagic();
+	// some JVM mechanism to create the hardware object
+	private static ParallelPort pp = jvmPPCreate();
 	
-	private static SerialPort sp;
+	private static SerialPort sp = jvmSPCreate(0);
+	private static SerialPort gps = jvmSPCreate(1);
 	
 	public static ParallelPort getParallelPort() {
 		return pp;
@@ -39,5 +41,9 @@ public class IOSystem {
 	
 	public static SerialPort getSerialPort() {
 		return sp;
+	}
+	
+	public static SerialPort getGpsPort() {
+		return gps;
 	}
 }

@@ -30,9 +30,9 @@ public class IOTALFactory extends BaseBoard {
 	
 	IOTALFactory() {
 		super();
-		pins = (TALPins) JVMIOMagic(0);
-		leds = (LEDPort) JVMIOMagic(0);
-		cs8900 = (Ethernet) JVMIOMagic(0);
+		pins = (TALPins) jvmHWOCreate(0);
+		leds = (LEDPort) jvmHWOCreate(0);
+		cs8900 = (Ethernet) jvmHWOCreate(0);
 	}
 	
 	static IOTALFactory single = new IOTALFactory();
