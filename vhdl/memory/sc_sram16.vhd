@@ -84,8 +84,7 @@ architecture rtl of sc_mem_if is
 --
 	type state_type		is (
 							idl, rd1_h, rd2_h, rd1_l, rd2_l,
-							wr1_h, wr2_h, wr3_h, wr_idl, 
-							wr1_l, wr2_l, wr3_l
+							wr1_h, wr2_h, wr_idl, wr1_l, wr2_l
 						);
 	signal state 		: state_type;
 	signal next_state	: state_type;
@@ -217,35 +216,27 @@ begin
 				next_state <= wr1_h;
 			end if;
 			
-		-- first write state high word
+		-- WS state high word
 		when wr1_h =>
-			next_state <= wr2_h;
-		
-		-- wait state
-		when wr2_h =>
 			if wait_state=2 then
-				next_state <= wr3_h;
+				next_state <= wr2_h;
 			end if;
 		
 		-- last write state
-		when wr3_h =>
+		when wr2_h =>
 			next_state <= wr_idl;
 			
 		when wr_idl =>
 			next_state <= wr1_l;
 		
-		-- first write state low word
+		-- WS write state low word
 		when wr1_l =>
-			next_state <= wr2_l;
-			
-		-- wait state
-		when wr2_l =>
 			if wait_state=2 then
-				next_state <= wr3_l;
+				next_state <= wr2_l;
 			end if;
 			
 		-- last write state
-		when wr3_l =>
+		when wr2_l =>
 			next_state <= idl;
 			-- This should do to give us a pipeline
 			-- level of 2 for read
@@ -321,15 +312,12 @@ begin
 				rd_data_ena_l <= '1';
 				
 			when wr1_h =>
-				ram_ncs <= '0';
-				
-			when wr2_h =>
 				ram_nwe <= '0';
 				dout_ena <= '1';
 				ram_ncs <= '0';
 			
 			-- high word last write state	
-			when wr3_h =>
+			when wr2_h =>
 				ram_ncs <= '0';
 
 			when wr_idl =>
@@ -339,14 +327,11 @@ begin
 				wr_low <= '1';
 
 			when wr1_l =>
-				ram_ncs <= '0';
-				
-			when wr2_l =>
 				ram_nwe <= '0';
 				dout_ena <= '1';
 				ram_ncs <= '0';
 				
-			when wr3_l =>
+			when wr2_l =>
 				ram_ncs <= '0';
 
 		end case;
@@ -398,7 +383,7 @@ begin
 			end if;
 		end if;
 
-		if state=rd1_l or state=rd2_l or state=wr1_l or state=wr2_l or state=wr3_l then
+		if state=rd1_l or state=rd2_l or state=wr1_l or state=wr2_l then
 			-- take care for pipelined cach transfer
 			-- there is no idl state and cnt should
 			-- go back to "11"
