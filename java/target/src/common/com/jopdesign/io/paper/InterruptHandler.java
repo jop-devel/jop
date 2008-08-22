@@ -2,7 +2,7 @@
   This file is part of JOP, the Java Optimized Processor
     see <http://www.jopdesign.com/>
 
-  Copyright (C) 2001-2008, Martin Schoeberl (martin@jopdesign.com)
+  Copyright (C) 2005-2008, Martin Schoeberl (martin@jopdesign.com)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -18,7 +18,23 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-package com.jopdesign.io;
 
-public abstract class HardwareObject {
+/**
+ * 
+ */
+package com.jopdesign.io.paper;
+
+/**
+ * @author martin
+ *
+ */
+public class InterruptHandler {
+	
+	public void handle() {
+		
+	}
+
+	public void enableInterrupt() {
+		
+	}
 }
