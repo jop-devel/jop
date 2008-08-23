@@ -243,6 +243,15 @@ public class InlineHelper {
         return true;
     }
 
+    /**
+     * Set all invokes of a private method to invokevirtual so it can be set to public.
+     * All methods of the same class (but no method outside the class) can invoke the private method,
+     * so in every method in the class of the method all 'special' invokes need to be replaced with
+     * 'virtual' invokes. The resulting code must be compiled successfully.
+     *
+     * @param method a private method for which all invokes are made virtual.
+     * @throws GraphException if changing a graph fails.
+     */
     private void setVirtual(MethodInfo method) throws GraphException {
 
         ClassInfo classInfo = method.getClassInfo();

@@ -71,7 +71,7 @@ public class AppStruct {
         try {
             return loader.createClassInfo(this, className);
         } catch (IOException e) {
-            throw new TypeException("Could not create class {"+className+"}", e);
+            throw new TypeException("Could not create class {"+className+"}. Please check your classpath.", e);
         }
     }
 

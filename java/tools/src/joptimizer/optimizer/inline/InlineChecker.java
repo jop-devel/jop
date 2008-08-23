@@ -190,7 +190,7 @@ public class InlineChecker {
 
         // check if dynamic classloading may cause troubles, do not inline if no checkcode is used in this case
         boolean unsafeInline = !( invoked.isStatic() || invoked.isPrivate() || invoked.isFinal() ||
-                !assumeDynLoading );
+                invoked.getClassInfo().isFinal() || !assumeDynLoading );
         if ( unsafeInline && !useCheckCode ) {
             return null;
         }
@@ -233,6 +233,14 @@ public class InlineChecker {
         return true;
     }
 
+    /**
+     * check the graph of the invoked method if it contains instructions which prevent inlining.
+     *
+     * @param caller the method containing the invocation which should be inlined.
+     * @param invoked the invoked method.
+     * @param srcGraph the graph of the invoked method.
+     * @return A set of ModifierInfos which need to be set to public (may be empty), or null if check failed.
+     */
     private Set checkGraph(MethodInfo caller, MethodInfo invoked, ControlFlowGraph srcGraph)
     {
         Set changePublic = new HashSet();
@@ -354,6 +362,12 @@ public class InlineChecker {
         if ( modifierInfo instanceof MethodInfo ) {
             MethodInfo method = (MethodInfo) modifierInfo;
 
+            // check if full class hierarchy is known, else the method may be overwritten if set to public by an unkonwn class.
+            if ( assumeDynLoading && !modifierInfo.getClassInfo().isFinal() ) {
+                // TODO check if useCheckCode is enabled; if so, continue but mark as unsafe 
+                return 0;
+            }
+
             // search all subclasses for same method
             List queue = new LinkedList(method.getClassInfo().getSubClasses());
             while ( !queue.isEmpty() ) {
@@ -365,6 +379,7 @@ public class InlineChecker {
                     if ( method.isPrivate() || submethod.isPrivate() ) {
                         return 0;
                     }
+                    // method is protected or package visible, submethod is not private
                     if ( !submethod.isPublic() ) {
                         changeSet.add(submethod);
                     }
