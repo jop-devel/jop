@@ -40,7 +40,7 @@ package java.lang;
 // import java.io.Serializable;
 
 // public final class StringBuffer implements Serializable, CharSequence
-public final class StringBuffer {
+public final class StringBuffer implements CharSequence {
 
 	int count;
 
@@ -99,39 +99,38 @@ public final class StringBuffer {
 		return this;
 	}
 
-//	don't create a temporary object
-//	public StringBuffer append(int inum) {
-//		return append(String.valueOf(inum));
-//	}
+	//	don't create a temporary object
+	//	public StringBuffer append(int inum) {
+	//		return append(String.valueOf(inum));
+	//	}
 
-  private static final int MAX_TMP = 32;
-  private static char[] tmp = new char[MAX_TMP];	// a generic buffer
+	private static final int MAX_TMP = 32;
+	private static char[] tmp = new char[MAX_TMP]; // a generic buffer
 
+	public synchronized StringBuffer append(int val) {
 
-  public synchronized StringBuffer append(int val)
-  {
+		int i;
+		int sign = 1;
+		// When the value is MIN_VALUE, it overflows when made positive
+		if (val < 0) {
+			this.append('-');
+			sign = -1;
+		}
+		for (i = 0; i < MAX_TMP - 1; ++i) {
+			tmp[i] = (char) (((val % 10) * sign) + '0');
+			val /= 10;
+			if (val == 0)
+				break;
+		}
+		for (val = i; val >= 0; --val) {
+			this.append(tmp[val]);
+		}
 
-	int i;
-	int sign = 1;
-	// When the value is MIN_VALUE, it overflows when made positive
- 	if (val<0) {
-		this.append('-');
-		sign = -1;
+		return this;
 	}
-	for (i=0; i<MAX_TMP-1; ++i) {
-		tmp[i] = (char)(((val % 10) * sign)+'0');
-		val /= 10;
-		if (val==0) break;
-	}
-	for (val=i; val>=0; --val) {
-		this.append(tmp[val]);
-	}
-
-	return this;
-  }
 
 	public StringBuffer append(long lnum) {
-		 return append(Long.toString(lnum, 10));
+		return append(Long.toString(lnum, 10));
 	}
 
 	// for collection needed - dummy version
@@ -140,7 +139,7 @@ public final class StringBuffer {
 	}
 
 	public StringBuffer append(Object obj) {
-		if(obj == null)
+		if (obj == null)
 			return append("null");
 		return append(obj.toString());
 	}
@@ -155,22 +154,21 @@ public final class StringBuffer {
 		return this;
 	}
 
-/*
-	only in 1.4 (not 1.3)!
-*/
-  public synchronized StringBuffer append(StringBuffer stringBuffer)
-  {
-    if (stringBuffer == null)
-      return append("null");
-//    synchronized (stringBuffer)
-//      {
-        int len = stringBuffer.count;
-        ensureCapacity_unsynchronized(count + len);
-        arraycopy(stringBuffer.value, 0, value, count, len);
-        count += len;
-//      }
-    return this;
-  }
+	/*
+	 only in 1.4 (not 1.3)!
+	 */
+	public synchronized StringBuffer append(StringBuffer stringBuffer) {
+		if (stringBuffer == null)
+			return append("null");
+		//    synchronized (stringBuffer)
+		//      {
+		int len = stringBuffer.count;
+		ensureCapacity_unsynchronized(count + len);
+		arraycopy(stringBuffer.value, 0, value, count, len);
+		count += len;
+		//      }
+		return this;
+	}
 
 	public synchronized int capacity() {
 		return value.length;
@@ -201,25 +199,24 @@ public final class StringBuffer {
 		return delete(index, index + 1);
 	}
 
-  public synchronized StringBuffer replace(int start, int end, String str)
-  {
-    if (start < 0 || start > count || start > end)
-//      throw new StringIndexOutOfBoundsException(start);
-return this;
+	public synchronized StringBuffer replace(int start, int end, String str) {
+		if (start < 0 || start > count || start > end)
+			//      throw new StringIndexOutOfBoundsException(start);
+			return this;
 
-    // int len = str.count;
-    int len = str.length();
-    // Calculate the difference in 'count' after the replace.
-    int delta = len - (end > count ? count : end) + start;
-    ensureCapacity_unsynchronized(count + delta);
+		// int len = str.count;
+		int len = str.length();
+		// Calculate the difference in 'count' after the replace.
+		int delta = len - (end > count ? count : end) + start;
+		ensureCapacity_unsynchronized(count + delta);
 
-    if (delta != 0 && end < count)
-      arraycopy(value, end, value, end + delta, count - end);
+		if (delta != 0 && end < count)
+			arraycopy(value, end, value, end + delta, count - end);
 
-    str.getChars(0, len, value, start);
-    count += delta;
-    return this;
-  }
+		str.getChars(0, len, value, start);
+		count += delta;
+		return this;
+	}
 
 	private void ensureCapacity_unsynchronized(int minimumCapacity) {
 		// if (shared || minimumCapacity > value.length)
@@ -310,31 +307,28 @@ return this;
 		return this;
 	}
 
-  public int indexOf(String str)
-  {
-    return indexOf(str, 0);
-  }
+	public int indexOf(String str) {
+		return indexOf(str, 0);
+	}
 
-  public synchronized int indexOf(String str, int fromIndex)
-  {
-    if (fromIndex < 0)
-      fromIndex = 0;
-    int limit = count - str.length();
-    for ( ; fromIndex <= limit; fromIndex++)
-      if (regionMatches(fromIndex, str))
-        return fromIndex;
-    return -1;
-  }
+	public synchronized int indexOf(String str, int fromIndex) {
+		if (fromIndex < 0)
+			fromIndex = 0;
+		int limit = count - str.length();
+		for (; fromIndex <= limit; fromIndex++)
+			if (regionMatches(fromIndex, str))
+				return fromIndex;
+		return -1;
+	}
 
-  private boolean regionMatches(int toffset, String other)
-  {
-    int len = other.length();
-    int index = 0;
-    while (--len >= 0)
-      if (value[toffset++] != other.charAt(index++))
-        return false;
-    return true;
-  }	
+	private boolean regionMatches(int toffset, String other) {
+		int len = other.length();
+		int index = 0;
+		while (--len >= 0)
+			if (value[toffset++] != other.charAt(index++))
+				return false;
+		return true;
+	}
 
 	public synchronized int length() {
 		return count;
@@ -381,5 +375,43 @@ return this;
 			dst[dst_pos + i] = src[src_pos + i];
 	}
 
+	/**
+	 * Creates a substring of this StringBuffer, starting at a specified index
+	 * and ending at one character before a specified index. This is implemented
+	 * the same as <code>substring(beginIndex, endIndex)</code>, to satisfy
+	 * the CharSequence interface.
+	 *
+	 * @param beginIndex index to start at (inclusive, base 0)
+	 * @param endIndex index to end at (exclusive)
+	 * @return new String which is a substring of this StringBuffer
+	 * @throws IndexOutOfBoundsException if beginIndex or endIndex is out of
+	 *         bounds
+	 * @see #substring(int, int)
+	 * @since 1.4
+	 */
+	public CharSequence subSequence(int beginIndex, int endIndex) {
+		return substring(beginIndex, endIndex);
+	}
+
+	/**
+	 * Creates a substring of this StringBuffer, starting at a specified index
+	 * and ending at one character before a specified index.
+	 *
+	 * @param beginIndex index to start at (inclusive, base 0)
+	 * @param endIndex index to end at (exclusive)
+	 * @return new String which is a substring of this StringBuffer
+	 * @throws StringIndexOutOfBoundsException if beginIndex or endIndex is out
+	 *         of bounds
+	 * @since 1.2
+	 */
+	public synchronized String substring(int beginIndex, int endIndex) {
+		int len = endIndex - beginIndex;
+		if (beginIndex < 0 || endIndex > count || endIndex < beginIndex)
+			throw new StringIndexOutOfBoundsException();
+		if (len == 0)
+			return "";
+		// Package constructor avoids an array copy.
+		return new String(value, beginIndex, len);
+	}
 
 }

@@ -76,7 +76,7 @@ import java.io.Serializable;
  */
 // FIX15: Implement Appendable when co-variant methods are available
 public final class StringBuilder
-  implements Serializable // , CharSequence
+  implements Serializable, CharSequence
 {
   // Implementation note: if you change this class, you usually will
   // want to change StringBuffer as well.
@@ -153,14 +153,14 @@ public final class StringBuilder
    * @param seq the initializing <code>CharSequence</code>
    * @throws NullPointerException if str is null
    */
-//  public StringBuilder(CharSequence seq)
-//  {
-//    int len = seq.length();
-//    count = len <= 0 ? 0 : len;
-//    value = new char[count + DEFAULT_CAPACITY];
-//    for (int i = 0; i < len; ++i)
-//      value[i] = seq.charAt(i);
-//  }
+  public StringBuilder(CharSequence seq)
+  {
+    int len = seq.length();
+    count = len <= 0 ? 0 : len;
+    value = new char[count + DEFAULT_CAPACITY];
+    for (int i = 0; i < len; ++i)
+      value[i] = seq.charAt(i);
+  }
 
   /**
    * Get the length of the <code>String</code> this <code>StringBuilder</code>
@@ -434,10 +434,10 @@ public final class StringBuilder
    * @param seq the <code>CharSequence</code> providing the characters
    * @return this <code>StringBuilder</code>
    */
-//  public StringBuilder append(CharSequence seq)
-//  {
-//    return append(seq, 0, seq.length());
-//  }
+  public StringBuilder append(CharSequence seq)
+  {
+    return append(seq, 0, seq.length());
+  }
 
   /**
    * Append some characters from the <code>CharSequence</code> to this
@@ -449,19 +449,19 @@ public final class StringBuilder
    * @param end one past the final index
    * @return this <code>StringBuilder</code>
    */
-//  public StringBuilder append(CharSequence seq, int start,
-//			      int end)
-//  {
-//    if (seq == null)
-//      return append("null");
-//    if (end - start > 0)
-//      {
-//	ensureCapacity(count + end - start);
-//	for (; start < end; ++start)
-//	  value[count++] = seq.charAt(start);
-//      }
-//    return this;
-//  }
+  public StringBuilder append(CharSequence seq, int start,
+			      int end)
+  {
+    if (seq == null)
+      return append("null");
+    if (end - start > 0)
+      {
+	ensureCapacity(count + end - start);
+	for (; start < end; ++start)
+	  value[count++] = seq.charAt(start);
+      }
+    return this;
+  }
 
   /**
    * Append the code point to this <code>StringBuilder</code>.
@@ -633,10 +633,10 @@ public final class StringBuilder
    *         bounds
    * @see #substring(int, int)
    */
-//  public CharSequence subSequence(int beginIndex, int endIndex)
-//  {
-//    return substring(beginIndex, endIndex);
-//  }
+  public CharSequence subSequence(int beginIndex, int endIndex)
+  {
+    return substring(beginIndex, endIndex);
+  }
 
   /**
    * Creates a substring of this StringBuilder, starting at a specified index

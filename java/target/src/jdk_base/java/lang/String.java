@@ -40,14 +40,13 @@ package java.lang;
 
 import java.io.UnsupportedEncodingException;
 
-public final class String {
+public final class String implements CharSequence {
 	/**
 	 * Characters which make up the String. Package access is granted for use by
 	 * StringBuffer.
 	 */
 	final char[] value;
 
-	
 	/**
 	 * Creates an empty String (length 0). Unless you really need a new object,
 	 * consider using <code>""</code> instead. CLCD 1.0
@@ -147,7 +146,7 @@ public final class String {
 			throws UnsupportedEncodingException {
 
 		encoding = encoding.toUpperCase();
-		if (!encoding.equals("ASCII")) 
+		if (!encoding.equals("ASCII"))
 			throw new UnsupportedEncodingException();
 
 		if (offset < 0)
@@ -361,7 +360,8 @@ public final class String {
 	}
 
 	public boolean equals(Object anObject) {
-		if (!(anObject instanceof String)) return false;
+		if (!(anObject instanceof String))
+			return false;
 		String str2 = (String) anObject;
 		if (value.length != str2.value.length)
 			return false;
@@ -509,7 +509,7 @@ public final class String {
 			return this;
 		// char[] newStr = (char[]) value.clone();
 		char[] newStr = new char[value.length];
-		
+
 		//TODO: System.arraycopy crashes
 		//System.arraycopy(value, 0, newStr, 0, value.length);
 		for (int i2 = 0; i2 < value.length; i2++) {
@@ -542,6 +542,22 @@ public final class String {
 
 	public boolean startsWith(String prefix) {
 		return regionMatches(false, 0, prefix, 0, prefix.value.length);
+	}
+
+	/**
+	 * Creates a substring of this String, starting at a specified index
+	 * and ending at one character before a specified index. This behaves like
+	 * <code>substring(begin, end)</code>.
+	 *
+	 * @param begin index to start substring (inclusive, base 0)
+	 * @param end index to end at (exclusive)
+	 * @return new String which is a substring of this String
+	 * @throws IndexOutOfBoundsException if begin &lt; 0 || end &gt; length()
+	 *         || begin &gt; end
+	 * @since 1.4
+	 */
+	public CharSequence subSequence(int begin, int end) {
+		return substring(begin, end);
 	}
 
 	public String substring(int begin) {
