@@ -32,7 +32,9 @@ public class SerialHandler extends InterruptHandler {
 	// This method is invoked by the driver thread
 	synchronized public int read() {
 		if (rdPtr!=wrPtr) {
-			return ((int) buffer[rdPtr++]) & 0xff;
+			int val = ((int) buffer[rdPtr++]) & 0xff;
+			if (rdPtr>=BUF_SIZE) rdPtr=0;
+			return val;
 		} else {
 			return -1;		// empty buffer
 		}
