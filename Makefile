@@ -242,15 +242,23 @@ tools:
 
 #
 #	Build joptimizer and libgraph
+#	JAR must contain the filename of the jar tool of the JDK.
 #
+ifneq ($(JAVA_HOME),)
+    JAR="$(JAVA_HOME)/bin/jar"
+else
+    JAR=jar
+endif
+
 joptimizer:
 	make compile_java -e JAVAC_FLAGS="$(TOOLS_JFLAGS)" JAVA_DIR=$(TOOLS)/src/com/jopdesign/libgraph
 	make compile_java -e JAVAC_FLAGS="$(TOOLS_JFLAGS)" JAVA_DIR=$(TOOLS)/src/joptimizer
 	#cd $(TOOLS)/dist/classes && jar cfm ../lib/joptimizer.jar ../../src/joptimizer/MANIFEST.MF \
-	cd $(TOOLS)/dist/classes && jar cf ../lib/joptimizer.jar \
+	cd $(TOOLS)/dist/classes && $(JAR) cf ../lib/joptimizer.jar \
 		joptimizer com/jopdesign/libgraph \
 		-C ../../src/joptimizer log4j.properties \
-		-C ../../src/joptimizer jop.conf \
+		-C ../../src/joptimizer jop.conf
+	cd $(TOOLS)/dist/classes && $(JAR) uf ../lib/joptimizer.jar \
 		-C ../../src joptimizer/config/jop-arch.properties \
 		-C ../../src joptimizer/config/jvm-arch.properties
 
