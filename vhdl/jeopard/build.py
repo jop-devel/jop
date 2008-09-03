@@ -197,7 +197,8 @@ class Method:
                     if ( 16 >= java_type.getVectorSize() ):
                         continue
 
-                out.append("_ccTransaction(0x%x | (((%s) >> %u) & 0xffff));\n" %
+                out.append("control_channel.write"
+                    "(0x%x | (((%s) >> %u) & 0xffff));\n" %
                         (( base | ( high << 23 ) |
                             ( reg_number << 16 )),
                         HN(name), high * 16))
