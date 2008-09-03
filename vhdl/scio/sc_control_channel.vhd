@@ -59,81 +59,121 @@ end sc_control_channel;
 
 architecture rtl of sc_control_channel is
 
-	signal tdre		        : std_logic;
-	signal rdrf		        : std_logic;
-	signal cc_in_full       : std_logic;
-	signal cc_in_reg        : std_logic_vector(31 downto 0);
-	signal cc_out_wr_d      : std_logic;
-	signal unlocked         : std_logic;
+	signal incoming_message     : std_logic_vector(31 downto 0);
+	signal outgoing_message     : std_logic_vector(31 downto 0);
+	signal send_ack, send_flag  : std_logic;
 
+    type StateType is ( IDLE, RELAY, SEND, AWAIT_REPLY, AWAIT_REPLY_RELAY );
 
-    constant TDRE_BIT       : Natural := 0;
-    constant RDRF_BIT       : Natural := 1;
-    constant LOCK_BIT       : Natural := 2;
-    constant RELEASE_BIT    : Natural := 3;
-    constant ADVANCE_BIT    : Natural := 4;
-
+    signal state                : StateType;
 
 begin
-	rdy_cnt <= "00";	-- no wait states
 
-    process(clk, reset)
+    process ( clk , reset ) is
     begin
-        if (reset='1') then
-            rd_data <= ( others => '0' ) ;
-            cc_in_full <= '0';
-            cc_in_reg <= ( others => '0' ) ;
-            cc_out_wr <= '0';
-            cc_out_wr_d <= '0';
-            unlocked <= '1';
+        if ( reset = '1' ) 
+        then
+            send_flag <= '0';
 
-        elsif rising_edge(clk) then
-
-            if cc_in_wr = '1' then
-                cc_in_reg <= cc_in_data;
-                cc_in_full <= '1';
+        elsif ( clk = '1' )
+        and ( clk'event )
+        then
+            if ( send_ack = '1' )
+            then
+                send_flag <= '0';
             end if;
 
-            cc_out_wr <= cc_out_wr_d;
-            cc_out_wr_d <= '0';
-            if rd='1' then
-                rd_data <= ( others => '0' ) ;
-                -- UART-style address decoder:
-                -- 0: control/status
-                -- 1: data
-                if address(0)='0' then
-                    -- control/status (read)
-                    rd_data ( LOCK_BIT ) <= unlocked;
-                    rd_data ( TDRE_BIT ) <= tdre;
-                    rd_data ( RDRF_BIT ) <= rdrf;
-                    unlocked <= '0'; -- now it is locked.
-                else
-                    -- data (read data)
-                    rd_data <= cc_in_reg;
-                end if;
-            elsif wr = '1' then
-                if address(0)='0' then
-                    -- control/status (write)
-                    if ( wr_data ( RELEASE_BIT ) = '1' ) then
-                        unlocked <= '1';
-                    end if;
-                    if ( wr_data ( ADVANCE_BIT ) = '1' ) then
-                        cc_in_full <= '0';
-                    end if;
-                else
-                    -- data (write data)
-                    cc_out_data <= wr_data;
-                    cc_out_wr_d <= '1';
-                end if;
+            if ( rd = '1' ) 
+            then
+                null;
+            elsif ( wr = '1' ) 
+            then
+                outgoing_message <= wr_data;
+                send_flag <= '1';
             end if;
         end if;
     end process;
 
+    rdy_cnt <= "00" when (( state = IDLE ) and ( send_flag = '0' )) else "11";
+    rd_data <= incoming_message;
 
-    tdre <= cc_out_rdy;
-    rdrf <= cc_in_full;
-    cc_in_rdy <= not cc_in_full ;
+    process ( clk , reset ) is
+    begin
+        if ( reset = '1' ) 
+        then
+            state <= IDLE;
+            cc_in_rdy <= '0';
+            cc_out_wr <= '0';
+            send_ack <= '0';
 
+        elsif ( clk = '1' )
+        and ( clk'event )
+        then
+            cc_in_rdy <= '0';
+            cc_out_wr <= '0';
+            send_ack <= '0';
+
+            case state is
+            when IDLE =>
+                if ( send_flag = '1' )
+                then
+                    -- A message to be sent
+                    cc_out_data <= outgoing_message;
+                    send_ack <= '1';
+                    state <= SEND;
+                elsif ( cc_in_wr = '1' )
+                then
+                    -- Relay incoming message since we are not
+                    -- waiting for a message
+                    cc_out_data <= cc_in_data;
+                    state <= RELAY;
+                else
+                    -- Ready for CC data 
+                    cc_in_rdy <= '1';
+                end if;
+
+            when RELAY =>
+                if ( cc_out_rdy = '1' )
+                then
+                    cc_out_wr <= '1';
+                    state <= IDLE;
+                end if;
+
+            when SEND =>
+                if ( cc_out_rdy = '1' )
+                then
+                    cc_out_wr <= '1';
+                    state <= AWAIT_REPLY;
+                end if;
+
+            when AWAIT_REPLY =>
+                if ( cc_in_wr = '1' )
+                then
+                    -- Examine incoming message
+                    if ( cc_in_data ( 30 downto 16 ) = outgoing_message ( 30 downto 16 ) )
+                    then
+                        -- Correct message
+                        incoming_message <= cc_in_data;
+                        state <= IDLE;
+                    else
+                        -- Wrong message (for someone else)
+                        cc_out_data <= cc_in_data;
+                        state <= AWAIT_REPLY_RELAY;
+                    end if;
+                else
+                    -- Ready for CC data 
+                    cc_in_rdy <= '1';
+                end if;
+                
+            when AWAIT_REPLY_RELAY =>
+                if ( cc_out_rdy = '1' )
+                then
+                    cc_out_wr <= '1';
+                    state <= AWAIT_REPLY;
+                end if;
+            end case;
+        end if;
+    end process;
 
 end rtl;
 

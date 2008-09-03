@@ -8,7 +8,22 @@
 --      parallel output
 --
 -- Author: Jack Whitham
--- $Id: debugger.vhd,v 1.1 2008/08/09 12:28:51 jwhitham Exp $
+-- $Id: debugger.vhd,v 1.2 2008/09/03 21:08:39 jwhitham Exp $
+--
+-- Copyright (C) 2008, Jack Whitham
+--
+-- This program is free software: you can redistribute it and/or modify
+-- it under the terms of the GNU General Public License as published by
+-- the Free Software Foundation, either version 3 of the License, or
+-- (at your option) any later version.
+--
+-- This program is distributed in the hope that it will be useful,
+-- but WITHOUT ANY WARRANTY; without even the implied warranty of
+-- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-- GNU General Public License for more details.
+--
+-- You should have received a copy of the GNU General Public License
+-- along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
 library ieee;
@@ -55,24 +70,28 @@ architecture rtl of debugger is
     signal in_channel_ack           : std_logic;
     signal free_run                 : std_logic;
     signal free_run_to_breakpoint   : std_logic;
-    signal temp_register            : Byte;
+    signal temp_reg                 : Byte;
     signal debug_clock_1            : std_logic;
 
     type State_Type is (
             INIT, DISPATCH, ECHO,
-            LAB_SET_CTRL, LAB_SET_CTRL_1,
-            LAB_GET_DEBUG_CHAIN, LAB_GET_DEBUG_CHAIN_1,
+            LAB_SET_CTRL, 
+            LAB_GET_DEBUG_CHAIN, LAB_GET_DEBUG_CHAIN_1A,
             LAB_GET_DEBUG_CHAIN_2, LAB_GET_DEBUG_CHAIN_3,
-            LAB_GET_DEBUG_CHAIN_4,
-            LAB_CLOCK_STEP, LAB_CLOCK_STEP_1, LAB_CLOCK_STEP_2,
-            PROC_LOAD_COUNTER, PROC_LOAD_COUNTER_1,
-            PROC_SEND_TO_PC, PROC_RECEIVE_FROM_PC );
+            LAB_CLOCK_STEP, LAB_CLOCK_STEP_1, LAB_CLOCK_STEP_2);
 
-    signal state, proc_return       : State_Type;
+    type Command_Type is ( CMD_STANDBY,
+            CMD_LOAD_COUNTER, CMD_LOAD_COUNTER_1,
+            CMD_SEND_TO_PC, CMD_RECEIVE_FROM_PC );
+
+    signal state                    : State_Type;
+    signal command                  : Command_Type;
+    signal complete                 : std_logic;
 
 begin
 
     process ( clk, reset ) is
+        variable next_command       : Command_Type;
     begin
         if ( reset = '1' )
         then
@@ -82,15 +101,14 @@ begin
             dc_control.dc_capture <= '0' ;
             dc_control.dc_ready <= '0' ;
             dc_control.dc_clock <= '0' ;
-            dc_out <= '0' ;
 
-            out_channel_data <= ( others => '0' ) ;
             out_channel_wr <= '0';
             in_channel_ack <= '0' ;
 
             mode_set <= false;
             state <= INIT;
-            proc_return <= INIT;
+            command <= CMD_STANDBY;
+
         elsif ( clk = '1' )
         and ( clk'event )
         then
@@ -104,86 +122,96 @@ begin
                 debug_clock_1 <= not debug_clock_1;
             end if;
 
+            complete <= '0';
+            next_command := CMD_STANDBY;
+
             case state is
             when INIT =>
                 -- Wait for a command on the input channel
-                state <= PROC_RECEIVE_FROM_PC;
-                proc_return <= ECHO;
+                next_command := CMD_RECEIVE_FROM_PC;
+                state <= ECHO;
                 -- Reset control registers
                 mode_set <= false;
                 dc_control.dc_shift <= '0' ;
                 dc_control.dc_clock <= '1' ;
-                dc_out <= '0' ;
 
             when ECHO =>
-                state <= PROC_SEND_TO_PC;
-                proc_return <= DISPATCH;
-                dc_control.dc_clock <= '0' ;
-                dc_control.dc_capture <= '0' ;
-                dc_control.dc_ready <= '0' ;
+                if ( complete = '1' )
+                then
+                    next_command := CMD_SEND_TO_PC;
+                    state <= DISPATCH;
+                    dc_control.dc_clock <= '0' ;
+                    dc_control.dc_capture <= '0' ;
+                    dc_control.dc_ready <= '0' ;
+                end if ;
 
             when DISPATCH =>
-                case temp_register is
-                when RX_COMMAND_CLOCK_STEP =>   
-                        state <= LAB_CLOCK_STEP;
-                when RX_COMMAND_GET_DEBUG_CHAIN => 
-                        state <= LAB_GET_DEBUG_CHAIN;
-                when RX_COMMAND_SET_DEBUG_CHAIN => 
-                        mode_set <= true;
-                        state <= LAB_GET_DEBUG_CHAIN;
-                when RX_COMMAND_SET_CTRL =>     
-                        state <= LAB_SET_CTRL;
-                when others => -- including NOP
-                        state <= INIT;
-                end case ;
+                if ( complete = '1' )
+                then
+                    case temp_reg is
+                    when RX_COMMAND_CLOCK_STEP =>   
+                            state <= LAB_CLOCK_STEP;
+                            next_command := CMD_LOAD_COUNTER;
+                    when RX_COMMAND_GET_DEBUG_CHAIN => 
+                            next_command := CMD_LOAD_COUNTER;
+                            state <= LAB_GET_DEBUG_CHAIN;
+                    when RX_COMMAND_SET_DEBUG_CHAIN => 
+                            mode_set <= true;
+                            next_command := CMD_LOAD_COUNTER;
+                            state <= LAB_GET_DEBUG_CHAIN;
+                    when RX_COMMAND_SET_CTRL =>     
+                            next_command := CMD_RECEIVE_FROM_PC;
+                            state <= LAB_SET_CTRL;
+                    when others => -- including NOP
+                            state <= INIT;
+                    end case ;
+                end if ;
 
 ----------------------------------------------------------------------------- 
             when LAB_SET_CTRL =>
                 -- Set the control lines
-                state <= PROC_RECEIVE_FROM_PC;
-                proc_return <= LAB_SET_CTRL_1;
-
-            when LAB_SET_CTRL_1 =>
-                free_run <= temp_register ( RX_FREE_RUN_BIT );
-                debug_clock_1 <= temp_register ( RX_CLOCK_BIT );
-                debug_reset <= temp_register ( RX_RESET_BIT );
-                free_run_to_breakpoint <= 
-                        temp_register ( RX_FREE_RUN_BREAK_BIT );
-                dc_control.dc_capture <= temp_register ( RX_CAPTURE_BIT );
-                dc_control.dc_ready <= temp_register ( RX_READY_BIT );
-                state <= INIT;
+                if ( complete = '1' )
+                then
+                    free_run <= temp_reg ( RX_FREE_RUN_BIT );
+                    debug_clock_1 <= temp_reg ( RX_CLOCK_BIT );
+                    debug_reset <= temp_reg ( RX_RESET_BIT );
+                    free_run_to_breakpoint <= 
+                            temp_reg ( RX_FREE_RUN_BREAK_BIT );
+                    dc_control.dc_capture <= temp_reg ( RX_CAPTURE_BIT );
+                    dc_control.dc_ready <= temp_reg ( RX_READY_BIT );
+                    state <= INIT;
+                end if;
 
 ----------------------------------------------------------------------------- 
             when LAB_GET_DEBUG_CHAIN =>
                 -- Send/receive the debug chain contents
                 -- Start by reading the number of bytes
-                state <= PROC_LOAD_COUNTER;
-                proc_return <= LAB_GET_DEBUG_CHAIN_1;
-                
-            when LAB_GET_DEBUG_CHAIN_1 =>
-                if ( mode_set )
+                if ( complete = '1' )
                 then
-                    -- Receive first byte of contents
-                    state <= PROC_RECEIVE_FROM_PC;
-                else
-                    -- Go ahead
+                    if ( mode_set )
+                    then
+                        -- Receive first byte of contents
+                        next_command := CMD_RECEIVE_FROM_PC;
+                        state <= LAB_GET_DEBUG_CHAIN_1A;
+                    else
+                        -- Go ahead
+                        state <= LAB_GET_DEBUG_CHAIN_2;
+                    end if;
+                    counter3 <= 7;
+                    dc_control.dc_shift <= '1' ;
+                end if;
+
+            when LAB_GET_DEBUG_CHAIN_1A =>
+                if ( complete = '1' )
+                then
                     state <= LAB_GET_DEBUG_CHAIN_2;
                 end if;
-                proc_return <= LAB_GET_DEBUG_CHAIN_2;
-                counter3 <= 7;
-                dc_control.dc_shift <= '1' ;
 
             when LAB_GET_DEBUG_CHAIN_2 =>
-                dc_out <= temp_register ( 7 ) ;
-                temp_register ( 7 downto 1 ) <= 
-                            temp_register ( 6 downto 0 ) ;
-                temp_register ( 0 ) <= dc_in ;
-                if ( not mode_set )
-                then
-                    -- There is no need for this - it is stupid.
-                    null;
-                    --dc_out <= '1';
-                end if ;
+                dc_control.dc_clock <= '0' ;
+                dc_out <= temp_reg ( 7 ) ;
+                temp_reg ( 7 downto 1 ) <= temp_reg ( 6 downto 0 ) ;
+                temp_reg ( 0 ) <= dc_in ;
                 state <= LAB_GET_DEBUG_CHAIN_3;
 
             when LAB_GET_DEBUG_CHAIN_3 =>
@@ -197,28 +225,27 @@ begin
                     else
                         if ( mode_set )
                         then
-                            state <= PROC_RECEIVE_FROM_PC;
+                            next_command := CMD_RECEIVE_FROM_PC;
                         else
-                            state <= PROC_SEND_TO_PC;
+                            next_command := CMD_SEND_TO_PC;
                         end if;
-                        proc_return <= LAB_GET_DEBUG_CHAIN_4;
+                        state <= LAB_GET_DEBUG_CHAIN_1A;
                         counter3 <= 7;
                         counter16 <= counter16 - 1;
                     end if;
                 else
-                    state <= LAB_GET_DEBUG_CHAIN_4;
+                    state <= LAB_GET_DEBUG_CHAIN_2;
                     counter3 <= counter3 - 1;
                 end if;
 
-            when LAB_GET_DEBUG_CHAIN_4 =>
-                dc_control.dc_clock <= '0' ;
-                state <= LAB_GET_DEBUG_CHAIN_2;
-
 ----------------------------------------------------------------------------- 
+
             when LAB_CLOCK_STEP =>
                 -- Step the debug clock by up to 65535 cycles
-                state <= PROC_LOAD_COUNTER;
-                proc_return <= LAB_CLOCK_STEP_1;
+                if ( complete = '1' )
+                then
+                    state <= LAB_CLOCK_STEP_1 ;
+                end if;
 
             when LAB_CLOCK_STEP_1 =>
                 if ( counter16 = 0 )
@@ -235,42 +262,62 @@ begin
                 state <= LAB_CLOCK_STEP_1 ;
 
 ----------------------------------------------------------------------------- 
-            when PROC_LOAD_COUNTER =>
+            end case;
+
+            case command is
+----------------------------------------------------------------------------- 
+            when CMD_STANDBY =>
+                case next_command is
+                when CMD_LOAD_COUNTER =>
+                        command <= CMD_LOAD_COUNTER ;
+                when CMD_SEND_TO_PC =>
+                        command <= CMD_SEND_TO_PC ;
+                when CMD_RECEIVE_FROM_PC =>
+                        command <= CMD_RECEIVE_FROM_PC ;
+                when others =>
+                        null;
+                end case;
+
+            when CMD_LOAD_COUNTER =>
                 if ( in_channel_present = '1' )
                 then
-                    temp_register <= in_channel_reg ( 7 downto 0 );
+                    temp_reg <= in_channel_reg ( 7 downto 0 );
                     in_channel_ack <= '1' ;
-                    state <= PROC_LOAD_COUNTER_1 ;
+                    command <= CMD_LOAD_COUNTER_1 ;
                 end if;
 
-            when PROC_LOAD_COUNTER_1 =>
+            when CMD_LOAD_COUNTER_1 =>
                 if ( in_channel_present = '1' )
                 then
-                    counter16 <= conv_integer ( temp_register &
+                    counter16 <= conv_integer ( temp_reg &
                             in_channel_reg ( 7 downto 0 ) ) ;
                     in_channel_ack <= '1' ;
-                    state <= proc_return;
+                    command <= CMD_STANDBY;
+                    complete <= '1';
                 end if;
 
-            when PROC_SEND_TO_PC =>
-                out_channel_data ( 7 downto 0 ) <= temp_register;
+            when CMD_SEND_TO_PC =>
                 if ( out_channel_rdy = '1' )
                 then
-                    state <= proc_return;
+                    command <= CMD_STANDBY;
+                    complete <= '1';
                     out_channel_wr <= '1';
                 end if;
                 
-            when PROC_RECEIVE_FROM_PC =>
+            when CMD_RECEIVE_FROM_PC =>
                 if ( in_channel_present = '1' )
                 then
-                    temp_register <= in_channel_reg ( 7 downto 0 );
+                    temp_reg <= in_channel_reg ( 7 downto 0 );
                     in_channel_ack <= '1' ;
-                    state <= proc_return;
+                    command <= CMD_STANDBY;
+                    complete <= '1';
                 end if;
 ----------------------------------------------------------------------------- 
             end case;
         end if;
     end process;
+
+    out_channel_data ( 7 downto 0 ) <= temp_reg;
 
     process ( clk, reset ) is
     begin

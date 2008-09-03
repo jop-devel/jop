@@ -1,9 +1,23 @@
 # 
 # Virtual Lab
-# Copyright (C) Jack Whitham 2008
-# $Id: vlab.py,v 1.4 2008/08/09 12:31:23 jwhitham Exp $
+# $Id: vlab.py,v 1.5 2008/09/03 21:08:37 jwhitham Exp $
+#
+# Copyright (C) 2008, Jack Whitham
 # 
-
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
 from twisted.conch import error
 from twisted.conch.ssh import transport
 from twisted.internet import defer
@@ -20,6 +34,9 @@ CVERSION = '0.1'
 
 class VlabException(Exception):
     """All virtual lab exceptions inherit this."""
+    pass
+
+class ConnectException(VlabException):
     pass
 
 class VlabErrorException(VlabException):
@@ -670,17 +687,30 @@ class VlabClientFactory(protocol.ClientFactory):
     >>> factory = VlabClientFactory(VlabAuthorisation())
     >>> factory.getChannel().addCallback(GotChannel)
     >>> reactor.connectTCP('foobar.cs.york.ac.uk', 22, factory)
-    In this example, GotChannel will be called when the
+    In this example, your method GotChannel will be called when the
     channel is available. You could also add an errback
     to catch connection errors.
+
+    An alternative usage allows connections via SOCKS.
+    >>> factory = vlab.VlabClientFactory(auth_data=VlabAuthorisation(),
+            socks_connect_address='foobar.cs.york.ac.uk',
+            socks_connect_port=22)
+    >>> factory.getChannel().addCallback(GotChannel)
+    >>> reactor.connectTCP('socksserver.example.com', 1080, factory)
+    In this example, the connection is made via the SOCKS service
+    at socksserver.example.com. 
     """
 
-    def __init__(self, auth_data, debug=False):
+    def __init__(self, auth_data, socks_connect_address=None,
+                socks_connect_port=None, debug=False):
         assert isinstance(auth_data, VlabAuthorisation)
         self.auth_data = auth_data
         self.vlab_channel = None
         self.vlab_channel_get_queue = []
+        self.socks_connect_address = socks_connect_address
+        self.socks_connect_port = socks_connect_port
         self.debug = debug
+        self.first_failure = None
 
     def startedConnecting(self, connector):
         pass
@@ -692,8 +722,20 @@ class VlabClientFactory(protocol.ClientFactory):
         pass
 
     def buildProtocol(self, addr):
-        return VlabClientTransport(self.registerVlabChannel, 
-                    self.auth_data, self.debug)
+        return VlabClientTransport(
+                    register_fn=self.registerVlabChannel, 
+                    auth_data=self.auth_data,
+                    fail_fn=self.failHandler,
+                    debug=self.debug,
+                    socks_connect_address=self.socks_connect_address, 
+                    socks_connect_port=self.socks_connect_port)
+
+    def failHandler(self, ex_data):
+        if ( self.first_failure != None ):
+            self.first_failure = ex_data
+        while ( len(self.vlab_channel_get_queue) != 0 ):
+            d = self.vlab_channel_get_queue.pop()
+            d.errback(ex_data)
 
     def registerVlabChannel(self, vlab_channel):
         assert isinstance(vlab_channel, VlabChannel)
@@ -702,23 +744,75 @@ class VlabClientFactory(protocol.ClientFactory):
             d = self.vlab_channel_get_queue.pop()
             d.callback(self.vlab_channel)
 
+    def getFirstFailure(self):
+        return self.first_failure
+
     def getChannel(self):
-        if ( self.vlab_channel != None ):
+        """Get the VlabChannel object representing the connection.
+
+        Returns a Deferred. The callback will be called with the VlabChannel
+        object."""
+
+        if ( self.first_failure != None ):
+            return defer.failure(self.first_failure)
+        elif ( self.vlab_channel != None ):
             return defer.success(self.vlab_channel)
         else:
             d = defer.Deferred()
             self.vlab_channel_get_queue.append(d)
             return d
 
+SOCKS_ERROR_TABLE = {
+'\x01': "General SOCKS server failure",
+'\x02': "Connection denied by rule",
+'\x03': "Network unreachable",
+'\x04': "Host unreachable",
+'\x05': "Connection refused",
+'\x06': "TTL Expired",
+'\x07': "Command not supported",
+'\x08': "Address type not supported",
+}
+[ SOCKS_PASS, SOCKS_GREETING, 
+        SOCKS_CONNECTING, SOCKS_FAILED ] = range(4)
+
 class VlabClientTransport(transport.SSHClientTransport):
     """Client transport for virtual lab services.
 
     Instances of this class are created by VlabClientFactory objects."""
 
-    def __init__(self, register_fn, auth_data, debug):
+    def __init__(self, register_fn, fail_fn, auth_data, debug,
+                socks_connect_address, socks_connect_port):
         self.auth_data = auth_data
         self.register_fn = register_fn 
+        self.fail_fn = fail_fn 
         self.debug = debug
+        self.socks_connect_address = socks_connect_address
+        self.socks_connect_port = socks_connect_port
+        self.socks_received = collections.deque()
+        if ( self.socks_connect_address == None ):
+            self.socks_state = SOCKS_PASS
+            self.socks_request = ""
+        else:
+            self.socks_state = SOCKS_GREETING
+            self.socks_request = self.getSocksRequest()
+
+
+    def getSocksRequest(self):
+        socks_request = [
+            0x5, # SOCKSv5
+            0x1, # establish a TCP/IP stream connection
+            0x0, # reserved (0)
+            0x3, # address type = domain name
+            len(self.socks_connect_address) ]
+
+        # address 
+        for ch in self.socks_connect_address:
+            socks_request.append(ord(ch))
+
+        # big-endian port number
+        socks_request.append(( self.socks_connect_port >> 8 ) & 0xff)
+        socks_request.append(self.socks_connect_port & 0xff)
+        return ''.join([ chr(ch) for ch in socks_request ])
 
     def verifyHostKey(self, pubKey, fingerprint):
         host_key = self.auth_data.relay_server_host_key.split()[ 1 ]
@@ -731,8 +825,76 @@ class VlabClientTransport(transport.SSHClientTransport):
         self.requestService(VlabClientUserAuth(self.auth_data,
                 VlabClientSSHConnection(self.register_fn, self.debug)))
 
+    def dataReceived(self, bytes):
+        if ( self.socks_state == SOCKS_PASS ):
+            transport.SSHClientTransport.dataReceived(self, bytes)
+        else:
+            print 'receive bytes %s' % repr(bytes)
+            for ch in bytes:
+                self.socks_received.append(ch)
+
+            if (( self.socks_state == SOCKS_GREETING )
+            and ( len(self.socks_received) >= 2 )):
+                print "that's a greeting"
+                ver = self.socks_received.popleft()
+                method = self.socks_received.popleft()
+                if (( ver != '\x05' )
+                or ( method != '\x00' )):
+                    self.socks_state = SOCKS_FAILED
+                    self.fail_fn(ConnectException(
+                        "SOCKS server isn't version 5."))
+                self.transport.write(self.socks_request)
+                self.socks_state = SOCKS_CONNECTING
+
+            elif (( self.socks_state == SOCKS_CONNECTING )
+            and ( len(self.socks_received) >= 5 )):
+                print "that's a connect message"
+                result = self.socks_received[ 1 ]
+                if ( result != '\x00' ):
+                    self.socks_state = SOCKS_FAILED
+                    self.fail_fn(ConnectException(
+                        "SOCKS connection failed: %s" % 
+                        SOCKS_ERROR_TABLE.get(result, 
+                            'Unknown error %u' % ord(result))))
+                address_type = ord(self.socks_received[ 3 ])
+                if ( address_type == 1 ):
+                    # IPv4 address
+                    # Packet size includes 4 bytes of IPv4
+                    packet_size = 4 + 4 + 2
+                elif ( address_type == 3 ):
+                    # Domain name
+                    packet_size = ( 4 + 
+                            1 + ord(self.socks_received[ 4 ]) + 2 ) 
+                else:
+                    self.fail_fn(ConnectException(
+                        "SOCKS: Unknown address type %u" % address_type))
+               
+                if ( len(self.socks_received) >= packet_size ):
+                    print "that's completion"
+                    for i in xrange(packet_size):
+                        self.socks_received.popleft()
+
+                    # Now the SSH connection is possible
+                    transport.SSHClientTransport.connectionMade(self)
+                    transport.SSHClientTransport.dataReceived(self, 
+                            ''.join(self.socks_received))
+
+                    self.socks_received.clear()
+                    self.socks_state = SOCKS_PASS
+
     def connectionMade(self):
-        transport.SSHClientTransport.connectionMade(self)
+        if ( self.socks_state == SOCKS_PASS ):
+            transport.SSHClientTransport.connectionMade(self)
+        elif ( self.socks_state == SOCKS_GREETING ):
+            # Greeting: no authentication methods supported
+            print 'send greeting'
+            self.transport.write('\x05\x01\x00')
+
+    def connectionLost(self, reason):
+        transport.SSHClientTransport.connectionLost(self, reason)
+        self.socks_state = SOCKS_FAILED
+        self.fail_fn(ConnectException("Connection lost: %s" % reason))
+
 
 class VlabClientUserAuth(userauth.SSHUserAuthClient):
     """Authentication for virtual lab services.

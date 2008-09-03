@@ -51,6 +51,14 @@ ADDRESS_SIZE = 24
 # RETURN $type
 # 
 # etc 
+#
+# The protocol for the control channel is designed so:
+# - does not require any locking of the channel
+#   hence, no deadlocks are possible
+# - either: single access point is shared by all processors
+#   or: one access point per processor
+# - low bus overhead, chain can have any route through the system
+# 
 
 
 class InterfaceDefinitionException(Exception):
@@ -138,31 +146,36 @@ class Method:
         self.name = name
         self.param_list = []
         self.ret_type = VoidType()
-        self.method_id = None
-        self.coproc_id = None
+        self.ret_reg_num = None
+        self.busy_reg_num = None
+        self.coproc = None
 
     def addParameter(self, name, java_type):
         assert isinstance(java_type, JavaType)
-        self.param_list.append((name, java_type))
+        self.param_list.append((name, java_type, self.coproc.makeRegNumber()))
 
     def addReturn(self, java_type):
         assert isinstance(java_type, JavaType)
+        self.ret_reg_num = self.coproc.makeRegNumber()
         self.ret_type = java_type
 
-    def assignId(self, coproc_id, method_id):
-        self.method_id = method_id
-        self.coproc_id = coproc_id
+    def assignCP(self, coproc):
+        assert isinstance(coproc, Coprocessor)
+        assert self.coproc == None
+        assert self.busy_reg_num == None
+        self.coproc = coproc
+        self.busy_reg_num = self.coproc.makeRegNumber()
 
     def generateJava(self):
         
         def HN(name):
             return '__hw_%s' % name
 
+        base = self.coproc.getId() << 24
         out = []
-        out.append("/* method id %u */\n" % self.method_id)
         out.append("public %s %s (\n" % (self.ret_type.name, self.name))
         first = True
-        for (name, java_type) in self.param_list:
+        for (name, java_type, reg_number) in self.param_list:
             if ( not first ):
                 out.append(',\n')
             out.append("\t\t%s %s " % (java_type.name, name))
@@ -170,34 +183,44 @@ class Method:
         out.append(")\n")
         out.append("{\n")
         ret_name = "__ret"
-        for (name, java_type) in self.param_list:
-            out.append("int %s;\n" % HN(name))
-        out.append("int %s;\n" % ret_name)
+        for (name, java_type, reg_number) in self.param_list:
+            out.append("int %s; // 0x%x\n" % (HN(name), reg_number))
 
-        for (name, java_type) in self.param_list:
+        out.append("// convert parameters\n")
+        for (name, java_type, reg_number) in self.param_list:
             out.append(java_type.convertForHardware(name, HN(name)))
 
-        payload_size = len(self.param_list)
-        header_word = ( self.method_id << 8 ) | payload_size | (
-                    self.coproc_id << 16 )
+        out.append("// load parameters\n")
+        for (name, java_type, reg_number) in self.param_list:
+            for high in (0, 1):
+                if ( high ):
+                    if ( 16 >= java_type.getVectorSize() ):
+                        continue
 
-        out.append("_acquireLock();\n")
-        out.append("_sendCCMessage(0x%x);\n" % header_word)
-        for (name, java_type) in self.param_list:
-            out.append("_sendCCMessage(%s);\n" % HN(name))
-        out.append("_releaseLock();\n")
-        out.append("// run\n")
+                out.append("_ccTransaction(0x%x | (((%s) >> %u) & 0xffff));\n" %
+                        (( base | ( high << 23 ) |
+                            ( reg_number << 16 )),
+                        HN(name), high * 16))
 
-        header_word = ( self.coproc_id << 24 ) | ( self.method_id << 8 ) | 1
-        out.append("_awaitHeaderThenLock(0x%x);\n" % header_word)
-        out.append("int %s = _receiveCCMessage();\n" % HN(ret_name))
-        
+        out.append("// start\n")
+        out.append("control_channel.write(0x%x);\n" % 
+                        ( base | ( self.busy_reg_num << 16 ) | 1 ))
+        out.append("// run (wait while busy)\n")
+        out.append("while ( 0 != ( _ccTransaction(0x%x) & 1 )) { /* yield */ }\n" % 
+                        ( base | ( self.busy_reg_num << 16 )))
+
         if ( isinstance(self.ret_type, VoidType) ):
             # Nothing is returned.
-            out.append("_releaseLock();\n")
+            pass
         else:
+            out.append("// get result\n")
+            out.append("int %s;\n" % ret_name)
+            out.append("int %s = _ccTransaction(0x%x) | ( _ccTransaction(0x%x) << 16 );\n" % (
+                        HN(ret_name),
+                        base | ( self.ret_reg_num << 16 ),
+                        base | ( self.ret_reg_num << 16 ) | ( 1 << 23 )))
+            out.append("// convert result\n")
             out.append(self.ret_type.convertForJava(HN(ret_name), ret_name))
-            out.append("_releaseLock();\n")
             out.append("return %s;\n" % ret_name)
         out.append("}\n\n")
         return ''.join(out)
@@ -205,14 +228,16 @@ class Method:
     def generateVHDL(self):
         # Entity definition
         header_code = []
-        for (name, java_type) in self.param_list:
+        for (name, java_type, reg_number) in self.param_list:
             header_code.append(
         "method_%s_param_%s : out std_logic_vector ( %u downto 0 );\n" % (
                 self.name, name, java_type.getVectorSize() - 1))
 
-        header_code.append(
-        "method_%s_return : in std_logic_vector ( %u downto 0 );\n" % (
-                self.name, self.ret_type.getVectorSize() - 1))
+        if ( not isinstance(self.ret_type, VoidType) ):
+            header_code.append(
+            "method_%s_return : in std_logic_vector ( %u downto 0 );\n" % (
+                    self.name, self.ret_type.getVectorSize() - 1))
+
         header_code.append(
         "method_%s_start : out std_logic;\n" % (
                 self.name))
@@ -220,97 +245,62 @@ class Method:
         "method_%s_running : in std_logic;\n" % (
                 self.name))
 
-        # Internal signals
-        signals_code = []
-        signals_code.append(
-        "signal method_%s_waiting : std_logic;\n" % (self.name))
+        # For computing "left downto right"
+        def LR(java_type, high):
+            right = high * 16
+            left = right + 15
+            if ( right >= java_type.getVectorSize() ):
+                return (None, None)
+            left = min(left, java_type.getVectorSize() - 1)
+            return (left, right)
 
-        # The start output is a momentary trigger; it is high
-        # until the running signal is acknowledged
+        # The start output is a momentary trigger, high for one clock cycle.
         default_code = []
         default_code.append("method_%s_start <= '0';\n" % (self.name))
 
-        # Dispatcher and states
-        def MS(number):
-            return "MS_%s_%u" % (self.name, number)
+        # The other things are parameter registers (WO), return register (RO)
+        # and busy/start register (RW)
+        register_code = []
+        for (name, java_type, reg_number) in self.param_list:
+            for high in (0, 1):
+                (left, right) = LR(java_type, high)
 
-        def WMS(number):
-            return "when %s =>\n" % MS(state_number)
+                if ( right == None ):
+                    continue
 
-        dispatch_code = []
-        dispatch_code.append(
-            'when x"%02x" => opcode <= %s;\n' % (
-                    self.method_id, MS(0)))
+                register_code.append('when x"%02x" => ' % (
+                        reg_number + (high * 128)))
+                register_code.append(
+                    'method_%s_param_%s ( %u downto %u ) <= ' % (
+                        self.name, name, left, right))
+                register_code.append(
+                    'cc_in_data ( %u downto 0 ) ;\n' % ( left - right ))
 
-        method_code = []
-        state_number = 0
-        first = True
-        method_code.append(WMS(state_number))
-        # Parameter-reading code
-        if ( len(self.param_list) != 0 ):
-            for (name, java_type) in self.param_list:
-                if ( first ):
-                    first = False
+        if ( not isinstance(self.ret_type, VoidType) ):
+            reg_number = self.ret_reg_num
+            for high in (0, 1):
+                (left, right) = LR(self.ret_type, high)
 
-                method_code.append(
-                    "opcode <= WAIT_INPUT;\n")
-                method_code.append(
-                    "when_ready <= %s;\n" % MS(state_number + 1))
+                if ( right == None ):
+                    continue
 
-                state_number += 1
-                method_code.append(WMS(state_number))
-                method_code.append(
-                    "method_%s_param_%s <= cc_register ( %u downto 0 ) ;\n" % (
-                                self.name, name, java_type.getVectorSize() - 1))
+                register_code.append('when x"%02x" => ' % (
+                        reg_number + (high * 128)))
+                register_code.append(
+                    'cc_out_data ( %u downto 0 ) <= ' % ( left - right ))
+                register_code.append(
+                    'method_%s_return ( %u downto %u ) ;\n' % (
+                        self.name, left, right))
 
-        # Start code
-        method_code.append("method_%s_start <= '1';\n" % (self.name))
-        method_code.append("method_%s_waiting <= '1';\n" % (self.name))
-        method_code.append("if ( method_%s_running = '1' )\n" % (self.name))
-        method_code.append("then opcode <= CHANNEL_IS_OPEN;\n")
-        method_code.append("end if;\n")
-        state_number += 1
-
-        # Re-entry point (on completion)
-        # Send return packet
-        reentry_number = state_number
-        payload_size = 1
-        header_word = ( self.method_id << 8 ) | payload_size | (
-                    self.coproc_id << 24 )
-        method_code.append(WMS(state_number))
-        method_code.append("method_%s_waiting <= '0';\n" % (self.name))
-        method_code.append('cc_register <= x"%08x";\n' % header_word)
-        method_code.append("opcode <= WAIT_OUTPUT;\n")
-        method_code.append("when_ready <= %s;\n" % MS(state_number + 1))
-
-        state_number += 1
-        method_code.append(WMS(state_number))
-        method_code.append('cc_register <= method_%s_return;\n' % self.name)
-        method_code.append("opcode <= WAIT_OUTPUT;\n")
-        method_code.append("when_ready <= CHANNEL_IS_OPEN;\n")
-
-        # Generate all states
-        state_list = []
-        state_number += 1
-        for number in xrange(state_number):
-            state_list.append(MS(number))
-        state_list.append("")
-
-        # Generate re-entry code
-        reentry_code = []
-        reentry_code.append("elsif ( method_%s_running = '0' )\n" % self.name)
-        reentry_code.append("and ( method_%s_waiting = '1' )\n" % self.name)
-        reentry_code.append("then opcode <= %s;\n" % MS(reentry_number))
+        register_code.append('when x"%02x" => ' % (self.busy_reg_num))
+        register_code.append('method_%s_start <= cc_in_data ( 0 ); ' % (self.name))
+        register_code.append('cc_out_data ( 0 ) <= method_%s_running ;\n' % (self.name))
 
         # Done
         return {
             "header_code" : ''.join(header_code),
-            "method_code" : ''.join(method_code),
+            "register_code" : ''.join(register_code),
             "default_code" : ''.join(default_code),
-            "signals_code" : ''.join(signals_code),
-            "reentry_code" : ''.join(reentry_code),
-            "dispatch_code" : ''.join(dispatch_code),
-            "state_code" : ',\n'.join(state_list),
             }
         
 
@@ -320,17 +310,25 @@ class Coprocessor:
         self.name = name
         self.method_list = []
         self.coproc_id = None
+        self.reg_count = 0
 
     def addMethod(self, method):
         assert isinstance(method, Method)
         self.method_list.append(method)
+        method.assignCP(self)
+
+    def getId(self):
+        return self.coproc_id
 
     def assignId(self, coproc_id):
+        assert coproc_id < 128
         self.coproc_id = coproc_id
-        method_id = 1
-        for method in self.method_list:
-            method.assignId(coproc_id, method_id)
-            method_id += 1
+
+    def makeRegNumber(self):
+        rc = self.reg_count
+        self.reg_count += 1
+        assert rc < 128
+        return rc
 
     def generateJava(self):
         out = []
@@ -390,124 +388,42 @@ end entity %(name)s_if;
 
 architecture cpi of %(name)s_if is
 
-    constant zero : std_logic_vector ( 7 downto 0 ) := x"00" ;
 
-    signal cc_reg_full          : std_logic;
-    signal out_message_counter  : std_logic_vector ( 7 downto 0 );
-    signal in_message_left      : std_logic_vector ( 7 downto 0 );
-    signal in_message_is_from   : std_logic_vector ( 7 downto 0 );
-    signal method_id            : std_logic_vector ( 7 downto 0 );
-    signal cc_register          : std_logic_vector ( 31 downto 0 );
-    -- Begin state list 
-    %(signals_code)s
-    -- End state list
-
-    type OpcodeType is ( 
-            CHANNEL_IS_OPEN,
-            PASS_MESSAGE,
-            PASS_MESSAGE_1,
-            CALL_METHOD,
-            -- Begin state list 
-            %(state_code)s
-            -- End state list
-            WAIT_INPUT,
-            WAIT_OUTPUT );
-
-    signal opcode, when_ready   : OpcodeType;
 begin
+
     process(clk, reset) is
     begin
         if reset = '1' 
         then
-            when_ready <= CHANNEL_IS_OPEN;
-            opcode <= CHANNEL_IS_OPEN;
             cc_out_wr <= '0';
             cc_in_rdy <= '0';
-            cc_register <= ( others => '0' ) ;
             cc_out_data <= ( others => '0' ) ;
-            in_message_left <= zero ;
-            in_message_is_from <= zero ;
 
         elsif rising_edge(clk) 
         then
-            cc_in_rdy <= '0';
+-- Begin default code
+%(default_code)s
+-- End default code
+            cc_in_rdy <= cc_out_rdy;
             cc_out_wr <= '0';
-            -- Begin default code
-            %(default_code)s
-            -- End default code
 
-
-            case opcode is
-            when CHANNEL_IS_OPEN =>
-                -- Receive a message header word
-                if ( cc_in_wr = '1' )
+            if ( cc_in_wr = '1' )
+            then
+                cc_out_data <= cc_in_data;
+                if (( cc_in_data ( 31 ) = '0' ) -- command (from CPU)
+                and ( cc_in_data ( 30 downto 24 ) = x"%(coproc_id)02x" ))
                 then
-                    cc_register <= cc_in_data;
-                    in_message_left <= cc_in_data ( 7 downto 0 ) ;
-
-                    if ( cc_in_data ( 23 downto 16 ) = x"%(coproc_id)02x" ) 
-                    then
-                        -- message is for this co-processor
-                        in_message_is_from <= cc_in_data ( 31 downto 24 ) ;
-                        method_id <= cc_in_data ( 15 downto 8 ) ;
-                        opcode <= CALL_METHOD;
-                    else
-                        -- message header to be relayed
-                        when_ready <= PASS_MESSAGE;
-                        opcode <= WAIT_OUTPUT;
-                    end if;
-                -- Begin reentry code
-                %(reentry_code)s
-                -- End reentry code
-                else
-                    cc_in_rdy <= '1';
+                    cc_out_data ( 31 ) <= '1' ; -- reply (from coproc)
+                    cc_out_data ( 15 downto 0 ) <= ( others => '0' );
+                    case cc_in_data ( 23 downto 16 ) is
+-- Begin register code
+%(register_code)s
+-- End register code
+                    when others => null;
+                    end case;
                 end if;
-
-            when PASS_MESSAGE =>
-                -- Get a new message payload word, if any remain.
-                if ( in_message_left = zero )
-                then
-                    opcode <= CHANNEL_IS_OPEN;
-                else
-                    opcode <= WAIT_INPUT;
-                    when_ready <= PASS_MESSAGE_1;
-                    in_message_left <= in_message_left - 1;
-                end if;
-
-            when PASS_MESSAGE_1 =>
-                -- Relay this word
-                opcode <= WAIT_OUTPUT;
-                when_ready <= PASS_MESSAGE;
-
-            when CALL_METHOD =>
-                case method_id is
-                -- Begin dispatch code
-                %(dispatch_code)s
-                -- End dispatch code
-                when others => opcode <= PASS_MESSAGE;
-                end case ;
-
-            -- Begin method code
-            %(method_code)s
-            -- End method code
-
-            when WAIT_INPUT =>
-                if ( cc_in_wr = '1' )
-                then
-                    cc_register <= cc_in_data ;
-                    opcode <= when_ready;
-                else
-                    cc_in_rdy <= '1';
-                end if;
-
-            when WAIT_OUTPUT =>
-                if ( cc_out_rdy = '1' )
-                then
-                    cc_out_data <= cc_register;
-                    cc_out_wr <= '1';
-                    opcode <= when_ready;
-                end if ;
-            end case;
+                cc_out_wr <= '1';
+            end if;
         end if;
     end process;
 end architecture cpi ;
@@ -593,18 +509,15 @@ import com.jopdesign.sys.Native;
 JAVA_BODY = """
     private ControlChannel control_channel ;
 
-    private void _sendCCMessage ( int word )
+    private int _ccTransaction ( int msg )
     {
-        while ( ! control_channel.txEmpty () ) { /* yield */ }
-        control_channel.write ( word ) ;
-    }
-
-    private int _receiveCCMessage ()
-    {
-        while ( ! control_channel.rxFull () ) { /* yield */ }
-        int msg = control_channel.read () ;
-        control_channel.advance () ;
-        return msg;
+        int reply;
+        do {
+            control_channel.write(msg);
+            reply = control_channel.read();
+        } while (( reply & 0x7fff0000 ) != ( msg & 0x7fff0000 )) ;
+        /* assert high bit = 1 */
+        return reply & 0xffff;
     }
                     
     private int _dereference ( int [] a )
@@ -612,30 +525,6 @@ JAVA_BODY = """
         return Native.rdMem ( Native.toInt ( a ) ) ;
     }
 
-    private void _acquireLock()
-    {
-        while ( ! control_channel.tryToAcquireLock() ) { /* yield */ }
-    }
-
-    private void _awaitHeaderThenLock(int header_expect)
-    {
-        while ( true ) {
-            _acquireLock () ;
-            int header = control_channel.read();
-            if ( header == header_expect ) 
-            {
-                control_channel.advance();
-                return ;
-            }
-            _releaseLock () ;
-            /* yield */
-        }
-    }
-
-    private void _releaseLock()
-    {
-        control_channel.releaseLock();
-    }
 """
 
 if ( __name__ == "__main__" ):

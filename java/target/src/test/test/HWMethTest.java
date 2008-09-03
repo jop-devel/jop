@@ -43,25 +43,27 @@ public class HWMethTest {
         int mac_size = 10000 ;
         int [] array1 = new int [ mac_size ] ;
         int [] array2 = new int [ mac_size ] ;
-        int i, expect;
+        int i, expect, j;
 
 
 		System.out.println("Let us begin.");
 
         mac_coprocessor m = new mac_coprocessor () ;
 
-        // make the data to be mac'ed
-        expect = 0 ;
-        for ( i = 0 ; i < mac_size ; i ++ )
+        for ( j = 0 ; j < 10 ; j ++ )
         {
-            array1 [ i ] = 123 + ( i * 99 ) + ( i * i * 12 ) ;
-            array2 [ i ] = 456 + ( i * 78 ) + ( i * i * 9 ) ;
-            expect += array1 [ i ] * array2 [ i ] ;
+            // make the data to be mac'ed
+            
+            expect = 0 ;
+            for ( i = 0 ; i < mac_size ; i ++ )
+            {
+                array1 [ i ] = 123 + ( i * ( 99 + j )) + ( i * i * 12 ) ;
+                array2 [ i ] = 456 + ( i * 78 ) + ( i * i * ( 9 + j )) ;
+                expect += array1 [ i ] * array2 [ i ] ;
+            }
+            System.out.print("Test: ");
+            System.out.println(m.mac1(mac_size, array1, array2) - expect);
         }
-		System.out.print("Expecting result: ");
-		System.out.println(expect);
-
-        System.out.println(m.mac1(mac_size, array1, array2));
 		System.out.println("That's all.");
 	}
 }

@@ -172,10 +172,6 @@ begin
         then
             mult_busy_0 <= '0';
             mult_in_2 <= ( others => '0' ) ;
-            if ( clear = '1' )
-            then
-                total <= ( others => '0' ) ;
-            end if;
             if ( capture_1 = '1' )
             then
                 mult_in_1 <= sc_mem_in.rd_data;
@@ -195,6 +191,10 @@ begin
             mult_busy_3 <= mult_busy_2;
             mult_busy_4 <= mult_busy_3;
             mult_busy_5 <= mult_busy_4;
+            if ( clear = '1' )
+            then
+                total <= ( others => '0' ) ;
+            end if;
         end if;
     end process;
                 
