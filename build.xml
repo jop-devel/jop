@@ -103,6 +103,7 @@
 			<include name="jakarta-regexp-1.3.jar"/>
 			<include name="RXTXcomm.jar"/>
 			<include name="lpsolve55j.jar"/>
+			<include name="log4j-1.2.15.jar"/>
 		</fileset>
 	</path>
 
@@ -224,6 +225,53 @@
 
 		<jar basedir="${tools}/dist/classes" destfile="${tools}/dist/lib/jop-tools.jar"/>
 
+		<antcall target="joptimizer"/>
+	</target>
+
+    
+	<!-- Targets to compile and run JOPtimizer -->
+	<!-- To use joptimizer, uncomment the following line (value is not important): -->
+	<!-- <property name="use-joptimizer" value=""/> -->
+
+	<path id="joptimizer-cp">
+		<path refid="ext-cp"/>
+		<pathelement location="${tools}/dist/lib/joptimizer.jar"/>
+	</path>
+
+	<target name="joptimizer" description="Build the JOPtimizer tool" if="use-joptimizer">
+
+		<mkdir dir="${tools}/dist/classes"/>
+		<mkdir dir="${tools}/dist/lib"/>
+
+		<javac debug="true" destdir="${tools}/dist/classes" classpathref="ext-cp"> 
+		    <src path="${tools}/src"/>
+		    <!-- compilerarg value="-Xlint:unchecked" compiler="modern"/ -->
+		    <include name="joptimizer/**/*.java"/>
+		    <include name="com/jopdesign/libgraph/**/*.java"/>
+		</javac>
+
+		<jar basedir="${tools}/dist/classes" destfile="${tools}/dist/lib/joptimizer.jar" 
+		     manifest="${tools}/src/joptimizer/MANIFEST.MF">
+		    <include name="joptimizer/**/*"/>
+		    <include name="com/jopdesign/libgraph/**/*"/>
+		</jar>
+
+		<!-- package resource files from source path -->
+		<jar basedir="${tools}/src" destfile="${tools}/dist/lib/joptimizer.jar" update="true">
+		    <include name="joptimizer/config/*.properties"/>
+		</jar>
+
+		<!-- some files must go into the root directory of the jar -->
+		<jar basedir="${tools}/src/joptimizer" destfile="${tools}/dist/lib/joptimizer.jar" update="true">
+		    <include name="log4j.properties"/>
+		    <include name="jop.conf"/>
+		</jar>
+	</target>
+
+	<target name="run-joptimizer" description="Run JOPtimizer on the compiled target" if="use-joptimizer">
+		<java classpathref="joptimizer-cp" classname="joptimizer.JOPtimizerRunner">
+		    <arg line="-config jar:file:${tools}/dist/lib/joptimizer.jar!/jop.conf ${main-class}"/>
+		</java>
 	</target>
 
 	<target name="java-app" description="Compile and JOPize the application">
@@ -274,6 +322,8 @@
 		
 		<delete dir="${empty.dir}"/>
 		 
+		<antcall target="run-joptimizer"/>
+
 		<jar destfile="${target}/dist/lib/classes.zip" basedir="${target}/dist/classes"/> 
 		 
 		<antcall target="optimize"/> 
@@ -292,7 +342,7 @@
 			classname="com.jopdesign.tools.jop2dat" 
 			failonerror="true" 
 			fork="true"> 
-			<arg line="${target}/dist/bin/${jopbin}"/> 
+			<arg line="${target}/dist/bin/${jopbin}"/>
 		</java> 
 		 
 		<move todir="modelsim"> 
