@@ -5,9 +5,9 @@
 \pagestyle{empty}
 \ \\
 \vspace{1cm}
-{\usekomafont{title}\mdseries\Large JOP Reference Handbook\\
-\medskip
-\large Building Embedded Systems with a Java Processor}
+{\usekomafont{title}\mdseries\huge JOP Reference Handbook\\
+%\bigskip \Large Building Embedded Systems with a Java Processor
+}
 \cleardoublepage
 \end{flushleft}
 
@@ -20,11 +20,14 @@
 \mdseries
 {\Large Building Embedded Systems with a Java Processor}\\
 \bigskip
-{\large\itshape Beta Edition}\\
+\bigskip
+%{\large\itshape Beta Edition}\\
 \bigskip
 {\usekomafont{title}\huge Martin Schoeberl}
 \medskip\\
-{\large\itshape martin@jopdesign.com} }
+%{\large\itshape martin@jopdesign.com}
+
+}
 
 
 \vspace{10cm} \emph{Version: \today}
@@ -38,7 +41,7 @@
 \begin{flushleft}
 {\small
 
-Copyright \copyright \ 2007 Martin Schoeberl
+Copyright \copyright \ 2008 Martin Schoeberl
 \medskip
 
 Martin Schoeberl\\
@@ -48,7 +51,8 @@ A-1050 Vienna, Austria\\
 
 Email: \url{martin@jopdesign.com}\\
 Visit the accompanying web site on \url{http://www.jopdesign.com/}
-and the JOP Wiki at \url{http://www.jopwiki.com/}
+and\\
+the JOP Wiki at \url{http://www.jopwiki.com/}
 \medskip
 
 %Published 2007 by Virtualbookworm.com Publishing Inc.,\\
@@ -60,8 +64,8 @@ Published 2008 by CreateSpace,\\
 
 \medskip
 
-Published 2007, Beta edition 2008 (preprint)
-\medskip
+%Published 2007, First edition 2008
+%\medskip
 
 All rights reserved. No part of this publication may be reproduced,
 stored in a retrieval system, or transmitted in any form or by any
@@ -76,11 +80,10 @@ prior written permission of Martin Schoeberl.
 
 Schoeberl, Martin
 \begin{quote}
-    JOP Reference Handbook : Building Embedded Systems\\
+    JOP Reference Handbook: Building Embedded Systems\\
     with a Java Processor / Martin Schoeberl\\
     Includes bibliographical references and index.\\
-    ISBN 1438239696
-%    ISBN 978-1-60264-XXX
+    ISBN 978-1438239699
 \end{quote}
 
 \bigskip
@@ -88,7 +91,7 @@ Schoeberl, Martin
 
 Manufactured in the United States of America.
 
-Typeset in 11pt Times by Martin Schoeberl }
+Typeset in 11pt Times by Martin Schoeberl}
 \end{flushleft}
 
 
@@ -98,12 +101,31 @@ This book is about JOP, the Java Optimized Processor. JOP began as a
 research project for a PhD thesis. JOP has been used in several
 industrial applications and, due to the fact that it is an
 open-source project, has a growing user base. This book is written
-for all of you who build this lively community. The book is based to
-some extent on the PhD thesis. For a long time the thesis, some
-research papers, and the web site  have been the only available
-documentation for JOP. A thesis is quite different from a reference
-manual. Its focus is on research results and implementation details
-are usually omitted. This book fills the gap and provides insight
-into the implementation of JOP and the accompanying Java virtual
-machine (JVM). It also gives you an idea how to build an embedded
-real-time system based on JOP.
+for all of you who build this lively community.
+
+For a long time the thesis, some research papers, and the web site
+have been the only available documentation for JOP. A thesis is quite
+different from a reference manual. Its focus is on research results
+and implementation details are usually omitted. This book complements
+the thesis and provides insight into the implementation of JOP and
+the accompanying Java virtual machine (JVM). It also gives you an
+idea how to build an embedded real-time system based on JOP.
+
+\addchap{Acknowledgements}
+
+Many users of JOP contributed to the design of JOP and to the tool
+chain. I also want to thank for the discussions with the students at
+the Vienna University of Technology during three years of the course
+``The JVM in Hardware" and one semester in Copenhagen at an embedded
+systems course in Java. Furthermore, the questions and discussions in
+the Java processor mailing list provided valuable input for the
+documentation now available in form of this book.
+
+Ed Anuff wrote \code{testmon.asm} to perform a memory interface test
+and \code{BlockGen.java} to convert Altera \code{.mif} files to
+Xilinx memory blocks. \code{BlockGen.java} was the key tool to port
+JOP to Xilinx FPGAs in general and the Spartan-3 specifically.
+Flavius Gruian wrote the initial version of \cmd{JOPizer} to generate
+the \code{.jop} file from the application classes. \cmd{JOPizer} is
+based on the open source BCEL and is a substitute to the formerly
+used \code{JavaCodeCompact} from Sun.

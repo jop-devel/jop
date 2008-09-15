@@ -1,4 +1,4 @@
-\section{The JOP ``Hello World" Exercise}
+\section{The JOP Hello World Exercise}
 
 This exercise gives an introduction into the design flow of JOP. JOP
 will be built from the sources and a simple \emph{Hello World}
@@ -21,9 +21,9 @@ before running them.
 \begin{enumerate}
     \item Create your working directory
     \item Download the sources from the opencores CVS server
-    \item Connect the FPGA board (with the bread board expansion) to the PC and the power supply
-    \item Perform the build as described in the \emph{Getting Started} section
-    from Chapter~\ref{chap:build}
+    \item Connect the FPGA board to the PC (and the power supply)
+    \item Perform the build as described in
+        Section~\ref{sec:started}.
 \end{enumerate}
 
 As a result you should see a message at your command prompt.
@@ -33,8 +33,8 @@ As a result you should see a message at your command prompt.
 
 In the root directory (\code{jop}) there is a \code{Makefile}. Open
 it with an editor and try to find the corresponding lines of code for
-the steps you did in first exercise. Reset the FPGA by cycling the
-power and run the build with a simple
+the steps you did in the first exercise. Reset the FPGA by cycling
+the power and run the build with a simple
 \begin{verbatim}
     make
 \end{verbatim}
@@ -51,12 +51,12 @@ built and downloaded with the following make target:
     make japp
 \end{verbatim}
 Change \code{HelloWorld.java} and run it on JOP. Now change the class
-name that contains the \code{main()} methods (\code{HelloWorld.java})
-to \code{Hello.java} and rerun the Java application build. Now an
-embedded version of ``Hello World" should run on JOP. Besides the
-usual greeting on the standard output, the LED on the FPGA board
-should blink at a frequency of 1~Hz. The first periodic task, an
-essential abstraction for real-time systems, is running on JOP!
+name that contains the \code{main()} method from \code{HelloWorld} to
+\code{Hello} and rerun the Java application build. Now an embedded
+version of ``Hello World" should run on JOP. Besides the usual
+greeting on the standard output, the LED on the FPGA board should
+blink at a frequency of 1~Hz. The first periodic task, an essential
+abstraction for real-time systems, is running on JOP!
 
 \subsection{Change the Microcode}
 
@@ -81,8 +81,7 @@ generates VHDL files and the complete processor has to be rebuilt.
 
 In this exercise, you will alter the \code{Makefile} for a different
 target board. Disconnect the first board and connect the board with
-an USB port (e.g.\ the dspio or Lego board) and the ByteBlaster
-cable.
+an USB port (e.g.\ the dspio or Lego board).
 
 Table~\ref{tab:boards} lists the  differences between the first
 board (simpexp) and the new one (called dspio).
@@ -96,7 +95,7 @@ board (simpexp) and the new one (called dspio).
     \midrule
     FPGA & EP1C6 & EP1C12 \\
     IO & UART & UART, USB, audio codec, sigma-delta codec \\
-    FPGA configuration & ByteBlaster & still ByteBlaster \\
+    FPGA configuration & ByteBlaster & USBRunner \\
     Java download & serial line & USB \\
 
     \bottomrule
@@ -108,18 +107,18 @@ board (simpexp) and the new one (called dspio).
 \end{table}
 %
 The correct FPGA is already selected in the Quartus project files
-(\code{jop.qpf}). Alter the \code{Makefile} as follows:
+(\code{jop.qpf}). Alter the \code{Makefile} to set the variable
+\code{USB} to \code{true}. This will change:
 
 \begin{enumerate}
-    \item Change the Quartus project from \code{cycmin} to
-    \code{usbmin}
+    \item The Quartus project from \code{cycmin} to \code{usbmin}
     \item The Java download is now over USB instead of the serial
-    line. Change the main target (\code{all}) to use sub target
-    \code{jopusb} instead of \code{jopser}
-    \item Change the parameters for the download via \code{down.exe}
-    to use the virtual com-port of the USB driver (look into Windows
-    hardware manager to get the correct number). Add the switch
-    \code{-usb} for the download
+        line
+    \item The parameters for the download via \code{down.exe} are
+        changed to use the virtual com-port of the USB driver
+        (look into Windows hardware manager to get the correct
+        number) and the switch \code{-usb} for the download is
+        added
 \end{enumerate}
 
 Now build the whole project with \code{make}. Change the Java
@@ -155,12 +154,12 @@ directly set the variables \code{TARGET\_APP\_PATH} and
 
 \subsection{Simulation}
 
-This optional exercise will give you a full view of the possibilities
-to debug JOP system code or the processor itself. There are two ways
-to simulate JOP: A simple debugging JVM written in Java
-(\code{JopSim} as part of the tool package) that can execute
-\emph{jopized} applications and VHDL level simulation with ModelSim.
-The make targets are \code{jsim} and \code{sim}.
+This  exercise will give you a full view of the possibilities to
+debug JOP system code or the processor itself. There are two ways to
+simulate JOP: A simple debugging JVM written in Java (\code{JopSim}
+as part of the tool package) that can execute \emph{jopized}
+applications and a VHDL level simulation with ModelSim. The make
+targets are \code{jsim} and \code{sim}.
 
 \subsection{WCET Analysis}
 
@@ -169,7 +168,7 @@ the WCET of the individual tasks. Compile and run the WCET example
 \code{Loop.java} in package \code{wcet}. You can analyze the WCET of
 the method \code{measure()} with following make command:
 \begin{verbatim}
-    make wcet -e P1=test P2=wcet P3=Loop
+    make java_app wcet -e P1=test P2=wcet P3=Loop
 \end{verbatim}
 Change the code in \code{Loop.java} to enable measurement of the
 execution time and compare it with the output of the static analysis.

@@ -15,11 +15,10 @@ short description how to get JOP running within an FPGA. A detailed
 description of the build process can be found in
 Chapter~\ref{chap:build}.
 
-JOP is the soft-core written in VHDL plus tools, a simplified Java
-library (JDK), and some application examples. JOP is delivered in
-source only. The source contains a set of VHDL files for the
-processor core and Java files. The JOP sources are hosted at
-Opencores\footnote{\url{http://www.opencores.org/projects.cgi/web/jop}}.
+JOP is a soft-core written in VHDL plus tools in Java, a simplified
+Java library (JDK), and application examples. JOP is delivered in
+source only and the sources are hosted at
+Opencores.\footnote{\url{http://www.opencores.org/projects.cgi/web/jop}}
 
 
 \subsection{Building JOP and Running ``Hello World"}
@@ -45,7 +44,7 @@ In order to build the whole system you need a Java
 compiler\footnote{Download the Java SE Development Kit (JDK) from
 \url{http://java.sun.com/javase/downloads/index.jsp}.} and an FPGA
 compiler. In our case we use the free web edition of Quartus from
-Altera\footnote{\url{http://www.altera.com/}}. As we use \cmd{make}
+Altera.\footnote{\url{http://www.altera.com/}} As we use \cmd{make}
 and the preprocessor from the GNU compiler collection,
 Cygwin\footnote{\url{http://www.cygwin.com/}} should be installed
 under Windows.
@@ -58,13 +57,12 @@ process will take a few minutes. After typing
 \begin{verbatim}
     make
 \end{verbatim}
-you should see a lot of messages from the various tools. However,
-the last lines should be actual messages received from JOP. It
-should look similar to the following:
+you see a lot of messages from the various tools. However, the last
+lines should be actual messages received from JOP. It should look
+similar to the following:
 \begin{verbatim}
-    JOP start
-    ...
-    V 20070831 - 60 MHz, 1024 KB RAM
+    JOP start V 20080821
+    60 MHz, 1024 KB RAM, 1 CPUs
     Hello World from JOP!
 
     JVM exit!
@@ -99,16 +97,17 @@ The design consists of three entities:
 \begin{enumerate}
     \item The processor JOP
     \item Supporting tools
-    \item The Java library and application
+    \item The Java library and applications
 \end{enumerate}
 
 The different entities are also reflected during the configuration
 and download process. The download is a two step process:
 \begin{enumerate}
-    \item Configuration of the FPGA: JOP is downloaded via a
-    FPGA download cable (e.g.\ ByteBlaster on the PCs parallel
-    port). After FPGA configuration the processor automatically starts and
-    listens to the second channel (the serial line) for the software download.
+    \item Configuration of the FPGA: JOP is downloaded via a FPGA
+        download cable (e.g., ByteBlaster on the PCs parallel
+        port). After FPGA configuration the processor
+        automatically starts and listens to the second channel
+        (the serial line) for the software download.
     \item Java application download: the compiled and linked
     application is downloaded usually via a serial line. JOP stores
     the application in the main memory and starts execution at
@@ -137,13 +136,13 @@ best case (assuming a local, single cycle memory) a simple bytecode
 additional 11 cycles for execution.
 
 
-A redesign followed in April 2001, now coded in VHDL. The version 2
-of JOP introduced features to speed up the implementation of the JVM
-with specific instructions for the stack access and a dedicated stack
-pointer. The register file was reduced to 16 entries and the
-instruction width reduced to 8 bits. The pipeline contained 5 stages
-and special support for decoding bytecode instructions was added -- a
-first version of the dynamic bytecode to microcode address
+A redesign followed in April 2001, now coded in VHDL. The second
+version of JOP introduced features to speed up the implementation of
+the JVM with specific instructions for the stack access and a
+dedicated stack pointer. The register file was reduced to 16 entries
+and the instruction width reduced to 8 bits. The pipeline contained 5
+stages and special support for decoding bytecode instructions was
+added -- a first version of the dynamic bytecode to microcode address
 translation as it is used in the current version of JOP. The
 enhancements within JOP2 resulted in the reduction of the execution
 time for a simple bytecode to 3 cycles. A great enhancement compared
@@ -180,9 +179,10 @@ available on the web site.
 
 This book presents a hardware implementation of the Java virtual
 machine (JVM), targeting small embedded systems with real-time
-constraints. The processor is designed from the ground up for low
-worst-case execution time (WCET) of bytecodes, in order to give
-tasks low WCET values.
+constraints. JOP is designed from the ground up with time-predictable
+execution of Java bytecode as a major design goal. All functional
+units, and especially the interactions between them, are carefully
+designed to avoid any time dependency between bytecodes.
 
 JOP is a stack computer with its own instruction set, called
 microcode in this book. Java bytecodes are translated into microcode
@@ -193,120 +193,83 @@ The JVM is a CISC stack architecture, whereas JOP is a RISC stack
 architecture.
 \end{quote}
 
-JOP will help to increase the acceptance of Java for embedded
-real-time systems. JOP is implemented as a soft-core in a field
-programmable gate array (FPGA). Implementing a processor for
-embedded systems in an FPGA gives a lot of flexibility for the
-overall hardware design. The processor can easily be extended by
-peripheral components inside the same chip. Therefore, it is
-possible to customize the solution exactly to the needs of the
-system.
-
-JOP is designed from the ground up with time-predictable execution of
-Java bytecode as a major design goal. All functional units, and
-especially the interactions between them, are carefully designed to
-avoid any time dependency between bytecodes. The architectural
-features and highlights are:
+The architectural features and highlights of JOP are:
 
 \begin{itemize}
 
-    \item The execution time for Java bytecodes can be exactly
-        predicted in terms of the number of clock cycles. There
-        is no mutual dependency between consecutive bytecodes.
-        Therefore, no pipeline analysis -- with possible
-        unbounded timing effects -- is necessary. These
-        properties result in a simple processor model for the
-        low-level WCET analysis.
+    \item Dynamic translation of the CISC Java bytecodes to a
+        RISC, stack based instruction set (the microcode) that
+        can be executed in a 3 stage pipeline.
 
-    \item In order to fill the gap between processor speed and
-        the memory access time, caches are mandatory. In
-        Section~\ref{sec:cache}, a novel way to organize an
-        instruction cache, as \emph{method cache}, is provided.
-        The time predictable instruction cache caches whole
-        methods. Only invoke and return instructions can result
-        in a cache miss. All other instructions are guaranteed
-        cache hits. This method cache is simple to analyze with
-        respect to worst-case behavior and still provides a
-        substantial performance gain.
+    \item The translation takes exactly one cycle per bytecode
+        and is therefore pipelined. Compared to other forms of
+        dynamic code translation the proposed translation does
+        not add any variable latency to the execution time and is
+        therefore time predictable.
 
-
-Prefetch buffers or store buffers that can introduce unbounded
-time dependencies between instructions are completely avoided in
-the design. Even simple processors can contain an instruction
-prefetch buffer that prohibits exact WCET values. The design of
-the method cache and the translation unit avoids the variable
-latency of a prefetch buffer.
-
-
-
-    \item JOP is microprogrammed using a novel way of mapping
-        bytecodes to microcode addresses. This mapping has
-        minimum overheads, even for complex bytecodes. CISC Java
-        bytecodes are dynamically translated to a RISC,
-        stack-based instruction set (the microcode) that can be
-        executed in a 3 stage pipeline.
-
-
-The translation takes exactly one cycle per bytecode and is
-therefore pipelined. Compared to other forms of dynamic code
-translation, the translation does not add any variable latency to
-the execution time and is therefore time predictable.
+    \item Interrupts are inserted in the translation stage as
+        special bytecodes and are transparent to the microcode
+        pipeline.
 
     \item The short pipeline (4 stages) results in short
-        conditional branch delays and a hard-to-analyze branch
-        prediction logic or a branch target buffer can be
-        avoided. All microcode instructions are executed in
-        constant time (one cycle). There are no stalls in the
-        microcode pipeline. Loads and stores of object fields are
-        handled explicitly. Interrupts are inserted in the
-        translation stage as special bytecodes and are
-        transparent to the microcode pipeline.
+        conditional branch delays and a hard to analyze branch
+        prediction logic or branch target buffer can be avoided.
+
+    \item Simple execution stage with the two topmost stack
+        elements as discrete registers. No write back stage or
+        forwarding logic is needed.
+
+    \item Constant execution time (one cycle) for all microcode
+        instructions. The microcode pipeline never stalls. Loads
+        and stores of object fields are handled explicitly.
+
+    \item No time dependencies between bytecodes result in a
+        simple processor model for the low-level WCET analysis.
+
+    \item Time predictable instruction cache that caches whole
+        methods. Only invoke and return instruction can result in
+        a cache miss. All other instructions are guaranteed cache
+        hits.
+
+    \item Time predictable data cache for local variables and the
+        operand stack. Access to local variables is a guaranteed
+        hit and no pipeline stall can happen. Stack cache fill
+        and spill is under microcode control and analyzable.
+
+    \item No prefetch buffers or store buffers that can introduce
+        unbound time dependencies of instructions. Even simple
+        processors can contain an instruction prefetch buffer
+        that prohibits exact WCET values. The design of the
+        method cache and the translation unit avoids the variable
+        latency of a prefetch buffer.
+
+    \item Good average case performance compared to other non
+        real-time Java processors.
+
+    \item Avoidance of hard to analyze architectural features
+        results in a very small design. Therefore an available
+        real estate can be used for a chip multi-processor
+        solution.
+
+    \item JOP is the smallest hardware implementation of the JVM
+        available to date. This fact enables usage of low-cost
+        FPGAs in embedded systems. The resource usage of JOP can
+        be configured to trade size against performance for
+        different application domains.
 
 
-    \item A two-level stack cache, described in
-        Section~\ref{sec:stack}, which fits in the embedded
-        memory technologies of current FPGAs and ASICs, ensures
-        the fast execution of basic instructions with minimum
-        resource requirements.
-
-
-The first level consists of the two topmost stack elements as
-discrete registers. Those two registers are the basis of the
-execution stage. The combination of the first level stack cache and
-the execution unit does not need a write back stage or any
-forwarding logic.
-
-
-The second level provides fast and time predictable access to local
-variables and the operand stack. Access to local variables is a
-guaranteed hit and no pipeline stall can happen. Fill and spill of
-the stack cache is subjected to microcode control and therefore
-analyzable.
-
-
-    \item
-JOP is the smallest hardware implementation of the JVM available to
-date. This fact enables usage of low-cost FPGAs in embedded systems.
-The resource usage of JOP can be configured to trade size against
-performance for different application domains.
-
-Avoidance of hard-to-analyze architectural features results in
-the very small design. Therefore, the available real estate can
-be used for a chip multi-processor version of JOP as described in
-Chapter~\ref{chap:cmp}.
-
-
-    \item
-JOP is actually in use in several real-world applications showing
-that a Java based embedded system implemented in an FPGA is a viable
-option. In Section~\ref{sec:applications} the usage of JOP in a
-real-world application is described.
+    \item JOP is actually in use in several real-world
+        applications showing that a Java based embedded system
+        implemented in an FPGA is a viable option.
 
 \end{itemize}
 
-This Java processor architecture results in time predictable and
-high-performance execution of real-time tasks in Java, without the
-resource implications and unpredictability of a JIT-compiler.
+JOP is implemented as a soft-core in a field programmable gate array
+(FPGA) giving a lot of flexibility for the overall hardware design.
+The processor can easily be extended by peripheral components inside
+the same chip. Therefore, it is possible to customize the solution
+exactly to the needs of the system.
+
 
 \section{Is JOP the Solution for Your Problem?}
 
@@ -325,27 +288,19 @@ Chapter~\ref{chap:build} gives a detailed introduction into the
 design flow of JOP. It explains how the individual parts are compiled
 and which files have to be changed when you want to extend JOP or
 adapt it to a new hardware platform. The chapter is concluded by an
-exercise to evaluate the different steps in the design flow.
+exercise to explore the different steps in the design flow.
 
 Chapter~\ref{chap:java} provides background information on the Java
 programming language, the execution environment, and the Java virtual
 machine, for Java applications. If you are already familiar with Java
 and the JVM, feel free to skip this chapter.
 
-Standard Java is not suitable for the resource-constrained world of
-embedded systems. Chapter~\ref{chap:rtjava} gives an overview of
-various definitions in embedded Java and the real-time specification
-of Java (RTSJ). It is an extended version of \cite{jop:rtjava} and
-Chapter~4 of \cite{jop:thesis}.
-
-Chapter~\ref{chap:arch} is the main chapter in which the
-architecture of JOP is described. The motivation behind different
-design decisions is given. A Java processor alone is not a complete
-JVM. Chapter~\ref{chap:runtime} describes the runtime environment on
-top of JOP, including the definition of a real-time profile for Java
-and a framework for a user-defined scheduler in Java.
-
-
+Chapter~\ref{chap:arch} is the main chapter in which the architecture
+of JOP is described. The motivation behind different design decisions
+is given. A Java processor alone is not a complete JVM.
+Chapter~\ref{chap:runtime} describes the runtime environment on top
+of JOP, including the definition of a real-time profile for Java and
+the description of the scheduler in Java.
 
 Garbage collection (GC) is an important part of the Java technology.
 Even in real-time systems new real-time garbage collectors emerge.
@@ -370,10 +325,15 @@ In Chapter~\ref{chap:results}, JOP is evaluated with respect to size
 and performance. This is followed by a description of some
 commercial real-world applications of JOP.
 
-Other solutions are presented in Chapter~\ref{chap:related}.
-Different hardware solutions from both academia and industry for
-accelerating Java in embedded systems are analyzed.
+Other hardware implementations of the JVM are presented in
+Chapter~\ref{chap:related}. Different hardware solutions from both
+academia and industry for accelerating Java in embedded systems are
+analyzed.
 
 Finally, in Chapter~\ref{chap:conclusions}, the work is summarized
 and the major contributions are presented. This chapter concludes
 with directions for future research using JOP and real-time Java.
+
+A more theoretical treatment of the design of JOP can be found in the
+PhD thesis \cite{jop:thesis}, which is also available as book
+\cite{jop:thesis:book}.

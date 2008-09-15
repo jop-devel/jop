@@ -39,7 +39,7 @@ The top-level directories of the distribution are:
         \item[config] Cycore PLD sources
         \item[core] The processor core
         \item[fpu] The floating-point unit
-        \item[memory] Main memory connections vi SimpCon
+        \item[memory] Main memory connections via SimpCon
         \item[scio] IO components and configurations with SimpCon
         \item[simpcon] SimpCon bridges and arbiter
         \item[simulation] Memory and UART for ModelSim simulation
@@ -48,9 +48,9 @@ The top-level directories of the distribution are:
         \item[testbenches] no real content
         \item[top] Top-level and configuration (e.g.\ PLL setting) components
         \item[vga] A SimpCon VGA controller
-        \item[wishbone] WISHBONE files -- \emph{not used?
-            TODO: This should be fixed. Are they still used
-            or not?}
+%        \item[wishbone] WISHBONE files -- \emph{not used?
+%            TODO: This should be fixed. Are they still used
+%            or not?}
         \item[xilinx] Xilinx specific components (RAM)
     \end{description}
     \item[xilinx] Xilinx project files
@@ -70,5 +70,15 @@ in \dirent{java/target}.
         -- input for \cmd{JOPizer}
     \end{description}
     \item[src] The source
+    \begin{description}
+      \item[app] The applications
+      \item[bench] The embedded benchmark suit
+      \item[common] Utility classes
+      \item[jdk\_base] Base classes for the JDK
+      \item[jdk11] JDK around version 1.1
+      \item[jdk14] A test port of JDK 1.4 classes
+      \item[rtapi] Experimental RT API dfinitions
+      \item[test] Various test programs
+    \end{description}
     \item[wcet] Output from the WCET analyzer (generated)
 \end{description}
