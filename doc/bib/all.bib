@@ -1,6 +1,35 @@
 % This file was created with JabRef 2.3.
 % Encoding: Cp1252
 
+@ARTICLE{mips:1984,
+  author = {John L. Hennessy},
+  title = {{VLSI} Processor Architecture},
+  journal = {Computers, IEEE Transactions on},
+  year = {1984},
+  volume = {C-33},
+  pages = {1221-1246},
+  number = {12},
+  month = {Dec. },
+  doi = {10.1109/TC.1984.1676395},
+  issn = {0018-9340},
+  keywords = {Computer organization, VLSI, instruction issue, instruction set design,
+	memory mapping, microprocessors, pipelining, processor architecture,
+	processor implementation}
+}
+
+@INPROCEEDINGS{jouppi:90,
+  author = {N. P. Jouppi},
+  title = {Improving direct-mapped cache performance by the addition of a small
+	fully-associative cache and prefetch buffers},
+  booktitle = {Proceedings of the 17th Annual International Symposium on Computer
+	Architecture},
+  year = {1990},
+  pages = {364--373},
+  address = {Seattle, WA},
+  month = may,
+  url = {http://portal.acm.org/citation.cfm?doid=325096.325162}
+}
+
 @ARTICLE{Niagara2005,
   author = {Poonacha Kongetira and Kathirgamar Aingaran and Kunle Olukotun},
   title = {Niagara: {A} 32-Way Multithreaded Sparc Processor},
@@ -38,6 +67,37 @@
   number = {8},
   crindex = {Fichier},
   url = {http://www.cs.ucsb.edu/~arch/cs254/papers/moorepaper.pdf}
+}
+
+@ARTICLE{acm:risc,
+  author = {David A. Patterson},
+  title = {Reduced instruction set computers},
+  journal = {Commun. ACM},
+  year = {1985},
+  volume = {28},
+  pages = {8--21},
+  number = {1},
+  address = {New York, NY, USA},
+  doi = {http://doi.acm.org/10.1145/2465.214917},
+  issn = {0001-0782},
+  publisher = {ACM}
+}
+
+@ARTICLE{larrabee:2008,
+  author = {Larry Seiler and Doug Carmean and Eric Sprangle and Tom Forsyth and
+	Michael Abrash and Pradeep Dubey and Stephen Junkins and Adam Lake
+	and Jeremy Sugerman and Robert Cavin and Roger Espasa and Ed Grochowski
+	and Toni Juan and Pat Hanrahan},
+  title = {Larrabee: a many-core x86 architecture for visual computing},
+  journal = {ACM Trans. Graph.},
+  year = {2008},
+  volume = {27},
+  pages = {1--15},
+  number = {3},
+  address = {New York, NY, USA},
+  doi = {http://doi.acm.org/10.1145/1360612.1360617},
+  issn = {0730-0301},
+  publisher = {ACM}
 }
 
 @comment{jabref-meta: selector_publisher:}
@@ -143,6 +203,20 @@
   month = jan
 }
 
+@ARTICLE{acm:surv:multithr,
+  author = {Theo Ungerer and Borut Robi\v{c} and Jurij \v{S}ilc},
+  title = {A survey of processors with explicit multithreading},
+  journal = {ACM Comput. Surv.},
+  year = {2003},
+  volume = {35},
+  pages = {29--63},
+  number = {1},
+  address = {New York, NY, USA},
+  doi = {http://doi.acm.org/10.1145/641865.641867},
+  issn = {0360-0300},
+  publisher = {ACM}
+}
+
 @comment{jabref-meta: selector_publisher:}
 
 @comment{jabref-meta: selector_author:}
@@ -237,6 +311,15 @@
   timestamp = {2007.04.16}
 }
 
+@PHDTHESIS{KaffeOS:phd,
+  author = {Godmar Back},
+  title = {Isolation, Resource Management and Sharing in the Kaffeos Java Runtime
+	System},
+  school = {University of Utah},
+  year = {2002},
+  url = {http://www.cs.utah.edu/flux/papers/back-thesis.pdf}
+}
+
 @INPROCEEDINGS{Badea2007,
   author = {Carmen Badea and Alexandru Nicolau and Alexander V. Veidenbaum},
   title = {A simplified java bytecode compilation system for resource-constrained
@@ -263,6 +346,21 @@
   url = {http://jxos.org/publications/jx-usenix.pdf}
 }
 
+@INPROCEEDINGS{JXwcet,
+  author = {Meik Felser and Michael Golm and Christian Wawersich and J\"{u}rgen
+	Klein\"{o}der},
+  title = {Execution time limitation of interrupt handlers in a Java operating
+	system},
+  booktitle = {EW10: Proceedings of the 10th workshop on ACM SIGOPS European workshop:
+	beyond the PC},
+  year = {2002},
+  pages = {190--193},
+  address = {New York, NY, USA},
+  publisher = {ACM Press},
+  doi = {http://doi.acm.org/10.1145/1133373.1133411},
+  location = {Saint-Emilion, France}
+}
+
 @INPROCEEDINGS{gal:ecoop:2004,
   author = {A. Gal and M. Yang and C. W. Probst and M. Franz},
   title = {Executing Legacy Applications on a Java Operating System},
@@ -282,6 +380,16 @@
   owner = {martin},
   timestamp = {2008.02.18},
   url = {http://java.sun.com/docs/books/jls/html/}
+}
+
+@BOOK{JavaLangSpec3,
+  title = {The {J}ava Language Specification, Third Edition},
+  publisher = {Addison-Wesley Professional},
+  year = {2005},
+  author = {James Gosling and Bill Joy and Guy Steele and Gilad Bracha},
+  series = {The {J}ava Series},
+  address = {Boston, Mass.},
+  isbn = {0-321-24678-0}
 }
 
 @BOOK{JavaLangSpec2,
@@ -342,15 +450,6 @@
   number = {MSR-TR-2005-135},
   month = oct,
   url = {ftp://ftp.research.microsoft.com/pub/tr/TR-2005-135.pdf}
-}
-
-@MISC{kaffe,
-  author = {Kaffe},
-  title = {Kaffe, a complete virtual machine and class library set which allows
-	the execution of Java code},
-  howpublished = {Available at http://www.kaffe.org},
-  owner = {admin},
-  timestamp = {2007.04.16}
 }
 
 @INPROCEEDINGS{cacao,
@@ -446,6 +545,15 @@
   year = {2002},
   pages = { 117-129},
   doi = {10.1109/DANCE.2002.1003487}
+}
+
+@MISC{kaffe,
+  author = {Tim Wilkinson},
+  title = {Kaffe -- A virtual machine to run Java code},
+  howpublished = {Available at http://www.kaffe.org},
+  year = {1996},
+  owner = {admin},
+  timestamp = {2007.04.16}
 }
 
 @comment{jabref-meta: selector_publisher:}
@@ -650,7 +758,7 @@
 
 @MISC{Cjip,
   author = {{Imsys}},
-  title = {IM1101C (the Cjip) Technical Reference Manual / V0.25},
+  title = {IM1101C (the {Cjip}) Technical Reference Manual / V0.25},
   year = {2004},
   owner = {admin},
   timestamp = {2007.04.16}
@@ -800,8 +908,6 @@
   title = {{picoJava-II} in an {FPGA}},
   school = {Vienna University of Technology},
   year = {2007},
-  owner = {martin},
-  timestamp = {2008.02.03},
   url = {http://www.ub.tuwien.ac.at/dipl/2007/AC05036255.pdf}
 }
 
@@ -855,8 +961,8 @@
 @INPROCEEDINGS{jamuth:jtres07,
   author = {Sascha Uhrig and J\"{o}rg Wiese},
   title = {jamuth: an IP processor core for embedded Java real-time systems},
-  booktitle = {JTRES '07: Proceedings of the 5th international workshop on Java
-	technologies for real-time and embedded systems},
+  booktitle = {Proceedings of the 5th International Workshop on Java Technologies
+	for Real-time and Embedded Systems (JTRES 2007)},
   year = {2007},
   pages = {230--237},
   address = {New York, NY, USA},
@@ -972,8 +1078,8 @@
 }
 
 @INPROCEEDINGS{shap,
-  author = {Martin Zabel and Thomas B. Preuber and Peter Reichel and Rainer G.
-	Spallek},
+  author = {Martin Zabel and Thomas B. Preusser and Peter Reichel and Rainer
+	G. Spallek},
   title = {Secure, Real-Time and Multi-Threaded General-Purpose Embedded Java
 	Microarchitecture},
   booktitle = {Prceedings of the 10th Euromicro Conference on Digital System Design
@@ -987,8 +1093,8 @@
 }
 
 @INPROCEEDINGS{shap:dass2007,
-  author = {Martin Zabel and Thomas B. Preuber and Peter Reichel and Rainer G.
-	Spallek},
+  author = {Martin Zabel and Thomas B. Preusser and Peter Reichel and Rainer
+	G. Spallek},
   title = {SHAP -- Secure Hardware Agent Platform},
   booktitle = {not really citable (DASS 2007)},
   year = {2007},
@@ -1027,8 +1133,8 @@
 % Encoding: Cp1252
 
 @INPROCEEDINGS{jop:crossprof:quest08,
-  author = {Walter Binder and Martin Schoeberl and Philippe Moret and Alex Villaz},
-  title = {Cross-Profiling for Embedded Java Processors},
+  author = {Walter Binder and Martin Schoeberl and Philippe Moret and Alex Villazon},
+  title = {Cross-Profiling for Embedded {Java} Processors},
   booktitle = {Proceedings of the 5th International Conference on the Quantitative
 	Evaluation of SysTems (QEST 2008)},
   year = {2008},
@@ -1038,27 +1144,26 @@
 }
 
 @INPROCEEDINGS{jop:crossprof:cases08,
-  author = {Walter Binder and Alex Villaz and Martin Schoeberl and Philippe Moret},
-  title = {Cache-aware Cross-profiling for Java Processors},
-  booktitle = {to appear in: Proceedings of the 2008 international conference on
-	Compilers, architecture, and synthesis for embedded systems (CASES
-	2008)},
+  author = {Walter Binder and Alex Villazon and Martin Schoeberl and Philippe
+	Moret},
+  title = {Cache-aware Cross-profiling for {Java} Processors},
+  booktitle = {Proceedings of the 2008 international conference on Compilers, architecture,
+	and synthesis for embedded systems (CASES 2008)},
   year = {2008},
   address = {Atlanta, Georgia},
   month = {October},
   publisher = {ACM},
-  owner = {martin},
-  timestamp = {2008.06.10}
+  url = {http://www.jopdesign.com/doc/crossprofiling_cases2008.pdf}
 }
 
-@INPROCEEDINGS{yari:cacao:jtres2008,
+@TECHREPORT{cacao:yari:techrep,
   author = {Florian Brandner and Tommy Thorn and Martin Schoeberl},
   title = {Embedded {JIT} Compilation with {CACAO} on {YARI}},
-  booktitle = {submitted to: Proceedings of the 6th International Workshop on Java
-	Technologies for Real-time and Embedded Systems (JTRES 2008)},
+  institution = {Institute of Computer Engineering, Vienna University of Technology},
   year = {2008},
-  owner = {martin},
-  timestamp = {2008.06.16}
+  number = {RR 35/2008},
+  address = {Austria},
+  month = {June}
 }
 
 @INPROCEEDINGS{jop:sac05,
@@ -1079,7 +1184,7 @@
 @INPROCEEDINGS{jop:rtlib:isorc2008,
   author = {Trevor Harmon and Martin Schoeberl and Raimund Kirner and Raymond
 	Klefstad},
-  title = {Toward Libraries for Real-time Java},
+  title = {Toward Libraries for Real-time {Java}},
   booktitle = {Proceedings of the 11th IEEE International Symposium on Object/component/service-oriented
 	Real-time distributed Computing (ISORC 2008)},
   year = {2008},
@@ -1092,7 +1197,7 @@
 @INPROCEEDINGS{jop:volta:rtas2008,
   author = {Trevor Harmon and Martin Schoeberl and Raimund Kirner and Raymond
 	Klefstad},
-  title = {A Modular Worst-case Execution Time Analysis Tool for Java Processors},
+  title = {A Modular Worst-case Execution Time Analysis Tool for {Java} Processors},
   booktitle = {Proceedings of the 14th IEEE Real-Time and Embedded Technology and
 	Applications Symposium (RTAS 2008)},
   year = {2008},
@@ -1116,7 +1221,7 @@
 
 @INPROCEEDINGS{jop:interrupt:handler,
   author = {Stephan Korsholm and Martin Schoeberl and Anders P. Ravn},
-  title = {{Java} Interrupt Handling},
+  title = {Interrupt Handlers in {Java}},
   booktitle = {Proceedings of the 11th IEEE International Symposium on Object/component/service-oriented
 	Real-time distributed Computing (ISORC 2008)},
   year = {2008},
@@ -1194,11 +1299,11 @@
 @INPROCEEDINGS{jop:nbrs:jtres2008,
   author = {Wolfgang Puffitsch and Martin Schoeberl},
   title = {Non-Blocking Root Scanning for Real-Time Garbage Collection},
-  booktitle = {submitted to: Proceedings of the 6th International Workshop on Java
-	Technologies for Real-time and Embedded Systems (JTRES 2008)},
+  booktitle = {Proceedings of the 6th International Workshop on Java Technologies
+	for Real-time and Embedded Systems (JTRES 2008)},
   year = {2008},
-  owner = {martin},
-  timestamp = {2008.06.09}
+  month = {September},
+  url = {http://www.jopdesign.com/doc/nbrs.pdf}
 }
 
 @INPROCEEDINGS{pjfpga,
@@ -1218,14 +1323,15 @@
 
 @INPROCEEDINGS{cmp:wcet2008,
   author = {Peter Puschner and Martin Schoeberl},
-  title = {On Composable System Timing, Task Timing, and WCET Analysis},
-  booktitle = {to appear in: Proceedings of the 8th International Workshop on Worst-Case
-	Execution Time (WCET) Analysis},
+  title = {On Composable System Timing, Task Timing, and {WCET} Analysis},
+  booktitle = {Proceedings of the 8th International Workshop on Worst-Case Execution
+	Time (WCET) Analysis},
   year = {2008},
   address = {Prague, Czech Republic},
   month = {July},
   owner = {martin},
-  timestamp = {2008.06.07}
+  timestamp = {2008.06.07},
+  url = {http://www.jopdesign.com/doc/wcet2008.pdf}
 }
 
 @INPROCEEDINGS{jop:app,
@@ -1247,6 +1353,16 @@
   pages = {265--286},
   doi = {10.1016/j.sysarc.2007.06.001},
   url = {http://www.jopdesign.com/doc/rtarch.pdf}
+}
+
+@BOOK{jop:thesis:book,
+  title = {JOP: A Java Optimized Processor for Embedded Real-Time Systems},
+  publisher = {VDM Verlag Dr. M{\"u}ller},
+  year = {2008},
+  author = {Martin Schoeberl},
+  number = {ISBN 978-3-8364-8086-4},
+  pages = {256},
+  month = {July}
 }
 
 @INPROCEEDINGS{jop:oohw:jtres2007,
@@ -1547,17 +1663,17 @@
 @INPROCEEDINGS{jop:nbobjcopy:jtres2008,
   author = {Martin Schoeberl and Wolfgang Puffitsch},
   title = {Non-blocking Object Copy for Real-Time Garbage Collection},
-  booktitle = {submitted to: Proceedings of the 6th International Workshop on Java
-	Technologies for Real-time and Embedded Systems (JTRES 2008)},
+  booktitle = {Proceedings of the 6th International Workshop on Java Technologies
+	for Real-time and Embedded Systems (JTRES 2008)},
   year = {2008},
-  owner = {martin},
-  timestamp = {2008.06.09}
+  month = {September},
+  url = {http://www.jopdesign.com/doc/gchwcp.pdf}
 }
 
 @INPROCEEDINGS{jop:scjava,
   author = {Martin Schoeberl and Hans Sondergaard and Bent Thomsen and Anders
 	P. Ravn},
-  title = {A Profile for Safety Critical Java},
+  title = {A Profile for Safety Critical {J}ava},
   booktitle = {10th IEEE International Symposium on Object and Component-Oriented
 	Real-Time Distributed Computing (ISORC'07)},
   year = {2007},
@@ -1664,16 +1780,6 @@
   doi = {http://doi.acm.org/10.1145/269629.269646},
   isbn = {0-89791-981-5},
   location = {St. Louis, Missouri, United States}
-}
-
-@INPROCEEDINGS{Delvai:ECRTS2003,
-  author = {Martin Delvai and Wolfgang Huber and Peter Puschner and Andreas Steininger},
-  title = {Processor Support for Temporal Predictability -- The SPEAR Design
-	Example},
-  booktitle = {Proceedings of the 15th Euromicro International Conference on Real-Time
-	Systems},
-  year = {2003},
-  month = {Jul.}
 }
 
 @ARTICLE{Sekar2000,
@@ -2467,6 +2573,21 @@ Encoding: Cp1252
 % This file was created with JabRef 2.3.
 % Encoding: Cp1252
 
+@INPROCEEDINGS{SaikiKKYY05,
+  author = {Hideaki Saiki and Yoshiharu Konaka and Tsuneyasu Komiya and Masahiro
+	Yasugi and Taiichi Yuasa},
+  title = {Real-Time {GC} in {J}e{RT}y$^{TM}${VM} Using the Return-Barrier Method},
+  booktitle = {ISORC},
+  year = {2005},
+  pages = {140--148},
+  publisher = {IEEE Computer Society},
+  bibdate = {2005-11-28},
+  bibsource = {DBLP, http://dblp.uni-trier.de/db/conf/isorc/isorc2005.html#SaikiKKYY05},
+  crossref = {conf/isorc/2005},
+  isbn = {0-7695-2356-0},
+  url = {http://doi.ieeecomputersociety.org/10.1109/ISORC.2005.45}
+}
+
 @INPROCEEDINGS{gc:hertz05,
   author = {full ref missing},
   title = {Quantifying the Performance of Garbage Collection vs. Explicit Memory
@@ -3048,16 +3169,15 @@ Encoding: Cp1252
 
 @ARTICLE{gc:NilsenS1992,
   author = {Kelvin D. Nilsen and William J. Schmidt},
-  title = {Cost-Effective Object Space Management for
-	
-	
-	 Hardware-Assisted Real-Time Garbage Collection},
+  title = {Cost-Effective Object Space Management for Hardware-Assisted Real-Time
+	Garbage Collection},
   journal = {ACM Letters on Programming Languages and Systems},
   year = {1992},
   volume = {1},
   pages = {338--354},
   number = {4},
-  month = dec
+  month = dec,
+  url = {http://portal.acm.org/citation.cfm?id=161508}
 }
 
 @INPROCEEDINGS{gc:nort87,
@@ -3213,6 +3333,21 @@ Encoding: Cp1252
   year = {2002},
   author = {Fridtjof Siebert},
   number = {ISBN: 3-8311-3893-1}
+}
+
+@INPROCEEDINGS{gc:siebert:cases2000,
+  author = {Fridtjof Siebert},
+  title = {Eliminating external fragmentation in a non-moving garbage collector
+	for {Java}},
+  booktitle = {Proceedings of the 2000 international conference on Compilers, architecture,
+	and synthesis for embedded systems (CASES 2000)},
+  year = {2000},
+  pages = {9--17},
+  address = {New York, NY, USA},
+  publisher = {ACM},
+  doi = {http://doi.acm.org/10.1145/354880.354883},
+  isbn = {1-58113-338-3},
+  location = {San Jose, California, United States}
 }
 
 @INPROCEEDINGS{siebert99realtime,
@@ -3387,6 +3522,22 @@ Encoding: Cp1252
   url = {http://www3.oup.co.uk/computer_journal/hdb/Volume_44/Issue_06/440531.sgm.abs.html}
 }
 
+@INPROCEEDINGS{berg:rtproc:2004,
+  author = {Christoph Berg and Jakob Engblom and Reinhard Wilhelm},
+  title = {Requirements for and Design of a Processor with Predictable Timing},
+  booktitle = {Perspectives Workshop: Design of Systems with Predictable Behaviour},
+  year = {2004},
+  editor = {Lothar Thiele and Reinhard Wilhelm},
+  number = {03471},
+  series = {Dagstuhl Seminar Proceedings},
+  address = {Dagstuhl, Germany},
+  publisher = {Internationales Begegnungs- und Forschungszentrum f{\"u}r Informatik
+	(IBFI), Schloss Dagstuhl, Germany},
+  annote = {Keywords: WCET, hard real-time, embedded systems, computer architecture},
+  issn = {1862-4405},
+  url = {http://drops.dagstuhl.de/opus/volltexte/2004/5}
+}
+
 @INPROCEEDINGS{rthw:branch:rtcsa05,
   author = {Claire Burguiere and Christine Rochange and Pascal Sainrat},
   title = {A Case for Static Branch Prediction in Real-Time Systems},
@@ -3399,6 +3550,19 @@ Encoding: Cp1252
   doi = {http://dx.doi.org/10.1109/RTCSA.2005.5},
   isbn = {0-7695-2346-3},
   url = {http://ieeexplore.ieee.org/iel5/10343/32906/01541053.pdf}
+}
+
+@INPROCEEDINGS{pret:dac2007,
+  author = {Stephen A. Edwards and Edward A. Lee},
+  title = {The case for the precision timed ({PRET}) machine},
+  booktitle = {DAC '07: Proceedings of the 44th annual conference on Design automation},
+  year = {2007},
+  pages = {264--265},
+  address = {New York, NY, USA},
+  publisher = {ACM},
+  doi = {http://doi.acm.org/10.1145/1278480.1278545},
+  isbn = {978-1-59593-627-1},
+  location = {San Diego, California}
 }
 
 @INPROCEEDINGS{LEON,
@@ -3434,18 +3598,26 @@ Encoding: Cp1252
   url = {http://ieeexplore.ieee.org/search/wrapper.jsp?arnumber=1453485}
 }
 
-@INPROCEEDINGS{Puaut:cache:ecrts2006,
-  author = {Isabelle Puaut},
-  title = {WCET-Centric Software-controlled Instruction Caches for Hard Real-Time
-	Systems},
-  booktitle = {ECRTS '06: Proceedings of the 18th Euromicro Conference on Real-Time
-	Systems},
-  year = {2006},
-  pages = {217--226},
-  address = {Washington, DC, USA},
-  publisher = {IEEE Computer Society},
-  doi = {http://dx.doi.org/10.1109/ECRTS.2006.32},
-  isbn = {0-7695-2619-5}
+@TECHREPORT{pret:techrep:2008,
+  author = {Lickly, Ben and Liu, Isaac and Kim, Sungjun and Patel, Hiren D. and
+	Edwards, Stephen A. and Lee, Edward A.},
+  title = {Predictable Programming on a Precision Timed Architecture},
+  institution = {EECS Department, University of California, Berkeley},
+  year = {2008},
+  number = {UCB/EECS-2008-40},
+  month = {Apr},
+  note = {This paper has been accepted for publication at CASES 2008.},
+  url = {http://www.eecs.berkeley.edu/Pubs/TechRpts/2008/EECS-2008-40.html}
+}
+
+@INPROCEEDINGS{tdma:arbiter:jtres2008,
+  author = {Christof Pitter},
+  title = {Time-Predictable Memory Arbitration for a {Java} Chip-Multiprocessor},
+  booktitle = {to appear in: Proceedings of the 6th International Workshop on Java
+	Technologies for Real-time and Embedded Systems (JTRES 2008)},
+  year = {2008},
+  owner = {martin},
+  timestamp = {2008.07.27}
 }
 
 @INPROCEEDINGS{cmp:rosen:2007,
@@ -3471,6 +3643,26 @@ Encoding: Cp1252
   bibdate = {2005-04-26},
   bibsource = {DBLP, http://dblp.uni-trier.de/db/journals/rts/rts28.html#ThieleW04},
   url = {http://dx.doi.org/10.1023/B:TIME.0000045316.66276.6e}
+}
+
+@PHDTHESIS{whitham:phd,
+  author = {Jack Whitham},
+  title = {Real-time Processor Architectures for Worst Case Execution Time Reduction},
+  school = {University of York},
+  year = {2008}
+}
+
+@INPROCEEDINGS{whitham:rtas:2008,
+  author = {Whitham, Jack and Audsley, Neil},
+  title = {Using Trace Scratchpads to Reduce Execution Times in Predictable
+	Real-Time Architectures},
+  booktitle = {Proceedings of the Real-Time and Embedded Technology and Applications
+	Symposium (RTAS 2008)},
+  year = {2008},
+  pages = {305-316},
+  month = {April},
+  doi = {10.1109/RTAS.2008.11},
+  issn = {1080-1812}
 }
 
 @PROCEEDINGS{DBLP:conf/eh/2005,
@@ -3889,11 +4081,12 @@ Encoding: Cp1252
   timestamp = {2006.12.04}
 }
 
-@MISC{simpRTJ,
+@MISC{simplertj,
   author = {{RTJ Computing}},
   title = {{simpleRTJ} a small footprint {Java VM} for embedded and consumer
 	devices},
   howpublished = {online at http://www.rtjcom.com/},
+  year = {2000},
   owner = {martin},
   timestamp = {2008.06.08}
 }
@@ -4115,6 +4308,18 @@ Encoding: Cp1252
   howpublished = {Available at http://www.faqs.org/faqs/realtime-computing/faq/},
   owner = {admin},
   timestamp = {2007.04.16}
+}
+
+@INPROCEEDINGS{Delvai:ECRTS2003,
+  author = {Martin Delvai and Wolfgang Huber and Peter Puschner and Andreas Steininger},
+  title = {Processor Support for Temporal Predictability -- The SPEAR Design
+	Example},
+  booktitle = {Proceedings of the 15th Euromicro International Conference on Real-Time
+	Systems},
+  year = {2003},
+  month = {Jul.},
+  owner = {martin},
+  timestamp = {2008.07.28}
 }
 
 @INPROCEEDINGS{289525,
@@ -5125,17 +5330,6 @@ Encoding: Cp1252
   publisher = {ACM Press}
 }
 
-@PHDTHESIS{wcet:thesing:phd,
-  author = {Stephan Thesing},
-  title = {Safe and Precise Worst-Case ExecutionTime Prediction by Abstract
-	Interpretation of Pipeline Models},
-  school = {University of Saarland},
-  year = {2004},
-  owner = {admin},
-  timestamp = {2006.12.20},
-  url = {http://scidok.sulb.uni-saarland.de/volltexte/2005/466/pdf/Dissertation_2428_Thesing_Stephan_2004.pdf}
-}
-
 @PHDTHESIS{phd:wiklund,
   author = {Daniel Wiklund},
   title = {Development and Performance Evaluation of Networks on Chip},
@@ -5200,9 +5394,7 @@ Encoding: Cp1252
 
 @INPROCEEDINGS{conf/rtcsa/EngblomE99,
   author = {Jakob Engblom and Andreas Ermedahl},
-  title = {Pipeline Timing Analysis Using a Trace-Driven
-	
-	 Simulator},
+  title = {Pipeline Timing Analysis Using a Trace-Driven Simulator},
   booktitle = {RTCSA},
   year = {1999},
   pages = {88--95},
@@ -5314,6 +5506,33 @@ Encoding: Cp1252
   url = {http://www.cs.ucla.edu/~palsberg/tba/papers/dean-grove-chambers-ecoop95.pdf}
 }
 
+@INPROCEEDINGS{deverge:ecrts2007,
+  author = {Jean-Francois Deverge and Isabelle Puaut},
+  title = {WCET-Directed Dynamic Scratchpad Memory Allocation of Data},
+  booktitle = {ECRTS '07: Proceedings of the 19th Euromicro Conference on Real-Time
+	Systems},
+  year = {2007},
+  pages = {179--190},
+  address = {Washington, DC, USA},
+  publisher = {IEEE Computer Society},
+  doi = {http://dx.doi.org/10.1109/ECRTS.2007.37},
+  isbn = {0-7695-2914-3}
+}
+
+@INPROCEEDINGS{Engblom:rtas:03,
+  author = {Jakob Engblom},
+  title = {Analysis of the Execution Time Unpredictability caused by Dynamic
+	Branch Prediction},
+  booktitle = {IEEE Real-Time and Embedded Technology and Applications Symposium},
+  year = {2003},
+  pages = {152--159},
+  publisher = {IEEE Computer Society},
+  bibdate = {2003-07-03},
+  bibsource = {DBLP, http://dblp.uni-trier.de/db/conf/rtas/rtas2003.html#Engblom03},
+  isbn = {0-7695-1956-3},
+  url = {http://ieeexplore.ieee.org/xpls/abs_all.jsp?arnumber=1203047}
+}
+
 @PHDTHESIS{EngblomPhD,
   author = {Jakob Engblom},
   title = {Processor Pipelines and Static Worst-Case Execution Time Analysis},
@@ -5351,6 +5570,23 @@ Encoding: Cp1252
   url = {http://dx.doi.org/10.1007/s100090100054}
 }
 
+@INPROCEEDINGS{Engblom:emsoft:2002,
+  author = {Jakob Engblom and Bengt Jonsson},
+  title = {Processor Pipelines and Their Properties for Static {WCET} Analysis},
+  booktitle = {Embedded Software, Second International Conference, {EMSOFT} 2002,
+	Grenoble, France, October 7-9, 2002, Proceedings},
+  year = {2002},
+  editor = {Alberto L. Sangiovanni-Vincentelli and Joseph Sifakis},
+  volume = {2491},
+  series = {Lecture Notes in Computer Science},
+  pages = {334--348},
+  publisher = {Springer},
+  bibdate = {2002-10-29},
+  bibsource = {DBLP, http://dblp.uni-trier.de/db/conf/emsoft/emsoft2002.html#EngblomJ02},
+  isbn = {3-540-44307-X},
+  url = {http://link.springer.de/link/service/series/0558/bibs/2491/24910334.htm}
+}
+
 @PHDTHESIS{Ermedahl_0570:2003,
   author = {Andreas Ermedahl},
   title = {A Modular Tool Architecture for Worst-Case Execution Time Analysis},
@@ -5358,6 +5594,37 @@ Encoding: Cp1252
   month = {June},
   publisher = {Uppsala University: Acta Universitatis Upsaliensis},
   url = {http://www.mrtc.mdh.se/index.phtml?choice=publications&id=0570}
+}
+
+@INPROCEEDINGS{wcet:ferdinand:emsoft2001,
+  author = {Christian Ferdinand and Reinhold Heckmann and Marc Langenbach and
+	Florian Martin and Michael Schmidt and Henrik Theiling and Stephan
+	Thesing and Reinhard Wilhelm},
+  title = {Reliable and Precise {WCET} Determination for a Real-Life Processor},
+  booktitle = {EMSOFT},
+  year = {2001},
+  editor = {Thomas A. Henzinger and Christoph M. Kirsch},
+  volume = {2211},
+  series = {Lecture Notes in Computer Science},
+  pages = {469--485},
+  publisher = {Springer},
+  bibdate = {2002-01-03},
+  bibsource = {DBLP, http://dblp.uni-trier.de/db/conf/emsoft/emsoft2001.html#FerdinandHLMSTTW01},
+  isbn = {3-540-42673-6},
+  url = {http://link.springer.de/link/service/series/0558/bibs/2211/22110469.htm}
+}
+
+@ARTICLE{Ferdinand:cache:1999,
+  author = {Christian Ferdinand and Reinhard Wilhelm},
+  title = {Efficient and Precise Cache Behavior Prediction for Real-Time Systems},
+  journal = {Real-Time Systems},
+  year = {1999},
+  volume = {17},
+  pages = {131--181},
+  number = {2-3},
+  bibdate = {2002-01-03},
+  bibsource = {DBLP, http://dblp.uni-trier.de/db/journals/rts/rts17.html#FerdinandW99},
+  url = {http://www.springerlink.com/content/v0173k6006513gl1/}
 }
 
 @INPROCEEDINGS{conf/rtss/HarmonBW92,
@@ -5413,6 +5680,20 @@ Encoding: Cp1252
   timestamp = {2007.08.05}
 }
 
+@ARTICLE{wcet:healy:1999,
+  author = {Christopher A. Healy and Robert D. Arnold and Frank Mueller and David
+	B. Whalley and Marion G. Harmon},
+  title = {Bounding Pipeline and Instruction Cache Performance},
+  journal = {IEEE Trans. Computers},
+  year = {1999},
+  volume = {48},
+  pages = {53--70},
+  number = {1},
+  bibdate = {2003-11-20},
+  bibsource = {DBLP, http://dblp.uni-trier.de/db/journals/tc/tc48.html#HealyAMWH99},
+  url = {http://www.computer.org:80/tc/tc1999/t0053abs.htm}
+}
+
 @INPROCEEDINGS{Healy1995,
   author = {Healy, C.A. and Whalley, D.B. and Harmon, M.G.},
   title = {Integrating the Timing Analysis of Pipelining and Instruction Caching},
@@ -5449,6 +5730,17 @@ Encoding: Cp1252
   volume = {LNCS 2889},
   pages = {411-424},
   publisher = {Springer}
+}
+
+@INPROCEEDINGS{Kadlec:KPS2007,
+  author = {Albrecht Kadlec and Raimund Kirner},
+  title = {On the Difficulty of Building a Precise Timing Model for Real-Time
+	Programming},
+  booktitle = {14.\ Kolloquium Programmiersprachen und Grundlagen der Programmierung},
+  year = {2007},
+  address = {Timmendorfer Strand, Germany},
+  month = {Oct.},
+  annote = {www: http://www.isp.uni-luebeck.de/kps07/index.htm}
 }
 
 @ARTICLE{279589,
@@ -5609,6 +5901,36 @@ Encoding: Cp1252
   publisher = {ACM Press}
 }
 
+@INPROCEEDINGS{Puaut:cache:ecrts2006,
+  author = {Isabelle Puaut},
+  title = {{WCET}-Centric Software-controlled Instruction Caches for Hard Real-Time
+	Systems},
+  booktitle = {ECRTS '06: Proceedings of the 18th Euromicro Conference on Real-Time
+	Systems},
+  year = {2006},
+  pages = {217--226},
+  address = {Washington, DC, USA},
+  publisher = {IEEE Computer Society},
+  doi = {http://dx.doi.org/10.1109/ECRTS.2006.32},
+  isbn = {0-7695-2619-5},
+  owner = {martin},
+  timestamp = {2008.08.05}
+}
+
+@INPROCEEDINGS{puaut:date2007,
+  author = {Isabelle Puaut and Christophe Pais},
+  title = {Scratchpad memories vs locked caches in hard real-time systems: a
+	quantitative comparison},
+  booktitle = {DATE '07: Proceedings of the conference on Design, automation and
+	test in Europe},
+  year = {2007},
+  pages = {1484--1489},
+  address = {San Jose, CA, USA},
+  publisher = {EDA Consortium},
+  isbn = {978-3-9810801-2-4},
+  location = {Nice, France}
+}
+
 @INPROCEEDINGS{pusch03:rtprogr,
   author = {Peter Puschner},
   title = {Algorithms for Dependable Hard Real-Time Systems},
@@ -5674,6 +5996,20 @@ Encoding: Cp1252
   month = {Jul.}
 }
 
+@ARTICLE{Reineke:RTS2007,
+  author = {Jan Reineke and Daniel Grund and Christoph Berg and Reinhard Wilhelm},
+  title = {Timing Predictability of Cache Replacement Policies},
+  journal = {Journal of Real-Time Systems},
+  year = {2007},
+  volume = {37},
+  pages = {99-122},
+  number = {2},
+  month = {Nov.},
+  annote = {Analyses LRU, FIFO, MRU, PLRU: MRU and even more so FIFO should not
+	be considered for use in hard-real time systems; no policy can perform
+	better than LRU. MRU...most recently used.}
+}
+
 @ARTICLE{Shaw:timeschema,
   author = {Alan C. Shaw},
   title = {Reasoning About Time in Higher-Level Language Software},
@@ -5686,6 +6022,20 @@ Encoding: Cp1252
   doi = {http://dx.doi.org/10.1109/32.29487},
   issn = {0098-5589},
   publisher = {IEEE Press}
+}
+
+@INPROCEEDINGS{conf/rtss/SuhendraMRC05,
+  author = {Vivy Suhendra and Tulika Mitra and Abhik Roychoudhury and Ting Chen},
+  title = {{WCET} Centric Data Allocation to Scratchpad Memory},
+  booktitle = {Proceedings of the 26th IEEE International Real-Time Systems Symposium
+	(RTSS)},
+  year = {2005},
+  pages = {223--232},
+  publisher = {IEEE Computer Society},
+  bibdate = {2006-01-10},
+  bibsource = {DBLP, http://dblp.uni-trier.de/db/conf/rtss/rtss2005.html#SuhendraMRC05},
+  isbn = {0-7695-2490-7},
+  url = {http://ieeexplore.ieee.org/xpls/abs_all.jsp?arnumber=1563110}
 }
 
 @INPROCEEDINGS{829031,
@@ -5723,6 +6073,38 @@ Encoding: Cp1252
   url = {http://scidok.sulb.uni-saarland.de/volltexte/2005/466/pdf/Dissertation_2428_Thesing_Stephan_2004.pdf}
 }
 
+@ARTICLE{verma:marwedel:2006,
+  author = {Manish Verma and Peter Marwedel},
+  title = {Overlay techniques for scratchpad memories in low power embedded
+	processors},
+  journal = {IEEE Trans. VLSI Syst},
+  year = {2006},
+  volume = {14},
+  pages = {802--815},
+  number = {8},
+  bibdate = {2007-03-30},
+  bibsource = {DBLP, http://dblp.uni-trier.de/db/journals/tvlsi/tvlsi14.html#VermaM06},
+  url = {http://doi.ieeecomputersociety.org/10.1109/TVLSI.2006.878469}
+}
+
+@INPROCEEDINGS{whemeyer:date2005,
+  author = {Lars Wehmeyer and Peter Marwedel},
+  title = {Influence of memory hierarchies on predictability for time constrained
+	embedded software},
+  booktitle = {Proceedings of Design, Automation and Test in Europe (DATE2005).},
+  year = {2005},
+  pages = { 600-605 Vol. 1},
+  month = {March},
+  doi = {10.1109/DATE.2005.183},
+  issn = {1530-1591 },
+  journal = {Design, Automation and Test in Europe, 2005. Proceedings},
+  keywords = { cache storage, embedded systems, integrated memory circuits, logic
+	design, network analysis WCET analysis, caches, memory hierarchies,
+	onchip memories, predictability, safety-critical embedded systems,
+	scratchpad memories, time constrained embedded software, worst case
+	execution time analysis}
+}
+
 @MASTERSTHESIS{wenzel:2003,
   author = {Ingomar Wenzel},
   title = {Principles of Timing Anomalies in Superscalar Processors},
@@ -5748,6 +6130,24 @@ Encoding: Cp1252
   doi = {http://doi.acm.org/10.1145/1347375.1347389},
   issn = {1539-9087},
   publisher = {ACM}
+}
+
+@INPROCEEDINGS{yan:zhang:rtas2008,
+  author = {Jun Yan and Wei Zhang},
+  title = {WCET Analysis for Multi-Core Processors with Shared L2 Instruction
+	Caches},
+  booktitle = {Proceedings of the Real-Time and Embedded Technology and Applications
+	Symposium (RTAS 2008)},
+  year = {2008},
+  pages = {80-89},
+  month = {April},
+  doi = {10.1109/RTAS.2008.6},
+  issn = {1080-1812},
+  keywords = {cache storage, microprocessor chips, multi-threading, real-time systems,
+	shared memory systemsinter-thread instruction conflicts, microprocessor
+	industry, multicore processors, program control flow information,
+	real-time systems, shared L2 instruction caches, worst-case execution
+	time}
 }
 
 @ARTICLE{ZhansBurnsWCET1993,
