@@ -289,7 +289,7 @@
 		<javac
 			destdir="${target}/dist/classes"
 			sourcepathref="target-source"
-			source="1.4"
+			source="1.5"
 			includeAntRuntime="false"
 			debug="true">  
 			<!-- We want to force bootclasspath, extdirs, and classpath to be empty, but Ant makes this difficult. -->
@@ -306,7 +306,7 @@
 		<javac 
 			destdir="${target}/dist/classes" 
 			sourcepathref="target-source" 
-			source="1.4"
+			source="1.5"
 			includeAntRuntime="false"
 			debug="true">  
 			<!-- We want to force bootclasspath, extdirs, and classpath to be empty, but Ant makes this difficult. -->
