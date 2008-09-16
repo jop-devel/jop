@@ -38,6 +38,8 @@ exception statement from your version. */
 
 package java.lang;
 
+import com.jopdesign.io.IOFactory;
+
 
 
 /**
@@ -133,5 +135,9 @@ public class Runtime
   public void gc()
   {
 	 System.gc();
+  }
+  
+  public int availableProcessors() {
+	  return IOFactory.getFactory().getSysDevice().nrCpu;
   }
 } // class Runtime
