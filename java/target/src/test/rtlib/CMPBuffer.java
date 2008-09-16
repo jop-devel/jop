@@ -28,9 +28,9 @@ import com.jopdesign.io.SysDevice;
 import com.jopdesign.sys.Startup;
 
 /**
- * A CMP version of Hello World
+ * Test of the rtlib Buffer
  * 
- * @author martin
+ * @author Martin Schoeberl
  *
  */
 public class CMPBuffer implements Runnable {

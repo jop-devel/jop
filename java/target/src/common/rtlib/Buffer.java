@@ -26,7 +26,7 @@ package rtlib;
 
 /**
  * A non-locking integer buffer for single reader and
- * single write. A classical usages is in an interrupt handler.
+ * single writer. A classical usage is in an interrupt handler.
  *  
  * @author Martin Schoeberl
  *
@@ -37,31 +37,48 @@ public class Buffer {
 	 * The buffer, manipulated by the reader and writer.
 	 * One issue: the array content should be volatile.
 	 */
-	public volatile int[] data;
+	private volatile int[] data;
 	/**
 	 * Read pointer, manipulated only by the reader.
 	 */
-	public volatile int rdPtr;
+	private volatile int rdPtr;
 	/**
 	 * Write pointer, manipulated only by the writer.
 	 */
-	public volatile int wrPtr;
+	private volatile int wrPtr;
 	
+	/**
+	 * Create a buffer (queue of fixed size)
+	 * @param size of the buffer
+	 */
 	public Buffer(int size) {
-		data = new int[size];
+		data = new int[size+1];
 		rdPtr = wrPtr = 0;
 	}
 	
+	/**
+	 * Is the buffer empty?
+	 * @return true if empty
+	 */
 	public boolean empty() {
 		return rdPtr==wrPtr;
 	}
 	
+	/**
+	 * Is the buffer full?
+	 * @return true if full
+	 */
 	public boolean full() {
 		int i = wrPtr+1;
 		if (i==data.length) i=0;
 		return i==rdPtr;
 	}
 
+	/**
+	 * Unchecked read from the buffer. Leaves the buffer corrupted
+	 * when invoked on an empty buffer. 
+	 * @return the value
+	 */
 	public int read() {
 		int i =rdPtr;
 		int val = data[i++];
@@ -70,6 +87,11 @@ public class Buffer {
 		return val;
 	}
 		
+	/**
+	 * Unchecked write to the buffer. Leaves the buffer corrupted
+	 * when invoked on a full buffer. 
+	 * @return
+	 */
 	public void write(int val) {
 		int i = wrPtr;
 		data[i++] = val;
@@ -95,11 +117,20 @@ public class Buffer {
 		return data.length-1-cnt();
 	}
 	
+	/**
+	 * Read one entry
+	 * @return entry or -1 on empty buffer
+	 */
 	public int checkedRead() {
 		if (empty()) return -1;
 		return read();
 	}
 
+	/**
+	 * Write one entry
+	 * @param val the entry
+	 * @return true if successful
+	 */
 	public boolean checkedWrite(int val) {
 		if (full()) return false;
 		write(val);
