@@ -138,11 +138,6 @@ public class RtThreadImpl {
 		initDone = true;
 		mission = false;
 		
-		// create scheduler objects for all cores
-		for (int i=0; i<sys.nrCpu; ++i) {
-			new Scheduler(i);
-
-		}
 
 		head = null;
 

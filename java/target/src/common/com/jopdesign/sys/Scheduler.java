@@ -28,6 +28,13 @@ class Scheduler implements Runnable {
 	
 	static SysDevice sys = IOFactory.getFactory().getSysDevice();
 	static Scheduler[] sched = new Scheduler[sys.nrCpu];
+	static {
+		// create scheduler objects for all cores
+		for (int i=0; i<sys.nrCpu; ++i) {
+			new Scheduler(i);
+
+		}
+	}
 	
 	Scheduler(int core) {
 		active = 0;			// main thread (or idle thread) is first thread
