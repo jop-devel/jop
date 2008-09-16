@@ -114,7 +114,7 @@ TARGET=java/target
 TOOLS_CP=$(EXT_CP)\;$(TOOLS)/dist/lib/jop-tools.jar\;$(TOOLS)/dist/lib/JopDebugger.jar
 
 TARGET_SOURCE=$(TARGET)/src/common\;$(TARGET)/src/jdk_base\;$(TARGET)/src/jdk11\;$(TARGET)/src/rtapi\;$(TARGET_APP_SOURCE_PATH)
-TARGET_JFLAGS=-d $(TARGET)/dist/classes -sourcepath $(TARGET_SOURCE) -bootclasspath "" -extdirs "" -classpath "" -source 1.4
+TARGET_JFLAGS=-d $(TARGET)/dist/classes -sourcepath $(TARGET_SOURCE) -bootclasspath "" -extdirs "" -classpath "" -source 1.5
 GCC_PARAMS=""
 
 # uncomment this if you want floating point operations in hardware
