@@ -66,7 +66,7 @@ import java.util.HashMap;
  * <em>Synthetic</em> attributes are supported. The
  * <em>Unknown</em> attribute stands for non-standard-attributes.
  *
- * @version $Id: Attribute.java,v 1.1 2008/09/16 16:36:36 martin Exp $
+ * @version $Id: Attribute.java,v 1.2 2008/09/16 16:48:40 martin Exp $
  * @author  <A HREF="mailto:markus.dahm@berlin.de">M. Dahm</A>
  * @see     ConstantValue
  * @see     SourceFile
@@ -175,6 +175,11 @@ public abstract class Attribute implements Cloneable, Node, Serializable {
       }
     }
 
+    // MS: change: the Signature class does not represent a Java 1.5 signature
+    // attribute => ignore it
+    if (tag==Constants.ATTR_SIGNATURE) {
+    	tag = Constants.ATTR_UNKNOWN;
+    }
     // Call proper constructor, depending on `tag'
     switch(tag) {
     case Constants.ATTR_UNKNOWN:
