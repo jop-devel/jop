@@ -1,3 +1,15 @@
+This chapter presents the architecture of JOP and the motivation
+behind the various different design decisions we faced. The first
+sections give an overview of JOP, describe the microcode and the
+pipeline.
+
+Pipelined instruction processing calls for high memory bandwidth.
+Caches are needed in order to avoid bottlenecks resulting from the
+main memory bandwidth. As seen in Chapter~\ref{chap:java}, there are
+two memory areas that are frequently accessed by the JVM: the stack
+and the method area. In this chapter, time-predictable cache
+solutions for both areas that are implemented in JOP are presented.
+
 \section{Overview of JOP}
 
 This section gives an overview of JOP architecture.

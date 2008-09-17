@@ -177,3 +177,72 @@ names for the types are the same as in the JVM specification
     \caption{Constant pool entries}
     \label{tab_jvm_const_pool}
 \end{table}
+
+\subsubsection{Class Initialization Issues}
+\label{para:restrict:clinit}
+
+According to \cite{jvm} the static initializers of a class C are
+executed immediately before one of the following occurs: (i) an
+instance of C is created; (ii) a static method of C is invoked or
+(iii) a static field of C is used or assigned. The issue with this
+definition is that it is not allowed to invoke the static
+initializers at JVM startup and it is not so obvious when it gets
+invoked.
+
+It follows that the bytecodes \code{getstatic}, \code{putstatic},
+\code{invokestatic} and \code{new} can lead to class initialization
+and the possibility of high WCET values. In the JVM, it is necessary
+to check every execution of these bytecodes if the class is already
+initialized. This leads to a loss of performance and is violated in
+some existing implementations of the JVM. For example, the first
+version of CACAO \cite{cacao} invokes the static initializer of a
+class at compilation time. Listing~\ref{lst:retrict:clinit} shows an
+example of this problem.
+
+\cmd{JOPizer} tries to find a correct order of the class initializers
+and puts this list into the application file. If a circular
+dependency is detected the application will not be built. The class
+initializers are invoked at JVM startup.
+
+\begin{lstlisting}[float,caption={Class initialization can occur very late},
+label=lst:retrict:clinit]
+    public class Problem {
+
+        private static Abc a;
+        public static int cnt; // implicitly set to 0
+
+        static {
+            // do some class initializaion
+            a = new Abc();  //even this is ok.
+        }
+
+        public Problem() {
+            ++cnt;
+        }
+    }
+
+    // anywhere in some other class, in situation,
+    // when no instance of Problem has been created
+    // the following code can lead to
+    // the execution of the initializer
+    int nrOfProblems = Problem.cnt;
+\end{lstlisting}
+
+\subsubsection{Synchronization Issue}
+
+Synchronization is possible with methods and on code blocks. Each
+object has a monitor associated with it and there are two different
+ways to gain and release ownership of a monitor. Bytecodes
+\code{monitorenter} and \code{monitorexit} explicitly handle
+synchronization. In other cases, synchronized methods are marked in
+the class file with the access flags. This means that all bytecodes
+for method invocation and return must check this access flag. This
+results in an unnecessary overhead on methods without
+synchronization. It would be preferable to encapsulate the bytecode
+of synchronized methods with bytecodes \code{monitorenter} and
+\code{monitorexit}. This solution is used in Suns picoJava-II
+\cite{pjProgRef}. The code is manipulated in the class loader. Two
+different ways of coding synchronization, in the bytecode stream and
+as access flags, are inconsistent. With \cmd{JOPizer} the same
+manipulation is of the methods is performed to wrap the method code
+in a synchronized block when the method is defined synchronized.
