@@ -240,6 +240,12 @@ System.out.println(mp+" "+pc);
 		if (addr >= Const.SCRATCHPAD_ADDRESS && addr <= Const.SCRATCHPAD_ADDRESS+MEM_TEST_OFF) {
 			return scratchMem[addr%MAX_SCRATCHPAD];
 		}
+		if (addr == Const.IO_CPU_ID) {
+			return 0;
+		}
+		if (addr == Const.IO_CPUCNT) {
+			return 1;
+		}
 		if (addr>MAX_MEM+MEM_TEST_OFF || addr<MIN_IO_ADDRESS) {
 			System.out.println("readMem: wrong address: "+addr);
 			System.exit(-1);
