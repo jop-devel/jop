@@ -455,12 +455,14 @@ System.out.println("Logic.initVals()");
 		}
 		// every state different form Erlaubnis/Verschub.. check moving
 		// except Verschub, Info, Lern, NOTHALT (?...?)
-		// Status.von > 0 means Verschub
 		if (!isVerschub && Logic.state!=Logic.ALARM &&
 			Logic.state!=Logic.NOTHALT && Logic.state!=Logic.NOTHALT_OK &&
 			Logic.state!=Logic.INFO && Logic.state!=Logic.LERN &&
 			Logic.state!=Logic.ES_VERSCHUB &&
-			checkMove && Gps.speed>Gps.MIN_SPEED && !alarmFaehrtQuit) {
+			checkMove && Gps.speed>Gps.MIN_SPEED && !alarmFaehrtQuit &&
+			// the following should not be necessary, but for sure
+			start==end) {
+			
 			stateAfterQuit = Logic.state;
 			Logic.state = Logic.ALARM;
 			alarmType = State.ALARM_FAEHRT;

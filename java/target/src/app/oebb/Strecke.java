@@ -73,7 +73,7 @@ System.out.println(" Strecken");
 Dbg.intVal(nr);
 
 			// find one 'exact'
-			if (Gps.getMelnr(nr, lat, lon)!=-1) {
+			if (Gps.getMelnr(nr, lat, lon, -1)!=-1) {
 				foundIdx = i;
 				++foundCnt;
 Dbg.wr("in melnr ");

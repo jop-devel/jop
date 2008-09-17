@@ -255,7 +255,7 @@ Dbg.wr('*');
 				Strecke.find.fire();
 			}
 		} else {
-			int melnr = getMelnr(state.strnr, last_lat, last_lon);
+			int melnr = getMelnr(state.strnr, last_lat, last_lon, state.getPos());
 			
 			Status.doCommAlarm = Flash.isCommAlarm(melnr, last_lat, last_lon);
 //			if (Status.doCommAlarm) {
@@ -615,7 +615,16 @@ Dbg.wr("m/s \n");
 		return melnr;
 	}
 
-	static int getMelnr(int strNr, int lat, int lon) {
+	/**
+	 * Find the melnr with the GPS coordinates. If two meln are found
+	 * keep the last one. If nothing found return -1;
+	 * @param strNr
+	 * @param lat
+	 * @param lon
+	 * @param lastMelnr
+	 * @return
+	 */
+	static int getMelnr(int strNr, int lat, int lon, int lastMelnr) {
 
 		int ret = -1;			// default not found
 		int b = findNearestPoint(strNr);
@@ -652,17 +661,16 @@ Dbg.wr("m/s \n");
 		int bc = dist(pb.lat-pc.lat, pb.lon-pc.lon);
 
 		nearestPointDistance = xb;
-		
 		//
 		// return 'left' melnr
 		//
-		if (xa<ab && xb<ab) {
-			if (xb<bc && xc<bc) {
-				ret = -1;	// point fits for both -> undecided
+		if (xa<=ab && xb<=ab) {
+			if (xb<=bc && xc<=bc) {
+				ret = lastMelnr;	// point fits for both -> return last known good point
 			} else {
 				ret = a;
 			}
-		} else if (xb<bc && xc<bc) {
+		} else if (xb<=bc && xc<=bc) {
 			ret = b;
 		}
 
