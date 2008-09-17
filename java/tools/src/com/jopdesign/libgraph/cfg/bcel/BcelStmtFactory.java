@@ -65,6 +65,8 @@ public class BcelStmtFactory {
         ConstantValue val;
         ConstantClass clazz;
 
+		// TODO: use bcel constants for switch
+
         switch ( instruction.getOpcode() ) {
             case 0x00: return new StackNop();
             case 0x01: return new StackPush(ConstantValue.CONST_NULL);
@@ -221,12 +223,13 @@ public class BcelStmtFactory {
                     );
             case 0x5e:
                     // DUP2_X2: dup two top slots two slots down
+				    int topCnt = stack[tos].getLength() == 2 ? 1 : 2;
                     return new StackDup( stack[tos].getLength() == 2 ?
                         new TypeInfo[] {stack[tos]} :
                         new TypeInfo[] {stack[tos-1],stack[tos]}
-                        , stack[tos-2].getLength() == 2 ?
-                          new TypeInfo[] {stack[tos-2]} :
-                          new TypeInfo[] {stack[tos-3],stack[tos-2]}
+                        , stack[tos-topCnt].getLength() == 2 ?
+                          new TypeInfo[] {stack[tos-topCnt]} :
+                          new TypeInfo[] {stack[tos-topCnt-1],stack[tos-topCnt]}
                     );
             case 0x5f: return new StackSwap(stack[tos-1], stack[tos]);
             case 0x60: return new StackBinop(TypeInfo.CONST_INT, BinopStmt.OP_ADD);

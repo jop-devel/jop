@@ -191,7 +191,8 @@ public class CodeInliner {
         // size of Nullpointer-checkcode
         if ( stmt.getInvokeType() != InvokeStmt.TYPE_STATIC ) {
             size += StackDup.BYTE_SIZE + StackIfZero.BYTE_SIZE + StackGoto.BYTE_SIZE;
-            size += StackNew.BYTE_SIZE + StackDup.BYTE_SIZE + StackInvoke.BYTE_SIZE + StackThrow.BYTE_SIZE;
+//             size += StackNew.BYTE_SIZE + StackDup.BYTE_SIZE + StackInvoke.BYTE_SIZE + StackThrow.BYTE_SIZE;
+            size += StackThrow.BYTE_SIZE;
         }
 
         return size;
@@ -354,20 +355,16 @@ public class CodeInliner {
             throws TypeException
     {
         code.insertStatement(0, new StackDup(thisRef));
-        code.insertStatement(1, new StackIfZero(thisRef, CmpStmt.OP_EQUAL));
+        code.insertStatement(1, new StackIfZero(thisRef, CmpStmt.OP_NOTEQUAL));
         code.getStmtHandle(1).splitAfter();
 
         BasicBlock targetBlock = code.getBasicBlock().createTarget(0).getTargetBlock();
+		code.getBasicBlock().setTarget(0, code.getBasicBlock().getNextBlockEdge().getTargetBlock());
+		code.getBasicBlock().setNextBlock(targetBlock);
         StackCode newCode = targetBlock.getStackCode();
         newBlocks.add(targetBlock);
 
-        // create a new NPE and throw it manually
-        ConstantClass newEx = appStruct.getConstantClass("java.lang.NullPointerException", false);
-        ConstantMethod newInit = appStruct.getConstantMethod(newEx, "<init>", "()V", false);
-
-        newCode.addStatement(new StackNew(newEx));
-        newCode.addStatement(new StackDup(TypeInfo.CONST_OBJECTREF));
-        newCode.addStatement(new StackInvoke(newInit,InvokeStmt.TYPE_SPECIAL));
+        // NPE is created implicitly when throwing null
         newCode.addStatement(new StackThrow());
 
         return 1;
@@ -376,20 +373,16 @@ public class CodeInliner {
     private int createQuadNPECheck(QuadCode code, TypeInfo thisRef, Variable thisVar, Collection newBlocks)
             throws TypeException
     {
-        code.insertStatement(0, new QuadIfZero(thisRef, CmpStmt.OP_EQUAL, thisVar));
+        code.insertStatement(0, new QuadIfZero(thisRef, CmpStmt.OP_NOTEQUAL, thisVar));
         code.getStmtHandle(0).splitAfter();
 
         BasicBlock targetBlock = code.getBasicBlock().createTarget(0).getTargetBlock();
+		code.getBasicBlock().setTarget(0, code.getBasicBlock().getNextBlockEdge().getTargetBlock());
+		code.getBasicBlock().setNextBlock(targetBlock);
         QuadCode newCode = targetBlock.getQuadCode();
         newBlocks.add(targetBlock);
 
-        ConstantClass newEx = appStruct.getConstantClass("java.lang.NullPointerException", false);
-        ConstantMethod newInit = appStruct.getConstantMethod(newEx, "init", "()V", false);
-
-        Variable newVar = code.getBasicBlock().getGraph().getVariableTable().createVariable();
-        newCode.addStatement(new QuadNew(newEx, newVar));
-        newCode.addStatement(new QuadInvoke(newInit, QuadInvoke.TYPE_SPECIAL, null, newVar, null));
-        newCode.addStatement(new QuadThrow(newVar));
+        newCode.addStatement(new QuadThrow(thisVar));
         
         return 1;
     }

@@ -69,14 +69,21 @@ public class BasicInvokeResolver implements InvokeResolver {
                 return null;
             }
 
-        } else if ( invoke.getInvokeType() != InvokeStmt.TYPE_STATIC ) {
+        } else if ( invoke.getInvokeType() == InvokeStmt.TYPE_VIRTUAL ) {
 
-            // TODO not quite correct, need to search for accessible methods only (?)
+			if (!info.isOverwritten()) {
+				return info;
+			} else {
+				return null;
+			}
 
             // TODO try to narrow down possibilities by using the CFG and variable type information
             // TODO try to narrow down possibilities by reducing possible subclass invocations, search interface impls.
 
-        }
+        } else if ( invoke.getInvokeType() == InvokeStmt.TYPE_INTERFACE ) {
+			// TODO resolve interface invokes, as described in the jvmspec for invokeinterface
+			return null;
+		}
 
         return info;
     }
