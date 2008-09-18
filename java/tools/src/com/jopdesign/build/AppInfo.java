@@ -33,6 +33,7 @@ import java.util.Set;
 
 import org.apache.bcel.classfile.ClassParser;
 import org.apache.bcel.classfile.JavaClass;
+import org.apache.bcel.util.ClassPath;
 
 /**
  * Helper class for BCEL class analyzation and manipulation.
@@ -43,27 +44,25 @@ import org.apache.bcel.classfile.JavaClass;
  */
 public class AppInfo {
 
-	org.apache.bcel.util.ClassPath classpath;
 	
-	/**
-	 * class list from the arguments
-	 */
-	HashSet clsArgs = new HashSet();
-
 	protected String outFile;
 	protected String srcPath;
 	protected String mainClass = "unknown";
 	protected String mainMethodName = "main";
 	
 	/**
-	 * Array of the application classes
+	 * Array of the application classes - should be a form of ClassInfo
+	 * with the fields super/sub set.
 	 */
 	protected JavaClass[] jclazz;
 
 	public AppInfo(String args[]) {
-		// we usually provide the classpath, so this is
-		// redundant.
-		classpath = new org.apache.bcel.util.ClassPath(".");
+		
+		// we usually provide the classpath, so this is redundant.
+		ClassPath classpath = new ClassPath(".");
+		// class list from the arguments
+		Set<String> clsArgs = new HashSet<String>();
+
 		try {
 			if(args.length == 0) {
 				System.err.println("arguments: [-cp classpath] [-o file] class [class]*");
@@ -71,7 +70,7 @@ public class AppInfo {
 				for (int i = 0; i < args.length; i++) {
 					if (args[i].equals("-cp")) {
 						i++;
-						classpath = new org.apache.bcel.util.ClassPath(args[i]);
+						classpath = new ClassPath(args[i]);
 						continue;
 					}
 					if (args[i].equals("-o")) {
@@ -95,13 +94,12 @@ public class AppInfo {
 					// The last class contains the main method
 					// We also allow / notation as used with JCC
 					mainClass = args[i].replace('/', '.');
-//					AppInfo.mainClass = args[i];
 				}
 				
 				System.out.println("CLASSPATH="+classpath+"\tmain class="+mainClass);
 				
 			}
-			load();
+			load(classpath, clsArgs);
 		} catch(Exception e) { e.printStackTrace();}
 	}
 	
@@ -109,11 +107,11 @@ public class AppInfo {
 	/**
 	 * Load all classes that belong to the application.
 	 */
-	private void load() throws IOException {
+	private void load(ClassPath classpath, Set<String> clsArgs) throws IOException {
 		
 		JavaClass[] jcl = new JavaClass[clsArgs.size()];
 		
-		Iterator i = clsArgs.iterator();
+		Iterator<String> i = clsArgs.iterator();
 		for (int nr=0; i.hasNext(); ++nr) {
 			String clname = (String) i.next();
 			InputStream is = classpath.getInputStream(clname);
@@ -125,7 +123,7 @@ public class AppInfo {
 		hull.start();
 		System.out.println(Arrays.asList(hull.getClassNames()));
 		jclazz = hull.getClasses();
-		// jlazz now contains the closure of the application
+		// jclazz now contains the closure of the application
 	}
 
 	public String toString() {
