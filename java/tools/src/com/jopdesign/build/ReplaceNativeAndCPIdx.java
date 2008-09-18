@@ -111,10 +111,12 @@ public class ReplaceNativeAndCPIdx extends MyVisitor {
  				if (!ii.getMethodName(cpoolgen).equals("<init>")) {
  					// not in the same class, must be super
  					if (!cli.clazz.getClassName().equals(ii.getClassName(cpoolgen))) {
- 						first.setInstruction(new JOPSYS_INVOKESUPER((short) ii.getIndex()));
+						Integer idx = new Integer(ii.getIndex());
+						int new_index = cli.cpoolUsed.indexOf(idx) + 1;
+ 						first.setInstruction(new JOPSYS_INVOKESUPER((short)new_index));
  						// System.err.println("invokesuper "+ii.getClassName(cpoolgen)+"."+ii.getMethodName(cpoolgen));
  					}
- 			    	}
+				}
  			}
 
 		}
