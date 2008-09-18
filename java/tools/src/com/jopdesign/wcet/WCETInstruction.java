@@ -91,6 +91,12 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 	public static WCETMemInstruction invokestatic; // same as invokespecial
 	public static WCETMemInstruction invokeinterface;
 	
+	static {
+		if (CMP_WCET==true){
+			// Initialize 
+			initArbiter();
+		}
+	}
 	
 	//Native bytecodes (see jvm.asm)
 	private static final int JOPSYS_RD = 209;
@@ -246,12 +252,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 	}
 
 	public static void main(String[] args) {
-		
-		if (CMP_WCET==true){
-			// Initialize 
-			initArbiter();
-		}			
-			
+					
 		for (int i=0; i<256; ++i) {
 			int cnt = getCycles(i, false, 0);
 			if (cnt==-1) cnt = 1000;
@@ -270,11 +271,6 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 	public static int getCycles(int opcode, boolean pmiss, int n) {
 		int wcet = -1;
 		int b = -1;
-
-		if (CMP_WCET==true){
-			// Initialize 
-			initArbiter();
-		}
 		
 		// cache load time
 		b = calculateB(!pmiss, n);
