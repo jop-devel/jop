@@ -214,13 +214,14 @@
 		<mkdir dir="${tools}/dist/lib"/>
 		<mkdir dir="${tools}/dist/classes"/>
 
-		<javac debug="true" destdir="${tools}/dist/classes" classpathref="ext-cp">
+		<javac debug="true" destdir="${tools}/dist/classes" classpathref="ext-cp" encoding="Latin1">
 			<src path="${tools}/src"/>
 			<src path="${target}/src/common"/>
 			<include name="*.java"/>
 			<include name="com/jopdesign/build/*.java"/>
 			<include name="com/jopdesign/tools/*.java"/>
 			<include name="com/jopdesign/wcet/*.java"/>
+			<include name="org/apache/**/*.java"/>
 		</javac>
 
 		<jar basedir="${tools}/dist/classes" destfile="${tools}/dist/lib/jop-tools.jar"/>
@@ -234,7 +235,7 @@
 	<!-- <property name="use-joptimizer" value=""/> -->
 
 	<path id="joptimizer-cp">
-		<path refid="ext-cp"/>
+		<path refid="tools-cp"/>
 		<pathelement location="${tools}/dist/lib/joptimizer.jar"/>
 	</path>
 
@@ -243,7 +244,7 @@
 		<mkdir dir="${tools}/dist/classes"/>
 		<mkdir dir="${tools}/dist/lib"/>
 
-		<javac debug="true" destdir="${tools}/dist/classes" classpathref="ext-cp"> 
+		<javac debug="true" destdir="${tools}/dist/classes" classpathref="ext-cp" encoding="Latin1"> 
 		    <src path="${tools}/src"/>
 		    <!-- compilerarg value="-Xlint:unchecked" compiler="modern"/ -->
 		    <include name="joptimizer/**/*.java"/>
@@ -291,7 +292,8 @@
 			sourcepathref="target-source"
 			source="1.5"
 			includeAntRuntime="false"
-			debug="true">  
+			debug="true"
+			encoding="Latin1">  
 			<!-- We want to force bootclasspath, extdirs, and classpath to be empty, but Ant makes this difficult. -->
 			<!-- If any of these are an empty string, Ant uses the default instead. So, we give them dummy values. -->
 			<!-- This works for all but classpath, for which Ant removes any non-existent paths. -->
@@ -308,7 +310,8 @@
 			sourcepathref="target-source" 
 			source="1.5"
 			includeAntRuntime="false"
-			debug="true">  
+			debug="true"
+			encoding="Latin1">  
 			<!-- We want to force bootclasspath, extdirs, and classpath to be empty, but Ant makes this difficult. -->
 			<!-- If any of these are an empty string, Ant uses the default instead. So, we give them dummy values. -->
 			<!-- This works for all but classpath, for which Ant removes any non-existent paths. -->
