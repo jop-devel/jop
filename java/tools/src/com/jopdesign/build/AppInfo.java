@@ -125,17 +125,27 @@ public class AppInfo {
 		hull.start();
 		System.out.println(Arrays.asList(hull.getClassNames()));
 		jclazz = hull.getClasses();
-		// jcalzz contains now the closure of the application
+		// jlazz now contains the closure of the application
 	}
 
+	public String toString() {
+		
+		StringBuilder sb = new StringBuilder();
+		for (int i=0; i<jclazz.length; ++i) {
+			sb.append(jclazz[i]);
+		}
+		return sb.toString();
+	}
 
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) {
 
-		AppInfo la = new AppInfo(args);
-		System.out.println("provide your own main");
+		AppInfo ai = new AppInfo(args);
+		System.out.println("Provide your own main!");
+		System.out.println("Ok here comes a BCEL dump of the loaded classes:");
+		System.out.println(ai);
 	}
 
 }
