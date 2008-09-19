@@ -20,9 +20,12 @@
 
 package com.jopdesign.wcet;
 
+import java.io.IOException;
 import java.util.*;
 
 import com.jopdesign.build.AppInfo;
+import com.jopdesign.build.CInfo;
+import com.jopdesign.build.ClassInfo;
 import com.jopdesign.util.*;
 import org.apache.bcel.classfile.*;
 import org.apache.bcel.generic.ConstantPoolGen;
@@ -32,15 +35,22 @@ import org.apache.bcel.generic.InvokeInstruction;
 import org.apache.bcel.generic.MethodGen;
 import org.apache.bcel.util.InstructionFinder;
 
-
+/**
+ * That's just a test program...
+ * 
+ * @author Martin Schoeberl
+ *
+ */
 
 public class CallGraph extends AppInfo {
 
+	static CInfo template = new CInfo();
 	
-	public CallGraph(String[] args) {
-		super(args);
+	public CallGraph(String[] args) throws IOException {
+		super(template);
+		parseOptions(args);
+		load();
 	}
-
 
 	MethClass mainMethClass;
 	HashMap methMap = new HashMap();
@@ -54,7 +64,13 @@ public class CallGraph extends AppInfo {
 	 */
 	public static void main(String[] args) {
 
-		CallGraph la = new CallGraph(args);
+		CallGraph la = null;
+		try {
+			la = new CallGraph(args);
+		} catch (IOException e) {
+			e.printStackTrace();
+			System.exit(-1);
+		}
 
 		la.findMain();
 		if (la.mainMethClass==null) {

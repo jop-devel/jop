@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.bcel.classfile.ClassParser;
@@ -60,14 +61,23 @@ public class AppInfo {
 	 * with the fields super/sub set.
 	 */
 	protected JavaClass[] jclazz;
+	private CInfo template;
+	
+	protected Map<String, CInfo> cliMap;
 
-	public AppInfo() {
+	/**
+	 * 
+	 * @param cliTemplate a template to create the correct ClassInfo type
+	 */
+	public AppInfo(CInfo cliTemplate) {
+		template = cliTemplate;
 	}
 	
 	public String[] parseOptions(String args[]) {
 		
 		List<String> retList = new LinkedList<String>();
 
+		System.out.println(args);
 
 //		if(args.length == 0) {
 //			System.err.println("arguments: [-cp classpath] [-o file] class [class]*");
@@ -112,7 +122,8 @@ public class AppInfo {
 			
 		} catch(Exception e) { e.printStackTrace();}
 
-		return (String []) retList.toArray();
+		String[] sa = new String[retList.size()];
+		return retList.toArray(sa);
 	}
 	
 	
@@ -136,15 +147,17 @@ public class AppInfo {
 		System.out.println(Arrays.asList(hull.getClassNames()));
 		jclazz = hull.getClasses();
 		// jclazz now contains the closure of the application
+		cliMap = template.genCInfoMap(jclazz);
 	}
 
 	public String toString() {
 		
-		StringBuilder sb = new StringBuilder();
-		for (int i=0; i<jclazz.length; ++i) {
-			sb.append(jclazz[i]);
-		}
-		return sb.toString();
+//		StringBuilder sb = new StringBuilder();
+//		for (int i=0; i<jclazz.length; ++i) {
+//			sb.append(jclazz[i]);
+//		}
+//		return sb.toString();
+		return cliMap.toString();
 	}
 
 	/**
@@ -152,7 +165,8 @@ public class AppInfo {
 	 */
 	public static void main(String[] args) {
 
-		AppInfo ai = new AppInfo();
+		AppInfo ai = new AppInfo(new CInfo());
+		ai.parseOptions(args);
 		System.out.println("CLASSPATH="+ai.classpath+"\tmain class="+ai.mainClass);
 		try {
 			ai.load();
