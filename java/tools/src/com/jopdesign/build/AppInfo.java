@@ -113,7 +113,7 @@ public class AppInfo {
 		
 		Iterator<String> i = clsArgs.iterator();
 		for (int nr=0; i.hasNext(); ++nr) {
-			String clname = (String) i.next();
+			String clname = i.next();
 			InputStream is = classpath.getInputStream(clname);
 			jcl[nr] = new ClassParser(is, clname).parse();
 			System.out.println(jcl[nr].getClassName());
