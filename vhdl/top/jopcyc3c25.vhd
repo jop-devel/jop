@@ -19,11 +19,10 @@
 --
 
 --
---	jopcyc3c25.vhd
+--	top.vhd
 --
 --  alexander.dejaco@leximausi.com
---	top level for starter kit board
---  2008-13-08  creation: setup for the starter kit base board (based on jopcyc.vhd)
+--	top level test for starter kit board
 --
 
 library ieee;
@@ -35,18 +34,7 @@ use work.sc_pack.all;
 use work.jop_config.all;
 
 
-entity jop is
-
-generic (
-	addr_bits	: integer := 24;	-- address range for the avalone interface
-	ram_cnt		: integer := 2;		-- clock cycles for external ram
-	ram_addr_cnt: integer := 12;	-- RAM addr bits
---	rom_cnt		: integer := 3;		-- clock cycles for external rom OK for 20 MHz
-	rom_cnt		: integer := 15;	-- clock cycles for external rom for 100 MHz
-	jpc_width	: integer := 12;	-- address bits of java bytecode pc = cache size
-	block_bits	: integer := 4;		-- 2*block_bits is number of cache blocks
-	spm_width	: integer := 0		-- size of scratchpad RAM (in number of address bits for 32-bit words)
-);
+entity top is
 
 port (
 	clk		: in std_logic;
@@ -67,11 +55,13 @@ port (
 --	ram bank
 --
 	rama_a		: out std_logic_vector(11 downto 0);
-	rama_ba0		: out std_logic;
-	rama_ba1		: out std_logic;
+	rama_ba		: out std_logic_vector(1 downto 0);
+--	rama_ba0		: out std_logic;
+--	rama_ba1		: out std_logic;
 	rama_d		: inout std_logic_vector(15 downto 0);
-	rama_dml		: out std_logic;
-	rama_dmh		: out std_logic;
+	rama_dm		: out std_logic_vector(1 downto 0);
+--	rama_dml		: out std_logic;
+--	rama_dmh		: out std_logic;
 	rama_clk		: out std_logic;
 	rama_ncs		: out std_logic;
 	rama_nwe		: out std_logic;
@@ -104,56 +94,12 @@ port (
 --	I/O pins of board
 --
 
-	io_l	: inout std_logic_vector(5 downto 1);
-
---
--- Avalon interface
---
-
-	address		: out std_logic_vector(addr_bits-1+2 downto 0);
-	writedata	: out std_logic_vector(31 downto 0);
-	byteenable	: out std_logic_vector(3 downto 0);
-	readdata	: in std_logic_vector(31 downto 0);
-	read		: out std_logic;
-	write		: out std_logic;
-	waitrequest	: in std_logic 
+	io_l	: inout std_logic_vector(3 downto 1)
 
 );
-end jop;
+end top;
 
-architecture rtl of jop is
-
---
---	components:
---
-
-component sc2avalon is
-generic (addr_bits : integer);
-
-port (
-
-	clk, reset	: in std_logic;
-
--- SimpCon interface
-
-	sc_address		: in std_logic_vector(addr_bits-1 downto 0);
-	sc_wr_data		: in std_logic_vector(31 downto 0);
-	sc_rd, sc_wr	: in std_logic;
-	sc_rd_data		: out std_logic_vector(31 downto 0);
-	sc_rdy_cnt		: out unsigned(1 downto 0);
-
--- Avalon interface
-
-	av_address		: out std_logic_vector(addr_bits-1+2 downto 0);
-	av_writedata	: out std_logic_vector(31 downto 0);
-	av_byteenable	: out std_logic_vector(3 downto 0);
-	av_readdata		: in std_logic_vector(31 downto 0);
-	av_read			: out std_logic;
-	av_write		: out std_logic;
-	av_waitrequest	: in std_logic
-
-);
-end component; 
+architecture rtl of top is
 
 component pll is
 generic (multiply_by : natural; divide_by : natural);
@@ -163,9 +109,36 @@ port (
 );
 end component;
 
+component test is
+port (
+              -- 1) global signals:
+                 signal clk : IN STD_LOGIC;
+                 signal reset_n : IN STD_LOGIC;
+
+              -- the_jop_avalon_inst
+          --       signal clk_to_the_jop_avalon_inst : IN STD_LOGIC;
+          --       signal reset_to_the_jop_avalon_inst : IN STD_LOGIC;
+                 signal ser_rxd_to_the_jop_avalon_inst : IN STD_LOGIC;
+                 signal ser_txd_from_the_jop_avalon_inst : OUT STD_LOGIC;
+                 signal wd_from_the_jop_avalon_inst : OUT STD_LOGIC;
+
+              -- the_sdram
+                 signal zs_addr_from_the_sdram : OUT STD_LOGIC_VECTOR (11 DOWNTO 0);
+                 signal zs_ba_from_the_sdram : OUT STD_LOGIC_VECTOR (1 DOWNTO 0);
+                 signal zs_cas_n_from_the_sdram : OUT STD_LOGIC;
+                 signal zs_cke_from_the_sdram : OUT STD_LOGIC;
+                 signal zs_cs_n_from_the_sdram : OUT STD_LOGIC;
+                 signal zs_dq_to_and_from_the_sdram : INOUT STD_LOGIC_VECTOR (15 DOWNTO 0);
+                 signal zs_dqm_from_the_sdram : OUT STD_LOGIC_VECTOR (1 DOWNTO 0);
+                 signal zs_ras_n_from_the_sdram : OUT STD_LOGIC;
+                 signal zs_we_n_from_the_sdram : OUT STD_LOGIC
+);
+end component;
+
 --
 --	Signals
 --
+
 	signal clk_int			: std_logic;
 
 	signal int_res			: std_logic;
@@ -173,50 +146,15 @@ end component;
 
 	attribute altera_attribute : string;
 	attribute altera_attribute of res_cnt : signal is "POWER_UP_LEVEL=LOW";
-
---
---	jopcpu connections
---
-	signal sc_mem_out		: sc_out_type;
-	signal sc_mem_in		: sc_in_type;
-	signal sc_io_out		: sc_out_type;
-	signal sc_io_in			: sc_in_type;
-	signal irq_in			: irq_bcf_type;
-	signal irq_out			: irq_ack_type;
-	signal exc_req			: exception_type;
-
---
---	IO interface
---
-	signal ser_in			: ser_in_type;
-	signal ser_out			: ser_out_type;
-	signal wd_out			: std_logic;
-	signal led_out			: std_logic;
-
-	-- for generation of internal reset
-
--- memory interface
-
-	signal ram_addr			: std_logic_vector(11 downto 0);
-	signal ram_dout			: std_logic_vector(15 downto 0);
-	signal ram_din			: std_logic_vector(15 downto 0);
-	signal ram_dout_en		: std_logic;
-	signal ram_ncs			: std_logic;
---	signal ram_noe			: std_logic;
-	signal ram_nwe			: std_logic;
 	
-	signal ram_ba0			: std_logic;
-	signal ram_ba1			: std_logic;
-	signal ram_dml			: std_logic;
-	signal ram_dmh			: std_logic;
-	signal ram_ncas			: std_logic;
-	signal ram_nras			: std_logic;
+	signal rama_ncke			: std_logic; --unused
+
 
 begin
 
 --
 --	intern reset
---	no extern reset, epm7064 has too less pins
+--	no extern reset
 --
 
 process(clk_int)
@@ -230,9 +168,6 @@ begin
 	end if;
 end process;
 
---
---	components of jop
---
 	pll_inst : pll generic map(
 		multiply_by => pll_mult,
 		divide_by => pll_div
@@ -241,75 +176,36 @@ end process;
 		inclk0	 => clk,
 		c0	 => clk_int
 	);
--- clk_int <= clk;
 
-	wd <= wd_out;
-
-	cpm_cpu: entity work.jopcpu
-		generic map(
-			jpc_width => jpc_width,
-			block_bits => block_bits,
-			spm_width => spm_width
-		)
-		port map(clk_int, int_res,
-			sc_mem_out, sc_mem_in,
-			sc_io_out, sc_io_in,
-			irq_in, irq_out, exc_req);
-
-	cmp_io: entity work.scio 
-		port map (clk_int, int_res,
-			sc_io_out, sc_io_in,
-			irq_in, irq_out, exc_req,
-
-			txd => ser_txd,
-			rxd => ser_rxd,
-			ncts => ser_ncts,
-			nrts => ser_nrts,
-			wd => wd_out,
-			led => led_out,
-			l => io_l,
-			r(12 downto 9) => usb_c(3 downto 0),
-			r(8 downto 1) => usb_d(7 downto 0),
-			r(13) => usb_wub
---			t => io_t,
---			b => io_b
-		);
-
---
---	EP1C12 additional power pins as tristatet output on EP1C6
---
---	dummy_gnd <= (others => 'Z');
---	dummy_vccint <= (others => 'Z');
---	freeio <= 'Z';
-
---
--- avalon interface
---
-
-sc2av: sc2avalon
-		generic map (
-			addr_bits => addr_bits
-		)
+	cmp_test: entity work.test 
 		port map (
-			clk => clk_int,
-			reset => int_res,
-
-			sc_address(22 downto 0) => sc_mem_out.address,
-			sc_address(23) => '0',
-			sc_wr_data => sc_mem_out.wr_data,
-			sc_rd => sc_mem_out.rd,
-			sc_wr => sc_mem_out.wr,
-			sc_rd_data => sc_mem_in.rd_data,
-			sc_rdy_cnt => sc_mem_in.rdy_cnt,
-
-			av_address => address,
-			av_writedata => writedata,
-			av_byteenable => byteenable,
-			av_readdata => readdata,
-			av_read => read,
-			av_write => write,
-			av_waitrequest => waitrequest
+			clk_int,
+			int_res,
+			ser_rxd,
+			ser_txd,
+			wd,
+			rama_a(11 downto 0),
+			rama_ba(1 downto 0),
+			rama_ncas,
+			rama_ncke,
+			rama_ncs,	
+			rama_d(15 downto 0),		
+			rama_dm(1 downto 0),
+			rama_nras,
+			rama_nwe
+			
+--			clk_int	-- ?
+			
+--			sd_d(3 downto 0),
+--			sd_clk,
+--			sd_cmd,
+--			usb_c(3 downto 0),
+--			usb_d(7 downto 0),
+--			usb_wub,
+--			led,
+--			io_l(3 downto 1)
 		);
-
+		
+	rama_clk <= clk_int;
 
 end rtl;
