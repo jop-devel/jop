@@ -50,64 +50,76 @@ public class AppInfo {
 	protected String mainClass = "unknown";
 	protected String mainMethodName = "main";
 	
+	// we usually provide the classpath, so this is redundant.
+	private ClassPath classpath = new ClassPath(".");
+	// class list from the arguments
+	private Set<String> clsArgs = new HashSet<String>();
+
 	/**
 	 * Array of the application classes - should be a form of ClassInfo
 	 * with the fields super/sub set.
 	 */
 	protected JavaClass[] jclazz;
 
-	public AppInfo(String args[]) {
+	public AppInfo() {
+	}
+	
+	public String[] parseOptions(String args[]) {
 		
-		// we usually provide the classpath, so this is redundant.
-		ClassPath classpath = new ClassPath(".");
-		// class list from the arguments
-		Set<String> clsArgs = new HashSet<String>();
+		List<String> retList = new LinkedList<String>();
+
+
+//		if(args.length == 0) {
+//			System.err.println("arguments: [-cp classpath] [-o file] class [class]*");
 
 		try {
-			if(args.length == 0) {
-				System.err.println("arguments: [-cp classpath] [-o file] class [class]*");
-			} else {
-				for (int i = 0; i < args.length; i++) {
-					if (args[i].equals("-cp")) {
-						i++;
-						classpath = new ClassPath(args[i]);
-						continue;
-					}
-					if (args[i].equals("-o")) {
-						i++;
-						outFile = args[i];
-						continue;
-					}
-					if (args[i].equals("-sp")) {
-						i++;
-						srcPath = args[i];
-						continue;
-					}
-					if (args[i].equals("-mm")) {
-						i++;
-						mainMethodName = args[i];
-						continue;
-					}
-					
-					clsArgs.add(args[i]);
-					
-					// The last class contains the main method
-					// We also allow / notation as used with JCC
-					mainClass = args[i].replace('/', '.');
+			for (int i = 0; i < args.length; i++) {
+				if (args[i].equals("-cp")) {
+					i++;
+					classpath = new ClassPath(args[i]);
+					continue;
+				}
+				if (args[i].equals("-o")) {
+					i++;
+					outFile = args[i];
+					continue;
+				}
+				if (args[i].equals("-sp")) {
+					i++;
+					srcPath = args[i];
+					continue;
+				}
+				if (args[i].equals("-mm")) {
+					i++;
+					mainMethodName = args[i];
+					continue;
 				}
 				
-				System.out.println("CLASSPATH="+classpath+"\tmain class="+mainClass);
+				if (args[i].charAt(0)=='-') {
+					// an option we don't know
+					retList.add(args[i]);
+					i++;
+					retList.add(args[i]);
+				} else {
+					// it's a class
+					clsArgs.add(args[i]);					
+				}
 				
+				// The last class contains the main method
+				// We also allow / notation as used with JCC
+				mainClass = args[i].replace('/', '.');
 			}
-			load(classpath, clsArgs);
+			
 		} catch(Exception e) { e.printStackTrace();}
+
+		return (String []) retList.toArray();
 	}
 	
 	
 	/**
 	 * Load all classes that belong to the application.
 	 */
-	private void load(ClassPath classpath, Set<String> clsArgs) throws IOException {
+	public void load() throws IOException {
 		
 		JavaClass[] jcl = new JavaClass[clsArgs.size()];
 		
@@ -140,7 +152,14 @@ public class AppInfo {
 	 */
 	public static void main(String[] args) {
 
-		AppInfo ai = new AppInfo(args);
+		AppInfo ai = new AppInfo();
+		System.out.println("CLASSPATH="+ai.classpath+"\tmain class="+ai.mainClass);
+		try {
+			ai.load();
+		} catch (IOException e) {
+			e.printStackTrace();
+			System.exit(-1);
+		}
 		System.out.println("Provide your own main!");
 		System.out.println("Ok here comes a BCEL dump of the loaded classes:");
 		System.out.println(ai);
