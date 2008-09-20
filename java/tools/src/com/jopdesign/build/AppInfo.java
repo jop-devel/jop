@@ -37,7 +37,7 @@ import org.apache.bcel.classfile.JavaClass;
 import org.apache.bcel.util.ClassPath;
 
 /**
- * Helper class for BCEL class analyzation and manipulation.
+ * Helper class for BCEL class analysis and manipulation.
  * Should be used by JOPizer and WCETAnalyser
  * 
  * @author martin

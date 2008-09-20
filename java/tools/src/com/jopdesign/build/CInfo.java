@@ -53,6 +53,6 @@ public class CInfo {
 	}
 	
 	public String toString() {
-		return "CLI of "+clazz.getClassName();
+		return clazz.getClassName();
 	}
 }
