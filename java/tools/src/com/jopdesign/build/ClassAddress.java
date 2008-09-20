@@ -34,7 +34,7 @@ import org.apache.bcel.classfile.*;
  * @author martin
  *
  */
-public class ClassAddress extends MyVisitor {
+public class ClassAddress extends AppVisitor {
 
 	private int addr;
 	
@@ -46,7 +46,7 @@ public class ClassAddress extends MyVisitor {
 	public void visitJavaClass(JavaClass clazz) {
 
 		super.visitJavaClass(clazz);
-		addr = cli.setAddress(jz, addr);
+		addr = cli.setAddress(ai, addr);
 	}
 	
 	public int getAddress() {

@@ -25,7 +25,7 @@ import org.apache.bcel.classfile.*;
  * It calls the methods and the stack walker. Adapted from SetMethodInfo. 
  * @author rup, ms
  */
-public class SetGCRTMethodInfo extends MyVisitor {
+public class SetGCRTMethodInfo extends AppVisitor {
   JOPizer jz;
 	public SetGCRTMethodInfo(JOPizer jz) {
 		super(jz);

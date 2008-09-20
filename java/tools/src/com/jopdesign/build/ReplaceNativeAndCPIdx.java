@@ -32,7 +32,7 @@ import com.jopdesign.tools.JopInstr;
  * @author Flavius, Martin
  * 
  */
-public class ReplaceNativeAndCPIdx extends MyVisitor {
+public class ReplaceNativeAndCPIdx extends AppVisitor {
 
 	// Why do we use a ConstantPoolGen and a ConstantPool?
 	private ConstantPoolGen cpoolgen;
@@ -92,7 +92,7 @@ public class ReplaceNativeAndCPIdx extends MyVisitor {
 					first.setInstruction(new NOP());
 				} else {
 					first.setInstruction(new NativeInstruction(opid, (short) 1));
-					jz.outTxt.println("\t"+first.getPosition());
+					((JOPizer) ai).outTxt.println("\t"+first.getPosition());
 					// since the new instruction is of length 1 and
 					// the replaced invokespecial was of length 3
 					// then we remove pc+2 and pc+1 from the MGCI info
@@ -230,7 +230,7 @@ public class ReplaceNativeAndCPIdx extends MyVisitor {
 		ConstantNameAndType signt = (ConstantNameAndType) cp
 				.getConstant(sigidx);
 		String sigstr = signt.getName(cp) + signt.getSignature(cp);
-		JopClassInfo clinf = (JopClassInfo) jz.cliMap.get(fclname);
+		JopClassInfo clinf = (JopClassInfo) ai.cliMap.get(fclname);
 		int j;
 		boolean found = false;
 		while (!found) {

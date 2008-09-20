@@ -26,7 +26,7 @@ import org.apache.bcel.classfile.*;
  * @author martin
  *
  */
-public class SetMethodInfo extends MyVisitor {
+public class SetMethodInfo extends AppVisitor {
 
 	private int addr;
 
@@ -55,7 +55,7 @@ public class SetMethodInfo extends MyVisitor {
 	        addr += mi.getLength();
 		}
 		
-		jz.pointerAddr = addr;
+		((JOPizer) ai).pointerAddr = addr;
 	}
 
 

@@ -41,7 +41,7 @@ import org.apache.bcel.util.InstructionFinder;
  * @author martin
  *
  */
-public class ClinitOrder extends MyVisitor {
+public class ClinitOrder extends AppVisitor {
 
 
 	Map clinit = new HashMap();
@@ -99,7 +99,7 @@ public class ClinitOrder extends MyVisitor {
 			case Constants.CONSTANT_Class:
 				cocl = (ConstantClass) co;
 				clname = cocl.getBytes(cpool).replace('/','.');
-				clinfo = (JopClassInfo) jz.cliMap.get(clname);
+				clinfo = (JopClassInfo) ai.cliMap.get(clname);
 				
 				if (clinfo!=null) {
 					minfo = clinfo.getMethodInfo("<init>()V");
@@ -127,7 +127,7 @@ public class ClinitOrder extends MyVisitor {
 			case Constants.CONSTANT_Methodref:
 				cocl = (ConstantClass) cpool.getConstant(((ConstantMethodref) co).getClassIndex());
 				clname = cocl.getBytes(cpool).replace('/','.');
-				clinfo = (JopClassInfo) jz.cliMap.get(clname);
+				clinfo = (JopClassInfo) ai.cliMap.get(clname);
 				int sigidx = ((ConstantMethodref) co).getNameAndTypeIndex();
 				ConstantNameAndType signt = (ConstantNameAndType) cpool.getConstant(sigidx);
 				String sigstr = signt.getName(cpool)+signt.getSignature(cpool);
@@ -157,7 +157,7 @@ public class ClinitOrder extends MyVisitor {
 			}
 			if (cocl!=null) {
 				clname = cocl.getBytes(cpool).replace('/','.');
-				JopClassInfo clinf = (JopClassInfo) jz.cliMap.get(clname);
+				JopClassInfo clinf = (JopClassInfo) ai.cliMap.get(clname);
 				if (clinf!=null) {
 					if (clinf.getMethodInfo(JOPizer.clinitSig)!=null) {
 						// don't add myself as dependency

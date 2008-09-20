@@ -30,7 +30,7 @@ import org.apache.bcel.classfile.*;
  *
  * Just dump all methods to the debug text file
  */
-public class Dump extends MyVisitor {
+public class Dump extends AppVisitor {
 
 	public Dump(JOPizer jz) {
 		super(jz);
@@ -38,7 +38,7 @@ public class Dump extends MyVisitor {
 	
 	public void visitMethod(Method method) {
 
-		jz.outTxt.println(clazz.getClassName()+":"+method.getName()+method.getSignature());
-		jz.outTxt.println(method.getCode());
+		((JOPizer) ai).outTxt.println(clazz.getClassName()+":"+method.getName()+method.getSignature());
+		((JOPizer) ai).outTxt.println(method.getCode());
 	}
 }

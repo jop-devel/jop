@@ -32,7 +32,7 @@ import org.apache.bcel.classfile.*;
  * @author martin
  *
  */
-public class CountStaticFields extends MyVisitor {
+public class CountStaticFields extends AppVisitor {
 
 	
 	public CountStaticFields(JOPizer jz) {

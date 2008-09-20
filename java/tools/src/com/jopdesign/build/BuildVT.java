@@ -37,7 +37,7 @@ import org.apache.bcel.generic.*;
  * @author martin
  *
  */
-public class BuildVT extends MyVisitor {
+public class BuildVT extends AppVisitor {
 
 	Map mapClVT = new HashMap();
 	Map mapClFT = new HashMap();
@@ -71,7 +71,7 @@ public class BuildVT extends MyVisitor {
 
 // System.err.println("invoke buildVT on class: "+clazz);
 		JopClassInfo cli;
-		cli = (JopClassInfo) jz.cliMap.get(clazz.getClassName());
+		cli = (JopClassInfo) ai.cliMap.get(clazz.getClassName());
 // System.err.println("build VT on class: "+cli.clazz);
 
 /*
@@ -87,7 +87,7 @@ System.err.println("build VT on class: "+cli.clazz);
 		if (clazz.getClassName().equals(clazz.getSuperclassName())) {
 			;	// now we'r Object
 		} else {
-			JopClassInfo clisup = (JopClassInfo) jz.cliMap.get(clazz.getSuperclassName());
+			JopClassInfo clisup = (JopClassInfo) ai.cliMap.get(clazz.getSuperclassName());
 
 //					JavaClass superClazz = clazz.getSuperClass();
 //			 System.err.println("super: "+superClazz);
@@ -250,7 +250,7 @@ System.err.println("build VT on class: "+cli.clazz);
 
 		int i, j;
 
-		JopClassInfo cli = (JopClassInfo) jz.cliMap.get(clazz.getClassName());
+		JopClassInfo cli = (JopClassInfo) ai.cliMap.get(clazz.getClassName());
 
 		String clazzName = clazz.getClassName();
 

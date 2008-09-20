@@ -40,7 +40,7 @@ import com.jopdesign.tools.JopInstr;
  * generates faster code on JOP.
  * 
  */
-public class ReplaceIinc extends MyVisitor {
+public class ReplaceIinc extends AppVisitor {
 
 	// Why do we use a ConstantPoolGen and a ConstantPool?
 	private ConstantPoolGen cpoolgen;

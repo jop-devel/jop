@@ -28,24 +28,25 @@ package com.jopdesign.build;
 import org.apache.bcel.classfile.*;
 
 /**
- * @author martin
+ * @author Martin
  *
- * TODO To change the template for this generated type comment go to
- * Window - Preferences - Java - Code Style - Code Templates
+ * TODO: should contain ClassInfo instead of JopClassInfo - can
+ * we do this with generics?
  */
-public class MyVisitor extends EmptyVisitor {
+public class AppVisitor extends EmptyVisitor {
 
-	protected JOPizer jz;
+	protected AppInfo ai;
+	// TODO: should be a ClassInfo
 	protected JopClassInfo cli;
 	protected JavaClass clazz;
 
-	public MyVisitor(JOPizer jz) {
-		this.jz = jz;
+	public AppVisitor(AppInfo ai) {
+		this.ai = ai;
 	}
 	
 	public void visitJavaClass(JavaClass clazz) {
 		this.clazz = clazz;
-		cli = (JopClassInfo) jz.cliMap.get(clazz.getClassName());
+		cli = (JopClassInfo) ai.cliMap.get(clazz.getClassName());
 	}
 
 }

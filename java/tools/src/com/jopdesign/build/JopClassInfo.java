@@ -274,7 +274,7 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 	 * @param addr
 	 * @return
 	 */
-	public int setAddress(JOPizer jz, int addr) {
+	public int setAddress(AppInfo ai, int addr) {
 		// TODO JOPizer should be a AppInfo
 		
 		int i;
@@ -313,7 +313,7 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 						bootAddress = addr;
 					}
 				}
-				if (clazz.getClassName().equals(jz.mainClass)) {
+				if (clazz.getClassName().equals(ai.mainClass)) {
 					if (m.methodId.equals(JOPizer.mainMethod)) {
 						mainAddress = addr;
 					}

@@ -55,7 +55,7 @@ import com.jopdesign.tools.JopInstr;
  *
  *
  */
-public class FindUsedConstants extends MyVisitor {
+public class FindUsedConstants extends AppVisitor {
 
 	private ConstantPoolGen cpool;
 	private ConstantPoolGen cpoolNew;

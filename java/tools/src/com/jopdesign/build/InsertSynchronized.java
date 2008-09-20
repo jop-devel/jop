@@ -32,7 +32,7 @@ import org.apache.bcel.util.InstructionFinder;
  * @author Martin Schoeberl, Wolfgang Puffitsch
  * 
  */
-public class InsertSynchronized extends MyVisitor {
+public class InsertSynchronized extends AppVisitor {
 
 	private ConstantPoolGen cpoolgen;
 
