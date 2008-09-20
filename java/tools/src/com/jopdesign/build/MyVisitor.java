@@ -36,7 +36,7 @@ import org.apache.bcel.classfile.*;
 public class MyVisitor extends EmptyVisitor {
 
 	protected JOPizer jz;
-	protected ClassInfo cli;
+	protected JopClassInfo cli;
 	protected JavaClass clazz;
 
 	public MyVisitor(JOPizer jz) {
@@ -45,7 +45,7 @@ public class MyVisitor extends EmptyVisitor {
 	
 	public void visitJavaClass(JavaClass clazz) {
 		this.clazz = clazz;
-		cli = ClassInfo.getClassInfo(clazz.getClassName());
+		cli = (JopClassInfo) jz.cliMap.get(clazz.getClassName());
 	}
 
 }

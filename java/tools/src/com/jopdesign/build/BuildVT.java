@@ -70,8 +70,8 @@ public class BuildVT extends MyVisitor {
 		int i, j;
 
 // System.err.println("invoke buildVT on class: "+clazz);
-		ClassInfo cli;
-		cli = (ClassInfo) ClassInfo.mapClassNames.get(clazz.getClassName());
+		JopClassInfo cli;
+		cli = (JopClassInfo) jz.cliMap.get(clazz.getClassName());
 // System.err.println("build VT on class: "+cli.clazz);
 
 /*
@@ -82,12 +82,12 @@ public class BuildVT extends MyVisitor {
 System.err.println("build VT on class: "+cli.clazz);
 */
 
-		ClassInfo.ClVT supVt = null;
-		ClassInfo.ClFT supFt = null;
+		JopClassInfo.ClVT supVt = null;
+		JopClassInfo.ClFT supFt = null;
 		if (clazz.getClassName().equals(clazz.getSuperclassName())) {
 			;	// now we'r Object
 		} else {
-			ClassInfo clisup = ClassInfo.getClassInfo(clazz.getSuperclassName());
+			JopClassInfo clisup = (JopClassInfo) jz.cliMap.get(clazz.getSuperclassName());
 
 //					JavaClass superClazz = clazz.getSuperClass();
 //			 System.err.println("super: "+superClazz);
@@ -98,8 +98,8 @@ System.err.println("build VT on class: "+cli.clazz);
 // System.err.println("rec. invoke buildVT with: "+superClazz);
 				buildVT(superClazz);	// first build super VT
 			}
-			supVt = (ClassInfo.ClVT) mapClVT.get(superName);
-			supFt = (ClassInfo.ClFT) mapClFT.get(superName);
+			supVt = (JopClassInfo.ClVT) mapClVT.get(superName);
+			supFt = (JopClassInfo.ClFT) mapClFT.get(superName);
 		}
 // System.err.println("build VT on: "+clazz.getClassName());
 		String clazzName = clazz.getClassName();
@@ -111,8 +111,8 @@ System.err.println("build VT on class: "+cli.clazz);
 //		int intfCount =  clazz.getInterfaces().length;
 
 // System.err.println(cli);
-		ClassInfo.ClVT clvt = cli.getClVT();
-		ClassInfo.ClFT clft = cli.getClFT();
+		JopClassInfo.ClVT clvt = cli.getClVT();
+		JopClassInfo.ClFT clft = cli.getClFT();
 		mapClVT.put(clazzName, clvt);
 		mapClFT.put(clazzName, clft);
 
@@ -250,7 +250,7 @@ System.err.println("build VT on class: "+cli.clazz);
 
 		int i, j;
 
-		ClassInfo cli = ClassInfo.getClassInfo(clazz.getClassName());
+		JopClassInfo cli = (JopClassInfo) jz.cliMap.get(clazz.getClassName());
 
 		String clazzName = clazz.getClassName();
 
@@ -267,12 +267,12 @@ System.err.println("build VT on class: "+cli.clazz);
 			String methodId = meth.getName()+meth.getSignature();
 			MethodInfo mi = cli.getMethodInfo(methodId);
 
-			ClassInfo.IT it = ClassInfo.getITObject();
-			it.nr = ClassInfo.listIT.size();
+			JopClassInfo.IT it = JopClassInfo.getITObject();
+			it.nr = JopClassInfo.listIT.size();
 			it.key = methodId;
 // System.out.println("Add to IT: "+it.nr+" "+it.key);
 			it.meth = mi;
-			ClassInfo.listIT.add(it);
+			JopClassInfo.listIT.add(it);
 
 		}
 		

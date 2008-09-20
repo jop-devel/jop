@@ -23,6 +23,7 @@ package com.jopdesign.debug.jdwp.jop;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.LinkedList;
 import java.util.List;
 
 import com.jopdesign.build.JOPizer;
@@ -107,7 +108,8 @@ public class JopSymbolManager extends SymbolManager implements Serializable
    */
   private void addClassReferences()
   {
-    classList = jopizer.clazzes;
+	  // list of JopClassInfo
+    classList = new LinkedList(jopizer.cliMap.values());
     SymbolTable table = getSymbolTable();
     table.setClassList(classList);
   }

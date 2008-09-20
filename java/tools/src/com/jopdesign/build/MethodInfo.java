@@ -40,7 +40,7 @@ public class MethodInfo implements Serializable{
 
 	static List clinitList;
 	String methodId;
-	ClassInfo cli;
+	JopClassInfo cli;
 	Method method;
 	int codeAddress;
 	// struct address is ONLY useful for <clinit> methods
@@ -53,7 +53,7 @@ public class MethodInfo implements Serializable{
 	int len, exclen;
 	int vtindex;
 	
-	public MethodInfo(ClassInfo jc, String mid) {
+	public MethodInfo(JopClassInfo jc, String mid) {
 		cli = jc;
 		codeAddress = 0;
 		structAddress = 0;

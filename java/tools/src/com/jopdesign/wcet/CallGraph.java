@@ -24,8 +24,8 @@ import java.io.IOException;
 import java.util.*;
 
 import com.jopdesign.build.AppInfo;
-import com.jopdesign.build.CInfo;
 import com.jopdesign.build.ClassInfo;
+import com.jopdesign.build.JopClassInfo;
 import com.jopdesign.util.*;
 import org.apache.bcel.classfile.*;
 import org.apache.bcel.generic.ConstantPoolGen;
@@ -44,7 +44,7 @@ import org.apache.bcel.util.InstructionFinder;
 
 public class CallGraph extends AppInfo {
 
-	static CInfo template = new CInfo();
+	static ClassInfo template = new ClassInfo(null, null);
 	
 	public CallGraph(String[] args) throws IOException {
 		super(template);
@@ -95,6 +95,10 @@ public class CallGraph extends AppInfo {
 		cg.addVertex(mv);
 		Method method = mv.getMethod();
 		System.out.println("in traverse for "+method);
+		if (method.isNative()) {
+			System.out.println("is native");
+			return mv;
+		}
 		
 		ConstantPoolGen cpoolgen = new ConstantPoolGen(method.getConstantPool());
 		// Why the hell do I have construct a MethodGen just
@@ -131,20 +135,24 @@ public class CallGraph extends AppInfo {
 
 	public void findMain() {
 		
-		for (int i=0; i<jclazz.length; ++i) {
-			Method[] ma = jclazz[i].getMethods();
+		Collection<? extends ClassInfo> jclSet = cliMap.values();
+		for (Iterator iterator = jclSet.iterator(); iterator.hasNext();) {
+			ClassInfo info = (ClassInfo) iterator.next();
+			JavaClass jclazz = info.clazz;
+			Method[] ma = jclazz.getMethods();
 			for (int j=0; j<ma.length; ++j) {
-				String id  = jclazz[i].getClassName()+'.'+
+				String id  = jclazz.getClassName()+'.'+
 					ma[j].getName()+ma[j].getSignature();
-				MethClass mc = new MethClass(ma[j], jclazz[i]);
+				MethClass mc = new MethClass(ma[j], jclazz);
 				methMap.put(mc.toString(), mc);
 
-				if (jclazz[i].getClassName().equals(mainClass)) {
+				if (jclazz.getClassName().equals(mainClass)) {
 					if (ma[j].getName().equals(mainMethodName)) {
 						mainMethClass = mc;
 					}
 				}
 			}
+			
 		}
 		System.out.println(mainMethClass);
 	}

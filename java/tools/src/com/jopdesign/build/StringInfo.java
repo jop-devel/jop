@@ -38,7 +38,7 @@ public class StringInfo {
 
 	public static HashMap usedStrings = new HashMap();
 	public static List list = new LinkedList();
-	public static ClassInfo cli;
+	public static JopClassInfo cli;
 	public static int stringTableAddress = -1;
 	public static int length = 0;
 
@@ -110,7 +110,7 @@ public class StringInfo {
 		out.println("\t//\t"+addrCnt+"\t"+getSaveString());
 	}
 	
-	public void dump(PrintWriter out, ClassInfo strcli, int arrygcinfo) {
+	public void dump(PrintWriter out, JopClassInfo strcli, int arrygcinfo) {
 
 		int addr = stringTableAddress+startAddress;
 		commentary(string, addr, out);

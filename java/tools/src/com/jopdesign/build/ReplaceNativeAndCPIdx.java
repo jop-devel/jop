@@ -230,7 +230,7 @@ public class ReplaceNativeAndCPIdx extends MyVisitor {
 		ConstantNameAndType signt = (ConstantNameAndType) cp
 				.getConstant(sigidx);
 		String sigstr = signt.getName(cp) + signt.getSignature(cp);
-		ClassInfo clinf = (ClassInfo) ClassInfo.mapClassNames.get(fclname);
+		JopClassInfo clinf = (JopClassInfo) jz.cliMap.get(fclname);
 		int j;
 		boolean found = false;
 		while (!found) {

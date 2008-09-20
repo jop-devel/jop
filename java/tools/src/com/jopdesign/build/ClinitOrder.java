@@ -60,7 +60,7 @@ public class ClinitOrder extends MyVisitor {
 	}	
 	
 	
-	private Set findDependencies(ClassInfo cli, MethodInfo mi, boolean inRec) {
+	private Set findDependencies(JopClassInfo cli, MethodInfo mi, boolean inRec) {
 
 //		System.out.println("find dep. in "+cli.clazz.getClassName()+":"+mi.getMethod().getName());
 		Method method = mi.getMethod();
@@ -93,13 +93,13 @@ public class ClinitOrder extends MyVisitor {
 			ConstantClass cocl = null;
 			Set addDepends = null;
 			String clname;
-			ClassInfo clinfo;
+			JopClassInfo clinfo;
 			MethodInfo minfo;
 			switch(co.getTag()) {
 			case Constants.CONSTANT_Class:
 				cocl = (ConstantClass) co;
 				clname = cocl.getBytes(cpool).replace('/','.');
-				clinfo = ClassInfo.getClassInfo(clname);
+				clinfo = (JopClassInfo) jz.cliMap.get(clname);
 				
 				if (clinfo!=null) {
 					minfo = clinfo.getMethodInfo("<init>()V");
@@ -127,7 +127,7 @@ public class ClinitOrder extends MyVisitor {
 			case Constants.CONSTANT_Methodref:
 				cocl = (ConstantClass) cpool.getConstant(((ConstantMethodref) co).getClassIndex());
 				clname = cocl.getBytes(cpool).replace('/','.');
-				clinfo = ClassInfo.getClassInfo(clname);
+				clinfo = (JopClassInfo) jz.cliMap.get(clname);
 				int sigidx = ((ConstantMethodref) co).getNameAndTypeIndex();
 				ConstantNameAndType signt = (ConstantNameAndType) cpool.getConstant(sigidx);
 				String sigstr = signt.getName(cpool)+signt.getSignature(cpool);
@@ -157,7 +157,7 @@ public class ClinitOrder extends MyVisitor {
 			}
 			if (cocl!=null) {
 				clname = cocl.getBytes(cpool).replace('/','.');
-				ClassInfo clinf = (ClassInfo) ClassInfo.mapClassNames.get(clname);
+				JopClassInfo clinf = (JopClassInfo) jz.cliMap.get(clname);
 				if (clinf!=null) {
 					if (clinf.getMethodInfo(JOPizer.clinitSig)!=null) {
 						// don't add myself as dependency
@@ -171,7 +171,7 @@ public class ClinitOrder extends MyVisitor {
 			if (addDepends!=null) {
 				Iterator itAddDep = addDepends.iterator();
 				while (itAddDep.hasNext()) {
-					ClassInfo addCli = (ClassInfo) itAddDep.next();
+					JopClassInfo addCli = (JopClassInfo) itAddDep.next();
 					if (addCli==cli) {
 						throw new Error("cyclic indirect <clinit> dependency");
 					}
@@ -196,13 +196,13 @@ public class ClinitOrder extends MyVisitor {
 		Iterator itCliSet = cliSet.iterator();
 		while (itCliSet.hasNext()) {
 		
-			ClassInfo clinf = (ClassInfo) itCliSet.next();
+			JopClassInfo clinf = (JopClassInfo) itCliSet.next();
 			System.out.println("Class "+clinf.clazz.getClassName());
 			Set depends = (Set) clinit.get(clinf);
 				
 			Iterator it = depends.iterator();
 			while(it.hasNext()) {
-				ClassInfo clf = (ClassInfo) it.next();
+				JopClassInfo clf = (JopClassInfo) it.next();
 				System.out.println("\tdepends "+clf.clazz.getClassName());
 			}
 		}
@@ -227,7 +227,7 @@ public class ClinitOrder extends MyVisitor {
 
 			Iterator itCliSet = cliSet.iterator();
 			while (itCliSet.hasNext()) {			
-				ClassInfo clinf = (ClassInfo) itCliSet.next();
+				JopClassInfo clinf = (JopClassInfo) itCliSet.next();
 				Set depends = (Set) clinit.get(clinf);
 				if (depends.size()==0) {
 					order.add(clinf);
@@ -235,7 +235,7 @@ public class ClinitOrder extends MyVisitor {
 					// element (a leave in the dependent tree
 					Iterator itCliSetInner = clinit.keySet().iterator();
 					while (itCliSetInner.hasNext()) {
-						ClassInfo clinfInner = (ClassInfo) itCliSetInner.next();
+						JopClassInfo clinfInner = (JopClassInfo) itCliSetInner.next();
 						Set dep = (Set) clinit.get(clinfInner);
 						dep.remove(clinf);
 					}

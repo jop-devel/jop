@@ -20,17 +20,11 @@
 
 package com.jopdesign.build;
 
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PrintWriter;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.io.Serializable;
+import java.util.*;
+
 
 import org.apache.bcel.classfile.ClassParser;
 import org.apache.bcel.classfile.JavaClass;
@@ -43,33 +37,50 @@ import org.apache.bcel.util.ClassPath;
  * @author martin
  *
  */
-public class AppInfo {
+public class AppInfo implements Serializable {
 
+	private static final long serialVersionUID = 1L;
 	
 	protected String outFile;
 	protected String srcPath;
+	/**
+	 * The class that contains the main method.
+	 */
 	protected String mainClass = "unknown";
 	protected String mainMethodName = "main";
 	
 	// we usually provide the classpath, so this is redundant.
 	private ClassPath classpath = new ClassPath(".");
-	// class list from the arguments
+	/**
+	 * class list from the arguments
+	 */
 	private Set<String> clsArgs = new HashSet<String>();
+	/**
+	 * Excluded classes (e.g. JOP Native.java)
+	 */
+	private Set<String> exclude = new HashSet<String>();
+	
 
 	/**
-	 * Array of the application classes - should be a form of ClassInfo
-	 * with the fields super/sub set.
+	 * Array of the application classes .
 	 */
-	protected JavaClass[] jclazz;
-	private CInfo template;
+	private JavaClass[] jclazz;
+	private ClassInfo template;
+
+	/**
+	 * Map of ClassInfo that represents the application.
+	 * 
+	 * It's public for the debugger.
+	 */
+	public Map<String, ? extends ClassInfo> cliMap;
+//	protected Map<String, ClassInfo> cliMap;
 	
-	protected Map<String, CInfo> cliMap;
 
 	/**
 	 * 
 	 * @param cliTemplate a template to create the correct ClassInfo type
 	 */
-	public AppInfo(CInfo cliTemplate) {
+	public AppInfo(ClassInfo cliTemplate) {
 		template = cliTemplate;
 	}
 	
@@ -83,7 +94,7 @@ public class AppInfo {
 //			System.err.println("arguments: [-cp classpath] [-o file] class [class]*");
 
 		try {
-			for (int i = 0; i < args.length; i++) {
+			for (int i = 0; i<args.length; i++) {
 				if (args[i].equals("-cp")) {
 					i++;
 					classpath = new ClassPath(args[i]);
@@ -109,7 +120,13 @@ public class AppInfo {
 					// an option we don't know
 					retList.add(args[i]);
 					i++;
-					retList.add(args[i]);
+					while (i<args.length) {
+						if (args[i].charAt(0)!='-') {
+							retList.add(args[i]);							
+						} else {
+							break;
+						}
+					}
 				} else {
 					// it's a class
 					clsArgs.add(args[i]);					
@@ -126,6 +143,21 @@ public class AppInfo {
 		return retList.toArray(sa);
 	}
 	
+	/**
+	 * Add an application known class (e.g. JOP system classes)
+	 * @param name
+	 */
+	public void addClass(String name) {
+		clsArgs.add(name);
+	}
+	
+	/**
+	 * Exclude that class.
+	 * @param name
+	 */
+	public void excludeClass(String name) {
+		exclude.add(name);
+	}
 	
 	/**
 	 * Load all classes that belong to the application.
@@ -143,11 +175,13 @@ public class AppInfo {
 
 		}
 		TransitiveHull hull = new TransitiveHull(classpath, jcl);
+		String[] excl = new String[exclude.size()];
+		hull.setExcluded(exclude.toArray(excl));
 		hull.start();
 		System.out.println(Arrays.asList(hull.getClassNames()));
 		jclazz = hull.getClasses();
 		// jclazz now contains the closure of the application
-		cliMap = template.genCInfoMap(jclazz);
+		cliMap = template.genClassInfoMap(jclazz, this);
 	}
 
 	public String toString() {
@@ -161,11 +195,13 @@ public class AppInfo {
 	}
 
 	/**
+	 * A simple example main that prints the Map of ClassInfo
+	 * 
 	 * @param args
 	 */
 	public static void main(String[] args) {
 
-		AppInfo ai = new AppInfo(new CInfo());
+		AppInfo ai = new AppInfo(new ClassInfo(null, null));
 		ai.parseOptions(args);
 		System.out.println("CLASSPATH="+ai.classpath+"\tmain class="+ai.mainClass);
 		try {

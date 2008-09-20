@@ -63,6 +63,8 @@ public class TransitiveHull extends org.apache.bcel.classfile.EmptyVisitor {
 		"com[.]sun[.].*"
 */
 	};
+	
+	private String[] excluded = {};
 
 
 	public TransitiveHull(JavaClass clazz) {
@@ -100,6 +102,10 @@ public class TransitiveHull extends org.apache.bcel.classfile.EmptyVisitor {
 	public String[] getClassNames() {
 		return _set.getClassNames();
 	}
+	
+	public void setExcluded(String[] names) {
+		excluded = names;
+	}
 
 	/**
 	 * Start traversal using DescendingVisitor pattern.
@@ -124,6 +130,11 @@ public class TransitiveHull extends org.apache.bcel.classfile.EmptyVisitor {
 //				return; // Ihh
 //			}
 //		}
+		for (int i=0; i<excluded.length; ++i) {
+			if (excluded[i].equals(class_name)) {
+				return;
+			}
+		}
 		// we ignore array classes
 		if (class_name.startsWith("[")) {
 			return;

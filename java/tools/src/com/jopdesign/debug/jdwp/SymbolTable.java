@@ -41,7 +41,7 @@ import org.apache.bcel.classfile.LocalVariableTable;
 import org.apache.bcel.classfile.Method;
 import org.apache.bcel.generic.Type;
 
-import com.jopdesign.build.ClassInfo;
+import com.jopdesign.build.JopClassInfo;
 import com.jopdesign.build.JOPizer;
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.debug.jdwp.constants.ErrorConstants;
@@ -151,7 +151,7 @@ public class SymbolTable implements Serializable
     int referenceTypeID = 0;
     while (iterator.hasNext())
     {
-      ClassInfo element = (ClassInfo) iterator.next();
+      JopClassInfo element = (JopClassInfo) iterator.next();
       
 //      System.out.println("Element: " + element);
       
@@ -193,7 +193,7 @@ public class SymbolTable implements Serializable
   /**
    * @param javaClass
    */
-  private void registerAllMethods(ClassInfo classInfo)
+  private void registerAllMethods(JopClassInfo classInfo)
   {
     List methods = classInfo.getMethods();
     MethodInfo methodInfo;
@@ -269,19 +269,19 @@ public class SymbolTable implements Serializable
     return (id >= 0) && (id < referenceTypeList.size());
   }
   
-  private ClassInfo getClassInfo(String className)
+  private JopClassInfo getClassInfo(String className)
   {
     int id = getClassId(className);
     return getClassInfo(id);
   }
   
-  private ClassInfo getClassInfo(int id)
+  private JopClassInfo getClassInfo(int id)
   {
-    ClassInfo result = null;
+    JopClassInfo result = null;
     
     if(isValidTypeId(id))
     {
-      result = (ClassInfo) classList.get(id);
+      result = (JopClassInfo) classList.get(id);
     }
     
     return result;
@@ -291,7 +291,7 @@ public class SymbolTable implements Serializable
   {
     GenericReferenceDataList list = new GenericReferenceDataList();
     
-    ClassInfo classInfo = getClassInfo(classId);
+    JopClassInfo classInfo = getClassInfo(classId);
     if(classInfo!= null)
     {
       List methods = classInfo.getMethods();
@@ -390,7 +390,7 @@ public class SymbolTable implements Serializable
   {
     String sourceFile = null;
     
-    ClassInfo classInfo = getClassInfo(typeId);
+    JopClassInfo classInfo = getClassInfo(typeId);
     if(classInfo!= null)
     {
       sourceFile = classInfo.clazz.getFileName();
@@ -430,7 +430,7 @@ public class SymbolTable implements Serializable
    */
   private MethodInfo getMethodInfo(String className, String methodSignature)
   {
-    ClassInfo info;
+    JopClassInfo info;
     MethodInfo methodInfo;
     
     info = getClassInfo(className);
@@ -442,7 +442,7 @@ public class SymbolTable implements Serializable
   private MethodInfo getMethodInfo(int typeId, int methodId) throws JDWPException
   {
     MethodInfo methodInfo = null;
-    ClassInfo classInfo = getClassInfo(typeId);
+    JopClassInfo classInfo = getClassInfo(typeId);
     if(classInfo!= null)
     {
       // ok, it's a valid class. Let's get the method.
@@ -597,7 +597,7 @@ public class SymbolTable implements Serializable
     int index, size;
     GenericReferenceDataList list = new GenericReferenceDataList();
     
-    ClassInfo classInfo = getClassInfo(classId);
+    JopClassInfo classInfo = getClassInfo(classId);
     if(classInfo!= null)
     {
       Field[] fieldArray = classInfo.clazz.getFields();
@@ -654,7 +654,7 @@ public class SymbolTable implements Serializable
     int size;
     GenericReferenceData data = null;
     
-    ClassInfo classInfo;
+    JopClassInfo classInfo;
     
     data = null;
     classInfo = getClassInfo(classId);
@@ -678,7 +678,7 @@ public class SymbolTable implements Serializable
   {
     int address = 0;
     
-    ClassInfo classInfo = getClassInfo(classId);
+    JopClassInfo classInfo = getClassInfo(classId);
     if(classInfo!= null)
     {
       
@@ -693,7 +693,7 @@ public class SymbolTable implements Serializable
    */
   public int getSuperClass(int classId)
   {
-    ClassInfo classInfo = getClassInfo(classId);
+    JopClassInfo classInfo = getClassInfo(classId);
     classInfo = classInfo.superClass;
     
     return getClassId(classInfo);
@@ -703,7 +703,7 @@ public class SymbolTable implements Serializable
    * @param classInfo
    * @return
    */
-  private int getClassId(ClassInfo classInfo)
+  private int getClassId(JopClassInfo classInfo)
   {
     int index, id, size;
     
@@ -711,7 +711,7 @@ public class SymbolTable implements Serializable
     size = getNumClasses();
     for(index = 0; index < size; index++)
     {
-      ClassInfo info = getClassInfo(index);
+      JopClassInfo info = getClassInfo(index);
       if(classInfo == info)
       {
         id = index;
@@ -730,7 +730,7 @@ public class SymbolTable implements Serializable
     size = getNumClasses();
     for(index = 0; index < size; index++)
     {
-      ClassInfo info = getClassInfo(index);
+      JopClassInfo info = getClassInfo(index);
       if(className.equals(info.clazz.getClassName()))
       {
         id = index;
@@ -790,7 +790,7 @@ public class SymbolTable implements Serializable
     size = getNumClasses();
     for(index = 0; index < size; index++)
     {
-      ClassInfo classInfo = getClassInfo(index);
+      JopClassInfo classInfo = getClassInfo(index);
       buffer.append(classInfo.clazz.getClassName());
       if(index < (size - 1))
       {
@@ -856,7 +856,7 @@ public class SymbolTable implements Serializable
   {
     Field field = null;
     
-    ClassInfo classInfo = getClassInfo(classId);
+    JopClassInfo classInfo = getClassInfo(classId);
     if(classInfo!= null)
     {
       Field[] fieldArray = classInfo.clazz.getFields();
@@ -877,7 +877,7 @@ public class SymbolTable implements Serializable
   {
     // TODO: need to be tested
     int index, size;
-    ClassInfo classInfo = getClassInfo(classId);
+    JopClassInfo classInfo = getClassInfo(classId);
     ConstantPool constantPool = classInfo.clazz.getConstantPool();
     GenericReferenceDataList list = new GenericReferenceDataList();
     GenericReferenceData data;
@@ -895,7 +895,7 @@ public class SymbolTable implements Serializable
       String className = constantPool.getConstantString(nameIndex, tag);
       
       int innerClassId = getClassId(className);
-      ClassInfo innerClassInfo = getClassInfo(innerClassId);
+      JopClassInfo innerClassInfo = getClassInfo(innerClassId);
       
       data = new GenericReferenceData(innerClassId);
       
@@ -916,7 +916,7 @@ public class SymbolTable implements Serializable
     InnerClass[] classes;
     
     classes = new InnerClass[0]; 
-    ClassInfo classInfo = getClassInfo(classId);
+    JopClassInfo classInfo = getClassInfo(classId);
     
     Attribute[] attributeArray = classInfo.clazz.getAttributes();
     Attribute attribute;

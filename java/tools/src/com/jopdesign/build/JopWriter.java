@@ -61,18 +61,18 @@ public class JopWriter {
 		out.println("//");
 		out.println("//\tspecial pointer at "+jz.pointerAddr+":");
 		out.println("//");
-		out.println("\t\t"+ClassInfo.bootAddress+",\t// pointer to boot method struct: "+
+		out.println("\t\t"+JopClassInfo.bootAddress+",\t// pointer to boot method struct: "+
 				JOPizer.startupClass+":"+JOPizer.bootMethod);
 //		int jvmptr = appinfo.fistNonObjectMethod(AppInfo.jvmClass);
 //		int helpptr = appinfo.fistNonObjectMethod(AppInfo.helpClass);
 
-		out.println("\t\t"+ClassInfo.jvmAddress+",\t// pointer to first non Object method struct of class JVM");
-		out.println("\t\t"+ClassInfo.jvmHelpAddress+",\t// pointer to first non Object method struct of of class JVMHelp");
-		out.println("\t\t"+ClassInfo.mainAddress+",\t// pointer to main method struct");
-		out.println("\t\t"+ClassInfo.addrRefStatic+",\t// pointer to static reference fields");
-		out.println("\t\t"+ClassInfo.cntRefStatic+",\t// number of static reference fields");
+		out.println("\t\t"+JopClassInfo.jvmAddress+",\t// pointer to first non Object method struct of class JVM");
+		out.println("\t\t"+JopClassInfo.jvmHelpAddress+",\t// pointer to first non Object method struct of of class JVMHelp");
+		out.println("\t\t"+JopClassInfo.mainAddress+",\t// pointer to main method struct");
+		out.println("\t\t"+JopClassInfo.addrRefStatic+",\t// pointer to static reference fields");
+		out.println("\t\t"+JopClassInfo.cntRefStatic+",\t// number of static reference fields");
 
-		if (ClassInfo.mainAddress==0 || ClassInfo.mainAddress==-1) {
+		if (JopClassInfo.mainAddress==0 || JopClassInfo.mainAddress==-1) {
 			System.out.println("Error: no main() method found");
 			System.exit(-1);
 		}
@@ -93,9 +93,9 @@ public class JopWriter {
 	private int dumpByteCode() {
 		
 		int cnt = 0;
-		Iterator it = jz.clazzes.iterator();
+		Iterator<? extends ClassInfo> it = jz.cliMap.values().iterator();
 		while (it.hasNext()) {
-			ClassInfo cli = (ClassInfo) it.next();
+			JopClassInfo cli = (JopClassInfo) it.next();
 			
 			out.println("//\t"+cli.clazz.getClassName());
 			List methods = cli.getMethods();
@@ -115,27 +115,25 @@ public class JopWriter {
 	
 	private void dumpStaticFields() {
 		
-		Iterator it;
 		// dump the static value fields
-		it = jz.clazzes.iterator();
+		Iterator<? extends ClassInfo> it = jz.cliMap.values().iterator();
 		while (it.hasNext()) {
-			ClassInfo cli = (ClassInfo) it.next();
+			JopClassInfo cli = (JopClassInfo) it.next();
 			cli.dumpStaticFields(out, false);			
 		}	
 		// dump the static ref fields
-		it = jz.clazzes.iterator();
+		it = jz.cliMap.values().iterator();
 		while (it.hasNext()) {
-			ClassInfo cli = (ClassInfo) it.next();
+			JopClassInfo cli = (JopClassInfo) it.next();
 			cli.dumpStaticFields(out, true);			
 		}	
 	}
 	
 	private void dumpClassInfo() {
 		
-		Iterator it;
-		it = jz.clazzes.iterator();
+		Iterator<? extends ClassInfo> it = jz.cliMap.values().iterator();
 		while (it.hasNext()) {
-			ClassInfo cli = (ClassInfo) it.next();
+			JopClassInfo cli = (JopClassInfo) it.next();
 			cli.dump(out);			
 		}	
 
@@ -149,14 +147,14 @@ public class JopWriter {
 		out.println("\t\t"+MethodInfo.clinitList.size()+",\t//\tnumber of methods");
 		Iterator it = MethodInfo.clinitList.iterator();
 		while (it.hasNext()) {
-			MethodInfo mi = ((ClassInfo) it.next()).getMethodInfo(JOPizer.clinitSig);
+			MethodInfo mi = ((JopClassInfo) it.next()).getMethodInfo(JOPizer.clinitSig);
 			out.println("\t\t"+mi.structAddress+",\t//\t"+mi.cli.clazz.getClassName());
 		}
 	}
  
 	private void dumpStrings() {
 		// find the string class
-		ClassInfo strcli = StringInfo.cli;
+		JopClassInfo strcli = StringInfo.cli;
 		out.println("//");
 		out.println("//\tString table: "+StringInfo.usedStrings.size()+" strings");
 		out.println("//");

@@ -46,7 +46,7 @@ public class ClassAddress extends MyVisitor {
 	public void visitJavaClass(JavaClass clazz) {
 
 		super.visitJavaClass(clazz);
-		addr = cli.setAddress(addr);
+		addr = cli.setAddress(jz, addr);
 	}
 	
 	public int getAddress() {
