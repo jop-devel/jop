@@ -505,17 +505,6 @@ public class GC {
 	static int free() {
 		return allocPtr-copyPtr;
 	}
-
-	// TODO this has to be exchanged on a thread switch
-	// TODO add the javax.realtime classes to the CVS
-	static Scope currentArea;
-	public static Scope getCurrentArea() {
-		return currentArea;
-	}
-
-	public static void setCurrentArea(Scope sc) {
-		currentArea = sc;
-	}
 	
 	/**
 	 * Size of scratchpad memory in 32-bit words
@@ -536,7 +525,10 @@ public class GC {
 		
 		if (USE_SCOPES) {
 			// allocate in scope
-			Scope sc = currentArea;
+			Scope sc = null;
+			if (RtThreadImpl.mission) {
+				sc = RtThreadImpl.getCurrentScope();				
+			}
 			if (sc!=null) {
 				int rem = sc.backingStore.length - sc.allocPtr;
 				if (size+2 > rem) {
@@ -626,7 +618,10 @@ public class GC {
 		
 		if (USE_SCOPES) {
 			// allocate in scope
-			Scope sc = currentArea;
+			Scope sc = null;
+			if (RtThreadImpl.mission) {
+				sc = RtThreadImpl.getCurrentScope();				
+			}
 			if (sc!=null) {
 				int rem = sc.backingStore.length - sc.allocPtr;
 				if (size+2 > rem) {

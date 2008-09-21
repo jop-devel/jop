@@ -34,11 +34,15 @@ public class Scope {
 	Scope outer;
 
 	public Scope(long size) {
+		// that's wrong as it allocates the backing store
+		// in the current memory context, but it should do
+		// in heap/immortal
 		backingStore = new int[((int) size+3)>>2];
 		cnt = 0;
 		allocPtr = 0;
 	}
 
+	// that's for our scratchpad memory
 	public Scope(int[] localMem) {
 		backingStore = localMem;
 		cnt = 0;
@@ -57,12 +61,12 @@ public class Scope {
 			throw new Error("No cyclic enter and no sharing between threads");
 		}
 		// activate the memory area
-		outer = GC.getCurrentArea();
-		GC.setCurrentArea(this);
+		outer = RtThreadImpl.getCurrentScope();
+		RtThreadImpl.setCurrentScope(this);
 		// super.enter(logic); nothing to do in MemoryArea
 		logic.run();
 		// deactivate the area
-		GC.setCurrentArea(outer);
+		RtThreadImpl.setCurrentScope(outer);
 
 		synchronized (this) {
 			cnt--;

@@ -112,6 +112,11 @@ public class RtThreadImpl {
 	int nr;
 	int[] stack;
 	int sp;
+	
+	/**
+	 * The scope that the thread is in. null when in heap context.
+	 */
+	Scope currentArrea;
 
 	// linked list of threads in priority order
 	// used only at initialization time to collect the threads
@@ -516,6 +521,40 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 	
 	static int getActive() {
 		return Scheduler.sched[0].active;
+	}
+	
+	static Scope getCurrentScope() {
+		
+//		JVMHelp.wr("getCurrent");
+		// we call it only when the mission is already started
+		Scheduler s = Scheduler.sched[sys.cpuId];
+		return s.ref[s.active].currentArrea;
+
+//		RtThreadImpl rtt = null;
+//		if (Scheduler.sched==null) {
+//			return null;
+//		}
+//		Scheduler s = Scheduler.sched[sys.cpuId];
+//		if (s!=null || s.ref!=null) {
+//			int nr = s.active;
+//			rtt = s.ref[nr];
+//		}
+//		if (rtt==null) {
+//			// we don't have started the mission
+//			return null;
+//		} else {
+//			return rtt.currentArrea;			
+//		}
+	}
+	
+	static void setCurrentScope(Scope sc) {
+		RtThreadImpl rtt = null;
+		Scheduler s = Scheduler.sched[sys.cpuId];
+		if (s!=null || s.ref!=null) {
+			int nr = s.active;
+			rtt = s.ref[nr];
+		}
+		rtt.currentArrea = sc;
 	}
 
 	

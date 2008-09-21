@@ -23,6 +23,8 @@ package examples.scopes;
 import javax.realtime.LTMemory;
 import javax.realtime.ScopedMemory;
 
+import joprt.RtThread;
+
 public class SimpleScope {
 
 	static class Abc {
@@ -59,11 +61,11 @@ public class SimpleScope {
 	public static void main(String[] args) {
 
 		final ScopedMemory scope = new LTMemory(0, 20000L);
-		Runnable run = new Runnable() {
+		final ScopedMemory inner = new LTMemory(0, 10000L);
+		final Runnable run = new Runnable() {
 			public void run() {
-				ScopedMemory inner = new LTMemory(0, 2000L);
 				MyRunner r = new MyRunner();
-				for (int i=0; i<100; ++i) {
+				for (int i=0; i<10; ++i) {
 					Abc abc = new Abc();
 					r.setAbc(abc);
 					r.setOuter(scope);
@@ -74,12 +76,25 @@ public class SimpleScope {
 			}			
 		};
 
-		for (int i=0; i<20; ++i) {
-			System.out.println("*");
-			scope.enter(run);
-			// this is a dangling reference
-			// sa.ref.toString();
-		}
+		System.out.println("some new");
+		new RtThread(1, 500000) {
+			public void run() {
+				for (;;) {
+					for (int i=0; i<20; ++i) {
+						System.out.print("*");
+						scope.enter(run);
+						// this is a dangling reference
+						// sa.ref.toString();
+					}				
+					waitForNextPeriod();
+				}
+			}
+		};
+		
+		System.out.println("start mission");
+		RtThread.startMission();
+		System.out.println("mission started");
+		for (;;) ;
 	}
 
 }
