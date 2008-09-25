@@ -246,7 +246,7 @@ public class ReplaceNativeAndCPIdx extends AppVisitor {
 				}
 			}
 			if (!found) {
-				clinf = clinf.superClass;
+				clinf = (JopClassInfo) clinf.superClass;
 				if (clinf == null) {
 					System.out.println("Error: field " + fclname + "." + sigstr
 							+ " not found!");

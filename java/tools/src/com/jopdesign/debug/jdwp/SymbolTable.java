@@ -694,7 +694,7 @@ public class SymbolTable implements Serializable
   public int getSuperClass(int classId)
   {
     JopClassInfo classInfo = getClassInfo(classId);
-    classInfo = classInfo.superClass;
+    classInfo = (JopClassInfo) classInfo.superClass;
     
     return getClassId(classInfo);
   }

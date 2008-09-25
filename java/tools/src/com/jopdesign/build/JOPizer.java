@@ -135,11 +135,6 @@ public class JOPizer extends AppInfo implements Serializable {
 			jz.outTxt = new PrintWriter(new FileOutputStream(jz.outFile+".txt"));
 
 			jz.load();
-
-// System.out.println(jz.clazz2cli);
-			// add the super and method info to ClassInfo
-			// collect String constants
-			jz.iterate(new SetClassInfo(jz));
 			
 			// Reduce constant pool
 			jz.iterate(new FindUsedConstants(jz));

@@ -201,7 +201,7 @@ public class AppInfo implements Serializable {
 	 */
 	public static void main(String[] args) {
 
-		AppInfo ai = new AppInfo(new ClassInfo(null, null));
+		AppInfo ai = new AppInfo(new ClassInfo());
 		ai.parseOptions(args);
 		System.out.println("CLASSPATH="+ai.classpath+"\tmain class="+ai.mainClass);
 		try {

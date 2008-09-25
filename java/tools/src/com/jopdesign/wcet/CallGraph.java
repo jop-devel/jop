@@ -44,7 +44,7 @@ import org.apache.bcel.util.InstructionFinder;
 
 public class CallGraph extends AppInfo {
 
-	static ClassInfo template = new ClassInfo(null, null);
+	static ClassInfo template = new ClassInfo();
 	
 	public CallGraph(String[] args) throws IOException {
 		super(template);

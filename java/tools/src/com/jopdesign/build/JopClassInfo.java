@@ -32,7 +32,6 @@ import java.util.*;
 import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.*;
 
-
 /**
  * @author Flavius, Martin
  *
@@ -55,21 +54,61 @@ import org.apache.bcel.classfile.*;
 
 public class JopClassInfo extends ClassInfo implements Serializable {
 
+	public class JopCliVisitor extends CliVisitor implements Serializable {
+
+		private static final long serialVersionUID = 1L;
+
+		private ConstantPool cpool;
+
+		public JopCliVisitor(Map<String, ClassInfo> map) {
+			super(map);
+		}
+
+		public void visitJavaClass(JavaClass clazz) {
+
+			super.visitJavaClass(clazz);
+			System.out.println("JopVisit "+clazz.getClassName());
+			JopClassInfo cli = (JopClassInfo) this.cli;
+	// System.err.println("visit "+clazz.getClassName()+" getSuper");
+
+			cpool = clazz.getConstantPool();
+
+			if (clazz.isInterface()) {
+				cli.interfaceID = ++cli.interfaceCnt;
+				cli.interfaceList.add(cli.interfaceID-1, clazz.getClassName());
+			}
+		}
+
+		public void visitMethod(Method method) {
+			
+			JopClassInfo cli = (JopClassInfo) this.cli;
+			String methodId = method.getName()+method.getSignature();
+	        cli.addMethodOnce(methodId);
+	        MethodInfo mi = cli.getMethodInfo(methodId);
+	        mi.setMethod(method);
+	        if(JOPizer.dumpMgci){
+	          // GCRT
+	          new GCRTMethodInfo(mi,method);
+	        }
+
+		}
+
+		public void visitConstantString(ConstantString S) {
+			// identifying constant strings
+			StringInfo.addString(S.getBytes(cpool));
+		}
+	}
+
 	private static final long serialVersionUID = 1L;
 
-	/**
-	 * A strange kind of factory method as we are too lazy to
-	 * do a real factory pattern.
-	 * @param jc
-	 * @return
-	 */
-	Map<String, ? extends ClassInfo> genClassInfoMap(JavaClass jc[], AppInfo ai) {
-		Map<String, ClassInfo> map = new HashMap<String, ClassInfo>();
-		for (int i=0; i<jc.length; ++i) {
-			JopClassInfo cli = new JopClassInfo(jc[i], ai);
-			map.put(cli.clazz.getClassName(), cli);
-		}
-		return map;
+	@Override
+	ClassInfo newClassInfo(JavaClass jc,AppInfo ai) {
+		return new JopClassInfo(jc, ai);
+	}
+	
+	@Override
+	CliVisitor newCliVisitor(Map<String, ClassInfo> map) {
+		return new JopCliVisitor(map);
 	}
 
 
@@ -142,10 +181,7 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 	static int addrRefStatic = 0;
 	
 	
-	public JopClassInfo superClass;
 	public int interfaceID;
-	
-	private Set subClasses = new HashSet();
 
 	private HashMap usedMethods = new HashMap();
 	// Methods in a list
@@ -345,7 +381,7 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 		if (superClass != null) {
 			String [] interfaceNames = clazz.getInterfaceNames();
 			for (i = 0; i < interfaceNames.length; i++) {
-				if (!superClass.implementsInterface(interfaceNames[i])) {
+				if (!((JopClassInfo) superClass).implementsInterface(interfaceNames[i])) {
 					needsInterfaceTable = true;
 				}
 			}
@@ -386,7 +422,7 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 					}
 				}
 			}
-			cli = cli.superClass;
+			cli = (JopClassInfo) cli.superClass;
 		} while (cli != null);
 		return false;
 	}
@@ -398,7 +434,7 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 	private int getGCInfo() {
 		
 		int gcInfo = 0;
-		for (JopClassInfo clinf = this; clinf!=null; clinf = clinf.superClass) {
+		for (JopClassInfo clinf = this; clinf!=null; clinf = (JopClassInfo) clinf.superClass) {
 			ClFT ft = clinf.clft;
 			for (int i=0; i<ft.len; ++i) {
 				if (!ft.isStatic[i] & ft.isReference[i]) {
@@ -610,7 +646,7 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 								}
 							}
 							if (!found) {
-								clinf = clinf.superClass;
+								clinf = (JopClassInfo) clinf.superClass;
 								if (clinf==null) {
 									System.out.println("Error: field "+fclname+"."+sigstr+" not found!");
 									break;									
@@ -785,12 +821,5 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 //		return (JopClassInfo) appInfo.cliMap.get(className);
 //	}
 	
-	public void addSubClass(JopClassInfo cli) {
-		subClasses.add(cli);
-	}
-	
-	public Set getSubClasses() {
-		return subClasses;
-	}
 	
 }
