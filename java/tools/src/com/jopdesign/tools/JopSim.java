@@ -48,6 +48,7 @@ public class JopSim {
 	static final int MIN_IO_ADDRESS = -128;
 
 	static final int SYS_INT = 0xf0;
+	static final int SYS_EXC = 0xf1;
 
 	int[] mem_load = new int[MAX_MEM];
 	int[] mem = new int[MAX_MEM];
@@ -73,7 +74,11 @@ public class JopSim {
 	static boolean intPend;
 	static boolean interrupt;
 	static boolean intEna;
-
+	//
+	// exception handling
+	//
+	boolean intExcept;
+	int exceptReason;
 	
 	static boolean exit = false;
 	static boolean stopped = false;
@@ -246,6 +251,10 @@ System.out.println(mp+" "+pc);
 		if (addr == Const.IO_CPUCNT) {
 			return 1;
 		}
+		if (addr == Const.IO_EXCPT) {
+			return exceptReason;
+		}
+		
 		if (addr>MAX_MEM+MEM_TEST_OFF || addr<MIN_IO_ADDRESS) {
 			System.out.println("readMem: wrong address: "+addr);
 			System.exit(-1);
@@ -486,37 +495,55 @@ System.out.println(mp+" "+pc);
 		int off = readOpd16u();
 		int val = stack[sp--];
 		int ref = stack[sp--];
-		// handle needs indirection
-		ref = readMem(ref);
-		writeMem(ref+off, val);
+		if (ref==0) {
+			intExcept = true;
+			exceptReason = Const.EXC_NP;
+		} else {
+			// handle needs indirection
+			ref = readMem(ref);
+			writeMem(ref+off, val);			
+		}
 	}
 
 	void getfield() {
 
 		int off = readOpd16u();
 		int ref = stack[sp];
+		if (ref==0) {
+			intExcept = true;
+			exceptReason = Const.EXC_NP;
+		};
 		// handle needs indirection
 		ref = readMem(ref);
 		stack[sp] = readMem(ref+off);
 	}
 	
-	void jopsys_getfield() {
-
-		int off = stack[sp--];
-		int ref = stack[sp];
-		// handle needs indirection
-		ref = readMem(ref);
-		stack[sp] = readMem(ref+off);
-	}
-
 	void jopsys_putfield() {
 
 		int val = stack[sp--];
 		int off = stack[sp--];
 		int ref = stack[sp--];
+		if (ref==0) {
+			intExcept = true;
+			exceptReason = Const.EXC_NP;
+		} else {
+			// handle needs indirection
+			ref = readMem(ref);
+			writeMem(ref+off, val);
+		}
+	}
+
+	void jopsys_getfield() {
+
+		int off = stack[sp--];
+		int ref = stack[sp];
+		if (ref==0) {
+			intExcept = true;
+			exceptReason = Const.EXC_NP;
+		};
 		// handle needs indirection
 		ref = readMem(ref);
-		writeMem(ref+off, val);
+		stack[sp] = readMem(ref+off);
 	}
 
 	void putfield_long() {
@@ -525,16 +552,25 @@ System.out.println(mp+" "+pc);
 		int val_l = stack[sp--];
 		int val_h = stack[sp--];
 		int ref = stack[sp--];
-		// handle needs indirection
-		ref = readMem(ref);
-		writeMem(ref+off, val_h);
-		writeMem(ref+off+1, val_l);
+		if (ref==0) {
+			intExcept = true;
+			exceptReason = Const.EXC_NP;
+		} else {
+			// handle needs indirection
+			ref = readMem(ref);
+			writeMem(ref+off, val_h);
+			writeMem(ref+off+1, val_l);			
+		}
 	}
 
 	void getfield_long() {
 
 		int off = readOpd16u();
 		int ref = stack[sp];
+		if (ref==0) {
+			intExcept = true;
+			exceptReason = Const.EXC_NP;
+		};
 		// handle needs indirection
 		ref = readMem(ref);
 		stack[sp] = readMem(ref+off);
@@ -570,16 +606,26 @@ System.out.println(mp+" "+pc);
 
 			int instr = cache.bc(pc++) & 0x0ff;
 
-//
-//	interrupt handling
-//
-			if ((nextTimerInt-usCnt()<0) && !intPend) {
-				intPend = true;
-				interrupt = true;
-			}
-			if (interrupt && intEna) {
-				instr = SYS_INT;
-				interrupt = false;		// reset int
+			//
+			// exception handling
+			//
+			if (intExcept) {
+				instr = SYS_EXC;
+				intExcept = false;
+			} else {
+				//
+				//	interrupt handling
+				//	TODO: check it only every few instructions
+				//
+				if ((nextTimerInt-usCnt()<0) && !intPend) {
+					intPend = true;
+					interrupt = true;
+				}
+				if (interrupt && intEna) {
+					instr = SYS_INT;
+					interrupt = false;		// reset int
+				}
+
 			}
 
 // stat
@@ -736,19 +782,39 @@ System.out.println(mp+" "+pc);
 				case 53 :		// saload
 					idx = stack[sp--];	// index
 					ref = stack[sp--];	// ref
-					// null pointer and array check missing
-					// handle needs indirection
-					ref = readMem(ref);
-					stack[++sp] = readMem(ref+idx);
+					if (ref==0) {
+						intExcept = true;
+						exceptReason = Const.EXC_NP;
+					} else {
+						a = readMem(ref+1);
+						if (idx<0 || idx>=a) {
+							intExcept = true;
+							exceptReason = Const.EXC_AB;							
+						} else {
+							// handle needs indirection
+							ref = readMem(ref);
+							stack[++sp] = readMem(ref+idx);							
+						}
+					}
 					break;
 				case 47 :		// laload
 					idx = stack[sp--];	// index
 					ref = stack[sp--];	// ref
-					// null pointer and array check missing
-					// handle needs indirection
-					ref = readMem(ref);
-					stack[++sp] = readMem(ref+idx*2);
-					stack[++sp] = readMem(ref+idx*2+1);
+					if (ref==0) {
+						intExcept = true;
+						exceptReason = Const.EXC_NP;
+					} else {
+						a = readMem(ref+1);
+						if (idx<0 || idx>=a) {
+							intExcept = true;
+							exceptReason = Const.EXC_AB;							
+						} else {
+							// handle needs indirection
+							ref = readMem(ref);
+							stack[++sp] = readMem(ref+idx*2);
+							stack[++sp] = readMem(ref+idx*2+1);							
+						}
+					}
 					break;
 				case 49 :		// daload
 					noim(49);
@@ -828,21 +894,41 @@ System.out.println(mp+" "+pc);
 					val = stack[sp--];	// value
 					idx = stack[sp--];	// index
 					ref = stack[sp--];	// ref
-					// TODO: null pointer and array check missing
-					// handle needs indirection
-					ref = readMem(ref);
-					writeMem(ref+idx, val);
+					if (ref==0) {
+						intExcept = true;
+						exceptReason = Const.EXC_NP;
+					} else {
+						a = readMem(ref+1);
+						if (idx<0 || idx>=a) {
+							intExcept = true;
+							exceptReason = Const.EXC_AB;							
+						} else {
+							// handle needs indirection
+							ref = readMem(ref);
+							writeMem(ref+idx, val);							
+						}
+					}
 					break;
 				case 80 :		// lastore
 					val = stack[sp--];	// value
 					val2 = stack[sp--];	// value
 					idx = stack[sp--];	// index
 					ref = stack[sp--];	// ref
-					// TODO: null pointer and array check missing
-					// handle needs indirection
-					ref = readMem(ref);
-					writeMem(ref+idx*2, val2);					
-					writeMem(ref+idx*2+1, val);					
+					if (ref==0) {
+						intExcept = true;
+						exceptReason = Const.EXC_NP;
+					} else {
+						a = readMem(ref+1);
+						if (idx<0 || idx>=a) {
+							intExcept = true;
+							exceptReason = Const.EXC_AB;							
+						} else {
+							// handle needs indirection
+							ref = readMem(ref);
+							writeMem(ref+idx*2, val2);					
+							writeMem(ref+idx*2+1, val);												
+						}
+					}
 					break;
 				case 82 :		// dastore
 					noim(82);
@@ -1513,8 +1599,9 @@ System.out.println("new heap: "+heap);
 					--pc;		// correct wrong increment on jpc
 					invoke(jjhp);	// interrupt() is at offset 0
 					break;
-				case 241 :		// resF1
-					noim(241);
+				case 241 :		// sys_exc exception handling
+					--pc;		// correct wrong increment on jpc
+					invoke(jjhp+6);	// exception() is at offset 3*2
 					break;
 				case 242 :		// resF2
 					noim(242);
