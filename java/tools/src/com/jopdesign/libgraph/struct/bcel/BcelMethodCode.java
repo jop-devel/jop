@@ -130,9 +130,11 @@ public class BcelMethodCode extends MethodCode {
 
         ConstantPoolGen cpg = methodInfo.getConstantPoolGen();
 
-        BcelGraphCompiler compiler = new BcelGraphCompiler(methodInfo.getClassInfo(), cpg);
+		ClassInfo classInfo = methodInfo.getClassInfo();
 
-        method = compiler.compile(graph, methodInfo.getClassInfo().getClassName(), method);
+        BcelGraphCompiler compiler = new BcelGraphCompiler(classInfo, cpg);
+
+        method = compiler.compile(graph, classInfo.getClassName(), method);
 
         methodInfo.setMethod(method);
     }

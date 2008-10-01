@@ -822,7 +822,9 @@ public class BcelStmtFactory {
                     if ( txt == null ) {
                         is = InstructionConstants.ACONST_NULL;
                     } else {
-                        is = new LDC( cp.addConstant(value) );
+                        int index = cp.addConstant(value);
+                        push.setPoolIndex(index);
+                        is = new LDC(index);
                     }
                     break;
             }

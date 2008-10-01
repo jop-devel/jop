@@ -21,14 +21,17 @@ package com.jopdesign.libgraph.cfg.bcel;
 import com.jopdesign.libgraph.cfg.ControlFlowGraph;
 import com.jopdesign.libgraph.cfg.Features;
 import com.jopdesign.libgraph.cfg.GraphException;
+import com.jopdesign.libgraph.cfg.ExceptionTable;
 import com.jopdesign.libgraph.cfg.block.BasicBlock;
 import com.jopdesign.libgraph.cfg.block.StackCode;
+import com.jopdesign.libgraph.cfg.statements.Statement;
 import com.jopdesign.libgraph.cfg.statements.stack.StackStatement;
 import com.jopdesign.libgraph.cfg.variable.VariableTable;
 import com.jopdesign.libgraph.struct.ClassInfo;
 import com.jopdesign.libgraph.struct.TypeException;
 import org.apache.bcel.classfile.Method;
 import org.apache.bcel.generic.BranchInstruction;
+import org.apache.bcel.generic.CodeExceptionGen;
 import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.GOTO;
 import org.apache.bcel.generic.Instruction;
@@ -36,10 +39,15 @@ import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.InstructionList;
 import org.apache.bcel.generic.MethodGen;
 import org.apache.bcel.generic.NOP;
+import org.apache.bcel.generic.ObjectType;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+
+import joptimizer.actions.ControlFlowGraphPrinter;
 
 /**
  * @author Stefan Hepp, e0026640@student.tuwien.ac.at
@@ -77,9 +85,10 @@ public class BcelGraphCompiler {
         if ( !graph.getFeatures().hasFeature(Features.FEATURE_VAR_ALLOC) ) {
             throw new GraphException("Cannot compile graph: variables not correctly allocated.");
         }
-        if ( graph.getExceptionTable().getExceptionHandlers().size() > 0 ) {
-            throw new GraphException("Compiling of graphs with exception handlers currently not supported.");
-        }
+
+//      if ( graph.getExceptionTable().getExceptionHandlers().size() > 0 ) {
+//             throw new GraphException("Compiling of graphs with exception handlers currently not supported.");
+// 		}
 
         InstructionList il = new InstructionList();
         method.setInstructionList(il);
@@ -99,6 +108,49 @@ public class BcelGraphCompiler {
         }
 
         // create exception table
+		ExceptionTable exceptionTable = graph.getExceptionTable();
+		List exceptionHandlers = exceptionTable.getExceptionHandlers();
+		for (Iterator it = exceptionHandlers.iterator(); it.hasNext();) {
+			BasicBlock.ExceptionHandler eh = (BasicBlock.ExceptionHandler)it.next();
+
+			for (Iterator k = eh.getHandledBlocks().iterator(); k.hasNext(); ) {
+				BasicBlock bb = (BasicBlock)k.next();
+
+				int srcIndex = bb.getBlockIndex();
+				InstructionHandle srcStart = (InstructionHandle)bbStarts.get(srcIndex);
+				InstructionHandle srcEnd = (InstructionHandle)bbEnds.get(srcIndex);
+
+				int dstIndex = eh.getExceptionBlock().getBlockIndex();
+				InstructionHandle dstStart = (InstructionHandle)bbStarts.get(dstIndex);
+
+				ObjectType type;
+				if (eh.getExceptionClass() == null) {
+					type = null;
+				} else {
+					type = new ObjectType(eh.getExceptionClass().getClassName());
+				}
+
+				method.addExceptionHandler(srcStart, srcEnd, dstStart, type);
+			}
+		}		
+
+		// merge exception handlers
+		CodeExceptionGen[] cg = method.getExceptionHandlers();
+		for (int i = 0; i < cg.length-1; i++) {
+			if (cg[i].getEndPC().getNext() == cg[i+1].getStartPC()
+				&& cg[i].getHandlerPC() == cg[i+1].getHandlerPC()
+				&& cg[i].getCatchType() == cg[i+1].getCatchType()) {				
+
+				InstructionHandle srcStart = cg[i].getStartPC();
+				InstructionHandle srcEnd = cg[i+1].getEndPC();
+				InstructionHandle dstStart = cg[i].getHandlerPC();
+				ObjectType type = cg[i].getCatchType();
+
+				method.removeExceptionHandler(cg[i]);
+				method.removeExceptionHandler(cg[i+1]);
+				method.addExceptionHandler(srcStart, srcEnd, dstStart, type);
+			}
+		}
 
         // cleanup
         method.removeNOPs();
@@ -140,6 +192,9 @@ public class BcelGraphCompiler {
             }
         }
 
+		bbStarts.put(block.getBlockIndex(), ih);
+		bbEnds.put(block.getBlockIndex(), ih);
+
         // TODO get targets for jsr
 
         for (Iterator it = code.getStatements().iterator(); it.hasNext();) {
@@ -159,6 +214,8 @@ public class BcelGraphCompiler {
             } else {
                 ih = il.append(ih, is);
             }
+
+			bbEnds.put(block.getBlockIndex(), ih);
         }
 
         // add goto if needed for default edge
@@ -166,7 +223,8 @@ public class BcelGraphCompiler {
         if ( next != null ) {
             int targetNr = next.getTargetBlock().getBlockIndex();
             if ( targetNr != block.getBlockIndex() + 1 ) {
-                il.append(ih, new GOTO((InstructionHandle) targetList.get(targetNr)) );
+                ih = il.append(ih, new GOTO((InstructionHandle) targetList.get(targetNr)) );
+				bbEnds.put(block.getBlockIndex(), ih);
             }
         }
     }
@@ -180,4 +238,8 @@ public class BcelGraphCompiler {
         
         return targets;
     }
+
+	private Map bbStarts = new HashMap();
+	private Map bbEnds = new HashMap();
+
 }

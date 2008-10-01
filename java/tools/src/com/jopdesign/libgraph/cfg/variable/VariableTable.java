@@ -161,7 +161,7 @@ public class VariableTable {
     }
 
     public int size() {
-        return variables.size();
+        return variables.size()+1; // the last variable could be a long or double
     }
 
     public int getIndex(Variable var) {

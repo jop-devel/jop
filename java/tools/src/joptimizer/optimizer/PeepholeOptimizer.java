@@ -19,6 +19,7 @@
 package joptimizer.optimizer;
 
 import com.jopdesign.libgraph.cfg.ControlFlowGraph;
+import com.jopdesign.libgraph.cfg.GraphException;
 import com.jopdesign.libgraph.cfg.block.CodeBlock;
 import com.jopdesign.libgraph.cfg.statements.StmtHandle;
 import com.jopdesign.libgraph.struct.MethodInfo;
@@ -28,6 +29,8 @@ import joptimizer.framework.actions.AbstractGraphAction;
 import joptimizer.framework.actions.ActionException;
 import joptimizer.optimizer.peephole.PeepGetfield;
 import joptimizer.optimizer.peephole.PeepGoto;
+import joptimizer.optimizer.peephole.PeepInc;
+import joptimizer.optimizer.peephole.PeepLoadPop;
 import joptimizer.optimizer.peephole.PeepNop;
 import joptimizer.optimizer.peephole.PeepOptimization;
 import org.apache.log4j.Logger;
@@ -74,6 +77,8 @@ public class PeepholeOptimizer extends AbstractGraphAction {
         optimizer.add(new PeepNop());
         optimizer.add(new PeepGoto());
         optimizer.add(new PeepGetfield());
+        optimizer.add(new PeepInc());
+        optimizer.add(new PeepLoadPop());
 
         return true;
     }
@@ -123,16 +128,18 @@ public class PeepholeOptimizer extends AbstractGraphAction {
             for (int i = 0; i < graph.getBlockCount(); i++ ) {
 
                 CodeBlock code = graph.getBlock(i).getCodeBlock();
+				boolean match = false;
 
                 for (int j = 0; j < code.size(); j++) {
                     StmtHandle handle = code.getStmtHandle(j);
 
                     if ( firstClass == null || firstClass.isAssignableFrom( handle.getStatement().getClass() ) ) {
+
                         StmtHandle next = optimization.processStatement(handle);
 
                         if ( next != null ) {
                             matches[m]++;
-
+							match = true;
                             // TODO set loop to next
                             next.dispose();
                         }
@@ -142,10 +149,23 @@ public class PeepholeOptimizer extends AbstractGraphAction {
                     handle.dispose();
                 }
 
+				if (match) {
+					graph.setModified(true);
+				}
             }
 
             m++;
         }
+
+		try {
+			methodInfo.getMethodCode().compileGraph();
+		} catch (GraphException e) {
+			if ( getJopConfig().doIgnoreActionErrors() ) {
+				logger.warn("Could peephole optimize {"+methodInfo.getFQMethodName()+"}, skipping.", e);
+			} else {
+				throw new ActionException("Could not get CFG for method.", e);
+			}
+		}
 
     }
 }

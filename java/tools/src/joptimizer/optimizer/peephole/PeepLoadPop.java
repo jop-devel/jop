@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007,2008, Stefan Hepp
+ * Copyright (c) 2007,2008, Wolfgang Puffitsch
  *
  * This file is part of JOPtimizer.
  *
@@ -19,18 +19,21 @@
 package joptimizer.optimizer.peephole;
 
 import com.jopdesign.libgraph.cfg.ControlFlowGraph;
+import com.jopdesign.libgraph.cfg.block.BasicBlock;
+import com.jopdesign.libgraph.cfg.block.StackCode;
 import com.jopdesign.libgraph.cfg.statements.StmtHandle;
-import com.jopdesign.libgraph.cfg.statements.common.GetfieldStmt;
-import com.jopdesign.libgraph.cfg.statements.common.PutfieldStmt;
-import com.jopdesign.libgraph.cfg.statements.stack.StackDup;
+import com.jopdesign.libgraph.cfg.statements.stack.StackLoad;
+import com.jopdesign.libgraph.cfg.statements.stack.StackPop;
+import com.jopdesign.libgraph.cfg.variable.Variable;
+import com.jopdesign.libgraph.struct.ConstantValue;
+import com.jopdesign.libgraph.struct.type.TypeInfo;
 
 /**
- * TODO this optimization is not very effective, only works on static fields.
- * @author Stefan Hepp, e0026640@student.tuwien.ac.at
+ * @author Wolfgang Puffitsch, wpuffits@mail.tuwien.a.at
  */
-public class PeepGetfield implements PeepOptimization {
-    
-    public PeepGetfield() {
+public class PeepLoadPop implements PeepOptimization {
+	
+	public PeepLoadPop() {
     }
 
     public void startOptimizer() {
@@ -44,35 +47,27 @@ public class PeepGetfield implements PeepOptimization {
     }
 
     public Class getFirstStmtClass() {
-        return PutfieldStmt.class;
+        return StackLoad.class;
     }
 
     public StmtHandle processStatement(StmtHandle stmt) {
 
-        PutfieldStmt put = (PutfieldStmt) stmt.getStatement();
+        if ( !(stmt.getStatement() instanceof StackLoad) ) {
+            return null;
+        }
+		
+		BasicBlock block = stmt.getBlock();
         StmtHandle nextStmt = stmt.getNext();
 
-        if ( nextStmt == null || !(nextStmt.getStatement() instanceof GetfieldStmt) ) {
+        if ( nextStmt == null || !(nextStmt.getStatement() instanceof StackPop) ) {
             return null;
         }
 
-        GetfieldStmt get = (GetfieldStmt) nextStmt.getStatement();
+		stmt.delete();
+		nextStmt.delete();
 
-        if ( !get.getConstantField().equals(put.getConstantField()) ) {
-            return null;
-        }
-
-        if ( get.getConstantField().isAnonymous() || get.getConstantField().getFieldInfo().isVolatile() ) {
-            return null;
-        }
-
-        if ( !get.isStatic() || !put.isStatic() ) {
-            return null;
-        }
-
-        stmt.setStatement(new StackDup(put.getConstantField().getFieldInfo().getType()));
-        nextStmt.setStatement(put);
-
-        return nextStmt;
+		return stmt;
     }
+
+
 }
