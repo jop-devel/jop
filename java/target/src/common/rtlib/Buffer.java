@@ -70,7 +70,8 @@ public class Buffer {
 	 */
 	public boolean full() {
 		int i = wrPtr+1;
-		if (i==data.length) i=0;
+		// >= makes Wolfgang's DFA happy
+		if (i>=data.length) i=0;
 		return i==rdPtr;
 	}
 
@@ -95,7 +96,7 @@ public class Buffer {
 	public void write(int val) {
 		int i = wrPtr;
 		data[i++] = val;
-		if (i==data.length) i=0;
+		if (i>=data.length) i=0;
 		wrPtr = i;
 	}
 	
