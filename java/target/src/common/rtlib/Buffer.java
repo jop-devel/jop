@@ -83,7 +83,7 @@ public class Buffer {
 	public int read() {
 		int i =rdPtr;
 		int val = data[i++];
-		if (i==data.length) i=0;
+		if (i>=data.length) i=0;
 		rdPtr = i;
 		return val;
 	}
