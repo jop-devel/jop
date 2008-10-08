@@ -54,7 +54,7 @@ public class Startup {
 	 * 
 	 * Public just for a quick test.
 	 */
-	static Runnable[] cpuStart;
+	static Runnable[] cpuStart = new Runnable[Native.rdMem(Const.IO_CPUCNT)-1];
 	
 	/**
 	 * called from jvm.asm as first method.
@@ -87,7 +87,6 @@ public class Startup {
 			started = true;
 			clazzinit();
 			
-			cpuStart = new Runnable[Native.rdMem(Const.IO_CPUCNT)-1];
 		}
 		
 		// clear all pending interrupts (e.g. timer after reset)
