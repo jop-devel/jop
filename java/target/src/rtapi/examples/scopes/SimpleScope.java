@@ -77,7 +77,7 @@ public class SimpleScope {
 		};
 
 		System.out.println("some new");
-		new RtThread(1, 500000) {
+		new RtThread(10, 500000) {
 			public void run() {
 				for (;;) {
 					for (int i=0; i<20; ++i) {
@@ -94,7 +94,6 @@ public class SimpleScope {
 		System.out.println("start mission");
 		RtThread.startMission();
 		System.out.println("mission started");
-		for (;;) ;
 	}
 
 }

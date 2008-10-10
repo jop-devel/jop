@@ -47,6 +47,10 @@ public class Scope {
 		backingStore = localMem;
 		cnt = 0;
 		allocPtr = 0;
+		// clean it
+		for (int i=0; i<localMem.length; ++i) {
+			localMem[i] = 0;
+		}
 	}
 	
 	public int getSize() {
