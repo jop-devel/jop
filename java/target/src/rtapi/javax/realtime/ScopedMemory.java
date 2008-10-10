@@ -19,21 +19,27 @@ public abstract class ScopedMemory extends MemoryArea {
 		sc = new Scope(localMem);
 	}
 	
+	/**
+	 * Package private constructor to be used by LTPhysicalMemory
+	 * @param type
+	 * @param size
+	 */
 	ScopedMemory(Object type, long size) {
 		// super does nothing
 		super(0);
 		if (type==PhysicalMemoryManager.ON_CHIP_PRIVATE) {
+			// TODO: get size from the HW
+			if (size>1024) {
+				throw new Error("SPM not big enough");
+			}
 			sc = new Scope(IOFactory.getFactory().getScratchpadMemory());
 		} else {
 			sc = new Scope(size);
 		}
-		// TODO Auto-generated constructor stub
 	}
 
 	public void enter(Runnable logic) throws RuntimeException {
-
 		sc.enter(logic);
-		
 	}
 	
 	public long size() {
