@@ -21,7 +21,6 @@
 package test;
 
 
-import com.jopdesign.io.SerialPort;
 import com.jopdesign.io.JeopardIOFactory;
 import com.jopdesign.sys.Native;
 
