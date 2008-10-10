@@ -20,36 +20,66 @@
 
 package examples.scopes;
 
+import javax.realtime.LTMemory;
 import javax.realtime.ScopedMemory;
 import javax.realtime.ScratchpadScope;
 
+import com.jopdesign.io.IOFactory;
+import com.jopdesign.sys.JVMHelp;
+
+import joprt.RtThread;
+
 public class LocalScope {
+	
+	static class X {
+		int v;
+	}
 
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) {
 
+		
+		int ia[] = IOFactory.getFactory().getScratchpadMemory();
+		for (int i=0; i<256; ++i) {
+			ia[i] = i+1;
+		}
+		for (int i=0; i<256; ++i) {
+			if (ia[i] != i+1) {
+				System.out.println("shit at "+i);
+			}
+		}
+		
 		// This was my version with automatic sizing
-		// ScopedMemory scope = new ScratchpadScope();
+		final ScopedMemory scope = new ScratchpadScope();
+		// final ScopedMemory scope = new LTMemory(0, 20000L);
 		// Andy's version
-		ThreadLocalScope scope = new ThreadLocalScope(1000);
+		// ThreadLocalScope scope = new ThreadLocalScope(1000);
+		// final PrivateScope scope = new PrivateScope(1000);
 		System.out.print("Size of the scratchpad RAM is ");
 		System.out.println(scope.size());
-		Runnable run = new Runnable() {
+		final Runnable run = new Runnable() {
 			public void run() {
 				// just generate garbage
-				for (int i=0; i<5; ++i) {
-					System.out.print("i="+i+" ");
-					System.out.println();
+				for (int i=0; i<3; ++i) {
+					// this line generates a LOT of garbage!
+					// loop count of 4 does NOT fit into our 1 KB SPM
+					System.out.println("i="+i);
 				}
 			}			
 		};
 
-		for (int i=0; i<5; ++i) {
-			System.out.println("enter");
-			scope.enter(run);
-		}
+		new RtThread(10, 100000) {
+			public void run() {
+				for (int i=0; i<5; ++i) {
+					System.out.println("enter");
+					scope.enter(run);
+				}				
+			}
+		};
+		
+		RtThread.startMission();
 	}
 
 }
