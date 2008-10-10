@@ -37,6 +37,7 @@
 --	2007-04-14	xaload and xastore in hardware
 --	2008-02-19	put/getfield in hardware
 --	2008-04-30  copy step in hardware
+--	2008-10-10	correct array access for fast (SPM) memory
 --
 
 Library IEEE;
@@ -133,7 +134,7 @@ end component;
 	type state_type		is (
 							idl, rd1, wr1,
 							bc_cc, bc_r1, bc_w, bc_rn, bc_wr, bc_wl,
-							iald0, iald1, iald2, iald3, iald4,
+							iald0, iald1, iald2, iald23, iald3, iald4,
 							iasrd, ialrb,
 							iast0, iaswb, iasrb, iasst,
 							gf0, gf1, gf2, gf3,
@@ -397,7 +398,8 @@ begin
 		addr_next <= unsigned(bin(SC_ADDR_SIZE-1 downto 0));
 	end if;
 
-	if state=iald3 or state=gf2 then
+	-- get/putfield could be optimized for faster memory (e.g. SPM)
+	if state=iald3 or state=iald23 or state=gf2 then
 		addr_next <= unsigned(sc_mem_in.rd_data(SC_ADDR_SIZE-1 downto 0))+unsigned(index);
 	end if;
 
@@ -550,8 +552,27 @@ begin
 			-- w. pipeline level 2
 			-- would waste one cycle in a single cycle memory (similar
 			-- to bc load) - SimpCon rd comes from registered state_rd.
-			if sc_mem_in.rdy_cnt/=3 then
+			if sc_mem_in.rdy_cnt<=1 then
+				next_state <= iald23;
+			elsif sc_mem_in.rdy_cnt/=3 then
 				next_state <= iald2;
+			end if;
+
+		--
+		-- a quick hack for faster memory: we need to read
+		-- it now! TODO: get better state names
+		-- it's a mix of iald2 and iald3
+		--
+		when iald23 =>
+			next_state <= iald4;
+------ that's now load specific!
+-- we start loading before we know the upper bound exception!
+-- is there an issue with read peripherals????
+			if was_a_store='1' then
+				next_state <= iaswb;
+			-- w. pipeline level 2
+			elsif sc_mem_in.rdy_cnt/=3 then
+				next_state <= iasrd;
 			end if;
 
 		when iald2 =>
@@ -756,6 +777,10 @@ begin
 				sc_mem_out.atomic <= '1';
 
 			when iald2 =>
+				state_rd <= '1';
+				sc_mem_out.atomic <= '1';
+
+			when iald23 =>
 				state_rd <= '1';
 				sc_mem_out.atomic <= '1';
 
