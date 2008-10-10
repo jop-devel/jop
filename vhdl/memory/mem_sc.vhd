@@ -37,7 +37,7 @@
 --	2007-04-14	xaload and xastore in hardware
 --	2008-02-19	put/getfield in hardware
 --	2008-04-30  copy step in hardware
---	2008-10-10	correct array access for fast (SPM) memory
+--	2008-10-10	correct array access for fast (SPM) memory (+iald23 state)
 --
 
 Library IEEE;
