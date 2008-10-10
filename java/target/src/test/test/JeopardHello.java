@@ -1,5 +1,6 @@
 package test;
 
+import com.jopdesign.io.ControlChannel;
 import com.jopdesign.io.JeopardIOFactory;
 import com.jopdesign.io.SerialPort;
 import com.jopdesign.sys.GC;
@@ -51,7 +52,7 @@ public class JeopardHello {
 		// Access to I/O devices via hardware objects
 		
 		// let's get the control channel from the factory
-		SerialPort cc = JeopardIOFactory.getJeopardIOFactory().getControlPort();
+		ControlChannel cc = JeopardIOFactory.getJeopardIOFactory().getControlPort();
 		
 		// writing is easy:
 		cc.data = 123;
