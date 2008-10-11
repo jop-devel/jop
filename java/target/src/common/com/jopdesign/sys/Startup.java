@@ -36,7 +36,9 @@ public class Startup {
 	
 	// use static vars, don't waste stack space
 	static int var;
+	/** Size of main memory in 32-bit words */
 	static int mem_size;
+	/** Size of scratchpad memory in 32-bit words */
 	static int spm_size;
 
 	// a stack for the interpreter mode
@@ -222,6 +224,10 @@ public class Startup {
 		synchronized (stack) {
 			for (;;) ;
 		}
+	}
+	
+	public static int getSPMSize() {
+		return spm_size*4;
 	}
 	static void clazzinit() {
 
