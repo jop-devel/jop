@@ -21,6 +21,8 @@
 package examples.scopes;
 
 import javax.realtime.LTMemory;
+import javax.realtime.LTPhysicalMemory;
+import javax.realtime.PhysicalMemoryManager;
 import javax.realtime.ScopedMemory;
 import javax.realtime.ScratchpadScope;
 
@@ -52,11 +54,12 @@ public class LocalScope {
 		}
 		
 		// This was my version with automatic sizing
-		final ScopedMemory scope = new ScratchpadScope();
-		// final ScopedMemory scope = new LTMemory(0, 20000L);
+		// final ScopedMemory scope = new ScratchpadScope();
+		// a RTSJ like version
+		// final ScopedMemory scope = new LTPhysicalMemory(PhysicalMemoryManager.ON_CHIP_PRIVATE, 1000);
 		// Andy's version
 		// ThreadLocalScope scope = new ThreadLocalScope(1000);
-		// final PrivateScope scope = new PrivateScope(1000);
+		final PrivateScope scope = new PrivateScope(1000);
 		System.out.print("Size of the scratchpad RAM is ");
 		System.out.println(scope.size());
 		final Runnable run = new Runnable() {

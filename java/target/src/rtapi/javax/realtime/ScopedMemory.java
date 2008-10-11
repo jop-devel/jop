@@ -30,7 +30,7 @@ public abstract class ScopedMemory extends MemoryArea {
 		if (type==PhysicalMemoryManager.ON_CHIP_PRIVATE) {
 			// TODO: get size from the HW
 			if (size>1024) {
-				throw new Error("SPM not big enough");
+				throw new RuntimeException("Local memory is not big enough");
 			}
 			sc = new Scope(IOFactory.getFactory().getScratchpadMemory());
 		} else {
