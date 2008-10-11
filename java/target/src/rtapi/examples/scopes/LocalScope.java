@@ -59,9 +59,6 @@ public class LocalScope {
 		// final ScopedMemory scope = new LTPhysicalMemory(PhysicalMemoryManager.ON_CHIP_PRIVATE, 1000);
 		// Andy's version
 		// ThreadLocalScope scope = new ThreadLocalScope(1000);
-		final PrivateScope scope = new PrivateScope(1000);
-		System.out.print("Size of the scratchpad RAM is ");
-		System.out.println(scope.size());
 		final Runnable run = new Runnable() {
 			public void run() {
 				// just generate garbage
@@ -75,6 +72,9 @@ public class LocalScope {
 
 		new RtThread(10, 100000) {
 			public void run() {
+				PrivateScope scope = new PrivateScope(1000);
+				System.out.print("Size of the scratchpad RAM is ");
+				System.out.println(scope.size());
 				for (int i=0; i<5; ++i) {
 					System.out.println("enter");
 					scope.enter(run);

@@ -72,6 +72,9 @@ public class RtThread {
 		thr.setProcessor(id);
 	}
 
+	public static RtThread currentRtThread() {
+		return RtThreadImpl.currentRtThread();
+	}
 
 	/**
 	*	dummy yield() for compatibility reason.

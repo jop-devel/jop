@@ -93,7 +93,7 @@ public class RtThreadImpl {
 	protected final static int RT_IDLE = 1;
 
 
-	private RtThread rtt;		// reference to RtThread's run method
+	RtThread rtt;		// reference to RtThread's run method
 	private int priority;
 	private int period;			// period in us
 	private int offset;			// offset in us
@@ -508,19 +508,28 @@ for (int i=0; i<Const.STACK_SIZE-Const.STACK_OFF; ++i) {
 
 	// TODO: make it CMP aware
 	static int[] getStack(int num) {
-		return Scheduler.sched[0].ref[num].stack;
+		return Scheduler.sched[sys.cpuId].ref[num].stack;
 	}
 
 	static int getSP(int num) {
-		return Scheduler.sched[0].ref[num].sp;
+		return Scheduler.sched[sys.cpuId].ref[num].sp;
 	}
 
 	static int getCnt() {
-		return Scheduler.sched[0].cnt;
+		return Scheduler.sched[sys.cpuId].cnt;
 	}
 	
 	static int getActive() {
-		return Scheduler.sched[0].active;
+		return Scheduler.sched[sys.cpuId].active;
+	}
+	
+	public static RtThread currentRtThread() {
+		
+		Scheduler s = Scheduler.sched[sys.cpuId];
+		if (s.ref==null) {
+			return null;
+		}
+		return s.ref[s.active].rtt;
 	}
 	
 	static Scope getCurrentScope() {
@@ -579,6 +588,8 @@ static void trace(int[] stack, int sp) {
 		fp = vp+args+loc;			// new fp can be calc. with vp and count of local vars
 	}
 }
+
+
 
 
 
