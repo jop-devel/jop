@@ -2,6 +2,7 @@ package javax.realtime;
 
 import com.jopdesign.io.IOFactory;
 import com.jopdesign.sys.Scope;
+import com.jopdesign.sys.Startup;
 
 public abstract class ScopedMemory extends MemoryArea {
 
@@ -20,6 +21,11 @@ public abstract class ScopedMemory extends MemoryArea {
 	}
 	
 	/**
+	 * We can only use one physical memory per CPU core
+	 */
+	private static boolean physInUse[] = new boolean[Runtime.getRuntime().availableProcessors()];
+
+	/**
 	 * Package private constructor to be used by LTPhysicalMemory
 	 * @param type
 	 * @param size
@@ -28,11 +34,17 @@ public abstract class ScopedMemory extends MemoryArea {
 		// super does nothing
 		super(0);
 		if (type==PhysicalMemoryManager.ON_CHIP_PRIVATE) {
-			// TODO: get size from the HW
-			if (size>1024) {
-				throw new RuntimeException("Local memory is not big enough");
+			synchronized(physInUse) {
+				if (size>Startup.getSPMSize()) {
+					throw new RuntimeException("Local memory is not big enough");
+				}
+				IOFactory fact = IOFactory.getFactory();
+				if (physInUse[fact.getSysDevice().cpuId]) {
+					throw new RuntimeException("Physical memory already in use");
+				}
+				physInUse[fact.getSysDevice().cpuId] = true;				
+				sc = new Scope(fact.getScratchpadMemory());
 			}
-			sc = new Scope(IOFactory.getFactory().getScratchpadMemory());
 		} else {
 			sc = new Scope(size);
 		}

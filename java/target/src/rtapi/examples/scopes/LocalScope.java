@@ -70,18 +70,37 @@ public class LocalScope {
 			}			
 		};
 
-		new RtThread(10, 100000) {
+		RtThread rtt1 = new RtThread(10, 10000) {
 			public void run() {
 				PrivateScope scope = new PrivateScope(1000);
 				System.out.print("Size of the scratchpad RAM is ");
 				System.out.println(scope.size());
-				for (int i=0; i<5; ++i) {
-					System.out.println("enter");
+				for (int i=0; i<3; ++i) {
+					System.out.println("enter A");
 					scope.enter(run);
+					waitForNextPeriod();
 				}				
 			}
 		};
 		
+		RtThread rtt2 = new RtThread(10, 10000) {
+			public void run() {
+				PrivateScope scope = new PrivateScope(1000);
+				System.out.print("Size of the scratchpad RAM is ");
+				System.out.println(scope.size());
+				for (int i=0; i<3; ++i) {
+					System.out.println("enter B");
+					scope.enter(run);
+					waitForNextPeriod();
+				}				
+			}
+		};
+		
+		rtt1.setProcessor(0);
+		// second thread on second CPU, but we will not see the
+		// output
+		rtt2.setProcessor(1);
+
 		RtThread.startMission();
 	}
 
