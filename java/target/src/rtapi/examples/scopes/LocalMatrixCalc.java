@@ -22,9 +22,7 @@ package examples.scopes;
 
 import java.util.Random;
 
-import com.jopdesign.io.IOFactory;
-import com.jopdesign.io.SysDevice;
-import com.jopdesign.sys.Startup;
+import joprt.RtThread;
 
 /**
  * Test program for local scope caching.
@@ -32,7 +30,7 @@ import com.jopdesign.sys.Startup;
  * @author Christof Pitter, Martin Schoeberl
  * 
  */
-public class LocalMatrixCalc implements Runnable {
+public class LocalMatrixCalc extends RtThread {
 
 	// Shared Variables
 	public static int[][] arrayA;
@@ -40,21 +38,33 @@ public class LocalMatrixCalc implements Runnable {
 	public static int[][] arrayC;
 	public static int rowCounter = 0;
 	public static int endCalculation = 0;
-	public static int M = 100; // Number of rows of A
-	public static int N = 100; // Number of columns of A, number of rows of B
-	public static int P = 100; // Number of columns of B	
-	static Object lock;
+	public static final int M = 100; // Number of rows of A
+	public static final int N = 100; // Number of columns of A, number of rows of B
+	public static final int P = 100; // Number of columns of B	
+	static Object lock = new Object();
+	static final int PRIORITY = 1;
+	static final int PERIOD = 1000;
+	
+	static final boolean USE_SCOPE = false;
+	volatile static boolean go = false;
+	
+	static int[] stats;
 
 	int cpu_id;
 
 	public LocalMatrixCalc(int identity) {
+		super(PRIORITY, PERIOD);
 		cpu_id = identity;
 	}
+	
+	// Questions to CP: why abs and %max in initialize?
+	// why not a local var in MAC operation?
+	// Make a local copy of the working row
+	// Use row in second index to avoid dual array access
 
 
-	static void initializeMultiplication(long seed) {
-		// Initialize the Arrays
-		int max = 10;
+	static void initializeArrays(long seed) {
+
 		Random r = new Random(seed);
 
 		arrayA = new int[M][N];
@@ -63,13 +73,13 @@ public class LocalMatrixCalc implements Runnable {
 
 		for (int i = 0; i < M; i++) {
 			for (int j = 0; j < N; j++) {
-				arrayA[i][j] = (Math.abs(r.nextInt())) % max;
+				arrayA[i][j] = r.nextInt();
 			}
 		}
 
 		for (int i = 0; i < N; i++) {
 			for (int j = 0; j < P; j++) {
-				arrayB[i][j] = (Math.abs(r.nextInt())) % max;
+				arrayB[i][j] = r.nextInt();
 			}
 		}
 
@@ -81,8 +91,15 @@ public class LocalMatrixCalc implements Runnable {
 	}
 
 	static int processCalculation() {
+
+		int val;
+		int[] colB, localRow;
+		int j, i;
+		
 		int myRow = 0;
 		int counter = 0;
+		
+		localRow = new int[M];
 
 		while (true) {
 			synchronized (lock) {
@@ -94,13 +111,17 @@ public class LocalMatrixCalc implements Runnable {
 				}
 			}
 
-			for (int i = 0; i < P; i++) { // column
-				arrayC[myRow][i] = 0;
-
-				for (int j = 0; j < M; j++) {
-					arrayC[myRow][i] = arrayC[myRow][i] + arrayA[myRow][j]
-							* arrayB[j][i];
+			for (j = 0; j < M; j++) {
+				localRow[j] = arrayA[j][myRow];
+			}
+			
+			for (i = 0; i < P; i++) { // column
+				val = 0;
+				colB = arrayB[i];
+				for (j = 0; j < M; j++) {
+					val += localRow[j] * colB[j];
 				}
+				arrayC[i][myRow] = val;
 			}
 
 			synchronized (lock) {
@@ -112,8 +133,21 @@ public class LocalMatrixCalc implements Runnable {
 		return counter;
 	}
 
-	public void run() {
-		int test = processCalculation();
+	public void run() {		
+		Runnable r = new Runnable() {
+			public void run() {
+				stats[cpu_id] = processCalculation();				
+			}
+		};
+		PrivateScope scope = new PrivateScope(1000);
+		while (!go) {
+			waitForNextPeriod();
+		}
+		if (USE_SCOPE) {
+			scope.enter(r);
+		} else {
+			r.run();
+		}
 	}
 	
 	public static void main(String[] args) {
@@ -126,26 +160,29 @@ public class LocalMatrixCalc implements Runnable {
 		System.out.println("Matrix Benchmark:");
 
 		long seed = 13;
-		initializeMultiplication(seed);
+		initializeArrays(seed);
 
-		SysDevice sys = IOFactory.getFactory().getSysDevice();
-		int nrCpu = sys.nrCpu;
-		nrCpu = 2;
+		int nrCpu = Runtime.getRuntime().availableProcessors();
+		stats = new int[nrCpu];
+		// nrCpu = 2;
 
-		for (int i = 0; i < nrCpu - 1; i++) {
-			Runnable r = new LocalMatrixCalc(i + 1);
-			Startup.setRunnable(r, i);
+		for (int i = 0; i < nrCpu; i++) {
+			RtThread rtt = new LocalMatrixCalc(i);
+			rtt.setProcessor(i);
 		}
 
+		// Start threads on this and other CPUs
+		RtThread.startMission();
+
+		// give threads time to setup their memory
+		RtThread.sleepMs(100);
 		System.out.println("Start calculation");
 		// Start of measurement
 		start = (int) System.currentTimeMillis();
+		go = true;
 
-		// Start of all other CPUs
-		sys.signal = 1;
-
-		// Start of CPU0
-		int test0 = processCalculation();
+		// This main thread will be blocked till the
+		// worker thread has finished
 
 		while (true) {
 			synchronized (lock) {
@@ -161,6 +198,9 @@ public class LocalMatrixCalc implements Runnable {
 		System.out.println("StopTime: " + stop);
 		time = stop - start;
 		System.out.println("TimeSpent: " + time);
+		for (int i=0; i<nrCpu; ++i) {
+			System.out.println("CPU "+i+" calculated "+stats[i]+" rows");
+		}
 
 	}
 
