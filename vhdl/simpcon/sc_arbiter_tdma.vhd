@@ -122,12 +122,22 @@ architecture rtl of arbiter is
 	
 begin
 
--- test numbers
+-- MS: the constants are for the DE2 board with a 6 cycle memory write.
+-- For the cyc12 board we can cut it down to 3 cycles.
 
-period <= 45;
-cpu_time(0) <= 15;
-cpu_time(1) <= 30;
-cpu_time(2) <= 44;
+period <= 18;
+cpu_time(0) <= 6;
+cpu_time(1) <= 12;
+cpu_time(2) <= 18;
+--cpu_time(3) <= 24;
+--cpu_time(4) <= 30;
+--cpu_time(5) <= 36;
+--cpu_time(6) <= 42;
+--cpu_time(7) <= 48;
+
+-- TODO: should really be configrable with: number of CPUs, slot length,
+-- and memory access time. Should use assert to check that the slot length
+-- is longer than the memory access time.
 
 
 -- Generates the input register and saves incoming data for each master
@@ -170,12 +180,22 @@ process(counter, cpu_time)
 			slot(j) <= '0';
 		end loop;
 		
-		if (counter > -1) and (counter < cpu_time(0)-3) then 								-- from 0 to 96
+		if (counter > -1) and (counter < cpu_time(0)-5) then
 			slot(0) <= '1';
-		elsif (counter > cpu_time(0)-1) and (counter < cpu_time(1)-3) then 	-- from 100 to 196
+		elsif (counter > cpu_time(0)-1) and (counter < cpu_time(1)-5) then
 			slot(1) <= '1';
-		elsif (counter > cpu_time(1)-1) and (counter < cpu_time(2)-2) then	-- from 200 to 296
+		elsif (counter > cpu_time(0)-1) and (counter < cpu_time(2)-5) then
 			slot(2) <= '1';
+--		elsif (counter > cpu_time(0)-1) and (counter < cpu_time(3)-5) then
+--			slot(3) <= '1';
+--		elsif (counter > cpu_time(0)-1) and (counter < cpu_time(4)-5) then
+--			slot(4) <= '1';
+--		elsif (counter > cpu_time(0)-1) and (counter < cpu_time(5)-5) then
+--			slot(5) <= '1';
+--		elsif (counter > cpu_time(0)-1) and (counter < cpu_time(6)-5) then
+--			slot(6) <= '1';
+--		elsif (counter > cpu_time(0)-1) and (counter < cpu_time(7)-5) then
+--			slot(7) <= '1';
 		end if;
 end process;	
 	
