@@ -297,6 +297,7 @@ public class State extends ejip.UdpHandler implements Runnable {
 				lastMsgDate = date;			
 				lastMsgTimestamp = time;
 			} else {
+				Main.logger.print("Msg. too old");
 				// it's a too old packet
 				p.setStatus(Packet.FREE);
 				return;
@@ -446,14 +447,28 @@ public class State extends ejip.UdpHandler implements Runnable {
 		if (val!=startNF) ferlChanged = true;
 		val = buf[Udp.DATA+4]&0xffff;
 		if (val!=start) ferlChanged = true;
+		
+		// logging
+		if (ferlChanged) {
+			Main.logger.printSmall("Ferl changed, Logic.state=", Logic.state);
+			Main.logger.printSmall("From ", buf[Udp.DATA+4]&0xffff);
+			Main.logger.printSmall("To " , buf[Udp.DATA+5]>>>16);
+		}
+		
+		
 		if (val!=0 && ferlChanged && (Logic.state==Logic.ANM_OK || Logic.state==Logic.ZIEL
 				|| Logic.state==Logic.NOTHALT_OK || Logic.state==Logic.ERLAUBNIS)) {
+			Main.logger.printSmall("new ferl accepted with state check, from=", buf[Udp.DATA+4]&0xffff);			
+		}
+		// For a test accept FERL in any Logic.state
+		if (val!=0 && ferlChanged) {
 			// this is now a FERL event and we accept the change
 			synchronized (this) {
 				start = buf[Udp.DATA+4]&0xffff;
 				end = buf[Udp.DATA+5]>>>16;
 				startNF = buf[Udp.DATA+5]&0xffff;
 			}
+			Main.logger.printSmall("new ferl accepted, from=", start);
 			synchronized (Status.dirMutex) {
 				// let Logik.check() update the direction
 				Status.direction = Gps.DIR_UNKNOWN;

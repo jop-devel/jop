@@ -357,6 +357,7 @@ System.out.println("Logic.initVals()");
 		
 		State state = Main.state;
 		int pos, start, end;
+		// TODO: use the following locals for the checks
 		synchronized (state) {
 			pos = state.getPos();
 			start = state.start;

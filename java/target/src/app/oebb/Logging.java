@@ -13,7 +13,7 @@ public class Logging implements Runnable {
 	final static int SND_PORT = 2007;
 	final static int ACK_PORT = 2008;
 	
-	final static int MIN_TIMOUT = 10;
+	final static int MIN_TIMOUT = 4;
 	
 	boolean nandChecked = false;
 	int timeOut;
@@ -63,6 +63,22 @@ public class Logging implements Runnable {
 			lm.msg.append((char) j);
 		}
 
+		lm.addToSendList();
+	}
+	
+	void printSmall(String s, int val) {
+		
+		LogMsg lm = LogMsg.getFreeMsg();
+		if (lm==null) {
+			return;
+		}
+		lm.msg.append(s);
+		lm.msg.append((char) ('0'+val/100000%10));
+		lm.msg.append((char) ('0'+val/10000%10));
+		lm.msg.append((char) ('0'+val/1000%10));
+		lm.msg.append((char) ('0'+val/100%10));
+		lm.msg.append((char) ('0'+val/10%10));
+		lm.msg.append((char) ('0'+val%10));
 		lm.addToSendList();
 	}
 

@@ -4,7 +4,8 @@ import java.util.Vector;
 
 public class LogMsg {
 
-	static final int MAX_MSG = 5;
+	// TODO: reduce to 5 again when FERL issue is solved
+	static final int MAX_MSG = 10;
 	static final int MAX_SIZE = 40;
 	
 	static Vector free = new Vector(MAX_MSG);
