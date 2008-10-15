@@ -16,7 +16,7 @@ public class HelloWorldHereIPing{
 private HelloWorldHereIPing(){
 }
 
-	final static boolean TWO_SERIAL = true;
+	final static boolean TWO_SERIAL = false;
 
 public static void main(String[] args){
 
