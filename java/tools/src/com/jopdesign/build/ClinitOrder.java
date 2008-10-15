@@ -52,10 +52,10 @@ public class ClinitOrder extends AppVisitor {
 		
 	public void visitJavaClass(JavaClass clazz) {
 		super.visitJavaClass(clazz);
-		MethodInfo mi = cli.getMethodInfo(JOPizer.clinitSig);
+		MethodInfo mi = getCli().getMethodInfo(JOPizer.clinitSig);
 		if (mi!=null) {
-			Set depends = findDependencies(cli, mi, false);
-			clinit.put(cli, depends);
+			Set depends = findDependencies(getCli(), mi, false);
+			clinit.put(getCli(), depends);
 		}
 	}	
 	

@@ -55,7 +55,7 @@ public class ReplaceNativeAndCPIdx extends AppVisitor {
 			if (!(methods[i].isAbstract() || methods[i].isNative())) {
 
 				Method m = replace(methods[i]);
-		        MethodInfo mi = cli.getMethodInfo(m.getName()+m.getSignature());
+		        MethodInfo mi = getCli().getMethodInfo(m.getName()+m.getSignature());
 		        // set new method also in MethodInfo
 		        mi.setMethod(m);
 				if (m != null) {
@@ -73,7 +73,7 @@ public class ReplaceNativeAndCPIdx extends AppVisitor {
 
 		String methodId = method.getName() + method.getSignature();
 
-		MethodInfo mi = cli.getMethodInfo(methodId);
+		MethodInfo mi = getCli().getMethodInfo(methodId);
 
 		// find invokes first and replace call to Native by
 		// JOP native instructions.
@@ -110,9 +110,9 @@ public class ReplaceNativeAndCPIdx extends AppVisitor {
  				// not an initializer
  				if (!ii.getMethodName(cpoolgen).equals("<init>")) {
  					// not in the same class, must be super
- 					if (!cli.clazz.getClassName().equals(ii.getClassName(cpoolgen))) {
+ 					if (!getCli().clazz.getClassName().equals(ii.getClassName(cpoolgen))) {
 						Integer idx = new Integer(ii.getIndex());
-						int new_index = cli.cpoolUsed.indexOf(idx) + 1;
+						int new_index = getCli().cpoolUsed.indexOf(idx) + 1;
  						first.setInstruction(new JOPSYS_INVOKESUPER((short)new_index));
  						// System.err.println("invokesuper "+ii.getClassName(cpoolgen)+"."+ii.getMethodName(cpoolgen));
  					}
@@ -144,12 +144,12 @@ public class ReplaceNativeAndCPIdx extends AppVisitor {
 			Integer idx = new Integer(index);
 			// pos is the new position in the reduced constant pool
 			// idx is the position in the 'original' unresolved cpool
-			int pos = cli.cpoolUsed.indexOf(idx);
+			int pos = getCli().cpoolUsed.indexOf(idx);
 			int new_index = pos + 1;
 			if (pos == -1) {
 				System.out.println("Error: constant " + index + " "
 						+ cpoolgen.getConstant(index) + " not found");
-				System.out.println("new cpool: " + cli.cpoolUsed);
+				System.out.println("new cpool: " + getCli().cpoolUsed);
 				System.out.println("original cpool: " + cpoolgen);
 
 				System.exit(-1);

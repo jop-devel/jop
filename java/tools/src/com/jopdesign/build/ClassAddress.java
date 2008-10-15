@@ -46,7 +46,7 @@ public class ClassAddress extends AppVisitor {
 	public void visitJavaClass(JavaClass clazz) {
 
 		super.visitJavaClass(clazz);
-		addr = cli.setAddress(ai, addr);
+		addr = getCli().setAddress(ai, addr);
 	}
 	
 	public int getAddress() {

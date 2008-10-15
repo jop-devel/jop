@@ -42,7 +42,7 @@ public class CountStaticFields extends AppVisitor {
 	public void visitJavaClass(JavaClass clazz) {
 
 		super.visitJavaClass(clazz);
-		cli.cntStaticFields();
+		getCli().cntStaticFields();
 	}
 	
 

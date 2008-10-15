@@ -61,7 +61,7 @@ public class ReplaceIinc extends AppVisitor {
 		for(int i=0; i < methods.length; i++) {
 			if(!(methods[i].isAbstract() || methods[i].isNative())) {
 				Method m = replace(methods[i]);
-		        MethodInfo mi = cli.getMethodInfo(m.getName()+m.getSignature());
+		        MethodInfo mi = getCli().getMethodInfo(m.getName()+m.getSignature());
 		        // set new method also in MethodInfo
 		        mi.setMethod(m);
 				if (m!=null) {

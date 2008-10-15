@@ -37,7 +37,7 @@ public class AppVisitor extends EmptyVisitor {
 
 	protected AppInfo ai;
 	// TODO: should be a ClassInfo
-	protected JopClassInfo cli;
+	private JopClassInfo cli;
 	protected JavaClass clazz;
 
 	public AppVisitor(AppInfo ai) {
@@ -46,7 +46,15 @@ public class AppVisitor extends EmptyVisitor {
 	
 	public void visitJavaClass(JavaClass clazz) {
 		this.clazz = clazz;
-		cli = (JopClassInfo) ai.cliMap.get(clazz.getClassName());
+		setCli((JopClassInfo) ai.cliMap.get(clazz.getClassName()));
+	}
+
+	protected void setCli(JopClassInfo cli) {
+		this.cli = cli;
+	}
+
+	protected JopClassInfo getCli() {
+		return cli;
 	}
 
 }

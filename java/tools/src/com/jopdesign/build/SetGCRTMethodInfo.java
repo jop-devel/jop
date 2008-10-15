@@ -41,7 +41,7 @@ public class SetGCRTMethodInfo extends AppVisitor {
 		for(int i=0; i < methods.length; i++) {
 			Method m = methods[i];
 			String methodId = m.getName()+m.getSignature();
-	    MethodInfo mi = cli.getMethodInfo(methodId);
+	    MethodInfo mi = getCli().getMethodInfo(methodId);
 	    // GCRT: Walk the method
 	    GCRTMethodInfo.stackWalker(mi);
 		}

@@ -117,7 +117,7 @@ public class FindUsedConstants extends AppVisitor {
 					len = 2;
 			}
 // System.out.println(co+" "+idx+" "+len);	
-			cli.addUsedConst(idx, len);
+			getCli().addUsedConst(idx, len);
 			
 			// also modify the index!
 //			Constant cnst = cpool.getConstant(ii.getIndex());
@@ -133,7 +133,7 @@ public class FindUsedConstants extends AppVisitor {
 		for (int i = 0; i < et.length; i++) {
 			ObjectType ctype = et[i].getCatchType();
 			if (ctype != null) {
-				cli.addUsedConst(cpool.lookupClass(ctype.getClassName()), 1);
+				getCli().addUsedConst(cpool.lookupClass(ctype.getClassName()), 1);
 			}
 		}
 	}

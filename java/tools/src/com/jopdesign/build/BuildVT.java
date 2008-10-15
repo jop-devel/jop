@@ -51,7 +51,7 @@ public class BuildVT extends AppVisitor {
 
 		super.visitJavaClass(clazz);
 		// don't get confused in the build process
-		cli = null;
+		setCli(null);
 		// TODO: if (!array class) ...
 		buildVT(clazz);
 		if (clazz.isInterface()) {

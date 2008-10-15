@@ -40,7 +40,7 @@ public class ResolveCPool extends AppVisitor {
 	}
 	
 	public void visitConstantPool(ConstantPool cp) {
-		cli.resolveCPool(cp);
+		getCli().resolveCPool(cp);
 	}
 	
 

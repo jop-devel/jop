@@ -45,7 +45,7 @@ public class SetMethodInfo extends AppVisitor {
 		for(int i=0; i < methods.length; i++) {
 			Method m = methods[i];
 			String methodId = m.getName()+m.getSignature();
-	        MethodInfo mi = cli.getMethodInfo(methodId);
+	        MethodInfo mi = getCli().getMethodInfo(methodId);
 	        if(JOPizer.dumpMgci){
 	          // GCRT: get number of words used for this method's GC
 	          addr += GCRTMethodInfo.gcLength(mi);    
