@@ -64,8 +64,6 @@ public class JopConfig implements AppConfig {
 
     public static final String CONF_IGNORE_ACTION_ERRORS = "ignore-errors";
 
-    public static final String CONF_SKIP_NATIVE_CLASS = "skip-nativeclass";
-
     public JopConfig() {
         initialize(null, null);
     }
@@ -123,8 +121,6 @@ public class JopConfig implements AppConfig {
                 CONF_ALLOW_INCOMPLETE_CODE + " is not set.", "pkg"));
         optionList.add( new BoolOption(null, CONF_IGNORE_ACTION_ERRORS,
                 "Continue with next method, class or action if any action throws an error."));
-        optionList.add( new BoolOption(null, CONF_SKIP_NATIVE_CLASS,
-                "Do not load native system classes."));
     }
 
     public void setProperties(Map config) throws ConfigurationException {
@@ -343,27 +339,15 @@ public class JopConfig implements AppConfig {
         return false;
     }
 
-    public String doExcludeClassName(String className) {
+    public boolean doExcludeClassName(String className) {
 
-        if ( isNativeClassName(className) && isEnabled(CONF_SKIP_NATIVE_CLASS) ) {
-            return "Skipping native class {" + className + "}.";
-        }
-
-        if ( isLibraryClassName(className) ) {
-            return "Skipping library class {" + className + "}";
-        }
-
-        if ( doAllowIncompleteCode() ) {
-
-            for (int i = 0; i < ignore.length; i++) {
-                if ( className.startsWith(ignore[i]) ) {
-                    return "Skipping excluded class {"+ className + "}";
-                }
+        for (int i = 0; i < ignore.length; i++) {
+            if ( className.startsWith(ignore[i]) ) {
+                return true;
             }
-
         }
 
-        return null;
+        return false;
     }
 
 }

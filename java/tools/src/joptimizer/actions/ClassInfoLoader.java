@@ -109,7 +109,7 @@ public class ClassInfoLoader extends AbstractAction implements ClassAction, Meth
     }
 
     public void execute(MethodInfo methodInfo) throws ActionException {
-        if ( forceReload || !methodInfo.isInitialzed() ) {
+        if ( forceReload || !methodInfo.isInitialized() ) {
             try {
                 methodInfo.reload();
             } catch (TypeException e) {

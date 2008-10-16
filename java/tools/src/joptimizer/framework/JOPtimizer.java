@@ -165,7 +165,7 @@ public class JOPtimizer {
         for (Iterator it = classNames.iterator(); it.hasNext();) {
             String className =  it.next().toString();
 
-            String reason = jopConfig.doExcludeClassName(className);
+            String reason = appStruct.doIgnoreClassName(className);
             if ( reason == null ) {
                 classes.add(appStruct.createClassInfo(className));
             } else {
@@ -192,7 +192,7 @@ public class JOPtimizer {
             ClassInfo classInfo = (ClassInfo) it.next();
             String className = classInfo.getClassName();
 
-            String reason = jopConfig.doExcludeClassName(className);
+            String reason = appStruct.doIgnoreClassName(className);
             if ( reason == null ) {
 
                 if ( doReflectTest && (className.startsWith("java.lang.reflect.") ||

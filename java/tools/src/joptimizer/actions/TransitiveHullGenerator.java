@@ -19,20 +19,15 @@
 package joptimizer.actions;
 
 import com.jopdesign.libgraph.struct.ClassInfo;
+import com.jopdesign.libgraph.struct.TransitiveHullLoader;
 import com.jopdesign.libgraph.struct.TypeException;
-import com.jopdesign.libgraph.struct.type.TypeHelper;
 import joptimizer.config.JopConfig;
 import joptimizer.framework.JOPtimizer;
 import joptimizer.framework.actions.AbstractClassAction;
 import joptimizer.framework.actions.ActionException;
 import org.apache.log4j.Logger;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Go through all currently loaded classes and load all referenced classes. <br>
@@ -41,100 +36,6 @@ import java.util.Set;
  * @author Stefan Hepp, e0026640@student.tuwien.ac.at
  */
 public class TransitiveHullGenerator extends AbstractClassAction {
-
-    private class ClassFinder {
-
-        private List queue;
-        private Set visited;
-        private List newClasses;
-        private boolean error;
-
-        public ClassFinder(List queue) {
-            this.queue = queue;
-            newClasses = new LinkedList();
-            error = false;
-
-            visited = new HashSet( queue.size() * 3 );
-            for (Iterator it = queue.iterator(); it.hasNext();) {
-                ClassInfo javaClass = (ClassInfo) it.next();
-                visited.add(javaClass.getClassName());
-            }
-        }
-
-        public boolean hasNext() {
-            return !queue.isEmpty();
-        }
-
-        public ClassInfo getNext() {
-            return (ClassInfo) queue.remove(0);
-        }
-        
-        public boolean hasError() {
-            return error;
-        }
-
-        public List getNewClasses() {
-            return newClasses;
-        }
-
-        private void visitClass(ClassInfo classInfo) {
-            Set newClasses = classInfo.getReferencedClassNames();
-            for (Iterator it = newClasses.iterator(); it.hasNext();) {
-                String name = (String) it.next();
-                addClass(name);
-            }
-        }
-
-        private void addClass(String className) {
-
-            // get class from array classes
-            if ( className.startsWith("[") ) {
-                className = TypeHelper.getClassName(className);
-                if ( className == null ) {
-                    return;
-                }
-            }
-
-            if ( visited.contains(className) ) {
-                return;
-            } else {
-                visited.add(className);
-            }
-
-            if ( doEnqueueClass(className) ) {
-                ClassInfo newClass = null;
-
-                try {
-                    newClass = loadClass(className);
-                } catch (ActionException e) {
-                    logger.error("Could not load class {"+className+"}.",e);
-                    error = true;
-                }
-
-                if ( newClass != null ) {
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("Add class " + newClass.getClassName());
-                    }
-                    queue.add(newClass);
-                    newClasses.add(newClass);
-                }
-            }
-        }
-
-        private boolean doEnqueueClass(String className) {
-
-            String reason = getJopConfig().doExcludeClassName(className);
-            if ( reason != null ) {
-                if ( logger.isInfoEnabled() ) {
-                    logger.info(reason);
-                }
-                return false;
-            }
-
-            return !getJoptimizer().getAppStruct().contains(className);
-        }
-
-    }
 
     public static final String ACTION_NAME = "loadtransitivehull";
 
@@ -161,66 +62,28 @@ public class TransitiveHullGenerator extends AbstractClassAction {
 
     public void execute() throws ActionException {
 
-        Collection classes = getJoptimizer().getAppStruct().getClassInfos();
-        List queue = new LinkedList();
+        TransitiveHullLoader loader = new TransitiveHullLoader(getJoptimizer().getAppStruct());
 
-        for (Iterator it = classes.iterator(); it.hasNext();) {
-            ClassInfo classInfo = (ClassInfo) it.next();
-
-            if ( classInfo != null ) {
-                queue.add(classInfo);
-            }
+        try {
+            loader.extendTransitiveHull( getJoptimizer().getAppStruct().getClassInfos() );
+        } catch (TypeException e) {
+            throw new ActionException("Failed loading transitive hull.", e);
         }
 
-        loadTransitiveHull(queue);
+        getJoptimizer().addClasses(loader.getNewClasses());
     }
 
     public void execute(ClassInfo classInfo) throws ActionException {
+        TransitiveHullLoader loader = new TransitiveHullLoader(getJoptimizer().getAppStruct());
 
-        List queue = new LinkedList();
-
-        if ( classInfo != null ) {
-            queue.add(classInfo);
-            loadTransitiveHull(queue);
-        }
-    }
-
-    public void loadTransitiveHull(List queue) {
-
-        ClassFinder classFinder = new ClassFinder(queue);
-
-        if ( logger.isInfoEnabled() ) {
-            logger.info("Starting transitive hull search..");
-        }
-
-        while ( classFinder.hasNext() ) {
-            ClassInfo next = classFinder.getNext();
-
-            if (logger.isInfoEnabled()) {
-                logger.info("Processing class " + next.getClassName());
-            }
-
-            classFinder.visitClass(next);
-        }
-
-        if ( logger.isInfoEnabled() ) {
-            logger.info("Transitive hull search done; creating classInfos..");
-        }
-
-        getJoptimizer().addClasses(classFinder.getNewClasses());
-    }
-
-    private ClassInfo loadClass(String className) throws ActionException {
         try {
-            return getJoptimizer().getAppStruct().createClassInfo(className);
+            loader.extendTransitiveHull( classInfo );
         } catch (TypeException e) {
-            if ( getJopConfig().doAllowIncompleteCode() ) {
-                logger.warn("Could not load class {"+className+"}, ignored.", e);
-            } else {
-                throw new ActionException("Could not load class {"+className+"}.", e);
-            }
+            throw new ActionException("Failed loading transitive hull.", e);
         }
-        return null;
+
+        getJoptimizer().addClasses(loader.getNewClasses());
     }
+
 
 }
