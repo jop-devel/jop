@@ -70,6 +70,20 @@ IPDEST=192.168.0.123
 P1=test
 P2=test
 P3=HelloWorld
+#P2=jvm
+#P3=DoAll
+#P1=rtapi
+#P2=examples/scopes
+#P3=LocalScope
+#P3=LocalMatrixCalc
+
+#P1=test
+#P2=rtlib
+#P3=CMPBuffer
+
+#P1=common
+#P2=ejip123/examples
+#P3=HelloWorldHereIPing
 
 #P1=bench
 #P2=jbe
@@ -93,6 +107,8 @@ WCET_METHOD=measure
 #	some variables
 #
 TOOLS=java/tools
+# setting for my Eclipse CVS project
+# TOOLS=../../workspace/cvs_jop_tools
 EXT_CP=-classpath java/lib/bcel-5.1.jar\;java/lib/jakarta-regexp-1.3.jar\;java/lib/RXTXcomm.jar\;java/lib/lpsolve55j.jar\;java/lib/log4j-1.2.15.jar
 
 # The line below makes the compilation crash, because it causes JOPizer to include a *lot*
@@ -183,6 +199,7 @@ DEBUG_JOPSIM=
 #OPTIMIZE=java $(EXT_CP)\;$(TOOLS)/dist/lib/joptimizer.jar joptimizer.JOPtimizerRunner \
 #	 -config jar:file:$(TOOLS)/dist/lib/joptimizer.jar!/jop.conf $(MAIN_CLASS) && \
 #	cd $(TARGET)/dist/classes && jar cf ../lib/classes.zip *
+
 
 
 # build everything from scratch
@@ -323,6 +340,33 @@ ecl_app:
 	java $(TOOLS_CP) com.jopdesign.tools.jop2dat $(TARGET)/dist/bin/$(JOPBIN)
 	cp *.dat modelsim
 	rm -f *.dat
+
+#
+# test AppInfo
+# MS: some temporary targets for AppInfo and libgraph tests
+#
+appinfo: tools
+	java $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.build.AppInfo \
+		-cp $(TARGET)/dist/lib/classes.zip $(MAIN_CLASS)
+
+testapp: tools
+	make java_app
+	-mkdir $(TARGET)/xxx
+	java $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.build.WcetPreprocess \
+		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/xxx $(MAIN_CLASS)
+	java $(DEBUG_JOPIZER) $(TOOLS_CP) -Dmgci=false com.jopdesign.build.JOPizer \
+		-cp $(TARGET)/xxx -o $(TARGET)/dist/bin/$(JOPBIN) $(MAIN_CLASS)
+ifeq ($(USB),true)
+	make config_usb
+else
+	make config_byteblaster
+endif
+	make download
+	
+testlib: 
+	make joptimizer -e TOOLS_JFLAGS="$(TOOLS_JFLAGS)" TOOLS="$(TOOLS)"
+	java $(EXT_CP)\;$(TOOLS)/dist/lib/joptimizer.jar joptimizer.TestLib \
+		-cp $(TARGET)/dist/lib/classes.zip $(MAIN_CLASS)
 
 #
 #	project.sof fiels are used to boot from the serial line
@@ -546,9 +590,13 @@ udp_dbg:
 wcet:
 	-rm -rf $(TARGET)/wcet
 	-mkdir $(TARGET)/wcet
-	java $(TOOLS_CP) -Dlatex=false -Ddot=true -Djline=true -Dls=true com.jopdesign.wcet.WCETAnalyser \
+	-mkdir $(TARGET)/tmp
+	java $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.build.WcetPreprocess \
+		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/tmp $(MAIN_CLASS)
+	java $(TOOLS_CP) -Dlatex=true -Ddot=true -Djline=true -Dls=true com.jopdesign.wcet.WCETAnalyser \
 		-mm $(WCET_METHOD) \
-		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/wcet/$(P3)wcet.txt -sp $(TARGET_SOURCE) $(MAIN_CLASS)
+		-cp $(TARGET)/tmp -o $(TARGET)/wcet/$(P3)wcet.txt -sp $(TARGET_SOURCE) $(MAIN_CLASS)
+	-rm -rf $(TARGET)/tmp
 
 dot2eps:
 	cd $(TARGET)/wcet && make
