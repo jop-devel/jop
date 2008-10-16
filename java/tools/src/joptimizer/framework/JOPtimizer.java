@@ -146,7 +146,7 @@ public class JOPtimizer {
     public void loadTransitiveHull(Set rootClasses) throws ActionException, TypeException {
 
         appStruct.clear();
-        addClasses(createClasses(rootClasses));
+        addClasses(loadClasses(rootClasses));
 
         Action loader = actionFactory.createAction(TransitiveHullGenerator.ACTION_NAME);
         executeAction(loader);
@@ -160,14 +160,14 @@ public class JOPtimizer {
      * @return a collection of {@link ClassInfo}s.
      * @throws TypeException
      */
-    public Collection createClasses(Collection classNames) throws TypeException {
+    public Collection loadClasses(Collection classNames) throws TypeException {
         List classes = new ArrayList(classNames.size());
         for (Iterator it = classNames.iterator(); it.hasNext();) {
             String className =  it.next().toString();
 
             String reason = appStruct.doIgnoreClassName(className);
             if ( reason == null ) {
-                classes.add(appStruct.createClassInfo(className));
+                classes.add(appStruct.loadClassInfo(className));
             } else {
                 if ( logger.isInfoEnabled() ) {
                     logger.info(reason);
