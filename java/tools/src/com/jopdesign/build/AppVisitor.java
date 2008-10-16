@@ -28,16 +28,17 @@ package com.jopdesign.build;
 import org.apache.bcel.classfile.*;
 
 /**
+ * A BCEL type visitor to set ClassInfo. Shall be extended by
+ * application specific visitors for easy access to ClassInfo.
+ * 
  * @author Martin
  *
- * TODO: should contain ClassInfo instead of JopClassInfo - can
- * we do this with generics?
  */
 public class AppVisitor extends EmptyVisitor {
 
 	protected AppInfo ai;
-	// TODO: should be a ClassInfo
-	private JopClassInfo cli;
+	// should be private, but we need access in e.g. JOPizerVisitor
+	protected ClassInfo cli;
 	protected JavaClass clazz;
 
 	public AppVisitor(AppInfo ai) {
@@ -46,14 +47,14 @@ public class AppVisitor extends EmptyVisitor {
 	
 	public void visitJavaClass(JavaClass clazz) {
 		this.clazz = clazz;
-		setCli((JopClassInfo) ai.cliMap.get(clazz.getClassName()));
+		setCli((ClassInfo) ai.cliMap.get(clazz.getClassName()));
 	}
 
-	protected void setCli(JopClassInfo cli) {
+	protected void setCli(ClassInfo cli) {
 		this.cli = cli;
 	}
 
-	protected JopClassInfo getCli() {
+	protected ClassInfo getCli() {
 		return cli;
 	}
 

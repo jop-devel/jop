@@ -95,7 +95,7 @@ public class JopWriter {
 		int cnt = 0;
 		Iterator<? extends ClassInfo> it = jz.cliMap.values().iterator();
 		while (it.hasNext()) {
-			JopClassInfo cli = (JopClassInfo) it.next();
+			ClassInfo cli = (ClassInfo) it.next();
 			
 			out.println("//\t"+cli.clazz.getClassName());
 			List methods = cli.getMethods();
@@ -106,7 +106,7 @@ public class JopWriter {
 				  GCRTMethodInfo.dumpMethodGcis(((MethodInfo) methods.get(i)), out);
 				}
 				
-				((MethodInfo) methods.get(i)).dumpByteCode(out);
+				((JopMethodInfo) methods.get(i)).dumpByteCode(out);
 				++cnt;
 			}
 		}
@@ -144,11 +144,11 @@ public class JopWriter {
 		out.println("//");
 		out.println("//\t<clinit> pointer to method struct");
 		out.println("//");
-		out.println("\t\t"+MethodInfo.clinitList.size()+",\t//\tnumber of methods");
-		Iterator it = MethodInfo.clinitList.iterator();
+		out.println("\t\t"+JopMethodInfo.clinitList.size()+",\t//\tnumber of methods");
+		Iterator it = JopMethodInfo.clinitList.iterator();
 		while (it.hasNext()) {
-			MethodInfo mi = ((JopClassInfo) it.next()).getMethodInfo(JOPizer.clinitSig);
-			out.println("\t\t"+mi.structAddress+",\t//\t"+mi.cli.clazz.getClassName());
+			JopMethodInfo mi = (JopMethodInfo) ((ClassInfo) it.next()).getMethodInfo(AppInfo.clinitSig);
+			out.println("\t\t"+mi.structAddress+",\t//\t"+mi.getCli().clazz.getClassName());
 		}
 	}
  

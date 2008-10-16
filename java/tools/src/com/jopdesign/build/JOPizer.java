@@ -43,9 +43,6 @@ public class JOPizer extends AppInfo implements Serializable {
 	public final static String bootMethod = "boot()V";
 	public final static String mainMethod = "main([Ljava/lang/String;)V";
 	
-	public final static String clinitSig = "<clinit>()V";
-
-	
 	public final static String stringClass = "java.lang.String";
 	public final static String objectClass = "java.lang.Object";
 
@@ -70,11 +67,6 @@ public class JOPizer extends AppInfo implements Serializable {
 	transient PrintWriter out;
 	/** text file for additional information */
 	transient PrintWriter outTxt;
-
-	/**
-	 * Loaded classes, type is ClassInfo
-	 */
-//	public List clazzes = new LinkedList();
 	
 	/**
 	 * Length of the generated application in words.
@@ -95,22 +87,13 @@ public class JOPizer extends AppInfo implements Serializable {
 	 */
 	int clinfoAddr;
 
-  // TODO: added to implement the symbol manager
+	// Added to implement the symbol manager
 	public static JOPizer jz;
 
-	public JOPizer(JopClassInfo template) {
+	public JOPizer(ClassInfo template) {
 		super(template);
 	}
 	
-
-	private void iterate(Visitor v) {
-
-		Iterator<? extends ClassInfo> it = cliMap.values().iterator();
-		while (it.hasNext()) {
-			JavaClass clz = it.next().clazz;
-			new DescendingVisitor(clz, v).visit();
-		}
-	}
 
 	public static void main(String[] args) {
 
@@ -118,7 +101,7 @@ public class JOPizer extends AppInfo implements Serializable {
 
     // TODO: small change to implement quickly the symbol manager
 //		JOPizer jz = new JOPizer();
-		jz = new JOPizer(new JopClassInfo(null, null));
+		jz = new JOPizer(JopClassInfo.getTemplate());
 		
 		if(args.length == 0) {
 			System.err.println("JOPizer arguments: [-cp classpath] [-o file] class [class]*");
@@ -167,7 +150,7 @@ public class JOPizer extends AppInfo implements Serializable {
 			// resolve the depenency and generate the list
 			ClinitOrder cliOrder = new  ClinitOrder(jz);
 			jz.iterate(cliOrder);
-			MethodInfo.clinitList = cliOrder.findOrder();
+			JopMethodInfo.clinitList = cliOrder.findOrder();
 			
 			// change methods - replace Native calls
 			// TODO: also change the index into the cp for the
@@ -180,10 +163,10 @@ public class JOPizer extends AppInfo implements Serializable {
 			jz.codeStart = 2;
 			// Now we can set the method info code and the address
 			// jz.pointerAddr is set
-			jz.iterate(new SetMethodInfo(jz));
+			jz.iterate(new SetMethodAddress(jz));
 			
 			// How long is the <clinit> List?
-			int cntClinit = MethodInfo.clinitList.size();
+			int cntClinit = JopMethodInfo.clinitList.size();
 			// How long is the string table?
 			StringInfo.stringTableAddress = jz.pointerAddr+PTRS+cntClinit+1;
 			

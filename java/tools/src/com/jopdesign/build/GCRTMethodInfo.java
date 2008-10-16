@@ -24,15 +24,10 @@ import java.util.*;
 import java.io.PrintWriter;
 
 import org.apache.bcel.classfile.*;
-import org.apache.bcel.classfile.Method;
 import org.apache.bcel.Constants;
 import org.apache.bcel.generic.*;
 import org.apache.bcel.verifier.exc.*;
 import org.apache.bcel.verifier.structurals.*;
-import org.apache.bcel.verifier.structurals.Frame;
-import org.apache.bcel.verifier.structurals.UninitializedObjectType;
-import org.apache.bcel.verifier.structurals.OperandStack;
-import org.apache.bcel.verifier.structurals.LocalVariables;
 
 /**
  * It is a class that are invoked two times for every non-abstract method. The
@@ -229,7 +224,7 @@ public class GCRTMethodInfo {
 	private void operandWalker() {
 		// System.out.println("operandWalker");
 
-		JavaClass jc = mi.cli.clazz;
+		JavaClass jc = mi.getCli().clazz;
 
 		ConstantPoolGen cpg = new ConstantPoolGen(jc.getConstantPool());
 
@@ -850,7 +845,7 @@ public class GCRTMethodInfo {
     if(gcMethods != null && gcMethods.contains(method)){
       if(out != null){
         out.println("\n\t// no stackwalker info for "
-            + mi.cli.clazz.getClassName() + "." + mi.methodId +" because cfgReduce == true and gcMethods.contains(method)\n");
+            + mi.getCli().clazz.getClassName() + "." + mi.methodId +" because cfgReduce == true and gcMethods.contains(method)\n");
       }
 
       return 0;
@@ -868,7 +863,7 @@ public class GCRTMethodInfo {
 
 			if (out != null) {
 				out.println("\n\t//stackwalker info for "
-						+ mi.cli.clazz.getClassName() + "." + mi.methodId);
+						+ mi.getCli().clazz.getClassName() + "." + mi.methodId);
 			}
 
 			StringBuffer sb = new StringBuffer();

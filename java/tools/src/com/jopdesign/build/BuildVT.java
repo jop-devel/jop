@@ -37,13 +37,13 @@ import org.apache.bcel.generic.*;
  * @author martin
  *
  */
-public class BuildVT extends AppVisitor {
+public class BuildVT extends JOPizerVisitor {
 
 	Map mapClVT = new HashMap();
 	Map mapClFT = new HashMap();
 
 	
-	public BuildVT(JOPizer jz) {
+	public BuildVT(AppInfo jz) {
 		super(jz);
 	}
 	
@@ -87,7 +87,7 @@ System.err.println("build VT on class: "+cli.clazz);
 		if (clazz.getClassName().equals(clazz.getSuperclassName())) {
 			;	// now we'r Object
 		} else {
-			JopClassInfo clisup = (JopClassInfo) ai.cliMap.get(clazz.getSuperclassName());
+			ClassInfo clisup = (ClassInfo) ai.cliMap.get(clazz.getSuperclassName());
 
 //					JavaClass superClazz = clazz.getSuperClass();
 //			 System.err.println("super: "+superClazz);
@@ -124,7 +124,7 @@ System.err.println("build VT on class: "+cli.clazz);
 		clvt.len = 0;
 		clvt.key = new String[maxLen];
 //		clvt.ptr = new int[maxLen];
-		clvt.mi = new MethodInfo[maxLen];
+		clvt.mi = new JopMethodInfo[maxLen];
 		
 		Field f[] = clazz.getFields();
 		maxLen = f.length;
@@ -167,7 +167,7 @@ System.err.println("build VT on class: "+cli.clazz);
 		for (i = 0; i < methodCount; i++) { 
 			Method meth = m[i];
 			String methodId = meth.getName()+meth.getSignature();
-			MethodInfo mi = cli.getMethodInfo(methodId);
+			JopMethodInfo mi = (JopMethodInfo) cli.getMethodInfo(methodId);
 			
 			for (j=0; j<clvt.len; ++j) {
 				if (clvt.key[j].equals(methodId)) {					// override method
@@ -250,7 +250,7 @@ System.err.println("build VT on class: "+cli.clazz);
 
 		int i, j;
 
-		JopClassInfo cli = (JopClassInfo) ai.cliMap.get(clazz.getClassName());
+		ClassInfo cli = (ClassInfo) ai.cliMap.get(clazz.getClassName());
 
 		String clazzName = clazz.getClassName();
 
@@ -265,7 +265,7 @@ System.err.println("build VT on class: "+cli.clazz);
 		for (i = 0; i < methodCount; i++) { 
 			Method meth = m[i];
 			String methodId = meth.getName()+meth.getSignature();
-			MethodInfo mi = cli.getMethodInfo(methodId);
+			JopMethodInfo mi = (JopMethodInfo) cli.getMethodInfo(methodId);
 
 			JopClassInfo.IT it = JopClassInfo.getITObject();
 			it.nr = JopClassInfo.listIT.size();

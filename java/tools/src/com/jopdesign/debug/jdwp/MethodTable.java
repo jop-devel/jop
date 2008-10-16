@@ -24,7 +24,7 @@ package com.jopdesign.debug.jdwp;
 import java.io.Serializable;
 import java.util.Vector;
 
-import com.jopdesign.build.MethodInfo;
+import com.jopdesign.build.JopMethodInfo;
 
 /**
  * MethodTable.java
@@ -48,13 +48,13 @@ public class MethodTable implements Serializable
     methodList = new Vector();
   }
   
-  public MethodInfo getMethod(int methodId)
+  public JopMethodInfo getMethod(int methodId)
   {
-    MethodInfo info = null;
+    JopMethodInfo info = null;
     
     if(isValidIndex(methodId))
     {
-      info = (MethodInfo) methodList.get(methodId);
+      info = (JopMethodInfo) methodList.get(methodId);
     }
     
     return info;
@@ -75,7 +75,7 @@ public class MethodTable implements Serializable
    * @param method
    * @return
    */
-  public int addMethod(MethodInfo method)
+  public int addMethod(JopMethodInfo method)
   {
     int methodId = getMethodId(method);
     if(isValidIndex(methodId) == false)
@@ -95,7 +95,7 @@ public class MethodTable implements Serializable
    * @param methodInfo
    * @return
    */
-  public static int getMethodId(MethodInfo methodInfo)
+  public static int getMethodId(JopMethodInfo methodInfo)
   {
     //return methodInfo.getCodeAddress();
     return methodInfo.getStructAddress();

@@ -17,7 +17,7 @@
 
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ */
 
 /*
  * Created on 05.06.2005
@@ -34,22 +34,18 @@ import org.apache.bcel.classfile.*;
 
 /**
  * @author Flavius, Martin
- *
+ * 
  * Class struct:
  * 
- *  0: instance size (class reference)
- *  1: pointer to static primitiv fields (if any)
- *  2: GC info field (one bit per field)
- *  3: pointer to super class
- *  4: pointer to interface table
- * 5+: method table, two words per entry
- *   : class reference (pointer back to class info)
- *   : constant pool (cp)
- *   : optional interface table
- *   
- * class variables are collected in one area for
- * easier GC access of the reference types
- *    
+ * 0: instance size (class reference) 1: pointer to static primitiv fields (if
+ * any) 2: GC info field (one bit per field) 3: pointer to super class 4:
+ * pointer to interface table 5+: method table, two words per entry : class
+ * reference (pointer back to class info) : constant pool (cp) : optional
+ * interface table
+ * 
+ * class variables are collected in one area for easier GC access of the
+ * reference types
+ * 
  */
 
 public class JopClassInfo extends ClassInfo implements Serializable {
@@ -67,30 +63,28 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 		public void visitJavaClass(JavaClass clazz) {
 
 			super.visitJavaClass(clazz);
-			System.out.println("JopVisit "+clazz.getClassName());
 			JopClassInfo cli = (JopClassInfo) this.cli;
-	// System.err.println("visit "+clazz.getClassName()+" getSuper");
 
 			cpool = clazz.getConstantPool();
 
 			if (clazz.isInterface()) {
 				cli.interfaceID = ++cli.interfaceCnt;
-				cli.interfaceList.add(cli.interfaceID-1, clazz.getClassName());
+				cli.interfaceList
+						.add(cli.interfaceID - 1, clazz.getClassName());
 			}
 		}
 
 		public void visitMethod(Method method) {
-			
-			JopClassInfo cli = (JopClassInfo) this.cli;
-			String methodId = method.getName()+method.getSignature();
-	        cli.addMethodOnce(methodId);
-	        MethodInfo mi = cli.getMethodInfo(methodId);
-	        mi.setMethod(method);
-	        if(JOPizer.dumpMgci){
-	          // GCRT
-	          new GCRTMethodInfo(mi,method);
-	        }
 
+			super.visitMethod(method);
+			// now get the MethodInfo back from the ClassInfo for
+			// additional work.
+			String methodId = method.getName() + method.getSignature();
+			MethodInfo mi = getITMethodInfo(methodId);
+			if (JOPizer.dumpMgci) {
+				// GCRT
+				new GCRTMethodInfo(mi, method);
+			}
 		}
 
 		public void visitConstantString(ConstantString S) {
@@ -101,31 +95,20 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 
-	@Override
-	ClassInfo newClassInfo(JavaClass jc,AppInfo ai) {
-		return new JopClassInfo(jc, ai);
-	}
-	
-	@Override
-	CliVisitor newCliVisitor(Map<String, ClassInfo> map) {
-		return new JopCliVisitor(map);
-	}
-
-
-	static class IT implements Serializable{
+	static class IT implements Serializable {
 		private static final long serialVersionUID = 1L;
 
 		int nr;
 		String key;
-		MethodInfo meth;
+		JopMethodInfo meth;
 	}
-	
+
 	// 'global' interface table
 	static LinkedList listIT = new LinkedList();
 
 	// list of all interfaces
-	static ArrayList interfaceList = new ArrayList();
-	
+	static ArrayList<String> interfaceList = new ArrayList<String>();
+
 	static int nrObjMethods;
 	static int bootAddress;
 	static int jvmAddress;
@@ -133,26 +116,23 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 	static int mainAddress;
 	static int interfaceCnt;
 
-//	// 'global' mapping of class names to ClassInfo 
-//	static HashMap mapClassNames = new HashMap();
-
-
 	// virtual method table
-	class ClVT implements Serializable{
+	class ClVT implements Serializable {
 		private static final long serialVersionUID = 1L;
 
 		int len;
 		// Method name plus signature is the key
 		String[] key;
-		MethodInfo mi[];
+		JopMethodInfo mi[];
 	}
 
 	/**
 	 * Field table
+	 * 
 	 * @author Martin
-	 *
+	 * 
 	 */
-	class ClFT implements Serializable{
+	class ClFT implements Serializable {
 		private static final long serialVersionUID = 1L;
 		int len;
 		int instSize;
@@ -163,14 +143,14 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 		int[] size;
 		boolean[] isStatic;
 		boolean[] isReference;
-		
+
 		public String toString() {
 			StringBuffer sb = new StringBuffer();
-			
-			for (int i=0; i<len; ++i) {
-				sb.append(key[i]+" ");
+
+			for (int i = 0; i < len; ++i) {
+				sb.append(key[i] + " ");
 			}
-			
+
 			return sb.toString();
 		}
 	}
@@ -179,24 +159,19 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 	static int cntRefStatic = 0;
 	static int addrValueStatic = 0;
 	static int addrRefStatic = 0;
-	
-	
+
 	public int interfaceID;
 
-	private HashMap usedMethods = new HashMap();
-	// Methods in a list
-	private List list = new LinkedList();
-
 	public ClVT clvt;
-	
+
 	public ClFT clft;
 	private int instSize;
 	private int instGCinfo;
 
-	public List cpoolUsed;
+	public List<Integer> cpoolUsed;
 	public int cpoolArry[];
 	public String cpoolComments[];
-	
+
 	public int staticValueVarAddress;
 	public int staticRefVarAddress;
 	public int classRefAddress;
@@ -204,52 +179,67 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 	public int cpoolAddress;
 	public int iftableAddress;
 
+	@Override
+	ClassInfo newClassInfo(JavaClass jc, AppInfo ai) {
+		return new JopClassInfo(jc, ai);
+	}
 
-	public JopClassInfo(JavaClass clazz, AppInfo ai) {
+	@Override
+	CliVisitor newCliVisitor(Map<String, ClassInfo> map) {
+		return new JopCliVisitor(map);
+	}
+
+	@Override
+	MethodInfo newMethodInfo(String mid) {
+		return new JopMethodInfo(this, mid);
+	}
+
+	/**
+	 * A template of the cli type for the factory.
+	 * 
+	 * @return
+	 */
+	public static ClassInfo getTemplate() {
+		return new JopClassInfo(null, null);
+	}
+
+	/**
+	 * Constructor is only used by following two factory methods: getTemplate
+	 * for the dispatch of the creation with newClassInfo
+	 * 
+	 * @param clazz
+	 * @param ai
+	 */
+	private JopClassInfo(JavaClass clazz, AppInfo ai) {
 		super(clazz, ai);
 		methodsAddress = 0;
 		cpoolAddress = 0;
 		instSize = 0;
 		instGCinfo = 0;
-		cpoolUsed = new LinkedList();
-		
+		cpoolUsed = new LinkedList<Integer>();
+
 		// the template class info is created with a null pointer
-		if (clazz!=null) {
+		if (clazz != null) {
 			if (clazz.getClassName().equals(JOPizer.stringClass)) {
 				StringInfo.cli = this;
 			}
 			if (clazz.getClassName().equals(JOPizer.objectClass)) {
 				nrObjMethods = clazz.getMethods().length;
-			}			
+			}
 		}
 	}
 
-	public boolean isMethodPresent(String amth) {
-		return usedMethods.containsKey(amth);
-	}
-	public void addMethodOnce(String mid) {
-		if(!isMethodPresent(mid)) {
-			MethodInfo mi = new MethodInfo(this, mid);
-			usedMethods.put(mid, mi);
-			list.add(mi);
-			//System.err.println(className+" has a new method: "+amth);
-		}
-	}
-	public MethodInfo getMethodInfo(String amth) {
-		return (MethodInfo)usedMethods.get(amth);
-	}
-	
-	public MethodInfo getVTMethodInfo(String mid) {
-		for (int i=0; i<clvt.len; ++i) {
+	public JopMethodInfo getVTMethodInfo(String mid) {
+		for (int i = 0; i < clvt.len; ++i) {
 			if (clvt.key[i].equals(mid)) {
 				return clvt.mi[i];
 			}
 		}
 		return null;
 	}
-	
-	public MethodInfo getITMethodInfo(String mid) {
-		for (int j=0; j<listIT.size(); ++j) {
+
+	public JopMethodInfo getITMethodInfo(String mid) {
+		for (int j = 0; j < listIT.size(); ++j) {
 			IT it = (IT) listIT.get(j);
 			if (it.key.equals(mid)) {
 				return it.meth;
@@ -257,41 +247,40 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 		}
 		return null;
 	}
-	
-	public List getMethods() {
-		return list;
-	}
-	
+
 	public ClVT getClVT() {
-		
-		if (clvt==null) {
+
+		if (clvt == null) {
 			clvt = new ClVT();
 		}
 		return clvt;
 	}
+
 	public ClFT getClFT() {
-		
-		if (clft==null) {
+
+		if (clft == null) {
 			clft = new ClFT();
 		}
 		return clft;
 	}
-	
+
 	public void setInstanceSize(int size) {
 		instSize = size;
 	}
+
 	/**
 	 * Get an IT object.
+	 * 
 	 * @return
 	 */
 	public static IT getITObject() {
 		return new IT();
 	}
-	
+
 	void cntStaticFields() {
-		
+
 		int i;
-		for (i=0; i<clft.len; ++i) {
+		for (i = 0; i < clft.len; ++i) {
 			if (clft.isStatic[i]) {
 				if (clft.isReference[i]) {
 					cntRefStatic += clft.size[i];
@@ -301,32 +290,30 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 			}
 		}
 	}
-	
+
 	/**
-	 * Calculate the size of the class info table,
-	 * adjust the addresses and return the next available
-	 * address.
-	 * Calculate GC info for the instance.
+	 * Calculate the size of the class info table, adjust the addresses and
+	 * return the next available address. Calculate GC info for the instance.
+	 * 
 	 * @param addr
 	 * @return
 	 */
 	public int setAddress(AppInfo ai, int addr) {
-		// TODO JOPizer should be a AppInfo
-		
+
 		int i;
 		instGCinfo = getGCInfo();
 		// the class variables (the static fields) are in a special area
 		staticRefVarAddress = addrRefStatic;
 		staticValueVarAddress = addrValueStatic;
-		for (i=0; i<clft.len; ++i) {
+		for (i = 0; i < clft.len; ++i) {
 			if (clft.isStatic[i]) {
 				// resolve the address
 				// idx is now the static address
 				if (clft.isReference[i]) {
-					clft.idx[i] = addrRefStatic;			
+					clft.idx[i] = addrRefStatic;
 					addrRefStatic += clft.size[i];
 				} else {
-					clft.idx[i] = addrValueStatic;			
+					clft.idx[i] = addrValueStatic;
 					addrValueStatic += clft.size[i];
 				}
 			}
@@ -340,8 +327,8 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 		// to the start of this table (at ref-1)
 		if (!clazz.isInterface()) {
 			methodsAddress = addr;
-			for (i=0; i<clvt.len; ++i) {
-				MethodInfo m = clvt.mi[i];
+			for (i = 0; i < clvt.len; ++i) {
+				JopMethodInfo m = clvt.mi[i];
 				m.vtindex = i;
 				m.structAddress = addr;
 				if (clazz.getClassName().equals(JOPizer.startupClass)) {
@@ -361,27 +348,30 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 		addr += 1;
 		// constant pool
 		cpoolAddress = addr;
-//System.out.println(clazz.getClassName()+" cplen="+clazz.getConstantPool().getLength());
+		// System.out.println(clazz.getClassName()+"
+		// cplen="+clazz.getConstantPool().getLength());
 		// the final size of the cp plus the length field
-		addr += cpoolUsed.size()+1;
+		addr += cpoolUsed.size() + 1;
 
 		// the optional interface table
 		iftableAddress = 0;
 
 		boolean needsInterfaceTable = false;
 		for (i = 0; i < listIT.size(); i++) {
-			IT it = (IT)listIT.get(i);
-			boolean matchMethod = isMethodPresent(it.meth.methodId);
-			boolean matchInterface = implementsInterface(it.meth.cli.clazz.getClassName());
+			IT it = (IT) listIT.get(i);
+			boolean matchMethod = usedMethods.containsKey(it.meth.methodId);
+			
+			boolean matchInterface = implementsInterface(it.meth.getCli().clazz.getClassName());
 			if (matchMethod && matchInterface) {
 				needsInterfaceTable = true;
 			}
 		}
 
 		if (superClass != null) {
-			String [] interfaceNames = clazz.getInterfaceNames();
+			String[] interfaceNames = clazz.getInterfaceNames();
 			for (i = 0; i < interfaceNames.length; i++) {
-				if (!((JopClassInfo) superClass).implementsInterface(interfaceNames[i])) {
+				if (!((JopClassInfo) superClass)
+						.implementsInterface(interfaceNames[i])) {
 					needsInterfaceTable = true;
 				}
 			}
@@ -390,7 +380,7 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 		}
 
 		if (needsInterfaceTable) {
-			addr += (interfaceCnt+31)/32;
+			addr += (interfaceCnt + 31) / 32;
 			iftableAddress = addr;
 			if (!clazz.isInterface()) {
 				addr += listIT.size();
@@ -399,16 +389,18 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 
 		// add method count of class Object !
 		if (clazz.getClassName().equals(JOPizer.jvmClass)) {
-			jvmAddress = methodsAddress+nrObjMethods*ClassStructConstants.METH_STR;
+			jvmAddress = methodsAddress + nrObjMethods
+					* ClassStructConstants.METH_STR;
 		}
 		if (clazz.getClassName().equals(JOPizer.helpClass)) {
-			jvmHelpAddress = methodsAddress+nrObjMethods*ClassStructConstants.METH_STR;
+			jvmHelpAddress = methodsAddress + nrObjMethods
+					* ClassStructConstants.METH_STR;
 		}
 		return addr;
 	}
 
 	private boolean implementsInterface(String ifname) {
-		JopClassInfo cli = this;
+		ClassInfo cli = this;
 		do {
 			String[] interfaces = cli.clazz.getInterfaceNames();
 			for (int i = 0; i < interfaces.length; i++) {
@@ -416,42 +408,44 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 					return true;
 				} else {
 					// an interface may have a super-interface
-					boolean match = ((JopClassInfo) appInfo.cliMap.get(interfaces[i])).implementsInterface(ifname);
+					boolean match = ((JopClassInfo) appInfo.cliMap
+							.get(interfaces[i])).implementsInterface(ifname);
 					if (match) {
 						return true;
 					}
 				}
 			}
-			cli = (JopClassInfo) cli.superClass;
+			cli = (ClassInfo) cli.superClass;
 		} while (cli != null);
 		return false;
 	}
-
 
 	/**
 	 * generate GC info for the instance
 	 */
 	private int getGCInfo() {
-		
+
 		int gcInfo = 0;
-		for (JopClassInfo clinf = this; clinf!=null; clinf = (JopClassInfo) clinf.superClass) {
+		for (JopClassInfo clinf = this; clinf != null; clinf = (JopClassInfo) clinf.superClass) {
 			ClFT ft = clinf.clft;
-			for (int i=0; i<ft.len; ++i) {
+			for (int i = 0; i < ft.len; ++i) {
 				if (!ft.isStatic[i] & ft.isReference[i]) {
-					gcInfo |= (1<<ft.idx[i]);
+					gcInfo |= (1 << ft.idx[i]);
 				}
-			}			
+			}
 		}
-		
+
 		return gcInfo;
 	}
+
 	public void addUsedConst(int idx, int len) {
-		
+
 		Integer ii = new Integer(idx);
-		
-		if (cpoolUsed.contains(ii)) return;
+
+		if (cpoolUsed.contains(ii))
+			return;
 		cpoolUsed.add(ii);
-		if (len>1) {
+		if (len > 1) {
 			// add a dummy entry for a long or double constant
 			cpoolUsed.add(null);
 		}
@@ -461,212 +455,228 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 	 * @param cp
 	 */
 	public void resolveCPool(ConstantPool cp) {
-		
+
 		Constant[] ca = cp.getConstantPool();
 		cpoolArry = new int[cpoolUsed.size()];
 		cpoolComments = new String[ca.length];
 
-// System.out.println(clazz.getClassName()+" cpool "+cpoolUsed);
+		// System.out.println(clazz.getClassName()+" cpool "+cpoolUsed);
 
-		
-		for (int i=0; i<ca.length; ++i) {
+		for (int i = 0; i < ca.length; ++i) {
 			Constant co = ca[i];
 			Integer idx = new Integer(i);
 			// pos is the new position in the reduced constant pool
 			// idx is the position in the 'original' unresolved cpool
 			int pos = cpoolUsed.indexOf(idx);
-			if (pos!=-1) {
+			if (pos != -1) {
 				boolean isInterface = false;
-//				System.out.println("cpool@"+pos+" = orig_cp@"+i+" "+co);
-				switch(co.getTag()) {
-					case Constants.CONSTANT_Integer:
-						cpoolArry[pos] = ((ConstantInteger) co).getBytes();
-						cpoolComments[pos] = "Integer";
+				// System.out.println("cpool@"+pos+" = orig_cp@"+i+" "+co);
+				switch (co.getTag()) {
+				case Constants.CONSTANT_Integer:
+					cpoolArry[pos] = ((ConstantInteger) co).getBytes();
+					cpoolComments[pos] = "Integer";
+					break;
+				case Constants.CONSTANT_Long:
+					long lval = ((ConstantLong) co).getBytes();
+					// store LOW, HIGH words in this order
+					int loW = (new Long(0xFFFFFFFF & lval)).intValue();
+					int hiW = (new Long(lval >>> 32)).intValue();
+					cpoolArry[pos] = hiW;
+					cpoolArry[pos + 1] = loW;
+					cpoolComments[pos] = "Long: " + lval;
+					cpoolComments[pos + 1] = "";
+					break;
+				case Constants.CONSTANT_Float:
+					float fval = ((ConstantFloat) co).getBytes();
+					cpoolArry[pos] = Float.floatToRawIntBits(fval);
+					cpoolComments[pos] = "Float: " + fval;
+					break;
+				case Constants.CONSTANT_Double:
+					double dval = ((ConstantDouble) co).getBytes();
+					long d_lval = Double.doubleToRawLongBits(dval);
+					// store LOW, HIGH words in this order
+					int d_loW = (new Long(0xFFFFFFFF & d_lval)).intValue();
+					int d_hiW = (new Long(d_lval >>> 32)).intValue();
+					cpoolArry[pos] = d_hiW;
+					cpoolArry[pos + 1] = d_loW;
+					cpoolComments[pos] = "Double: " + dval;
+					cpoolComments[pos + 1] = "";
+					break;
+				case Constants.CONSTANT_String:
+					String str = ((ConstantString) co).getBytes(cp);
+					StringInfo si = StringInfo.getStringInfo(str);
+					cpoolArry[pos] = StringInfo.stringTableAddress
+							+ si.getAddress();
+					cpoolComments[pos] = "String: " + si.getSaveString();
+					break;
+				case Constants.CONSTANT_Class:
+					String clname = ((ConstantClass) co).getBytes(cp).replace(
+							'/', '.');
+					JopClassInfo clinfo = (JopClassInfo) appInfo.cliMap
+							.get(clname);
+					if (clinfo == null) {
+						cpoolComments[pos] = "Problem with class: " + clname;
+						continue;
+					}
+					cpoolArry[pos] = clinfo.classRefAddress;
+					cpoolComments[pos] = "Class: " + clname;
+					break;
+				case Constants.CONSTANT_InterfaceMethodref:
+					isInterface = true;
+				case Constants.CONSTANT_Methodref:
+					// find the class for this method
+					int mclidx;
+					if (isInterface) {
+						mclidx = ((ConstantInterfaceMethodref) co)
+								.getClassIndex();
+					} else {
+						mclidx = ((ConstantMethodref) co).getClassIndex();
+					}
+					ConstantClass mcl = (ConstantClass) cp.getConstant(mclidx);
+					// the method has "/" instead of ".", fix that
+					// now get the signature too...
+					String mclname = mcl.getBytes(cp).replace('/', '.');
+					int sigidx;
+					if (isInterface) {
+						sigidx = ((ConstantInterfaceMethodref) co)
+								.getNameAndTypeIndex();
+					} else {
+						sigidx = ((ConstantMethodref) co).getNameAndTypeIndex();
+					}
+					ConstantNameAndType signt = (ConstantNameAndType) cp
+							.getConstant(sigidx);
+					String sigstr = signt.getName(cp) + signt.getSignature(cp);
+					// now find the address of the method struct!
+					JopClassInfo clinf = (JopClassInfo) appInfo.cliMap
+							.get(mclname);
+					if (clinf == null) {
+						// probably a reference to Native - a class that
+						// is NOT present in the application.
+						// we could avoid this by not adding method refs to
+						// Native in our reduced cpool.
+						cpoolArry[pos] = 0;
+						cpoolComments[pos] = "static " + mclname + "." + sigstr;
 						break;
-					case Constants.CONSTANT_Long:
-						long lval = ((ConstantLong) co).getBytes();
-						// store LOW, HIGH words in this order
-						int loW = (new Long(0xFFFFFFFF & lval)).intValue();
-						int hiW = (new Long(lval >>> 32)).intValue();
-						cpoolArry[pos] = hiW;
-						cpoolArry[pos+1] = loW;
-						cpoolComments[pos] = "Long: "+lval;
-						cpoolComments[pos+1] = "";
-						break;
-					case Constants.CONSTANT_Float:
-						float fval = ((ConstantFloat) co).getBytes();
-						cpoolArry[pos] = Float.floatToRawIntBits(fval);
-						cpoolComments[pos] = "Float: "+fval;
-						break;
-					case Constants.CONSTANT_Double:
-						double dval = ((ConstantDouble) co).getBytes();
-						long d_lval = Double.doubleToRawLongBits(dval);
-						// store LOW, HIGH words in this order
-						int d_loW = (new Long(0xFFFFFFFF & d_lval)).intValue();
-						int d_hiW = (new Long(d_lval >>> 32)).intValue();
-						cpoolArry[pos] = d_hiW;
-						cpoolArry[pos+1] = d_loW;
-						cpoolComments[pos] = "Double: "+dval;
-						cpoolComments[pos+1] = "";
-						break;
-					case Constants.CONSTANT_String:
-						String str = ((ConstantString) co).getBytes(cp);
-						StringInfo si = StringInfo.getStringInfo(str);
-						cpoolArry[pos] = StringInfo.stringTableAddress+si.getAddress();
-						cpoolComments[pos] = "String: "+si.getSaveString();
-						break;
-					case Constants.CONSTANT_Class:
-						String clname = ((ConstantClass) co).getBytes(cp).replace('/','.');
-						JopClassInfo clinfo = (JopClassInfo) appInfo.cliMap.get(clname);
-						if (clinfo==null) {
-							cpoolComments[pos] = "Problem with class: "+clname;
-							continue;
+					}
+					JopMethodInfo minf;
+					if (isInterface) {
+						minf = clinf.getITMethodInfo(sigstr);
+					} else {
+						minf = clinf.getVTMethodInfo(sigstr);
+					}
+					if (minf == null) {
+						System.out.println("Error: Method "
+								+ clinf.clazz.getClassName() + '.' + sigstr
+								+ " not found.");
+						System.out
+								.println("Invoked by " + clazz.getClassName());
+						for (int xxx = 0; xxx < clinf.clvt.len; ++xxx) {
+							System.out.println(clinf.clvt.key[xxx]);
 						}
-						cpoolArry[pos] = clinfo.classRefAddress;
-						cpoolComments[pos] = "Class: "+clname;
-						break;
-					case Constants.CONSTANT_InterfaceMethodref:
-						isInterface = true;
-					case Constants.CONSTANT_Methodref:
-						// find the class for this method
-						int mclidx;
-						if (isInterface) {
-							mclidx = ((ConstantInterfaceMethodref) co).getClassIndex();
-						} else {
-							mclidx = ((ConstantMethodref) co).getClassIndex();
-						}
-						ConstantClass mcl = (ConstantClass) cp.getConstant(mclidx);
-						// the method has "/" instead of ".", fix that
-						// now get the signature too...
-						String mclname = mcl.getBytes(cp).replace('/','.');
-						int sigidx;
-						if (isInterface) {
-							sigidx = ((ConstantInterfaceMethodref) co).getNameAndTypeIndex();
-						} else {
-							sigidx = ((ConstantMethodref) co).getNameAndTypeIndex();
-						}
-						ConstantNameAndType signt = (ConstantNameAndType) cp.getConstant(sigidx);
-						String sigstr = signt.getName(cp)+signt.getSignature(cp);
-						// now find the address of the method struct!
-						JopClassInfo clinf = (JopClassInfo) appInfo.cliMap.get(mclname);
-						if (clinf==null) {
-							// probably a reference to Native - a class that
-							// is NOT present in the application.
-							// we could avoid this by not adding method refs to
-							// Native in our reduced cpool.
-							cpoolArry[pos] = 0;
-							cpoolComments[pos] = "static "+mclname+"."+sigstr;
-							break;
-						}
-						MethodInfo minf;
-						if (isInterface) {
-							minf = clinf.getITMethodInfo(sigstr);							
-						} else {
-							minf = clinf.getVTMethodInfo(sigstr);
-						}
-						if (minf==null) {
-							System.out.println("Error: Method "+clinf.clazz.getClassName()+'.'+sigstr+" not found.");
-							System.out.println("Invoked by "+clazz.getClassName());
-							for (int xxx = 0; xxx < clinf.clvt.len; ++xxx) {
-								System.out.println(clinf.clvt.key[xxx]);		
-							}
-							System.exit(1);
-						}
-						if(minf.method.isStatic() ||	
-							// <init> and privat methods are called with invokespecial
+						System.exit(1);
+					}
+					if (minf.method.isStatic() ||
+					// <init> and privat methods are called with invokespecial
 							// which mapps in jvm.asm to invokestatic
-								minf.method.isPrivate() ||
-								sigstr.charAt(0)=='<'
-							) {
-							// for static methods a direct pointer to the
-							// method struct
-							cpoolArry[pos] = minf.structAddress;
-							cpoolComments[pos] = "static, special or private "+clinf.clazz.getClassName()+
-								"."+minf.methodId;
-						} else {
-							// as Flavius correctly comments:
-							// TODO: CHANGE THIS TO A MORE CONSISTENT FORMAT...
-							// extract the objref! for some reason the microcode needs -1 here...weird
+							minf.method.isPrivate() || sigstr.charAt(0) == '<') {
+						// for static methods a direct pointer to the
+						// method struct
+						cpoolArry[pos] = minf.structAddress;
+						cpoolComments[pos] = "static, special or private "
+								+ clinf.clazz.getClassName() + "."
+								+ minf.methodId;
+					} else {
+						// as Flavius correctly comments:
+						// TODO: CHANGE THIS TO A MORE CONSISTENT FORMAT...
+						// extract the objref! for some reason the microcode
+						// needs -1 here...weird
 
-							// that's for simple virtual methods
-							int vpos = minf.vtindex;
-							String comment = "virtual";
-							
-							// TODO: is kind of redundant search as we've allready
-							// searched the IT table with getVTMethodInfo()
-							// TODO: do we handle different interfaces with same
-							// method id correct? (see buildIT)
-							if (isInterface) {
-								comment = "interface";
-								for (int j=0; j<listIT.size(); ++j) {
-									IT it = (IT) listIT.get(j);
-									if (it.key.equals(minf.methodId)) {
-										vpos = j;
-										break;
-									}
-								}
-								// offest in interface table
-								// index plus number of arguments (without this!)
-								cpoolArry[pos] = (vpos<<8) + (minf.margs-1);
-							} else {
-								// offest in method table
-								// (index*2) plus number of arguments (without this!)
-								cpoolArry[pos] = (vpos*ClassStructConstants.METH_STR<<8) + (minf.margs-1);
-								
-							}
-							cpoolComments[pos] = comment+" index: "+vpos+
-								" args: "+minf.margs+" "+clinf.clazz.getClassName()+
-								"."+minf.methodId;						}
-						break;
-					case Constants.CONSTANT_Fieldref:
-						int fidx = ((ConstantFieldref) co).getClassIndex();
-						ConstantClass fcl = (ConstantClass) cp.getConstant(fidx);
-						String fclname = fcl.getBytes(cp).replace('/','.');
-						// got the class name
-						sigidx = ((ConstantFieldref) co).getNameAndTypeIndex();
-						signt = (ConstantNameAndType) cp.getConstant(sigidx);
-						sigstr = signt.getName(cp)+signt.getSignature(cp);
-						clinf = (JopClassInfo) appInfo.cliMap.get(fclname);
-						int j;
-						String comment = "";
-						boolean found = false;
-						while (!found) {
-							for (j=0; j<clinf.clft.len; ++j) {
-								if (clinf.clft.key[j].equals(sigstr)) {
-									found = true;
-									if (clinf.clft.isStatic[j]) {
-										comment = "static ";						
-									}
-									// for static fields a direct pointer to the
-									// static field
-									cpoolArry[pos] = clinf.clft.idx[j];
-									cpoolComments[pos] = comment+clinf.clazz.getClassName()+
-										"."+sigstr;				
+						// that's for simple virtual methods
+						int vpos = minf.vtindex;
+						String comment = "virtual";
+
+						// TODO: is kind of redundant search as we've allready
+						// searched the IT table with getVTMethodInfo()
+						// TODO: do we handle different interfaces with same
+						// method id correct? (see buildIT)
+						if (isInterface) {
+							comment = "interface";
+							for (int j = 0; j < listIT.size(); ++j) {
+								IT it = (IT) listIT.get(j);
+								if (it.key.equals(minf.methodId)) {
+									vpos = j;
 									break;
 								}
 							}
-							if (!found) {
-								clinf = (JopClassInfo) clinf.superClass;
-								if (clinf==null) {
-									System.out.println("Error: field "+fclname+"."+sigstr+" not found!");
-									break;									
-								}
-							}							
+							// offest in interface table
+							// index plus number of arguments (without this!)
+							cpoolArry[pos] = (vpos << 8) + (minf.margs - 1);
+						} else {
+							// offest in method table
+							// (index*2) plus number of arguments (without
+							// this!)
+							cpoolArry[pos] = (vpos
+									* ClassStructConstants.METH_STR << 8)
+									+ (minf.margs - 1);
+
 						}
-						break;
-					default:
-						System.out.println("TODO: cpool@"+pos+" = orig_cp@"+i+" "+co);
-						cpoolComments[pos] = "Problem with: "+co;
-				}	 	
+						cpoolComments[pos] = comment + " index: " + vpos
+								+ " args: " + minf.margs + " "
+								+ clinf.clazz.getClassName() + "."
+								+ minf.methodId;
+					}
+					break;
+				case Constants.CONSTANT_Fieldref:
+					int fidx = ((ConstantFieldref) co).getClassIndex();
+					ConstantClass fcl = (ConstantClass) cp.getConstant(fidx);
+					String fclname = fcl.getBytes(cp).replace('/', '.');
+					// got the class name
+					sigidx = ((ConstantFieldref) co).getNameAndTypeIndex();
+					signt = (ConstantNameAndType) cp.getConstant(sigidx);
+					sigstr = signt.getName(cp) + signt.getSignature(cp);
+					clinf = (JopClassInfo) appInfo.cliMap.get(fclname);
+					int j;
+					String comment = "";
+					boolean found = false;
+					while (!found) {
+						for (j = 0; j < clinf.clft.len; ++j) {
+							if (clinf.clft.key[j].equals(sigstr)) {
+								found = true;
+								if (clinf.clft.isStatic[j]) {
+									comment = "static ";
+								}
+								// for static fields a direct pointer to the
+								// static field
+								cpoolArry[pos] = clinf.clft.idx[j];
+								cpoolComments[pos] = comment
+										+ clinf.clazz.getClassName() + "."
+										+ sigstr;
+								break;
+							}
+						}
+						if (!found) {
+							clinf = (JopClassInfo) clinf.superClass;
+							if (clinf == null) {
+								System.out.println("Error: field " + fclname
+										+ "." + sigstr + " not found!");
+								break;
+							}
+						}
+					}
+					break;
+				default:
+					System.out.println("TODO: cpool@" + pos + " = orig_cp@" + i
+							+ " " + co);
+					cpoolComments[pos] = "Problem with: " + co;
+				}
 			}
 
 		}
-		
+
 	}
-	
-	
+
 	public void dumpStaticFields(PrintWriter out, boolean ref) {
-		
+
 		int i, addr;
 		if (ref) {
 			addr = staticRefVarAddress;
@@ -674,70 +684,74 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 			addr = staticValueVarAddress;
 		}
 		out.println("//");
-		out.println("//\t"+addr+": "+clazz.getClassName()+
-				" static "+(ref ? "reference " : " ")+"fields");
+		out.println("//\t" + addr + ": " + clazz.getClassName() + " static "
+				+ (ref ? "reference " : " ") + "fields");
 		out.println("//");
-		for (i=0; i<clft.len; ++i) {
+		for (i = 0; i < clft.len; ++i) {
 			if (clft.isStatic[i]) {
-				if (clft.isReference[i]==ref) {
-					if (clft.size[i]==1) {
+				if (clft.isReference[i] == ref) {
+					if (clft.size[i] == 1) {
 						out.print("\t\t0,");
 					} else {
 						out.print("\t\t0, 0,");
 					}
-					out.println("\t//\t"+clft.idx[i]+": "+clft.key[i]);				
+					out.println("\t//\t" + clft.idx[i] + ": " + clft.key[i]);
 				}
 			}
 		}
 	}
 
 	public void dump(PrintWriter out) {
-			
-			int i;
-		
+
+		int i;
+
 		out.println("//");
-		out.println("//\t"+classRefAddress+": "+clazz.getClassName());
+		out.println("//\t" + classRefAddress + ": " + clazz.getClassName());
 		out.println("//");
-		out.println("\t\t"+instSize+",\t//\tinstance size");
-		for (i=0; i<clft.len; ++i) {
+		out.println("\t\t" + instSize + ",\t//\tinstance size");
+		for (i = 0; i < clft.len; ++i) {
 			if (!clft.isStatic[i]) {
-				out.println("\t\t\t\t//\t"+clft.idx[i]+" "+clft.key[i]);				
+				out.println("\t\t\t\t//\t" + clft.idx[i] + " " + clft.key[i]);
 			}
 		}
-		out.println("\t\t"+staticValueVarAddress+",\t//\tpointer to static primitive fields");
-		if (instSize>31) {
-			System.err.println("Error: Object of "+clazz.getClassName()+" to big! Size="+instSize);
+		out.println("\t\t" + staticValueVarAddress
+				+ ",\t//\tpointer to static primitive fields");
+		if (instSize > 31) {
+			System.err.println("Error: Object of " + clazz.getClassName()
+					+ " to big! Size=" + instSize);
 			System.exit(-1);
 		}
-		out.println("\t\t"+instGCinfo+",\t//\tinstance GC info");
+		out.println("\t\t" + instGCinfo + ",\t//\tinstance GC info");
 
 		String supname = "null";
 		int superAddr = 0;
-		if (superClass!=null) {
+		if (superClass != null) {
 			supname = superClass.clazz.getClassName();
 			superAddr = ((JopClassInfo) appInfo.cliMap.get(supname)).classRefAddress;
 		}
 		if (!clazz.isInterface()) {
-			out.println("\t\t"+superAddr+",\t//\tpointer to super class - "+supname);
+			out.println("\t\t" + superAddr + ",\t//\tpointer to super class - "
+					+ supname);
 		} else {
-			out.println("\t\t"+(-interfaceID)+",\t//\tinterface ID");
+			out.println("\t\t" + (-interfaceID) + ",\t//\tinterface ID");
 		}
 
 		boolean useSuperInterfaceTable = false;
 		if ((iftableAddress == 0) && (superClass != null)) {
 			iftableAddress = ((JopClassInfo) appInfo.cliMap.get(supname)).iftableAddress;
 			useSuperInterfaceTable = true;
-		}			
-		out.println("\t\t"+iftableAddress+",\t//\tpointer to interface table");
-		
+		}
+		out.println("\t\t" + iftableAddress
+				+ ",\t//\tpointer to interface table");
+
 		if (!clazz.isInterface()) {
 			out.println("//");
-			out.println("//\t"+methodsAddress+": "+clazz.getClassName()+
-						" method table");
+			out.println("//\t" + methodsAddress + ": " + clazz.getClassName()
+					+ " method table");
 			out.println("//");
 
 			int addr = methodsAddress;
-			for(i=0; i < clvt.len; i++) {
+			for (i = 0; i < clvt.len; i++) {
 				clvt.mi[i].dumpMethodStruct(out, addr);
 				addr += ClassStructConstants.METH_STR;
 			}
@@ -746,67 +760,73 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 			out.println("//\tno method table for interfaces");
 			out.println("//");
 		}
-		
+
 		out.println();
-		out.println("\t\t"+classRefAddress+",\t//\tpointer back to class struct (cp-1)");
+		out.println("\t\t" + classRefAddress
+				+ ",\t//\tpointer back to class struct (cp-1)");
 		out.println();
-	 		
+
 		out.println("//");
-		out.println("//\t"+cpoolAddress+": "+clazz.getClassName()+" constants");
+		out.println("//\t" + cpoolAddress + ": " + clazz.getClassName()
+				+ " constants");
 		out.println("//");
 
 		// constant pool length includes the length field
 		// same is true for the index in the bytecodes:
 		// The lowest constant has indes 1.
-		out.println("\t\t"+(cpoolArry.length+1)+",\t//\tconst pool length");
+		out.println("\t\t" + (cpoolArry.length + 1)
+				+ ",\t//\tconst pool length");
 		out.println();
-		for (i=0; i<cpoolArry.length; ++i) {
-			out.println("\t\t"+cpoolArry[i]+",\t//\t"+cpoolComments[i]);
+		for (i = 0; i < cpoolArry.length; ++i) {
+			out.println("\t\t" + cpoolArry[i] + ",\t//\t" + cpoolComments[i]);
 		}
-		
-		if (iftableAddress!=0 && !useSuperInterfaceTable) {
+
+		if (iftableAddress != 0 && !useSuperInterfaceTable) {
 
 			out.println("//");
-			out.println("//\t"+(iftableAddress-(interfaceCnt+31)/32)+": "+clazz.getClassName()+
-						" implements table");
+			out.println("//\t" + (iftableAddress - (interfaceCnt + 31) / 32)
+					+ ": " + clazz.getClassName() + " implements table");
 			out.println("//");
-			for (i = (interfaceCnt+31)/32 - 1; i >= 0; i--) {
+			for (i = (interfaceCnt + 31) / 32 - 1; i >= 0; i--) {
 				String comment = "";
 				int word = 0;
 				int j;
 				for (j = 31; j >= 0; j--) {
 					word <<= 1;
-					if ((i*32+j) < interfaceCnt) {
-						if (implementsInterface((String)interfaceList.get(i*32+j))) {
+					if ((i * 32 + j) < interfaceCnt) {
+						if (implementsInterface(interfaceList.get(i * 32 + j))) {
 							word |= 1;
-							comment += (String)interfaceList.get(i*32+j)+", ";
-						};						
-					}						
+							comment += interfaceList.get(i * 32 + j) + ", ";
+						}
+						;
+					}
 				}
-				out.println("\t\t"+word+",\t//\t"+comment);
+				out.println("\t\t" + word + ",\t//\t" + comment);
 			}
 
 			out.println("//");
-			out.println("//\t"+iftableAddress+": "+clazz.getClassName()+
-						" interface table");
+			out.println("//\t" + iftableAddress + ": " + clazz.getClassName()
+					+ " interface table");
 			out.println("//");
 			if (!clazz.isInterface()) {
 				out.println("//\tTODO: is it enough to use methodId as key???");
 				out.println("//");
-				for (i=0; i<listIT.size(); ++i) {
+				for (i = 0; i < listIT.size(); ++i) {
 					IT it = (IT) listIT.get(i);
 					int j;
-					for (j = 0; j < clvt.len; j++) { 
+					for (j = 0; j < clvt.len; j++) {
 						if (clvt.key[j].equals(it.key)) {
 							break;
 						}
 					}
-					if (j!=clvt.len) {
-						out.print("\t\t"+(methodsAddress+j*ClassStructConstants.METH_STR)+",");
+					if (j != clvt.len) {
+						out.print("\t\t"
+								+ (methodsAddress + j
+										* ClassStructConstants.METH_STR) + ",");
 					} else {
-						out.print("\t\t"+0+",\t");
+						out.print("\t\t" + 0 + ",\t");
 					}
-					out.println("\t//\t"+it.meth.methodId);
+					out.println("\t//\t" + it.meth.methodId);
 				}
 			}
 		}
@@ -817,9 +837,8 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 	 * @param className
 	 * @return
 	 */
-//	public static JopClassInfo getClassInfo(String className) {
-//		return (JopClassInfo) appInfo.cliMap.get(className);
-//	}
-	
-	
+	//	public static JopClassInfo getClassInfo(String className) {
+	//		return (JopClassInfo) appInfo.cliMap.get(className);
+	//	}
+
 }

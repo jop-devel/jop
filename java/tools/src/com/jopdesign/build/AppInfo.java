@@ -27,14 +27,20 @@ import java.util.*;
 
 
 import org.apache.bcel.classfile.ClassParser;
+import org.apache.bcel.classfile.DescendingVisitor;
 import org.apache.bcel.classfile.JavaClass;
+import org.apache.bcel.classfile.Visitor;
 import org.apache.bcel.util.ClassPath;
 
 /**
- * Helper class for BCEL class analysis and manipulation.
- * Should be used by JOPizer and WCETAnalyser
+ * Helper class for BCEL based class analysis and manipulation.
+ * Used by JOPizer and should be used by WCETAnalyser and
+ * merged with libgraph
  * 
- * @author martin
+ * TODO: split JOP specific and general MethodInfo
+ * TODO: make all general usable visitors AppVisitor instead of JOPizerVisitor
+ * 
+ * @author Martin
  *
  */
 public class AppInfo implements Serializable {
@@ -62,9 +68,13 @@ public class AppInfo implements Serializable {
 	
 
 	/**
-	 * Array of the application classes .
+	 * Array of the application classes.
 	 */
 	private JavaClass[] jclazz;
+	/**
+	 * A template of the specific cli type to create
+	 * the specific cli map (some form of factory pattern)
+	 */
 	private ClassInfo template;
 
 	/**
@@ -74,6 +84,8 @@ public class AppInfo implements Serializable {
 	 */
 	public Map<String, ? extends ClassInfo> cliMap;
 //	protected Map<String, ClassInfo> cliMap;
+
+	public final static String clinitSig = "<clinit>()V";
 	
 
 	/**
@@ -195,13 +207,27 @@ public class AppInfo implements Serializable {
 	}
 
 	/**
+	 * Iterate over all classes and run the visitor.
+	 * 
+	 * @param v
+	 */
+	protected void iterate(Visitor v) {
+	
+		Iterator<? extends ClassInfo> it = cliMap.values().iterator();
+		while (it.hasNext()) {
+			JavaClass clz = it.next().clazz;
+			new DescendingVisitor(clz, v).visit();
+		}
+	}
+
+	/**
 	 * A simple example main that prints the Map of ClassInfo
 	 * 
 	 * @param args
 	 */
 	public static void main(String[] args) {
 
-		AppInfo ai = new AppInfo(new ClassInfo());
+		AppInfo ai = new AppInfo(ClassInfo.getTemplate());
 		ai.parseOptions(args);
 		System.out.println("CLASSPATH="+ai.classpath+"\tmain class="+ai.mainClass);
 		try {

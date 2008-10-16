@@ -23,14 +23,15 @@ package com.jopdesign.build;
 import org.apache.bcel.classfile.*;
 
 /**
+ * Set the start address of the method.
  * @author martin
  *
  */
-public class SetMethodInfo extends AppVisitor {
+public class SetMethodAddress extends JOPizerVisitor {
 
 	private int addr;
 
-	public SetMethodInfo(JOPizer jz) {
+	public SetMethodAddress(JOPizer jz) {
 		super(jz);
 		addr = jz.codeStart;
 	}
@@ -45,7 +46,7 @@ public class SetMethodInfo extends AppVisitor {
 		for(int i=0; i < methods.length; i++) {
 			Method m = methods[i];
 			String methodId = m.getName()+m.getSignature();
-	        MethodInfo mi = getCli().getMethodInfo(methodId);
+	        JopMethodInfo mi = (JopMethodInfo) getCli().getMethodInfo(methodId);
 	        if(JOPizer.dumpMgci){
 	          // GCRT: get number of words used for this method's GC
 	          addr += GCRTMethodInfo.gcLength(mi);    

@@ -2,7 +2,6 @@
   This file is part of JOP, the Java Optimized Processor
     see <http://www.jopdesign.com/>
 
-  Copyright (C) 2004,2005, Flavius Gruian
   Copyright (C) 2005-2008, Martin Schoeberl (martin@jopdesign.com)
 
   This program is free software: you can redistribute it and/or modify
@@ -26,24 +25,25 @@
 package com.jopdesign.build;
 
 
-import org.apache.bcel.classfile.*;
-
 /**
- * @author martin
+ * The JOPizer specific version of the AppVisitor.
+ * 
+ * @author Martin
  *
+ * TODO: can we use generics to avoid this application specific class?
+
  */
-public class CountStaticFields extends JOPizerVisitor {
+public class JOPizerVisitor extends AppVisitor {
 
-	
-	public CountStaticFields(AppInfo jz) {
-		super(jz);
+	public JOPizerVisitor(AppInfo ai) {
+		super(ai);
 	}
 	
-	public void visitJavaClass(JavaClass clazz) {
-
-		super.visitJavaClass(clazz);
-		getCli().cntStaticFields();
+	/**
+	 * Return the specific cli object.
+	 */
+	protected JopClassInfo getCli() {
+		return (JopClassInfo) cli;
 	}
-	
 
 }

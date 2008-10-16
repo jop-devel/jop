@@ -32,14 +32,14 @@ import com.jopdesign.tools.JopInstr;
  * @author Flavius, Martin
  * 
  */
-public class ReplaceNativeAndCPIdx extends AppVisitor {
+public class ReplaceNativeAndCPIdx extends JOPizerVisitor {
 
 	// Why do we use a ConstantPoolGen and a ConstantPool?
 	private ConstantPoolGen cpoolgen;
 
 	private ConstantPool cp;
 
-	public ReplaceNativeAndCPIdx(JOPizer jz) {
+	public ReplaceNativeAndCPIdx(AppInfo jz) {
 		super(jz);
 	}
 

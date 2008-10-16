@@ -27,10 +27,10 @@ import org.apache.bcel.classfile.*;
  * @author martin
  *
  */
-public class ResolveCPool extends AppVisitor {
+public class ResolveCPool extends JOPizerVisitor {
 
 
-	public ResolveCPool(JOPizer jz) {
+	public ResolveCPool(AppInfo jz) {
 		super(jz);
 	}
 	

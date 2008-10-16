@@ -34,11 +34,11 @@ import org.apache.bcel.classfile.*;
  * @author martin
  *
  */
-public class ClassAddress extends AppVisitor {
+public class ClassAddress extends JOPizerVisitor {
 
 	private int addr;
 	
-	public ClassAddress(JOPizer jz, int addr) {
+	public ClassAddress(AppInfo jz, int addr) {
 		super(jz);
 		this.addr = addr;
 	}

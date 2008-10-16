@@ -26,6 +26,7 @@ import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
 
+import com.jopdesign.build.AppInfo;
 import com.jopdesign.build.JOPizer;
 import com.jopdesign.debug.jdwp.SymbolManager;
 import com.jopdesign.debug.jdwp.SymbolTable;
@@ -50,7 +51,7 @@ public class JopSymbolManager extends SymbolManager implements Serializable
   
   private List classList;
   
-  private JOPizer jopizer;
+  private AppInfo jopizer;
   
   public JopSymbolManager()
   {
@@ -93,7 +94,7 @@ public class JopSymbolManager extends SymbolManager implements Serializable
    * 
    * @param jz
    */
-  private void buildSymbolTable(JOPizer jz)
+  private void buildSymbolTable(AppInfo jz)
   {
     jopizer = jz;
     

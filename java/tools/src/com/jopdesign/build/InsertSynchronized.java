@@ -32,11 +32,11 @@ import org.apache.bcel.util.InstructionFinder;
  * @author Martin Schoeberl, Wolfgang Puffitsch
  * 
  */
-public class InsertSynchronized extends AppVisitor {
+public class InsertSynchronized extends JOPizerVisitor {
 
 	private ConstantPoolGen cpoolgen;
 
-	public InsertSynchronized(JOPizer jz) {
+	public InsertSynchronized(AppInfo jz) {
 		super(jz);
 	}
 

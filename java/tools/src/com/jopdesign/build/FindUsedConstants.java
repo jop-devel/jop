@@ -55,7 +55,7 @@ import com.jopdesign.tools.JopInstr;
  *
  *
  */
-public class FindUsedConstants extends AppVisitor {
+public class FindUsedConstants extends JOPizerVisitor {
 
 	private ConstantPoolGen cpool;
 	private ConstantPoolGen cpoolNew;
@@ -65,7 +65,7 @@ public class FindUsedConstants extends AppVisitor {
 	 */
 	private HashMap cpoolMap;
 	
-	public FindUsedConstants(JOPizer jz) {
+	public FindUsedConstants(AppInfo jz) {
 		super(jz);
 	}
 	

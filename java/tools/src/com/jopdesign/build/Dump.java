@@ -32,8 +32,8 @@ import org.apache.bcel.classfile.*;
  */
 public class Dump extends AppVisitor {
 
-	public Dump(JOPizer jz) {
-		super(jz);
+	public Dump(AppInfo ai) {
+		super(ai);
 	}
 	
 	public void visitMethod(Method method) {

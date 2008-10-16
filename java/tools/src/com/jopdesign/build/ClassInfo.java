@@ -38,6 +38,11 @@ import org.apache.bcel.classfile.JavaClass;
  */
 public class ClassInfo implements Serializable {
 	
+	/**
+	 * Is invoked on cli map creation for additional information setting.
+	 * 
+	 * @author Martin Schoeberl
+	 */
 	protected class CliVisitor extends EmptyVisitor implements Serializable {
 		
 		private static final long serialVersionUID = 1L;
@@ -59,8 +64,21 @@ public class ClassInfo implements Serializable {
 				// add this ClassInfo as a known sub class to the super class
 				cli.superClass.subClasses.add(map.get(clazz.getClassName()));
 			}
+		}
+		
+		public void visitMethod(Method method) {
+			
+			ClassInfo cli = (ClassInfo) this.cli;
+			String methodId = method.getName()+method.getSignature();
+	        if(!cli.usedMethods.containsKey(methodId)) {
+				MethodInfo mi1 = cli.newMethodInfo(methodId);
+				cli.usedMethods.put(methodId, mi1);
+				cli.list.add(mi1);
+			}
+	        MethodInfo mi = cli.getMethodInfo(methodId);
+	        mi.setMethod(method);
+		}
 
-		}		
 	}
 
 	private static final long serialVersionUID = 1L;
@@ -83,6 +101,16 @@ public class ClassInfo implements Serializable {
 	 * Back link to the application info
 	 */
 	AppInfo appInfo;
+
+	/**
+	 * Map of method signatures to a MethodInfo.
+	 */
+	protected Map<String, MethodInfo> usedMethods = new HashMap<String, MethodInfo>();
+
+	/**
+	 * Methods in a list ordered in the visit order.
+	 */
+	protected List<MethodInfo> list = new LinkedList<MethodInfo>();
 	
 	protected ClassInfo(JavaClass jc, AppInfo ai) {
 		clazz = jc;
@@ -93,10 +121,10 @@ public class ClassInfo implements Serializable {
 	 * A dummy instance for the dispatch of newClassInfo() that
 	 * creates the real ClassInfo sub type
 	 */
-	public ClassInfo() {
-		this(null, null);
+	public static ClassInfo getTemplate() {
+		return new ClassInfo(null, null);
 	}
-	
+
 	/**
 	 * Create ClassInfos and the map from class names to ClassInfo
 	 * @param jc
@@ -108,7 +136,7 @@ public class ClassInfo implements Serializable {
 			ClassInfo cli = newClassInfo(jc[i], ai);
 			map.put(cli.clazz.getClassName(), cli);
 		}
-		// second over all class infos for additional information setting
+		// second iteration over all class infos for additional information setting
 		CliVisitor v = newCliVisitor(map);
 		Iterator<? extends ClassInfo> it = map.values().iterator();
 		while (it.hasNext()) {
@@ -118,7 +146,6 @@ public class ClassInfo implements Serializable {
 		return map;
 	}
 	
-	// SF factory idea - Saint Mary's Square
 	/**
 	 * A funny version of a factory method to create ClassInfo
 	 * types. Has to be overwritten by each sub-type.
@@ -137,7 +164,29 @@ public class ClassInfo implements Serializable {
 		return new CliVisitor(map);
 	}
 	
+	/**
+	 * And another funny factory.
+	 * @param mid
+	 * @return
+	 */
+	MethodInfo newMethodInfo(String mid) {
+		return new MethodInfo(this, mid);
+	}
+	
 	public String toString() {
 		return clazz.getClassName();
 	}
+
+	public MethodInfo getMethodInfo(String amth) {
+		return usedMethods.get(amth);
+	}
+
+	/**
+	 * Return the methods as list in the order they have been visited.
+	 * @return
+	 */
+	public List<MethodInfo> getMethods() {
+		return list;
+	}
+
 }
