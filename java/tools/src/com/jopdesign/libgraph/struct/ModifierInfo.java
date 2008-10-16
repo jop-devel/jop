@@ -40,6 +40,8 @@ public interface ModifierInfo {
 
     boolean isSynchronized();
 
+    void setStatic(boolean val);
+
     void setFinal(boolean val);
 
     /**

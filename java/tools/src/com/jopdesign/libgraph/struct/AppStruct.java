@@ -68,25 +68,29 @@ public class AppStruct {
     }
 
     /**
-     * This is a wrapper for {@link com.jopdesign.libgraph.struct.AppClassLoader#createClassInfo(AppStruct, String)}
+     * This is a wrapper for {@link com.jopdesign.libgraph.struct.AppClassLoader#loadClassInfo(AppStruct, String)}
      * of the current loader. A new classInfo object will be created, even if the class is already loaded in the
      * AppStruct.
      *
      * {@link AppConfig} settings are ignored by this method. To honor AppConfig, use {@link #getClassInfo(String, boolean)}
      * or {@link #tryLoadMissingClass(String)}.
      *
-     * @see com.jopdesign.libgraph.struct.AppClassLoader#createClassInfo(AppStruct, String)
+     * @see com.jopdesign.libgraph.struct.AppClassLoader# loadClassInfo (AppStruct, String)
      * @see #getClassInfo(String, boolean)  
      * @param className the name of the class to load.
      * @return a new ClassInfo of the class.
      * @throws TypeException
      */
-    public ClassInfo createClassInfo(String className) throws TypeException {
+    public ClassInfo loadClassInfo(String className) throws TypeException {
         try {
-            return loader.createClassInfo(this, className);
+            return loader.loadClassInfo(this, className);
         } catch (IOException e) {
             throw new TypeException("Could not create class {"+className+"}. Please check your classpath.", e);
         }
+    }
+
+    public ClassInfo createClassInfo(String className, String superClassName, boolean isInterface) {
+        return loader.createClassInfo(this, className, superClassName, isInterface);
     }
 
     /**
@@ -147,7 +151,7 @@ public class AppStruct {
         ClassInfo info;
 
         try {
-            info = loader.createClassInfo(this, className);
+            info = loader.loadClassInfo(this, className);
         } catch (IOException e) {
             if ( config.doAllowIncompleteCode() ) {
                 logger.warn("Could not load class {"+className+"}, ignoring.", e);

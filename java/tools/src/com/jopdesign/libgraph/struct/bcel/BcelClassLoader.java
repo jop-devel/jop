@@ -21,17 +21,15 @@ package com.jopdesign.libgraph.struct.bcel;
 import com.jopdesign.libgraph.struct.AppClassLoader;
 import com.jopdesign.libgraph.struct.AppStruct;
 import com.jopdesign.libgraph.struct.ClassInfo;
+import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.ClassParser;
 import org.apache.bcel.classfile.JavaClass;
+import org.apache.bcel.generic.ClassGen;
 import org.apache.bcel.util.ClassPath;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
 
 /**
  * @author Stefan Hepp, e0026640@student.tuwien.ac.at
@@ -52,7 +50,7 @@ public class BcelClassLoader implements AppClassLoader {
         classPath = new ClassPath(path);
     }
 
-    public ClassInfo createClassInfo(AppStruct appStruct, String className) throws IOException {
+    public ClassInfo loadClassInfo(AppStruct appStruct, String className) throws IOException {
 
         JavaClass jc = createJavaClass(className);
         if ( jc == null ) {
@@ -62,23 +60,17 @@ public class BcelClassLoader implements AppClassLoader {
         return new BcelClassInfo(appStruct, jc);
     }
 
-    /**
-     * create Bcel JavaClasses from a list of classnames using the configured classpath.
-     *
-     * @param classNames a set of FQ-classnames to load.
-     * @return a collection of Bcel-JavaClasses containing the given classes.
-     * @throws IOException if reading a class fails.
-     */
-    public Collection createJavaClasses(Set classNames) throws IOException {
-        List jc = new LinkedList();
+    public ClassInfo createClassInfo(AppStruct appStruct, String className, String superClassName, boolean isInterface) {
 
-        Iterator i = classNames.iterator();
-        for (int nr=0; i.hasNext(); ++nr) {
-            String clname = (String) i.next();
-            jc.add( createJavaClass(clname) );
+        String filename = className.replace(".", File.separator) + ".class";
+        
+        int af = Constants.ACC_PUBLIC;
+        if ( isInterface ) {
+            af |= Constants.ACC_INTERFACE;
         }
 
-        return jc;
+        JavaClass jc = new ClassGen(className, superClassName, filename, af, new String[0]).getJavaClass();
+        return new BcelClassInfo(appStruct, jc);
     }
 
     /**

@@ -77,6 +77,15 @@ public class BcelMethodInfo extends MethodInfo {
         }
     }
 
+    public void setStatic(boolean val) {
+        int af = method.getModifiers();
+        if ( val ) {
+            method.setModifiers(af | Constants.ACC_STATIC);
+        } else {
+            method.setModifiers(af & (~Constants.ACC_STATIC));
+        }
+    }
+
     public void setAccessType(int type) {
         int af = method.getAccessFlags() & ~(Constants.ACC_PRIVATE|Constants.ACC_PROTECTED|Constants.ACC_PUBLIC);
         switch (type) {

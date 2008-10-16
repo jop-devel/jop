@@ -83,6 +83,15 @@ public class BcelFieldInfo extends FieldInfo {
         }
     }
 
+    public void setStatic(boolean val) {
+        int af = field.getModifiers();
+        if ( val ) {
+            field.setModifiers(af | Constants.ACC_STATIC);
+        } else {
+            field.setModifiers(af & (~Constants.ACC_STATIC));
+        }
+    }
+    
     public void setAccessType(int type) {
         int af = field.getAccessFlags() & ~(Constants.ACC_PRIVATE|Constants.ACC_PROTECTED|Constants.ACC_PUBLIC);
         switch (type) {

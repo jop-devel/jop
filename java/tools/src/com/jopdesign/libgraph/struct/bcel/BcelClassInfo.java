@@ -243,6 +243,15 @@ public class BcelClassInfo extends ClassInfo {
         modified = true;
     }
 
+    public void setStatic(boolean val) {
+        int af = classGen.getModifiers();
+        if ( val ) {
+            classGen.setModifiers(af | Constants.ACC_STATIC);
+        } else {
+            classGen.setModifiers(af & (~Constants.ACC_STATIC));
+        }
+    }
+
     public void setAccessType(int type) {
         int af = classGen.getAccessFlags() & ~(Constants.ACC_PRIVATE|Constants.ACC_PROTECTED|Constants.ACC_PUBLIC);
         switch (type) {

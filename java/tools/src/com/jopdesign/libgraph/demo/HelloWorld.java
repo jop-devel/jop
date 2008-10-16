@@ -64,7 +64,7 @@ public class HelloWorld {
         try {
 
             // let the class load itself into the appstruct
-            ClassInfo main = appStruct.createClassInfo("com.jopdesign.libgraph.demo.HelloWorld");
+            ClassInfo main = appStruct.loadClassInfo("com.jopdesign.libgraph.demo.HelloWorld");
 
             if ( main == null ) {
                 System.out.println("Personality error: could not find myself.");

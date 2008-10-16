@@ -30,7 +30,7 @@ public interface AppClassLoader {
     void setClassPath(String path);
 
     /**
-     * Create a new class for a given classname.
+     * Load a class for a given classname from a file.
      * The packages must be separated by dots.
      *
      * @param appStruct the AppStruct which will be used by the new class.
@@ -38,6 +38,17 @@ public interface AppClassLoader {
      * @return the classinfo for this class or null if this class should not be loaded.
      * @throws java.io.IOException if classfile cannot be loaded.
      */
-    ClassInfo createClassInfo(AppStruct appStruct, String className) throws IOException;
+    ClassInfo loadClassInfo(AppStruct appStruct, String className) throws IOException;
 
+    /**
+     * Create a new class from scratch with the given name.
+     * The packages must be separated by dots.
+     *
+     * @param appStruct      the AppStruct which will be used by the new class.
+     * @param className      the fully qualified name of the class.
+     * @param superClassName the fully qualified name of the superclass (e.g. 'java.lang.Object').
+     * @param isInterface    true if the class should be an interface.
+     * @return a new classinfo instance.
+     */
+    ClassInfo createClassInfo(AppStruct appStruct, String className, String superClassName, boolean isInterface);
 }
