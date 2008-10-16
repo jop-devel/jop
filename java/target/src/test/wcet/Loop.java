@@ -33,12 +33,12 @@ public class Loop {
 
 	public static int measure(boolean b, int val) {
 		
-		// measured: 1529
-		// wcet: 1553
+		// measured: 1369
+		// wcet: 1393
 		// difference is 24 cycles:
 		//		iload_1		1
 		//		ireturn		23
-		
+
 		int i, j;
 		
 //		int ts, te, to;
