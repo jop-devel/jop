@@ -40,7 +40,7 @@ import com.jopdesign.tools.JopInstr;
  * generates faster code on JOP.
  * 
  */
-public class ReplaceIinc extends JOPizerVisitor {
+public class ReplaceIinc extends AppVisitor {
 
 	// Why do we use a ConstantPoolGen and a ConstantPool?
 	private ConstantPoolGen cpoolgen;
@@ -65,8 +65,11 @@ public class ReplaceIinc extends JOPizerVisitor {
 		        // set new method also in MethodInfo
 		        mi.setMethod(m);
 				if (m!=null) {
+					// overwrite the BCEL method with the changed one
 					methods[i] = m;
 				}
+				// update constant pool
+				clazz.setConstantPool(cpoolgen.getFinalConstantPool());
 			}
 		}
 	}

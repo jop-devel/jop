@@ -51,6 +51,8 @@ public class InsertSynchronized extends JOPizerVisitor {
 			if(!(methods[i].isAbstract() || methods[i].isNative())
 					&& methods[i].isSynchronized()) {		
 				Method m = synchronize(methods[i]);
+		        // why does this work without the following line?
+		        // mi.setMethod(m);
 				if (m!=null) {
 					methods[i] = m;
 				}

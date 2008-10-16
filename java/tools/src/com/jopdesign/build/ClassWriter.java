@@ -2,7 +2,7 @@
   This file is part of JOP, the Java Optimized Processor
     see <http://www.jopdesign.com/>
 
-  Copyright (C) 2005-2008, Martin Schoeberl (martin@jopdesign.com)
+  Copyright (C) 2008, Martin Schoeberl (martin@jopdesign.com)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -18,31 +18,39 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/*
+
+/**
+ * 
  */
 package com.jopdesign.build;
 
+import java.io.File;
+import java.io.IOException;
 
-import java.io.PrintWriter;
-
-import org.apache.bcel.classfile.*;
+import org.apache.bcel.classfile.JavaClass;
 
 /**
- * @author martin
+ * @author Martin Schoeberl
  *
- * Just dump all methods to the debug text file
  */
-public class Dump extends AppVisitor {
+public class ClassWriter extends AppVisitor {
 
-	PrintWriter outTxt;
-	public Dump(AppInfo ai, PrintWriter pw) {
+	String dir;
+	public ClassWriter(AppInfo ai, String outDir) {
 		super(ai);
-		outTxt = pw;
+		dir = outDir;
 	}
-	
-	public void visitMethod(Method method) {
 
-		outTxt.println(clazz.getClassName()+":"+method.getName()+method.getSignature());
-		outTxt.println(method.getCode());
+	@Override
+	public void visitJavaClass(JavaClass clazz) {
+		super.visitJavaClass(clazz);
+
+		String filename = dir+File.separator+
+			clazz.getClassName().replace(".", File.separator)+".class";
+	    try {
+			cli.writeClassFile(filename);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 }

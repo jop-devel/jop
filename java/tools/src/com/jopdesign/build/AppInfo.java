@@ -39,6 +39,9 @@ import org.apache.bcel.util.ClassPath;
  * 
  * TODO: split JOP specific and general MethodInfo
  * TODO: make all general usable visitors AppVisitor instead of JOPizerVisitor
+ * TODO: How do we handle the update when manipulating methods and classes?
+ * 	There is this gen* in BCEL, but don't we also need to update the info
+ * 	in XClassInfo and XMethodInfo?
  * 
  * @author Martin
  *
@@ -66,11 +69,6 @@ public class AppInfo implements Serializable {
 	 */
 	private Set<String> exclude = new HashSet<String>();
 	
-
-	/**
-	 * Array of the application classes.
-	 */
-	private JavaClass[] jclazz;
 	/**
 	 * A template of the specific cli type to create
 	 * the specific cli map (some form of factory pattern)
@@ -191,18 +189,13 @@ public class AppInfo implements Serializable {
 		hull.setExcluded(exclude.toArray(excl));
 		hull.start();
 		System.out.println(Arrays.asList(hull.getClassNames()));
-		jclazz = hull.getClasses();
+		JavaClass[] jclazz = hull.getClasses();
 		// jclazz now contains the closure of the application
 		cliMap = template.genClassInfoMap(jclazz, this);
 	}
 
 	public String toString() {
 		
-//		StringBuilder sb = new StringBuilder();
-//		for (int i=0; i<jclazz.length; ++i) {
-//			sb.append(jclazz[i]);
-//		}
-//		return sb.toString();
 		return cliMap.toString();
 	}
 

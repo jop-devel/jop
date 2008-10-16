@@ -136,7 +136,7 @@ public class JOPizer extends AppInfo implements Serializable {
 			
 	        
 	        // dump of BCEL info to a text file
-			jz.iterate(new Dump(jz));
+			jz.iterate(new Dump(jz, jz.outTxt));
 
 			// BuildVT was after SetMethodInfo
 			// we need it for replace of field offsets

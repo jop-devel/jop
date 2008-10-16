@@ -24,6 +24,11 @@
  */
 package com.jopdesign.build;
 
+import java.io.BufferedOutputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
 
@@ -187,6 +192,26 @@ public class ClassInfo implements Serializable {
 	 */
 	public List<MethodInfo> getMethods() {
 		return list;
+	}
+
+	/**
+	 * Write the BCEL clazz to a class file. 'Stolen' from Stefan's libgraph.
+	 * @param filename
+	 * @throws IOException
+	 */
+	public void writeClassFile(String filename) throws IOException {
+        File file = new File(filename);
+        String parent = file.getParent();
+
+        if(parent != null) {
+            File dir = new File(parent);
+            dir.mkdirs();
+        }
+
+        BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(file));
+        // TODO: what happens if we have changed the class (gen)?
+        // updateClass();
+        clazz.dump(new DataOutputStream(out));		
 	}
 
 }
