@@ -51,7 +51,7 @@ public abstract class MethodInfo implements ClassElement {
         return getClassInfo().getAppStruct();
     }
 
-    public boolean isInitialzed() {
+    public boolean isInitialized() {
         return initialzed;
     }
 

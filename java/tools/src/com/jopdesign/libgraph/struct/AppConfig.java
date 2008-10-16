@@ -23,17 +23,32 @@ package com.jopdesign.libgraph.struct;
  */
 public interface AppConfig {
 
+    /**
+     * Check if referenced classes should be loaded after the initial class loading phase.
+     * 
+     * @return true if implicit class loading should be possible after the first loading phase. 
+     */
     boolean doLoadOnDemand();
 
+    /**
+     * Check if incomplete code should be allowed or if an error should be produced
+     * if a class which is not excluded cannot be loaded (i.e. this has an effect
+     * only on classes which are not excluded by {@link #doExcludeClassName(String)},
+     * {@link #isNativeClassName(String)} and {@link #isLibraryClassName(String)}).
+     *
+     * @return true if an error should be produced if loading a not excluded class fails.
+     */
     boolean doAllowIncompleteCode();
 
     /**
-     * check if the given classname should be loaded or not.
+     * Check if the given classname should be loaded or not.<br>
+     * This check does not need to check if the class is a library class
+     * or a native class. To check for all possible reasons, use {@link AppStruct#doIgnoreClassName(String)}. 
      *
      * @param className the classname to check.
-     * @return the reason as string if the class should be ignored, else null.
+     * @return true for classes which should not be loaded due to configuration settings.
      */
-    String doExcludeClassName(String className);
+    boolean doExcludeClassName(String className);
 
     /**
      * Check if this class is implemented by the JVM. As

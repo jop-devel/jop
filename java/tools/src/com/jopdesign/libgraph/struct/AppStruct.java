@@ -67,6 +67,20 @@ public class AppStruct {
         loader.setClassPath(path);
     }
 
+    /**
+     * This is a wrapper for {@link com.jopdesign.libgraph.struct.AppClassLoader#createClassInfo(AppStruct, String)}
+     * of the current loader. A new classInfo object will be created, even if the class is already loaded in the
+     * AppStruct.
+     *
+     * {@link AppConfig} settings are ignored by this method. To honor AppConfig, use {@link #getClassInfo(String, boolean)}
+     * or {@link #tryLoadMissingClass(String)}.
+     *
+     * @see com.jopdesign.libgraph.struct.AppClassLoader#createClassInfo(AppStruct, String)
+     * @see #getClassInfo(String, boolean)  
+     * @param className the name of the class to load.
+     * @return a new ClassInfo of the class.
+     * @throws TypeException
+     */
     public ClassInfo createClassInfo(String className) throws TypeException {
         try {
             return loader.createClassInfo(this, className);
@@ -77,44 +91,56 @@ public class AppStruct {
 
     /**
      * Try to load a missing class. <br>
-     * This returns the new (uninitialized) class if found and loaded,
+     * This returns the new class if found and loaded,
      * null if this class should by ignored, or throws an exeption if the class
      * is missing but shouldn't. <br>
-     * This depends on the settings of jopConfig.
+     * This depends on the settings of appConfig. <br>
+     *
+     * TODO maybe introduce load/post-load phases for AppStruct, set 'onDemand/init' depending on phase ?
+     * TODO maybe add loaded classes to a separate cache (not to the classlist, as this should only contain explicitly added classes).
      *
      * @param className the classname which should by tried to load.
      * @return the loaded classinfo or null if this class should be ignored.
      * @throws TypeException if this class should not be missing.
      */
     public ClassInfo tryLoadMissingClass(String className) throws TypeException {
+        return tryLoadClass(className, true, true);
+    }
 
-        if ( config.isLibraryClassName(className) ) {
+    /**
+     * Try to load a class. <br>
+     * This returns the new class if found and loaded,
+     * null if this class should by ignored, or throws an exeption if the class
+     * is missing but shouldn't. <br>
+     * This depends on the settings of appConfig. <br>
+     *
+     * @param className the classname which should by tried to load.
+     * @param onDemand true if the class is loaded after the initial class loading phase because it is referenced by another class.
+     * @param initClass true if the classinfo should be initialized after loading it. 
+     * @return the loaded classinfo or null if this class should be ignored.
+     * @throws TypeException if this class should not be missing.
+     */
+    public ClassInfo tryLoadClass(String className, boolean onDemand, boolean initClass) throws TypeException {
+
+        // first, check if class should be ignored by configuration, return null for ignored classes.
+        String reason = doIgnoreClassName(className);        
+        if ( reason != null ) {
             if (logger.isDebugEnabled()) {
-                logger.debug("Skipping post-loading of library class {" + className + "}");
+                logger.debug(reason);
             }
             return null;
         }
 
-        if ( !config.doLoadOnDemand() ) {
-            if ( config.doAllowIncompleteCode() || config.isNativeClassName(className) ) {
+        // a bit tricky: if load-on-demand is disabled and the class is loaded on demand (and not ignored),
+        // do not load the class, but return null or throw an error if incomplete code is not allowed
+        if ( !config.doLoadOnDemand() && onDemand ) {
+            if ( config.doAllowIncompleteCode() ) {
                 if (logger.isTraceEnabled()) {
-                    logger.trace("Skipping loading of class {" + className + "}");
+                    logger.trace("Skipping on-demand loading of class {" + className + "}");
                 }
                 return null;
             } else {
                 throw new TypeException("Load-on-demand not enabled (class "+className+").");
-            }
-        }
-
-        String reason = config.doExcludeClassName(className);
-        if ( reason != null ) {
-            if ( config.doAllowIncompleteCode() ) {
-                if ( logger.isInfoEnabled() ) {
-                    logger.info(reason);
-                }
-                return null;
-            } else {
-                throw new TypeException(reason);
             }
         }
 
@@ -143,13 +169,38 @@ public class AppStruct {
         }
 
         // need to initialize the class (?)
-        info.reload();
-        for (Iterator it = info.getMethodInfos().iterator(); it.hasNext();) {
-            MethodInfo methodInfo = (MethodInfo) it.next();
-            methodInfo.reload();
+        if ( initClass ) {
+            info.reload();
+            for (Iterator it = info.getMethodInfos().iterator(); it.hasNext();) {
+                MethodInfo methodInfo = (MethodInfo) it.next();
+                methodInfo.reload();
+            }
         }
 
         return info;
+    }
+
+    /**
+     * Check if the class should be ignored due to configuration settings.<br>
+     * {@link AppConfig#doAllowIncompleteCode()} has no effect here.
+     *
+     * @param className the fully qualified class name.
+     * @return a reason text why the class is ignored, or null if the class should be loaded.
+     */
+    public String doIgnoreClassName(String className) {
+        if ( config.isNativeClassName(className) ) {
+            return "Skipping native class {" + className + "}.";
+        }
+
+        if ( config.isLibraryClassName(className) ) {
+            return "Skipping library class {" + className + "}";
+        }
+
+        if ( config.doExcludeClassName(className) ) {
+            return "Skipping excluded class {"+ className + "}";
+        }
+
+        return null;
     }
 
     /**
@@ -173,10 +224,12 @@ public class AppStruct {
     }
 
     /**
-     * Get a classInfo and try to load it if not found.
+     * Get a classInfo and try to load it if not found using {@link #tryLoadMissingClass(String)}.<br>
+     * A new class is not added to the classlist (this might someday be done by tryLoadMissingClass).
      *
      * @param className the fully qualified class name of the class to load.
-     * @param ignoreMissing if the class is not loaded, throw an exception.
+     * @param ignoreMissing if false and the class is not loaded, an exception is thrown
+     *    (i.e. this function never returns null if ignoreMissing is false).
      * @return the classInfo or null if class not found and ignoreMissing is true.
      * @throws TypeException if the class should be loaded but was not found.
      */
@@ -284,6 +337,39 @@ public class AppStruct {
 
     public void removeClass(String className) {
         classInfos.remove(className);
+    }
+
+    /**
+     * Initialize all the classInfos.
+     *
+     * @param forceReload true if the classes should be reloaded even if they are already initialized.
+     */
+    public void initClassInfos(boolean forceReload) throws TypeException {
+        Iterator it = getClassInfos().iterator();
+
+        // reload all classinfos
+        while (it.hasNext()) {
+            ClassInfo classInfo = (ClassInfo) it.next();
+            if ( forceReload || !classInfo.isInitialized() ) {
+                classInfo.reload();
+            }
+        }
+
+        // reload all methodinfos. Must (currently) be done after all classes have been initialized
+        // because this needs the methodinfos of super- and sub-classes.
+        it = getClassInfos().iterator();
+        while (it.hasNext()) {
+            ClassInfo classInfo = (ClassInfo) it.next();
+            Collection methods = classInfo.getMethodInfos();
+
+            for (Iterator it2 = methods.iterator(); it2.hasNext();) {
+                MethodInfo method = (MethodInfo) it2.next();
+                if ( forceReload || !method.isInitialized() ) {
+                    method.reload();
+                }
+            }
+        }
+
     }
 
     /**
