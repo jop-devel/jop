@@ -3,6 +3,7 @@
     see <http://www.jopdesign.com/>
 
   Copyright (C) 2006, Rasmus Ulslev Pedersen
+  Copyright (C) 2006, Martin Schoeberl (martin@jopdesign.com)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -22,16 +23,16 @@ package com.jopdesign.wcet;
 import org.apache.bcel.classfile.*;
 
 /*
- * It calls the methods. 
+ * It calls the methods.
  * @author rup, ms
  */
 public class SetWCETAnalysis extends MyVisitor {
   WCETAnalyser wca;
 	public SetWCETAnalysis(WCETAnalyser wca) {
 		super(wca);
-		this.wca = wca; 
+		this.wca = wca;
 	}
-	
+
 	public void visitJavaClass(JavaClass clazz) {
 
 		super.visitJavaClass(clazz);
@@ -41,17 +42,17 @@ public class SetWCETAnalysis extends MyVisitor {
   		for(int i=0; i < methods.length; i++) {
   			Method m = methods[i];
   			String methodId = m.getName()+m.getSignature();
-        
+
 
         if(true){//!m.isAbstract()){
           WCETMethodBlock wcmb = new WCETMethodBlock(m,clazz,wca);
           wca.msigtowcmb.put(methodId,wcmb);
           wca.wcmbs.add(wcmb);
-//  System.out.println("put "+clazz.getClassName()+"."+methodId+" in msigtiwcmb");        
+//  System.out.println("put "+clazz.getClassName()+"."+methodId+" in msigtiwcmb");
 //          wcmb.controlFlowGraph();
 //          wcmb.directedGraph();
           //wcmb.toString();
-//System.out.println("comparing:"+(clazz.getClassName()+"."+m.getName())+" to:"+wca.appmethod);          
+//System.out.println("comparing:"+(clazz.getClassName()+"."+m.getName())+" to:"+wca.appmethod);
           if((clazz.getClassName()+"."+m.getName()).equalsIgnoreCase(wca.appmethod)){
             wca.wcmbapp = wcmb;
           }
@@ -79,7 +80,7 @@ public class SetWCETAnalysis extends MyVisitor {
       for(int i=0; i < methods.length; i++) {
         Method m = methods[i];
         String methodId = m.getName()+m.getSignature();
-        
+
         //if(m.getName().equalsIgnoreCase("main")||m.getName().equalsIgnoreCase("loop11")){
         if(!m.isAbstract()){
           WCETMethodBlock wcmb = (WCETMethodBlock)wca.mtowcmb.get(m);
@@ -91,7 +92,7 @@ public class SetWCETAnalysis extends MyVisitor {
         //}
       }
     }*/
-    
+
 
 	}
 }

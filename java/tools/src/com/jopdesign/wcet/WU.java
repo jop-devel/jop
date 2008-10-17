@@ -3,6 +3,7 @@
     see <http://www.jopdesign.com/>
 
   Copyright (C) 2006, Rasmus Ulslev Pedersen
+  Copyright (C) 2006, Martin Schoeberl (martin@jopdesign.com)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -28,7 +29,7 @@ import java.util.StringTokenizer;
  * @author rup,ms
  */
 public class WU{
-  
+
   /**
    * Parse WCA annotation
    * @param wcaA Java source line possibly with a @WCA comment
@@ -56,7 +57,7 @@ public class WU{
     }
     return wcaAH;
   }
-  
+
   /**
    * Inserts spaces in front of a string.
    * @param len the desired total length
@@ -86,7 +87,7 @@ public class WU{
     }
     return sb.toString();
   }
-  
+
   /**
    * Return n repetitions of a string, which is usually a single character.
    * @param val the string

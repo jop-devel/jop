@@ -2,8 +2,8 @@
   This file is part of JOP, the Java Optimized Processor
     see <http://www.jopdesign.com/>
 
-  Copyright (C) 2006, Rasmus Ulslev Pedersen
   Copyright (C) 2006-2008, Martin Schoeberl (martin@jopdesign.com)
+  Copyright (C) 2006, Rasmus Ulslev Pedersen
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -40,7 +40,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 	public static final int w = r+1;
 	// cache read wait state (r-1)
 	public static final int c = 0;
-	
+
 	public static final boolean CMP_WCET = false;
 
 	// Arbitration
@@ -48,15 +48,15 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 	public static final int TIMESLOT = 3;
 	public static final int MAX_CYCLES = 100000;
 	public static final int ARB_PERIOD = CPUS*TIMESLOT;
-	
+
 	// Build Instructions
 	public static final int NOP = 0;
 	public static final int RD = 1;
 	public static final int WR = 2;
-	
+
 	// Arbitration Array
 	public static boolean [] arbiter;
-	
+
 	// Instructions working on memory with 1 rd_waitstate and 2 wr_waitstates
 	public static int [] ldc = {NOP,NOP,NOP,NOP,NOP,RD,NOP,NOP};
 	public static int [] ldc_w = {NOP,NOP,NOP,NOP,NOP,NOP,RD,NOP,NOP};
@@ -78,26 +78,26 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 	public static int [] jopsys_ext2int; // do not need them, just for scheduling
 	public static int [] getstatic_ref = {NOP,NOP,NOP,NOP,NOP,NOP,RD,NOP,NOP,NOP,NOP,RD,NOP,NOP};
 	public static int [] getfield_ref = {NOP,NOP,NOP,NOP,NOP,NOP,RD,NOP,NOP,NOP,RD,NOP,NOP};
-	
+
 	// Instructions that have to be calculated because of cache
-	public static WCETMemInstruction ireturn; 
+	public static WCETMemInstruction ireturn;
 	public static WCETMemInstruction freturn;
 	public static WCETMemInstruction areturn;
 	public static WCETMemInstruction lreturn;
 	public static WCETMemInstruction dreturn;
 	public static WCETMemInstruction returnx; // return
 	public static WCETMemInstruction invokevirtual;
-	public static WCETMemInstruction invokespecial; 
+	public static WCETMemInstruction invokespecial;
 	public static WCETMemInstruction invokestatic; // same as invokespecial
 	public static WCETMemInstruction invokeinterface;
-	
+
 	static {
 		if (CMP_WCET==true){
-			// Initialize 
+			// Initialize
 			initArbiter();
 		}
 	}
-	
+
 	//Native bytecodes (see jvm.asm)
 	private static final int JOPSYS_RD = 209;
 
@@ -124,7 +124,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 	private static final int JOPSYS_EXT2INT = 220;
 
 	private static final int JOPSYS_NOP = 221;
-	
+
 	private static final int JOPSYS_MEMCPY = 232;
 
 	private static String ILLEGAL_OPCODE = "ILLEGAL_OPCODE";
@@ -186,7 +186,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 
 	/**
 	 * Same as getWCET, but using the handle.
-	 * 
+	 *
 	 * @param ih
 	 * @param pmiss true if the cache is missed and false if there is a cache hit
 	 * @return wcet or WCETNOTAVAILABLE (-1)
@@ -200,7 +200,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 
 	/**
 	 * Get the name using the opcode. Used when WCA toWCAString().
-	 * 
+	 *
 	 * @param opcode
 	 * @return name or "ILLEGAL_OPCODE"
 	 */
@@ -252,17 +252,17 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 	}
 
 	public static void main(String[] args) {
-					
+
 		for (int i=0; i<256; ++i) {
 			int cnt = getCycles(i, false, 0);
 			if (cnt==-1) cnt = 1000;
 			System.out.println(i+"\t"+cnt);
 		}
 	}
-	
+
 	/**
 	 * Returns the wcet count for the instruction.
-	 * 
+	 *
 	 * @see table D.1 in ms thesis
 	 * @param opcode
 	 * @param pmiss true if cacle is misses and false if a cache hit
@@ -271,7 +271,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 	public static int getCycles(int opcode, boolean pmiss, int n) {
 		int wcet = -1;
 		int b = -1;
-		
+
 		// cache load time
 		b = calculateB(!pmiss, n);
 
@@ -1039,7 +1039,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			if (b > 10) {
 				wcet += b - 10;
 			}
-			
+
 			// Only for 1 rd waitstate!!!
 			if(CMP_WCET==true){
 				WCETMemInstruction ireturn = new WCETMemInstruction();
@@ -1050,7 +1050,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 //				generateInstruction(ireturn, false, 0, 0);
 //				ireturn.microcode = new int [wcet+8];
 //				generateInstruction(ireturn, true, 5, 18);
-				
+
 				wcet = wcetOfInstruction(ireturn.microcode);
 //				System.out.println("IRETURN WCET: " + wcet );
 				}
@@ -1125,12 +1125,12 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 				returnx.microcode = new int [wcet];
 				returnx.opcode = 177;
 				generateInstruction(returnx, pmiss, n, b);
-				
+
 //				generateInstruction(returnx, true, 0, 0);
 //				generateInstruction(returnx, false, 0, 0);
 //				returnx.microcode = new int [wcet+9];
 //				generateInstruction(returnx, true, 5, 18);
-				
+
 				wcet = wcetOfInstruction(returnx.microcode);}
 			break;
 		// GETSTATIC = 178
@@ -1298,7 +1298,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 		case org.apache.bcel.Constants.JSR_W:
 			wcet = -1;
 			break;
-		// JOPSYS_RD = 209   
+		// JOPSYS_RD = 209
 		case JOPSYS_RD:
 			if(CMP_WCET==false){
 				wcet = 4 + r;}
@@ -1373,15 +1373,15 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			wcet = 1;
 			break;
 
-		case 223: // conditional move 
+		case 223: // conditional move
 			wcet = 5;
 			break;
-			
+
 		// JOPSYS_MEMCPY = 232
 		case JOPSYS_MEMCPY:
 			wcet = -1;
 			break;
-		
+
 		default:
 			wcet = -1;
 		}
@@ -1393,7 +1393,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 	}
 
 	public static boolean isInJava(int opcode) {
-		
+
 		switch (opcode) {
 			case org.apache.bcel.Constants.FCONST_0:
 				return true;
@@ -1467,7 +1467,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 	}
 	/**
 	 * Check to see if there is a valid WCET count for the instruction.
-	 * 
+	 *
 	 * @param opcode
 	 * @return true if there is a valid wcet value
 	 */
@@ -1477,10 +1477,10 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 		else
 			return true;
 	}
-	
+
 	/**
 	 * Get an estimation of the bytecode execution time.
-	 * 
+	 *
 	 * TODO: measure Java implemented bytecodes and add the numbers.
 	 * @param opcode
 	 * @param pmiss
@@ -1488,7 +1488,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 	 * @return
 	 */
 	public static int getCyclesEstimate(int opcode, boolean pmiss, int n) {
-		
+
 		int ret = getCycles(opcode, pmiss, n);
 		// VERY rough estimate
 		if (ret==WCETNOTAVAILABLE) {
@@ -1500,7 +1500,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 
 	/**
 	 * Method load time on invoke or return if there is a cache miss (see pMiss).
-	 * 
+	 *
 	 * @see ms thesis p 232
 	 */
 	public static int calculateB(boolean hit, int n) {
@@ -1517,34 +1517,34 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 		}
 		return b;
 	}
-	
+
 	// Initializes a couple of periods, where one timeslot is true and the
 	// other ones are false
-	
+
 	public static void initArbiter(){
-		
+
 		int i;
 		arbiter = new boolean [MAX_CYCLES];
-		
+
 		for(i=0;i<MAX_CYCLES;i++){
 			if( (i%(ARB_PERIOD)) < TIMESLOT ){
 				arbiter[i]=true;}
 			else{
 				arbiter[i]=false;}
-		}			
+		}
 	}
-	
+
 // Should go into WCETMemInstruction
-	
+
 	public static void generateInstruction(WCETMemInstruction instruction, boolean pmiss, int n, int b){
-		
+
 		boolean nop = false;
 		int cnt = 0;
-		
+
 		switch(instruction.opcode){
 		// ireturn
-		case 172:	
-			
+		case 172:
+
 			for(int i=0;i<instruction.microcode.length;i++){
 				if(i<=3) instruction.microcode[i]=NOP;
 				else if(i==4) instruction.microcode[i]=RD;
@@ -1556,43 +1556,9 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 						if (n==0){
 							instruction.microcode[i]=NOP;}
 						else if (n==1){
-							if (i==16) 
+							if (i==16)
 								instruction.microcode[i]=RD;
-							else 
-								instruction.microcode[i]=NOP;}
-						else{
-							if (i>15 && i<=instruction.microcode.length-4)
-								if (nop==false){
-									instruction.microcode[i]=RD;
-									nop=true;}
-								else{
-									instruction.microcode[i]=NOP;
-									nop=false;}
 							else
-								instruction.microcode[i]=NOP;
-						}
-					}
-				}
-			}				
-			break;
-			
-		// freturn	
-		case 174:	
-			
-			for(int i=0;i<instruction.microcode.length;i++){
-				if(i<=3) instruction.microcode[i]=NOP;
-				else if(i==4) instruction.microcode[i]=RD;
-				else if(i>=5 && i<=15) instruction.microcode[i]=NOP;
-				else{
-					if (pmiss == false)
-						instruction.microcode[i]=NOP;
-					else{
-						if (n==0){
-							instruction.microcode[i]=NOP;}
-						else if (n==1){
-							if (i==16) 
-								instruction.microcode[i]=RD;
-							else 
 								instruction.microcode[i]=NOP;}
 						else{
 							if (i>15 && i<=instruction.microcode.length-4)
@@ -1609,10 +1575,10 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 				}
 			}
 			break;
-			
-		// areturn	
-		case 176:	
-			
+
+		// freturn
+		case 174:
+
 			for(int i=0;i<instruction.microcode.length;i++){
 				if(i<=3) instruction.microcode[i]=NOP;
 				else if(i==4) instruction.microcode[i]=RD;
@@ -1624,9 +1590,9 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 						if (n==0){
 							instruction.microcode[i]=NOP;}
 						else if (n==1){
-							if (i==16) 
+							if (i==16)
 								instruction.microcode[i]=RD;
-							else 
+							else
 								instruction.microcode[i]=NOP;}
 						else{
 							if (i>15 && i<=instruction.microcode.length-4)
@@ -1643,16 +1609,50 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 				}
 			}
 			break;
-			
-		// lreturn	
+
+		// areturn
+		case 176:
+
+			for(int i=0;i<instruction.microcode.length;i++){
+				if(i<=3) instruction.microcode[i]=NOP;
+				else if(i==4) instruction.microcode[i]=RD;
+				else if(i>=5 && i<=15) instruction.microcode[i]=NOP;
+				else{
+					if (pmiss == false)
+						instruction.microcode[i]=NOP;
+					else{
+						if (n==0){
+							instruction.microcode[i]=NOP;}
+						else if (n==1){
+							if (i==16)
+								instruction.microcode[i]=RD;
+							else
+								instruction.microcode[i]=NOP;}
+						else{
+							if (i>15 && i<=instruction.microcode.length-4)
+								if (nop==false){
+									instruction.microcode[i]=RD;
+									nop=true;}
+								else{
+									instruction.microcode[i]=NOP;
+									nop=false;}
+							else
+								instruction.microcode[i]=NOP;
+						}
+					}
+				}
+			}
+			break;
+
+		// lreturn
 		case 173:
 			break;
-			
-		// dreturn	
+
+		// dreturn
 		case 175:
 			break;
-			
-		// return	
+
+		// return
 		case 177:
 			for(int i=0;i<instruction.microcode.length;i++){
 				if(i<=2) instruction.microcode[i]=NOP;
@@ -1663,7 +1663,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 						instruction.microcode[i]=NOP;
 					else{
 						if (b<=9){
-							if(cnt<=2*(n+1)){ //2*(n+1) = 
+							if(cnt<=2*(n+1)){ //2*(n+1) =
 								if (nop==false){
 									instruction.microcode[i]=RD;
 									nop=true;
@@ -1673,7 +1673,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 									nop=false;
 									cnt++;}
 							}
-							else 
+							else
 								instruction.microcode[i]=NOP;}
 						else{
 							if (i>14 && i<=instruction.microcode.length-4)
@@ -1690,8 +1690,8 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 				}
 			}
 			break;
-			
-		// invokevirtual	
+
+		// invokevirtual
 		case 182:
 			for(int i=0;i<instruction.microcode.length;i++){
 				if(i<=5) instruction.microcode[i]=NOP;
@@ -1708,7 +1708,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 						instruction.microcode[i]=NOP;
 					else{
 						if (b<=37){
-							if(cnt<=2*(n+1)){ //2*(n+1) = 
+							if(cnt<=2*(n+1)){ //2*(n+1) =
 								if (nop==false){
 									instruction.microcode[i]=RD;
 									nop=true;
@@ -1718,7 +1718,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 									nop=false;
 									cnt++;}
 							}
-							else 
+							else
 								instruction.microcode[i]=NOP;}
 						else{
 							if (i>67 && i<=instruction.microcode.length-4)
@@ -1735,8 +1735,8 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 				}
 			}
 			break;
-			
-		// invokespecial		
+
+		// invokespecial
 		case 183:
 			for(int i=0;i<instruction.microcode.length;i++){
 				if(i<=5) instruction.microcode[i]=NOP;
@@ -1751,7 +1751,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 						instruction.microcode[i]=NOP;
 					else{
 						if (b<=37){
-							if(cnt<=2*(n+1)){ //2*(n+1) = 
+							if(cnt<=2*(n+1)){ //2*(n+1) =
 								if (nop==false){
 									instruction.microcode[i]=RD;
 									nop=true;
@@ -1761,7 +1761,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 									nop=false;
 									cnt++;}
 							}
-							else 
+							else
 								instruction.microcode[i]=NOP;}
 						else{
 							if (i>40 && i<=instruction.microcode.length-4)
@@ -1778,8 +1778,8 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 				}
 			}
 			break;
-			
-		// invokestatic	
+
+		// invokestatic
 		case 184:
 			for(int i=0;i<instruction.microcode.length;i++){
 				if(i<=5) instruction.microcode[i]=NOP;
@@ -1794,7 +1794,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 						instruction.microcode[i]=NOP;
 					else{
 						if (b<=37){
-							if(cnt<=2*(n+1)){ //2*(n+1) = 
+							if(cnt<=2*(n+1)){ //2*(n+1) =
 								if (nop==false){
 									instruction.microcode[i]=RD;
 									nop=true;
@@ -1804,7 +1804,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 									nop=false;
 									cnt++;}
 							}
-							else 
+							else
 								instruction.microcode[i]=NOP;}
 						else{
 							if (i>40 && i<=instruction.microcode.length-4)
@@ -1821,24 +1821,24 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 				}
 			}
 			break;
-			
-		// invokeinterface	
+
+		// invokeinterface
 		case 185:
-			
+
 			break;
 
-			
+
 		default:
 		}
 	}
-	
+
 	public static int wcetOfInstruction(int [] microcode){
-		
+
 		int i = 0;
 		int j = 0;
 		int wcet=0;
-		int exec = 0;	
-		
+		int exec = 0;
+
 		for(i=0;i<ARB_PERIOD;i++){
 			exec = arbitration(i,microcode);
 			if (wcet<exec){
@@ -1846,19 +1846,19 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 				j = i;
 			}
 		}
-				
+
 		//System.out.println("WCET: " + wcet + " Arbitration position: " + j);
 		return wcet;
 	}
-	
-	
-	public static int arbitration(int arb_position,  int [] microcode){	
-		
+
+
+	public static int arbitration(int arb_position,  int [] microcode){
+
 		int i=0;
 		int exec_time=0;
-			
+
 		for(i=0;i<microcode.length;i++){
-			
+
 			switch(microcode[i])
 			{
 			case NOP:
@@ -1866,29 +1866,29 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 				arb_position++;
 				//System.out.println("NOP: " + exec_time);
 				break;
-					
-			case RD:				
-				while( (arbiter[arb_position]==false) || 
+
+			case RD:
+				while( (arbiter[arb_position]==false) ||
 					   (((arb_position%(ARB_PERIOD))>=TIMESLOT-r) && ((arb_position%(ARB_PERIOD))<=TIMESLOT)) ){
 					exec_time++;
 					arb_position++;
 					//System.out.println("Blocking RD: " + exec_time);
 				}
-					
+
 				if(arbiter[arb_position]==true){
 					exec_time++;
 					arb_position++;
 					//System.out.println("RD: " + exec_time);
 				}
 				break;
-					
+
 			case WR:
-				while( (arbiter[arb_position]==false) || 
+				while( (arbiter[arb_position]==false) ||
 					   (((arb_position%(ARB_PERIOD))>=TIMESLOT-w) && ((arb_position%(ARB_PERIOD))<=TIMESLOT)) ){
 					exec_time++;
 					arb_position++;
 				}
-				
+
 				if(arbiter[arb_position]==true){
 					exec_time++;
 					arb_position++;
@@ -1896,14 +1896,14 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 				break;
 			}
 		}
-		
+
 		return exec_time;
 	}
-	
+
 //	public static void generateInstruction(WCETMemInstruction instruction, int length){
-//		
+//
 //		switch(instruction.opcode){
-////		case 18:	
+////		case 18:
 ////			for(int i=0;i<length;i++){
 ////				if(i<=4) instruction.microcode[i]=nop;
 ////				else if(i==5) instruction.microcode[i]=rd;
@@ -1911,15 +1911,15 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 ////				else instruction.microcode[i]=nop; // waitstates
 ////			}
 ////			break;
-//			
-//		// ireturn 	
+//
+//		// ireturn
 //		case 172:
 //			for(int i=0;i<length;i++){
 //				if(i<=3) instruction.microcode[i]=nop;
 //				else if(i==4) instruction.microcode[i]=rd;
 //			}
-//			
-//			
+//
+//
 //		default:
 //		}
 }

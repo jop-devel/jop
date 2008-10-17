@@ -3,6 +3,7 @@
     see <http://www.jopdesign.com/>
 
   Copyright (C) 2006, Rasmus Ulslev Pedersen
+  Copyright (C) 2006-2008, Martin Schoeberl (martin@jopdesign.com)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -36,22 +37,22 @@ import com.jopdesign.build.TransitiveHull;
 import com.jopdesign.tools.JopInstr;
 
 /**
- * The class is for wcet analysis. The class hierarchy is such 
+ * The class is for wcet analysis. The class hierarchy is such
  * that WCETAnalyzer creates one WCETMethodBlock for each
  * method. The WCETMethodBlock assists WCETAnalyzer in creating the
  * WCETBasicBlock objects for each basic block. Then WCETBasicBlock can be used
  * together with WCETInstruction to calculate the WCET/BCET value for that particular
  * basic block.
- * 
- * Options in the Makefile for the wcet target: You can set "latex" to true, 
- * and WCA will generate "&" characters between columns and "\\" as row terminator. 
+ *
+ * Options in the Makefile for the wcet target: You can set "latex" to true,
+ * and WCA will generate "&" characters between columns and "\\" as row terminator.
  * In Latex do this post-processing: replace ">" with "$>$ and "_" with "\_".
- * A directed graph of the basic blocks can be generated in dot  
+ * A directed graph of the basic blocks can be generated in dot
  * format by setting the "dot" property to true.
- * 
+ *
  * It can generate LPSolve compliant code which can be used to calculate
  * WCET of each method. Enable the "ls" switch in the Makefile.
- *  
+ *
  * @author rup, ms
  * @see Section 7.4 and Appendix D in MS thesis
  * @see http://www.graphviz.org
@@ -63,8 +64,8 @@ import com.jopdesign.tools.JopInstr;
 // 2006-04-07 rup: Moved to become a non-Jopizer dependent piece of code
 // 2006-04-20 rup: Show both cachehit and cachemiss entries
 // 2006-04-27 rup: Show latex tables and load/store info for locals
-// 2006-05-04  ms: Split cache miss column 
-// 2006-05-07 rup: Output dot graphs 
+// 2006-05-04  ms: Split cache miss column
+// 2006-05-07 rup: Output dot graphs
 // 2006-05-25 rup: "Annotations" and lp_solvable wcet output
 // 2006-05-30 rup: Exact call graph permutation to allow cache simulation
 
@@ -74,30 +75,30 @@ import com.jopdesign.tools.JopInstr;
  * The thing that controls the WCETClassBlock etc.
  */
 public class WCETAnalyser{
-  
+
   public HashMap filePathcodeLines = new HashMap();
-  
+
   public ArrayList cfgwcmbs = new ArrayList();
-  
+
   WCETMethodBlock wcmbapp = null;
   boolean global = true; // controls names of blocks B1 or B1_M1 if true
-  
+
   String dotf = null;
   // dot property: it will generate dot graphs if true
   public static boolean jline;
   public static boolean instr; // true if you want instriction cycles printed
-  
+
   // The app method or main if not provided
   public static String appmethod;
-  
+
   public static int idtmp = 0; // counter to make unique ids
-  
+
   public final static String nativeClass = "com.jopdesign.sys.Native";
 
   JavaClass[] jca;
-  
+
   PrintWriter out;
-  
+
   PrintWriter dotout;
 
   /**
@@ -111,40 +112,40 @@ public class WCETAnalyser{
    * The class that contains the main method.
    */
   static String mainClass;
-  
+
 	static String mainMethodName = "main";
 
-  
+
   public StringBuffer wcasb = new StringBuffer();
-  
+
   //signaure -> methodbcel
   HashMap mmap;
-  
-  // methodbcel -> WCETMethodBlock 
-  HashMap mtowcmb = new HashMap();  
-  
+
+  // methodbcel -> WCETMethodBlock
+  HashMap mtowcmb = new HashMap();
+
   //method name to id
   HashMap midmap;
-  
+
   //id to wcmb
   HashMap idmmap;
-  
+
   // methodsignature -> wcmb
   HashMap msigtowcmb;
-  
+
   HashMap javaFilePathMap;
-  
+
   ArrayList javaFiles;
-  
+
   public ArrayList wcmbs; // all the wcmbs
-  
+
   static String outFile;
-  
+
   public boolean init = true;
   public boolean analyze = false;
 
   public WCETAnalyser() {
-    
+
     wcmbs = new ArrayList();
     msigtowcmb = new HashMap();
     classpath = new org.apache.bcel.util.ClassPath(".");
@@ -161,7 +162,7 @@ public class WCETAnalyser{
     //the tables can be easier to use in latex using this property
     jline = System.getProperty("jline", "false").equals("true");
     instr = System.getProperty("instr", "true").equals("true");
-    
+
     String srcPath = "nodir";
     try {
       if (args.length == 0) {
@@ -194,19 +195,19 @@ public class WCETAnalyser{
           mainClass = args[i].replace('/', '.');
           appmethod = mainClass+"."+mainMethodName;
         }
-        
+
         StringTokenizer st = new StringTokenizer(srcPath, File.pathSeparator);
         while(st.hasMoreTokens()){
           String srcDir = st.nextToken();//"java/target/src/common";
           File sDir = new File(srcDir);
           if(sDir.isDirectory()){
-//System.out.println("srcDir="+srcDir);          
+//System.out.println("srcDir="+srcDir);
             wca.visitAllFiles(sDir);
           }
         }
 //        Iterator ito = wca.javaFilePathMap.values().iterator();
 //        while(ito.hasNext()){
-//System.out.println(ito.next());          
+//System.out.println(ito.next());
 //        }
 
 //System.out.println("CLASSPATH=" + wca.classpath + "\tmain class="
@@ -216,14 +217,14 @@ public class WCETAnalyser{
         String ds = new File(WCETAnalyser.outFile).getParentFile().getAbsolutePath()+File.separator+"Makefile";
         wca.dotout = new PrintWriter(new FileOutputStream(ds));
         wca.dotout.print("doteps:\n");
-        
+
         wca.load(clsArgs);
         wca.global = false;
         wca.iterate(new SetWCETAnalysis(wca));
         wca.init = false;
         wca.analyze = true;
         //wca.iterate(new SetWCETAnalysis(wca));
-        
+
         //wca.out.println("*************APPLICATION WCET="+wca.wcmbapp.wcet+"********************");
         StringBuffer wcasbtemp = new StringBuffer();
         if(wca.analyze){
@@ -247,7 +248,7 @@ public class WCETAnalyser{
         }
         wca.out.println("*************END APPLICATION WCET*******************");
         wca.out.println(wca.wcasb.toString());
-        
+
         //instruction info
         wca.out.println("*****************************************************");
         if(instr)
@@ -261,7 +262,7 @@ public class WCETAnalyser{
       e.printStackTrace();
     }
   }
-  
+
   //Java Dev. Almanac
   public void visitAllFiles(File dir) {
     if (dir.isDirectory()) {
@@ -278,7 +279,7 @@ public class WCETAnalyser{
 //        String prevPath = (String)javaFilePathMap.get(fileName);
 //        if(prevPath != null && !prevPath.equals(filePath)){
 //          System.out.println(fileName +" is referring to "+prevPath+" and to "+filePath+". Exiting.");
-//          System.exit(1);          
+//          System.exit(1);
 //        }
 //        else{
 //          javaFilePathMap.put(fileName,filePath);
@@ -290,7 +291,7 @@ public class WCETAnalyser{
 
   /**
    * Load all classes and the super classes from the argument list.
-   * 
+   *
    * @throws IOException
    */
   private void load(Set clsArgs) throws IOException {
@@ -311,10 +312,10 @@ public class WCETAnalyser{
       // The class Native is NOT used in a JOP application
       if (!jca[j].getClassName().equals(nativeClass)) {
         // ClassInfo cli = new ClassInfo(jc[j]);
-//System.out.println("added classname:"+jc[j].getClassName()+" filename:"+jc[j].getFileName()+ " sourcefilename:"+jc[j].getSourceFileName()+" packagename:"+jc[j].getPackageName());        
+//System.out.println("added classname:"+jc[j].getClassName()+" filename:"+jc[j].getFileName()+ " sourcefilename:"+jc[j].getSourceFileName()+" packagename:"+jc[j].getPackageName());
         clazzes.add(jca[j]);
       }
-      //package name and associated sourcefile 
+      //package name and associated sourcefile
       String pacSrc = jca[j].getPackageName()+"."+jca[j].getSourceFileName();
       boolean fileMatch = false;
       for(int k=0;k<javaFiles.size();k++){
@@ -322,11 +323,11 @@ public class WCETAnalyser{
         String pn = orig;
         pn = pn.replace('/','.');
         pn = pn.replace('\\','.');
-//System.out.println("Trying to match:"+pn+ " with: "+pacSrc);        
+//System.out.println("Trying to match:"+pn+ " with: "+pacSrc);
         int match = pn.lastIndexOf(pacSrc);
         if(match != -1){
           String key = jca[j].getClassName();
-//System.out.println("Match! Key :"+key);          
+//System.out.println("Match! Key :"+key);
           javaFilePathMap.put(key, orig);
           fileMatch = true;
           break;
@@ -339,7 +340,7 @@ public class WCETAnalyser{
       Method[] m = jca[j].getMethods();
       for(int ii=0;ii<m.length;ii++){
         String msig = jca[j].getClassName() + "." + m[ii].getName()+m[ii].getSignature();
-//System.out.println("m to be put:"+msig);//TODO mig everywhere          
+//System.out.println("m to be put:"+msig);//TODO mig everywhere
 //System.out.println("r: "+m[ii].getReturnType().getSignature());//TODO mig everywhere
         mmap.put(msig,m[ii]);
         midmap.put(new Integer(mid),msig);
@@ -355,7 +356,7 @@ public class WCETAnalyser{
       new DescendingVisitor(clz, v).visit();
     }
   }
-  
+
   /**
    * Get a method object from the String id. It is used to find
    * the length of a method when it is invoked from some method.
@@ -367,10 +368,10 @@ public class WCETAnalyser{
     Method m = (Method)mmap.get(methodid);
     return m;
   }
-  
+
   public WCETMethodBlock getWCMB(Method method){
     WCETMethodBlock wcmb = (WCETMethodBlock)mtowcmb.get(method);
-//System.out.println("getWCMB:"+wcmb);    
+//System.out.println("getWCMB:"+wcmb);
     return wcmb;
   }
 
@@ -387,7 +388,7 @@ public class WCETAnalyser{
     }
     return opcode;
   }
-  
+
   public String toDot(){
     StringBuffer sb = new StringBuffer();
     sb.append("\n/* App Dot Graph */\n");
@@ -404,7 +405,7 @@ public class WCETAnalyser{
       sb.append("color = black;\n");
       sb.append(wcmb.toDot(true)+"\n");
       sb.append("label = \""+wcmb.cname+"."+wcmb.name+" : M"+wcmb.mid+"\";\n");
-      
+
       sb.append("}\n");
       WCETBasicBlock[] wcbba = wcmb.getBBSArray();
       for(int j=0;j<wcbba.length;j++){
@@ -419,7 +420,7 @@ public class WCETAnalyser{
       appWCMB.remove(0);
     }
     sb.append("}\n");
-   
+
     try {
       dotf = new File(WCETAnalyser.outFile).getParentFile().getAbsolutePath()+File.separator+"App.dot";
       dotf = dotf.replace('<','_');

@@ -2,6 +2,7 @@
   This file is part of JOP, the Java Optimized Processor
     see <http://www.jopdesign.com/>
 
+  Copyright (C) 2006-2008, Martin Schoeberl (martin@jopdesign.com)
   Copyright (C) 2006, Rasmus Ulslev Pedersen
 
   This program is free software: you can redistribute it and/or modify
@@ -24,7 +25,7 @@ import org.apache.bcel.classfile.Method;
 
 public class CacheSimul {
 
-	// that's not nice. Why the hell is the clinit
+	// that's not nice. Why is the clinit
 	// not invoked???
 	static MethodCache mc = new MethodCache(2048, 16, false);
 	{
@@ -33,7 +34,7 @@ public class CacheSimul {
 	}
 	// return true on a cache hit
 	public static boolean get(Method m) {
-		
+
 		boolean hit = mc.invoke(m);
 //		System.out.println(m.getName()+" hit="+hit);
 		return hit;
@@ -41,14 +42,14 @@ public class CacheSimul {
 
 	// return true on a cache hit
 	public static boolean invoke(Method m) {
-		
+
 		boolean hit = mc.invoke(m);
 		System.out.println(m.getName()+" invoke hit="+hit);
 		return hit;
 	}
 	// return true on a cache hit
 	public static boolean ret(Method m) {
-		
+
 		boolean hit = mc.ret(m);
 		System.out.println(m.getName()+" return hit="+hit);
 		return hit;
@@ -61,7 +62,7 @@ public class CacheSimul {
 }
 
 /**
- * 
+ *
  * Simulation of the variable block method cache
  * @see http://www.jopdesign.com/doc/jtres_cache.pdf
  * @author martin

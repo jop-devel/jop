@@ -2,6 +2,7 @@
   This file is part of JOP, the Java Optimized Processor
     see <http://www.jopdesign.com/>
 
+  Copyright (C) 2006-2008, Martin Schoeberl (martin@jopdesign.com)
   Copyright (C) 2006, Rasmus Ulslev Pedersen
 
   This program is free software: you can redistribute it and/or modify
@@ -37,7 +38,7 @@ import org.apache.bcel.util.InstructionFinder;
 
 /**
  * That's just a test program...
- * 
+ *
  * @author Martin Schoeberl
  *
  */
@@ -45,7 +46,7 @@ import org.apache.bcel.util.InstructionFinder;
 public class CallGraph extends AppInfo {
 
 	static ClassInfo template = ClassInfo.getTemplate();
-	
+
 	public CallGraph(String[] args) throws IOException {
 		super(template);
 		parseOptions(args);
@@ -54,11 +55,11 @@ public class CallGraph extends AppInfo {
 
 	MethClass mainMethClass;
 	HashMap methMap = new HashMap();
-	
+
 	List methodList = new LinkedList();
 	Graph cg = new Graph();
 	MethodVertex root;
-	
+
 	/**
 	 * @param args
 	 */
@@ -79,19 +80,19 @@ public class CallGraph extends AppInfo {
 		}
 		la.root = new MethodVertex(la.mainMethClass);
 		la.traverse(la.root);
-		
+
 //		Vertex v1 = la.cg.addVertex("abc");
 //		Vertex v2 = la.cg.addVertex("def");
 //		Vertex v3 = la.cg.addVertex("XYZ");
 //		la.cg.addEdge(v1, v2);
 //		la.cg.addEdge(v1, v3);
 		System.out.println(la.cg.printGraph());
-		
-		
+
+
 	}
-	
+
 	private MethodVertex traverse(MethodVertex mv) {
-		
+
 		cg.addVertex(mv);
 		Method method = mv.getMethod();
 		System.out.println("in traverse for "+method);
@@ -99,18 +100,18 @@ public class CallGraph extends AppInfo {
 			System.out.println("is native");
 			return mv;
 		}
-		
+
 		ConstantPoolGen cpoolgen = new ConstantPoolGen(method.getConstantPool());
 		// Why the hell do I have construct a MethodGen just
 		// to find invoke instructions???
 		MethodGen mg  = new MethodGen(method, "abcdef", cpoolgen);
 		InstructionList il  = mg.getInstructionList();
 		InstructionFinder f = new InstructionFinder(il);
-    
+
 		String methodId = method.getName() + method.getSignature();
 		// if(methodId.equalsIgnoreCase("f_lshl(III)J")){
 
-		
+
 		// find invokes and traverse them
 		String invokeStr = "InvokeInstruction";
 		for(Iterator i = f.search(invokeStr); i.hasNext(); ) {
@@ -129,12 +130,12 @@ public class CallGraph extends AppInfo {
 
 		}
 
-		
+
 		return mv;
 	}
 
 	public void findMain() {
-		
+
 		Collection<? extends ClassInfo> jclSet = cliMap.values();
 		for (Iterator iterator = jclSet.iterator(); iterator.hasNext();) {
 			ClassInfo info = (ClassInfo) iterator.next();
@@ -152,7 +153,7 @@ public class CallGraph extends AppInfo {
 					}
 				}
 			}
-			
+
 		}
 		System.out.println(mainMethClass);
 	}
@@ -161,25 +162,25 @@ public class CallGraph extends AppInfo {
 class MethClass {
 	Method m;
 	JavaClass jc;
-	
+
 	public MethClass(Method meth, JavaClass jclazz) {
 		m = meth;
 		jc = jclazz;
 	}
-	
+
 	public String toString() {
 		return jc.getClassName()+'.'+m.getName()+m.getSignature();
 	}
 }
 
 class MethodVertex extends Vertex {
-	
+
 	MethClass mc;
 	public MethodVertex(MethClass methClass) {
 		super(methClass.toString());
 		mc = methClass;
 	}
-	
+
 	public Method getMethod() {
 		return mc.m;
 	}
@@ -187,7 +188,7 @@ class MethodVertex extends Vertex {
 	MethClass getMethodClass() {
 		return mc;
 	}
-	
+
 	public String toDotString() {
 		return mc.jc.getClassName()+"\\n"+mc.m.getName()+mc.m.getSignature();
 	}
@@ -195,11 +196,11 @@ class MethodVertex extends Vertex {
 }
 
 
-// new DescendingVisitor(jclazz[i], new CallGraphVisitor()).visit();				
+// new DescendingVisitor(jclazz[i], new CallGraphVisitor()).visit();
 
 
 //class CallGraphVisitor extends EmptyVisitor {
-//	
+//
 //	public void visitJavaClass(JavaClass clazz) {
 //		System.out.println(clazz.getClassName());
 //	}

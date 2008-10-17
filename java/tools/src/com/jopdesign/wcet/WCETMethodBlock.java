@@ -3,6 +3,7 @@
     see <http://www.jopdesign.com/>
 
   Copyright (C) 2006, Rasmus Ulslev Pedersen
+  Copyright (C) 2006, Martin Schoeberl (martin@jopdesign.com)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
