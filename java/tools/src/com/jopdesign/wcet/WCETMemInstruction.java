@@ -18,3 +18,11 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+package com.jopdesign.wcet;
+
+public class WCETMemInstruction{
+	
+	public int opcode;
+	public int [] microcode;
+	
+}
