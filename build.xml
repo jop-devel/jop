@@ -221,6 +221,7 @@
 			<include name="com/jopdesign/build/*.java"/>
 			<include name="com/jopdesign/tools/*.java"/>
 			<include name="com/jopdesign/wcet/*.java"/>
+			<include name="com/jopdesign/dfa/*.java"/>
 			<include name="org/apache/**/*.java"/>
 		</javac>
 
@@ -272,6 +273,12 @@
 	<target name="run-joptimizer" description="Run JOPtimizer on the compiled target" if="use-joptimizer">
 		<java classpathref="joptimizer-cp" classname="joptimizer.JOPtimizerRunner">
 		    <arg line="-config jar:file:${tools}/dist/lib/joptimizer.jar!/jop.conf ${main-class}"/>
+		</java>
+	</target>
+
+	<target name="dfa" description="Run DFA on the target application">
+		<java classpathref="tools-cp" classname="com.jopdesign.dfa.Main">
+			<arg line="-cp ${target}/dist/classes ${main-class}"/>
 		</java>
 	</target>
 
