@@ -24,10 +24,7 @@
  */
 package com.jopdesign.build;
 
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.PrintWriter;
 
 /**
  * Perform the JOPtimizer transformations on the class files

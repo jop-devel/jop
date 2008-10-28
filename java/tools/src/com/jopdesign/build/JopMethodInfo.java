@@ -57,14 +57,13 @@ public class JopMethodInfo extends MethodInfo implements Serializable {
 		super(jc, mid);
 		codeAddress = 0;
 		structAddress = 0;
-		code = null;
 	}
 
 	/**
 	 * Return the correct type of cli
 	 */
 	public JopClassInfo getCli() {
-		return (JopClassInfo) cli;
+		return (JopClassInfo) super.getCli();
 	}
 	
 	/**
@@ -73,7 +72,7 @@ public class JopMethodInfo extends MethodInfo implements Serializable {
 	public void setInfo(int addr) {
 		codeAddress = addr;
 
-		Method m = method;
+		Method m = getMethod();
 
 		margs = 0;
 		Type at[] = m.getArgumentTypes();
@@ -122,7 +121,7 @@ public class JopMethodInfo extends MethodInfo implements Serializable {
 
 	public int getLength() {
 
-		return method.isAbstract() ? 0 : len + 1 + 2 * exclen;
+		return getMethod().isAbstract() ? 0 : len + 1 + 2 * exclen;
 	}
 
 	public void dumpMethodStruct(PrintWriter out, int addr) {
@@ -141,7 +140,7 @@ public class JopMethodInfo extends MethodInfo implements Serializable {
 		// locals: 1 args size: 1
 
 		String abstr = "";
-		if (method.isAbstract()) {
+		if (getMethod().isAbstract()) {
 			abstr = "abstract ";
 		}
 
@@ -162,7 +161,7 @@ public class JopMethodInfo extends MethodInfo implements Serializable {
 		}
 		int word2 = getCli().cpoolAddress << 10 | mreallocals << 5 | margs;
 
-		if (method.isAbstract()) {
+		if (getMethod().isAbstract()) {
 			word1 = word2 = 0;
 		}
 
@@ -174,11 +173,11 @@ public class JopMethodInfo extends MethodInfo implements Serializable {
 	public void dumpByteCode(PrintWriter out) {
 
 		out.println("//\t" + codeAddress + ": " + methodId);
-		if (code == null) {
+		if (getCode() == null) {
 			out.println("//\tabstract");
 			return;
 		}
-		byte bc[] = code.getCode();
+		byte bc[] = getCode().getCode();
 		String post = "// ";
 		int i, word, j;
 		for (j = 0, i = 3, word = 0; j < bc.length; j++) {
@@ -197,7 +196,7 @@ public class JopMethodInfo extends MethodInfo implements Serializable {
 			out.println("\t" + word + ",\t" + post);
 		}
 
-		word = method.isSynchronized() ? 1 : 0;
+		word = getMethod().isSynchronized() ? 1 : 0;
 		word = word << 16 | (exclen & 0xFFFF);
 
 		out.println("\t" + word

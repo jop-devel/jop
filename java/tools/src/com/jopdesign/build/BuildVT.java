@@ -252,11 +252,8 @@ System.err.println("build VT on class: "+cli.clazz);
 
 		ClassInfo cli = (ClassInfo) ai.cliMap.get(clazz.getClassName());
 
-		String clazzName = clazz.getClassName();
-
 		Method m[] = clazz.getMethods();
 		int methodCount =  m.length;
-
 
 		//
 		//	build global interface table

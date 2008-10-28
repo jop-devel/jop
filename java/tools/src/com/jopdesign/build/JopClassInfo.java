@@ -69,8 +69,7 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 
 			if (clazz.isInterface()) {
 				cli.interfaceID = ++cli.interfaceCnt;
-				cli.interfaceList
-						.add(cli.interfaceID - 1, clazz.getClassName());
+				cli.interfaceList.add(cli.interfaceID - 1, clazz.getClassName());
 			}
 		}
 
@@ -180,17 +179,17 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 	public int iftableAddress;
 
 	@Override
-	ClassInfo newClassInfo(JavaClass jc, AppInfo ai) {
+	public ClassInfo newClassInfo(JavaClass jc, AppInfo ai) {
 		return new JopClassInfo(jc, ai);
 	}
 
 	@Override
-	CliVisitor newCliVisitor(Map<String, ClassInfo> map) {
+	public CliVisitor newCliVisitor(Map<String, ClassInfo> map) {
 		return new JopCliVisitor(map);
 	}
 
 	@Override
-	MethodInfo newMethodInfo(String mid) {
+	public MethodInfo newMethodInfo(String mid) {
 		return new JopMethodInfo(this, mid);
 	}
 
@@ -359,7 +358,7 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 		boolean needsInterfaceTable = false;
 		for (i = 0; i < listIT.size(); i++) {
 			IT it = (IT) listIT.get(i);
-			boolean matchMethod = usedMethods.containsKey(it.meth.methodId);
+			boolean matchMethod = methods.containsKey(it.meth.methodId);
 			
 			boolean matchInterface = implementsInterface(it.meth.getCli().clazz.getClassName());
 			if (matchMethod && matchInterface) {
@@ -575,10 +574,10 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 						}
 						System.exit(1);
 					}
-					if (minf.method.isStatic() ||
+					if (minf.getMethod().isStatic() ||
 					// <init> and privat methods are called with invokespecial
 							// which mapps in jvm.asm to invokestatic
-							minf.method.isPrivate() || sigstr.charAt(0) == '<') {
+							minf.getMethod().isPrivate() || sigstr.charAt(0) == '<') {
 						// for static methods a direct pointer to the
 						// method struct
 						cpoolArry[pos] = minf.structAddress;

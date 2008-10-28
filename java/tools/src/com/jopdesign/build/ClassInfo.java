@@ -74,12 +74,14 @@ public class ClassInfo implements Serializable {
 		public void visitMethod(Method method) {
 			
 			ClassInfo cli = (ClassInfo) this.cli;
+			
 			String methodId = method.getName()+method.getSignature();
-	        if(!cli.usedMethods.containsKey(methodId)) {
+	        if(!cli.methods.containsKey(methodId)) {
 				MethodInfo mi1 = cli.newMethodInfo(methodId);
-				cli.usedMethods.put(methodId, mi1);
+				cli.methods.put(methodId, mi1);
 				cli.list.add(mi1);
 			}
+	        
 	        MethodInfo mi = cli.getMethodInfo(methodId);
 	        mi.setMethod(method);
 		}
@@ -105,12 +107,12 @@ public class ClassInfo implements Serializable {
 	/**
 	 * Back link to the application info
 	 */
-	AppInfo appInfo;
+	public AppInfo appInfo;
 
 	/**
 	 * Map of method signatures to a MethodInfo.
 	 */
-	protected Map<String, MethodInfo> usedMethods = new HashMap<String, MethodInfo>();
+	protected Map<String, MethodInfo> methods = new HashMap<String, MethodInfo>();
 
 	/**
 	 * Methods in a list ordered in the visit order.
@@ -156,7 +158,7 @@ public class ClassInfo implements Serializable {
 	 * types. Has to be overwritten by each sub-type.
 	 * Wolfgang and Martin in SF, Saint Mary's Square
 	 */
-	ClassInfo newClassInfo(JavaClass jc,AppInfo ai) {
+	public ClassInfo newClassInfo(JavaClass jc,AppInfo ai) {
 		return new ClassInfo(jc, ai);
 	}
 	
@@ -165,7 +167,7 @@ public class ClassInfo implements Serializable {
 	 * @param map
 	 * @return
 	 */
-	CliVisitor newCliVisitor(Map<String, ClassInfo> map) {
+	public CliVisitor newCliVisitor(Map<String, ClassInfo> map) {
 		return new CliVisitor(map);
 	}
 	
@@ -174,7 +176,7 @@ public class ClassInfo implements Serializable {
 	 * @param mid
 	 * @return
 	 */
-	MethodInfo newMethodInfo(String mid) {
+	public MethodInfo newMethodInfo(String mid) {
 		return new MethodInfo(this, mid);
 	}
 	
@@ -183,7 +185,11 @@ public class ClassInfo implements Serializable {
 	}
 
 	public MethodInfo getMethodInfo(String amth) {
-		return usedMethods.get(amth);
+		return methods.get(amth);
+	}
+
+	public Map<String, MethodInfo> getMethodInfoMap() {
+		return methods;
 	}
 
 	/**

@@ -31,7 +31,6 @@ package com.jopdesign.build;
 import org.apache.bcel.classfile.*;
 import org.apache.bcel.generic.*;
 import org.apache.bcel.util.*;
-import java.io.*;
 import java.util.*;
 import org.apache.bcel.Constants;
 import org.apache.bcel.Repository;
@@ -50,20 +49,10 @@ import org.apache.bcel.Repository;
  */
 public class TransitiveHull extends org.apache.bcel.classfile.EmptyVisitor {
 	
-	private ClassPath classpath;
-	private JavaClass		_class;
 	private ClassQueue	 _queue;
 	private ClassSet		 _set;
 	private ConstantPool _cp;
 
-	private String[] _ignored = {
-/*
-		"java[.].*",
-		"javax[.].*",
-		"com[.]sun[.].*"
-*/
-	};
-	
 	private String[] excluded = {};
 
 
@@ -86,7 +75,7 @@ public class TransitiveHull extends org.apache.bcel.classfile.EmptyVisitor {
 
 	public TransitiveHull(ClassPath classpath, JavaClass[] clazz) {
 		
-		this.classpath = classpath;
+		Repository.setRepository(SyntheticRepository.getInstance(classpath));
 		_queue = new ClassQueue();
 		_set = new ClassSet();
 		for (int i=0; i<clazz.length; ++i) {
@@ -113,7 +102,6 @@ public class TransitiveHull extends org.apache.bcel.classfile.EmptyVisitor {
 	public void start() {
 		while(!_queue.empty()) {
 			JavaClass clazz = _queue.dequeue();
-			_class = clazz;
 			_cp = clazz.getConstantPool();
 
 			new org.apache.bcel.classfile.DescendingVisitor(clazz, this).visit();
@@ -140,19 +128,7 @@ public class TransitiveHull extends org.apache.bcel.classfile.EmptyVisitor {
 			return;
 		}
 
-		JavaClass clazz = null;
-		if (classpath==null) {
-			clazz = Repository.lookupClass(class_name);
-		} else {
-			InputStream is;
-			try {
-				is = classpath.getInputStream(class_name);
-				clazz = new ClassParser(is, class_name).parse();			
-			} catch (IOException e) {
-				e.printStackTrace();
-				System.exit(-1);
-			}
-		}
+		JavaClass clazz = Repository.lookupClass(class_name);
 
 		if(clazz != null && _set.add(clazz)) {
 			_queue.enqueue(clazz);
@@ -209,19 +185,14 @@ public class TransitiveHull extends org.apache.bcel.classfile.EmptyVisitor {
 	}
 
 	public static void main(String[] argv) {
-		ClassParser parser=null;
-		JavaClass	 java_class;
+		JavaClass java_class;
 
 		try {
 			if(argv.length == 0) {
 				System.err.println("transitive: No input files specified");
 			} else {
-				if((java_class = Repository.lookupClass(argv[0])) == null) {
-					java_class = new ClassParser(argv[0]).parse();
-				}
-			
+				java_class = Repository.lookupClass(argv[0]);
 				TransitiveHull hull = new TransitiveHull(java_class);
-			
 				hull.start();
 				System.out.println(Arrays.asList(hull.getClassNames()));
 			}

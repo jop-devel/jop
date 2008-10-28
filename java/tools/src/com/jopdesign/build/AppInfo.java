@@ -21,16 +21,21 @@
 package com.jopdesign.build;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.Serializable;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-
-import org.apache.bcel.classfile.ClassParser;
+import org.apache.bcel.Repository;
 import org.apache.bcel.classfile.DescendingVisitor;
 import org.apache.bcel.classfile.JavaClass;
 import org.apache.bcel.classfile.Visitor;
 import org.apache.bcel.util.ClassPath;
+import org.apache.bcel.util.SyntheticRepository;
 
 /**
  * Helper class for BCEL based class analysis and manipulation.
@@ -59,7 +64,7 @@ public class AppInfo implements Serializable {
 	protected String mainMethodName = "main";
 	
 	// we usually provide the classpath, so this is redundant.
-	private ClassPath classpath = new ClassPath(".");
+	public ClassPath classpath = new ClassPath(".");
 	/**
 	 * class list from the arguments
 	 */
@@ -92,6 +97,7 @@ public class AppInfo implements Serializable {
 	 */
 	public AppInfo(ClassInfo cliTemplate) {
 		template = cliTemplate;
+		template.appInfo = this;
 	}
 	
 	public String[] parseOptions(String args[]) {
@@ -175,12 +181,11 @@ public class AppInfo implements Serializable {
 	public void load() throws IOException {
 		
 		JavaClass[] jcl = new JavaClass[clsArgs.size()];
-		
+		Repository.setRepository(SyntheticRepository.getInstance(classpath));
 		Iterator<String> i = clsArgs.iterator();
 		for (int nr=0; i.hasNext(); ++nr) {
 			String clname = i.next();
-			InputStream is = classpath.getInputStream(clname);
-			jcl[nr] = new ClassParser(is, clname).parse();
+			jcl[nr] = Repository.lookupClass(clname);
 			System.out.println(jcl[nr].getClassName());
 
 		}

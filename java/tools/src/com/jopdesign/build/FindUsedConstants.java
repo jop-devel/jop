@@ -25,27 +25,20 @@
 package com.jopdesign.build;
 
 
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
 
 import org.apache.bcel.Constants;
-import org.apache.bcel.classfile.*;
+import org.apache.bcel.classfile.Constant;
+import org.apache.bcel.classfile.JavaClass;
+import org.apache.bcel.classfile.Method;
 import org.apache.bcel.generic.CPInstruction;
+import org.apache.bcel.generic.CodeExceptionGen;
 import org.apache.bcel.generic.ConstantPoolGen;
-import org.apache.bcel.generic.FieldInstruction;
-import org.apache.bcel.generic.INVOKEVIRTUAL;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.InstructionList;
-import org.apache.bcel.generic.InvokeInstruction;
 import org.apache.bcel.generic.MethodGen;
 import org.apache.bcel.generic.ObjectType;
-import org.apache.bcel.generic.CodeExceptionGen;
-import org.apache.bcel.generic.NOP;
 import org.apache.bcel.util.InstructionFinder;
-
-import com.jopdesign.tools.JopInstr;
 
 /**
  * Create a usefull constant pool mapping and change the index in the
@@ -58,12 +51,6 @@ import com.jopdesign.tools.JopInstr;
 public class FindUsedConstants extends JOPizerVisitor {
 
 	private ConstantPoolGen cpool;
-	private ConstantPoolGen cpoolNew;
-	/**
-	 * mapping for a reduced constant pool.
-	 * Will get filled by FindUsedConstants.
-	 */
-	private HashMap cpoolMap;
 	
 	public FindUsedConstants(AppInfo jz) {
 		super(jz);
@@ -74,8 +61,6 @@ public class FindUsedConstants extends JOPizerVisitor {
 		super.visitJavaClass(clazz);
 		
 		cpool = new ConstantPoolGen(clazz.getConstantPool());
-		cpoolMap = new HashMap();
-		cpoolNew = new ConstantPoolGen();
 
 		Method[] methods = clazz.getMethods();
 		
@@ -92,9 +77,6 @@ public class FindUsedConstants extends JOPizerVisitor {
 
 
 	private void find(Method method) {
-		
-		boolean replace = false;
-		
 		
 		MethodGen mg  = new MethodGen(method, clazz.getClassName(), cpool);
 		InstructionList il  = mg.getInstructionList();

@@ -21,11 +21,9 @@
 
 package com.jopdesign.build;
 
-import java.util.*;
-import java.io.*;
-
-import org.apache.bcel.util.ClassPath;
-import org.apache.bcel.classfile.*;
+import java.io.FileOutputStream;
+import java.io.PrintWriter;
+import java.io.Serializable;
 
 /**
  * @author flavius, martin

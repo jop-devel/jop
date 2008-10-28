@@ -22,14 +22,21 @@ package com.jopdesign.build;
 
 import java.util.Iterator;
 
-import org.apache.bcel.Constants;
-import org.apache.bcel.classfile.*;
-import org.apache.bcel.generic.*;
+import org.apache.bcel.classfile.ConstantPool;
+import org.apache.bcel.classfile.JavaClass;
+import org.apache.bcel.classfile.Method;
+import org.apache.bcel.generic.BIPUSH;
+import org.apache.bcel.generic.ConstantPoolGen;
+import org.apache.bcel.generic.IADD;
+import org.apache.bcel.generic.ICONST;
+import org.apache.bcel.generic.IINC;
+import org.apache.bcel.generic.ILOAD;
+import org.apache.bcel.generic.ISTORE;
+import org.apache.bcel.generic.InstructionHandle;
+import org.apache.bcel.generic.InstructionList;
+import org.apache.bcel.generic.MethodGen;
+import org.apache.bcel.generic.SIPUSH;
 import org.apache.bcel.util.InstructionFinder;
-import org.apache.bcel.verifier.statics.DOUBLE_Upper;
-import org.apache.bcel.verifier.statics.LONG_Upper;
-
-import com.jopdesign.tools.JopInstr;
 
 /**
  * @author Martin

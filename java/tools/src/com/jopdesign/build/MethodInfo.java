@@ -26,6 +26,7 @@ package com.jopdesign.build;
 
 import org.apache.bcel.classfile.Code;
 import org.apache.bcel.classfile.Method;
+import org.apache.bcel.generic.MethodGen;
 
 /**
  * Info for methods. Shall be extended fo application specific
@@ -35,12 +36,12 @@ import org.apache.bcel.classfile.Method;
  */
 public class MethodInfo {
 
-	protected ClassInfo cli;
-	protected Method method;
-	protected Code code;
-	protected String methodId;
+	private ClassInfo cli;
+	private Method method;
+	private MethodGen methodGen;
+	public String methodId;
 
-	protected MethodInfo(ClassInfo classInfo, String mid) {
+	public MethodInfo(ClassInfo classInfo, String mid) {
 		cli = classInfo;
 		methodId = mid;
 	}
@@ -52,18 +53,29 @@ public class MethodInfo {
 	 */
 	public void setMethod(Method m) {
 		method = m;
-		code = m.getCode();
+		methodGen = null;
 	}
-
+	
+	public void setMethodGen(MethodGen m) {
+		methodGen = m;
+		methodGen.setMaxStack();
+		methodGen.setMaxLocals();
+		method = methodGen.getMethod();
+	}
+	
 	public Method getMethod() {
 		return method;
 	}
-
-	public Code getCode() {
-		return code;
+	
+	public MethodGen getMethodGen() {
+		return methodGen;
 	}
 
-	protected ClassInfo getCli() {
+	public Code getCode() {
+		return method.getCode();
+	}
+	
+	public ClassInfo getCli() {
 		return cli;
 	}
 
