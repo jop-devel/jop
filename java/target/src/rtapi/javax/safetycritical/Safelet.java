@@ -56,6 +56,10 @@ Questions:
  *
  */
 public interface Safelet {
+	
+	final static int LEVEL_0 = 0;
+	final static int LEVEL_1 = 1;
+	final static int LEVEL_2 = 2;
 
 	/**
 	 * The SCJ level. Here an integer instead of the enum.
