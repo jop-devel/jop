@@ -65,7 +65,7 @@ public class HelloSCJ extends MissionDescriptor implements Safelet {
 				new ThreadConfiguration()
 			) {
 			public void handleAsyncEvent() {
-				Terminal.getTerminal().write("Ping ");
+				Terminal.getTerminal().writeln("Ping ");
 			}
 		};
 	}
@@ -87,7 +87,7 @@ public class HelloSCJ extends MissionDescriptor implements Safelet {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		Terminal.getTerminal().write("Hello SCJ World!");
+		Terminal.getTerminal().writeln("Hello SCJ World!");
 		JopSystem.startMission(new HelloSCJ());
 	}
 

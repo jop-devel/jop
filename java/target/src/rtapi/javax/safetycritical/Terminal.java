@@ -69,9 +69,24 @@ public class Terminal {
 				// TODO: we don't care on unicode that needs an escape itself
 			}
 		}
-		
 	}
 	
+	/**
+	 * Same as write, but add a newline. CRLF does not hurt on a
+	 * Unix terminal.
+	 * @param s
+	 */
+	public void writeln(CharSequence s) {
+		write(s);
+		writeln();
+	}
+	
+	/**
+	 * Just a CRLF output.
+	 */
+	public void writeln() {
+		write("\r\n");
+	}
 	/**
 	 * Does the actual work. Change for your implementation.
 	 * @param b A UTF8 byte to be written.
