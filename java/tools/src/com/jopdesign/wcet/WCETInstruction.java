@@ -4,7 +4,7 @@
 
   Copyright (C) 2006-2008, Martin Schoeberl (martin@jopdesign.com)
   Copyright (C) 2006, Rasmus Ulslev Pedersen
-
+  
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
@@ -26,7 +26,7 @@ import org.apache.bcel.generic.InstructionHandle;
 
 
 /**
- * It has wcet info on byte code instruction granlularity. Should we consider
+ * It has wcet info on byte code instruction granularity. Should we consider
  * making a class that wraps the microcodes into objects?
  */
 public class WCETInstruction {
@@ -36,10 +36,13 @@ public class WCETInstruction {
 public static final int a = -1; // should be removed from WCETAnalyser!
 
 	// the read and write wait states, ram_cnt - 1
+	// DE2 Board: r=3, w=5
+	// dspio Board: r=1, w=2
 	public static final int r = 1;
-	public static final int w = r+1;
+	public static final int w = 2;
 	// cache read wait state (r-1)
-	public static final int c = 0;
+	public static final int c = 0; // if read wait state <= 1
+	// public static final int c = r-1; // if read wait state > 1
 
 	public static final boolean CMP_WCET = false;
 
@@ -48,85 +51,66 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 	public static final int TIMESLOT = 3;
 	public static final int MAX_CYCLES = 100000;
 	public static final int ARB_PERIOD = CPUS*TIMESLOT;
-
+	
 	// Build Instructions
 	public static final int NOP = 0;
 	public static final int RD = 1;
 	public static final int WR = 2;
-
+	
 	// Arbitration Array
 	public static boolean [] arbiter;
-
-	// Instructions working on memory with 1 rd_waitstate and 2 wr_waitstates
-	public static int [] ldc = {NOP,NOP,NOP,NOP,NOP,RD,NOP,NOP};
-	public static int [] ldc_w = {NOP,NOP,NOP,NOP,NOP,NOP,RD,NOP,NOP};
-	public static int [] ldc2_w = {NOP,NOP,NOP,NOP,NOP,NOP,NOP,RD,NOP,NOP,NOP,NOP,NOP,NOP,RD,NOP,NOP};
-	public static int [] xaload = {NOP,NOP,NOP,RD,NOP,RD,NOP,RD,NOP,NOP};
-	public static int [] laload; // not needed at the moment
-	public static int [] xastore = {NOP,NOP,NOP,NOP,RD,NOP,RD,NOP,NOP,NOP,WR,NOP,NOP,NOP};
-	public static int [] lastore; // not needed at the moment
-	public static int [] getstatic = {NOP,NOP,NOP,NOP,NOP,NOP,RD,NOP,NOP,NOP,NOP,RD,NOP,NOP};
-	public static int [] putstatic = {NOP,NOP,NOP,NOP,NOP,NOP,RD,NOP,NOP,NOP,NOP,NOP,WR,NOP,NOP,NOP};
-	public static int [] getfield = {NOP,NOP,NOP,NOP,NOP,NOP,RD,NOP,NOP,NOP,RD,NOP,NOP};
-	public static int [] putfield = {NOP,NOP,NOP,NOP,NOP,NOP,NOP,NOP,RD,NOP,NOP,NOP,WR,NOP,NOP,NOP};
-	public static int [] arraylength = {NOP,NOP,NOP,NOP,RD,NOP,NOP};
-	public static int [] jopsys_rd = {NOP,NOP,RD,NOP,NOP};
-	public static int [] jopsys_wr = {NOP,NOP,NOP,WR,NOP,NOP,NOP};
-	public static int [] jopsys_rdmem = {NOP,NOP,RD,NOP,NOP};
-	public static int [] jopsys_wrmem = {NOP,NOP,NOP,WR,NOP,NOP,NOP};
-	public static int [] jopsys_int2ext; // do not need them, just for scheduling
-	public static int [] jopsys_ext2int; // do not need them, just for scheduling
-	public static int [] getstatic_ref = {NOP,NOP,NOP,NOP,NOP,NOP,RD,NOP,NOP,NOP,NOP,RD,NOP,NOP};
-	public static int [] getfield_ref = {NOP,NOP,NOP,NOP,NOP,NOP,RD,NOP,NOP,NOP,RD,NOP,NOP};
-
-	// Instructions that have to be calculated because of cache
-	public static WCETMemInstruction ireturn;
+	
+	// Static Instruction patterns
+	public static WCETMemInstruction ldc;
+	public static WCETMemInstruction ldc_w;
+	public static WCETMemInstruction ldc2_w;
+	public static WCETMemInstruction xaload;
+	public static WCETMemInstruction xastore;
+	public static WCETMemInstruction getstaticx;
+	public static WCETMemInstruction putstatic;
+	public static WCETMemInstruction getfield;
+	public static WCETMemInstruction putfield;
+	public static WCETMemInstruction arraylength;
+	public static WCETMemInstruction jopsys_rdx;
+	public static WCETMemInstruction jopsys_wrx;
+	
+	// Dynamic Instruction pattern dependent on cache
+	public static WCETMemInstruction ireturn; 
 	public static WCETMemInstruction freturn;
 	public static WCETMemInstruction areturn;
 	public static WCETMemInstruction lreturn;
 	public static WCETMemInstruction dreturn;
 	public static WCETMemInstruction returnx; // return
 	public static WCETMemInstruction invokevirtual;
-	public static WCETMemInstruction invokespecial;
+	public static WCETMemInstruction invokespecial; 
 	public static WCETMemInstruction invokestatic; // same as invokespecial
 	public static WCETMemInstruction invokeinterface;
-
+	
 	static {
-		if (CMP_WCET==true){
-			// Initialize
+		if (CMP_WCET){
+			// Initialize 
 			initArbiter();
+			generateStaticInstr();
 		}
 	}
-
+	
 	//Native bytecodes (see jvm.asm)
 	private static final int JOPSYS_RD = 209;
-
 	private static final int JOPSYS_WR = 210;
-
 	private static final int JOPSYS_RDMEM = 211;
-
 	private static final int JOPSYS_WRMEM = 212;
-
 	private static final int JOPSYS_RDINT = 213;
-
 	private static final int JOPSYS_WRINT = 214;
-
 	private static final int JOPSYS_GETSP = 215;
-
 	private static final int JOPSYS_SETSP = 216;
-
 	private static final int JOPSYS_GETVP = 217;
-
 	private static final int JOPSYS_SETVP = 218;
-
 	private static final int JOPSYS_INT2EXT = 219;
-
 	private static final int JOPSYS_EXT2INT = 220;
-
 	private static final int JOPSYS_NOP = 221;
-
+	private static final int GETSTATIC_REF = 224;	
+	private static final int GETFIELD_REF = 226;
 	private static final int JOPSYS_MEMCPY = 232;
-
 	private static String ILLEGAL_OPCODE = "ILLEGAL_OPCODE";
 
 	/**
@@ -186,7 +170,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 
 	/**
 	 * Same as getWCET, but using the handle.
-	 *
+	 * 
 	 * @param ih
 	 * @param pmiss true if the cache is missed and false if there is a cache hit
 	 * @return wcet or WCETNOTAVAILABLE (-1)
@@ -200,7 +184,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 
 	/**
 	 * Get the name using the opcode. Used when WCA toWCAString().
-	 *
+	 * 
 	 * @param opcode
 	 * @return name or "ILLEGAL_OPCODE"
 	 */
@@ -252,17 +236,17 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 	}
 
 	public static void main(String[] args) {
-
+					
 		for (int i=0; i<256; ++i) {
 			int cnt = getCycles(i, false, 0);
 			if (cnt==-1) cnt = 1000;
 			System.out.println(i+"\t"+cnt);
 		}
 	}
-
+	
 	/**
 	 * Returns the wcet count for the instruction.
-	 *
+	 * 
 	 * @see table D.1 in ms thesis
 	 * @param opcode
 	 * @param pmiss true if cacle is misses and false if a cache hit
@@ -271,7 +255,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 	public static int getCycles(int opcode, boolean pmiss, int n) {
 		int wcet = -1;
 		int b = -1;
-
+		
 		// cache load time
 		b = calculateB(!pmiss, n);
 
@@ -350,31 +334,28 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			break;
 		// LDC = 18
 		case org.apache.bcel.Constants.LDC:
-			if (CMP_WCET==false){
-				wcet = 7 + r;}
-			else{
-				wcet = wcetOfInstruction(ldc);}
+			wcet = 7 + r;
+			if (CMP_WCET==true)
+				wcet = ldc.wcet;
 			break;
 		// LDC_W = 19
 		case org.apache.bcel.Constants.LDC_W:
-			if (CMP_WCET==false){
-				wcet = 8 + r;}
-			else{
-				wcet = wcetOfInstruction(ldc_w);}
+			wcet = 8 + r;
+			if (CMP_WCET==true)
+				wcet = ldc_w.wcet;
 			break;
 		// LDC2_W = 20
 		case org.apache.bcel.Constants.LDC2_W:
-			if (CMP_WCET==false){
-				wcet = 17;
-				if (r > 2) {
-					wcet += r - 2;
-				}
-				if (r > 1) {
-					wcet += r - 1;
-				}
+			wcet = 17;
+			if (r > 2) {
+				wcet += r - 2;
 			}
-			else{
-				wcet = wcetOfInstruction(ldc2_w);}
+			if (r > 1) {
+				wcet += r - 1;
+			}
+			if (CMP_WCET==true){
+				wcet = ldc2_w.wcet;
+			}
 			break;
 		// ILOAD = 21
 		case org.apache.bcel.Constants.ILOAD:
@@ -478,11 +459,11 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			break;
 		// IALOAD = 46
 		case org.apache.bcel.Constants.IALOAD:
-			if(CMP_WCET==false){
-				wcet = 7 + 3*r;}
-			else{
-				wcet = wcetOfInstruction(xaload);}
+			wcet = 7 + 3*r;			
+			if (CMP_WCET==true)
+				wcet = xaload.wcet;
 			break;
+			
 		// LALOAD = 47
 		case org.apache.bcel.Constants.LALOAD:
 			if(CMP_WCET==false){
@@ -492,10 +473,9 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			break;
 		// FALOAD = 48
 		case org.apache.bcel.Constants.FALOAD:
-			if(CMP_WCET==false){
-				wcet = 7 + 3*r;}
-			else{
-				wcet = wcetOfInstruction(xaload);}
+			wcet = 7 + 3*r;			
+			if (CMP_WCET==true)
+				wcet = xaload.wcet;
 			break;
 		// DALOAD = 49
 		case org.apache.bcel.Constants.DALOAD:
@@ -503,31 +483,27 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			break;
 		// AALOAD = 50
 		case org.apache.bcel.Constants.AALOAD:
-			if(CMP_WCET==false){
-				wcet = 7 + 3*r;}
-			else{
-				wcet = wcetOfInstruction(xaload);}
+			wcet = 7 + 3*r;			
+			if (CMP_WCET==true)
+				wcet = xaload.wcet;
 			break;
 		// BALOAD = 51
 		case org.apache.bcel.Constants.BALOAD:
-			if(CMP_WCET==false){
-				wcet = 7 + 3*r;}
-			else{
-				wcet = wcetOfInstruction(xaload);}
+			wcet = 7 + 3*r;			
+			if (CMP_WCET==true)
+				wcet = xaload.wcet;
 			break;
 		// CALOAD = 52
 		case org.apache.bcel.Constants.CALOAD:
-			if(CMP_WCET==false){
-				wcet = 7 + 3*r;}
-			else{
-				wcet = wcetOfInstruction(xaload);}
+			wcet = 7 + 3*r;			
+			if (CMP_WCET==true)
+				wcet = xaload.wcet;
 			break;
 		// SALOAD = 53
 		case org.apache.bcel.Constants.SALOAD:
-			if(CMP_WCET==false){
-				wcet = 7 + 3*r;}
-			else{
-				wcet = wcetOfInstruction(xaload);}
+			wcet = 7 + 3*r;			
+			if (CMP_WCET==true)
+				wcet = xaload.wcet;
 			break;
 		// ISTORE = 54
 		case org.apache.bcel.Constants.ISTORE:
@@ -631,10 +607,9 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			break;
 		// IASTORE = 79
 		case org.apache.bcel.Constants.IASTORE:
-			if(CMP_WCET==false){
-				wcet = 10+2*r+w;}
-			else{
-				wcet = wcetOfInstruction(xastore);}
+			wcet = 10+2*r+w;
+			if (CMP_WCET==true)
+				wcet = xastore.wcet;
 			break;
 		// LASTORE = 80
 		case org.apache.bcel.Constants.LASTORE:
@@ -648,10 +623,9 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			break;
 		// FASTORE = 81
 		case org.apache.bcel.Constants.FASTORE:
-			if(CMP_WCET==false){
-				wcet = 10+2*r+w;}
-			else{
-				wcet = wcetOfInstruction(xastore);}
+			wcet = 10+2*r+w;
+			if (CMP_WCET==true)
+				wcet = xastore.wcet;
 			break;
 		// DASTORE = 82
 		case org.apache.bcel.Constants.DASTORE:
@@ -665,24 +639,21 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			break;
 		// BASTORE = 84
 		case org.apache.bcel.Constants.BASTORE:
-			if(CMP_WCET==false){
-				wcet = 10+2*r+w;}
-			else{
-				wcet = wcetOfInstruction(xastore);}
+			wcet = 10+2*r+w;
+			if (CMP_WCET==true)
+				wcet = xastore.wcet;
 			break;
 		// CASTORE = 85
 		case org.apache.bcel.Constants.CASTORE:
-			if(CMP_WCET==false){
-				wcet = 10+2*r+w;}
-			else{
-				wcet = wcetOfInstruction(xastore);}
+			wcet = 10+2*r+w;
+			if (CMP_WCET==true)
+				wcet = xastore.wcet;
 			break;
 		// SASTORE = 86
 		case org.apache.bcel.Constants.SASTORE:
-			if(CMP_WCET==false){
-				wcet = 10+2*r+w;}
-			else{
-				wcet = wcetOfInstruction(xastore);}
+			wcet = 10+2*r+w;
+			if (CMP_WCET==true)
+				wcet = xastore.wcet;
 			break;
 		// POP = 87
 		case org.apache.bcel.Constants.POP:
@@ -1039,21 +1010,14 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			if (b > 10) {
 				wcet += b - 10;
 			}
-
-			// Only for 1 rd waitstate!!!
+			
 			if(CMP_WCET==true){
 				WCETMemInstruction ireturn = new WCETMemInstruction();
 				ireturn.microcode = new int [wcet];
 				ireturn.opcode = 172;
-				generateInstruction(ireturn,pmiss, n, b);
-//				generateInstruction(ireturn, true, 1, 10);
-//				generateInstruction(ireturn, false, 0, 0);
-//				ireturn.microcode = new int [wcet+8];
-//				generateInstruction(ireturn, true, 5, 18);
-
+				generateInstruction(ireturn, pmiss, n, b);				
 				wcet = wcetOfInstruction(ireturn.microcode);
-//				System.out.println("IRETURN WCET: " + wcet );
-				}
+			}
 			break;
 		// LRETURN = 173
 		case org.apache.bcel.Constants.LRETURN:
@@ -1120,46 +1084,38 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			if (b > 9) {
 				wcet += b - 9;
 			}
+			
 			if(CMP_WCET==true){
 				WCETMemInstruction returnx = new WCETMemInstruction();
 				returnx.microcode = new int [wcet];
 				returnx.opcode = 177;
-				generateInstruction(returnx, pmiss, n, b);
-
-//				generateInstruction(returnx, true, 0, 0);
-//				generateInstruction(returnx, false, 0, 0);
-//				returnx.microcode = new int [wcet+9];
-//				generateInstruction(returnx, true, 5, 18);
-
-				wcet = wcetOfInstruction(returnx.microcode);}
+				generateInstruction(returnx, pmiss, n, b);		
+				wcet = wcetOfInstruction(returnx.microcode);
+			}
 			break;
 		// GETSTATIC = 178
 		case org.apache.bcel.Constants.GETSTATIC:
-			if(CMP_WCET==false){
-				wcet = 12 + 2 * r;}
-			else{
-				wcet = wcetOfInstruction(getstatic);}
+			wcet = 12 + 2 * r;
+			if (CMP_WCET==true)
+				wcet = getstaticx.wcet; 
 			break;
 		// PUTSTATIC = 179
 		case org.apache.bcel.Constants.PUTSTATIC:
-			if(CMP_WCET==false){
-				wcet = 13 + r + w;}
-			else{
-				wcet = wcetOfInstruction(putstatic);}
+			wcet = 13 + r + w;
+			if (CMP_WCET==true)
+				wcet = putstatic.wcet;
 			break;
 		// GETFIELD = 180
 		case org.apache.bcel.Constants.GETFIELD:
-			if(CMP_WCET==false){
-				wcet = 11 + 2 * r;}
-			else{
-				wcet = wcetOfInstruction(getfield);}
+			wcet = 11 + 2 * r;
+			if (CMP_WCET==true)
+				wcet = getfield.wcet;
 			break;
 		// PUTFIELD = 181
 		case org.apache.bcel.Constants.PUTFIELD:
-			if(CMP_WCET==false){
-				wcet = 13 + r + w;}
-			else{
-				wcet = wcetOfInstruction(putfield);}
+			wcet = 13 + r + w;
+			if (CMP_WCET==true)
+				wcet = putfield.wcet;
 			break;
 		// INVOKEVIRTUAL = 182
 		case org.apache.bcel.Constants.INVOKEVIRTUAL:
@@ -1178,6 +1134,8 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 				invokevirtual.microcode = new int [wcet];
 				invokevirtual.opcode = 182;
 				generateInstruction(invokevirtual, pmiss, n, b);
+				//for(int i=0; i<invokevirtual.microcode.length; i++)
+				//	System.out.println("Invokevirtual["+i+"] = "+invokevirtual.microcode[i]);
 				wcet = wcetOfInstruction(invokevirtual.microcode);}
 			break;
 		// INVOKESPECIAL = 183
@@ -1249,10 +1207,9 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			break;
 		// ARRAYLENGTH = 190
 		case org.apache.bcel.Constants.ARRAYLENGTH:
-			if(CMP_WCET==false){
-				wcet = 6 + r;}
-			else{
-				wcet = wcetOfInstruction(arraylength);}
+			wcet = 6 + r;
+			if (CMP_WCET==true)
+				wcet = arraylength.wcet;
 			break;
 		// ATHROW = 191
 		case org.apache.bcel.Constants.ATHROW:
@@ -1298,33 +1255,29 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 		case org.apache.bcel.Constants.JSR_W:
 			wcet = -1;
 			break;
-		// JOPSYS_RD = 209
+		// JOPSYS_RD = 209   
 		case JOPSYS_RD:
-			if(CMP_WCET==false){
-				wcet = 4 + r;}
-			else{
-				wcet = wcetOfInstruction(jopsys_rd);}
+			wcet = 4 + r;
+			if (CMP_WCET==true)
+				wcet = jopsys_rdx.wcet;
 			break;
 		// JOPSYS_WR = 210
 		case JOPSYS_WR:
-			if(CMP_WCET==false){
-				wcet = 5 + w;}
-			else{
-				wcet = wcetOfInstruction(jopsys_wr);}
+			wcet = 5 + w;
+			if (CMP_WCET==true)
+				wcet = jopsys_wrx.wcet;
 			break;
 		// JOPSYS_RDMEM = 211
 		case JOPSYS_RDMEM:
-			if(CMP_WCET==false){
-				wcet = 4 + r;}
-			else{
-				wcet = wcetOfInstruction(jopsys_rd);}
+			wcet = 4 + r;
+			if (CMP_WCET==true)
+				wcet = jopsys_rdx.wcet;
 			break;
 		// JOPSYS_WRMEM = 212
 		case JOPSYS_WRMEM:
-			if(CMP_WCET==false){
-				wcet = 5 + w;}
-			else{
-				wcet = wcetOfInstruction(jopsys_wr);}
+			wcet = 5 + w;
+			if (CMP_WCET==true)
+				wcet = jopsys_wrx.wcet;
 			break;
 		// JOPSYS_RDINT = 213
 		case JOPSYS_RDINT:
@@ -1372,16 +1325,35 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 		case JOPSYS_NOP:
 			wcet = 1;
 			break;
-
-		case 223: // conditional move
+			
+		case 223: // conditional move 
 			wcet = 5;
 			break;
 
+		// GETSTATIC_REF = 224
+		case GETSTATIC_REF:
+			wcet = 12 + 2 * r;
+			if (CMP_WCET==true)
+				wcet = getstaticx.wcet;
+			break;
+			
+		// GETFIELD_REF = 226
+		case GETFIELD_REF:
+			wcet = 11 + 2 * r;
+			if (CMP_WCET==true){
+				WCETMemInstruction getfield_ref = new WCETMemInstruction();
+				getfield_ref.microcode = new int [wcet];
+				getfield_ref.opcode = 226;
+				generateInstruction(getfield_ref, pmiss, n, b);
+				wcet = wcetOfInstruction(getfield_ref.microcode);
+			}
+			break;
+			
 		// JOPSYS_MEMCPY = 232
 		case JOPSYS_MEMCPY:
 			wcet = -1;
 			break;
-
+		
 		default:
 			wcet = -1;
 		}
@@ -1393,7 +1365,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 	}
 
 	public static boolean isInJava(int opcode) {
-
+		
 		switch (opcode) {
 			case org.apache.bcel.Constants.FCONST_0:
 				return true;
@@ -1467,7 +1439,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 	}
 	/**
 	 * Check to see if there is a valid WCET count for the instruction.
-	 *
+	 * 
 	 * @param opcode
 	 * @return true if there is a valid wcet value
 	 */
@@ -1477,10 +1449,10 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 		else
 			return true;
 	}
-
+	
 	/**
 	 * Get an estimation of the bytecode execution time.
-	 *
+	 * 
 	 * TODO: measure Java implemented bytecodes and add the numbers.
 	 * @param opcode
 	 * @param pmiss
@@ -1488,7 +1460,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 	 * @return
 	 */
 	public static int getCyclesEstimate(int opcode, boolean pmiss, int n) {
-
+		
 		int ret = getCycles(opcode, pmiss, n);
 		// VERY rough estimate
 		if (ret==WCETNOTAVAILABLE) {
@@ -1500,7 +1472,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 
 	/**
 	 * Method load time on invoke or return if there is a cache miss (see pMiss).
-	 *
+	 * 
 	 * @see ms thesis p 232
 	 */
 	public static int calculateB(boolean hit, int n) {
@@ -1517,348 +1489,453 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 		}
 		return b;
 	}
-
+	
 	// Initializes a couple of periods, where one timeslot is true and the
 	// other ones are false
-
+	
 	public static void initArbiter(){
-
+		
 		int i;
 		arbiter = new boolean [MAX_CYCLES];
-
+		
 		for(i=0;i<MAX_CYCLES;i++){
 			if( (i%(ARB_PERIOD)) < TIMESLOT ){
 				arbiter[i]=true;}
 			else{
 				arbiter[i]=false;}
-		}
+		}			
 	}
-
-// Should go into WCETMemInstruction
-
+	
+	// generates all static instruction patterns and WCETs
+	public static void generateStaticInstr()
+	{
+		ldc = new WCETMemInstruction();
+		ldc_w = new WCETMemInstruction();
+		ldc2_w = new WCETMemInstruction();
+		xaload = new WCETMemInstruction();
+		xastore = new WCETMemInstruction();
+		getstaticx = new WCETMemInstruction();
+		putstatic = new WCETMemInstruction();
+		getfield = new WCETMemInstruction();
+		putfield = new WCETMemInstruction();
+		arraylength = new WCETMemInstruction();
+		jopsys_rdx = new WCETMemInstruction();
+		jopsys_wrx = new WCETMemInstruction();
+		
+		
+		ldc.microcode = new int [7+r];
+		ldc.opcode = 18;
+		generateInstruction(ldc, false, 0, 0); // Cache is not interesting here
+		ldc.wcet = wcetOfInstruction(ldc.microcode);
+		
+		ldc_w.microcode = new int [8+r];
+		ldc_w.opcode = 19;
+		generateInstruction(ldc_w, false, 0, 0);
+		ldc_w.wcet = wcetOfInstruction(ldc_w.microcode);
+		
+		int wcet = 17;
+		if (r > 2) {
+			wcet += r - 2;
+		}
+		if (r > 1) {
+			wcet += r - 1;
+		}
+		ldc2_w.microcode = new int [wcet];
+		ldc2_w.opcode = 20;
+		generateInstruction(ldc2_w, false, 0, 0);
+		ldc2_w.wcet = wcetOfInstruction(ldc2_w.microcode);
+		
+		xaload.microcode = new int [7+3*r];
+		xaload.opcode = 46;
+		generateInstruction(xaload, false, 0, 0);
+		xaload.wcet = wcetOfInstruction(xaload.microcode);
+		
+		xastore.microcode = new int [10+2*r+w];
+		xastore.opcode = 79;
+		generateInstruction(xastore, false, 0, 0);
+		xastore.wcet = wcetOfInstruction(xastore.microcode);
+		
+		getstaticx.microcode = new int [12+2*r];
+		getstaticx.opcode = 178;
+		generateInstruction(getstaticx, false, 0, 0);
+		getstaticx.wcet = wcetOfInstruction(getstaticx.microcode);
+		
+		putstatic.microcode = new int [13+r+w];
+		putstatic.opcode = 179;
+		generateInstruction(putstatic, false, 0, 0);
+		putstatic.wcet = wcetOfInstruction(putstatic.microcode);
+		
+		getfield.microcode = new int [11+2*r];
+		getfield.opcode = 180;
+		generateInstruction(getfield, false, 0, 0);
+		getfield.wcet = wcetOfInstruction(getfield.microcode);
+		
+		putfield.microcode = new int [13+r+w];
+		putfield.opcode = 181;
+		generateInstruction(putfield, false, 0, 0);
+		putfield.wcet = wcetOfInstruction(putfield.microcode);
+		
+		arraylength.microcode = new int [6+r];
+		arraylength.opcode = 190;
+		generateInstruction(arraylength, false, 0, 0);
+		arraylength.wcet = wcetOfInstruction(arraylength.microcode);
+		
+		jopsys_rdx.microcode = new int [4+r];
+		jopsys_rdx.opcode = 209;
+		generateInstruction(jopsys_rdx, false, 0, 0);
+		jopsys_rdx.wcet = wcetOfInstruction(jopsys_rdx.microcode);
+		
+		jopsys_wrx.microcode = new int [5+w];
+		jopsys_wrx.opcode = 210;
+		generateInstruction(jopsys_wrx, false, 0, 0);
+		jopsys_wrx.wcet = wcetOfInstruction(jopsys_wrx.microcode);	
+	}
+	
+	
+	// Generates the Instruction patterns
+	
 	public static void generateInstruction(WCETMemInstruction instruction, boolean pmiss, int n, int b){
-
+		
 		boolean nop = false;
 		int cnt = 0;
-
+		int x = 0;
+		int y = 0;
+		
 		switch(instruction.opcode){
-		// ireturn
-		case 172:
-
+		
+		
+		// Static Instructions
+		// ldc
+		case 18:
 			for(int i=0;i<instruction.microcode.length;i++){
-				if(i<=3) instruction.microcode[i]=NOP;
-				else if(i==4) instruction.microcode[i]=RD;
-				else if(i>=5 && i<=15) instruction.microcode[i]=NOP;
-				else{
-					if (pmiss == false)
-						instruction.microcode[i]=NOP;
-					else{
-						if (n==0){
-							instruction.microcode[i]=NOP;}
-						else if (n==1){
-							if (i==16)
-								instruction.microcode[i]=RD;
-							else
-								instruction.microcode[i]=NOP;}
-						else{
-							if (i>15 && i<=instruction.microcode.length-4)
-								if (nop==false){
-									instruction.microcode[i]=RD;
-									nop=true;}
-								else{
-									instruction.microcode[i]=NOP;
-									nop=false;}
-							else
-								instruction.microcode[i]=NOP;
-						}
-					}
-				}
+				if(i<=4) instruction.microcode[i]=NOP;
+				else if(i==5) instruction.microcode[i]=RD;
+				else instruction.microcode[i]=NOP;
 			}
 			break;
-
-		// freturn
-		case 174:
-
+		
+		// ldc_w
+		case 19:
 			for(int i=0;i<instruction.microcode.length;i++){
-				if(i<=3) instruction.microcode[i]=NOP;
-				else if(i==4) instruction.microcode[i]=RD;
-				else if(i>=5 && i<=15) instruction.microcode[i]=NOP;
-				else{
-					if (pmiss == false)
-						instruction.microcode[i]=NOP;
-					else{
-						if (n==0){
-							instruction.microcode[i]=NOP;}
-						else if (n==1){
-							if (i==16)
-								instruction.microcode[i]=RD;
-							else
-								instruction.microcode[i]=NOP;}
-						else{
-							if (i>15 && i<=instruction.microcode.length-4)
-								if (nop==false){
-									instruction.microcode[i]=RD;
-									nop=true;}
-								else{
-									instruction.microcode[i]=NOP;
-									nop=false;}
-							else
-								instruction.microcode[i]=NOP;
-						}
-					}
-				}
+				if(i<=5) instruction.microcode[i]=NOP;
+				else if(i==6) instruction.microcode[i]=RD;
+				else instruction.microcode[i]=NOP;
+			}
+			break; 
+			
+		// ldc2_w 
+		case 20:
+			
+			if (r <= 2) x = 0;
+			else x = r-2; // the 2nd comparison is unnecessary because only only NOPs anyway! 
+			
+			for(int i=0;i<instruction.microcode.length;i++){
+				if(i<=6) instruction.microcode[i]=NOP;
+				else if(i==7) instruction.microcode[i]=RD;
+				else if(i>=8 && i<=13+x) instruction.microcode[i]=NOP;
+				else if(i==14+x) instruction.microcode[i]=RD;
+				else instruction.microcode[i]=NOP;
 			}
 			break;
-
-		// areturn
-		case 176:
-
-			for(int i=0;i<instruction.microcode.length;i++){
-				if(i<=3) instruction.microcode[i]=NOP;
-				else if(i==4) instruction.microcode[i]=RD;
-				else if(i>=5 && i<=15) instruction.microcode[i]=NOP;
-				else{
-					if (pmiss == false)
-						instruction.microcode[i]=NOP;
-					else{
-						if (n==0){
-							instruction.microcode[i]=NOP;}
-						else if (n==1){
-							if (i==16)
-								instruction.microcode[i]=RD;
-							else
-								instruction.microcode[i]=NOP;}
-						else{
-							if (i>15 && i<=instruction.microcode.length-4)
-								if (nop==false){
-									instruction.microcode[i]=RD;
-									nop=true;}
-								else{
-									instruction.microcode[i]=NOP;
-									nop=false;}
-							else
-								instruction.microcode[i]=NOP;
-						}
-					}
-				}
-			}
-			break;
-
-		// lreturn
-		case 173:
-			break;
-
-		// dreturn
-		case 175:
-			break;
-
-		// return
-		case 177:
+			
+		// xaload = iaload, faload, aaload, baload, caload, saload	
+		case 46:
+		case 48:
+		case 50:
+		case 51:
+		case 52:
 			for(int i=0;i<instruction.microcode.length;i++){
 				if(i<=2) instruction.microcode[i]=NOP;
 				else if(i==3) instruction.microcode[i]=RD;
-				else if(i>=4 && i<=14) instruction.microcode[i]=NOP;
+				else if(i>3 && i<=3+r) instruction.microcode[i]=NOP;
+				else if(i==4+r) instruction.microcode[i]=RD;
+				else if(i>4+r && i<=4+2*r) instruction.microcode[i]=NOP;
+				else if(i==5+2*r) instruction.microcode[i]=RD;
+				else instruction.microcode[i]=NOP;
+			}
+			break;
+			
+		// xastore = iastore, fastore, bastore, castore, sastore
+		case 79:
+		case 81:
+		case 84:
+		case 85:
+		case 86:
+			for(int i=0;i<instruction.microcode.length;i++){
+				if(i<=3) instruction.microcode[i]=NOP;
+				else if(i==4) instruction.microcode[i]=RD;
+				else if(i>4 && i<=4+r) instruction.microcode[i]=NOP;
+				else if(i==5+r) instruction.microcode[i]=RD;
+				else if(i>5+r && i<=7+2*r) instruction.microcode[i]=NOP;
+				else if(i==8+2*r) instruction.microcode[i]=WR;
+				else instruction.microcode[i]=NOP;
+			}
+			break;
+			
+		// getstaticx = getstatic, getstatic_ref
+		case 178:
+		case 224:
+			for(int i=0;i<instruction.microcode.length;i++){
+				if(i<=5) instruction.microcode[i]=NOP;
+				else if(i==6) instruction.microcode[i]=RD;
+				else if(i>6 && i<=9+r) instruction.microcode[i]=NOP;
+				else if(i==10+r) instruction.microcode[i]=RD;
+				else instruction.microcode[i]=NOP;
+			}
+			break;
+			
+		// putstatic
+		case 179:
+			for(int i=0;i<instruction.microcode.length;i++){
+				if(i<=5) instruction.microcode[i]=NOP;
+				else if(i==6) instruction.microcode[i]=RD;
+				else if(i>6 && i<=10+r) instruction.microcode[i]=NOP;
+				else if(i==11+r) instruction.microcode[i]=WR;
+				else instruction.microcode[i]=NOP;
+			}
+			break;
+			
+		// getfield
+		case 180:
+			for(int i=0;i<instruction.microcode.length;i++){
+				if(i<=5) instruction.microcode[i]=NOP;
+				else if(i==6) instruction.microcode[i]=RD;
+				else if(i>6 && i<=8+r) instruction.microcode[i]=NOP;
+				else if(i==9+r) instruction.microcode[i]=RD;
+				else instruction.microcode[i]=NOP;
+			}
+			break;
+			
+		// putfield	
+		case 181:
+			for(int i=0;i<instruction.microcode.length;i++){
+				if(i<=7) instruction.microcode[i]=NOP;
+				else if(i==8) instruction.microcode[i]=RD;
+				else if(i>8 && i<=10+r) instruction.microcode[i]=NOP;
+				else if(i==11+r) instruction.microcode[i]=WR;
+				else instruction.microcode[i]=NOP;
+			}
+			break;
+		
+		// arraylength
+		case 190:
+			for(int i=0;i<instruction.microcode.length;i++){
+				if(i<=3) instruction.microcode[i]=NOP;
+				else if(i==4) instruction.microcode[i]=RD;
+				else instruction.microcode[i]=NOP;
+			}
+			break;
+			
+		// jopsys_rdx = jopsys_rd, jopsys_rdmem
+		case 209:
+		case 211:
+			for(int i=0;i<instruction.microcode.length;i++){
+				if(i<=1) instruction.microcode[i]=NOP;
+				else if(i==2) instruction.microcode[i]=RD;
+				else instruction.microcode[i]=NOP;
+			}
+			break;
+			
+		// jopsys_wrx = jopsys_wr, jopsys_wrmem
+		case 210:
+		case 212:
+			for(int i=0;i<instruction.microcode.length;i++){
+				if(i<=2) instruction.microcode[i]=NOP;
+				else if(i==3) instruction.microcode[i]=WR;
+				else instruction.microcode[i]=NOP;
+			}
+			break;
+
+			
+		// Dynamic Instructions	
+			
+		// ireturn, freturn, areturn
+		case 172:
+		case 174:
+		case 176:
+
+			if (r <= 3) x = 0;
+			else x = r-3;
+			
+			for(int i=0;i<instruction.microcode.length;i++){
+				if(i<=3) instruction.microcode[i]=NOP;
+				else if(i==4) instruction.microcode[i]=RD;
+				else if(i>=5 && i<=15+x) instruction.microcode[i]=NOP;
 				else{
-					if (pmiss == false)
+					if (pmiss == false || n==0)
 						instruction.microcode[i]=NOP;
 					else{
-						if (b<=9){
-							if(cnt<=2*(n+1)){ //2*(n+1) =
-								if (nop==false){
-									instruction.microcode[i]=RD;
-									nop=true;
-									cnt++;}
-								else{
-									instruction.microcode[i]=NOP;
-									nop=false;
-									cnt++;}
-							}
-							else
-								instruction.microcode[i]=NOP;}
-						else{
-							if (i>14 && i<=instruction.microcode.length-4)
-								if (nop==false){
-									instruction.microcode[i]=RD;
-									nop=true;}
-								else{
-									instruction.microcode[i]=NOP;
-									nop=false;}
-							else
+						if (cnt<(2+c)*(n+1)){ 
+							if (cnt % (r+1) == 0){
+								instruction.microcode[i]=RD;
+								cnt++;}
+							else{
 								instruction.microcode[i]=NOP;
+								cnt++;}
 						}
+						else
+							instruction.microcode[i]=NOP;
+					}
+				}
+			}				
+			break;
+			
+		
+		// lreturn	
+		case 173:
+			break;
+			
+		// dreturn	
+		case 175:
+			break;
+			
+		// return	
+		case 177:
+			
+			if (r <= 3) x = 0;
+			else x = r-3;
+		
+			for(int i=0;i<instruction.microcode.length;i++){
+				if(i<=2) instruction.microcode[i]=NOP;
+				else if(i==3) instruction.microcode[i]=RD;
+				else if(i>=4 && i<=14+x) instruction.microcode[i]=NOP;
+				else{
+					if (pmiss == false || n==0)
+						instruction.microcode[i]=NOP;
+					else{
+						if (cnt<(2+c)*(n+1)){ 
+							if (cnt % (r+1) == 0){
+								instruction.microcode[i]=RD;
+								cnt++;}
+							else{
+								instruction.microcode[i]=NOP;
+								cnt++;}
+						}
+						else
+							instruction.microcode[i]=NOP;
 					}
 				}
 			}
 			break;
-
-		// invokevirtual
+			
+		// invokevirtual	
 		case 182:
+			
+			if (r <= 3) x = 0;
+			else x = r-3;
+			if (r <= 2) y = 0;
+			else y = r-2;
+			
 			for(int i=0;i<instruction.microcode.length;i++){
 				if(i<=5) instruction.microcode[i]=NOP;
 				else if(i==6) instruction.microcode[i]=RD;
-				else if(i>=7 && i<=32) instruction.microcode[i]=NOP;
-				else if(i==33) instruction.microcode[i]=RD;
-				else if(i>=34 && i<=42) instruction.microcode[i]=NOP;
-				else if(i==43) instruction.microcode[i]=RD;
-				else if(i>=44 && i<=54) instruction.microcode[i]=NOP;
-				else if(i==55) instruction.microcode[i]=RD;
-				else if(i>=56 && i<=65) instruction.microcode[i]=NOP;
+				else if(i>=7 && i<=31+r) instruction.microcode[i]=NOP;
+				else if(i==32+r) instruction.microcode[i]=RD;
+				else if(i>=33+r && i<=40+2*r) instruction.microcode[i]=NOP;
+				else if(i==41+2*r) instruction.microcode[i]=RD;
+				else if(i>=42+2*r && i<=52+2*r+x) instruction.microcode[i]=NOP;
+				else if(i==53+2*r+x) instruction.microcode[i]=RD;
+				else if(i>=54+2*r+x && i<=63+2*r+x+y) instruction.microcode[i]=NOP;
 				else{
-					if (pmiss == false)
+					if (pmiss == false || n==0)
 						instruction.microcode[i]=NOP;
 					else{
-						if (b<=37){
-							if(cnt<=2*(n+1)){ //2*(n+1) =
-								if (nop==false){
+						if (pmiss == false)
+							instruction.microcode[i]=NOP;
+						else{
+							if (cnt<(2+c)*(n+1)){ 
+								if (cnt % (r+1) == 0){
 									instruction.microcode[i]=RD;
-									nop=true;
 									cnt++;}
 								else{
 									instruction.microcode[i]=NOP;
-									nop=false;
 									cnt++;}
 							}
-							else
-								instruction.microcode[i]=NOP;}
-						else{
-							if (i>67 && i<=instruction.microcode.length-4)
-								if (nop==false){
-									instruction.microcode[i]=RD;
-									nop=true;}
-								else{
-									instruction.microcode[i]=NOP;
-									nop=false;}
 							else
 								instruction.microcode[i]=NOP;
 						}
 					}
-				}
+				}	
 			}
 			break;
-
-		// invokespecial
+			
+		// invokespecial, invokestatic
 		case 183:
-			for(int i=0;i<instruction.microcode.length;i++){
-				if(i<=5) instruction.microcode[i]=NOP;
-				else if(i==6) instruction.microcode[i]=RD;
-				else if(i>=7 && i<=17) instruction.microcode[i]=NOP;
-				else if(i==18) instruction.microcode[i]=RD;
-				else if(i>=19 && i<=29) instruction.microcode[i]=NOP;
-				else if(i==30) instruction.microcode[i]=RD;
-				else if(i>=31 && i<=40) instruction.microcode[i]=NOP;
-				else{
-					if (pmiss == false)
-						instruction.microcode[i]=NOP;
-					else{
-						if (b<=37){
-							if(cnt<=2*(n+1)){ //2*(n+1) =
-								if (nop==false){
-									instruction.microcode[i]=RD;
-									nop=true;
-									cnt++;}
-								else{
-									instruction.microcode[i]=NOP;
-									nop=false;
-									cnt++;}
-							}
-							else
-								instruction.microcode[i]=NOP;}
-						else{
-							if (i>40 && i<=instruction.microcode.length-4)
-								if (nop==false){
-									instruction.microcode[i]=RD;
-									nop=true;}
-								else{
-									instruction.microcode[i]=NOP;
-									nop=false;}
-							else
-								instruction.microcode[i]=NOP;
-						}
-					}
-				}
-			}
-			break;
-
-		// invokestatic
 		case 184:
+
+			if (r <= 3) x = 0;
+			else x = r-3;
+			if (r <= 2) y = 0;
+			else y = r-2;
+			
 			for(int i=0;i<instruction.microcode.length;i++){
 				if(i<=5) instruction.microcode[i]=NOP;
 				else if(i==6) instruction.microcode[i]=RD;
-				else if(i>=7 && i<=17) instruction.microcode[i]=NOP;
-				else if(i==18) instruction.microcode[i]=RD;
-				else if(i>=19 && i<=29) instruction.microcode[i]=NOP;
-				else if(i==30) instruction.microcode[i]=RD;
-				else if(i>=31 && i<=40) instruction.microcode[i]=NOP;
+				else if(i>=7 && i<=16+r) instruction.microcode[i]=NOP;
+				else if(i==17+r) instruction.microcode[i]=RD;
+				else if(i>=18+r && i<=28+r+x) instruction.microcode[i]=NOP;
+				else if(i==29+r+x) instruction.microcode[i]=RD;
+				else if(i>=30+r+x && i<=39+r+x+y) instruction.microcode[i]=NOP;
 				else{
-					if (pmiss == false)
+					if (pmiss == false || n==0)
 						instruction.microcode[i]=NOP;
 					else{
-						if (b<=37){
-							if(cnt<=2*(n+1)){ //2*(n+1) =
-								if (nop==false){
-									instruction.microcode[i]=RD;
-									nop=true;
-									cnt++;}
-								else{
-									instruction.microcode[i]=NOP;
-									nop=false;
-									cnt++;}
-							}
-							else
-								instruction.microcode[i]=NOP;}
-						else{
-							if (i>40 && i<=instruction.microcode.length-4)
-								if (nop==false){
-									instruction.microcode[i]=RD;
-									nop=true;}
-								else{
-									instruction.microcode[i]=NOP;
-									nop=false;}
-							else
+						if (cnt<(2+c)*(n+1)){ 
+							if (cnt % (r+1) == 0){
+								instruction.microcode[i]=RD;
+								cnt++;}
+							else{
 								instruction.microcode[i]=NOP;
+								cnt++;}
 						}
+						else
+							instruction.microcode[i]=NOP;
 					}
 				}
-			}
+			}				
 			break;
-
-		// invokeinterface
+			
+			
+		// invokeinterface	
 		case 185:
-
+			
 			break;
 
-
+			
 		default:
 		}
 	}
-
+	
+	// calculates WCET of instruction
 	public static int wcetOfInstruction(int [] microcode){
-
+		
 		int i = 0;
 		int j = 0;
 		int wcet=0;
-		int exec = 0;
-
+		int exec = 0;	
+		
 		for(i=0;i<ARB_PERIOD;i++){
-			exec = arbitration(i,microcode);
+			exec = calcExecTime(i,microcode);
 			if (wcet<exec){
 				wcet = exec;
 				j = i;
 			}
 		}
-
+				
 		//System.out.println("WCET: " + wcet + " Arbitration position: " + j);
 		return wcet;
 	}
-
-
-	public static int arbitration(int arb_position,  int [] microcode){
-
+	
+	// Calculates execution time of instruction, starting at a certain position of the
+	// arbitration period
+	
+	public static int calcExecTime(int arb_position,  int [] microcode){	
+		
 		int i=0;
 		int exec_time=0;
-
+			
 		for(i=0;i<microcode.length;i++){
-
+			
 			switch(microcode[i])
 			{
 			case NOP:
@@ -1866,29 +1943,29 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 				arb_position++;
 				//System.out.println("NOP: " + exec_time);
 				break;
-
-			case RD:
-				while( (arbiter[arb_position]==false) ||
+					
+			case RD:				
+				while( (arbiter[arb_position]==false) || 
 					   (((arb_position%(ARB_PERIOD))>=TIMESLOT-r) && ((arb_position%(ARB_PERIOD))<=TIMESLOT)) ){
 					exec_time++;
 					arb_position++;
 					//System.out.println("Blocking RD: " + exec_time);
 				}
-
+					
 				if(arbiter[arb_position]==true){
 					exec_time++;
 					arb_position++;
 					//System.out.println("RD: " + exec_time);
 				}
 				break;
-
+					
 			case WR:
-				while( (arbiter[arb_position]==false) ||
+				while( (arbiter[arb_position]==false) || 
 					   (((arb_position%(ARB_PERIOD))>=TIMESLOT-w) && ((arb_position%(ARB_PERIOD))<=TIMESLOT)) ){
 					exec_time++;
 					arb_position++;
 				}
-
+				
 				if(arbiter[arb_position]==true){
 					exec_time++;
 					arb_position++;
@@ -1896,32 +1973,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 				break;
 			}
 		}
-
+		
 		return exec_time;
 	}
-
-//	public static void generateInstruction(WCETMemInstruction instruction, int length){
-//
-//		switch(instruction.opcode){
-////		case 18:
-////			for(int i=0;i<length;i++){
-////				if(i<=4) instruction.microcode[i]=nop;
-////				else if(i==5) instruction.microcode[i]=rd;
-////				else if(i==length-1) instruction.microcode[i]=nop;
-////				else instruction.microcode[i]=nop; // waitstates
-////			}
-////			break;
-//
-//		// ireturn
-//		case 172:
-//			for(int i=0;i<length;i++){
-//				if(i<=3) instruction.microcode[i]=nop;
-//				else if(i==4) instruction.microcode[i]=rd;
-//			}
-//
-//
-//		default:
-//		}
 }
-
-
