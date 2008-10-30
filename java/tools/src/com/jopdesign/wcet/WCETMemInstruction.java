@@ -24,5 +24,6 @@ public class WCETMemInstruction{
 	
 	public int opcode;
 	public int [] microcode;
+	public int wcet;
 	
 }
