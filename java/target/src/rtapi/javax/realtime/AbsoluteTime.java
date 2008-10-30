@@ -33,46 +33,46 @@ import javax.safetycritical.annotate.SCJAllowed;
  */
 public class AbsoluteTime extends HighResolutionTime {
 
-	@BlockFree
-	@SCJAllowed
+//	@BlockFree
+//	@SCJAllowed
 	public AbsoluteTime(AbsoluteTime time) {
 		millis = time.millis;
 		nanos = time.nanos;
 	}
 
-	@BlockFree
-	@SCJAllowed
+//	@BlockFree
+//	@SCJAllowed
 	public AbsoluteTime(long millis, int nanos) {
 		this.millis = millis;
 		this.nanos = nanos;
 	}
 
 //	@Allocate( { CURRENT })
-	@BlockFree
-	@SCJAllowed
+//	@BlockFree
+//	@SCJAllowed
 	public AbsoluteTime add(long millis, int nanos) {
 		return null; // dummy return
 	}
 
 //	@Allocate( { CURRENT })
-	@BlockFree
-	@SCJAllowed
+//	@BlockFree
+//	@SCJAllowed
 	public AbsoluteTime add(RelativeTime time) {
 		return null; // dummy return
 	}
 
 
 //	@Allocate( { CURRENT })
-	@BlockFree
-	@SCJAllowed
+//	@BlockFree
+//	@SCJAllowed
 	public RelativeTime subtract(AbsoluteTime time) {
 		return null; // dummy return
 	}
 
 
 //	@Allocate( { CURRENT })
-	@BlockFree
-	@SCJAllowed
+//	@BlockFree
+//	@SCJAllowed
 	public AbsoluteTime subtract(RelativeTime time) {
 		return null; // dummy return
 	}

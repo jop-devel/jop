@@ -28,7 +28,7 @@ import javax.safetycritical.annotate.SCJAllowed;
 //import javax.safetycritical.annotate.Allocate;
 //import static javax.safetycritical.annotate.Allocate.Area.CURRENT;
 
-@SCJAllowed
+//@SCJAllowed
 public class RelativeTime extends HighResolutionTime {
 
 
@@ -45,8 +45,8 @@ public class RelativeTime extends HighResolutionTime {
 	 * @param ms
 	 * @param ns
 	 */
-	@BlockFree
-	@SCJAllowed
+//	@BlockFree
+//	@SCJAllowed
 	public RelativeTime(long ms, int ns) {
 		ms += ns/1000;
 		ns %= 1000;
@@ -63,8 +63,8 @@ public class RelativeTime extends HighResolutionTime {
 	 * fact immutable?
 	 * @param time
 	 */
-	@BlockFree
-	@SCJAllowed
+//	@BlockFree
+//	@SCJAllowed
 	public RelativeTime(RelativeTime time) {
 		millis = time.millis;
 		nanos = time.nanos;
@@ -94,22 +94,22 @@ public class RelativeTime extends HighResolutionTime {
 	}
 
 //	@Allocate({CURRENT})
-	@BlockFree
-	@SCJAllowed
+//	@BlockFree
+//	@SCJAllowed
 	public RelativeTime add(long millis, int nanos) {
 		return new RelativeTime(this.millis + millis, this.nanos + nanos);
 	}
 
 //	@Allocate({CURRENT})
-	@BlockFree
-	@SCJAllowed
+//	@BlockFree
+//	@SCJAllowed
 	public RelativeTime add(RelativeTime time) {
 		return add(time.millis, time.nanos);
 	}
 
 //	@Allocate({CURRENT})
-	@BlockFree
-	@SCJAllowed
+//	@BlockFree
+//	@SCJAllowed
 	public RelativeTime subtract(RelativeTime time) {
 		return new RelativeTime(millis - time.millis, nanos - time.nanos);
 	}

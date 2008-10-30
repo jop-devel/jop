@@ -25,58 +25,58 @@ package javax.realtime;
 import javax.safetycritical.annotate.BlockFree;
 import javax.safetycritical.annotate.SCJAllowed;
 
-@SCJAllowed
+// @SCJAllowed
 public abstract class HighResolutionTime implements java.lang.Comparable {
 
 	long millis;
 	int nanos;
 	
-	@BlockFree
-	@SCJAllowed
+//	@BlockFree
+//	@SCJAllowed
 	public int compareTo(Object o) {
 		// TODO Auto-generated method stub
 		return 0;
 	}
 
-	@BlockFree
-	@SCJAllowed
+//	@BlockFree
+//	@SCJAllowed
 	public int compareTo(HighResolutionTime time) {
 		// TODO Auto-generated method stub
 		return 0;
 	}
 
-	@BlockFree
-	@SCJAllowed
+//	@BlockFree
+//	@SCJAllowed
 	public boolean equals(HighResolutionTime time) {
 		return (millis==time.millis && nanos==time.nanos);
 	}
 
-	@BlockFree
-	@SCJAllowed
+//	@BlockFree
+//	@SCJAllowed
 	public boolean equals(java.lang.Object object) {
 		return false; // dummy return
 	}
 
-	@BlockFree
-	@SCJAllowed
+//	@BlockFree
+//	@SCJAllowed
 	public Clock getClock() {
 		return Clock.getRealtimeClock();
 	}
 
-	@BlockFree
-	@SCJAllowed
+//	@BlockFree
+//	@SCJAllowed
 	public final long getMilliseconds() {
 		return millis;
 	}
 
-	@BlockFree
-	@SCJAllowed
+//	@BlockFree
+//	@SCJAllowed
 	public final int getNanoseconds() {
 		return nanos;
 	}
 
-	@BlockFree
-	@SCJAllowed
+//	@BlockFree
+//	@SCJAllowed
 	public int hashCode() {
 		// TODO lookup the chapter how to best generate a hash code.
 		return (int) millis + nanos;
