@@ -26,21 +26,10 @@ package com.jopdesign.sys;
 // class JVMHelp {
 public class JVMHelp {
 
-	/**
-	 * The list of the interrupt handlers for all cores.
-	 * 
-	 * We cannot use HW object in clinit as they depend on JVMHelp.
-	 */
-	static Runnable ih[][] = new Runnable[Native.rdMem(Const.IO_CPUCNT)][Const.NUM_INTERRUPTS];
+	// don't use static initializers <clinit> in this class as some
+	// methods depend on the order.
+	static Runnable ih[][];
 	static Runnable dh;
-	static {
-		dh = new DummyHandler();
-		for (int core=0; core<Native.rdMem(Const.IO_CPUCNT); ++core) {
-			for (int var=0; var<Const.NUM_INTERRUPTS; ++var) {
-				JVMHelp.addInterruptHandler(core, var, dh);
-			}								
-		}
-	}
 	
 
 	//
@@ -148,6 +137,22 @@ synchronized (o) {
 		for (;;);
 	}
 
+	/**
+	 * Create interrupt handler in a static method instead of <clinit>.
+	 * Jikes puts <clinit> as first methods into the table (instead of
+	 * interrupt()), javac as last method. 
+	 * 
+	 * We could use HWO here.
+	 */
+	static void init() {
+		ih = new Runnable[Native.rdMem(Const.IO_CPUCNT)][Const.NUM_INTERRUPTS];
+		dh = new DummyHandler();
+		for (int core=0; core<Native.rdMem(Const.IO_CPUCNT); ++core) {
+			for (int var=0; var<Const.NUM_INTERRUPTS; ++var) {
+				JVMHelp.addInterruptHandler(core, var, dh);
+			}								
+		}		
+	}
 
 
 	static void trace(int sp) {

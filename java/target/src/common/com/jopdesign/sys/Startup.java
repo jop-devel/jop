@@ -88,7 +88,9 @@ public class Startup {
 			version();
 			started = true;
 			clazzinit();
-			
+			// not in <clinit> as first methods are special and palcement
+			// of <clinit> depends on compiler
+			JVMHelp.init();
 		}
 		
 		// clear all pending interrupts (e.g. timer after reset)
