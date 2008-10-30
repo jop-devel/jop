@@ -1,8 +1,6 @@
 /*
   This file is part of JOP, the Java Optimized Processor
     see <http://www.jopdesign.com/>
-  This subset of javax.realtime is provided for the JSR 302
-  Safety Critical Specification for Java
 
   Copyright (C) 2008, Martin Schoeberl (martin@jopdesign.com)
 
@@ -20,19 +18,32 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+
+/**
+ * 
+ */
 package javax.realtime;
 
-import com.jopdesign.io.IOFactory;
-
-public class ScratchpadScope extends ScopedMemory {
+/**
+ * That class causes issues with packacge crossing.
+ * 
+ * @author Martin Schoeberl
+ *
+ */
+public class PeriodicParameters extends ReleaseParameters {
 
 	/**
-	 * All instances of ScratchpadScope on the same processor
-	 * point to the same on-chip memory.
-	 * TODO: we have to find a solution to avoid this sharing.
+	 * Not possible to communicate in a safe way the parameters
+	 * from the SCJ class to use that methods.
+	 * 
+	 *  TBD: leave it empty?
+	 * @return
 	 */
-	public ScratchpadScope() {
-		super(IOFactory.getFactory().getScratchpadMemory());
+	HighResolutionTime getStart() {
+		return null;
 	}
-
+	
+	protected RelativeTime getPeriod() {
+		return null;
+	}
 }

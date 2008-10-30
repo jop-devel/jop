@@ -1,261 +1,117 @@
 /*
- * -----------------------------------------------------------------
- * RelativeTime.java :
- *
- * Copyright (C) 2001 TimeSys Corporation, All Rights Reserved.
- *
- * This software is subject to the terms and conditions of the
- * accompanying Common Public License in file CPLicense.  Your use
- * of this software indicates your acceptance of these terms.
- * -----------------------------------------------------------------
+  This file is part of JOP, the Java Optimized Processor
+    see <http://www.jopdesign.com/>
+  This subset of javax.realtime is provided for the JSR 302
+  Safety Critical Specification for Java
+
+  Copyright (C) 2008, Martin Schoeberl (martin@jopdesign.com)
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 package javax.realtime;
-// import java.util.Date;
 
-/**
- * An object that represents a time interval millis/1E3+nanos/1E9 seconds long. It
- * generally is used to represent a time relative to now.
- * Caution: This class is explicitly unsafe in multithreaded situations when it is
- * being changed. No synchronization is done. It is assumed that users of this class who
- * are mutating instances will be doing their own synchronization at a higher level.
- *
- * All Implemented Interfaces: java.lang.Comparable
- * Direct Known Subclasses: RationalTime
- */
+import javax.safetycritical.annotate.BlockFree;
+import javax.safetycritical.annotate.SCJAllowed;
+
+//import javax.safetycritical.annotate.Allocate;
+//import static javax.safetycritical.annotate.Allocate.Area.CURRENT;
+
+@SCJAllowed
+public class RelativeTime extends HighResolutionTime {
 
 
-public class RelativeTime extends HighResolutionTime
-{
 
+	public int compareTo(Object o) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
 	/**
-	* Equivalent to new RelativeTime(0,0)
-	*/
-	public RelativeTime(){
-			
-		this(0,0);
-	}
-
-	/**
-	* Construct a RelativeTime object which means a time millis milliseconds
-	* plus nanos nanoseconds  past the Clock time.
-	* @param millis The milliseconds component of the time past the Clock time
-	* @param nanos  The nanoseconds component of the time past the Clock time
-	*/
-	public RelativeTime(long millis, int nanos){
-		this.milliseconds = (int) millis;
-		this.nanoseconds = nanos;
-	}
-
-	/**	
-	* Make a new RelativeTime object from the given RelativeTime object
-	* @param time  The RelativeTime object used as the source for the copy
-	*/
-	public RelativeTime(RelativeTime time){
-	    if(time == null)
-		; //throw new IllegalArgumentException("Illegal null argument");
-	    
-	    this.milliseconds = (int) time.getMilliseconds();
-	    this.nanoseconds = time.getNanoseconds();
-	}
-
-	/** Convert this time to an absolute time. For a RelativeTime, this invovled
-	* adding the clocks notion of now to this interval and constructing a new
-	* AbsoluteTime based on the sum
-	*
-	* @param clock if null, Clock.getRealTimeClock() is used
-	* @param destination
-	*/
-	/*
-	public AbsoluteTime absolute(Clock clock, AbsoluteTime destination){
-		AbsoluteTime result;
-
-		if(clock==null)
-			clock = Clock.getRealtimeClock();
-		if(destination==null){
-			destination = clock.getTime();
+	 * Create and normalize the time.
+	 * How are negative values normalized?
+	 * 
+	 * TODO: see in the OVM source if GPLed versions exist.
+	 * @param ms
+	 * @param ns
+	 */
+	@BlockFree
+	@SCJAllowed
+	public RelativeTime(long ms, int ns) {
+		ms += ns/1000;
+		ns %= 1000;
+		if (ns<0) {
+			ns += 1000;
+			ms--;
 		}
-		else{
-			clock.getTime(destination);
-		}
-
-		result = destination.add(milliseconds,nanoseconds,destination);
-
-		return result;
-	}
-	*/
-
-
-	/*
-    public AbsoluteTime absolute(Clock clock){
-	AbsoluteTime result;
-	AbsoluteTime destination = null;
-	if(clock==null){
-	    clock = Clock.getRealtimeClock();
-	}
-	destination = clock.getTime();
-	result = destination.add(milliseconds,nanoseconds,destination);
-	return result;
-    }
-	
-
-    public RelativeTime relative(Clock clock){
-	return this;
-    }    
-
-    public RelativeTime relative(Clock clock, RelativeTime destination){    
-	if(destination != null){
-	    destination.set(milliseconds, nanoseconds);
-	}
-	return this;
-    }
-    */    
-    
-    /**
-     * Add a specific number of milli and nano seconds to <code>this</code>.
-     * A new object is allocated
-     *
-     * @param millis	milli seconds to add
-     * @param nanos	nano seconds to add
-     * @return A new object containing the result
-     */
-    public RelativeTime add(long millis, int nanos){
-	
-	long total = getTotalNanos()+millis*1000000+nanos;
-	setTotalNanos(total);
-	
-	return new RelativeTime(millisecondsTmp,nanosecondsTmp);
-    }	
-
-	/**
-	* Add a specific number of milli and nano seconds to <code>this</code>.
-	* A new object is allocated if destination is null, otherwise store there.
-	*
-	* @param millis	milli seconds to add
-	* @param nanos	nano seconds to add
-	* @param destination	to store the result
-	* @return A new object containing the result
-	*/
-	public RelativeTime add(long millis, int nanos, RelativeTime destination){
-
-		long total = getTotalNanos()+millis*1000000+nanos;
-		setTotalNanos(total);
-	
-		if(destination!=null){
-			destination.set(millisecondsTmp,nanosecondsTmp);
-			return destination;
-		}
-
-		return new RelativeTime(millisecondsTmp,nanosecondsTmp);
+		millis = ms;
+		nanos = ns;
 	}
 
 	/**
-	* Return this + time. A new object is allocated for the result.
-	*
-	* @param time	the time to add to <code>this</code>
-	* @return	the result
-	*/
-	public final RelativeTime add(RelativeTime time){
-	
-		long total = getTotalNanos() + time.getTotalNanos();
-		setTotalNanos(total);
-		
-		return new RelativeTime(millisecondsTmp,nanosecondsTmp);
+	 * Why do we need this constructor when RelativeTime is in
+	 * fact immutable?
+	 * @param time
+	 */
+	@BlockFree
+	@SCJAllowed
+	public RelativeTime(RelativeTime time) {
+		millis = time.millis;
+		nanos = time.nanos;
 	}
 
 	/**
-	*	The purpose of "destination" is unclear, for the result is returned anyway.
-	*	
-	* Return this + time. If destination is non-null, the result is placed there and dest
-	*	is returned. Otherwise a new object is allocated for the result.
-	*
-	* @param time	the time to add to <code>this</code>
-	* @param destination to place the result in
-	* @return	the result
-	*/
-	public RelativeTime add(RelativeTime time, RelativeTime destination){
-
-		long total = getTotalNanos() + time.getTotalNanos();
-		setTotalNanos(total);
-
-		if(destination != null){
-			destination.set(millisecondsTmp,nanosecondsTmp);
-			return destination;
-		}			
-		
-		return new RelativeTime(millisecondsTmp,nanosecondsTmp);
-	}
-
-
-	/**
-	* Add this time to an AbsoluteTime. It is almost the same dest.add(this, dest) except
-	* that it accounts for(ie. divides by) the frequency. If destination is equal to null,
-	* NullPointerException is thrown.
-	* @param destination
-	*/
-	public void addInterarrivalTo(AbsoluteTime destination){
-
-		long total = getTotalNanos() + destination.getTotalNanos();
-		setTotalNanos(total);
-		destination.set(millisecondsTmp,nanosecondsTmp);
+	 * TBD: is AbsoluteTime mutable?
+	 */
+	public AbsoluteTime absolute(Clock clock, AbsoluteTime destination) {
+		return null; // dummy return
 	}
 
 	/**
-	* Return the interarrival time that is the result of dividing this interval by its frequency.
-	* For a <code>RelativeTime</code>, or a <code>RationalTime</code> with a frequency of 1
-	* it just returns <code>this</code>. The interarrival time is necessarily an approximation.
-	* @param destination	interarrival time is between <code>this</code> and the destination
-	* @return interarrival time
-	*/
-	public RelativeTime getInterarrivalTime(RelativeTime destination){
-		if(destination!=null){
-			destination.set(this);
-			return destination;
-		}
-		return this;
+	 * TBD: it is not "safe" to automatically convert from one clock basis
+	 * to another. Do we want to support this?
+	 */
+	public AbsoluteTime absolute(Clock clock) {
+		return absolute(clock, null);
 	}
 
-	/**
-	* @param time relative time to subtract from <code>this</code>
-	* @return this-time. A new object is allocated for the result.
-	*/
-	public final RelativeTime subtract(RelativeTime time){
 
-		long total = getTotalNanos() - time.getTotalNanos();
-		setTotalNanos(total);
-	
-		return new RelativeTime(millisecondsTmp,nanosecondsTmp);
+	public RelativeTime relative(Clock clock) {
+		return null; // dummy return
+	}
+	public RelativeTime relative(Clock clock, RelativeTime destination) {
+		return null; // dummy return
 	}
 
-	/**
-	* @param time relative time to subtract from <code>this</code>
-	* @param destination place to store the result. New object allocated if null
-	* @return this-time. A new object is allocated for the result.
-	*/
-	public RelativeTime subtract(RelativeTime time, RelativeTime destination){
-
-		long total = getTotalNanos() - time.getTotalNanos();
-		setTotalNanos(total);
-		if(destination != null){
-			destination.set(millisecondsTmp,nanosecondsTmp);
-			return destination;
-		}
-
-		return new RelativeTime(millisecondsTmp,nanosecondsTmp);
+//	@Allocate({CURRENT})
+	@BlockFree
+	@SCJAllowed
+	public RelativeTime add(long millis, int nanos) {
+		return new RelativeTime(this.millis + millis, this.nanos + nanos);
 	}
 
-	
-	/**
-	* Return a printable version of this time.
-	* Overrides: java.lang.Object.toString() in class java.lang.Object
-	* @return  String   a printable version of this time.
-	*/
-	/*
-	public java.lang.String toString(){
-		return new String(milliseconds+"ms+"+nanoseconds+"ns");
+//	@Allocate({CURRENT})
+	@BlockFree
+	@SCJAllowed
+	public RelativeTime add(RelativeTime time) {
+		return add(time.millis, time.nanos);
 	}
-	*/
 
-
+//	@Allocate({CURRENT})
+	@BlockFree
+	@SCJAllowed
+	public RelativeTime subtract(RelativeTime time) {
+		return new RelativeTime(millis - time.millis, nanos - time.nanos);
+	}
 }
 

@@ -1,8 +1,6 @@
 /*
   This file is part of JOP, the Java Optimized Processor
     see <http://www.jopdesign.com/>
-  This subset of javax.realtime is provided for the JSR 302
-  Safety Critical Specification for Java
 
   Copyright (C) 2008, Martin Schoeberl (martin@jopdesign.com)
 
@@ -20,19 +18,29 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-package javax.realtime;
 
-import com.jopdesign.io.IOFactory;
+/**
+ * 
+ */
+package javax.safetycritical;
 
-public class ScratchpadScope extends ScopedMemory {
+/**
+ * @author Martin Schoeberl
+ *
+ */
+public abstract class AperiodicEventHandler extends ManagedEventHandler {
 
 	/**
-	 * All instances of ScratchpadScope on the same processor
-	 * point to the same on-chip memory.
-	 * TODO: we have to find a solution to avoid this sharing.
+	 * This method is concrete in the RTSJ superclass, but
+	 * now it is abstract.
 	 */
-	public ScratchpadScope() {
-		super(IOFactory.getFactory().getScratchpadMemory());
+	public abstract void handleAsyncEvent();
+	
+	/**
+	 * An internal method to unblock the handler.
+	 */
+	void unblock() {
+		// TODO Auto-generated method stub
 	}
 
 }

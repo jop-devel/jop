@@ -31,7 +31,8 @@ public class SporadicEventHandler extends SwEvent {
 		// super(pri, spor, null, ImmortalMemory.instance(),null, true, null); // no heap
 
 		super(pp.getPriority(),
-				spor.getMinInterarrival().getUs());
+				((int) spor.getMinInterarrival().getMilliseconds())*1000 + spor.getMinInterarrival().getNanoseconds()/1000
+			);
 
 	}
 	

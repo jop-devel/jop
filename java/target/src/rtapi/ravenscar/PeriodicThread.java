@@ -32,9 +32,9 @@ public class PeriodicThread extends RtThread {
 	{
 		// super(pp, p, ImmortalMemory.instance());
 		super(pp.getPriority(),
-			p.getPeriod().getUs(),
-			p.getEpoch().getUs());
-
+				((int) p.getPeriod().getMilliseconds())*1000 + p.getPeriod().getNanoseconds()/1000,
+				((int) p.getEpoch().getMilliseconds())*1000 + p.getEpoch().getNanoseconds()/1000
+			);
 		applicationLogic = logic;
 	}
 

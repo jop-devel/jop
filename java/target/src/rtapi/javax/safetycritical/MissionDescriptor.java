@@ -1,8 +1,6 @@
 /*
   This file is part of JOP, the Java Optimized Processor
     see <http://www.jopdesign.com/>
-  This subset of javax.realtime is provided for the JSR 302
-  Safety Critical Specification for Java
 
   Copyright (C) 2008, Martin Schoeberl (martin@jopdesign.com)
 
@@ -18,21 +16,35 @@
 
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ */
 
-package javax.realtime;
+/**
+ * 
+ */
+package javax.safetycritical;
 
-import com.jopdesign.io.IOFactory;
+/**
+ * @author Martin Schoeberl
+ *
+ */
+public abstract class MissionDescriptor {
 
-public class ScratchpadScope extends ScopedMemory {
-
-	/**
-	 * All instances of ScratchpadScope on the same processor
-	 * point to the same on-chip memory.
-	 * TODO: we have to find a solution to avoid this sharing.
-	 */
-	public ScratchpadScope() {
-		super(IOFactory.getFactory().getScratchpadMemory());
+	static boolean terminationRequest = false;
+	
+	public final boolean terminationPending() {
+		return terminationRequest;
 	}
 
+	public abstract long missionMemorySize();
+
+	protected abstract void initialize();
+
+	protected void cleanup() {
+		// do nothing on default
+	}
+
+	public final void requestTermination() {
+		terminationRequest = true;
+		// It is simple polled in the PAEH - that'S easy ;-)
+	}
 }

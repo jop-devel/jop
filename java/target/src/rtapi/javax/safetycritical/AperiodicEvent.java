@@ -1,8 +1,6 @@
 /*
   This file is part of JOP, the Java Optimized Processor
     see <http://www.jopdesign.com/>
-  This subset of javax.realtime is provided for the JSR 302
-  Safety Critical Specification for Java
 
   Copyright (C) 2008, Martin Schoeberl (martin@jopdesign.com)
 
@@ -20,19 +18,47 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-package javax.realtime;
 
-import com.jopdesign.io.IOFactory;
+/**
+ * 
+ */
+package javax.safetycritical;
 
-public class ScratchpadScope extends ScopedMemory {
+import javax.realtime.*;
 
+/**
+ * @author Martin Schoeberl
+ *
+ */
+public class AperiodicEvent extends AsyncEvent {
+	
+	AperiodicEventHandler aeh[];
+	
 	/**
-	 * All instances of ScratchpadScope on the same processor
-	 * point to the same on-chip memory.
-	 * TODO: we have to find a solution to avoid this sharing.
+	 * A aperiodic event bound to a handler.
+	 * @param h
 	 */
-	public ScratchpadScope() {
-		super(IOFactory.getFactory().getScratchpadMemory());
+	public AperiodicEvent(AperiodicEventHandler h) {
+		aeh = new AperiodicEventHandler[1];
+		aeh[0] = h;
 	}
-
+	
+	/**
+	 * Do we really want to bind several handlers to one event?
+	 * @param h
+	 */
+	public AperiodicEvent(AperiodicEventHandler h[]) {
+		// a defensive copy
+		aeh = new AperiodicEventHandler[h.length];
+		for (int i=0; i<h.length; ++i) {
+			aeh[i] = h[i];
+		}
+	}
+	
+	public void fire() {
+		int len = aeh.length;
+		for (int i=0; i<len; ++i) {
+			aeh[i].unblock();
+		}
+	}
 }

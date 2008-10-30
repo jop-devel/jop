@@ -20,19 +20,21 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+
+/**
+ * 
+ */
 package javax.realtime;
 
-import com.jopdesign.io.IOFactory;
+/**
+ * @author Martin Schoeberl
+ *
+ */
+public class Clock {
 
-public class ScratchpadScope extends ScopedMemory {
-
-	/**
-	 * All instances of ScratchpadScope on the same processor
-	 * point to the same on-chip memory.
-	 * TODO: we have to find a solution to avoid this sharing.
-	 */
-	public ScratchpadScope() {
-		super(IOFactory.getFactory().getScratchpadMemory());
+	private static Clock single = new Clock();
+	
+	public static Clock getRealtimeClock() {
+		return single;
 	}
-
 }

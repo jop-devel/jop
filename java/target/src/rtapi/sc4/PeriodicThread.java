@@ -31,6 +31,11 @@ public abstract class PeriodicThread extends RealtimeThread {
 	}
 
 	public PeriodicThread(javax.realtime.RelativeTime period) {
-		super(period.getUs(), period.getUs(), 0, 0);
+		super(0, 0, 0, 0);
+		long ms = period.getMilliseconds();
+		int ns = period.getNanoseconds();
+		int us = ((int) ms)*1000 + ns/1000;
+		this.period = us;
+		this.deadline = us;
 	}
 }
