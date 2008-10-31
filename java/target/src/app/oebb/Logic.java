@@ -1046,6 +1046,10 @@ System.out.println("Download server connect timeout");
 			if (Events.anmeldenOk || Main.state.start!=0 || hilfsbtr) {
 				Logic.state = Logic.ANM_OK;
 				Events.anmeldenOk = false;
+				if (Main.state.start!=Main.state.end) {
+					// we also got a FERL
+					Logic.state = Logic.ERLAUBNIS;
+				}
 				break;
 			} else if (Logic.state == Logic.ABGEMELDET) {
 				abmelden();

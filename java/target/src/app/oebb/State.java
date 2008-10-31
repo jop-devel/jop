@@ -562,13 +562,13 @@ public class State extends ejip.UdpHandler implements Runnable {
 	public void run() {
 
 		// a hack for a lost bgid in the Flash
-		if (bgid==-1 && Gps.ok()) {
+		if ((bgid==-1 || bgid==0) && Gps.ok()) {
 			bgid = (getDate()<<16) + (getTime()>>>16);
-			Dbg.wr("bgid is -1 => set a new one");
+			Dbg.wr("bgid is -1/0 => set a new one");
 			Dbg.lf();
 			BgTftp.programBgid(bgid);
 			bgid = Flash.getId();
-			Main.logger.printHex("bgid is -1 set to", bgid);
+			Main.logger.printHex("bgid is -1/0 set to", bgid);
 			// enough done this round
 			return;
 		}
