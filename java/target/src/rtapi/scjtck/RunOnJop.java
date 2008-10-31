@@ -1,5 +1,6 @@
 /*
-  This file is part of the SCJ TCK
+  This file is part of the TCK for JSR 302: Safety Critical JavaTM Technology
+  	see <http://jcp.org/en/jsr/detail?id=302>
 
   Copyright (C) 2008, The Open Group
   Author: Martin Schoeberl (martin@jopdesign.com)
@@ -26,12 +27,15 @@ public class RunOnJop {
 //			new TestTermination(),
 //	};
 	
+//	static TestCase tc = new TestTermination();
+	static TestCase tc = new TestPeriodicParameters();
+	
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		Terminal.getTerminal().writeln("TCK on JOP");
-		JopSystem.startMission(new TestTermination());
+		Terminal.getTerminal().writeln("SCJ TCK on JOP");
+		JopSystem.startMission(tc);
 	}
 
 }

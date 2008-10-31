@@ -1,5 +1,6 @@
 /*
-  This file is part of the SCJ TCK
+  This file is part of the TCK for JSR 302: Safety Critical JavaTM Technology
+  	see <http://jcp.org/en/jsr/detail?id=302>
 
   Copyright (C) 2008, The Open Group
   Author: Martin Schoeberl (martin@jopdesign.com)
@@ -49,6 +50,10 @@ public class TestTermination extends TestCase implements Safelet {
 			}
 		};
 		
+		// Those info will go away when we have more tests.
+		// It's just here to make the output more interesting
+		// and the tiny program look like they are doing some
+		// 'real' testing ;-)
 		info("request termination");
 		requestTermination();
 		info("after request");

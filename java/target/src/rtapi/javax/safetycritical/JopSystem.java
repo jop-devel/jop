@@ -36,7 +36,7 @@ public class JopSystem {
 		MissionSequencer ms = scj.getSequencer();
 		MissionDescriptor md = ms.getInitialMission();
 		md.initialize();
-		Terminal.getTerminal().write("Start mission on JOP");
+		Terminal.getTerminal().writeln("SCJ Start mission on JOP");
 		RtThread.startMission();
 	}
 

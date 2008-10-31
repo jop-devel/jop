@@ -1,5 +1,6 @@
 /*
-  This file is part of the SCJ TCK
+  This file is part of the TCK for JSR 302: Safety Critical JavaTM Technology
+  	see <http://jcp.org/en/jsr/detail?id=302>
 
   Copyright (C) 2008, The Open Group
   Author: Martin Schoeberl (martin@jopdesign.com)
@@ -17,6 +18,7 @@ import javax.realtime.PriorityParameters;
 import javax.realtime.PriorityScheduler;
 import javax.safetycritical.MissionDescriptor;
 import javax.safetycritical.MissionSequencer;
+import javax.safetycritical.Safelet;
 import javax.safetycritical.SingleMissionSequencer;
 import javax.safetycritical.Terminal;
 
@@ -24,14 +26,12 @@ import javax.safetycritical.Terminal;
  * @author Martin Schoeberl
  *
  */
-public abstract class TestCase extends MissionDescriptor {
+public abstract class TestCase extends MissionDescriptor implements Safelet {
 
 	private boolean ok;
 	Terminal term;
 	
 	public TestCase() {
-		super();
-		System.out.println("in constr Test");
 		ok = true;
 		term = Terminal.getTerminal();
 	}
@@ -60,7 +60,7 @@ public abstract class TestCase extends MissionDescriptor {
 	public void info(CharSequence s) {
 		term.write("Info: ");
 		term.write(getName());
-		term.write(" ");
+		term.write(" - ");
 		term.writeln(s);
 	}
 	
@@ -71,9 +71,9 @@ public abstract class TestCase extends MissionDescriptor {
 		term.write("Result: ");
 		term.write(getName());
 		if (ok) {
-			term.writeln(" passed");			
+			term.writeln(" - passed");			
 		} else {
-			term.writeln(" failed");						
+			term.writeln(" - failed");						
 		}
 		// it's time to stop the mission
 		requestTermination();
