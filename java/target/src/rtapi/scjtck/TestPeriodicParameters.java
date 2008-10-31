@@ -64,6 +64,6 @@ public class TestPeriodicParameters extends TestCase implements Safelet {
 	}
 
 	public int getLevel() {
-		return 0;
+		return Safelet.LEVEL_0;
 	}
 }

@@ -69,6 +69,6 @@ public class TestTermination extends TestCase implements Safelet {
 	}
 
 	public int getLevel() {
-		return 1;
+		return Safelet.LEVEL_1;
 	}
 }
