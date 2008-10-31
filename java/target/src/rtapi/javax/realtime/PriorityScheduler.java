@@ -22,22 +22,19 @@
 /**
  * 
  */
-package javax.safetycritical;
-
-import joprt.RtThread;
+package javax.realtime;
 
 /**
  * @author Martin Schoeberl
  *
  */
-public class JopSystem {
-	
-	public static void startMission(Safelet scj) {
-		MissionSequencer ms = scj.getSequencer();
-		MissionDescriptor md = ms.getInitialMission();
-		md.initialize();
-		Terminal.getTerminal().write("Start mission on JOP");
-		RtThread.startMission();
-	}
+public class PriorityScheduler extends Scheduler {
 
+	public static int getMinPriority() {
+		return 1;
+	}
+	
+	public static int getMaxPriority() {
+		return 100;
+	}
 }

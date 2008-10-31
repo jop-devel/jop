@@ -24,20 +24,30 @@
  */
 package javax.safetycritical;
 
-import joprt.RtThread;
+import javax.realtime.PriorityParameters;
 
 /**
  * @author Martin Schoeberl
  *
  */
-public class JopSystem {
+public class SingleMissionSequencer extends MissionSequencer {
 	
-	public static void startMission(Safelet scj) {
-		MissionSequencer ms = scj.getSequencer();
-		MissionDescriptor md = ms.getInitialMission();
-		md.initialize();
-		Terminal.getTerminal().write("Start mission on JOP");
-		RtThread.startMission();
+	private MissionDescriptor mission;
+
+	public SingleMissionSequencer(PriorityParameters priority, MissionDescriptor md) {
+		super(priority);
+		mission = md;
 	}
 
+	public MissionDescriptor getInitialMission() {
+		return mission;
+	}
+
+	/**
+	 * This is a single mission so we return null for the
+	 * next mission.
+	 */
+	public MissionDescriptor getNextMission() {
+		return null;
+	}
 }

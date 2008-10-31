@@ -32,6 +32,7 @@ import javax.safetycritical.MissionSequencer;
 import javax.safetycritical.PeriodicEventHandler;
 import javax.safetycritical.PeriodicParameters;
 import javax.safetycritical.Safelet;
+import javax.safetycritical.SingleMissionSequencer;
 import javax.safetycritical.Terminal;
 import javax.safetycritical.ThreadConfiguration;
 
@@ -42,20 +43,6 @@ import jbe.kfl.JopSys;
  *
  */
 public class HelloSCJ extends MissionDescriptor implements Safelet {
-
-	// static or not, or access the outer class (outer?)
-	static class MySequencer extends MissionSequencer {
-
-		MissionDescriptor md;
-		public MySequencer(MissionDescriptor md) {
-			super(new PriorityParameters(13));
-			this.md = md;
-		}
-		public MissionDescriptor getInitialMission() {
-			return md;
-		}
-		
-	}
 
 	protected void initialize() {
 		
@@ -80,7 +67,7 @@ public class HelloSCJ extends MissionDescriptor implements Safelet {
 
 	public MissionSequencer getSequencer() {
 		// we assume this method is invoked only once
-		return new MySequencer(this);
+		return new SingleMissionSequencer(new PriorityParameters(13), this);
 	}
 
 	/**
