@@ -182,6 +182,24 @@ public class SMOBinaryClassifierFP{
     // smo.waitForNextPeriod();
     // while(i1>-10); //foreverloop
     loop = 0;
+//	%      // init to start it
+//	%      numChanged = 1;
+//	%      gos = 0;
+//	%      kernelCounter = 0;
+//	%
+//	%      // check all combinations like 1,2, but skip symmetrics like 2,1
+//	%      while(numChanged){
+//	%      //while(0){
+//	%        numChanged = 0;
+//	%        gos++;
+//	%
+//	%				for(i = 0; i < call D.rowsM(&svmp->x); i++) {
+//	%					for(j = 0; j < call D.rowsM(&svmp->x); j++) {
+//	%						numChanged += takeStep(i,j);
+//	%					}
+//	%				}
+//	%      }
+//	%
     while (numChanged > 0 || examineAll) {
       // while (loop>=0) { //temp debug forever loop
 //      System.out.print("Starting loop=");
