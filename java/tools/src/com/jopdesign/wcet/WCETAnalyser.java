@@ -17,7 +17,7 @@
 
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ */
 
 package com.jopdesign.wcet;
 
@@ -33,27 +33,29 @@ import org.apache.bcel.classfile.Visitor;
 import org.apache.bcel.generic.*;
 import org.apache.bcel.verifier.structurals.*;
 
+import com.jopdesign.build.AppInfo;
+import com.jopdesign.build.AppVisitor;
+import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.TransitiveHull;
 import com.jopdesign.tools.JopInstr;
 
 /**
- * The class is for wcet analysis. The class hierarchy is such
- * that WCETAnalyzer creates one WCETMethodBlock for each
- * method. The WCETMethodBlock assists WCETAnalyzer in creating the
- * WCETBasicBlock objects for each basic block. Then WCETBasicBlock can be used
- * together with WCETInstruction to calculate the WCET/BCET value for that particular
- * basic block.
- *
- * Options in the Makefile for the wcet target: You can set "latex" to true,
- * and WCA will generate "&" characters between columns and "\\" as row terminator.
- * In Latex do this post-processing: replace ">" with "$>$ and "_" with "\_".
- * A directed graph of the basic blocks can be generated in dot
- * format by setting the "dot" property to true.
- *
- * It can generate LPSolve compliant code which can be used to calculate
- * WCET of each method. Enable the "ls" switch in the Makefile.
- *
- * @author rup, ms
+ * The class is for WCET analysis. The class hierarchy is such that WCETAnalyzer
+ * creates one WCETMethodBlock for each method. The WCETMethodBlock assists
+ * WCETAnalyzer in creating the WCETBasicBlock objects for each basic block.
+ * Then WCETBasicBlock can be used together with WCETInstruction to calculate
+ * the WCET/BCET value for that particular basic block.
+ * 
+ * Options in the Makefile for the wcet target: You can set "latex" to true, and
+ * WCA will generate "&" characters between columns and "\\" as row terminator.
+ * In Latex do this post-processing: replace ">" with "$>$ and "_" with "\_". A
+ * directed graph of the basic blocks can be generated in dot format by setting
+ * the "dot" property to true.
+ * 
+ * It can generate LPSolve compliant code which can be used to calculate WCET of
+ * each method. Enable the "ls" switch in the Makefile.
+ * 
+ * @author rup, Martin
  * @see Section 7.4 and Appendix D in MS thesis
  * @see http://www.graphviz.org
  * @see http://lpsolve.sourceforge.net/5.5/
@@ -64,381 +66,317 @@ import com.jopdesign.tools.JopInstr;
 // 2006-04-07 rup: Moved to become a non-Jopizer dependent piece of code
 // 2006-04-20 rup: Show both cachehit and cachemiss entries
 // 2006-04-27 rup: Show latex tables and load/store info for locals
-// 2006-05-04  ms: Split cache miss column
+// 2006-05-04 ms:  Split cache miss column
 // 2006-05-07 rup: Output dot graphs
 // 2006-05-25 rup: "Annotations" and lp_solvable wcet output
 // 2006-05-30 rup: Exact call graph permutation to allow cache simulation
-
-//TODO: abstract method resolution (try all implementations and select worst).
-
+// 2008-11-01 ms:  Use AppInfo
+// TODO: abstract method resolution (try all implementations and select worst).
 /**
  * The thing that controls the WCETClassBlock etc.
  */
-public class WCETAnalyser{
+public class WCETAnalyser extends AppInfo {
 
-  public HashMap filePathcodeLines = new HashMap();
+	public HashMap filePathcodeLines = new HashMap();
 
-  public ArrayList cfgwcmbs = new ArrayList();
+	public ArrayList cfgwcmbs = new ArrayList();
 
-  WCETMethodBlock wcmbapp = null;
-  boolean global = true; // controls names of blocks B1 or B1_M1 if true
+	WCETMethodBlock wcmbapp = null;
+	boolean global = true; // controls names of blocks B1 or B1_M1 if true
 
-  String dotf = null;
-  // dot property: it will generate dot graphs if true
-  public static boolean jline;
-  public static boolean instr; // true if you want instriction cycles printed
+	String dotf = null;
+	// dot property: it will generate dot graphs if true
+	public static boolean jline;
+	public static boolean instr; // true if you want instriction cycles
+	// printed
 
-  // The app method or main if not provided
-  public static String appmethod;
+	// The app method or main if not provided
+	public String appmethod;
 
-  public static int idtmp = 0; // counter to make unique ids
+	public static int idtmp = 0; // counter to make unique ids
 
-  public final static String nativeClass = "com.jopdesign.sys.Native";
+	public final static String nativeClass = "com.jopdesign.sys.Native";
 
-  JavaClass[] jca;
+//	JavaClass[] jca;
 
-  PrintWriter out;
+	PrintWriter out;
 
-  PrintWriter dotout;
+	PrintWriter dotout;
 
-  /**
-   * Loaded classes, type is JavaClass
-   */
-  List clazzes = new LinkedList();
+	public StringBuffer wcasb = new StringBuffer();
 
-  org.apache.bcel.util.ClassPath classpath; // = ClassPath.SYSTEM_CLASS_PATH;
+	// signaure -> methodbcel
+	HashMap mmap;
 
-  /**
-   * The class that contains the main method.
-   */
-  static String mainClass;
+	// methodbcel -> WCETMethodBlock
+	HashMap mtowcmb = new HashMap();
 
-	static String mainMethodName = "main";
+	// method name to id
+	HashMap midmap;
 
+	// id to wcmb
+	HashMap idmmap;
 
-  public StringBuffer wcasb = new StringBuffer();
+	// methodsignature -> wcmb
+	HashMap msigtowcmb;
 
-  //signaure -> methodbcel
-  HashMap mmap;
+	HashMap javaFilePathMap;
 
-  // methodbcel -> WCETMethodBlock
-  HashMap mtowcmb = new HashMap();
+	ArrayList javaFiles;
 
-  //method name to id
-  HashMap midmap;
+	public ArrayList wcmbs; // all the wcmbs
 
-  //id to wcmb
-  HashMap idmmap;
+	public boolean init = true;
+	public boolean analyze = false;
 
-  // methodsignature -> wcmb
-  HashMap msigtowcmb;
+	public WCETAnalyser() {
+		super(ClassInfo.getTemplate());
 
-  HashMap javaFilePathMap;
+		wcmbs = new ArrayList();
+		msigtowcmb = new HashMap();
+		classpath = new org.apache.bcel.util.ClassPath(".");
+		mmap = new HashMap();
+		midmap = new HashMap();
+		javaFiles = new ArrayList();
+		javaFilePathMap = new HashMap();
+	}
 
-  ArrayList javaFiles;
+	public static void main(String[] args) {
+		WCETAnalyser wca = new WCETAnalyser();
+		HashSet clsArgs = new HashSet();
+		wca.outFile = null; // wcet/P3+Wcet.txt
+		// the tables can be easier to use in latex using this property
+		jline = System.getProperty("jline", "false").equals("true");
+		instr = System.getProperty("instr", "true").equals("true");
 
-  public ArrayList wcmbs; // all the wcmbs
+		if (args.length == 0) {
+			System.err
+					.println("WCETAnalyser arguments: [-cp classpath] [-o file] class [class]*");
+			System.exit(1);
+		}
+		wca.parseOptions(args);
+		wca.appmethod = wca.mainClass + "." + wca.mainMethodName;
 
-  static String outFile;
+		// String srcPath = "nodir";
+		try {
 
-  public boolean init = true;
-  public boolean analyze = false;
-
-  public WCETAnalyser() {
-
-    wcmbs = new ArrayList();
-    msigtowcmb = new HashMap();
-    classpath = new org.apache.bcel.util.ClassPath(".");
-    mmap = new HashMap();
-    midmap = new HashMap();
-    javaFiles = new ArrayList();
-    javaFilePathMap = new HashMap();
-  }
-
-  public static void main(String[] args) {
-    WCETAnalyser wca = new WCETAnalyser();
-    HashSet clsArgs = new HashSet();
-    outFile = null;     // wcet/P3+Wcet.txt
-    //the tables can be easier to use in latex using this property
-    jline = System.getProperty("jline", "false").equals("true");
-    instr = System.getProperty("instr", "true").equals("true");
-
-    String srcPath = "nodir";
-    try {
-      if (args.length == 0) {
-        System.err
-            .println("WCETAnalyser arguments: [-cp classpath] [-o file] class [class]*");
-      } else {
-        for (int i = 0; i < args.length; i++) {
-          if (args[i].equals("-cp")) {
-            i++;
-            wca.classpath = new org.apache.bcel.util.ClassPath(args[i]);
-            continue;
-          }
-          if (args[i].equals("-o")) {
-            i++;
-            outFile = args[i];
-            continue;
-          }
-          if (args[i].equals("-sp")) {
-            i++;
-            srcPath = args[i];
-            continue;
-          }
-			if (args[i].equals("-mm")) {
-				i++;
-				mainMethodName = args[i];
-				continue;
+			StringTokenizer st = new StringTokenizer(wca.srcPath,
+					File.pathSeparator);
+			while (st.hasMoreTokens()) {
+				String srcDir = st.nextToken();// "java/target/src/common";
+				File sDir = new File(srcDir);
+				if (sDir.isDirectory()) {
+					// System.out.println("srcDir="+srcDir);
+					wca.visitAllFiles(sDir);
+				}
 			}
+			// Iterator ito = wca.javaFilePathMap.values().iterator();
+			// while(ito.hasNext()){
+			// System.out.println(ito.next());
+			// }
 
-          clsArgs.add(args[i]);
-          mainClass = args[i].replace('/', '.');
-          appmethod = mainClass+"."+mainMethodName;
-        }
+			// System.out.println("CLASSPATH=" + wca.classpath + "\tmain
+			// class="
+			// + mainClass);
 
-        StringTokenizer st = new StringTokenizer(srcPath, File.pathSeparator);
-        while(st.hasMoreTokens()){
-          String srcDir = st.nextToken();//"java/target/src/common";
-          File sDir = new File(srcDir);
-          if(sDir.isDirectory()){
-//System.out.println("srcDir="+srcDir);
-            wca.visitAllFiles(sDir);
-          }
-        }
-//        Iterator ito = wca.javaFilePathMap.values().iterator();
-//        while(ito.hasNext()){
-//System.out.println(ito.next());
-//        }
+			wca.out = new PrintWriter(new FileOutputStream(wca.outFile));
+			String ds = new File(wca.outFile).getParentFile()
+					.getAbsolutePath()
+					+ File.separator + "Makefile";
+			wca.dotout = new PrintWriter(new FileOutputStream(ds));
+			wca.dotout.print("doteps:\n");
 
-//System.out.println("CLASSPATH=" + wca.classpath + "\tmain class="
-//            + mainClass);
+//			wca.excludeClass(nativeClass);
+			wca.load();
+			wca.iterate(new SrcMethodVisitor(wca));
 
-        wca.out = new PrintWriter(new FileOutputStream(outFile));
-        String ds = new File(WCETAnalyser.outFile).getParentFile().getAbsolutePath()+File.separator+"Makefile";
-        wca.dotout = new PrintWriter(new FileOutputStream(ds));
-        wca.dotout.print("doteps:\n");
+			wca.global = false;
+			wca.iterate(new SetWCETAnalysis(wca));
+			wca.init = false;
+			wca.analyze = true;
+			// wca.iterate(new SetWCETAnalysis(wca));
 
-        wca.load(clsArgs);
-        wca.global = false;
-        wca.iterate(new SetWCETAnalysis(wca));
-        wca.init = false;
-        wca.analyze = true;
-        //wca.iterate(new SetWCETAnalysis(wca));
+			// wca.out.println("*************APPLICATION
+			// WCET="+wca.wcmbapp.wcet+"********************");
+			StringBuffer wcasbtemp = new StringBuffer();
+			if (wca.analyze) {
+				wca.global = true;
+				wca.wcmbapp.check();
+				wcasbtemp.append(wca.wcmbapp.toLS(true, true, null));
+				// wca.out.println(wca.wcmbapp.toLS(true,true, null));
+				wcasbtemp.append(wca.toDot());
+				System.out.println("Application WCET=" + wca.wcmbapp.wcetlp);
+				if (wca.wcmbapp.wcetlp >= 0)
+					wcasbtemp.insert(0, "*************APPLICATION WCET="
+							+ wca.wcmbapp.wcetlp + "********************\n");
+				else
+					wcasbtemp
+							.insert(
+									0,
+									"*************APPLICATION WCET=UNBOUNDED (CHECK LOOP BOUNDS I.E.: @WCA loop=XYZ)********************\n");
+				// for (int i=0;i<wca.cfgwcmbs.size();i++){
+				// WCETMethodBlock wcmb =
+				// (WCETMethodBlock)wca.cfgwcmbs.get(i);
+				// wca.wcasb.append(wcmb.codeString.toString());
+				// wca.dotout.print("\tdot -Tps "+wcmb.dotf+" >
+				// "+wcmb.dotf.substring(0,wcmb.dotf.length()-4)+".eps\n");
+				// }
+				wca.out.println(wcasbtemp.toString());
+				wca.dotout.print("\tdot -Tps " + wca.dotf + " > "
+						+ wca.dotf.substring(0, wca.dotf.length() - 4)
+						+ ".eps\n");
+			}
+			wca.out
+					.println("*************END APPLICATION WCET*******************");
+			wca.out.println(wca.wcasb.toString());
 
-        //wca.out.println("*************APPLICATION WCET="+wca.wcmbapp.wcet+"********************");
-        StringBuffer wcasbtemp = new StringBuffer();
-        if(wca.analyze){
-          wca.global = true;
-          wca.wcmbapp.check();
-          wcasbtemp.append(wca.wcmbapp.toLS(true,true, null));
-          //wca.out.println(wca.wcmbapp.toLS(true,true, null));
-          wcasbtemp.append(wca.toDot());
-          System.out.println("Application WCET="+wca.wcmbapp.wcetlp);
-          if(wca.wcmbapp.wcetlp>=0)
-            wcasbtemp.insert(0, "*************APPLICATION WCET="+wca.wcmbapp.wcetlp+"********************\n");
-          else
-            wcasbtemp.insert(0, "*************APPLICATION WCET=UNBOUNDED (CHECK LOOP BOUNDS I.E.: @WCA loop=XYZ)********************\n");
-//          for (int i=0;i<wca.cfgwcmbs.size();i++){
-//            WCETMethodBlock wcmb = (WCETMethodBlock)wca.cfgwcmbs.get(i);
-//            wca.wcasb.append(wcmb.codeString.toString());
-//            wca.dotout.print("\tdot -Tps "+wcmb.dotf+" > "+wcmb.dotf.substring(0,wcmb.dotf.length()-4)+".eps\n");
-//          }
-          wca.out.println(wcasbtemp.toString());
-          wca.dotout.print("\tdot -Tps "+wca.dotf+" > "+wca.dotf.substring(0,wca.dotf.length()-4)+".eps\n");
-        }
-        wca.out.println("*************END APPLICATION WCET*******************");
-        wca.out.println(wca.wcasb.toString());
+			// instruction info
+			wca.out
+					.println("*****************************************************");
+			if (instr)
+				wca.out.println(WCETInstruction.toWCAString());
+			wca.out.println("Note: Remember to keep WCETAnalyzer updated");
+			wca.out.println("each time a bytecode implementation is changed.");
+			wca.out.close();
+			wca.dotout.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 
-        //instruction info
-        wca.out.println("*****************************************************");
-        if(instr)
-          wca.out.println(WCETInstruction.toWCAString());
-        wca.out.println("Note: Remember to keep WCETAnalyzer updated");
-        wca.out.println("each time a bytecode implementation is changed.");
-        wca.out.close();
-        wca.dotout.close();
-      }
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-  }
+	// Java Dev. Almanac
+	public void visitAllFiles(File dir) {
+		if (dir.isDirectory()) {
+			String[] children = dir.list();
+			for (int i = 0; i < children.length; i++) {
+				visitAllFiles(new File(dir, children[i]));
+			}
+		} else {
+			String filePath = dir.getAbsolutePath();
+			String fileName = dir.getName();
+			if (fileName.endsWith(".java")) {
+				// System.out.println(fileName);
+				// System.out.println(filePath);
+				// String prevPath = (String)javaFilePathMap.get(fileName);
+				// if(prevPath != null && !prevPath.equals(filePath)){
+				// System.out.println(fileName +" is referring to "+prevPath+"
+				// and to "+filePath+". Exiting.");
+				// System.exit(1);
+				// }
+				// else{
+				// javaFilePathMap.put(fileName,filePath);
+				// }
+				javaFiles.add(filePath);
+			}
+		}
+	}
 
-  //Java Dev. Almanac
-  public void visitAllFiles(File dir) {
-    if (dir.isDirectory()) {
-        String[] children = dir.list();
-        for (int i=0; i<children.length; i++) {
-            visitAllFiles(new File(dir, children[i]));
-        }
-    } else {
-      String filePath = dir.getAbsolutePath();
-      String fileName = dir.getName();
-      if(fileName.endsWith(".java")){
-//System.out.println(fileName);
-//System.out.println(filePath);
-//        String prevPath = (String)javaFilePathMap.get(fileName);
-//        if(prevPath != null && !prevPath.equals(filePath)){
-//          System.out.println(fileName +" is referring to "+prevPath+" and to "+filePath+". Exiting.");
-//          System.exit(1);
-//        }
-//        else{
-//          javaFilePathMap.put(fileName,filePath);
-//        }
-        javaFiles.add(filePath);
-      }
-    }
+
+	/**
+	 * Get a method object from the String id. It is used to find the length of
+	 * a method when it is invoked from some method. The methodid is created
+	 * like this: c.getClassName() + "." + m.getName()+m.getSignature();
+	 * 
+	 * @param methodid
+	 * @return the method object
+	 */
+	public Method getMethod(String methodid) {
+		Method m = (Method) mmap.get(methodid);
+		return m;
+	}
+
+	public WCETMethodBlock getWCMB(Method method) {
+		WCETMethodBlock wcmb = (WCETMethodBlock) mtowcmb.get(method);
+		// System.out.println("getWCMB:"+wcmb);
+		return wcmb;
+	}
+
+	/**
+	 * Return the opcode for the methodId (applicable to Native methods).
+	 * 
+	 * @param methodid
+	 * @return opcode which can be used to call WCETIstruction.getcycles
+	 */
+	public int getNativeOpcode(String methodid) {
+		int opcode = JopInstr.getNative(methodid);
+		if (opcode == -1) {
+			System.out.println("Did not find native");
+			System.exit(-1);
+		}
+		return opcode;
+	}
+	
+	public String getOutFile() {
+		return outFile;
+	}
+	
+	/**
+	 * Needed by WCETMethodBlock, should use ClassInfo instead.
+	 * @return
+	 */
+	JavaClass[] toClassArray() {
+		Object cli[] = cliMap.values().toArray();
+		JavaClass jca[] = new JavaClass[cli.length];
+		for (int i = 0; i < jca.length; i++) {
+			jca[i] = ((ClassInfo) cli[i]).clazz;
+		}
+		return jca;
+	}
+
+	public String toDot() {
+		StringBuffer sb = new StringBuffer();
+		sb.append("\n/* App Dot Graph */\n");
+		sb.append("digraph G {\n"); // 8.27 x 11.69 inches
+		sb.append("size = \"7.27,9.69\"\n");
+		// boolean mem = global;
+		// global = false;
+		ArrayList appWCMB = new ArrayList();
+		appWCMB.add(wcmbapp);
+		while (appWCMB.size() > 0) {
+			WCETMethodBlock wcmb = (WCETMethodBlock) appWCMB.get(0);
+			wcmb.link();
+			sb.append("subgraph cluster" + wcmb.mid + " {\n");
+			sb.append("color = black;\n");
+			sb.append(wcmb.toDot(true) + "\n");
+			sb.append("label = \"" + wcmb.cname + "." + wcmb.name + " : M"
+					+ wcmb.mid + "\";\n");
+
+			sb.append("}\n");
+			WCETBasicBlock[] wcbba = wcmb.getBBSArray();
+			for (int j = 0; j < wcbba.length; j++) {
+				if (wcbba[j].invowcmb != null) {
+					sb.append(wcbba[j].toDotFlowEdge(wcbba[j].invowcmb.S));
+					sb.append(" [label=\""
+							+ wcbba[j].toDotFlowLabel(wcbba[j].invowcmb.S)
+							+ "\"];\n");
+					sb.append(wcbba[j].invowcmb.T.toDotFlowEdge(wcbba[j]));
+					sb.append(" [label=\""
+							+ wcbba[j].invowcmb.T.toDotFlowLabel(wcbba[j])
+							+ "\"];\n");
+					appWCMB.add(wcbba[j].invowcmb);
+				}
+			}
+			appWCMB.remove(0);
+		}
+		sb.append("}\n");
+
+		try {
+			dotf = new File(outFile).getParentFile()
+					.getAbsolutePath()
+					+ File.separator + "App.dot";
+			dotf = dotf.replace('<', '_');
+			dotf = dotf.replace('>', '_');
+			dotf = dotf.replace('\\', '/');
+			PrintWriter dotout = new PrintWriter(new FileOutputStream(dotf));
+			dotout.write(sb.toString());
+			dotout.close();
+		} catch (FileNotFoundException e1) {
+			e1.printStackTrace();
+		}
+		// global = mem;
+		return "";
+	}
 }
-
-  /**
-   * Load all classes and the super classes from the argument list.
-   *
-   * @throws IOException
-   */
-  private void load(Set clsArgs) throws IOException {
-    JavaClass[] jcl = new JavaClass[clsArgs.size()];
-    Iterator i = clsArgs.iterator();
-    for (int nr = 0; i.hasNext(); ++nr) {
-      String clname = (String) i.next();
-      InputStream is = classpath.getInputStream(clname);
-      jcl[nr] = new ClassParser(is, clname).parse();
-    }
-    TransitiveHull hull = new TransitiveHull(classpath, jcl);
-    hull.start();
-    System.out.println(Arrays.asList(hull.getClassNames()));
-    jca = hull.getClasses();
-    // clazzes contains now the closure of the application
-    int mid = 0;
-    for (int j = 0; j < jca.length; ++j) {
-      // The class Native is NOT used in a JOP application
-      if (!jca[j].getClassName().equals(nativeClass)) {
-        // ClassInfo cli = new ClassInfo(jc[j]);
-//System.out.println("added classname:"+jc[j].getClassName()+" filename:"+jc[j].getFileName()+ " sourcefilename:"+jc[j].getSourceFileName()+" packagename:"+jc[j].getPackageName());
-        clazzes.add(jca[j]);
-      }
-      //package name and associated sourcefile
-      String pacSrc = jca[j].getPackageName()+"."+jca[j].getSourceFileName();
-      boolean fileMatch = false;
-      for(int k=0;k<javaFiles.size();k++){
-        String orig = (String)javaFiles.get(k);
-        String pn = orig;
-        pn = pn.replace('/','.');
-        pn = pn.replace('\\','.');
-//System.out.println("Trying to match:"+pn+ " with: "+pacSrc);
-        int match = pn.lastIndexOf(pacSrc);
-        if(match != -1){
-          String key = jca[j].getClassName();
-//System.out.println("Match! Key :"+key);
-          javaFilePathMap.put(key, orig);
-          fileMatch = true;
-          break;
-        }
-      }
-      if(!fileMatch){
-        System.out.println("No filematch for "+jca[j].getClassName() + " and pacSrc="+pacSrc);
-        System.exit(-1);
-      }
-      Method[] m = jca[j].getMethods();
-      for(int ii=0;ii<m.length;ii++){
-        String msig = jca[j].getClassName() + "." + m[ii].getName()+m[ii].getSignature();
-//System.out.println("m to be put:"+msig);//TODO mig everywhere
-//System.out.println("r: "+m[ii].getReturnType().getSignature());//TODO mig everywhere
-        mmap.put(msig,m[ii]);
-        midmap.put(new Integer(mid),msig);
-        mid++;
-      }
-    }
-  }
-
-  private void iterate(Visitor v) {
-    Iterator it = clazzes.iterator();
-    while (it.hasNext()) {
-      JavaClass clz = (JavaClass) it.next();
-      new DescendingVisitor(clz, v).visit();
-    }
-  }
-
-  /**
-   * Get a method object from the String id. It is used to find
-   * the length of a method when it is invoked from some method.
-   * The methodid is created like this: c.getClassName() + "." + m.getName()+m.getSignature();
-   * @param methodid
-   * @return the method object
-   */
-  public Method getMethod(String methodid){
-    Method m = (Method)mmap.get(methodid);
-    return m;
-  }
-
-  public WCETMethodBlock getWCMB(Method method){
-    WCETMethodBlock wcmb = (WCETMethodBlock)mtowcmb.get(method);
-//System.out.println("getWCMB:"+wcmb);
-    return wcmb;
-  }
-
-  /**
-   * Return the opcode for the methodId (applicable to Native methods).
-   * @param methodid
-   * @return opcode which can be used to call WCETIstruction.getcycles
-   */
-  public int getNativeOpcode(String methodid){
-    int opcode = JopInstr.getNative(methodid);
-    if(opcode==-1){
-      System.out.println("Did not find native");
-      System.exit(-1);
-    }
-    return opcode;
-  }
-
-  public String toDot(){
-    StringBuffer sb = new StringBuffer();
-    sb.append("\n/* App Dot Graph */\n");
-    sb.append("digraph G {\n"); //8.27 x 11.69 inches
-    sb.append("size = \"7.27,9.69\"\n");
-    //boolean mem = global;
-    //global = false;
-    ArrayList appWCMB = new ArrayList();
-    appWCMB.add(wcmbapp);
-    while(appWCMB.size() > 0){
-      WCETMethodBlock wcmb = (WCETMethodBlock)appWCMB.get(0);
-      wcmb.link();
-      sb.append("subgraph cluster"+wcmb.mid+" {\n");
-      sb.append("color = black;\n");
-      sb.append(wcmb.toDot(true)+"\n");
-      sb.append("label = \""+wcmb.cname+"."+wcmb.name+" : M"+wcmb.mid+"\";\n");
-
-      sb.append("}\n");
-      WCETBasicBlock[] wcbba = wcmb.getBBSArray();
-      for(int j=0;j<wcbba.length;j++){
-        if(wcbba[j].invowcmb != null){
-          sb.append(wcbba[j].toDotFlowEdge(wcbba[j].invowcmb.S));
-          sb.append(" [label=\""+wcbba[j].toDotFlowLabel(wcbba[j].invowcmb.S)+"\"];\n");
-          sb.append(wcbba[j].invowcmb.T.toDotFlowEdge(wcbba[j]));
-          sb.append(" [label=\""+wcbba[j].invowcmb.T.toDotFlowLabel(wcbba[j])+"\"];\n");
-          appWCMB.add(wcbba[j].invowcmb);
-        }
-      }
-      appWCMB.remove(0);
-    }
-    sb.append("}\n");
-
-    try {
-      dotf = new File(WCETAnalyser.outFile).getParentFile().getAbsolutePath()+File.separator+"App.dot";
-      dotf = dotf.replace('<','_');
-      dotf = dotf.replace('>','_');
-      dotf = dotf.replace('\\','/');
-      PrintWriter dotout = new PrintWriter(new FileOutputStream(dotf));
-      dotout.write(sb.toString());
-      dotout.close();
-    } catch (FileNotFoundException e1) {
-      e1.printStackTrace();
-    }
-    //global = mem;
-    return "";
-  }
-}
-
-
-
 
 // BCEL overrides
 
@@ -448,21 +386,80 @@ public class WCETAnalyser{
  */
 class FrameFrame extends Frame {
 
-  public FrameFrame(int maxLocals, int maxStack) {
-    super(maxLocals, maxStack);
-  }
+	public FrameFrame(int maxLocals, int maxStack) {
+		super(maxLocals, maxStack);
+	}
 
-  public FrameFrame(LocalVariables locals, OperandStack stack) {
-    super(locals, stack);
-  }
+	public FrameFrame(LocalVariables locals, OperandStack stack) {
+		super(locals, stack);
+	}
 
-  void setThis(UninitializedObjectType uot) {
-    _this = uot;
-  }
+	void setThis(UninitializedObjectType uot) {
+		_this = uot;
+	}
 
-  UninitializedObjectType getThis() {
-    return _this;
-  }
+	UninitializedObjectType getThis() {
+		return _this;
+	}
+}
+
+/**
+ * Get additional info for WCA.
+ * @author Martin Schoeberl
+ *
+ */
+class SrcMethodVisitor extends AppVisitor {
+
+	/**
+	 * A counter for a unique method id;
+	 */
+    int mid = 0;
+
+	public SrcMethodVisitor(AppInfo ai) {
+		super(ai);
+	}
+	
+	@Override
+	public void visitJavaClass(JavaClass clazz) {
+		super.visitJavaClass(clazz);
+		
+		WCETAnalyser wca = (WCETAnalyser) ai;
+		// package name and associated sourcefile
+		String pacSrc = clazz.getPackageName() + "."
+				+ clazz.getSourceFileName();
+		boolean fileMatch = false;
+		for (int k = 0; k < wca.javaFiles.size(); k++) {
+			String orig = (String) wca.javaFiles.get(k);
+			String pn = orig;
+			pn = pn.replace('/', '.');
+			pn = pn.replace('\\', '.');
+			// System.out.println("Trying to match:"+pn+ " with: "+pacSrc);
+			int match = pn.lastIndexOf(pacSrc);
+			if (match != -1) {
+				String key = clazz.getClassName();
+				// System.out.println("Match! Key :"+key);
+				wca.javaFilePathMap.put(key, orig);
+				fileMatch = true;
+				break;
+			}
+		}
+		if (!fileMatch) {
+			System.out.println("No filematch for " + clazz.getClassName()
+					+ " and pacSrc=" + pacSrc);
+			System.exit(-1);
+		}
+		Method[] m = clazz.getMethods();
+		for (int ii = 0; ii < m.length; ii++) {
+			String msig = clazz.getClassName() + "." + m[ii].getName()
+					+ m[ii].getSignature();
+			// System.out.println("m to be put:"+msig);//TODO mig everywhere
+			// System.out.println("r:
+			// "+m[ii].getReturnType().getSignature());//TODO mig everywhere
+			wca.mmap.put(msig, m[ii]);
+			wca.midmap.put(new Integer(mid), msig);
+			mid++;
+		}
+	}
 }
 
 /**
@@ -476,497 +473,497 @@ class FrameFrame extends Frame {
 // TODO: Can this extension be avoided (ie. why did BCEL not like the
 // overloaded Dbg field).
 class AnInstConstraintVisitor extends InstConstraintVisitor {
-  public void visitAALOAD(AALOAD o) {
-  }
+	public void visitAALOAD(AALOAD o) {
+	}
 
-  public void visitAASTORE(AASTORE o) {
-  }
+	public void visitAASTORE(AASTORE o) {
+	}
 
-  public void visitACONST_NULL(ACONST_NULL o) {
-  }
+	public void visitACONST_NULL(ACONST_NULL o) {
+	}
 
-  public void visitALOAD(ALOAD o) {
-  }
+	public void visitALOAD(ALOAD o) {
+	}
 
-  public void visitANEWARRAY(ANEWARRAY o) {
-  }
+	public void visitANEWARRAY(ANEWARRAY o) {
+	}
 
-  public void visitARETURN(ARETURN o) {
-  }
+	public void visitARETURN(ARETURN o) {
+	}
 
-  public void visitARRAYLENGTH(ARRAYLENGTH o) {
-  }
+	public void visitARRAYLENGTH(ARRAYLENGTH o) {
+	}
 
-  public void visitASTORE(ASTORE o) {
-  }
+	public void visitASTORE(ASTORE o) {
+	}
 
-  public void visitATHROW(ATHROW o) {
-  }
+	public void visitATHROW(ATHROW o) {
+	}
 
-  public void visitBALOAD(BALOAD o) {
-  }
+	public void visitBALOAD(BALOAD o) {
+	}
 
-  public void visitBASTORE(BASTORE o) {
-  }
+	public void visitBASTORE(BASTORE o) {
+	}
 
-  public void visitBIPUSH(BIPUSH o) {
-  }
+	public void visitBIPUSH(BIPUSH o) {
+	}
 
-  public void visitBREAKPOINT(BREAKPOINT o) {
-  }
+	public void visitBREAKPOINT(BREAKPOINT o) {
+	}
 
-  public void visitCALOAD(CALOAD o) {
-  }
+	public void visitCALOAD(CALOAD o) {
+	}
 
-  public void visitCASTORE(CASTORE o) {
-  }
+	public void visitCASTORE(CASTORE o) {
+	}
 
-  public void visitCHECKCAST(CHECKCAST o) {
-  }
+	public void visitCHECKCAST(CHECKCAST o) {
+	}
 
-  public void visitCPInstruction(CPInstruction o) {
-  }
+	public void visitCPInstruction(CPInstruction o) {
+	}
 
-  public void visitD2F(D2F o) {
-  }
+	public void visitD2F(D2F o) {
+	}
 
-  public void visitD2I(D2I o) {
-  }
+	public void visitD2I(D2I o) {
+	}
 
-  public void visitD2L(D2L o) {
-  }
+	public void visitD2L(D2L o) {
+	}
 
-  public void visitDADD(DADD o) {
-  }
+	public void visitDADD(DADD o) {
+	}
 
-  public void visitDALOAD(DALOAD o) {
-  }
+	public void visitDALOAD(DALOAD o) {
+	}
 
-  public void visitDASTORE(DASTORE o) {
-  }
+	public void visitDASTORE(DASTORE o) {
+	}
 
-  public void visitDCMPG(DCMPG o) {
-  }
+	public void visitDCMPG(DCMPG o) {
+	}
 
-  public void visitDCMPL(DCMPL o) {
-  }
+	public void visitDCMPL(DCMPL o) {
+	}
 
-  public void visitDCONST(DCONST o) {
-  }
+	public void visitDCONST(DCONST o) {
+	}
 
-  public void visitDDIV(DDIV o) {
-  }
+	public void visitDDIV(DDIV o) {
+	}
 
-  public void visitDLOAD(DLOAD o) {
-  }
+	public void visitDLOAD(DLOAD o) {
+	}
 
-  public void visitDMUL(DMUL o) {
-  }
+	public void visitDMUL(DMUL o) {
+	}
 
-  public void visitDNEG(DNEG o) {
-  }
+	public void visitDNEG(DNEG o) {
+	}
 
-  public void visitDREM(DREM o) {
-  }
+	public void visitDREM(DREM o) {
+	}
 
-  public void visitDRETURN(DRETURN o) {
-  }
+	public void visitDRETURN(DRETURN o) {
+	}
 
-  public void visitDSTORE(DSTORE o) {
-  }
+	public void visitDSTORE(DSTORE o) {
+	}
 
-  public void visitDSUB(DSUB o) {
-  }
+	public void visitDSUB(DSUB o) {
+	}
 
-  public void visitDUP_X1(DUP_X1 o) {
-  }
+	public void visitDUP_X1(DUP_X1 o) {
+	}
 
-  public void visitDUP_X2(DUP_X2 o) {
-  }
+	public void visitDUP_X2(DUP_X2 o) {
+	}
 
-  public void visitDUP(DUP o) {
-  }
+	public void visitDUP(DUP o) {
+	}
 
-  public void visitDUP2_X1(DUP2_X1 o) {
-  }
+	public void visitDUP2_X1(DUP2_X1 o) {
+	}
 
-  public void visitDUP2_X2(DUP2_X2 o) {
-  }
+	public void visitDUP2_X2(DUP2_X2 o) {
+	}
 
-  public void visitDUP2(DUP2 o) {
-  }
+	public void visitDUP2(DUP2 o) {
+	}
 
-  public void visitF2D(F2D o) {
-  }
+	public void visitF2D(F2D o) {
+	}
 
-  public void visitF2I(F2I o) {
-  }
+	public void visitF2I(F2I o) {
+	}
 
-  public void visitF2L(F2L o) {
-  }
+	public void visitF2L(F2L o) {
+	}
 
-  public void visitFADD(FADD o) {
-  }
+	public void visitFADD(FADD o) {
+	}
 
-  public void visitFALOAD(FALOAD o) {
-  }
+	public void visitFALOAD(FALOAD o) {
+	}
 
-  public void visitFASTORE(FASTORE o) {
-  }
+	public void visitFASTORE(FASTORE o) {
+	}
 
-  public void visitFCMPG(FCMPG o) {
-  }
+	public void visitFCMPG(FCMPG o) {
+	}
 
-  public void visitFCMPL(FCMPL o) {
-  }
+	public void visitFCMPL(FCMPL o) {
+	}
 
-  public void visitFCONST(FCONST o) {
-  }
+	public void visitFCONST(FCONST o) {
+	}
 
-  public void visitFDIV(FDIV o) {
-  }
+	public void visitFDIV(FDIV o) {
+	}
 
-  public void visitFieldInstruction(FieldInstruction o) {
-  }
+	public void visitFieldInstruction(FieldInstruction o) {
+	}
 
-  public void visitFLOAD(FLOAD o) {
-  }
+	public void visitFLOAD(FLOAD o) {
+	}
 
-  public void visitFMUL(FMUL o) {
-  }
+	public void visitFMUL(FMUL o) {
+	}
 
-  public void visitFNEG(FNEG o) {
-  }
+	public void visitFNEG(FNEG o) {
+	}
 
-  public void visitFREM(FREM o) {
-  }
+	public void visitFREM(FREM o) {
+	}
 
-  public void visitFRETURN(FRETURN o) {
-  }
+	public void visitFRETURN(FRETURN o) {
+	}
 
-  public void visitFSTORE(FSTORE o) {
-  }
+	public void visitFSTORE(FSTORE o) {
+	}
 
-  public void visitFSUB(FSUB o) {
-  }
+	public void visitFSUB(FSUB o) {
+	}
 
-  public void visitGETFIELD(GETFIELD o) {
-  }
+	public void visitGETFIELD(GETFIELD o) {
+	}
 
-  public void visitGETSTATIC(GETSTATIC o) {
-  }
+	public void visitGETSTATIC(GETSTATIC o) {
+	}
 
-  public void visitGOTO_W(GOTO_W o) {
-  }
+	public void visitGOTO_W(GOTO_W o) {
+	}
 
-  public void visitGOTO(GOTO o) {
-  }
+	public void visitGOTO(GOTO o) {
+	}
 
-  public void visitI2B(I2B o) {
-  }
+	public void visitI2B(I2B o) {
+	}
 
-  public void visitI2C(I2C o) {
-  }
+	public void visitI2C(I2C o) {
+	}
 
-  public void visitI2D(I2D o) {
-  }
+	public void visitI2D(I2D o) {
+	}
 
-  public void visitI2F(I2F o) {
-  }
+	public void visitI2F(I2F o) {
+	}
 
-  public void visitI2L(I2L o) {
-  }
+	public void visitI2L(I2L o) {
+	}
 
-  public void visitI2S(I2S o) {
-  }
+	public void visitI2S(I2S o) {
+	}
 
-  public void visitIADD(IADD o) {
-  }
+	public void visitIADD(IADD o) {
+	}
 
-  public void visitIALOAD(IALOAD o) {
-  }
+	public void visitIALOAD(IALOAD o) {
+	}
 
-  public void visitIAND(IAND o) {
-  }
+	public void visitIAND(IAND o) {
+	}
 
-  public void visitIASTORE(IASTORE o) {
-  }
+	public void visitIASTORE(IASTORE o) {
+	}
 
-  public void visitICONST(ICONST o) {
-  }
+	public void visitICONST(ICONST o) {
+	}
 
-  public void visitIDIV(IDIV o) {
-  }
+	public void visitIDIV(IDIV o) {
+	}
 
-  public void visitIF_ACMPEQ(IF_ACMPEQ o) {
-  }
+	public void visitIF_ACMPEQ(IF_ACMPEQ o) {
+	}
 
-  public void visitIF_ACMPNE(IF_ACMPNE o) {
-  }
+	public void visitIF_ACMPNE(IF_ACMPNE o) {
+	}
 
-  public void visitIF_ICMPEQ(IF_ICMPEQ o) {
-  }
+	public void visitIF_ICMPEQ(IF_ICMPEQ o) {
+	}
 
-  public void visitIF_ICMPGE(IF_ICMPGE o) {
-  }
+	public void visitIF_ICMPGE(IF_ICMPGE o) {
+	}
 
-  public void visitIF_ICMPGT(IF_ICMPGT o) {
-  }
+	public void visitIF_ICMPGT(IF_ICMPGT o) {
+	}
 
-  public void visitIF_ICMPLE(IF_ICMPLE o) {
-  }
+	public void visitIF_ICMPLE(IF_ICMPLE o) {
+	}
 
-  public void visitIF_ICMPLT(IF_ICMPLT o) {
-  }
+	public void visitIF_ICMPLT(IF_ICMPLT o) {
+	}
 
-  public void visitIF_ICMPNE(IF_ICMPNE o) {
-  }
+	public void visitIF_ICMPNE(IF_ICMPNE o) {
+	}
 
-  public void visitIFEQ(IFEQ o) {
-  }
+	public void visitIFEQ(IFEQ o) {
+	}
 
-  public void visitIFGE(IFGE o) {
-  }
+	public void visitIFGE(IFGE o) {
+	}
 
-  public void visitIFGT(IFGT o) {
-  }
+	public void visitIFGT(IFGT o) {
+	}
 
-  public void visitIFLE(IFLE o) {
-  }
+	public void visitIFLE(IFLE o) {
+	}
 
-  public void visitIFLT(IFLT o) {
-  }
+	public void visitIFLT(IFLT o) {
+	}
 
-  public void visitIFNE(IFNE o) {
-  }
+	public void visitIFNE(IFNE o) {
+	}
 
-  public void visitIFNONNULL(IFNONNULL o) {
-  }
+	public void visitIFNONNULL(IFNONNULL o) {
+	}
 
-  public void visitIFNULL(IFNULL o) {
-  }
+	public void visitIFNULL(IFNULL o) {
+	}
 
-  public void visitIINC(IINC o) {
-  }
+	public void visitIINC(IINC o) {
+	}
 
-  public void visitILOAD(ILOAD o) {
-  }
+	public void visitILOAD(ILOAD o) {
+	}
 
-  public void visitIMPDEP1(IMPDEP1 o) {
-  }
+	public void visitIMPDEP1(IMPDEP1 o) {
+	}
 
-  public void visitIMPDEP2(IMPDEP2 o) {
-  }
+	public void visitIMPDEP2(IMPDEP2 o) {
+	}
 
-  public void visitIMUL(IMUL o) {
-  }
+	public void visitIMUL(IMUL o) {
+	}
 
-  public void visitINEG(INEG o) {
-  }
+	public void visitINEG(INEG o) {
+	}
 
-  public void visitINSTANCEOF(INSTANCEOF o) {
-  }
+	public void visitINSTANCEOF(INSTANCEOF o) {
+	}
 
-  public void visitInvokeInstruction(InvokeInstruction o) {
-  }
+	public void visitInvokeInstruction(InvokeInstruction o) {
+	}
 
-  public void visitINVOKEINTERFACE(INVOKEINTERFACE o) {
-  }
+	public void visitINVOKEINTERFACE(INVOKEINTERFACE o) {
+	}
 
-  public void visitINVOKESPECIAL(INVOKESPECIAL o) {
-  }
+	public void visitINVOKESPECIAL(INVOKESPECIAL o) {
+	}
 
-  public void visitINVOKESTATIC(INVOKESTATIC o) {
-  }
+	public void visitINVOKESTATIC(INVOKESTATIC o) {
+	}
 
-  public void visitINVOKEVIRTUAL(INVOKEVIRTUAL o) {
-  }
+	public void visitINVOKEVIRTUAL(INVOKEVIRTUAL o) {
+	}
 
-  public void visitIOR(IOR o) {
-  }
+	public void visitIOR(IOR o) {
+	}
 
-  public void visitIREM(IREM o) {
-  }
+	public void visitIREM(IREM o) {
+	}
 
-  public void visitIRETURN(IRETURN o) {
-  }
+	public void visitIRETURN(IRETURN o) {
+	}
 
-  public void visitISHL(ISHL o) {
-  }
+	public void visitISHL(ISHL o) {
+	}
 
-  public void visitISHR(ISHR o) {
-  }
+	public void visitISHR(ISHR o) {
+	}
 
-  public void visitISTORE(ISTORE o) {
-  }
+	public void visitISTORE(ISTORE o) {
+	}
 
-  public void visitISUB(ISUB o) {
-  }
+	public void visitISUB(ISUB o) {
+	}
 
-  public void visitIUSHR(IUSHR o) {
-  }
+	public void visitIUSHR(IUSHR o) {
+	}
 
-  public void visitIXOR(IXOR o) {
-  }
+	public void visitIXOR(IXOR o) {
+	}
 
-  public void visitJSR_W(JSR_W o) {
-  }
+	public void visitJSR_W(JSR_W o) {
+	}
 
-  public void visitJSR(JSR o) {
-  }
+	public void visitJSR(JSR o) {
+	}
 
-  public void visitL2D(L2D o) {
-  }
+	public void visitL2D(L2D o) {
+	}
 
-  public void visitL2F(L2F o) {
-  }
+	public void visitL2F(L2F o) {
+	}
 
-  public void visitL2I(L2I o) {
-  }
+	public void visitL2I(L2I o) {
+	}
 
-  public void visitLADD(LADD o) {
-  }
+	public void visitLADD(LADD o) {
+	}
 
-  public void visitLALOAD(LALOAD o) {
-  }
+	public void visitLALOAD(LALOAD o) {
+	}
 
-  public void visitLAND(LAND o) {
-  }
+	public void visitLAND(LAND o) {
+	}
 
-  public void visitLASTORE(LASTORE o) {
-  }
+	public void visitLASTORE(LASTORE o) {
+	}
 
-  public void visitLCMP(LCMP o) {
-  }
+	public void visitLCMP(LCMP o) {
+	}
 
-  public void visitLCONST(LCONST o) {
-  }
+	public void visitLCONST(LCONST o) {
+	}
 
-  public void visitLDC_W(LDC_W o) {
-  }
+	public void visitLDC_W(LDC_W o) {
+	}
 
-  public void visitLDC(LDC o) {
-  }
+	public void visitLDC(LDC o) {
+	}
 
-  public void visitLDC2_W(LDC2_W o) {
-  }
+	public void visitLDC2_W(LDC2_W o) {
+	}
 
-  public void visitLDIV(LDIV o) {
-  }
+	public void visitLDIV(LDIV o) {
+	}
 
-  public void visitLLOAD(LLOAD o) {
-  }
+	public void visitLLOAD(LLOAD o) {
+	}
 
-  public void visitLMUL(LMUL o) {
-  }
+	public void visitLMUL(LMUL o) {
+	}
 
-  public void visitLNEG(LNEG o) {
-  }
+	public void visitLNEG(LNEG o) {
+	}
 
-  public void visitLoadClass(LoadClass o) {
-  }
+	public void visitLoadClass(LoadClass o) {
+	}
 
-  public void visitLoadInstruction(LoadInstruction o) {
-  }
+	public void visitLoadInstruction(LoadInstruction o) {
+	}
 
-  public void visitLocalVariableInstruction(LocalVariableInstruction o) {
-  }
+	public void visitLocalVariableInstruction(LocalVariableInstruction o) {
+	}
 
-  public void visitLOOKUPSWITCH(LOOKUPSWITCH o) {
-  }
+	public void visitLOOKUPSWITCH(LOOKUPSWITCH o) {
+	}
 
-  public void visitLOR(LOR o) {
-  }
+	public void visitLOR(LOR o) {
+	}
 
-  public void visitLREM(LREM o) {
-  }
+	public void visitLREM(LREM o) {
+	}
 
-  public void visitLRETURN(LRETURN o) {
-  }
+	public void visitLRETURN(LRETURN o) {
+	}
 
-  public void visitLSHL(LSHL o) {
-  }
+	public void visitLSHL(LSHL o) {
+	}
 
-  public void visitLSHR(LSHR o) {
-  }
+	public void visitLSHR(LSHR o) {
+	}
 
-  public void visitLSTORE(LSTORE o) {
-  }
+	public void visitLSTORE(LSTORE o) {
+	}
 
-  public void visitLSUB(LSUB o) {
-  }
+	public void visitLSUB(LSUB o) {
+	}
 
-  public void visitLUSHR(LUSHR o) {
-  }
+	public void visitLUSHR(LUSHR o) {
+	}
 
-  public void visitLXOR(LXOR o) {
-  }
+	public void visitLXOR(LXOR o) {
+	}
 
-  public void visitMONITORENTER(MONITORENTER o) {
-  }
+	public void visitMONITORENTER(MONITORENTER o) {
+	}
 
-  public void visitMONITOREXIT(MONITOREXIT o) {
-  }
+	public void visitMONITOREXIT(MONITOREXIT o) {
+	}
 
-  public void visitMULTIANEWARRAY(MULTIANEWARRAY o) {
-  }
+	public void visitMULTIANEWARRAY(MULTIANEWARRAY o) {
+	}
 
-  public void visitNEW(NEW o) {
-  }
+	public void visitNEW(NEW o) {
+	}
 
-  public void visitNEWARRAY(NEWARRAY o) {
-  }
+	public void visitNEWARRAY(NEWARRAY o) {
+	}
 
-  public void visitNOP(NOP o) {
-  }
+	public void visitNOP(NOP o) {
+	}
 
-  public void visitPOP(POP o) {
-  }
+	public void visitPOP(POP o) {
+	}
 
-  public void visitPOP2(POP2 o) {
-  }
+	public void visitPOP2(POP2 o) {
+	}
 
-  public void visitPUTFIELD(PUTFIELD o) {
-  }
+	public void visitPUTFIELD(PUTFIELD o) {
+	}
 
-  public void visitPUTSTATIC(PUTSTATIC o) {
-  }
+	public void visitPUTSTATIC(PUTSTATIC o) {
+	}
 
-  public void visitRET(RET o) {
-  }
+	public void visitRET(RET o) {
+	}
 
-  public void visitRETURN(RETURN o) {
-  }
+	public void visitRETURN(RETURN o) {
+	}
 
-  public void visitReturnInstruction(ReturnInstruction o) {
-  }
+	public void visitReturnInstruction(ReturnInstruction o) {
+	}
 
-  public void visitSALOAD(SALOAD o) {
-  }
+	public void visitSALOAD(SALOAD o) {
+	}
 
-  public void visitSASTORE(SASTORE o) {
-  }
+	public void visitSASTORE(SASTORE o) {
+	}
 
-  public void visitSIPUSH(SIPUSH o) {
-  }
+	public void visitSIPUSH(SIPUSH o) {
+	}
 
-  public void visitStackConsumer(StackConsumer o) {
-  }
+	public void visitStackConsumer(StackConsumer o) {
+	}
 
-  public void visitStackInstruction(StackInstruction o) {
-  }
+	public void visitStackInstruction(StackInstruction o) {
+	}
 
-  public void visitStackProducer(StackProducer o) {
-  }
+	public void visitStackProducer(StackProducer o) {
+	}
 
-  public void visitStoreInstruction(StoreInstruction o) {
-  }
+	public void visitStoreInstruction(StoreInstruction o) {
+	}
 
-  public void visitSWAP(SWAP o) {
-  }
+	public void visitSWAP(SWAP o) {
+	}
 
-  public void visitTABLESWITCH(TABLESWITCH o) {
-  }
+	public void visitTABLESWITCH(TABLESWITCH o) {
+	}
 }
 
 // We may need this later in controlFlowMethod to simulate the basic blocks

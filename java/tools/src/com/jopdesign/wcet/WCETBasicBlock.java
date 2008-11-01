@@ -855,7 +855,7 @@ if(nodetype!=WCETBasicBlock.INODE){
 //System.out.println("bbinvo:"+bbinvo);
 //System.out.println("name:"+wcmb.name);
 //System.out.println("cname:"+wcmb.cname);
-          if(bbinvo.startsWith("com.jopdesign.sys.Native")){
+          if(bbinvo.startsWith(WCETAnalyser.nativeClass)){
             int opcode = wcmb.wca.getNativeOpcode(m.getName());//methodid);
             if(opcode == -1){
               sb.append(WU.prepad("*to check",10));

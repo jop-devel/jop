@@ -22,11 +22,13 @@
 package com.jopdesign.wcet;
 import org.apache.bcel.classfile.*;
 
+import com.jopdesign.build.AppVisitor;
+
 /*
  * It calls the methods.
  * @author rup, ms
  */
-public class SetWCETAnalysis extends MyVisitor {
+public class SetWCETAnalysis extends AppVisitor {
   WCETAnalyser wca;
 	public SetWCETAnalysis(WCETAnalyser wca) {
 		super(wca);
