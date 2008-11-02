@@ -451,9 +451,9 @@ Dbg.wr('\n');
 System.out.print("Modem init ");
 System.out.println(connCount);
 			Led.stopModem();
-			waitSec(5);
-			Led.startModem();
 			waitSec(1);
+			Led.startModem();
+			waitSec(15);
 			
 			if (connCount>GPRS_TRY_CNT && gsm_uid.length()!=0) {
 				useGSM = true;
