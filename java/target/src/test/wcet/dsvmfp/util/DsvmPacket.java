@@ -1,4 +1,4 @@
-package dsvmfp.util;
+package wcet.dsvmfp.util;
 
 /**
  * Only one packet is manipulated at a time.

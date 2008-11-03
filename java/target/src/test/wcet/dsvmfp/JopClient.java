@@ -1,14 +1,14 @@
-package dsvmfp;
+package wcet.dsvmfp;
 
 import com.jopdesign.sys.Native;
 
 import util.Dbg;
 
 import joprt.RtThread;
-import dsvmfp.util.UdpJop;
-import dsvmfp.model.smo.classification.SMOBinaryClassifierFP;
-import dsvmfp.model.smo.kernel.FP;
-import dsvmfp.util.DsvmPacket;
+import wcet.dsvmfp.util.UdpJop;
+import wcet.dsvmfp.model.smo.classification.SMOBinaryClassifierFP;
+import wcet.dsvmfp.model.smo.kernel.FP;
+import wcet.dsvmfp.util.DsvmPacket;
 /**
  * 
  * @author rup.inf

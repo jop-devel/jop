@@ -1,8 +1,8 @@
-package dsvmfp.util;
+package wcet.dsvmfp.util;
 
 import com.jopdesign.sys.Native;
 
-import dsvmfp.JopClient;
+import wcet.dsvmfp.JopClient;
 import util.Dbg;
 import joprt.RtThread;
 import ejip.CS8900;
@@ -48,7 +48,8 @@ public class UdpJop {
 		packetToSend = false;
     
 		net = Net.init();
-    ipLink = CS8900.init(Net.eth, Net.ip);
+		// TODO: the following code does not compile
+//    ipLink = CS8900.init(Net.eth, Net.ip);
     
 		new RtThread(5, 10000) {
 			public void run() {

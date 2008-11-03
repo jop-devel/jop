@@ -1,6 +1,6 @@
-package dsvmfp.util;
+package wcet.dsvmfp.util;
 
-import dsvmfp.util.DsvmPacket;
+import wcet.dsvmfp.util.DsvmPacket;
 
 // Call back interface
 public interface ILink {

@@ -1,4 +1,4 @@
-package dsvmfp.util;
+package wcet.dsvmfp.util;
 /**
  * 
  * @author rup.inf
