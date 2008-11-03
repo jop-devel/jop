@@ -36,12 +36,12 @@ public class TestSMO {
     SMOBinaryClassifierFP.setData_fp(data_fp);
     SMOBinaryClassifierFP.setY_fp(y_fp);
 
-    SMOBinaryClassifierFP.mainRoutine();
+    //SMOBinaryClassifierFP.mainRoutine();
 
     int errcnt = 0;
     // 0 belongs to positive
     int time = 0;
-    for (int i = 0; i < m; i++) {
+    for (int i = 0; i < m; i++) { // @WCA loop=2
       int starttime = Native.rd(Const.IO_US_CNT);
       int t = Native.rd(Const.IO_CNT);
       int smores = SMOBinaryClassifierFP.getFunctionOutputTestPointFP(testdata_fp[i]);;
@@ -68,6 +68,10 @@ public class TestSMO {
     System.out.print("per observation time (classifying):");
     System.out.print(time/m);
     System.out.println(" us");
+
+  }
+
+
 
   }
 }
