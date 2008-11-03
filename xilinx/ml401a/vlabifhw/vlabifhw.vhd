@@ -8,7 +8,7 @@
 --      debug clock and reset
 --
 -- Author: Jack Whitham
--- $Id: vlabifhw.vhd,v 1.2 2008/09/03 21:08:39 jwhitham Exp $
+-- $Id: vlabifhw.vhd,v 1.3 2008/11/03 11:41:29 jwhitham Exp $
 -- 
 --
 -- Copyright (C) 2008, Jack Whitham
@@ -38,6 +38,7 @@ entity vlabifhw is
     generic (
             baud_rate       : Integer := 115200;
             fifo_depth      : Integer := 4;
+            less_features   : Boolean := false;
             ext_channels    : Integer;
             clock_freq      : Integer
         );
@@ -190,7 +191,7 @@ begin
             -- Input stage. FIFO.
             in_rdy <= not in_full;
             in_has_data <= not in_empty;
-            in_fifo : entity fifo 
+            in_fifo : entity fifo
                 generic map (
                     width => 8,
                     depth => c_fifo_depth,
@@ -223,7 +224,7 @@ begin
             -- Output stage. FIFO.
             out_rdy <= not out_full;
             out_has_data <= not out_empty;
-            out_fifo : entity fifo 
+            out_fifo : entity fifo
                 generic map (
                     width => 8,
                     depth => c_fifo_depth,
@@ -331,6 +332,8 @@ begin
             nrts => open );
 
     d : entity debugger 
+        generic map (
+            less_features => less_features )
         port map (
             clk => clk,
             reset => int_reset,

@@ -10,7 +10,7 @@
 MAX_MEM	= 1048576/4
 BLOCK_SIZE = 1024
 EXIT_STRING = "JVM exit!"
-BOARD_NAME = "burchtest"
+BOARD_NAME = "jeopard"
 VL_KEY = "vluser.key"
 
 

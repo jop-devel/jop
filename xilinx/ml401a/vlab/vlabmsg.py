@@ -18,6 +18,9 @@ MSG_EXIT = "exit"
 MSG_FPGAINFO = "fpgainfo"
 MSG_HELP = "help"
 MSG_INSTANCEOFFLINE = "instanceoffline"
+MSG_JDW = "jdw"
+MSG_JDWDATA = "jdwdata"
+MSG_JDWFAIL = "jdwfail"
 MSG_LOADBITS = "loadbits"
 MSG_LOADED = "loaded"
 MSG_LOADREADY = "loadready"
@@ -28,6 +31,7 @@ MSG_PROGRAM = "program"
 MSG_PROGRAMFAILED = "programfailed"
 MSG_PROGRAMOK = "programok"
 MSG_QUIT = "quit"
+MSG_RELOADMUTEX = "reloadmutex"
 MSG_REM = "rem"
 MSG_RVERSION = "rversion"
 MSG_SETUART = "setuart"
@@ -40,7 +44,7 @@ MSG_USINGUART = "usinguart"
 MSG_WALL = "wall"
 
 
-MSG_TABLE = {
+VL_MSG_TABLE = {
     MSG_ACTIVITYINFO : [ False, "ClReceiveActivityInfo",int,int ],
     MSG_BITINFO : [ True, "ClReceiveBitInfo",int,int,int,str,str,str,str,str ],
     MSG_BOARDINFO : [ True, "ClReceiveBoardInfo",str ],
@@ -48,6 +52,8 @@ MSG_TABLE = {
     MSG_ERROR : [ True, "ClError",str,str ],
     MSG_EVERSION : [ True, "ClGetEmbeddedVersion",str,str ],
     MSG_FPGAINFO : [ False, "ClReceiveFPGAInfo",int,str,str ],
+    MSG_JDWDATA : [ False, "ClJdwData",str ],
+    MSG_JDWFAIL : [ False, "ClJdwFail",str ],
     MSG_LOADED : [ False, "ClLoaded",int,int ],
     MSG_LOADREADY : [ True, "ClLoadReady",int,int,str ],
     MSG_MVERSION : [ True, "ClGetMutexDaemonVersion",str,str ],
@@ -62,42 +68,57 @@ MSG_TABLE = {
 }
 
 class VlabBase:
-    def ClReceiveActivityInfo(self, p0, p1):
-        pass
-    def ClReceiveBitInfo(self, p0, p1, p2, p3, p4, p5, p6, p7):
-        pass
-    def ClReceiveBoardInfo(self, p0):
-        pass
-    def ClEndList(self):
-        pass
-    def ClError(self, p0, p1):
-        pass
-    def ClGetEmbeddedVersion(self, p0, p1):
-        pass
-    def ClReceiveFPGAInfo(self, p0, p1, p2):
-        pass
-    def ClLoaded(self, p0, p1):
-        pass
-    def ClLoadReady(self, p0, p1, p2):
-        pass
-    def ClGetMutexDaemonVersion(self, p0, p1):
-        pass
-    def ClOk(self, p0):
-        pass
-    def ClProgramFailed(self, p0, p1):
-        pass
-    def ClProgramOk(self, p0):
-        pass
-    def Ignore(self):
-        pass
-    def ClGetRelayVersion(self, p0, p1):
-        pass
-    def ClUserInfo(self, p0, p1, p2, p3):
-        pass
-    def ClUsingUart(self):
-        pass
-    def ClReceiveWall(self, p0):
-        pass
+    def ClReceiveActivityInfo(self, p0, p1): pass
+    def ClReceiveBitInfo(self, p0, p1, p2, p3, p4, p5, p6, p7): pass
+    def ClReceiveBoardInfo(self, p0): pass
+    def ClEndList(self): pass
+    def ClError(self, p0, p1): pass
+    def ClGetEmbeddedVersion(self, p0, p1): pass
+    def ClReceiveFPGAInfo(self, p0, p1, p2): pass
+    def ClJdwData(self, p0): pass
+    def ClJdwFail(self, p0): pass
+    def ClLoaded(self, p0, p1): pass
+    def ClLoadReady(self, p0, p1, p2): pass
+    def ClGetMutexDaemonVersion(self, p0, p1): pass
+    def ClOk(self, p0): pass
+    def ClProgramFailed(self, p0, p1): pass
+    def ClProgramOk(self, p0): pass
+    def Ignore(self): pass
+    def ClGetRelayVersion(self, p0, p1): pass
+    def ClUserInfo(self, p0, p1, p2, p3): pass
+    def ClUsingUart(self): pass
+    def ClReceiveWall(self, p0): pass
+
+
+MD_MSG_TABLE = {
+    MSG_BOARDREQUEST : [ False, "MdBoardRequest",str ],
+    MSG_BYE : [ False, "MdExit" ],
+    MSG_ENDLIST : [ False, "MdEndList" ],
+    MSG_ERROR : [ True, "MdError",str,str ],
+    MSG_EXIT : [ False, "MdExit" ],
+    MSG_INSTANCEOFFLINE : [ False, "MdInstanceOffline" ],
+    MSG_LOGOFF : [ False, "MdExit" ],
+    MSG_OK : [ True, "MdOk",str ],
+    MSG_QUIT : [ False, "MdExit" ],
+    MSG_RELOADMUTEX : [ False, "MdReloadMutex" ],
+    MSG_REM : [ False, "Ignore" ],
+    MSG_SETUID : [ False, "MdSetuid",int ],
+    MSG_USERINFO : [ False, "MdUserInfo",int,int,str,int ],
+    MSG_USERREQUEST : [ False, "MdUserRequest",str ],
+}
+
+class MutexDaemonBase:
+    def MdBoardRequest(self, p0): pass
+    def MdExit(self): pass
+    def MdEndList(self): pass
+    def MdError(self, p0, p1): pass
+    def MdInstanceOffline(self): pass
+    def MdOk(self, p0): pass
+    def MdReloadMutex(self): pass
+    def Ignore(self): pass
+    def MdSetuid(self, p0): pass
+    def MdUserInfo(self, p0, p1, p2, p3): pass
+    def MdUserRequest(self, p0): pass
 ERR_TABLE = {}
 ERR_NOUART = "nouart"
 ERR_TABLE[ ERR_NOUART ] = "Requested UART does not exist."
@@ -155,3 +176,37 @@ ERR_NOMUTEXDAEMON = "nomutexdaemon"
 ERR_TABLE[ ERR_NOMUTEXDAEMON ] = "The mutual exclusion daemon is not running."
 ERR_TIMEOUT = "timeout"
 ERR_TABLE[ ERR_TIMEOUT ] = "Connection timed out due to inactivity."
+ERR_NOJTAG = "nojtag"
+ERR_TABLE[ ERR_NOJTAG ] = "No JTAG support on this board."
+ERR_NOTJDW = "notjdw"
+ERR_TABLE[ ERR_NOTJDW ] = "Not a valid JTAG Direct Write command."
+ERR_NOTLOCKED = "notlocked"
+ERR_TABLE[ ERR_NOTLOCKED ] = "JTAG Direct Write not locked."
+ERR_CANTLOCKJTAG = "cantlockjtag"
+ERR_TABLE[ ERR_CANTLOCKJTAG ] = "JTAG Direct Write access is locked by something else."
+ERR_JDWFAIL = "jdwfail"
+ERR_TABLE[ ERR_JDWFAIL ] = "Failure in JTAG Direct Write."
+JDW_RESET = "reset"
+JDW_IDLE = "idle"
+JDW_SELECTDR = "selectdr"
+JDW_CAPTUREDR = "capturedr"
+JDW_SHIFTDR = "shiftdr"
+JDW_EXIT1DR = "exit1dr"
+JDW_PAUSEDR = "pausedr"
+JDW_EXIT2DR = "exit2dr"
+JDW_UPDATEDR = "updatedr"
+JDW_SELECTIR = "selectir"
+JDW_CAPTUREIR = "captureir"
+JDW_SHIFTIR = "shiftir"
+JDW_EXIT1IR = "exit1ir"
+JDW_PAUSEIR = "pauseir"
+JDW_EXIT2IR = "exit2ir"
+JDW_UPDATEIR = "updateir"
+JDW_LOCK = "lock"
+JDW_UNLOCK = "unlock"
+JDW_NAVIGATE_TAP = "navigate_tap"
+JDW_PULSE_TCK = "pulse_tck"
+JDW_SET_TCK = "set_tck"
+JDW_SET_TMS = "set_tms"
+JDW_SHIFT_W = "shift_w"
+JDW_SHIFT_RW = "shift_rw"

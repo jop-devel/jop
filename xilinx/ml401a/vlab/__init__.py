@@ -24,7 +24,7 @@ In order to use this module, you will need to understand
 Deferreds, a concept which is explained in the Twisted 
 Python documentation. 
 
-Version $Id: __init__.py,v 1.2 2008/09/03 21:08:37 jwhitham Exp $
+Version $Id: __init__.py,v 1.3 2008/11/03 11:41:24 jwhitham Exp $
 """
 
 from vlab import *

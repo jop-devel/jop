@@ -8,7 +8,7 @@
 --      parallel output
 --
 -- Author: Jack Whitham
--- $Id: debugger.vhd,v 1.2 2008/09/03 21:08:39 jwhitham Exp $
+-- $Id: debugger.vhd,v 1.3 2008/11/03 11:41:29 jwhitham Exp $
 --
 -- Copyright (C) 2008, Jack Whitham
 --
@@ -34,6 +34,8 @@ use ieee.std_logic_unsigned.all;
 use work.vlabifhw_pack.all;
 
 entity debugger is
+generic (
+    less_features               : Boolean := false );
 port (
 	clk		                    : in std_logic;
 	reset	                    : in std_logic;
@@ -115,11 +117,15 @@ begin
             out_channel_wr <= '0';
             in_channel_ack <= '0' ;
 
-            if (( free_run = '1' )
-            or (( free_run_to_breakpoint = '1' )
-                and ( breakpoint = '0' )))
+            if ( not less_features )
             then
-                debug_clock_1 <= not debug_clock_1;
+                -- less_features disables clock control
+                if (( free_run = '1' )
+                or (( free_run_to_breakpoint = '1' )
+                    and ( breakpoint = '0' )))
+                then
+                    debug_clock_1 <= not debug_clock_1;
+                end if;
             end if;
 
             complete <= '0';
@@ -150,8 +156,14 @@ begin
                 then
                     case temp_reg is
                     when RX_COMMAND_CLOCK_STEP =>   
-                            state <= LAB_CLOCK_STEP;
-                            next_command := CMD_LOAD_COUNTER;
+                            if ( less_features )
+                            then
+                                -- Clock step feature is disabled
+                                state <= INIT;
+                            else
+                                state <= LAB_CLOCK_STEP;
+                                next_command := CMD_LOAD_COUNTER;
+                            end if;
                     when RX_COMMAND_GET_DEBUG_CHAIN => 
                             next_command := CMD_LOAD_COUNTER;
                             state <= LAB_GET_DEBUG_CHAIN;
@@ -172,11 +184,15 @@ begin
                 -- Set the control lines
                 if ( complete = '1' )
                 then
-                    free_run <= temp_reg ( RX_FREE_RUN_BIT );
-                    debug_clock_1 <= temp_reg ( RX_CLOCK_BIT );
-                    debug_reset <= temp_reg ( RX_RESET_BIT );
-                    free_run_to_breakpoint <= 
-                            temp_reg ( RX_FREE_RUN_BREAK_BIT );
+                    if ( not less_features )
+                    then
+                        -- less_features disables clock control
+                        free_run <= temp_reg ( RX_FREE_RUN_BIT );
+                        debug_clock_1 <= temp_reg ( RX_CLOCK_BIT );
+                        debug_reset <= temp_reg ( RX_RESET_BIT );
+                        free_run_to_breakpoint <= 
+                                temp_reg ( RX_FREE_RUN_BREAK_BIT );
+                    end if;
                     dc_control.dc_capture <= temp_reg ( RX_CAPTURE_BIT );
                     dc_control.dc_ready <= temp_reg ( RX_READY_BIT );
                     state <= INIT;
@@ -269,7 +285,13 @@ begin
             when CMD_STANDBY =>
                 case next_command is
                 when CMD_LOAD_COUNTER =>
-                        command <= CMD_LOAD_COUNTER ;
+                        if ( less_features )
+                        then
+                            -- Causes 8 bit load
+                            command <= CMD_LOAD_COUNTER_1 ;
+                        else
+                            command <= CMD_LOAD_COUNTER ;
+                        end if;
                 when CMD_SEND_TO_PC =>
                         command <= CMD_SEND_TO_PC ;
                 when CMD_RECEIVE_FROM_PC =>
@@ -289,8 +311,15 @@ begin
             when CMD_LOAD_COUNTER_1 =>
                 if ( in_channel_present = '1' )
                 then
-                    counter16 <= conv_integer ( temp_reg &
+                    if ( less_features )
+                    then
+                        -- Causes 8 bit load
+                        counter16 <= conv_integer ( 
                             in_channel_reg ( 7 downto 0 ) ) ;
+                    else
+                        counter16 <= conv_integer ( temp_reg &
+                            in_channel_reg ( 7 downto 0 ) ) ;
+                    end if;
                     in_channel_ack <= '1' ;
                     command <= CMD_STANDBY;
                     complete <= '1';

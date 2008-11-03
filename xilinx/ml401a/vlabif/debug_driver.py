@@ -3,7 +3,7 @@
 # Virtual Lab Interface - Debug Chain Driver
 #
 # Author: Jack Whitham
-# $Id: debug_driver.py,v 1.2 2008/09/03 21:08:38 jwhitham Exp $
+# $Id: debug_driver.py,v 1.3 2008/11/03 11:41:28 jwhitham Exp $
 #
 #
 # Copyright (C) 2008, Jack Whitham
@@ -92,10 +92,11 @@ class DebugDriver(VlabGenericProtocol):
     >>> vlihp.openChannel(CHANNEL_NUMBER, dbg)
     """
 
-    def __init__(self, debug_chain, debug=False):
+    def __init__(self, debug_chain, less_features=False, debug=False):
         """Create a new DebugDriver for the specified debug_chain,
         which should be an intance of DebugChain, such as DebugConfig."""
         VlabGenericProtocol.__init__(self, debug=debug)
+        self.less_features = less_features
 
         assert isinstance(debug_chain, debug_entity.DebugChain)
         self.debug_chain = debug_chain
@@ -223,8 +224,11 @@ class DebugDriver(VlabGenericProtocol):
 
         assert ( self.debug_chain != None )
 
-        self.write(chr(RX_COMMAND_GET_DEBUG_CHAIN) +
-                chr((self.chain_length_bytes >> 8) & 0xff) +
+        pgm = chr((self.chain_length_bytes >> 8) & 0xff)
+        if ( self.less_features ):
+            pgm = ''
+
+        self.write(chr(RX_COMMAND_GET_DEBUG_CHAIN) + pgm +
                 chr((self.chain_length_bytes >> 0) & 0xff))
 
         done = defer.Deferred()
@@ -271,8 +275,11 @@ class DebugDriver(VlabGenericProtocol):
 
             bytes.append(chr(out))
 
-        self.write(chr(RX_COMMAND_SET_DEBUG_CHAIN) +
-                chr(((self.chain_length_bytes - 1 ) >> 8) & 0xff) +
+        pgm = chr(((self.chain_length_bytes - 1 ) >> 8) & 0xff)
+        if ( self.less_features ):
+            pgm = ''
+
+        self.write(chr(RX_COMMAND_SET_DEBUG_CHAIN) + pgm +
                 chr(((self.chain_length_bytes - 1 ) >> 0) & 0xff) + 
                 ''.join(bytes))
 
@@ -315,6 +322,10 @@ class DebugDriver(VlabGenericProtocol):
 
         Returns a Deferred. The callback is called with True when
         the operation is completed."""
+
+        if ( self.less_features ):
+            assert False, "clock() feature is not available"
+
         assert 0 < n < 0x10000
         self.write(chr(RX_COMMAND_CLOCK_STEP) +
                 chr((n >> 8) & 0xff) + chr((n >> 0) & 0xff))

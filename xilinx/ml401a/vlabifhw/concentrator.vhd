@@ -7,7 +7,7 @@
 -- There have to be at least two channels (see entity definition).
 --
 -- Author: Jack Whitham
--- $Id: concentrator.vhd,v 1.2 2008/09/03 21:08:39 jwhitham Exp $
+-- $Id: concentrator.vhd,v 1.3 2008/11/03 11:41:29 jwhitham Exp $
 -- 
 --
 -- Copyright (C) 2008, Jack Whitham
@@ -180,6 +180,8 @@ begin
                 then
                     -- Data from virtual UART: relay to PC UART now
                     next_command := CMD_SEND_TO_PC_LITERAL;
+                    output_reg <= in_mux_data;
+                    in_mux_ack <= '1';
                     state <= INIT_1;
                 end if ;
 

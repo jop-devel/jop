@@ -3,7 +3,7 @@
 # Virtual Lab Interface Driver
 #
 # Author: Jack Whitham
-# $Id: vlabif.py,v 1.2 2008/09/03 21:08:38 jwhitham Exp $
+# $Id: vlabif.py,v 1.3 2008/11/03 11:41:28 jwhitham Exp $
 #
 #
 # Copyright (C) 2008, Jack Whitham
@@ -451,8 +451,8 @@ class VlabInterfaceProtocol(VlabGenericProtocol):
                 # ExpectReady was reached before the timeout expired
                 return
 
-            raise VlabInterfaceError("Activation string "
-                    "was not acknowledged.")
+            done.errback(VlabInterfaceError("Activation string "
+                    "was not acknowledged."))
 
         def TestEmpty():
             if ( state.buffer_empty ):

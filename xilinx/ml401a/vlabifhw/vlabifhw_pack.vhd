@@ -4,7 +4,7 @@
 --
 --
 -- Author: Jack Whitham
--- $Id: vlabifhw_pack.vhd,v 1.2 2008/09/03 21:08:39 jwhitham Exp $
+-- $Id: vlabifhw_pack.vhd,v 1.3 2008/11/03 11:41:29 jwhitham Exp $
 --
 -- Copyright (C) 2008, Jack Whitham
 --

@@ -1,6 +1,6 @@
-# 
+ 
 # Virtual Lab
-# $Id: vlab.py,v 1.5 2008/09/03 21:08:37 jwhitham Exp $
+# $Id: vlab.py,v 1.6 2008/11/03 11:41:24 jwhitham Exp $
 #
 # Copyright (C) 2008, Jack Whitham
 # 
@@ -26,7 +26,7 @@ from twisted.internet import protocol, reactor
 from twisted.conch.ssh import keys, userauth
 from twisted.conch.ssh import connection
 from twisted.conch.ssh import channel, common
-import sys, collections, zlib, os, base64, pickle
+import sys, collections, zlib, os, base64, pickle, time
 
 from vlabmsg import *
 
@@ -61,6 +61,9 @@ class VlabBitfileException(Exception):
     wrong FPGA type, or it was truncated, or it didn't have a valid
     header."""
     pass
+
+TIMEOUT_FOR_SOCKS = 10.0
+TIMEOUT_FOR_KEEPALIVE = 40.0
 
 [ BINFO_UNUSED , BINFO_INVALID , BINFO_INCOMPLETE , BINFO_READY,
         BINFO_WRONG_FPGA, UINFO_IN_USE, UINFO_OFFLINE,
@@ -183,6 +186,74 @@ def loadAuthorisation(fname):
     except:
         raise VlabException("Loading authorisation failed.")
 
+def vlabProcessMessage(handler_class, message_table, 
+                    message_buffer, new_data, debug):
+    """Internal function; process a message that has been received."""
+
+    def doMsg(msg):
+        if ( debug ):
+            print 'VIRTUAL LAB Receive: "%s"' % msg
+
+        fields = msg.split()
+        if ( len(fields) == 0 ):
+            return False
+
+        command = fields[ 0 ].lower()
+        tbl_entry = message_table.get(command, None)
+        if ( tbl_entry == None ):
+            return False
+
+        get_all_remaining = tbl_entry[ 0 ]
+        handler_name = tbl_entry[ 1 ]
+        if ( get_all_remaining ):
+            # Resplit - put all of final parameter into one string.
+            fields = msg.split(None, len(tbl_entry) - 2)
+
+        handler_fn = getattr(handler_class, handler_name, None)
+        if ( handler_fn == None ):
+            raise VlabException(
+                        'Missing handler function: %s' % (handler_name))
+        else:
+            if ( debug ):
+                print 'VIRTUAL LAB calling function: %s' % (handler_name)
+
+        params = []
+
+        for (value, conv_fn) in zip(fields[ 1: ], tbl_entry[ 2: ]):
+            params.append(conv_fn(value))
+
+        handler_fn(*params)
+        return True
+
+    for ch in new_data:
+        if ( ch in "\r\n" ):
+            doMsg(''.join(message_buffer))
+            message_buffer.clear()
+        elif ( ch in '\x08\x7f' ):
+            if ( len(message_buffer) != 0 ):
+                message_buffer.pop()
+        else:
+            if ( len(message_buffer) < 1024 ):
+                message_buffer.append(ch)
+
+def processUserInfo(userinfo_table,
+                index, valid, user_name, lock_count):
+    try:
+        uinfo = userinfo_table[ index ]
+    except KeyError:
+        uinfo = userinfo_table[ index ] = VlabUserInfo()
+
+    uinfo.lock_count = lock_count
+    uinfo.user_name = None
+    if ( valid ):
+        uinfo.user_name = user_name
+        uinfo.status = UINFO_IN_USE
+    elif ( user_name == "offline" ):
+        uinfo.status = UINFO_OFFLINE
+    else:
+        uinfo.status = UINFO_AVAILABLE
+
+
 class VlabChannel(channel.SSHChannel):
     """A Protocol for interacting with virtual lab services.
     
@@ -190,7 +261,7 @@ class VlabChannel(channel.SSHChannel):
 
     name = 'session'
 
-    def __init__(self, register_fn=None, debug=False, **args2):
+    def __init__(self, register_fn=None, debug=False, fail_fn=None, **args2):
         """Create a new VlabChannel with the specified register_fn.
         
         This __init__ method is normally called from the SSHConnection
@@ -198,6 +269,12 @@ class VlabChannel(channel.SSHChannel):
         channel.SSHChannel.__init__(self, **args2)
         self.initData(debug)
         self.register_fn = register_fn
+
+        if ( fail_fn == None ):
+            def noFn(*args1, **args2): pass
+            self.fail_fn = noFn
+        else:
+            self.fail_fn = fail_fn
 
     # Requests and their protocol level (Cl*) functions.
     def getBoardUserInfo(self, board_name):
@@ -222,20 +299,8 @@ class VlabChannel(channel.SSHChannel):
         return self.awaitEndMessage().addCallback(transform)
 
     def ClUserInfo(self, index, valid, user_name, lock_count):
-        try:
-            uinfo = self.userinfo_table[ index ]
-        except KeyError:
-            uinfo = self.userinfo_table[ index ] = VlabUserInfo()
-
-        uinfo.lock_count = lock_count
-        uinfo.user_name = None
-        if ( valid ):
-            uinfo.user_name = user_name
-            uinfo.status = UINFO_IN_USE
-        elif ( user_name == "offline" ):
-            uinfo.status = UINFO_OFFLINE
-        else:
-            uinfo.status = UINFO_AVAILABLE
+        processUserInfo(self.userinfo_table,
+                index, valid, user_name, lock_count)
 
     def getBitInfo(self):
         """Request a list of bit file buffers on the board server.
@@ -439,6 +504,71 @@ class VlabChannel(channel.SSHChannel):
 
         return self.awaitEndMessage().addCallback(success)
 
+    def jtagDirectCommand(self, jdw_cmd, *params):
+        """Use the JTAG Direct Write module to execute a JTAG commmand.
+
+        Returns a Deferred. The callback will be called with a Boolean
+        that is True if the command was successful, False otherwise. """
+        self.assertProper("jdw")
+        self.sendMessage(MSG_JDW, jdw_cmd, *params)
+
+        def success((command, parameter)):
+            assert command in (MSG_OK, MSG_JDWFAIL)
+            return command == MSG_OK 
+
+        return self.awaitEndMessage().addCallback(success)
+        
+    def jtagDirectShift(self, readback, last, data, num_bits):
+        """Shift data using the JTAG Direct Write module.
+
+        Returns a Deferred. If readback=True, then the callback
+        will be called with the received data. If not, then the callback
+        will be called with True."""
+        self.assertProper("jdw")
+        assert ( len(data) * 8 ) >= num_bits
+        if ( readback ):
+            self.sendMessage(MSG_JDW, JDW_SHIFT_RW, num_bits, int(last))
+        else:
+            self.sendMessage(MSG_JDW, JDW_SHIFT_W, num_bits, int(last))
+
+        done = defer.Deferred()
+
+        def fail(ex_data):
+            done.errback(ex_data)
+
+        def success((command, parameter)):
+            assert command == MSG_OK
+            if ( readback ):
+                if ( len(self.direct_shift_data) < ( num_bits / 8 )):
+                    raise VlabException(
+                            "Insufficient data was returned")
+
+                out = []
+                for i in xrange(( num_bits + 7 ) / 8):
+                    out.append(self.direct_shift_data.popleft())
+
+                done.callback(''.join(out))
+            else:
+                done.callback(True)
+
+        def stage2((command, parameter)):
+            assert command == MSG_OK
+            self.direct_shift_data.clear()
+            self.write(data)
+            self.awaitEndMessage().addCallback(success).addErrback(fail)
+
+        self.awaitEndMessage().addCallback(stage2).addErrback(fail)
+        return done
+
+    def ClJdwData(self, hexdata):
+        for i in xrange(0, len(hexdata), 2):
+            slice = hexdata[ i : i + 2 ]
+            try:
+                byte = int(slice, 16)
+            except:
+                return
+            self.direct_shift_data.append(chr(byte))
+        
     # Protocol level Cl* functions that aren't associated
     # with a particular type of request.
     def ClGetEmbeddedVersion(self, version, english):
@@ -459,7 +589,13 @@ class VlabChannel(channel.SSHChannel):
     def ClUsingUart(self):
         self.reply().callback((MSG_USINGUART, ''))
         
-    def ClError(self, name, server_message): 
+    def ClJdwFail(self, p0):
+        self.reply().callback((MSG_JDWFAIL, p0))
+        
+    def ClReceiveWall(self, *args):
+        pass
+        
+    def ClError(self, name, server_message=""): 
         if ( name == ERR_DISCONNECT ):
             return
         my_message = ERR_TABLE.get(name, ERR_TABLE[ ERR_UNKNOWN ])
@@ -471,10 +607,11 @@ class VlabChannel(channel.SSHChannel):
         """Internal function called when the SSH connection is available."""
         self.conn.sendRequest(self, 'exec', common.NS('-no-shell-'),
                                   wantReply = 1)
-        self.message_buffer = []
+        self.message_buffer = collections.deque()
         self.stage = VLAB_RELAY_SERVER
         if ( self.register_fn != None ):
             self.register_fn(self)
+            reactor.callLater(1.0, self.keepAlive)
 
     def assertProper(self, caller):
         assert self.stage == VLAB_BOARD_SERVER, (
@@ -502,28 +639,36 @@ class VlabChannel(channel.SSHChannel):
             self.uart_protocol.dataReceived(buffer)
             return
 
-        for ch in buffer:
-            if ( ch in "\r\n" ):
-                self.processMessage(''.join(self.message_buffer))
-                self.message_buffer = []
-            elif ( ch in '\x08\x7f' ):
-                if ( len(self.message_buffer) != 0 ):
-                    self.message_buffer.pop()
-            else:
-                if ( len(self.message_buffer) < 1024 ):
-                    self.message_buffer.append(ch)
+        vlabProcessMessage(handler_class=self, 
+                    message_table=VL_MSG_TABLE, 
+                    new_data=buffer,
+                    message_buffer=self.message_buffer, 
+                    debug=self.debug)
 
     def closed(self):
         """Internal function; called when the SSH connection is closed."""
         self.stage = VLAB_NOT_CONNECTED
 
+    def closeReceived(self):
+        """Internal function; called as the SSH connection is closed
+        by the other end."""
+        self.loseConnection()
+
+    def keepAlive(self):
+        if ( self.stage in (VLAB_RELAY_SERVER, VLAB_BOARD_SERVER) ):
+            if ( self.keep_alive_start == None ):
+                self.keep_alive_start = time.time()
+            self.sendMessage(MSG_REM, "keep alive %us\n" %
+                                int(time.time() - self.keep_alive_start))
+            reactor.callLater(TIMEOUT_FOR_KEEPALIVE, self.keepAlive)
+        
     def connectionLost(self, reason):
         if ( self.stage == VLAB_UART ):
-            self.uart_protocol.connectionLost(reason)
+            self.uart_protocol.connectionLost()
 
     def initData(self, debug):
         self.reply_queue = collections.deque()
-        self.message_buffer = []
+        self.message_buffer = collections.deque()
         self.userinfo_table = dict()
         self.version = VlabVersion()
         self.stage = VLAB_NOT_CONNECTED
@@ -531,52 +676,20 @@ class VlabChannel(channel.SSHChannel):
         self.uart_protocol = None
         self.register_fn = None
         self.debug = debug
+        self.direct_shift_data = collections.deque()
+        self.keep_alive_start = None
 
     def sendMessage(self, tag, *parameters):
         """Internal function; sends a message to the relay shell or board
         server."""
-        assert self.stage in (VLAB_RELAY_SERVER, VLAB_BOARD_SERVER), (
-            "sendMessage is only possible when connected." )
+        if ( not ( self.stage in (VLAB_RELAY_SERVER, VLAB_BOARD_SERVER) )):
+            return
+
         msg = '%s %s\n' % (tag, ' '.join([ str(p) for p in parameters]))
         if ( self.debug ):
             print 'VIRTUAL LAB Send: "%s"' % msg.strip()
         self.write(msg)
 
-    def processMessage(self, msg):
-        """Internal function; process a message that has been received via
-        SSH."""
-        if ( self.debug ):
-            print 'VIRTUAL LAB Receive: "%s"' % msg
-
-        fields = msg.split()
-        if ( len(fields) == 0 ):
-            return False
-
-        command = fields[ 0 ].lower()
-        tbl_entry = MSG_TABLE.get(command, None)
-        if ( tbl_entry == None ):
-            return False
-
-        get_all_remaining = tbl_entry[ 0 ]
-        handler_name = tbl_entry[ 1 ]
-        if ( get_all_remaining ):
-            # Resplit - put all of final parameter into one string.
-            fields = msg.split(None, len(tbl_entry) - 2)
-
-        handler_fn = getattr(self, handler_name, None)
-        if ( handler_fn == None ):
-            raise VlabException('Missing handler function: %s' % (handler_name))
-        else:
-            if ( self.debug ):
-                print 'VIRTUAL LAB calling function: %s' % (handler_name)
-
-        params = []
-
-        for (value, conv_fn) in zip(fields[ 1: ], tbl_entry[ 2: ]):
-            params.append(conv_fn(value))
-
-        handler_fn(*params)
-        return True
 
 class VlabUARTProtocol(protocol.Protocol):
     """A Protocol for communication with a virtual lab UART.
@@ -685,17 +798,17 @@ class VlabClientFactory(protocol.ClientFactory):
 
     A typical usage of VlabClientFactory is as follows:
     >>> factory = VlabClientFactory(VlabAuthorisation())
-    >>> factory.getChannel().addCallback(GotChannel)
+    >>> factory.getChannel().addCallback(GotChannel).addErrback(Fail)
     >>> reactor.connectTCP('foobar.cs.york.ac.uk', 22, factory)
     In this example, your method GotChannel will be called when the
-    channel is available. You could also add an errback
-    to catch connection errors.
+    channel is available. The errback function Fail is called if there
+    is a connection error.
 
     An alternative usage allows connections via SOCKS.
     >>> factory = vlab.VlabClientFactory(auth_data=VlabAuthorisation(),
             socks_connect_address='foobar.cs.york.ac.uk',
             socks_connect_port=22)
-    >>> factory.getChannel().addCallback(GotChannel)
+    >>> factory.getChannel().addCallback(GotChannel).addErrback(Fail)
     >>> reactor.connectTCP('socksserver.example.com', 1080, factory)
     In this example, the connection is made via the SOCKS service
     at socksserver.example.com. 
@@ -711,24 +824,43 @@ class VlabClientFactory(protocol.ClientFactory):
         self.socks_connect_port = socks_connect_port
         self.debug = debug
         self.first_failure = None
+        self.connector_list = []
+        self.transport_list = []
 
     def startedConnecting(self, connector):
-        pass
+        self.connector_list.append(connector)
+
+    def abort(self):
+        """Abort all scheduled connection attempts."""
+        while ( len(self.connector_list) != 0 ):
+            cl = self.connector_list.pop()
+            try:
+                cl.stopConnecting()
+            except:
+                pass
+        while ( len(self.transport_list) != 0 ):
+            t = self.transport_list.pop()
+            try:
+                t.abort()
+            except:
+                pass
 
     def clientConnectionLost(self, connector, reason):
-        pass
+        self.failHandler(reason)
 
     def clientConnectionFailed(self, connector, reason):
-        pass
+        self.failHandler(reason)
 
     def buildProtocol(self, addr):
-        return VlabClientTransport(
+        t = VlabClientTransport(
                     register_fn=self.registerVlabChannel, 
                     auth_data=self.auth_data,
                     fail_fn=self.failHandler,
                     debug=self.debug,
                     socks_connect_address=self.socks_connect_address, 
                     socks_connect_port=self.socks_connect_port)
+        self.transport_list.append(t)
+        return t
 
     def failHandler(self, ex_data):
         if ( self.first_failure != None ):
@@ -823,19 +955,22 @@ class VlabClientTransport(transport.SSHClientTransport):
 
     def connectionSecure(self):
         self.requestService(VlabClientUserAuth(self.auth_data,
-                VlabClientSSHConnection(self.register_fn, self.debug)))
+                VlabClientSSHConnection(self.register_fn, 
+                    self.fail_fn, self.debug)))
 
     def dataReceived(self, bytes):
         if ( self.socks_state == SOCKS_PASS ):
             transport.SSHClientTransport.dataReceived(self, bytes)
         else:
-            print 'receive bytes %s' % repr(bytes)
+            if ( self.debug ):
+                print 'receive bytes %s' % repr(bytes)
             for ch in bytes:
                 self.socks_received.append(ch)
 
             if (( self.socks_state == SOCKS_GREETING )
             and ( len(self.socks_received) >= 2 )):
-                print "that's a greeting"
+                if ( self.debug ):
+                    print "that's a greeting"
                 ver = self.socks_received.popleft()
                 method = self.socks_received.popleft()
                 if (( ver != '\x05' )
@@ -848,7 +983,8 @@ class VlabClientTransport(transport.SSHClientTransport):
 
             elif (( self.socks_state == SOCKS_CONNECTING )
             and ( len(self.socks_received) >= 5 )):
-                print "that's a connect message"
+                if ( self.debug ):
+                    print "that's a connect message"
                 result = self.socks_received[ 1 ]
                 if ( result != '\x00' ):
                     self.socks_state = SOCKS_FAILED
@@ -870,7 +1006,8 @@ class VlabClientTransport(transport.SSHClientTransport):
                         "SOCKS: Unknown address type %u" % address_type))
                
                 if ( len(self.socks_received) >= packet_size ):
-                    print "that's completion"
+                    if ( self.debug ):
+                        print "that's completion"
                     for i in xrange(packet_size):
                         self.socks_received.popleft()
 
@@ -881,19 +1018,61 @@ class VlabClientTransport(transport.SSHClientTransport):
 
                     self.socks_received.clear()
                     self.socks_state = SOCKS_PASS
+            else:
+                print 'Received something else from socks!'
+
+    def socksFail(self):
+        if (( self.socks_state != SOCKS_PASS )
+        and ( self.socks_state != SOCKS_FAILED )):
+            if ( self.debug ):
+                print 'SOCKS timeout'
+
+            self.fail_fn(ConnectException(
+                "SOCKS: Connection to remote host failed"))
+
+            try:
+                self.transport.loseConnection()
+            except:
+                pass
+
+    def abort(self):
+        self.socksFail()
 
     def connectionMade(self):
         if ( self.socks_state == SOCKS_PASS ):
+            if ( self.debug ):
+                print 'Connection made'
             transport.SSHClientTransport.connectionMade(self)
         elif ( self.socks_state == SOCKS_GREETING ):
             # Greeting: no authentication methods supported
-            print 'send greeting'
+            if ( self.debug ):
+                print 'send greeting'
             self.transport.write('\x05\x01\x00')
+            reactor.callLater(TIMEOUT_FOR_SOCKS, self.socksFail)
 
     def connectionLost(self, reason):
-        transport.SSHClientTransport.connectionLost(self, reason)
+        if ( self.socks_state == SOCKS_CONNECTING ):
+            # SOCKS server must have closed the connection,
+            # apparently without sending an error code.
+            self.fail_fn(ConnectException(
+                    "SOCKS: Server closed connection - DNS error?"))
+        else:
+            self.fail_fn(reason)
         self.socks_state = SOCKS_FAILED
-        self.fail_fn(ConnectException("Connection lost: %s" % reason))
+        transport.SSHClientTransport.connectionLost(self, reason)
+
+    def receiveError(self, reasonCode, desc):
+        # This happens if authentication fails.
+        self.socks_state = SOCKS_FAILED
+        self.fail_fn(ConnectException("SSH: (%s) %s" % (reasonCode, desc)))
+        transport.SSHClientTransport.receiveError(self, reasonCode, desc)
+
+    def sendDisconnect(self, reasonCode, desc):
+        # This happens if the host key doesn't match.
+        # It happens before connectionLost.
+        self.fail_fn(ConnectException("SSH: (%s) %s" % (reasonCode, desc)))
+        transport.SSHClientTransport.sendDisconnect(self, reasonCode, desc)
+
 
 
 class VlabClientUserAuth(userauth.SSHUserAuthClient):
@@ -934,13 +1113,20 @@ class VlabClientSSHConnection(connection.SSHConnection):
 
     Instances of this class are created by VlabClientTransport objects."""
 
-    def __init__(self, register_fn, debug, *args1, **args2):
+    def __init__(self, register_fn, fail_fn, debug, *args1, **args2):
         self.register_fn = register_fn
         self.debug = debug
+        self.fail_fn = fail_fn
         connection.SSHConnection.__init__(self, *args1, **args2)
 
     def serviceStarted(self):
+        connection.SSHConnection.serviceStarted(self)
         self.openChannel(VlabChannel(register_fn=self.register_fn, 
+                fail_fn=self.fail_fn,
                 debug=self.debug, conn=self))
+
+    def serviceStopped(self):
+        connection.SSHConnection.serviceStopped(self)
+        self.fail_fn(ConnectException("SSH service stopped"))
 
 

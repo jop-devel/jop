@@ -1,7 +1,7 @@
 # 
 # Debug Chain 
 # Copyright (C) Jack Whitham 2008
-# $Id: __init__.py,v 1.2 2008/09/03 21:08:38 jwhitham Exp $
+# $Id: __init__.py,v 1.3 2008/11/03 11:41:27 jwhitham Exp $
 # 
 #
 # Copyright (C) 2008, Jack Whitham
@@ -29,7 +29,7 @@ In order to use this module, you will need to understand
 Deferreds, a concept which is explained in the Twisted 
 Python documentation. 
 
-Version $Id: __init__.py,v 1.2 2008/09/03 21:08:38 jwhitham Exp $
+Version $Id: __init__.py,v 1.3 2008/11/03 11:41:27 jwhitham Exp $
 """
 
 

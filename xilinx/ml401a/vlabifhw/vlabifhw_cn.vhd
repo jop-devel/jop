@@ -2,7 +2,7 @@
 -- Virtual Lab Hardware Interface, with clock neutral channels
 --
 -- Author: Jack Whitham
--- $Id: vlabifhw_cn.vhd,v 1.2 2008/09/03 21:08:39 jwhitham Exp $
+-- $Id: vlabifhw_cn.vhd,v 1.3 2008/11/03 11:41:29 jwhitham Exp $
 -- 
 --
 -- Copyright (C) 2008, Jack Whitham
@@ -32,6 +32,7 @@ entity vlabifhw_cn is
     generic (
             baud_rate       : Integer := 115200;
             fifo_depth      : Integer := 16;
+            less_features   : Boolean := false;
             ext_channels    : Integer;
             clock_freq      : Integer
         );
@@ -107,6 +108,7 @@ begin
             baud_rate => baud_rate,
             fifo_depth => fifo_depth,
             ext_channels => channels,
+            less_features => less_features,
             clock_freq => clock_freq)
         port map (
             -- External hardware connections
