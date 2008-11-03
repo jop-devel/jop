@@ -5,6 +5,8 @@ vhdl work  ../../vhdl/simpcon/sc_arbiter_pack.vhd
 vhdl work  ../../vhdl/simpcon/sc_arbiter_fair.vhd
 vhdl work  ../../vhdl/jeopard/mac_coprocessor_if.vhd
 vhdl work  ../../vhdl/jeopard/mac_coprocessor.vhd
+vhdl work  ../../vhdl/jeopard/test_cp_if.vhd
+vhdl work  ../../vhdl/jeopard/test_cp.vhd
 vhdl work  ../../vhdl/scio/fifo.vhd
 vhdl work vlabifhw/vlabifhw_pack.vhd
 vhdl work vlabifhw/debugger.vhd
@@ -13,6 +15,7 @@ vhdl work vlabifhw/chuart.vhd
 vhdl work vlabifhw/vlabifhw.vhd
 vhdl work vlabifhw/testutils.vhd
 vhdl work vlabifhw/vlabifhw_cn.vhd
+vhdl work  ../../vhdl/scio/cmpsync.vhd
 vhdl work  ../../vhdl/scio/sc_usb.vhd
 vhdl work  ../../vhdl/scio/sc_uart.vhd
 vhdl work  ../../vhdl/scio/sc_control_channel.vhd
@@ -38,4 +41,4 @@ vhdl work  ../../vhdl/xilinx/xram.vhd
 vhdl work  ../../vhdl/xv4ram_block.vhd
 vhdl work  ../../vhdl/core/jopcpu.vhd
 vhdl work Autogen_Debug_Entity.vhd
-vhdl work  ../../vhdl/top/jop_ml401a.vhd
+vhdl work  ../../vhdl/top/jop_ml401cmp.vhd
