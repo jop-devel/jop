@@ -125,7 +125,7 @@ public class RtHWMethTestCMP extends RtThread {
         test_cp     cp = new test_cp () ;
         Random      rng = new Random(method_number);
         int[]       memory = new int [ 4 ];
-        int         din, address, dout, write, val, iteration;
+        int         din, address, dout, write, val, iteration, t;
 
         // Check hardware and software representations of registers.
         // There are four registers per hardware method, and all of them
@@ -137,20 +137,25 @@ public class RtHWMethTestCMP extends RtThread {
             write = val & 1;
             address = (val >> 1) & 3;
             din = rng.nextInt();
+            if ( 0 != ( val & 0x8000 )) {
+                t = rng.nextInt() & 0x7fffff;
+            } else {
+                t = 0;
+            }
 
             switch (method_number) {
-                case 1 :    dout = cp.test01(address, din, write); break;
-                case 2 :    dout = cp.test02(address, din, write); break;
-                case 3 :    dout = cp.test03(address, din, write); break;
-                case 4 :    dout = cp.test04(address, din, write); break;
-                case 5 :    dout = cp.test05(address, din, write); break;
-                case 6 :    dout = cp.test06(address, din, write); break;
-                case 7 :    dout = cp.test07(address, din, write); break;
-                case 8 :    dout = cp.test08(address, din, write); break;
-                case 9 :    dout = cp.test09(address, din, write); break;
-                case 10 :   dout = cp.test10(address, din, write); break;
-                case 11 :   dout = cp.test11(address, din, write); break;
-                case 12 :   dout = cp.test12(address, din, write); break;
+                case 1 :    dout = cp.test01(address, din, write, t); break;
+                case 2 :    dout = cp.test02(address, din, write, t); break;
+                case 3 :    dout = cp.test03(address, din, write, t); break;
+                case 4 :    dout = cp.test04(address, din, write, t); break;
+                case 5 :    dout = cp.test05(address, din, write, t); break;
+                case 6 :    dout = cp.test06(address, din, write, t); break;
+                case 7 :    dout = cp.test07(address, din, write, t); break;
+                case 8 :    dout = cp.test08(address, din, write, t); break;
+                case 9 :    dout = cp.test09(address, din, write, t); break;
+                case 10 :   dout = cp.test10(address, din, write, t); break;
+                case 11 :   dout = cp.test11(address, din, write, t); break;
+                case 12 :   dout = cp.test12(address, din, write, t); break;
                 default :   error = "Outside case?"; failure = true; return;
             }
             if (dout != memory[ address ]) { 
