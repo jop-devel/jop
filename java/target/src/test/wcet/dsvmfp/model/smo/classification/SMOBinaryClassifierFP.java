@@ -182,25 +182,7 @@ public class SMOBinaryClassifierFP{
     // smo.waitForNextPeriod();
     // while(i1>-10); //foreverloop
     loop = 0;
-//	%      // init to start it
-//	%      numChanged = 1;
-//	%      gos = 0;
-//	%      kernelCounter = 0;
-//	%
-//	%      // check all combinations like 1,2, but skip symmetrics like 2,1
-//	%      while(numChanged){
-//	%      //while(0){
-//	%        numChanged = 0;
-//	%        gos++;
-//	%
-//	%				for(i = 0; i < call D.rowsM(&svmp->x); i++) {
-//	%					for(j = 0; j < call D.rowsM(&svmp->x); j++) {
-//	%						numChanged += takeStep(i,j);
-//	%					}
-//	%				}
-//	%      }
-//	%
-    while (numChanged > 0 || examineAll) {
+    while (numChanged > 0 || examineAll) { // @WCA loop=2
       // while (loop>=0) { //temp debug forever loop
 //      System.out.print("Starting loop=");
 //      System.out.println(loop);
@@ -211,11 +193,11 @@ public class SMOBinaryClassifierFP{
 //        System.out.println("examineAll=true");
 //      else
 //        System.out.println("examineAll=false");
-      for (int i = 0; i < 100000; i++)
+      for (int i = 0; i < 100000; i++) // @WCA loop=2
         ; // slow it down to print
       numChanged = 0;
       if (examineAll) {
-        for (i2 = 0; i2 < m; i2++) {
+        for (i2 = 0; i2 < m; i2++) { // @WCA loop=2
           if (examineExample()) {
             numChanged++;
           }
@@ -489,7 +471,7 @@ public class SMOBinaryClassifierFP{
     int fcache_fp_tmpi1 = 0;
     int fcache_fp_tmpi2 = 0;
     int fcache_fp_tmp_sum = 0;
-    for (int i = 0; i < findexset0Size; i++) {
+    for (int i = 0; i < findexset0Size; i++) { // @WCA loop=2
       // fcache_fp[findexset0[i]] = FP.add(fcache_fp[findexset0[i]], FP.add(
       // FP.mul(y_fp[i1], FP.mul(FP.sub(a1_fp, alph1_fp),
       // getKernelOutputFP(i1, findexset0[i], true))),
@@ -1328,9 +1310,9 @@ public class SMOBinaryClassifierFP{
     int[][] data_fp_local = data_fp;
     int m = data_fp_local.length;
     int n = xtest.length;
-    for (int i = 0; i < m; i++) {
+    for (int i = 0; i < m; i++) { // @WCA loop=2
       if (alpha_fp[i] > 0) {
-        while (n != 0) {
+        while (n != 0) { // @WCA loop=2
           n = n - 1;
           //functionalOutput_fp += KFP.kernelX(i);
           functionalOutput_fp += (data_fp_local[m][n] >> 8) * (xtest[n] >> 8);
