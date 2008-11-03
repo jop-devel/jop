@@ -1,5 +1,5 @@
 
-import sys
+import sys, os
 
 import vlab, collections, time, vlabif
 from twisted.internet import reactor, defer, protocol
@@ -8,8 +8,27 @@ from vlab.download import BOARD_NAME, DecodeJOP, EXIT_STRING
 
 @defer.inlineCallbacks
 def Run():
-    print 'Initialising...'
-    byte_buffer = DecodeJOP("../../java/target/dist/bin/HWMethTest.jop")
+    if ( len(sys.argv) != 2 ):
+        print 'Usage: %s <JOP file>' % sys.argv[ 1 ]
+        reactor.stop()
+        return
+
+    print 'Loading...'
+    name = sys.argv[ 1 ]
+    print '?', name
+    if ( not os.path.exists(name) ):
+        name += '.jop'
+        print '?', name
+        if ( not os.path.exists(name) ):
+            name = "../../java/target/dist/bin/" + name
+            print '?', name
+            if ( not os.path.exists(name) ):
+                print 'JOP file not found'
+                reactor.stop()
+                return
+
+    print 'Initialising...', name
+    byte_buffer = DecodeJOP(name)
     bits = file("ml401.bit").read()
     debug_chain = vlabif.DebugConfig(chain_config_file="chain_config.py")
     vlihp = vlabif.VlabInterfaceProtocol(debug=False)
