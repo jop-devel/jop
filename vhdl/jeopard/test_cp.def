@@ -1,0 +1,76 @@
+
+
+COPROCESSOR test_cp
+METHOD test01
+PARAMETER address int
+PARAMETER data int
+PARAMETER write int
+RETURN int
+
+METHOD test02
+PARAMETER address int
+PARAMETER data int
+PARAMETER write int
+RETURN int
+
+METHOD test03
+PARAMETER address int
+PARAMETER data int
+PARAMETER write int
+RETURN int
+
+METHOD test04
+PARAMETER address int
+PARAMETER data int
+PARAMETER write int
+RETURN int
+
+METHOD test05
+PARAMETER address int
+PARAMETER data int
+PARAMETER write int
+RETURN int
+
+METHOD test06
+PARAMETER address int
+PARAMETER data int
+PARAMETER write int
+RETURN int
+
+METHOD test07
+PARAMETER address int
+PARAMETER data int
+PARAMETER write int
+RETURN int
+
+METHOD test08
+PARAMETER address int
+PARAMETER data int
+PARAMETER write int
+RETURN int
+
+METHOD test09
+PARAMETER address int
+PARAMETER data int
+PARAMETER write int
+RETURN int
+
+METHOD test10
+PARAMETER address int
+PARAMETER data int
+PARAMETER write int
+RETURN int
+
+METHOD test11
+PARAMETER address int
+PARAMETER data int
+PARAMETER write int
+RETURN int
+
+METHOD test12
+PARAMETER address int
+PARAMETER data int
+PARAMETER write int
+RETURN int
+
+

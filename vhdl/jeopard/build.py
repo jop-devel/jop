@@ -532,6 +532,9 @@ if ( __name__ == "__main__" ):
     makeInterfaces(definition_fname="mac_coprocessor.def", 
                 java_dir="../../java/target/src/test/test", 
                 vhdl_dir=".")
+    makeInterfaces(definition_fname="test_cp.def", 
+                java_dir="../../java/target/src/test/test", 
+                vhdl_dir=".")
 
 
 
