@@ -28,7 +28,22 @@ import java.util.Map.Entry;
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.Graph;
 
+/**
+ * Export JGraphT graphs to .DOT, with custom attributes.
+ * 
+ * @author Benedikt Huber <benedikt.huber@gmail.com>
+ *
+ * @param <V> node type
+ * @param <E> edge type
+ */
 public class AdvancedDOTExporter<V,E> {
+	
+	/**
+	 * Escape a string, s.t. it can be used as a DOT attribute value.
+	 * 
+	 * @param s input string
+	 * @return the string, with special characters replaced, and quoted if neccessary
+	 */
 	public static String escapedToString(String s) {
 		StringBuffer sb = new StringBuffer();
 		boolean quote=false;
@@ -46,19 +61,59 @@ public class AdvancedDOTExporter<V,E> {
 		if(quote || sb.length() == 0) { sb.insert(0, '"');sb.append('"'); }
 		return sb.toString();
 	}
+	
+	/**
+	 * Sets label and other attributes of a <code>DOT</code> node or edge based on the provided
+	 * object.
+	 * @param <T> The type of the node/edge.
+	 */
 	public interface DOTLabeller<T> {
+		/**
+		 * get the label for the object
+		 * @param object
+		 * @return the label, or null if no label should be used
+		 */
 		public String getLabel(T object);
+		/**
+		 * Set <code>DOT</code> attributes depending on the given object
+		 * @param object
+		 * @param ht the map to write attributes into 
+		 * @return true if <code>ht</code> has been changed
+		 */
 		public boolean setAttributes(T object, Map<String,String> ht);
 	}
+	
+	/**
+	 * Provides the ID and sets label and other attributes of a <code>DOT</code> node based 
+	 * on the provided node.
+	 *
+	 * @param <T> node tpye
+	 */
 	public interface DOTNodeLabeller<T> extends DOTLabeller<T> {
+		/**
+		 * get the ID of a graph's node
+		 * @param node
+		 * @return the (unique) integer ID
+		 */
 		public int getID(T node);
 	}
+	
+	/**
+	 * Doesn't set a label.
+	 * 
+	 * @param <T> the type of the objects getting labelled
+	 */
 	public static class NullLabeller<T> implements DOTLabeller<T> {
 		public String getLabel(T obj) { return null; }
 		public boolean setAttributes(T object, Map<String, String> ht) {
 			return false;
 		}		
 	}
+	/**
+	 * Uses {@link toString()} to provide a label
+	 * 
+	 * @param <T> the type of the objects getting labelled
+	 */
 	public static class DefaultDOTLabeller<T> implements DOTLabeller<T> {
 		public String getLabel(T node) {
 			return node.toString();
@@ -69,6 +124,12 @@ public class AdvancedDOTExporter<V,E> {
 			return (node != null);
 		}				
 	}
+	
+	/**
+	 * Uses a <code>Map</code>(dictionary) to provide labels
+	 * 
+	 * @param <T> the type of the objects getting labelled
+	 */
 	public static class MapLabeller<T> extends DefaultDOTLabeller<T> {
 		protected Map<T, ?> annots;
 		public MapLabeller(Map<T, ?> annots) {
@@ -82,6 +143,11 @@ public class AdvancedDOTExporter<V,E> {
 			}
 		}
 	}
+	/**
+	 * Additionally provides node IDs using a hash-based <code>Map</code>
+	 * 
+	 * @param <T> The node type. Needs to provide correct <code>hashCode()</code>
+	 */
 	public static class DefaultNodeLabeller<T> 
 			extends    DefaultDOTLabeller<T>
 			implements DOTNodeLabeller<T> {		
@@ -95,7 +161,13 @@ public class AdvancedDOTExporter<V,E> {
 			return id;
 		}
 	}
-
+	
+	/**
+	 * Default DOT attributes used for nodes, using box shape and 
+	 * a 10pt font.
+	 * 
+	 * @return the attribute dictionary
+	 */
 	public static Map<String,String> defaultNodeAttributes() {
 		Hashtable<String, String> attrs = new Hashtable<String,String>();
 		attrs.put("shape", "box");
@@ -103,6 +175,12 @@ public class AdvancedDOTExporter<V,E> {
 		attrs.put("fontsize", "10");
 		return attrs;
 	}
+	
+	/**
+	 * Default DOT attributes used for edges, using a 10pt font. 
+     *
+	 * @return the attribute dictionary
+	 */
 	public static Map<String,String> defaultEdgeAttributes() {
 		Hashtable<String, String> attrs = new Hashtable<String,String>();
 		attrs.put("fontname", "Courier");
@@ -114,12 +192,22 @@ public class AdvancedDOTExporter<V,E> {
 	private DOTLabeller<E> edgeLabeller;
 	private Map<String, String> nodeAttributes;
 	private Map<String, String> edgeAttributes;
+	
+	/**
+	 * Create a DOT exporter with {@link DefaultNodeLabeller} for nodes,
+	 * and {@link NullLabeller} for edges.
+	 */
 	public AdvancedDOTExporter() {
 		this.nodeLabeller = new DefaultNodeLabeller<V>();
 		this.edgeLabeller = new NullLabeller<E>();
 		this.nodeAttributes = defaultNodeAttributes();
 		this.edgeAttributes = defaultEdgeAttributes();
 	}
+	/**
+	 * Create a DOT exporter using the provided labellers
+	 * @param nodeLabeller if null, use {@link DefaultNodeLabeller}
+	 * @param edgeLabeller if null, use {@link NullLabeller}
+	 */
 	public AdvancedDOTExporter(DOTNodeLabeller<V> nodeLabeller,
 							   DOTLabeller<E> edgeLabeller) {
 		this.nodeLabeller = nodeLabeller == null ? new DefaultNodeLabeller<V>() : nodeLabeller;
@@ -127,19 +215,34 @@ public class AdvancedDOTExporter<V,E> {
 		this.nodeAttributes = defaultNodeAttributes();
 		this.edgeAttributes = defaultEdgeAttributes();
 	}
-	public void exportDOT(Writer writer, DirectedGraph<V,E> g) throws IOException {
-		exportDOTDiGraph(writer,g);
+	
+	/**
+	 * Create a DOT file for the given directed graph
+	 * @param writer target for the export
+	 * @param graph the directed graph to export
+	 * @throws IOException if {@code writer} raises an IO exception
+	 */
+	public void exportDOT(Writer writer, DirectedGraph<V,E> graph) throws IOException {
+		exportDOTDiGraph(writer,graph);
 	}
-	public void exportDOTDiGraph(Writer w, Graph<V,E> graph) throws IOException {
-		w.append("digraph cfg\n{\n");
+	
+	/**
+	 * Create a DOT digraph for the given graph
+     *
+	 * @param writer target for the export
+	 * @param graph the graph to export
+	 * @throws IOException if {@code writer} raises an IO exception
+	 */
+	public void exportDOTDiGraph(Writer writer, Graph<V,E> graph) throws IOException {
+		writer.append("digraph cfg\n{\n");
 		for(V n : graph.vertexSet()) {
 			int id = nodeLabeller.getID(n);
 			Hashtable<String,String> attrs = new Hashtable<String,String>(this.nodeAttributes);
 			nodeLabeller.setAttributes(n, attrs);
 
-			w.append(""+id+" ");
-			appendAttributes(w,attrs);
-			w.append(";\n");
+			writer.append(""+id+" ");
+			appendAttributes(writer,attrs);
+			writer.append(";\n");
 		}
 		for(E e : graph.edgeSet()) {
 			int idSrc = nodeLabeller.getID(graph.getEdgeSource(e));
@@ -147,12 +250,13 @@ public class AdvancedDOTExporter<V,E> {
 			Hashtable<String,String> attrs = new Hashtable<String,String>(this.edgeAttributes);
 			edgeLabeller.setAttributes(e, attrs);
 
-			w.append(""+idSrc+" -> "+idTarget);
-			appendAttributes(w,attrs);
-			w.append(";\n");
+			writer.append(""+idSrc+" -> "+idTarget);
+			appendAttributes(writer,attrs);
+			writer.append(";\n");
 		}
-		w.append("}\n");
+		writer.append("}\n");
 	}
+	
 	private void appendAttributes(Writer w, Hashtable<String, String> attrs) throws IOException {
 		if(attrs.isEmpty()) return;
 		w.append('[');

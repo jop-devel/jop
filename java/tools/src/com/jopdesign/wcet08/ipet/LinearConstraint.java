@@ -19,9 +19,6 @@
 */
 package com.jopdesign.wcet08.ipet;
 
-import java.util.Map;
-import java.util.Map.Entry;
-
 public class LinearConstraint<T> {
 	public enum ConstraintType { LessEqual, Equal, GreaterEqual; } 
 	private ConstraintType cmp;

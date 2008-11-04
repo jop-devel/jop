@@ -19,15 +19,9 @@
 */
 package com.jopdesign.wcet08;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
 import java.util.SortedMap;
-import java.util.TreeMap;
-import java.util.Vector;
 import org.apache.log4j.Logger;
 
 import com.jopdesign.build.ClassInfo;
@@ -36,15 +30,9 @@ import com.jopdesign.wcet08.frontend.CallGraph;
 import com.jopdesign.wcet08.frontend.FlowGraph;
 import com.jopdesign.wcet08.frontend.JOPAppInfo;
 import com.jopdesign.wcet08.frontend.SourceAnnotations;
-import com.jopdesign.wcet08.frontend.FlowGraph.FlowGraphEdge;
-import com.jopdesign.wcet08.frontend.FlowGraph.FlowGraphNode;
 import com.jopdesign.wcet08.frontend.SourceAnnotations.BadAnnotationException;
-import com.jopdesign.wcet08.report.DetailedMethodReport;
-import com.jopdesign.wcet08.report.InvokeDot;
-import com.jopdesign.wcet08.report.MethodReport;
+import com.jopdesign.wcet08.graphutils.TopOrder.BadFlowGraphException;
 import com.jopdesign.wcet08.report.Report;
-
-import static com.jopdesign.wcet08.Config.sanitizeFileName;
 
 /** WCET 'project', information on which method in which class to analyse etc. */
 public class Project {
@@ -108,13 +96,16 @@ public class Project {
 			assert(wcaMap != null);
 			FlowGraph fg;
 			try {
-				fg = new FlowGraph(appInfo,method);
+				fg = new FlowGraph(method);
 				fg.loadAnnotations(wcaMap);
 			} catch (BadAnnotationException e) {
 				logger.error("Bad annotation: "+e);
 				e.printStackTrace();
 				throw new Exception("Bad annotation: "+e,e);
-			} 
+			}  catch(BadFlowGraphException e) {
+				logger.error("Bad flow graph: "+e);
+				throw new Exception("Bad flowgraph: "+e.getMessage(),e);				
+			}
 			cfgs.put(method,fg);
 		}		
 	}	

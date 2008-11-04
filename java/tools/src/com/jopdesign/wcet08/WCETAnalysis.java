@@ -47,14 +47,10 @@
  */
 package com.jopdesign.wcet08;
 
-import java.util.Properties;
-
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
-import org.apache.velocity.app.Velocity;
-
 import com.jopdesign.wcet08.Config.MissingPropertyError;
 import com.jopdesign.wcet08.analysis.CacheConfig;
 import com.jopdesign.wcet08.analysis.SimpleAnalysis;

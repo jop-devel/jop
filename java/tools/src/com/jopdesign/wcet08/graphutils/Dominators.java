@@ -24,6 +24,10 @@ import java.util.Vector;
 
 import org.jgrapht.DirectedGraph;
 
+/** Compute Dominators of a graph, following:
+ * A Simple, Fast Dominance Algorithm
+ * (Cooper, Keith  D.  and Harvey, Timothy  J.  and Kennedy, Ken).
+ */
 public class Dominators<V,E> {
 	private DirectedGraph<V, E> graph;
 	private Vector<V> vertexPreOrder;
@@ -36,7 +40,11 @@ public class Dominators<V,E> {
 	protected V getIDom(V vertex) {		
 		return idom.get(vertex);
 	}
-
+	/**
+	 * (Immediate) Dominators based on the given pre-order traversal of the graph. 
+	 * @param g the graph
+	 * @param preOrder a pre-order DFS traversal of the graph. Its first node is the entry point of the graph.
+	 */
 	public Dominators(DirectedGraph<V,E> g, Vector<V> preOrder) {
 		this.graph = g;
 		this.vertexPreOrder = preOrder;
@@ -45,10 +53,6 @@ public class Dominators<V,E> {
 			preOrderMap.put(vertexPreOrder.get(i),i);
 		}
 	}
-	/* Compute Dominators, following:
-	 *    	author = {Cooper, Keith  D.  and Harvey, Timothy  J.  and Kennedy, Ken  },
-            title = {A Simple, Fast Dominance Algorithm},
-	 */
 	protected void computeDominators() {
 		if(this.idom != null) return;
 		this.idom = new Hashtable<V,V>();
@@ -93,10 +97,27 @@ public class Dominators<V,E> {
 		}
 		return v1;
 	}
+	
+	/**
+	 * Get the table of immediate dominators. Note that by convention, the graph's entry 
+	 * is dominated by itself (so <code>IDOM(n)</code> is a total function).</br>
+	 * Note that the set <code>DOM(n)</code> is given by 
+	 * <ul>
+	 *  <li/><code>DOM(Entry) = Entry</code>
+	 *  <li/><code>DOM(n) = n \cup DOM(IDOM(n))</code>
+	 * </ul>
+	 * @return
+	 */
 	public Hashtable<V, V> getIDoms() {
 		computeDominators();
 		return this.idom;
 	}
+	/**
+	 * Check wheter a node dominates another one.
+	 * @param dominator
+	 * @param dominated
+	 * @return true, if <code>dominator</code> dominates <code>dominated</code> w.r.t to the entry node
+	 */
 	public boolean dominates(V dominator, V dominated) {
 		if(dominator.equals(dominated)) return true; // Domination is reflexive ;)
 		computeDominators();

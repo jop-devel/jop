@@ -36,8 +36,16 @@ import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 import org.jgrapht.traverse.AbstractGraphIterator;
 
+/**
+ * Compute the loop coloring of a graph, i.e. for each node
+ * the set of loops (identifie by targets of back-edges) it 
+ * belongs to. Based on {@link TopOrder} and {@link Dominators}.
+ *
+ * @param <V> node type
+ * @param <E> edge type
+ */
 public class LoopColoring<V,E> {
-	enum SimpleVisitColor { WHITE,GREY };
+	private enum SimpleVisitColor { WHITE,GREY };
 	private class LoopColorIterator extends AbstractGraphIterator<V,E> {
 		private Stack<V> stack;
 		private V hol;
@@ -68,9 +76,9 @@ public class LoopColoring<V,E> {
 			return nextV;
 		}
 	}
+	
 	private DirectedGraph<V, E> graph;
 	private TopOrder<V, E> topOrder;
-	private Dominators<V, E> doms;
 	private Hashtable<V, Set<V>> loopColors;
 	private Hashtable<V, Vector<V>> headOfLoops;
 	private Hashtable<V, List<E>> exitEdges;
@@ -79,30 +87,8 @@ public class LoopColoring<V,E> {
 	public LoopColoring(DirectedGraph<V,E> graph, TopOrder<V,E> topOrder) {
 		this.graph = graph;
 		this.topOrder = topOrder;
-		this.doms = new Dominators<V,E>(graph,topOrder.getDfsOrder());
 	}
-	/**
-	 * Reducability condition:
-	 * For every backedge (n,h), h dominates n
-	 */
-	public void checkReducible() throws Exception {
-		for(E backEdge : topOrder.getBackEdges()) {
-			V n   = graph.getEdgeSource(backEdge);
-			V hol = graph.getEdgeTarget(backEdge);
-			if(! doms.dominates(hol,n)) {
-				throw new Exception("Irreducible loop: "+hol+" should dominate "+ n +
-									"because of "+backEdge);
-			}
-		}
-	}
-	private void assertReducible() {
-		try { 
-			checkReducible(); 
-		}
-		catch(Exception e) { 
-			throw new AssertionError("Precondition violated: Unreducible flow graph: "+e); 
-		}		
-	}
+
 	public Map<V,Set<V>> getLoopColors() {
 		if(loopColors == null) analyse();
 		return loopColors;
@@ -110,7 +96,6 @@ public class LoopColoring<V,E> {
 	private void analyse() {
 		loopColors = new Hashtable<V, Set<V>>();
 		for(V v : graph.vertexSet()) loopColors.put(v, new TreeSet<V>());
-		assertReducible();
 		/* Step 1: Group backedges by Head-Of-Loop */
 		headOfLoops = new Hashtable<V,Vector<V>>();
 		for(E backedge : this.topOrder.getBackEdges()) {
@@ -152,6 +137,10 @@ public class LoopColoring<V,E> {
 			}
 		}
 	}
+	/**
+	 * A loop-nest forest has an edge from loop A to loop B, if B is an inner loop of A.
+	 * @return The loop-nest forest of the graph
+	 */
 	public SimpleDirectedGraph<V,DefaultEdge> getLoopNestForest() {
 		if(loopNestForest != null) return loopNestForest;
 		analyse();
@@ -167,13 +156,19 @@ public class LoopColoring<V,E> {
 		}
 		return loopNestForest;
 	}
-	public Dominators<V, E> getDominators() {		
-		return doms;
-	}
+	/**
+	 * A node is an Head of loop, if it is the target of a back-edge
+	 * @return a map from head-of-loop nodes to back-edge source vertices.
+	 */
 	public Hashtable<V, Vector<V>> getHeadOfLoops() {
 		if(headOfLoops == null) analyse();
 		return headOfLoops;
 	}
+	/**
+	 * An edge E is an <i>exit edge</i> of an loop, if the source of E
+	 * is part of the loop, but its target is not.
+	 * @return a map from head-of-loop nodes to that loop's exit edges
+	 */
 	public Map<V,List<E>> getExitEdges() {
 		if(this.exitEdges == null) analyse();
 		return this.exitEdges;
@@ -198,7 +193,6 @@ public class LoopColoring<V,E> {
 	public void unpeelLoop(V headOfLoop, VertexFactory<V> factory) {
 		/* invalidate */
 		this.topOrder = null;
-		this.doms = null;
 		this.loopNestForest = null;
 		this.headOfLoops = null;
 		/* step 1: find all vertices involved in the loop */

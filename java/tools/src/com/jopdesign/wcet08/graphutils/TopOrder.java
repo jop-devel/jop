@@ -23,14 +23,38 @@ import java.util.Hashtable;
 import java.util.Vector;
 
 import org.jgrapht.DirectedGraph;
+import org.jgrapht.alg.ConnectivityInspector;
 import org.jgrapht.traverse.DepthFirstIterator;
 
+import com.jopdesign.wcet08.frontend.FlowGraph.FlowGraphEdge;
+import com.jopdesign.wcet08.frontend.FlowGraph.FlowGraphNode;
+
+/**
+ * Given a rooted, directed graph, identify back-edges.
+ * A back-edge is an edge <code>B -> A</code> s.t. A dominates B w.r.t to Entry.
+ * If removing the back-edges leads to a DAG, compute a topological order using that graph.
+ * @param <V> node type
+ * @param <E> edge type
+ */
 public class TopOrder<V,E> {
+	/**
+	 * Raised if the given graph isn't reducible, i.e. there are cycles without back-edges,
+	 * or if there is more than one component.
+	 */
+	public static class BadFlowGraphException extends Exception {
+		private static final long serialVersionUID = 1L;
+		public BadFlowGraphException(String reason) { super(reason); }
+	}
 	private DirectedGraph<V, E> graph;
 	private Hashtable<V,Integer> topOrder = null;
 	private Vector<V> dfsOrder = null;
 	private Vector<E> backEdges = null;
 	private V startVertex;
+	private Dominators<V, E> dominators;
+
+	/* Iterator detecting back edges using DFS search.
+	 * This works for reducible graphs only.
+	 */
 	private class BackEdgeDetector extends DepthFirstIterator<V,E> {
 		private int gen;
 		public BackEdgeDetector(DirectedGraph<V, E> g, V startVertex) {
@@ -56,25 +80,74 @@ public class TopOrder<V,E> {
 			}
 		}
 	}
-	public TopOrder(DirectedGraph<V,E> graph,V startVertex) {
+	
+	public TopOrder(DirectedGraph<V,E> graph,V startVertex) throws BadFlowGraphException {
 		this.graph = graph;
 		this.startVertex = startVertex;
+		analyse();
 	}
-	public Vector<E> getBackEdges() {
-		if(backEdges != null) return backEdges; // Caching 
+	private void analyse() throws BadFlowGraphException {
 		backEdges = new Vector<E>();
 		topOrder = new Hashtable<V, Integer>();
 		dfsOrder = new Vector<V>();
 		BackEdgeDetector iter = new BackEdgeDetector(graph,startVertex);
 		while(iter.hasNext()) iter.next();
-		return this.backEdges;
+		this.dominators = new Dominators<V,E>(this.graph,dfsOrder);
+		checkReducible();
 	}
+	/**
+	 * An edge B->A is a back-edge if A dominates B w.r.t. <code>Entry</code>.
+	 * @return the back-edges of this graph
+	 */
+	public Vector<E> getBackEdges() {
+		return backEdges; 
+	}
+	/**
+	 * Get a topological order <code>TOPO</code> mapping nodes to integers.
+	 * If you remove all back-edges in the graph, <code>TOPO(n) &lt; TOPO(m)</code> if there
+	 * is a path from n to m.
+	 * @return
+	 */
 	public Hashtable<V,Integer> getTopOrder() {
-		if(topOrder == null) getBackEdges();
 		return topOrder;
 	}
+	/**
+	 * Get a DFS traversal of the graph
+	 * @return
+	 */
 	public Vector<V> getDfsOrder() {
-		if(dfsOrder == null) getBackEdges();
 		return dfsOrder;
 	}
+	/**
+	 * @return the {@link Dominators} of the graph
+	 */
+	public Dominators getDominators() {
+		return this.dominators;
+	}
+	
+	/* Reducability condition: For every backedge (n,h), h dominates n
+	 * @throws Exception if the graph isn't reducible
+	 */
+	private void checkReducible() throws BadFlowGraphException {
+		for(E backEdge : getBackEdges()) {
+			V n   = graph.getEdgeSource(backEdge);
+			V hol = graph.getEdgeTarget(backEdge);
+			if(! dominators.dominates(hol,n)) {
+				throw new BadFlowGraphException(hol+" should dominate "+ n);
+			}
+		}
+	}
+	/**
+	 * Check wheter the given graph is connected <code>|weakly connected components| = 1</code>
+	 * @param graph
+	 * @throws BadFlowGraphException
+	 */
+	public static void checkConnected(DirectedGraph<FlowGraphNode, FlowGraphEdge> graph) 
+		throws BadFlowGraphException {
+		int comps = new ConnectivityInspector<FlowGraphNode, FlowGraphEdge>(graph).connectedSets().size(); 
+		if(comps != 1) {
+			throw new BadFlowGraphException("Expected graph with one component, but the given one has "+comps);
+		}
+	}
+
 }

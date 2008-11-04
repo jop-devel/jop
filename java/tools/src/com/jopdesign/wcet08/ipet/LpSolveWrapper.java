@@ -19,17 +19,11 @@
 */
 package com.jopdesign.wcet08.ipet;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Vector;
 import java.util.Map.Entry;
-
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
 
 import com.jopdesign.wcet08.ipet.LinearConstraint.ConstraintType;
 
@@ -37,7 +31,6 @@ import lpsolve.LpSolve;
 import lpsolve.LpSolveException;
 
 public class LpSolveWrapper {
-	private static final Logger logger = Logger.getLogger(LpSolveWrapper.class);	
 	private class RawVector {
 		int count;
 		int[] ixs;

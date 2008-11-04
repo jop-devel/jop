@@ -46,6 +46,7 @@ import com.jopdesign.wcet08.report.InvokeDot;
  * @author Benedikt Huber, benedikt.huber@gmail.com
  */
 public class JOPAppInfo extends AppInfo {
+	private static final long serialVersionUID = 2L;
 	private static final Logger  logger = Logger.getLogger(JOPAppInfo.class);
 
 	public class MethodNotFoundException extends Exception {

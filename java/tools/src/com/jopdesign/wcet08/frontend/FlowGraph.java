@@ -33,11 +33,9 @@ import java.util.Vector;
 import java.util.Map.Entry;
 
 import org.apache.bcel.generic.InstructionHandle;
-import org.apache.log4j.Logger;
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.ext.StringNameProvider;
 import org.jgrapht.graph.DefaultDirectedGraph;
-
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.wcet.WCETInstruction;
 import com.jopdesign.wcet08.frontend.BasicBlock.FlowInfo;
@@ -46,6 +44,7 @@ import com.jopdesign.wcet08.frontend.BasicBlock.InstrField;
 import com.jopdesign.wcet08.frontend.SourceAnnotations.BadAnnotationException;
 import com.jopdesign.wcet08.graphutils.LoopColoring;
 import com.jopdesign.wcet08.graphutils.TopOrder;
+import com.jopdesign.wcet08.graphutils.TopOrder.BadFlowGraphException;
 
 /**
  * (Control) Flow Graph for WCET analysis.
@@ -64,8 +63,6 @@ import com.jopdesign.wcet08.graphutils.TopOrder;
  *
  */
 public class FlowGraph {
-	private static final Logger logger = Logger.getLogger(FlowGraph.class);	
-
 	/* 
 	 * Flow Graph Nodes 
 	 * ----------------
@@ -141,7 +138,7 @@ public class FlowGraph {
 	private HashMap<FlowGraphNode, Integer> annotations;
 	private MethodInfo  methodInfo;
 	
-	public FlowGraph(JOPAppInfo cl, MethodInfo method)  {
+	public FlowGraph(MethodInfo method) throws BadFlowGraphException  {
 		this.methodInfo = method;
 		createFlowGraph(method);
 		analyseFlowGraph();
@@ -201,7 +198,8 @@ public class FlowGraph {
 		}
 	}
 
-	private void analyseFlowGraph() {
+	private void analyseFlowGraph() throws BadFlowGraphException {
+		TopOrder.checkConnected(graph);
 		topOrder = new TopOrder<FlowGraphNode, FlowGraphEdge>(this.graph, this.entry);
 		loopColoring = new LoopColoring<FlowGraphNode, FlowGraphEdge>(this.graph,topOrder);
 	}
