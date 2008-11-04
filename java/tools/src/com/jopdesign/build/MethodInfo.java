@@ -79,4 +79,8 @@ public class MethodInfo {
 		return cli;
 	}
 
+	public String getFQMethodName() {
+		return cli.clazz.getClassName() + "." + methodId;
+	}
+
 }

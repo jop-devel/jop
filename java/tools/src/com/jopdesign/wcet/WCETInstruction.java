@@ -197,7 +197,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 	 * @return table body of opcodes with info
 	 */
 
-	static String toWCAString() {
+	public static String toWCAString() {
 		StringBuffer sb = new StringBuffer();
 
 		sb.append("Table of WCETInstruction cycles\n");
