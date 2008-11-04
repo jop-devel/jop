@@ -86,21 +86,18 @@ public class WCETAnalyser extends AppInfo {
 
 	String dotf = null;
 	// dot property: it will generate dot graphs if true
-	public static boolean jline;
-	public static boolean instr; // true if you want instriction cycles
+	public boolean jline;
+	public boolean instr; // true if you want instriction cycles
 	// printed
 
 	// The app method or main if not provided
 	public String appmethod;
 
-	public static int idtmp = 0; // counter to make unique ids
+	public int idtmp = 0; // counter to make unique ids
 
 	public final static String nativeClass = "com.jopdesign.sys.Native";
 
-//	JavaClass[] jca;
-
 	PrintWriter out;
-
 	PrintWriter dotout;
 
 	public StringBuffer wcasb = new StringBuffer();
@@ -127,7 +124,6 @@ public class WCETAnalyser extends AppInfo {
 	public ArrayList wcmbs; // all the wcmbs
 
 	public boolean init = true;
-	public boolean analyze = false;
 
 	public WCETAnalyser() {
 		super(ClassInfo.getTemplate());
@@ -141,23 +137,16 @@ public class WCETAnalyser extends AppInfo {
 		javaFilePathMap = new HashMap();
 	}
 
-	public static void main(String[] args) {
-		WCETAnalyser wca = new WCETAnalyser();
-		HashSet clsArgs = new HashSet();
-		wca.outFile = null; // wcet/P3+Wcet.txt
+	public void analyze() {
+		
+		WCETAnalyser wca = this;
+		
 		// the tables can be easier to use in latex using this property
-		jline = System.getProperty("jline", "false").equals("true");
-		instr = System.getProperty("instr", "true").equals("true");
+		wca.jline = System.getProperty("jline", "false").equals("true");
+		wca.instr = System.getProperty("instr", "true").equals("true");
 
-		if (args.length == 0) {
-			System.err
-					.println("WCETAnalyser arguments: [-cp classpath] [-o file] class [class]*");
-			System.exit(1);
-		}
-		wca.parseOptions(args);
 		wca.appmethod = wca.mainClass + "." + wca.mainMethodName;
 
-		// String srcPath = "nodir";
 		try {
 
 			StringTokenizer st = new StringTokenizer(wca.srcPath,
@@ -193,13 +182,13 @@ public class WCETAnalyser extends AppInfo {
 			wca.global = false;
 			wca.iterate(new SetWCETAnalysis(wca));
 			wca.init = false;
-			wca.analyze = true;
 			// wca.iterate(new SetWCETAnalysis(wca));
 
 			// wca.out.println("*************APPLICATION
 			// WCET="+wca.wcmbapp.wcet+"********************");
 			StringBuffer wcasbtemp = new StringBuffer();
-			if (wca.analyze) {
+			// was dependent on a flag just set before
+			if (true) {
 				wca.global = true;
 				wca.wcmbapp.check();
 				wcasbtemp.append(wca.wcmbapp.toLS(true, true, null));
@@ -233,7 +222,7 @@ public class WCETAnalyser extends AppInfo {
 			// instruction info
 			wca.out
 					.println("*****************************************************");
-			if (instr)
+			if (wca.instr)
 				wca.out.println(WCETInstruction.toWCAString());
 			wca.out.println("Note: Remember to keep WCETAnalyzer updated");
 			wca.out.println("each time a bytecode implementation is changed.");
@@ -242,6 +231,18 @@ public class WCETAnalyser extends AppInfo {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+
+	}
+	public static void main(String[] args) {
+		
+		WCETAnalyser wca = new WCETAnalyser();
+		if (args.length == 0) {
+			System.err
+					.println("WCETAnalyser arguments: [-cp classpath] [-o file] class [class]*");
+			System.exit(1);
+		}
+		wca.parseOptions(args);
+		wca.analyze();
 	}
 
 	// Java Dev. Almanac
