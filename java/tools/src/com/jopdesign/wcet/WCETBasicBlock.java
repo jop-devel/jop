@@ -807,11 +807,11 @@ class WCETBasicBlock {
     sb.append(WU.postpad(getIDS()+"'B'{"+lcStr+"}"+tStr,6)); // see the BBs that point to this BB
   else if(nodetype == INODE)
     sb.append(WU.postpad(getIDS()+"'I'{"+lcStr+"}"+tStr,6)); // see the BBs that point to this BB
+  sb.append("\n");
 
   //        sb.append(WU.postpad("B" + id,6));
-        } else {
-          sb.append("      ");
         }
+        sb.append("      ");
 
         // addr (len 6)
         sb.append(WU.postpad(ih.getPosition() + ":",6));
@@ -822,15 +822,16 @@ class WCETBasicBlock {
           sb.append(" ");
 
         // bytecode (len 22)
-        StringBuffer ihs = new StringBuffer(ih.getInstruction().getName() + "["
-            + ih.getInstruction().getOpcode() + "]");
+        StringBuffer ihs = new StringBuffer(ih.getInstruction().getName());
+        // MS get rid of instruction number
+        // + "["  + ih.getInstruction().getOpcode() + "]");
 
         if (ih.getInstruction() instanceof BranchInstruction) {
           // target
           InstructionHandle ihtar = ((BranchInstruction) ih.getInstruction())
               .getTarget();
           int tarpos = ihtar.getPosition();
-          ihs.append("->" + tarpos + ":");
+          ihs.append(" " + tarpos);
         }
 
         sb.append(WU.postpad(ihs.toString(),20));
@@ -971,18 +972,19 @@ if(nodetype!=WCETBasicBlock.INODE){
         }
 
        //fetch local variable name and type from class file
+        // MS: disable output of local type
         if(ih.getInstruction() instanceof LocalVariableInstruction){
           if(ih.getInstruction() instanceof StoreInstruction){
             StoreInstruction si = (StoreInstruction)ih.getInstruction();
             //add instruction len to pos to peek into localvariable table
             String siStr = wcmb.getLocalVarName(si.getIndex(),ih.getPosition()+ih.getInstruction().getLength());
-            if(siStr.length()>0)
-              sb.append("->"+siStr+" ");
+//            if(siStr.length()>0)
+//              sb.append("->"+siStr+" ");
           } else{ //load or iinc
             LocalVariableInstruction lvi = (LocalVariableInstruction)ih.getInstruction();
             String lvStr = wcmb.getLocalVarName(lvi.getIndex(),ih.getPosition());
-            if(lvStr.length()>0)
-              sb.append(lvStr+" ");
+//            if(lvStr.length()>0)
+//              sb.append(lvStr+" ");
           }
         }
 
