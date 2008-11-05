@@ -18,7 +18,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-package com.jopdesign.dfa.analyses;
+package com.jopdesign.dfa.framework;
 
 public class HashedString {
 
