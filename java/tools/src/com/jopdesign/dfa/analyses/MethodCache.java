@@ -38,6 +38,7 @@ import com.jopdesign.dfa.framework.Analysis;
 import com.jopdesign.dfa.framework.Context;
 import com.jopdesign.dfa.framework.ContextMap;
 import com.jopdesign.dfa.framework.FlowEdge;
+import com.jopdesign.dfa.framework.HashedString;
 import com.jopdesign.dfa.framework.Interpreter;
 import com.jopdesign.dfa.framework.AppInfo;
 
@@ -385,7 +386,7 @@ public class MethodCache implements	Analysis<List<HashedString>, MethodCache.Cac
 		Context context = new Context(input.getContext());
 
 		AppInfo p = interpreter.getProgram();
-		MethodGen method = p.getMethods().get(methodName);
+		MethodGen method = p.getMethod(methodName).getMethodGen();
 		if (method == null) {
 			System.out.println(context.method + ": " + stmt	+ " unknown method: " + methodName);
 			return;
@@ -428,7 +429,7 @@ public class MethodCache implements	Analysis<List<HashedString>, MethodCache.Cac
 		// pull out relevant information from call
 		InstructionHandle exit = method.getInstructionList().getEnd();
 		if (r.get(exit) != null) {
-			MethodGen returnMethod = p.getMethods().get(context.method);			
+			MethodGen returnMethod = p.getMethod(context.method).getMethodGen();			
 			mapping = new CacheMapping(r.get(exit).get(c.callString));
 			last = returnMethod.getInstructionList().getEnd();
 			mapping.fetch(context.method, last.getPosition());
@@ -443,6 +444,10 @@ public class MethodCache implements	Analysis<List<HashedString>, MethodCache.Cac
 	public Map getResult() {
 		// TODO Auto-generated method stub
 		return null;
+	}
+	
+	public void printResult(AppInfo program) {
+		System.out.println("NYI");
 	}
 
 }

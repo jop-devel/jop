@@ -1044,11 +1044,11 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 			ContextMap<TypeMapping, TypeMapping> result) {
 		
 		AppInfo p = interpreter.getProgram();
-		MethodGen method = p.getMethod(methodName).getMethodGen();
-		if (method == null) {
+		if (p.getMethod(methodName) == null) {
 			System.out.println(context.method+": "+stmt+" unknown method: "+methodName);
 			return;					
 		}
+		MethodGen method = p.getMethod(methodName).getMethodGen();
 		String signature = method.getName()+method.getSignature();
 		methodName = method.getClassName()+"."+signature;
 				
@@ -1265,14 +1265,31 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 		return result;
 	}
 	
-	public Map getResult() {
-		return targets;
-	}
-	
 	private void recordReceiver(InstructionHandle stmt, Context context, String target) {
 		if (targets.get(stmt) == null) {
 			targets.put(stmt, new ContextMap<String, String>(context, new HashMap<String, String>()));
 		}
 		targets.get(stmt).add(target);	
 	}
+	
+	public Map getResult() {
+		return targets;
+	}
+	
+	public void printResult(AppInfo program) {
+		
+		for (Iterator<InstructionHandle> i = targets.keySet().iterator(); i.hasNext(); ) {
+			InstructionHandle instr = i.next();
+
+			ContextMap<String, String> r = targets.get(instr);
+			Context c = r.getContext();
+
+			System.out.println(c.method+":"+instr.getPosition());
+			for (Iterator<String> k = r.keySet().iterator(); k.hasNext(); ) {
+				String target = k.next();
+				System.out.println("\t"+target);
+			}
+		}			
+	}
+
 }

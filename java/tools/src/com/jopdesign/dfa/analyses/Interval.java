@@ -78,25 +78,47 @@ public class Interval {
 	}
 
 	public void add(int val) {
-		// TODO: saturate
 		if (lv) {
-			lb += val;
+			long l = lb+val;
+			if (l > Integer.MAX_VALUE || l < Integer.MIN_VALUE) {
+				lb = BOT;
+				lv = false;
+			} else {
+				lb += val;
+			}
 		}
 		if (uv) {
-			ub += val;
+			long l = ub+val;
+			if (l > Integer.MAX_VALUE || l < Integer.MIN_VALUE) {
+				ub = TOP;
+				uv = false;
+			} else {			
+				ub += val;
+			}
 		}
 	}
 	
 	public void add(Interval val) {
-		// TODO: saturate
 		if (lv && val.lv) {
-			lb += val.lb;
+			long l = lb+val.lb;
+			if (l > Integer.MAX_VALUE || l < Integer.MIN_VALUE) {
+				lb = BOT;
+				lv = false;
+			} else {
+				lb += val.lb;
+			}
 		} else {
 			lb = BOT;
 			lv = false;
 		}
 		if (uv && val.uv) {
-			ub += val.ub;
+			long l = ub+val.ub;
+			if (l > Integer.MAX_VALUE || l < Integer.MIN_VALUE) {
+				ub = TOP;
+				uv = false;
+			} else {			
+				ub += val.ub;
+			}
 		} else {
 			ub = TOP;
 			uv = false;
@@ -104,15 +126,26 @@ public class Interval {
 	}
 	
 	public void sub(Interval val) {
-		// TODO: saturate
-		if (lv && val.lv) {
-			lb -= val.ub;
+		if (lv && val.uv) {
+			long l = lb-val.ub;
+			if (l > Integer.MAX_VALUE || l < Integer.MIN_VALUE) {
+				lb = BOT;
+				lv = false;
+			} else {
+				lb -= val.ub;
+			}
 		} else {
 			lb = BOT;
 			lv = false;
 		}
-		if (uv && val.uv) {
-			ub -= val.lb;
+		if (uv && val.lv) {
+			long l = ub-val.lb;
+			if (l > Integer.MAX_VALUE || l < Integer.MIN_VALUE) {
+				ub = TOP;
+				uv = false;
+			} else {			
+				ub -= val.lb;
+			}
 		} else {
 			ub = TOP;
 			uv = false;

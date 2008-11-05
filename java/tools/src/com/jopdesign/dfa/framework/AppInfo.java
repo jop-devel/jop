@@ -22,6 +22,7 @@ package com.jopdesign.dfa.framework;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -39,7 +40,6 @@ import org.apache.bcel.generic.InstructionList;
 import org.apache.bcel.generic.MethodGen;
 import org.apache.bcel.generic.NOP;
 import org.apache.bcel.generic.Type;
-import org.apache.bcel.util.ClassPath;
 
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.build.ClinitOrder;
@@ -48,41 +48,47 @@ public class AppInfo extends com.jopdesign.build.AppInfo {
 
 	private static final long serialVersionUID = 1L;
 
+	private static final String mainName = "main";
+	private static final String mainSig = "([Ljava/lang/String;)V";
+
+	private static final String clinitName = "<clinit>";
+	private static final String clinitSig = "()V";
+
+	private static final String prologueName = "<prologue>";
+	private static final String prologueSig = "()V";
+
 	private List<InstructionHandle> statements;
 	private Flow flow;
 	private Map<InstructionHandle, ContextMap<String, String>> receivers;
 	
-	public AppInfo(ClassPath classpath, String mainClass) {
-		
-		super(new ClassInfo());
-		this.classpath = classpath;
-		this.mainClass = mainClass;
+	public AppInfo(ClassInfo cliTemplate) {		
+		super(cliTemplate);
 		this.statements = new LinkedList<InstructionHandle>();
 		this.flow = new Flow();
 		this.receivers = null;
-		addClass(mainClass);
+	}
+
+	public void load() throws IOException {
 		
-		try {
-			load();
-		} catch (IOException exc) {
-			exc.printStackTrace();
-			System.exit(-1);
-		}
+		// do the usual stuff
+		super.load();
 		
+		// find oredering for class initializers
 		List<String> clinits = new LinkedList<String>();
 		
 		ClinitOrder c = new ClinitOrder(this);
 		iterate(c);
 
-		List<ClassInfo> order = c.findOrder();
-		for (Iterator<ClassInfo> i = order.iterator(); i.hasNext(); ) {
-			JavaClass jc = i.next().clazz;
-			clinits.add(jc.getClassName()+".<clinit>()V");
+		List order = c.findOrder();
+		for (Iterator i = order.iterator(); i.hasNext(); ) {
+			JavaClass jc = ((ClassInfo)i.next()).clazz;
+			clinits.add(jc.getClassName()+"."+clinitName+clinitSig);
 		}
 
+		// create prologue
 		buildPrologue(mainClass, statements, flow, clinits);	
 	}
-
+	
 	private void buildPrologue(String mainClass, List<InstructionHandle> statements, Flow flow, List<String> clinits) {
 
 		// we use a prologue sequence for startup
@@ -106,9 +112,9 @@ public class AppInfo extends com.jopdesign.build.AppInfo {
 
 		// add class initializers
 		for (Iterator<String> i = clinits.iterator(); i.hasNext(); ) {	
-			String clinitSig = i.next();					
-			String className = clinitSig.substring(0, clinitSig.lastIndexOf("."));
-			idx = prologueCP.addMethodref(className, "<clinit>", "()V");
+			String clinit = i.next();					
+			String className = clinit.substring(0, clinit.lastIndexOf("."));
+			idx = prologueCP.addMethodref(className, clinitName, clinitSig);
 			instr = new INVOKESPECIAL(idx); 
 			prologue.append(instr);
 		}
@@ -116,7 +122,7 @@ public class AppInfo extends com.jopdesign.build.AppInfo {
 		// add main method
 		instr = new ACONST_NULL();
 		prologue.append(instr);
-		idx = prologueCP.addMethodref(mainClass, "main", "([Ljava/lang/String;)V");
+		idx = prologueCP.addMethodref(mainClass, mainName, mainSig);
 		instr = new INVOKESTATIC(idx);
 		prologue.append(instr);
 		instr = new NOP();
@@ -135,10 +141,34 @@ public class AppInfo extends com.jopdesign.build.AppInfo {
 			}
 		}
 
-		MethodGen method = new MethodGen(Constants.ACC_PRIVATE, Type.VOID, Type.NO_ARGS, null, "java.lang.Object.<prologue>", "", prologue, prologueCP);
-		MethodInfo mi = new MethodInfo(cliMap.get("java.lang.Object"), "<prologue>");
+		MethodGen method = new MethodGen(Constants.ACC_PRIVATE, Type.VOID, Type.NO_ARGS, null, mainClass+"."+prologueName+prologueSig, "", prologue, prologueCP);
+		MethodInfo mi = new MethodInfo(cliMap.get(mainClass), prologueName+prologueSig);
 		mi.setMethodGen(method);
-		cliMap.get("java.lang.Object").getMethodInfoMap().put("<prologue>", mi);
+		cliMap.get(mainClass).getMethodInfoMap().put(prologueName+prologueSig, mi);
+	}
+		
+	public Map runAnalysis(Analysis analysis) {
+
+		Interpreter interpreter = new Interpreter(analysis, this);
+
+		try {
+			MethodInfo prologue = getMethod(mainClass+"."+prologueName+prologueSig);
+
+			Context context = new Context();
+			context.stackPtr = 0;
+			context.syncLevel = 0;
+			context.constPool = new ConstantPoolGen(prologue.getMethod().getConstantPool());
+			context.method = prologue.methodId;
+
+			analysis.initialize(mainClass+"."+mainName+mainSig, context);
+
+			InstructionHandle entry = prologue.getMethodGen().getInstructionList().getStart();
+			interpreter.interpret(context, entry, new HashMap(), true);
+		} catch (Throwable thr) {
+			thr.printStackTrace();
+		}
+		
+		return analysis.getResult();
 	}
 	
 	public List<InstructionHandle> getStatements() {
@@ -153,7 +183,7 @@ public class AppInfo extends com.jopdesign.build.AppInfo {
 		return receivers;
 	}
 
-	public void setReceivers(Map<InstructionHandle, ContextMap<String, String>> receivers) {
+	public void setReceivers(Map receivers) {
 		this.receivers = receivers;
 	}
 	

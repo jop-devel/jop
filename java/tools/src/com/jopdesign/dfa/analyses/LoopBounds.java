@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.bcel.Constants;
+import org.apache.bcel.classfile.LineNumberTable;
 import org.apache.bcel.generic.ANEWARRAY;
 import org.apache.bcel.generic.ConstantPushInstruction;
 import org.apache.bcel.generic.GETFIELD;
@@ -50,6 +51,7 @@ import com.jopdesign.dfa.framework.Analysis;
 import com.jopdesign.dfa.framework.Context;
 import com.jopdesign.dfa.framework.ContextMap;
 import com.jopdesign.dfa.framework.FlowEdge;
+import com.jopdesign.dfa.framework.HashedString;
 import com.jopdesign.dfa.framework.Interpreter;
 import com.jopdesign.dfa.framework.MethodHelper;
 import com.jopdesign.dfa.framework.AppInfo;
@@ -57,6 +59,8 @@ import com.jopdesign.dfa.framework.AppInfo;
 public class LoopBounds implements Analysis<List<HashedString>, Map<Location, LoopBounds.ValueMapping>> {
 
 	private static final int CALLSTRING_LENGTH = 0;
+	private static final int ASSIGN_LIMIT = 256;
+	private static final int CONSTRAINT_LIMIT = 4096;
 
 	public static class ValueMapping {
 
@@ -108,13 +112,13 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 				Interval old = new Interval(assigned);
 
 				// merge assigned values
-				if (cnt > 256) {
+				if (cnt > ASSIGN_LIMIT) {
 					assigned = new Interval();
 				} else {
 					assigned.join(val.assigned);
 				}
 				// merge constraints
-				if (cnt > 4096) {
+				if (cnt > CONSTRAINT_LIMIT) {
 					constrained = new Interval();
 				} else {
 					constrained.join(val.constrained);
@@ -270,10 +274,6 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 			
 			return true;
 		}
-	}
-
-	public Map getResult() {
-		return bounds;
 	}
 
 	public ContextMap<List<HashedString>, Map<Location, ValueMapping>> transfer(
@@ -1353,12 +1353,16 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 				if (returned != null) {
 					for (Iterator<Location> i = returned.keySet().iterator(); i.hasNext(); ) {
 						Location l = i.next();
-						// TODO: join instead of plain put
 						if (l.stackLoc < 0) {
-							result.get(context.callString).put(l, new ValueMapping(returned.get(l), true));
+							ValueMapping m = new ValueMapping(returned.get(l), true);
+							m.join(result.get(context.callString).get(l));
+							result.get(context.callString).put(l, m);
 						}
 						if (l.stackLoc >= 0) {
-							result.get(context.callString).put(new Location(l.stackLoc+varPtr), new ValueMapping(returned.get(l), false));						
+							ValueMapping m = new ValueMapping(returned.get(l), false);
+							Location loc = new Location(l.stackLoc+varPtr);
+							m.join(result.get(context.callString).get(loc));
+							result.get(context.callString).put(loc, m);						
 						}
 					}
 				}
@@ -1463,6 +1467,80 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 			map.put(context.callString, new Pair<ValueMapping>(bound, b.getSecond()));						
 		}
 		
+	}
+
+	public Map getResult() {
+		return bounds;
+	}
+
+	public void printResult(AppInfo program) {
+		
+		for (Iterator<InstructionHandle> i = bounds.keySet().iterator(); i.hasNext(); ) {
+			InstructionHandle instr = i.next();
+
+			ContextMap<List<HashedString>, Pair<ValueMapping>> r = bounds.get(instr);
+			Context c = r.getContext();
+
+			LineNumberTable lines = program.getMethod(c.method).getMethod().getLineNumberTable();
+			int sourceLine = lines.getSourceLine(instr.getPosition());			
+
+			for (Iterator<List<HashedString>> k = r.keySet().iterator(); k.hasNext(); ) {
+				List<HashedString> callString = k.next();
+				Pair<ValueMapping> bounds = r.get(callString);
+
+				LoopBounds.ValueMapping first = bounds.getFirst();
+				LoopBounds.ValueMapping second = bounds.getSecond();
+
+				System.out.println(c.method+":"+sourceLine+":\t"+callString+": ");
+
+				System.out.print("\t\ttrue:\t");
+				System.out.println(first);
+				System.out.print("\t\tfalse:\t");
+				System.out.println(second);
+				System.out.print("\t\tbound:\t");
+
+				// basic checks
+				if (//first == null ||
+						first.increment == null
+						// || second == null
+						|| second.increment == null) {
+					System.out.println("no valid increment");
+					continue;
+				}
+				// check for boundedness
+				if (!first.assigned.hasLb()
+						|| !first.assigned.hasUb()
+						|| !second.assigned.hasLb()
+						|| !second.assigned.hasUb()) {
+					System.out.println("unbounded");
+					continue;
+				}
+				// monotone increments?
+				if (first.increment.getLb()*first.increment.getUb() <= 0
+						|| second.increment.getLb()*second.increment.getUb() <= 0) {
+					System.out.println("invalid increments");
+					continue;
+				}
+
+				int firstRange = first.assigned.getUb() - first.assigned.getLb() + 1;
+				int secondRange = second.assigned.getUb() - second.assigned.getLb() + 1;
+
+				int firstBound;
+				if (first.assigned.getUb() < first.assigned.getLb()) {
+					firstBound = 0;
+				} else {
+					firstBound = firstRange / Math.min(Math.abs(first.increment.getUb()), Math.abs(first.increment.getLb()));
+				}
+				int secondBound;
+				if (second.assigned.getUb() < second.assigned.getLb()) {
+					secondBound = 0;
+				} else {
+					secondBound = secondRange / Math.min(Math.abs(second.increment.getUb()), Math.abs(second.increment.getLb()));
+				}
+
+				System.out.println(Math.max(firstBound, secondBound));						
+			}			
+		}
 	}
 
 }

@@ -24,7 +24,6 @@ import java.util.LinkedList;
 
 import org.apache.bcel.generic.ConstantPoolGen;
 
-import com.jopdesign.dfa.analyses.HashedString;
 
 public class Context {
 
