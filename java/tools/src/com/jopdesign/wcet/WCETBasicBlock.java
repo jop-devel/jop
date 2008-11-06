@@ -764,7 +764,7 @@ class WCETBasicBlock {
       InstructionHandle ih = stih;
       blockcyc = 0;
 
-      LineNumberTable lnt = wcmb.methodbcel.getLineNumberTable();
+      LineNumberTable lnt = wcmb.mi.getMethod().getLineNumberTable();
       int prevLine = -1;
       int srcLine = -1;
       do {
@@ -852,7 +852,7 @@ if(nodetype!=WCETBasicBlock.INODE){
           //J long, F float, D double, L fully-qualified-class, [ type type[]
 //          bbinvo = methodid;
 //System.out.println("extra bbinvo:"+bbinvo);
-          Method m = wcmb.wca.getMethod(bbinvo);
+          Method m = wcmb.wca.getMethod(bbinvo).getMethod();
 //System.out.println("bbinvo:"+bbinvo);
 //System.out.println("name:"+wcmb.name);
 //System.out.println("cname:"+wcmb.cname);
@@ -967,7 +967,7 @@ if(nodetype!=WCETBasicBlock.INODE){
             String fieStrClass = ((FieldOrMethod)ih.getInstruction()).getClassName(wcmb.getCpg());
             sb.append(fieStrClass+".");
           }
-          String fieStrName = ((FieldInstruction)ih.getInstruction()).getFieldName(wcmb.cpg);
+          String fieStrName = ((FieldInstruction)ih.getInstruction()).getFieldName(wcmb.mi.getConstantPoolGen());
           sb.append(fieStrName);
         }
 

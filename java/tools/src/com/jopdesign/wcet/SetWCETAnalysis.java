@@ -47,7 +47,7 @@ public class SetWCETAnalysis extends AppVisitor {
 
 
         if(true){//!m.isAbstract()){
-          WCETMethodBlock wcmb = new WCETMethodBlock(m,clazz,wca);
+          WCETMethodBlock wcmb = new WCETMethodBlock(cli.getMethodInfo(methodId),wca);
           wca.msigtowcmb.put(methodId,wcmb);
           wca.wcmbs.add(wcmb);
 //  System.out.println("put "+clazz.getClassName()+"."+methodId+" in msigtiwcmb");

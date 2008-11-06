@@ -50,10 +50,14 @@ import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.InvokeInstruction;
 import org.apache.bcel.generic.MethodGen;
+import org.apache.bcel.generic.NOP;
 import org.apache.bcel.generic.ReturnInstruction;
+import org.apache.bcel.generic.TargetLostException;
 import org.apache.bcel.verifier.structurals.ControlFlowGraph;
 import org.apache.bcel.verifier.structurals.ExecutionVisitor;
 import org.apache.bcel.verifier.structurals.InstConstraintVisitor;
+
+import com.jopdesign.build.MethodInfo;
 
 /**
  * It has a HashMap of WCETBasicBlocks. The class have methods that are called
@@ -86,13 +90,15 @@ class WCETMethodBlock {
 
 	JavaClass jc;
 
-	Method methodbcel;
-
-	MethodGen mg;
+	// TODO WCETMethodBlock should probably extend MethodInfo
+	MethodInfo mi;
+//	Method methodbcel;
+//
+//	MethodGen mg;
 
 	ControlFlowGraph cfg;
 
-	ConstantPoolGen cpg;
+//	ConstantPoolGen cpg;
 
 	String tostr;
 
@@ -144,19 +150,19 @@ class WCETMethodBlock {
 	/**
 	 * Instanciated from from <code>SetClassInfo</code>.
 	 */
-	public WCETMethodBlock(Method method, JavaClass jc, WCETAnalyser wca) {
+	public WCETMethodBlock(MethodInfo mi, WCETAnalyser wca) {
 		//System.out.println("WCMB CONSTR putting: "+jc.getClassName()+"."+method.getName());
 		//if(method.getName().equals("printLn"))
 		//  System.out.println("HELLO");
-		wca.mtowcmb.put(method, this);
+		this.mi = mi;
+		wca.mtowcmb.put(mi, this);
 		this.wca = wca;
 		mid = wca.idtmp++;
 
 		bbs = new TreeMap();
-		this.methodbcel = method;
-		name = methodbcel.getName();
+		name = mi.getMethod().getName();
+		this.jc = mi.getCli().clazz;
 		cname = jc.getClassName();
-		this.jc = jc;
 		//System.out.println("sourcefilename: "+ jc.getSourceFileName());
 
 	}
@@ -168,6 +174,7 @@ class WCETMethodBlock {
 
 			controlFlowGraph();
 
+			Method methodbcel = mi.getMethod();
 			//method length in words
 			if (!methodbcel.isAbstract()) {
 				n = (methodbcel.getCode().getCode().length + 3) / 4;
@@ -217,10 +224,10 @@ class WCETMethodBlock {
 													+ " in "
 													+ filePath
 													+ ":" + str);
-									System.exit(-1); // can be commented out to force continuation
+									// System.exit(-1); // can be commented out to force continuation
 									System.out
-											.println("Default annotation inserted: \"//@WCA loop=1\"");
-									str += "// @WCA loop=1";
+											.println("Default annotation inserted: \"//@WCA loop=9999\"");
+									str += "// @WCA loop=9999";
 								}
 							}
 
@@ -271,22 +278,16 @@ class WCETMethodBlock {
 	 * Control flow analysis for one nonabstract-method.
 	 */
 	public void controlFlowGraph() {
-		cpg = new ConstantPoolGen(jc.getConstantPool());
 
 		// Some methods overridden (see bottom of this file)
 		InstConstraintVisitor icv = new AnInstConstraintVisitor();
 
-		icv.setConstantPoolGen(cpg);
+		icv.setConstantPoolGen(mi.getConstantPoolGen());
 
 		ExecutionVisitor ev = new ExecutionVisitor();
-		ev.setConstantPoolGen(cpg);
+		ev.setConstantPoolGen(mi.getConstantPoolGen());
 
-		mg = new MethodGen(methodbcel, jc.getClassName(), cpg);
-
-		// String tostr = mg.toString();
-		//String signature = mg.getSignature();
-		//String name = mg.getName();
-		//String cname = mg.getClassName();
+		MethodGen mg = mi.getMethodGen();
 
 		icv.setMethodGen(mg);
 		if (!(mg.isAbstract() || mg.isNative())) { // IF mg HAS CODE
@@ -298,6 +299,17 @@ class WCETMethodBlock {
 			InstructionHandle ih = mg.getInstructionList().getStart();
 			// wcet startup: create the first full covering bb
 			InstructionHandle ihend = mg.getInstructionList().getEnd();
+			if (ihend.getInstruction() instanceof NOP) {
+				System.out.println("Info: "+mi.methodId+" ends with a nop! remove it");
+				try {
+					mg.getInstructionList().delete(ihend);
+				} catch (TargetLostException e) {
+					e.printStackTrace();
+					System.exit(-1);
+				}
+				mg.getInstructionList().setPositions(true);
+				ihend = mg.getInstructionList().getEnd();
+			}
 			init(ih, ihend);
 
 			do {
@@ -467,17 +479,17 @@ class WCETMethodBlock {
 
 			// hook the called method to the outgoing node
 			if (wcbb.nodetype == WCETBasicBlock.INODE) {
-				//System.out.println("+linking inode in:"+name);
-				//System.out.println("+class:"+cname);
-				//System.out.println("+and linking bbinvo:"+wcbb.bbinvo);
-				//if(wca.getMethod(wcbb.bbinvo)==null){
-				//  System.out.println("wca.getMethod(wcbb.bbinvo) == null");
-				//}
-				//else
-				//  System.out.println(wca.getMethod(wcbb.bbinvo).getName());
-				//if(wca.getWCMB(wca.getMethod(wcbb.bbinvo))==null){
-				//  System.out.println("wca.getWCMB(wca.getMethod(wcbb.bbinvo)) == null");
-				//}
+//				System.out.println("+linking inode in:"+name);
+//				System.out.println("+class:"+cname);
+//				System.out.println("+and linking bbinvo:"+wcbb.bbinvo);
+//				if(wca.getMethod(wcbb.bbinvo)==null){
+//				  System.out.println("wca.getMethod(wcbb.bbinvo) == null");
+//				}
+//				else
+//				  System.out.println(wca.getMethod(wcbb.bbinvo).getMethod().getName());
+//				if(wca.getWCMB(wca.getMethod(wcbb.bbinvo))==null){
+//				  System.out.println("wca.getWCMB(wca.getMethod(wcbb.bbinvo)) == null");
+//				}
 				wcbb.invowcmb = wca.getWCMB(wca.getMethod(wcbb.bbinvo));
 				if (wcbb.invowcmb == null)
 					System.out.println("Info: " + wcbb.bbinvo
@@ -531,7 +543,7 @@ class WCETMethodBlock {
 								+ name + ":" + wcbb.getIDS());
 						System.out.println("jc abstract:" + jc.isAbstract());
 					}
-				} else if (wcbb.invowcmb.methodbcel.isAbstract()) { // such as jbe.ejip.LinkLayer.loop()
+				} else if (wcbb.invowcmb.mi.getMethod().isAbstract()) { // such as jbe.ejip.LinkLayer.loop()
 					System.out.println("* This method is abstract: "
 							+ wcbb.invowcmb.cname + "." + wcbb.invowcmb.name);
 					JavaClass jcabs = wcbb.invowcmb.jc;
@@ -545,10 +557,10 @@ class WCETMethodBlock {
 						String newbbinvo = jca[i].getClassName() + "."
 								+ mname;
 						//System.out.println("* Checking for :"+newbbinvo);
-						WCETMethodBlock invocandi = wca.getWCMB(wca
-								.getMethod(newbbinvo));
+						WCETMethodBlock invocandi = wca.getWCMB(wca.getMethod(newbbinvo));
+//								.getMethodB(newbbinvo));
 						if (invocandi != null
-								&& !invocandi.methodbcel.isAbstract()) {
+								&& !invocandi.mi.getMethod().isAbstract()) {
 							//System.out.println("** "+invocandi.jc.getSuperclassName());
 							//System.out.println("** "+jcabs.getClassName());
 
@@ -736,7 +748,7 @@ class WCETMethodBlock {
 	}
 
 	public MethodGen getMethodGen() {
-		return mg;
+		return mi.getMethodGen();
 	}
 
 	/**
@@ -748,7 +760,7 @@ class WCETMethodBlock {
 	 */
 	public String getLocalVarName(int index, int pc) {
 		//System.out.println("getLocalVarName: index:"+index+" pc:"+pc+" info:"+mg.getClassName()+"."+mg.getName());
-		LocalVariableTable lvt = methodbcel.getLocalVariableTable();
+		LocalVariableTable lvt = mi.getMethod().getLocalVariableTable();
 		String lvName = "";
 		boolean match = false;
 		if (lvt != null) {
@@ -861,7 +873,7 @@ class WCETMethodBlock {
 		// now create the directed graph
 		dg = new int[bbs.size()][bbs.size()];
 		WCETBasicBlock.bba = new WCETBasicBlock[bbs.size() + 2];//TODO
-		LineNumberTable lnt = methodbcel.getLineNumberTable();
+		LineNumberTable lnt = mi.getMethod().getLineNumberTable();
 		WCETBasicBlock pbb = null;
 		for (Iterator iter = bbs.keySet().iterator(); iter.hasNext();) {
 			Integer keyInt = (Integer) iter.next();
@@ -943,6 +955,7 @@ class WCETMethodBlock {
 								set = true;
 							}
 						}
+						// MS: I really don't undertstand the following code :-(
 						//System.out.println("loop controller hit:"+wcbbhit.id);
 						wcbb.loopdriver = true;
 						wcbb.loopcontroller = false;
@@ -959,6 +972,8 @@ class WCETMethodBlock {
 								.get("loop"));
 						wcbbhit.loopdriverwcbb = wcbb;
 						lines.add(new Integer(wcbbhit.line));
+						
+						System.out.println("Loop bounds from annotation: wcbb.loop="+wcbb.loop+" wcbbhit.loop="+wcbbhit.loop);
 						//            if(wcaA.get("innerloop") != null){
 						//              if(((String)wcaA.get("innerloop")).equals("true")){
 						//System.out.println(wcbb.getIDS() +" is an inner loop controller");
@@ -991,7 +1006,7 @@ class WCETMethodBlock {
 		codeString
 				.append("******************************************************************************\n");
 		codeString.append("WCET info for:" + jc.getClassName() + "."
-				+ methodbcel.getName() + methodbcel.getSignature() + "\n\n");
+				+ mi.getMethod().getName() + mi.getMethod().getSignature() + "\n\n");
 
 		// directed graph
 		codeString.append("Directed graph of basic blocks(row->column):\n");
@@ -1072,8 +1087,8 @@ class WCETMethodBlock {
 		// use: dot -Tps graph.dot -o graph.ps
 		boolean labels = true;
 
-		sb.append("\n/*" + jc.getClassName() + "." + methodbcel.getName()
-				+ methodbcel.getSignature() + "*/\n");
+		sb.append("\n/*" + jc.getClassName() + "." + mi.getMethod().getName()
+				+ mi.getMethod().getSignature() + "*/\n");
 		if (!global) {
 			sb.append("digraph G {\n");
 			sb.append("size = \"10,7.5\"\n");
@@ -1134,7 +1149,7 @@ class WCETMethodBlock {
 						+ File.separator
 						+ jc.getClassName()
 						+ "."
-						+ methodbcel.getName() + ".dot";
+						+ mi.getMethod().getName() + ".dot";
 				dotf = dotf.replace('<', '_');
 				dotf = dotf.replace('>', '_');
 				dotf = dotf.replace('\\', '/');
@@ -1221,7 +1236,7 @@ class WCETMethodBlock {
 			StringBuffer lso = new StringBuffer();
 			lso.append("/***WCET calculation source***/\n");
 			lso.append("/* WCA WCET objective: " + jc.getClassName() + "."
-					+ methodbcel.getName() + " */\n");
+					+ mi.getMethod().getName() + " */\n");
 			lso.append("max: " + lsobj.toString() + ";\n");
 			ls.insert(0, lso.toString());
 
@@ -1231,7 +1246,7 @@ class WCETMethodBlock {
 						+ File.separator
 						+ jc.getClassName()
 						+ "."
-						+ methodbcel.getName() + ".lp";
+						+ mi.getMethod().getName() + ".lp";
 				lpf = lpf.replace('<', '_');
 				lpf = lpf.replace('>', '_');
 				//System.out.println("about to write:"+lpf);
@@ -1247,7 +1262,7 @@ class WCETMethodBlock {
 				wcetvars = new HashMap();
 				LpSolve problem = LpSolve.readLp(lpf, LpSolve.NORMAL, jc
 						.getClassName()
-						+ "." + methodbcel.getName());
+						+ "." + mi.getMethod().getName());
 				problem.setOutputfile(lpf + ".output.txt");
 				problem.setVerbose(LpSolve.CRITICAL);
 				lpresult = problem.solve();
@@ -1276,7 +1291,7 @@ class WCETMethodBlock {
 				}
 			} catch (LpSolveException e) {
 				System.out.println("LP not solvable for: " + jc.getClassName()
-						+ "." + methodbcel.getName());
+						+ "." + mi.getMethod().getName());
 				//e.printStackTrace();
 			}
 		}
@@ -1360,7 +1375,7 @@ class WCETMethodBlock {
 	}
 
 	public ConstantPoolGen getCpg() {
-		return cpg;
+		return mi.getConstantPoolGen();
 	}
 
 	// valid after call to toLS

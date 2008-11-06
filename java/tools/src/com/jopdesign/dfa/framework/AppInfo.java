@@ -141,9 +141,9 @@ public class AppInfo extends com.jopdesign.build.AppInfo {
 			}
 		}
 
-		MethodGen method = new MethodGen(Constants.ACC_PRIVATE, Type.VOID, Type.NO_ARGS, null, mainClass+"."+prologueName+prologueSig, "", prologue, prologueCP);
+		MethodGen mg = new MethodGen(Constants.ACC_PRIVATE, Type.VOID, Type.NO_ARGS, null, mainClass+"."+prologueName+prologueSig, "", prologue, prologueCP);
 		MethodInfo mi = new MethodInfo(cliMap.get(mainClass), prologueName+prologueSig);
-		mi.setMethodGen(method);
+		mi.setMethodGen(mg);
 		cliMap.get(mainClass).getMethodInfoMap().put(prologueName+prologueSig, mi);
 	}
 		

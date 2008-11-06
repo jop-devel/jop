@@ -26,6 +26,7 @@ package com.jopdesign.build;
 
 import org.apache.bcel.classfile.Code;
 import org.apache.bcel.classfile.Method;
+import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.MethodGen;
 
 /**
@@ -39,6 +40,7 @@ public class MethodInfo {
 	private ClassInfo cli;
 	private Method method;
 	private MethodGen methodGen;
+	private ConstantPoolGen constGen;
 	public String methodId;
 
 	public MethodInfo(ClassInfo classInfo, String mid) {
@@ -69,6 +71,10 @@ public class MethodInfo {
 	
 	public MethodGen getMethodGen() {
 		return methodGen;
+	}
+	
+	public ConstantPoolGen getConstantPoolGen() {
+		return methodGen.getConstantPool();
 	}
 
 	public Code getCode() {

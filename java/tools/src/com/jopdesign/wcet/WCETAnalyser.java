@@ -33,10 +33,11 @@ import org.apache.bcel.classfile.Visitor;
 import org.apache.bcel.generic.*;
 import org.apache.bcel.verifier.structurals.*;
 
-import com.jopdesign.build.AppInfo;
+import com.jopdesign.dfa.analyses.LoopBounds;
+import com.jopdesign.dfa.analyses.ReceiverTypes;
+import com.jopdesign.dfa.framework.*;
 import com.jopdesign.build.AppVisitor;
-import com.jopdesign.build.ClassInfo;
-import com.jopdesign.build.TransitiveHull;
+import com.jopdesign.build.MethodInfo;
 import com.jopdesign.tools.JopInstr;
 
 /**
@@ -75,7 +76,7 @@ import com.jopdesign.tools.JopInstr;
 /**
  * The thing that controls the WCETClassBlock etc.
  */
-public class WCETAnalyser extends AppInfo {
+public class WCETAnalyser extends com.jopdesign.dfa.framework.AppInfo {
 
 	public HashMap filePathcodeLines = new HashMap();
 
@@ -105,7 +106,7 @@ public class WCETAnalyser extends AppInfo {
 	// signaure -> methodbcel
 	HashMap mmap;
 
-	// methodbcel -> WCETMethodBlock
+	// MethodInfo -> WCETMethodBlock
 	HashMap mtowcmb = new HashMap();
 
 	// method name to id
@@ -136,9 +137,8 @@ public class WCETAnalyser extends AppInfo {
 		javaFiles = new ArrayList();
 		javaFilePathMap = new HashMap();
 	}
-
-	public void analyze() {
-		
+	
+	public void prepare() {
 		WCETAnalyser wca = this;
 		
 		// the tables can be easier to use in latex using this property
@@ -146,37 +146,42 @@ public class WCETAnalyser extends AppInfo {
 		wca.instr = System.getProperty("instr", "true").equals("true");
 
 		wca.appmethod = wca.mainClass + "." + wca.mainMethodName;
+		StringTokenizer st = new StringTokenizer(wca.srcPath,
+				File.pathSeparator);
+		while (st.hasMoreTokens()) {
+			String srcDir = st.nextToken();// "java/target/src/common";
+			File sDir = new File(srcDir);
+			if (sDir.isDirectory()) {
+				// System.out.println("srcDir="+srcDir);
+				wca.visitAllFiles(sDir);
+			}
+		}
+		// Iterator ito = wca.javaFilePathMap.values().iterator();
+		// while(ito.hasNext()){
+		// System.out.println(ito.next());
+		// }
+
+		// System.out.println("CLASSPATH=" + wca.classpath + "\tmain
+		// class="
+		// + mainClass);
+
+		try {
+			wca.out = new PrintWriter(new FileOutputStream(wca.outFile));
+			String ds = new File(wca.outFile).getParentFile().getAbsolutePath()
+				+ File.separator + "Makefile";
+			wca.dotout = new PrintWriter(new FileOutputStream(ds));
+			wca.dotout.print("doteps:\n");
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+
+	}
+
+	public void analyze() {
+		WCETAnalyser wca = this;		
 
 		try {
 
-			StringTokenizer st = new StringTokenizer(wca.srcPath,
-					File.pathSeparator);
-			while (st.hasMoreTokens()) {
-				String srcDir = st.nextToken();// "java/target/src/common";
-				File sDir = new File(srcDir);
-				if (sDir.isDirectory()) {
-					// System.out.println("srcDir="+srcDir);
-					wca.visitAllFiles(sDir);
-				}
-			}
-			// Iterator ito = wca.javaFilePathMap.values().iterator();
-			// while(ito.hasNext()){
-			// System.out.println(ito.next());
-			// }
-
-			// System.out.println("CLASSPATH=" + wca.classpath + "\tmain
-			// class="
-			// + mainClass);
-
-			wca.out = new PrintWriter(new FileOutputStream(wca.outFile));
-			String ds = new File(wca.outFile).getParentFile()
-					.getAbsolutePath()
-					+ File.separator + "Makefile";
-			wca.dotout = new PrintWriter(new FileOutputStream(ds));
-			wca.dotout.print("doteps:\n");
-
-//			wca.excludeClass(nativeClass);
-			wca.load();
 			wca.iterate(new SrcMethodVisitor(wca));
 
 			wca.global = false;
@@ -242,6 +247,24 @@ public class WCETAnalyser extends AppInfo {
 			System.exit(1);
 		}
 		wca.parseOptions(args);
+		wca.prepare();
+//		wca.excludeClass(nativeClass);
+		
+		try {
+			wca.load();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		// get receivers for this program
+//		ReceiverTypes rt = new ReceiverTypes();
+//		wca.setReceivers(wca.runAnalysis(rt));
+////		rt.printResult(program);
+//		// run loop bounds analysis
+//		LoopBounds lb = new LoopBounds();
+//		wca.runAnalysis(lb);
+//		lb.printResult(wca);				
+		
 		wca.analyze();
 	}
 
@@ -272,23 +295,9 @@ public class WCETAnalyser extends AppInfo {
 		}
 	}
 
-
-	/**
-	 * Get a method object from the String id. It is used to find the length of
-	 * a method when it is invoked from some method. The methodid is created
-	 * like this: c.getClassName() + "." + m.getName()+m.getSignature();
-	 * 
-	 * @param methodid
-	 * @return the method object
-	 */
-	public Method getMethod(String methodid) {
-		Method m = (Method) mmap.get(methodid);
-		return m;
-	}
-
-	public WCETMethodBlock getWCMB(Method method) {
-		WCETMethodBlock wcmb = (WCETMethodBlock) mtowcmb.get(method);
-		// System.out.println("getWCMB:"+wcmb);
+	public WCETMethodBlock getWCMB(MethodInfo mi) {
+		WCETMethodBlock wcmb = (WCETMethodBlock) mtowcmb.get(mi);
+		// System.out.println("getWCMB: "+mi.methodId+" "+wcmb.mid);
 		return wcmb;
 	}
 
