@@ -1473,6 +1473,26 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 		return bounds;
 	}
 
+	Map<InstructionHandle, Integer> ihBound = new HashMap();
+	
+	public int getBound(AppInfo program, InstructionHandle instr) {
+		
+		
+//		ContextMap<List<HashedString>, Pair<ValueMapping>> r = bounds.get(instr);
+// why does the following resutl in a null pointer?
+//		Context c = r.getContext();
+
+		System.out.println("Instr in getBound() "+instr);
+		Integer bd = ihBound.get(instr);
+
+		if (bd!=null) {
+			return bd.intValue();			
+		} else {
+			System.out.println("Bound not found");
+			return 8888;
+		}
+	}
+	
 	public void printResult(AppInfo program) {
 		
 		for (Iterator<InstructionHandle> i = bounds.keySet().iterator(); i.hasNext(); ) {
@@ -1538,7 +1558,10 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 					secondBound = secondRange / Math.min(Math.abs(second.increment.getUb()), Math.abs(second.increment.getLb()));
 				}
 
-				System.out.println(Math.max(firstBound, secondBound));						
+				int val = Math.max(firstBound, secondBound);
+				System.out.println(val);
+				System.out.println("Instr in result: "+instr);
+				ihBound.put(instr, new Integer(val));
 			}			
 		}
 	}

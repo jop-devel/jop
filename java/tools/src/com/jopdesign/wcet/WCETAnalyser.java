@@ -125,6 +125,8 @@ public class WCETAnalyser extends com.jopdesign.dfa.framework.AppInfo {
 	public ArrayList wcmbs; // all the wcmbs
 
 	public boolean init = true;
+	
+	LoopBounds lb;
 
 	public WCETAnalyser() {
 		super(ClassInfo.getTemplate());
@@ -238,8 +240,10 @@ public class WCETAnalyser extends com.jopdesign.dfa.framework.AppInfo {
 		}
 
 	}
+	
+	
 	public static void main(String[] args) {
-		
+				
 		WCETAnalyser wca = new WCETAnalyser();
 		if (args.length == 0) {
 			System.err
@@ -257,13 +261,13 @@ public class WCETAnalyser extends com.jopdesign.dfa.framework.AppInfo {
 		}
 		
 		// get receivers for this program
-//		ReceiverTypes rt = new ReceiverTypes();
-//		wca.setReceivers(wca.runAnalysis(rt));
-////		rt.printResult(program);
-//		// run loop bounds analysis
-//		LoopBounds lb = new LoopBounds();
-//		wca.runAnalysis(lb);
-//		lb.printResult(wca);				
+		ReceiverTypes rt = new ReceiverTypes();
+		wca.setReceivers(wca.runAnalysis(rt));
+//		rt.printResult(program);
+		// run loop bounds analysis
+		wca.lb = new LoopBounds();
+		wca.runAnalysis(wca.lb);
+		wca.lb.printResult(wca);				
 		
 		wca.analyze();
 	}

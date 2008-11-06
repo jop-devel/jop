@@ -32,6 +32,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.TreeMap;
 
@@ -58,6 +60,11 @@ import org.apache.bcel.verifier.structurals.ExecutionVisitor;
 import org.apache.bcel.verifier.structurals.InstConstraintVisitor;
 
 import com.jopdesign.build.MethodInfo;
+import com.jopdesign.dfa.analyses.Pair;
+import com.jopdesign.dfa.analyses.LoopBounds.ValueMapping;
+import com.jopdesign.dfa.framework.Context;
+import com.jopdesign.dfa.framework.ContextMap;
+import com.jopdesign.dfa.framework.HashedString;
 
 /**
  * It has a HashMap of WCETBasicBlocks. The class have methods that are called
@@ -968,12 +975,23 @@ class WCETMethodBlock {
 							wcbbhit.leq = true;
 						wcbbhit.loopdriver = false;
 						wcbbhit.loopid = wcbb.bid;
-						wcbbhit.loop = Integer.parseInt((String) wcaA
-								.get("loop"));
+						wcbbhit.loop = Integer.parseInt((String) wcaA.get("loop"));
 						wcbbhit.loopdriverwcbb = wcbb;
 						lines.add(new Integer(wcbbhit.line));
 						
 						System.out.println("Loop bounds from annotation: wcbb.loop="+wcbb.loop+" wcbbhit.loop="+wcbbhit.loop);
+						// MS: it's the WRONG BB for the loop bound!
+						InstructionHandle instr = wcbb.endih;
+						// a very quick and dirty hack:
+						instr = wcbb.sucbb.endih;
+						int bound = wca.lb.getBound(wca, instr);
+						System.out.println("Loop bounds from DFA: "+bound);
+						// now use our DFA bounds:
+						wcbb.loop = bound;
+						// MS: I don't understand that stuff:
+						wcbbhit.loop = bound;
+						wcbbhit.leq = true;	// what's the difference for WCET?
+						
 						//            if(wcaA.get("innerloop") != null){
 						//              if(((String)wcaA.get("innerloop")).equals("true")){
 						//System.out.println(wcbb.getIDS() +" is an inner loop controller");
