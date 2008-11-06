@@ -4,6 +4,24 @@ package wcet.wcadevel;
 public class WCADevel {
 
   static public int dowcet() {
+	for(int j = 0; j < 5; j++) // @WCA loop=5
+	  bar();
+
+	return 0;
+  }
+
+   static void bar() {
+       int i = 0;
+       i = i + 1;
+   }
+
+
+}
+
+/* saving a copy
+public class WCADevel {
+
+  static public int dowcet() {
 	//A a = new A();
     A a = new B();
 
@@ -42,4 +60,4 @@ class B extends A {
    }
 
 }
-
+*/
