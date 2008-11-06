@@ -20,9 +20,11 @@
 package com.jopdesign.wcet08.graphutils;
 
 import java.util.Hashtable;
+import java.util.List;
 import java.util.Vector;
 
 import org.jgrapht.DirectedGraph;
+import org.jgrapht.alg.BellmanFordShortestPath;
 import org.jgrapht.alg.ConnectivityInspector;
 import org.jgrapht.traverse.DepthFirstIterator;
 
@@ -41,9 +43,9 @@ public class TopOrder<V,E> {
 	 * Raised if the given graph isn't reducible, i.e. there are cycles without back-edges,
 	 * or if there is more than one component.
 	 */
-	public static class BadFlowGraphException extends Exception {
+	public static class BadGraphException extends Exception {
 		private static final long serialVersionUID = 1L;
-		public BadFlowGraphException(String reason) { super(reason); }
+		public BadGraphException(String reason) { super(reason); }
 	}
 	private DirectedGraph<V, E> graph;
 	private Hashtable<V,Integer> topOrder = null;
@@ -71,7 +73,7 @@ public class TopOrder<V,E> {
 		@Override
 		protected void encounterVertexAgain(V vertex, E edge) {
 			super.encounterVertexAgain(vertex,edge);
-			if(getSeenData(vertex) == VisitColor.BLACK) {
+			if(getSeenData(vertex) != VisitColor.GRAY) {
 				int sourceOrder = topOrder.get(graph.getEdgeSource(edge));
 				int targetOrder = topOrder.get(graph.getEdgeTarget(edge));
 				topOrder.put(vertex, Math.max(targetOrder, sourceOrder+1));
@@ -81,17 +83,27 @@ public class TopOrder<V,E> {
 		}
 	}
 	
-	public TopOrder(DirectedGraph<V,E> graph,V startVertex) throws BadFlowGraphException {
+	public TopOrder(DirectedGraph<V,E> graph,V startVertex) throws BadGraphException {
 		this.graph = graph;
 		this.startVertex = startVertex;
-		analyse();
+		analyse(false);
 	}
-	private void analyse() throws BadFlowGraphException {
+	public TopOrder(DirectedGraph<V,E> graph,V startVertex, boolean isAcyclic) throws BadGraphException {
+		this.graph = graph;
+		this.startVertex = startVertex;
+		analyse(isAcyclic);
+	}
+	private void analyse(boolean isAcyclic) throws BadGraphException {
 		backEdges = new Vector<E>();
 		topOrder = new Hashtable<V, Integer>();
 		dfsOrder = new Vector<V>();
 		BackEdgeDetector iter = new BackEdgeDetector(graph,startVertex);
 		while(iter.hasNext()) iter.next();
+		if(isAcyclic && ! backEdges.isEmpty()) {
+			E e1 = backEdges.firstElement();
+			List<E> cycle = BellmanFordShortestPath.findPathBetween(graph, graph.getEdgeTarget(e1), graph.getEdgeSource(e1));			
+			throw new BadGraphException("Expected acyclic graph, but found cycle: "+cycle);
+		}
 		this.dominators = new Dominators<V,E>(this.graph,dfsOrder);
 		checkReducible();
 	}
@@ -118,6 +130,7 @@ public class TopOrder<V,E> {
 	public Vector<V> getDfsOrder() {
 		return dfsOrder;
 	}
+
 	/**
 	 * @return the {@link Dominators} of the graph
 	 */
@@ -128,25 +141,25 @@ public class TopOrder<V,E> {
 	/* Reducability condition: For every backedge (n,h), h dominates n
 	 * @throws Exception if the graph isn't reducible
 	 */
-	private void checkReducible() throws BadFlowGraphException {
+	private void checkReducible() throws BadGraphException {
 		for(E backEdge : getBackEdges()) {
 			V n   = graph.getEdgeSource(backEdge);
 			V hol = graph.getEdgeTarget(backEdge);
 			if(! dominators.dominates(hol,n)) {
-				throw new BadFlowGraphException(hol+" should dominate "+ n);
+				throw new BadGraphException(hol+" should dominate "+ n);
 			}
 		}
 	}
 	/**
 	 * Check wheter the given graph is connected <code>|weakly connected components| = 1</code>
 	 * @param graph
-	 * @throws BadFlowGraphException
+	 * @throws BadGraphException
 	 */
 	public static void checkConnected(DirectedGraph<FlowGraphNode, FlowGraphEdge> graph) 
-		throws BadFlowGraphException {
+		throws BadGraphException {
 		int comps = new ConnectivityInspector<FlowGraphNode, FlowGraphEdge>(graph).connectedSets().size(); 
 		if(comps != 1) {
-			throw new BadFlowGraphException("Expected graph with one component, but the given one has "+comps);
+			throw new BadGraphException("Expected graph with one component, but the given one has "+comps);
 		}
 	}
 

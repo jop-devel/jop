@@ -122,9 +122,10 @@ public class Dominators<V,E> {
 		if(dominator.equals(dominated)) return true; // Domination is reflexive ;)
 		computeDominators();
 		V dom = getIDom(dominated);
-		while(dom != null && ! dom.equals(dominator)) {
+		// as long as dominated >= dominator
+		while(getOrder(dom) >= getOrder(dominator) && ! dom.equals(dominator)) {
 			dom = getIDom(dom);
 		}
-		return  dom.equals(dominator);
+		return dom.equals(dominator);
 	}
 }

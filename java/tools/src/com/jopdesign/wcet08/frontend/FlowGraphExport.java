@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.bcel.generic.BranchInstruction;
+import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.InvokeInstruction;
 import org.apache.bcel.generic.RETURN;
@@ -75,15 +76,19 @@ public class FlowGraphExport {
 		}
 		private void setBasicBlockAttributes(BasicBlockNode n, Map<String,String> ht) {
 			BasicBlock codeBlock = n.getCodeBlock();
-			boolean isInvoke = codeBlock.getLastInstruction().getInstruction() instanceof InvokeInstruction;
-			boolean isReturn = codeBlock.getLastInstruction().getInstruction() instanceof RETURN;
+			Instruction lastInstr = codeBlock.getLastInstruction().getInstruction();
+			InvokeInstruction invInstr = 
+				(lastInstr instanceof InvokeInstruction) ? ((InvokeInstruction)lastInstr) : null;
+			boolean isReturn = lastInstr instanceof RETURN;
 			StringBuilder nodeInfo = new StringBuilder();
 			nodeInfo.append('#');
 			nodeInfo.append(n.getId());
 			nodeInfo.append(' ');
 			String infoHeader;
-			if(isInvoke) {
-				infoHeader = "{invoke ";
+			if(invInstr != null) {
+				infoHeader = "{invoke "+
+							 codeBlock.getAppInfo().getReferenced(codeBlock.getMethodInfo().getCli(), invInstr) +
+							 "}";
 			} else if(isReturn) {
 				infoHeader = "{return ";
 			} else if(codeBlock.getBranchInstruction() != null) {

@@ -30,12 +30,15 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.TreeMap;
 import java.util.Vector;
+import java.util.Map.Entry;
 
 import org.apache.log4j.Logger;
 import org.apache.velocity.Template;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.Velocity;
+import org.apache.velocity.exception.ParseErrorException;
 import org.apache.velocity.exception.ResourceNotFoundException;
+import org.apache.velocity.exception.VelocityException;
 
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.wcet.WCETInstruction;
@@ -45,33 +48,92 @@ import com.jopdesign.wcet08.frontend.FlowGraph;
 import com.jopdesign.wcet08.frontend.FlowGraph.FlowGraphEdge;
 import com.jopdesign.wcet08.frontend.FlowGraph.FlowGraphNode;
 
+/**
+ * Analysis reports, using HTML framesets.
+ * 
+ * TODO: This is an ad-hoc implementation. Design a good report concept.
+ * TODO: html resources should be bundled in this package
+ * @author Benedikt Huber <benedikt.huber@gmail.com>
+ *
+ */
 public class Report {
 	static final Logger logger = Logger.getLogger(Report.class);
+	
+	/**
+	 * Initialize the velocity engine
+	 * @throws Exception
+	 */
+	public static void initVelocity() throws Exception  {
+		Properties ps = new Properties();
+		ps.put("resource.loader", "class");
+		ps.put("class.resource.loader.description","velocity: wcet class resource loader"); 
+		ps.put("class.resource.loader.class","org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader");
+		Config conf = Config.instance();
+		if(conf.getTemplatePath() != null) {
+			ps.put("resource.loader", "file, class");
+			ps.put("file.resource.loader.class","org.apache.velocity.runtime.resource.loader.FileResourceLoader");
+			ps.put("file.resource.loader.path",Config.instance().getTemplatePath());
+			ps.put("file.resource.loader.cache","true");
+		} else {
+			
+		}
+		Velocity.init(ps);
+	}
+
+	private Config config;	
 	private Project project;
 	private HashMap<MethodInfo,Vector<DetailedMethodReport>> detailedReports =
 		new HashMap<MethodInfo, Vector<DetailedMethodReport>>();
-	private Config config;	
-
 	private Hashtable<String,Object> stats = new Hashtable<String, Object>();
 	private ReportEntry rootReportEntry = ReportEntry.rootReportEntry("summary.html");
+	private Hashtable<File,File> dotJobs = new Hashtable<File,File>();
 	
 	public Report(Project p) {
 		this.project = p;
 		this.config = Config.instance();
 	}
-
 	public void addStat(String key, Object val) { this.stats.put(key,val); }
 
-	public void addPage(String key, String link)  {
-		this.rootReportEntry.addPage(key,link);
+	/**
+	 * add a HTML page, with the given name, order number and link
+	 * @param name the name of the page
+	 * @param link the relative path to the page (e.g. <code>details/m1.html<code>)
+	 */
+	public void addPage(String name, String link)  {
+		this.rootReportEntry.addPage(name,link);
 	}
-	public void writeResults() throws Exception {
-		this.addPage("logs/error.log", config.getErrorLogFile().getName());
+	
+	public void generateFile(String templateName,File outFile, Map ctxMap) throws Exception {
+		generateFile(templateName,outFile,new VelocityContext(ctxMap));
+	}
+	/**
+	 * Write the reports to disk
+	 * @throws Exception
+	 */
+	public void writeReport() throws Exception {
+		this.addPage("logs/error.log",config.getErrorLogFile().getName());
 		this.addPage("logs/info.log", config.getInfoLogFile().getName());
 		generateBytecodeTable();
 		generateIndex();
 		generateSummary();
 		generateTOC();
+		generateDOT();
+	}
+
+	private void generateDOT() throws IOException {
+		if(config.doInvokeDot()) {
+			for(Entry<File,File> dotJob : this.dotJobs.entrySet()) {
+				InvokeDot.invokeDot(dotJob.getKey(), dotJob.getValue());
+			}
+		} else {
+			FileWriter fw = new FileWriter(config.getOutFile("Makefile"));
+			fw.append("dot:\n");
+			for(Entry<File,File> dotJob : this.dotJobs.entrySet()) {
+				fw.append("\tdot -Tpng -o "+dotJob.getValue().getName()+" "+
+											dotJob.getKey().getName()+"\n");
+			}			
+			fw.close();
+		}
 	}
 	private void generateBytecodeTable() throws IOException {
 		File file = config.getOutFile("Bytecode WCET Table.txt");
@@ -95,13 +157,15 @@ public class Report {
 		VelocityContext context = new VelocityContext();
 		context.put( "classpath", config.getClassPath());
 		context.put( "class", config.getRootClassName());
-		context.put( "method", config.getRootMethodSig());
+		context.put( "method", config.getRootMethodName());
 		context.put( "errorlog", config.getErrorLogFile());
 		context.put( "infolog", config.getInfoLogFile());
 		context.put( "stats", stats);
 		generateFile("summary.vm", config.getOutFile("summary.html"), context);
 	}
-	private void generateFile(String templateName, File outFile, VelocityContext ctx) throws Exception {
+	private void generateFile(String templateName, File outFile, VelocityContext ctx) 
+			throws Exception 
+	{
 		Template template;
 		try {
 			template = Velocity.getTemplate(templateName);
@@ -113,10 +177,6 @@ public class Report {
 		fw.close();				
 	}
 
-	public void generateFile(String templateName,File outFile, Map ctxMap) throws Exception {
-		generateFile(templateName,outFile,new VelocityContext(ctxMap));
-	}
-
 	/**
 	 * Dump the project's input (callgraph,cfgs)
 	 * @throws IOException 
@@ -126,7 +186,9 @@ public class Report {
 		this.addStat("#classes", project.getCallGraph().getClassInfos().size());
 		this.addStat("#methods", project.getCallGraph().getImplementedMethods().size());
 		generateInputOverview();
+		this.addPage("details",null);
 		for(MethodInfo m : project.getCallGraph().getImplementedMethods()) {
+			logger.info("Generating report for method: "+m);
 			FlowGraph flowGraph = project.getFlowGraph(m);
 			Map<String,Object> stats = new TreeMap<String, Object>();
 			stats.put("#nodes", flowGraph.getGraph().vertexSet().size() - 2 /* entry+exit */);
@@ -145,11 +207,7 @@ public class Report {
 		FileWriter fw = new FileWriter(cgdot);
 		project.getCallGraph().exportDOT(fw);
 		fw.close();
-		try {
-			InvokeDot.invokeDot(cgdot, cgimg);
-		} catch(IOException e) {
-			logger.error("Invoking DOT failed: "+e);
-		}
+		recordDot(cgdot,cgimg);
 		ctx.put("callgraph", "callgraph.png");
 
 		Vector<MethodReport> mrv = new Vector<MethodReport>();
@@ -167,6 +225,10 @@ public class Report {
 		this.addPage("input", "input_overview.html");
 	}
 	
+	void recordDot(File cgdot, File cgimg) {
+		this.dotJobs .put(cgdot,cgimg);
+	}
+
 	private static String pageOf(MethodInfo i) { 
 		return sanitizeFileName(i.getFQMethodName())+".html";
 	}
@@ -200,22 +262,5 @@ public class Report {
 			logger.error(e);
 		}
 		this.addPage("details/"+method.getFQMethodName(),page);		
-	}
-
-	public static void initVelocity() throws Exception  {
-		Properties ps = new Properties();
-		ps.put("resource.loader", "class");
-		ps.put("class.resource.loader.description","velocity: wcet class resource loader"); 
-		ps.put("class.resource.loader.class","org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader");
-		Config conf = Config.instance();
-		if(conf.getTemplatePath() != null) {
-			ps.put("resource.loader", "file, class");
-			ps.put("file.resource.loader.class","org.apache.velocity.runtime.resource.loader.FileResourceLoader");
-			ps.put("file.resource.loader.path",Config.instance().getTemplatePath());
-			ps.put("file.resource.loader.cache","true");
-		} else {
-			
-		}
-		Velocity.init(ps);
 	}
 }

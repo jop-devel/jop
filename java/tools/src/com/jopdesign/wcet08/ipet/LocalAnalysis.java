@@ -46,9 +46,9 @@ public class LocalAnalysis {
 			new MaxCostFlow<FlowGraphNode,FlowGraphEdge>(g.getGraph(),g.getEntry(),g.getExit());
 		for(FlowGraphNode n : g.getGraph().vertexSet()) {
 			Long cost = nodeWCET.get(n);
-			maxflow.addCost(n, cost);
+			maxflow.setCost(n, cost);
 		}
-		for(FlowConstraint c : flowCs) maxflow.addEdgeConstraint(c);
+		for(FlowConstraint c : flowCs) maxflow.addFlowConstraint(c);
 		return maxflow;
 	}
 	/**

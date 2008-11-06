@@ -33,7 +33,9 @@ import org.apache.log4j.Logger;
 import com.jopdesign.wcet08.Config;
 
 /**
- * This class invokes the .dot program to generate graphs
+ * This class invokes the .dot program to generate graphs.
+ * As invoking dot is very time consuming, we cache output graphs using
+ * md5s on the DOT file.
  *
  * @author Benedikt Huber, benedikt.huber@gmail.com
  *

@@ -22,7 +22,7 @@ import org.junit.Test;
 import com.jopdesign.wcet08.graphutils.Dominators;
 import com.jopdesign.wcet08.graphutils.LoopColoring;
 import com.jopdesign.wcet08.graphutils.TopOrder;
-import com.jopdesign.wcet08.graphutils.TopOrder.BadFlowGraphException;
+import com.jopdesign.wcet08.graphutils.TopOrder.BadGraphException;
 
 import static junit.framework.Assert.*;
 public class GraphTopologyTest {
@@ -144,7 +144,7 @@ public class GraphTopologyTest {
 		TopOrder<String, DefaultEdge> topOrder;
 		try {
 			topOrder = new TopOrder<String,DefaultEdge>(g,"Entry");
-		} catch (BadFlowGraphException e) {
+		} catch (BadGraphException e) {
 			e.printStackTrace();
 			System.exit(1);
 			topOrder = null;

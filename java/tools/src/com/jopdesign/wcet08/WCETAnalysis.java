@@ -18,11 +18,13 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+/* Notes: WCET times reported by JOP (noted if JopSIM+cache-timing differs)
+ * Method.java: 12039
+ * StartKfl.java: 3048-11200
+ * StartLift.java: 4638-4772 (JopSIM: 4636-4774) 
+ */
 
-/**
- * WCET Analysis for JOP
- * 
- * TODO List:
+ /* TODO List:
  * 
  * [1] Special instructions (either JOP com.jopsys.native or java implemented bytecodes):
  * It would be nicer if we could deal with them in a preprocessing step instead of 
@@ -41,22 +43,27 @@
  * 
  * [5] Should we eliminate the velocity library ? It is rather heavyweight, and we don't use too
  * many features of it.
- * 
- * [6] The report stuff is rather ad-hoc and should be cleaned up.
+ * Plus the report stuff is rather ad-hoc and should be cleaned up.
  * 
  */
+
 package com.jopdesign.wcet08;
 
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
-import com.jopdesign.wcet08.Config.MissingPropertyError;
+
+import com.jopdesign.wcet08.Config.BadConfigurationError;
+import com.jopdesign.wcet08.Config.MissingConfigurationError;
 import com.jopdesign.wcet08.analysis.CacheConfig;
 import com.jopdesign.wcet08.analysis.SimpleAnalysis;
 import com.jopdesign.wcet08.analysis.SimpleAnalysis.WcetMode;
 import com.jopdesign.wcet08.report.Report;
 
+/**
+ * WCET Analysis for JOP - Executable
+ */
 public class WCETAnalysis {
 	private static final String CONFIG_FILE_PROP = "config";
 	private static final Logger tlLogger = Logger.getLogger(WCETAnalysis.class);
@@ -95,16 +102,15 @@ public class WCETAnalysis {
 		ConsoleAppender consoleApp = new ConsoleAppender(new PatternLayout(), ConsoleAppender.SYSTEM_ERR);
 		consoleApp.setName("TOP-LEVEL");
 		consoleApp.setThreshold(Level.INFO);
-		consoleApp.setLayout(new PatternLayout("[WCETAnalysis] %-6rms %m%n"));
+		consoleApp.setLayout(new PatternLayout("[WCETAnalysis %-6rms] %m%n"));
 		tlLogger.addAppender(consoleApp);
 
 		/* Get config */
 		try {
-			tlLogger.info("Loading configuration");
 			String[] argsrest = Config.load(System.getProperty(CONFIG_FILE_PROP),args);
 			Config c = Config.instance();
-			if(argsrest.length == 1) c.setTarget(argsrest[0]);
-			else if(argsrest.length > 1) exitUsage();
+			if(argsrest.length != 0 || c.helpRequested()) exitUsage();
+			tlLogger.info("Configuration: "+Config.instance().getOptions());
 			c.checkPresent(Config.CLASSPATH_PROPERTY);
 			c.checkPresent(Config.SOURCEPATH_PROPERTY);
 			c.checkPresent(Config.ROOT_CLASS_NAME);
@@ -112,9 +118,12 @@ public class WCETAnalysis {
 				tlLogger.info("Initializing Output");
 				Config.instance().initializeReport();
 			}
-		} catch (MissingPropertyError e) {
+		} catch (MissingConfigurationError e) {
 			System.err.println("[FATAL] Missing option: "+e.getMessage());
 			exitUsage();
+		} catch(BadConfigurationError e) { 
+			System.err.println("[FATAL] Bad option: "+e.getMessage());
+			exitUsage();					
 		} catch (Exception e) {
 			e.printStackTrace();
 			System.err.println("----------------------------------------");
@@ -126,7 +135,7 @@ public class WCETAnalysis {
 		WCETAnalysis inst = new WCETAnalysis(config);
 		/* run */
 		if(! inst.run()) {
-			tlLogger.error("WCET Analysis failed. See "+config.getErrorLogFile()+ " for details");
+			System.err.println("[ERROR] WCET Analysis failed");
 			System.exit(1);
 		} else {
 			tlLogger.info("WCET analysis finished");
@@ -142,7 +151,7 @@ public class WCETAnalysis {
 		try {
 			project.load();
 		} catch (Exception e) {
-			tlLogger.error("Loading project failed: "+e);
+			System.err.println("[ERROR] Loading project failed: "+e);
 			e.printStackTrace();
 			return false;
 		}
@@ -165,8 +174,10 @@ public class WCETAnalysis {
 			project.getReport().addStat("wcet-cache-approx", scaWCET);
 			succeed = true;
 		} catch (Exception e) {
+			System.err.println("[ERROR] "+e);
 			e.printStackTrace();			
 		} catch(AssertionError e) {
+			System.err.println("[FATAL] "+e);
 			e.printStackTrace();			
 		}
 		if(! config.hasReportDir()) {
@@ -179,7 +190,7 @@ public class WCETAnalysis {
 			try {
 				Report.initVelocity();
 			} catch (Exception e) {
-				tlLogger.error("Initializing velocity failed");
+				System.err.println("[ERROR] Initializing velocity failed");
 				e.printStackTrace();
 				return false;
 			}
@@ -187,8 +198,9 @@ public class WCETAnalysis {
 			tlLogger.info("Generating info pages");
 			project.getReport().generateInfoPages();
 			tlLogger.info("Generating result document");
-			project.getReport().writeResults();
+			project.getReport().writeReport();
 		} catch (Exception e) {
+			System.err.println("[ERROR] Generating report failed");
 			e.printStackTrace();
 			return false;
 		}

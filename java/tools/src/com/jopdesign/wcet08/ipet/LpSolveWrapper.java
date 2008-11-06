@@ -22,6 +22,7 @@ package com.jopdesign.wcet08.ipet;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.Vector;
 import java.util.Map.Entry;
 
@@ -30,20 +31,68 @@ import com.jopdesign.wcet08.ipet.LinearConstraint.ConstraintType;
 import lpsolve.LpSolve;
 import lpsolve.LpSolveException;
 
-public class LpSolveWrapper {
+/**
+ * Simple, typed API for invoking LpSolve.
+ * 
+ * @param<T> type of variables. If you don't want typed variables, use {@link java.lang.Object}
+ *
+ * @author Benedikt Huber <benedikt.huber@gmail.com>
+ */
+public class LpSolveWrapper<T> {
+	/**
+	 * Status of the lp solver (typed copy of basic LP solve status numbers)
+	 */
+	public enum SolverStatus {
+		NOMEMORY(LpSolve.NOMEMORY), OPTIMAL(0), SUBOPTIMAL(1), INFEASIBLE(2), UNBOUNDED(3),
+		DEGENERATE(4), NUMFAILURE(5), USERABORT(6), TIMEOUT(7),
+		PRESOLVED(9),PROCFAIL(10),PROCBREAK(11),FEASFOUND(12),NOFEASFOUND(13),
+		UNKNOWN(-1);
+		int statusCode;
+		SolverStatus(int c) {
+			this.statusCode = c;
+		}
+	}
+	private static Map<Integer,SolverStatus> readMap;
+	public static SolverStatus getSolverStatus(int code) {
+		if(readMap == null) {
+			readMap = new TreeMap<Integer,SolverStatus>();
+			for(SolverStatus ss : SolverStatus.values()) {
+				readMap.put(ss.statusCode, ss);
+			}
+		}
+		SolverStatus status = readMap.get(code);
+		if(status == null) return SolverStatus.UNKNOWN;
+		else return status;
+	}
+
+	/**
+	 * Implementors provide integral IDs for objects of type T
+	 *
+	 * @param <T>
+	 */
+	public static interface IDProvider<T> {
+		int getID(T t);
+		T fromID(int id);
+	}
+	
 	private class RawVector {
 		int count;
 		int[] ixs;
 		double[] coeffs;
 	}
-	private<T> RawVector buildRawVector(LinearVector<T> inputVector) {
+	private RawVector buildRawVector(LinearVector<T> inputVector) 
+		throws LpSolveException {
 		RawVector vec = new RawVector();
 		vec.count = inputVector.size();
 		vec.ixs = new int[vec.count];
 		vec.coeffs = new double[vec.count];
 		int i = 0;
 		for(Entry<T,Long> e : inputVector.getCoeffs().entrySet()) {
-			vec.ixs[i] = objMapping.get(e.getKey());
+			int objId = idProvider.getID(e.getKey());
+			if(objId < 1 || objId > numVars) {
+				throw new LpSolveException("Bad id: "+e+"has id "+objId+" not in [1.."+numVars+"]");
+			}
+			vec.ixs[i] = objId;
 			vec.coeffs[i] = e.getValue();
 			i++;
 		}
@@ -51,80 +100,75 @@ public class LpSolveWrapper {
 	}
 
 	private LpSolve lpsolve;
-	private Map<? extends Object, Integer> objMapping;
 	private int numVars;
-
-	public LpSolveWrapper(Map<?,Integer> objMapping, boolean intVars) 
+	private IDProvider<T> idProvider;
+	
+	/**
+	 * Create a new (I)LP problem with the given number of variables. Note that
+	 * variables are per default considered to be non-negative.
+	 * @param numVars     number of variables
+	 * @param idProvider  mapping variables to ids. The id of a variable has to be in the range
+	 * 					  [1..numVars].
+	 * @param intVars     if true, all variables are considered to be integral, otherwise rational
+	 * @throws LpSolveException
+	 */
+	public LpSolveWrapper(int numVars, boolean intVars, IDProvider<T> idProvider) 
 		throws LpSolveException {
-		checkMapping(objMapping);
-		this.numVars = objMapping.size();
+		this.numVars = numVars;
+		this.idProvider = idProvider;
 		this.lpsolve = LpSolve.makeLp(0,numVars);
+
 		lpsolve.setPrintSol(0);
 		lpsolve.setTrace(false);
 		lpsolve.setDebug(false);
 		lpsolve.setVerbose(3);
-//		lpsolve.putMsgfunc(null,null,0);
+
 		for(int i = 1; i <= numVars; i++) {
 			lpsolve.setInt(i, intVars);
 		}
-		this.objMapping = objMapping;
 	}
 	/**
-	 * Check that the objet map is valid: its codomain has to be a consecutive range of
-	 * integers. Rather expensive, so should only be run in debugging mode.
-	 * @param objmap
-	 * @throws LpSolveException when the map isn't valid
+	 * add a linear constraint to the the problem
+	 * @param linearConstraint the lienar constraint
+	 * @throws LpSolveException
 	 */
-	private void checkMapping(Map<?, Integer> objmap) throws LpSolveException {
-		List<Integer> vals = new Vector<Integer>(objmap.values());
-		Collections.sort(vals);
-		if(vals.isEmpty()) {
-			throw new LpSolveException("Empty problem");
-		} else if(vals.get(0) != 1) {
-			throw new LpSolveException("First variable has to mapped to 1");
-		}
-		for(int i = 1; i<vals.size();i++) {
-			if(vals.get(i-1)+1 != vals.get(i)) {
-				throw new LpSolveException("Objects have to be mapped to a consecutive list of integers");
-			}
-		}
+	public void addConstraint(LinearConstraint<T> linearConstraint) throws LpSolveException {
+		LinearVector<T> row = linearConstraint.getLinearVectorOnLHS();
+		RawVector rawVector = buildRawVector(row);
+		int constrType = mapConstraintType(linearConstraint.getConstraintType());
+		double rh = linearConstraint.getInhomogenousTermOnRHS();
+		this.lpsolve.addConstraintex(rawVector.count, rawVector.coeffs, rawVector.ixs, constrType , rh);
 	}
-	public<T> void addConstraint(LinearConstraint<T> lc) throws LpSolveException {
-		LinearVector<T> rowVector = lc.getLinearVectorOnLHS();
-		RawVector rawVec = buildRawVector(rowVector);
-		int constrType = mapConstraintType(lc.getConstraintType());
-		double rh = lc.getInhomogenousTermOnRHS();
-		this.lpsolve.addConstraintex(rawVec.count, rawVec.coeffs, rawVec.ixs, constrType , rh);
-	}
-	public<T> void setObjective(LinearVector<T> vec) throws LpSolveException {
-		RawVector rawVec = buildRawVector(vec);
+	/**
+	 * Set the objective of the (I)LP problem.
+	 * @param <T> Type of variables
+	 * @param objVector the objective vector
+	 * @param doMax whether to maximize (if false, minimize)
+	 * @throws LpSolveException
+	 */
+	public void setObjective(LinearVector<T> objVector, boolean doMax) 
+		throws LpSolveException {
+		RawVector rawVec = buildRawVector(objVector);
 		this.lpsolve.setObjFnex(rawVec.count, rawVec.coeffs, rawVec.ixs);
+		if(doMax) lpsolve.setMaxim();
+		else      lpsolve.setMinim();
 	}
+	/**
+	 * Solve the I(LP)
+	 * @param objVec if non-null, write the solution into this array
+	 * @return the objective value
+	 * @throws LpSolveException
+	 */
 	public double solve(double[] objVec) throws LpSolveException {
-		lpsolve.setMaxim();
-//		if(logger.getLevel().isGreaterOrEqual(Level.TRACE)) {
-//			try {
-//				for(Entry e : this.objMapping.entrySet()) {
-//					logger.trace("[LP] --" + e);
-//				}
-//				File tmpFile = File.createTempFile("LpSolveWrapper", ".lp");
-//				lpsolve.writeLp(tmpFile.toString());
-//				BufferedReader frw = new BufferedReader(new FileReader(tmpFile));
-//				String l;
-//				while(null != (l=frw.readLine())) { logger.trace("[LP] "+l); }
-//			} catch(Exception e) {
-//				logger.error("Failed to write and log .lp file");
-//			}
-//		}
-		
 		int r = this.lpsolve.solve();
-		switch(r) {
-		case LpSolve.OPTIMAL: break;
-		default: throw new LpSolveException("Unexpected return code from solve(): "+r);
+		SolverStatus st = getSolverStatus(r);
+		if(st != SolverStatus.OPTIMAL) {
+			throw new LpSolveException("Failed to solve LP problem: "+st);
 		}
 		if(objVec != null) this.lpsolve.getVariables(objVec);
 		return this.lpsolve.getObjective();
 	}
+	
 	private int mapConstraintType(ConstraintType constraintType) {
 		switch(constraintType) {
 			case Equal : return LpSolve.EQ;

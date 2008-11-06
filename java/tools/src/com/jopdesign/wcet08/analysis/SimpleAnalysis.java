@@ -119,7 +119,7 @@ public class SimpleAnalysis {
 		long cost;
 		Map<FlowGraphEdge, Long> flowMapOut = new HashMap<FlowGraphEdge, Long>();
 		try {
-			cost = Math.round(problem.solve(flowMapOut,true));
+			cost = Math.round(problem.solve(flowMapOut));
 		} catch (Exception e) {
 			logger.error("Failed to solve LP problem: "+e);
 			cost=Long.MAX_VALUE;

@@ -30,17 +30,20 @@ public class CacheConfig {
 	public CacheConfig(Config c) { 
 		this.config = c; 
 	}	
+	public static final String CACHE_APPROX = "cache-approx";	
 	public static final String CACHE_BLOCKS = "cache-blocks";	
 	public static final String BLOCK_SIZE = "cache-block-size";
 	public final static String[][] optionDescrs = {
+		{ CACHE_APPROX, "cache approximation for var block cache"+
+						"{always-hit,always-miss,static-reachable [default]}" },
 		{ CACHE_BLOCKS, "number of cache blocks [default: 16]" },
 		{ BLOCK_SIZE,   "size of cache blocks in bytes [default: 256]"}
 	};
 	
 	public int cacheBlocks() {
-		return config.getIntProperty(CACHE_BLOCKS,16);
+		return config.getIntOption(CACHE_BLOCKS,16);
 	}
 	public int blockSize() {
-		return config.getIntProperty(BLOCK_SIZE,256);
+		return config.getIntOption(BLOCK_SIZE,256);
 	}
 }

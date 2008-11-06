@@ -44,7 +44,7 @@ import com.jopdesign.wcet08.frontend.BasicBlock.InstrField;
 import com.jopdesign.wcet08.frontend.SourceAnnotations.BadAnnotationException;
 import com.jopdesign.wcet08.graphutils.LoopColoring;
 import com.jopdesign.wcet08.graphutils.TopOrder;
-import com.jopdesign.wcet08.graphutils.TopOrder.BadFlowGraphException;
+import com.jopdesign.wcet08.graphutils.TopOrder.BadGraphException;
 
 /**
  * (Control) Flow Graph for WCET analysis.
@@ -138,7 +138,7 @@ public class FlowGraph {
 	private HashMap<FlowGraphNode, Integer> annotations;
 	private MethodInfo  methodInfo;
 	
-	public FlowGraph(MethodInfo method) throws BadFlowGraphException  {
+	public FlowGraph(MethodInfo method) throws BadGraphException  {
 		this.methodInfo = method;
 		createFlowGraph(method);
 		analyseFlowGraph();
@@ -198,7 +198,7 @@ public class FlowGraph {
 		}
 	}
 
-	private void analyseFlowGraph() throws BadFlowGraphException {
+	private void analyseFlowGraph() throws BadGraphException {
 		TopOrder.checkConnected(graph);
 		topOrder = new TopOrder<FlowGraphNode, FlowGraphEdge>(this.graph, this.entry);
 		loopColoring = new LoopColoring<FlowGraphNode, FlowGraphEdge>(this.graph,topOrder);

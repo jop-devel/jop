@@ -39,7 +39,7 @@ import com.jopdesign.build.MethodInfo;
 import com.jopdesign.build.ReplaceIinc;
 import com.jopdesign.tools.JopInstr;
 import com.jopdesign.wcet08.Config;
-import com.jopdesign.wcet08.Config.MissingPropertyError;
+import com.jopdesign.wcet08.Config.MissingConfigurationError;
 import com.jopdesign.wcet08.report.InvokeDot;
 /**
  * Class loader for the WCET analysis
@@ -146,7 +146,7 @@ public class JOPAppInfo extends AppInfo {
 			config.checkPresent(Config.CLASSPATH_PROPERTY);
 			config.checkPresent(Config.ROOT_CLASS_NAME);			
 			config.checkPresent(Config.ROOT_METHOD_NAME);			
-		} catch(MissingPropertyError e) {
+		} catch(MissingConfigurationError e) {
 			System.err.println(e);
 			System.err.println(USAGE);
 			System.exit(1);
@@ -195,8 +195,8 @@ public class JOPAppInfo extends AppInfo {
 		String methodname = instr.getMethodName(cpg) + instr.getSignature(cpg);
 		MethodInfo m = getClassInfo(classname).getMethodInfo(methodname);
 		if(m==null) {
-			System.err.println(methodname + " not found in "+
-					getClassInfo(classname).getMethodInfoMap().keySet());
+			logger.error(methodname + " not found in "+ classname + "." +
+					     getClassInfo(classname).getMethodInfoMap().keySet());
 			throw new AssertionError("Failed method lookup: "+classname+"."+methodname);
 		}
 		return m;

@@ -72,9 +72,13 @@ public class Config {
 	 * Exception classes
 	 * ~~~~~~~~~~~~~~~~~
 	 */
-	public class MissingPropertyError extends Error {
+	public class MissingConfigurationError extends Error {
 		private static final long serialVersionUID = 1L;
-		public MissingPropertyError(String msg) { super(msg); }
+		public MissingConfigurationError(String msg) { super(msg); }
+	}
+	public class BadConfigurationError extends Error {
+		private static final long serialVersionUID = 1L;
+		public BadConfigurationError(String msg) { super(msg); }
 	}
 	public class BadConfigurationException extends Exception {
 		private static final long serialVersionUID = 1L;
@@ -104,7 +108,6 @@ public class Config {
 	public static final String TEMPLATEDIR_PROPERTY = "templatedir";
 
 	private static final String PROGRAM_DOT = "program-dot";
-    private static final String DEFAULT_DOT_PROGRAM = "/usr/bin/dot";
 
     /*
 	public static final String DO_UPPAAL = "do-uppaal";
@@ -116,17 +119,17 @@ public class Config {
     	{SOURCEPATH_PROPERTY,"the sourcepath [mandatory]"},
     	{ROOT_CLASS_NAME,"the name of the class containing the method to be analyzed [mandatory]"},
     	{ROOT_METHOD_NAME,"the name (and optionally signature) of the method to be analyzed [default: measure]"},    	
-    	{PROGRAM_DOT,"the path to the dot binary [default: /usr/bin/dot]"},
     	{PROJECT_NAME," the name of the project [default: fully qualified name of root method]"},
     	{REPORTDIR_PROPERTY,"if reports should be generated, the directory to write them to [optional]"},
     	{REPORTDIRROOT_PROPERTY,"if reports should be generated, the parent directory to write them to [optional]"},
-    	{TEMPLATEDIR_PROPERTY,"directory with additional velocity templates [optional]"}    		    	
+    	{TEMPLATEDIR_PROPERTY,"directory with additional velocity templates [optional]"},
+    	{PROGRAM_DOT,"the path to the dot binary if dot should be invoked from java [optional]"}
     };
 
     /**
 	 * The underlying Properties object
 	 */
-	protected Properties props;
+	protected Properties options;
 	
 	/* The name of the project (set once) */
 	private String projectName;
@@ -141,25 +144,25 @@ public class Config {
 	 */
 	protected Config() { 
 		theConfig = this; /* avoid potential recursive loop */
-		props = new Properties(System.getProperties());
+		options = new Properties(System.getProperties());
 		defaultAppender = new ConsoleAppender(new PatternLayout("[%c{1}] %m\n"),"System.err");
 		defaultAppender.setName("ACONSOLE");
 		defaultAppender.setThreshold(Level.ERROR);
 		Logger.getRootLogger().addAppender(defaultAppender);
-		PropertyConfigurator.configure(this.props);
+		PropertyConfigurator.configure(this.options);
 	}		
 	protected boolean hasProperty(String key) {
-		return this.props.containsKey(key);		
+		return this.options.containsKey(key);		
 	}
 	protected String getProperty(String key) {
-		return this.props.getProperty(key);
+		return this.options.getProperty(key);
 	}
 	protected String getProperty(String key, String defaultVal) {
 		return getProperty(key) == null ? defaultVal : getProperty(key);
 	}
 	protected String forceProperty(String key) {
-		String val = this.props.getProperty(key);
-		if(val == null) throw new MissingPropertyError("Missing property: " + key);
+		String val = this.options.getProperty(key);
+		if(val == null) throw new MissingConfigurationError("Missing property: " + key);
 		return val;
 	}
 	public void checkPresent(String prop) {
@@ -176,13 +179,13 @@ public class Config {
 	 */
 	public static void load(String configURL) throws BadConfigurationException {
 		if(configURL != null) instance().loadConfig(configURL);
-		PropertyConfigurator.configure(instance().props);
+		PropertyConfigurator.configure(instance().options);
 	}
 	public static String[] load(String configURL, String[] argv) throws BadConfigurationException {
 		Config c = instance();
 		if(configURL != null) c.loadConfig(configURL);		
 		String[] argvrest = c.consumeOptions(argv);
-		PropertyConfigurator.configure(c.props);
+		PropertyConfigurator.configure(c.options);
 		return argvrest;
 	}
 	
@@ -215,7 +218,7 @@ public class Config {
 		iapp.setName("AINFO");
 		Logger.getRootLogger().addAppender(eapp);
 		Logger.getRootLogger().addAppender(iapp);
-		PropertyConfigurator.configure(this.props);
+		PropertyConfigurator.configure(this.options);
 	}
 	
 	/** Load a configuration file
@@ -242,7 +245,7 @@ public class Config {
 	 * @throws IOException 
 	 */
 	public void loadConfig(InputStream propStream) throws IOException {
-		props.load(propStream);
+		options.load(propStream);
 	}
 	
 	public String getProjectName() {
@@ -260,19 +263,21 @@ public class Config {
 	}
 
 	public String getRootMethodName() {
-		if(this.props.get(ROOT_METHOD_NAME) != null) {
-			return this.props.getProperty(ROOT_METHOD_NAME);
-		} else {
-			return DEFAULT_ROOT_METHOD;
-		}
-	}
-
-	public String getRootMethodSig() {
-		return getRootMethodName();
+		return getProperty(ROOT_METHOD_NAME, DEFAULT_ROOT_METHOD);
 	}
 
 	public String getRootClassName() {
-		return forceProperty(ROOT_CLASS_NAME);
+		String rootClass = forceProperty(ROOT_CLASS_NAME);
+		if(rootClass.indexOf('/') > 0) return updRootClassName(rootClass);
+		else return rootClass;
+	}
+	
+	private String updRootClassName(String rc) {
+		if(rc.indexOf('/') > 0) { // sanitize
+			rc = rc.replace('/','.');
+		}
+		options.put(ROOT_CLASS_NAME,rc);
+		return rc;
 	}
 	
 	/** Return the configured classpath, a list of colon-separated paths
@@ -305,7 +310,7 @@ public class Config {
 				File outdirRoot = new File(getProperty(REPORTDIRROOT_PROPERTY));
 				this.outDir = new File(outdirRoot,getProjectName());
 			} else {
-				throw new MissingPropertyError("Requesting out directory, but no report directory set: "+
+				throw new MissingConfigurationError("Requesting out directory, but no report directory set: "+
 											   "neither '" + REPORTDIR_PROPERTY + "' nor '"+
 											   REPORTDIRROOT_PROPERTY + "' present");	
 			}
@@ -364,21 +369,31 @@ public class Config {
 	}
 
 	public String getDotBinary() {
-		return getProperty(PROGRAM_DOT,DEFAULT_DOT_PROGRAM);
+		return getProperty(PROGRAM_DOT);
+	}
+	public boolean doInvokeDot() {
+		return (getDotBinary() != null);
 	}
 	public boolean hasDotBinary() {
+		if(getDotBinary() == null) return false;
 		return new File(getDotBinary()).exists();
 	}
+	public boolean helpRequested() {
+		return getBooleanOption("help",false);
+	}
+	public Properties getOptions() {
+		return this.options;
+	}
 
-	public boolean getBoolProperty(String key, boolean def) {
-		String v= this.props.getProperty(key);
+	public boolean getBooleanOption(String key, boolean def) {
+		String v= this.options.getProperty(key);
 		if(v == null) return def;
 		return (v.toLowerCase().startsWith("t") ||
 		        v.toLowerCase().startsWith("y"));
 	
 	}
-	public int getIntProperty(String key, int def) {
-		String v= this.props.getProperty(key);
+	public int getIntOption(String key, int def) {
+		String v= this.options.getProperty(key);
 		if(v== null) return def;
 		return Integer.parseInt(v);
 	}
@@ -390,10 +405,11 @@ public class Config {
 	 */
 	public void setTarget(String fqmethodname) {
 		int i = fqmethodname.lastIndexOf(".");
+		if(i < 0) throw new AssertionError("setTarget("+fqmethodname+"): not a fully qualified method name");
 		String clazz = fqmethodname.substring(0,i);
         String method = fqmethodname.substring(i+1,fqmethodname.length());
-        this.props.put(Config.ROOT_CLASS_NAME, clazz);
-        this.props.put(Config.ROOT_METHOD_NAME, method);
+        this.options.put(Config.ROOT_CLASS_NAME, clazz);
+        this.options.put(Config.ROOT_METHOD_NAME, method);
     }
 	
 	/**
@@ -405,7 +421,7 @@ public class Config {
 	 * and we add the pair to our properties, consuming both arguments.
 	 * The first non-option or the argument string {@code --} terminates the option list.
 	 * @param argv The argument list
-	 * @param props The properties to update
+	 * @param options The properties to update
 	 * @return An array of unconsumed arguments
 	 */
 	public String[] consumeOptions(String[] argv) {
@@ -416,7 +432,7 @@ public class Config {
 			if(argv[i].charAt(1) == '-') key = argv[i].substring(2);
 			else key = argv[i].substring(1);
 			val = argv[i+1];
-			props.put(key, val);
+			options.put(key, val);
 			i+=2;
 		}
 		String [] rest = new String[argv.length - i];

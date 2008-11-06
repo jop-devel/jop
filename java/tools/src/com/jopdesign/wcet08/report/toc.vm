@@ -1,8 +1,10 @@
 #macro(showtree $reportEntry)
   <li id="$reportEntry.getKey()"/>
-  <a href="$reportEntry.getLink()" target="content">
-    $reportEntry.getKey()
-  </a>
+#if($reportEntry.getLink())
+  <a href="$reportEntry.getLink()" target="content">$reportEntry.getKey()</a>
+#else
+  $reportEntry.getKey()
+#end
 #if($reportEntry.getSubReportEntries().size() > 0)
 <ul>
 #foreach($p in $reportEntry.getSubReportEntries())

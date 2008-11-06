@@ -19,49 +19,86 @@
 */
 package com.jopdesign.wcet08.ipet;
 
+/**
+ * Integeral linear constraint of the form <code>a x <=> b</code>.
+ * 
+ * @author Benedikt Huber <benedikt.huber@gmail.com>
+ *
+ * @param <T> Type of the variables in the linear constraint
+ */
 public class LinearConstraint<T> {
 	public enum ConstraintType { LessEqual, Equal, GreaterEqual; } 
-	private ConstraintType cmp;
+
+	private ConstraintType op;
 	private LinearVector<T> vec;
 	private long inhom;
-	public LinearConstraint(ConstraintType cmp) {
+	
+	/**
+	 * Initialize the linear constraint to <code>0 op 0</code>
+	 * @param op the comparison operator
+	 */
+	public LinearConstraint(ConstraintType op) {
 		this.vec = new LinearVector<T>();
 		this.inhom = 0;		
-		this.cmp   = cmp;
+		this.op   = op;
 	}
-	public void addLHS(T unit) { vec.add(unit,1); }
-	public void addLHS(T unit, long coeff) { vec.add(unit,coeff); }
-	public void addLHS(long d) { inhom-=d; }
-	public void addRHS(T unit) { vec.add(unit,-1); }
-	public void addRHS(T unit, long coeff) { vec.add(unit,-coeff); }
-	public void addRHS(long d) { inhom+=d; }
 	/**
-	 * For a linear constraint <pre>a x + b op b y + d</pre>
-	 * @return <pre>a x - b y</pre>
+	 * Add <code>coeff * var</code> to the left-hand-side of the constraint
+	 * @param var  
+	 * @param coeff
+	 */
+	public void addLHS(T var, long coeff) { vec.add(var,coeff); }
+	public void addLHS(T var) { vec.add(var,1); }
+
+	/**
+	 * Add the constant integer <code>d</code> to the left-hand-sde of the constraint
+	 * @param d
+	 */
+	public void addLHS(long d) { inhom-=d; }
+
+	/**
+	 * Add <code>coeff * var</code> to the right-hand-side of the constraint
+	 * @param var  
+	 * @param coeff
+	 */
+	public void addRHS(T var, long coeff) { vec.add(var,-coeff); }
+	public void addRHS(T var) { vec.add(var,-1); }
+
+	/**
+	 * Add the constant integer <code>d</code> to the right-hand-sde of the constraint
+	 * @param d
+	 */
+	public void addRHS(long d) { inhom+=d; }
+
+	/**
+	 * Return <code>a x</code> of <code>a x op b</code>
+	 * @return the vector on the left hand side 
 	 */
 	public LinearVector<T> getLinearVectorOnLHS() {
 		return this.vec;
 	}
 	/**
-	 * For a linear constraint <pre>a x + b op b y + d</pre>
-	 * @return <pre>d-b</pre>
+	 * Return <code>b</code> of <code>a x op b</code>
+	 * @return the constant on the right hand side
 	 */
 	public long getInhomogenousTermOnRHS() {
 		return this.inhom;
 	}
+	
+	public ConstraintType getConstraintType() {
+		return op;
+	}
+
 	@Override
 	public String toString() {
 		StringBuffer s = new StringBuffer();
 		s.append(vec.toString());
-		switch(cmp) {
+		switch(op) {
 		case Equal : s.append(" = ");break;
 		case LessEqual: s.append(" <= ");break;
 		case GreaterEqual : s.append(" >= ");break;
 		}
 		s.append(inhom);
 		return s.toString();
-	}
-	public ConstraintType getConstraintType() {
-		return cmp;
 	}
 }

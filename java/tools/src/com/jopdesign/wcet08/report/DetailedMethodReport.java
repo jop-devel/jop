@@ -63,11 +63,7 @@ public class DetailedMethodReport {
 		File cgimg = Config.instance().getOutFile(method,key+".png");
 		FlowGraph flowGraph = project.getFlowGraph(method);
 		flowGraph.exportDOT(cgdot,nodeAnnotations, edgeAnnotations);
-		try {
-			if(Config.instance().hasDotBinary()) InvokeDot.invokeDot(cgdot, cgimg);
-		} catch(IOException e) {
-			Report.logger.error("Invoking DOT failed: "+e);
-		}
+		project.getReport().recordDot(cgdot,cgimg);
 		return cgimg;
 	}
 }

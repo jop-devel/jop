@@ -24,9 +24,11 @@ import java.io.Writer;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.Vector;
 
+import org.apache.bcel.classfile.Method;
 import org.apache.bcel.generic.EmptyVisitor;
 import org.apache.bcel.generic.INVOKEINTERFACE;
 import org.apache.bcel.generic.INVOKESPECIAL;
@@ -37,14 +39,18 @@ import org.apache.bcel.generic.Visitor;
 import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionList;
 import org.jgrapht.DirectedGraph;
+import org.jgrapht.alg.CycleDetector;
 import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.traverse.DepthFirstIterator;
+import org.jgrapht.traverse.TopologicalOrderIterator;
 
 import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.wcet08.frontend.JOPAppInfo.MethodNotFoundException;
 import com.jopdesign.wcet08.graphutils.AdvancedDOTExporter;
+import com.jopdesign.wcet08.graphutils.TopOrder;
+import com.jopdesign.wcet08.graphutils.TopOrder.BadGraphException;
 
 /**
  * Java CallGraph, based on JGraphT. Supports interfaces.
@@ -183,6 +189,7 @@ public class CallGraph {
 	private Vector<MethodNotFoundException> errors;
 	private HashSet<ClassInfo> classInfos;
 	private HashMap<MethodInfo,CallGraphNode> methodInfos;
+	private TopOrder<CallGraphNode,DefaultEdge> topOrder;
 
 	/**
 	 * Initialize a CallGraph object.
@@ -222,6 +229,9 @@ public class CallGraph {
 		for(CallGraphNode cgn : callGraph.vertexSet()) {
 			methodInfos.put(cgn.getMethod(),cgn);
 		}
+		CycleDetector<CallGraphNode, DefaultEdge> cycDetect = 
+			new CycleDetector<CallGraphNode, DefaultEdge>(callGraph);
+		if(cycDetect.detectCycles()) throw new AssertionError("Cyclic callgraph");
 	}
 
 	public void exportDOT(Writer w) throws IOException {
@@ -241,12 +251,19 @@ public class CallGraph {
 	public Set<MethodInfo> getMethods() {
 		return methodInfos.keySet();
 	}
-	public Set<MethodInfo> getImplementedMethods() {
-		Set<MethodInfo> implemented = new HashSet<MethodInfo>();
-		for(MethodInfo m : methodInfos.keySet()){
+	/**
+	 * get non-abstract methods, in topological orer
+	 * @return
+	 */
+	public List<MethodInfo> getImplementedMethods() {
+		List<MethodInfo> implemented = new Vector<MethodInfo>();
+		TopologicalOrderIterator<CallGraphNode, DefaultEdge> ti = 
+			new TopologicalOrderIterator<CallGraphNode, DefaultEdge>(callGraph);
+		while(ti.hasNext()) {
+			MethodInfo m = ti.next().getMethod();
 			if(! m.getMethod().isAbstract() && ! m.getMethod().isInterface())
 				implemented.add(m);
-		}
+		}		
 		return implemented;
 	}
 
@@ -264,5 +281,8 @@ public class CallGraph {
 	
 	protected CallGraphNode getNode(MethodInfo m) {
 		return methodInfos.get(m);
+	}
+	public TopOrder<CallGraphNode,DefaultEdge> getTopologicalOrder() {
+		return this.topOrder;
 	}
 }

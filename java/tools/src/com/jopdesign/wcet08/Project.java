@@ -31,7 +31,7 @@ import com.jopdesign.wcet08.frontend.FlowGraph;
 import com.jopdesign.wcet08.frontend.JOPAppInfo;
 import com.jopdesign.wcet08.frontend.SourceAnnotations;
 import com.jopdesign.wcet08.frontend.SourceAnnotations.BadAnnotationException;
-import com.jopdesign.wcet08.graphutils.TopOrder.BadFlowGraphException;
+import com.jopdesign.wcet08.graphutils.TopOrder.BadGraphException;
 import com.jopdesign.wcet08.report.Report;
 
 /** WCET 'project', information on which method in which class to analyse etc. */
@@ -102,7 +102,7 @@ public class Project {
 				logger.error("Bad annotation: "+e);
 				e.printStackTrace();
 				throw new Exception("Bad annotation: "+e,e);
-			}  catch(BadFlowGraphException e) {
+			}  catch(BadGraphException e) {
 				logger.error("Bad flow graph: "+e);
 				throw new Exception("Bad flowgraph: "+e.getMessage(),e);				
 			}

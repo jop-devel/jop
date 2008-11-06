@@ -23,44 +23,84 @@ import java.util.Hashtable;
 import java.util.Map;
 import java.util.Map.Entry;
 
+/**
+ * Given variables <code>v_i</code> of type T, a linear vector a sum of
+ * the form <code>c_1 * v_1 + ... + c_n * v_n</code>. The <code>c_i</code>
+ * are the (integral) coefficients.
+ *
+ * @author Benedikt Huber <benedikt.huber@gmail.com>
+ *
+ * @param <T> type of the variables
+ */
 public class LinearVector<T> {
 	private Hashtable<T,Long> coeffs;
+
+	/**
+	 * Initialize the linear vector, with all coefficient 0.
+	 */
 	public LinearVector() {
 		coeffs = new Hashtable<T,Long>();
 	}
-	public LinearVector(LinearVector<T> vecL) {
-		this.coeffs = new Hashtable<T,Long>(vecL.getCoeffs());
+	/**
+	 * Create a copy of the given linear vector
+	 * @param vector 
+	 */
+	public LinearVector(LinearVector<T> vector) {
+		this.coeffs = new Hashtable<T,Long>(vector.getCoeffs());
 	}
+	/**
+	 * @return the number of non-zero coefficients
+	 */
 	public int size() {
 		return this.coeffs.size();
 	}
-	public void add(T elem, long offs) {
-		if(offs == 0) return;
-		Long oldCoeff = this.coeffs.get(elem);
+	/**
+	 * Add the product <code>coeff * var</code> to the linear vectors
+	 * @param var
+	 * @param coeff
+	 */
+	public void add(T var, long coeff) {
+		if(coeff == 0) return;
+		Long oldCoeff = this.coeffs.get(var);
 		if (oldCoeff == null) {
-			this.coeffs.put(elem,offs);
+			this.coeffs.put(var,coeff);
 		} else {
-			long newCoeff = offs+oldCoeff;
+			long newCoeff = coeff+oldCoeff;
 			if(newCoeff == 0) {
-				this.coeffs.remove(elem);
+				this.coeffs.remove(var);
 			} else {
-				this.coeffs.put(elem,newCoeff);
+				this.coeffs.put(var,newCoeff);
 			}
 		}
 	}
+	/**
+	 * Multiply the vector with the given scalar
+	 * @param c the number to multiply each coefficient with
+	 */
 	public void mul(long c) {
 		for(Entry<T,Long> e : this.coeffs.entrySet()) {
 			this.coeffs.put(e.getKey(), e.getValue() * c);
 		}
 	}
+	/**
+	 * Return the linear vector as a map
+	 * @return map from variables to <emph>non-zero</emph> coefficients
+	 */
 	public Map<T, Long> getCoeffs() {
 		return this.coeffs;
 	}
+	
+	@Override
 	public String toString() {
 		StringBuffer s = new StringBuffer();
 		toStringWith(s,0);
 		return s.toString();
 	}
+	/**
+	 * Append the string representation of <code>a x + d</code>
+	 * @param s the string buffer to append to
+	 * @param d 
+	 */
 	public void toStringWith(StringBuffer s, long d) {
 		boolean first = true;
 		for(Entry<T,Long> e : coeffs.entrySet()) {
