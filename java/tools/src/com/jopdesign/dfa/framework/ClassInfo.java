@@ -188,6 +188,14 @@ public class ClassInfo extends com.jopdesign.build.ClassInfo {
 	private Set<String> fields;
 	
 	/**
+	 * A dummy instance for the dispatch of newClassInfo() that
+	 * creates the real ClassInfo sub type
+	 */
+	public static ClassInfo getTemplate() {
+		return new ClassInfo(null, null);
+	}
+
+	/**
 	 * A dummy instance for the dispatch of newClassInfo() that creates the real
 	 * ClassInfo sub type
 	 */
