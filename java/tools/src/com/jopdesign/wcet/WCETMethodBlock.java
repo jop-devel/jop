@@ -783,12 +783,12 @@ class WCETMethodBlock {
 						//System.out.println("startpc match");
 						if (pc <= lv.getStartPC() + lv.getLength()) {
 							//System.out.println("endpc match");
-							lvName = lv.getSignature() + ":" + lv.getName();
-							if (match) {
+							if (match && !lvName.equals(lv.getSignature() + ":" + lv.getName())) {
 								System.out
 										.println("Only one match pr. local variable table is possible");
 								System.exit(-1);
 							}
+							lvName = lv.getSignature() + ":" + lv.getName();
 							match = true;
 							//break; //safety check when commented out, but slower
 						}
