@@ -84,6 +84,27 @@ public class BasicBlock  {
 	public InstructionHandle getLastInstruction() {
 		return this.instructions.getLast();
 	}
+
+	/**
+	 * Get the invoke instruction of the basic block (which should be
+	 * the only instruction in the basic block)
+	 * @return the invoke instruction, or <code>null</code>, if the basic block doesn't
+	 *         contain an invoke instruction.
+	 * @throws AssertionError if there is more than one invoke instruction in the block.
+	 */
+	public InvokeInstruction getTheInvokeInstruction() {
+		InvokeInstruction theInvInstr = null;
+		for(InstructionHandle ih : this.instructions) {
+			if(! (ih.getInstruction() instanceof InvokeInstruction)) continue;
+			InvokeInstruction inv = (InvokeInstruction) ih.getInstruction();
+			if(this.getAppInfo().isSpecialInvoke(this.methodInfo, inv)) continue;
+			if(theInvInstr != null) {
+				throw new AssertionError("More than one invoke instruction in a basic block");
+			}
+			theInvInstr = inv;
+		}
+		return theInvInstr;
+	}
 	public BranchInstruction getBranchInstruction() {
 		Instruction last = this.getLastInstruction().getInstruction();
 		return ((last instanceof BranchInstruction) ? ((BranchInstruction) last) : null);
@@ -174,8 +195,8 @@ public class BasicBlock  {
 		}
 		// Not neccesarily, but nice for WCET analysis
 		@Override public void visitInvokeInstruction(InvokeInstruction obj) {
-			// FIXME [1]: Lot of special cases for this one
-			if(! appInfo.isSpecialInvoke(methodInfo.getCli(), obj)) {
+			// TODO Lot of case distinctions needed for specialInvoke [1]
+			if(! appInfo.isSpecialInvoke(methodInfo, obj)) {
 				flowInfo.splitBefore = true;
 				flowInfo.splitAfter = true;
 			}
@@ -221,5 +242,4 @@ public class BasicBlock  {
 		}
 		return sb.toString();
 	}
-
 }

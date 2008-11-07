@@ -20,7 +20,7 @@
 package com.jopdesign.wcet08.ipet;
 
 /**
- * Integeral linear constraint of the form <code>a x <=> b</code>.
+ * Integral linear constraint of the form <code>a x <=> b</code>.
  * 
  * @author Benedikt Huber <benedikt.huber@gmail.com>
  *
@@ -51,7 +51,7 @@ public class LinearConstraint<T> {
 	public void addLHS(T var) { vec.add(var,1); }
 
 	/**
-	 * Add the constant integer <code>d</code> to the left-hand-sde of the constraint
+	 * Add the constant integer <code>d</code> to the left-hand-side of the constraint
 	 * @param d
 	 */
 	public void addLHS(long d) { inhom-=d; }
@@ -65,7 +65,7 @@ public class LinearConstraint<T> {
 	public void addRHS(T var) { vec.add(var,-1); }
 
 	/**
-	 * Add the constant integer <code>d</code> to the right-hand-sde of the constraint
+	 * Add the constant integer <code>d</code> to the right-hand-side of the constraint
 	 * @param d
 	 */
 	public void addRHS(long d) { inhom+=d; }
@@ -84,7 +84,10 @@ public class LinearConstraint<T> {
 	public long getInhomogenousTermOnRHS() {
 		return this.inhom;
 	}
-	
+	/** 
+	 * the the type of the constraint: &lt;=, = or &gt;=
+	 * @return 
+	 */
 	public ConstraintType getConstraintType() {
 		return op;
 	}

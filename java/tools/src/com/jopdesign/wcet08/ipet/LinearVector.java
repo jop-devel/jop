@@ -24,9 +24,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 /**
- * Given variables <code>v_i</code> of type T, a linear vector a sum of
- * the form <code>c_1 * v_1 + ... + c_n * v_n</code>. The <code>c_i</code>
- * are the (integral) coefficients.
+ * A term of the form
+ * <code>c_1 * v_1 + ... + c_n * v_n</code>, 
+ * where v_i denotes a variable and c_i an (integral) coefficient.
  *
  * @author Benedikt Huber <benedikt.huber@gmail.com>
  *
@@ -49,13 +49,13 @@ public class LinearVector<T> {
 		this.coeffs = new Hashtable<T,Long>(vector.getCoeffs());
 	}
 	/**
-	 * @return the number of non-zero coefficients
+	 * the number of non-zero coefficients
 	 */
 	public int size() {
 		return this.coeffs.size();
 	}
 	/**
-	 * Add the product <code>coeff * var</code> to the linear vectors
+	 * Add the product <code>coeff * var</code> to the linear vector
 	 * @param var
 	 * @param coeff
 	 */

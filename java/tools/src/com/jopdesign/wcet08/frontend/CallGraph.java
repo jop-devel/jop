@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.Vector;
 
-import org.apache.bcel.classfile.Method;
 import org.apache.bcel.generic.EmptyVisitor;
 import org.apache.bcel.generic.INVOKEINTERFACE;
 import org.apache.bcel.generic.INVOKESPECIAL;
@@ -49,8 +48,8 @@ import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.wcet08.frontend.JOPAppInfo.MethodNotFoundException;
 import com.jopdesign.wcet08.graphutils.AdvancedDOTExporter;
+import com.jopdesign.wcet08.graphutils.Pair;
 import com.jopdesign.wcet08.graphutils.TopOrder;
-import com.jopdesign.wcet08.graphutils.TopOrder.BadGraphException;
 
 /**
  * Java CallGraph, based on JGraphT. Supports interfaces.
@@ -61,10 +60,10 @@ import com.jopdesign.wcet08.graphutils.TopOrder.BadGraphException;
 public class CallGraph {
 	public class CallGraphBuilderVisitor extends EmptyVisitor implements Visitor {
 		private MethodImplNode methodNode;
-		private Set<MethodInfo> referencedMethods;
+		private Set<Pair<ClassInfo,String>> referencedMethods;
 		public CallGraphBuilderVisitor(MethodImplNode node) {
 			this.methodNode = node;
-			this.referencedMethods = new HashSet<MethodInfo>();
+			this.referencedMethods = new HashSet<Pair<ClassInfo,String>>();
 		}
 
 		@Override
@@ -87,20 +86,19 @@ public class CallGraph {
 
 		@Override
 		public void visitINVOKESTATIC(INVOKESTATIC i) {
-			// FIXME [1]: better to eliminate these in preprocessing
-			if(appInfo.isSpecialInvoke(methodNode.method.getCli(), i)) {
-				return;
-			}
+			if(appInfo.isSpecialInvoke(methodNode.method.getCli(), i)) return;
 			buildCallGraphEdge(i,true);
 		}
+		
 		private void buildCallGraphEdge(InvokeInstruction inv, boolean isStatic) {
-			MethodInfo refMethod;
-			refMethod = appInfo.getReferenced(this.methodNode.method.getCli(), inv);			
+			Pair<ClassInfo, String> refMethod = appInfo.getReferenced(this.methodNode.method, inv);			
 			if(this.referencedMethods.contains(refMethod)) return;
 			if(isStatic) {
-				addEdge(this.methodNode, new MethodImplNode(refMethod));
+				addEdge(this.methodNode, 
+						new MethodImplNode(refMethod.fst().getMethodInfo(refMethod.snd())));
 			} else {
-				addEdge(this.methodNode, new MethodIFaceNode(refMethod));				
+				addEdge(this.methodNode, 
+						new MethodIFaceNode(refMethod));				
 			}
 			this.referencedMethods.add(refMethod);
 		}
@@ -119,9 +117,13 @@ public class CallGraph {
 		public abstract boolean isAbstractNode();
 		/**
 		 * return the method referenced by the callgraph node
-		 * @return the method info referenced, or null if not supported
+		 * @return a pair of the receiver's class and the method's id (name+signature)
 		 */
-		public abstract MethodInfo getMethod();
+		public abstract Pair<ClassInfo,String> getReferencedMethod();
+		/**
+		 * @return the implementation referenced, or null if no implementation is referenced
+		 */
+		public abstract MethodInfo getMethodImpl();
 		/**
 		 * build the subgraph rooted at the given callgraph node 
 		 */
@@ -135,8 +137,14 @@ public class CallGraph {
 	}
 	class MethodImplNode extends CallGraphNode {
 		private MethodInfo method;
-		public MethodImplNode(MethodInfo m) { this.method = m; }
-		@Override public MethodInfo getMethod() { return this.method; }
+		public MethodImplNode(MethodInfo m) { 
+			this.method = m; 
+		}
+		@Override public MethodInfo getMethodImpl() { return this.method; }		
+		@Override public Pair<ClassInfo,String> getReferencedMethod() { 
+			return new Pair<ClassInfo, String>(method.getCli(),method.methodId);
+		}
+		
 		@Override public boolean isAbstractNode() { return false; }
 		@Override public int hashCode() { return method.getMethod().hashCode(); }
 		@Override public boolean equals(Object that) {
@@ -158,29 +166,38 @@ public class CallGraph {
 		}
 	}
 	class MethodIFaceNode extends CallGraphNode {
-		private MethodInfo method;
-		public MethodIFaceNode(MethodInfo m) { 
-			this.method = m;
+		private ClassInfo receiver;
+		private String method;
+		public MethodIFaceNode(Pair<ClassInfo, String> methodRef) {
+			this.receiver = methodRef.fst();
+			this.method = methodRef.snd();
 		}
-		@Override public MethodInfo getMethod() { return this.method; }
 		@Override public boolean isAbstractNode() { return true; }
-		@Override public int hashCode() { return method.getMethod().hashCode(); }
+		@Override public int hashCode() { 
+			return receiver.hashCode() + method.hashCode();
+		}
 		@Override public boolean equals(Object that) {
-			return (that instanceof MethodIFaceNode) ? 
-				   (method.getMethod().equals(((MethodIFaceNode) that).method.getMethod())) : 
+			return (that instanceof MethodIFaceNode) ?
+				   (receiver.equals(((MethodIFaceNode)that).receiver) && 
+				    method.equals(((MethodIFaceNode)that).method)) :
 				   false;
 		}
 		@Override public void build() {
-			for(MethodInfo mImpl : appInfo.findImplementations(this.method)) {	
-				if(mImpl.getMethod().isAbstract() || mImpl.getMethod().isInterface()) continue;
+			for(MethodInfo mImpl : appInfo.findImplementations(receiver,method)) {	
 				addEdge(this, new MethodImplNode(mImpl));
 			}
 			super.buildRecursive();
 		}
 		@Override public String toString() {
-			return "[IFACE] "+ method.getFQMethodName();
+			return "[IFACE] "+ receiver.clazz.getClassName() + "." + method;
 		}
+		@Override
+		public Pair<ClassInfo, String> getReferencedMethod() {
+			return new Pair<ClassInfo, String>(this.receiver,this.method);
+		}
+		@Override public MethodInfo getMethodImpl() { return null; }
 	}
+	
 	// Fields
 	// ~~~~~~
 	private JOPAppInfo appInfo;
@@ -188,7 +205,7 @@ public class CallGraph {
 	private DirectedGraph<CallGraphNode, DefaultEdge> callGraph;
 	private Vector<MethodNotFoundException> errors;
 	private HashSet<ClassInfo> classInfos;
-	private HashMap<MethodInfo,CallGraphNode> methodInfos;
+	private HashMap<Pair<ClassInfo,String>,CallGraphNode> methodInfos;
 	private TopOrder<CallGraphNode,DefaultEdge> topOrder;
 
 	/**
@@ -223,12 +240,12 @@ public class CallGraph {
 		/* Compute set of classes and methods */
 		classInfos = new HashSet<ClassInfo>();
 		for(CallGraphNode cgn : callGraph.vertexSet()) {
-			classInfos.add(cgn.getMethod().getCli());
+			classInfos.add(cgn.getReferencedMethod().fst());
 		}
-		methodInfos = new HashMap<MethodInfo,CallGraphNode>();
+		methodInfos = new HashMap<Pair<ClassInfo,String>,CallGraphNode>();
 		for(CallGraphNode cgn : callGraph.vertexSet()) {
-			methodInfos.put(cgn.getMethod(),cgn);
-		}
+			methodInfos.put(cgn.getReferencedMethod(),cgn);
+		}		
 		CycleDetector<CallGraphNode, DefaultEdge> cycDetect = 
 			new CycleDetector<CallGraphNode, DefaultEdge>(callGraph);
 		if(cycDetect.detectCycles()) throw new AssertionError("Cyclic callgraph");
@@ -248,7 +265,7 @@ public class CallGraph {
 	public Set<ClassInfo> getClassInfos() {
 		return classInfos;
 	}
-	public Set<MethodInfo> getMethods() {
+	public Set<Pair<ClassInfo, String>> getMethods() {
 		return methodInfos.keySet();
 	}
 	/**
@@ -260,26 +277,29 @@ public class CallGraph {
 		TopologicalOrderIterator<CallGraphNode, DefaultEdge> ti = 
 			new TopologicalOrderIterator<CallGraphNode, DefaultEdge>(callGraph);
 		while(ti.hasNext()) {
-			MethodInfo m = ti.next().getMethod();
-			if(! m.getMethod().isAbstract() && ! m.getMethod().isInterface())
-				implemented.add(m);
+			MethodInfo m = ti.next().getMethodImpl();
+			if(m != null) implemented.add(m);
 		}		
 		return implemented;
 	}
 
-	public Iterator<CallGraphNode> getReachableMethods(MethodInfo m) {
+	public Iterator<CallGraphNode> getReachableMethods(Pair<ClassInfo,String> m) {
 		DepthFirstIterator<CallGraphNode, DefaultEdge> dfi = 
 			new DepthFirstIterator<CallGraphNode, DefaultEdge>(callGraph,getNode(m));
 		dfi.setCrossComponentTraversal(false);
 		return dfi;		
 	}
+	public Iterator<CallGraphNode> getReachableMethods(MethodInfo m) {
+		return getReachableMethods(new Pair<ClassInfo, String>(m.getCli(),m.methodId));
+	}
 	
+
 	protected void addEdge(CallGraphNode src, CallGraphNode target) {
 		callGraph.addVertex(target);
 		callGraph.addEdge(src, target);
 	}
 	
-	protected CallGraphNode getNode(MethodInfo m) {
+	protected CallGraphNode getNode(Pair<ClassInfo,String> m) {
 		return methodInfos.get(m);
 	}
 	public TopOrder<CallGraphNode,DefaultEdge> getTopologicalOrder() {

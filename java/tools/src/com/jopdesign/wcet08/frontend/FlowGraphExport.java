@@ -10,6 +10,7 @@ import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.InvokeInstruction;
 import org.apache.bcel.generic.RETURN;
+import org.apache.log4j.Logger;
 import org.jgrapht.DirectedGraph;
 import com.jopdesign.wcet08.frontend.FlowGraph.BasicBlockNode;
 import com.jopdesign.wcet08.frontend.FlowGraph.FlowGraphEdge;
@@ -109,7 +110,9 @@ public class FlowGraphExport {
 				nodeInfo.append(ih.toString());
 			}			
 			ht.put("label",nodeInfo.toString());
-			ht.put("peripheries",""+(1+flowGraph.getLoopColoring().getLoopColors().get(n).size()));			
+			if(! flowGraph.getHeadOfLoops().isEmpty()) {
+				ht.put("peripheries",""+(1+flowGraph.getLoopColoring().getLoopColors().get(n).size()));
+			}
 		}		
 	}
 

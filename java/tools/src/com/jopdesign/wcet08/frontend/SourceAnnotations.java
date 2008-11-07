@@ -55,7 +55,7 @@ public class SourceAnnotations {
 		public BadAnnotationException(String reason, BasicBlock block, int codeLineStart, int codeLineEnd) {
 			this.block = block;
 			this.msg = reason+" for " + block.getLastInstruction()+ 
-					          " in class " + block.getClassInfo().clazz.toString()  + ":" + 
+					          " in class " + block.getClassInfo().clazz.getClassName()  + ":" + 
 					          codeLineStart + "-" + codeLineEnd;
 		}
 		@Override
@@ -117,7 +117,7 @@ public class SourceAnnotations {
 			Matcher matcher = pattern.matcher(c);
 
 			if (! matcher.matches()) {
-				//logger.error("Invalid WCA string: @WCA" + c + ". It must be of the form \" *loop *<?= *[0-9]+ *\"");
+				logger.error("Invalid WCA string: @WCA" + c + ". It must be of the form \" *loop *<?= *[0-9]+ *\"");
 				return -1;
 			}
 

@@ -107,7 +107,7 @@ public class Config {
 	
 	public static final String TEMPLATEDIR_PROPERTY = "templatedir";
 
-	private static final String PROGRAM_DOT = "program-dot";
+	public static final String PROGRAM_DOT = "program-dot";
 
     /*
 	public static final String DO_UPPAAL = "do-uppaal";

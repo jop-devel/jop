@@ -39,7 +39,7 @@ public class MethodReport {
 		this.referenced = new TreeSet<String>();
 		Iterator<CallGraphNode> i = p.getCallGraph().getReachableMethods(m);
 		while(i.hasNext()) {
-			this.referenced.add(i.next().getMethod().methodId);
+			this.referenced.add(i.next().getReferencedMethod().snd());
 		}
 		this.page = page;
 	}

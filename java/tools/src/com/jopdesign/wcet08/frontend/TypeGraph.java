@@ -71,16 +71,33 @@ public class TypeGraph extends DefaultDirectedGraph<ClassInfo,DefaultEdge> {
 		}
 		this.rootNode = appInfo.getCliMap().get("java.lang.Object");
 	}
-	public List<ClassInfo> getSubtypes(ClassInfo ci) {
-		DepthFirstIterator<ClassInfo, DefaultEdge> iter = new DepthFirstIterator<ClassInfo, DefaultEdge>(this,ci);
+	
+	/**
+	 * Subtypes (including the type itself) of the type denoted by the given class info
+	 * @param ci 
+	 * @return
+	 */
+	public List<ClassInfo> getSubtypes(ClassInfo base) {
+		List<ClassInfo> subTypes = getStrictSubtypes(base);
+		subTypes.add(base);
+		return subTypes;
+	}
+	/**
+	 * Subtypes (not including the type itself) of the type denoted by the given class info
+	 * @param ci 
+	 * @return
+	 */
+	public List<ClassInfo> getStrictSubtypes(ClassInfo base) {
+		DepthFirstIterator<ClassInfo, DefaultEdge> iter = new DepthFirstIterator<ClassInfo, DefaultEdge>(this,base);
 		iter.setCrossComponentTraversal(false);
 		List<ClassInfo> subTypes = new Vector<ClassInfo>();
+		iter.next();
 		while(iter.hasNext()) {
 			subTypes.add(iter.next());
 		}
 		return subTypes;
 	}
-	
+
 	private class TgNodeLabeller extends DefaultNodeLabeller<ClassInfo> {
 		@Override public String getLabel(ClassInfo ci) {
 			return ci.clazz.getClassName();
@@ -95,7 +112,12 @@ public class TypeGraph extends DefaultDirectedGraph<ClassInfo,DefaultEdge> {
 		}
 		
 	}
-
+	/**
+	 * Write the type graph in DOT format.
+	 * @param w 
+	 * @param classFilter If non-null, only classes matching this prefix will be exported
+	 * @throws IOException
+	 */
 	public void exportDOT(Writer w, String classFilter) throws IOException {
 		Set<ClassInfo> subset = null;
 		if(classFilter != null) {

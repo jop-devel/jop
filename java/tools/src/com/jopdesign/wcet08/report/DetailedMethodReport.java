@@ -20,7 +20,6 @@
 package com.jopdesign.wcet08.report;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Map;
 
 import com.jopdesign.build.MethodInfo;

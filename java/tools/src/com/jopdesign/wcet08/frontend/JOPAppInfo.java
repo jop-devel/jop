@@ -31,7 +31,6 @@ import org.apache.bcel.generic.INVOKESTATIC;
 import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InvokeInstruction;
 import org.apache.bcel.util.ClassPath;
-import org.apache.log4j.Logger;
 import com.jopdesign.build.AppInfo;
 import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.InsertSynchronized;
@@ -40,15 +39,20 @@ import com.jopdesign.build.ReplaceIinc;
 import com.jopdesign.tools.JopInstr;
 import com.jopdesign.wcet08.Config;
 import com.jopdesign.wcet08.Config.MissingConfigurationError;
+import com.jopdesign.wcet08.graphutils.Pair;
 import com.jopdesign.wcet08.report.InvokeDot;
+
 /**
- * Class loader for the WCET analysis
+ * AppInfo subclass for the WCET analysis.
+ * Provides a TypeGraph.
+ * 
  * @author Benedikt Huber, benedikt.huber@gmail.com
  */
 public class JOPAppInfo extends AppInfo {
 	private static final long serialVersionUID = 2L;
-	private static final Logger  logger = Logger.getLogger(JOPAppInfo.class);
-
+	/**
+	 * Raised when we cannot find / fail to load a referenced method.
+	 */
 	public class MethodNotFoundException extends Exception {
 		private static final long serialVersionUID = 1L;
 		public MethodNotFoundException(String message) {
@@ -60,6 +64,11 @@ public class JOPAppInfo extends AppInfo {
 	public JOPAppInfo() {
 		super(ClassInfo.getTemplate());
 	}
+	/**
+	 * load all classes reachable from the given class
+	 * @param topClass 
+	 * @throws IOException
+	 */
 	public void loadClasses(String topClass) throws IOException {
 		this.classpath = new ClassPath(Config.instance().getClassPath());
 		this.srcPath = Config.instance().getSourcePath();
@@ -69,14 +78,24 @@ public class JOPAppInfo extends AppInfo {
 		iterate(new InsertSynchronized(this));
 		this.typeGraph = new TypeGraph(this);
 	}
+	/**
+	 * @return A mapping from the name of a loaded class to {@link ClassInfo}.
+	 */
 	public Map<String, ? extends ClassInfo> getCliMap() {
 		return cliMap;
 	}
+	/**
+	 * @return The typegraph of all loaded classes
+	 */
 	public TypeGraph getTypeGraph() {
 		return typeGraph;
 	}
-	public ClassInfo getClassInfo(String name) {
-		return this.cliMap.get(name);
+	/**
+	 * @param className Name of the class to lookup
+	 * @return the class info, or null if the class could'nt be found
+	 */
+	public ClassInfo getClassInfo(String className) {
+		return this.cliMap.get(className);
 	}
 
 	/**
@@ -84,7 +103,7 @@ public class JOPAppInfo extends AppInfo {
 	 * @param className The fully qualified name of the class the method is located in
 	 * @param methodSig The name of the method to be searched. 
 	 * 				    Signature is optional if the method name is unique.
-	 * @return 
+	 * @return The method searched for, or null if it couldn't be found
 	 * @throws MethodNotFoundException if the method couldn't be found or is ambigous
 	 */
 	public MethodInfo searchMethod(String className, String methodSig) throws MethodNotFoundException {
@@ -114,20 +133,99 @@ public class JOPAppInfo extends AppInfo {
 		return mi;
 	}
 	/**
-	 * Find implementations of the given method (in all loaded classes)
-	 * @param method
-	 * @return
+	 * Return the receiver name and method name of a 
+	 * method referenced by the given invoke instruction
+	 * @param invokerCi the classinfo of the method which contains the {@link InvokeInstruciton}
+	 * @param instr the invoke instruction
+	 * @return A pair of class info and method name
 	 */
-	public List<MethodInfo> findImplementations(MethodInfo method) {
-		ClassInfo ci = method.getCli();
-		Vector<MethodInfo> impls = new Vector<MethodInfo>();
-		for(ClassInfo subty : typeGraph.getSubtypes(ci)) {
-			MethodInfo impl = subty.getMethodInfo(method.methodId);
-			if(impl != null) { impls.add(impl); }
-			else { logger.debug("No implementation of "+method.methodId+" in "+subty.clazz);}
+	public Pair<ClassInfo, String> getReferenced(ClassInfo invokerCi, InvokeInstruction instr) {
+		ConstantPoolGen cpg = new ConstantPoolGen(invokerCi.clazz.getConstantPool());
+		String classname = instr.getClassName(cpg );
+		String methodname = instr.getMethodName(cpg) + instr.getSignature(cpg);
+		ClassInfo refCi = getClassInfo(classname);
+		if(refCi == null) throw new AssertionError("Failed class lookup (invoke target): "+classname);
+		return new Pair<ClassInfo,String>(refCi,methodname);
+	}
+	public Pair<ClassInfo, String> getReferenced(MethodInfo method, InvokeInstruction instr) {
+		return getReferenced(method.getCli(),instr);
+	}
+
+	/**
+	 * Find possible implementations of the given method in the given class
+	 * <p>
+	 * For all candidates, check whether they implement the method.
+	 * All subclasses of the receiver class are candidates. If the method isn't implemented
+	 * in the receiver, the lowest superclass implementing the method is a candidate too.
+	 * </p>
+	 * @param receiver The class info of the receiver
+	 * @param methodname The method name
+	 * @return list of method infos that might be invoked
+	 */
+	public List<MethodInfo> findImplementations(ClassInfo receiver, String methodname) {
+		Vector<MethodInfo> impls = new Vector<MethodInfo>(3);
+		MethodInfo baseImpl = receiver.getMethodInfo(methodname);
+		if(baseImpl == null) {
+			ClassInfo superRec = receiver;
+			while(baseImpl == null && superRec != null) {
+				baseImpl = superRec.getMethodInfo(methodname);
+				if(superRec.clazz.getSuperClass() == null) superRec = null;
+				else superRec = superRec.superClass;
+			}
+		}
+		tryAddImpl(impls,baseImpl);
+		for(ClassInfo subty : this.typeGraph.getStrictSubtypes(receiver)) {
+			MethodInfo subtyImpl = subty.getMethodInfo(methodname);
+			tryAddImpl(impls,subtyImpl);
 		}
 		return impls;
 	}
+	/* helper to avoid code dupl */
+	private void tryAddImpl(List<MethodInfo> ms, MethodInfo m) {
+		if(m != null) {
+			if(! m.getMethod().isAbstract() && ! m.getMethod().isInterface()) {
+				ms.add(m);
+			}
+		}		
+	}
+
+	/**
+	 * check whether we need to deal with the given statement in a special way,
+	 * because it is translated to a JOP specific microcode sequence
+     *
+	 * @param instr the instruction to check
+	 * @return true, if this is translated to a JOP specific bytecode
+	 */
+	public boolean isSpecialInvoke(ClassInfo ci, Instruction i) {		
+		if(! (i instanceof INVOKESTATIC)) return false;
+		ConstantPoolGen cpg = new ConstantPoolGen(ci.clazz.getConstantPool());
+		String classname = ((INVOKESTATIC) i).getClassName(cpg);
+		return (classname.equals("com.jopdesign.sys.Native"));		
+	}
+	public boolean isSpecialInvoke(MethodInfo methodInfo, Instruction i) {
+		return isSpecialInvoke(methodInfo.getCli(),i);
+	}
+
+	/**
+	 * Get the (actual) opcode of a statement, as executed on JOP
+	 * FIXME: handle java-implemented bytecodes [1]
+	 * @param instr the BCEL instructions
+	 * @return
+	 */
+	public int getJOpCode(ClassInfo ci, Instruction instr) {
+		if(isSpecialInvoke(ci,instr)) {
+			ConstantPoolGen cpg = new ConstantPoolGen(ci.clazz.getConstantPool());
+			String methodName = ((INVOKESTATIC) instr).getMethodName(cpg);			
+			return JopInstr.getNative(methodName);
+		} else {
+			return instr.getOpcode();
+		}
+	}
+
+	/*
+	 * DEMO
+	 * ~~~~
+	 */
 
 	public static String USAGE = 
 		"Usage: java [-Dconfig=file://<config.props>] "+ 
@@ -144,8 +242,10 @@ public class JOPAppInfo extends AppInfo {
 			if(argvrest.length == 1) config.setTarget(argvrest[0]);
 			config.initializeReport();
 			config.checkPresent(Config.CLASSPATH_PROPERTY);
-			config.checkPresent(Config.ROOT_CLASS_NAME);			
-			config.checkPresent(Config.ROOT_METHOD_NAME);			
+			config.checkPresent(Config.ROOT_CLASS_NAME);
+			config.checkPresent(Config.ROOT_METHOD_NAME);
+			config.checkPresent(Config.REPORTDIR_PROPERTY);
+			config.checkPresent(Config.PROGRAM_DOT);
 		} catch(MissingConfigurationError e) {
 			System.err.println(e);
 			System.err.println(USAGE);
@@ -189,48 +289,5 @@ public class JOPAppInfo extends AppInfo {
 			e.printStackTrace();
 		}
 	}
-	public MethodInfo getReferenced(ClassInfo ci, InvokeInstruction instr) {
-		ConstantPoolGen cpg = new ConstantPoolGen(ci.clazz.getConstantPool());
-		String classname = instr.getClassName(cpg );
-		String methodname = instr.getMethodName(cpg) + instr.getSignature(cpg);
-		MethodInfo m = getClassInfo(classname).getMethodInfo(methodname);
-		if(m==null) {
-			logger.error(methodname + " not found in "+ classname + "." +
-					     getClassInfo(classname).getMethodInfoMap().keySet());
-			throw new AssertionError("Failed method lookup: "+classname+"."+methodname);
-		}
-		return m;
-	}
-	
-	/**
-	 * check whether we need to deal with the given statement in a special way,
-	 * because it is translated to a JOP specific microcode sequence
-     *
-	 * @param instr the instruction to check
-	 * @return true, if this is translated to a JOP specific bytecode
-	 */
-	public boolean isSpecialInvoke(ClassInfo ci, Instruction i) {		
-		if(! (i instanceof INVOKESTATIC)) return false;
-		ConstantPoolGen cpg = new ConstantPoolGen(ci.clazz.getConstantPool());
-		String classname = ((INVOKESTATIC) i).getClassName(cpg);
-		return (classname.equals("com.jopdesign.sys.Native"));		
-	}
-
-	/**
-	 * Get the (actual) opcode of a statement, as executed on JOP
-	 * FIXME: [1] handle java-implemented bytecodes
-	 * @param instr the BCEL instructions
-	 * @return
-	 */
-	public int getJOpCode(ClassInfo ci, Instruction instr) {
-		if(isSpecialInvoke(ci,instr)) {
-			ConstantPoolGen cpg = new ConstantPoolGen(ci.clazz.getConstantPool());
-			String methodName = ((INVOKESTATIC) instr).getMethodName(cpg);			
-			return JopInstr.getNative(methodName);
-		} else {
-			return instr.getOpcode();
-		}
-	}
-
 }
 

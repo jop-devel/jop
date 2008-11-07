@@ -32,14 +32,17 @@ import com.jopdesign.wcet08.ipet.LpSolveWrapper.IDProvider;
 /**
  * Max-Cost-Max-Flow solver with additional linear constraints
  * (see Implicit Path Enumeration (IPET)).
+ * <p>
  * A MCMF problem consists of a directed graph with a dedicated source and sink node, 
  * cost labels for nodes and linear edge constraints.
- * 
+ * </p>
+ * <p>
  * Note: With simple (constant-per-edge) flow constraints, the problem could be solved using e.g.
  * [Goldberg97]. With arbitrary flow constraints, this is an ILP problem.
- * 
- * [Goldberg97]  An efficient implementation of a scaling minimum-cost flow algorithm (1997). A. Goldberg. 
- *
+ * </p>
+ * <p>
+ * [Goldberg97]  An efficient implementation of a scaling minimum-cost flow algorithm (1997). A. Goldberg. <br/>
+ * </p> 
  * @author Benedikt Huber (benedikt.huber@gmail.com)
  *
  * @param <V> the node type
@@ -93,7 +96,7 @@ public class MaxCostFlow<V,E> {
 	
 	/**
 	 * Solve this MCMF problem using {@link LpSolveWrapper}.
-	 * @param flowMapOut write solution, assigning a flow to each edge, into this map
+	 * @param flowMapOut write solution into this map, assigning a flow to each edge
 	 * @return the cost of the solution
 	 * @throws Exception if the ILP solver fails
 	 */

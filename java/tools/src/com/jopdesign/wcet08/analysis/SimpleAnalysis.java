@@ -36,8 +36,11 @@ import com.jopdesign.wcet08.Project;
 import com.jopdesign.wcet08.frontend.BasicBlock;
 import com.jopdesign.wcet08.frontend.FlowGraph;
 import com.jopdesign.wcet08.frontend.CallGraph.CallGraphNode;
+import com.jopdesign.wcet08.frontend.FlowGraph.BasicBlockNode;
+import com.jopdesign.wcet08.frontend.FlowGraph.DedicatedNode;
 import com.jopdesign.wcet08.frontend.FlowGraph.FlowGraphEdge;
 import com.jopdesign.wcet08.frontend.FlowGraph.FlowGraphNode;
+import com.jopdesign.wcet08.frontend.FlowGraph.InvokeNode;
 import com.jopdesign.wcet08.ipet.LocalAnalysis;
 import com.jopdesign.wcet08.ipet.MaxCostFlow;
 
@@ -151,7 +154,7 @@ public class SimpleAnalysis {
 		HashMap<FlowGraphNode, Long> nodeCost = new HashMap<FlowGraphNode,Long>();
 		for(FlowGraphNode n : fg.getGraph().vertexSet()) {
 			if(n.getCodeBlock() != null) {
-				nodeCost.put(n, computeCostOfNode(n.getCodeBlock(), recursiveMode, localHit));
+				nodeCost.put(n, computeCostOfNode(n, recursiveMode, localHit));
 			} else {
 				nodeCost.put(n, 0L);
 			}
@@ -159,44 +162,46 @@ public class SimpleAnalysis {
 		return nodeCost;
 	}
 	
-	private class WcetVisitor extends EmptyVisitor {
-		private BasicBlock bb;
-		private long opCost;
+	private class WcetVisitor implements FlowGraph.FlowGraphVisitor {
+		private long localWcet;
+		private long cumWcet;
 		private WcetMode recursiveMode;
 		private boolean localHit;
-		public WcetVisitor(BasicBlock bb) {
-			if(bb == null) throw new AssertionError("WcetVisitor: bb = null");
-			this.bb = bb;
-		}
-		public long computeCost(InstructionHandle ih,WcetMode recursiveMode, boolean localHit) {
+		public WcetVisitor(WcetMode recursiveMode, boolean localHit) {
 			this.recursiveMode = recursiveMode;
 			this.localHit = localHit;
-			int jopcode = project.getAppInfo().getJOpCode(bb.getClassInfo(), ih.getInstruction());
-			opCost = WCETInstruction.getCycles(jopcode,false,0);						
-			ih.accept(this);
-			return opCost;
+			this.localWcet = 0;
+			this.cumWcet = 0;
 		}
-		public void visitINVOKESTATIC(INVOKESTATIC instr) {
-			if(project.getAppInfo().isSpecialInvoke(bb.getClassInfo(), instr)) return;
-			MethodInfo meth = project.getAppInfo().getReferenced(bb.getClassInfo(), instr);
+		public void visitSpecialNode(DedicatedNode n) {
+		}
+		public void visitBasicBlockNode(BasicBlockNode n) {
+			BasicBlock bb = n.getCodeBlock();
+			for(InstructionHandle ih : bb.getInstructions()) {
+				int jopcode = project.getAppInfo().getJOpCode(n.getCodeBlock().getClassInfo(), ih.getInstruction());
+				localWcet += WCETInstruction.getCycles(jopcode,false,0);										
+			}
+			cumWcet += localWcet;
+		}
+		public void visitInvokeNode(InvokeNode n) {
+			if(n.getImpl() == null) {
+				throw new AssertionError("Invoke node "+n.getReferenced()+" without implementation in WCET analysis - did you preprocess virtual methods ?");
+			}
+			MethodInfo meth = n.getImpl();
 			logger.info("Recursive WCET computation: "+meth.getMethod());
 			long subCost = computeWCET(meth, recursiveMode);
 			if(! localHit) {
 				subCost+=getInvokeReturnMissCost(
-						bb.getNumberOfBytes(),
+						n.getCodeBlock().getNumberOfBytes(),
 						project.getFlowGraph(meth).getNumberOfBytes());
 			}
-			opCost+=subCost;
+			cumWcet+=subCost;
 		}
 	}
-	private long computeCostOfNode(BasicBlock bb, WcetMode recursiveMode, boolean localHit) {
-		int wcet = 0;
-		
-		WcetVisitor wcetVisitor = new WcetVisitor(bb);
-		for(InstructionHandle ih : bb.getInstructions()) {
-			wcet+=wcetVisitor.computeCost(ih,recursiveMode,localHit);
-		}
-		return wcet;
+	private long computeCostOfNode(FlowGraphNode n,WcetMode recursiveMode, boolean localHit) {
+		WcetVisitor wcetVisitor = new WcetVisitor(recursiveMode, localHit);
+		n.accept(wcetVisitor);
+		return wcetVisitor.cumWcet;
 	}
 	/**
 	 * Get an upper bound for the miss cost involved in invoking a method of length
@@ -230,15 +235,15 @@ public class SimpleAnalysis {
 	 * @param m The root method
 	 * @return the cache miss penalty
 	 * 
-	 * FIXME: [2] Note that we only support static method invocations for now.
 	 */
 	private long cacheMissPenalty(MethodInfo m) {
 		long miss = 0;
 		Iterator<CallGraphNode> iter = project.getCallGraph().getReachableMethods(m);
 		while(iter.hasNext()) {
 			CallGraphNode n = iter.next();
-			if(n.getMethod().equals(m)) continue;
-			int words = (project.getFlowGraph(n.getMethod()).getNumberOfBytes() + 3) / 4;
+			if(n.getMethodImpl() == null) continue;
+			if(n.getMethodImpl().equals(m)) continue;
+			int words = (project.getFlowGraph(n.getMethodImpl()).getNumberOfBytes() + 3) / 4;
 			miss  += Math.max(0,
 							  WCETInstruction.calculateB(false, words) - config.INVOKE_STATIC_HIDE_LOAD_CYCLES);
 		}
@@ -256,7 +261,7 @@ public class SimpleAnalysis {
 		while(iter.hasNext()) {
 			CallGraphNode n = iter.next();
 			if(n.isAbstractNode()) continue;			
-			size+= requiredNumberOfBlocks(n.getMethod());
+			size+= requiredNumberOfBlocks(n.getMethodImpl());
 		}
 		return size;
 	}

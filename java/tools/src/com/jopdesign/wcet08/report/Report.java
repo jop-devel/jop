@@ -36,10 +36,7 @@ import org.apache.log4j.Logger;
 import org.apache.velocity.Template;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.Velocity;
-import org.apache.velocity.exception.ParseErrorException;
 import org.apache.velocity.exception.ResourceNotFoundException;
-import org.apache.velocity.exception.VelocityException;
-
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.wcet.WCETInstruction;
 import com.jopdesign.wcet08.Config;
@@ -252,10 +249,10 @@ public class Report {
 		String page = pageOf(method);
 		Hashtable<String,Object> ctx = new Hashtable<String,Object>();
 		ctx.put("m", method);
-		if(this.detailedReports.get(method).size() == 0) {
-			throw new AssertionError("foo!");
-		}
 		ctx.put("reports", this.detailedReports.get(method));
+		for(DetailedMethodReport m: this.detailedReports.get(method)) {
+			m.getGraph();
+		}
 		try {
 			this.generateFile("cfg.vm", config.getOutFile(page), ctx);
 		} catch (Exception e) {

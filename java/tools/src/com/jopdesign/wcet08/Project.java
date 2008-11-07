@@ -98,6 +98,7 @@ public class Project {
 			try {
 				fg = new FlowGraph(method);
 				fg.loadAnnotations(wcaMap);
+				fg.resolveVirtualInvokes();
 			} catch (BadAnnotationException e) {
 				logger.error("Bad annotation: "+e);
 				e.printStackTrace();

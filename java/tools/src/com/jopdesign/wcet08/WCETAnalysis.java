@@ -18,33 +18,11 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+
 /* Notes: WCET times reported by JOP (noted if JopSIM+cache-timing differs)
  * Method.java: 12039
  * StartKfl.java: 3048-11200
  * StartLift.java: 4638-4772 (JopSIM: 4636-4774) 
- */
-
- /* TODO List:
- * 
- * [1] Special instructions (either JOP com.jopsys.native or java implemented bytecodes):
- * It would be nicer if we could deal with them in a preprocessing step instead of 
- * hacking them out later {@link BasicBlockUtilitiesOld}.
- * 
- * [2] Handle dynamic dispatch:
- * We already support dynamic dispatch and interface on a callgraph/typegraph level,
- * so it would be nice to add them to WCET analysis
- * 
- * [3] Check for unsupported bytecodes / features rigiously:
- * It would really be a good idea to first check wheter the code uses unsupported features
- * (currently: Exceptions, invokespecial, invokevirtual, invokeinterface, JSR, sync stuff ...)
- * and be explicit about the supported set
- * 
- * [4] Add UPPAAL simluation (needs to be ported)
- * 
- * [5] Should we eliminate the velocity library ? It is rather heavyweight, and we don't use too
- * many features of it.
- * Plus the report stuff is rather ad-hoc and should be cleaned up.
- * 
  */
 
 package com.jopdesign.wcet08;
@@ -60,6 +38,30 @@ import com.jopdesign.wcet08.analysis.CacheConfig;
 import com.jopdesign.wcet08.analysis.SimpleAnalysis;
 import com.jopdesign.wcet08.analysis.SimpleAnalysis.WcetMode;
 import com.jopdesign.wcet08.report.Report;
+
+/* TODO List:
+ * 
+ * [1] Special static instruction (com.jopsys.native) need a lot of case distinctions.
+ *     Can we eliminated them in a preprocessing step ?
+ *
+ * [2] Handle dynamic dispatch:
+ * We already support dynamic dispatch and interface on a callgraph/typegraph level,
+ * so it would be nice to add them to WCET analysis
+ * 
+ * [3] Check for unsupported bytecodes / features rigiously:
+ * It would really be a good idea to first check wheter the code uses unsupported features
+ * (currently: Exceptions, invokespecial, invokevirtual, invokeinterface, JSR, sync stuff ...)
+ * and be explicit about the supported set
+ * 
+ * [4] Add UPPAAL simluation (needs to be ported)
+ * 
+ * [5] Should we eliminate the velocity library ? It is rather heavyweight, and we don't use too
+ * many features of it.
+ * Plus the report stuff is rather ad-hoc and should be cleaned up.
+ *
+ * [6] Support java implemented bytecodes
+ * 
+ */
 
 /**
  * WCET Analysis for JOP - Executable

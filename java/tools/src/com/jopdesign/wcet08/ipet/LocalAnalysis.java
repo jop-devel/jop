@@ -29,9 +29,9 @@ import com.jopdesign.wcet08.frontend.FlowGraph.FlowGraphNode;
 import com.jopdesign.wcet08.ipet.LinearConstraint.ConstraintType;
 
 /**
- * Perform local, i.e. per method, WCET analysis using DFA+IPET.
- * The local analysis takes is preceeded by a dataflow (or simple static) analysis, 
- * which in turn invokes local analysis for smaller methods.
+ * Perform local (per method) WCET analysis using DFA+IPET.
+ * The local analysis is preceeded by a static (e.g. dataflow) analysis, 
+ * which in turn invokes local analysis for referenced methods.
  * 
  * @author Benedikt Huber (benedikt.huber@gmail.com)
  */
@@ -40,6 +40,13 @@ public class LocalAnalysis {
 	public LocalAnalysis(Project project) {
 		this.project = project;
 	}
+	/**
+	 * Create a max-cost maxflow problem for the given flow graph graph, based on a 
+	 * given node to cost mapping.
+	 * @param g the graph
+	 * @param nodeWCET cost of nodes
+	 * @return The max-cost maxflow problem
+	 */
 	public MaxCostFlow<FlowGraphNode,FlowGraphEdge> buildWCETProblem(FlowGraph g,Map<FlowGraphNode,Long> nodeWCET) {
 		Vector<FlowConstraint> flowCs = computeFlowConstraints(g);
 		MaxCostFlow<FlowGraphNode,FlowGraphEdge> maxflow = 
@@ -52,9 +59,9 @@ public class LocalAnalysis {
 		return maxflow;
 	}
 	/**
-	 * compute flow constraints
-	 * @param g
-	 * @return
+	 * Compute flow constraints for the given flow graph
+	 * @param g the flow graph
+	 * @return A list of flow constraints
 	 */
 	public Vector<FlowConstraint> computeFlowConstraints(FlowGraph g) {
 		Vector<FlowConstraint> constraints = new Vector<FlowConstraint>();

@@ -19,11 +19,8 @@
 */
 package com.jopdesign.wcet08.ipet;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.Vector;
 import java.util.Map.Entry;
 
 import com.jopdesign.wcet08.ipet.LinearConstraint.ConstraintType;
@@ -129,7 +126,7 @@ public class LpSolveWrapper<T> {
 	}
 	/**
 	 * add a linear constraint to the the problem
-	 * @param linearConstraint the lienar constraint
+	 * @param linearConstraint the linear constraint
 	 * @throws LpSolveException
 	 */
 	public void addConstraint(LinearConstraint<T> linearConstraint) throws LpSolveException {
