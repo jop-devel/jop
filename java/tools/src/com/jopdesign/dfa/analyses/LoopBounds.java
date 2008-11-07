@@ -355,7 +355,7 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 					result.put(l, in.get(l));
 				}
 				if (l.stackLoc == context.stackPtr-1) {
-					result.put(new Location(index), new ValueMapping(in.get(l), false));
+					result.put(new Location(index), new ValueMapping(in.get(l), true));
 				}				
 			}
 		}
