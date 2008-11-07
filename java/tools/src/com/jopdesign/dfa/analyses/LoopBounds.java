@@ -1489,7 +1489,7 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 			return bd.intValue();			
 		} else {
 			System.out.println("Bound not found");
-			return 8888;
+			return -1;
 		}
 	}
 	

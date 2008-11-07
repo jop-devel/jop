@@ -985,12 +985,16 @@ class WCETMethodBlock {
 						// a very quick and dirty hack:
 						instr = wcbb.sucbb.endih;
 						int bound = wca.lb.getBound(wca, instr);
-						System.out.println("Loop bounds from DFA: "+bound);
-						// now use our DFA bounds:
-						wcbb.loop = bound;
-						// MS: I don't understand that stuff:
-						wcbbhit.loop = bound;
-						wcbbhit.leq = true;	// what's the difference for WCET?
+						if (bound==-1) {
+							System.out.println("No DFA based bound available");
+						} else {
+							System.out.println("Loop bounds from DFA: "+bound);
+							// now use our DFA bounds:
+							wcbb.loop = bound;
+							// MS: I don't understand that stuff:
+							wcbbhit.loop = bound;
+							wcbbhit.leq = true;	// what's the difference for WCET?							
+						}
 						
 						//            if(wcaA.get("innerloop") != null){
 						//              if(((String)wcaA.get("innerloop")).equals("true")){
@@ -1122,8 +1126,14 @@ class WCETMethodBlock {
 						String edge = getBbs(i).toDotFlowLabel(getBbs(j));
 
 						if (wcetvars.get(edge) != null) {
-							int edgeval = Integer.parseInt((String) wcetvars
-									.get(edge));
+							int edgeval = 0;
+							try {
+								edgeval = Integer.parseInt((String) wcetvars
+										.get(edge));							
+							} catch (Exception e) {
+								System.out.println((String) wcetvars
+								.get(edge)+" not an integer, assuming 0");
+							}
 							if (edgeval > 0)
 								sb.append(" [label=\""
 										+ getBbs(i).toDotFlowLabel(getBbs(j))
