@@ -195,7 +195,6 @@ public class BasicBlock  {
 		}
 		// Not neccesarily, but nice for WCET analysis
 		@Override public void visitInvokeInstruction(InvokeInstruction obj) {
-			// TODO Lot of case distinctions needed for specialInvoke [1]
 			if(! appInfo.isSpecialInvoke(methodInfo, obj)) {
 				flowInfo.splitBefore = true;
 				flowInfo.splitAfter = true;

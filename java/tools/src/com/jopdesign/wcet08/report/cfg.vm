@@ -1,6 +1,5 @@
 <body>
-<h1>Detailed report for $m.getMethod().getName()</h1>
-<p>Fully Qualified Method Name: <pre>$m.getFQMethodName()</pre></p>
+<h1>Detailed report for $m.getFQMethodName()</h1>
 #foreach ($e in $reports)
 <h2> $e.getKey() </h2>
 <h3>Stats</h3>

@@ -137,6 +137,7 @@ public class Config {
 	/* The output directory (set once) */
 	private File outDir;
 	private ConsoleAppender defaultAppender;
+	private boolean genWCETReport = true;
 	
 	
 	/**
@@ -373,6 +374,12 @@ public class Config {
 	}
 	public boolean doInvokeDot() {
 		return (getDotBinary() != null);
+	}
+	public boolean doGenerateWCETReport() {
+		return this.genWCETReport ;
+	}
+	public void setGenerateWCETReport(boolean generateReport) {
+		this.genWCETReport = generateReport;
 	}
 	public boolean hasDotBinary() {
 		if(getDotBinary() == null) return false;

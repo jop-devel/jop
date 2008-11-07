@@ -7,6 +7,7 @@
 	<title>WCET Analysis results</title>
 	<meta name="generator" content="com.jopdesign.wcet08, using the Apache Velocity Engine">
 	<meta name="author" content="Benedikt Huber">
+	<link rel="stylesheet" href="../default.css" type="text/css" media="screen" title="no title" charset="utf-8">	
 </head>
 <body>
 <frameset cols="30%, 70%">

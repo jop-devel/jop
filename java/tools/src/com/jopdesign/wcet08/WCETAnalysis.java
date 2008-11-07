@@ -41,26 +41,18 @@ import com.jopdesign.wcet08.report.Report;
 
 /* TODO List:
  * 
- * [1] Special static instruction (com.jopsys.native) need a lot of case distinctions.
- *     Can we eliminated them in a preprocessing step ?
+ * [1] Support java implemented bytecodes
  *
- * [2] Handle dynamic dispatch:
- * We already support dynamic dispatch and interface on a callgraph/typegraph level,
- * so it would be nice to add them to WCET analysis
- * 
+ * [2] Add UPPAAL simluation (needs to be ported)
+ *
  * [3] Check for unsupported bytecodes / features rigiously:
  * It would really be a good idea to first check wheter the code uses unsupported features
  * (currently: Exceptions, invokespecial, invokevirtual, invokeinterface, JSR, sync stuff ...)
  * and be explicit about the supported set
  * 
- * [4] Add UPPAAL simluation (needs to be ported)
- * 
- * [5] Should we eliminate the velocity library ? It is rather heavyweight, and we don't use too
- * many features of it.
- * Plus the report stuff is rather ad-hoc and should be cleaned up.
+ * [3] Should we eliminate the velocity library ? It is rather heavyweight, and we don't use too
+ * many features of it. Plus the report stuff is rather ad-hoc and should be cleaned up.
  *
- * [6] Support java implemented bytecodes
- * 
  */
 
 /**
@@ -162,15 +154,20 @@ public class WCETAnalysis {
 			/* Analysis */
 			tlLogger.info("Starting analysis");
 			SimpleAnalysis an = new SimpleAnalysis(project);
-			long ahWCET = an.computeWCET(project.getRootMethod(),WcetMode.ALWAYS_HIT);			
-			tlLogger.info("WCET always hit analysis finsihed");
-			System.out.println("ah:"+ahWCET);
-			long amWCET = an.computeWCET(project.getRootMethod(),WcetMode.ALWAYS_MISS);
-			tlLogger.info("WCET always miss analysis finished");
-			System.out.println("am: "+amWCET);
-			long scaWCET = 	an.computeWCET(project.getRootMethod(),WcetMode.STATIC_CACHE_ANALYSIS);
+
+			long scaWCET = 	an.computeWCET(project.getRootMethod(),WcetMode.ANALYSE_REACHABLE).getCost();
 			tlLogger.info("WCET simple cache analysis finsihed");
 			System.out.println("sca: "+scaWCET);
+			
+			config.setGenerateWCETReport(false);
+			long ahWCET = an.computeWCET(project.getRootMethod(),WcetMode.ALWAYS_HIT).getCost();			
+			tlLogger.info("WCET always hit analysis finsihed");
+			System.out.println("ah:"+ahWCET);
+			
+			long amWCET = an.computeWCET(project.getRootMethod(),WcetMode.ALWAYS_MISS).getCost();
+			tlLogger.info("WCET always miss analysis finished");
+			System.out.println("am: "+amWCET);
+			
 			project.getReport().addStat("wcet-always-hit", ahWCET);
 			project.getReport().addStat("wcet-always-miss", amWCET);
 			project.getReport().addStat("wcet-cache-approx", scaWCET);

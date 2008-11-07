@@ -258,6 +258,10 @@ public class Report {
 		} catch (Exception e) {
 			logger.error(e);
 		}
-		this.addPage("details/"+method.getFQMethodName(),page);		
+		this.addPage("details/"+sanitizePageKey(method.getFQMethodName()),page);		
+	}
+	/* page keys may not contain a slash - replace it by backslash */
+	private String sanitizePageKey(String s) {
+		return s.replace('/', '\\');
 	}
 }

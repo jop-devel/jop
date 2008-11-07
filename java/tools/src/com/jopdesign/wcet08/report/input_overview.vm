@@ -10,7 +10,7 @@
 #if ($m.getLoopBounds().size() > 0)
 <li/>Loop Bounds: $m.getLoopBounds()
 #end
-<li/>Referenced methods in classes: $m.getReferenced()
+<li/>Referenced methods: $m.getReferenced()
 </ul>
 #end
 </body>

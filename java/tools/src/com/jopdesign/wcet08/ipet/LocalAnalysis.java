@@ -36,6 +36,13 @@ import com.jopdesign.wcet08.ipet.LinearConstraint.ConstraintType;
  * @author Benedikt Huber (benedikt.huber@gmail.com)
  */
 public class LocalAnalysis {
+	/**
+	 * Implementors provide cost for objects of type T
+	 * @param <T>
+	 */
+	public interface CostProvider<T> {
+		public long getCost(T obj);
+	}
 	Project project;
 	public LocalAnalysis(Project project) {
 		this.project = project;
@@ -47,13 +54,13 @@ public class LocalAnalysis {
 	 * @param nodeWCET cost of nodes
 	 * @return The max-cost maxflow problem
 	 */
-	public MaxCostFlow<FlowGraphNode,FlowGraphEdge> buildWCETProblem(FlowGraph g,Map<FlowGraphNode,Long> nodeWCET) {
+	public MaxCostFlow<FlowGraphNode,FlowGraphEdge> 
+		buildWCETProblem(FlowGraph g,CostProvider<FlowGraphNode> nodeWCET) {
 		Vector<FlowConstraint> flowCs = computeFlowConstraints(g);
 		MaxCostFlow<FlowGraphNode,FlowGraphEdge> maxflow = 
 			new MaxCostFlow<FlowGraphNode,FlowGraphEdge>(g.getGraph(),g.getEntry(),g.getExit());
 		for(FlowGraphNode n : g.getGraph().vertexSet()) {
-			Long cost = nodeWCET.get(n);
-			maxflow.setCost(n, cost);
+			maxflow.setCost(n, nodeWCET.getCost(n));
 		}
 		for(FlowConstraint c : flowCs) maxflow.addFlowConstraint(c);
 		return maxflow;

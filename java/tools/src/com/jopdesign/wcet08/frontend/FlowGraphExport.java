@@ -35,7 +35,7 @@ public class FlowGraphExport {
 		}
 		public String getLabel(FlowGraphNode object) {
 			if(annots.containsKey(object)) {
-				return "[" +object.getId() + "]"+ annots.get(object);
+				return "[" +object.getName() + "] "+ annots.get(object);
 			} else {
 				return super.getLabel(object);
 			}			

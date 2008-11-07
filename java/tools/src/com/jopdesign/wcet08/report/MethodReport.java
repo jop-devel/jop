@@ -24,9 +24,11 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.TreeSet;
 
+import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.wcet08.Project;
 import com.jopdesign.wcet08.frontend.CallGraph.CallGraphNode;
+import com.jopdesign.wcet08.graphutils.Pair;
 
 public class MethodReport {
 	private MethodInfo info;
@@ -39,7 +41,8 @@ public class MethodReport {
 		this.referenced = new TreeSet<String>();
 		Iterator<CallGraphNode> i = p.getCallGraph().getReachableMethods(m);
 		while(i.hasNext()) {
-			this.referenced.add(i.next().getReferencedMethod().snd());
+			Pair<ClassInfo, String> ref = i.next().getReferencedMethod();
+			this.referenced.add(ref.fst().clazz.getClassName()+"."+ref.snd());
 		}
 		this.page = page;
 	}

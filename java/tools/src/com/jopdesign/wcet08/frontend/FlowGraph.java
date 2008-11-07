@@ -85,19 +85,16 @@ public class FlowGraph {
 	 */
 	public abstract class FlowGraphNode implements Comparable<FlowGraphNode>{
 		private int id;
-		private String name;
-		protected FlowGraphNode() { 
-			this.id = idGen++;
-			this.name = "Node"+this.id;
-		}
+		protected String name;
 		protected FlowGraphNode(String name) { 
-			this();
-			this.name = name;
+			this.id = idGen++;
+			this.name = "#"+id+" "+name;
 		}
 		public int compareTo(FlowGraphNode o) { 
 			return new Integer(this.hashCode()).compareTo(o.hashCode()); 
 		}
 		public String toString() { return name; }
+		public String getName()  { return name; }
 		public BasicBlock getCodeBlock() { return null; }
 		public int getId() { return id; }
 		public abstract void accept(FlowGraphVisitor v);
@@ -115,6 +112,7 @@ public class FlowGraph {
 		private DedicatedNodeName kind;
 		public DedicatedNodeName getKind() { return kind; }
 		private  DedicatedNode(DedicatedNodeName kind) {
+			super(kind.toString());
 			this.kind = kind;
 		}
 		@Override
@@ -123,7 +121,7 @@ public class FlowGraph {
 		}		
 	}
 	private DedicatedNode splitNode() { return new DedicatedNode(DedicatedNodeName.SPLIT); }
-	private DedicatedNode joinNode() { return new DedicatedNode(DedicatedNodeName.SPLIT); }
+	private DedicatedNode joinNode() { return new DedicatedNode(DedicatedNodeName.JOIN); }
 	
 	
 	/**
@@ -132,6 +130,7 @@ public class FlowGraph {
 	public class BasicBlockNode extends FlowGraphNode {
 		private int blockIndex;
 		public BasicBlockNode(int blockIndex) {
+			super("basic("+blockIndex+")");
 			this.blockIndex = blockIndex;
 		}
 		public BasicBlock getCodeBlock() { return blocks.get(blockIndex); }
@@ -155,9 +154,10 @@ public class FlowGraph {
 			super(blockIndex);
 		}
 		public InvokeNode(int blockIndex, InvokeInstruction instr) {
-			super(blockIndex);
+			super(blockIndex);			
 			this.instr = instr;
 			this.referenced = appInfo.getReferenced(methodInfo, instr);
+			this.name = "invoke("+this.referenced+")";
 			/* if virtual / interface, this method has to be resolved first */
 			if((instr instanceof INVOKEINTERFACE) || (instr instanceof INVOKEVIRTUAL)) {
 			} else {
@@ -188,6 +188,7 @@ public class FlowGraph {
 		 */
 		public InvokeNode createImplNode(MethodInfo impl) {
 			InvokeNode n = new InvokeNode(this.getBlockIndex());
+			n.name = "invoke("+this.referenced+")";
 			n.instr=this.instr;
 			n.referenced=this.referenced;
 			n.impl=impl;
