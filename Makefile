@@ -46,8 +46,10 @@ BLASTER_TYPE=ByteBlasterMV
 
 ifeq ($(WINDIR),)
 	USBRUNNER=./USBRunner
+	S=:
 else
 	USBRUNNER=USBRunner.exe
+	S=\;
 endif
 
 # 'some' different Quartus projects
@@ -109,15 +111,15 @@ WCET_METHOD=measure
 TOOLS=java/tools
 # setting for my Eclipse CVS project
 # TOOLS=../../workspace/cvs_jop_tools
-EXT_CP=-classpath java/lib/bcel-5.1.jar\;java/lib/jakarta-regexp-1.3.jar\;java/lib/RXTXcomm.jar\;java/lib/lpsolve55j.jar\;java/lib/log4j-1.2.15.jar
+EXT_CP=-classpath java/lib/bcel-5.1.jar$(S)java/lib/jakarta-regexp-1.3.jar$(S)java/lib/RXTXcomm.jar$(S)java/lib/lpsolve55j.jar$(S)java/lib/log4j-1.2.15.jar$(S)java/lib/jgrapht-jdk1.5.jar$(S)java/lib/velocity-1.5.jar$(S)java/lib/velocity-dep-1.5.jar
 
 # The line below makes the compilation crash, because it causes JOPizer to include a *lot*
 # of classes which are actually not necessary.
-#EXT_CP=-classpath java/jopeclipse/com.jopdesign.jopeclipse/lib/bcel-5.2.jar\;java/lib/jakarta-regexp-1.3.jar\;java/lib/RXTXcomm.jar\;java/lib/lpsolve55j.jar
-#EXT_CP=-classpath java/lib/recompiled_bcel-5.2.jar\;java/lib/jakarta-regexp-1.3.jar\;java/lib/RXTXcomm.jar\;java/lib/lpsolve55j.jar
+#EXT_CP=-classpath java/jopeclipse/com.jopdesign.jopeclipse/lib/bcel-5.2.jar$(S)java/lib/jakarta-regexp-1.3.jar$(S)java/lib/RXTXcomm.jar$(S)java/lib/lpsolve55j.jar
+#EXT_CP=-classpath java/lib/recompiled_bcel-5.2.jar$(S)java/lib/jakarta-regexp-1.3.jar$(S)java/lib/RXTXcomm.jar$(S)java/lib/lpsolve55j.jar
 
-#TOOLS_JFLAGS=-d $(TOOLS)/dist/classes $(EXT_CP) -sourcepath $(TOOLS)/src\;$(TARGET)/src/common
-TOOLS_JFLAGS=-g -d $(TOOLS)/dist/classes $(EXT_CP) -sourcepath $(TOOLS)/src\;$(TARGET)/src/common
+#TOOLS_JFLAGS=-d $(TOOLS)/dist/classes $(EXT_CP) -sourcepath $(TOOLS)/src$(S)$(TARGET)/src/common
+TOOLS_JFLAGS=-g -d $(TOOLS)/dist/classes $(EXT_CP) -sourcepath $(TOOLS)/src$(S)$(TARGET)/src/common
 
 PCTOOLS=java/pc
 PCTOOLS_JFLAGS=-g -d $(PCTOOLS)/dist/classes -sourcepath $(PCTOOLS)/src
@@ -126,10 +128,10 @@ PCTOOLS_JFLAGS=-g -d $(PCTOOLS)/dist/classes -sourcepath $(PCTOOLS)/src
 TARGET=java/target
 
 # changed to add another class to the tool chain
-#TOOLS_CP=$(EXT_CP)\;$(TOOLS)/dist/lib/jop-tools.jar
-TOOLS_CP=$(EXT_CP)\;$(TOOLS)/dist/lib/jop-tools.jar\;$(TOOLS)/dist/lib/JopDebugger.jar
+#TOOLS_CP=$(EXT_CP)$(S)$(TOOLS)/dist/lib/jop-tools.jar
+TOOLS_CP=$(EXT_CP)$(S)$(TOOLS)/dist/lib/jop-tools.jar$(S)$(TOOLS)/dist/lib/JopDebugger.jar
 
-TARGET_SOURCE=$(TARGET)/src/common\;$(TARGET)/src/jdk_base\;$(TARGET)/src/jdk11\;$(TARGET)/src/rtapi\;$(TARGET_APP_SOURCE_PATH)
+TARGET_SOURCE=$(TARGET)/src/common$(S)$(TARGET)/src/jdk_base$(S)$(TARGET)/src/jdk11$(S)$(TARGET)/src/rtapi$(S)$(TARGET_APP_SOURCE_PATH)
 TARGET_JFLAGS=-d $(TARGET)/dist/classes -sourcepath $(TARGET_SOURCE) -bootclasspath "" -extdirs "" -classpath "" -source 1.5
 GCC_PARAMS=""
 
@@ -158,7 +160,7 @@ MAIN_CLASS=$(P2)/$(P3)
 
 #	add more directoies here when needed
 #		(and use \; to escape the ';' when using a list!)
-TARGET_APP_SOURCE_PATH=$(TARGET_APP_PATH)\;$(TARGET)/src/bench
+TARGET_APP_SOURCE_PATH=$(TARGET_APP_PATH)$(S)$(TARGET)/src/bench
 TARGET_APP=$(TARGET_APP_PATH)/$(MAIN_CLASS).java
 
 
@@ -196,7 +198,7 @@ DEBUG_JOPSIM=
 #	application optimization with JOPtimizer
 #	uncomment the following lines to use it
 #
-#OPTIMIZE=java $(EXT_CP)\;$(TOOLS)/dist/lib/joptimizer.jar joptimizer.JOPtimizerRunner \
+#OPTIMIZE=java $(EXT_CP)$(S)$(TOOLS)/dist/lib/joptimizer.jar joptimizer.JOPtimizerRunner \
 #	 -config jar:file:$(TOOLS)/dist/lib/joptimizer.jar!/jop.conf $(MAIN_CLASS) && \
 #	cd $(TARGET)/dist/classes && jar cf ../lib/classes.zip *
 
@@ -223,8 +225,6 @@ else
 endif
 	make download
 
-# shortcut for my work in Eclipse on TCP/IP
-eapp: ecl_app config_byteblaster download
 
 install:
 	@echo nothing to install
@@ -248,6 +248,9 @@ tools:
 	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/build/*.java
 	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/tools/*.java
 	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/wcet/*.java
+	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/dfa/*.java
+	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/wcet08/*.java
+	cp $(TOOLS)/src/com/jopdesign/wcet08/report/*.vm $(TOOLS)/dist/classes/com/jopdesign/wcet08/report
 # Build libgraph and joptimizer
 	#make joptimizer -e TOOLS_JFLAGS="$(TOOLS_JFLAGS)" TOOLS="$(TOOLS)"
 # quick hack to get the tools with the debugger ok
@@ -318,6 +321,7 @@ java_app:
 	-mkdir $(TARGET)/dist/lib
 	-mkdir $(TARGET)/dist/bin
 	javac $(TARGET_JFLAGS) $(TARGET)/src/common/com/jopdesign/sys/*.java
+	javac $(TARGET_JFLAGS) $(TARGET)/src/jdk_base/java/lang/annotation/*.java	# oh new Java 1.5 world!
 	javac $(TARGET_JFLAGS) $(TARGET_APP)
 	cd $(TARGET)/dist/classes && jar cf ../lib/classes.zip *
 	$(OPTIMIZE)
@@ -330,43 +334,6 @@ java_app:
 	cp *.dat modelsim
 	rm -f *.dat
 
-#
-# do it from my eclipse workspace
-#
-ecl_app:
-	cd ../../workspace/cvs_jop_target/classes && jar cf ../../../cpu/jop/java/target/dist/lib/classes.zip *
-	java $(TOOLS_CP) -Dmgci=false com.jopdesign.build.JOPizer \
-		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/dist/bin/$(JOPBIN) $(MAIN_CLASS)
-	java $(TOOLS_CP) com.jopdesign.tools.jop2dat $(TARGET)/dist/bin/$(JOPBIN)
-	cp *.dat modelsim
-	rm -f *.dat
-
-#
-# test AppInfo
-# MS: some temporary targets for AppInfo and libgraph tests
-#
-appinfo: tools
-	java $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.build.AppInfo \
-		-cp $(TARGET)/dist/lib/classes.zip $(MAIN_CLASS)
-
-testapp: tools
-	make java_app
-	-mkdir $(TARGET)/xxx
-	java $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.build.WcetPreprocess \
-		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/xxx $(MAIN_CLASS)
-	java $(DEBUG_JOPIZER) $(TOOLS_CP) -Dmgci=false com.jopdesign.build.JOPizer \
-		-cp $(TARGET)/xxx -o $(TARGET)/dist/bin/$(JOPBIN) $(MAIN_CLASS)
-ifeq ($(USB),true)
-	make config_usb
-else
-	make config_byteblaster
-endif
-	make download
-	
-testlib: 
-	make joptimizer -e TOOLS_JFLAGS="$(TOOLS_JFLAGS)" TOOLS="$(TOOLS)"
-	java $(EXT_CP)\;$(TOOLS)/dist/lib/joptimizer.jar joptimizer.TestLib \
-		-cp $(TARGET)/dist/lib/classes.zip $(MAIN_CLASS)
 
 #
 #	project.sof fiels are used to boot from the serial line
@@ -440,14 +407,13 @@ jsim: java_app
 	java $(DEBUG_JOPSIM) -cp java/tools/dist/lib/jop-tools.jar -Dlog="false" \
 	com.jopdesign.tools.JopSim java/target/dist/bin/$(JOPBIN)
 
-
 #
 #	JopServer target
 #		without the tools
 #
 jsim_server: java_app
 	java $(DEBUG_JOPSIM) \
-	-cp java/tools/dist/lib/jop-tools.jar\;$(TOOLS)/dist/lib/JopDebugger.jar -Dlog="false" \
+	-cp java/tools/dist/lib/jop-tools.jar$(S)$(TOOLS)/dist/lib/JopDebugger.jar -Dlog="false" \
 	com.jopdesign.debug.jdwp.jop.JopServer java/target/dist/bin/$(JOPBIN)
 
 
@@ -458,7 +424,7 @@ config_usb:
 	cd rbf && ../$(USBRUNNER) $(DLPROJ).rbf
 
 download:
-#	java -cp java/tools/dist/lib/jop-tools.jar\;java/lib/RXTXcomm.jar com.jopdesign.tools.JavaDown \
+#	java -cp java/tools/dist/lib/jop-tools.jar$(S)java/lib/RXTXcomm.jar com.jopdesign.tools.JavaDown \
 #		$(COM_FLAG) java/target/dist/bin/$(JOPBIN) $(COM_PORT)
 #
 #	this is the download version with down.exe
@@ -593,14 +559,94 @@ wcet:
 	-mkdir $(TARGET)/tmp
 	java $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.build.WcetPreprocess \
 		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/tmp $(MAIN_CLASS)
-	java $(TOOLS_CP) -Dlatex=true -Ddot=true -Djline=true -Dls=true com.jopdesign.wcet.WCETAnalyser \
+	java -Xss16M $(TOOLS_CP) -Dlatex=true -Ddot=true -Djline=false -Dlatex=true -Dls=true com.jopdesign.wcet.WCETAnalyser \
 		-mm $(WCET_METHOD) \
 		-cp $(TARGET)/tmp -o $(TARGET)/wcet/$(P3)wcet.txt -sp $(TARGET_SOURCE) $(MAIN_CLASS)
 	-rm -rf $(TARGET)/tmp
 
+# WCET08 analyser
+# make before: java_app
+# make after: dot2eps
+#
+# OPTIONS can be configured using system properties, supplying a  property file or as command line arguments
+#    cp ... the classpath [mandatory]
+#    sp ... the sourcepath [mandatory]
+#    rootclass ... the name of the class containing the method to  be analyzed [mandatory]
+#    rootmethod ... the name (and optionally signature) of the  method to be analyzed [default: measure]
+#    projectname ...  the name of the project [default: fully  qualified name of root method]
+#    reportdir ... if reports should be generated, the directory to  write them to [optional]
+#    reportdir-parent ... if reports should be generated, the  parent directory to write them to [optional]
+#    program-dot ... the path to the dot binary if dot should be  invoked from java [optional]
+#    cache-blocks ... number of cache blocks [default: 16]
+#    cache-block-size ... size of cache blocks in bytes [default:  256]
+wcet08:
+	-mkdir $(TARGET)/tmp
+	java $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.build.WcetPreprocess \
+		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/tmp $(MAIN_CLASS)
+	-rm -rf $(TARGET)/wcet
+	-mkdir -p $(TARGET)/wcet
+	java -Xss16M $(TOOLS_CP) com.jopdesign.wcet08.WCETAnalysis \
+		-reportdir $(TARGET)/wcet \
+		-cp $(TARGET)/dist/classes -sp $(TARGET_SOURCE) \
+		-rootclass $(MAIN_CLASS) -rootmethod $(WCET_METHOD)
+	-rm -rf $(TARGET)/tmp
+
+
+# dot2eps works for both rasmus WCETAnalyser and wcet08.WCETAnalyser
 dot2eps:
 	cd $(TARGET)/wcet && make
+
+dfa:
+	java -Xss16M $(TOOLS_CP) com.jopdesign.dfa.Main \
+		-cp $(TARGET)/dist/lib/classes.zip $(MAIN_CLASS)
 
 test:
 	java $(TOOLS_CP) com.jopdesign.wcet.CallGraph \
 		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/wcet/$(P3)call.txt -sp $(TARGET_SOURCE) $(MAIN_CLASS)
+
+
+###### end of Makefile #######
+
+
+
+
+
+
+
+#
+# some MS specific setting - just ignore it
+#
+
+# shortcut for my work in Eclipse on TCP/IP
+eapp: ecl_app config_usb download
+
+esim: ecl_app
+	java $(DEBUG_JOPSIM) -cp java/tools/dist/lib/jop-tools.jar -Dlog="false" \
+	com.jopdesign.tools.JopSim java/target/dist/bin/$(JOPBIN)
+
+#
+# do it from my eclipse workspace
+#
+ecl_app:
+	cd ../../workspace/cvs_jop_target/classes && jar cf ../../../cpu/jop/java/target/dist/lib/classes.zip *
+	java $(TOOLS_CP) -Dmgci=false com.jopdesign.build.JOPizer \
+		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/dist/bin/$(JOPBIN) $(MAIN_CLASS)
+	java $(TOOLS_CP) com.jopdesign.tools.jop2dat $(TARGET)/dist/bin/$(JOPBIN)
+	cp *.dat modelsim
+	rm -f *.dat
+
+#
+# test AppInfo
+# MS: some temporary targets for AppInfo and libgraph tests
+#
+appinfo: tools
+	java $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.build.AppInfo \
+		-cp $(TARGET)/dist/lib/classes.zip $(MAIN_CLASS)
+
+testapp: tools
+	make java_app
+	-mkdir $(TARGET)/xxx
+	java $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.build.WcetPreprocess \
+		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/xxx $(MAIN_CLASS)
+	java $(DEBUG_JOPIZER) $(TOOLS_CP) -Dmgci=false com.jopdesign.build.JOPizer \
+		-cp $(TARGET)/xxx -o $(TARGET)/dist/bin/$(JOPBIN) $(MAIN_CLASS)
