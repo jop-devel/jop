@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Properties;
+import java.util.StringTokenizer;
 
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.FileAppender;
@@ -358,14 +359,24 @@ public class Config {
 	}
 	
 	public File getSourceFile(ClassInfo ci) throws FileNotFoundException {
-		for(String sourcePath : this.getSourcePath().split(":")) {
+		StringTokenizer st = new StringTokenizer(this.getSourcePath(),File.pathSeparator);
+		while (st.hasMoreTokens()) {
+			String sourcePath = st.nextToken();
+			String pkgPath = ci.clazz.getPackageName().replace('.', File.separatorChar);
+			sourcePath += File.separator + pkgPath;
 			File sourceDir = new File(sourcePath);
-			for(String pkgDir : ci.clazz.getPackageName().split("\\.")) {
-				sourceDir = new File(sourceDir,pkgDir);			
-			}
 			File sourceFile = new File(sourceDir, ci.clazz.getSourceFileName());
 			if(sourceFile.exists()) return sourceFile;	
 		}
+
+//		for(String sourcePath : this.getSourcePath().split("\\"+File.separator)) {
+//			File sourceDir = new File(sourcePath);
+//			for(String pkgDir : ci.clazz.getPackageName().split("\\.")) {
+//				sourceDir = new File(sourceDir,pkgDir);			
+//			}
+//			File sourceFile = new File(sourceDir, ci.clazz.getSourceFileName());
+//			if(sourceFile.exists()) return sourceFile;	
+//		}
 		throw new FileNotFoundException("Source for "+ci.clazz.getClassName()+" not found.");
 	}
 
