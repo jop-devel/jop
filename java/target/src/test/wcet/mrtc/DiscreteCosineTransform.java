@@ -43,7 +43,7 @@ public class DiscreteCosineTransform
     private static final int PASS1_BITS = 2;
     
     // Image block to be transformed
-    private int[][] block = {
+    public int[][] block = {
         {  99, 104, 109, 113, 115, 115, 55, 55 },
         { 104, 111, 113, 116, 119,  56, 56, 56 },
         { 110, 115, 120, 119, 118,  56, 56, 56 },
@@ -54,7 +54,7 @@ public class DiscreteCosineTransform
         {  62,  62,  61,  61,  63,  58, 58, 58 }
     };
 
-    private void fdct(int[][] block, int lx)
+    public void fdct(int[][] block, int lx)
     {
     	int tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7;
     	int tmp10, tmp11, tmp12, tmp13;
@@ -66,7 +66,7 @@ public class DiscreteCosineTransform
     	// furthermore, we scale the results by 2**PASS1_BITS.
 
         //@LoopBound(max=8)
-    	for (int i = 0; i < 8; i++)
+    	for (int i = 0; i < 8; i++) // @WCA loop=8
     	{
     		tmp0 = block[i][0] + block[i][7];
     		tmp7 = block[i][0] - block[i][7];
@@ -135,7 +135,7 @@ public class DiscreteCosineTransform
     	// Pass 2: process columns.
 
         //@LoopBound(max=8)
-    	for (int i = 0; i < 8; i++)
+    	for (int i = 0; i < 8; i++) // @WCA loop=8
     	{
     		tmp0 = block[0][i] + block[7][i];
     		tmp7 = block[0][i] - block[7][i];

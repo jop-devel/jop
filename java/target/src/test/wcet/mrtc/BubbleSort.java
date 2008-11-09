@@ -33,13 +33,13 @@ public class BubbleSort
     /*
      * Sorts an array of integers of size NUM_ELEMENTS in ascending order.
      */
-    private void bubbleSort()
+    public void bubbleSort()
     {
         //@LoopBound(max=NUM_ELEMENTS - 1)
-    	for (int i = 1; i < NUM_ELEMENTS; i++)
+    	for (int i = 1; i < NUM_ELEMENTS; i++) // @WCA loop=99
     	{
     	    //@LoopBound(max=NUM_ELEMENTS - 1)
-    		for (int j = 0; j < NUM_ELEMENTS - 1; j++)
+    		for (int j = 0; j < NUM_ELEMENTS - 1; j++) // @WCA loop=99
     		{
     			if (array[j] > array[j + 1])
     			{

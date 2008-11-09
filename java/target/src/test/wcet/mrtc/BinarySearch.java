@@ -38,7 +38,7 @@ public class BinarySearch
         }
     }
     
-    private int binarySearch(int x)
+    public int binarySearch(int x)
     {
     	int fvalue, mid, up, low;
         
@@ -47,7 +47,7 @@ public class BinarySearch
         fvalue = -1;  // all data are positive
 
         // @LoopBound(max=4)  // max=log(DATA_SIZE)
-    	while (low <= up)
+    	while (low <= up) // @WCA loop=10
     	{
         	mid = (low + up) >> 1;
 
