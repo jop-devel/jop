@@ -170,7 +170,11 @@ begin
 				end loop;
 
 				state <= idle;
-				nxt <= nxt + nr_of_blks + 1;
+				-- optimization to not advance the next pointer
+				-- on short methods
+--				if unsigned(bc_len) > 14 then
+					nxt <= nxt + nr_of_blks + 1;
+--				end if;
 
 
 		end case;
