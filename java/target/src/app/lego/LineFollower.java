@@ -47,7 +47,6 @@ public class LineFollower {
 	public static void loop() {
 
 		int val = Sensors.readSensor(IR_SENSOR);
-		System.out.println(val);
 		black = val > 285; // XXX
 							
 		left.setDutyCyclePercentage(75);
