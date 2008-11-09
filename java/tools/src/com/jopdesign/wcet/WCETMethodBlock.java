@@ -979,21 +979,23 @@ class WCETMethodBlock {
 						wcbbhit.loopdriverwcbb = wcbb;
 						lines.add(new Integer(wcbbhit.line));
 						
-						System.out.println("Loop bounds from annotation: wcbb.loop="+wcbb.loop+" wcbbhit.loop="+wcbbhit.loop);
-						// MS: it's the WRONG BB for the loop bound!
-						InstructionHandle instr = wcbb.endih;
-						// a very quick and dirty hack:
-						instr = wcbb.sucbb.endih;
-						int bound = wca.lb.getBound(wca, instr);
-						if (bound==-1) {
-							System.out.println("No DFA based bound available");
-						} else {
-							System.out.println("Loop bounds from DFA: "+bound);
-							// now use our DFA bounds:
-							wcbb.loop = bound;
-							// MS: I don't understand that stuff:
-							wcbbhit.loop = bound;
-							wcbbhit.leq = true;	// what's the difference for WCET?							
+						if (wca.useDfa) {
+							System.out.println("Loop bounds from annotation: wcbb.loop="+wcbb.loop+" wcbbhit.loop="+wcbbhit.loop);
+							// MS: it's the WRONG BB for the loop bound!
+							InstructionHandle instr = wcbb.endih;
+							// a very quick and dirty hack:
+							instr = wcbb.sucbb.endih;
+							int bound = wca.lb.getBound(wca, instr);
+							if (bound==-1) {
+								System.out.println("No DFA based bound available");
+							} else {
+								System.out.println("Loop bounds from DFA: "+bound);
+								// now use our DFA bounds:
+								wcbb.loop = bound;
+								// MS: I don't understand that stuff:
+								wcbbhit.loop = bound;
+								wcbbhit.leq = true;	// what's the difference for WCET?							
+							}							
 						}
 						
 						//            if(wcaA.get("innerloop") != null){

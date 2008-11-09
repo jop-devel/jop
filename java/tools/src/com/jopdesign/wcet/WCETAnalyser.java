@@ -90,6 +90,8 @@ public class WCETAnalyser extends com.jopdesign.dfa.framework.AppInfo {
 	public boolean jline;
 	public boolean instr; // true if you want instriction cycles
 	// printed
+	
+	public boolean useDfa; // use DFA for the loop bounds, default is yes
 
 	// The app method or main if not provided
 	public String appmethod;
@@ -146,6 +148,7 @@ public class WCETAnalyser extends com.jopdesign.dfa.framework.AppInfo {
 		// the tables can be easier to use in latex using this property
 		wca.jline = System.getProperty("jline", "false").equals("true");
 		wca.instr = System.getProperty("instr", "true").equals("true");
+		wca.useDfa = System.getProperty("dfa", "true").equals("true");
 
 		wca.appmethod = wca.mainClass + "." + wca.mainMethodName;
 		StringTokenizer st = new StringTokenizer(wca.srcPath,
@@ -260,14 +263,16 @@ public class WCETAnalyser extends com.jopdesign.dfa.framework.AppInfo {
 			e.printStackTrace();
 		}
 		
-		// get receivers for this program
-		ReceiverTypes rt = new ReceiverTypes();
-		wca.setReceivers(wca.runAnalysis(rt));
-//		rt.printResult(program);
-		// run loop bounds analysis
-		wca.lb = new LoopBounds();
-		wca.runAnalysis(wca.lb);
-		wca.lb.printResult(wca);				
+		if (wca.useDfa) {
+			// get receivers for this program
+			ReceiverTypes rt = new ReceiverTypes();
+			wca.setReceivers(wca.runAnalysis(rt));
+//			rt.printResult(program);
+			// run loop bounds analysis
+			wca.lb = new LoopBounds();
+			wca.runAnalysis(wca.lb);
+			wca.lb.printResult(wca);			
+		}
 		
 		wca.analyze();
 	}
