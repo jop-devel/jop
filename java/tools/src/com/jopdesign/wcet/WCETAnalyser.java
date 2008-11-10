@@ -247,6 +247,8 @@ public class WCETAnalyser extends com.jopdesign.dfa.framework.AppInfo {
 	
 	public static void main(String[] args) {
 				
+		long time;
+		
 		WCETAnalyser wca = new WCETAnalyser();
 		if (args.length == 0) {
 			System.err
@@ -263,6 +265,7 @@ public class WCETAnalyser extends com.jopdesign.dfa.framework.AppInfo {
 			e.printStackTrace();
 		}
 		
+		time = System.currentTimeMillis();
 		if (wca.useDfa) {
 			// get receivers for this program
 			ReceiverTypes rt = new ReceiverTypes();
@@ -271,10 +274,15 @@ public class WCETAnalyser extends com.jopdesign.dfa.framework.AppInfo {
 			// run loop bounds analysis
 			wca.lb = new LoopBounds();
 			wca.runAnalysis(wca.lb);
-			wca.lb.printResult(wca);			
+			wca.lb.printResult(wca);
+			time = System.currentTimeMillis()-time;
+			System.out.println("DFA finished after "+time+" ms");
 		}
 		
+		time = System.currentTimeMillis();
 		wca.analyze();
+		time = System.currentTimeMillis()-time;
+		System.out.println("WCA finished after "+time+" ms");
 	}
 
 	// Java Dev. Almanac
