@@ -41,12 +41,12 @@ public class Dispatch {
 		B b = new B();
 		C c = new C();
 		
-//		measure(a);
-//		System.out.println(te-ts-to);
-//		measure(b);
-//		System.out.println(te-ts-to);
-//		measure(c);
-//		System.out.println(te-ts-to);
+		measure(a);
+		System.out.println(te-ts-to);
+		measure(b);
+		System.out.println(te-ts-to);
+		measure(c);
+		System.out.println(te-ts-to);
 	}
 	static void measure(A x) {
 		ts = Native.rdMem(Const.IO_CNT);

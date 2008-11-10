@@ -43,9 +43,11 @@ public class Method2 {
 	}
 	
 	static void measure() {
+//		Native.wrMem(1, Const.IO_WD);
 		ts = Native.rdMem(Const.IO_CNT);
 		foo();		
 		te = Native.rdMem(Const.IO_CNT);		
+//		Native.wrMem(0, Const.IO_WD);
 	}
 	
 	
