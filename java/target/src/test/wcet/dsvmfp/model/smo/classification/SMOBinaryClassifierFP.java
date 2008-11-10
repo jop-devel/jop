@@ -23,6 +23,8 @@ import wcet.dsvmfp.model.smo.kernel.KFP;
  * points. 2. Provide the classification of test points.
  */
 public class SMOBinaryClassifierFP{
+	
+	final static boolean PRINT = false;
 
   static boolean info;
 
@@ -157,7 +159,7 @@ public class SMOBinaryClassifierFP{
    */
   static public boolean mainRoutine() {
     int time = 0;
-    System.out.println("SMO.mainroutine");
+    if (PRINT) System.out.println("SMO.mainroutine");
     time = Native.rd(Const.IO_US_CNT);
     //for(int i=0;i<1000000;i++);
     info = false;
@@ -215,10 +217,12 @@ public class SMOBinaryClassifierFP{
       //break;
     }
     time = Native.rd(Const.IO_US_CNT)-time;
-    System.out.println("Done!");
-    smoInfo();
-    System.out.print("total time:");
-    System.out.println(time);
+    if (PRINT) {
+        System.out.println("Done!");
+        smoInfo();
+        System.out.print("total time:");
+        System.out.println(time);    	
+    }
 
 
     return true;
@@ -1315,11 +1319,12 @@ public class SMOBinaryClassifierFP{
     //System.out.println("---ALIVE1n2---" + n2);
     //System.out.println("---ALIVE1n---" + n);
     //System.out.println("---ALIVE11---");
-    for (int i = 0; i < m; i++) { // @WCA loop=2
+    for (int i = 0; i < m; i++) { // @WCA loop=60
       //System.out.println("---ALIVE1111---" + i);
       if (alpha_fp[i] > 0) {
 		n = xtest.length;
-        while (n != 0) { // @WCA loop=2
+		// MS: is the following bound correct?
+        while (n != 0) { // @WCA loop=2 
           n = n - 1;
           //System.out.println("---ALIVEnin---" + n);
           //System.out.println("---ALIVEnim---" + m);
