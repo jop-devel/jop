@@ -1309,13 +1309,22 @@ public class SMOBinaryClassifierFP{
     int functionalOutput_fp = 0;
     int[][] data_fp_local = data_fp;
     int m = data_fp_local.length;
+    //System.out.println("---ALIVE1m---" + m);
     int n = xtest.length;
+    int n2 = data_fp_local[0].length;
+    //System.out.println("---ALIVE1n2---" + n2);
+    //System.out.println("---ALIVE1n---" + n);
+    //System.out.println("---ALIVE11---");
     for (int i = 0; i < m; i++) { // @WCA loop=2
+      //System.out.println("---ALIVE1111---" + i);
       if (alpha_fp[i] > 0) {
+		n = xtest.length;
         while (n != 0) { // @WCA loop=2
           n = n - 1;
+          //System.out.println("---ALIVEnin---" + n);
+          //System.out.println("---ALIVEnim---" + m);
           //functionalOutput_fp += KFP.kernelX(i);
-          functionalOutput_fp += (data_fp_local[m][n] >> 8) * (xtest[n] >> 8);
+          functionalOutput_fp += (data_fp_local[i][n] >> 8) * (xtest[n] >> 8);
         }
       }
     }

@@ -7,8 +7,26 @@ import wcet.dsvmfp.model.smo.classification.*;
 import wcet.dsvmfp.model.smo.kernel.*;
 
 public class TestSMO {
+  static int m = 60;
+  static int data_fp[][] = new int[m][];
+  static int y_fp[] = new int[m];
+  static int testdata_fp[][] = new int[m][];
+  static int testlabel_fp[] = new int[m];
 
-  public static void start() {
+  // 0 belongs to positive
+  static int errcnt = 0;
+  static int time = 0;
+
+  // Run this to see the whole program run
+  // Notice that only the deplyyRT() method is RT enabled
+  public static void goAll(){
+	init();
+	deployRT();
+	report();
+  }
+
+  // non-real time inialization of SVM
+  public static void init() {
     // DATA
     // int[][] traindata_fp = { {FP.intToFp(1)}, {FP.intToFp(3)},
     // {FP.intToFp(5)} };
@@ -18,11 +36,6 @@ public class TestSMO {
 
     // Training instances
     // Remember to make same as in dsvm.test.smo.ServerData
-    int m = 60;
-    int data_fp[][] = new int[m][];
-    int y_fp[] = new int[m];
-    int testdata_fp[][] = new int[m][];
-    int testlabel_fp[] = new int[m];
     // Change these files for the four setups
     TrainingData1.assign(data_fp, y_fp);
     TestData1.assign(testdata_fp,testlabel_fp);
@@ -36,15 +49,25 @@ public class TestSMO {
     SMOBinaryClassifierFP.setData_fp(data_fp);
     SMOBinaryClassifierFP.setY_fp(y_fp);
 
-    //SMOBinaryClassifierFP.mainRoutine();
+    // Train the model prior to deployment
+    SMOBinaryClassifierFP.mainRoutine();
+  }
 
-    int errcnt = 0;
-    // 0 belongs to positive
-    int time = 0;
+  // Real-time part of SVM
+  // This is the method that is to be called and analyzed from a WCA tool
+  public static void deployRT(){
+
+
+
     for (int i = 0; i < m; i++) { // @WCA loop=2
+
+
       int starttime = Native.rd(Const.IO_US_CNT);
       int t = Native.rd(Const.IO_CNT);
+      //System.out.println("---ALIVE1---" + i);
+      //int smores = SMOBinaryClassifierFP.getFunctionOutputTestPointFP(testdata_fp[i]);;
       int smores = SMOBinaryClassifierFP.getFunctionOutputTestPointFP(testdata_fp[i]);;
+      System.out.println("---ALIVE2---" + i);
       t = Native.rd(Const.IO_CNT) - t;
       time += Native.rd(Const.IO_US_CNT)-starttime;
 //      System.out.print("classification time cycles:");
@@ -57,6 +80,12 @@ public class TestSMO {
       }
       //System.out.println(FP.fpToStr(SMOBinaryClassifierFP.getFunctionOutputTestPointFP(testdata_fp)));
     }
+  }
+
+
+  // Show testual output from the system (non-real time)
+  public static void report()
+  {
     System.out.println("---TESTING---");
     System.out.print("Error cnt:");
     System.out.println(errcnt);
@@ -68,7 +97,6 @@ public class TestSMO {
     System.out.print("per observation time (classifying):");
     System.out.print(time/m);
     System.out.println(" us");
-
   }
 
 }
