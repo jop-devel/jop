@@ -7,6 +7,7 @@ package wcet;
 import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 
+import util.Dbg;
 import wcet.dsvmfp.*;
 
 public class StartDSVM {
@@ -21,6 +22,7 @@ public class StartDSVM {
 		ts = Native.rdMem(Const.IO_CNT);
 		te = Native.rdMem(Const.IO_CNT);
 		to = te-ts;
+		Dbg.initSer();
 		TestSMO.init();
 		measure();
 		if (MEASURE) System.out.println(te-ts-to);
