@@ -72,6 +72,7 @@ public class LiftBenchCMP implements Runnable {
 		
 		
 		bm_array[0] = new BenchLift();
+		
 		for (int i=0; i<sys.nrCpu-1; i++) {
 			bm_array[i+1] = new BenchLift();
 			Runnable r = new LiftBenchCMP(i+1, loop_array[i+1], bm_array[i+1]);
@@ -81,11 +82,11 @@ public class LiftBenchCMP implements Runnable {
 		// Start of measurement
 		start = LowLevel.timeMillis();
 		
-		// Start of CPU0
-		bm_array[0].test(loop_array[0]);
-
 		// Start of all other CPUs
 		sys.signal = 1;
+		
+		// Start of CPU0
+		bm_array[0].test(loop_array[0]);
 		
 		while(true){
 			synchronized(lock)
@@ -102,6 +103,10 @@ public class LiftBenchCMP implements Runnable {
 		System.out.println("StopTime: " + stop);
 		time = stop-start;
 		System.out.println("TimeSpent: " + time);
+		
+		for (int i=0; i<sys.nrCpu; ++i) {
+			System.out.println("CPU "+i+" calculated "+loop_array[i]+" loops");
+		}
 		
 	}	
 	
