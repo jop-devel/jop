@@ -10,8 +10,15 @@ public class StartDSVM {
 
 	public static void main(String[] args) {
 
-		// initialization
-		TestSMO.start();
+		/* Enable one of the following lines */
+
+		// Analyze the RT part
+		TestSMO.deployRT();
+
+		// or
+
+		// run the whole thing
+		//TestSMO.goAll();
 
 	}
 
