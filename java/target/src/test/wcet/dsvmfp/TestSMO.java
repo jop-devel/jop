@@ -59,7 +59,7 @@ public class TestSMO {
 
 
 
-    for (int i = 0; i < m; i++) { // @WCA loop=2
+    for (int i = 0; i < m; i++) { // @WCA loop=60
 
 
       int starttime = Native.rd(Const.IO_US_CNT);
@@ -67,7 +67,7 @@ public class TestSMO {
       //System.out.println("---ALIVE1---" + i);
       //int smores = SMOBinaryClassifierFP.getFunctionOutputTestPointFP(testdata_fp[i]);;
       int smores = SMOBinaryClassifierFP.getFunctionOutputTestPointFP(testdata_fp[i]);;
-      System.out.println("---ALIVE2---" + i);
+      //System.out.println("---ALIVE2---" + i);
       t = Native.rd(Const.IO_CNT) - t;
       time += Native.rd(Const.IO_US_CNT)-starttime;
 //      System.out.print("classification time cycles:");
