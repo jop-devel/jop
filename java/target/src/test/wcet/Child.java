@@ -20,12 +20,23 @@
 
 package wcet;
 
+import com.jopdesign.sys.*;
+
 public class Child extends Parent{
+	static int ts, te, to;
+
 	public static void main(String[] args){
-    measure();    
+	    ts = Native.rdMem(Const.IO_CNT);
+	    te = Native.rdMem(Const.IO_CNT);
+	    to = te-ts;
+	    // WCET with var. block cache: 12279
+	    measure();    
+	    System.out.println(te-ts-to);
   }
   
   public static void measure(){
-    loop();
+      ts = Native.rdMem(Const.IO_CNT);      
+      loop();
+      te = Native.rdMem(Const.IO_CNT);
   }
 }

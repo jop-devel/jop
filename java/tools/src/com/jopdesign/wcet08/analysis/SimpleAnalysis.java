@@ -178,7 +178,7 @@ public class SimpleAnalysis {
 		Map<FlowGraphNode,WcetCost> nodeCosts = buildNodeCostMap(fg,recursiveMode, localHit);
 		CostProvider<FlowGraphNode> costProvider = new MapCostProvider<FlowGraphNode>(nodeCosts);
 		MaxCostFlow<FlowGraphNode,FlowGraphEdge> problem = 
-			localAnalysis.buildWCETProblem(project.getFlowGraph(m), costProvider);
+			localAnalysis.buildWCETProblem(key.toString(),project.getFlowGraph(m), costProvider);
 		logger.debug("Max-Cost-Flow: "+m.getMethod()+", cache mode: "+cacheMode+
 		            ", all methods fit?: "+allFit+ ", cache miss penalty: "+missCost);
 		/* solve ILP */

@@ -19,13 +19,19 @@
 */
 package com.jopdesign.wcet08.ipet;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Vector;
 import java.util.Map.Entry;
 
+import lpsolve.LpSolveException;
+
 import org.jgrapht.DirectedGraph;
 
+import com.jopdesign.wcet08.Config;
 import com.jopdesign.wcet08.ipet.LinearConstraint.ConstraintType;
 import com.jopdesign.wcet08.ipet.LpSolveWrapper.IDProvider;
 
@@ -57,6 +63,7 @@ public class MaxCostFlow<V,E> {
 	private V entry;
 	private V exit;
 	private IDProvider<E> idProvider;
+	private String key;
 
 	/**
 	 * Initialize the MCMF problem with the given graph
@@ -64,7 +71,8 @@ public class MaxCostFlow<V,E> {
 	 * @param entry the source node
 	 * @param exit the sink node
 	 */
-	public MaxCostFlow(DirectedGraph<V,E> g, V entry, V exit) {
+	public MaxCostFlow(String key, DirectedGraph<V,E> g, V entry, V exit) {
+		this.key = key;
 		this.graph = g;
 		this.entry = entry;
 		this.exit  = exit;
@@ -122,7 +130,36 @@ public class MaxCostFlow<V,E> {
 				flowMapOut.put(revMap.get(i+1), Math.round(objVec[i]));
 			}
 		}
+		if(Config.instance().doDumpIPL()) {
+			dumpILP(wrapper);
+		}
 		return sol;
+	}
+	private void dumpILP(LpSolveWrapper<E> wrapper) throws LpSolveException {
+		File outFile = Config.instance().getOutFile(Config.sanitizeFileName(this.key + ".ilp"));
+		wrapper.dumpToFile(outFile);
+		FileWriter fw = null;
+		try {
+			fw = new FileWriter(outFile,true);
+		} catch (IOException e1) {
+			throw new LpSolveException("Failed to open ILP file");
+		}
+		try {
+			fw.append("/* Mapping: \n");
+			for(Entry<E,Integer> e : this.idMap.entrySet()) {
+				fw.append("    "+e.getKey() + " -> C" + e.getValue() + "\n");
+			}
+			fw.append(this.toString());
+			fw.append("*/\n");
+		} catch (IOException e) {
+			throw new LpSolveException("Failed to write to ILP file");
+		} finally {
+			try {
+				fw.close();
+			} catch (IOException e) {
+				throw new LpSolveException("Failed to close ILP file");
+			}
+		}
 	}
 	/* generate a bijective mapping between edges and integers */
 	private void generateMapping() {

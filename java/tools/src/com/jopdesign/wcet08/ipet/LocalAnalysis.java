@@ -22,6 +22,7 @@ package com.jopdesign.wcet08.ipet;
 import java.util.Map;
 import java.util.Vector;
 
+import com.jopdesign.wcet08.Config;
 import com.jopdesign.wcet08.Project;
 import com.jopdesign.wcet08.frontend.FlowGraph;
 import com.jopdesign.wcet08.frontend.FlowGraph.FlowGraphEdge;
@@ -50,15 +51,16 @@ public class LocalAnalysis {
 	/**
 	 * Create a max-cost maxflow problem for the given flow graph graph, based on a 
 	 * given node to cost mapping.
+	 * @param key a unique identifier for the problem (for reporting)
 	 * @param g the graph
 	 * @param nodeWCET cost of nodes
 	 * @return The max-cost maxflow problem
 	 */
 	public MaxCostFlow<FlowGraphNode,FlowGraphEdge> 
-		buildWCETProblem(FlowGraph g,CostProvider<FlowGraphNode> nodeWCET) {
+		buildWCETProblem(String key, FlowGraph g,CostProvider<FlowGraphNode> nodeWCET) {
 		Vector<FlowConstraint> flowCs = computeFlowConstraints(g);
 		MaxCostFlow<FlowGraphNode,FlowGraphEdge> maxflow = 
-			new MaxCostFlow<FlowGraphNode,FlowGraphEdge>(g.getGraph(),g.getEntry(),g.getExit());
+			new MaxCostFlow<FlowGraphNode,FlowGraphEdge>(key,g.getGraph(),g.getEntry(),g.getExit());
 		for(FlowGraphNode n : g.getGraph().vertexSet()) {
 			maxflow.setCost(n, nodeWCET.getCost(n));
 		}

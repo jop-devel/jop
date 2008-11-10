@@ -151,6 +151,19 @@ public class JOPAppInfo extends AppInfo {
 		return getReferenced(method.getCli(),instr);
 	}
 
+	public MethodInfo findStaticImplementation(ClassInfo receiver, String methodRef) {
+		MethodInfo staticImpl = receiver.getMethodInfo(methodRef);
+		if(staticImpl == null) {
+			ClassInfo superRec = receiver;
+			while(staticImpl == null && superRec != null) {
+				staticImpl = superRec.getMethodInfo(methodRef);
+				if(superRec.clazz.getSuperClass() == null) superRec = null;
+				else superRec = superRec.superClass;
+			}
+		}		
+		return staticImpl;
+	}
+
 	/**
 	 * Find possible implementations of the given method in the given class
 	 * <p>
@@ -164,16 +177,7 @@ public class JOPAppInfo extends AppInfo {
 	 */
 	public List<MethodInfo> findImplementations(ClassInfo receiver, String methodname) {
 		Vector<MethodInfo> impls = new Vector<MethodInfo>(3);
-		MethodInfo baseImpl = receiver.getMethodInfo(methodname);
-		if(baseImpl == null) {
-			ClassInfo superRec = receiver;
-			while(baseImpl == null && superRec != null) {
-				baseImpl = superRec.getMethodInfo(methodname);
-				if(superRec.clazz.getSuperClass() == null) superRec = null;
-				else superRec = superRec.superClass;
-			}
-		}
-		tryAddImpl(impls,baseImpl);
+		tryAddImpl(impls,findStaticImplementation(receiver, methodname));
 		for(ClassInfo subty : this.typeGraph.getStrictSubtypes(receiver)) {
 			MethodInfo subtyImpl = subty.getMethodInfo(methodname);
 			tryAddImpl(impls,subtyImpl);

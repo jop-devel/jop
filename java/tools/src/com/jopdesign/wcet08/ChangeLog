@@ -1,0 +1,6 @@
+ChangeLog for wcet08. Please keep current.
+
+10.Nov 08
+---------
+Fixed Bug (Child.java): implementation of a static method may be located in superclass
+Added optional lp dump (on by default)

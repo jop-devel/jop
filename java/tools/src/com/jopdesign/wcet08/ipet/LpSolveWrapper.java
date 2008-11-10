@@ -19,6 +19,7 @@
 */
 package com.jopdesign.wcet08.ipet;
 
+import java.io.File;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.Map.Entry;
@@ -173,5 +174,8 @@ public class LpSolveWrapper<T> {
 			case LessEqual : return LpSolve.LE;
 			default: throw new AssertionError("unexpected constraint type: "+constraintType);
 		}
+	}
+	public void dumpToFile(File outFile) throws LpSolveException {
+		this.lpsolve.writeLp(outFile.getPath());		
 	}
 }

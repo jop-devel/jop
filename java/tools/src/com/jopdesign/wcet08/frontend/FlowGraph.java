@@ -161,7 +161,7 @@ public class FlowGraph {
 			/* if virtual / interface, this method has to be resolved first */
 			if((instr instanceof INVOKEINTERFACE) || (instr instanceof INVOKEVIRTUAL)) {
 			} else {
-				this.impl = referenced.fst().getMethodInfo(referenced.snd());
+				this.impl = appInfo.findStaticImplementation(referenced.fst(),referenced.snd());
 			}
 		}
 		@Override

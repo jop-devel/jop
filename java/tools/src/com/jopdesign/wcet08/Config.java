@@ -110,6 +110,10 @@ public class Config {
 
 	public static final String PROGRAM_DOT = "program-dot";
 
+	/* report triggers */
+	public static final String DUMP_ILP = "dump-ilp";
+	private final static boolean DUMP_ILP_DEFAULT = true;
+	
     /*
 	public static final String DO_UPPAAL = "do-uppaal";
 	public static final String DO_IPET   = "do-ipet";
@@ -368,15 +372,6 @@ public class Config {
 			File sourceFile = new File(sourceDir, ci.clazz.getSourceFileName());
 			if(sourceFile.exists()) return sourceFile;	
 		}
-
-//		for(String sourcePath : this.getSourcePath().split("\\"+File.separator)) {
-//			File sourceDir = new File(sourcePath);
-//			for(String pkgDir : ci.clazz.getPackageName().split("\\.")) {
-//				sourceDir = new File(sourceDir,pkgDir);			
-//			}
-//			File sourceFile = new File(sourceDir, ci.clazz.getSourceFileName());
-//			if(sourceFile.exists()) return sourceFile;	
-//		}
 		throw new FileNotFoundException("Source for "+ci.clazz.getClassName()+" not found.");
 	}
 
@@ -388,6 +383,9 @@ public class Config {
 	}
 	public boolean doGenerateWCETReport() {
 		return this.genWCETReport ;
+	}
+	public boolean doDumpIPL() {
+		return this.getBooleanOption(DUMP_ILP, DUMP_ILP_DEFAULT);
 	}
 	public void setGenerateWCETReport(boolean generateReport) {
 		this.genWCETReport = generateReport;
