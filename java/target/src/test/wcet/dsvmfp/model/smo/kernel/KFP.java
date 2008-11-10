@@ -55,17 +55,17 @@ public class KFP {
 
   // Gauss k(data[i1],data[i2])
   private static int kernelGauss(int i1, int i2) {
-    Dbg.wr("K-SP: ", Native.getSP());
+//    Dbg.wr("K-SP: ", Native.getSP());
     tmp1 = FP.mul(FP.TWO, kernelDot(i1, i2));
-    Dbg.wr("K-SP1: ", Native.getSP());
+//    Dbg.wr("K-SP1: ", Native.getSP());
     tmp2 = FP.sub(FP.add(kernelCache[i1], kernelCache[i2]), tmp1);
-    Dbg.wr("K-SP2: ", Native.getSP());
+//    Dbg.wr("K-SP2: ", Native.getSP());
     tmp1 = FP.mul(gaussConst, tmp2);
-    Dbg.wr("K-SP3: ", Native.getSP());
-    Dbg.wr("tmp1: ", tmp1);
+//    Dbg.wr("K-SP3: ", Native.getSP());
+//    Dbg.wr("tmp1: ", tmp1);
     tmp1 = FP.exp(tmp1);
-    Dbg.wr("K-SP4: ", Native.getSP());
-    Dbg.wr("tmp1: ", tmp1);
+//    Dbg.wr("K-SP4: ", Native.getSP());
+//    Dbg.wr("tmp1: ", tmp1);
     return tmp1;
   }
 

@@ -20,6 +20,8 @@ package wcet.dsvmfp.model.smo.kernel;
  */
 
 public class FP {
+	
+	private static Error overflow = new Error("FP.intToFp:Overflow");
 //	public static int HALF;
 //
 //	public static int ONE;
@@ -94,8 +96,10 @@ public class FP {
 	}
 
 	public static int intToFp(int i) {
-		if (i > FP.ONE)
-			System.out.println("FP.intToFp:Overflow");
+		if (i > FP.ONE) {
+			// System.out.println("FP.intToFp:Overflow");
+			throw overflow;
+		}
 		return i << 16;
 	}
 
