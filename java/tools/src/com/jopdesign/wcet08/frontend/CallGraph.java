@@ -93,12 +93,11 @@ public class CallGraph {
 		private void buildCallGraphEdge(InvokeInstruction inv, boolean isStatic) {
 			Pair<ClassInfo, String> methodRef = appInfo.getReferenced(this.methodNode.method, inv);			
 			if(this.referencedMethods.contains(methodRef)) return;
-			MethodInfo refdMethod = appInfo.findStaticImplementation(methodRef.fst(),methodRef.snd());
-			if(refdMethod == null) {
-				throw new AssertionError("Could not find referenced STATIC method: "+methodRef);
-			}
-			
 			if(isStatic) {
+				MethodInfo refdMethod = appInfo.findStaticImplementation(methodRef.fst(),methodRef.snd());
+				if(refdMethod == null) {
+					throw new AssertionError("Could not find referenced STATIC method: "+methodRef);
+				}				
 				addEdge(this.methodNode, 
 						new MethodImplNode(refdMethod));
 			} else {

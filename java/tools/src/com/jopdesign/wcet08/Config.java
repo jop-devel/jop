@@ -127,8 +127,9 @@ public class Config {
     	{PROJECT_NAME," the name of the project [default: fully qualified name of root method]"},
     	{REPORTDIR_PROPERTY,"if reports should be generated, the directory to write them to [optional]"},
     	{REPORTDIRROOT_PROPERTY,"if reports should be generated, the parent directory to write them to [optional]"},
-    	{TEMPLATEDIR_PROPERTY,"directory with additional velocity templates [optional]"},
-    	{PROGRAM_DOT,"the path to the dot binary if dot should be invoked from java [optional]"}
+    	{TEMPLATEDIR_PROPERTY,"directory with additional velocity templates [optional]"},    	
+    	{PROGRAM_DOT,"the path to the dot binary if dot should be invoked from java [optional]"},
+    	{DUMP_ILP,"dump the lp problems to files [default: yes]"}
     };
 
     /**
