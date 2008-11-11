@@ -106,7 +106,7 @@ public class Packet {
 		synchronized (monitor) {
 			initOk = true;
 			packets = new Packet[CNT];
-			for (int i=0; i<CNT; ++i) { // @WCA loop=8
+			for (int i=0; i<CNT; ++i) { // @WCA loop=2
 				packets[i] = new Packet();
 			}
 		}
@@ -116,7 +116,7 @@ private static void dbg() {
 
 	synchronized (monitor) {
 		Dbg.wr('|');
-		for (int i=0; i<CNT; ++i) { // @WCA loop=8
+		for (int i=0; i<CNT; ++i) { // @WCA loop=2
 			Dbg.wr('0'+packets[i].status);
 		}
 		Dbg.wr('|');
@@ -136,7 +136,7 @@ private static void dbg() {
 			init();
 		}
 		synchronized (monitor) {
-			for (i=0; i<CNT; ++i) { // @WCA loop=8
+			for (i=0; i<CNT; ++i) { // @WCA loop=2
 				if (packets[i].status==type) {
 					break;
 				}
@@ -164,7 +164,7 @@ if (type==FREE) Dbg.wr('!');
 			init();
 		}
 		synchronized (monitor) {
-			for (i=0; i<CNT; ++i) { // @WCA loop=8
+			for (i=0; i<CNT; ++i) { // @WCA loop=2
 				if (packets[i].status==type) {
 					break;
 				}
@@ -193,7 +193,7 @@ if (type==FREE) Dbg.wr('!');
 			init();
 		}
 		synchronized (monitor) {
-			for (i=0; i<CNT; ++i) { // @WCA loop=8
+			for (i=0; i<CNT; ++i) { // @WCA loop=2
 				if (packets[i].status==type && packets[i].interf==s) {
 					break;
 				}
