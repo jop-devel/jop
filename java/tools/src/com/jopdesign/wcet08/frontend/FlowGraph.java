@@ -54,18 +54,31 @@ import com.jopdesign.wcet08.graphutils.TopOrder;
 import com.jopdesign.wcet08.graphutils.TopOrder.BadGraphException;
 
 /**
- * (Control) Flow Graph for WCET analysis.
+ * General purpose control flow graph, for use in WCET analysis. 
  * 
- * The new architecture models the CFG as a list of a basic blocks, and a graph.
- * The graph nodes have a unique id, may point to the basic blocks, and are annotated with
- * additional information (loop colors). The edges are marked (jmp,exit-loop color, backlink)
- * as well.
- * Additionally, we identify head-of-loops, and flow constraints.
+ * <p>
+ * A flow graph is a directed graph with a dedicated entry and exit node.
+ * Nodes include dedicated nodes (like entry, exit, split, join), basic block nodes
+ * and invoke nodes. Edges carry information about the associated (branch) instruction.
+ * The basic blocks associated with the CFG are stored seperately are referenced from
+ * basic block nodes.
+ * </p>
  * 
- * We plan to support loop unpeeling and node folding.
- *
- * The graph can be used for generating IPET programs, UPPAAL models, for cache analysis, etc.
- *
+ * <p>
+ * This class supports 
+ * <ul>
+ *   <li/> loop detection
+ *   <li/> extracting annotations from the source code
+ *   <li/> resolving virtual invokations (possible, as all methods are known at compile time)
+ * </ul></p>
+ * 
+ * <p>
+ * Planned:
+ * <ul>
+ *   <li/> loop unpeeling
+ *   <li/> folding
+ * </ul></p>
+ * *
  * @author Benedikt Huber (benedikt.huber@gmail.com)
  *
  */
@@ -231,14 +244,22 @@ public class FlowGraph {
 	 * ------
 	 */
 	private int idGen = 0;
-	private FlowGraphNode entry, exit;
-	private Vector<BasicBlock> blocks;
-	private DirectedGraph<FlowGraphNode, FlowGraphEdge> graph;
-	private TopOrder<FlowGraphNode, FlowGraphEdge> topOrder;
-	private LoopColoring<FlowGraphNode, FlowGraphEdge> loopColoring;
-	private HashMap<FlowGraphNode, Integer> annotations;
+
+	/* linking to java */
 	private MethodInfo  methodInfo;
 	private JOPAppInfo appInfo;
+	private Vector<BasicBlock> blocks;
+	
+	/* graph */
+	private FlowGraphNode entry, exit;
+	private DirectedGraph<FlowGraphNode, FlowGraphEdge> graph;
+
+	/* annotations */
+	private HashMap<FlowGraphNode, Integer> annotations;
+	
+	/* analysis stuff, needs to be reevaluted when graph changes */
+	private TopOrder<FlowGraphNode, FlowGraphEdge> topOrder = null;
+	private LoopColoring<FlowGraphNode, FlowGraphEdge> loopColoring = null;
 	
 	/**
 	 * Build a new flow graph for the given method
@@ -249,10 +270,12 @@ public class FlowGraph {
 		this.methodInfo = method;
 		this.appInfo = (JOPAppInfo) method.getCli().appInfo;
 		createFlowGraph(method);
-		analyseFlowGraph();
+		check();
 	}
+
 	/* worker: create the flow graph */
 	private void createFlowGraph(MethodInfo method) {
+		JOPAppInfo.logger.info("creating flow graph for: "+method);
 		blocks = BasicBlock.buildBasicBlocks(method);
 		Hashtable<Integer,BasicBlockNode> nodeTable =
 			new Hashtable<Integer, BasicBlockNode>();
@@ -292,7 +315,7 @@ public class FlowGraph {
 							  nodeTable.get(target.target.getPosition()), 
 							  new FlowGraphEdge(target.edgeKind));
 			}
-		}		
+		}	
 	}
 	
 	/**
@@ -304,9 +327,8 @@ public class FlowGraph {
 	 */
 	public void loadAnnotations(SortedMap<Integer,Integer> wcaMap) throws BadAnnotationException {
 		this.annotations = new HashMap<FlowGraphNode, Integer>();
-		for(Entry<FlowGraphNode,Vector<FlowGraphNode>> e : 
-			loopColoring.getHeadOfLoops().entrySet()) {
-			BasicBlockNode headOfLoop = (BasicBlockNode) e.getKey();
+		for(FlowGraphNode n : this.getHeadOfLoops()) {
+			BasicBlockNode headOfLoop = (BasicBlockNode) n;
 			BasicBlock block = headOfLoop.getCodeBlock();
 			// search for loop annotation in range
 			int lb = (Integer) block.getFirstInstruction().getAttribute(InstrField.LINE_NUMBER);
@@ -324,8 +346,9 @@ public class FlowGraph {
 	}
 	/**
 	 * resolve all virtual invoke nodes, and replace them by actual implementations
+	 * @throws BadGraphException If the flow graph analysis (post replacement) fails
 	 */
-	public void resolveVirtualInvokes() {
+	public void resolveVirtualInvokes() throws BadGraphException {
 		Vector<InvokeNode> virtualInvokes = new Vector<InvokeNode>();
 		/* find virtual invokes */
 		for(FlowGraphNode n : this.graph.vertexSet()) {
@@ -370,73 +393,138 @@ public class FlowGraph {
 			}
 			graph.removeVertex(inv);
 		}
+		this.invalidate();
+		this.check();
 	}	
 
-	/* worker: run loop detection */
-	private void analyseFlowGraph() throws BadGraphException {
+	private void check() throws BadGraphException {
 		TopOrder.checkConnected(graph);
-		topOrder = new TopOrder<FlowGraphNode, FlowGraphEdge>(this.graph, this.entry);
-		loopColoring = new LoopColoring<FlowGraphNode, FlowGraphEdge>(this.graph,topOrder);
+		TopOrder.checkIsExitNode(graph, this.exit);
+		List<FlowGraphNode> deads = TopOrder.findDeadNodes(graph,this.entry);
+		if(deads.size() > 0) {
+			JOPAppInfo.logger.error("Found dead code - this most likely indicates a bug. "+deads);
+		}
 	}
-
+	private void invalidate() {
+		this.topOrder = null;
+		this.loopColoring = null;
+	}
+	/* flow graph should have been checked before analyseFlowGraph is called */
+	private void analyseFlowGraph() {
+		try {
+			topOrder = new TopOrder<FlowGraphNode, FlowGraphEdge>(this.graph, this.entry);
+			loopColoring = new LoopColoring<FlowGraphNode, FlowGraphEdge>(this.graph,topOrder);
+		} catch (BadGraphException e) {
+			throw new Error("[FATAL] Analyse flow graph failed ",e);
+		}
+	}
+	
+	/**
+	 * get the method this flow graph models
+	 * @return the MethodInfo the flow graph was build from
+	 */
 	public MethodInfo getMethodInfo() {
 		return this.methodInfo;
 	}
 
 	/**
-	 * @return the (dedicated) entry node of the flow graph 
+	 * the (dedicated) entry node of the flow graph 
+	 * @return 
 	 */
 	public FlowGraphNode getEntry() {
 		return entry;
 	}
 	/**
-	 * @return the (dedicated) exit node of the flow graph
+	 * the (dedicated) exit node of the flow graph
+	 * @return 
 	 */
 	public FlowGraphNode getExit() {
 		return exit;
 	}
 	/**
-	 * @return the underlying graph datastructure
+	 * Get the actual flow graph
+	 * @return 
 	 */
 	public DirectedGraph<FlowGraphNode, FlowGraphEdge> getGraph() {
 		return graph;
 	}
+	
 	/**
-	 * @return the loop coloring of the flow graph
+	 * retrieve the loop bound (annotations)
+	 * @return a map from head-of-loop nodes to their loop bounds
+	 */
+	public Map<FlowGraphNode, Integer> getLoopBounds() {
+		return this.annotations;
+	}
+
+	/**
+	 * Calculate (cached) the "loop coloring" of the flow graph.
+	 * 
+	 * @return a loop coloring assigning each flowgraph node the set of loops it
+	 * participates in 
 	 */
 	public LoopColoring<FlowGraphNode, FlowGraphEdge> getLoopColoring() {
+		if(loopColoring == null) analyseFlowGraph();
 		return loopColoring;
 	}
-	
+	/**
+	 * Calculate (cached) the "head of loops" of the flow graph
+	 * 
+	 * @return the set of "head of loop" nodes
+	 */
 	public Collection<FlowGraphNode> getHeadOfLoops() {
+		if(loopColoring == null) analyseFlowGraph();
 		return this.loopColoring.getHeadOfLoops().keySet();
 	}
+	/**
+	 * check wheter the given basic block node is a "head of loop"
+	 * @param n the node to check
+	 * @return
+	 */
 	public boolean isHeadOfLoop(BasicBlockNode n) {
+		if(loopColoring == null) analyseFlowGraph();
 		return this.loopColoring.getHeadOfLoops().containsKey(n);
 	}
-	
+	/**
+	 * Get "back edges" to the given flow graph node
+	 * @param hol a "head of loop" node 
+	 * @return
+	 */
 	public Collection<FlowGraphEdge> getBackEdgesTo(FlowGraphNode hol) {
+		if(loopColoring == null) analyseFlowGraph();
 		Vector<FlowGraphEdge> edges = new Vector<FlowGraphEdge>();
 		for(FlowGraphNode n : this.loopColoring.getHeadOfLoops().get(hol)) {
 			edges.add(graph.getEdge(n, hol));
 		}
 		return edges;
 	}
+	/**
+	 * test whether the given edge is a "back-edge"
+	 * @param edge the edge to test
+	 * @return
+	 */
 	public boolean isBackEdge(FlowGraphEdge edge) {
+		if(topOrder == null) analyseFlowGraph();
 		return this.topOrder.getBackEdges().contains(edge);
 	}
 
 	public Set<FlowGraphNode> getLoopEntrySet(FlowGraphEdge edge) {
+		if(loopColoring == null) analyseFlowGraph();
+		/* no loops */
 		if(this.loopColoring.getHeadOfLoops().isEmpty()) return new HashSet<FlowGraphNode>();
+		
 		Set<FlowGraphNode> setSource = getLoopColor(graph.getEdgeSource(edge));
 		Set<FlowGraphNode> setTarget = new TreeSet<FlowGraphNode>(getLoopColor(graph.getEdgeTarget(edge)));
 		setTarget.removeAll(setSource);
 		return setTarget;
 	}
 	public Collection<FlowGraphEdge> getExitEdgesOf(FlowGraphNode hol) {
+		if(loopColoring == null) analyseFlowGraph();
 		return this.loopColoring.getExitEdges().get(hol);
 	}
 	public Set<FlowGraphNode> getLoopExitSet(FlowGraphEdge edge) {
+		if(loopColoring == null) analyseFlowGraph();
+		/* no loops */
 		if(this.loopColoring.getHeadOfLoops().isEmpty()) return new HashSet<FlowGraphNode>();
 		Set<FlowGraphNode> setSource = new TreeSet<FlowGraphNode>(getLoopColor(graph.getEdgeSource(edge)));
 		Set<FlowGraphNode> setTarget = getLoopColor(graph.getEdgeTarget(edge));
@@ -444,18 +532,19 @@ public class FlowGraph {
 		return setSource;
 	}
 	public Set<FlowGraphNode> getLoopColor(FlowGraphNode node) {
+		if(loopColoring == null) analyseFlowGraph();
 		if(this.loopColoring.getHeadOfLoops().isEmpty()) return new HashSet<FlowGraphNode>();
 		return loopColoring.getLoopColors().get(node);
 	}
-	public Map<FlowGraphNode, Integer> getLoopBounds() {
-		return this.annotations;
-	}
+	
 	public void exportDOT(File file) {
 		exportDOT(file,null,null);
 	}
 
-	
-	
+	/**
+	 * Get the length of the implementation
+	 * @return the length in bytes
+	 */
 	public int getNumberOfBytes() {
 		int sum = 0;
 		for(BasicBlock bb : this.blocks) {
@@ -487,5 +576,8 @@ public class FlowGraph {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}				
+	}
+	@Override public String toString() {
+		return super.toString()+this.methodInfo.getFQMethodName();
 	}
 }

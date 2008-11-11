@@ -19,13 +19,16 @@
 */
 package com.jopdesign.wcet08.graphutils;
 
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Set;
 import java.util.Vector;
 
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.alg.BellmanFordShortestPath;
 import org.jgrapht.alg.ConnectivityInspector;
+import org.jgrapht.alg.DijkstraShortestPath;
 import org.jgrapht.traverse.DepthFirstIterator;
 
 import com.jopdesign.wcet08.frontend.FlowGraph.FlowGraphEdge;
@@ -150,17 +153,56 @@ public class TopOrder<V,E> {
 			}
 		}
 	}
+	
 	/**
-	 * Check wheter the given graph is connected <code>|weakly connected components| = 1</code>
+	 * Check wheter the given graph is (weakly) connected.
+	 * <p> This is the case if
+	 *  <code>|weakly connected components| = 1</code>
+	 * </p>
 	 * @param graph
-	 * @throws BadGraphException
+	 * @throws BadGraphException if the graph is empty, or there is more than one weakly connected component
 	 */
-	public static void checkConnected(DirectedGraph<FlowGraphNode, FlowGraphEdge> graph) 
+	public static <V,E> void checkConnected(DirectedGraph<V,E> graph) 
 		throws BadGraphException {
-		int comps = new ConnectivityInspector<FlowGraphNode, FlowGraphEdge>(graph).connectedSets().size(); 
-		if(comps != 1) {
+		List<Set<V>> comps = new ConnectivityInspector<V,E>(graph).connectedSets(); 
+		if(comps.size() != 1) {
 			throw new BadGraphException("Expected graph with one component, but the given one has "+comps);
 		}
 	}
-
+	/**
+	 * Find nodes which aren't reachable from <code>entry</code>.
+	 * <p> A nodes is unreachable with respect to <code>entry</code>, if there is no path
+	 * from <code>entry</code> to <code>n</code>.
+	 * </p>
+	 * @param graph the given graph
+	 * @param entry the entry node
+	 * @return a list of unreachable nodes
+	 */
+	public static <V,E> List<V> findDeadNodes(DirectedGraph<V,E> graph, V entry) {
+		ConnectivityInspector<V, E> ci = new ConnectivityInspector<V,E>(graph);
+		Vector<V> deads = new Vector<V>();
+		for(V node : graph.vertexSet()) {
+			if(node != entry && ! ci.pathExists(entry, node)) {
+				deads .add(node);
+			}
+		}
+		return deads;
+	}
+	/**
+	 * Check that the given node is an exit node of the given flow graph.
+	 * <p>
+	 * That is, for all nodes n, there has to be a path from entry n to exit.
+	 * </p>
+	 * @param graph the flow graph
+	 * @param exit the dedicated "exit" node
+	 * @throws BadGraphException if there is a node n which has isn't connected to exit 
+	 */
+	public static <V,E> void checkIsExitNode(DirectedGraph<V,E> graph, V exit) throws BadGraphException {
+		ConnectivityInspector<V, E> ci = new ConnectivityInspector<V,E>(graph);
+		for(V node : graph.vertexSet()) {
+			if(node != exit && ! ci.pathExists(node, exit)) {
+				throw new BadGraphException("checkIsExitNode: There is no path from "+node+" to exit");				
+			}
+		}
+	}
 }

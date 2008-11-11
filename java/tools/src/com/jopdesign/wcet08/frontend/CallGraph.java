@@ -19,6 +19,7 @@
 */
 package com.jopdesign.wcet08.frontend;
 
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.HashMap;
@@ -129,16 +130,20 @@ public class CallGraph {
 		 */
 		public abstract MethodInfo getMethodImpl();
 		/**
-		 * build the subgraph rooted at the given callgraph node 
+		 * build the subgraph rooted at the given callgraph node.
+		 * Only needs to be called once for each node.
 		 */
 		public abstract void build();
 
 		protected void buildRecursive() {
 			for(DefaultEdge e : callGraph.outgoingEdgesOf(this)) {
+				CallGraphNode target = callGraph.getEdgeTarget(e);
+				if(hasBeenBuild(target)) continue;
 				callGraph.getEdgeTarget(e).build();
 			}
 		}
 	}
+
 	class MethodImplNode extends CallGraphNode {
 		private MethodInfo method;
 		public MethodImplNode(MethodInfo m) { 
@@ -157,6 +162,7 @@ public class CallGraph {
 				   false;
 		}
 		@Override public void build() {
+			markBuild(this);
 			if(this.method.getCode() == null) return; // no impl available
 			InstructionList il = new InstructionList(this.method.getCode().getCode());
 			CallGraphBuilderVisitor cgBuilderVisitor = new CallGraphBuilderVisitor(this); 
@@ -187,6 +193,7 @@ public class CallGraph {
 				   false;
 		}
 		@Override public void build() {
+			markBuild(this);
 			for(MethodInfo mImpl : appInfo.findImplementations(receiver,method)) {	
 				addEdge(this, new MethodImplNode(mImpl));
 			}
@@ -207,11 +214,21 @@ public class CallGraph {
 	private JOPAppInfo appInfo;
 	private MethodImplNode rootNode;
 	private DirectedGraph<CallGraphNode, DefaultEdge> callGraph;
-	private Vector<MethodNotFoundException> errors;
+
 	private HashSet<ClassInfo> classInfos;
 	private HashMap<Pair<ClassInfo,String>,CallGraphNode> methodInfos;
+
 	private TopOrder<CallGraphNode,DefaultEdge> topOrder;
 
+	/* building */
+	private Vector<MethodNotFoundException> errors;
+	private HashSet<CallGraphNode> buildSet;
+	private boolean hasBeenBuild(CallGraphNode n) {
+		return this.buildSet.contains(n);
+	}
+	private void markBuild(CallGraphNode n) {
+		this.buildSet.add(n);
+	}
 	/**
 	 * Initialize a CallGraph object.
 	 */
@@ -239,6 +256,7 @@ public class CallGraph {
 	}
 	private void build() throws MethodNotFoundException {
 		this.errors = new Vector<MethodNotFoundException>();
+		this.buildSet = new HashSet<CallGraphNode>();
 		this.rootNode.build();
 		if(! errors.isEmpty()) throw errors.get(0);
 		/* Compute set of classes and methods */
@@ -252,7 +270,10 @@ public class CallGraph {
 		}		
 		CycleDetector<CallGraphNode, DefaultEdge> cycDetect = 
 			new CycleDetector<CallGraphNode, DefaultEdge>(callGraph);
-		if(cycDetect.detectCycles()) throw new AssertionError("Cyclic callgraph");
+		if(cycDetect.detectCycles()) {
+			throw new AssertionError("Cyclic callgraph. Vertices participating in cycles: "+
+									 cycDetect.findCycles());
+		}
 	}
 
 	public void exportDOT(Writer w) throws IOException {

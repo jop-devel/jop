@@ -83,12 +83,15 @@ public class SimpleAnalysis {
 		private long nonLocalCost = 0;
 		public WcetCost() { }
 		public long getCost() { return nonLocalCost+getLocalAndCacheCost(); }
+		
 		public long getLocalCost() { return localCost; }
 		public long getCacheCost() { return cacheCost; }
 		public long getNonLocalCost() { return nonLocalCost; }
+		
 		public void addLocalCost(long c) { this.localCost += c; }
 		public void addNonLocalCost(long c) { this.nonLocalCost += c; }
 		public void addCacheCost(long c) { this.cacheCost += c; }
+		
 		public long getLocalAndCacheCost() { return this.localCost + this.cacheCost; }
 		@Override public String toString() {
 			if(getCost() == 0) return "0";
@@ -193,7 +196,7 @@ public class SimpleAnalysis {
 		Map<FlowGraphNode,Long> nodeFlow = new Hashtable<FlowGraphNode, Long>();
 		DirectedGraph<FlowGraphNode, FlowGraphEdge> graph = fg.getGraph();
 		for(FlowGraphNode n : fg.getGraph().vertexSet()) {
-			if(graph.inDegreeOf(n) == 0) nodeFlow.put(n, 1L); // ENTRY
+			if(graph.inDegreeOf(n) == 0) nodeFlow.put(n, 0L); // ENTRY and DEAD CODE (no flow)
 			else {
 				long flow = 0;
 				for(FlowGraphEdge inEdge : graph.incomingEdgesOf(n)) {

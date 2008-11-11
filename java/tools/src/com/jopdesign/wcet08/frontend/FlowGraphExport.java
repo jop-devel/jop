@@ -111,7 +111,11 @@ public class FlowGraphExport {
 			}			
 			ht.put("label",nodeInfo.toString());
 			if(! flowGraph.getHeadOfLoops().isEmpty()) {
-				ht.put("peripheries",""+(1+flowGraph.getLoopColoring().getLoopColors().get(n).size()));
+				if(flowGraph.getLoopColoring().getLoopColors().get(n) == null) {
+					JOPAppInfo.logger.error("No loop coloring for node "+n+" (dead code?)");
+				} else {
+					ht.put("peripheries",""+(1+flowGraph.getLoopColoring().getLoopColors().get(n).size()));
+				}
 			}
 		}		
 	}

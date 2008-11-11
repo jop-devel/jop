@@ -39,22 +39,6 @@ import com.jopdesign.wcet08.analysis.SimpleAnalysis;
 import com.jopdesign.wcet08.analysis.SimpleAnalysis.WcetMode;
 import com.jopdesign.wcet08.report.Report;
 
-/* TODO List:
- * 
- * [1] Support java implemented bytecodes
- *
- * [2] Add UPPAAL simluation (needs to be ported)
- *
- * [3] Check for unsupported bytecodes / features rigiously:
- * It would really be a good idea to first check wheter the code uses unsupported features
- * (currently: Exceptions, invokespecial, invokevirtual, invokeinterface, JSR, sync stuff ...)
- * and be explicit about the supported set
- * 
- * [3] Should we eliminate the velocity library ? It is rather heavyweight, and we don't use too
- * many features of it. Plus the report stuff is rather ad-hoc and should be cleaned up.
- *
- */
-
 /**
  * WCET Analysis for JOP - Executable
  */

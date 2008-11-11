@@ -1,6 +1,17 @@
-ChangeLog for wcet08. Please keep current.
+(User) ChangeLog for wcet08. Please keep current.
 
-10.Nov 08
+Nov 08
 ---------
-- Fixed Bug (Child.java): implementation of a static method may be located in superclass
-- Added optional lp dump (-dump-ilp yes|no, on by default)
+- 11/11/08: Callgraph: 
+            Make sure a subgraph is only build once (fixes bug in presence of cyclic callgraphs).
+- 11/11/08: Flowgraph:
+		    * In flowgraph, graph-modifying operations now result in (lazy) re-analysis
+            * Addedd new consistency checks: find dead code (currently non-fatal), 
+              find stuck code (fatal)
+            * Updated documentation
+
+- 10/11/08: Bugfix (Child.java): 
+			Implementation of a static method may be located in superclass.
+			
+- 10/11/08: Added optional dump of LP files (via lp_solve)
+			(-dump-ilp yes|no, on by default)

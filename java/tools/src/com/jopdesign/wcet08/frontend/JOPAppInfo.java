@@ -31,6 +31,8 @@ import org.apache.bcel.generic.INVOKESTATIC;
 import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InvokeInstruction;
 import org.apache.bcel.util.ClassPath;
+import org.apache.log4j.Logger;
+
 import com.jopdesign.build.AppInfo;
 import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.InsertSynchronized;
@@ -50,6 +52,8 @@ import com.jopdesign.wcet08.report.InvokeDot;
  */
 public class JOPAppInfo extends AppInfo {
 	private static final long serialVersionUID = 2L;
+	/* package logger */
+	public static final Logger logger = Logger.getLogger(JOPAppInfo.class.getPackage().toString());
 	/**
 	 * Raised when we cannot find / fail to load a referenced method.
 	 */
@@ -212,7 +216,7 @@ public class JOPAppInfo extends AppInfo {
 
 	/**
 	 * Get the (actual) opcode of a statement, as executed on JOP
-	 * FIXME: handle java-implemented bytecodes [1]
+	 * FIXME: handle java-implemented bytecodes [WCET_JAVA_BYTECODES]
 	 * @param instr the BCEL instructions
 	 * @return
 	 */

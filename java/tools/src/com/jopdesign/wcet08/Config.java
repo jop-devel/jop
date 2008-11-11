@@ -386,7 +386,7 @@ public class Config {
 		return this.genWCETReport ;
 	}
 	public boolean doDumpIPL() {
-		return this.getBooleanOption(DUMP_ILP, DUMP_ILP_DEFAULT);
+		return this.hasReportDir() && this.getBooleanOption(DUMP_ILP, DUMP_ILP_DEFAULT);
 	}
 	public void setGenerateWCETReport(boolean generateReport) {
 		this.genWCETReport = generateReport;
