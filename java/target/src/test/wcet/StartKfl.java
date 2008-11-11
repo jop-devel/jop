@@ -27,6 +27,10 @@ import wcet.kflapp.Mast;
 
 public class StartKfl {
 
+	/**
+	 * Set to false for the WCET analysis, true for measurement
+	 */
+	final static boolean MEASURE = false;
 	static int ts, te, to;
 
 
@@ -47,13 +51,13 @@ public class StartKfl {
 			if (val<min) min = val;
 			if (val>max) max = val;
 		}
-		System.out.println(min);
-		System.out.println(max);
+		if (MEASURE) System.out.println(min);
+		if (MEASURE) System.out.println(max);
 	}
 	static void measure() {
-		ts = Native.rdMem(Const.IO_CNT);
+		if (MEASURE) ts = Native.rdMem(Const.IO_CNT);
 		Mast.loop();
-		te = Native.rdMem(Const.IO_CNT);		
+		if (MEASURE) te = Native.rdMem(Const.IO_CNT);		
 	}
 			
 }

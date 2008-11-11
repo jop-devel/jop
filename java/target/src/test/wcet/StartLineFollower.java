@@ -26,6 +26,10 @@ import com.jopdesign.sys.*;
 
 public class StartLineFollower {
 
+	/**
+	 * Set to false for the WCET analysis, true for measurement
+	 */
+	final static boolean MEASURE = false;
 	static int ts, te, to;
 
 	/**
@@ -41,13 +45,13 @@ public class StartLineFollower {
 		// WCET measured: x
 		// WCET analysed: y
 		measure();
-		System.out.println(te-ts-to);
+		if (MEASURE) System.out.println(te-ts-to);
 	}
 	
 	static void measure() {
-		ts = Native.rdMem(Const.IO_CNT);
+		if (MEASURE) ts = Native.rdMem(Const.IO_CNT);
 		LineFollower.loop();
-		te = Native.rdMem(Const.IO_CNT);		
+		if (MEASURE) te = Native.rdMem(Const.IO_CNT);		
 	}
 	
 }

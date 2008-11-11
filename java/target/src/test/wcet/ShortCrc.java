@@ -24,6 +24,10 @@ import com.jopdesign.sys.*;
 
 public class ShortCrc {
 
+	/**
+	 * Set to false for the WCET analysis, true for measurement
+	 */
+	final static boolean MEASURE = false;
 	static int ts, te, to;
 
 	/**
@@ -37,6 +41,7 @@ public class ShortCrc {
 		// measurement + return takes 22+22+21=65 cycles
 		// WCET measured: 1442/1552
 		// WCET analysed: 1685-65=1620
+		// Those numbers are fomr 2006
 		measure(123);
 		int min = 0x7fffffff;
 		int max = 0;
@@ -48,8 +53,8 @@ public class ShortCrc {
 			if (time<min) min = time;
 			if (time>max) max = time;
 		}
-		System.out.println(min);
-		System.out.println(max);
+		if (MEASURE) System.out.println(min);
+		if (MEASURE) System.out.println(max);
 
 	}
 	
@@ -66,7 +71,7 @@ public class ShortCrc {
 */
 	
 	static int measure(int val) {
-		ts = Native.rdMem(Const.IO_CNT);
+		if (MEASURE) ts = Native.rdMem(Const.IO_CNT);
 		int reg = -1;
 
 		for (int i=0; i<32; ++i) { // @WCA loop=32
@@ -76,7 +81,7 @@ public class ShortCrc {
 			if ((reg & 0x100) != 0) reg ^= 0x07;
 		}
 		reg &= 0xff;
-		te = Native.rdMem(Const.IO_CNT);		
+		if (MEASURE) te = Native.rdMem(Const.IO_CNT);		
 		return reg;
 	}
 	

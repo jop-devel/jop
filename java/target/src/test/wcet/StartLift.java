@@ -30,6 +30,10 @@ import com.jopdesign.sys.Native;
 
 public class StartLift {
 
+	/**
+	 * Set to false for the WCET analysis, true for measurement
+	 */
+	final static boolean MEASURE = false;
 	private static LiftControl ctrl;
 	private static TalIo io;
 
@@ -57,13 +61,13 @@ public class StartLift {
 			if (val<min) min = val;
 			if (val>max) max = val;
 		}
-		System.out.println(min);
-		System.out.println(max);
+		if (MEASURE) System.out.println(min);
+		if (MEASURE) System.out.println(max);
 	}
 	static void measure() {
-		ts = Native.rdMem(Const.IO_CNT);
+		if (MEASURE) ts = Native.rdMem(Const.IO_CNT);
 		loop();
-		te = Native.rdMem(Const.IO_CNT);		
+		if (MEASURE) te = Native.rdMem(Const.IO_CNT);		
 	}
 	
 	static void loop() {
