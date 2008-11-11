@@ -289,7 +289,7 @@ public class Triac {
 		int i, val;
 
 		val = JopSys.rd(BBSys.IO_IADC);
-		for (i=0; i<3; ++i) { // @WCA loop=4
+		for (i=0; i<3; ++i) { // @WCA loop=3
 			curr[i] = val & 1023;
 			val = val>>10;
 		}
@@ -303,7 +303,7 @@ public class Triac {
 */
 		if (Mast.state==BBSys.MS_UP || Mast.state==BBSys.MS_DOWN) {
 
-			for (i=0; i<3; ++i) { // @WCA loop=4
+			for (i=0; i<3; ++i) { // @WCA loop=3
 				val = curr[i];
 				if (val<STROM_THRES) {					// kein Strom
 					stop();
@@ -322,7 +322,7 @@ public class Triac {
 
 		} else {
 
-			for (i=0; i<3; ++i) { // @WCA loop=4
+			for (i=0; i<3; ++i) { // @WCA loop=3
 				val = curr[i];
 				if (val>=STROM_THRES) {					// es fliesst Strom in Ruhestellung
 					stop();

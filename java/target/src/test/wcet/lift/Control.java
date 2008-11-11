@@ -98,7 +98,7 @@ public abstract class Control {
 	
 	public void setVals() {
 		int val = 0;
-		for (int i=3; i>=0; --i) { // @WCA loop=3
+		for (int i=3; i>=0; --i) { // @WCA loop=4
 			val <<= 1;
 			val |= io.out[i] ? 1 : 0;
 		}
