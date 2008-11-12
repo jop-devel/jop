@@ -559,7 +559,7 @@ wcet:
 	-mkdir $(TARGET)/tmp
 	java $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.build.WcetPreprocess \
 		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/tmp $(MAIN_CLASS)
-	java -Xss16M $(TOOLS_CP) -Dlatex=true -Ddot=true -Djline=false -Dlatex=true -Dls=true com.jopdesign.wcet.WCETAnalyser \
+	java -Xss16M $(TOOLS_CP) -Dlatex=true -Ddot=true -Djline=false -Dlatex=true -Ddfa=false -Dls=true com.jopdesign.wcet.WCETAnalyser \
 		-mm $(WCET_METHOD) \
 		-cp $(TARGET)/tmp -o $(TARGET)/wcet/$(P3)wcet.txt -sp $(TARGET_SOURCE) $(MAIN_CLASS)
 	-rm -rf $(TARGET)/tmp
