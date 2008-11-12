@@ -20,6 +20,10 @@
 
 package wcet;
 
+import util.Timer;
+
+import com.jopdesign.io.IOFactory;
+import com.jopdesign.io.SysDevice;
 import com.jopdesign.sys.*;
 
 /**
@@ -29,34 +33,27 @@ import com.jopdesign.sys.*;
  */
 public class ArrayIssue {
 
-	int[][] block = { {99, 104}, {109, 113} };
+	/**
+	 * Set to false for the WCET analysis, true for measurement
+	 */
+	final static boolean MEASURE = false;
+	static int ts, te, to;
+	static int a[] = new int[1];
 
 	public static void main(String[] args) {
-		ArrayIssue ai = new ArrayIssue();
-		ai.fdct(ai.block);
+		
+		ts = Native.rdMem(Const.IO_CNT);
+		te = Native.rdMem(Const.IO_CNT);
+		to = te-ts;
+		measure();
+		if (MEASURE) System.out.println(te-ts-to);
 	}
 	
-	void fdct(int[][] block) {
-	     int t1, diff;
-	     t1 = Native.rd(Const.IO_CNT);
-	     t1 = Native.rd(Const.IO_CNT)-t1;
-	     diff = t1;
-
-	     JVMHelp.wr('*');
-	     
-	     int[] ia = new int[1];
-	     
-	     t1 = Native.rd(Const.IO_CNT);
-//	     int tmp0 = block[0][0];
-//	     block[0][0] = 0;
-	     ia[0] = 0;
-
-//	     int x[] = block[0];
-//	     int i = x[0];
-	     
-	     t1 = Native.rd(Const.IO_CNT)-t1;
-	     JVMHelp.wr('-');
-	     System.out.println(t1-diff);
-	     
+	static void measure() {
+		if (MEASURE) ts = Native.rdMem(Const.IO_CNT);
+		SysDevice sys = IOFactory.getFactory().getSysDevice();
+		sys.wd = 1;
+		a[0] = 0;
+		if (MEASURE) te = Native.rdMem(Const.IO_CNT);		
 	}
 }
