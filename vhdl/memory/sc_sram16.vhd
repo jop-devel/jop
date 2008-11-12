@@ -84,7 +84,7 @@ architecture rtl of sc_mem_if is
 --
 	type state_type		is (
 							idl, rd1_h, rd2_h, rd1_l, rd2_l,
-							wr1_h, wr2_h, wr_idl, wr1_l, wr2_l
+							wr1_h, wr2_h, wr1_l, wr2_l
 						);
 	signal state 		: state_type;
 	signal next_state	: state_type;
@@ -224,11 +224,8 @@ begin
 		
 		-- last write state
 		when wr2_h =>
-			next_state <= wr_idl;
-			
-		when wr_idl =>
 			next_state <= wr1_l;
-		
+			
 		-- WS write state low word
 		when wr1_l =>
 			if wait_state=2 then
@@ -318,11 +315,8 @@ begin
 			
 			-- high word last write state	
 			when wr2_h =>
-				ram_ncs <= '0';
-
-			when wr_idl =>
-				ram_ncs <= '1';
 				dout_ena <= '1';
+				ram_ncs <= '0';
 				inc_addr <= '1';
 				wr_low <= '1';
 
@@ -332,6 +326,7 @@ begin
 				ram_ncs <= '0';
 				
 			when wr2_l =>
+				dout_ena <= '1';
 				ram_ncs <= '0';
 
 		end case;
@@ -374,7 +369,7 @@ begin
 			end if;
 		end if;
 			
-		if state=wr_idl then
+		if state=wr2_h then
 			wait_state <= to_unsigned(ram_ws_wr+1, 4);
 			if ram_ws_wr<3 then
 				cnt <= to_unsigned(ram_ws_wr+1, 2);

@@ -251,6 +251,11 @@ the wait sates.
 \paragraph{20081010} MS: correct array access for fast on-chip memory
 (\code{mem\sc.vhd}).
 
+\paragraph{20081112} MS: error correction in \code{sc\_sram16.vhd}: data enable also in last
+state of write, removed idle state between two write. Same error is
+still in \code{sc\_sram8.vhd} -- could be the issue on the Actel
+board!
+
 \subsection{Software}
 
 \paragraph{20050620}
