@@ -119,10 +119,10 @@ EXT_CP=-classpath java/lib/bcel-5.1.jar$(S)java/lib/jakarta-regexp-1.3.jar$(S)ja
 #EXT_CP=-classpath java/lib/recompiled_bcel-5.2.jar$(S)java/lib/jakarta-regexp-1.3.jar$(S)java/lib/RXTXcomm.jar$(S)java/lib/lpsolve55j.jar
 
 #TOOLS_JFLAGS=-d $(TOOLS)/dist/classes $(EXT_CP) -sourcepath $(TOOLS)/src$(S)$(TARGET)/src/common
-TOOLS_JFLAGS=-g -d $(TOOLS)/dist/classes $(EXT_CP) -sourcepath $(TOOLS)/src$(S)$(TARGET)/src/common
+TOOLS_JFLAGS=-g -d $(TOOLS)/dist/classes $(EXT_CP) -sourcepath $(TOOLS)/src$(S)$(TARGET)/src/common -encoding Latin1
 
 PCTOOLS=java/pc
-PCTOOLS_JFLAGS=-g -d $(PCTOOLS)/dist/classes -sourcepath $(PCTOOLS)/src
+PCTOOLS_JFLAGS=-g -d $(PCTOOLS)/dist/classes -sourcepath $(PCTOOLS)/src -encoding Latin1
 
 
 TARGET=java/target
