@@ -48,7 +48,6 @@ import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.wcet08.frontend.WcetAppInfo.MethodNotFoundException;
 import com.jopdesign.wcet08.graphutils.AdvancedDOTExporter;
-import com.jopdesign.wcet08.graphutils.OneCycleDetector;
 import com.jopdesign.wcet08.graphutils.Pair;
 import com.jopdesign.wcet08.graphutils.TopOrder;
 
