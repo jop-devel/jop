@@ -107,17 +107,24 @@ process
 	variable l 			: line;
 	variable val		: integer;
 	variable data32		: std_logic_vector(31 downto 0);
+	variable len			: integer;
 
 variable x : integer;
 
 	begin
 		write(output, "load main memory...");
-		for address in 0 to nwords-1 loop
+		if data_bits=32 then
+			len := nwords;
+		else
+			len := nwords/2;
+		end if;
+		for address in 0 to len-1 loop
 			if endfile(memfile) then
-				exit;
+				val := 0;
+			else 	
+				readline(memfile, memline);
+				read(memline, val);
 			end if;
-			readline(memfile, memline);
-			read(memline, val);
 			if data_bits=32 then
 				ram(address) := std_logic_vector(to_signed(val, data_bits));
 			else
