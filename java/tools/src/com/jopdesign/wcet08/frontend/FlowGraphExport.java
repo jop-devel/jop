@@ -10,7 +10,6 @@ import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.InvokeInstruction;
 import org.apache.bcel.generic.RETURN;
-import org.apache.log4j.Logger;
 import org.jgrapht.DirectedGraph;
 import com.jopdesign.wcet08.frontend.FlowGraph.BasicBlockNode;
 import com.jopdesign.wcet08.frontend.FlowGraph.FlowGraphEdge;
@@ -112,7 +111,7 @@ public class FlowGraphExport {
 			ht.put("label",nodeInfo.toString());
 			if(! flowGraph.getHeadOfLoops().isEmpty()) {
 				if(flowGraph.getLoopColoring().getLoopColors().get(n) == null) {
-					JOPAppInfo.logger.error("No loop coloring for node "+n+" (dead code?)");
+					WcetAppInfo.logger.error("No loop coloring for node "+n+" (dead code?)");
 				} else {
 					ht.put("peripheries",""+(1+flowGraph.getLoopColoring().getLoopColors().get(n).size()));
 				}

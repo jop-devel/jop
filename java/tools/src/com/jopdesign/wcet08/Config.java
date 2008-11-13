@@ -114,6 +114,8 @@ public class Config {
 	public static final String DUMP_ILP = "dump-ilp";
 	private final static boolean DUMP_ILP_DEFAULT = true;
 	
+	public static final String DO_DFA = "dataflow-analysis";
+	public static final boolean DO_DFA_DEFAULT = false;
     /*
 	public static final String DO_UPPAAL = "do-uppaal";
 	public static final String DO_IPET   = "do-ipet";
@@ -129,7 +131,8 @@ public class Config {
     	{REPORTDIRROOT_PROPERTY,"if reports should be generated, the parent directory to write them to [optional]"},
     	{TEMPLATEDIR_PROPERTY,"directory with additional velocity templates [optional]"},    	
     	{PROGRAM_DOT,"the path to the dot binary if dot should be invoked from java [optional]"},
-    	{DUMP_ILP,"dump the lp problems to files [default: yes]"}
+    	{DUMP_ILP,"dump the lp problems to files [default: yes]"},
+    	{DO_DFA,"perform dataflow analysis [default: no]"}
     };
 
     /**
@@ -154,7 +157,7 @@ public class Config {
 		options = new Properties(System.getProperties());
 		defaultAppender = new ConsoleAppender(new PatternLayout("[%c{1}] %m\n"),"System.err");
 		defaultAppender.setName("ACONSOLE");
-		defaultAppender.setThreshold(Level.ERROR);
+		defaultAppender.setThreshold(Level.WARN);
 		Logger.getRootLogger().addAppender(defaultAppender);
 		PropertyConfigurator.configure(this.options);
 	}		
@@ -375,7 +378,9 @@ public class Config {
 		}
 		throw new FileNotFoundException("Source for "+ci.clazz.getClassName()+" not found.");
 	}
-
+	public boolean doDataflowAnalysis() {
+		return getBooleanOption(DO_DFA, DO_DFA_DEFAULT);
+	}
 	public String getDotBinary() {
 		return getProperty(PROGRAM_DOT);
 	}

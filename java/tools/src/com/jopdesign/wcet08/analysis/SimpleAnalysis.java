@@ -25,8 +25,6 @@ import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.apache.bcel.generic.EmptyVisitor;
-import org.apache.bcel.generic.INVOKESTATIC;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.log4j.Logger;
 import org.jgrapht.DirectedGraph;
@@ -275,7 +273,7 @@ public class SimpleAnalysis {
 		public void visitBasicBlockNode(BasicBlockNode n) {
 			BasicBlock bb = n.getCodeBlock();
 			for(InstructionHandle ih : bb.getInstructions()) {
-				int jopcode = project.getAppInfo().getJOpCode(n.getCodeBlock().getClassInfo(), ih.getInstruction());
+				int jopcode = project.getWcetAppInfo().getJOpCode(n.getCodeBlock().getClassInfo(), ih.getInstruction());
 				cost.addLocalCost(WCETInstruction.getCycles(jopcode,false,0));										
 			}
 		}

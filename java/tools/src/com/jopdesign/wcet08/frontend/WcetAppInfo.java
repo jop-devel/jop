@@ -29,8 +29,8 @@ import java.util.Vector;
 import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.INVOKESTATIC;
 import org.apache.bcel.generic.Instruction;
+import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.InvokeInstruction;
-import org.apache.bcel.util.ClassPath;
 import org.apache.log4j.Logger;
 
 import com.jopdesign.build.AppInfo;
@@ -38,6 +38,8 @@ import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.InsertSynchronized;
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.build.ReplaceIinc;
+import com.jopdesign.build.WcetPreprocess;
+import com.jopdesign.dfa.analyses.ReceiverTypes;
 import com.jopdesign.tools.JopInstr;
 import com.jopdesign.wcet08.Config;
 import com.jopdesign.wcet08.Config.MissingConfigurationError;
@@ -50,10 +52,10 @@ import com.jopdesign.wcet08.report.InvokeDot;
  * 
  * @author Benedikt Huber, benedikt.huber@gmail.com
  */
-public class JOPAppInfo extends AppInfo {
+public class WcetAppInfo  {
 	private static final long serialVersionUID = 2L;
 	/* package logger */
-	public static final Logger logger = Logger.getLogger(JOPAppInfo.class.getPackage().toString());
+	public static final Logger logger = Logger.getLogger(WcetAppInfo.class.getPackage().toString());
 	/**
 	 * Raised when we cannot find / fail to load a referenced method.
 	 */
@@ -63,30 +65,20 @@ public class JOPAppInfo extends AppInfo {
 			super(message);			
 		}
 	}	
+
 	private TypeGraph typeGraph;
+	private AppInfo ai;
 	
-	public JOPAppInfo() {
-		super(ClassInfo.getTemplate());
-	}
-	/**
-	 * load all classes reachable from the given class
-	 * @param topClass 
-	 * @throws IOException
-	 */
-	public void loadClasses(String topClass) throws IOException {
-		this.classpath = new ClassPath(Config.instance().getClassPath());
-		this.srcPath = Config.instance().getSourcePath();
-		addClass(topClass);
-		load();
-		iterate(new ReplaceIinc(this));
-		iterate(new InsertSynchronized(this));
+	public WcetAppInfo(com.jopdesign.build.AppInfo ai) {
+		this.ai = ai; 
 		this.typeGraph = new TypeGraph(this);
 	}
+	
 	/**
 	 * @return A mapping from the name of a loaded class to {@link ClassInfo}.
 	 */
 	public Map<String, ? extends ClassInfo> getCliMap() {
-		return cliMap;
+		return ai.cliMap;
 	}
 	/**
 	 * @return The typegraph of all loaded classes
@@ -99,7 +91,7 @@ public class JOPAppInfo extends AppInfo {
 	 * @return the class info, or null if the class could'nt be found
 	 */
 	public ClassInfo getClassInfo(String className) {
-		return this.cliMap.get(className);
+		return getCliMap().get(className);
 	}
 
 	/**
@@ -111,7 +103,7 @@ public class JOPAppInfo extends AppInfo {
 	 * @throws MethodNotFoundException if the method couldn't be found or is ambigous
 	 */
 	public MethodInfo searchMethod(String className, String methodSig) throws MethodNotFoundException {
-		ClassInfo cli = cliMap.get(className);
+		ClassInfo cli = getCliMap().get(className);
 		if(cli == null) throw new MethodNotFoundException("The class "+className+" couldn't be found");
 		return searchMethod(cli,methodSig);
 	}
@@ -188,6 +180,20 @@ public class JOPAppInfo extends AppInfo {
 		}
 		return impls;
 	}
+	
+	/**
+	 * Variant operating on an instruction handle and therefore capable of 
+	 * using DFA analysis results.
+	 * @param invInstr
+	 * @return
+	 */
+	public List<MethodInfo> findImplementations(MethodInfo invokerM, InstructionHandle ih) {
+		Pair<ClassInfo, String> ref = this.getReferenced(invokerM, (InvokeInstruction) ih.getInstruction());
+		List<MethodInfo> staticImpls = findImplementations(ref.fst(), ref.snd());
+		/* TODO: Better receiver types using DFA */
+		return staticImpls;
+	}
+
 	/* helper to avoid code dupl */
 	private void tryAddImpl(List<MethodInfo> ms, MethodInfo m) {
 		if(m != null) {
@@ -237,10 +243,15 @@ public class JOPAppInfo extends AppInfo {
 
 	public static String USAGE = 
 		"Usage: java [-Dconfig=file://<config.props>] "+ 
-		JOPAppInfo.class.getCanonicalName()+
+		WcetAppInfo.class.getCanonicalName()+
 		" [-outdir outdir] [-cp classpath] package.rootclass.rootmethod";
 
 	/* small demo using the class loader */	
+	private static void loadClasses(AppInfo ai, String topClass) throws IOException {
+		ai.addClass(topClass);
+		ai.load();
+		WcetPreprocess.preprocess(ai);
+	}
 	public static void main(String[] argv) {
 
 		try {
@@ -262,26 +273,26 @@ public class JOPAppInfo extends AppInfo {
 			e.printStackTrace();
 			System.exit(1);
 		}
-		
-		JOPAppInfo cl = new JOPAppInfo();
+		AppInfo ai = new AppInfo(ClassInfo.getTemplate());		
 		try {
 			Config config = Config.instance();
 			System.out.println("Classloader Demo: "+config.getRootClassName() + "." + config.getRootMethodName());
 			String rootClass = config.getRootClassName();
 			String rootPkg = rootClass.substring(0,rootClass.lastIndexOf("."));
-			cl.loadClasses(rootClass);
-			ClassInfo ci = cl.getClassInfo(config.getRootClassName());
+			loadClasses(ai,rootClass);
+			WcetAppInfo wcetAi = new WcetAppInfo(ai);
+			ClassInfo ci = wcetAi.getClassInfo(config.getRootClassName());
 			System.out.println("Source file: "+ci.clazz.getSourceFileName());
 			System.out.println("Root class: "+ci.clazz.toString());
 			{ 
 				System.out.println("Writing type graph to "+config.getOutFile("typegraph.png"));
 				File dotFile = config.getOutFile("typegraph.dot");
 				FileWriter dotWriter = new FileWriter(dotFile);
-				cl.getTypeGraph().exportDOT(dotWriter,rootPkg);			
+				wcetAi.getTypeGraph().exportDOT(dotWriter,rootPkg);			
 				dotWriter.close();			
 				InvokeDot.invokeDot(dotFile, config.getOutFile("typegraph.png"));
 			}
-			CallGraph cg = CallGraph.buildCallGraph(cl, config.getRootClassName(), config.getRootMethodName());			
+			CallGraph cg = CallGraph.buildCallGraph(wcetAi, config.getRootClassName(), config.getRootMethodName());			
 			{
 				System.out.println("Writing call graph to "+config.getOutFile("callgraph.png"));
 				File dotFile = config.getOutFile("callgraph.dot");
@@ -296,6 +307,10 @@ public class JOPAppInfo extends AppInfo {
 		} catch (MethodNotFoundException e) {
 			e.printStackTrace();
 		}
+	}
+
+	public AppInfo getAppInfo() {
+		return this.ai;
 	}
 }
 

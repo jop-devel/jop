@@ -57,8 +57,7 @@ public class WcetPreprocess extends AppInfo {
 			e.printStackTrace();
 			System.exit(-1);
 		}
-		ai.iterate(new ReplaceIinc(ai));
-		ai.iterate(new InsertSynchronized(ai));
+		preprocess(ai);
 		// dump the methods
 //		try {
 //			ai.iterate(new Dump(ai, new PrintWriter(new FileOutputStream(ai.outFile+"/dump.txt"))));
@@ -69,4 +68,8 @@ public class WcetPreprocess extends AppInfo {
 		ai.iterate(new ClassWriter(ai, ai.outFile));
 	}
 
+	public static void preprocess(AppInfo ai) {
+		ai.iterate(new ReplaceIinc(ai));
+		ai.iterate(new InsertSynchronized(ai));		
+	}
 }

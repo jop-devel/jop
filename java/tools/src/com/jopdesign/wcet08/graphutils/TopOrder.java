@@ -19,7 +19,6 @@
 */
 package com.jopdesign.wcet08.graphutils;
 
-import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Set;
@@ -28,11 +27,7 @@ import java.util.Vector;
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.alg.BellmanFordShortestPath;
 import org.jgrapht.alg.ConnectivityInspector;
-import org.jgrapht.alg.DijkstraShortestPath;
 import org.jgrapht.traverse.DepthFirstIterator;
-
-import com.jopdesign.wcet08.frontend.FlowGraph.FlowGraphEdge;
-import com.jopdesign.wcet08.frontend.FlowGraph.FlowGraphNode;
 
 /**
  * Given a rooted, directed graph, identify back-edges.

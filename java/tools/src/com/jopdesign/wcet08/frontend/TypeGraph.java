@@ -46,11 +46,11 @@ public class TypeGraph extends DefaultDirectedGraph<ClassInfo,DefaultEdge> {
 	private static final long serialVersionUID = 1L;
 	private ClassInfo rootNode;
 	public ClassInfo getRootNode() { return rootNode; }
-	public TypeGraph(JOPAppInfo ai) {
+	public TypeGraph(WcetAppInfo ai) {
 		super(DefaultEdge.class);
 		build(ai);
 	}
-	private void build(JOPAppInfo appInfo) {
+	private void build(WcetAppInfo appInfo) {
 		this.rootNode = appInfo.getCliMap().get("java.lang.Object");
 		for(ClassInfo ci : appInfo.getCliMap().values()) {
 			this.addVertex(ci);

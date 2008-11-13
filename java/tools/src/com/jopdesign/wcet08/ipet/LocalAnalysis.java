@@ -19,10 +19,8 @@
 */
 package com.jopdesign.wcet08.ipet;
 
-import java.util.Map;
 import java.util.Vector;
 
-import com.jopdesign.wcet08.Config;
 import com.jopdesign.wcet08.Project;
 import com.jopdesign.wcet08.frontend.FlowGraph;
 import com.jopdesign.wcet08.frontend.FlowGraph.FlowGraphEdge;
@@ -92,7 +90,7 @@ public class LocalAnalysis {
 		// -- sum(exit_loop_edges) * B <= sum(continue_loop_edges) 
 		for(FlowGraphNode hol : g.getHeadOfLoops()) {
 			FlowConstraint loopConstraint = new FlowConstraint(ConstraintType.Equal);
-			int lhsMultiplicity = g.getLoopBounds().get(hol);
+			int lhsMultiplicity = g.getLoopBounds().get(hol).getUpperBound();
 			for(FlowGraphEdge exitEdge : g.getExitEdgesOf(hol)) {
 				loopConstraint.addLHS(exitEdge,lhsMultiplicity);
 			}

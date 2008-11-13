@@ -28,11 +28,12 @@ import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.wcet08.Project;
 import com.jopdesign.wcet08.frontend.CallGraph.CallGraphNode;
+import com.jopdesign.wcet08.frontend.SourceAnnotations.LoopBound;
 import com.jopdesign.wcet08.graphutils.Pair;
 
 public class MethodReport {
 	private MethodInfo info;
-	private Collection<Integer> loopBounds;
+	private Collection<LoopBound> loopBounds;
 	private Set<String> referenced;
 	String page;
 	public MethodReport(Project p, MethodInfo m, String page) {
@@ -49,7 +50,7 @@ public class MethodReport {
 	public MethodInfo getInfo() {
 		return info;
 	}
-	public Collection<Integer> getLoopBounds() {
+	public Collection<LoopBound> getLoopBounds() {
 		return loopBounds;
 	}
 	public Set<String> getReferenced() {

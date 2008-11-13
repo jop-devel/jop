@@ -186,8 +186,8 @@ public class AppInfo implements Serializable {
 		for (int nr=0; i.hasNext(); ++nr) {
 			String clname = i.next();
 			jcl[nr] = Repository.lookupClass(clname);
+			if(jcl[nr] == null) throw new IOException("loookupClass("+clname+") failed");
 			System.out.println(jcl[nr].getClassName());
-
 		}
 		TransitiveHull hull = new TransitiveHull(classpath, jcl);
 		String[] excl = new String[exclude.size()];
@@ -209,7 +209,7 @@ public class AppInfo implements Serializable {
 	 * 
 	 * @param v
 	 */
-	protected void iterate(Visitor v) {
+	public void iterate(Visitor v) {
 	
 		Iterator<? extends ClassInfo> it = cliMap.values().iterator();
 		while (it.hasNext()) {
@@ -238,5 +238,14 @@ public class AppInfo implements Serializable {
 		System.out.println("Ok here comes a BCEL dump of the loaded classes:");
 		System.out.println(ai);
 	}
-
+	
+	/** Configure the application (classpath, sourcepath, entry point) */
+	public void configure(String classpath, String sourcepath, 
+						  String entryClass, String entryMethod) {
+		this.classpath = new ClassPath(classpath);
+		this.srcPath = sourcepath;
+		addClass(entryClass);
+		this.mainClass = entryClass;
+		this.mainMethodName = entryMethod;
+	}
 }

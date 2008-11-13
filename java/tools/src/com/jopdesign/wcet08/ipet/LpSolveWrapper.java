@@ -176,6 +176,7 @@ public class LpSolveWrapper<T> {
 		}
 	}
 	public void dumpToFile(File outFile) throws LpSolveException {
+		outFile.delete();
 		this.lpsolve.writeLp(outFile.getPath());		
 	}
 }

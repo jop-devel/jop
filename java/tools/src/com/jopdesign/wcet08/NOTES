@@ -1,0 +1,9 @@
+Misc. Notes on the wcet08 project
+---------------------------------
+[Loop bounds]
+
+[Setting MethodGen] Problem with methodGen + visitMethod():
+Whenever setMethod is called, MethodGen is deleted.
+This leads to a subtle bug: After e.g. replacing iinc , we have to create the MethodGen again.
+And if we run e.g. ReplaceIinc after DFA analysis, the analysis is lost !
+

@@ -32,8 +32,6 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeSet;
 import java.util.Vector;
-import java.util.Map.Entry;
-
 import org.apache.bcel.generic.INVOKEINTERFACE;
 import org.apache.bcel.generic.INVOKEVIRTUAL;
 import org.apache.bcel.generic.InstructionHandle;
@@ -43,11 +41,14 @@ import org.jgrapht.graph.DefaultDirectedGraph;
 
 import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.MethodInfo;
+import com.jopdesign.dfa.analyses.LoopBounds;
+import com.jopdesign.dfa.framework.AppInfo;
 import com.jopdesign.wcet.WCETInstruction;
+import com.jopdesign.wcet08.Project;
 import com.jopdesign.wcet08.frontend.BasicBlock.FlowInfo;
 import com.jopdesign.wcet08.frontend.BasicBlock.FlowTarget;
-import com.jopdesign.wcet08.frontend.BasicBlock.InstrField;
 import com.jopdesign.wcet08.frontend.SourceAnnotations.BadAnnotationException;
+import com.jopdesign.wcet08.frontend.SourceAnnotations.LoopBound;
 import com.jopdesign.wcet08.graphutils.LoopColoring;
 import com.jopdesign.wcet08.graphutils.Pair;
 import com.jopdesign.wcet08.graphutils.TopOrder;
@@ -141,7 +142,7 @@ public class FlowGraph {
 	 * Flow graph nodes representing basic blocks
 	 */
 	public class BasicBlockNode extends FlowGraphNode {
-		private int blockIndex;
+		protected int blockIndex;
 		public BasicBlockNode(int blockIndex) {
 			super("basic("+blockIndex+")");
 			this.blockIndex = blockIndex;
@@ -181,6 +182,9 @@ public class FlowGraph {
 		public void accept(FlowGraphVisitor v) { 
 			v.visitBasicBlockNode(this);
 			v.visitInvokeNode(this);
+		}
+		public InstructionHandle getInstructionHandle() {
+			return FlowGraph.this.blocks.get(blockIndex).getLastInstruction();
 		}
 		public MethodInfo getImpl() {
 			return impl;
@@ -247,7 +251,7 @@ public class FlowGraph {
 
 	/* linking to java */
 	private MethodInfo  methodInfo;
-	private JOPAppInfo appInfo;
+	private WcetAppInfo appInfo;
 	private Vector<BasicBlock> blocks;
 	
 	/* graph */
@@ -255,7 +259,7 @@ public class FlowGraph {
 	private DirectedGraph<FlowGraphNode, FlowGraphEdge> graph;
 
 	/* annotations */
-	private HashMap<FlowGraphNode, Integer> annotations;
+	private Map<FlowGraphNode, LoopBound> annotations;
 	
 	/* analysis stuff, needs to be reevaluted when graph changes */
 	private TopOrder<FlowGraphNode, FlowGraphEdge> topOrder = null;
@@ -266,17 +270,17 @@ public class FlowGraph {
 	 * @param method needs attached code (<code>method.getCode() != null</code>)
 	 * @throws BadGraphException if the bytecode results in an invalid flow graph
 	 */
-	public FlowGraph(MethodInfo method) throws BadGraphException  {
+	public FlowGraph(WcetAppInfo wcetAi, MethodInfo method) throws BadGraphException  {
 		this.methodInfo = method;
-		this.appInfo = (JOPAppInfo) method.getCli().appInfo;
+		this.appInfo = wcetAi;
 		createFlowGraph(method);
 		check();
 	}
 
 	/* worker: create the flow graph */
 	private void createFlowGraph(MethodInfo method) {
-		JOPAppInfo.logger.info("creating flow graph for: "+method);
-		blocks = BasicBlock.buildBasicBlocks(method);
+		WcetAppInfo.logger.info("creating flow graph for: "+method);
+		blocks = BasicBlock.buildBasicBlocks(this.appInfo,method);
 		Hashtable<Integer,BasicBlockNode> nodeTable =
 			new Hashtable<Integer, BasicBlockNode>();
 		graph = new DefaultDirectedGraph<FlowGraphNode,FlowGraphEdge>(FlowGraphEdge.class);
@@ -302,7 +306,7 @@ public class FlowGraph {
 		/* flow edges */
 		for(BasicBlockNode bbNode : nodeTable.values()) {
 			BasicBlock bb = bbNode.getCodeBlock();
-			FlowInfo bbf = (FlowInfo) bb.getLastInstruction().getAttribute(InstrField.FLOW_INFO);
+			FlowInfo bbf = bb.getFlowInfo(bb.getLastInstruction());
 			if(bbf.exit) { // exit edge
 				graph.addEdge(bbNode, this.exit, exitEdge());
 			} else if(! bbf.alwaysTaken) { // next block edge
@@ -311,8 +315,12 @@ public class FlowGraph {
 							  new FlowGraphEdge(EdgeKind.NEXT_EDGE));
 			}
 			for(FlowTarget target: bbf.targets) { // jmps
+				BasicBlockNode targetNode = nodeTable.get(target.target.getPosition());
+				if(targetNode == null) {
+					throw new AssertionError("No node for flow target: "+bbNode+" -> "+target);
+				}
 				graph.addEdge(bbNode, 
-							  nodeTable.get(target.target.getPosition()), 
+							  targetNode, 
 							  new FlowGraphEdge(target.edgeKind));
 			}
 		}	
@@ -320,28 +328,52 @@ public class FlowGraph {
 	
 	/**
 	 * load annotations for the flow graph.
-	 * TODO: this is very simple, and should be improved.
 	 * 
 	 * @param wcaMap a map from source lines to loop bounds
 	 * @throws BadAnnotationException if an annotations is missing
 	 */
-	public void loadAnnotations(SortedMap<Integer,Integer> wcaMap) throws BadAnnotationException {
-		this.annotations = new HashMap<FlowGraphNode, Integer>();
+	public void loadAnnotations(Project p) throws BadAnnotationException {
+		SortedMap<Integer, LoopBound> wcaMap = p.getAnnotations(this.methodInfo.getCli());
+		this.annotations = new HashMap<FlowGraphNode, LoopBound>();
 		for(FlowGraphNode n : this.getHeadOfLoops()) {
 			BasicBlockNode headOfLoop = (BasicBlockNode) n;
 			BasicBlock block = headOfLoop.getCodeBlock();
 			// search for loop annotation in range
-			int lb = (Integer) block.getFirstInstruction().getAttribute(InstrField.LINE_NUMBER);
-			int ub = (Integer) block.getLastInstruction().getAttribute(InstrField.LINE_NUMBER);
-			SortedMap<Integer,Integer> annots = wcaMap.subMap(lb, ub+1);
-			if(annots.size() == 1) {
-				this.annotations.put(headOfLoop,annots.get(annots.firstKey()));
-			} else {
-				throw new BadAnnotationException(
-						(annots.isEmpty() ? "Missing Annotation [" : "Ambigous Annotation [") + wcaMap + "]",
-						block,
-						lb,ub);
+			int sourceRangeStart = BasicBlock.getLineNumber(block.getFirstInstruction());
+			int sourceRangeStop = BasicBlock.getLineNumber(block.getLastInstruction());
+			SortedMap<Integer,LoopBound> annots = wcaMap.subMap(sourceRangeStart, sourceRangeStop+1);
+			if(annots.size() > 1) {
+				String reason = "Ambigous Annotation [" + annots + "]"; 
+				throw new BadAnnotationException(reason,block,sourceRangeStart,sourceRangeStop);
 			}
+			LoopBound loopAnnot = null;
+			if(annots.size() == 1) {
+				loopAnnot = annots.get(annots.firstKey());
+			}
+			// if we have loop bounds from DFA analysis, use them
+			if(p.getDfaLoopBounds() != null) {
+				LoopBounds lbs = p.getDfaLoopBounds();
+				int bound = lbs.getBound(p.getDfaProgram(), block.getLastInstruction());
+				if(bound < 0) {
+					WcetAppInfo.logger.info("No DFA bound for " + n);					
+				} else if(loopAnnot == null) {
+					WcetAppInfo.logger.info("Only DFA bound for "+ n);
+					loopAnnot = LoopBound.boundedAbove(bound);
+				} else {
+					int loopUb = loopAnnot.getUpperBound();
+					if(bound < loopUb) {
+						WcetAppInfo.logger.warn("DFA analysis reports a smaller upper bound :"+bound+ " < "+loopUb);
+						//loopAnnot = LoopBound.boundedAbove(bound); [currently unsafe]
+					} else if (bound > loopUb) {
+						WcetAppInfo.logger.warn("DFA analysis reports a larger upper bound: "+bound+ " > "+loopUb);
+					} else {}
+				}
+			}
+			if(loopAnnot == null) {
+				throw new BadAnnotationException("No loop bound annotation",
+												 block,sourceRangeStart,sourceRangeStop);
+			}
+			this.annotations.put(headOfLoop,loopAnnot);
 		}
 	}
 	/**
@@ -362,7 +394,7 @@ public class FlowGraph {
 		/* replace them */
 		for(InvokeNode inv : virtualInvokes) {
 			List<MethodInfo> impls = 
-				appInfo.findImplementations(inv.referenced.fst(), inv.referenced.snd());
+				appInfo.findImplementations(this.methodInfo,inv.getInstructionHandle());
 			if(impls.size() == 0) throw new AssertionError("No implementations for "+inv.referenced);
 			if(impls.size() == 1) {
 				InvokeNode implNode = inv.createImplNode(impls.get(0));
@@ -402,7 +434,7 @@ public class FlowGraph {
 		TopOrder.checkIsExitNode(graph, this.exit);
 		List<FlowGraphNode> deads = TopOrder.findDeadNodes(graph,this.entry);
 		if(deads.size() > 0) {
-			JOPAppInfo.logger.error("Found dead code - this most likely indicates a bug. "+deads);
+			WcetAppInfo.logger.error("Found dead code - this most likely indicates a bug. "+deads);
 		}
 	}
 	private void invalidate() {
@@ -453,7 +485,7 @@ public class FlowGraph {
 	 * retrieve the loop bound (annotations)
 	 * @return a map from head-of-loop nodes to their loop bounds
 	 */
-	public Map<FlowGraphNode, Integer> getLoopBounds() {
+	public Map<FlowGraphNode, LoopBound> getLoopBounds() {
 		return this.annotations;
 	}
 
@@ -560,7 +592,7 @@ public class FlowGraph {
 	public int basicBlockWCETEstimate(BasicBlock b) {
 		int wcet = 0;
 		for(InstructionHandle ih : b.getInstructions()) {
-			int jopcode = ((JOPAppInfo) this.methodInfo.getCli().appInfo).getJOpCode(b.getClassInfo(), ih.getInstruction());
+			int jopcode = appInfo.getJOpCode(b.getClassInfo(), ih.getInstruction());
 			int opCost = WCETInstruction.getCycles(jopcode,false,0);						
 			wcet += opCost;
 		}

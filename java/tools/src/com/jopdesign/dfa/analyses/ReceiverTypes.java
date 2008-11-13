@@ -1272,7 +1272,7 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 		targets.get(stmt).add(target);	
 	}
 	
-	public Map getResult() {
+	public Map<InstructionHandle, ContextMap<String, String>> getResult() {
 		return targets;
 	}
 	

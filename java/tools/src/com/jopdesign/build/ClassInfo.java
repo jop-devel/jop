@@ -36,6 +36,9 @@ import org.apache.bcel.classfile.*;
 
 
 import org.apache.bcel.classfile.JavaClass;
+import org.apache.bcel.generic.ConstantPoolGen;
+import org.apache.bcel.generic.MethodGen;
+
 /**
  * The new version of ClassInfo
  * @author Martin Schoeberl
@@ -84,6 +87,10 @@ public class ClassInfo implements Serializable {
 	        
 	        MethodInfo mi = cli.getMethodInfo(methodId);
 	        mi.setMethod(method);
+	        
+	        /* NOTE: don't set MethodGen here. You have to explicitly ask for it later,
+	         * as changing bytecode will invalidate the MethodGen
+	         */
 		}
 
 	}

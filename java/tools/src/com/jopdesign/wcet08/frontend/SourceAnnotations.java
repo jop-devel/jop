@@ -34,6 +34,7 @@ import org.apache.log4j.Logger;
 
 import com.jopdesign.build.ClassInfo;
 import com.jopdesign.wcet08.Config;
+import com.jopdesign.wcet08.graphutils.Pair;
 
 /**
  * Parsing source annotations for WCET analysis.
@@ -50,19 +51,26 @@ public class SourceAnnotations {
 		public BasicBlock getBlock() {
 			return this.block;
 		}
-		private String msg;
-
 		public BadAnnotationException(String reason, BasicBlock block, int codeLineStart, int codeLineEnd) {
+			super(reason+" for " + block.getLastInstruction()+ 
+			      " in class " + block.getClassInfo().clazz.getClassName()  + ":" + 
+				  codeLineStart + "-" + codeLineEnd);
 			this.block = block;
-			this.msg = reason+" for " + block.getLastInstruction()+ 
-					          " in class " + block.getClassInfo().clazz.getClassName()  + ":" + 
-					          codeLineStart + "-" + codeLineEnd;
 		}
-		@Override
-		public String getMessage() {
-			return msg;
+		public BadAnnotationException(String msg) {
+			super(msg);
 		}
-
+	}
+	public static class LoopBound extends Pair<Integer,Integer> {
+		private static final long serialVersionUID = 1L;
+		public LoopBound(Integer lb, Integer ub) {
+			super(lb, ub);
+		}
+		public int getLowerBound()  { return fst(); }
+		public int getUpperBound() { return snd(); }
+		public static LoopBound boundedAbove(int ub) {
+			return new LoopBound(0,ub);
+		}
 	}
 
 	private Config config;
@@ -76,19 +84,21 @@ public class SourceAnnotations {
 	 * @return a [Source Line] -> [Loop bound] map containing loop bounds for annotated
 	 * source lines
 	 * @throws IOException 
+	 * @throws BadAnnotationException 
 	 * 
 	 */
-	public  SortedMap<Integer,Integer> calculateWCA(ClassInfo ci) throws IOException {
-		SortedMap<Integer, Integer> wcaMap = new TreeMap<Integer, Integer>();
+	public  SortedMap<Integer,LoopBound> calculateWCA(ClassInfo ci) 
+		throws IOException, BadAnnotationException {
+		
+		SortedMap<Integer, LoopBound> wcaMap = new TreeMap<Integer, LoopBound>();
 		File fileName = config.getSourceFile(ci);
 		BufferedReader reader = new BufferedReader(new FileReader(fileName));
 		String line = null;
 		int lineNr = 1;
 
 		while ((line = reader.readLine()) != null) {
-			int wca = SourceAnnotations.calculateWCA(line);	
-			if (wca != -1) {
-
+			LoopBound wca = SourceAnnotations.calculateWCA(line);	
+			if (wca != null) {
 				wcaMap.put(lineNr,wca);
 			}
 			lineNr++;
@@ -98,35 +108,45 @@ public class SourceAnnotations {
 	}
 
 	/**
-	 * Return the loop bound for a java source lines. Loop bounds are tagged with
-	 * the following expression: // *@WCA *loop *<?= *[0-9]+ *
-	 * e.g. // @WCA loop = 100
+	 * Return the loop bound for a java source lines. 
+	 * <p>Loop bounds are tagged with one of the following annotations: 
+	 * <ul> 
+	 *  <li/>{@code @WCA loop &lt;?= [0-9]+}
+	 *  <li/>{@code @WCA [0-9]+ &lt;= loop &lt;= [0-9]+}
+	 * </ul>
+	 * e.g. {@code // @WCA loop = 100} or {@code \@WCA 50 &lt;= loop &lt;= 60}.
 	 * 
 	 * @param line a java source code line (possibly annotated)
-	 * @return the loop bound limit or -1 if no annotation was found or the annotation
-	 * was erroneous
+	 * @return the loop bound limit or null if no annotation was found
+	 * @throws BadAnnotationException if the loop bound annotation has syntax errors or is
+	 * invalid
 	 */
-	public static int calculateWCA(String wcaA){
+	public static LoopBound calculateWCA(String wcaA)
+		throws BadAnnotationException {
 
 		int ai = wcaA.indexOf("@WCA");
-		if(ai != -1){
+		if(ai != -1 ){
 
-			String c = wcaA.substring(ai+"@WCA".length());
-
-			Pattern pattern = Pattern.compile(" *loop *<?= *([0-9]+) *");
-			Matcher matcher = pattern.matcher(c);
-
-			if (! matcher.matches()) {
-				logger.error("Invalid WCA string: @WCA" + c + ". It must be of the form \" *loop *<?= *[0-9]+ *\"");
-				return -1;
+			String annotString = wcaA.substring(ai+"@WCA".length());
+			if(annotString.indexOf("loop") < 0) return null;
+			
+			Pattern pattern1 = Pattern.compile(" *loop *(<?=) *([0-9]+) *");
+			Pattern pattern2 = Pattern.compile(" *([0-9]+) *<= *loop *<= *([0-9]+) *");
+			Matcher matcher1 = pattern1.matcher(annotString);
+			if(matcher1.matches()) {				
+				int ub = Integer.parseInt(matcher1.group(2));
+				int lb = (matcher1.group(1).equals("=")) ? ub : 0;
+				return new LoopBound(lb,ub);		
 			}
-
-			int val = Integer.parseInt(matcher.group(1));
-
-			return val;
-
+			Matcher matcher2 = pattern2.matcher(annotString);
+			if(matcher2.matches()) {
+				int lb = Integer.parseInt(matcher2.group(1));
+				int ub = Integer.parseInt(matcher2.group(2));
+				return new LoopBound(lb,ub);		
+			}
+			throw new BadAnnotationException("Syntax error in loop bound annotation: "+annotString);
 		}
-		return -1;
+		return null;
 	}
 
 }

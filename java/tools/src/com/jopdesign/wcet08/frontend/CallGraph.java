@@ -19,7 +19,6 @@
 */
 package com.jopdesign.wcet08.frontend;
 
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.HashMap;
@@ -47,8 +46,9 @@ import org.jgrapht.traverse.TopologicalOrderIterator;
 
 import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.MethodInfo;
-import com.jopdesign.wcet08.frontend.JOPAppInfo.MethodNotFoundException;
+import com.jopdesign.wcet08.frontend.WcetAppInfo.MethodNotFoundException;
 import com.jopdesign.wcet08.graphutils.AdvancedDOTExporter;
+import com.jopdesign.wcet08.graphutils.OneCycleDetector;
 import com.jopdesign.wcet08.graphutils.Pair;
 import com.jopdesign.wcet08.graphutils.TopOrder;
 
@@ -163,8 +163,8 @@ public class CallGraph {
 		}
 		@Override public void build() {
 			markBuild(this);
-			if(this.method.getCode() == null) return; // no impl available
-			InstructionList il = new InstructionList(this.method.getCode().getCode());
+			if(this.method.getMethodGen() == null) return; // no impl available
+			InstructionList il = this.method.getMethodGen().getInstructionList();
 			CallGraphBuilderVisitor cgBuilderVisitor = new CallGraphBuilderVisitor(this); 
 			for(Instruction i : il.getInstructions()) {
 				i.accept(cgBuilderVisitor);
@@ -211,7 +211,7 @@ public class CallGraph {
 	
 	// Fields
 	// ~~~~~~
-	private JOPAppInfo appInfo;
+	private WcetAppInfo appInfo;
 	private MethodImplNode rootNode;
 	private DirectedGraph<CallGraphNode, DefaultEdge> callGraph;
 
@@ -232,7 +232,7 @@ public class CallGraph {
 	/**
 	 * Initialize a CallGraph object.
 	 */
-	protected CallGraph(JOPAppInfo appInfo, MethodInfo rootMethod) {
+	protected CallGraph(WcetAppInfo appInfo, MethodInfo rootMethod) {
 		this.appInfo = appInfo;
 		this.callGraph = new DefaultDirectedGraph<CallGraphNode,DefaultEdge>(DefaultEdge.class);
 		this.rootNode = new MethodImplNode(rootMethod);
@@ -247,7 +247,7 @@ public class CallGraph {
 	 * (e.g. "measure"), if unique, or a method with signature (e.g. "measure()Z")
 	 * @throws MethodNotFoundException 
 	 */
-	public static CallGraph buildCallGraph(JOPAppInfo cli, String className, String methodSig) 
+	public static CallGraph buildCallGraph(WcetAppInfo cli, String className, String methodSig) 
 							throws MethodNotFoundException {
 		MethodInfo rootMethod = cli.searchMethod(className,methodSig);
 		CallGraph cg = new CallGraph(cli,rootMethod);
@@ -271,8 +271,7 @@ public class CallGraph {
 		CycleDetector<CallGraphNode, DefaultEdge> cycDetect = 
 			new CycleDetector<CallGraphNode, DefaultEdge>(callGraph);
 		if(cycDetect.detectCycles()) {
-			throw new AssertionError("Cyclic callgraph. Vertices participating in cycles: "+
-									 cycDetect.findCycles());
+			throw new AssertionError("Cyclic callgraph. One cycle is:"+cycDetect.findCycles());
 		}
 	}
 

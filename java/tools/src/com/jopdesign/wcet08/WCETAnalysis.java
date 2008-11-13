@@ -51,6 +51,31 @@ public class WCETAnalysis {
 		this.config = config;
 	}
 
+	public static void main(String[] args) {
+		/* Console logging for top level messages */
+		ConsoleAppender consoleApp = new ConsoleAppender(new PatternLayout(), ConsoleAppender.SYSTEM_ERR);
+		consoleApp.setName("TOP-LEVEL");
+		consoleApp.setThreshold(Level.INFO);
+		consoleApp.setLayout(new PatternLayout("[WCETAnalysis %-6rms] %m%n"));
+		tlLogger.addAppender(consoleApp);
+	
+		/* Load config */
+		loadConfig(args);
+				
+		Config config = Config.instance();
+		WCETAnalysis inst = new WCETAnalysis(config);
+		/* run */
+		if(! inst.run()) {
+			System.err.println("[ERROR] WCET Analysis failed");
+			System.exit(1);
+		} else {
+			tlLogger.info("WCET analysis finished");
+			if(config.hasReportDir()) {
+				tlLogger.info("Results are in "+config.getOutDir()+"/index.html");
+			}
+		}
+	}
+
 	private static void exitUsage() {
 		System.err.println(
 				"Usage:\n  java "+
@@ -75,15 +100,10 @@ public class WCETAnalysis {
 		}
 	}
 
-	public static void main(String[] args) {
-		/* Console logging for top level messages */
-		ConsoleAppender consoleApp = new ConsoleAppender(new PatternLayout(), ConsoleAppender.SYSTEM_ERR);
-		consoleApp.setName("TOP-LEVEL");
-		consoleApp.setThreshold(Level.INFO);
-		consoleApp.setLayout(new PatternLayout("[WCETAnalysis %-6rms] %m%n"));
-		tlLogger.addAppender(consoleApp);
-
-		/* Get config */
+	/**
+	 * @param args
+	 */
+	private static void loadConfig(String[] args) {
 		try {
 			String[] argsrest = Config.load(System.getProperty(CONFIG_FILE_PROP),args);
 			Config c = Config.instance();
@@ -108,23 +128,11 @@ public class WCETAnalysis {
 			System.err.println("[FATAL] Loading configuration failed");
 			System.exit(1);
 		}
-				
-		Config config = Config.instance();
-		WCETAnalysis inst = new WCETAnalysis(config);
-		/* run */
-		if(! inst.run()) {
-			System.err.println("[ERROR] WCET Analysis failed");
-			System.exit(1);
-		} else {
-			tlLogger.info("WCET analysis finished");
-			if(config.hasReportDir()) {
-				tlLogger.info("Results are in "+config.getOutDir()+"/index.html");
-			}
-		}
 	}
 
 	private boolean run() {
 		Project project = new Project();
+		project.setTopLevelLooger(tlLogger);
 		tlLogger.info("Loading project");
 		try {
 			project.load();
@@ -136,7 +144,7 @@ public class WCETAnalysis {
 		boolean succeed = false;
 		try {
 			/* Analysis */
-			tlLogger.info("Starting analysis");
+			tlLogger.info("Starting WCET analysis");
 			SimpleAnalysis an = new SimpleAnalysis(project);
 
 			long scaWCET = 	an.computeWCET(project.getRootMethod(),WcetMode.ANALYSE_REACHABLE).getCost();

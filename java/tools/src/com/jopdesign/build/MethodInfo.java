@@ -60,9 +60,13 @@ public class MethodInfo {
 	
 	public void setMethodGen(MethodGen m) {
 		methodGen = m;
+		updateMethodFromGen();
+	}
+	
+	public void updateMethodFromGen() {
 		methodGen.setMaxStack();
 		methodGen.setMaxLocals();
-		method = methodGen.getMethod();
+		method = methodGen.getMethod();		
 	}
 	
 	public Method getMethod() {
@@ -87,6 +91,10 @@ public class MethodInfo {
 
 	public String getFQMethodName() {
 		return cli.clazz.getClassName() + "." + methodId;
+	}
+	
+	@Override public String toString() {
+		return super.toString()+"\""+getFQMethodName() +"\"";
 	}
 
 }

@@ -123,6 +123,7 @@ public class ClassInfo extends com.jopdesign.build.ClassInfo {
 			mi.setMethodGen(mg);
 			
 			processMethod(mg);
+			cli.list.add(mi);
 		}
 
 		private void processMethod(MethodGen method) {

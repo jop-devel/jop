@@ -2,6 +2,18 @@
 
 Nov 08
 ---------
+- 13/11/08: Factor out common preprocessing steps into WcetPreprocess.preprocess
+- 13/11/08: Loop bound annotations now support lower and upper bound
+- 13/11/08: Add support for DFA analysis (when config.doDfaAnalysis())
+- 13/11/08: BasicBlock: fixed a bug in InstructionTargetVisitor.visitSelect
+
+- 12/11/08: frontend: Rename JOPAppInfo to WcetAppInfo. It no longer inherits from AppInfo,
+            but aggregates it. Run 'CreateMethodGenerators' after loading the classes.
+            Don't use method.getCode(), but the methodGen.getInstructionList() everywhere.
+            See NOTES [Setting MethodGen].
+- 12/11/08: frontend: Make InstrField enum private and provide (static) getters
+- 12/11/08: LpSolveWrapper: delete file before dumping .lp file
+
 - 11/11/08: Callgraph: 
             Make sure a subgraph is only build once (fixes bug in presence of cyclic callgraphs).
 - 11/11/08: Flowgraph:
