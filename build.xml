@@ -104,6 +104,9 @@
 			<include name="RXTXcomm.jar"/>
 			<include name="lpsolve55j.jar"/>
 			<include name="log4j-1.2.15.jar"/>
+			<!-- wcet08 -->
+			<include name="velocity-dep-1.5.jar"/>
+			<include name="jgrapht-jdk1.5.jar"/>
 		</fileset>
 	</path>
 
@@ -208,7 +211,7 @@
 	</target>
 
 	<target name="tools" description="Builds all the (Java) tools">
-		
+
 		<delete dir="${tools}/dist"/>
 		<mkdir dir="${tools}/dist"/>
 		<mkdir dir="${tools}/dist/lib"/>
@@ -221,9 +224,17 @@
 			<include name="com/jopdesign/build/*.java"/>
 			<include name="com/jopdesign/tools/*.java"/>
 			<include name="com/jopdesign/wcet/*.java"/>
+			<include name="com/jopdesign/wcet08/**/*.java"/>
+			<exclude name="com/jopdesign/wcet08/**/test/*.java"/>
 			<include name="com/jopdesign/dfa/*.java"/>
 			<include name="org/apache/**/*.java"/>
 		</javac>
+		<!-- Additional files to be included in the tools.jar -->
+		<copy todir="${tools}/dist/classes" failonerror="true">
+		  <fileset dir="${tools}/src">
+		    <include name="com/jopdesign/wcet08/**/*.vm"/>
+		  </fileset>
+		</copy>
 
 		<jar basedir="${tools}/dist/classes" destfile="${tools}/dist/lib/jop-tools.jar"/>
 
@@ -684,6 +695,13 @@
 	<!-- dot:   it will generate directed graphs of basic blocks in dot format (see: http://www.graphviz.org/) -->
 	<!-- jline: it will insert Java source code into the bytecode tables -->
 	<target name="wcet" description="Rasmus's WCET analyser">
+	        <mkdir dir="${target}/tmp"/>
+		<java
+		   classpathref="tools-cp"
+		   classname="com.jopdesign.build.WcetPreprocess"
+		   failonerror="true" fork="true">
+		  <arg line="-cp ${target}/dist/lib/classes.zip -o ${target}/tmp ${main-class}"/>
+		</java>
 		<delete dir="${target}/wcet"/>
 		<mkdir dir="${target}/wcet"/>
 		<java
@@ -698,12 +716,27 @@
 <!--
 			<arg line="-mm ${wcet-method} -cp ${target}/dist/lib/classes.zip -o ${target}/wcet/${p3}wcet.txt -sp &quot;${target-source-flattened} &quot; ${main-class}"/>
 -->
-			<arg line="-mm ${wcet-method} -cp ${target}/dist/lib/classes.zip -o ${target}/wcet/${p3}wcet.txt -sp ${target-source-flattened} ${main-class}"/>
+			<arg line="-mm ${wcet-method} -cp ${target}/tmp -o ${target}/wcet/${p3}wcet.txt -sp ${target-source-flattened} ${main-class}"/>
 		</java>
 	</target>
-		
-	<target name="dot2eps" depends="wcet">
-	 	<!-- cd $(TARGET)/wcet && make   -->
+
+	<target name="wcet08" description="Benedikt's WCET analyser" depends="java-app">
+		<delete dir="${target}/wcet"/>
+		<mkdir dir="${target}/wcet"/>
+		<java
+			classpathref="tools-cp"
+			classname="com.jopdesign.wcet08.WCETAnalysis"
+			failonerror="true"
+			fork="true">
+			<sysproperty key="cp" value="${target}/dist/lib/classes.zip"/>
+			<sysproperty key="sp" value="${target-source-flattened}"/>
+			<sysproperty key="reportdir" value="${target}/wcet"/>
+			<arg line="-rootclass ${main-class} -rootmethod ${wcet-method}"/>
+		</java>
+	</target>
+
+	<target name="dot2eps"> <!-- depends wcet or wcet08 -->
+		<exec executable="make" dir="${target}/wcet" failonerror="yes"/>
 	</target>  
 	
 	<target name="test">
