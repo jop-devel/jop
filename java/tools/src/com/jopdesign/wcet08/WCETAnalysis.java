@@ -27,6 +27,8 @@
 
 package com.jopdesign.wcet08;
 
+import java.util.Arrays;
+
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -96,7 +98,6 @@ public class WCETAnalysis {
 		}
 		System.err.println("\nSee 'wcet.properties' for an example configuration");
 		System.err.println("Current configuration: "+Config.instance().getOptions());
-		System.err.println("System properties: "+System.getProperties());
 		System.exit(1);		
 	}
 
@@ -107,7 +108,11 @@ public class WCETAnalysis {
 		try {
 			String[] argsrest = Config.load(System.getProperty(CONFIG_FILE_PROP),args);
 			Config c = Config.instance();
-			if(argsrest.length != 0 || c.helpRequested()) exitUsage();
+			if(c.helpRequested()) exitUsage();
+			if(argsrest.length != 0) {
+				System.err.println("Unknown command line arguments: "+Arrays.toString(argsrest));
+				exitUsage();
+			}
 			tlLogger.info("Configuration: "+Config.instance().getOptions());
 			c.checkOptions();
 			if(Config.instance().hasReportDir()) {

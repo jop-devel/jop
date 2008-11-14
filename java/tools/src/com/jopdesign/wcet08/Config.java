@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.List;
@@ -512,12 +513,15 @@ public class Config {
 			if(optionSet.containsKey(key)) {
 				options.put(key, val);
 			} else {
-				rest.add(argv[i]);rest.add(argv[i+1]);
+				System.err.println("Not in option set: "+key+" ("+Arrays.toString(argv));
+				rest.add(key);
+				rest.add(val);
 			}
 			i+=2;
 		}
 		for(;i < argv.length;i++) rest.add(argv[i]);
-		return rest.toArray(argv);
+		String[] restArray = new String[rest.size()];
+		return rest.toArray(restArray);
 	}
 
 	/** 
