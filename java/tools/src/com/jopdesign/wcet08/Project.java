@@ -25,18 +25,12 @@ import java.util.Map;
 import java.util.SortedMap;
 
 import org.apache.bcel.classfile.JavaClass;
-import org.apache.bcel.classfile.Method;
-import org.apache.bcel.classfile.Visitor;
-import org.apache.bcel.generic.ConstantPoolGen;
-import org.apache.bcel.generic.MethodGen;
 import org.apache.log4j.Logger;
 
 import com.jopdesign.build.AppInfo;
 import com.jopdesign.build.AppVisitor;
 import com.jopdesign.build.ClassInfo;
-import com.jopdesign.build.InsertSynchronized;
 import com.jopdesign.build.MethodInfo;
-import com.jopdesign.build.ReplaceIinc;
 import com.jopdesign.build.WcetPreprocess;
 import com.jopdesign.dfa.analyses.LoopBounds;
 import com.jopdesign.dfa.analyses.ReceiverTypes;

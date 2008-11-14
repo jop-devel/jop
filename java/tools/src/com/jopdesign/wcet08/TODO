@@ -3,6 +3,10 @@ TODO  List
 Please assign names (in square brackets) to tasks, and reference them in the source
 when appropriate.
 
+[REFACTOR_PROJECT] Project and WcetAppInfo server quite similar purposes at the moment. A good
+choice would be to have everything non-WCET specific in WcetAppInfo, and the rest in project.
+E.g. ControlFlowGraphs should reside in WcetAppInfo.
+
 [BUG_ARRAY_ISSUE]
 wcet.ArrayIssue takes 710 cycles on the sim, but only 43 according to analysis.
 

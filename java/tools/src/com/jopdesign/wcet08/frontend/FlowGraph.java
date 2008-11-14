@@ -42,7 +42,6 @@ import org.jgrapht.graph.DefaultDirectedGraph;
 import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.dfa.analyses.LoopBounds;
-import com.jopdesign.dfa.framework.AppInfo;
 import com.jopdesign.wcet.WCETInstruction;
 import com.jopdesign.wcet08.Project;
 import com.jopdesign.wcet08.frontend.BasicBlock.FlowInfo;
@@ -278,6 +277,7 @@ public class FlowGraph {
 	}
 
 	/* worker: create the flow graph */
+	@SuppressWarnings("static-access")
 	private void createFlowGraph(MethodInfo method) {
 		WcetAppInfo.logger.info("creating flow graph for: "+method);
 		blocks = BasicBlock.buildBasicBlocks(this.appInfo,method);
@@ -447,6 +447,7 @@ public class FlowGraph {
 			topOrder = new TopOrder<FlowGraphNode, FlowGraphEdge>(this.graph, this.entry);
 			loopColoring = new LoopColoring<FlowGraphNode, FlowGraphEdge>(this.graph,topOrder);
 		} catch (BadGraphException e) {
+			WcetAppInfo.logger.error("Bad flow graph: "+getGraph().toString());
 			throw new Error("[FATAL] Analyse flow graph failed ",e);
 		}
 	}

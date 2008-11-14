@@ -33,6 +33,7 @@ import com.jopdesign.build.MethodInfo;
 import com.jopdesign.wcet.WCETInstruction;
 import com.jopdesign.wcet08.Config;
 import com.jopdesign.wcet08.Project;
+import com.jopdesign.wcet08.analysis.CacheConfig.CacheApproximation;
 import com.jopdesign.wcet08.frontend.BasicBlock;
 import com.jopdesign.wcet08.frontend.FlowGraph;
 import com.jopdesign.wcet08.frontend.CallGraph.CallGraphNode;
@@ -54,8 +55,8 @@ import com.jopdesign.wcet08.ipet.LocalAnalysis.CostProvider;
 public class SimpleAnalysis {
 	class WcetKey {
 		MethodInfo m;
-		WcetMode alwaysHit;
-		public WcetKey(MethodInfo m, WcetMode mode) {
+		CacheApproximation alwaysHit;
+		public WcetKey(MethodInfo m, CacheApproximation mode) {
 			this.m = m; this.alwaysHit = mode;
 		}
 		@Override
@@ -121,15 +122,6 @@ public class SimpleAnalysis {
 		
 	}
 	
-	/**
-	 * Supported WCET computations: Assume all method cache accesses are miss 
-	 * (<code>ALWAYS_MISS</code>), analyse the set of reachable methods
-	 * (<code>ANALYSE_REACHABLE</code) or
-	 * assume (unsafe !) all are hit (<code>ALWAYS_HIT</code>),
-	 *
-	 */
-	public enum WcetMode { ALWAYS_HIT, ALWAYS_MISS, ANALYSE_REACHABLE };
-
 	private static final Logger logger = Logger.getLogger(SimpleAnalysis.class);
 	private Project project;
 	private Hashtable<WcetKey, WcetCost> wcetMap;
@@ -157,19 +149,19 @@ public class SimpleAnalysis {
 	 * @param alwaysHit
 	 * @return
 	 */
-	public WcetCost computeWCET(MethodInfo m, WcetMode cacheMode) {
+	public WcetCost computeWCET(MethodInfo m, CacheApproximation cacheMode) {
 		/* use a cache to speed up analysis */
 		WcetKey key = new WcetKey(m,cacheMode);
 		if(wcetMap.containsKey(key)) return wcetMap.get(key);
 
 		/* analyse reachable */
-		WcetMode recursiveMode = cacheMode;
+		CacheApproximation recursiveMode = cacheMode;
 		boolean allFit = getMaxCacheBlocks(m) <= config.cacheBlocks();
-		boolean localHit = cacheMode == WcetMode.ALWAYS_HIT;
+		boolean localHit = cacheMode == CacheApproximation.ALWAYS_HIT;
 		long missCost = 0;		
-		if(cacheMode == WcetMode.ANALYSE_REACHABLE) {
+		if(cacheMode == CacheApproximation.ANALYSE_REACHABLE) {
 			if(allFit) {
-				recursiveMode = WcetMode.ALWAYS_HIT;
+				recursiveMode = CacheApproximation.ALWAYS_HIT;
 				localHit = true;
 				missCost = cacheMissPenalty(m);
 			}			
@@ -246,7 +238,7 @@ public class SimpleAnalysis {
 	 * @return
 	 */
 	private Map<FlowGraphNode, WcetCost> 
-		buildNodeCostMap(FlowGraph fg,WcetMode recursiveMode, boolean localHit) {
+		buildNodeCostMap(FlowGraph fg,CacheApproximation recursiveMode, boolean localHit) {
 		
 		HashMap<FlowGraphNode, WcetCost> nodeCost = new HashMap<FlowGraphNode,WcetCost>();
 		for(FlowGraphNode n : fg.getGraph().vertexSet()) {
@@ -261,9 +253,9 @@ public class SimpleAnalysis {
 	
 	private class WcetVisitor implements FlowGraph.FlowGraphVisitor {
 		WcetCost cost;
-		private WcetMode recursiveMode;
+		private CacheApproximation recursiveMode;
 		private boolean localHit;
-		public WcetVisitor(WcetMode recursiveMode, boolean localHit) {
+		public WcetVisitor(CacheApproximation recursiveMode, boolean localHit) {
 			this.recursiveMode = recursiveMode;
 			this.localHit = localHit;
 			this.cost = new WcetCost();
@@ -293,7 +285,7 @@ public class SimpleAnalysis {
 		}
 	}
 	private WcetCost 
-		computeCostOfNode(FlowGraphNode n,WcetMode recursiveMode, boolean localHit) {
+		computeCostOfNode(FlowGraphNode n,CacheApproximation recursiveMode, boolean localHit) {
 		
 		WcetVisitor wcetVisitor = new WcetVisitor(recursiveMode, localHit);
 		n.accept(wcetVisitor);

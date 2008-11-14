@@ -35,11 +35,8 @@ import org.apache.log4j.Logger;
 
 import com.jopdesign.build.AppInfo;
 import com.jopdesign.build.ClassInfo;
-import com.jopdesign.build.InsertSynchronized;
 import com.jopdesign.build.MethodInfo;
-import com.jopdesign.build.ReplaceIinc;
 import com.jopdesign.build.WcetPreprocess;
-import com.jopdesign.dfa.analyses.ReceiverTypes;
 import com.jopdesign.tools.JopInstr;
 import com.jopdesign.wcet08.Config;
 import com.jopdesign.wcet08.Config.MissingConfigurationError;

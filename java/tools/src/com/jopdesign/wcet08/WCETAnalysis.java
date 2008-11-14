@@ -36,7 +36,7 @@ import com.jopdesign.wcet08.Config.BadConfigurationError;
 import com.jopdesign.wcet08.Config.MissingConfigurationError;
 import com.jopdesign.wcet08.analysis.CacheConfig;
 import com.jopdesign.wcet08.analysis.SimpleAnalysis;
-import com.jopdesign.wcet08.analysis.SimpleAnalysis.WcetMode;
+import com.jopdesign.wcet08.analysis.CacheConfig.CacheApproximation;
 import com.jopdesign.wcet08.report.Report;
 
 /**
@@ -52,6 +52,9 @@ public class WCETAnalysis {
 	}
 
 	public static void main(String[] args) {
+		Config.addOptions(Config.baseOptions);
+		Config.addOptions(CacheConfig.cacheOptions);
+		
 		/* Console logging for top level messages */
 		ConsoleAppender consoleApp = new ConsoleAppender(new PatternLayout(), ConsoleAppender.SYSTEM_ERR);
 		consoleApp.setName("TOP-LEVEL");
@@ -88,16 +91,13 @@ public class WCETAnalysis {
 				" -"+Config.ROOT_CLASS_NAME+" wcet.Method\n");
 		System.err.print  ("OPTIONS can be configured using system properties");
 		System.err.println(", supplying a property file or as command line arguments");
-		printOptionDescrs(Config.optionDescrs);
-		printOptionDescrs(CacheConfig.optionDescrs);
-		System.err.println("\nSee 'wcet.properties' for an example configuration");
-		System.exit(1);		
-	}
-
-	private static void printOptionDescrs(String[][] optionDescrs) {
-		for(String[] option : optionDescrs) {
-			System.err.println("    "+option[0]+" ... "+option[1]);
+		for(Option o : Config.availableOptions()) {
+			System.err.println("    "+o.toString(15));
 		}
+		System.err.println("\nSee 'wcet.properties' for an example configuration");
+		System.err.println("Current configuration: "+Config.instance().getOptions());
+		System.err.println("System properties: "+System.getProperties());
+		System.exit(1);		
 	}
 
 	/**
@@ -109,9 +109,7 @@ public class WCETAnalysis {
 			Config c = Config.instance();
 			if(argsrest.length != 0 || c.helpRequested()) exitUsage();
 			tlLogger.info("Configuration: "+Config.instance().getOptions());
-			c.checkPresent(Config.CLASSPATH_PROPERTY);
-			c.checkPresent(Config.SOURCEPATH_PROPERTY);
-			c.checkPresent(Config.ROOT_CLASS_NAME);
+			c.checkOptions();
 			if(Config.instance().hasReportDir()) {
 				tlLogger.info("Initializing Output");
 				Config.instance().initializeReport();
@@ -147,16 +145,16 @@ public class WCETAnalysis {
 			tlLogger.info("Starting WCET analysis");
 			SimpleAnalysis an = new SimpleAnalysis(project);
 
-			long scaWCET = 	an.computeWCET(project.getRootMethod(),WcetMode.ANALYSE_REACHABLE).getCost();
+			long scaWCET = 	an.computeWCET(project.getRootMethod(),CacheApproximation.ANALYSE_REACHABLE).getCost();
 			tlLogger.info("WCET simple cache analysis finsihed");
 			System.out.println("sca: "+scaWCET);
 			
 			config.setGenerateWCETReport(false);
-			long ahWCET = an.computeWCET(project.getRootMethod(),WcetMode.ALWAYS_HIT).getCost();			
+			long ahWCET = an.computeWCET(project.getRootMethod(),CacheApproximation.ALWAYS_HIT).getCost();			
 			tlLogger.info("WCET always hit analysis finsihed");
 			System.out.println("ah:"+ahWCET);
 			
-			long amWCET = an.computeWCET(project.getRootMethod(),WcetMode.ALWAYS_MISS).getCost();
+			long amWCET = an.computeWCET(project.getRootMethod(),CacheApproximation.ALWAYS_MISS).getCost();
 			tlLogger.info("WCET always miss analysis finished");
 			System.out.println("am: "+amWCET);
 			

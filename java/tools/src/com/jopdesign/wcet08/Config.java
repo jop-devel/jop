@@ -25,8 +25,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Hashtable;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.StringTokenizer;
+import java.util.Vector;
+import java.util.Map.Entry;
 
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.FileAppender;
@@ -116,25 +122,53 @@ public class Config {
 	
 	public static final String DO_DFA = "dataflow-analysis";
 	public static final boolean DO_DFA_DEFAULT = false;
-    /*
-	public static final String DO_UPPAAL = "do-uppaal";
-	public static final String DO_IPET   = "do-ipet";
-    */
 
-    public static final String[][] optionDescrs = {
-    	{CLASSPATH_PROPERTY,"the classpath [mandatory]"},
-    	{SOURCEPATH_PROPERTY,"the sourcepath [mandatory]"},
-    	{ROOT_CLASS_NAME,"the name of the class containing the method to be analyzed [mandatory]"},
-    	{ROOT_METHOD_NAME,"the name (and optionally signature) of the method to be analyzed [default: measure]"},    	
-    	{PROJECT_NAME," the name of the project [default: fully qualified name of root method]"},
-    	{REPORTDIR_PROPERTY,"if reports should be generated, the directory to write them to [optional]"},
-    	{REPORTDIRROOT_PROPERTY,"if reports should be generated, the parent directory to write them to [optional]"},
-    	{TEMPLATEDIR_PROPERTY,"directory with additional velocity templates [optional]"},    	
-    	{PROGRAM_DOT,"the path to the dot binary if dot should be invoked from java [optional]"},
-    	{DUMP_ILP,"dump the lp problems to files [default: yes]"},
-    	{DO_DFA,"perform dataflow analysis [default: no]"}
-    };
+	/*
+	 * Options
+	 * ~~~~~~~ 
+	 */
+	private static Map<String,Option<? extends Object>> optionSet;
+	private static List<Option<? extends Object>> optionList;
+	private static void optionSetInit() {
+		if(optionList != null) return;
+		optionList = new LinkedList<Option<? extends Object>>();
+		optionSet  = new Hashtable<String, Option<? extends Object>>();		
+	}
+	public static List<Option<? extends Object>> availableOptions() {
+		optionSetInit();
+		return optionList;
+	}
+	public static Option<? extends Object> getOptionSpec(String key) {
+		optionSetInit();
+		return optionSet.get(key);
+	}
+	public static void addOptions(Option[] options) {
+		optionSetInit();
+		for(Option<? extends Object> opt : options) {
+			optionSet.put(opt.key,opt);
+			optionList.add(opt);
+		}
+	}
+	/**
+	 * TODO: We could add more elaborated option type (for classpath, methods, etc.) to improve error handling
+	 */
+	public static final Option[] baseOptions =
+	{ 
+		new Option.StringOption(ROOT_CLASS_NAME,"the name of the class containing the method to be analyzed",false),
+		new Option.StringOption(ROOT_METHOD_NAME,"the name (and optionally signature) of the method to be analyzed","measure"),
+		new Option.StringOption(PROJECT_NAME,"name of the 'project', used when generating reports (generated if missing)",true),
 
+		new Option.StringOption(CLASSPATH_PROPERTY,"the classpath",false),
+		new Option.StringOption(SOURCEPATH_PROPERTY,"the sourcepath",false),
+		
+		new Option.StringOption(REPORTDIR_PROPERTY,"the directory to write reports into (no report generation if neither this nor "+REPORTDIRROOT_PROPERTY+" is set)",true),
+		new Option.StringOption(REPORTDIRROOT_PROPERTY,"reports will be generated in config["+REPORTDIRROOT_PROPERTY+"]/config["+PROJECT_NAME+"]",true),
+		new Option.StringOption(PROGRAM_DOT,"if graphs should be generated from java, the path to the 'dot' binary", true),
+		
+		new Option.BooleanOption(DUMP_ILP,"whether the LP problems should be dumped to files","yes"),
+		
+		new Option.BooleanOption(DO_DFA,"whether dataflow analysis should be performed","no")
+	};
     /**
 	 * The underlying Properties object
 	 */
@@ -154,7 +188,10 @@ public class Config {
 	 */
 	protected Config() { 
 		theConfig = this; /* avoid potential recursive loop */
-		options = new Properties(System.getProperties());
+		options = new Properties();
+		for(Entry e : System.getProperties().entrySet()) {
+			options.put(e.getKey(),e.getValue());
+		}
 		defaultAppender = new ConsoleAppender(new PatternLayout("[%c{1}] %m\n"),"System.err");
 		defaultAppender.setName("ACONSOLE");
 		defaultAppender.setThreshold(Level.WARN);
@@ -255,9 +292,27 @@ public class Config {
 	 * @throws IOException 
 	 */
 	public void loadConfig(InputStream propStream) throws IOException {
-		options.load(propStream);
+		Properties p = new Properties();
+		p.load(propStream);
+		options.putAll(p);
 	}
 	
+	public void checkOptions() throws BadConfigurationException {
+		for(Option o : Config.optionList) {
+			if(! o.isOptional() && ! this.hasProperty(o.key)) {
+				throw new BadConfigurationException("Missing Option: "+o.key);
+			}
+			String p = this.getProperty(o.key);
+			if(p != null) {
+				try {
+					o.checkFormat(p);
+				} catch(IllegalArgumentException ex ){
+					throw new BadConfigurationException("Bad format for option: "+o.key+"="+p,ex);
+				}
+			}
+		}
+	}
+
 	public String getProjectName() {
 		if(this.projectName == null) { /* Set ONCE ! */
 			if(getProperty(PROJECT_NAME) != null) {
@@ -410,12 +465,11 @@ public class Config {
 	public boolean getBooleanOption(String key, boolean def) {
 		String v= this.options.getProperty(key);
 		if(v == null) return def;
-		return (v.toLowerCase().startsWith("t") ||
-		        v.toLowerCase().startsWith("y"));
+		return Option.BooleanOption.parse(v);
 	
 	}
 	public int getIntOption(String key, int def) {
-		String v= this.options.getProperty(key);
+		String v = this.options.getProperty(key);
 		if(v== null) return def;
 		return Integer.parseInt(v);
 	}
@@ -448,18 +502,22 @@ public class Config {
 	 */
 	public String[] consumeOptions(String[] argv) {
 		int i = 0;
+		Vector<String> rest = new Vector<String>();
 		while(i+1 < argv.length && argv[i].startsWith("-") && 
 			  ! (argv[i].equals("-") || argv[i].equals("--"))) {
 			String key,val; 
 			if(argv[i].charAt(1) == '-') key = argv[i].substring(2);
 			else key = argv[i].substring(1);
 			val = argv[i+1];
-			options.put(key, val);
+			if(optionSet.containsKey(key)) {
+				options.put(key, val);
+			} else {
+				rest.add(argv[i]);rest.add(argv[i+1]);
+			}
 			i+=2;
 		}
-		String [] rest = new String[argv.length - i];
-		for(int j = 0; j < (argv.length-i); j++) rest[j] = argv[i+j];
-		return rest;
+		for(;i < argv.length;i++) rest.add(argv[i]);
+		return rest.toArray(argv);
 	}
 
 	/** 

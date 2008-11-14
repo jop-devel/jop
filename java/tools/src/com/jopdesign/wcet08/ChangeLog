@@ -2,6 +2,11 @@
 
 Nov 08
 ---------
+- 14/11/08: Create an Option class, for better easier option processing and better
+            error handling of command line arguments.
+- 14/11/08: Fix bug in graphutils.Dominators : Intersect (defined) predecessors,
+            not their idoms, to find the idom of a node.
+
 - 13/11/08: Factor out common preprocessing steps into WcetPreprocess.preprocess
 - 13/11/08: Loop bound annotations now support lower and upper bound
 - 13/11/08: Add support for DFA analysis (when config.doDfaAnalysis())

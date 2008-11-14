@@ -69,14 +69,13 @@ public class Dominators<V,E> {
 				V newIdom = null;
 				for(E edge : graph.incomingEdgesOf(v)) {
 					V pre = graph.getEdgeSource(edge);
-					V preIdom = getIDom(pre);
-					if(preIdom == null) continue;
+					if(getIDom(pre) == null) /* not yet analyzed */ continue;
 					if(newIdom == null) {
 						/* If we only have one (defined) predecessor pre, IDom(v) = pre */
 						newIdom = pre;
 					} else {
 						/* compute the intersection of all defined predecessors of v */
-						newIdom = intersectIDoms(preIdom,newIdom);
+						newIdom = intersectIDoms(pre,newIdom);
 					}
 				}
 				if(newIdom == null) throw new AssertionError("newIDom == null !, for "+v);

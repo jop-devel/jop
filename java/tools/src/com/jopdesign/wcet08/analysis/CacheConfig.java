@@ -20,8 +20,17 @@
 package com.jopdesign.wcet08.analysis;
 
 import com.jopdesign.wcet08.Config;
+import com.jopdesign.wcet08.Option;
 
 public class CacheConfig {
+	/**
+	 * Supported cache approximations: Assume all method cache accesses are miss 
+	 * (<code>ALWAYS_MISS</code>), analyse the set of reachable methods
+	 * (<code>ANALYSE_REACHABLE</code) or
+	 * assume (unsafe !) all are hit (<code>ALWAYS_HIT</code>),
+	 *
+	 */
+	public enum CacheApproximation { ALWAYS_HIT, ALWAYS_MISS, ANALYSE_REACHABLE };
 	public final int INVOKE_STATIC_HIDE_LOAD_CYCLES = 37;
 	public final int MIN_RETURN_HIDE_LOAD_CYCLES = 9;
 	public final int MIN_HIDE_LOAD_CYCLES = 9;
@@ -33,11 +42,11 @@ public class CacheConfig {
 	public static final String CACHE_APPROX = "cache-approx";	
 	public static final String CACHE_BLOCKS = "cache-blocks";	
 	public static final String BLOCK_SIZE = "cache-block-size";
-	public final static String[][] optionDescrs = {
-		{ CACHE_APPROX, "cache approximation for var block cache"+
-						"{always-hit,always-miss,static-reachable [default]}" },
-		{ CACHE_BLOCKS, "number of cache blocks [default: 16]" },
-		{ BLOCK_SIZE,   "size of cache blocks in bytes [default: 256]"}
+
+	public static final Option[] cacheOptions = {
+		new Option.EnumOption<CacheApproximation>(CACHE_APPROX,"cache approximation for var block cache", CacheApproximation.ANALYSE_REACHABLE),
+		new Option.IntegerOption(CACHE_BLOCKS,"number of cache blocks",16),
+		new Option.IntegerOption(BLOCK_SIZE,"size of cache blocks in bytes",256)
 	};
 	
 	public int cacheBlocks() {
