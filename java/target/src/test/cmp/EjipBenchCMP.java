@@ -21,13 +21,16 @@
 package cmp;
 
 
+import com.jopdesign.io.IOFactory;
+import com.jopdesign.io.SysDevice;
+import com.jopdesign.sys.Startup;
+
 import ejip.LinkLayer;
 import ejip.Loopback;
 import ejip.Net;
 import ejip.Packet;
 import ejip.Udp;
 import ejip.UdpHandler;
-import joprt.RtThread;
 
 /**
  * Test program for CMP version of ejip.
@@ -37,39 +40,21 @@ import joprt.RtThread;
  */
 public class EjipBenchCMP {
 	
-	static class LinkThread extends RtThread {
-
-		public LinkThread(int prio, int us) {
-			super(prio, us);
-			// TODO Auto-generated constructor stub
-		}
-
-		public void run() {
-			while (!go) {
-				waitForNextPeriod();
-			}
-		}
-	}
-
 	// Shared Variables
 	static boolean finished;
 	
 	static Object monitor = new Object();
-	static final int PRIORITY = 1;
-	static final int PERIOD = 1000;
 	static final int CNT = 10000;
 	static final boolean CMP = false;
-	static final int MAX_OUTSTANDING = 1;
-	
-	volatile static boolean go = false;
-	
+	static final int MAX_OUTSTANDING = 3;
+		
 	static Net net;
 	static LinkLayer ipLink;
 	
-	int sent;
-	int received;
-	int a, b;
-	int sum;
+	static int sent;
+	static int received;
+	static int a, b;
+	static int sum;
 
 /**
 *	Start network.
@@ -110,18 +95,8 @@ public class EjipBenchCMP {
 		b = 0xabcd;
 		sum = 1234;
 	}
-
-	public int test(int cnt) {
-
-		for (received=0; received<cnt;) {
-			request();
-			ipLink.loop();
-			net.loop();
-		}
-		return sum;
-	}
 	
-	private void request() {
+	private static void request() {
 		
 		if (sent-received<MAX_OUTSTANDING) {
 			Packet p = Packet.getPacket(Packet.FREE, Packet.ALLOC, ipLink);
@@ -147,46 +122,67 @@ public class EjipBenchCMP {
 		int stop = 0;
 		int time = 0;
 
-		System.out.println("Ejip benchmark:");
 		
 		EjipBenchCMP ebench = new EjipBenchCMP();
 
+		SysDevice sys = IOFactory.getFactory().getSysDevice();
 		int nrCpu = Runtime.getRuntime().availableProcessors();
 
+		System.out.println("Ejip benchmark");
+
+		Runnable rl = new Runnable() {
+			public void run() {
+				for (;;) {
+					ipLink.loop();					
+				}
+			}
+		};
+
+		Runnable rn = new Runnable() {
+			public void run() {
+				for (;;) {
+					net.loop();					
+				}
+			}
+		};
+
+		if (nrCpu>2) {
+			Startup.setRunnable(rl, 0);
+			Startup.setRunnable(rn, 1);
+		} else if (nrCpu==2) {
+			Startup.setRunnable(rn, 0);			
+		}
+		
 		for (int i = 0; i < nrCpu; i++) {
-//			rtt.setProcessor(i);
+//			Startup.setRunnable(r, i);
 		}
 
-		// Start threads on this and other CPUs
-		RtThread.startMission();
-
-		// give threads time to setup their memory
-		RtThread.sleepMs(100);
 		System.out.println("Start calculation");
 		// Start of measurement
+		// Start of all other CPUs
+		sys.signal = 1;
 		start = (int) System.currentTimeMillis();
-		go = true;
-		
-		for (int i=0; i<CNT; ++i) {
+
+
+		if (nrCpu==1) {
+			for (received=0; received<CNT;) {
+				request();
+				ipLink.loop();
+				net.loop();
+			}
+		} else if (nrCpu==2) {
+			for (received=0; received<CNT;) {
+				request();
+				ipLink.loop();
+			}
+		} else {
+			for (received=0; received<CNT;) {
+				request();
+			}			
 		}
-		ebench.test(CNT);
-
-		// This main thread will be blocked till the
-		// worker thread has finished
-
-//		while (true) {
-//			synchronized (monitor) {
-//				if (finished) {
-//					break;
-//				}
-//			}
-//		}
 
 		// End of measurement
 		stop = (int) System.currentTimeMillis();
-
-		System.out.println("StartTime: " + start);
-		System.out.println("StopTime: " + stop);
 		time = stop - start;
 		System.out.println("TimeSpent: " + time);
 	}
