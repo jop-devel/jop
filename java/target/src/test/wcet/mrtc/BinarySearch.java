@@ -25,7 +25,7 @@ public class BinarySearch
         }
     }
 
-    private static final int DATA_SIZE = 1024;
+    private static final int DATA_SIZE = 15;
     private Data[] data;
 
     public BinarySearch()
@@ -47,7 +47,7 @@ public class BinarySearch
         fvalue = -1;  // all data are positive
 
         // @LoopBound(max=4)  // max=log(DATA_SIZE)
-    	while (low <= up) // @WCA loop=10
+    	while (low <= up) // @WCA loop=4
     	{
         	mid = (low + up) >> 1;
 
