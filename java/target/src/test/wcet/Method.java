@@ -144,6 +144,6 @@ public class Method {
 		i = 456;
 		i = 456;
 		i = 456;
-
+		c();
 	}
 }
