@@ -139,7 +139,10 @@ public class LocalMatrixCalc extends RtThread {
 				stats[cpu_id] = processCalculation();				
 			}
 		};
-		PrivateScope scope = new PrivateScope(1000);
+		PrivateScope scope = null;
+		if (USE_SCOPE) {
+			scope = new PrivateScope(1000);			
+		}
 		while (!go) {
 			waitForNextPeriod();
 		}

@@ -46,9 +46,7 @@ public class SimpleLoop2 {
 			Native.wrMem(0x00000001, Const.IO_SIGNAL);
 			measure(10, a, number);
 			val = te-ts-to;
-			if (MEASURE) System.out.println(val);
-			// if (MEASURE) System.out.println(to);
-			
+			if (MEASURE) System.out.println(val);			
 		}
 		else
 		{
