@@ -63,6 +63,7 @@ class WCETBasicBlock {
 
   // loopcontroller vars
   boolean innerloop = false; // used both for invo block and lc blocks when applicable
+  boolean onlyInvokeInInnerLoop = false; //rup: only activate cache hits when an invocation is alone in an inner loop
   ArrayList loopchains; // chains of BB that loop back to the lc
 
   // id of the bb
@@ -476,6 +477,8 @@ class WCETBasicBlock {
           invowcbb.innerloop = true;
           invowcbb.loopdriverwcbb = loopdriverwcbb;
           invowcbb.loop = loop;
+          if(invoblocks.size() == 1)
+            invowcbb.onlyInvokeInInnerLoop = true;
         }
       }
     }
@@ -664,10 +667,12 @@ class WCETBasicBlock {
       ls.append(getIDS()+ "_T: f" + invodriver+" = f" +invoT+"; // invo T return path \n");
 
       // flow constrain the cache paths
-      if(innerloop){
-        ls.append("fcm"+ invoS + " <= f"+loopdriverwcbb.getLoopdriverprevwcbb().getIDS()+"_"+loopdriverwcbb.getIDS()+"; // cache misses driven by loopdriver\n");
+      //if(innerloop){
+	  if(innerloop && onlyInvokeInInnerLoop){
+        //ls.append("fcm"+ invoS + " <= f"+loopdriverwcbb.getLoopdriverprevwcbb().getIDS()+"_"+loopdriverwcbb.getIDS()+"; // cache misses driven by loopdriver\n");
+        ls.append("fcm"+ invoS + " = f"+loopdriverwcbb.getIDS()+"_"+loopdriverwcbb.getSucbb().getIDS()+"; // innerloop && onlyInvokeInInnerLoop: cache misses driven by loopdriver\n");
       } else { // cache misses
-        ls.append("fch"+ invoS + " = 0; // no cache hits (because not innerloop)\n");
+        ls.append("fch"+ invoS + " = 0; // !(innerloop && onlyInvokeInInnerLoop): no cache hits\n");
       }
 
       ls.append("/* Done with "+bbinvo+"*/\n");
@@ -803,6 +808,13 @@ class WCETBasicBlock {
           }
           if(loopdriver)
             lcStr += "ld";
+  if(innerloop)
+    lcStr += "(il)"; //means on inner loop
+
+  if(innerloop && onlyInvokeInInnerLoop)
+    lcStr += "(oi)";  //means only invoke
+
+
   if(nodetype == BNODE)
     sb.append(WU.postpad(getIDS()+"'B'{"+lcStr+"}"+tStr,6)); // see the BBs that point to this BB
   else if(nodetype == INODE)
