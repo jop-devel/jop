@@ -144,6 +144,10 @@ public class Method {
 		i = 456;
 		i = 456;
 		i = 456;
+		e();
+	}
+	
+	static void e() {
 		c();
 	}
 }
