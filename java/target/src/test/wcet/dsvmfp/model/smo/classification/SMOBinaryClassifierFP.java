@@ -23,7 +23,7 @@ import wcet.dsvmfp.model.smo.kernel.KFP;
  * points. 2. Provide the classification of test points.
  */
 public class SMOBinaryClassifierFP{
-	
+
 	final static boolean PRINT = false;
 
   static boolean info;
@@ -221,7 +221,7 @@ public class SMOBinaryClassifierFP{
         System.out.println("Done!");
         smoInfo();
         System.out.print("total time:");
-        System.out.println(time);    	
+        System.out.println(time);
     }
 
 
@@ -1313,6 +1313,7 @@ public class SMOBinaryClassifierFP{
     int functionalOutput_fp = 0;
     int[][] data_fp_local = data_fp;
     int m = data_fp_local.length;
+    int func_out = 0;
     //System.out.println("---ALIVE1m---" + m);
     int n = xtest.length;
     int n2 = data_fp_local[0].length;
@@ -1321,17 +1322,20 @@ public class SMOBinaryClassifierFP{
     //System.out.println("---ALIVE11---");
     for (int i = 0; i < m; i++) { // @WCA loop=60
       //System.out.println("---ALIVE1111---" + i);
-      if (alpha_fp[i] > 0) {
-		n = xtest.length;
-		// MS: is the following bound correct?
-        while (n != 0) { // @WCA loop=2 
-          n = n - 1;
-          //System.out.println("---ALIVEnin---" + n);
-          //System.out.println("---ALIVEnim---" + m);
-          //functionalOutput_fp += KFP.kernelX(i);
-          functionalOutput_fp += (data_fp_local[i][n] >> 8) * (xtest[n] >> 8);
-        }
+
+      n = xtest.length;
+      // MS: is the following bound correct?
+      while (n != 0) { // @WCA loop=2
+        n = n - 1;
+        //System.out.println("---ALIVEnin---" + n);
+        //System.out.println("---ALIVEnim---" + m);
+        //functionalOutput_fp += KFP.kernelX(i);
+        func_out += (data_fp_local[i][n] >> 8) * (xtest[n] >> 8);
       }
+      if (alpha_fp[i] > 0) {
+        functionalOutput_fp += func_out;
+      }
+      func_out = 0;
     }
     functionalOutput_fp -= bias_fp;
     return functionalOutput_fp;
