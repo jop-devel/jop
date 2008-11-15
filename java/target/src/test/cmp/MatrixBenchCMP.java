@@ -111,7 +111,7 @@ public class MatrixBenchCMP implements Runnable {
 		{
 			for (int j=0; j<N; j++)
 			{
-				arrayA[i][j]= (Math.abs(r.nextInt()))%max;
+				arrayA[i][j]= r.nextInt();
 			}
 		}
 		
@@ -119,7 +119,7 @@ public class MatrixBenchCMP implements Runnable {
 		{
 			for (int j=0; j<P; j++)
 			{
-				arrayB[i][j]= (Math.abs(r.nextInt()))%max;
+				arrayB[i][j]= r.nextInt();
 			}
 		}
 		
@@ -132,36 +132,44 @@ public class MatrixBenchCMP implements Runnable {
 		}
 	}
 	
-	static int processCalculation()
-	{
+	static int processCalculation() {
+
+		int val;
+		int[] colB, localRow;
+		int j, i;
+		
 		int myRow = 0;
 		int counter = 0;
 		
-		while(true){
-			synchronized(lock)
-			{
-				if (rowCounter == N){
-					break;}
-				else{
+		localRow = new int[M];
+
+		while (true) {
+			synchronized (lock) {
+				if (rowCounter == N) {
+					break;
+				} else {
 					myRow = rowCounter;
-					rowCounter++;}
-			}
-			
-			for (int i=0; i<P; i++)  // column
-			{
-				arrayC[myRow][i] = 0;
-				
-				for( int j=0; j<M; j++)
-				{
-					arrayC[myRow][i]= arrayC[myRow][i]+arrayA[myRow][j]*arrayB[j][i];
+					rowCounter++;
 				}
 			}
-			
-			synchronized(lock)
-			{
-				endCalculation++;
+
+			for (j = 0; j < M; j++) {
+				localRow[j] = arrayA[j][myRow];
 			}
 			
+			for (i = 0; i < P; i++) { // column
+				val = 0;
+				colB = arrayB[i];
+				for (j = 0; j < M; j++) {
+					val += localRow[j] * colB[j];
+				}
+				arrayC[i][myRow] = val;
+			}
+
+			synchronized (lock) {
+				endCalculation++;
+			}
+
 			counter++;
 		}
 		return counter;
