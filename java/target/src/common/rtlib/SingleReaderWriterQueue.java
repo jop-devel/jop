@@ -26,7 +26,7 @@ package rtlib;
 
 /**
  * A non-locking buffer for single reader and
- * single writer. A classical usage is in an interrupt handler.
+ * single writer. Classical usage is in an interrupt handler.
  *  
  * @author Martin Schoeberl
  *
@@ -124,7 +124,7 @@ public class SingleReaderWriterQueue<T> {
 	 * @return entry or -1 on empty buffer
 	 */
 	public T checkedRead() {
-		if (empty()) return null;
+		if (rdPtr==wrPtr) return null;
 		return read();
 	}
 

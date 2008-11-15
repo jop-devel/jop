@@ -32,11 +32,67 @@ package cmp;
  */
 class Runner implements Runnable {
 
-	Runnable[] work;
+	Runnable[] workList;
 	static boolean stop;
 	
 	public Runner(Runnable[] list) {
-		work = list;
+		workList = list;
+	}
+	
+	static Runnable dummy = new Runnable() {
+
+		public void run() {
+			while(!stop) {
+				util.Timer.usleep(10);
+			}
+		}
+		
+	};
+	
+	/**
+	 * Distribute the work list. Runner 1 to n-1 get ceil(length, n) Runnables.
+	 * The last Runner gets the rest.
+	 * @param work
+	 * @param nrCpu
+	 * @return
+	 */
+	public static Runner[] distributeWorklist(Runnable[] work, int nrCpu) {
+		// Distribute the workload
+		Runner[] runner = new Runner[nrCpu];
+		int cnt = 0;
+		System.out.println(nrCpu);
+		for (int i=0; i<nrCpu; i++) {
+			
+			int toDistribute = work.length-cnt;
+			int remCpus = nrCpu-i;
+			int perCpu = 1;
+			if (toDistribute%remCpus!=0) {
+				// ceiling
+				perCpu = (toDistribute+remCpus-1)/remCpus;
+			} else {
+				perCpu = toDistribute/remCpus;
+			}
+//			System.out.println("toDist="+toDistribute+"remCpus="+remCpus+" perCpu="+perCpu);
+//			if (perCpu<0) perCpu = 0;
+			Runnable localWork[] = new Runnable[perCpu];
+			if (perCpu==0) {
+				localWork = new Runnable[] {
+						dummy,
+				};
+				System.out.println("cpu="+i+" dummy runnable");
+			}
+			for (int j=0; j<perCpu; ++j) {
+				System.out.println("cpu="+i+" runnable="+cnt);
+				if (cnt>=work.length) {
+					localWork[j] = dummy;					
+				} else {
+					localWork[j] = work[cnt];
+					++cnt;
+				}
+			}
+			runner[i] = new Runner(localWork);
+		}
+		return runner;
 	}
 	
 	static void stop() {
@@ -45,8 +101,8 @@ class Runner implements Runnable {
 	
 	public void run() {
 		while(!stop) {
-			for (int i=0; i<work.length; ++i) {
-				work[i].run();
+			for (int i=0; i<workList.length; ++i) {
+				workList[i].run();
 			}
 		}
 	}

@@ -21,6 +21,8 @@
 package cmp;
 
 
+import rtlib.SingleReaderWriterQueue;
+
 import com.jopdesign.io.IOFactory;
 import com.jopdesign.io.SysDevice;
 import com.jopdesign.sys.Startup;
@@ -44,48 +46,43 @@ public class EjipBenchCMP {
 	static boolean finished;
 	
 	static Object monitor = new Object();
-	static final int CNT = 10000;
-	static final boolean CMP = false;
-	static final int MAX_OUTSTANDING = 3;
+	static final int CNT = 1000;
+	static final int VECTOR_LEN = 10;
+	static final int MAX_OUTSTANDING = 4;
 		
 	static Net net;
 	static LinkLayer ipLink;
 	
-	static int sent;
-	static int received;
+	static volatile int sent;
+	static volatile int received;
 	static int a, b;
 	static int sum;
+	
+	static SingleReaderWriterQueue<Packet> macQueue, resultQueue;
 
 /**
 *	Start network.
 */
-	public EjipBenchCMP() {
+	public static void init() {
 
 		net = Net.init();
 		ipLink = Loopback.init();
+		
+		macQueue = new SingleReaderWriterQueue<Packet>(new Packet[Packet.MAX+1]);
+		resultQueue = new SingleReaderWriterQueue<Packet>(new Packet[Packet.MAX+1]);
 
-		UdpHandler adder;
-		adder = new UdpHandler() {
+		UdpHandler mac;
+		mac = new UdpHandler() {
 			public void request(Packet p) {
-				if (p.len != ((Udp.DATA+1)<<2)) {
-					p.setStatus(Packet.FREE);
-				} else {
-					p.buf[Udp.DATA] += p.buf[Udp.DATA+1];
-					p.len = (Udp.DATA)<<2;
-					Udp.build(p, (127<<24)+(0<<16)+(0<<8)+1, 5678);
-				}
+				macQueue.write(p);
 			}
 		};
-		Udp.addHandler(1234, adder);
+		Udp.addHandler(1234, mac);
 
 		UdpHandler result;
 		result = new UdpHandler() {
 			public void request(Packet p) {
-				if (p.len == ((Udp.DATA)<<2)) {
-					sum = p.buf[Udp.DATA];
-				}
-				++received;
-				p.setStatus(Packet.FREE);
+				resultQueue.write(p);
 			}
 		};
 		Udp.addHandler(5678, result);
@@ -96,22 +93,67 @@ public class EjipBenchCMP {
 		sum = 1234;
 	}
 	
-	private static void request() {
+	private static void macServer() {
 		
+		Packet p = macQueue.checkedRead();
+		if (p==null) return;
+		
+		if (p.len < ((Udp.DATA+1)<<2)) {
+			p.setStatus(Packet.FREE);
+		} else {
+			int buf[] = p.buf;
+			int len = buf[Udp.DATA];
+			int result = 0;
+			for (int i=0; i<len; ++i) {
+				result += buf[Udp.DATA+1+i*2] * buf[Udp.DATA+2+i*2];
+			}
+			
+			buf[Udp.DATA] = result;
+			p.len = (Udp.DATA+1)<<2;
+			Udp.build(p, (127<<24)+(0<<16)+(0<<8)+1, 5678);
+		}
+		
+	}
+	
+	private static void resultServer() {
+		
+		Packet p = resultQueue.checkedRead();
+		if (p==null) return;
+
+		if (p.len == ((Udp.DATA)<<2)) {
+			sum = p.buf[Udp.DATA];
+		}
+		++received;
+		p.setStatus(Packet.FREE);
+		if (received>=CNT) {
+			Runner.stop();
+		}		
+	}
+	private static void request() {
+
 		if (sent-received<MAX_OUTSTANDING) {
 			Packet p = Packet.getPacket(Packet.FREE, Packet.ALLOC, ipLink);
 			if (p == null) {				// got no free buffer!
 				return;
 			}
-			p.buf[Udp.DATA] = a;
-			p.buf[Udp.DATA+1] = b;
-			p.len = (Udp.DATA+1)<<2;
+			int buf[] = p.buf;
+			buf[Udp.DATA] = VECTOR_LEN;			
+			for (int i=0; i<VECTOR_LEN; ++i) {
+				buf[Udp.DATA+1+i*2] = a;
+				buf[Udp.DATA+2+i*2] = b;				
+				// just generate new 'funny' values and use sum
+				a = (a<<1)^b;
+				b = (b<<1)^sum;
+			}
+			
+			p.len = (Udp.DATA+1+VECTOR_LEN*2)<<2;
 			Udp.build(p, (127<<24)+(0<<16)+(0<<8)+1, 1234);
 			sent++;
-			// just generate new 'funny' values and use sum
-			a = (a<<1)^b;
-			b = (b<<1)^sum;
 		}
+//		System.out.print("request ");
+//		System.out.print(sent);
+//		System.out.print(" ");
+//		System.out.println(received);
 	}
 
 	
@@ -122,64 +164,37 @@ public class EjipBenchCMP {
 		int stop = 0;
 		int time = 0;
 
-		
-		EjipBenchCMP ebench = new EjipBenchCMP();
+		init();
 
 		SysDevice sys = IOFactory.getFactory().getSysDevice();
 		int nrCpu = Runtime.getRuntime().availableProcessors();
 
 		System.out.println("Ejip benchmark");
-
-		Runnable rl = new Runnable() {
-			public void run() {
-				for (;;) {
-					ipLink.loop();					
-				}
-			}
-		};
-
-		Runnable rn = new Runnable() {
-			public void run() {
-				for (;;) {
-					net.loop();					
-				}
-			}
-		};
-
-		if (nrCpu>2) {
-			Startup.setRunnable(rl, 0);
-			Startup.setRunnable(rn, 1);
-		} else if (nrCpu==2) {
-			Startup.setRunnable(rn, 0);			
-		}
 		
-		for (int i = 0; i < nrCpu; i++) {
-//			Startup.setRunnable(r, i);
+		// our work list
+		Runnable[] work = new Runnable[] {
+			// first one (or more) can printout
+			new Runnable() { public void run() { ipLink.loop(); } },
+			new Runnable() { public void run() { resultServer(); } },
+			new Runnable() { public void run() { request(); } },				
+			new Runnable() { public void run() { macServer(); } },
+			// more heavy tasks at the end
+			new Runnable() { public void run() { net.loop(); } },
+		};
+
+		Runner[] runner = Runner.distributeWorklist(work, nrCpu);
+		for (int i=0; i<nrCpu-1; i++) {
+			Startup.setRunnable(runner[i+1], i);
 		}
 
-		System.out.println("Start calculation");
+		received = 0;
+		System.out.println("Start");
 		// Start of measurement
 		// Start of all other CPUs
 		sys.signal = 1;
 		start = (int) System.currentTimeMillis();
 
-
-		if (nrCpu==1) {
-			for (received=0; received<CNT;) {
-				request();
-				ipLink.loop();
-				net.loop();
-			}
-		} else if (nrCpu==2) {
-			for (received=0; received<CNT;) {
-				request();
-				ipLink.loop();
-			}
-		} else {
-			for (received=0; received<CNT;) {
-				request();
-			}			
-		}
+		runner[0].run();
 
 		// End of measurement
 		stop = (int) System.currentTimeMillis();
