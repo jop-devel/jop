@@ -30,7 +30,7 @@ import jbe.BenchLift;
 
 public class LiftBenchCMP implements Runnable {
  
-	public static int cnt = 16384;
+	public static int cnt = 10000;
 	public static int signal = 0;
 	static Object lock;
 	public static BenchMark [] bm_array;
@@ -78,6 +78,9 @@ public class LiftBenchCMP implements Runnable {
 			Runnable r = new LiftBenchCMP(i+1, loop_array[i+1], bm_array[i+1]);
 			Startup.setRunnable(r, i);
 		}
+		
+		// Insert for comparison with single CPU performance
+		//loop_array[0]=cnt;
 		
 		// Start of measurement
 		start = LowLevel.timeMillis();
