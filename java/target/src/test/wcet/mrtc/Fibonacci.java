@@ -1,5 +1,4 @@
 package wcet.mrtc;
-//import edu.uci.eecs.doc.clepsydra.loop.LoopBound;
 
 /**
  * Simple iterative Fibonacci calculation used to calculate fib(30).
@@ -11,18 +10,16 @@ package wcet.mrtc;
  * href="http://www.mrtc.mdh.se/projects/wcet/benchmarks.html">Maelardalen WCET
  * Benchmarks</a>.
  */
-public class Fibonacci
-{
-    private int fib(int n)
-    {
+public class Fibonacci {
+	
+    public int fib(int n) {
     	int i, fNew, fOld, temp;
 
     	fNew = 1;
     	fOld = 0;
 
     	//@LoopBound(max=29)
-    	for (i = 2; i <= 30 && i <= n; i++)
-    	{
+    	for (i = 2; i <= 30 && i <= n; i++) { // @WCA loop=29
     		temp = fNew;
     		fNew = fNew + fOld;
     		fOld = temp;
@@ -31,8 +28,8 @@ public class Fibonacci
     	return fNew;
     }
 
-    public static void main(String[] args)
-    {
+    public static void main(String[] args) {
+    	
         Fibonacci f = new Fibonacci();
         
         f.fib(30);
