@@ -41,17 +41,18 @@ public class StartLineFollower {
 		te = Native.rdMem(Const.IO_CNT);
 		to = te-ts;
 		LineFollower.init();
-		// measurement + return takes 22+22+21=65 cycles
-		// WCET measured: x
-		// WCET analysed: y
-		measure();
+		invoke();
 		if (MEASURE) System.out.println(te-ts-to);
 	}
 	
+	static void invoke() {
+		measure();
+		if (MEASURE) te = Native.rdMem(Const.IO_CNT);
+	}
+
 	static void measure() {
 		if (MEASURE) ts = Native.rdMem(Const.IO_CNT);
 		LineFollower.loop();
-		if (MEASURE) te = Native.rdMem(Const.IO_CNT);		
 	}
 	
 }

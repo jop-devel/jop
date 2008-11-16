@@ -15,7 +15,7 @@ public class StartDSVM {
 	/**
 	 * Set to false for the WCET analysis, true for measurement
 	 */
-	final static boolean MEASURE = false;
+	final static boolean MEASURE = true;
 	static int ts, te, to;
 
 	public static void main(String[] args) {
@@ -24,16 +24,20 @@ public class StartDSVM {
 		to = te-ts;
 		Dbg.initSer();
 		TestSMO.init();
-		measure();
+		invoke();
 		if (MEASURE) System.out.println(te-ts-to);
 
 		// TestSMO.report();
 	}
-	
+
+	static void invoke() {
+		measure();
+		if (MEASURE) te = Native.rdMem(Const.IO_CNT);
+	}
+
 	static void measure() {
 		if (MEASURE) ts = Native.rdMem(Const.IO_CNT);
 		TestSMO.deployRT();
-		if (MEASURE) te = Native.rdMem(Const.IO_CNT);		
 	}
 
 }

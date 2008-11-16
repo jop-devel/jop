@@ -45,8 +45,8 @@ public class StartKfl {
 		int min = 0x7fffffff;
 		int max = 0;
 		int val = 0;
-		for (int i=0; i<100; ++i) { // @WCA loop=100
-			measure();
+		for (int i=0; i<100; ++i) {
+			invoke();
 			val = te-ts-to;
 			if (val<min) min = val;
 			if (val>max) max = val;
@@ -54,10 +54,15 @@ public class StartKfl {
 		if (MEASURE) System.out.println(min);
 		if (MEASURE) System.out.println(max);
 	}
+	
+	static void invoke() {
+		measure();
+		if (MEASURE) te = Native.rdMem(Const.IO_CNT);
+	}
+
 	static void measure() {
 		if (MEASURE) ts = Native.rdMem(Const.IO_CNT);
 		Mast.loop();
-		if (MEASURE) te = Native.rdMem(Const.IO_CNT);		
 	}
 			
 }

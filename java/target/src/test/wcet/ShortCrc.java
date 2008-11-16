@@ -42,13 +42,12 @@ public class ShortCrc {
 		// WCET measured: 1442/1552
 		// WCET analysed: 1685-65=1620
 		// Those numbers are fomr 2006
-		measure(123);
 		int min = 0x7fffffff;
 		int max = 0;
 		int time = 0;
 		int val = -1;
 		for (int i=0; i<100000; ++i) { // @WCA loop=100
-			val = measure(val);
+			val = invoke(val);
 			time = te-ts-to;
 			if (time<min) min = time;
 			if (time>max) max = time;
@@ -58,6 +57,12 @@ public class ShortCrc {
 
 	}
 	
+	static int invoke(int val) {
+		int res = measure(val);
+		if (MEASURE) te = Native.rdMem(Const.IO_CNT);
+		return res;
+	}
+
 /*
 	better values for polynom on short messages see:
 
@@ -81,7 +86,6 @@ public class ShortCrc {
 			if ((reg & 0x100) != 0) reg ^= 0x07;
 		}
 		reg &= 0xff;
-		if (MEASURE) te = Native.rdMem(Const.IO_CNT);		
 		return reg;
 	}
 	

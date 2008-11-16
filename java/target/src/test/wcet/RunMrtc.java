@@ -24,7 +24,7 @@ import wcet.mrtc.BinarySearch;
 import wcet.mrtc.BubbleSort;
 import wcet.mrtc.CyclicRedundancyCheck;
 import wcet.mrtc.DiscreteCosineTransform;
-import lego.LineFollower;
+import wcet.mrtc.Fibonacci;
 
 import com.jopdesign.sys.*;
 
@@ -40,31 +40,28 @@ public class RunMrtc {
     static int[] crcVal = new int[2];
     static CyclicRedundancyCheck crc = new CyclicRedundancyCheck();
     static DiscreteCosineTransform d = new DiscreteCosineTransform();
+    static Fibonacci fib = new Fibonacci();
 
-
-    
-
-	/**
-	 * @param args
-	 */
 	public static void main(String[] args) {
 		
 		ts = Native.rdMem(Const.IO_CNT);
 		te = Native.rdMem(Const.IO_CNT);
 		to = te-ts;
-		measure();
+		invoke();
 		if (MEASURE) System.out.println(te-ts-to);
-
-
+	}
+	
+	static void invoke() {
+		measure();
+		if (MEASURE) te = Native.rdMem(Const.IO_CNT);
 	}
 	
 	static void measure() {
 		if (MEASURE) ts = Native.rdMem(Const.IO_CNT);
-		// b.bubbleSort();
 	    // bs.binarySearch(-1);  // Use non-existent key to drive worst-case performance
+		// b.bubbleSort();
 	    // crc.crc(crcVal);
 	    d.fdct(d.block, 8);
-		if (MEASURE) te = Native.rdMem(Const.IO_CNT);		
+		// fib.fib(30);		
 	}
-	
 }
