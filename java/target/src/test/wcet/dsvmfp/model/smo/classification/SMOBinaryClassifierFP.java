@@ -26,6 +26,9 @@ public class SMOBinaryClassifierFP{
 
 	final static boolean PRINT = false;
 
+  /** Number of lagrange multipliers in deployed RT model */
+  public final static int ALPHA_RT = 5;
+
   static boolean info;
 
   static public boolean printSMOInfo;
@@ -66,6 +69,9 @@ public class SMOBinaryClassifierFP{
 
   /** The [m] Lagrange multipliers. */
   static public int[] alpha_fp;
+
+  /** Sorted to have largest alpha index on [0] and so on.*/
+  static public int[] alpha_index_sorted;
 
   /** The target vector of {-1,+1}. */
   static public int[] y_fp;
@@ -172,6 +178,7 @@ public class SMOBinaryClassifierFP{
     // Reset alpha_fp array , errorarray , b, and C
     takeStepCount = 0;
     initParams();
+
     // System.out.println("main:bef manual call");
     // printSMOInfo = true;
     // while(printSMOInfo)
@@ -216,6 +223,8 @@ public class SMOBinaryClassifierFP{
       }
       //break;
     }
+    if (PRINT) System.out.println("SMO.mainroutine.trained");
+    sortAlphaIndex();
     time = Native.rd(Const.IO_US_CNT)-time;
     if (PRINT) {
         System.out.println("Done!");
@@ -640,6 +649,7 @@ public class SMOBinaryClassifierFP{
     m = y_fp.length;
     n = data_fp[0].length;
     alpha_fp = new int[m];
+    alpha_index_sorted = new int[m];
     findexset = new int[m];
     findexset0 = new int[m];
     findexset0Size = 0;
@@ -667,6 +677,7 @@ public class SMOBinaryClassifierFP{
       findexset0pos[i] = -1;
       findexset0[i] = -1;
       findexset[i] = calculatefindex(i);
+      alpha_index_sorted[i] = i;
     }
     fcache_fp = new int[m];
     // Kernel cache init
@@ -1320,7 +1331,8 @@ public class SMOBinaryClassifierFP{
     //System.out.println("---ALIVE1n2---" + n2);
     //System.out.println("---ALIVE1n---" + n);
     //System.out.println("---ALIVE11---");
-    for (int i = 0; i < m; i++) { // @WCA loop=60
+    // RT bound it to ALPHA_RT
+    for (int i = 0; i < ALPHA_RT; i++) { // @WCA loop=5
       //System.out.println("---ALIVE1111---" + i);
 
       n = xtest.length;
@@ -1330,9 +1342,9 @@ public class SMOBinaryClassifierFP{
         //System.out.println("---ALIVEnin---" + n);
         //System.out.println("---ALIVEnim---" + m);
         //functionalOutput_fp += KFP.kernelX(i);
-        func_out += (data_fp_local[i][n] >> 8) * (xtest[n] >> 8);
+        func_out += (data_fp_local[alpha_index_sorted[i]][n] >> 8) * (xtest[n] >> 8);
       }
-      if (alpha_fp[i] > 0) {
+      if (alpha_fp[alpha_index_sorted[i]] > 0) {
         functionalOutput_fp += func_out;
       }
       func_out = 0;
@@ -1491,6 +1503,30 @@ public class SMOBinaryClassifierFP{
         svs++;
     }
     return svs;
+  }
+
+  // sorts the indeces of the alphas
+  static void sortAlphaIndex(){
+
+	int changed;
+	if (PRINT) System.out.println("SMO.sortalphaindex");
+	do {
+	  changed = 0;
+	  if (PRINT) System.out.println("SMO.sort1");
+      for(int i = 0; i < (m-1); i++){
+	    if(alpha_fp[alpha_index_sorted[i]] < alpha_fp[alpha_index_sorted[i+1]]) {
+	      int tmp = alpha_index_sorted[i];
+	      alpha_index_sorted[i] = alpha_index_sorted[i+1];
+	      alpha_index_sorted[i+1] = tmp;
+	      changed++;
+	    }
+      }
+      if (PRINT) System.out.println("SMO.sort2");
+	  if (PRINT) {
+		  System.out.println("Sorting...");
+	  }
+
+	} while(changed > 0);
   }
 
   /**

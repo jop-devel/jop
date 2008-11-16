@@ -37,8 +37,8 @@ public class TestSMO {
     // Training instances
     // Remember to make same as in dsvm.test.smo.ServerData
     // Change these files for the four setups
-    TrainingData1.assign(data_fp, y_fp);
-    TestData1.assign(testdata_fp,testlabel_fp);
+    TrainingData2.assign(data_fp, y_fp);
+    TestData2.assign(testdata_fp,testlabel_fp);
 //    dsvmfp.TrainingData2.assign(data_fp, y_fp);
 //    dsvmfp.TestData2.assign(testdata_fp,testlabel_fp);
 //    dsvmfp.TrainingData3.assign(data_fp, y_fp);
