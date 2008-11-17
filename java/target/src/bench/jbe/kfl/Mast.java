@@ -229,10 +229,14 @@ private static void xxxDbgData() {
 	static boolean handleDbg(int val) {
 
 		int data;
+		// we need this to avoid a simple goto in the CFG
+		boolean exit = false;
 
+		// that's a reset state - we do not need to
+		// analyse it -> loop count is set to 1
 		if (val==BBSys.CMD_RESET) {
 			Msg.write(0);
-			for(;;)
+			for(;exit;)  // @WCA loop=1
 				;				// wait for WD
 
 		}
@@ -248,9 +252,12 @@ private static void xxxDbgData() {
 //
 	private static void doService() {
 
+		// we need this to avoid a simple goto in the CFG
+		boolean exit = false;
+
 		JopSys.wr(0x01, BBSys.IO_LED);
 
-		for (;;) {
+		for (;exit;) { // @WCA loop=1
 			Msg.loop();					// only for replay to set state
 			Triac.loop();
 
@@ -286,7 +293,7 @@ private static void xxxDbgData() {
 
 		blinkCnt = 0;
 
-		for (;;) {
+		for (;;) {  // @WCA loop=999999
 			loop();
 		}
 	}
