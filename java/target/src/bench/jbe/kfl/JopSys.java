@@ -233,7 +233,7 @@ public class JopSys {
 		val <<= 8;
 		val |= Msg.crc(val);		// append crc
 
-		for (i=0; i<4; ++i) {
+		for (i=0; i<4; ++i) {	// @WCA loop=4
 			buf[i] = val & 0x0ff;
 			val >>>= 8;
 		}
