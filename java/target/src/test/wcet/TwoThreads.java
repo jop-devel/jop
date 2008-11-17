@@ -22,9 +22,9 @@ package wcet;
 
 import joprt.*;
 import util.Timer;
-import wcet.kflapp.Mast;
-import wcet.lift.LiftControl;
-import wcet.lift.TalIo;
+import jbe.kfl.Mast;
+import jbe.lift.LiftControl;
+import jbe.lift.TalIo;
 
 /**
  * The example for CPs JOP/DMa paper
