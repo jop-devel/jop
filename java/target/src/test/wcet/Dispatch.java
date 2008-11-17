@@ -20,10 +20,6 @@
 
 package wcet;
 
-import joprt.RtThread;
-import wcet.lift.LiftControl;
-import wcet.lift.TalIo;
-
 import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 
