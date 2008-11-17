@@ -68,7 +68,7 @@ public class Timer {
 			last = i;
 			return;
 		}
-		while (next-JopSys.rd(JopSys.IO_CNT) >= 0)
+		while (next-JopSys.rd(JopSys.IO_CNT) >= 0) // @WCA loop=1
 			;
 		last = JopSys.rd(JopSys.IO_CNT);
 	}

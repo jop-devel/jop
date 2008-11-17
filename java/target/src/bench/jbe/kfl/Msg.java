@@ -104,7 +104,7 @@ public class Msg {
 
 		int reg = -1;
 
-		for (int i=0; i<32; ++i) {
+		for (int i=0; i<32; ++i) { // @WCA loop=32
 			reg <<= 1;
 			if (val<0) reg |= 1;
 			val <<=1;
@@ -134,16 +134,16 @@ public class Msg {
 		int i;
 
 		int old485 = cnt485;
-		while ((JopSys.rd(IO_STATUS)&2)!=0 && cntSer<4) {
+		while ((JopSys.rd(IO_STATUS)&2)!=0 && cntSer<4) { // @WCA loop=4
 			bufSer[cntSer++] = JopSys.rd(IO_UART);
 			msg485 = false;
 		}
-		while ((JopSys.rd(IO_STATUS)&32)!=0 && cnt485<4) {
+		while ((JopSys.rd(IO_STATUS)&32)!=0 && cnt485<4) { // @WCA loop=4
 			buf485[cnt485++] = JopSys.rd(IO_RS485);
 			msg485 = true;
 		}
 		if (cntSer==4) {					// read messages from serial and rs485
-			for (i=0; i<4; ++i) {
+			for (i=0; i<4; ++i) { // @WCA loop=4
 				buf485[i] = bufSer[i];
 			}
 			cnt485 = 4;
@@ -151,7 +151,7 @@ public class Msg {
 		}
 		if (cnt485==4) {
 			val = 0;
-			for (i=0; i<4; ++i) {
+			for (i=0; i<4; ++i) { // @WCA loop=4
 				val <<= 8;
 				val |= buf485[i];
 			}
@@ -179,7 +179,8 @@ public class Msg {
 
 		int i;
 
-		for (i=3; i>=0; --i) {			// buf is filled in 'wrong' way (LSB)
+		for (i=3; i>=0; --i) {	// @WCA loop=4
+			// buf is filled in 'wrong' way (LSB)
 			if (msg485) {
 				JopSys.wr(buf[i], IO_RS485);
 			} else {
@@ -212,7 +213,7 @@ public class Msg {
 		val <<= 8;
 		val |= crc(val);		// append crc
 
-		for (i=0; i<4; ++i) {
+		for (i=0; i<4; ++i) { // @WCA loop=4
 			buf[i] = val & 0x0ff;
 			val >>>= 8;
 		}

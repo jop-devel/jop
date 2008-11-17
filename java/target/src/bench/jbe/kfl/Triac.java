@@ -79,13 +79,15 @@ public class Triac {
 		int i;
 
 		opto = new int[OPTO_LEN];		// 5 ms loop, min one val for 20 ms
-		for (i=0; i<opto.length; ++i) {
+		for (i=0; i<opto.length; ++i) { // @WCA loop=4
 			opto[i] = BBSys.MSK_U;	// usfull defaults
 		}
 		opto_idx = 0;
 
 		curr = new int[3];
-		for (i=0; i<3; ++i) curr[i] = 0;
+		for (i=0; i<3; ++i) { // @WCA loop=4
+			curr[i] = 0;			
+		}
 
 		dir = 0;
 		timerWait = 0;
@@ -177,7 +179,7 @@ public class Triac {
 		opto_idx = i;
 
 		j = 0;
-		for (i=0; i<OPTO_LEN; ++i) {
+		for (i=0; i<OPTO_LEN; ++i) { // @WCA loop=4
 			j |= opto[i];								// or means minimum one impuls
 		}												// in 20 ms
 		opto_val = j;
@@ -287,7 +289,7 @@ public class Triac {
 		int i, val;
 
 		val = JopSys.rd(BBSys.IO_IADC);
-		for (i=0; i<3; ++i) {
+		for (i=0; i<3; ++i) { // @WCA loop=3
 			curr[i] = val & 1023;
 			val = val>>10;
 		}
@@ -301,7 +303,7 @@ public class Triac {
 */
 		if (Mast.state==BBSys.MS_UP || Mast.state==BBSys.MS_DOWN) {
 
-			for (i=0; i<3; ++i) {
+			for (i=0; i<3; ++i) { // @WCA loop=3
 				val = curr[i];
 				if (val<STROM_THRES) {					// kein Strom
 					stop();
@@ -320,7 +322,7 @@ public class Triac {
 
 		} else {
 
-			for (i=0; i<3; ++i) {
+			for (i=0; i<3; ++i) { // @WCA loop=3
 				val = curr[i];
 				if (val>=STROM_THRES) {					// es fliesst Strom in Ruhestellung
 					stop();
