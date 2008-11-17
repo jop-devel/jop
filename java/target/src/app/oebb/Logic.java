@@ -486,7 +486,7 @@ System.out.println("Logic.initVals()");
 		//
 		if (Logic.state == Logic.ERLAUBNIS && 
 			pos == Main.state.end &&
-			state.type==State.TYPE_ZUG) {
+			(state.type==State.TYPE_ZUG || state.type==State.TYPE_ES221)) {
 
 			Logic.state = Logic.ZIEL;
 			if (Status.connOk) {
@@ -1758,7 +1758,7 @@ System.out.println("ES Rdy");
 				Main.state.start = Main.state.getPos();
 				Main.state.end = melnr;
 				Logic.state = Logic.ERLAUBNIS;
-				Main.state.type = State.TYPE_ZUG;
+				Main.state.type = State.TYPE_ES221;
 				Status.direction = Gps.DIR_UNKNOWN;
 
 				setGpsData();

@@ -75,7 +75,7 @@ public class State extends ejip.UdpHandler implements Runnable {
 	public static final int ALARM_UEBERF = 1;
 	public static final int ALARM_RICHTUNG = 2;
 	public static final int ALARM_FAEHRT = 3;
-	public static final int ALARM_ES221 = 4;
+	public static final int ALARM_ES221 = 4;	// flag not used anymore
 	public static final int FLAG_ANK = 5;
 	public static final int FLAG_VERL = 6;
 	public static final int FLAG_ZIEL = 7;
@@ -749,8 +749,10 @@ public class State extends ejip.UdpHandler implements Runnable {
 		
 	}
 
+	// flag not used anymore
 	public void setESAlarm() {
-		setAlarm(ALARM_ES221);
+		type = TYPE_ES221;
+		// setAlarm(ALARM_ES221);
 	}
 
 	void setPos(int pos) {
