@@ -23,7 +23,7 @@ package wcet;
 import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 
-import wcet.kflapp.Mast;
+import jbe.kfl.Mast;
 
 public class StartKfl {
 
