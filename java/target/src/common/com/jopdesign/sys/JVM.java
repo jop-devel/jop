@@ -178,12 +178,12 @@ class JVM {
 		
 		long aa = a;
 		long res = 0;
-		for(int i=0;i<64;i=i+8)
+		for(int i=0;i<64;i=i+8) // @WCA loop=8
 		{
 			long bb = b;
 			int am = ((int)aa) & 0x000000FF;
 			
-			for(int j=0;j<64;j=j+8)
+			for(int j=0;j<64;j=j+8) // @WCA loop=8
 			{
 				int bm = ((int)bb) & 0x000000FF;
 				
@@ -228,7 +228,7 @@ class JVM {
 
 		int c = 0;
 		int r = 0;
-		for (int i=0; i<32; ++i) {
+		for (int i=0; i<32; ++i) { // @WCA loop=32
 			c <<= 1;
 			r <<= 1;
 			if (a < 0) {
@@ -272,7 +272,7 @@ class JVM {
 
 		long c = 0;
 		long r = 0;
-		for (int i=0; i<64; ++i) {
+		for (int i=0; i<64; ++i) { // @WCA loop=64 
 			c <<= 1;
 			r <<= 1;
 			if (a < 0) {
@@ -325,7 +325,7 @@ class JVM {
 		}
 
 		int r = 0;
-		for (int i=0; i<32; ++i) {
+		for (int i=0; i<32; ++i) { // @WCA loop=32
 			r <<= 1;
 			if (a < 0) {
 				r |= 1;
@@ -367,7 +367,7 @@ class JVM {
 		}
 
 		long r = 0;
-		for (int i=0; i<64; ++i) {
+		for (int i=0; i<64; ++i) { // @WCA loop=64
 			r <<= 1;
 			if (a < 0) {
 				r |= 1;
