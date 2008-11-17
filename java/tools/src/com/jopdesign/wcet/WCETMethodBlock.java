@@ -1088,8 +1088,7 @@ class WCETMethodBlock {
 		}
 		codeString
 				.append("=========================================================================\n");
-		codeString.append("Info: n=" + n + " a=" + WCETInstruction.a + " r="
-				+ WCETInstruction.r + " w=" + WCETInstruction.w + "\n");
+		codeString.append("Info: n=" + n + " r=" + WCETInstruction.r + " w=" + WCETInstruction.w + "\n");
 		codeString.append("\n");
 		//    if(wca.ls){
 		//      sb.append(toLS(true, true, ""));

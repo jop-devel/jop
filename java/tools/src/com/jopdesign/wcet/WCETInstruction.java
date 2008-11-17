@@ -21,6 +21,9 @@
 
 package com.jopdesign.wcet;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
 
@@ -30,10 +33,9 @@ import org.apache.bcel.generic.InstructionHandle;
  * making a class that wraps the microcodes into objects?
  */
 public class WCETInstruction {
+
 	// indicate that wcet is not available for this bytecode
 	public static final int WCETNOTAVAILABLE = -1;
-
-public static final int a = -1; // should be removed from WCETAnalyser!
 
 	// the read and write wait states, ram_cnt - 1
 	// DE2 Board: r=3, w=5
@@ -44,6 +46,16 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 	public static final int c = 0; // if read wait state <= 1
 	// public static final int c = r-1; // if read wait state > 1
 
+	// hidden load cycles
+	public static final int INVOKE_HIDDEN_LOAD_CYCLES = 37;
+	public static final int RETURN_HIDDEN_LOAD_CYCLES = 9;
+	public static final int ARETURN_HIDDEN_LOAD_CYCLES = 10;
+	public static final int FRETURN_HIDDEN_LOAD_CYCLES = 10;
+	public static final int IRETURN_HIDDEN_LOAD_CYCLES = 10;
+	public static final int LRETURN_HIDDEN_LOAD_CYCLES = 11;
+	public static final int DRETURN_HIDDEN_LOAD_CYCLES = 11;
+	public static final int MIN_HIDDEN_LOAD_CYCLES = RETURN_HIDDEN_LOAD_CYCLES; 
+	// TODO: Describe CMP_WCET !
 	public static final boolean CMP_WCET = false;
 
 	// Arbitration
@@ -165,11 +177,11 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			ILLEGAL_OPCODE, ILLEGAL_OPCODE, ILLEGAL_OPCODE, ILLEGAL_OPCODE,
 			ILLEGAL_OPCODE, ILLEGAL_OPCODE };
 
-	// TODO: make those missing (the rup/ms speciffic ones, but are they
+	// TODO: make those missing (the rup/ms specific ones, but are they
 	// reachable?)
 
 	/**
-	 * Same as getWCET, but using the handle.
+	 * Same as getWCET, but using the handle. 
 	 * 
 	 * @param ih
 	 * @param pmiss true if the cache is missed and false if there is a cache hit
@@ -249,15 +261,18 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 	 * 
 	 * @see table D.1 in ms thesis
 	 * @param opcode
-	 * @param pmiss true if cacle is misses and false if a cache hit
+	 * @param pmiss <code>true</code> if the invoke/return instruction referenced by 
+	 * 		  <code>opcode</code> causes a cache miss, and <code>false</code> otherwise 
+	 * @param n for invoke/return instructions, the length of the receiver/caller in words,
+	 * 		  0 otherwise
 	 * @return wcet cycle count or -1 if wcet not available
 	 */
 	public static int getCycles(int opcode, boolean pmiss, int n) {
 		int wcet = -1;
-		int b = -1;
+		int loadTime = -1;
 		
 		// cache load time
-		b = calculateB(!pmiss, n);
+		loadTime = calculateB(!pmiss, n);
 
 		switch (opcode) {
 		// NOP = 0
@@ -1007,15 +1022,15 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			if (r > 3) {
 				wcet += r - 3;
 			}
-			if (b > 10) {
-				wcet += b - 10;
+			if (loadTime > IRETURN_HIDDEN_LOAD_CYCLES) {
+				wcet += loadTime - IRETURN_HIDDEN_LOAD_CYCLES;
 			}
 			
 			if(CMP_WCET==true){
 				WCETMemInstruction ireturn = new WCETMemInstruction();
 				ireturn.microcode = new int [wcet];
 				ireturn.opcode = 172;
-				generateInstruction(ireturn, pmiss, n, b);				
+				generateInstruction(ireturn, pmiss, n, loadTime);				
 				wcet = wcetOfInstruction(ireturn.microcode);
 			}
 			break;
@@ -1025,8 +1040,8 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			if (r > 3) {
 				wcet += r - 3;
 			}
-			if (b > 11) {
-				wcet += b - 11;
+			if (loadTime > LRETURN_HIDDEN_LOAD_CYCLES) {
+				wcet += loadTime - LRETURN_HIDDEN_LOAD_CYCLES;
 			}
 			if(CMP_WCET==true){
 				wcet = -1;}
@@ -1037,14 +1052,14 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			if (r > 3) {
 				wcet += r - 3;
 			}
-			if (b > 10) {
-				wcet += b - 10;
+			if (loadTime > FRETURN_HIDDEN_LOAD_CYCLES) {
+				wcet += loadTime - FRETURN_HIDDEN_LOAD_CYCLES;
 			}
 			if(CMP_WCET==true){
 				WCETMemInstruction freturn = new WCETMemInstruction();
 				freturn.microcode = new int [wcet];
 				freturn.opcode = 174;
-				generateInstruction(freturn, pmiss, n, b);
+				generateInstruction(freturn, pmiss, n, loadTime);
 				wcet = wcetOfInstruction(freturn.microcode);}
 			break;
 		// DRETURN = 175
@@ -1053,8 +1068,8 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			if (r > 3) {
 				wcet += r - 3;
 			}
-			if (b > 11) {
-				wcet += b - 11;
+			if (loadTime > DRETURN_HIDDEN_LOAD_CYCLES) {
+				wcet += loadTime - DRETURN_HIDDEN_LOAD_CYCLES;
 			}
 			if(CMP_WCET==true){
 				wcet = -1;}
@@ -1065,14 +1080,14 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			if (r > 3) {
 				wcet += r - 3;
 			}
-			if (b > 10) {
-				wcet += b - 10;
+			if (loadTime > ARETURN_HIDDEN_LOAD_CYCLES) {
+				wcet += loadTime - ARETURN_HIDDEN_LOAD_CYCLES;
 			}
 			if(CMP_WCET==true){
 				WCETMemInstruction areturn = new WCETMemInstruction();
 				areturn.microcode = new int [wcet];
 				areturn.opcode = 176;
-				generateInstruction(areturn, pmiss, n, b);
+				generateInstruction(areturn, pmiss, n, loadTime);
 				wcet = wcetOfInstruction(areturn.microcode);}
 			break;
 		// RETURN = 177
@@ -1081,15 +1096,15 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			if (r > 3) {
 				wcet += r - 3;
 			}
-			if (b > 9) {
-				wcet += b - 9;
+			if (loadTime > RETURN_HIDDEN_LOAD_CYCLES) {
+				wcet += loadTime - RETURN_HIDDEN_LOAD_CYCLES;
 			}
 			
 			if(CMP_WCET==true){
 				WCETMemInstruction returnx = new WCETMemInstruction();
 				returnx.microcode = new int [wcet];
 				returnx.opcode = 177;
-				generateInstruction(returnx, pmiss, n, b);		
+				generateInstruction(returnx, pmiss, n, loadTime);		
 				wcet = wcetOfInstruction(returnx.microcode);
 			}
 			break;
@@ -1126,14 +1141,14 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			if (r > 2) {
 				wcet += r - 2;
 			}
-			if (b > 37) {
-				wcet += b - 37;
+			if (loadTime > INVOKE_HIDDEN_LOAD_CYCLES) {
+				wcet += loadTime - INVOKE_HIDDEN_LOAD_CYCLES;
 			}
 			if(CMP_WCET==true){
 				WCETMemInstruction invokevirtual = new WCETMemInstruction();
 				invokevirtual.microcode = new int [wcet];
 				invokevirtual.opcode = 182;
-				generateInstruction(invokevirtual, pmiss, n, b);
+				generateInstruction(invokevirtual, pmiss, n, loadTime);
 				//for(int i=0; i<invokevirtual.microcode.length; i++)
 				//	System.out.println("Invokevirtual["+i+"] = "+invokevirtual.microcode[i]);
 				wcet = wcetOfInstruction(invokevirtual.microcode);}
@@ -1147,14 +1162,14 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			if (r > 2) {
 				wcet += r - 2;
 			}
-			if (b > 37) {
-				wcet += b - 37;
+			if (loadTime > INVOKE_HIDDEN_LOAD_CYCLES) {
+				wcet += loadTime - INVOKE_HIDDEN_LOAD_CYCLES;
 			}
 			if(CMP_WCET==true){
 				WCETMemInstruction invokespecial = new WCETMemInstruction();
 				invokespecial.microcode = new int [wcet];
 				invokespecial.opcode = 183;
-				generateInstruction(invokespecial, pmiss, n, b);
+				generateInstruction(invokespecial, pmiss, n, loadTime);
 				wcet = wcetOfInstruction(invokespecial.microcode);}
 			break;
 		// INVOKENONVIRTUAL = 183
@@ -1168,14 +1183,14 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			if (r > 2) {
 				wcet += r - 2;
 			}
-			if (b > 37) {
-				wcet += b - 37;
+			if (loadTime > INVOKE_HIDDEN_LOAD_CYCLES) {
+				wcet += loadTime - INVOKE_HIDDEN_LOAD_CYCLES;
 			}
 			if(CMP_WCET==true){
 				WCETMemInstruction invokestatic = new WCETMemInstruction();
 				invokestatic.microcode = new int [wcet];
 				invokestatic.opcode = 184;
-				generateInstruction(invokestatic, pmiss, n, b);
+				generateInstruction(invokestatic, pmiss, n, loadTime);
 				wcet = wcetOfInstruction(invokestatic.microcode);}
 			break;
 		// INVOKEINTERFACE = 185
@@ -1187,8 +1202,8 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 			if (r > 2) {
 				wcet += r - 2;
 			}
-			if (b > 37) {
-				wcet += b - 37;
+			if (loadTime > INVOKE_HIDDEN_LOAD_CYCLES) {
+				wcet += loadTime - INVOKE_HIDDEN_LOAD_CYCLES;
 			}
 			if(CMP_WCET==true){
 				wcet = -1;}
@@ -1344,7 +1359,7 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 				WCETMemInstruction getfield_ref = new WCETMemInstruction();
 				getfield_ref.microcode = new int [wcet];
 				getfield_ref.opcode = 226;
-				generateInstruction(getfield_ref, pmiss, n, b);
+				generateInstruction(getfield_ref, pmiss, n, loadTime);
 				wcet = wcetOfInstruction(getfield_ref.microcode);
 			}
 			break;
@@ -1975,5 +1990,29 @@ public static final int a = -1; // should be removed from WCETAnalyser!
 		}
 		
 		return exec_time;
+	}
+	
+	/* Useful for cache analysis */
+	private static final int _HIDDEN_LOAD_CYCLES[][] = 
+	{ { org.apache.bcel.Constants.IRETURN, IRETURN_HIDDEN_LOAD_CYCLES },
+	  { org.apache.bcel.Constants.FRETURN, FRETURN_HIDDEN_LOAD_CYCLES },
+	  { org.apache.bcel.Constants.LRETURN, LRETURN_HIDDEN_LOAD_CYCLES },
+	  { org.apache.bcel.Constants.DRETURN, DRETURN_HIDDEN_LOAD_CYCLES },
+	  { org.apache.bcel.Constants.ARETURN, ARETURN_HIDDEN_LOAD_CYCLES },
+	  { org.apache.bcel.Constants.RETURN, RETURN_HIDDEN_LOAD_CYCLES },
+	  { org.apache.bcel.Constants.INVOKEVIRTUAL, INVOKE_HIDDEN_LOAD_CYCLES },
+	  { org.apache.bcel.Constants.INVOKESPECIAL, INVOKE_HIDDEN_LOAD_CYCLES },
+	  { org.apache.bcel.Constants.INVOKESTATIC, INVOKE_HIDDEN_LOAD_CYCLES },
+	  { org.apache.bcel.Constants.INVOKEINTERFACE, INVOKE_HIDDEN_LOAD_CYCLES },
+	};
+	/** Hidden load cycles for invoke/return instructions */
+	public static final Map<Integer,Integer> HIDDEN_LOAD_CYCLES = asHashMap(_HIDDEN_LOAD_CYCLES);
+
+	private static Map<Integer, Integer> asHashMap(int[][] assocArray) {
+		HashMap<Integer, Integer> map = new HashMap<Integer,Integer>();
+		for(int[] entry : assocArray) {
+			map.put(entry[0], entry[1]);
+		}
+		return map;
 	}
 }
