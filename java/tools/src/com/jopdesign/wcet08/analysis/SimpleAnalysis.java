@@ -25,10 +25,17 @@ import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Map;
 
+import org.apache.bcel.generic.ANEWARRAY;
+import org.apache.bcel.generic.ATHROW;
+import org.apache.bcel.generic.INVOKESTATIC;
+import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
+import org.apache.bcel.generic.NEW;
+import org.apache.bcel.generic.NEWARRAY;
 import org.apache.log4j.Logger;
 import org.jgrapht.DirectedGraph;
 
+import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.wcet.WCETInstruction;
 import com.jopdesign.wcet08.Config;
@@ -242,7 +249,7 @@ public class SimpleAnalysis {
 		
 		HashMap<FlowGraphNode, WcetCost> nodeCost = new HashMap<FlowGraphNode,WcetCost>();
 		for(FlowGraphNode n : fg.getGraph().vertexSet()) {
-			if(n.getCodeBlock() != null) {
+			if(n.getBasicBlock() != null) {
 				nodeCost.put(n, computeCostOfNode(n, recursiveMode, localHit));
 			} else {
 				nodeCost.put(n, new WcetCost());
@@ -263,25 +270,54 @@ public class SimpleAnalysis {
 		public void visitSpecialNode(DedicatedNode n) {
 		}
 		public void visitBasicBlockNode(BasicBlockNode n) {
-			BasicBlock bb = n.getCodeBlock();
+			BasicBlock bb = n.getBasicBlock();
 			for(InstructionHandle ih : bb.getInstructions()) {
-				int jopcode = project.getWcetAppInfo().getJOpCode(n.getCodeBlock().getClassInfo(), ih.getInstruction());
-				cost.addLocalCost(WCETInstruction.getCycles(jopcode,false,0));										
+				addInstructionCost(n,ih);
 			}
 		}
 		public void visitInvokeNode(InvokeNode n) {
+			addInstructionCost(n,n.getInstructionHandle());
 			if(n.getImpl() == null) {
 				throw new AssertionError("Invoke node "+n.getReferenced()+" without implementation in WCET analysis - did you preprocess virtual methods ?");
 			}
-			MethodInfo meth = n.getImpl();
-			logger.info("Recursive WCET computation: "+meth.getMethod());
-			cost.addNonLocalCost(computeWCET(meth, recursiveMode).getCost());
+			recursiveWCET(n.getBasicBlock().getMethodInfo(), n.getImpl());
+		}
+		private void addInstructionCost(BasicBlockNode n, InstructionHandle ih) {
+			Instruction ii = ih.getInstruction();
+			if(WCETInstruction.isInJava(ii.getOpcode())) {
+				/* FIXME: [NO THROW HACK] */
+				if(ii instanceof ATHROW || ii instanceof NEW || 
+				   ii instanceof NEWARRAY || ii instanceof ANEWARRAY) {
+					logger.error("Unable to compute WCET of "+ii+". Approximating with 2000 cycles.");
+					cost.addLocalCost(2000L);
+				} else {
+					visitJavaImplementedBC(n.getBasicBlock(),ih);
+				}
+			} else {
+				int jopcode = project.getWcetAppInfo().getJOpCode(n.getBasicBlock().getClassInfo(), ii);
+				int cycles = WCETInstruction.getCycles(jopcode,false,0);
+				cost.addLocalCost(cycles);
+			}			
+		}
+		/* add cost for invokestatic + return + the java implemented bc */
+		private void visitJavaImplementedBC(BasicBlock bb, InstructionHandle ih) {
+			logger.info("Java implemented bytecode: "+ ih.getInstruction());
+			MethodInfo javaImpl = project.getWcetAppInfo().getJavaImpl(bb.getClassInfo(), ih.getInstruction());
+			int cycles = WCETInstruction.getCycles(new INVOKESTATIC(0).getOpcode(),false,0);
+			cost.addLocalCost(cycles);
+			recursiveWCET(bb.getMethodInfo(), javaImpl);
+		}
+		private void recursiveWCET(MethodInfo invoker, MethodInfo invoked) {			
+			logger.info("Recursive WCET computation: " + invoked.getMethod());
+			cost.addNonLocalCost(computeWCET(invoked, recursiveMode).getCost());
 			if(! localHit) {
-				cost.addCacheCost(getInvokeReturnMissCost(
-						n.getCodeBlock().getNumberOfBytes(),
-						project.getFlowGraph(meth).getNumberOfBytes()));
+				long missCost = getInvokeReturnMissCost(
+					  			  project.getFlowGraph(invoker).getNumberOfBytes(),
+								  project.getFlowGraph(invoked).getNumberOfBytes());
+				logger.debug("Adding invoke/return miss cost: "+missCost);
+				cost.addCacheCost(missCost);
 				
-			}
+			}			
 		}
 	}
 	private WcetCost 
@@ -303,22 +339,33 @@ public class SimpleAnalysis {
 		int invokedWords = (invokedBytes + 3) / 4;
 		int invokerCost = Math.max(0,
 									WCETInstruction.calculateB(false, invokedWords) - 
-									config.MIN_HIDE_LOAD_CYCLES);
+									WCETInstruction.MIN_HIDDEN_LOAD_CYCLES);
 		int invokedCost = Math.max(0,
 									WCETInstruction.calculateB(false, invokerWords) - 
-									config.MIN_HIDE_LOAD_CYCLES);
+									WCETInstruction.MIN_HIDDEN_LOAD_CYCLES);
 		return invokerCost+invokedCost;
 	}
 	/**
-	 * Compute the maximal cache-hit penalty when executing m.
+	 * Compute the maximal cache-miss penalty when executing m.
+	 * <p>
 	 * Precondition: The set of all methods reachable from m fit into the cache
-	 * Observation: Assume all method invocation are static for now. Then, we may assume the
-	 * first and only cache miss for a method n  always occurs on `invokestatic`.
-	 * The cache miss penalty in this case (b-37), where b = 6 + (n+1) * (2+c), with n
-	 * being the method length in bytes and c the cache-read-wait time.
-     * Conclusion: If all methods reachable from m fit into the cache, we can compute the
-     * WCET assuming alwaysHit, and then add the sum of cache miss penalties (b[m]-37) for
-     * every reachable method m.
+	 * </p>
+	 * <p>
+     * Algorithm: If all methods reachable from <code>m</code> (including <code>m</code>) fit 
+     * into the cache, we can compute the WCET of <m> using the {@link ALWAYS_HIT@} cache
+     * approximation, and then add the sum of cache miss penalties for every reachable method.
+	 * <p>
+	 * <strong>[UPDATED]</strong> 
+	 * Explanation: We know that there is only one cache miss per method, but we do not know
+	 * when it will occur (on return or invoke). Let <code>H</code> be the number of cycles
+	 * hidden by <strong>any</strong> return or invoke instructions. Then the cache
+	 * miss penalty is bounded by <code>(b-h)</code> per method. The root method is not
+	 * taken into account, as the root's methods penalty is attributed to the caller.
+	 * </p><p>
+	 * <code>b</code> is giben by <code>b = 6 + (n+1) * (2+c)</code>, with <code>n</code>
+	 * being the method length of the receiver (invoke) or caller (return) in words 
+	 * and <code>c</code> being the cache-read wait time.
+	 * </p>
      * 
 	 * @param m The root method
 	 * @return the cache miss penalty
@@ -332,23 +379,26 @@ public class SimpleAnalysis {
 			if(n.getMethodImpl() == null) continue;
 			if(n.getMethodImpl().equals(m)) continue;
 			int words = (project.getFlowGraph(n.getMethodImpl()).getNumberOfBytes() + 3) / 4;
-			miss  += Math.max(0,
-							  WCETInstruction.calculateB(false, words) - config.INVOKE_STATIC_HIDE_LOAD_CYCLES);
+			int thisMiss = Math.max(0,WCETInstruction.calculateB(false, words) - 
+					                  WCETInstruction.MIN_HIDDEN_LOAD_CYCLES);	
+			logger.debug("Adding cache miss penalty for "+n.getMethodImpl() + " from " + m + ": " + thisMiss);
+			miss+=thisMiss;
 		}
 		return miss;
 	}
 	/**
 	 * Compute the number of cache blocks which might be needed when calling this method
-	 * @param m
-	 * @return
+	 * @param mi
+	 * @return the maximum number of cache blocks needed, s.t. we won't run out of cache
+	 * blocks when invoking the given method
 	 * @throws TypeException 
 	 */
-	public long getMaxCacheBlocks(MethodInfo m) {
-		long size = requiredNumberOfBlocks(m);
-		Iterator<CallGraphNode> iter = project.getCallGraph().getReachableMethods(m);
+	public long getMaxCacheBlocks(MethodInfo mi) {
+		long size = requiredNumberOfBlocks(mi);
+		Iterator<CallGraphNode> iter = project.getCallGraph().getReachableMethods(mi);
 		while(iter.hasNext()) {
 			CallGraphNode n = iter.next();
-			if(n.isAbstractNode()) continue;			
+			if(n.isAbstractNode()) continue;
 			size+= requiredNumberOfBlocks(n.getMethodImpl());
 		}
 		return size;

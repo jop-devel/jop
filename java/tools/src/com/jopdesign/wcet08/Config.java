@@ -170,6 +170,9 @@ public class Config {
 		
 		new Option.BooleanOption(DO_DFA,"whether dataflow analysis should be performed","no")
 	};
+	static {
+		Config.addOptions(Config.baseOptions);
+	}
     /**
 	 * The underlying Properties object
 	 */
@@ -460,7 +463,13 @@ public class Config {
 		return getBooleanOption("help",false);
 	}
 	public Properties getOptions() {
-		return this.options;
+		Properties validOptions = new Properties();
+		for(Entry<Object,Object> e : options.entrySet()) {
+			if(null != this.getOptionSpec((String)e.getKey())) {
+				validOptions.put(e.getKey(),e.getValue());				
+			}
+		}
+		return validOptions;
 	}
 
 	public boolean getBooleanOption(String key, boolean def) {
@@ -510,7 +519,7 @@ public class Config {
 			if(argv[i].charAt(1) == '-') key = argv[i].substring(2);
 			else key = argv[i].substring(1);
 			val = argv[i+1];
-			if(optionSet.containsKey(key)) {
+			if(null != Config.getOptionSpec(key)) {
 				options.put(key, val);
 			} else {
 				System.err.println("Not in option set: "+key+" ("+Arrays.toString(argv));

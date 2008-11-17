@@ -54,7 +54,6 @@ public class WCETAnalysis {
 	}
 
 	public static void main(String[] args) {
-		Config.addOptions(Config.baseOptions);
 		Config.addOptions(CacheConfig.cacheOptions);
 		
 		/* Console logging for top level messages */
@@ -70,7 +69,7 @@ public class WCETAnalysis {
 		Config config = Config.instance();
 		WCETAnalysis inst = new WCETAnalysis(config);
 		/* run */
-		if(! inst.run()) {
+		if(! inst.run()) {		
 			System.err.println("[ERROR] WCET Analysis failed");
 			System.exit(1);
 		} else {
@@ -151,16 +150,16 @@ public class WCETAnalysis {
 			SimpleAnalysis an = new SimpleAnalysis(project);
 
 			long scaWCET = 	an.computeWCET(project.getRootMethod(),CacheApproximation.ANALYSE_REACHABLE).getCost();
-			tlLogger.info("WCET simple cache analysis finsihed");
+			tlLogger.info("WCET 'analyze static reachable' analysis finsihed");
 			System.out.println("sca: "+scaWCET);
 			
 			config.setGenerateWCETReport(false);
 			long ahWCET = an.computeWCET(project.getRootMethod(),CacheApproximation.ALWAYS_HIT).getCost();			
-			tlLogger.info("WCET always hit analysis finsihed");
+			tlLogger.info("WCET 'always hit' analysis finsihed");
 			System.out.println("ah:"+ahWCET);
 			
 			long amWCET = an.computeWCET(project.getRootMethod(),CacheApproximation.ALWAYS_MISS).getCost();
-			tlLogger.info("WCET always miss analysis finished");
+			tlLogger.info("WCET 'always miss' analysis finished");
 			System.out.println("am: "+amWCET);
 			
 			project.getReport().addStat("wcet-always-hit", ahWCET);

@@ -75,7 +75,7 @@ public class FlowGraphExport {
 			return true;
 		}
 		private void setBasicBlockAttributes(BasicBlockNode n, Map<String,String> ht) {
-			BasicBlock codeBlock = n.getCodeBlock();
+			BasicBlock codeBlock = n.getBasicBlock();
 			Instruction lastInstr = codeBlock.getLastInstruction().getInstruction();
 			InvokeInstruction invInstr = 
 				(lastInstr instanceof InvokeInstruction) ? ((InvokeInstruction)lastInstr) : null;

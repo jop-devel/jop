@@ -31,9 +31,6 @@ public class CacheConfig {
 	 *
 	 */
 	public enum CacheApproximation { ALWAYS_HIT, ALWAYS_MISS, ANALYSE_REACHABLE };
-	public final int INVOKE_STATIC_HIDE_LOAD_CYCLES = 37;
-	public final int MIN_RETURN_HIDE_LOAD_CYCLES = 9;
-	public final int MIN_HIDE_LOAD_CYCLES = 9;
 	private Config config;
 
 	public CacheConfig(Config c) { 

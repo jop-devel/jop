@@ -25,6 +25,9 @@ import java.util.Map;
 import java.util.SortedMap;
 
 import org.apache.bcel.classfile.JavaClass;
+import org.apache.bcel.classfile.Method;
+import org.apache.bcel.generic.ConstantPoolGen;
+import org.apache.bcel.generic.MethodGen;
 import org.apache.log4j.Logger;
 
 import com.jopdesign.build.AppInfo;
@@ -35,7 +38,6 @@ import com.jopdesign.build.WcetPreprocess;
 import com.jopdesign.dfa.analyses.LoopBounds;
 import com.jopdesign.dfa.analyses.ReceiverTypes;
 import com.jopdesign.wcet08.frontend.CallGraph;
-import com.jopdesign.wcet08.frontend.CreateMethodGenerators;
 import com.jopdesign.wcet08.frontend.FlowGraph;
 import com.jopdesign.wcet08.frontend.WcetAppInfo;
 import com.jopdesign.wcet08.frontend.SourceAnnotations;
@@ -52,6 +54,9 @@ public class Project {
 			super(msg);
 		}
 	}
+	/**
+	 * Remove NOPs in all reachable classes
+	 */
 	public static class RemoveNops extends AppVisitor {
 		public RemoveNops(AppInfo ai) {
 			super(ai);
@@ -64,8 +69,29 @@ public class Project {
 				m.getMethodGen().removeNOPs();
 				m.updateMethodFromGen();
 			}
+		}		
+	}
+	/**
+	 * Set {@link MethodGen} in all reachable classes 
+	 */
+	public static class CreateMethodGenerators extends AppVisitor {
+		public CreateMethodGenerators(AppInfo ai) {
+			super(ai);
 		}
-		
+		public void visitJavaClass(JavaClass clazz) {
+			super.visitJavaClass(clazz);
+			ConstantPoolGen cpg = new ConstantPoolGen(clazz.getConstantPool());
+			Method[] methods = clazz.getMethods();
+			for(int i=0; i < methods.length; i++) {
+				if(!(methods[i].isAbstract() || methods[i].isNative())) {
+					Method m = methods[i];
+			        MethodInfo mi = getCli().getMethodInfo(m.getName()+m.getSignature());
+			        mi.setMethodGen(new MethodGen(m,
+			        							  mi.getCli().clazz.getClassName(),
+			        							  cpg));
+				}
+			}
+		}
 	}
 
 	public static final Logger logger = Logger.getLogger(Project.class);
@@ -75,7 +101,6 @@ public class Project {
 	}
 
 	private Config config;
-
 
 	private String className;
 	private String methodName;
@@ -109,8 +134,9 @@ public class Project {
 		this.results = new Report(this);
 	}
 	
-	private AppInfo loadApp() throws IOException {
+	public static AppInfo loadApp() throws IOException {
 		AppInfo appInfo;
+		Config config = Config.instance();
 		if(config.doDataflowAnalysis()) {
 			appInfo = new com.jopdesign.dfa.framework.AppInfo(
 							new com.jopdesign.dfa.framework.ClassInfo());
@@ -121,7 +147,7 @@ public class Project {
 		                  config.getSourcePath(),
 		                  config.getRootClassName(),
 		                  config.getRootMethodName());
-		
+		appInfo.addClass(WcetAppInfo.JVM_CLASS);
 		if(config.doDataflowAnalysis()) {			
 			appInfo.load();
 			appInfo.iterate(new RemoveNops(appInfo));
@@ -134,8 +160,17 @@ public class Project {
 	}
 	
 	public void load() throws Exception  {
+		/* run dataflow analysis */
+		if(Config.instance().doDataflowAnalysis()) {
+			topLevelLogger.info("Starting DFA analysis");
+			dataflowAnalysis();
+			topLevelLogger.info("DFA analysis finished");
+		}
+
 		AppInfo appInfo = loadApp();
-		wcetAppInfo = new WcetAppInfo(appInfo);		
+		wcetAppInfo = new WcetAppInfo(appInfo);
+		
+		/* build callgraph */
 		callGraph = CallGraph.buildCallGraph(wcetAppInfo,className,methodName);
 
 		/* Load source code annotations */
@@ -143,12 +178,6 @@ public class Project {
 		SourceAnnotations sourceAnnotations = new SourceAnnotations(config);
 		for(ClassInfo ci : callGraph.getClassInfos()) {
 			annotationMap.put(ci,sourceAnnotations.calculateWCA(ci));
-		}
-		/* run dataflow analysis */
-		if(Config.instance().doDataflowAnalysis()) {
-			topLevelLogger.info("Starting DFA analysis");
-			dataflowAnalysis();
-			topLevelLogger.info("DFA analysis finished");
 		}
 		/* Analyse control flow graphs */
 		cfgs = new Hashtable<MethodInfo, FlowGraph>();
@@ -175,6 +204,10 @@ public class Project {
 	public WcetAppInfo getWcetAppInfo() {
 		return this.wcetAppInfo;
 	}
+	public boolean hasFlowGraph(MethodInfo mi) {
+		return(cfgs.containsKey(mi));
+	}
+
 	public FlowGraph getFlowGraph(MethodInfo m) {
 		if(cfgs.get(m) == null) {
 			throw new AssertionError("No FlowGraph for "+m.getFQMethodName()+ ". Avail: "+this.cfgs.keySet());

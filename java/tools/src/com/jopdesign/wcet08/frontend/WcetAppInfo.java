@@ -36,11 +36,11 @@ import org.apache.log4j.Logger;
 import com.jopdesign.build.AppInfo;
 import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.MethodInfo;
-import com.jopdesign.build.WcetPreprocess;
 import com.jopdesign.tools.JopInstr;
+import com.jopdesign.wcet.WCETInstruction;
 import com.jopdesign.wcet08.Config;
+import com.jopdesign.wcet08.Project;
 import com.jopdesign.wcet08.Config.MissingConfigurationError;
-import com.jopdesign.wcet08.graphutils.Pair;
 import com.jopdesign.wcet08.report.InvokeDot;
 
 /**
@@ -51,7 +51,7 @@ import com.jopdesign.wcet08.report.InvokeDot;
  */
 public class WcetAppInfo  {
 	private static final long serialVersionUID = 2L;
-	/* package logger */
+ 	/* package logger */
 	public static final Logger logger = Logger.getLogger(WcetAppInfo.class.getPackage().toString());
 	/**
 	 * Raised when we cannot find / fail to load a referenced method.
@@ -62,6 +62,8 @@ public class WcetAppInfo  {
 			super(message);			
 		}
 	}	
+
+	public static final String JVM_CLASS = "com.jopdesign.sys.JVM";
 
 	private TypeGraph typeGraph;
 	private AppInfo ai;
@@ -94,34 +96,34 @@ public class WcetAppInfo  {
 	/**
 	 * Find the given method
 	 * @param className The fully qualified name of the class the method is located in
-	 * @param methodSig The name of the method to be searched. 
-	 * 				    Signature is optional if the method name is unique.
+	 * @param methodName The name of the method to be searched. 
+	 * 				     Note that the signature is optional if the method name is unique.
 	 * @return The method searched for, or null if it couldn't be found
 	 * @throws MethodNotFoundException if the method couldn't be found or is ambigous
 	 */
-	public MethodInfo searchMethod(String className, String methodSig) throws MethodNotFoundException {
+	public MethodInfo searchMethod(String className, String methodName) throws MethodNotFoundException {
 		ClassInfo cli = getCliMap().get(className);
 		if(cli == null) throw new MethodNotFoundException("The class "+className+" couldn't be found");
-		return searchMethod(cli,methodSig);
+		return searchMethod(cli,methodName);
 	}
-	private MethodInfo searchMethod(ClassInfo cli, String methodSig) throws MethodNotFoundException {
+	private MethodInfo searchMethod(ClassInfo cli, String methodName) throws MethodNotFoundException {
 		MethodInfo mi = null;
-		if(methodSig.indexOf("(") > 0) {
-			mi = cli.getMethodInfo(methodSig);
+		if(methodName.indexOf("(") > 0) {
+			mi = cli.getMethodInfo(methodName);
 		} else {
 			for(MethodInfo candidate : cli.getMethods()) {
-				if(methodSig.equals(candidate.getMethod().getName())) {
+				if(methodName.equals(candidate.getMethod().getName())) {
 					if(mi == null) {
 						mi = candidate;
 					} else {
-						throw new MethodNotFoundException("The method name "+methodSig+" is ambigous."+
+						throw new MethodNotFoundException("The method name "+methodName+" is ambigous."+
 														  "Both "+mi.methodId+" and "+candidate.methodId+" match");
 					}
 				}
 			}			
 		}
 		if(mi == null) {
-			throw new MethodNotFoundException("The method "+cli.toString()+"."+methodSig+" could not be found");
+			throw new MethodNotFoundException("The method "+cli.toString()+"."+methodName+" could not be found");
 		}
 		return mi;
 	}
@@ -132,24 +134,26 @@ public class WcetAppInfo  {
 	 * @param instr the invoke instruction
 	 * @return A pair of class info and method name
 	 */
-	public Pair<ClassInfo, String> getReferenced(ClassInfo invokerCi, InvokeInstruction instr) {
+	public MethodRef getReferenced(ClassInfo invokerCi, InvokeInstruction instr) {
 		ConstantPoolGen cpg = new ConstantPoolGen(invokerCi.clazz.getConstantPool());
 		String classname = instr.getClassName(cpg );
 		String methodname = instr.getMethodName(cpg) + instr.getSignature(cpg);
 		ClassInfo refCi = getClassInfo(classname);
 		if(refCi == null) throw new AssertionError("Failed class lookup (invoke target): "+classname);
-		return new Pair<ClassInfo,String>(refCi,methodname);
+		return new MethodRef(refCi,methodname);
 	}
-	public Pair<ClassInfo, String> getReferenced(MethodInfo method, InvokeInstruction instr) {
+	public MethodRef getReferenced(MethodInfo method, InvokeInstruction instr) {
 		return getReferenced(method.getCli(),instr);
 	}
 
-	public MethodInfo findStaticImplementation(ClassInfo receiver, String methodRef) {
-		MethodInfo staticImpl = receiver.getMethodInfo(methodRef);
+	public MethodInfo findStaticImplementation(MethodRef ref) {
+		ClassInfo receiver = ref.getReceiver();
+		String methodId  = ref.getMethodId();
+		MethodInfo staticImpl = ref.getReceiver().getMethodInfo(methodId);
 		if(staticImpl == null) {
 			ClassInfo superRec = receiver;
 			while(staticImpl == null && superRec != null) {
-				staticImpl = superRec.getMethodInfo(methodRef);
+				staticImpl = superRec.getMethodInfo(methodId);
 				if(superRec.clazz.getSuperClass() == null) superRec = null;
 				else superRec = superRec.superClass;
 			}
@@ -168,11 +172,11 @@ public class WcetAppInfo  {
 	 * @param methodname The method name
 	 * @return list of method infos that might be invoked
 	 */
-	public List<MethodInfo> findImplementations(ClassInfo receiver, String methodname) {
+	public List<MethodInfo> findImplementations(MethodRef methodRef) {
 		Vector<MethodInfo> impls = new Vector<MethodInfo>(3);
-		tryAddImpl(impls,findStaticImplementation(receiver, methodname));
-		for(ClassInfo subty : this.typeGraph.getStrictSubtypes(receiver)) {
-			MethodInfo subtyImpl = subty.getMethodInfo(methodname);
+		tryAddImpl(impls,findStaticImplementation(methodRef));
+		for(ClassInfo subty : this.typeGraph.getStrictSubtypes(methodRef.getReceiver())) {
+			MethodInfo subtyImpl = subty.getMethodInfo(methodRef.getMethodId());
 			tryAddImpl(impls,subtyImpl);
 		}
 		return impls;
@@ -185,8 +189,8 @@ public class WcetAppInfo  {
 	 * @return
 	 */
 	public List<MethodInfo> findImplementations(MethodInfo invokerM, InstructionHandle ih) {
-		Pair<ClassInfo, String> ref = this.getReferenced(invokerM, (InvokeInstruction) ih.getInstruction());
-		List<MethodInfo> staticImpls = findImplementations(ref.fst(), ref.snd());
+		MethodRef ref = this.getReferenced(invokerM, (InvokeInstruction) ih.getInstruction());
+		List<MethodInfo> staticImpls = findImplementations(ref);
 		/* TODO: Better receiver types using DFA */
 		return staticImpls;
 	}
@@ -219,7 +223,6 @@ public class WcetAppInfo  {
 
 	/**
 	 * Get the (actual) opcode of a statement, as executed on JOP
-	 * FIXME: handle java-implemented bytecodes [WCET_JAVA_BYTECODES]
 	 * @param instr the BCEL instructions
 	 * @return
 	 */
@@ -230,6 +233,25 @@ public class WcetAppInfo  {
 			return JopInstr.getNative(methodName);
 		} else {
 			return instr.getOpcode();
+		}
+	}
+	/** Get the reference to the method in {@link com.jopdesign.sys.JVM} implementing the
+	 *  given instruction
+	 * @param ii the instruction
+	 * @return the reference to the java implementation of the bytecode, or null if this is
+	 * a native bytecode
+	 */
+	public MethodInfo getJavaImpl(ClassInfo ci, Instruction instr) {
+		if(WCETInstruction.isInJava(getJOpCode(ci,instr))) {
+			ClassInfo receiver = ai.cliMap.get(JVM_CLASS);
+			String methodName = "f_"+instr.getName();
+			try {
+				return searchMethod(receiver,methodName);
+			} catch (MethodNotFoundException e) {
+				throw new AssertionError("Failed to find java implementation for: "+instr);
+			}
+		} else {
+			return null;
 		}
 	}
 
@@ -244,11 +266,6 @@ public class WcetAppInfo  {
 		" [-outdir outdir] [-cp classpath] package.rootclass.rootmethod";
 
 	/* small demo using the class loader */	
-	private static void loadClasses(AppInfo ai, String topClass) throws IOException {
-		ai.addClass(topClass);
-		ai.load();
-		WcetPreprocess.preprocess(ai);
-	}
 	public static void main(String[] argv) {
 
 		try {
@@ -256,12 +273,8 @@ public class WcetAppInfo  {
 			Config config = Config.instance();
 			config.setProjectName("typegraph");
 			if(argvrest.length == 1) config.setTarget(argvrest[0]);
-			config.initializeReport();
-			config.checkPresent(Config.CLASSPATH_PROPERTY);
-			config.checkPresent(Config.ROOT_CLASS_NAME);
-			config.checkPresent(Config.ROOT_METHOD_NAME);
 			config.checkPresent(Config.REPORTDIR_PROPERTY);
-			config.checkPresent(Config.PROGRAM_DOT);
+			config.initializeReport();
 		} catch(MissingConfigurationError e) {
 			System.err.println(e);
 			System.err.println(USAGE);
@@ -270,13 +283,14 @@ public class WcetAppInfo  {
 			e.printStackTrace();
 			System.exit(1);
 		}
-		AppInfo ai = new AppInfo(ClassInfo.getTemplate());		
+		AppInfo ai = null;
 		try {
 			Config config = Config.instance();
 			System.out.println("Classloader Demo: "+config.getRootClassName() + "." + config.getRootMethodName());
 			String rootClass = config.getRootClassName();
 			String rootPkg = rootClass.substring(0,rootClass.lastIndexOf("."));
-			loadClasses(ai,rootClass);
+
+			ai = Project.loadApp();
 			WcetAppInfo wcetAi = new WcetAppInfo(ai);
 			ClassInfo ci = wcetAi.getClassInfo(config.getRootClassName());
 			System.out.println("Source file: "+ci.clazz.getSourceFileName());

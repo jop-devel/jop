@@ -39,7 +39,6 @@ import org.apache.bcel.generic.InvokeInstruction;
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.graph.DefaultDirectedGraph;
 
-import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.dfa.analyses.LoopBounds;
 import com.jopdesign.wcet.WCETInstruction;
@@ -49,7 +48,6 @@ import com.jopdesign.wcet08.frontend.BasicBlock.FlowTarget;
 import com.jopdesign.wcet08.frontend.SourceAnnotations.BadAnnotationException;
 import com.jopdesign.wcet08.frontend.SourceAnnotations.LoopBound;
 import com.jopdesign.wcet08.graphutils.LoopColoring;
-import com.jopdesign.wcet08.graphutils.Pair;
 import com.jopdesign.wcet08.graphutils.TopOrder;
 import com.jopdesign.wcet08.graphutils.TopOrder.BadGraphException;
 
@@ -89,6 +87,9 @@ public class FlowGraph {
 	public interface FlowGraphVisitor {
 		public void visitSpecialNode(DedicatedNode n);
 		public void visitBasicBlockNode(BasicBlockNode n);
+		/**
+		 * visit an invoke node. InvokeNode's won't call visitBasicBlockNode.
+		 */
 		public void visitInvokeNode(InvokeNode n);
 	}
 	
@@ -108,7 +109,7 @@ public class FlowGraph {
 		}
 		public String toString() { return name; }
 		public String getName()  { return name; }
-		public BasicBlock getCodeBlock() { return null; }
+		public BasicBlock getBasicBlock() { return null; }
 		public int getId() { return id; }
 		public abstract void accept(FlowGraphVisitor v);
 	}
@@ -146,7 +147,7 @@ public class FlowGraph {
 			super("basic("+blockIndex+")");
 			this.blockIndex = blockIndex;
 		}
-		public BasicBlock getCodeBlock() { return blocks.get(blockIndex); }
+		public BasicBlock getBasicBlock() { return blocks.get(blockIndex); }
 		public String toString() { return "Block#"+blockIndex; }
 		@Override
 		public void accept(FlowGraphVisitor v) {
@@ -162,7 +163,7 @@ public class FlowGraph {
 	public class InvokeNode extends BasicBlockNode {
 		private InvokeInstruction instr;
 		private MethodInfo impl;
-		private Pair<ClassInfo, String> referenced;
+		private MethodRef referenced;
 		private InvokeNode(int blockIndex) {
 			super(blockIndex);
 		}
@@ -174,12 +175,11 @@ public class FlowGraph {
 			/* if virtual / interface, this method has to be resolved first */
 			if((instr instanceof INVOKEINTERFACE) || (instr instanceof INVOKEVIRTUAL)) {
 			} else {
-				this.impl = appInfo.findStaticImplementation(referenced.fst(),referenced.snd());
+				this.impl = appInfo.findStaticImplementation(referenced);
 			}
 		}
 		@Override
 		public void accept(FlowGraphVisitor v) { 
-			v.visitBasicBlockNode(this);
 			v.visitInvokeNode(this);
 		}
 		public InstructionHandle getInstructionHandle() {
@@ -188,7 +188,7 @@ public class FlowGraph {
 		public MethodInfo getImpl() {
 			return impl;
 		}
-		public Pair<ClassInfo, String> getReferenced() {
+		public MethodRef getReferenced() {
 			return referenced;
 		}
 		/** 
@@ -305,13 +305,13 @@ public class FlowGraph {
 		graph.addEdge(entry, nodeTable.get(blocks.get(0).getFirstInstruction().getPosition()), entryEdge());
 		/* flow edges */
 		for(BasicBlockNode bbNode : nodeTable.values()) {
-			BasicBlock bb = bbNode.getCodeBlock();
+			BasicBlock bb = bbNode.getBasicBlock();
 			FlowInfo bbf = bb.getFlowInfo(bb.getLastInstruction());
 			if(bbf.exit) { // exit edge
 				graph.addEdge(bbNode, this.exit, exitEdge());
 			} else if(! bbf.alwaysTaken) { // next block edge
 				graph.addEdge(bbNode, 
-							  nodeTable.get(bbNode.getCodeBlock().getLastInstruction().getNext().getPosition()),
+							  nodeTable.get(bbNode.getBasicBlock().getLastInstruction().getNext().getPosition()),
 							  new FlowGraphEdge(EdgeKind.NEXT_EDGE));
 			}
 			for(FlowTarget target: bbf.targets) { // jmps
@@ -337,7 +337,7 @@ public class FlowGraph {
 		this.annotations = new HashMap<FlowGraphNode, LoopBound>();
 		for(FlowGraphNode n : this.getHeadOfLoops()) {
 			BasicBlockNode headOfLoop = (BasicBlockNode) n;
-			BasicBlock block = headOfLoop.getCodeBlock();
+			BasicBlock block = headOfLoop.getBasicBlock();
 			// search for loop annotation in range
 			int sourceRangeStart = BasicBlock.getLineNumber(block.getFirstInstruction());
 			int sourceRangeStop = BasicBlock.getLineNumber(block.getLastInstruction());

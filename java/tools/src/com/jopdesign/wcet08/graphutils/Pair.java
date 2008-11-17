@@ -3,8 +3,8 @@ package com.jopdesign.wcet08.graphutils;
 import java.io.Serializable;
 
 /**
- * Pairs of objects, following FP terminology.
- * It is usually a good idea to subclass <code>Pair</code> to improve the API.
+ * Pairs of objects, following FP terminology (recommended for prototyping only) -
+ * it is usually a good idea to subclass <code>Pair</code> to improve the API.
  * As in {@link java.util}, {@link compareTo} might raise a {@link ClassCastException}
  * if the T1 or T2 doesn't implement {@link Comparable}.
  *

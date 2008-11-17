@@ -2,6 +2,18 @@
 
 Nov 08
 ---------
+- 17/11/08: Use MethodRef instead of Pair<ClassInfo,String> (better API)
+- 17/11/08: Cache miss penalty:
+            Encode HIDDEN_LOAD_CYCLES in WCETInstruction
+            Fix bug (length of invoker)
+            Fix bug (use MIN_HIDDEN_LOAD_CYCLES instead of INVOKE_HIDDEN_LOAD_CYCLES)
+- 17/11/08: Java implemented bytecodes:
+            Add getJavaImpl (get java implementation of bytecode) to WcetAppInfo
+            Callgraph takes java implemented bytecodes into account
+            [NO THROW HACK] But not for f_*throw,f_new or f_*newarray, 
+                            as we don't support exceptions yet
+            
+
 - 14/11/08: Create an Option class, for better easier option processing and better
             error handling of command line arguments.
 - 14/11/08: Fix bug in graphutils.Dominators : Intersect (defined) predecessors,

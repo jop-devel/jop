@@ -7,12 +7,11 @@ when appropriate.
 choice would be to have everything non-WCET specific in WcetAppInfo, and the rest in project.
 E.g. ControlFlowGraphs should reside in WcetAppInfo.
 
-[BUG_ARRAY_ISSUE]
-wcet.ArrayIssue takes 710 cycles on the sim, but only 43 according to analysis.
+[NO THROW HACK] 
+We do not add f_*throw, f*_new and f*_newarray calls to the callgraph, 
+as we do not support exceptions or analyzing the garbage collector yet.
+Depends: WCET_EXCEPTIONS
 
-[WCET_JAVA_BYTECODES] 
-Support java implemented bytecodes
- 
 [WCET_CHECK_UNSUPPORTED] 
 Check for unsupported bytecodes / features rigiously:
 It would really be a good idea to first check wheter the code uses unsupported features
@@ -39,4 +38,11 @@ Add UPPAAL simluation (needs to be ported)
 [UPPAAL_CACHE]
 Add cache simulation (assuming cash flush) to UppAal
 Depends: UPPAAL_PORT, flush cash
+
+Done
+~~~~
+BUG_ARRAY_ISSUE:
+wcet.ArrayIssue takes 710 cycles on the sim, but only 43 according to analysis.
+WCET_JAVA_BYTECODES:
+Support java implemented bytecodes
 
