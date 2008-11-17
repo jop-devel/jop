@@ -160,15 +160,15 @@ public class Project {
 	}
 	
 	public void load() throws Exception  {
+		AppInfo appInfo = loadApp();
+		wcetAppInfo = new WcetAppInfo(appInfo);
+
 		/* run dataflow analysis */
 		if(Config.instance().doDataflowAnalysis()) {
 			topLevelLogger.info("Starting DFA analysis");
 			dataflowAnalysis();
 			topLevelLogger.info("DFA analysis finished");
 		}
-
-		AppInfo appInfo = loadApp();
-		wcetAppInfo = new WcetAppInfo(appInfo);
 		
 		/* build callgraph */
 		callGraph = CallGraph.buildCallGraph(wcetAppInfo,className,methodName);
