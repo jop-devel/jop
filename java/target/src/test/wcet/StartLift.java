@@ -20,9 +20,8 @@
 
 package wcet;
 
-import joprt.RtThread;
-import wcet.lift.LiftControl;
-import wcet.lift.TalIo;
+import jbe.lift.LiftControl;
+import jbe.lift.TalIo;
 
 import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
@@ -46,8 +45,6 @@ public class StartLift {
 		ts = Native.rdMem(Const.IO_CNT);
 		te = Native.rdMem(Const.IO_CNT);
 		to = te-ts;
-		// to avoid stack overflow in Control()
-		new RtThread(10,10);
 		// initialization
 		ctrl = new LiftControl();
 		io = new TalIo();
