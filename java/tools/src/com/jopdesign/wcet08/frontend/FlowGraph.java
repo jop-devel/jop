@@ -47,7 +47,6 @@ import com.jopdesign.wcet08.frontend.BasicBlock.FlowInfo;
 import com.jopdesign.wcet08.frontend.BasicBlock.FlowTarget;
 import com.jopdesign.wcet08.frontend.SourceAnnotations.BadAnnotationException;
 import com.jopdesign.wcet08.frontend.SourceAnnotations.LoopBound;
-import com.jopdesign.wcet08.graphutils.ArrayGraph;
 import com.jopdesign.wcet08.graphutils.IDProvider;
 import com.jopdesign.wcet08.graphutils.LoopColoring;
 import com.jopdesign.wcet08.graphutils.TopOrder;
@@ -450,6 +449,8 @@ public class FlowGraph {
 	 * Freeze the flowgraph into an ArrayGraph, and assign the nodes ids from 0 to n-1.
 	 * The entry is garantueed to be node 0, and the exit node n-1
 	 */
+	/*
+	 * NOT YET IN CVS
 	public ArrayGraph<FlowGraphNode,FlowGraphEdge> getArrayGraph() {
 		if(topOrder == null) analyseFlowGraph();
 		int i = 0;		
@@ -463,7 +464,7 @@ public class FlowGraph {
 						return t.getId();
 					}},graph);
 	}
-	
+	*/
 	private void check() throws BadGraphException {
 		TopOrder.checkConnected(graph);
 		TopOrder.checkIsExitNode(graph, this.exit);
