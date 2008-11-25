@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.Map.Entry;
 
+import com.jopdesign.wcet08.graphutils.IDProvider;
 import com.jopdesign.wcet08.ipet.LinearConstraint.ConstraintType;
 
 import lpsolve.LpSolve;
@@ -61,16 +62,6 @@ public class LpSolveWrapper<T> {
 		SolverStatus status = readMap.get(code);
 		if(status == null) return SolverStatus.UNKNOWN;
 		else return status;
-	}
-
-	/**
-	 * Implementors provide integral IDs for objects of type T
-	 *
-	 * @param <T>
-	 */
-	public static interface IDProvider<T> {
-		int getID(T t);
-		T fromID(int id);
 	}
 	
 	private class RawVector {

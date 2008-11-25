@@ -38,7 +38,7 @@ public class MethodReport {
 	String page;
 	public MethodReport(Project p, MethodInfo m, String page) {
 		this.info = m;
-		this.loopBounds = p.getFlowGraph(info).getLoopBounds().values();
+		this.loopBounds = p.getWcetAppInfo().getFlowGraph(info).getLoopBounds().values();
 		this.referenced = new TreeSet<String>();
 		Iterator<CallGraphNode> i = p.getCallGraph().getReachableMethods(m);
 		while(i.hasNext()) {

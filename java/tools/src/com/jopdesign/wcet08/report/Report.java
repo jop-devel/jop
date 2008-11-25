@@ -32,11 +32,14 @@ import java.util.TreeMap;
 import java.util.Vector;
 import java.util.Map.Entry;
 
+import org.apache.bcel.classfile.LineNumber;
 import org.apache.log4j.Logger;
 import org.apache.velocity.Template;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.Velocity;
 import org.apache.velocity.exception.ResourceNotFoundException;
+
+import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.wcet.WCETInstruction;
 import com.jopdesign.wcet08.Config;
@@ -71,14 +74,14 @@ public class Report {
 			ps.put("file.resource.loader.class","org.apache.velocity.runtime.resource.loader.FileResourceLoader");
 			ps.put("file.resource.loader.path",Config.instance().getTemplatePath());
 			ps.put("file.resource.loader.cache","true");
-		} else {
-			
 		}
 		Velocity.init(ps);
 	}
 
 	private Config config;	
 	private Project project;
+	private HashMap<ClassInfo,ClassReport> classReports =
+		new HashMap<ClassInfo,ClassReport>();
 	private HashMap<MethodInfo,Vector<DetailedMethodReport>> detailedReports =
 		new HashMap<MethodInfo, Vector<DetailedMethodReport>>();
 	private Hashtable<String,Object> stats = new Hashtable<String, Object>();
@@ -185,8 +188,11 @@ public class Report {
 		generateInputOverview();
 		this.addPage("details",null);
 		for(MethodInfo m : project.getCallGraph().getImplementedMethods()) {
+			for(LineNumber ln : m.getMethod().getLineNumberTable().getLineNumberTable()) {
+				getClassReport(m.getCli()).addLinePropertyIfNull(ln.getLineNumber(),"color","lightgreen");
+			}
 			logger.info("Generating report for method: "+m);
-			FlowGraph flowGraph = project.getFlowGraph(m);
+			FlowGraph flowGraph = project.getWcetAppInfo().getFlowGraph(m);
 			Map<String,Object> stats = new TreeMap<String, Object>();
 			stats.put("#nodes", flowGraph.getGraph().vertexSet().size() - 2 /* entry+exit */);
 			stats.put("length-in-bytes", flowGraph.getNumberOfBytes());
@@ -195,6 +201,26 @@ public class Report {
 								   true);
 			generateDetailedReport(m);
 		}		
+		for(ClassInfo c : project.getCallGraph().getClassInfos()) {
+			ClassReport cr = getClassReport(c);
+			String page = pageOf(c);
+			Hashtable<String,Object> ctx = new Hashtable<String,Object>();
+			ctx.put("classreport", cr);			
+			try {				
+				this.generateFile("class.vm", config.getOutFile(page), ctx);
+			} catch (Exception e) {
+				logger.error(e);
+			}
+			addPage("details/"+c.clazz.getClassName(), page);
+		}
+	}
+	public ClassReport getClassReport(ClassInfo cli) {
+		ClassReport cr = this.classReports.get(cli);
+		if(cr==null) {
+			cr = new ClassReport(cli);
+			this.classReports.put(cli,cr);
+		}
+		return cr;
 	}
 	private void generateInputOverview() throws IOException {
 		Hashtable<String,Object> ctx = new Hashtable<String,Object>();
@@ -225,11 +251,13 @@ public class Report {
 	void recordDot(File cgdot, File cgimg) {
 		this.dotJobs .put(cgdot,cgimg);
 	}
-
+	private static String pageOf(ClassInfo ci) {
+		return sanitizeFileName(ci.clazz.getClassName())+".html";
+	}
 	private static String pageOf(MethodInfo i) { 
 		return sanitizeFileName(i.getFQMethodName())+".html";
 	}
-	
+
 	protected void addDetailedReport(MethodInfo m, DetailedMethodReport e, boolean prepend) {
 		Vector<DetailedMethodReport> reports = this.detailedReports.get(m);
 		if(reports == null) {
@@ -254,11 +282,14 @@ public class Report {
 			m.getGraph();
 		}
 		try {
-			this.generateFile("cfg.vm", config.getOutFile(page), ctx);
+			this.generateFile("method.vm", config.getOutFile(page), ctx);
 		} catch (Exception e) {
 			logger.error(e);
 		}
-		this.addPage("details/"+sanitizePageKey(method.getFQMethodName()),page);		
+		this.addPage("details/"+
+					 method.getCli().clazz.getClassName()+"/"+
+				     sanitizePageKey(method.methodId),
+				     page);		
 	}
 	/* page keys may not contain a slash - replace it by backslash */
 	private String sanitizePageKey(String s) {

@@ -3,9 +3,9 @@ TODO  List
 Please assign names (in square brackets) to tasks, and reference them in the source
 when appropriate.
 
-[REFACTOR_PROJECT] Project and WcetAppInfo server quite similar purposes at the moment. A good
-choice would be to have everything non-WCET specific in WcetAppInfo, and the rest in project.
-E.g. ControlFlowGraphs should reside in WcetAppInfo.
+[REFACTOR_SIMPLE_ANALYSIS] Little messy cause of prototyping right now
+[REFACTOR_REPORT] Clean up the report package
+[REFACTOR_FLOWGRAPH] Split FlowGraph into WcetMethodInfo and FlowGraph
 
 [NO THROW HACK] 
 We do not add f_*throw, f*_new and f*_newarray calls to the callgraph, 
@@ -45,4 +45,5 @@ BUG_ARRAY_ISSUE:
 wcet.ArrayIssue takes 710 cycles on the sim, but only 43 according to analysis.
 WCET_JAVA_BYTECODES:
 Support java implemented bytecodes
-
+REFACTOR_PROJECT:
+Move flowgraphs to WcetAppInfo

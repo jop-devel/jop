@@ -30,26 +30,28 @@ public class CacheConfig {
 	 * assume (unsafe !) all are hit (<code>ALWAYS_HIT</code>),
 	 *
 	 */
-	public enum CacheApproximation { ALWAYS_HIT, ALWAYS_MISS, ANALYSE_REACHABLE };
+	public enum CacheApproximation { ALWAYS_HIT, ALWAYS_MISS, ANALYSE_REACHABLE};
 	private Config config;
 
 	public CacheConfig(Config c) { 
 		this.config = c; 
 	}	
 	public static final String CACHE_APPROX = "cache-approx";	
-	public static final String CACHE_BLOCKS = "cache-blocks";	
-	public static final String BLOCK_SIZE = "cache-block-size";
+	public static final String CACHE_BLOCKS = "cache-blocks";
+	private static final int DEFAULT_NUM_CACHE_BLOCKS = 16;
+	public static final String BLOCK_SIZE_WORDS = "cache-block-size-words";
+	private static final int DEFAULT_BLOCK_WORDS = 64;
 
 	public static final Option[] cacheOptions = {
 		new Option.EnumOption<CacheApproximation>(CACHE_APPROX,"cache approximation for var block cache", CacheApproximation.ANALYSE_REACHABLE),
-		new Option.IntegerOption(CACHE_BLOCKS,"number of cache blocks",16),
-		new Option.IntegerOption(BLOCK_SIZE,"size of cache blocks in bytes",256)
+		new Option.IntegerOption(CACHE_BLOCKS,"number of cache blocks",DEFAULT_NUM_CACHE_BLOCKS),
+		new Option.IntegerOption(BLOCK_SIZE_WORDS,"size of cache blocks in bytes",DEFAULT_BLOCK_WORDS)
 	};
 	
-	public int cacheBlocks() {
-		return config.getIntOption(CACHE_BLOCKS,16);
+	public int numCacheBlocks() {
+		return config.getIntOption(CACHE_BLOCKS,DEFAULT_NUM_CACHE_BLOCKS);
 	}
-	public int blockSize() {
-		return config.getIntOption(BLOCK_SIZE,256);
+	public int blockSizeInWords() {
+		return config.getIntOption(BLOCK_SIZE_WORDS,DEFAULT_BLOCK_WORDS);
 	}
 }

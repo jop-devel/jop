@@ -100,7 +100,7 @@ public class GraphTopologyTest {
 	}
 	@Test
 	public void testTopOrder1() {
-		Hashtable<Integer, Integer> preOrder = to1.getTopOrder();
+		Hashtable<Integer, Integer> preOrder = to1.getTopologicalOrder();
 		for(int i = 0; i < vxs1.length; i++) {
 			int[] succs = toporders1[i];
 			for(int j : succs) {
@@ -110,7 +110,7 @@ public class GraphTopologyTest {
 	}
 	@Test
 	public void testDominators1() {
-		Dominators<Integer, DefaultEdge> doms1 = new Dominators<Integer, DefaultEdge>(gr1,to1.getDfsOrder());
+		Dominators<Integer, DefaultEdge> doms1 = new Dominators<Integer, DefaultEdge>(gr1,to1.getDFSTraversal());
 		Hashtable<Integer, Integer> idoms = doms1.getIDoms();
 		for(int i  = 0; i < vxs1.length; i++) {
 			assertEquals(idoms.get(vxs1[i]).intValue(),idoms1[i]);
@@ -149,11 +149,11 @@ public class GraphTopologyTest {
 			System.exit(1);
 			topOrder = null;
 		}
-		System.out.println("DfsOrder: "+topOrder.getDfsOrder());
-		System.out.println("TopOrder: "+topOrder.getTopOrder());
+		System.out.println("DfsOrder: "+topOrder.getDFSTraversal());
+		System.out.println("TopOrder: "+topOrder.getTopologicalOrder());
 		System.out.println("Back-Edges: "+topOrder.getBackEdges());
 		Dominators<String,DefaultEdge> doms = 
-			new Dominators<String,DefaultEdge>(g,topOrder.getDfsOrder());
+			new Dominators<String,DefaultEdge>(g,topOrder.getDFSTraversal());
 		System.out.println("Dominators: "+doms.getIDoms());
 		LoopColoring<String, DefaultEdge> loopColoring = 
 			new LoopColoring<String, DefaultEdge>(g,topOrder);

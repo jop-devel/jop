@@ -2,6 +2,13 @@
 
 Nov 08
 ---------
+- 25/11/08: Refactor Project/WcetAppInfo (close [REFACTOR_PROJECT])
+- 25/11/08: Modify static reachable cache miss estimation (once again).
+            We have to assume that the invoked method itself is missed not on invoke,
+            but somewhere during execution of the method.
+- 25/11/08: Experimental source annotation
+- 25/11/08: Add IDs to flowgraphs. Preparation to support of array based graphs (for fast DFA).
+
 - 17/11/08: Use MethodRef instead of Pair<ClassInfo,String> (better API)
 - 17/11/08: Cache miss penalty:
             Encode HIDDEN_LOAD_CYCLES in WCETInstruction

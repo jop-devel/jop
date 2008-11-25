@@ -21,6 +21,7 @@ package com.jopdesign.wcet08.graphutils;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -38,19 +39,28 @@ import org.jgrapht.Graph;
  */
 public class AdvancedDOTExporter<V,E> {
 	
+	public static enum MultiLineAlignment { ML_ALIGN_LEFT, ML_ALIGN_CENTER, ML_ALIGN_RIGHT };
+
 	/**
 	 * Escape a string, s.t. it can be used as a DOT attribute value.
 	 * 
 	 * @param s input string
 	 * @return the string, with special characters replaced, and quoted if neccessary
 	 */
-	public static String escapedToString(String s) {
+	public static String escapedToString(String s, MultiLineAlignment mla) {
 		StringBuffer sb = new StringBuffer();
 		boolean quote=false;
+		String lineBreak = null;
+		switch(mla) {
+		case ML_ALIGN_LEFT: lineBreak = "\\l"; break;
+		case ML_ALIGN_CENTER: lineBreak = "\\n"; break;
+		case ML_ALIGN_RIGHT: lineBreak = "\\r"; break;
+		}
+		
 		for(int i = 0; i < s.length(); i++) {
 			char c = s.charAt(i);
 			switch(c) {
-			case '\n' : sb.append("\\n"); break;
+			case '\n' : sb.append(lineBreak); break;
 			case '\r' : break;
 			case '\t' : sb.append("\\t"); break;
 			case '"'  : sb.append("\\\""); break;
@@ -192,16 +202,15 @@ public class AdvancedDOTExporter<V,E> {
 	private DOTLabeller<E> edgeLabeller;
 	private Map<String, String> nodeAttributes;
 	private Map<String, String> edgeAttributes;
+	private Map<String, String> graphAttributes;
+	private MultiLineAlignment multiLineAlignment;
 	
 	/**
 	 * Create a DOT exporter with {@link DefaultNodeLabeller} for nodes,
 	 * and {@link NullLabeller} for edges.
 	 */
 	public AdvancedDOTExporter() {
-		this.nodeLabeller = new DefaultNodeLabeller<V>();
-		this.edgeLabeller = new NullLabeller<E>();
-		this.nodeAttributes = defaultNodeAttributes();
-		this.edgeAttributes = defaultEdgeAttributes();
+		this(null,null);
 	}
 	/**
 	 * Create a DOT exporter using the provided labellers
@@ -214,6 +223,8 @@ public class AdvancedDOTExporter<V,E> {
 		this.edgeLabeller = edgeLabeller == null ? new NullLabeller<E>() : edgeLabeller;
 		this.nodeAttributes = defaultNodeAttributes();
 		this.edgeAttributes = defaultEdgeAttributes();
+		this.graphAttributes = new HashMap<String,String>();
+		this.multiLineAlignment = MultiLineAlignment.ML_ALIGN_LEFT;
 	}
 	
 	/**
@@ -235,6 +246,11 @@ public class AdvancedDOTExporter<V,E> {
 	 */
 	public void exportDOTDiGraph(Writer writer, Graph<V,E> graph) throws IOException {
 		writer.append("digraph cfg\n{\n");
+		if(! this.graphAttributes.isEmpty()) {
+			writer.append("graph ");
+			appendAttributes(writer,this.graphAttributes);
+			writer.append(";\n");
+		}
 		for(V n : graph.vertexSet()) {
 			int id = nodeLabeller.getID(n);
 			Hashtable<String,String> attrs = new Hashtable<String,String>(this.nodeAttributes);
@@ -257,7 +273,7 @@ public class AdvancedDOTExporter<V,E> {
 		writer.append("}\n");
 	}
 	
-	private void appendAttributes(Writer w, Hashtable<String, String> attrs) throws IOException {
+	private void appendAttributes(Writer w, Map<String, String> attrs) throws IOException {
 		if(attrs.isEmpty()) return;
 		w.append('[');
 		boolean first = true;
@@ -266,8 +282,12 @@ public class AdvancedDOTExporter<V,E> {
 			else      w.append(',');
 			w.append(e.getKey());
 			w.append('=');
-			w.append(escapedToString(e.getValue()));
+			w.append(escapedToString(e.getValue(),this.multiLineAlignment));
 		}
 		w.append(']');
+	}
+
+	public void setGraphAttribute(String key, String val) {
+		this.graphAttributes.put(key,val);
 	}
 }

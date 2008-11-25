@@ -47,6 +47,8 @@ import com.jopdesign.wcet08.frontend.BasicBlock.FlowInfo;
 import com.jopdesign.wcet08.frontend.BasicBlock.FlowTarget;
 import com.jopdesign.wcet08.frontend.SourceAnnotations.BadAnnotationException;
 import com.jopdesign.wcet08.frontend.SourceAnnotations.LoopBound;
+import com.jopdesign.wcet08.graphutils.ArrayGraph;
+import com.jopdesign.wcet08.graphutils.IDProvider;
 import com.jopdesign.wcet08.graphutils.LoopColoring;
 import com.jopdesign.wcet08.graphutils.TopOrder;
 import com.jopdesign.wcet08.graphutils.TopOrder.BadGraphException;
@@ -111,6 +113,7 @@ public class FlowGraph {
 		public String getName()  { return name; }
 		public BasicBlock getBasicBlock() { return null; }
 		public int getId() { return id; }
+		void setId(int newId) { this.id = newId; }
 		public abstract void accept(FlowGraphVisitor v);
 	}
 
@@ -162,8 +165,9 @@ public class FlowGraph {
 	 */
 	public class InvokeNode extends BasicBlockNode {
 		private InvokeInstruction instr;
-		private MethodInfo impl;
 		private MethodRef referenced;
+		private MethodInfo impl;
+		private FlowGraph fg;
 		private InvokeNode(int blockIndex) {
 			super(blockIndex);
 		}
@@ -174,8 +178,9 @@ public class FlowGraph {
 			this.name = "invoke("+this.referenced+")";
 			/* if virtual / interface, this method has to be resolved first */
 			if((instr instanceof INVOKEINTERFACE) || (instr instanceof INVOKEVIRTUAL)) {
+				impl = null;
 			} else {
-				this.impl = appInfo.findStaticImplementation(referenced);
+				impl = appInfo.findStaticImplementation(referenced);
 			}
 		}
 		@Override
@@ -185,8 +190,15 @@ public class FlowGraph {
 		public InstructionHandle getInstructionHandle() {
 			return FlowGraph.this.blocks.get(blockIndex).getLastInstruction();
 		}
-		public MethodInfo getImpl() {
-			return impl;
+		public MethodInfo getImplementedMethod() {
+			return this.impl;
+		}
+		public FlowGraph getFlowGraph() {
+			if(isInterface()) return null;
+			if(this.fg == null) {
+				this.fg = appInfo.getFlowGraph(impl);
+			}
+			return this.fg;
 		}
 		public MethodRef getReferenced() {
 			return referenced;
@@ -207,7 +219,7 @@ public class FlowGraph {
 			n.name = "invoke("+this.referenced+")";
 			n.instr=this.instr;
 			n.referenced=this.referenced;
-			n.impl=impl;
+			n.impl = impl;
 			return n;
 		}
 	}
@@ -246,6 +258,10 @@ public class FlowGraph {
 	 * Fields
 	 * ------
 	 */
+	private int id; 
+	public int getId() {
+		return id;
+	}
 	private int idGen = 0;
 
 	/* linking to java */
@@ -269,7 +285,8 @@ public class FlowGraph {
 	 * @param method needs attached code (<code>method.getCode() != null</code>)
 	 * @throws BadGraphException if the bytecode results in an invalid flow graph
 	 */
-	public FlowGraph(WcetAppInfo wcetAi, MethodInfo method) throws BadGraphException  {
+	public FlowGraph(int id, WcetAppInfo wcetAi, MethodInfo method) throws BadGraphException {
+		this.id = id;
 		this.methodInfo = method;
 		this.appInfo = wcetAi;
 		createFlowGraph(method);
@@ -429,6 +446,24 @@ public class FlowGraph {
 		this.check();
 	}	
 
+	/**
+	 * Freeze the flowgraph into an ArrayGraph, and assign the nodes ids from 0 to n-1.
+	 * The entry is garantueed to be node 0, and the exit node n-1
+	 */
+	public ArrayGraph<FlowGraphNode,FlowGraphEdge> getArrayGraph() {
+		if(topOrder == null) analyseFlowGraph();
+		int i = 0;		
+		for(FlowGraphNode n : this.topOrder.getTopologicalTraversal()) {
+			n.setId(i++);
+		}
+		return new ArrayGraph<FlowGraphNode,FlowGraphEdge>(
+				new IDProvider<FlowGraphNode>() {
+					public FlowGraphNode fromID(int id) { return null; }
+					public int getID(FlowGraphNode t) {
+						return t.getId();
+					}},graph);
+	}
+	
 	private void check() throws BadGraphException {
 		TopOrder.checkConnected(graph);
 		TopOrder.checkIsExitNode(graph, this.exit);

@@ -19,6 +19,8 @@
 */
 package com.jopdesign.wcet08.graphutils;
 
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Set;
@@ -113,19 +115,33 @@ public class TopOrder<V,E> {
 		return backEdges; 
 	}
 	/**
-	 * Get a topological order <code>TOPO</code> mapping nodes to integers.
+	 * Get a topological ordinals <code>TOPO</code> mapping nodes to integers.
 	 * If you remove all back-edges in the graph, <code>TOPO(n) &lt; TOPO(m)</code> if there
 	 * is a path from n to m.
 	 * @return
 	 */
-	public Hashtable<V,Integer> getTopOrder() {
+	public Hashtable<V,Integer> getTopologicalOrder() {
 		return topOrder;
+	}
+	/**
+	 * Return a traversal of the graph in topological order of the corresponding back-edge
+	 * free graph.
+	 * @return The traversal as list of nodes
+	 */
+	public Vector<V> getTopologicalTraversal() {
+		Vector<V> topTraversal = new Vector<V>(this.topOrder.keySet());
+		Collections.sort(topTraversal,new Comparator<V>() {
+			public int compare(V o1, V o2) {
+				return topOrder.get(o1).compareTo(topOrder.get(o2));
+			}			
+		});
+		return topTraversal;
 	}
 	/**
 	 * Get a DFS traversal of the graph
 	 * @return
 	 */
-	public Vector<V> getDfsOrder() {
+	public Vector<V> getDFSTraversal() {
 		return dfsOrder;
 	}
 

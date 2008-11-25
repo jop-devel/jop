@@ -60,7 +60,7 @@ public class DetailedMethodReport {
 	private File generateGraph(MethodInfo method, String key, Map<FlowGraphNode, ?> nodeAnnotations, Map<FlowGraphEdge, ?> edgeAnnotations) {
 		File cgdot = Config.instance().getOutFile(method,key+".dot");
 		File cgimg = Config.instance().getOutFile(method,key+".png");
-		FlowGraph flowGraph = project.getFlowGraph(method);
+		FlowGraph flowGraph = project.getWcetAppInfo().getFlowGraph(method);
 		flowGraph.exportDOT(cgdot,nodeAnnotations, edgeAnnotations);
 		project.getReport().recordDot(cgdot,cgimg);
 		return cgimg;

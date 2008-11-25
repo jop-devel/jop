@@ -17,7 +17,7 @@
 
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ */
 
 /* Notes: WCET times reported by JOP (noted if JopSIM+cache-timing differs)
  * Method.java: 12039
@@ -55,17 +55,17 @@ public class WCETAnalysis {
 
 	public static void main(String[] args) {
 		Config.addOptions(CacheConfig.cacheOptions);
-		
+
 		/* Console logging for top level messages */
 		ConsoleAppender consoleApp = new ConsoleAppender(new PatternLayout(), ConsoleAppender.SYSTEM_ERR);
 		consoleApp.setName("TOP-LEVEL");
 		consoleApp.setThreshold(Level.INFO);
 		consoleApp.setLayout(new PatternLayout("[WCETAnalysis %-6rms] %m%n"));
 		tlLogger.addAppender(consoleApp);
-	
+
 		/* Load config */
 		loadConfig(args);
-				
+
 		Config config = Config.instance();
 		WCETAnalysis inst = new WCETAnalysis(config);
 		/* run */
@@ -88,7 +88,7 @@ public class WCETAnalysis {
 		System.err.println("Example:\n  "+
 				"java -D"+CONFIG_FILE_PROP+"=file:///home/jop/myconf.props "+
 				WCETAnalysis.class.getName() + 
-				" -"+CacheConfig.BLOCK_SIZE+" 32" +
+				" -"+CacheConfig.BLOCK_SIZE_WORDS+" 32" +
 				" -"+Config.ROOT_CLASS_NAME+" wcet.Method\n");
 		System.err.print  ("OPTIONS can be configured using system properties");
 		System.err.println(", supplying a property file or as command line arguments");
@@ -146,22 +146,24 @@ public class WCETAnalysis {
 		boolean succeed = false;
 		try {
 			/* Analysis */
+			//tlLogger.info("Stack usage analysis");
+			//StackSize stackUsage = new StackSize(project);
+			//tlLogger.info("Stack usage: "+stackUsage.getStackSize());
 			tlLogger.info("Starting WCET analysis");
 			SimpleAnalysis an = new SimpleAnalysis(project);
 
 			long scaWCET = 	an.computeWCET(project.getRootMethod(),CacheApproximation.ANALYSE_REACHABLE).getCost();
 			tlLogger.info("WCET 'analyze static reachable' analysis finsihed");
 			System.out.println("sca: "+scaWCET);
-			
+
 			config.setGenerateWCETReport(false);
 			long ahWCET = an.computeWCET(project.getRootMethod(),CacheApproximation.ALWAYS_HIT).getCost();			
 			tlLogger.info("WCET 'always hit' analysis finsihed");
 			System.out.println("ah:"+ahWCET);
-			
+
 			long amWCET = an.computeWCET(project.getRootMethod(),CacheApproximation.ALWAYS_MISS).getCost();
 			tlLogger.info("WCET 'always miss' analysis finished");
 			System.out.println("am: "+amWCET);
-			
 			project.getReport().addStat("wcet-always-hit", ahWCET);
 			project.getReport().addStat("wcet-always-miss", amWCET);
 			project.getReport().addStat("wcet-cache-approx", scaWCET);

@@ -22,8 +22,10 @@ package com.jopdesign.wcet08.frontend;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
+import java.util.SortedMap;
 import java.util.Vector;
 
 import org.apache.bcel.generic.ConstantPoolGen;
@@ -41,6 +43,9 @@ import com.jopdesign.wcet.WCETInstruction;
 import com.jopdesign.wcet08.Config;
 import com.jopdesign.wcet08.Project;
 import com.jopdesign.wcet08.Config.MissingConfigurationError;
+import com.jopdesign.wcet08.frontend.SourceAnnotations.BadAnnotationException;
+import com.jopdesign.wcet08.frontend.SourceAnnotations.LoopBound;
+import com.jopdesign.wcet08.graphutils.TopOrder.BadGraphException;
 import com.jopdesign.wcet08.report.InvokeDot;
 
 /**
@@ -67,7 +72,9 @@ public class WcetAppInfo  {
 
 	private TypeGraph typeGraph;
 	private AppInfo ai;
-	
+	private Map<MethodInfo, FlowGraph> cfgs;
+	private List<FlowGraph> cfgsByIndex;
+
 	public WcetAppInfo(com.jopdesign.build.AppInfo ai) {
 		this.ai = ai; 
 		this.typeGraph = new TypeGraph(this);
@@ -322,6 +329,46 @@ public class WcetAppInfo  {
 
 	public AppInfo getAppInfo() {
 		return this.ai;
+	}
+
+	public void analyseFlowGraphs(Project p, List<MethodInfo> methodInfos) throws Exception {
+		cfgsByIndex = new Vector<FlowGraph>();
+		cfgs = new Hashtable<MethodInfo, FlowGraph>();
+		for(int i = 0; i < methodInfos.size(); i++) {
+			MethodInfo method = methodInfos.get(i);
+			SortedMap<Integer,LoopBound> wcaMap = p.getAnnotations(method.getCli());
+			assert(wcaMap != null);
+			FlowGraph fg;
+			try {
+				fg = new FlowGraph(i,this,method);
+			}  catch(BadGraphException e) {
+				logger.error("Bad flow graph: "+e);
+				throw e;
+			}
+			cfgsByIndex.add(fg);
+			cfgs.put(method,fg);
+		}
+		for(FlowGraph fg: cfgsByIndex) {
+			try {
+				fg.loadAnnotations(p);
+				fg.resolveVirtualInvokes();
+			} catch (BadAnnotationException e) {
+				logger.error("Bad annotation: "+e);
+				throw e;
+			}
+		}
+	}
+	public boolean hasFlowGraph(MethodInfo mi) {
+		return(cfgs.containsKey(mi));
+	}
+	public FlowGraph getFlowGraph(int id) {
+		return cfgsByIndex.get(id);
+	}
+	public FlowGraph getFlowGraph(MethodInfo m) {
+		if(cfgs.get(m) == null) {
+			throw new AssertionError("No FlowGraph for "+m.getFQMethodName());
+		}
+		return cfgs.get(m);
 	}
 }
 

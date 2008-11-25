@@ -118,7 +118,12 @@ public class ReportEntry {
 			p = p.getOrCreate(path[i]);
 		}
 		if(p.hasSubPage(leaf)) {
-			Report.logger.error("Page "+key+" already exists. Won't overwrite.");
+			p = p.getOrCreate(leaf);
+			if(p.getLink() == null) {
+				p.link = link;
+			} else {
+				Report.logger.error("Page "+leaf+" already linked. Won't overwrite.");				
+			}
 		} else {
 			p.add(leaf,link,atStart);
 		}			

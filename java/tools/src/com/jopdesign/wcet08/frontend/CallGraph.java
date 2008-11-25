@@ -31,7 +31,6 @@ import java.util.Vector;
 import org.apache.bcel.generic.ANEWARRAY;
 import org.apache.bcel.generic.ATHROW;
 import org.apache.bcel.generic.EmptyVisitor;
-import org.apache.bcel.generic.ExceptionThrower;
 import org.apache.bcel.generic.INVOKEINTERFACE;
 import org.apache.bcel.generic.INVOKESPECIAL;
 import org.apache.bcel.generic.INVOKESTATIC;
@@ -43,7 +42,6 @@ import org.apache.bcel.generic.Visitor;
 import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionList;
 import org.jgrapht.DirectedGraph;
-import org.jgrapht.alg.CycleDetector;
 import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.traverse.DepthFirstIterator;
@@ -323,7 +321,6 @@ public class CallGraph {
 		}		
 		return implemented;
 	}
-
 	public Iterator<CallGraphNode> getReachableMethods(MethodRef m) {
 		DepthFirstIterator<CallGraphNode, DefaultEdge> dfi = 
 			new DepthFirstIterator<CallGraphNode, DefaultEdge>(callGraph,getNode(m));
@@ -339,11 +336,16 @@ public class CallGraph {
 		callGraph.addVertex(target);
 		callGraph.addEdge(src, target);
 	}
-	
 	protected CallGraphNode getNode(MethodRef m) {
 		return methodInfos.get(m);
 	}
 	public TopOrder<CallGraphNode,DefaultEdge> getTopologicalOrder() {
 		return this.topOrder;
+	}
+	public boolean isLeafNode(CallGraphNode vertex) {
+		return callGraph.outDegreeOf(vertex) == 0;
+	}
+	public boolean isLeafNode(MethodRef ref) {
+		return isLeafNode(this.getNode(ref));
 	}
 }

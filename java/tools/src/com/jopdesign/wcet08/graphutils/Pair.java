@@ -30,6 +30,7 @@ public class Pair<T1,T2> implements Comparable<Pair<T1,T2>>,
 		if(c1 == 0) return ((Comparable<T2>) snd).compareTo(o.snd);
 		return c1;
 	}
+	@SuppressWarnings("unchecked")
 	@Override
 	public boolean equals(Object o) {
 		if(this == o) return true;

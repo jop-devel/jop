@@ -20,6 +20,7 @@
 package com.jopdesign.wcet08.frontend;
 
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Vector;
@@ -28,6 +29,7 @@ import org.apache.bcel.classfile.LineNumberTable;
 import org.apache.bcel.generic.BranchInstruction;
 import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.EmptyVisitor;
+import org.apache.bcel.generic.FieldInstruction;
 import org.apache.bcel.generic.GotoInstruction;
 import org.apache.bcel.generic.IfInstruction;
 import org.apache.bcel.generic.Instruction;
@@ -37,6 +39,7 @@ import org.apache.bcel.generic.InvokeInstruction;
 import org.apache.bcel.generic.JsrInstruction;
 import org.apache.bcel.generic.ReturnInstruction;
 import org.apache.bcel.generic.Select;
+import org.apache.bcel.generic.StoreInstruction;
 
 import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.MethodInfo;
@@ -256,10 +259,45 @@ public class BasicBlock  {
 		}
 		return len;
 	}
+	/** fancy dumping */
 	public String dump() {
 		StringBuilder sb = new StringBuilder();
-		for(InstructionHandle ih : this.instructions) {
-			sb.append(ih.getPosition()+": "+ih.getInstruction()+";\n");
+		LineNumberTable lnt = methodInfo.getMethod().getLineNumberTable();
+		ConstantPoolGen cpg = methodInfo.getConstantPoolGen();
+		Iterator<InstructionHandle> ihIter = this.instructions.iterator();
+		StringBuilder lineBuilder = new StringBuilder();
+		InstructionHandle first = null;
+		while(ihIter.hasNext()) {
+			InstructionHandle ih = ihIter.next();
+			String line = null;
+			if(first == null) {
+				first = ih;
+			} else {
+				lineBuilder.append(" ");
+			}
+			Instruction ii = ih.getInstruction();
+			// SIPUSH, RET, NOP, NEWARRAY, MONITORENTER, MONITOREXIT
+			if(ii instanceof ReturnInstruction) {
+				line = ii.getName() + ": " + lineBuilder.toString();
+			} else if(ii instanceof StoreInstruction) {
+				line = "$l"+((StoreInstruction)ii).getIndex()+" <- "+lineBuilder.toString();
+			} else if(ii instanceof FieldInstruction && ii.getName().startsWith("put") ) {
+				line = "$"+((FieldInstruction)ii).getFieldName(cpg)+" <- "+lineBuilder.toString();
+		    } else {
+				lineBuilder.append(ii.getName());
+			}
+			if(! ihIter.hasNext()) {
+				line = lineBuilder.toString();
+			}
+			if(line != null) {
+				int l1 = lnt.getSourceLine(first.getPosition());
+				int l2 = lnt.getSourceLine(ih.getPosition());
+				if(l1 != l2) sb.append("["+l1+"-"+l2+"] ");
+				else         sb.append("["+l1+"]  ");
+				sb.append(line+"\n");
+				first = null;
+				lineBuilder = new StringBuilder();
+			}
 		}
 		return sb.toString();
 	}

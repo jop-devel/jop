@@ -7,7 +7,6 @@ import java.util.Set;
 
 import org.apache.bcel.generic.BranchInstruction;
 import org.apache.bcel.generic.Instruction;
-import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.InvokeInstruction;
 import org.apache.bcel.generic.RETURN;
 import org.jgrapht.DirectedGraph;
@@ -103,11 +102,8 @@ public class FlowGraphExport {
 			if(flowGraph.isHeadOfLoop(n)) {
 				nodeInfo.append(", LOOP "+n.getId()+"/"+flowGraph.getLoopBounds().get(n));
 			}
-			nodeInfo.append("}");
-			for(InstructionHandle ih: codeBlock.getInstructions()) {
-				nodeInfo.append("\\n");
-				nodeInfo.append(ih.toString());
-			}			
+			nodeInfo.append("}\n");
+			nodeInfo.append(codeBlock.dump());
 			ht.put("label",nodeInfo.toString());
 			if(! flowGraph.getHeadOfLoops().isEmpty()) {
 				if(flowGraph.getLoopColoring().getLoopColors().get(n) == null) {

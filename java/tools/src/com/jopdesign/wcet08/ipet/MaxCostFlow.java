@@ -32,8 +32,8 @@ import lpsolve.LpSolveException;
 import org.jgrapht.DirectedGraph;
 
 import com.jopdesign.wcet08.Config;
+import com.jopdesign.wcet08.graphutils.IDProvider;
 import com.jopdesign.wcet08.ipet.LinearConstraint.ConstraintType;
-import com.jopdesign.wcet08.ipet.LpSolveWrapper.IDProvider;
 
 /**
  * Max-Cost-Max-Flow solver with additional linear constraints
@@ -170,7 +170,7 @@ public class MaxCostFlow<V,E> {
 			idMap.put(e, key);			
 			revMap.put(key, e);
 		}
-		this.idProvider = new LpSolveWrapper.IDProvider<E>() {
+		this.idProvider = new IDProvider<E>() {
 			/* Note: No closures in java, so idMap/revMap have to be instance variables */
 			public E fromID(int id) { return revMap.get(id); }
 			public int getID(E t)   { return idMap.get(t);   }

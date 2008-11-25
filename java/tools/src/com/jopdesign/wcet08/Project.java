@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.Hashtable;
 import java.util.Map;
 import java.util.SortedMap;
-
 import org.apache.bcel.classfile.JavaClass;
 import org.apache.bcel.classfile.Method;
 import org.apache.bcel.generic.ConstantPoolGen;
@@ -41,9 +40,7 @@ import com.jopdesign.wcet08.frontend.CallGraph;
 import com.jopdesign.wcet08.frontend.FlowGraph;
 import com.jopdesign.wcet08.frontend.WcetAppInfo;
 import com.jopdesign.wcet08.frontend.SourceAnnotations;
-import com.jopdesign.wcet08.frontend.SourceAnnotations.BadAnnotationException;
 import com.jopdesign.wcet08.frontend.SourceAnnotations.LoopBound;
-import com.jopdesign.wcet08.graphutils.TopOrder.BadGraphException;
 import com.jopdesign.wcet08.report.Report;
 
 /** WCET 'project', information on which method in which class to analyse etc. */
@@ -108,6 +105,12 @@ public class Project {
 	private WcetAppInfo wcetAppInfo;
 	private CallGraph callGraph;
 
+	private Report results;
+		
+	private Map<ClassInfo, SortedMap<Integer, LoopBound>> annotationMap;
+
+	private LoopBounds dfaLoopBounds;
+
 	public CallGraph getCallGraph() {
 		return callGraph;
 	}
@@ -117,14 +120,6 @@ public class Project {
 	public MethodInfo getRootMethod() {
 		return callGraph.getRootMethod();
 	}
-	private Report results;
-		
-	private Map<MethodInfo, FlowGraph> cfgs;
-
-	private Map<ClassInfo, SortedMap<Integer, LoopBound>> annotationMap;
-
-	private LoopBounds dfaLoopBounds;
-
 	public Report getReport() { return results; }
 	
 	public Project() {
@@ -180,40 +175,15 @@ public class Project {
 			annotationMap.put(ci,sourceAnnotations.calculateWCA(ci));
 		}
 		/* Analyse control flow graphs */
-		cfgs = new Hashtable<MethodInfo, FlowGraph>();
-		for(MethodInfo method : this.callGraph.getImplementedMethods()) {
-			SortedMap<Integer,LoopBound> wcaMap = annotationMap.get(method.getCli());
-			assert(wcaMap != null);
-			FlowGraph fg;
-			try {
-				fg = new FlowGraph(wcetAppInfo,method);
-				fg.loadAnnotations(this);
-				fg.resolveVirtualInvokes();
-			} catch (BadAnnotationException e) {
-				logger.error("Bad annotation: "+e);
-				e.printStackTrace();
-				throw new Exception("Bad annotation: "+e,e);
-			}  catch(BadGraphException e) {
-				logger.error("Bad flow graph: "+e);
-				throw new Exception("Bad flowgraph: "+e.getMessage(),e);				
-			}
-			cfgs.put(method,fg);
-		}		
+		wcetAppInfo.analyseFlowGraphs(this, this.callGraph.getImplementedMethods());
 	}
 
 	public WcetAppInfo getWcetAppInfo() {
 		return this.wcetAppInfo;
 	}
-	public boolean hasFlowGraph(MethodInfo mi) {
-		return(cfgs.containsKey(mi));
-	}
-
-	public FlowGraph getFlowGraph(MethodInfo m) {
-		if(cfgs.get(m) == null) {
-			throw new AssertionError("No FlowGraph for "+m.getFQMethodName()+ ". Avail: "+this.cfgs.keySet());
-		}
-		return cfgs.get(m);
-	}
+	public FlowGraph getRootFlowGraph() {
+		return wcetAppInfo.getFlowGraph(this.getRootMethod());
+	}	
 	public SortedMap<Integer, LoopBound> getAnnotations(ClassInfo cli) {
 		return this.annotationMap.get(cli);
 	}
