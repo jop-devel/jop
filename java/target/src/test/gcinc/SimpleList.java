@@ -29,6 +29,18 @@ public class SimpleList {
 	
 	Element first, last;
 
+	static final int POOL_SIZE = 4; // limits capacity!
+	Element[] pool;
+	int poolIndex;
+
+	public SimpleList() {
+		pool = new Element[POOL_SIZE];
+		for (int i = 0; i < POOL_SIZE; i++) {
+			pool[i] = new Element();
+		}
+		poolIndex = 0;
+	}
+
 	public void append(Object o) {
 		Element e = new Element();
 		e.element = o;
@@ -42,8 +54,28 @@ public class SimpleList {
 		}
 	}
 	
-	public Object remove() {
-		
+	public void appendPooled(Object o) {
+		Element e = null;
+		synchronized(this) {
+			e = pool[poolIndex];
+			poolIndex++;
+			if (poolIndex >= POOL_SIZE) {
+				poolIndex = 0;
+			}
+		}
+		e.element = o;
+		e.next = null;
+		synchronized (this) {
+			if (last!=null) {
+				last.next = e;
+			} else {
+				first = e;
+			}
+			last = e;
+		}
+	}
+	
+	public Object remove() {		
 		Object o = null;
 		synchronized (this) {
 			if (first!=null) {

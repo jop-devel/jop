@@ -32,10 +32,12 @@ import joprt.RtThread;
 
 public class Latency {
 
+	final static String TASK_SET = "hpclg";
+	final static int TEST_TIME = 60;
+	final static int ARRAY_SIZE = 4096/4;
+
 	final static boolean USE_ARRAY = true;
-//	final static int ARRAY_SIZE = 1*1024/4;
-	final static int ARRAY_SIZE = 256/4;
-	
+
 	static class HFThread extends RtThread {
 
 		public HFThread(int prio, int us) {
@@ -95,6 +97,35 @@ public class Latency {
 		void work() {
 			if (USE_ARRAY) {
 				sl.append(new int[ARRAY_SIZE]);
+			} else {
+				sl.append(new Integer(nr));				
+			}
+//			synchronized (v) {
+//				v.addElement(new Integer(nr));				
+//			}
+			++nr;
+		}
+	}
+	static class PooledMFThread extends HFThread {
+
+		int nr;
+
+		int [][] pool;
+		int poolIndex;
+
+		public PooledMFThread(int prio, int us) {
+			super(prio, us);
+			pool = new int[sl.POOL_SIZE][ARRAY_SIZE];
+			poolIndex = 0;
+		}
+		
+		void work() {
+			if (USE_ARRAY) {
+				sl.appendPooled(pool[poolIndex]);
+				poolIndex++;
+				if (poolIndex >= sl.POOL_SIZE) {
+					poolIndex = 0;
+				}
 			} else {
 				sl.append(new Integer(nr));				
 			}
@@ -164,6 +195,28 @@ public class Latency {
 		}
 	}
 	
+	static class StackThread extends HFThread {
+
+		public StackThread(int prio, int us) {
+			super(prio, us);
+		}
+		
+		void work() {
+			for (;;) {
+				factorial(5);
+			}
+		}
+
+		int factorial(int n) {
+			if (n > 1) {
+				return factorial(n-1)*n;
+			} else {
+				waitForNextPeriod();
+				return 1;
+			}
+		}
+	}
+
 	/**
 	 * Use Dbg instead 
 	 * @author martin
@@ -176,15 +229,23 @@ public class Latency {
 		}
 
 		public void run() {
-			for (;;) {
+			int cnt = 0;
+			int subCnt = 0;
+			for (;;) {				
 				waitForNextPeriod();
-				if (hft!=null) {
-					Dbg.wr("hft max=", hft.max);
-					Dbg.wr("hft min=", hft.min);
-				}
-				if (mft!=null) {
-					Dbg.wr("mft max=", mft.max);
-					Dbg.wr("mft min=", mft.min);
+				// emulate a period of 1 second
+				if (++subCnt >= (1000*1000)/PERIOD_LOG) {
+					subCnt = 0;
+					if (hft!=null) {
+						Dbg.wr("hft max=", hft.max);
+						Dbg.wr("hft min=", hft.min);
+					}
+
+					if (++cnt >= TEST_TIME) {
+						synchronized(System.out) {
+							System.out.println("JVM exit!");
+						}
+					}
 				}
 			}
 		}
@@ -192,7 +253,6 @@ public class Latency {
 	}
 	
 	static HFThread hft;
-	static MFThread mft;
 
 	// Changes in the scheduler to get low latency values:
 	//		TIM_OFF to 2
@@ -204,10 +264,12 @@ public class Latency {
 	// with output thread 10 us
 	// with prod/cons threads (no GC) 16 us
 	// with GC 72 us (77 us)
-	public static final int PERIOD_HIGH = 107; // 211; // 107;
+	public static final int PERIOD_HIGH   = 107; // 211;
 	public static final int PERIOD_MEDIUM = 2003; // 1009;
-	public static final int PERIOD_LOW = 10853;
-	public static final int PERIOD_GC = 50021; // 200183;
+	public static final int PERIOD_LOW    = 10007; // 10853;
+	public static final int PERIOD_STACK  = 15013;
+	public static final int PERIOD_LOG    = 25000;
+	public static final int PERIOD_GC     = 50021; // 200183;
 	
 	// for slower JOP versions (<100MHz)
 //	public static final int PERIOD_HIGH = 200;
@@ -221,22 +283,36 @@ public class Latency {
 	public static void main(String[] args) {
 
 		Dbg.initSerWait();
+
 //		v = new Vector(20);
 		sl = new SimpleList();
 		
-		hft = new HFThread(5, PERIOD_HIGH);
-		new LogThread (2, 1000*1000);
-		
-		mft = new MFThread(4, PERIOD_MEDIUM);
-		new LFThread(3, PERIOD_LOW);
-		new GCThread();
-		
-				
+		if (TASK_SET.indexOf('h') >= 0) {
+			hft = new HFThread(6, PERIOD_HIGH);
+		}
+		if (TASK_SET.indexOf('p') >= 0) {
+			new MFThread(5, PERIOD_MEDIUM);
+		} else if (TASK_SET.indexOf('q') >= 0) {
+			new PooledMFThread(5, PERIOD_MEDIUM);
+		} 
+		if (TASK_SET.indexOf('c') >= 0) {
+			new LFThread(4, PERIOD_LOW);
+		}
+		if (TASK_SET.indexOf('s') >= 0) {
+			new StackThread(3, PERIOD_STACK);
+		}
+		if (TASK_SET.indexOf('l') >= 0) {
+			new LogThread (2, PERIOD_LOG);
+		}		
+		if (TASK_SET.indexOf('g') >= 0) {
+			new GCThread();
+		}		
+
 		RtThread.startMission();
 		
 		// that one is mandatory to get low latency!
 		// check RtThreadImpl why.
-		for (;;);
+		for(;;);
 	}
 
 }
