@@ -1,0 +1,1153 @@
+? asm/generated
+? vhdl/jtbl.vhd
+? vhdl/offtbl.vhd
+? vhdl/rom.vhd
+? vhdl/xram_block.vhd
+? quartus/cycmin/db
+? quartus/cycmin/jop.asm.rpt
+? quartus/cycmin/jop.fit.rpt
+? quartus/cycmin/jop.fit.summary
+? quartus/cycmin/jop.flow.rpt
+? quartus/cycmin/jop.map.rpt
+? quartus/cycmin/jop.map.summary
+? quartus/cycmin/jop.pin
+? quartus/cycmin/jop.pof
+? quartus/cycmin/jop.sof
+? quartus/cycmin/jop.tan.rpt
+? quartus/cycmin/jop.tan.summary
+? quartus/cycmin/jop.ttf
+? quartus/cycmin/serv_req_info.txt
+? quartus/usbmin/db
+? quartus/usbmin/jop.asm.rpt
+? quartus/usbmin/jop.fit.rpt
+? quartus/usbmin/jop.fit.summary
+? quartus/usbmin/jop.flow.rpt
+? quartus/usbmin/jop.map.rpt
+? quartus/usbmin/jop.map.summary
+? quartus/usbmin/jop.pin
+? quartus/usbmin/jop.pof
+? quartus/usbmin/jop.sof
+? quartus/usbmin/jop.tan.rpt
+? quartus/usbmin/jop.tan.summary
+? quartus/usbmin/jop_assignment_defaults.qdf
+? quartus/usbmin/serv_req_info.txt
+Index: java/target/src/common/com/jopdesign/sys/Scheduler.java
+===================================================================
+RCS file: /cvsroot/jeuneS2/jop/java/target/src/common/com/jopdesign/sys/Scheduler.java,v
+retrieving revision 1.6
+diff -c -r1.6 Scheduler.java
+*** java/target/src/common/com/jopdesign/sys/Scheduler.java	16 Sep 2008 15:14:24 -0000	1.6
+--- java/target/src/common/com/jopdesign/sys/Scheduler.java	26 Nov 2008 14:27:11 -0000
+***************
+*** 55,63 ****
+  	// timer offset to ensure that no timer interrupt happens just
+  	// after monitorexit in this method and the new thread
+  	// has a minimum time to run.
+! 	private final static int TIM_OFF = 200;
+  //	private final static int TIM_OFF = 20;
+! //	private final static int TIM_OFF = 2; // for 100 MHz version 20 or even lower
+  										 // 2 is minimum
+  	/**
+  	 * This is the scheduler invoked as a plain interrupt handler
+--- 55,63 ----
+  	// timer offset to ensure that no timer interrupt happens just
+  	// after monitorexit in this method and the new thread
+  	// has a minimum time to run.
+! 	//	private final static int TIM_OFF = 200;
+  //	private final static int TIM_OFF = 20;
+! 	private final static int TIM_OFF = 2; // for 100 MHz version 20 or even lower
+  										 // 2 is minimum
+  	/**
+  	 * This is the scheduler invoked as a plain interrupt handler
+***************
+*** 135,140 ****
+--- 135,141 ----
+  		// get this back form the array of Schedulers		
+  		s = sched[sys.cpuId];
+  		th = s.ref[s.active];
++ 		th.state = RtThreadImpl.READY;
+  		i = Native.rdIntMem(SP_VAL_ADDR);		
+  		
+  		// can't use s1-127 as count,
+Index: java/tools/src/com/jopdesign/tools/Instruction.java
+===================================================================
+RCS file: /cvsroot/jeuneS2/jop/java/tools/src/com/jopdesign/tools/Instruction.java,v
+retrieving revision 1.9
+diff -c -r1.9 Instruction.java
+*** java/tools/src/com/jopdesign/tools/Instruction.java	30 Apr 2008 17:00:36 -0000	1.9
+--- java/tools/src/com/jopdesign/tools/Instruction.java	26 Nov 2008 14:27:11 -0000
+***************
+*** 57,66 ****
+  		new Instruction("sub", 0x05, false, false),
+  
+  //	extension 'address' selects function 4 bits
+- 
+- 		// multiplication
+- 		new Instruction("stmul", 0x06, false, false),
+- 
+  		new Instruction("stmwa", 0x07, false, false),
+  
+  		new Instruction("stmra", 0x08+0, false, false),
+--- 57,62 ----
+***************
+*** 71,93 ****
+  		// getfield/putfield
+  		new Instruction("stgf",  0x08+4, false, false),
+  		new Instruction("stpf",  0x08+5, false, false),
+! 		// magic copying
+! 		new Instruction("stcp",  0x08+6, false, false),
+  		// bytecode read
+! 		new Instruction("stbcrd",0x08+7, false, false),
+  
+  //	st (vp)	3 bits
+! 		new Instruction("st0",   0x10+0, false, false),
+! 		new Instruction("st1",   0x10+1, false, false),
+! 		new Instruction("st2",   0x10+2, false, false),
+! 		new Instruction("st3",   0x10+3, false, false),
+! 		new Instruction("st",    0x10+4, false, false),
+  		new Instruction("stmi",  0x10+5, false, false),
+  
+! 		new Instruction("stvp",  0x18, false, false),
+  		new Instruction("stjpc", 0x19, false, false),
+! 		new Instruction("star",  0x1a, false, false),
+! 		new Instruction("stsp",  0x1b, false, false),
+  
+  //	shift
+  		new Instruction("ushr", 0x1c, false, false),
+--- 67,89 ----
+  		// getfield/putfield
+  		new Instruction("stgf",  0x08+4, false, false),
+  		new Instruction("stpf",  0x08+5, false, false),
+! 		// multiplication
+! 		new Instruction("stmul", 0x08+6, false, false),
+  		// bytecode read
+! 		new Instruction("stbcrd", 0x08+7, false, false),
+  
+  //	st (vp)	3 bits
+! 		new Instruction("st0", 0x10+0, false, false),
+! 		new Instruction("st1", 0x10+1, false, false),
+! 		new Instruction("st2", 0x10+2, false, false),
+! 		new Instruction("st3", 0x10+3, false, false),
+! 		new Instruction("st",  0x10+4, false, false),
+  		new Instruction("stmi",  0x10+5, false, false),
+  
+! 		new Instruction("stvp", 0x18, false, false),
+  		new Instruction("stjpc", 0x19, false, false),
+! 		new Instruction("star", 0x1a, false, false),
+! 		new Instruction("stsp", 0x1b, false, false),
+  
+  //	shift
+  		new Instruction("ushr", 0x1c, false, false),
+Index: build.xml
+===================================================================
+RCS file: /cvsroot/jeuneS2/jop/build.xml,v
+retrieving revision 1.19
+diff -c -r1.19 build.xml
+*** build.xml	14 Nov 2008 16:12:46 -0000	1.19
+--- build.xml	26 Nov 2008 14:27:11 -0000
+***************
+*** 27,41 ****
+  	</description>
+  	
+  	<!-- com1 is the usual serial port -->
+! 	<property name="com-port" value="COM1"/>
+  	<!-- com6 is the FTDI VCOM for the USB download -->
+  	<!-- <property name="com-port" value="COM6"/> -->
+  
+! 	<property name="com-flag" value="-e"/>
+  	<!-- use -usb to download the Java application without the echo 'protocol' on USB -->
+! 	<!-- <property name="com-flag" value="-e -usb"/> -->
+  
+! 	<property name="blaster-type" value="ByteBlasterMV"/>
+  	<!-- <property name="blaster-type" value="USB-Blaster"/> -->
+  
+  	<condition property="usbrunner" value="./USBRunner">
+--- 27,41 ----
+  	</description>
+  	
+  	<!-- com1 is the usual serial port -->
+! 	<property name="com-port" value="/dev/ttyUSB1"/>
+  	<!-- com6 is the FTDI VCOM for the USB download -->
+  	<!-- <property name="com-port" value="COM6"/> -->
+  
+! <!-- 	<property name="com-flag" value="-e"/> -->
+  	<!-- use -usb to download the Java application without the echo 'protocol' on USB -->
+! 	<property name="com-flag" value="-e -usb"/>
+  
+! <!-- 	<property name="blaster-type" value="ByteBlasterMV"/> -->
+  	<!-- <property name="blaster-type" value="USB-Blaster"/> -->
+  
+  	<condition property="usbrunner" value="./USBRunner">
+***************
+*** 53,59 ****
+  	<!-- <property name="qproj" value="cycfpu"/> -->
+  	<!-- <property name="qproj" value="cyc256x16"/> -->
+  	<!-- <property name="qproj" value="sopcmin"/> -->
+! 	<property name="qproj" value="cycmin"/> 
+  	
+  	<!-- Nelson uncomment this -->
+  	<!-- <property name="qproj" value="cyc12baseio"/> -->
+--- 53,59 ----
+  	<!-- <property name="qproj" value="cycfpu"/> -->
+  	<!-- <property name="qproj" value="cyc256x16"/> -->
+  	<!-- <property name="qproj" value="sopcmin"/> -->
+! 	<property name="qproj" value="usbmin"/> 
+  	
+  	<!-- Nelson uncomment this -->
+  	<!-- <property name="qproj" value="cyc12baseio"/> -->
+***************
+*** 195,206 ****
+  	<pathconvert refid="target-source" property="target-source-flattened"/>
+  	
+  	<!-- use this for serial download -->
+! 	<target name="all" depends="directories, tools, jopser, japp" description="Use this for serial download"/>
+! 	<target name="japp" depends="java-app, config-byteblast, download"/>
+  
+  	<!-- use this for USB download of FPGA configuration and Java program download -->
+! 	<!-- <target name="all" depends="directories, tools, jopusb, japp"/> -->
+! 	<!-- <target name="japp" depends="java-app, config-usb, download"/> -->
+  	
+  	<target name="clean">
+  		<echo message="This is specific for my configuration ;-)"/>
+--- 195,206 ----
+  	<pathconvert refid="target-source" property="target-source-flattened"/>
+  	
+  	<!-- use this for serial download -->
+! <!-- 	<target name="all" depends="directories, tools, jopser, japp" description="Use this for serial download"/> -->
+! <!-- 	<target name="japp" depends="java-app, config-byteblast, download"/> -->
+  
+  	<!-- use this for USB download of FPGA configuration and Java program download -->
+! 	<target name="all" depends="directories, tools, jopusb, japp"/>
+! 	<target name="japp" depends="java-app, config-usb, download"/>
+  	
+  	<target name="clean">
+  		<echo message="This is specific for my configuration ;-)"/>
+***************
+*** 288,294 ****
+  	</target>
+  
+  	<target name="dfa" description="Run DFA on the target application">
+! 		<java classpathref="tools-cp" classname="com.jopdesign.dfa.Main">
+  			<arg line="-cp ${target}/dist/classes ${main-class}"/>
+  		</java>
+  	</target>
+--- 288,295 ----
+  	</target>
+  
+  	<target name="dfa" description="Run DFA on the target application">
+! 		<java classpathref="tools-cp" classname="com.jopdesign.dfa.Main" fork="true">
+! 			<jvmarg value="-Xss16M"/>
+  			<arg line="-cp ${target}/dist/classes ${main-class}"/>
+  		</java>
+  	</target>
+***************
+*** 420,429 ****
+  		</antcall>
+  		
+  		<exec executable="quartus_cpf" dir="quartus/${qproj}" failonerror="true">
+- 			<arg line="-c jop.cdf ../../jbc/${qproj}.jbc"/>
+- 		</exec>
+- 			
+- 		<exec executable="quartus_cpf" dir="quartus/${qproj}" failonerror="true">
+  			<arg line="-c jop.sof ../../rbf/${qproj}.rbf"/>
+  		</exec>
+  
+--- 421,426 ----
+***************
+*** 505,519 ****
+  	Ant's way to logging is very annoying!
+  
+  	that's the JavaDown version
+! 
+! 		<java classname="com.jopdesign.tools.JavaDown" failonerror="true">
+  			<classpath>
+  				<pathelement location="java/tools/dist/lib/jop-tools.jar"/>
+! 				<pathelement location="java/lib/RXTXcomm.jar"/>
+  			</classpath>
+  			<arg line="${com-flag} java/target/dist/bin/${jopbin} ${com-port}"/>
+  		</java>
+! 
+  	this is the download version with down.exe
+  
+  		<exec executable="down" spawn="true">
+--- 502,517 ----
+  	Ant's way to logging is very annoying!
+  
+  	that's the JavaDown version
+! -->
+! 		<java classname="com.jopdesign.tools.JavaDown" failonerror="true"
+! 			  output="/dev/stdout" input="/dev/null">
+  			<classpath>
+  				<pathelement location="java/tools/dist/lib/jop-tools.jar"/>
+! 				<pathelement location="/usr/share/java/RXTXcomm.jar"/>
+  			</classpath>
+  			<arg line="${com-flag} java/target/dist/bin/${jopbin} ${com-port}"/>
+  		</java>
+! <!--
+  	this is the download version with down.exe
+  
+  		<exec executable="down" spawn="true">
+***************
+*** 522,528 ****
+  -->
+  		<!-- But we just generate a dl.bat as Ant logging need line feeds -->
+  		
+! 		<echo message="down ${com-flag} java/target/dist/bin/${jopbin} ${com-port}" file="dl.bat"/>
+  
+  	</target>
+  	
+--- 520,526 ----
+  -->
+  		<!-- But we just generate a dl.bat as Ant logging need line feeds -->
+  		
+! <!-- 		<echo message="down ${com-flag} java/target/dist/bin/${jopbin} ${com-port}" file="dl.bat"/> -->
+  
+  	</target>
+  	
+Index: asm/src/jvm.asm
+===================================================================
+RCS file: /cvsroot/jeuneS2/jop/asm/src/jvm.asm,v
+retrieving revision 1.72
+diff -c -r1.72 jvm.asm
+*** asm/src/jvm.asm	21 Jul 2008 12:18:39 -0000	1.72
+--- asm/src/jvm.asm	26 Nov 2008 14:27:11 -0000
+***************
+*** 678,684 ****
+  
+  
+  imul:
+! 			stmul		// store both operands and start
+  			pop			// pop second operand
+  
+  			ldi	2		// 2*7+2 wait ok!
+--- 678,684 ----
+  
+  
+  imul:
+! 			stmul			// store both operands and start
+  			pop			// pop second operand
+  
+  			ldi	2		// 2*7+2 wait ok!
+***************
+*** 1802,1807 ****
+--- 1802,1809 ----
+  			wait
+  			wait
+  
++ nop	// to keep offtbl.vhd short enough....
++ nop	// to keep offtbl.vhd short enough....
+  			bnz		intext_loop
+  			ldi	-1	// decrement in branch slot
+  			add
+***************
+*** 1838,1843 ****
+--- 1840,1846 ----
+  
+  			dup
+  			nop
++ nop	// to keep offtbl.vhd short enough....
+  			bnz		extint_loop
+  			ldi	-1	// decrement in branch slot
+  			add
+***************
+*** 1847,1885 ****
+  //	public static native void memCopy(int src, int dest, int cnt);
+  
+  jopsys_memcpy:
+! // 			ldi	-1
+! // 			add
+! // 			stm c	// counter-1
+! // 			stm b	// destination
+! // 			stm a	// source
+! // 			ldm	c	// keep counter on the stack
+! 
+! // memcpy_loop:
+! // 			dup
+! // 			ldm	a
+! // 			add
+! // 			stmra
+! // 			dup
+! // 			ldm	b
+! // 			add
+! // 			stmwa	// should be ok
+! // 			wait
+! // 			wait
+! // 			ldmrd
+! // 			stmwd
+! // 			dup
+! // 			wait
+! // 			wait
+! 
+! // 			bnz	memcpy_loop
+! // 			ldi	-1	// decrement in branch slot
+! // 			add
+  
+! 			stcp
+! 			pop
+  			wait
+  			wait
+! 			pop nxt
+  
+  
+  
+--- 1850,1884 ----
+  //	public static native void memCopy(int src, int dest, int cnt);
+  
+  jopsys_memcpy:
+! 			ldi	-1
+! 			add
+! 			stm c	// counter-1
+! 			stm b	// destination
+! 			stm a	// source
+! 			ldm	c	// keep counter on the stack
+  
+! memcpy_loop:
+! 			dup
+! 			ldm	a
+! 			add
+! 			stmra
+! 			dup
+! 			ldm	b
+! 			add
+! 			stmwa	// should be ok
+  			wait
+  			wait
+! 			ldmrd
+! 			stmwd
+! 			dup
+! 			wait
+! 			wait
+! 
+! 			bnz	memcpy_loop
+! 			ldi	-1	// decrement in branch slot
+! 			add
+! 
+! 			pop	nxt	// remove counter
+  
+  
+  
+Index: vhdl/core/decode.vhd
+===================================================================
+RCS file: /cvsroot/jeuneS2/jop/vhdl/core/decode.vhd,v
+retrieving revision 1.11
+diff -c -r1.11 decode.vhd
+*** vhdl/core/decode.vhd	30 Apr 2008 17:00:37 -0000	1.11
+--- vhdl/core/decode.vhd	26 Nov 2008 14:27:11 -0000
+***************
+*** 83,89 ****
+  	dir			: out std_logic_vector(ram_width-1 downto 0);
+  
+  	sel_sub		: out std_logic;						-- 0..add, 1..sub
+! 	sel_amux	: out std_logic;						-- 0..sum, 1..lmux
+  	ena_a		: out std_logic;						-- 1..store new value
+  	sel_bmux	: out std_logic;						-- 0..a, 1..mem
+  	sel_log		: out std_logic_vector(1 downto 0);		-- pop/st, and, or, xor
+--- 83,89 ----
+  	dir			: out std_logic_vector(ram_width-1 downto 0);
+  
+  	sel_sub		: out std_logic;						-- 0..add, 1..sub
+! 	sel_amux		: out std_logic;						-- 0..sum, 1..lmux
+  	ena_a		: out std_logic;						-- 1..store new value
+  	sel_bmux	: out std_logic;						-- 0..a, 1..mem
+  	sel_log		: out std_logic_vector(1 downto 0);		-- pop/st, and, or, xor
+***************
+*** 179,187 ****
+  		rd <= '1';
+  	end if;
+  	wr <= '0';
+! 	if ir(7 downto 0)="00000110"
+! 		or ir(7 downto 0)="00000111"
+! 		or ir(7 downto 3)="00001" then -- st memio
+  		wr <= '1';
+  	end if;
+  
+--- 179,185 ----
+  		rd <= '1';
+  	end if;
+  	wr <= '0';
+! 	if ir(7 downto 0)="00000111" or ir(7 downto 3)="00001" then -- st memio
+  		wr <= '1';
+  	end if;
+  
+Index: vhdl/core/extension.vhd
+===================================================================
+RCS file: /cvsroot/jeuneS2/jop/vhdl/core/extension.vhd,v
+retrieving revision 1.17
+diff -c -r1.17 extension.vhd
+*** vhdl/core/extension.vhd	30 Apr 2008 17:00:37 -0000	1.17
+--- vhdl/core/extension.vhd	26 Nov 2008 14:27:11 -0000
+***************
+*** 188,194 ****
+  		mem_in.iastore <= '0';
+  		mem_in.getfield <= '0';
+  		mem_in.putfield <= '0';
+- 		mem_in.copy <= '0';
+  		mul_wr <= '0';
+  
+  		wr_dly <= wr;
+--- 188,193 ----
+***************
+*** 206,225 ****
+  			elsif ext_addr=STMWD then
+  				mem_scio_wr <= '1';		-- start memory or io write
+  			elsif ext_addr=STALD then
+! 				mem_in.iaload <= '1';	-- start an array load
+  			elsif ext_addr=STAST then
+! 				mem_in.iastore <= '1';	-- start an array store
+  			elsif ext_addr=STGF then
+! 				mem_in.getfield <= '1';	-- start getfield
+  			elsif ext_addr=STPF then
+! 				mem_in.putfield <= '1';	-- start getfield
+! 			elsif ext_addr=STCP then
+! 				mem_in.copy <= '1';		-- start copy
+  			elsif ext_addr=STMUL then
+  				mul_wr <= '1';			-- start multiplier
+  			-- elsif ext_addr=STBCR then
+  			else
+! 				mem_in.bc_rd <= '1';	-- start bc read
+  			end if;
+  		end if;
+  
+--- 205,222 ----
+  			elsif ext_addr=STMWD then
+  				mem_scio_wr <= '1';		-- start memory or io write
+  			elsif ext_addr=STALD then
+! 				mem_in.iaload <= '1';		-- start an array load
+  			elsif ext_addr=STAST then
+! 				mem_in.iastore <= '1';		-- start an array store
+  			elsif ext_addr=STGF then
+! 				mem_in.getfield <= '1';	 -- start getfield
+  			elsif ext_addr=STPF then
+! 				mem_in.putfield <= '1';	 -- start getfield
+  			elsif ext_addr=STMUL then
+  				mul_wr <= '1';			-- start multiplier
+  			-- elsif ext_addr=STBCR then
+  			else
+! 				mem_in.bc_rd <= '1';		-- start bc read
+  			end if;
+  		end if;
+  
+Index: vhdl/core/jop_types.vhd
+===================================================================
+RCS file: /cvsroot/jeuneS2/jop/vhdl/core/jop_types.vhd,v
+retrieving revision 1.14
+diff -c -r1.14 jop_types.vhd
+*** vhdl/core/jop_types.vhd	13 Jun 2008 12:10:06 -0000	1.14
+--- vhdl/core/jop_types.vhd	26 Nov 2008 14:27:11 -0000
+***************
+*** 49,64 ****
+  --	        8+7	st	start bytecode load (or cache)
+  --	          7	ld	read new pc base (for cache version)
+  --
+- 	constant STMUL	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "0110";
+  	constant STMWA	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "0111"; 
+  
+! 	constant STMRA	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "1000"; 
+  	constant STMWD	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "1001"; 
+  	constant STALD	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "1010"; 
+  	constant STAST	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "1011"; 
+  	constant STGF	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "1100"; 
+  	constant STPF	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "1101"; 
+! 	constant STCP	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "1110"; 
+  	constant STBCR	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "1111"; 
+  
+  	constant LDMRD	        : std_logic_vector(EXTA_WIDTH-1 downto 0) := "0000"; 
+--- 49,63 ----
+  --	        8+7	st	start bytecode load (or cache)
+  --	          7	ld	read new pc base (for cache version)
+  --
+  	constant STMWA	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "0111"; 
+  
+!         constant STMRA	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "1000"; 
+  	constant STMWD	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "1001"; 
+  	constant STALD	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "1010"; 
+  	constant STAST	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "1011"; 
+  	constant STGF	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "1100"; 
+  	constant STPF	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "1101"; 
+! 	constant STMUL	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "1110";   
+  	constant STBCR	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "1111"; 
+  
+  	constant LDMRD	        : std_logic_vector(EXTA_WIDTH-1 downto 0) := "0000"; 
+***************
+*** 72,80 ****
+  		bc_rd           : std_logic;
+  		iaload          : std_logic;
+  		iastore	        : std_logic;
+! 		getfield        : std_logic;
+! 		putfield        : std_logic;
+! 		copy            : std_logic;
+  	end record;
+  
+  	type mem_out_type is record
+--- 71,78 ----
+  		bc_rd           : std_logic;
+  		iaload          : std_logic;
+  		iastore	        : std_logic;
+!                 getfield        : std_logic;
+!                 putfield        : std_logic;
+  	end record;
+  
+  	type mem_out_type is record
+Index: vhdl/memory/mem_sc.vhd
+===================================================================
+RCS file: /cvsroot/jeuneS2/jop/vhdl/memory/mem_sc.vhd,v
+retrieving revision 1.21
+diff -c -r1.21 mem_sc.vhd
+*** vhdl/memory/mem_sc.vhd	10 Oct 2008 22:18:29 -0000	1.21
+--- vhdl/memory/mem_sc.vhd	26 Nov 2008 14:27:11 -0000
+***************
+*** 136,146 ****
+  							bc_cc, bc_r1, bc_w, bc_rn, bc_wr, bc_wl,
+  							iald0, iald1, iald2, iald23, iald3, iald4,
+  							iasrd, ialrb,
+! 							iast0, iaswb, iasrb, iasst,
+! 							gf0, gf1, gf2, gf3,
+! 							pf0, pf3,
+! 							cp0, cp1, cp2, cp3, cp4, cpstop,
+! 							last,
+  							npexc, abexc, excw
+  						);
+  	signal state 		: state_type;
+--- 136,144 ----
+  							bc_cc, bc_r1, bc_w, bc_rn, bc_wr, bc_wl,
+  							iald0, iald1, iald2, iald23, iald3, iald4,
+  							iasrd, ialrb,
+! 							iast0, iaswb, iasrb, iasst, iasw,
+!                                                         gf0, gf1, gf2, gf3, gf4,
+!                                                         pf0, pf3, pf4,
+  							npexc, abexc, excw
+  						);
+  	signal state 		: state_type;
+***************
+*** 151,157 ****
+  
+  	-- addr_reg used to 'store' the address for wr, bc load, and array access
+  	signal addr_reg		: unsigned(SC_ADDR_SIZE-1 downto 0);
+- 	signal addr_next	: unsigned(SC_ADDR_SIZE-1 downto 0);
+  
+  	-- MUX for SimpCon address and write data
+  	signal ram_addr		: std_logic_vector(SC_ADDR_SIZE-1 downto 0);
+--- 149,154 ----
+***************
+*** 168,178 ****
+--- 165,177 ----
+  --	signals for object and array access
+  --
+  	signal index		: std_logic_vector(SC_ADDR_SIZE-1 downto 0);	-- array or field index
++ 	signal addr_calc	: unsigned(SC_ADDR_SIZE-1 downto 0);		-- adder
+  	signal value		: std_logic_vector(31 downto 0);		-- store value
+  
+  	signal null_pointer	: std_logic;
+  	signal bounds_error	: std_logic;
+  
++ 	signal store_nxt	: std_logic;
+  	signal was_a_store	: std_logic;
+  
+  --
+***************
+*** 195,209 ****
+  	signal cache_in_cache	: std_logic;
+  	signal cache_bcstart	: std_logic_vector(jpc_width-3 downto 0);
+  
+- --
+- -- signals for copying and address translation
+- --
+- 	signal base_reg		: unsigned(SC_ADDR_SIZE-1 downto 0);
+- 	signal pos_reg		: unsigned(SC_ADDR_SIZE-1 downto 0);
+-     signal offset_reg	: unsigned(SC_ADDR_SIZE-1 downto 0);
+- 	signal translate_bit : std_logic;
+- 	signal cp_stopbit   : std_logic;
+- 
+  begin
+  
+  process(sc_mem_in, state_bsy, state)
+--- 194,199 ----
+***************
+*** 212,218 ****
+  	if sc_mem_in.rdy_cnt=3 then
+  		mem_out.bsy <= '1';
+  	else
+! 		if state/=ialrb and state/=last and state_bsy='1' then
+  			mem_out.bsy <= '1';
+  		end if;
+  	end if;
+--- 202,208 ----
+  	if sc_mem_in.rdy_cnt=3 then
+  		mem_out.bsy <= '1';
+  	else
+! 		if state/=ialrb and state/=iasw and state/=gf4 and state/=pf4 and state_bsy='1' then
+  			mem_out.bsy <= '1';
+  		end if;
+  	end if;
+***************
+*** 276,344 ****
+  		addr_reg <= (others => '0');
+  		index <= (others => '0');
+  		value <= (others => '0');
+  		was_a_store <= '0';
+  		bc_len <= (others => '0');
+  
+- 		base_reg <= (others => '0');
+- 		pos_reg <= (others => '0');
+- 		offset_reg <= (others => '0');
+- 		
+  	elsif rising_edge(clk) then
+  		if mem_in.bc_rd='1' then
+! 			bc_len <= unsigned(ain(METHOD_SIZE_BITS-1 downto 0));
+  		else
+  			if dec_len='1' then
+  				bc_len <= bc_len-1;
+  			end if;
+  		end if;
+  
+  		-- save array address and index
+! 		if mem_in.iaload='1' or mem_in.getfield='1' then
+  			index <= ain(SC_ADDR_SIZE-1 downto 0);		-- store array index
+  		end if;
+  		-- first step of three-operand operations
+  		if mem_in.iastore='1' or mem_in.putfield='1' then
+  			value <= ain;
+! 		end if;
+! 		-- get reference and index for putfield and array stores
+! 		if state=pf0 or state=iast0 then
+! 			index <= ain(SC_ADDR_SIZE-1 downto 0);		-- store array index			
+  		end if;
+  
+- 		-- get source and index for copying
+- 		if mem_in.copy='1' then
+- 			base_reg <= unsigned(bin(SC_ADDR_SIZE-1 downto 0));
+- 			pos_reg <= unsigned(ain(SC_ADDR_SIZE-1 downto 0)) + unsigned(bin(SC_ADDR_SIZE-1 downto 0));
+- 			cp_stopbit <= ain(31);
+- 		end if;
+- 		-- get destination for copying
+- 		if state=cp0 then
+- 			offset_reg <= unsigned(bin(SC_ADDR_SIZE-1 downto 0)) - base_reg;
+- 		end if;
+- 
+- 		-- address and data tweaking for copying
+- 		if state=cp3 then
+- 			pos_reg <= pos_reg+1;
+- 			value <= sc_mem_in.rd_data;
+- 		end if;
+- 		if state=cpstop then
+- 			pos_reg <= base_reg;
+- 		end if;
+- 
+- 		-- precompute address translation
+- 		if addr_next >= base_reg and addr_next < pos_reg then
+- 			translate_bit <= '1';
+- 		else
+- 			translate_bit <= '0';
+- 		end if;
+- 		addr_reg <= addr_next;
+- 		
+  		-- set flag for state sharing
+  		if mem_in.iaload='1' or mem_in.getfield='1' then
+  			was_a_store <= '0';
+  		elsif mem_in.iastore='1' or mem_in.putfield='1' then
+  			was_a_store <= '1';
+! 		end if;		
+  	end if;
+  end process;
+  
+--- 266,321 ----
+  		addr_reg <= (others => '0');
+  		index <= (others => '0');
+  		value <= (others => '0');
++ 		store_nxt <= '0';
+  		was_a_store <= '0';
+  		bc_len <= (others => '0');
+  
+  	elsif rising_edge(clk) then
++ 		if mem_in.addr_wr='1' then
++ 			addr_reg <= unsigned(ain(SC_ADDR_SIZE-1 downto 0));
++ 		end if;
++ 
+  		if mem_in.bc_rd='1' then
+! 			bc_len <= unsigned(ain(jpc_width-3 downto 0));
+! 			addr_reg(17 downto 0) <= unsigned(ain(27 downto 10));
+! 
+! 			-- addr_bits is 17
+! 			if SC_ADDR_SIZE>18 then
+! 				addr_reg(SC_ADDR_SIZE-1 downto 18) <= (others => '0');
+! 			end if;
+  		else
++ 			if inc_addr_reg='1' then
++ 				addr_reg <= addr_reg+1;
++ 			end if;
+  			if dec_len='1' then
+  				bc_len <= bc_len-1;
+  			end if;
+  		end if;
+  
++ 		store_nxt <= '0';
+  		-- save array address and index
+! 		if mem_in.iaload='1' or mem_in.getfield='1' or store_nxt='1' then
+! 			addr_reg <= unsigned(bin(SC_ADDR_SIZE-1 downto 0));	-- store address for store and np check
+  			index <= ain(SC_ADDR_SIZE-1 downto 0);		-- store array index
+  		end if;
+  		-- first step of three-operand operations
+  		if mem_in.iastore='1' or mem_in.putfield='1' then
+  			value <= ain;
+! 			-- get reference and index in next cycle
+! 			store_nxt <= '1';
+  		end if;
+  
+  		-- set flag for state sharing
+  		if mem_in.iaload='1' or mem_in.getfield='1' then
+  			was_a_store <= '0';
+  		elsif mem_in.iastore='1' or mem_in.putfield='1' then
+  			was_a_store <= '1';
+! 		end if;
+! 
+! 		if state=iald3 or state=gf2 then
+! 			addr_reg <= addr_calc;
+! 		end if;
+! 
+  	end if;
+  end process;
+  
+***************
+*** 346,420 ****
+  --
+  --	RAM address MUX (combinational)
+  --
+! process(ain, addr_reg, offset_reg, mem_in, base_reg, pos_reg, translate_bit)
+  begin
+  	if mem_in.rd='1' then
+! 		if unsigned(ain(SC_ADDR_SIZE-1 downto 0)) >= base_reg and unsigned(ain(SC_ADDR_SIZE-1 downto 0)) < pos_reg then
+! 			ram_addr <= std_logic_vector(unsigned(ain(SC_ADDR_SIZE-1 downto 0)) + offset_reg);
+! 		else
+! 			ram_addr <= ain(SC_ADDR_SIZE-1 downto 0);
+! 		end if;
+  	else
+  		-- default is the registered address for wr, bc load
+! 		if translate_bit='1' then
+! 			ram_addr <= std_logic_vector(addr_reg(SC_ADDR_SIZE-1 downto 0) + offset_reg);
+! 		else
+! 			ram_addr <= std_logic_vector(addr_reg(SC_ADDR_SIZE-1 downto 0));
+! 		end if;
+  	end if;
+  end process;
+  
+  --
+- -- prepare RAM address registering
+- --
+- process(addr_reg, sc_mem_in, mem_in, ain, bin, state, inc_addr_reg, index, pos_reg, offset_reg)
+- begin
+- 
+- 	-- default values
+- 	addr_next <= addr_reg;	
+- 	if inc_addr_reg='1' then
+- 		addr_next <= addr_reg+1;
+- 	end if;
+- 
+- 	-- computations that depend on mem_in
+- 	if mem_in.addr_wr='1' then
+- 		addr_next <= unsigned(ain(SC_ADDR_SIZE-1 downto 0));
+- 	end if;
+- 	
+- 	if mem_in.bc_rd='1' then
+- 		addr_next(17 downto 0) <= unsigned(ain(27 downto 10));
+- 		-- addr_bits is 17
+- 		if SC_ADDR_SIZE>18 then
+- 			addr_next(SC_ADDR_SIZE-1 downto 18) <= (others => '0');
+- 		end if;
+- 	end if;
+- 	
+- 	if mem_in.iaload='1' or mem_in.getfield='1' then
+- 		addr_next <= unsigned(bin(SC_ADDR_SIZE-1 downto 0));
+- 	end if;
+- 
+- 	-- computations that depend on the state
+- 	if state=pf0 or state=iast0 then
+- 		addr_next <= unsigned(bin(SC_ADDR_SIZE-1 downto 0));
+- 	end if;
+- 
+- 	-- get/putfield could be optimized for faster memory (e.g. SPM)
+- 	if state=iald3 or state=iald23 or state=gf2 then
+- 		addr_next <= unsigned(sc_mem_in.rd_data(SC_ADDR_SIZE-1 downto 0))+unsigned(index);
+- 	end if;
+- 
+- 	if state=cp0 then
+- 		addr_next <= pos_reg;
+- 	end if;		
+- 
+- 	if state=cp3 then
+- 		addr_next <= pos_reg + offset_reg;
+- 	end if;
+- 	
+- end process;
+- 
+- 
+- --
+  --	RAM write data MUX (combinational)
+  --
+  process(ain, addr_reg, mem_in, value)
+--- 323,339 ----
+  --
+  --	RAM address MUX (combinational)
+  --
+! process(ain, addr_reg, mem_in)
+  begin
+  	if mem_in.rd='1' then
+! 		ram_addr <= ain(SC_ADDR_SIZE-1 downto 0);
+  	else
+  		-- default is the registered address for wr, bc load
+! 		ram_addr <= std_logic_vector(addr_reg(SC_ADDR_SIZE-1 downto 0));
+  	end if;
+  end process;
+  
+  --
+  --	RAM write data MUX (combinational)
+  --
+  process(ain, addr_reg, mem_in, value)
+***************
+*** 428,439 ****
+  end process;
+  
+  
+  --
+  --	next state logic
+  --
+  process(state, mem_in, sc_mem_in,
+! 	cache_rdy, cache_in_cache, bc_len, value, index, 
+! 	addr_reg, cp_stopbit, was_a_store)
+  begin
+  
+  	next_state <= state;
+--- 347,361 ----
+  end process;
+  
+  
++ 	addr_calc <= unsigned(sc_mem_in.rd_data(SC_ADDR_SIZE-1 downto 0))+unsigned(index);
++ 
++ 
+  --
+  --	next state logic
+  --
+  process(state, mem_in, sc_mem_in,
+! 	cache_rdy, cache_in_cache, bc_len, addr_calc, value, index, 
+! 	addr_reg, was_a_store)
+  begin
+  
+  	next_state <= state;
+***************
+*** 453,460 ****
+  				next_state <= gf0;
+  			elsif mem_in.putfield='1' then
+  				next_state <= pf0;
+- 			elsif mem_in.copy='1' then
+- 				next_state <= cp0;				
+  			elsif mem_in.iastore='1' then
+  				next_state <= iast0;
+  			end if;
+--- 375,380 ----
+***************
+*** 523,529 ****
+  				end if;
+  			end if;
+  
+! 		-- wait for the last ack
+  		when bc_wl =>
+  			if sc_mem_in.rdy_cnt(1)='0' then
+  				next_state <= idl;
+--- 443,449 ----
+  				end if;
+  			end if;
+  
+! 		-- wait fot the last ack
+  		when bc_wl =>
+  			if sc_mem_in.rdy_cnt(1)='0' then
+  				next_state <= idl;
+***************
+*** 621,627 ****
+  			end if;
+  
+  		when iasst =>
+! 			next_state <= last;
+  
+  		when gf0 =>
+  			if addr_reg=0 then
+--- 541,554 ----
+  			end if;
+  
+  		when iasst =>
+! 			next_state <= iasw;
+! 
+! 		when iasw =>
+! 			-- either 1 or 0
+! 			if sc_mem_in.rdy_cnt(1)='0' then
+! 				next_state <= idl;
+! 			end if;
+! 
+  
+  		when gf0 =>
+  			if addr_reg=0 then
+***************
+*** 636,679 ****
+  			end if;
+  		when gf2 =>
+  			next_state <= gf3;
+! 			if was_a_store='1' then
+! 				next_state <= pf3;
+! 			end if;
+  		when gf3 =>
+! 			next_state <= last;
+! 
+! 		when pf0 =>
+! 			-- just one cycle wait to store the value
+! 			next_state <= gf0;
+! 			-- states pf1 and pf2 are shared with getfield
+! 		when pf3 =>
+! 			next_state <= last;
+! 
+! 		when cp0 =>
+! 			next_state <= cp1;
+! 			if cp_stopbit = '1' then
+! 				next_state <= cpstop;
+! 			end if;
+! 		when cp1 =>
+! 			next_state <= cp2;
+! 		when cp2 =>
+  			-- either 1 or 0
+  			if sc_mem_in.rdy_cnt(1)='0' then
+! 				next_state <= cp3;
+  			end if;
+! 		when cp3 =>
+! 			next_state <= cp4;
+! 		when cp4 =>
+! 			next_state <= last;
+! 		when cpstop =>
+! 			next_state <= idl;
+! 			
+! 		when last =>
+  			-- either 1 or 0
+  			if sc_mem_in.rdy_cnt(1)='0' then
+  				next_state <= idl;
+  			end if;
+  
+  		when npexc =>
+  			next_state <= excw;
+  
+--- 563,592 ----
+  			end if;
+  		when gf2 =>
+  			next_state <= gf3;
+!                         if was_a_store='1' then
+!                           next_state <= pf3;
+!                         end if;
+  		when gf3 =>
+! 			next_state <= gf4;
+! 		when gf4 =>
+  			-- either 1 or 0
+  			if sc_mem_in.rdy_cnt(1)='0' then
+! 				next_state <= idl;
+  			end if;
+! 
+!        		when pf0 =>
+! 			-- just one cycle wait to store the value
+!                         next_state <= gf0;
+!                 -- states pf1 and pf2 are shared with getfield
+! 		when pf3 =>
+! 			next_state <= pf4;
+! 		when pf4 =>
+  			-- either 1 or 0
+  			if sc_mem_in.rdy_cnt(1)='0' then
+  				next_state <= idl;
+  			end if;
+  
++                         
+  		when npexc =>
+  			next_state <= excw;
+  
+***************
+*** 807,812 ****
+--- 720,728 ----
+  				state_wr <= '1';
+  				sc_mem_out.atomic <= '1';
+  
++ 			when iasw =>
++ 				sc_mem_out.atomic <= '1';
++ 
+  			when gf0 =>
+  				state_rd <= '1';
+  				state_bsy <= '1';
+***************
+*** 822,855 ****
+  				state_rd <= '1';
+  				sc_mem_out.atomic <= '1';
+                            
+! 			when pf0 =>
+  				state_bsy <= '1';
+  
+  			when pf3 =>
+  				state_wr <= '1';
+  				sc_mem_out.atomic <= '1';
+                            
+! 			when cp0 =>
+! 				sc_mem_out.atomic <= '1';
+! 				state_bsy <= '1';
+! 
+! 			when cp1 =>
+! 				state_rd <= '1';
+! 				sc_mem_out.atomic <= '1';
+! 				
+! 			when cp2 =>
+! 				sc_mem_out.atomic <= '1';
+! 
+! 			when cp3 =>
+! 				sc_mem_out.atomic <= '1';
+! 
+! 			when cp4 =>
+! 				state_wr <= '1';
+! 				sc_mem_out.atomic <= '1';
+! 
+! 			when cpstop =>
+! 
+! 			when last =>
+  				sc_mem_out.atomic <= '1';
+  
+  			when npexc =>
+--- 738,754 ----
+  				state_rd <= '1';
+  				sc_mem_out.atomic <= '1';
+                            
+! 			when gf4 =>
+! 				sc_mem_out.atomic <= '1';
+! 				
+!                         when pf0 =>
+  				state_bsy <= '1';
+  
+  			when pf3 =>
+  				state_wr <= '1';
+  				sc_mem_out.atomic <= '1';
+                            
+! 			when pf4 =>
+  				sc_mem_out.atomic <= '1';
+  
+  			when npexc =>
+Index: quartus/usbmin/jop.qsf
+===================================================================
+RCS file: /cvsroot/jeuneS2/jop/quartus/usbmin/jop.qsf,v
+retrieving revision 1.4
+diff -c -r1.4 jop.qsf
+*** quartus/usbmin/jop.qsf	3 Mar 2008 09:44:29 -0000	1.4
+--- quartus/usbmin/jop.qsf	26 Nov 2008 14:27:11 -0000
+***************
+*** 491,497 ****
+  # ---------------
+  
+  
+! set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_60.vhd
+  set_global_assignment -name VHDL_FILE ../../vhdl/core/jop_types.vhd
+  set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_pack.vhd
+  set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc_pll.vhd
+--- 491,497 ----
+  # ---------------
+  
+  
+! set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_100.vhd
+  set_global_assignment -name VHDL_FILE ../../vhdl/core/jop_types.vhd
+  set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_pack.vhd
+  set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc_pll.vhd

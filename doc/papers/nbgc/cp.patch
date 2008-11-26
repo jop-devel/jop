@@ -1,0 +1,250 @@
+? asm/generated
+? vhdl/jtbl.vhd
+? vhdl/offtbl.vhd
+? vhdl/rom.vhd
+? vhdl/xram_block.vhd
+? quartus/cycmin/db
+? quartus/cycmin/jop.asm.rpt
+? quartus/cycmin/jop.fit.rpt
+? quartus/cycmin/jop.fit.summary
+? quartus/cycmin/jop.flow.rpt
+? quartus/cycmin/jop.map.rpt
+? quartus/cycmin/jop.map.summary
+? quartus/cycmin/jop.pin
+? quartus/cycmin/jop.pof
+? quartus/cycmin/jop.sof
+? quartus/cycmin/jop.tan.rpt
+? quartus/cycmin/jop.tan.summary
+? quartus/cycmin/jop.ttf
+? quartus/cycmin/serv_req_info.txt
+? quartus/usbmin/db
+? quartus/usbmin/jop.asm.rpt
+? quartus/usbmin/jop.fit.rpt
+? quartus/usbmin/jop.fit.summary
+? quartus/usbmin/jop.flow.rpt
+? quartus/usbmin/jop.map.rpt
+? quartus/usbmin/jop.map.summary
+? quartus/usbmin/jop.pin
+? quartus/usbmin/jop.pof
+? quartus/usbmin/jop.sof
+? quartus/usbmin/jop.tan.rpt
+? quartus/usbmin/jop.tan.summary
+? quartus/usbmin/jop_assignment_defaults.qdf
+Index: java/target/src/common/com/jopdesign/sys/Scheduler.java
+===================================================================
+RCS file: /cvsroot/jeuneS2/jop/java/target/src/common/com/jopdesign/sys/Scheduler.java,v
+retrieving revision 1.6
+diff -c -r1.6 Scheduler.java
+*** java/target/src/common/com/jopdesign/sys/Scheduler.java	16 Sep 2008 15:14:24 -0000	1.6
+--- java/target/src/common/com/jopdesign/sys/Scheduler.java	26 Nov 2008 14:31:12 -0000
+***************
+*** 55,63 ****
+  	// timer offset to ensure that no timer interrupt happens just
+  	// after monitorexit in this method and the new thread
+  	// has a minimum time to run.
+! 	private final static int TIM_OFF = 200;
+  //	private final static int TIM_OFF = 20;
+! //	private final static int TIM_OFF = 2; // for 100 MHz version 20 or even lower
+  										 // 2 is minimum
+  	/**
+  	 * This is the scheduler invoked as a plain interrupt handler
+--- 55,63 ----
+  	// timer offset to ensure that no timer interrupt happens just
+  	// after monitorexit in this method and the new thread
+  	// has a minimum time to run.
+! 	//	private final static int TIM_OFF = 200;
+  //	private final static int TIM_OFF = 20;
+! 	private final static int TIM_OFF = 2; // for 100 MHz version 20 or even lower
+  										 // 2 is minimum
+  	/**
+  	 * This is the scheduler invoked as a plain interrupt handler
+Index: build.xml
+===================================================================
+RCS file: /cvsroot/jeuneS2/jop/build.xml,v
+retrieving revision 1.19
+diff -c -r1.19 build.xml
+*** build.xml	14 Nov 2008 16:12:46 -0000	1.19
+--- build.xml	26 Nov 2008 14:31:12 -0000
+***************
+*** 27,41 ****
+  	</description>
+  	
+  	<!-- com1 is the usual serial port -->
+! 	<property name="com-port" value="COM1"/>
+  	<!-- com6 is the FTDI VCOM for the USB download -->
+  	<!-- <property name="com-port" value="COM6"/> -->
+  
+! 	<property name="com-flag" value="-e"/>
+  	<!-- use -usb to download the Java application without the echo 'protocol' on USB -->
+! 	<!-- <property name="com-flag" value="-e -usb"/> -->
+  
+! 	<property name="blaster-type" value="ByteBlasterMV"/>
+  	<!-- <property name="blaster-type" value="USB-Blaster"/> -->
+  
+  	<condition property="usbrunner" value="./USBRunner">
+--- 27,41 ----
+  	</description>
+  	
+  	<!-- com1 is the usual serial port -->
+! 	<property name="com-port" value="/dev/ttyUSB1"/>
+  	<!-- com6 is the FTDI VCOM for the USB download -->
+  	<!-- <property name="com-port" value="COM6"/> -->
+  
+! <!-- 	<property name="com-flag" value="-e"/> -->
+  	<!-- use -usb to download the Java application without the echo 'protocol' on USB -->
+! 	<property name="com-flag" value="-e -usb"/>
+  
+! <!-- 	<property name="blaster-type" value="ByteBlasterMV"/> -->
+  	<!-- <property name="blaster-type" value="USB-Blaster"/> -->
+  
+  	<condition property="usbrunner" value="./USBRunner">
+***************
+*** 53,59 ****
+  	<!-- <property name="qproj" value="cycfpu"/> -->
+  	<!-- <property name="qproj" value="cyc256x16"/> -->
+  	<!-- <property name="qproj" value="sopcmin"/> -->
+! 	<property name="qproj" value="cycmin"/> 
+  	
+  	<!-- Nelson uncomment this -->
+  	<!-- <property name="qproj" value="cyc12baseio"/> -->
+--- 53,59 ----
+  	<!-- <property name="qproj" value="cycfpu"/> -->
+  	<!-- <property name="qproj" value="cyc256x16"/> -->
+  	<!-- <property name="qproj" value="sopcmin"/> -->
+! 	<property name="qproj" value="usbmin"/> 
+  	
+  	<!-- Nelson uncomment this -->
+  	<!-- <property name="qproj" value="cyc12baseio"/> -->
+***************
+*** 195,206 ****
+  	<pathconvert refid="target-source" property="target-source-flattened"/>
+  	
+  	<!-- use this for serial download -->
+! 	<target name="all" depends="directories, tools, jopser, japp" description="Use this for serial download"/>
+! 	<target name="japp" depends="java-app, config-byteblast, download"/>
+  
+  	<!-- use this for USB download of FPGA configuration and Java program download -->
+! 	<!-- <target name="all" depends="directories, tools, jopusb, japp"/> -->
+! 	<!-- <target name="japp" depends="java-app, config-usb, download"/> -->
+  	
+  	<target name="clean">
+  		<echo message="This is specific for my configuration ;-)"/>
+--- 195,206 ----
+  	<pathconvert refid="target-source" property="target-source-flattened"/>
+  	
+  	<!-- use this for serial download -->
+! <!-- 	<target name="all" depends="directories, tools, jopser, japp" description="Use this for serial download"/> -->
+! <!-- 	<target name="japp" depends="java-app, config-byteblast, download"/> -->
+  
+  	<!-- use this for USB download of FPGA configuration and Java program download -->
+! 	<target name="all" depends="directories, tools, jopusb, japp"/>
+! 	<target name="japp" depends="java-app, config-usb, download"/>
+  	
+  	<target name="clean">
+  		<echo message="This is specific for my configuration ;-)"/>
+***************
+*** 288,294 ****
+  	</target>
+  
+  	<target name="dfa" description="Run DFA on the target application">
+! 		<java classpathref="tools-cp" classname="com.jopdesign.dfa.Main">
+  			<arg line="-cp ${target}/dist/classes ${main-class}"/>
+  		</java>
+  	</target>
+--- 288,295 ----
+  	</target>
+  
+  	<target name="dfa" description="Run DFA on the target application">
+! 		<java classpathref="tools-cp" classname="com.jopdesign.dfa.Main" fork="true">
+! 			<jvmarg value="-Xss16M"/>
+  			<arg line="-cp ${target}/dist/classes ${main-class}"/>
+  		</java>
+  	</target>
+***************
+*** 420,429 ****
+  		</antcall>
+  		
+  		<exec executable="quartus_cpf" dir="quartus/${qproj}" failonerror="true">
+- 			<arg line="-c jop.cdf ../../jbc/${qproj}.jbc"/>
+- 		</exec>
+- 			
+- 		<exec executable="quartus_cpf" dir="quartus/${qproj}" failonerror="true">
+  			<arg line="-c jop.sof ../../rbf/${qproj}.rbf"/>
+  		</exec>
+  
+--- 421,426 ----
+***************
+*** 505,519 ****
+  	Ant's way to logging is very annoying!
+  
+  	that's the JavaDown version
+! 
+! 		<java classname="com.jopdesign.tools.JavaDown" failonerror="true">
+  			<classpath>
+  				<pathelement location="java/tools/dist/lib/jop-tools.jar"/>
+! 				<pathelement location="java/lib/RXTXcomm.jar"/>
+  			</classpath>
+  			<arg line="${com-flag} java/target/dist/bin/${jopbin} ${com-port}"/>
+  		</java>
+! 
+  	this is the download version with down.exe
+  
+  		<exec executable="down" spawn="true">
+--- 502,517 ----
+  	Ant's way to logging is very annoying!
+  
+  	that's the JavaDown version
+! -->
+! 		<java classname="com.jopdesign.tools.JavaDown" failonerror="true"
+! 			  output="/dev/stdout" input="/dev/null">
+  			<classpath>
+  				<pathelement location="java/tools/dist/lib/jop-tools.jar"/>
+! 				<pathelement location="/usr/share/java/RXTXcomm.jar"/>
+  			</classpath>
+  			<arg line="${com-flag} java/target/dist/bin/${jopbin} ${com-port}"/>
+  		</java>
+! <!--
+  	this is the download version with down.exe
+  
+  		<exec executable="down" spawn="true">
+***************
+*** 522,528 ****
+  -->
+  		<!-- But we just generate a dl.bat as Ant logging need line feeds -->
+  		
+! 		<echo message="down ${com-flag} java/target/dist/bin/${jopbin} ${com-port}" file="dl.bat"/>
+  
+  	</target>
+  	
+--- 520,526 ----
+  -->
+  		<!-- But we just generate a dl.bat as Ant logging need line feeds -->
+  		
+! <!-- 		<echo message="down ${com-flag} java/target/dist/bin/${jopbin} ${com-port}" file="dl.bat"/> -->
+  
+  	</target>
+  	
+Index: quartus/usbmin/jop.qsf
+===================================================================
+RCS file: /cvsroot/jeuneS2/jop/quartus/usbmin/jop.qsf,v
+retrieving revision 1.4
+diff -c -r1.4 jop.qsf
+*** quartus/usbmin/jop.qsf	3 Mar 2008 09:44:29 -0000	1.4
+--- quartus/usbmin/jop.qsf	26 Nov 2008 14:31:13 -0000
+***************
+*** 491,497 ****
+  # ---------------
+  
+  
+! set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_60.vhd
+  set_global_assignment -name VHDL_FILE ../../vhdl/core/jop_types.vhd
+  set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_pack.vhd
+  set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc_pll.vhd
+--- 491,497 ----
+  # ---------------
+  
+  
+! set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_100.vhd
+  set_global_assignment -name VHDL_FILE ../../vhdl/core/jop_types.vhd
+  set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_pack.vhd
+  set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc_pll.vhd

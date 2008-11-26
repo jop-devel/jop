@@ -1,0 +1,30 @@
+This directory contains the files to reproduce the data presented in
+the paper "Non-blocking Garbage Collection".
+
+How to use
+==========
+
+* Check out the appropriatly tagged version of the sources from
+  opencores.org, go to the root directory.
+
+* Apply the patch:
+$ patch -p0 < doc/papers/nbgc/cp.patch
+OR
+$ patch -p0 < doc/papers/nbgc/nocp.patch
+
+* Extract templates for the testsuite:
+$ tar xzvf doc/papers/nbgc/cp_templates.tar.gz
+OR
+$ tar xzvf doc/papers/nbgc/nocp_templates.tar.gz
+
+* Adapt build.xml to fit your needs (e.g., the serial port device).
+
+* Build the processor:
+$ ant directories tools jopusb 
+
+* Adapt runtests.sh to fit your needs (e.g., the tests to be run and
+  the root password).
+
+* Run tests:
+$ mkdir results; ./doc/papers/nbgc/runtests.sh <variant>
+where <variant> is one of base, single, scan, or save
