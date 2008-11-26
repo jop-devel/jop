@@ -120,10 +120,15 @@ class JVM {
 				// TODO Scope check
 			} else {
 				// snapshot-at-beginning barrier
-				int oldVal = Native.arrayLoad(ref, index); 
-				if (oldVal!=0 && Native.rdMem(oldVal+GC.OFF_SPACE)!=GC.toSpace) {
-					GC.push(oldVal);
-				}
+				int oldVal = Native.arrayLoad(ref, index);
+				// Is it white?
+				if (oldVal != 0
+					&& Native.rdMem(oldVal+GC.OFF_SPACE) != GC.toSpace
+					&& Native.rdMem(oldVal+GC.OFF_GREY)==0) {
+					// Mark grey
+					Native.wrMem(GC.grayList, oldVal+GC.OFF_GREY);
+					GC.grayList = oldVal;			
+				}				
 			}
 
 			Native.arrayStore(ref, index, value);
@@ -926,9 +931,14 @@ class JVM {
 			} else {
 				// snapshot-at-beginning barrier
 				int oldVal = Native.rdMem(addr);
-				if (oldVal!=0 && Native.rdMem(oldVal+GC.OFF_SPACE)!=GC.toSpace) {
-					GC.push(oldVal);
-				}
+				// Is it white?
+				if (oldVal != 0
+					&& Native.rdMem(oldVal+GC.OFF_SPACE) != GC.toSpace
+					&& Native.rdMem(oldVal+GC.OFF_GREY)==0) {
+					// Mark grey
+					Native.wrMem(GC.grayList, oldVal+GC.OFF_GREY);
+					GC.grayList = oldVal;
+				}				
 			}
 
 			Native.wrMem(val, addr);			
@@ -945,9 +955,12 @@ class JVM {
 				// snapshot-at-beginning barrier
 				int oldVal = Native.getField(ref, index);
 				// Is it white?
-				if (oldVal!=0 && Native.rdMem(oldVal+GC.OFF_SPACE)!=GC.toSpace) {
+				if (oldVal != 0
+					&& Native.rdMem(oldVal+GC.OFF_SPACE) != GC.toSpace
+					&& Native.rdMem(oldVal+GC.OFF_GREY)==0) {
 					// Mark grey
-					GC.push(oldVal);
+					Native.wrMem(GC.grayList, oldVal+GC.OFF_GREY);
+					GC.grayList = oldVal;
 				}				
 			}
 			Native.putField(ref, index, value);
