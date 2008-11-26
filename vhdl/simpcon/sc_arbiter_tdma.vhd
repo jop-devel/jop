@@ -114,6 +114,7 @@ architecture rtl of arbiter is
 -- counter
 	signal counter : integer;
 	signal period	: integer;
+	signal slot_length : integer;
 	type time_type is array (0 to cpu_cnt-1) of integer;
 	signal cpu_time : time_type; -- how much clock cycles each CPU
 	type slot_type is array (0 to cpu_cnt-1) of std_logic;
@@ -125,15 +126,21 @@ begin
 -- MS: the constants are for the DE2 board with a 6 cycle memory write.
 -- For the cyc12 board we can cut it down to 3 cycles.
 
-period <= 18;
-cpu_time(0) <= 6;
-cpu_time(1) <= 12;
-cpu_time(2) <= 18;
+slot_length <= 24;
+period <= cpu_cnt*slot_length;
+--cpu_time(0) <= 15;
+--cpu_time(1) <= 30;
+--cpu_time(2) <= 45;
 --cpu_time(3) <= 24;
 --cpu_time(4) <= 30;
 --cpu_time(5) <= 36;
 --cpu_time(6) <= 42;
 --cpu_time(7) <= 48;
+
+-- generate slot information
+slots: for i in 0 to cpu_cnt-1 generate
+	cpu_time(i) <= (i+1)*slot_length;
+end generate;	
 
 -- TODO: should really be configrable with: number of CPUs, slot length,
 -- and memory access time. Should use assert to check that the slot length
@@ -182,19 +189,42 @@ process(counter, cpu_time)
 		
 		if (counter > -1) and (counter < cpu_time(0)-5) then
 			slot(0) <= '1';
+		elsif (counter < cpu_time(0)-3) and (arb_out(0).rd = '1') then -- rd is 2 cycles longer allowed
+			slot(0) <= '1';
+			
 		elsif (counter > cpu_time(0)-1) and (counter < cpu_time(1)-5) then
 			slot(1) <= '1';
+		elsif (counter < cpu_time(1)-3) and (arb_out(1).rd = '1') then -- rd is 2 cycles longer allowed
+			slot(1) <= '1';
+			
 		elsif (counter > cpu_time(0)-1) and (counter < cpu_time(2)-5) then
 			slot(2) <= '1';
+		elsif (counter < cpu_time(2)-3) and (arb_out(2).rd = '1') then -- rd is 2 cycles longer allowed
+			slot(2) <= '1';
+--			
 --		elsif (counter > cpu_time(0)-1) and (counter < cpu_time(3)-5) then
 --			slot(3) <= '1';
+--		elsif (counter < cpu_time(3)-3) and (arb_out(3).rd = '1') then -- rd is 2 cycles longer allowed
+--			slot(3) <= '1';
+--			
 --		elsif (counter > cpu_time(0)-1) and (counter < cpu_time(4)-5) then
 --			slot(4) <= '1';
+--		elsif (counter < cpu_time(4)-3) and (arb_out(4).rd = '1') then -- rd is 2 cycles longer allowed
+--			slot(4) <= '1';
+--			
 --		elsif (counter > cpu_time(0)-1) and (counter < cpu_time(5)-5) then
 --			slot(5) <= '1';
+--		elsif (counter < cpu_time(5)-3) and (arb_out(5).rd = '1') then -- rd is 2 cycles longer allowed
+--			slot(5) <= '1';
+--			
 --		elsif (counter > cpu_time(0)-1) and (counter < cpu_time(6)-5) then
 --			slot(6) <= '1';
+--		elsif (counter < cpu_time(6)-3) and (arb_out(6).rd = '1') then -- rd is 2 cycles longer allowed
+--			slot(6) <= '1';
+--			
 --		elsif (counter > cpu_time(0)-1) and (counter < cpu_time(7)-5) then
+--			slot(7) <= '1';
+--		elsif (counter < cpu_time(7)-3) and (arb_out(7).rd = '1') then -- rd is 2 cycles longer allowed
 --			slot(7) <= '1';
 		end if;
 end process;	
