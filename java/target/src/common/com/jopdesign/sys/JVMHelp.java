@@ -31,6 +31,11 @@ public class JVMHelp {
 	static Runnable ih[][];
 	static Runnable dh;
 	
+	static StackOverflowError SOError;
+	static NullPointerException NPExc;
+	static ArrayIndexOutOfBoundsException ABExc;
+	static ArithmeticException ArithExc;
+	static ClassCastException CCExc;
 
 	//
 	// DON'T change order of first functions!!!
@@ -121,12 +126,6 @@ synchronized (o) {
 }
 	}
 
-	static StackOverflowError SOError = new StackOverflowError();
-	static NullPointerException NPExc = new NullPointerException();
-	static ArrayIndexOutOfBoundsException ABExc = new ArrayIndexOutOfBoundsException();
-	static ArithmeticException ArithExc = new ArithmeticException();
-	static ClassCastException CCExc = new ClassCastException();
-
 	static void handleException() {
 		
 		int i;
@@ -145,7 +144,8 @@ synchronized (o) {
 	}
 
 	/**
-	 * Create interrupt handler in a static method instead of <clinit>.
+	 * Create interrupt handler and preallocated exceptions 
+	 * in a static method instead of <clinit>.
 	 * Jikes puts <clinit> as first methods into the table (instead of
 	 * interrupt()), javac as last method. 
 	 * 
@@ -158,7 +158,14 @@ synchronized (o) {
 			for (int var=0; var<Const.NUM_INTERRUPTS; ++var) {
 				JVMHelp.addInterruptHandler(core, var, dh);
 			}								
-		}		
+		}	
+		
+		SOError = new StackOverflowError();
+		NPExc = new NullPointerException();
+		ABExc = new ArrayIndexOutOfBoundsException();
+		ArithExc = new ArithmeticException();
+		CCExc = new ClassCastException();
+
 	}
 
 
