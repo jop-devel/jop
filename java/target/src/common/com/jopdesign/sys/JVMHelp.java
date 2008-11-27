@@ -36,6 +36,7 @@ public class JVMHelp {
 	// DON'T change order of first functions!!!
 	//	interrupt gets called from jvm.asm
 	//
+
 	/**
 	 * Dispatch an interrupt to the handler according to the core
 	 * and the interrupt number. Interrupt 0 is the scheduler.
@@ -60,13 +61,13 @@ public class JVMHelp {
 
 	public static void nullPoint() {
 
-		throw new NullPointerException();
+		throw NPExc;
 	}
 
 	// this is used for arrays of longs
 	public static void arrayBound() {
 
-		throw new ArrayIndexOutOfBoundsException();
+		throw ABExc;
 	}
 	
 	static int saved_sp;
@@ -120,18 +121,24 @@ synchronized (o) {
 }
 	}
 
+	static StackOverflowError SOError = new StackOverflowError();
+	static NullPointerException NPExc = new NullPointerException();
+	static ArrayIndexOutOfBoundsException ABExc = new ArrayIndexOutOfBoundsException();
+	static ArithmeticException ArithExc = new ArithmeticException();
+	static ClassCastException CCExc = new ClassCastException();
+
 	static void handleException() {
 		
 		int i;
 		i = Native.rdMem(Const.IO_EXCPT);
 		if (i==Const.EXC_SPOV) {
-			throw new StackOverflowError();
+			throw SOError;
 		} else if (i==Const.EXC_NP) {
-			throw new NullPointerException();
+			throw NPExc;
 		} else if (i==Const.EXC_AB) {
-			throw new ArrayIndexOutOfBoundsException();
+			throw ABExc;
 		} else if (i==Const.EXC_DIVZ) {
-			throw new ArithmeticException();
+			throw ArithExc;
 		}
 
 		for (;;);
@@ -292,7 +299,7 @@ synchronized (o) {
 		   with other configurations. The UART limits the transfer rate
 		   to about 10kB/s.
 		   
-		while ((Native.rdMem(Const.IO_USB_STATUS) & Const.MSK_UA_TDRE)==0) {
+		// while ((Native.rdMem(Const.IO_USB_STATUS) & Const.MSK_UA_TDRE)==0) {
 			;
 		}
 		*/
@@ -302,7 +309,7 @@ synchronized (o) {
 	
 	static void wr(String s) {
 
-		int i = s.length();
+		int i = s.length();		
 		for (int j=0; j<i; ++j) {
 			wr(s.charAt(j));
 		}

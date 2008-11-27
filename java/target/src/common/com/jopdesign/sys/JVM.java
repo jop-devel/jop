@@ -746,14 +746,14 @@ class JVM {
 			int iftab = Native.rdMem(p+Const.CLASS_IFTAB);
 			if (iftab == 0) {
 				// the class does not implement any interface
-				throw new ClassCastException();
+				throw JVMHelp.CCExc;
 			} else {
 				// check if the appropriate bit is set
 				int i = Native.rdMem(iftab+(ifidx-31)/32);				
 				if (((i >>> (~ifidx & 0x1f)) & 1) != 0) {
 					return objref;
 				} else {
-					throw new ClassCastException();
+					throw JVMHelp.CCExc;
 				}
 			}
 		}
@@ -764,7 +764,7 @@ class JVM {
 				return objref;
 			} else {
 				p = Native.rdMem(p+Const.CLASS_SUPER);	// super class ptr
-				if (p==0) throw new ClassCastException();
+				if (p==0) throw JVMHelp.CCExc;
 			}
 		}		
 
