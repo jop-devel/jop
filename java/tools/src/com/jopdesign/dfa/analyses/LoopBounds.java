@@ -59,8 +59,8 @@ import com.jopdesign.dfa.framework.AppInfo;
 public class LoopBounds implements Analysis<List<HashedString>, Map<Location, LoopBounds.ValueMapping>> {
 
 	private static final int CALLSTRING_LENGTH = 0;
-	private static final int ASSIGN_LIMIT = 256;
-	private static final int CONSTRAINT_LIMIT = 4096;
+	private static final int ASSIGN_LIMIT = 64;
+	private static final int CONSTRAINT_LIMIT = 1024;
 
 	public static class ValueMapping {
 
@@ -165,6 +165,49 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 		
 		public String toString() {
 			return "<"+assigned+", "+constrained+", ="+source+", #"+cnt+", +"+increment+">";				
+		}
+		
+		public static int computeBound(ValueMapping first, ValueMapping second) {
+			// basic checks
+			if (//first == null ||
+					first.increment == null
+					// || second == null
+					|| second.increment == null) {
+				// System.out.println("no valid increment");
+ 				return -1;
+			}
+			// check for boundedness
+			if (!first.assigned.hasLb()
+					|| !first.assigned.hasUb()
+					|| !second.assigned.hasLb()
+					|| !second.assigned.hasUb()) {
+				// System.out.println("unbounded");
+				return -1;
+			}
+			// monotone increments?
+			if (first.increment.getLb()*first.increment.getUb() <= 0
+					|| second.increment.getLb()*second.increment.getUb() <= 0) {
+				// System.out.println("invalid increments");
+				return -1;
+			}
+
+			int firstRange = first.assigned.getUb() - first.assigned.getLb() + 1;
+			int secondRange = second.assigned.getUb() - second.assigned.getLb() + 1;
+
+			int firstBound;
+			if (first.assigned.getUb() < first.assigned.getLb()) {
+				firstBound = 0;
+			} else {
+				firstBound = (int)Math.ceil((double)firstRange / Math.min(Math.abs(first.increment.getUb()), Math.abs(first.increment.getLb())));
+			}
+			int secondBound;
+			if (second.assigned.getUb() < second.assigned.getLb()) {
+				secondBound = 0;
+			} else {
+				secondBound = (int)Math.ceil((double)secondRange / Math.min(Math.abs(second.increment.getUb()), Math.abs(second.increment.getLb())));
+			}
+
+			return Math.max(firstBound, secondBound);
 		}
 	}
 	
@@ -599,6 +642,7 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 						result.put(l, in.get(l));
 					}
 					if (l.stackLoc == context.stackPtr-1) {
+						// TODO: join intervals!
 						result.put(new Location(name), new ValueMapping(in.get(l), false));
 					}
 				}
@@ -1121,6 +1165,7 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 				case Constants.IFEQ:				
 					if (edge.getType() == FlowEdge.FALSE_EDGE) {
 						// != 0 cannot be expressed as interval
+						// TODO: mark paths infeasible if appropriate
 					} else if (edge.getType() == FlowEdge.TRUE_EDGE) {
 						m.constrained.setLb(0);
 						m.constrained.setUb(0);
@@ -1132,6 +1177,7 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 						m.constrained.setUb(0);
 					} else if (edge.getType() == FlowEdge.TRUE_EDGE) {
 						// != 0 cannot be expressed as interval
+						// TODO: mark paths infeasible if appropriate
 					}
 					break;
 				case Constants.IFLT:
@@ -1205,6 +1251,7 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 				case Constants.IF_ICMPEQ:				
 					if (edge.getType() == FlowEdge.FALSE_EDGE) {
 						// != Interval not expressable as Interval
+						// TODO: mark paths infeasible if appropriate
 					} else if (edge.getType() == FlowEdge.TRUE_EDGE) {
 						if (constraint.hasLb()) {
 							m.constrained.setLb(constraint.getLb());
@@ -1224,6 +1271,7 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 						}
 					} else if (edge.getType() == FlowEdge.TRUE_EDGE) {
 						// != Interval not expressable as Interval
+						// TODO: mark paths infeasible if appropriate
 					}
 					break;
 				case Constants.IF_ICMPLT:
@@ -1473,24 +1521,34 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 		return bounds;
 	}
 
-	Map<InstructionHandle, Integer> ihBound = new HashMap();
-	
 	public int getBound(AppInfo program, InstructionHandle instr) {
-		
-		
-//		ContextMap<List<HashedString>, Pair<ValueMapping>> r = bounds.get(instr);
-// why does the following resutl in a null pointer?
-//		Context c = r.getContext();
-
-		System.out.println("Instr in getBound() "+instr);
-		Integer bd = ihBound.get(instr);
-
-		if (bd!=null) {
-			return bd.intValue();			
-		} else {
-			System.out.println("Bound not found");
+				
+		ContextMap<List<HashedString>, Pair<ValueMapping>> r = bounds.get(instr);
+		if (r == null) {
+			// no bound at this point
 			return -1;
 		}
+		
+		// merge bound for all contexts
+		int maxValue = -1;
+		for (Iterator<List<HashedString>> k = r.keySet().iterator(); k.hasNext(); ) {
+			List<HashedString> callString = k.next();
+			Pair<ValueMapping> bounds = r.get(callString);
+
+			LoopBounds.ValueMapping first = bounds.getFirst();
+			LoopBounds.ValueMapping second = bounds.getSecond();
+
+			int val = ValueMapping.computeBound(first, second);
+			if (val < 0) {
+				// no bound for some context
+				return -1; 
+			} else {
+				// compute the maximum
+				maxValue = Math.max(maxValue, val);
+			}
+		}			
+
+		return maxValue;
 	}
 	
 	public void printResult(AppInfo program) {
@@ -1519,49 +1577,12 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 				System.out.println(second);
 				System.out.print("\t\tbound:\t");
 
-				// basic checks
-				if (//first == null ||
-						first.increment == null
-						// || second == null
-						|| second.increment == null) {
-					System.out.println("no valid increment");
-					continue;
-				}
-				// check for boundedness
-				if (!first.assigned.hasLb()
-						|| !first.assigned.hasUb()
-						|| !second.assigned.hasLb()
-						|| !second.assigned.hasUb()) {
-					System.out.println("unbounded");
-					continue;
-				}
-				// monotone increments?
-				if (first.increment.getLb()*first.increment.getUb() <= 0
-						|| second.increment.getLb()*second.increment.getUb() <= 0) {
-					System.out.println("invalid increments");
-					continue;
-				}
-
-				int firstRange = first.assigned.getUb() - first.assigned.getLb() + 1;
-				int secondRange = second.assigned.getUb() - second.assigned.getLb() + 1;
-
-				int firstBound;
-				if (first.assigned.getUb() < first.assigned.getLb()) {
-					firstBound = 0;
+				int val = ValueMapping.computeBound(first, second);
+				if (val >= 0) {
+					System.out.println(val);
 				} else {
-					firstBound = firstRange / Math.min(Math.abs(first.increment.getUb()), Math.abs(first.increment.getLb()));
+					System.out.println("invalid");
 				}
-				int secondBound;
-				if (second.assigned.getUb() < second.assigned.getLb()) {
-					secondBound = 0;
-				} else {
-					secondBound = secondRange / Math.min(Math.abs(second.increment.getUb()), Math.abs(second.increment.getLb()));
-				}
-
-				int val = Math.max(firstBound, secondBound);
-				System.out.println(val);
-				System.out.println("Instr in result: "+instr);
-				ihBound.put(instr, new Integer(val));
 			}			
 		}
 	}

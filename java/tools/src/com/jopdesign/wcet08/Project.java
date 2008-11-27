@@ -205,7 +205,6 @@ public class Project {
 		topLevelLogger.info("Loop bound analysis");
 		dfaLoopBounds = new LoopBounds();
 		program.runAnalysis(dfaLoopBounds);
-		dfaLoopBounds.printResult(program); /* DO NOT remove !!: Wolfgang's code depends on it */
 	}
 	
 	public LoopBounds getDfaLoopBounds() {
