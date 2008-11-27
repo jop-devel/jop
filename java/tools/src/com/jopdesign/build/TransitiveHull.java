@@ -130,6 +130,11 @@ public class TransitiveHull extends org.apache.bcel.classfile.EmptyVisitor {
 
 		JavaClass clazz = Repository.lookupClass(class_name);
 
+		if (clazz == null) {
+			System.out.println("lookupClass("+class_name+") failed in TransitiveHull");
+			System.exit(1);
+		}
+
 		if(clazz != null && _set.add(clazz)) {
 			_queue.enqueue(clazz);
 		}

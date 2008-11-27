@@ -186,7 +186,7 @@ public class AppInfo implements Serializable {
 		for (int nr=0; i.hasNext(); ++nr) {
 			String clname = i.next();
 			jcl[nr] = Repository.lookupClass(clname);
-			if(jcl[nr] == null) throw new IOException("loookupClass("+clname+") failed");
+			if(jcl[nr] == null) throw new IOException("lookupClass("+clname+") failed");
 			System.out.println(jcl[nr].getClassName());
 		}
 		TransitiveHull hull = new TransitiveHull(classpath, jcl);
