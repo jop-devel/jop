@@ -352,7 +352,7 @@ public class WcetAppInfo  {
 			try {
 				fg.loadAnnotations(p);
 				fg.resolveVirtualInvokes();
-				fg.insertSplitNodes();
+//				fg.insertSplitNodes();
 			} catch (BadAnnotationException e) {
 				logger.error("Bad annotation: "+e);
 				throw e;

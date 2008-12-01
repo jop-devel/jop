@@ -206,11 +206,6 @@ public class MethodBuilder implements CfgVisitor {
 		return NodeAutomaton.singleton(join);
 	}
 	private NodeAutomaton createBasicBlock(BasicBlockNode n) {
-		if(cfg.getGraph().outDegreeOf(n) != 1) {
-			throw new Error("Outdegree of basic block node != 1 cannot be handled "+
-						    "by uppaal translator.\n" +
-					        "Preprocess using ControlFlowGraph.insertSplitNodes() instead.");
-		}
 		Location bbNode = tBuilder.createLocation("N"+n.getId());
 		long blockWCET = cfg.basicBlockWCETEstimate(n.getBasicBlock());
 		
