@@ -44,9 +44,9 @@ import com.jopdesign.build.MethodInfo;
 import com.jopdesign.wcet.WCETInstruction;
 import com.jopdesign.wcet08.Config;
 import com.jopdesign.wcet08.Project;
-import com.jopdesign.wcet08.frontend.FlowGraph;
-import com.jopdesign.wcet08.frontend.FlowGraph.FlowGraphEdge;
-import com.jopdesign.wcet08.frontend.FlowGraph.FlowGraphNode;
+import com.jopdesign.wcet08.frontend.ControlFlowGraph;
+import com.jopdesign.wcet08.frontend.ControlFlowGraph.CFGEdge;
+import com.jopdesign.wcet08.frontend.ControlFlowGraph.CFGNode;
 
 /**
  * Analysis reports, using HTML framesets.
@@ -192,7 +192,7 @@ public class Report {
 				getClassReport(m.getCli()).addLinePropertyIfNull(ln.getLineNumber(),"color","lightgreen");
 			}
 			logger.info("Generating report for method: "+m);
-			FlowGraph flowGraph = project.getWcetAppInfo().getFlowGraph(m);
+			ControlFlowGraph flowGraph = project.getWcetAppInfo().getFlowGraph(m);
 			Map<String,Object> stats = new TreeMap<String, Object>();
 			stats.put("#nodes", flowGraph.getGraph().vertexSet().size() - 2 /* entry+exit */);
 			stats.put("length-in-bytes", flowGraph.getNumberOfBytes());
@@ -268,8 +268,8 @@ public class Report {
 		else reports.add(e);
 	}
 	public void addDetailedReport(MethodInfo m, String key, Map<String, Object> stats, 
-								 Map<FlowGraphNode, ?> nodeAnnots, 
-								 Map<FlowGraphEdge, ?> edgeAnnots) {
+								 Map<CFGNode, ?> nodeAnnots, 
+								 Map<CFGEdge, ?> edgeAnnots) {
 		DetailedMethodReport re = new DetailedMethodReport(project,m,key,stats,nodeAnnots,edgeAnnots);
 		this.addDetailedReport(m, re,false);
 	}

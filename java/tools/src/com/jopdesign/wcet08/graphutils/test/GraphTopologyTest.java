@@ -4,8 +4,10 @@ package com.jopdesign.wcet08.graphutils.test;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.text.MessageFormat;
 import java.util.Comparator;
 import java.util.Hashtable;
+import java.util.Map;
 import java.util.TreeSet;
 import java.util.Vector;
 
@@ -19,13 +21,80 @@ import org.jgrapht.graph.DefaultEdge;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.jopdesign.wcet08.graphutils.AdvancedDOTExporter;
+import com.jopdesign.wcet08.graphutils.DefaultFlowGraph;
 import com.jopdesign.wcet08.graphutils.Dominators;
+import com.jopdesign.wcet08.graphutils.FlowGraph;
 import com.jopdesign.wcet08.graphutils.LoopColoring;
 import com.jopdesign.wcet08.graphutils.TopOrder;
+import com.jopdesign.wcet08.graphutils.AdvancedDOTExporter.DOTLabeller;
+import com.jopdesign.wcet08.graphutils.AdvancedDOTExporter.DOTNodeLabeller;
+import com.jopdesign.wcet08.graphutils.AdvancedDOTExporter.DefaultNodeLabeller;
+import com.jopdesign.wcet08.graphutils.LoopColoring.IterationBranchLabel;
 import com.jopdesign.wcet08.graphutils.TopOrder.BadGraphException;
 
 import static junit.framework.Assert.*;
 public class GraphTopologyTest {
+	public static class AnalysisNodeLabel extends DefaultNodeLabeller<String> {
+		private DirectedGraph<String, DefaultEdge> graph;
+		private TopOrder<String, DefaultEdge> to;
+		private LoopColoring<String, DefaultEdge> lc;
+		private Dominators<String, DefaultEdge> doms;
+
+		public AnalysisNodeLabel(DirectedGraph<String, DefaultEdge> g,
+				TopOrder<String, DefaultEdge> topOrder,
+				Dominators<String, DefaultEdge> doms,
+				LoopColoring<String, DefaultEdge> loopColoring) {
+			graph = g;
+			to = topOrder;
+			lc = loopColoring;
+			this.doms = doms;
+		}
+
+		public String getLabel(String n) {
+			return MessageFormat.format("{0} [ order: {1}, idom: {2}, loops: {3} ]",
+					n, to.getTopologicalOrder().get(n), 
+					doms.getIDoms().get(n), lc.getLoopColors().get(n));
+		}
+
+		public boolean setAttributes(String n, Map<String, String> ht) {
+			super.setAttributes(n, ht);
+			if(lc.getHeadOfLoops().contains(n)) {
+				ht.put("peripheries", "2");
+			}
+			return true;
+		}
+
+	}
+	public static class AnalysisEdgeLabeller implements DOTLabeller<DefaultEdge> {
+
+		private DirectedGraph<String, DefaultEdge> graph;
+		private LoopColoring<String, DefaultEdge> lc;
+
+		public AnalysisEdgeLabeller(
+				DirectedGraph<String, DefaultEdge> g,
+				LoopColoring<String, DefaultEdge> loopColoring) {
+			graph = g;
+			lc = loopColoring;
+		}
+
+		public String getLabel(DefaultEdge e) {
+			IterationBranchLabel<String> lab = lc.getIterationBranchEdges().get(e);
+			if(lab == null) return null;
+			return MessageFormat.format("cont: {0}\nexit: {1}",
+					lab.getContinues(),lab.getExits());
+		}
+		public boolean setAttributes(DefaultEdge e, Map<String, String> ht) {
+			String lab = getLabel(e);
+			if(lab != null) {
+				ht.put("label",lab);
+				return true;
+			} else {
+				return false;
+			}
+		}
+
+	}
 	private static final Integer ENTRY_VERTEX = 0;
 	
 	private static class EdgeCmp implements Comparator<DefaultEdge> {
@@ -127,7 +196,7 @@ public class GraphTopologyTest {
 			return ("v"+(genId++));
 		}		
 	}
-	public static void main(String argv[]) {
+	public static DefaultDirectedGraph<String, DefaultEdge> g1() {
 		DefaultDirectedGraph<String, DefaultEdge> g = new DefaultDirectedGraph<String, DefaultEdge>(DefaultEdge.class);
 		g.addVertex("Entry");
 		g.addVertex("1");g.addVertex("2");g.addVertex("3");
@@ -138,7 +207,25 @@ public class GraphTopologyTest {
 		g.addEdge("4", "6");g.addEdge("4", "2");g.addEdge("5", "6");g.addEdge("5", "1");
 		g.addEdge("1","7");g.addEdge("7","8");g.addEdge("8", "8");g.addEdge("8","9");
 		g.addEdge("6", "10");g.addEdge("9", "10");g.addEdge("9", "7");
-
+		return g;
+	}
+	public static FlowGraph<String, DefaultEdge> g2() {
+		FlowGraph <String, DefaultEdge> g = 
+			new DefaultFlowGraph<String, DefaultEdge>(DefaultEdge.class,"Entry","Exit");
+		for(int i = 1; i <= 8; i++) { g.addVertex(""+i); }
+		g.addEdge("Entry","1");
+		g.addEdge("1","2");g.addEdge("1","7");
+		g.addEdge("2","3");g.addEdge("2","7");
+		g.addEdge("3","4");g.addEdge("3","6");
+		g.addEdge("4","5");
+		g.addEdge("5","2");
+		g.addEdge("6","1");
+		g.addEdge("7","8");
+		g.addEdge("8","Exit");
+		return g;
+	}
+	public static void main(String argv[]) {
+		DefaultDirectedGraph<String, DefaultEdge> g = g1();
 		System.out.println("Graph: "+g);
 		exportDOT("g1-cfg.dot",g);
 		TopOrder<String, DefaultEdge> topOrder;
@@ -158,8 +245,27 @@ public class GraphTopologyTest {
 		LoopColoring<String, DefaultEdge> loopColoring = 
 			new LoopColoring<String, DefaultEdge>(g,topOrder);
 		System.out.println("Loop coloring: "+loopColoring.getLoopColors());
-		System.out.println("Loop nest tree: "+loopColoring.getLoopNestForest());
+		System.out.println("Iteration branch edges: "+loopColoring.getIterationBranchEdges());
 		exportDOT("g1-lnf.dot",loopColoring.getLoopNestForest());		
+		System.out.println("Loop nest tree: "+loopColoring.getLoopNestForest());
+		
+		exportDOT("g1-analysis", g,new AnalysisNodeLabel(g,topOrder,doms,loopColoring), 
+								   new AnalysisEdgeLabeller(g,loopColoring));
+
+		try {
+			FlowGraph<String, DefaultEdge> g2 = g2();
+			exportDOT("g2-cfg.dot",g2);
+			TopOrder<String, DefaultEdge> top2 = new TopOrder<String, DefaultEdge>(g2,g2.getEntry());
+			Dominators<String,DefaultEdge> doms2 = 
+				new Dominators<String,DefaultEdge>(g2,top2.getDFSTraversal());
+			LoopColoring<String, DefaultEdge> loops2 = 
+				new LoopColoring<String, DefaultEdge>(g2,top2);
+			
+			exportDOT("g2-analysis", g2 ,
+				   new AnalysisNodeLabel(g2,top2,doms2,loops2),
+				   new AnalysisEdgeLabeller(g2,loops2));
+		} catch(Exception e) { e.printStackTrace(); }
+		
 		StringVertexFactory vf = new StringVertexFactory(g);
 		loopColoring.unpeelLoop("8", vf);
 		System.out.println("Graph (unpeel 8): "+g);
@@ -183,6 +289,21 @@ public class GraphTopologyTest {
 			System.out.println("Creating .dot file: "+tmpFile);
 			FileWriter fw = new FileWriter(tmpFile);
 			export.export(fw, g);
+			fw.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}		
+	}
+	private static void exportDOT(String file, DirectedGraph<String, DefaultEdge> g,
+								  DOTNodeLabeller<String> nl,
+								  DOTLabeller<DefaultEdge> el) {
+		AdvancedDOTExporter<String, DefaultEdge> export = 
+			new AdvancedDOTExporter<String, DefaultEdge>(nl,el);
+		try {
+			File tmpFile = File.createTempFile(file, ".dot");
+			System.out.println("Creating .dot file: "+tmpFile);
+			FileWriter fw = new FileWriter(tmpFile);
+			export.exportDOT(fw, g);
 			fw.close();
 		} catch (IOException e) {
 			e.printStackTrace();

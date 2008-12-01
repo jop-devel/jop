@@ -43,14 +43,14 @@ import com.jopdesign.wcet08.Config;
 import com.jopdesign.wcet08.Project;
 import com.jopdesign.wcet08.analysis.CacheConfig.CacheApproximation;
 import com.jopdesign.wcet08.frontend.BasicBlock;
-import com.jopdesign.wcet08.frontend.FlowGraph;
+import com.jopdesign.wcet08.frontend.ControlFlowGraph;
 import com.jopdesign.wcet08.frontend.WcetAppInfo;
 import com.jopdesign.wcet08.frontend.CallGraph.CallGraphNode;
-import com.jopdesign.wcet08.frontend.FlowGraph.BasicBlockNode;
-import com.jopdesign.wcet08.frontend.FlowGraph.DedicatedNode;
-import com.jopdesign.wcet08.frontend.FlowGraph.FlowGraphEdge;
-import com.jopdesign.wcet08.frontend.FlowGraph.FlowGraphNode;
-import com.jopdesign.wcet08.frontend.FlowGraph.InvokeNode;
+import com.jopdesign.wcet08.frontend.ControlFlowGraph.BasicBlockNode;
+import com.jopdesign.wcet08.frontend.ControlFlowGraph.DedicatedNode;
+import com.jopdesign.wcet08.frontend.ControlFlowGraph.CFGEdge;
+import com.jopdesign.wcet08.frontend.ControlFlowGraph.CFGNode;
+import com.jopdesign.wcet08.frontend.ControlFlowGraph.InvokeNode;
 import com.jopdesign.wcet08.ipet.LocalAnalysis;
 import com.jopdesign.wcet08.ipet.MaxCostFlow;
 import com.jopdesign.wcet08.ipet.LocalAnalysis.CostProvider;
@@ -170,27 +170,27 @@ public class SimpleAnalysis {
 		checkCache(m); /* TODO: should throw exception */
 
 		/* build wcet map */
-		FlowGraph fg = appInfo.getFlowGraph(m);
-		Map<FlowGraphNode,WcetCost> nodeCosts = buildNodeCostMap(fg,cacheMode);
-		CostProvider<FlowGraphNode> costProvider = new MapCostProvider<FlowGraphNode>(nodeCosts);
-		MaxCostFlow<FlowGraphNode,FlowGraphEdge> problem = 
+		ControlFlowGraph fg = appInfo.getFlowGraph(m);
+		Map<CFGNode,WcetCost> nodeCosts = buildNodeCostMap(fg,cacheMode);
+		CostProvider<CFGNode> costProvider = new MapCostProvider<CFGNode>(nodeCosts);
+		MaxCostFlow<CFGNode,CFGEdge> problem = 
 			localAnalysis.buildWCETProblem(key.toString(),fg, costProvider);
 		/* solve ILP */
 		long maxCost = 0;
-		Map<FlowGraphEdge, Long> flowMapOut = new HashMap<FlowGraphEdge, Long>();
+		Map<CFGEdge, Long> flowMapOut = new HashMap<CFGEdge, Long>();
 		try {
 			maxCost = Math.round(problem.solve(flowMapOut));
 		} catch (Exception e) {
-			throw new Error("Failed to solve LP problem",e);
+			throw new Error("Failed to solve LP problem: "+e,e);
 		}
 		/* extract node flow, local cost, cache cost, cummulative cost */
-		Map<FlowGraphNode,Long> nodeFlow = new Hashtable<FlowGraphNode, Long>();
-		DirectedGraph<FlowGraphNode, FlowGraphEdge> graph = fg.getGraph();
-		for(FlowGraphNode n : fg.getGraph().vertexSet()) {
+		Map<CFGNode,Long> nodeFlow = new Hashtable<CFGNode, Long>();
+		DirectedGraph<CFGNode, CFGEdge> graph = fg.getGraph();
+		for(CFGNode n : fg.getGraph().vertexSet()) {
 			if(graph.inDegreeOf(n) == 0) nodeFlow.put(n, 0L); // ENTRY and DEAD CODE (no flow)
 			else {
 				long flow = 0;
-				for(FlowGraphEdge inEdge : graph.incomingEdgesOf(n)) {
+				for(CFGEdge inEdge : graph.incomingEdgesOf(n)) {
 					flow+=flowMapOut.get(inEdge);
 				}
 				nodeFlow.put(n, flow);
@@ -199,7 +199,7 @@ public class SimpleAnalysis {
 		/* Compute cost, sepearting local and non-local cost */
 		/* Safety check: compare flow*cost to actual solution */
 		WcetCost methodCost = new WcetCost();
-		for(FlowGraphNode n : fg.getGraph().vertexSet()) {
+		for(CFGNode n : fg.getGraph().vertexSet()) {
 			long flow = nodeFlow.get(n);
 			methodCost.addLocalCost(flow * nodeCosts.get(n).getLocalAndCacheCost());
 			methodCost.addNonLocalCost(flow * nodeCosts.get(n).getNonLocalCost());
@@ -211,9 +211,9 @@ public class SimpleAnalysis {
 		wcetMap.put(key, methodCost); 
 		/* Logging and Report */
 		if(Config.instance().doGenerateWCETReport()) {
-			Hashtable<FlowGraphNode, String> nodeFlowCostDescrs = new Hashtable<FlowGraphNode, String>();
+			Hashtable<CFGNode, String> nodeFlowCostDescrs = new Hashtable<CFGNode, String>();
 			
-			for(FlowGraphNode n : fg.getGraph().vertexSet()) {
+			for(CFGNode n : fg.getGraph().vertexSet()) {
 				if(nodeFlow.get(n) > 0) {
 					nodeFlowCostDescrs .put(n,nodeCosts.get(n).toString());
 					BasicBlock basicBlock = n.getBasicBlock();
@@ -255,11 +255,11 @@ public class SimpleAnalysis {
 	 * @param cacheMode cache approximation mode
 	 * @return
 	 */
-	private Map<FlowGraphNode, WcetCost> 
-		buildNodeCostMap(FlowGraph fg,CacheApproximation cacheMode) {
+	private Map<CFGNode, WcetCost> 
+		buildNodeCostMap(ControlFlowGraph fg,CacheApproximation cacheMode) {
 		
-		HashMap<FlowGraphNode, WcetCost> nodeCost = new HashMap<FlowGraphNode,WcetCost>();
-		for(FlowGraphNode n : fg.getGraph().vertexSet()) {
+		HashMap<CFGNode, WcetCost> nodeCost = new HashMap<CFGNode,WcetCost>();
+		for(CFGNode n : fg.getGraph().vertexSet()) {
 			if(n.getBasicBlock() != null) {
 				nodeCost.put(n, computeCostOfNode(n, cacheMode));
 			} else {
@@ -269,7 +269,7 @@ public class SimpleAnalysis {
 		return nodeCost;
 	}
 	
-	private class WcetVisitor implements FlowGraph.FlowGraphVisitor {
+	private class WcetVisitor implements ControlFlowGraph.CfgVisitor {
 		WcetCost cost;
 		private CacheApproximation cacheMode;
 		public WcetVisitor(CacheApproximation cacheMode) {
@@ -336,7 +336,7 @@ public class SimpleAnalysis {
 		}
 	}
 	private WcetCost 
-		computeCostOfNode(FlowGraphNode n,CacheApproximation cacheMode) {
+		computeCostOfNode(CFGNode n,CacheApproximation cacheMode) {
 		
 		WcetVisitor wcetVisitor = new WcetVisitor(cacheMode);
 		n.accept(wcetVisitor);
@@ -350,13 +350,13 @@ public class SimpleAnalysis {
 	 * @param invoked
 	 * @return the maximal cache miss penalty for the invoke/return
 	 */
-	private long getInvokeReturnMissCost(FlowGraph invoker, FlowGraph invoked) {
+	private long getInvokeReturnMissCost(ControlFlowGraph invoker, ControlFlowGraph invoked) {
 		int invokedWords = bytesToWords(invoked.getNumberOfBytes());
 		int invokedCost = Math.max(0, WCETInstruction.calculateB(false, invokedWords) - 
 									  WCETInstruction.INVOKE_HIDDEN_LOAD_CYCLES);
 		return getReturnMissCost(invoker)+invokedCost;
 	}
-	private long getReturnMissCost(FlowGraph invoker) {
+	private long getReturnMissCost(ControlFlowGraph invoker) {
 		int invokerWords = bytesToWords(invoker.getNumberOfBytes());
 		return Math.max(0,WCETInstruction.calculateB(false, invokerWords) - 
 				          WCETInstruction.MIN_HIDDEN_LOAD_CYCLES);		

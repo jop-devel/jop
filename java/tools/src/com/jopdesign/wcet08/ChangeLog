@@ -1,7 +1,20 @@
 (User) ChangeLog for wcet08. Please keep current.
 
+Dez 08
+---------
+- 01/12/08: Added ExecHelper for reusable parts in analyzer executables
+- 01/12/08: Import UppAal translation (wcet08.uppaal.translation)
+- 01/12/08: Import UppAal XML model (wcet08.uppaal.model)
+- 01/12/08: Add getIterationBranchEdges() to LoopColoring
+
 Nov 08
 ---------
+- 30/11/08: Move some utilities from ControlFlowGraph to LoopColoring
+- 30/11/08: Create graphutils.FlowGraph (directed graph with entry and exit) and move
+            FlowGraph -> ControlFlowGraph, FlowGraphExport -> CFGExport,
+            FlowGraphNode -> CFGNode, FlowGraphEdge -> CFGEdge etc.
+- 30/11/08: Add maxHeight to callgraph nodes
+
 - 25/11/08: Refactor Project/WcetAppInfo (close [REFACTOR_PROJECT])
 - 25/11/08: Modify static reachable cache miss estimation (once again).
             We have to assume that the invoked method itself is missed not on invoke,

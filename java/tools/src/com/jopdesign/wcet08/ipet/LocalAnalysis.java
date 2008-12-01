@@ -22,9 +22,10 @@ package com.jopdesign.wcet08.ipet;
 import java.util.Vector;
 
 import com.jopdesign.wcet08.Project;
-import com.jopdesign.wcet08.frontend.FlowGraph;
-import com.jopdesign.wcet08.frontend.FlowGraph.FlowGraphEdge;
-import com.jopdesign.wcet08.frontend.FlowGraph.FlowGraphNode;
+import com.jopdesign.wcet08.frontend.ControlFlowGraph;
+import com.jopdesign.wcet08.frontend.ControlFlowGraph.CFGEdge;
+import com.jopdesign.wcet08.frontend.ControlFlowGraph.CFGNode;
+import com.jopdesign.wcet08.graphutils.LoopColoring;
 import com.jopdesign.wcet08.ipet.LinearConstraint.ConstraintType;
 
 /**
@@ -54,12 +55,12 @@ public class LocalAnalysis {
 	 * @param nodeWCET cost of nodes
 	 * @return The max-cost maxflow problem
 	 */
-	public MaxCostFlow<FlowGraphNode,FlowGraphEdge> 
-		buildWCETProblem(String key, FlowGraph g,CostProvider<FlowGraphNode> nodeWCET) {
+	public MaxCostFlow<CFGNode,CFGEdge> 
+		buildWCETProblem(String key, ControlFlowGraph g,CostProvider<CFGNode> nodeWCET) {
 		Vector<FlowConstraint> flowCs = computeFlowConstraints(g);
-		MaxCostFlow<FlowGraphNode,FlowGraphEdge> maxflow = 
-			new MaxCostFlow<FlowGraphNode,FlowGraphEdge>(key,g.getGraph(),g.getEntry(),g.getExit());
-		for(FlowGraphNode n : g.getGraph().vertexSet()) {
+		MaxCostFlow<CFGNode,CFGEdge> maxflow = 
+			new MaxCostFlow<CFGNode,CFGEdge>(key,g.getGraph(),g.getEntry(),g.getExit());
+		for(CFGNode n : g.getGraph().vertexSet()) {
 			maxflow.setCost(n, nodeWCET.getCost(n));
 		}
 		for(FlowConstraint c : flowCs) maxflow.addFlowConstraint(c);
@@ -70,31 +71,36 @@ public class LocalAnalysis {
 	 * @param g the flow graph
 	 * @return A list of flow constraints
 	 */
-	public Vector<FlowConstraint> computeFlowConstraints(FlowGraph g) {
+	public Vector<FlowConstraint> computeFlowConstraints(ControlFlowGraph g) {
 		Vector<FlowConstraint> constraints = new Vector<FlowConstraint>();
 		// sum (e_Entry_x) = 1		
 		FlowConstraint entryConstraint = new FlowConstraint(ConstraintType.Equal);
 		entryConstraint.addRHS(1);
-		for(FlowGraphEdge entryEdge : g.getGraph().outgoingEdgesOf(g.getEntry())) {
+		for(CFGEdge entryEdge : g.getGraph().outgoingEdgesOf(g.getEntry())) {
 			entryConstraint.addLHS(entryEdge);
 		}
 		constraints.add(entryConstraint);
 		// sum (e_y_Exit) = 1
 		FlowConstraint exitConstraint = new FlowConstraint(ConstraintType.Equal);
 		exitConstraint.addRHS(1);
-		for(FlowGraphEdge exitEdge : g.getGraph().incomingEdgesOf(g.getExit())) {
+		for(CFGEdge exitEdge : g.getGraph().incomingEdgesOf(g.getExit())) {
 			exitConstraint.addLHS(exitEdge);
 		}
 		constraints.add(exitConstraint);
 		// - for each loop with bound B
-		// -- sum(exit_loop_edges) * B <= sum(continue_loop_edges) 
-		for(FlowGraphNode hol : g.getHeadOfLoops()) {
+		// -- sum(exit_loop_edges) * B <= sum(continue_loop_edges)
+		LoopColoring<CFGNode, CFGEdge> loops = g.getLoopColoring();
+		for(CFGNode hol : loops.getHeadOfLoops()) {
 			FlowConstraint loopConstraint = new FlowConstraint(ConstraintType.Equal);
+			if(g.getLoopBounds().get(hol) == null) {
+				throw new Error("No loop bound recorder for head of loop: "+hol+
+								" : "+g.getLoopBounds());
+			}
 			int lhsMultiplicity = g.getLoopBounds().get(hol).getUpperBound();
-			for(FlowGraphEdge exitEdge : g.getExitEdgesOf(hol)) {
+			for(CFGEdge exitEdge : loops.getExitEdgesOf(hol)) {
 				loopConstraint.addLHS(exitEdge,lhsMultiplicity);
 			}
-			for(FlowGraphEdge continueEdge : g.getBackEdgesTo(hol)) {
+			for(CFGEdge continueEdge : loops.getBackEdgesTo(hol)) {
 				loopConstraint.addRHS(continueEdge);
 			}
 			constraints.add(loopConstraint);

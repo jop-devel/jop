@@ -3,9 +3,15 @@ TODO  List
 Please assign names (in square brackets) to tasks, and reference them in the source
 when appropriate.
 
-[REFACTOR_SIMPLE_ANALYSIS] Little messy cause of prototyping right now
-[REFACTOR_REPORT] Clean up the report package
-[REFACTOR_FLOWGRAPH] Split FlowGraph into WcetMethodInfo and FlowGraph
+[REFACTOR_SIMPLE_ANALYSIS] 
+Little messy cause of prototyping right now
+
+[REFACTOR_REPORT] 
+Clean up the report package
+
+[UPPAAL_CACHE]
+Add cache simulation (assuming cash flush) to UppAal
+Depends: UPPAAL_PORT, flush cash
 
 [NO THROW HACK] 
 We do not add f_*throw, f*_new and f*_newarray calls to the callgraph, 
@@ -32,17 +38,12 @@ exception return nodes, i.e. computing more than one WCET (maybe a nice applicat
 global analysis).
 Depends: WCET_EXCEPTIONS
 
-[UPPAAL_PORT] 
-Add UPPAAL simluation (needs to be ported)
-
-[UPPAAL_CACHE]
-Add cache simulation (assuming cash flush) to UppAal
-Depends: UPPAAL_PORT, flush cash
-
 Done
 ~~~~
+UPPAAL_PORT: 
+Add UPPAAL simulation (needs to be ported)
 BUG_ARRAY_ISSUE:
-wcet.ArrayIssue takes 710 cycles on the sim, but only 43 according to analysis.
+wcet.ArrayIssue takes 710 cycles on the simulator, but only 43 according to analysis.
 WCET_JAVA_BYTECODES:
 Support java implemented bytecodes
 REFACTOR_PROJECT:

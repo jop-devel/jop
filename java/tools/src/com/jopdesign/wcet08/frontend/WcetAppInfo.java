@@ -72,8 +72,8 @@ public class WcetAppInfo  {
 
 	private TypeGraph typeGraph;
 	private AppInfo ai;
-	private Map<MethodInfo, FlowGraph> cfgs;
-	private List<FlowGraph> cfgsByIndex;
+	private Map<MethodInfo, ControlFlowGraph> cfgs;
+	private List<ControlFlowGraph> cfgsByIndex;
 
 	public WcetAppInfo(com.jopdesign.build.AppInfo ai) {
 		this.ai = ai; 
@@ -332,15 +332,15 @@ public class WcetAppInfo  {
 	}
 
 	public void analyseFlowGraphs(Project p, List<MethodInfo> methodInfos) throws Exception {
-		cfgsByIndex = new Vector<FlowGraph>();
-		cfgs = new Hashtable<MethodInfo, FlowGraph>();
+		cfgsByIndex = new Vector<ControlFlowGraph>();
+		cfgs = new Hashtable<MethodInfo, ControlFlowGraph>();
 		for(int i = 0; i < methodInfos.size(); i++) {
 			MethodInfo method = methodInfos.get(i);
 			SortedMap<Integer,LoopBound> wcaMap = p.getAnnotations(method.getCli());
 			assert(wcaMap != null);
-			FlowGraph fg;
+			ControlFlowGraph fg;
 			try {
-				fg = new FlowGraph(i,this,method);
+				fg = new ControlFlowGraph(i,this,method);
 			}  catch(BadGraphException e) {
 				logger.error("Bad flow graph: "+e);
 				throw e;
@@ -348,10 +348,11 @@ public class WcetAppInfo  {
 			cfgsByIndex.add(fg);
 			cfgs.put(method,fg);
 		}
-		for(FlowGraph fg: cfgsByIndex) {
+		for(ControlFlowGraph fg: cfgsByIndex) {
 			try {
 				fg.loadAnnotations(p);
 				fg.resolveVirtualInvokes();
+				fg.insertSplitNodes();
 			} catch (BadAnnotationException e) {
 				logger.error("Bad annotation: "+e);
 				throw e;
@@ -361,10 +362,10 @@ public class WcetAppInfo  {
 	public boolean hasFlowGraph(MethodInfo mi) {
 		return(cfgs.containsKey(mi));
 	}
-	public FlowGraph getFlowGraph(int id) {
+	public ControlFlowGraph getFlowGraph(int id) {
 		return cfgsByIndex.get(id);
 	}
-	public FlowGraph getFlowGraph(MethodInfo m) {
+	public ControlFlowGraph getFlowGraph(MethodInfo m) {
 		if(cfgs.get(m) == null) {
 			throw new AssertionError("No FlowGraph for "+m.getFQMethodName());
 		}

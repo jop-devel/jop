@@ -27,7 +27,10 @@ import org.apache.bcel.classfile.JavaClass;
 import org.apache.bcel.classfile.Method;
 import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.MethodGen;
+import org.apache.log4j.ConsoleAppender;
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+import org.apache.log4j.PatternLayout;
 
 import com.jopdesign.build.AppInfo;
 import com.jopdesign.build.AppVisitor;
@@ -37,7 +40,7 @@ import com.jopdesign.build.WcetPreprocess;
 import com.jopdesign.dfa.analyses.LoopBounds;
 import com.jopdesign.dfa.analyses.ReceiverTypes;
 import com.jopdesign.wcet08.frontend.CallGraph;
-import com.jopdesign.wcet08.frontend.FlowGraph;
+import com.jopdesign.wcet08.frontend.ControlFlowGraph;
 import com.jopdesign.wcet08.frontend.WcetAppInfo;
 import com.jopdesign.wcet08.frontend.SourceAnnotations;
 import com.jopdesign.wcet08.frontend.SourceAnnotations.LoopBound;
@@ -128,7 +131,10 @@ public class Project {
 		this.methodName = config.getRootMethodName();
 		this.results = new Report(this);
 	}
-	
+	public String getName() {
+		return config.getProjectName();
+	}
+
 	public static AppInfo loadApp() throws IOException {
 		AppInfo appInfo;
 		Config config = Config.instance();
@@ -181,7 +187,7 @@ public class Project {
 	public WcetAppInfo getWcetAppInfo() {
 		return this.wcetAppInfo;
 	}
-	public FlowGraph getRootFlowGraph() {
+	public ControlFlowGraph getRootFlowGraph() {
 		return wcetAppInfo.getFlowGraph(this.getRootMethod());
 	}	
 	public SortedMap<Integer, LoopBound> getAnnotations(ClassInfo cli) {

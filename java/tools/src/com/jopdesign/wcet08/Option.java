@@ -46,11 +46,11 @@ public abstract class Option<T> {
 		public void checkFormat(String s) { return; }
 	}
 	public static class BooleanOption extends Option<Boolean> {
-		public BooleanOption(String key, String descr, boolean optional) {
-			super(key, Boolean.class, descr, optional);
+		public BooleanOption(String key, String descr) {
+			super(key, Boolean.class, descr, false);
 		}
-		public BooleanOption(String key, String descr, String def) {
-			super(key,descr,parse(def));
+		public BooleanOption(String key, String descr, boolean def) {
+			super(key,descr,def);
 		}
 		@Override
 		public void checkFormat(String s) throws IllegalArgumentException {

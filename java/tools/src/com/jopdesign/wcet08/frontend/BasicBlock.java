@@ -44,7 +44,7 @@ import org.apache.bcel.generic.StoreInstruction;
 import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.tools.JopInstr;
-import com.jopdesign.wcet08.frontend.FlowGraph.EdgeKind;
+import com.jopdesign.wcet08.frontend.ControlFlowGraph.EdgeKind;
 
 /**
  * A lightweight basic block class, based on linked lists.<br/>

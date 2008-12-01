@@ -27,110 +27,37 @@
 
 package com.jopdesign.wcet08;
 
-import java.util.Arrays;
-
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
-import org.apache.log4j.PatternLayout;
-
-import com.jopdesign.wcet08.Config.BadConfigurationError;
-import com.jopdesign.wcet08.Config.MissingConfigurationError;
 import com.jopdesign.wcet08.analysis.CacheConfig;
 import com.jopdesign.wcet08.analysis.SimpleAnalysis;
 import com.jopdesign.wcet08.analysis.CacheConfig.CacheApproximation;
 import com.jopdesign.wcet08.report.Report;
-
 /**
  * WCET Analysis for JOP - Executable
  */
 public class WCETAnalysis {
 	private static final String CONFIG_FILE_PROP = "config";
 	private static final Logger tlLogger = Logger.getLogger(WCETAnalysis.class);
-	private Config config;
 
-	public WCETAnalysis(Config config) {
-		this.config = config;
-	}
 
 	public static void main(String[] args) {
 		Config.addOptions(CacheConfig.cacheOptions);
-
-		/* Console logging for top level messages */
-		ConsoleAppender consoleApp = new ConsoleAppender(new PatternLayout(), ConsoleAppender.SYSTEM_ERR);
-		consoleApp.setName("TOP-LEVEL");
-		consoleApp.setThreshold(Level.INFO);
-		consoleApp.setLayout(new PatternLayout("[WCETAnalysis %-6rms] %m%n"));
-		tlLogger.addAppender(consoleApp);
-
-		/* Load config */
-		loadConfig(args);
-
+		ExecHelper exec = new ExecHelper(WCETAnalysis.class,tlLogger,CONFIG_FILE_PROP);
+		
+		exec.initTopLevelLogger();       /* Console logging for top level messages */
+		exec.loadConfig(args);           /* Load config */
 		Config config = Config.instance();
-		WCETAnalysis inst = new WCETAnalysis(config);
+		WCETAnalysis inst = new WCETAnalysis();
 		/* run */
 		if(! inst.run()) {		
-			System.err.println("[ERROR] WCET Analysis failed");
-			System.exit(1);
-		} else {
-			tlLogger.info("WCET analysis finished");
-			if(config.hasReportDir()) {
-				tlLogger.info("Results are in "+config.getOutDir()+"/index.html");
-			}
+			exec.bail("WCET Analysis failed");
+		}
+		tlLogger.info("WCET analysis finished");
+		if(config.hasReportDir()) {
+			tlLogger.info("Results are in "+config.getOutDir()+"/index.html");
 		}
 	}
 
-	private static void exitUsage() {
-		System.err.println(
-				"Usage:\n  java "+
-				"-D"+CONFIG_FILE_PROP+"=file://<path-to-config> "+
-				WCETAnalysis.class.getCanonicalName() + " [OPTIONS]");
-		System.err.println("Example:\n  "+
-				"java -D"+CONFIG_FILE_PROP+"=file:///home/jop/myconf.props "+
-				WCETAnalysis.class.getName() + 
-				" -"+CacheConfig.BLOCK_SIZE_WORDS+" 32" +
-				" -"+Config.ROOT_CLASS_NAME+" wcet.Method\n");
-		System.err.print  ("OPTIONS can be configured using system properties");
-		System.err.println(", supplying a property file or as command line arguments");
-		for(Option o : Config.availableOptions()) {
-			System.err.println("    "+o.toString(15));
-		}
-		System.err.println("\nSee 'wcet.properties' for an example configuration");
-		System.err.println("Current configuration: "+Config.instance().getOptions());
-		System.exit(1);		
-	}
-
-	/**
-	 * @param args
-	 */
-	private static void loadConfig(String[] args) {
-		try {
-			String[] argsrest = Config.load(System.getProperty(CONFIG_FILE_PROP),args);
-			Config c = Config.instance();
-			if(c.helpRequested()) exitUsage();
-			if(argsrest.length != 0) {
-				System.err.println("Unknown command line arguments: "+Arrays.toString(argsrest));
-				exitUsage();
-			}
-			tlLogger.info("Configuration: "+Config.instance().getOptions());
-			c.checkOptions();
-			if(Config.instance().hasReportDir()) {
-				tlLogger.info("Initializing Output");
-				Config.instance().initializeReport();
-			}
-		} catch (MissingConfigurationError e) {
-			System.err.println("[FATAL] Missing option: "+e.getMessage());
-			exitUsage();
-		} catch(BadConfigurationError e) { 
-			System.err.println("[FATAL] Bad option: "+e.getMessage());
-			exitUsage();					
-		} catch (Exception e) {
-			e.printStackTrace();
-			System.err.println("----------------------------------------");
-			System.err.println("[FATAL] Loading configuration failed");
-			System.exit(1);
-		}
-	}
 
 	private boolean run() {
 		Project project = new Project();
@@ -146,9 +73,9 @@ public class WCETAnalysis {
 		boolean succeed = false;
 		try {
 			/* Analysis */
-			//tlLogger.info("Stack usage analysis");
-			//StackSize stackUsage = new StackSize(project);
-			//tlLogger.info("Stack usage: "+stackUsage.getStackSize());
+//			tlLogger.info("Stack usage analysis");
+//			StackSize stackUsage = new StackSize(project);
+//			tlLogger.info("Stack usage: "+stackUsage.getStackSize());
 			tlLogger.info("Starting WCET analysis");
 			SimpleAnalysis an = new SimpleAnalysis(project);
 
@@ -156,7 +83,7 @@ public class WCETAnalysis {
 			tlLogger.info("WCET 'analyze static reachable' analysis finsihed");
 			System.out.println("sca: "+scaWCET);
 
-			config.setGenerateWCETReport(false);
+			Config.instance().setGenerateWCETReport(false);
 			long ahWCET = an.computeWCET(project.getRootMethod(),CacheApproximation.ALWAYS_HIT).getCost();			
 			tlLogger.info("WCET 'always hit' analysis finsihed");
 			System.out.println("ah:"+ahWCET);
@@ -169,13 +96,11 @@ public class WCETAnalysis {
 			project.getReport().addStat("wcet-cache-approx", scaWCET);
 			succeed = true;
 		} catch (Exception e) {
-			System.err.println("[ERROR] "+e);
-			e.printStackTrace();			
+			tlLogger.error(e);
 		} catch(AssertionError e) {
-			System.err.println("[FATAL] "+e);
-			e.printStackTrace();			
+			tlLogger.fatal(e);
 		}
-		if(! config.hasReportDir()) {
+		if(! Config.instance().hasReportDir()) {
 			tlLogger.info("No 'reportdir' set, ommiting HTML report");
 			return succeed;
 		}
@@ -185,8 +110,8 @@ public class WCETAnalysis {
 			try {
 				Report.initVelocity();
 			} catch (Exception e) {
-				System.err.println("[ERROR] Initializing velocity failed");
 				e.printStackTrace();
+				tlLogger.error("Initializing velocity failed");
 				return false;
 			}
 			/* Report */
@@ -195,8 +120,8 @@ public class WCETAnalysis {
 			tlLogger.info("Generating result document");
 			project.getReport().writeReport();
 		} catch (Exception e) {
-			System.err.println("[ERROR] Generating report failed");
 			e.printStackTrace();
+			tlLogger.error("Generating report failed");
 			return false;
 		}
 		return succeed;

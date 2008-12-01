@@ -133,6 +133,11 @@ public class CallGraph {
 	 */
 	public abstract class CallGraphNode {
 		/**
+		 * the maximum height of the subgraph rooted at this note
+		 * (excluding abstract nodes). 
+		 */
+		protected int maxHeight;
+		/**
 		 * query whether the node is abstract (interface node)
 		 * @return true if the node refers to a method interface rather than an implementation
 		 */
@@ -153,10 +158,12 @@ public class CallGraph {
 		public abstract void build();
 
 		protected void buildRecursive() {
+			maxHeight = 0;
 			for(DefaultEdge e : callGraph.outgoingEdgesOf(this)) {
 				CallGraphNode target = callGraph.getEdgeTarget(e);
 				if(hasBeenBuild(target)) continue;
 				callGraph.getEdgeTarget(e).build();
+				maxHeight = Math.max(callGraph.getEdgeTarget(e).maxHeight,maxHeight);
 			}
 		}
 	}
@@ -187,6 +194,7 @@ public class CallGraph {
 				cgBuilderVisitor.visitInstruction(i);
 			}
 			super.buildRecursive();
+			maxHeight = maxHeight + 1;
 		}
 		@Override public String toString() {
 			return method.getFQMethodName();
@@ -345,7 +353,23 @@ public class CallGraph {
 	public boolean isLeafNode(CallGraphNode vertex) {
 		return callGraph.outDegreeOf(vertex) == 0;
 	}
+	/**
+	 * Return if the given reference points to a leaf node,
+	 * i.e., a method which doesn't invoke any other methods.
+	 * @param ref
+	 * @return
+	 */
 	public boolean isLeafNode(MethodRef ref) {
-		return isLeafNode(this.getNode(ref));
+		return this.getNode(ref).maxHeight == 1;
+	}
+	/**
+	 * Get the maximum height of the call stack.
+	 * <p>A leaf method has height 1, an abstract method's height is the
+	 * maximum height of its children, and the height of an implemented method
+	 * is the maximum height of its children + 1. <p>
+	 * @return
+	 */
+	public int getMaxHeight() {
+		return this.rootNode.maxHeight;
 	}
 }

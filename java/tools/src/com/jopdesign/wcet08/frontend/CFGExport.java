@@ -10,10 +10,11 @@ import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InvokeInstruction;
 import org.apache.bcel.generic.RETURN;
 import org.jgrapht.DirectedGraph;
-import com.jopdesign.wcet08.frontend.FlowGraph.BasicBlockNode;
-import com.jopdesign.wcet08.frontend.FlowGraph.FlowGraphEdge;
-import com.jopdesign.wcet08.frontend.FlowGraph.FlowGraphNode;
+import com.jopdesign.wcet08.frontend.ControlFlowGraph.BasicBlockNode;
+import com.jopdesign.wcet08.frontend.ControlFlowGraph.CFGEdge;
+import com.jopdesign.wcet08.frontend.ControlFlowGraph.CFGNode;
 import com.jopdesign.wcet08.graphutils.AdvancedDOTExporter;
+import com.jopdesign.wcet08.graphutils.LoopColoring;
 import com.jopdesign.wcet08.graphutils.AdvancedDOTExporter.DOTLabeller;
 import com.jopdesign.wcet08.graphutils.AdvancedDOTExporter.DOTNodeLabeller;
 import com.jopdesign.wcet08.graphutils.AdvancedDOTExporter.DefaultDOTLabeller;
@@ -25,47 +26,47 @@ import com.jopdesign.wcet08.graphutils.AdvancedDOTExporter.MapLabeller;
  *
  * @author Benedikt Huber (benedikt.huber@gmail.com)
  */
-public class FlowGraphExport {
-	public class FGCustomNodeLabeller extends   MapLabeller<FlowGraphNode> 
-								 	 implements DOTNodeLabeller<FlowGraphNode> {
-		public FGCustomNodeLabeller(Map<FlowGraphNode, ?> nodeAnnotations) {
+public class CFGExport {
+	public class FGCustomNodeLabeller extends   MapLabeller<CFGNode> 
+								 	 implements DOTNodeLabeller<CFGNode> {
+		public FGCustomNodeLabeller(Map<CFGNode, ?> nodeAnnotations) {
 			super(nodeAnnotations);
 		}
-		public String getLabel(FlowGraphNode object) {
+		public String getLabel(CFGNode object) {
 			if(annots.containsKey(object)) {
 				return "[" +object.getName() + "] "+ annots.get(object);
 			} else {
 				return super.getLabel(object);
 			}			
 		}
-		public int getID(FlowGraphNode node) { return node.getId(); }
+		public int getID(CFGNode node) { return node.getId(); }
 	}
-	public class FGEdgeLabeller extends DefaultDOTLabeller<FlowGraphEdge> {		
-		public boolean setAttributes(FlowGraphEdge edge, Map<String,String> ht) {
+	public class FGEdgeLabeller extends DefaultDOTLabeller<CFGEdge> {		
+		public boolean setAttributes(CFGEdge edge, Map<String,String> ht) {
 			super.setAttributes(edge,ht);
-			if(flowGraph.isBackEdge(edge)) ht.put("arrowhead", "empty");
-			if(flowGraph.getLoopEntrySet(edge).size() > 0) ht.put("arrowhead", "diamond");
+			if(flowGraph.getLoopColoring().isBackEdge(edge)) ht.put("arrowhead", "empty");
+			if(flowGraph.getLoopColoring().getLoopEntrySet(edge).size() > 0) ht.put("arrowhead", "diamond");
 			return true;
 		}
-		public String getLabel(FlowGraphEdge edge) {
+		public String getLabel(CFGEdge edge) {
 			StringBuilder lab = new StringBuilder();
 			switch(edge.getKind()) {
 			case EXIT_EDGE : lab.append("return");break;
 			case ENTRY_EDGE : lab.append("entry");break;
 			default: break;
 			}
-			Set<FlowGraphNode> exits = flowGraph.getLoopExitSet(edge);
+			Set<CFGNode> exits = flowGraph.getLoopColoring().getLoopExitSet(edge);
 			if(exits.size() > 0) {
 				lab.append("{exit ");
-				for(FlowGraphNode n : exits) { lab.append(n.getId()); }
+				for(CFGNode n : exits) { lab.append(n.getId()); }
 				lab.append("}");
 			}
 			return lab.toString();
 		}
 	}
-	public class FGNodeLabeller extends DefaultNodeLabeller<FlowGraphNode> {
+	public class FGNodeLabeller extends DefaultNodeLabeller<CFGNode> {
 		@Override
-		public boolean setAttributes(FlowGraphNode node, Map<String,String> ht) {
+		public boolean setAttributes(CFGNode node, Map<String,String> ht) {
 			if(node instanceof BasicBlockNode) {
 				setBasicBlockAttributes((BasicBlockNode) node, ht);
 			} else {
@@ -79,6 +80,7 @@ public class FlowGraphExport {
 			InvokeInstruction invInstr = 
 				(lastInstr instanceof InvokeInstruction) ? ((InvokeInstruction)lastInstr) : null;
 			boolean isReturn = lastInstr instanceof RETURN;
+			LoopColoring<CFGNode, CFGEdge> loops = flowGraph.getLoopColoring();
 			StringBuilder nodeInfo = new StringBuilder();
 			nodeInfo.append('#');
 			nodeInfo.append(n.getId());
@@ -99,13 +101,13 @@ public class FlowGraphExport {
 			nodeInfo.append(infoHeader);
 			nodeInfo.append("{"+codeBlock.getNumberOfBytes()+" By, ");
 			nodeInfo.append(flowGraph.basicBlockWCETEstimate(codeBlock)+" Cyc");
-			if(flowGraph.isHeadOfLoop(n)) {
+			if(loops.getHeadOfLoops().contains(n)) {
 				nodeInfo.append(", LOOP "+n.getId()+"/"+flowGraph.getLoopBounds().get(n));
 			}
 			nodeInfo.append("}\n");
 			nodeInfo.append(codeBlock.dump());
 			ht.put("label",nodeInfo.toString());
-			if(! flowGraph.getHeadOfLoops().isEmpty()) {
+			if(! loops.getHeadOfLoops().isEmpty()) {
 				if(flowGraph.getLoopColoring().getLoopColors().get(n) == null) {
 					WcetAppInfo.logger.error("No loop coloring for node "+n+" (dead code?)");
 				} else {
@@ -115,28 +117,28 @@ public class FlowGraphExport {
 		}		
 	}
 
-	private FlowGraph flowGraph;
-	private DOTNodeLabeller<FlowGraphNode> nl;
-	private DOTLabeller<FlowGraphEdge> el;
+	private ControlFlowGraph flowGraph;
+	private DOTNodeLabeller<CFGNode> nl;
+	private DOTLabeller<CFGEdge> el;
 
-	public FlowGraphExport(FlowGraph g) {
+	public CFGExport(ControlFlowGraph g) {
 		this.flowGraph = g;
 	}
-	public FlowGraphExport(FlowGraph graph, Map<FlowGraphNode, ?> nodeAnnotations, Map<FlowGraphEdge, ?> edgeAnnotations) {
+	public CFGExport(ControlFlowGraph graph, Map<CFGNode, ?> nodeAnnotations, Map<CFGEdge, ?> edgeAnnotations) {
 		this(graph);
 		if(nodeAnnotations != null) {
 			this.nl = new FGCustomNodeLabeller(nodeAnnotations);
 		}
 		if(edgeAnnotations != null) {
-			this.el = new MapLabeller<FlowGraphEdge>(edgeAnnotations);
+			this.el = new MapLabeller<CFGEdge>(edgeAnnotations);
 		}
 	}
 
-	public void exportDOT(Writer writer, DirectedGraph<FlowGraphNode, FlowGraphEdge> graph) throws IOException {
+	public void exportDOT(Writer writer, DirectedGraph<CFGNode, CFGEdge> graph) throws IOException {
 		if(nl == null) nl = new FGNodeLabeller();
 		if(el == null) el = new FGEdgeLabeller();
-		AdvancedDOTExporter<FlowGraphNode,FlowGraphEdge> dotExport = 
-			new AdvancedDOTExporter<FlowGraphNode,FlowGraphEdge>(nl,el);
+		AdvancedDOTExporter<CFGNode,CFGEdge> dotExport = 
+			new AdvancedDOTExporter<CFGNode,CFGEdge>(nl,el);
 		dotExport.exportDOT(writer, flowGraph.getGraph());
 	}
 }

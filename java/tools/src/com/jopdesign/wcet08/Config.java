@@ -166,9 +166,9 @@ public class Config {
 		new Option.StringOption(REPORTDIRROOT_PROPERTY,"reports will be generated in config["+REPORTDIRROOT_PROPERTY+"]/config["+PROJECT_NAME+"]",true),
 		new Option.StringOption(PROGRAM_DOT,"if graphs should be generated from java, the path to the 'dot' binary", true),
 		
-		new Option.BooleanOption(DUMP_ILP,"whether the LP problems should be dumped to files","yes"),
+		new Option.BooleanOption(DUMP_ILP,"whether the LP problems should be dumped to files",true),
 		
-		new Option.BooleanOption(DO_DFA,"whether dataflow analysis should be performed","no")
+		new Option.BooleanOption(DO_DFA,"whether dataflow analysis should be performed",false)
 	};
 	static {
 		Config.addOptions(Config.baseOptions);

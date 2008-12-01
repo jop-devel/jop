@@ -19,7 +19,7 @@
 */
 package com.jopdesign.wcet08.ipet;
 
-import com.jopdesign.wcet08.frontend.FlowGraph.FlowGraphEdge;
+import com.jopdesign.wcet08.frontend.ControlFlowGraph.CFGEdge;
 
 /** 
  * FlowConstraints are (linear) equations limiting the flow in a max-flow min-cost problem.
@@ -27,6 +27,6 @@ import com.jopdesign.wcet08.frontend.FlowGraph.FlowGraphEdge;
  * @author Benedikt Huber (benedikt.huber@gmail.com)
  *
  */
-public class FlowConstraint extends LinearConstraint<FlowGraphEdge> {
+public class FlowConstraint extends LinearConstraint<CFGEdge> {
 	public FlowConstraint(ConstraintType cmp) { super(cmp); }
 }
