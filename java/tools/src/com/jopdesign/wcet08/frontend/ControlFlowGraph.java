@@ -487,6 +487,7 @@ public class ControlFlowGraph {
 			topOrder = new TopOrder<CFGNode, CFGEdge>(this.graph, this.graph.getEntry());
 			idGen = 0;
 			for(CFGNode vertex : topOrder.getTopologicalTraversal()) vertex.id = idGen++;
+			for(CFGNode vertex : TopOrder.findDeadNodes(graph,this.graph.getEntry())) vertex.id = idGen++;
 			loopColoring = new LoopColoring<CFGNode, CFGEdge>(this.graph,topOrder);
 		} catch (BadGraphException e) {
 			WcetAppInfo.logger.error("Bad flow graph: "+getGraph().toString());

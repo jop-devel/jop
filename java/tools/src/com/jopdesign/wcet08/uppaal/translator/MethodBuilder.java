@@ -92,6 +92,7 @@ public class MethodBuilder implements CfgVisitor {
 		
 		this.isRoot = isRoot;
 		this.tBuilder = new TemplateBuilder("Method"+cfg.getId(),cfg.getId(),cfg.getLoopBounds(),isRoot);
+		this.tBuilder.addDescription("Template for method "+cfg.getMethodInfo());
 		FlowGraph<CFGNode, CFGEdge> graph = cfg.getGraph();
 		/* Translate the CFGs nodes */
 		for(CFGNode node : graph.vertexSet()) {

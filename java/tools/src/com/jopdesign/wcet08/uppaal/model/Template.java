@@ -124,4 +124,8 @@ public class Template {
 		return "Template@" +this.name;
 	}
 
+	public void addComment(String comment) {
+		this.declarations.add("/* "+comment+" */");		
+	}
+
 }

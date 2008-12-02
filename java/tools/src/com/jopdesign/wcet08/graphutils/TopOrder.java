@@ -29,6 +29,7 @@ import java.util.Vector;
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.alg.BellmanFordShortestPath;
 import org.jgrapht.alg.ConnectivityInspector;
+import org.jgrapht.alg.DijkstraShortestPath;
 import org.jgrapht.traverse.DepthFirstIterator;
 
 /**
@@ -190,10 +191,12 @@ public class TopOrder<V,E> {
 	 * @return a list of unreachable nodes
 	 */
 	public static <V,E> List<V> findDeadNodes(DirectedGraph<V,E> graph, V entry) {
-		ConnectivityInspector<V, E> ci = new ConnectivityInspector<V,E>(graph);
+		/* CAVEAT: Do not use ConnectivityInspector; it consides graphs as undirected */
+		BellmanFordShortestPath<V, E> bfsp = new BellmanFordShortestPath<V, E>(graph,entry);
 		Vector<V> deads = new Vector<V>();
 		for(V node : graph.vertexSet()) {
-			if(node != entry && ! ci.pathExists(entry, node)) {
+			if(node == entry) continue;
+			if(null == bfsp.getPathEdgeList(node)) {
 				deads .add(node);
 			}
 		}

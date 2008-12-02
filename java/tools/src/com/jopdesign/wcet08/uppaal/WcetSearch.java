@@ -67,7 +67,12 @@ public class WcetSearch {
 		InputStream is = new BufferedInputStream(verifier.getInputStream());
 		try {
 			if(verifier.waitFor() != 0) {
-				logger.error("Uppaal verifier terminated with exit code: "+verifier.exitValue());
+				InputStream eis = new BufferedInputStream(verifier.getErrorStream());
+				BufferedInputStream ebis = new BufferedInputStream(eis);
+				BufferedReader ebr = new BufferedReader(new InputStreamReader(ebis));
+				String l;
+				while((l=ebr.readLine()) != null) logger.error("verifyta: "+l);
+				throw new IOException("Uppaal verifier terminated with exit code: "+verifier.exitValue());
 			}
 		} catch (InterruptedException e) {
 			throw new IOException("Interrupted while waiting for verifier to finish");

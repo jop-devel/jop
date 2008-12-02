@@ -147,4 +147,7 @@ public class TemplateBuilder {
 							LOCAL_CALL_STACK_DEPTH, 
 							SystemBuilder.CURRENT_CALL_STACK_DEPTH);
 	}
+	public void addDescription(String string) {
+		this.template.addComment(string);
+	}
 }
