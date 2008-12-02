@@ -141,7 +141,7 @@ public class XmlBuilder {
 	public static String joinStrings(Iterable<String> strs, String sep) {
 		StringBuilder b = new StringBuilder("");
 
-		Iterator i = strs.iterator();
+		Iterator<String> i = strs.iterator();
 		if(! i.hasNext()) return "";
 		b.append(i.next());
 		while(i.hasNext()) { b.append(sep);b.append(i.next()); }

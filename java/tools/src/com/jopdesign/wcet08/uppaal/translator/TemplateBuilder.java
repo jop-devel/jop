@@ -19,7 +19,6 @@
 */
 package com.jopdesign.wcet08.uppaal.translator;
 
-import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Vector;
@@ -53,7 +52,6 @@ public class TemplateBuilder {
 	
 	private Map<CFGNode, Integer>   loopIds;
 	private Vector<LoopBound> loopBounds;
-	private int methodNum;
 
 	/**
 	 * Build a fresh template representing a CFG.
@@ -66,7 +64,6 @@ public class TemplateBuilder {
 	 * @param isRootMethod whether this is the `measure' entry point
 	 */
 	public TemplateBuilder(String name, int methodNumber, Map<CFGNode, LoopBound> map, boolean isRootMethod) {
-		this.methodNum = methodNumber;
 		Vector<String> parameters = new Vector<String>();
 		this.template = new Template(name,parameters);	
 
@@ -89,21 +86,21 @@ public class TemplateBuilder {
 	 */
 	private void initializeTemplate() {
 		getTemplate().appendDeclaration(
-				MessageFormat.format("clock {0}; ", LOCAL_CLOCK));
+				String.format("clock %s; ", LOCAL_CLOCK));
 		getTemplate().appendDeclaration(
-				MessageFormat.format("int[0,{0}] {1};", 
+				String.format("int[0,%s] %s;", 
 						SystemBuilder.MAX_CALL_STACK_DEPTH, 
 						LOCAL_CALL_STACK_DEPTH));
 		for(int i = 0; i < loopBounds.size(); i++ ) {
 			getTemplate().appendDeclaration(
-					MessageFormat.format("const int {0} = {1};", 
-										  loopBoundConst(i), loopBounds.get(i).getUpperBound()));
+					String.format("const int %s = %d;", 
+								  loopBoundConst(i), loopBounds.get(i).getUpperBound()));
 			getTemplate().appendDeclaration(
-					MessageFormat.format("const int {0} = {1};", 
-										  loopLowerBoundConst(i), loopBounds.get(i).getLowerBound()));
+					String.format("const int %s = %d;", 
+								  loopLowerBoundConst(i), loopBounds.get(i).getLowerBound()));
 			getTemplate().appendDeclaration(
-					MessageFormat.format("int[0,{0}] {1};", 
-										  loopBoundConst(i), loopVar(i)));
+					String.format("int[0,%s] %s;", 
+								  loopBoundConst(i), loopVar(i)));
 		}		
 		Location initLoc = new Location("I");
 		template.setInitialLocation(initLoc);
@@ -126,12 +123,12 @@ public class TemplateBuilder {
 	}
 	public String contLoopGuard(CFGNode loop) {
 		int id = this.loopIds.get(loop);
-		return MessageFormat.format("{0} < {1}",
+		return String.format("%s < %s",
 									loopVar(id), loopBoundConst(id));
 	}
 	public String exitLoopGuard(CFGNode loop) {
 		int id = this.loopIds.get(loop);
-		return MessageFormat.format("{0} >= {1}",
+		return String.format("%s >= %s",
 									loopVar(id), 
 									(new UppAalConfig(Config.instance()).assumeTightBounds())
 									? loopBoundConst(id)
@@ -139,17 +136,15 @@ public class TemplateBuilder {
 	}
 	public String resetLoopCounter(CFGNode loop) {
 		int id = this.loopIds.get(loop);
-		return MessageFormat.format("{0} := 0",
-									loopVar(id), loopBoundConst(id));
+		return String.format("%s := 0",loopVar(id));
 	}		
 	public String incrLoopCounter(CFGNode loop) {
 		int id = this.loopIds.get(loop);
-		return MessageFormat.format("{0} := {0} + 1",
-									loopVar(id), loopBoundConst(id));
+		return String.format("%1$s := %1$s + 1",loopVar(id));
 	}
 	public String initLocalCallStackDepth() {
-		return MessageFormat.format("{0} := {1}", 
-									LOCAL_CALL_STACK_DEPTH, 
-									SystemBuilder.CURRENT_CALL_STACK_DEPTH);
+		return String.format("%s := %s", 
+							LOCAL_CALL_STACK_DEPTH, 
+							SystemBuilder.CURRENT_CALL_STACK_DEPTH);
 	}
 }

@@ -49,6 +49,7 @@ public class DirectedCycleDetector<V,E> {
 			return new Pair<List<V>,List<V>>(ex.prefix,ex.cyclePath);
 		}
 	}
+	@SuppressWarnings("unchecked") /* exception classes may not be generic */
 	private static class CycleDetectedException extends Error {
 		/**
 		 * 

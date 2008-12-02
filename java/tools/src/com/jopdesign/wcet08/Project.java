@@ -27,11 +27,7 @@ import org.apache.bcel.classfile.JavaClass;
 import org.apache.bcel.classfile.Method;
 import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.MethodGen;
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
-import org.apache.log4j.PatternLayout;
-
 import com.jopdesign.build.AppInfo;
 import com.jopdesign.build.AppVisitor;
 import com.jopdesign.build.ClassInfo;
@@ -134,7 +130,9 @@ public class Project {
 	public String getName() {
 		return config.getProjectName();
 	}
-
+	public String getTargetName() {
+		return config.getTargetName();
+	}
 	public static AppInfo loadApp() throws IOException {
 		AppInfo appInfo;
 		Config config = Config.instance();
@@ -206,7 +204,7 @@ public class Project {
 		com.jopdesign.dfa.framework.AppInfo program = getDfaProgram();
 		topLevelLogger.info("Receiver analysis");
 		ReceiverTypes recTys = new ReceiverTypes();
-		Map receiverResults = program.runAnalysis(recTys);
+		Map<?,?> receiverResults = program.runAnalysis(recTys);
 		program.setReceivers(receiverResults);
 		topLevelLogger.info("Loop bound analysis");
 		dfaLoopBounds = new LoopBounds();

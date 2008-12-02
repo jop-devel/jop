@@ -18,6 +18,8 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 package com.jopdesign.wcet08.uppaal.translator;
+import java.io.File;
+
 import com.jopdesign.wcet08.Config;
 import com.jopdesign.wcet08.Option;
 
@@ -32,14 +34,17 @@ public class UppAalConfig {
 	
 	public static final String UPPAAL_ALWAYS_HIT= "uppaal-always-hit-cache";
 	public static final String UPPAAL_TIGHT_BOUNDS = "uppaal-tight-bounds";
+	public static final String UPPAAL_VERIFYTA_BINARY = "uppaal-verifier";
 	public static final Option<?>[] uppaalOptions = {
 		new Option.BooleanOption(UPPAAL_ALWAYS_HIT,
 				"assume always hit in uppaal simulation", 
 				true),
 		new Option.BooleanOption(UPPAAL_TIGHT_BOUNDS,
 				"assume all loop bounds are tight in simulation", 
-				false)
-
+				false),
+		new Option.StringOption(UPPAAL_VERIFYTA_BINARY,
+				"binary of the uppaal model-checker (verifyta)",
+				true)		
 	};
 	public UppAalConfig(Config c) {
 		this.config = c;
@@ -50,5 +55,14 @@ public class UppAalConfig {
 	public boolean assumeTightBounds() {
 		return config.getBooleanOption(UPPAAL_TIGHT_BOUNDS, false);
 	}
-	
+	public File getUppaalBinary() {
+		File f = new File(config.getOptions().getProperty(UPPAAL_VERIFYTA_BINARY));
+		if(! f.exists() || ! f.isFile()) {
+			throw new AssertionError("UppAal binary does not exist: "+f);
+		}
+		return f;
+	}
+	public static boolean hasVerifier() {
+		return (Config.instance().getOptions().containsKey(UPPAAL_VERIFYTA_BINARY));
+	}
 }

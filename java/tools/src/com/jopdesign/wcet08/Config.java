@@ -143,7 +143,7 @@ public class Config {
 		optionSetInit();
 		return optionSet.get(key);
 	}
-	public static void addOptions(Option[] options) {
+	public static void addOptions(Option<?>[] options) {
 		optionSetInit();
 		for(Option<? extends Object> opt : options) {
 			optionSet.put(opt.key,opt);
@@ -153,7 +153,7 @@ public class Config {
 	/**
 	 * TODO: We could add more elaborated option type (for classpath, methods, etc.) to improve error handling
 	 */
-	public static final Option[] baseOptions =
+	public static final Option<?>[] baseOptions =
 	{ 
 		new Option.StringOption(ROOT_CLASS_NAME,"the name of the class containing the method to be analyzed",false),
 		new Option.StringOption(ROOT_METHOD_NAME,"the name (and optionally signature) of the method to be analyzed","measure"),
@@ -193,7 +193,7 @@ public class Config {
 	protected Config() { 
 		theConfig = this; /* avoid potential recursive loop */
 		options = new Properties();
-		for(Entry e : System.getProperties().entrySet()) {
+		for(Entry<?,?> e : System.getProperties().entrySet()) {
 			options.put(e.getKey(),e.getValue());
 		}
 		defaultAppender = new ConsoleAppender(new PatternLayout("[%c{1}] %m\n"),"System.err");
@@ -302,7 +302,7 @@ public class Config {
 	}
 	
 	public void checkOptions() throws BadConfigurationException {
-		for(Option o : Config.optionList) {
+		for(Option<?> o : Config.optionList) {
 			if(! o.isOptional() && ! this.hasProperty(o.key)) {
 				throw new BadConfigurationException("Missing Option: "+o.key);
 			}
@@ -322,13 +322,16 @@ public class Config {
 			if(getProperty(PROJECT_NAME) != null) {
 				this.projectName = getProperty(PROJECT_NAME); 
 			} else {
-				this.projectName = sanitizeFileName(this.getRootClassName()+"_"+this.getRootMethodName());
+				this.projectName = getTargetName();
 			}
 		}
 		return projectName;
 	}
 	public void setProjectName(String name) {
 		this.projectName = name;
+	}
+	public String getTargetName() {
+		return sanitizeFileName(this.getRootClassName()+"_"+this.getRootMethodName());		
 	}
 
 	public String getRootMethodName() {
@@ -465,7 +468,7 @@ public class Config {
 	public Properties getOptions() {
 		Properties validOptions = new Properties();
 		for(Entry<Object,Object> e : options.entrySet()) {
-			if(null != this.getOptionSpec((String)e.getKey())) {
+			if(null != getOptionSpec((String)e.getKey())) {
 				validOptions.put(e.getKey(),e.getValue());				
 			}
 		}

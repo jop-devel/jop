@@ -148,7 +148,7 @@ public class TopOrder<V,E> {
 	/**
 	 * @return the {@link Dominators} of the graph
 	 */
-	public Dominators getDominators() {
+	public Dominators<V,E> getDominators() {
 		return this.dominators;
 	}
 	

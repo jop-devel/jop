@@ -17,7 +17,7 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-package com.jopdesign.wcet08.uppaal.translator;
+package com.jopdesign.wcet08.uppaal;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -31,6 +31,8 @@ import com.jopdesign.wcet08.frontend.CallGraph;
 import com.jopdesign.wcet08.uppaal.model.DuplicateKeyException;
 import com.jopdesign.wcet08.uppaal.model.XmlBuilder;
 import com.jopdesign.wcet08.uppaal.model.XmlSerializationException;
+import com.jopdesign.wcet08.uppaal.translator.MethodBuilder;
+import com.jopdesign.wcet08.uppaal.translator.SystemBuilder;
 
 public class Translator {
 	private static final Logger logger = Logger.getLogger(Translator.class);
@@ -51,7 +53,7 @@ public class Translator {
 		sys = new SystemBuilder(
 				project.getName(), 
 				2, 2,  /* FIXME: read from config */
-				callGraph.getMaxHeight()+2,
+				callGraph.getMaxHeight(),
 				impls.size());
 		/* Translate methods */
 		for(MethodInfo mi : impls) {
@@ -66,14 +68,6 @@ public class Translator {
 		sys.buildSystem();
 		return sys;
 	}
-
-	/* TODO: Bogus Execution time bounds 
-	 * Loop.java: 1553 (correct)
-	 * Method.java, without measurement: 12260 (correct)
-	 * Method.java: 12304 (correct)
-	 * Method2.java: 13890 (correct) / 21566 (always chache miss)
-	 * 
-	 * */
 	public void writeOutput() throws 
 		XmlSerializationException, FileNotFoundException {
 		String xml = XmlBuilder.domToString(sys.toXML());
@@ -101,11 +95,11 @@ public class Translator {
 	}
 
 	public File getModelFile() {
-		return Config.instance().getOutFile(project.getName()+".xml");
+		return Config.instance().getOutFile(project.getTargetName()+".xml");
 	}
 
 	public File getQueryFile() {
-		return Config.instance().getOutFile(project.getName()+".q");
+		return Config.instance().getOutFile(project.getTargetName()+".q");
 	}
 
 }

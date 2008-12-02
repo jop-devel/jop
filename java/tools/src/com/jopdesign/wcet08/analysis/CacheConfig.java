@@ -42,7 +42,7 @@ public class CacheConfig {
 	public static final String BLOCK_SIZE_WORDS = "cache-block-size-words";
 	private static final int DEFAULT_BLOCK_WORDS = 64;
 
-	public static final Option[] cacheOptions = {
+	public static final Option<?>[] cacheOptions = {
 		new Option.EnumOption<CacheApproximation>(CACHE_APPROX,"cache approximation for var block cache", CacheApproximation.ANALYSE_REACHABLE),
 		new Option.IntegerOption(CACHE_BLOCKS,"number of cache blocks",DEFAULT_NUM_CACHE_BLOCKS),
 		new Option.IntegerOption(BLOCK_SIZE_WORDS,"size of cache blocks in bytes",DEFAULT_BLOCK_WORDS)

@@ -245,10 +245,10 @@ public class LayoutCFG {
 		}
 		/* 3rd pass */		
 		transitionLayout();		
-		for(Location l: template.getLocations()) {
+//		for(Location l: template.getLocations()) {
 //			System.err.println("Loc: "+l);			
 //			System.err.println("Pos: "+l.getCoords());
-		}
+//		}
 	}
 	/* set and record the y-coordinate of a location. */
 	private void setYCoord(Location loc, int y) {

@@ -36,7 +36,6 @@ import com.jopdesign.wcet08.graphutils.TopOrder.BadGraphException;
 import static junit.framework.Assert.*;
 public class GraphTopologyTest {
 	public static class AnalysisNodeLabel extends DefaultNodeLabeller<String> {
-		private DirectedGraph<String, DefaultEdge> graph;
 		private TopOrder<String, DefaultEdge> to;
 		private LoopColoring<String, DefaultEdge> lc;
 		private Dominators<String, DefaultEdge> doms;
@@ -45,7 +44,6 @@ public class GraphTopologyTest {
 				TopOrder<String, DefaultEdge> topOrder,
 				Dominators<String, DefaultEdge> doms,
 				LoopColoring<String, DefaultEdge> loopColoring) {
-			graph = g;
 			to = topOrder;
 			lc = loopColoring;
 			this.doms = doms;
@@ -68,13 +66,11 @@ public class GraphTopologyTest {
 	}
 	public static class AnalysisEdgeLabeller implements DOTLabeller<DefaultEdge> {
 
-		private DirectedGraph<String, DefaultEdge> graph;
 		private LoopColoring<String, DefaultEdge> lc;
 
 		public AnalysisEdgeLabeller(
 				DirectedGraph<String, DefaultEdge> g,
 				LoopColoring<String, DefaultEdge> loopColoring) {
-			graph = g;
 			lc = loopColoring;
 		}
 

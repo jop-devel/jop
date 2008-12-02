@@ -9,9 +9,16 @@ Little messy cause of prototyping right now
 [REFACTOR_REPORT] 
 Clean up the report package
 
+[REFACTOR_CONFIG]
+Split into library and base config
+
 [UPPAAL_CACHE]
 Add cache simulation (assuming cash flush) to UppAal
-Depends: UPPAAL_PORT, flush cash
+Depends: flush cash
+
+[UPPAAL_JAVA_IMPL_BYTECODE]
+Java implemented Bytecodes should be replaced in a preprocessing step to work for 
+UppAal too
 
 [NO THROW HACK] 
 We do not add f_*throw, f*_new and f*_newarray calls to the callgraph, 

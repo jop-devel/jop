@@ -1,6 +1,5 @@
 package com.jopdesign.wcet08.uppaal.model;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Vector;
 

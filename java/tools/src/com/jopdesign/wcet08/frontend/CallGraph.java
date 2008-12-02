@@ -21,10 +21,12 @@ package com.jopdesign.wcet08.frontend;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
 
@@ -133,11 +135,6 @@ public class CallGraph {
 	 */
 	public abstract class CallGraphNode {
 		/**
-		 * the maximum height of the subgraph rooted at this note
-		 * (excluding abstract nodes). 
-		 */
-		protected int maxHeight;
-		/**
 		 * query whether the node is abstract (interface node)
 		 * @return true if the node refers to a method interface rather than an implementation
 		 */
@@ -158,12 +155,10 @@ public class CallGraph {
 		public abstract void build();
 
 		protected void buildRecursive() {
-			maxHeight = 0;
 			for(DefaultEdge e : callGraph.outgoingEdgesOf(this)) {
 				CallGraphNode target = callGraph.getEdgeTarget(e);
 				if(hasBeenBuild(target)) continue;
 				callGraph.getEdgeTarget(e).build();
-				maxHeight = Math.max(callGraph.getEdgeTarget(e).maxHeight,maxHeight);
 			}
 		}
 	}
@@ -194,7 +189,6 @@ public class CallGraph {
 				cgBuilderVisitor.visitInstruction(i);
 			}
 			super.buildRecursive();
-			maxHeight = maxHeight + 1;
 		}
 		@Override public String toString() {
 			return method.getFQMethodName();
@@ -360,7 +354,7 @@ public class CallGraph {
 	 * @return
 	 */
 	public boolean isLeafNode(MethodRef ref) {
-		return this.getNode(ref).maxHeight == 1;
+		return this.callGraph.outDegreeOf(getNode(ref)) == 0;
 	}
 	/**
 	 * Get the maximum height of the call stack.
@@ -369,7 +363,52 @@ public class CallGraph {
 	 * is the maximum height of its children + 1. <p>
 	 * @return
 	 */
-	public int getMaxHeight() {
-		return this.rootNode.maxHeight;
+	public Vector<CallGraphNode> getMaximalCallStack() {
+		Map<CallGraphNode, Integer> depth = new HashMap<CallGraphNode,Integer>();
+		HashMap<CallGraphNode, CallGraphNode> prev = new HashMap<CallGraphNode, CallGraphNode>();
+		CallGraphNode deepestLeaf = rootNode;
+
+		TopologicalOrderIterator<CallGraphNode, DefaultEdge> toIter =
+			new TopologicalOrderIterator<CallGraphNode, DefaultEdge>(callGraph);
+		depth.put(rootNode, 0);
+		int maxDepth = 0;
+		Set<CallGraphNode> visited = new HashSet<CallGraphNode>();
+		while(toIter.hasNext()) {
+			CallGraphNode n = toIter.next();
+			visited.add(n);
+			int thisDepth = depth.get(n);
+			for(DefaultEdge e :callGraph.outgoingEdgesOf(n)) {
+				CallGraphNode target = callGraph.getEdgeTarget(e);
+				if(visited.contains(target)) {
+					throw new AssertionError("Bad implementation of topological order iterator in jgrapht ?");
+				}
+				int oldDepth;
+				{
+					Integer tmp = depth.get(target);
+					oldDepth = tmp == null ? 0 : tmp.intValue();
+				}
+				if(thisDepth+1 > oldDepth) {
+					depth.put(target,thisDepth+1);
+					prev.put(target,n);
+					if(thisDepth + 1 > maxDepth) {
+						maxDepth = thisDepth + 1;
+						deepestLeaf = target;
+					}
+				}
+			}			
+		}
+		Vector<CallGraphNode> maxCallStack = new Vector<CallGraphNode>();
+		CallGraphNode n = deepestLeaf;
+		while(prev.containsKey(n)) {
+			maxCallStack.add(n);
+			n = prev.get(n);
+		}
+		Collections.reverse(maxCallStack);
+		return maxCallStack;
 	}
+
+	 public int getMaxHeight() {
+		return this.getMaximalCallStack().size();
+	}
+	
 }

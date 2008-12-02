@@ -103,7 +103,7 @@ public class Report {
 		this.rootReportEntry.addPage(name,link);
 	}
 	
-	public void generateFile(String templateName,File outFile, Map ctxMap) throws Exception {
+	public void generateFile(String templateName,File outFile, Map<String, Object> ctxMap) throws Exception {
 		generateFile(templateName,outFile,new VelocityContext(ctxMap));
 	}
 	/**
@@ -185,6 +185,7 @@ public class Report {
 	public void generateInfoPages() throws IOException {
 		this.addStat("#classes", project.getCallGraph().getClassInfos().size());
 		this.addStat("#methods", project.getCallGraph().getImplementedMethods().size());
+		this.addStat("max call stack ", project.getCallGraph().getMaximalCallStack());
 		generateInputOverview();
 		this.addPage("details",null);
 		for(MethodInfo m : project.getCallGraph().getImplementedMethods()) {

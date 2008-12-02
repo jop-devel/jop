@@ -19,7 +19,6 @@
 */
 package com.jopdesign.wcet08.uppaal.translator;
 
-import java.text.MessageFormat;
 import java.util.Hashtable;
 import java.util.Map.Entry;
 
@@ -74,7 +73,7 @@ public class SystemBuilder {
 		StringBuilder sys = new StringBuilder();
 		/* Create processes */
 		for(Entry<Template,Integer> tmpl : templates.entrySet()) {
-			sys.append(MessageFormat.format("M{0} = {1}() ;\n", 
+			sys.append(String.format("M%s = %s() ;\n", 
 					   tmpl.getValue(), tmpl.getKey().getId()));
 		}
 		/* Instantiate processes */

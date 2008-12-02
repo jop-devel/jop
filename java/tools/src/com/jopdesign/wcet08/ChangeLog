@@ -2,6 +2,11 @@
 
 Dez 08
 ---------
+- 02/12/08: Do not use MessageFormat in the uppaal builder - it should only be used for
+            UI messages
+- 02/12/08: Add WcetSearch to uppaal - binary search using verifyta
+- 02/12/08: Fix CallGraph.maxHeight
+
 - 01/12/08: Added ExecHelper for reusable parts in analyzer executables
 - 01/12/08: Import UppAal translation (wcet08.uppaal.translation)
 - 01/12/08: Import UppAal XML model (wcet08.uppaal.model)

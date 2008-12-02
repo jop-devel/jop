@@ -19,12 +19,9 @@
 */
 package com.jopdesign.wcet08.uppaal.translator;
 
-import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-
-import org.jgrapht.DirectedGraph;
 
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.wcet08.Project;
@@ -55,6 +52,7 @@ import com.jopdesign.wcet08.uppaal.model.TransitionAttributes;
  */
 public class MethodBuilder implements CfgVisitor {
 	private static class NodeAutomaton extends Pair<Location,Location>{
+		private static final long serialVersionUID = 1L;
 		public NodeAutomaton(Location entry, Location exit) {
 			super(entry, exit);
 		}
@@ -190,7 +188,7 @@ public class MethodBuilder implements CfgVisitor {
 		t.getAttrs().setSync(SystemBuilder.RETURN_CHAN+"!");
 
 		this.incomingAttrs.get(n).
-			appendUpdate(MessageFormat.format("{0} := {0} - 1", 
+			appendUpdate(String.format("%1$s := %1$s - 1", 
         				 SystemBuilder.CURRENT_CALL_STACK_DEPTH)); 
 
 		return NodeAutomaton.singleton(exit);
@@ -209,13 +207,13 @@ public class MethodBuilder implements CfgVisitor {
 		Location bbNode = tBuilder.createLocation("N"+n.getId());
 		long blockWCET = cfg.basicBlockWCETEstimate(n.getBasicBlock());
 		
-		bbNode.setInvariant(MessageFormat.format("{0} <= {1}", 
+		bbNode.setInvariant(String.format("%s <= %d", 
 							TemplateBuilder.LOCAL_CLOCK, 
 							blockWCET));
 		this.incomingAttrs.get(n).
 			appendUpdate(TemplateBuilder.LOCAL_CLOCK + " := 0");
 		this.outgoingAttrs.get(n).
-			appendGuard(MessageFormat.format("{0} >= {1}", 
+			appendGuard(String.format("%s >= %d", 
 						TemplateBuilder.LOCAL_CLOCK, 
 						blockWCET));
 
@@ -226,15 +224,15 @@ public class MethodBuilder implements CfgVisitor {
 		Location inNode = tBuilder.createLocation("IN_"+n.getId());
 		Transition t = tBuilder.createTransition(na, inNode);
 		t.getAttrs()
-			.appendUpdate(MessageFormat.format("{0} := {0} + 1",
+			.appendUpdate(String.format("%1$s := %1$s + 1",
 											  SystemBuilder.CURRENT_CALL_STACK_DEPTH))
 			.setSync(SystemBuilder.INVOKE_CHAN+"!");
 		incomingAttrs.get(n)
-			.appendUpdate(MessageFormat.format("{0} := {1}", 
+			.appendUpdate(String.format("%s := %d", 
 						  					   SystemBuilder.ACTIVE_METHOD, 
 						  					   n.getFlowGraph().getId()));
 		outgoingAttrs.get(n)
-			.appendGuard(MessageFormat.format("{0} == {1}", 
+			.appendGuard(String.format("%s == %s", 
 											  SystemBuilder.CURRENT_CALL_STACK_DEPTH, 
 											  TemplateBuilder.LOCAL_CALL_STACK_DEPTH))
 			.setSync(SystemBuilder.RETURN_CHAN+"?");

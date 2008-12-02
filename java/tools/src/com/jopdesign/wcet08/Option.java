@@ -75,21 +75,20 @@ public abstract class Option<T> {
 			Long.parseLong(s);			
 		}		
 	}
-	public static class EnumOption<T extends Enum> extends Option<T> {
+	public static class EnumOption<T extends Enum<T>> extends Option<T> {
 		public EnumOption(String key, String descr, T def) {
 			super(key,descr + " " + enumDescr(def), def);
 		}
-		private static<U extends Enum> String enumDescr(U v) {
+		private static<U extends Enum<U>> String enumDescr(U v) {
 			return Arrays.toString(v.getClass().getEnumConstants());
 		}
-		private static<U extends Enum> String enumDescr(Class v) {
+		private static String enumDescr(Class<?> v) {
 			return Arrays.toString(v.getEnumConstants());
 		}
 		@Override
 		public void checkFormat(String s) throws IllegalArgumentException {
 			parseEnum(s);
 		}
-		@SuppressWarnings("unchecked")
 		public T parseEnum(String s) {
 			try {
 				return (T)Enum.valueOf(this.valClass,s);
@@ -101,7 +100,7 @@ public abstract class Option<T> {
 	protected String key;
     protected String descr;
     protected boolean optional;	
-    protected Class valClass;
+    protected Class<T> valClass;
     protected T defaultValue = null;	
 
     public T getDefaultValue() {
@@ -116,11 +115,12 @@ public abstract class Option<T> {
 	public boolean isOptional() {
 		return optional;
 	}
-	protected Option(String key, Class optClass, String descr, boolean optional) {
+	protected Option(String key, Class<T> optClass, String descr, boolean optional) {
 		this.key=key;this.valClass=optClass;this.descr=descr;this.optional=optional;
 	}
+	@SuppressWarnings("unchecked")
 	public Option(String key, String descr, T defaultVal) {
-		this(key,defaultVal.getClass(),descr,true);
+		this(key,(Class<T>) defaultVal.getClass(),descr,true);
 		this.defaultValue = defaultVal;
 	}
 	public abstract void checkFormat(String s) throws IllegalArgumentException;
