@@ -1151,12 +1151,16 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 	private void doIf(InstructionHandle stmt, FlowEdge edge, Context context,
 			Map<Location, ValueMapping> in,	Map<Location, ValueMapping> result) {
 		
+		// copy input values
 		for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
 			Location l = i.next(); 
 			if (l.stackLoc < context.stackPtr-1) {
 				result.put(l, in.get(l));
 			}
-
+		}
+		// apply constraint
+		for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
+			Location l = i.next(); 
 			if (l.stackLoc == context.stackPtr-1 && in.get(l).source != null) {
 			
 				ValueMapping m = new ValueMapping(in.get(l), true);
@@ -1222,6 +1226,7 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 				
 				recordBound(stmt, context, edge, m);
 									
+				// TODO: is this really correct for all cases?
 				result.put(in.get(l).source, m);
 			}
 		}
@@ -1236,13 +1241,16 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 				constraint = in.get(l).assigned;
 			}
 		}
-		// copy and apply constraint
+		// copy input values
 		for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
 			Location l = i.next(); 
 			if (l.stackLoc < context.stackPtr-2) {
 				result.put(l, in.get(l));
 			}
-
+		}
+		// apply constraint
+		for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
+			Location l = i.next(); 
 			if (l.stackLoc == context.stackPtr-2 && in.get(l).source != null) {
 			
 				ValueMapping m = new ValueMapping(in.get(l), true);
@@ -1331,6 +1339,7 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 				
 				recordBound(stmt, context, edge, m);
 
+				// TODO: is this really correct for all cases?
 				result.put(in.get(l).source, m);
 			}
 		}
