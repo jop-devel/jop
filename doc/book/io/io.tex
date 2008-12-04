@@ -1,0 +1,32 @@
+
+\emph{TODO: add HWO description + interrupts}
+
+\subsection{The System Device}
+
+The system device contains all the logic for interrupts, CMP
+interaction, timers, and the watchdog control.
+
+The registers are as follows:
+
+\begin{table}
+    \centering
+    \begin{tabular}{cll}
+        \toprule
+        Address  & Read & Write \\
+        \midrule
+        0 & Clock counter & Interrupt enable \\
+        1 & Counter in $\mu$s & Timer interrupt in $\mu$) \\
+        2 & Interrupt number & SW interrupt \\
+        3 & --- & Watchdog \\
+        4 & Exception reason & Generate exception \\
+        5 & Lock status? & Lock request \\
+        6 & CPU ID & --- \\
+        7 & Polled in JVM startup & Start CMP \\
+        8 & --- & Interrupt mask \\
+        9 & --- & Clear pending interrupts \\
+        11 & Nr. CPUs & --- \\
+        \bottomrule
+    \end{tabular}
+    \caption{Registers in the system device.}
+    \label{tab:io:sysdev}
+\end{table}
