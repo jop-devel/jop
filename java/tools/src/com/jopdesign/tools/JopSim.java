@@ -68,13 +68,6 @@ public class JopSim {
 	static boolean log = false;
 
 	//
-	//	simulate timer interrupt
-	//
-	static int nextTimerInt;
-	static boolean intPend;
-	static boolean interrupt;
-	static boolean intEna;
-	//
 	// exception handling
 	//
 	boolean intExcept;
@@ -159,11 +152,6 @@ public class JopSim {
 		for (int i=0; i<heap; ++i) mem[i] = mem_load[i];
 		moncnt = 1;
 
-		nextTimerInt = 0;
-		intPend = false;
-		interrupt = false;
-		intEna = false;
-
 		pc = vp = 0;
 		sp = Const.STACK_OFF;
 		int ptr = readMem(1);
@@ -246,12 +234,6 @@ System.out.println(mp+" "+pc);
 		// that's an access to our scratchpad memory
 		if (addr >= Const.SCRATCHPAD_ADDRESS && addr <= Const.SCRATCHPAD_ADDRESS+MEM_TEST_OFF) {
 			return scratchMem[addr%MAX_SCRATCHPAD];
-		}
-		if (addr == Const.IO_CPU_ID) {
-			return 0;
-		}
-		if (addr == Const.IO_CPUCNT) {
-			return 1;
 		}
 		if (addr == Const.IO_EXCPT) {
 			return exceptReason;
@@ -624,13 +606,13 @@ System.out.println(mp+" "+pc);
 				//	interrupt handling
 				//	TODO: check it only every few instructions
 				//
-				if ((nextTimerInt-usCnt()<0) && !intPend) {
-					intPend = true;
-					interrupt = true;
+				if ((io.nextTimerInt-usCnt()<0) && !io.intPend) {
+					io.intPend = true;
+					io.interrupt = true;
 				}
-				if (interrupt && intEna) {
+				if (io.interrupt && io.intEna) {
 					instr = SYS_INT;
-					interrupt = false;		// reset int
+					io.interrupt = false;		// reset int
 				}
 
 			}
@@ -1379,16 +1361,14 @@ System.out.println("new heap: "+heap);
 					break;
 				case 194 :		// monitorenter
 					sp--;		// we don't use the objref
-					intEna = false;
+					io.monEnter();
 					++moncnt;
 					// noim(194);
 					break;
 				case 195 :		// monitorexit
 					sp--;		// we don't use the objref
 					--moncnt;
-					if (moncnt==0) {
-						intEna = true;
-					}
+					io.monExit();
 					// noim(195);
 					break;
 				case 196 :		// wide
@@ -1753,7 +1733,7 @@ System.out.println("new heap: "+heap);
 			System.exit(-1);
 		}
 		
-		io.setJopSimRef(js);
+		io.setJopSimRef(js, 0);
 		
 		for (int i=0; i<js.cache.cnt(); ++i) {
 			js.cache.use(i);
