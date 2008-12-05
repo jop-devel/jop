@@ -33,7 +33,11 @@ import com.jopdesign.sys.Const;
  *
  */
 public class IOSimMin {
-	
+	// must not interfere with constants (check at compile time) and
+	// within the interval [-128,-1]
+	private static final int SIM_CACHE_FLUSH = -51;
+	private static final int SIM_CACHE_COST  = -52;
+	private static final int SIM_CACHE_DUMP  = -53;
 	JopSim js;
 	//	find JVM exit
 	static String exitStr = "JVM exit!";
@@ -141,7 +145,10 @@ public class IOSimMin {
 				case Const.IO_US_CNT:
 					val = JopSim.usCnt();
 					break;
-				case 1234:
+				case SIM_CACHE_COST:
+					val = js.cacheCost;
+					break;
+				case SIM_CACHE_DUMP:
 					// trigger cache debug output
 //					cache.rawData();
 //					cache.resetCnt();
@@ -222,6 +229,9 @@ public class IOSimMin {
 					JopSim.interrupt = true;
 					JopSim.intPend = true;
 				}
+				break;
+			case SIM_CACHE_FLUSH:
+				js.cache.flushCache();
 				break;
 			default:
 		}

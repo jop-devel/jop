@@ -38,7 +38,7 @@ public class SimpleCache extends Cache {
 
 
 	int ret(int start, int len, int pc) {
-
+		this.lastHit = false;
 		loadBc(start, len);
 		return pc;
 	}
@@ -49,7 +49,7 @@ public class SimpleCache extends Cache {
 	}
 
 	int invoke(int start, int len) {
-
+		this.lastHit = false;
 		loadBc(start, len);
 		return 0;
 	}

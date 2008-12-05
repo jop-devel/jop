@@ -47,8 +47,15 @@ public class Cache {
 	int memRead = 0;
 	int memTrans = 0;
 	int cacheRead = 0;
+	
+	/* true if the last access was a hit */
+	protected boolean lastHit = true;
+	/* if true, flush the cache on the next access */
+	protected boolean flush = false;
+	/* number of bytes read at the last access */
+	int bytesLastRead;
 
-	LinkedList test = new LinkedList();
+	LinkedList<Cache> test = new LinkedList<Cache>();
 	Cache use;
 
 	// dummy constructor for child classes
@@ -95,9 +102,9 @@ public class Cache {
 		test.add(new DirectMapped(main, js, 4, 32));
 */
 //		test.add(new VarBlockCache(main, js, 1, 8, false));
-		test.add(new VarBlockCache(main, js, 4, 16, false));
+//		test.add(new VarBlockCache(main, js, 4, 16, false));
 //		test.add(new VarBlockCache(main, js, 1, 32, false));
-//		test.add(new VarBlockCache(main, js, 1, 64, false));
+		test.add(new VarBlockCache(main, js, 1, 64, false));
 //		test.add(new VarBlockCache(main, js, 2, 8, false));
 /*
 		test.add(new VarBlockCache(main, js, 2, 16, false));
@@ -105,27 +112,27 @@ public class Cache {
 		test.add(new VarBlockCache(main, js, 2, 16, true));
 		test.add(new VarBlockCache(main, js, 2, 32, true));
 */
-/*
-		test.add(new VarBlockCache(main, js, 2, 64, false));
-		test.add(new VarBlockCache(main, js, 4, 8, false));
-		test.add(new VarBlockCache(main, js, 4, 16, false));
-		test.add(new VarBlockCache(main, js, 4, 32, false));
-		test.add(new VarBlockCache(main, js, 4, 64, false));
-*/
-		use = (Cache) test.get(0);
+
+//		test.add(new VarBlockCache(main, js, 2, 64, false));
+//		test.add(new VarBlockCache(main, js, 4, 8, false));
+//		test.add(new VarBlockCache(main, js, 4, 16, false));
+//		test.add(new VarBlockCache(main, js, 4, 32, false));
+//		test.add(new VarBlockCache(main, js, 4, 64, false));
+
+		use = test.get(0);
 	}
 
 	int cnt() {
 		return test.size();
 	}
 	void use(int nr) {
-		use = (Cache) test.get(nr);
+		use = test.get(nr);
 	}
 
 
 
 	int ret(int start, int len, int pc) {
-
+		this.bytesLastRead = len;
 		return use.ret(start, len, pc);
 	}
 
@@ -135,7 +142,7 @@ public class Cache {
 	}
 
 	int invoke(int start, int len) {
-
+		this.bytesLastRead = len;
 		return use.invoke(start, len);
 	}
 
@@ -196,7 +203,10 @@ public class Cache {
 		System.out.println();
 
 	}
-
+	
+	void flushCache() {
+		use.flush=true;
+	}
 
 	/**
 	*	reset performance counter.
@@ -227,6 +237,10 @@ public class Cache {
 	int instrBytes() {
 
 		return use.cacheRead;
+	}
+	
+	boolean lastAccessWasHit() {
+		return use.lastHit;
 	}
 
 }

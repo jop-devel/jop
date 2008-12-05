@@ -64,15 +64,19 @@ public class TwoBlockCache extends Cache {
 	}
 
 	int testCache(int start, int len) {
-
-		if (start==addr[0]) {
+		this.lastHit = true;
+		if(flush) {
+			flush=false;
+			addr[0]=0;
+			addr[1]=0;
+		} else if (start==addr[0]) {
 			currentBlock = 0;
 			return 0;
 		} else if (start==addr[1]) {
 			currentBlock = 1;
 			return (MAX_BC>>1);
 		}
-
+		this.lastHit=false;
 		if (currentBlock==0) {
 			next = 1;
 		} else {

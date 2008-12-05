@@ -72,16 +72,20 @@ public class LRUBlockCache extends Cache {
 	}
 
 	int testCache(int start, int len) {
-
-		for (int i=0; i<numBlocks; ++i) {
-			if (ctag[i]==start) {	// HIT
-				lrucnt[i]++;
-				return i*MAX_BC;
+		this.lastHit = true;
+		if(flush) {
+			flush = false;
+			for(int i = 0; i < numBlocks; i++) ctag[i] = 0;
+		} else {
+			for (int i=0; i<numBlocks; ++i) {
+				if (ctag[i]==start) {	// HIT
+					lrucnt[i]++;
+					return i*MAX_BC;
+				}
 			}
 		}
-
 		// not found
-
+		this.lastHit = false;
 //
 //	LRU system
 //

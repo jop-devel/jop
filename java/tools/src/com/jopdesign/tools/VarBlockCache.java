@@ -41,7 +41,6 @@ public class VarBlockCache extends Cache {
 	boolean stackNext;
 
 	VarBlockCache(int[] main, JopSim js, int size, int num, boolean stkNxt) {
-
 		mem = main;
 		sim = js;
 		numBlocks = num;
@@ -51,15 +50,17 @@ public class VarBlockCache extends Cache {
 			mask <<= 1;
 			mask |= 1;
 		}
-		bc = new byte[MAX_BC*size];
+		bc = new byte[blockSize * numBlocks];
 		ctag = new int[numBlocks];
-		for (int i=0; i<numBlocks; ++i) {
-			ctag[i] = 0;
-		}
-
+		resetCache();
 		stackNext = stkNxt;
 	}
-
+	
+	private void resetCache() {
+		for (int i=0; i<numBlocks; ++i) {
+			ctag[i] = 0;
+		}		
+	}
 
 	int corrPc(int pc) {
 
@@ -91,26 +92,32 @@ public class VarBlockCache extends Cache {
 	}
 
 	int testCache(int start, int len) {
-
+		this.lastHit = true;
+		if(flush) {
+			flush = false;
+			resetCache();
+		}
 		for (int i=0; i<numBlocks; ++i) {
 			if (ctag[i]==start) {	// HIT
 				currentBlock = i;
-// System.out.println("hit in "+i+" off: "+(currentBlock*blockSize));
+				// System.out.println("hit in "+i+" off: "+(currentBlock*blockSize));
 				return currentBlock*blockSize;
 			}
 		}
-
+		
 		// not found
-
+		this.lastHit = false;
+		//System.out.println("Missed method: "+start);
 		currentBlock = next;
 		for (int i=0; i<=len*4/blockSize; ++i) {
 			ctag[next] = 0;				// block in use
 			++next;
 			next %= numBlocks;
-// System.out.print(i+" "+next+" - ");
+			// System.out.print(i+" "+next+" - ");
 		}
 		ctag[currentBlock] = start;		// start block
-// for (int i=0; i<4; ++i) System.out.print(ctag[i]+" "); System.out.println("next="+next+" len="+len);
+		// for (int i=0; i<4; ++i) System.out.print(ctag[i]+" "); 
+		// System.out.println("next="+next+" len="+len);
 
 		int off = currentBlock*blockSize;
 
@@ -121,7 +128,7 @@ public class VarBlockCache extends Cache {
 // a different version of loadBc !!!
 	void loadBc(int off, int start, int len) {
 
-// high byte of word is first bc!!!
+		// high byte of word is first bc!!!
 		for (int i=0; i<len; ++i) {
 			int val = sim.readInstrMem(start+i);
 			for (int j=0; j<4; ++j) {

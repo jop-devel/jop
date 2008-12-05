@@ -95,6 +95,7 @@ public class JopSim {
 	int instrCnt;
 	int clkCnt;
 	int maxSp;
+	int cacheCost;
 
 	JopSim(String fn, IOSimMin ioSim, int max) {
 		maxInstr = max;
@@ -151,6 +152,7 @@ public class JopSim {
 		instrCnt = 0;
 		clkCnt = 0;
 		maxSp = 0;
+		cacheCost = 0;
 		for (int i=0; i<256; ++i) bcStat[i] = 0;
 
 		heap = empty_heap;
@@ -459,7 +461,12 @@ System.out.println(mp+" "+pc);
 		stack[++sp] = val2;
 		stack[++sp] = val1;
 	}
-
+	void waitCache(int hiddenCycles) {
+		int penalty = WCETInstruction.calculateB(cache.lastAccessWasHit(),cache.bytesLastRead);
+		penalty = Math.max(0, penalty-hiddenCycles);
+		this.cacheCost += penalty;
+		this.clkCnt += penalty;
+	}
 	void putstatic() {
 
 		int idx = readOpd16u();
@@ -1278,15 +1285,19 @@ System.out.println(mp+" "+pc);
 				case 172 :		// ireturn
 				case 174 :		// freturn
 					ireturn();
+					waitCache(WCETInstruction.IRETURN_HIDDEN_LOAD_CYCLES);					
 					break;
 				case 173 :		// lreturn
 					lreturn();
+					waitCache(WCETInstruction.LRETURN_HIDDEN_LOAD_CYCLES);					
 					break;
 				case 175 :		// dreturn
 					lreturn();
+					waitCache(WCETInstruction.DRETURN_HIDDEN_LOAD_CYCLES);
 					break;
 				case 177 :		// return
 					vreturn();
+					waitCache(WCETInstruction.RETURN_HIDDEN_LOAD_CYCLES);
 					break;
 				case 178 :		// getstatic
 					getstatic();
@@ -1302,15 +1313,19 @@ System.out.println(mp+" "+pc);
 					break;
 				case 182 :		// invokevirtual
 					invokevirtual();
+					waitCache(WCETInstruction.INVOKE_HIDDEN_LOAD_CYCLES);
 					break;
 				case 183 :		// invokespecial
 					invokespecial();
+					waitCache(WCETInstruction.INVOKE_HIDDEN_LOAD_CYCLES);
 					break;
 				case 184 :		// invokestatic
 					invokestatic();
+					waitCache(WCETInstruction.INVOKE_HIDDEN_LOAD_CYCLES);
 					break;
 				case 185 :		// invokeinterface
 					invokeinterface();
+					waitCache(WCETInstruction.INVOKE_HIDDEN_LOAD_CYCLES);
 					break;
 				case 186 :		// unused_ba
 					noim(186);
@@ -1658,20 +1673,20 @@ System.out.println("new heap: "+heap);
 
 	void stat() {
 
-System.out.println();
-/*
-int sum = 0;
-int sumcnt = 0;
-for (int i=0; i<256; ++i) {
-	if (bcStat[i] > 0) {
-		System.out.println(bcStat[i]+"\t"+(bcStat[i]*JopInstr.cnt(i))+"\t"+JopInstr.name(i));
-		sum += bcStat[i];
-		sumcnt = bcStat[i]*JopInstr.cnt(i);
-	}
-}
-System.out.println();
-System.out.println(sum+" instructions, "+sumcnt+" cycles, "+instrBytesCnt+" bytes");
-*/
+		System.out.println();
+		/*
+		int sum = 0;
+		int sumcnt = 0;
+		for (int i=0; i<256; ++i) {
+			if (bcStat[i] > 0) {
+				System.out.println(bcStat[i]+"\t"+(bcStat[i]*JopInstr.cnt(i))+"\t"+JopInstr.name(i));
+				sum += bcStat[i];
+				sumcnt = bcStat[i]*JopInstr.cnt(i);
+			}
+		}
+		System.out.println();
+		System.out.println(sum+" instructions, "+sumcnt+" cycles, "+instrBytesCnt+" bytes");
+		 */
 		System.out.println(maxSp+" maximum sp");
 //		System.out.println(heap+" heap"); not the heap pointer anymore
 //		System.out.println();
@@ -1683,6 +1698,7 @@ System.out.println(sum+" instructions, "+sumcnt+" cycles, "+instrBytesCnt+" byte
 		System.out.println("memory word per instruction: "+
 			((float) rdMemCnt/instrCnt)+" load "+
 			((float) wrMemCnt/instrCnt)+" store");
+		System.out.println("total cache load cycles: "+this.cacheCost);
 		System.out.println();
 
 
