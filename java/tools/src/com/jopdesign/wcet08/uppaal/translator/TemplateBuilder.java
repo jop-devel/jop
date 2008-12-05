@@ -24,12 +24,13 @@ import java.util.Map;
 import java.util.Vector;
 import java.util.Map.Entry;
 
-import com.jopdesign.wcet08.Config;
 import com.jopdesign.wcet08.frontend.ControlFlowGraph.CFGNode;
 import com.jopdesign.wcet08.frontend.SourceAnnotations.LoopBound;
+import com.jopdesign.wcet08.uppaal.UppAalConfig;
 import com.jopdesign.wcet08.uppaal.model.Location;
 import com.jopdesign.wcet08.uppaal.model.Template;
 import com.jopdesign.wcet08.uppaal.model.Transition;
+import com.jopdesign.wcet08.uppaal.model.TransitionAttributes;
 
 /**
  * Builder for templates
@@ -48,10 +49,13 @@ public class TemplateBuilder {
 	}
 
 	private Template template;
-	public Template getTemplate() { return this.template; }
+	private Template getTemplate() { return this.template; }
 	
 	private Map<CFGNode, Integer>   loopIds;
 	private Vector<LoopBound> loopBounds;
+	private UppAalConfig config;
+	private Map<Location, TransitionAttributes> outgoingAttrs;
+	private Map<Location, TransitionAttributes> incomingAttrs;
 
 	/**
 	 * Build a fresh template representing a CFG.
@@ -63,7 +67,9 @@ public class TemplateBuilder {
 	 * @param map the bound of each loop in the template
 	 * @param isRootMethod whether this is the `measure' entry point
 	 */
-	public TemplateBuilder(String name, int methodNumber, Map<CFGNode, LoopBound> map, boolean isRootMethod) {
+	public TemplateBuilder(UppAalConfig c, String name, int methodNumber,
+						   Map<CFGNode, LoopBound> map) {
+		this.config = c;
 		Vector<String> parameters = new Vector<String>();
 		this.template = new Template(name,parameters);	
 
@@ -75,7 +81,8 @@ public class TemplateBuilder {
 			this.loopBounds.add(entry.getValue());
 			id = id + 1;
 		}
-
+		this.incomingAttrs = new HashMap<Location, TransitionAttributes>();
+		this.outgoingAttrs = new HashMap<Location, TransitionAttributes>();
 		initializeTemplate();
 	}
 	
@@ -87,10 +94,12 @@ public class TemplateBuilder {
 	private void initializeTemplate() {
 		getTemplate().appendDeclaration(
 				String.format("clock %s; ", LOCAL_CLOCK));
-		getTemplate().appendDeclaration(
-				String.format("int[0,%s] %s;", 
-						SystemBuilder.MAX_CALL_STACK_DEPTH, 
-						LOCAL_CALL_STACK_DEPTH));
+		if(! config.useOneChannelPerMethod()) {
+			getTemplate().appendDeclaration(
+					String.format("int[0,%s] %s;", 
+							SystemBuilder.MAX_CALL_STACK_DEPTH, 
+							LOCAL_CALL_STACK_DEPTH));
+		}
 		for(int i = 0; i < loopBounds.size(); i++ ) {
 			getTemplate().appendDeclaration(
 					String.format("const int %s = %d;", 
@@ -121,6 +130,51 @@ public class TemplateBuilder {
 		this.template.addTransition(t);
 		return t;
 	}
+	public Template getFinalTemplate() {
+		if(outgoingAttrs == null) return this.template;
+		for(Location l : template.getLocations()) {
+			TransitionAttributes in = incomingAttrs.get(l);
+			if(in != null) {
+				for(Transition t : l.getPredecessors()) {
+					t.getAttrs().addAttributes(in);
+				}
+			}
+			TransitionAttributes out = outgoingAttrs.get(l);
+			if(out != null) {
+				for(Transition t : l.getSuccessors()) {
+					t.getAttrs().addAttributes(out);
+				}
+			}
+		}
+		outgoingAttrs = incomingAttrs = null;
+		return template;
+	}
+	public TransitionAttributes getOutgoingAttrs(Location l) {
+		TransitionAttributes attrs = outgoingAttrs.get(l);
+		if(attrs == null) {
+			attrs = new TransitionAttributes();
+			outgoingAttrs.put(l,attrs);
+		}
+		return attrs;
+	}
+	public TransitionAttributes getIncomingAttrs(Location l) {
+		TransitionAttributes attrs = incomingAttrs.get(l);
+		if(attrs == null) {
+			attrs = new TransitionAttributes();
+			incomingAttrs.put(l,attrs);
+		}
+		return attrs;
+	}
+	public void waitAtLocation(Location location, long waitTime) {
+		location.setInvariant(String.format("%s <= %d", 
+				TemplateBuilder.LOCAL_CLOCK, 
+				waitTime));
+		getIncomingAttrs(location).appendUpdate(TemplateBuilder.LOCAL_CLOCK + " := 0");
+		getOutgoingAttrs(location).appendGuard(
+			String.format("%s >= %d", 
+			TemplateBuilder.LOCAL_CLOCK, 
+			waitTime));
+	}
 	public String contLoopGuard(CFGNode loop) {
 		int id = this.loopIds.get(loop);
 		return String.format("%s < %s",
@@ -128,11 +182,12 @@ public class TemplateBuilder {
 	}
 	public String exitLoopGuard(CFGNode loop) {
 		int id = this.loopIds.get(loop);
-		return String.format("%s >= %s",
-									loopVar(id), 
-									(new UppAalConfig(Config.instance()).assumeTightBounds())
-									? loopBoundConst(id)
-									: loopLowerBoundConst(id));
+		if(config.assumeTightBounds()) {
+			return String.format("%s == %s",loopVar(id),loopBoundConst(id));
+		}
+		else {
+			return String.format("%s >= %s",loopVar(id),loopLowerBoundConst(id)); 
+		}
 	}
 	public String resetLoopCounter(CFGNode loop) {
 		int id = this.loopIds.get(loop);
@@ -142,12 +197,13 @@ public class TemplateBuilder {
 		int id = this.loopIds.get(loop);
 		return String.format("%1$s := %1$s + 1",loopVar(id));
 	}
-	public String initLocalCallStackDepth() {
-		return String.format("%s := %s", 
-							LOCAL_CALL_STACK_DEPTH, 
-							SystemBuilder.CURRENT_CALL_STACK_DEPTH);
-	}
 	public void addDescription(String string) {
 		this.template.addComment(string);
+	}
+	public void onHit(Transition trans) {
+		trans.getAttrs().appendGuard("lastHit");
+	}
+	public void onMiss(Transition trans) {
+		trans.getAttrs().appendGuard("! lastHit");
 	}
 }

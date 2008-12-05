@@ -45,6 +45,9 @@ import org.apache.log4j.PropertyConfigurator;
 
 import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.MethodInfo;
+import com.jopdesign.wcet08.Option.BooleanOption;
+import com.jopdesign.wcet08.Option.EnumOption;
+import com.jopdesign.wcet08.Option.StringOption;
 
 /*    
 *  Sections:
@@ -330,7 +333,7 @@ public class Config {
 		this.projectName = name;
 	}
 	public String getTargetName() {
-		return sanitizeFileName(this.getAppClassName()+"_"+this.getMeasuredMethod());		
+		return sanitizeFileName(this.getAppClassName()+"_"+this.getMeasureTarget());		
 	}
 
 	public String getAppClassName() {
@@ -492,16 +495,26 @@ public class Config {
 		return validOptions;
 	}
 
+	public boolean getBooleanOption(BooleanOption opt) {
+		return getBooleanOption(opt.getKey(), opt.getDefaultValue());
+	}
 	public boolean getBooleanOption(String key, boolean def) {
 		String v= this.options.getProperty(key);
 		if(v == null) return def;
-		return Option.BooleanOption.parse(v);
-	
+		return Option.BooleanOption.parse(v);	
 	}
 	public int getIntOption(String key, int def) {
 		String v = this.options.getProperty(key);
 		if(v== null) return def;
 		return Integer.parseInt(v);
+	}
+	public <T extends Enum<T>> T getEnumOption(EnumOption<T> option) {
+		String e = this.options.getProperty(option.getKey());
+		if(e == null) return option.getDefaultValue();
+		else return option.parseEnum(e);
+	}
+	public File getFileOption(StringOption option) {
+		return new File(options.getProperty(option.key, option.defaultValue));
 	}
 			
 	/**

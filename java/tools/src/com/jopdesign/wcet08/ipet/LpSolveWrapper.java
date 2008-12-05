@@ -111,7 +111,7 @@ public class LpSolveWrapper<T> {
 		this.idProvider = idProvider;
 		this.lpsolve = LpSolve.makeLp(0,numVars);
 
-		lpsolve.setPrintSol(lpsolve.FALSE);
+		lpsolve.setPrintSol(LpSolve.FALSE);
 		lpsolve.setTrace(false);
 		lpsolve.setDebug(false);
 		lpsolve.setVerbose(LpSolve.SEVERE);

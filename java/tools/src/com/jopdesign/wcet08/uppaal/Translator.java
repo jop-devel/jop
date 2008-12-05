@@ -38,10 +38,11 @@ public class Translator {
 	private static final Logger logger = Logger.getLogger(Translator.class);
 
 	private Project project;
-
 	private SystemBuilder sys;
+	private UppAalConfig config;
 
 	public Translator(Project p) {
+		this.config = new UppAalConfig(Config.instance());
 		this.project = p;
 	}
 	
@@ -51,13 +52,13 @@ public class Translator {
 		List<MethodInfo> impls = callGraph.getImplementedMethods();
 		/* Create system builder */
 		sys = new SystemBuilder(
+				config,
 				project.getName(), 
-				2, 2,  /* FIXME: read from config */
 				callGraph.getMaxHeight(),
 				impls.size());
 		/* Translate methods */
 		for(MethodInfo mi : impls) {
-			MethodBuilder transl = new MethodBuilder(project,mi);
+			MethodBuilder transl = new MethodBuilder(config,project,mi);
 			if(mi.equals(project.getMeasuredMethod())) {
 				sys.addTemplate(0,transl.buildRootMethod());				
 			} else {

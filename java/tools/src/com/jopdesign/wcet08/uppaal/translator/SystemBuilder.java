@@ -24,6 +24,8 @@ import java.util.Map.Entry;
 
 import org.w3c.dom.Document;
 
+import com.jopdesign.wcet08.uppaal.UppAalConfig;
+import com.jopdesign.wcet08.uppaal.UppAalConfig.CacheSim;
 import com.jopdesign.wcet08.uppaal.model.DuplicateKeyException;
 import com.jopdesign.wcet08.uppaal.model.NTASystem;
 import com.jopdesign.wcet08.uppaal.model.Template;
@@ -37,6 +39,7 @@ public class SystemBuilder {
 	public static final String CLOCK = "t";
 	public static final String INVOKE_CHAN = "invoke";
 	public static final String RETURN_CHAN = "ret";
+	public static       String methodChannel(int i) { return "invoke_"+i; }
 	public static final String MAX_CALL_STACK_DEPTH = "max_csd";
 	public static final String NUM_METHODS = "num_methods";
 	public static final String ACTIVE_METHOD = "active_method";
@@ -46,27 +49,56 @@ public class SystemBuilder {
 	public NTASystem getNTASystem() { return system; }
 	
 	private Hashtable<Template,Integer> templates = new Hashtable<Template,Integer>();
+	private UppAalConfig config;
 	/**
 	 * Create a new top-level UPPAAL System builder
 	 * @param name               the name of the system
-	 * @param readDelay          the read delay of the processor's memory
-	 * @param writeDelay         the write delay of the processor's memory
 	 * @param maxCallStackDepth  the maximal call stack depth
 	 * @param numMethods         the number of methods of the program
 	 */
-	public SystemBuilder(String name,
-						 int readDelay, int writeDelay, int maxCallStackDepth, int numMethods) {
+	public SystemBuilder(UppAalConfig config, String name,int maxCallStackDepth, int numMethods) {
+		this.config = config;
 		this.system = new NTASystem(name);
-		initialize(readDelay, writeDelay, maxCallStackDepth, numMethods);
+		initialize(maxCallStackDepth, numMethods);
 	}
-	private void initialize(int readDelay, int writeDelay, int maxCallStackDepth, int numMethods) {
+	private void initialize(int maxCallStackDepth, int numMethods) {
 		system.appendDeclaration("clock " + CLOCK +";");
 		system.appendDeclaration("const int " + MAX_CALL_STACK_DEPTH + " = "+maxCallStackDepth+";"); 
 		system.appendDeclaration("const int " + NUM_METHODS + " = "+numMethods+";"); 
-		system.appendDeclaration("chan "+INVOKE_CHAN+";");
-		system.appendDeclaration("chan "+RETURN_CHAN+";");
-		system.appendDeclaration("int[0,"+ NUM_METHODS+ "] "+ ACTIVE_METHOD  +";");
-		system.appendDeclaration("int[0,"+ MAX_CALL_STACK_DEPTH +"] "+CURRENT_CALL_STACK_DEPTH+";");
+		if(config.useOneChannelPerMethod()) {
+			for(int i = 1; i < numMethods; i++) {
+				system.appendDeclaration("chan "+methodChannel(i)+";");				
+			}
+		} else {
+			system.appendDeclaration("chan "+INVOKE_CHAN+";");
+			system.appendDeclaration("chan "+RETURN_CHAN+";");
+			system.appendDeclaration("int[0,"+ NUM_METHODS+ "] "+ ACTIVE_METHOD  +";");
+			system.appendDeclaration("int[0,"+ MAX_CALL_STACK_DEPTH +"] "+CURRENT_CALL_STACK_DEPTH+";");
+		}
+		// FIXME: Prototype. Refactor cache strategies into classes later.
+		if(config.getCacheSim() == CacheSim.TWO_BLOCK) {
+			system.appendDeclaration(String.format("int[0,%s-1] s1;",NUM_METHODS));
+			system.appendDeclaration(String.format("int[0,%s-1] s2;",NUM_METHODS));
+			system.appendDeclaration(String.format("bool next_is_s1;"));
+			system.appendDeclaration(String.format("bool lastHit;"));
+			system.appendDeclaration(
+					"void access_cache(int mid) {\n"+
+					"if(s1 == mid) {\n"+
+					"	next_is_s1 = false;\n"+
+					"	lastHit = true;	\n"+
+					"} else if(s2 == mid) {\n"+
+					"	next_is_s1 = true;\n"+
+					"	lastHit = true;\n"+
+					"} else if(next_is_s1) {\n"+
+					"	next_is_s1 = false;\n"+
+					"	s1=mid;\n"+
+					"	lastHit = false;\n"+
+					"} else {\n"+
+					"	next_is_s1 = true;\n"+
+					"	s2=mid;\n"+
+					"	lastHit = false;\n"+
+					"}}");
+		}		
 	}
 	
 	public void buildSystem() {

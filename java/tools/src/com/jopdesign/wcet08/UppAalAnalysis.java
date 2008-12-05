@@ -25,8 +25,8 @@ import java.io.IOException;
 
 import org.apache.log4j.Logger;
 import com.jopdesign.wcet08.uppaal.Translator;
+import com.jopdesign.wcet08.uppaal.UppAalConfig;
 import com.jopdesign.wcet08.uppaal.WcetSearch;
-import com.jopdesign.wcet08.uppaal.translator.UppAalConfig;
 
 public class UppAalAnalysis {
 	private static final String CONFIG_FILE_PROP = "config";
@@ -71,8 +71,11 @@ public class UppAalAnalysis {
 			WcetSearch search = new WcetSearch(translator.getModelFile());
 			long wcet;
 			try {
+				long start = System.nanoTime();
 				wcet = search.searchWCET();
-				tlLogger.info("Found WCET bound (always hit): "+wcet);
+				long end = System.nanoTime();				
+				System.out.println("wcet: "+wcet);
+				System.out.println("solvertime: "+((double)(end-start))/1E9);
 			} catch (IOException e) {
 				exec.logException(" binary searching for WCET using UppAal", e);
 			}

@@ -328,7 +328,7 @@ public class SimpleAnalysis {
 						appInfo.getFlowGraph(invoked));				
 			} else if (cacheMode == CacheApproximation.ANALYSE_REACHABLE) {
 				cacheCost = totalCacheMissPenalty(invoked) + 
-							getReturnMissCost(appInfo.getFlowGraph(invoker));
+							BlockWCET.getMissOnReturnCost(appInfo.getFlowGraph(invoker));
 				recursiveMode = CacheApproximation.ALWAYS_HIT;				
 			}
 			cost.addNonLocalCost(computeWCET(invoked, recursiveMode).getCost());
@@ -351,16 +351,9 @@ public class SimpleAnalysis {
 	 * @return the maximal cache miss penalty for the invoke/return
 	 */
 	private long getInvokeReturnMissCost(ControlFlowGraph invoker, ControlFlowGraph invoked) {
-		int invokedWords = bytesToWords(invoked.getNumberOfBytes());
-		int invokedCost = Math.max(0, WCETInstruction.calculateB(false, invokedWords) - 
-									  WCETInstruction.INVOKE_HIDDEN_LOAD_CYCLES);
-		return getReturnMissCost(invoker)+invokedCost;
+		return BlockWCET.getMissOnInvokeCost(invoked)+BlockWCET.getMissOnReturnCost(invoker);
 	}
-	private long getReturnMissCost(ControlFlowGraph invoker) {
-		int invokerWords = bytesToWords(invoker.getNumberOfBytes());
-		return Math.max(0,WCETInstruction.calculateB(false, invokerWords) - 
-				          WCETInstruction.MIN_HIDDEN_LOAD_CYCLES);		
-	}
+	
 	/**
 	 * Compute the maximal total cache-miss penalty for <strong>invoking and executing</strong>
 	 * m.
@@ -435,11 +428,7 @@ public class SimpleAnalysis {
 
 	private long requiredNumberOfBlocks(MethodInfo m) {
 		int M = config.blockSizeInWords();
-		int mWords = bytesToWords(appInfo.getFlowGraph(m).getNumberOfBytes());
+		int mWords = BlockWCET.bytesToWords(appInfo.getFlowGraph(m).getNumberOfBytes());
 		return ((mWords+M-1) / M);
-	}
-
-	private static int bytesToWords(int b) {
-		return (b+3)/4;
 	}
 }

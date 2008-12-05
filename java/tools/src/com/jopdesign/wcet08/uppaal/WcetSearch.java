@@ -12,7 +12,6 @@ import java.text.MessageFormat;
 import org.apache.log4j.Logger;
 
 import com.jopdesign.wcet08.Config;
-import com.jopdesign.wcet08.uppaal.translator.UppAalConfig;
 
 /**
  * Binary search for WCET using UppAal

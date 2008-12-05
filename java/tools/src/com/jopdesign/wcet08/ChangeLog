@@ -2,6 +2,10 @@
 
 Dez 08
 ---------
+
+- 05/12/08: Add ALWAYS_HIT, ALWAYS_MISS and 2 block LRU cache simulation to UppAal.
+
+- 05/12/08: Measure time spend in lp_solve's solve method
 - 05/12/08: Seperate concept of application and method to be measured:
 	        We now have a app-class (containing the application's main method) and
             a target-method (method to be measured, may be in a different class).

@@ -10,6 +10,8 @@ import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InvokeInstruction;
 import org.apache.bcel.generic.RETURN;
 import org.jgrapht.DirectedGraph;
+
+import com.jopdesign.wcet08.analysis.BlockWCET;
 import com.jopdesign.wcet08.frontend.ControlFlowGraph.BasicBlockNode;
 import com.jopdesign.wcet08.frontend.ControlFlowGraph.CFGEdge;
 import com.jopdesign.wcet08.frontend.ControlFlowGraph.CFGNode;
@@ -100,7 +102,7 @@ public class CFGExport {
 			}
 			nodeInfo.append(infoHeader);
 			nodeInfo.append("{"+codeBlock.getNumberOfBytes()+" By, ");
-			nodeInfo.append(flowGraph.basicBlockWCETEstimate(codeBlock)+" Cyc");
+			nodeInfo.append(BlockWCET.basicBlockWCETEstimate(codeBlock)+" Cyc");
 			if(loops.getHeadOfLoops().contains(n)) {
 				nodeInfo.append(", LOOP "+n.getId()+"/"+flowGraph.getLoopBounds().get(n));
 			}

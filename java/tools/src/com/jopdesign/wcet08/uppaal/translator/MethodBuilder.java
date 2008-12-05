@@ -25,6 +25,7 @@ import java.util.Set;
 
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.wcet08.Project;
+import com.jopdesign.wcet08.analysis.BlockWCET;
 import com.jopdesign.wcet08.frontend.ControlFlowGraph;
 import com.jopdesign.wcet08.frontend.WcetAppInfo;
 import com.jopdesign.wcet08.frontend.ControlFlowGraph.BasicBlockNode;
@@ -36,6 +37,7 @@ import com.jopdesign.wcet08.frontend.ControlFlowGraph.InvokeNode;
 import com.jopdesign.wcet08.graphutils.FlowGraph;
 import com.jopdesign.wcet08.graphutils.Pair;
 import com.jopdesign.wcet08.graphutils.LoopColoring.IterationBranchLabel;
+import com.jopdesign.wcet08.uppaal.UppAalConfig;
 import com.jopdesign.wcet08.uppaal.model.Location;
 import com.jopdesign.wcet08.uppaal.model.Template;
 import com.jopdesign.wcet08.uppaal.model.Transition;
@@ -51,6 +53,64 @@ import com.jopdesign.wcet08.uppaal.model.TransitionAttributes;
  *
  */
 public class MethodBuilder implements CfgVisitor {
+	private abstract class SyncBuilder {
+		public abstract void methodEntry(Location entry);
+		public abstract void methodExit(Location exit, Transition entryToExit);
+		public abstract Location invokeMethod(InvokeNode n, Location basicBlockExit);
+	}
+	private class SyncViaVariables extends SyncBuilder {
+		public void methodEntry(Location entry) {
+			tBuilder.getOutgoingAttrs(entry)
+			.appendGuard(getId() + " == " + SystemBuilder.ACTIVE_METHOD)
+			.appendUpdate(String.format("%s := %s", 
+							TemplateBuilder.LOCAL_CALL_STACK_DEPTH, 
+							SystemBuilder.CURRENT_CALL_STACK_DEPTH))
+			.setSync(SystemBuilder.INVOKE_CHAN+"?");			
+		}
+		public void methodExit(Location exit, Transition exitToEntry) {
+			exitToEntry.getAttrs().setSync(SystemBuilder.RETURN_CHAN+"!");
+			tBuilder.getIncomingAttrs(exit).
+				appendUpdate(String.format("%1$s := %1$s - 1", 
+	        				 SystemBuilder.CURRENT_CALL_STACK_DEPTH)); 
+			
+		}
+		public Location invokeMethod(InvokeNode n, Location basicBlockExit) {
+			Location inNode = tBuilder.createLocation("IN_"+n.getId());
+			tBuilder.getIncomingAttrs(inNode)
+				.appendUpdate(String.format("%1$s := %1$s + 1",
+												  SystemBuilder.CURRENT_CALL_STACK_DEPTH))
+				.setSync(SystemBuilder.INVOKE_CHAN+"!");
+			tBuilder.getIncomingAttrs(basicBlockExit)
+				.appendUpdate(String.format("%s := %d", 
+							  					   SystemBuilder.ACTIVE_METHOD, 
+							  					   n.receiverFlowGraph().getId()));
+			tBuilder.getOutgoingAttrs(inNode)
+				.appendGuard(String.format("%s == %s", 
+												  SystemBuilder.CURRENT_CALL_STACK_DEPTH, 
+												  TemplateBuilder.LOCAL_CALL_STACK_DEPTH))
+				.setSync(SystemBuilder.RETURN_CHAN+"?");
+			return inNode;
+		}
+	}
+	private class SyncViaChannels extends SyncBuilder {
+		public void methodEntry(Location entry) {
+			tBuilder.getOutgoingAttrs(entry)
+			 .setSync(SystemBuilder.methodChannel(cfg.getId())+"?");
+		}
+		public void methodExit(Location exit, Transition exitToEntry) {
+			exitToEntry.getAttrs()
+				.setSync(SystemBuilder.methodChannel(cfg.getId())+"!");			
+		}
+		public Location invokeMethod(InvokeNode n, Location _) {
+			Location inNode = tBuilder.createLocation("IN_"+n.getId());
+			tBuilder.getIncomingAttrs(inNode)
+				.setSync(SystemBuilder.methodChannel(n.receiverFlowGraph().getId())+"!");
+			tBuilder.getOutgoingAttrs(inNode)
+				.setSync(SystemBuilder.methodChannel(n.receiverFlowGraph().getId())+"?");
+			return inNode;
+		}
+	}
+
 	private static class NodeAutomaton extends Pair<Location,Location>{
 		private static final long serialVersionUID = 1L;
 		public NodeAutomaton(Location entry, Location exit) {
@@ -66,10 +126,11 @@ public class MethodBuilder implements CfgVisitor {
 	private ControlFlowGraph cfg;
 	private TemplateBuilder tBuilder;
 	private Map<CFGNode,NodeAutomaton> nodeTemplates;
-	private Map<CFGNode,TransitionAttributes> incomingAttrs;
-	private Map<CFGNode,TransitionAttributes> outgoingAttrs;
 	private boolean isRoot;
-	public MethodBuilder(Project p, MethodInfo mi) {
+	private UppAalConfig config;
+	private SyncBuilder syncBuilder;
+	public MethodBuilder(UppAalConfig c, Project p, MethodInfo mi) {
+		this.config = c;
 		this.wAppInfo = p.getWcetAppInfo();
 		this.cfg = wAppInfo.getFlowGraph(mi);
 	}
@@ -86,27 +147,30 @@ public class MethodBuilder implements CfgVisitor {
 		return buildMethod(false);
 	}
 	private Template buildMethod(boolean isRoot) {
+		if(config.useOneChannelPerMethod()) {
+			syncBuilder = new SyncViaChannels();
+		} else {
+			syncBuilder = new SyncViaVariables();
+		}
 		this.nodeTemplates = new HashMap<CFGNode, NodeAutomaton>();
-		this.incomingAttrs = new HashMap<CFGNode, TransitionAttributes>();
-		this.outgoingAttrs = new HashMap<CFGNode, TransitionAttributes>();
 		
 		this.isRoot = isRoot;
-		this.tBuilder = new TemplateBuilder("Method"+cfg.getId(),cfg.getId(),cfg.getLoopBounds(),isRoot);
+		this.tBuilder = new TemplateBuilder(config,"Method"+cfg.getId(),cfg.getId(),
+										    cfg.getLoopBounds());
 		this.tBuilder.addDescription("Template for method "+cfg.getMethodInfo());
 		FlowGraph<CFGNode, CFGEdge> graph = cfg.getGraph();
 		/* Translate the CFGs nodes */
 		for(CFGNode node : graph.vertexSet()) {
-			this.incomingAttrs.put(node, new TransitionAttributes());
-			this.outgoingAttrs.put(node, new TransitionAttributes());
 			node.accept(this);
 		}
 		/* Translate the CFGs edges */
 		for(CFGEdge edge : graph.edgeSet()) {
 			buildEdge(edge);
 		}
-		new LayoutCFG(100,120).layoutCfgModel(tBuilder.getTemplate());
-		return tBuilder.getTemplate();
+		new LayoutCFG(100,120).layoutCfgModel(tBuilder.getFinalTemplate());
+		return tBuilder.getFinalTemplate();
 	}
+	
 	public void visitSpecialNode(DedicatedNode n) {
 		NodeAutomaton localTranslation = null;
 		switch(n.getKind()) {
@@ -125,12 +189,16 @@ public class MethodBuilder implements CfgVisitor {
 		}
 		this.nodeTemplates.put(n,localTranslation);
 	}	
+	
 	public void visitBasicBlockNode(BasicBlockNode n) {
-		this.nodeTemplates.put(n,createBasicBlock(n));
+		this.nodeTemplates.put(n,
+							   createBasicBlock(n,BlockWCET.basicBlockWCETEstimate(n.getBasicBlock())));
 	}
+	
 	public void visitInvokeNode(InvokeNode n) {
 		this.nodeTemplates.put(n,createInvoke(n));		
 	}
+	
 	private void buildEdge(CFGEdge edge) {
 		FlowGraph<CFGNode, CFGEdge> graph = cfg.getGraph();
 		Set<CFGNode> hols = cfg.getLoopColoring().getHeadOfLoops();
@@ -156,15 +224,17 @@ public class MethodBuilder implements CfgVisitor {
 		if(hols.contains(target) && ! backEdges.contains(edge)) {
 			attrs.appendUpdate(tBuilder.resetLoopCounter(target));
 		}
-		attrs.addAttributes(incomingAttrs.get(target));
-		attrs.addAttributes(outgoingAttrs.get(src));
 	}
 	
 	private NodeAutomaton createRootEntry(DedicatedNode n) {
 		Location initLoc = tBuilder.getInitial();
 		initLoc.setCommited();
-		outgoingAttrs.get(n)
-			.appendUpdate(tBuilder.initLocalCallStackDepth());
+		if(! config.useOneChannelPerMethod()) {
+			tBuilder.getOutgoingAttrs(initLoc)
+			.appendUpdate(String.format("%s := %s", 
+					TemplateBuilder.LOCAL_CALL_STACK_DEPTH, 
+					SystemBuilder.CURRENT_CALL_STACK_DEPTH));
+		}
 		return NodeAutomaton.singleton(initLoc);
 	}
 	private NodeAutomaton createRootExit(DedicatedNode n) {
@@ -176,22 +246,14 @@ public class MethodBuilder implements CfgVisitor {
 	}
 	private NodeAutomaton createEntry(DedicatedNode n) {
 		Location init = tBuilder.getInitial();
-		outgoingAttrs.get(n)
-			 .appendGuard(getId() + " == " + SystemBuilder.ACTIVE_METHOD)
-			 .appendUpdate(tBuilder.initLocalCallStackDepth())
-     		 .setSync(SystemBuilder.INVOKE_CHAN+"?");
+		syncBuilder.methodEntry(init);
 		return NodeAutomaton.singleton(init);
 	}
 	private NodeAutomaton createExit(DedicatedNode n) {
 		Location exit = tBuilder.createLocation("E");
 		exit.setCommited();
 		Transition t = tBuilder.createTransition(exit,tBuilder.getInitial());
-		t.getAttrs().setSync(SystemBuilder.RETURN_CHAN+"!");
-
-		this.incomingAttrs.get(n).
-			appendUpdate(String.format("%1$s := %1$s - 1", 
-        				 SystemBuilder.CURRENT_CALL_STACK_DEPTH)); 
-
+		syncBuilder.methodExit(exit,t);
 		return NodeAutomaton.singleton(exit);
 	}
 	private NodeAutomaton createSplit(DedicatedNode n) {
@@ -204,40 +266,49 @@ public class MethodBuilder implements CfgVisitor {
 		join.setCommited();
 		return NodeAutomaton.singleton(join);
 	}
-	private NodeAutomaton createBasicBlock(BasicBlockNode n) {
+	private NodeAutomaton createBasicBlock(BasicBlockNode n, long blockWCET) {
 		Location bbNode = tBuilder.createLocation("N"+n.getId());
-		long blockWCET = cfg.basicBlockWCETEstimate(n.getBasicBlock());
-		
-		bbNode.setInvariant(String.format("%s <= %d", 
-							TemplateBuilder.LOCAL_CLOCK, 
-							blockWCET));
-		this.incomingAttrs.get(n).
-			appendUpdate(TemplateBuilder.LOCAL_CLOCK + " := 0");
-		this.outgoingAttrs.get(n).
-			appendGuard(String.format("%s >= %d", 
-						TemplateBuilder.LOCAL_CLOCK, 
-						blockWCET));
-
+		tBuilder.waitAtLocation(bbNode,blockWCET);
 		return NodeAutomaton.singleton(bbNode);		
 	}
 	private NodeAutomaton createInvoke(InvokeNode n) {
-		Location na = createBasicBlock(n).getExit();
-		Location inNode = tBuilder.createLocation("IN_"+n.getId());
-		Transition t = tBuilder.createTransition(na, inNode);
-		t.getAttrs()
-			.appendUpdate(String.format("%1$s := %1$s + 1",
-											  SystemBuilder.CURRENT_CALL_STACK_DEPTH))
-			.setSync(SystemBuilder.INVOKE_CHAN+"!");
-		incomingAttrs.get(n)
-			.appendUpdate(String.format("%s := %d", 
-						  					   SystemBuilder.ACTIVE_METHOD, 
-						  					   n.getFlowGraph().getId()));
-		outgoingAttrs.get(n)
-			.appendGuard(String.format("%s == %s", 
-											  SystemBuilder.CURRENT_CALL_STACK_DEPTH, 
-											  TemplateBuilder.LOCAL_CALL_STACK_DEPTH))
-			.setSync(SystemBuilder.RETURN_CHAN+"?");
-		return new NodeAutomaton(na,inNode);
+		long blockWCET = BlockWCET.basicBlockWCETEstimate(n.getBasicBlock());
+		if(config.getCacheSim() == UppAalConfig.CacheSim.ALWAYS_MISS) {
+			blockWCET+= BlockWCET.getMissOnInvokeCost(n.receiverFlowGraph());
+			blockWCET+= BlockWCET.getMissOnReturnCost(cfg);
+		}		
+		Location basicBlockNode = createBasicBlock(n,blockWCET).getExit();
+		Location invokeNode = syncBuilder.invokeMethod(n,basicBlockNode);
+		Transition bbInvTrans = tBuilder.createTransition(basicBlockNode,invokeNode);			
+		if(config.isDynamicCacheSim()) {
+			Location invokeMissNode = tBuilder.createLocation("CACHEI_"+n.getId());
+			Transition bbMissTrans = tBuilder.createTransition(basicBlockNode, invokeMissNode);
+			tBuilder.createTransition(invokeMissNode, invokeNode);
+			int recID = n.receiverFlowGraph().getId();
+			tBuilder.getIncomingAttrs(basicBlockNode).appendUpdate("access_cache("+recID+")");
+			tBuilder.onHit(bbInvTrans);
+			tBuilder.onMiss(bbMissTrans);
+			tBuilder.waitAtLocation(invokeMissNode, BlockWCET.getMissOnInvokeCost(n.receiverFlowGraph()));
+		}
+		Location invokeExitNode;
+		if(config.isDynamicCacheSim()) {
+			Location cacheAccess = tBuilder.createLocation("CACHER_"+n.getId());
+			cacheAccess.setCommited();
+			Transition invAcc = tBuilder.createTransition(invokeNode, cacheAccess);
+			invAcc.getAttrs().appendUpdate("access_cache("+cfg.getId()+")");
+			invokeExitNode = tBuilder.createLocation("INVEXIT_"+n.getId());
+			invokeExitNode.setCommited();
+			Location returnMissNode = tBuilder.createLocation("CACHERMISS_"+n.getId());
+			Transition accExit = tBuilder.createTransition(cacheAccess, invokeExitNode);
+			Transition accMiss = tBuilder.createTransition(cacheAccess, returnMissNode);
+			/* missExit */ tBuilder.createTransition(returnMissNode, invokeExitNode);
+			tBuilder.onHit(accExit);
+			tBuilder.onMiss(accMiss);
+			tBuilder.waitAtLocation(returnMissNode, BlockWCET.getMissOnReturnCost(cfg));
+		} else {
+			 invokeExitNode = invokeNode;			
+		}
+		return new NodeAutomaton(basicBlockNode,invokeExitNode);
 	}
 
 	public int getId() {

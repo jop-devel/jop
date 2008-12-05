@@ -35,7 +35,6 @@ import org.apache.bcel.generic.InvokeInstruction;
 
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.dfa.analyses.LoopBounds;
-import com.jopdesign.wcet.WCETInstruction;
 import com.jopdesign.wcet08.Project;
 import com.jopdesign.wcet08.frontend.BasicBlock.FlowInfo;
 import com.jopdesign.wcet08.frontend.BasicBlock.FlowTarget;
@@ -183,7 +182,7 @@ public class ControlFlowGraph {
 		public MethodInfo getImplementedMethod() {
 			return this.impl;
 		}
-		public ControlFlowGraph getFlowGraph() {
+		public ControlFlowGraph receiverFlowGraph() {
 			if(isInterface()) return null;
 			if(this.fg == null) {
 				this.fg = appInfo.getFlowGraph(impl);
@@ -557,20 +556,6 @@ public class ControlFlowGraph {
 			sum += bb.getNumberOfBytes();
 		}
 		return sum;
-	}
-	/**
-	 * Estimate the WCET of a basic block (only local effects) for debugging purposes
-	 * @param b the basic block
-	 * @return the cost of executing the basic block, without cache misses
-	 */
-	public int basicBlockWCETEstimate(BasicBlock b) {
-		int wcet = 0;
-		for(InstructionHandle ih : b.getInstructions()) {
-			int jopcode = appInfo.getJOpCode(b.getClassInfo(), ih.getInstruction());
-			int opCost = WCETInstruction.getCycles(jopcode,false,0);						
-			wcet += opCost;
-		}
-		return wcet;
 	}
 	public void exportDOT(File file) {
 		exportDOT(file,null,null);
