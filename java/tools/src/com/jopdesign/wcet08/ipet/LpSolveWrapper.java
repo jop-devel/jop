@@ -51,7 +51,11 @@ public class LpSolveWrapper<T> {
 			this.statusCode = c;
 		}
 	}
-	private static Map<Integer,SolverStatus> readMap;
+	private static long solverTime = 0;
+	public static double getSolverTime() { return ((double)solverTime)/1.0E9; }
+	public static void resetSolverTime() { solverTime = 0; }
+
+	private static Map<Integer,SolverStatus> readMap = null;
 	public static SolverStatus getSolverStatus(int code) {
 		if(readMap == null) {
 			readMap = new TreeMap<Integer,SolverStatus>();
@@ -107,14 +111,15 @@ public class LpSolveWrapper<T> {
 		this.idProvider = idProvider;
 		this.lpsolve = LpSolve.makeLp(0,numVars);
 
-		lpsolve.setPrintSol(0);
+		lpsolve.setPrintSol(lpsolve.FALSE);
 		lpsolve.setTrace(false);
 		lpsolve.setDebug(false);
-		lpsolve.setVerbose(3);
+		lpsolve.setVerbose(LpSolve.SEVERE);
 
 		for(int i = 1; i <= numVars; i++) {
 			lpsolve.setInt(i, intVars);
 		}
+		lpsolve.setAddRowmode(true);
 	}
 	/**
 	 * add a linear constraint to the the problem
@@ -149,7 +154,11 @@ public class LpSolveWrapper<T> {
 	 * @throws LpSolveException
 	 */
 	public double solve(double[] objVec) throws LpSolveException {
+		this.lpsolve.setAddRowmode(false);
+		long start = System.nanoTime();
 		int r = this.lpsolve.solve();
+		long stop = System.nanoTime();
+		LpSolveWrapper.solverTime +=(stop-start);
 		SolverStatus st = getSolverStatus(r);
 		if(st != SolverStatus.OPTIMAL) {
 			throw new LpSolveException("Failed to solve LP problem: "+st);

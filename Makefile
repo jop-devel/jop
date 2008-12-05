@@ -160,7 +160,7 @@ MAIN_CLASS=$(P2)/$(P3)
 
 #	add more directoies here when needed
 #		(and use \; to escape the ';' when using a list!)
-TARGET_APP_SOURCE_PATH=$(TARGET_APP_PATH)$(S)$(TARGET)/src/bench
+TARGET_APP_SOURCE_PATH=$(TARGET_APP_PATH)$(S)$(TARGET)/src/bench$(S)$(TARGET)/src/app
 TARGET_APP=$(TARGET_APP_PATH)/$(MAIN_CLASS).java
 
 
@@ -579,16 +579,20 @@ wcet:
 #    program-dot ... the path to the dot binary if dot should be  invoked from java [optional]
 #    cache-blocks ... number of cache blocks [default: 16]
 #    cache-block-size ... size of cache blocks in bytes [default:  256]
+#
+# Profiling: add -Xss16M -agentlib:hprof=cpu=samples to java arguments
 wcet08:
 	-mkdir $(TARGET)/tmp
 	java $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.build.WcetPreprocess \
 		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/tmp $(MAIN_CLASS)
 	-rm -rf $(TARGET)/wcet
 	-mkdir -p $(TARGET)/wcet
-	java -Xss16M $(TOOLS_CP) com.jopdesign.wcet08.WCETAnalysis \
-		-reportdir $(TARGET)/wcet \
+	java \
+	  $(TOOLS_CP) com.jopdesign.wcet08.WCETAnalysis \
 		-cp $(TARGET)/dist/classes -sp $(TARGET_SOURCE) \
-		-rootclass $(MAIN_CLASS) -rootmethod $(WCET_METHOD)
+		-app-class $(MAIN_CLASS) -target-method $(WCET_METHOD) \
+		-reportdir $(TARGET)/wcet
+#		-dataflow-analysis yes
 	-rm -rf $(TARGET)/tmp
 
 

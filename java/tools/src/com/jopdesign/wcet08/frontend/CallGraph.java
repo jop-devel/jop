@@ -403,6 +403,7 @@ public class CallGraph {
 			maxCallStack.add(n);
 			n = prev.get(n);
 		}
+		maxCallStack.add(n);
 		Collections.reverse(maxCallStack);
 		return maxCallStack;
 	}

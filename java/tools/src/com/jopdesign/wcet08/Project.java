@@ -98,9 +98,6 @@ public class Project {
 
 	private Config config;
 
-	private String className;
-	private String methodName;
-
 	private WcetAppInfo wcetAppInfo;
 	private CallGraph callGraph;
 
@@ -113,18 +110,19 @@ public class Project {
 	public CallGraph getCallGraph() {
 		return callGraph;
 	}
-	public ClassInfo getRootClass() {
+	public ClassInfo getApplicationEntryClass() {
+		return this.wcetAppInfo.getClassInfo(config.getAppClassName());
+	}
+	public ClassInfo getMeasuredClass() {
 		return callGraph.getRootClass();
 	}
-	public MethodInfo getRootMethod() {
+	public MethodInfo getMeasuredMethod() {
 		return callGraph.getRootMethod();
 	}
 	public Report getReport() { return results; }
 	
 	public Project() {
 		this.config = Config.instance();
-		this.className = config.getRootClassName();
-		this.methodName = config.getRootMethodName();
 		this.results = new Report(this);
 	}
 	public String getName() {
@@ -144,8 +142,7 @@ public class Project {
 		}
 		appInfo.configure(config.getClassPath(),
 		                  config.getSourcePath(),
-		                  config.getRootClassName(),
-		                  config.getRootMethodName());
+		                  config.getAppClassName());
 		appInfo.addClass(WcetAppInfo.JVM_CLASS);
 		if(config.doDataflowAnalysis()) {			
 			appInfo.load();
@@ -170,7 +167,9 @@ public class Project {
 		}
 		
 		/* build callgraph */
-		callGraph = CallGraph.buildCallGraph(wcetAppInfo,className,methodName);
+		callGraph = CallGraph.buildCallGraph(wcetAppInfo,
+											 config.getMeasuredClass(),
+											 config.getMeasuredMethod());
 
 		/* Load source code annotations */
 		annotationMap = new Hashtable<ClassInfo, SortedMap<Integer,LoopBound>>();
@@ -185,9 +184,6 @@ public class Project {
 	public WcetAppInfo getWcetAppInfo() {
 		return this.wcetAppInfo;
 	}
-	public ControlFlowGraph getRootFlowGraph() {
-		return wcetAppInfo.getFlowGraph(this.getRootMethod());
-	}	
 	public SortedMap<Integer, LoopBound> getAnnotations(ClassInfo cli) {
 		return this.annotationMap.get(cli);
 	}

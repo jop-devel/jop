@@ -102,10 +102,9 @@ public class Config {
 	 * ~~~~~~~~~
 	 */
 	public static final String PROJECT_NAME = "projectname";
-	public static final String ROOT_CLASS_NAME = "rootclass";
-
-	public static final String ROOT_METHOD_NAME = "rootmethod";
-	private static final String DEFAULT_ROOT_METHOD = "measure";
+	public static final String APP_CLASS_NAME = "app-class";
+	public static final String TARGET_METHOD = "target-method";
+	private static final String DEFAULT_TARGET_METHOD = "measure";
 	
 	public static final String CLASSPATH_PROPERTY = "cp";	
 	public static final String SOURCEPATH_PROPERTY = "sp";
@@ -155,8 +154,8 @@ public class Config {
 	 */
 	public static final Option<?>[] baseOptions =
 	{ 
-		new Option.StringOption(ROOT_CLASS_NAME,"the name of the class containing the method to be analyzed",false),
-		new Option.StringOption(ROOT_METHOD_NAME,"the name (and optionally signature) of the method to be analyzed","measure"),
+		new Option.StringOption(APP_CLASS_NAME,"the name of the class containing the method to be analyzed",false),
+		new Option.StringOption(TARGET_METHOD,"the name (optionally fully qualified and/or with signature) of the method to be analyzed",DEFAULT_TARGET_METHOD),
 		new Option.StringOption(PROJECT_NAME,"name of the 'project', used when generating reports (generated if missing)",true),
 
 		new Option.StringOption(CLASSPATH_PROPERTY,"the classpath",false),
@@ -331,25 +330,43 @@ public class Config {
 		this.projectName = name;
 	}
 	public String getTargetName() {
-		return sanitizeFileName(this.getRootClassName()+"_"+this.getRootMethodName());		
+		return sanitizeFileName(this.getAppClassName()+"_"+this.getMeasuredMethod());		
 	}
 
-	public String getRootMethodName() {
-		return getProperty(ROOT_METHOD_NAME, DEFAULT_ROOT_METHOD);
-	}
-
-	public String getRootClassName() {
-		String rootClass = forceProperty(ROOT_CLASS_NAME);
-		if(rootClass.indexOf('/') > 0) return updRootClassName(rootClass);
-		else return rootClass;
-	}
-	
-	private String updRootClassName(String rc) {
-		if(rc.indexOf('/') > 0) { // sanitize
-			rc = rc.replace('/','.');
+	public String getAppClassName() {
+		String rootClass = forceProperty(APP_CLASS_NAME);
+		if(rootClass.indexOf('/') > 0) {
+			rootClass = rootClass.replace('/','.');			
+			options.put(APP_CLASS_NAME,rootClass);
 		}
-		options.put(ROOT_CLASS_NAME,rc);
-		return rc;
+		return rootClass;
+	}
+	public String getMeasureTarget() {
+		return getProperty(TARGET_METHOD, DEFAULT_TARGET_METHOD);
+	}
+	public String getMeasuredClass() {
+		return splitFQMethod(getMeasureTarget(),true);
+	}
+	public String getMeasuredMethod() {
+		return splitFQMethod(getMeasureTarget(),false);
+	}
+	private String splitFQMethod(String s, boolean getClass) {		
+		int sigIx = s.indexOf('(');
+		if(sigIx > 0) s = s.substring(0,sigIx);
+		int methIx = s.lastIndexOf('.');
+		if(getClass) {
+			if(methIx > 0) {
+				return s.substring(0,methIx);
+			} else {
+				return getAppClassName();
+			}
+		} else {
+			if(methIx > 0) {
+				return s.substring(methIx + 1);
+			} else {
+				return s;
+			}
+		}
 	}
 	
 	/** Return the configured classpath, a list of colon-separated paths
@@ -486,21 +503,7 @@ public class Config {
 		if(v== null) return def;
 		return Integer.parseInt(v);
 	}
-		
-	
-	/**
-	 * Set root class and method
-	 * @param string
-	 */
-	public void setTarget(String fqmethodname) {
-		int i = fqmethodname.lastIndexOf(".");
-		if(i < 0) throw new AssertionError("setTarget("+fqmethodname+"): not a fully qualified method name");
-		String clazz = fqmethodname.substring(0,i);
-        String method = fqmethodname.substring(i+1,fqmethodname.length());
-        this.options.put(Config.ROOT_CLASS_NAME, clazz);
-        this.options.put(Config.ROOT_METHOD_NAME, method);
-    }
-	
+			
 	/**
 	 * Consume all command line options and turn them into properties.<br/>
 	 * 

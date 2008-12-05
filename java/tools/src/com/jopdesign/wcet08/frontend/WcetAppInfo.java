@@ -278,8 +278,13 @@ public class WcetAppInfo  {
 		try {
 			String[] argvrest = Config.load(System.getProperty("config"), argv);
 			Config config = Config.instance();
-			config.setProjectName("typegraph");
-			if(argvrest.length == 1) config.setTarget(argvrest[0]);
+			config.setProjectName("typegraph");			
+			if(argvrest.length == 1) {
+				String target = argvrest[0];
+				if(target.indexOf('(') > 0) target = target.substring(0,target.indexOf('('));
+				config.getOptions().setProperty(Config.APP_CLASS_NAME, target.substring(0,target.lastIndexOf('.')));
+				config.getOptions().setProperty(Config.TARGET_METHOD,argvrest[0]);
+			}
 			config.checkPresent(Config.REPORTDIR_PROPERTY);
 			config.initializeReport();
 		} catch(MissingConfigurationError e) {
@@ -293,13 +298,13 @@ public class WcetAppInfo  {
 		AppInfo ai = null;
 		try {
 			Config config = Config.instance();
-			System.out.println("Classloader Demo: "+config.getRootClassName() + "." + config.getRootMethodName());
-			String rootClass = config.getRootClassName();
+			System.out.println("Classloader Demo: "+config.getAppClassName());
+			String rootClass = config.getAppClassName();
 			String rootPkg = rootClass.substring(0,rootClass.lastIndexOf("."));
 
 			ai = Project.loadApp();
 			WcetAppInfo wcetAi = new WcetAppInfo(ai);
-			ClassInfo ci = wcetAi.getClassInfo(config.getRootClassName());
+			ClassInfo ci = wcetAi.getClassInfo(config.getAppClassName());
 			System.out.println("Source file: "+ci.clazz.getSourceFileName());
 			System.out.println("Root class: "+ci.clazz.toString());
 			{ 
@@ -310,7 +315,7 @@ public class WcetAppInfo  {
 				dotWriter.close();			
 				InvokeDot.invokeDot(dotFile, config.getOutFile("typegraph.png"));
 			}
-			CallGraph cg = CallGraph.buildCallGraph(wcetAi, config.getRootClassName(), config.getRootMethodName());			
+			CallGraph cg = CallGraph.buildCallGraph(wcetAi, config.getMeasuredClass(), config.getMeasuredMethod());			
 			{
 				System.out.println("Writing call graph to "+config.getOutFile("callgraph.png"));
 				File dotFile = config.getOutFile("callgraph.dot");

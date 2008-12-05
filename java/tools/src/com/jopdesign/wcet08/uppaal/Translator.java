@@ -58,7 +58,7 @@ public class Translator {
 		/* Translate methods */
 		for(MethodInfo mi : impls) {
 			MethodBuilder transl = new MethodBuilder(project,mi);
-			if(mi.equals(project.getRootMethod())) {
+			if(mi.equals(project.getMeasuredMethod())) {
 				sys.addTemplate(0,transl.buildRootMethod());				
 			} else {
 				sys.addTemplate(transl.getId(),transl.buildMethod());

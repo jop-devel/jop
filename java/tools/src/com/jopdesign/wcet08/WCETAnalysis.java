@@ -31,6 +31,7 @@ import org.apache.log4j.Logger;
 import com.jopdesign.wcet08.analysis.CacheConfig;
 import com.jopdesign.wcet08.analysis.SimpleAnalysis;
 import com.jopdesign.wcet08.analysis.CacheConfig.CacheApproximation;
+import com.jopdesign.wcet08.ipet.LpSolveWrapper;
 import com.jopdesign.wcet08.report.Report;
 /**
  * WCET Analysis for JOP - Executable
@@ -78,17 +79,20 @@ public class WCETAnalysis {
 //			tlLogger.info("Stack usage: "+stackUsage.getStackSize());
 			tlLogger.info("Starting WCET analysis");
 			SimpleAnalysis an = new SimpleAnalysis(project);
-
-			long scaWCET = 	an.computeWCET(project.getRootMethod(),CacheApproximation.ANALYSE_REACHABLE).getCost();
+			long start = System.nanoTime();
+			long scaWCET = 	an.computeWCET(project.getMeasuredMethod(),CacheApproximation.ANALYSE_REACHABLE).getCost();
+			long stop  = System.nanoTime();
 			tlLogger.info("WCET 'analyze static reachable' analysis finsihed");
 			System.out.println("sca: "+scaWCET);
+			System.out.println("time: "+(((double)stop-start) / 1.0E9));
+			System.out.println("solvertime: "+LpSolveWrapper.getSolverTime());
 
 			Config.instance().setGenerateWCETReport(false);
-			long ahWCET = an.computeWCET(project.getRootMethod(),CacheApproximation.ALWAYS_HIT).getCost();			
+			long ahWCET = an.computeWCET(project.getMeasuredMethod(),CacheApproximation.ALWAYS_HIT).getCost();			
 			tlLogger.info("WCET 'always hit' analysis finsihed");
 			System.out.println("ah:"+ahWCET);
 
-			long amWCET = an.computeWCET(project.getRootMethod(),CacheApproximation.ALWAYS_MISS).getCost();
+			long amWCET = an.computeWCET(project.getMeasuredMethod(),CacheApproximation.ALWAYS_MISS).getCost();
 			tlLogger.info("WCET 'always miss' analysis finished");
 			System.out.println("am: "+amWCET);
 			project.getReport().addStat("wcet-always-hit", ahWCET);

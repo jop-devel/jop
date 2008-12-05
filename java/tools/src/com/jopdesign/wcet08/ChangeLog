@@ -2,6 +2,12 @@
 
 Dez 08
 ---------
+- 05/12/08: Seperate concept of application and method to be measured:
+	        We now have a app-class (containing the application's main method) and
+            a target-method (method to be measured, may be in a different class).
+            Useful to analyse methods which are not in the same class as the 
+            application entry point.
+
 - 02/12/08: Do not use MessageFormat in the uppaal builder - it should only be used for UI messages
 - 02/12/08: Add WcetSearch to uppaal - binary search using verifyta
 - 02/12/08: Fix CallGraph.maxHeight

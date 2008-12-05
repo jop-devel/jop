@@ -72,7 +72,7 @@ public class ExecHelper {
 			MessageFormat.format(
 				"Example:\n    java -D{0}=file:///home/jop/myconf.props {1} -{2} {3}\n",
 				 configFile, WCETAnalysis.class.getName(), 
-				 Config.ROOT_CLASS_NAME, "wcet.Method"));
+				 Config.APP_CLASS_NAME, "wcet.Method"));
 		System.err.println("OPTIONS can be configured using system properties"+
 		                   ", supplying a property file or as command line arguments");
 		for(Option<?> o : Config.availableOptions()) {

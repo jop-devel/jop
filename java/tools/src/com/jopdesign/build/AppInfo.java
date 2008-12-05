@@ -240,12 +240,10 @@ public class AppInfo implements Serializable {
 	}
 	
 	/** Configure the application (classpath, sourcepath, entry point) */
-	public void configure(String classpath, String sourcepath, 
-						  String entryClass, String entryMethod) {
+	public void configure(String classpath, String sourcepath,String entryClass) {
 		this.classpath = new ClassPath(classpath);
 		this.srcPath = sourcepath;
 		addClass(entryClass);
 		this.mainClass = entryClass;
-		this.mainMethodName = entryMethod;
 	}
 }

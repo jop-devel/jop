@@ -733,7 +733,7 @@
 			<sysproperty key="sp" value="${target-source-flattened}"/>
 			<sysproperty key="reportdir" value="${target}/wcet"/>
 			<sysproperty key="java.library.path" value=".:${java.library.path}"/>
-			<arg line="-rootclass ${main-class} -rootmethod ${wcet-method}"/>
+			<arg line="-app-class ${main-class} -target-method ${wcet-method}"/>
 		</java>
 	</target>
 

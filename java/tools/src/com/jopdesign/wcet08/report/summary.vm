@@ -22,6 +22,7 @@
 <body>
 <h1 id="h1">Summary</h1>
 <table border=1 cellpadding=5>
+  #tablerow ("application" $application)
   #tablerow ("class" $class)
   #tablerow ("method" $method)
   #tablerow ("classpath" $classpath)

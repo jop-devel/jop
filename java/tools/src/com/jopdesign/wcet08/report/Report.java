@@ -156,8 +156,9 @@ public class Report {
 	private void generateSummary() throws Exception {
 		VelocityContext context = new VelocityContext();
 		context.put( "classpath", config.getClassPath());
-		context.put( "class", config.getRootClassName());
-		context.put( "method", config.getRootMethodName());
+		context.put( "application", config.getAppClassName());
+		context.put( "class", config.getMeasuredClass());
+		context.put( "method", config.getMeasuredMethod());
 		context.put( "errorlog", config.getErrorLogFile());
 		context.put( "infolog", config.getInfoLogFile());
 		context.put( "stats", stats);
