@@ -109,7 +109,7 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 
 			//System.out.print("join: "+this+", "+val+" = ");
 			if (val != null) {
-				Interval old = new Interval(assigned);
+				final Interval old = new Interval(assigned);
 
 				// merge assigned values
 				if (cnt > ASSIGN_LIMIT) {
@@ -266,9 +266,13 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 			ValueMapping x = a.get(l);
 			ValueMapping y = b.get(l);
 			if (x != null) {
-				ValueMapping r = new ValueMapping(x, true);
-				r.join(y);
-				merged.put(l, r);
+				if (!x.equals(y)) {
+					ValueMapping r = new ValueMapping(x, true);
+					r.join(y);
+					merged.put(l, r);
+				} else {
+					merged.put(l, x);
+				}
 			} else {
 				merged.put(l, y);
 			}
@@ -326,10 +330,10 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 			Map<InstructionHandle, ContextMap<List<HashedString>, Map<Location, ValueMapping>>> state) {
 
 		Context context = new Context(input.getContext());
-		Map<Location, ValueMapping> in = input.get(context.callString);
-		Map<Location, ValueMapping> result = new HashMap<Location, ValueMapping>();
-
+		HashMap<Location, ValueMapping> in = (HashMap<Location, ValueMapping>)input.get(context.callString);
 		ContextMap<List<HashedString>, Map<Location, ValueMapping>> retval = new ContextMap<List<HashedString>, Map<Location, ValueMapping>>(context, input);
+
+		HashMap<Location, ValueMapping> result = new HashMap<Location, ValueMapping>();
 		retval.put(context.callString, result);		
 
 		Instruction instruction = stmt.getInstruction();
@@ -353,20 +357,23 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 		case Constants.BIPUSH:
 		case Constants.SIPUSH: {
 			ConstantPushInstruction instr = (ConstantPushInstruction)instruction;
-			result.putAll(in);
+			result = new HashMap<Location, ValueMapping>(in);
+			retval.put(context.callString, result);
 			int value = instr.getValue().intValue();
 			result.put(new Location(context.stackPtr), new ValueMapping(value));
 		}
 		break;
 		
 		case Constants.ACONST_NULL:
-			result.putAll(in);
+			result = in;
+			retval.put(context.callString, result);
 			break;
 			
 		case Constants.LDC:
 		case Constants.LDC_W: {
 			LDC instr = (LDC)instruction;
- 			result.putAll(in);
+ 			result = new HashMap<Location, ValueMapping>(in);
+			retval.put(context.callString, result);
 			Type type = instr.getType(context.constPool);
 			if (type.equals(Type.INT)) {
 				Integer value = (Integer)instr.getValue(context.constPool);
@@ -382,7 +389,8 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 		break;
 		
 		case Constants.LDC2_W:
-			result.putAll(in);
+			result = in;
+			retval.put(context.callString, result);
 			break;
  
 		case Constants.ISTORE_0:
@@ -409,7 +417,8 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 		case Constants.ASTORE_2:
 		case Constants.ASTORE_3:
 		case Constants.ASTORE:
-			result.putAll(in);
+			result = in;
+			retval.put(context.callString, result);
 			break;	
 
 		case Constants.ILOAD_0:
@@ -438,7 +447,8 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 		case Constants.ALOAD_2:
 		case Constants.ALOAD_3:
 		case Constants.ALOAD:
-			result.putAll(in);
+			result = in;
+			retval.put(context.callString, result);
 			break;	
 
 		case Constants.ARRAYLENGTH: {	
@@ -594,7 +604,8 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 		case Constants.GETSTATIC: {			
 			GETSTATIC instr = (GETSTATIC)instruction;
 			
-			result.putAll(in);
+			result = new HashMap<Location, ValueMapping>(in);
+			retval.put(context.callString, result);
 
 			AppInfo p = interpreter.getProgram();
 			ContextMap<String, String> receivers = p.getReceivers().get(stmt);
@@ -930,16 +941,19 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 		case Constants.I2C:
 		case Constants.I2S:
 			// TODO: is this really correct?
-			result.putAll(in);
+			result = in;
+			retval.put(context.callString, result);
 			break;
 
 		case Constants.MONITORENTER:
-			result.putAll(in);
+			result = in;
+			retval.put(context.callString, result);
 			context.syncLevel++;
 			break;
 
 		case Constants.MONITOREXIT:
-			result.putAll(in);
+			result = in;
+			retval.put(context.callString, result);
 			context.syncLevel--;
 			if (context.syncLevel < 0) {
 				System.err.println("Synchronization level mismatch.");
@@ -948,7 +962,8 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 			break;
 
 		case Constants.CHECKCAST:
-			result.putAll(in);
+			result = in;
+			retval.put(context.callString, result);
 			break;
 			
 		case Constants.INSTANCEOF: {
@@ -966,7 +981,8 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 		break;
 
 		case Constants.NEW:
-			result.putAll(in);
+			result = in;
+			retval.put(context.callString, result);
 			break;
 			
 		case Constants.NEWARRAY: {
@@ -1039,7 +1055,8 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 		break;
 
 		case Constants.GOTO:
-			result.putAll(in);
+			result = in;
+			retval.put(context.callString, result);
 			break;
 		
 		case Constants.IFNULL:
@@ -1084,7 +1101,8 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 
 		case Constants.LOOKUPSWITCH:
 		case Constants.TABLESWITCH:
-			result.putAll(in);
+			result = in;
+			retval.put(context.callString, result);
 			break;
 			
 		case Constants.INVOKEVIRTUAL:
@@ -1129,8 +1147,9 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 		break;						
 
 		default:
-			System.out.println("unknown instruction: "+stmt);
-			result.putAll(in);
+//			System.out.println("unknown instruction: "+stmt);
+			result = in;
+			retval.put(context.callString, result);
 			break;
 		}
 		
@@ -1147,7 +1166,7 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 		context.stackPtr += instruction.produceStack(context.constPool) - instruction.consumeStack(context.constPool);
 		return retval;
 	}
-
+	
 	private void doIf(InstructionHandle stmt, FlowEdge edge, Context context,
 			Map<Location, ValueMapping> in,	Map<Location, ValueMapping> result) {
 		

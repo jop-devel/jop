@@ -20,10 +20,10 @@
 
 package com.jopdesign.dfa.framework;
 
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.Map;
 
-public class ContextMap<K, V> extends LinkedHashMap<K, V> {
+public class ContextMap<K, V> extends HashMap<K, V> {
 	
 	private static final long serialVersionUID = 1L;
 	

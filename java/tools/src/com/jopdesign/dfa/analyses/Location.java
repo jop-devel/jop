@@ -22,22 +22,26 @@ package com.jopdesign.dfa.analyses;
 
 public class Location {
 	
-	public int stackLoc;
-	public String heapLoc;
+	public final int stackLoc;
+	public final String heapLoc;
+	private final int hash;
 	
 	public Location(int loc) {
 		stackLoc = loc;
 		heapLoc = "";
+		hash = stackLoc+31*heapLoc.hashCode();
 	}
 
 	public Location(String loc) {
 		stackLoc = -1;
 		heapLoc = loc;
+		hash = stackLoc+31*heapLoc.hashCode();
 	}
 
 	public Location(Location loc) {
 		stackLoc = loc.stackLoc;
 		heapLoc = loc.heapLoc;
+		hash = loc.hash;
 	}
 	
 	public boolean equals(Object o) {
@@ -47,7 +51,7 @@ public class Location {
 	}
 			
 	public int hashCode() {
-		return stackLoc+31*heapLoc.hashCode();
+		return hash;
 	}
 	
 	public String toString() {

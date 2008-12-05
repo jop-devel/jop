@@ -23,9 +23,9 @@ package com.jopdesign.dfa.analyses;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
 
 import org.apache.bcel.Constants;
 import org.apache.bcel.generic.ANEWARRAY;
@@ -57,20 +57,23 @@ import com.jopdesign.dfa.framework.AppInfo;
 public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, ReceiverTypes.TypeMapping> {
 
 	public static class TypeMapping {
-		public int stackLoc;
-		public String heapLoc;
-		public String type;
+		public final int stackLoc;
+		public final String heapLoc;
+		public final String type;
+		public final int hash;
 		
 		public TypeMapping(int l, String t) {
 			stackLoc = l;
 			heapLoc = "";
 			type = t;
+			hash = stackLoc+heapLoc.hashCode()+type.hashCode();
 		}
 
 		public TypeMapping(String l, String t) {
 			stackLoc = -1;
 			heapLoc = l;
 			type = t;
+			hash = stackLoc+heapLoc.hashCode()+type.hashCode();
 		}
 
 		public boolean equals(Object o) {
@@ -81,7 +84,7 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 		}
 				
 		public int hashCode() {
-			return stackLoc+heapLoc.hashCode()+type.hashCode();
+			return hash;
 		}
 		
 		public String toString() {
@@ -123,8 +126,7 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 			return new ContextMap<TypeMapping, TypeMapping>(s1);
 		}
 
-		ContextMap<TypeMapping, TypeMapping> result = new ContextMap<TypeMapping, TypeMapping>(new Context(s1.getContext()), new HashMap<TypeMapping, TypeMapping>());
-		result.putAll(s1);
+		ContextMap<TypeMapping, TypeMapping> result = new ContextMap<TypeMapping, TypeMapping>(new Context(s1.getContext()), new HashMap<TypeMapping, TypeMapping>(s1));
 		result.putAll(s2);
 
 		if (result.getContext().stackPtr < 0) {
@@ -177,7 +179,7 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 		switch (instruction.getOpcode()) {
 		
 		case Constants.NOP:
-			result.putAll(input);
+			result = input;
 			break;
 
 		case Constants.ACONST_NULL:
@@ -198,13 +200,13 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 		case Constants.DCONST_0:
 		case Constants.DCONST_1:
 		case Constants.LDC2_W:			
-			result.putAll(input);
+			result = input;
 			break;
 
 		case Constants.LDC: 
 		case Constants.LDC_W: {
 			LDC instr = (LDC)instruction;
- 			result.putAll(input);
+			result = new ContextMap<TypeMapping, TypeMapping>(input);
 			Type type = instr.getType(context.constPool);
 			if (type.equals(Type.STRING)) {
 				result.add(new TypeMapping(context.stackPtr, type.toString()));
@@ -347,7 +349,7 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 		case Constants.GETFIELD: {
 			
 			GETFIELD instr = (GETFIELD)instruction;
-			Set<String> receivers = new TreeSet<String>();
+			List<String> receivers = new LinkedList<String>();
 			
 			for (Iterator<TypeMapping> i = input.keySet().iterator(); i.hasNext(); ) {
 				TypeMapping m = i.next();
@@ -391,7 +393,7 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 		case Constants.PUTFIELD: {
 			
 			PUTFIELD instr = (PUTFIELD)instruction;
-			Set<String> receivers = new TreeSet<String>();
+			List<String> receivers = new LinkedList<String>();
 			
 			int fieldSize = instr.getFieldType(context.constPool).getSize();
 			
@@ -537,7 +539,7 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 
 		case Constants.AASTORE: {
 			
-			Set<String> receivers = new TreeSet<String>();
+			List<String> receivers = new LinkedList<String>();
 			
 			for (Iterator<TypeMapping> i = input.keySet().iterator(); i.hasNext(); ) {
 				TypeMapping m = i.next();
@@ -602,7 +604,7 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 
 		case Constants.AALOAD: {
 			
-			Set<String> receivers = new TreeSet<String>();
+			List<String> receivers = new LinkedList<String>();
 			
 			for (Iterator<TypeMapping> i = input.keySet().iterator(); i.hasNext(); ) {
 				TypeMapping m = i.next();
@@ -715,7 +717,7 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 		case Constants.DLOAD_2:
 		case Constants.DLOAD_3:
 		case Constants.DLOAD: 
-			result.putAll(input);
+			result = input;
 			break;
 			
 		case Constants.ALOAD_0:
@@ -760,7 +762,7 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 		case Constants.DSTORE_2:
 		case Constants.DSTORE_3:
 		case Constants.DSTORE:
-			result.putAll(input);
+			result = input;
 			break;
 		
 		case Constants.ASTORE_0:
@@ -791,7 +793,7 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 		case Constants.LCMP:
 		case Constants.DCMPL:
 		case Constants.DCMPG:
-			result.putAll(input);
+			result = input;
 			break;						
 		
 		case Constants.IFEQ:
@@ -822,7 +824,7 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 			break;
 
 		case Constants.GOTO:
-			result.putAll(input);
+			result = input;
 			break;			
 			
 		case Constants.IADD:
@@ -851,14 +853,14 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 		case Constants.FNEG:
 		case Constants.LNEG:
 		case Constants.DNEG:
-			result.putAll(input);
+			result = input;
 			break;
 
 		case Constants.LADD:
 		case Constants.LAND:
 		case Constants.LOR:
 		case Constants.LXOR:
-			result.putAll(input);
+			result = new ContextMap<TypeMapping, TypeMapping>(input);
 			doInvokeStatic("com.jopdesign.sys.JVM.f_"+stmt.getInstruction().getName()+"(IIII)J", stmt, context, input, interpreter, state, result);
 			break;
 
@@ -866,14 +868,14 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 		case Constants.LMUL:
 		case Constants.LDIV:
 		case Constants.LREM:
-			result.putAll(input);
+			result = new ContextMap<TypeMapping, TypeMapping>(input);
 			doInvokeStatic("com.jopdesign.sys.JVM.f_"+stmt.getInstruction().getName()+"(JJ)J", stmt, context, input, interpreter, state, result);
 			break;			
 			
 		case Constants.LSHL:
 		case Constants.LSHR:
 		case Constants.LUSHR:
-			result.putAll(input);
+			result = new ContextMap<TypeMapping, TypeMapping>(input);
 			doInvokeStatic("com.jopdesign.sys.JVM.f_"+stmt.getInstruction().getName()+"(III)J", stmt, context, input, interpreter, state, result);
 			break;			
 
@@ -892,7 +894,7 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 		case Constants.D2F:
 		case Constants.L2D:
 		case Constants.D2L:
-			result.putAll(input);
+			result = input;
 			break;
 			
 		case Constants.INSTANCEOF:
@@ -900,7 +902,7 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 			break;			
 
 		case Constants.CHECKCAST:
-			result.putAll(input);
+			result = input;
 			break;			
 			
 		case Constants.MONITORENTER:
@@ -924,7 +926,7 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 			int argSize = MethodHelper.getArgSize(instr, context.constPool);
 			
 			// find possible revceiver types
-			Set<String> receivers = new TreeSet<String>();
+			List<String> receivers = new LinkedList<String>();
 			for (Iterator<TypeMapping> i = input.keySet().iterator(); i.hasNext(); ) {
 				TypeMapping m = i.next();
 				if (m.stackLoc == context.stackPtr-argSize) {
@@ -1183,7 +1185,7 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 		while (modified) {
 			modified = false;
 			
-			for (Iterator<String> k = new TreeSet<String>(threads.keySet()).iterator(); k.hasNext(); ) {
+			for (Iterator<String> k = threads.keySet().iterator(); k.hasNext(); ) {
 
 				String methodName = k.next();
 

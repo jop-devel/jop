@@ -39,6 +39,10 @@ public class HashedString {
 	}
 	
 	public boolean equals(Object o) {
+		if (this == o)
+			return true;
+		if (getClass() != o.getClass())
+			return false;
 		return value.equals(o.toString());
 	}
 }
