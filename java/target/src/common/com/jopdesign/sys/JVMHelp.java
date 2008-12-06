@@ -48,19 +48,11 @@ public class JVMHelp {
 	 */
 	static void interrupt() {
 		
-//		int nr = Native.rd(Const.IO_INTNR);
 		ih[Native.rd(Const.IO_CPU_ID)][Native.rd(Const.IO_INTNR)].run();
-//		Native.wr(1, Const.IO_INT_ENA); // for sure?
+		// Enable interrupts again - we could have invoked a dummy handler
+		Native.wr(1, Const.IO_INT_ENA);
 //		wr('!');
 //		wr('0'+nr);
-//		if (nr==0) {
-//			RtThreadImpl.schedule();			
-//		} else {
-//			ih[sys.cpuId][nr].run();
-//			// enable interrupts again
-//			// each interrupt handler shall do it - we do it here for sure
-//			Native.wr(1, Const.IO_INT_ENA);
-//		}
 	}
 
 
