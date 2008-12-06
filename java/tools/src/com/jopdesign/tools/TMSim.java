@@ -31,6 +31,8 @@ package com.jopdesign.tools;
  *
  */
 public class TMSim extends JopSim {
+	
+	final static int MAGIC = -10000;
 
 	TMSim(String fn, IOSimMin ioSim, int max) {
 		super(fn, ioSim, max);
@@ -48,7 +50,7 @@ public class TMSim extends JopSim {
 
 	void writeMem(int addr, int data) {
 
-		if (addr==-10000) {
+		if (addr==MAGIC) {
 			if (data!=0) {
 				startTransaction();
 			} else {
@@ -66,7 +68,8 @@ public class TMSim extends JopSim {
 		System.out.println("start transaction");
 		++trCnt;
 		if (nestingCnt==0) {
-			savedPc = pc-1;
+			savedPc = pc-1;	
+
 		}
 		++nestingCnt;
 	}
@@ -79,6 +82,9 @@ public class TMSim extends JopSim {
 			if (simAbort>0) {
 				--simAbort;
 				pc = savedPc;
+				// also restore the stack for the write
+				stack[++sp] = 1;
+				stack[++sp] = MAGIC;
 			}
 		}
 	}
