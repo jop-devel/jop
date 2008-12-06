@@ -104,6 +104,7 @@ public class IOFactory {
 		JVMHelp.removeInterruptHandler(nr);
 	}
 	
+	// TODO: This does NOT work with CMP based interrupts!
 	static int interruptMask;
 
 	/**
