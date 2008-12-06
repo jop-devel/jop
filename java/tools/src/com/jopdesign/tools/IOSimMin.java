@@ -38,8 +38,8 @@ public class IOSimMin {
 	// must not interfere with constants (check at compile time) and
 	// within the interval [-128,-1]
 	private static final int SIM_CACHE_FLUSH = -51;
-	private static final int SIM_CACHE_COST  = -52;
-	private static final int SIM_CACHE_DUMP  = -53;
+	private static final int SIM_CACHE_COST = -52;
+	private static final int SIM_CACHE_DUMP = -53;
 
 	JopSim js;
 	// find JVM exit
@@ -48,15 +48,35 @@ public class IOSimMin {
 
 	int cpuId;
 	static int cpuCnt = 1;
+	static boolean startCMP = false;
+	static boolean globalLock = false;
 	
-	//
-	//	simulate timer interrupt
-	//
-	int nextTimerInt;
-	boolean intPend;
-	boolean interrupt;
-	boolean intEna;
+	int moncnt = 0;
 
+	/**
+	 * The interrupt register
+	 */
+	private int interrupt;
+	/**
+	 * Interrupt mask
+	 */
+	private int mask;
+	/**
+	 * The global enable
+	 */
+	private boolean intEna;
+	/**
+	 * Timer was triggered
+	 */
+	private boolean timeShot;
+	/**
+	 * Time for the next timer interrupt
+	 */
+	private int nextTimerInt;
+	/**
+	 * Interrupt as a number
+	 */
+	private int intNr;
 
 	/**
 	 * Set reference to simulation and CPU ID
@@ -69,6 +89,9 @@ public class IOSimMin {
 	public void setJopSimRef(JopSim jsRef, int id) {
 		js = jsRef;
 		cpuId = id;
+		if (id + 1 > cpuCnt) {
+			cpuCnt = id + 1;
+		}
 	}
 
 	//
@@ -170,16 +193,15 @@ public class IOSimMin {
 				val = js.clkCnt;
 				break;
 			case Const.IO_US_CNT:
-				val = JopSim.usCnt();
+				val = usCnt();
 				break;
 			case Const.IO_INTNR:
-				val = 0; // TODO
+				val = intNr;
 				break;
 			case Const.IO_EXCPT:
-				val = 0; // TODO
+				val = js.exceptReason;
 				break;
 			case Const.IO_CPU_ID:
-				val = 0; // TODO
 				val = cpuId;
 				break;
 			case Const.IO_CPUCNT:
@@ -190,13 +212,13 @@ public class IOSimMin {
 				break;
 			case SIM_CACHE_DUMP:
 				// trigger cache debug output
-//				cache.rawData();
-//				cache.resetCnt();
+				// cache.rawData();
+				// cache.resetCnt();
 				val = 0;
 				break;
 			default:
 				val = 0;
-				System.out.println("Default read "+addr);
+				System.out.println("Default read " + addr);
 			}
 		} catch (Exception e) {
 			System.out.println(e);
@@ -266,27 +288,29 @@ public class IOSimMin {
 			intEna = (val == 0) ? false : true;
 			break;
 		case Const.IO_TIMER:
-			intPend = false; // reset pending interrupt
-			interrupt = false; // for shure ???
 			nextTimerInt = val;
+			timeShot = false;
 			break;
 		case Const.IO_SWINT:
-			if (!intPend) {
-				interrupt = true;
-				intPend = true;
-			}
+			interrupt |= 1 << val;
 			break;
 		case Const.IO_WD:
 			break;
 		case Const.IO_EXCPT:
+			js.intExcept = true;
+			js.exceptReason = val;
 			break;
 		case Const.IO_LOCK:
+			// TODO
 			break;
 		case Const.IO_SIGNAL:
+			startCMP = (val != 0);
 			break;
 		case Const.IO_INTMASK:
+			mask = val;
 			break;
 		case Const.IO_INTCLEARALL:
+			interrupt = 0;
 			break;
 		case SIM_CACHE_FLUSH:
 			js.cache.flushCache();
@@ -295,15 +319,64 @@ public class IOSimMin {
 			System.out.println("Default write " + addr + " " + val);
 		}
 	}
-	
-	void monEnter() {
+
+	/**
+	 * Monitor enter returns true when either global lock
+	 * is already held (moncnt>0) or global lock is grabbed.
+	 * @return true if successfully entered
+	 */
+	boolean monEnter() {
 		intEna = false;
-		// check moncount when grabbing the global lock
+		if (moncnt == 0) {
+			if (globalLock) {
+				return false;
+			} else {
+				++moncnt;						
+				globalLock = true;
+				return true;
+			}
+		} else {
+			++moncnt;
+			return true;
+		}
 	}
 
 	void monExit() {
-		if (js.moncnt==0) {
+		--moncnt;
+		if (moncnt == 0) {
 			intEna = true;
+			globalLock = false;
 		}
 	}
+
+	boolean intPending() {
+		int i;
+		// do the timer interrupt
+		if ((nextTimerInt - usCnt() < 0) && !timeShot) {
+			timeShot = true;
+			interrupt |= 1;
+		}
+		// check interrupts
+		int val = interrupt & mask;
+		if (val != 0 && intEna) {
+			for (i = 0; val != 0; ++i) {
+				if ((val & 1) != 0) {
+					break;
+				}
+				val >>>= 1;
+			}
+			intNr = i;
+			interrupt &= ~(1 << i);
+			intEna = false;
+			return true;
+		}
+		return false;
+	}
+
+	static int usCnt() {
+		// return ((int) (System.nanoTime()/1000)); // does not really work as
+		// expected
+		return ((int) System.currentTimeMillis()) * 1000;
+	}
+
 }

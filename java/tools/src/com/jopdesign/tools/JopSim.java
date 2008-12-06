@@ -61,7 +61,7 @@ public class JopSim {
 	int heap;
 	int jjp;
 	int jjhp;
-	int moncnt;
+//	int moncnt;
 
 	int empty_heap;
 
@@ -93,7 +93,6 @@ public class JopSim {
 	JopSim(String fn, IOSimMin ioSim, int max) {
 		maxInstr = max;
 		heap = 0;
-		moncnt = 1;
 		
 		try {
 			StreamTokenizer in = new StreamTokenizer(new FileReader(fn));
@@ -150,7 +149,6 @@ public class JopSim {
 
 		heap = empty_heap;
 		for (int i=0; i<heap; ++i) mem[i] = mem_load[i];
-		moncnt = 1;
 
 		pc = vp = 0;
 		sp = Const.STACK_OFF;
@@ -296,10 +294,6 @@ System.out.println(mp+" "+pc);
 		return cache.bc(pc++)&0x0ff;
 	}
 
-	static int usCnt() {
-		// return ((int) (System.nanoTime()/1000)); // does not really work as expected
-		return ((int) System.currentTimeMillis())*1000;
-	}
 	
 //
 //	start of JVM :-)
@@ -596,28 +590,21 @@ System.out.println(mp+" "+pc);
 			int instr = cache.bc(pc++) & 0x0ff;
 
 			//
-			// exception handling
+			// exception and interrupt handling
 			//
 			if (intExcept) {
 				instr = SYS_EXC;
 				intExcept = false;
 			} else {
-				//
-				//	interrupt handling
-				//	TODO: check it only every few instructions
-				//
-				if ((io.nextTimerInt-usCnt()<0) && !io.intPend) {
-					io.intPend = true;
-					io.interrupt = true;
-				}
-				if (io.interrupt && io.intEna) {
-					instr = SYS_INT;
-					io.interrupt = false;		// reset int
+				// check all 16 instructions for a pending interrupt
+				if ((instrCnt&0xf)==0) {
+					if (io.intPending()) {
+						instr = SYS_INT;					
+					}					
 				}
 
 			}
 
-// stat
 			bcStat[instr]++;
 			// TODO add cache miss timing and a different timing info for
 			// Java implemented bytecodes
@@ -1360,16 +1347,15 @@ System.out.println("new heap: "+heap);
 					jjvmConst(193);
 					break;
 				case 194 :		// monitorenter
-					sp--;		// we don't use the objref
-					io.monEnter();
-					++moncnt;
-					// noim(194);
+					if (io.monEnter()) {
+						sp--;	// we don't use the objref
+					} else {
+						pc--;	// restart if we don't get the global lock
+					}
 					break;
 				case 195 :		// monitorexit
 					sp--;		// we don't use the objref
-					--moncnt;
 					io.monExit();
-					// noim(195);
 					break;
 				case 196 :		// wide
 					noim(196);
@@ -1453,7 +1439,7 @@ System.out.println("new heap: "+heap);
 					} else if (ref==4) {
 						val = jjhp;
 					} else if (ref==5) {
-						val = moncnt;
+						val = io.moncnt;
 					} else {
 						val = stack[ref];
 					}
@@ -1474,7 +1460,7 @@ System.out.println("new heap: "+heap);
 					} else if (ref==4) {
 						jjhp = val;
 					} else if (ref==5) {
-						moncnt = val;
+						io.moncnt = val;
 					} else {
 						stack[ref] = val;
 					}
