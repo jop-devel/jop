@@ -30,7 +30,6 @@ public class InterruptHandler implements Runnable {
 	public static void main(String[] args) {
 
 		IOFactory fact = IOFactory.getFactory();		
-		SerialPort sp = fact.getSerialPort();
 		SysDevice sys = fact.getSysDevice();
 
 		InterruptHandler ih = new InterruptHandler();
@@ -44,6 +43,7 @@ public class InterruptHandler implements Runnable {
 			int t = Timer.getTimeoutMs(200);
 			while (!Timer.timeout(t));
 			// trigger a SW interrupt via the system HW object
+			System.out.println("Trigger");
 			sys.swInterrupt = 1;
 			if (i==10) {
 				fact.disableInterrupt(1);
