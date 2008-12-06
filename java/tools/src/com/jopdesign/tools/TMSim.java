@@ -16,13 +16,13 @@
 
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
+ */
 
 /**
  * 
  */
 package com.jopdesign.tools;
+
 
 /**
  * Extension of JopSim to simulation real-time transactional memory (RTTM)
@@ -35,6 +35,59 @@ public class TMSim extends JopSim {
 	TMSim(String fn, IOSimMin ioSim, int max) {
 		super(fn, ioSim, max);
 	}
+	
+	int trCnt;
+	int nestingCnt;
+	int savedPc;
+
+	int readMem(int addr) {
+
+		return super.readMem(addr);
+
+	}
+
+	void writeMem(int addr, int data) {
+
+		if (addr==-10000) {
+			if (data!=0) {
+				startTransaction();
+			} else {
+				endTransaction();
+			}
+			return;
+		}
+		super.writeMem(addr, data);
+
+	}
+	
+	int simAbort = 3;
+	
+	void startTransaction() {
+		System.out.println("start transaction");
+		++trCnt;
+		if (nestingCnt==0) {
+			savedPc = pc-1;
+		}
+		++nestingCnt;
+	}
+
+	void endTransaction() {
+		System.out.println("end transaction");
+		--nestingCnt;
+		if (nestingCnt==0) {
+			// do the commit or retry
+			if (simAbort>0) {
+				--simAbort;
+				pc = savedPc;
+			}
+		}
+	}
+	
+	void stat() {
+		super.stat();
+		System.out.println("TM statistics");
+		System.out.println("Nr of transactions: "+trCnt);
+	}
 
 	/**
 	 * @param args
@@ -44,14 +97,14 @@ public class TMSim extends JopSim {
 		IOSimMin io;
 
 		int maxInstr = getArgs(args);
-		
-		for (int i=0; i<nrCpus; ++i) {
-			io = new IOSimMin();			
+
+		for (int i = 0; i < nrCpus; ++i) {
+			io = new IOSimMin();
 			io.setCpuId(i);
-			js[i] = new JopSim(args[0], io, maxInstr);
-			io.setJopSimRef(js[i]);			
+			js[i] = new TMSim(args[0], io, maxInstr);
+			io.setJopSimRef(js[i]);
 		}
-		
+
 		runSimulation();
 	}
 
