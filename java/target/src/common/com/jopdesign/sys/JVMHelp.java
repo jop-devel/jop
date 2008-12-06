@@ -245,9 +245,7 @@ synchronized (o) {
 	 * @param r Runnable the represents the interrupt handler
 	 */
 	public static void addInterruptHandler(int nr, Runnable r) {
-		if (nr>=0 && nr<ih.length) {
-			ih[Native.rdMem(Const.IO_CPU_ID)][nr] = r;
-		}
+		addInterruptHandler(Native.rdMem(Const.IO_CPU_ID), nr, r);
 	}
 	/**
 	 * Add a Runnable as first level interrupt handler for an individual core.
@@ -256,7 +254,7 @@ synchronized (o) {
 	 * @param r
 	 */
 	public static void addInterruptHandler(int core, int nr, Runnable r) {
-		if (nr>=0 && nr<ih.length) {
+		if (nr>=0 && nr<ih[core].length) {
 			ih[core][nr] = r;
 		}
 	}
@@ -265,11 +263,19 @@ synchronized (o) {
 	 * @param nr interrupt number
 	 */
 	public static void removeInterruptHandler(int nr) {
-		if (nr>=0 && nr<ih.length) {
-			ih[Native.rdMem(Const.IO_CPU_ID)][nr] = dh;
-		}
+		removeInterruptHandler(Native.rdMem(Const.IO_CPU_ID), nr);
+
 	}
 	
+	/**
+	 * Remove the interrupt handler
+	 * @param nr interrupt number
+	 */
+	public static void removeInterruptHandler(int core, int nr) {
+		if (nr>=0 && nr<ih.length) {
+			ih[core][nr] = dh;
+		}
+	}
 
 	static void wrByte(int i) {
 
