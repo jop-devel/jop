@@ -272,7 +272,7 @@ synchronized (o) {
 	 * @param nr interrupt number
 	 */
 	public static void removeInterruptHandler(int core, int nr) {
-		if (nr>=0 && nr<ih.length) {
+		if (nr>=0 && nr<ih[core].length) {
 			ih[core][nr] = dh;
 		}
 	}
