@@ -60,6 +60,7 @@ public class RtHelloCMP extends RtThread {
 		System.out.println("Hello World from CPU 0");
 		
 		SysDevice sys = IOFactory.getFactory().getSysDevice();
+		System.out.println("Nur of CPUs: "+sys.nrCpu);
 		for (int i=0; i<NR_THREADS; ++i) {
 			RtHelloCMP th = new RtHelloCMP(1, 1000*1000);
 			th.id = i;
