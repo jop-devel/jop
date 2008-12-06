@@ -51,6 +51,11 @@ public class JopSim {
 	static final int SYS_EXC = 0xf1;
 
 	static boolean log = false;
+	static int nrCpus = 1;
+
+	// references to all simulation instances
+	static JopSim js[];
+
 
 	// static fields for shared heap
 	static int[] mem_load = new int[MAX_MEM];
@@ -1689,45 +1694,25 @@ System.out.println("new heap: "+heap);
 		exit = true;
 	}
 	
-	public static void main(String args[]) {
-
-		JopSim js[];
-		IOSimMin io[];
-
-//		js.portName = System.getProperty("port", "COM1");
-//		js.openSerialPort();
-
+	public static int getArgs(String args[]) {
 		log = System.getProperty("log", "false").equals("true");
-		int nrCpus = Integer.parseInt(System.getProperty("cpucnt", "1"));
+		nrCpus = Integer.parseInt(System.getProperty("cpucnt", "1"));
 		js = new JopSim[nrCpus];
-		io = new IOSimMin[nrCpus];
-		
-		String ioDevice = System.getProperty("ioclass");
-		
-		for (int i=0; i<nrCpus; ++i) {
-			// select the IO simulation
-			if (ioDevice!=null) {
-				try {
-					io[i] = (IOSimMin) Class.forName("com.jopdesign.tools."+ioDevice).newInstance();
-				} catch (Exception e) {
-					e.printStackTrace();
-					io[i] = new IOSimMin();
-				}			
-			} else {
-				io[i] = new IOSimMin();			
-			}
-			io[i].setCpuId(i);
 
-			if (args.length==1) {
-				js[i] = new JopSim(args[0], io[i]);
-			} else if (args.length==2) {
-				js[i] = new JopSim(args[0], io[i], Integer.parseInt(args[1]));
-			} else {
-				System.out.println("usage: java JopSim file.bin [max instr]");
-				System.exit(-1);
-			}
-			io[i].setJopSimRef(js[i]);			
+		int maxInstr=0;
+		
+		if (args.length==1) {
+			maxInstr=0;
+		} else if (args.length==2) {
+			maxInstr = Integer.parseInt(args[1]);
+		} else {
+			System.out.println("usage: java JopSim file.bin [max instr]");
+			System.exit(-1);
 		}
+		return maxInstr;
+	}
+	
+	public static void runSimulation() {
 		
 		// loop over all cache simulations
 		for (int i=0; i<js[0].cache.cnt(); ++i) {
@@ -1755,4 +1740,31 @@ System.out.println("new heap: "+heap);
 		}
 	}
 
+	public static void main(String args[]) {
+
+		IOSimMin io;
+
+		int maxInstr = getArgs(args);
+		
+		String ioDevice = System.getProperty("ioclass");
+		
+		for (int i=0; i<nrCpus; ++i) {
+			// select the IO simulation
+			if (ioDevice!=null) {
+				try {
+					io = (IOSimMin) Class.forName("com.jopdesign.tools."+ioDevice).newInstance();
+				} catch (Exception e) {
+					e.printStackTrace();
+					io = new IOSimMin();
+				}			
+			} else {
+				io = new IOSimMin();			
+			}
+			io.setCpuId(i);
+			js[i] = new JopSim(args[0], io, maxInstr);
+			io.setJopSimRef(js[i]);			
+		}
+		
+		runSimulation();
+	}
 }
