@@ -50,22 +50,23 @@ public class JopSim {
 	static final int SYS_INT = 0xf0;
 	static final int SYS_EXC = 0xf1;
 
-	int[] mem_load = new int[MAX_MEM];
-	int[] mem = new int[MAX_MEM];
+	static boolean log = false;
+
+	// static fields for shared heap
+	static int[] mem_load = new int[MAX_MEM];
+	static int[] mem = new int[MAX_MEM];
+	static int heap;
+	static int empty_heap;
+	
+	// local fields for each CPU
 	int[] stack = new int[MAX_STACK];
 	int[] scratchMem = new int[MAX_SCRATCHPAD];
 	Cache cache;
 	IOSimMin io;
 
 	int pc, cp, vp, sp, mp;
-	int heap;
 	int jjp;
 	int jjhp;
-//	int moncnt;
-
-	int empty_heap;
-
-	static boolean log = false;
 
 	//
 	// exception handling
@@ -80,7 +81,7 @@ public class JopSim {
 	//	only for statistics
 	//
 
-	int[] bcTiming = new int[256];
+	static int[] bcTiming = new int[256];
 	int[] bcStat = new int[256];
 	int rdMemCnt;
 	int wrMemCnt;
@@ -92,51 +93,60 @@ public class JopSim {
 
 	JopSim(String fn, IOSimMin ioSim, int max) {
 		maxInstr = max;
-		heap = 0;
 		
-		try {
-			StreamTokenizer in = new StreamTokenizer(new FileReader(fn));
-		
-			in.wordChars( '_', '_' );
-			in.wordChars( ':', ':' );
-			in.eolIsSignificant(true);
-			in.slashStarComments(true);
-			in.slashSlashComments(true);
-			in.lowerCaseMode(true);
-		
+		// only first simulation object loads the memory
+		if (ioSim.cpuId==0) {
+			heap = 0;
 			
-			while (in.nextToken()!=StreamTokenizer.TT_EOF) {
-				if (in.ttype == StreamTokenizer.TT_NUMBER) {
-					mem_load[heap++] = (int) in.nval;
+			try {
+				StreamTokenizer in = new StreamTokenizer(new FileReader(fn));
+			
+				in.wordChars( '_', '_' );
+				in.wordChars( ':', ':' );
+				in.eolIsSignificant(true);
+				in.slashStarComments(true);
+				in.slashSlashComments(true);
+				in.lowerCaseMode(true);
+			
+				
+				while (in.nextToken()!=StreamTokenizer.TT_EOF) {
+					if (in.ttype == StreamTokenizer.TT_NUMBER) {
+						mem_load[heap++] = (int) in.nval;
+					}
 				}
+			
+			} catch (IOException e) {
+				System.out.println(e.getMessage());
+				System.exit(-1);
 			}
-		
-		} catch (IOException e) {
-			System.out.println(e.getMessage());
-			System.exit(-1);
+
+			int instr = mem_load[0];
+			System.out.println("Program: "+fn);
+			System.out.println(instr + " instruction word ("+(instr*4/1024)+" KB)");
+			System.out.println(heap + " words mem read ("+(heap*4/1024)+" KB)");
+			empty_heap = heap;
+
+			for (int i=0; i<256; ++i) {
+				int j = WCETInstruction.getCycles(i, false, 0);
+				if (j==-1) j = 80; // rough estimate for invokation of Java implementation
+				bcTiming[i] = j;
+			}
 		}
 		
-		int instr = mem_load[0];
-		System.out.println("Program: "+fn);
-		System.out.println(instr + " instruction word ("+(instr*4/1024)+" KB)");
-		System.out.println(heap + " words mem read ("+(heap*4/1024)+" KB)");
-		empty_heap = heap;
 		
 		cache = new Cache(mem, this);
 
 		io = ioSim;
 		
-		for (int i=0; i<256; ++i) {
-			int j = WCETInstruction.getCycles(i, false, 0);
-			if (j==-1) j = 80; // rough estimate for invokation of Java implementation
-			bcTiming[i] = j;
-		}
 	}
 
 	JopSim(String fn, IOSimMin ioSim) {
 		this(fn, ioSim, 0);
 	}
 
+	/**
+	 * An extrat (re)start method to test several cache strategies.
+	 */
 	void start() {
 
 		rdMemCnt = 0;
@@ -147,8 +157,10 @@ public class JopSim {
 		cacheCost = 0;
 		for (int i=0; i<256; ++i) bcStat[i] = 0;
 
-		heap = empty_heap;
-		for (int i=0; i<heap; ++i) mem[i] = mem_load[i];
+		if (io.cpuId==0) {
+			heap = empty_heap;
+			for (int i=0; i<heap; ++i) mem[i] = mem_load[i];			
+		}
 
 		pc = vp = 0;
 		sp = Const.STACK_OFF;
@@ -571,13 +583,9 @@ System.out.println(mp+" "+pc);
 		int ref, val, idx, val2;
 		int a, b, c, d;
 
-		for (;;) {
 
 			if (maxInstr!=0 && instrCnt>=maxInstr) {
-				break;
-			}
-			if (exit) {
-				break;
+				exit=true;
 			}
 
 //
@@ -1629,17 +1637,13 @@ System.out.println("new heap: "+heap);
 
 				default:
 					noim(instr);
-
 			}
-
-
-		}
-
 	}
 
 	void stat() {
 
 		System.out.println();
+		System.out.println("CPU "+io.cpuId+":");
 		/*
 		int sum = 0;
 		int sumcnt = 0;
@@ -1687,50 +1691,67 @@ System.out.println("new heap: "+heap);
 	
 	public static void main(String args[]) {
 
-		JopSim js = null;
-		IOSimMin io = null;
+		JopSim js[];
+		IOSimMin io[];
 
 //		js.portName = System.getProperty("port", "COM1");
 //		js.openSerialPort();
 
 		log = System.getProperty("log", "false").equals("true");
+		int nrCpus = Integer.parseInt(System.getProperty("cpucnt", "1"));
+		js = new JopSim[nrCpus];
+		io = new IOSimMin[nrCpus];
 		
 		String ioDevice = System.getProperty("ioclass");
-		// select the IO simulation
-		if (ioDevice!=null) {
-			try {
-				io = (IOSimMin) Class.forName("com.jopdesign.tools."+ioDevice).newInstance();
-			} catch (Exception e) {
-				e.printStackTrace();
-				io = new IOSimMin();
-			}			
-		} else {
-			io = new IOSimMin();			
+		
+		for (int i=0; i<nrCpus; ++i) {
+			// select the IO simulation
+			if (ioDevice!=null) {
+				try {
+					io[i] = (IOSimMin) Class.forName("com.jopdesign.tools."+ioDevice).newInstance();
+				} catch (Exception e) {
+					e.printStackTrace();
+					io[i] = new IOSimMin();
+				}			
+			} else {
+				io[i] = new IOSimMin();			
+			}
+			io[i].setCpuId(i);
+
+			if (args.length==1) {
+				js[i] = new JopSim(args[0], io[i]);
+			} else if (args.length==2) {
+				js[i] = new JopSim(args[0], io[i], Integer.parseInt(args[1]));
+			} else {
+				System.out.println("usage: java JopSim file.bin [max instr]");
+				System.exit(-1);
+			}
+			io[i].setJopSimRef(js[i]);			
 		}
 		
-
-
-		if (args.length==1) {
-			js = new JopSim(args[0], io);
-		} else if (args.length==2) {
-			js = new JopSim(args[0], io, Integer.parseInt(args[1]));
-		} else {
-			System.out.println("usage: java JopSim file.bin [max instr]");
-			System.exit(-1);
-		}
-		
-		io.setJopSimRef(js, 0);
-		
-		for (int i=0; i<js.cache.cnt(); ++i) {
-			js.cache.use(i);
-			js.start();
-			js.interpret();
+		// loop over all cache simulations
+		for (int i=0; i<js[0].cache.cnt(); ++i) {
+			for (int j=0; j<nrCpus; ++j) {
+				js[j].cache.use(i);
+				js[j].start();				
+			}
+			while (!exit) {
+				js[0].interpret();
+				if (nrCpus!=1 && IOSimMin.startCMP) {
+					for (int j=1; j<nrCpus; ++j) {
+						js[j].interpret();
+					}
+				}
+			}
 			if (stopped) {
 				System.out.println();
 				System.out.println("JopSim stopped");
 			}
-			if (i==0) js.stat();
-			js.cache.stat();
+			System.out.println();
+			for (int j=0; j<nrCpus; ++j) {
+				if (i==0) js[j].stat();
+				js[j].cache.stat();				
+			}
 		}
 	}
 

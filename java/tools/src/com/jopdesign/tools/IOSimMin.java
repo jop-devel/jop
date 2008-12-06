@@ -79,19 +79,25 @@ public class IOSimMin {
 	private int intNr;
 
 	/**
-	 * Set reference to simulation and CPU ID
+	 * Set reference to simulation
 	 * 
 	 * @param jsRef
 	 *            Simulation class reference
+	 */
+	public void setJopSimRef(JopSim jsRef) {
+		js = jsRef;
+	}
+	
+	/**
+	 * Set CPU ID
 	 * @param id
 	 *            CPU id for CMP simulation
 	 */
-	public void setJopSimRef(JopSim jsRef, int id) {
-		js = jsRef;
+	public void setCpuId(int id) {
 		cpuId = id;
 		if (id + 1 > cpuCnt) {
 			cpuCnt = id + 1;
-		}
+		}		
 	}
 
 	//
