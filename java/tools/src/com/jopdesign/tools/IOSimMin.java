@@ -307,7 +307,7 @@ public class IOSimMin {
 			js.exceptReason = val;
 			break;
 		case Const.IO_LOCK:
-			// TODO
+			// only used in microcode for monitor enter and exit
 			break;
 		case Const.IO_SIGNAL:
 			startCMP = (val != 0);
@@ -327,8 +327,8 @@ public class IOSimMin {
 	}
 
 	/**
-	 * Monitor enter returns true when either global lock
-	 * is already held (moncnt>0) or global lock is grabbed.
+	 * Monitor enter returns true when either the global lock
+	 * is grabbed or it is already held (moncnt>0).
 	 * @return true if successfully entered
 	 */
 	boolean monEnter() {
