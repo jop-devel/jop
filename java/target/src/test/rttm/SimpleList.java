@@ -24,7 +24,7 @@
  */
 package rttm;
 
-import util.Timer;
+import java.util.Vector;
 
 import com.jopdesign.io.IOFactory;
 import com.jopdesign.io.SysDevice;
@@ -36,83 +36,88 @@ import com.jopdesign.sys.Startup;
  */
 public class SimpleList {
 
-	final static int CNT = 3;
+	static final int MAGIC = -10000;
+
+	static final int CNT = 10000;
 	
 	static SysDevice sys = IOFactory.getFactory().getSysDevice();
-	static int[] ia = new int[100];
+	
+	static Vector vecA = new Vector();
+	static Vector vecB = new Vector();
+	
+	
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		
-		Runner r[] = new Runner[sys.nrCpu-1];
-		for (int i=0; i<sys.nrCpu-1; ++i) {
-			r[i] = new Runner();
-			Startup.setRunnable(r[i], i);
+
+		if (sys.nrCpu<3) {
+			System.out.println("Not enogh CPUs for this example");
+			System.exit(-1);
 		}
+		Inserter ins = new Inserter();
+		Startup.setRunnable(ins, 0);
+		Remover rem = new Remover();
+		Startup.setRunnable(rem, 1);
 		
-		Runnable me = new Runner();
 		// start the other CPUs
 		sys.signal = 1;
 		
-		me.run();
+		// move one element atomic from one vector to the other
+		for (int i=0; i<CNT; ) {
+			boolean found = false;
+			Native.wrMem(1, MAGIC);	// start transaction
+			int nr = vecA.size();
+			if (nr>0) {
+				Object o = vecA.remove(nr-1);
+				vecB.addElement(o);
+				found = true;
+			}
+			Native.wrMem(0, MAGIC);	// end transaction
+			if (found) ++i;
+		}
+
 
 		// wait for other CPUs to finish
-		boolean allDone = false;
-		while (!allDone) {
-			allDone = true;
-			for (int i=0; i<sys.nrCpu-1; ++i) {
-				allDone &= r[i].finished;
-			}			
+		while (!(ins.finished && rem.finished)) {
+			;
 		}
 	}
 	
-	static class Runner implements Runnable {
+	static class Inserter implements Runnable {
 
 		public boolean finished;
 		
-		private static final int MAGIC = -10000;
-
 		public void run() {
 			for (int i=0; i<CNT; ++i) {
-				
+				Object o = new Object();
 				Native.wrMem(1, MAGIC);	// start transaction
-//				System.out.println(sys.cpuId);
-//				System.out.println("hello");
-				for (int j=0; j<ia.length; ++j) {
-					ia[j] = sys.cpuId+1;
-				}
-				for (int j=0; j<ia.length; ++j) {
-					if (ia[j]!=sys.cpuId+1) {
-						synchronized (this) {
-							System.out.println("wrong data "+sys.cpuId);							
-						}
-						break;
-					}
-				}
+				vecA.addElement(o);
 				Native.wrMem(0, MAGIC);	// end transaction
 				
-				// data should be consistent and non zero
-				Native.wrMem(1, MAGIC);	// start transaction
-				int val = ia[0];
-				if (val==0) {
-					synchronized (this) {
-						System.out.println("data is zero "+sys.cpuId);							
-					}					
-				}
-				for (int j=0; j<ia.length; ++j) {
-					if (ia[j]!=val) {
-						synchronized (this) {
-							System.out.println("data inconsistent "+sys.cpuId);							
-						}
-						break;
-					}
-				}				
-				Native.wrMem(0, MAGIC);	// end transaction
 			}
 			finished = true;
 		}
+	}
+
+	static class Remover implements Runnable {
+
+		public boolean finished;
 		
+		public void run() {
+			for (int i=0; i<CNT; ) {
+				boolean found = false;
+				Native.wrMem(1, MAGIC);	// start transaction
+				int nr = vecB.size();
+				if (nr>0) {
+					Object o = vecB.remove(nr-1);
+					found = true;
+				}
+				Native.wrMem(0, MAGIC);	// end transaction
+				if (found) ++i;
+			}
+			finished = true;
+		}
 	}
 
 }

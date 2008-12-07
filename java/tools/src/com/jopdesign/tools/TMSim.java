@@ -35,6 +35,7 @@ import java.util.*;
 public class TMSim extends JopSim {
 	
 	final static int MAGIC = -10000;
+	final static boolean LOG = false;
 
 	TMSim(String fn, IOSimMin ioSim, int max) {
 		super(fn, ioSim, max);
@@ -42,6 +43,9 @@ public class TMSim extends JopSim {
 	
 	int trCnt;
 	int retryCnt;
+	int maxRead;
+	int maxWrite;
+	
 	int nestingCnt;
 	int savedPc;
 	
@@ -83,8 +87,10 @@ public class TMSim extends JopSim {
 	}
 	
 	void commit() {
-		System.out.print("Commiting TR "+trCnt+" on CPU "+io.cpuId);
-		System.out.println(" - write set "+writeSet.size()+" read set "+readSet.size());
+		if (LOG) System.out.print("Commiting TR "+trCnt+" on CPU "+io.cpuId);
+		if (LOG) System.out.println(" - write set "+writeSet.size()+" read set "+readSet.size());
+		if (writeSet.size()>maxWrite) maxWrite = writeSet.size();
+		if (readSet.size()>maxRead) maxRead = readSet.size();
 		
 		Collection<Integer> keys = writeSet.keySet();
 		for (Iterator<Integer> iterator = keys.iterator(); iterator.hasNext();) {
@@ -102,7 +108,7 @@ public class TMSim extends JopSim {
 					int otherAddr = other.next();
 					if (otherAddr==thisAddr) {
 						otherSim.abort=true;
-						System.out.println("Transaction on CPU "+i+" aborted");
+						if (LOG) System.out.println("Transaction on CPU "+i+" aborted");
 						break;
 					}
 				}
@@ -120,7 +126,7 @@ public class TMSim extends JopSim {
 		stack[++sp] = MAGIC;
 		writeSet.clear();
 		readSet.clear();
-		System.out.println("Retry TR "+trCnt+" on CPU "+io.cpuId);
+		if (LOG) System.out.println("Retry TR "+trCnt+" on CPU "+io.cpuId);
 		--trCnt;
 		++retryCnt;
 	}
@@ -134,7 +140,7 @@ public class TMSim extends JopSim {
 	
 	void startTransaction() {
 		++trCnt;
-		System.out.println("Start TR "+trCnt+" on CPU "+io.cpuId);
+		if (LOG) System.out.println("Start TR "+trCnt+" on CPU "+io.cpuId);
 		if (nestingCnt==0) {
 			savedPc = pc-1;	
 		}
@@ -142,7 +148,7 @@ public class TMSim extends JopSim {
 	}
 
 	void endTransaction() {
-		System.out.println("End TR "+trCnt+" on CPU "+io.cpuId);
+		if (LOG) System.out.println("End TR "+trCnt+" on CPU "+io.cpuId);
 		--nestingCnt;
 		if (nestingCnt==0) {
 			// do the commit or retry
@@ -169,6 +175,7 @@ public class TMSim extends JopSim {
 		System.out.println("TM statistics");
 		System.out.println("Nr of transactions: "+trCnt);
 		System.out.println("Nr of retries: "+retryCnt);
+		System.out.println("Max write set "+maxWrite+" max read set "+maxRead);
 	}
 
 	/**
