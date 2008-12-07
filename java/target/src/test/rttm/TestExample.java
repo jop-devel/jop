@@ -34,7 +34,7 @@ import com.jopdesign.sys.Startup;
  * @author Martin Schoeberl
  *
  */
-public class SimpleList {
+public class TestExample {
 
 	final static int CNT = 3;
 	
