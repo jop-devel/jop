@@ -23,6 +23,8 @@
  */
 package com.jopdesign.tools;
 
+import java.util.*;
+
 
 /**
  * Extension of JopSim to simulation real-time transactional memory (RTTM)
@@ -39,11 +41,25 @@ public class TMSim extends JopSim {
 	}
 	
 	int trCnt;
+	int retryCnt;
 	int nestingCnt;
 	int savedPc;
+	
+	LinkedHashSet<Integer> readSet = new LinkedHashSet<Integer>();
+	LinkedHashMap<Integer, Integer> writeSet = new LinkedHashMap<Integer, Integer>();
 
+	// TODO: we should earlier abort the transaction as we
+	// can read inconsistent data from another commited transaction
 	int readMem(int addr) {
 
+		// Transaction active and not an I/O address
+		if (nestingCnt>0 && addr>=0) {
+			Integer addrInt = new Integer(addr);
+			readSet.add(addrInt);
+			if (writeSet.containsKey(addrInt)) {
+				return writeSet.get(addrInt).intValue();
+			}
+		}
 		return super.readMem(addr);
 
 	}
@@ -58,33 +74,92 @@ public class TMSim extends JopSim {
 			}
 			return;
 		}
-		super.writeMem(addr, data);
-
+		// Transaction active and not an I/O address
+		if (nestingCnt>0 && addr>=0) {
+			writeSet.put(new Integer(addr), new Integer(data));
+		} else {
+			super.writeMem(addr, data);			
+		}
 	}
 	
-	int simAbort = 3;
+	void commit() {
+		System.out.print("Commiting TR "+trCnt+" on CPU "+io.cpuId);
+		System.out.println(" - write set "+writeSet.size()+" read set "+readSet.size());
+		
+		Collection<Integer> keys = writeSet.keySet();
+		for (Iterator<Integer> iterator = keys.iterator(); iterator.hasNext();) {
+			Integer addr = iterator.next();
+			int thisAddr = addr;
+			int val = writeSet.get(addr);
+			super.writeMem(thisAddr, val);
+			
+			// test for conflict
+			for (int i=0; i<nrCpus; ++i) {
+				if (i==io.cpuId) continue;
+				TMSim otherSim = (TMSim) js[i];
+				if (otherSim.abort) continue;
+				for (Iterator<Integer> other = otherSim.readSet.iterator(); other.hasNext();) {
+					int otherAddr = other.next();
+					if (otherAddr==thisAddr) {
+						otherSim.abort=true;
+						System.out.println("Transaction on CPU "+i+" aborted");
+						break;
+					}
+				}
+			}
+		}
+		writeSet.clear();
+		readSet.clear();
+	}
+	
+	void retry() {
+		abort = false;
+		pc = savedPc;
+		// also restore the stack for the write
+		stack[++sp] = 1;
+		stack[++sp] = MAGIC;
+		writeSet.clear();
+		readSet.clear();
+		System.out.println("Retry TR "+trCnt+" on CPU "+io.cpuId);
+		--trCnt;
+		++retryCnt;
+	}
+	
+	/**
+	 * The single commit token. 0 means free otherwise it
+	 * contains the CPU ID + 1.
+	 */
+	static int commitingCpu;
+	boolean abort;
 	
 	void startTransaction() {
-		System.out.println("start transaction");
 		++trCnt;
+		System.out.println("Start TR "+trCnt+" on CPU "+io.cpuId);
 		if (nestingCnt==0) {
 			savedPc = pc-1;	
-
 		}
 		++nestingCnt;
 	}
 
 	void endTransaction() {
-		System.out.println("end transaction");
+		System.out.println("End TR "+trCnt+" on CPU "+io.cpuId);
 		--nestingCnt;
 		if (nestingCnt==0) {
 			// do the commit or retry
-			if (simAbort>0) {
-				--simAbort;
-				pc = savedPc;
-				// also restore the stack for the write
-				stack[++sp] = 1;
-				stack[++sp] = MAGIC;
+			if (abort) {
+				retry();
+			} else {
+				if (commitingCpu!=0) {
+					// wait for commit token
+					--pc;
+					stack[++sp] = 0;
+					stack[++sp] = MAGIC;
+					System.out.println("wait for token");
+				} else {
+					commitingCpu=io.cpuId+1;
+					commit();
+					commitingCpu=0;
+				}
 			}
 		}
 	}
@@ -93,6 +168,7 @@ public class TMSim extends JopSim {
 		super.stat();
 		System.out.println("TM statistics");
 		System.out.println("Nr of transactions: "+trCnt);
+		System.out.println("Nr of retries: "+retryCnt);
 	}
 
 	/**
