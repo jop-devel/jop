@@ -24,6 +24,8 @@ package com.jopdesign.wcet08;
 import java.io.IOException;
 
 import org.apache.log4j.Logger;
+
+import com.jopdesign.wcet08.analysis.CacheConfig;
 import com.jopdesign.wcet08.uppaal.Translator;
 import com.jopdesign.wcet08.uppaal.UppAalConfig;
 import com.jopdesign.wcet08.uppaal.WcetSearch;
@@ -34,12 +36,13 @@ public class UppAalAnalysis {
 
 
 	public static void main(String[] args) {
-		Config.addOptions(UppAalConfig.uppaalOptions);
+		Config config = Config.instance();
+		config.addOptions(CacheConfig.cacheOptions);
+		config.addOptions(UppAalConfig.uppaalOptions);
 		ExecHelper exec = new ExecHelper(UppAalAnalysis.class,tlLogger,CONFIG_FILE_PROP);
 		
 		exec.initTopLevelLogger();       /* Console logging for top level messages */
 		exec.loadConfig(args);           /* Load config */
-		Config config = Config.instance();
 		if(! config.hasReportDir()) {
 			exec.bail("No report directory set - UppAal model needs to be written to disk");
 		}
@@ -76,6 +79,7 @@ public class UppAalAnalysis {
 				long end = System.nanoTime();				
 				System.out.println("wcet: "+wcet);
 				System.out.println("solvertime: "+((double)(end-start))/1E9);
+				System.out.println("solvertimelast: "+search.getLastSolverTime());
 			} catch (IOException e) {
 				exec.logException(" binary searching for WCET using UppAal", e);
 			}

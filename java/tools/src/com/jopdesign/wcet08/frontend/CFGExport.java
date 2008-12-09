@@ -22,6 +22,7 @@ import com.jopdesign.wcet08.graphutils.AdvancedDOTExporter.DOTNodeLabeller;
 import com.jopdesign.wcet08.graphutils.AdvancedDOTExporter.DefaultDOTLabeller;
 import com.jopdesign.wcet08.graphutils.AdvancedDOTExporter.DefaultNodeLabeller;
 import com.jopdesign.wcet08.graphutils.AdvancedDOTExporter.MapLabeller;
+import com.jopdesign.wcet08.graphutils.LoopColoring.IterationBranchLabel;
 
 /**
  * Export information about the flow graph and create a DOT graph
@@ -57,10 +58,20 @@ public class CFGExport {
 			case ENTRY_EDGE : lab.append("entry");break;
 			default: break;
 			}
-			Set<CFGNode> exits = flowGraph.getLoopColoring().getLoopExitSet(edge);
-			if(exits.size() > 0) {
-				lab.append("{exit ");
-				for(CFGNode n : exits) { lab.append(n.getId()); }
+			IterationBranchLabel<CFGNode> branchLabels = 
+				flowGraph.getLoopColoring().getIterationBranchEdges().get(edge);
+			if(branchLabels != null && ! branchLabels.isEmpty()) {
+				lab.append("{");boolean mark=false;
+				if(! branchLabels.getContinues().isEmpty()) {
+					lab.append("cont:");
+					for(CFGNode n : branchLabels.getContinues()) { lab.append(n.getId()+" "); }
+					mark=true;
+				}
+				if(! branchLabels.getExits().isEmpty()) {
+					if(mark) lab.append(";");
+					lab.append( "exit:");
+					for(CFGNode n : branchLabels.getExits()) { lab.append(n.getId()+" "); }
+				}
 				lab.append("}");
 			}
 			return lab.toString();

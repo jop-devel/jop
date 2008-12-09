@@ -23,6 +23,8 @@ import java.util.Hashtable;
 import java.util.Vector;
 
 import org.jgrapht.DirectedGraph;
+import org.jgrapht.graph.EdgeReversedGraph;
+import org.jgrapht.traverse.DepthFirstIterator;
 
 /** Compute Dominators of a graph, following:
  * A Simple, Fast Dominance Algorithm
@@ -39,6 +41,21 @@ public class Dominators<V,E> {
 	}
 	protected V getIDom(V vertex) {		
 		return idom.get(vertex);
+	}
+	/**
+	 * Dominators, using default pre-oder traversal
+	 */
+	public Dominators(DirectedGraph<V, E> g, V entry) {
+		this(g,dfsPreOrder(g,entry));		
+	}
+	private static<V,E> Vector<V> dfsPreOrder(DirectedGraph<V,E> g, V exit) {
+		DepthFirstIterator<V, E> iter = new DepthFirstIterator<V, E>(g,exit);
+		iter.setCrossComponentTraversal(false);
+		Vector<V> trav = new Vector<V>();
+		while(iter.hasNext()) {
+			trav .add(iter.next());			
+		}
+		return trav;
 	}
 	/**
 	 * (Immediate) Dominators based on the given pre-order traversal of the graph. 

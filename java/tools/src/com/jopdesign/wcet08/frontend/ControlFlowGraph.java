@@ -32,6 +32,7 @@ import org.apache.bcel.generic.INVOKEINTERFACE;
 import org.apache.bcel.generic.INVOKEVIRTUAL;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.InvokeInstruction;
+import org.jgrapht.graph.EdgeReversedGraph;
 
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.dfa.analyses.LoopBounds;
@@ -92,12 +93,12 @@ public class ControlFlowGraph {
 		protected String name;
 		protected CFGNode(String name) { 
 			this.id = idGen++;
-			this.name = "#"+id+" "+name;
+			this.name = name;
 		}
 		public int compareTo(CFGNode o) { 
 			return new Integer(this.hashCode()).compareTo(o.hashCode()); 
 		}
-		public String toString() { return name; }
+		public String toString() { return "#"+id+" "+name; }
 		public String getName()  { return name; }
 		public BasicBlock getBasicBlock() { return null; }
 		public int getId() { return id; }
@@ -139,7 +140,6 @@ public class ControlFlowGraph {
 			this.blockIndex = blockIndex;
 		}
 		public BasicBlock getBasicBlock() { return blocks.get(blockIndex); }
-		public String toString() { return "Block#"+blockIndex; }
 		@Override
 		public void accept(CfgVisitor v) {
 			v.visitBasicBlockNode(this);
@@ -364,18 +364,22 @@ public class ControlFlowGraph {
 				LoopBounds lbs = p.getDfaLoopBounds();
 				int bound = lbs.getBound(p.getDfaProgram(), block.getLastInstruction());
 				if(bound < 0) {
-					WcetAppInfo.logger.info("No DFA bound for " + n);					
+					WcetAppInfo.logger.info("No DFA bound for " + methodInfo+":"+n);					
 				} else if(loopAnnot == null) {
-					WcetAppInfo.logger.info("Only DFA bound for "+ n);
+					WcetAppInfo.logger.info("Only DFA bound for "+methodInfo+":"+n);
 					loopAnnot = LoopBound.boundedAbove(bound);
 				} else {
 					int loopUb = loopAnnot.getUpperBound();
 					if(bound < loopUb) {
-						WcetAppInfo.logger.warn("DFA analysis reports a smaller upper bound :"+bound+ " < "+loopUb);
+						WcetAppInfo.logger.info("DFA analysis reports a smaller upper bound :"+bound+ " < "+loopUb+
+								"for "+methodInfo+":"+n);
 						//loopAnnot = LoopBound.boundedAbove(bound); [currently unsafe]
 					} else if (bound > loopUb) {
-						WcetAppInfo.logger.warn("DFA analysis reports a larger upper bound: "+bound+ " > "+loopUb);
-					} else {}
+						WcetAppInfo.logger.info("DFA analysis reports a larger upper bound: "+bound+ " > "+loopUb+
+								"for "+methodInfo+":"+n);
+					} else {
+						WcetAppInfo.logger.info("DFA and annotated loop bounds match: "+methodInfo+":"+n);
+					}
 				}
 			}
 			if(loopAnnot == null) {
@@ -487,7 +491,7 @@ public class ControlFlowGraph {
 			idGen = 0;
 			for(CFGNode vertex : topOrder.getTopologicalTraversal()) vertex.id = idGen++;
 			for(CFGNode vertex : TopOrder.findDeadNodes(graph,this.graph.getEntry())) vertex.id = idGen++;
-			loopColoring = new LoopColoring<CFGNode, CFGEdge>(this.graph,topOrder);
+			loopColoring = new LoopColoring<CFGNode, CFGEdge>(this.graph,topOrder,graph.getExit());
 		} catch (BadGraphException e) {
 			WcetAppInfo.logger.error("Bad flow graph: "+getGraph().toString());
 			throw new Error("[FATAL] Analyse flow graph failed ",e);

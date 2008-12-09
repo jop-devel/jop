@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Vector;
 import java.util.Map.Entry;
 
+import com.jopdesign.wcet08.Config;
 import com.jopdesign.wcet08.frontend.ControlFlowGraph.CFGNode;
 import com.jopdesign.wcet08.frontend.SourceAnnotations.LoopBound;
 import com.jopdesign.wcet08.uppaal.UppAalConfig;
@@ -53,7 +54,7 @@ public class TemplateBuilder {
 	
 	private Map<CFGNode, Integer>   loopIds;
 	private Vector<LoopBound> loopBounds;
-	private UppAalConfig config;
+	private Config config;
 	private Map<Location, TransitionAttributes> outgoingAttrs;
 	private Map<Location, TransitionAttributes> incomingAttrs;
 
@@ -67,9 +68,9 @@ public class TemplateBuilder {
 	 * @param map the bound of each loop in the template
 	 * @param isRootMethod whether this is the `measure' entry point
 	 */
-	public TemplateBuilder(UppAalConfig c, String name, int methodNumber,
+	public TemplateBuilder(String name, int methodNumber,
 						   Map<CFGNode, LoopBound> map) {
-		this.config = c;
+		this.config = Config.instance();
 		Vector<String> parameters = new Vector<String>();
 		this.template = new Template(name,parameters);	
 
@@ -94,7 +95,7 @@ public class TemplateBuilder {
 	private void initializeTemplate() {
 		getTemplate().appendDeclaration(
 				String.format("clock %s; ", LOCAL_CLOCK));
-		if(! config.useOneChannelPerMethod()) {
+		if(! config.getOption(UppAalConfig.UPPAAL_ONE_CHANNEL_PER_METHOD)) {
 			getTemplate().appendDeclaration(
 					String.format("int[0,%s] %s;", 
 							SystemBuilder.MAX_CALL_STACK_DEPTH, 
@@ -182,7 +183,7 @@ public class TemplateBuilder {
 	}
 	public String exitLoopGuard(CFGNode loop) {
 		int id = this.loopIds.get(loop);
-		if(config.assumeTightBounds()) {
+		if(config.getOption(UppAalConfig.UPPAAL_TIGHT_BOUNDS)) {
 			return String.format("%s == %s",loopVar(id),loopBoundConst(id));
 		}
 		else {

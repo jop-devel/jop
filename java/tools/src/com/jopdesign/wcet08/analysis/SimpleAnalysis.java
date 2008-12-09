@@ -136,11 +136,11 @@ public class SimpleAnalysis {
 	private Project project;
 	private WcetAppInfo appInfo;
 	private Hashtable<WcetKey, WcetCost> wcetMap;
-	private CacheConfig config;
+	private Config config;
 	private LocalAnalysis localAnalysis;
 
 	public SimpleAnalysis(Project project) {
-		this.config = new CacheConfig(Config.instance());
+		this.config = Config.instance();
 		this.project = project;
 		this.appInfo = project.getWcetAppInfo();
 		this.localAnalysis = new LocalAnalysis(project);
@@ -399,13 +399,13 @@ public class SimpleAnalysis {
 		return miss;
 	}
 	private void checkCache(MethodInfo m) {
-		if(requiredNumberOfBlocks(m) <= config.numCacheBlocks()) return;
+		if(requiredNumberOfBlocks(m) <= config.getOption(CacheConfig.CACHE_BLOCKS)) return;
 		throw new AssertionError("Too few cache blocks for "+m+" - requires "+
 								 requiredNumberOfBlocks(m) + " but have " +
-								 config.numCacheBlocks());		
+								 config.getOption(CacheConfig.CACHE_BLOCKS));		
 	}
 	private boolean allFit(MethodInfo m) {
-		return getMaxCacheBlocks(m) <= config.numCacheBlocks();
+		return getMaxCacheBlocks(m) <= config.getOption(CacheConfig.CACHE_BLOCKS);
 	}
 
 	/**
@@ -427,8 +427,7 @@ public class SimpleAnalysis {
 	}
 
 	private long requiredNumberOfBlocks(MethodInfo m) {
-		int M = config.blockSizeInWords();
-		int mWords = BlockWCET.bytesToWords(appInfo.getFlowGraph(m).getNumberOfBytes());
-		return ((mWords+M-1) / M);
+		return BlockWCET.numberOfBlocks(appInfo.getFlowGraph(m),
+										config.getOption(CacheConfig.BLOCK_SIZE_WORDS).intValue());
 	}
 }

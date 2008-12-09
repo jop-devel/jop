@@ -2,6 +2,10 @@
 
 Dez 08
 ---------
+- 09/12/08: uppaal: Implementation of N-Block LRU and N-Block FIFO caches
+- 09/12/08: Fixed Topological Order computation
+
+- 06/12/08: Use DFA receiver analysis results
 
 - 05/12/08: Add ALWAYS_HIT, ALWAYS_MISS and 2 block LRU cache simulation to UppAal.
 

@@ -75,7 +75,7 @@ public class ExecHelper {
 				 Config.APP_CLASS_NAME, "wcet.Method"));
 		System.err.println("OPTIONS can be configured using system properties"+
 		                   ", supplying a property file or as command line arguments");
-		for(Option<?> o : Config.availableOptions()) {
+		for(Option<?> o : Config.instance().availableOptions()) {
 			System.err.println("    "+o.toString(15));
 		}
 		System.err.println("\nSee 'wcet.properties' for an example configuration");

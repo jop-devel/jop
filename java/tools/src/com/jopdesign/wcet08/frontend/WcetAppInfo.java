@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.Vector;
 
@@ -38,6 +39,7 @@ import org.apache.log4j.Logger;
 import com.jopdesign.build.AppInfo;
 import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.MethodInfo;
+import com.jopdesign.dfa.framework.ContextMap;
 import com.jopdesign.tools.JopInstr;
 import com.jopdesign.wcet.WCETInstruction;
 import com.jopdesign.wcet08.Config;
@@ -74,6 +76,7 @@ public class WcetAppInfo  {
 	private AppInfo ai;
 	private Map<MethodInfo, ControlFlowGraph> cfgs;
 	private List<ControlFlowGraph> cfgsByIndex;
+	private Map<InstructionHandle, ContextMap<String, String>> receiverAnalysis = null;
 
 	public WcetAppInfo(com.jopdesign.build.AppInfo ai) {
 		this.ai = ai; 
@@ -198,7 +201,24 @@ public class WcetAppInfo  {
 	public List<MethodInfo> findImplementations(MethodInfo invokerM, InstructionHandle ih) {
 		MethodRef ref = this.getReferenced(invokerM, (InvokeInstruction) ih.getInstruction());
 		List<MethodInfo> staticImpls = findImplementations(ref);
-		/* TODO: Better receiver types using DFA */
+		// TODO: rather slow, for debugging purposes
+		if(this.receiverAnalysis != null) {
+			ContextMap<String, String> receivers = receiverAnalysis.get(ih);
+			List<MethodInfo> dynImpls = new Vector<MethodInfo>();
+			Set<String> dynReceivers = receivers.keySet();
+			for(MethodInfo impl : staticImpls) {
+				if(dynReceivers.contains(impl.getFQMethodName())) {
+					dynReceivers.remove(impl.getFQMethodName());
+					dynImpls.add(impl);
+				} else {
+					logger.info("Static but not dynamic receiver: "+impl);
+				}
+			}
+			if(! dynReceivers.isEmpty()) {
+				throw new AssertionError("Bad receiver analysis ? Dynamic but not static receivers: "+dynReceivers);
+			}
+			staticImpls = dynImpls;
+		}
 		return staticImpls;
 	}
 
@@ -282,8 +302,8 @@ public class WcetAppInfo  {
 			if(argvrest.length == 1) {
 				String target = argvrest[0];
 				if(target.indexOf('(') > 0) target = target.substring(0,target.indexOf('('));
-				config.getOptions().setProperty(Config.APP_CLASS_NAME, target.substring(0,target.lastIndexOf('.')));
-				config.getOptions().setProperty(Config.TARGET_METHOD,argvrest[0]);
+				config.setProperty(Config.APP_CLASS_NAME.getKey(), target.substring(0,target.lastIndexOf('.')));
+				config.setProperty(Config.TARGET_METHOD.getKey(),argvrest[0]);
 			}
 			config.checkPresent(Config.REPORTDIR_PROPERTY);
 			config.initializeReport();
@@ -376,5 +396,11 @@ public class WcetAppInfo  {
 		}
 		return cfgs.get(m);
 	}
+
+	public void setReceivers(
+			Map<InstructionHandle, ContextMap<String, String>> receiverResults) {
+		this.receiverAnalysis = receiverResults;
+	}
+
 }
 

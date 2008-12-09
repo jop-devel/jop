@@ -42,12 +42,12 @@ public class WCETAnalysis {
 
 
 	public static void main(String[] args) {
-		Config.addOptions(CacheConfig.cacheOptions);
+		Config config = Config.instance();
+		config.addOptions(CacheConfig.cacheOptions);
 		ExecHelper exec = new ExecHelper(WCETAnalysis.class,tlLogger,CONFIG_FILE_PROP);
 		
 		exec.initTopLevelLogger();       /* Console logging for top level messages */
 		exec.loadConfig(args);           /* Load config */
-		Config config = Config.instance();
 		WCETAnalysis inst = new WCETAnalysis();
 		/* run */
 		if(! inst.run()) {		

@@ -19,9 +19,7 @@
 */
 package com.jopdesign.wcet08.graphutils;
 
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Hashtable;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Vector;
@@ -29,8 +27,9 @@ import java.util.Vector;
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.alg.BellmanFordShortestPath;
 import org.jgrapht.alg.ConnectivityInspector;
-import org.jgrapht.alg.DijkstraShortestPath;
+import org.jgrapht.graph.DirectedSubgraph;
 import org.jgrapht.traverse.DepthFirstIterator;
+import org.jgrapht.traverse.TopologicalOrderIterator;
 
 /**
  * Given a rooted, directed graph, identify back-edges.
@@ -49,35 +48,29 @@ public class TopOrder<V,E> {
 		public BadGraphException(String reason) { super(reason); }
 	}
 	private DirectedGraph<V, E> graph;
-	private Hashtable<V,Integer> topOrder = null;
 	private Vector<V> dfsOrder = null;
 	private Vector<E> backEdges = null;
 	private V startVertex;
 	private Dominators<V, E> dominators;
+	private Vector<V> topTraversal;
 
 	/* Iterator detecting back edges using DFS search.
 	 * This works for reducible graphs only.
 	 */
 	private class BackEdgeDetector extends DepthFirstIterator<V,E> {
-		private int gen;
 		public BackEdgeDetector(DirectedGraph<V, E> g, V startVertex) {
 			super(g,startVertex);
-			this.gen = 1;
 		}
 		// Topological order
 		@Override
 		protected void encounterVertex(V vertex, E edge) {
 			super.encounterVertex(vertex,edge);
-			topOrder.put(vertex, gen++);
 			dfsOrder.add(vertex);
 		}
 		@Override
 		protected void encounterVertexAgain(V vertex, E edge) {
 			super.encounterVertexAgain(vertex,edge);
 			if(getSeenData(vertex) != VisitColor.GRAY) {
-				int sourceOrder = topOrder.get(graph.getEdgeSource(edge));
-				int targetOrder = topOrder.get(graph.getEdgeTarget(edge));
-				topOrder.put(vertex, Math.max(targetOrder, sourceOrder+1));
 			} else {
 				backEdges.add(edge);
 			}
@@ -96,7 +89,6 @@ public class TopOrder<V,E> {
 	}
 	private void analyse(boolean isAcyclic) throws BadGraphException {
 		backEdges = new Vector<E>();
-		topOrder = new Hashtable<V, Integer>();
 		dfsOrder = new Vector<V>();
 		BackEdgeDetector iter = new BackEdgeDetector(graph,startVertex);
 		while(iter.hasNext()) iter.next();
@@ -116,26 +108,24 @@ public class TopOrder<V,E> {
 		return backEdges; 
 	}
 	/**
-	 * Get a topological ordinals <code>TOPO</code> mapping nodes to integers.
-	 * If you remove all back-edges in the graph, <code>TOPO(n) &lt; TOPO(m)</code> if there
-	 * is a path from n to m.
-	 * @return
-	 */
-	public Hashtable<V,Integer> getTopologicalOrder() {
-		return topOrder;
-	}
-	/**
 	 * Return a traversal of the graph in topological order of the corresponding back-edge
 	 * free graph.
 	 * @return The traversal as list of nodes
 	 */
 	public Vector<V> getTopologicalTraversal() {
-		Vector<V> topTraversal = new Vector<V>(this.topOrder.keySet());
-		Collections.sort(topTraversal,new Comparator<V>() {
-			public int compare(V o1, V o2) {
-				return topOrder.get(o1).compareTo(topOrder.get(o2));
-			}			
-		});
+		if(topTraversal != null) return topTraversal;
+		topTraversal = new Vector<V>();
+		Set<E> edgeSet = new HashSet<E>(graph.edgeSet());
+		for(E backEdge : this.getBackEdges()) {
+			edgeSet.remove(backEdge);			
+		}
+		DirectedSubgraph<V, E> subgraph = 
+			new DirectedSubgraph<V,E>(graph,graph.vertexSet(),edgeSet);
+		TopologicalOrderIterator<V, E> iter = 
+			new TopologicalOrderIterator<V, E>((DirectedGraph<V, E>) subgraph);
+		while(iter.hasNext()) {
+			topTraversal.add(iter.next());
+		}
 		return topTraversal;
 	}
 	/**

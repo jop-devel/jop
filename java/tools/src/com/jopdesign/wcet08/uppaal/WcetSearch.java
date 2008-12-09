@@ -20,18 +20,19 @@ import com.jopdesign.wcet08.Config;
  */
 public class WcetSearch {
 	private File modelFile;
-	private UppAalConfig config;
 	private File queryFile;
 	private Logger logger = Logger.getLogger(WcetSearch.class);
-
+	private double lastSolverTime = -1;
+	public double getLastSolverTime() {
+		return lastSolverTime;
+	}
 	public WcetSearch(File modelFile) {
-		this.config = new UppAalConfig(Config.instance());
 		this.modelFile = modelFile;
 	}
 	public long searchWCET() throws IOException {
 		queryFile = File.createTempFile("query", ".q");
 		String[] cmd = {
-				config.getUppaalBinary().getPath(),
+				Config.instance().getOption(UppAalConfig.UPPAAL_VERIFYTA_BINARY),
 				"-q",
 				modelFile.getPath(),
 				queryFile.getPath()				
@@ -62,6 +63,7 @@ public class WcetSearch {
 	}
 	private boolean checkBound(String[] cmd, long m) throws IOException {
 		writeQueryFile(queryFile, m);
+		long start = System.nanoTime();
 		Process verifier = Runtime.getRuntime().exec(cmd);
 		InputStream is = new BufferedInputStream(verifier.getInputStream());
 		try {
@@ -72,6 +74,9 @@ public class WcetSearch {
 				String l;
 				while((l=ebr.readLine()) != null) logger.error("verifyta: "+l);
 				throw new IOException("Uppaal verifier terminated with exit code: "+verifier.exitValue());
+			} else {
+				long stop  = System.nanoTime();
+				lastSolverTime = ((double)(stop-start)) / 1.0E9;				
 			}
 		} catch (InterruptedException e) {
 			throw new IOException("Interrupted while waiting for verifier to finish");

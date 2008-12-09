@@ -330,7 +330,25 @@ public class CallGraph {
 		return dfi;		
 	}
 	public Iterator<CallGraphNode> getReachableMethods(MethodInfo m) {
-		return getReachableMethods(new MethodRef(m.getCli(),m.methodId));
+		return getReachableMethods(MethodRef.fromMethodInfo(m));
+	}
+	public Iterator<CallGraphNode> getReferencedMethods(MethodInfo m) {
+		Vector<CallGraphNode> refd = new Vector<CallGraphNode>();
+		CallGraphNode node = getNode(MethodRef.fromMethodInfo(m));
+		Vector<DefaultEdge> edgeSet = new Vector<DefaultEdge>(callGraph.outgoingEdgesOf(node));
+		while(! edgeSet.isEmpty()) {
+			Vector<DefaultEdge> edgeSet2 = new Vector<DefaultEdge>();
+			for(DefaultEdge e : edgeSet) {
+				CallGraphNode target = callGraph.getEdgeTarget(e);
+				if(target.isAbstractNode()) {
+					edgeSet2.addAll(callGraph.outgoingEdgesOf(target));
+				} else {
+					refd.add(target);
+				}
+			}
+			edgeSet = edgeSet2;
+		}
+		return refd.iterator();
 	}
 	
 
@@ -347,6 +365,10 @@ public class CallGraph {
 	public boolean isLeafNode(CallGraphNode vertex) {
 		return callGraph.outDegreeOf(vertex) == 0;
 	}
+	public boolean isLeafNode(MethodInfo mi) {
+		return isLeafNode(getNode(MethodRef.fromMethodInfo(mi)));
+	}
+
 	/**
 	 * Return if the given reference points to a leaf node,
 	 * i.e., a method which doesn't invoke any other methods.

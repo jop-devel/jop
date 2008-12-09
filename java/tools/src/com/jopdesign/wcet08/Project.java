@@ -26,6 +26,7 @@ import java.util.SortedMap;
 import org.apache.bcel.classfile.JavaClass;
 import org.apache.bcel.classfile.Method;
 import org.apache.bcel.generic.ConstantPoolGen;
+import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.MethodGen;
 import org.apache.log4j.Logger;
 import com.jopdesign.build.AppInfo;
@@ -35,6 +36,7 @@ import com.jopdesign.build.MethodInfo;
 import com.jopdesign.build.WcetPreprocess;
 import com.jopdesign.dfa.analyses.LoopBounds;
 import com.jopdesign.dfa.analyses.ReceiverTypes;
+import com.jopdesign.dfa.framework.ContextMap;
 import com.jopdesign.wcet08.frontend.CallGraph;
 import com.jopdesign.wcet08.frontend.WcetAppInfo;
 import com.jopdesign.wcet08.frontend.SourceAnnotations;
@@ -195,12 +197,15 @@ public class Project {
 		return (com.jopdesign.dfa.framework.AppInfo) this.wcetAppInfo.getAppInfo();
 	}
 	
+	@SuppressWarnings("unchecked")
 	public void dataflowAnalysis() {
 		com.jopdesign.dfa.framework.AppInfo program = getDfaProgram();
 		topLevelLogger.info("Receiver analysis");
 		ReceiverTypes recTys = new ReceiverTypes();
-		Map<?,?> receiverResults = program.runAnalysis(recTys);
+		Map<InstructionHandle, ContextMap<String, String>> receiverResults = 
+			program.runAnalysis(recTys);
 		program.setReceivers(receiverResults);
+		wcetAppInfo.setReceivers(receiverResults);
 		topLevelLogger.info("Loop bound analysis");
 		dfaLoopBounds = new LoopBounds();
 		program.runAnalysis(dfaLoopBounds);

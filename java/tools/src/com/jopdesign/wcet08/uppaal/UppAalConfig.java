@@ -18,12 +18,11 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 package com.jopdesign.wcet08.uppaal;
-import java.io.File;
-
 import com.jopdesign.wcet08.Config;
 import com.jopdesign.wcet08.Option;
 import com.jopdesign.wcet08.Option.BooleanOption;
 import com.jopdesign.wcet08.Option.EnumOption;
+import com.jopdesign.wcet08.Option.IntegerOption;
 import com.jopdesign.wcet08.Option.StringOption;
 
 /** 
@@ -33,13 +32,25 @@ import com.jopdesign.wcet08.Option.StringOption;
  *
  */
 public class UppAalConfig {
-	private Config config;
-	public enum CacheSim { ALWAYS_HIT, ALWAYS_MISS, TWO_BLOCK };
+	public enum CacheSim { ALWAYS_HIT, ALWAYS_MISS, LRU_BLOCK, FIFO_BLOCK, VARIABLE_BLOCK };
 	
 	public static final EnumOption<CacheSim> UPPAAL_CACHE_SIM =
 		new Option.EnumOption<CacheSim>("uppaal-cache-sim",
 				"which cache simulation to use in UppAal", 
 				CacheSim.ALWAYS_HIT);
+	public static final IntegerOption UPPAAL_CACHE_BLOCKS =
+		new Option.IntegerOption("uppaal-cache-blocks",
+				"number of cache blocks for UppAal cache simulation", 
+				2);
+	public static final IntegerOption UPPAAL_CACHE_BLOCK_WORDS =
+		new Option.IntegerOption("uppaal-cache-block-words",
+				"size of cache blocks (in words) for UppAal cache simulation", 
+				64);
+	/* Currently not an option */
+	public static final BooleanOption UPPAAL_EMPTY_INITIAL_CACHE =
+		new Option.BooleanOption("uppaal-empty-initial-cache",
+			"assume the cache is initially empty (FIFO)",
+			true);
 	public static final BooleanOption UPPAAL_ONE_CHANNEL_PER_METHOD = 
 		new Option.BooleanOption("uppaal-one-chan-per-method",
 				"use one sync channel per method",
@@ -48,37 +59,26 @@ public class UppAalConfig {
 		new Option.BooleanOption("uppaal-tight-bounds",
 				"assume all loop bounds are tight in simulation", 
 				false);
+	public static final BooleanOption UPPAAL_COLLAPSE_LEAVES =
+		new Option.BooleanOption("uppaal-collapse-leaves",
+				"collapse leaf methods to speed up simulation", 
+				false);
 	public static final StringOption UPPAAL_VERIFYTA_BINARY =
 		new Option.StringOption("uppaal-verifier",
 			"binary of the uppaal model-checker (verifyta)",
 			true);		
 
 	public static final Option<?>[] uppaalOptions = {
-		UPPAAL_CACHE_SIM, UPPAAL_TIGHT_BOUNDS, UPPAAL_TIGHT_BOUNDS, UPPAAL_VERIFYTA_BINARY 
+		UPPAAL_CACHE_SIM, UPPAAL_CACHE_BLOCKS,
+		UPPAAL_TIGHT_BOUNDS, UPPAAL_COLLAPSE_LEAVES, 
+		UPPAAL_ONE_CHANNEL_PER_METHOD, UPPAAL_VERIFYTA_BINARY 
 	};
-	public UppAalConfig(Config c) {
-		this.config = c;
-	}
-	public boolean assumeTightBounds() {
-		return config.getBooleanOption(UPPAAL_TIGHT_BOUNDS);
-	}
-	public boolean useOneChannelPerMethod() {
-		return config.getBooleanOption(UPPAAL_ONE_CHANNEL_PER_METHOD);
-	}
-	public File getUppaalBinary() {
-		File f = config.getFileOption(UPPAAL_VERIFYTA_BINARY);
-		if(! f.exists() || ! f.isFile()) {
-			throw new AssertionError("UppAal binary does not exist: "+f);
-		}
-		return f;
-	}
-	public CacheSim getCacheSim() {
-		return config.getEnumOption(UPPAAL_CACHE_SIM);
-	}
-	public boolean isDynamicCacheSim() {
-		return this.getCacheSim().equals(CacheSim.TWO_BLOCK);
+
+	public static boolean isDynamicCacheSim() {
+		CacheSim cs = Config.instance().getOption(UPPAAL_CACHE_SIM);
+		return ! (cs.equals(CacheSim.ALWAYS_HIT) || cs.equals(CacheSim.ALWAYS_MISS));
 	}
 	public static boolean hasVerifier() {
-		return (Config.instance().getOptions().containsKey(UPPAAL_VERIFYTA_BINARY));
+		return (Config.instance().hasOption(UPPAAL_VERIFYTA_BINARY));
 	}
 }

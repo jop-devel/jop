@@ -35,6 +35,7 @@ import java.util.Map.Entry;
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.VertexFactory;
 import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.EdgeReversedGraph;
 import org.jgrapht.graph.SimpleDirectedGraph;
 import org.jgrapht.traverse.AbstractGraphIterator;
 
@@ -89,10 +90,13 @@ public class LoopColoring<V,E> {
 	private SimpleDirectedGraph<V, DefaultEdge> loopNestForest;
 	private Map<E,IterationBranchLabel<V>> iterationBranchEdges;
 	private Set<E> backEdges;
+	private TopOrder<V, E> rTopOrder;
+	private Dominators<V, E> rDoms;
 
-	public LoopColoring(DirectedGraph<V,E> graph, TopOrder<V,E> topOrder) {
+	public LoopColoring(DirectedGraph<V,E> graph, TopOrder<V,E> topOrder, V exit) {
 		this.graph = graph;
 		this.topOrder = topOrder;
+		this.rDoms = new Dominators<V, E>(new EdgeReversedGraph<V, E>(graph),exit);
 	}
 
 	public Map<V,Set<V>> getLoopColors() {
@@ -298,6 +302,7 @@ public class LoopColoring<V,E> {
 				if(first == null) first = key;
 				else if(! key.equals(first)) isIterationBranch = true;
 			}
+			/* TODO: A better implementation would use postdominators */
 			if(! isIterationBranch && first != null) {				
 				nodeLabels.put(source, first);
 				for(E edge : graph.outgoingEdgesOf(source)) {

@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.List;
@@ -46,7 +47,6 @@ import org.apache.log4j.PropertyConfigurator;
 import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.wcet08.Option.BooleanOption;
-import com.jopdesign.wcet08.Option.EnumOption;
 import com.jopdesign.wcet08.Option.StringOption;
 
 /*    
@@ -101,84 +101,80 @@ public class Config {
 		}
 	}
 	/*
-	 * Constants
-	 * ~~~~~~~~~
-	 */
-	public static final String PROJECT_NAME = "projectname";
-	public static final String APP_CLASS_NAME = "app-class";
-	public static final String TARGET_METHOD = "target-method";
-	private static final String DEFAULT_TARGET_METHOD = "measure";
-	
-	public static final String CLASSPATH_PROPERTY = "cp";	
-	public static final String SOURCEPATH_PROPERTY = "sp";
-
-	public static final String REPORTDIR_PROPERTY = "reportdir";
-	public static final String REPORTDIRROOT_PROPERTY = "reportdir-parent";
-	
-	public static final String TEMPLATEDIR_PROPERTY = "templatedir";
-
-	public static final String PROGRAM_DOT = "program-dot";
-
-	/* report triggers */
-	public static final String DUMP_ILP = "dump-ilp";
-	private final static boolean DUMP_ILP_DEFAULT = true;
-	
-	public static final String DO_DFA = "dataflow-analysis";
-	public static final boolean DO_DFA_DEFAULT = false;
-
-	/*
 	 * Options
 	 * ~~~~~~~ 
 	 */
-	private static Map<String,Option<? extends Object>> optionSet;
-	private static List<Option<? extends Object>> optionList;
-	private static void optionSetInit() {
-		if(optionList != null) return;
-		optionList = new LinkedList<Option<? extends Object>>();
-		optionSet  = new Hashtable<String, Option<? extends Object>>();		
-	}
-	public static List<Option<? extends Object>> availableOptions() {
-		optionSetInit();
+	private Map<String,Option<? extends Object>> optionSet;
+	private List<Option<? extends Object>> optionList;
+	public List<Option<? extends Object>> availableOptions() {
 		return optionList;
 	}
-	public static Option<? extends Object> getOptionSpec(String key) {
-		optionSetInit();
+	public Option<? extends Object> getOptionSpec(String key) {
 		return optionSet.get(key);
 	}
-	public static void addOptions(Option<?>[] options) {
-		optionSetInit();
+	public void addOptions(Option<?>[] options) {
 		for(Option<? extends Object> opt : options) {
 			optionSet.put(opt.key,opt);
 			optionList.add(opt);
 		}
 	}
+	
+	/*
+	 * Base Option
+	 * ~~~~~~~~~~~~
+	 */
 	/**
+	 * FIXME: Split library logic and base options into 2 classes
 	 * TODO: We could add more elaborated option type (for classpath, methods, etc.) to improve error handling
 	 */
+	public static final StringOption APP_CLASS_NAME = new Option.StringOption("app-class",
+			"the name of the class containing the method to be analyzed",false);
+	public static final StringOption TARGET_METHOD =
+		new Option.StringOption("target-method",
+								"the name (optionally fully qualified and/or with signature) of the method to be analyzed",
+								"measure");
+	public static final StringOption PROJECT_NAME =
+		new Option.StringOption("projectname","name of the 'project', used when generating reports",true);
+
+	public static final StringOption CLASSPATH_PROPERTY =  new Option.StringOption("cp","the classpath",false);
+	public static final StringOption SOURCEPATH_PROPERTY = new Option.StringOption("sp","the sourcepath",false);
+	
+	public static final StringOption REPORTDIR_PROPERTY =
+		new Option.StringOption("reportdir",
+				"the directory to write reports into (no report generation if neither this nor reportdir-root is set)",true);		
+	public static final StringOption REPORTDIRROOT_PROPERTY =
+		new Option.StringOption("reportdir-parent",
+				"reports will be generated in config[reportdir-root]/config["+PROJECT_NAME.key+"]",true);
+	public static final StringOption TEMPLATEDIR_PROPERTY =
+		new Option.StringOption("templatedir",
+				"directory with custom templates for report generation",true);
+	
+	public static final StringOption PROGRAM_DOT = 
+		new Option.StringOption("program-dot","if graphs should be generated from java, the path to the 'dot' binary", true);
+		
+	public static final BooleanOption DUMP_ILP =
+		new Option.BooleanOption("dump-ilp","whether the LP problems should be dumped to files",true);
+	
+	public static final BooleanOption DO_DFA =
+		new Option.BooleanOption("dataflow-analysis","whether dataflow analysis should be performed",false);
+	public static final BooleanOption SHOW_HELP =
+		new Option.BooleanOption("help","show help",false);
+	
+
 	public static final Option<?>[] baseOptions =
 	{ 
-		new Option.StringOption(APP_CLASS_NAME,"the name of the class containing the method to be analyzed",false),
-		new Option.StringOption(TARGET_METHOD,"the name (optionally fully qualified and/or with signature) of the method to be analyzed",DEFAULT_TARGET_METHOD),
-		new Option.StringOption(PROJECT_NAME,"name of the 'project', used when generating reports (generated if missing)",true),
-
-		new Option.StringOption(CLASSPATH_PROPERTY,"the classpath",false),
-		new Option.StringOption(SOURCEPATH_PROPERTY,"the sourcepath",false),
-		
-		new Option.StringOption(REPORTDIR_PROPERTY,"the directory to write reports into (no report generation if neither this nor "+REPORTDIRROOT_PROPERTY+" is set)",true),
-		new Option.StringOption(REPORTDIRROOT_PROPERTY,"reports will be generated in config["+REPORTDIRROOT_PROPERTY+"]/config["+PROJECT_NAME+"]",true),
-		new Option.StringOption(PROGRAM_DOT,"if graphs should be generated from java, the path to the 'dot' binary", true),
-		
-		new Option.BooleanOption(DUMP_ILP,"whether the LP problems should be dumped to files",true),
-		
-		new Option.BooleanOption(DO_DFA,"whether dataflow analysis should be performed",false)
+		APP_CLASS_NAME, TARGET_METHOD, PROJECT_NAME,
+		CLASSPATH_PROPERTY, SOURCEPATH_PROPERTY,
+		REPORTDIR_PROPERTY, REPORTDIRROOT_PROPERTY,
+		TEMPLATEDIR_PROPERTY, PROGRAM_DOT,
+		DUMP_ILP, DO_DFA,
+		SHOW_HELP
 	};
-	static {
-		Config.addOptions(Config.baseOptions);
-	}
     /**
 	 * The underlying Properties object
 	 */
-	protected Properties options;
+	protected Properties props;
+	public void setProperty(String key, String val) { props.setProperty(key, val); }
 	
 	/* The name of the project (set once) */
 	private String projectName;
@@ -194,32 +190,36 @@ public class Config {
 	 */
 	protected Config() { 
 		theConfig = this; /* avoid potential recursive loop */
-		options = new Properties();
+		props = new Properties();
 		for(Entry<?,?> e : System.getProperties().entrySet()) {
-			options.put(e.getKey(),e.getValue());
+			props.put(e.getKey(),e.getValue());
 		}
 		defaultAppender = new ConsoleAppender(new PatternLayout("[%c{1}] %m\n"),"System.err");
 		defaultAppender.setName("ACONSOLE");
 		defaultAppender.setThreshold(Level.WARN);
 		Logger.getRootLogger().addAppender(defaultAppender);
-		PropertyConfigurator.configure(this.options);
+		PropertyConfigurator.configure(this.props);
+		optionList = new LinkedList<Option<? extends Object>>();
+		optionSet  = new Hashtable<String, Option<? extends Object>>();		
+		addOptions(Config.baseOptions);
 	}		
-	protected boolean hasProperty(String key) {
-		return this.options.containsKey(key);		
+	public <T> boolean hasOption(Option<T> option) {
+		return (getOption(option) != null);
 	}
-	protected String getProperty(String key) {
-		return this.options.getProperty(key);
+	public <T> T getOption(Option<T> option) throws BadConfigurationError {
+		String val = this.props.getProperty(option.getKey());
+		if(val == null) {
+			if(option.getDefaultValue() != null) return option.getDefaultValue();
+			if(! option.isOptional()) throw new BadConfigurationError("Missing option: "+option);
+			return null;
+		} else {
+			return option.parse(val);
+		}
 	}
-	protected String getProperty(String key, String defaultVal) {
-		return getProperty(key) == null ? defaultVal : getProperty(key);
-	}
-	protected String forceProperty(String key) {
-		String val = this.options.getProperty(key);
-		if(val == null) throw new MissingConfigurationError("Missing property: " + key);
-		return val;
-	}
-	public void checkPresent(String prop) {
-		forceProperty(prop);
+	public<T> void checkPresent(Option<T> option) throws BadConfigurationException {
+		if(getOption(option) == null) {
+			throw new BadConfigurationException("Missing option: "+option);
+		}
 	}
 	
 	/**
@@ -232,13 +232,13 @@ public class Config {
 	 */
 	public static void load(String configURL) throws BadConfigurationException {
 		if(configURL != null) instance().loadConfig(configURL);
-		PropertyConfigurator.configure(instance().options);
+		PropertyConfigurator.configure(instance().props);
 	}
 	public static String[] load(String configURL, String[] argv) throws BadConfigurationException {
 		Config c = instance();
 		if(configURL != null) c.loadConfig(configURL);		
 		String[] argvrest = c.consumeOptions(argv);
-		PropertyConfigurator.configure(c.options);
+		PropertyConfigurator.configure(c.props);
 		return argvrest;
 	}
 	
@@ -271,7 +271,7 @@ public class Config {
 		iapp.setName("AINFO");
 		Logger.getRootLogger().addAppender(eapp);
 		Logger.getRootLogger().addAppender(iapp);
-		PropertyConfigurator.configure(this.options);
+		PropertyConfigurator.configure(this.props);
 	}
 	
 	/** Load a configuration file
@@ -300,32 +300,25 @@ public class Config {
 	public void loadConfig(InputStream propStream) throws IOException {
 		Properties p = new Properties();
 		p.load(propStream);
-		options.putAll(p);
+		props.putAll(p);
 	}
 	
 	public void checkOptions() throws BadConfigurationException {
-		for(Option<?> o : Config.optionList) {
-			if(! o.isOptional() && ! this.hasProperty(o.key)) {
-				throw new BadConfigurationException("Missing Option: "+o.key);
-			}
-			String p = this.getProperty(o.key);
-			if(p != null) {
-				try {
-					o.checkFormat(p);
-				} catch(IllegalArgumentException ex ){
-					throw new BadConfigurationException("Bad format for option: "+o.key+"="+p,ex);
-				}
+		for(Option<?> o : optionList) {
+			try {
+				this.getOption(o);
+			} catch(BadConfigurationError missing) {
+				throw new BadConfigurationException(missing.getMessage());
+			} catch(IllegalArgumentException ex ){
+				throw new BadConfigurationException("Bad format for option: "+o.key+"="+this.props.getProperty(o.key),ex);
 			}
 		}
 	}
 
 	public String getProjectName() {
 		if(this.projectName == null) { /* Set ONCE ! */
-			if(getProperty(PROJECT_NAME) != null) {
-				this.projectName = getProperty(PROJECT_NAME); 
-			} else {
-				this.projectName = getTargetName();
-			}
+			this.projectName = getOption(PROJECT_NAME);
+			if(projectName == null) this.projectName = getTargetName();
 		}
 		return projectName;
 	}
@@ -337,15 +330,15 @@ public class Config {
 	}
 
 	public String getAppClassName() {
-		String rootClass = forceProperty(APP_CLASS_NAME);
+		String rootClass = getOption(APP_CLASS_NAME);
 		if(rootClass.indexOf('/') > 0) {
 			rootClass = rootClass.replace('/','.');			
-			options.put(APP_CLASS_NAME,rootClass);
+			props.put(APP_CLASS_NAME.getKey(),rootClass);
 		}
 		return rootClass;
 	}
 	public String getMeasureTarget() {
-		return getProperty(TARGET_METHOD, DEFAULT_TARGET_METHOD);
+		return getOption(TARGET_METHOD);
 	}
 	public String getMeasuredClass() {
 		return splitFQMethod(getMeasureTarget(),true);
@@ -376,11 +369,11 @@ public class Config {
 	 * @return the classpath to look for files
 	 */
 	public String getClassPath() {
-		return forceProperty(CLASSPATH_PROPERTY);
+		return getOption(CLASSPATH_PROPERTY);
 	}
 
 	public String getTemplatePath() {
-		return getProperty(TEMPLATEDIR_PROPERTY);
+		return getOption(TEMPLATEDIR_PROPERTY);
 	}
 
 	/**
@@ -388,18 +381,18 @@ public class Config {
 	 * @return true, if there is a report directory
 	 */
 	public boolean hasReportDir() {
-		return this.hasProperty(REPORTDIR_PROPERTY) ||
-			   this.hasProperty(REPORTDIRROOT_PROPERTY);
+		return this.hasOption(REPORTDIR_PROPERTY) ||
+			   this.hasOption(REPORTDIRROOT_PROPERTY);
 	}
 	/**
 	 * @return the directory to create output files in
 	 */
 	public File getOutDir() {
 		if(this.outDir == null) {
-			if(getProperty(REPORTDIR_PROPERTY) != null) {
-				this.outDir = new File(getProperty(REPORTDIR_PROPERTY));
-			} else if(getProperty(REPORTDIRROOT_PROPERTY) != null){
-				File outdirRoot = new File(getProperty(REPORTDIRROOT_PROPERTY));
+			if(getOption(REPORTDIR_PROPERTY) != null) {
+				this.outDir = new File(getOption(REPORTDIR_PROPERTY));
+			} else if(getOption(REPORTDIRROOT_PROPERTY) != null){
+				File outdirRoot = new File(getOption(REPORTDIRROOT_PROPERTY));
 				this.outDir = new File(outdirRoot,getProjectName());
 			} else {
 				throw new MissingConfigurationError("Requesting out directory, but no report directory set: "+
@@ -441,7 +434,7 @@ public class Config {
 	 * @return the path to source directories
 	 */
 	public String getSourcePath() {
-		return forceProperty(SOURCEPATH_PROPERTY);		
+		return getOption(SOURCEPATH_PROPERTY);		
 	}
 	
 	public File getSourceFile(MethodInfo method) throws FileNotFoundException {
@@ -461,10 +454,10 @@ public class Config {
 		throw new FileNotFoundException("Source for "+ci.clazz.getClassName()+" not found.");
 	}
 	public boolean doDataflowAnalysis() {
-		return getBooleanOption(DO_DFA, DO_DFA_DEFAULT);
+		return getOption(DO_DFA);
 	}
 	public String getDotBinary() {
-		return getProperty(PROGRAM_DOT);
+		return getOption(PROGRAM_DOT);
 	}
 	public boolean doInvokeDot() {
 		return (getDotBinary() != null);
@@ -473,7 +466,7 @@ public class Config {
 		return this.genWCETReport ;
 	}
 	public boolean doDumpIPL() {
-		return this.hasReportDir() && this.getBooleanOption(DUMP_ILP, DUMP_ILP_DEFAULT);
+		return this.hasReportDir() && this.getOption(DUMP_ILP);
 	}
 	public void setGenerateWCETReport(boolean generateReport) {
 		this.genWCETReport = generateReport;
@@ -483,40 +476,16 @@ public class Config {
 		return new File(getDotBinary()).exists();
 	}
 	public boolean helpRequested() {
-		return getBooleanOption("help",false);
+		return getOption(SHOW_HELP);
 	}
-	public Properties getOptions() {
-		Properties validOptions = new Properties();
-		for(Entry<Object,Object> e : options.entrySet()) {
-			if(null != getOptionSpec((String)e.getKey())) {
-				validOptions.put(e.getKey(),e.getValue());				
-			}
+	public Map<String,Object> getOptions() {
+		Map<String,Object> opts = new HashMap<String, Object>();
+		for(Option<?> o : optionList) {
+			opts.put(o.key,getOption(o));
 		}
-		return validOptions;
+		return opts;
 	}
-
-	public boolean getBooleanOption(BooleanOption opt) {
-		return getBooleanOption(opt.getKey(), opt.getDefaultValue());
-	}
-	public boolean getBooleanOption(String key, boolean def) {
-		String v= this.options.getProperty(key);
-		if(v == null) return def;
-		return Option.BooleanOption.parse(v);	
-	}
-	public int getIntOption(String key, int def) {
-		String v = this.options.getProperty(key);
-		if(v== null) return def;
-		return Integer.parseInt(v);
-	}
-	public <T extends Enum<T>> T getEnumOption(EnumOption<T> option) {
-		String e = this.options.getProperty(option.getKey());
-		if(e == null) return option.getDefaultValue();
-		else return option.parseEnum(e);
-	}
-	public File getFileOption(StringOption option) {
-		return new File(options.getProperty(option.key, option.defaultValue));
-	}
-			
+	
 	/**
 	 * Consume all command line options and turn them into properties.<br/>
 	 * 
@@ -526,7 +495,7 @@ public class Config {
 	 * and we add the pair to our properties, consuming both arguments.
 	 * The first non-option or the argument string {@code --} terminates the option list.
 	 * @param argv The argument list
-	 * @param options The properties to update
+	 * @param props The properties to update
 	 * @return An array of unconsumed arguments
 	 */
 	public String[] consumeOptions(String[] argv) {
@@ -538,8 +507,8 @@ public class Config {
 			if(argv[i].charAt(1) == '-') key = argv[i].substring(2);
 			else key = argv[i].substring(1);
 			val = argv[i+1];
-			if(null != Config.getOptionSpec(key)) {
-				options.put(key, val);
+			if(null != getOptionSpec(key)) {
+				props.put(key, val);
 			} else {
 				System.err.println("Not in option set: "+key+" ("+Arrays.toString(argv));
 				rest.add(key);

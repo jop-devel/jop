@@ -43,4 +43,9 @@ public class BlockWCET {
 		return (b+3)/4;
 	}
 
+	public static int numberOfBlocks(ControlFlowGraph flowGraph, int blockSize) {
+		int mWords = BlockWCET.bytesToWords(flowGraph.getNumberOfBytes());
+		return ((mWords+blockSize-1) / blockSize);
+	}
+
 }

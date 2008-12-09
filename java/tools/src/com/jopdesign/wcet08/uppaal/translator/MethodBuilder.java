@@ -24,8 +24,12 @@ import java.util.Map;
 import java.util.Set;
 
 import com.jopdesign.build.MethodInfo;
+import com.jopdesign.wcet08.Config;
 import com.jopdesign.wcet08.Project;
 import com.jopdesign.wcet08.analysis.BlockWCET;
+import com.jopdesign.wcet08.analysis.SimpleAnalysis;
+import com.jopdesign.wcet08.analysis.CacheConfig.CacheApproximation;
+import com.jopdesign.wcet08.analysis.SimpleAnalysis.WcetCost;
 import com.jopdesign.wcet08.frontend.ControlFlowGraph;
 import com.jopdesign.wcet08.frontend.WcetAppInfo;
 import com.jopdesign.wcet08.frontend.ControlFlowGraph.BasicBlockNode;
@@ -38,6 +42,7 @@ import com.jopdesign.wcet08.graphutils.FlowGraph;
 import com.jopdesign.wcet08.graphutils.Pair;
 import com.jopdesign.wcet08.graphutils.LoopColoring.IterationBranchLabel;
 import com.jopdesign.wcet08.uppaal.UppAalConfig;
+import com.jopdesign.wcet08.uppaal.UppAalConfig.CacheSim;
 import com.jopdesign.wcet08.uppaal.model.Location;
 import com.jopdesign.wcet08.uppaal.model.Template;
 import com.jopdesign.wcet08.uppaal.model.Transition;
@@ -56,7 +61,25 @@ public class MethodBuilder implements CfgVisitor {
 	private abstract class SyncBuilder {
 		public abstract void methodEntry(Location entry);
 		public abstract void methodExit(Location exit, Transition entryToExit);
-		public abstract Location invokeMethod(InvokeNode n, Location basicBlockExit);
+		protected abstract Location createMethodInvocation(InvokeNode n, Location basicBlockExit);
+		public Location invokeMethod(InvokeNode n, Location basicBlockNode) {
+			if(project.getCallGraph().isLeafNode(n.getReferenced()) &&
+			   Config.instance().getOption(UppAalConfig.UPPAAL_COLLAPSE_LEAVES)) {
+				SimpleAnalysis ilpAn = new SimpleAnalysis(project);
+				CacheApproximation cacheApprox;
+				if(cacheSim == CacheSim.ALWAYS_MISS) {
+					cacheApprox = CacheApproximation.ALWAYS_MISS;
+				} else {
+					cacheApprox = CacheApproximation.ALWAYS_HIT;
+				}
+				WcetCost wcet = ilpAn.computeWCET(n.getImplementedMethod(), cacheApprox);
+				Location inv = tBuilder.createLocation("IN_"+n.getId());
+				tBuilder.waitAtLocation(inv, wcet.getCost());
+				return inv;
+			} else {
+				return createMethodInvocation(n,basicBlockNode);
+			}
+		}
 	}
 	private class SyncViaVariables extends SyncBuilder {
 		public void methodEntry(Location entry) {
@@ -74,7 +97,7 @@ public class MethodBuilder implements CfgVisitor {
 	        				 SystemBuilder.CURRENT_CALL_STACK_DEPTH)); 
 			
 		}
-		public Location invokeMethod(InvokeNode n, Location basicBlockExit) {
+		public Location createMethodInvocation(InvokeNode n, Location basicBlockExit) {
 			Location inNode = tBuilder.createLocation("IN_"+n.getId());
 			tBuilder.getIncomingAttrs(inNode)
 				.appendUpdate(String.format("%1$s := %1$s + 1",
@@ -101,7 +124,7 @@ public class MethodBuilder implements CfgVisitor {
 			exitToEntry.getAttrs()
 				.setSync(SystemBuilder.methodChannel(cfg.getId())+"!");			
 		}
-		public Location invokeMethod(InvokeNode n, Location _) {
+		public Location createMethodInvocation(InvokeNode n, Location _) {
 			Location inNode = tBuilder.createLocation("IN_"+n.getId());
 			tBuilder.getIncomingAttrs(inNode)
 				.setSync(SystemBuilder.methodChannel(n.receiverFlowGraph().getId())+"!");
@@ -122,17 +145,21 @@ public class MethodBuilder implements CfgVisitor {
 			return new NodeAutomaton(exit,exit);
 		}
 	}
+	private Project project;
 	private WcetAppInfo wAppInfo;
 	private ControlFlowGraph cfg;
 	private TemplateBuilder tBuilder;
 	private Map<CFGNode,NodeAutomaton> nodeTemplates;
 	private boolean isRoot;
-	private UppAalConfig config;
 	private SyncBuilder syncBuilder;
-	public MethodBuilder(UppAalConfig c, Project p, MethodInfo mi) {
-		this.config = c;
+	private Config config;
+	private CacheSim cacheSim;
+	public MethodBuilder(Project p, MethodInfo mi) {
+		this.config = Config.instance();
+		this.project = p;
 		this.wAppInfo = p.getWcetAppInfo();
 		this.cfg = wAppInfo.getFlowGraph(mi);
+		this.cacheSim = config.getOption(UppAalConfig.UPPAAL_CACHE_SIM);
 	}
 	/**
 	 * To translate the root method
@@ -147,15 +174,16 @@ public class MethodBuilder implements CfgVisitor {
 		return buildMethod(false);
 	}
 	private Template buildMethod(boolean isRoot) {
-		if(config.useOneChannelPerMethod()) {
+		if(config.getOption(UppAalConfig.UPPAAL_ONE_CHANNEL_PER_METHOD)) {
 			syncBuilder = new SyncViaChannels();
 		} else {
 			syncBuilder = new SyncViaVariables();
 		}
 		this.nodeTemplates = new HashMap<CFGNode, NodeAutomaton>();
-		
+		Map<CFGEdge, IterationBranchLabel<CFGNode>> edgeColoring = 
+			cfg.getLoopColoring().getIterationBranchEdges();
 		this.isRoot = isRoot;
-		this.tBuilder = new TemplateBuilder(config,"Method"+cfg.getId(),cfg.getId(),
+		this.tBuilder = new TemplateBuilder("Method"+cfg.getId(),cfg.getId(),
 										    cfg.getLoopBounds());
 		this.tBuilder.addDescription("Template for method "+cfg.getMethodInfo());
 		FlowGraph<CFGNode, CFGEdge> graph = cfg.getGraph();
@@ -229,7 +257,7 @@ public class MethodBuilder implements CfgVisitor {
 	private NodeAutomaton createRootEntry(DedicatedNode n) {
 		Location initLoc = tBuilder.getInitial();
 		initLoc.setCommited();
-		if(! config.useOneChannelPerMethod()) {
+		if(! config.getOption(UppAalConfig.UPPAAL_ONE_CHANNEL_PER_METHOD)) {
 			tBuilder.getOutgoingAttrs(initLoc)
 			.appendUpdate(String.format("%s := %s", 
 					TemplateBuilder.LOCAL_CALL_STACK_DEPTH, 
@@ -273,14 +301,14 @@ public class MethodBuilder implements CfgVisitor {
 	}
 	private NodeAutomaton createInvoke(InvokeNode n) {
 		long blockWCET = BlockWCET.basicBlockWCETEstimate(n.getBasicBlock());
-		if(config.getCacheSim() == UppAalConfig.CacheSim.ALWAYS_MISS) {
+		if(cacheSim == UppAalConfig.CacheSim.ALWAYS_MISS) {
 			blockWCET+= BlockWCET.getMissOnInvokeCost(n.receiverFlowGraph());
 			blockWCET+= BlockWCET.getMissOnReturnCost(cfg);
 		}		
 		Location basicBlockNode = createBasicBlock(n,blockWCET).getExit();
 		Location invokeNode = syncBuilder.invokeMethod(n,basicBlockNode);
 		Transition bbInvTrans = tBuilder.createTransition(basicBlockNode,invokeNode);			
-		if(config.isDynamicCacheSim()) {
+		if(UppAalConfig.isDynamicCacheSim()) {
 			Location invokeMissNode = tBuilder.createLocation("CACHEI_"+n.getId());
 			Transition bbMissTrans = tBuilder.createTransition(basicBlockNode, invokeMissNode);
 			tBuilder.createTransition(invokeMissNode, invokeNode);
@@ -291,7 +319,7 @@ public class MethodBuilder implements CfgVisitor {
 			tBuilder.waitAtLocation(invokeMissNode, BlockWCET.getMissOnInvokeCost(n.receiverFlowGraph()));
 		}
 		Location invokeExitNode;
-		if(config.isDynamicCacheSim()) {
+		if(UppAalConfig.isDynamicCacheSim()) {
 			Location cacheAccess = tBuilder.createLocation("CACHER_"+n.getId());
 			cacheAccess.setCommited();
 			Transition invAcc = tBuilder.createTransition(invokeNode, cacheAccess);

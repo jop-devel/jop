@@ -39,29 +39,28 @@ public class Translator {
 
 	private Project project;
 	private SystemBuilder sys;
-	private UppAalConfig config;
 
 	public Translator(Project p) {
-		this.config = new UppAalConfig(Config.instance());
 		this.project = p;
 	}
 	
 	public SystemBuilder translateProgram() throws DuplicateKeyException {
 		/* Get callgraph */
 		CallGraph callGraph = project.getCallGraph();
+		// logger.info("Call stack depth: "+callGraph.getMaxHeight());
 		List<MethodInfo> impls = callGraph.getImplementedMethods();
 		/* Create system builder */
 		sys = new SystemBuilder(
-				config,
-				project.getName(), 
+				project, 
 				callGraph.getMaxHeight(),
 				impls.size());
 		/* Translate methods */
+		boolean collapseLeafs = Config.instance().getOption(UppAalConfig.UPPAAL_COLLAPSE_LEAVES);
 		for(MethodInfo mi : impls) {
-			MethodBuilder transl = new MethodBuilder(config,project,mi);
+			MethodBuilder transl = new MethodBuilder(project,mi);
 			if(mi.equals(project.getMeasuredMethod())) {
 				sys.addTemplate(0,transl.buildRootMethod());				
-			} else {
+			} else if(! collapseLeafs || ! project.getCallGraph().isLeafNode(mi)){
 				sys.addTemplate(transl.getId(),transl.buildMethod());
 			}
 		}

@@ -44,6 +44,7 @@ public abstract class Option<T> {
 		}
 		@Override
 		public void checkFormat(String s) { return; }
+		public String parse(String s) { return s; }
 	}
 	public static class BooleanOption extends Option<Boolean> {
 		public BooleanOption(String key, String descr) {
@@ -54,9 +55,9 @@ public abstract class Option<T> {
 		}
 		@Override
 		public void checkFormat(String s) throws IllegalArgumentException {
-			BooleanOption.parse(s);			
+			parse(s);			
 		}
-		public static Boolean parse(String s) {
+		public Boolean parse(String s) throws IllegalArgumentException {
 			String sl = s.toLowerCase();
 			if(sl.equals("true") || sl.equals("yes") || sl.equals("y")) return Boolean.TRUE;
 			else if (sl.equals("false") || sl.equals("no") || sl.equals("n")) return Boolean.FALSE;
@@ -72,8 +73,12 @@ public abstract class Option<T> {
 		}
 		@Override
 		public void checkFormat(String s) throws NumberFormatException {
-			Long.parseLong(s);			
-		}		
+			parse(s);
+		}
+		@Override
+		public Long parse(String s) throws IllegalArgumentException {
+			return Long.parseLong(s);
+		}
 	}
 	public static class EnumOption<T extends Enum<T>> extends Option<T> {
 		public EnumOption(String key, String descr, T def) {
@@ -87,9 +92,9 @@ public abstract class Option<T> {
 		}
 		@Override
 		public void checkFormat(String s) throws IllegalArgumentException {
-			parseEnum(s);
+			parse(s);
 		}
-		public T parseEnum(String s) {
+		public T parse(String s) throws IllegalArgumentException {
 			try {
 				return (T)Enum.valueOf(this.valClass,s);
 			} catch(IllegalArgumentException e) {
@@ -123,7 +128,10 @@ public abstract class Option<T> {
 		this(key,(Class<T>) defaultVal.getClass(),descr,true);
 		this.defaultValue = defaultVal;
 	}
+	
 	public abstract void checkFormat(String s) throws IllegalArgumentException;
+	public abstract T parse(String s) throws IllegalArgumentException;
+	
 	public String toString() {
 		return toString(0);
 	}

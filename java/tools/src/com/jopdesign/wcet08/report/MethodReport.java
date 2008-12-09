@@ -40,7 +40,7 @@ public class MethodReport {
 		this.info = m;
 		this.loopBounds = p.getWcetAppInfo().getFlowGraph(info).getLoopBounds().values();
 		this.referenced = new TreeSet<String>();
-		Iterator<CallGraphNode> i = p.getCallGraph().getReachableMethods(m);
+		Iterator<CallGraphNode> i = p.getCallGraph().getReferencedMethods(m);
 		while(i.hasNext()) {
 			Pair<ClassInfo, String> ref = i.next().getReferencedMethod();
 			this.referenced.add(ref.fst().clazz.getClassName()+"."+ref.snd());

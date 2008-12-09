@@ -18,6 +18,7 @@ import org.jgrapht.ext.IntegerNameProvider;
 import org.jgrapht.ext.StringNameProvider;
 import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.EdgeReversedGraph;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -50,9 +51,8 @@ public class GraphTopologyTest {
 		}
 
 		public String getLabel(String n) {
-			return MessageFormat.format("{0} [ order: {1}, idom: {2}, loops: {3} ]",
-					n, to.getTopologicalOrder().get(n), 
-					doms.getIDoms().get(n), lc.getLoopColors().get(n));
+			return MessageFormat.format("{0} [ idom: {1}, loops: {2} ]",
+					n, doms.getIDoms().get(n), lc.getLoopColors().get(n));
 		}
 
 		public boolean setAttributes(String n, Map<String, String> ht) {
@@ -164,16 +164,6 @@ public class GraphTopologyTest {
 		assertEquals(mkEdgeSet(gr1,to1.getBackEdges()),mkEdgeSet(gr1, backEdges1));
 	}
 	@Test
-	public void testTopOrder1() {
-		Hashtable<Integer, Integer> preOrder = to1.getTopologicalOrder();
-		for(int i = 0; i < vxs1.length; i++) {
-			int[] succs = toporders1[i];
-			for(int j : succs) {
-				assertEquals(true, preOrder.get(vxs1[i]) < preOrder.get(j));
-			}
-		}
-	}
-	@Test
 	public void testDominators1() {
 		Dominators<Integer, DefaultEdge> doms1 = new Dominators<Integer, DefaultEdge>(gr1,to1.getDFSTraversal());
 		Hashtable<Integer, Integer> idoms = doms1.getIDoms();
@@ -209,11 +199,14 @@ public class GraphTopologyTest {
 		FlowGraph <String, DefaultEdge> g = 
 			new DefaultFlowGraph<String, DefaultEdge>(DefaultEdge.class,"Entry","Exit");
 		for(int i = 1; i <= 8; i++) { g.addVertex(""+i); }
+		g.addVertex("4a");g.addVertex("4b");
 		g.addEdge("Entry","1");
 		g.addEdge("1","2");g.addEdge("1","7");
 		g.addEdge("2","3");g.addEdge("2","7");
 		g.addEdge("3","4");g.addEdge("3","6");
-		g.addEdge("4","5");
+		g.addEdge("4","4a");g.addEdge("4","4b");
+		g.addEdge("4a","5");
+		g.addEdge("4b","5");
 		g.addEdge("5","2");
 		g.addEdge("6","1");
 		g.addEdge("7","8");
@@ -224,22 +217,20 @@ public class GraphTopologyTest {
 		DefaultDirectedGraph<String, DefaultEdge> g = g1();
 		System.out.println("Graph: "+g);
 		exportDOT("g1-cfg.dot",g);
-		TopOrder<String, DefaultEdge> topOrder;
+		TopOrder<String, DefaultEdge> topOrder = null;
 		try {
 			topOrder = new TopOrder<String,DefaultEdge>(g,"Entry");
 		} catch (BadGraphException e) {
 			e.printStackTrace();
 			System.exit(1);
-			topOrder = null;
 		}
 		System.out.println("DfsOrder: "+topOrder.getDFSTraversal());
-		System.out.println("TopOrder: "+topOrder.getTopologicalOrder());
 		System.out.println("Back-Edges: "+topOrder.getBackEdges());
 		Dominators<String,DefaultEdge> doms = 
 			new Dominators<String,DefaultEdge>(g,topOrder.getDFSTraversal());
 		System.out.println("Dominators: "+doms.getIDoms());
 		LoopColoring<String, DefaultEdge> loopColoring = 
-			new LoopColoring<String, DefaultEdge>(g,topOrder);
+			new LoopColoring<String, DefaultEdge>(g,topOrder,"10");
 		System.out.println("Loop coloring: "+loopColoring.getLoopColors());
 		System.out.println("Iteration branch edges: "+loopColoring.getIterationBranchEdges());
 		exportDOT("g1-lnf.dot",loopColoring.getLoopNestForest());		
@@ -255,7 +246,7 @@ public class GraphTopologyTest {
 			Dominators<String,DefaultEdge> doms2 = 
 				new Dominators<String,DefaultEdge>(g2,top2.getDFSTraversal());
 			LoopColoring<String, DefaultEdge> loops2 = 
-				new LoopColoring<String, DefaultEdge>(g2,top2);
+				new LoopColoring<String, DefaultEdge>(g2,top2,g2.getExit());
 			
 			exportDOT("g2-analysis", g2 ,
 				   new AnalysisNodeLabel(g2,top2,doms2,loops2),
