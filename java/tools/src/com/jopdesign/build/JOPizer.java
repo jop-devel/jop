@@ -118,13 +118,15 @@ public class JOPizer extends AppInfo implements Serializable {
 			jz.load();
 			
 			// Reduce constant pool
+			// TODO: remove unused field and static field entries
+			// and remove the code from resolveCPool(cp).
 			jz.iterate(new FindUsedConstants(jz));
 			// length of the reduced cpool is now known
 	        if(dumpMgci){
 	          jz.iterate(new SetGCRTMethodInfo(jz));
 	        }
 
-	        // replace the wide instrucitons generated
+	        // replace the wide instructions generated
 			// by Sun's javac 1.5
 			jz.iterate(new ReplaceIinc(jz));
 			
@@ -132,7 +134,6 @@ public class JOPizer extends AppInfo implements Serializable {
 			// methods
 			jz.iterate(new InsertSynchronized(jz));
 			
-	        
 	        // dump of BCEL info to a text file
 			jz.iterate(new Dump(jz, jz.outTxt));
 
@@ -150,6 +151,17 @@ public class JOPizer extends AppInfo implements Serializable {
 			jz.iterate(cliOrder);
 			JopMethodInfo.clinitList = cliOrder.findOrder();
 			
+			// calculate addresses for static fields
+			jz.iterate(new CountStaticFields(jz));
+			int addrVal = 2;
+			JopClassInfo.addrValueStatic = addrVal;
+			int addrRef = JopClassInfo.addrValueStatic + JopClassInfo.cntValueStatic;
+			JopClassInfo.addrRefStatic = addrRef;
+			jz.iterate(new SetStaticAddresses(jz));
+			// set back the start addresses
+			JopClassInfo.addrValueStatic = addrVal; 
+			JopClassInfo.addrRefStatic = addrRef;
+
 			// change methods - replace Native calls
 			// TODO: also change the index into the cp for the
 			// reduced version.
@@ -157,8 +169,7 @@ public class JOPizer extends AppInfo implements Serializable {
 			// No further access via BCEL is now possible -
 			// we have 'illegal' instructions in the bytecode.
 
-
-			jz.codeStart = 2;
+			jz.codeStart = JopClassInfo.addrRefStatic + JopClassInfo.cntRefStatic;;
 			// Now we can set the method info code and the address
 			// jz.pointerAddr is set
 			jz.iterate(new SetMethodAddress(jz));
@@ -167,26 +178,15 @@ public class JOPizer extends AppInfo implements Serializable {
 			int cntClinit = JopMethodInfo.clinitList.size();
 			// How long is the string table?
 			StringInfo.stringTableAddress = jz.pointerAddr+PTRS+cntClinit+1;
-			
-			// calculate addresses for static fields
-			jz.iterate(new CountStaticFields(jz));
-			int addrVal = StringInfo.stringTableAddress + StringInfo.length;
-			JopClassInfo.addrValueStatic = addrVal; 
-			int addrRef = JopClassInfo.addrValueStatic + JopClassInfo.cntValueStatic;
-			JopClassInfo.addrRefStatic = addrRef;
-			
+						
 			// Start of class info
-			jz.clinfoAddr = JopClassInfo.addrRefStatic + JopClassInfo.cntRefStatic;
+			jz.clinfoAddr = StringInfo.stringTableAddress + StringInfo.length;
 			
 			// Calculate class info addresses
 			ClassAddress cla = new ClassAddress(jz, jz.clinfoAddr);
 			jz.iterate(cla);
 			// Now all sizes are known
 			jz.length = cla.getAddress();
-
-			// set back the start addresses
-			JopClassInfo.addrValueStatic = addrVal; 
-			JopClassInfo.addrRefStatic = addrRef;
 
 			// As all addresses are now known we can
 			// resolve the constants.

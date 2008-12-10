@@ -52,8 +52,11 @@ public class JopWriter {
 		out.print("\t"+jz.pointerAddr+",");
 		out.println("//\tpointer to special pointers = address of 'special' pointer");
 		
-		System.out.println(((jz.pointerAddr*4-8+512)/1024)+"KB instruction");
+		System.out.println((((jz.pointerAddr-JopClassInfo.cntValueStatic
+				-JopClassInfo.cntRefStatic)*4-8+512)/1024)+"KB instruction");
 			
+		dumpStaticFields();
+
 		int nrOfMethods = dumpByteCode();
 		
 		System.out.println(nrOfMethods+" number of methods");
@@ -82,8 +85,6 @@ public class JopWriter {
 		
 		dumpStrings();
 		
-		dumpStaticFields();
-
 		dumpClassInfo();
 		
 		out.close();

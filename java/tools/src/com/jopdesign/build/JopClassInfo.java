@@ -290,21 +290,12 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 		}
 	}
 
-	/**
-	 * Calculate the size of the class info table, adjust the addresses and
-	 * return the next available address. Calculate GC info for the instance.
-	 * 
-	 * @param addr
-	 * @return
-	 */
-	public int setAddress(AppInfo ai, int addr) {
-
-		int i;
-		instGCinfo = getGCInfo();
+	public void setStaticAddresses() {
+		
 		// the class variables (the static fields) are in a special area
 		staticRefVarAddress = addrRefStatic;
 		staticValueVarAddress = addrValueStatic;
-		for (i = 0; i < clft.len; ++i) {
+		for (int i = 0; i < clft.len; ++i) {
 			if (clft.isStatic[i]) {
 				// resolve the address
 				// idx is now the static address
@@ -317,6 +308,19 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 				}
 			}
 		}
+		
+	}
+	/**
+	 * Calculate the size of the class info table, adjust the addresses and
+	 * return the next available address. Calculate GC info for the instance.
+	 * 
+	 * @param addr
+	 * @return
+	 */
+	public int setAddress(AppInfo ai, int addr) {
+
+		int i;
+		instGCinfo = getGCInfo();
 		classRefAddress = addr;
 		// class head contains the instance size and
 		// a pointer to the inteface table
@@ -594,7 +598,7 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 						int vpos = minf.vtindex;
 						String comment = "virtual";
 
-						// TODO: is kind of redundant search as we've allready
+						// TODO: is kind of redundant search as we've already
 						// searched the IT table with getVTMethodInfo()
 						// TODO: do we handle different interfaces with same
 						// method id correct? (see buildIT)
@@ -626,43 +630,44 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 					}
 					break;
 				case Constants.CONSTANT_Fieldref:
-					int fidx = ((ConstantFieldref) co).getClassIndex();
-					ConstantClass fcl = (ConstantClass) cp.getConstant(fidx);
-					String fclname = fcl.getBytes(cp).replace('/', '.');
-					// got the class name
-					sigidx = ((ConstantFieldref) co).getNameAndTypeIndex();
-					signt = (ConstantNameAndType) cp.getConstant(sigidx);
-					sigstr = signt.getName(cp) + signt.getSignature(cp);
-					clinf = (JopClassInfo) appInfo.cliMap.get(fclname);
-					int j;
-					String comment = "";
-					boolean found = false;
-					while (!found) {
-						for (j = 0; j < clinf.clft.len; ++j) {
-							if (clinf.clft.key[j].equals(sigstr)) {
-								found = true;
-								if (clinf.clft.isStatic[j]) {
-									comment = "static ";
-								}
-								// for static fields a direct pointer to the
-								// static field
-								cpoolArry[pos] = clinf.clft.idx[j];
-								cpoolComments[pos] = comment
-										+ clinf.clazz.getClassName() + "."
-										+ sigstr;
-								break;
-							}
-						}
-						if (!found) {
-							clinf = (JopClassInfo) clinf.superClass;
-							if (clinf == null) {
-								System.out.println("Error: field " + fclname
-										+ "." + sigstr + " not found!");
-								break;
-							}
-						}
-					}
-					break;
+					throw new Error("Fieldref should not be used anymore");
+//					int fidx = ((ConstantFieldref) co).getClassIndex();
+//					ConstantClass fcl = (ConstantClass) cp.getConstant(fidx);
+//					String fclname = fcl.getBytes(cp).replace('/', '.');
+//					// got the class name
+//					sigidx = ((ConstantFieldref) co).getNameAndTypeIndex();
+//					signt = (ConstantNameAndType) cp.getConstant(sigidx);
+//					sigstr = signt.getName(cp) + signt.getSignature(cp);
+//					clinf = (JopClassInfo) appInfo.cliMap.get(fclname);
+//					int j;
+//					String comment = "";
+//					boolean found = false;
+//					while (!found) {
+//						for (j = 0; j < clinf.clft.len; ++j) {
+//							if (clinf.clft.key[j].equals(sigstr)) {
+//								found = true;
+//								if (clinf.clft.isStatic[j]) {
+//									comment = "static ";
+//								}
+//								// for static fields a direct pointer to the
+//								// static field
+//								cpoolArry[pos] = clinf.clft.idx[j];
+//								cpoolComments[pos] = comment
+//										+ clinf.clazz.getClassName() + "."
+//										+ sigstr;
+//								break;
+//							}
+//						}
+//						if (!found) {
+//							clinf = (JopClassInfo) clinf.superClass;
+//							if (clinf == null) {
+//								System.out.println("Error: field " + fclname
+//										+ "." + sigstr + " not found!");
+//								break;
+//							}
+//						}
+//					}
+//					break;
 				default:
 					System.out.println("TODO: cpool@" + pos + " = orig_cp@" + i
 							+ " " + co);

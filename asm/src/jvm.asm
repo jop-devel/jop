@@ -130,6 +130,7 @@
 //  2008-07-03	WP: Fixed null pointer handling of invokexxx instructions
 //	2008-07-13	MS: mapping of Native.put/getfield to jopsys version
 //	2008-08-21	MS: Corrected data out enable in SRAM/Flash interface
+//	2008-12-10	MS: static field access uses index as address
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -139,7 +140,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20080821
+version		= 20081210
 
 //
 //	start of stack area in the on-chip RAM
@@ -1054,63 +1055,25 @@ goto:
 			nop nxt
 
 
-
+			// new 'customized' getfield
+			// index is now the address
 getstatic_ref:
 getstatic:
-//*******************************
-// test for oohw change
-//			ldi	1			// 2*5+2+2=14
-//dly4:
-//			dup
-//			nop
-//			bnz	dly4
-//			ldi	-1			// decrement in branch slot
-//			add
-//			pop				// remove counter
-//			nop
-//			nop
-//*******************************
-			ldm	cp opd
+			nop opd
 			nop	opd
 			ld_opd_16u
-			add
 
-			stmra				// read ext. mem, mem_bsy comes one cycle later
+			stmra
 			wait
 			wait
-			ldmrd		 	// read ext. mem
+			ldmrd		 nxt
 
-			stmra				// read ext. mem, mem_bsy comes one cycle later
-			wait
-			wait
-			ldmrd		 nxt	// read ext. mem
-
-
-
+			// new 'customized' getfield
+			// index is now the address
 putstatic:
-//*******************************
-// test for oohw change
-//			ldi	1			// 2*5+2+3=15
-//dly5:
-//			dup
-//			nop
-//			bnz	dly5
-//			ldi	-1			// decrement in branch slot
-//			add
-//			pop				// remove counter
-//			nop
-//			nop
-//			nop
-//*******************************
-			ldm	cp opd
+			nop opd
 			nop	opd
 			ld_opd_16u
-			add
-
-			stmra				// read ext. mem, mem_bsy comes one cycle later
-			wait
-			wait
-			ldmrd		 		// read ext. mem
 
 			stmwa				// write ext. mem address
 //			nop				// ??? tos is val
@@ -1134,53 +1097,6 @@ jopsys_getfield:				// version from Native
 			wait
 			ldmrd nxt			// read result
 
-//*******************************
-// test for oohw change
-//			ldi	2			// 3*5+2+2=19
-//dly2:
-//			dup
-//			nop
-//			bnz	dly2
-//			ldi	-1			// decrement in branch slot
-//			add
-//			pop				// remove counter
-//			nop
-//			nop
-//*******************************
-				// int off = readOpd16u();
-				// int ref = stack[sp];
-				// if (useHandle) {
-				//	// handle needs indirection
-				//	ref = readMem(ref);
-				// }
-				// stack[sp] = readMem(ref+off);
-
-
-//			dup				// null pointer check
-//			nop				// could be interleaved with
-//			bz	null_pointer	// following code
-//			nop
-//			nop
-
-//			stmra				// read handle indirection
-//			wait				// for the GC
-//			wait
-//			ldmrd
-
-			// TODO: why does flag opd has to be immediatley
-			// before usage by ld_opd?
-			// We cannot optimize this instruction as far as
-			// we want to!
-//			nop	opd
-//			nop	opd
-//			ld_opd_16u
-//			add					// +objectref
-
-//			stmra				// read ext. mem, mem_bsy comes one cycle later
-//			wait
-//			wait
-//			ldmrd		 nxt	// read ext. mem				
-
 putfield:
 			stm	a opd			// push index
 			nop	opd
@@ -1192,52 +1108,6 @@ jopsys_putfield:				// Version from Native
 			wait
 			wait
 			pop nxt
-
-
-//*******************************
-// test for oohw change
-//			ldi	3			// 4*5+2=22
-//dly3:
-//			dup
-//			nop
-//			bnz	dly3
-//			ldi	-1			// decrement in branch slot
-//			add
-//			pop				// remove counter
-//*******************************
-				// int off = readOpd16u();
-				// int val = stack[sp--];
-				// int ref = stack[sp--];
-				// if (useHandle) {
-				// 	// handle needs indirection
-				// 	ref = readMem(ref);
-				// }
-				// writeMem(ref+off, val);
-
-// 			stm	a				// save value
-
-// 			dup				// null pointer check
-// 			nop				// could be interleaved with
-// 			bz	null_pointer	// following code
-// 			nop
-// 			nop
-
-// 			stmra				// read handle indirection
-// 			wait				// for the GC
-// 			wait
-// 			ldmrd
-
-// 			nop	opd
-// 			nop	opd
-// 			ld_opd_16u
-// 			add					// +objectref
-
-// 			stmwa				// write ext. mem address
-// 			ldm	a				// restore value
-// 			stmwd				// write ext. mem data
-// 			wait
-// 			wait
-// 			nop	nxt
 
 newarray:
 			nop opd
@@ -1610,7 +1480,6 @@ new:
 anewarray:
 checkcast:
 instanceof:
-putstatic_ref:
 
 //
 //	find address for JVM function
@@ -1662,6 +1531,7 @@ putstatic_ref:
 //
 
 putfield_ref:
+putstatic_ref:
 
 //
 //	find address for JVM function

@@ -131,21 +131,14 @@ lstore:		ldvp
 			nop	nxt
 
 getstatic_long:
-				// int idx = readOpd16u();
-				// int addr = readMem(cp+idx);
+				// int addr = readOpd16u();
 				// stack[++sp] = readMem(addr);
 				// stack[++sp] = readMem(addr+1);
 
-			ldm	cp opd
+			nop opd
 			nop	opd
 			ld_opd_16u
-			add
 
-			stmra				// read ext. mem, mem_bsy comes one cycle later
-			wait
-			wait
-			ldmrd		 	// read ext. mem
-long_read:
 			dup
 
 			stmra
@@ -164,26 +157,17 @@ long_read:
 
 
 putstatic_long:
-				// int idx = readOpd16u();
-				// int addr = readMem(cp+idx);
+				// int addr = readOpd16u();
 				// writeMem(addr+1, stack[sp--]);
 				// writeMem(addr, stack[sp--]);
 
-			stm	b				// save low word
-			stm	a				// save high word
+			stm	b opd		// save low word
+			stm	a opd		// save high word
 			// could also be done to keep values on
 			// stack, but first store at addr+1 (like 
 			// in Java simulation)
 
-			ldm	cp opd
-			nop	opd
 			ld_opd_16u
-			add
-
-			stmra				// read ext. mem, mem_bsy comes one cycle later
-			wait
-			wait
-			ldmrd		 	// read ext. mem
 
 			dup
 

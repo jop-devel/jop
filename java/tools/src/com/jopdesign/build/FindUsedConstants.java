@@ -97,9 +97,13 @@ public class FindUsedConstants extends JOPizerVisitor {
 				case Constants.CONSTANT_Long:
 				case Constants.CONSTANT_Double:
 					len = 2;
+					break;
 			}
-// System.out.println(co+" "+idx+" "+len);	
-			getCli().addUsedConst(idx, len);
+// System.out.println(co+" "+idx+" "+len);
+			// we don't need the field references in the cpool anymore
+			if (co.getTag()!=Constants.CONSTANT_Fieldref) {
+				getCli().addUsedConst(idx, len);				
+			}
 			
 			// also modify the index!
 //			Constant cnst = cpool.getConstant(ii.getIndex());

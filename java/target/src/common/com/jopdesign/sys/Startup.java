@@ -403,15 +403,13 @@ public class Startup {
 
 	static void putstatic() {
 
-		int idx = readBC16u();
-		int addr = Native.rdMem(cp+idx);
+		int addr = readBC16u();
 		Native.wrMem(stack[sp--], addr);
 	}
 
 	static void getstatic() {
 
-		int idx = readBC16u();
-		int addr = Native.rdMem(cp+idx);
+		int addr = readBC16u();
 		stack[++sp] = Native.rdMem(addr);
 	}
 

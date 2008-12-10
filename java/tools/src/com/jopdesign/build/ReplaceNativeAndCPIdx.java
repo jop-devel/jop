@@ -146,27 +146,25 @@ public class ReplaceNativeAndCPIdx extends JOPizerVisitor {
 			// idx is the position in the 'original' unresolved cpool
 			int pos = getCli().cpoolUsed.indexOf(idx);
 			int new_index = pos + 1;
-			if (pos == -1) {
-				System.out.println("Error: constant " + index + " "
-						+ cpoolgen.getConstant(index) + " not found");
-				System.out.println("new cpool: " + getCli().cpoolUsed);
-				System.out.println("original cpool: " + cpoolgen);
-
-				System.exit(-1);
+			// replace index by the offset for getfield
+			// and putfield and by address for getstatic and putstatic
+			if (cpii instanceof GETFIELD || cpii instanceof PUTFIELD ||
+					cpii instanceof GETSTATIC || cpii instanceof PUTSTATIC) {
+				// we use the offset instead of the CP index
+				new_index = getFieldOffset(cp, index);
 			} else {
-				// replace index by the offset for getfield
-				// and putfield
-				if (cpii instanceof GETFIELD || cpii instanceof PUTFIELD) {
-					int offset = getFieldOffset(cp, index);
-					// we use the offset instead of the CP index
-					new_index = offset;
+				if (pos == -1) {
+					System.out.println("Error: constant " + index + " "
+							+ cpoolgen.getConstant(index) + " not found");
+					System.out.println("new cpool: " + getCli().cpoolUsed);
+					System.out.println("original cpool: " + cpoolgen);
+
+					System.exit(-1);	
 				}
-				// set new index, position starts at
-				// 1 as cp points to the length of the pool
-				// System.out.println(cli.clazz.getClassName()+"."+method.getName()+"
-				// "+ii+" -> "+(pos+1));
-				cpii.setIndex(new_index);
 			}
+			// set new index, position starts at
+			// 1 as cp points to the length of the pool
+			cpii.setIndex(new_index);
 
 			// Added field instruction replacement
 			// by Rasmus and extended by Martin
@@ -216,6 +214,16 @@ public class ReplaceNativeAndCPIdx extends JOPizerVisitor {
 
 	}
 
+	/**
+	 * Get field offset: relative affset for object fields, absolute
+	 * addresses for static fields.
+	 * 
+	 * TODO: remove the dead code in constant pool replacement
+	 * TODO: remove not used constants
+	 * @param cp
+	 * @param index
+	 * @return
+	 */
 	private int getFieldOffset(ConstantPool cp, int index) {
 
 		// from ClassInfo.resolveCPool
@@ -237,11 +245,6 @@ public class ReplaceNativeAndCPIdx extends JOPizerVisitor {
 			for (j = 0; j < clinf.clft.len; ++j) {
 				if (clinf.clft.key[j].equals(sigstr)) {
 					found = true;
-					// should not happen - check it for sure
-					if (clinf.clft.isStatic[j]) {
-						System.out.println("Error is static in ReplNCI");
-						System.exit(-1);
-					}
 					return clinf.clft.idx[j];
 				}
 			}
@@ -258,6 +261,7 @@ public class ReplaceNativeAndCPIdx extends JOPizerVisitor {
 		System.exit(-1);
 		return 0;
 	}
+	
 
 	class GETSTATIC_REF extends FieldInstruction {
 		public GETSTATIC_REF(short index) {

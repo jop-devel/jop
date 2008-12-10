@@ -1110,13 +1110,13 @@ public class WCETInstruction {
 			break;
 		// GETSTATIC = 178
 		case org.apache.bcel.Constants.GETSTATIC:
-			wcet = 12 + 2 * r;
+			wcet = 7 + r;
 			if (CMP_WCET==true)
 				wcet = getstaticx.wcet; 
 			break;
 		// PUTSTATIC = 179
 		case org.apache.bcel.Constants.PUTSTATIC:
-			wcet = 13 + r + w;
+			wcet = 8 + w;
 			if (CMP_WCET==true)
 				wcet = putstatic.wcet;
 			break;
@@ -1347,7 +1347,7 @@ public class WCETInstruction {
 
 		// GETSTATIC_REF = 224
 		case GETSTATIC_REF:
-			wcet = 12 + 2 * r;
+			wcet = 7 + r;
 			if (CMP_WCET==true)
 				wcet = getstaticx.wcet;
 			break;
@@ -1570,12 +1570,12 @@ public class WCETInstruction {
 		generateInstruction(xastore, false, 0, 0);
 		xastore.wcet = wcetOfInstruction(xastore.microcode);
 		
-		getstaticx.microcode = new int [12+2*r];
+		getstaticx.microcode = new int [7+r];
 		getstaticx.opcode = 178;
 		generateInstruction(getstaticx, false, 0, 0);
 		getstaticx.wcet = wcetOfInstruction(getstaticx.microcode);
 		
-		putstatic.microcode = new int [13+r+w];
+		putstatic.microcode = new int [8+w];
 		putstatic.opcode = 179;
 		generateInstruction(putstatic, false, 0, 0);
 		putstatic.wcet = wcetOfInstruction(putstatic.microcode);
@@ -1691,10 +1691,8 @@ public class WCETInstruction {
 		case 178:
 		case 224:
 			for(int i=0;i<instruction.microcode.length;i++){
-				if(i<=5) instruction.microcode[i]=NOP;
-				else if(i==6) instruction.microcode[i]=RD;
-				else if(i>6 && i<=9+r) instruction.microcode[i]=NOP;
-				else if(i==10+r) instruction.microcode[i]=RD;
+				if(i<=4) instruction.microcode[i]=NOP;
+				else if(i==5) instruction.microcode[i]=RD;
 				else instruction.microcode[i]=NOP;
 			}
 			break;
@@ -1702,10 +1700,8 @@ public class WCETInstruction {
 		// putstatic
 		case 179:
 			for(int i=0;i<instruction.microcode.length;i++){
-				if(i<=5) instruction.microcode[i]=NOP;
-				else if(i==6) instruction.microcode[i]=RD;
-				else if(i>6 && i<=10+r) instruction.microcode[i]=NOP;
-				else if(i==11+r) instruction.microcode[i]=WR;
+				if(i<=4) instruction.microcode[i]=NOP;
+				else if(i==5) instruction.microcode[i]=WR;
 				else instruction.microcode[i]=NOP;
 			}
 			break;

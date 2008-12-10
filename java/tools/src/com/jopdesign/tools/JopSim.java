@@ -462,30 +462,26 @@ System.out.println(mp+" "+pc);
 	}
 	void putstatic() {
 
-		int idx = readOpd16u();
-		int addr = readMem(cp+idx);
+		int addr = readOpd16u();
 		writeMem(addr, stack[sp--]);
 	}
 
 	void getstatic() {
 
-		int idx = readOpd16u();
-		int addr = readMem(cp+idx);
+		int addr = readOpd16u();
 		stack[++sp] = readMem(addr);
 	}
 
 	void putstatic_long() {
 
-		int idx = readOpd16u();
-		int addr = readMem(cp+idx);
+		int addr = readOpd16u();
 		writeMem(addr+1, stack[sp--]);
 		writeMem(addr, stack[sp--]);
 	}
 
 	void getstatic_long() {
 
-		int idx = readOpd16u();
-		int addr = readMem(cp+idx);
+		int addr = readOpd16u();
 		stack[++sp] = readMem(addr);
 		stack[++sp] = readMem(addr+1);
 	}
@@ -1531,7 +1527,7 @@ System.out.println("new heap: "+heap);
 					getstatic();
 					break;
 				case 225 :		// resE1 - putstatic_ref
-					jjvmConst(225);	// use JVM.java version
+					jjvmIdx(225);	// use JVM.java version
 					//putstatic();
 					break;
 				case 226 :		// resE2 - getfield_ref
