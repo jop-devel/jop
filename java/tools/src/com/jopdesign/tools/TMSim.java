@@ -54,10 +54,12 @@ public class TMSim extends JopSim {
 
 	// TODO: we should earlier abort the transaction as we
 	// can read inconsistent data from another commited transaction
+	// TODO: we're still having constants and method table loads in
+	// the read set, but cache load uses readInstrMem().
 	int readMem(int addr) {
 
 		// Transaction active and not an I/O address
-		if (nestingCnt>0 && addr>=0) {
+		if (nestingCnt>0 && addr>=0 && !invokeRead) {
 			Integer addrInt = new Integer(addr);
 			readSet.add(addrInt);
 			if (writeSet.containsKey(addrInt)) {

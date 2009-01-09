@@ -73,6 +73,7 @@ public class JopSim {
 	int jjp;
 	int jjhp;
 
+	boolean invokeRead;
 	//
 	// exception handling
 	//
@@ -389,6 +390,7 @@ System.out.println(mp+" "+pc);
 */
 	void invoke(int new_mp) {
 
+		invokeRead = true;
 		if (log) {
 			System.out.println("addr. of meth.struct="+new_mp);		
 		}
@@ -418,6 +420,7 @@ System.out.println(mp+" "+pc);
 		stack[++sp] = old_mp;
 
 		pc = cache.invoke(start, len);
+		invokeRead = false;
 	}
 
 /**

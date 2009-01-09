@@ -38,7 +38,7 @@ public class SimpleList {
 
 	static final int MAGIC = -10000;
 
-	static final int CNT = 10000;
+	static final int CNT = 10;
 	
 	static SysDevice sys = IOFactory.getFactory().getSysDevice();
 	
