@@ -53,14 +53,14 @@ public class RunBench {
 			
 			// start measurement here
 			int t1 = (int) System.currentTimeMillis();
-			int cyc1 = com.jopdesign.sys.Native.rdMem(com.jopdesign.sys.Const.IO_CNT);
+//			int cyc1 = com.jopdesign.sys.Native.rdMem(com.jopdesign.sys.Const.IO_CNT);
 			bm[i].test(10000);
 //			bm[i].test(10);
 			// stop measurement here
-			int cyc2 = com.jopdesign.sys.Native.rdMem(com.jopdesign.sys.Const.IO_CNT);
+//			int cyc2 = com.jopdesign.sys.Native.rdMem(com.jopdesign.sys.Const.IO_CNT);
 			int t2 = (int) System.currentTimeMillis();
-			System.out.print("cycles: ");
-			System.out.println(cyc2-cyc1);
+//			System.out.print("cycles: ");
+//			System.out.println(cyc2-cyc1);
 			System.out.print("ms: ");
 			System.out.println(t2-t1);			
 		}
