@@ -502,8 +502,6 @@ public class CS8900 extends LinkLayer {
 			//
 			p = Packet.getTxPacket(single);
 			if (p != null) {
-				System.out.print("Packet state=");
-				System.out.println(p.getStatus());
 				p = Arp.fillMAC(p); // fill in dest MAC
 				if (p!=null) {
 					send(p); // send one packet					
