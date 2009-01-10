@@ -21,7 +21,7 @@
 package cmp;
 
 
-import rtlib.SingleReaderWriterQueue;
+import rtlib.SRSWQueue;
 
 import com.jopdesign.io.IOFactory;
 import com.jopdesign.io.SysDevice;
@@ -58,7 +58,7 @@ public class EjipBenchCMP {
 	static int a, b;
 	static int sum;
 	
-	static SingleReaderWriterQueue<Packet> macQueue, resultQueue;
+	static SRSWQueue<Packet> macQueue, resultQueue;
 
 /**
 *	Start network.
@@ -68,13 +68,13 @@ public class EjipBenchCMP {
 		net = Net.init();
 		ipLink = Loopback.init();
 		
-		macQueue = new SingleReaderWriterQueue<Packet>(new Packet[Packet.MAX+1]);
-		resultQueue = new SingleReaderWriterQueue<Packet>(new Packet[Packet.MAX+1]);
+		macQueue = new SRSWQueue<Packet>(Packet.MAX);
+		resultQueue = new SRSWQueue<Packet>(Packet.MAX);
 
 		UdpHandler mac;
 		mac = new UdpHandler() {
 			public void request(Packet p) {
-				macQueue.write(p);
+				macQueue.enq(p);
 			}
 		};
 		Udp.addHandler(1234, mac);
@@ -82,7 +82,7 @@ public class EjipBenchCMP {
 		UdpHandler result;
 		result = new UdpHandler() {
 			public void request(Packet p) {
-				resultQueue.write(p);
+				resultQueue.enq(p);
 			}
 		};
 		Udp.addHandler(5678, result);
@@ -95,7 +95,7 @@ public class EjipBenchCMP {
 	
 	private static void macServer() {
 		
-		Packet p = macQueue.checkedRead();
+		Packet p = macQueue.deq();
 		if (p==null) return;
 		
 		if (p.len < ((Udp.DATA+1)<<2)) {
@@ -117,7 +117,7 @@ public class EjipBenchCMP {
 	
 	private static void resultServer() {
 		
-		Packet p = resultQueue.checkedRead();
+		Packet p = resultQueue.deq();
 		if (p==null) return;
 
 		if (p.len == ((Udp.DATA)<<2)) {
