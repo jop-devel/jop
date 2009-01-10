@@ -565,8 +565,7 @@ public class CS8900 extends LinkLayer {
 	/**
 	 * reset isa bus
 	 */
-	// private void resetIsa() {
-	void resetIsa() {
+	private void resetIsa() {
 
 		int i;
 		for (i = 0; i < 10; ++i) {
