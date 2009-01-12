@@ -31,7 +31,7 @@
 
 package ejip.jtcpip;
 
-import ejip.Net;
+import ejip_old.Net;
 import ejip.jtcpip.util.Debug;
 
 /**
@@ -43,7 +43,7 @@ import ejip.jtcpip.util.Debug;
  * @author Tobias Kellner
  * @author Ulrich Feichter
  * @author Christof Rath
- * @version $Rev: 984 $ $Date: 2007/01/24 19:37:07 $
+ * @version $Rev: 984 $ $Date: 2009/01/12 23:00:13 $
  */
 public class UDP
 {

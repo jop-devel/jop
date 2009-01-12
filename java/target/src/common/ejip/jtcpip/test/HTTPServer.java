@@ -40,9 +40,9 @@ package ejip.jtcpip.test;
 import java.io.IOException;
 
 import util.Dbg;
-import ejip.CS8900;
-import ejip.LinkLayer;
-import ejip.Net;
+import ejip_old.CS8900;
+import ejip_old.LinkLayer;
+import ejip_old.Net;
 import ejip.jtcpip.NwLoopThread;
 import ejip.jtcpip.TCP;
 import ejip.jtcpip.TCPConnection;

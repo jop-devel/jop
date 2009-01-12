@@ -33,10 +33,10 @@ package ejip.jtcpip;
 
 import util.Dbg;
 import joprt.RtThread;
-import ejip.Arp;
-import ejip.LinkLayer;
-import ejip.Net;
-import ejip.Packet;
+import ejip_old.Arp;
+import ejip_old.LinkLayer;
+import ejip_old.Net;
+import ejip_old.Packet;
 import ejip.jtcpip.util.Debug;
 
 /**
@@ -45,7 +45,7 @@ import ejip.jtcpip.util.Debug;
  * @author Ulrich Feichter
  * @author Tobias Kellner
  * @author Christof Rath
- * @version $Rev: 984 $ $Date: 2007/09/19 19:08:19 $
+ * @version $Rev: 984 $ $Date: 2009/01/12 23:00:13 $
  */
 public class NwLoopThread // extends RtThread
 {

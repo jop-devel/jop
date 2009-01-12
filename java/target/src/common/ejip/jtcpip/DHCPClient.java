@@ -35,8 +35,8 @@ import java.io.IOException;
 
 import javax.microedition.io.Datagram;
 
-import ejip.CS8900;
-import ejip.Net;
+import ejip_old.CS8900;
+import ejip_old.Net;
 import ejip.jtcpip.util.Debug;
 import ejip.jtcpip.util.NumFunctions;
 
@@ -46,7 +46,7 @@ import ejip.jtcpip.util.NumFunctions;
  * @author Ulrich Feichter
  * @author Tobias Kellner
  * @author Christof Rath
- * @version $Rev: 975 $ $Date: 2007/01/24 19:37:07 $
+ * @version $Rev: 975 $ $Date: 2009/01/12 23:00:13 $
  */
 public class DHCPClient
 {
