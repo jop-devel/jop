@@ -32,7 +32,6 @@ package ejip.examples;
 
 
 import ejip.*;
-import util.Dbg;
 import util.Timer;
 
 /**
@@ -51,16 +50,19 @@ public class Telnetd extends TcpHandler {
 	*/
 	public static void main(String[] args) {
 
-		// use serial line for debugging
-		Dbg.initSerWait();
+		Ejip ejip = new Ejip();
 
-		net = Net.init();
+		//
+		//	start TCP/IP
+		//
+		net = new Net(ejip);
+// don't use CS8900 when simulating on PC or for BG263
 		int[] eth = {0x00, 0xe0, 0x98, 0x33, 0xb0, 0xf8};
-		int ip = (192<<24) + (168<<16) + (0<<8) + 123;
-		ipLink = CS8900.init(eth, ip);
+		int ip = Ejip.makeIp(192, 168, 0, 123); 
+		ipLink = new CS8900(ejip, eth, ip);
 		
 		// a telnet server
-		Tcp.addHandler(23, new Telnetd());
+		net.getTcp().addHandler(23, new Telnetd());
 
 		forever();
 	}
@@ -69,8 +71,8 @@ public class Telnetd extends TcpHandler {
 
 		for (;;) {
 			for (int i=0; i<1000; ++i) {
-				ipLink.loop();
-				net.loop();
+				ipLink.run();
+				net.run();
 			}
 			Timer.wd();
 		}

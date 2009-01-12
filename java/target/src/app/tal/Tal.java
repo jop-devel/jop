@@ -60,6 +60,7 @@ import util.Timer;
 import com.jopdesign.sys.Const;
 
 import ejip.CS8900;
+import ejip.Ejip;
 import ejip.Html;
 import ejip.LinkLayer;
 import ejip.Net;
@@ -101,17 +102,18 @@ evn = true;
 		}
 
 		//
-		//	start TCP/IP and all (four) threads
+		//	start TCP/IP
 		//
-		net = Net.init();
+		Ejip ejip = new Ejip();
+		net = new Net(ejip);
 		int[] outReg = new int[1];
 		outReg[0] = 0;
 		Html.setOutValArray(outReg);
 		// don't use CS8900 when simulating on PC
 		if (!simpc) {
 			int[] eth = {0x00, 0xe0, 0x98, 0x33, 0xb0, 0xf8};
-			int ip = (192<<24) + (168<<16) + (0<<8) + 123;
-			ipLink = CS8900.init(eth, ip);
+			int ip = Ejip.makeIp(192, 168, 0, 123); 
+			ipLink = new CS8900(ejip, eth, ip);
 		}
 		// use instead Slip for PC simulation
 		// LinkLayer ipLink = Slip.init(Const.IO_UART_BG_MODEM_BASE,
@@ -125,14 +127,14 @@ evn = true;
 			public void run() {
 				for (;;) {
 					waitForNextPeriod();
-					net.loop();
-					if (!simpc) ipLink.loop();
+					net.run();
+					if (!simpc) ipLink.run();
 				}
 			}
 		};
 
 		par = new Param();
-		fwp = new Fwp();
+		fwp = new Fwp(ejip, net);
 		if (simpc) {
 			ser = new Serial(Const.IO_UART_BG_MODEM_BASE);
 		} else {

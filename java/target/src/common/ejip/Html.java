@@ -30,7 +30,6 @@
 
 package ejip;
 
-import util.Dbg;
 
 import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
@@ -175,12 +174,8 @@ public class Html {
 	private static int[] getTemp() {
 
 		int i = Native.rd(Const.IO_ADC1);
-//		Dbg.intVal(i>>>16);
 		i &= 0xffff;
-//		Dbg.wr('T');
-//		Dbg.intVal(i);
 		i = (i-600)/17+27;
-//		Dbg.intVal(i);
 
 		if (i>99) i = 99;
 
@@ -274,14 +269,11 @@ public class Html {
 		for (i=0; i<MAX_MSG; ++i) {
 			msg[i] = ' ';
 		}
-// Dbg.wr('m');
-// Dbg.wr(':');
 		for (i=0; i<MAX_MSG; ++i) {
 			j = buf[pos+i];
 			if (j==' ') break;
 			if (j=='+') j=' ';
 			msg[i] = j;
-//Dbg.wr(j);
 		}
 	}
 
@@ -300,17 +292,6 @@ public class Html {
 
 		int i, j, k;
 
-
-//Dbg.wr('\n');
-//Dbg.wr('h');
-//Dbg.wr('t');
-//Dbg.wr('m');
-//Dbg.wr('l');
-//Dbg.wr(':');
-//Dbg.intVal(hits);
-
-
-
 		// copy request to 'byte' buffer
 		for (i=0; i<req_len; i+=4) {
 			j = buf[req_pos+(i>>2)];
@@ -319,8 +300,8 @@ public class Html {
 			tmp[i+2] = (j>>>8)&0xff;
 			tmp[i+3] = j&0xff;
 		}
-Dbg.wr('\n');
-for (i=0; i<req_len; ++i) Dbg.wr(tmp[i]);
+		if (Logging.LOG) Logging.wr('\n');
+		if (Logging.LOG) for (i=0; i<req_len; ++i) Logging.wr((char) tmp[i]);
 
 		int ret = 0;
 		if (tmp[0]!='G' || tmp[1]!='E') return 0;
@@ -364,11 +345,6 @@ for (i=0; i<req_len; ++i) Dbg.wr(tmp[i]);
 
 		}
 		// copy replay to word buffer
-/*
-Dbg.wr('\n');
-for (i=0; i<ret; ++i) Dbg.wr(tmp[i]);
-Dbg.wr('\n');
-*/
 		tmp[ret] = 0;					// make shure last bytes are 0 for checksum
 		tmp[ret+1] = 0;
 		tmp[ret+2] = 0;

@@ -46,11 +46,11 @@ package ejip;
 /**
 *	Slip.java
 *
-*	communicate with jopbb via serial line.
+*	communicate with JOP via serial line.
 */
 
-import util.Dbg;
 import util.Serial;
+import util.Timer;
 
 /**
 *	Slip driver.
@@ -70,54 +70,41 @@ private static int simSendErr, simRcvErr;
 /**
 *	receive buffer
 */
-	private static int[] rbuf;
+	private int[] rbuf;
 /**
 *	send buffer
 */
-	private static int[] sbuf;
+	private int[] sbuf;
 /**
 *	bytes received.
 */
-	private static int cnt;
+	private int cnt;
 /**
 *	mark escape sequence.
 */
-	private static boolean esc;
+	private boolean esc;
 /**
 *	an ip packet is in the receive buffer.
 */
-	private static boolean ready;
+	private boolean ready;
 
 /**
 *	bytes to be sent. 0 means txFree
 */
-	private static int scnt;
+	private int scnt;
 /**
 *	allready sent bytes.
 */
-	private static int sent;
-
-
-/**
-*	The one and only reference to this object.
-*/
-	private static Slip single;
+	private int sent;
 	
-	private static Serial ser;
+	private Serial ser;
 
-/**
-*	private constructor. The singleton object is created in init().
-*/
-	private Slip() {
-	}
+	/**
+	*	Create a SLIP connection.
+	*/
+	public Slip(Ejip ejip, Serial serPort, int ipAddr) {
 
-/**
-*	allocate buffer, start serial buffer and slip Thread.
-*/
-	public static LinkLayer init(Serial serPort, int ipAddr) {
-
-
-		if (single != null) return single;	// allready called init()
+		super(ejip, ipAddr);
 
 		rbuf = new int[MAX_BUF];
 		sbuf = new int[MAX_BUF];
@@ -128,61 +115,42 @@ private static int simSendErr, simRcvErr;
 		sent = 0;
 
 		ser = serPort;
-
-		single = new Slip();
-		single.ip = ipAddr;
-
-		return single;
 	}
 
-	public int getIpAddress() {
-		return ip;
-	}
-
-	/**
-	*	Set connection strings and connect.
-	*/
-	public void startConnection(StringBuffer dialstr, StringBuffer connect, StringBuffer user, StringBuffer passwd) {
-		// useless in Slip
-	}
-	/**
-	*	Forces the connection to be new established.
-	*	On Slip ignored.
-	*/
-	public void reconnect() {
-	}
-	static int timer;
+	int timer;
 	
 /**
 *	main loop.
 */
-	public void loop() {
+	public void run() {
 
 		Packet p;
 
 		//
-		//	read, write loop
+		// read, write loop
 		//
 		if (ipLoop()) {
-			timer = 0;
+			timer = Timer.getTimeoutMs(1000);
 		} else {
-			++timer;
-			if (timer>100 && cnt>0) {		// flush buffer on timeout (100*10ms)
-				Dbg.wr('t');
-for (int i=0; i<cnt; ++i) {
-int val = rbuf[i];
-if (val=='\r') {
-Dbg.wr('r');
-} else {
-	Dbg.wr(val);
-}
-}
-					cnt = 0;
-					esc = false;
-					ready = false;
-					timer = 0;
-					// send anything back for windoz slip version
-				if (ser.txFreeCnt()>0) {
+			if (Timer.timeout(timer) && cnt > 0) {	// flush buffer on timeout
+													// (1000ms)
+				if (Logging.LOG) {
+					Logging.wr('t');
+					for (int i = 0; i < cnt; ++i) {
+						int val = rbuf[i];
+						if (val == '\r') {
+							Logging.wr('r');
+						} else {
+							Logging.wr((char) val);
+						}
+					}
+				}
+				cnt = 0;
+				esc = false;
+				ready = false;
+				timer = Timer.getTimeoutMs(1000);
+				// send anything back for Windoz slip version
+				if (ser.txFreeCnt() > 0) {
 					ser.wr('C');
 					ser.wr('L');
 					ser.wr('I');
@@ -201,18 +169,18 @@ Dbg.wr('r');
 		}
 
 		//
-		//	copy packet to packet buffer.
+		// copy packet to packet buffer.
 		//
-		if (ready) {				// we got a packet
+		if (ready) { // we got a packet
 			read();
 		}
-		if (scnt==0) {				// transmit buffer is free
+		if (scnt == 0) { // transmit buffer is free
 			//
 			// get a ready to send packet with source from this driver.
 			//
-			p = Packet.getTxPacket(single);
-			if (p!=null) {
-				send(p);				// send one packet
+			p = txQueue.deq();
+			if (p != null) {
+				send(p); // send one packet
 			}
 		}
 	}
@@ -220,13 +188,13 @@ Dbg.wr('r');
 /**
 *	get a Packet buffer and copy from receive buffer.
 */
-	private static void read() {
+	private void read() {
 
 		int i, j, k;
 
-		Packet p = Packet.getPacket(Packet.FREE, Packet.ALLOC, single);
+		Packet p = ejip.getFreePacket(this);
 		if (p==null) {
-Dbg.wr('!');
+			if (Logging.LOG) Logging.wr('!');
 			cnt = 0;						// drop it
 			ready = false;					// don't block the receiver
 			return;
@@ -250,8 +218,8 @@ Dbg.wr('!');
 
 		p.len = cnt;
 
-Dbg.wr('r');
-Dbg.intVal(cnt);
+		if (Logging.LOG) Logging.wr('r');
+if (Logging.LOG) Logging.intVal(cnt);
 		cnt = 0;
 		ready = false;
 
@@ -259,32 +227,32 @@ Dbg.intVal(cnt);
 ++simRcvErr;
 if (simRcvErr%5==1) {
 p.setStatus(Packet.FREE);
-Dbg.wr(" rcv dropped");
-Dbg.lf();
+if (Logging.LOG) Logging.wr(" rcv dropped");
+if (Logging.LOG) Logging.lf();
 return;
 }
 */
-		p.setStatus(Packet.RCV);		// inform upper layer
+		rxQueue.enq(p);		// inform upper layer
 	}
 
 
 /**
 *	copy packet to send buffer.
 */
-	private static void send(Packet p) {
+	private void send(Packet p) {
 
 		int i, k;
 		int[] pb = p.buf;
 
-Dbg.wr('s');
-Dbg.intVal(p.len);
+		if (Logging.LOG) Logging.wr('s');
+		if (Logging.LOG) Logging.intVal(p.len);
 
 /*
 ++simSendErr;
 if (simSendErr%7==3) {
 p.setStatus(Packet.FREE);
-Dbg.wr(" send dropped");
-Dbg.lf();
+if (Logging.LOG) Logging.wr(" send dropped");
+if (Logging.LOG) Logging.lf();
 return;
 }
 */
@@ -297,21 +265,16 @@ return;
 			sbuf[i+2] = (k>>>8)&0xff;
 			sbuf[i+3] = k&0xff;
 		}
-		if (p.getStatus()==Packet.SND_TCP) {
-			p.setStatus(Packet.TCP_ONFLY);		// mark on the fly
-		} else {
-			p.setStatus(Packet.FREE);		// mark packet free			
+		if (!p.isTcpOnFly) {
+			ejip.returnPacket(p);
 		}
 	}
 
-/* warum geht das nicht !!!!!
-	private void loop() {
-*/
 /**
 *	read from serial buffer and build an ip packet.
 *	send a packet if one is in our send buffer.
 */
-	private static boolean ipLoop() {
+	private boolean ipLoop() {
 
 		int i;
 		boolean ret = false;
@@ -335,7 +298,7 @@ return;
 /**
 *	copy from send buffer to serial buffer.
 */
-	private static void snd(int free) {
+	private void snd(int free) {
 
 		int i;
 
@@ -372,7 +335,7 @@ return;
 /**
 *	copy from serial buffer to receive buffer.
 */
-	private static void rcv(int len) {
+	private void rcv(int len) {
 
 		int i;
 
@@ -413,13 +376,5 @@ return;
 			}
 		}
 	}
-
-/* (non-Javadoc)
- * @see ejip.LinkLayer#getConnCount()
- */
-public int getConnCount() {
-	return 0;
-}
-
 
 }

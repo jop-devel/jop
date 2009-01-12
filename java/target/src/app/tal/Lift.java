@@ -50,6 +50,7 @@ import joprt.RtThread;
 import util.Dbg;
 import util.Timer;
 import ejip.CS8900;
+import ejip.Ejip;
 import ejip.Html;
 import ejip.LinkLayer;
 import ejip.Net;
@@ -90,12 +91,11 @@ evn = true;
 			Dbg.init();
 		}
 
-
-
 		//
-		//	start TCP/IP and all (four) threads
+		//	start TCP/IP
 		//
-		net = Net.init();
+		Ejip ejip = new Ejip();
+		net = new Net(ejip);
 		int[] outReg = new int[1];
 		outReg[0] = 0;
 		Html.setOutValArray(outReg);
@@ -105,8 +105,8 @@ evn = true;
 		// don't use CS8900 when simulating on PC
 		if (!simpc) {
 			int[] eth = {0x00, 0xe0, 0x98, 0x33, 0xb0, 0xf8};
-			int ip = (192<<24) + (168<<16) + (0<<8) + 123;
-			ipLink = CS8900.init(eth, ip);
+			int ip = Ejip.makeIp(192, 168, 0, 123); 
+			ipLink = new CS8900(ejip, eth, ip);
 			// use instead Slip for PC simulation
 			// LinkLayer ipLink = Slip.init(Const.IO_UART_BG_MODEM_BASE,
 			//	(192<<24) + (168<<16) + (1<<8) + 2); 
@@ -114,8 +114,8 @@ evn = true;
 				public void run() {
 					for (;;) {
 						waitForNextPeriod();
-						net.loop();
-						ipLink.loop();
+						net.run();
+						ipLink.run();
 					}
 				}
 			};

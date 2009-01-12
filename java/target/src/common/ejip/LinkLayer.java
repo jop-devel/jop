@@ -30,6 +30,8 @@
 
 package ejip;
 
+import rtlib.SRSWQueue;
+
 /**
 *	LinkLayer.java
 *
@@ -40,30 +42,65 @@ package ejip;
 /**
  * LinkLayer driver.
  */
-public abstract class LinkLayer {
+public abstract class LinkLayer implements Runnable {
 	
+	protected Ejip ejip;
 	
 	/** Own IP address */
-	public int ip; // own ip address
+	protected int ip; // own ip address
 // TODO: make ip, gateway, netmask package visible again
 
 	/** */
-	public int gateway;
+	private int gateway;
 
 	/** Subnet mask */
-	public int netmask;
+	private int netmask;
+	
+	SRSWQueue<Packet> txQueue;
+	SRSWQueue<Packet> rxQueue;
+	
+	public LinkLayer(Ejip ejipRef, int ipAddress) {
+		ip = ipAddress;
+		ejip = ejipRef;
+		txQueue = new SRSWQueue<Packet>(ejip.getMaxPackets());
+		rxQueue = new SRSWQueue<Packet>(ejip.getMaxPackets());
+		ejip.registerLinkLayer(this);
+	}
 
+	public int getIpAddress() {
+		return ip;
+	}
+	
+	public void enqTxPacket(Packet p) {
+		txQueue.enq(p);
+	}
+	
+	/**
+	*	Set connection strings and connect.
+	*/
+	public void startConnection(StringBuffer dialstr, StringBuffer connect, StringBuffer user, StringBuffer passwd) {
+		// default implementation does nothing
+	}
 
-	public abstract int getIpAddress();
-	public abstract void startConnection(StringBuffer dialstr,
-			StringBuffer connect, StringBuffer user, StringBuffer passwd);
-	public abstract void reconnect();
-	public abstract int getConnCount();
+	/**
+	*	Forces the connection to be new established.
+	*	On Slip and CS8900 ignored.
+	*/
+	public void reconnect() {
+	}
+
+	/**
+	 * Used for PPP and Oebb project.
+	 * @return
+	 */
+	public int getConnCount() {
+		return 0;
+	}
+
 	public void disconnect() {
 		// only usefull for PPP
 	}
 
-	public abstract void loop();
 	/**
 	 * @param remoteAddr
 	 * @return true if the remote address is in the same subnet or if no gateway
@@ -78,4 +115,7 @@ public abstract class LinkLayer {
 
 		return (test1 ^ test2) == 0;
 	}
+	
+	// TODO: JOPizer needs the run method here, don't know why?
+	public void run() {}
 }

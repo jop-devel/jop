@@ -37,7 +37,6 @@ package ejip;
 */
 
 import joprt.RtThread;
-import util.Dbg;
 import util.Serial;
 import util.Timer;
 
@@ -65,105 +64,87 @@ public class Ppp extends LinkLayer {
 	private static final int TERM = 5;				// Termination
 
 	private static final int NEG_SEND= 3000;		// Period of send negotiation (in ms)
-	private static final int IP_SEND= 10000;		// Send timout for ip for reconnect (in ms)
-	private static final int PPP_HANDLING = 60000;	// Timout for the PPP negotiation
+	private static final int IP_SEND= 10000;		// Send timeout for IP for reconnect (in ms)
+	private static final int PPP_HANDLING = 60000;	// Timeout for the PPP negotiation
 	
 	private static final int GPRS_TRY_CNT = 3;		// After that count connect via GSM
 
 /**
 *	receive buffer
 */
-	private static int[] rbuf;
+	private int[] rbuf;
 /**
 *	send buffer
 */
-	private static int[] sbuf;
+	private int[] sbuf;
 /**
 *	bytes received.
 */
-	private static int cnt;
-/**
-*	mark escape sequence.
-*/
-	private static boolean esc;
+	private int cnt;
 /**
 *	a ppp packet is in the receive buffer.
 */
-	private static boolean ready;
+	private boolean ready;
 /**
 *	bytes to be sent. 0 means txFree
 */
-	private static int scnt;
+	private int scnt;
 /**
 *	allready sent bytes.
 */
-	private static int sent;
+	private int sent;
 
 /**
 *	flag (0x7e, ~) received
 */
-	private static boolean flag;
+	private boolean flag;
 /**
 *	number for lcp id
 */
-	private static int lcpId;
+	private int lcpId;
 /**
 *	state machine
 */
-	private static int state;
+	private int state;
 /**
 *	reject counter
 */
-	private static int rejCnt;
+	private int rejCnt;
 	private static final int MAX_REJ = 5;
 
 /**
-*	remote ip address.
+*	remote IP address.
 */
-	private static int ipRemote;
-/**
-*	ip address.
-*/
-//	private static int ip;
-
+	private int ipRemote;
 /**
 *	request for reconnect.
 */
-	private static boolean reconnectRequest;
+	private boolean reconnectRequest;
 /**
 *	request for a disconnect.
 */
-	private static boolean disconnectRequest;
+	private boolean disconnectRequest;
 	
+	// TODO: we run out of object fields....
 	private static int connCount;
-	
 	private static boolean useGSM;
 
-/**
-*	The one and only reference to this object.
-*/
-	private static Ppp single;
-
-	private static Serial ser;
-	private static RtThread rth;
-
-/**
+	private Serial ser;
+	private RtThread rth;
+	
+	/**
 *	private constructor. The singleton object is created in init().
 */
-	private Ppp() {
-	}
+	/**
+	 * Create a PPP connection.
+	 */
+	public Ppp(Ejip ejip, Serial serPort, RtThread pppThread) {
 
-/**
-*	allocate buffer, start serial buffer and slip Thread.
-*/
-	public static LinkLayer init(Serial serPort, RtThread pppThread) {
-
-		if (single != null) return single;		// allready called init()
-
+		super(ejip, 0);
+		
 		rbuf = new int[MAX_BUF];
 		sbuf = new int[MAX_BUF];
 		cnt = 0;
-		esc = false;
 		ready = false;
 		flag = false;
 		scnt = 0;
@@ -182,11 +163,7 @@ public class Ppp extends LinkLayer {
 		ser = serPort;
 		// new Serial(serAddr, 10, 3000);
 
-		single = new Ppp();
-		single.ip = 0;
 		rth = pppThread;
-
-		return single;
 	}
 
 	/**
@@ -206,7 +183,6 @@ public class Ppp extends LinkLayer {
 	public void startConnection(StringBuffer dialstr, StringBuffer connect, StringBuffer user, StringBuffer passwd) {
 
 		int i, j;
-// System.out.println("start Conn");
 
 		copyStr(dialstr, dial, gsm_dial);
 		dial.append('\r');
@@ -230,7 +206,6 @@ public class Ppp extends LinkLayer {
 	*	Forces the connection to be anew established.
 	*/
 	public void reconnect() {
-// System.out.println("reconnect");
 		reconnectRequest = true;
 		connCount = 0;
 		ip = 0;
@@ -247,25 +222,19 @@ public class Ppp extends LinkLayer {
 *	main loop. However this loop NEVER returns!
 *	TODO: change to a loop based version to use PPP without threads.
 */
-	public void loop() {
+	public void run() {
 
 		connect();
 	}
 
-	/**
-	* windoz PPP.
-	*/
-	private static String client;
-	private static String ver;
+	private StringBuffer dial;
+	private StringBuffer con;
+	private StringBuffer uid;
+	private StringBuffer pwd;
 
-	private static StringBuffer dial;
-	private static StringBuffer con;
-	private static StringBuffer uid;
-	private static StringBuffer pwd;
-
-	private static StringBuffer gsm_dial;
-	private static StringBuffer gsm_uid;
-	private static StringBuffer gsm_pwd;
+	private StringBuffer gsm_dial;
+	private StringBuffer gsm_uid;
+	private StringBuffer gsm_pwd;
 
 
 	private static String ok;
@@ -274,7 +243,7 @@ public class Ppp extends LinkLayer {
 	private static String pin;
 	private static String flow;
 
-	private static StringBuffer strBuf;
+	private StringBuffer strBuf;
 
 	/**
 	*	a little helper:
@@ -299,7 +268,7 @@ public class Ppp extends LinkLayer {
 		}
 	}
 
-	private static void initStr() {
+	private void initStr() {
 
 		con = new StringBuffer(40);
 		dial = new StringBuffer(20);
@@ -309,19 +278,7 @@ public class Ppp extends LinkLayer {
 		gsm_dial = new StringBuffer(20);
 		gsm_uid = new StringBuffer(20);
 		gsm_pwd = new StringBuffer(20);
-
-/* we get the information from startConnection
-		con.append("AT+CGDCONT=1,\"IP\",\"A1.net\"\r");
-		uid.append("ppp@A1plus.at");
-		pwd.append("ppp");
-		dial.append("ATD*99***1#\r");			
-*/
-
-
 		
-		client = "CLIENT";
-		ver = "VER";
-
 		ok = "OK";
 		connect = "ECT";
 		ath = "|+++|ATH\r";
@@ -359,18 +316,18 @@ public class Ppp extends LinkLayer {
 		i = ser.txFreeCnt();
 		j = s.length();
 		if (j>i) return false;
-Dbg.wr('\'');
+		if (Logging.LOG) Logging.wr('\'');
 		for (i=0; i<j; ++i) {
 			val = s.charAt(i);
 			if (val=='|') {
 				waitSec(2);			// for shure if send buffer is full
 			} else {
 				ser.wr(val);
-Dbg.wr(val);
+				if (Logging.LOG) Logging.wr((char) val);
 			}
 		}
-Dbg.wr('\'');
-Dbg.wr('\n');
+		if (Logging.LOG) Logging.wr('\'');
+		if (Logging.LOG) Logging.lf();
 		return true;
 	}
 
@@ -415,11 +372,11 @@ Dbg.wr('\n');
 			for (int i = ser.rxCnt(); i>0; --i) {
 
 				int val = ser.rd();
-Dbg.wr(val);
+				if (Logging.LOG) Logging.wr((char) val);
 				if (val == rcv.charAt(ptr)) {
 					++ptr;
 					if (ptr==len) {
-Dbg.wr('\n');
+						if (Logging.LOG) Logging.wr('\n');
 						waitSec(1);
 						return true;			// we're done
 					}
@@ -428,16 +385,14 @@ Dbg.wr('\n');
 				}
 			}
 		}
-Dbg.wr('?');
-Dbg.wr('\n');
+		if (Logging.LOG) Logging.wr('?');
+		if (Logging.LOG) Logging.lf();
 
 		return false;							// timeout expired
 	}
 
 	private static int globTimer;					// negotion send and ip-restart timer
 	private static boolean lcpAck;
-	private static boolean ipcpAck;
-
 	/**
 	*	do the modem stuff till CONNECT
 	*/
@@ -487,7 +442,6 @@ System.out.println(connCount);
 		state = MODEM_OK;
 		globTimer = Timer.getTimeoutMs(NEG_SEND);
 		lcpAck = false;
-		ipcpAck = false;
 	}
 
 	/**
@@ -495,8 +449,6 @@ System.out.println(connCount);
 	*/
 	void modemHangUp() {
 
-// System.out.print("Modem hangup ");
-// System.out.println(connCount);
 		ip = 0;								// stop sending ip data
 		reconnectRequest = false;
 		disconnectRequest = false;
@@ -526,15 +478,13 @@ System.out.println(connCount);
 	private static final int CONNECTED = 9;
 
 	/**
-	*	establish a connetcion.
+	*	establish a connection.
 	*/
 	void connect() {
 
 		state = INIT;
 		rejCnt = 0;
 		lcpAck = false;
-		ipcpAck = false;
-		
 		int timer = 0;
 
 		//
@@ -565,7 +515,6 @@ System.out.println(connCount);
 
 			if ((rejCnt > MAX_REJ) || 
 					(Timer.timeout(timer) && state!=CONNECTED)) {
-// System.out.print("1");
 				modemHangUp();		// start over
 				modemInit();
 			}
@@ -588,7 +537,6 @@ dbgCon();
 					} else if (code==ACK && rbuf[5]==lcpId) {
 						state = LCP_OK;
 					} else if (code==TERM) {
-// System.out.print("2");
 						modemHangUp();		// start over
 						modemInit();
 					}
@@ -603,7 +551,7 @@ dbgCon();
 
 					if (code == REQ) {
 						if (checkOptions(IPCP)) {
-							ipcpAck = true;;
+							;
 						}
 					} else if (code == NAK) {	// with this NAK we will get our IP address
 						ip= (rbuf[10]<<24) + (rbuf[11]<<16) +
@@ -615,8 +563,8 @@ dbgCon();
 						state = IPCP_OK;
 						// nothing more to do ?
 						state = CONNECTED;
-Dbg.wr('C');
-Dbg.wr('\n');
+						if (Logging.LOG) Logging.wr('C');
+						if (Logging.LOG) Logging.wr('\n');
 					}
 
 //
@@ -639,7 +587,6 @@ Dbg.wr('\n');
 	void doSend() {
 
 		if (reconnectRequest) {
-// System.out.print("3");
 			modemHangUp();		// start over
 			modemInit();
 		}
@@ -648,19 +595,20 @@ Dbg.wr('\n');
 			modemHangUp();		// stop the connection
 		}
 
-		if (state==CONNECTED) {			// send waiting ip packets
+		if (state==CONNECTED) {			// send waiting IP packets
 			if (scnt==0) {				// transmit buffer is free
 				globTimer = Timer.getTimeoutMs(IP_SEND);	// use IP timeout
 				//
 				// get a ready to send packet with source from this driver.
 				//
-				Packet p = Packet.getPacket(single, Packet.SND_DGRAM, Packet.ALLOC);
+				Packet p = txQueue.deq();
 				if (p!=null) {
 					sendIp(p);			// send one packet
 				}
 			} else {					// check sendTimer;
 				if (Timer.timeout(globTimer)) {
-// System.out.print("4");
+System.out.println("IP send timeout");
+System.out.println(scnt);
 					modemHangUp();		// start over
 					modemInit();
 				}
@@ -669,8 +617,6 @@ Dbg.wr('\n');
 			dropIp();
 			if (Timer.timeout(globTimer)) {
 
-//Dbg.intVal(state); Dbg.intVal(scnt);
-//if (lcpAck) Dbg.wr('t'); else Dbg.wr('f');
 
 				if (scnt==0) {			// once every three seconds send a REQ
 					if (state == MODEM_OK) {
@@ -683,7 +629,7 @@ Dbg.wr('\n');
 					} else if (state>=PAP_OK && state<CONNECTED) {	// ONE
 						makeIPCP();
 						state = IPCP_SENT;
-						++rejCnt;		// incremenet counter to start over when no respond
+						++rejCnt;		// increment counter to start over when no respond
 					}
 					globTimer = Timer.getTimeoutMs(NEG_SEND);	// use negotiation timeout
 				}
@@ -696,30 +642,30 @@ Dbg.wr('\n');
 	*/
 	void dropIp() {
 
-		Packet p = Packet.getPacket(single, Packet.SND_DGRAM, Packet.ALLOC);
-		if (p!=null) {
-			p.setStatus(Packet.FREE);		// mark packet free
+		Packet p = txQueue.deq();
+		if (p!=null && !p.isTcpOnFly) {
+			ejip.returnPacket(p);
 		}
 	}
 
 void dbgCon() {
 if (state!=CONNECTED) {
-Dbg.wr('>');
+	if (Logging.LOG) Logging.wr('>');
 for (int i=0; i<cnt; ++i) {
-	Dbg.byteVal(rbuf[i]);
+	if (Logging.LOG) Logging.byteVal(rbuf[i]);
 	if ((i&0x0f) ==0) rth.waitForNextPeriod();
 }
-Dbg.wr('\n');
+if (Logging.LOG) Logging.wr('\n');
 }
 }
 void dbgIp(int ip) {
-Dbg.wr('I');
-Dbg.wr(' ');
-Dbg.intVal(ip>>>24);
-Dbg.intVal((ip>>>16)&0xff);
-Dbg.intVal((ip>>>8)&0xff);
-Dbg.intVal(ip&0xff);
-Dbg.wr('\n');
+	if (Logging.LOG) Logging.wr('I');
+	if (Logging.LOG) Logging.wr(' ');
+	if (Logging.LOG) Logging.intVal(ip>>>24);
+	if (Logging.LOG) Logging.intVal((ip>>>16)&0xff);
+	if (Logging.LOG) Logging.intVal((ip>>>8)&0xff);
+	if (Logging.LOG) Logging.intVal(ip&0xff);
+	if (Logging.LOG) Logging.lf();
 }
 
 	/**
@@ -729,9 +675,9 @@ Dbg.wr('\n');
 	void makeLCP() {
 
 		lcpId = 0x22;
-Dbg.wr('L');
-Dbg.intVal(lcpId);
-Dbg.wr('\n');
+		if (Logging.LOG) Logging.wr('L');
+		if (Logging.LOG) Logging.intVal(lcpId);
+		if (Logging.LOG) Logging.wr('\n');
 
 		sbuf[0] = 0xff;
 		sbuf[1] = 0x03;
@@ -762,9 +708,9 @@ Dbg.wr('\n');
 		int i;
 
 		lcpId = 0x33;
-Dbg.wr('P');
-Dbg.intVal(lcpId);
-Dbg.wr('\n');
+		if (Logging.LOG) Logging.wr('P');
+		if (Logging.LOG) Logging.intVal(lcpId);
+		if (Logging.LOG) Logging.wr('\n');
 
 /* compression
 		sbuf[0] = 0xff;
@@ -857,9 +803,9 @@ Dbg.wr('\n');
 	void makeIPCP() {
 
 		lcpId = 0x44;
-Dbg.wr('I');
-Dbg.intVal(lcpId);
-Dbg.wr('\n');
+		if (Logging.LOG) Logging.wr('I');
+		if (Logging.LOG) Logging.intVal(lcpId);
+		if (Logging.LOG) Logging.wr('\n');
 
 /* compression
 		sbuf[0] = 0xff;
@@ -892,8 +838,8 @@ Dbg.wr('\n');
 
 		int ptr = 8;
 
-Dbg.wr('R');
-Dbg.wr(' ');
+		if (Logging.LOG) Logging.wr('R');
+		if (Logging.LOG) Logging.wr(' ');
 		int resp = ACK;
 
 		for (i=0; i<cnt; ++i) sbuf[i] = rbuf[i];	// assume ACK
@@ -901,13 +847,13 @@ Dbg.wr(' ');
 
 		while (len > 0) {
 			int opt = rbuf[ptr];
-Dbg.intVal(opt);
+			if (Logging.LOG) Logging.intVal(opt);
 			if (type==LCP && opt==3) {				// auth. protocol
 				if ((rbuf[ptr+2]<<8) + rbuf[ptr+3] != PAP) {
 					resp = REJ;
-Dbg.wr('!');
-Dbg.wr('P');
-Dbg.wr(' ');
+					if (Logging.LOG) Logging.wr('!');
+					if (Logging.LOG) Logging.wr('P');
+					if (Logging.LOG) Logging.wr(' ');
 				}
 			} else if (type==IPCP) {
 				if (opt==2) {						// IP-Compression
@@ -915,7 +861,7 @@ Dbg.wr(' ');
 				} else if (opt==3) {				// IP-address
 					ipRemote = (rbuf[ptr+2]<<24) + (rbuf[ptr+3]<<16) +
 						(rbuf[ptr+4]<<8) + rbuf[ptr+5];
-Dbg.hexVal(ipRemote);
+					if (Logging.LOG) Logging.hexVal(ipRemote);
 dbgIp(ipRemote);
 				}
 			}
@@ -935,7 +881,7 @@ dbgIp(ipRemote);
 		sbuf[4] = resp;
 		sbuf[6] = slen>>>8;
 		sbuf[7] = slen&0xff;
-Dbg.wr('\n');
+		if (Logging.LOG) Logging.lf();
 
 		checksum(slen+4);
 
@@ -949,9 +895,9 @@ Dbg.wr('\n');
 
 		int i, j, k;
 
-		Packet p = Packet.getPacket(Packet.FREE, Packet.ALLOC, single);
+		Packet p = ejip.getFreePacket(this);
 		if (p==null) {
-Dbg.wr('!');
+			if (Logging.LOG) Logging.wr('!');
 			return;							// try again later
 		}									// buf blocks receive buffer :-< 
 
@@ -975,18 +921,10 @@ Dbg.wr('!');
 
 		p.len = cnt;
 
-//Dbg.wr('r');
-//Dbg.intVal(cnt);
-/*
-dbgIp(pb[3]);
-dbgIp(pb[4]);
-for (i=0; i<(cnt+4)>>2; ++i) Dbg.hexVal(pb[i]);
-Dbg.wr('\n');
-*/
 		cnt = 0;
 		ready = false;
 
-		p.setStatus(Packet.RCV);		// inform upper layer
+		rxQueue.enq(p);		// inform upper layer
 	}
 
 
@@ -997,9 +935,6 @@ Dbg.wr('\n');
 
 		int i, k;
 		int[] pb = p.buf;
-
-//Dbg.wr('s');
-//Dbg.intVal(p.len);
 
 		sbuf[0] = 0xff;
 		sbuf[1] = 0x03;
@@ -1015,18 +950,13 @@ Dbg.wr('\n');
 			sbuf[i+4+2] = (k>>>8)&0xff;
 			sbuf[i+4+3] = k&0xff;
 		}
-		if (p.getStatus()==Packet.SND_TCP) {
-			p.setStatus(Packet.TCP_ONFLY);		// mark on the fly
-		} else {
-			p.setStatus(Packet.FREE);		// mark packet free			
+		if (!p.isTcpOnFly) {
+			ejip.returnPacket(p);
 		}
 
 		checksum(slen+4);
 	}
 
-/* warum geht das nicht !!!!!
-	private void loop() {
-*/
 /**
 *	read from serial buffer and build a ppp packet.
 *	send a packet if one is in our send buffer.
@@ -1099,8 +1029,8 @@ if (state >= LCP_OK) { 			// hard code async map
 		}
 	}
 
-	private static boolean escape;
-	private static int fcs;
+	private boolean escape;
+	private int fcs;
 /**
 *	copy from serial buffer to receive buffer.
 *	calc CRC on the fly.
@@ -1117,7 +1047,7 @@ if (state >= LCP_OK) { 			// hard code async map
 			int val = ser.rd();
 			if (cnt==0 && !flag && val!='~') {	// wait for a packet start
 				escape = false;					// first data byte is not an escape
-Dbg.wr('d');
+				if (Logging.LOG) Logging.wr('d');
 				continue;						// so don't worry about '~' escapes on cnt==0
 			}
 
@@ -1127,9 +1057,6 @@ Dbg.wr('d');
 					if (fcs==0xf0b8) {			// checksum ok?
 						ready = true;
 					} else {
-//Dbg.wr('d');
-//Dbg.intVal(cnt);
-//Dbg.wr('\n');
 						cnt = 0;				// just drop it
 					}
 					break;
@@ -1162,16 +1089,10 @@ Dbg.wr('d');
 				rbuf[cnt++] = 0x00;
 			}
 			rbuf[cnt++] = val;
-//Dbg.byteVal(val);
 
 			fcs = check(val^fcs) ^ (fcs>>8);
 
 		}
-/*
-Dbg.wr('r');
-Dbg.intVal(cnt);
-Dbg.wr('\n');
-*/
 	}
 
 /**
@@ -1218,12 +1139,12 @@ Dbg.wr('\n');
 		scnt = len+2;
 
 if (state!=CONNECTED) {
-Dbg.wr('<');
+	if (Logging.LOG) Logging.wr('<');
 for (i=0; i<scnt; ++i) {
-	Dbg.byteVal(sbuf[i]);
+	if (Logging.LOG) Logging.byteVal(sbuf[i]);
 	if ((i&0x0f) ==0) rth.waitForNextPeriod();
 }
-Dbg.wr('\n');
+if (Logging.LOG) Logging.wr('\n');
 }
 	}
 	/**
@@ -1237,7 +1158,7 @@ Dbg.wr('\n');
 	 * GPRS or GSM
 	 * @return 0=GPRS, 1=GSM
 	 */
-	public static int getConnType() {
+	public int getConnType() {
 		if (useGSM) {
 			return 1;
 		} else {

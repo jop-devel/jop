@@ -34,8 +34,6 @@ package ejip;
 *   Changelog:
 */
 
-import util.Dbg;
-
 /**
  * TCP functions.
  * 
@@ -43,10 +41,10 @@ import util.Dbg;
  *
  */
 
-public class Tcp {
+public class Tcp implements Runnable {
 
 	/**
-	 * TCP protocl number
+	 * TCP protocol number
 	 */
 	public static final int PROTOCOL = 6;
 
@@ -124,11 +122,14 @@ public class Tcp {
 	private static Object mutex;
 
 	public static final int MAX_HANDLER = 8;
-	private static TcpHandler[] list;
-	private static int[] ports;
-	private static int loopCnt;
+	private TcpHandler[] list;
+	private int[] ports;
+	private int loopCnt;
+	
+	private Ejip ejip;
 
-	static {
+	public Tcp(Ejip ejipRef) {
+		ejip = ejipRef;
 		mutex = new Object();
 		list = new TcpHandler[MAX_HANDLER];
 		ports = new int[MAX_HANDLER];
@@ -139,7 +140,7 @@ public class Tcp {
 	*	add a handler for TCP requests.
 	*	returns false if list is full.
 	*/
-	public static boolean addHandler(int port, TcpHandler h) {
+	public boolean addHandler(int port, TcpHandler h) {
 
 
 		synchronized(mutex) {
@@ -158,7 +159,7 @@ public class Tcp {
 	*	remove a handler for TCP requests.
 	*	returns false if it was not in the list.
 	*/
-	public static boolean removeHandler(int port) {
+	public boolean removeHandler(int port) {
 
 		synchronized(mutex) {
 			for (int i=0; i<MAX_HANDLER; ++i) {
@@ -175,7 +176,7 @@ public class Tcp {
 	/**
 	*	Called periodic from Net for timeout processing.
 	*/
-	static void loop() {
+	public void run() {
 
 		int i;
 
@@ -193,7 +194,7 @@ public class Tcp {
 							tc.timeout = TIMEOUT;
 							// let it retransmit
 							System.out.println("retransmit");
-							tc.outStanding.setStatus(Packet.SND_TCP);
+							tc.outStanding.interf.txQueue.enq(tc.outStanding);
 						}
 					}					
 				}
@@ -216,7 +217,7 @@ public class Tcp {
 	/**
 	*	process packet and generate reply if necessary.
 	*/
-	static void process(Packet p) {
+	void process(Packet p) {
 
 		int[] buf = p.buf;
 
@@ -224,14 +225,14 @@ public class Tcp {
 		
 		buf[Ip.CHKSUM] = (PROTOCOL<<16) + p.len - 20; 		// set protocol and TCP length in iph checksum for tcp checksum
 		if (Ip.chkSum(buf, 2, p.len-8)!=0) {
-			p.setStatus(Packet.FREE);	// mark packet free
+			ejip.returnPacket(p);	// mark packet free
 			return;
 		}
 
 		TcpConnection tc = TcpConnection.findConnection(p);
 		// connection pool is empty, drop the packet
 		if (tc==null) {
-			p.setStatus(Packet.FREE);
+			ejip.returnPacket(p);
 			return;
 		}
 		// We could add the handler to the connection to find
@@ -248,11 +249,11 @@ public class Tcp {
 		}
 		// no handler found
 		if (th==null) {
-			p.setStatus(Packet.FREE);
+			ejip.returnPacket(p);
 			tc.close();
-Dbg.lf();
-Dbg.wr('T');
-Dbg.intVal(buf[HEAD] & 0xffff);
+			if (Logging.LOG) Logging.lf();
+			if (Logging.LOG) Logging.wr('T');
+			if (Logging.LOG) Logging.intVal(buf[HEAD] & 0xffff);
 			return;
 		}
 		
@@ -266,7 +267,7 @@ Dbg.intVal(buf[HEAD] & 0xffff);
 	 * @param tc connection
 	 * @return false means nothing more to do
 	 */
-	private static void handleState(Packet p, TcpHandler th, TcpConnection tc) {
+	private void handleState(Packet p, TcpHandler th, TcpConnection tc) {
 		
 		// TODO: do we need synchronized for handle state?
 		// or synchronized handling of connection change?
@@ -295,18 +296,20 @@ Dbg.intVal(buf[HEAD] & 0xffff);
 				if (buf[ACKNR]==tc.sndNxt) {
 					System.out.println("ACK received");
 					Packet os = tc.outStanding;
+					// recycle the outstanding packet and reset isTcpOnFly
 					tc.outStanding = null;
-					os.setStatus(Packet.FREE);
+					os.isTcpOnFly = false;
+					ejip.returnPacket(os);
 					if (flags==FL_ACK && p.len==DATA<<2 &&
 							state == ESTABLISHED) {
 						// only ack - no more action
 						System.out.println("just an ACK");
-						p.setStatus(Packet.FREE);
+						ejip.returnPacket(p);
 						return;
 					}
 				} else {
 					// not the correct ACK - drop it
-					p.setStatus(Packet.FREE);
+					ejip.returnPacket(p);
 					return;
 				}
 			}			
@@ -316,7 +319,7 @@ Dbg.intVal(buf[HEAD] & 0xffff);
 			// we handle only one packet at a time
 			// so we have to drop it.
 			System.out.println("waiting on ACK - dropped");
-			p.setStatus(Packet.FREE);
+			ejip.returnPacket(p);
 			return;
 		}
 		
@@ -325,12 +328,12 @@ Dbg.intVal(buf[HEAD] & 0xffff);
 			// we should not receive a packet in state CLOSED
 			// that means no one is listening
 			// shall we send a RST?
-			p.setStatus(Packet.FREE);
+			ejip.returnPacket(p);
 			tc.close();
 			return;
 		case Tcp.LISTEN:
 			if ((flags&FL_SYN) == 0) {
-				p.setStatus(Packet.FREE);
+				ejip.returnPacket(p);
 				tc.close();
 				System.out.println("dropped non SYN packet");
 				return;
@@ -352,7 +355,7 @@ Dbg.intVal(buf[HEAD] & 0xffff);
 				fillHeader(p, tc, FL_ACK);
 				tc.sndNxt += p.len-(DATA<<2);
 			} else {
-				p.setStatus(Packet.FREE);				
+				ejip.returnPacket(p);				
 			}
 			break;
 		case Tcp.SYN_SENT:
@@ -378,7 +381,7 @@ Dbg.intVal(buf[HEAD] & 0xffff);
 				tc.sndNxt += p.len-(DATA<<2);
 			} else {
 				System.out.println("dropped wrong SEQNR");
-				p.setStatus(Packet.FREE);
+				ejip.returnPacket(p);
 				// TODO ack last segment
 			}
 			break;
@@ -388,7 +391,7 @@ Dbg.intVal(buf[HEAD] & 0xffff);
 			System.out.println("CLOSE_WAIT");
 			break;
 		case Tcp.LAST_ACK:
-			p.setStatus(Packet.FREE);
+			ejip.returnPacket(p);
 			System.out.println("LAST_ACK");
 			if (tc.outStanding==null) {
 				System.out.println("we received the last ACK");
@@ -406,11 +409,11 @@ Dbg.intVal(buf[HEAD] & 0xffff);
 		}
 	}
 	
-	static void fillHeader(Packet p, TcpConnection tc, int fl) {
+	void fillHeader(Packet p, TcpConnection tc, int fl) {
 
 		// Do we really free it here?
 		if (p.len==0) {
-			p.setStatus(Packet.FREE); // mark packet free
+			ejip.returnPacket(p); // mark packet free
 			return;
 		}
 		int buf[] = p.buf;
@@ -450,11 +453,9 @@ Dbg.intVal(buf[HEAD] & 0xffff);
 				tc.outStanding = p;
 				tc.timeout = TIMEOUT;				
 			}
-			p.setStatus(Packet.SND_TCP); // mark packet ready to send			
-		} else {
-			// probably just an ACK
-			p.setStatus(Packet.SND_DGRAM); // mark packet ready to send			
+			p.isTcpOnFly = true;
 		}
+		p.interf.txQueue.enq(p);
 		
 	}
 }

@@ -9,35 +9,38 @@
 package ejip.examples;
 
 import joprt.RtThread;
-import util.Dbg;
 import util.Timer;
 import ejip.*;
 
 
 /**
-*	Ping program on ejip.
+*	Ping program with ejip.
 */
 	
 public class Pinger {
 
 	static Net net;
 	static LinkLayer ipLink;
+	
+	static int target;
 
 /**
 *	Start network and enter forever loop.
 */
 	public static void main(String[] args) {
-
-		// use serial line for debugging
-		Dbg.initSerWait();
+		
+		Ejip ejip = new Ejip();
 
 		//
 		//	start TCP/IP
 		//
-		net = Net.init();
+		net = new Net(ejip);
+// don't use CS8900 when simulating on PC or for BG263
 		int[] eth = {0x00, 0xe0, 0x98, 0x33, 0xb0, 0xf8};
-		int ip = (192<<24) + (168<<16) + (0<<8) + 123;
-		ipLink = CS8900.init(eth, ip);
+		int ip = Ejip.makeIp(192, 168, 0, 123); 
+		target = Ejip.makeIp(192, 168, 0, 1);
+		ipLink = new CS8900(ejip, eth, ip);
+
 
 		//
 		//	start device driver threads
@@ -47,7 +50,7 @@ public class Pinger {
 			public void run() {
 				for (;;) {
 					waitForNextPeriod();
-					net.loop();
+					net.run();
 				}
 			}
 		};
@@ -55,12 +58,12 @@ public class Pinger {
 			public void run() {
 				for (;;) {
 					waitForNextPeriod();
-					ipLink.loop();
+					ipLink.run();
 				}
 			}
 		};
 
-		new Worker();
+		new Worker(ejip);
 		
 		//
 		//	WD thread has lowest priority to see if every timing will be met
@@ -90,8 +93,11 @@ public class Pinger {
 
 class Worker extends RtThread {
 	
-	Worker() {
+	Ejip ejip;
+	
+	Worker(Ejip ejipRef) {
 		super(1, 5*1000000);
+		ejip = ejipRef;
 	}
 	public void run() {
 		
@@ -100,7 +106,7 @@ class Worker extends RtThread {
 		for (;;) {
 			waitForNextPeriod();
 			System.out.println("Ping");
-			Packet p = Packet.getPacket(Packet.FREE, Packet.ALLOC, Pinger.ipLink);
+			Packet p = ejip.getFreePacket(Pinger.ipLink); 
 			if (p==null) {
 				System.out.println("no free packet");
 				continue;
@@ -123,7 +129,7 @@ class Worker extends RtThread {
 			// source ip address
 			buf[3] = Pinger.ipLink.getIpAddress();
 			// destination ip address
-			buf[4] = (192<<24) + (168<<16) + (0<<8) + 5;
+			buf[4] = Pinger.target;
 			buf[2] |= Ip.chkSum(buf, 0, 20);
 
 			
@@ -141,9 +147,7 @@ class Worker extends RtThread {
 			
 			p.llh[6] = 0x0800;
 
-			p.setStatus(Packet.SND_DGRAM);	// mark packet ready to send
-
-			
+			Pinger.ipLink.enqTxPacket(p);
 		}
 	}
 }

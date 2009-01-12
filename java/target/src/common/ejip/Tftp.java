@@ -41,7 +41,6 @@ package ejip;
 */
 
 import util.Amd;
-import util.Dbg;
 import util.Timer;
 
 /**
@@ -68,13 +67,13 @@ private static int simerr;
 
 	private static int srcIp, dstIp, dstPort;
 	private static LinkLayer ipLink;
+	private static Ejip ejip;
 
-	Tftp() {
-		tftpInit();
+	Tftp(Ejip ejipRef) {
+		ejip = ejipRef;
 	}
-
+	
 	private static void tftpInit() {
-
 		state = IDLE;
 		block = 0;
 		fn = 0;
@@ -123,22 +122,23 @@ private static int simerr;
 
 		time <<= 1;
 		if (time > 64) {
-Dbg.wr("TFTP give up");
+			if (Logging.LOG) Logging.wr("TFTP give up");
 			tftpInit();
 			return;
 		}
 
-Dbg.wr("TFTP resend ");
-Dbg.intVal(block_out);
+		if (Logging.LOG) Logging.wr("TFTP resend ");
+		if (Logging.LOG) Logging.intVal(block_out);
 		// retransmit DATA
 		timeout = Timer.getTimeoutSec(time);
 
-		Packet p = Packet.getPacket(Packet.FREE, Packet.ALLOC, ipLink);
+		Packet p = ejip.getFreePacket(ipLink);
 		if (p == null) {								// got no free buffer!
-			Dbg.wr('!');
-			Dbg.wr('b');
+			if (Logging.LOG) Logging.wr('!');
+			if (Logging.LOG) Logging.wr('b');
 			return;
 		}
+		
 		p.buf[Udp.DATA] = (DAT<<16)+block_out;
 		if (block_out==endBlock) {
 			p.len = Udp.DATA*4+4;			// last block is zero length
@@ -162,8 +162,8 @@ Dbg.intVal(block_out);
 		int i, j;
 		int[] buf = p.buf;
 
-Dbg.wr('F');
-Dbg.hexVal(buf[Udp.DATA]);
+		if (Logging.LOG) Logging.wr('F');
+		if (Logging.LOG) Logging.hexVal(buf[Udp.DATA]);
 
 		int op = buf[Udp.DATA]>>>16;
 
@@ -171,8 +171,8 @@ Dbg.hexVal(buf[Udp.DATA]);
 /*
 ++simerr;
 if (simerr%23==0) { 
-Dbg.wr(" tftp dropped");
-Dbg.lf();
+if (Logging.LOG) Logging.wr(" tftp dropped");
+if (Logging.LOG) Logging.lf();
 p.setStatus(Packet.FREE);	// mark packet free
 return;
 }
@@ -203,7 +203,7 @@ return;
 			if (i < block) {
 				// a ACK for an allready sent package
 				// drop it
-				p.setStatus(Packet.FREE);	// mark packet free
+				ejip.returnPacket(p);	// mark packet free
 				return;
 			}
 
@@ -222,8 +222,8 @@ return;
 /*
 ++simerr;
 if (simerr%23==0) { 
-Dbg.wr(" simulate wrong data on read ");
-Dbg.lf();
+if (Logging.LOG) Logging.wr(" simulate wrong data on read ");
+if (Logging.LOG) Logging.lf();
 buf[Udp.DATA+13] = 0x12345678;
 }
 */
@@ -257,8 +257,8 @@ buf[Udp.DATA+13] = 0x12345678;
 					p.len = 0;				// else just discarde paket
 				}
 			} else {
-// Dbg.wr('a');
-// Dbg.intVal(block);
+// if (Logging.LOG) Logging.wr('a');
+// if (Logging.LOG) Logging.intVal(block);
 				if (p.len > Udp.DATA*4+4) {
 					program(buf, block);
 				}
@@ -273,11 +273,11 @@ buf[Udp.DATA+13] = 0x12345678;
 		} else {
 			p.len = 0;
 			tftpInit();
-Dbg.wr("error ");
+			if (Logging.LOG) Logging.wr("error ");
 		}
 
 		if (p.len==0) {
-			p.setStatus(Packet.FREE);	// mark packet free
+			ejip.returnPacket(p);	// mark packet free
 		} else {
 			reply(p);
 		}
@@ -289,15 +289,15 @@ Dbg.wr("error ");
 /*
 ++simerr;
 if (simerr%23==0) { 
-Dbg.wr("reply dropped ");
-Dbg.lf();
+if (Logging.LOG) Logging.wr("reply dropped ");
+if (Logging.LOG) Logging.lf();
 p.setStatus(Packet.FREE);	// mark packet free
 return;
 }
 */
 int[] buf = p.buf;
-Dbg.wr("tftp reply: ");
-Dbg.intVal(buf[Udp.DATA] & 0xffff);
+if (Logging.LOG) Logging.wr("tftp reply: ");
+if (Logging.LOG) Logging.hexVal(buf[Udp.DATA] & 0xffff);
 
 			// generate a reply with IP src/dst exchanged
 			dstPort = buf[Udp.HEAD]>>>16;

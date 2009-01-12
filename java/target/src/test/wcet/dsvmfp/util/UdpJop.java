@@ -5,12 +5,12 @@ import com.jopdesign.sys.Native;
 import wcet.dsvmfp.JopClient;
 import util.Dbg;
 import joprt.RtThread;
-import ejip.CS8900;
-import ejip.LinkLayer;
-import ejip.Packet;
-import ejip.Net;
-import ejip.Udp;
-import ejip.UdpHandler;
+import ejip_old.CS8900;
+import ejip_old.LinkLayer;
+import ejip_old.Packet;
+import ejip_old.Net;
+import ejip_old.Udp;
+import ejip_old.UdpHandler;
 /**
  * 
  * @author rup.inf

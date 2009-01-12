@@ -1,5 +1,3 @@
-package ejip;
-
 /**
  *	CS8900.java
  *
@@ -35,7 +33,7 @@ package ejip;
  *		2004-08-19	longer time for read/write (nior/w low) for 100 MHz JOP
  */
 
-import util.Dbg;
+package ejip;
 
 import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
@@ -49,18 +47,6 @@ public class CS8900 extends LinkLayer {
 
 	public static final int ETH_HLEN = 14;
 
-	/**
-	 * flag allows new frame to be sent.
-	 */
-	private static boolean txFree; // ready for next transmit
-
-	// FIXME: schould be pacakge - change it when jtcpip is moved
-	// to ejip
-	public static int[] eth; // own ethernet address
-
-	private static int mac_low, mac_mid, mac_hi;
-
-	private static int tx_packets;
 
 	// private static int tx_bytes;
 	// private static int collisions;
@@ -459,65 +445,26 @@ public class CS8900 extends LinkLayer {
 	static final int ETH_IP = 0x0800;
 
 	/**
-	 * The one and only reference to this object.
+	 * flag allows new frame to be sent.
 	 */
-	static CS8900 single;
+	private boolean txFree; // ready for next transmit
+
+	// FIXME: schould be pacakge - change it when jtcpip is moved
+	// to ejip
+	public int[] eth; // own ethernet address
+	
+	private Arp arp;
+
+	private int mac_low, mac_mid, mac_hi;
+
+	private int tx_packets;
 
 	/**
-	 * private constructor. The singleton object is created in init().
+	 * Allocate buffer and reset the chip.
 	 */
-	private CS8900() {
-	}
+	public CS8900(Ejip ejip, int[] mac, int ipaddr) {
 
-	public int getIpAddress() {
-		return ip;
-	}
-
-	/**
-	 * Set connection strings and connect.
-	 */
-	public void startConnection(StringBuffer dialstr, StringBuffer connect,
-			StringBuffer user, StringBuffer passwd) {
-		// useless on Ethernet
-	}
-
-	/**
-	 * Forces the connection to be new established. On Ethernet ignored.
-	 */
-	public void reconnect() {
-	}
-
-	/**
-	 * the polling loop.
-	 */
-
-	public void loop() {
-
-		Packet p;
-
-		poll();
-		if (txFree) {
-			//
-			// get a ready to send packet with source from this driver.
-			//
-			p = Packet.getTxPacket(single);
-			if (p != null) {
-				p = Arp.fillMAC(p); // fill in dest MAC
-				if (p!=null) {
-					send(p); // send one packet					
-				}
-			}
-		}
-	}
-
-	/**
-	 * allocate buffer, reset chip and start Thread.
-	 */
-	public static LinkLayer init(int[] mac, int ipaddr) {
-
-		if (single != null)
-			return single; // allready called init()
-
+		super(ejip, ipaddr);
 		txFree = true;
 
 		eth = new int[6];
@@ -536,14 +483,36 @@ public class CS8900 extends LinkLayer {
 		rx_packets = 0;
 		rx_bytes = 0;
 		rx_dropped = 0;
+		
+		arp = new Arp(ejip, this, ip, eth);
 
-		single = new CS8900();
-		single.ip = ipaddr;
+		reset();
 
-		single.reset();
-
-		return single;
 	}
+
+	/**
+	 * the polling loop.
+	 */
+
+	public void run() {
+
+		Packet p;
+
+		poll();
+		if (txFree) {
+			//
+			// get a ready to send packet with source from this driver.
+			//
+			p = txQueue.deq();
+			if (p != null) {
+				p = arp.fillMAC(p); // fill in dest MAC
+				if (p!=null) {
+					send(p); // send one packet					
+				}
+			}
+		}
+	}
+
 
 	//
 	// ISA bus handling
@@ -579,7 +548,7 @@ public class CS8900 extends LinkLayer {
 	/**
 	 * 'ISA Bus' io read cycle 2x8 bit.
 	 */
-	private static int readWord(int port) {
+	private int readWord(int port) {
 
 		Native.wr(port, Const.IO_CTRL); // port
 		Native.wr(port | ISA_RD, Const.IO_CTRL); // nior low
@@ -599,7 +568,7 @@ public class CS8900 extends LinkLayer {
 	/**
 	 * 'ISA Bus' io read cycle 2x8 bit with high byte first.
 	 */
-	private static int readWordHighFirst(int port) {
+	private int readWordHighFirst(int port) {
 
 		++port;
 		Native.wr(port, Const.IO_CTRL); // addr
@@ -621,7 +590,7 @@ public class CS8900 extends LinkLayer {
 	 * 'ISA Bus' io write cycle 2x8 bit. first low byte than high byte at higher
 	 * address.
 	 */
-	private static void writeWord(int port, int value) {
+	private void writeWord(int port, int value) {
 
 		Native.wr(value, Const.IO_DATA); // value in buffer
 		Native.wr(port | ISA_DIR, Const.IO_CTRL); // port and drive value out
@@ -637,12 +606,12 @@ public class CS8900 extends LinkLayer {
 		Native.wr(port, Const.IO_CTRL); // disable dout
 	}
 
-	private static int readReg(int reg) {
+	private int readReg(int reg) {
 		writeWord(ADD_PORT, reg);
 		return readWord(DATA_PORT);
 	}
 
-	private static void writeReg(int reg, int value) {
+	private void writeReg(int reg, int value) {
 		writeWord(ADD_PORT, reg);
 		writeWord(DATA_PORT, value);
 	}
@@ -650,7 +619,7 @@ public class CS8900 extends LinkLayer {
 	/**
 	 * write ethernet header.
 	 */
-	private static void writeHead(Packet p) {
+	private void writeHead(Packet p) {
 
 		int i, val;
 
@@ -687,7 +656,7 @@ public class CS8900 extends LinkLayer {
 	/**
 	 * write tx data.
 	 */
-	private static void writeData(Packet p) {
+	private void writeData(Packet p) {
 
 		int i, val;
 		int[] buf = p.buf;
@@ -732,7 +701,7 @@ public class CS8900 extends LinkLayer {
 	/**
 	 * read ethernet header.
 	 */
-	private static void readHead(Packet p) {
+	private void readHead(Packet p) {
 
 		int i, val;
 		int[] buf = p.llh;
@@ -757,7 +726,7 @@ public class CS8900 extends LinkLayer {
 	/**
 	 * read rx data.
 	 */
-	private static void readData(Packet p) {
+	private void readData(Packet p) {
 
 		int i, val;
 		int length = p.len;
@@ -802,8 +771,7 @@ public class CS8900 extends LinkLayer {
 	/**
 	 * reset chip and set registers
 	 */
-	// private void reset() {
-	void reset() {
+	private void reset() {
 
 		int i;
 
@@ -847,7 +815,7 @@ public class CS8900 extends LinkLayer {
 	 * Sends a packet to an CS8900 network device. old ret was 0 if ok, now true
 	 * if ok!
 	 */
-	private static void send(Packet p) {
+	private void send(Packet p) {
 
 		/*
 		 * keep the upload from being interrupted, since we ask the chip to
@@ -868,7 +836,7 @@ public class CS8900 extends LinkLayer {
 			 */
 			// p.setStatus(Packet.FREE);
 			// or keep it in SND status???
-			Dbg.wr('^');
+			if (Logging.LOG) Logging.wr('^');
 			return;
 		}
 
@@ -876,21 +844,20 @@ public class CS8900 extends LinkLayer {
 		writeHead(p);
 		/* Write the contents of the packet */
 		writeData(p);
-		if (p.getStatus()==Packet.SND_TCP) {
-			p.setStatus(Packet.TCP_ONFLY);		// mark on the fly
-		} else {
-			p.setStatus(Packet.FREE);		// mark packet free			
+			
+		if (!p.isTcpOnFly) {
+			ejip.returnPacket(p);
 		}
 		txFree = false;
 
 		//
-		// txFree is set with an transmit event
+		// txFree is set with a transmit event
 		//
 	}
 
 	private static final int EVENT_MASK = 0xffc0;
 
-	private static int pollRegs() {
+	private int pollRegs() {
 
 		int event;
 
@@ -912,7 +879,7 @@ public class CS8900 extends LinkLayer {
 	 * mode)!
 	 */
 
-	private static void poll() {
+	private void poll() {
 
 		int status, mask;
 
@@ -965,7 +932,7 @@ public class CS8900 extends LinkLayer {
 	}
 
 	/* We have a good packet(s), get it/them out of the buffers. */
-	private static void net_rx() {
+	private void net_rx() {
 
 		int status, length;
 
@@ -981,9 +948,10 @@ public class CS8900 extends LinkLayer {
 		}
 
 		// get a free packet and set source to CS8900
-		Packet p = Packet.getPacket(Packet.FREE, Packet.ALLOC, single);
+		Packet p = ejip.getFreePacket(this);
+
 		if (p == null) { // got no free buffer!
-			Dbg.wr('~');
+			if (Logging.LOG) Logging.wr('~');
 			rx_dropped++;
 			writeReg(PP_RxCFG, curr_rx_cfg | SKIP_1); // release memory on
 														// chip
@@ -1001,22 +969,15 @@ public class CS8900 extends LinkLayer {
 		//
 		int i = p.llh[6]; // type field of ethernet header
 		if (i == ETH_ARP) { // ARP type
-			Arp.receive(p, eth, single.ip);
+			arp.receive(p, eth, ip);
 		} else if (i == ETH_IP) { // IP type
-			p.setStatus(Packet.RCV); // inform upper layer
-
+			rxQueue.enq(p); // inform upper layer
 		} else {
-			p.setStatus(Packet.FREE); // just drop unknown types
+			ejip.returnPacket(p); // just drop unknown types
 		}
 
 		rx_packets++;
 		rx_bytes += length + 14;
 	}
 
-	/* (non-Javadoc)
-	 * @see ejip.LinkLayer#getConnCount()
-	 */
-	public int getConnCount() {
-		return 0;
-	}
 }

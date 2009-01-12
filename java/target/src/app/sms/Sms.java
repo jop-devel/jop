@@ -29,6 +29,7 @@ import joprt.RtThread;
 import com.jopdesign.sys.Const;
 
 import ejip.CS8900;
+import ejip.Ejip;
 import ejip.LinkLayer;
 import ejip.Net;
 
@@ -397,11 +398,12 @@ private static final int ERROR_TIME = 10;
 		//
 		//	start TCP/IP
 		//
-		net = Net.init();
+		Ejip ejip = new Ejip();
+		net = new Net(ejip);
 // don't use CS8900 when simulating on PC or for BG263
 		int[] eth = {0x00, 0xe0, 0x98, 0x33, 0xb0, 0xf8};
-		int ip = (192<<24) + (168<<16) + (0<<8) + 123;
-		ipLink = CS8900.init(eth, ip);
+		int ip = Ejip.makeIp(192, 168, 0, 123); 
+		ipLink = new CS8900(ejip, eth, ip);
 
 		//
 		//	start device driver threads
@@ -411,7 +413,7 @@ private static final int ERROR_TIME = 10;
 			public void run() {
 				for (;;) {
 					waitForNextPeriod();
-					net.loop();
+					net.run();
 				}
 			}
 		};
@@ -419,7 +421,7 @@ private static final int ERROR_TIME = 10;
 			public void run() {
 				for (;;) {
 					waitForNextPeriod();
-					ipLink.loop();
+					ipLink.run();
 				}
 			}
 		};

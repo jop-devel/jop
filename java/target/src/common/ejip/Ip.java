@@ -36,19 +36,27 @@ public class Ip {
 	public final static int SOURCE = 3;
 	public final static int DESTINATION = 4;
 	
+	// TODO: this should not be static and it should be a synch. access
 	static int ip_id = 0x12340000;
+	
+	Ejip ejip;
+	
+	public Ip(Ejip ejipRef) {
+		ejip = ejipRef;
+	}
 
 	/**
 	 * very simple generation of IP header. just swap source and destination.
+	 * Still used by ICMP and TCP.
 	 */
-	static void doIp(Packet p, int prot) {
+	void doIp(Packet p, int prot) {
 	
 		int[] buf = p.buf;
 		int len = p.len;
 		int i;
 	
 		if (len == 0) {
-			p.setStatus(Packet.FREE); // mark packet free
+			ejip.returnPacket(p); // mark packet free
 		} else {
 			buf[0] = 0x45000000 + len; // ip length (header without options)
 			buf[1] = Ip.getId(); // identification, no fragmentation
@@ -61,8 +69,8 @@ public class Ip {
 	
 			p.llh[6] = 0x0800;
 	
-			p.setStatus(Packet.SND_DGRAM); // mark packet ready to send
-	
+			// send packet to the link layer for the packet
+			p.interf.txQueue.enq(p);	
 		}
 	}
 
@@ -76,7 +84,7 @@ public class Ip {
 	}
 
 	/**
-	 * calc ip check sum. assume (32 bit) word boundries. rest of buffer is 0.
+	 * calc IP check sum. assume (32 bit) word boundaries. rest of buffer is 0.
 	 * off offset in buffer (in words) cnt length in bytes
 	 */
 	public static int chkSum(int[] buf, int off, int cnt) {

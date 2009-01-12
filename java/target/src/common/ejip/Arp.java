@@ -43,8 +43,6 @@ package ejip;
 *
 */
 
-import util.Dbg;
-
 
 /**
 *	handle ARP request.
@@ -61,10 +59,12 @@ public class Arp {
 
 //		TODO: not used - age wraps around after 4 billion requests
 //		static int ageCnt;
+		
+		// TODO: make this list non-static
 
 		int ip;
 		int[] mac;		// could be optimized to use 16-bit words
-						// in intel byte oreder for CS8900
+						// in intel byte order for CS8900
 		boolean valid;
 		int age;
 
@@ -148,24 +148,32 @@ public class Arp {
 		
 		static void dump(int nr) {
 			
-			Dbg.wr("add ARP IP=");
-			Dbg.hexVal(list[nr].ip);
+			if (Logging.LOG) Logging.wr("add ARP IP=");
+			if (Logging.LOG) Logging.hexVal(list[nr].ip);
 			for (int i=0; i<6; ++i) {
-				Dbg.hexVal(list[nr].mac[i]);
+				if (Logging.LOG) Logging.hexVal(list[nr].mac[i]);
 			}
 		}
 	}
 
-	static {
+	Ejip ejip;
+	int eth[];
+	int ip;
+	LinkLayer ll;
+
+	public Arp(Ejip ejip, LinkLayer interf, int ipAddr, int ethAddr[]) {
+		eth = ethAddr;
+		ip = ipAddr;
+		this.ejip = ejip;
+		ll = interf;
 		Entry.init();
 	}
-
 /**
 *	handle ARP request.
 */
-	protected static void receive(Packet p, int[] eth, int ip) {
+	protected void receive(Packet p, int[] eth, int ip) {
 
-//		Dbg.wr('A');
+//		if (Logging.LOG) Logging.wr('A');
 
 		if (p.buf[6]==ip) {
 //			System.out.println("ARP receive");
@@ -201,11 +209,11 @@ public class Arp {
 				// System.out.println("request");
 			} else if (arp_op==2) {
 				// System.out.println("reply");
-				p.setStatus(Packet.FREE);			// mark packet free
+				ejip.returnPacket(p);
 				return;
 			} else {
-				Dbg.wr("ARP unknown op: ");
-				Dbg.intVal(arp_op);
+				if (Logging.LOG) Logging.wr("ARP unknown op: ");
+				if (Logging.LOG) Logging.intVal(arp_op);
 			}
 
 			/*
@@ -234,9 +242,9 @@ public class Arp {
 			p.llh[1] = p.llh[4];
 			p.llh[2] = p.llh[5];
 			p.llh[6] = 0x0806;			// ARP frame
-			p.setStatus(Packet.SND_DGRAM);	// mark packet ready to send
+			ll.txQueue.enq(p);	// mark packet ready to send			
 		} else {
-			p.setStatus(Packet.FREE);			// mark packet free
+			ejip.returnPacket(p); // mark packet free
 		}
 	}
 
@@ -247,14 +255,13 @@ public class Arp {
 	 * @param ll
 	 * @param ip
 	 */
-	protected static void sendRequest(Packet p) {
+	protected void sendRequest(Packet p) {
 		
 		int ip_dest = p.buf[4];
 		
 		p.buf[0] = 0x00010800;	// hw addr. space 1, Protocol add. space IP 
 		p.buf[1] = 0x06040001;	// hw-len, sw-len, opcode request
 		
-		int eth[] = CS8900.eth;	// we have only the static filed in CS8900
 		
 		p.buf[2] = (eth[0]<<24) + (eth[1]<<16) + (eth[2]<<8) + eth[3];
 
@@ -263,8 +270,8 @@ public class Arp {
 //		+ (p.interf.getIpAddress() >>> 16);
 //		p.buf[4] = (p.interf.getIpAddress() << 16); // we don't know the
 
-		p.buf[3] = (eth[4]<<24) + (eth[5]<<16) + (CS8900.single.ip>>>16);
-		p.buf[4] = (CS8900.single.ip<<16);	// we don't know the dest. eth. addr.
+		p.buf[3] = (eth[4]<<24) + (eth[5]<<16) + (ip>>>16);
+		p.buf[4] = (ip<<16);	// we don't know the dest. eth. addr.
 		p.buf[5] = 0;
 		p.buf[6] = ip_dest;			// destination IP address
 		p.len = 46;				// why 46?
@@ -285,7 +292,7 @@ public class Arp {
 	 * 
 	 * @param p
 	 */
-	static Packet fillMAC(Packet p) {
+	Packet fillMAC(Packet p) {
 
 		Entry e;
 		// IP destination address (without gateway) is
@@ -303,17 +310,13 @@ public class Arp {
 
 
 		if (e == null) {
-			// If it's a TCP packet we need to make a copy,
-			// set the status to on-the-fly and rely on the
-			// TCP timout retransmission
-			if (p.getStatus()==Packet.SND_TCP) {
-				Packet ap = Packet.getPacket(Packet.FREE, Packet.ALLOC);
+			// If it's a TCP packet we need to make a copy
+			// and rely on the TCP timeout retransmission
+			if (p.isTcpOnFly) {
+				Packet ap = ejip.getFreePacket(ll);
 				if (ap!=null) {
 					ap.copy(p);
 					sendRequest(ap);
-					// avoid transmit from the link layer again
-					// before the ARP reply comes in
-					p.setStatus(Packet.TCP_ONFLY);
 					return ap;
 				}
 			} else {
@@ -338,7 +341,7 @@ public class Arp {
 	 * @param ip
 	 * @return boolean
 	 */
-	public static boolean inCache(int ip) {
+	public boolean inCache(int ip) {
 		// TODO dhcp
 		// return Entry.find(CS8900.isSameSubnet(ip) ? ip :
 		// Net.linkLayer.gateway) != null;

@@ -35,20 +35,13 @@
 
 package ejip;
 
-import util.Dbg;
-
 /**
 *	Packet buffer handling for a minimalistic TCP/IP stack.
 *
 */
 public class Packet {
 
-	public final static int MAX = 1500;		// maximum Packet length in bytes
-//	public final static int MAX = StackParameters.PACKET_MTU_SIZE; 
-	public final static int MAXW = 1500/4;	// maximum Packet length in word
 	public final static int MAXLLH = 7;		// 7 16 bit words for ethernet
-	private final static int CNT = 8;		// size of packet pool
-//	private final static int CNT = StackParameters.PACKET_POOL_SIZE; 
 
 	/** interface source/destination */
 	public LinkLayer interf;
@@ -58,163 +51,37 @@ public class Packet {
 	public int[] buf;
 	/** Packet length in bytes */
 	public int len;
+	/** Mark as TCP packet on the fly. Don't free it in the link layer. */
+	public boolean isTcpOnFly;
+	
+	
 	/** Current status of the packet. */
 	private int status;
-	/** The packet is free to use. */
-	public final static int FREE = 0;
-	/** Allocated and either under interpretation or under construction. */
-	public final static int ALLOC = 1;
-	/** A datagram packet ready to be sent by the link layer. */
-	public final static int SND_DGRAM = 2;
-	/** Received packet ready to be processed by the network stack. */
-	public final static int RCV = 3;
-	/** A TCP packet ready to be sent. This will go to TCP_ONFLY after sending. */
-	public final static int SND_TCP = 4;
-	/** A sent and not acked TCP packet. Can be resent after a timeout. */
-	public final static int TCP_ONFLY = 5;
+//	/** The packet is free to use. */
+//	public final static int FREE = 0;
+//	/** Allocated and either under interpretation or under construction. */
+//	public final static int ALLOC = 1;
+//	/** A datagram packet ready to be sent by the link layer. */
+//	public final static int SND_DGRAM = 2;
+//	/** Received packet ready to be processed by the network stack. */
+//	public final static int RCV = 3;
+//	/** A TCP packet ready to be sent. This will go to TCP_ONFLY after sending. */
+//	public final static int SND_TCP = 4;
+//	/** A sent and not acked TCP packet. Can be resent after a timeout. */
+//	public final static int TCP_ONFLY = 5;
 	
-	private static Object mutex;
-
-	//	no direct construction
-	private Packet() {
+	/**
+	 * Create a packet with maximum length. 
+	 */
+	Packet(int pktSize) {
 		llh = new int[MAXLLH];
-		buf = new int[MAXW];
+		buf = new int[(pktSize+3)/4];
 		len = 0;
-		status = FREE;
+		status = 0;
 		interf = null;
 	}
 
-	private static Packet[] packets;
 
-	static {
-		mutex = new Object();
-
-		packets = new Packet[CNT];
-		for (int i=0; i<CNT; ++i) {
-			packets[i] = new Packet();
-		}
-		
-	}
-
-private static void dbg() {
-
-	synchronized (mutex) {
-		Dbg.wr('|');
-		for (int i=0; i<CNT; ++i) {
-			Dbg.wr('0'+packets[i].status);
-		}
-		Dbg.wr('|');
-	}
-}
-
-
-/**
-*	Request a packet of a given type from the pool and set new type.
-*/
-	public static Packet getPacket(int type, int newType) {
-
-		int i;
-		Packet p;
-
-		synchronized (mutex) {
-			for (i=0; i<CNT; ++i) {
-				if (packets[i].status==type) {
-					break;
-				}
-			}
-			if (i==CNT) {
-if (type==FREE) Dbg.wr('!');
-				return null;
-			}
-			packets[i].status = newType;
-			p = packets[i];
-		}
-// dbg();
-		return p;
-	}
-
-/**
-*	Request a packet of a given type from the pool and set new type and source.
-*/
-	public static Packet getPacket(int type, int newType, LinkLayer s) {
-
-		int i;
-		Packet p;
-
-		synchronized (mutex) {
-			for (i=0; i<CNT; ++i) {
-				if (packets[i].status==type) {
-					break;
-				}
-			}
-			if (i==CNT) {
-if (type==FREE) Dbg.wr('!');
-				return null;
-			}
-			packets[i].status = newType;
-			packets[i].interf = s;
-			p = packets[i];
-		}
-// dbg();
-		return p;
-	}
-
-/**
-*	Request a packet of a given type and source from the pool and set new type.
-*/
-	public static Packet getPacket(LinkLayer s, int type, int newType) {
-
-		int i;
-		Packet p = null;
-
-		synchronized (mutex) {
-			for (i=0; i<CNT; ++i) {
-				p = packets[i];
-				if (p.status==type && packets[i].interf==s) {
-					p.status = newType;
-					break;
-				}
-			}
-		}
-		if (i==CNT) {
-			p = null;
-		}
-			
-		return p;
-	}
-	/**
-	 * Get a packet with either status SND or SND_TCP.
-	 * Keep the status as it is needed in the link layer.
-	 * @param s link layer for this packet.
-	 * @return a Packet
-	 */
-	public static Packet getTxPacket(LinkLayer s) {
-		int i;
-		Packet p = null;
-
-		synchronized (mutex) {
-			for (i=0; i<CNT; ++i) {
-				p = packets[i];
-				if ((p.status==SND_DGRAM || p.status==SND_TCP)
-						&& packets[i].interf==s) {
-					break;
-				}
-			}
-		}
-		if (i==CNT) {
-			p = null;
-		}
-			
-		return p;
-	}
-
-	public void setStatus(int v) {
-
-		synchronized (mutex) {
-			status = v;
-		}
-// dbg();
-	}
 
 	public int getStatus() {
 		return status;
@@ -223,6 +90,10 @@ if (type==FREE) Dbg.wr('!');
 	public LinkLayer getLinkLayer() {
 		return interf;
 	}
+	
+	public void setLinkLayer(LinkLayer ll) {
+		interf = ll;
+	}
 
 
 	/**
@@ -230,19 +101,17 @@ if (type==FREE) Dbg.wr('!');
 	 * with a TCP packet as the TCP packet is kept in the connection.
 	 * @param p
 	 */
-	public void copy(Packet p) {
+	synchronized public void copy(Packet p) {
 
 		int i;
 		
-		synchronized (mutex) {
-			this.len = p.len;
-			this.interf = p.interf;
-			for (i=0; i<MAXLLH; ++i) {
-				this.llh[i] = p.llh[i];
-			}
-			for (i=0; i<MAXW; ++i) {
-				this.buf[i] = p.buf[i];
-			}
+		this.len = p.len;
+		this.interf = p.interf;
+		for (i=0; i<MAXLLH; ++i) {
+			this.llh[i] = p.llh[i];
+		}
+		for (i=0; i<buf.length; ++i) {
+			this.buf[i] = p.buf[i];
 		}
 	}
 }

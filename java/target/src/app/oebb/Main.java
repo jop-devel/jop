@@ -130,8 +130,14 @@ public class Main {
 		RtThread.sleepMs(1000);
 		Timer.wd();
 
+		//
+		//	start TCP/IP
+		//
+		Ejip ejip = new Ejip();
+		net = new Net(ejip);
+
 		// we need the BgTftp befor Flash.init()!
-		BgTftp tftpHandler = new BgTftp();
+		BgTftp tftpHandler = new BgTftp(ejip);
 /* comment Flash for JopSim debug
 */
 		Flash.init();
@@ -142,20 +148,18 @@ public class Main {
 
 		Status.isMaster = Flash.isMaster();
 		
-		//
-		//	start TCP/IP and all (four) threads
-		//
-		net = Net.init();
+
+		
 		// remove default TFTP handler
-		Udp.removeHandler(BgTftp.PORT);
+		net.getUdp().removeHandler(BgTftp.PORT);
 		// BUT this handler can only handle 64KB sector
 		// writes. A new FPGA configuration has to be
 		// split to more writes!!!
-		Udp.addHandler(BgTftp.PORT, tftpHandler);
+		net.getUdp().addHandler(BgTftp.PORT, tftpHandler);
 		ser = new Serial(Const.IO_UART_BG_MODEM_BASE);
 		
 		// Handler for DGPS data
-		Udp.addHandler(DgpsHandler.PORT, new DgpsHandler());
+		net.getUdp().addHandler(DgpsHandler.PORT, new DgpsHandler(ejip));
 
 		//
 		//	Create serial, PPP/SLIP and TCP/IP threads
@@ -173,7 +177,7 @@ public class Main {
 			public void run() {
 				for (;;) {
 					waitForNextPeriod();
-					ipLink.loop();
+					ipLink.run();
 				}
 			}
 		};
@@ -182,13 +186,13 @@ public class Main {
 			public void run() {
 				for (;;) {
 					waitForNextPeriod();
-					net.loop();
+					net.run();
 				}
 			}
 		};
 
 		// create logging thread
-		logger = new Logging();
+		logger = new Logging(ejip, net);
 		new RtThread(LOG_PRIO, LOG_PERIOD) {
 			public void run() {
 				for (;;) {
@@ -201,14 +205,15 @@ public class Main {
 
 		if (val==Keyboard.K3) {
 			// SLIP for simpler tests
-			ipLink = Slip.init(ser,	(192<<24) + (168<<16) + (1<<8) + 2); 
+			ipLink = new Slip(ejip, ser, Ejip.makeIp(192, 168, 1, 2));
 		} else if (val==Keyboard.K2){
 			// use second SLIP subnet for 'COs test'
-			ipLink = Slip.init(ser, (192<<24) + (168<<16) + (2<<8) + 2); 
+			ipLink = new Slip(ejip, ser, Ejip.makeIp(192, 168, 2, 2));
 		} else {
-			ipLink = Ppp.init(ser, pppThre); 
+			ipLink = new Ppp(ejip, ser, pppThre);
 //			System.out.println("SLIP is default!!");
-//			ipLink = Slip.init(ser,	(192<<24) + (168<<16) + (1<<8) + 2); 
+//			ipLink = new Slip(ejip, ser, Ejip.makeIp(192, 168, 1, 2));
+
 		}
 
 		//
@@ -236,10 +241,10 @@ public class Main {
 
 		//
 		//	Crate state object and the periodic thread.
-		state = new State(ipLink);
+		state = new State(ejip, net, ipLink);
 		state.bgid = Flash.getId();
 		state.versionStrecke = Flash.getVer();
-		Udp.addHandler(State.ZLB_RCV_PORT, state);
+		net.getUdp().addHandler(State.ZLB_RCV_PORT, state);
 		
 		new RtThread(STATE_PRIO, STATE_PERIOD) {
 			public void run() {

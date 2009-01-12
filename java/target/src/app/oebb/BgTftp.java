@@ -23,6 +23,7 @@ import com.jopdesign.sys.Native;
 import util.Amd;
 import util.Dbg;
 import util.Timer;
+import ejip.Ejip;
 import ejip.LinkLayer;
 import ejip.Packet;
 import ejip.Udp;
@@ -57,7 +58,10 @@ private static int simerr;
 	final static int MAX_BLOCKS = 128;
 	static int[] sector;
 
-	BgTftp() {
+	private static Ejip ejip;
+
+	BgTftp(Ejip ejipRef) {
+		ejip = ejipRef;
 		// +1 is for the final block on a 64KB write
 		// that contains no data
 		sector = new int[(MAX_BLOCKS+1)*512/4];
@@ -125,7 +129,7 @@ Dbg.intVal(block_out);
 		// retransmit DATA
 		timeout = Timer.getTimeoutSec(time);
 
-		Packet p = Packet.getPacket(Packet.FREE, Packet.ALLOC, ipLink);
+		Packet p = ejip.getFreePacket(ipLink);
 		if (p == null) {								// got no free buffer!
 			Dbg.wr('!');
 			Dbg.wr('b');
@@ -195,7 +199,7 @@ return;
 			if (i < block) {
 				// a ACK for an allready sent package
 				// drop it
-				p.setStatus(Packet.FREE);	// mark packet free
+				ejip.returnPacket(p);	// mark packet free
 				return;
 			}
 
@@ -274,7 +278,7 @@ Dbg.wr("error ");
 		}
 
 		if (p.len==0) {
-			p.setStatus(Packet.FREE);	// mark packet free
+			ejip.returnPacket(p);	// mark packet free
 		} else {
 			reply(p);
 		}

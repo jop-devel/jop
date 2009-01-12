@@ -37,17 +37,12 @@ package ejip.examples;
 *
 */
 
-import joprt.RtThread;
-import util.Dbg;
 import util.Serial;
 import util.Timer;
 
 import com.jopdesign.sys.Const;
-import com.jopdesign.sys.Native;
 
-import ejip.LinkLayer;
-import ejip.Net;
-import ejip.Slip;
+import ejip.*;
 
 /**
 *	Test Main for ejip.
@@ -64,76 +59,36 @@ public class MainSlip {
 */
 	public static void main(String[] args) {
 
-		Dbg.init();
+		Ejip ejip = new Ejip();
 
 		//
-		//	start TCP/IP and all (four) threads
+		//	start TCP/IP
 		//
-		net = Net.init();
-// don't use CS8900 when simulating on PC or for BG263
-		// LinkLayer ipLink = CS8900.init(Net.eth, Net.ip);
-// don't use PPP on my web server
-		// Ppp.init(Const.IO_UART_BG_MODEM_BASE); 
-
-		ser = new Serial(Const.IO_UART1_BASE);
-		ipLink = Slip.init(ser,	(192<<24) + (168<<16) + (1<<8) + 2);
+		net = new Net(ejip);
 		
 		//
-		//	start device driver threads
+		//	use second serial line for simulation
+		//	with JopSim and on the project usbser
 		//
+		ser = new Serial(Const.IO_UART_BG_MODEM_BASE);
+		int ip = Ejip.makeIp(192, 168, 1, 2);
+		ipLink = new Slip(ejip, ser, ip);
 		
-		new RtThread(5, 10000) {
-			public void run() {
-				for (;;) {
-					waitForNextPeriod();
-					net.loop();
-				}
-			}
-		};
-		// Slip timeout (for windoz slip reply) depends on
-		// period (=100*period) !
-		new RtThread(9, 10000) {
-			public void run() {
-				for (;;) {
-					waitForNextPeriod();
-					ipLink.loop();
-				}
-			}
-		};
-		new RtThread(10, 3000) {
-			public void run() {
-				for (;;) {
-					waitForNextPeriod();
-					ser.loop();
-				}
-			}
-		};
-
-		//
-		//	WD thread has lowest priority to see if every timing will be met
-		//
-
-		RtThread.startMission();
-
 		forever();
 	}
 
 	private static void forever() {
 
-		//
-		//	just do the WD blink with lowest priority
-		//	=> if the other threads take to long (*3) there will be a reset
-		//
 		for (;;) {
-			for (int i=0; i<10; ++i) {
-				Timer.wd();
-				/*-
-				int val = Native.rd(Const.IO_IN);
-				Native.wr(val, Const.IO_LED);
-				*/
-				RtThread.sleepMs(50);
+			for (int i=0; i<1000; ++i) {
+				ser.loop();
+				// timeout in slip depends on loop time!
+				ipLink.run();
+				ser.loop();
+				net.run();
 			}
 			Timer.wd();
+			System.out.print("*");
 		}
 	}
 }

@@ -43,13 +43,20 @@ public class BgInit {
 
 		Dbg.initSerWait();
 
-		//
-		//	start TCP/IP and all threads
-		//
-		net = Net.init();
+		Ejip ejip = new Ejip();
 
+		//
+		//	start TCP/IP
+		//
+		net = new Net(ejip);
+		
+		//
+		//	use second serial line for simulation
+		//	with JopSim and on the project usbser
+		//
 		ser = new Serial(Const.IO_UART_BG_MODEM_BASE);
-		ipLink = Slip.init(ser,	(192<<24) + (168<<16) + (1<<8) + 2);
+		int ip = Ejip.makeIp(192, 168, 1, 2);
+		ipLink = new Slip(ejip, ser, ip);
 		
 		//
 		//	start device driver threads
@@ -59,7 +66,7 @@ public class BgInit {
 			public void run() {
 				for (;;) {
 					waitForNextPeriod();
-					net.loop();
+					net.run();
 				}
 			}
 		};
@@ -69,7 +76,7 @@ public class BgInit {
 			public void run() {
 				for (;;) {
 					waitForNextPeriod();
-					ipLink.loop();
+					ipLink.run();
 				}
 			}
 		};

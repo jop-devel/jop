@@ -34,13 +34,13 @@ package examples;
 import joprt.RtThread;
 import util.Dbg;
 import util.Timer;
-import ejip.*;
+import ejip_old.*;
 
 class MyServer extends UdpHandler {
 	
 	StringBuffer sb;
 
-	// sorry, but the class intializer cannot
+	// sorry, but the class initializer cannot
 	// create objects (at the moment)
 	public MyServer() {
 		sb = new StringBuffer(100);
@@ -136,10 +136,6 @@ public class UdpJOPServer {
 			for (int i=0; i<10; ++i) {
 				RtThread.sleepMs(50);
 				Timer.wd();
-				/*-
-				int val = Native.rd(Const.IO_IN);
-				Native.wr(val, Const.IO_LED);
-				*/
 				Timer.loop();
 			}
 			Timer.wd();

@@ -30,56 +30,32 @@
 
 package ejip;
 
-import util.Dbg;
-import ejip.LinkLayer;
+import rtlib.SRSWQueue;
 
 /**
 *	Start device driver threads and poll for packets.
 */
 
-public class Net {
+public class Net implements Runnable {
 	
 	/**
 	 * Enable the experimental TCP implementation
 	 */
-	public static final boolean TCP_ENABLE = false;
+	public static final boolean TCP_ENABLED = false;
 	
 	public static final int PROT_ICMP = 1;
 	
-	/**
-	 * Holds a reference to the actual LinkLayer to abstract the source of the
-	 * IP address
-	 * 
-	 * TODO: should not be that global! We can have more link layers.
-	 * FIXME: remove it!!!! - used by jtcpip
-	 */
-	public static LinkLayer linkLayer;
+	Ejip ejip;
+	Ip ip;
+	private Udp udp;
+	private Tcp tcp;
 
-
-/**
-*	The one and only reference to this object.
-*/
-	private static Net single;
-
-/**
-*	private because it's a singleton Thread.
-*/
-	private Net() {
-	}
-
-/**
-*	Allocate buffer and create thread.
-*/
-	public static Net init() {
-
-		if (single != null) return single;			// allready called init()
-
-		Udp.init();
+	public Net(Ejip ejipRef) {
+		ejip = ejipRef;
+		ip = new Ip(ejip);
+		udp = new Udp(ejip);
+		tcp = new Tcp(ejip);
 		TcpIp.init();
-
-		single = new Net();
-		
-		return single;
 	}
 
 
@@ -87,39 +63,42 @@ public class Net {
 *	Look for received packets and invoke receive.
 *	Mark them to be sent if returned with len!=0 from TcpIp layer.
 */
-	public void loop() {
+	public void run() {
 
 		Packet p;
-
-		// is a received packet in the pool?
-		p = Packet.getPacket(Packet.RCV, Packet.ALLOC);
-		if (p!=null) {					// got one received Packet from pool
+		SRSWQueue<Packet> rxQ = ejip.llRxQueue;
+		if (rxQ==null) {
+			if (Logging.LOG) Logging.wr("No link layer registered");
+			return;
+		}
+		
+		// get one received packet from the receive queue
+		p = rxQ.deq();
+		if (p!=null) {
 			receive(p);
 		} else {
-			Udp.loop();
-			if (TCP_ENABLE)	Tcp.loop();
-		}
+			udp.run();
+			if (TCP_ENABLED) tcp.run();
+		}			
 	}
 	
 	/**
 	 * Process one IP packet. Change buffer and set length to get a packet sent
 	 * back. called from Net.loop().
 	 */
-	public static void receive(Packet p) {
+	public void receive(Packet p) {
 
-		int i, j;
-		int ret = 0;
+		int i;
 		int[] buf = p.buf;
 		int len;
 
 		i = buf[0];
-		len = i & 0xffff; // len from IP header
+		len = i & 0xffff; // length from IP header
 		// NO options are assumed in ICMP/TCP/IP...
 		// => copy if options present
 		if (len > p.len || (i >>> 24 != 0x45)) {
-			Dbg.wr("IP options -> discard");
-			p.setStatus(Packet.FREE); // packet to short or ip options => drop
-										// it
+			if (Logging.LOG) Logging.wr("IP options -> discard");
+			ejip.returnPacket(p); // packet to short or ip options => drop it
 			return;
 		} else {
 			p.len = len; // correct for to long packets
@@ -127,33 +106,42 @@ public class Net {
 
 		// TODO fragmentation
 		if (Ip.chkSum(buf, 0, 20) != 0) {
-			p.setStatus(Packet.FREE);
-			Dbg.wr("wrong IP checksum ");
+			ejip.returnPacket(p);
+			if (Logging.LOG) Logging.wr("wrong IP checksum ");
 			return;
 		}
 
 		int prot = (buf[2] >> 16) & 0xff; // protocol
 		if (prot == PROT_ICMP) {
 			TcpIp.doICMP(p);
-			Ip.doIp(p, prot);
+			ip.doIp(p, prot);
 		} else if (prot == Tcp.PROTOCOL) {
 			if ((buf[5] & 0xffff) == 80) {
 				// still do our simple HTML server
 				TcpIp.doTCP(p);
-				Ip.doIp(p, prot);
+				ip.doIp(p, prot);
 			} else {
-				if (TCP_ENABLE) {
-					// that's the new upcomming TCP processing
-					Tcp.process(p);					
+				if (TCP_ENABLED) {
+					// that's the new TCP processing
+					tcp.process(p);					
 				} else {
-					p.setStatus(Packet.FREE); // mark packet free					
+					ejip.returnPacket(p); // mark packet free					
 				}
 			}
 		} else if (prot == Udp.PROTOCOL) {
-			Udp.process(p); // Udp generates the reply
+			udp.process(p); // Udp generates the reply
 		} else {
-			p.setStatus(Packet.FREE); // mark packet free
+			ejip.returnPacket(p); // mark packet free
 		}
+	}
+
+
+	public Tcp getTcp() {
+		return tcp;
+	}
+
+	public Udp getUdp() {
+		return udp;
 	}
 
 }

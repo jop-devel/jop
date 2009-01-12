@@ -36,84 +36,42 @@ package ejip;
 *	Loopback link layer driver.
 */
 
-
-/**
-*	Loopback driver.
-*/
-
 public class Loopback extends LinkLayer {
 
-	private static final int MAX_BUF = 1500;		// or should we use 1006
+	public Loopback(Ejip ejip, int[] mac, int ipaddr) {
 
+		super(ejip, ipaddr);
 
-/**
-*	The one and only reference to this object.
-*/
-	private static Loopback single;
-	
-/**
-*	private constructor. The singleton object is created in init().
-*/
-	private Loopback() {
+		ip = (127<<24) + (0<<16) + (0<<8) + 1;
 	}
 
-/**
-*	allocate buffer, start serial buffer and slip Thread.
-*/
-	public static LinkLayer init() {
-
-
-		if (single != null) return single;	// allready called init()
-
-		single = new Loopback();
-		single.ip = (127<<24) + (0<<16) + (0<<8) + 1;
-		return single;
-	}
-
-	public int getIpAddress() {
-		return ip;
-	}
-
-	/**
-	*	Set connection strings and connect.
-	*/
-	public void startConnection(StringBuffer dialstr, StringBuffer connect, StringBuffer user, StringBuffer passwd) {
-		// useless for loopback driver
-	}
-	/**
-	*	Forces the connection to be new established.
-	*	On Slip ignored.
-	*/
-	public void reconnect() {
-	}
 	static int timer;
 	
 /**
 *	main loop.
 */
-	public void loop() {
+	public void run() {
 
 		Packet p;
 
 		//
 		// get a ready to send packet with source from this driver.
 		//
-		p = Packet.getPacket(single, Packet.SND_DGRAM, Packet.ALLOC);
-		// TODO: we need to copy a TCP packet
+		p = rxQueue.deq();
+		//
+		// and simple mark it as received packet.
+		//
 		if (p!=null) {
-			//
-			// and simple mark it as received packet.
-			//
-			p.setStatus(Packet.RCV);		// inform upper layer
+			// If it's a TCP packet we need to make a copy
+			if (p.isTcpOnFly) {
+				Packet cp = ejip.getFreePacket(this);
+				if (cp!=null) {
+					cp.copy(p);
+					txQueue.enq(cp);
+				}
+			} else {
+				txQueue.enq(p);				
+			}
 		}
 	}
-
-/* (non-Javadoc)
- * @see ejip.LinkLayer#getConnCount()
- */
-public int getConnCount() {
-	return 0;
-}
-
-
 }

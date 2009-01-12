@@ -4,7 +4,9 @@ import util.Timer;
 
 import com.jopdesign.sys.Native;
 
+import ejip.Ejip;
 import ejip.Ip;
+import ejip.Net;
 import ejip.Packet;
 import ejip.Udp;
 
@@ -17,8 +19,12 @@ public class Logging implements Runnable {
 	
 	boolean nandChecked = false;
 	int timeOut;
+	private Ejip ejip;
+	private Net net;
 	
-	public Logging() {
+	public Logging(Ejip ejipRef, Net netRef) {
+		ejip = ejipRef;
+		net = netRef;
 		timeOut = Timer.getTimeoutSec(MIN_TIMOUT);
 	}
 	
@@ -90,7 +96,8 @@ public class Logging implements Runnable {
 		if (lm==null) {
 			return;
 		}
-		Packet p = Packet.getPacket(Packet.FREE, Packet.ALLOC, Main.ipLink);
+		Packet p = ejip.getFreePacket(Main.ipLink);
+
 		if (p==null) {
 			// requeue it again
 			lm.addToSendList();
@@ -104,7 +111,7 @@ public class Logging implements Runnable {
 		Ip.setData(p, Udp.DATA+4, lm.msg);
 		
 		// and send it
-		Udp.build(p, state.destIp, SND_PORT);
+		net.getUdp().build(p, state.destIp, SND_PORT);
 		lm.addToFreeList();
 	}
 	

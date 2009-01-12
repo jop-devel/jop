@@ -25,7 +25,9 @@ package oebb;
 
 import util.Dbg;
 import util.Timer;
+import ejip.Ejip;
 import ejip.LinkLayer;
+import ejip.Net;
 import ejip.Packet;
 import ejip.Udp;
 
@@ -175,7 +177,13 @@ public class State extends ejip.UdpHandler implements Runnable {
 	 */
 	private int[] stat;
 
-	public State(LinkLayer link) {
+	// TODO: to many fields - we use statics here...
+	private static Ejip ejip;
+	private static Net net;
+	
+	public State(Ejip ejipRef, Net netRef, LinkLayer link) {
+		ejip = ejipRef;
+		net = netRef;
 
 		ipLink = link;
 //		setTimestamp(2001, 1, 1, 0, 0, 0, 1);
@@ -227,7 +235,7 @@ public class State extends ejip.UdpHandler implements Runnable {
 	boolean send() {
 
 		// get an IP packet
-		Packet p = Packet.getPacket(Packet.FREE, Packet.ALLOC, ipLink);
+		Packet p = ejip.getFreePacket(ipLink);
 		if (p == null) { // got no free buffer!
 			Dbg.wr('!');
 			Dbg.wr('b');
@@ -244,7 +252,7 @@ public class State extends ejip.UdpHandler implements Runnable {
 		printMsg(p);
 
 		// and send it
-		Udp.build(p, destIp, BG_SND_PORT);
+		net.getUdp().build(p, destIp, BG_SND_PORT);
 		return true;
 	}
 
@@ -256,13 +264,12 @@ public class State extends ejip.UdpHandler implements Runnable {
 
 		System.out.println("ZLB pkt");
 		// just store the received package
-		p.setStatus(Packet.ALLOC);
 		synchronized(this) {
 			if (zlbMsg==null) {
 				zlbMsg = p;
 			} else {
 				// this should not happen
-				p.setStatus(Packet.FREE);
+				ejip.returnPacket(p);
 			}
 		}
 	}
@@ -281,7 +288,7 @@ public class State extends ejip.UdpHandler implements Runnable {
 		}
 		
 		if (!checkPkt(p)) {
-			p.setStatus(Packet.FREE);
+			ejip.returnPacket(p);
 			return;
 		}
 		int date = p.buf[Udp.DATA + 1];
@@ -299,7 +306,7 @@ public class State extends ejip.UdpHandler implements Runnable {
 			} else {
 				Main.logger.print("Msg. too old");
 				// it's a too old packet
-				p.setStatus(Packet.FREE);
+				ejip.returnPacket(p);
 				return;
 			}			
 		}
@@ -344,7 +351,7 @@ public class State extends ejip.UdpHandler implements Runnable {
 			cmdAck |= cmd & CFLAG_DOWNLOAD;
 			Dbg.wr("ZLB ignored");
 			Dbg.lf();
-			p.setStatus(Packet.FREE);
+			ejip.returnPacket(p);
 			return;
 		}
 
@@ -480,7 +487,7 @@ public class State extends ejip.UdpHandler implements Runnable {
 
 		Dbg.wr("ZLB: ");
 		printMsg(p);
-		p.setStatus(Packet.FREE);
+		ejip.returnPacket(p);
 	}
 
 	/**

@@ -31,22 +31,15 @@
 package ejip.examples;
 
 /**
-*	Main.java: test main.
+*	Main.java: test main for the ejip stack
 *
-*	Author: Martin Schoeberl (martin.schoeberl@chello.at)
+*	Author: Martin Schoeberl (martin@jopdesign.com)
 *
 */
 
-import joprt.RtThread;
-import util.Dbg;
 import util.Timer;
 
-import com.jopdesign.sys.Const;
-import com.jopdesign.sys.Native;
-
-import ejip.CS8900;
-import ejip.LinkLayer;
-import ejip.Net;
+import ejip.*;
 
 /**
 *	Test Main for ejip.
@@ -63,64 +56,25 @@ public class Main {
 */
 	public static void main(String[] args) {
 
-		// use serial line for debugging
-		Dbg.initSerWait();
-
 		//
 		//	start TCP/IP
 		//
-		net = Net.init();
+		Ejip ejip = new Ejip();
+		net = new Net(ejip);
 // don't use CS8900 when simulating on PC or for BG263
 		int[] eth = {0x00, 0xe0, 0x98, 0x33, 0xb0, 0xf8};
-		int ip = (192<<24) + (168<<16) + (0<<8) + 123;
-		ipLink = CS8900.init(eth, ip);
-// don't use PPP on my web server
-
-		//
-		//	start device driver threads
-		//
-
-		new RtThread(5, 10000) {
-			public void run() {
-				for (;;) {
-					waitForNextPeriod();
-					net.loop();
-				}
-			}
-		};
-		new RtThread(5, 10000) {
-			public void run() {
-				for (;;) {
-					waitForNextPeriod();
-					ipLink.loop();
-				}
-			}
-		};
-
-		//
-		//	WD thread has lowest priority to see if every timing will be met
-		//
-
-		RtThread.startMission();
+		int ip = Ejip.makeIp(192, 168, 0, 123); 
+		ipLink = new CS8900(ejip, eth, ip);
 
 		forever();
 	}
 
 	private static void forever() {
 
-		//
-		//	just do the WD blink with lowest priority
-		//	=> if the other threads take to long (*3) there will be a reset
-		//
 		for (;;) {
-			for (int i=0; i<10; ++i) {
-				RtThread.sleepMs(50);
-				Timer.wd();
-				/*-
-				int val = Native.rd(Const.IO_IN);
-				Native.wr(val, Const.IO_LED);
-				*/
-				Timer.loop();
+			for (int i=0; i<1000; ++i) {
+				ipLink.run();
+				net.run();
 			}
 			Timer.wd();
 		}

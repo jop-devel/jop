@@ -45,18 +45,22 @@ public class Fwp {
 	private boolean lf;
 	private int expBlock;
 	
-	
+	private static Ejip ejip;
+	private static Net net;
 	
 	//
 	//	Vv ... Version request, reply
 	//	Bpccnn ... Parameter download, cc block count, nn block number starting with 1
 	//	
-	public Fwp() {
-		
+	public Fwp(Ejip ejipRef, Net netRef) {
+		ejip = ejipRef;
+		net = netRef;
+
 		in = new StringBuffer();
 		out = new StringBuffer();
 		usnr = new StringBuffer();
-		version = "Version: TAL261 1.01 vom 30.10.2006";
+		// adapted to new ejip
+		version = "Version: TAL261 1.02 vom 13.1.2009";
 		lf = true;		// default for serial/modem
 		usnr.append(Tal.par.usnr);
 		
@@ -70,11 +74,11 @@ public class Fwp {
 					Ip.setData(p, Udp.DATA, out);
 					Udp.reply(p);
 				} else{
-					p.setStatus(Packet.FREE);
+					ejip.returnPacket(p);
 				}
 			}
 		};
-		Udp.addHandler(FWP_PORT, uh);
+		net.getUdp().addHandler(FWP_PORT, uh);
 	}
 
 	void handle() {

@@ -25,12 +25,7 @@ import com.jopdesign.io.IOFactory;
 import com.jopdesign.io.SysDevice;
 import com.jopdesign.sys.Startup;
 
-import ejip.LinkLayer;
-import ejip.Loopback;
-import ejip.Net;
-import ejip.Packet;
-import ejip.Udp;
-import ejip.UdpHandler;
+import ejip_old.*;
 
 /**
  * Test program for CMP version of ejip. This is the version that

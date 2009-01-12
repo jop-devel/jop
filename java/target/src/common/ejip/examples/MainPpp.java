@@ -31,28 +31,27 @@
 package ejip.examples;
 
 /**
-*	MainPppLoop.java: PPP/Modem test with a single thread.
+*	MainPpp.java: PPP/Modem test with threads.
+*
+*	TODO: we need to change Ppp to avoid wFNP() to make
+*			a single thread example
 *
 *	Author: Martin Schoeberl (martin@jopdesign.com)
 *
 */
 
 import joprt.RtThread;
-import util.Dbg;
 import util.Serial;
 import util.Timer;
 
 import com.jopdesign.sys.Const;
-import com.jopdesign.sys.JVMHelp;
-import com.jopdesign.sys.Native;
-
 import ejip.*;
 
 /**
 *	Test Main for ejip.
 */
 
-public class MainPppLoop {
+public class MainPpp {
 
 	static Net net;
 	static LinkLayer ipLink;
@@ -69,15 +68,18 @@ public class MainPppLoop {
 */
 	public static void main(String[] args) {
 
-		Dbg.initSerWait();
+		Ejip ejip = new Ejip();
 
 		//
-		//	initialize TCP/IP
+		//	start TCP/IP
 		//
-		net = Net.init();
+		net = new Net(ejip);
 		
+		//
+		//	use second serial line for simulation
+		//	with JopSim and on the project usbser
+		//
 		ser = new Serial(Const.IO_UART_BG_MODEM_BASE);
-		
 
 		//
 		//	Create serial and PPP
@@ -96,19 +98,19 @@ public class MainPppLoop {
 			public void run() {
 				for (;;) {
 					waitForNextPeriod();
-					ipLink.loop();
+					ipLink.run();
 				}
 			}
 		};
 
-		ipLink = Ppp.init(ser, pppThre); 
+		ipLink = new Ppp(ejip, ser, pppThre);
 		
 		new RtThread(20, 100000) {
 			public void run() {
 				int i = 0;
 				for (;;) {
 					waitForNextPeriod();
-					net.loop();
+					net.run();
 					++i;
 					if (i==10) {
 						Timer.wd();
@@ -128,26 +130,12 @@ public class MainPppLoop {
 
 		RtThread.startMission();
 				
-//		forever();
 		for (;;) {
 			int t = Timer.getTimeoutMs(800);
 			while (!Timer.timeout(t)) {
 				RtThread.sleepMs(10);
 			}
 			System.out.print("M");
-		}
-	}
-
-	private static void forever() {
-
-		for (;;) {
-			for (int i=0; i<1000; ++i) {
-//				ser.loop();
-//				ipLink.loop();
-//				ser.loop();
-				net.loop();
-			}
-			Timer.wd();
 		}
 	}
 }

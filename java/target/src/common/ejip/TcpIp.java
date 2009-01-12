@@ -31,18 +31,17 @@
 package ejip;
 
 /*
- * Changelog: 2002-03-16 works with ethernet 2002-10-21 use Packet buffer, 4
- * bytes in one word
+ * Changelog:
+ * 2002-03-16 works with ethernet
+ * 2002-10-21 use Packet buffer, 4 bytes in one word
  * 
  * 
  */
 
-import util.Dbg;
-
 /**
  * A minimalistic TCP/IP stack (with ICMP).
  * 
- * It's enough to handel a HTTP request (and nothing more)!
+ * It's enough to handle a HTTP request (and nothing more)!
  */
 
 public class TcpIp {
@@ -89,8 +88,8 @@ public class TcpIp {
 	static void doICMP(Packet p) {
 
 		int type_code = p.buf[5] >>> 16;
-		Dbg.wr('P');
-		Dbg.hexVal(type_code);
+		if (Logging.LOG) Logging.wr('P');
+		if (Logging.LOG) Logging.hexVal(type_code);
 		if (type_code == 0x0800) {
 			// TODO check received ICMP checksum
 			p.buf[5] = 0; // echo replay plus clear checksu,
@@ -111,7 +110,7 @@ public class TcpIp {
 		int rcvcnt, sndcnt;
 		int fl;
 
-		Dbg.wr('T');
+		if (Logging.LOG) Logging.wr('T');
 
 		// Find the payload
 		i = buf[8] >>> 16;
@@ -131,9 +130,9 @@ public class TcpIp {
 		// If it's not http, just drop it
 		i = buf[5];
 		if ((i & 0xffff) != 80) {
-			Dbg.lf();
-			Dbg.wr('T');
-			Dbg.intVal(i & 0xffff);
+			if (Logging.LOG) Logging.lf();
+			if (Logging.LOG) Logging.wr('T');
+			if (Logging.LOG) Logging.intVal(i & 0xffff);
 			p.len = 0;
 			return;
 		}

@@ -30,6 +30,8 @@
 
 package ejip;
 
+// UDP Debug output disabled
+
 /*
 *   Changelog:
 *		2002-10-24	creation.
@@ -37,49 +39,44 @@ package ejip;
 *	TODO: in Udp, TcpIp.... when to use the packet with automatic reply?
 */
 
-import util.Dbg;
 
 /**
  * @author martin
  *
- * To change the template for this generated type comment go to
- * Window&gt;Preferences&gt;Java&gt;Code Generation&gt;Code and Comments
- */
-/**
-*	UDP functions.
+ *	UDP functions.
 */
 
-public class Udp {
+public class Udp implements Runnable {
 
 	public static final int PROTOCOL = 17;
 
 	public static final int HEAD = 5;	// offset of udp header in words
 	public static final int DATA = 7;	// offset of data in words
 
-	private static Object monitor;
+	private Object monitor;
 
 	public static final int MAX_HANDLER = 8;
-	private static UdpHandler[] list;
-	private static int[] ports;
-	private static int loopCnt;
+	private UdpHandler[] list;
+	private int[] ports;
+	private int loopCnt;
+	
+	private Ejip ejip;
 
-	public static void init() {
-
+	public Udp(Ejip ejipRef) {
+		ejip = ejipRef;
 		if (monitor!=null) return;
 		monitor = new Object();
 		list = new UdpHandler[MAX_HANDLER];
 		ports = new int[MAX_HANDLER];
 		loopCnt = 0;
 
-		addHandler(Tftp.PORT, new Tftp());
+		addHandler(Tftp.PORT, new Tftp(ejip));
 	}
 	/**
 	*	add a handler for UDP requests.
 	*	returns false if list is full.
 	*/
-	public static boolean addHandler(int port, UdpHandler h) {
-
-		if (monitor==null) init();
+	public boolean addHandler(int port, UdpHandler h) {
 
 		synchronized(monitor) {
 			for (int i=0; i<MAX_HANDLER; ++i) {
@@ -97,9 +94,7 @@ public class Udp {
 	*	remove a handler for UDP requests.
 	*	returns false if it was not in the list.
 	*/
-	public static boolean removeHandler(int port) {
-
-		if (monitor==null) init();
+	public boolean removeHandler(int port) {
 
 		synchronized(monitor) {
 			for (int i=0; i<MAX_HANDLER; ++i) {
@@ -116,7 +111,7 @@ public class Udp {
 	/**
 	*	Called periodic from Net for timeout processing.
 	*/
-	static void loop() {
+	public void run() {
 
 		int i = loopCnt;
 
@@ -132,7 +127,7 @@ public class Udp {
 	/**
 	*	process packet and generate reply if necessary.
 	*/
-	static void process(Packet p) {
+	void process(Packet p) {
 
 		int i, j;
 		int[] buf = p.buf;
@@ -143,21 +138,16 @@ public class Udp {
 
 		buf[2] = (PROTOCOL<<16) + p.len - 20; 		// set protocol and udp length in iph checksum for tcp checksum
 		if (Ip.chkSum(buf, 2, p.len-8)!=0) {
-			Dbg.intVal(p.len);
-			Dbg.wr(" : ");
-			for (int k = 0; k < (p.len+3)/4; k++) {
-				Dbg.hexVal(buf[k]);
-			}
-			p.setStatus(Packet.FREE);	// mark packet free
-Dbg.wr("wrong UDP checksum ");
+			if (Logging.LOG) Logging.wr("wrong UDP checksum ");
+			ejip.returnPacket(p);	// mark packet free
 			return;
 		}
 
 		if (port == 1625) {
 
 			// do the Dgb thing!
-			i = Dbg.readBuffer(buf, 7);
-			p.len = 28+i;
+//			i = Dbg.readBuffer(buf, 7);
+//			p.len = 28+i;
 			// generate a reply with IP src/dst exchanged
 			Udp.build(p, buf[4], buf[3], remport);
 
@@ -171,13 +161,13 @@ Dbg.wr("wrong UDP checksum ");
 					}
 				}
 				if (i==MAX_HANDLER) {
-					p.setStatus(Packet.FREE);	// mark packet free
-Dbg.lf();
-Dbg.wr('U');
-Dbg.intVal(port);
+					ejip.returnPacket(p);	// mark packet free
+					if (Logging.LOG) Logging.lf();
+					if (Logging.LOG) Logging.wr('U');
+					if (Logging.LOG) Logging.intVal(port);
 				}
 			} else {
-				p.setStatus(Packet.FREE);
+				ejip.returnPacket(p);
 			}
 		}
 	}
@@ -195,11 +185,11 @@ Dbg.intVal(port);
 	/**
 	*	Get source IP from interface and build IP/UDP header.
 	*/
-	public static void build(Packet p, int dstIp, int port) {
+	public void build(Packet p, int dstIp, int port) {
 
 		int srcIp = p.interf.getIpAddress();
 		if (srcIp==0) {						// interface is down
-			p.setStatus(Packet.FREE);		// mark packet free
+			ejip.returnPacket(p);			// mark packet free
 		} else {
 			build(p, srcIp, dstIp, port);
 		}
@@ -235,6 +225,6 @@ Dbg.intVal(port);
 		buf[2] |= Ip.chkSum(buf, 0, 20);
 
 		p.llh[6] = 0x0800;
-		p.setStatus(Packet.SND_DGRAM);	// mark packet ready to send
+		p.interf.txQueue.enq(p);	// mark packet ready to send
 	}
 }

@@ -28,68 +28,88 @@
  *
  */
 
-package ejip.examples;
 
 /**
-*	MainSlipLoop.java: SLIP test main without threads
-*
-*	Author: Martin Schoeberl (martin.schoeberl@chello.at)
-*
-*/
-
-import util.Dbg;
-import util.Serial;
-import util.Timer;
-
-import com.jopdesign.sys.Const;
-
-import ejip.LinkLayer;
-import ejip.Net;
-import ejip.Slip;
+ * 
+ */
+package ejip;
 
 /**
-*	Test Main for ejip.
-*/
+ * A simple logger for the ejip stack.
+ * 
+ * @author Martin Schoeberl
+ *
+ */
+public class Logging {
+	
+	public static final boolean LOG = true;
+	
+	private static final int MAX_TMP = 32;
+	private static int[] tmp = new int[MAX_TMP];			// a generic buffer
 
-public class MainSlipLoop {
-
-	static Net net;
-	static LinkLayer ipLink;
-	static Serial ser;
-
-/**
-*	Start network and enter forever loop.
-*/
-	public static void main(String[] args) {
-
-		Dbg.init();
-
-		//
-		//	start TCP/IP and all (four) threads
-		//
-		net = Net.init();
-// don't use CS8900 when simulating on PC or for BG263
-		// LinkLayer ipLink = CS8900.init(Net.eth, Net.ip);
-// don't use PPP on my web server
-		// Ppp.init(Const.IO_UART_BG_MODEM_BASE); 
-
-		ser = new Serial(Const.IO_UART1_BASE);
-		ipLink = Slip.init(ser,	(192<<24) + (168<<16) + (1<<8) + 2);
-		
-		forever();
+	
+	static void wr(char c) {
+		System.out.print(c);
 	}
 
-	private static void forever() {
+	static void wr(String string) {
+		System.out.print(string);
+	}
 
-		for (;;) {
-			for (int i=0; i<1000; ++i) {
-				ser.loop();
-				// timeout in slip depends on loop time!
-				ipLink.loop();
-				ser.loop();
-				net.loop();
-			}
-			Timer.wd();
+	public static void intVal(int val) {
+
+		int i;
+		int sign = 1;
+		if (val<0) {
+			wr('-');
+			sign = -1;
 		}
+		for (i=0; i<MAX_TMP-1; ++i) {
+			tmp[i] = ((val%10)*sign)+'0';
+			val /= 10;
+			if (val==0) break;
+		}
+		for (val=i; val>=0; --val) {
+			wr((char) tmp[val]);
+		}
+		wr(' ');
 	}
+	
+	static void lf() {
+		System.out.println();
+	}
+	
+	public static void hexVal(int val) {
+
+		int i, j;
+		if (val<16 && val>=0) wr('0');
+		for (i=0; i<MAX_TMP-1; ++i) {
+			j = val & 0x0f;
+			if (j<10) {
+				j += '0';
+			} else {
+				j += 'a'-10;
+			}
+			tmp[i] = j;
+			val >>>= 4;
+			if (val==0) break;
+		}
+		for (val=i; val>=0; --val) {
+			wr((char) tmp[val]);
+		}
+		wr(' ');
+	}
+	
+	public static void byteVal(int val) {
+
+		int j;
+		j = (val>>4) & 0x0f;
+		if (j<10) { j += '0'; } else { j += 'a'-10; }
+		wr((char) j);
+		j = val & 0x0f;
+		if (j<10) { j += '0'; } else { j += 'a'-10; }
+		wr((char) j);
+		wr(' ');
+	}
+
 }
