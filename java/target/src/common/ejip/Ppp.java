@@ -66,6 +66,9 @@ public class Ppp extends LinkLayer {
 
 	private static final int NEG_SEND= 3000;		// Period of send negotiation (in ms)
 	private static final int IP_SEND= 10000;		// Send timout for ip for reconnect (in ms)
+	private static final int PPP_HANDLING = 60000;	// Timout for the PPP negotiation
+	
+	private static final int GPRS_TRY_CNT = 3;		// After that count connect via GSM
 
 /**
 *	receive buffer
@@ -118,6 +121,10 @@ public class Ppp extends LinkLayer {
 *	remote ip address.
 */
 	private static int ipRemote;
+/**
+*	ip address.
+*/
+//	private static int ip;
 
 /**
 *	request for reconnect.
@@ -129,6 +136,8 @@ public class Ppp extends LinkLayer {
 	private static boolean disconnectRequest;
 	
 	private static int connCount;
+	
+	private static boolean useGSM;
 
 /**
 *	The one and only reference to this object.
@@ -165,6 +174,8 @@ public class Ppp extends LinkLayer {
 		ipRemote = 0;
 		reconnectRequest = false;
 		disconnectRequest = false;
+		
+		useGSM = true;
 
 		initStr();
 
@@ -197,8 +208,9 @@ public class Ppp extends LinkLayer {
 		int i, j;
 // System.out.println("start Conn");
 
-		// TODO correct dial string in Strecken data
-		// copyStr(dialstr, dial);
+		copyStr(dialstr, dial, gsm_dial);
+		dial.append('\r');
+		gsm_dial.append('\r');
 
 		con.setLength(0);
 		con.append("AT+CGDCONT=1,\"IP\",\"");
@@ -206,8 +218,8 @@ public class Ppp extends LinkLayer {
 		for (j=0; j<i; ++j) con.append(connect.charAt(j));
 		con.append("\"\r");
 
-		copyStr(user, uid);
-		copyStr(passwd, pwd);
+		copyStr(user, uid, gsm_uid);
+		copyStr(passwd, pwd, gsm_pwd);
 
 		reconnectRequest = true;
 		connCount = 0;
@@ -251,6 +263,11 @@ public class Ppp extends LinkLayer {
 	private static StringBuffer uid;
 	private static StringBuffer pwd;
 
+	private static StringBuffer gsm_dial;
+	private static StringBuffer gsm_uid;
+	private static StringBuffer gsm_pwd;
+
+
 	private static String ok;
 	private static String connect;
 	private static String ath;
@@ -262,12 +279,24 @@ public class Ppp extends LinkLayer {
 	/**
 	*	a little helper:
 	*/
-	static void copyStr(StringBuffer src, StringBuffer dst) {
+	static void copyStr(StringBuffer src, StringBuffer dst,
+			StringBuffer gsm_dst) {
 
 		int i, j;
 		dst.setLength(0);
 		i = src.length();
-		for (j=0; j<i; ++j) dst.append(src.charAt(j));
+		for (j=0; j<i; ++j) {
+			char ch = src.charAt(j);
+			if (ch=='|') {
+				++j;	// skip it
+				break;
+			}
+			dst.append(ch);
+		}
+		gsm_dst.setLength(0);
+		for (; j<i; ++j) {
+			gsm_dst.append(src.charAt(j));
+		}
 	}
 
 	private static void initStr() {
@@ -277,15 +306,19 @@ public class Ppp extends LinkLayer {
 		uid = new StringBuffer(20);
 		pwd = new StringBuffer(20);
 
+		gsm_dial = new StringBuffer(20);
+		gsm_uid = new StringBuffer(20);
+		gsm_pwd = new StringBuffer(20);
+
 /* we get the information from startConnection
 		con.append("AT+CGDCONT=1,\"IP\",\"A1.net\"\r");
 		uid.append("ppp@A1plus.at");
 		pwd.append("ppp");
+		dial.append("ATD*99***1#\r");			
 */
 
 
-		dial.append("ATD*99***1#\r");
-
+		
 		client = "CLIENT";
 		ver = "VER";
 
@@ -297,19 +330,6 @@ public class Ppp extends LinkLayer {
 		flow = "AT\\Q3\r";
 
 		strBuf = new StringBuffer(40);
-
-		// int [] s7 = { 'A', 'T', '+', 'C', 'G', 'D', 'C', 'O', 'N', 'T', '=', '1', ',', '"', 'I', 'P', '"', ',', '"', 'w', 'e', 'b', '.', 'o', 'n', 'e', '.', 'a', 't', '"', '\r' };
-		/* A1 */
-		// int [] s7 = { 'A', 'T', '+', 'C', 'G', 'D', 'C', 'O', 'N', 'T', '=', '1', ',', '"', 'I', 'P', '"', ',', '"', 'A', '1', '.', 'n', 'e', 't', '"', '\r' };
-		/* OEBB VPN */
-		/*
-		int [] s7 = { 'A', 'T', '+', 'C', 'G', 'D', 'C', 'O', 'N', 'T', '=', '1', ',', '"', 'I', 'P', '"', ',',
-			'"', 'o', 'e', 'b', 'b', '.', 'A', '1', '.', 'n', 'e', 't', '"', '\r' };
-		*/
-		/*
-		int [] s8 = { 'A', 'T', 'D', '*', '9', '9', '*', '*', '*', '1', '#', '\r' };
-		int [] s9 = { 'A', 'T', '\\', 'Q', '3', '\r' };
-		*/
 	}
 
 	/**
@@ -334,7 +354,7 @@ public class Ppp extends LinkLayer {
 	*/
 	boolean wrString(StringBuffer s) {
 
-		int i, j, k, val;
+		int i, j, val;
 
 		i = ser.txFreeCnt();
 		j = s.length();
@@ -424,10 +444,19 @@ Dbg.wr('\n');
 
 	void modemInit() {
 
+		useGSM = false;
 		++connCount;
 		for (;;++connCount) {
- System.out.print("Modem init ");
- System.out.println(connCount);
+System.out.print("Modem init ");
+System.out.println(connCount);
+//			Led.stopModem();
+//			waitSec(1);
+//			Led.startModem();
+			waitSec(15);
+			
+			if (connCount>GPRS_TRY_CNT && gsm_uid.length()!=0) {
+				useGSM = true;
+			}
 
 			if (sendWait(ath, ok, 3)) {
 				if (sendWait(flow, ok, 3)) {
@@ -437,13 +466,22 @@ Dbg.wr('\n');
 							continue;				// something really strange happend!
 						}
 					}
-					if (sendWait(dial, connect, 10)) {
-						break;
+					sendWait("ATD", null, 1);
+					if (useGSM) {
+						if (sendWait(gsm_dial, connect, 30)) {
+							System.out.println("GSM connect ok");
+							break;
+						}
+					} else {
+						if (sendWait(dial, connect, 30)) {
+							System.out.println("GPRS connect ok");
+							break;						
+						}
 					}
 				}
 			}
 
-			waitSec(1);
+//			waitSec(1);
 		}
 
 		state = MODEM_OK;
@@ -496,6 +534,8 @@ Dbg.wr('\n');
 		rejCnt = 0;
 		lcpAck = false;
 		ipcpAck = false;
+		
+		int timer = 0;
 
 		//
 		//	wait for startConnection(...)
@@ -519,9 +559,12 @@ Dbg.wr('\n');
 			pppLoop();
 
 			if (state==MODEM_OK) {
+				// start timer for PPP negotiation
+				timer = Timer.getTimeoutMs(PPP_HANDLING);
 			}
 
-			if (rejCnt > MAX_REJ) {
+			if ((rejCnt > MAX_REJ) || 
+					(Timer.timeout(timer) && state!=CONNECTED)) {
 // System.out.print("1");
 				modemHangUp();		// start over
 				modemInit();
@@ -538,7 +581,7 @@ dbgCon();
 
 					if (code == REQ) {
 						if (checkOptions(LCP)) {
-							lcpAck = true;;
+							lcpAck = true;
 						} else {
 							++rejCnt;
 						}
@@ -611,7 +654,7 @@ Dbg.wr('\n');
 				//
 				// get a ready to send packet with source from this driver.
 				//
-				Packet p = Packet.getTxPacket(single); 
+				Packet p = Packet.getPacket(single, Packet.SND_DGRAM, Packet.ALLOC);
 				if (p!=null) {
 					sendIp(p);			// send one packet
 				}
@@ -625,10 +668,10 @@ Dbg.wr('\n');
 		} else {						// do the negotiation stuff
 			dropIp();
 			if (Timer.timeout(globTimer)) {
-/*
-Dbg.intVal(state);
-if (lcpAck) Dbg.wr('t'); else Dbg.wr('f');
-*/
+
+//Dbg.intVal(state); Dbg.intVal(scnt);
+//if (lcpAck) Dbg.wr('t'); else Dbg.wr('f');
+
 				if (scnt==0) {			// once every three seconds send a REQ
 					if (state == MODEM_OK) {
 						makeLCP();
@@ -653,7 +696,6 @@ if (lcpAck) Dbg.wr('t'); else Dbg.wr('f');
 	*/
 	void dropIp() {
 
-		// TODO: what shall we do with SND_TCP packets?
 		Packet p = Packet.getPacket(single, Packet.SND_DGRAM, Packet.ALLOC);
 		if (p!=null) {
 			p.setStatus(Packet.FREE);		// mark packet free
@@ -733,20 +775,82 @@ Dbg.wr('\n');
 		sbuf[2] = REQ;
 		sbuf[3] = lcpId;
 		sbuf[4] = 0;
+		
+		StringBuffer u, p;
+		if (useGSM) {
+			u = gsm_uid;
+			p = gsm_pwd;
+		} else {
+			u = uid;
+			p = pwd;
+		}
 
-		int ulen = uid.length();
-		int plen = pwd.length();
+		int ulen = u.length();
+		int plen = p.length();
 		sbuf[5] = ulen + plen + 6;			// length including code, id and length field
 		sbuf[6] = ulen;		// length of user id
 		for (i=0; i<ulen; ++i) {
-			sbuf[7+i] = uid.charAt(i);
+			sbuf[7+i] = u.charAt(i);
 		}
 		sbuf[7+ulen] = plen;
 		for (i=0; i<plen; ++i) {
-			sbuf[8+ulen+i] = pwd.charAt(i);
+			sbuf[8+ulen+i] = p.charAt(i);
 		}
 		checksum(ulen + plen + 8);
 
+/* A1.net
+		sbuf[5] = 24-2;		// length including code, id and length field
+		sbuf[6] = 13;		// length of user id
+		sbuf[7] = 'p';
+		sbuf[8] = 'p';
+		sbuf[9] = 'p';
+		sbuf[10] = '@';
+		sbuf[11] = 'A';
+		sbuf[12] = '1';
+		sbuf[13] = 'p';
+		sbuf[14] = 'l';
+		sbuf[15] = 'u';
+		sbuf[16] = 's';
+		sbuf[17] = '.';
+		sbuf[18] = 'a';
+		sbuf[19] = 't';
+		sbuf[20] = 3;		// length of password
+		sbuf[21] = 'p';
+		sbuf[22] = 'p';
+		sbuf[23] = 'p';
+
+		checksum(24);
+*/
+
+
+
+/* ONE
+		sbuf[7] = 30-4;		// length including code, id and length field
+		sbuf[8] = 14;		// length of user id
+		sbuf[9] = '+';
+		sbuf[10] = '4';
+		sbuf[11] = '3';
+		sbuf[12] = '6';
+		sbuf[13] = '9';
+		sbuf[14] = '9';
+		sbuf[15] = '1';
+		sbuf[16] = '9';
+		sbuf[17] = '5';
+		sbuf[18] = '2';
+		sbuf[19] = '0';
+		sbuf[20] = '2';
+		sbuf[21] = '2';
+		sbuf[22] = '0';
+		sbuf[23] = 6;		// length of password
+		sbuf[24] = 'N';
+		sbuf[25] = '6';
+		sbuf[26] = 'J';
+		sbuf[27] = '8';
+		sbuf[28] = 'N';
+		sbuf[29] = '4';
+
+		checksum(30);
+*/
 
 	}
 
@@ -871,8 +975,8 @@ Dbg.wr('!');
 
 		p.len = cnt;
 
-Dbg.wr('r');
-Dbg.intVal(cnt);
+//Dbg.wr('r');
+//Dbg.intVal(cnt);
 /*
 dbgIp(pb[3]);
 dbgIp(pb[4]);
@@ -894,8 +998,8 @@ Dbg.wr('\n');
 		int i, k;
 		int[] pb = p.buf;
 
-Dbg.wr('s');
-Dbg.intVal(p.len);
+//Dbg.wr('s');
+//Dbg.intVal(p.len);
 
 		sbuf[0] = 0xff;
 		sbuf[1] = 0x03;
@@ -1023,9 +1127,9 @@ Dbg.wr('d');
 					if (fcs==0xf0b8) {			// checksum ok?
 						ready = true;
 					} else {
-Dbg.wr('d');
-Dbg.intVal(cnt);
-Dbg.wr('\n');
+//Dbg.wr('d');
+//Dbg.intVal(cnt);
+//Dbg.wr('\n');
 						cnt = 0;				// just drop it
 					}
 					break;
@@ -1047,11 +1151,18 @@ Dbg.wr('\n');
 			}
 
 			// rfc1549 3.2 Address-and-Control-Field-Compression
-			if (cnt==0 && val!=0xff) rbuf[cnt++] = 0xff;
-			if (cnt==1 && val!=0x03) rbuf[cnt++] = 0x03;
+			if (cnt==0 && val!=0xff) {
+				rbuf[cnt++] = 0xff;
+			}
+			if (cnt==1 && val!=0x03) {
+				rbuf[cnt++] = 0x03;
+			}
 			// rfc1548 6.6 Protocol-Field-Compression
-			if (cnt==2 && (val&1)!=0) rbuf[cnt++] = 0x00;
+			if (cnt==2 && (val&1)!=0) {
+				rbuf[cnt++] = 0x00;
+			}
 			rbuf[cnt++] = val;
+//Dbg.byteVal(val);
 
 			fcs = check(val^fcs) ^ (fcs>>8);
 
@@ -1120,6 +1231,18 @@ Dbg.wr('\n');
 	 */
 	public int getConnCount() {
 		return connCount;
+	}
+	
+	/**
+	 * GPRS or GSM
+	 * @return 0=GPRS, 1=GSM
+	 */
+	public static int getConnType() {
+		if (useGSM) {
+			return 1;
+		} else {
+			return 0;
+		}
 	}
 
 }
