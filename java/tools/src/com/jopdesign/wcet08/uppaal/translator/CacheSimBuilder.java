@@ -3,10 +3,18 @@ package com.jopdesign.wcet08.uppaal.translator;
 import java.util.Vector;
 
 import com.jopdesign.wcet08.uppaal.model.NTASystem;
+import com.jopdesign.wcet08.uppaal.model.Transition;
 
-public class CacheSimBuilder {
-
+public abstract class CacheSimBuilder {
 	public void appendDeclarations(NTASystem system, String NUM_METHODS) {
+	}
+	
+	public void onHit(Transition trans) {
+		trans.getAttrs().appendGuard("lastHit");
+	}
+
+	public void onMiss(Transition trans) {
+		trans.getAttrs().appendGuard("! lastHit");
 	}
 
 	public static StringBuilder constArray(Vector<?> elems) {
@@ -20,5 +28,11 @@ public class CacheSimBuilder {
 		sb.append(" }");
 		return sb;
 	}
-	
+
+	public boolean isDynamic() {
+		return true;
+	}
+	public boolean isAlwaysMiss() {
+		return false;
+	}
 }

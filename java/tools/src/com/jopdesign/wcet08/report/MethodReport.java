@@ -27,6 +27,10 @@ import java.util.TreeSet;
 import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.wcet08.Project;
+import com.jopdesign.wcet08.analysis.BlockWCET;
+import com.jopdesign.wcet08.analysis.CacheConfig;
+import com.jopdesign.wcet08.config.Config;
+import com.jopdesign.wcet08.frontend.ControlFlowGraph;
 import com.jopdesign.wcet08.frontend.CallGraph.CallGraphNode;
 import com.jopdesign.wcet08.frontend.SourceAnnotations.LoopBound;
 import com.jopdesign.wcet08.graphutils.Pair;
@@ -36,9 +40,13 @@ public class MethodReport {
 	private Collection<LoopBound> loopBounds;
 	private Set<String> referenced;
 	String page;
+	private int sizeInWords;
+	private ControlFlowGraph fg;
 	public MethodReport(Project p, MethodInfo m, String page) {
 		this.info = m;
-		this.loopBounds = p.getWcetAppInfo().getFlowGraph(info).getLoopBounds().values();
+		fg = p.getWcetAppInfo().getFlowGraph(info);
+		this.loopBounds = fg.getLoopBounds().values();
+		this.sizeInWords = fg.getNumberOfWords();		
 		this.referenced = new TreeSet<String>();
 		Iterator<CallGraphNode> i = p.getCallGraph().getReferencedMethods(m);
 		while(i.hasNext()) {
@@ -58,5 +66,11 @@ public class MethodReport {
 	}
 	public String getPage() {
 		return page;
+	}
+	public int getSizeInWords() {
+		return this.sizeInWords;
+	}
+	public int getCacheBlocks() {
+		return BlockWCET.numberOfBlocks(fg, Config.instance().getOption(CacheConfig.BLOCK_SIZE_WORDS).intValue());
 	}
 }

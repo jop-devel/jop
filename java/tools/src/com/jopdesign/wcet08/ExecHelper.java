@@ -8,8 +8,9 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 
-import com.jopdesign.wcet08.Config.BadConfigurationError;
-import com.jopdesign.wcet08.Config.MissingConfigurationError;
+import com.jopdesign.wcet08.config.Config;
+import com.jopdesign.wcet08.config.Option;
+import com.jopdesign.wcet08.config.Config.BadConfigurationException;
 
 public class ExecHelper {
 	private Class<?> execClass;
@@ -21,7 +22,6 @@ public class ExecHelper {
 		this.tlLogger = topLevelLogger;
 		this.configFile = configFile;
 	}
-
 	public void initTopLevelLogger() {
 		ConsoleAppender consoleApp = new ConsoleAppender(new PatternLayout(), ConsoleAppender.SYSTEM_ERR);
 		consoleApp.setName("TOP-LEVEL");
@@ -40,17 +40,11 @@ public class ExecHelper {
 			if(argsrest.length != 0) {
 				exitUsage("Unknown command line arguments: "+Arrays.toString(argsrest));
 			}
-			tlLogger.info("Configuration: "+Config.instance().getOptions());
-			tlLogger.info("java.library.path: "+System.getProperty("java.library.path"));
 			c.checkOptions();
-			if(Config.instance().hasReportDir()) {
-				tlLogger.info("Initializing Output");
-				Config.instance().initializeReport();
-			}
-		} catch (MissingConfigurationError e) {
-			exitUsage("Missing option: "+e.getMessage());
-		} catch(BadConfigurationError e) { 
-			exitUsage("Bad option: "+e.getMessage());					
+			tlLogger.info("Configuration:\n"+c.dumpConfiguration(4));
+			tlLogger.info("java.library.path: "+System.getProperty("java.library.path"));
+		} catch(BadConfigurationException e) { 
+			exitUsage(e.getMessage());					
 		} catch (Exception e) {
 			e.printStackTrace();
 			bail("Loading configuration failed");
@@ -72,14 +66,14 @@ public class ExecHelper {
 			MessageFormat.format(
 				"Example:\n    java -D{0}=file:///home/jop/myconf.props {1} -{2} {3}\n",
 				 configFile, WCETAnalysis.class.getName(), 
-				 Config.APP_CLASS_NAME, "wcet.Method"));
+				 ProjectConfig.APP_CLASS_NAME.getKey(), "wcet.Method"));
 		System.err.println("OPTIONS can be configured using system properties"+
 		                   ", supplying a property file or as command line arguments");
 		for(Option<?> o : Config.instance().availableOptions()) {
 			System.err.println("    "+o.toString(15));
 		}
 		System.err.println("\nSee 'wcet.properties' for an example configuration");
-		System.err.println("Current configuration: "+Config.instance().getOptions());
+		System.err.println("Current configuration:\n"+Config.instance().dumpConfiguration(4));
 		System.exit(1);		
 	}
 	public void logException(String ctx, Throwable e) {

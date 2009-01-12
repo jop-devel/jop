@@ -5,23 +5,24 @@ import java.util.LinkedList;
 import org.w3c.dom.Element;
 
 /**
- * This class represents a transition in an UPPAAL template
+ * <p>This class represents a transition in an UPPAAL template</p>
  *
- * See toXML() for the corresponding DTD elements.
- * 
- * Transitions support the following labels:
- * 
- * - "select": Introduction of non-deterministic local variables (like a local random number generator)
- *  Example: i : int[0,3], j: int[0,1] 
- * - "guard": A boolean expression, a conjunction of simple conditions on a clock, differences between clocks, and boolean 
+ * <p>Transitions support the following labels:
+ * <ul>
+ * <li/> "select": Introduction of non-deterministic local variables (like a local random number generator)
+ *  <pre>Example: i : int[0,3], j: int[0,1]</pre> 
+ * <li/> "guard": A boolean expression, a conjunction of simple conditions on a clock, differences between clocks, and boolean 
  *          expressions not involving clocks. (So clock expressions are restricted to difference arithmetic)
  *          The transition can only be used if the guard is true in the current state. 
- *  Example: (x == 0 || y == 1) && clock > 3 && a[i] == a[j]
- * - "sync": Synchronization (see UPPAAL help)
- *  Exammple: i?, i!
- * - "assignment": Comma seperated list of statements with side-effects. The updates on the m? side are evaluated before the
+ *  <pre>Example: (x == 0 || y == 1) && clock > 3 && a[i] == a[j]</pre>
+ * <li/>"sync": Synchronization (see UPPAAL help)
+ *  <pre>Exammple: i?, i!</pre>
+ * <li/> "assignment": Comma seperated list of statements with side-effects. The updates on the m? side are evaluated before the
  * updates on the m! side, when using channel synchronization.
- *  Example: x:=0, y:=1, call_fun()
+ *  <pre>Example: x:=0, y:=1, call_fun()</pre>
+ *  </ul>
+ *
+ * @see toXML() for the corresponding DTD elements.
  */
 public class Transition {
 	private int id;

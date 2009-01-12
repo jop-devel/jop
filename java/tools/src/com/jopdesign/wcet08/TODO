@@ -3,6 +3,11 @@ TODO  List
 Please assign names (in square brackets) to tasks, and reference them in the source
 when appropriate.
 
+[CREATE_FLOWGRAPH_MODIFIER_ABSTRACTION]
+There are plenty of ways we have to modify flow graphs before WCET analysis:
+Resolve virtual invokes, insert split/join nodes, create summary nodes, etc.
+This should be encapsulated as a strategy. 
+
 [REFACTOR_SIMPLE_ANALYSIS] 
 Little messy cause of prototyping right now
 
@@ -11,10 +16,6 @@ Clean up the report package
 
 [REFACTOR_CONFIG]
 Split into library and base config
-
-[UPPAAL_CACHE]
-Add cache simulation (assuming cash flush) to UppAal
-Depends: flush cash
 
 [UPPAAL_JAVA_IMPL_BYTECODE]
 Java implemented Bytecodes should be replaced in a preprocessing step to work for 
@@ -47,6 +48,9 @@ Depends: WCET_EXCEPTIONS
 
 Done
 ~~~~
+UPPAAL_CACHE:
+Add cache simulation (assuming cash flush) to UppAal
+Depends: flush cash
 UPPAAL_PORT: 
 Add UPPAAL simulation (needs to be ported)
 BUG_ARRAY_ISSUE:

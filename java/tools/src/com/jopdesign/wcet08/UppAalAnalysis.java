@@ -21,11 +21,13 @@
 
 package com.jopdesign.wcet08;
 
+import java.io.File;
 import java.io.IOException;
 
 import org.apache.log4j.Logger;
 
-import com.jopdesign.wcet08.analysis.CacheConfig;
+import com.jopdesign.wcet08.config.Config;
+import com.jopdesign.wcet08.config.Option;
 import com.jopdesign.wcet08.uppaal.Translator;
 import com.jopdesign.wcet08.uppaal.UppAalConfig;
 import com.jopdesign.wcet08.uppaal.WcetSearch;
@@ -33,19 +35,19 @@ import com.jopdesign.wcet08.uppaal.WcetSearch;
 public class UppAalAnalysis {
 	private static final String CONFIG_FILE_PROP = "config";
 	private static final Logger tlLogger = Logger.getLogger(UppAalAnalysis.class);
+	public static Option<?>[][] options = {
+		ProjectConfig.projectOptions,
+		UppAalConfig.uppaalOptions
+	};
 
 
 	public static void main(String[] args) {
 		Config config = Config.instance();
-		config.addOptions(CacheConfig.cacheOptions);
-		config.addOptions(UppAalConfig.uppaalOptions);
+		config.addOptions(options);
 		ExecHelper exec = new ExecHelper(UppAalAnalysis.class,tlLogger,CONFIG_FILE_PROP);
 		
 		exec.initTopLevelLogger();       /* Console logging for top level messages */
 		exec.loadConfig(args);           /* Load config */
-		if(! config.hasReportDir()) {
-			exec.bail("No report directory set - UppAal model needs to be written to disk");
-		}
 		UppAalAnalysis inst = new UppAalAnalysis();
 		/* run */
 		if(! inst.run(exec)) exec.bail("UppAal translation failed");
@@ -53,21 +55,30 @@ public class UppAalAnalysis {
 	}
 
 	private boolean run(ExecHelper exec) {
-		Project project = new Project();
-		project.setTopLevelLooger(tlLogger);
-		tlLogger.info("Loading project");
-		try { project.load(); }
-		catch (Exception e) { exec.logException("loading project", e); return false; }
+		Config c = Config.instance();
+		File uppaalOutDir = null;
+		Project project = null;
+		try { 
+			project = new Project(c);
+			project.setTopLevelLooger(tlLogger);
+			tlLogger.info("Loading project");
+			project.load();
+			uppaalOutDir = project.getOutDir("uppaal");
+		}
+		catch (Exception e) { 
+			exec.logException("loading project", e); 
+			return false; 
+		}
 
 		tlLogger.info("Starting UppAal translation");
-		Translator translator = new Translator(project);
+		Translator translator = new Translator(project, uppaalOutDir);
 		try {
 			translator.translateProgram();
 			translator.writeOutput();
 		} catch (Throwable e) {
 			exec.logException("translating WCET problem to UppAal", e);
 		}
-		tlLogger.info("model and query can be found in "+Config.instance().getOutDir());
+		tlLogger.info("model and query can be found in "+uppaalOutDir);
 		tlLogger.info("model file: "+translator.getModelFile());
 		if(UppAalConfig.hasVerifier()) {
 			tlLogger.info("Starting verification");
@@ -78,8 +89,8 @@ public class UppAalAnalysis {
 				wcet = search.searchWCET();
 				long end = System.nanoTime();				
 				System.out.println("wcet: "+wcet);
-				System.out.println("solvertime: "+((double)(end-start))/1E9);
-				System.out.println("solvertimelast: "+search.getLastSolverTime());
+				System.out.println("searchtime: "+((double)(end-start))/1E9);
+				System.out.println("solvertimemax: "+search.getMaxSolverTime());
 			} catch (IOException e) {
 				exec.logException(" binary searching for WCET using UppAal", e);
 			}

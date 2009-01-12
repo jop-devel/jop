@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.Vector;
 import java.util.Map.Entry;
 
-import com.jopdesign.wcet08.Config;
+import com.jopdesign.wcet08.config.Config;
 import com.jopdesign.wcet08.frontend.ControlFlowGraph.CFGNode;
 import com.jopdesign.wcet08.frontend.SourceAnnotations.LoopBound;
 import com.jopdesign.wcet08.uppaal.UppAalConfig;
@@ -200,11 +200,5 @@ public class TemplateBuilder {
 	}
 	public void addDescription(String string) {
 		this.template.addComment(string);
-	}
-	public void onHit(Transition trans) {
-		trans.getAttrs().appendGuard("lastHit");
-	}
-	public void onMiss(Transition trans) {
-		trans.getAttrs().appendGuard("! lastHit");
 	}
 }

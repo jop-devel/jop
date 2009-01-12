@@ -1,6 +1,6 @@
 package com.jopdesign.wcet08.uppaal.translator;
 
-import com.jopdesign.wcet08.Config;
+import com.jopdesign.wcet08.config.Config;
 import com.jopdesign.wcet08.uppaal.UppAalConfig;
 import com.jopdesign.wcet08.uppaal.model.NTASystem;
 
@@ -48,5 +48,4 @@ public class LRUCacheBuilder extends CacheSimBuilder {
 		sb.append(" }");
 		return sb.toString();
 	}
-
 }

@@ -19,10 +19,14 @@
 */
 package com.jopdesign.wcet08;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Hashtable;
 import java.util.Map;
 import java.util.SortedMap;
+import java.util.StringTokenizer;
+
 import org.apache.bcel.classfile.JavaClass;
 import org.apache.bcel.classfile.Method;
 import org.apache.bcel.generic.ConstantPoolGen;
@@ -37,7 +41,9 @@ import com.jopdesign.build.WcetPreprocess;
 import com.jopdesign.dfa.analyses.LoopBounds;
 import com.jopdesign.dfa.analyses.ReceiverTypes;
 import com.jopdesign.dfa.framework.ContextMap;
+import com.jopdesign.wcet08.config.Config;
 import com.jopdesign.wcet08.frontend.CallGraph;
+import com.jopdesign.wcet08.frontend.ControlFlowGraph;
 import com.jopdesign.wcet08.frontend.WcetAppInfo;
 import com.jopdesign.wcet08.frontend.SourceAnnotations;
 import com.jopdesign.wcet08.frontend.SourceAnnotations.LoopBound;
@@ -97,22 +103,70 @@ public class Project {
 		this.topLevelLogger = tlLogger;		
 	}
 
-	private Config config;
+	private ProjectConfig projectConfig;
+	private String projectName;
 
 	private WcetAppInfo wcetAppInfo;
 	private CallGraph callGraph;
-
-	private Report results;
 		
 	private Map<ClassInfo, SortedMap<Integer, LoopBound>> annotationMap;
 
 	private LoopBounds dfaLoopBounds;
 
+	private boolean genWCETReport;
+	private Report results;
+
+	public Project(Config config) throws IOException {
+		this.projectConfig =  new ProjectConfig(config);
+		this.projectName = projectConfig.getProjectName();
+		{
+			File outDir = projectConfig.getOutDir();
+			Config.checkDir(outDir,true);
+			File ilpDir = new File(outDir,"ilps");
+			Config.checkDir(ilpDir, true);
+		}
+		if(projectConfig.doGenerateReport()) {
+			this.results = new Report(config,this, projectConfig.getReportDir());
+			this.genWCETReport = true;
+		} else {
+			this.genWCETReport = false;
+		}
+	}
+	public String getProjectName() {
+		return this.projectName;
+	}
+	public boolean reportGenerationActive() {
+		return this.genWCETReport ;
+	}
+	public void setGenerateWCETReport(boolean generateReport) {
+		this.genWCETReport = generateReport;
+	}
+
+	public String getTargetName() {
+		return Config.sanitizeFileName(projectConfig.getAppClassName()+"_"+projectConfig.getMeasureTarget());		
+	}
+		
+	public File getSourceFile(MethodInfo method) throws FileNotFoundException {
+		return getSourceFile(method.getCli());
+	}
+	
+	public File getSourceFile(ClassInfo ci) throws FileNotFoundException {
+		StringTokenizer st = new StringTokenizer(projectConfig.getSourcePath(),File.pathSeparator);
+		while (st.hasMoreTokens()) {
+			String sourcePath = st.nextToken();
+			String pkgPath = ci.clazz.getPackageName().replace('.', File.separatorChar);
+			sourcePath += File.separator + pkgPath;
+			File sourceDir = new File(sourcePath);
+			File sourceFile = new File(sourceDir, ci.clazz.getSourceFileName());
+			if(sourceFile.exists()) return sourceFile;	
+		}
+		throw new FileNotFoundException("Source for "+ci.clazz.getClassName()+" not found.");
+	}
 	public CallGraph getCallGraph() {
 		return callGraph;
 	}
 	public ClassInfo getApplicationEntryClass() {
-		return this.wcetAppInfo.getClassInfo(config.getAppClassName());
+		return this.wcetAppInfo.getClassInfo(projectConfig.getAppClassName());
 	}
 	public ClassInfo getMeasuredClass() {
 		return callGraph.getRootClass();
@@ -121,31 +175,23 @@ public class Project {
 		return callGraph.getRootMethod();
 	}
 	public Report getReport() { return results; }
+	public boolean doWriteReport() {
+		return projectConfig.getReportDir() != null;
+	}
 	
-	public Project() {
-		this.config = Config.instance();
-		this.results = new Report(this);
-	}
-	public String getName() {
-		return config.getProjectName();
-	}
-	public String getTargetName() {
-		return config.getTargetName();
-	}
-	public static AppInfo loadApp() throws IOException {
+	public AppInfo loadApp() throws IOException {
 		AppInfo appInfo;
-		Config config = Config.instance();
-		if(config.doDataflowAnalysis()) {
+		if(projectConfig.doDataflowAnalysis()) {
 			appInfo = new com.jopdesign.dfa.framework.AppInfo(
 							new com.jopdesign.dfa.framework.ClassInfo());
 		} else {
 			appInfo = new AppInfo(ClassInfo.getTemplate());
 		}
-		appInfo.configure(config.getClassPath(),
-		                  config.getSourcePath(),
-		                  config.getAppClassName());
+		appInfo.configure(projectConfig.getClassPath(),
+						  projectConfig.getSourcePath(),
+						  projectConfig.getAppClassName());
 		appInfo.addClass(WcetAppInfo.JVM_CLASS);
-		if(config.doDataflowAnalysis()) {			
+		if(projectConfig.doDataflowAnalysis()) {			
 			appInfo.load();
 			appInfo.iterate(new RemoveNops(appInfo));
 		} else {
@@ -161,7 +207,7 @@ public class Project {
 		wcetAppInfo = new WcetAppInfo(appInfo);
 
 		/* run dataflow analysis */
-		if(Config.instance().doDataflowAnalysis()) {
+		if(projectConfig.doDataflowAnalysis()) {
 			topLevelLogger.info("Starting DFA analysis");
 			dataflowAnalysis();
 			topLevelLogger.info("DFA analysis finished");
@@ -169,12 +215,12 @@ public class Project {
 		
 		/* build callgraph */
 		callGraph = CallGraph.buildCallGraph(wcetAppInfo,
-											 config.getMeasuredClass(),
-											 config.getMeasuredMethod());
+											 projectConfig.getMeasuredClass(),
+											 projectConfig.getMeasuredMethod());
 
 		/* Load source code annotations */
 		annotationMap = new Hashtable<ClassInfo, SortedMap<Integer,LoopBound>>();
-		SourceAnnotations sourceAnnotations = new SourceAnnotations(config);
+		SourceAnnotations sourceAnnotations = new SourceAnnotations(this);
 		for(ClassInfo ci : callGraph.getClassInfos()) {
 			annotationMap.put(ci,sourceAnnotations.calculateWCA(ci));
 		}
@@ -192,6 +238,9 @@ public class Project {
 	/* Data flow analysis
 	 * ------------------
 	 */
+	public boolean doDataflowAnalysis() {
+		return projectConfig.doDataflowAnalysis();
+	}
 	
 	public com.jopdesign.dfa.framework.AppInfo getDfaProgram() {
 		return (com.jopdesign.dfa.framework.AppInfo) this.wcetAppInfo.getAppInfo();
@@ -210,8 +259,37 @@ public class Project {
 		dfaLoopBounds = new LoopBounds();
 		program.runAnalysis(dfaLoopBounds);
 	}
-	
+	/**
+	 * Get the loop bounds found by dataflow analysis
+	 * @return
+	 */
 	public LoopBounds getDfaLoopBounds() {
 		return this.dfaLoopBounds;
+	}
+	/**
+	 * Convenience delegator to get the flowgraph of the given method
+	 * @param mi
+	 * @return
+	 */
+	public ControlFlowGraph getFlowGraph(MethodInfo mi) {
+		return wcetAppInfo.getFlowGraph(mi);
+	}
+	
+	public void writeReport() throws Exception {
+		this.results.addStat( "classpath", projectConfig.getClassPath());
+		this.results.addStat( "application", projectConfig.getAppClassName());
+		this.results.addStat( "class", projectConfig.getMeasuredClass());
+		this.results.addStat( "method", projectConfig.getMeasuredMethod());
+		this.results.writeReport();
+	}
+	
+	public File getOutDir(String sub) {
+		File outDir = projectConfig.getOutDir();
+		File subDir = new File(outDir,sub);
+		if(! subDir.exists()) subDir.mkdir();
+		return subDir;
+	}
+	public File getOutFile(String file) {
+		return new File(projectConfig.getOutDir(),file);
 	}
 }

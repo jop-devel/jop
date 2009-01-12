@@ -29,46 +29,52 @@ package com.jopdesign.wcet08;
 
 import org.apache.log4j.Logger;
 import com.jopdesign.wcet08.analysis.CacheConfig;
+import com.jopdesign.wcet08.analysis.GlobalAnalysis;
 import com.jopdesign.wcet08.analysis.SimpleAnalysis;
 import com.jopdesign.wcet08.analysis.CacheConfig.CacheApproximation;
+import com.jopdesign.wcet08.config.Config;
+import com.jopdesign.wcet08.config.Option;
 import com.jopdesign.wcet08.ipet.LpSolveWrapper;
 import com.jopdesign.wcet08.report.Report;
+import com.jopdesign.wcet08.report.ReportConfig;
 /**
  * WCET Analysis for JOP - Executable
  */
 public class WCETAnalysis {
 	private static final String CONFIG_FILE_PROP = "config";
 	private static final Logger tlLogger = Logger.getLogger(WCETAnalysis.class);
-
+	public static Option<?>[][] options = {
+		ProjectConfig.projectOptions,
+		CacheConfig.cacheOptions,
+		ReportConfig.options
+	};
 
 	public static void main(String[] args) {
 		Config config = Config.instance();
-		config.addOptions(CacheConfig.cacheOptions);
+		config.addOptions(options);
 		ExecHelper exec = new ExecHelper(WCETAnalysis.class,tlLogger,CONFIG_FILE_PROP);
 		
 		exec.initTopLevelLogger();       /* Console logging for top level messages */
 		exec.loadConfig(args);           /* Load config */
-		WCETAnalysis inst = new WCETAnalysis();
+		WCETAnalysis inst = new WCETAnalysis(config);
 		/* run */
-		if(! inst.run()) {		
-			exec.bail("WCET Analysis failed");
-		}
-		tlLogger.info("WCET analysis finished");
-		if(config.hasReportDir()) {
-			tlLogger.info("Results are in "+config.getOutDir()+"/index.html");
-		}
+		if(! inst.run(exec)) exec.bail("WCET Analysis failed");
+		tlLogger.info("WCET Analysis finished");
 	}
-
-
-	private boolean run() {
-		Project project = new Project();
-		project.setTopLevelLooger(tlLogger);
-		tlLogger.info("Loading project");
+	private Config config;
+	public WCETAnalysis(Config c) {
+		this.config = c;
+	}
+	private boolean run(ExecHelper exec) {
+		Project project = null;
 		try {
+			project = new Project(config);
+			project.setTopLevelLooger(tlLogger);
+			Report.initVelocity(config);     /* Initialize velocity engine */
+			tlLogger.info("Loading project");
 			project.load();
 		} catch (Exception e) {
-			System.err.println("[ERROR] Loading project failed: "+e);
-			e.printStackTrace();
+			exec.logException("Loading project", e);
 			return false;
 		}
 		boolean succeed = false;
@@ -76,7 +82,30 @@ public class WCETAnalysis {
 			/* Analysis */
 //			tlLogger.info("Stack usage analysis");
 //			StackSize stackUsage = new StackSize(project);
-//			tlLogger.info("Stack usage: "+stackUsage.getStackSize());
+//			tlLogger.info("Stack usage: "+stackUsage.getStackSize());			
+//			SuperGraph sg = new SuperGraph(
+//					project.getWcetAppInfo(),
+//					project.getWcetAppInfo().getFlowGraph(project.getMeasuredMethod()));
+//			File tmpFile = File.createTempFile("supergraph", ".dot");
+//			FileWriter fw = new FileWriter(tmpFile);
+//			DOTExporter<CFGNode, CFGEdge> dotExporter =
+//				new DOTExporter<CFGNode, CFGEdge>(
+//						new IntegerNameProvider<CFGNode>(),
+//						new StringNameProvider<CFGNode>(),
+//						null);
+//			dotExporter.export(fw, sg);
+//			System.out.println(tmpFile);
+//			fw.close();
+			{
+			tlLogger.info("Global WCET analysis");
+			GlobalAnalysis gb = new GlobalAnalysis(project);
+			long start = System.nanoTime();
+			System.out.println(gb.computeWCET(project.getMeasuredMethod(), CacheApproximation.ALL_FIT));
+			long stop  = System.nanoTime();
+			System.out.println("globaltime: " + (((double)stop-start) / 1.0E9));
+			System.out.println("solvertime: " + LpSolveWrapper.getSolverTime());
+			LpSolveWrapper.resetSolverTime();
+		    }
 			tlLogger.info("Starting WCET analysis");
 			SimpleAnalysis an = new SimpleAnalysis(project);
 			long start = System.nanoTime();
@@ -87,7 +116,7 @@ public class WCETAnalysis {
 			System.out.println("time: "+(((double)stop-start) / 1.0E9));
 			System.out.println("solvertime: "+LpSolveWrapper.getSolverTime());
 
-			Config.instance().setGenerateWCETReport(false);
+			project.setGenerateWCETReport(false);
 			long ahWCET = an.computeWCET(project.getMeasuredMethod(),CacheApproximation.ALWAYS_HIT).getCost();			
 			tlLogger.info("WCET 'always hit' analysis finsihed");
 			System.out.println("ah:"+ahWCET);
@@ -100,32 +129,20 @@ public class WCETAnalysis {
 			project.getReport().addStat("wcet-cache-approx", scaWCET);
 			succeed = true;
 		} catch (Exception e) {
-			tlLogger.error(e);
-		} catch(AssertionError e) {
-			tlLogger.fatal(e);
+			exec.logException("analysis", e);
 		}
-		if(! Config.instance().hasReportDir()) {
-			tlLogger.info("No 'reportdir' set, ommiting HTML report");
+		if(! project.doWriteReport()) {
+			tlLogger.info("Ommiting HTML report");
 			return succeed;
 		}
 		try {
-			/* Initialize output and libraries */
-			tlLogger.info("Initializing velocity");
-			try {
-				Report.initVelocity();
-			} catch (Exception e) {
-				e.printStackTrace();
-				tlLogger.error("Initializing velocity failed");
-				return false;
-			}
 			/* Report */
 			tlLogger.info("Generating info pages");
 			project.getReport().generateInfoPages();
 			tlLogger.info("Generating result document");
-			project.getReport().writeReport();
+			project.writeReport();
 		} catch (Exception e) {
-			e.printStackTrace();
-			tlLogger.error("Generating report failed");
+			exec.logException("Report generation", e);
 			return false;
 		}
 		return succeed;

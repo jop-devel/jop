@@ -31,9 +31,10 @@ import lpsolve.LpSolveException;
 
 import org.jgrapht.DirectedGraph;
 
-import com.jopdesign.wcet08.Config;
+import com.jopdesign.wcet08.ProjectConfig;
 import com.jopdesign.wcet08.graphutils.IDProvider;
 import com.jopdesign.wcet08.ipet.LinearConstraint.ConstraintType;
+import com.jopdesign.wcet08.report.ReportConfig;
 
 /**
  * Max-Cost-Max-Flow solver with additional linear constraints
@@ -55,14 +56,24 @@ import com.jopdesign.wcet08.ipet.LinearConstraint.ConstraintType;
  * @param <E> the edge type
  */
 public class MaxCostFlow<V,E> { 
+	public static class DecisionVariable {
+		private int id;
+		private DecisionVariable(int id) {
+			this.id = id;
+		}
+	}
 	private DirectedGraph<V, E> graph;
 	private Map<E,Integer> idMap;
+	private Map<DecisionVariable, Integer> dMap;
+	private int dGen;
 	private Map<Integer,E> revMap;
 	private Map<V,Long> costObjective;
 	private Vector<LinearConstraint<E>> flowConstraints;
+	private Vector<LinearConstraint<Object>> extraConstraints;
+	private LinearVector<Object> extraCost;
 	private V entry;
 	private V exit;
-	private IDProvider<E> idProvider;
+	private IDProvider<Object> idProvider;
 	private String key;
 
 	/**
@@ -78,6 +89,8 @@ public class MaxCostFlow<V,E> {
 		this.exit  = exit;
 		this.costObjective = new HashMap<V, Long>();
 		this.flowConstraints = new Vector<LinearConstraint<E>>();
+		this.extraConstraints = new Vector<LinearConstraint<Object>>();
+		this.extraCost = new LinearVector<Object>();
 		generateMapping();
 		addBasicFlowConstraints();
 	}
@@ -109,12 +122,18 @@ public class MaxCostFlow<V,E> {
 	 * @throws Exception if the ILP solver fails
 	 */
 	public double solve(Map<E,Long> flowMapOut) throws Exception {
-		LpSolveWrapper<E> wrapper = 
-			new LpSolveWrapper<E>(graph.edgeSet().size(),true,this.idProvider);
+		LpSolveWrapper<Object> wrapper = 
+			new LpSolveWrapper<Object>(dGen-1,true,this.idProvider);
+		for(DecisionVariable dv : dMap.keySet()) {
+			wrapper.setBinary(dv);
+		}
 		for(LinearConstraint<E> lc : flowConstraints) {
 			wrapper.addConstraint(lc);
 		}
-		LinearVector<E> costVec = new LinearVector<E>();
+		for(LinearConstraint<Object> extra : extraConstraints) {
+			wrapper.addConstraint(extra);
+		}
+		LinearVector<Object> costVec = new LinearVector<Object>(extraCost);
 		// build cost objective
 		for(Entry<V,Long> e : this.costObjective.entrySet()) {
 			long costFactor = e.getValue();
@@ -123,20 +142,21 @@ public class MaxCostFlow<V,E> {
 			}
 		}
 		wrapper.setObjective(costVec,true);
-		double[] objVec = new double[this.graph.edgeSet().size()];
+		double[] objVec = new double[dGen-1];
+		wrapper.freeze();
+		if(ReportConfig.doDumpILP()) {
+			dumpILP(wrapper);
+		}
 		double sol = Math.round(wrapper.solve(objVec));
 		if(flowMapOut != null) {
 			for(int i = 0; i < objVec.length; i++) {
 				flowMapOut.put(revMap.get(i+1), Math.round(objVec[i]));
 			}
 		}
-		if(Config.instance().doDumpIPL()) {
-			dumpILP(wrapper);
-		}
 		return sol;
 	}
-	private void dumpILP(LpSolveWrapper<E> wrapper) throws LpSolveException {
-		File outFile = Config.instance().getOutFile(Config.sanitizeFileName(this.key + ".ilp"));
+	private void dumpILP(LpSolveWrapper<?> wrapper) throws LpSolveException {
+		File outFile = ProjectConfig.getOutFile("ilps",this.key + ".ilp");
 		wrapper.dumpToFile(outFile);
 		FileWriter fw = null;
 		try {
@@ -148,6 +168,9 @@ public class MaxCostFlow<V,E> {
 			fw.append("/* Mapping: \n");
 			for(Entry<E,Integer> e : this.idMap.entrySet()) {
 				fw.append("    "+e.getKey() + " -> C" + e.getValue() + "\n");
+			}
+			for(Entry<DecisionVariable, Integer> dv : this.dMap.entrySet()) {
+				fw.append("    "+dv.getKey() + " -> C" + dv.getValue() + "\n");
 			}
 			fw.append(this.toString());
 			fw.append("*/\n");
@@ -170,12 +193,19 @@ public class MaxCostFlow<V,E> {
 			idMap.put(e, key);			
 			revMap.put(key, e);
 		}
-		this.idProvider = new IDProvider<E>() {
+		dMap = new HashMap<DecisionVariable, Integer>();
+		dGen = idMap.size() + 1;
+		this.idProvider = new IDProvider<Object>() {
 			/* Note: No closures in java, so idMap/revMap have to be instance variables */
-			public E fromID(int id) { return revMap.get(id); }
-			public int getID(E t)   { return idMap.get(t);   }
+			public Object fromID(int id) { return revMap.get(id); }
+			public int getID(Object t)   { 
+				Integer key = idMap.get(t);
+				if(key != null) return key.intValue();
+				else return dMap.get(t).intValue();
+			}
 		};
 	}
+	
 	/* 
 	 * For all nodes but entry and exit, flow incoming = flow outgoing 
 	 * flow outgoing(source) = flow ingoing(sink) = 1
@@ -212,5 +242,37 @@ public class MaxCostFlow<V,E> {
 			s.append('\n');
 		}
 		return s.toString();
+	}
+	/**
+	 * Create a decision variable which is true if lv > 0.
+	 * Realized by introducing a decision variable b, and
+	 * adding b * M >= lv (if lv > 0, b has to be 1)
+	 * adding b <= lv (if lv = 0, b has to be 0)
+	 * @param lv
+	 * @return
+	 */
+	public DecisionVariable addFlowDecision(LinearVector<E> lv) {
+		DecisionVariable dv = createDecisionVariable();
+		LinearConstraint<Object> lc = new LinearConstraint<Object>(ConstraintType.GreaterEqual);
+		lc.addLHS(dv, Long.MAX_VALUE);
+		for(Entry<E, Long> coeff : lv.getCoeffs().entrySet()) {
+			lc.addRHS(coeff.getKey(), coeff.getValue());
+		}
+		this.extraConstraints.add(lc);
+		lc = new LinearConstraint<Object>(ConstraintType.LessEqual);
+		lc.addLHS(dv,1);
+		for(Entry<E, Long> coeff : lv.getCoeffs().entrySet()) {
+			lc.addRHS(coeff.getKey(), coeff.getValue());
+		}
+		this.extraConstraints.add(lc);
+		return dv;
+	}
+	public void addDecisionCost(DecisionVariable dv, long cost) {
+		this.extraCost.add(dv,cost);
+	}
+	private DecisionVariable createDecisionVariable() {
+		DecisionVariable dv = new DecisionVariable(dGen++);
+		this.dMap.put(dv, dv.id);
+		return dv;
 	}
 }

@@ -19,9 +19,10 @@
 */
 package com.jopdesign.wcet08.report;
 
-import static com.jopdesign.wcet08.Config.sanitizeFileName;
+import static com.jopdesign.wcet08.config.Config.sanitizeFileName;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashMap;
@@ -42,8 +43,8 @@ import org.apache.velocity.exception.ResourceNotFoundException;
 import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.wcet.WCETInstruction;
-import com.jopdesign.wcet08.Config;
 import com.jopdesign.wcet08.Project;
+import com.jopdesign.wcet08.config.Config;
 import com.jopdesign.wcet08.frontend.ControlFlowGraph;
 import com.jopdesign.wcet08.frontend.ControlFlowGraph.CFGEdge;
 import com.jopdesign.wcet08.frontend.ControlFlowGraph.CFGNode;
@@ -58,27 +59,29 @@ import com.jopdesign.wcet08.frontend.ControlFlowGraph.CFGNode;
  */
 public class Report {
 	static final Logger logger = Logger.getLogger(Report.class);
+
+	private ReportConfig config;
+	private InvokeDot dotInvoker = null;
 	
 	/**
 	 * Initialize the velocity engine
-	 * @throws Exception
+	 * @throws Exception thrown by the velocity engine on init
 	 */
-	public static void initVelocity() throws Exception  {
+	public static void initVelocity(Config config) throws Exception  {
 		Properties ps = new Properties();
 		ps.put("resource.loader", "class");
 		ps.put("class.resource.loader.description","velocity: wcet class resource loader"); 
 		ps.put("class.resource.loader.class","org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader");
-		Config conf = Config.instance();
-		if(conf.getTemplatePath() != null) {
+		String templatedir = config.getOption(ReportConfig.TEMPLATEDIR);
+		if(templatedir != null) {
 			ps.put("resource.loader", "file, class");
 			ps.put("file.resource.loader.class","org.apache.velocity.runtime.resource.loader.FileResourceLoader");
-			ps.put("file.resource.loader.path",Config.instance().getTemplatePath());
-			ps.put("file.resource.loader.cache","true");
+			ps.put("file.resource.loader.path" , templatedir);
+			ps.put("file.resource.loader.cache", "true");
 		}
 		Velocity.init(ps);
 	}
 
-	private Config config;	
 	private Project project;
 	private HashMap<ClassInfo,ClassReport> classReports =
 		new HashMap<ClassInfo,ClassReport>();
@@ -88,10 +91,16 @@ public class Report {
 	private ReportEntry rootReportEntry = ReportEntry.rootReportEntry("summary.html");
 	private Hashtable<File,File> dotJobs = new Hashtable<File,File>();
 	
-	public Report(Project p) {
+	public Report(Config c, Project p, File outDir) throws IOException {
 		this.project = p;
-		this.config = Config.instance();
+		this.config = new ReportConfig(outDir, c);
+		outDir = config.getOutDir();
+		Config.checkDir(outDir,true);
+		if(config.doInvokeDot()) {
+			this.dotInvoker = new InvokeDot(config.getDotBinary(), config.getOutDir());			
+		}
 	}
+
 	public void addStat(String key, Object val) { this.stats.put(key,val); }
 
 	/**
@@ -121,9 +130,9 @@ public class Report {
 	}
 
 	private void generateDOT() throws IOException {
-		if(config.doInvokeDot()) {
+		if(config.doInvokeDot() && dotInvoker != null) {
 			for(Entry<File,File> dotJob : this.dotJobs.entrySet()) {
-				InvokeDot.invokeDot(dotJob.getKey(), dotJob.getValue());
+				dotInvoker.runDot(dotJob.getKey(), dotJob.getValue());
 			}
 		} else {
 			FileWriter fw = new FileWriter(config.getOutFile("Makefile"));
@@ -155,11 +164,7 @@ public class Report {
 
 	private void generateSummary() throws Exception {
 		VelocityContext context = new VelocityContext();
-		context.put( "classpath", config.getClassPath());
-		context.put( "application", config.getAppClassName());
-		context.put( "class", config.getMeasuredClass());
-		context.put( "method", config.getMeasuredMethod());
-		context.put( "errorlog", config.getErrorLogFile());
+		context.put( "errorlog",config.getErrorLogFile());
 		context.put( "infolog", config.getInfoLogFile());
 		context.put( "stats", stats);
 		generateFile("summary.vm", config.getOutFile("summary.html"), context);
@@ -187,6 +192,9 @@ public class Report {
 		this.addStat("#classes", project.getCallGraph().getClassInfos().size());
 		this.addStat("#methods", project.getCallGraph().getImplementedMethods().size());
 		this.addStat("max call stack ", project.getCallGraph().getMaximalCallStack());
+		this.addStat("largest method size (in bytes)", project.getCallGraph().getLargestMethod().getNumberOfBytes());
+		this.addStat("largest method size (in words)", project.getCallGraph().getLargestMethod().getNumberOfWords());
+		this.addStat("total size of task (in bytes)", project.getCallGraph().getTotalSizeInBytes());
 		generateInputOverview();
 		this.addPage("details",null);
 		for(MethodInfo m : project.getCallGraph().getImplementedMethods()) {
@@ -197,9 +205,9 @@ public class Report {
 			ControlFlowGraph flowGraph = project.getWcetAppInfo().getFlowGraph(m);
 			Map<String,Object> stats = new TreeMap<String, Object>();
 			stats.put("#nodes", flowGraph.getGraph().vertexSet().size() - 2 /* entry+exit */);
-			stats.put("length-in-bytes", flowGraph.getNumberOfBytes());
+			stats.put("number of words", flowGraph.getNumberOfWords());
 			this.addDetailedReport(m, 
-								   new DetailedMethodReport(project,m,"CFG",stats,null,null),
+								   new DetailedMethodReport(config,project,m,"CFG",stats,null,null),
 								   true);
 			generateDetailedReport(m);
 		}		
@@ -219,7 +227,11 @@ public class Report {
 	public ClassReport getClassReport(ClassInfo cli) {
 		ClassReport cr = this.classReports.get(cli);
 		if(cr==null) {
-			cr = new ClassReport(cli);
+			try {
+				cr = new ClassReport(cli, project.getSourceFile(cli));
+			} catch (FileNotFoundException e) {
+				throw new AssertionError("Unexpected FileNotFoundException: "+e);
+			}
 			this.classReports.put(cli,cr);
 		}
 		return cr;
@@ -272,7 +284,7 @@ public class Report {
 	public void addDetailedReport(MethodInfo m, String key, Map<String, Object> stats, 
 								 Map<CFGNode, ?> nodeAnnots, 
 								 Map<CFGEdge, ?> edgeAnnots) {
-		DetailedMethodReport re = new DetailedMethodReport(project,m,key,stats,nodeAnnots,edgeAnnots);
+		DetailedMethodReport re = new DetailedMethodReport(config,project,m,key,stats,nodeAnnots,edgeAnnots);
 		this.addDetailedReport(m, re,false);
 	}
 	private void generateDetailedReport(MethodInfo method) {

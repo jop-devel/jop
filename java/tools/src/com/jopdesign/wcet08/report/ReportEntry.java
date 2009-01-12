@@ -34,7 +34,7 @@ public class ReportEntry {
 	private String link = null;
 	private ReportEntry parent = null;
 	private int level = 0;	
-	/* for sub report entries, we keep an order using integer ordinals */
+
 	private HashMap<String,ReportEntry> entrySet = new HashMap<String,ReportEntry>();
 	private LinkedList<ReportEntry> subreportEntries = new LinkedList<ReportEntry>();
 

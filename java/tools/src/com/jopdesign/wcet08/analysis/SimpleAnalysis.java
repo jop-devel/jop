@@ -19,7 +19,6 @@
 */
 package com.jopdesign.wcet08.analysis;
 
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Iterator;
@@ -39,7 +38,6 @@ import org.jgrapht.DirectedGraph;
 import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.wcet.WCETInstruction;
-import com.jopdesign.wcet08.Config;
 import com.jopdesign.wcet08.Project;
 import com.jopdesign.wcet08.analysis.CacheConfig.CacheApproximation;
 import com.jopdesign.wcet08.frontend.BasicBlock;
@@ -51,9 +49,10 @@ import com.jopdesign.wcet08.frontend.ControlFlowGraph.DedicatedNode;
 import com.jopdesign.wcet08.frontend.ControlFlowGraph.CFGEdge;
 import com.jopdesign.wcet08.frontend.ControlFlowGraph.CFGNode;
 import com.jopdesign.wcet08.frontend.ControlFlowGraph.InvokeNode;
-import com.jopdesign.wcet08.ipet.LocalAnalysis;
+import com.jopdesign.wcet08.frontend.ControlFlowGraph.SummaryNode;
+import com.jopdesign.wcet08.ipet.ILPModelBuilder;
 import com.jopdesign.wcet08.ipet.MaxCostFlow;
-import com.jopdesign.wcet08.ipet.LocalAnalysis.CostProvider;
+import com.jopdesign.wcet08.ipet.ILPModelBuilder.CostProvider;
 import com.jopdesign.wcet08.report.ClassReport;
 
 /**
@@ -63,6 +62,7 @@ import com.jopdesign.wcet08.report.ClassReport;
  *
  */
 public class SimpleAnalysis {
+	private static final boolean useGlobalIPET = false;
 	class WcetKey {
 		MethodInfo m;
 		CacheApproximation alwaysHit;
@@ -85,41 +85,70 @@ public class SimpleAnalysis {
 			return this.m.getFQMethodName()+"["+this.alwaysHit+"]";
 		}
 	}
-	public class WcetCost implements Serializable {
-		private static final long serialVersionUID = 1L;
-		private long localCost = 0;
-		private long cacheCost = 0;
-		private long nonLocalCost = 0;
-		public WcetCost() { }
-		public long getCost() { return nonLocalCost+getLocalAndCacheCost(); }
-		
-		public long getLocalCost() { return localCost; }
-		public long getCacheCost() { return cacheCost; }
-		public long getNonLocalCost() { return nonLocalCost; }
-		
-		public void addLocalCost(long c) { this.localCost += c; }
-		public void addNonLocalCost(long c) { this.nonLocalCost += c; }
-		public void addCacheCost(long c) { this.cacheCost += c; }
-		
-		public long getLocalAndCacheCost() { return this.localCost + this.cacheCost; }
-		@Override public String toString() {
-			if(getCost() == 0) return "0";
-			return ""+getCost()+" (local: "+localCost+",cache: "+cacheCost+",non-local: "+nonLocalCost+")";
+	public class WcetSolution {
+		private long lpCost;
+		private WcetCost cost;
+		private Map<CFGNode,Long> nodeFlow;
+		private Map<CFGEdge,Long> edgeFlow;
+		private DirectedGraph<CFGNode, CFGEdge> graph;
+		private Map<CFGNode, WcetCost> nodeCosts;
+		public WcetSolution(DirectedGraph<CFGNode,CFGEdge> g, Map<CFGNode,WcetCost> nodeCosts) { 
+			this.graph = g;
+			this.nodeCosts= nodeCosts;
 		}
-		public WcetCost getFlowCost(Long flow) {
-			WcetCost flowcost = new WcetCost();
-			if(this.getCost() == 0 || flow == 0) return flowcost;
-			flowcost.localCost = localCost*flow;
-			flowcost.cacheCost = cacheCost*flow;
-			flowcost.nonLocalCost = nonLocalCost*flow;
-			if(flowcost.getCost() / flow != getCost()) {
-				throw new ArithmeticException("getFlowCost: Arithmetic Error");
-			}
-			return flowcost;
+		public void setSolution(long lpCost, Map<CFGEdge, Long> edgeFlow) {
+			this.lpCost = lpCost;
+			this.edgeFlow = edgeFlow;
+			computeNodeFlow();
+			computeCost();
+		}
+		public long getLpCost() {
+			return lpCost;
+		}
+		public WcetCost getCost() {
+			return cost;
+		}
+		public long getNodeFlow(CFGNode n) {
+			return getNodeFlow().get(n);
+		}
+		public Map<CFGNode, Long> getNodeFlow() {
+			return nodeFlow;
+		}
+		public Map<CFGEdge, Long> getEdgeFlow() {
+			return edgeFlow;
+		}
+		/** Safety check: compare flow*cost to actual solution */
+		public void checkConsistentency() {
+			if(cost.getCost() != lpCost) {
+				throw new AssertionError("The solution implies that the flow graph cost is " 
+										 + cost.getCost() + ", but the ILP solver reported "+lpCost);
+			}			
+		}
+		private void computeNodeFlow() {
+			nodeFlow = new HashMap<CFGNode, Long>();
+			for(CFGNode n : graph.vertexSet()) {
+				if(graph.inDegreeOf(n) == 0) nodeFlow.put(n, 0L); // ENTRY and DEAD CODE (no flow)
+				else {
+					long flow = 0;
+					for(CFGEdge inEdge : graph.incomingEdgesOf(n)) {
+						flow+=edgeFlow.get(inEdge);
+					}
+					nodeFlow.put(n, flow);
+				}
+			}			
+		}
+		/* Compute cost, sepearting local and non-local cost */
+		private void computeCost() {
+			cost = new WcetCost();
+			for(CFGNode n : graph.vertexSet()) {
+				long flow = nodeFlow.get(n);
+				cost.addLocalCost(flow * nodeCosts.get(n).getLocalAndCacheCost());
+				cost.addNonLocalCost(flow * nodeCosts.get(n).getNonLocalCost());
+			}			
 		}
 	}
 	/* provide cost given a node->cost table */
-	private class MapCostProvider<T> implements CostProvider<T> {
+	public static class MapCostProvider<T> implements CostProvider<T> {
 		private Map<T, WcetCost> costMap;
 		public MapCostProvider(Map<T,WcetCost> costMap) {
 			this.costMap = costMap;
@@ -136,15 +165,17 @@ public class SimpleAnalysis {
 	private Project project;
 	private WcetAppInfo appInfo;
 	private Hashtable<WcetKey, WcetCost> wcetMap;
-	private Config config;
-	private LocalAnalysis localAnalysis;
+	private ILPModelBuilder modelBuilder;
+	private BlockWCET blockBuilder;
 
 	public SimpleAnalysis(Project project) {
-		this.config = Config.instance();
 		this.project = project;
 		this.appInfo = project.getWcetAppInfo();
-		this.localAnalysis = new LocalAnalysis(project);
+
 		this.wcetMap = new Hashtable<WcetKey,WcetCost>();
+
+		this.modelBuilder = new ILPModelBuilder(project);
+		this.blockBuilder = new BlockWCET(project);
 	}
 	
 	/**
@@ -154,12 +185,15 @@ public class SimpleAnalysis {
 	 *  <li/>{@link CacheApproximation.ALWAYS_MISS}: Assume all method cache accesses are misses
 	 *  <li/>{@link CacheApproximation.ANALYSE_REACHABLE}: 
 	 *  	<p>If for some invocation of <code>m</code>, all methods reachable from and including <code>m</code>
-	 *      fit into the cache, add the cost for missing each method exactly once (minimal cycles hidden
-	 *      if the method isn't a leaf, minimal number of hidden cycles on invoke otherwise)</p>
-	 *      <p>Otherwise, assume invoke/return is miss, and analyse the method using ANALYSE_REACHABLE.</p>
+	 *      fit into the cache, add the cost for missing each method exactly once.
+	 *      If the method isn't a leaf, the minimal number cycles is hidden.
+	 *      Additionally, add the cost for missing on return.</p>
+	 *      <p>Otherwise, assume invoke/return is miss, and analyze the method using ANALYSE_REACHABLE.</p>
 	 * @param m the method to be analyzed
 	 * @param cacheMode the cache approximation strategy
 	 * @return
+	 * 
+	 * <p>FIXME: Logging/Report need to be cleaned up </p>
 	 */
 	public WcetCost computeWCET(MethodInfo m, CacheApproximation cacheMode) {
 		/* use memoization to speed up analysis */
@@ -167,54 +201,22 @@ public class SimpleAnalysis {
 		if(wcetMap.containsKey(key)) return wcetMap.get(key);
 
 		/* check cache is big enough */
-		checkCache(m); /* TODO: should throw exception */
+		blockBuilder.checkCache(m); /* TODO: should throw exception */
 
 		/* build wcet map */
-		ControlFlowGraph fg = appInfo.getFlowGraph(m);
-		Map<CFGNode,WcetCost> nodeCosts = buildNodeCostMap(fg,cacheMode);
-		CostProvider<CFGNode> costProvider = new MapCostProvider<CFGNode>(nodeCosts);
-		MaxCostFlow<CFGNode,CFGEdge> problem = 
-			localAnalysis.buildWCETProblem(key.toString(),fg, costProvider);
-		/* solve ILP */
-		long maxCost = 0;
-		Map<CFGEdge, Long> flowMapOut = new HashMap<CFGEdge, Long>();
-		try {
-			maxCost = Math.round(problem.solve(flowMapOut));
-		} catch (Exception e) {
-			throw new Error("Failed to solve LP problem: "+e,e);
-		}
-		/* extract node flow, local cost, cache cost, cummulative cost */
-		Map<CFGNode,Long> nodeFlow = new Hashtable<CFGNode, Long>();
-		DirectedGraph<CFGNode, CFGEdge> graph = fg.getGraph();
-		for(CFGNode n : fg.getGraph().vertexSet()) {
-			if(graph.inDegreeOf(n) == 0) nodeFlow.put(n, 0L); // ENTRY and DEAD CODE (no flow)
-			else {
-				long flow = 0;
-				for(CFGEdge inEdge : graph.incomingEdgesOf(n)) {
-					flow+=flowMapOut.get(inEdge);
-				}
-				nodeFlow.put(n, flow);
-			}
-		}
-		/* Compute cost, sepearting local and non-local cost */
-		/* Safety check: compare flow*cost to actual solution */
-		WcetCost methodCost = new WcetCost();
-		for(CFGNode n : fg.getGraph().vertexSet()) {
-			long flow = nodeFlow.get(n);
-			methodCost.addLocalCost(flow * nodeCosts.get(n).getLocalAndCacheCost());
-			methodCost.addNonLocalCost(flow * nodeCosts.get(n).getNonLocalCost());
-		}
-		if(methodCost.getCost() != maxCost) {
-			throw new AssertionError("The solution implies that the flow graph cost is " 
-									 + methodCost.getCost() + ", but the ILP solver reported "+maxCost);
-		}
-		wcetMap.put(key, methodCost); 
+		ControlFlowGraph cfg = appInfo.getFlowGraph(m);
+		Map<CFGNode,WcetCost> nodeCosts;
+		nodeCosts = buildNodeCostMap(cfg,cacheMode);
+		WcetSolution sol = runWCETComputation(key.toString(), cfg, cacheMode, nodeCosts);
+		sol.checkConsistentency();
+		wcetMap.put(key, sol.getCost()); 
+		
 		/* Logging and Report */
-		if(Config.instance().doGenerateWCETReport()) {
+		if(project.reportGenerationActive()) {
 			Hashtable<CFGNode, String> nodeFlowCostDescrs = new Hashtable<CFGNode, String>();
 			
-			for(CFGNode n : fg.getGraph().vertexSet()) {
-				if(nodeFlow.get(n) > 0) {
+			for(CFGNode n : cfg.getGraph().vertexSet()) {
+				if(sol.getNodeFlow(n) > 0) {
 					nodeFlowCostDescrs .put(n,nodeCosts.get(n).toString());
 					BasicBlock basicBlock = n.getBasicBlock();
 					/* prototyping */
@@ -226,7 +228,7 @@ public class SimpleAnalysis {
 						ClassReport cr = project.getReport().getClassReport(cli);
 						Long oldCost = (Long) cr.getLineProperty(sourceLine, "cost");
 						if(oldCost == null) oldCost = 0L;
-						cr.addLineProperty(sourceLine, "cost", oldCost + nodeFlow.get(n)*nodeCosts.get(n).getCost());
+						cr.addLineProperty(sourceLine, "cost", oldCost + sol.getNodeFlow(n)*nodeCosts.get(n).getCost());
 						for(InstructionHandle ih : basicBlock.getInstructions()) {
 							sourceLine = lineNumberTable.getSourceLine(ih.getPosition());
 							cr.addLineProperty(sourceLine, "color", "red");
@@ -236,17 +238,46 @@ public class SimpleAnalysis {
 					nodeFlowCostDescrs.put(n, ""+nodeCosts.get(n).getCost());
 				}
 			}
-			logger.info("WCET for " + key + ": "+methodCost);
+			logger.info("WCET for " + key + ": "+sol.getCost());
 			Map<String,Object> stats = new Hashtable<String, Object>();
-			stats.put("WCET",methodCost);
+			stats.put("WCET",sol.getCost());
 			stats.put("mode",cacheMode);
-			stats.put("all-methods-fit-in-cache",allFit(m));
-			project.getReport().addDetailedReport(m,"WCET_"+cacheMode.toString(),stats,nodeFlowCostDescrs,flowMapOut);
+			stats.put("all-methods-fit-in-cache",blockBuilder.allFit(m));
+			project.getReport().addDetailedReport(m,"WCET_"+cacheMode.toString(),stats,nodeFlowCostDescrs,sol.getEdgeFlow());
 		}
-		return methodCost;
+		return sol.getCost();
 	}
-
-
+	/**
+	 * Compute the WCET of the given control flow graph
+	 * @param name name for the ILP problem
+	 * @param cfg the control flow graph 
+	 * @param cacheMode which cache approximation to use
+	 * @param nodeCosts (costs per node which should be used) (if null, calculate cost)
+	 * @return the WCET for the given CFG
+	 */
+	public WcetSolution runWCETComputation(
+			String name, 
+			ControlFlowGraph cfg,
+			CacheApproximation cacheMode,
+			Map<CFGNode,WcetCost> nodeCosts) {		
+		if(nodeCosts == null)  nodeCosts = buildNodeCostMap(cfg,cacheMode);
+		WcetSolution sol = new WcetSolution(cfg.getGraph(),nodeCosts);
+		CostProvider<CFGNode> costProvider = new MapCostProvider<CFGNode>(nodeCosts);
+		MaxCostFlow<CFGNode,CFGEdge> problem = 
+			modelBuilder.buildLocalILPModel(name,cfg, costProvider);
+		/* solve ILP */
+		/* extract node flow, local cost, cache cost, cummulative cost */
+		long maxCost = 0;
+		Map<CFGEdge, Long> edgeFlow = new HashMap<CFGEdge, Long>();
+		try {
+			maxCost = Math.round(problem.solve(edgeFlow));
+		} catch (Exception e) {
+			throw new Error("Failed to solve LP problem: "+e,e);
+		}
+		sol.setSolution(maxCost, edgeFlow);
+		return sol;
+	}
+	
 	/**
 	 * map flowgraph nodes to WCET
 	 * if the node is a invoke, we need to compute the WCET for the invoked method
@@ -260,7 +291,7 @@ public class SimpleAnalysis {
 		
 		HashMap<CFGNode, WcetCost> nodeCost = new HashMap<CFGNode,WcetCost>();
 		for(CFGNode n : fg.getGraph().vertexSet()) {
-			if(n.getBasicBlock() != null) {
+			if(n.getBasicBlock() != null || n instanceof SummaryNode) {
 				nodeCost.put(n, computeCostOfNode(n, cacheMode));
 			} else {
 				nodeCost.put(n, new WcetCost());
@@ -275,6 +306,9 @@ public class SimpleAnalysis {
 		public WcetVisitor(CacheApproximation cacheMode) {
 			this.cacheMode = cacheMode;
 			this.cost = new WcetCost();
+		}
+		public void visitSummaryNode(SummaryNode n) {
+			cost.addLocalCost(runWCETComputation("summary", n.getSubGraph(), CacheApproximation.ALWAYS_MISS,null).getCost().getCost());
 		}
 		public void visitSpecialNode(DedicatedNode n) {
 		}
@@ -319,41 +353,55 @@ public class SimpleAnalysis {
 		}
 		private void recursiveWCET(MethodInfo invoker, MethodInfo invoked) {			
 			logger.info("Recursive WCET computation: " + invoked.getMethod());
-			long cacheCost = 0L;
-			CacheApproximation recursiveMode = cacheMode;
-			if(cacheMode == CacheApproximation.ALWAYS_MISS ||
-			   ! allFit(invoked)) {
-				cacheCost = getInvokeReturnMissCost(
-						appInfo.getFlowGraph(invoker),
-						appInfo.getFlowGraph(invoked));				
-			} else if (cacheMode == CacheApproximation.ANALYSE_REACHABLE) {
-				cacheCost = totalCacheMissPenalty(invoked) + 
-							BlockWCET.getMissOnReturnCost(appInfo.getFlowGraph(invoker));
-				recursiveMode = CacheApproximation.ALWAYS_HIT;				
+			long cacheCost = BlockWCET.getInvokeReturnMissCost(appInfo.getFlowGraph(invoker),appInfo.getFlowGraph(invoked));				
+			long nonLocalCost = computeWCET(invoked, cacheMode).getCost();
+			switch(cacheMode) {
+			case ALWAYS_HIT:
+				cacheCost=0; break;
+			case ALWAYS_MISS:
+				break;				
+			case ANALYSE_REACHABLE:
+				/* ALL FIT is unsafe if the invoked method is a leaf 
+				 * This is because the cost for accessing the method itself is usually attributes
+				 * to some return node, which is missing in the case of leaf methods.
+				 * Should be cleaned up !!
+				 */
+				if(blockBuilder.allFit(invoked) && ! project.getCallGraph().isLeafNode(invoked)) {
+					long allMissCost = nonLocalCost + cacheCost;
+					long returnCost = BlockWCET.getMissOnReturnCost(appInfo.getFlowGraph(invoker));
+
+					if(! useGlobalIPET) {
+						long allFitAhCost = computeWCET(invoked, CacheApproximation.ALWAYS_HIT).getCost();
+						long allFitPenalty = totalCacheMissPenalty(invoked);										 
+						long allFitCost = allFitAhCost + allFitPenalty  + returnCost;
+						if(allFitCost <= allMissCost) {
+							cacheCost = allFitPenalty;
+							nonLocalCost = allFitAhCost;
+						}
+					} else {
+						GlobalAnalysis ga = new GlobalAnalysis(project);
+						WcetCost recCost;
+						try { recCost = ga.computeWCET(invoked, CacheApproximation.ALL_FIT); }
+						catch (Exception e) { throw new AssertionError(e); }
+						long allFitCostGlobal = recCost.getCost() + returnCost;
+						cacheCost = returnCost;
+						nonLocalCost = recCost.getCost();
+					}
+				}
+				break;
 			}
-			cost.addNonLocalCost(computeWCET(invoked, recursiveMode).getCost());
+			cost.addNonLocalCost(nonLocalCost);
 			cost.addCacheCost(cacheCost);
 		}
 	}
+
 	private WcetCost 
-		computeCostOfNode(CFGNode n,CacheApproximation cacheMode) {
-		
+		computeCostOfNode(CFGNode n,CacheApproximation cacheMode) {	
 		WcetVisitor wcetVisitor = new WcetVisitor(cacheMode);
 		n.accept(wcetVisitor);
 		return wcetVisitor.cost;
 	}
-	
-	/**
-	 * Get an upper bound for the miss cost involved in invoking a method of length
-	 * <pre>invokedBytes</pre> and returning to a method of length <pre>invokerBytes</pre> 
-	 * @param invoker
-	 * @param invoked
-	 * @return the maximal cache miss penalty for the invoke/return
-	 */
-	private long getInvokeReturnMissCost(ControlFlowGraph invoker, ControlFlowGraph invoked) {
-		return BlockWCET.getMissOnInvokeCost(invoked)+BlockWCET.getMissOnReturnCost(invoker);
-	}
-	
+		
 	/**
 	 * Compute the maximal total cache-miss penalty for <strong>invoking and executing</strong>
 	 * m.
@@ -369,11 +417,11 @@ public class SimpleAnalysis {
 	 * </p><p>
 	 * Explanation: We know that there is only one cache miss per method, but we do not know
 	 * when it will occur (on return or invoke), except for leaf methods. 
-	 * Let <code>H</code> be the number of cyclen hidden by <strong>any</strong> return or 
+	 * Let <code>h</code> be the number of cycles hidden by <strong>any</strong> return or 
 	 * invoke instructions. Then the cache miss penalty is bounded by <code>(b-h)</code> per 
 	 * method.
 	 * </p><p>
-	 * <code>b</code> is giben by <code>b = 6 + (n+1) * (2+c)</code>, with <code>n</code>
+	 * <code>b</code> is given by <code>b = 6 + (n+1) * (2+c)</code>, with <code>n</code>
 	 * being the method length of the receiver (invoke) or caller (return) in words 
 	 * and <code>c</code> being the cache-read wait time.
 	 * </p>
@@ -388,46 +436,14 @@ public class SimpleAnalysis {
 		while(iter.hasNext()) {
 			CallGraphNode n = iter.next();
 			if(n.getMethodImpl() == null) continue;
-			int words = (appInfo.getFlowGraph(n.getMethodImpl()).getNumberOfBytes() + 3) / 4;
+			int words = appInfo.getFlowGraph(n.getMethodImpl()).getNumberOfWords();
 			int hidden = project.getCallGraph().isLeafNode(n) ?
 					WCETInstruction.INVOKE_HIDDEN_LOAD_CYCLES :
 					WCETInstruction.MIN_HIDDEN_LOAD_CYCLES;
 			int thisMiss = Math.max(0,WCETInstruction.calculateB(false, words) - hidden); 
-			logger.debug("Adding cache miss penalty for "+n.getMethodImpl() + " from " + m + ": " + thisMiss);
+			logger.info("Adding cache miss penalty for "+n.getMethodImpl() + " from " + m + ": " + thisMiss);
 			miss+=thisMiss;
 		}
 		return miss;
-	}
-	private void checkCache(MethodInfo m) {
-		if(requiredNumberOfBlocks(m) <= config.getOption(CacheConfig.CACHE_BLOCKS)) return;
-		throw new AssertionError("Too few cache blocks for "+m+" - requires "+
-								 requiredNumberOfBlocks(m) + " but have " +
-								 config.getOption(CacheConfig.CACHE_BLOCKS));		
-	}
-	private boolean allFit(MethodInfo m) {
-		return getMaxCacheBlocks(m) <= config.getOption(CacheConfig.CACHE_BLOCKS);
-	}
-
-	/**
-	 * Compute the number of cache blocks which might be needed when calling this method
-	 * @param mi
-	 * @return the maximum number of cache blocks needed, s.t. we won't run out of cache
-	 * blocks when invoking the given method
-	 * @throws TypeException 
-	 */
-	public long getMaxCacheBlocks(MethodInfo mi) {
-		long size = requiredNumberOfBlocks(mi);
-		Iterator<CallGraphNode> iter = project.getCallGraph().getReachableMethods(mi);
-		while(iter.hasNext()) {
-			CallGraphNode n = iter.next();
-			if(n.isAbstractNode()) continue;
-			size+= requiredNumberOfBlocks(n.getMethodImpl());
-		}
-		return size;
-	}
-
-	private long requiredNumberOfBlocks(MethodInfo m) {
-		return BlockWCET.numberOfBlocks(appInfo.getFlowGraph(m),
-										config.getOption(CacheConfig.BLOCK_SIZE_WORDS).intValue());
 	}
 }

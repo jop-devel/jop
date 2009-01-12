@@ -2,10 +2,11 @@ package com.jopdesign.wcet08.uppaal.translator;
 
 import java.util.Vector;
 
-import com.jopdesign.wcet08.Config;
 import com.jopdesign.wcet08.Project;
 import com.jopdesign.wcet08.analysis.BlockWCET;
+import com.jopdesign.wcet08.config.Config;
 import com.jopdesign.wcet08.uppaal.UppAalConfig;
+import com.jopdesign.wcet08.uppaal.model.Location;
 import com.jopdesign.wcet08.uppaal.model.NTASystem;
 
 public class VarBlockCacheBuilder extends CacheSimBuilder {
@@ -51,7 +52,11 @@ public class VarBlockCacheBuilder extends CacheSimBuilder {
 		Vector<Integer> blocksPerMethod = new Vector<Integer>();
 		for(int i = 0; i < numMethods; i++) {
 			int mBlocks = blocksOf(i);
-			if(mBlocks > numMethods) throw new AssertionError("Cache too small");
+			if(mBlocks > numBlocks) {
+				throw new AssertionError("Cache too small for method: "+project.getWcetAppInfo().getFlowGraph(i)+
+									     " which requires at least "+mBlocks+" blocks, but only "+
+									     numBlocks + " are available ");
+			}
 			blocksPerMethod.add(mBlocks);
 		}
 		return CacheSimBuilder.constArray(blocksPerMethod);
@@ -66,5 +71,7 @@ public class VarBlockCacheBuilder extends CacheSimBuilder {
 	}
 	private int blocksOf(int id) {
 		return BlockWCET.numberOfBlocks(project.getWcetAppInfo().getFlowGraph(id),blockSize);
+	}
+	public void handleProgramEntry(TemplateBuilder builder, Location initLoc) {
 	}
 }

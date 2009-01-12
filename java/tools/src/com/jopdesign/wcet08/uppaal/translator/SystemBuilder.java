@@ -24,8 +24,8 @@ import java.util.Map.Entry;
 
 import org.w3c.dom.Document;
 
-import com.jopdesign.wcet08.Config;
 import com.jopdesign.wcet08.Project;
+import com.jopdesign.wcet08.config.Config;
 import com.jopdesign.wcet08.uppaal.UppAalConfig;
 import com.jopdesign.wcet08.uppaal.UppAalConfig.CacheSim;
 import com.jopdesign.wcet08.uppaal.model.DuplicateKeyException;
@@ -51,8 +51,8 @@ public class SystemBuilder {
 	public NTASystem getNTASystem() { return system; }
 	
 	private Hashtable<Template,Integer> templates = new Hashtable<Template,Integer>();
-	private Config config;
 	private CacheSimBuilder cacheSim;
+	private Project project;
 	/**
 	 * Create a new top-level UPPAAL System builder
 	 * @param name               the name of the system
@@ -60,9 +60,10 @@ public class SystemBuilder {
 	 * @param numMethods         the number of methods of the program
 	 */
 	public SystemBuilder(Project p, int maxCallStackDepth, int numMethods) {
-		this.config = Config.instance();
-		this.system = new NTASystem(p.getName());
-		CacheSim cache = config.getOption(UppAalConfig.UPPAAL_CACHE_SIM);
+		this.project = p;
+		this.system = new NTASystem(p.getProjectName());
+		
+		CacheSim cache = Config.instance().getOption(UppAalConfig.UPPAAL_CACHE_SIM);
 		if(cache.equals(CacheSim.LRU_BLOCK)) {
 			this.cacheSim = new LRUCacheBuilder();
 		} else if (cache.equals(CacheSim.FIFO_BLOCK)) {
@@ -70,15 +71,16 @@ public class SystemBuilder {
 		} else if (cache.equals(CacheSim.VARIABLE_BLOCK)) {
 			this.cacheSim = new VarBlockCacheBuilder(p,numMethods);
 		} else {
-			this.cacheSim = new CacheSimBuilder();
+			this.cacheSim = new StaticCacheBuilder(cache.equals(CacheSim.ALWAYS_MISS));
 		}
+		
 		initialize(maxCallStackDepth, numMethods);
 	}
 	private void initialize(int maxCallStackDepth, int numMethods) {
 		system.appendDeclaration("clock " + CLOCK +";");
 		system.appendDeclaration("const int " + MAX_CALL_STACK_DEPTH + " = "+maxCallStackDepth+";"); 
 		system.appendDeclaration("const int " + NUM_METHODS + " = "+numMethods+";"); 
-		if(config.getOption(UppAalConfig.UPPAAL_ONE_CHANNEL_PER_METHOD)) {
+		if(Config.instance().getOption(UppAalConfig.UPPAAL_ONE_CHANNEL_PER_METHOD)) {
 			for(int i = 1; i < numMethods; i++) {
 				system.appendDeclaration("chan "+methodChannel(i)+";");				
 			}
@@ -119,5 +121,11 @@ public class SystemBuilder {
 
 	public Document toXML() throws XmlSerializationException {
 		return this.system.toXML();
+	}
+	public Project getProject() {
+		return project;
+	}
+	public CacheSimBuilder getCacheSim() {
+		return this.cacheSim;
 	}
 }

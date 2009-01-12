@@ -1,0 +1,28 @@
+<body>
+<h1>Report generation</h1>
+<p>The purpose of the report package is to report the results of the program and WCET analysis
+to the client. 
+We differentiate different kind of result data:
+<ul>
+  <li/>Program stats
+    <ul>
+      <li/>Task/application statistics, i.e. number of classes, methods
+      <li/>Analysis statistics, i.e. time elapsed, configuration
+      <li/>Global graphs: Typegraph, Callgraph
+      <li/>WCET of target method
+    </ul>
+  <li/>Method stats
+    <ul>
+      <li/> Program analysis statistics
+      <li/> Control flow graph / Annotations
+      <li/> WCET of method [per context]
+      <li/> Explicit WCET path
+    </ul>
+  <li/>Flow graph stats (node / edge) [per context]
+    <ul>
+      <li/> Execution costs
+      <li/> Explicit WCET path
+      <li/> Implicit WCET path (execution frequencies)
+    </ul>
+  <li/> Source code back-annotation
+</ul>

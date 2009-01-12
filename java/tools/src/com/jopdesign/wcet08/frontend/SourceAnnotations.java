@@ -33,7 +33,7 @@ import java.util.regex.Pattern;
 import org.apache.log4j.Logger;
 
 import com.jopdesign.build.ClassInfo;
-import com.jopdesign.wcet08.Config;
+import com.jopdesign.wcet08.Project;
 import com.jopdesign.wcet08.graphutils.Pair;
 
 /**
@@ -73,9 +73,10 @@ public class SourceAnnotations {
 		}
 	}
 
-	private Config config;
-	public SourceAnnotations(Config config) {
-		this.config = config;
+	private Project project;
+
+	public SourceAnnotations(Project p) {
+		this.project = p;
 	}
 
 	/**
@@ -91,7 +92,7 @@ public class SourceAnnotations {
 		throws IOException, BadAnnotationException {
 		
 		SortedMap<Integer, LoopBound> wcaMap = new TreeMap<Integer, LoopBound>();
-		File fileName = config.getSourceFile(ci);
+		File fileName = project.getSourceFile(ci);
 		BufferedReader reader = new BufferedReader(new FileReader(fileName));
 		String line = null;
 		int lineNr = 1;

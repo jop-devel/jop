@@ -22,17 +22,22 @@ package com.jopdesign.wcet08.frontend;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.Vector;
 import org.apache.bcel.generic.INVOKEINTERFACE;
 import org.apache.bcel.generic.INVOKEVIRTUAL;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.InvokeInstruction;
-import org.jgrapht.graph.EdgeReversedGraph;
+import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.SimpleDirectedGraph;
+import org.jgrapht.traverse.TopologicalOrderIterator;
 
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.dfa.analyses.LoopBounds;
@@ -82,17 +87,17 @@ public class ControlFlowGraph {
 		 * visit an invoke node. InvokeNode's won't call visitBasicBlockNode.
 		 */
 		public void visitInvokeNode(InvokeNode n);
+		public void visitSummaryNode(SummaryNode n);
 	}
 	
 	/**
 	 * Abstract base class for flow graph nodes
 	 *
 	 */
-	public abstract class CFGNode implements Comparable<CFGNode>{
+	public abstract static class CFGNode implements Comparable<CFGNode>{
 		private int id;
 		protected String name;
-		protected CFGNode(String name) { 
-			this.id = idGen++;
+		protected CFGNode(int id, String name) { 
 			this.name = name;
 		}
 		public int compareTo(CFGNode o) { 
@@ -118,7 +123,7 @@ public class ControlFlowGraph {
 		private DedicatedNodeName kind;
 		public DedicatedNodeName getKind() { return kind; }
 		private  DedicatedNode(DedicatedNodeName kind) {
-			super(kind.toString());
+			super(idGen++, kind.toString());
 			this.kind = kind;
 		}
 		@Override
@@ -136,7 +141,7 @@ public class ControlFlowGraph {
 	public class BasicBlockNode extends CFGNode {
 		protected int blockIndex;
 		public BasicBlockNode(int blockIndex) {
-			super("basic("+blockIndex+")");
+			super(idGen++, "basic("+blockIndex+")");
 			this.blockIndex = blockIndex;
 		}
 		public BasicBlock getBasicBlock() { return blocks.get(blockIndex); }
@@ -155,8 +160,8 @@ public class ControlFlowGraph {
 	public class InvokeNode extends BasicBlockNode {
 		private InvokeInstruction instr;
 		private MethodRef referenced;
-		private MethodInfo impl;
-		private ControlFlowGraph fg;
+		private MethodInfo receiverImpl;
+		private ControlFlowGraph receiverFlowGraph;
 		private InvokeNode(int blockIndex) {
 			super(blockIndex);
 		}
@@ -167,9 +172,9 @@ public class ControlFlowGraph {
 			this.name = "invoke("+this.referenced+")";
 			/* if virtual / interface, this method has to be resolved first */
 			if((instr instanceof INVOKEINTERFACE) || (instr instanceof INVOKEVIRTUAL)) {
-				impl = null;
+				receiverImpl = null;
 			} else {
-				impl = appInfo.findStaticImplementation(referenced);
+				receiverImpl = appInfo.findStaticImplementation(referenced);
 			}
 		}
 		@Override
@@ -180,15 +185,18 @@ public class ControlFlowGraph {
 			return ControlFlowGraph.this.blocks.get(blockIndex).getLastInstruction();
 		}
 		public MethodInfo getImplementedMethod() {
-			return this.impl;
+			return this.receiverImpl;
+		}
+		public ControlFlowGraph invokerFlowGraph() {
+			return ControlFlowGraph.this;
 		}
 		public ControlFlowGraph receiverFlowGraph() {
 			if(isInterface()) return null;
-			if(this.fg == null) {
-				this.fg = appInfo.getFlowGraph(impl);
+			if(this.receiverFlowGraph == null) {
+				this.receiverFlowGraph = appInfo.getFlowGraph(receiverImpl);
 			}
-			return this.fg;
-		}
+			return this.receiverFlowGraph;
+		}		
 		public MethodRef getReferenced() {
 			return referenced;
 		}
@@ -196,7 +204,7 @@ public class ControlFlowGraph {
 		 * @return true if the invokation denotes an interface, not an implementation
 		 */
 		public boolean isInterface() {
-			return impl == null;
+			return receiverImpl == null;
 		}
 		/**
 		 * Create an implementation node from this node
@@ -208,9 +216,28 @@ public class ControlFlowGraph {
 			n.name = "invoke("+this.referenced+")";
 			n.instr=this.instr;
 			n.referenced=this.referenced;
-			n.impl = impl;
+			n.receiverImpl = impl;
 			return n;
 		}
+	}
+	
+	public class SummaryNode extends CFGNode {
+
+		private ControlFlowGraph subGraph;
+
+		public SummaryNode(String name, ControlFlowGraph subGraph) {
+			super(idGen++, name);
+			this.subGraph = subGraph;
+		}
+		public ControlFlowGraph getSubGraph() {
+			return subGraph;
+		}
+		
+		@Override
+		public void accept(CfgVisitor v) {
+			v.visitSummaryNode(this);
+		}
+		
 	}
 	/*
 	 * Flow Graph Edges
@@ -222,21 +249,17 @@ public class ControlFlowGraph {
 	 */
 	enum EdgeKind { ENTRY_EDGE, EXIT_EDGE, NEXT_EDGE,
 					GOTO_EDGE, SELECT_EDGE, BRANCH_EDGE, JSR_EDGE,
-					DISPATCH_EDGE, RETURN_EDGE, FLOW_EDGE };
+					DISPATCH_EDGE, 
+					INVOKE_EDGE, RETURN_EDGE, FLOW_EDGE };
 	/**
 	 * Edges of the flow graph
 	 */
-	public class CFGEdge  {
+	public static class CFGEdge extends DefaultEdge {
+		private static final long serialVersionUID = 1L;
 		EdgeKind kind;
 		public EdgeKind getKind() { return kind; }
 		public CFGEdge(EdgeKind kind) {
 			this.kind = kind;
-		}
-		public String getName() {
-			return graph.getEdgeSource(this)+"_"+graph.getEdgeTarget(this);
-		}
-		public String toString() {
-			return (""+graph.getEdgeSource(this).id+"->"+graph.getEdgeTarget(this).id);
 		}
 		public CFGEdge clone() {
 			return new CFGEdge(kind);			
@@ -283,7 +306,14 @@ public class ControlFlowGraph {
 		createFlowGraph(method);
 		check();
 	}
-
+	private ControlFlowGraph(int id, WcetAppInfo appInfo) {
+		this.id = id;
+		this.appInfo = appInfo;
+		CFGNode subEntry = new DedicatedNode(DedicatedNodeName.ENTRY);
+		CFGNode subExit = new DedicatedNode(DedicatedNodeName.EXIT);
+		this.graph = 
+			new DefaultFlowGraph<CFGNode, CFGEdge>(CFGEdge.class, subEntry, subExit);
+	}
 	/* worker: create the flow graph */
 	@SuppressWarnings("static-access")
 	private void createFlowGraph(MethodInfo method) {
@@ -332,7 +362,8 @@ public class ControlFlowGraph {
 							  targetNode, 
 							  new CFGEdge(target.edgeKind));
 			}
-		}	
+		}
+		this.graph.addEdge(graph.getEntry(), graph.getExit(), exitEdge());
 	}
 	
 	/**
@@ -470,6 +501,121 @@ public class ControlFlowGraph {
 		this.check();
 		this.analyseFlowGraph();
 	}
+	/**
+	 * Insert dedicates return nodes after invoke
+	 * @throws BadGraphException 
+	 */
+	public void insertReturnNodes() throws BadGraphException {
+		Vector<CFGNode> trav = this.getTopOrder().getTopologicalTraversal();
+		for(CFGNode n : trav) {
+			if(n instanceof InvokeNode) {
+				DedicatedNode returnNode = this.splitNode();
+				graph.addVertex(returnNode);
+				/* copy, as the iterators don't work when removing elements while iterating */
+				Vector<CFGEdge> outEdges = new Vector<CFGEdge>(graph.outgoingEdgesOf(n));
+				/* move edges */
+				for(CFGEdge e : outEdges) {
+					graph.addEdge(returnNode, graph.getEdgeTarget(e), e.clone());
+					graph.removeEdge(e);
+				}
+				graph.addEdge(n,returnNode,new CFGEdge(EdgeKind.RETURN_EDGE));
+			}
+		}
+		this.invalidate();
+		this.check();
+		this.analyseFlowGraph();
+	}
+
+	/**
+	 * Prototype: Insert summary nodes to speed up UPPAAL search
+	 * Currently only for loops which do not contain invoke() and have a single exit
+	 * @throws BadGraphException 
+	 */
+	public void insertSummaryNodes() throws BadGraphException {
+		SimpleDirectedGraph<CFGNode, DefaultEdge> loopNestForest = 
+			this.getLoopColoring().getLoopNestForest();
+		TopologicalOrderIterator<CFGNode, DefaultEdge> lnfIter = 
+			new TopologicalOrderIterator<CFGNode, DefaultEdge>(loopNestForest);
+		Vector<CFGNode> summaryLoops = new Vector<CFGNode>();
+		Set<CFGNode> marked = new HashSet<CFGNode>();
+		while(lnfIter.hasNext()) {
+			CFGNode hol = lnfIter.next();
+			if(marked.contains(hol)) continue;
+			Collection<CFGEdge> exitEdges = getLoopColoring().getExitEdgesOf(hol);
+			CFGNode theTarget = null; boolean failed = false;
+			for(CFGEdge e : exitEdges) {
+				CFGNode target = graph.getEdgeTarget(e);
+				if(theTarget == null) theTarget =target;
+				else if(theTarget != target) { failed = true; break; }
+			}
+			if(failed) continue;
+			Set<CFGNode> loopNodes = getLoopColoring().getNodesOfLoop(hol);
+			for(CFGNode n : loopNodes) {
+				if(n instanceof InvokeNode) { failed=true; break; }
+			}
+			if(failed) continue;
+			summaryLoops.add(hol);
+			for(CFGNode n : loopNodes) {
+				marked.add(n);
+			}
+		}
+		for(CFGNode hol : summaryLoops) {
+			insertSummaryNode(hol,getLoopColoring().getExitEdgesOf(hol),getLoopColoring().getNodesOfLoop(hol));			
+		}
+		this.invalidate();
+		this.check();
+		this.analyseFlowGraph();
+	}
+	private void insertSummaryNode(CFGNode hol, Collection<CFGEdge> exitEdges,
+			Set<CFGNode> loopNodes) {
+		/* summary subgraph */
+		/* create a new flow graph */
+		ControlFlowGraph subCFG = new ControlFlowGraph(-1,appInfo);
+		subCFG.methodInfo = methodInfo;
+		subCFG.blocks = blocks;
+		subCFG.annotations = annotations;
+		FlowGraph<CFGNode, CFGEdge> subGraph = subCFG.graph;
+		for(CFGNode n : loopNodes) {
+			subGraph.addVertex(n);
+		}
+		for(CFGNode n : loopNodes) {
+			if(n == hol) {
+				subGraph.addEdge(subGraph.getEntry(),n,subCFG.entryEdge());
+				for(CFGEdge e : getLoopColoring().getBackEdgesByHOL().get(hol)) {
+					subGraph.addEdge(graph.getEdgeSource(e), hol, e.clone());
+				}
+			} else {
+				for(CFGEdge e : graph.incomingEdgesOf(n)) {
+					subGraph.addEdge(graph.getEdgeSource(e), n, e.clone());
+				}
+			}
+		}
+		for(CFGEdge e : exitEdges) {
+			subGraph.addEdge(graph.getEdgeSource(e), subGraph.getExit(), e.clone());
+		}
+		try {
+			FileWriter writer;
+			writer = new FileWriter(File.createTempFile("subcfg", ".dot"));
+			new CFGExport(subCFG).exportDOT(writer, subGraph);
+			writer.close();
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}
+		/* summary node */
+		SummaryNode summary = new SummaryNode("SUMMARY_"+hol.id,subCFG);
+		Set<CFGEdge> inEdges = graph.incomingEdgesOf(hol);
+		this.graph.addVertex(summary);
+		for(CFGEdge e : inEdges) {
+			CFGNode src = graph.getEdgeSource(e);
+			graph.addEdge(src, summary, e.clone());
+		}
+		for(CFGEdge e : exitEdges) {
+			CFGNode target = graph.getEdgeTarget(e);
+			graph.addEdge(summary, target, e.clone());
+		}
+		this.graph.removeAllVertices(loopNodes);
+		
+	}
 	
 	private void check() throws BadGraphException {
 		TopOrder.checkConnected(graph);
@@ -486,7 +632,7 @@ public class ControlFlowGraph {
 
 	/* flow graph should have been checked before analyseFlowGraph is called */
 	private void analyseFlowGraph() {
-		try {			
+		try {
 			topOrder = new TopOrder<CFGNode, CFGEdge>(this.graph, this.graph.getEntry());
 			idGen = 0;
 			for(CFGNode vertex : topOrder.getTopologicalTraversal()) vertex.id = idGen++;
@@ -561,6 +707,10 @@ public class ControlFlowGraph {
 		}
 		return sum;
 	}
+	public int getNumberOfWords() {
+		return (getNumberOfBytes() + 3) / 4;
+	}
+
 	public void exportDOT(File file) {
 		exportDOT(file,null,null);
 	}
@@ -578,4 +728,19 @@ public class ControlFlowGraph {
 	@Override public String toString() {
 		return super.toString()+this.methodInfo.getFQMethodName();
 	}
+	
+//	/**
+//	 * get single entry single exit sets
+//	 * @return
+//	 */
+//	public Collection<Set<CFGNode>> getSESESets() {
+//		DominanceFrontiers<CFGNode, CFGEdge> df = 
+//			new DominanceFrontiers<CFGNode, CFGEdge>(this.graph,graph.getEntry(),graph.getExit());
+//		return df.getSingleEntrySingleExitSets();
+//	}
+//	public Map<CFGNode, Set<CFGEdge>> getControlDependencies() {
+//		DominanceFrontiers<CFGNode, CFGEdge> df = 
+//			new DominanceFrontiers<CFGNode, CFGEdge>(this.graph,graph.getEntry(),graph.getExit());
+//		return df.getControlDependencies();
+//	}
 }

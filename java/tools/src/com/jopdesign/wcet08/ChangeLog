@@ -1,7 +1,27 @@
 (User) ChangeLog for wcet08. Please keep current.
 
+Jan 09
+--------
+- 10/01/08 Create config package.
+           Split configurations for seperate packages.
+           Improve command line argument handling.
+
+
 Dez 08
 ---------
+- 15/12/08: Analysis package: Create WcetCost, GlobalAnalysis. Still needs more work.
+            Frontend: Create SuperGraph (for interprocedural analysis)
+            Ipet: Create ILPModelBuilder
+            GraphUtils: Create UnmodifiableDirectedGraphAdapter (for SuperGraph)
+            
+- 12/12/08: Improve Static-Reachable heuristic (try both recursive heuristic and local heuristic)
+
+- 11/12/08: Cleanup SimpleAnalysis
+- 11/12/08: Fix external method invocation (failed if process wrote more than 4096 chars)
+
+- 10/12/08: Control Dependency Graph prototype
+- 10/12/08: analysis: Fixed bug in maxCacheBlocks() computation
+
 - 09/12/08: uppaal: Implementation of N-Block LRU and N-Block FIFO caches
 - 09/12/08: Fixed Topological Order computation
 

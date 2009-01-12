@@ -174,6 +174,21 @@ public class LoopColoring<V,E> {
 		return backEdgesByHOL.keySet();		
 	}
 	/**
+	 * Get nodes belonging to some head of loop 
+	 * <p>Complexity: {@code O(|V|) * (map-get + set-member)}</p>
+	 * @param hol the head of loop
+	 * @return a set of nodes belonging to that loop
+	 */
+	public Set<V> getNodesOfLoop(CFGNode hol) {
+		Set<V> nodes = new HashSet<V>();
+		for(V node : graph.vertexSet()) {
+			Set<V> col = getLoopColor(node);
+			if(col != null && col.contains(hol)) nodes.add(node);
+		}
+		return nodes;
+	}
+
+	/**
 	 * Get set of back edges
 	 */
 	public Set<E> getBackEdges() {
@@ -389,5 +404,6 @@ public class LoopColoring<V,E> {
 			}
 		}
 	}
+
 
 }

@@ -19,11 +19,14 @@
 */
 package com.jopdesign.wcet08.graphutils;
 
+import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.Set;
 import java.util.Vector;
 
 import org.jgrapht.DirectedGraph;
-import org.jgrapht.graph.EdgeReversedGraph;
+import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.SimpleDirectedGraph;
 import org.jgrapht.traverse.DepthFirstIterator;
 
 /** Compute Dominators of a graph, following:
@@ -39,7 +42,8 @@ public class Dominators<V,E> {
 	protected int getOrder(V vertex) {
 		return preOrderMap.get(vertex);
 	}
-	protected V getIDom(V vertex) {		
+	protected V getIDom(V vertex) {
+		if(idom == null) computeDominators();
 		return idom.get(vertex);
 	}
 	/**
@@ -135,6 +139,7 @@ public class Dominators<V,E> {
 	 * @return true, if <code>dominator</code> dominates <code>dominated</code> w.r.t to the entry node
 	 */
 	public boolean dominates(V dominator, V dominated) {
+		computeDominators();
 		if(dominator.equals(dominated)) return true; // Domination is reflexive ;)
 		computeDominators();
 		V dom = getIDom(dominated);
@@ -143,5 +148,35 @@ public class Dominators<V,E> {
 			dom = getIDom(dom);
 		}
 		return dom.equals(dominator);
+	}
+	public Set<V> getStrictDominators(V n) {
+		computeDominators();
+		Set<V> strictDoms = new HashSet<V>();
+		V dominated = n;
+		V iDom = getIDom(n);
+		while(iDom != dominated) {
+			strictDoms.add(iDom);
+			dominated = iDom;
+			iDom = getIDom(dominated);
+		}
+		return strictDoms;
+	}
+	
+	/**
+	 * get the dominator tree
+	 */
+	public SimpleDirectedGraph<V,DefaultEdge> getDominatorTree() {
+		computeDominators();
+		SimpleDirectedGraph<V, DefaultEdge> domTree =
+			new SimpleDirectedGraph<V, DefaultEdge>(DefaultEdge.class);
+		for(V node : graph.vertexSet()) {
+			domTree.addVertex(node);
+			V idom =  getIDom(node);
+			if(idom != null && ! node.equals(idom)) {
+				domTree.addVertex(idom);
+				domTree.addEdge(idom, node);
+			}
+		}
+		return domTree;
 	}
 }

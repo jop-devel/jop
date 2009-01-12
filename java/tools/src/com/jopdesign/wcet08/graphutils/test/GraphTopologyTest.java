@@ -8,6 +8,7 @@ import java.text.MessageFormat;
 import java.util.Comparator;
 import java.util.Hashtable;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.Vector;
 
@@ -18,12 +19,12 @@ import org.jgrapht.ext.IntegerNameProvider;
 import org.jgrapht.ext.StringNameProvider;
 import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.EdgeReversedGraph;
 import org.junit.Before;
 import org.junit.Test;
 
 import com.jopdesign.wcet08.graphutils.AdvancedDOTExporter;
 import com.jopdesign.wcet08.graphutils.DefaultFlowGraph;
+import com.jopdesign.wcet08.graphutils.DominanceFrontiers;
 import com.jopdesign.wcet08.graphutils.Dominators;
 import com.jopdesign.wcet08.graphutils.FlowGraph;
 import com.jopdesign.wcet08.graphutils.LoopColoring;
@@ -39,20 +40,17 @@ public class GraphTopologyTest {
 	public static class AnalysisNodeLabel extends DefaultNodeLabeller<String> {
 		private TopOrder<String, DefaultEdge> to;
 		private LoopColoring<String, DefaultEdge> lc;
-		private Dominators<String, DefaultEdge> doms;
 
 		public AnalysisNodeLabel(DirectedGraph<String, DefaultEdge> g,
 				TopOrder<String, DefaultEdge> topOrder,
-				Dominators<String, DefaultEdge> doms,
 				LoopColoring<String, DefaultEdge> loopColoring) {
 			to = topOrder;
 			lc = loopColoring;
-			this.doms = doms;
 		}
 
 		public String getLabel(String n) {
 			return MessageFormat.format("{0} [ idom: {1}, loops: {2} ]",
-					n, doms.getIDoms().get(n), lc.getLoopColors().get(n));
+					n, to.getDominators().getIDoms().get(n), lc.getLoopColors().get(n));
 		}
 
 		public boolean setAttributes(String n, Map<String, String> ht) {
@@ -182,8 +180,8 @@ public class GraphTopologyTest {
 			return ("v"+(genId++));
 		}		
 	}
-	public static DefaultDirectedGraph<String, DefaultEdge> g1() {
-		DefaultDirectedGraph<String, DefaultEdge> g = new DefaultDirectedGraph<String, DefaultEdge>(DefaultEdge.class);
+	public static FlowGraph<String, DefaultEdge> g1() {
+		FlowGraph<String, DefaultEdge> g = new DefaultFlowGraph<String, DefaultEdge>(DefaultEdge.class,"Entry","10");
 		g.addVertex("Entry");
 		g.addVertex("1");g.addVertex("2");g.addVertex("3");
 		g.addVertex("4");g.addVertex("5");g.addVertex("6");
@@ -214,9 +212,9 @@ public class GraphTopologyTest {
 		return g;
 	}
 	public static void main(String argv[]) {
-		DefaultDirectedGraph<String, DefaultEdge> g = g1();
+		FlowGraph<String, DefaultEdge> g = g1();
 		System.out.println("Graph: "+g);
-		exportDOT("g1-cfg.dot",g);
+		exportDOT("g1-cfg",g);
 		TopOrder<String, DefaultEdge> topOrder = null;
 		try {
 			topOrder = new TopOrder<String,DefaultEdge>(g,"Entry");
@@ -226,44 +224,56 @@ public class GraphTopologyTest {
 		}
 		System.out.println("DfsOrder: "+topOrder.getDFSTraversal());
 		System.out.println("Back-Edges: "+topOrder.getBackEdges());
-		Dominators<String,DefaultEdge> doms = 
-			new Dominators<String,DefaultEdge>(g,topOrder.getDFSTraversal());
-		System.out.println("Dominators: "+doms.getIDoms());
+		System.out.println("Dominators: "+topOrder.getDominators().getIDoms());
+		System.out.println("Dominator Tree: "+topOrder.getDominators().getDominatorTree());
+		exportDOT("g1-domtree",topOrder.getDominators().getDominatorTree());
+		
+		DominanceFrontiers<String, DefaultEdge> domFrontiers = 
+			new DominanceFrontiers<String, DefaultEdge>(g,g.getEntry(), g.getExit());
+		Map<String, Set<String>> df = domFrontiers.getDominanceFrontiers();
+		for(String v : g.vertexSet()) {
+			System.out.println(String.format("DF(%s) := %s",v,df.get(v)));			
+		}
+		Map<String, Set<DefaultEdge>> cd = domFrontiers.getControlDependencies();
+		for(String v : g.vertexSet()) {
+			System.out.println(String.format("CD(%s) := %s",v,cd.get(v)));			
+		}
+//		for(Set<String> sese : domFrontiers.getSingleEntrySingleExitSets()) {
+//			System.out.println(String.format("Mutual SESE set: %s",sese));
+//		}
 		LoopColoring<String, DefaultEdge> loopColoring = 
 			new LoopColoring<String, DefaultEdge>(g,topOrder,"10");
 		System.out.println("Loop coloring: "+loopColoring.getLoopColors());
 		System.out.println("Iteration branch edges: "+loopColoring.getIterationBranchEdges());
-		exportDOT("g1-lnf.dot",loopColoring.getLoopNestForest());		
+		exportDOT("g1-lnf",loopColoring.getLoopNestForest());		
 		System.out.println("Loop nest tree: "+loopColoring.getLoopNestForest());
 		
-		exportDOT("g1-analysis", g,new AnalysisNodeLabel(g,topOrder,doms,loopColoring), 
+		exportDOT("g1-analysis", g,new AnalysisNodeLabel(g,topOrder,loopColoring), 
 								   new AnalysisEdgeLabeller(g,loopColoring));
 
 		try {
 			FlowGraph<String, DefaultEdge> g2 = g2();
-			exportDOT("g2-cfg.dot",g2);
+			exportDOT("g2-cfg",g2);
 			TopOrder<String, DefaultEdge> top2 = new TopOrder<String, DefaultEdge>(g2,g2.getEntry());
-			Dominators<String,DefaultEdge> doms2 = 
-				new Dominators<String,DefaultEdge>(g2,top2.getDFSTraversal());
 			LoopColoring<String, DefaultEdge> loops2 = 
 				new LoopColoring<String, DefaultEdge>(g2,top2,g2.getExit());
 			
 			exportDOT("g2-analysis", g2 ,
-				   new AnalysisNodeLabel(g2,top2,doms2,loops2),
+				   new AnalysisNodeLabel(g2,top2,loops2),
 				   new AnalysisEdgeLabeller(g2,loops2));
 		} catch(Exception e) { e.printStackTrace(); }
 		
 		StringVertexFactory vf = new StringVertexFactory(g);
 		loopColoring.unpeelLoop("8", vf);
 		System.out.println("Graph (unpeel 8): "+g);
-		exportDOT("g1-up8.dot",g);				
+		exportDOT("g1-up8",g);				
 		loopColoring.unpeelLoop("7", vf);
 		System.out.println("Graph (unpeel 7,8): "+g);
-		exportDOT("g1-up7.dot",g);
+		exportDOT("g1-up7",g);
 		loopColoring.unpeelLoop("2", vf);
 		loopColoring.unpeelLoop("1", vf);
 		System.out.println("Graph (unpeel all): "+g);
-		exportDOT("g1-up-all.dot",g);
+		exportDOT("g1-up-all",g);
 	}
 	private static void exportDOT(String file, DirectedGraph<String, DefaultEdge> g) {
 		DOTExporter<String, DefaultEdge> export = new DOTExporter<String, DefaultEdge>(

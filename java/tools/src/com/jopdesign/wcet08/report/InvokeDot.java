@@ -30,7 +30,8 @@ import java.util.Arrays;
 
 import org.apache.log4j.Logger;
 
-import com.jopdesign.wcet08.Config;
+import com.jopdesign.wcet08.ProjectConfig;
+import com.jopdesign.wcet08.config.Config;
 
 /**
  * This class invokes the .dot program to generate graphs.
@@ -41,43 +42,48 @@ import com.jopdesign.wcet08.Config;
  *
  */
 public class InvokeDot {
-	public static void invokeDot(File dotFile, File imageFile) throws IOException {
-		new InvokeDot(Config.instance()).runDot(dotFile, imageFile);
-	}
-	
-	private static final String CACHE_DIR = "dot-cache";
 	private static final Logger logger = Logger.getLogger(InvokeDot.class);
+	private static final String DEFAULT_CACHE_DIR = "dot-cache";
 	public File getCacheFile(String filename) {
-		File cache = config.getOutFile(CACHE_DIR);
-		if(! cache.exists()) cache.mkdir();		
-		return new File(cache,filename);
+		return new File(cacheDir,filename);
 	}
-	private Config config;
-
-	public InvokeDot(Config config) {
-		this.config = config;
+	public static void invokeDot(File dotFile, File outFile) throws IOException {
+		Config c= Config.instance();
+		File cacheDir = ProjectConfig.getOutDir(DEFAULT_CACHE_DIR);
+		InvokeDot id = new InvokeDot(c.getOption(ReportConfig.PROGRAM_DOT),cacheDir);
+		id.runDot(dotFile, outFile);
 	}
-
+	private String dotBinary;
+	private File cacheDir;
+	private String format;
+	public InvokeDot(String dotBinary, File cacheDir) {
+		this.dotBinary = dotBinary;
+		this.cacheDir  = cacheDir;
+		this.format = "png";
+	}
+	public void setFormat(String format) {
+		this.format = format;
+	}
 	public void runDot(File dotFile, File imageFile) throws IOException {
-		String dotProgram = config.getDotBinary();
 		byte[] md5;
-		if(dotProgram == null) {
-			throw new IOException("No program specified to generate images from .dot files");
-		}
 		try {
 			md5 = calculateMD5(dotFile);
 		} catch (NoSuchAlgorithmException e) {
 			throw new Error("Unexpected exception: MD5 Algorithm not available",e);
+		}	
+		if(cacheDir != null) {
+			File cachedFile = getCacheFile(byteArrayToString(md5)+".png");
+			if(! cachedFile.exists()) {
+				runDot(dotFile,cachedFile,format);
+			}
+			copyFile(cachedFile,imageFile);
+		} else {
+			runDot(dotFile,imageFile,format);			
 		}
-		File cachedFile = getCacheFile(byteArrayToString(md5)+".png");
-		if(! cachedFile.exists()) {
-			runDot(dotFile,cachedFile,"png");
-		}
-		copyFile(cachedFile,imageFile);
 	}
 	
 	private void runDot(File dotFile,File imageFile, String fmt) throws IOException {
-		String cmd[] = { config.getDotBinary(), dotFile.getPath(), "-T"+fmt, "-o", imageFile.getPath() };
+		String cmd[] = { dotBinary, dotFile.getPath(), "-T"+fmt, "-o", imageFile.getPath() };
 		Process p;
 		logger.info("Invoking dot: "+Arrays.toString(cmd));
 		p = Runtime.getRuntime().exec(cmd);

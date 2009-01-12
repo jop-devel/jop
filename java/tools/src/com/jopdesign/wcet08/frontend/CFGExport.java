@@ -3,8 +3,6 @@ package com.jopdesign.wcet08.frontend;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.Map;
-import java.util.Set;
-
 import org.apache.bcel.generic.BranchInstruction;
 import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InvokeInstruction;

@@ -2,24 +2,27 @@ package com.jopdesign.wcet08.uppaal.translator;
 
 import java.util.Vector;
 
-import com.jopdesign.wcet08.Config;
+import com.jopdesign.wcet08.config.Config;
 import com.jopdesign.wcet08.uppaal.UppAalConfig;
 import com.jopdesign.wcet08.uppaal.model.NTASystem;
 
 public class FIFOCacheBuilder extends CacheSimBuilder {
 	private int numBlocks;
+	private boolean assumeEmptyCache;
+	private String NUM_METHODS;
 	public FIFOCacheBuilder() {
 		this.numBlocks = Config.instance().getOption(UppAalConfig.UPPAAL_CACHE_BLOCKS).intValue();
-		// logger.info("FIFO cache simulation with "+numBlocks+ " blocks assuming empty cache");
+		this.assumeEmptyCache = Config.instance().getOption(UppAalConfig.UPPAAL_EMPTY_INITIAL_CACHE);
 	}
 	@Override
 	public void appendDeclarations(NTASystem system,String NUM_METHODS) {
-		appendDeclsN(system,NUM_METHODS);
+		this.NUM_METHODS = NUM_METHODS;
+		appendDeclsN(system);
 	}
-	public void appendDeclsN(NTASystem system,String NUM_METHODS) {
+	public void appendDeclsN(NTASystem system) {
 		super.appendDeclarations(system,NUM_METHODS);
 		system.appendDeclaration(String.format("int[0,%s] cache[%d] = %s;",
-				NUM_METHODS,this.numBlocks,initCache(NUM_METHODS)));
+				NUM_METHODS,this.numBlocks,initCache()));
 		system.appendDeclaration(String.format("bool lastHit;"));
 		system.appendDeclaration(
 				"void access_cache(int mid) {\n"+
@@ -37,7 +40,7 @@ public class FIFOCacheBuilder extends CacheSimBuilder {
 				"  cache[0] = mid;\n"+
 				"}\n");
 	}
-	private StringBuilder initCache(String NUM_METHODS) {
+	private StringBuilder initCache() {
 		Vector<Object> cacheElems = new Vector<Object>();
 		cacheElems.add(0);
 		for(int i = 1; i < numBlocks; i++) cacheElems.add(NUM_METHODS);

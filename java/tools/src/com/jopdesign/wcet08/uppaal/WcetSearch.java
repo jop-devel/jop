@@ -1,6 +1,5 @@
 package com.jopdesign.wcet08.uppaal;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileWriter;
@@ -8,10 +7,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.text.MessageFormat;
+import java.util.LinkedList;
+import java.util.Vector;
 
 import org.apache.log4j.Logger;
 
-import com.jopdesign.wcet08.Config;
+import com.jopdesign.wcet08.config.Config;
 
 /**
  * Binary search for WCET using UppAal
@@ -22,9 +23,9 @@ public class WcetSearch {
 	private File modelFile;
 	private File queryFile;
 	private Logger logger = Logger.getLogger(WcetSearch.class);
-	private double lastSolverTime = -1;
-	public double getLastSolverTime() {
-		return lastSolverTime;
+	private double maxSolverTime = 0.0;
+	public double getMaxSolverTime() {
+		return maxSolverTime;
 	}
 	public WcetSearch(File modelFile) {
 		this.modelFile = modelFile;
@@ -61,29 +62,89 @@ public class WcetSearch {
 		}
 		return safe;
 	}
+	private class StreamReaderThread extends Thread {
+		private Vector<String> data = null;
+		private BufferedReader reader;
+		private InputStream is;
+		private int limit;
+		private LinkedList<String> dataList = null;
+		private boolean doEcho = false;
+		private int doStatusEcho;
+
+		public StreamReaderThread(InputStream inputStream) {
+			this.is = inputStream;
+			this.reader = new BufferedReader(new InputStreamReader(inputStream));
+			this.data = new Vector<String>();
+			this.limit = -1;
+		}
+		public StreamReaderThread(InputStream inputStream,int limit) {
+			this.is = inputStream;
+			this.reader = new BufferedReader(new InputStreamReader(inputStream));
+			this.limit = limit;
+			this.dataList = new LinkedList<String>();
+		}
+
+		@Override
+		public void run() {
+			String l ;
+			try {
+				while(null != (l=reader.readLine())) {
+					if(doEcho) System.out.println(l);
+					if(doStatusEcho > 0) {
+						System.out.print(".");
+						System.out.flush();
+					}
+					process(l);
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		public Vector<String> getData() {
+			if(dataList != null) {
+				data = new Vector<String>(dataList);
+			}
+			return data;
+		}
+		protected void process(String l) {
+			if(dataList == null) data.add(l);
+			else {
+				dataList.offer(l);
+				if(dataList.size() > limit) dataList.remove();
+			}			
+		}
+		public String getMessage() {
+			return this.data.toString();
+		}
+		public void setEcho(boolean b) {
+			doEcho  = b;			
+		}
+		public void setStatusEcho(boolean b) {
+			doStatusEcho = 1;			
+		}
+	}
 	private boolean checkBound(String[] cmd, long m) throws IOException {
 		writeQueryFile(queryFile, m);
 		long start = System.nanoTime();
 		Process verifier = Runtime.getRuntime().exec(cmd);
-		InputStream is = new BufferedInputStream(verifier.getInputStream());
+		StreamReaderThread outLines = new StreamReaderThread(verifier.getInputStream(),3);
+		//outLines.setEcho(true);
+		outLines.setStatusEcho(true);
+		outLines.run();
+		StreamReaderThread errLines = new StreamReaderThread(verifier.getErrorStream());
+		errLines.run();
 		try {
 			if(verifier.waitFor() != 0) {
-				InputStream eis = new BufferedInputStream(verifier.getErrorStream());
-				BufferedInputStream ebis = new BufferedInputStream(eis);
-				BufferedReader ebr = new BufferedReader(new InputStreamReader(ebis));
-				String l;
-				while((l=ebr.readLine()) != null) logger.error("verifyta: "+l);
+				logger.error("verifyta: "+errLines.getMessage());
 				throw new IOException("Uppaal verifier terminated with exit code: "+verifier.exitValue());
 			} else {
 				long stop  = System.nanoTime();
-				lastSolverTime = ((double)(stop-start)) / 1.0E9;				
+				maxSolverTime = Math.max(maxSolverTime,((double)(stop-start)) / 1.0E9);				
 			}
 		} catch (InterruptedException e) {
 			throw new IOException("Interrupted while waiting for verifier to finish");
 		}
-		BufferedInputStream bis = new BufferedInputStream(is);
-		BufferedReader br = new BufferedReader(new InputStreamReader(bis));
-		return checkIfSafe(br);	
+		return checkIfSafe(outLines.getData());	
 	}
 	private String getQuery(long bound) {
 		return "A[] (M0.E imply t<="+bound+")";
@@ -94,14 +155,11 @@ public class WcetSearch {
 		fw.write('\n');
 		fw.close();		
 	}
-	private boolean checkIfSafe(BufferedReader br) throws IOException {
-		String l,last=null;
-		while(null != (l=br.readLine())) {
-			last = l; 
-		}
-		if(last == null) {
+	private boolean checkIfSafe(Vector<String> vector) throws IOException {
+		if(vector.size() == 0) {
 			throw new IOException("No output from verifyta");
 		}
+		String last = vector.lastElement();
 		if(last.matches(".*NOT satisfied.*")) {
 			return false;
 		} else if(last.matches(".*Property is satisfied.*")) {

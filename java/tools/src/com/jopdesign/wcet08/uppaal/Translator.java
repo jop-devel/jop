@@ -25,8 +25,8 @@ import java.io.PrintStream;
 import java.util.List;
 import org.apache.log4j.Logger;
 import com.jopdesign.build.MethodInfo;
-import com.jopdesign.wcet08.Config;
 import com.jopdesign.wcet08.Project;
+import com.jopdesign.wcet08.config.Config;
 import com.jopdesign.wcet08.frontend.CallGraph;
 import com.jopdesign.wcet08.uppaal.model.DuplicateKeyException;
 import com.jopdesign.wcet08.uppaal.model.XmlBuilder;
@@ -40,8 +40,11 @@ public class Translator {
 	private Project project;
 	private SystemBuilder sys;
 
-	public Translator(Project p) {
+	private File outDir;
+
+	public Translator(Project p, File outDir) {
 		this.project = p;
+		this.outDir = outDir;
 	}
 	
 	public SystemBuilder translateProgram() throws DuplicateKeyException {
@@ -49,6 +52,9 @@ public class Translator {
 		CallGraph callGraph = project.getCallGraph();
 		// logger.info("Call stack depth: "+callGraph.getMaxHeight());
 		List<MethodInfo> impls = callGraph.getImplementedMethods();
+		if(! impls.get(0).equals(project.getMeasuredMethod())) {
+			throw new AssertionError("Bad callgraph: measured method has to be the root node");
+		}
 		/* Create system builder */
 		sys = new SystemBuilder(
 				project, 
@@ -56,14 +62,15 @@ public class Translator {
 				impls.size());
 		/* Translate methods */
 		boolean collapseLeafs = Config.instance().getOption(UppAalConfig.UPPAAL_COLLAPSE_LEAVES);
-		for(MethodInfo mi : impls) {
-			MethodBuilder transl = new MethodBuilder(project,mi);
-			if(mi.equals(project.getMeasuredMethod())) {
-				sys.addTemplate(0,transl.buildRootMethod());				
-			} else if(! collapseLeafs || ! project.getCallGraph().isLeafNode(mi)){
-				sys.addTemplate(transl.getId(),transl.buildMethod());
+		sys.addTemplate(0,new MethodBuilder(sys, 0, impls.get(0)).buildRootMethod());
+		for(int i = 1; i < impls.size(); i++) {
+			MethodInfo mi = impls.get(i);
+			if(! collapseLeafs || ! project.getCallGraph().isLeafNode(mi)) {
+				MethodBuilder transl = new MethodBuilder(sys, i, mi);
+				sys.addTemplate(i,transl.buildMethod());
 			}
 		}
+
 		/* build the system */
 		sys.buildSystem();
 		return sys;
@@ -73,11 +80,8 @@ public class Translator {
 		String xml = XmlBuilder.domToString(sys.toXML());
 		PrintStream outStreamXML = System.out, outStreamQ = System.out;
 		File fileTemplate = null;
-		Config config = Config.instance();
-		if(config.getOutDir() != null) {
-			outStreamXML = new PrintStream(getModelFile());
-			outStreamQ = new PrintStream(getQueryFile());
-		}
+		outStreamXML = new PrintStream(getModelFile());
+		outStreamQ = new PrintStream(getQueryFile());
 		outStreamXML.println(xml);
 
 		StringBuilder stringBuilder = new StringBuilder();
@@ -95,11 +99,11 @@ public class Translator {
 	}
 
 	public File getModelFile() {
-		return Config.instance().getOutFile(project.getTargetName()+".xml");
+		return new File(outDir,project.getTargetName()+".xml");
 	}
 
 	public File getQueryFile() {
-		return Config.instance().getOutFile(project.getTargetName()+".q");
+		return new File(outDir,project.getTargetName()+".q");
 	}
 
 }

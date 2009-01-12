@@ -20,22 +20,24 @@
 package com.jopdesign.wcet08.ipet;
 
 import java.util.Vector;
+import java.util.Map.Entry;
 
 import com.jopdesign.wcet08.Project;
 import com.jopdesign.wcet08.frontend.ControlFlowGraph;
+import com.jopdesign.wcet08.frontend.SuperGraph;
 import com.jopdesign.wcet08.frontend.ControlFlowGraph.CFGEdge;
 import com.jopdesign.wcet08.frontend.ControlFlowGraph.CFGNode;
+import com.jopdesign.wcet08.frontend.SuperGraph.SuperInvokeEdge;
+import com.jopdesign.wcet08.frontend.SuperGraph.SuperReturnEdge;
 import com.jopdesign.wcet08.graphutils.LoopColoring;
 import com.jopdesign.wcet08.ipet.LinearConstraint.ConstraintType;
 
 /**
- * Perform local (per method) WCET analysis using DFA+IPET.
- * The local analysis is preceeded by a static (e.g. dataflow) analysis, 
- * which in turn invokes local analysis for referenced methods.
+ * Build an ILP model for determining the WCET. 
  * 
  * @author Benedikt Huber (benedikt.huber@gmail.com)
  */
-public class LocalAnalysis {
+public class ILPModelBuilder {
 	/**
 	 * Implementors provide cost for objects of type T
 	 * @param <T>
@@ -44,7 +46,7 @@ public class LocalAnalysis {
 		public long getCost(T obj);
 	}
 	Project project;
-	public LocalAnalysis(Project project) {
+	public ILPModelBuilder(Project project) {
 		this.project = project;
 	}
 	/**
@@ -56,8 +58,9 @@ public class LocalAnalysis {
 	 * @return The max-cost maxflow problem
 	 */
 	public MaxCostFlow<CFGNode,CFGEdge> 
-		buildWCETProblem(String key, ControlFlowGraph g,CostProvider<CFGNode> nodeWCET) {
-		Vector<FlowConstraint> flowCs = computeFlowConstraints(g);
+		buildLocalILPModel(String key, ControlFlowGraph g,CostProvider<CFGNode> nodeWCET) {
+		Vector<FlowConstraint> flowCs = topLevelEntryExitConstraints(g);
+		flowCs.addAll(loopBoundConstraints(g));
 		MaxCostFlow<CFGNode,CFGEdge> maxflow = 
 			new MaxCostFlow<CFGNode,CFGEdge>(key,g.getGraph(),g.getEntry(),g.getExit());
 		for(CFGNode n : g.getGraph().vertexSet()) {
@@ -67,11 +70,41 @@ public class LocalAnalysis {
 		return maxflow;
 	}
 	/**
-	 * Compute flow constraints for the given flow graph
-	 * @param g the flow graph
-	 * @return A list of flow constraints
+	 * Create an interprocedural max-cost max-flow problem for the given flow graph 
+	 * based on a given node to cost mapping.
+	 * @param key a unique identifier for the problem (for reporting)
+	 * @param g the graph
+	 * @param nodeWCET cost of nodes
+	 * @return The max-cost maxflow problem
 	 */
-	public Vector<FlowConstraint> computeFlowConstraints(ControlFlowGraph g) {
+	public MaxCostFlow<CFGNode,CFGEdge> 
+		buildGlobalILPModel(String key, SuperGraph sg, CostProvider<CFGNode> nodeWCET) {
+		ControlFlowGraph top = sg.getTopCFG();
+		Vector<FlowConstraint> flowCs = topLevelEntryExitConstraints(top);
+		for(ControlFlowGraph cfg : sg.getControlFlowGraphs()) {
+			flowCs.addAll(loopBoundConstraints(cfg));
+		}
+		for(Entry<SuperInvokeEdge,SuperReturnEdge> superEdgePair : sg.getSuperEdgePairs().entrySet()) {
+			flowCs.add(superEdgeConstraint(superEdgePair.getKey(), superEdgePair.getValue()));
+		}
+		MaxCostFlow<CFGNode,CFGEdge> maxflow = 
+			new MaxCostFlow<CFGNode,CFGEdge>(key,sg,sg.getTopEntry(),sg.getTopExit());
+		for(CFGNode n : sg.vertexSet()) {
+			maxflow.setCost(n, nodeWCET.getCost(n));
+		}
+		for(FlowConstraint c : flowCs) maxflow.addFlowConstraint(c);
+		return maxflow;
+	}
+	private FlowConstraint superEdgeConstraint(SuperInvokeEdge in, SuperReturnEdge out) {
+		FlowConstraint pairConstraint = new FlowConstraint(ConstraintType.Equal);
+		pairConstraint.addLHS(in);
+		pairConstraint.addRHS(out);
+		return pairConstraint;		
+	}
+	/**
+	 * Top level flow constraints: flow out of entry and flow into exit should be 1
+	 */
+	private Vector<FlowConstraint> topLevelEntryExitConstraints(ControlFlowGraph g) {
 		Vector<FlowConstraint> constraints = new Vector<FlowConstraint>();
 		// sum (e_Entry_x) = 1		
 		FlowConstraint entryConstraint = new FlowConstraint(ConstraintType.Equal);
@@ -87,6 +120,16 @@ public class LocalAnalysis {
 			exitConstraint.addLHS(exitEdge);
 		}
 		constraints.add(exitConstraint);
+		return constraints;
+	}
+	
+	/**
+	 * Compute flow constraints: Loop Bound constraints
+	 * @param g the flow graph
+	 * @return A list of flow constraints
+	 */
+	private Vector<FlowConstraint> loopBoundConstraints(ControlFlowGraph g) {
+		Vector<FlowConstraint> constraints = new Vector<FlowConstraint>();
 		// - for each loop with bound B
 		// -- sum(exit_loop_edges) * B <= sum(continue_loop_edges)
 		LoopColoring<CFGNode, CFGEdge> loops = g.getLoopColoring();

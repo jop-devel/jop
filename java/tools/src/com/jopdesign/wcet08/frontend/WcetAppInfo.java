@@ -42,9 +42,10 @@ import com.jopdesign.build.MethodInfo;
 import com.jopdesign.dfa.framework.ContextMap;
 import com.jopdesign.tools.JopInstr;
 import com.jopdesign.wcet.WCETInstruction;
-import com.jopdesign.wcet08.Config;
 import com.jopdesign.wcet08.Project;
-import com.jopdesign.wcet08.Config.MissingConfigurationError;
+import com.jopdesign.wcet08.ProjectConfig;
+import com.jopdesign.wcet08.config.Config;
+import com.jopdesign.wcet08.config.Config.MissingConfigurationError;
 import com.jopdesign.wcet08.frontend.SourceAnnotations.BadAnnotationException;
 import com.jopdesign.wcet08.frontend.SourceAnnotations.LoopBound;
 import com.jopdesign.wcet08.graphutils.TopOrder.BadGraphException;
@@ -109,7 +110,7 @@ public class WcetAppInfo  {
 	 * @param methodName The name of the method to be searched. 
 	 * 				     Note that the signature is optional if the method name is unique.
 	 * @return The method searched for, or null if it couldn't be found
-	 * @throws MethodNotFoundException if the method couldn't be found or is ambigous
+	 * @throws MethodNotFoundException if the method couldn't be found or is ambiguous
 	 */
 	public MethodInfo searchMethod(String className, String methodName) throws MethodNotFoundException {
 		ClassInfo cli = getCliMap().get(className);
@@ -120,20 +121,29 @@ public class WcetAppInfo  {
 		MethodInfo mi = null;
 		if(methodName.indexOf("(") > 0) {
 			mi = cli.getMethodInfo(methodName);
+			if(mi == null) {
+				throw new MethodNotFoundException("The fully qualified method '"+methodName+"' could not be found in "+
+						cli.getMethodInfoMap().keySet());
+			}
 		} else {
 			for(MethodInfo candidate : cli.getMethods()) {
 				if(methodName.equals(candidate.getMethod().getName())) {
 					if(mi == null) {
 						mi = candidate;
 					} else {
-						throw new MethodNotFoundException("The method name "+methodName+" is ambigous."+
+						throw new MethodNotFoundException("The method name "+methodName+" is ambiguous."+
 														  "Both "+mi.methodId+" and "+candidate.methodId+" match");
 					}
 				}
 			}			
-		}
-		if(mi == null) {
-			throw new MethodNotFoundException("The method "+cli.toString()+"."+methodName+" could not be found");
+			if(mi == null) {
+				Vector<String> candidates = new Vector<String>();
+				for(MethodInfo candidate : cli.getMethods()) {
+					candidates.add(candidate.getMethod().getName());
+				}
+				throw new MethodNotFoundException("The method "+methodName+"could not be found in "+cli.toString()+". "+
+												  "Candidates: "+candidates);
+			}
 		}
 		return mi;
 	}
@@ -282,75 +292,6 @@ public class WcetAppInfo  {
 		}
 	}
 
-	/*
-	 * DEMO
-	 * ~~~~
-	 */
-
-	public static String USAGE = 
-		"Usage: java [-Dconfig=file://<config.props>] "+ 
-		WcetAppInfo.class.getCanonicalName()+
-		" [-outdir outdir] [-cp classpath] package.rootclass.rootmethod";
-
-	/* small demo using the class loader */	
-	public static void main(String[] argv) {
-
-		try {
-			String[] argvrest = Config.load(System.getProperty("config"), argv);
-			Config config = Config.instance();
-			config.setProjectName("typegraph");			
-			if(argvrest.length == 1) {
-				String target = argvrest[0];
-				if(target.indexOf('(') > 0) target = target.substring(0,target.indexOf('('));
-				config.setProperty(Config.APP_CLASS_NAME.getKey(), target.substring(0,target.lastIndexOf('.')));
-				config.setProperty(Config.TARGET_METHOD.getKey(),argvrest[0]);
-			}
-			config.checkPresent(Config.REPORTDIR_PROPERTY);
-			config.initializeReport();
-		} catch(MissingConfigurationError e) {
-			System.err.println(e);
-			System.err.println(USAGE);
-			System.exit(1);
-		} catch (Exception e) {
-			e.printStackTrace();
-			System.exit(1);
-		}
-		AppInfo ai = null;
-		try {
-			Config config = Config.instance();
-			System.out.println("Classloader Demo: "+config.getAppClassName());
-			String rootClass = config.getAppClassName();
-			String rootPkg = rootClass.substring(0,rootClass.lastIndexOf("."));
-
-			ai = Project.loadApp();
-			WcetAppInfo wcetAi = new WcetAppInfo(ai);
-			ClassInfo ci = wcetAi.getClassInfo(config.getAppClassName());
-			System.out.println("Source file: "+ci.clazz.getSourceFileName());
-			System.out.println("Root class: "+ci.clazz.toString());
-			{ 
-				System.out.println("Writing type graph to "+config.getOutFile("typegraph.png"));
-				File dotFile = config.getOutFile("typegraph.dot");
-				FileWriter dotWriter = new FileWriter(dotFile);
-				wcetAi.getTypeGraph().exportDOT(dotWriter,rootPkg);			
-				dotWriter.close();			
-				InvokeDot.invokeDot(dotFile, config.getOutFile("typegraph.png"));
-			}
-			CallGraph cg = CallGraph.buildCallGraph(wcetAi, config.getMeasuredClass(), config.getMeasuredMethod());			
-			{
-				System.out.println("Writing call graph to "+config.getOutFile("callgraph.png"));
-				File dotFile = config.getOutFile("callgraph.dot");
-				FileWriter dotWriter = new FileWriter(dotFile);
-				cg.exportDOT(dotWriter);			
-				dotWriter.close();			
-				InvokeDot.invokeDot(dotFile, config.getOutFile("callgraph.png"));
-			}
-			
-		} catch (IOException e) {
-			e.printStackTrace();
-		} catch (MethodNotFoundException e) {
-			e.printStackTrace();
-		}
-	}
 
 	public AppInfo getAppInfo() {
 		return this.ai;
@@ -378,6 +319,8 @@ public class WcetAppInfo  {
 				fg.loadAnnotations(p);
 				fg.resolveVirtualInvokes();
 //				fg.insertSplitNodes();
+//				fg.insertSummaryNodes();
+				fg.insertReturnNodes();
 			} catch (BadAnnotationException e) {
 				logger.error("Bad annotation: "+e);
 				throw e;
@@ -400,6 +343,76 @@ public class WcetAppInfo  {
 	public void setReceivers(
 			Map<InstructionHandle, ContextMap<String, String>> receiverResults) {
 		this.receiverAnalysis = receiverResults;
+	}
+	
+	/*
+	 * DEMO
+	 * ~~~~
+	 */
+
+	public static String USAGE = 
+		"Usage: java [-Dconfig=file://<config.props>] "+ 
+		WcetAppInfo.class.getCanonicalName()+
+		" [-outdir outdir] [-cp classpath] package.rootclass.rootmethod";
+
+	/* small demo using the class loader */	
+	public static void main(String[] argv) {
+		ProjectConfig pConfig = null;
+		try {
+			String[] argvrest = Config.load(System.getProperty("config"), argv);
+			Config config = Config.instance();
+			pConfig = new ProjectConfig(config);
+			if(argvrest.length == 1) {
+				String target = argvrest[0];
+				if(target.indexOf('(') > 0) target = target.substring(0,target.indexOf('('));
+				config.setProperty(ProjectConfig.APP_CLASS_NAME.getKey(), target.substring(0,target.lastIndexOf('.')));
+				config.setProperty(ProjectConfig.TARGET_METHOD.getKey(),argvrest[0]);
+			}
+			config.checkOptions();
+		} catch(MissingConfigurationError e) {
+			System.err.println(e);
+			System.err.println(USAGE);
+			System.exit(1);
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.exit(1);
+		}
+		AppInfo ai = null;
+		try {
+			Config config = Config.instance();
+			System.out.println("Classloader Demo: "+pConfig.getAppClassName());
+			String rootClass = pConfig.getAppClassName();
+			String rootPkg = rootClass.substring(0,rootClass.lastIndexOf("."));
+			config.setOption(ProjectConfig.PROJECT_NAME, "typegraph");
+			Project p = new Project(config);
+			ai = p.loadApp();
+			WcetAppInfo wcetAi = new WcetAppInfo(ai);
+			ClassInfo ci = wcetAi.getClassInfo(pConfig.getAppClassName());
+			System.out.println("Source file: "+ci.clazz.getSourceFileName());
+			System.out.println("Root class: "+ci.clazz.toString());
+			{ 
+				System.out.println("Writing type graph to "+p.getOutFile("typegraph.png"));
+				File dotFile = p.getOutFile("typegraph.dot");
+				FileWriter dotWriter = new FileWriter(dotFile);
+				wcetAi.getTypeGraph().exportDOT(dotWriter,rootPkg);			
+				dotWriter.close();
+				InvokeDot.invokeDot(dotFile, p.getOutFile("typegraph.png"));
+			}
+			CallGraph cg = CallGraph.buildCallGraph(wcetAi, pConfig.getMeasuredClass(), pConfig.getMeasuredMethod());			
+			{
+				System.out.println("Writing call graph to "+p.getOutFile("callgraph.png"));
+				File dotFile = p.getOutFile("callgraph.dot");
+				FileWriter dotWriter = new FileWriter(dotFile);
+				cg.exportDOT(dotWriter);			
+				dotWriter.close();			
+				InvokeDot.invokeDot(dotFile, p.getOutFile("callgraph.png"));
+			}
+			
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (MethodNotFoundException e) {
+			e.printStackTrace();
+		}
 	}
 
 }

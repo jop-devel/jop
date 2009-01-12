@@ -310,13 +310,30 @@ public class CallGraph {
 		return methodInfos.keySet();
 	}
 	/**
-	 * get non-abstract methods, in topological orer
+	 * get non-abstract methods, in topological order
+	 * requires an acyclic callgraph.
 	 * @return
 	 */
 	public List<MethodInfo> getImplementedMethods() {
 		List<MethodInfo> implemented = new Vector<MethodInfo>();
 		TopologicalOrderIterator<CallGraphNode, DefaultEdge> ti = 
 			new TopologicalOrderIterator<CallGraphNode, DefaultEdge>(callGraph);
+		while(ti.hasNext()) {
+			MethodInfo m = ti.next().getMethodImpl();
+			if(m != null) implemented.add(m);
+		}		
+		return implemented;
+	}
+	/**
+	 * get non-abstract methods reachable from the given method, in DFS order
+	 * @return
+	 */
+	public List<MethodInfo> getReachableImplementations(MethodInfo rootMethod) {
+		List<MethodInfo> implemented = new Vector<MethodInfo>();
+		CallGraphNode root = this.getNode(MethodRef.fromMethodInfo(rootMethod));
+		DepthFirstIterator<CallGraphNode, DefaultEdge> ti =
+			new DepthFirstIterator<CallGraphNode, DefaultEdge>(callGraph,root);
+		ti.setCrossComponentTraversal(false);
 		while(ti.hasNext()) {
 			MethodInfo m = ti.next().getMethodImpl();
 			if(m != null) implemented.add(m);
@@ -432,6 +449,26 @@ public class CallGraph {
 
 	 public int getMaxHeight() {
 		return this.getMaximalCallStack().size();
+	}
+	public ControlFlowGraph getLargestMethod() {
+		ControlFlowGraph largest = null;
+		int maxBytes = 0;
+		for(MethodInfo mi : this.getImplementedMethods()) {
+			ControlFlowGraph cfg = appInfo.getFlowGraph(mi);
+			int bytes = cfg.getNumberOfBytes();
+			if(bytes > maxBytes) {
+				largest = cfg;
+				maxBytes = bytes;
+			}
+		}
+		return largest;
+	}
+	public int getTotalSizeInBytes() {
+		int bytes = 0;
+		for (MethodInfo mi : this.getImplementedMethods()) {
+			 bytes += appInfo.getFlowGraph(mi).getNumberOfBytes();
+		}
+		return bytes;
 	}
 	
 }

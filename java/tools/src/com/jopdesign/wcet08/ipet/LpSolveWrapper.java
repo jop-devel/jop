@@ -20,13 +20,13 @@
 package com.jopdesign.wcet08.ipet;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.Map.Entry;
 
 import com.jopdesign.wcet08.graphutils.IDProvider;
 import com.jopdesign.wcet08.ipet.LinearConstraint.ConstraintType;
-
 import lpsolve.LpSolve;
 import lpsolve.LpSolveException;
 
@@ -73,20 +73,29 @@ public class LpSolveWrapper<T> {
 		int[] ixs;
 		double[] coeffs;
 	}
-	private RawVector buildRawVector(LinearVector<T> inputVector) 
+	private RawVector buildRawVector(LinearVector<? extends T> inputVector) 
 		throws LpSolveException {
 		RawVector vec = new RawVector();
 		vec.count = inputVector.size();
 		vec.ixs = new int[vec.count];
 		vec.coeffs = new double[vec.count];
 		int i = 0;
-		for(Entry<T,Long> e : inputVector.getCoeffs().entrySet()) {
+		for(Entry<? extends T,Long> e : inputVector.getCoeffs().entrySet()) {
 			int objId = idProvider.getID(e.getKey());
 			if(objId < 1 || objId > numVars) {
 				throw new LpSolveException("Bad id: "+e+"has id "+objId+" not in [1.."+numVars+"]");
 			}
-			vec.ixs[i] = objId;
-			vec.coeffs[i] = e.getValue();
+			vec.ixs[i] = objId;			
+			long val = e.getValue();
+			double dval;
+			if(val == Long.MAX_VALUE) {
+				dval = 10000000.0; /* Fixme: What value to choose for Big M  ? difficult */
+			} else if (val == Long.MIN_VALUE) {
+				dval = 10000000.0;
+			} else {
+				dval = (double)val;
+			}
+			vec.coeffs[i] = dval;
 			i++;
 		}
 		return vec;
@@ -126,8 +135,8 @@ public class LpSolveWrapper<T> {
 	 * @param linearConstraint the linear constraint
 	 * @throws LpSolveException
 	 */
-	public void addConstraint(LinearConstraint<T> linearConstraint) throws LpSolveException {
-		LinearVector<T> row = linearConstraint.getLinearVectorOnLHS();
+	public void addConstraint(LinearConstraint<? extends T> linearConstraint) throws LpSolveException {
+		LinearVector<? extends T> row = linearConstraint.getLinearVectorOnLHS();
 		RawVector rawVector = buildRawVector(row);
 		int constrType = mapConstraintType(linearConstraint.getConstraintType());
 		double rh = linearConstraint.getInhomogenousTermOnRHS();
@@ -140,7 +149,7 @@ public class LpSolveWrapper<T> {
 	 * @param doMax whether to maximize (if false, minimize)
 	 * @throws LpSolveException
 	 */
-	public void setObjective(LinearVector<T> objVector, boolean doMax) 
+	public void setObjective(LinearVector<? extends T> objVector, boolean doMax) 
 		throws LpSolveException {
 		RawVector rawVec = buildRawVector(objVector);
 		this.lpsolve.setObjFnex(rawVec.count, rawVec.coeffs, rawVec.ixs);
@@ -148,22 +157,37 @@ public class LpSolveWrapper<T> {
 		else      lpsolve.setMinim();
 	}
 	/**
+	 * Turn row mode off - changes are expensive now,
+	 * but possible to dump ILP
+	 */
+	public void freeze() {
+		this.lpsolve.setAddRowmode(false);
+	}
+
+	/**
 	 * Solve the I(LP)
 	 * @param objVec if non-null, write the solution into this array
 	 * @return the objective value
 	 * @throws LpSolveException
 	 */
 	public double solve(double[] objVec) throws LpSolveException {
-		this.lpsolve.setAddRowmode(false);
+		freeze();
 		long start = System.nanoTime();
 		int r = this.lpsolve.solve();
 		long stop = System.nanoTime();
 		LpSolveWrapper.solverTime +=(stop-start);
 		SolverStatus st = getSolverStatus(r);
-		if(st != SolverStatus.OPTIMAL) {
-			throw new LpSolveException("Failed to solve LP problem: "+st);
-		}
 		if(objVec != null) this.lpsolve.getVariables(objVec);
+		if(st != SolverStatus.OPTIMAL) {
+			if(objVec != null) {
+				int i = 0;
+				for(double obj : objVec) {
+					System.out.println(String.format("Objective entry %d: %.2f",i++,obj));
+				}
+			}
+			throw new LpSolveException("Failed to solve LP problem: "+st+" // "+ 
+					(objVec != null ? Arrays.toString(objVec) : " no info "));
+		}
 		return this.lpsolve.getObjective();
 	}
 	
@@ -178,5 +202,12 @@ public class LpSolveWrapper<T> {
 	public void dumpToFile(File outFile) throws LpSolveException {
 		outFile.delete();
 		this.lpsolve.writeLp(outFile.getPath());		
+	}
+	public void setBinary(T dv) {
+		try {
+			this.lpsolve.setBinary(this.idProvider.getID(dv), true);
+		} catch (LpSolveException e) {
+			throw new AssertionError("setBinary failed for dv "+dv);
+		}
 	}
 }

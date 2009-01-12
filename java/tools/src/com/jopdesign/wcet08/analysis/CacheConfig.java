@@ -19,9 +19,9 @@
 */
 package com.jopdesign.wcet08.analysis;
 
-import com.jopdesign.wcet08.Option;
-import com.jopdesign.wcet08.Option.EnumOption;
-import com.jopdesign.wcet08.Option.IntegerOption;
+import com.jopdesign.wcet08.config.EnumOption;
+import com.jopdesign.wcet08.config.IntegerOption;
+import com.jopdesign.wcet08.config.Option;
 
 public class CacheConfig {
 	/**
@@ -41,7 +41,7 @@ public class CacheConfig {
 		new IntegerOption("cache-blocks","number of cache blocks",16);
 
 	public static final IntegerOption BLOCK_SIZE_WORDS =
-		new Option.IntegerOption("cache-block-size-words",
+		new IntegerOption("cache-block-size-words",
 								 "size of cache blocks in bytes",
 								 64);
 		
@@ -49,5 +49,5 @@ public class CacheConfig {
 		CACHE_APPROX, CACHE_BLOCKS, BLOCK_SIZE_WORDS
 	};
 
-	public enum CacheApproximation { ALWAYS_HIT, ALWAYS_MISS, ANALYSE_REACHABLE};
+	public enum CacheApproximation { ALWAYS_HIT, ALWAYS_MISS, ANALYSE_REACHABLE, ALL_FIT};
 }

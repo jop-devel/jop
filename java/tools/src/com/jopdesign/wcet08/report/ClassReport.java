@@ -10,7 +10,6 @@ import java.util.Properties;
 import java.util.TreeMap;
 
 import com.jopdesign.build.ClassInfo;
-import com.jopdesign.wcet08.Config;
 
 public class ClassReport {
 	public static class JavaSource {
@@ -100,10 +99,10 @@ public class ClassReport {
 		return source;
 	}
 
-	public ClassReport(ClassInfo ci) {
+	public ClassReport(ClassInfo ci, File sourceFile) {
 		this.ci = ci;
 		try {
-			this.source = JavaSource.readSource(Config.instance().getSourceFile(ci));
+			this.source = JavaSource.readSource(sourceFile);
 		} catch (IOException e) {
 			this.source = null;
 		}
