@@ -35,9 +35,8 @@ public class SRSWQueue<T> {
 	
 	/**
 	 * The buffer, manipulated by the reader and writer.
-	 * One issue: the array content should be volatile.
 	 */
-	private volatile T[] data;
+	private volatile Object[] data;
 	/**
 	 * Read pointer, manipulated only by the reader.
 	 */
@@ -53,8 +52,13 @@ public class SRSWQueue<T> {
 	 * more element than the intended buffer size.
 	 */
 	public SRSWQueue(int capacity) {
-		T[] ts = (T[]) new Object[capacity+1];
-		data = ts;
+		// the following does not work on JOP with
+		// the Sun javac as it produces a checkcast
+		// and we have not yet implemented checkcast
+		// for array types
+//		T[] ts = (T[]) new Object[capacity+1];
+//		data = ts;
+		data = new Object[capacity+1];
 		rdPtr = wrPtr = 0;
 	}
 	
@@ -96,7 +100,7 @@ public class SRSWQueue<T> {
 	public T deq() {
 		if (rdPtr==wrPtr) return null;
 		int i =rdPtr;
-		T val = data[i++];
+		T val = (T) data[i++];
 		if (i>=data.length) i=0;
 		rdPtr = i;
 		return val;
