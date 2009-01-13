@@ -56,6 +56,8 @@ public class yportenv
 	
 	public static final int YAFFS_TRACE_ALWAYS =		0x40000000;
 	public static final int YAFFS_TRACE_BUG =			0x80000000;
+	
+	public static final boolean LOGGING = false;
 
 	public static void T(int mask, String p)
 	{
@@ -69,72 +71,82 @@ public class yportenv
 //		printfBuffer[7] = arg7;
 //		printfBuffer[8] = arg8;
 
-		if(((mask) & (yaffs2.utils.Globals.yaffs_traceMask | YAFFS_TRACE_ERROR)) != 0)
-			Unix.printf(p);
+		if (LOGGING) {
+			if(((mask) & (yaffs2.utils.Globals.yaffs_traceMask | YAFFS_TRACE_ERROR)) != 0)
+				Unix.printf(p);			
+		}
 	}
 	
 	public static void T(int mask, String p, PrimitiveWrapper arg0)
 	{
-		Unix.xprintfArgs[0] = arg0; 
-//		printfBuffer[1] = arg1;
-//		printfBuffer[2] = arg2;
-//		printfBuffer[3] = arg3;
-//		printfBuffer[4] = arg4;
-//		printfBuffer[5] = arg5;
-//		printfBuffer[6] = arg6;
-//		printfBuffer[7] = arg7;
-//		printfBuffer[8] = arg8;
+		if (LOGGING) {
+			Unix.xprintfArgs[0] = arg0; 
+//			printfBuffer[1] = arg1;
+//			printfBuffer[2] = arg2;
+//			printfBuffer[3] = arg3;
+//			printfBuffer[4] = arg4;
+//			printfBuffer[5] = arg5;
+//			printfBuffer[6] = arg6;
+//			printfBuffer[7] = arg7;
+//			printfBuffer[8] = arg8;
 
-		if(((mask) & (yaffs2.utils.Globals.yaffs_traceMask | YAFFS_TRACE_ERROR)) != 0)
-			Unix.printf(p);
+			if(((mask) & (yaffs2.utils.Globals.yaffs_traceMask | YAFFS_TRACE_ERROR)) != 0)
+				Unix.printf(p);
+		}
 	}
 	
 	public static void T(int mask, String p, PrimitiveWrapper arg0, PrimitiveWrapper arg1)
 	{
-		Unix.xprintfArgs[0] = arg0; 
-		Unix.xprintfArgs[1] = arg1;
-//		printfBuffer[2] = arg2;
-//		printfBuffer[3] = arg3;
-//		printfBuffer[4] = arg4;
-//		printfBuffer[5] = arg5;
-//		printfBuffer[6] = arg6;
-//		printfBuffer[7] = arg7;
-//		printfBuffer[8] = arg8;
+		if (LOGGING) {
+			Unix.xprintfArgs[0] = arg0; 
+			Unix.xprintfArgs[1] = arg1;
+//			printfBuffer[2] = arg2;
+//			printfBuffer[3] = arg3;
+//			printfBuffer[4] = arg4;
+//			printfBuffer[5] = arg5;
+//			printfBuffer[6] = arg6;
+//			printfBuffer[7] = arg7;
+//			printfBuffer[8] = arg8;
 
-		if(((mask) & (yaffs2.utils.Globals.yaffs_traceMask | YAFFS_TRACE_ERROR)) != 0)
-			Unix.printf(p);
+			if(((mask) & (yaffs2.utils.Globals.yaffs_traceMask | YAFFS_TRACE_ERROR)) != 0)
+				Unix.printf(p);
+		}
 	}
 
 	public static void T(int mask, String p, PrimitiveWrapper arg0, PrimitiveWrapper arg1, PrimitiveWrapper arg2)
 	{
-		Unix.xprintfArgs[0] = arg0; 
-		Unix.xprintfArgs[1] = arg1;
-		Unix.xprintfArgs[2] = arg2;
-//		printfBuffer[3] = arg3;
-//		printfBuffer[4] = arg4;
-//		printfBuffer[5] = arg5;
-//		printfBuffer[6] = arg6;
-//		printfBuffer[7] = arg7;
-//		printfBuffer[8] = arg8;
+		if (LOGGING) {
+			Unix.xprintfArgs[0] = arg0; 
+			Unix.xprintfArgs[1] = arg1;
+			Unix.xprintfArgs[2] = arg2;
+//			printfBuffer[3] = arg3;
+//			printfBuffer[4] = arg4;
+//			printfBuffer[5] = arg5;
+//			printfBuffer[6] = arg6;
+//			printfBuffer[7] = arg7;
+//			printfBuffer[8] = arg8;
 
-		if(((mask) & (yaffs2.utils.Globals.yaffs_traceMask | YAFFS_TRACE_ERROR)) != 0)
-			Unix.printf(p);
+			if(((mask) & (yaffs2.utils.Globals.yaffs_traceMask | YAFFS_TRACE_ERROR)) != 0)
+				Unix.printf(p);
+		}
 	}
 	
 	public static void T(int mask, String p, PrimitiveWrapper arg0, PrimitiveWrapper arg1, PrimitiveWrapper arg2, PrimitiveWrapper arg3)
 	{
-		Unix.xprintfArgs[0] = arg0; 
-		Unix.xprintfArgs[1] = arg1;
-		Unix.xprintfArgs[2] = arg2;
-		Unix.xprintfArgs[3] = arg3;
-//		printfBuffer[4] = arg4;
-//		printfBuffer[5] = arg5;
-//		printfBuffer[6] = arg6;
-//		printfBuffer[7] = arg7;
-//		printfBuffer[8] = arg8;
+		if (LOGGING) {
+			Unix.xprintfArgs[0] = arg0; 
+			Unix.xprintfArgs[1] = arg1;
+			Unix.xprintfArgs[2] = arg2;
+			Unix.xprintfArgs[3] = arg3;
+//			printfBuffer[4] = arg4;
+//			printfBuffer[5] = arg5;
+//			printfBuffer[6] = arg6;
+//			printfBuffer[7] = arg7;
+//			printfBuffer[8] = arg8;
 
-		if(((mask) & (yaffs2.utils.Globals.yaffs_traceMask | YAFFS_TRACE_ERROR)) != 0)
-			Unix.printf(p);
+			if(((mask) & (yaffs2.utils.Globals.yaffs_traceMask | YAFFS_TRACE_ERROR)) != 0)
+				Unix.printf(p);
+		}
 	}
 	
 	public static void T(int mask, String p, 
@@ -142,18 +154,20 @@ public class yportenv
 			PrimitiveWrapper arg4, PrimitiveWrapper arg5, PrimitiveWrapper arg6, PrimitiveWrapper arg7,
 			PrimitiveWrapper arg8)
 	{		
-		Unix.xprintfArgs[0] = arg0; 
-		Unix.xprintfArgs[1] = arg1;
-		Unix.xprintfArgs[2] = arg2;
-		Unix.xprintfArgs[3] = arg3;
-		Unix.xprintfArgs[4] = arg4;
-		Unix.xprintfArgs[5] = arg5;
-		Unix.xprintfArgs[6] = arg6;
-		Unix.xprintfArgs[7] = arg7;
-		Unix.xprintfArgs[8] = arg8;
+		if (LOGGING) {
+			Unix.xprintfArgs[0] = arg0; 
+			Unix.xprintfArgs[1] = arg1;
+			Unix.xprintfArgs[2] = arg2;
+			Unix.xprintfArgs[3] = arg3;
+			Unix.xprintfArgs[4] = arg4;
+			Unix.xprintfArgs[5] = arg5;
+			Unix.xprintfArgs[6] = arg6;
+			Unix.xprintfArgs[7] = arg7;
+			Unix.xprintfArgs[8] = arg8;
 
-		if(((mask) & (yaffs2.utils.Globals.yaffs_traceMask | YAFFS_TRACE_ERROR)) != 0)
-			Unix.printf(p);
+			if(((mask) & (yaffs2.utils.Globals.yaffs_traceMask | YAFFS_TRACE_ERROR)) != 0)
+				Unix.printf(p);
+		}
 	}
 
 	//	static void YBUG()
