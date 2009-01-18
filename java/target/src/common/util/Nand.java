@@ -51,9 +51,10 @@ import com.jopdesign.sys.Native;
  */
 public class Nand {
 
-	public final static int NAND_ADDR = 0x100000;
+	public final static int NAND_ADDR = 0x100000;	// data port
 	final static int CLE = NAND_ADDR + 1; // command latch enable
 	final static int ALE = NAND_ADDR + 2; // address latch enable
+	final static int RDY = NAND_ADDR + 4; // ready signal
 
 	final static int ERASE = 0x60;
 	final static int ERASE_CONFIRM = 0xD0;
@@ -87,13 +88,13 @@ public class Nand {
 		int man = Native.rdMem(NAND_ADDR); // Manufacturer
 		int size = Native.rdMem(NAND_ADDR); // Size
 
-		if (size == 0x173) {
+		if (size == 0x73) {
 			nrOfBlocks = 1024;
-		} else if (size == 0x175) {
+		} else if (size == 0x75) {
 			nrOfBlocks = 2048;
-		} else if (size == 0x176) {
+		} else if (size == 0x76) {
 			nrOfBlocks = 4096;
-		} else if (size == 0x179) {
+		} else if (size == 0x79) {
 			nrOfBlocks = 8192;
 		} else {
 			nrOfBlocks = 0;
@@ -105,7 +106,7 @@ public class Nand {
 	 */
 	boolean cmdOk() {
 		Native.wrMem(STATUS, CLE);
-		// S0=error bit S6=controller inactive S7=wr protection S8=nReady/Busy
+		// S0=error bit S6=controller inactive S7=wr protection
 		// Signal
 		return !((Native.rdMem(NAND_ADDR) & 0x01) == 0x01);
 	}
@@ -114,7 +115,7 @@ public class Nand {
 	 * waits until the NAND is ready
 	 */
 	void waitForReady() {
-		while ((Native.rdMem(NAND_ADDR) & RDY_MSK) != RDY_MSK) {
+		while (Native.rdMem(RDY)==0) {
 			; // watch rdy signal
 		}
 	}
@@ -233,18 +234,12 @@ public class Nand {
 			Native.wrMem(0, ALE);		// we read a whole page, a0=0
 			Native.wrMem(a1, ALE);
 			Native.wrMem(a2, ALE);
+			waitForReady();
 			for (i=0; i<cnt; ++i) {
-				val = 0;
-//				if (i==0) {
-					while ((val=Native.rdMem(NAND_ADDR)) < RDY_MSK) {
-						; // watch rdy signal
-					}					
-//				} else {
-//					val = Native.rdMem(NAND_ADDR);
-//				}
-				val = (val<<8) + (Native.rdMem(NAND_ADDR) & 0xff);
-				val = (val<<8) + (Native.rdMem(NAND_ADDR) & 0xff);
-				val = (val<<8) + (Native.rdMem(NAND_ADDR) & 0xff);
+				val = Native.rdMem(NAND_ADDR);
+				val = (val<<8) + Native.rdMem(NAND_ADDR);
+				val = (val<<8) + Native.rdMem(NAND_ADDR);
+				val = (val<<8) + Native.rdMem(NAND_ADDR);
 				buf[i] = val;
 			}
 			
@@ -277,21 +272,21 @@ public class Nand {
 		System.out.print(" ");
 		System.out.print(j);
 		System.out.print(" ");
-		if (i == 0x198) {
+		if (i == 0x98) {
 			System.out.print("Toshiba ");
-		} else if (i == 0x120) {
+		} else if (i == 0x20) {
 			System.out.print("ST ");
 		} else {
 			System.out.println("Unknown manufacturer");
 		}
 
-		if (j == 0x173) {
+		if (j == 0x73) {
 			System.out.println("16 MB");
-		} else if (j == 0x175) {
+		} else if (j == 0x75) {
 			System.out.println("32 MB");
-		} else if (j == 0x176) {
+		} else if (j == 0x76) {
 			System.out.println("64 MB");
-		} else if (j == 0x179) {
+		} else if (j == 0x79) {
 			System.out.println("128 MB");
 		} else {
 			System.out.println("error reading NAND");
@@ -302,13 +297,13 @@ public class Nand {
 		// read status, should be 0xc0
 		//
 		Native.wrMem(STATUS, CLE);
-		i = Native.rdMem(NAND_ADDR) & 0x1c1;
-		j = Native.rdMem(NAND_ADDR) & 0x1c1;
+		i = Native.rdMem(NAND_ADDR) & 0xc1;
+		j = Native.rdMem(NAND_ADDR) & 0xc1;
 		System.out.print(i);
 		System.out.print(" ");
 		System.out.print(j);
 		System.out.print(" ");
-		if (i == 0x1c0 && j == 0x1c0) {
+		if (i == 0xc0 && j == 0xc0) {
 			System.out.println("status OK");
 		} else {
 			System.out.println("error reading NAND status");
@@ -333,6 +328,8 @@ public class Nand {
 		int badSpare=0;
 		int time;
 		int testCnt = nrOfBlocks;
+		
+//		testCnt = 100;
 		
 		time = (int) System.currentTimeMillis();
 		System.out.println("Erase");
@@ -416,7 +413,9 @@ public class Nand {
 		test();
 		Nand n = new Nand();
 		System.out.println(n.nrOfBlocks + " blocks");
+//		n.eraseAll();
 		n.testFull();
+		
 //		System.out.println("Erase NAND");
 ////		n.eraseAll();
 //		int[] data = new int[WORDS];

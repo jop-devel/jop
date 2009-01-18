@@ -14,6 +14,7 @@ public class InternalNANDYaffs1NANDInterfacePrimitives implements Yaffs1NANDInte
 	static final int IO_NAND = 0x100000;
 	static final int CLE = 1;	// command latch enable
 	static final int ALE = 2;	// address latch enable
+	static final int RDY = 4;	// ready signal
 	static final int COMMAND_ERASE = 0x60;
 	static final int COMMAND_ERASE_CONFIRM = 0xD0;
 	static final int COMMAND_PROGRAM = 0x80;
@@ -40,15 +41,11 @@ public class InternalNANDYaffs1NANDInterfacePrimitives implements Yaffs1NANDInte
 	 * 
 	 *  waits until the nand is ready
 	 */
-	static int waitForNandReady(String msg)
+	static void waitForNandReady(String msg)
 	{
 		int i = 0;
-		int j;
-		while(((j = Native.rdMem(IO_NAND)) & 0x100) != 0x100)	// wait if rdy signal is 0
+		while(Native.rdMem(IO_NAND+RDY)==0)	// wait if rdy signal is 0
 		{i++;}
-		//System.out.print(msg);System.out.println(i);
-		//Dbg.wr(msg);Dbg.hexVal(i);Dbg.wr("\n");
-		return j;
 	}
 	
 	/**
@@ -60,6 +57,9 @@ public class InternalNANDYaffs1NANDInterfacePrimitives implements Yaffs1NANDInte
 			int devicenDataBytesPerChunk, int chunkInNAND, 
 			byte[] data, int dataIndex, byte[] spare, int spareIndex)
 	{
+		// TODO: data index is NOT used for the address!!!
+		// Set correct a0 and pointer
+
 		if (data != null) {
 			int column = 0, pointer = 0, addr0, addr1;
 
@@ -144,6 +144,9 @@ public class InternalNANDYaffs1NANDInterfacePrimitives implements Yaffs1NANDInte
 			int devicenDataBytesPerChunk, int chunkInNAND, byte[] data, int dataIndex, 
 			byte[] spare, int spareIndex)
 	{
+		
+		// TODO: data index is NOT used for the address!!!
+		// Set correct a0 and pointer
 		int column = 0, pointer = 0, addr0, addr1;
 		if (data != null) {
 			// (chunkInNAND % (PAGES_PER_BLOCK)) address in block
@@ -158,9 +161,9 @@ public class InternalNANDYaffs1NANDInterfacePrimitives implements Yaffs1NANDInte
 			Native.wrMem(addr1, IO_NAND + ALE); // page address 17-24
 
 			// TODO conversion
-			data[dataIndex+0] = (byte) (waitForNandReady("data read.") & 0xff);
+			waitForNandReady("data read.");
 
-			for (int i = 1; i < devicenDataBytesPerChunk /* XXX - 1 */; i++)
+			for (int i = 0; i < devicenDataBytesPerChunk /* XXX - 1 */; i++)
 				data[dataIndex+i] = (byte) (Native.rdMem(IO_NAND) & 0xff);
 			
 			if (errorOccurred())
@@ -178,8 +181,9 @@ public class InternalNANDYaffs1NANDInterfacePrimitives implements Yaffs1NANDInte
 			Native.wrMem(addr0, IO_NAND + ALE); // page address 9-16
 			Native.wrMem(addr1, IO_NAND + ALE); // page address 17-24
 
-			spare[spareIndex+0] = (byte) (waitForNandReady("spare read.") & 0xff);
-			for (int i = 1; i < DebugSettings.SPARE_SERIALIZED_LENGTH /* XXX - 1 */; i++)
+			waitForNandReady("spare read.");
+
+			for (int i = 0; i < DebugSettings.SPARE_SERIALIZED_LENGTH /* XXX - 1 */; i++)
 				spare[spareIndex+i] = (byte) (Native.rdMem(IO_NAND) & 0xff);
 			
 			if (errorOccurred())
