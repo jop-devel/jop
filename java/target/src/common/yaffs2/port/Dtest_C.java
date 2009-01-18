@@ -77,7 +77,7 @@ public class Dtest_C {
 
 	}
 
-	protected static void dump_directory_tree(byte[] dname, int dnameIndex)
+	public static void dump_directory_tree(byte[] dname, int dnameIndex)
 	{
 		dump_directory_tree_worker(dname, dnameIndex,1);
 		Unix.printf("\n");
