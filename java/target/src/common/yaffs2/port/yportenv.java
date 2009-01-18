@@ -57,7 +57,7 @@ public class yportenv
 	public static final int YAFFS_TRACE_ALWAYS =		0x40000000;
 	public static final int YAFFS_TRACE_BUG =			0x80000000;
 	
-	public static final boolean LOGGING = false;
+	public static final boolean LOGGING = true;
 
 	public static void T(int mask, String p)
 	{
