@@ -257,6 +257,10 @@ state of write, removed idle state between the two writes. Same error
 is still in \code{sc\_sram8.vhd} -- could be the issue on the Actel
 board!
 
+\paragraph{20090118} MS: change NAND interface to read the ready
+signal without reading data (\code{sc\_sram32\_flash.vhd}). 10 cycles
+for a ROM access (various top level).
+
 \subsection{Software}
 
 \paragraph{20050620}

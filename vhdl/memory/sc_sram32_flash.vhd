@@ -32,6 +32,10 @@
 --		0x000000-x7ffff	external SRAM (w mirror)	max. 512 kW (4*4 MBit)
 --		0x080000-xfffff	external Flash (w mirror)	max. 512 kB (4 MBit)
 --		0x100000-xfffff	external NAND flash
+--			0	data
+--			1	command latch
+--			2	address latch
+--			4	ready pin
 --
 --	RAM: 32 bit word
 --	ROM: 8 bit word (for flash programming)
@@ -42,6 +46,7 @@
 --	2005-11-22	first version
 --	2005-12-02	added flash interface
 --	2008-05-22	nwe on pos edge, additional wait state for write
+--	2009-01-18	NAND ready at relative address 4
 
 Library IEEE;
 use IEEE.std_logic_1164.all;
@@ -94,7 +99,7 @@ architecture rtl of sc_mem_if is
 --
 	type state_type		is (
 							idl, rd1, rd2, wr1, wr2,
-							fl_rd1, fl_rd2, fl_wr1, fl_wr2
+							fl_rd1, fl_rd2, fl_wr1, fl_wr2, fl_rd_rdy
 						);
 	signal state 		: state_type;
 	signal next_state	: state_type;
@@ -110,14 +115,17 @@ architecture rtl of sc_mem_if is
 	signal fl_dout_ena	: std_logic;
 	signal flash_data	: std_logic_vector(7 downto 0);
 	signal flash_data_ena	: std_logic;
-	signal nand_rdy		: std_logic;
 
 	signal trans_ram	: std_logic;
 	signal trans_flash	: std_logic;
+	signal trans_rdy	: std_logic;
 	-- selection for read mux
 	signal ram_access	: std_logic;
 	-- selection for Flash/NAND ncs
 	signal sel_flash	: std_logic;
+	signal sel_rdy		: std_logic;
+	-- sync in NAND ready
+	signal nand_rdy		: std_logic_vector(1 downto 0);
 	
 	signal ram_ws_wr	: integer;
 
@@ -149,7 +157,10 @@ begin
 			null;
 	end case;
 
+
 end process;
+
+	trans_rdy <= sc_mem_out.address(2);
 
 --
 --	Register memory address, write data and read data
@@ -164,6 +175,7 @@ begin
 		flash_dout <= (others => '0');
 		fl_a <= (others => '0');
 		sel_flash <= '1';			-- AMD default
+		sel_rdy <= '0';
 		ram_access <= '1';			-- RAM default
 
 	elsif rising_edge(clk) then
@@ -175,12 +187,14 @@ begin
 			else
 				ram_access <= '0';
 				fl_a <= sc_mem_out.address(18 downto 0);
-				-- select flash type
+				-- select flash type and NAND ready input
 				-- and keep it selected
 				if trans_flash='1' then
 					sel_flash <= '1';
+					sel_rdy <= '0';
 				else
 					sel_flash <= '0';
+					sel_rdy <= trans_rdy;
 				end if;
 			end if;
 		end if;
@@ -195,8 +209,6 @@ begin
 			ram_data <= ram_din;
 		end if;
 		if flash_data_ena='1' then
-			-- signal NAND rdy only for NAND access
-			nand_rdy <= fl_rdy and not sel_flash;
 			flash_data <= fl_d;
 		end if;
 
@@ -204,15 +216,19 @@ begin
 end process;
 
 --
---	MUX registered RAM and Flash data
+--	MUX registered RAM and Flash data or ready signal
 --
-process(ram_access, ram_data, flash_data, nand_rdy)
+process(ram_access, ram_data, flash_data, nand_rdy(1))
 
 begin
 	if (ram_access='1') then
 		sc_mem_in.rd_data <= ram_data;
 	else
-		sc_mem_in.rd_data <= std_logic_vector(to_unsigned(0, 32-9)) & nand_rdy & flash_data;
+		if (sel_rdy='1') then
+			sc_mem_in.rd_data <= std_logic_vector(to_unsigned(0, 32-1)) & nand_rdy(1);
+		else
+			sc_mem_in.rd_data <= std_logic_vector(to_unsigned(0, 32-8)) & flash_data;
+		end if;
 	end if;
 end process;
 
@@ -237,7 +253,11 @@ begin
 						next_state <= rd1;
 					end if;
 				else
-					next_state <= fl_rd1;
+					if trans_rdy='1' and trans_flash='0' then
+						next_state <= fl_rd_rdy;
+					else
+						next_state <= fl_rd1;
+					end if;
 				end if;
 			elsif sc_mem_out.wr='1' then
 				if trans_ram='1' then
@@ -296,6 +316,9 @@ begin
 			end if;
 
 		when fl_wr2 =>
+			next_state <= idl;
+
+		when fl_rd_rdy =>
 			next_state <= idl;
 
 	end case;
@@ -377,6 +400,9 @@ begin
 			when fl_wr2 =>
 				fl_dout_ena <= '1';
 
+			when fl_rd_rdy =>
+				-- no output change
+
 		end case;
 					
 	end if;
@@ -391,6 +417,7 @@ begin
 	if (reset='1') then
 		wait_state <= (others => '1');
 		cnt <= "00";
+		nand_rdy <= "00";
 	elsif rising_edge(clk) then
 
 		wait_state <= wait_state-1;
@@ -430,6 +457,10 @@ begin
 				cnt <= "11";
 			end if;
 		end if;
+
+		-- sync in NAND ready signal
+		nand_rdy(0) <= fl_rdy;
+		nand_rdy(1) <= nand_rdy(0);
 
 	end if;
 end process;
