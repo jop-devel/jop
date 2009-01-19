@@ -68,29 +68,43 @@ public class BytecodeVerification {
 			ts = Native.rdMem(Const.IO_CNT);
 			te = Native.rdMem(Const.IO_CNT);
 			error = te-ts;
+			
+			// MIN latency in clock cycles
+//			ts = Native.rdMem(Const.IO_CNT);
+//			for(int j=0; j<0; j++);
+//			te = Native.rdMem(Const.IO_CNT);
+//			to = te-ts-error;
+//			System.out.println("Minimum Latency: " + to + " cycles!");
+			
+			// MAX latency in clock cycles
+//			ts = Native.rdMem(Const.IO_CNT);
+//			for(int j=0; j<PRIME-1; j++);
+//			te = Native.rdMem(Const.IO_CNT);
+//			to = te-ts-error;
+//			System.out.println("Maximum Latency: " + to + " cycles!");
 		
 			// Initialization of random generator
 			Random r = new Random(SEED);
 		
 			for(int i=0; i<MAX; i++){
 			
-				// Waiting Time
+				// Random latency generation
 				random =  Math.abs(r.nextInt() % PRIME);
 				for(int j=0; j<random; j++);			
 			
 				ts = Native.rdMem(Const.IO_CNT);
-				//test = array[0];
-				array[0] = test;
+				test = array[0];
+				//array[0] = test;
 				te = Native.rdMem(Const.IO_CNT);
 				to = te-ts-error;
 			
-				if(to>47)
+				if(to>28)
 					System.out.println("Error["+i+"]: " + to + " cycles!");
 			}	
 		}	
 		else{
-			// test = array[0]; // WCET = 28
-			array[0] = test; // WCET = 47
+			test = array[0]; // WCET = 28
+			//array[0] = test; // WCET = 47
 		}
 	}	
 }
