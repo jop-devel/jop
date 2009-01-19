@@ -119,23 +119,28 @@ architecture rtl of arbiter is
 	signal cpu_time : time_type; -- how much clock cycles each CPU
 	type slot_type is array (0 to cpu_cnt-1) of std_logic;
 	signal slot : slot_type; -- defines which CPU is on turn
+	
+-- read and write gaps
+
+	signal read_gap : integer;
+	signal write_gap : integer;
 		
 	
 begin
 
--- MS: the constants are for the DE2 board with a 6 cycle memory write.
--- For the cyc12 board we can cut it down to 3 cycles.
+-- Constants for read_gap, write_gap, slot_length:
+-- DE2 board:   6 cycle memory write, 4 cycle memory read
+--              write_gap <= 5; read_gap <= 3;
+--              minimal slot_length <= 6;
+-- cyc12 board: 3 cycle memory write, 2 cycle memory read
+--              write_gap <= 2; read_gap <= 1;
+--              minimal slot_length <= 3;
 
-slot_length <= 24;
+write_gap <= 2;
+read_gap <= 1;
+slot_length <=7;
+
 period <= cpu_cnt*slot_length;
---cpu_time(0) <= 15;
---cpu_time(1) <= 30;
---cpu_time(2) <= 45;
---cpu_time(3) <= 24;
---cpu_time(4) <= 30;
---cpu_time(5) <= 36;
---cpu_time(6) <= 42;
---cpu_time(7) <= 48;
 
 -- generate slot information
 slots: for i in 0 to cpu_cnt-1 generate
@@ -187,19 +192,19 @@ process(counter, cpu_time)
 			slot(j) <= '0';
 		end loop;
 		
-		if (counter > -1) and (counter < cpu_time(0)-5) then
+		if (counter > -1) and (counter < cpu_time(0)-write_gap) then
 			slot(0) <= '1';
-		elsif (counter < cpu_time(0)-3) and (arb_out(0).rd = '1') then -- rd is 2 cycles longer allowed
+		elsif (counter < cpu_time(0)-read_gap) and (arb_out(0).rd = '1') then -- rd is 2 cycles longer allowed
 			slot(0) <= '1';
 			
-		elsif (counter > cpu_time(0)-1) and (counter < cpu_time(1)-5) then
+		elsif (counter > cpu_time(0)-1) and (counter < cpu_time(1)-write_gap) then
 			slot(1) <= '1';
-		elsif (counter < cpu_time(1)-3) and (arb_out(1).rd = '1') then -- rd is 2 cycles longer allowed
+		elsif (counter < cpu_time(1)-read_gap) and (arb_out(1).rd = '1') then -- rd is 2 cycles longer allowed
 			slot(1) <= '1';
 			
-		elsif (counter > cpu_time(0)-1) and (counter < cpu_time(2)-5) then
+		elsif (counter > cpu_time(0)-1) and (counter < cpu_time(2)-write_gap) then
 			slot(2) <= '1';
-		elsif (counter < cpu_time(2)-3) and (arb_out(2).rd = '1') then -- rd is 2 cycles longer allowed
+		elsif (counter < cpu_time(2)-read_gap) and (arb_out(2).rd = '1') then -- rd is 2 cycles longer allowed
 			slot(2) <= '1';
 --			
 --		elsif (counter > cpu_time(0)-1) and (counter < cpu_time(3)-5) then
