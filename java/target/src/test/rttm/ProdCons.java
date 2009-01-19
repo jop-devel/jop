@@ -34,7 +34,7 @@ import com.jopdesign.sys.Startup;
  * @author Martin Schoeberl
  *
  */
-public class SimpleList {
+public class ProdCons {
 
 	static final int MAGIC = -10000;
 
@@ -43,7 +43,6 @@ public class SimpleList {
 	static SysDevice sys = IOFactory.getFactory().getSysDevice();
 	
 	static Vector vecA = new Vector();
-	static Vector vecB = new Vector();
 	
 	
 	/**
@@ -56,27 +55,14 @@ public class SimpleList {
 			System.exit(-1);
 		}
 		Inserter ins = new Inserter();
-		Startup.setRunnable(ins, 0);
+//		Startup.setRunnable(ins, 0);
 		Remover rem = new Remover();
 		Startup.setRunnable(rem, 1);
 		
 		// start the other CPUs
 		sys.signal = 1;
 		
-		// move one element atomic from one vector to the other
-		for (int i=0; i<CNT; ) {
-			boolean found = false;
-			Native.wrMem(1, MAGIC);	// start transaction
-			int nr = vecA.size();
-			if (nr>0) {
-				Object o = vecA.remove(nr-1);
-				vecB.addElement(o);
-				found = true;
-			}
-			Native.wrMem(0, MAGIC);	// end transaction
-			if (found) ++i;
-		}
-
+		ins.run();
 
 		// wait for other CPUs to finish
 		while (!(ins.finished && rem.finished)) {
@@ -108,9 +94,9 @@ public class SimpleList {
 			for (int i=0; i<CNT; ) {
 				boolean found = false;
 				Native.wrMem(1, MAGIC);	// start transaction
-				int nr = vecB.size();
+				int nr = vecA.size();
 				if (nr>0) {
-					Object o = vecB.remove(nr-1);
+					Object o = vecA.remove(nr-1);
 					found = true;
 				}
 				Native.wrMem(0, MAGIC);	// end transaction
