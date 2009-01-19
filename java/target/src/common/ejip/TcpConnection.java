@@ -68,11 +68,16 @@ public class TcpConnection {
 	 * decremented and retransmit on 0
 	 */
 	int timeout;
+
+	/**
+	 * We shut down the connection after being idle for too long.
+	 */	
+	int idleTime;
 	
 	/**
 	 * Maximum number of active TCP connections
 	 */
-	final static int CNT = 10;
+	final static int CNT = 100;
 	static TcpConnection[] connections;
 	
 	private static Object mutex = new Object();
@@ -104,6 +109,11 @@ public class TcpConnection {
 		int src = buf[Ip.SOURCE];
 		int dest = buf[Ip.DESTINATION];
 		
+		return findConnection(src, srcPort, dest, dstPort);
+	}
+
+	public static TcpConnection findConnection(int src, int srcPort, int dest, int dstPort) {
+				
 		TcpConnection free = null;
 		TcpConnection conn = null;
 				
@@ -136,6 +146,11 @@ public class TcpConnection {
 					free.localIP = dest;
 				}
 			}
+
+			if (conn != null) {
+				// we use it, so we're not idle
+				conn.idleTime = 0;
+			}
 		}
 		
 		int cnt=0;
@@ -144,9 +159,13 @@ public class TcpConnection {
 				++cnt;
 			}
 		}
-		System.out.print("getCon: con in use:");
-		System.out.println(cnt);
-		
+
+		if (Logging.LOG) {
+			Logging.wr("getCon: con in use: ");
+			Logging.intVal(cnt);
+			Logging.lf();
+		}
+
 		return conn;
 	}
 	

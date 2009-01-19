@@ -41,13 +41,24 @@ public abstract class TcpHandler implements Runnable {
 	/**
 	*	handle one request on the registered port.
 	*/
-	public abstract void request(Packet p);
+	public abstract Packet request(Packet p);
 	
 	/**
 	 * Connection is established. Transfer can start.
 	 * @return
 	 */
-	public abstract void established(Packet p);
+	public abstract Packet established(Packet p);
+
+	/**
+	 * Close connection?
+	 * @return
+	 */
+	public abstract boolean finished();
+
+	/**
+	 * The connection we are handling
+	 */
+	protected TcpConnection connection;
 
 	/**
 	 * Application logic that gets invoked periodically

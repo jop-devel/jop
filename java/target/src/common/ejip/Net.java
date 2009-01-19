@@ -116,17 +116,11 @@ public class Net implements Runnable {
 			TcpIp.doICMP(p);
 			ip.doIp(p, prot);
 		} else if (prot == Tcp.PROTOCOL) {
-			if ((buf[5] & 0xffff) == 80) {
-				// still do our simple HTML server
-				TcpIp.doTCP(p);
-				ip.doIp(p, prot);
+			if (TCP_ENABLED) {
+				// that's the new TCP processing
+				tcp.process(p);					
 			} else {
-				if (TCP_ENABLED) {
-					// that's the new TCP processing
-					tcp.process(p);					
-				} else {
-					ejip.returnPacket(p); // mark packet free					
-				}
+				ejip.returnPacket(p); // mark packet free					
 			}
 		} else if (prot == Udp.PROTOCOL) {
 			udp.process(p); // Udp generates the reply

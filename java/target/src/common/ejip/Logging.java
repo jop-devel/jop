@@ -42,7 +42,7 @@ package ejip;
  */
 public class Logging {
 	
-	public static final boolean LOG = true;
+	public static final boolean LOG = false;
 	
 	private static final int MAX_TMP = 32;
 	private static int[] tmp = new int[MAX_TMP];			// a generic buffer
@@ -75,7 +75,7 @@ public class Logging {
 		wr(' ');
 	}
 	
-	static void lf() {
+	public static void lf() {
 		System.out.println();
 	}
 	

@@ -91,6 +91,11 @@ public class Ejip {
 	 */
 	synchronized public Packet getFreePacket(LinkLayer link) {
 		Packet p = freePool.deq();
+		if (Logging.LOG) {
+			Logging.wr("get: free packets: ");
+			Logging.intVal(freePool.cnt());
+			Logging.lf();
+		}
 		if (p!=null) p.interf = link;
 		return p;
 	}

@@ -219,7 +219,7 @@ private static int simSendErr, simRcvErr;
 		p.len = cnt;
 
 		if (Logging.LOG) Logging.wr('r');
-if (Logging.LOG) Logging.intVal(cnt);
+		if (Logging.LOG) Logging.intVal(cnt);
 		cnt = 0;
 		ready = false;
 

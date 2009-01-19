@@ -110,10 +110,22 @@ public class Tcp implements Runnable {
 	 * 500 ms timer tick for the timout handlers
 	 */
 	public static final int TIMER_TICK = 500;
+
+	/**
+	 * 8 seconds until a connection is timed out for TIME_WAIT (very short!)
+	 */
+	public static final int TIME_WAIT_TIMEOUT = 8000/TIMER_TICK;
+
+	/**
+	 * 60 seconds until a connection is timed out when being idle
+	 */
+	public static final int USER_TIMEOUT = 60000/TIMER_TICK;
+
+
 	/**
 	 * Timout for retransmit in timer ticks.
 	 */
-	public static final int TIMEOUT = 4;
+	public static final int TIMEOUT = 2000/TIMER_TICK;
 	/**
 	 * The timer.
 	 */
@@ -134,7 +146,7 @@ public class Tcp implements Runnable {
 		list = new TcpHandler[MAX_HANDLER];
 		ports = new int[MAX_HANDLER];
 		loopCnt = 0;
-		timer = ((int) System.currentTimeMillis()) + TIMER_TICK;
+		timer = (char)System.currentTimeMillis() + TIMER_TICK;
 	}
 	/**
 	*	add a handler for TCP requests.
@@ -180,12 +192,42 @@ public class Tcp implements Runnable {
 
 		int i;
 
-		if (timer - ((int) System.currentTimeMillis())<0) {
+		if ((short)(timer - System.currentTimeMillis()) < 0) {
+
+// 			System.out.print("timer: ");
+// 			System.out.print(timer);
+// 			System.out.print(" sys: ");
+// 			System.out.println(System.currentTimeMillis());
+
 			// do the TCP timeout
-			timer = ((int) System.currentTimeMillis()) + TIMER_TICK;
+			timer = (short)(System.currentTimeMillis() + TIMER_TICK);
 			for (i=0; i<TcpConnection.CNT; ++i) {
+
 				synchronized (mutex) {
 					TcpConnection tc = TcpConnection.connections[i];
+
+					if (Logging.LOG) {
+						Logging.intVal(tc.idleTime);
+						Logging.wr("; ");
+					}
+					
+					tc.idleTime--;
+					if (tc.state != FREE && tc.idleTime < 0) {
+						if (Logging.LOG) {
+							Logging.wr("Forced shutdown");
+							Logging.lf();
+						}
+						if (tc.outStanding!=null) {
+							Packet os = tc.outStanding;
+							// recycle the outstanding packet and reset isTcpOnFly
+							tc.outStanding = null;
+							os.isTcpOnFly = false;
+							ejip.returnPacket(os);
+						}
+						tc.close();
+						return;
+					}
+
 					if (tc.outStanding!=null) {
 						tc.timeout--;
 						if (tc.timeout==0) {
@@ -193,12 +235,17 @@ public class Tcp implements Runnable {
 							// after some time (2-7 minutes)
 							tc.timeout = TIMEOUT;
 							// let it retransmit
-							System.out.println("retransmit");
+							Logging.wr("retransmit");
 							tc.outStanding.interf.txQueue.enq(tc.outStanding);
 						}
-					}					
+					}
 				}
 			}
+
+			if (Logging.LOG) {
+				Logging.lf();
+			}
+
 		} else {
 			// do an application poll
 			i = loopCnt;
@@ -256,7 +303,7 @@ public class Tcp implements Runnable {
 			if (Logging.LOG) Logging.intVal(buf[HEAD] & 0xffff);
 			return;
 		}
-		
+
 		// do the TCP state machine
 		handleState(p, th, tc);
 	}
@@ -268,14 +315,14 @@ public class Tcp implements Runnable {
 	 * @return false means nothing more to do
 	 */
 	private void handleState(Packet p, TcpHandler th, TcpConnection tc) {
-		
+
 		// TODO: do we need synchronized for handle state?
 		// or synchronized handling of connection change?
 		
 		// we only come into this when a handler is registered
 		// so there is no use of state closed
-		if (tc.state==Tcp.CLOSED) {
-			tc.state = Tcp.LISTEN;
+		if (tc.state==CLOSED) {
+			tc.state = LISTEN;
 		}
 		int state = tc.state;
 		
@@ -286,40 +333,108 @@ public class Tcp implements Runnable {
 		int hlen = i >>> 12;
 		int datlen = p.len - 20 - (hlen << 2);
 
-		System.out.print("TCP state: ");
-		System.out.print(state);
-		System.out.print(" len ");
-		System.out.println(datlen);
+		Packet h;
 
+		if (Logging.LOG) {
+			Logging.wr("TCP state: ");
+			Logging.intVal(state);
+			Logging.wr(" len ");
+			Logging.intVal(datlen);
+			Logging.lf();
+		}
+
+		// reset the connection
 		synchronized (mutex) {
-			if ((flags&FL_ACK) !=0 && tc.outStanding!=null) {
-				if (buf[ACKNR]==tc.sndNxt) {
-					System.out.println("ACK received");
+			if ((flags&FL_RST)!=0) {
+				if (Logging.LOG) {
+					Logging.wr("RST received");
+					Logging.lf();
+				}
+				// reset the connection for the handler
+				th.connection = null;
+
+				if (tc.outStanding != null) {
 					Packet os = tc.outStanding;
 					// recycle the outstanding packet and reset isTcpOnFly
 					tc.outStanding = null;
 					os.isTcpOnFly = false;
 					ejip.returnPacket(os);
-					if (flags==FL_ACK && p.len==DATA<<2 &&
-							state == ESTABLISHED) {
-						// only ack - no more action
-						System.out.println("just an ACK");
-						ejip.returnPacket(p);
-						return;
+				}
+				ejip.returnPacket(p);
+				tc.close();
+				return;
+			}
+		}
+		// reset if what we received does not match our state
+		synchronized (mutex) {
+			if (state == LISTEN && (flags&FL_SYN) == 0) {
+				//ejip.returnPacket(p);
+				// reset the connection
+				tc.rcvNxt = buf[SEQNR]+p.len-(DATA<<2);
+				tc.sndNxt = buf[ACKNR];
+				Ip.setData(p, Tcp.DATA, "");
+				fillHeader(p, tc, FL_RST|FL_ACK);
+				if (Logging.LOG) {
+					Logging.wr("dropped non SYN packet in LISTEN");
+					Logging.lf();
+				}
+				return;
+			}
+		}
+
+		// check if the handler is busy
+		synchronized (mutex) {
+			if (th.connection != null
+				&& th.connection != tc
+				&& th.connection.state != Tcp.FREE) {
+// 				System.out.print("wrong connection: ");
+// 				System.out.print(tc);
+// 				System.out.print(" got already ");
+// 				System.out.print(th.connection);
+// 				System.out.print(" state ");
+// 				System.out.println(th.connection.state);
+				ejip.returnPacket(p);
+				return;
+			}
+		}
+
+		// we received _something_ on this connection
+		synchronized (mutex) {
+			tc.idleTime = USER_TIMEOUT;
+		}
+
+		// check for ACK
+		synchronized (mutex) {
+			if ((flags&FL_ACK)!=0 && tc.outStanding!=null) {
+				if (buf[ACKNR]==tc.sndNxt) {
+					if (Logging.LOG) {
+						Logging.wr("ACK received");
+						Logging.lf();
 					}
+					Packet os = tc.outStanding;
+					// recycle the outstanding packet and reset isTcpOnFly
+					tc.outStanding = null;
+					os.isTcpOnFly = false;
+					ejip.returnPacket(os);
 				} else {
 					// not the correct ACK - drop it
 					ejip.returnPacket(p);
+					if (Logging.LOG) {
+						Logging.wr("dropped wrong ACKNR");
+						Logging.lf();
+					}
 					return;
 				}
 			}			
-		}
-		
+		}		
 		if (tc.outStanding!=null) {
 			// we handle only one packet at a time
 			// so we have to drop it.
-			System.out.println("waiting on ACK - dropped");
 			ejip.returnPacket(p);
+			if (Logging.LOG) {
+				Logging.wr("waiting on ACK - dropped");
+				Logging.lf();
+			}
 			return;
 		}
 		
@@ -328,41 +443,75 @@ public class Tcp implements Runnable {
 			// we should not receive a packet in state CLOSED
 			// that means no one is listening
 			// shall we send a RST?
+			// we don't ever get here!
+			if (Logging.LOG) {
+				Logging.wr("shutdown from CLOSED");
+				Logging.lf();
+			}
 			ejip.returnPacket(p);
 			tc.close();
 			return;
 		case Tcp.LISTEN:
-			if ((flags&FL_SYN) == 0) {
-				ejip.returnPacket(p);
-				tc.close();
-				System.out.println("dropped non SYN packet");
-				return;
-			}
+			// set the connection for the handler
+			th.connection = tc;
 			// TODO: read options (MSS)
 			tc.rcvNxt = buf[SEQNR]+1;
-			tc.sndNxt = 123;	// TODO: get time dependent initial seqnrs
+			tc.sndNxt = (int)System.currentTimeMillis();	// TODO: get time dependent initial seqnrs
 			buf[OPTION] = 0x02040000 + 512;	// set MSS to 512
 			p.len = (OPTION+1)<<2;	// len in bytes
 			fillHeader(p, tc, FL_SYN|FL_ACK);
 			tc.sndNxt++;		// SYN send counts for one
-			tc.state = Tcp.SYN_RCVD;
+			tc.state = SYN_RCVD;
 			break;
 		case Tcp.SYN_RCVD:
 			if ((flags&FL_ACK) != 0 && buf[ACKNR]==tc.sndNxt) {
-				System.out.println("SYN acked");
-				tc.state = Tcp.ESTABLISHED;
-				th.established(p);
-				fillHeader(p, tc, FL_ACK);
-				tc.sndNxt += p.len-(DATA<<2);
+				if (Logging.LOG) {
+					Logging.wr("SYN acked");
+					Logging.lf();
+				}
+				tc.state = ESTABLISHED;
+				h = th.established(p);
+				if (h != null) {
+					// only reply if necessary
+					fillHeader(h, tc, FL_ACK);
+					tc.sndNxt += p.len-(DATA<<2);
+				} else {
+					ejip.returnPacket(p);
+				}
 			} else {
 				ejip.returnPacket(p);				
 			}
 			break;
 		case Tcp.SYN_SENT:
+			if ((flags&FL_SYN) == 0) {
+				ejip.returnPacket(p);
+				if (Logging.LOG) {
+					Logging.wr("dropped non SYN packet in SYN_SENT");
+					Logging.lf();
+				}
+				return;
+			}
+			tc.rcvNxt = buf[SEQNR]+1;
+			p.len = DATA<<2;	// len in bytes
+			tc.state = ESTABLISHED;
+			h = th.established(p);
+			if (h == null) {
+				// return plain ack
+				Ip.setData(p, Tcp.DATA, "");
+				fillHeader(p, tc, FL_ACK);
+				tc.sndNxt += p.len-(DATA<<2);
+			} else {
+				fillHeader(h, tc, FL_ACK);
+				tc.sndNxt += h.len-(DATA<<2);
+			}
 			break;
+
 		case Tcp.ESTABLISHED:
 			if ((flags&FL_FIN)!=0) {
-				System.out.println("do FIN");
+				if (Logging.LOG) {
+					Logging.wr("FIN received");
+					Logging.lf();
+				}
 				// TODO check SEQNR
 				tc.rcvNxt = buf[SEQNR]+1;
 				p.len = DATA<<2;
@@ -370,45 +519,138 @@ public class Tcp implements Runnable {
 				tc.sndNxt++;		// FIN send counts for one
 				tc.state = LAST_ACK;
 				break;
-			}
+			}			
+
 			// again ignored any options
 			int len = p.len-(DATA<<2);
 			if (buf[SEQNR]==tc.rcvNxt) {
+
+				if (Logging.LOG) {
+					Logging.wr("do request");
+					Logging.lf();
+				}
+				h = th.request(p);
 				tc.rcvNxt += len;
-				System.out.println("do request");
-				th.request(p);
-				fillHeader(p, tc, FL_ACK);
-				tc.sndNxt += p.len-(DATA<<2);
+
+				if (h==null) {
+					if (flags==FL_ACK && len==0 && !th.finished()) {
+						// nothing to send and nothing to ack
+					} else {
+						flags = FL_ACK | (th.finished() ? FL_FIN : 0);
+						// return plain ack
+						Ip.setData(p, Tcp.DATA, "");
+						fillHeader(p, tc, flags);
+						tc.sndNxt += p.len-(DATA<<2);
+					}
+				} else {
+					flags = FL_ACK | (th.finished() ? FL_FIN : 0);
+					fillHeader(h, tc, flags);
+					tc.sndNxt += h.len-(DATA<<2);
+				}
+
+				if (th.finished()) {
+					if (Logging.LOG) {
+						Logging.wr("send FIN");
+						Logging.lf();
+					}
+					tc.sndNxt++;
+					tc.state = FIN_WAIT_1;
+				}
+
 			} else {
-				System.out.println("dropped wrong SEQNR");
 				ejip.returnPacket(p);
 				// TODO ack last segment
+				if (Logging.LOG) {
+					Logging.wr("dropped wrong SEQNR");
+					Logging.lf();
+				}
 			}
 			break;
 		case Tcp.CLOSE_WAIT:
 			// we do not need this state as we are not interested
 			// in half open connetions
-			System.out.println("CLOSE_WAIT");
+			if (Logging.LOG) {
+				Logging.wr("spurious state CLOSE_WAIT");
+				Logging.lf();
+			}			
 			break;
 		case Tcp.LAST_ACK:
-			ejip.returnPacket(p);
-			System.out.println("LAST_ACK");
-			if (tc.outStanding==null) {
-				System.out.println("we received the last ACK");
-				tc.close();
+			if (Logging.LOG) {
+				Logging.wr("shutdown from LAST_ACK");
+				Logging.lf();
 			}
+			// reset the connection for the handler
+			th.connection = null;			
+			ejip.returnPacket(p);
+			tc.close();
 			break;
 		case Tcp.FIN_WAIT_1:
+			// reset the connection for the handler
+			th.connection = null;
+
+			tc.rcvNxt = buf[SEQNR]+1;			
+			if ((flags&FL_FIN) != 0) {
+				fillHeader(p, tc, FL_ACK);
+				tc.sndNxt++;		// FIN send counts for one
+				if ((flags&FL_ACK) != 0) {
+					if (Logging.LOG) {
+						Logging.wr("wait from FIN_WAIT_1");
+						Logging.lf();
+					}
+					tc.state = TIME_WAIT;
+					tc.idleTime = TIME_WAIT_TIMEOUT;
+				} else {
+					tc.state = CLOSING;
+				}
+			} else {
+				tc.state = FIN_WAIT_2;
+			}
 			break;
 		case Tcp.FIN_WAIT_2:
+			tc.rcvNxt = buf[SEQNR]+1;			
+			if ((flags&FL_FIN) != 0) {
+				fillHeader(p, tc, FL_ACK);
+				tc.sndNxt++;		// FIN send counts for one
+				if (Logging.LOG) {
+					Logging.wr("wait from FIN_WAIT_2");
+					Logging.lf();
+				}
+				tc.state = TIME_WAIT;
+				tc.idleTime = TIME_WAIT_TIMEOUT;
+			}
 			break;
 		case Tcp.CLOSING:
+			if (Logging.LOG) {
+				Logging.wr("shutdown from CLOSING");
+				Logging.lf();
+			}
+			// drop packet, but keep connection alive
+			ejip.returnPacket(p);
+			tc.state = TIME_WAIT;
+			tc.idleTime = TIME_WAIT_TIMEOUT;
 			break;
 		case Tcp.TIME_WAIT:
+			if (Logging.LOG) {
+				Logging.wr("dropped packet in TIME_WAIT");
+				Logging.lf();
+			}
+			// just discard packet
+			ejip.returnPacket(p);
 			break;
 		}
 	}
-	
+
+	public void startConnection(LinkLayer ll, int ip, int port) {
+		Packet p = ejip.getFreePacket(ll);
+		p.buf[OPTION] = 0x02040000 + 512;	// set MSS to 512
+		p.len = (OPTION+1)<<2;	// len in bytes
+		TcpConnection tc = TcpConnection.findConnection(ip, port, ll.getIpAddress(), 10000+port);
+		tc.sndNxt = (int)System.currentTimeMillis();	// TODO: get time dependent initial seqnrs
+		fillHeader(p, tc, FL_SYN);
+		tc.sndNxt++;		// SYN send counts for one
+		tc.state = SYN_SENT;
+	}
+
 	void fillHeader(Packet p, TcpConnection tc, int fl) {
 
 		// Do we really free it here?
@@ -425,7 +667,7 @@ public class Tcp implements Runnable {
 
 		buf[HEAD] = (tc.localPort << 16) + tc.remotePort;
 		buf[SEQNR] = tc.sndNxt;
-		buf[ACKNR] = tc.rcvNxt;
+		buf[ACKNR] = (fl & FL_ACK) != 0 ? tc.rcvNxt : 0;
 		// TODO: set window according to buffer
 		if ((fl&FL_SYN)!=0) {
 			buf[FLAGS] = 0x60000000 + (fl << 16) + 512; // hlen = 24, mss option						
@@ -451,10 +693,16 @@ public class Tcp implements Runnable {
 		if (p.len>(DATA<<2) || (fl & (FL_SYN|FL_FIN))!=0) {
 			synchronized (mutex) {
 				tc.outStanding = p;
-				tc.timeout = TIMEOUT;				
+				tc.timeout = TIMEOUT;
 			}
 			p.isTcpOnFly = true;
 		}
+
+		// we send _something_ on this connection
+		synchronized (mutex) {
+			tc.idleTime = USER_TIMEOUT;
+		}
+
 		p.interf.txQueue.enq(p);
 		
 	}

@@ -148,6 +148,38 @@ public class Ip {
 	}
 
 	/**
+	 * Set data from StringBuffer into the packet
+	 * @param p packet
+	 * @param off offset in 32-bit words
+	 * @param s StringBuffer source
+	 * @param start offset into s
+	 * @return offset up to which the data has been written
+	 */
+	public static int setData(Packet p, int off, StringBuffer s, int start) {
+		
+		int[] buf = p.buf;
+		int cnt = s.length()-start;
+
+		if (cnt > ((buf.length-off)<<2)) {
+			cnt = (buf.length-off)<<2;
+		}
+
+		// copy buffer
+		int k = 0;
+		for (int i=0; i<cnt; i+=4) {
+			for (int j=0; j<4; ++j) {
+				k <<= 8;
+				if (i+j < cnt) k += s.charAt(start+i+j);
+			}
+			buf[off + (i>>>2)] = k;
+		}
+	
+		p.len = (off<<2)+cnt;
+
+		return cnt+start;
+	}
+
+	/**
 	 * Set data from String into the packet
 	 * @param p packet
 	 * @param off offset in 32-bit words
