@@ -189,15 +189,15 @@ public class SMTPClient extends TcpHandler {
 		
 		// create smtp client
 		String message = ("From: <jop@jopdesign.com>\r\n"
-						  +"To: <wpuffits@mail.tuwien.ac.at>\r\n"
+						  +"To: <user@host>\r\n"
 						  +"Subject: Hello, world!\r\n"
-						  +"Routing works now :-)");
-		SMTPClient client = new SMTPClient("jopdesign.com", "jop@jopdesign.com", "wpuffits@mail.tuwien.ac.at", message);
+						  +"Happy happy, joy joy :-)");
+		SMTPClient client = new SMTPClient("jopdesign.com", "jop@jopdesign.com", "user@host", message);
 
 		// register smtp client
 		net.getTcp().addHandler(10025, client);
-		// get connection to smtp server 128.130.2.10 (mr.tuwien.ac.at)
-		net.getTcp().startConnection(ipLink, Ejip.makeIp(128, 130, 2, 10), 25);
+		// get connection to smtp server 192.168.1.1 (postfix running on local PC)
+		net.getTcp().startConnection(ipLink, Ejip.makeIp(192, 168, 1, 1), 25);
 
 		forever();
 	}
