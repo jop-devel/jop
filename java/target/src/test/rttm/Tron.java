@@ -41,7 +41,7 @@ public class Tron {
 	
 	static final int EMPTY = -1;
 	
-	static final int SIZE = 14;
+	static final int SIZE = 15;
 	static int array[][] = new int[SIZE][SIZE];
 	
 	static boolean running[] = new boolean[sys.nrCpu];
@@ -63,7 +63,7 @@ public class Tron {
 			}
 		}
 		
-		// Initialize Players
+		// initialize players
 		TronRunner s[] = new TronRunner[sys.nrCpu];		
 				
 		Random r = new Random();
@@ -75,7 +75,6 @@ public class Tron {
 				y = Math.abs(r.nextInt()%SIZE);
 			} while(array[x][y] != EMPTY);
 
-			array[x][y] = i;
 			if(i < sys.nrCpu-1) {
 				s[i] = new TronRunner(i, x, y);
 				Startup.setRunnable(s[i], i);
@@ -107,16 +106,20 @@ public class Tron {
 		
 		// print last player positions
 		for(int i=0; i<sys.nrCpu; ++i) {
-			s[i].printLastPosition();
+			s[i].stats();
 		}
 		
 		// print out winner
+		boolean any = false;
 		for(int i=0; i<sys.nrCpu; ++i) {
 			if(running[i] == true) {
+				any = true;
 				System.out.println("Player " + s[i].playerno + " has won the game (last active npc)!");
 			}
 		}
-		
+		if(!any) {
+			System.out.println("All Players were destroyed ...");
+		}
 	}
 	
 	private static void printGameTable() {
@@ -159,11 +162,14 @@ public class Tron {
 		
 		private boolean[][] setPossible = new boolean[3][3];
 		
-		public TronRunner(int playerno, int startx, int starty) {
-			this.playerno = playerno;			
+		public TronRunner(int p, int startx, int starty) {
+			playerno = p;			
 			
 			x = startx;
 			y = starty;
+
+			// set start field
+			array[x][y] = p;
 			
 			// set an initial direction
 			randDir();
@@ -184,34 +190,43 @@ public class Tron {
 			dy = r.nextInt()%2;
 		}
 		
-		public void run() {					
+		public void run() {				
+			int m = 0;
+			
 			while(anyMovePossible()) {
 				// test direction
 				if( x+dx >= 0 && x+dx < SIZE && y+dy >= 0 && y+dy < SIZE) {
+					m = moves;
+					
 					Native.wrMem(1, MAGIC);
-					if( array[x+dx][y+dy] == EMPTY) {
-						// found a hole
-						reset();
-					
-						// advance					
-						x += dx;
-						y += dy;
-						array[x][y] = playerno;	// set my marker
+						if( array[x+dx][y+dy] == EMPTY) {
+							// found a hole
+							reset();
 						
-						moves++;
-					}
-					else {
-						nextMove();
-					}				
+							// advance					
+							x += dx;
+							y += dy;
+							array[x][y] = playerno;	// set my marker
+							
+							moves++;
+						}
+					Native.wrMem(0, MAGIC);
 					
-					Native.wrMem(0, MAGIC);				
+					// if there was no move -> select new direction
+					if(m == moves) {
+						setNotPossible();
+						randDir();
+					}
+
 				}
 				else {
-					nextMove();
+					setNotPossible();
+					randDir();
 				}
+			}
 				
+			Native.wrMem(1, MAGIC);
 				// check if there are other players left
-				Native.wrMem(1, MAGIC);
 				boolean loose = false;
 				for(int i=0; i<sys.nrCpu; ++i) {
 					if(running[i] == true && i != playerno) {
@@ -221,18 +236,16 @@ public class Tron {
 				if(loose) {
 					running[playerno] = false;
 				}
-				Native.wrMem(0, MAGIC);							
-			}
+			Native.wrMem(0, MAGIC);							
 			
 			finished = true;
 		}
 		
-		private void nextMove() {
+
+		private void setNotPossible() {
 			// set current dir as not possible
 			setPossible[dx+1][dy+1] = false;
-			
-			randDir();
-		}
+		}		
 		
 		private void reset() {
 			for(int x=0; x<3; ++x) {
@@ -245,8 +258,28 @@ public class Tron {
 		}
 		
 		private boolean anyMovePossible() {
-			for(int x=0; x<3; ++x) {
-				for(int y=0; y<3; ++y) {
+			// first check if there is any place to go			
+			boolean any = false;
+			int kx, ky;
+			for(int ny=-1; ny<=1; ++ny) {
+				for(int nx=-1; nx<=1; ++nx) {
+					kx = x+nx;
+					ky = y+ny;
+					if( (kx >= 0) && 
+						(kx < SIZE) && 
+						(ky >= 0) && 
+						(ky < SIZE) ) {
+
+						if(array[kx][ky] == EMPTY) {
+							any = true;
+						}
+					}
+				}
+			}
+			if(!any) { return false; }
+			
+			for(int y=0; y<3; ++y) {
+				for(int x=0; x<3; ++x) {
 					if(setPossible[x][y] == true)
 						return true;
 				}
@@ -254,7 +287,7 @@ public class Tron {
 			return false;
 		}
 		
-		public void printLastPosition() {
+		public void stats() {
 			System.out.println("Player " + playerno + " stopped at (" + x + " | " + y +") with " + moves + " moves");
 		}
 	}
