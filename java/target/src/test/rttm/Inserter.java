@@ -36,14 +36,14 @@ public class Inserter<T> implements Runnable {
 	public boolean finished;
 	private SRSWQueue<T> q;
 	private int cnt = 0;
-	// recycle the Object -- we would use a pool in a real application
-	Object o = new Object();
 
 	public Inserter(SRSWQueue<T> queue) {
 		q = queue;
 	}
 
 	public void run() {
+		// recycle the Object -- we would use a pool in a real application
+		Object o = new Object();
 		while (cnt < Const.CNT) {
 			Native.wrMem(1, Const.MAGIC); // start transaction
 			if (!q.full()) {

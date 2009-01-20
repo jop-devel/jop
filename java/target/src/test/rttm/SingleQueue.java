@@ -32,7 +32,7 @@ import com.jopdesign.sys.Native;
 import com.jopdesign.sys.Startup;
 
 /**
- * Test program for RTTM with two bound Queues.
+ * Test program for RTTM with single bounded queue (producer/consumer).
  * 
  * @author Martin Schoeberl
  *
