@@ -251,6 +251,25 @@
 		<pathelement location="${tools}/dist/lib/joptimizer.jar"/>
 	</path>
 
+	<target name="libgraph" description="Build libgraph as standalone library">
+		<mkdir dir="${tools}/dist/classes"/>
+		<mkdir dir="${tools}/dist/lib"/>
+		
+		<javac debug="true" destdir="${tools}/dist/classes" classpathref="ext-cp" encoding="Latin1">
+		    <src path="${tools}/src"/>
+		    <include name="com/jopdesign/libgraph/**/*"/>
+		</javac>
+
+		<jar basedir="${tools}/dist/classes" destfile="${tools}/dist/lib/libgraph.jar">
+		    <include name="com/jopdesign/libgraph/**/*"/>
+		</jar>
+		
+		<!-- package resource files from source path -->
+		<jar basedir="${tools}/src" destfile="${tools}/dist/lib/libgraph.jar" update="true">
+		    <include name="com/jopdesign/libgraph/**/*.properties"/>
+		</jar>
+	</target>
+
 	<target name="joptimizer" description="Build the JOPtimizer tool" if="use-joptimizer">
 
 		<mkdir dir="${tools}/dist/classes"/>
