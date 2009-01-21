@@ -48,6 +48,8 @@ public class HTTPServer extends TcpHandler {
 	public static final int CONT_REPLY = 2;
 	public static final int QUIT = 3;
 
+	public static final int MAX_CMDLEN = 4*1024;
+
 	static Ejip ejip;
 	static Net net;
 	static LinkLayer ipLink;
@@ -105,6 +107,9 @@ public class HTTPServer extends TcpHandler {
 					state = QUIT;
 				}
 			} else {
+				if (cmd.length() > MAX_CMDLEN) {
+					state = QUIT;
+				}
 				// just ack what we have
 				return null;
 			}
