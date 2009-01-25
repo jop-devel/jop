@@ -28,20 +28,14 @@ import joptimizer.config.JopConfig;
 import joptimizer.framework.actions.Action;
 import joptimizer.framework.actions.ActionCollection;
 import joptimizer.framework.actions.ActionException;
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * a simple commandline interpreter class.
@@ -110,6 +104,7 @@ public class CmdLine {
         out.println("  info <classname>      Print some infos about the structure of a class.");
         out.println("  get <var>             Get the value of an option.");
         out.println("  set <var> <val>       Set an option to a given value.");
+        out.println("  setlog <lvl> [<path>] Set the default loglevel or the level of a log4j logger.");
         out.println("  unset <var>           Unset the given option.");
         out.println("  run <action>          Execute an action on all loaded classes.");
         out.println("  run <action> <class> [<method>] ");
@@ -450,6 +445,20 @@ public class CmdLine {
             } catch (ConfigurationException e) {
                 out.println("Could not unset option: " + e.getMessage());
                 logger.info("Could not unset option.", e);
+            }
+
+        } else if ( "setlog".equals(args[0]) ) {
+            if ( args.length != 3 && args.length != 2 ) {
+                out.println("Syntax is: setlog <level> [<logger>]");
+                return false;
+            }
+            Level level = Level.toLevel(args[1]);
+            if ( args.length == 2 ) {
+                out.println("Setting loglevel " + level.toString());
+                Logger.getRootLogger().setLevel(level);
+            } else {
+                out.println("Setting loglevel " + level.toString() + " for " + args[2]);
+                Logger.getLogger(args[2]).setLevel(level);
             }
 
         } else if ( "run".equals(args[0]) ) {

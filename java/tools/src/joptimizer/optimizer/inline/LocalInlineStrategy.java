@@ -39,11 +39,7 @@ import joptimizer.config.JopConfig;
 import joptimizer.framework.actions.ActionException;
 import org.apache.log4j.Logger;
 
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.List;
-import java.util.TreeSet;
+import java.util.*;
 
 /**
  * A simple inline selector which orders invocations by the code size per method.
@@ -171,17 +167,26 @@ public class LocalInlineStrategy extends AbstractInlineStrategy {
                 continue;
             }
 
+            MethodCode methodCode = null;
             try {
-                MethodCode methodCode = methodInfo.getMethodCode();
+                methodCode = methodInfo.getMethodCode();
 
                 execute(methodInfo, methodCode.getGraph());
                 methodCode.compileGraph();
 
             } catch (GraphException e) {
                 if ( getJopConfig().doIgnoreActionErrors() ) {
-                    logger.warn("Could not inline method {"+methodInfo.getFQMethodName()+"}, skipping.", e);
+                    logger.warn("Could not get or compile code for method {"+
+                            methodInfo.getFQMethodName()+"}, skipping.", e);
                 } else {
-                    throw new ActionException("Could not get CFG for method.", e);
+                    throw new ActionException("Could not get or compile code for method {"+
+                            methodInfo.getFQMethodName()+"}.", e);
+                }
+            } catch (ActionException e) {
+                if ( getJopConfig().doIgnoreActionErrors() ) {
+                    logger.warn("Error inlining in method {"+methodInfo.getFQMethodName()+"}, skipping method.", e);
+                } else {
+                    throw e;
                 }
             }
         }

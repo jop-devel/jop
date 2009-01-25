@@ -162,7 +162,7 @@ public class InlineHelper {
         try {
             result = inliner.doInline(check);
         } catch (GraphException e) {
-            throw new ActionException("Could not perform inlining.", e);
+            throw new ActionException("Error inlining {" + check.getInvokedMethod().getFQMethodName()+ "}.", e);
         }
 
         return result;

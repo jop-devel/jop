@@ -18,9 +18,7 @@
  */
 package joptimizer.optimizer.inline;
 
-import com.jopdesign.libgraph.cfg.BlockCloner;
-import com.jopdesign.libgraph.cfg.ControlFlowGraph;
-import com.jopdesign.libgraph.cfg.GraphException;
+import com.jopdesign.libgraph.cfg.*;
 import com.jopdesign.libgraph.cfg.block.BasicBlock;
 import com.jopdesign.libgraph.cfg.block.CodeBlock;
 import com.jopdesign.libgraph.cfg.block.QuadCode;
@@ -30,41 +28,16 @@ import com.jopdesign.libgraph.cfg.statements.ControlFlowStmt;
 import com.jopdesign.libgraph.cfg.statements.StmtHandle;
 import com.jopdesign.libgraph.cfg.statements.common.InvokeStmt;
 import com.jopdesign.libgraph.cfg.statements.common.ReturnStmt;
-import com.jopdesign.libgraph.cfg.statements.quad.QuadCopy;
-import com.jopdesign.libgraph.cfg.statements.quad.QuadIfZero;
-import com.jopdesign.libgraph.cfg.statements.quad.QuadInvoke;
-import com.jopdesign.libgraph.cfg.statements.quad.QuadNew;
-import com.jopdesign.libgraph.cfg.statements.quad.QuadParamAssign;
-import com.jopdesign.libgraph.cfg.statements.quad.QuadReturn;
-import com.jopdesign.libgraph.cfg.statements.quad.QuadStatement;
-import com.jopdesign.libgraph.cfg.statements.quad.QuadThisAssign;
-import com.jopdesign.libgraph.cfg.statements.quad.QuadThrow;
-import com.jopdesign.libgraph.cfg.statements.stack.StackDup;
-import com.jopdesign.libgraph.cfg.statements.stack.StackGoto;
-import com.jopdesign.libgraph.cfg.statements.stack.StackIfZero;
-import com.jopdesign.libgraph.cfg.statements.stack.StackInvoke;
-import com.jopdesign.libgraph.cfg.statements.stack.StackNew;
-import com.jopdesign.libgraph.cfg.statements.stack.StackParamAssign;
-import com.jopdesign.libgraph.cfg.statements.stack.StackStatement;
-import com.jopdesign.libgraph.cfg.statements.stack.StackStore;
-import com.jopdesign.libgraph.cfg.statements.stack.StackThisAssign;
-import com.jopdesign.libgraph.cfg.statements.stack.StackThrow;
+import com.jopdesign.libgraph.cfg.statements.quad.*;
+import com.jopdesign.libgraph.cfg.statements.stack.*;
 import com.jopdesign.libgraph.cfg.variable.OffsetVariableMapper;
 import com.jopdesign.libgraph.cfg.variable.Variable;
 import com.jopdesign.libgraph.cfg.variable.VariableTable;
 import com.jopdesign.libgraph.struct.AppStruct;
-import com.jopdesign.libgraph.struct.ConstantClass;
-import com.jopdesign.libgraph.struct.ConstantMethod;
 import com.jopdesign.libgraph.struct.TypeException;
 import com.jopdesign.libgraph.struct.type.TypeInfo;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 /**
  * This class does the actual inlining, but performs no code checks at all.
@@ -139,7 +112,8 @@ public class CodeInliner {
         checkBlocks.addAll( linkFirstBlock(block, graph.getBlock(firstBlock), invokeStmt, offset) );
 
         // link inlined blocks to next block and exceptionhandler
-        linkBlocks(graph, firstBlock, next, invokeStmt);
+        // TODO error recovery if anything goes wrong here (undo inline? skip)
+        linkBlocks(graph, firstBlock, next, invokeStmt, offset);
 
         if ( insertCheckCode && unsafeInline) {
             checkBlocks.addAll( createCheckCode(block, next, invokeStmt) );
@@ -237,8 +211,10 @@ public class CodeInliner {
      * @param firstBlock the index of the first inlined block.
      * @param next the next block after the inlined code.
      * @param invokeStmt the invocation statement.
+     * @param offset local variable slot offset
+     * @throws com.jopdesign.libgraph.cfg.GraphException if calculating the stackdepth fails
      */
-    private void linkBlocks(ControlFlowGraph graph, int firstBlock, BasicBlock next, InvokeStmt invokeStmt) {
+    private void linkBlocks(ControlFlowGraph graph, int firstBlock, BasicBlock next, InvokeStmt invokeStmt, int offset) throws GraphException {
 
         int nextIndex = next.getBlockIndex();
         List exHandler = next.getExceptionHandlers();
@@ -246,6 +222,24 @@ public class CodeInliner {
         Variable resultVar = null;
         if ( graph.getType() == ControlFlowGraph.TYPE_QUAD ) {
             resultVar = ((QuadInvoke)invokeStmt).getAssignedVar();
+        } else {
+            // need to calculate the stack depth for inlined basic blocks
+            // TODO if code with exception handlers is inlined, start on first block of exception handlers too
+            boolean error;
+
+            StackWalker stackWalker = new StackWalker();
+            CFGWalker walker = new CFGWalker(graph, stackWalker, firstBlock, nextIndex - 1);
+
+            stackWalker.setStack(((StackInvoke) invokeStmt).getPopTypes());
+            error = walker.walkDFS(firstBlock);
+
+            if ( error ) {
+                // should never happen
+                throw new GraphException("Inconsistent stack found or reference outside original code.");
+            }
+            if ( !walker.allVisited() ) {
+                throw new GraphException("Found unreachable code.");
+            }
         }
 
         for ( int i = firstBlock; i < nextIndex; i++ ) {
@@ -266,11 +260,40 @@ public class CodeInliner {
                 if ( resultVar != null ) {
                     QuadReturn ret = (QuadReturn) cf;
                     block.getQuadCode().addStatement(new QuadCopy(ret.getType(), resultVar, ret.getReturnVar()));
+                } else if ( graph.getType() == ControlFlowGraph.TYPE_STACK ) {
+                    StackCode stackCode = block.getStackCode();
+
+                    // if something is left on the stack, insert code to remove it
+                    if ( stackCode.getEndStack().length != 0 ) {
+                        createStackReturnCleanup(stackCode, ((ReturnStmt)cf).getType(), offset);
+                    }
                 }
 
                 block.setNextBlock(next);
             }
 
+        }
+    }
+
+    private void createStackReturnCleanup(StackCode stackCode, TypeInfo returnType, int offset) {
+        TypeInfo[] stack = stackCode.getEndStack();
+        boolean hasRetval = returnType != null && returnType.getType() != TypeInfo.TYPE_VOID;
+
+        Variable tmpVar = null;
+
+        // method returns something, store on stack
+        if ( hasRetval ) {
+            tmpVar = stackCode.getBasicBlock().getGraph().getVariableTable().getDefaultLocalVariable(offset);
+            stackCode.addStatement(new StackStore(returnType, tmpVar));
+        }
+
+        // pop rest from stack
+        for (int i = stack.length - 1; i >= 0; i--) {
+            stackCode.addStatement(new StackPop(stack[i]));
+        }
+
+        if ( hasRetval ) {
+            stackCode.addStatement(new StackLoad(returnType, tmpVar));
         }
     }
 
@@ -398,6 +421,8 @@ public class CodeInliner {
      * @return collection of new blocks.
      */
     private Collection createCheckCode(BasicBlock block, BasicBlock next, InvokeStmt invokeStmt) {
+
+        // TODO create code to do ref.getClass().getName().equals(<assumedClassName>)
         return Collections.EMPTY_SET;
     }
 }
