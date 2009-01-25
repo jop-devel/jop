@@ -40,9 +40,21 @@ public class StackEmulator {
     }
 
     public void init(TypeInfo[] stack) {
-        this.stack = stack;
+        this.stack = new TypeInfo[stack.length + 3];
+        System.arraycopy(stack, 0, this.stack, 0, stack.length);
         maxSize = stack.length;
         size = maxSize;
+    }
+
+    /**
+     * Change the current stack without resetting the maximum stack size.
+     * @param stack the new stackinfo to set.
+     */
+    public void setStack(TypeInfo[] stack) {
+        this.stack = new TypeInfo[stack.length + 3];
+        System.arraycopy(stack, 0, this.stack, 0, stack.length);
+        size = stack.length;
+        maxSize = Math.max(size, maxSize);
     }
 
     /**

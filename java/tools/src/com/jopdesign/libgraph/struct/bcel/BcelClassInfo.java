@@ -18,28 +18,14 @@
  */
 package com.jopdesign.libgraph.struct.bcel;
 
-import com.jopdesign.libgraph.struct.AppStruct;
-import com.jopdesign.libgraph.struct.ClassInfo;
-import com.jopdesign.libgraph.struct.ConstantPoolInfo;
-import com.jopdesign.libgraph.struct.TypeException;
+import com.jopdesign.libgraph.struct.*;
+import com.jopdesign.libgraph.struct.type.FieldSignature;
+import com.jopdesign.libgraph.struct.type.MethodSignature;
 import org.apache.bcel.Constants;
-import org.apache.bcel.classfile.ConstantCP;
+import org.apache.bcel.classfile.*;
 import org.apache.bcel.classfile.ConstantClass;
-import org.apache.bcel.classfile.ConstantFieldref;
-import org.apache.bcel.classfile.ConstantInterfaceMethodref;
-import org.apache.bcel.classfile.ConstantMethodref;
-import org.apache.bcel.classfile.ConstantNameAndType;
-import org.apache.bcel.classfile.ConstantPool;
-import org.apache.bcel.classfile.DescendingVisitor;
 import org.apache.bcel.classfile.EmptyVisitor;
-import org.apache.bcel.classfile.Field;
-import org.apache.bcel.classfile.JavaClass;
-import org.apache.bcel.classfile.Method;
-import org.apache.bcel.generic.ArrayType;
-import org.apache.bcel.generic.ClassGen;
-import org.apache.bcel.generic.ConstantPoolGen;
-import org.apache.bcel.generic.ObjectType;
-import org.apache.bcel.generic.Type;
+import org.apache.bcel.generic.*;
 import org.apache.log4j.Logger;
 
 import java.io.DataOutputStream;
@@ -328,6 +314,32 @@ public class BcelClassInfo extends ClassInfo {
 
     protected void loadFieldInfos() {
         new DescendingVisitor(javaClass, new FieldVisitor()).visit();
+    }
+
+    protected MethodInfo createMethodInfo(MethodSignature signature, int accessType) {
+
+        ConstantPoolGen cpg = classGen.getConstantPool();
+
+        // TODO initialize method
+        
+        Method m = new Method();
+        classGen.addMethod(m);
+        modified = true;
+
+        return new BcelMethodInfo(this, m);
+    }
+
+    protected FieldInfo createFieldInfo(FieldSignature signature, int accessType) {
+
+        /*
+        // TODO implement
+        Field f = new Field();
+        classGen.addField(f);
+        modified = true;
+
+        return new BcelFieldInfo(this, f);
+        */
+        return null;
     }
 
     private void updateClass() {

@@ -18,23 +18,12 @@
  */
 package com.jopdesign.libgraph.struct;
 
+import com.jopdesign.libgraph.struct.type.FieldSignature;
 import com.jopdesign.libgraph.struct.type.MethodSignature;
 import org.apache.log4j.Logger;
 
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.io.*;
+import java.util.*;
 
 /**
  * This class represents a fully loaded class or interface.
@@ -509,6 +498,24 @@ public abstract class ClassInfo implements ModifierInfo {
         return references.size();
     }
 
+    public MethodInfo addMethodInfo(MethodSignature signature, int accessType) {
+        // TODO check if method already exists
+        MethodInfo method = createMethodInfo(signature, accessType);
+        if ( method != null ) {
+            addMethodInfo(method);
+        }
+        return method;
+    }
+
+    public FieldInfo addFieldInfo(FieldSignature signature, int accessType) {
+        // TODO check if field already exists
+        FieldInfo field = createFieldInfo(signature, accessType);
+        if ( field != null ) {
+            addFieldInfo(field);
+        }
+        return field;
+    }
+
     protected void addMethodInfo(MethodInfo method) {
         methods.put(MethodSignature.createFullName(method.getName(), method.getSignature()), method);
     }
@@ -564,4 +571,9 @@ public abstract class ClassInfo implements ModifierInfo {
     protected abstract void loadMethodInfos();
 
     protected abstract void loadFieldInfos();
+
+    protected abstract MethodInfo createMethodInfo(MethodSignature signature, int accessType);
+
+    protected abstract FieldInfo createFieldInfo(FieldSignature signature, int accessType);
+
 }

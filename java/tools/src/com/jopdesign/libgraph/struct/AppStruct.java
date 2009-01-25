@@ -90,6 +90,9 @@ public class AppStruct {
     }
 
     public ClassInfo createClassInfo(String className, String superClassName, boolean isInterface) {
+        if ( superClassName == null ) {
+            superClassName = "java.lang.Object";
+        }
         return loader.createClassInfo(this, className, superClassName, isInterface);
     }
 
