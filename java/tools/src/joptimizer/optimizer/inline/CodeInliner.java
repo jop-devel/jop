@@ -34,7 +34,9 @@ import com.jopdesign.libgraph.cfg.variable.OffsetVariableMapper;
 import com.jopdesign.libgraph.cfg.variable.Variable;
 import com.jopdesign.libgraph.cfg.variable.VariableTable;
 import com.jopdesign.libgraph.struct.AppStruct;
+import com.jopdesign.libgraph.struct.ConstantValue;
 import com.jopdesign.libgraph.struct.TypeException;
+import com.jopdesign.libgraph.struct.type.BaseType;
 import com.jopdesign.libgraph.struct.type.TypeInfo;
 
 import java.util.*;
@@ -47,11 +49,13 @@ import java.util.*;
 public class CodeInliner {
 
     private boolean insertCheckCode;
+    private boolean insertFastNPECode;
     private AppStruct appStruct;
 
     public CodeInliner(AppStruct appStruct) {
         this.appStruct = appStruct;
         insertCheckCode = false;
+        insertFastNPECode = false;
     }
 
     public AppStruct getAppStruct() {
@@ -72,6 +76,25 @@ public class CodeInliner {
      */
     public void setInsertCheckCode(boolean insertCheckCode) {
         this.insertCheckCode = insertCheckCode;
+    }
+
+    /**
+     * Check if a faster nullpointer exception generation should be used.
+     * Some bytecode verifiers may not like this, because non-throwable objects are thrown
+     * (but only if they are null).
+     * @return true if a faster NPE code should be generated.
+     */
+    public boolean doInsertFastNPECode() {
+        return insertFastNPECode;
+    }
+
+    /**
+     * Enable insertion of faster nullpointer exception generation, defaults to false.
+     * @see #doInsertFastNPECode()
+     * @param insertFastNPECode true if faster NPE should be generated.
+     */
+    public void setInsertFastNPECode(boolean insertFastNPECode) {
+        this.insertFastNPECode = insertFastNPECode;
     }
 
     public InlineResult doInline(CheckResult check) throws GraphException {
@@ -388,6 +411,8 @@ public class CodeInliner {
         newBlocks.add(targetBlock);
 
         // NPE is created implicitly when throwing null
+        // must push null first, else some bytecode verifiers may say this is not a throwable reference.
+        newCode.addStatement(new StackPush(new ConstantValue(BaseType.CONST_NULLREF)));
         newCode.addStatement(new StackThrow());
 
         return 1;
@@ -405,8 +430,10 @@ public class CodeInliner {
         QuadCode newCode = targetBlock.getQuadCode();
         newBlocks.add(targetBlock);
 
-        newCode.addStatement(new QuadThrow(thisVar));
-        
+        ConstantValue nullVal = new ConstantValue(TypeInfo.CONST_NULLREF);
+        Variable nullVar = code.getBasicBlock().getGraph().getVariableTable().getDefaultConstant(nullVal);
+        newCode.addStatement(new QuadThrow(nullVar));
+
         return 1;
     }
 

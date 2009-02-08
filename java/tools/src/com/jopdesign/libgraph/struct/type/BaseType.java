@@ -70,18 +70,4 @@ public class BaseType extends AbstractType {
         return getTypeName(getMachineType());
     }
 
-    public static String typeStackToString(TypeInfo[] stack) {
-        return typeStackToString(stack, ", ");
-    }
-
-    public static String typeStackToString(TypeInfo[] stack, String delim) {
-        StringBuffer buf = new StringBuffer();
-
-        for (int i = 0; i < stack.length; i++) {
-            TypeInfo typeInfo = stack[i];
-            if ( i > 0 ) buf.append(delim);
-            buf.append(typeInfo.getTypeName());
-        }
-        return buf.toString();
-    }
 }

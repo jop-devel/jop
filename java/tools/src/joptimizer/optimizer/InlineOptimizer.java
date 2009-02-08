@@ -27,11 +27,7 @@ import joptimizer.config.StringOption;
 import joptimizer.framework.JOPtimizer;
 import joptimizer.framework.actions.AbstractGraphAction;
 import joptimizer.framework.actions.ActionException;
-import joptimizer.optimizer.inline.CodeInliner;
-import joptimizer.optimizer.inline.InlineChecker;
-import joptimizer.optimizer.inline.InlineHelper;
-import joptimizer.optimizer.inline.InlineStrategy;
-import joptimizer.optimizer.inline.LocalInlineStrategy;
+import joptimizer.optimizer.inline.*;
 import org.apache.log4j.Logger;
 
 import java.util.List;
@@ -53,6 +49,8 @@ public class InlineOptimizer extends AbstractGraphAction {
     public static final String CONF_INLINE_IGNORE = "ignore";
 
     public static final String CONF_INLINE_CHECK = "checkcode";
+
+    public static final String CONF_FAST_NPE = "fastnpe";
 
     public static final String CONF_CHANGE_ACCESS = "changeaccess";
 
@@ -129,7 +127,7 @@ public class InlineOptimizer extends AbstractGraphAction {
         }
 
         boolean checkCode = isActionEnabled(config, CONF_INLINE_CHECK);
-        
+
         inliner.setInsertCheckCode(checkCode);
         checker.setUseCheckCode(checkCode);
         checker.setAssumeDynamicLoading(config.doAssumeDynamicLoading());

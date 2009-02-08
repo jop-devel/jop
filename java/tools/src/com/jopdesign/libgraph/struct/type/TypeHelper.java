@@ -166,4 +166,55 @@ public class TypeHelper {
 
         return retType;
     }
+
+    public static String typeStackToString(TypeInfo[] stack) {
+        return typeStackToString(stack, ", ");
+    }
+
+    public static String typeStackToString(TypeInfo[] stack, String delim) {
+        StringBuffer buf = new StringBuffer();
+
+        for (int i = 0; i < stack.length; i++) {
+            TypeInfo typeInfo = stack[i];
+            if ( i > 0 ) buf.append(delim);
+            buf.append(typeInfo.getTypeName());
+        }
+        return buf.toString();
+    }
+
+    public static boolean compareTypeStacks(TypeInfo[] stack1, TypeInfo[] stack2, boolean machineTypeOnly) {
+
+        if ( stack1 == null && stack2 == null ) {
+            return true;
+        } else if ( stack1 == null || stack2 == null ) {
+            return false;
+        }
+
+        if ( stack1.length != stack2.length ) {
+            return false;
+        }
+
+        for (int i = 0; i < stack1.length; i++) {
+            if ( !compareTypes(stack1[i], stack2[i], machineTypeOnly) ) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public static boolean compareTypes(TypeInfo type1, TypeInfo type2, boolean machineTypeOnly) {
+        if ( type1 == null && type2 == null ) {
+            return true;
+        } else if ( type1 == null || type2 == null ) {
+            return false;
+        }
+
+        if ( machineTypeOnly ) {
+            return type1.getMachineType() == type2.getMachineType();
+        } else {
+            // TODO compare only type?
+            return type1.equals(type2);
+        }
+    }
 }

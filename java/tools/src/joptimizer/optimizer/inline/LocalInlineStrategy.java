@@ -118,7 +118,14 @@ public class LocalInlineStrategy extends AbstractInlineStrategy {
         try {
             // add main method as root
             ClassInfo root = getAppStruct().getClassInfo(config.getMainClassName(), false);
+            if ( root == null ) {
+                throw new ActionException("Could not find main class {"+config.getMainClassName()+"}.");
+            }
             MethodInfo main = root.getMethodInfo(config.getMainMethodSignature());
+            if ( main == null ) {
+                throw new ActionException("Could not find main method {"+config.getMainMethodSignature()+
+                        "} in main class {"+config.getMainClassName()+"}.");
+            }
             callgraph.addRoot(main);
 
             // add all methods of other root classes as root

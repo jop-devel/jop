@@ -20,11 +20,9 @@ package com.jopdesign.libgraph.cfg;
 
 import com.jopdesign.libgraph.cfg.block.BasicBlock;
 import com.jopdesign.libgraph.cfg.block.StackCode;
-import com.jopdesign.libgraph.struct.type.BaseType;
+import com.jopdesign.libgraph.struct.type.TypeHelper;
 import com.jopdesign.libgraph.struct.type.TypeInfo;
 import org.apache.log4j.Logger;
-
-import java.util.Arrays;
 
 /**
  * This visitor will update the stack depth information of basic blocks using the
@@ -58,7 +56,7 @@ public class StackWalker implements CFGWalker.Visitor {
 
         if ( logger.isDebugEnabled() ) {
             logger.debug("Starting at block " + block.getBlockIndex() + " with stack: " +
-                BaseType.typeStackToString(emulator.getCurrentStack()) );
+                TypeHelper.typeStackToString(emulator.getCurrentStack()) );
         }
 
         code.setStartStack(emulator.getCurrentStack());
@@ -78,17 +76,17 @@ public class StackWalker implements CFGWalker.Visitor {
 
         if ( logger.isDebugEnabled() ) {
             logger.debug("Visiting block " + block.getBlockIndex() + " from block " + parentBlock.getBlockIndex() +
-                ", stack: " +BaseType.typeStackToString(stack));
+                ", stack: " + TypeHelper.typeStackToString(stack));
         }
 
         if ( edgeType != EDGE_NORMAL ) {
             // for loops, check stack consistency
-            if ( !Arrays.equals(stack, block.getStackCode().getStartStack()) ) {
+            if ( !TypeHelper.compareTypeStacks(stack, block.getStackCode().getStartStack(), true) ) {
                 logger.error("Found inconsistent stack types in loop:");
                 logger.error(" from block " + parentBlock.getBlockIndex() + ": " +
-                        BaseType.typeStackToString(stack));
+                        TypeHelper.typeStackToString(stack));
                 logger.error(" to block " + block.getBlockIndex() + ": " +
-                        BaseType.typeStackToString(block.getStackCode().getStartStack()));
+                        TypeHelper.typeStackToString(block.getStackCode().getStartStack()));
                 return true;
             }
         } else {
@@ -101,7 +99,7 @@ public class StackWalker implements CFGWalker.Visitor {
 
             if ( logger.isDebugEnabled() ) {
                 logger.debug("    Stack at end of block " + block.getBlockIndex() + ": " +
-                    BaseType.typeStackToString(code.getEndStack()));
+                    TypeHelper.typeStackToString(code.getEndStack()));
             }
         }
 

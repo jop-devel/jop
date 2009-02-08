@@ -22,18 +22,10 @@ import com.jopdesign.libgraph.cfg.ControlFlowGraph;
 import com.jopdesign.libgraph.cfg.GraphException;
 import com.jopdesign.libgraph.cfg.bcel.BcelGraphCompiler;
 import com.jopdesign.libgraph.cfg.bcel.BcelGraphCreator;
-import com.jopdesign.libgraph.struct.ClassInfo;
-import com.jopdesign.libgraph.struct.MethodCode;
-import com.jopdesign.libgraph.struct.MethodInfo;
-import com.jopdesign.libgraph.struct.MethodInvocation;
-import com.jopdesign.libgraph.struct.TypeException;
+import com.jopdesign.libgraph.struct.*;
 import com.jopdesign.libgraph.struct.type.MethodSignature;
 import org.apache.bcel.classfile.Method;
-import org.apache.bcel.generic.ConstantPoolGen;
-import org.apache.bcel.generic.Instruction;
-import org.apache.bcel.generic.InstructionList;
-import org.apache.bcel.generic.InvokeInstruction;
-import org.apache.bcel.generic.ObjectType;
+import org.apache.bcel.generic.*;
 import org.apache.log4j.Logger;
 
 import java.util.ArrayList;
@@ -145,8 +137,9 @@ public class BcelMethodCode extends MethodCode {
 
         // get class of invoked method
         ObjectType type = invoke.getClassType(cpg);
+        AppConfig config = getAppStruct().getConfig();
 
-        if ( getAppStruct().getConfig().isNativeClassName(type.getClassName()) ) {
+        if ( config.isNativeClassName(type.getClassName()) ) {
             if (logger.isInfoEnabled()) {
                 logger.info("Ignoring invocation of native class method {" + invoke.getMethodName(cpg) + "} in {" +
                         methodInfo.getFQMethodName() + "}.");
@@ -161,7 +154,7 @@ public class BcelMethodCode extends MethodCode {
             invokedClass = getAppStruct().tryLoadMissingClass(type.getClassName());
 
             if ( invokedClass == null ) {
-                if (logger.isInfoEnabled()) {
+                if (logger.isInfoEnabled() && !config.isLibraryClassName(type.getClassName()) ) {
                     logger.info("Could not resolve class reference to invoked method of {" +
                             type.getClassName() + "} in {" + methodInfo.getFQMethodName() + "}.");
                 }
@@ -175,8 +168,11 @@ public class BcelMethodCode extends MethodCode {
                 MethodSignature.createFullName(invoke.getMethodName(cpg), invoke.getSignature(cpg)), false, true );
 
         if ( invoked == null ) {
-            logger.warn("Could not find invoked method {" + invoke.getMethodName(cpg) + "} in class {"+
-                    type.getClassName()+"}.");
+            // TODO check if any superclass is a library class
+            if ( logger.isInfoEnabled() ) {
+                logger.info("Could not find invoked method {" + invoke.getMethodName(cpg) + "} in class {"+
+                        type.getClassName()+"}.");
+            }
             return null;
         }
 
