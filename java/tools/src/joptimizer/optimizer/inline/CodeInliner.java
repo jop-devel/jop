@@ -49,13 +49,11 @@ import java.util.*;
 public class CodeInliner {
 
     private boolean insertCheckCode;
-    private boolean insertFastNPECode;
     private AppStruct appStruct;
 
     public CodeInliner(AppStruct appStruct) {
         this.appStruct = appStruct;
         insertCheckCode = false;
-        insertFastNPECode = false;
     }
 
     public AppStruct getAppStruct() {
@@ -76,25 +74,6 @@ public class CodeInliner {
      */
     public void setInsertCheckCode(boolean insertCheckCode) {
         this.insertCheckCode = insertCheckCode;
-    }
-
-    /**
-     * Check if a faster nullpointer exception generation should be used.
-     * Some bytecode verifiers may not like this, because non-throwable objects are thrown
-     * (but only if they are null).
-     * @return true if a faster NPE code should be generated.
-     */
-    public boolean doInsertFastNPECode() {
-        return insertFastNPECode;
-    }
-
-    /**
-     * Enable insertion of faster nullpointer exception generation, defaults to false.
-     * @see #doInsertFastNPECode()
-     * @param insertFastNPECode true if faster NPE should be generated.
-     */
-    public void setInsertFastNPECode(boolean insertFastNPECode) {
-        this.insertFastNPECode = insertFastNPECode;
     }
 
     public InlineResult doInline(CheckResult check) throws GraphException {
