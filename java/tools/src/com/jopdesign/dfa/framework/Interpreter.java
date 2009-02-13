@@ -30,14 +30,14 @@ import org.apache.bcel.generic.InstructionHandle;
 public class Interpreter<K, V> {
 
 	private Analysis<K, V> analysis;
-	private AppInfo program;
+	private DFAAppInfo program;
 	
-	public Interpreter(Analysis<K, V> a, AppInfo p) {
+	public Interpreter(Analysis<K, V> a, DFAAppInfo p) {
 		program = p;
 		analysis = a;
 	}
 	
-	public AppInfo getProgram() {
+	public DFAAppInfo getProgram() {
 		return program;
 	}
 	

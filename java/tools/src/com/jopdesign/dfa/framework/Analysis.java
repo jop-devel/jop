@@ -40,5 +40,5 @@ public interface Analysis<K, V> {
 	public ContextMap<K, V> join(ContextMap<K, V> s1, ContextMap<K, V> s2);
 	
 	public Map			 	getResult();
-	public void				printResult(AppInfo program);
+	public void				printResult(DFAAppInfo program);
 }

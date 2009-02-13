@@ -24,14 +24,14 @@ import java.io.IOException;
 
 import com.jopdesign.dfa.analyses.LoopBounds;
 import com.jopdesign.dfa.analyses.ReceiverTypes;
-import com.jopdesign.dfa.framework.ClassInfo;
-import com.jopdesign.dfa.framework.AppInfo;
+import com.jopdesign.dfa.framework.DFAClassInfo;
+import com.jopdesign.dfa.framework.DFAAppInfo;
 
 public class Main {
 	
 	public static void main(String[] args) {
 		
-		AppInfo program = new AppInfo(new ClassInfo());
+		DFAAppInfo program = new DFAAppInfo(new DFAClassInfo());
 		
 		// basic initializations
 		program.parseOptions(args);
@@ -42,16 +42,28 @@ public class Main {
 		} catch (IOException exc) {
 			exc.printStackTrace();
 		}
+
+		System.out.println("Starting analysis...");
+		long startTime = System.currentTimeMillis();
 		
 		// get receivers for this program
 		ReceiverTypes rt = new ReceiverTypes();
 		program.setReceivers(program.runAnalysis(rt));
 //		rt.printResult(program);
+
+		long rtTime = System.currentTimeMillis();
 		
+		System.out.println("Time for ReceiverTypes: "+(rtTime - startTime));
+
 		// run loop bounds analysis
 		LoopBounds lb = new LoopBounds();
 		program.runAnalysis(lb);
 		lb.printResult(program);				
+
+		long lbTime = System.currentTimeMillis();
+		
+		System.out.println("Time for LoopBounds: "+(lbTime - rtTime));
+
 	}
 
 }

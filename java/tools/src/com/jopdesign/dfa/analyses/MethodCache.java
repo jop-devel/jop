@@ -40,7 +40,7 @@ import com.jopdesign.dfa.framework.ContextMap;
 import com.jopdesign.dfa.framework.FlowEdge;
 import com.jopdesign.dfa.framework.HashedString;
 import com.jopdesign.dfa.framework.Interpreter;
-import com.jopdesign.dfa.framework.AppInfo;
+import com.jopdesign.dfa.framework.DFAAppInfo;
 
 public class MethodCache implements	Analysis<List<HashedString>, MethodCache.CacheMapping> {
 
@@ -285,7 +285,7 @@ public class MethodCache implements	Analysis<List<HashedString>, MethodCache.Cac
 		case Constants.INVOKESTATIC: {
 			result = new ContextMap<List<HashedString>, CacheMapping>(context, new HashMap<List<HashedString>, CacheMapping>());
 
-			AppInfo p = interpreter.getProgram();
+			DFAAppInfo p = interpreter.getProgram();
 			ContextMap<String, String> receivers = p.getReceivers().get(stmt);
 			if (receivers == null) {
 				System.out.println(context.method + ": invoke "	+ instruction.toString(context.constPool.getConstantPool()) + " unknown receivers");
@@ -385,7 +385,7 @@ public class MethodCache implements	Analysis<List<HashedString>, MethodCache.Cac
 
 		Context context = new Context(input.getContext());
 
-		AppInfo p = interpreter.getProgram();
+		DFAAppInfo p = interpreter.getProgram();
 		MethodGen method = p.getMethod(methodName).getMethodGen();
 		if (method == null) {
 			System.out.println(context.method + ": " + stmt	+ " unknown method: " + methodName);
@@ -446,7 +446,7 @@ public class MethodCache implements	Analysis<List<HashedString>, MethodCache.Cac
 		return null;
 	}
 	
-	public void printResult(AppInfo program) {
+	public void printResult(DFAAppInfo program) {
 		System.out.println("NYI");
 	}
 

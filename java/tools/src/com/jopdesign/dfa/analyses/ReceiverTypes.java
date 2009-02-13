@@ -52,7 +52,7 @@ import com.jopdesign.dfa.framework.ContextMap;
 import com.jopdesign.dfa.framework.FlowEdge;
 import com.jopdesign.dfa.framework.Interpreter;
 import com.jopdesign.dfa.framework.MethodHelper;
-import com.jopdesign.dfa.framework.AppInfo;
+import com.jopdesign.dfa.framework.DFAAppInfo;
 
 public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, ReceiverTypes.TypeMapping> {
 
@@ -106,8 +106,8 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 	public ContextMap<TypeMapping, TypeMapping> initial(InstructionHandle stmt) {
 		ContextMap<TypeMapping, TypeMapping> init = new ContextMap<TypeMapping, TypeMapping>(new Context(), new HashMap<TypeMapping, TypeMapping>());
 		
-		init.add(new TypeMapping("com.jopdesign.io.IOFactory@com.jopdesign.io.IOFactory.<clinit>()V:0.sp", "com.jopdesign.io.SerialPort"));
-		init.add(new TypeMapping("com.jopdesign.io.IOFactory@com.jopdesign.io.IOFactory.<clinit>()V:0.sys", "com.jopdesign.io.SysDevice"));
+		init.add(new TypeMapping("com.jopdesign.io.IOFactory.sp", "com.jopdesign.io.SerialPort"));
+		init.add(new TypeMapping("com.jopdesign.io.IOFactory.sys", "com.jopdesign.io.SysDevice"));
 
 		return init;
 	}
@@ -174,7 +174,7 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 //				System.out.print("<" + m.heapLoc + ", " + m.type +">, ");						
 //			}
 //		}
-//		System.out.println("}");				
+//		System.out.println("}");
 
 		switch (instruction.getOpcode()) {
 		
@@ -211,7 +211,6 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 			if (type.equals(Type.STRING)) {
 				result.add(new TypeMapping(context.stackPtr, type.toString()));
 				String value = type.toString()+".value";
-				//value += "@"+context.method+":"+stmt.getPosition();	
 				String name = "char[]";
 				name += "@"+context.method+":"+stmt.getPosition();	
 				result.add(new TypeMapping(value, name));
@@ -360,22 +359,18 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 				}
 			}
 			
-//			System.out.println(receivers);
-//			System.out.println(instr.getLoadClassType(context.constPool)+" . "+instr.getFieldName(context.constPool)+":"+instr.getFieldType(context.constPool));
-
-			if (receivers.isEmpty()
-				&& instr.getFieldType(context.constPool) != Type.INT) {
+//			if (receivers.isEmpty()
+//				&& instr.getFieldType(context.constPool) != Type.INT) {
 //				System.out.println("GETFIELD not found: "+context.method+"@"+stmt+": "+instr.getFieldName(context.constPool));
-//				System.exit(1);
-			}
+////				System.exit(1);
+//			}
 			
-			AppInfo p = interpreter.getProgram();
+			DFAAppInfo p = interpreter.getProgram();
 
 			for (Iterator<String> i = receivers.iterator(); i.hasNext(); ) {
 				String receiver = i.next();
 				String heapLoc = receiver+"."+instr.getFieldName(context.constPool);
 				String namedLoc = receiver.split("@")[0]+"."+instr.getFieldName(context.constPool);
-//				System.out.println(heapLoc+" vs "+namedLoc);
 				if (p.containsField(namedLoc)) {
 					
 					recordReceiver(stmt, context, heapLoc);
@@ -399,19 +394,19 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 			
 			for (Iterator<TypeMapping> i = input.keySet().iterator(); i.hasNext(); ) {
 				TypeMapping m = i.next();
-				if (m.stackLoc >= 0 && m.stackLoc < context.stackPtr-1-fieldSize) {
+				if (m.stackLoc < context.stackPtr-1-fieldSize) {
 					result.add(m);
 				} else if (m.stackLoc == context.stackPtr-1-fieldSize) {
 					receivers.add(m.type);
 				}
 			}
 
-			if (receivers.isEmpty()) {
+//			if (receivers.isEmpty()) {
 //				System.out.println("PUTFIELD not found: "+context.method+"@"+stmt+": "+instr.getFieldName(context.constPool));
-//				System.exit(-1);
-			}
+////				System.exit(-1);
+//			}
 
-			AppInfo p = interpreter.getProgram();
+			DFAAppInfo p = interpreter.getProgram();
 
 			for (Iterator<String> i = receivers.iterator(); i.hasNext(); ) {
 				String receiver = i.next();
@@ -441,7 +436,7 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 			
 			GETSTATIC instr = (GETSTATIC)instruction;
 			
-			AppInfo p = interpreter.getProgram();
+			DFAAppInfo p = interpreter.getProgram();
 			String heapLoc = instr.getClassName(context.constPool)+"."+instr.getFieldName(context.constPool);
 
 			if (p.containsField(heapLoc)) {
@@ -467,7 +462,7 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 			
 			PUTSTATIC instr = (PUTSTATIC)instruction;
 			
-			AppInfo p = interpreter.getProgram();
+			DFAAppInfo p = interpreter.getProgram();
 			String heapLoc = instr.getClassName(context.constPool)+"."+instr.getFieldName(context.constPool);			
 			
 			if (p.containsField(heapLoc)) {			
@@ -551,10 +546,10 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 				}
 			}
 
-			if (receivers.isEmpty()) {
+//			if (receivers.isEmpty()) {
 //				System.out.println("AASTORE not found: "+context.method+"@"+stmt);
-//				System.exit(-1);
-			}
+////				System.exit(-1);
+//			}
 
 			for (Iterator<String> i = receivers.iterator(); i.hasNext(); ) {
 				String receiver = i.next();
@@ -616,12 +611,10 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 				}
 			}
 			
-//			System.out.println(receivers);
-
-			if (receivers.isEmpty()) {
+//			if (receivers.isEmpty()) {
 //					System.out.println("AALOAD not found: "+context.method+"@"+stmt);
-//					System.exit(1);
-			}
+////					System.exit(1);
+//			}
 
 			for (Iterator<String> i = receivers.iterator(); i.hasNext(); ) {
 				String receiver = i.next();
@@ -640,7 +633,7 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 			NEW instr = (NEW)instruction;			
 			filterSet(input, result, context.stackPtr);
 			String name = instr.getType(context.constPool).toString();
-			name += "@"+context.method+":"+stmt.getPosition();
+			// name += "@"+context.method+":"+stmt.getPosition();
 			result.add(new TypeMapping(context.stackPtr, name));
 			doInvokeStatic("com.jopdesign.sys.JVM.f_"+stmt.getInstruction().getName()+"(I)I", stmt, context, input, interpreter, state, result);
 		}
@@ -940,8 +933,6 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 				String signature = instr.getMethodName(context.constPool)+instr.getSignature(context.constPool);
 				String methodName = receiver+"."+signature;
 				
-				// System.out.println("######## "+methodName+" ########");
-
 				doInvokeVirtual(methodName, receiver, stmt, context, input, interpreter, state, result);
 			}
 			
@@ -959,8 +950,6 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 			String receiver = instr.getClassName(context.constPool);
 			String signature = instr.getMethodName(context.constPool)+instr.getSignature(context.constPool);
 			String methodName = receiver+"."+signature;
-			
-			// System.out.println("######## "+methodName+": "+interpreter.getProgram().getMethod(methodName)+" ########");
 			
 			if (interpreter.getProgram().getMethod(methodName).getMethodGen().isPrivate()
 					&& !interpreter.getProgram().getMethod(methodName).getMethodGen().isStatic()) {
@@ -1045,7 +1034,7 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 			Map<InstructionHandle, ContextMap<TypeMapping, TypeMapping>> state,
 			ContextMap<TypeMapping, TypeMapping> result) {
 		
-		AppInfo p = interpreter.getProgram();
+		DFAAppInfo p = interpreter.getProgram();
 		if (p.getMethod(methodName) == null) {
 			System.out.println(context.method+": "+stmt+" unknown method: "+methodName);
 			return;					
@@ -1055,8 +1044,6 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 		methodName = method.getClassName()+"."+signature;
 				
 		recordReceiver(stmt, context, methodName);
-		
-//		System.out.println(stmt+" invokes method: "+methodName);
 		
 //		LineNumberTable lines = p.getMethods().get(context.method).getLineNumberTable(context.constPool);
 //		int sourceLine = lines.getSourceLine(stmt.getPosition());
@@ -1075,7 +1062,6 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 		boolean threaded = false;	
 		
 		if (p.cliMap.get(receiver).clazz.instanceOf(p.cliMap.get("joprt.RtThread").clazz) && signature.equals("run()V")) {
-//					System.out.println("spawning thread: "+methodName);
 			c.createThread();
 			threaded = true;
 		}
@@ -1125,13 +1111,11 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 			Map<InstructionHandle, ContextMap<TypeMapping, TypeMapping>> state,
 			Map<TypeMapping, TypeMapping> result) {
 
-		AppInfo p = interpreter.getProgram();
+		DFAAppInfo p = interpreter.getProgram();
 		MethodGen method = p.getMethod(methodName).getMethodGen();
 		methodName = method.getClassName()+"."+method.getName()+method.getSignature();
 
 		recordReceiver(stmt, context, methodName);
-
-//		System.out.println(stmt+" invokes method: "+methodName);				
 
 		if (method.isNative()) {
 
@@ -1179,7 +1163,7 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 			Interpreter<TypeMapping, TypeMapping> interpreter,
 			Map<InstructionHandle, ContextMap<TypeMapping, TypeMapping>> state) {
 		
-		AppInfo p = interpreter.getProgram();
+		DFAAppInfo p = interpreter.getProgram();
 		
 		boolean modified = true;
 		while (modified) {
@@ -1218,7 +1202,6 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 
 				if (!threadResult.equals(savedResult)) {
 					modified = true;
-//					System.err.println("<changed>");
 				}
 
 				threads.put(methodName, threadResult);
@@ -1278,7 +1261,7 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 		return targets;
 	}
 	
-	public void printResult(AppInfo program) {
+	public void printResult(DFAAppInfo program) {
 		
 		for (Iterator<InstructionHandle> i = targets.keySet().iterator(); i.hasNext(); ) {
 			InstructionHandle instr = i.next();

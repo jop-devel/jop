@@ -182,8 +182,8 @@ public class Project {
 	public AppInfo loadApp() throws IOException {
 		AppInfo appInfo;
 		if(projectConfig.doDataflowAnalysis()) {
-			appInfo = new com.jopdesign.dfa.framework.AppInfo(
-							new com.jopdesign.dfa.framework.ClassInfo());
+			appInfo = new com.jopdesign.dfa.framework.DFAAppInfo(
+							new com.jopdesign.dfa.framework.DFAClassInfo());
 		} else {
 			appInfo = new AppInfo(ClassInfo.getTemplate());
 		}
@@ -242,13 +242,13 @@ public class Project {
 		return projectConfig.doDataflowAnalysis();
 	}
 	
-	public com.jopdesign.dfa.framework.AppInfo getDfaProgram() {
-		return (com.jopdesign.dfa.framework.AppInfo) this.wcetAppInfo.getAppInfo();
+	public com.jopdesign.dfa.framework.DFAAppInfo getDfaProgram() {
+		return (com.jopdesign.dfa.framework.DFAAppInfo) this.wcetAppInfo.getAppInfo();
 	}
 	
 	@SuppressWarnings("unchecked")
 	public void dataflowAnalysis() {
-		com.jopdesign.dfa.framework.AppInfo program = getDfaProgram();
+		com.jopdesign.dfa.framework.DFAAppInfo program = getDfaProgram();
 		topLevelLogger.info("Receiver analysis");
 		ReceiverTypes recTys = new ReceiverTypes();
 		Map<InstructionHandle, ContextMap<String, String>> receiverResults = 

@@ -41,7 +41,7 @@ import org.apache.bcel.generic.UnconditionalBranch;
 
 import com.jopdesign.build.MethodInfo;
 
-public class ClassInfo extends com.jopdesign.build.ClassInfo {
+public class DFAClassInfo extends com.jopdesign.build.ClassInfo {
 
 	private static final long serialVersionUID = 1L;
 
@@ -59,7 +59,7 @@ public class ClassInfo extends com.jopdesign.build.ClassInfo {
 		public void visitJavaClass(JavaClass clazz) {
 
 			this.cli = map.get(clazz.getClassName());
-			ClassInfo cli = (ClassInfo)this.cli;
+			DFAClassInfo cli = (DFAClassInfo)this.cli;
 
 			synchronized(cli) {
 				if (cli.visited) {
@@ -115,7 +115,7 @@ public class ClassInfo extends com.jopdesign.build.ClassInfo {
 
 		public void visitMethod(Method method) {
 			
-			ClassInfo cli = (ClassInfo) this.cli;
+			DFAClassInfo cli = (DFAClassInfo) this.cli;
 			
 			String methodId = method.getName() + method.getSignature();
 	        MethodGen mg = new MethodGen(method, cli.clazz.getClassName(), new ConstantPoolGen(method.getConstantPool()));
@@ -131,11 +131,11 @@ public class ClassInfo extends com.jopdesign.build.ClassInfo {
 			if (method.getInstructionList() != null) {
 
 				InstructionList exit = new InstructionList(new NOP());
-				((AppInfo)appInfo).getStatements().add(exit.getStart());
+				((DFAAppInfo)appInfo).getStatements().add(exit.getStart());
 
 				for (Iterator l = method.getInstructionList().iterator(); l.hasNext();) {
 					InstructionHandle handle = (InstructionHandle) l.next();
-					((AppInfo)appInfo).getStatements().add(handle);
+					((DFAAppInfo)appInfo).getStatements().add(handle);
 
 					Instruction instr = handle.getInstruction();
 					if (instr instanceof BranchInstruction) {
@@ -143,14 +143,14 @@ public class ClassInfo extends com.jopdesign.build.ClassInfo {
 							Select s = (Select) instr;
 							InstructionHandle[] target = s.getTargets();
 							for (int j = 0; j < target.length; j++) {
-								((AppInfo)appInfo).getFlow().addEdge(new FlowEdge(handle, target[j],
+								((DFAAppInfo)appInfo).getFlow().addEdge(new FlowEdge(handle, target[j],
 										FlowEdge.TRUE_EDGE));
 							}
-							((AppInfo)appInfo).getFlow().addEdge(new FlowEdge(handle, s.getTarget(),
+							((DFAAppInfo)appInfo).getFlow().addEdge(new FlowEdge(handle, s.getTarget(),
 									FlowEdge.FALSE_EDGE));
 						} else {
 							BranchInstruction b = (BranchInstruction) instr;
-							((AppInfo)appInfo).getFlow().addEdge(new FlowEdge(handle, b.getTarget(),
+							((DFAAppInfo)appInfo).getFlow().addEdge(new FlowEdge(handle, b.getTarget(),
 									FlowEdge.TRUE_EDGE));
 						}
 					}
@@ -158,15 +158,15 @@ public class ClassInfo extends com.jopdesign.build.ClassInfo {
 							&& !(instr instanceof UnconditionalBranch
 									|| instr instanceof Select || instr instanceof ReturnInstruction)) {
 						if (instr instanceof BranchInstruction) {
-							((AppInfo)appInfo).getFlow().addEdge(new FlowEdge(handle, handle.getNext(),
+							((DFAAppInfo)appInfo).getFlow().addEdge(new FlowEdge(handle, handle.getNext(),
 									FlowEdge.FALSE_EDGE));
 						} else {
-							((AppInfo)appInfo).getFlow().addEdge(new FlowEdge(handle, handle.getNext(),
+							((DFAAppInfo)appInfo).getFlow().addEdge(new FlowEdge(handle, handle.getNext(),
 									FlowEdge.NORMAL_EDGE));
 						}
 					}
 					if (instr instanceof ReturnInstruction) {
-						((AppInfo)appInfo).getFlow().addEdge(new FlowEdge(handle, exit.getStart(),
+						((DFAAppInfo)appInfo).getFlow().addEdge(new FlowEdge(handle, exit.getStart(),
 								FlowEdge.NORMAL_EDGE));
 					}
 				}
@@ -178,7 +178,7 @@ public class ClassInfo extends com.jopdesign.build.ClassInfo {
 		}
 	}
 
-	protected ClassInfo(JavaClass jc, AppInfo ai) {
+	protected DFAClassInfo(JavaClass jc, DFAAppInfo ai) {
 		super(jc, ai);
 
 		visited = false;
@@ -192,15 +192,15 @@ public class ClassInfo extends com.jopdesign.build.ClassInfo {
 	 * A dummy instance for the dispatch of newClassInfo() that
 	 * creates the real ClassInfo sub type
 	 */
-	public static ClassInfo getTemplate() {
-		return new ClassInfo(null, null);
+	public static DFAClassInfo getTemplate() {
+		return new DFAClassInfo(null, null);
 	}
 
 	/**
 	 * A dummy instance for the dispatch of newClassInfo() that creates the real
 	 * ClassInfo sub type
 	 */
-	public ClassInfo() {
+	public DFAClassInfo() {
 		super(null, null);
 	}
 
@@ -214,7 +214,7 @@ public class ClassInfo extends com.jopdesign.build.ClassInfo {
 	 */
 	@Override
 	public com.jopdesign.build.ClassInfo newClassInfo(JavaClass jc, com.jopdesign.build.AppInfo ai) {
-		return new ClassInfo(jc, (AppInfo)ai);
+		return new DFAClassInfo(jc, (DFAAppInfo)ai);
 	}
 
 	/**

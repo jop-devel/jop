@@ -76,7 +76,7 @@ import com.jopdesign.tools.JopInstr;
 /**
  * The thing that controls the WCETClassBlock etc.
  */
-public class WCETAnalyser extends com.jopdesign.dfa.framework.AppInfo {
+public class WCETAnalyser extends com.jopdesign.dfa.framework.DFAAppInfo {
 
 	public HashMap filePathcodeLines = new HashMap();
 
@@ -131,7 +131,7 @@ public class WCETAnalyser extends com.jopdesign.dfa.framework.AppInfo {
 	LoopBounds lb;
 
 	public WCETAnalyser() {
-		super(ClassInfo.getTemplate());
+		super(DFAClassInfo.getTemplate());
 
 		wcmbs = new ArrayList();
 		msigtowcmb = new HashMap();
@@ -345,7 +345,7 @@ public class WCETAnalyser extends com.jopdesign.dfa.framework.AppInfo {
 		Object cli[] = cliMap.values().toArray();
 		JavaClass jca[] = new JavaClass[cli.length];
 		for (int i = 0; i < jca.length; i++) {
-			jca[i] = ((ClassInfo) cli[i]).clazz;
+			jca[i] = ((DFAClassInfo) cli[i]).clazz;
 		}
 		return jca;
 	}
@@ -442,7 +442,7 @@ class SrcMethodVisitor extends AppVisitor {
 	 */
     int mid = 0;
 
-	public SrcMethodVisitor(AppInfo ai) {
+	public SrcMethodVisitor(DFAAppInfo ai) {
 		super(ai);
 	}
 	

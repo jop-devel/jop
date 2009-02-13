@@ -54,7 +54,7 @@ import com.jopdesign.dfa.framework.FlowEdge;
 import com.jopdesign.dfa.framework.HashedString;
 import com.jopdesign.dfa.framework.Interpreter;
 import com.jopdesign.dfa.framework.MethodHelper;
-import com.jopdesign.dfa.framework.AppInfo;
+import com.jopdesign.dfa.framework.DFAAppInfo;
 
 public class LoopBounds implements Analysis<List<HashedString>, Map<Location, LoopBounds.ValueMapping>> {
 
@@ -459,7 +459,7 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 				}
 			}
 
-			AppInfo p = interpreter.getProgram();
+			DFAAppInfo p = interpreter.getProgram();
 			ContextMap<String, String> receivers = p.getReceivers().get(stmt);
 			Location location = new Location(context.stackPtr-1); 
 			boolean valid = false;
@@ -495,7 +495,7 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 			
 //			System.out.println(context.stackPtr+","+fieldSize+": "+result);
 
-			AppInfo p = interpreter.getProgram();
+			DFAAppInfo p = interpreter.getProgram();
 			ContextMap<String, String> receivers = p.getReceivers().get(stmt);
 			for (Iterator<String> i = receivers.keySet().iterator(); i.hasNext(); ) {
 				
@@ -536,31 +536,34 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 				}
 			}
 
-			AppInfo p = interpreter.getProgram();
+			DFAAppInfo p = interpreter.getProgram();
 			ContextMap<String, String> receivers = p.getReceivers().get(stmt);
+
 			Location location = new Location(context.stackPtr-1);
 			boolean valid = false;
-			for (Iterator<String> i = receivers.keySet().iterator(); i.hasNext(); ) {
-				String fieldName = i.next();
-				
-				String f = fieldName.substring(fieldName.lastIndexOf("."), fieldName.length());
-				String strippedName;
-				if (fieldName.indexOf("@") >= 0) {
-					strippedName = fieldName.split("@")[0] + f;
-				} else {
-					strippedName = fieldName;
-				}
-				
-//				System.out.println(fieldName+" vs "+strippedName);
+			if (receivers != null) {
+				for (Iterator<String> i = receivers.keySet().iterator(); i.hasNext(); ) {
+					String fieldName = i.next();
 
-				if (p.containsField(strippedName)) {
-					for (Iterator<Location> k = in.keySet().iterator(); k.hasNext(); ) {
-						Location l = k.next();
-						if (l.heapLoc.equals(fieldName)) {
-							ValueMapping value = new ValueMapping(in.get(l), false);
-							value.join(result.get(location));
-							result.put(location, value);
-							valid = true;
+					String f = fieldName.substring(fieldName.lastIndexOf("."), fieldName.length());
+					String strippedName;
+					if (fieldName.indexOf("@") >= 0) {
+						strippedName = fieldName.split("@")[0] + f;
+					} else {
+						strippedName = fieldName;
+					}
+
+//					System.out.println(fieldName+" vs "+strippedName);
+
+					if (p.containsField(strippedName)) {
+						for (Iterator<Location> k = in.keySet().iterator(); k.hasNext(); ) {
+							Location l = k.next();
+							if (l.heapLoc.equals(fieldName)) {
+								ValueMapping value = new ValueMapping(in.get(l), false);
+								value.join(result.get(location));
+								result.put(location, value);
+								valid = true;
+							}
 						}
 					}
 				}
@@ -582,7 +585,7 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 				}
 			}
 
-			AppInfo p = interpreter.getProgram();
+			DFAAppInfo p = interpreter.getProgram();
 			ContextMap<String, String> receivers = p.getReceivers().get(stmt);
 			for (Iterator<String> i = receivers.keySet().iterator(); i.hasNext(); ) {
 				String fieldName = i.next();
@@ -607,7 +610,7 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 			result = new HashMap<Location, ValueMapping>(in);
 			retval.put(context.callString, result);
 
-			AppInfo p = interpreter.getProgram();
+			DFAAppInfo p = interpreter.getProgram();
 			ContextMap<String, String> receivers = p.getReceivers().get(stmt);
 			Location location = new Location(context.stackPtr);
 			boolean valid = false;
@@ -643,7 +646,7 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 				}
 			}
 
-			AppInfo p = interpreter.getProgram();
+			DFAAppInfo p = interpreter.getProgram();
 			ContextMap<String, String> receivers = p.getReceivers().get(stmt);
 			for (Iterator<String> i = receivers.keySet().iterator(); i.hasNext(); ) {
 				String name = i.next();
@@ -683,7 +686,7 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 				}
 			}
 
-			AppInfo p = interpreter.getProgram();
+			DFAAppInfo p = interpreter.getProgram();
 			ContextMap<String, String> receivers = p.getReceivers().get(stmt);
 			Location location = new Location(context.stackPtr-2);
 			boolean valid = false;
@@ -1109,7 +1112,7 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 		case Constants.INVOKEINTERFACE:
 		case Constants.INVOKESTATIC:
 		case Constants.INVOKESPECIAL: {
-			AppInfo p = interpreter.getProgram();
+			DFAAppInfo p = interpreter.getProgram();
 			ContextMap<String, String> receivers = p.getReceivers().get(stmt);
 			if (receivers == null) {
 				System.out.println(context.method + ": invoke "	+ instruction.toString(context.constPool.getConstantPool()) + " unknown receivers");
@@ -1372,7 +1375,7 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 			Map<InstructionHandle, ContextMap<List<HashedString>, Map<Location, ValueMapping>>> state,
 			Map<List<HashedString>, Map<Location, ValueMapping>> result) {
 
-		AppInfo p = interpreter.getProgram();
+		DFAAppInfo p = interpreter.getProgram();
 		MethodInfo mi = p.getMethod(methodName);
 		MethodGen method = mi.getMethodGen();
 		methodName = method.getClassName()+"."+method.getName()+method.getSignature();
@@ -1549,7 +1552,7 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 		return bounds;
 	}
 
-	public int getBound(AppInfo program, InstructionHandle instr) {
+	public int getBound(DFAAppInfo program, InstructionHandle instr) {
 				
 		ContextMap<List<HashedString>, Pair<ValueMapping>> r = bounds.get(instr);
 		if (r == null) {
@@ -1579,7 +1582,7 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 		return maxValue;
 	}
 	
-	public void printResult(AppInfo program) {
+	public void printResult(DFAAppInfo program) {
 		
 		for (Iterator<InstructionHandle> i = bounds.keySet().iterator(); i.hasNext(); ) {
 			InstructionHandle instr = i.next();

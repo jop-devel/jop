@@ -44,7 +44,7 @@ import org.apache.bcel.generic.Type;
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.build.ClinitOrder;
 
-public class AppInfo extends com.jopdesign.build.AppInfo {
+public class DFAAppInfo extends com.jopdesign.build.AppInfo {
 
 	private static final long serialVersionUID = 1L;
 
@@ -61,7 +61,7 @@ public class AppInfo extends com.jopdesign.build.AppInfo {
 	private Flow flow;
 	private Map<InstructionHandle, ContextMap<String, String>> receivers;
 	
-	public AppInfo(ClassInfo cliTemplate) {		
+	public DFAAppInfo(DFAClassInfo cliTemplate) {		
 		super(cliTemplate);
 		this.statements = new LinkedList<InstructionHandle>();
 		this.flow = new Flow();
@@ -81,7 +81,7 @@ public class AppInfo extends com.jopdesign.build.AppInfo {
 
 		List order = c.findOrder();
 		for (Iterator i = order.iterator(); i.hasNext(); ) {
-			JavaClass jc = ((ClassInfo)i.next()).clazz;
+			JavaClass jc = ((DFAClassInfo)i.next()).clazz;
 			clinits.add(jc.getClassName()+"."+clinitName+clinitSig);
 		}
 
@@ -190,7 +190,7 @@ public class AppInfo extends com.jopdesign.build.AppInfo {
 	public MethodInfo getMethod(String methodName) {
 		String className = methodName.substring(0, methodName.lastIndexOf("."));
 		String signature = methodName.substring(methodName.lastIndexOf(".")+1, methodName.length());
-		ClassInfo cli = (ClassInfo)cliMap.get(className);
+		DFAClassInfo cli = (DFAClassInfo)cliMap.get(className);
 		//System.out.println(cli.toString()+": "+cli.getMethods().keySet());
 		//System.out.println(signature+": "+cli.getMethods().get(signature)+" "+cli.getMethods().containsKey(signature));
 		return cli.getMethodInfo(signature);
@@ -199,7 +199,7 @@ public class AppInfo extends com.jopdesign.build.AppInfo {
 	public boolean containsField(String fieldName) {
 		String className = fieldName.substring(0, fieldName.lastIndexOf("."));
 		String signature = fieldName.substring(fieldName.lastIndexOf(".")+1, fieldName.length());
-		ClassInfo cli = (ClassInfo)cliMap.get(className);
+		DFAClassInfo cli = (DFAClassInfo)cliMap.get(className);
 		//System.out.println("contains: "+cli+" vs "+fieldName);
 		return cli.getFields().contains(signature);
 	}
