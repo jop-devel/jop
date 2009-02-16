@@ -1169,6 +1169,8 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 		while (modified) {
 			modified = false;
 			
+			Map<String, ContextMap<TypeMapping, TypeMapping>> tmpThreads = new LinkedHashMap<String, ContextMap<TypeMapping, TypeMapping>>();
+			
 			for (Iterator<String> k = threads.keySet().iterator(); k.hasNext(); ) {
 
 				String methodName = k.next();
@@ -1204,8 +1206,10 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 					modified = true;
 				}
 
-				threads.put(methodName, threadResult);
+				tmpThreads.put(methodName, threadResult);
 			}
+			
+			threads = tmpThreads;
 		}
 	}
 	
