@@ -194,6 +194,10 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 			int firstRange = first.assigned.getUb() - first.assigned.getLb() + 1;
 			int secondRange = second.assigned.getUb() - second.assigned.getLb() + 1;
 
+			if (firstRange < 0 || secondRange < 0) {
+				return -1;
+			}
+			
 			int firstBound;
 			if (first.assigned.getUb() < first.assigned.getLb()) {
 				firstBound = 0;
