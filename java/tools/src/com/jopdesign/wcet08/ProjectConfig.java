@@ -1,9 +1,29 @@
+/*
+  This file is part of JOP, the Java Optimized Processor
+    see <http://www.jopdesign.com/>
+
+  Copyright (C) 2008-2009, Benedikt Huber (benedikt.huber@gmail.com)
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package com.jopdesign.wcet08;
 
 import java.io.File;
 
 import com.jopdesign.wcet08.config.BooleanOption;
 import com.jopdesign.wcet08.config.Config;
+import com.jopdesign.wcet08.config.IntegerOption;
 import com.jopdesign.wcet08.config.Option;
 import com.jopdesign.wcet08.config.StringOption;
 
@@ -12,7 +32,7 @@ public class ProjectConfig {
 		new StringOption("projectname","name of the 'project', used when generating reports",true);
 	public static final StringOption APP_CLASS_NAME = 
 		new StringOption("app-class",
-			             "the name of the class containing the method to be analyzed",
+			             "the name of the class containing the main entry point of the RTJava application",
 			             false);
 	public static final StringOption TARGET_METHOD =
 		new StringOption("target-method",
@@ -29,13 +49,16 @@ public class ProjectConfig {
 		new BooleanOption("report-generation","whether reports should be generated",true);
 	public static final BooleanOption DO_DFA =
 		new BooleanOption("dataflow-analysis","whether dataflow analysis should be performed",false);
-
+	public static final BooleanOption USE_UPPAAL =
+		new BooleanOption("uppaal","perform uppaal-based WCET analysis",false);
+	public static final IntegerOption UPPAAL_COMPLEXITY_TRESHOLD =
+		new IntegerOption("uppaal-treshold","limit UPPAAL to methods below the given expanded cyclomatic complexity",true);
 	public static final Option<?>[] projectOptions =
 	{ 
 		OUT_DIR,
 		APP_CLASS_NAME, TARGET_METHOD, PROJECT_NAME,
 		TARGET_CLASSPATH, TARGET_SOURCEPATH,
-		DO_DFA
+		DO_DFA, USE_UPPAAL, UPPAAL_COMPLEXITY_TRESHOLD
 	};
 	public static File getOutDir(String subdir) {
 		File dir = new File(
@@ -53,7 +76,8 @@ public class ProjectConfig {
 		return new File(getOutDir(subdir),Config.sanitizeFileName(name));
 	}
 	public String getProjectName() {
-		return config.getOptionWithDefault(PROJECT_NAME,Config.sanitizeFileName(getMeasureTarget()));
+		return config.getOptionWithDefault(PROJECT_NAME,
+				Config.sanitizeFileName(getAppClassName() + "_" + getTargetMethodName()));
 	}
 	public File getOutDir() {
 		return new File(config.getOption(OUT_DIR),getProjectName());
@@ -83,16 +107,16 @@ public class ProjectConfig {
 	 * get the name of the method to be analyzed
 	 * @return
 	 */
-	public String getMeasureTarget() {
+	public String getTargetMethodName() {
 		return config.getOption(ProjectConfig.TARGET_METHOD);
 	}
-	public String getMeasuredClass() {
-		String measureClass = splitFQMethod(getMeasureTarget(),true);
+	public String getTargetClass() {
+		String measureClass = splitFQMethod(getTargetMethodName(),true);
 		if(measureClass == null) return getAppClassName();
 		else return measureClass;
 	}
-	public String getMeasuredMethod() {
-		return splitFQMethod(getMeasureTarget(),false);
+	public String getTargetMethod() {
+		return splitFQMethod(getTargetMethodName(),false);
 	}
 
 	/**
@@ -114,6 +138,15 @@ public class ProjectConfig {
 	}
 	public boolean doDataflowAnalysis() {
 		return config.getOption(DO_DFA);
+	}
+	public boolean useUppaal() {
+		return config.getOption(USE_UPPAAL);
+	}
+	public boolean hasUppaalComplexityTreshold() {
+		return config.hasOption(UPPAAL_COMPLEXITY_TRESHOLD);
+	}
+	public Long getUppaalComplexityTreshold() {
+		return config.getOption(UPPAAL_COMPLEXITY_TRESHOLD);
 	}
 	public static String splitFQMethod(String s, boolean getClass) {		
 		int sigIx = s.indexOf('(');
@@ -137,5 +170,8 @@ public class ProjectConfig {
 				return s;
 			}
 		}
+	}
+	public Config getConfigManager() {
+		return this.config;
 	}
 }

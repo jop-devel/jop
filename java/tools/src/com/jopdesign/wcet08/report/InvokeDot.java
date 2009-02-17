@@ -48,7 +48,7 @@ public class InvokeDot {
 		return new File(cacheDir,filename);
 	}
 	public static void invokeDot(File dotFile, File outFile) throws IOException {
-		Config c= Config.instance();
+		Config c = Config.instance();
 		File cacheDir = ProjectConfig.getOutDir(DEFAULT_CACHE_DIR);
 		InvokeDot id = new InvokeDot(c.getOption(ReportConfig.PROGRAM_DOT),cacheDir);
 		id.runDot(dotFile, outFile);

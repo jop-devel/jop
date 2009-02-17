@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.LinkedList;
@@ -34,6 +33,7 @@ import java.util.Properties;
 import java.util.Vector;
 import java.util.Map.Entry;
 
+import org.apache.log4j.Level;
 import org.apache.log4j.PropertyConfigurator;
 
 /** Configuration for WCET Analysis
@@ -98,7 +98,11 @@ public class Config {
 	/* Options which are always present */
 	public static final BooleanOption SHOW_HELP =
 		new BooleanOption("help","show help",false);
-	public static final Option<?> standardOptions[] = { SHOW_HELP };
+	public static final BooleanOption SHOW_VERSION =
+		new BooleanOption("version","get version number",false);
+	public static final BooleanOption DEBUG =
+		new BooleanOption("debug","verbose debugging mode",false);
+	public static final Option<?> standardOptions[] = { SHOW_HELP, SHOW_VERSION, DEBUG };
     /**
 	 * The underlying Properties object
 	 */
@@ -233,9 +237,14 @@ public class Config {
 			}
 		}
 	}
-
+	public void initHtmlLoggers(File errorLog, File infoLog, Level consoleLevel) throws IOException {
+		this.loggerConfig.setReportLoggers(errorLog, infoLog, consoleLevel);
+	}
 	public boolean helpRequested() {
 		return getOption(SHOW_HELP);
+	}
+	public boolean versionRequested() {
+		return getOption(SHOW_VERSION);
 	}
 	public Map<String,Object> getOptions() {
 		Map<String,Object> opts = new HashMap<String, Object>();
@@ -252,7 +261,8 @@ public class Config {
 	public String dumpConfiguration(int indent) {
 		StringBuilder sb = new StringBuilder();
 		for(Option<?> o : optionList) {
-			sb.append(String.format("%"+indent+"s%-20s ==> %s\n", "",o.getKey(),tryGetOption(o)));
+			Object val = tryGetOption(o);
+			sb.append(String.format("%"+indent+"s%-20s ==> %s\n", "",o.getKey(),val == null ? "<not set>": val));
 		}
 		return sb.toString();
 	}
@@ -263,29 +273,44 @@ public class Config {
 	 * <p>The arguments are processed as follows: If an argument is of the form
 	 * "-option" or "--option", it is considered to be an option.
 	 * If an argument is an option, the next argument is considered to be the parameter,
-	 * and we add the pair to our properties, consuming both arguments.
+	 * unless the option is boolean and the next argument is missing or an option as well.
+	 * W add the pair to our properties, consuming both arguments.
 	 * The first non-option or the argument string {@code --} terminates the option list.
 	 * @param argv The argument list
 	 * @param props The properties to update
 	 * @return An array of unconsumed arguments
+	 * @throws Exception 
 	 */
-	public String[] consumeOptions(String[] argv) {
+	public String[] consumeOptions(String[] argv) throws BadConfigurationException {
 		int i = 0;
 		Vector<String> rest = new Vector<String>();
-		while(i+1 < argv.length && argv[i].startsWith("-") && 
+		while(i < argv.length && argv[i].startsWith("-") && 
 			  ! (argv[i].equals("-") || argv[i].equals("--"))) {
-			String key,val; 
+			String key; 
 			if(argv[i].charAt(1) == '-') key = argv[i].substring(2);
 			else key = argv[i].substring(1);
-			val = argv[i+1];
 			if(null != getOptionSpec(key)) {
+				Option<? extends Object> spec = getOptionSpec(key);
+				String val = null;
+				if(i+1 < argv.length) {
+					try {
+						spec.checkFormat(argv[i+1]);
+						val = argv[i+1];
+					} catch(IllegalArgumentException ex) {
+					}
+				}
+				if(spec instanceof BooleanOption && val == null) {
+					val = "true";
+				} else if(val == null){
+					throw new BadConfigurationException("Missing argument for option: "+spec);
+				} else {
+					i++;
+				}
 				props.put(key, val);
 			} else {
-				System.err.println("Not in option set: "+key+" ("+Arrays.toString(argv));
-				rest.add(key);
-				rest.add(val);
+				throw new BadConfigurationException("Not in option set: "+key+" ("+optionSet.keySet().toString()+")");
 			}
-			i+=2;
+			i++;
 		}
 		for(;i < argv.length;i++) rest.add(argv[i]);
 		String[] restArray = new String[rest.size()];

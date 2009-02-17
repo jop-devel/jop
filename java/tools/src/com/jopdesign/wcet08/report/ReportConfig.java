@@ -20,7 +20,7 @@ public class ReportConfig {
 				"directory with custom templates for report generation",true);	
 	public static final StringOption PROGRAM_DOT = 
 		new StringOption("program-dot","if graphs should be generated from java, the path to the 'dot' binary", true);
-	public static final StringOption REPROTDIR =
+	public static final StringOption REPORTDIR =
 		new StringOption("reportdir",
 				"the directory to write reports into",true);		
 	public static final BooleanOption DUMP_ILP =
@@ -28,12 +28,9 @@ public class ReportConfig {
 	
 		
 	public static final Option<?> options[] = 
-		{ REPROTDIR, TEMPLATEDIR, 
+		{ REPORTDIR, TEMPLATEDIR, 
 		  ERROR_LOG_FILE, INFO_LOG_FILE, PROGRAM_DOT, DUMP_ILP };	
-	/* static configuration */
-	public static boolean doDumpILP() {
-		return Config.instance().getOption(DUMP_ILP);
-	}
+
 	/* dynamic configuration */
 	private Config config;
 	private File outDir;

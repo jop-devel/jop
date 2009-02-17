@@ -13,4 +13,7 @@ public class StringOption extends Option<String> {
 	@Override
 	public void checkFormat(String s) { return; }
 	public String parse(String s) { return s.trim(); }
+	public StringOption mandatory() {
+		return new StringOption(key,descr,false);
+	}
 }

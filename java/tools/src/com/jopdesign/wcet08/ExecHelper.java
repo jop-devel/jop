@@ -1,3 +1,22 @@
+/*
+  This file is part of JOP, the Java Optimized Processor
+    see <http://www.jopdesign.com/>
+
+  Copyright (C) 2008-2009, Benedikt Huber (benedikt.huber@gmail.com)
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package com.jopdesign.wcet08;
 
 import java.text.MessageFormat;
@@ -12,13 +31,21 @@ import com.jopdesign.wcet08.config.Config;
 import com.jopdesign.wcet08.config.Option;
 import com.jopdesign.wcet08.config.Config.BadConfigurationException;
 
+/**
+ * Helper class for command line executables.
+ * @author Benedikt Huber <benedikt.huber@gmail.com>
+ *
+ */
 public class ExecHelper {
 	private Class<?> execClass;
 	private String configFile;
 	private Logger tlLogger;
+	private Config config;
+	private String version;
 
-	public ExecHelper(Class<?> clazz, Logger topLevelLogger, String configFile) {
+	public ExecHelper(Class<?> clazz, String version, Logger topLevelLogger, String configFile) {
 		this.execClass = clazz;
+		this.version = version;
 		this.tlLogger = topLevelLogger;
 		this.configFile = configFile;
 	}
@@ -35,13 +62,14 @@ public class ExecHelper {
 	public void loadConfig(String[] args) {
 		try {
 			String[] argsrest = Config.load(System.getProperty(configFile),args);
-			Config c = Config.instance();
-			if(c.helpRequested()) exitUsage();
+			config = Config.instance();
+			if(config.helpRequested()) exitUsage(false);
+			if(config.versionRequested()) exitVersion();
 			if(argsrest.length != 0) {
 				exitUsage("Unknown command line arguments: "+Arrays.toString(argsrest));
 			}
-			c.checkOptions();
-			tlLogger.info("Configuration:\n"+c.dumpConfiguration(4));
+			config.checkOptions();
+			tlLogger.info("Configuration:\n"+config.dumpConfiguration(4));
 			tlLogger.info("java.library.path: "+System.getProperty("java.library.path"));
 		} catch(BadConfigurationException e) { 
 			exitUsage(e.getMessage());					
@@ -50,14 +78,21 @@ public class ExecHelper {
 			bail("Loading configuration failed");
 		}
 	}
+	public void exitVersion() {
+		printSep();
+		System.err.println(""+this.execClass);
+		System.err.println("Version: "+version);
+		printSep();
+		System.exit(0);		
+	}
 	public void exitUsage(String reason) {
 		printSep();
 		System.err.println("[USAGE ERROR] "+reason);
 		printSep();
-		exitUsage();
+		exitUsage(true);
 	}
 
-	public void exitUsage() {
+	public void exitUsage(boolean dumpConfig) {
 		System.err.println(
 			MessageFormat.format("" +
 					"Usage:\n  java -D{0}=file://<path-to-config> {1} [OPTIONS]", 
@@ -73,7 +108,7 @@ public class ExecHelper {
 			System.err.println("    "+o.toString(15));
 		}
 		System.err.println("\nSee 'wcet.properties' for an example configuration");
-		System.err.println("Current configuration:\n"+Config.instance().dumpConfiguration(4));
+		if(dumpConfig) System.err.println("Current configuration:\n"+Config.instance().dumpConfiguration(4));
 		System.exit(1);		
 	}
 	public void logException(String ctx, Throwable e) {
@@ -89,5 +124,8 @@ public class ExecHelper {
 
 	private void printSep() {
 		System.err.println("---------------------------------------------------------------");
+	}
+	public static double timeDiff(long nanoStart, long nanoStop) {
+		return (((double)nanoStop-nanoStart) / 1.0E9);		
 	}
 }

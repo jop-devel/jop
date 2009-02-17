@@ -27,9 +27,6 @@ import java.util.TreeSet;
 import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.wcet08.Project;
-import com.jopdesign.wcet08.analysis.BlockWCET;
-import com.jopdesign.wcet08.analysis.CacheConfig;
-import com.jopdesign.wcet08.config.Config;
 import com.jopdesign.wcet08.frontend.ControlFlowGraph;
 import com.jopdesign.wcet08.frontend.CallGraph.CallGraphNode;
 import com.jopdesign.wcet08.frontend.SourceAnnotations.LoopBound;
@@ -42,6 +39,7 @@ public class MethodReport {
 	String page;
 	private int sizeInWords;
 	private ControlFlowGraph fg;
+	private int cacheBlocks;
 	public MethodReport(Project p, MethodInfo m, String page) {
 		this.info = m;
 		fg = p.getWcetAppInfo().getFlowGraph(info);
@@ -54,6 +52,7 @@ public class MethodReport {
 			this.referenced.add(ref.fst().clazz.getClassName()+"."+ref.snd());
 		}
 		this.page = page;
+		this.cacheBlocks = p.getProcessorModel().getMethodCache().requiredNumberOfBlocks(fg.getNumberOfWords());
 	}
 	public MethodInfo getInfo() {
 		return info;
@@ -71,6 +70,6 @@ public class MethodReport {
 		return this.sizeInWords;
 	}
 	public int getCacheBlocks() {
-		return BlockWCET.numberOfBlocks(fg, Config.instance().getOption(CacheConfig.BLOCK_SIZE_WORDS).intValue());
+		return cacheBlocks;
 	}
 }

@@ -34,6 +34,7 @@ import java.util.Vector;
 import java.util.Map.Entry;
 
 import org.apache.bcel.classfile.LineNumber;
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.velocity.Template;
 import org.apache.velocity.VelocityContext;
@@ -45,6 +46,7 @@ import com.jopdesign.build.MethodInfo;
 import com.jopdesign.wcet.WCETInstruction;
 import com.jopdesign.wcet08.Project;
 import com.jopdesign.wcet08.config.Config;
+import com.jopdesign.wcet08.config.LoggerConfig;
 import com.jopdesign.wcet08.frontend.ControlFlowGraph;
 import com.jopdesign.wcet08.frontend.ControlFlowGraph.CFGEdge;
 import com.jopdesign.wcet08.frontend.ControlFlowGraph.CFGNode;
@@ -96,6 +98,7 @@ public class Report {
 		this.config = new ReportConfig(outDir, c);
 		outDir = config.getOutDir();
 		Config.checkDir(outDir,true);
+		c.initHtmlLoggers(config.getErrorLogFile(),config.getInfoLogFile(),Level.ERROR);
 		if(config.doInvokeDot()) {
 			this.dotInvoker = new InvokeDot(config.getDotBinary(), config.getOutDir());			
 		}

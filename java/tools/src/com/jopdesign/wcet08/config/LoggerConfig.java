@@ -19,7 +19,11 @@ public class LoggerConfig {
 		this.config = config;
 		defaultAppender = new ConsoleAppender(new PatternLayout("[%c{1}] %m\n"),"System.err");
 		defaultAppender.setName("ACONSOLE");
-		defaultAppender.setThreshold(Level.WARN);
+		if(config.getOption(Config.DEBUG)) {
+			defaultAppender.setThreshold(Level.INFO);
+		} else {
+			defaultAppender.setThreshold(Level.WARN);			
+		}
 		Logger.getRootLogger().addAppender(defaultAppender);
 	}
 	public void setReportLoggers(File errorLog, File infoLog, Level consoleLevel) 

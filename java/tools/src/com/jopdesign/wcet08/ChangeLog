@@ -1,5 +1,12 @@
 (User) ChangeLog for wcet08. Please keep current.
-
+Feb 09
+--------
+  - Rewrote CallGraph, which now takes receiver type analysis into account.
+  - Unify handling of Java implemented Bytecodes
+  - Add basic timestamp check that source file hasn't been modified after compilation.
+    It would be better to use md5 sums, of course (Makefile ?)
+  - Move all cache options into analysis/CacheConfig
+  
 Jan 09
 --------
 - 10/01/08 Create config package.

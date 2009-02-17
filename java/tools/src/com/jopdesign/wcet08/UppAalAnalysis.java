@@ -23,28 +23,50 @@ package com.jopdesign.wcet08;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.MessageFormat;
+import java.util.Collections;
+import java.util.List;
+import java.util.Vector;
 
 import org.apache.log4j.Logger;
 
+import com.jopdesign.build.MethodInfo;
+import com.jopdesign.wcet08.analysis.UppaalAnalysis;
+import com.jopdesign.wcet08.analysis.WcetCost;
 import com.jopdesign.wcet08.config.Config;
 import com.jopdesign.wcet08.config.Option;
+import com.jopdesign.wcet08.jop.JOPModel;
 import com.jopdesign.wcet08.uppaal.Translator;
 import com.jopdesign.wcet08.uppaal.UppAalConfig;
 import com.jopdesign.wcet08.uppaal.WcetSearch;
+import com.jopdesign.wcet08.uppaal.model.DuplicateKeyException;
+import com.jopdesign.wcet08.uppaal.model.XmlSerializationException;
 
 public class UppAalAnalysis {
 	private static final String CONFIG_FILE_PROP = "config";
 	private static final Logger tlLogger = Logger.getLogger(UppAalAnalysis.class);
+	private static final int ECC_TRESHOLD = 400;
 	public static Option<?>[][] options = {
 		ProjectConfig.projectOptions,
 		UppAalConfig.uppaalOptions
 	};
-
-
+	class WCETEntry {
+		MethodInfo target;
+		long wcet;
+		double searchtime;
+		double  solvertime;
+		public WCETEntry(MethodInfo target, long wcet, double searchtime, double solvertime) {
+			this.target = target;
+			this.wcet = wcet;
+			this.searchtime = searchtime; 
+			this.solvertime = solvertime;
+		}
+	}
+	
 	public static void main(String[] args) {
 		Config config = Config.instance();
 		config.addOptions(options);
-		ExecHelper exec = new ExecHelper(UppAalAnalysis.class,tlLogger,CONFIG_FILE_PROP);
+		ExecHelper exec = new ExecHelper(UppAalAnalysis.class, "1.0 [deprecated]", tlLogger, CONFIG_FILE_PROP);
 		
 		exec.initTopLevelLogger();       /* Console logging for top level messages */
 		exec.loadConfig(args);           /* Load config */
@@ -59,7 +81,7 @@ public class UppAalAnalysis {
 		File uppaalOutDir = null;
 		Project project = null;
 		try { 
-			project = new Project(c);
+			project = new Project(new ProjectConfig(c));
 			project.setTopLevelLooger(tlLogger);
 			tlLogger.info("Loading project");
 			project.load();
@@ -69,33 +91,33 @@ public class UppAalAnalysis {
 			exec.logException("loading project", e); 
 			return false; 
 		}
-
-		tlLogger.info("Starting UppAal translation");
-		Translator translator = new Translator(project, uppaalOutDir);
-		try {
-			translator.translateProgram();
-			translator.writeOutput();
-		} catch (Throwable e) {
-			exec.logException("translating WCET problem to UppAal", e);
-		}
-		tlLogger.info("model and query can be found in "+uppaalOutDir);
-		tlLogger.info("model file: "+translator.getModelFile());
-		if(UppAalConfig.hasVerifier()) {
-			tlLogger.info("Starting verification");
-			WcetSearch search = new WcetSearch(translator.getModelFile());
-			long wcet;
-			try {
-				long start = System.nanoTime();
-				wcet = search.searchWCET();
-				long end = System.nanoTime();				
-				System.out.println("wcet: "+wcet);
-				System.out.println("searchtime: "+((double)(end-start))/1E9);
-				System.out.println("solvertimemax: "+search.getMaxSolverTime());
-			} catch (IOException e) {
-				exec.logException(" binary searching for WCET using UppAal", e);
+		UppaalAnalysis ua = new UppaalAnalysis(tlLogger,project,uppaalOutDir);
+		List<MethodInfo> methods = project.getCallGraph().getImplementedMethods();
+		Collections.reverse(methods);
+		List<WCETEntry> entries = new Vector<WCETEntry>();
+		for( MethodInfo m : methods ) {
+			if(project.computeCyclomaticComplexity(m) > ECC_TRESHOLD) {
+				tlLogger.info("Skipping UppAal translation for "+m+
+						      " because extended cyclomatic compleity "+
+						      project.computeCyclomaticComplexity(m) + " > treshold");				
+			} else {
+				tlLogger.info("Starting UppAal translation for "+m);
+				WcetCost wcet;
+				try {
+					wcet = ua.calculateWCET(m);
+					entries.add(new WCETEntry(m,wcet.getCost(),ua.getSearchtime(),ua.getSolvertimemax()));
+				} catch (Exception e) {
+					exec.logException("Uppaal calculation",e);
+					return false;
+				}
 			}
-		} else {
-			tlLogger.info("No verifier binary available. Skipping search");
+		}
+		for(WCETEntry entry : entries) {
+			System.out.println("***" + entry.target.toString());
+			System.out.println("    wcet: " + entry.wcet);
+			System.out.println("    complex: " + project.computeCyclomaticComplexity(entry.target));
+			System.out.println("    searchT: " + entry.searchtime);
+			System.out.println("    solverTmax: " + entry.solvertime);			
 		}
 		return true;
 	}

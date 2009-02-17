@@ -32,6 +32,7 @@ import lpsolve.LpSolveException;
 import org.jgrapht.DirectedGraph;
 
 import com.jopdesign.wcet08.ProjectConfig;
+import com.jopdesign.wcet08.config.Config;
 import com.jopdesign.wcet08.graphutils.IDProvider;
 import com.jopdesign.wcet08.ipet.LinearConstraint.ConstraintType;
 import com.jopdesign.wcet08.report.ReportConfig;
@@ -75,6 +76,7 @@ public class MaxCostFlow<V,E> {
 	private V exit;
 	private IDProvider<Object> idProvider;
 	private String key;
+	private HashMap<Integer, DecisionVariable> dRevMap;
 
 	/**
 	 * Initialize the MCMF problem with the given graph
@@ -117,11 +119,21 @@ public class MaxCostFlow<V,E> {
 	
 	/**
 	 * Solve this MCMF problem using {@link LpSolveWrapper}.
-	 * @param flowMapOut write solution into this map, assigning a flow to each edge
+	 * @param flowMapOut if not null, write solution into this map, assigning a flow to each edge
 	 * @return the cost of the solution
 	 * @throws Exception if the ILP solver fails
 	 */
 	public double solve(Map<E,Long> flowMapOut) throws Exception {
+		return solve(flowMapOut,null);
+	}
+	/**
+	 * Solve this MCMF problem using {@link LpSolveWrapper}.
+	 * @param flowMapOut if not null, write solution into this map, assigning a flow to each edge
+	 * @param decisionsOut if not null, write assignments to decision variable in this map
+	 * @return the cost of the solution
+	 * @throws Exception if the ILP solver fails
+	 */
+	public double solve(Map<E,Long> flowMapOut, Map<DecisionVariable,Boolean> decisionsOut) throws Exception {
 		LpSolveWrapper<Object> wrapper = 
 			new LpSolveWrapper<Object>(dGen-1,true,this.idProvider);
 		for(DecisionVariable dv : dMap.keySet()) {
@@ -144,13 +156,21 @@ public class MaxCostFlow<V,E> {
 		wrapper.setObjective(costVec,true);
 		double[] objVec = new double[dGen-1];
 		wrapper.freeze();
-		if(ReportConfig.doDumpILP()) {
+		if(Config.instance().getOption(ReportConfig.DUMP_ILP)) {
 			dumpILP(wrapper);
 		}
 		double sol = Math.round(wrapper.solve(objVec));
 		if(flowMapOut != null) {
-			for(int i = 0; i < objVec.length; i++) {
+			int i = 0;
+			while(revMap.containsKey(i+1)) {
 				flowMapOut.put(revMap.get(i+1), Math.round(objVec[i]));
+				i++;
+			}
+			if(decisionsOut != null) {				
+				while(dRevMap.containsKey(i+1)) {
+					decisionsOut.put(dRevMap.get(i+1), objVec[i] > 0.5);
+					i++;
+				}
 			}
 		}
 		return sol;
@@ -184,7 +204,7 @@ public class MaxCostFlow<V,E> {
 			}
 		}
 	}
-	/* generate a bijective mapping between edges and integers */
+	/* generate a bijective mapping between edges/decision variables and integers */
 	private void generateMapping() {
 		idMap = new HashMap<E, Integer>();
 		this.revMap = new HashMap<Integer, E>();
@@ -194,7 +214,9 @@ public class MaxCostFlow<V,E> {
 			revMap.put(key, e);
 		}
 		dMap = new HashMap<DecisionVariable, Integer>();
+		dRevMap = new HashMap<Integer,DecisionVariable>();
 		dGen = idMap.size() + 1;
+		/* create ID provider */
 		this.idProvider = new IDProvider<Object>() {
 			/* Note: No closures in java, so idMap/revMap have to be instance variables */
 			public Object fromID(int id) { return revMap.get(id); }
@@ -273,6 +295,7 @@ public class MaxCostFlow<V,E> {
 	private DecisionVariable createDecisionVariable() {
 		DecisionVariable dv = new DecisionVariable(dGen++);
 		this.dMap.put(dv, dv.id);
+		this.dRevMap.put(dv.id, dv);
 		return dv;
 	}
 }

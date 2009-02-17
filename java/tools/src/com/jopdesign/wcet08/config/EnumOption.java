@@ -6,6 +6,9 @@ package com.jopdesign.wcet08.config;
 import java.util.Arrays;
 
 public class EnumOption<T extends Enum<T>> extends Option<T> {
+	public EnumOption(String key, String descr, Class<T> klazz) {
+		super(key,klazz,descr,false);
+	}
 	public EnumOption(String key, String descr, T def) {
 		super(key,descr + " " + enumDescr(def), def);
 	}
