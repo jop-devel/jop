@@ -564,35 +564,36 @@ wcet:
 		-cp $(TARGET)/tmp -o $(TARGET)/wcet/$(P3)wcet.txt -sp $(TARGET_SOURCE) $(MAIN_CLASS)
 	-rm -rf $(TARGET)/tmp
 
-# WCET08 analyser
-# make before: java_app
-# make after: dot2eps
+# WCET help
+wcet_help:
+	java $(TOOLS_CP) com.jopdesign.wcet08.WCETAnalysis -help
+# WCET analyzer
+# make before     : java_app
+# make after (dot): (cd java/target/wcet/<project-name>; make)
 #
-# OPTIONS can be configured using system properties, supplying a  property file or as command line arguments
-#    cp ... the classpath [mandatory]
-#    sp ... the sourcepath [mandatory]
-#    rootclass ... the name of the class containing the method to  be analyzed [mandatory]
-#    rootmethod ... the name (and optionally signature) of the  method to be analyzed [default: measure]
-#    projectname ...  the name of the project [default: fully  qualified name of root method]
-#    reportdir ... if reports should be generated, the directory to  write them to [optional]
-#    reportdir-parent ... if reports should be generated, the  parent directory to write them to [optional]
-#    program-dot ... the path to the dot binary if dot should be  invoked from java [optional]
-#    cache-blocks ... number of cache blocks [default: 16]
-#    cache-block-size ... size of cache blocks in bytes [default:  256]
+# Makefile options:
+# WCET_DFA: perform dataflow analysis
+# WCET_UPPAAL: whether to use modelchecking for WCET analysis
+# WCET_VERIFYTA: UPPAAL verifier executable
+# WCET_OPTIONS: Additional WCET options (run 'make wcet_help')
 #
 # Profiling: add -Xss16M -agentlib:hprof=cpu=samples to java arguments
+WCET_DFA?=no
+WCET_UPPAAL?=no
+WCET_VERIFYTA?=verifyta	 # only needed if WCET_UPPAAL=yes
 wcet08:
 	-mkdir $(TARGET)/tmp
 	java $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.build.WcetPreprocess \
 		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/tmp $(MAIN_CLASS)
-	-rm -rf $(TARGET)/wcet
 	-mkdir -p $(TARGET)/wcet
 	java \
 	  $(TOOLS_CP) com.jopdesign.wcet08.WCETAnalysis \
 		-cp $(TARGET)/dist/classes -sp $(TARGET_SOURCE) \
 		-app-class $(MAIN_CLASS) -target-method $(WCET_METHOD) \
-		-reportdir $(TARGET)/wcet
-#		-dataflow-analysis yes
+		-outdir $(TARGET)/wcet \
+		-dataflow-analysis $(WCET_DFA) \
+		-uppaal $(WCET_UPPAAL) -uppaal-verifier $(WCET_VERIFYTA) \
+		$(WCET_OPTIONS)	
 	-rm -rf $(TARGET)/tmp
 
 
