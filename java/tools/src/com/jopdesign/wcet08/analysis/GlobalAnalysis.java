@@ -1,27 +1,28 @@
 package com.jopdesign.wcet08.analysis;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
 
 import com.jopdesign.build.MethodInfo;
+import com.jopdesign.wcet08.ProcessorModel;
 import com.jopdesign.wcet08.Project;
-import com.jopdesign.wcet08.analysis.BlockWCET.WcetVisitor;
-import com.jopdesign.wcet08.analysis.BlockWCET.AlwaysMissVisitor;
-import com.jopdesign.wcet08.analysis.CacheConfig.CacheApproximation;
-import com.jopdesign.wcet08.analysis.SimpleAnalysis.MapCostProvider;
+import com.jopdesign.wcet08.analysis.LocalAnalysis.MapCostProvider;
 import com.jopdesign.wcet08.frontend.SuperGraph;
 import com.jopdesign.wcet08.frontend.ControlFlowGraph.CFGEdge;
 import com.jopdesign.wcet08.frontend.ControlFlowGraph.CFGNode;
+import com.jopdesign.wcet08.frontend.ControlFlowGraph.InvokeNode;
 import com.jopdesign.wcet08.frontend.SuperGraph.SuperInvokeEdge;
 import com.jopdesign.wcet08.frontend.SuperGraph.SuperReturnEdge;
+import static com.jopdesign.wcet08.graphutils.MiscUtils.addToSet;
 import com.jopdesign.wcet08.ipet.ILPModelBuilder;
 import com.jopdesign.wcet08.ipet.LinearVector;
 import com.jopdesign.wcet08.ipet.MaxCostFlow;
 import com.jopdesign.wcet08.ipet.ILPModelBuilder.CostProvider;
 import com.jopdesign.wcet08.ipet.MaxCostFlow.DecisionVariable;
+import com.jopdesign.wcet08.jop.MethodCache;
+import com.jopdesign.wcet08.jop.CacheConfig.StaticCacheApproximation;
 
 /**
  * Global IPET-based analysis, supporting 2-block LRU caches (static)
@@ -31,12 +32,12 @@ import com.jopdesign.wcet08.ipet.MaxCostFlow.DecisionVariable;
  */
 public class GlobalAnalysis {
 	private Project project;
-	private BlockWCET blockBuilder;
+	private Map<DecisionVariable,MethodInfo> decisionVariables =
+		new HashMap<DecisionVariable, MethodInfo>();
 	public GlobalAnalysis(Project p) {
 		this.project = p;
-		this.blockBuilder = new BlockWCET(p);
 	}
-	public WcetCost computeWCET(MethodInfo m, CacheApproximation cacheMode) throws Exception {
+	public WcetCost computeWCET(MethodInfo m, StaticCacheApproximation cacheMode) throws Exception {
 		String key = m.getFQMethodName() + "_global_" + cacheMode;
 		SuperGraph sg = new SuperGraph(project.getWcetAppInfo(),project.getFlowGraph(m));
 		ILPModelBuilder imb = new ILPModelBuilder(project);
@@ -44,13 +45,34 @@ public class GlobalAnalysis {
 		CostProvider<CFGNode> nodeWCET = new MapCostProvider<CFGNode>(nodeCostMap);
 		/* create an ILP graph for all reachable methods */
 		MaxCostFlow<CFGNode, CFGEdge> maxCostFlow = imb.buildGlobalILPModel(key, sg, nodeWCET);
-		if(cacheMode == CacheApproximation.ALL_FIT) {
+		if(cacheMode == StaticCacheApproximation.ALL_FIT) {
 			addMissOnceCost(sg,maxCostFlow);
 		}
-		/* TODO: exact cost extraction */
-		double lpCost = maxCostFlow.solve(null);
+		Map<CFGEdge, Long> flowMap = new HashMap<CFGEdge, Long>();
+		Map<DecisionVariable, Boolean> cacheMissMap = new HashMap<DecisionVariable, Boolean>();
+		double lpCost = maxCostFlow.solve(flowMap,cacheMissMap);
 		WcetCost cost = new WcetCost();
-		cost.addLocalCost(Math.round(lpCost));
+		/* exact cost extraction */
+		for(Entry<CFGEdge,Long> flowEntry : flowMap.entrySet()) {
+			CFGNode target    = sg.getEdgeTarget(flowEntry.getKey());
+			WcetCost nodeCost = nodeCostMap.get(target).getFlowCost(flowEntry.getValue());
+			cost.addNonLocalCost(nodeCost.getLocalCost() + nodeCost.getNonLocalCost());
+			if(nodeCost.getCacheCost() != 0) {
+				throw new AssertionError("Local cache cost in global ILP ??");
+			}
+		}
+		/* decision variable map */
+		MethodCache cache = project.getProcessorModel().getMethodCache();
+		for(Entry<DecisionVariable, Boolean> cacheMiss : cacheMissMap.entrySet()) {
+			if(cacheMiss.getValue()) {
+				MethodInfo mi = decisionVariables.get(cacheMiss.getKey());
+				cost.addCacheCost(cache.missOnceCost(mi));
+			}
+		}
+		long objValue = (long) (lpCost+0.5);
+		if(cost.getCost() != objValue) {
+			throw new AssertionError("Inconsistency: lpValue vs. extracted value: "+objValue+" / "+cost.getCost());
+		}
 		return cost;
 	}
 	/* add cost for missing each method once (ALL FIT) */
@@ -64,6 +86,7 @@ public class GlobalAnalysis {
 			MethodInfo invoker = invokeSite.getKey().getInvokeNode().invokerFlowGraph().getMethodInfo();
 			addToSet(accessEdges, invoker, invokeSite.getValue());
 		}
+		MethodCache cache = project.getProcessorModel().getMethodCache();
 		/* For each  MethodInfo, create a binary decision variable */
 		for(MethodInfo mi : accessEdges.keySet()) {
 			/* sum(edges) <= b_M * |edges| */
@@ -72,18 +95,10 @@ public class GlobalAnalysis {
 				lv.add(e,1);
 			}
 			DecisionVariable dVar = maxCostFlow.addFlowDecision(lv);
+			this.decisionVariables .put(dVar,mi);
 			/* cost += b_M * missCost(M) */
-			maxCostFlow.addDecisionCost(dVar, blockBuilder.getMissCost(mi));
+			maxCostFlow.addDecisionCost(dVar, cache.missOnceCost(mi));
 		}
-	}
-	/* TODO: DUP */
-	private static<K,V> void addToSet(Map<K,Set<V>> map,K key, V val) {
-		Set<V> set = map.get(key);
-		if(set == null) {
-			set = new HashSet<V>();
-			map.put(key,set);
-		}
-		set.add(val);
 	}
 	/**
 	 * compute execution time of basic blocks in the supergraph
@@ -91,7 +106,7 @@ public class GlobalAnalysis {
 	 * @return
 	 */
 	private Map<CFGNode, WcetCost> 
-		buildNodeCostMap(SuperGraph sg, CacheApproximation approx) {		
+		buildNodeCostMap(SuperGraph sg, StaticCacheApproximation approx) {		
 		HashMap<CFGNode, WcetCost> nodeCost = new HashMap<CFGNode,WcetCost>();
 		Class<? extends WcetVisitor> visitor;
 		switch(approx) {
@@ -99,9 +114,30 @@ public class GlobalAnalysis {
 		default: visitor = WcetVisitor.class; break; 
 		}
 		for(CFGNode n : sg.vertexSet()) {
-			WcetCost cost = blockBuilder.computeLocalCost(n, visitor);
+			WcetCost cost = computeLocalCost(n, visitor);
 			nodeCost.put(n,cost);
 		}
 		return nodeCost;
+	}
+	public WcetCost computeLocalCost(CFGNode n) {
+		return computeLocalCost(n,WcetVisitor.class);
+	}
+	private WcetCost computeLocalCost(CFGNode n, Class<? extends WcetVisitor> c) {
+		WcetVisitor wcetVisitor;
+		try {
+			wcetVisitor = c.newInstance();
+			wcetVisitor.project = project;
+		} catch (Exception e) {
+			throw new AssertionError("Failed to instantiate WcetVisitor: "+c+" : "+e);
+		}
+		n.accept(wcetVisitor);
+		return wcetVisitor.cost;
+	}
+	public static class AlwaysMissVisitor extends WcetVisitor {
+		public void visitInvokeNode(InvokeNode n) {
+			super.visitInvokeNode(n);
+			ProcessorModel proc = project.getProcessorModel();
+			this.cost.addCacheCost(proc.getInvokeReturnMissCost(n.invokerFlowGraph(), n.receiverFlowGraph()));
+		}
 	}
 }

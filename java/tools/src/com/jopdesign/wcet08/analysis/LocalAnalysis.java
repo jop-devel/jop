@@ -21,31 +21,20 @@ package com.jopdesign.wcet08.analysis;
 
 import java.util.HashMap;
 import java.util.Hashtable;
-import java.util.Iterator;
 import java.util.Map;
 
 import org.apache.bcel.classfile.LineNumberTable;
-import org.apache.bcel.generic.ANEWARRAY;
-import org.apache.bcel.generic.ATHROW;
-import org.apache.bcel.generic.INVOKESTATIC;
-import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
-import org.apache.bcel.generic.NEW;
-import org.apache.bcel.generic.NEWARRAY;
 import org.apache.log4j.Logger;
 import org.jgrapht.DirectedGraph;
 
 import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.MethodInfo;
-import com.jopdesign.wcet.WCETInstruction;
+import com.jopdesign.wcet08.ProcessorModel;
 import com.jopdesign.wcet08.Project;
-import com.jopdesign.wcet08.analysis.CacheConfig.CacheApproximation;
 import com.jopdesign.wcet08.frontend.BasicBlock;
 import com.jopdesign.wcet08.frontend.ControlFlowGraph;
 import com.jopdesign.wcet08.frontend.WcetAppInfo;
-import com.jopdesign.wcet08.frontend.CallGraph.CallGraphNode;
-import com.jopdesign.wcet08.frontend.ControlFlowGraph.BasicBlockNode;
-import com.jopdesign.wcet08.frontend.ControlFlowGraph.DedicatedNode;
 import com.jopdesign.wcet08.frontend.ControlFlowGraph.CFGEdge;
 import com.jopdesign.wcet08.frontend.ControlFlowGraph.CFGNode;
 import com.jopdesign.wcet08.frontend.ControlFlowGraph.InvokeNode;
@@ -53,20 +42,23 @@ import com.jopdesign.wcet08.frontend.ControlFlowGraph.SummaryNode;
 import com.jopdesign.wcet08.ipet.ILPModelBuilder;
 import com.jopdesign.wcet08.ipet.MaxCostFlow;
 import com.jopdesign.wcet08.ipet.ILPModelBuilder.CostProvider;
+import com.jopdesign.wcet08.jop.CacheConfig;
+import com.jopdesign.wcet08.jop.MethodCache;
+import com.jopdesign.wcet08.jop.CacheConfig.StaticCacheApproximation;
 import com.jopdesign.wcet08.report.ClassReport;
 
 /**
  * Simple and fast local analysis with cache approximation.
+ * For the miss-once all-fit approximation, global analysis can be used to tighten the bound.
  *
  * @author Benedikt Huber (benedikt.huber@gmail.com)
  *
  */
-public class SimpleAnalysis {
-	private static final boolean useGlobalIPET = false;
+public class LocalAnalysis {
 	class WcetKey {
 		MethodInfo m;
-		CacheApproximation alwaysHit;
-		public WcetKey(MethodInfo m, CacheApproximation mode) {
+		StaticCacheApproximation alwaysHit;
+		public WcetKey(MethodInfo m, StaticCacheApproximation mode) {
 			this.m = m; this.alwaysHit = mode;
 		}
 		@Override
@@ -137,12 +129,13 @@ public class SimpleAnalysis {
 				}
 			}			
 		}
-		/* Compute cost, sepearting local and non-local cost */
+		/* Compute cost, separating local and non-local cost */
 		private void computeCost() {
 			cost = new WcetCost();
 			for(CFGNode n : graph.vertexSet()) {
 				long flow = nodeFlow.get(n);
-				cost.addLocalCost(flow * nodeCosts.get(n).getLocalAndCacheCost());
+				cost.addLocalCost(flow * nodeCosts.get(n).getLocalCost());
+				cost.addCacheCost(flow * nodeCosts.get(n).getCacheCost());
 				cost.addNonLocalCost(flow * nodeCosts.get(n).getNonLocalCost());
 			}			
 		}
@@ -161,23 +154,27 @@ public class SimpleAnalysis {
 		
 	}
 	
-	private static final Logger logger = Logger.getLogger(SimpleAnalysis.class);
+	private static final Logger logger = Logger.getLogger(LocalAnalysis.class);
 	private Project project;
 	private WcetAppInfo appInfo;
 	private Hashtable<WcetKey, WcetCost> wcetMap;
 	private ILPModelBuilder modelBuilder;
-	private BlockWCET blockBuilder;
+	private ProcessorModel processor;
 
-	public SimpleAnalysis(Project project) {
+	public LocalAnalysis(Project project) {
 		this.project = project;
 		this.appInfo = project.getWcetAppInfo();
+		this.processor = project.getWcetAppInfo().getProcessorModel();
 
 		this.wcetMap = new Hashtable<WcetKey,WcetCost>();
 
 		this.modelBuilder = new ILPModelBuilder(project);
-		this.blockBuilder = new BlockWCET(project);
 	}
-	
+	/** WCET analyis, using the configured cache approximation strategy */
+	public WcetCost computeWCET(MethodInfo m) {
+		StaticCacheApproximation cacheMode = project.getConfig().getOption(CacheConfig.STATIC_CACHE_APPROX);
+		return computeWCET(m,cacheMode);
+	}
 	/**
 	 * WCET analysis of the given method, using some cache approximation scheme.
 	 * <ul>
@@ -195,13 +192,19 @@ public class SimpleAnalysis {
 	 * 
 	 * <p>FIXME: Logging/Report need to be cleaned up </p>
 	 */
-	public WcetCost computeWCET(MethodInfo m, CacheApproximation cacheMode) {
+	public WcetCost computeWCET(MethodInfo m, StaticCacheApproximation cacheMode) {
 		/* use memoization to speed up analysis */
 		WcetKey key = new WcetKey(m,cacheMode);
 		if(wcetMap.containsKey(key)) return wcetMap.get(key);
 
 		/* check cache is big enough */
-		blockBuilder.checkCache(m); /* TODO: should throw exception */
+		MethodCache cache = project.getProcessorModel().getMethodCache();
+		try {
+			cache.checkCache(m);
+		} catch (Exception e) {
+			/* TODO: throw exception, not error ? */
+			throw new AssertionError("Bad Method cache: "+e.getMessage());
+		}
 
 		/* build wcet map */
 		ControlFlowGraph cfg = appInfo.getFlowGraph(m);
@@ -242,10 +245,12 @@ public class SimpleAnalysis {
 			Map<String,Object> stats = new Hashtable<String, Object>();
 			stats.put("WCET",sol.getCost());
 			stats.put("mode",cacheMode);
-			stats.put("all-methods-fit-in-cache",blockBuilder.allFit(m));
+			stats.put("all-methods-fit-in-cache",cache.allFit(m));
 			project.getReport().addDetailedReport(m,"WCET_"+cacheMode.toString(),stats,nodeFlowCostDescrs,sol.getEdgeFlow());
 		}
-		return sol.getCost();
+		WcetCost cost = sol.getCost();
+		cost.moveLocalToGlobalCost();
+		return cost;
 	}
 	/**
 	 * Compute the WCET of the given control flow graph
@@ -258,7 +263,7 @@ public class SimpleAnalysis {
 	public WcetSolution runWCETComputation(
 			String name, 
 			ControlFlowGraph cfg,
-			CacheApproximation cacheMode,
+			StaticCacheApproximation cacheMode,
 			Map<CFGNode,WcetCost> nodeCosts) {		
 		if(nodeCosts == null)  nodeCosts = buildNodeCostMap(cfg,cacheMode);
 		WcetSolution sol = new WcetSolution(cfg.getGraph(),nodeCosts);
@@ -287,163 +292,97 @@ public class SimpleAnalysis {
 	 * @return
 	 */
 	private Map<CFGNode, WcetCost> 
-		buildNodeCostMap(ControlFlowGraph fg,CacheApproximation cacheMode) {
+		buildNodeCostMap(ControlFlowGraph fg,StaticCacheApproximation cacheMode) {
 		
 		HashMap<CFGNode, WcetCost> nodeCost = new HashMap<CFGNode,WcetCost>();
 		for(CFGNode n : fg.getGraph().vertexSet()) {
-			if(n.getBasicBlock() != null || n instanceof SummaryNode) {
-				nodeCost.put(n, computeCostOfNode(n, cacheMode));
-			} else {
-				nodeCost.put(n, new WcetCost());
-			}
+			nodeCost.put(n, computeCostOfNode(n, cacheMode));
 		}
 		return nodeCost;
 	}
 	
-	private class WcetVisitor implements ControlFlowGraph.CfgVisitor {
-		WcetCost cost;
-		private CacheApproximation cacheMode;
-		public WcetVisitor(CacheApproximation cacheMode) {
+	private class LocalWcetVisitor extends WcetVisitor {
+		StaticCacheApproximation cacheMode;
+		public LocalWcetVisitor(Project project, StaticCacheApproximation cacheMode) {
+			this.project = project;
 			this.cacheMode = cacheMode;
-			this.cost = new WcetCost();
 		}
+		@Override
 		public void visitSummaryNode(SummaryNode n) {
-			cost.addLocalCost(runWCETComputation("summary", n.getSubGraph(), CacheApproximation.ALWAYS_MISS,null).getCost().getCost());
+			cost.addLocalCost(
+			  runWCETComputation("summary", 
+					             n.getSubGraph(), 
+					             StaticCacheApproximation.ALWAYS_MISS,null).getCost().getCost());
 		}
-		public void visitSpecialNode(DedicatedNode n) {
-		}
-		public void visitBasicBlockNode(BasicBlockNode n) {
-			BasicBlock bb = n.getBasicBlock();
-			for(InstructionHandle ih : bb.getInstructions()) {
-				addInstructionCost(n,ih);
-			}
-		}
+		@Override
 		public void visitInvokeNode(InvokeNode n) {
-			addInstructionCost(n,n.getInstructionHandle());
+			cost.addLocalCost(processor.getExecutionTime(n.getBasicBlock().getClassInfo(),n.getInstructionHandle().getInstruction()));
 			if(n.isInterface()) {
 				throw new AssertionError("Invoke node "+n.getReferenced()+" without implementation in WCET analysis - did you preprocess virtual methods ?");
 			}
 			recursiveWCET(n.getBasicBlock().getMethodInfo(), n.getImplementedMethod());
 		}
-		private void addInstructionCost(BasicBlockNode n, InstructionHandle ih) {
-			Instruction ii = ih.getInstruction();
-			if(WCETInstruction.isInJava(ii.getOpcode())) {
-				/* FIXME: [NO THROW HACK] */
-				if(ii instanceof ATHROW || ii instanceof NEW || 
-				   ii instanceof NEWARRAY || ii instanceof ANEWARRAY) {
-					logger.error(n.getBasicBlock().getMethodInfo()+": "+
-							     "Unable to compute WCET of "+ii+". Approximating with 2000 cycles.");
-					cost.addLocalCost(2000L);
-				} else {
-					visitJavaImplementedBC(n.getBasicBlock(),ih);
-				}
-			} else {
-				int jopcode = project.getWcetAppInfo().getJOpCode(n.getBasicBlock().getClassInfo(), ii);
-				int cycles = WCETInstruction.getCycles(jopcode,false,0);
-				cost.addLocalCost(cycles);
-			}			
-		}
-		/* add cost for invokestatic + return + the java implemented bc */
-		private void visitJavaImplementedBC(BasicBlock bb, InstructionHandle ih) {
-			logger.info("Java implemented bytecode: "+ ih.getInstruction());
-			MethodInfo javaImpl = project.getWcetAppInfo().getJavaImpl(bb.getClassInfo(), ih.getInstruction());
-			int cycles = WCETInstruction.getCycles(new INVOKESTATIC(0).getOpcode(),false,0);
-			cost.addLocalCost(cycles);
-			recursiveWCET(bb.getMethodInfo(), javaImpl);
-		}
-		private void recursiveWCET(MethodInfo invoker, MethodInfo invoked) {			
-			logger.info("Recursive WCET computation: " + invoked.getMethod());
-			long cacheCost = BlockWCET.getInvokeReturnMissCost(appInfo.getFlowGraph(invoker),appInfo.getFlowGraph(invoked));				
-			long nonLocalCost = computeWCET(invoked, cacheMode).getCost();
-			switch(cacheMode) {
-			case ALWAYS_HIT:
-				cacheCost=0; break;
-			case ALWAYS_MISS:
-				break;				
-			case ANALYSE_REACHABLE:
-				/* ALL FIT is unsafe if the invoked method is a leaf 
-				 * This is because the cost for accessing the method itself is usually attributes
-				 * to some return node, which is missing in the case of leaf methods.
-				 * Should be cleaned up !!
-				 */
-				if(blockBuilder.allFit(invoked) && ! project.getCallGraph().isLeafNode(invoked)) {
-					long allMissCost = nonLocalCost + cacheCost;
-					long returnCost = BlockWCET.getMissOnReturnCost(appInfo.getFlowGraph(invoker));
+		private void recursiveWCET(MethodInfo invoker, MethodInfo invoked) {						
+			ProcessorModel proc = project.getProcessorModel();
+			MethodCache cache = proc.getMethodCache();
 
-					if(! useGlobalIPET) {
-						long allFitAhCost = computeWCET(invoked, CacheApproximation.ALWAYS_HIT).getCost();
-						long allFitPenalty = totalCacheMissPenalty(invoked);										 
-						long allFitCost = allFitAhCost + allFitPenalty  + returnCost;
-						if(allFitCost <= allMissCost) {
-							cacheCost = allFitPenalty;
-							nonLocalCost = allFitAhCost;
-						}
+			long cacheCost;
+			WcetCost recCost = computeWCET(invoked, cacheMode);
+			long nonLocalExecCost = recCost.getCost() - recCost.getCacheCost();
+			long nonLocalCacheCost = recCost.getCacheCost();
+			long invokeReturnCost = cache.getInvokeReturnMissCost(
+					proc,
+					appInfo.getFlowGraph(invoker),
+                    appInfo.getFlowGraph(invoked));
+			boolean allFitMode = cacheMode == StaticCacheApproximation.ALL_FIT || 
+								 cacheMode == StaticCacheApproximation.ALL_FIT_LOCAL;
+			if(! proc.hasMethodCache() || cacheMode == StaticCacheApproximation.ALWAYS_HIT) {
+				cacheCost = 0;
+			} else if(project.getCallGraph().isLeafNode(invoked)) {
+				cacheCost = invokeReturnCost + nonLocalCacheCost;
+			} else if(allFitMode && cache.allFit(invoked)) {
+				long returnCost = cache.getMissOnReturnCost(proc, appInfo.getFlowGraph(invoker));
+				if(cacheMode == StaticCacheApproximation.ALL_FIT_LOCAL) {
+					/* Maybe its better not to apply the all-fit heuristic ... */
+					long noAllFitCost = recCost.getCost() + invokeReturnCost;
+					/* Compute cost without method cache */
+					long alwaysHitCost = computeWCET(invoked, StaticCacheApproximation.ALWAYS_HIT).getCost();
+					/* Compute penalty for loading each method exactly once */
+					long allFitPenalty = cache.getMissOnceCummulativeCacheCost(invoked);
+					long allFitCacheCost = allFitPenalty  + returnCost;
+					/* Cost All-Fit: recursive + penalty for loading once + return to caller */
+					long allFitCost = alwaysHitCost + allFitCacheCost;
+					/* Choose the better approximation */
+					if(allFitCost <= noAllFitCost) {
+						cacheCost = allFitCacheCost;
+						nonLocalExecCost = alwaysHitCost;
 					} else {
-						GlobalAnalysis ga = new GlobalAnalysis(project);
-						WcetCost recCost;
-						try { recCost = ga.computeWCET(invoked, CacheApproximation.ALL_FIT); }
-						catch (Exception e) { throw new AssertionError(e); }
-						long allFitCostGlobal = recCost.getCost() + returnCost;
-						cacheCost = returnCost;
-						nonLocalCost = recCost.getCost();
+						cacheCost = invokeReturnCost + nonLocalCacheCost;						
 					}
-				}
-				break;
+				} else {
+					GlobalAnalysis ga = new GlobalAnalysis(project);
+					WcetCost allFitCost = null;
+					try { allFitCost= ga.computeWCET(invoked, StaticCacheApproximation.ALL_FIT); }
+					catch (Exception e) { throw new AssertionError(e); }
+					cacheCost = returnCost + allFitCost.getCacheCost();
+					nonLocalExecCost = allFitCost.getNonCacheCost();
+				}				
+			} else {
+				cacheCost = invokeReturnCost + nonLocalCacheCost;				
 			}
-			cost.addNonLocalCost(nonLocalCost);
+			cost.addNonLocalCost(nonLocalExecCost);
 			cost.addCacheCost(cacheCost);
+			logger.info("Recursive WCET computation: " + invoked.getMethod() +
+					    ". cummulative cache cost: "+cacheCost+
+					    " non local execution cost: "+nonLocalExecCost);
 		}
 	}
 
 	private WcetCost 
-		computeCostOfNode(CFGNode n,CacheApproximation cacheMode) {	
-		WcetVisitor wcetVisitor = new WcetVisitor(cacheMode);
+		computeCostOfNode(CFGNode n,StaticCacheApproximation cacheMode) {	
+		WcetVisitor wcetVisitor = new LocalWcetVisitor(project, cacheMode);
 		n.accept(wcetVisitor);
 		return wcetVisitor.cost;
 	}
 		
-	/**
-	 * Compute the maximal total cache-miss penalty for <strong>invoking and executing</strong>
-	 * m.
-	 * <p>
-	 * Precondition: The set of all methods reachable from <code>m</code> fit into the cache
-	 * </p><p>
-     * Algorithm: If all methods reachable from <code>m</code> (including <code>m</code>) fit 
-     * into the cache, we can compute the WCET of <m> using the {@link ALWAYS_HIT@} cache
-     * approximation, and then add the sum of cache miss penalties for every reachable method.
-	 * </p><p>
-	 * Note that when using this approximation, we attribute the
-	 * total cache miss cost to the invocation of that method.
-	 * </p><p>
-	 * Explanation: We know that there is only one cache miss per method, but we do not know
-	 * when it will occur (on return or invoke), except for leaf methods. 
-	 * Let <code>h</code> be the number of cycles hidden by <strong>any</strong> return or 
-	 * invoke instructions. Then the cache miss penalty is bounded by <code>(b-h)</code> per 
-	 * method.
-	 * </p><p>
-	 * <code>b</code> is given by <code>b = 6 + (n+1) * (2+c)</code>, with <code>n</code>
-	 * being the method length of the receiver (invoke) or caller (return) in words 
-	 * and <code>c</code> being the cache-read wait time.
-	 * </p>
-     * 
-	 * @param m The method invoked
-	 * @return the cache miss penalty
-	 * 
-	 */
-	private long totalCacheMissPenalty(MethodInfo m) {
-		long miss = 0;
-		Iterator<CallGraphNode> iter = project.getCallGraph().getReachableMethods(m);
-		while(iter.hasNext()) {
-			CallGraphNode n = iter.next();
-			if(n.getMethodImpl() == null) continue;
-			int words = appInfo.getFlowGraph(n.getMethodImpl()).getNumberOfWords();
-			int hidden = project.getCallGraph().isLeafNode(n) ?
-					WCETInstruction.INVOKE_HIDDEN_LOAD_CYCLES :
-					WCETInstruction.MIN_HIDDEN_LOAD_CYCLES;
-			int thisMiss = Math.max(0,WCETInstruction.calculateB(false, words) - hidden); 
-			logger.info("Adding cache miss penalty for "+n.getMethodImpl() + " from " + m + ": " + thisMiss);
-			miss+=thisMiss;
-		}
-		return miss;
-	}
 }

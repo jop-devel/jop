@@ -10,7 +10,14 @@ public class WcetCost implements Serializable {
 	private long localCost = 0;
 	private long cacheCost = 0;
 	private long nonLocalCost = 0;
-	public long getCost() { return nonLocalCost+getLocalAndCacheCost(); }
+	public WcetCost() {
+		
+	}
+	public WcetCost(long wcet) {
+		localCost = wcet;
+	}
+
+	public long getCost() { return localCost+cacheCost+nonLocalCost; }
 	
 	public long getLocalCost() { return localCost; }
 	public long getCacheCost() { return cacheCost; }
@@ -20,9 +27,9 @@ public class WcetCost implements Serializable {
 	public void addNonLocalCost(long c) { this.nonLocalCost += c; }
 	public void addCacheCost(long c) { this.cacheCost += c; }
 	
-	public long getLocalAndCacheCost() { return this.localCost + this.cacheCost; }
 	@Override public String toString() {
 		if(getCost() == 0) return "0";
+		if(localCost == 0) return "(cost: "+getCost()+", execution: "+nonLocalCost+", cache: "+cacheCost+")";
 		return ""+getCost()+" (local: "+localCost+",cache: "+cacheCost+",non-local: "+nonLocalCost+")";
 	}
 	public WcetCost getFlowCost(Long flow) {
@@ -35,5 +42,12 @@ public class WcetCost implements Serializable {
 			throw new ArithmeticException("getFlowCost: Arithmetic Error");
 		}
 		return flowcost;
+	}
+	public void moveLocalToGlobalCost() {
+		this.nonLocalCost += this.localCost;
+		this.localCost = 0;
+	}
+	public long getNonCacheCost() {
+		return this.localCost + this.nonLocalCost;
 	}
 }
