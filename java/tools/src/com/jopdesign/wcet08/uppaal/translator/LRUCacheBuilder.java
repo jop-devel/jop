@@ -1,13 +1,12 @@
 package com.jopdesign.wcet08.uppaal.translator;
 
-import com.jopdesign.wcet08.config.Config;
-import com.jopdesign.wcet08.uppaal.UppAalConfig;
+import com.jopdesign.wcet08.jop.BlockCache;
 import com.jopdesign.wcet08.uppaal.model.NTASystem;
 
 public class LRUCacheBuilder extends CacheSimBuilder {
-	private int numBlocks;
-	public LRUCacheBuilder() {
-		this.numBlocks = Config.instance().getOption(UppAalConfig.UPPAAL_CACHE_BLOCKS).intValue();
+	private BlockCache cache;
+	public LRUCacheBuilder(BlockCache blockCache) {
+		this.cache = blockCache;
 		// logger.info("LRU cache simulation with "+numBlocks+ " blocks");
 	}
 	@Override
@@ -17,7 +16,7 @@ public class LRUCacheBuilder extends CacheSimBuilder {
 	public void appendDeclsN(NTASystem system,String NUM_METHODS) {
 		super.appendDeclarations(system,NUM_METHODS);
 		system.appendDeclaration(String.format("int[0,%s] cache[%d] = %s;",
-				NUM_METHODS,this.numBlocks,initCache(NUM_METHODS,numBlocks)));
+				NUM_METHODS,cache.getNumBlocks(),initCache(NUM_METHODS,cache.getNumBlocks())));
 		system.appendDeclaration(String.format("bool lastHit;"));
 		system.appendDeclaration(
 				"void access_cache(int mid) {\n" +
@@ -27,7 +26,7 @@ public class LRUCacheBuilder extends CacheSimBuilder {
 				"  } else {\n"+
 				"    int i = 0;\n"+
 				"    int last = cache[0];\n"+
-				"    for(i = 0; i < "+(numBlocks-1)+" && (! lastHit); i++) {\n"+
+				"    for(i = 0; i < "+(cache.getNumBlocks()-1)+" && (! lastHit); i++) {\n"+
 				"      int next = cache[i+1];\n"+
 				"      if(next == mid) {\n"+
 				"        lastHit = true;\n"+

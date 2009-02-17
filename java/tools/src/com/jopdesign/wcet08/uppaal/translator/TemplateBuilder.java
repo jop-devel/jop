@@ -93,8 +93,8 @@ public class TemplateBuilder {
 	 *   - Create variables for loop counters,and constants for loop bounds
 	 */
 	private void initializeTemplate() {
-		getTemplate().appendDeclaration(
-				String.format("clock %s; ", LOCAL_CLOCK));
+//		getTemplate().appendDeclaration(
+//				String.format("clock %s; ", LOCAL_CLOCK));
 		if(! config.getOption(UppAalConfig.UPPAAL_ONE_CHANNEL_PER_METHOD)) {
 			getTemplate().appendDeclaration(
 					String.format("int[0,%s] %s;", 

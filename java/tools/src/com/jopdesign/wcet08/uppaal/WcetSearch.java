@@ -24,41 +24,53 @@ public class WcetSearch {
 	private File queryFile;
 	private Logger logger = Logger.getLogger(WcetSearch.class);
 	private double maxSolverTime = 0.0;
+	private Config config;
 	public double getMaxSolverTime() {
 		return maxSolverTime;
 	}
-	public WcetSearch(File modelFile) {
+	public WcetSearch(Config c, File modelFile) {
+		this.config = c;
 		this.modelFile = modelFile;
 	}
-	public long searchWCET() throws IOException {
+	public long searchWCET(Long upperBound) throws IOException {
+		long ub = (upperBound == null) ? -1 : upperBound.longValue();
 		queryFile = File.createTempFile("query", ".q");
-		String[] cmd = {
-				Config.instance().getOption(UppAalConfig.UPPAAL_VERIFYTA_BINARY),
-				"-q",
-				modelFile.getPath(),
-				queryFile.getPath()				
-		};
-		long unsafe = 1;
-		long safe = 100;
-		try {
+		Vector<String> cmdlist = new Vector<String>();
+		cmdlist.add(config.getOption(UppAalConfig.UPPAAL_VERIFYTA_BINARY));
+		cmdlist.add("-q");
+		if(config.getOption(UppAalConfig.UPPAAL_CONVEX_HULL)) {
+			cmdlist.add("-A");
+		}
+		cmdlist.add(modelFile.getPath());
+		cmdlist.add(queryFile.getPath());
+		String[] cmd = cmdlist.toArray(new String[cmdlist.size()]);
+		long safe, unsafe;
+		if(ub >= 1) {
+			unsafe = safe = ub;
+			while(checkBound(cmd,unsafe)) {
+				unsafe /= 2;
+				System.err.println(MessageFormat.format("WCET bounds (unsafe/safe): {0}/{1}",
+							  				     unsafe, safe));
+			}
+		} else {
+			unsafe = 1;
+			safe = 100;
 			while(! checkBound(cmd,safe)) {
 				unsafe = safe;
 				safe *= 2;
 				System.err.println(MessageFormat.format("WCET bounds (unsafe/safe): {0}/{1}",
 							  				     unsafe, safe));
 			}
-			while(unsafe + 1 < safe) {
-				long m = unsafe+((safe-unsafe)/2);
-				if(checkBound(cmd,m)) { /* m is a safe bound */
-					safe = m;
-				} else {
-					unsafe = m;
-				}
-				System.err.println(MessageFormat.format("WCET bounds (unsafe/safe): {0}/{1}",
-	  				                             unsafe, safe));
+		}
+		while(unsafe + 1 < safe) {
+			long m = unsafe+((safe-unsafe)/2);
+			if(checkBound(cmd,m)) { /* m is a safe bound */
+				safe = m;
+			} else {
+				unsafe = m;
 			}
-		} finally {
-			queryFile.delete();
+			System.err.println(MessageFormat.format("WCET bounds (unsafe/safe): {0}/{1}",
+					unsafe, safe));
 		}
 		return safe;
 	}
@@ -160,7 +172,8 @@ public class WcetSearch {
 			throw new IOException("No output from verifyta");
 		}
 		String last = vector.lastElement();
-		if(last.matches(".*NOT satisfied.*")) {
+		if(last.matches(".*NOT satisfied.*") ||
+			last.matches(".*MAYBE satisfied.*")) {
 			return false;
 		} else if(last.matches(".*Property is satisfied.*")) {
 			return true;

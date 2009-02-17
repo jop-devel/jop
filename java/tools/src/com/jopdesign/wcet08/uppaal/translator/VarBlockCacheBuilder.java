@@ -3,22 +3,19 @@ package com.jopdesign.wcet08.uppaal.translator;
 import java.util.Vector;
 
 import com.jopdesign.wcet08.Project;
-import com.jopdesign.wcet08.analysis.BlockWCET;
-import com.jopdesign.wcet08.config.Config;
-import com.jopdesign.wcet08.uppaal.UppAalConfig;
+import com.jopdesign.wcet08.jop.VarBlockCache;
 import com.jopdesign.wcet08.uppaal.model.Location;
 import com.jopdesign.wcet08.uppaal.model.NTASystem;
 
 public class VarBlockCacheBuilder extends CacheSimBuilder {
-	private int numBlocks;
 	private Project project;
-	private int blockSize;
+	private VarBlockCache cache;
 	private int numMethods;
-	public VarBlockCacheBuilder(Project p, int numMethods) {
+	public VarBlockCacheBuilder(Project p, VarBlockCache cache, int numMethods, boolean assumeEmptyCache) {
 		this.project = p;
+		this.cache = cache;
 		this.numMethods = numMethods;
-		this.numBlocks = Config.instance().getOption(UppAalConfig.UPPAAL_CACHE_BLOCKS).intValue();
-		this.blockSize = Config.instance().getOption(UppAalConfig.UPPAAL_CACHE_BLOCK_WORDS).intValue();
+		if(! assumeEmptyCache) throw new AssertionError("Empty cache has to be assumed for VARBLOCK cache sim");
 		// logger.info("Var Block cache simulation with "+numBlocks+ " blocks assuming empty cache");
 	}
 	@Override
@@ -27,20 +24,20 @@ public class VarBlockCacheBuilder extends CacheSimBuilder {
 		system.appendDeclaration(String.format("const int NUM_BLOCKS[%s] = %s;",
 				NUM_METHODS,initNumBlocks()));
 		system.appendDeclaration(String.format("int[0,%s] cache[%d] = %s;",
-				NUM_METHODS,this.numBlocks,initCache(NUM_METHODS)));
+				NUM_METHODS,cache.getNumBlocks(),initCache(NUM_METHODS)));
 		system.appendDeclaration(String.format("bool lastHit;"));
 		system.appendDeclaration(
 				"void access_cache(int mid) {\n"+
 				"  int i = 0;\n"+
 				"  int sz = NUM_BLOCKS[mid];\n"+
 				"  lastHit = false;\n"+
-				"  for(i = 0; i < "+numBlocks+"; i++) {\n"+
+				"  for(i = 0; i < "+cache.getNumBlocks()+"; i++) {\n"+
 				"      if(cache[i] == mid) {\n"+
 				"        lastHit = true;\n"+
 				"        return;\n"+
 				"      }\n"+
 				"  }\n"+
-				"  for(i = "+(numBlocks-1)+"; i >= sz; i--) {\n"+
+				"  for(i = "+(cache.getNumBlocks()-1)+"; i >= sz; i--) {\n"+
 				"     cache[i]=cache[i-sz];\n"+
 				"  }\n"+
 				"  for(i = 0; i < sz; i++) {\n"+
@@ -52,10 +49,10 @@ public class VarBlockCacheBuilder extends CacheSimBuilder {
 		Vector<Integer> blocksPerMethod = new Vector<Integer>();
 		for(int i = 0; i < numMethods; i++) {
 			int mBlocks = blocksOf(i);
-			if(mBlocks > numBlocks) {
+			if(mBlocks > cache.getNumBlocks()) {
 				throw new AssertionError("Cache too small for method: "+project.getWcetAppInfo().getFlowGraph(i)+
 									     " which requires at least "+mBlocks+" blocks, but only "+
-									     numBlocks + " are available ");
+									     cache.getNumBlocks() + " are available ");
 			}
 			blocksPerMethod.add(mBlocks);
 		}
@@ -66,11 +63,11 @@ public class VarBlockCacheBuilder extends CacheSimBuilder {
 		cacheElems.add(0);
 		int i;
 		for(i = 1; i < blocksOf(0); i++) cacheElems.add(0);
-		for(; i < numBlocks; i++) cacheElems.add(NUM_METHODS);
+		for(; i < cache.getNumBlocks(); i++) cacheElems.add(NUM_METHODS);
 		return CacheSimBuilder.constArray(cacheElems);
 	}
 	private int blocksOf(int id) {
-		return BlockWCET.numberOfBlocks(project.getWcetAppInfo().getFlowGraph(id),blockSize);
+		return project.getProcessorModel().getMethodCache().requiredNumberOfBlocks(project.getWcetAppInfo().getFlowGraph(id).getNumberOfWords());
 	}
 	public void handleProgramEntry(TemplateBuilder builder, Location initLoc) {
 	}

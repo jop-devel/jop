@@ -24,11 +24,10 @@ import java.util.Map;
 import java.util.Set;
 
 import com.jopdesign.build.MethodInfo;
+import com.jopdesign.wcet08.ProcessorModel;
 import com.jopdesign.wcet08.Project;
-import com.jopdesign.wcet08.analysis.BlockWCET;
-import com.jopdesign.wcet08.analysis.SimpleAnalysis;
+import com.jopdesign.wcet08.analysis.LocalAnalysis;
 import com.jopdesign.wcet08.analysis.WcetCost;
-import com.jopdesign.wcet08.analysis.CacheConfig.CacheApproximation;
 import com.jopdesign.wcet08.config.Config;
 import com.jopdesign.wcet08.frontend.ControlFlowGraph;
 import com.jopdesign.wcet08.frontend.WcetAppInfo;
@@ -43,6 +42,9 @@ import com.jopdesign.wcet08.graphutils.FlowGraph;
 import com.jopdesign.wcet08.graphutils.Pair;
 import com.jopdesign.wcet08.graphutils.LoopColoring.IterationBranchLabel;
 import com.jopdesign.wcet08.graphutils.TopOrder.BadGraphException;
+import com.jopdesign.wcet08.jop.MethodCache;
+import com.jopdesign.wcet08.jop.CacheConfig.DynCacheApproximation;
+import com.jopdesign.wcet08.jop.CacheConfig.StaticCacheApproximation;
 import com.jopdesign.wcet08.uppaal.UppAalConfig;
 import com.jopdesign.wcet08.uppaal.model.Location;
 import com.jopdesign.wcet08.uppaal.model.Template;
@@ -64,14 +66,14 @@ public class MethodBuilder implements CfgVisitor {
 		public abstract void methodExit(Location exit, Transition entryToExit);
 		protected abstract Location createMethodInvocation(InvokeNode n, Location basicBlockExit);
 		public Location invokeMethod(InvokeNode n, Location basicBlockNode) {
-			if(project.getCallGraph().isLeafNode(n.getReferenced()) &&
+			if(project.getCallGraph().isLeafNode(n.getImplementedMethod()) &&
 			   Config.instance().getOption(UppAalConfig.UPPAAL_COLLAPSE_LEAVES)) {
-				SimpleAnalysis ilpAn = new SimpleAnalysis(project);
-				CacheApproximation cacheApprox;
+				LocalAnalysis ilpAn = new LocalAnalysis(project);
+				StaticCacheApproximation cacheApprox;
 				if(cacheSim.isAlwaysMiss()) {
-					cacheApprox = CacheApproximation.ALWAYS_MISS;
+					cacheApprox = StaticCacheApproximation.ALWAYS_MISS;
 				} else {
-					cacheApprox = CacheApproximation.ALWAYS_HIT;
+					cacheApprox = StaticCacheApproximation.ALWAYS_HIT;
 				}
 				WcetCost wcet = ilpAn.computeWCET(n.getImplementedMethod(), cacheApprox);
 				Location inv = tBuilder.createLocation("IN_"+n.getId());
@@ -156,9 +158,15 @@ public class MethodBuilder implements CfgVisitor {
 	private int mId;
 	private CacheSimBuilder cacheSim;
 	private boolean oneChanPerMethod;
+	private SystemBuilder sys;
+	private ProcessorModel processor;
+	private MethodCache cacheImpl;
 	public MethodBuilder(SystemBuilder sys, int mId, MethodInfo mi) {
+		this.sys = sys;
 		this.project = sys.getProject();
 		this.wAppInfo = sys.getProject().getWcetAppInfo();
+		this.processor = project.getProcessorModel();
+		this.cacheImpl = processor.getMethodCache();
 		this.mId = mId;
 		this.cfg = wAppInfo.getFlowGraph(mi);
 		this.cacheSim = sys.getCacheSim();
@@ -228,7 +236,7 @@ public class MethodBuilder implements CfgVisitor {
 	
 	public void visitBasicBlockNode(BasicBlockNode n) {
 		NodeAutomaton bbLoc = 
-			createBasicBlock(n.getId(),BlockWCET.basicBlockWCETEstimate(n.getBasicBlock()));
+			createBasicBlock(n.getId(),project.getProcessorModel().basicBlockWCET(n.getBasicBlock()));
 		this.nodeTemplates.put(n,bbLoc);
 	}
 	
@@ -237,8 +245,8 @@ public class MethodBuilder implements CfgVisitor {
 	}
 	
 	public void visitSummaryNode(SummaryNode n) {
-		SimpleAnalysis an = new SimpleAnalysis(project);
-		long cost = an.runWCETComputation("SUBGRAPH"+n.getId(), n.getSubGraph(), CacheApproximation.ALWAYS_MISS,null).getLpCost();
+		LocalAnalysis an = new LocalAnalysis(project);
+		long cost = an.runWCETComputation("SUBGRAPH"+n.getId(), n.getSubGraph(), StaticCacheApproximation.ALWAYS_MISS,null).getLpCost();
 		NodeAutomaton sumLoc = createBasicBlock(n.getId(),cost);
 		this.nodeTemplates.put(n,sumLoc);
 	}
@@ -315,30 +323,30 @@ public class MethodBuilder implements CfgVisitor {
 		return NodeAutomaton.singleton(bbNode);		
 	}
 	private NodeAutomaton createInvoke(InvokeNode n) {
-		long blockWCET = BlockWCET.basicBlockWCETEstimate(n.getBasicBlock());
+		long blockWCET = processor.basicBlockWCET(n.getBasicBlock());
 		if(cacheSim.isAlwaysMiss()) {
-			blockWCET+= BlockWCET.getMissOnInvokeCost(n.receiverFlowGraph());
-			blockWCET+= BlockWCET.getMissOnReturnCost(cfg);
+			blockWCET+= cacheImpl.getMissOnInvokeCost(processor,n.receiverFlowGraph());
+			blockWCET+= cacheImpl.getMissOnReturnCost(processor,cfg);
 		}		
 		Location basicBlockNode = createBasicBlock(n.getId(),blockWCET).getExit();
 		Location invokeNode = syncBuilder.invokeMethod(n,basicBlockNode);
 		Transition bbInvTrans = tBuilder.createTransition(basicBlockNode,invokeNode);			
-		if(UppAalConfig.isDynamicCacheSim()) {
+		if(UppAalConfig.isDynamicCacheSim(project.getConfig())) {
 			Location invokeMissNode = tBuilder.createLocation("CACHEI_"+n.getId());
 			Transition bbMissTrans = tBuilder.createTransition(basicBlockNode, invokeMissNode);
 			tBuilder.createTransition(invokeMissNode, invokeNode);
-			int recID = n.receiverFlowGraph().getId();
-			tBuilder.getIncomingAttrs(basicBlockNode).appendUpdate("access_cache("+recID+")");
+			tBuilder.getIncomingAttrs(basicBlockNode).appendUpdate(
+					sys.accessCache(n.getImplementedMethod()));
 			cacheSim.onHit(bbInvTrans);
 			cacheSim.onMiss(bbMissTrans);
-			tBuilder.waitAtLocation(invokeMissNode, BlockWCET.getMissOnInvokeCost(n.receiverFlowGraph()));
+			tBuilder.waitAtLocation(invokeMissNode, cacheImpl.getMissOnInvokeCost(processor,n.receiverFlowGraph()));
 		}
 		Location invokeExitNode;
-		if(UppAalConfig.isDynamicCacheSim()) {
+		if(UppAalConfig.isDynamicCacheSim(project.getConfig())) {
 			Location cacheAccess = tBuilder.createLocation("CACHER_"+n.getId());
 			cacheAccess.setCommited();
 			Transition invAcc = tBuilder.createTransition(invokeNode, cacheAccess);
-			invAcc.getAttrs().appendUpdate("access_cache("+cfg.getId()+")");
+			invAcc.getAttrs().appendUpdate(sys.accessCache(cfg.getMethodInfo()));
 			invokeExitNode = tBuilder.createLocation("INVEXIT_"+n.getId());
 			invokeExitNode.setCommited();
 			Location returnMissNode = tBuilder.createLocation("CACHERMISS_"+n.getId());
@@ -347,7 +355,7 @@ public class MethodBuilder implements CfgVisitor {
 			/* missExit */ tBuilder.createTransition(returnMissNode, invokeExitNode);
 			cacheSim.onHit(accExit);
 			cacheSim.onMiss(accMiss);
-			tBuilder.waitAtLocation(returnMissNode, BlockWCET.getMissOnReturnCost(cfg));
+			tBuilder.waitAtLocation(returnMissNode, cacheImpl.getMissOnReturnCost(processor,cfg));
 		} else {
 			 invokeExitNode = invokeNode;			
 		}

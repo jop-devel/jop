@@ -47,21 +47,21 @@ public class Translator {
 		this.outDir = outDir;
 	}
 	
-	public SystemBuilder translateProgram() throws DuplicateKeyException {
+	public SystemBuilder translateProgram(MethodInfo root) throws DuplicateKeyException {
 		/* Get callgraph */
 		CallGraph callGraph = project.getCallGraph();
 		// logger.info("Call stack depth: "+callGraph.getMaxHeight());
-		List<MethodInfo> impls = callGraph.getImplementedMethods();
-		if(! impls.get(0).equals(project.getMeasuredMethod())) {
+		List<MethodInfo> impls = callGraph.getReachableImplementations(root);
+		if(! impls.get(0).equals(root)) {
 			throw new AssertionError("Bad callgraph: measured method has to be the root node");
 		}
 		/* Create system builder */
 		sys = new SystemBuilder(
 				project, 
 				callGraph.getMaxHeight(),
-				impls.size());
+				impls);
 		/* Translate methods */
-		boolean collapseLeafs = Config.instance().getOption(UppAalConfig.UPPAAL_COLLAPSE_LEAVES);
+		boolean collapseLeafs = project.getConfig().getOption(UppAalConfig.UPPAAL_COLLAPSE_LEAVES);
 		sys.addTemplate(0,new MethodBuilder(sys, 0, impls.get(0)).buildRootMethod());
 		for(int i = 1; i < impls.size(); i++) {
 			MethodInfo mi = impls.get(i);

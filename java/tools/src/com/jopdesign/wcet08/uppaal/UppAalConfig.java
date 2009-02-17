@@ -24,6 +24,8 @@ import com.jopdesign.wcet08.config.EnumOption;
 import com.jopdesign.wcet08.config.IntegerOption;
 import com.jopdesign.wcet08.config.Option;
 import com.jopdesign.wcet08.config.StringOption;
+import com.jopdesign.wcet08.jop.CacheConfig;
+import com.jopdesign.wcet08.jop.CacheConfig.DynCacheApproximation;
 
 /** 
  * 
@@ -32,20 +34,6 @@ import com.jopdesign.wcet08.config.StringOption;
  *
  */
 public class UppAalConfig {
-	public enum CacheSim { ALWAYS_HIT, ALWAYS_MISS, LRU_BLOCK, FIFO_BLOCK, VARIABLE_BLOCK };
-	
-	public static final EnumOption<CacheSim> UPPAAL_CACHE_SIM =
-		new EnumOption<CacheSim>("uppaal-cache-sim",
-				"which cache simulation to use in UppAal", 
-				CacheSim.ALWAYS_HIT);
-	public static final IntegerOption UPPAAL_CACHE_BLOCKS =
-		new IntegerOption("uppaal-cache-blocks",
-				"number of cache blocks for UppAal cache simulation", 
-				2);
-	public static final IntegerOption UPPAAL_CACHE_BLOCK_WORDS =
-		new IntegerOption("uppaal-cache-block-words",
-				"size of cache blocks (in words) for UppAal cache simulation", 
-				64);
 	/* Currently not an option */
 	public static final BooleanOption UPPAAL_EMPTY_INITIAL_CACHE =
 		new BooleanOption("uppaal-empty-initial-cache",
@@ -67,18 +55,23 @@ public class UppAalConfig {
 		new StringOption("uppaal-verifier",
 			"binary of the uppaal model-checker (verifyta)",
 			true);		
+	public static final Option<Boolean> UPPAAL_CONVEX_HULL = 
+		new BooleanOption("uppaal-convex-hull",
+			"use UPPAAL's convex hull approximation",
+			false);
 
 	public static final Option<?>[] uppaalOptions = {
-		UPPAAL_CACHE_SIM, UPPAAL_CACHE_BLOCKS, UPPAAL_CACHE_BLOCK_WORDS,
+		UPPAAL_VERIFYTA_BINARY,
 		UPPAAL_TIGHT_BOUNDS, UPPAAL_COLLAPSE_LEAVES, 
-		UPPAAL_ONE_CHANNEL_PER_METHOD, UPPAAL_VERIFYTA_BINARY 
+		UPPAAL_ONE_CHANNEL_PER_METHOD, UPPAAL_CONVEX_HULL
 	};
 
-	public static boolean isDynamicCacheSim() {
-		CacheSim cs = Config.instance().getOption(UPPAAL_CACHE_SIM);
-		return ! (cs.equals(CacheSim.ALWAYS_HIT) || cs.equals(CacheSim.ALWAYS_MISS));
+	public static boolean isDynamicCacheSim(Config c) {
+		DynCacheApproximation cs = c.getOption(CacheConfig.DYNAMIC_CACHE_APPROX);
+		return ! (cs.equals(DynCacheApproximation.ALWAYS_HIT) ||
+				  cs.equals(DynCacheApproximation.ALWAYS_MISS));
 	}
-	public static boolean hasVerifier() {
-		return (Config.instance().hasOption(UPPAAL_VERIFYTA_BINARY));
+	public static boolean hasVerifier(Config c) {
+		return (c.hasOption(UPPAAL_VERIFYTA_BINARY));
 	}
 }

@@ -3,6 +3,7 @@ package com.jopdesign.wcet08.uppaal.translator;
 import java.util.Vector;
 
 import com.jopdesign.wcet08.config.Config;
+import com.jopdesign.wcet08.jop.BlockCache;
 import com.jopdesign.wcet08.uppaal.UppAalConfig;
 import com.jopdesign.wcet08.uppaal.model.NTASystem;
 
@@ -10,9 +11,9 @@ public class FIFOCacheBuilder extends CacheSimBuilder {
 	private int numBlocks;
 	private boolean assumeEmptyCache;
 	private String NUM_METHODS;
-	public FIFOCacheBuilder() {
-		this.numBlocks = Config.instance().getOption(UppAalConfig.UPPAAL_CACHE_BLOCKS).intValue();
-		this.assumeEmptyCache = Config.instance().getOption(UppAalConfig.UPPAAL_EMPTY_INITIAL_CACHE);
+	public FIFOCacheBuilder(BlockCache blockCache, boolean assumeEmptyCache) {
+		this.numBlocks = blockCache.getNumBlocks();	
+		this.assumeEmptyCache = assumeEmptyCache;
 	}
 	@Override
 	public void appendDeclarations(NTASystem system,String NUM_METHODS) {

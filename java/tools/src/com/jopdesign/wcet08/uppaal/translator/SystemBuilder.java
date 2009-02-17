@@ -20,14 +20,21 @@
 package com.jopdesign.wcet08.uppaal.translator;
 
 import java.util.Hashtable;
+import java.util.List;
 import java.util.Map.Entry;
 
 import org.w3c.dom.Document;
 
+import com.jopdesign.build.MethodInfo;
 import com.jopdesign.wcet08.Project;
 import com.jopdesign.wcet08.config.Config;
+import com.jopdesign.wcet08.jop.BlockCache;
+import com.jopdesign.wcet08.jop.VarBlockCache;
+import com.jopdesign.wcet08.jop.CacheConfig;
+import com.jopdesign.wcet08.jop.MethodCache;
+import com.jopdesign.wcet08.jop.CacheConfig.CacheImplementation;
+import com.jopdesign.wcet08.jop.CacheConfig.DynCacheApproximation;
 import com.jopdesign.wcet08.uppaal.UppAalConfig;
-import com.jopdesign.wcet08.uppaal.UppAalConfig.CacheSim;
 import com.jopdesign.wcet08.uppaal.model.DuplicateKeyException;
 import com.jopdesign.wcet08.uppaal.model.NTASystem;
 import com.jopdesign.wcet08.uppaal.model.Template;
@@ -51,6 +58,7 @@ public class SystemBuilder {
 	public NTASystem getNTASystem() { return system; }
 	
 	private Hashtable<Template,Integer> templates = new Hashtable<Template,Integer>();
+	private Hashtable<MethodInfo,Integer> methodId = new Hashtable<MethodInfo, Integer>();
 	private CacheSimBuilder cacheSim;
 	private Project project;
 	/**
@@ -59,30 +67,62 @@ public class SystemBuilder {
 	 * @param maxCallStackDepth  the maximal call stack depth
 	 * @param numMethods         the number of methods of the program
 	 */
-	public SystemBuilder(Project p, int maxCallStackDepth, int numMethods) {
+	public SystemBuilder(Project p, int maxCallStackDepth, List<MethodInfo> methods) {
 		this.project = p;
 		this.system = new NTASystem(p.getProjectName());
-		
-		CacheSim cache = Config.instance().getOption(UppAalConfig.UPPAAL_CACHE_SIM);
-		if(cache.equals(CacheSim.LRU_BLOCK)) {
-			this.cacheSim = new LRUCacheBuilder();
-		} else if (cache.equals(CacheSim.FIFO_BLOCK)) {
-			this.cacheSim = new FIFOCacheBuilder();
-		} else if (cache.equals(CacheSim.VARIABLE_BLOCK)) {
-			this.cacheSim = new VarBlockCacheBuilder(p,numMethods);
-		} else {
-			this.cacheSim = new StaticCacheBuilder(cache.equals(CacheSim.ALWAYS_MISS));
+		int numMethods = methods.size();
+		for(int i = 0; i < numMethods; i++) {
+			methodId.put(methods.get(i), i);
 		}
-		
-		initialize(maxCallStackDepth, numMethods);
+		Config config = project.getConfig();
+		boolean assumeEmptyCache = config.getOption(UppAalConfig.UPPAAL_EMPTY_INITIAL_CACHE);
+		MethodCache cache = project.getProcessorModel().getMethodCache();
+		DynCacheApproximation cacheSim = Config.instance().getOption(CacheConfig.DYNAMIC_CACHE_APPROX);
+		if(cache.getName() == CacheImplementation.NO_METHOD_CACHE
+		  || cacheSim == DynCacheApproximation.ALWAYS_HIT) {
+			this.cacheSim = new StaticCacheBuilder(false);
+		} else if(cacheSim == DynCacheApproximation.ALWAYS_MISS) {
+			this.cacheSim = new StaticCacheBuilder(true);
+		} else {
+			switch(cache.getName()) {
+			case LRU_CACHE: 
+				this.cacheSim = new LRUCacheBuilder((BlockCache)cache);
+				break;
+			case FIFO_CACHE:
+				this.cacheSim = new FIFOCacheBuilder((BlockCache)cache, assumeEmptyCache);
+				break;
+			case FIFO_VARBLOCK_CACHE: 
+				this.cacheSim = new VarBlockCacheBuilder(p,(VarBlockCache)cache, numMethods, assumeEmptyCache);
+				break;
+			default: throw new AssertionError("Unsupport cache implementation: "+cache.getName());
+			}
+		}
+		initialize(maxCallStackDepth, methods);
 	}
-	private void initialize(int maxCallStackDepth, int numMethods) {
+	/* -- Using global-local clock
+	 * com.jopdesign.build.MethodInfo@cdbc83"wcet.StartLift.measure()V"
+     * wcet: 9797
+     * complex: 98
+     * searchT: 4.58302
+     * solverTmax: 0.265957
+     * -- Using per method-local clock
+     * com.jopdesign.build.MethodInfo@cdbc83"wcet.StartLift.measure()V"
+     * wcet: 9797
+     * complex: 98
+     * searchT: 7.969566
+     * solverTmax: 0.491255
+     */
+	private void initialize(int maxCallStackDepth, List<MethodInfo> methodInfos) {
 		system.appendDeclaration("clock " + CLOCK +";");
+		system.appendDeclaration(
+				String.format("clock %s; ", TemplateBuilder.LOCAL_CLOCK));
+
 		system.appendDeclaration("const int " + MAX_CALL_STACK_DEPTH + " = "+maxCallStackDepth+";"); 
-		system.appendDeclaration("const int " + NUM_METHODS + " = "+numMethods+";"); 
+		system.appendDeclaration("const int " + NUM_METHODS + " = "+methodInfos.size()+";"); 
 		if(Config.instance().getOption(UppAalConfig.UPPAAL_ONE_CHANNEL_PER_METHOD)) {
-			for(int i = 1; i < numMethods; i++) {
-				system.appendDeclaration("chan "+methodChannel(i)+";");				
+			for(MethodInfo i : methodInfos) {
+				int id = project.getFlowGraph(i).getId();
+				system.appendDeclaration("chan "+methodChannel(id)+";");				
 			}
 		} else {
 			system.appendDeclaration("chan "+INVOKE_CHAN+";");
@@ -127,5 +167,11 @@ public class SystemBuilder {
 	}
 	public CacheSimBuilder getCacheSim() {
 		return this.cacheSim;
+	}
+	public int getMethodId(MethodInfo implementedMethod) {
+		return this.methodId.get(implementedMethod);
+	}
+	public String accessCache(MethodInfo m) {
+		return "access_cache("+getMethodId(m)+")";
 	}
 }
