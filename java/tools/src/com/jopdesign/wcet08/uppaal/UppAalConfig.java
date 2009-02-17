@@ -68,8 +68,7 @@ public class UppAalConfig {
 
 	public static boolean isDynamicCacheSim(Config c) {
 		DynCacheApproximation cs = c.getOption(CacheConfig.DYNAMIC_CACHE_APPROX);
-		return ! (cs.equals(DynCacheApproximation.ALWAYS_HIT) ||
-				  cs.equals(DynCacheApproximation.ALWAYS_MISS));
+		return ! (cs.equals(DynCacheApproximation.ALWAYS_MISS));
 	}
 	public static boolean hasVerifier(Config c) {
 		return (c.hasOption(UPPAAL_VERIFYTA_BINARY));

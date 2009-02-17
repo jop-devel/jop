@@ -50,6 +50,7 @@ import com.jopdesign.wcet08.frontend.SourceAnnotations.LoopBound;
 import com.jopdesign.wcet08.graphutils.DefaultFlowGraph;
 import com.jopdesign.wcet08.graphutils.FlowGraph;
 import com.jopdesign.wcet08.graphutils.LoopColoring;
+import com.jopdesign.wcet08.graphutils.MiscUtils;
 import com.jopdesign.wcet08.graphutils.TopOrder;
 import com.jopdesign.wcet08.graphutils.TopOrder.BadGraphException;
 
@@ -797,7 +798,7 @@ public class ControlFlowGraph {
 		return sum;
 	}
 	public int getNumberOfWords() {
-		return (getNumberOfBytes() + 3) / 4;
+		return MiscUtils.bytesToWords(getNumberOfBytes());
 	}
 
 	public void exportDOT(File file) {

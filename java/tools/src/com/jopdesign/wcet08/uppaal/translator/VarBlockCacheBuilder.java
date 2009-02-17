@@ -52,7 +52,7 @@ public class VarBlockCacheBuilder extends CacheSimBuilder {
 			int mBlocks = blocksOf(i);
 			if(mBlocks > cache.getNumBlocks()) {
 				throw new AssertionError("Cache too small for method: "+project.getWcetAppInfo().getFlowGraph(i)+
-									     " which requires at least "+mBlocks+" blocks, but only "+
+									     " which requires at least " + mBlocks + " blocks, but only "+
 									     cache.getNumBlocks() + " are available ");
 			}
 			blocksPerMethod.add(mBlocks);

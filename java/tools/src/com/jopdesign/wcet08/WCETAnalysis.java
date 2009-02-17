@@ -28,12 +28,16 @@
 package com.jopdesign.wcet08;
 
 import org.apache.log4j.Logger;
+
+import com.jopdesign.build.MethodInfo;
 import com.jopdesign.wcet08.analysis.GlobalAnalysis;
-import com.jopdesign.wcet08.analysis.LocalAnalysis;
+import com.jopdesign.wcet08.analysis.RecursiveAnalysis;
 import com.jopdesign.wcet08.analysis.UppaalAnalysis;
 import com.jopdesign.wcet08.analysis.WcetCost;
+import com.jopdesign.wcet08.analysis.RecursiveAnalysis.RecursiveWCETStrategy;
 import com.jopdesign.wcet08.config.Config;
 import com.jopdesign.wcet08.config.Option;
+import com.jopdesign.wcet08.graphutils.MiscUtils;
 import com.jopdesign.wcet08.ipet.LpSolveWrapper;
 import com.jopdesign.wcet08.jop.CacheConfig;
 import com.jopdesign.wcet08.jop.CacheConfig.StaticCacheApproximation;
@@ -80,6 +84,10 @@ public class WCETAnalysis {
 			Report.initVelocity(config);     /* Initialize velocity engine */
 			tlLogger.info("Loading project");
 			project.load();
+			MethodInfo largestMethod = project.getProcessorModel().getMethodCache().checkCache();
+			System.out.println("Minimal Cache Size for target method(words): " 
+					         + MiscUtils.bytesToWords(largestMethod.getCode().getLength())
+					         + " because of "+largestMethod.getFQMethodName());
 		} catch (Exception e) {
 			exec.logException("Loading project", e);
 			return false;
@@ -101,7 +109,8 @@ public class WCETAnalysis {
 				System.out.println("solvertime: " + LpSolveWrapper.getSolverTime());
 		    }
 			{				
-				LocalAnalysis an = new LocalAnalysis(project);
+				RecursiveAnalysis<StaticCacheApproximation> an = 
+					new RecursiveAnalysis<StaticCacheApproximation>(project,new RecursiveAnalysis.LocalIPETStrategy());
 				WcetCost ahcost = an.computeWCET(project.getTargetMethod(),StaticCacheApproximation.ALWAYS_HIT);			
 				tlLogger.info("WCET 'always hit' analysis finsihed: "+ahcost);
 				ahWCET = ahcost.getCost();
@@ -133,10 +142,19 @@ public class WCETAnalysis {
 				System.out.println("solvertimemax: "+an.getSolvertimemax());
 				project.getReport().addStat("wcet-uppal", uppaalWCET.getCost());
 			} else {
-				LocalAnalysis an = new LocalAnalysis(project);
+				StaticCacheApproximation staticCacheApprox =
+					config.getOption(CacheConfig.STATIC_CACHE_APPROX);
+				RecursiveWCETStrategy<StaticCacheApproximation> recStrategy;
+				if(staticCacheApprox == StaticCacheApproximation.ALL_FIT) {
+					recStrategy = new GlobalAnalysis.GlobalIPETStrategy();
+				} else {
+					recStrategy = new RecursiveAnalysis.LocalIPETStrategy();
+				}
+				RecursiveAnalysis<StaticCacheApproximation> an =
+					new RecursiveAnalysis<StaticCacheApproximation>(project,recStrategy);
 				LpSolveWrapper.resetSolverTime();
 				long start = System.nanoTime();
-				WcetCost cachewcet = an.computeWCET(project.getTargetMethod());
+				WcetCost cachewcet = an.computeWCET(project.getTargetMethod(),config.getOption(CacheConfig.STATIC_CACHE_APPROX));
 				long stop  = System.nanoTime();
 				tlLogger.info("WCET analysis finsihed: "+cachewcet);
 				System.out.println("wcet: "+cachewcet.getCost());

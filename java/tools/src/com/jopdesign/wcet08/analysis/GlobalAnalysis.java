@@ -8,7 +8,8 @@ import java.util.Map.Entry;
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.wcet08.ProcessorModel;
 import com.jopdesign.wcet08.Project;
-import com.jopdesign.wcet08.analysis.LocalAnalysis.MapCostProvider;
+import com.jopdesign.wcet08.analysis.RecursiveAnalysis.MapCostProvider;
+import com.jopdesign.wcet08.analysis.RecursiveAnalysis.RecursiveWCETStrategy;
 import com.jopdesign.wcet08.frontend.SuperGraph;
 import com.jopdesign.wcet08.frontend.ControlFlowGraph.CFGEdge;
 import com.jopdesign.wcet08.frontend.ControlFlowGraph.CFGNode;
@@ -99,6 +100,46 @@ public class GlobalAnalysis {
 			/* cost += b_M * missCost(M) */
 			maxCostFlow.addDecisionCost(dVar, cache.missOnceCost(mi));
 		}
+	}
+	public static class GlobalIPETStrategy implements RecursiveWCETStrategy<StaticCacheApproximation> {
+		public WcetCost recursiveWCET(
+				RecursiveAnalysis<StaticCacheApproximation> stagedAnalysis,
+				InvokeNode n, StaticCacheApproximation cacheMode) {
+			if(cacheMode != StaticCacheApproximation.ALL_FIT) {
+				throw new AssertionError("Cache Mode "+cacheMode+" not supported using global IPET strategy");
+			}
+			Project project = stagedAnalysis.getProject();
+			MethodInfo invoker = n.getBasicBlock().getMethodInfo(); 
+			MethodInfo invoked = n.getImplementedMethod();
+			ProcessorModel proc = project.getProcessorModel();
+			MethodCache cache = proc.getMethodCache();
+			long returnCost = cache.getMissOnReturnCost(proc, project.getFlowGraph(invoker));
+			long invokeReturnCost = cache.getInvokeReturnMissCost(
+					proc,
+					project.getFlowGraph(invoker),
+	                project.getFlowGraph(invoked));
+			long cacheCost, nonLocalExecCost;
+			if(cache.allFit(invoked) && ! project.getCallGraph().isLeafNode(invoked)) {
+				GlobalAnalysis ga = new GlobalAnalysis(project);
+				WcetCost allFitCost = null;
+				try { allFitCost= ga.computeWCET(invoked, StaticCacheApproximation.ALL_FIT); }
+				catch (Exception e) { throw new AssertionError(e); }
+				cacheCost = returnCost + allFitCost.getCacheCost();
+				nonLocalExecCost = allFitCost.getNonCacheCost();				
+			} else {
+				WcetCost recCost = stagedAnalysis.computeWCET(invoked, cacheMode);
+				cacheCost = recCost.getCacheCost() + invokeReturnCost ;				
+				nonLocalExecCost = recCost.getCost() - recCost.getCacheCost();
+			}
+			WcetCost cost = new WcetCost();
+			cost.addNonLocalCost(nonLocalExecCost);
+			cost.addCacheCost(cacheCost);
+			Project.logger.info("Recursive WCET computation [GLOBAL IPET]: " + invoked.getMethod() +
+			        		    ". cummulative cache cost: "+cacheCost+
+					            " non local execution cost: "+nonLocalExecCost);
+			return cost;
+		}
+		
 	}
 	/**
 	 * compute execution time of basic blocks in the supergraph

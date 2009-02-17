@@ -14,4 +14,8 @@ public class MiscUtils {
 		set.add(val);
 	}
 
+	public static int bytesToWords(int by) {
+		return (by + 3) / 4;
+	}
+
 }

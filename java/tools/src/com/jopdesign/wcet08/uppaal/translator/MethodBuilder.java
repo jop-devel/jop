@@ -26,7 +26,7 @@ import java.util.Set;
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.wcet08.ProcessorModel;
 import com.jopdesign.wcet08.Project;
-import com.jopdesign.wcet08.analysis.LocalAnalysis;
+import com.jopdesign.wcet08.analysis.RecursiveAnalysis;
 import com.jopdesign.wcet08.analysis.WcetCost;
 import com.jopdesign.wcet08.config.Config;
 import com.jopdesign.wcet08.frontend.ControlFlowGraph;
@@ -68,7 +68,8 @@ public class MethodBuilder implements CfgVisitor {
 		public Location invokeMethod(InvokeNode n, Location basicBlockNode) {
 			if(project.getCallGraph().isLeafNode(n.getImplementedMethod()) &&
 			   Config.instance().getOption(UppAalConfig.UPPAAL_COLLAPSE_LEAVES)) {
-				LocalAnalysis ilpAn = new LocalAnalysis(project);
+				RecursiveAnalysis<StaticCacheApproximation> ilpAn = 
+					new RecursiveAnalysis<StaticCacheApproximation>(project,new RecursiveAnalysis.LocalIPETStrategy());
 				StaticCacheApproximation cacheApprox;
 				if(cacheSim.isAlwaysMiss()) {
 					cacheApprox = StaticCacheApproximation.ALWAYS_MISS;
@@ -245,9 +246,11 @@ public class MethodBuilder implements CfgVisitor {
 	}
 	
 	public void visitSummaryNode(SummaryNode n) {
-		LocalAnalysis an = new LocalAnalysis(project);
-		long cost = an.runWCETComputation("SUBGRAPH"+n.getId(), n.getSubGraph(), StaticCacheApproximation.ALWAYS_MISS,null).getLpCost();
-		NodeAutomaton sumLoc = createBasicBlock(n.getId(),cost);
+		RecursiveAnalysis<StaticCacheApproximation> an = 
+			new RecursiveAnalysis<StaticCacheApproximation>(project,new RecursiveAnalysis.LocalIPETStrategy());
+		WcetCost cost = an.runWCETComputation("SUBGRAPH"+n.getId(), n.getSubGraph(), StaticCacheApproximation.ALWAYS_MISS)
+				          .getTotalCost();
+		NodeAutomaton sumLoc = createBasicBlock(n.getId(),cost.getCost());
 		this.nodeTemplates.put(n,sumLoc);
 	}
 	private void buildEdge(CFGEdge edge) {

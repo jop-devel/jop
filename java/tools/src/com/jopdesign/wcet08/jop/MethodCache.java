@@ -2,13 +2,18 @@ package com.jopdesign.wcet08.jop;
 
 import java.util.Iterator;
 
+import org.apache.bcel.classfile.Code;
+
+import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.wcet08.ProcessorModel;
 import com.jopdesign.wcet08.Project;
 import com.jopdesign.wcet08.config.Config;
 import com.jopdesign.wcet08.frontend.ControlFlowGraph;
 import com.jopdesign.wcet08.frontend.CallGraph.CallGraphNode;
+import com.jopdesign.wcet08.graphutils.MiscUtils;
 import com.jopdesign.wcet08.jop.CacheConfig.CacheImplementation;
+import com.sun.corba.se.impl.encoding.CodeSetConversion.BTCConverter;
 
 public abstract class MethodCache {
 	protected Project project;
@@ -91,11 +96,43 @@ public abstract class MethodCache {
 		}
 		return size;
 	}
-	public void checkCache(MethodInfo m) throws Exception {
-		if(! this.fitsInCache(project.getSizeInWords(m))) {
-			throw new Exception("Method cache is too small: method "+
-					            m.getFQMethodName() + " does not fit into the cache");
+	/** Check that cache is big enough to hold any method possibly invoked
+	 *  Return largest method */
+	public MethodInfo checkCache() throws Exception {
+		int maxWords = 0;
+		MethodInfo largestMethod = null;
+		// It is inconvenient for testing to take all methods into account
+		for(MethodInfo mi : project.getCallGraph().getImplementedMethods()) {
+			Code code = mi.getCode();
+			if(code == null) continue;
+			int size = code.getLength();
+			int words = MiscUtils.bytesToWords(size);
+			if(! this.fitsInCache(words)) {
+				throw new Exception("Cache to small for target method: "+mi.getFQMethodName() + " / "+ words + " words");
+			}
+			if(words >= maxWords) {
+				largestMethod = mi;
+				maxWords = words;
+			}
 		}
+		
+// It is inconvenient for testing to take all methods into account
+//		for(ClassInfo ci : project.getWcetAppInfo().getCliMap().values()) {
+//			for(MethodInfo mi : ci.getMethodInfoMap().values()) {
+//				Code code = mi.getCode();
+//				if(code == null) continue;
+//				int size = code.getLength();
+//				int words = MiscUtils.bytesToWords(size);
+//				if(! this.fitsInCache(words)) {
+//					System.err.println("Warning: does not fit into cache: "+mi.getFQMethodName()+" / "+words+" words");
+//				}
+//				if(words >= maxWords) {
+//					largestMethod = mi;
+//					maxWords = words;
+//				}
+//			}
+//		}
+		return largestMethod;
 	}
 	public long getMissOnInvokeCost(ProcessorModel proc, ControlFlowGraph invoked) {
 		//System.err.println("Miss on invoke cost: "+invoked+": "+proc.getMethodCacheLoadTime(invoked.getNumberOfWords(), true));

@@ -1,6 +1,7 @@
 (User) ChangeLog for wcet08. Please keep current.
 Feb 09
 --------
+  - Add support for staged UPPAAL analysis :))
   - Rewrote CallGraph, which now takes receiver type analysis into account.
   - Unify handling of Java implemented Bytecodes
   - Add basic timestamp check that source file hasn't been modified after compilation.

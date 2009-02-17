@@ -78,8 +78,7 @@ public class SystemBuilder {
 		boolean assumeEmptyCache = config.getOption(UppAalConfig.UPPAAL_EMPTY_INITIAL_CACHE);
 		MethodCache cache = project.getProcessorModel().getMethodCache();
 		DynCacheApproximation cacheSim = Config.instance().getOption(CacheConfig.DYNAMIC_CACHE_APPROX);
-		if(cache.getName() == CacheImplementation.NO_METHOD_CACHE
-		  || cacheSim == DynCacheApproximation.ALWAYS_HIT) {
+		if(cache.getName() == CacheImplementation.NO_METHOD_CACHE) {
 			this.cacheSim = new StaticCacheBuilder(false);
 		} else if(cacheSim == DynCacheApproximation.ALWAYS_MISS) {
 			this.cacheSim = new StaticCacheBuilder(true);

@@ -66,7 +66,11 @@ public class CacheConfig {
 	 */
 	public enum StaticCacheApproximation { 
 		ALWAYS_HIT, ALWAYS_MISS,
-		ALL_FIT_LOCAL, ALL_FIT
+		ALL_FIT_LOCAL, 
+		ALL_FIT;
+		public boolean needsInterProcIPET() {
+			return this == ALL_FIT;
+		}
     };
 	public static final EnumOption<StaticCacheApproximation> STATIC_CACHE_APPROX =
 		new EnumOption<StaticCacheApproximation>(
@@ -82,12 +86,11 @@ public class CacheConfig {
 	 * <ul>
 	 *   <li/> CACHE_SIM
 	 *   <li/> ALWAYS_MISS
-	 *   <li/> ALWAYS_HIT
 	 * </ul>
 	 * 
 	 */
 	public enum DynCacheApproximation {
-		ALWAYS_HIT, ALWAYS_MISS,
+		ALWAYS_MISS,
 		CACHE_SIM
 	}
 	public static final EnumOption<DynCacheApproximation> DYNAMIC_CACHE_APPROX =

@@ -18,6 +18,21 @@ public class WcetCost implements Serializable {
 		cost.addNonLocalCost(wcet);
 		return cost;
 	}
+	@Override
+	public WcetCost clone() {
+		WcetCost cCost = new WcetCost();
+		cCost.addLocalCost(localCost);
+		cCost.addNonLocalCost(nonLocalCost);
+		cCost.addCacheCost(cacheCost);
+		return cCost;
+	}
+	
+	public void addCost(WcetCost cost) {
+		this.localCost += cost.getLocalCost();
+		this.nonLocalCost += cost.getNonLocalCost();
+		this.cacheCost += cost.getCacheCost();
+	}
+
 
 	public long getCost() { return localCost+cacheCost+nonLocalCost; }
 	
