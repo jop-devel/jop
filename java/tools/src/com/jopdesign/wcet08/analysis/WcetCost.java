@@ -13,8 +13,10 @@ public class WcetCost implements Serializable {
 	public WcetCost() {
 		
 	}
-	public WcetCost(long wcet) {
-		localCost = wcet;
+	public static WcetCost totalCost(long wcet) {
+		WcetCost cost = new WcetCost();
+		cost.addNonLocalCost(wcet);
+		return cost;
 	}
 
 	public long getCost() { return localCost+cacheCost+nonLocalCost; }

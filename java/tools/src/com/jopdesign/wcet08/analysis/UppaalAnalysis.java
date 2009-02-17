@@ -58,7 +58,7 @@ public class UppaalAnalysis {
 			long end = System.nanoTime();		
 			this.searchtime = ((double)(end-start))/1E9;
 			this.solvertimemax = search.getMaxSolverTime();
-			return new WcetCost(wcet);
+			return WcetCost.totalCost(wcet);
 		} else {
 			throw new IOException("No verifier binary available. Skipping search");
 		}
