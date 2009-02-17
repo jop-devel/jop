@@ -87,12 +87,19 @@ public class ExecHelper {
 	}
 	public void exitUsage(String reason) {
 		printSep();
+		printUsage(true);
+		printSep();
 		System.err.println("[USAGE ERROR] "+reason);
 		printSep();
-		exitUsage(true);
+		System.exit(1);
 	}
 
 	public void exitUsage(boolean dumpConfig) {
+		printUsage(dumpConfig);
+		System.exit(1);
+	}
+	public void printUsage(boolean dumpConfig) {
+		if(dumpConfig) System.err.println("Current configuration:\n"+Config.instance().dumpConfiguration(4));
 		System.err.println(
 			MessageFormat.format("" +
 					"Usage:\n  java -D{0}=file://<path-to-config> {1} [OPTIONS]", 
@@ -108,8 +115,6 @@ public class ExecHelper {
 			System.err.println("    "+o.toString(15));
 		}
 		System.err.println("\nSee 'wcet.properties' for an example configuration");
-		if(dumpConfig) System.err.println("Current configuration:\n"+Config.instance().dumpConfiguration(4));
-		System.exit(1);		
 	}
 	public void logException(String ctx, Throwable e) {
 		e.printStackTrace();

@@ -40,8 +40,9 @@ public class VarBlockCacheBuilder extends CacheSimBuilder {
 				"  for(i = "+(cache.getNumBlocks()-1)+"; i >= sz; i--) {\n"+
 				"     cache[i]=cache[i-sz];\n"+
 				"  }\n"+
-				"  for(i = 0; i < sz; i++) {\n"+
-				"     cache[i]=mid;\n"+
+				"  cache[0] = mid;"+
+				"  for(i = 1; i < sz; i++) {\n"+
+				"     cache[i] = "+NUM_METHODS+";\n"+
 				"  }\n"+
 				"}\n");
 	}
