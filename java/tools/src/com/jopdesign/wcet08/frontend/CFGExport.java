@@ -5,14 +5,13 @@ import java.io.Writer;
 import java.util.Map;
 import org.apache.bcel.generic.BranchInstruction;
 import org.apache.bcel.generic.Instruction;
-import org.apache.bcel.generic.InvokeInstruction;
-import org.apache.bcel.generic.RETURN;
+import org.apache.bcel.generic.ReturnInstruction;
 import org.jgrapht.DirectedGraph;
 
-import com.jopdesign.wcet08.analysis.BlockWCET;
 import com.jopdesign.wcet08.frontend.ControlFlowGraph.BasicBlockNode;
 import com.jopdesign.wcet08.frontend.ControlFlowGraph.CFGEdge;
 import com.jopdesign.wcet08.frontend.ControlFlowGraph.CFGNode;
+import com.jopdesign.wcet08.frontend.ControlFlowGraph.InvokeNode;
 import com.jopdesign.wcet08.graphutils.AdvancedDOTExporter;
 import com.jopdesign.wcet08.graphutils.LoopColoring;
 import com.jopdesign.wcet08.graphutils.AdvancedDOTExporter.DOTLabeller;
@@ -88,30 +87,29 @@ public class CFGExport {
 		private void setBasicBlockAttributes(BasicBlockNode n, Map<String,String> ht) {
 			BasicBlock codeBlock = n.getBasicBlock();
 			Instruction lastInstr = codeBlock.getLastInstruction().getInstruction();
-			InvokeInstruction invInstr = 
-				(lastInstr instanceof InvokeInstruction) ? ((InvokeInstruction)lastInstr) : null;
-			boolean isReturn = lastInstr instanceof RETURN;
+			boolean isReturn = lastInstr instanceof ReturnInstruction;
 			LoopColoring<CFGNode, CFGEdge> loops = flowGraph.getLoopColoring();
 			StringBuilder nodeInfo = new StringBuilder();
 			nodeInfo.append('#');
 			nodeInfo.append(n.getId());
 			nodeInfo.append(' ');
 			String infoHeader;
-			if(invInstr != null) {
-				infoHeader = "{invoke "+
-							 codeBlock.getAppInfo().getReferenced(codeBlock.getMethodInfo().getCli(), invInstr) +
-							 "}";
+			if(n instanceof InvokeNode) {
+				InvokeNode in = (InvokeNode) n;
+				infoHeader = "{invoke "+ (in.isInterface()
+						                  ? ("virtual "+in.getReferenced())
+						                  : in.getImplementedMethod().getFQMethodName()) +"}";
 			} else if(isReturn) {
-				infoHeader = "{return ";
+				infoHeader = "{return}";
 			} else if(codeBlock.getBranchInstruction() != null) {
 				BranchInstruction instr = codeBlock.getBranchInstruction();
-				infoHeader = "{"+ instr.getName() + " ";
+				infoHeader = "{"+ instr.getName() + "}";
 			} else {
-				infoHeader = "{simple ";
+				infoHeader = "{simple}";
 			}
 			nodeInfo.append(infoHeader);
 			nodeInfo.append("{"+codeBlock.getNumberOfBytes()+" By, ");
-			nodeInfo.append(BlockWCET.basicBlockWCETEstimate(codeBlock)+" Cyc");
+			nodeInfo.append(n.getBasicBlock().getAppInfo().getProcessorModel().basicBlockWCET(codeBlock)+" Cyc");
 			if(loops.getHeadOfLoops().contains(n)) {
 				nodeInfo.append(", LOOP "+n.getId()+"/"+flowGraph.getLoopBounds().get(n));
 			}

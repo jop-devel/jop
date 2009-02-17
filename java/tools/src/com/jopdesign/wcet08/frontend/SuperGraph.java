@@ -1,5 +1,7 @@
 package com.jopdesign.wcet08.frontend;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -8,6 +10,7 @@ import java.util.Stack;
 import java.util.Vector;
 
 import org.jgrapht.EdgeFactory;
+import org.jgrapht.ext.DOTExporter;
 import org.jgrapht.graph.DirectedMultigraph;
 
 import com.jopdesign.build.MethodInfo;
@@ -15,11 +18,13 @@ import com.jopdesign.wcet08.frontend.ControlFlowGraph.CFGEdge;
 import com.jopdesign.wcet08.frontend.ControlFlowGraph.CFGNode;
 import com.jopdesign.wcet08.frontend.ControlFlowGraph.EdgeKind;
 import com.jopdesign.wcet08.frontend.ControlFlowGraph.InvokeNode;
+import com.jopdesign.wcet08.graphutils.AdvancedDOTExporter;
 import com.jopdesign.wcet08.graphutils.FlowGraph;
 import com.jopdesign.wcet08.graphutils.UnmodifiableDirectedGraphAdapter;
+import com.jopdesign.wcet08.graphutils.AdvancedDOTExporter.DOTNodeLabeller;
 
 /**
- * A supergraph is similar to a callgraph, but models the actual edges
+ * A supergraph is similar to a call graph, but models the actual edges
  * connecting the control flow graphs.
  * @author Benedikt Huber <benedikt.huber@gmail.com>
  *
@@ -31,6 +36,7 @@ public class SuperGraph extends UnmodifiableDirectedGraphAdapter<CFGNode, CFGEdg
 			super(kind);
 		}
 	}
+	/** Edge representing a method invocation */
 	public static class SuperInvokeEdge extends SuperEdge {
 		private static final long serialVersionUID = 1L;
 		InvokeNode invoker;
@@ -42,6 +48,7 @@ public class SuperGraph extends UnmodifiableDirectedGraphAdapter<CFGNode, CFGEdg
 			return invoker;
 		}
 	}
+	/** Edge representing return to the invoking method */
 	public static class SuperReturnEdge extends SuperEdge {
 		private static final long serialVersionUID = 1L;
 		CFGNode returnNode;
@@ -161,6 +168,29 @@ public class SuperGraph extends UnmodifiableDirectedGraphAdapter<CFGNode, CFGEdg
 		} else {
 			return graphOfNode.get(n).getGraph().outgoingEdgesOf(n);
 		}		
+	}
+	public void exportDOT(FileWriter dotWriter) throws IOException {
+		DOTNodeLabeller<CFGNode> nodeLabeller =
+			new AdvancedDOTExporter.DefaultNodeLabeller<CFGNode>() {
+
+				@Override
+				public String getLabel(CFGNode node) {
+					if(node.getBasicBlock() != null) {
+						String s;
+						if(node instanceof ControlFlowGraph.InvokeNode) {
+							s = "INVOKE ";
+						} else {
+							s = "BB ";
+						}
+						return s+node.getId()+" "+node.getBasicBlock().getLastInstruction().getInstruction().getName();
+					}
+					return super.getLabel(node);
+				}
+			
+		};
+		AdvancedDOTExporter<CFGNode, CFGEdge> de = new AdvancedDOTExporter<CFGNode, CFGEdge>(
+				nodeLabeller,null);
+		de.exportDOT(dotWriter, this);
 	}
 	public ControlFlowGraph getTopCFG() {
 		return rootCfg;

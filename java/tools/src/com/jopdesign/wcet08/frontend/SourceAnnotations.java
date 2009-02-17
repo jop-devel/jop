@@ -23,6 +23,7 @@ package com.jopdesign.wcet08.frontend;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.SortedMap;
@@ -92,7 +93,7 @@ public class SourceAnnotations {
 		throws IOException, BadAnnotationException {
 		
 		SortedMap<Integer, LoopBound> wcaMap = new TreeMap<Integer, LoopBound>();
-		File fileName = project.getSourceFile(ci);
+		File fileName = getSourceFile(ci);
 		BufferedReader reader = new BufferedReader(new FileReader(fileName));
 		String line = null;
 		int lineNr = 1;
@@ -106,6 +107,15 @@ public class SourceAnnotations {
 		}
 		logger.debug("Computed wca annotations for "+fileName);
 		return wcaMap;
+	}
+
+	private File getSourceFile(ClassInfo ci) throws FileNotFoundException, BadAnnotationException {
+		File src = project.getSourceFile(ci);
+		File klazz = project.getClassFile(ci);
+		if(src.lastModified() > klazz.lastModified()) {
+			throw new BadAnnotationException("Timestamp error: source file modified after compilation");
+		}
+		return src;
 	}
 
 	/**

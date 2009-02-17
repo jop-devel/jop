@@ -30,7 +30,6 @@ import java.util.SortedMap;
 import java.util.Vector;
 
 import org.apache.bcel.generic.ConstantPoolGen;
-import org.apache.bcel.generic.INVOKESTATIC;
 import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.InvokeInstruction;
@@ -40,16 +39,12 @@ import com.jopdesign.build.AppInfo;
 import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.dfa.framework.ContextMap;
-import com.jopdesign.tools.JopInstr;
-import com.jopdesign.wcet.WCETInstruction;
+import com.jopdesign.wcet08.ProcessorModel;
 import com.jopdesign.wcet08.Project;
-import com.jopdesign.wcet08.ProjectConfig;
-import com.jopdesign.wcet08.config.Config;
-import com.jopdesign.wcet08.config.Config.MissingConfigurationError;
+import com.jopdesign.wcet08.Project.AnalysisError;
 import com.jopdesign.wcet08.frontend.SourceAnnotations.BadAnnotationException;
 import com.jopdesign.wcet08.frontend.SourceAnnotations.LoopBound;
 import com.jopdesign.wcet08.graphutils.TopOrder.BadGraphException;
-import com.jopdesign.wcet08.report.InvokeDot;
 
 /**
  * AppInfo subclass for the WCET analysis.
@@ -58,7 +53,7 @@ import com.jopdesign.wcet08.report.InvokeDot;
  * @author Benedikt Huber, benedikt.huber@gmail.com
  */
 public class WcetAppInfo  {
-	private static final long serialVersionUID = 2L;
+	private static final long serialVersionUID = 3L;
  	/* package logger */
 	public static final Logger logger = Logger.getLogger(WcetAppInfo.class.getPackage().toString());
 	/**
@@ -70,18 +65,21 @@ public class WcetAppInfo  {
 			super(message);			
 		}
 	}	
-
-	public static final String JVM_CLASS = "com.jopdesign.sys.JVM";
-
 	private TypeGraph typeGraph;
 	private AppInfo ai;
 	private Map<MethodInfo, ControlFlowGraph> cfgs;
 	private List<ControlFlowGraph> cfgsByIndex;
 	private Map<InstructionHandle, ContextMap<String, String>> receiverAnalysis = null;
+	private ProcessorModel processor;
+	private Project project;
 
-	public WcetAppInfo(com.jopdesign.build.AppInfo ai) {
+	public WcetAppInfo(Project p, com.jopdesign.build.AppInfo ai, ProcessorModel processor) {
+		this.project = p;
 		this.ai = ai; 
+		this.processor = processor;
 		this.typeGraph = new TypeGraph(this);
+		cfgsByIndex = new Vector<ControlFlowGraph>();
+		cfgs = new Hashtable<MethodInfo, ControlFlowGraph>();
 	}
 	
 	/**
@@ -90,12 +88,14 @@ public class WcetAppInfo  {
 	public Map<String, ? extends ClassInfo> getCliMap() {
 		return ai.cliMap;
 	}
+	
 	/**
 	 * @return The typegraph of all loaded classes
 	 */
 	public TypeGraph getTypeGraph() {
 		return typeGraph;
 	}
+	
 	/**
 	 * @param className Name of the class to lookup
 	 * @return the class info, or null if the class could'nt be found
@@ -117,7 +117,7 @@ public class WcetAppInfo  {
 		if(cli == null) throw new MethodNotFoundException("The class "+className+" couldn't be found");
 		return searchMethod(cli,methodName);
 	}
-	private MethodInfo searchMethod(ClassInfo cli, String methodName) throws MethodNotFoundException {
+	public MethodInfo searchMethod(ClassInfo cli, String methodName) throws MethodNotFoundException {
 		MethodInfo mi = null;
 		if(methodName.indexOf("(") > 0) {
 			mi = cli.getMethodInfo(methodName);
@@ -155,10 +155,11 @@ public class WcetAppInfo  {
 	 * @return A pair of class info and method name
 	 */
 	public MethodRef getReferenced(ClassInfo invokerCi, InvokeInstruction instr) {
+		ClassInfo refCi;
 		ConstantPoolGen cpg = new ConstantPoolGen(invokerCi.clazz.getConstantPool());
 		String classname = instr.getClassName(cpg );
 		String methodname = instr.getMethodName(cpg) + instr.getSignature(cpg);
-		ClassInfo refCi = getClassInfo(classname);
+		refCi = getClassInfo(classname);
 		if(refCi == null) throw new AssertionError("Failed class lookup (invoke target): "+classname);
 		return new MethodRef(refCi,methodname);
 	}
@@ -211,7 +212,11 @@ public class WcetAppInfo  {
 	public List<MethodInfo> findImplementations(MethodInfo invokerM, InstructionHandle ih) {
 		MethodRef ref = this.getReferenced(invokerM, (InvokeInstruction) ih.getInstruction());
 		List<MethodInfo> staticImpls = findImplementations(ref);
-		// TODO: rather slow, for debugging purposes
+		staticImpls = dfaReceivers(ih, staticImpls);
+		return staticImpls;
+	}
+	// TODO: rather slow, for debugging purposes
+	private List<MethodInfo> dfaReceivers(InstructionHandle ih, List<MethodInfo> staticImpls) {
 		if(this.receiverAnalysis != null) {
 			ContextMap<String, String> receivers = receiverAnalysis.get(ih);
 			List<MethodInfo> dynImpls = new Vector<MethodInfo>();
@@ -227,11 +232,11 @@ public class WcetAppInfo  {
 			if(! dynReceivers.isEmpty()) {
 				throw new AssertionError("Bad receiver analysis ? Dynamic but not static receivers: "+dynReceivers);
 			}
-			staticImpls = dynImpls;
+			return dynImpls;
+		} else {
+			return staticImpls;
 		}
-		return staticImpls;
 	}
-
 	/* helper to avoid code dupl */
 	private void tryAddImpl(List<MethodInfo> ms, MethodInfo m) {
 		if(m != null) {
@@ -241,178 +246,56 @@ public class WcetAppInfo  {
 		}		
 	}
 
-	/**
-	 * check whether we need to deal with the given statement in a special way,
-	 * because it is translated to a JOP specific microcode sequence
-     *
-	 * @param instr the instruction to check
-	 * @return true, if this is translated to a JOP specific bytecode
-	 */
-	public boolean isSpecialInvoke(ClassInfo ci, Instruction i) {		
-		if(! (i instanceof INVOKESTATIC)) return false;
-		ConstantPoolGen cpg = new ConstantPoolGen(ci.clazz.getConstantPool());
-		String classname = ((INVOKESTATIC) i).getClassName(cpg);
-		return (classname.equals("com.jopdesign.sys.Native"));		
-	}
-	public boolean isSpecialInvoke(MethodInfo methodInfo, Instruction i) {
-		return isSpecialInvoke(methodInfo.getCli(),i);
-	}
-
-	/**
-	 * Get the (actual) opcode of a statement, as executed on JOP
-	 * @param instr the BCEL instructions
-	 * @return
-	 */
-	public int getJOpCode(ClassInfo ci, Instruction instr) {
-		if(isSpecialInvoke(ci,instr)) {
-			ConstantPoolGen cpg = new ConstantPoolGen(ci.clazz.getConstantPool());
-			String methodName = ((INVOKESTATIC) instr).getMethodName(cpg);			
-			return JopInstr.getNative(methodName);
-		} else {
-			return instr.getOpcode();
-		}
-	}
-	/** Get the reference to the method in {@link com.jopdesign.sys.JVM} implementing the
-	 *  given instruction
-	 * @param ii the instruction
-	 * @return the reference to the java implementation of the bytecode, or null if this is
-	 * a native bytecode
-	 */
-	public MethodInfo getJavaImpl(ClassInfo ci, Instruction instr) {
-		if(WCETInstruction.isInJava(getJOpCode(ci,instr))) {
-			ClassInfo receiver = ai.cliMap.get(JVM_CLASS);
-			String methodName = "f_"+instr.getName();
-			try {
-				return searchMethod(receiver,methodName);
-			} catch (MethodNotFoundException e) {
-				throw new AssertionError("Failed to find java implementation for: "+instr);
-			}
-		} else {
-			return null;
-		}
-	}
-
-
 	public AppInfo getAppInfo() {
 		return this.ai;
-	}
-
-	public void analyseFlowGraphs(Project p, List<MethodInfo> methodInfos) throws Exception {
-		cfgsByIndex = new Vector<ControlFlowGraph>();
-		cfgs = new Hashtable<MethodInfo, ControlFlowGraph>();
-		for(int i = 0; i < methodInfos.size(); i++) {
-			MethodInfo method = methodInfos.get(i);
-			SortedMap<Integer,LoopBound> wcaMap = p.getAnnotations(method.getCli());
-			assert(wcaMap != null);
-			ControlFlowGraph fg;
-			try {
-				fg = new ControlFlowGraph(i,this,method);
-			}  catch(BadGraphException e) {
-				logger.error("Bad flow graph: "+e);
-				throw e;
-			}
-			cfgsByIndex.add(fg);
-			cfgs.put(method,fg);
-		}
-		for(ControlFlowGraph fg: cfgsByIndex) {
-			try {
-				fg.loadAnnotations(p);
-				fg.resolveVirtualInvokes();
-//				fg.insertSplitNodes();
-//				fg.insertSummaryNodes();
-				fg.insertReturnNodes();
-			} catch (BadAnnotationException e) {
-				logger.error("Bad annotation: "+e);
-				throw e;
-			}
-		}
-	}
-	public boolean hasFlowGraph(MethodInfo mi) {
-		return(cfgs.containsKey(mi));
 	}
 	public ControlFlowGraph getFlowGraph(int id) {
 		return cfgsByIndex.get(id);
 	}
 	public ControlFlowGraph getFlowGraph(MethodInfo m) {
 		if(cfgs.get(m) == null) {
-			throw new AssertionError("No FlowGraph for "+m.getFQMethodName());
+			try {
+				loadFlowGraph(m);
+			} catch (BadAnnotationException e) {
+				throw new AnalysisError("Bad Flow Fact Annotation: "+e.getMessage(),e);
+			} catch (IOException e) {
+				throw new AnalysisError("IO Exception",e);
+			} catch (BadGraphException e) {
+				throw new AnalysisError("Bad Flow Graph: "+e.getMessage(),e);
+			}
 		}
 		return cfgs.get(m);
 	}
-
+	private ControlFlowGraph loadFlowGraph(MethodInfo method) throws BadAnnotationException, IOException, BadGraphException {
+		SortedMap<Integer,LoopBound> wcaMap = project.getAnnotations(method.getCli());
+		assert(wcaMap != null);
+		ControlFlowGraph fg;
+		try {
+			fg = new ControlFlowGraph(cfgsByIndex.size(),this,method);
+			fg.loadAnnotations(project);
+			fg.resolveVirtualInvokes();
+//			fg.insertSplitNodes();
+//			fg.insertSummaryNodes();
+			fg.insertReturnNodes();
+			cfgsByIndex.add(fg);
+			cfgs.put(method,fg);
+			return fg;
+		}  catch(BadGraphException e) {
+			logger.error("Bad flow graph: "+e);
+			throw e;
+		}
+	}
 	public void setReceivers(
 			Map<InstructionHandle, ContextMap<String, String>> receiverResults) {
 		this.receiverAnalysis = receiverResults;
 	}
-	
-	/*
-	 * DEMO
-	 * ~~~~
-	 */
 
-	public static String USAGE = 
-		"Usage: java [-Dconfig=file://<config.props>] "+ 
-		WcetAppInfo.class.getCanonicalName()+
-		" [-outdir outdir] [-cp classpath] package.rootclass.rootmethod";
+	public ProcessorModel getProcessorModel() {
+		return this.processor;
+	}
 
-	/* small demo using the class loader */	
-	public static void main(String[] argv) {
-		ProjectConfig pConfig = null;
-		try {
-			String[] argvrest = Config.load(System.getProperty("config"), argv);
-			Config config = Config.instance();
-			pConfig = new ProjectConfig(config);
-			if(argvrest.length == 1) {
-				String target = argvrest[0];
-				if(target.indexOf('(') > 0) target = target.substring(0,target.indexOf('('));
-				config.setProperty(ProjectConfig.APP_CLASS_NAME.getKey(), target.substring(0,target.lastIndexOf('.')));
-				config.setProperty(ProjectConfig.TARGET_METHOD.getKey(),argvrest[0]);
-			}
-			config.checkOptions();
-		} catch(MissingConfigurationError e) {
-			System.err.println(e);
-			System.err.println(USAGE);
-			System.exit(1);
-		} catch (Exception e) {
-			e.printStackTrace();
-			System.exit(1);
-		}
-		AppInfo ai = null;
-		try {
-			Config config = Config.instance();
-			System.out.println("Classloader Demo: "+pConfig.getAppClassName());
-			String rootClass = pConfig.getAppClassName();
-			String rootPkg = rootClass.substring(0,rootClass.lastIndexOf("."));
-			config.setOption(ProjectConfig.PROJECT_NAME, "typegraph");
-			Project p = new Project(config);
-			ai = p.loadApp();
-			WcetAppInfo wcetAi = new WcetAppInfo(ai);
-			ClassInfo ci = wcetAi.getClassInfo(pConfig.getAppClassName());
-			System.out.println("Source file: "+ci.clazz.getSourceFileName());
-			System.out.println("Root class: "+ci.clazz.toString());
-			{ 
-				System.out.println("Writing type graph to "+p.getOutFile("typegraph.png"));
-				File dotFile = p.getOutFile("typegraph.dot");
-				FileWriter dotWriter = new FileWriter(dotFile);
-				wcetAi.getTypeGraph().exportDOT(dotWriter,rootPkg);			
-				dotWriter.close();
-				InvokeDot.invokeDot(dotFile, p.getOutFile("typegraph.png"));
-			}
-			CallGraph cg = CallGraph.buildCallGraph(wcetAi, pConfig.getMeasuredClass(), pConfig.getMeasuredMethod());			
-			{
-				System.out.println("Writing call graph to "+p.getOutFile("callgraph.png"));
-				File dotFile = p.getOutFile("callgraph.dot");
-				FileWriter dotWriter = new FileWriter(dotFile);
-				cg.exportDOT(dotWriter);			
-				dotWriter.close();			
-				InvokeDot.invokeDot(dotFile, p.getOutFile("callgraph.png"));
-			}
-			
-		} catch (IOException e) {
-			e.printStackTrace();
-		} catch (MethodNotFoundException e) {
-			e.printStackTrace();
-		}
+	public MethodInfo getJavaImplementation(ClassInfo ci, Instruction lastInstr) {
+		return this.processor.getJavaImplementation(this, ci, lastInstr);
 	}
 
 }

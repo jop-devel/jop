@@ -43,7 +43,7 @@ import org.apache.bcel.generic.StoreInstruction;
 
 import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.MethodInfo;
-import com.jopdesign.tools.JopInstr;
+import com.jopdesign.wcet08.frontend.ControlFlowGraph.ControlFlowError;
 import com.jopdesign.wcet08.frontend.ControlFlowGraph.EdgeKind;
 
 /**
@@ -57,22 +57,60 @@ import com.jopdesign.wcet08.frontend.ControlFlowGraph.EdgeKind;
  */
 public class BasicBlock  {
 	private static final long serialVersionUID = 1L;
+	/**
+	 * Flow annotations for instructions.
+	 * Should only be used by {@link FlowGraph}
+	 */
+	static class FlowInfo {
+		boolean alwaysTaken = false;
+		boolean splitBefore = false;
+		boolean splitAfter = false;
+		boolean exit = false;		
+		List<FlowTarget> targets = new Vector<FlowTarget>();
+		
+		void addTarget(InstructionHandle ih, EdgeKind kind) {
+			targets.add(new FlowTarget(ih,kind));
+		}
+	}
+	/**
+	 * Represents targets of a control flow instruction
+	 */
+	static class FlowTarget {
+		InstructionHandle target;
+		EdgeKind edgeKind;
+		FlowTarget(InstructionHandle target, EdgeKind edgeKind) { 
+			this.target = target; this.edgeKind = edgeKind; 
+		}
+		@Override public String toString() {
+			return "FlowTarget<"+target.getPosition()+","+edgeKind+">";
+		}
+	}
+	
+
+	/** Keys for the custom {@link InstructionHandle} attributes */
 	private enum InstrField { FLOW_INFO, LINE_NUMBER };
 	
-	public static FlowInfo getFlowInfo(InstructionHandle ih) {
+	/** Get FlowInfo associated with an {@link InstructionHandle} */
+	static FlowInfo getFlowInfo(InstructionHandle ih) {
 		return (FlowInfo)ih.getAttribute(InstrField.FLOW_INFO);
 	}
-	public static Integer getLineNumber(InstructionHandle ih) {
+	
+	/** Get Line number associated with an {@link InstructionHandle} */
+	static Integer getLineNumber(InstructionHandle ih) {
 		return (Integer)ih.getAttribute(InstrField.LINE_NUMBER);
 	}
-
+	
 	private LinkedList<InstructionHandle> instructions = new LinkedList<InstructionHandle>();
 	private MethodInfo methodInfo;
 	private WcetAppInfo appInfo;
 	
-	public BasicBlock(WcetAppInfo wcetAi, MethodInfo m) {
-		this.appInfo = wcetAi;
-		this.methodInfo = m;
+	/** Create a basic block
+	 * @param appInfo    The WCET context
+	 * @param methodInfo The method the basic block belongs to
+	 */
+	public BasicBlock(WcetAppInfo appInfo, MethodInfo methodInfo) {
+		this.appInfo = appInfo;
+		this.methodInfo = methodInfo;
 	}
 	public WcetAppInfo getAppInfo() {
 		return appInfo;
@@ -83,54 +121,148 @@ public class BasicBlock  {
 	public MethodInfo getMethodInfo() {
 		return methodInfo;
 	}
-
+	/** Get the constant pool associated with the method of this basic block */
 	public ConstantPoolGen cpg() {
-		return this.methodInfo.getMethodGen().getConstantPool();
+		return this.getMethodInfo().getMethodGen().getConstantPool();
 	}
+	/** add an instruction to this basic block */
 	public void addInstruction(InstructionHandle ih) {
 		this.instructions.add(ih);
 	}
+	/** Get the first instruction of an basic block
+	 *  (potential target of control flow instruction)
+	 */
 	public InstructionHandle getFirstInstruction() {
 		return this.instructions.getFirst();
-	}	
+	}
+	/** Get the last instruction of an basic block
+	 *  (potential control flow instruction)
+	 * @return
+	 */
 	public InstructionHandle getLastInstruction() {
 		return this.instructions.getLast();
 	}
 
 	/**
-	 * Get the invoke instruction of the basic block (which should be
+	 * Get the invoke instruction of the basic block (which must be
 	 * the only instruction in the basic block)
 	 * @return the invoke instruction, or <code>null</code>, if the basic block doesn't
 	 *         contain an invoke instruction.
-	 * @throws AssertionError if there is more than one invoke instruction in the block.
+	 * @throws FlowGraphError if there is more than one invoke instruction in the block.
 	 */
 	public InvokeInstruction getTheInvokeInstruction() {
 		InvokeInstruction theInvInstr = null;
 		for(InstructionHandle ih : this.instructions) {
 			if(! (ih.getInstruction() instanceof InvokeInstruction)) continue;
 			InvokeInstruction inv = (InvokeInstruction) ih.getInstruction();
-			if(this.getAppInfo().isSpecialInvoke(this.methodInfo, inv)) continue;
+			if(this.getAppInfo().getProcessorModel().isSpecialInvoke(this.methodInfo.getCli(), inv)) {
+				continue;
+			}
 			if(theInvInstr != null) {
-				throw new AssertionError("More than one invoke instruction in a basic block");
+				throw new ControlFlowError("More than one invoke instruction in a basic block");
 			}
 			theInvInstr = inv;
 		}
 		return theInvInstr;
 	}
+	/** return the BranchInstruction of the basic block, or {@code null} if there is none. */
 	public BranchInstruction getBranchInstruction() {
 		Instruction last = this.getLastInstruction().getInstruction();
 		return ((last instanceof BranchInstruction) ? ((BranchInstruction) last) : null);
 	}
+	/** Get the list of {@link InstructionHandle}s, which make up this basic block */
 	public List<InstructionHandle> getInstructions() {
 		return this.instructions;
 	}
+
+	/** Get number of bytes in this basic block */
+	public int getNumberOfBytes() {
+		int len = 0;
+		for(InstructionHandle ih : this.instructions) {
+			len += appInfo.getProcessorModel().getNumberOfBytes(
+					this.methodInfo.getCli(), ih.getInstruction()					
+			);
+		}
+		return len;
+	}
+	/*---------------------------------------------------------------------------
+	 *  Control flow graph construction 
+	 *---------------------------------------------------------------------------
+	 */
+	/**
+	 * Override this class to get specific basic block partitioning
+	 */
+	public static class InstructionTargetVisitor extends EmptyVisitor {
+		private FlowInfo flowInfo;
+		private HashSet<InstructionHandle> targeted;
+		public boolean isTarget(InstructionHandle ih) {
+			return targeted.contains(ih);
+		}
+		private MethodInfo methodInfo;
+		private WcetAppInfo appInfo;
+		public void visitInstruction(InstructionHandle ih) {
+			ih.accept(this);
+			if(appInfo.getProcessorModel().isImplementedInJava(ih.getInstruction())) {
+				flowInfo.splitBefore = true;
+				flowInfo.splitAfter  = true;
+			}
+		}
+		@Override public void visitBranchInstruction(BranchInstruction obj) {
+			flowInfo.splitAfter=true; /* details follow in goto/if/jsr/select */
+		}
+		@Override public void visitGotoInstruction(GotoInstruction obj) {
+			flowInfo.addTarget(obj.getTarget(),EdgeKind.GOTO_EDGE);
+			this.targeted.add(obj.getTarget());
+			flowInfo.alwaysTaken = true;
+		}
+		@Override public void visitIfInstruction(IfInstruction obj) {
+			flowInfo.addTarget(obj.getTarget(),EdgeKind.BRANCH_EDGE);
+			this.targeted.add(obj.getTarget());
+		}
+		@Override public void visitSelect(Select obj) {
+			super.visitSelect(obj);
+			for(InstructionHandle tih : obj.getTargets()) {
+				flowInfo.addTarget(tih,EdgeKind.SELECT_EDGE);
+				this.targeted.add(tih);
+			}
+		}
+		@Override public void visitJsrInstruction(JsrInstruction obj) {
+			flowInfo.addTarget(obj.getTarget(),EdgeKind.JSR_EDGE);
+			this.targeted.add(obj.getTarget());
+			flowInfo.alwaysTaken = true;
+		}
+
+		// Not neccesarily, but nice for WCET analysis
+		@Override public void visitInvokeInstruction(InvokeInstruction obj) {
+			if(! appInfo.getProcessorModel().isSpecialInvoke(methodInfo.getCli(), obj)) {
+				flowInfo.splitBefore = true;
+				flowInfo.splitAfter = true;
+			}
+		}
+		@Override public void visitReturnInstruction(ReturnInstruction obj) {
+			flowInfo.splitAfter = true;
+			flowInfo.exit = true;
+		}
+		protected InstructionTargetVisitor(WcetAppInfo ai, MethodInfo m) {
+			this.targeted = new HashSet<InstructionHandle>();
+			this.methodInfo = m;
+			this.appInfo = ai;
+		}
+		
+		public FlowInfo getFlowInfo(InstructionHandle ih) {
+			flowInfo = new FlowInfo();
+			visitInstruction(ih);
+			return flowInfo;
+		}
+	}
+
 	/**
 	 * Create a vector of basic blocks, annotated with flow information
 	 * @param methodInfo The MethodInfo of the method where should extract basic blocks.
 	 * @return A vector of BasicBlocks, which instruction handles annotated with
 	 * flow information.
 	 */
-	public static Vector<BasicBlock> buildBasicBlocks(WcetAppInfo ai, MethodInfo methodInfo) {
+	static Vector<BasicBlock> buildBasicBlocks(WcetAppInfo ai, MethodInfo methodInfo) {
 		InstructionTargetVisitor itv = new InstructionTargetVisitor(ai,methodInfo);
 		Vector<BasicBlock> basicBlocks = new Vector<BasicBlock>();
 		InstructionList il = methodInfo.getMethodGen().getInstructionList();
@@ -163,103 +295,14 @@ public class BasicBlock  {
 		return basicBlocks;
 	}
 	
-	/**
-	 * Flow annotations for basic blocks (package visibility for FlowGraph)
-	 */
-	static class FlowInfo {
-		boolean alwaysTaken = false;
-		boolean splitBefore = false;
-		boolean splitAfter = false;
-		boolean exit = false;		
-		List<FlowTarget> targets = new Vector<FlowTarget>();
-		
-		void addTarget(InstructionHandle ih, EdgeKind kind) {
-			targets.add(new FlowTarget(ih,kind));
-		}
-	}
-	static class FlowTarget {
-		InstructionHandle target;
-		EdgeKind edgeKind;
-		FlowTarget(InstructionHandle target, EdgeKind edgeKind) { 
-			this.target = target; this.edgeKind = edgeKind; 
-		}
-		@Override public String toString() {
-			return "FlowTarget<"+target.getPosition()+","+edgeKind+">";
-		}
-	}
 	
-	/**
-	 * Override this class to get specific basic block partitioning
-	 */
-	public static class InstructionTargetVisitor extends EmptyVisitor {
-		private FlowInfo flowInfo;
-		private HashSet<InstructionHandle> targeted;
-		public boolean isTarget(InstructionHandle ih) {
-			return targeted.contains(ih);
-		}
-		private MethodInfo methodInfo;
-		private WcetAppInfo appInfo;
-		public void visitInstruction(InstructionHandle ih) {
-			ih.accept(this);
-		}
-		@Override public void visitBranchInstruction(BranchInstruction obj) {
-			flowInfo.splitAfter=true; /* details follow in goto/if/jsr/select */
-		}
-		@Override public void visitGotoInstruction(GotoInstruction obj) {
-			flowInfo.addTarget(obj.getTarget(),EdgeKind.GOTO_EDGE);
-			this.targeted.add(obj.getTarget());
-			flowInfo.alwaysTaken = true;
-		}
-		@Override public void visitIfInstruction(IfInstruction obj) {
-			flowInfo.addTarget(obj.getTarget(),EdgeKind.BRANCH_EDGE);
-			this.targeted.add(obj.getTarget());
-		}
-		@Override public void visitSelect(Select obj) {
-			super.visitSelect(obj);
-			for(InstructionHandle tih : obj.getTargets()) {
-				flowInfo.addTarget(tih,EdgeKind.SELECT_EDGE);
-				this.targeted.add(tih);
-			}
-		}
-		@Override public void visitJsrInstruction(JsrInstruction obj) {
-			flowInfo.addTarget(obj.getTarget(),EdgeKind.JSR_EDGE);
-			this.targeted.add(obj.getTarget());
-			flowInfo.alwaysTaken = true;
-		}
-
-		// Not neccesarily, but nice for WCET analysis
-		@Override public void visitInvokeInstruction(InvokeInstruction obj) {
-			if(! appInfo.isSpecialInvoke(methodInfo, obj)) {
-				flowInfo.splitBefore = true;
-				flowInfo.splitAfter = true;
-			}
-		}
-		@Override public void visitReturnInstruction(ReturnInstruction obj) {
-			flowInfo.splitAfter = true;
-			flowInfo.exit = true;
-		}
-		protected InstructionTargetVisitor(WcetAppInfo ai, MethodInfo m) {
-			this.targeted = new HashSet<InstructionHandle>();
-			this.methodInfo = m;
-			this.appInfo = ai;
-		}
-		
-		public FlowInfo getFlowInfo(InstructionHandle ih) {
-			flowInfo = new FlowInfo();
-			visitInstruction(ih);
-			return flowInfo;
-		}
-	}
-
-	public int getNumberOfBytes() {
-		int len = 0;
-		for(InstructionHandle ih : this.instructions) {
-			int opCode = appInfo.getJOpCode(this.methodInfo.getCli(), ih.getInstruction());
-			if(opCode >= 0) len += JopInstr.len(opCode);
-		}
-		return len;
-	}
-	/** fancy dumping */
+	/** <p>Compact, human-readable String representation of the basic block.</p>
+	 *
+	 *  <p>Mixed Stack notation, with at most one side-effect statement per line.</p> 
+	 *  Example:<br/>
+	 *  {@code local_0 <- sipush[3] sipush[4] dup add add} <br/>
+	 *  {@code local_1 <- load[local_0] load[local_0] mul}
+	 *  */
 	public String dump() {
 		StringBuilder sb = new StringBuilder();
 		LineNumberTable lnt = methodInfo.getMethod().getLineNumberTable();

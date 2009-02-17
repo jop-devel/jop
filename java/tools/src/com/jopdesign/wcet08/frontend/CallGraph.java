@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Stack;
 import java.util.Vector;
 
 import org.apache.bcel.generic.ANEWARRAY;
@@ -43,6 +44,7 @@ import org.apache.bcel.generic.NEWARRAY;
 import org.apache.bcel.generic.Visitor;
 import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionList;
+import org.apache.velocity.util.introspection.MethodMap;
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
@@ -52,6 +54,9 @@ import org.jgrapht.traverse.TopologicalOrderIterator;
 import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.wcet.WCETInstruction;
+import com.jopdesign.wcet08.frontend.ControlFlowGraph.CFGEdge;
+import com.jopdesign.wcet08.frontend.ControlFlowGraph.CFGNode;
+import com.jopdesign.wcet08.frontend.ControlFlowGraph.InvokeNode;
 import com.jopdesign.wcet08.frontend.WcetAppInfo.MethodNotFoundException;
 import com.jopdesign.wcet08.graphutils.AdvancedDOTExporter;
 import com.jopdesign.wcet08.graphutils.DirectedCycleDetector;
@@ -59,199 +64,60 @@ import com.jopdesign.wcet08.graphutils.Pair;
 import com.jopdesign.wcet08.graphutils.TopOrder;
 
 /**
- * Java CallGraph, based on JGraphT. Supports interfaces.
- * 
+ * <p>Java call graph, whose nodes represent control flow graphs and 
+ *     dynamic dispatches.</p>
+ * <p>If some instruction in the flow graph represented by {@code MethodImplNode m1} invokes
+ * a method whose implementation is statically known, there is an edge from {@code m1}
+ * to {@code MethodImplNode m2}, representing the invoked method</p>
+ * <p>If the invoked method cannot be determined statically, a {@code DispatchNode d2}
+ * is inserted, and edges from {@code m1} to {@code d2}, and from {@code d2} to all
+ * nodes representing some method possibly invoked are added.</p> 
  * @author Benedikt Huber (benedikt.huber@gmail.com)
  *
  */
 public class CallGraph {
-	public class CallGraphBuilderVisitor extends EmptyVisitor implements Visitor {
-		private MethodImplNode methodNode;
-		private Set<MethodRef> referencedMethods;
-		public CallGraphBuilderVisitor(MethodImplNode node) {
-			this.methodNode = node;
-			this.referencedMethods = new HashSet<MethodRef>();
-		}
-		public void visitInstruction(Instruction ii) {
-			/* FIXME: [NO THROW HACK] */
-			if(WCETInstruction.isInJava(ii.getOpcode())) {				
-				if(ii instanceof ATHROW || ii instanceof NEW || 
-				   ii instanceof NEWARRAY || ii instanceof ANEWARRAY) return;
-				MethodInfo javaImpl = appInfo.getJavaImpl(methodNode.method.getCli(),ii);
-				buildCallGraphEdge(MethodRef.fromMethodInfo(javaImpl), true);
-			} else {
-				ii.accept(this);
-			}
-		}
-		@Override
-		public void visitINVOKESPECIAL(INVOKESPECIAL obj) {
-			// see http://eduunix.cn/index2/html/java/Oreilly%20-%20Java%20Virtual%20Machine/ref--33.html
-			// Used to implement <init>, <super> and private instance methods
-			// The type of the receiver is statically known
-			buildCallGraphEdge(obj,true);
-		}
-
-		@Override
-		public void visitINVOKEINTERFACE(INVOKEINTERFACE obj) {
-			buildCallGraphEdge(obj,false);
-		}
-
-		@Override
-		public void visitINVOKEVIRTUAL(INVOKEVIRTUAL obj) {
-			buildCallGraphEdge(obj,false);
-		}
-
-		@Override
-		public void visitINVOKESTATIC(INVOKESTATIC i) {
-			if(appInfo.isSpecialInvoke(methodNode.method.getCli(), i)) return;
-			buildCallGraphEdge(i,true);
-		}
-		
-		private void buildCallGraphEdge(InvokeInstruction inv, boolean isStatic) {
-			MethodRef methodRef = appInfo.getReferenced(this.methodNode.method, inv);	
-			buildCallGraphEdge(methodRef,isStatic);
-		}
-		private void buildCallGraphEdge(MethodRef methodRef, boolean isStatic) {
-			if(this.referencedMethods.contains(methodRef)) return;
-			if(isStatic) {
-				MethodInfo refdMethod = appInfo.findStaticImplementation(methodRef);
-				if(refdMethod == null) {
-					throw new AssertionError("Could not find referenced STATIC method: "+methodRef);
-				}				
-				addEdge(this.methodNode, 
-						new MethodImplNode(refdMethod));
-			} else {
-				addEdge(this.methodNode, 
-						new MethodIFaceNode(methodRef));				
-			}
-			this.referencedMethods.add(methodRef);
-		}
-	}
-
 	/** 
-	 * Call graph nodes referencing methods.
-	 * <br/>
-	 * Is important to override {@link equals()} and {@link hashCode()} !! 
+	 * Call graph nodes referencing methods. <br/>
 	 */
-	public abstract class CallGraphNode {
-		/**
-		 * query whether the node is abstract (interface node)
-		 * @return true if the node refers to a method interface rather than an implementation
-		 */
-		public abstract boolean isAbstractNode();
-		/**
-		 * return the method referenced by the callgraph node
-		 * @return a pair of the receiver's class and the method's id (name+signature)
-		 */
-		public abstract MethodRef getReferencedMethod();
-		/**
-		 * @return the implementation referenced, or null if no implementation is referenced
-		 */
-		public abstract MethodInfo getMethodImpl();
-		/**
-		 * build the subgraph rooted at the given callgraph node.
-		 * Only needs to be called once for each node.
-		 */
-		public abstract void build();
-
-		protected void buildRecursive() {
-			for(DefaultEdge e : callGraph.outgoingEdgesOf(this)) {
-				CallGraphNode target = callGraph.getEdgeTarget(e);
-				if(hasBeenBuild(target)) continue;
-				callGraph.getEdgeTarget(e).build();
-			}
-		}
-	}
-
-	class MethodImplNode extends CallGraphNode {
+	public class CallGraphNode {
 		private MethodInfo method;
-		public MethodImplNode(MethodInfo m) { 
+		public CallGraphNode(MethodInfo m) { 
 			this.method = m; 
 		}
-		@Override public MethodInfo getMethodImpl() { return this.method; }		
-		@Override public MethodRef getReferencedMethod() { 
+		public MethodInfo getMethodImpl() { return this.method; }		
+		public MethodRef getReferencedMethod() { 
 			return new MethodRef(method.getCli(),method.methodId);
 		}
 		
-		@Override public boolean isAbstractNode() { return false; }
-		@Override public int hashCode() { return method.getMethod().hashCode(); }
-		@Override public boolean equals(Object that) {
-			return (that instanceof MethodImplNode) ? 
-				   (method.getMethod().equals(((MethodImplNode) that).method.getMethod())) : 
+		public int hashCode() { return method.getMethod().hashCode(); }
+		public boolean equals(Object that) {
+			return (that instanceof CallGraphNode) ? 
+				   (method.getMethod().equals(((CallGraphNode) that).method.getMethod())) : 
 				   false;
 		}
-		@Override public void build() {
-			markBuild(this);
-			if(this.method.getMethodGen() == null) return; // no impl available
-			InstructionList il = this.method.getMethodGen().getInstructionList();
-			CallGraphBuilderVisitor cgBuilderVisitor = new CallGraphBuilderVisitor(this); 
-			for(Instruction i : il.getInstructions()) {
-				cgBuilderVisitor.visitInstruction(i);
-			}
-			super.buildRecursive();
-		}
-		@Override public String toString() {
+		public String toString() {
 			return method.getFQMethodName();
 		}
 	}
-	class MethodIFaceNode extends CallGraphNode {
-		private MethodRef methodRef;
-		public MethodIFaceNode(MethodRef methodRef) {
-			this.methodRef = methodRef;
-		}
-		@Override public boolean isAbstractNode() { return true; }
-		@Override public int hashCode() { 
-			return methodRef.hashCode();
-		}
-		@Override public boolean equals(Object that) {
-			return (that instanceof MethodIFaceNode) ?
-				   (methodRef.equals(((MethodIFaceNode)that).methodRef)) :
-				   false;
-		}
-		@Override public void build() {
-			markBuild(this);
-			for(MethodInfo mImpl : appInfo.findImplementations(methodRef)) {	
-				addEdge(this, new MethodImplNode(mImpl));
-			}
-			super.buildRecursive();
-		}
-		@Override public String toString() {
-			return "[IFACE] "+ methodRef.toString();
-		}
-		@Override
-		public MethodRef getReferencedMethod() {
-			return this.methodRef;
-		}
-		@Override public MethodInfo getMethodImpl() { return null; }
-	}
-	
 	// Fields
 	// ~~~~~~
 	private WcetAppInfo appInfo;
-	private MethodImplNode rootNode;
+	private CallGraphNode rootNode;
 	private DirectedGraph<CallGraphNode, DefaultEdge> callGraph;
 
 	private HashSet<ClassInfo> classInfos;
-	private HashMap<MethodRef,CallGraphNode> methodInfos;
-
+	private HashMap<MethodInfo,CallGraphNode> nodeMap;
 	private TopOrder<CallGraphNode,DefaultEdge> topOrder;
 
-	/* building */
-	private Vector<MethodNotFoundException> errors;
-	private HashSet<CallGraphNode> buildSet;
-	private boolean hasBeenBuild(CallGraphNode n) {
-		return this.buildSet.contains(n);
-	}
-	private void markBuild(CallGraphNode n) {
-		this.buildSet.add(n);
-	}
 	/**
 	 * Initialize a CallGraph object.
+	 * @param appInfo
+	 * @param rootMethod The root method of the callgraph. Must not be abstract.
 	 */
 	protected CallGraph(WcetAppInfo appInfo, MethodInfo rootMethod) {
 		this.appInfo = appInfo;
 		this.callGraph = new DefaultDirectedGraph<CallGraphNode,DefaultEdge>(DefaultEdge.class);
-		this.rootNode = new MethodImplNode(rootMethod);
+		this.rootNode = new CallGraphNode(rootMethod);
 		this.callGraph.addVertex(rootNode);
 	}
 
@@ -270,28 +136,59 @@ public class CallGraph {
 		cg.build();
 		return cg;
 	}
+	/* building */
 	private void build() throws MethodNotFoundException {
-		this.errors = new Vector<MethodNotFoundException>();
-		this.buildSet = new HashSet<CallGraphNode>();
-		this.rootNode.build();
-		if(! errors.isEmpty()) throw errors.get(0);
+		this.buildGraph();		
 		/* Compute set of classes and methods */
 		classInfos = new HashSet<ClassInfo>();
 		for(CallGraphNode cgn : callGraph.vertexSet()) {
 			classInfos.add(cgn.getReferencedMethod().getReceiver());
 		}
-		methodInfos = new HashMap<MethodRef,CallGraphNode>();
-		for(CallGraphNode cgn : callGraph.vertexSet()) {
-			methodInfos.put(cgn.getReferencedMethod(),cgn);
-		}	
 		Pair<List<CallGraphNode>,List<CallGraphNode>> cycle = 
 			DirectedCycleDetector.findCycle(callGraph,rootNode);
 		if(cycle != null) {
-			throw new AssertionError("Cyclic callgraph !. One cycle is *** "+cycle.snd()+
-									 " *** reachable via "+cycle.fst());
+			throw new AssertionError(cyclicCallGraphMsg(cycle));
 		}
+	}	
+	private static String cyclicCallGraphMsg(Pair<List<CallGraphNode>, List<CallGraphNode>> cycleWithPrefix) {
+		List<CallGraphNode> cycle = cycleWithPrefix.snd();
+		List<CallGraphNode> prefix = cycleWithPrefix.fst();
+		StringBuffer sb = new StringBuffer();
+		sb.append("Cyclic Callgraph !\n");
+		sb.append("One cycle is:\n");
+		for(CallGraphNode cn : cycle) sb.append("  "+cn+"\n");
+		sb.append("Reachable via:\n");
+		for(CallGraphNode cn : prefix) sb.append("  "+cn+"\n");
+		return sb.toString();
 	}
-
+	private void buildGraph() {
+		nodeMap = new HashMap<MethodInfo, CallGraphNode>();
+		Stack<CallGraphNode> todo = 
+			new Stack<CallGraphNode>();
+		nodeMap.put(this.rootNode.getMethodImpl(), rootNode);
+		todo.push(rootNode);
+		while(! todo.empty()) {
+			CallGraphNode current = todo.pop();
+			ControlFlowGraph currentCFG = appInfo.getFlowGraph(current.getMethodImpl());
+			for(CFGNode node : currentCFG.getGraph().vertexSet()) {
+				if(node instanceof InvokeNode) {
+					InvokeNode iNode = (InvokeNode) node;
+					for(MethodInfo impl : iNode.getImplementedMethods()) {
+						CallGraphNode cgn;
+						if(! nodeMap.containsKey(impl)) {
+							cgn = new CallGraphNode(impl);
+							nodeMap.put(impl,cgn);
+							callGraph.addVertex(cgn);
+							todo.push(cgn);
+						} else {
+							cgn = nodeMap.get(impl);
+						}
+						callGraph.addEdge(current, cgn);
+					}
+				}
+			}				
+		}
+	}		
 	public void exportDOT(Writer w) throws IOException {
 		new AdvancedDOTExporter<CallGraphNode, DefaultEdge>().exportDOT(w, this.callGraph);
 	}
@@ -305,9 +202,6 @@ public class CallGraph {
 
 	public Set<ClassInfo> getClassInfos() {
 		return classInfos;
-	}
-	public Set<MethodRef> getMethods() {
-		return methodInfos.keySet();
 	}
 	/**
 	 * get non-abstract methods, in topological order
@@ -330,7 +224,7 @@ public class CallGraph {
 	 */
 	public List<MethodInfo> getReachableImplementations(MethodInfo rootMethod) {
 		List<MethodInfo> implemented = new Vector<MethodInfo>();
-		CallGraphNode root = this.getNode(MethodRef.fromMethodInfo(rootMethod));
+		CallGraphNode root = this.getNode(rootMethod);
 		DepthFirstIterator<CallGraphNode, DefaultEdge> ti =
 			new DepthFirstIterator<CallGraphNode, DefaultEdge>(callGraph,root);
 		ti.setCrossComponentTraversal(false);
@@ -340,28 +234,22 @@ public class CallGraph {
 		}		
 		return implemented;
 	}
-	public Iterator<CallGraphNode> getReachableMethods(MethodRef m) {
+	public Iterator<CallGraphNode> getReachableMethods(MethodInfo m) {
 		DepthFirstIterator<CallGraphNode, DefaultEdge> dfi = 
 			new DepthFirstIterator<CallGraphNode, DefaultEdge>(callGraph,getNode(m));
 		dfi.setCrossComponentTraversal(false);
 		return dfi;		
 	}
-	public Iterator<CallGraphNode> getReachableMethods(MethodInfo m) {
-		return getReachableMethods(MethodRef.fromMethodInfo(m));
-	}
+	/** Get methods possibly directly invoked from the given method */
 	public Iterator<CallGraphNode> getReferencedMethods(MethodInfo m) {
 		Vector<CallGraphNode> refd = new Vector<CallGraphNode>();
-		CallGraphNode node = getNode(MethodRef.fromMethodInfo(m));
+		CallGraphNode node = getNode(m);
 		Vector<DefaultEdge> edgeSet = new Vector<DefaultEdge>(callGraph.outgoingEdgesOf(node));
 		while(! edgeSet.isEmpty()) {
 			Vector<DefaultEdge> edgeSet2 = new Vector<DefaultEdge>();
 			for(DefaultEdge e : edgeSet) {
 				CallGraphNode target = callGraph.getEdgeTarget(e);
-				if(target.isAbstractNode()) {
-					edgeSet2.addAll(callGraph.outgoingEdgesOf(target));
-				} else {
-					refd.add(target);
-				}
+				refd.add(target);
 			}
 			edgeSet = edgeSet2;
 		}
@@ -373,8 +261,8 @@ public class CallGraph {
 		callGraph.addVertex(target);
 		callGraph.addEdge(src, target);
 	}
-	protected CallGraphNode getNode(MethodRef m) {
-		return methodInfos.get(m);
+	protected CallGraphNode getNode(MethodInfo m) {
+		return nodeMap.get(m);
 	}
 	public TopOrder<CallGraphNode,DefaultEdge> getTopologicalOrder() {
 		return this.topOrder;
@@ -383,18 +271,9 @@ public class CallGraph {
 		return callGraph.outDegreeOf(vertex) == 0;
 	}
 	public boolean isLeafNode(MethodInfo mi) {
-		return isLeafNode(getNode(MethodRef.fromMethodInfo(mi)));
+		return isLeafNode(getNode(mi));
 	}
 
-	/**
-	 * Return if the given reference points to a leaf node,
-	 * i.e., a method which doesn't invoke any other methods.
-	 * @param ref
-	 * @return
-	 */
-	public boolean isLeafNode(MethodRef ref) {
-		return this.callGraph.outDegreeOf(getNode(ref)) == 0;
-	}
 	/**
 	 * Get the maximum height of the call stack.
 	 * <p>A leaf method has height 1, an abstract method's height is the

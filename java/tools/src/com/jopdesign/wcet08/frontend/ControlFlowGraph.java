@@ -33,6 +33,7 @@ import java.util.SortedMap;
 import java.util.Vector;
 import org.apache.bcel.generic.INVOKEINTERFACE;
 import org.apache.bcel.generic.INVOKEVIRTUAL;
+import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.InvokeInstruction;
 import org.jgrapht.graph.DefaultEdge;
@@ -77,6 +78,20 @@ import com.jopdesign.wcet08.graphutils.TopOrder.BadGraphException;
  *
  */
 public class ControlFlowGraph {
+	public static class ControlFlowError extends Error{
+		private static final long serialVersionUID = 1L;
+		private ControlFlowGraph cfg;
+		public ControlFlowGraph getAffectedCFG() {
+			return cfg;
+		}
+		public ControlFlowError(String msg) {
+			super("Error in Control Flow Graph: " + msg);
+		}
+		public ControlFlowError(String msg, ControlFlowGraph cfg) {
+			this(msg);
+			this.cfg = cfg;
+		}
+	}
 	/**
 	 * Visitor for flow graph nodes
 	 */
@@ -184,12 +199,23 @@ public class ControlFlowGraph {
 		public InstructionHandle getInstructionHandle() {
 			return ControlFlowGraph.this.blocks.get(blockIndex).getLastInstruction();
 		}
+		/** For non-virtual methods, get the implementation of the method */
 		public MethodInfo getImplementedMethod() {
 			return this.receiverImpl;
 		}
-		public ControlFlowGraph invokerFlowGraph() {
-			return ControlFlowGraph.this;
+		/** Get all possible implementations of the invoked method */
+		public List<MethodInfo> getImplementedMethods() {
+			if(! isInterface()) {
+				List<MethodInfo> impls = new Vector<MethodInfo>();
+				impls.add(getImplementedMethod());
+				return impls;
+			} else {
+				return appInfo.findImplementations(this.invokerFlowGraph().getMethodInfo(),
+                        						   getInstructionHandle());
+			}
 		}
+		
+		/** For non-virtual methods, get the implementation of the method */
 		public ControlFlowGraph receiverFlowGraph() {
 			if(isInterface()) return null;
 			if(this.receiverFlowGraph == null) {
@@ -197,6 +223,10 @@ public class ControlFlowGraph {
 			}
 			return this.receiverFlowGraph;
 		}		
+		
+		public ControlFlowGraph invokerFlowGraph() {
+			return ControlFlowGraph.this;
+		}
 		public MethodRef getReferenced() {
 			return referenced;
 		}
@@ -221,6 +251,56 @@ public class ControlFlowGraph {
 		}
 	}
 	
+	/**
+	 * Invoke nodes (Basic block with exactly one invoke instruction).
+	 */
+	public class SpecialInvokeNode extends InvokeNode {
+		private InstructionHandle instr;
+		private MethodInfo receiverImpl;
+		private ControlFlowGraph receiverFlowGraph;
+		private SpecialInvokeNode(int blockIndex) {
+			super(blockIndex);
+		}
+		public SpecialInvokeNode(int blockIndex, MethodInfo javaImpl) {
+			this(blockIndex);			
+			this.instr = ControlFlowGraph.this.blocks.get(blockIndex).getLastInstruction();
+			this.name = "jimplBC("+javaImpl+")";
+			this.receiverImpl = javaImpl;
+		}
+		@Override
+		public void accept(CfgVisitor v) { 
+			v.visitInvokeNode(this);
+		}
+		public InstructionHandle getInstructionHandle() {
+			return instr;
+		}
+		public MethodInfo getImplementedMethod() {
+			return this.receiverImpl;
+		}
+		public ControlFlowGraph invokerFlowGraph() {
+			return ControlFlowGraph.this;
+		}
+		public ControlFlowGraph receiverFlowGraph() {
+			if(this.receiverFlowGraph == null) {
+				this.receiverFlowGraph = appInfo.getFlowGraph(receiverImpl);
+			}
+			return this.receiverFlowGraph;
+		}		
+		public MethodRef getReferenced() {
+			return MethodRef.fromMethodInfo(receiverImpl);
+		}
+		/** 
+		 * @return true if the invokation denotes an interface, not an implementation
+		 */
+		public boolean isInterface() {
+			return receiverImpl == null;
+		}
+		@Override
+		public InvokeNode createImplNode(MethodInfo impl) {
+			return this; /* no dynamic dispatch */
+		}
+	}
+
 	public class SummaryNode extends CFGNode {
 
 		private ControlFlowGraph subGraph;
@@ -329,11 +409,15 @@ public class ControlFlowGraph {
 		for(int i = 0; i < blocks.size(); i++) {
 			BasicBlock bb = blocks.get(i);
 			BasicBlockNode n;
+			Instruction lastInstr = bb.getLastInstruction().getInstruction();
 			InvokeInstruction theInvoke = bb.getTheInvokeInstruction(); 
 			if(theInvoke != null) {
 				n = new InvokeNode(i,theInvoke);
+			} else if (appInfo.getProcessorModel().isImplementedInJava(lastInstr)) {
+				MethodInfo javaImpl = appInfo.getJavaImplementation(bb.getClassInfo(),lastInstr);
+				n = new SpecialInvokeNode(i,javaImpl);
 			} else {
-				n = new BasicBlockNode(i);
+				n = new BasicBlockNode(i);				
 			}
 			nodeTable.put(bb.getFirstInstruction().getPosition(),n);
 			graph.addVertex(n);
@@ -373,7 +457,12 @@ public class ControlFlowGraph {
 	 * @throws BadAnnotationException if an annotations is missing
 	 */
 	public void loadAnnotations(Project p) throws BadAnnotationException {
-		SortedMap<Integer, LoopBound> wcaMap = p.getAnnotations(this.methodInfo.getCli());
+		SortedMap<Integer, LoopBound> wcaMap;
+		try {
+			wcaMap = p.getAnnotations(this.methodInfo.getCli());
+		} catch (IOException e) {
+			throw new BadAnnotationException("IO Error reading annotation: "+e.getMessage());
+		}
 		this.annotations = new HashMap<CFGNode, LoopBound>();
 		for(CFGNode n : this.getLoopColoring().getHeadOfLoops()) {
 			BasicBlockNode headOfLoop = (BasicBlockNode) n;
