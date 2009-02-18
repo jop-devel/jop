@@ -49,7 +49,7 @@ public class Main {
 		// get receivers for this program
 		ReceiverTypes rt = new ReceiverTypes();
 		program.setReceivers(program.runAnalysis(rt));
-//		rt.printResult(program);
+		rt.printResult(program);
 
 		long rtTime = System.currentTimeMillis();
 		

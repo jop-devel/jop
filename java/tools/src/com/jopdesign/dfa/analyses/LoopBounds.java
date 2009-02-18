@@ -69,6 +69,11 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 		public Interval increment;
 		public Location source;
 		public int cnt;
+		public int defscope;
+		public boolean softinc;
+		
+		public static int scope = 0;
+		public static int scopeCnt = 0;
 		
 		public ValueMapping() {
 			assigned = new Interval();
@@ -76,6 +81,8 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 			increment = null;
 			source = null;
 			cnt = 0;
+			defscope = scope;
+			softinc = false;
 		}
 
 		public ValueMapping(int val) {
@@ -84,6 +91,8 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 			increment = null;
 			source = null;
 			cnt = 0;
+			defscope = scope;
+			softinc = false;
 		}
 		
 		public ValueMapping(ValueMapping val, boolean full) {
@@ -98,10 +107,14 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 				}
 				source = val.source;
 				cnt = val.cnt;
+				defscope = val.defscope;
+				softinc = val.softinc;
 			} else {
 				increment = null;
 				source = null;
 				cnt = 0;
+				defscope = scope;
+				softinc = false;
 			}
 		}		
 
@@ -131,13 +144,20 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 				// merge increments
 				if (increment == null) {
 					increment = val.increment;
+					softinc = val.softinc;
 				} else if (val.increment != null) {
 					increment.join(val.increment);
+					if (softinc || val.softinc) {
+						increment.join(new Interval(0, 0));
+						softinc = true;
+					}
 				}
 
 				if (!old.equals(assigned)) {
 					cnt++;
 				}
+				
+				defscope = Math.max(defscope, val.defscope);
 			}
 			
 			//System.out.println(this);
@@ -156,7 +176,9 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 			}
 			return assigned.equals(m.assigned)
 				&& constrained.equals(m.constrained)
-				&& inceq;
+				&& inceq
+				//&& defscope == m.defscope
+				&& softinc == m.softinc;
 		}
 
 		public int hashCode() {
@@ -164,7 +186,7 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 		}
 		
 		public String toString() {
-			return "<"+assigned+", "+constrained+", ="+source+", #"+cnt+", +"+increment+">";				
+			return "<"+assigned+", "+constrained+", ="+source+", #"+cnt+", +"+increment+", $"+defscope+", !"+softinc+">";				
 		}
 		
 		public static int computeBound(ValueMapping first, ValueMapping second) {
@@ -194,19 +216,15 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 			int firstRange = first.assigned.getUb() - first.assigned.getLb() + 1;
 			int secondRange = second.assigned.getUb() - second.assigned.getLb() + 1;
 
-			if (firstRange < 0 || secondRange < 0) {
-				return -1;
-			}
-			
 			int firstBound;
 			if (first.assigned.getUb() < first.assigned.getLb()) {
-				firstBound = 0;
+				firstBound = 0; //return -1;
 			} else {
 				firstBound = (int)Math.ceil((double)firstRange / Math.min(Math.abs(first.increment.getUb()), Math.abs(first.increment.getLb())));
 			}
 			int secondBound;
 			if (second.assigned.getUb() < second.assigned.getLb()) {
-				secondBound = 0;
+				secondBound = 0; //return -1;
 			} else {
 				secondBound = (int)Math.ceil((double)secondRange / Math.min(Math.abs(second.increment.getUb()), Math.abs(second.increment.getLb())));
 			}
@@ -237,7 +255,8 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 	}
 
 	private Map<InstructionHandle, ContextMap<List<HashedString>, Pair<ValueMapping>>> bounds = new HashMap<InstructionHandle, ContextMap<List<HashedString>, Pair<ValueMapping>>>();
-
+	private Map<InstructionHandle, Integer> scopes = new HashMap<InstructionHandle, Integer>();
+	
 	public void initialize(String sig, Context context) {
 	}
 	
@@ -343,6 +362,7 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 		Instruction instruction = stmt.getInstruction();
 		
 //		System.out.println(context.method+": "+stmt);
+//		System.out.println("###"+context.stackPtr+" + "+instruction.produceStack(context.constPool)+" - "+instruction.consumeStack(context.constPool));		
 //		System.out.println(stmt+" "+(edge.getType() == FlowEdge.TRUE_EDGE ? "TRUE" : (edge.getType() == FlowEdge.FALSE_EDGE) ? "FALSE" : "NORMAL")+" "+edge);
 //		System.out.println(context.callString+"/"+context.method);
 //		System.out.print(stmt.getInstruction()+":\t{ ");
@@ -410,7 +430,12 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 					result.put(l, in.get(l));
 				}
 				if (l.stackLoc == context.stackPtr-1) {
-					result.put(new Location(index), new ValueMapping(in.get(l), true));
+					ValueMapping v = new ValueMapping(in.get(l), true);
+					if (in.get(l).source == null 
+							|| in.get(l).source.stackLoc != index) {
+						v.defscope = ValueMapping.scope;
+					}
+					result.put(new Location(index), v);
 				}				
 			}
 		}
@@ -596,7 +621,7 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 				if (p.containsField(fieldName)) {
 					for (Iterator<Location> k = in.keySet().iterator(); k.hasNext(); ) {
 						Location l = k.next();
-						if (!receivers.containsKey(l.heapLoc)) {
+						if (l.stackLoc < 0 && !receivers.containsKey(l.heapLoc)) {
 							result.put(l, in.get(l));
 						}
 						if (l.stackLoc == context.stackPtr-1) {
@@ -799,10 +824,21 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 					ValueMapping m = new ValueMapping(in.get(l), true);
 					m.assigned.add(increment);
 					m.constrained.add(increment);
-					if (m.increment != null) {
-						m.increment.join(new Interval(increment, increment));
-					} else {
-						m.increment = new Interval(increment, increment);
+					Interval operand = new Interval(increment, increment);
+					
+					if (m.increment != null && !m.softinc) {
+						m.increment.join(operand);
+					} else if (m.increment != null && m.softinc) {
+						if ((m.increment.getLb() < 0 && operand.getUb() > 0)
+								|| (m.increment.getUb() > 0 && operand.getLb() < 0)) {
+							m.increment.join(operand);
+						} else {
+							m.increment = operand;
+						}
+						m.softinc = false;
+					} else {						
+						m.increment = operand;
+						m.softinc = false;
 					}
 					result.put(l, m);
 				}				
@@ -826,10 +862,19 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 					ValueMapping m = new ValueMapping(in.get(l), true);
 					m.assigned.add(operand);
 					m.constrained.add(operand);
-					if (m.increment != null) {
+					if (m.increment != null && !m.softinc) {
 						m.increment.join(operand);
-					} else {
+					} else if (m.increment != null && m.softinc) {
+						if ((m.increment.getLb() < 0 && operand.getUb() > 0)
+								|| (m.increment.getUb() > 0 && operand.getLb() < 0)) {
+							m.increment.join(operand);
+						} else {
+							m.increment = operand;
+						}
+						m.softinc = false;
+					} else {						
 						m.increment = operand;
+						m.softinc = false;
 					}
 					result.put(l, m);
 				}
@@ -1068,6 +1113,10 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 		
 		case Constants.IFNULL:
 		case Constants.IFNONNULL: {	
+			if (scopes.get(stmt) == null) {
+				ValueMapping.scope = ++ValueMapping.scopeCnt;
+				scopes.put(stmt, new Integer(ValueMapping.scope));
+			}
 			for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
 				Location l = i.next();
 				if (l.stackLoc < context.stackPtr-1) {
@@ -1079,6 +1128,10 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 		
 		case Constants.IF_ACMPEQ:
 		case Constants.IF_ACMPNE: {	
+			if (scopes.get(stmt) == null) {
+				ValueMapping.scope = ++ValueMapping.scopeCnt;
+				scopes.put(stmt, new Integer(ValueMapping.scope));
+			}
 			for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
 				Location l = i.next();
 				if (l.stackLoc < context.stackPtr-2) {
@@ -1094,6 +1147,10 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 		case Constants.IFGE:
 		case Constants.IFLE:
 		case Constants.IFGT:
+			if (scopes.get(stmt) == null) {
+				ValueMapping.scope = ++ValueMapping.scopeCnt;
+				scopes.put(stmt, new Integer(ValueMapping.scope));
+			}
 			doIf(stmt, edge, context, in, result);
 			break;
 
@@ -1103,6 +1160,10 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 		case Constants.IF_ICMPGE:
 		case Constants.IF_ICMPGT:
 		case Constants.IF_ICMPLE:
+			if (scopes.get(stmt) == null) {
+				ValueMapping.scope = ++ValueMapping.scopeCnt;
+				scopes.put(stmt, new Integer(ValueMapping.scope));
+			}
 			doIfIcmp(stmt, edge, context, in, result);
 			break;
 
@@ -1205,7 +1266,7 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 					if (edge.getType() == FlowEdge.FALSE_EDGE) {
 						m.constrained.setLb(0);
 						m.constrained.setUb(0);
-					} else if (edge.getType() == FlowEdge.TRUE_EDGE) {
+					} else if (edge.getType() == FlowEdge.TRUE_EDGE) {						
 						// != 0 cannot be expressed as interval
 						// TODO: mark paths infeasible if appropriate
 					}
@@ -1249,8 +1310,10 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 				}
 				
 				m.assigned.constrain(m.constrained);
-				
-				recordBound(stmt, context, edge, m);
+
+				recordBound(stmt, context, edge, new ValueMapping(m, true));
+
+				m.softinc = true;
 									
 				// TODO: is this really correct for all cases?
 				result.put(in.get(l).source, m);
@@ -1362,9 +1425,11 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 				}
 				
 				m.assigned.constrain(m.constrained);
-				
-				recordBound(stmt, context, edge, m);
 
+				recordBound(stmt, context, edge, new ValueMapping(m, true));
+
+				m.softinc = true;
+				
 				// TODO: is this really correct for all cases?
 				result.put(in.get(l).source, m);
 			}
@@ -1549,7 +1614,6 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 		} else if (edge.getType() == FlowEdge.TRUE_EDGE) {
 			map.put(context.callString, new Pair<ValueMapping>(bound, b.getSecond()));						
 		}
-		
 	}
 
 	public Map getResult() {
@@ -1573,6 +1637,15 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 			LoopBounds.ValueMapping first = bounds.getFirst();
 			LoopBounds.ValueMapping second = bounds.getSecond();
 
+			if (scopes.get(instr).intValue() <= first.defscope
+					|| scopes.get(instr).intValue() <= second.defscope) {
+				return -1;
+			}
+			
+//			if (first.softinc || second.softinc) {
+//				return -1;
+//			}
+			
 			int val = ValueMapping.computeBound(first, second);
 			if (val < 0) {
 				// no bound for some context
@@ -1604,7 +1677,7 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 				LoopBounds.ValueMapping first = bounds.getFirst();
 				LoopBounds.ValueMapping second = bounds.getSecond();
 
-				System.out.println(c.method+":"+sourceLine+":\t"+callString+": ");
+				System.out.println(c.method+":"+sourceLine+":\t"+callString+"\t$"+scopes.get(instr)+": ");
 
 				System.out.print("\t\ttrue:\t");
 				System.out.println(first);
@@ -1612,7 +1685,7 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 				System.out.println(second);
 				System.out.print("\t\tbound:\t");
 
-				int val = ValueMapping.computeBound(first, second);
+				int val = getBound(program, instr);
 				if (val >= 0) {
 					System.out.println(val);
 				} else {

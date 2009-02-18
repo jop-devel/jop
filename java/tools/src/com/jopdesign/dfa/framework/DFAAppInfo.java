@@ -115,7 +115,7 @@ public class DFAAppInfo extends com.jopdesign.build.AppInfo {
 			String clinit = i.next();					
 			String className = clinit.substring(0, clinit.lastIndexOf("."));
 			idx = prologueCP.addMethodref(className, clinitName, clinitSig);
-			instr = new INVOKESPECIAL(idx); 
+			instr = new INVOKESTATIC(idx); 
 			prologue.append(instr);
 		}
 
