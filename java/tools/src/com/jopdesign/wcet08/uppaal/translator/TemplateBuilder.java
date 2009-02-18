@@ -172,7 +172,7 @@ public class TemplateBuilder {
 				waitTime));
 		getIncomingAttrs(location).appendUpdate(TemplateBuilder.LOCAL_CLOCK + " := 0");
 		getOutgoingAttrs(location).appendGuard(
-			String.format("%s >= %d", 
+			String.format("%s == %d", 
 			TemplateBuilder.LOCAL_CLOCK, 
 			waitTime));
 	}

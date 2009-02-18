@@ -44,6 +44,7 @@ import com.jopdesign.wcet08.ipet.ILPModelBuilder;
 import com.jopdesign.wcet08.ipet.MaxCostFlow;
 import com.jopdesign.wcet08.ipet.ILPModelBuilder.CostProvider;
 import com.jopdesign.wcet08.jop.MethodCache;
+import com.jopdesign.wcet08.jop.CacheConfig.DynCacheApproximation;
 import com.jopdesign.wcet08.jop.CacheConfig.StaticCacheApproximation;
 import com.jopdesign.wcet08.report.ClassReport;
 
@@ -201,7 +202,7 @@ public class RecursiveAnalysis<Context> {
 		/* compute solution */
 		LocalWCETSolution sol = runWCETComputation(key.toString(), appInfo.getFlowGraph(m), ctx);
 		sol.checkConsistentency();
-		wcetMap.put(key, sol.getCost()); 
+		recordCost(key, sol.getCost());
 		/* Logging and Report */
 		if(project.reportGenerationActive()) updateReport(key, sol);
 		return sol.getTotalCost();
@@ -306,7 +307,7 @@ public class RecursiveAnalysis<Context> {
 		}
 		@Override
 		public void visitInvokeNode(InvokeNode n) {
-			cost.addLocalCost(processor.getExecutionTime(n.getBasicBlock().getClassInfo(),n.getInstructionHandle().getInstruction()));
+			cost.addLocalCost(processor.getExecutionTime(n.getBasicBlock().getMethodInfo(),n.getInstructionHandle().getInstruction()));
 			if(n.isInterface()) {
 				throw new AssertionError("Invoke node "+n.getReferenced()+" without implementation in WCET analysis - did you preprocess virtual methods ?");
 			}
@@ -372,6 +373,18 @@ public class RecursiveAnalysis<Context> {
 
 	public Project getProject() {
 		return project;
+	}
+	public void recordCost(MethodInfo invoked, Context ctx, WcetCost cost) {
+		recordCost(new WcetKey(invoked,ctx),cost);		
+	}
+	private void recordCost(WcetKey key, WcetCost cost) {
+		wcetMap.put(key, cost); 		
+	}
+	public boolean isCached(MethodInfo invoked, Context ctx) {
+		return wcetMap.containsKey(new WcetKey(invoked,ctx));
+	}
+	public WcetCost getCached(MethodInfo invoked, Context ctx) {
+		return wcetMap.get(new WcetKey(invoked,ctx));
 	}
 		
 }

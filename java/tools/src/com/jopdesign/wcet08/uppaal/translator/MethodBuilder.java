@@ -273,6 +273,7 @@ public class MethodBuilder implements CfgVisitor {
 			}
 			for(CFGNode loop : edgeColor.getExits()) {
 				attrs.appendGuard(tBuilder.exitLoopGuard(loop));
+				attrs.appendUpdate(tBuilder.resetLoopCounter(loop));
 			}
 		}
 		if(hols.contains(target) && ! backEdges.contains(edge)) {

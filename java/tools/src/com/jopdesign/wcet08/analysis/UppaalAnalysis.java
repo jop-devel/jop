@@ -26,8 +26,8 @@ public class UppaalAnalysis {
 	private Logger logger;
 	private Project project;
 	private File outDir;
-	private double searchtime;
-	private double solvertimemax;
+	private double searchtime = 0.0;
+	private double solvertimemax = 0.0;
 	public UppaalAnalysis(Logger logger, Project project, File outDir) {
 		this.logger = logger;
 		this.project = project;
@@ -52,10 +52,8 @@ public class UppaalAnalysis {
 		return calculateWCET(m,-1);
 	}
 	public WcetCost calculateWCET(MethodInfo m, long ub) throws IOException, DuplicateKeyException, XmlSerializationException {
-		searchtime = 0;
 		Long upperBound = null;
 		if(ub > 0) upperBound = ub;
-		solvertimemax = 0;
 		logger.info("Starting UppAal translation of " + m.getFQMethodName());
 		Translator translator = new Translator(project, outDir);
 		translator.translateProgram(m);
@@ -68,8 +66,8 @@ public class UppaalAnalysis {
 			long start = System.nanoTime();
 			long wcet = search.searchWCET(upperBound);
 			long end = System.nanoTime();		
-			this.searchtime = ((double)(end-start))/1E9;
-			this.solvertimemax = search.getMaxSolverTime();
+			searchtime += ((double)(end-start))/1E9;
+			solvertimemax = Math.max(solvertimemax,search.getMaxSolverTime());
 			return WcetCost.totalCost(wcet);
 		} else {
 			throw new IOException("No verifier binary available. Skipping search");
@@ -101,21 +99,29 @@ public class UppaalAnalysis {
 			ProcessorModel proc = project.getProcessorModel();
 			MethodCache cache = proc.getMethodCache();
 			int cc = project.computeCyclomaticComplexity(invoked);
-			long returnCost = cache.getMissOnReturnCost(proc, project.getFlowGraph(invoker));
 			long invokeReturnCost = cache.getInvokeReturnMissCost(proc,project.getFlowGraph(invoker),project.getFlowGraph(invoked));
 			long cacheCost, nonLocalExecCost;
-
-			if(cc < treshold && ctx != DynCacheApproximation.ALWAYS_MISS) {
+			if(   cc <= treshold 
+			   && ctx != DynCacheApproximation.ALWAYS_MISS
+			   && ! project.getCallGraph().isLeafNode(invoked)
+			   && ! stagedAnalysis.isCached(invoked, ctx)
+			   ) {
 				WcetCost uppaalCost;
 				WcetCost ubCost = stagedAnalysis.computeWCET(invoked, DynCacheApproximation.ALWAYS_MISS);
 				try {
+					uppaalAnalysis.logger.info("Complexity of "+invoked+" below treshold: "+cc);
 					uppaalCost = uppaalAnalysis.calculateWCET(invoked,ubCost.getCost());
 				} catch (Exception e) {
 					throw new AssertionError("Uppaal analysis failed: "+e);
 				}
-				cacheCost = returnCost + uppaalCost.getCacheCost(); // FIXME: Not accurate at the moment
+				stagedAnalysis.recordCost(invoked,ctx,uppaalCost);
+				// FIXME: uppaal getCacheCost() is 0 at the moment
+				cacheCost = invokeReturnCost + uppaalCost.getCacheCost(); 
 				nonLocalExecCost = uppaalCost.getNonCacheCost();				
 			} else {
+				if(cc > treshold) {
+					uppaalAnalysis.logger.info("Complexity of "+invoked+" above treshold: "+cc);
+				}
 				WcetCost recCost = stagedAnalysis.computeWCET(invoked, ctx);
 				cacheCost = recCost.getCacheCost() + invokeReturnCost ;				
 				nonLocalExecCost = recCost.getCost() - recCost.getCacheCost();
