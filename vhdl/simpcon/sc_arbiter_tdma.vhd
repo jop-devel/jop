@@ -185,7 +185,7 @@ process(clk, reset)
 end process;
 				
 -- A time slot is assigned to each CPU 
-process(counter, cpu_time)
+process(counter, cpu_time, read_gap, write_gap, arb_out)
 	begin
 		for j in 0 to cpu_cnt-1 loop
 			slot(j) <= '0';
@@ -193,42 +193,42 @@ process(counter, cpu_time)
 		
 		if (counter > -1) and (counter < cpu_time(0)-write_gap) then
 			slot(0) <= '1';
-		elsif (counter < cpu_time(0)-read_gap) and (arb_out(0).rd = '1') then -- rd is 2 cycles longer allowed
+		elsif (counter > -1) and (counter < cpu_time(0)-read_gap) and (arb_out(0).rd = '1') then -- rd is 2 cycles longer allowed
 			slot(0) <= '1';
 			
 		elsif (counter > cpu_time(0)-1) and (counter < cpu_time(1)-write_gap) then
 			slot(1) <= '1';
-		elsif (counter < cpu_time(1)-read_gap) and (arb_out(1).rd = '1') then -- rd is 2 cycles longer allowed
+		elsif (counter > cpu_time(0)-1) and (counter < cpu_time(1)-read_gap) and (arb_out(1).rd = '1') then -- rd is 2 cycles longer allowed
 			slot(1) <= '1';
 			
 		elsif (counter > cpu_time(1)-1) and (counter < cpu_time(2)-write_gap) then
 			slot(2) <= '1';
-		elsif (counter < cpu_time(2)-read_gap) and (arb_out(2).rd = '1') then -- rd is 2 cycles longer allowed
+		elsif (counter > cpu_time(1)-1) and (counter < cpu_time(2)-read_gap) and (arb_out(2).rd = '1') then -- rd is 2 cycles longer allowed
 			slot(2) <= '1';
 --			
 --		elsif (counter > cpu_time(2)-1) and (counter < cpu_time(3)-write_gap) then
 --			slot(3) <= '1';
---		elsif (counter < cpu_time(3)-read_gap) and (arb_out(3).rd = '1') then -- rd is 2 cycles longer allowed
+--		elsif (counter > cpu_time(2)-1) and (counter < cpu_time(3)-read_gap) and (arb_out(3).rd = '1') then -- rd is 2 cycles longer allowed
 --			slot(3) <= '1';
 --			
 --		elsif (counter > cpu_time(3)-1) and (counter < cpu_time(4)-write_gap) then
 --			slot(4) <= '1';
---		elsif (counter < cpu_time(4)-read_gap) and (arb_out(4).rd = '1') then -- rd is 2 cycles longer allowed
+--		elsif (counter > cpu_time(3)-1) and (counter < cpu_time(4)-read_gap) and (arb_out(4).rd = '1') then -- rd is 2 cycles longer allowed
 --			slot(4) <= '1';
 --			
 --		elsif (counter > cpu_time(4)-1) and (counter < cpu_time(5)-write_gap) then
 --			slot(5) <= '1';
---		elsif (counter < cpu_time(5)-read_gap) and (arb_out(5).rd = '1') then -- rd is 2 cycles longer allowed
+--		elsif (counter > cpu_time(4)-1) and (counter < cpu_time(5)-read_gap) and (arb_out(5).rd = '1') then -- rd is 2 cycles longer allowed
 --			slot(5) <= '1';
 --			
 --		elsif (counter > cpu_time(5)-1) and (counter < cpu_time(6)-write_gap) then
 --			slot(6) <= '1';
---		elsif (counter < cpu_time(6)-read_gap) and (arb_out(6).rd = '1') then -- rd is 2 cycles longer allowed
+--		elsif (counter > cpu_time(5)-1) and (counter < cpu_time(6)-read_gap) and (arb_out(6).rd = '1') then -- rd is 2 cycles longer allowed
 --			slot(6) <= '1';
 --			
 --		elsif (counter > cpu_time(6)-1) and (counter < cpu_time(7)-write_gap) then
 --			slot(7) <= '1';
---		elsif (counter < cpu_time(7)-read_gap) and (arb_out(7).rd = '1') then -- rd is 2 cycles longer allowed
+--		elsif (counter > cpu_time(6)-1) and (counter < cpu_time(7)-read_gap) and (arb_out(7).rd = '1') then -- rd is 2 cycles longer allowed
 --			slot(7) <= '1';
 		end if;
 end process;	
