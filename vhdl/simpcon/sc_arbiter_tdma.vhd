@@ -139,7 +139,6 @@ begin
 write_gap <= 2;
 read_gap <= 1;
 slot_length <=7;
-
 period <= cpu_cnt*slot_length;
 
 -- generate slot information
@@ -202,34 +201,34 @@ process(counter, cpu_time)
 		elsif (counter < cpu_time(1)-read_gap) and (arb_out(1).rd = '1') then -- rd is 2 cycles longer allowed
 			slot(1) <= '1';
 			
-		elsif (counter > cpu_time(0)-1) and (counter < cpu_time(2)-write_gap) then
+		elsif (counter > cpu_time(1)-1) and (counter < cpu_time(2)-write_gap) then
 			slot(2) <= '1';
 		elsif (counter < cpu_time(2)-read_gap) and (arb_out(2).rd = '1') then -- rd is 2 cycles longer allowed
 			slot(2) <= '1';
 --			
---		elsif (counter > cpu_time(0)-1) and (counter < cpu_time(3)-5) then
+--		elsif (counter > cpu_time(2)-1) and (counter < cpu_time(3)-write_gap) then
 --			slot(3) <= '1';
---		elsif (counter < cpu_time(3)-3) and (arb_out(3).rd = '1') then -- rd is 2 cycles longer allowed
+--		elsif (counter < cpu_time(3)-read_gap) and (arb_out(3).rd = '1') then -- rd is 2 cycles longer allowed
 --			slot(3) <= '1';
 --			
---		elsif (counter > cpu_time(0)-1) and (counter < cpu_time(4)-5) then
+--		elsif (counter > cpu_time(3)-1) and (counter < cpu_time(4)-write_gap) then
 --			slot(4) <= '1';
---		elsif (counter < cpu_time(4)-3) and (arb_out(4).rd = '1') then -- rd is 2 cycles longer allowed
+--		elsif (counter < cpu_time(4)-read_gap) and (arb_out(4).rd = '1') then -- rd is 2 cycles longer allowed
 --			slot(4) <= '1';
 --			
---		elsif (counter > cpu_time(0)-1) and (counter < cpu_time(5)-5) then
+--		elsif (counter > cpu_time(4)-1) and (counter < cpu_time(5)-write_gap) then
 --			slot(5) <= '1';
---		elsif (counter < cpu_time(5)-3) and (arb_out(5).rd = '1') then -- rd is 2 cycles longer allowed
+--		elsif (counter < cpu_time(5)-read_gap) and (arb_out(5).rd = '1') then -- rd is 2 cycles longer allowed
 --			slot(5) <= '1';
 --			
---		elsif (counter > cpu_time(0)-1) and (counter < cpu_time(6)-5) then
+--		elsif (counter > cpu_time(5)-1) and (counter < cpu_time(6)-write_gap) then
 --			slot(6) <= '1';
---		elsif (counter < cpu_time(6)-3) and (arb_out(6).rd = '1') then -- rd is 2 cycles longer allowed
+--		elsif (counter < cpu_time(6)-read_gap) and (arb_out(6).rd = '1') then -- rd is 2 cycles longer allowed
 --			slot(6) <= '1';
 --			
---		elsif (counter > cpu_time(0)-1) and (counter < cpu_time(7)-5) then
+--		elsif (counter > cpu_time(6)-1) and (counter < cpu_time(7)-write_gap) then
 --			slot(7) <= '1';
---		elsif (counter < cpu_time(7)-3) and (arb_out(7).rd = '1') then -- rd is 2 cycles longer allowed
+--		elsif (counter < cpu_time(7)-read_gap) and (arb_out(7).rd = '1') then -- rd is 2 cycles longer allowed
 --			slot(7) <= '1';
 		end if;
 end process;	
