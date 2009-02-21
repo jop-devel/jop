@@ -152,6 +152,7 @@ public class RecursiveAnalysis<Context> {
 				cost.addLocalCost(flow * nodeCosts.get(n).getLocalCost());
 				cost.addCacheCost(flow * nodeCosts.get(n).getCacheCost());
 				cost.addNonLocalCost(flow * nodeCosts.get(n).getNonLocalCost());
+				cost.addPotentialCacheFlushes((int)flow * nodeCosts.get(n).getPotentialCacheFlushes());
 			}			
 		}
 	}

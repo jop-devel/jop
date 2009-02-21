@@ -31,10 +31,10 @@ public class JOPModel implements ProcessorModel {
 	public JOPModel(Project p) {
 		this.cache = MethodCache.getCacheModel(p);
 	}
-	public boolean isSpecialInvoke(ClassInfo context, Instruction i) {		
+	public boolean isSpecialInvoke(MethodInfo context, Instruction i) {		
 		if(! (i instanceof INVOKESTATIC)) return false;
-		ConstantPoolGen cpg = new ConstantPoolGen(context.clazz.getConstantPool());
-		String classname = ((INVOKESTATIC) i).getClassName(cpg);
+		INVOKESTATIC isi = (INVOKESTATIC) i;
+		String classname = isi.getClassName(context.getConstantPoolGen());
 		return (classname.equals(JOP_NATIVE));		
 	}
 
@@ -46,7 +46,7 @@ public class JOPModel implements ProcessorModel {
 		return (WCETInstruction.isInJava(ii.getOpcode()) && ! isUnboundedBC);
 	}
 	
-	public MethodInfo getJavaImplementation(WcetAppInfo ai, ClassInfo context, Instruction instr) {
+	public MethodInfo getJavaImplementation(WcetAppInfo ai, MethodInfo context, Instruction instr) {
 		if(WCETInstruction.isInJava(getNativeOpCode(context,instr))) {
 			ClassInfo receiver = ai.getClassInfo(JVM_CLASS);
 			String methodName = "f_"+instr.getName();
@@ -59,15 +59,16 @@ public class JOPModel implements ProcessorModel {
 			return null;
 		}
 	}
-	public int getNumberOfBytes(ClassInfo context, Instruction instruction) {
+	public int getNumberOfBytes(MethodInfo context, Instruction instruction) {
 		int opCode = getNativeOpCode(context, instruction);
 		if(opCode >= 0) return JopInstr.len(opCode);
 		else throw new AssertionError("Invalid opcode: "+context+" : "+instruction);
 	}
-	public int getNativeOpCode(ClassInfo context, Instruction instr) {
+	/* performance hot spot */
+	public int getNativeOpCode(MethodInfo context, Instruction instr) {
 		if(isSpecialInvoke(context,instr)) {
-			ConstantPoolGen cpg = new ConstantPoolGen(context.clazz.getConstantPool());
-			String methodName = ((INVOKESTATIC) instr).getMethodName(cpg);			
+			INVOKESTATIC isi = (INVOKESTATIC) instr;
+			String methodName = isi.getMethodName(context.getConstantPoolGen());
 			return JopInstr.getNative(methodName);
 		} else {
 			return instr.getOpcode();
@@ -79,7 +80,7 @@ public class JOPModel implements ProcessorModel {
 		return jvmClasses;
 	}
 	/* get plain execution time, without global effects */
-	public int getExecutionTime(ClassInfo context, Instruction i) {
+	public int getExecutionTime(MethodInfo context, Instruction i) {
 		int jopcode = this.getNativeOpCode(context,i);
 		int cycles = WCETInstruction.getCycles(jopcode,false,0);
 		if(cycles < 0) {
@@ -114,8 +115,9 @@ public class JOPModel implements ProcessorModel {
 	}
 	public long basicBlockWCET(BasicBlock bb) {
 		int wcet = 0;
+		MethodInfo ctx = bb.getMethodInfo();
 		for(InstructionHandle ih : bb.getInstructions()) {
-			wcet += getExecutionTime(bb.getClassInfo(),ih.getInstruction());
+			wcet += getExecutionTime(ctx, ih.getInstruction());
 		}
 		return wcet;
 	}

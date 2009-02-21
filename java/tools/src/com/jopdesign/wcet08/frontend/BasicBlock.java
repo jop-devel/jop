@@ -155,7 +155,7 @@ public class BasicBlock  {
 		for(InstructionHandle ih : this.instructions) {
 			if(! (ih.getInstruction() instanceof InvokeInstruction)) continue;
 			InvokeInstruction inv = (InvokeInstruction) ih.getInstruction();
-			if(this.getAppInfo().getProcessorModel().isSpecialInvoke(this.methodInfo.getCli(), inv)) {
+			if(this.getAppInfo().getProcessorModel().isSpecialInvoke(this.methodInfo, inv)) {
 				continue;
 			}
 			if(theInvInstr != null) {
@@ -180,7 +180,7 @@ public class BasicBlock  {
 		int len = 0;
 		for(InstructionHandle ih : this.instructions) {
 			len += appInfo.getProcessorModel().getNumberOfBytes(
-					this.methodInfo.getCli(), ih.getInstruction()					
+					this.methodInfo, ih.getInstruction()					
 			);
 		}
 		return len;
@@ -234,7 +234,7 @@ public class BasicBlock  {
 
 		// Not neccesarily, but nice for WCET analysis
 		@Override public void visitInvokeInstruction(InvokeInstruction obj) {
-			if(! appInfo.getProcessorModel().isSpecialInvoke(methodInfo.getCli(), obj)) {
+			if(! appInfo.getProcessorModel().isSpecialInvoke(methodInfo, obj)) {
 				flowInfo.splitBefore = true;
 				flowInfo.splitAfter = true;
 			}

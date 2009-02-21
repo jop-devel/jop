@@ -39,7 +39,7 @@ public interface ProcessorModel{
 	 * @param instr the instruction to check
 	 * @return true, if the instruction is translated to a processor specific bytecode
 	 */
-	public boolean isSpecialInvoke(ClassInfo ci, Instruction i);
+	public boolean isSpecialInvoke(MethodInfo ctx, Instruction i);
 	/**
 	 * Check whether the given instruction is implemented in Java.
 	 */
@@ -51,9 +51,9 @@ public interface ProcessorModel{
 	 * @return the reference to the Java implementation of the bytecode, 
 	 *         or null if the instruction is not implemented in Java.
 	 */
-	public MethodInfo getJavaImplementation(WcetAppInfo ai, ClassInfo ci, Instruction instr);
+	public MethodInfo getJavaImplementation(WcetAppInfo ai, MethodInfo ctx, Instruction instr);
 	
-	public int getNativeOpCode(ClassInfo ci, Instruction instr);
+	public int getNativeOpCode(MethodInfo ctx, Instruction instr);
 
 	/**
 	 * Get number of bytes needed to encode an instruction
@@ -61,7 +61,7 @@ public interface ProcessorModel{
 	 * @param instruction 
 	 * @return
 	 */
-	public int getNumberOfBytes(ClassInfo context, Instruction instruction);
+	public int getNumberOfBytes(MethodInfo context, Instruction instruction);
 
 	/**
 	 * Get classes, which contain methods invoked by the JVM.
@@ -70,7 +70,7 @@ public interface ProcessorModel{
 	 */
 	public List<String> getJVMClasses();
 	
-	public int getExecutionTime(ClassInfo context, Instruction i);
+	public int getExecutionTime(MethodInfo context, Instruction i);
 	public int getMethodCacheLoadTime(int words, boolean loadOnInvoke);
 	/**
 	 * return method cache, or NoMethodCache if the processor does not have a method cache

@@ -107,7 +107,6 @@ public class CallGraph {
 
 	private HashSet<ClassInfo> classInfos;
 	private HashMap<MethodInfo,CallGraphNode> nodeMap;
-	private TopOrder<CallGraphNode,DefaultEdge> topOrder;
 
 	/**
 	 * Initialize a CallGraph object.
@@ -199,6 +198,9 @@ public class CallGraph {
 	public MethodInfo getRootMethod() {
 		return rootNode.method;
 	}
+	public CallGraphNode getRootNode() {
+		return rootNode;
+	}
 
 	public Set<ClassInfo> getClassInfos() {
 		return classInfos;
@@ -241,19 +243,13 @@ public class CallGraph {
 		return dfi;		
 	}
 	/** Get methods possibly directly invoked from the given method */
-	public Iterator<CallGraphNode> getReferencedMethods(MethodInfo m) {
-		Vector<CallGraphNode> refd = new Vector<CallGraphNode>();
+	public List<CallGraphNode> getReferencedMethods(MethodInfo m) {
 		CallGraphNode node = getNode(m);
-		Vector<DefaultEdge> edgeSet = new Vector<DefaultEdge>(callGraph.outgoingEdgesOf(node));
-		while(! edgeSet.isEmpty()) {
-			Vector<DefaultEdge> edgeSet2 = new Vector<DefaultEdge>();
-			for(DefaultEdge e : edgeSet) {
-				CallGraphNode target = callGraph.getEdgeTarget(e);
-				refd.add(target);
-			}
-			edgeSet = edgeSet2;
+		Vector<CallGraphNode> succs = new Vector<CallGraphNode>();
+		for(DefaultEdge e : callGraph.outgoingEdgesOf(node)) {
+			succs.add(callGraph.getEdgeTarget(e));
 		}
-		return refd.iterator();
+		return succs;
 	}
 	
 
@@ -263,9 +259,6 @@ public class CallGraph {
 	}
 	protected CallGraphNode getNode(MethodInfo m) {
 		return nodeMap.get(m);
-	}
-	public TopOrder<CallGraphNode,DefaultEdge> getTopologicalOrder() {
-		return this.topOrder;
 	}
 	public boolean isLeafNode(CallGraphNode vertex) {
 		return callGraph.outDegreeOf(vertex) == 0;

@@ -118,25 +118,24 @@ public class GlobalAnalysis {
 					proc,
 					project.getFlowGraph(invoker),
 	                project.getFlowGraph(invoked));
-			long cacheCost, nonLocalExecCost;
+			WcetCost cost = new WcetCost();
 			if(cache.allFit(invoked) && ! project.getCallGraph().isLeafNode(invoked)) {
 				GlobalAnalysis ga = new GlobalAnalysis(project);
 				WcetCost allFitCost = null;
 				try { allFitCost= ga.computeWCET(invoked, StaticCacheApproximation.ALL_FIT); }
 				catch (Exception e) { throw new AssertionError(e); }
-				cacheCost = returnCost + allFitCost.getCacheCost();
-				nonLocalExecCost = allFitCost.getNonCacheCost();				
+				cost.addCacheCost(returnCost + allFitCost.getCacheCost());
+				cost.addNonLocalCost(allFitCost.getNonCacheCost());
+				cost.addPotentialCacheFlushes(1);
+				System.err.println("Potential cache flush: "+invoked+" from "+invoker);
 			} else {
 				WcetCost recCost = stagedAnalysis.computeWCET(invoked, cacheMode);
-				cacheCost = recCost.getCacheCost() + invokeReturnCost ;				
-				nonLocalExecCost = recCost.getCost() - recCost.getCacheCost();
+				cost.addCacheCost(recCost.getCacheCost() + invokeReturnCost);				
+				cost.addNonLocalCost(recCost.getCost() - recCost.getCacheCost());
 			}
-			WcetCost cost = new WcetCost();
-			cost.addNonLocalCost(nonLocalExecCost);
-			cost.addCacheCost(cacheCost);
 			Project.logger.info("Recursive WCET computation [GLOBAL IPET]: " + invoked.getMethod() +
-			        		    ". cummulative cache cost: "+cacheCost+
-					            " non local execution cost: "+nonLocalExecCost);
+			        		    ". cummulative cache cost: "+ cost.getCacheCost()+
+					            ", execution cost: "+ cost.getNonCacheCost());
 			return cost;
 		}
 		

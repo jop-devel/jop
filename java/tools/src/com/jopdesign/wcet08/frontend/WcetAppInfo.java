@@ -294,8 +294,8 @@ public class WcetAppInfo  {
 		return this.processor;
 	}
 
-	public MethodInfo getJavaImplementation(ClassInfo ci, Instruction lastInstr) {
-		return this.processor.getJavaImplementation(this, ci, lastInstr);
+	public MethodInfo getJavaImplementation(MethodInfo ctx, Instruction lastInstr) {
+		return this.processor.getJavaImplementation(this, ctx, lastInstr);
 	}
 
 }

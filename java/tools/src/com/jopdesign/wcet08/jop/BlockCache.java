@@ -18,6 +18,7 @@ public class BlockCache extends MethodCache {
 		if(cacheSizeWords % blockCount != 0) {
 			throw new AssertionError("Bad Cache Size / Block Count: "+cacheSizeWords+" / "+blockCount);
 		}
+		this.blockSize = cacheSizeWords / blockCount;
 	}
 	public int getBlockSize() {
 		return blockSize;

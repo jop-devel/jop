@@ -21,11 +21,16 @@ package com.jopdesign.wcet08;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.StringTokenizer;
 import java.util.Vector;
@@ -36,6 +41,8 @@ import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.MethodGen;
 import org.apache.log4j.Logger;
+import org.jgrapht.graph.DefaultEdge;
+
 import com.jopdesign.build.AppInfo;
 import com.jopdesign.build.AppVisitor;
 import com.jopdesign.build.ClassInfo;
@@ -44,6 +51,7 @@ import com.jopdesign.build.WcetPreprocess;
 import com.jopdesign.dfa.analyses.LoopBounds;
 import com.jopdesign.dfa.analyses.ReceiverTypes;
 import com.jopdesign.dfa.framework.ContextMap;
+import com.jopdesign.wcet08.analysis.WcetCost;
 import com.jopdesign.wcet08.config.Config;
 import com.jopdesign.wcet08.config.LoggerConfig;
 import com.jopdesign.wcet08.frontend.CallGraph;
@@ -54,8 +62,13 @@ import com.jopdesign.wcet08.frontend.CallGraph.CallGraphNode;
 import com.jopdesign.wcet08.frontend.SourceAnnotations.BadAnnotationException;
 import com.jopdesign.wcet08.frontend.SourceAnnotations.LoopBound;
 import com.jopdesign.wcet08.frontend.WcetAppInfo.MethodNotFoundException;
+import com.jopdesign.wcet08.graphutils.MiscUtils;
+import com.jopdesign.wcet08.graphutils.TopOrder;
+import com.jopdesign.wcet08.jop.CacheConfig;
 import com.jopdesign.wcet08.jop.JOPModel;
+import com.jopdesign.wcet08.jop.MethodCache;
 import com.jopdesign.wcet08.report.Report;
+import com.jopdesign.wcet08.uppaal.UppAalConfig;
 
 /** WCET 'project', information on which method in which class to analyse etc. */
 public class Project {
@@ -138,6 +151,7 @@ public class Project {
 	private Report results;
 	private ProcessorModel processor;
 	private SourceAnnotations sourceAnnotations;
+	private File resultRecord;
 
 	public Project(ProjectConfig config) throws IOException {
 		this.projectConfig =  config;
@@ -155,6 +169,10 @@ public class Project {
 			this.genWCETReport = true;
 		} else {
 			this.genWCETReport = false;
+		}
+		if(projectConfig.saveResults()) {
+			this.resultRecord = new File(config.getConfigManager().getOption(ProjectConfig.RESULT_FILE));
+			if(! projectConfig.appendResults()) { resultRecord.delete(); resultRecord.createNewFile(); }
 		}
 		this.processor = new JOPModel(this);
 	}
@@ -355,7 +373,6 @@ public class Project {
 	public File getOutFile(String file) {
 		return new File(projectConfig.getOutDir(),file);
 	}
-
 	public int computeCyclomaticComplexity(MethodInfo m) {
 		ControlFlowGraph g = getFlowGraph(m);
 		int nLocal = g.getGraph().vertexSet().size();
@@ -363,9 +380,7 @@ public class Project {
 		int pLocal = g.getLoopBounds().size();
 		int ccLocal = eLocal - nLocal + 2 * pLocal;
 		int ccGlobal = 0;
-		Iterator<CallGraphNode> iter = this.getCallGraph().getReferencedMethods(m);
-		while(iter.hasNext()) {
-			CallGraphNode n = iter.next();
+		for(CallGraphNode n: this.getCallGraph().getReferencedMethods(m)) {
 			MethodInfo impl = n.getMethodImpl();
 			ccGlobal += 2 + computeCyclomaticComplexity(impl);
 		}
@@ -373,5 +388,61 @@ public class Project {
 	}
 	public ProcessorModel getProcessorModel() {
 		return this.processor;
+	}
+	/* recording for scripted evaluatino */
+	public void recordResult(WcetCost wcet, double timeDiff, double solverTime) {
+		if(resultRecord == null) return;
+		Config c = projectConfig.getConfigManager();		
+		recordCVS("wcet","ipet",wcet,timeDiff,solverTime,
+					c.getOption(CacheConfig.CACHE_IMPL),
+					c.getOption(CacheConfig.CACHE_SIZE_WORDS),
+					c.getOption(CacheConfig.CACHE_BLOCKS),
+					c.getOption(CacheConfig.STATIC_CACHE_APPROX),
+					c.getOption(CacheConfig.ASSUME_MISS_ONCE_ON_INVOKE));
+		
+	}
+	public void recordResultUppaal(WcetCost wcet,
+			                       double timeDiff, double searchtime,double solvertimemax) {
+		if(resultRecord == null) return;
+		Config c = projectConfig.getConfigManager();		
+		recordCVS("wcet","uppaal",wcet,timeDiff,searchtime,solvertimemax,
+				c.getOption(CacheConfig.CACHE_IMPL),
+				c.getOption(CacheConfig.CACHE_SIZE_WORDS),
+				c.getOption(CacheConfig.CACHE_BLOCKS),
+				c.getOption(CacheConfig.DYNAMIC_CACHE_APPROX),
+				projectConfig.getUppaalComplexityTreshold(),
+				c.getOption(UppAalConfig.UPPAAL_COLLAPSE_LEAVES),
+				c.getOption(UppAalConfig.UPPAAL_CONVEX_HULL),
+				c.getOption(UppAalConfig.UPPAAL_TIGHT_BOUNDS));
+	}
+	public void recordSpecialResult(String metric, WcetCost cost) {
+		if(resultRecord == null) return;
+		if(projectConfig.appendResults()) return;
+		recordCVS("metric",metric,cost);
+	}
+	public void recordMetric(String metric, Object... params) {
+		if(resultRecord == null) return;
+		if(projectConfig.appendResults()) return;
+		recordCVS("metric",metric,null,params);
+	}
+	private void recordCVS(String key, String subkey, WcetCost cost, Object... params) {
+		Object fixedCols[] = { key, subkey };
+		try {			
+			FileWriter fw = new FileWriter(resultRecord,true);
+			fw.write(MiscUtils.joinStrings(fixedCols, ";"));
+			if(cost != null) {
+				Object costCols[] = { cost.getCost(), cost.getNonCacheCost(),cost.getCacheCost() }; 
+				fw.write(";");
+				fw.write(MiscUtils.joinStrings(costCols, ";"));				
+			}
+			if(params.length > 0) {
+				fw.write(";");
+				fw.write(MiscUtils.joinStrings(params, ";"));
+			}
+			fw.write("\n");
+			fw.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 }

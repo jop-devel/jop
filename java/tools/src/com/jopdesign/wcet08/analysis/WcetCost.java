@@ -10,6 +10,7 @@ public class WcetCost implements Serializable {
 	private long localCost = 0;
 	private long cacheCost = 0;
 	private long nonLocalCost = 0;
+	private int potCacheFlushes = 0;
 	public WcetCost() {
 		
 	}
@@ -24,6 +25,7 @@ public class WcetCost implements Serializable {
 		cCost.addLocalCost(localCost);
 		cCost.addNonLocalCost(nonLocalCost);
 		cCost.addCacheCost(cacheCost);
+		cCost.addPotentialCacheFlushes(this.potCacheFlushes);
 		return cCost;
 	}
 	
@@ -31,6 +33,7 @@ public class WcetCost implements Serializable {
 		this.localCost += cost.getLocalCost();
 		this.nonLocalCost += cost.getNonLocalCost();
 		this.cacheCost += cost.getCacheCost();
+		this.potCacheFlushes += cost.getPotentialCacheFlushes();
 	}
 
 
@@ -46,8 +49,12 @@ public class WcetCost implements Serializable {
 	
 	@Override public String toString() {
 		if(getCost() == 0) return "0";
-		if(localCost == 0) return "(cost: "+getCost()+", execution: "+nonLocalCost+", cache: "+cacheCost+")";
-		return ""+getCost()+" (local: "+localCost+",cache: "+cacheCost+",non-local: "+nonLocalCost+")";
+		String s;
+		if(localCost == 0) s= "(cost: "+getCost()+", execution: "+nonLocalCost+", cache: "+cacheCost;
+		else s = ""+getCost()+" (local: "+localCost+",cache: "+cacheCost+",non-local: "+nonLocalCost;
+		if(this.potCacheFlushes > 0) s+= ", potentialCacheFlushes: "+potCacheFlushes;
+		s+=")";
+		return s;
 	}
 	public WcetCost getFlowCost(Long flow) {
 		WcetCost flowcost = new WcetCost();
@@ -66,5 +73,11 @@ public class WcetCost implements Serializable {
 	}
 	public long getNonCacheCost() {
 		return this.localCost + this.nonLocalCost;
+	}
+	public void addPotentialCacheFlushes(int i) {
+		potCacheFlushes  = i;		
+	}
+	public int getPotentialCacheFlushes() {
+		return potCacheFlushes;
 	}
 }

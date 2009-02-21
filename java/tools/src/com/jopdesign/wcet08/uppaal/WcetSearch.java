@@ -38,6 +38,8 @@ public class WcetSearch {
 		Vector<String> cmdlist = new Vector<String>();
 		cmdlist.add(config.getOption(UppAalConfig.UPPAAL_VERIFYTA_BINARY));
 		cmdlist.add("-q");
+		cmdlist.add("-S");
+		cmdlist.add("2");
 		if(config.getOption(UppAalConfig.UPPAAL_CONVEX_HULL)) {
 			cmdlist.add("-A");
 		}

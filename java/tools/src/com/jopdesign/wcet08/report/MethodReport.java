@@ -46,9 +46,8 @@ public class MethodReport {
 		this.loopBounds = fg.getLoopBounds().values();
 		this.sizeInWords = fg.getNumberOfWords();		
 		this.referenced = new TreeSet<String>();
-		Iterator<CallGraphNode> i = p.getCallGraph().getReferencedMethods(m);
-		while(i.hasNext()) {
-			Pair<ClassInfo, String> ref = i.next().getReferencedMethod();
+		for(CallGraphNode cgn : p.getCallGraph().getReferencedMethods(m)) {
+			Pair<ClassInfo, String> ref = cgn.getReferencedMethod();
 			this.referenced.add(ref.fst().clazz.getClassName()+"."+ref.snd());
 		}
 		this.page = page;

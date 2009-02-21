@@ -72,12 +72,14 @@ public class WCETAnalysis {
 		tlLogger.info("WCET Analysis finished.");
 	}
 	private Config config;
+	private Project project;
 	public WCETAnalysis(Config c) {
 		this.config = c;
 	}
 	private boolean run(ExecHelper exec) {
-		Project project = null;
+		project = null;
 		ProjectConfig pConfig = new ProjectConfig(config);
+		/* Initialize */
 		try {
 			project = new Project(pConfig);
 			project.setTopLevelLooger(tlLogger);
@@ -85,48 +87,62 @@ public class WCETAnalysis {
 			tlLogger.info("Loading project");
 			project.load();
 			MethodInfo largestMethod = project.getProcessorModel().getMethodCache().checkCache();
+			int minWords = MiscUtils.bytesToWords(largestMethod.getCode().getLength());
 			System.out.println("Minimal Cache Size for target method(words): " 
-					         + MiscUtils.bytesToWords(largestMethod.getCode().getLength())
+					         + minWords
 					         + " because of "+largestMethod.getFQMethodName());
+			project.recordMetric("min-cache-size",largestMethod.getFQMethodName(),minWords);
 		} catch (Exception e) {
 			exec.logException("Loading project", e);
 			return false;
 		}
+		/* Perf-Test */
+//		for(int i = 0; i < 50; i++) { 
+//			RecursiveAnalysis<StaticCacheApproximation> an = 
+//				new RecursiveAnalysis<StaticCacheApproximation>(project,new RecursiveAnalysis.LocalIPETStrategy());
+//			an.computeWCET(project.getTargetMethod(),StaticCacheApproximation.ALWAYS_HIT);			
+//		}
+//		System.err.println("Total solver time (50): "+LpSolveWrapper.getSolverTime());
+//		System.exit(1);
+		/* Run */
 		boolean succeed = false;
 		try {
 			/* Analysis */
 			project.setGenerateWCETReport(false); /* generate reports later */
-			/* Perform a few standard analysis (global ALL_FIT, ALWAYS_HIT, ALWAYS_MISS) */
 			tlLogger.info("Cyclomatic complexity: "+project.computeCyclomaticComplexity(project.getTargetMethod()));
-			long ahWCET, amWCET;
-			{
-				tlLogger.info("Global WCET analysis");
-				GlobalAnalysis gb = new GlobalAnalysis(project);
-				long start = System.nanoTime();
-				long stop  = System.nanoTime();
-				System.out.println("global-missonce: "+gb.computeWCET(project.getTargetMethod(), StaticCacheApproximation.ALL_FIT));
-				System.out.println("time: " + timeDiff(start,stop));
-				System.out.println("solvertime: " + LpSolveWrapper.getSolverTime());
-		    }
-			{				
+			WcetCost mincachecost, ah, am, wcet;
+			
+			/* Perform a few standard analysis (MIN_CACHE_COST, ALWAYS_HIT, ALWAYS_MISS) */
+			{	
+				long start,stop;
+				/* always hit */
 				RecursiveAnalysis<StaticCacheApproximation> an = 
 					new RecursiveAnalysis<StaticCacheApproximation>(project,new RecursiveAnalysis.LocalIPETStrategy());
-				WcetCost ahcost = an.computeWCET(project.getTargetMethod(),StaticCacheApproximation.ALWAYS_HIT);			
-				tlLogger.info("WCET 'always hit' analysis finsihed: "+ahcost);
-				ahWCET = ahcost.getCost();
-				System.out.println("ah:"+ahWCET);
-				project.getReport().addStat("wcet-always-hit", ahWCET);
-	
+				LpSolveWrapper.resetSolverTime();
+				start = System.nanoTime();
+				ah = an.computeWCET(project.getTargetMethod(),StaticCacheApproximation.ALWAYS_HIT);			
+				stop  = System.nanoTime();
+				reportSpecial("always-hit",ah,start,stop,LpSolveWrapper.getSolverTime());
+				/* always miss */
 				/* FIXME: We don't have  report generation for UPPAAL and global analysis yet */
-				if(project.getProjectConfig().useUppaal()
-				   || project.getConfig().getOption(CacheConfig.STATIC_CACHE_APPROX) == StaticCacheApproximation.ALL_FIT) { 
+				if(   project.getProjectConfig().useUppaal()
+				   || project.getConfig().getOption(CacheConfig.STATIC_CACHE_APPROX).needsInterProcIPET()) { 
 					project.setGenerateWCETReport(true);
 				}
-				WcetCost amcost = an.computeWCET(project.getTargetMethod(),StaticCacheApproximation.ALWAYS_MISS);
-				amWCET = amcost.getCost();
-				tlLogger.info("WCET 'always miss' analysis finished: "+amcost);
-				System.out.println("am: "+amWCET);
-				project.getReport().addStat("wcet-always-miss", amWCET);
+				am = an.computeWCET(project.getTargetMethod(),StaticCacheApproximation.ALWAYS_MISS);
+				reportSpecial("always-miss",am,0,0,0);
+				project.setGenerateWCETReport(false);
+				
+				/* minimal cache cost */
+				boolean missOnceOnInvoke = config.getOption(CacheConfig.ASSUME_MISS_ONCE_ON_INVOKE);
+				config.setOption(CacheConfig.ASSUME_MISS_ONCE_ON_INVOKE, true);
+				GlobalAnalysis gb = new GlobalAnalysis(project);
+				LpSolveWrapper.resetSolverTime();
+				start = System.nanoTime();
+				mincachecost = gb.computeWCET(project.getTargetMethod(), StaticCacheApproximation.ALL_FIT);
+				stop  = System.nanoTime();
+				reportSpecial("min-cache-cost",mincachecost, start, stop, LpSolveWrapper.getSolverTime());
+				config.setOption(CacheConfig.ASSUME_MISS_ONCE_ON_INVOKE, missOnceOnInvoke);
 			}
 			tlLogger.info("Starting precise WCET analysis");
 			project.setGenerateWCETReport(true);
@@ -134,13 +150,9 @@ public class WCETAnalysis {
 				UppaalAnalysis an = new UppaalAnalysis(tlLogger,project,project.getOutDir("uppaal"));
 				config.checkPresent(UppAalConfig.UPPAAL_VERIFYTA_BINARY);
 				long start = System.nanoTime();
-				WcetCost uppaalWCET = an.computeWCET(project.getTargetMethod(),amWCET);
+				wcet = an.computeWCET(project.getTargetMethod(),am.getCost());
 				long stop  = System.nanoTime();
-				tlLogger.info("WCET analysis [UPPAAL] finished");
-				System.out.println("wcet-uppaal: "+uppaalWCET);
-				System.out.println("time: "+timeDiff(start,stop));
-				System.out.println("solvertimemax: "+an.getSolvertimemax());
-				project.getReport().addStat("wcet-uppal", uppaalWCET.getCost());
+				reportUppaal(wcet,start,stop,an.getSearchtime(),an.getSolvertimemax());
 			} else {
 				StaticCacheApproximation staticCacheApprox =
 					config.getOption(CacheConfig.STATIC_CACHE_APPROX);
@@ -154,15 +166,11 @@ public class WCETAnalysis {
 					new RecursiveAnalysis<StaticCacheApproximation>(project,recStrategy);
 				LpSolveWrapper.resetSolverTime();
 				long start = System.nanoTime();
-				WcetCost cachewcet = an.computeWCET(project.getTargetMethod(),config.getOption(CacheConfig.STATIC_CACHE_APPROX));
+				wcet = an.computeWCET(project.getTargetMethod(),config.getOption(CacheConfig.STATIC_CACHE_APPROX));
 				long stop  = System.nanoTime();
-				tlLogger.info("WCET analysis finsihed: "+cachewcet);
-				System.out.println("wcet: "+cachewcet.getCost());
-				System.out.println("time: "+timeDiff(start,stop));
-				System.out.println("solvertime: "+LpSolveWrapper.getSolverTime());
-				project.getReport().addStat("wcet", cachewcet.getCost());
+				report(wcet,start,stop,LpSolveWrapper.getSolverTime());
 			}
-
+			tlLogger.info("WCET analysis finsihed: "+wcet);
 			succeed = true;
 		} catch (Exception e) {
 			exec.logException("analysis", e);
@@ -183,5 +191,30 @@ public class WCETAnalysis {
 			return false;
 		}
 		return succeed;
+	}
+	private void report(WcetCost wcet, long start, long stop,double solverTime) {
+		String key = "wcet";
+		System.out.println(key+": "+wcet);
+		System.out.println(key+".time: " + timeDiff(start,stop));
+		System.out.println(key+".solvertime: " + solverTime);
+		project.recordResult(wcet,timeDiff(start,stop),solverTime);
+		project.getReport().addStat(key, wcet.toString());
+	}
+	private void reportUppaal(WcetCost wcet, long start, long stop, double searchtime, double solvertimemax) {
+		String key = "wcet";
+		System.out.println(key+": "+wcet);
+		System.out.println(key+".time: " + timeDiff(start,stop));
+		System.out.println(key+".searchtime: " + searchtime);
+		System.out.println(key+".solvertimemax: " + solvertimemax);
+		project.recordResultUppaal(wcet,timeDiff(start,stop),searchtime,solvertimemax);
+		project.getReport().addStat(key, wcet.toString());
+	}
+	private void reportSpecial(String metric, WcetCost cost, long start, long stop, double solverTime) {
+		String key = "wcet."+metric;
+		System.out.println(key+": "+cost);
+		if(start != stop) System.out.println(key+".time: " + timeDiff(start,stop));
+		if(solverTime != 0) System.out.println(key+".solvertime: " + solverTime);
+		project.recordSpecialResult(metric,cost);
+		project.getReport().addStat(key, cost.toString());
 	}
 }
