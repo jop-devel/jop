@@ -19,13 +19,15 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-package com.jopdesign.wcet;
+package com.jopdesign.timing;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
+
+import com.jopdesign.wca_rup.WU;
 
 
 /**
@@ -187,7 +189,7 @@ public class WCETInstruction {
 	 * @param pmiss true if the cache is missed and false if there is a cache hit
 	 * @return wcet or WCETNOTAVAILABLE (-1)
 	 */
-	static int getCyclesFromHandle(InstructionHandle ih, boolean pmiss, int n) {
+	public static int getCyclesFromHandle(InstructionHandle ih, boolean pmiss, int n) {
 		Instruction ins = ih.getInstruction();
 		int opcode = ins.getOpcode();
 
@@ -1458,7 +1460,7 @@ public class WCETInstruction {
 	 * @param opcode
 	 * @return true if there is a valid wcet value
 	 */
-	static boolean wcetAvailable(int opcode) {
+	public static boolean wcetAvailable(int opcode) {
 		if (getCycles(opcode, false, 0) == WCETNOTAVAILABLE)
 			return false;
 		else

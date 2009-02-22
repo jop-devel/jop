@@ -43,7 +43,7 @@ import org.apache.velocity.exception.ResourceNotFoundException;
 
 import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.MethodInfo;
-import com.jopdesign.wcet.WCETInstruction;
+import com.jopdesign.timing.WCETInstruction;
 import com.jopdesign.wcet08.Project;
 import com.jopdesign.wcet08.config.Config;
 import com.jopdesign.wcet08.config.LoggerConfig;

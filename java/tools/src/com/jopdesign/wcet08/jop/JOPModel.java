@@ -14,8 +14,8 @@ import org.apache.bcel.generic.NEWARRAY;
 
 import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.MethodInfo;
+import com.jopdesign.timing.WCETInstruction;
 import com.jopdesign.tools.JopInstr;
-import com.jopdesign.wcet.WCETInstruction;
 import com.jopdesign.wcet08.ProcessorModel;
 import com.jopdesign.wcet08.Project;
 import com.jopdesign.wcet08.frontend.BasicBlock;

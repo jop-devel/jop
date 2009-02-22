@@ -19,7 +19,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.jopdesign.wcet;
+package com.jopdesign.wca_rup;
 
 import java.util.*;
 import java.io.File;
@@ -38,6 +38,7 @@ import com.jopdesign.dfa.analyses.ReceiverTypes;
 import com.jopdesign.dfa.framework.*;
 import com.jopdesign.build.AppVisitor;
 import com.jopdesign.build.MethodInfo;
+import com.jopdesign.timing.WCETInstruction;
 import com.jopdesign.tools.JopInstr;
 
 /**

@@ -19,7 +19,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-package com.jopdesign.wcet;
+package com.jopdesign.wca_rup;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -37,6 +37,8 @@ import org.apache.bcel.generic.InvokeInstruction;
 import org.apache.bcel.generic.LocalVariableInstruction;
 import org.apache.bcel.generic.ReturnInstruction;
 import org.apache.bcel.generic.StoreInstruction;
+
+import com.jopdesign.timing.WCETInstruction;
 
 /**
  * Basic block of byte codes. It is aggregated in WCETMethodBlock.

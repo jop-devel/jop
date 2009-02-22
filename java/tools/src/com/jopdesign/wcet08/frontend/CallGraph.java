@@ -53,7 +53,7 @@ import org.jgrapht.traverse.TopologicalOrderIterator;
 
 import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.MethodInfo;
-import com.jopdesign.wcet.WCETInstruction;
+import com.jopdesign.timing.WCETInstruction;
 import com.jopdesign.wcet08.frontend.ControlFlowGraph.CFGEdge;
 import com.jopdesign.wcet08.frontend.ControlFlowGraph.CFGNode;
 import com.jopdesign.wcet08.frontend.ControlFlowGraph.InvokeNode;

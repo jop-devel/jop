@@ -12,11 +12,11 @@ import java.util.Map;
 import java.util.Stack;
 import java.util.Vector;
 
+import com.jopdesign.timing.WCETInstruction;
 import com.jopdesign.tools.Instruction;
 import com.jopdesign.tools.JopInstr;
 import com.jopdesign.tools.Jopa;
 import com.jopdesign.tools.Jopa.Line;
-import com.jopdesign.wcet.WCETInstruction;
 
 /**
  * Parse microcode file, compute timings 

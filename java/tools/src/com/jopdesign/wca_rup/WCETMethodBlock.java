@@ -19,7 +19,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.jopdesign.wcet;
+package com.jopdesign.wca_rup;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -65,6 +65,7 @@ import com.jopdesign.dfa.analyses.LoopBounds.ValueMapping;
 import com.jopdesign.dfa.framework.Context;
 import com.jopdesign.dfa.framework.ContextMap;
 import com.jopdesign.dfa.framework.HashedString;
+import com.jopdesign.timing.WCETInstruction;
 
 /**
  * It has a HashMap of WCETBasicBlocks. The class have methods that are called
