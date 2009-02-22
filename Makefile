@@ -247,7 +247,7 @@ tools:
 	javac $(TOOLS_JFLAGS) $(TOOLS)/src/*.java
 	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/build/*.java
 	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/tools/*.java
-	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/wcet/*.java
+	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/wca_rup/*.java
 	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/dfa/*.java
 	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/wcet08/*.java
 	cp $(TOOLS)/src/com/jopdesign/wcet08/report/*.vm $(TOOLS)/dist/classes/com/jopdesign/wcet08/report
@@ -561,13 +561,13 @@ udp_dbg:
 # dot:   it will generate directed graphs of basic blocks in dot format 
 # (see: http://www.graphviz.org/)
 # jline: it will insert Java source code into the bytecode tables
-wcet:
+wca_rup:
 	-rm -rf $(TARGET)/wcet
 	-mkdir $(TARGET)/wcet
 	-mkdir $(TARGET)/tmp
 	java $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.build.WcetPreprocess \
 		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/tmp $(MAIN_CLASS)
-	java -Xss16M $(TOOLS_CP) -Dlatex=true -Ddot=true -Djline=false -Dlatex=true -Ddfa=false -Dls=true com.jopdesign.wcet.WCETAnalyser \
+	java -Xss16M $(TOOLS_CP) -Dlatex=true -Ddot=true -Djline=false -Dlatex=true -Ddfa=false -Dls=true com.jopdesign.wca_rup.WCETAnalyser \
 		-mm $(WCET_METHOD) \
 		-cp $(TARGET)/tmp -o $(TARGET)/wcet/$(P3)wcet.txt -sp $(TARGET_SOURCE) $(MAIN_CLASS)
 	-rm -rf $(TARGET)/tmp
@@ -589,7 +589,7 @@ wcet_help:
 WCET_DFA?=no
 WCET_UPPAAL?=no
 WCET_VERIFYTA?=verifyta	 # only needed if WCET_UPPAAL=yes
-wcet08:
+wcet:
 	-mkdir $(TARGET)/tmp
 	java $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.build.WcetPreprocess \
 		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/tmp $(MAIN_CLASS)
