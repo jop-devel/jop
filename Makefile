@@ -402,10 +402,18 @@ sim: java_app
 #
 #	JopSim target
 #		without the tools
+#		use -Dcpucnt=# for a CMP simulation
 #
 jsim: java_app
 	java $(DEBUG_JOPSIM) -cp java/tools/dist/lib/jop-tools.jar -Dlog="false" \
 	com.jopdesign.tools.JopSim java/target/dist/bin/$(JOPBIN)
+
+#
+#	Simulate RTTM
+#
+tmsim: java_app
+	java $(DEBUG_JOPSIM) -cp java/tools/dist/lib/jop-tools.jar -Dcpucnt=4 \
+	com.jopdesign.tools.TMSim java/target/dist/bin/$(JOPBIN)
 
 #
 #	JopServer target
@@ -435,7 +443,7 @@ download:
 #	flash programming
 #
 prog_flash: java_app
-	quartus_pgm -c ByteblasterMV -m JTAG -o p\;jbc/$(DLPROJ).jbc
+	quartus_pgm -c $(BLASTER_TYPE) -m JTAG -o p\;jbc/$(DLPROJ).jbc
 	down java/target/dist/bin/$(JOPBBIN) $(COM_PORT)
 	java -cp java/pc/dist/lib/jop-pc.jar udp.Flash java/target/dist/bin/$(JOPBIN) $(IPDEST)
 	java -cp java/pc/dist/lib/jop-pc.jar udp.Flash ttf/$(FLPROJ).ttf $(IPDEST)
