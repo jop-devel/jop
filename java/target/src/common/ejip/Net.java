@@ -117,11 +117,11 @@ public class Net implements Runnable {
 			ip.doIp(p, prot);
 		} else if (prot == Tcp.PROTOCOL) {
 // that's the old, simple HTML server (for the TAL)
-//			if ((buf[5] & 0xffff) == 80) {
-//				// still do our simple HTML server
-//				TcpIp.doTCP(p);
-//				ip.doIp(p, prot);
-//			} else {
+			if ((buf[5] & 0xffff) == 80) {
+				// still do our simple HTML server
+				TcpIp.doTCP(p);
+				ip.doIp(p, prot);
+			} else 
 			if (TCP_ENABLED) {
 				// that's the new TCP processing
 				tcp.process(p);					
