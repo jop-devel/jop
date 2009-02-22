@@ -13,7 +13,6 @@ import com.jopdesign.wcet08.frontend.ControlFlowGraph;
 import com.jopdesign.wcet08.frontend.CallGraph.CallGraphNode;
 import com.jopdesign.wcet08.graphutils.MiscUtils;
 import com.jopdesign.wcet08.jop.CacheConfig.CacheImplementation;
-import com.sun.corba.se.impl.encoding.CodeSetConversion.BTCConverter;
 
 public abstract class MethodCache {
 	protected Project project;
