@@ -58,6 +58,7 @@ public class MatrixBenchCMP implements Runnable {
 		int time = 0;
 		
 		System.out.println("Matrix Benchmark:");
+		System.out.println("Initializing data...");
 			
 		long seed = 13;
 		initializeMultiplication(seed);
@@ -69,6 +70,7 @@ public class MatrixBenchCMP implements Runnable {
 			Startup.setRunnable(r, i);
 		}
 		
+		System.out.println("Start benchmark!");
 		// Start of measurement
 		start = LowLevel.timeMillis();
 					
