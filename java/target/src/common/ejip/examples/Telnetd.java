@@ -109,4 +109,10 @@ public class Telnetd extends TcpHandler {
 	public void established(Packet p) {
 		Ip.setData(p, Tcp.DATA, "Welcome to JOP\r\n");
 	}
+
+	@Override
+	public boolean finished() {
+		// TODO Auto-generated method stub
+		return false;
+	}
 }
