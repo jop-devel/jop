@@ -50,9 +50,10 @@
 #define SECTOR_SIZE 0x10000
 #define CONFIG_START 0x60000
 #define CONFIG_CYC_START 0x40000
-#define HTML_START 0x00000
-#define JAVA_START 0x10000
+// #define JAVA_START 0x10000 old ACEX configuration
+#define JAVA_START 0x00000
 #define JAVA_CNT	16384
+#define HTML_START 0x10000
 
 HANDLE hCom;
 
@@ -88,7 +89,10 @@ main(int argc, char *argv[]) {
 		exit(-1);
 	}
 
-	hCom = CreateFile(argv[argc-1],
+	// com ports > COM9 need a special name!
+	sprintf(buf, "\\\\.\\%s",argv[argc-1]); 
+
+	hCom = CreateFile(buf,
 		GENERIC_READ | GENERIC_WRITE,
 		0,    /* comm devices must be opened w/exclusive-access */
 		NULL, /* no security attrs */
@@ -144,7 +148,7 @@ main(int argc, char *argv[]) {
 		;
 	
 
-	// ACEX config file
+	// FPGA config file
 	if (strcmp(argv[1]+i, ".ttf")==0) {
 
 		for (i=0; fscanf(fp, "%d", &val)==1; ++i) {
@@ -152,13 +156,16 @@ main(int argc, char *argv[]) {
 			fscanf(fp, ",");
 		}
 		fclose(fp);
-		if (i>MAX_ACEX) {							// file is big, so it must be for Cyclone
+		// file size does not work anymore to distiguish
+		// between Cyclone and ACEX as the Cyclone configuration
+		// is compressed.
+//		if (i>MAX_ACEX) {							// file is big, so it must be for Cyclone
 			program(mem, CONFIG_CYC_START, i);
 			compare(mem, CONFIG_CYC_START, i);
-		} else {
-			program(mem, CONFIG_START, i);
-			compare(mem, CONFIG_START, i);
-		}
+//		} else {
+//			program(mem, CONFIG_START, i);
+//			compare(mem, CONFIG_START, i);
+//		}
 
 	// Java file
 	} else if (strcmp(argv[1]+i, ".jop")==0) {
