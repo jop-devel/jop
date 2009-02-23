@@ -224,8 +224,7 @@
 			<include name="com/jopdesign/build/*.java"/>
 			<include name="com/jopdesign/tools/*.java"/>
 			<include name="com/jopdesign/wcet/*.java"/>
-			<include name="com/jopdesign/wcet08/**/*.java"/>
-			<exclude name="com/jopdesign/wcet08/**/test/*.java"/>
+			<include name="com/jopdesign/wcet08/WCETAnalysis.java"/>
 			<include name="com/jopdesign/dfa/*.java"/>
 			<include name="org/apache/**/*.java"/>
 		</javac>
