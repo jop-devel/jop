@@ -111,9 +111,13 @@ public class SourceAnnotations {
 
 	private File getSourceFile(ClassInfo ci) throws FileNotFoundException, BadAnnotationException {
 		File src = project.getSourceFile(ci);
-		File klazz = project.getClassFile(ci);
-		if(src.lastModified() > klazz.lastModified()) {
-			throw new BadAnnotationException("Timestamp error: source file modified after compilation");
+		try {
+			File klazz = project.getClassFile(ci);
+			if(src.lastModified() > klazz.lastModified()) {
+				throw new BadAnnotationException("Timestamp error: source file modified after compilation");
+			}
+		} catch(IOException ex) {
+			Project.logger.warn("Could not find class file for " + ci);
 		}
 		return src;
 	}

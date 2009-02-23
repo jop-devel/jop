@@ -712,7 +712,7 @@
 	<!-- latex: it will output latex formatting in the tables (afterwards replace ">" with "$>$ and "_" with "\_") -->
 	<!-- dot:   it will generate directed graphs of basic blocks in dot format (see: http://www.graphviz.org/) -->
 	<!-- jline: it will insert Java source code into the bytecode tables -->
-	<target name="wcet" description="Rasmus's WCET analyser">
+	<target name="wca_rup" description="Rasmus's WCET analyser">
 	        <mkdir dir="${target}/tmp"/>
 		<java
 		   classpathref="tools-cp"
