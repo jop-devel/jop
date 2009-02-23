@@ -249,8 +249,8 @@ tools:
 	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/tools/*.java
 	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/wca_rup/*.java
 	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/dfa/*.java
-	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/wcet08/*.java
-	cp $(TOOLS)/src/com/jopdesign/wcet08/report/*.vm $(TOOLS)/dist/classes/com/jopdesign/wcet08/report
+	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/wcet/*.java
+	cp $(TOOLS)/src/com/jopdesign/wcet/report/*.vm $(TOOLS)/dist/classes/com/jopdesign/wcet/report
 # Build libgraph and joptimizer
 	#make joptimizer -e TOOLS_JFLAGS="$(TOOLS_JFLAGS)" TOOLS="$(TOOLS)"
 # quick hack to get the tools with the debugger ok
@@ -581,7 +581,7 @@ wca_rup:
 
 # WCET help
 wcet_help:
-	java $(TOOLS_CP) com.jopdesign.wcet08.WCETAnalysis -help
+	java $(TOOLS_CP) com.jopdesign.wcet.WCETAnalysis -help
 # WCET analyzer
 # make before     : java_app
 # make after (dot): (cd java/target/wcet/<project-name>; make)
@@ -592,7 +592,7 @@ wcet_help:
 # WCET_VERIFYTA: UPPAAL verifier executable
 # WCET_OPTIONS: Additional WCET options (run 'make wcet_help')
 #
-# Profiling: add -Xss16M -agentlib:hprof=cpu=samples to java arguments
+# Profiling: add -Xss16M -agentlib:hprof=cpu=samples,interval=2,depth=8 to java arguments
 WCET_DFA?=no
 WCET_UPPAAL?=no
 WCET_VERIFYTA?=verifyta	 # only needed if WCET_UPPAAL=yes
@@ -602,7 +602,7 @@ wcet:
 		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/tmp $(MAIN_CLASS)
 	-mkdir -p $(TARGET)/wcet
 	java \
-	  $(TOOLS_CP) com.jopdesign.wcet08.WCETAnalysis \
+	  $(TOOLS_CP) com.jopdesign.wcet.WCETAnalysis \
 		-cp $(TARGET)/dist/classes -sp $(TARGET_SOURCE) \
 		-app-class $(MAIN_CLASS) -target-method $(WCET_METHOD) \
 		-outdir $(TARGET)/wcet \
@@ -612,7 +612,7 @@ wcet:
 	-rm -rf $(TARGET)/tmp
 
 
-# dot2eps works for both rasmus WCETAnalyser and wcet08.WCETAnalyser
+# dot2eps works for both rasmus WCETAnalyser and wcet.WCETAnalyser
 dot2eps:
 	cd $(TARGET)/wcet && make
 

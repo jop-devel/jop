@@ -72,7 +72,7 @@
 	<property name="p1" value="test"/>
 	<property name="p2" value="test"/>
 	<property name="p3" value="HelloWorld"/>
-	 
+
 	<!-- <property name="p2" value="wcet"/> -->
 	<!-- <property name="p3" value="Loop"/> -->
 	 
@@ -104,7 +104,7 @@
 			<include name="RXTXcomm.jar"/>
 			<include name="lpsolve55j.jar"/>
 			<include name="log4j-1.2.15.jar"/>
-			<!-- wcet08 -->
+			<!-- wcet -->
 			<include name="velocity-dep-1.5.jar"/>
 			<include name="jgrapht-jdk1.5.jar"/>
 		</fileset>
@@ -224,14 +224,14 @@
 			<include name="com/jopdesign/build/*.java"/>
 			<include name="com/jopdesign/tools/*.java"/>
 			<include name="com/jopdesign/wcet/*.java"/>
-			<include name="com/jopdesign/wcet08/WCETAnalysis.java"/>
+			<include name="com/jopdesign/wcet/WCETAnalysis.java"/>
 			<include name="com/jopdesign/dfa/*.java"/>
 			<include name="org/apache/**/*.java"/>
 		</javac>
 		<!-- Additional files to be included in the tools.jar -->
 		<copy todir="${tools}/dist/classes" failonerror="true">
 		  <fileset dir="${tools}/src">
-		    <include name="com/jopdesign/wcet08/**/*.vm"/>
+		    <include name="com/jopdesign/wcet/**/*.vm"/>
 		  </fileset>
 		</copy>
 
@@ -739,23 +739,25 @@
 		</java>
 	</target>
 
-	<target name="wcet08" description="Benedikt's WCET analyser" depends="java-app">
+    <property name="dataflow-analysis" value="false"/>
+	<target name="wcet" description="Benedikt's WCET analyser" depends="java-app">
 		<delete dir="${target}/wcet"/>
 		<mkdir dir="${target}/wcet"/>
 		<java
 			classpathref="tools-cp"
-			classname="com.jopdesign.wcet08.WCETAnalysis"
+			classname="com.jopdesign.wcet.WCETAnalysis"
 			failonerror="true"
 			fork="true">
 			<sysproperty key="cp" value="${target}/dist/lib/classes.zip"/>
 			<sysproperty key="sp" value="${target-source-flattened}"/>
 			<sysproperty key="reportdir" value="${target}/wcet"/>
+			<sysproperty key="dataflow-analysis" value="${dataflow-analysis}"/>
 			<sysproperty key="java.library.path" value=".:${java.library.path}"/>
 			<arg line="-app-class ${main-class} -target-method ${wcet-method}"/>
 		</java>
 	</target>
 
-	<target name="dot2eps"> <!-- depends wcet or wcet08 -->
+	<target name="dot2eps"> <!-- depends wcet or wcet -->
 		<exec executable="make" dir="${target}/wcet" failonerror="yes"/>
 	</target>  
 	

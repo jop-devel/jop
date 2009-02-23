@@ -178,7 +178,7 @@ public class Report {
 		try {
 			template = Velocity.getTemplate(templateName);
 		} catch(ResourceNotFoundException e) {
-			template = Velocity.getTemplate("com/jopdesign/wcet08/report/"+templateName);
+			template = Velocity.getTemplate("com/jopdesign/wcet/report/"+templateName);
 		}
 		FileWriter fw = new FileWriter(outFile);
 		template.merge( ctx, fw );

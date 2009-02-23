@@ -132,6 +132,9 @@ added temporary for a fix.
       <include name="jakarta-regexp-1.3.jar"/>
       <include name="RXTXcomm.jar"/>
       <include name="lpsolve55j.jar"/>
+      <include name="log4j-1.2.15.jar"/>
+      <include name="velocity-dep-1.5.jar"/>
+      <include name="jgrapht-jdk1.5.jar"/>
     </fileset>
 
   </path>
@@ -246,41 +249,16 @@ added temporary for a fix.
 			<include name="com/jopdesign/build/*.java"/>
 			<include name="com/jopdesign/tools/*.java"/>
 			<include name="com/jopdesign/wcet/*.java"/>
+			<include name="com/jopdesign/wcet/**/*.java"/>
+			<exclude name="com/jopdesign/wcet/**/test/*.java"/>
 			<include name="com/jopdesign/debug/**/*.java"/>
-    </javac>
-
-  </target>
-
-  <!-- wcet08 build (experimental) -->
-  <path id="ext-cp-wcet08">
-    <pathelement path="${ext-cp}"/>
-    <fileset dir="${JOP_folder}/java/lib">
-      <include name="bcel-5.1.jar"/>
-      <include name="jakarta-regexp-1.3.jar"/>
-      <include name="lpsolve55j.jar"/>
-      <include name="log4j-1.2.15.jar"/>
-      <include name="velocity-dep-1.5.jar"/>
-      <include name="jgrapht-jdk1.5.jar"/>
-    </fileset>
-  </path>
-  <target name="compile-wcet08" depends="compile" description="compile the source of wcet08" >
-    <!-- Compile the java code from ${src} into ${build} -->
-    <javac
-      destdir="${build}/classes"
-      classpathref="ext-cp-wcet08"
-      debug="true"
-    >
-      <src path="${tools}/src"/>
-      <include name="com/jopdesign/wcet08/**/*.java"/>
-      <exclude name="com/jopdesign/wcet08/**/test/*.java"/>
     </javac>
     <copy todir="${build}/classes">
       <fileset dir="${tools}/src">
-        <include name="com/jopdesign/wcet08/**/*.vm"/>
+        <include name="com/jopdesign/wcet/**/*.vm"/>
       </fileset>
     </copy>
   </target>
-  <!-- end wcet08 build -->
   
   <target name="tools" depends="rebuild"
         description="Rebuilds all the (Java) tools. Same as 'rebuild' target." >
