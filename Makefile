@@ -312,6 +312,13 @@ pc:
 	cd $(PCTOOLS)/dist/classes && jar cf ../lib/jop-pc.jar *
 
 #
+# make target for the tools that are still in C
+#
+cprog:
+	gcc c_src/amd.c -o amd.exe
+	gcc c_src/e.c -o e.exe
+
+#
 #	compile and JOPize the application
 #
 java_app:
