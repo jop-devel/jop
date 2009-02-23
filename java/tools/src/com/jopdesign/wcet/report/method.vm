@@ -1,0 +1,14 @@
+<body>
+<h1>Detailed report for $m.getFQMethodName()</h1>
+#foreach ($e in $reports)
+<h2> $e.getKey() </h2>
+<h3>Stats</h3>
+<ul>
+#foreach ($s in $e.getStats().entrySet())
+<li/> $s.getKey(): <emph>$s.getValue()</emph>
+#end
+</ul>
+<h3>Graph</h3>
+<img width="80%" src="$e.getGraph()"/>
+#end
+</body>
