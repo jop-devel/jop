@@ -343,59 +343,8 @@ public class Tcp implements Runnable {
 			Logging.lf();
 		}
 
-		// reset the connection
-		synchronized (mutex) {
-			if ((flags&FL_RST)!=0) {
-				if (Logging.LOG) {
-					Logging.wr("RST received");
-					Logging.lf();
-				}
-				// reset the connection for the handler
-				th.connection = null;
-
-				if (tc.outStanding != null) {
-					Packet os = tc.outStanding;
-					// recycle the outstanding packet and reset isTcpOnFly
-					tc.outStanding = null;
-					os.isTcpOnFly = false;
-					ejip.returnPacket(os);
-				}
-				ejip.returnPacket(p);
-				tc.close();
-				return;
-			}
-		}
-		// reset if what we received does not match our state
-		synchronized (mutex) {
-			if (state == LISTEN && (flags&FL_SYN) == 0) {
-				//ejip.returnPacket(p);
-				// reset the connection
-				tc.rcvNxt = buf[SEQNR]+p.len-(DATA<<2);
-				tc.sndNxt = buf[ACKNR];
-				Ip.setData(p, Tcp.DATA, "");
-				fillHeader(p, tc, FL_RST|FL_ACK);
-				if (Logging.LOG) {
-					Logging.wr("dropped non SYN packet in LISTEN");
-					Logging.lf();
-				}
-				return;
-			}
-		}
-
-		// check if the handler is busy
-		synchronized (mutex) {
-			if (th.connection != null
-				&& th.connection != tc
-				&& th.connection.state != Tcp.FREE) {
-// 				System.out.print("wrong connection: ");
-// 				System.out.print(tc);
-// 				System.out.print(" got already ");
-// 				System.out.print(th.connection);
-// 				System.out.print(" state ");
-// 				System.out.println(th.connection.state);
-				ejip.returnPacket(p);
-				return;
-			}
+		if (!checkConnection(p, th, tc, flags, state)) {
+			return;
 		}
 
 		// we received _something_ on this connection
@@ -403,38 +352,7 @@ public class Tcp implements Runnable {
 			tc.idleTime = USER_TIMEOUT;
 		}
 
-		// check for ACK
-		synchronized (mutex) {
-			if ((flags&FL_ACK)!=0 && tc.outStanding!=null) {
-				if (buf[ACKNR]==tc.sndNxt) {
-					if (Logging.LOG) {
-						Logging.wr("ACK received");
-						Logging.lf();
-					}
-					Packet os = tc.outStanding;
-					// recycle the outstanding packet and reset isTcpOnFly
-					tc.outStanding = null;
-					os.isTcpOnFly = false;
-					ejip.returnPacket(os);
-				} else {
-					// not the correct ACK - drop it
-					ejip.returnPacket(p);
-					if (Logging.LOG) {
-						Logging.wr("dropped wrong ACKNR");
-						Logging.lf();
-					}
-					return;
-				}
-			}			
-		}		
-		if (tc.outStanding!=null) {
-			// we handle only one packet at a time
-			// so we have to drop it.
-			ejip.returnPacket(p);
-			if (Logging.LOG) {
-				Logging.wr("waiting on ACK - dropped");
-				Logging.lf();
-			}
+		if (!checkAck(p, th, tc, flags)) {
 			return;
 		}
 		
@@ -638,6 +556,111 @@ public class Tcp implements Runnable {
 			ejip.returnPacket(p);
 			break;
 		}
+	}
+
+	private boolean checkConnection(Packet p, TcpHandler th, TcpConnection tc, int flags, int state) {
+
+		int buf[] = p.buf;
+
+		// reset the connection
+		synchronized (mutex) {
+			if ((flags&FL_RST)!=0) {
+				if (Logging.LOG) {
+					Logging.wr("RST received");
+					Logging.lf();
+				}
+				// reset the connection for the handler
+				th.connection = null;
+
+				if (tc.outStanding != null) {
+					Packet os = tc.outStanding;
+					// recycle the outstanding packet and reset isTcpOnFly
+					tc.outStanding = null;
+					os.isTcpOnFly = false;
+					ejip.returnPacket(os);
+				}
+				ejip.returnPacket(p);
+				tc.close();
+				return false;
+			}
+		}
+		// reset if what we received does not match our state
+		synchronized (mutex) {
+			if (state == LISTEN && (flags&FL_SYN) == 0) {
+				//ejip.returnPacket(p);
+				// reset the connection
+				tc.rcvNxt = buf[SEQNR]+p.len-(DATA<<2);
+				tc.sndNxt = buf[ACKNR];
+				Ip.setData(p, Tcp.DATA, "");
+				fillHeader(p, tc, FL_RST|FL_ACK);
+				if (Logging.LOG) {
+					Logging.wr("dropped non SYN packet in LISTEN");
+					Logging.lf();
+				}
+				return false;
+			}
+		}
+
+		// check if the handler is busy
+		synchronized (mutex) {
+			if (th.connection != null
+				&& th.connection != tc
+				&& th.connection.state != Tcp.FREE) {
+// 				System.out.print("wrong connection: ");
+// 				System.out.print(tc);
+// 				System.out.print(" got already ");
+// 				System.out.print(th.connection);
+// 				System.out.print(" state ");
+// 				System.out.println(th.connection.state);
+				ejip.returnPacket(p);
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+
+	private boolean checkAck(Packet p, TcpHandler th, TcpConnection tc, int flags) {
+
+		int buf[] = p.buf;
+
+		// check for ACK
+		synchronized (mutex) {
+			if ((flags&FL_ACK)!=0 && tc.outStanding!=null) {
+				if (buf[ACKNR]==tc.sndNxt) {
+					if (Logging.LOG) {
+						Logging.wr("ACK received");
+						Logging.lf();
+					}
+					Packet os = tc.outStanding;
+					// recycle the outstanding packet and reset isTcpOnFly
+					tc.outStanding = null;
+					os.isTcpOnFly = false;
+					ejip.returnPacket(os);
+				} else {
+					// not the correct ACK - drop it
+					ejip.returnPacket(p);
+					if (Logging.LOG) {
+						Logging.wr("dropped wrong ACKNR");
+						Logging.lf();
+					}
+					return false;
+				}
+			}			
+		}		
+		if (tc.outStanding!=null) {
+			// we handle only one packet at a time
+			// so we have to drop it.
+			ejip.returnPacket(p);
+			if (Logging.LOG) {
+				Logging.wr("waiting on ACK - dropped");
+				Logging.lf();
+			}
+			return false;
+		}
+
+		return true;
 	}
 
 	public void startConnection(LinkLayer ll, int ip, int port) {
