@@ -270,6 +270,82 @@ combinations are useful:
     the Java program from the Flash.
 \end{enumerate}
 
+\subsection{Stand Alone Configuration}
+
+The Cycore board can be configured to configure the FPGA and load the
+Java program from Flash at power up. In order to prepare the Cycore
+board for this configuration the Flash must be programmed. Depending
+on the I/O capabilities several options are possible:
+
+\begin{description}
+  \item[SLIP] With a SLIP connection the Flash can be programmed
+      via TFTP. For this configuration a second serial line is
+      needed.
+  \item[Ethernet] With an Ethernet connection (e.g., the baseio
+      board) TFTP can be used for Flash programming.
+  \item[Serial Line] With a single serial line the utilities
+      \code{util.Mem.java} and \code{amd.exe} can be used to
+      program the Flash.
+\end{description}
+
+The following text describes the Flash programming and PLD
+reconfiguration for a stand alone configuration. Fist we have to
+build a JOP version that will load a Java program from the Flash:
+\begin{verbatim}
+    make jopflash
+\end{verbatim}
+As usual a \code{jop.sof} file will be generated. For easier reading
+of the configuration it will be converted to \code{jop.ttf}. This
+file will be programmed into the Flash starting at address 0x40000.
+Therefore, we need to save that file and rebuild a JOP version that
+loads a Java program (the Flash programmer) from the serial line:
+\begin{verbatim}
+    copy quartus\cycmin\jop.ttf ttf\cycmin.ttf
+    make jopser
+\end{verbatim}
+As a next step we will build the Java program that will be programmed
+into the Flash and save a copy of the \code{.jop} file.
+\code{Hello.java} is the embedded version of a \emph{Hello World}
+program that blinks the WD LED at 1~Hz.
+\begin{verbatim}
+    make java_app -e P1=test P2=test P3=Hello
+    copy java\target\dist\bin\Hello.jop .
+\end{verbatim}
+To program the Flash the programmer tool \code{util.Mem} will run on
+JOP and \code{amd.exe} is used at the PC side:
+\begin{verbatim}
+    make japp -e P1=common P2=util P3=Mem COM_FLAG=
+    amd Hello.jop COM1
+    amd ttf\cycmin.ttf COM1
+\end{verbatim}
+As a last step the PLD will be programmed to enable FPGA
+configuration form the Flash:
+\begin{verbatim}
+    make pld_conf
+\end{verbatim}
+The board shall now boot after a power cycle and the LED will blink.
+To read the output from the serial line the small utility
+\code{e.exe} can be used.
+
+
+In the case the PLD configuration shall be changed back to JTAG FPGA
+configuration following make command will reset the PLD:
+\begin{verbatim}
+    make pld_init
+\end{verbatim}
+
+Note, that in a stand alone configuration the watchdog (WD) pin has
+to be toggled every second (e.g., by invoking \code{util.Timer.wd()}.
+When the WD is not toggled the FPGA will be reconfigured after 1.6
+seconds.
+
+Due to wrong file permissions the Windows executables \code{amd.exe}
+and \code{USBRunner.exe} will not have the execution permission set.
+Change the setting with the Windows Explorer. The tool \code{amd.exe}
+can also be rebuilt with:
+\begin{verbatim}
+    make cprog
+\end{verbatim}
 
 
 \section{The Design Flow}
