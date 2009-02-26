@@ -23,9 +23,7 @@ import com.jopdesign.libgraph.callgraph.CallGraph;
 import com.jopdesign.libgraph.cfg.ControlFlowGraph;
 import com.jopdesign.libgraph.cfg.GraphException;
 import com.jopdesign.libgraph.cfg.block.BasicBlock;
-import com.jopdesign.libgraph.cfg.statements.Statement;
 import com.jopdesign.libgraph.cfg.statements.common.InvokeStmt;
-import com.jopdesign.libgraph.cfg.statements.quad.QuadReturn;
 import com.jopdesign.libgraph.cfg.statements.stack.StackGoto;
 import com.jopdesign.libgraph.cfg.statements.stack.StackInvoke;
 import com.jopdesign.libgraph.cfg.statements.stack.StackReturn;
@@ -371,24 +369,10 @@ public class LocalInlineStrategy extends AbstractInlineStrategy {
         int cyclesUncached = timing.getInvokeCycles(stackStmt, methodSize, true);
         int cyclesCached = timing.getInvokeCycles(stackStmt, methodSize, false);
         int cyclesLoad = timing.getCacheMemCycles(methodSize + deltaSize);
-        
+
+        StackReturn retStmt = new StackReturn(stmt.getResultType());
         int cyclesGoto = timing.getCycles(StackGoto.GOTO);
-        int cyclesReturn = 0;
-
-        // calculate cycles of all return statements in srcgraph, use 'worst case' (invoker is cached, gain is minimal)
-        for (Iterator it = rs.getSrcGraph().getBlocks().iterator(); it.hasNext();) {
-            BasicBlock block = (BasicBlock) it.next();
-            for (Iterator it2 = block.getCodeBlock().getStatements().iterator(); it2.hasNext();) {
-                Statement stmt2 = (Statement) it2.next();
-
-                if ( stmt2 instanceof StackReturn ) {
-                    cyclesReturn += timing.getReturnCycles((StackReturn) stmt2, invokerSize, false) - cyclesGoto;
-                } else if ( stmt2 instanceof QuadReturn ) {
-                    StackReturn ret = new StackReturn(((QuadReturn)stmt2).getType());
-                    cyclesReturn += timing.getReturnCycles(ret, invokerSize, false) - cyclesGoto;
-                }
-            }
-        }
+        int cyclesReturn = timing.getReturnCycles(retStmt, invokerSize, false) - cyclesGoto;
 
         // gain increases by number of executions of the statement (cached and uncached)
         float gain = (float)(cyclesUncached * misses + cyclesCached * hits) * pInvoke;
