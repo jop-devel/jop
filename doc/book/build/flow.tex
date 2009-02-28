@@ -977,9 +977,9 @@ be added to the microcode assembler \cmd{Jopa}.
 
 \subsection{Dependencies and Configurations}
 
-As JOP and the JVM are a mix of VHDL and Java files, changes in the
-central data structures or some configurations needs an update in
-several files.
+As JOP and the JVM are a mix of VHDL and Java files, of changes some
+configurations or changes in central data structures needs an update
+in several files.
 
 \subsubsection{Speed Configuration}
 
@@ -987,7 +987,7 @@ By default, JOP is configured for 80 Mhz. To build the 100 MHz
 configuration, edit \code{quartus/cycmin/jop.qsf} and change
 \code{jop\_config\_80} to \code{jop\_config\_100}.
 
-\subsection{Method Cache Configuration}
+\subsubsection{Method Cache Configuration}
 
 The default configuration (for the Altera Cyclone) is a 4~KB method
 cache configured with 16 blocks (i.e., a variable block cache). For
@@ -998,18 +998,19 @@ To change from a variable block cache to a dual-block cache, you will
 need to edit the top-level VHDL. Here is an example from
 \code{vhdl/top/jopcyc.vhd}:
 
+{\small
 \begin{verbatim}
 entity jop is
 
 generic (
    ram_cnt  : integer := 2;  -- clock cycles for external ram
--- rom_cnt  : integer := 3;  -- clock cycles for external rom OK for
-20 MHz
+-- rom_cnt  : integer := 3;  -- clock cycles for external rom OK for 20 MHz
    rom_cnt  : integer := 15; -- clock cycles for external rom for 100 MHz
    jpc_width : integer := 12; -- address bits of java bytecode pc = cache size
    block_bits : integer := 4  -- 2*block_bits is number of cache blocks
 );
 \end{verbatim}
+}
 
 The power of 2 of the \code{jpc\_width} is the cache size, and the
 power of 2 of the \code{block\_bits} is the number of blocks. To
@@ -1030,10 +1031,14 @@ constants:
 
 \subsubsection{Changing the Class Format}
 
+The constants for the offsets of fields in the class format are found
+in:
+
 \begin{itemize}
-    \item JOPizer: CLS\_HEAD, dump()
-    \item GC.java uses CLASS\_HEADR
-    \item JMV.java uses CLASS\_HEADR + offset (checkcast, instanceof)
+    \item \code{JOPizer}: \code{CLS\_HEAD, dump()}
+    \item \code{GC.java} uses \code{CLASS\_HEADR}
+    \item \code{JMV.java} uses \code{CLASS\_HEADR} + offset
+        (\code{checkcast}, \code{instanceof})
 \end{itemize}
 
 

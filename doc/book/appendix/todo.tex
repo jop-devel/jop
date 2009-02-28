@@ -2,7 +2,7 @@
 
 Start 130h counting down from 14.9.2008
 
-Count: 120 18.9.
+Count: 117 18.9.
 
 \section{TODO Handbook}
 
@@ -27,17 +27,14 @@ Count: 120 18.9.
     \item Figure from Slides on configuration (FPGA + serial/USB
     channel)
     \item Index
-    \item Trevor's changes in the Wiki design flow page
     \item Cover and back cover including text on Martin Schoeberl
-    \item Redraw block diagram
-    \begin{itemize}
-      \item I/O after memory controller, memory interface
-      \item jopcpu
-      \item B goes to memory contrller
-      \item Method instead of Bytecode cache
-    \end{itemize}
     \item instruction frequency of Kfl, Lift and UDP/IP into Java
         benchmark section
+    \item GC chapter: mention how GC default and concurrent
+        version works
+    \item A section on I/O organization (scio moduels) and I/O
+        top level into JOP Hardware Architecture. Also some words
+        about HWO.
 \end{itemize}
 
 \subsection{Minor Change Ideas}
@@ -154,10 +151,18 @@ Copy stuff from JSA paper. However, only paragraphs to avoid
     \item Chapter~\ref{chap:intro}
     \item Chapter~\ref{chap:build}
     \item Chapter~\ref{chap:java}
-    \item Chapter~\ref{chap:rtjava} (removed)
-       \item Some text from Chapter~\ref{chap:rtjava} into
-           the embedded section of Chapter~\ref{chap:java},
-           Intro from it as part of the history section
+    \item Chapter~RT Java (removed)
+       \item Some text from Chapter~RT Java into the embedded
+           section of Chapter~\ref{chap:java}, Intro from it
+           as part of the history section
+    \item Trevor's changes in the Wiki design flow page
+    \item Redraw block diagram
+    \begin{itemize}
+      \item I/O after memory controller, memory interface
+      \item jopcpu
+      \item B goes to memory contrller
+      \item Method instead of Bytecode cache
+    \end{itemize}
 
   \end{itemize}
 \end{itemize}

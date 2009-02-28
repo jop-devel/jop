@@ -13,65 +13,66 @@ solutions for both areas that are implemented in JOP are presented.
 \section{Overview of JOP}
 
 This section gives an overview of JOP architecture.
-\figurename~\ref{fig:arch:jop:block} shows JOP's major functional
-units. A typical configuration of JOP contains the processor core, a
-memory interface and a number of IO devices. The module extension
-provides the link between the processor core, and the memory and IO
-modules.
+Figure~\ref{fig:arch:jop:block} shows JOP's major function units. A
+typical configuration of JOP contains the processor core, a memory
+interface and a number of IO devices. The module extension provides
+the link between the processor core, and the memory and IO modules.
 
-\begin{figure}
+\begin{figure}[t]
     \centering
     \includegraphics{arch/arch_jop_block}
     \caption{Block diagram of JOP}
     \label{fig:arch:jop:block}
 \end{figure}
 
-The processor core contains the four pipeline stages \emph{bytecode
-fetch}, \emph{microcode fetch}, \emph{decode} and \emph{execute}.
-The ports to the other modules are the address and data bus for the
-bytecode instructions, the two top elements of the stack (A and B),
-input to the top-of-stack (Data) and a number of control signals.
-There is no direct connection between the processor core and the
-external world.
 
-The memory interface provides a connection between the main memory
-and the processor core. It also contains the bytecode cache. The
-extension module controls data read and write. The \emph{busy}
-signal is used by the microcode instruction \code{wait}\footnote{The
-busy signal can also be used to stall the whole processor pipeline.
-This was the change made to JOP by Flavius Gruian \cite{jop:sac05}.
-However, in this synchronization mode, the concurrency between the
-memory access module and the main pipeline is lost.} to synchronize
-the processor core with the memory unit. The core reads bytecode
-instructions through dedicated buses (BC address and BC data) from
-the memory subsystem. The request for a method to be placed in the
-cache is performed through the extension module, but the cache hit
-detection and load is performed by the memory interface
-independently of the processor core (and therefore concurrently).
+The processor core contains the three microcode pipeline stages
+\emph{microcode fetch}, \emph{decode} and \emph{execute} and an
+additional translation stage \emph{bytecode fetch}. The ports to the
+other modules are the two top elements of the stack (A and B), input
+to the top-of-stack (Data), bytecode cache address and data, and a
+number of control signals. There is no direct connection between the
+processor core and the external world.
+
+The memory controller implements the simple memory load and store
+operations and the field and array access bytecodes. It also contains
+the method cache. The memory interface provides a connection between
+the main memory and the memory controller. The extension module
+controls data read and write. The \emph{busy} signal is used by the
+microcode instruction \code{wait}\footnote{The busy signal can also
+be used to stall the whole processor pipeline. This was the change
+made to JOP by Flavius Gruian \cite{jop:sac05}. However, in this
+synchronization mode, the concurrency between the memory access
+module and the main pipeline is lost.} to synchronize the processor
+core with the memory unit. The core reads bytecode instructions
+through dedicated buses (BC address and BC data) from the memory
+controller. The request for a method to be placed in the cache is
+performed through the extension module, but the cache hit detection
+and load is performed by the memory controller independently of the
+processor core (and therefore concurrently).
 
 The I/O interface contains peripheral devices, such as the system
-time and timer interrupt, a serial interface and
-application-specific devices. Read and write to and from this module
-are controlled by the extension module. All external
-devices\footnote{The external device can be as simple as a line
-driver for the serial interface that forms part of the interface
+time and timer interrupt for real-time thread scheduling, a serial
+interface and application-specific devices. Read and write to and
+from this module are controlled by the memory controller. All
+external devices\footnote{The external device can be as simple as a
+line driver for the serial interface that forms part of the interface
 module, or a complete bus interface, such as the ISA bus used to
 connect e.g.\ an Ethernet chip.} are connected to the I/O interface.
 
-The extension module performs three functions: (a) it contains
-hardware accelerators (such as the multiplier unit in this example),
-(b) the control for the memory and the I/O module, and (c) the
-multiplexer for the read data that is loaded in the top-of-stack
-register. The write data from the top-of-stack (A) is connected
-directly to all modules.
+The extension module performs two functions: (a) it contains hardware
+accelerators (such as the multiplier unit in this example) and (b)
+the multiplexer for the read data that is loaded into the
+top-of-stack register. The write data from the top-of-stack (A) is
+connected directly to all modules.
 
-The division of the processor into those four modules greatly
-simplifies the adaptation of JOP for different application domains
-or hardware platforms. Porting JOP to a new FPGA board usually
-results in changes in the memory module alone. Using the same board
-for different applications only involves making changes to the I/O
-module. JOP has been ported to several different FPGAs and
-prototyping boards and has been used in different applications (see
+The division of the processor into those modules greatly simplifies
+the adaptation of JOP for different application domains or hardware
+platforms. Porting JOP to a new FPGA board usually results in changes
+in the memory interface alone. Using the same board for different
+applications only involves making changes to the I/O interface. JOP
+has been ported to several different FPGAs and prototyping boards and
+has been used in different real-world applications (see
 Chapter~\ref{chap:results}), but it never proved necessary to change
 the processor core.
 
@@ -131,7 +132,7 @@ minimal hardware.
 
 \begin{figure}
     \centering
-    \includegraphics[scale=\picscale]{arch/arch_indirection}
+    \includegraphics{arch/arch_indirection}
     \caption{Data flow from the Java program counter to JOP microcode}
     \label{fig_arch_data_flow}
 \end{figure}
