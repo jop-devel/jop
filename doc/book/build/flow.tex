@@ -108,11 +108,17 @@ want to build it within Quartus follow the following instructions:
 
 \label{subsubsec:quartus}
 
-Start Quartus II and open the project \code{jop.qpf} from directory
-\dirent{quartus/cycmin} in Quartus with \menuitem{File -- Open
-Project...}. Start the compiler and fitter with \menuitem{Processing
--- Start Compilation}. After successful compilation the FPGA is
-configured with \menuitem{Tools -- Programmer} and \menuitem{Start}.
+\begin{enumerate}
+  \item Start Quartus II and open the project \code{jop.qpf} from
+      directory \dirent{quartus/cycmin} in Quartus with
+      \menuitem{File -- Open Project...}.
+  \item Start the compiler and fitter with \menuitem{Processing
+      -- Start Compilation}.
+  \item After successful compilation the FPGA is configured with
+      \menuitem{Tools -- Programmer} and \menuitem{Start}.
+\end{enumerate}
+
+
 
 \subsubsection{Compiling and Downloading the Java Application}
 
@@ -974,6 +980,42 @@ be added to the microcode assembler \cmd{Jopa}.
 As JOP and the JVM are a mix of VHDL and Java files, changes in the
 central data structures or some configurations needs an update in
 several files.
+
+\subsubsection{Speed Configuration}
+
+By default, JOP is configured for 80 Mhz. To build the 100 MHz
+configuration, edit \code{quartus/cycmin/jop.qsf} and change
+\code{jop\_config\_80} to \code{jop\_config\_100}.
+
+\subsection{Method Cache Configuration}
+
+The default configuration (for the Altera Cyclone) is a 4~KB method
+cache configured with 16 blocks (i.e., a variable block cache). For
+the Xilinx targets, the cache size is 2KB because Xilinx does not (or
+did not) support easily configurable block RAMs.
+
+To change from a variable block cache to a dual-block cache, you will
+need to edit the top-level VHDL. Here is an example from
+\code{vhdl/top/jopcyc.vhd}:
+
+\begin{verbatim}
+entity jop is
+
+generic (
+   ram_cnt  : integer := 2;  -- clock cycles for external ram
+-- rom_cnt  : integer := 3;  -- clock cycles for external rom OK for
+20 MHz
+   rom_cnt  : integer := 15; -- clock cycles for external rom for 100 MHz
+   jpc_width : integer := 12; -- address bits of java bytecode pc = cache size
+   block_bits : integer := 4  -- 2*block_bits is number of cache blocks
+);
+\end{verbatim}
+
+The power of 2 of the \code{jpc\_width} is the cache size, and the
+power of 2 of the \code{block\_bits} is the number of blocks. To
+simulate a dual block cache, \code{block\_bits} has to be set to 1.
+(To use a single block cache, \code{cache.vhd} has to be modified to
+force a miss at the cache lookup.)
 
 \subsubsection{Stack Size}
 
