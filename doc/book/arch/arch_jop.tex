@@ -177,10 +177,13 @@ stack machine. Method parameters and local variables are defined as
 method and are accessed with an offset relative to the start of this
 \emph{locals} area.
 
-Additional local variables (16) are available at the microcode
-level. These variables serve as scratch variables, like registers in
-a conventional CPU. However, arithmetic and logic operations are
-performed on the stack.
+Additional local variables (16) are available at the microcode level.
+These variables serve as scratch variables, like registers in a
+conventional CPU. Furthermore, the constant pool pointer (cp), the
+method pointer (mp), and pointers to the method tables of
+\code{JVM.java} and \code{JVMHelp.java} are stored in these
+variables. The 16 variables are located in the on-chip stack memory.
+However, arithmetic and logic operations are performed on the stack.
 
 Some bytecodes, such as ALU operations and the short form access to
 \emph{locals}, are directly implemented by an equivalent microcode
@@ -236,7 +239,7 @@ instruction, the selection is directly encoded in the instruction.
 
 \subsection{Instruction Set}
 
-JOP implements 45 different microcode instructions. These
+JOP implements 54 different microcode instructions. These
 instructions are encoded in 8 bits. With the addition of the
 \emph{nxt} and \emph{opd} bits in every instruction, the effective
 instruction length is 10 bits.
@@ -293,27 +296,28 @@ Appendix~\ref{appx:jop:instr}.
 
 The example in Figure~\ref{lst:arch:micro1} shows the implementation
 of a single cycle bytecode and an infrequent bytecode as a sequence
-of JOP instructions. The suffix \code{nxt} marks the last
-instruction of the microcode sequence. In this example, the
-\code{dup} bytecode is mapped to the equivalent \code{dup} microcode
-and executed in a single cycle, whereas \code{dup\_x1} takes five
-cycles to execute, and after the last instruction (\code{ldm a
-nxt}), the first instruction for the next bytecode is executed. The
-scratch variables, as shown in the second example, are stored in the
-on-chip memory that is shared with the stack cache.
+of JOP instructions. The suffix \code{nxt} marks the last instruction
+of the microcode sequence. In this example, the \code{iadd} bytecode
+is mapped to the equivalent \code{add} microcode and executed in a
+single cycle, whereas \code{swap} takes four cycles to execute, and
+after the last instruction (\code{ldm b nxt}), the first instruction
+for the next bytecode is executed. The scratch variables, as shown in
+the second example, are stored in the on-chip memory that is shared
+with the stack cache.
 
-\begin{lstlisting}[caption={Implementation of \code{dup} and \code{dup\_x1}},
+\begin{figure}
+\begin{lstlisting}[caption={Implementation of \code{iadd} and \code{swap}},
 label=lst:arch:micro1]
-    dup:    dup nxt    // 1 to 1 mapping
+    iadd:   add nxt    // 1 to 1 mapping
 
     //  a and b are scratch variables for the
     //  JVM code.
-    dup_x1: stm a      // save TOS
-            stm b      // and TOS-1
-            ldm a      // duplicate former TOS
-            ldm b      // restore TOS-1
-            ldm a nxt  // restore TOS and fetch next bytecode
+    swap:   stm a      // save TOS in variable a
+            stm b      // save TOS-1 in variable b
+            ldm a      // push a on stack
+            ldm b nxt  // push b on stack and fetch next bytecode
 \end{lstlisting}
+\end{figure}
 
 Some bytecodes are followed by operands of between one and three
 bytes in length (except \code{lookupswitch} and \code{tableswitch}).
@@ -333,13 +337,37 @@ time dependencies over bytecode boundaries.} byte per cycle,
 implies a minimum execution time of $n+1$ cycles for a bytecode with
 $n$ operand bytes.
 
+\begin{figure}
 \begin{lstlisting}[caption={Bytecode operand load},
 label=lst:arch:micro2]
     sipush: nop opd        // fetch next byte
             nop opd        // and one more
             ld_opd_16s nxt // load 16 bit operand
 \end{lstlisting}
+\end{figure}
 
+\subsection{Microcode Branches}
+
+At the microcode level two conditional branches that test the TOS are
+available: \code{bz} branch on zero, and \code{bnz} branch on not
+zero. The branches are followed by two delay slots, i.e., the
+following two instructions are executed independent of the branch
+condition outcome. Furthermore, the branch condition is also
+pipelined, i.e., it has to be available one cycle earlier.
+Listing~\ref{lst:arch:micro3} shows the condition delay and the
+branch delay slots.
+
+\begin{figure}
+\begin{lstlisting}[caption={Microcode condition delay and branch delay slots},
+label=lst:arch:micro3]
+        add            // sets the condition for the branch
+        nop            // one cycle condition delay slot
+        bz label       // a branch on TOS zero
+        instr1         // is executed
+        instr2         // is executed
+        instr3         // executed on fall through
+\end{lstlisting}
+\end{figure}
 
 \subsection{Flexible Implementation of Bytecodes}
 \label{subsec:flex:bc}
@@ -378,9 +406,12 @@ set for a stack machine, but more RISC-like than the CISC-like JVM
 bytecodes.
 
 At the time of this writing 43 of the 201 different bytecodes are
-implemented by a single microcode instruction, 93 by a microcode
-sequence, and 40 bytecodes are implemented in Java. In the next
-section we will see how this translation is handled in JOP's
+implemented by a single microcode instruction, 92 by a microcode
+sequence, and 41 bytecodes are implemented in Java. Furthermore, JOP
+contains additional bytecodes that are used to implement low-level
+operations, such as direct memory access. Those bytecodes are mapped
+to native, static methods in \code{com.jopdesign.sys.Native}. In the
+next section we will see how this translation is handled in JOP's
 pipeline and how it can simplify interrupt handling.
 
 
@@ -393,7 +424,7 @@ bytecode to these instructions. Figure~\ref{fig_arch_pipeline} shows
 the datapath for JOP, representing the pipeline from left to right.
 Blocks arranged vertically belong to the same pipeline stage.
 
-\begin{figure}
+\begin{figure}[t]
     \centering
     \includegraphics[scale=\picscale]{arch/arch_pipeline}
     \caption{Datapath of JOP}
@@ -434,14 +465,15 @@ memories.
 
 In the first pipeline stage, as shown in
 Figure~\ref{fig_arch_bc_fetch}, the Java bytecodes are fetched from
-the internal memory (\emph{Bytecode RAM}). The bytecode is mapped
+the internal memory (\emph{Method cache}). The bytecode is mapped
 through the translation table into the address (\emph{jpaddr}) for
-the microcode ROM.
+the microcode ROM. Interrupts and exceptions are handled by
+redirection of the microcode address to the handler code.
 
-\begin{figure}
+\begin{figure}[t]
     \centering
     \includegraphics[scale=\picscale]{arch/arch_bcfetch}
-    \caption{Java bytecode fetch}
+    \caption{Java bytecode fetch and translation}
     \label{fig_arch_bc_fetch}
 \end{figure}
 
@@ -453,7 +485,7 @@ one, JOP continues to execute microcode. At the end of this
 instruction sequence, the next bytecode, and therefore the new jump
 address, is requested (signal \emph{nxt}).
 
-The bytecode RAM serves as the instruction cache and is filled on
+The method cache serves as the instruction cache and is filled on
 method invoke and return. Details about this time-predictable
 instruction cache can be found in Section~\ref{sec:cache}.
 
