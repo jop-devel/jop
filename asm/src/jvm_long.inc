@@ -60,6 +60,12 @@ l2i:		stm	a				// low part
 			pop					// drop high word
 			ldm	a nxt			// low on stack
 
+i2l:		dup
+			stm a
+			ldi 31
+			shr					// high part is a >> 31
+			ldm a nxt			// low part is a
+
 dload_0:
 lload_0:	ld0				// high word
 			ld1 nxt			// low word
@@ -384,3 +390,292 @@ laload:
 			wait
 			ldmrd 	nxt	// read ext. mem
 
+lneg: // WCET=8+26=34
+			ldi -1
+			xor
+			stm a
+			ldi -1
+			xor
+			ldm a
+			ldi 0
+			ldi 1
+			// fall through to addition
+ladd: // WCET=26
+			stm a // bl
+			stm b // bh
+			stm c // al
+			stm d // hh
+			
+			ldm c // al>>>1
+			ldi 1
+			ushr
+
+			ldm a // bl>>>1
+			ldi 1
+			ushr
+
+			add // (al>>>1) + (bl>>>1)
+
+			ldm a // (al & bl & 1)
+			ldm c
+			and
+			ldi 1
+			and
+
+			add // (al>>>1) + (bl>>>1) + (al & bl & 1)
+
+			ldi 31 // carry, ((al>>>1) + (bl>>>1) + (al & bl & 1)) >>> 31
+			ushr
+
+			ldm b
+			add
+			ldm d
+			add // ah+bh+carry
+
+			ldm a
+			ldm c
+			add nxt
+
+lsub: // WCET=38
+			ldi -1 // bl = ~bl
+			xor
+			stm a // bl
+			ldi -1 // bh = ~bh
+			xor			
+			stm b // bh
+			stm c // al
+			stm d // ah
+			
+			ldm c // al>>>1
+			ldi 1
+			ushr
+
+			ldm a // bl>>>1
+			ldi 1
+			ushr
+
+			add // (al>>>1) + (bl>>>1)
+
+			ldm a // (al&1 + bl&1 + 1)>>1
+			ldi 1
+			and
+			ldm c
+			ldi 1
+			and
+			add
+			ldi 1
+			add
+			ldi 1
+			shr
+
+			add // (al>>>1) + (bl>>>1) + (al&1 + bl&1 + 1)>>1
+
+			ldi 31
+			ushr
+
+			ldm b
+			add
+			ldm d
+			add // ah+bh+carry
+
+			ldm a
+			ldm c
+			add
+			ldi 1
+			add nxt
+			
+
+lushr: // WCET=28
+			ldi 63 // cnt &= 0x3f
+			and
+			
+			dup
+			bnz lushr_not0
+			nop
+			nop
+			pop nxt
+
+			nop // dummy nop to keep offtbl.vhd happy
+
+lushr_not0:
+			dup // cnt > 31?
+			ldi 32
+			sub
+			ldi 31
+			ushr
+			nop
+			bnz lushr_le31
+			stm c // cnt
+			stm a // al
+
+lushr_gt31:
+			stm b // ah
+
+			ldi 0 // ah = 0
+
+			ldm b // al = ah >>> (cnt-32)
+			ldm c
+			ldi 32
+			sub
+			ushr nxt
+
+			nop // dummy nop to keep offtbl.vhd happy
+			nop // dummy nop to keep offtbl.vhd happy
+			nop // dummy nop to keep offtbl.vhd happy
+
+lushr_le31:
+			stm b // ah
+
+			ldm b // ah = ah >>> cnt
+			ldm c
+			ushr
+
+			ldm a // al = (al >>> cnt) + (ah << (32-cnt))
+			ldm c
+			ushr
+			ldm b
+			ldi 32
+			ldm c
+			sub
+			shl
+			add nxt
+
+lshr: // WCET=28
+			ldi 63 // cnt &= 0x3f
+			and
+			
+			dup
+			bnz lshr_not0
+			nop
+			nop
+			pop nxt
+
+			nop // dummy nop to keep offtbl.vhd happy
+
+lshr_not0:
+			dup // cnt > 31?
+			ldi 32
+			sub
+			ldi 31
+			ushr
+			nop
+			bnz lshr_le31
+			stm c // cnt
+			stm a // al
+
+lshr_gt31:
+			stm b // ah
+
+			ldm b // ah = ah >> 31
+			ldi 31
+			shr
+
+			ldm b // al = ah >> (cnt-32)
+			ldm c
+			ldi 32
+			sub
+			shr nxt
+
+			nop // dummy nop to keep offtbl.vhd happy
+
+lshr_le31:
+			stm b // ah
+
+			ldm b // ah = ah >> cnt
+			ldm c
+			shr
+
+			ldm a // al = (al >>> cnt) + (ah << (32-cnt))
+			ldm c
+			ushr
+			ldm b
+			ldi 32
+			ldm c
+			sub
+			shl
+			add nxt
+
+lshl: // WCET=28
+			ldi 63 // cnt &= 0x3f
+			and
+			
+			dup
+			bnz lshl_not0
+			nop
+			nop
+			pop nxt
+
+			nop // dummy nop to keep offtbl.vhd happy
+
+lshl_not0:
+			dup // cnt > 31?
+			ldi 32
+			sub
+			ldi 31
+			ushr
+			nop
+			bnz lshl_le31
+			stm c // cnt
+			stm a // al
+
+lshl_gt31:
+			stm b // ah
+
+			ldm a // ah = al << (cnt-32)
+			ldm c
+			ldi 32
+			sub
+			shl
+
+			ldi 0 nxt // al = 0
+
+			nop // dummy nop to keep offtbl.vhd happy
+			nop // dummy nop to keep offtbl.vhd happy
+			nop // dummy nop to keep offtbl.vhd happy
+
+lshl_le31:
+			stm b // ah
+
+			ldm b // ah = (ah << cnt) + (al >>> (32-cnt))
+			ldm c
+			shl
+			ldm a
+			ldi 32
+			ldm c
+			sub
+			ushr
+			add
+
+			ldm a // al = al << cnt
+			ldm c
+			shl nxt
+
+lxor: // WCET=8
+			stm a
+			stm b
+			stm c
+			ldm b
+			xor
+			ldm a
+			ldm c
+			xor nxt
+
+land: // WCET=8
+			stm a
+			stm b
+			stm c
+			ldm b
+			and
+			ldm a
+			ldm c
+			and nxt
+
+lor: // WCET=8
+			stm a
+			stm b
+			stm c
+			ldm b
+			or
+			ldm a
+			ldm c
+			or nxt

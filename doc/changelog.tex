@@ -81,6 +81,7 @@ in JOP.
         20.02.2008 & 20080220 & 18347 & 8511 & 18767 & 3136 & IO/memory MUX after mem\_sc \\
         22.08.2008 & 20080522 & 18275 & 8474 & 18671 & 3579 & memory write one cycle longer \\
         10.12.2008 & 20081012 & 19907 & 8837 & 18930 & 3486 & static access with index as address \\
+        05.03.2009 & 20090305 & 19907 & 8837 & 18930 & 3496 & long operations in microcode \\
         \bottomrule
     \end{tabular}
     \caption{JOP performance with 100MHz, 4KB/16 cache, cycmin}
@@ -430,6 +431,11 @@ exact cycles for \code{wcet.Loop} with Java 1.5/1.6 ;-)
 \paragraph{20081210} MS: Static field access uses index as address.
 Changes in \code{JOPizer}, \code{jvm.asm}, \code{jvm\_long.asm},
 \code{Startup.java}, \code{JopSim.java}, and in WCET timing.
+
+\paragraph{20090305} WP: Support for long operations (ladd, lsub,
+lneg, land, lor, lxor, lshr, lushr, lshl, i2l) in microcode. Changes
+in \code{jvm\_long.asm} and in WCET timing; minor cleanups in
+JVM.java, but kept Java implementations for long bytecodes.
 
 \subsection{Documentation}
 

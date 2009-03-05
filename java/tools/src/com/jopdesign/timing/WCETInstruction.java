@@ -714,7 +714,7 @@ public class WCETInstruction {
 			break;
 		// LADD = 97
 		case org.apache.bcel.Constants.LADD:
-			wcet = -1;
+			wcet = 26;
 			break;
 		// FADD = 98
 		case org.apache.bcel.Constants.FADD:
@@ -730,7 +730,7 @@ public class WCETInstruction {
 			break;
 		// LSUB = 101
 		case org.apache.bcel.Constants.LSUB:
-			wcet = -1;
+			wcet = 38;
 			break;
 		// FSUB = 102
 		case org.apache.bcel.Constants.FSUB:
@@ -794,7 +794,7 @@ public class WCETInstruction {
 			break;
 		// LNEG = 117
 		case org.apache.bcel.Constants.LNEG:
-			wcet = -1;
+			wcet = 34;
 			break;
 		// FNEG = 118
 		case org.apache.bcel.Constants.FNEG:
@@ -810,7 +810,7 @@ public class WCETInstruction {
 			break;
 		// LSHL = 121
 		case org.apache.bcel.Constants.LSHL:
-			wcet = -1;
+			wcet = 28;
 			break;
 		// ISHR = 122
 		case org.apache.bcel.Constants.ISHR:
@@ -818,7 +818,7 @@ public class WCETInstruction {
 			break;
 		// LSHR = 123
 		case org.apache.bcel.Constants.LSHR:
-			wcet = -1;
+			wcet = 28;
 			break;
 		// IUSHR = 124
 		case org.apache.bcel.Constants.IUSHR:
@@ -826,7 +826,7 @@ public class WCETInstruction {
 			break;
 		// LUSHR = 125
 		case org.apache.bcel.Constants.LUSHR:
-			wcet = -1;
+			wcet = 28;
 			break;
 		// IAND = 126
 		case org.apache.bcel.Constants.IAND:
@@ -834,7 +834,7 @@ public class WCETInstruction {
 			break;
 		// LAND = 127
 		case org.apache.bcel.Constants.LAND:
-			wcet = -1;
+			wcet = 8;
 			break;
 		// IOR = 128
 		case org.apache.bcel.Constants.IOR:
@@ -842,7 +842,7 @@ public class WCETInstruction {
 			break;
 		// LOR = 129
 		case org.apache.bcel.Constants.LOR:
-			wcet = -1;
+			wcet = 8;
 			break;
 		// IXOR = 130
 		case org.apache.bcel.Constants.IXOR:
@@ -850,7 +850,7 @@ public class WCETInstruction {
 			break;
 		// LXOR = 131
 		case org.apache.bcel.Constants.LXOR:
-			wcet = -1;
+			wcet = 8;
 			break;
 		// IINC = 132
 		case org.apache.bcel.Constants.IINC:
@@ -858,7 +858,7 @@ public class WCETInstruction {
 			break;
 		// I2L = 133
 		case org.apache.bcel.Constants.I2L:
-			wcet = -1;
+			wcet = 5;
 			break;
 		// I2F = 134
 		case org.apache.bcel.Constants.I2F:
@@ -1390,11 +1390,7 @@ public class WCETInstruction {
 				return true;
 			case org.apache.bcel.Constants.FCONST_2:
 				return true;
-			case org.apache.bcel.Constants.LADD:
-				return true;
 			case org.apache.bcel.Constants.FADD:
-				return true;
-			case org.apache.bcel.Constants.LSUB:
 				return true;
 			case org.apache.bcel.Constants.FSUB:
 				return true;
@@ -1407,22 +1403,6 @@ public class WCETInstruction {
 			case org.apache.bcel.Constants.IREM:
 				return true;
 			case org.apache.bcel.Constants.LREM:
-				return true;
-			case org.apache.bcel.Constants.LNEG:
-				return true;
-			case org.apache.bcel.Constants.LSHL:
-				return true;
-			case org.apache.bcel.Constants.LSHR:
-				return true;
-			case org.apache.bcel.Constants.LUSHR:
-				return true;
-			case org.apache.bcel.Constants.LAND:
-				return true;
-			case org.apache.bcel.Constants.LOR:
-				return true;
-			case org.apache.bcel.Constants.LXOR:
-				return true;
-			case org.apache.bcel.Constants.I2L:
 				return true;
 			case org.apache.bcel.Constants.F2I:
 				return true;

@@ -173,11 +173,11 @@ class JVM {
 		
 		boolean positive = true;
 		if(a<0) {
-			a = (~a)+1; 
+			a = -a; 
 			positive = false;
 		  }
 		if(b<0) {
-			b = (~b)+1; 
+			b = -b; 
 			positive = !positive;
 			}
 		
@@ -193,13 +193,13 @@ class JVM {
 				int bm = ((int)bb) & 0x000000FF;
 				
 			    long sres = 0;
-				if (i+j < 64) sres=f_lshl(0,am*bm,i+j);
+				if (i+j < 64) sres = Native.makeLong(0,am*bm) << (i+j);
 				res += sres;
 				bb = bb>>>8;
 			}
 			aa = aa>>>8;
 		}
-		if(!positive) res = (~res)+1;
+		if(!positive) res = -res;
 		return res;
 	}
 	private static int f_fmul(int a, int b) {
@@ -518,19 +518,16 @@ class JVM {
 		}
 		return a;
 	}
-	private static int f_lcmp(long a, long b) {
+	private static int f_lcmp(int ah, int al, int bh, int bl) {
 
-		// is this really necessary?
-		// Change by Peter & Christof
-		int ah = (int)(a>>>32);
-		int bh = (int)(b>>>32);
 		//overflow, underflow, if a and b have different signs
 		if((ah >= 0)&&(bh < 0)) return 1;
 		if((ah < 0)&&(bh >= 0)) return -1;
 		// I didn't have it in my first implementation
 		
-		a -= b;
-		int al = (int) a;
+		long a = Native.makeLong(ah, al) - Native.makeLong(bh, bl);
+
+		al = (int) a;
 		ah = (int) (a>>>32);
 
 		if ((ah | al)==0) return 0;
