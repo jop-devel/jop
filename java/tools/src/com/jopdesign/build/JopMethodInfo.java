@@ -109,7 +109,7 @@ public class JopMethodInfo extends MethodInfo implements Serializable {
 							+ " margs(max:31)=" + margs);
 					System.err.println("wrong size: "
 							+ getCli().clazz.getClassName() + "." + methodId);
-					System.exit(-1);
+					throw new Error();
 				}
 			}
 			// System.out.println((mstack+m.getCode().getMaxLocals())+" "+
