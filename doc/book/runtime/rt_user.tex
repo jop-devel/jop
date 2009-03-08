@@ -1,3 +1,163 @@
+\section{Real-Time Scheduler}
+
+The following section describes the preemptive, priority based
+scheduler on JOP.
+
+\subsection{Interrupts}
+
+Interrupts are usually associated with low-level programming of
+device drivers. The priorities of interrupts and their handler
+functions are above task priorities and yield to an immediate context
+switch. In this form, interrupts cannot be integrated in a schedule
+with \emph{normal} tasks. The execution time of the interrupt handler
+has to be integrated in the schedulability analysis as additional
+blocking time. A better solution is to handle interrupts, which
+represent external events, as schedulable objects with priority
+levels in the range of real-time tasks, as suggested in the RTSJ.
+
+\paragraph{The Timer Interrupt}
+
+The timer or clock interrupt has a different semantic than other
+interrupts. The main purpose of the timer interrupt is representation
+of time and release of periodic or time triggered tasks. One common
+implementation is a clock tick. The interrupt occurs at a regular
+interval (e.g.\ 10 ms) and a decision has to be taken whether a task
+has to be released. This approach is simple to implement, but there
+are two major drawbacks: The resolution of timed events is bound by
+the resolution of the clock tick and clock ticks without a task
+switch are a waste of execution time.
+
+A better approach, used in JOP, is to generate timer interrupts at
+the release times of the tasks. The scheduler is now responsible for
+reprogramming the timer after each occurrence of a timer interrupt.
+The list of sleeping threads has to be searched to find the nearest
+release time in the future of a higher priority thread than the one
+that will be released now. This time is used for the next timer
+interrupt.
+
+\paragraph{External Events}
+
+Hardware interrupts, other than the timer interrupt, are represented
+as instances of \code{Runnable}. The interrupt handler runs at top
+priority. To incorporate external event handling as a \emph{normal}
+schedulable object under the control of the scheduler the interrupt
+handler can simply fire software event. In that case the handler code
+executes in the associated thread. When the minimum interarrival time
+of the hardware events is known, these events can be incorporated
+into the priority assignment and schedulability analysis in the same
+way as periodic tasks.
+
+\paragraph{Software Interrupts}
+
+The common software generated interrupts, such as illegal memory
+access or divide by zero, are represented by Java runtime exceptions
+and need no special handler. They can be detected with a try-catch
+block.
+
+Asynchronous notification from the program is supported, in the same
+way as an external event, as a schedulable object with an associated
+thread. The event is triggered through the call of \code{fire()}. The
+thread with the handler is placed in the runnable state and scheduled
+according to its priority.
+
+
+\subsection{Task Switch}
+
+An important issue in real-time systems is the time for a task
+switch. A task switch consists of two actions:
+\begin{itemize}
+    \item \emph{Scheduling} is the selection of the task order
+        and timing
+    \item \emph{Dispatching} is the term for the context switch
+        between tasks
+\end{itemize}
+
+\paragraph{Scheduling}
+
+Most real-time systems use a fixed-priority preemptive scheduler.
+Tasks with the same priority are usually scheduled in a FIFO order.
+Two common ways to assign priorities are rate monotonic or, in a more
+general form, deadline monotonic assignment. When two tasks get the
+same priority, we can choose one of them and assign a higher priority
+to that task and the task set is still schedulable. We get a strictly
+monotonic priority order and do not have to deal with FIFO order.
+This eliminates queues for each priority level and results in a
+single, priority ordered task list.
+
+Strictly fixed priority schedulers suffer from a problem called
+\emph{priority inversion} \cite{626613}. The problem where a low
+priority task blocks a high priority task on a shared resource is
+solved by raising the priority of the low priority task. Two standard
+priority inversion avoidance protocols are common:
+%
+\begin{description}
+    \item[Priority Inheritance Protocol:] A lock assigns the
+        priority of the highest-priority waiting task to the task
+        holding the lock until that task releases the resource.
+
+    \item[Priority Ceiling Emulation Protocol:] A lock gets a
+        priority assigned above the priority of the
+        highest-priority task that will ever acquire the lock.
+        Every task will be immediately assigned the priority of
+        that lock when acquiring it.
+\end{description}
+%
+The priority inheritance protocol is more complex to implement and
+the time when the priority of a task is raised is not so obvious. It
+is not raised because the task does anything, but because another
+task reaches some point in its execution path.
+
+Using priority ceiling emulation with unique priorities, different
+from task priorities, the priority order is still strictly monotonic.
+The priority ordered task list is expanded with slots for each lock.
+If a task acquires a lock, it is placed in the corresponding slot.
+With this extension to the task list, scheduling is still simple and
+can be efficiently implemented.
+
+In the current implementation of JOP locks have implicitly top
+priority. On a uniprocessor system this top priority is enforced by
+switching off the interrupts. In the CMP version of JOP a single
+global lock is acquired at \code{monitorenter}. 
+
+\paragraph{Dispatching}
+
+
+The time for a context switch depends on the size of the state of the
+tasks. For a stack machine it is not so obvious what belongs to the
+state of a task. If the stack resides in main memory, only a few
+registers (e.g. program counter and stack pointer) need to be saved
+and restored. However, the stack is a frequently accessed memory
+region of the JVM. The stack can be seen as a data cache and should
+be placed near the execution unit (in this case, \emph{near} means on
+the chip and not in external memory). However, on-chip memory is
+usually too small to hold the stack content for all tasks. This means
+that the stack is part of the execution context and has to be saved
+and restored on a context switch.
+
+In JOP, the stack is placed in local (on-chip) FPGA memory with
+single cycle access time. With this configuration, the next question
+is how much of the stack to place there. Either the complete stack of
+a thread or only the stack frame of the current method can reside
+locally. If the complete stack of a thread is stored in local memory,
+the invocation of methods and returns are fast, but the context is
+large. For fast context switches, it is preferable to have only a
+short stack in local memory. This results in less data being
+transferred to and from main memory, but more memory transfers on
+method invocation and return. The local stack can be further divided
+into small pieces, each holding only one stack frame of one thread.
+During the context switch, only the stack pointer needs to be saved
+and restored. The outcome of this is a very fast context switch,
+although the size of the local memory limits the maximum number of
+threads.
+
+Since JOP is a soft-core processor, these different solutions can be
+configured for different application requirements. It is even
+possible to mix of these policies: some stack slots can be assigned
+to \emph{important} threads, while the remaining threads share one
+slot. This stack slot only needs to be exchanged with the main memory
+when switching \emph{to} a less \emph{important} thread.
+
+
 \section{User-Defined Scheduler}
 \label{sec:usersched}
 

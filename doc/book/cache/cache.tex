@@ -4,415 +4,51 @@
 Worst-case execution time (WCET) analysis \cite{pusch:maxt:jnl} of
 real-time programs is essential for any schedulability analysis. To
 provide a low WCET value, a good processor model is necessary.
-However, the architectural advancement in modern processor designs
-is dominated by the rule: '\emph{Make the common case fast}`. This
-is the opposite of '\emph{Reduce the worst case}` and complicates
-WCET analysis.
-
-Cache memory for the instructions and data is a classic example of
-this paradigm. Avoiding or ignoring this feature in real-time
-systems, due to its unpredictable behavior, results in a very
-pessimistic WCET value. Plenty of effort has gone into research into
-integrating the instruction cache in the timing analysis of tasks
-\cite{Arnold1994, Healy1995, 225068} and the influence of the cache
-on task preemption \cite{279589, RTAS96*204}. The influence of
-different cache architectures on WCET analysis is described in
+However, caches for the instructions and data is a classic example of
+the paradigm \emph{Make the common case fast}, which complicates WCET
+analysis. Avoiding or ignoring this feature in real-time systems, due
+to its unpredictable behavior, results in a very pessimistic WCET
+value. Plenty of effort has gone into research into integrating the
+instruction cache in the timing analysis of tasks \cite{Arnold1994,
+Healy1995, 225068} and the influence of the cache on task preemption
+\cite{279589, Mataix:1996}. The influence of different cache
+architectures on WCET analysis is described in
 \cite{Heckmann:IEEE2003}.
 
 We will tackle this problem from the architectural side -- an
 instruction cache organization in which simpler and more accurate
 WCET analysis is more important than average case performance.
 
-In this section, we will propose a method cache with a novel
-replacement policy. In Java bytecode only relative branches exist,
-and a method is therefore only left when a return instruction has
-been executed\footnote{An uncaught exception also results in a
-method exit.}. It has been observed that methods are typically short
-(see Section~\ref{sec:bench:jvm:methods}) in Java applications.
-These properties are utilized by a cache architecture that stores
-complete methods. A complete method is loaded into the cache on both
-invocation and return. This cache fill strategy lumps all cache
-misses together and is very simple to analyze.
+In this section, we will explore the method cache, as it is
+implemented in JOP, with a novel replacement policy. In Java bytecode
+only relative branches exist, and a method is therefore only left
+when a return instruction has been executed.\footnote{An uncaught
+exception also results in a method exit.} It has been observed that
+methods are typically short (see \cite{jop:thesis}) in Java
+applications. These properties are utilized by a cache architecture
+that stores complete methods. A complete method is loaded into the
+cache on both invocation and return. This cache fill strategy lumps
+all cache misses together and is very simple to analyze.
 
-\subsection{Cache Performance}
+The method cache was first presented in \cite{jop:jtres_cache} and is
+now also used by the Java processor SHAP \cite{shap:mcache}.
+Furthermore, the idea has been adapted for a processor that executes
+compiled C programs \cite{Metzlaff:SPM:2008}.
 
-In real-time systems we prefer time-predictable architectures over
-those with a high average performance. However, performance is still
-important. In this section, we will give a short overview of the
-formulas from \cite{Hennessy02} that are used to calculate the
-cache's influence on execution time. We will extend the single
-measurement \emph{miss rate} to a two value set, memory read and
-transaction rate, that is architecture independent and better
-reflects the two properties (bandwidth and latency) of the main
-memory. To evaluate cache performance, \(MEM_{clk}\) memory  stall
-cycles are added to the CPU execution time (\(t_{exe}\)) equation:
-%
-\begin{align}
-\nonumber
-    t_{exe}  & = (CPU_{clk}+MEM_{clk}) \times t_{clk} \\
-\nonumber
-    MEM_{clk}& =  Misses  \times  MP_{clk}
-\end{align}
-%
-The miss penalty \(MP_{clk}\) is the cost per miss, measured in
-clock cycles. When the instruction count $IC$ is given as the number
-of instructions executed, $CPI$ the average clock cycles per
-instruction and the number of misses per instruction, we obtain the
-following result:
-%
-\begin{align}
-\nonumber
-    CPU_{clk} & = IC  \times  CPI_{exe} \\
-\nonumber
-    MEM_{clk} & = IC  \times  \frac{Misses}{Instruction}  \times  MP_{clk} \\
-\nonumber
-    t_{exe}   & = IC  \times  (CPI_{exe}+\frac{Misses}{Instruction}  \times
-MP_{clk}) \times t_{clk}
-\end{align}
-%
-As this section is only concerned with the instruction cache, we
-will split the memory stall cycles into misses caused by the
-instruction fetch and misses caused by data access.
-%
-\[CPI = CPI_{exe} + CPI_{IM} + CPI_{DM}\]
-%
-$CPI_{exe}$ is the average number of clock cycles per instruction,
-given an ideal memory system without any stalls. $CPI_{IM}$ are the
-additional clock cycles caused by instruction cache misses and
-$CPI_{DM}$ the data miss portion of the CPI. This split between
-instruction and data portions of the CPI better reflects the split
-of the cache between instruction and data cache found in actual
-processors. The misses per instruction are often given as misses per
-1000 instructions. However, there are several drawbacks to using a
-single number:
-%
-\begin{description}
+\subsection{Method Cache}
 
-\item[Architecture dependent:] The average number of memory accesses per
-instruction differs greatly between a RISC processor and the Java
-Virtual Machine (JVM). A typical RISC processor needs one memory
-word (4 bytes) per instruction word, and about 40\% of the
-instructions \cite{Hennessy02} are \emph{load} or \emph{store}
-instructions. Using the example of a 32-bit RISC processor, this
-results in 5.6 bytes memory access per instruction. The average
-length of a JVM bytecode instruction is 1.7 bytes and about 18\% of
-the instructions access the memory for data load and store.
+In this section, we will develop a solution for a time-predictable
+instruction cache. Typical Java programs consist of short methods.
+There are no branches out of the method and all branches inside are
+relative. In the proposed architecture, the full code of a method is
+loaded into the cache before execution. The cache is filled on
+invocations and returns. This means that all cache fills are lumped
+together with a known execution time. The full loaded method and
+relative addressing inside a method also result in a simpler cache.
+Tag memory and address translation are not necessary.
 
-\item[Block size dependent:] Misses per instruction depends subtly
-on the block size. On a single cache miss, a whole block of the
-cache is filled. Therefore, the probability that a future
-instruction request is a hit is higher with a larger block size.
-However, a larger block size results in a higher miss penalty as
-more memory is transferred.
-
-\end{description}
-%
-Main memory is usually composed of DRAMs. Access time to this memory
-is measured in terms of latency (the time taken to access the first
-word of a larger block) and bandwidth (the number of bytes read or
-written in a single request per time unit). These two values, along
-with the block size of a cache, are used to calculate the miss
-penalty:
-%
-\[MP_{clk} = Latency + \frac{Block\;size}{Bandwidth}\]
-%
-To better evaluate different cache organizations and different
-instruction sets (RISC versus JVM), we will introduce two
-performance measurements -- memory bytes read per instruction byte
- and memory transactions per instruction byte:
-%
-\begin{align}
-\nonumber
-    MBIB & = \frac{Memory\;bytes\;read}{Instruction\;bytes}\\
-\nonumber
-    MTIB & = \frac{Memory\;transactions}{Instruction\;bytes}
-\end{align}
-%
-These two measures are closely related to memory bandwidth and
-latency. With these two values and the properties of the main
-memory, we can calculate the average memory cycles per instruction
-byte \(MCIB\) and \(CPI_{IM}\), i.e.\ the values we are concerned in
-this section.
-%
-\begin{align}
-\nonumber
-    MCIB & = (\frac{MBIB}{Bandwith}+MTIB \times Latency)\\
-\nonumber
-    CPI_{IM} & = MCIB \times {Instruction\;length}
-\end{align}
-%
-The misses per instruction can be converted to MBIB and MTIB when
-the following parameters are known: the average instruction length
-of the architecture, the block size of the cache and the miss
-penalty in latency and bandwidth. We will examine this further in
-the following example:
-
-We use the following architecture to illustrate the conversion: a
-RISC architecture with a 4 bytes instruction length, an 8KB
-instruction cache with 64-byte blocks and a miss rate of 8.16 per
-1000 instructions \cite{Hennessy02}. The miss penalty is 100 clock
-cycles. The memory system is assumed to deliver one word (4 bytes)
-per cycle.
-
-Firstly, we need to calculate  the latency of the memory system.
-\begin{equation}
-\nonumber
-    \begin{split}
-        Latency & = MP_{clk} - \frac{Block size}{Bandwidth} \\
-                & = 100 - \frac{64}{4} = 84 \mbox{ clock cycles}
-    \end{split}
-\end{equation}
-%
-With \(Miss\;rate=\frac{Cache\;miss}{Cache\;access}\), we obtain
-MBIB.
-%
-\begin{equation}
-\nonumber
-    \begin{split}
-        MBIB & = \frac{Memory\;bytes\;read}{Instruction\;bytes} \\
-             & = \frac{Cache\;miss \times Block\;size}
-                     {Cache\;access \times Instruction\;length} \\
-             & = Miss\;rate \times \frac{Block\;size}{Instruction\;length} \\
-             & = 8.16 \times 10^{-3} \times \frac{65}{4}\\
-             & = 0.131
-    \end{split}
-\end{equation}
-%
-MTIB is calculated in a similar way:
-%
-\begin{equation}
-\nonumber
-    \begin{split}
-        MTIB & = \frac{Memory\;transactions}{Instruction\;bytes}\\
-             & = \frac{Cache\;miss}
-                     {Cache\;access \times Instruction\;length} \\
-             & = \frac{Miss\;rate}{Instruction\;length}\\
-             & = \frac{8.16 \times 10^{-3}}{4}\\
-             & = 2.04 \times 10^{-3}
-    \end{split}
-\end{equation}
-%
-For a quick check, we can calculate \(CPI_{IM}\):
-%
-\begin{equation}
-\nonumber
-    \begin{split}
-        MCIB     & = \frac{MBIB}{Bandwith}+MTIB \times Latency\\
-                 & = \frac{0.131}{4}+2.04 \times 10^{-3} \times 84\\
-                 & = 0.204\\
-        CPI_{IM} & = MCIB \times {Instruction\;length} \\
-                 & = 0.204 \times 4\\
-                 & = 0.816
-    \end{split}
-\end{equation}
-%
-This is the same value as that which we get from using the miss rate
-with the miss penalty:
-%
-\begin{equation}
-\nonumber
-    \begin{split}
-        CPI_{IM} & = Miss\;rate  \times  Miss\;penalty\\
-                 & = 8.16 \times 10^{-3} \times 100\\
-                 & = 0.816
-    \end{split}
-\end{equation}
-%
-However, MBIB and MTIB are architecture independent and better
-reflect the latency and bandwidth of the main memory.
-
-\subsection{Proposed Cache Solution}
-
-In this section, we will develop a solution for a predictable cache.
-Typical Java programs consist of short methods. There are no
-branches out of the method and all branches inside are relative. In
-the proposed architecture, the full code of a method is loaded into
-the cache before execution. The cache is filled on invocations and
-returns. This means that all cache fills are lumped together with a
-known execution time. The full loaded method and relative addressing
-inside a method also result in a simpler cache. Tag memory and
-address translation are not necessary.
-
-However, we will first discuss an even simpler solution -- no
-caching at all. Without an instruction cache, prefetching is
-mandatory, especially with a variable length instruction set. The
-issues surrounding prefetching are discussed in the next section.
-
-\subsubsection{Instruction Prefetching}
-
-A simple prefetch queue, as found in older processors, can increase
-instruction throughput after a multi-cycle bytecode is executed.
-However, for a stream of single-cycle bytecodes, prefetching is
-useless and the frequent occurrence of branches, method invocations,
-and method returns (see Section~\ref{sec:bench:jvm}) reduces the
-performance gain. Using a prefetch queue also results in execution
-time dependencies over a stream of instructions, which complicates
-timing analysis.
-
-For a variable length instruction set, prefetching is also not a
-straightforward option. The prefetching unit needs to guarantee the
-availability of a complete instruction for the fetch unit. As the
-actual length of the instruction is not known at this stage, the
-prefetch unit must be a minimum of $maximum\;length - 1$ bytes ahead
-of the requested instruction. This can lead to unnecessary memory
-transfers. The return instruction is a typical example of this. It
-is 1 byte long and the additional prefetched instruction bytes are
-never used.
-
-A memory interface with a bus width greater than one byte adds an
-artificial boundary to the instruction stream. For the purpose of
-this example, we are assuming a 4 byte memory interface. In this
-case we need an 8 byte prefetch buffer. On a branch to an address
-$address\;mod\;4
-> 4-maximum\;instruction\;length$, two words need to be loaded from
-main memory before the processor can continue.
-
-A memory technology, such as synchronous DRAM, has a large latency
-for the first accessed word and then a high bandwidth for the
-following words. Prefetching that only loads small quantities (one
-or two words) from the memory is therefore impracticable with these
-memory technologies.
-
-\subsubsection{Single Method Cache}
-
-A single method cache, although less efficient than a conventional
-instruction cache, can be incorporated very easily into the WCET
-analysis. The time needed for the memory transfer must be added to
-the invoke and return instructions.
-
-% Wiederholung von Einlietung der proposed cache solution
-% könnte nach vorne gelegt werden,
-% dann aber ein, zwei Sätze über den single method cache
-The method cache also simplifies the hardware of the cache, as it
-means that no tag memory or address translation is necessary. Other
-parts of the processor are also smaller. The program counter, the
-associated adders and multiplexer are shorter than in a standard
-cache solution. For example, for a 1KB cache, the size of these
-units is only 10 bits, instead of 32 bits.
-
-The main disadvantage of this single method cache is the high
-overhead when a complete method is loaded into the cache and only a
-small fraction of the code is executed. This issue is similar to that
-encountered with unused data in a cache line. However, in extreme
-cases, this overhead can be very high. The second problem can be seen
-in the following example:
-%
-\begin{samepage}
-\begin{lstlisting}
-    foo() {
-        a();
-        b();
-    }
-\end{lstlisting}
-\end{samepage}
-%
-This code sequence results in the following cache loads:
-%
-\begin{enumerate}
-\item method \code{foo} is loaded on invocation of \code{foo()}
-\item method \code{a} is loaded on invocation of \code{a()}
-\item method \code{foo} is loaded on return from \code{a()}
-\item method \code{b} is loaded on invocation of \code{b()}
-\item method \code{foo} is loaded on return from \code{b()}
-\end{enumerate}
-%
-The main drawback of the single method cache is the multiple cache
-fill of \code{foo()} on return from methods \code{a()} and
-\code{b()}. In a conventional cache design, if these three methods
-fit in the cache memory at the same time and there is no placement
-conflict, each method is only loaded once. This issue can be
-overcome by caching more than one method. The simplest solution is a
-two-block cache.
-
-\subsubsection{Two-Block Cache}
-
-The two-block cache can hold up to two methods in the cache. This
-results in having to decide which block is replaced on a cache miss.
-With only two blocks, Least-Recently Used (LRU) is trivial to
-implement. The code sequence now results in the cache loads and hits
-as shown in Table~\ref{tab_cache_two_block_example}.
-%
-\begin{table}[htbp]
-    \centering
-    \begin{tabular}{llll}
-    \toprule
-    Instruction & Block 1 & Block 2  & Cache \\
-    \midrule
-    foo()       & foo     & --       & load \\
-    a()         & foo     & a        & load \\
-    return      & foo     & a        & hit  \\
-    b()         & foo     & b        & load \\
-    return      & foo     & b        & hit \\
-    \bottomrule
-    \end{tabular}
-    \caption{Cache load and hit example with the two-block cache}
-    \label{tab_cache_two_block_example}
-\end{table}
-%
-With the two-block cache, we have to double the cache memory or use
-both blocks for a single large method. The WCET analysis is slightly
-more complex than with a single block. A short history of the
-invocation sequence has to be used to find the cache fills and hits.
-
-However, a cache that can only hold two methods is still very
-restrictive. The next code sequence shows the conflict.
-\tablename~\ref{tab_cache_two_block_conflict} shows the resulting
-cache loads.
-%
-\begin{samepage}
-\begin{lstlisting}
-    foo() {
-        a();
-    }
-    a() {
-        b();
-    }
-\end{lstlisting}
-%
-\begin{table}[htbp]
-    \centering
-    \begin{tabular}{llll}
-    \toprule
-    Instruction & Block 1 & Block 2  & Cache \\
-    \midrule
-    foo()       & foo     & --       & load \\
-    a()         & foo     & a        & load \\
-    b()         & b       & a        & load \\
-    return      & b       & a        & hit  \\
-    return      & foo     & a        & load \\
-    \bottomrule
-    \end{tabular}
-    \caption{Cache conflict example with the two-block cache}
-    \label{tab_cache_two_block_conflict}
-\end{table}
-\end{samepage}
-%
-A memory (similar to the tag memory) with one word per block is used
-to store a reference to the cached method. However, this memory can
-be slower than the tag memory as it is only accessed on invocation
-or return, rather than on every cache access.
-
-\subsubsection{More Blocks}
-
-We can improve the hit rate by adding more blocks to the cache. If
-only one block per method is used, the cache size increases with the
-number of blocks. With more than two blocks, LRU replacement policy
-means that another word is needed for every block containing a use
-counter that is updated on every invoke and return. During
-replacement, this list is searched for the LRU block. Hit detection
-involves a search through the list of the method references of the
-blocks. If this search is done in microcode, it imposes a limit on
-the maximum number of blocks.
-
-\subsubsection{Variable Block Cache}
-
-\label{sec:cache:var}
-
-
-Several cache blocks, all of the size as the largest method, are a
-waste of cache memory. Using smaller block sizes and allowing a
-method to span over several blocks, the blocks become very similar
-to cache lines. The main difference from a conventional cache is
+In the method cache several cache blocks (similar to cache lines) are
+used for a method. The main difference from a conventional cache is
 that the blocks for a method are all loaded at once and need to be
 consecutive.
 
@@ -465,55 +101,6 @@ instruction. An uppercase letter indicates that this block has been
 newly loaded. A right arrow depicts the block to be replaced on a
 cache miss (the \emph{next} pointer). The last row shows the number
 of blocks that are filled during the execution of the program.
-
-% too long for book format
-%
-%\begin{table*}
-%    \centering
-%\begin{tt}
-%    \begin{tabular}{lrrrrrrrrrrrrr}
-%    \toprule
-%
-%                &a()    &b()    &ret    &c()    &ret    &b()    &ret    &c()    &ret    &b()    &ret    &c()    &ret    \\
-%    \midrule
-%    \rm{Block 1}&A      &$\to$a &$\to$a &C      &c      &B      &b      &b      &$\to$- &B      &b      &b      &A      \\
-%    \rm{Block 2}&A      &a      &a      &$\to$- &A      &$\to$a &$\to$a &C      &c      &B      &b      &b      &$\to$- \\
-%    \rm{Block 3}&$\to$- &B      &b      &b      &A      &a      &a      &$\to$- &A      &$\to$a &$\to$a &C      &c      \\
-%    \rm{Block 4}&-      &B      &b      &b      &$\to$- &B      &b      &b      &A      &a      &a      &$\to$- &A      \\
-%    \midrule
-%    \rm{Fill}      &2   &4      &       &5      &7      &9      &       &11     &13     &15     &       &16     &18     \\
-%    \bottomrule
-%
-%    \end{tabular}
-%\end{tt}
-%    \caption{Next block replacement policy}
-%    \label{tab_cache_replace_next}
-%\end{table*}
-%
-%\begin{table*}
-%    \centering
-%\begin{tt}
-%    \begin{tabular}{lrrrrrrrrrrrrr}
-%    \toprule
-%
-%                &a()    &b()    &ret    &c()    &ret    &b()    &ret    &c()    &ret    &b()    &ret    &c()    &ret    \\
-%    \midrule
-%    \rm{Block 1}&A      &$\to$a &a      &a      &a      &$\to$a &a      &a      &a      &$\to$a &a      &a      &a      \\
-%    \rm{Block 2}&A      &a      &a      &a      &a      &a      &a      &a      &a      &a      &a      &a      &a      \\
-%    \rm{Block 3}&$\to$- &B      &$\to$b &C      &$\to$c &B      &$\to$b &C      &$\to$c &B      &$\to$b &C      &$\to$c \\
-%    \rm{Block 4}&-      &B      &b      &$\to$- &-      &B      &b      &$\to$- &-      &B      &b      &$\to$- &-      \\
-%    \midrule
-%    \rm{Fill}      &2   &4      &       &5      &       &7      &       &8      &       &10     &       &11     &       \\
-%    \bottomrule
-%
-%    \end{tabular}
-%\end{tt}
-%    \caption{Stack oriented replacement policy}
-%    \label{tab_cache_replace_stack}
-%\end{table*}
-
-
-
 
 \begin{table}
     \centering
@@ -599,11 +186,11 @@ a leaf in the call tree. In the latter case, it is always a hit.
 
 When the cache contains more blocks (i.e.\ more than two methods can
 be cached), a part of the call tree has to be taken into account for
-hit detection. The variable block cache further complicates the
-analysis, as the method length also determines the cache content.
-However, this analysis is still simpler than a cache modeling of a
-direct-mapped instruction cache, as cache block replacement depends
-on the call tree instead of instruction addresses.
+hit detection. The method cache further complicates the analysis, as
+the method length also determines the cache content. However, this
+analysis is still simpler than a cache modeling of a direct-mapped
+instruction cache, as cache block replacement depends on the call
+tree instead of instruction addresses.
 
 In traditional caches, data access and instruction cache fill
 requests can compete for the main memory bus. For example, a load or
