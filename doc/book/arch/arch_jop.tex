@@ -502,64 +502,57 @@ The second pipeline stage, as shown in Figure~\ref{fig_arch_fetch},
 fetches JOP instructions from the internal microcode memory and
 executes microcode branches.
 
-\begin{figure}
+\begin{figure}[t]
     \centering
     \includegraphics[scale=\picscale]{arch/arch_fetch}
-    \caption{JOP instruction fetch}
+    \caption{Microcode instruction fetch}
     \label{fig_arch_fetch}
 \end{figure}
 
 The JOP microcode, which implements the JVM, is stored in the
 microcode ROM. The program counter \emph{pc} is incremented during
-normal execution. If the instruction is labeled with \emph{nxt} a
-new bytecode is requested from the first stage and \emph{pc} is
-loaded with \emph{jpaddr}. \emph{jpaddr} is the starting address for
-the implementation of that bytecode. The label \emph{nxt} is the
-flag that marks the end of the microcode instruction stream for one
-bytecode. Another flag, \emph{opd}, indicates that a bytecode
-operand needs to be fetched in the first pipeline stage. Both flags
-are stored in a table that is indexed by the program counter.
+normal execution. If the instruction is labeled with \emph{nxt} a new
+bytecode is requested from the first stage and \emph{pc} is loaded
+with \emph{jpaddr}. \emph{jpaddr} is the starting address for the
+implementation of that bytecode. The label \emph{nxt} is the flag
+that marks the end of the microcode instruction stream for one
+bytecode. Another flag, \emph{opd}, indicates that a bytecode operand
+needs to be fetched in the first pipeline stage. Both flags are
+stored in the microcode ROM.
 
-\emph{brdly} contains the target address for a conditional branch.
-The same offset is shared by a number of branch destinations. A
-table (\emph{branch offset}) is used to store these relative
-offsets. This indirection means that only 5 bits need to be used in
-the instruction coding for branch targets and thereby allow greater
-offsets. The three tables \emph{BC fetch table}, \emph{branch
-offset} and \emph{translation table} (from the bytecode fetch stage)
+The register \emph{brdly} contains the target address for a
+conditional branch. The same offset is shared by a number of branch
+destinations. A table (\emph{branch offset}) is used to store these
+relative offsets. This indirection means that only 5 bits need to be
+used in the instruction coding for branch targets and thereby allow
+greater offsets. The three tables \emph{translation table} (from the
+bytecode fetch stage), \emph{microcode ROM}, and \emph{branch offset}
 are generated during the assembly of the JVM code. The outputs are
 plain VHDL files. For an implementation in an FPGA, recompiling the
 design after changing the JVM implementation is a straightforward
 operation. For an ASIC with a loadable JVM, it is necessary to
 implement a different solution.
 
-FPGAs available to date do not allow asynchronous memory access.
-They therefore force us to use the registers in the memory blocks.
+FPGAs available to date do not allow asynchronous memory access. They
+therefore force us to use the registers in the memory blocks.
 However, the output of these registers is not accessible. To avoid
 having to create an additional pipeline stage just for a
 register-register move, the read address register of the microcode
-ROM is clocked on the negative edge.
+ROM is fed by the \emph{pc} multiplexer. The memory address register
+effectively contains the same value as the \emph{pc}.
 
-An alternative solution for this problem would be to use the output
-of the multiplexer for the \emph{pc} and the read address register
-of the memory. However, this solution results in a longer critical
-path, as the multiplexer can no longer be combined with the
-flip-flops that form the \emph{pc} in the same LCs. This is an
-example of how implementation technology (the FPGA) can influence
-the architecture.
+\begin{figure}[t]
+    \centering
+    \includegraphics[scale=\picscale]{arch/arch_decaddr}
+    \caption{Decode and address generation}
+    \label{fig_arch_decode}
+\end{figure}
 
 \subsection{Decode and Address Generation}
 
 Besides the usual decode function, the third pipeline, as shown in
 Figure~\ref{fig_arch_decode}, also generates addresses for the stack
 RAM.
-
-\begin{figure}
-    \centering
-    \includegraphics[scale=\picscale]{arch/arch_decaddr}
-    \caption{Decode and address generation}
-    \label{fig_arch_decode}
-\end{figure}
 
 
 As we can see in Section~\ref{sec:stack}
@@ -576,13 +569,14 @@ allows us to generate fill or spill TOS-1 addresses for the
 \emph{following} instruction during the decode stage, thereby saving
 one extra pipeline stage.
 
+
 \subsection{Execute}
 
 At the execution stage, as shown in Figure~\ref{fig_arch_exe},
 operations are performed using two discrete registers: TOS and
 TOS-1, labeled \emph{A} and \emph{B}.
 
-\begin{figure}
+\begin{figure}[t]
     \centering
     \includegraphics[scale=\picscale]{arch/arch_execute}
     \caption{Execution stage}
@@ -590,11 +584,11 @@ TOS-1, labeled \emph{A} and \emph{B}.
 \end{figure}
 
 Each arithmetic/logical operation is performed with registers
-\emph{A} and \emph{B} as the source, and register \emph{A} as the
-destination. All load operations (local variables, internal
-register, external memory and periphery) result in a value being
-loaded into register \emph{A}. There is therefore no need for a
-write-back pipeline stage. Register \emph{A} is also the source for
+\emph{A} and \emph{B} as the source (top-of-stack and next-of-stack),
+and register \emph{A} as the destination. All load operations (local
+variables, internal register, external memory and periphery) result
+in a value being loaded into register \emph{A}. There is no need for
+a write-back pipeline stage. Register \emph{A} is also the source for
 the store operations. Register \emph{B} is never accessed directly.
 It is read as an implicit operand or for stack spill on push
 instructions. It is written during the stack spill with the content
@@ -608,8 +602,8 @@ also the number of data paths to and from the register \nolinebreak
 \emph{A}.
 
 The inverted clock on data-in and on the write address register of
-the stack RAM is used, for the same reason, as on the read address
-register of the microcode ROM.
+the stack RAM is used to perform the RAM write in the same cycle as
+the execute operation.
 
 A stack machine with two explicit registers for the two topmost
 stack elements and automatic fill/spill needs neither an extra
@@ -655,9 +649,10 @@ the stack. This feature is used to implement the preemptive, fixed
 priority real-time scheduler in Java \cite{jop:javasched}.
 
 The main source for an interrupt is the $\mu$s accurate timer
-interrupt used by the real-time scheduler. Hardware generated
-exceptions, such as stack overflow or array bounds checks, generate
-a system interrupt. The exception reason can be found in a register.
+interrupt used by the real-time scheduler. I/O device interrupts can
+also be connected to the interrupt controller. Hardware generated
+exceptions, such as stack overflow or array bounds checks, generate a
+system interrupt. The exception reason can be found in a register.
 
 \subsection{Summary}
 
