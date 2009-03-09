@@ -61,6 +61,9 @@ else
 	QPROJ=cycmin
 endif
 
+# Number of cores for JopSim and RTTM simulation
+CORE_CNT=4
+
 # Which project do you want to be downloaded?
 DLPROJ=$(QPROJ)
 # Which project do you want to be programmed into the flash?
@@ -419,7 +422,7 @@ jsim: java_app
 #	Simulate RTTM
 #
 tmsim: java_app
-	java $(DEBUG_JOPSIM) -cp java/tools/dist/lib/jop-tools.jar -Dcpucnt=4 \
+	java $(DEBUG_JOPSIM) -cp java/tools/dist/lib/jop-tools.jar -Dcpucnt=$(CORE_CNT) \
 	com.jopdesign.tools.TMSim java/target/dist/bin/$(JOPBIN)
 
 #
