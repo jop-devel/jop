@@ -269,7 +269,7 @@ begin
 		sc_mem_out.rd <= '0';
 		sc_mem_out.wr <= '0';
 		sc_mem_out.atomic <= '0';
---		sc_mem_out.nc <= '1';
+		sc_mem_out.nc <= '1';
 
 		-- default values to CPU
 		mem_out.dout <= sc_mem_in.rd_data;
@@ -317,13 +317,13 @@ begin
 				end if;
 				if mem_in.rd='1' then
 					sc_mem_out.address <= ain(SC_ADDR_SIZE-1 downto 0);
---					sc_mem_out.nc <= '0';
+					sc_mem_out.nc <= '0';
 					sc_mem_out.rd <= '1';
 					state_next <= last;
 				end if;
 				if mem_in.wr='1' then	
 					sc_mem_out.wr_data <= ain;
---					sc_mem_out.nc <= '0';
+					sc_mem_out.nc <= '0';
 					sc_mem_out.wr <= '1';
 					state_next <= last;
 				end if;
@@ -342,7 +342,7 @@ begin
 					sc_mem_out.address <= bin(SC_ADDR_SIZE-1 downto 0);
 					sc_mem_out.rd <= '1';					
 					sc_mem_out.atomic <= '1';
---					sc_mem_out.nc <= '0';
+					sc_mem_out.nc <= '0';
 					state_next <= iald0;
 				end if;
 				if mem_in.getfield='1' then
@@ -351,7 +351,7 @@ begin
 					sc_mem_out.address <= bin(SC_ADDR_SIZE-1 downto 0);
 					sc_mem_out.rd <= '1';					
 					sc_mem_out.atomic <= '1';
---					sc_mem_out.nc <= '0';
+					sc_mem_out.nc <= '0';
 					state_next <= gf0;
 				end if;
 				if mem_in.putfield='1' then					
@@ -460,7 +460,7 @@ begin
 
 			when gf1 =>
 				sc_mem_out.atomic <= '1';
---				sc_mem_out.nc <= '0';
+				sc_mem_out.nc <= '0';
 				mem_out.bsy <= '1';
 
 				sc_mem_out.rd <= '1';
@@ -470,7 +470,7 @@ begin
 				-- putfield
 			when pf0 =>
 				sc_mem_out.atomic <= '1';				
---				sc_mem_out.nc <= '0';
+				sc_mem_out.nc <= '0';
 				mem_out.bsy <= '1';
 
 				index_next <= unsigned(ain(SC_ADDR_SIZE-1 downto 0));
@@ -498,7 +498,7 @@ begin
 					
 			when pf2 =>
 				sc_mem_out.atomic <= '1';
---				sc_mem_out.nc <= '0';
+				sc_mem_out.nc <= '0';
 				mem_out.bsy <= '1';
 
 				sc_mem_out.wr <= '1';
@@ -508,7 +508,7 @@ begin
 				-- iaload
 			when iald0 =>
 				sc_mem_out.atomic <= '1';
---				sc_mem_out.nc <= '0';
+				sc_mem_out.nc <= '0';
 				mem_out.bsy <= '1';					
 
 				-- either 1 or 0
@@ -546,7 +546,7 @@ begin
 
 			when iald2 =>
 				sc_mem_out.atomic <= '1';
-----				sc_mem_out.nc <= '0';
+--				sc_mem_out.nc <= '0';
 				mem_out.bsy <= '1';
 
 				-- either 1 or 0
@@ -588,7 +588,7 @@ begin
 				-- iastore
 			when iast0 =>
 				sc_mem_out.atomic <= '1';				
---				sc_mem_out.nc <= '0';
+				sc_mem_out.nc <= '0';
 				mem_out.bsy <= '1';
 
 				index_next <= unsigned(ain(SC_ADDR_SIZE-1 downto 0));
@@ -601,7 +601,7 @@ begin
 
 			when iast1 =>
 				sc_mem_out.atomic <= '1';
---				sc_mem_out.nc <= '0';
+				sc_mem_out.nc <= '0';
 				mem_out.bsy <= '1';					
 				
 				-- either 1 or 0
@@ -650,7 +650,7 @@ begin
 				
 			when iast4 =>
 				sc_mem_out.atomic <= '1';
-----				sc_mem_out.nc <= '0';
+--				sc_mem_out.nc <= '0';
 				mem_out.bsy <= '1';
 
 				-- check bounds and trigger write only if it's ok
@@ -664,7 +664,7 @@ begin
 
 			when cp0 =>
 				sc_mem_out.atomic <= '1';
---				sc_mem_out.nc <= '0';
+				sc_mem_out.nc <= '0';
 				mem_out.bsy <= '1';
 
 				sc_mem_out.rd <= '1';
@@ -686,7 +686,7 @@ begin
 
 			when cp2 =>
 				sc_mem_out.atomic <= '1';
---				sc_mem_out.nc <= '0';
+				sc_mem_out.nc <= '0';
 				mem_out.bsy <= '1';
 
 				sc_mem_out.wr <= '1';

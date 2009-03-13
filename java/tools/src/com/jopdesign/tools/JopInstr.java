@@ -326,7 +326,7 @@ public class JopInstr{
 //	reserved instructions
 //
 		new JopInstr("resCB", 1, IMP_NO, 1),			// 0xCB
-		new JopInstr("resCC", 1, IMP_NO, 1),			// 0xCC
+		new JopInstr("jopsys_inval", 1, IMP_ASM, 7),			// 0xCC
 		new JopInstr("resCD", 1, IMP_NO, 1),			// 0xCD
 		new JopInstr("resCE", 1, IMP_NO, 1),			// 0xCE
 		new JopInstr("resCF", 1, IMP_NO, 1),			// 0xCF
@@ -414,6 +414,7 @@ public class JopInstr{
 			"toDouble", "jopsys_nop",
 			"monitorExit", "monitorexit",
 //			"condMove", "jopsys_cond_move",
+			"invalidate", "jopsys_inval",
 			"memCopy", "jopsys_memcpy",
 			"putField", "jopsys_putfield",
 			"getField", "jopsys_getfield",

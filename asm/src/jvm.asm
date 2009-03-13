@@ -160,6 +160,7 @@ stack_init	= 64
 io_cnt		=	-128
 io_wd		=	-125
 io_int_ena	=	-128
+io_inval    =   -113
 io_status	=	-112
 io_uart		=	-111
 
@@ -1769,3 +1770,12 @@ jopsys_nop:
 //			stm		c
 //			ldm		c nxt
 //false_path:	ldm		b nxt
+
+jopsys_inval:
+			ldi io_inval
+			stmwa
+			ldi 0
+		    stmwd
+			wait
+			wait
+			nop nxt

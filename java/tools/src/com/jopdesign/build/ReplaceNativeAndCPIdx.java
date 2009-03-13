@@ -121,6 +121,52 @@ public class ReplaceNativeAndCPIdx extends JOPizerVisitor {
 
 		}
 
+		if (JOPizer.CACHE_INVAL) {
+			f = new InstructionFinder(il);
+			// find volatile reads and insert cache invalidation bytecode
+			String fieldInstr = "GETFIELD|GETSTATIC|PUTFIELD|PUTSTATIC";
+			for(Iterator i = f.search(fieldInstr); i.hasNext(); ) {
+				InstructionHandle[] match = (InstructionHandle[])i.next();
+				InstructionHandle   ih = match[0];
+				FieldInstruction fi = (FieldInstruction) ih.getInstruction();
+
+				JavaClass jc = JOPizer.jz.cliMap.get(fi.getClassName(cpoolgen)).clazz;
+				Field field = null;
+				while (field == null) {
+					Field [] fields = jc.getFields();
+					for (int k = 0; k < fields.length; k++) {
+						if (fields[k].getName().equals(fi.getFieldName(cpoolgen))) {
+							field = fields[k];
+							break;
+						}
+					}
+					if (field == null) {
+						jc = jc.getSuperClass();
+					}
+				}
+
+				if (field.isVolatile()) {
+
+					if (field.getType().getSize() < 2) {
+						if (fi instanceof GETFIELD ||
+							fi instanceof GETSTATIC) {
+							ih.setInstruction(new InvalidateInstruction());
+							ih = il.append(ih, fi);
+						}
+					} else {
+						// this only works because we do not throw a
+						// NullPointerException for monitorenter/-exit!
+						ih.setInstruction(new ACONST_NULL());
+						ih = il.append(ih, new MONITORENTER());
+						ih = il.append(ih, fi);
+						ih = il.append(ih, new ACONST_NULL());
+						ih = il.append(ih, new MONITOREXIT());
+					}
+
+				}
+			}
+		}		
+
 		f = new InstructionFinder(il);
 		// find instructions that access the constant pool
 		// and replace the index by the new value from ClassInfo
@@ -180,17 +226,13 @@ public class ReplaceNativeAndCPIdx extends JOPizerVisitor {
 					if (isRef) {
 						ih.setInstruction(new GETSTATIC_REF((short) new_index));
 					} else if (isLong) {
-						ih
-								.setInstruction(new GETSTATIC_LONG(
-										(short) new_index));
+						ih.setInstruction(new GETSTATIC_LONG((short) new_index));
 					}
 				} else if (fi instanceof PUTSTATIC) {
 					if (isRef) {
 						ih.setInstruction(new PUTSTATIC_REF((short) new_index));
 					} else if (isLong) {
-						ih
-								.setInstruction(new PUTSTATIC_LONG(
-										(short) new_index));
+						ih.setInstruction(new PUTSTATIC_LONG((short) new_index));
 					}
 				} else if (fi instanceof GETFIELD) {
 					if (isRef) {
@@ -357,4 +399,14 @@ public class ReplaceNativeAndCPIdx extends JOPizerVisitor {
 		       return null;
 		}
 	}
+
+	class InvalidateInstruction extends Instruction {
+		public InvalidateInstruction() {
+			super((short)JopInstr.get("jopsys_inval"), (short)1);
+		}
+
+		public void accept(org.apache.bcel.generic.Visitor v) {
+		}
+	}
+
 }
