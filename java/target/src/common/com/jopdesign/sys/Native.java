@@ -52,6 +52,8 @@ public class Native {
 	public static native double toDouble(long l);
 	public static native void monitorExit(int ref);
 //	public static native int condMove(int a, int b, boolean cond);
+	public static native void invalidate();
+
 	/**
 	 * 
 	 * @param dest memory destination address

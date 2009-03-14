@@ -151,6 +151,8 @@ public class Startup {
 			Native.wr(0x12345678, offset+size);
 			if (Native.rd(offset+size)!=0x12345678) break;
 			if (size!=0) {
+				// invalidate cache
+				Native.invalidate();
 				if (Native.rd(offset+0)!=firstWord) break;				
 			}
 			// restore current word

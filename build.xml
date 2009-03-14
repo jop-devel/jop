@@ -12,8 +12,9 @@
 		You probably want to change the following parts:
 	
 			qproj ... your Quartus FPGA project
-			com-* ... your communication settings
-			all, japp ... USB or serial download
+			usb ... USB or serial download
+			com-port ... your communication ports
+			use-config-* .. how the board is configured
 			target-app-path, main-class ... your target application
 
 		There is a shortcut for the target app:
@@ -26,23 +27,55 @@
 
 	</description>
 	
+	<!-- set property usb to true for an USB based board (dspio, usbmin, lego) -->
+	<property name="usb" value="true"/>
+
 	<!-- com1 is the usual serial port -->
-	<property name="com-port" value="COM1"/>
+	<condition property="com-port" value="COM1">
+	  <not> <istrue value="${usb}"/> </not>
+	</condition>
+
 	<!-- com6 is the FTDI VCOM for the USB download -->
-	<!-- <property name="com-port" value="COM6"/> -->
+	<condition property="com-port" value="COM6">
+	  <istrue value="${usb}"/>
+	</condition>
 
-	<property name="com-flag" value="-e"/>
 	<!-- use -usb to download the Java application without the echo 'protocol' on USB -->
-	<!-- <property name="com-flag" value="-e -usb"/> -->
+	<condition property="com-flag" value="-e">
+	  <not> <istrue value="${usb}"/> </not>
+	</condition>
+	<condition property="com-flag" value="-e -usb">
+	  <istrue value="${usb}"/>
+	</condition>
 
-	<property name="blaster-type" value="ByteBlasterMV"/>
-	<!-- <property name="blaster-type" value="USB-Blaster"/> -->
+	<!-- select how to configure the board -->
+	<property name="use-config-usb" value="true"/>
+<!-- 	<property name="use-config-byteblast" value="true"/> -->
+<!-- 	<property name="use-config-usbblast" value="true"/> -->
+<!-- 	<property name="use-config-urjtag" value="true"/> -->
 
+	<!-- choose blaster type for config-byteblast -->
+	<condition property="blaster-type" value="ByteBlastMV">
+	  <istrue value="${use-config-byteblast}"/>
+	</condition>
+	<condition property="blaster-type" value="USB-Blaster">
+	  <istrue value="${use-config-usbblast}"/>
+	</condition>
+
+	<!-- select usbrunner depending on operating system -->
 	<condition property="usbrunner" value="./USBRunner">
 	  <os family="unix" name="linux"/>
 	</condition>
 	<condition property="usbrunner" value="USBRunner.exe">
 	  <os family="windows"/>
+	</condition>
+
+	<!-- set flags to build the right targets -->
+	<condition property="use-jopser">
+	  <not> <istrue value="${usb}"/> </not>
+	</condition>
+	<condition property="use-jopusb">
+	  <istrue value="${usb}"/>
 	</condition>
 
 	<!-- 'some' different Quartus projects -->
@@ -53,7 +86,7 @@
 	<!-- <property name="qproj" value="cycfpu"/> -->
 	<!-- <property name="qproj" value="cyc256x16"/> -->
 	<!-- <property name="qproj" value="sopcmin"/> -->
-	<property name="qproj" value="cycmin"/> 
+	<property name="qproj" value="usbmin"/> 
 	
 	<!-- Nelson uncomment this -->
 	<!-- <property name="qproj" value="cyc12baseio"/> -->
@@ -194,13 +227,8 @@
 	
 	<pathconvert refid="target-source" property="target-source-flattened"/>
 	
-	<!-- use this for serial download -->
-	<target name="all" depends="directories, tools, jopser, japp" description="Use this for serial download"/>
-	<target name="japp" depends="java-app, config-byteblast, download"/>
-
-	<!-- use this for USB download of FPGA configuration and Java program download -->
-	<!-- <target name="all" depends="directories, tools, jopusb, japp"/> -->
-	<!-- <target name="japp" depends="java-app, config-usb, download"/> -->
+	<target name="all" depends="directories, tools, jopser, jopusb, japp" description="Use this for serial download"/>
+	<target name="japp" depends="java-app, config-usb, config-urjtag, config-byteblast, download"/>
 	
 	<target name="clean">
 		<echo message="This is specific for my configuration ;-)"/>
@@ -413,7 +441,7 @@
 
 	</target>
 	
-	<target name="jopser" description="Creates JBC files used to boot from the serial line">
+	<target name="jopser" description="Creates JBC files used to boot from the serial line"	if="use-jopser">
 
 		<ant dir="asm" antfile="jopser.xml"/>
 	
@@ -422,7 +450,7 @@
 	
 	</target>
 
-	<target name="jopusb" description="Creates project.jbc files used to boot from the USB interface">
+	<target name="jopusb" description="Creates project.jbc files used to boot from the USB interface" if="use-jopusb">
 
 		<ant dir="asm" antfile="jopusb.xml"/>
 
@@ -436,13 +464,13 @@
 		<antcall target="qsyn">
 			<param name="qbt" value="${qproj}"/>
 		</antcall>
-		
-		<exec executable="quartus_cpf" dir="quartus/${qproj}" failonerror="true">
-			<arg line="-c jop.cdf ../../jbc/${qproj}.jbc"/>
-		</exec>
 			
 		<exec executable="quartus_cpf" dir="quartus/${qproj}" failonerror="true">
 			<arg line="-c jop.sof ../../rbf/${qproj}.rbf"/>
+		</exec>
+
+		<exec executable="quartus_cpf" dir="quartus/${qproj}" failonerror="true">
+			<arg line="-c -q 10MHz -g 3.3 -n p jop.sof jop.svf"/>
 		</exec>
 
 	</target>
@@ -506,15 +534,21 @@
 		</java>
 	</target>
 	
-	<target name="config-byteblast">
+	<target name="config-byteblast" if="use-config-byteblast">
 		<exec executable="quartus_pgm" dir="quartus/${dlproj}" failonerror="true">
 			<arg line="-c ${blaster-type} -m JTAG jop.cdf"/>
 		</exec>
 	</target>
 	
-	<target name="config-usb">
+	<target name="config-usb" if="use-config-usb">
 		<exec executable="${usbrunner}" resolveexecutable="true" dir="rbf" failonerror="true">
 			<arg line="${dlproj}.rbf"/>
+		</exec>
+	</target>
+
+	<target name="config-urjtag" if="use-config-urjtag">
+		<exec executable="jtag" dir="quartus/${dlproj}" failonerror="true">
+			<arg line="../../urjtag.config"/>
 		</exec>
 	</target>
 
@@ -523,24 +557,27 @@
 	Ant's way to logging is very annoying!
 
 	that's the JavaDown version
-
-		<java classname="com.jopdesign.tools.JavaDown" failonerror="true">
+-->
+		<java classname="com.jopdesign.tools.JavaDown" failonerror="true"
+			  output="/dev/stdout" input="/dev/null">
 			<classpath>
 				<pathelement location="java/tools/dist/lib/jop-tools.jar"/>
 				<pathelement location="java/lib/RXTXcomm.jar"/>
 			</classpath>
 			<arg line="${com-flag} java/target/dist/bin/${jopbin} ${com-port}"/>
 		</java>
-
+<!--
 	this is the download version with down.exe
 
 		<exec executable="down" spawn="true">
 			<arg line="${com-flag} java/target/dist/bin/${jopbin} ${com-port}"/>
 		</exec>
 -->
-		<!-- But we just generate a dl.bat as Ant logging need line feeds -->
-		
-		<echo message="down ${com-flag} java/target/dist/bin/${jopbin} ${com-port}" file="dl.bat"/>
+<!--
+	Just generate a dl.bat as Ant logging need line feeds
+
+ 		<echo message="down ${com-flag} java/target/dist/bin/${jopbin} ${com-port}" file="dl.bat"/>
+ -->
 
 	</target>
 	

@@ -135,10 +135,12 @@ port (
 	sync_out : in sync_out_type := NO_SYNC;
 	sync_in	 : out sync_in_type;
 	
-	wd				: out std_logic
+	wd				: out std_logic;
 	
 	-- remove the comment for RAM access counting
-	-- ram_count	: in std_logic
+	-- ram_count	: in std_logic;
+
+	inval		: out std_logic
 
 );
 end sc_sys ;
@@ -190,7 +192,7 @@ architecture rtl of sc_sys is
 	signal pending		: std_logic_vector(NUM_INT-1 downto 0);
 	signal prioint		: std_logic_vector(4 downto 0);
 	signal intnr		: std_logic_vector(4 downto 0);		-- processing int number
-	signal clearall		: std_logic;
+	signal clearall		: std_logic;	
 
 begin
 
@@ -232,6 +234,8 @@ begin
 				--	rd_data(31 downto 0) <= ram_counter;
 				when "1011" =>
 					rd_data <= std_logic_vector(to_unsigned(cpu_cnt, 32));
+				when "1111" =>
+					-- nothing, cache inval is write only
 				when others =>
 					-- nothing
 			end case;
@@ -382,6 +386,7 @@ begin
 		exc_pend <= '0';
 		swreq <= (others => '0');
 		clearall <= '0';
+		inval <= '0';
 
 		-- disable interrupts on a taken interrupt or excption
 		if irq_out.ack_irq='1' or irq_out.ack_exc='1' then
@@ -417,7 +422,9 @@ begin
 					exc_pend <= '1';
 				when "0101" =>
 					sync_in.lock_req <= wr_data(0);	
-					lock_reqest <= wr_data(0);			
+					lock_reqest <= wr_data(0);
+					-- implicit cache invalidation on monitorenter
+					inval <= wr_data(0);
 				when "0110" =>
 					-- nothing, processor id is read only
 				when "0111" =>
@@ -428,6 +435,9 @@ begin
 					clearall <= '1';
 				when "1010" =>
 					-- nothing, ram_counter is read only
+				when "1111" =>
+					-- explicit cache invalidation
+					inval <= '1';
 				when others =>
 			end case;
 		end if;
