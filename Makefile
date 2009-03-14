@@ -232,12 +232,27 @@ endif
 install:
 	@echo nothing to install
 
+# cleanup
+EXTENSIONS=class rbf rpt sof pin summary ttf qdf dat wlf
+
 clean:
-	@echo "that's specific for my configuration ;-)"
-	cd modelsim && ./clean.bat
-	@echo classes
-	d:/bin/del_class.bat
-	cd quartus && d:/bin/qu_del.bat
+	for ext in $(EXTENSIONS); do \
+		find . -name \*.$$ext -print -exec rm -r -f {} \; ; \
+	done
+	find . -name jop.pof -print -exec rm -r -f {} \;
+	find . -name db -print -exec rm -r -f {} \;
+	find . -name incremental_db -print -exec rm -r -f {} \;
+	rm -rf asm/generated
+	rm -f vhdl/*.vhd
+	-rm -rf $(TOOLS)/dist
+	-rm -rf $(PCTOOLS)/dist
+	-rm -rf $(TARGET)/dist
+	-rm -rf modelsim/work
+	-rm -rf modelsim/transcript
+	-rm -rf modelsim/gaisler
+	-rm -rf modelsim/grlib
+	-rm -rf modelsim/techmap
+
 
 #
 #	build all the (Java) tools
