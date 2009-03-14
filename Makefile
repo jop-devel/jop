@@ -136,11 +136,11 @@ TOOLS_CP=$(EXT_CP)$(S)$(TOOLS)/dist/lib/jop-tools.jar$(S)$(TOOLS)/dist/lib/JopDe
 
 TARGET_SOURCE=$(TARGET)/src/common$(S)$(TARGET)/src/jdk_base$(S)$(TARGET)/src/jdk11$(S)$(TARGET)/src/rtapi$(S)$(TARGET_APP_SOURCE_PATH)
 TARGET_JFLAGS=-d $(TARGET)/dist/classes -sourcepath $(TARGET_SOURCE) -bootclasspath "" -extdirs "" -classpath "" -source 1.5
-GCC_PARAMS=""
+GCC_PARAMS=
 
 # uncomment this if you want floating point operations in hardware
 # ATTN: be sure to choose 'cycfpu' as QPROJ else no FPU will be available
-#GCC_PARAMS="-DFPU_ATTACHED"
+#GCC_PARAMS=-DFPU_ATTACHED
 
 #
 #	Add your application source pathes and class that contains the
@@ -349,7 +349,7 @@ java_app:
 #	project.sof fiels are used to boot from the serial line
 #
 jopser:
-	cd asm && export GCC_PARAMS=$(GCC_PARAMS) && ./jopser.bat
+	make gen_mem -e ASM_SRC=jvm JVM_TYPE=SERIAL
 	@echo $(QPROJ)
 	for target in $(QPROJ); do \
 		make qsyn -e QBT=$$target; \
@@ -362,7 +362,7 @@ jopser:
 #	project.rbf fiels are used to boot from the USB interface
 #
 jopusb:
-	cd asm && export GCC_PARAMS=$(GCC_PARAMS) && ./jopusb.bat
+	make gen_mem -e ASM_SRC=jvm JVM_TYPE=USB
 	@echo $(QPROJ)
 	for target in $(QPROJ); do \
 		make qsyn -e QBT=$$target; \
@@ -375,12 +375,33 @@ jopusb:
 #	project.ttf files are used to boot from flash.
 #
 jopflash:
-	cd asm && ./jopflash.bat
+	make gen_mem -e ASM_SRC=jvm JVM_TYPE=FLASH
 	@echo $(QPROJ)
 	for target in $(QPROJ); do \
 		make qsyn -e QBT=$$target; \
 		quartus_cpf -c quartus/$$target/jop.sof ttf/$$target.ttf; \
 	done
+
+BLOCK_SIZE=4096
+#
+#	assemble the microcode and generate on-chip memory files
+#
+gen_mem:
+	rm -rf asm/generated
+	mkdir asm/generated
+	gcc -x c -E -C -P $(GCC_PARAMS) -D$(JVM_TYPE) asm/src/$(ASM_SRC).asm > asm/generated/jvmgen.asm
+	java $(TOOLS_CP) com.jopdesign.tools.Jopa -s asm/generated -d asm/generated jvmgen.asm
+# generate Xilinx and Actel memory files
+	java $(TOOLS_CP) BlockGen -b $(BLOCK_SIZE) -pd -m xram_block asm/generated/ram.mif asm/generated/xram_block.vhd
+	java $(TOOLS_CP) BlockGen -b 16384 -pd -m xram_block asm/generated/ram.mif asm/generated/xv4ram_block.vhd
+	java $(TOOLS_CP) GenAsynROM -m actelram_initrom asm/generated/ram.mif asm/generated/actelram_initrom.vhd
+# copy generated files into working directories
+	cp asm/generated/*.vhd vhdl
+	cp asm/generated/*.dat modelsim
+
+# not used targets
+#	rem java -cp ..\java\tools\dist\lib\jop-tools.jar BlockGen -b %blocksize% -pd -d 1024 -w 8 -m xjbc_block -o generated
+#	rem java -cp ..\java\tools\dist\lib\jop-tools.jar BlockGen -b %blocksize% -pd -m xrom_block generated\rom.mif generated\xrom_block.vhd
 
 
 #
@@ -404,7 +425,7 @@ qsyn:
 #		without the tools
 #
 sim: java_app
-	cd asm && ./jopsim.bat
+	make gen_mem -e ASM_SRC=jvm JVM_TYPE=SIMULATION
 	cd modelsim && ./sim.bat
 	# for simulation of CMP 
 	# cd modelsim && ./sim_cmp.bat
@@ -519,7 +540,7 @@ xxx:
 #	TODO: combine all quartus stuff to a single target
 #
 jop_blink_test:
-	cd asm && ./build.bat blink
+	make gen_mem -e ASM_SRC=blink JVM_TYPE=NOOP
 	@echo $(QPROJ)
 	for target in $(QPROJ); do \
 		echo "building $$target"; \
@@ -537,7 +558,7 @@ jop_blink_test:
 
 
 jop_testmon:
-	cd asm && ./build.bat testmon
+	make gen_mem -e ASM_SRC=testmon JVM_TYPE=NOOP
 	@echo $(QPROJ)
 	for target in $(QPROJ); do \
 		echo "building $$target"; \
