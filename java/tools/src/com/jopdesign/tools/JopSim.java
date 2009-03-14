@@ -458,7 +458,7 @@ System.out.println(mp+" "+pc);
 		stack[++sp] = val1;
 	}
 	void waitCache(int hiddenCycles) {
-		int penalty = WCETInstruction.calculateB(cache.lastAccessWasHit(),cache.bytesLastRead);
+		int penalty = WCETInstruction.calculateB(cache.lastAccessWasHit(),cache.wordsLastRead);
 		penalty = Math.max(0, penalty-hiddenCycles);
 		this.cacheCost += penalty;
 		this.clkCnt += penalty;
