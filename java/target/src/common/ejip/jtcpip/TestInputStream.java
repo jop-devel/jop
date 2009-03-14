@@ -38,7 +38,7 @@ package ejip.jtcpip;
  * @author Christof Rath
  * @version $Rev: 849 $ $Date: 2007/01/24 19:37:07 $
  */
-public class TestInputStream extends Thread
+public class TestInputStream
 {
 	/**
 	 * 
