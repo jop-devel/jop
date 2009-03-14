@@ -56,6 +56,9 @@ clean:
 	-rm */*.bak
 	-rm *.toc
 	-rm *.pdf
+	-rm *.idx
+	-rm *.ilg
+	-rm *.ind
 	cd appendix && make clean
 	-rm -r ../javadoc
 	-rm classes/classes.tex

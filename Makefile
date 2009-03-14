@@ -252,6 +252,7 @@ clean:
 	-rm -rf modelsim/gaisler
 	-rm -rf modelsim/grlib
 	-rm -rf modelsim/techmap
+	cd doc/book && make clean
 
 
 #
