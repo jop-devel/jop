@@ -24,9 +24,7 @@ import java.io.Writer;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 import java.util.Vector;
@@ -49,12 +47,9 @@ import com.jopdesign.wcet.graphutils.Pair;
 /**
  * <p>Java call graph, whose nodes represent control flow graphs and 
  *     dynamic dispatches.</p>
- * <p>If some instruction in the flow graph represented by {@code MethodImplNode m1} invokes
- * a method whose implementation is statically known, there is an edge from {@code m1}
- * to {@code MethodImplNode m2}, representing the invoked method</p>
- * <p>If the invoked method cannot be determined statically, a {@code DispatchNode d2}
- * is inserted, and edges from {@code m1} to {@code d2}, and from {@code d2} to all
- * nodes representing some method possibly invoked are added.</p> 
+ * <p>If some instruction in the flow graph represented by {@code MethodImplNode m1}
+ * possibly invokes a {@code MethodImplNode m2},there is an edge from {@code m1}
+ * to {@code m2}.</p>
  * @author Benedikt Huber (benedikt.huber@gmail.com)
  *
  */
@@ -91,10 +86,23 @@ public class CallGraph {
 	private HashSet<ClassInfo> classInfos;
 	private HashMap<MethodInfo,CallGraphNode> nodeMap;
 
+	// Caching Fields
+	// ~~~~~~~~~~~~~~
+	private HashMap<CallGraphNode, Integer> maxDistanceToRoot = null;
+	private HashMap<CallGraphNode, CallGraphNode> maxCallstackDAG = null;
+	private HashMap<CallGraphNode, Integer> subgraphHeight = null;
+	private CallGraphNode maxCallStackLeaf = null;
+	private void invalidate() {
+		maxCallStackLeaf = null;
+		maxDistanceToRoot = null;
+		maxCallstackDAG = null;
+		subgraphHeight = null;
+	}
+	
 	/**
 	 * Initialize a CallGraph object.
-	 * @param appInfo
-	 * @param rootMethod The root method of the callgraph. Must not be abstract.
+	 * @param appInfo    Uplink to the application info.
+	 * @param rootMethod The root method of the callgraph (not abstract).
 	 */
 	protected CallGraph(WcetAppInfo appInfo, MethodInfo rootMethod) {
 		this.appInfo = appInfo;
@@ -105,16 +113,16 @@ public class CallGraph {
 
 	/**
 	 * Build a callgraph rooted at the given method
-	 * @param cli The class loader (with classes loaded)
+	 * @param appInfo   The application (with classes loaded)
 	 * @param className The class where the root method of the callgraph is located
 	 * @param methodSig The root method of the call graph. Either a plain method name
-	 * (e.g. "measure"), if unique, or a method with signature (e.g. "measure()Z")
+	 *                   (e.g. "measure"), if unique, or a method with signature (e.g. "measure()Z")
 	 * @throws MethodNotFoundException 
 	 */
-	public static CallGraph buildCallGraph(WcetAppInfo cli, String className, String methodSig) 
+	public static CallGraph buildCallGraph(WcetAppInfo appInfo, String className, String methodSig) 
 							throws MethodNotFoundException {
-		MethodInfo rootMethod = cli.searchMethod(className,methodSig);
-		CallGraph cg = new CallGraph(cli,rootMethod);
+		MethodInfo rootMethod = appInfo.searchMethod(className,methodSig);
+		CallGraph cg = new CallGraph(appInfo,rootMethod);
 		cg.build();
 		return cg;
 	}
@@ -131,6 +139,7 @@ public class CallGraph {
 		if(cycle != null) {
 			throw new AssertionError(cyclicCallGraphMsg(cycle));
 		}
+		invalidate();
 	}	
 	private static String cyclicCallGraphMsg(Pair<List<CallGraphNode>, List<CallGraphNode>> cycleWithPrefix) {
 		List<CallGraphNode> cycle = cycleWithPrefix.snd();
@@ -171,16 +180,69 @@ public class CallGraph {
 			}				
 		}
 	}		
+	private CallGraphNode getNode(MethodInfo m) {
+		return nodeMap.get(m);
+	}
+	/* calculate the depth of each node, the height of the subgraph
+	 * rooted at that node, and a longest path map.
+	 */
+	private void calculateDepthAndHeight() {
+		if(this.maxDistanceToRoot != null) return; // caching
+		this.maxDistanceToRoot = new HashMap<CallGraphNode,Integer>();
+		this.maxCallStackLeaf = this.getRootNode();
+		this.maxCallstackDAG  = new HashMap<CallGraphNode,CallGraphNode>();
+		this.subgraphHeight = new HashMap<CallGraphNode, Integer>();
+		/* calculate longest distance to root and max call stack DAG */
+		Vector<CallGraphNode> toList = new Vector<CallGraphNode>();
+		TopologicalOrderIterator<CallGraphNode, DefaultEdge> toIter =
+			new TopologicalOrderIterator<CallGraphNode, DefaultEdge>(callGraph);
+		int globalMaxDist = 0;
+		while(toIter.hasNext()) {
+			CallGraphNode node = toIter.next();
+			toList.add(node);
+			int maxDist = 0;
+			CallGraphNode maxCallStackPred = null;
+			for(DefaultEdge e : callGraph.incomingEdgesOf(node)) {
+				CallGraphNode pred = callGraph.getEdgeSource(e);
+				int distViaPred = maxDistanceToRoot.get(pred) + 1;
+				if(distViaPred > maxDist) {
+					maxDist = distViaPred;
+					maxCallStackPred = pred;
+				}
+			}
+			this.maxDistanceToRoot.put(node,maxDist);
+			if(maxCallStackPred != null) this.maxCallstackDAG.put(node,maxCallStackPred);
+			if(maxDist > globalMaxDist) this.maxCallStackLeaf = node;
+		}
+		/* calculate subgraph height */
+		Collections.reverse(toList);
+		for(CallGraphNode n : toList) {
+			int maxHeight = 0;
+			for(DefaultEdge e : callGraph.outgoingEdgesOf(n)) {
+				int predHeight = subgraphHeight.get(callGraph.getEdgeTarget(e));
+				maxHeight = Math.max(maxHeight, predHeight);
+			}
+			subgraphHeight.put(n, maxHeight);
+		}
+	}
+
+	/**
+	 * Export callgraph as .dot file
+	 * @param w
+	 * @throws IOException
+	 */
 	public void exportDOT(Writer w) throws IOException {
 		new AdvancedDOTExporter<CallGraphNode, DefaultEdge>().exportDOT(w, this.callGraph);
 	}
-
+	
 	public ClassInfo getRootClass() {
 		return rootNode.method.getCli();
 	}
+	
 	public MethodInfo getRootMethod() {
 		return rootNode.method;
 	}
+	
 	public CallGraphNode getRootNode() {
 		return rootNode;
 	}
@@ -188,6 +250,7 @@ public class CallGraph {
 	public Set<ClassInfo> getClassInfos() {
 		return classInfos;
 	}
+	
 	/**
 	 * get non-abstract methods, in topological order
 	 * requires an acyclic callgraph.
@@ -203,6 +266,7 @@ public class CallGraph {
 		}		
 		return implemented;
 	}
+	
 	/**
 	 * get non-abstract methods reachable from the given method, in DFS order
 	 * @return
@@ -215,16 +279,12 @@ public class CallGraph {
 		ti.setCrossComponentTraversal(false);
 		while(ti.hasNext()) {
 			MethodInfo m = ti.next().getMethodImpl();
-			if(m != null) implemented.add(m);
+			if(m == null) throw new AssertionError("Abstract method in callgraph");
+			implemented.add(m);
 		}		
 		return implemented;
 	}
-	public Iterator<CallGraphNode> getReachableMethods(MethodInfo m) {
-		DepthFirstIterator<CallGraphNode, DefaultEdge> dfi = 
-			new DepthFirstIterator<CallGraphNode, DefaultEdge>(callGraph,getNode(m));
-		dfi.setCrossComponentTraversal(false);
-		return dfi;		
-	}
+		
 	/** Get methods possibly directly invoked from the given method */
 	public List<CallGraphNode> getReferencedMethods(MethodInfo m) {
 		CallGraphNode node = getNode(m);
@@ -234,20 +294,22 @@ public class CallGraph {
 		}
 		return succs;
 	}
+	/**
+	 * Return true when the given method does not invoke any other methods
+	 * @param node
+	 * @return
+	 */
+	public boolean isLeafNode(CallGraphNode node) {
+		return callGraph.outDegreeOf(node) == 0;
+	}
 	
-
-	protected void addEdge(CallGraphNode src, CallGraphNode target) {
-		callGraph.addVertex(target);
-		callGraph.addEdge(src, target);
-	}
-	protected CallGraphNode getNode(MethodInfo m) {
-		return nodeMap.get(m);
-	}
-	public boolean isLeafNode(CallGraphNode vertex) {
-		return callGraph.outDegreeOf(vertex) == 0;
-	}
 	public boolean isLeafNode(MethodInfo mi) {
 		return isLeafNode(getNode(mi));
+	}
+
+	public int getMaxNodeDepth(MethodInfo mi) {
+		calculateDepthAndHeight();
+		return this.maxDistanceToRoot.get(getNode(mi));
 	}
 
 	/**
@@ -258,54 +320,24 @@ public class CallGraph {
 	 * @return
 	 */
 	public Vector<CallGraphNode> getMaximalCallStack() {
-		Map<CallGraphNode, Integer> depth = new HashMap<CallGraphNode,Integer>();
-		HashMap<CallGraphNode, CallGraphNode> prev = new HashMap<CallGraphNode, CallGraphNode>();
-		CallGraphNode deepestLeaf = rootNode;
-
-		TopologicalOrderIterator<CallGraphNode, DefaultEdge> toIter =
-			new TopologicalOrderIterator<CallGraphNode, DefaultEdge>(callGraph);
-		depth.put(rootNode, 0);
-		int maxDepth = 0;
-		Set<CallGraphNode> visited = new HashSet<CallGraphNode>();
-		while(toIter.hasNext()) {
-			CallGraphNode n = toIter.next();
-			visited.add(n);
-			int thisDepth = depth.get(n);
-			for(DefaultEdge e :callGraph.outgoingEdgesOf(n)) {
-				CallGraphNode target = callGraph.getEdgeTarget(e);
-				if(visited.contains(target)) {
-					throw new AssertionError("Bad implementation of topological order iterator in jgrapht ?");
-				}
-				int oldDepth;
-				{
-					Integer tmp = depth.get(target);
-					oldDepth = tmp == null ? 0 : tmp.intValue();
-				}
-				if(thisDepth+1 > oldDepth) {
-					depth.put(target,thisDepth+1);
-					prev.put(target,n);
-					if(thisDepth + 1 > maxDepth) {
-						maxDepth = thisDepth + 1;
-						deepestLeaf = target;
-					}
-				}
-			}			
-		}
+		if(maxCallStackLeaf == null) calculateDepthAndHeight();
+		CallGraphNode n = this.maxCallStackLeaf;
 		Vector<CallGraphNode> maxCallStack = new Vector<CallGraphNode>();
-		CallGraphNode n = deepestLeaf;
-		while(prev.containsKey(n)) {
-			maxCallStack.add(n);
-			n = prev.get(n);
-		}
 		maxCallStack.add(n);
+		while(maxCallstackDAG.containsKey(n)) {
+			n = maxCallstackDAG.get(n);
+			maxCallStack.add(n);			
+		}
 		Collections.reverse(maxCallStack);
 		return maxCallStack;
 	}
 
 	 public int getMaxHeight() {
-		return this.getMaximalCallStack().size();
+		calculateDepthAndHeight();
+		return this.subgraphHeight.get(this.rootNode);
 	}
-	public ControlFlowGraph getLargestMethod() {
+
+	 public ControlFlowGraph getLargestMethod() {
 		ControlFlowGraph largest = null;
 		int maxBytes = 0;
 		for(MethodInfo mi : this.getImplementedMethods()) {

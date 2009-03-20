@@ -1,7 +1,5 @@
 package com.jopdesign.wcet.jop;
 
-import java.util.Iterator;
-
 import org.apache.bcel.classfile.Code;
 
 import com.jopdesign.build.MethodInfo;
@@ -9,7 +7,6 @@ import com.jopdesign.wcet.ProcessorModel;
 import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.config.Config;
 import com.jopdesign.wcet.frontend.ControlFlowGraph;
-import com.jopdesign.wcet.frontend.CallGraph.CallGraphNode;
 import com.jopdesign.wcet.graphutils.MiscUtils;
 import com.jopdesign.wcet.jop.CacheConfig.CacheImplementation;
 
@@ -61,13 +58,12 @@ public abstract class MethodCache {
 	 */
 	public long getMissOnceCummulativeCacheCost(MethodInfo m) {
 		long miss = 0;
-		Iterator<CallGraphNode> iter = project.getCallGraph().getReachableMethods(m);
-		while(iter.hasNext()) {
-			CallGraphNode n = iter.next();
-			miss+=missOnceCost(n.getMethodImpl());
+		for(MethodInfo reachable : project.getCallGraph().getReachableImplementations(m)) {
+			miss += missOnceCost(reachable);
 		}
 		return miss;
 	}
+
 	public long missOnceCost(MethodInfo mi) {
 		int words = project.getFlowGraph(mi).getNumberOfWords();
 		boolean loadOnInvoke =    project.getCallGraph().isLeafNode(mi) 
@@ -80,17 +76,15 @@ public abstract class MethodCache {
 
 	/**
 	 * Compute the number of cache blocks which might be needed when calling this method
-	 * @param mi
+	 * @param invoked
 	 * @return the maximum number of cache blocks needed, s.t. we won't run out of cache
 	 * blocks when invoking the given method
 	 * @throws TypeException 
 	 */
-	public long getAllFitCacheBlocks(MethodInfo mi) {
+	public long getAllFitCacheBlocks(MethodInfo invoked) {
 		int size = 0;
-		Iterator<CallGraphNode> iter = project.getCallGraph().getReachableMethods(mi);
-		while(iter.hasNext()) {
-			CallGraphNode n = iter.next();
-			size+= requiredNumberOfBlocks(project.getSizeInWords(n.getMethodImpl()));
+		for(MethodInfo mi : project.getCallGraph().getReachableImplementations(invoked)) {
+			size+= requiredNumberOfBlocks(project.getSizeInWords(mi));			
 		}
 		return size;
 	}
@@ -103,7 +97,7 @@ public abstract class MethodCache {
 		for(MethodInfo mi : project.getCallGraph().getImplementedMethods()) {
 			Code code = mi.getCode();
 			if(code == null) continue;
-			int size = code.getLength();
+			int size = code.getCode().length;
 			int words = MiscUtils.bytesToWords(size);
 			if(! this.fitsInCache(words)) {
 				throw new Exception("Cache to small for target method: "+mi.getFQMethodName() + " / "+ words + " words");
