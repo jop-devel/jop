@@ -87,7 +87,7 @@ public class WCETAnalysis {
 			tlLogger.info("Loading project");
 			project.load();
 			MethodInfo largestMethod = project.getProcessorModel().getMethodCache().checkCache();
-			int minWords = MiscUtils.bytesToWords(largestMethod.getCode().getLength());
+			int minWords = MiscUtils.bytesToWords(largestMethod.getCode().getCode().length);
 			System.out.println("Minimal Cache Size for target method(words): " 
 					         + minWords
 					         + " because of "+largestMethod.getFQMethodName());
@@ -104,6 +104,7 @@ public class WCETAnalysis {
 //		}
 //		System.err.println("Total solver time (50): "+LpSolveWrapper.getSolverTime());
 //		System.exit(1);
+		// new ETMCExport(project).export(project.getOutFile("Spec_"+project.getProjectName()+".txt")); 
 		/* Run */
 		boolean succeed = false;
 		try {
