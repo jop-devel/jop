@@ -269,12 +269,13 @@ public class WcetAppInfo  {
 		assert(wcaMap != null);
 		ControlFlowGraph fg;
 		try {
-			fg = new ControlFlowGraph(cfgsByIndex.size(),this,method);
+			fg = new ControlFlowGraph(cfgsByIndex.size(),project,method);
 			fg.loadAnnotations(project);
 			fg.resolveVirtualInvokes();
 //			fg.insertSplitNodes();
 //			fg.insertSummaryNodes();
 			fg.insertReturnNodes();
+			fg.insertContinueLoopNodes();
 			cfgsByIndex.add(fg);
 			cfgs.put(method,fg);
 			return fg;

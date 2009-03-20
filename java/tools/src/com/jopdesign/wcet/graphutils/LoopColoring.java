@@ -34,9 +34,12 @@ import java.util.Map.Entry;
 
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.VertexFactory;
+import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DirectedSubgraph;
 import org.jgrapht.graph.SimpleDirectedGraph;
 import org.jgrapht.traverse.AbstractGraphIterator;
+import org.jgrapht.traverse.TopologicalOrderIterator;
 
 import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGNode;
 
@@ -143,10 +146,10 @@ public class LoopColoring<V,E> {
 		}
 	}
 	/**
-	 * A loop-nest forest has an edge from loop A to loop B, if B is an inner loop of A.
-	 * @return The loop-nest forest of the graph
+	 * A loop-nest DAG has an edge from loop A to loop B, if B is an inner loop of A.
+	 * @return The loop-nest DAG of the graph
 	 */
-	public SimpleDirectedGraph<V,DefaultEdge> getLoopNestForest() {
+	public SimpleDirectedGraph<V,DefaultEdge> getLoopNestDAG() {
 		if(loopNestForest != null) return loopNestForest;
 		analyse();
 		loopNestForest = 
@@ -161,7 +164,41 @@ public class LoopColoring<V,E> {
 		}
 		return loopNestForest;
 	}
-	
+	/**
+	 * <p>Return a traversal of the graph in 'flow' order, a topological order
+	 * where back edges and the loop header are treated in a special way.</p>
+	 * </p> 
+	 * @return The traversal as list of nodes
+	 */
+	public Vector<V> getFlowTraversal() {
+		Vector<V> flowTraversal = new Vector<V>();
+		TopologicalOrderIterator<V, DefaultEdge> iter = 
+			new TopologicalOrderIterator<V, DefaultEdge>(getFlowTraversalGraph());
+		while(iter.hasNext()) {
+			flowTraversal.add(iter.next());
+		}
+		return flowTraversal;		
+	}
+	/** topo order, where back edges are replaced by exit loop edg */
+	public DirectedGraph<V, DefaultEdge> getFlowTraversalGraph() {
+		DirectedGraph<V,DefaultEdge> travGraph = new DefaultDirectedGraph<V,DefaultEdge>(DefaultEdge.class);
+		for(V v : graph.vertexSet()) { 
+			travGraph.addVertex(v);			
+		}
+		for(E e: graph.edgeSet()) {
+			V src = graph.getEdgeSource(e);
+			V target = graph.getEdgeTarget(e);
+			if(isBackEdge(e)) {
+				for(E exitEdge : getExitEdgesOf(target)) {
+					V newTarget = graph.getEdgeTarget(exitEdge);
+					travGraph.addEdge(src, newTarget);
+				}
+			} else {
+				travGraph.addEdge(src,target);
+			}
+		}
+		return travGraph;
+	}
 	/**
 	 * A node is an Head of loop, if it is the target of a back-edge
      */
@@ -400,6 +437,51 @@ public class LoopColoring<V,E> {
 			}
 		}
 	}
-
-
 }
+
+///* headers last */
+//DirectedGraph<V,DefaultEdge> travGraph = new DefaultDirectedGraph<V,DefaultEdge>(DefaultEdge.class);
+//for(V v : graph.vertexSet()) { 
+//	travGraph.addVertex(v);			
+//}
+//Set<V> hols = this.getHeadOfLoops();
+//for(E e: graph.edgeSet()) {
+//	V src = graph.getEdgeSource(e);
+//	V target = graph.getEdgeTarget(e);
+//	if(hols.contains(src)) {
+//		V hol = src;
+//		if(! getLoopColor(target).contains(hol)) {
+//			travGraph.addEdge(src,target);
+//			continue;
+//		}
+//		/* Special case: src is hol, target is part of loop */
+//		Stack<V> todo = new Stack<V>();
+//		Vector<V> newPreds = new Vector<V>();
+//		todo.add(hol);
+//		while(! todo.empty()) {
+//			V pred = todo.pop();
+//			if(hols.contains(pred)) {
+//				for(E toHOL : graph.incomingEdgesOf(pred)) {
+//					V predPred = graph.getEdgeSource(toHOL);
+//					if(getLoopColor(predPred).contains(pred)) continue;
+//					todo.push(predPred);
+//				}
+//			} else {
+//				newPreds.add(pred); /* not a hol */
+//			}
+//		}
+//		for(V newPred : newPreds) {
+//			travGraph.addEdge(newPred,target);
+//		}
+//	} else {
+//		travGraph.addEdge(src,target);
+//	}
+//}
+//for(V hol : hols) {
+//	for(E exitEdge : this.exitEdges.get(hol)) {
+//		V exit = graph.getEdgeTarget(exitEdge);
+//		travGraph.addEdge(hol, exit);
+//	}
+//}
+//return travGraph;
+
