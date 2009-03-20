@@ -108,14 +108,14 @@ public class InlineOptimizer extends AbstractGraphAction {
         String ignorepkg = getActionOption(config, CONF_INLINE_IGNORE);
         String nativeClass = config.getArchConfig().getNativeClassName();
 
-        if ( nativeClass != null && !nativeClass.isEmpty() ) {
-            if ( ignorepkg != null && !ignorepkg.isEmpty() ) {
+        if ( nativeClass != null && nativeClass.length() > 0 ) {
+            if ( ignorepkg != null && ignorepkg.length() > 0 ) {
                 ignorepkg += "," + nativeClass;
             } else {
                 ignorepkg = nativeClass;
             }
         }
-        if ( ignorepkg != null && !ignorepkg.isEmpty() ) {
+        if ( ignorepkg != null && ignorepkg.length() > 0 ) {
             checker.setIgnorePrefix(ignorepkg.split(","));
         }
 

@@ -27,6 +27,7 @@ import org.apache.log4j.Logger;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.net.URL;
@@ -104,10 +105,9 @@ public class ConfigLoader {
 
             // not using class.getResource() here as the config file is usually outside the classpath.
             URL file = new URL(filename);
-            InputStreamReader fileStream = new InputStreamReader(file.openStream());
-            Reader reader = new BufferedReader(fileStream);
-            propfile.load(reader);
-            reader.close();
+            InputStream fileStream = file.openStream();
+            propfile.load(fileStream);
+            fileStream.close();
 
         } catch (IOException e) {
             if (logger.isDebugEnabled()) {
