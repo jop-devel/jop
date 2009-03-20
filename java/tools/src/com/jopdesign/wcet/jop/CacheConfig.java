@@ -50,7 +50,7 @@ public class CacheConfig {
 	public static final IntegerOption CACHE_SIZE_WORDS =
 		new IntegerOption("cache-size-words",
 						  "size of the cache in words",
-						  256);
+						  1024);
 	
    /** Static cache approximations:
 	 * <ul>
