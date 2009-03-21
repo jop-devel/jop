@@ -2,6 +2,29 @@
  * Copyright (c) Martin Schoeberl, martin@jopdesign.com
  * All rights reserved.
  *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. All advertising materials mentioning features or use of this software
+ *    must display the following acknowledgement:
+ *	This product includes software developed by Martin Schoeberl
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  *
  */
 
@@ -23,127 +46,25 @@ import com.jopdesign.sys.Native;
 import util.Amd;
 import util.Dbg;
 import util.Timer;
-import ejip.Ejip;
-import ejip.LinkLayer;
-import ejip.Packet;
-import ejip.Udp;
-import ejip.UdpHandler;
+import ejip.*;
 
 /**
 *	BgTftp.java: A simple TFTP Server. see rfc1350.
 */
 
-public class BgTftp extends UdpHandler {
+public class BgTftp extends Tftp {
 
-	public static final int PORT = 69;
-
-	private static final int IDLE = 0;
-
-	private static final int RRQ = 1;
-	private static final int WRQ = 2;
-	private static final int DAT = 3;
-	private static final int ACK = 4;
-	private static final int ERR = 5;
-
-	private static int state;
-	private static int fn;
-	private static int endBlock;
-	private static int block;
-	private static int last_block;
-private static int simerr;
-
-	private static int srcIp, dstIp, dstPort;
-	private static LinkLayer ipLink;
-	
 	final static int MAX_BLOCKS = 128;
-	static int[] sector;
-
-	private static Ejip ejip;
+	private int[] sector;
 
 	BgTftp(Ejip ejipRef) {
-		ejip = ejipRef;
+		super(ejipRef);
 		// +1 is for the final block on a 64KB write
 		// that contains no data
 		sector = new int[(MAX_BLOCKS+1)*512/4];
-		tftpInit();
 	}
 
-	private static void tftpInit() {
 
-		state = IDLE;
-		last_block = 0;
-		block = 0;
-		fn = 0;
-		block_out = 0;
-		timeout = 0;
-	}
-
-/* not used
-	private static void error(Packet p) {
-
-		p.buf[Udp.DATA] = (ERR<<16) + 4711;
-		p.buf[Udp.DATA+1] = 'x'<<24;
-		p.len = Udp.DATA+6;
-		tftpInit();
-	}
-*/
-
-	/** drop the packet end reset state */
-	private static void discard(Packet p) {
-		p.len = 0;			
-		tftpInit();
-	}
-
-	private static int block_out;
-	private static int timeout;
-	private static int time;
-
-	private static void onTheFly(int block) {
-
-		block_out = block;
-		time = 4;
-		timeout = Timer.getTimeoutSec(time);
-	}
-
-	public void loop() {
-
-		if (block_out != 0) {
-			if (Timer.timeout(timeout)) {
-				resend();
-			}
-		}
-	}
-
-	private static void resend() {
-
-
-		time <<= 1;
-		if (time > 64) {
-Dbg.wr("TFTP give up");
-			tftpInit();
-			return;
-		}
-
-Dbg.wr("TFTP resend ");
-Dbg.intVal(block_out);
-		// retransmit DATA
-		timeout = Timer.getTimeoutSec(time);
-
-		Packet p = ejip.getFreePacket(ipLink);
-		if (p == null) {								// got no free buffer!
-			Dbg.wr('!');
-			Dbg.wr('b');
-			return;
-		}
-		p.buf[Udp.DATA] = (DAT<<16)+block_out;
-		if (block_out==endBlock) {
-			p.len = Udp.DATA*4+4;			// last block is zero length
-		} else {
-			read(p.buf, block_out);
-			p.len = Udp.DATA*4+4+512;
-		}
-		Udp.build(p, srcIp, dstIp, dstPort);
-	}
 
 	/**
 	*	handle the TFTP packets.
@@ -265,7 +186,7 @@ buf[Udp.DATA+13] = 0x12345678;
 				p.len = Udp.DATA*4+4;
 				++block;
 				if (last) {				// end of write
-					program(block-1);
+					programSec(block-1);
 					tftpInit();
 					// remember very last written block
 					last_block = block-1;
@@ -284,34 +205,10 @@ Dbg.wr("error ");
 		}
 	}
 
-// TODO: insert reply back to request or split in smaller methods
-	private static void reply(Packet p) {
-
-/*
-++simerr;
-if (simerr%23==0) { 
-Dbg.wr("reply dropped ");
-Dbg.lf();
-p.setStatus(Packet.FREE);	// mark packet free
-return;
-}
-*/
-int[] buf = p.buf;
-Dbg.wr("tftp reply: ");
-Dbg.intVal(buf[Udp.DATA] & 0xffff);
-
-			// generate a reply with IP src/dst exchanged
-			dstPort = buf[Udp.HEAD]>>>16;
-			srcIp = buf[4];
-			dstIp = buf[3];
-			ipLink = p.getLinkLayer();
-			Udp.build(p, srcIp, dstIp, dstPort);
-	}
-
 	/**
 	*	Save data for future programming.
 	*/
-	private static void save(int[] buf, int block) {
+	private void save(int[] buf, int block) {
 
 		int i, j;
 		int base;
@@ -337,7 +234,7 @@ System.out.print("Save "); System.out.println(block);
 	/**
 	*	Program one sector of the Flash.
 	*/
-	private static void program(int cnt) {
+	private void programSec(int cnt) {
 
 System.out.print("Program "); System.out.print(cnt); System.out.println(" blocks");
 
@@ -366,49 +263,13 @@ System.out.println("Program ");
 			}	
 		}
 	}
-
-	/**
-	*	read internal memory or flash.
-	*/
-	private static void read(int[] buf, int block) {
-
-		int i, j, k;
-		int base;
-
-		block--;
-		i = fn>>8;
-		if (i=='i') {					// read internal memory
-			base = block<<7;
-			for (i=0; i<128; ++i) {
-				buf[Udp.DATA+1+i] = com.jopdesign.sys.Native.rdIntMem(base+i);
-			}
-		} else if (i=='f') {				// read flash
-			base = (block<<9) + 0x80000;	// add offset because we use Native.rdMem!
-			base += ((fn&0xff)-'0')<<16;	// 64 KB sector
-
-			k = 0;
-			for (i=0; i<128; ++i) {
-				synchronized (sector) {
-					for (j=0; j<4; ++j) {
-						k <<= 8;
-						k += com.jopdesign.sys.Native.rdMem(base+(i<<2)+j);
-					}					
-				}
-				buf[Udp.DATA+1+i] = k;
-			}
-		} else {						// read nothing
-			for (i=0; i<128; ++i) {
-				buf[Udp.DATA+1+i] = 0;
-			}
-		}
-	}
 	
 	/**
 	 * move log data
 	 * @author admin
 	 *
 	 */
-	static void moveLog() {
+	void moveLog() {
 		
 		int i, j;
 //		synchronized (sector) {
@@ -426,7 +287,7 @@ System.out.println("Program ");
 				++j;
 			}
 			fn = (((int)'f')<<8) + '3';
-			program(MAX_BLOCKS);
+			programSec(MAX_BLOCKS);
 //		}
 	}
 	
@@ -434,7 +295,7 @@ System.out.println("Program ");
 	 * Set bgid if it got lost
 	 * @param bgid
 	 */
-	static void programBgid(int bgid) {
+	void programBgid(int bgid) {
 		
 		int i,j;
 		
@@ -445,11 +306,11 @@ System.out.println("Program ");
 		}
 		sector[0] = bgid;
 		fn = (((int)'f')<<8) + '3';
-		program(1);
+		programSec(1);
 
 	}
 	
-	static int intVal(int addr) {
+	int intVal(int addr) {
 
 		int val = 0;
 		synchronized (sector) {

@@ -51,30 +51,40 @@ public class Tftp extends UdpHandler {
 
 	public static final int PORT = 69;
 
-	private static final int IDLE = 0;
+	public static final int IDLE = 0;
 
-	private static final int RRQ = 1;
-	private static final int WRQ = 2;
-	private static final int DAT = 3;
-	private static final int ACK = 4;
-	private static final int ERR = 5;
+	public static final int RRQ = 1;
+	public static final int WRQ = 2;
+	public static final int DAT = 3;
+	public static final int ACK = 4;
+	public static final int ERR = 5;
 
-	private static int state;
-	private static int fn;
-	private static int endBlock;
-	private static int block;
-private static int simerr;
+	// TODO: make it private again after full integration of BgTftp
+	public int state;
+	public int fn;
+	public int endBlock;
+	public int block;
+	public int last_block;
+	private int simerr;
+	
+	public int block_out;
+	public int timeout;
+	public int time;
 
-	private static int srcIp, dstIp, dstPort;
-	private static LinkLayer ipLink;
-	private static Ejip ejip;
+	private int srcIp, dstIp, dstPort;
+	public LinkLayer ipLink;
+	
+	public Ejip ejip;
 
-	Tftp(Ejip ejipRef) {
+	public Tftp(Ejip ejipRef) {
 		ejip = ejipRef;
+		tftpInit();
 	}
 	
-	private static void tftpInit() {
+	public void tftpInit() {
+
 		state = IDLE;
+		last_block = 0;
 		block = 0;
 		fn = 0;
 		block_out = 0;
@@ -92,16 +102,12 @@ private static int simerr;
 */
 
 	/** drop the packet end reset state */
-	private static void discard(Packet p) {
+	public void discard(Packet p) {
 		p.len = 0;			
 		tftpInit();
 	}
 
-	private static int block_out;
-	private static int timeout;
-	private static int time;
-
-	private static void onTheFly(int block) {
+	public void onTheFly(int block) {
 
 		block_out = block;
 		time = 4;
@@ -117,7 +123,7 @@ private static int simerr;
 		}
 	}
 
-	private static void resend() {
+	private void resend() {
 
 
 		time <<= 1;
@@ -242,10 +248,12 @@ buf[Udp.DATA+13] = 0x12345678;
 			i = (buf[Udp.DATA] & 0xffff);	// get block number
 
 			if (state==IDLE) {
-				// ACK of last data block got lost,
-				// but we received the data and finished programming
-				buf[Udp.DATA] = (ACK<<16)+i;	// just ack it
-				p.len = Udp.DATA*4+4;			// we have allready received it before
+				if (i==last_block) {
+					// ACK of last data block got lost,
+					// but we received the data and finished programming
+					buf[Udp.DATA] = (ACK<<16)+last_block;	// just ack it
+					p.len = Udp.DATA*4+4;			// we have allready received it before
+				}
 			} else if (state!=WRQ) {
 				discard(p);
 			} else if (block != i) {		// not the expected block
@@ -268,6 +276,8 @@ buf[Udp.DATA+13] = 0x12345678;
 				++block;
 				if (last) {				// end of write
 					tftpInit();
+					// remember very last written block
+					last_block = block-1;
 				}
 			}
 		} else {
@@ -284,7 +294,7 @@ buf[Udp.DATA+13] = 0x12345678;
 	}
 
 // TODO: insert reply back to request or split in smaller methods
-	private static void reply(Packet p) {
+	public void reply(Packet p) {
 
 /*
 ++simerr;
@@ -310,7 +320,7 @@ if (Logging.LOG) Logging.hexVal(buf[Udp.DATA] & 0xffff);
 	/**
 	*	program flash.
 	*/
-	private static void program(int[] buf, int block) {
+	private void program(int[] buf, int block) {
 
 		int i, j;
 		int base;
@@ -328,7 +338,7 @@ if (Logging.LOG) Logging.hexVal(buf[Udp.DATA] & 0xffff);
 		}
 	}
 
-	private static void progloop(int base, int[] buf) {
+	private void progloop(int base, int[] buf) {
 
 		int i, w;
 
@@ -345,7 +355,7 @@ if (Logging.LOG) Logging.hexVal(buf[Udp.DATA] & 0xffff);
 	/**
 	*	read internal memory or flash.
 	*/
-	private static void read(int[] buf, int block) {
+	public void read(int[] buf, int block) {
 
 		int i, j, k;
 		int base;
@@ -363,9 +373,11 @@ if (Logging.LOG) Logging.hexVal(buf[Udp.DATA] & 0xffff);
 
 			k = 0;
 			for (i=0; i<128; ++i) {
-				for (j=0; j<4; ++j) {
-					k <<= 8;
-					k += com.jopdesign.sys.Native.rdMem(base+(i<<2)+j);
+				synchronized (this) {
+					for (j=0; j<4; ++j) {
+						k <<= 8;
+						k += com.jopdesign.sys.Native.rdMem(base+(i<<2)+j);
+					}					
 				}
 				buf[Udp.DATA+1+i] = k;
 			}
