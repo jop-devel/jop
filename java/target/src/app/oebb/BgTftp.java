@@ -44,7 +44,6 @@ package oebb;
 import com.jopdesign.sys.Native;
 
 import util.Amd;
-import util.Dbg;
 import util.Timer;
 import ejip.*;
 
@@ -64,151 +63,10 @@ public class BgTftp extends Tftp {
 		sector = new int[(MAX_BLOCKS+1)*512/4];
 	}
 
-
-
-	/**
-	*	handle the TFTP packets.
-	*
-	*	filename is fixed length (2):
-	*		'ix'		internal memory (read only)
-	*		'f0'..'f8'	flash sector (64 KB)
-	*
-	*/
-	public void request(Packet p) {
-
-		int i, j;
-		int[] buf = p.buf;
-
-Dbg.wr('F');
-Dbg.hexVal(buf[Udp.DATA]);
-
-		int op = buf[Udp.DATA]>>>16;
-
-
-/*
-++simerr;
-if (simerr%23==0) { 
-Dbg.wr(" tftp dropped");
-Dbg.lf();
-p.setStatus(Packet.FREE);	// mark packet free
-return;
-}
-*/
-
-		if (op==RRQ) {
-
-			state = RRQ;
-			fn = buf[Udp.DATA]&0xffff;
-			i = fn>>8;
-			if (i=='i') {
-				endBlock = 2+1;			// (256*4)/512
-			} else if (i=='f') {
-				endBlock = 128+1;			// 64K/512
-			} else {
-				endBlock = 1+1;
-			}
-
-			block = 1;
-			buf[Udp.DATA] = (DAT<<16)+block;
-			read(buf, block);
-			p.len = Udp.DATA*4+4+512;
-			onTheFly(block);
-
-		} else if (op==ACK) {
-
-			i = (buf[Udp.DATA] & 0xffff);	// get block number
-			if (i < block) {
-				// a ACK for an allready sent package
-				// drop it
-				ejip.returnPacket(p);	// mark packet free
-				return;
-			}
-
-			block = i+1;					// use one higher then last acked block
-			if (block>endBlock) {			// ACK of last block
-				discard(p);
-			} else {
-				buf[Udp.DATA] = (DAT<<16)+block;
-				if (block==endBlock) {
-					p.len = Udp.DATA*4+4;			// last block is zero length
-				} else {
-					read(buf, block);
-					p.len = Udp.DATA*4+4+512;
-				}
-				onTheFly(block);
-/*
-++simerr;
-if (simerr%23==0) { 
-Dbg.wr(" simulate wrong data on read ");
-Dbg.lf();
-buf[Udp.DATA+13] = 0x12345678;
-}
-*/
-			}
-
-		} else if (op==WRQ) {
-
-			state = WRQ;
-			fn = buf[Udp.DATA]&0xffff;
-			block = 1;
-			buf[Udp.DATA] = (ACK<<16);
-			p.len = Udp.DATA*4+4;
-
-		} else if (op==DAT) {
-
-			i = (buf[Udp.DATA] & 0xffff);	// get block number
-
-			if (state==IDLE) {
-				if (i==last_block) {
-					// ACK of last data block got lost,
-					// but we received the data and finished programming
-					buf[Udp.DATA] = (ACK<<16)+last_block;	// just ack it
-					p.len = Udp.DATA*4+4;			// we have allready received it before
-				}
-			} else if (state!=WRQ) {
-				discard(p);
-			} else if (block != i) {		// not the expected block
-				// is it a second write with the old block number?
-				if (block-1 == i) {
-					buf[Udp.DATA] = (ACK<<16)+i;	// just ack it
-					p.len = Udp.DATA*4+4;			// we have allready received it before
-				} else {
-					p.len = 0;				// else just discarde paket
-				}
-			} else {
-// Dbg.wr('a');
-// Dbg.intVal(block);
-				if (p.len > Udp.DATA*4+4) {
-					save(buf, block);
-				}
-				buf[Udp.DATA] = (ACK<<16)+block;
-				boolean last = p.len != Udp.DATA*4+4+512;
-				p.len = Udp.DATA*4+4;
-				++block;
-				if (last) {				// end of write
-					programSec(block-1);
-					tftpInit();
-					// remember very last written block
-					last_block = block-1;
-				}
-			}
-		} else {
-			p.len = 0;
-			tftpInit();
-Dbg.wr("error ");
-		}
-
-		if (p.len==0) {
-			ejip.returnPacket(p);	// mark packet free
-		} else {
-			reply(p);
-		}
-	}
-
 	/**
 	*	Save data for future programming.
 	*/
-	private void save(int[] buf, int block) {
+	protected void write(int[] buf, int block) {
 
 		int i, j;
 		int base;
@@ -234,7 +92,7 @@ System.out.print("Save "); System.out.println(block);
 	/**
 	*	Program one sector of the Flash.
 	*/
-	private void programSec(int cnt) {
+	protected void eof(int cnt) {
 
 System.out.print("Program "); System.out.print(cnt); System.out.println(" blocks");
 
@@ -251,7 +109,7 @@ System.out.println("Program ");
 
 			for (i=0; i<cnt && i<MAX_BLOCKS; ++i) {
 				Timer.wd();				// toggle for each block?
- System.out.print(" blk "); System.out.print(i);
+System.out.print(" blk "); System.out.print(i);
 				for (j=0; j<128; ++j) {
 					w = sector[i*128+j];
 					Amd.program(base, w>>>24);
@@ -287,7 +145,7 @@ System.out.println("Program ");
 				++j;
 			}
 			fn = (((int)'f')<<8) + '3';
-			programSec(MAX_BLOCKS);
+			eof(MAX_BLOCKS);
 //		}
 	}
 	
@@ -306,7 +164,7 @@ System.out.println("Program ");
 		}
 		sector[0] = bgid;
 		fn = (((int)'f')<<8) + '3';
-		programSec(1);
+		eof(1);
 
 	}
 	
