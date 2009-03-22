@@ -232,59 +232,48 @@ public class NandTest extends Nand {
 		test();
 		NandTest n = new NandTest();
 		System.out.println(n.getNrOfBlocks() + " blocks");
-//		n.eraseAll();
+		System.out.println(n.size() + " usable blocks");
+		System.out.println(n.size()*16 + " KB");
+		System.out.println("Physical block "+n.getPhysicalBlock(3));
+		System.out.println("Physical block "+n.getPhysicalBlock(488));
+		System.out.println("Physical block "+n.getPhysicalBlock(1000));
+		System.out.println("Physical block "+n.getPhysicalBlock(1920));
+		n.eraseAll();
+
+//		for (int i=0; i<1000; ++i) {
+//			n.erase(i);
+//			System.out.print('.');
+//		}
 //		n.testFull();
 //		n.findBadBlocks();
 		
-//		System.out.println("Erase NAND");
-////		n.eraseAll();
-//		int[] data = new int[WORDS];
-//		int[] spare = new int[SPARE_WORDS];
-//		
-//		for (block=0; block<1; ++block) {
-//			for (page=0; page<PAGES_PER_BLOCK; ++page) {
-//				n.readPage(data, spare, block, page);
-//				System.out.println("block "+block+" page "+page+" data "+data[0]+" spare "+spare[0]);
-//			}
-//		}
-//		block = 0;
-//		page = 0;
-//		for (int i=0; i<WORDS; ++i) {
-//			data[i] = OFF+i;
-//		}
-//		if (!n.writePage(data, null, block, page)) {
-//			System.out.println("Error during write");
-//		}
-//		for (int i=0; i<WORDS; ++i) {
-//			data[i] = 0;
-//		}
-//		if (!n.readPage(data,  null, block, page)) {
-//			System.out.println("Error during read");
-//		}
-//		for (int i=0; i<WORDS; ++i) {
-//			if (data[i] != OFF+i) {
-//				System.out.println("Error "+data[i]);
-//			}
-//		}
-//		
-//		for (int i=0; i<SPARE_WORDS; ++i) {
-//			spare[i] = OFF+i;
-//		}
-//		if (!n.writePage(null, spare, block, page)) {
-//			System.out.println("Error during write");
-//		}
-//		for (int i=0; i<SPARE_WORDS; ++i) {
-//			spare[i] = 0;
-//		}
-//		if (!n.readPage(null,  spare, block, page)) {
-//			System.out.println("Error during read");
-//		}
-//		for (int i=0; i<SPARE_WORDS; ++i) {
-//			if (spare[i] != OFF+i) {
-//				System.out.println("Error "+spare[i]);
-//			}
-//		}
-
+		int data[] = new int[128];
+		for (int cnt=0; cnt<10000; ++cnt) {
+			System.out.println("Test "+cnt);
+			for (int i=400; i<500; ++i) {
+				for (int j=0; j<PAGES_PER_BLOCK; ++j) {
+					for (int k=0; k<128; ++k) {
+						data[k] = i*128*PAGES_PER_BLOCK+j*PAGES_PER_BLOCK+k;
+					}
+					n.write(data, i, j);				
+				}
+			}
+			for (int i=400; i<500; ++i) {
+				for (int j=0; j<PAGES_PER_BLOCK; ++j) {
+					n.read(data, i, j);				
+					for (int k=0; k<128; ++k) {
+						if (data[k] != i*128*PAGES_PER_BLOCK+j*PAGES_PER_BLOCK+k) {
+							System.out.println("Data error! "+i+" "+j+" "+k);
+							System.exit(-1);
+						}
+					}
+				}
+			}
+			for (int i=400; i<500; ++i) {
+				n.erase(i);
+			}
+		}
+		
 	}
 
 }

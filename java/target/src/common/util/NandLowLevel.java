@@ -48,6 +48,8 @@ import com.jopdesign.sys.Native;
  * 
  */
 public class NandLowLevel {
+	
+	final static boolean LOG = true;
 
 	public final static int NAND_ADDR = 0x100000;	// data port
 	final static int CLE = NAND_ADDR + 1; // command latch enable
@@ -82,7 +84,7 @@ public class NandLowLevel {
 	/**
 	 * Check the size of the NAND flash.
 	 */
-	public NandLowLevel() {
+	NandLowLevel() {
 		
 		Native.wrMem(SIGNATURE, CLE);
 		Native.wrMem(0x00, ALE);
@@ -123,13 +125,15 @@ public class NandLowLevel {
 	
 
 	/**
-	 * Erase one block.
+	 * Erase one block and read back to check if cleaned.
 	 * @param block
 	 * @return true if ok.
 	 */
 	boolean eraseBlock(int block) {
 		
 		int a1, a2;
+		boolean ret = true;
+		int cnt;
 		
 		a1 = block << 5;
 		a2 = block >> 3;
@@ -139,8 +143,35 @@ public class NandLowLevel {
 		Native.wrMem(ERASE_CONFIRM, CLE);
 		
 		waitForReady();
+		ret &= cmdOk();
 		
-		return cmdOk();
+		// check page
+		for (int seq=0; seq<2; ++seq) {
+			if (seq==0) {
+				Native.wrMem(POINTA, CLE);
+				cnt = WORDS*4;
+			} else {
+				Native.wrMem(POINTC, CLE);
+				cnt = SPARE_WORDS*4;
+			}
+			Native.wrMem(0, ALE);		// we read a whole page, a0=0
+			Native.wrMem(a1, ALE);
+			Native.wrMem(a2, ALE);
+			waitForReady();
+			for (int i=0; i<cnt; ++i) {
+				if (Native.rdMem(NAND_ADDR)!=0xff) {
+					ret = false;
+				}
+			}			
+			if (LOG) {
+				if (!ret) {
+					System.out.println("not erased");					
+				}
+			}
+		}
+
+		
+		return ret;
 	}
 	
 	/**
@@ -157,7 +188,7 @@ public class NandLowLevel {
 	}
 
 	/**
-	 * Write one page and spare into the NAND.
+	 * Write one page and spare into the NAND. Also read back for a check.
 	 * @param data
 	 * @param block
 	 * @param page
@@ -167,15 +198,19 @@ public class NandLowLevel {
 		
 		int i, val;
 		int a1, a2;
-		int[] buf = data;
+		int[] buf;
 		boolean ret = true;
-		int cnt = WORDS;
+		int cnt;
 		
 		a1 = (block << 5) + page;
 		a2 = block >> 3;
+		
+		// write page
 		for (int seq=0; seq<2; ++seq) {
 			if (seq==0) {
-				Native.wrMem(POINTA, CLE);			
+				Native.wrMem(POINTA, CLE);
+				buf = data;
+				cnt = WORDS;
 			} else {
 				Native.wrMem(POINTC, CLE);
 				buf = spare;
@@ -198,6 +233,35 @@ public class NandLowLevel {
 			Native.wrMem(PROGRAM_CONFIRM, CLE);
 			
 			waitForReady();
+			ret &= cmdOk();
+		}
+		
+		// check page
+		for (int seq=0; seq<2; ++seq) {
+			if (seq==0) {
+				Native.wrMem(POINTA, CLE);
+				buf = data;
+				cnt = WORDS;
+			} else {
+				Native.wrMem(POINTC, CLE);
+				buf = spare;
+				cnt = SPARE_WORDS;
+			}
+			if (buf==null) {
+				continue;
+			}
+			Native.wrMem(0, ALE);		// we read a whole page, a0=0
+			Native.wrMem(a1, ALE);
+			Native.wrMem(a2, ALE);
+			waitForReady();
+			for (i=0; i<cnt; ++i) {
+				val = Native.rdMem(NAND_ADDR);
+				val = (val<<8) + Native.rdMem(NAND_ADDR);
+				val = (val<<8) + Native.rdMem(NAND_ADDR);
+				val = (val<<8) + Native.rdMem(NAND_ADDR);
+				ret &= buf[i] == val;
+			}
+			
 			ret &= cmdOk();
 		}
 		
