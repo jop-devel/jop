@@ -20,12 +20,12 @@
 
 package test;
 
-import util.Nand;
+import util.NandTest;
 
 import com.jopdesign.sys.Native;
 
 /**
-*	Test.java ... the name implys it
+*	Test.java ... the name implies it
 */
 
 public class Flash {
@@ -55,7 +55,7 @@ public class Flash {
 			System.out.println(" error reading Flash");
 		}
 
-		Nand.test();
+		NandTest.test();
 
 	}
 

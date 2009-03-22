@@ -23,448 +23,148 @@
  */
 package util;
 
-import oebb.BgTftp;
-
-import com.jopdesign.sys.Native;
-
 /**
- * Interface to NAND memory on the Cycore board.
+ * NAND interface with bad block mapping.
  * 
- * NAND organization (8-bit device): page = 2x256 Bytes + 16 Bytes spare, block =
- * 32 pages = 16 KB
+ * About 6% (1/16) of the NAND is reserved mapping of bad blocks. The bad block
+ * map is stored in the last or last-1 block and kept in memory.<br>
  * 
- * Addressing is without A8 => for 8-bit devices there are two different address
- * commands that contain A8. A0-A7 Column Address, A9-A13 Address in Block, A14-A26
- * Block Address, A9-A26 Page Address
+ * Usage of spare bytes:<br>
+ * B0-B1: type<br>
+ * B2-B3: TBD<br>
+ * B4-B5: TBD<br>
+ * B6-B7: bad block marker (!= 0xffff)<br>
+ * B8-B9: TBD<br>
+ * B10-B11: TBD<br>
+ * B12-B13: TBD<br>
+ * B14-B15: checksum<br>
  * 
- * Bad blocks are marked with the 6th byte of the spare area with data != 0xff
- * on shipment.
  * 
- * All commands use integer arrays. We use the network order with high byte first.
- * 
- * @author Martin Schoeberl
- * 
- * TODO:
- * 		Having the RDY signal as bit 8 is not such a good idea -- change memory
- * 			interface
+ * @author Martin Schoeberl (martin@jopdesign.com)
  * 
  */
-public class Nand {
-
-	public final static int NAND_ADDR = 0x100000;	// data port
-	final static int CLE = NAND_ADDR + 1; // command latch enable
-	final static int ALE = NAND_ADDR + 2; // address latch enable
-	final static int RDY = NAND_ADDR + 4; // ready signal
-
-	final static int ERASE = 0x60;
-	final static int ERASE_CONFIRM = 0xD0;
-	final static int STATUS = 0x70;
-	final static int SIGNATURE = 0x90;
-	final static int PROGRAM = 0x80;
-	final static int PROGRAM_CONFIRM = 0x10;
-	final static int POINTA = 0x00;
-	final static int POINTB = 0x01;
-	final static int POINTC = 0x50;
-
-	final static int RDY_MSK = 0x100;
+public class Nand extends NandLowLevel {
 	
-	final static int PAGES_PER_BLOCK = 32;
-	final static int WORDS = 128;	// one page in 32 bit words
-	final static int SPARE_WORDS = 4;
-	
+	final static int TYPE_BBMAP = 1;
+	final static int TYPE_DATA = 2;
 
 	/**
-	 * Size in blocks. One block contains 32 pages or 16 KB.
+	 * Mapping of bad blocks. Lower 16 bits is the logical block number, upper
+	 * 16 bits are the block in the reserved block area if mapped.
 	 */
-	int nrOfBlocks;
+	int remap[];
+	int[] data = new int[WORDS];
+	int mapBlock;
 
-	/**
-	 * Check the size of the NAND flash.
-	 */
 	public Nand() {
-		
-		Native.wrMem(SIGNATURE, CLE);
-		Native.wrMem(0x00, ALE);
-		int man = Native.rdMem(NAND_ADDR); // Manufacturer
-		int size = Native.rdMem(NAND_ADDR); // Size
-
-		if (size == 0x73) {
-			nrOfBlocks = 1024;
-		} else if (size == 0x75) {
-			nrOfBlocks = 2048;
-		} else if (size == 0x76) {
-			nrOfBlocks = 4096;
-		} else if (size == 0x79) {
-			nrOfBlocks = 8192;
+		super();
+		int maxRemap = getNrOfBlocks() / 16 - 2;
+		if (maxRemap < 0) {
+			// we have not found a NAND Flash
+			return;
+		}
+		remap = new int[maxRemap];
+		for (int i = 0; i < remap.length; i++) {
+			remap[i] = -1;
+		}
+		mapBlock = getNrOfBlocks() - 1;
+		if (isBad(mapBlock)) {
+			--mapBlock;
+			if (isBad(mapBlock)) {
+				System.out.println("NAND Flash is dead!");
+			}
+		}
+		readPage(null, localSpare, mapBlock, 0);
+		if ((localSpare[0]>>>16)!=TYPE_BBMAP) {
+			System.out.println("Initializing NAND Flash");
+			initMap();
 		} else {
-			nrOfBlocks = 0;
+			System.out.println("Read bad block table");
+			int page = 0;
+			for (int i = 0; i < remap.length; i++) {
+				if (i % (512 / 4) == 0) {
+					readPage(data, mapBlock, page);
+				}
+				remap[i] = data[i % (512 / 4)];
+			}
 		}
-
-	}
-	/**
-	 * @return true if no error is signaled by the error bit
-	 */
-	boolean cmdOk() {
-		Native.wrMem(STATUS, CLE);
-		// S0=error bit S6=controller inactive S7=wr protection
-		// Signal
-		return !((Native.rdMem(NAND_ADDR) & 0x01) == 0x01);
-	}
-
-	/**
-	 * waits until the NAND is ready
-	 */
-	void waitForReady() {
-		while (Native.rdMem(RDY)==0) {
-			; // watch rdy signal
+		System.out.print(badCount());
+		System.out.println(" bad blocks:");
+		for (int i=0; i<badCount(); ++i) {
+			System.out.println("\t" + (remap[i]&0xffff) + " -> " + (remap[i]>>>16));
 		}
+	}
+
+	boolean isAvailable() {
+		return getNrOfBlocks() != 0;
+	}
+
+	boolean isBad(int block) {
+
+		boolean bad = false;
+		for (int i = 0; i < 2; ++i) {
+			readPage(null, localSpare, block, i);
+			if ((localSpare[1] & 0xffff) != 0xffff) {
+				bad = true;
+			}
+		}
+		return bad;
+	}
+
+	private void initMap() {
+		for (int i=0; i<getNrOfBlocks(); ++i) {
+			if (isBad(i)) {
+				addBadBlock(i);
+			}
+		}
+		updateMap();
 	}
 	
-
-	/**
-	 * Erase one block.
-	 * @param block
-	 * @return true if ok.
-	 */
-	boolean eraseBlock(int block) {
-		
-		int a1, a2;
-		
-		a1 = (block << 5);
-		a2 = (block >> 5);
-		Native.wrMem(ERASE, CLE);
-		Native.wrMem(a1, ALE);
-		Native.wrMem(a2, ALE);
-		Native.wrMem(ERASE_CONFIRM, CLE);
-		
-		waitForReady();
-		
-		return cmdOk();
+	private void addBadBlock(int block) {
+		int cnt = badCount();
+		int reservedStart = getNrOfBlocks()-remap.length-2;
+		remap[cnt] = ((reservedStart+cnt)<<16) + block;
 	}
 	
-	/**
-	 * Erase the whole NAND flash.
-	 * @return true if no error.
-	 */
-	boolean eraseAll() {
-		boolean ret = true;
-		for (int i=0; i<nrOfBlocks; ++i) {
-			ret &= eraseBlock(i);
+	private boolean updateMap() {
+		if (!eraseBlock(mapBlock)) {
+			if (mapBlock!=getNrOfBlocks()-1) {
+				System.out.println("NAND Flash is dead!");
+				return false;
+			}
+			--mapBlock;
+			if (!eraseBlock(mapBlock)) {
+				System.out.println("NAND Flash is dead!");
+				return false;
+			}
 		}
-		return ret;
+		int cnt = 0;
+		int nrBad = badCount();
+		for (int i=0; i<SPARE_WORDS; ++i) {
+			localSpare[i] = -1;
+		}
+		localSpare[0] = (TYPE_BBMAP<<16) | 0xffff;
+		// write mapping table, but at least an empty one
+		for (int i=0; i<PAGES_PER_BLOCK & cnt<=nrBad; ++i) {
+			for (int j=0; j<WORDS; ++j, ++cnt) {
+				if (cnt<nrBad) {
+					data[j] = remap[cnt];
+				} else {
+					data[j] = -1;					
+				}
+			}
+			if (!writePage(data, localSpare,mapBlock, i)) {
+				return false;
+			}
+		}
+		return true;
 	}
 
-	/**
-	 * Write one page and spare into the NAND.
-	 * @param data
-	 * @param block
-	 * @param page
-	 * @return true if no error.
-	 */
-	boolean writePage(int[] data, int[] spare, int block, int page) {
-		
-		int i, val;
-		int a1, a2;
-		int[] buf = data;
-		boolean ret = true;
-		int cnt = WORDS;
-		
-		a1 = (block << 5) + page;
-		a2 = block >> 3;
-		for (int seq=0; seq<2; ++seq) {
-			if (seq==0) {
-				Native.wrMem(POINTA, CLE);			
-			} else {
-				Native.wrMem(POINTC, CLE);
-				buf = spare;
-				cnt = SPARE_WORDS;
-			}
-			if (buf==null) {
-				continue;
-			}
-			Native.wrMem(PROGRAM, CLE);
-			Native.wrMem(0, ALE);		// we read a whole page, a0=0
-			Native.wrMem(a1, ALE);
-			Native.wrMem(a2, ALE);
-			for (i=0; i<cnt; ++i) {
-				val = buf[i];
-				Native.wr(val>>24, NAND_ADDR);
-				Native.wr(val>>16, NAND_ADDR);
-				Native.wr(val>>8, NAND_ADDR);
-				Native.wr(val, NAND_ADDR);
-			}
-			Native.wrMem(PROGRAM_CONFIRM, CLE);
-			
-			waitForReady();
-			ret &= cmdOk();
+	private int badCount() {
+		int i;
+		for (i=0; i<remap.length && remap[i]!=-1; ++i) {
+			;
 		}
-		
-		return ret;
+		return i;
 	}
-
-	/**
-	 * Read one page and spare from the NAND.
-	 * @param data
-	 * @param block
-	 * @param page
-	 * @return
-	 */
-	boolean readPage(int[] data, int[] spare, int block, int page) {
-		
-		int i, j, val;
-		int a1, a2;
-		int[] buf = data;
-		boolean ret = true;
-		int cnt = WORDS;
-		
-		a1 = (block << 5) + page;
-		a2 = block >> 3;
-		
-		for (int seq=0; seq<2; ++seq) {
-			if (seq==0) {
-				Native.wrMem(POINTA, CLE);				
-			} else {
-				Native.wrMem(POINTC, CLE);
-				buf = spare;
-				cnt = SPARE_WORDS;
-			}
-			if (buf==null) {
-				continue;
-			}
-			Native.wrMem(0, ALE);		// we read a whole page, a0=0
-			Native.wrMem(a1, ALE);
-			Native.wrMem(a2, ALE);
-			waitForReady();
-			for (i=0; i<cnt; ++i) {
-				val = Native.rdMem(NAND_ADDR);
-				val = (val<<8) + Native.rdMem(NAND_ADDR);
-				val = (val<<8) + Native.rdMem(NAND_ADDR);
-				val = (val<<8) + Native.rdMem(NAND_ADDR);
-				buf[i] = val;
-			}
-			
-			ret &= cmdOk();
-		}
-		
-		return ret;
-	}
-
-	/**
-	 * Test the NAND Flash. A static method to be used in the
-	 * board test.
-	 * 
-	 * @return true when NAND Flash is available.
-	 */
-	public static boolean test() {
-
-		int i, j;
-		boolean ret = true;
-		/* read ID and status from NAND */
-		Native.wrMem(SIGNATURE, CLE);
-		Native.wrMem(0x00, ALE);
-		//
-		// should read 0x98 and 0x73
-		//
-		i = Native.rdMem(NAND_ADDR); // Manufacturer
-		j = Native.rdMem(NAND_ADDR); // Size
-		System.out.print("NAND ");
-		System.out.print(i);
-		System.out.print(" ");
-		System.out.print(j);
-		System.out.print(" ");
-		if (i == 0x98) {
-			System.out.print("Toshiba ");
-		} else if (i == 0x20) {
-			System.out.print("ST ");
-		} else {
-			System.out.println("Unknown manufacturer");
-		}
-
-		if (j == 0x73) {
-			System.out.println("16 MB");
-		} else if (j == 0x75) {
-			System.out.println("32 MB");
-		} else if (j == 0x76) {
-			System.out.println("64 MB");
-		} else if (j == 0x79) {
-			System.out.println("128 MB");
-		} else {
-			System.out.println("error reading NAND");
-			ret = false;
-		}
-
-		//
-		// read status, should be 0xc0
-		//
-		Native.wrMem(STATUS, CLE);
-		i = Native.rdMem(NAND_ADDR) & 0xc1;
-		j = Native.rdMem(NAND_ADDR) & 0xc1;
-		System.out.print(i);
-		System.out.print(" ");
-		System.out.print(j);
-		System.out.print(" ");
-		if (i == 0xc0 && j == 0xc0) {
-			System.out.println("status OK");
-		} else {
-			System.out.println("error reading NAND status");
-			ret = false;
-		}
-
-		return ret;
-	}
-	
-	/**
-	 * Program the whole NAND flash and check it.
-	 * @return
-	 */
-	void testFull() {
-		
-		int block, page;
-
-		int[] data = new int[WORDS];
-		int[] spare = new int[SPARE_WORDS];
-		int magic;
-		int badPage=0;
-		int badSpare=0;
-		int time;
-		int testCnt = nrOfBlocks;
-		
-//		testCnt = 100;
-		
-		time = (int) System.currentTimeMillis();
-		System.out.println("Erase");
-		if (eraseAll()) {
-			System.out.println("Not all blocks erased");
-		}
-		time = ((int) System.currentTimeMillis()) - time;
-		System.out.println("Erase finished after "+time+" ms");
-		
-		System.out.println("Program");
-		time = (int) System.currentTimeMillis();
-		for (block=0; block<testCnt; ++block) {
-			System.out.print("+");
-			for (page=0; page<PAGES_PER_BLOCK; ++page) {
-				for (int i=0; i<WORDS; ++i) {
-					magic = OFF+i+(block<<7)+(page<<2);
-					data[i] = magic;
-				}
-				for (int i=0; i<SPARE_WORDS; ++i) {
-					magic = OFF+i+(block<<7)+(page<<2)+0xabcd;
-					spare[i] = magic;
-				}
-				if (!writePage(data, spare, block, page)) {
-					System.out.println("Error on write at block "+block+" page "+page);
-				}
-			}
-		}
-		time = ((int) System.currentTimeMillis()) - time;
-		System.out.println();
-		System.out.println("Program finished after "+time+" ms");
-
-		System.out.println("Read back");
-		time = (int) System.currentTimeMillis();
-		for (block=0; block<testCnt; ++block) {
-			System.out.print(".");
-			for (page=0; page<PAGES_PER_BLOCK; ++page) {
-				for (int i=0; i<WORDS; ++i) {
-					data[i] = 0;
-				}
-				for (int i=0; i<SPARE_WORDS; ++i) {
-					spare[i] = 0;
-				}
-
-				if (!readPage(data, spare, block, page)) {
-					System.out.println("Error on read at block "+block+" page "+page);
-				}
-				for (int i=0; i<WORDS; ++i) {
-					magic = OFF+i+(block<<7)+(page<<2);
-					if (data[i] != magic) {
-//						System.out.println("Read error data "+(block*32+page));
-						++badPage;
-						break;
-					}
-				}
-				for (int i=0; i<SPARE_WORDS; ++i) {
-					magic = OFF+i+(block<<7)+(page<<2)+0xabcd;
-					if (spare[i] != magic) {
-//						System.out.println("Read error spare "+(block*32+page));
-						++badSpare;
-						break;
-					}
-				}
-			}
-		}
-		time = ((int) System.currentTimeMillis()) - time;
-		System.out.println();
-		System.out.println("Read back finished after "+time+" ms");
-
-		System.out.println("Bad pages: "+badPage+" from "+(testCnt*32));
-		System.out.println("Bad spares: "+badSpare+" from "+(testCnt*32));
-	}
-
-	final static int OFF = 1234;
-	/**
-	 * @param args
-	 */
-	public static void main(String[] args) {
-
-		int block, page;
-		
-		test();
-		Nand n = new Nand();
-		System.out.println(n.nrOfBlocks + " blocks");
-//		n.eraseAll();
-		n.testFull();
-		
-//		System.out.println("Erase NAND");
-////		n.eraseAll();
-//		int[] data = new int[WORDS];
-//		int[] spare = new int[SPARE_WORDS];
-//		
-//		for (block=0; block<1; ++block) {
-//			for (page=0; page<PAGES_PER_BLOCK; ++page) {
-//				n.readPage(data, spare, block, page);
-//				System.out.println("block "+block+" page "+page+" data "+data[0]+" spare "+spare[0]);
-//			}
-//		}
-//		block = 0;
-//		page = 0;
-//		for (int i=0; i<WORDS; ++i) {
-//			data[i] = OFF+i;
-//		}
-//		if (!n.writePage(data, null, block, page)) {
-//			System.out.println("Error during write");
-//		}
-//		for (int i=0; i<WORDS; ++i) {
-//			data[i] = 0;
-//		}
-//		if (!n.readPage(data,  null, block, page)) {
-//			System.out.println("Error during read");
-//		}
-//		for (int i=0; i<WORDS; ++i) {
-//			if (data[i] != OFF+i) {
-//				System.out.println("Error "+data[i]);
-//			}
-//		}
-//		
-//		for (int i=0; i<SPARE_WORDS; ++i) {
-//			spare[i] = OFF+i;
-//		}
-//		if (!n.writePage(null, spare, block, page)) {
-//			System.out.println("Error during write");
-//		}
-//		for (int i=0; i<SPARE_WORDS; ++i) {
-//			spare[i] = 0;
-//		}
-//		if (!n.readPage(null,  spare, block, page)) {
-//			System.out.println("Error during read");
-//		}
-//		for (int i=0; i<SPARE_WORDS; ++i) {
-//			if (spare[i] != OFF+i) {
-//				System.out.println("Error "+spare[i]);
-//			}
-//		}
-
-	}
-
 }
