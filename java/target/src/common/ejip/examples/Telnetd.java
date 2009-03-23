@@ -78,7 +78,7 @@ public class Telnetd extends TcpHandler {
 		}
 	}
 
-	public void request(Packet p) {
+	public Packet request(Packet p) {
 
 		StringBuffer hello = new StringBuffer("Hello from JOP\r\n");
 		Ip.getData(p, Tcp.DATA, sb);
@@ -104,13 +104,14 @@ public class Telnetd extends TcpHandler {
 		} else {
 			p.len = Tcp.DATA<<2;
 		}
+		return p;
 	}
 
-	public void established(Packet p) {
+	public Packet established(Packet p) {
 		Ip.setData(p, Tcp.DATA, "Welcome to JOP\r\n");
+		return p;
 	}
 
-	@Override
 	public boolean finished() {
 		// TODO Auto-generated method stub
 		return false;

@@ -10,4 +10,5 @@ clean:
 	-rm *.log
 	-rm *.out
 	-rm *.bak
+	-rm *.idx
 	-rm timing.pdf

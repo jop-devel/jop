@@ -89,10 +89,14 @@ public class BgInit {
 			}
 		};
 
+		new Display(1, 5000);
 
 		System.out.println("Bginit");
 
 		RtThread.startMission();
+		
+		Display.write(0, "BG263 Init");
+
 
 		//
 		//	WD thread has lowest priority to see if every timing will be met

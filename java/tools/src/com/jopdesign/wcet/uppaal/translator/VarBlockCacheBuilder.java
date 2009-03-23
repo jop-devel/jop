@@ -40,10 +40,10 @@ public class VarBlockCacheBuilder extends CacheSimBuilder {
 				"  for(i = "+(cache.getNumBlocks()-1)+"; i >= sz; i--) {\n"+
 				"     cache[i]=cache[i-sz];\n"+
 				"  }\n"+
-				"  cache[0] = mid;"+
-				"  for(i = 1; i < sz; i++) {\n"+
+				"  for(i = 0; i < sz-1; i++) {\n"+
 				"     cache[i] = "+NUM_METHODS+";\n"+
 				"  }\n"+
+				"  cache[i] = mid;\n"+
 				"}\n");
 	}
 	private StringBuilder initNumBlocks() {
@@ -61,10 +61,8 @@ public class VarBlockCacheBuilder extends CacheSimBuilder {
 	}
 	private StringBuilder initCache(String NUM_METHODS) {
 		Vector<Object> cacheElems = new Vector<Object>();
-		cacheElems.add(0);
-		int i;
-		for(i = 1; i < blocksOf(0); i++) cacheElems.add(0);
-		for(; i < cache.getNumBlocks(); i++) cacheElems.add(NUM_METHODS);
+		for(int i = 0; i < cache.getNumBlocks(); i++) cacheElems.add(NUM_METHODS);
+		cacheElems.set(blocksOf(0)-1,0);
 		return CacheSimBuilder.constArray(cacheElems);
 	}
 	private int blocksOf(int id) {

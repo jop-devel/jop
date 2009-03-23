@@ -275,7 +275,12 @@ public class UDPConnection
 			if (pay != null)
 				break;
 
-			Thread.sleep(100);
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 
 		UDPPacket.setData(pay, ((DatagramPacket) p).getBuffer(), 0, p.getLength());

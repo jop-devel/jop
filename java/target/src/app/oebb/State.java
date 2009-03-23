@@ -573,7 +573,7 @@ public class State extends ejip.UdpHandler implements Runnable {
 			bgid = (getDate()<<16) + (getTime()>>>16);
 			Dbg.wr("bgid is -1/0 => set a new one");
 			Dbg.lf();
-			BgTftp.programBgid(bgid);
+			Main.tftpHandler.programBgid(bgid);
 			bgid = Flash.getId();
 			Main.logger.printHex("bgid is -1/0 set to", bgid);
 			// enough done this round

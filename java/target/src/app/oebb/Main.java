@@ -62,7 +62,7 @@ public class Main {
 
 	// SW version
 	public static final int VER_MAJ = 2;
-	public static final int VER_MIN = 29;
+	public static final int VER_MIN = 31;
 
 	private static final int LOG_PRIO = 1;
 	private static final int LOG_PERIOD = 1000000;
@@ -89,6 +89,7 @@ public class Main {
 
 	static Net net;
 	static LinkLayer ipLink;
+	static BgTftp tftpHandler;
 	static Serial ser, ser2;
 	static RtThread pppThre;
 	
@@ -137,7 +138,7 @@ public class Main {
 		net = new Net(ejip);
 
 		// we need the BgTftp befor Flash.init()!
-		BgTftp tftpHandler = new BgTftp(ejip);
+		tftpHandler = new BgTftp(ejip);
 /* comment Flash for JopSim debug
 */
 		Flash.init();
@@ -210,9 +211,9 @@ public class Main {
 			// use second SLIP subnet for 'COs test'
 			ipLink = new Slip(ejip, ser, Ejip.makeIp(192, 168, 2, 2));
 		} else {
-			ipLink = new Ppp(ejip, ser, pppThre);
-//			System.out.println("SLIP is default!!");
-//			ipLink = new Slip(ejip, ser, Ejip.makeIp(192, 168, 1, 2));
+//			ipLink = new Ppp(ejip, ser, pppThre);
+			System.out.println("SLIP is default!!");
+			ipLink = new Slip(ejip, ser, Ejip.makeIp(192, 168, 1, 2));
 
 		}
 

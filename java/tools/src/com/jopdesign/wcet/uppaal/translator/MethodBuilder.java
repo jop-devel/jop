@@ -260,6 +260,7 @@ public class MethodBuilder implements CfgVisitor {
 			cfg.getLoopColoring().getIterationBranchEdges();
 		CFGNode src = graph.getEdgeSource(edge);
 		CFGNode target = graph.getEdgeTarget(edge);
+		if(src == cfg.getEntry() && target == cfg.getExit()) return;
 		Transition transition = tBuilder.createTransition(
 				nodeTemplates.get(src).snd(),
 				nodeTemplates.get(target).fst());

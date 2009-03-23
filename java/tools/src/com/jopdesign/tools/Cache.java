@@ -53,7 +53,7 @@ public class Cache {
 	/* if true, flush the cache on the next access */
 	protected boolean flush = false;
 	/* number of bytes read at the last access */
-	int bytesLastRead;
+	int wordsLastRead;
 
 	LinkedList<Cache> test = new LinkedList<Cache>();
 	Cache use;
@@ -73,49 +73,53 @@ public class Cache {
 //	don't use direct mapped now!!!
 //
 // we can't use all cache variants in one run as the pc is used differently!!!
-/*
-		test.add(new PrefetchBuffer(main, js));
-		test.add(new SimpleCache(main, js));
-		test.add(new TwoBlockCache(main, js));
-//		test.add(new LRUBlockCache(main, js, 2));
-		test.add(new LRUBlockCache(main, js, 4));
-*/
-/*
-		test.add(new LRUBlockCache(main, js, 8));
-		test.add(new LRUBlockCache(main, js, 16));
-		test.add(new LRUBlockCache(main, js, 32));
+
+//		test.add(new PrefetchBuffer(main, js));
+//		test.add(new SimpleCache(main, js));
+//		test.add(new TwoBlockCache(main, js));
+//		test.add(new LRUBlockCache(main, js, 1));
+//		test.add(new LRUBlockCache(main, js, 4));
+
+
+//		test.add(new LRUBlockCache(main, js, 8));
+//		test.add(new LRUBlockCache(main, js, 16));
+//		test.add(new LRUBlockCache(main, js, 32));
 //		test.add(new LRUBlockCache(main, js, 64));
 //		test.add(new LRUBlockCache(main, js, 128));
-		test.add(new TwoWay(main, js));
-*/
-/*
-		test.add(new DirectMapped(main, js, 1, 8));
-		test.add(new DirectMapped(main, js, 1, 16));
-		test.add(new DirectMapped(main, js, 1, 32));
-		test.add(new DirectMapped(main, js, 2, 8));
-*/
+//		test.add(new TwoWay(main, js));
+
+
+//		test.add(new DirectMapped(main, js, 1, 8));
+//		test.add(new DirectMapped(main, js, 1, 16));
+//		test.add(new DirectMapped(main, js, 1, 32));
+//		test.add(new DirectMapped(main, js, 2, 8));
+
 //		test.add(new DirectMapped(main, js, 2, 16));
-/*
-		test.add(new DirectMapped(main, js, 2, 32));
-		test.add(new DirectMapped(main, js, 4, 8));
-		test.add(new DirectMapped(main, js, 4, 16));
-		test.add(new DirectMapped(main, js, 4, 32));
-*/
+
+//		test.add(new DirectMapped(main, js, 2, 32));
+//		test.add(new DirectMapped(main, js, 4, 8));
+//		test.add(new DirectMapped(main, js, 4, 16));
+//		test.add(new DirectMapped(main, js, 4, 32));
+
 //		test.add(new VarBlockCache(main, js, 1, 8, false));
 //		test.add(new VarBlockCache(main, js, 4, 16, false));
 //		test.add(new VarBlockCache(main, js, 1, 32, false));
-		test.add(new VarBlockCache(main, js, 1, 64, false));
+//		test.add(new VarBlockCache(main, js, 1, 64, false));
 //		test.add(new VarBlockCache(main, js, 2, 8, false));
-/*
-		test.add(new VarBlockCache(main, js, 2, 16, false));
-		test.add(new VarBlockCache(main, js, 2, 32, false));
-		test.add(new VarBlockCache(main, js, 2, 16, true));
-		test.add(new VarBlockCache(main, js, 2, 32, true));
-*/
+//
+//		test.add(new VarBlockCache(main, js, 2, 16, false));
+//		test.add(new VarBlockCache(main, js, 2, 32, false));
+//		test.add(new VarBlockCache(main, js, 2, 16, true));
+//		test.add(new VarBlockCache(main, js, 2, 32, true));
+
 
 //		test.add(new VarBlockCache(main, js, 2, 64, false));
 //		test.add(new VarBlockCache(main, js, 4, 8, false));
-//		test.add(new VarBlockCache(main, js, 4, 16, false));
+
+        // Default onfiguration for dspio, jopcyc.vhd
+        // 4 * 1KB, 16 blocks
+		test.add(new VarBlockCache(main, js, 4, 16, false));
+
 //		test.add(new VarBlockCache(main, js, 4, 32, false));
 //		test.add(new VarBlockCache(main, js, 4, 64, false));
 
@@ -132,7 +136,7 @@ public class Cache {
 
 
 	int ret(int start, int len, int pc) {
-		this.bytesLastRead = len;
+		this.wordsLastRead = len;
 		return use.ret(start, len, pc);
 	}
 
@@ -142,7 +146,7 @@ public class Cache {
 	}
 
 	int invoke(int start, int len) {
-		this.bytesLastRead = len;
+		this.wordsLastRead = len;
 		return use.invoke(start, len);
 	}
 

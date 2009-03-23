@@ -40,6 +40,27 @@ import com.jopdesign.timing.WCETInstruction;
 
 public class JopSim {
 
+	public class JopSimRtsException extends RuntimeException {
+		
+		private static final long serialVersionUID = 1L;
+		private int errCode;
+
+		public JopSimRtsException(String message, int reason) {
+			super(message);
+			this.errCode = reason;
+		}
+		public int getReason() {
+			return errCode;
+		}
+	}
+	public class JopSimFatalError extends RuntimeException {
+
+		private static final long serialVersionUID = 1L;
+		public JopSimFatalError(String message) {
+			super(message);
+		}
+	}
+
 	static final int MAX_MEM = 1024*1024/4;
 	static final int MAX_STACK = Const.STACK_SIZE;	// with internal memory
 	static final int MEM_TEST_OFF = 256;
@@ -98,6 +119,7 @@ public class JopSim {
 	int cacheCost;
 
 	JopSim(String fn, IOSimMin ioSim, int max) {
+		
 		maxInstr = max;
 		
 		// only first simulation object loads the memory
@@ -147,6 +169,7 @@ public class JopSim {
 	}
 
 	JopSim(String fn, IOSimMin ioSim) {
+		
 		this(fn, ioSim, 0);
 	}
 
@@ -198,7 +221,7 @@ System.out.println(mp+" "+pc);
 
 		int idx = readOpd16u();
 		int val = readMem(cp+idx);			// read constant
-// System.out.println("jjvmConst: "+instr+" "+(cp+idx)+" "+val);
+		// System.out.println("jjvmConst: "+instr+" "+(cp+idx)+" "+val);
 		stack[++sp] = val;					// push on stack
 		invoke(jjp+(instr<<1));
 	}
@@ -214,21 +237,19 @@ System.out.println(mp+" "+pc);
 	}
 
 	void dump() {
+		
 		System.out.print("cp="+cp+" vp="+vp+" sp="+sp+" pc="+pc);
 		System.out.println(" Stack=[..., "+stack[sp-2]+", "+stack[sp-1]+", "+stack[sp]+"]");
 	}
 
-/**
-*	helper functions.
-*/
+	/**
+	 *	helper functions.
+	 */
 	int readInstrMem(int addr) {
 
-// System.out.println(addr+" "+mem[addr]);
+		// System.out.println(addr+" "+mem[addr]);
 
-		if (addr>MAX_MEM || addr<0) {
-			System.out.println("readInstrMem: wrong address: "+addr);
-			System.exit(-1);
-		}
+		if (addr>MAX_MEM || addr<0) throw new JopSimFatalError("readInstrMem: wrong address: "+addr);
 
 		return mem[addr];
 	}
@@ -238,8 +259,8 @@ System.out.println(mp+" "+pc);
 	int copy_pos = 0;
 
 	int readMem(int addr) {
-
-// System.out.println(addr+" "+mem[addr]);
+		
+		// System.out.println(addr+" "+mem[addr]);
 		rdMemCnt++;
 
 		// translate addresses
@@ -256,8 +277,7 @@ System.out.println(mp+" "+pc);
 		}
 		
 		if (addr>MAX_MEM+MEM_TEST_OFF || addr<MIN_IO_ADDRESS) {
-			System.out.println("readMem: wrong address: "+addr);
-			System.exit(-1);
+			throw new JopSimFatalError("readMem: wrong address: "+addr);
 		}
 		if (addr<0) {
 			return io.read(addr);
@@ -275,8 +295,7 @@ System.out.println(mp+" "+pc);
 			return;
 		}
 		if (addr>MAX_MEM+MEM_TEST_OFF || addr<MIN_IO_ADDRESS) {
-			System.out.println("writeMem: wrong address: "+addr);
-			System.exit(-1);
+			throw new JopSimFatalError("writeMem: wrong address: "+addr);
 		}
 
 		if (addr<0) {
@@ -319,13 +338,21 @@ System.out.println(mp+" "+pc);
 	void invokespecial() {
 		invokestatic();				// what's the difference?
 	}
+	
+	void checkNullPointer(int addr) throws JopSimRtsException {
+		if(addr == 0) throw new JopSimRtsException("Null-Pointer Exception",Const.EXC_NP);
+	}
+	
+	void invokesuper() throws JopSimRtsException {
 
-	void invokesuper() {
 		int idx = readOpd16u();
 		int off = readMem(cp+idx);	// index in vt and arg count (-1)
 		int args = off & 0xff;		// this is args count without obj-ref
 		off >>>= 8;
 		int ref = stack[sp-args];
+		
+		checkNullPointer(ref);
+		
 		// pointer to method table in handle at offset 1
 		int vt = readMem(ref+1);
 		// pointer to super class in method table at offset -2
@@ -339,20 +366,22 @@ System.out.println(mp+" "+pc);
 		invoke(vt+off);
 	}
 
-	void invokevirtual() {
+	void invokevirtual() throws JopSimRtsException {
 
 		int idx = readOpd16u();
 		int off = readMem(cp+idx);	// index in vt and arg count (-1)
 		int args = off & 0xff;		// this is args count without obj-ref
 		off >>>= 8;
 		int ref = stack[sp-args];
+		checkNullPointer(ref);
+		
 		// pointer to method table in handle at offset 1
 		int vt = readMem(ref+1);
-// System.out.println("invvirt: off: "+off+" args: "+args+" ref: "+ref+" vt: "+vt+" addr: "+(vt+off));
+		// System.out.println("invvirt: off: "+off+" args: "+args+" ref: "+ref+" vt: "+vt+" addr: "+(vt+off));
 		invoke(vt+off);
 	}
 
-	void invokeinterface() {
+	void invokeinterface() throws JopSimRtsException {
 
 		int idx = readOpd16u();
 		readOpd16u();				// read historical argument count and 0
@@ -362,6 +391,8 @@ System.out.println(mp+" "+pc);
 		int args = off & 0xff;				// this is args count without obj-ref
 		off >>>= 8;
 		int ref = stack[sp-args];
+		checkNullPointer(ref);
+		
 		// pointer to method table in handle at offset 1
 		int vt = readMem(ref+1);			// pointer to virtual table in obj-1
 		int it = readMem(vt-1);				// pointer to interface table one befor vt
@@ -374,14 +405,14 @@ System.out.println(mp+" "+pc);
 *	invokestatic wie es in der JVM sein soll!!!
 */
 	void invokestatic() {
-
+		
 		int idx = readOpd16u();
 		invokestatic(cp+idx);
 	}
 
 
 	void invokestatic(int ptr) {
-
+		
 		invoke(readMem(ptr));
 	}
 
@@ -457,12 +488,15 @@ System.out.println(mp+" "+pc);
 		stack[++sp] = val2;
 		stack[++sp] = val1;
 	}
+	
 	void waitCache(int hiddenCycles) {
-		int penalty = WCETInstruction.calculateB(cache.lastAccessWasHit(),cache.bytesLastRead);
+		
+		int penalty = WCETInstruction.calculateB(cache.lastAccessWasHit(),cache.wordsLastRead);
 		penalty = Math.max(0, penalty-hiddenCycles);
 		this.cacheCost += penalty;
 		this.clkCnt += penalty;
 	}
+	
 	void putstatic() {
 
 		int addr = readOpd16u();
@@ -494,24 +528,16 @@ System.out.println(mp+" "+pc);
 		int off = readOpd16u();
 		int val = stack[sp--];
 		int ref = stack[sp--];
-		if (ref==0) {
-			intExcept = true;
-			exceptReason = Const.EXC_NP;
-		} else {
-			// handle needs indirection
-			ref = readMem(ref);
-			writeMem(ref+off, val);			
-		}
+		checkNullPointer(ref);		
+		ref = readMem(ref);
+		writeMem(ref+off, val);						
 	}
 
 	void getfield() {
 
 		int off = readOpd16u();
 		int ref = stack[sp];
-		if (ref==0) {
-			intExcept = true;
-			exceptReason = Const.EXC_NP;
-		};
+		checkNullPointer(ref);		
 		// handle needs indirection
 		ref = readMem(ref);
 		stack[sp] = readMem(ref+off);
@@ -522,24 +548,17 @@ System.out.println(mp+" "+pc);
 		int val = stack[sp--];
 		int off = stack[sp--];
 		int ref = stack[sp--];
-		if (ref==0) {
-			intExcept = true;
-			exceptReason = Const.EXC_NP;
-		} else {
-			// handle needs indirection
-			ref = readMem(ref);
-			writeMem(ref+off, val);
-		}
+		checkNullPointer(ref);		
+		// handle needs indirection
+		ref = readMem(ref);
+		writeMem(ref+off, val);
 	}
 
 	void jopsys_getfield() {
 
 		int off = stack[sp--];
 		int ref = stack[sp];
-		if (ref==0) {
-			intExcept = true;
-			exceptReason = Const.EXC_NP;
-		};
+		checkNullPointer(ref);		
 		// handle needs indirection
 		ref = readMem(ref);
 		stack[sp] = readMem(ref+off);
@@ -551,26 +570,19 @@ System.out.println(mp+" "+pc);
 		int val_l = stack[sp--];
 		int val_h = stack[sp--];
 		int ref = stack[sp--];
-		if (ref==0) {
-			intExcept = true;
-			exceptReason = Const.EXC_NP;
-		} else {
-			// handle needs indirection
-			ref = readMem(ref);
-			writeMem(ref+off, val_h);
-			writeMem(ref+off+1, val_l);			
-		}
+		checkNullPointer(ref);		
+		// handle needs indirection
+		ref = readMem(ref);
+		writeMem(ref+off, val_h);
+		writeMem(ref+off+1, val_l);			
 	}
 
 	void getfield_long() {
 
 		int off = readOpd16u();
 		int ref = stack[sp];
-		if (ref==0) {
-			intExcept = true;
-			exceptReason = Const.EXC_NP;
-		};
 		// handle needs indirection
+		checkNullPointer(ref);		
 		ref = readMem(ref);
 		stack[sp] = readMem(ref+off);
 		stack[++sp] = readMem(ref+off+1);
@@ -588,48 +600,48 @@ System.out.println(mp+" "+pc);
 		int a, b, c, d;
 
 
-			if (maxInstr!=0 && instrCnt>=maxInstr) {
-				exit=true;
+		if (maxInstr!=0 && instrCnt>=maxInstr) {
+			exit=true;
+		}
+
+		//
+		//	statistic
+		//
+		++instrCnt;
+		if (sp > maxSp) maxSp = sp;
+
+
+		int instr = cache.bc(pc++) & 0x0ff;
+
+		//
+		// exception and interrupt handling
+		//
+		if (intExcept) {
+			instr = SYS_EXC;
+			intExcept = false;
+		} else {
+			// check all 16 instructions for a pending interrupt
+			if ((instrCnt&0xf)==0) {
+				if (io.intPending()) {
+					instr = SYS_INT;					
+				}					
 			}
 
-//
-//	statistic
-//
-			++instrCnt;
-			if (sp > maxSp) maxSp = sp;
+		}
 
+		bcStat[instr]++;
+		// TODO add cache miss timing and a different timing info for
+		// Java implemented bytecodes
+		clkCnt += bcTiming[instr];
 
-			int instr = cache.bc(pc++) & 0x0ff;
-
-			//
-			// exception and interrupt handling
-			//
-			if (intExcept) {
-				instr = SYS_EXC;
-				intExcept = false;
-			} else {
-				// check all 16 instructions for a pending interrupt
-				if ((instrCnt&0xf)==0) {
-					if (io.intPending()) {
-						instr = SYS_INT;					
-					}					
-				}
-
-			}
-
-			bcStat[instr]++;
-			// TODO add cache miss timing and a different timing info for
-			// Java implemented bytecodes
-			clkCnt += bcTiming[instr];
-
-			if (log) {
-				String spc = (pc-1)+" ";
-				while (spc.length()<4) spc = " "+spc;
-				String s = spc+JopInstr.name(instr);
-				System.out.print(s+"\t");
-				dump();
-			}
-
+		if (log) {
+			String spc = (pc-1)+" ";
+			while (spc.length()<4) spc = " "+spc;
+			String s = spc+JopInstr.name(instr);
+			System.out.print(s+"\t");
+			dump();
+		}
+		try {
 			switch (instr) {
 
 				case 0 :		// nop
@@ -770,39 +782,23 @@ System.out.println(mp+" "+pc);
 				case 53 :		// saload
 					idx = stack[sp--];	// index
 					ref = stack[sp--];	// ref
-					if (ref==0) {
-						intExcept = true;
-						exceptReason = Const.EXC_NP;
-					} else {
-						a = readMem(ref+1);
-						if (idx<0 || idx>=a) {
-							intExcept = true;
-							exceptReason = Const.EXC_AB;							
-						} else {
-							// handle needs indirection
-							ref = readMem(ref);
-							stack[++sp] = readMem(ref+idx);							
-						}
-					}
+					checkNullPointer(ref);
+					a = readMem(ref+1);
+					if (idx<0 || idx>=a) throw new JopSimRtsException("saload: index out of bounds",Const.EXC_AB);
+					// handle needs indirection
+					ref = readMem(ref);
+					stack[++sp] = readMem(ref+idx);							
 					break;
 				case 47 :		// laload
 					idx = stack[sp--];	// index
 					ref = stack[sp--];	// ref
-					if (ref==0) {
-						intExcept = true;
-						exceptReason = Const.EXC_NP;
-					} else {
-						a = readMem(ref+1);
-						if (idx<0 || idx>=a) {
-							intExcept = true;
-							exceptReason = Const.EXC_AB;							
-						} else {
-							// handle needs indirection
-							ref = readMem(ref);
-							stack[++sp] = readMem(ref+idx*2);
-							stack[++sp] = readMem(ref+idx*2+1);							
-						}
-					}
+					checkNullPointer(ref);
+					a = readMem(ref+1);
+					if (idx<0 || idx>=a) throw new JopSimRtsException("laload: index out of bounds",Const.EXC_AB);
+					// handle needs indirection
+					ref = readMem(ref);
+					stack[++sp] = readMem(ref+idx*2);
+					stack[++sp] = readMem(ref+idx*2+1);							
 					break;
 				case 49 :		// daload
 					noim(49);
@@ -882,41 +878,25 @@ System.out.println(mp+" "+pc);
 					val = stack[sp--];	// value
 					idx = stack[sp--];	// index
 					ref = stack[sp--];	// ref
-					if (ref==0) {
-						intExcept = true;
-						exceptReason = Const.EXC_NP;
-					} else {
-						a = readMem(ref+1);
-						if (idx<0 || idx>=a) {
-							intExcept = true;
-							exceptReason = Const.EXC_AB;							
-						} else {
-							// handle needs indirection
-							ref = readMem(ref);
-							writeMem(ref+idx, val);							
-						}
-					}
+					checkNullPointer(ref);
+					a = readMem(ref+1);
+					if (idx<0 || idx>=a) throw new JopSimRtsException("sastore: index out of bounds",Const.EXC_AB);
+					// handle needs indirection
+					ref = readMem(ref);
+					writeMem(ref+idx, val);							
 					break;
 				case 80 :		// lastore
 					val = stack[sp--];	// value
 					val2 = stack[sp--];	// value
 					idx = stack[sp--];	// index
 					ref = stack[sp--];	// ref
-					if (ref==0) {
-						intExcept = true;
-						exceptReason = Const.EXC_NP;
-					} else {
-						a = readMem(ref+1);
-						if (idx<0 || idx>=a) {
-							intExcept = true;
-							exceptReason = Const.EXC_AB;							
-						} else {
-							// handle needs indirection
-							ref = readMem(ref);
-							writeMem(ref+idx*2, val2);					
-							writeMem(ref+idx*2+1, val);												
-						}
-					}
+					checkNullPointer(ref);
+					a = readMem(ref+1);
+					if (idx<0 || idx>=a) throw new JopSimRtsException("lastore: index out of bounds",Const.EXC_AB);
+					// handle needs indirection
+					ref = readMem(ref);
+					writeMem(ref+idx*2, val2);					
+					writeMem(ref+idx*2+1, val);												
 					break;
 				case 82 :		// dastore
 					noim(82);
@@ -1346,6 +1326,7 @@ System.out.println("new heap: "+heap);
 					break;
 				case 190 :		// arraylength
 					ref = stack[sp--];	// ref from stack
+					checkNullPointer(ref);
 					// lenght in handle at offset 1
 					stack[++sp] = readMem(ref+1);
 					break;
@@ -1578,6 +1559,7 @@ System.out.println("new heap: "+heap);
 					break;
 				case 236 :		// invokesuper
 					invokesuper();
+					waitCache(WCETInstruction.INVOKE_HIDDEN_LOAD_CYCLES);
 					break;
 				case 237 :		// resED
 					noim(237);
@@ -1642,6 +1624,10 @@ System.out.println("new heap: "+heap);
 				default:
 					noim(instr);
 			}
+		} catch(JopSimRtsException rtsEx) {
+			this.intExcept = true;
+			this.exceptReason = rtsEx.getReason();
+		}
 	}
 
 	void stat() {
@@ -1721,8 +1707,8 @@ System.out.println("new heap: "+heap);
 			}
 			while (!exit) {
 				js[0].interpret();
-				if (nrCpus!=1 && IOSimMin.startCMP) {
-					for (int j=1; j<nrCpus; ++j) {
+				if (nrCpus != 1 && IOSimMin.startCMP) {
+					for (int j = 1; j < nrCpus; ++j) {
 						js[j].interpret();
 					}
 				}

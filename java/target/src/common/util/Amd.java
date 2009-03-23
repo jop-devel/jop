@@ -91,7 +91,7 @@ public class Amd {
 
 		for (i=0; i<400; ++i) {					// maximum 40 s timeout
 			joprt.RtThread.sleepMs(100);
-Dbg.wr('.');
+			System.out.print('.');
 			Timer.wd();
 			if (Native.rdMem(addr) == 0xff) return true;
 		}
