@@ -132,7 +132,12 @@ public class DiningPhilosophersRandomBackoff {
 			
 			while(ok) {
 				
-				Thread.sleep(r.nextInt()%MAX_BACKOFF);
+				try {
+					Thread.sleep(r.nextInt()%MAX_BACKOFF);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 				
 				Native.wrMem(1, MAGIC);	// start transaction
 					

@@ -132,7 +132,12 @@ public class DiningPhilosophersStaticBackoff {
 			
 			while(ok) {
 				
-				Thread.sleep(MAX_BACKOFF);
+				try {
+					Thread.sleep(MAX_BACKOFF);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 				
 				Native.wrMem(1, MAGIC);	// start transaction
 					

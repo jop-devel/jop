@@ -156,7 +156,12 @@ public class OddEvenSortMod {
 					}				   
 				Native.wrMem(0, MAGIC);
 			}			
-			Thread.sleep(1);
+			try {
+				Thread.sleep(1);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			for(int i=1; i+1<SIZE; i+=2) {
 				Native.wrMem(1, MAGIC);
 					if(array[i] > array[i+1]) { 
@@ -164,7 +169,12 @@ public class OddEvenSortMod {
 					}				   
 				Native.wrMem(0, MAGIC);
 			}
-			Thread.sleep(1);
+			try {
+				Thread.sleep(1);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 		
 		private void swap(int x1, int x2) { 

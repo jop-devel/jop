@@ -133,7 +133,12 @@ public class IncrementTest {
 			
 			while(ok) {
 				
-				Thread.sleep(10);
+				try {
+					Thread.sleep(10);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 				
 				Native.wrMem(1, MAGIC);	// start transaction
 					
