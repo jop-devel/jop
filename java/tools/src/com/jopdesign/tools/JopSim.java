@@ -1374,8 +1374,8 @@ System.out.println("new heap: "+heap);
 				case 203 :		// resCB
 					noim(203);
 					break;
-				case 204 :		// resCC
-					noim(204);
+				case 204 :		// jopsys_inval
+					// ignore cache invalidation here
 					break;
 				case 205 :		// resCD
 					noim(205);
