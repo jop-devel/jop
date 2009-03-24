@@ -32,11 +32,14 @@ import com.jopdesign.sys.Startup;
 
 /**
  * @author Michael Muck
- * dining philosophers
+ * dining philosophers with static backoff
+ * example to study the effects of static backoffs before chopstick access
  */
-public class DiningPhilosophers {
+public class DiningPhilosophersStaticBackoff {
 	
 	static SysDevice sys = IOFactory.getFactory().getSysDevice();
+	
+	static final int MAX_BACKOFF = 10;
 	
 	static final int FULL = 1000;
 	static final int EMPTY = 0;
@@ -129,8 +132,7 @@ public class DiningPhilosophers {
 			
 			while(ok) {
 				
-				//Thread.sleep(r.nextInt()%10);
-				//Thread.sleep(1);
+				Thread.sleep(MAX_BACKOFF);
 				
 				Native.wrMem(1, MAGIC);	// start transaction
 					

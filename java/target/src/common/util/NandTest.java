@@ -234,11 +234,11 @@ public class NandTest extends Nand {
 		System.out.println(n.getNrOfBlocks() + " blocks");
 		System.out.println(n.size() + " usable blocks");
 		System.out.println(n.size()*16 + " KB");
-		System.out.println("Physical block "+n.getPhysicalBlock(3));
-		System.out.println("Physical block "+n.getPhysicalBlock(488));
-		System.out.println("Physical block "+n.getPhysicalBlock(1000));
-		System.out.println("Physical block "+n.getPhysicalBlock(1920));
-		n.eraseAll();
+//		System.out.println("Physical block "+n.getPhysicalBlock(3));
+//		System.out.println("Physical block "+n.getPhysicalBlock(488));
+//		System.out.println("Physical block "+n.getPhysicalBlock(1000));
+//		System.out.println("Physical block "+n.getPhysicalBlock(1920));
+//		n.eraseAll();
 
 //		for (int i=0; i<1000; ++i) {
 //			n.erase(i);
@@ -247,29 +247,31 @@ public class NandTest extends Nand {
 //		n.testFull();
 //		n.findBadBlocks();
 		
+		System.out.println("Start wearing out test");
 		int data[] = new int[128];
 		for (int cnt=0; cnt<10000; ++cnt) {
-			System.out.println("Test "+cnt);
-			for (int i=400; i<500; ++i) {
+			System.out.print(" ");
+			System.out.print(cnt);
+			for (int i=450; i<500; ++i) {
 				for (int j=0; j<PAGES_PER_BLOCK; ++j) {
 					for (int k=0; k<128; ++k) {
-						data[k] = i*128*PAGES_PER_BLOCK+j*PAGES_PER_BLOCK+k;
+						data[k] = i*128*PAGES_PER_BLOCK+j*PAGES_PER_BLOCK+k+cnt;
 					}
 					n.write(data, i, j);				
 				}
 			}
-			for (int i=400; i<500; ++i) {
+			for (int i=450; i<500; ++i) {
 				for (int j=0; j<PAGES_PER_BLOCK; ++j) {
 					n.read(data, i, j);				
 					for (int k=0; k<128; ++k) {
-						if (data[k] != i*128*PAGES_PER_BLOCK+j*PAGES_PER_BLOCK+k) {
-							System.out.println("Data error! "+i+" "+j+" "+k);
+						if (data[k] != i*128*PAGES_PER_BLOCK+j*PAGES_PER_BLOCK+k+cnt) {
+							System.out.println("Data error! "+i+" "+j+" "+(k+cnt));
 							System.exit(-1);
 						}
 					}
 				}
 			}
-			for (int i=400; i<500; ++i) {
+			for (int i=450; i<500; ++i) {
 				n.erase(i);
 			}
 		}
