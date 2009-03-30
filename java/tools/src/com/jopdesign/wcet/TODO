@@ -3,6 +3,9 @@ TODO  List
 Please assign names (in square brackets) to tasks, and reference them in the source
 when appropriate.
 
+[FIFO_HALF_CACHE]
+Add support for safe UPPAAL FIFO cache analysis (using N/2 lemma)
+
 [CREATE_FLOWGRAPH_MODIFIER_ABSTRACTION]
 There are plenty of ways we have to modify flow graphs before WCET analysis:
 Resolve virtual invokes, insert split/join nodes, create summary nodes, etc.
@@ -13,9 +16,6 @@ Little messy cause of prototyping right now
 
 [REFACTOR_REPORT] 
 Clean up the report package
-
-[REFACTOR_CONFIG]
-Split into library and base config
 
 [UPPAAL_JAVA_IMPL_BYTECODE]
 Java implemented Bytecodes should be replaced in a preprocessing step to work for 
@@ -59,3 +59,6 @@ WCET_JAVA_BYTECODES:
 Support java implemented bytecodes
 REFACTOR_PROJECT:
 Move flowgraphs to WcetAppInfo
+[REFACTOR_CONFIG]
+Split into library and base config
+

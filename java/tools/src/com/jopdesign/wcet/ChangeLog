@@ -1,4 +1,9 @@
 (User) ChangeLog for wcet08. Please keep current.
+Mar 09
+-------
+  - Rewrote UPPAAL translator, substantial performance improvements
+  - Added support for one-template-per-thread UPPAAL analysis
+
 Feb 09
 --------
   - Add support for staged UPPAAL analysis :))
