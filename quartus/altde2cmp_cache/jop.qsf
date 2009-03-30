@@ -1,0 +1,151 @@
+# Copyright (C) 1991-2006 Altera Corporation
+# Your use of Altera Corporation's design tools, logic functions 
+# and other software and tools, and its AMPP partner logic 
+# functions, and any output files any of the foregoing 
+# (including device programming or simulation files), and any 
+# associated documentation or information are expressly subject 
+# to the terms and conditions of the Altera Program License 
+# Subscription Agreement, Altera MegaCore Function License 
+# Agreement, or other applicable license agreement, including, 
+# without limitation, that your use is for the sole purpose of 
+# programming logic devices manufactured by Altera and sold by 
+# Altera or its authorized distributors.  Please refer to the 
+# applicable agreement for further details.
+
+
+# The default values for assignments are stored in the file
+#		jop_assignment_defaults.qdf
+# If this file doesn't exist, and for assignments not listed, see file
+#		assignment_defaults.qdf
+
+# Altera recommends that you do not modify this file. This
+# file is updated automatically by the Quartus II software
+# and any changes you make may be lost or overwritten.
+
+
+set_global_assignment -name FAMILY "Cyclone II"
+set_global_assignment -name DEVICE EP2C35F672C6
+set_global_assignment -name TOP_LEVEL_ENTITY jop
+set_global_assignment -name ORIGINAL_QUARTUS_VERSION "6.0 SP1"
+set_global_assignment -name PROJECT_CREATION_TIME_DATE "20:32:02  AUGUST 07, 2006"
+set_global_assignment -name LAST_QUARTUS_VERSION 7.2
+
+# Pin & Location Assignments
+# ==========================
+
+set_location_assignment PIN_Y12 -to wd
+set_location_assignment PIN_N2 -to clk
+set_location_assignment PIN_C25 -to ser_rxd
+set_location_assignment PIN_B25 -to ser_txd
+set_location_assignment PIN_AE4 -to rama_a[0]
+set_location_assignment PIN_AF4 -to rama_a[1]
+set_location_assignment PIN_AC5 -to rama_a[2]
+set_location_assignment PIN_AC6 -to rama_a[3]
+set_location_assignment PIN_AD4 -to rama_a[4]
+set_location_assignment PIN_AD5 -to rama_a[5]
+set_location_assignment PIN_AE5 -to rama_a[6]
+set_location_assignment PIN_AF5 -to rama_a[7]
+set_location_assignment PIN_AD6 -to rama_a[8]
+set_location_assignment PIN_AD7 -to rama_a[9]
+set_location_assignment PIN_V10 -to rama_a[10]
+set_location_assignment PIN_V9 -to rama_a[11]
+set_location_assignment PIN_AC7 -to rama_a[12]
+set_location_assignment PIN_W8 -to rama_a[13]
+set_location_assignment PIN_W10 -to rama_a[14]
+set_location_assignment PIN_Y10 -to rama_a[15]
+set_location_assignment PIN_AB8 -to rama_a[16]
+set_location_assignment PIN_AC8 -to rama_a[17]
+set_location_assignment PIN_AD8 -to rama_d[0]
+set_location_assignment PIN_AE6 -to rama_d[1]
+set_location_assignment PIN_AF6 -to rama_d[2]
+set_location_assignment PIN_AA9 -to rama_d[3]
+set_location_assignment PIN_AA10 -to rama_d[4]
+set_location_assignment PIN_AB10 -to rama_d[5]
+set_location_assignment PIN_AA11 -to rama_d[6]
+set_location_assignment PIN_Y11 -to rama_d[7]
+set_location_assignment PIN_AE7 -to rama_d[8]
+set_location_assignment PIN_AF7 -to rama_d[9]
+set_location_assignment PIN_AE8 -to rama_d[10]
+set_location_assignment PIN_AF8 -to rama_d[11]
+set_location_assignment PIN_W11 -to rama_d[12]
+set_location_assignment PIN_W12 -to rama_d[13]
+set_location_assignment PIN_AC9 -to rama_d[14]
+set_location_assignment PIN_AC10 -to rama_d[15]
+set_location_assignment PIN_AE10 -to rama_nwe
+set_location_assignment PIN_AD10 -to rama_noe
+set_location_assignment PIN_AF9 -to rama_nub
+set_location_assignment PIN_AE9 -to rama_nlb
+set_location_assignment PIN_AC11 -to rama_ncs
+
+set_global_assignment -name RESERVE_ALL_UNUSED_PINS "AS INPUT TRI-STATED"
+set_global_assignment -name STRATIX_DEVICE_IO_STANDARD LVCMOS
+set_global_assignment -name RESERVE_ASDO_AFTER_CONFIGURATION "AS INPUT TRI-STATED"
+set_global_assignment -name IGNORE_CLOCK_SETTINGS ON
+
+set_global_assignment -name RESERVE_ALL_UNUSED_PINS_NO_OUTPUT_GND "AS INPUT TRI-STATED"
+
+set_global_assignment -name CYCLONE_OPTIMIZATION_TECHNIQUE SPEED
+
+# -----------------
+# start ENTITY(jop)
+
+# timing constraints for SRAM
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to ram*_a
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to ram*_d
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to ram*_noe
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to ram*_d
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to ram*_ncs
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to ram*_nwe
+set_instance_assignment -name TCO_REQUIREMENT "3 ns" -to ram*_a
+set_instance_assignment -name TCO_REQUIREMENT "3 ns" -to ram*_d
+set_instance_assignment -name TCO_REQUIREMENT "3 ns" -to ram*_noe
+set_instance_assignment -name TCO_REQUIREMENT "3 ns" -to ram*_ncs
+set_instance_assignment -name TCO_REQUIREMENT "3 ns" -to ram*_nwe
+# relex tsu for the RAM input MUX
+# we have 10ns SRAMs and use two cycles to access them
+set_instance_assignment -name TSU_REQUIREMENT "3 ns" -to ram*_d
+
+# other default timings
+set_global_assignment -name TSU_REQUIREMENT "5 ns"
+set_global_assignment -name TCO_REQUIREMENT "10 ns"
+
+# end ENTITY(jop)
+# ---------------
+
+
+set_instance_assignment -name PARTITION_HIERARCHY no_file_for_top_partition -to | -section_id Top
+set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
+set_global_assignment -name PARTITION_COLOR 2147039 -section_id Top
+set_global_assignment -name LL_ROOT_REGION ON -section_id "Root Region"
+set_global_assignment -name LL_MEMBER_STATE LOCKED -section_id "Root Region"
+set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_de2.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/core/jop_types.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_pack.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc2_pll.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/fifo.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_uart.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_sys.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/scio_min_cache.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/offtbl.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/jtbl.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/altera/arom.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/altera/aram.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/core/bcfetch.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/core/core.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/core/decode.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/core/fetch.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/cache/lru.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/memory/sc_sram16.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc_jbc.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/memory/mem_sc_new.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/memory/sdpram.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/cmpsync.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/core/extension.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/core/cache.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/core/mul.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/core/shift.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/core/stack.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_arbiter_pack.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_arbiter_tdma.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/core/jopcpu.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/top/jopmul_256x16_cache.vhd

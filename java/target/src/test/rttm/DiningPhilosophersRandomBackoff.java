@@ -32,11 +32,14 @@ import com.jopdesign.sys.Startup;
 
 /**
  * @author Michael Muck
- * dining philosophers
+ * dining philosophers with random backoff
+ * example to study the effects of random backoffs before access
  */
-public class DiningPhilosophers {
+public class DiningPhilosophersRandomBackoff {
 	
 	static SysDevice sys = IOFactory.getFactory().getSysDevice();
+	
+	static final int MAX_BACKOFF = 100;
 	
 	static final int FULL = 1000;
 	static final int EMPTY = 0;
@@ -129,8 +132,12 @@ public class DiningPhilosophers {
 			
 			while(ok) {
 				
-				//Thread.sleep(r.nextInt()%10);
-				//Thread.sleep(1);
+				try {
+					Thread.sleep(r.nextInt()%MAX_BACKOFF);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 				
 				Native.wrMem(1, MAGIC);	// start transaction
 					

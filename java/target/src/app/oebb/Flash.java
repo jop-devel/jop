@@ -152,7 +152,7 @@ public class Flash {
 	public static int intVal(int addr) {
 
 		int val = 0;
-		synchronized (BgTftp.sector) {
+		synchronized (Main.tftpHandler) {
 			for (int i=0; i<4; ++i) {
 				val <<= 8;
 				val += Native.rdMem(DATA_START+addr+i);
@@ -314,7 +314,7 @@ System.out.println("getFirst: wrong strnr");
 
 		int val;
 		for (i=0; i<80; ++i) {
-			synchronized (BgTftp.sector) {
+			synchronized (Main.tftpHandler) {
 				val = Native.rdMem(DATA_START+addr+i);				
 			}
 			if (val==0) break;
@@ -457,7 +457,7 @@ Dbg.lf();
 			for (int j=0; j<6 && val!=0; ++j) {
 				tmpStr[j].setLength(0);
 				for (int k=0; k<19; ++k) {
-					synchronized (BgTftp.sector) {
+					synchronized (Main.tftpHandler) {
 						val = Native.rdMem(DATA_START+idx+off);						
 					}
 					++off;
@@ -549,7 +549,7 @@ System.out.println("ES Strecke:");
 			int off = 0;
 			tmpStr[0].setLength(0);
 			for (k=0; k<19; ++k) {
-				synchronized (BgTftp.sector) {
+				synchronized (Main.tftpHandler) {
 					val = Native.rdMem(DATA_START+idx+k);					
 				}
 				if (val==0 || val=='^') break;
@@ -649,11 +649,11 @@ Dbg.wr("\"\n");
 		// in moveLog().
 		if (i>45000) {
 System.out.println("move logbook");
-			BgTftp.moveLog();
+			Main.tftpHandler.moveLog();
 		}
 		
 		for (logPtr=CONFIG_LEN; logPtr<0x10000; ++logPtr) {
-			synchronized (BgTftp.sector) {
+			synchronized (Main.tftpHandler) {
 				j = Native.rdMem(BGID_START+logPtr);				
 			}
 			if (j==0xff) {
@@ -704,7 +704,7 @@ System.out.println("move logbook");
 				Dbg.wr('\n');
 				Timer.wd();
 			}
-			synchronized (BgTftp.sector) {
+			synchronized (Main.tftpHandler) {
 				Dbg.hexVal(Native.rdMem(DATA_START+i));				
 			}
 			if ((i&0x03)==3) {
@@ -732,7 +732,7 @@ System.out.println("move logbook");
 			j = str.charAt(i);
 			System.out.print((char) j);
 			if (logPtr<0x10000) {
-				synchronized (BgTftp.sector) {
+				synchronized (Main.tftpHandler) {
 					Amd.program(BGID_START-0x80000+logPtr, j);					
 				}
 				++logPtr;
