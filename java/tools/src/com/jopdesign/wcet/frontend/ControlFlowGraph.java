@@ -32,7 +32,6 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.Vector;
 
-import org.apache.bcel.generic.BranchInstruction;
 import org.apache.bcel.generic.INVOKEINTERFACE;
 import org.apache.bcel.generic.INVOKEVIRTUAL;
 import org.apache.bcel.generic.Instruction;
@@ -857,6 +856,7 @@ public class ControlFlowGraph {
 	@Override public String toString() {
 		return super.toString()+this.methodInfo.getFQMethodName();
 	}
+	@SuppressWarnings("unchecked")
 	public String dumpDFA() {
 	    if(this.project.getDfaLoopBounds() == null) return "n/a";
 		Map<InstructionHandle, ContextMap<List<HashedString>, Pair<ValueMapping>>> results = this.project.getDfaLoopBounds().getResult();
