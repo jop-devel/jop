@@ -47,10 +47,11 @@ public class UppAalConfig {
 		new BooleanOption("uppaal-convex-hull",
 			"use UPPAAL's convex hull approximation",
 			false);
+	// FIXME: Change, as soon as we have implemented safe approx
 	public static final BooleanOption UPPAAL_EMPTY_INITIAL_CACHE =
 		new BooleanOption("uppaal-empty-initial-cache",
 			"assume the cache is initially empty (FIFO) - otherwise use 1/2 cache",
-			false);
+			true);
 	public static final BooleanOption UPPAAL_TIGHT_BOUNDS =
 		new BooleanOption("uppaal-tight-bounds",
 				"assume all loop bounds are tight in simulation", 
