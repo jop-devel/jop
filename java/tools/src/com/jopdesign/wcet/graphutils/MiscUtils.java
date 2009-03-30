@@ -1,5 +1,6 @@
 package com.jopdesign.wcet.graphutils;
 
+import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -8,6 +9,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.Vector;
+import java.util.Map.Entry;
 
 public class MiscUtils {
 	public interface Function1<Arg,Ret> {
@@ -74,6 +76,72 @@ public class MiscUtils {
 	public static String joinStrings(Object[] entries, String sep) {
 		return joinStrings(Arrays.asList(entries), sep);
 	}
+
+	/** 
+	 * Remove problematic characters from a method name 
+	 * Note that fully qualified methods might become non-unique,
+	 * so use an additional unique identifier if you need unique names. */
+	public static String sanitizeFileName(String str) {
+		StringBuffer sanitized = new StringBuffer(str.length());
+		for(int i = 0; i < str.length(); i++) {
+			if(Character.isLetterOrDigit(str.charAt(i)) || str.charAt(i) == '.') {
+				sanitized.append(str.charAt(i));
+			} else {
+				sanitized.append('_');
+			}
+		}
+		return sanitized.toString();
+	}
 	
+	/** Escape non-alpha numeric characters
+	 *  q -> qq
+	 *  . -> qd
+	 *  , -> qD
+	 *  / -> qs
+	 *  \ -> qS
+	 *  ' ' -> _
+	 *  _ -> q_
+	 *  ( -> qp
+	 *  ) -> qP
+	 *  x -> q$(chr x)
+	 */
+	public static String qEncode(String s) {
+		StringBuffer sb = new StringBuffer();
+		for(int i = 0; i < s.length(); i++) {
+			char c = s.charAt(i);
+			switch(c) {
+			case 'q' : sb.append("qq");break;
+			case '.' : sb.append("qd");break;
+			case ',' : sb.append("qD");break;
+			case '/' : sb.append("qs");break;
+			case '\\' : sb.append("qS");break;
+			case ' ' : sb.append("_"); break;
+			case '_' : sb.append("q_");break;
+			case '(' : sb.append("qp");break;
+			case ')' : sb.append("qP");break;
+			default:
+				if(Character.isJavaIdentifierPart(c)) {
+					sb.append(c);
+				} else {
+					sb.append('q');
+					sb.append((int)(c));
+				}
+				break;
+			}
+		}
+		return sb.toString();
+	}
+
+	public static void printMap(PrintStream out,Map<?,?> map, int fill) {
+		for(Entry<?, ?> entry : map.entrySet()) {
+			StringBuilder sb = new StringBuilder();
+			String s1 = entry.getKey().toString();
+			sb.append(s1);
+			for(int i = s1.length(); i < fill; i++) sb.append(' ');
+			sb.append(" ==> ");
+			sb.append(entry.getValue().toString());
+			out.println(sb.toString());
+		}
+	}	
 
 }

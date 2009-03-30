@@ -177,7 +177,7 @@ public class Project {
 	}
 
 	public String getTargetName() {
-		return Config.sanitizeFileName(projectConfig.getAppClassName()+"_"+projectConfig.getTargetMethodName());		
+		return MiscUtils.sanitizeFileName(projectConfig.getAppClassName()+"_"+projectConfig.getTargetMethodName());		
 	}
 		
 	public File getSourceFile(MethodInfo method) throws FileNotFoundException {

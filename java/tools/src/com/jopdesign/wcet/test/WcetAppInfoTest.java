@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 
-import com.jopdesign.build.AppInfo;
 import com.jopdesign.build.ClassInfo;
 import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.ProjectConfig;
@@ -54,7 +53,6 @@ public class WcetAppInfoTest {
 			e.printStackTrace();
 			System.exit(1);
 		}
-		AppInfo ai = null;
 		try {
 			Config config = Config.instance();
 			System.out.println("Classloader Demo: "+pConfig.getAppClassName());

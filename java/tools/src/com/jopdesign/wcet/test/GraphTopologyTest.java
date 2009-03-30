@@ -245,8 +245,10 @@ public class GraphTopologyTest {
 			new LoopColoring<String, DefaultEdge>(g,topOrder,"10");
 		System.out.println("Loop coloring: "+loopColoring.getLoopColors());
 		System.out.println("Iteration branch edges: "+loopColoring.getIterationBranchEdges());
-		exportDOT("g1-lnf",loopColoring.getLoopNestForest());		
-		System.out.println("Loop nest tree: "+loopColoring.getLoopNestForest());
+		exportDOT("g1-lnf",loopColoring.getLoopNestDAG());		
+		System.out.println("Loop nest tree: "+loopColoring.getLoopNestDAG());
+		exportDOT("g1-flow-order-graph",loopColoring.getFlowTraversalGraph());				
+		System.out.println("Flow order: "+loopColoring.getFlowTraversal());
 		
 		exportDOT("g1-analysis", g,new AnalysisNodeLabel(g,topOrder,loopColoring), 
 								   new AnalysisEdgeLabeller(g,loopColoring));
