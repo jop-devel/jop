@@ -220,7 +220,7 @@ public class CallGraph {
 			int maxHeight = 0;
 			for(DefaultEdge e : callGraph.outgoingEdgesOf(n)) {
 				int predHeight = subgraphHeight.get(callGraph.getEdgeTarget(e));
-				maxHeight = Math.max(maxHeight, predHeight);
+				maxHeight = Math.max(maxHeight, predHeight + 1);
 			}
 			subgraphHeight.put(n, maxHeight);
 		}
