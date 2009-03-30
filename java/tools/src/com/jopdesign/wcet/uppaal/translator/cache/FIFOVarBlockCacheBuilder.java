@@ -1,4 +1,4 @@
-package com.jopdesign.wcet.uppaal.translator;
+package com.jopdesign.wcet.uppaal.translator.cache;
 
 import java.util.Vector;
 
@@ -6,12 +6,14 @@ import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.jop.VarBlockCache;
 import com.jopdesign.wcet.uppaal.model.Location;
 import com.jopdesign.wcet.uppaal.model.NTASystem;
+import com.jopdesign.wcet.uppaal.translator.SystemBuilder;
+import com.jopdesign.wcet.uppaal.translator.TemplateBuilder;
 
-public class VarBlockCacheBuilder extends CacheSimBuilder {
+public class FIFOVarBlockCacheBuilder extends DynamicCacheBuilder {
 	private Project project;
 	private VarBlockCache cache;
 	private int numMethods;
-	public VarBlockCacheBuilder(Project p, VarBlockCache cache, int numMethods, boolean assumeEmptyCache) {
+	public FIFOVarBlockCacheBuilder(Project p, VarBlockCache cache, int numMethods, boolean assumeEmptyCache) {
 		this.project = p;
 		this.cache = cache;
 		this.numMethods = numMethods;
@@ -57,13 +59,13 @@ public class VarBlockCacheBuilder extends CacheSimBuilder {
 			}
 			blocksPerMethod.add(mBlocks);
 		}
-		return CacheSimBuilder.constArray(blocksPerMethod);
+		return SystemBuilder.constArray(blocksPerMethod);
 	}
 	private StringBuilder initCache(String NUM_METHODS) {
 		Vector<Object> cacheElems = new Vector<Object>();
 		for(int i = 0; i < cache.getNumBlocks(); i++) cacheElems.add(NUM_METHODS);
 		cacheElems.set(blocksOf(0)-1,0);
-		return CacheSimBuilder.constArray(cacheElems);
+		return SystemBuilder.constArray(cacheElems);
 	}
 	private int blocksOf(int id) {
 		return project.getProcessorModel().getMethodCache().requiredNumberOfBlocks(project.getWcetAppInfo().getFlowGraph(id).getNumberOfWords());

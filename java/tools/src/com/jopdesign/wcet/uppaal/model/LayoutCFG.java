@@ -17,7 +17,7 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-package com.jopdesign.wcet.uppaal.translator;
+package com.jopdesign.wcet.uppaal.model;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -33,9 +33,6 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.Vector;
 
-import com.jopdesign.wcet.uppaal.model.Location;
-import com.jopdesign.wcet.uppaal.model.Template;
-import com.jopdesign.wcet.uppaal.model.Transition;
 /* BROKEN */
 public class LayoutCFG {
 	public int x_step;

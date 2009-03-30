@@ -3,13 +3,23 @@
  */
 package com.jopdesign.wcet.uppaal.model;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Vector;
 
+import org.jgrapht.DirectedGraph;
+import org.jgrapht.graph.DefaultDirectedGraph;
+import org.jgrapht.graph.DefaultEdge;
 import org.w3c.dom.Element;
+
+import com.jopdesign.wcet.graphutils.AdvancedDOTExporter;
+import com.jopdesign.wcet.graphutils.AdvancedDOTExporter.DOTLabeller;
+import com.jopdesign.wcet.graphutils.AdvancedDOTExporter.DOTNodeLabeller;
 
 /**
  * This class represents an UPAAL template.
@@ -126,6 +136,27 @@ public class Template {
 
 	public void addComment(String comment) {
 		this.declarations.add("/* "+comment+" */");		
+	}
+
+	public void exportDOT(File dbgFile) throws IOException {
+		DirectedGraph<Location, DefaultEdge> locGraph =
+			new DefaultDirectedGraph<Location, DefaultEdge>(DefaultEdge.class);
+		for(Location l : this.locations.values()) locGraph.addVertex(l);
+		Map<DefaultEdge,String> edgeMap = new HashMap<DefaultEdge,String>();
+		for(Transition t: this.transitions) {
+			DefaultEdge e = locGraph.addEdge(t.getSource(),t.getTarget());
+			edgeMap.put(e, t.getAttrs().toString());
+		}		
+		FileWriter fw = new FileWriter(dbgFile);
+		DOTNodeLabeller<Location> nodeLabeller = new AdvancedDOTExporter.DefaultNodeLabeller<Location>(){
+			public int getID(Location node) { return node.getId(); }
+			public String getLabel(Location node) { return node.getName(); }
+		};
+		DOTLabeller<DefaultEdge> edgeLabeller = new AdvancedDOTExporter.MapLabeller<DefaultEdge>(edgeMap);
+		AdvancedDOTExporter<Location, DefaultEdge> dotExport =			
+			new AdvancedDOTExporter<Location, DefaultEdge>(nodeLabeller,edgeLabeller );
+		dotExport.exportDOT(fw, locGraph);
+		fw.close();
 	}
 
 }

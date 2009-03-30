@@ -1,9 +1,12 @@
-package com.jopdesign.wcet.uppaal.translator;
+package com.jopdesign.wcet.uppaal.translator.cache;
+
+import java.util.Vector;
 
 import com.jopdesign.wcet.jop.BlockCache;
 import com.jopdesign.wcet.uppaal.model.NTASystem;
+import com.jopdesign.wcet.uppaal.translator.SystemBuilder;
 
-public class LRUCacheBuilder extends CacheSimBuilder {
+public class LRUCacheBuilder extends DynamicCacheBuilder {
 	private BlockCache cache;
 	public LRUCacheBuilder(BlockCache blockCache) {
 		this.cache = blockCache;
@@ -39,12 +42,9 @@ public class LRUCacheBuilder extends CacheSimBuilder {
 				"}\n");
 	}
 	private String initCache(String NUM_METHODS,int numBlocks) {
-		StringBuffer sb = new StringBuffer("{ 0");
-		for(int i = 1; i < numBlocks; i++) {
-			sb.append(", ");
-			sb.append(NUM_METHODS);
-		}
-		sb.append(" }");
-		return sb.toString();
+		Vector<String>initElems = new Vector<String>();
+		initElems.add(""+0);
+		for(int i = 1; i < numBlocks; i++) initElems.add(NUM_METHODS);
+		return SystemBuilder.constArray(initElems).toString();
 	}
 }

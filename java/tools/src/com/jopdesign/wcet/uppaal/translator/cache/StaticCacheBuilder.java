@@ -1,4 +1,5 @@
-package com.jopdesign.wcet.uppaal.translator;
+package com.jopdesign.wcet.uppaal.translator.cache;
+
 
 public class StaticCacheBuilder extends CacheSimBuilder {
 

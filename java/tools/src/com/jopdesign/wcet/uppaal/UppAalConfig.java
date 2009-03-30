@@ -18,6 +18,8 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 package com.jopdesign.wcet.uppaal;
+import java.io.File;
+
 import com.jopdesign.wcet.config.BooleanOption;
 import com.jopdesign.wcet.config.Config;
 import com.jopdesign.wcet.config.Option;
@@ -33,18 +35,6 @@ import com.jopdesign.wcet.jop.CacheConfig.DynCacheApproximation;
  */
 public class UppAalConfig {
 	/* Currently not an option */
-	public static final BooleanOption UPPAAL_EMPTY_INITIAL_CACHE =
-		new BooleanOption("uppaal-empty-initial-cache",
-			"assume the cache is initially empty (FIFO)",
-			true);
-	public static final BooleanOption UPPAAL_ONE_CHANNEL_PER_METHOD = 
-		new BooleanOption("uppaal-one-chan-per-method",
-				"use one sync channel per method",
-				true);
-	public static final BooleanOption UPPAAL_TIGHT_BOUNDS =
-		new BooleanOption("uppaal-tight-bounds",
-				"assume all loop bounds are tight in simulation", 
-				false);
 	public static final BooleanOption UPPAAL_COLLAPSE_LEAVES =
 		new BooleanOption("uppaal-collapse-leaves",
 				"collapse leaf methods to speed up simulation", 
@@ -57,18 +47,62 @@ public class UppAalConfig {
 		new BooleanOption("uppaal-convex-hull",
 			"use UPPAAL's convex hull approximation",
 			false);
-
+	public static final BooleanOption UPPAAL_EMPTY_INITIAL_CACHE =
+		new BooleanOption("uppaal-empty-initial-cache",
+			"assume the cache is initially empty (FIFO) - otherwise use 1/2 cache",
+			false);
+	public static final BooleanOption UPPAAL_TIGHT_BOUNDS =
+		new BooleanOption("uppaal-tight-bounds",
+				"assume all loop bounds are tight in simulation", 
+				false);
+	public static final BooleanOption UPPAAL_SUPERGRAPH_TEMPLATE =
+		new BooleanOption("uppaal-supergraph",
+				"use one template per process",
+				false);
 	public static final Option<?>[] uppaalOptions = {
 		UPPAAL_VERIFYTA_BINARY,
 		UPPAAL_TIGHT_BOUNDS, UPPAAL_COLLAPSE_LEAVES, 
-		UPPAAL_ONE_CHANNEL_PER_METHOD, UPPAAL_CONVEX_HULL
+		UPPAAL_SUPERGRAPH_TEMPLATE, UPPAAL_CONVEX_HULL
 	};
 
-	public static boolean isDynamicCacheSim(Config c) {
-		DynCacheApproximation cs = c.getOption(CacheConfig.DYNAMIC_CACHE_APPROX);
+	public boolean isDynamicCacheSim() {
+		DynCacheApproximation cs = configData.getOption(CacheConfig.DYNAMIC_CACHE_APPROX);
 		return ! (cs.equals(DynCacheApproximation.ALWAYS_MISS));
 	}
-	public static boolean hasVerifier(Config c) {
-		return (c.hasOption(UPPAAL_VERIFYTA_BINARY));
+	public boolean hasVerifier() {
+		return verifyBinary != null;
+	}
+	public String getVerifier() {
+		return verifyBinary;
+	}
+	public File getOutFile(String filename) {
+		return new File(outDir,filename);
+	}
+	private Config configData;
+	public boolean collapseLeaves;
+	public boolean convexHullApprox;
+	public boolean emptyInitialCache;
+	public boolean assumeTightBounds;
+	public boolean superGraphTemplate;
+	public DynCacheApproximation cacheApprox;
+	public DynCacheApproximation getCacheApproximation() {
+		return this.cacheApprox;
+	}
+	public final boolean debug = false;
+	public final File outDir;
+
+	private String verifyBinary = null;
+	public UppAalConfig(Config c, File outDir) {
+		this.configData = c;
+		this.collapseLeaves = c.getOption(UPPAAL_COLLAPSE_LEAVES);
+		this.convexHullApprox = c.getOption(UPPAAL_CONVEX_HULL);
+		this.emptyInitialCache = c.getOption(UPPAAL_EMPTY_INITIAL_CACHE);
+		this.assumeTightBounds = c.getOption(UPPAAL_TIGHT_BOUNDS);
+		this.superGraphTemplate = c.getOption(UPPAAL_SUPERGRAPH_TEMPLATE);
+		if(c.hasOption(UPPAAL_VERIFYTA_BINARY)) {
+			this.verifyBinary = c.getOption(UPPAAL_VERIFYTA_BINARY);
+		}
+		this.cacheApprox = c.getOption(CacheConfig.DYNAMIC_CACHE_APPROX);
+		this.outDir = outDir;
 	}
 }

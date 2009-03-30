@@ -1,11 +1,12 @@
-package com.jopdesign.wcet.uppaal.translator;
+package com.jopdesign.wcet.uppaal.translator.cache;
 
 import java.util.Vector;
 
 import com.jopdesign.wcet.jop.BlockCache;
 import com.jopdesign.wcet.uppaal.model.NTASystem;
+import com.jopdesign.wcet.uppaal.translator.SystemBuilder;
 
-public class FIFOCacheBuilder extends CacheSimBuilder {
+public class FIFOCacheBuilder extends DynamicCacheBuilder {
 	private int numBlocks;
 	private boolean assumeEmptyCache;
 	private String NUM_METHODS;
@@ -43,6 +44,6 @@ public class FIFOCacheBuilder extends CacheSimBuilder {
 		Vector<Object> cacheElems = new Vector<Object>();
 		cacheElems.add(0);
 		for(int i = 1; i < numBlocks; i++) cacheElems.add(NUM_METHODS);
-		return CacheSimBuilder.constArray(cacheElems);
+		return SystemBuilder.constArray(cacheElems);
 	}
 }
