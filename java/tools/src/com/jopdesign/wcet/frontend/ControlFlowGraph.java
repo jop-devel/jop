@@ -382,6 +382,10 @@ public class ControlFlowGraph {
 	/* analysis stuff, needs to be reevaluated when graph changes */
 	private TopOrder<CFGNode, CFGEdge> topOrder = null;
 	private LoopColoring<CFGNode, CFGEdge> loopColoring = null;
+	private Boolean isLeafMethod = null;
+	public boolean isLeafMethod() {
+		return isLeafMethod;
+	}
 
 	
 	/**
@@ -756,6 +760,7 @@ public class ControlFlowGraph {
 	private void invalidate() {
 		this.topOrder = null;
 		this.loopColoring = null;
+		this.isLeafMethod = null;
 	}
 
 	/* flow graph should have been checked before analyseFlowGraph is called */
@@ -763,7 +768,11 @@ public class ControlFlowGraph {
 		try {
 			topOrder = new TopOrder<CFGNode, CFGEdge>(this.graph, this.graph.getEntry());
 			idGen = 0;
-			for(CFGNode vertex : topOrder.getTopologicalTraversal()) vertex.id = idGen++;
+			this.isLeafMethod = true;
+			for(CFGNode vertex : topOrder.getTopologicalTraversal()) {
+				if(vertex instanceof InvokeNode) this.isLeafMethod = false;
+				vertex.id = idGen++;
+			}
 			for(CFGNode vertex : TopOrder.findDeadNodes(graph,this.graph.getEntry())) vertex.id = idGen++;
 			loopColoring = new LoopColoring<CFGNode, CFGEdge>(this.graph,topOrder,graph.getExit());
 		} catch (BadGraphException e) {

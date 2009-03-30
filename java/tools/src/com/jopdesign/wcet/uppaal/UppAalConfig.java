@@ -61,7 +61,7 @@ public class UppAalConfig {
 				"use one template per process",
 				false);
 	public static final Option<?>[] uppaalOptions = {
-		UPPAAL_VERIFYTA_BINARY,
+		UPPAAL_VERIFYTA_BINARY, UPPAAL_EMPTY_INITIAL_CACHE,
 		UPPAAL_TIGHT_BOUNDS, UPPAAL_COLLAPSE_LEAVES, 
 		UPPAAL_SUPERGRAPH_TEMPLATE, UPPAAL_CONVEX_HULL
 	};

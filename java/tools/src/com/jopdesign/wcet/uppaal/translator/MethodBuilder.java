@@ -168,8 +168,4 @@ public class MethodBuilder implements CfgVisitor {
 	public int getId() {
 		return mId;
 	}
-	public void waitAtCacheMiss(Location missNode, ControlFlowGraph cfg, boolean loadOnInvoke) {
-		long waitTime = this.project.getProcessorModel().getMethodCacheLoadTime(cfg.getNumberOfWords(), loadOnInvoke);
-		tBuilder.waitAtLocation(missNode, waitTime);
-	}
 }

@@ -1,8 +1,10 @@
 package com.jopdesign.wcet.jop;
 
 import com.jopdesign.build.MethodInfo;
+import com.jopdesign.wcet.ProcessorModel;
 import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.config.Config;
+import com.jopdesign.wcet.frontend.ControlFlowGraph;
 import com.jopdesign.wcet.jop.CacheConfig.CacheImplementation;
 
 public class BlockCache extends MethodCache {

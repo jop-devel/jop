@@ -1,5 +1,9 @@
 package com.jopdesign.wcet.uppaal.translator.cache;
 
+import com.jopdesign.wcet.ProcessorModel;
+import com.jopdesign.wcet.frontend.ControlFlowGraph;
+import com.jopdesign.wcet.uppaal.model.NTASystem;
+
 
 public class StaticCacheBuilder extends CacheSimBuilder {
 
@@ -14,5 +18,11 @@ public class StaticCacheBuilder extends CacheSimBuilder {
 	@Override
 	public boolean isAlwaysMiss() {
 		return alwaysMiss;
+	}
+	@Override
+	public void appendDeclarations(NTASystem system, String NUM_METHODS) { }
+	@Override
+	public long getWaitTime(ProcessorModel proc, ControlFlowGraph cfg,boolean isInvoke) {
+		return proc.getMethodCacheLoadTime(cfg.getNumberOfWords(), isInvoke);
 	}
 }

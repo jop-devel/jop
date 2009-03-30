@@ -136,6 +136,11 @@ public abstract class MethodCache {
 		//System.err.println("Miss on return cost: "+invoker+": "+proc.getMethodCacheLoadTime(invoker.getNumberOfWords(), false));
 		return proc.getMethodCacheLoadTime(invoker.getNumberOfWords(), false);
 	}
+	public long getMaxMissCost(ProcessorModel proc, ControlFlowGraph cfg) {
+		long invokeCost=getMissOnInvokeCost(proc,cfg);
+		if(! cfg.isLeafMethod()) return Math.max(invokeCost, getMissOnReturnCost(proc,cfg));
+		else                     return invokeCost;
+	}
 	
 	/**
 	 * Get an upper bound for the miss cost involved in invoking a method of length

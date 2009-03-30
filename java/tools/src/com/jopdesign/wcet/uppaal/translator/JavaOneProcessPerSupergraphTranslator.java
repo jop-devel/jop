@@ -28,7 +28,7 @@ public class JavaOneProcessPerSupergraphTranslator extends JavaTranslator {
 	public class InvokeViaCallStackBuilder extends InvokeBuilder {
 
 		public InvokeViaCallStackBuilder(JavaTranslator mt, TemplateBuilder tBuilder) {
-			super(mt, tBuilder);
+			super(mt,tBuilder, mt.cacheSim);
 		}
 		/* when syncing via callstack, we connect the invoke node to the entry, and the exit to
 		 * to the return node. The former pushes the invoked method on the callstack, while the
@@ -57,7 +57,7 @@ public class JavaOneProcessPerSupergraphTranslator extends JavaTranslator {
 				Transition toInvokeHit    = tBuilder.createTransition(basicBlockNode, callNode);
 				Transition toInvokeMiss   = tBuilder.createTransition(basicBlockNode, invokeMissNode);
 	                                        tBuilder.createTransition(invokeMissNode, callNode);
-				simulateCacheAccess(mBuilder,
+				simulateCacheAccess(
 						n.receiverFlowGraph(),true,
 						basicBlockNode,  /* access cache on ingoing transitions */
 						toInvokeHit,     /* if hit transition */
@@ -70,7 +70,6 @@ public class JavaOneProcessPerSupergraphTranslator extends JavaTranslator {
 				Transition toReturnMiss   = tBuilder.createTransition(returnNode, returnMissNode);
 	            							tBuilder.createTransition(returnMissNode, finishInvokeNode);
 				simulateCacheAccess(
-						mBuilder,
 						n.invokerFlowGraph(),false,
 						returnNode,       /* access cache on ingoing transitions */
 						toReturnHit,      /* if hit transition */
@@ -88,7 +87,7 @@ public class JavaOneProcessPerSupergraphTranslator extends JavaTranslator {
 				int invokedID,
 				InvokeNode n) {
 			MethodInfo invoked = n.getImplementedMethod();
-			if(project.getCallGraph().isLeafNode(invoked) && config.collapseLeaves) {
+			if(n.receiverFlowGraph().isLeafMethod() && config.collapseLeaves) {
 				RecursiveAnalysis<StaticCacheApproximation> ilpAn = 
 					new RecursiveAnalysis<StaticCacheApproximation>(project,new RecursiveAnalysis.LocalIPETStrategy());
 				WcetCost wcet = ilpAn.computeWCET(n.getImplementedMethod(), StaticCacheApproximation.ALWAYS_HIT);

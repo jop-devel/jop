@@ -29,7 +29,7 @@ public class JavaOneProcessPerMethodTranslator extends JavaTranslator {
 
 		public InvokeViaSyncBuilder(JavaTranslator mt, 
 				                    TemplateBuilder tBuilder) {
-			super(mt,tBuilder);
+			super(mt,tBuilder, mt.cacheSim);
 		}
 		/* we need a few nodes for translating an invoke node
 		 * - A  bbNode (wait, before invoking)
@@ -58,7 +58,7 @@ public class JavaOneProcessPerMethodTranslator extends JavaTranslator {
 				Transition toInvokeHit    = tBuilder.createTransition(basicBlockNode, waitInvokeNode);
 				Transition toInvokeMiss   = tBuilder.createTransition(basicBlockNode, invokeMissNode);
 	                                        tBuilder.createTransition(invokeMissNode, waitInvokeNode);
-				simulateCacheAccess(mBuilder,
+				simulateCacheAccess(
 						n.receiverFlowGraph(),true,
 						basicBlockNode,  /* access cache on ingoing transitions */
 						toInvokeHit,     /* if hit transition */
@@ -72,7 +72,6 @@ public class JavaOneProcessPerMethodTranslator extends JavaTranslator {
 				Transition toReturnMiss   = tBuilder.createTransition(returnAccessNode, returnMissNode);
 	            							tBuilder.createTransition(returnMissNode, exitInvokeNode);
 				simulateCacheAccess(
-						mBuilder,
 						n.invokerFlowGraph(),false,
 						returnAccessNode, /* access cache on ingoing transitions */
 						toReturnHit,      /* if hit transition */
@@ -86,7 +85,7 @@ public class JavaOneProcessPerMethodTranslator extends JavaTranslator {
 			return new SubAutomaton(startInvoke, finishInvoke);
 		}
 		public void simulateMethodInvocation(Location waitInvokeLoc, InvokeNode n) {
-			if(project.getCallGraph().isLeafNode(n.getImplementedMethod()) && config.collapseLeaves) {
+			if(n.receiverFlowGraph().isLeafMethod() && config.collapseLeaves) {
 				RecursiveAnalysis<StaticCacheApproximation> ilpAn = 
 					new RecursiveAnalysis<StaticCacheApproximation>(project,new RecursiveAnalysis.LocalIPETStrategy());
 				WcetCost wcet = ilpAn.computeWCET(n.getImplementedMethod(), StaticCacheApproximation.ALWAYS_HIT);
