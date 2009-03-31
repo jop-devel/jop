@@ -50,8 +50,13 @@ public class WcetCost implements Serializable {
 	@Override public String toString() {
 		if(getCost() == 0) return "0";
 		String s;
-		if(localCost == 0) s= "(cost: "+getCost()+", execution: "+nonLocalCost+", cache: "+cacheCost;
-		else s = ""+getCost()+" (local: "+localCost+",cache: "+cacheCost+",non-local: "+nonLocalCost;
+		if(localCost == 0 && cacheCost == 0) {
+			s = "(cost: "+getCost();
+		} else if(localCost == 0) { 
+			s = "(cost: "+getCost()+", execution: "+nonLocalCost+", cache: "+cacheCost;
+		} else { 
+			s = ""+getCost()+" (local: "+localCost+",cache: "+cacheCost+",non-local: "+nonLocalCost;
+		}
 		if(this.potCacheFlushes > 0) s+= ", potentialCacheFlushes: "+potCacheFlushes;
 		s+=")";
 		return s;

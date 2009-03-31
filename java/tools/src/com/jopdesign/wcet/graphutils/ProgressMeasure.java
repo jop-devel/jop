@@ -18,7 +18,7 @@ public  class  ProgressMeasure<V,E> {
 	private LoopColoring<V, E> loopColors;
 	private FlowGraph<V, E> cfg;
 	private Map<V, Integer> loopBounds;
-	private Map<V, Integer> blockMeasure;
+	private Map<V, Long> blockMeasure;
 	/* state */
 	private HashMap<V, Long> pMaxMap;
 	private HashMap<V, Long> loopProgress;
@@ -26,7 +26,7 @@ public  class  ProgressMeasure<V,E> {
 	public ProgressMeasure(FlowGraph<V,E> cfg, 
 						   LoopColoring<V, E> loopColors,
 			               Map<V, Integer> loopBounds, 
-			               Map<V, Integer> blockMeasure) {
+			               Map<V, Long> blockMeasure) {
 		this.cfg = cfg;
 		this.loopBounds = loopBounds;
 		this.loopColors = loopColors;
@@ -88,7 +88,7 @@ public  class  ProgressMeasure<V,E> {
 	/* test */
 	public static void main(String argv[]) {
 		int nodes[] = { 1,2,3,4,5,6,7,8,9,10,11};
-		int blockm[] = { 1,1,22,4,4,4,2,1,1,1,1};
+		long blockm[] = { 1,1,22,4,4,4,2,1,1,1,1};
 		int edges[][] = { {1,2},{2,3},{2,4},{4,5},
 				          {5,6},{6,7},{6,2},{7,5},{7,10},
 				          {5,8},{3,9},{8,9},{9,2},
@@ -109,7 +109,7 @@ public  class  ProgressMeasure<V,E> {
 		}
 		LoopColoring<Integer,DefaultEdge> testLoopColors 
 			= new LoopColoring<Integer, DefaultEdge>(testGraph, topo , 11);
-		HashMap<Integer,Integer> testBlockMeasure = new HashMap<Integer, Integer>();
+		HashMap<Integer,Long> testBlockMeasure = new HashMap<Integer, Long>();
 		for(int i = 0; i < nodes.length; i++) {
 			testBlockMeasure.put(nodes[i],blockm[i]);
 		}

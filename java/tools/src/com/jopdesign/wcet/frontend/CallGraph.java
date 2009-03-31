@@ -256,13 +256,14 @@ public class CallGraph {
 	 * requires an acyclic callgraph.
 	 * @return
 	 */
-	public List<MethodInfo> getImplementedMethods() {
+	public List<MethodInfo> getImplementedMethods(MethodInfo rootMethod) {
 		List<MethodInfo> implemented = new Vector<MethodInfo>();
+		HashSet<MethodInfo> reachable = new HashSet<MethodInfo>(getReachableImplementations(rootMethod));
 		TopologicalOrderIterator<CallGraphNode, DefaultEdge> ti = 
 			new TopologicalOrderIterator<CallGraphNode, DefaultEdge>(callGraph);
 		while(ti.hasNext()) {
 			MethodInfo m = ti.next().getMethodImpl();
-			if(m != null) implemented.add(m);
+			if(m != null && reachable.contains(m)) implemented.add(m);
 		}		
 		return implemented;
 	}
@@ -340,7 +341,7 @@ public class CallGraph {
 	 public ControlFlowGraph getLargestMethod() {
 		ControlFlowGraph largest = null;
 		int maxBytes = 0;
-		for(MethodInfo mi : this.getImplementedMethods()) {
+		for(MethodInfo mi : this.getImplementedMethods(this.rootNode.method)) {
 			ControlFlowGraph cfg = appInfo.getFlowGraph(mi);
 			int bytes = cfg.getNumberOfBytes();
 			if(bytes > maxBytes) {
@@ -352,7 +353,7 @@ public class CallGraph {
 	}
 	public int getTotalSizeInBytes() {
 		int bytes = 0;
-		for (MethodInfo mi : this.getImplementedMethods()) {
+		for (MethodInfo mi : this.getImplementedMethods(this.rootNode.method)) {
 			 bytes += appInfo.getFlowGraph(mi).getNumberOfBytes();
 		}
 		return bytes;

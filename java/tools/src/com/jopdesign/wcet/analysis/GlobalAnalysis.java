@@ -27,8 +27,7 @@ import com.jopdesign.wcet.jop.CacheConfig.StaticCacheApproximation;
 import static com.jopdesign.wcet.graphutils.MiscUtils.addToSet;
 
 /**
- * Global IPET-based analysis, supporting 2-block LRU caches (static)
- * and variable block caches (miss once areas).
+ * Global IPET-based analysis, supporting variable block caches (all fit region approximation).
  * @author Benedikt Huber <benedikt.huber@gmail.com>
  *
  */
@@ -149,36 +148,31 @@ public class GlobalAnalysis {
 	private Map<CFGNode, WcetCost> 
 		buildNodeCostMap(SuperGraph sg, StaticCacheApproximation approx) {		
 		HashMap<CFGNode, WcetCost> nodeCost = new HashMap<CFGNode,WcetCost>();
-		Class<? extends WcetVisitor> visitor;
+		GlobalVisitor visitor;
 		switch(approx) {
-		case ALWAYS_MISS: visitor = AlwaysMissVisitor.class; break;
-		default: visitor = WcetVisitor.class; break; 
+		case ALWAYS_MISS: visitor = new GlobalVisitor(project,true); break;
+		default: visitor = new GlobalVisitor(project,false); break; 
 		}
 		for(CFGNode n : sg.vertexSet()) {
-			WcetCost cost = computeLocalCost(n, visitor);
+			WcetCost cost = visitor.computeCost(n);
 			nodeCost.put(n,cost);
 		}
 		return nodeCost;
 	}
-	public WcetCost computeLocalCost(CFGNode n) {
-		return computeLocalCost(n,WcetVisitor.class);
-	}
-	private WcetCost computeLocalCost(CFGNode n, Class<? extends WcetVisitor> c) {
-		WcetVisitor wcetVisitor;
-		try {
-			wcetVisitor = c.newInstance();
-			wcetVisitor.project = project;
-		} catch (Exception e) {
-			throw new AssertionError("Failed to instantiate WcetVisitor: "+c+" : "+e);
+	public static class GlobalVisitor extends WcetVisitor {
+		private boolean addAlwaysMissCost;
+		public GlobalVisitor(Project p, boolean addAlwaysMissCost) {
+			super(p);
+			this.addAlwaysMissCost = addAlwaysMissCost;
 		}
-		n.accept(wcetVisitor);
-		return wcetVisitor.cost;
-	}
-	public static class AlwaysMissVisitor extends WcetVisitor {
 		public void visitInvokeNode(InvokeNode n) {
-			super.visitInvokeNode(n);
-			ProcessorModel proc = project.getProcessorModel();
-			this.cost.addCacheCost(proc.getInvokeReturnMissCost(n.invokerFlowGraph(), n.receiverFlowGraph()));
+			visitBasicBlockNode(n);
+			if(addAlwaysMissCost) {
+				ProcessorModel proc = project.getProcessorModel();
+				this.cost.addCacheCost(proc.getInvokeReturnMissCost(
+						n.invokerFlowGraph(), 
+						n.receiverFlowGraph()));
+			}
 		}
 	}
 }

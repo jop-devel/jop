@@ -191,14 +191,14 @@ public class Report {
 	 */
 	public void generateInfoPages() throws IOException {
 		this.addStat("#classes", project.getCallGraph().getClassInfos().size());
-		this.addStat("#methods", project.getCallGraph().getImplementedMethods().size());
+		this.addStat("#methods", project.getCallGraph().getImplementedMethods(project.getTargetMethod()).size());
 		this.addStat("max call stack ", project.getCallGraph().getMaximalCallStack());
 		this.addStat("largest method size (in bytes)", project.getCallGraph().getLargestMethod().getNumberOfBytes());
 		this.addStat("largest method size (in words)", project.getCallGraph().getLargestMethod().getNumberOfWords());
 		this.addStat("total size of task (in bytes)", project.getCallGraph().getTotalSizeInBytes());
 		generateInputOverview();
 		this.addPage("details",null);
-		for(MethodInfo m : project.getCallGraph().getImplementedMethods()) {
+		for(MethodInfo m : project.getCallGraph().getImplementedMethods(project.getTargetMethod())) {
 			for(LineNumber ln : m.getMethod().getLineNumberTable().getLineNumberTable()) {
 				getClassReport(m.getCli()).addLinePropertyIfNull(ln.getLineNumber(),"color","lightgreen");
 			}
@@ -249,7 +249,7 @@ public class Report {
 		ctx.put("callgraph", "callgraph.png");
 
 		Vector<MethodReport> mrv = new Vector<MethodReport>();
-		for(MethodInfo m : project.getCallGraph().getImplementedMethods()) { 
+		for(MethodInfo m : project.getCallGraph().getImplementedMethods(project.getTargetMethod())) { 
 			mrv.add(new MethodReport(project,m,pageOf(m))); 
 		}
 		ctx.put("methods", mrv);

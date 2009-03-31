@@ -95,7 +95,7 @@ public abstract class MethodCache {
 		int maxWords = 0;
 		MethodInfo largestMethod = null;
 		// It is inconvenient for testing to take all methods into account
-		for(MethodInfo mi : project.getCallGraph().getImplementedMethods()) {
+		for(MethodInfo mi : project.getCallGraph().getImplementedMethods(project.getTargetMethod())) {
 			Code code = mi.getCode();
 			if(code == null) continue;
 			int size = code.getCode().length;
