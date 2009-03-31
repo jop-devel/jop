@@ -32,6 +32,7 @@ import org.apache.log4j.Logger;
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.wcet.analysis.GlobalAnalysis;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis;
+import com.jopdesign.wcet.analysis.TreeAnalysis;
 import com.jopdesign.wcet.analysis.UppaalAnalysis;
 import com.jopdesign.wcet.analysis.WcetCost;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveWCETStrategy;
@@ -96,6 +97,15 @@ public class WCETAnalysis {
 			exec.logException("Loading project", e);
 			return false;
 		}
+		/* Tree based WCET analysis - has to be equal to ALWAYS_MISS */
+		{
+			long start,stop;
+			start = System.nanoTime();
+			long treeWCET = new TreeAnalysis(project).computeWCET(project.getTargetMethod());
+			stop = System.nanoTime();
+			reportSpecial("wcet.tree",WcetCost.totalCost(treeWCET),start,stop,0.0);
+		}
+
 		/* Perf-Test */
 //		for(int i = 0; i < 50; i++) { 
 //			RecursiveAnalysis<StaticCacheApproximation> an = 
