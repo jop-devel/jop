@@ -96,6 +96,7 @@ public class Main {
 	static State state;
 	static Logic logic;
 	static Logging logger;
+	static SingleFileFS fs;
 
 
 	static boolean reset;
@@ -138,7 +139,12 @@ public class Main {
 		net = new Net(ejip);
 
 		// we need the BgTftp befor Flash.init()!
-		tftpHandler = new BgTftp(ejip);
+		fs = new SingleFileFS();
+		if (fs.isAvailable()) {
+			tftpHandler = new NandTftp(ejip, fs);
+		} else {
+			tftpHandler = new BgTftp(ejip);			
+		}
 /* comment Flash for JopSim debug
 */
 		Flash.init();

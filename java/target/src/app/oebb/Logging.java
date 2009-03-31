@@ -123,50 +123,10 @@ public class Logging implements Runnable {
 		if (lm==null) {
 			return;
 		}
-		
-		Native.wrMem(0x90, 0x100001);
-		Native.wrMem(0x00, 0x100002);
-//
-//			should read 0x98 and 0x73
-//
-		i = Native.rdMem(0x100000);	// Manufacturer
-		j = Native.rdMem(0x100000);	// Size
-		System.out.print("NAND ");
-		System.out.print(i);
-		System.out.print(" ");
-		System.out.print(j);
-		System.out.print(" ");
-		lm.msg.append("NAND ");
-		if (i==0x198) {
-			lm.msg.append("Toshiba ");
-		} else if (i==0x120) {
-			lm.msg.append("ST ");
+		if (Main.fs.isAvailable()) {
+			lm.msg.append("NAND Flash available");
 		} else {
-			lm.msg.append("Unknown manufacturer ");
-		}
-			
-		if (j==0x173) {
-			lm.msg.append("16 MB");
-		} else if (j==0x175) {
-			lm.msg.append("32 MB");
-		} else if (j==0x176) {
-			lm.msg.append("64 MB");
-		} else if (j==0x179) {
-			lm.msg.append("128 MB");
-		} else {
-			lm.msg.append("error reading NAND");
-		}
-
-//
-//			read status, should be 0xc0
-//
-		Native.wrMem(0x70, 0x100001);
-		i = Native.rdMem(0x100000)&0x1c1;
-		j = Native.rdMem(0x100000)&0x1c1;
-		if (i==0x1c0 && j==0x1c0) {
-			lm.msg.append(" status OK");
-		} else {
-			lm.msg.append(" error reading NAND status");
+			lm.msg.append("NAND Flash NOT available");			
 		}
 		System.out.println(lm.msg);
 		lm.addToSendList();
