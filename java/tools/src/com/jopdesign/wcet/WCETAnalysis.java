@@ -89,9 +89,9 @@ public class WCETAnalysis {
 			project.load();
 			MethodInfo largestMethod = project.getProcessorModel().getMethodCache().checkCache();
 			int minWords = MiscUtils.bytesToWords(largestMethod.getCode().getCode().length);
-			System.out.println("Minimal Cache Size for target method(words): " 
+			System.out.println("Minimal Cache Size for target method: " 
 					         + minWords
-					         + " because of "+largestMethod.getFQMethodName());
+					         + " words because of "+largestMethod.getFQMethodName());
 			project.recordMetric("min-cache-size",largestMethod.getFQMethodName(),minWords);
 		} catch (Exception e) {
 			exec.logException("Loading project", e);
@@ -101,7 +101,8 @@ public class WCETAnalysis {
 		{
 			long start,stop;
 			start = System.nanoTime();
-			long treeWCET = new TreeAnalysis(project).computeWCET(project.getTargetMethod());
+			TreeAnalysis treeAna = new TreeAnalysis(project);
+			long treeWCET = treeAna.computeWCET(project.getTargetMethod());
 			stop = System.nanoTime();
 			reportSpecial("wcet.tree",WcetCost.totalCost(treeWCET),start,stop,0.0);
 		}

@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.Map.Entry;
 
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
@@ -12,16 +13,38 @@ import com.jopdesign.wcet.graphutils.TopOrder.BadGraphException;
 
 
 /** Module to compute relative progess measure
- * Fun fact: While implementing, I suddenly recognized this is a generalized tree based WCET computation :) */
+ * Fun fact: While implementing, I suddenly recognized this is a
+ * generalized tree based WCET computation :) */
 public  class  ProgressMeasure<V,E> {
+	public static class RelativeProgress<V> {
+		public RelativeProgress(long staticDiff, Map<V,Long> loopDiff) {
+			this.staticDiff = staticDiff;
+			this.loopDiff = loopDiff;
+		}
+		public final long staticDiff;
+		public final Map<V,Long> loopDiff;
+		public String toString() {
+			StringBuilder sb = new StringBuilder();
+			sb.append(staticDiff);
+			for(Entry<V, Long> entry : loopDiff.entrySet()) {
+				sb.append(String.format(" - %d * iter(%s)",entry.getValue(),entry.getKey()));
+			}
+			return sb.toString();
+		}
+	}
+	
 	/* input */
 	private LoopColoring<V, E> loopColors;
 	private FlowGraph<V, E> cfg;
 	private Map<V, Integer> loopBounds;
 	private Map<V, Long> blockMeasure;
 	/* state */
-	private HashMap<V, Long> pMaxMap;
-	private HashMap<V, Long> loopProgress;
+	private HashMap<V, Long> pMaxMap = null;
+	private HashMap<V, Long> loopProgress = null;
+	public long getLoopProgress(V target) {
+		getMaxProgress();
+		return this.loopProgress.get(target);
+	}
 
 	public ProgressMeasure(FlowGraph<V,E> cfg, 
 						   LoopColoring<V, E> loopColors,
@@ -32,11 +55,14 @@ public  class  ProgressMeasure<V,E> {
 		this.loopColors = loopColors;
 		this.blockMeasure = blockMeasure;
 	}
+
+
 	/**
 	 * The fun algorithm to compute relative progress measures.
 	 * @return
 	 */
 	public Map<V, Long> getMaxProgress() {
+		if(pMaxMap != null) return pMaxMap;
 		/* pmax: maximal progress upto the given node */
 		pMaxMap = new HashMap<V, Long>();
 		loopProgress = new HashMap<V, Long>();
@@ -67,6 +93,24 @@ public  class  ProgressMeasure<V,E> {
 			updatePMax(subGraph, node, loopColors);
 		}
 		return pMaxMap;
+	}
+	public Map<E,RelativeProgress<V>> computeRelativeProgress() {
+		Map<V, Long> maxProgress = getMaxProgress();
+		Map<E, RelativeProgress<V>> relProgress = new HashMap<E, RelativeProgress<V>>();
+		for(E e : cfg.edgeSet()) {
+			V src    = cfg.getEdgeSource(e);
+			V target = cfg.getEdgeTarget(e);
+			Long pmSrc = maxProgress.get(src);
+			Long pmTarget = maxProgress.get(target);
+			long staticDiff = pmTarget - pmSrc;
+			if(this.loopColors.isBackEdge(e)) staticDiff += getLoopProgress(target);
+			Map<V,Long> loopDiff = new HashMap<V, Long>();
+			for(V exit : loopColors.getLoopExitSet(e)) {
+				loopDiff.put(exit,getLoopProgress(exit));
+			}
+			relProgress .put(e, new RelativeProgress<V>(staticDiff,loopDiff));
+		}
+		return relProgress;
 	}
 	private void updatePMax(DirectedGraph<V, 
 			                E> subgraph,V node, 
@@ -115,6 +159,14 @@ public  class  ProgressMeasure<V,E> {
 		}
 		ProgressMeasure<Integer,DefaultEdge> pm = 
 			new ProgressMeasure<Integer,DefaultEdge>(testGraph,testLoopColors,testLoopBounds,testBlockMeasure );
-		MiscUtils.printMap(System.out,new TreeMap<Integer,Long>(pm.getMaxProgress()), 10);
+		Map<Integer, Long> maxProgress = pm.getMaxProgress();
+		MiscUtils.printMap(System.out,new TreeMap<Integer,Long>(maxProgress), 10);
+
+		/* compute relative updates */
+		for(Entry<DefaultEdge, RelativeProgress<Integer>> x : pm.computeRelativeProgress().entrySet()) {
+			int src    = testGraph.getEdgeSource(x.getKey());
+			int target = testGraph.getEdgeTarget(x.getKey());
+			System.out.println(String.format("%2d --> %2d: +%s",src,target,x.getValue()));
+		}
 	}
 }

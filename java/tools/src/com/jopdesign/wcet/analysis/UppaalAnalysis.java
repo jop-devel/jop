@@ -51,7 +51,7 @@ public class UppaalAnalysis {
 	}
 	public WcetCost calculateWCET(MethodInfo m, long ub) throws IOException, DuplicateKeyException, XmlSerializationException {
 		Long upperBound = null;
-		if(ub > 0) upperBound = ub;
+		if(ub > 0) upperBound = ub + 20;
 		logger.info("Starting UppAal translation of " + m.getFQMethodName());
 		Translator translator = new Translator(uppaalConfig, project);
 		translator.translateProgram(m);
