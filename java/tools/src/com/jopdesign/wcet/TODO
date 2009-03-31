@@ -2,9 +2,7 @@ TODO  List
 ==========
 Please assign names (in square brackets) to tasks, and reference them in the source
 when appropriate.
-
-[FIFO_HALF_CACHE]
-Add support for safe UPPAAL FIFO cache analysis (using N/2 lemma)
+[PROGRESS_MEASURE_SUPPORT_FOR_UPPAAL_SUPERGRAPH]
 
 [CREATE_FLOWGRAPH_MODIFIER_ABSTRACTION]
 There are plenty of ways we have to modify flow graphs before WCET analysis:

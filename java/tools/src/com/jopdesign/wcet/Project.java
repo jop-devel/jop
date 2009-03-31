@@ -363,6 +363,7 @@ public class Project {
 	public File getOutFile(String file) {
 		return new File(projectConfig.getOutDir(),file);
 	}
+	/** FIXME: Slow, caching is missing */
 	public int computeCyclomaticComplexity(MethodInfo m) {
 		ControlFlowGraph g = getFlowGraph(m);
 		int nLocal = g.getGraph().vertexSet().size();
@@ -379,7 +380,7 @@ public class Project {
 	public ProcessorModel getProcessorModel() {
 		return this.processor;
 	}
-	/* recording for scripted evaluatino */
+	/* recording for scripted evaluation */
 	public void recordResult(WcetCost wcet, double timeDiff, double solverTime) {
 		if(resultRecord == null) return;
 		Config c = projectConfig.getConfigManager();		

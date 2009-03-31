@@ -1,6 +1,9 @@
 (User) ChangeLog for wcet08. Please keep current.
 Mar 09
--------
+------
+  - EXPERIMENTAL: progress measures (and, for free, tree based WCET analysis)
+  - Add support for (not yet existing) LRU VARBLOCK cache
+  - Add support for safe UPPAAL FIFO cache analysis (using N/2 lemma)
   - Rewrote UPPAAL translator, substantial performance improvements
   - Added support for one-template-per-thread UPPAAL analysis
 
