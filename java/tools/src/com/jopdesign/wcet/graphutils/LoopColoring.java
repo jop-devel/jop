@@ -36,11 +36,11 @@ import org.jgrapht.DirectedGraph;
 import org.jgrapht.VertexFactory;
 import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DirectedSubgraph;
 import org.jgrapht.graph.SimpleDirectedGraph;
 import org.jgrapht.traverse.AbstractGraphIterator;
 import org.jgrapht.traverse.TopologicalOrderIterator;
 
-import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGNode;
 
 /**
  * Compute the loop coloring of a graph, i.e. for each node
@@ -211,7 +211,7 @@ public class LoopColoring<V,E> {
 	 * @param hol the head of loop
 	 * @return a set of nodes belonging to that loop
 	 */
-	public Set<V> getNodesOfLoop(CFGNode hol) {
+	public Set<V> getNodesOfLoop(V hol) {
 		Set<V> nodes = new HashSet<V>();
 		for(V node : graph.vertexSet()) {
 			Set<V> col = getLoopColor(node);
@@ -240,7 +240,7 @@ public class LoopColoring<V,E> {
 		if(backEdgesByHOL == null) analyse();
 		return backEdgesByHOL;
 	}
-	public Vector<E> getBackEdgesTo(CFGNode hol) {
+	public Vector<E> getBackEdgesTo(V hol) {
 		return backEdgesByHOL.get(hol);
 	}
 	/**
@@ -359,6 +359,23 @@ public class LoopColoring<V,E> {
 		}		
 		return iterationBranchEdges;
 	}
+	/** return an acyclic subgraph which only contains nodes from the given loop,
+	 *  and no back-edges at all  */
+	public DirectedGraph<V, E> getLinearSubgraph(V hol) {		
+		Set<V> nodesOfInterest;
+		if(hol==null) nodesOfInterest = this.graph.vertexSet();
+		else          nodesOfInterest = this.getNodesOfLoop(hol);
+		Set<E> edgesOfInterest = new HashSet<E>();
+		for(E edge : this.graph.edgeSet()) {
+			if(this.getBackEdges().contains(edge)) continue;
+			V src = graph.getEdgeSource(edge);
+			if(! nodesOfInterest.contains(src)) continue;
+			V target = graph.getEdgeTarget(edge);
+			if(! nodesOfInterest.contains(target)) continue;
+			edgesOfInterest.add(edge);
+		}
+		return new DirectedSubgraph<V,E>(graph,nodesOfInterest, edgesOfInterest);
+	}
 	
 	
 	/* EXPERIMENTAL - NOT USED follows */
@@ -436,6 +453,7 @@ public class LoopColoring<V,E> {
 			}
 		}
 	}
+
 }
 
 ///* headers last */

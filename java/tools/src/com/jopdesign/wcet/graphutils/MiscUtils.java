@@ -1,15 +1,21 @@
 package com.jopdesign.wcet.graphutils;
 
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.Vector;
 import java.util.Map.Entry;
+
+import org.jgrapht.DirectedGraph;
+import org.jgrapht.traverse.TopologicalOrderIterator;
 
 public class MiscUtils {
 	public interface Function1<Arg,Ret> {
@@ -142,6 +148,25 @@ public class MiscUtils {
 			sb.append(entry.getValue().toString());
 			out.println(sb.toString());
 		}
-	}	
+	}
+
+	public static <V,E>
+	List<V> topologicalOrder(DirectedGraph<V,E> acyclicGraph) 
+	{
+		TopologicalOrderIterator<V,E> topo = new TopologicalOrderIterator<V,E>(acyclicGraph);
+		List<V> topoList = new ArrayList<V>();
+		while(topo.hasNext()) {
+			topoList.add(topo.next());
+		}
+		return topoList;
+	}
+	public static <V,E>
+	List<V> reverseTopologicalOrder(DirectedGraph<V,E> acyclicGraph) 
+	{
+		List<V> revTopo = topologicalOrder(acyclicGraph);
+		Collections.reverse(revTopo);
+		return revTopo;
+	}
+
 
 }

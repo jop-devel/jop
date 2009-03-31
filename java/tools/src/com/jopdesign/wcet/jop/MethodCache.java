@@ -23,6 +23,7 @@ public abstract class MethodCache {
 		case NO_METHOD_CACHE: return new NoMethodCache(p);
 		case LRU_CACHE: return BlockCache.fromConfig(p,true);
 		case FIFO_CACHE: return BlockCache.fromConfig(p,false);
+		case LRU_VARBLOCK_CACHE: return VarBlockCache.fromConfig(p, true);
 		case FIFO_VARBLOCK_CACHE: return VarBlockCache.fromConfig(p,false);
 		default: throw new AssertionError("Non-exhaustive match on enum: CACHE_IMPL: "+
 				                          c.getOption(CacheConfig.CACHE_IMPL));

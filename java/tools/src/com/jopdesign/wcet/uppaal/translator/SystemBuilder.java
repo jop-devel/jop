@@ -45,6 +45,7 @@ import com.jopdesign.wcet.uppaal.model.XmlSerializationException;
 import com.jopdesign.wcet.uppaal.translator.cache.CacheSimBuilder;
 import com.jopdesign.wcet.uppaal.translator.cache.FIFOCacheBuilder;
 import com.jopdesign.wcet.uppaal.translator.cache.LRUCacheBuilder;
+import com.jopdesign.wcet.uppaal.translator.cache.LRUVarBlockCacheBuilder;
 import com.jopdesign.wcet.uppaal.translator.cache.StaticCacheBuilder;
 import com.jopdesign.wcet.uppaal.translator.cache.FIFOVarBlockCacheBuilder;
 
@@ -126,6 +127,9 @@ public class SystemBuilder {
 			case FIFO_CACHE:
 				sim = new FIFOCacheBuilder((BlockCache)cache, config.emptyInitialCache);
 				break;
+			case LRU_VARBLOCK_CACHE:
+				sim = new LRUVarBlockCacheBuilder(project, (VarBlockCache)cache, this.numMethods);
+				break;				
 			case FIFO_VARBLOCK_CACHE: 
 				sim = new FIFOVarBlockCacheBuilder(project,        (VarBlockCache)cache, 
 						                       this.numMethods, config.emptyInitialCache);

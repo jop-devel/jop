@@ -36,7 +36,7 @@ public class CacheConfig {
 	 */
 	public enum CacheImplementation {
 		LRU_CACHE, FIFO_CACHE,
-		FIFO_VARBLOCK_CACHE,
+		LRU_VARBLOCK_CACHE, FIFO_VARBLOCK_CACHE,
 		NO_METHOD_CACHE, 
 	}
 	public static final EnumOption<CacheImplementation> CACHE_IMPL =

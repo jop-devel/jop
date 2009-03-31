@@ -227,7 +227,6 @@ public class GraphTopologyTest {
 		System.out.println("Dominators: "+topOrder.getDominators().getIDoms());
 		System.out.println("Dominator Tree: "+topOrder.getDominators().getDominatorTree());
 		exportDOT("g1-domtree",topOrder.getDominators().getDominatorTree());
-		
 		DominanceFrontiers<String, DefaultEdge> domFrontiers = 
 			new DominanceFrontiers<String, DefaultEdge>(g,g.getEntry(), g.getExit());
 		Map<String, Set<String>> df = domFrontiers.getDominanceFrontiers();
