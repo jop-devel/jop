@@ -191,7 +191,7 @@ public class JavaOneProcessPerSupergraphTranslator extends JavaTranslator {
 	private void computeMethodNestingDepths() {
 		this.methodMNDs = new HashMap<MethodInfo,Integer>();
 		/* for methods in topological order */
-		for(MethodInfo m : project.getCallGraph().getImplementedMethods()) {
+		for(MethodInfo m : project.getCallGraph().getImplementedMethods(project.getTargetMethod())) {
 			int maxCaller = 0;
 			ControlFlowGraph cfgInvoked = project.getFlowGraph(m);
 			for(Pair<SuperInvokeEdge,SuperReturnEdge> callSite : superGraph.getCallSites(cfgInvoked)) {
