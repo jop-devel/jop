@@ -60,10 +60,12 @@ public class UppAalConfig {
 		new BooleanOption("uppaal-supergraph",
 				"use one template per process",
 				false);
+	public static final BooleanOption UPPAAL_PROGRESS_MEASURE =
+		new BooleanOption("uppaal-progress-measure", "use a global progress measure", false);
 	public static final Option<?>[] uppaalOptions = {
 		UPPAAL_VERIFYTA_BINARY, UPPAAL_EMPTY_INITIAL_CACHE,
-		UPPAAL_TIGHT_BOUNDS, UPPAAL_COLLAPSE_LEAVES, 
-		UPPAAL_SUPERGRAPH_TEMPLATE, UPPAAL_CONVEX_HULL
+		UPPAAL_TIGHT_BOUNDS, UPPAAL_COLLAPSE_LEAVES, UPPAAL_CONVEX_HULL,
+		UPPAAL_SUPERGRAPH_TEMPLATE, UPPAAL_PROGRESS_MEASURE,
 	};
 
 	public boolean isDynamicCacheSim() {
@@ -85,6 +87,7 @@ public class UppAalConfig {
 	public boolean emptyInitialCache;
 	public boolean assumeTightBounds;
 	public boolean superGraphTemplate;
+	public boolean useProgressMeasure;
 	public DynCacheApproximation cacheApprox;
 	public DynCacheApproximation getCacheApproximation() {
 		return this.cacheApprox;
@@ -100,6 +103,7 @@ public class UppAalConfig {
 		this.emptyInitialCache = c.getOption(UPPAAL_EMPTY_INITIAL_CACHE);
 		this.assumeTightBounds = c.getOption(UPPAAL_TIGHT_BOUNDS);
 		this.superGraphTemplate = c.getOption(UPPAAL_SUPERGRAPH_TEMPLATE);
+		this.useProgressMeasure = c.getOption(UPPAAL_PROGRESS_MEASURE);
 		if(c.hasOption(UPPAAL_VERIFYTA_BINARY)) {
 			this.verifyBinary = c.getOption(UPPAAL_VERIFYTA_BINARY);
 		}

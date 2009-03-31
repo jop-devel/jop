@@ -2,7 +2,6 @@ package com.jopdesign.wcet.uppaal.translator;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.wcet.Project;
@@ -138,10 +137,10 @@ public class JavaOneProcessPerMethodTranslator extends JavaTranslator {
 
 	private void recordLoops(MethodInfo mi, TemplateBuilder pb) {
 		ControlFlowGraph cfg = project.getFlowGraph(mi);
-		for( Entry<CFGNode, LoopBound> entry : cfg.getLoopBounds().entrySet()) {
-			CFGNode node = entry.getKey();
-			int nesting = cfg.getLoopColoring().getLoopColor(node).size();
-			pb.addLoop(node,nesting,entry.getValue());
+		for(CFGNode hol: cfg.getLoopColoring().getHeadOfLoops()) {
+			LoopBound bound = cfg.getLoopBounds().get(hol);
+			int nesting = cfg.getLoopColoring().getLoopColor(hol).size();
+			pb.addLoop(hol,nesting,bound);
 		}
 	}
 

@@ -6,8 +6,12 @@ import java.util.Map;
 
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.wcet.Project;
+import com.jopdesign.wcet.analysis.TreeAnalysis;
 import com.jopdesign.wcet.frontend.CallGraph;
 import com.jopdesign.wcet.frontend.ControlFlowGraph;
+import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGEdge;
+import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGNode;
+import com.jopdesign.wcet.graphutils.ProgressMeasure.RelativeProgress;
 import com.jopdesign.wcet.graphutils.TopOrder.BadGraphException;
 import com.jopdesign.wcet.uppaal.UppAalConfig;
 import com.jopdesign.wcet.uppaal.translator.cache.CacheSimBuilder;
@@ -25,6 +29,7 @@ public abstract class JavaTranslator {
 	protected SystemBuilder systemBuilder;
 	protected CacheSimBuilder cacheSim;
 	protected HashMap<MethodInfo, Integer> methodIDs;
+	private Map<MethodInfo, Map<CFGEdge, RelativeProgress<CFGNode>>> progressMap;
 	
 	public Project getProject() {
 		return project;
@@ -40,6 +45,9 @@ public abstract class JavaTranslator {
 	}
 	public CacheSimBuilder getCacheSim() {
 		return cacheSim;
+	}
+	public Map<CFGEdge, RelativeProgress<CFGNode>> getProgress(MethodInfo mi) {
+		return progressMap.get(mi);
 	}
 	public void addMethodAutomaton(MethodInfo mi, SubAutomaton auto) {
 		this.methodAutomata.put(mi,auto);
@@ -62,11 +70,27 @@ public abstract class JavaTranslator {
 		systemBuilder = new SystemBuilder(config,project,callGraph.getMaxHeight() + 1,methodInfos);
 		this.methodIDs = new HashMap<MethodInfo, Integer>();
 		for(int i = 0; i < methodInfos.size(); i++) {
-			methodIDs.put(methodInfos.get(i), i);
+			MethodInfo mi = methodInfos.get(i);
+			methodIDs.put(mi, i);
+			ControlFlowGraph cfg = project.getFlowGraph(mi);
+			/* insert summary nodes if request */
+			if(config.collapseLeaves) {
+				try {
+					cfg.insertSummaryNodes();
+				} catch (BadGraphException e) {
+					throw new AssertionError("Faild to insert summary nodes: "+e);
+				}			
+			}
 		}
 		this.methodAutomata = new HashMap<MethodInfo, SubAutomaton>();
 		/* Cache sim */
 		this.cacheSim = systemBuilder.getCacheSim();
+		/* Progress measure */
+		this.progressMap = new TreeAnalysis(project).computeProgress(project.getTargetMethod(),config.collapseLeaves);
+		if(config.useProgressMeasure) {
+			systemBuilder.declareVariable("int","pm","0");
+			systemBuilder.addProgressMeasure("pm");
+		}
 	}
 	protected abstract void translate();
 	protected void translateMethod(TemplateBuilder tb,
@@ -76,22 +100,13 @@ public abstract class JavaTranslator {
 								   InvokeBuilder invokeBuilder) {
 		/* get flow graph */
 		ControlFlowGraph cfg = project.getFlowGraph(mi);
-		/* insert summary nodes if request */
-		if(config.collapseLeaves) {
-			try {
-				cfg.insertSummaryNodes();
-			} catch (BadGraphException e) {
-				throw new AssertionError("Faild to insert summary nodes: "+e);
-			}			
-		}
 		MethodBuilder mBuilder = 
-			new MethodBuilder(config, project, tb, invokeBuilder, cacheSim, 
-				                               methodAutomaton, mId, cfg);
+			new MethodBuilder(this, tb, invokeBuilder, 
+				              methodAutomaton, mId, cfg);
 		mBuilder.build();
 	}
 	public SystemBuilder getSystem() {
 		translate();
 		return this.systemBuilder;
-	}
-	
+	}	
 }

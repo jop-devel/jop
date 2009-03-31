@@ -273,6 +273,9 @@ public class SystemBuilder {
 	public void addProgressMeasure(String progressMeasure) {
 		this.progressMeasures .add(progressMeasure);
 	}
+	public void declareVariable(String ty, String var, String init) {
+		this.system.appendDeclaration(ty+" "+var+" := "+init+";");		
+	}
 }
 /* -- Using global-local clock
  * com.jopdesign.build.MethodInfo@cdbc83"wcet.StartLift.measure()V"

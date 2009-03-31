@@ -135,30 +135,29 @@ public class TemplateBuilder {
 		this.loopVars.put(hol,nestingDepth);
 		return varKey;
 	}
-	private String getLoopVar(CFGNode hol) {
+	public String getLoopVar(CFGNode hol) {
 		String s = loopVarName(this.loopVars.get(hol));
 		if(s == null) throw new AssertionError("Loop not registered: "+hol);
 		return s;
 	}
-	private String getLoopBoundConst(CFGNode hol) {
+	public String getLoopBoundConst(CFGNode hol) {
 		String s = loopBoundConst(this.loopBounds.get(hol));
 		if(s == null) throw new AssertionError("Loop not registered: "+hol);
 		return s;
 	}
-	private String getLoopLowerBoundConst(CFGNode hol) {
+	public String getLoopLowerBoundConst(CFGNode hol) {
 		String s = loopLowerBoundConst(this.loopBounds.get(hol));
 		if(s == null) throw new AssertionError("Loop not registered: "+hol);
 		return s;
 	}
-	public Integer getLoopId(CFGNode hol) {
-		return this.loopBounds.get(hol);
-	}
+	
 	public Location getInitial() {
 		return this.template.getInitial();
 	}
 	public Location getEnd() {
 		return this.endLoc;
 	}
+	
 	private Location createLocation(String name, LocationAttribute lAttr) {
 		Location l = new Location(name,lAttr);
 		this.template.addLocation(l);

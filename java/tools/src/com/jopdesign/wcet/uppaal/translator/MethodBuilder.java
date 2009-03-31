@@ -22,8 +22,9 @@ package com.jopdesign.wcet.uppaal.translator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.Map.Entry;
 
-import com.jopdesign.wcet.Project;
+import com.jopdesign.wcet.ProcessorModel;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis;
 import com.jopdesign.wcet.analysis.WcetCost;
 import com.jopdesign.wcet.frontend.ControlFlowGraph;
@@ -36,12 +37,11 @@ import com.jopdesign.wcet.frontend.ControlFlowGraph.InvokeNode;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.SummaryNode;
 import com.jopdesign.wcet.graphutils.FlowGraph;
 import com.jopdesign.wcet.graphutils.LoopColoring.IterationBranchLabel;
+import com.jopdesign.wcet.graphutils.ProgressMeasure.RelativeProgress;
 import com.jopdesign.wcet.jop.CacheConfig.StaticCacheApproximation;
-import com.jopdesign.wcet.uppaal.UppAalConfig;
 import com.jopdesign.wcet.uppaal.model.Location;
 import com.jopdesign.wcet.uppaal.model.Transition;
 import com.jopdesign.wcet.uppaal.model.TransitionAttributes;
-import com.jopdesign.wcet.uppaal.translator.cache.CacheSimBuilder;
 /**
  * Build UppAal templates for a Java method.
  * We map the CFG's nodes and edges to 
@@ -53,24 +53,19 @@ import com.jopdesign.wcet.uppaal.translator.cache.CacheSimBuilder;
  *
  */
 public class MethodBuilder implements CfgVisitor {
-
-	private Project project;
-	private int mId;
-	private ControlFlowGraph cfg;
-	private TemplateBuilder tBuilder;
+	/* input */
+	private final JavaTranslator jTrans;
+	private final InvokeBuilder invokeBuilder;
+	private final SubAutomaton methodAuto;
+	private final int mId;
+	private final ControlFlowGraph cfg;
+	private final TemplateBuilder tBuilder;
+	/* state */
 	private Map<CFGNode,SubAutomaton> nodeTemplates = new HashMap<CFGNode, SubAutomaton>();
-	private SubAutomaton methodAuto;
-	private InvokeBuilder invokeBuilder;
-	private CacheSimBuilder cacheSim;
-	@SuppressWarnings("unused")
-	private UppAalConfig config;
-	public MethodBuilder(UppAalConfig c, Project p, 
-			             TemplateBuilder tb, InvokeBuilder invokeBuilder, CacheSimBuilder cacheSim,
+	public MethodBuilder(JavaTranslator jt, TemplateBuilder tBuilder, InvokeBuilder invokeBuilder,
 			             SubAutomaton methodAuto, int mId, ControlFlowGraph cfg) {
-		this.config = c;
-		this.project = p;
-		this.tBuilder = tb;
-		this.cacheSim = cacheSim;
+		this.jTrans = jt;
+		this.tBuilder = tBuilder;
 		this.mId = mId;
 		this.cfg = cfg;
 		this.methodAuto = methodAuto;
@@ -108,15 +103,16 @@ public class MethodBuilder implements CfgVisitor {
 	
 	public void visitBasicBlockNode(BasicBlockNode n) {
 		SubAutomaton bbLoc = 
-			createBasicBlock(n.getId(),project.getProcessorModel().basicBlockWCET(n.getBasicBlock()));
+			createBasicBlock(n.getId(),jTrans.getProject().getProcessorModel().basicBlockWCET(n.getBasicBlock()));
 		this.nodeTemplates.put(n,bbLoc);
 	}
 	
 	public void visitInvokeNode(InvokeNode n) {
+		ProcessorModel proc = jTrans.getProject().getProcessorModel();
 		SubAutomaton invokeAuto;
-		long staticWCET = project.getProcessorModel().basicBlockWCET(n.getBasicBlock());
-		if(cacheSim.isAlwaysMiss()) {
-			staticWCET+=project.getProcessorModel().getInvokeReturnMissCost(n.invokerFlowGraph(),n.receiverFlowGraph());
+		long staticWCET = proc.basicBlockWCET(n.getBasicBlock());
+		if(jTrans.getCacheSim().isAlwaysMiss()) {
+			staticWCET+=proc.getInvokeReturnMissCost(n.invokerFlowGraph(),n.receiverFlowGraph());
 		}
 		invokeAuto = invokeBuilder.translateInvoke(this,n,staticWCET);
 		this.nodeTemplates.put(n,invokeAuto);		
@@ -124,7 +120,9 @@ public class MethodBuilder implements CfgVisitor {
 	
 	public void visitSummaryNode(SummaryNode n) {
 		RecursiveAnalysis<StaticCacheApproximation> an = 
-			new RecursiveAnalysis<StaticCacheApproximation>(project,new RecursiveAnalysis.LocalIPETStrategy());
+			new RecursiveAnalysis<StaticCacheApproximation>(
+					jTrans.getProject(),
+					new RecursiveAnalysis.LocalIPETStrategy());
 		WcetCost cost = an.runWCETComputation("SUBGRAPH"+n.getId(), n.getSubGraph(), StaticCacheApproximation.ALWAYS_MISS)
 				          .getTotalCost();
 		SubAutomaton sumLoc = createBasicBlock(n.getId(),cost.getCost());
@@ -144,6 +142,19 @@ public class MethodBuilder implements CfgVisitor {
 				nodeTemplates.get(target).getEntry());
 		TransitionAttributes attrs = transition.getAttrs();
 		IterationBranchLabel<CFGNode> edgeColor = edgeColoring.get(edge);
+		if(jTrans.getConfig().useProgressMeasure) {
+			if(src instanceof InvokeNode) {
+				attrs.appendUpdate("pm := pm + 1");
+			} else {
+				RelativeProgress<CFGNode> progress = jTrans.getProgress(cfg.getMethodInfo()).get(edge);
+				String progressExpr = "pm := pm + " + progress.staticDiff;
+				for(Entry<CFGNode, Long> loopDiff : progress.loopDiff.entrySet()) {
+					progressExpr += String.format(" - %d * %s",loopDiff.getValue(),
+							tBuilder.getLoopVar(loopDiff.getKey()));
+				}
+				attrs.appendUpdate(progressExpr);
+			}
+		}
 		if(edgeColor != null) {
 			for(CFGNode loop : edgeColor.getContinues()) {
 				attrs.appendGuard(tBuilder.contLoopGuard(loop));
