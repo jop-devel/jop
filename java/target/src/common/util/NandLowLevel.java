@@ -168,6 +168,7 @@ public class NandLowLevel {
 					System.out.println("not erased");					
 				}
 			}
+			Timer.wd();
 		}
 
 		

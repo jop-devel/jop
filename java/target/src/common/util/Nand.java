@@ -29,17 +29,17 @@ package util;
  * About 6% (1/16) of the NAND is reserved mapping of bad blocks. The bad block
  * map is stored in the last or last-1 block and kept in memory.<br>
  * 
- * Usage of spare bytes:<br>
+ * <p>Usage of spare bytes:<br>
  * B0-B1: type<br>
  * B2-B3: size for the last page<br>
- * B4-B5: TBD<br>
+ * B4-B5: logical block number<br>
  * B6-B7: bad block marker (!= 0xffff); in 1st and 2nd page<br>
  * B8-B9: TBD<br>
  * B10-B11: TBD<br>
  * B12-B13: TBD<br>
  * B14-B15: checksum<br>
  * 
- * TODO: we could go down on BB table (mapBlock) till meeting the actual used
+ * Idea: we could go down on BB table (mapBlock) till meeting the actual used
  * blocks (badCount).
  * 
  * @author Martin Schoeberl (martin@jopdesign.com)
@@ -126,10 +126,10 @@ public class Nand extends NandLowLevel {
 	 * @param page
 	 * @return
 	 */
-	public boolean write(int[] data, int block, int page) {
+	public boolean write(int[] data, int block, int page, int size) {
 
 		int origBlock = getPhysicalBlock(block);
-		fillSpare(localSpare, TYPE_DATA);
+		fillSpare(localSpare, TYPE_DATA, origBlock, size);
 		block = getPhysicalBlock(block);
 		boolean ret = writePage(data, localSpare, block, page);
 
@@ -148,14 +148,14 @@ public class Nand extends NandLowLevel {
 			}
 			for (int i = 0; i < page; ++i) {
 				readPage(localData, origBlock, i);
-				fillSpare(localSpare, TYPE_DATA);
+				fillSpare(localSpare, TYPE_DATA, origBlock);
 				if (!writePage(localData, localSpare, block, i)) {
 					markBad(block);
 					continue retry;
 				}
 			}
 			// write page
-			fillSpare(localSpare, TYPE_DATA);
+			fillSpare(localSpare, TYPE_DATA, origBlock, size);
 			if (!writePage(data, localSpare, block, page)) {
 				continue retry;
 			}
@@ -169,18 +169,35 @@ public class Nand extends NandLowLevel {
 		return ret;
 	}
 	
+	/**
+	 * Read one page and return the size of the page.
+	 * 
+	 * @param data
+	 * @param block
+	 * @param page
+	 * @return
+	 */
 	int read(int[] data, int block, int page) {
 		block = getPhysicalBlock(block);
 		boolean ok = readPage(data, localSpare, block, page);
-		return ok ? 512 : -1;
+		return ok ? (localSpare[0] & 0xffff) : -1;
 	}
 
 
-	private void fillSpare(int[] sp, int type) {
+	private void fillSpare(int[] sp, int type, int logicBlock) {
 		for (int i = 0; i < SPARE_WORDS; ++i) {
 			sp[i] = -1;
 		}
 		sp[0] = (type << 16) | 0xffff;
+		sp[1] = (logicBlock << 16) | 0xffff;
+	}
+
+	private void fillSpare(int[] sp, int type, int logicBlock, int size) {
+		for (int i = 0; i < SPARE_WORDS; ++i) {
+			sp[i] = -1;
+		}
+		sp[0] = (type << 16) | size;
+		sp[1] = (logicBlock << 16) | 0xffff;
 	}
 
 	int getPhysicalBlock(int block) {
@@ -298,7 +315,7 @@ public class Nand extends NandLowLevel {
 		}
 		int cnt = 0;
 		int nrBad = badCount();
-		fillSpare(localSpare, TYPE_BBMAP);
+		fillSpare(localSpare, TYPE_BBMAP, -1);
 		// write mapping table, but at least an empty one
 		for (int i = 0; i < PAGES_PER_BLOCK & cnt <= nrBad; ++i) {
 			for (int j = 0; j < WORDS; ++j, ++cnt) {
