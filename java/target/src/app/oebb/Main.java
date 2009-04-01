@@ -62,7 +62,7 @@ public class Main {
 
 	// SW version
 	public static final int VER_MAJ = 2;
-	public static final int VER_MIN = 32;
+	public static final int VER_MIN = 33;
 
 	private static final int LOG_PRIO = 1;
 	private static final int LOG_PERIOD = 1000000;
@@ -217,9 +217,9 @@ public class Main {
 			// use second SLIP subnet for 'COs test'
 			ipLink = new Slip(ejip, ser, Ejip.makeIp(192, 168, 2, 2));
 		} else {
-//			ipLink = new Ppp(ejip, ser, pppThre);
-			System.out.println("SLIP is default!!");
-			ipLink = new Slip(ejip, ser, Ejip.makeIp(192, 168, 1, 2));
+			ipLink = new Ppp(ejip, ser, pppThre);
+//			System.out.println("SLIP is default!!");
+//			ipLink = new Slip(ejip, ser, Ejip.makeIp(192, 168, 1, 2));
 
 		}
 
