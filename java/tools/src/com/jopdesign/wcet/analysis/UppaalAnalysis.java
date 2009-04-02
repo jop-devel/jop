@@ -10,12 +10,11 @@ import com.jopdesign.wcet.ProcessorModel;
 import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveWCETStrategy;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.InvokeNode;
-import com.jopdesign.wcet.jop.CacheConfig;
 import com.jopdesign.wcet.jop.MethodCache;
-import com.jopdesign.wcet.jop.CacheConfig.DynCacheApproximation;
 import com.jopdesign.wcet.uppaal.Translator;
 import com.jopdesign.wcet.uppaal.UppAalConfig;
 import com.jopdesign.wcet.uppaal.WcetSearch;
+import com.jopdesign.wcet.uppaal.UppAalConfig.UppaalCacheApproximation;
 import com.jopdesign.wcet.uppaal.model.DuplicateKeyException;
 import com.jopdesign.wcet.uppaal.model.XmlSerializationException;
 
@@ -32,19 +31,19 @@ public class UppaalAnalysis {
 		this.project = project;
 	}
 	public WcetCost computeWCET(MethodInfo targetMethod, long upperBound) throws IOException, DuplicateKeyException, XmlSerializationException {
-		if(project.getProjectConfig().hasUppaalComplexityTreshold()) {
+		if(uppaalConfig.hasComplexityTreshold()) {
 			int cc = project.computeCyclomaticComplexity(targetMethod);
-			int treshold = project.getProjectConfig().getUppaalComplexityTreshold().intValue();
+			long treshold = uppaalConfig.getComplexityTreshold();
 			if(cc > treshold) {
 				return computeWCETWithTreshold(targetMethod,treshold);
 			}
 		}
 		return calculateWCET(targetMethod, upperBound);
 	}
-	public WcetCost computeWCETWithTreshold(MethodInfo targetMethod, int uppaalComplexityTreshold) {
-		RecursiveAnalysis<DynCacheApproximation> sa = 
-			new RecursiveAnalysis<DynCacheApproximation>(project,new UppaalTresholdStrategy(this,uppaalComplexityTreshold));
-		return sa.computeWCET(targetMethod, project.getConfig().getOption(CacheConfig.DYNAMIC_CACHE_APPROX));
+	public WcetCost computeWCETWithTreshold(MethodInfo targetMethod, long complexityTreshold) {
+		RecursiveAnalysis<UppaalCacheApproximation> sa = 
+			new RecursiveAnalysis<UppaalCacheApproximation>(project,new UppaalTresholdStrategy(this,complexityTreshold));
+		return sa.computeWCET(targetMethod, uppaalConfig.getCacheApproximation());
 	}
 	public WcetCost calculateWCET(MethodInfo m) throws IOException, DuplicateKeyException, XmlSerializationException {
 		return calculateWCET(m,-1);
@@ -77,20 +76,20 @@ public class UppaalAnalysis {
 	public double getSolvertimemax() {
 		return solvertimemax;
 	}
-	static class UppaalTresholdStrategy implements RecursiveWCETStrategy<DynCacheApproximation> {
+	static class UppaalTresholdStrategy implements RecursiveWCETStrategy<UppaalCacheApproximation> {
 
 		private UppaalAnalysis uppaalAnalysis;
-		private int treshold;
+		private long treshold;
 
-		public UppaalTresholdStrategy(UppaalAnalysis uppaalAnalysis, int treshold) {
+		public UppaalTresholdStrategy(UppaalAnalysis uppaalAnalysis, long treshold) {
 			this.uppaalAnalysis = uppaalAnalysis;
 			this.treshold = treshold;
 		}
 		/* FIXME: Some code duplication with GlobalAnalysis / LocalAnalysis */
 		public WcetCost recursiveWCET(
-				RecursiveAnalysis<DynCacheApproximation> stagedAnalysis,
+				RecursiveAnalysis<UppaalCacheApproximation> stagedAnalysis,
 				InvokeNode n,
-				DynCacheApproximation ctx) {
+				UppaalCacheApproximation ctx) {
 			Project project = stagedAnalysis.getProject();
 			MethodInfo invoker = n.getBasicBlock().getMethodInfo(); 
 			MethodInfo invoked = n.getImplementedMethod();
@@ -100,12 +99,12 @@ public class UppaalAnalysis {
 			long invokeReturnCost = cache.getInvokeReturnMissCost(proc,project.getFlowGraph(invoker),project.getFlowGraph(invoked));
 			long cacheCost, nonLocalExecCost;
 			if(   cc <= treshold 
-			   && ctx != DynCacheApproximation.ALWAYS_MISS
+			   && ctx != UppaalCacheApproximation.ALWAYS_MISS
 			   && ! project.getCallGraph().isLeafNode(invoked)
 			   && ! stagedAnalysis.isCached(invoked, ctx)
 			   ) {
 				WcetCost uppaalCost;
-				WcetCost ubCost = stagedAnalysis.computeWCET(invoked, DynCacheApproximation.ALWAYS_MISS);
+				WcetCost ubCost = stagedAnalysis.computeWCET(invoked, UppaalCacheApproximation.ALWAYS_MISS);
 				try {
 					uppaalAnalysis.logger.info("Complexity of "+invoked+" below treshold: "+cc);
 					uppaalCost = uppaalAnalysis.calculateWCET(invoked,ubCost.getCost());

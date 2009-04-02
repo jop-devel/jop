@@ -33,6 +33,9 @@ import com.jopdesign.wcet.analysis.UppaalAnalysis;
 import com.jopdesign.wcet.analysis.WcetCost;
 import com.jopdesign.wcet.config.Config;
 import com.jopdesign.wcet.config.Option;
+import com.jopdesign.wcet.ipet.IpetConfig;
+import com.jopdesign.wcet.jop.CacheConfig;
+import com.jopdesign.wcet.report.ReportConfig;
 import com.jopdesign.wcet.uppaal.UppAalConfig;
 
 public class UppAalAnalysis {
@@ -41,7 +44,10 @@ public class UppAalAnalysis {
 	private static final int ECC_TRESHOLD = 400;
 	public static Option<?>[][] options = {
 		ProjectConfig.projectOptions,
-		UppAalConfig.uppaalOptions
+		CacheConfig.cacheOptions,
+		IpetConfig.ipetOptions,
+		UppAalConfig.uppaalOptions,
+		ReportConfig.reportOptions
 	};
 	class WCETEntry {
 		MethodInfo target;
