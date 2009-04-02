@@ -27,6 +27,9 @@
 
 package com.jopdesign.wcet;
 
+import lpsolve.LpSolve;
+import lpsolve.VersionInfo;
+
 import org.apache.log4j.Logger;
 
 import com.jopdesign.build.MethodInfo;
@@ -45,6 +48,7 @@ import com.jopdesign.wcet.jop.CacheConfig.StaticCacheApproximation;
 import com.jopdesign.wcet.report.Report;
 import com.jopdesign.wcet.report.ReportConfig;
 import com.jopdesign.wcet.uppaal.UppAalConfig;
+import com.jopdesign.wcet.uppaal.WcetSearch;
 
 import static com.jopdesign.wcet.ExecHelper.timeDiff;
 /**
@@ -52,7 +56,7 @@ import static com.jopdesign.wcet.ExecHelper.timeDiff;
  */
 public class WCETAnalysis {
 	private static final String CONFIG_FILE_PROP = "config";
-	public static final String VERSION = "1.0.0"; 
+	public static final String VERSION = "1.0.1"; 
 	private static final Logger tlLogger = Logger.getLogger(WCETAnalysis.class);
 	public static Option<?>[][] options = {
 		ProjectConfig.projectOptions,
@@ -67,17 +71,40 @@ public class WCETAnalysis {
 		ExecHelper exec = new ExecHelper(WCETAnalysis.class,VERSION,tlLogger,CONFIG_FILE_PROP);
 		exec.initTopLevelLogger();       /* Console logging for top level messages */
 		exec.loadConfig(args);           /* Load config */
-		WCETAnalysis inst = new WCETAnalysis(config);
+		WCETAnalysis inst = new WCETAnalysis(config,exec);
+		/* check environment */
+		inst.checkLibs();
 		/* run */
-		if(! inst.run(exec)) exec.bail("WCET Analysis failed");
+		if(! inst.run()) exec.bail("WCET Analysis failed");
 		tlLogger.info("WCET Analysis finished.");
 	}
 	private Config config;
 	private Project project;
-	public WCETAnalysis(Config c) {
+	private ExecHelper exec;
+	public WCETAnalysis(Config c, ExecHelper e) {
 		this.config = c;
+		this.exec   = e;
 	}
-	private boolean run(ExecHelper exec) {
+	private void checkLibs() {
+		try {
+			VersionInfo v = LpSolve.lpSolveVersion();
+			tlLogger.info("Using lp_solve for Java, v"+
+					v.getMajorversion()+"."+v.getMinorversion()+
+					" build "+v.getBuild()+" release "+v.getRelease());
+		} catch(UnsatisfiedLinkError ule) {
+			exec.bail("Failed to load the lp_solve Java library: "+ule);
+		}
+		if(config.getOption(ProjectConfig.USE_UPPAAL)) {
+			String vbinary = config.getOption(UppAalConfig.UPPAAL_VERIFYTA_BINARY); 
+			try {
+				String version = WcetSearch.getVerifytaVersion(vbinary);
+				tlLogger.info("Using uppaal/verifyta: "+vbinary+" version "+version);
+			} catch(Exception fne) {
+				exec.bail("Failed to run uppaal verifier: "+fne);
+			}
+		} 
+	}
+	private boolean run() {
 		project = null;
 		ProjectConfig pConfig = new ProjectConfig(config);
 		/* Initialize */
