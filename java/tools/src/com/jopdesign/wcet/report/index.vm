@@ -9,7 +9,6 @@
 	<meta name="author" content="Benedikt Huber">
 	<link rel="stylesheet" href="../default.css" type="text/css" media="screen" title="no title" charset="utf-8">	
 </head>
-<body>
 <frameset cols="30%, 70%">
   <frame name="toc" src="toc.html">
   <frame name="content" src="summary.html">
@@ -21,5 +20,4 @@
       </ul>
   </noframes>
 </frameset>
-</body>
 </html>
