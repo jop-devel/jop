@@ -20,6 +20,9 @@
 
 package com.jopdesign.sys;
 
+import com.jopdesign.io.IOFactory;
+import com.jopdesign.io.SysDevice;
+
 //
 //	I don't like to make JVMHelp public, but I need it in java.io.PrintStream
 //
@@ -30,6 +33,12 @@ public class JVMHelp {
 	// methods depend on the order.
 	static Runnable ih[][];
 	static Runnable dh;
+	
+	// Cannot be used here as <clinit> of the factory depends on this
+	// class for the helper method. Would result in a cyclic dependency
+	// of <clinit>.
+//	static SysDevice sys = IOFactory.getFactory().getSysDevice();
+	static SysDevice sys;
 	
 	static StackOverflowError SOError;
 	static NullPointerException NPExc;
@@ -48,6 +57,9 @@ public class JVMHelp {
 	 */
 	static void interrupt() {
 		
+		// the clean way
+		// ih[sys.cpuId][sys.intNr].run();
+		// a little bit faster
 		ih[Native.rd(Const.IO_CPU_ID)][Native.rd(Const.IO_INTNR)].run();
 		// Enable interrupts again - we could have invoked a dummy handler
 		Native.wr(1, Const.IO_INT_ENA);
@@ -152,6 +164,8 @@ synchronized (o) {
 			}								
 		}	
 		
+		sys = IOFactory.getFactory().getSysDevice();
+
 		SOError = new StackOverflowError();
 		NPExc = new NullPointerException();
 		ABExc = new ArrayIndexOutOfBoundsException();

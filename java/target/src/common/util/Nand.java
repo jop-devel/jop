@@ -271,6 +271,7 @@ public class Nand extends NandLowLevel {
 				addBadBlock(i);
 			}
 		}
+		updateMap();
 	}
 
 	private void addBadBlock(int block) {
@@ -317,7 +318,7 @@ public class Nand extends NandLowLevel {
 		int nrBad = badCount();
 		fillSpare(localSpare, TYPE_BBMAP, -1);
 		// write mapping table, but at least an empty one
-		for (int i = 0; i < PAGES_PER_BLOCK & cnt <= nrBad; ++i) {
+		for (int i = 0; i < PAGES_PER_BLOCK && cnt <= nrBad; ++i) {
 			for (int j = 0; j < WORDS; ++j, ++cnt) {
 				if (cnt < nrBad) {
 					localData[j] = remap[cnt];
@@ -339,5 +340,13 @@ public class Nand extends NandLowLevel {
 			;
 		}
 		return i;
+	}
+	
+	public static void main(String args[]) {
+		
+		Nand nand = new Nand();
+		System.out.println(nand.readBBTable());
+		// nand.eraseAll();
+		
 	}
 }

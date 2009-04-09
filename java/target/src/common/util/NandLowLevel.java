@@ -265,7 +265,7 @@ public class NandLowLevel {
 			
 			ret &= cmdOk();
 		}
-		
+
 		return ret;
 	}
 
