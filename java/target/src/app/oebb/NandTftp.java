@@ -51,7 +51,7 @@ public class NandTftp extends BgTftp {
 		state = IDLE;
 		data = new int[128];
 		System.out.println("Erase NAND if not empty");
-		fs.erase();
+		fs.eraseStart();
 	}
 
 	/**
