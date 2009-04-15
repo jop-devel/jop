@@ -448,21 +448,31 @@ public class ControlFlowGraph {
 			if(bbf.exit) { // exit edge
 				graph.addEdge(bbNode, graph.getExit(), exitEdge());
 			} else if(! bbf.alwaysTaken) { // next block edge
+				BasicBlockNode bbSucc = nodeTable.get(bbNode.getBasicBlock().getLastInstruction().getNext().getPosition());
+				if(bbSucc == null) {
+					internalError("Next Edge to non-existing next block from "+
+								  bbNode.getBasicBlock().getLastInstruction());
+				}
 				graph.addEdge(bbNode, 
-							  nodeTable.get(bbNode.getBasicBlock().getLastInstruction().getNext().getPosition()),
+							  bbSucc,
 							  new CFGEdge(EdgeKind.NEXT_EDGE));
 			}
 			for(FlowTarget target: bbf.targets) { // jmps
 				BasicBlockNode targetNode = nodeTable.get(target.target.getPosition());
-				if(targetNode == null) {
-					throw new AssertionError("No node for flow target: "+bbNode+" -> "+target);
-				}
+				if(targetNode == null) internalError("No node for flow target: "+bbNode+" -> "+target);
 				graph.addEdge(bbNode, 
 							  targetNode, 
 							  new CFGEdge(target.edgeKind));
 			}
 		}
 		this.graph.addEdge(graph.getEntry(), graph.getExit(), exitEdge());
+	}
+	
+	private void internalError(String reason) {
+		WcetAppInfo.logger.error("[INTERNAL ERROR] "+reason);
+		WcetAppInfo.logger.error("CFG of "+this.getMethodInfo().getFQMethodName()+"\n");
+		WcetAppInfo.logger.error(this.getMethodInfo().getMethod().getCode().toString(true));
+		throw new AssertionError(reason);		
 	}
 	
 	/**
@@ -544,7 +554,7 @@ public class ControlFlowGraph {
 		for(InvokeNode inv : virtualInvokes) {
 			List<MethodInfo> impls = 
 				appInfo.findImplementations(this.methodInfo,inv.getInstructionHandle());
-			if(impls.size() == 0) throw new AssertionError("No implementations for "+inv.referenced);
+			if(impls.size() == 0) internalError("No implementations for "+inv.referenced);
 			if(impls.size() == 1) {
 				InvokeNode implNode = inv.createImplNode(impls.get(0));
 				graph.addVertex(implNode);
@@ -754,7 +764,12 @@ public class ControlFlowGraph {
 		TopOrder.checkIsExitNode(graph, this.graph.getExit());
 		List<CFGNode> deads = TopOrder.findDeadNodes(graph,this.graph.getEntry());
 		if(deads.size() > 0) {
-			WcetAppInfo.logger.error("Found dead code - this most likely indicates a bug. "+deads);
+			WcetAppInfo.logger.error("Found dead code in " + this.getMethodInfo().getFQMethodName()
+					               + "- this is probably because you are using Exceptions: "+deads);
+			for(CFGNode deadCode : deads) {
+				this.graph.removeVertex(deadCode);
+			}
+			this.invalidate();
 		}
 	}
 	private void invalidate() {

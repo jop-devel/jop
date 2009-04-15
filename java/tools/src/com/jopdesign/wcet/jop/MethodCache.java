@@ -57,19 +57,19 @@ public abstract class MethodCache {
 	 * @return the cache miss penalty
 	 * 
 	 */
-	public long getMissOnceCummulativeCacheCost(MethodInfo m) {
+	public long getMissOnceCummulativeCacheCost(MethodInfo m, boolean assumeOnInvoke) {
 		long miss = 0;
 		for(MethodInfo reachable : project.getCallGraph().getReachableImplementations(m)) {
-			miss += missOnceCost(reachable);
+			miss += missOnceCost(reachable, assumeOnInvoke);
 		}
 		return miss;
 	}
 
-	public long missOnceCost(MethodInfo mi) {
+	public long missOnceCost(MethodInfo mi, boolean assumeOnInvoke) {
 		int words = project.getFlowGraph(mi).getNumberOfWords();
 		boolean loadOnInvoke =    project.getCallGraph().isLeafNode(mi) 
 		                       || this.isLRU() 
-		                       || project.getConfig().getOption(CacheConfig.ASSUME_MISS_ONCE_ON_INVOKE);
+		                       || assumeOnInvoke;
 		int thisMiss = project.getProcessorModel().getMethodCacheLoadTime(words,loadOnInvoke);
 		Project.logger.info("Cache miss penalty to cumulative cache cost: "+mi+": "+thisMiss);
 		return thisMiss;

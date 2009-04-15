@@ -19,7 +19,6 @@
 */
 package com.jopdesign.wcet.jop;
 
-import com.jopdesign.wcet.config.BooleanOption;
 import com.jopdesign.wcet.config.EnumOption;
 import com.jopdesign.wcet.config.IntegerOption;
 import com.jopdesign.wcet.config.Option;
@@ -51,57 +50,8 @@ public class CacheConfig {
 		new IntegerOption("cache-size-words",
 						  "size of the cache in words",
 						  1024);
-	
-   /** Static cache approximations:
-	 * <ul>
-	 *   <li/> ALL_FIT_MISS_ONCE
-	 *     <ul>
-	 *     <li/> FIFO_VARBLOCK_CACHE: If all fit, assume miss (at most) once on return
-	 *     <li/> LRU_CACHE: If all fit, assume miss (at most) once on invoke
-	 *     <li/> otherwise: Not applicable
-	 *     </ul>
-	 *   <li/> ALWAYS_MISS (all acceses are cache misses)
-	 *   <li/> ALWAYS_HIT (all accesses are hits)
-	 * </ul>
-	 */
-	public enum StaticCacheApproximation { 
-		ALWAYS_HIT, ALWAYS_MISS,
-		ALL_FIT_LOCAL, 
-		ALL_FIT;
-		public boolean needsInterProcIPET() {
-			return this == ALL_FIT;
-		}
-    };
-	public static final EnumOption<StaticCacheApproximation> STATIC_CACHE_APPROX =
-		new EnumOption<StaticCacheApproximation>(
-				"cache-approx",
-				"static cache approximation", 
-				StaticCacheApproximation.ALL_FIT);
-	public static final BooleanOption ASSUME_MISS_ONCE_ON_INVOKE =
-		new BooleanOption("assume-miss-once-on-invoke",
-						  "assume method cache loads in miss-once areas always happen on invoke (unsafe)",
-						  false);
-   /**
-	 * Dynamic cache approximations
-	 * <ul>
-	 *   <li/> CACHE_SIM
-	 *   <li/> ALWAYS_MISS
-	 * </ul>
-	 * 
-	 */
-	public enum DynCacheApproximation {
-		ALWAYS_MISS,
-		CACHE_SIM
-	}
-	public static final EnumOption<DynCacheApproximation> DYNAMIC_CACHE_APPROX =
-		new EnumOption<DynCacheApproximation>(
-				"dyn-cache-approx",
-				"dynamic cache approximation (uppaal)", 
-				DynCacheApproximation.CACHE_SIM);
-		
+			
 	public static final Option<?>[] cacheOptions = {
-		CACHE_IMPL, CACHE_BLOCKS, CACHE_SIZE_WORDS,
-		STATIC_CACHE_APPROX, ASSUME_MISS_ONCE_ON_INVOKE,
-		DYNAMIC_CACHE_APPROX
+		CACHE_IMPL, CACHE_BLOCKS, CACHE_SIZE_WORDS
 	};
 }

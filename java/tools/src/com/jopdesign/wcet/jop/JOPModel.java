@@ -5,6 +5,7 @@ import java.util.Vector;
 
 import org.apache.bcel.generic.ANEWARRAY;
 import org.apache.bcel.generic.ATHROW;
+import org.apache.bcel.generic.CHECKCAST;
 import org.apache.bcel.generic.INVOKESTATIC;
 import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
@@ -37,14 +38,16 @@ public class JOPModel implements ProcessorModel {
 		return (classname.equals(JOP_NATIVE));		
 	}
 
-	/* FIXME: [NO THROW HACK] */
+	/* FIXME: [NO THROW HACK] */	
 	public boolean isImplementedInJava(Instruction ii) {
-		boolean isUnboundedBC =
-			(ii instanceof ATHROW || ii instanceof NEW || 
-			 ii instanceof NEWARRAY || ii instanceof ANEWARRAY);
-		return (WCETInstruction.isInJava(ii.getOpcode()) && ! isUnboundedBC);
+		return (WCETInstruction.isInJava(ii.getOpcode()) && ! isUnboundedBytecode(ii));
 	}
-	
+	/** return true if we are not able to compute a WCET for the given bytecode */
+	public boolean isUnboundedBytecode(Instruction ii) {
+		return 	(ii instanceof ATHROW || ii instanceof NEW || ii instanceof CHECKCAST ||
+				 ii instanceof NEWARRAY || ii instanceof ANEWARRAY);
+
+	}
 	public MethodInfo getJavaImplementation(WcetAppInfo ai, MethodInfo context, Instruction instr) {
 		if(WCETInstruction.isInJava(getNativeOpCode(context,instr))) {
 			ClassInfo receiver = ai.getClassInfo(JVM_CLASS);
@@ -83,8 +86,12 @@ public class JOPModel implements ProcessorModel {
 		int jopcode = this.getNativeOpCode(context,i);
 		int cycles = WCETInstruction.getCycles(jopcode,false,0);
 		if(cycles < 0) {
-			if(isImplementedInJava(i)) {
-				return WCETInstruction.getCycles(new INVOKESTATIC(0).getOpcode(), false, 0);
+			if(isUnboundedBytecode(i)){
+				Project.logger.error("[HACK] Unsupported (unbounded) bytecode: "+i.getName()+
+						             " approximating with 2000 cycles, but result is not safe anymore");
+				return 2000;
+			} else if(isImplementedInJava(i)) {
+				return WCETInstruction.getNoImplDispatchCycles();
 			} else {
 				throw new AssertionError("Requesting #cycles of non-implemented opcode: "+i+"(opcode "+jopcode+")");
 			} 

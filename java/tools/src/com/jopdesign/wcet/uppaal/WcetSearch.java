@@ -81,7 +81,7 @@ public class WcetSearch {
 		}
 		return safe;
 	}
-	private class StreamReaderThread extends Thread {
+	private static class StreamReaderThread extends Thread {
 		private Vector<String> data = null;
 		private BufferedReader reader;
 		private int limit;
@@ -183,6 +183,23 @@ public class WcetSearch {
 			return true;
 		} else {
 			throw new IOException("Unexpected output from verifyta: "+last);
+		}
+	}
+	public static String getVerifytaVersion(String vbinary) throws IOException {
+		String[] cmd = { vbinary, "-v" };
+		Process verifier = Runtime.getRuntime().exec(cmd);
+		StreamReaderThread outLines = new StreamReaderThread(verifier.getInputStream());
+		outLines.run();
+		StreamReaderThread errLines = new StreamReaderThread(verifier.getErrorStream());
+		errLines.run();
+		try {
+			if(verifier.waitFor() != 0) {
+				throw new IOException("Uppaal verifier terminated with exit code: "+verifier.exitValue());
+			} else {
+				return outLines.getData().firstElement();
+			}
+		} catch (InterruptedException e) {
+			throw new IOException("Interrupted while waiting for verifier to finish");
 		}
 	}
 }

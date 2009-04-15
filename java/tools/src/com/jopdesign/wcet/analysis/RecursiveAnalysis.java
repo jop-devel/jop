@@ -41,10 +41,11 @@ import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGNode;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.InvokeNode;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.SummaryNode;
 import com.jopdesign.wcet.ipet.ILPModelBuilder;
+import com.jopdesign.wcet.ipet.IpetConfig;
 import com.jopdesign.wcet.ipet.MaxCostFlow;
 import com.jopdesign.wcet.ipet.ILPModelBuilder.CostProvider;
+import com.jopdesign.wcet.ipet.IpetConfig.StaticCacheApproximation;
 import com.jopdesign.wcet.jop.MethodCache;
-import com.jopdesign.wcet.jop.CacheConfig.StaticCacheApproximation;
 import com.jopdesign.wcet.report.ClassReport;
 
 /**
@@ -315,9 +316,17 @@ public class RecursiveAnalysis<Context> {
 	}
 
 	public static class LocalIPETStrategy implements RecursiveWCETStrategy<StaticCacheApproximation> {
+		private boolean assumeMissOnceOnInvoke;
+		public LocalIPETStrategy(IpetConfig ipetConfig) {
+			this.assumeMissOnceOnInvoke = ipetConfig.assumeMissOnceOnInvoke;
+		}
+		public LocalIPETStrategy() {
+			this.assumeMissOnceOnInvoke = false;
+		}
 		public WcetCost recursiveWCET(
 				RecursiveAnalysis<StaticCacheApproximation> stagedAnalysis,
-				InvokeNode n, StaticCacheApproximation cacheMode) {
+				InvokeNode n, 
+				StaticCacheApproximation cacheMode) {
 			if(cacheMode.needsInterProcIPET()) {
 				throw new AssertionError("Ups. Cache Mode "+cacheMode+" not supported using local IPET strategy");
 			}
@@ -338,14 +347,14 @@ public class RecursiveAnalysis<Context> {
 				cacheCost = 0;
 			} else if(project.getCallGraph().isLeafNode(invoked)) {
 				cacheCost = invokeReturnCost + nonLocalCacheCost;
-			} else if(cacheMode == StaticCacheApproximation.ALL_FIT_LOCAL && cache.allFit(invoked)) {
+			} else if(cacheMode == StaticCacheApproximation.ALL_FIT_SIMPLE && cache.allFit(invoked)) {
 				long returnCost = cache.getMissOnReturnCost(proc, project.getFlowGraph(invoker));
 				/* Maybe its better not to apply the all-fit heuristic ... */
 				long noAllFitCost = recCost.getCost() + invokeReturnCost;
 				/* Compute cost without method cache */
 				long alwaysHitCost = stagedAnalysis.computeWCET(invoked, StaticCacheApproximation.ALWAYS_HIT).getCost();
 				/* Compute penalty for loading each method exactly once */
-				long allFitPenalty = cache.getMissOnceCummulativeCacheCost(invoked);
+				long allFitPenalty = cache.getMissOnceCummulativeCacheCost(invoked,assumeMissOnceOnInvoke);
 				long allFitCacheCost = allFitPenalty  + returnCost;
 				/* Cost All-Fit: recursive + penalty for loading once + return to caller */
 				long allFitCost = alwaysHitCost + allFitCacheCost;

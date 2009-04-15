@@ -26,9 +26,11 @@ import java.util.List;
 import java.util.Vector;
 
 import org.apache.bcel.classfile.LineNumberTable;
+import org.apache.bcel.generic.ATHROW;
 import org.apache.bcel.generic.BranchInstruction;
 import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.EmptyVisitor;
+import org.apache.bcel.generic.ExceptionThrower;
 import org.apache.bcel.generic.FieldInstruction;
 import org.apache.bcel.generic.GotoInstruction;
 import org.apache.bcel.generic.IfInstruction;
@@ -232,6 +234,14 @@ public class BasicBlock  {
 			flowInfo.alwaysTaken = true;
 		}
 
+		/** FIXME: Exceptions aren't supported yet, but to avoid 
+		 *  early bail out, we assume exceptions terminate execution (for now) */
+		@Override
+		public void visitATHROW(ATHROW obj) {
+			flowInfo.exit = true;
+			flowInfo.splitAfter = true;
+		}
+		
 		// Not neccesarily, but nice for WCET analysis
 		@Override public void visitInvokeInstruction(InvokeInstruction obj) {
 			if(! appInfo.getProcessorModel().isSpecialInvoke(methodInfo, obj)) {
@@ -254,6 +264,7 @@ public class BasicBlock  {
 			visitInstruction(ih);
 			return flowInfo;
 		}
+		
 	}
 
 	/**
@@ -291,7 +302,11 @@ public class BasicBlock  {
 					bb = new BasicBlock(ai,methodInfo);
 				}
 			}
-		}
+			if(! bb.instructions.isEmpty()) {
+				throw new AssertionError("[INTERNAL ERROR] Last instruction "+bb.instructions.getLast()+ 
+						                 " in code does not change control flow - this is impossible");
+			}
+		}		
 		return basicBlocks;
 	}
 	

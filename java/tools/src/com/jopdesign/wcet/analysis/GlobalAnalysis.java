@@ -17,12 +17,13 @@ import com.jopdesign.wcet.frontend.ControlFlowGraph.InvokeNode;
 import com.jopdesign.wcet.frontend.SuperGraph.SuperInvokeEdge;
 import com.jopdesign.wcet.frontend.SuperGraph.SuperReturnEdge;
 import com.jopdesign.wcet.ipet.ILPModelBuilder;
+import com.jopdesign.wcet.ipet.IpetConfig;
 import com.jopdesign.wcet.ipet.LinearVector;
 import com.jopdesign.wcet.ipet.MaxCostFlow;
 import com.jopdesign.wcet.ipet.ILPModelBuilder.CostProvider;
+import com.jopdesign.wcet.ipet.IpetConfig.StaticCacheApproximation;
 import com.jopdesign.wcet.ipet.MaxCostFlow.DecisionVariable;
 import com.jopdesign.wcet.jop.MethodCache;
-import com.jopdesign.wcet.jop.CacheConfig.StaticCacheApproximation;
 
 import static com.jopdesign.wcet.graphutils.MiscUtils.addToSet;
 
@@ -35,10 +36,18 @@ public class GlobalAnalysis {
 	private Project project;
 	private Map<DecisionVariable,MethodInfo> decisionVariables =
 		new HashMap<DecisionVariable, MethodInfo>();
-	public GlobalAnalysis(Project p) {
+	private IpetConfig ipetConfig;
+	public GlobalAnalysis(Project p, IpetConfig ipetConfig) {
+		this.ipetConfig = ipetConfig;
 		this.project = p;
 	}
+	/** Compute WCET using global ipet, and either ALWAYS_MISS or GLOBAL_ALL_FIT */
 	public WcetCost computeWCET(MethodInfo m, StaticCacheApproximation cacheMode) throws Exception {
+		if(cacheMode != StaticCacheApproximation.ALWAYS_MISS && 
+		   cacheMode != StaticCacheApproximation.GLOBAL_ALL_FIT) {
+			throw new Exception("Global IPET: only ALWAYS_MISS and GLOBAL_ALL_FIT are supported"+
+					            " as cache approximation strategies");
+		}
 		String key = m.getFQMethodName() + "_global_" + cacheMode;
 		SuperGraph sg = new SuperGraph(project.getWcetAppInfo(),project.getFlowGraph(m));
 		ILPModelBuilder imb = new ILPModelBuilder(project);
@@ -46,7 +55,7 @@ public class GlobalAnalysis {
 		CostProvider<CFGNode> nodeWCET = new MapCostProvider<CFGNode>(nodeCostMap);
 		/* create an ILP graph for all reachable methods */
 		MaxCostFlow<CFGNode, CFGEdge> maxCostFlow = imb.buildGlobalILPModel(key, sg, nodeWCET);
-		if(cacheMode == StaticCacheApproximation.ALL_FIT) {
+		if(cacheMode == StaticCacheApproximation.GLOBAL_ALL_FIT) {
 			addMissOnceCost(sg,maxCostFlow);
 		}
 		Map<CFGEdge, Long> flowMap = new HashMap<CFGEdge, Long>();
@@ -67,7 +76,7 @@ public class GlobalAnalysis {
 		for(Entry<DecisionVariable, Boolean> cacheMiss : cacheMissMap.entrySet()) {
 			if(cacheMiss.getValue()) {
 				MethodInfo mi = decisionVariables.get(cacheMiss.getKey());
-				cost.addCacheCost(cache.missOnceCost(mi));
+				cost.addCacheCost(cache.missOnceCost(mi,ipetConfig.assumeMissOnceOnInvoke));
 			}
 		}
 		long objValue = (long) (lpCost+0.5);
@@ -98,15 +107,20 @@ public class GlobalAnalysis {
 			DecisionVariable dVar = maxCostFlow.addFlowDecision(lv);
 			this.decisionVariables .put(dVar,mi);
 			/* cost += b_M * missCost(M) */
-			maxCostFlow.addDecisionCost(dVar, cache.missOnceCost(mi));
+			maxCostFlow.addDecisionCost(dVar, cache.missOnceCost(mi,ipetConfig.assumeMissOnceOnInvoke));
 		}
 	}
 	public static class GlobalIPETStrategy implements RecursiveWCETStrategy<StaticCacheApproximation> {
+		private IpetConfig ipetConfig;
+		public GlobalIPETStrategy(IpetConfig ipetConfig) {
+			this.ipetConfig = ipetConfig;
+		}
 		public WcetCost recursiveWCET(
 				RecursiveAnalysis<StaticCacheApproximation> stagedAnalysis,
 				InvokeNode n, StaticCacheApproximation cacheMode) {
-			if(cacheMode != StaticCacheApproximation.ALL_FIT) {
-				throw new AssertionError("Cache Mode "+cacheMode+" not supported using global IPET strategy");
+			if(cacheMode != StaticCacheApproximation.ALL_FIT_REGIONS) {
+				throw new AssertionError("Cache Mode "+cacheMode+" not supported using"+
+						                " mixed local/global IPET strategy");
 			}
 			Project project = stagedAnalysis.getProject();
 			MethodInfo invoker = n.getBasicBlock().getMethodInfo(); 
@@ -120,9 +134,9 @@ public class GlobalAnalysis {
 	                project.getFlowGraph(invoked));
 			WcetCost cost = new WcetCost();
 			if(cache.allFit(invoked) && ! project.getCallGraph().isLeafNode(invoked)) {
-				GlobalAnalysis ga = new GlobalAnalysis(project);
+				GlobalAnalysis ga = new GlobalAnalysis(project, ipetConfig);
 				WcetCost allFitCost = null;
-				try { allFitCost= ga.computeWCET(invoked, StaticCacheApproximation.ALL_FIT); }
+				try { allFitCost= ga.computeWCET(invoked, StaticCacheApproximation.GLOBAL_ALL_FIT); }
 				catch (Exception e) { throw new AssertionError(e); }
 				cost.addCacheCost(returnCost + allFitCost.getCacheCost());
 				cost.addNonLocalCost(allFitCost.getNonCacheCost());

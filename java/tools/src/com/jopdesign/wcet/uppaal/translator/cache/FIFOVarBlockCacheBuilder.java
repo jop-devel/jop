@@ -55,7 +55,8 @@ public class FIFOVarBlockCacheBuilder extends VarBlockCacheBuilder {
 	}
 	
 	public long getWaitTime(ProcessorModel proc, ControlFlowGraph cfg, boolean isInvoke) {
-		if(assumeEmptyCache && isInvoke) return cache.getMissOnInvokeCost(proc, cfg);
+		if((assumeEmptyCache && isInvoke) ||
+		   cfg.isLeafMethod()) return cache.getMissOnInvokeCost(proc, cfg);
 		else return cache.getMaxMissCost(proc, cfg);
 	}
 }

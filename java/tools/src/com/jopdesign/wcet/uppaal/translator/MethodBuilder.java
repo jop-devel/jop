@@ -38,7 +38,7 @@ import com.jopdesign.wcet.frontend.ControlFlowGraph.SummaryNode;
 import com.jopdesign.wcet.graphutils.FlowGraph;
 import com.jopdesign.wcet.graphutils.LoopColoring.IterationBranchLabel;
 import com.jopdesign.wcet.graphutils.ProgressMeasure.RelativeProgress;
-import com.jopdesign.wcet.jop.CacheConfig.StaticCacheApproximation;
+import com.jopdesign.wcet.ipet.IpetConfig.StaticCacheApproximation;
 import com.jopdesign.wcet.uppaal.model.Location;
 import com.jopdesign.wcet.uppaal.model.Transition;
 import com.jopdesign.wcet.uppaal.model.TransitionAttributes;
