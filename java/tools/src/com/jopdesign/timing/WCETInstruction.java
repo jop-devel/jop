@@ -1466,6 +1466,12 @@ public class WCETInstruction {
 		return ret;
 	}
 
+	
+	public static int getNoImplDispatchCycles() {
+		// FIXME (CMP_WCET): invokevirtual should be a conservative approximation to sys_noim for now
+		if(CMP_WCET) return getCycles(org.apache.bcel.Constants.INVOKEVIRTUAL,false,0);
+		else return 85 + Math.max(0,r-3) + Math.max(0,r-2);
+	}
 
 	/**
 	 * Method load time on invoke or return if there is a cache miss (see pMiss).
