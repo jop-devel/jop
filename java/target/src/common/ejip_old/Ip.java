@@ -84,7 +84,7 @@ public class Ip {
 		int i;
 		int sum = 0;
 		cnt = (cnt + 3) >> 2; // word count
-		while (cnt != 0) {
+		while (cnt != 0) { // @WCA loop<=375
 			i = buf[off];
 			sum += i & 0xffff;
 			sum += i >>> 16;
@@ -92,7 +92,7 @@ public class Ip {
 			--cnt;
 		}
 	
-		while ((sum >> 16) != 0)
+		while ((sum >> 16) != 0) // @WCA loop<=2
 			sum = (sum & 0xffff) + (sum >> 16);
 	
 		sum = (~sum) & 0xffff;

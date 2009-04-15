@@ -99,7 +99,9 @@ public class EjipBenchCMP {
 			int buf[] = p.buf;
 			int len = buf[Udp.DATA];
 			int result = 0;
-			for (int i=0; i<len; ++i) {
+			
+			
+			for (int i=0; i<len; ++i) { // @WCA loop=10
 				result += buf[Udp.DATA+1+i*2] * buf[Udp.DATA+2+i*2];
 			}
 			
