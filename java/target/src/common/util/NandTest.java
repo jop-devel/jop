@@ -238,7 +238,7 @@ public class NandTest extends Nand {
 //		System.out.println("Physical block "+n.getPhysicalBlock(488));
 //		System.out.println("Physical block "+n.getPhysicalBlock(1000));
 //		System.out.println("Physical block "+n.getPhysicalBlock(1920));
-		n.eraseAll();
+//		n.eraseAll();
 
 //		for (int i=0; i<1000; ++i) {
 //			n.erase(i);

@@ -113,8 +113,23 @@ public class SingleFileFS {
 			size = nand.read(null, i, 0);
 			if (size!=-1) {
 				nand.erase(i);
-			} else {
-				break;
+			}
+		}
+	}
+
+	/**
+	 * Erase just the first part for faster BG boot
+	 */
+	public void eraseStart() {
+		if (!avail || mode!=CLOSED) {
+			throw exc;
+		}
+		int size;
+		int end = nand.size()/10;
+		for (int i=0; i<end; ++i) {
+			size = nand.read(null, i, 0);
+			if (size!=-1) {
+				nand.erase(i);
 			}
 		}
 	}

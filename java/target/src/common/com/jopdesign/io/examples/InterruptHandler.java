@@ -44,7 +44,7 @@ public class InterruptHandler implements Runnable {
 			while (!Timer.timeout(t));
 			// trigger a SW interrupt via the system HW object
 			System.out.println("Trigger");
-			sys.swInterrupt = 1;
+			sys.intNr = 1;
 			if (i==10) {
 				fact.disableInterrupt(1);
 //				fact.deregisterInterruptHandler(1);

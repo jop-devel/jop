@@ -58,7 +58,7 @@ public class ScheduledIH implements Runnable {
 					ts = Native.rdMem(Const.IO_CNT);
 					// trigger a SW interrupt via the system HW object
 //					sw.fire();
-					sys.swInterrupt = 1;
+					sys.intNr = 1;
 					waitForNextPeriod();
 				}
 			}
@@ -71,7 +71,7 @@ public class ScheduledIH implements Runnable {
 
 		// measure overhead
 		ts = Native.rdMem(Const.IO_CNT);
-		sys.swInterrupt = 2;
+		sys.intNr = 2;
 		te = Native.rdMem(Const.IO_CNT);
 		to = te-ts;
 		
