@@ -1390,19 +1390,31 @@ public class WCETInstruction {
 				return true;
 			case org.apache.bcel.Constants.FCONST_2:
 				return true;
+			case org.apache.bcel.Constants.AASTORE:
+				return true;
 			case org.apache.bcel.Constants.FADD:
 				return true;
 			case org.apache.bcel.Constants.FSUB:
 				return true;
 			case org.apache.bcel.Constants.LMUL:
 				return true;
+			case org.apache.bcel.Constants.FMUL:
+				return true;
 			case org.apache.bcel.Constants.IDIV:
 				return true;
 			case org.apache.bcel.Constants.LDIV:
 				return true;
+			case org.apache.bcel.Constants.FDIV:
+				return true;
 			case org.apache.bcel.Constants.IREM:
 				return true;
 			case org.apache.bcel.Constants.LREM:
+				return true;
+			case org.apache.bcel.Constants.FREM:
+				return true;
+			case org.apache.bcel.Constants.FNEG:
+				return true;
+			case org.apache.bcel.Constants.I2F:
 				return true;
 			case org.apache.bcel.Constants.F2I:
 				return true;
@@ -1411,6 +1423,10 @@ public class WCETInstruction {
 			case org.apache.bcel.Constants.I2S:
 				return true;
 			case org.apache.bcel.Constants.LCMP:
+				return true;
+			case org.apache.bcel.Constants.FCMPL:
+				return true;
+			case org.apache.bcel.Constants.FCMPG:
 				return true;
 			case org.apache.bcel.Constants.TABLESWITCH:
 				return true;
