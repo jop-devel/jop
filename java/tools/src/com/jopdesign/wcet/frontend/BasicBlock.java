@@ -303,8 +303,14 @@ public class BasicBlock  {
 				}
 			}
 			if(! bb.instructions.isEmpty()) {
-				throw new AssertionError("[INTERNAL ERROR] Last instruction "+bb.instructions.getLast()+ 
-						                 " in code does not change control flow - this is impossible");
+				// be nice to DFA stuff, and ignore NOPs
+				for(int i = bb.instructions.size() - 1; i>=0; --i) {
+					InstructionHandle x = bb.instructions.get(i);
+					if(x.getInstruction().getOpcode() != org.apache.bcel.Constants.NOP) {
+						throw new AssertionError("[INTERNAL ERROR] Last instruction "+x+
+		                 " in code does not change control flow - this is impossible");
+					}
+				}
 			}
 		}		
 		return basicBlocks;
