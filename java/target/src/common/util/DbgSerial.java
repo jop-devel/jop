@@ -40,8 +40,8 @@ public class DbgSerial extends Dbg {
 	void dbgWr(int c) {
 
 		if (waitHs) {
-			// busy wait, no sleep for thread tests!
-			while ((Native.rd(Const.IO_STATUS)&Const.MSK_UA_TDRE)==0) ;
+			// busy wait, no sleep for thread tests! dummy WCA value
+			while ((Native.rd(Const.IO_STATUS)&Const.MSK_UA_TDRE)==0) ; // @WCA loop=100
 		}
 /*
 		// changed for OEBB
