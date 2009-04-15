@@ -291,14 +291,13 @@ public class RecursiveAnalysis<Context> {
 	private WcetCost 
 	computeCostOfNode(CFGNode n ,Context ctx) {	
 		WcetVisitor wcetVisitor = new LocalWcetVisitor(project, ctx);
-		n.accept(wcetVisitor);
-		return wcetVisitor.cost;
+		return wcetVisitor.computeCost(n);
 	}
 	
 	private class LocalWcetVisitor extends WcetVisitor {
 		Context ctx;
 		public LocalWcetVisitor(Project project, Context ctx) {
-			this.project = project;
+			super(project);
 			this.ctx = ctx;
 		}
 		@Override

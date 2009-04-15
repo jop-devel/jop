@@ -90,7 +90,7 @@ public class Packet {
 		mutex = new Object();
 
 		packets = new Packet[CNT];
-		for (int i=0; i<CNT; ++i) {
+		for (int i=0; i<CNT; ++i) { // @WCA loop=8
 			packets[i] = new Packet();
 		}
 		
@@ -100,7 +100,7 @@ private static void dbg() {
 
 	synchronized (mutex) {
 		Dbg.wr('|');
-		for (int i=0; i<CNT; ++i) {
+		for (int i=0; i<CNT; ++i) { // @WCA loop=8
 			Dbg.wr('0'+packets[i].status);
 		}
 		Dbg.wr('|');
@@ -117,7 +117,7 @@ private static void dbg() {
 		Packet p;
 
 		synchronized (mutex) {
-			for (i=0; i<CNT; ++i) {
+			for (i=0; i<CNT; ++i) { // @WCA loop=8
 				if (packets[i].status==type) {
 					break;
 				}
@@ -142,7 +142,7 @@ if (type==FREE) Dbg.wr('!');
 		Packet p;
 
 		synchronized (mutex) {
-			for (i=0; i<CNT; ++i) {
+			for (i=0; i<CNT; ++i) { // @WCA loop=8
 				if (packets[i].status==type) {
 					break;
 				}
@@ -168,7 +168,7 @@ if (type==FREE) Dbg.wr('!');
 		Packet p = null;
 
 		synchronized (mutex) {
-			for (i=0; i<CNT; ++i) {
+			for (i=0; i<CNT; ++i) { // @WCA loop=8
 				p = packets[i];
 				if (p.status==type && packets[i].interf==s) {
 					p.status = newType;
@@ -193,7 +193,7 @@ if (type==FREE) Dbg.wr('!');
 		Packet p = null;
 
 		synchronized (mutex) {
-			for (i=0; i<CNT; ++i) {
+			for (i=0; i<CNT; ++i) { // @WCA loop=8
 				p = packets[i];
 				if ((p.status==SND_DGRAM || p.status==SND_TCP)
 						&& packets[i].interf==s) {
@@ -237,10 +237,10 @@ if (type==FREE) Dbg.wr('!');
 		synchronized (mutex) {
 			this.len = p.len;
 			this.interf = p.interf;
-			for (i=0; i<MAXLLH; ++i) {
+			for (i=0; i<MAXLLH; ++i) {  // @WCA loop=7
 				this.llh[i] = p.llh[i];
 			}
-			for (i=0; i<MAXW; ++i) {
+			for (i=0; i<MAXW; ++i) {  // @WCA loop=375
 				this.buf[i] = p.buf[i];
 			}
 		}

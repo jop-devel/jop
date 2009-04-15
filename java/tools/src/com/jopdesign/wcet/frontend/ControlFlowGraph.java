@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.Vector;
+
 import org.apache.bcel.generic.INVOKEINTERFACE;
 import org.apache.bcel.generic.INVOKEVIRTUAL;
 import org.apache.bcel.generic.Instruction;
@@ -42,6 +43,10 @@ import org.jgrapht.traverse.TopologicalOrderIterator;
 
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.dfa.analyses.LoopBounds;
+import com.jopdesign.dfa.analyses.Pair;
+import com.jopdesign.dfa.analyses.LoopBounds.ValueMapping;
+import com.jopdesign.dfa.framework.ContextMap;
+import com.jopdesign.dfa.framework.HashedString;
 import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.frontend.BasicBlock.FlowInfo;
 import com.jopdesign.wcet.frontend.BasicBlock.FlowTarget;
@@ -361,8 +366,11 @@ public class ControlFlowGraph {
 	private int idGen = 0;
 
 	/* linking to java */
-	private MethodInfo  methodInfo;
+	private Project project;
 	private WcetAppInfo appInfo;
+	private MethodInfo  methodInfo;
+	
+	/* basic blocks associated with the CFG */
 	private Vector<BasicBlock> blocks;
 	
 	/* graph */
@@ -374,16 +382,22 @@ public class ControlFlowGraph {
 	/* analysis stuff, needs to be reevaluated when graph changes */
 	private TopOrder<CFGNode, CFGEdge> topOrder = null;
 	private LoopColoring<CFGNode, CFGEdge> loopColoring = null;
+	private Boolean isLeafMethod = null;
+	public boolean isLeafMethod() {
+		return isLeafMethod;
+	}
+
 	
 	/**
 	 * Build a new flow graph for the given method
 	 * @param method needs attached code (<code>method.getCode() != null</code>)
 	 * @throws BadGraphException if the bytecode results in an invalid flow graph
 	 */
-	public ControlFlowGraph(int id, WcetAppInfo wcetAi, MethodInfo method) throws BadGraphException {
+	public ControlFlowGraph(int id, Project p, MethodInfo method) throws BadGraphException {
 		this.id = id;
 		this.methodInfo = method;
-		this.appInfo = wcetAi;
+		this.project = p;
+		this.appInfo = p.getWcetAppInfo();
 		createFlowGraph(method);
 		check();
 	}
@@ -615,7 +629,35 @@ public class ControlFlowGraph {
 		this.check();
 		this.analyseFlowGraph();
 	}
-
+	/**
+	 * Insert continue-loop nodes, to simplify order for model checker.
+	 * If the head of loop has more than one incoming 'continue' edge,
+	 * an redirect the continue edges.
+	 * @throws BadGraphException 
+	 */
+	public void insertContinueLoopNodes() throws BadGraphException {
+		Vector<CFGNode> trav = this.getTopOrder().getTopologicalTraversal();
+		for(CFGNode n : trav) {
+			if(getLoopColoring().getHeadOfLoops().contains(n)) {
+				Vector<CFGEdge> backEdges = getLoopColoring().getBackEdgesTo(n);
+				if(backEdges.size() > 1) {
+					DedicatedNode splitNode = this.splitNode();
+					graph.addVertex(splitNode);
+					/* move edges */
+					for(CFGEdge e : backEdges) {
+						CFGNode src = graph.getEdgeSource(e);
+						graph.addEdge(src, splitNode,e.clone());
+						graph.removeEdge(e);
+					}
+					graph.addEdge(splitNode,n,new CFGEdge(EdgeKind.FLOW_EDGE));					
+				}
+			}
+		}
+		this.invalidate();
+		this.check();
+		this.analyseFlowGraph();
+	}
+	
 	/**
 	 * Prototype: Insert summary nodes to speed up UPPAAL search
 	 * Currently only for loops which do not contain invoke() and have a single exit
@@ -623,7 +665,7 @@ public class ControlFlowGraph {
 	 */
 	public void insertSummaryNodes() throws BadGraphException {
 		SimpleDirectedGraph<CFGNode, DefaultEdge> loopNestForest = 
-			this.getLoopColoring().getLoopNestForest();
+			this.getLoopColoring().getLoopNestDAG();
 		TopologicalOrderIterator<CFGNode, DefaultEdge> lnfIter = 
 			new TopologicalOrderIterator<CFGNode, DefaultEdge>(loopNestForest);
 		Vector<CFGNode> summaryLoops = new Vector<CFGNode>();
@@ -718,6 +760,7 @@ public class ControlFlowGraph {
 	private void invalidate() {
 		this.topOrder = null;
 		this.loopColoring = null;
+		this.isLeafMethod = null;
 	}
 
 	/* flow graph should have been checked before analyseFlowGraph is called */
@@ -725,7 +768,11 @@ public class ControlFlowGraph {
 		try {
 			topOrder = new TopOrder<CFGNode, CFGEdge>(this.graph, this.graph.getEntry());
 			idGen = 0;
-			for(CFGNode vertex : topOrder.getTopologicalTraversal()) vertex.id = idGen++;
+			this.isLeafMethod = true;
+			for(CFGNode vertex : topOrder.getTopologicalTraversal()) {
+				if(vertex instanceof InvokeNode) this.isLeafMethod = false;
+				vertex.id = idGen++;
+			}
 			for(CFGNode vertex : TopOrder.findDeadNodes(graph,this.graph.getEntry())) vertex.id = idGen++;
 			loopColoring = new LoopColoring<CFGNode, CFGEdge>(this.graph,topOrder,graph.getExit());
 		} catch (BadGraphException e) {
@@ -818,7 +865,24 @@ public class ControlFlowGraph {
 	@Override public String toString() {
 		return super.toString()+this.methodInfo.getFQMethodName();
 	}
-	
+	@SuppressWarnings("unchecked")
+	public String dumpDFA() {
+	    if(this.project.getDfaLoopBounds() == null) return "n/a";
+		Map<InstructionHandle, ContextMap<List<HashedString>, Pair<ValueMapping>>> results = this.project.getDfaLoopBounds().getResult();
+		if(results == null) return "n/a";
+		StringBuilder s = new StringBuilder();
+		for(CFGNode n: this.graph.vertexSet()) {
+			if(n.getBasicBlock() == null) continue;
+			ContextMap<List<HashedString>, Pair<ValueMapping>> r = results.get(n.getBasicBlock().getLastInstruction());
+			if(r != null) {
+				s.append(n);
+				s.append(" :: ");
+				s.append(r);
+				s.append("\n");
+			}
+		}
+		return s.toString();
+	}
 //	/**
 //	 * get single entry single exit sets
 //	 * @return

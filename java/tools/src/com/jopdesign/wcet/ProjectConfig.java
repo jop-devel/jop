@@ -26,6 +26,7 @@ import com.jopdesign.wcet.config.Config;
 import com.jopdesign.wcet.config.IntegerOption;
 import com.jopdesign.wcet.config.Option;
 import com.jopdesign.wcet.config.StringOption;
+import com.jopdesign.wcet.graphutils.MiscUtils;
 
 public class ProjectConfig {
 	public static final StringOption PROJECT_NAME =
@@ -78,11 +79,11 @@ public class ProjectConfig {
 	 * @param name 
 	 */
 	public static File getOutFile(String subdir, String name) {
-		return new File(getOutDir(subdir),Config.sanitizeFileName(name));
+		return new File(getOutDir(subdir),MiscUtils.sanitizeFileName(name));
 	}
 	public String getProjectName() {
 		return config.getOptionWithDefault(PROJECT_NAME,
-				Config.sanitizeFileName(getAppClassName() + "_" + getTargetMethodName()));
+				MiscUtils.sanitizeFileName(getAppClassName() + "_" + getTargetMethodName()));
 	}
 	public File getOutDir() {
 		return new File(config.getOption(OUT_DIR),getProjectName());

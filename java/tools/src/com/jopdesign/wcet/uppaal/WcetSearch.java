@@ -40,6 +40,8 @@ public class WcetSearch {
 		cmdlist.add("-q");
 		cmdlist.add("-S");
 		cmdlist.add("2");
+		cmdlist.add("-o");		
+		cmdlist.add("2");
 		if(config.getOption(UppAalConfig.UPPAAL_CONVEX_HULL)) {
 			cmdlist.add("-A");
 		}
@@ -50,10 +52,13 @@ public class WcetSearch {
 		if(ub >= 1) {
 			unsafe = safe = ub;
 			while(checkBound(cmd,unsafe)) {
+				safe = unsafe; 
 				unsafe /= 2;
-				System.err.println(MessageFormat.format("WCET bounds (unsafe/safe): {0}/{1}",
+				System.err.println(MessageFormat.format("WCET bounds (? / safe): {0}/{1}",
 							  				     unsafe, safe));
 			}
+			System.err.println(MessageFormat.format("WCET bounds (unsafe / safe): {0}/{1}",
+ 				     unsafe, safe));
 		} else {
 			unsafe = 1;
 			safe = 100;

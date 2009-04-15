@@ -19,7 +19,9 @@
 package joptimizer.config;
 
 import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.net.URL;
@@ -113,9 +115,9 @@ public class ArchConfig {
 
         Properties props = new Properties();
         try {
-            Reader reader = new BufferedReader(new InputStreamReader(config.openStream()));
-            props.load(reader);
-            reader.close();
+            InputStream is = config.openStream();
+            props.load(is);
+            is.close();
         } catch (IOException e) {
             throw new ConfigurationException("Could not read configuration file.", e);
         }

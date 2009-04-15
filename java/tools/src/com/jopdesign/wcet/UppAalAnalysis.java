@@ -85,7 +85,7 @@ public class UppAalAnalysis {
 			return false; 
 		}
 		UppaalAnalysis ua = new UppaalAnalysis(tlLogger,project,uppaalOutDir);
-		List<MethodInfo> methods = project.getCallGraph().getImplementedMethods();
+		List<MethodInfo> methods = project.getCallGraph().getImplementedMethods(project.getTargetMethod());
 		Collections.reverse(methods);
 		List<WCETEntry> entries = new Vector<WCETEntry>();
 		for( MethodInfo m : methods ) {

@@ -54,7 +54,7 @@ import ejip.*;
 public class BgTftp extends Tftp {
 
 	final static int MAX_BLOCKS = 128;
-	private int[] sector;
+	protected int[] sector;
 
 	BgTftp(Ejip ejipRef) {
 		super(ejipRef);

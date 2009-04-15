@@ -9,8 +9,9 @@ public class VarBlockCache extends MethodCache {
 
 	private int blockCount;
 	private int blockSize;
+	private boolean isLRU;
 
-	public VarBlockCache(Project p, int blockCount, int cacheSizeInWords) {
+	public VarBlockCache(Project p, int blockCount, int cacheSizeInWords, boolean isLRU) {
 		super(p,cacheSizeInWords);
 		this.blockCount = blockCount;
 		if(cacheSizeWords % blockCount != 0) {
@@ -18,14 +19,15 @@ public class VarBlockCache extends MethodCache {
 		                             cacheSizeWords+" / "+blockCount);
 		}
 		this.blockSize = cacheSizeWords / blockCount;
+		this.isLRU = isLRU;
 	}
 
 	public static MethodCache fromConfig(Project p, boolean isLRU) {
 		Config c = p.getConfig();
-		if(isLRU) throw new Project.UnsupportedFeatureException("Var Block LRU cache not supported yet");
 		return new VarBlockCache(p,
 				                 c.getOption(CacheConfig.CACHE_BLOCKS).intValue(),
-								 c.getOption(CacheConfig.CACHE_SIZE_WORDS).intValue());
+								 c.getOption(CacheConfig.CACHE_SIZE_WORDS).intValue(),
+								 isLRU);
 	}
 	/** Return the number of blocks needed for the a method of size {@code words}.
 	 */
@@ -46,12 +48,13 @@ public class VarBlockCache extends MethodCache {
 	
 	@Override
 	public boolean isLRU() {
-		return false;
+		return this.isLRU;
 	}
 
 	@Override
 	public CacheImplementation getName() {
-		return CacheImplementation.FIFO_VARBLOCK_CACHE;
+		if(isLRU()) return CacheImplementation.LRU_VARBLOCK_CACHE;
+		else        return CacheImplementation.FIFO_VARBLOCK_CACHE;
 	}
 
 	public int getNumBlocks() {

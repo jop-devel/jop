@@ -32,6 +32,7 @@ import org.apache.log4j.Logger;
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.wcet.analysis.GlobalAnalysis;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis;
+import com.jopdesign.wcet.analysis.TreeAnalysis;
 import com.jopdesign.wcet.analysis.UppaalAnalysis;
 import com.jopdesign.wcet.analysis.WcetCost;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveWCETStrategy;
@@ -87,15 +88,25 @@ public class WCETAnalysis {
 			tlLogger.info("Loading project");
 			project.load();
 			MethodInfo largestMethod = project.getProcessorModel().getMethodCache().checkCache();
-			int minWords = MiscUtils.bytesToWords(largestMethod.getCode().getLength());
-			System.out.println("Minimal Cache Size for target method(words): " 
+			int minWords = MiscUtils.bytesToWords(largestMethod.getCode().getCode().length);
+			System.out.println("Minimal Cache Size for target method: " 
 					         + minWords
-					         + " because of "+largestMethod.getFQMethodName());
+					         + " words because of "+largestMethod.getFQMethodName());
 			project.recordMetric("min-cache-size",largestMethod.getFQMethodName(),minWords);
 		} catch (Exception e) {
 			exec.logException("Loading project", e);
 			return false;
 		}
+		/* Tree based WCET analysis - has to be equal to ALWAYS_MISS */
+		{
+			long start,stop;
+			start = System.nanoTime();
+			TreeAnalysis treeAna = new TreeAnalysis(project);
+			long treeWCET = treeAna.computeWCET(project.getTargetMethod());
+			stop = System.nanoTime();
+			reportSpecial("wcet.tree",WcetCost.totalCost(treeWCET),start,stop,0.0);
+		}
+
 		/* Perf-Test */
 //		for(int i = 0; i < 50; i++) { 
 //			RecursiveAnalysis<StaticCacheApproximation> an = 
@@ -104,6 +115,7 @@ public class WCETAnalysis {
 //		}
 //		System.err.println("Total solver time (50): "+LpSolveWrapper.getSolverTime());
 //		System.exit(1);
+		// new ETMCExport(project).export(project.getOutFile("Spec_"+project.getProjectName()+".txt")); 
 		/* Run */
 		boolean succeed = false;
 		try {

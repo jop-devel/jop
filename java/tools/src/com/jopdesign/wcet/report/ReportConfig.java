@@ -1,7 +1,5 @@
 package com.jopdesign.wcet.report;
 
-import static com.jopdesign.wcet.config.Config.sanitizeFileName;
-
 import java.io.File;
 
 import com.jopdesign.build.MethodInfo;
@@ -9,6 +7,7 @@ import com.jopdesign.wcet.config.BooleanOption;
 import com.jopdesign.wcet.config.Config;
 import com.jopdesign.wcet.config.Option;
 import com.jopdesign.wcet.config.StringOption;
+import com.jopdesign.wcet.graphutils.MiscUtils;
 
 public class ReportConfig {
 	public static final StringOption ERROR_LOG_FILE =
@@ -64,7 +63,7 @@ public class ReportConfig {
 	 */
 	public File getOutFile(MethodInfo method, String extension) {
 		return new File(outDir,
-				        sanitizeFileName(method.getFQMethodName()+extension));
+				        MiscUtils.sanitizeFileName(method.getFQMethodName()+extension));
 	}
 	public String getDotBinary() {
 		return config.getOption(PROGRAM_DOT);

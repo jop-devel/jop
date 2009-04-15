@@ -22,15 +22,15 @@ package com.jopdesign.wcet.uppaal;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintStream;
-import java.util.List;
 import org.apache.log4j.Logger;
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.wcet.Project;
-import com.jopdesign.wcet.frontend.CallGraph;
 import com.jopdesign.wcet.uppaal.model.DuplicateKeyException;
 import com.jopdesign.wcet.uppaal.model.XmlBuilder;
 import com.jopdesign.wcet.uppaal.model.XmlSerializationException;
-import com.jopdesign.wcet.uppaal.translator.MethodBuilder;
+import com.jopdesign.wcet.uppaal.translator.JavaOneProcessPerMethodTranslator;
+import com.jopdesign.wcet.uppaal.translator.JavaOneProcessPerSupergraphTranslator;
+import com.jopdesign.wcet.uppaal.translator.JavaTranslator;
 import com.jopdesign.wcet.uppaal.translator.SystemBuilder;
 
 public class Translator {
@@ -39,36 +39,22 @@ public class Translator {
 	private Project project;
 	private SystemBuilder sys;
 
-	private File outDir;
+	private UppAalConfig config;
 
-	public Translator(Project p, File outDir) {
+	public Translator(UppAalConfig c, Project p) {
+		this.config = c;
 		this.project = p;
-		this.outDir = outDir;
 	}
 	
 	public SystemBuilder translateProgram(MethodInfo root) throws DuplicateKeyException {
-		/* Get callgraph */
-		CallGraph callGraph = project.getCallGraph();
-		// logger.info("Call stack depth: "+callGraph.getMaxHeight());
-		List<MethodInfo> impls = callGraph.getReachableImplementations(root);
-		if(! impls.get(0).equals(root)) {
-			throw new AssertionError("Bad callgraph: measured method has to be the root node");
+		/* Create process translator */
+		JavaTranslator pt;
+		if(config.superGraphTemplate) {
+			pt = new JavaOneProcessPerSupergraphTranslator(config, project, root);
+		} else {
+			pt = new JavaOneProcessPerMethodTranslator(config, project, root);
 		}
-		/* Create system builder */
-		sys = new SystemBuilder(
-				project, 
-				callGraph.getMaxHeight(),
-				impls);
-		/* Translate methods */
-		boolean collapseLeafs = project.getConfig().getOption(UppAalConfig.UPPAAL_COLLAPSE_LEAVES);
-		sys.addTemplate(0,new MethodBuilder(sys, 0, impls.get(0)).buildRootMethod());
-		for(int i = 1; i < impls.size(); i++) {
-			MethodInfo mi = impls.get(i);
-			if(! collapseLeafs || ! project.getCallGraph().isLeafNode(mi)) {
-				MethodBuilder transl = new MethodBuilder(sys, i, mi);
-				sys.addTemplate(i,transl.buildMethod());
-			}
-		}
+		sys = pt.getSystem();
 
 		/* build the system */
 		sys.buildSystem();
@@ -98,11 +84,11 @@ public class Translator {
 	}
 
 	public File getModelFile() {
-		return new File(outDir,project.getTargetName()+".xml");
+		return config.getOutFile(project.getTargetName()+".xml");
 	}
 
 	public File getQueryFile() {
-		return new File(outDir,project.getTargetName()+".q");
+		return config.getOutFile(project.getTargetName()+".q");
 	}
 
 }

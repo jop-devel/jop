@@ -317,22 +317,6 @@ public class Config {
 		return rest.toArray(restArray);
 	}
 
-	/** 
-	 * Remove problematic characters from a method name 
-     * Note that fully qualified methods might become non-unique,
-     * so use an additional unique identifier if you need unique names. */
-	public static String sanitizeFileName(String str) {
-		StringBuffer sanitized = new StringBuffer(str.length());
-		for(int i = 0; i < str.length(); i++) {
-			if(Character.isLetterOrDigit(str.charAt(i)) || str.charAt(i) == '.') {
-				sanitized.append(str.charAt(i));
-			} else {
-				sanitized.append('_');
-			}
-		}
-		return sanitized.toString();
-	}
-	
 	/** Check whether the given file is a directory, possibly creating it if
 	 * non existing
 	 * @param dir the path to the directory

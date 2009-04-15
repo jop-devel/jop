@@ -39,10 +39,11 @@ public final class SysDevice extends HardwareObject {
 	public volatile int uscntTimer;
 	
 	/**
-	 * SW interrupt on write
 	 * Interrupt number on read
+	 * SW interrupt on write
+	 * 
 	 */
-	public volatile int swInterrupt;
+	public volatile int intNr;
 	
 	/**
 	 * Watchdog

@@ -168,6 +168,7 @@ public class NandLowLevel {
 					System.out.println("not erased");					
 				}
 			}
+			Timer.wd();
 		}
 
 		
@@ -264,7 +265,7 @@ public class NandLowLevel {
 			
 			ret &= cmdOk();
 		}
-		
+
 		return ret;
 	}
 

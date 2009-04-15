@@ -23,13 +23,13 @@ public class UppaalAnalysis {
 
 	private Logger logger;
 	private Project project;
-	private File outDir;
 	private double searchtime = 0.0;
 	private double solvertimemax = 0.0;
+	private UppAalConfig uppaalConfig;
 	public UppaalAnalysis(Logger logger, Project project, File outDir) {
+		this.uppaalConfig = new UppAalConfig(project.getConfig(), outDir);
 		this.logger = logger;
 		this.project = project;
-		this.outDir = outDir;
 	}
 	public WcetCost computeWCET(MethodInfo targetMethod, long upperBound) throws IOException, DuplicateKeyException, XmlSerializationException {
 		if(project.getProjectConfig().hasUppaalComplexityTreshold()) {
@@ -51,14 +51,14 @@ public class UppaalAnalysis {
 	}
 	public WcetCost calculateWCET(MethodInfo m, long ub) throws IOException, DuplicateKeyException, XmlSerializationException {
 		Long upperBound = null;
-		if(ub > 0) upperBound = ub;
+		if(ub > 0) upperBound = ub + 20;
 		logger.info("Starting UppAal translation of " + m.getFQMethodName());
-		Translator translator = new Translator(project, outDir);
+		Translator translator = new Translator(uppaalConfig, project);
 		translator.translateProgram(m);
 		translator.writeOutput();
-		logger.info("model and query can be found in "+outDir);
+		logger.info("model and query can be found in "+uppaalConfig.outDir);
 		logger.info("model file: "+translator.getModelFile());
-		if(UppAalConfig.hasVerifier(project.getConfig())) {
+		if(uppaalConfig.hasVerifier()) {
 			logger.info("Starting verification");
 			WcetSearch search = new WcetSearch(project.getConfig(),translator.getModelFile());
 			long start = System.nanoTime();

@@ -4,6 +4,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
@@ -19,6 +20,7 @@ import com.jopdesign.wcet.frontend.ControlFlowGraph.EdgeKind;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.InvokeNode;
 import com.jopdesign.wcet.graphutils.AdvancedDOTExporter;
 import com.jopdesign.wcet.graphutils.FlowGraph;
+import com.jopdesign.wcet.graphutils.Pair;
 import com.jopdesign.wcet.graphutils.UnmodifiableDirectedGraphAdapter;
 import com.jopdesign.wcet.graphutils.AdvancedDOTExporter.DOTNodeLabeller;
 
@@ -86,6 +88,17 @@ public class SuperGraph extends UnmodifiableDirectedGraphAdapter<CFGNode, CFGEdg
 	}
 	public Map<SuperInvokeEdge,SuperReturnEdge> getSuperEdgePairs() {
 		return superEdgePairs;
+	}
+	public List<Pair<SuperInvokeEdge,SuperReturnEdge>> getCallSites(ControlFlowGraph cfg) {
+		Vector<Pair<SuperInvokeEdge,SuperReturnEdge>> callSites =
+			new Vector<Pair<SuperInvokeEdge,SuperReturnEdge>>();
+		for(SuperEdge e : superGraph.incomingEdgesOf(cfg)) {
+			if(e instanceof SuperInvokeEdge) {
+				SuperInvokeEdge ei = (SuperInvokeEdge) e;
+				callSites.add(new Pair<SuperInvokeEdge,SuperReturnEdge>(ei,superEdgePairs.get(ei)));
+			}
+		}
+		return callSites;
 	}
 
 	private void createSuperGraph() {

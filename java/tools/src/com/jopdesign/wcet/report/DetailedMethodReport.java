@@ -58,7 +58,6 @@ public class DetailedMethodReport {
 		return graphLink;
 	}
 	public String getKey() { return key; }
-
 	private File generateGraph(MethodInfo method, String key, Map<CFGNode, ?> nodeAnnotations, Map<CFGEdge, ?> edgeAnnotations) {
 		File cgdot = config.getOutFile(method,key+".dot");
 		File cgimg = config.getOutFile(method,key+".png");

@@ -227,7 +227,6 @@ public class GraphTopologyTest {
 		System.out.println("Dominators: "+topOrder.getDominators().getIDoms());
 		System.out.println("Dominator Tree: "+topOrder.getDominators().getDominatorTree());
 		exportDOT("g1-domtree",topOrder.getDominators().getDominatorTree());
-		
 		DominanceFrontiers<String, DefaultEdge> domFrontiers = 
 			new DominanceFrontiers<String, DefaultEdge>(g,g.getEntry(), g.getExit());
 		Map<String, Set<String>> df = domFrontiers.getDominanceFrontiers();
@@ -245,8 +244,10 @@ public class GraphTopologyTest {
 			new LoopColoring<String, DefaultEdge>(g,topOrder,"10");
 		System.out.println("Loop coloring: "+loopColoring.getLoopColors());
 		System.out.println("Iteration branch edges: "+loopColoring.getIterationBranchEdges());
-		exportDOT("g1-lnf",loopColoring.getLoopNestForest());		
-		System.out.println("Loop nest tree: "+loopColoring.getLoopNestForest());
+		exportDOT("g1-lnf",loopColoring.getLoopNestDAG());		
+		System.out.println("Loop nest tree: "+loopColoring.getLoopNestDAG());
+		exportDOT("g1-flow-order-graph",loopColoring.getFlowTraversalGraph());				
+		System.out.println("Flow order: "+loopColoring.getFlowTraversal());
 		
 		exportDOT("g1-analysis", g,new AnalysisNodeLabel(g,topOrder,loopColoring), 
 								   new AnalysisEdgeLabeller(g,loopColoring));

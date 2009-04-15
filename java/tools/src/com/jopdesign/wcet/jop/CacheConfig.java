@@ -36,7 +36,7 @@ public class CacheConfig {
 	 */
 	public enum CacheImplementation {
 		LRU_CACHE, FIFO_CACHE,
-		FIFO_VARBLOCK_CACHE,
+		LRU_VARBLOCK_CACHE, FIFO_VARBLOCK_CACHE,
 		NO_METHOD_CACHE, 
 	}
 	public static final EnumOption<CacheImplementation> CACHE_IMPL =
@@ -50,7 +50,7 @@ public class CacheConfig {
 	public static final IntegerOption CACHE_SIZE_WORDS =
 		new IntegerOption("cache-size-words",
 						  "size of the cache in words",
-						  256);
+						  1024);
 	
    /** Static cache approximations:
 	 * <ul>

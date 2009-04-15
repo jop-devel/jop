@@ -45,7 +45,7 @@ public class MeasureIH implements Runnable {
 
 		// measure overhead
 		ts = Native.rdMem(Const.IO_CNT);
-		sys.swInterrupt = 2;
+		sys.intNr = 2;
 		te = Native.rdMem(Const.IO_CNT);
 		to = te-ts;
 		ts = Native.rdMem(Const.IO_CNT);
@@ -56,7 +56,7 @@ public class MeasureIH implements Runnable {
 //			while (!Timer.timeout(t));
 			ts = Native.rdMem(Const.IO_CNT);
 			// trigger a SW interrupt via the system HW object
-			sys.swInterrupt = 1;
+			sys.intNr = 1;
 		}
 	}
 

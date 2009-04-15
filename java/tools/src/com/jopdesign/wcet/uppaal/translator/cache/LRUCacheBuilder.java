@@ -1,9 +1,14 @@
-package com.jopdesign.wcet.uppaal.translator;
+package com.jopdesign.wcet.uppaal.translator.cache;
 
+import java.util.Vector;
+
+import com.jopdesign.wcet.ProcessorModel;
+import com.jopdesign.wcet.frontend.ControlFlowGraph;
 import com.jopdesign.wcet.jop.BlockCache;
 import com.jopdesign.wcet.uppaal.model.NTASystem;
+import com.jopdesign.wcet.uppaal.translator.SystemBuilder;
 
-public class LRUCacheBuilder extends CacheSimBuilder {
+public class LRUCacheBuilder extends DynamicCacheBuilder {
 	private BlockCache cache;
 	public LRUCacheBuilder(BlockCache blockCache) {
 		this.cache = blockCache;
@@ -14,7 +19,6 @@ public class LRUCacheBuilder extends CacheSimBuilder {
 		appendDeclsN(system,NUM_METHODS);
 	}
 	public void appendDeclsN(NTASystem system,String NUM_METHODS) {
-		super.appendDeclarations(system,NUM_METHODS);
 		system.appendDeclaration(String.format("int[0,%s] cache[%d] = %s;",
 				NUM_METHODS,cache.getNumBlocks(),initCache(NUM_METHODS,cache.getNumBlocks())));
 		system.appendDeclaration(String.format("bool lastHit;"));
@@ -39,12 +43,13 @@ public class LRUCacheBuilder extends CacheSimBuilder {
 				"}\n");
 	}
 	private String initCache(String NUM_METHODS,int numBlocks) {
-		StringBuffer sb = new StringBuffer("{ 0");
-		for(int i = 1; i < numBlocks; i++) {
-			sb.append(", ");
-			sb.append(NUM_METHODS);
-		}
-		sb.append(" }");
-		return sb.toString();
+		Vector<String>initElems = new Vector<String>();
+		initElems.add(""+0);
+		for(int i = 1; i < numBlocks; i++) initElems.add(NUM_METHODS);
+		return SystemBuilder.constArray(initElems).toString();
+	}
+	@Override
+	public long getWaitTime(ProcessorModel proc, ControlFlowGraph cfg,boolean isInvoke) {
+		return proc.getMethodCacheLoadTime(cfg.getNumberOfWords(), isInvoke);
 	}
 }

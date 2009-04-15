@@ -62,7 +62,7 @@ public class Main {
 
 	// SW version
 	public static final int VER_MAJ = 2;
-	public static final int VER_MIN = 31;
+	public static final int VER_MIN = 36;
 
 	private static final int LOG_PRIO = 1;
 	private static final int LOG_PERIOD = 1000000;
@@ -96,6 +96,7 @@ public class Main {
 	static State state;
 	static Logic logic;
 	static Logging logger;
+	static SingleFileFS fs;
 
 
 	static boolean reset;
@@ -138,7 +139,13 @@ public class Main {
 		net = new Net(ejip);
 
 		// we need the BgTftp befor Flash.init()!
-		tftpHandler = new BgTftp(ejip);
+		fs = new SingleFileFS();
+		if (fs.isAvailable()) {
+			tftpHandler = new NandTftp(ejip, fs);
+		} else {
+			System.out.println("No NAND Flash");
+			tftpHandler = new BgTftp(ejip);			
+		}
 /* comment Flash for JopSim debug
 */
 		Flash.init();
@@ -153,9 +160,7 @@ public class Main {
 		
 		// remove default TFTP handler
 		net.getUdp().removeHandler(BgTftp.PORT);
-		// BUT this handler can only handle 64KB sector
-		// writes. A new FPGA configuration has to be
-		// split to more writes!!!
+		// Add special BG TFTP handler
 		net.getUdp().addHandler(BgTftp.PORT, tftpHandler);
 		ser = new Serial(Const.IO_UART_BG_MODEM_BASE);
 		
@@ -211,9 +216,9 @@ public class Main {
 			// use second SLIP subnet for 'COs test'
 			ipLink = new Slip(ejip, ser, Ejip.makeIp(192, 168, 2, 2));
 		} else {
-//			ipLink = new Ppp(ejip, ser, pppThre);
-			System.out.println("SLIP is default!!");
-			ipLink = new Slip(ejip, ser, Ejip.makeIp(192, 168, 1, 2));
+			ipLink = new Ppp(ejip, ser, pppThre);
+//			System.out.println("SLIP is default!!");
+//			ipLink = new Slip(ejip, ser, Ejip.makeIp(192, 168, 1, 2));
 
 		}
 

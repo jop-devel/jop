@@ -19,17 +19,20 @@
 */
 package com.jopdesign.wcet.uppaal.translator;
 
-import java.util.Hashtable;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.Vector;
 import java.util.Map.Entry;
 
 import org.w3c.dom.Document;
 
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.wcet.Project;
-import com.jopdesign.wcet.config.Config;
+import com.jopdesign.wcet.graphutils.MiscUtils;
+import com.jopdesign.wcet.graphutils.MiscUtils.Function1;
 import com.jopdesign.wcet.jop.BlockCache;
-import com.jopdesign.wcet.jop.CacheConfig;
 import com.jopdesign.wcet.jop.MethodCache;
 import com.jopdesign.wcet.jop.VarBlockCache;
 import com.jopdesign.wcet.jop.CacheConfig.CacheImplementation;
@@ -39,16 +42,33 @@ import com.jopdesign.wcet.uppaal.model.DuplicateKeyException;
 import com.jopdesign.wcet.uppaal.model.NTASystem;
 import com.jopdesign.wcet.uppaal.model.Template;
 import com.jopdesign.wcet.uppaal.model.XmlSerializationException;
+import com.jopdesign.wcet.uppaal.translator.cache.CacheSimBuilder;
+import com.jopdesign.wcet.uppaal.translator.cache.FIFOCacheBuilder;
+import com.jopdesign.wcet.uppaal.translator.cache.LRUCacheBuilder;
+import com.jopdesign.wcet.uppaal.translator.cache.LRUVarBlockCacheBuilder;
+import com.jopdesign.wcet.uppaal.translator.cache.StaticCacheBuilder;
+import com.jopdesign.wcet.uppaal.translator.cache.FIFOVarBlockCacheBuilder;
 
 /**
- * Builder for the system modeling the java program
+ * Builder for the system modeling the java program.
+ * Support the following features / modeling elements
+ * <ul> <li/> global, elapsed time
+ *      <li/> per-process clocks
+ *      <li/> method synchronization channels
+ *      <li/> call stacks
+ * </ul>
  */
 public class SystemBuilder {
 	
 	public static final String CLOCK = "t";
+	public static final String BB_CLOCK = "t_local";
+	public static String bbClock(int process) {
+		return BB_CLOCK+"_"+process;
+	}
+
 	public static final String INVOKE_CHAN = "invoke";
 	public static final String RETURN_CHAN = "ret";
-	public static       String methodChannel(int i) { return "invoke_"+i; }
+	
 	public static final String MAX_CALL_STACK_DEPTH = "max_csd";
 	public static final String NUM_METHODS = "num_methods";
 	public static final String ACTIVE_METHOD = "active_method";
@@ -57,109 +77,67 @@ public class SystemBuilder {
 	private NTASystem system;
 	public NTASystem getNTASystem() { return system; }
 	
-	private Hashtable<Template,Integer> templates = new Hashtable<Template,Integer>();
-	private Hashtable<MethodInfo,Integer> methodId = new Hashtable<MethodInfo, Integer>();
+	private HashMap<Template,Integer> templates = new HashMap<Template,Integer>();
+	private HashMap<Template,Integer> priorities = new HashMap<Template,Integer>();
+	private HashMap<MethodInfo,Integer> methodId = new HashMap<MethodInfo, Integer>();
 	private CacheSimBuilder cacheSim;
 	private Project project;
+	private UppAalConfig config;
+	private int numMethods;
+	private int maxCallStackDepth;
+	private Vector<String> progressMeasures = new Vector<String>();
+
 	/**
 	 * Create a new top-level UPPAAL System builder
-	 * @param name               the name of the system
+	 * @param config             configuration
+	 * @param project            uplink to Project
 	 * @param maxCallStackDepth  the maximal call stack depth
 	 * @param numMethods         the number of methods of the program
 	 */
-	public SystemBuilder(Project p, int maxCallStackDepth, List<MethodInfo> methods) {
+	public SystemBuilder(UppAalConfig config,
+			             Project p,
+			             int maxCallStackDepth, List<MethodInfo> methods) {
+		this.config = config;
 		this.project = p;
 		this.system = new NTASystem(p.getProjectName());
-		int numMethods = methods.size();
+		this.numMethods = methods.size();
 		for(int i = 0; i < numMethods; i++) {
 			methodId.put(methods.get(i), i);
 		}
-		Config config = project.getConfig();
-		boolean assumeEmptyCache = config.getOption(UppAalConfig.UPPAAL_EMPTY_INITIAL_CACHE);
+		this.cacheSim = getCacheSimulation();
+		this.maxCallStackDepth = maxCallStackDepth;
+		system.appendDeclaration("clock " + CLOCK +";");
+		system.appendDeclaration("const int " + MAX_CALL_STACK_DEPTH + " = "+maxCallStackDepth+";"); 
+		system.appendDeclaration("const int " + NUM_METHODS + " = "+numMethods+";"); 
+		cacheSim.appendDeclarations(system,NUM_METHODS);
+	}
+	private CacheSimBuilder getCacheSimulation() {
 		MethodCache cache = project.getProcessorModel().getMethodCache();
-		DynCacheApproximation cacheSim = Config.instance().getOption(CacheConfig.DYNAMIC_CACHE_APPROX);
+		DynCacheApproximation cacheApprox = config.getCacheApproximation();
+		CacheSimBuilder sim;
 		if(cache.getName() == CacheImplementation.NO_METHOD_CACHE) {
-			this.cacheSim = new StaticCacheBuilder(false);
-		} else if(cacheSim == DynCacheApproximation.ALWAYS_MISS) {
-			this.cacheSim = new StaticCacheBuilder(true);
+			 sim = new StaticCacheBuilder(false);
+		} else if(cacheApprox == DynCacheApproximation.ALWAYS_MISS) {
+			sim = new StaticCacheBuilder(true);
 		} else {
 			switch(cache.getName()) {
 			case LRU_CACHE: 
-				this.cacheSim = new LRUCacheBuilder((BlockCache)cache);
+				sim = new LRUCacheBuilder((BlockCache)cache);
 				break;
 			case FIFO_CACHE:
-				this.cacheSim = new FIFOCacheBuilder((BlockCache)cache, assumeEmptyCache);
+				sim = new FIFOCacheBuilder((BlockCache)cache, config.emptyInitialCache);
 				break;
+			case LRU_VARBLOCK_CACHE:
+				sim = new LRUVarBlockCacheBuilder(project, (VarBlockCache)cache, this.numMethods);
+				break;				
 			case FIFO_VARBLOCK_CACHE: 
-				this.cacheSim = new VarBlockCacheBuilder(p,(VarBlockCache)cache, numMethods, assumeEmptyCache);
+				sim = new FIFOVarBlockCacheBuilder(project,        (VarBlockCache)cache, 
+						                       this.numMethods, config.emptyInitialCache);
 				break;
 			default: throw new AssertionError("Unsupport cache implementation: "+cache.getName());
 			}
 		}
-		initialize(maxCallStackDepth, methods);
-	}
-	/* -- Using global-local clock
-	 * com.jopdesign.build.MethodInfo@cdbc83"wcet.StartLift.measure()V"
-     * wcet: 9797
-     * complex: 98
-     * searchT: 4.58302
-     * solverTmax: 0.265957
-     * -- Using per method-local clock
-     * com.jopdesign.build.MethodInfo@cdbc83"wcet.StartLift.measure()V"
-     * wcet: 9797
-     * complex: 98
-     * searchT: 7.969566
-     * solverTmax: 0.491255
-     */
-	private void initialize(int maxCallStackDepth, List<MethodInfo> methodInfos) {
-		system.appendDeclaration("clock " + CLOCK +";");
-		system.appendDeclaration(
-				String.format("clock %s; ", TemplateBuilder.LOCAL_CLOCK));
-
-		system.appendDeclaration("const int " + MAX_CALL_STACK_DEPTH + " = "+maxCallStackDepth+";"); 
-		system.appendDeclaration("const int " + NUM_METHODS + " = "+methodInfos.size()+";"); 
-		if(Config.instance().getOption(UppAalConfig.UPPAAL_ONE_CHANNEL_PER_METHOD)) {
-			for(MethodInfo i : methodInfos) {
-				int id = project.getFlowGraph(i).getId();
-				system.appendDeclaration("chan "+methodChannel(id)+";");				
-			}
-		} else {
-			system.appendDeclaration("chan "+INVOKE_CHAN+";");
-			system.appendDeclaration("chan "+RETURN_CHAN+";");
-			system.appendDeclaration("int[0,"+ NUM_METHODS+ "] "+ ACTIVE_METHOD  +";");
-			system.appendDeclaration("int[0,"+ MAX_CALL_STACK_DEPTH +"] "+CURRENT_CALL_STACK_DEPTH+";");
-		}
-		cacheSim.appendDeclarations(system,NUM_METHODS);
-	}
-	
-	public void buildSystem() {
-		StringBuilder sys = new StringBuilder();
-		/* Create processes */
-		for(Entry<Template,Integer> tmpl : templates.entrySet()) {
-			sys.append(String.format("M%s = %s() ;\n", 
-					   tmpl.getValue(), tmpl.getKey().getId()));
-		}
-		/* Instantiate processes */
-		sys.append("system ");
-		
-		/* Please change the first/else idiom by one similar to ruby's join  */
-		boolean first = true;
-		for(Entry<Template,Integer> tmpl : templates.entrySet()) {
-			if(first) first = false;
-			else      sys.append(", ");
-			sys.append("M"+tmpl.getValue());
-		}		
-		sys.append(";\n");
-		this.system.setSystem(sys.toString());
-	}
-
-	public void addTemplate(int procid, Template templ) throws DuplicateKeyException {
-		this.templates.put(templ,procid);
-		this.system.addTemplate(templ);
-	}
-
-	public Document toXML() throws XmlSerializationException {
-		return this.system.toXML();
+		return sim;
 	}
 	public Project getProject() {
 		return project;
@@ -173,4 +151,143 @@ public class SystemBuilder {
 	public String accessCache(MethodInfo m) {
 		return "access_cache("+getMethodId(m)+")";
 	}
+	public String addProcessClock(int proc) {
+		String cl = bbClock(proc);
+		system.appendDeclaration(String.format("clock %s; ", cl));
+		return cl;
+	}
+	/* Method channel support
+	 * ----------------------
+	 */
+	public void addMethodSynchChannels(List<MethodInfo> mis, Map<MethodInfo,Integer> mids) {
+		for(MethodInfo mi : mis) {
+			system.appendDeclaration("chan "+methodChannel(mids.get(mi))+";");				
+		}		
+	}
+	public static String methodChannel(int i) { 
+		return "invoke_"+i; 
+	}
+	/* call stack support 
+	 * -----------------  
+	 */
+	public void addCallStack(MethodInfo rootMethod, int numCallSites) {
+		int rootId = this.getMethodId(rootMethod);
+		Vector<String> initArray = new Vector<String>();
+		initArray.add(""+rootId);
+		for(int i = 1; i < maxCallStackDepth; i++) { initArray.add(""+rootId); }
+		system.appendDeclaration(String.format("int[0,%d] callStack[%s] = %s;",
+				numCallSites, MAX_CALL_STACK_DEPTH, constArray(initArray).toString()));
+		system.appendDeclaration(
+				"void pushCallStack(int id) {\n" +
+				"  int i;\n" +
+				"  for(i = "+MAX_CALL_STACK_DEPTH+"-1;i > 0; --i) {\n"+
+			    "    callStack[i] = callStack[i-1];\n"+
+				"  }\n"+
+				" callStack[0] = id;\n" +
+				"}");
+		system.appendDeclaration(
+				"bool matchCallStack(int id) {\n" +
+				"  return (callStack[0] == id);\n" +
+				"}\n");
+		system.appendDeclaration(
+				"void popCallStack() {\n" +
+				"  int i;\n" +
+				"  for(i = 0; i < "+MAX_CALL_STACK_DEPTH+"-1;i++) {\n"+
+			    "    callStack[i] = callStack[i+1];\n"+
+				"  }\n"+
+				"}");
+		
+	}
+	public String pushCallStack(String id) {
+		return String.format("pushCallStack(%s)",id);
+	}
+	public String matchCallStack(String id) {
+		return String.format("callStack[0] == %s",id);		
+	}
+	public String popCallStack() {
+		return "popCallStack()";
+	}
+	/** Build the final system */
+	public void buildSystem() {
+		StringBuilder sys = new StringBuilder();
+		/* Create processes */
+		for(Entry<Template,Integer> tmpl : templates.entrySet()) {
+			sys.append(String.format("M%s = %s() ;\n", 
+					   tmpl.getValue(), tmpl.getKey().getId()));
+		}
+		/* Instantiate processes */
+		sys.append("system ");
+		/* bucket sort templates by priority */
+		TreeMap<Integer, Vector<Template>> templatesByPrio = 
+			MiscUtils.partialSort(templates.keySet(), new Function1<Template,Integer>() {
+				public Integer apply(Template t) {
+					return priorities.get(t);
+				}
+			}			
+		);
+		/* create system declaration strings */
+		Vector<String> systemEntry = new Vector<String>();
+		for(Vector<Template> entry : templatesByPrio.values()) {
+			Vector<String> proclist = new Vector<String>();
+			for(Template t : entry) {
+				proclist.add("M"+templates.get(t));
+			}
+			systemEntry.add(MiscUtils.joinStrings(proclist, ", "));
+		}
+		sys.append(MiscUtils.joinStrings(systemEntry, " < "));
+		sys.append(";\n");
+		if(this.progressMeasures.size() > 0) {
+			sys.append("progress { ");
+			for(String pm : progressMeasures) {
+				sys.append("  ");sys.append(pm);sys.append(";\n");				
+			}
+			sys.append("}");
+		}
+		this.system.setSystem(sys.toString());
+	}
+	
+	/** add a template with the given id and priority */
+	public void addTemplate(int procid, int priority, Template templ) throws DuplicateKeyException {
+		this.templates.put(templ,procid);
+		this.priorities.put(templ,priority);
+		this.system.addTemplate(templ);
+	}
+
+	public Document toXML() throws XmlSerializationException {
+		return this.system.toXML();
+	}
+	public static StringBuilder constArray(Vector<?> elems) {
+		StringBuilder sb = new StringBuilder("{ ");
+		boolean first = true;
+		for(Object o : elems) {
+			if(first) first = false;
+			else sb.append(", ");
+			sb.append(o);
+		}
+		sb.append(" }");
+		return sb;
+	}
+	public UppAalConfig getConfig() {
+		return this.config;
+	}
+	public void addProgressMeasure(String progressMeasure) {
+		this.progressMeasures .add(progressMeasure);
+	}
+	public void declareVariable(String ty, String var, String init) {
+		this.system.appendDeclaration(ty+" "+var+" := "+init+";");		
+	}
 }
+/* -- Using global-local clock
+ * com.jopdesign.build.MethodInfo@cdbc83"wcet.StartLift.measure()V"
+ * wcet: 9797
+ * complex: 98
+ * searchT: 4.58302
+ * solverTmax: 0.265957
+ * -- Using per method-local clock
+ * com.jopdesign.build.MethodInfo@cdbc83"wcet.StartLift.measure()V"
+ * wcet: 9797
+ * complex: 98
+ * searchT: 7.969566
+ * solverTmax: 0.491255
+ */
+

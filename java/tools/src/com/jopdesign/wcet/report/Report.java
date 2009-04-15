@@ -19,8 +19,6 @@
 */
 package com.jopdesign.wcet.report;
 
-import static com.jopdesign.wcet.config.Config.sanitizeFileName;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
@@ -49,6 +47,7 @@ import com.jopdesign.wcet.config.Config;
 import com.jopdesign.wcet.frontend.ControlFlowGraph;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGEdge;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGNode;
+import com.jopdesign.wcet.graphutils.MiscUtils;
 
 /**
  * Analysis reports, using HTML framesets.
@@ -192,14 +191,14 @@ public class Report {
 	 */
 	public void generateInfoPages() throws IOException {
 		this.addStat("#classes", project.getCallGraph().getClassInfos().size());
-		this.addStat("#methods", project.getCallGraph().getImplementedMethods().size());
+		this.addStat("#methods", project.getCallGraph().getImplementedMethods(project.getTargetMethod()).size());
 		this.addStat("max call stack ", project.getCallGraph().getMaximalCallStack());
 		this.addStat("largest method size (in bytes)", project.getCallGraph().getLargestMethod().getNumberOfBytes());
 		this.addStat("largest method size (in words)", project.getCallGraph().getLargestMethod().getNumberOfWords());
 		this.addStat("total size of task (in bytes)", project.getCallGraph().getTotalSizeInBytes());
 		generateInputOverview();
 		this.addPage("details",null);
-		for(MethodInfo m : project.getCallGraph().getImplementedMethods()) {
+		for(MethodInfo m : project.getCallGraph().getImplementedMethods(project.getTargetMethod())) {
 			for(LineNumber ln : m.getMethod().getLineNumberTable().getLineNumberTable()) {
 				getClassReport(m.getCli()).addLinePropertyIfNull(ln.getLineNumber(),"color","lightgreen");
 			}
@@ -250,7 +249,7 @@ public class Report {
 		ctx.put("callgraph", "callgraph.png");
 
 		Vector<MethodReport> mrv = new Vector<MethodReport>();
-		for(MethodInfo m : project.getCallGraph().getImplementedMethods()) { 
+		for(MethodInfo m : project.getCallGraph().getImplementedMethods(project.getTargetMethod())) { 
 			mrv.add(new MethodReport(project,m,pageOf(m))); 
 		}
 		ctx.put("methods", mrv);
@@ -268,10 +267,10 @@ public class Report {
 		this.dotJobs .put(cgdot,cgimg);
 	}
 	private static String pageOf(ClassInfo ci) {
-		return sanitizeFileName(ci.clazz.getClassName())+".html";
+		return MiscUtils.sanitizeFileName(ci.clazz.getClassName())+".html";
 	}
 	private static String pageOf(MethodInfo i) { 
-		return sanitizeFileName(i.getFQMethodName())+".html";
+		return MiscUtils.sanitizeFileName(i.getFQMethodName())+".html";
 	}
 
 	protected void addDetailedReport(MethodInfo m, DetailedMethodReport e, boolean prepend) {
@@ -293,6 +292,7 @@ public class Report {
 		String page = pageOf(method);
 		Hashtable<String,Object> ctx = new Hashtable<String,Object>();
 		ctx.put("m", method);
+		ctx.put("dfaresults",project.getFlowGraph(method).dumpDFA());
 		ctx.put("reports", this.detailedReports.get(method));
 		for(DetailedMethodReport m: this.detailedReports.get(method)) {
 			m.getGraph();
