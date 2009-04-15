@@ -71,7 +71,8 @@ public abstract class Dbg {
 	public static void wr(String s) {
 
 		int i = s.length();
-		for (int j=0; j<i; ++j) {
+		// dummy annotation
+		for (int j=0; j<i; ++j) { // @WCA loop<=80
 			wr(s.charAt(j));
 		}
 	}
@@ -79,7 +80,8 @@ public abstract class Dbg {
 	public static void wr(StringBuffer s) {
 
 		int i = s.length();
-		for (int j=0; j<i; ++j) {
+		// dummy annotation
+		for (int j=0; j<i; ++j) {  // @WCA loop<=80
 			wr(s.charAt(j));
 		}
 	}
@@ -99,13 +101,13 @@ public abstract class Dbg {
 			//val = -val;
 			sign = -1;
 		}
-		for (i=0; i<MAX_TMP-1; ++i) {
+		for (i=0; i<MAX_TMP-1; ++i) { // @WCA loop=31
 			//tmp[i] = (val%10)+'0';
 			tmp[i] = ((val%10)*sign)+'0';
 			val /= 10;
 			if (val==0) break;
 		}
-		for (val=i; val>=0; --val) {
+		for (val=i; val>=0; --val) { // @WCA loop<=10
 			wr((char) tmp[val]);
 		}
 		wr(' ');
@@ -115,7 +117,7 @@ public abstract class Dbg {
 
 		int i, j;
 		if (val<16 && val>=0) wr('0');
-		for (i=0; i<MAX_TMP-1; ++i) {
+		for (i=0; i<MAX_TMP-1; ++i) { // @WCA loop=31
 			j = val & 0x0f;
 			if (j<10) {
 				j += '0';
@@ -126,7 +128,7 @@ public abstract class Dbg {
 			val >>>= 4;
 			if (val==0) break;
 		}
-		for (val=i; val>=0; --val) {
+		for (val=i; val>=0; --val) { // @WCA loop<=8
 			wr(tmp[val]);
 		}
 		wr(' ');
