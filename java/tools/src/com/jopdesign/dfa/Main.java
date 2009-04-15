@@ -44,25 +44,29 @@ public class Main {
 		}
 
 		System.out.println("Starting analysis...");
-		long startTime = System.currentTimeMillis();
+		long startRtTime = System.currentTimeMillis();
 		
 		// get receivers for this program
 		ReceiverTypes rt = new ReceiverTypes();
 		program.setReceivers(program.runAnalysis(rt));
-		rt.printResult(program);
 
 		long rtTime = System.currentTimeMillis();
 		
-		System.out.println("Time for ReceiverTypes: "+(rtTime - startTime));
+		rt.printResult(program);
 
+		System.out.println("Time for ReceiverTypes: "+(rtTime - startRtTime));
+
+		long startLbTime = System.currentTimeMillis();
+		
 		// run loop bounds analysis
 		LoopBounds lb = new LoopBounds();
 		program.runAnalysis(lb);
-		lb.printResult(program);				
 
 		long lbTime = System.currentTimeMillis();
 		
-		System.out.println("Time for LoopBounds: "+(lbTime - rtTime));
+		lb.printResult(program);				
+
+		System.out.println("Time for LoopBounds: "+(lbTime - startLbTime));
 
 	}
 

@@ -164,6 +164,10 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 		}
 		
 		public boolean equals(Object o) {
+			if (this == o) {
+				return true;
+			}
+			
 			ValueMapping m = (ValueMapping)o;
 
 			boolean inceq = false;
@@ -174,11 +178,42 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 			} else {
 				inceq = increment.equals(m.increment);
 			}
-			return assigned.equals(m.assigned)
+			
+			boolean retval = inceq 
+				&& assigned.equals(m.assigned)
 				&& constrained.equals(m.constrained)
-				&& inceq
 				//&& defscope == m.defscope
 				&& softinc == m.softinc;
+			
+			//System.out.println("equ: "+this+" vs "+m+" -> "+retval+ " / "+(this == m));
+						
+			return retval;
+		}
+
+		public boolean compare(Object o) {
+			if (this == o) {
+				return true;
+			}
+			
+			ValueMapping m = (ValueMapping)o;
+
+			boolean inceq = false;
+			if (increment == null) {
+				inceq = true;
+			} else if (m.increment == null) {
+				inceq = false;
+			} else {
+				inceq = increment.compare(m.increment);
+			}
+			boolean retval = inceq
+				&& assigned.compare(m.assigned)
+				&& constrained.compare(m.constrained)
+				//&& defscope == m.defscope
+				&& softinc == m.softinc;
+
+			//System.out.println("cmp: "+this+" vs "+m+" -> "+retval+ " / "+(this == m));
+			
+			return retval;
 		}
 
 		public int hashCode() {
@@ -337,7 +372,7 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 
 			for (Iterator<Location> i = a.keySet().iterator(); i.hasNext(); ) {
 				Location l = i.next();
-				if (!b.containsKey(l) || !a.get(l).equals(b.get(l))) {
+				if (!b.containsKey(l) || !a.get(l).compare(b.get(l))) {
 					return false;
 				}
 			}

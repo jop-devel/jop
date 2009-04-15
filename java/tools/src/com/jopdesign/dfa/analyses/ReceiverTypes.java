@@ -846,18 +846,17 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 		case Constants.FNEG:
 		case Constants.LNEG:
 		case Constants.DNEG:
-			result = input;
-			break;
-
 		case Constants.LADD:
 		case Constants.LAND:
 		case Constants.LOR:
 		case Constants.LXOR:
-			result = new ContextMap<TypeMapping, TypeMapping>(input);
-			doInvokeStatic("com.jopdesign.sys.JVM.f_"+stmt.getInstruction().getName()+"(IIII)J", stmt, context, input, interpreter, state, result);
+		case Constants.LSUB:
+		case Constants.LSHL:
+		case Constants.LSHR:
+		case Constants.LUSHR:
+			result = input;
 			break;
 
-		case Constants.LSUB:
 		case Constants.LMUL:
 		case Constants.LDIV:
 		case Constants.LREM:
@@ -865,13 +864,6 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 			doInvokeStatic("com.jopdesign.sys.JVM.f_"+stmt.getInstruction().getName()+"(JJ)J", stmt, context, input, interpreter, state, result);
 			break;			
 			
-		case Constants.LSHL:
-		case Constants.LSHR:
-		case Constants.LUSHR:
-			result = new ContextMap<TypeMapping, TypeMapping>(input);
-			doInvokeStatic("com.jopdesign.sys.JVM.f_"+stmt.getInstruction().getName()+"(III)J", stmt, context, input, interpreter, state, result);
-			break;			
-
 		case Constants.I2B:
 		case Constants.I2C:
 		case Constants.I2S:

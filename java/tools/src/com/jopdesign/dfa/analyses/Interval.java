@@ -235,6 +235,13 @@ public class Interval {
 		return true;
 	}
 	
+	public boolean compare(Object obj) {
+		Interval i = (Interval) obj;
+		if (lb < i.lb || ub > i.ub)
+			return false;
+		return true;
+	}
+
 	public String toString() {
 		return "("+(lv?lb:"BOT")+","+(uv?ub:"TOP")+")";
 	}
