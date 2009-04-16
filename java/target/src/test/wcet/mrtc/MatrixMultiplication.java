@@ -41,10 +41,10 @@ public class MatrixMultiplication
     private void initialize(int[][] matrix)
     {
         //@LoopBound(max=UPPER_LIMIT)
-    	for (int outer = 0; outer < UPPER_LIMIT; outer++)
+    	for (int outer = 0; outer < UPPER_LIMIT; outer++) //@WCA loop=20
     	{
             //@LoopBound(max=UPPER_LIMIT)
-    		for (int inner = 0; inner < UPPER_LIMIT; inner++)
+    		for (int inner = 0; inner < UPPER_LIMIT; inner++) //@WCA loop=20
     		{
     			matrix[outer][inner] = randomInteger();
     		}
@@ -54,10 +54,8 @@ public class MatrixMultiplication
     // Generates random integers between 0 and 8095
     private int randomInteger()
     {
-        // FIXME: Cannot do remainder because irem bytecode is implemented in software on JOP, causing problems for Clepsydra
-    	// seed = ((seed * 133) + 81) % 8095;
-    	seed = ((seed * 133) + 81) & 0x00001FFF;  // Simulate remainder by masking
-
+    	seed = ((seed * 133) + 81) % 8095;
+    	//seed = ((seed * 133) + 81) & 0x00001FFF;  // Simulate remainder by masking
     	return seed;
     }
 
@@ -65,15 +63,15 @@ public class MatrixMultiplication
     private void multiply(int[][] a, int[][] b, int[][] res)
     {
         //@LoopBound(max=UPPER_LIMIT)
-    	for (int i = 0; i < UPPER_LIMIT; i++)
+    	for (int i = 0; i < UPPER_LIMIT; i++) //@WCA loop=20
         {
             //@LoopBound(max=UPPER_LIMIT)
-    		for (int j = 0; j < UPPER_LIMIT; j++)
+    		for (int j = 0; j < UPPER_LIMIT; j++) //@WCA loop=20
     		{
     			res[i][j] = 0;
     			
                 //@LoopBound(max=UPPER_LIMIT)
-    			for (int k = 0; k < UPPER_LIMIT; k++)
+    			for (int k = 0; k < UPPER_LIMIT; k++) //@WCA loop=20
     			{
     				res[i][j] += a[i][k] * b[k][j];
     			}
@@ -94,11 +92,14 @@ public class MatrixMultiplication
     	
     	System.out.println();
     }
-    
+
+    public void multiplyTest() {
+        multiply(matrixA, matrixB, resultMatrix);    	
+    }
+
     public static void main(String[] args)
     {
         MatrixMultiplication m = new MatrixMultiplication();
-
-        m.multiply(m.matrixA, m.matrixB, m.resultMatrix);
+        m.multiplyTest();
     }
 }
