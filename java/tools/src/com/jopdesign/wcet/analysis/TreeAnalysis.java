@@ -68,22 +68,21 @@ public class TreeAnalysis {
 	}
 	private Project project;
 	private HashMap<MethodInfo, Long> methodWCET;
-
-	public TreeAnalysis(Project p) {
+	private Map<MethodInfo,Map<CFGEdge, RelativeProgress<CFGNode>>> relativeProgress
+		= new HashMap<MethodInfo, Map<CFGEdge,RelativeProgress<CFGNode>>>();
+	private HashMap<MethodInfo, Long> maxProgress = new HashMap<MethodInfo,Long>();
+	private boolean  filterLeafMethods;
+	
+	public TreeAnalysis(Project p, boolean filterLeafMethods) {
 		this.project = p;
+		this.filterLeafMethods = filterLeafMethods;
+		computeProgress(p.getTargetMethod());
 	}
-	public Map<MethodInfo,Map<CFGEdge, RelativeProgress<CFGNode>>> 
-		computeProgress(MethodInfo targetMethod) {
-		return computeProgress(targetMethod,false);
-	}
+	
 	/* FIXME: filter leaf methods is really a ugly hack,
 	 * but needs some work to play nice with uppaal eliminate-leaf-methods optimizations
 	 */
-	public Map<MethodInfo,Map<CFGEdge, RelativeProgress<CFGNode>>> 
-		computeProgress(MethodInfo targetMethod, boolean filterLeafMethod) {
-		HashMap<MethodInfo, Long> maxProgress = new HashMap<MethodInfo,Long>();
-		HashMap<MethodInfo,Map<CFGEdge,RelativeProgress<CFGNode>>> relativeProgress =
-			new HashMap<MethodInfo, Map<CFGEdge,RelativeProgress<CFGNode>>>();
+	public void computeProgress(MethodInfo targetMethod) {
 		List<MethodInfo> reachable = project.getCallGraph().getImplementedMethods(targetMethod);
 		Collections.reverse(reachable);
 		for(MethodInfo mi: reachable) {
@@ -98,7 +97,7 @@ public class TreeAnalysis {
 													  extractUBs(cfg.getLoopBounds()) ,localProgress);
 			long progress = pm.getMaxProgress().get(cfg.getExit());
 			/* FIXME: _UGLY_ hack */
-			if(filterLeafMethod && cfg.isLeafMethod()) {
+			if(filterLeafMethods && cfg.isLeafMethod()) {
 				maxProgress.put(mi, 0L);
 			} else {
 				maxProgress.put(mi, progress);
@@ -106,8 +105,14 @@ public class TreeAnalysis {
 			relativeProgress.put(mi, pm.computeRelativeProgress());
 		}
 		System.out.println("Progress Measure (max): "+maxProgress.get(targetMethod));
-		return relativeProgress;
 	}
+	public Map<MethodInfo, Map<CFGEdge, RelativeProgress<CFGNode>>> getRelativeProgressMap() {
+		return this.relativeProgress;
+	}
+	public Long getMaxProgress(MethodInfo mi) {
+		return this.maxProgress.get(mi);
+	}
+
 	private Map<CFGNode, Integer> extractUBs(Map<CFGNode, LoopBound> loopBounds) {
 		Map<CFGNode, Integer> ubMap = new HashMap<CFGNode, Integer>();
 		for(Entry<CFGNode, LoopBound> entry : loopBounds.entrySet()) { 
@@ -134,4 +139,5 @@ public class TreeAnalysis {
 		}
 		return methodWCET.get(targetMethod);
 	}
+
 }

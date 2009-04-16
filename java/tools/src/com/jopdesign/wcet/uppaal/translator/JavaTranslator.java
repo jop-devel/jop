@@ -86,9 +86,13 @@ public abstract class JavaTranslator {
 		/* Cache sim */
 		this.cacheSim = systemBuilder.getCacheSim();
 		/* Progress measure */
-		this.progressMap = new TreeAnalysis(project).computeProgress(project.getTargetMethod(),config.collapseLeaves);
+		TreeAnalysis ta = new TreeAnalysis(project, config.collapseLeaves);
+		this.progressMap = ta.getRelativeProgressMap(); 
 		if(config.useProgressMeasure) {
-			systemBuilder.declareVariable("int","pm","0");
+			// TODO: The model checker needs some extra progress space,
+			// if he explores loop bodies another time to often (*2 should be safe).
+			long maxProgress = ta.getMaxProgress(project.getTargetMethod());
+			systemBuilder.declareVariable("int[0,"+maxProgress*2+"]","pm","0");
 			systemBuilder.addProgressMeasure("pm");
 		}
 	}
