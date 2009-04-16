@@ -215,7 +215,7 @@ public class WcetAppInfo  {
 	}
 	// TODO: rather slow, for debugging purposes
 	private List<MethodInfo> dfaReceivers(InstructionHandle ih, List<MethodInfo> staticImpls) {
-		if(this.receiverAnalysis != null) {
+		if(this.receiverAnalysis != null && receiverAnalysis.containsKey(ih)) {
 			ContextMap<String, String> receivers = receiverAnalysis.get(ih);
 			List<MethodInfo> dynImpls = new Vector<MethodInfo>();
 			Set<String> dynReceivers = receivers.keySet();
