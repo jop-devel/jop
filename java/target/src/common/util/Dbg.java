@@ -99,13 +99,13 @@ public abstract class Dbg {
 			//val = -val;
 			sign = -1;
 		}
-		for (i=0; i<MAX_TMP-1; ++i) {
+		for (i=0; i<MAX_TMP-1; ++i) { //@WCA loop<=31
 			//tmp[i] = (val%10)+'0';
 			tmp[i] = ((val%10)*sign)+'0';
 			val /= 10;
 			if (val==0) break;
 		}
-		for (val=i; val>=0; --val) {
+		for (val=i; val>=0; --val) { //@WCA loop<=32
 			wr((char) tmp[val]);
 		}
 		wr(' ');
