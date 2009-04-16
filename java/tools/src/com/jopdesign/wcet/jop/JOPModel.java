@@ -88,7 +88,8 @@ public class JOPModel implements ProcessorModel {
 		if(cycles < 0) {
 			if(isUnboundedBytecode(i)){
 				Project.logger.error("[HACK] Unsupported (unbounded) bytecode: "+i.getName()+
-						             " approximating with 2000 cycles, but result is not safe anymore");
+						             " in " + context.getFQMethodName()+
+						             ".\nApproximating with 2000 cycles, but result is not safe anymore.");
 				return 2000;
 			} else if(isImplementedInJava(i)) {
 				return WCETInstruction.getNoImplDispatchCycles();

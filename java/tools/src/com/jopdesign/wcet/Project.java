@@ -378,6 +378,7 @@ public class Project {
 		}
 		return ccLocal + ccGlobal;
 	}
+
 	public ProcessorModel getProcessorModel() {
 		return this.processor;
 	}

@@ -118,10 +118,7 @@ public class WCETAnalysis {
 			project.load();
 			MethodInfo largestMethod = project.getProcessorModel().getMethodCache().checkCache();
 			int minWords = MiscUtils.bytesToWords(largestMethod.getCode().getCode().length);
-			System.out.println("Minimal Cache Size for target method: " 
-					         + minWords
-					         + " words because of "+largestMethod.getFQMethodName());
-			project.recordMetric("min-cache-size",largestMethod.getFQMethodName(),minWords);
+			reportMetric("min-cache-size",largestMethod.getFQMethodName(),minWords);
 		} catch (Exception e) {
 			exec.logException("Loading project", e);
 			return false;
@@ -130,9 +127,10 @@ public class WCETAnalysis {
 		{
 			long start,stop;
 			start = System.nanoTime();
-			TreeAnalysis treeAna = new TreeAnalysis(project);
+			TreeAnalysis treeAna = new TreeAnalysis(project, false);
 			long treeWCET = treeAna.computeWCET(project.getTargetMethod());
 			stop = System.nanoTime();
+			reportMetric("progress-measure",treeAna.getMaxProgress(project.getTargetMethod()));
 			reportSpecial("wcet.tree",WcetCost.totalCost(treeWCET),start,stop,0.0);
 		}
 
@@ -144,7 +142,9 @@ public class WCETAnalysis {
 //		}
 //		System.err.println("Total solver time (50): "+LpSolveWrapper.getSolverTime());
 //		System.exit(1);
-		// new ETMCExport(project).export(project.getOutFile("Spec_"+project.getProjectName()+".txt")); 
+
+		//new ETMCExport(project).export(project.getOutFile("Spec_"+project.getProjectName()+".txt")); 
+
 		/* Run */
 		boolean succeed = false;
 		try {
@@ -233,6 +233,12 @@ public class WCETAnalysis {
 			return false;
 		}
 		return succeed;
+	}
+	private void reportMetric(String metric, Object... args) {
+		project.recordMetric(metric, args);
+		System.out.print(metric+":");
+		for(Object o : args) System.out.print(" "+o);
+		System.out.println("");
 	}
 	private void report(WcetCost wcet, long start, long stop,double solverTime) {
 		String key = "wcet";

@@ -235,6 +235,7 @@ public class AdvancedDOTExporter<V,E> {
 	 */
 	public void exportDOT(Writer writer, DirectedGraph<V,E> graph) throws IOException {
 		exportDOTDiGraph(writer,graph);
+		writer.flush();
 	}
 	
 	/**
