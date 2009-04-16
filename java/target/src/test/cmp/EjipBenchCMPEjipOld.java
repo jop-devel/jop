@@ -21,11 +21,13 @@
 package cmp;
 
 
+import rtlib.SRSWQueue;
+
 import com.jopdesign.io.IOFactory;
 import com.jopdesign.io.SysDevice;
 import com.jopdesign.sys.Startup;
 
-import ejip.*;
+import ejip_old.*;
 
 /**
  * Test program for CMP version of ejip.
@@ -33,7 +35,7 @@ import ejip.*;
  * @author Martin Schoeberl
  * 
  */
-public class EjipBenchCMP {
+public class EjipBenchCMPEjipOld {
 	
 	// Shared Variables
 	static boolean finished;
@@ -43,9 +45,7 @@ public class EjipBenchCMP {
 	static final int VECTOR_LEN = 10;
 	static final int MAX_OUTSTANDING = 4;
 		
-	static Ejip ejip;
 	static Net net;
-	static Udp udp;
 	static LinkLayer ipLink;
 	
 	static volatile int sent;
@@ -53,22 +53,18 @@ public class EjipBenchCMP {
 	static int a, b;
 	static int sum;
 	
-	static PacketQueue macQueue, resultQueue;
+	static SRSWQueue<Packet> macQueue, resultQueue;
 
 /**
 *	Start network.
 */
 	public static void init() {
 
-		// maximum packet length: (Udp.DATA+1+2*VECTOR_LEN)*4 = 28*4 = 112;
-		ejip = new Ejip(Ejip.CNT, 112);
-		net = new Net(ejip);
-		udp = net.getUdp();
-		int ip = Ejip.makeIp(192, 168, 1, 2);
-		ipLink = new Loopback(ejip, ip);
+		net = Net.init();
+		ipLink = Loopback.init();
 		
-		macQueue = new PacketQueue(Ejip.CNT);
-		resultQueue = new PacketQueue(Ejip.CNT);
+		macQueue = new SRSWQueue<Packet>(Packet.MAX);
+		resultQueue = new SRSWQueue<Packet>(Packet.MAX);
 
 		UdpHandler mac;
 		mac = new UdpHandler() {
@@ -76,7 +72,7 @@ public class EjipBenchCMP {
 				macQueue.enq(p);
 			}
 		};
-		net.getUdp().addHandler(1234, mac);
+		Udp.addHandler(1234, mac);
 
 		UdpHandler result;
 		result = new UdpHandler() {
@@ -84,7 +80,7 @@ public class EjipBenchCMP {
 				resultQueue.enq(p);
 			}
 		};
-		net.getUdp().addHandler(5678, result);
+		Udp.addHandler(5678, result);
 
 		sent = 0;
 		a = 0x1234;
@@ -98,7 +94,7 @@ public class EjipBenchCMP {
 		if (p==null) return;
 		
 		if (p.len < ((Udp.DATA+1)<<2)) {
-			ejip.returnPacket(p);
+			p.setStatus(Packet.FREE);
 		} else {
 			int buf[] = p.buf;
 			int len = buf[Udp.DATA];
@@ -111,7 +107,7 @@ public class EjipBenchCMP {
 			
 			buf[Udp.DATA] = result;
 			p.len = (Udp.DATA+1)<<2;
-			udp.build(p, (127<<24)+(0<<16)+(0<<8)+1, 5678);
+			Udp.build(p, (127<<24)+(0<<16)+(0<<8)+1, 5678);
 		}
 		
 	}
@@ -125,7 +121,7 @@ public class EjipBenchCMP {
 			sum = p.buf[Udp.DATA];
 		}
 		++received;
-		ejip.returnPacket(p);
+		p.setStatus(Packet.FREE);
 		if (received>=CNT) {
 			Runner.stop();
 		}		
@@ -133,7 +129,7 @@ public class EjipBenchCMP {
 	private static void request() {
 
 		if (sent-received<MAX_OUTSTANDING) {
-			Packet p = ejip.getFreePacket(ipLink);
+			Packet p = Packet.getPacket(Packet.FREE, Packet.ALLOC, ipLink);
 			if (p == null) {				// got no free buffer!
 				return;
 			}
@@ -148,7 +144,7 @@ public class EjipBenchCMP {
 			}
 			
 			p.len = (Udp.DATA+1+VECTOR_LEN*2)<<2;
-			udp.build(p, (127<<24)+(0<<16)+(0<<8)+1, 1234);
+			Udp.build(p, (127<<24)+(0<<16)+(0<<8)+1, 1234);
 			sent++;
 		}
 //		System.out.print("request ");
@@ -175,12 +171,12 @@ public class EjipBenchCMP {
 		// our work list
 		Runnable[] work = new Runnable[] {
 			// first one (or more) can printout
-			new Runnable() { public void run() { ipLink.run(); } },
+			new Runnable() { public void run() { ipLink.loop(); } },
 			new Runnable() { public void run() { resultServer(); } },
 			new Runnable() { public void run() { request(); } },				
 			new Runnable() { public void run() { macServer(); } },
 			// more heavy tasks at the end
-			new Runnable() { public void run() { net.run(); } },
+			new Runnable() { public void run() { net.loop(); } },
 		};
 
 		Runner[] runner = Runner.distributeWorklist(work, nrCpu);

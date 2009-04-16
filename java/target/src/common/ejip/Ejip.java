@@ -24,8 +24,6 @@
  */
 package ejip;
 
-import rtlib.SRSWQueue;
-
 /**
  * The Embedded Java IP stack.
  * 
@@ -41,18 +39,23 @@ import rtlib.SRSWQueue;
  */
 public class Ejip {
 
+	/**
+	 * Enable the experimental TCP implementation
+	 */
+	public static final boolean TCP_ENABLED = false;
+
 	// default values
 	private final static int MAX = 1500;		// maximum Packet length in bytes
-	private final static int CNT = 8;			// size of packet pool
+	public final static int CNT = 8;			// size of packet pool
 
-	private SRSWQueue<Packet> freePool;
+	private PacketQueue freePool;
 	private int maxLength;
 	private int maxPackets;
 	
 	// TODO: annoying that arrays of generics don't work
 	// So we have only one link layer at the moment - we would need
 	// a list...
-	SRSWQueue<Packet> llRxQueue;
+	PacketQueue llRxQueue;
 	
 	/**
 	 * Initialize the Ejip stack.
@@ -60,7 +63,7 @@ public class Ejip {
 	 * @param pktSize maximum size of an IP packet.
 	 */
 	public Ejip(int nrPkt, int pktSize) {
-		freePool = new SRSWQueue<Packet>(nrPkt);
+		freePool = new PacketQueue(nrPkt);
 		maxLength = pktSize;
 		maxPackets = nrPkt;
 		for (int i=0; i<nrPkt; ++i) {
