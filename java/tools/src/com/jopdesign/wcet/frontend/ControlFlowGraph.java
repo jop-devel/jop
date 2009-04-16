@@ -52,6 +52,7 @@ import com.jopdesign.wcet.frontend.BasicBlock.FlowInfo;
 import com.jopdesign.wcet.frontend.BasicBlock.FlowTarget;
 import com.jopdesign.wcet.frontend.SourceAnnotations.BadAnnotationException;
 import com.jopdesign.wcet.frontend.SourceAnnotations.LoopBound;
+import com.jopdesign.wcet.graphutils.AdvancedDOTExporter;
 import com.jopdesign.wcet.graphutils.DefaultFlowGraph;
 import com.jopdesign.wcet.graphutils.FlowGraph;
 import com.jopdesign.wcet.graphutils.LoopColoring;
@@ -446,7 +447,13 @@ public class ControlFlowGraph {
 			BasicBlock bb = bbNode.getBasicBlock();
 			FlowInfo bbf = bb.getFlowInfo(bb.getLastInstruction());
 			if(bbf.exit) { // exit edge
-				graph.addEdge(bbNode, graph.getExit(), exitEdge());
+				// do not connect exception edges
+				if(bbNode.getBasicBlock().getLastInstruction().getInstruction().getOpcode()
+				   == org.apache.bcel.Constants.ATHROW) {
+					WcetAppInfo.logger.warn("Found ATHROW edge - ignoring");
+				} else {
+					graph.addEdge(bbNode, graph.getExit(), exitEdge());
+				}
 			} else if(! bbf.alwaysTaken) { // next block edge
 				BasicBlockNode bbSucc = nodeTable.get(bbNode.getBasicBlock().getLastInstruction().getNext().getPosition());
 				if(bbSucc == null) {
@@ -473,6 +480,22 @@ public class ControlFlowGraph {
 		WcetAppInfo.logger.error("CFG of "+this.getMethodInfo().getFQMethodName()+"\n");
 		WcetAppInfo.logger.error(this.getMethodInfo().getMethod().getCode().toString(true));
 		throw new AssertionError(reason);		
+	}
+	private void debugDumpGraph() {
+		try {
+			File tmpFile = File.createTempFile("cfg-dump", ".dot");
+			FileWriter fw = new FileWriter(tmpFile);
+			new AdvancedDOTExporter<CFGNode, CFGEdge>(new AdvancedDOTExporter.DefaultNodeLabeller<CFGNode>() {
+				@Override public String getLabel(CFGNode node) { 
+					String s = node.toString();
+					if(node.getBasicBlock() != null) s+= "\n" + node.getBasicBlock().dump(); 
+					return s;
+				}
+			}, null).exportDOT(fw, graph); fw.close();		
+			WcetAppInfo.logger.error("[CFG DUMP] Dumped graph to '"+tmpFile+"'");
+		} catch (IOException e) {
+			WcetAppInfo.logger.error("[CFG DUMP] Dumping graph failed: "+e);
+		}		
 	}
 	
 	/**
@@ -758,20 +781,27 @@ public class ControlFlowGraph {
 		this.graph.removeAllVertices(loopNodes);
 		
 	}
-	
+	/* Check that the graph is connectet, with entry and exit dominating resp. postdominating all nodes */
 	private void check() throws BadGraphException {
-		TopOrder.checkConnected(graph);
-		TopOrder.checkIsExitNode(graph, this.graph.getExit());
-		List<CFGNode> deads = TopOrder.findDeadNodes(graph,this.graph.getEntry());
-		if(deads.size() > 0) {
-			WcetAppInfo.logger.error("Found dead code in " + this.getMethodInfo().getFQMethodName()
-					               + "- this is probably because you are using Exceptions: "+deads);
-			for(CFGNode deadCode : deads) {
-				this.graph.removeVertex(deadCode);
-			}
+		/* Remove unreachable and stuck code */
+		Set<CFGNode> deads = TopOrder.findDeadNodes(graph, getEntry());
+		if(! deads.isEmpty()) WcetAppInfo.logger.error("Found dead code (Exceptions ?): "+deads);			
+		Set<CFGNode> stucks = TopOrder.findStuckNodes(graph, getExit());
+		if(! stucks.isEmpty()) WcetAppInfo.logger.error("Found stuck code (Exceptions ?): "+stucks);			
+		deads.addAll(stucks);
+		if(! deads.isEmpty()) {
+			graph.removeAllVertices(deads);
 			this.invalidate();
 		}
+		/* now checks should succeed */
+		try {
+			TopOrder.checkIsFlowGraph(graph, getEntry(), getExit());
+		} catch(BadGraphException ex) {
+			debugDumpGraph();
+			throw ex;
+		}
 	}
+
 	private void invalidate() {
 		this.topOrder = null;
 		this.loopColoring = null;

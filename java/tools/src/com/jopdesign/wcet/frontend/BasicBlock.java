@@ -30,7 +30,6 @@ import org.apache.bcel.generic.ATHROW;
 import org.apache.bcel.generic.BranchInstruction;
 import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.EmptyVisitor;
-import org.apache.bcel.generic.ExceptionThrower;
 import org.apache.bcel.generic.FieldInstruction;
 import org.apache.bcel.generic.GotoInstruction;
 import org.apache.bcel.generic.IfInstruction;

@@ -141,13 +141,12 @@ public class Dominators<V,E> {
 	public boolean dominates(V dominator, V dominated) {
 		computeDominators();
 		if(dominator.equals(dominated)) return true; // Domination is reflexive ;)
-		computeDominators();
 		V dom = getIDom(dominated);
 		// as long as dominated >= dominator
-		while(getOrder(dom) >= getOrder(dominator) && ! dom.equals(dominator)) {
+		while(dom != null && getOrder(dom) >= getOrder(dominator) && ! dom.equals(dominator)) {
 			dom = getIDom(dom);
 		}
-		return dom.equals(dominator);
+		return dominator.equals(dom);
 	}
 	public Set<V> getStrictDominators(V n) {
 		computeDominators();
