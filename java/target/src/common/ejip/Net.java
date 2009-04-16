@@ -30,18 +30,11 @@
 
 package ejip;
 
-import rtlib.SRSWQueue;
-
 /**
 *	Start device driver threads and poll for packets.
 */
 
 public class Net implements Runnable {
-	
-	/**
-	 * Enable the experimental TCP implementation
-	 */
-	public static final boolean TCP_ENABLED = false;
 	
 	public static final int PROT_ICMP = 1;
 	
@@ -66,7 +59,7 @@ public class Net implements Runnable {
 	public void run() {
 
 		Packet p;
-		SRSWQueue<Packet> rxQ = ejip.llRxQueue;
+		PacketQueue rxQ = ejip.llRxQueue;
 		if (rxQ==null) {
 			if (Logging.LOG) Logging.wr("No link layer registered");
 			return;
@@ -78,7 +71,7 @@ public class Net implements Runnable {
 			receive(p);
 		} else {
 			udp.run();
-			if (TCP_ENABLED) tcp.run();
+			if (Ejip.TCP_ENABLED) tcp.run();
 		}			
 	}
 	
@@ -122,7 +115,7 @@ public class Net implements Runnable {
 				TcpIp.doTCP(p);
 				ip.doIp(p, prot);
 			} else 
-			if (TCP_ENABLED) {
+			if (Ejip.TCP_ENABLED) {
 				// that's the new TCP processing
 				tcp.process(p);					
 			} else {

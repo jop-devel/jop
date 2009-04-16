@@ -30,8 +30,6 @@
 
 package ejip;
 
-import rtlib.SRSWQueue;
-
 /**
 *	LinkLayer.java
 *
@@ -56,14 +54,14 @@ public abstract class LinkLayer implements Runnable {
 	/** Subnet mask */
 	private int netmask;
 	
-	SRSWQueue<Packet> txQueue;
-	SRSWQueue<Packet> rxQueue;
+	PacketQueue txQueue;
+	PacketQueue rxQueue;
 	
 	public LinkLayer(Ejip ejipRef, int ipAddress) {
 		ip = ipAddress;
 		ejip = ejipRef;
-		txQueue = new SRSWQueue<Packet>(ejip.getMaxPackets());
-		rxQueue = new SRSWQueue<Packet>(ejip.getMaxPackets());
+		txQueue = new PacketQueue(ejip.getMaxPackets());
+		rxQueue = new PacketQueue(ejip.getMaxPackets());
 		ejip.registerLinkLayer(this);
 	}
 
