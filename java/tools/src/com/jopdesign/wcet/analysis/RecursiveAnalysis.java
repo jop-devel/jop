@@ -22,10 +22,9 @@ package com.jopdesign.wcet.analysis;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
+import java.util.TreeSet;
 import java.util.Map.Entry;
 
-import org.apache.bcel.classfile.LineNumberTable;
-import org.apache.bcel.generic.InstructionHandle;
 import org.apache.log4j.Logger;
 import org.jgrapht.DirectedGraph;
 
@@ -41,10 +40,11 @@ import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGNode;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.InvokeNode;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.SummaryNode;
 import com.jopdesign.wcet.ipet.ILPModelBuilder;
+import com.jopdesign.wcet.ipet.IpetConfig;
 import com.jopdesign.wcet.ipet.MaxCostFlow;
 import com.jopdesign.wcet.ipet.ILPModelBuilder.CostProvider;
+import com.jopdesign.wcet.ipet.IpetConfig.StaticCacheApproximation;
 import com.jopdesign.wcet.jop.MethodCache;
-import com.jopdesign.wcet.jop.CacheConfig.StaticCacheApproximation;
 import com.jopdesign.wcet.report.ClassReport;
 
 /**
@@ -220,17 +220,17 @@ public class RecursiveAnalysis<Context> {
 				BasicBlock basicBlock = n.getBasicBlock();
 				/* prototyping */
 				if(basicBlock != null) {
-					int pos = basicBlock.getFirstInstruction().getPosition();
+					TreeSet<Integer> lineRange = basicBlock.getSourceLineRange();
+					if(lineRange.isEmpty()) {
+						Project.logger.error("No source code lines associated with basic block ! ");						
+					}
 					ClassInfo cli = basicBlock.getClassInfo();
-					LineNumberTable lineNumberTable = basicBlock.getMethodInfo().getMethod().getLineNumberTable();
-					int sourceLine = lineNumberTable.getSourceLine(pos);
 					ClassReport cr = project.getReport().getClassReport(cli);
-					Long oldCost = (Long) cr.getLineProperty(sourceLine, "cost");
+					Long oldCost = (Long) cr.getLineProperty(lineRange.first(), "cost");
 					if(oldCost == null) oldCost = 0L;
-					cr.addLineProperty(sourceLine, "cost", oldCost + sol.getNodeFlow(n)*nodeCosts.get(n).getCost());
-					for(InstructionHandle ih : basicBlock.getInstructions()) {
-						sourceLine = lineNumberTable.getSourceLine(ih.getPosition());
-						cr.addLineProperty(sourceLine, "color", "red");
+					cr.addLineProperty(lineRange.first(), "cost", oldCost + sol.getNodeFlow(n)*nodeCosts.get(n).getCost());
+					for(int i : lineRange) {
+						cr.addLineProperty(i, "color", "red");
 					}
 				}
 			} else {
@@ -315,9 +315,17 @@ public class RecursiveAnalysis<Context> {
 	}
 
 	public static class LocalIPETStrategy implements RecursiveWCETStrategy<StaticCacheApproximation> {
+		private boolean assumeMissOnceOnInvoke;
+		public LocalIPETStrategy(IpetConfig ipetConfig) {
+			this.assumeMissOnceOnInvoke = ipetConfig.assumeMissOnceOnInvoke;
+		}
+		public LocalIPETStrategy() {
+			this.assumeMissOnceOnInvoke = false;
+		}
 		public WcetCost recursiveWCET(
 				RecursiveAnalysis<StaticCacheApproximation> stagedAnalysis,
-				InvokeNode n, StaticCacheApproximation cacheMode) {
+				InvokeNode n, 
+				StaticCacheApproximation cacheMode) {
 			if(cacheMode.needsInterProcIPET()) {
 				throw new AssertionError("Ups. Cache Mode "+cacheMode+" not supported using local IPET strategy");
 			}
@@ -338,14 +346,14 @@ public class RecursiveAnalysis<Context> {
 				cacheCost = 0;
 			} else if(project.getCallGraph().isLeafNode(invoked)) {
 				cacheCost = invokeReturnCost + nonLocalCacheCost;
-			} else if(cacheMode == StaticCacheApproximation.ALL_FIT_LOCAL && cache.allFit(invoked)) {
+			} else if(cacheMode == StaticCacheApproximation.ALL_FIT_SIMPLE && cache.allFit(invoked)) {
 				long returnCost = cache.getMissOnReturnCost(proc, project.getFlowGraph(invoker));
 				/* Maybe its better not to apply the all-fit heuristic ... */
 				long noAllFitCost = recCost.getCost() + invokeReturnCost;
 				/* Compute cost without method cache */
 				long alwaysHitCost = stagedAnalysis.computeWCET(invoked, StaticCacheApproximation.ALWAYS_HIT).getCost();
 				/* Compute penalty for loading each method exactly once */
-				long allFitPenalty = cache.getMissOnceCummulativeCacheCost(invoked);
+				long allFitPenalty = cache.getMissOnceCummulativeCacheCost(invoked,assumeMissOnceOnInvoke);
 				long allFitCacheCost = allFitPenalty  + returnCost;
 				/* Cost All-Fit: recursive + penalty for loading once + return to caller */
 				long allFitCost = alwaysHitCost + allFitCacheCost;

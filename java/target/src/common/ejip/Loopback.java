@@ -38,11 +38,11 @@ package ejip;
 
 public class Loopback extends LinkLayer {
 
-	public Loopback(Ejip ejip, int[] mac, int ipaddr) {
+	public Loopback(Ejip ejip, int ipaddr) {
 
 		super(ejip, ipaddr);
 
-		ip = (127<<24) + (0<<16) + (0<<8) + 1;
+		ip = ipaddr;
 	}
 
 	static int timer;
@@ -55,22 +55,21 @@ public class Loopback extends LinkLayer {
 		Packet p;
 
 		//
-		// get a ready to send packet with source from this driver.
+		// get a ready to send packet and put it into the receive queue.
 		//
-		p = rxQueue.deq();
-		//
-		// and simple mark it as received packet.
-		//
+		p = txQueue.deq();
 		if (p!=null) {
 			// If it's a TCP packet we need to make a copy
 			if (p.isTcpOnFly) {
-				Packet cp = ejip.getFreePacket(this);
-				if (cp!=null) {
-					cp.copy(p);
-					txQueue.enq(cp);
+				if (Ejip.TCP_ENABLED) {
+					Packet cp = ejip.getFreePacket(this);
+					if (cp!=null) {
+						cp.copy(p);
+						rxQueue.enq(cp);
+					}					
 				}
 			} else {
-				txQueue.enq(p);				
+				rxQueue.enq(p);				
 			}
 		}
 	}

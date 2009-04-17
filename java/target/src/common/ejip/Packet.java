@@ -75,7 +75,7 @@ public class Packet {
 	 */
 	Packet(int pktSize) {
 		llh = new int[MAXLLH];
-		buf = new int[(pktSize+3)/4];
+		buf = new int[(pktSize+3)>>2]; // DFA likes shift, but not division
 		len = 0;
 		status = 0;
 		interf = null;

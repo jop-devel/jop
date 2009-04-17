@@ -28,6 +28,7 @@ import org.jgrapht.DirectedGraph;
 import org.jgrapht.alg.BellmanFordShortestPath;
 import org.jgrapht.alg.ConnectivityInspector;
 import org.jgrapht.graph.DirectedSubgraph;
+import org.jgrapht.graph.EdgeReversedGraph;
 import org.jgrapht.traverse.DepthFirstIterator;
 import org.jgrapht.traverse.TopologicalOrderIterator;
 
@@ -155,6 +156,13 @@ public class TopOrder<V,E> {
 			}
 		}
 	}
+	/**
+	 * Get the connected components of the graph
+	 * @return 
+	 */
+	public static <V,E> List<Set<V>> getComponents(DirectedGraph<V,E> graph) {
+		return new ConnectivityInspector<V, E>(graph).connectedSets();
+	}
 	
 	/**
 	 * Check wheter the given graph is (weakly) connected.
@@ -166,7 +174,7 @@ public class TopOrder<V,E> {
 	 */
 	public static <V,E> void checkConnected(DirectedGraph<V,E> graph) 
 		throws BadGraphException {
-		List<Set<V>> comps = new ConnectivityInspector<V,E>(graph).connectedSets(); 
+		List<Set<V>> comps = getComponents(graph);
 		if(comps.size() != 1) {
 			throw new BadGraphException("Expected graph with one component, but the given one has "+comps);
 		}
@@ -180,32 +188,65 @@ public class TopOrder<V,E> {
 	 * @param entry the entry node
 	 * @return a list of unreachable nodes
 	 */
-	public static <V,E> List<V> findDeadNodes(DirectedGraph<V,E> graph, V entry) {
-		/* CAVEAT: Do not use ConnectivityInspector; it consides graphs as undirected */
+	public static <V,E> Set<V> findDeadNodes(DirectedGraph<V,E> graph, V entry) {
+		/* CAVEAT: Do not use ConnectivityInspector; it considers graphs as undirected */
 		BellmanFordShortestPath<V, E> bfsp = new BellmanFordShortestPath<V, E>(graph,entry);
-		Vector<V> deads = new Vector<V>();
+		Set<V> deads = new HashSet<V>();
 		for(V node : graph.vertexSet()) {
 			if(node == entry) continue;
 			if(null == bfsp.getPathEdgeList(node)) {
-				deads .add(node);
+				deads.add(node);
 			}
 		}
 		return deads;
 	}
 	/**
-	 * Check that the given node is an exit node of the given flow graph.
-	 * <p>
-	 * That is, for all nodes n, there has to be a path from entry n to exit.
-	 * </p>
-	 * @param graph the flow graph
-	 * @param exit the dedicated "exit" node
-	 * @throws BadGraphException if there is a node n which has isn't connected to exit 
+	 * Find nodes which which have no path to exit.
+	 * @param graph the given graph
+	 * @param exit the exit node
+	 * @return a list of stuck nodes
 	 */
-	public static <V,E> void checkIsExitNode(DirectedGraph<V,E> graph, V exit) throws BadGraphException {
-		ConnectivityInspector<V, E> ci = new ConnectivityInspector<V,E>(graph);
+	public static <V,E> Set<V> findStuckNodes(DirectedGraph<V,E> graph, V exit) {
+		/* CAVEAT: Do not use ConnectivityInspector; it considers graphs as undirected */
+		BellmanFordShortestPath<V, E> bfspRev = new BellmanFordShortestPath<V, E>(
+				new EdgeReversedGraph<V, E>(graph),
+				exit);
+		Set<V> stucks = new HashSet<V>();
 		for(V node : graph.vertexSet()) {
-			if(node != exit && ! ci.pathExists(node, exit)) {
-				throw new BadGraphException("checkIsExitNode: There is no path from "+node+" to exit");				
+			if(node == exit) continue;
+			if(null == bfspRev.getPathEdgeList(node)) {
+				stucks.add(node);
+			}
+		}
+		return stucks;
+	}
+	/**
+	 * Check that the given graph is a flowgraph:
+	 * <ul>
+	 * <li/> There is a path from the entry to every nodes, and entry dominates all nodes
+	 * <li/> There is a path from every node to exit, and exit postdominates all nodes 
+	 * </ul>
+	 */
+	public static <V,E> void checkIsFlowGraph(DirectedGraph<V,E> graph, V entry, V exit)
+		throws BadGraphException 
+	{
+		Set<V> deads = findDeadNodes(graph, entry);
+		Set<V> stucks = findStuckNodes(graph,exit);
+		if(! deads.isEmpty()) {
+			throw new BadGraphException("checkIsFlowGraph: There is no path from entry to "+deads);											
+		}
+		if(! stucks.isEmpty()) {
+			throw new BadGraphException("checkIsFlowGraph: There is no path to exit from "+stucks);											
+		}
+
+		Dominators<V, E> doms = new Dominators<V, E>(graph, entry);
+		Dominators<V,E> rdoms = new Dominators<V,E>(new EdgeReversedGraph<V, E>(graph),exit);
+		for(V node : graph.vertexSet()) {
+			if(! doms.dominates(entry, node)) {
+				throw new BadGraphException("checkIsFlowGraph: Entry does not dominate "+node);												
+			}
+			if(! rdoms.dominates(exit, node)) {
+				throw new BadGraphException("checkIsFlowGraph: Exit does not postdominate "+node);												
 			}
 		}
 	}

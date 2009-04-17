@@ -1,4 +1,8 @@
 (User) ChangeLog for wcet08. Please keep current.
+April 09
+--------
+  - Big config file cleanup
+ 
 Mar 09
 ------
   - EXPERIMENTAL: progress measures (and, for free, tree based WCET analysis)

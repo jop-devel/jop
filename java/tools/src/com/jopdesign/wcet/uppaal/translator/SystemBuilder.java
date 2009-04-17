@@ -36,8 +36,8 @@ import com.jopdesign.wcet.jop.BlockCache;
 import com.jopdesign.wcet.jop.MethodCache;
 import com.jopdesign.wcet.jop.VarBlockCache;
 import com.jopdesign.wcet.jop.CacheConfig.CacheImplementation;
-import com.jopdesign.wcet.jop.CacheConfig.DynCacheApproximation;
 import com.jopdesign.wcet.uppaal.UppAalConfig;
+import com.jopdesign.wcet.uppaal.UppAalConfig.UppaalCacheApproximation;
 import com.jopdesign.wcet.uppaal.model.DuplicateKeyException;
 import com.jopdesign.wcet.uppaal.model.NTASystem;
 import com.jopdesign.wcet.uppaal.model.Template;
@@ -113,11 +113,11 @@ public class SystemBuilder {
 	}
 	private CacheSimBuilder getCacheSimulation() {
 		MethodCache cache = project.getProcessorModel().getMethodCache();
-		DynCacheApproximation cacheApprox = config.getCacheApproximation();
+		UppaalCacheApproximation cacheApprox = config.getCacheApproximation();
 		CacheSimBuilder sim;
 		if(cache.getName() == CacheImplementation.NO_METHOD_CACHE) {
 			 sim = new StaticCacheBuilder(false);
-		} else if(cacheApprox == DynCacheApproximation.ALWAYS_MISS) {
+		} else if(cacheApprox == UppaalCacheApproximation.ALWAYS_MISS) {
 			sim = new StaticCacheBuilder(true);
 		} else {
 			switch(cache.getName()) {

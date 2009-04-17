@@ -3,7 +3,6 @@ package com.jopdesign.wcet.report;
 import java.io.File;
 
 import com.jopdesign.build.MethodInfo;
-import com.jopdesign.wcet.config.BooleanOption;
 import com.jopdesign.wcet.config.Config;
 import com.jopdesign.wcet.config.Option;
 import com.jopdesign.wcet.config.StringOption;
@@ -21,14 +20,11 @@ public class ReportConfig {
 		new StringOption("program-dot","if graphs should be generated from java, the path to the 'dot' binary", true);
 	public static final StringOption REPORTDIR =
 		new StringOption("reportdir",
-				"the directory to write reports into",true);		
-	public static final BooleanOption DUMP_ILP =
-		new BooleanOption("dump-ilp","whether the LP problems should be dumped to files",true);
-	
+				"the directory to write reports into",true);			
 		
-	public static final Option<?> options[] = 
+	public static final Option<?> reportOptions[] = 
 		{ REPORTDIR, TEMPLATEDIR, 
-		  ERROR_LOG_FILE, INFO_LOG_FILE, PROGRAM_DOT, DUMP_ILP };	
+		  ERROR_LOG_FILE, INFO_LOG_FILE, PROGRAM_DOT };	
 
 	/* dynamic configuration */
 	private Config config;

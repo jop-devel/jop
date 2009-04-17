@@ -23,9 +23,11 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.TreeSet;
 import java.util.Vector;
 
 import org.apache.bcel.classfile.LineNumberTable;
+import org.apache.bcel.generic.ATHROW;
 import org.apache.bcel.generic.BranchInstruction;
 import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.EmptyVisitor;
@@ -232,6 +234,14 @@ public class BasicBlock  {
 			flowInfo.alwaysTaken = true;
 		}
 
+		/** FIXME: Exceptions aren't supported yet, but to avoid 
+		 *  early bail out, we assume exceptions terminate execution (for now) */
+		@Override
+		public void visitATHROW(ATHROW obj) {
+			flowInfo.exit = true;
+			flowInfo.splitAfter = true;
+		}
+		
 		// Not neccesarily, but nice for WCET analysis
 		@Override public void visitInvokeInstruction(InvokeInstruction obj) {
 			if(! appInfo.getProcessorModel().isSpecialInvoke(methodInfo, obj)) {
@@ -254,6 +264,7 @@ public class BasicBlock  {
 			visitInstruction(ih);
 			return flowInfo;
 		}
+		
 	}
 
 	/**
@@ -291,7 +302,17 @@ public class BasicBlock  {
 					bb = new BasicBlock(ai,methodInfo);
 				}
 			}
-		}
+			if(! bb.instructions.isEmpty()) {
+				// be nice to DFA stuff, and ignore NOPs
+				for(int i = bb.instructions.size() - 1; i>=0; --i) {
+					InstructionHandle x = bb.instructions.get(i);
+					if(x.getInstruction().getOpcode() != org.apache.bcel.Constants.NOP) {
+						throw new AssertionError("[INTERNAL ERROR] Last instruction "+x+
+		                 " in code does not change control flow - this is impossible");
+					}
+				}
+			}
+		}		
 		return basicBlocks;
 	}
 	
@@ -335,13 +356,27 @@ public class BasicBlock  {
 			if(line != null) {
 				int l1 = lnt.getSourceLine(first.getPosition());
 				int l2 = lnt.getSourceLine(ih.getPosition());
-				if(l1 != l2) sb.append("["+l1+"-"+l2+"] ");
-				else         sb.append("["+l1+"]  ");
+				if(l1 != l2) sb.append("["+ (l1 < 0 ? "?" : l1) +"-"+(l2 < 0 ? "?" : l2)+"] ");
+				else         sb.append("["+ (l1 < 0 ? "?" : l1) +"]  ");
 				sb.append(line+"\n");
 				first = null;
 				lineBuilder = new StringBuilder();
 			}
 		}
 		return sb.toString();
+	}
+	
+	/**
+	 * Return all source code lines this basic block maps to
+	 * @return
+	 */
+	public TreeSet<Integer> getSourceLineRange() {
+		TreeSet<Integer> lines = new TreeSet<Integer>();
+		LineNumberTable lnt = this.getMethodInfo().getMethod().getLineNumberTable();
+		for(InstructionHandle ih : instructions) {
+			int sourceLine = lnt.getSourceLine(ih.getPosition());
+			if(sourceLine >= 0) lines.add(sourceLine);
+		}
+		return lines;
 	}
 }

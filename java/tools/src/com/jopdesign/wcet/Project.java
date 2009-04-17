@@ -55,6 +55,7 @@ import com.jopdesign.wcet.frontend.SourceAnnotations.BadAnnotationException;
 import com.jopdesign.wcet.frontend.SourceAnnotations.LoopBound;
 import com.jopdesign.wcet.frontend.WcetAppInfo.MethodNotFoundException;
 import com.jopdesign.wcet.graphutils.MiscUtils;
+import com.jopdesign.wcet.ipet.IpetConfig;
 import com.jopdesign.wcet.jop.CacheConfig;
 import com.jopdesign.wcet.jop.JOPModel;
 import com.jopdesign.wcet.report.Report;
@@ -377,6 +378,7 @@ public class Project {
 		}
 		return ccLocal + ccGlobal;
 	}
+
 	public ProcessorModel getProcessorModel() {
 		return this.processor;
 	}
@@ -388,8 +390,8 @@ public class Project {
 					c.getOption(CacheConfig.CACHE_IMPL),
 					c.getOption(CacheConfig.CACHE_SIZE_WORDS),
 					c.getOption(CacheConfig.CACHE_BLOCKS),
-					c.getOption(CacheConfig.STATIC_CACHE_APPROX),
-					c.getOption(CacheConfig.ASSUME_MISS_ONCE_ON_INVOKE));
+					c.getOption(IpetConfig.STATIC_CACHE_APPROX),
+					c.getOption(IpetConfig.ASSUME_MISS_ONCE_ON_INVOKE));
 		
 	}
 	public void recordResultUppaal(WcetCost wcet,
@@ -400,11 +402,15 @@ public class Project {
 				c.getOption(CacheConfig.CACHE_IMPL),
 				c.getOption(CacheConfig.CACHE_SIZE_WORDS),
 				c.getOption(CacheConfig.CACHE_BLOCKS),
-				c.getOption(CacheConfig.DYNAMIC_CACHE_APPROX),
-				projectConfig.getUppaalComplexityTreshold(),
+				c.getOption(UppAalConfig.UPPAAL_CACHE_APPROX),
+				c.getOption(UppAalConfig.UPPAAL_COMPLEXITY_TRESHOLD),
 				c.getOption(UppAalConfig.UPPAAL_COLLAPSE_LEAVES),
 				c.getOption(UppAalConfig.UPPAAL_CONVEX_HULL),
-				c.getOption(UppAalConfig.UPPAAL_TIGHT_BOUNDS));
+				c.getOption(UppAalConfig.UPPAAL_TIGHT_BOUNDS),
+				c.getOption(UppAalConfig.UPPAAL_PROGRESS_MEASURE),
+				c.getOption(UppAalConfig.UPPAAL_SUPERGRAPH_TEMPLATE),
+				c.getOption(UppAalConfig.UPPAAL_EMPTY_INITIAL_CACHE)
+				);
 	}
 	public void recordSpecialResult(String metric, WcetCost cost) {
 		if(resultRecord == null) return;

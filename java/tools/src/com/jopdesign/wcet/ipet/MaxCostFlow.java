@@ -32,10 +32,8 @@ import lpsolve.LpSolveException;
 import org.jgrapht.DirectedGraph;
 
 import com.jopdesign.wcet.ProjectConfig;
-import com.jopdesign.wcet.config.Config;
 import com.jopdesign.wcet.graphutils.IDProvider;
 import com.jopdesign.wcet.ipet.LinearConstraint.ConstraintType;
-import com.jopdesign.wcet.report.ReportConfig;
 
 /**
  * Max-Cost-Max-Flow solver with additional linear constraints
@@ -77,7 +75,8 @@ public class MaxCostFlow<V,E> {
 	private IDProvider<Object> idProvider;
 	private String key;
 	private HashMap<Integer, DecisionVariable> dRevMap;
-
+	private boolean doDumpILP = false;
+	public void setDumpILP() { doDumpILP = true; }
 	/**
 	 * Initialize the MCMF problem with the given graph
 	 * @param g the graph
@@ -156,7 +155,7 @@ public class MaxCostFlow<V,E> {
 		wrapper.setObjective(costVec,true);
 		double[] objVec = new double[dGen-1];
 		wrapper.freeze();
-		if(Config.instance().getOption(ReportConfig.DUMP_ILP)) {
+		if(this.doDumpILP ) {
 			dumpILP(wrapper);
 		}
 		double sol = Math.round(wrapper.solve(objVec));

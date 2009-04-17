@@ -23,7 +23,6 @@ import java.io.File;
 
 import com.jopdesign.wcet.config.BooleanOption;
 import com.jopdesign.wcet.config.Config;
-import com.jopdesign.wcet.config.IntegerOption;
 import com.jopdesign.wcet.config.Option;
 import com.jopdesign.wcet.config.StringOption;
 import com.jopdesign.wcet.graphutils.MiscUtils;
@@ -52,8 +51,6 @@ public class ProjectConfig {
 		new BooleanOption("dataflow-analysis","whether dataflow analysis should be performed",false);
 	public static final BooleanOption USE_UPPAAL =
 		new BooleanOption("uppaal","perform uppaal-based WCET analysis",false);
-	public static final IntegerOption UPPAAL_COMPLEXITY_TRESHOLD =
-		new IntegerOption("uppaal-treshold","limit UPPAAL to methods below the given expanded cyclomatic complexity",true);
 	public static final StringOption RESULT_FILE =
 		new StringOption("result-file","save analysis results to the given file (CVS)",true);
 	public static final BooleanOption RESULTS_APPEND =
@@ -63,7 +60,7 @@ public class ProjectConfig {
 		OUT_DIR,
 		APP_CLASS_NAME, TARGET_METHOD, PROJECT_NAME,
 		TARGET_CLASSPATH, TARGET_SOURCEPATH,
-		DO_DFA, USE_UPPAAL, UPPAAL_COMPLEXITY_TRESHOLD,
+		DO_DFA, USE_UPPAAL,
 		RESULT_FILE, RESULTS_APPEND
 	};
 	public static File getOutDir(String subdir) {
@@ -147,12 +144,6 @@ public class ProjectConfig {
 	}
 	public boolean useUppaal() {
 		return config.getOption(USE_UPPAAL);
-	}
-	public boolean hasUppaalComplexityTreshold() {
-		return config.hasOption(UPPAAL_COMPLEXITY_TRESHOLD);
-	}
-	public Long getUppaalComplexityTreshold() {
-		return config.getOption(UPPAAL_COMPLEXITY_TRESHOLD);
 	}
 	public boolean saveResults() {
 		return config.hasOption(RESULT_FILE);

@@ -354,7 +354,7 @@ Dbg.intVal(buf[Udp.DATA] & 0xffff);
 		i = fn>>8;
 		if (i=='i') {					// read internal memory
 			base = block<<7;
-			for (i=0; i<128; ++i) {
+			for (i=0; i<128; ++i) { // @WCA loop=128
 				buf[Udp.DATA+1+i] = com.jopdesign.sys.Native.rdIntMem(base+i);
 			}
 		} else if (i=='f') {				// read flash
@@ -362,15 +362,15 @@ Dbg.intVal(buf[Udp.DATA] & 0xffff);
 			base += ((fn&0xff)-'0')<<16;	// 64 KB sector
 
 			k = 0;
-			for (i=0; i<128; ++i) {
-				for (j=0; j<4; ++j) {
+			for (i=0; i<128; ++i) { // @WCA loop=128
+				for (j=0; j<4; ++j) { // @WCA loop=4
 					k <<= 8;
 					k += com.jopdesign.sys.Native.rdMem(base+(i<<2)+j);
 				}
 				buf[Udp.DATA+1+i] = k;
 			}
 		} else {						// read nothing
-			for (i=0; i<128; ++i) {
+			for (i=0; i<128; ++i) {		// @WCA loop=128
 				buf[Udp.DATA+1+i] = 0;
 			}
 		}
