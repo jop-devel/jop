@@ -25,7 +25,7 @@ import java.util.*;
 
 public class Instruction {
 
-	String name;
+	public String name;
 	public int opcode;
 	public boolean hasOpd;
 	public boolean isJmp;
@@ -42,6 +42,19 @@ public class Instruction {
 	public String toString() {
 		return name;
 	}
+	
+	public boolean isStackConsumer() {
+		return opcode < 0x80;
+	}
+	
+	public boolean isStackProducer() {
+		return opcode >= 0xa0;
+	}
+
+	public boolean noStackUse() {
+		return (! isStackConsumer()) && (! isStackProducer());
+	}
+
 
 	private static Instruction[] ia = new Instruction[] 
 	{
@@ -192,11 +205,42 @@ public class Instruction {
 		}
 	}
 
+	public static void printTable() {
+		
+		Instruction table[] = new Instruction[256];
+		for(int i = 0; i < 256; i++) table[i] = null;
+		for (int i=0; i<ia.length; ++i) {
+			Instruction ins = ia[i];
+			int up = 1;
+			if(ins.hasOpd) up = (1<<5);
+			for(int j = 0; j < up; j++) {
+					int code = ins.opcode | j;
+					if(table[code] != null) {
+						System.err.println("Two entries for: "+code+" : "+ins+" and "+table[code]);
+						System.exit(1);
+					}
+					else table[code] = ins;
+			}
+		}
+		for(int i = 0; i < 256; i++) {
+			System.out.print(String.format("0x%02x ",i));
+			if(table[i] == null) System.out.print("---");
+			else {
+				Instruction ins = table[i];
+				System.out.print(ins);
+				if(ins.hasOpd) System.out.print(" "+(i&((1<<5)-1)));
+				if(ins.isStackConsumer()) System.out.print(" [-]");
+				else if(ins.isStackProducer()) System.out.print(" [+]");				
+			}
+			System.out.println("");
+		}
+	}
 
 	public static void main(String[] args) {
 
 		// printVhdl();
 		printCsv();
+		// printTable();
 	}
 
 }
