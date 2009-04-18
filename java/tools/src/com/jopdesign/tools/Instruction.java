@@ -157,17 +157,22 @@ public class Instruction {
 		new Instruction("dup", 0xf8, false, false),
 	};
 
-	public static Map map = new HashMap();
+	public static Map<String,Instruction> map = new HashMap<String,Instruction>();
+	public static Map<Integer,Instruction> imap = new TreeMap<Integer,Instruction>();
 
 	static {
 		for (int i=0; i<ia.length; ++i) {
 			map.put(ia[i].name, ia[i]);
+			imap.put(ia[i].opcode, ia[i]);
 		}
 	}
 
-	public static Instruction get(String s) {
+	public static Instruction get(String name) {
+		return map.get(name);
+	}
 
-		return (Instruction) map.get(s);
+	public static Instruction get(int opcode) {
+		return imap.get(opcode);
 	}
 
 	public static void printVhdl() {
