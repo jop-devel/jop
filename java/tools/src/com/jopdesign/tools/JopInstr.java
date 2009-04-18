@@ -30,7 +30,7 @@ package com.jopdesign.tools;
 import java.util.*;
 
 public class JopInstr{
-
+	/* TODO: better use enums, if 5.0 is ok */
 	public final static int IMP_ASM = 0;
 	public final static int IMP_JAVA = 1;
 	public final static int IMP_NO = 2;
@@ -39,14 +39,14 @@ public class JopInstr{
 	private int len;		// in byte codes (0 means variable length!)
 	private int imp;		// is implemented in JOP
 	private int cnt;
-	private static Map map = new HashMap();
+	private static Map<String,Integer> map = new HashMap<String,Integer>();
 
 	// mapping of native methods
-	private static Map natMap = new HashMap();
+	private static Map<String,String> natMap = new HashMap<String,String>();
 
 	public static int get(String s) {
 
-		Integer i = (Integer) map.get(s);
+		Integer i = map.get(s);
 		if (i==null) {
 			return -1;
 		} else {
@@ -56,7 +56,7 @@ public class JopInstr{
 	
 	public static int getNative(String s) {
 		
-		s = (String) natMap.get(s);
+		s = natMap.get(s);
 		if (s==null) {
 			return -1;
 		} else {
@@ -388,7 +388,7 @@ public class JopInstr{
 	//	Mapping of 'native' methods from Native.java
 	//	to special bytecodes
 	//	With JCC the index in Native was used, but with JOPizer
-	//	and BCEL we need the expilicit mapping.
+	//	and BCEL we need the explicit mapping.
 	
 	private static String[] nativeMapping = {
 			"rd", "jopsys_rd",
