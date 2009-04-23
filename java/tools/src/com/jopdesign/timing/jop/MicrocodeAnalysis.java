@@ -18,7 +18,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-package com.jopdesign.timing;
+package com.jopdesign.timing.jop;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Stack;
 import java.util.Vector;
 import java.util.Map.Entry;
+
 import com.jopdesign.tools.Instruction;
 import com.jopdesign.tools.JopInstr;
 import com.jopdesign.tools.Jopa;
@@ -70,101 +71,6 @@ public class MicrocodeAnalysis {
 	public static String[] INFEASIBLE_BRANCHES = 
 		{ NULL_PTR_CHECK_LABEL, ARRAY_BOUND_CHECK_LABEL, "! "+VP_SAVE_LABEL };
 
-	/** Class representing microcode paths */
-	public class MicrocodePath {
-		private String opName;
-		private Vector<Line> path;
-		private boolean nullPtrCheck = false, 
-		                arrayBoundCheck = false,
-		                hasWait = false;
-		private int minMultiplierDelay = Integer.MAX_VALUE;
-
-		public MicrocodePath(String name) {
-			this.opName = name;
-			this.path = new Vector<Line>();
-		}
-		
-		public MicrocodePath clone() {
-			MicrocodePath cloned = new MicrocodePath(opName);
-			cloned.path = new Vector<Line>(path); 
-			cloned.nullPtrCheck = nullPtrCheck;
-			cloned.arrayBoundCheck = arrayBoundCheck;
-			cloned.hasWait = hasWait;
-			cloned.minMultiplierDelay = minMultiplierDelay;
-			return cloned;
-		}
-		
-		public void addInstr(Line microInstr) {
-			this.path.add(microInstr);
-		}
-		
-		/** check that the instruction before the current one did not modify the TOS value */
-		public void checkStableTOS() throws MicrocodeVerificationException {
-			/* Unknown last instr: MAYBE modified TOS */
-			if (path.size() == 1) {
-				throw new MicrocodeVerificationException("last instruction maybe modified TOS (empty path)");
-			}
-			Instruction lastInstr = path.get(path.size() - 2).getInstruction();
-			/* Some statements do not use the stack */
-			if(lastInstr.noStackUse()) {
-				return;
-			}
-			/* DUP does not modify the TOS */
-			if(lastInstr.opcode == MicrocodeConstants.DUP) {
-				return;
-			}
-			/* If we have a DUP first, and the next instruction consumes one element without producing
-			 * any, the TOS values isn't modified */
-			if(path.size() >= 3 && 
-			   path.get(path.size() - 3).getInstruction().opcode == MicrocodeConstants.DUP &&
-			     lastInstr.isStackConsumer() &&
-			   ! lastInstr.isStackProducer()) {
-				return;
-			}
-			/* Unknown: TOS was MAYBE modified */
-			System.err.println("[WARNING] "+opName+" : "+
-					           "last instruction maybe modified TOS: "+lastInstr);
-		}
-		
-		public String toString() {
-			Vector<String> names = new Vector<String>();
-			for(Line l : path) {
-				Instruction i = l.getInstruction();
-				String name = i.name;
-				if(i.hasOpd) { 
-					if(l.getSymVal() != null) name += " "+l.getSymVal();
-					else                      name += " "+l.getIntVal();
-				}
-				names.add(name);
-			}
-			String s = names.toString();
-			if(hasWait) s+= "[wait]";
-			if(nullPtrCheck) s+= "[check-null-ptr]";
-			if(arrayBoundCheck) s+= "[check-array-bound]";
-			if(minMultiplierDelay != Integer.MAX_VALUE) s+= "[multiplier/delay "+minMultiplierDelay+"]";
-			return s;
-		}
-		
-		public void setNullPtrCheck() {
-			this.nullPtrCheck = true;
-		}
-		
-		public void setArrayBoundCheck() {
-			this.arrayBoundCheck = true;
-		}
-		
-		public void setNeedsMultiplier(int delay) {
-			this.minMultiplierDelay = Math.min(minMultiplierDelay, delay);
-		}
-		
-		public void setHasWait() {
-			this.hasWait = true;
-		}
-		
-		public Vector<Line> getPath() {
-			return this.path;
-		}
-	}
 	
 	/** Symbolic values */
 	private static abstract class MachineValue {
@@ -424,9 +330,17 @@ public class MicrocodeAnalysis {
 		private boolean interpret() throws MicrocodeVerificationException {
 			Line microLine = current.st.fetchNext();
 			Instruction microInstr = microLine.getInstruction();
-			String symVal = microLine.getSymVal();			
-			current.p.addInstr(microLine);
-			if(current.p.path.size() > PATH_SIZE_LIMIT) {
+			/* eliminate the error-prone getIntVal/getSymVal/getSpecial stuff */
+			int constant ; // constant arguments
+			String label = microLine.getSymVal();  // labels for jumps
+			String localVar = microLine.getSymVal(); // local variable names
+			if(microLine.getSymVal() != null) {
+				constant = (Integer) jopa.getSymMap().get(microLine.getSymVal());
+			} else {
+				constant = microLine.getIntVal(); 
+			}
+			current.p.addInstr(microLine, current.st.stack.peek().evaluate());
+			if(current.p.getPath().size() > PATH_SIZE_LIMIT) {
 				ifail("<loop>: path exceeded maximal size of "+PATH_SIZE_LIMIT);
 			}
 
@@ -490,12 +404,12 @@ public class MicrocodeAnalysis {
 			//5 bits
 			case MicrocodeConstants.STM:
 				MachineValue local = current.st.stackPop();
-				current.st.localVars.put(microLine.getSymVal(),local);
+				current.st.localVars.put(localVar,local);
 				break;
 			/* microcode branches */
 			case MicrocodeConstants.BNZ: 
 			case MicrocodeConstants.BZ:
-				mcBranch(microInstr, symVal);
+				mcBranch(microInstr, label);
 				break;
 
 			// -----------------------------------------------------------------------------------
@@ -517,11 +431,11 @@ public class MicrocodeAnalysis {
 			//5 bits
 		    // stack.push(local[n])
 			case MicrocodeConstants.LDM: 
-				current.st.stackPush(current.st.getLocalVar(microLine.getSymVal()));
+				current.st.stackPush(current.st.getLocalVar(localVar));
 				break;
 
 			case MicrocodeConstants.LDI:
-				current.st.stackPush(MachineValue.number(microLine.getIntVal()));
+				current.st.stackPush(MachineValue.number(constant));
 				break;
 
 			//	extension 'address' selects function 4 bits
@@ -663,17 +577,13 @@ public class MicrocodeAnalysis {
 		int jopinstr = JopInstr.get(name);
 		return this.jInstrs.get(jopinstr);		
 	}
-	
-	Vector<MicropathTiming> getTiming(String opName, int addr) throws MicrocodeVerificationException {
+
+	Vector<MicrocodePath> getMicrocodePaths(String opName, int addr)
+		throws MicrocodeVerificationException{
 		MicroInterpreter microMachine = new MicroInterpreter();
-		Vector<MicrocodePath> paths = microMachine.interpret(opName,addr);
-		Vector<MicropathTiming> timings = new Vector<MicropathTiming>();
-		for(MicrocodePath p : paths) {
-			MicropathTiming mt = new MicropathTiming(p);
-			timings .add(mt);
-		}
-		return timings;
+		return microMachine.interpret(opName,addr);
 	}
+
 
 	public static void main(String[] argv) {
 //		String asmFile= 

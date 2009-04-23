@@ -18,16 +18,15 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-package com.jopdesign.timing;
+package com.jopdesign.timing.jop;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
 
-import com.jopdesign.timing.MicrocodeAnalysis.MicrocodePath;
-import com.jopdesign.timing.MicrocodeAnalysis.MicrocodeVerificationException;
+import com.jopdesign.timing.jop.MicrocodeAnalysis.MicrocodeVerificationException;
+import com.jopdesign.timing.jop.MicrocodePath.PathEntry;
 import com.jopdesign.tools.Instruction;
-import com.jopdesign.tools.Jopa.Line;
 
 /** Timing information for one microcode path of the form<br/>
  *  {@code sum(exprs) + max(0, b - hidden) } <br/> 
@@ -106,10 +105,16 @@ public class MicropathTiming {
 		int constantCycles = 0;
 		boolean wasWait = false;
 		int accessKind = -1;
-		for(Line l : p.getPath()) {
+		Integer accessAddress = null;
+		for(PathEntry l : p.getPath()) {
 			Instruction i = l.getInstruction();
 			switch(i.opcode) {
-			case MicrocodeConstants.STMRA: 
+			case MicrocodeConstants.STMWA:
+			accessAddress = l.getTOS(); /* Deal with OP addresses here */
+			break;
+			case MicrocodeConstants.STMRA:
+			accessAddress = l.getTOS();
+			/* fallthrough */
 			case MicrocodeConstants.STMWD:
 			case MicrocodeConstants.STBCRD:
 			case MicrocodeConstants.STGF:
@@ -130,11 +135,18 @@ public class MicropathTiming {
 						throw new MicrocodeVerificationException("Wait without memory access ?");
 					}
 					switch(accessKind) {
-					case MicrocodeConstants.STMRA: 
+					case MicrocodeConstants.STMRA:
+						if(accessAddress != null) {
+							throw new MicrocodeVerificationException("Timing for IO access not yet implemented[r]: "+accessAddress);
+						}
 						timing.add(TimingExpression.read(passed - 2));
 						break;
 					case MicrocodeConstants.STMWD:
-						timing.add(TimingExpression.write(passed - 2));
+						if(accessAddress != null && accessAddress < 0) {
+							// no wait states
+						} else {
+							timing.add(TimingExpression.write(passed - 2));
+						}
 						break;
 					case MicrocodeConstants.STBCRD:
 						if(bcAccessHidden >= 0) {
