@@ -15,13 +15,14 @@ import com.jopdesign.tools.JopInstr;
  *
  */
 public class MicropathTable {
-	final static String OPCODE_NAMES[] = new String[256];
+	// TODO factor out
+	public final static String OPCODE_NAMES[] = new String[256];
 	static {
 		for(int i = 0; i < 256; i++) {
 			OPCODE_NAMES[i] = JopInstr.name(i);
 		}
 	}
-	static boolean isReserved(int opcode) {
+	public static boolean isReserved(int opcode) {
 		return OPCODE_NAMES[opcode].matches("res[0-9a-zA-F]{2,2}");
 	}
 	private HashSet<Integer> hasMicrocode = new HashSet<Integer>();	

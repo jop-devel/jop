@@ -27,45 +27,50 @@ import java.util.List;
  * 
  * Currently we support the following aspects:
  * <ul>
- * <li/> Local State (pipeline, arbiter)
+ * <li/> Cycles needed to execute an instruction (ProcessorState as type parameter))
+ * <li/> WCET of basic blocks
+ * <li/> Method Caches
  * <li/> Java Implemented Bytecodes
- * <li/> Instruction Cache
  * </ul>
  * 
- * We will need to extend this interface in order to support other
- * hardware aspects.
- * 
- * The type parameter LocalState will be used for timings which depend on
- * a local state (CMP, Pipelines), but for which (in contrast to method cache
- * access cycles), a local worst case can be assumed. 
+ * We currently only support architectures where there is a worst case for the
+ * ProcessorState.
  */
-public abstract class TimingTable<LocalState> {
-	
+public abstract class TimingTable<ProcessorState> {
 	/**
 	 * Class for encapsulating a instruction to be analyzed
 	 */
-	class Instruction {
-		public int opcode;
-		public long cacheAccessCycles;
-		public Instruction(int opcode, long cac) { 
+	public class InstructionInfo {
+		int opcode;
+		ProcessorState procState = null;
+		public InstructionInfo(int opcode) { 
 			this.opcode = opcode;
-			this.cacheAccessCycles = cac;
+		}
+		public InstructionInfo(int opcode, ProcessorState ps) {
+			this(opcode);
+			this.procState = ps;
+		}
+		public boolean hasStateInfo() {
+			return procState != null;
 		}
 	}
 	
-	/** Get the WCET for an instruction.
-	 *  The default implementation delegates to {@code getCycles(opcode,null)}.
-	 * */
-	public long getCycles(int opcode, Long cacheAccessCycles) {
-		return getCycles(opcode,cacheAccessCycles, null);
-	}
-	
-	/** Get the timing info for a 'locally dependent' instruction.
-	 *  For example, pipeline or arbiter state are supplied.
-	 *  If {@code st} is {@code null}, the worst case scenario shall
-	 *  be assumed.  
+	/**
+	 * return true if timing info is available for the given instruction
 	 */
-	public abstract long getCycles(int opcode, Long cacheAccessCycles, LocalState st);
+	public abstract boolean hasTimingInfo(int opcode);
+	
+	/** 
+	 * Get the WCET for an instruction.
+	 * The default implementation delegates to {@code getCycles(opcode,null)}.
+	 * */
+	public abstract long getCycles(int opcode);
+
+	/** 
+	 * Get the WCET for an instruction.
+	 */
+	public abstract long getCycles(int opcode, ProcessorState ps);
+	
 
 	/*                      Get WCETs of Basic Block
 	 * ----------------------------------------------------------------------
@@ -75,39 +80,37 @@ public abstract class TimingTable<LocalState> {
 	 * Get the timing info for a basic block.<br/>
 	 * The default implementation simply sums the WCETs of the instructions.
 	 */
-	public long getCycles(List<Instruction> opcodes) {
+	public long getCycles(List<InstructionInfo> opcodes) {
 		long wcet = 0;
-		for(Instruction instr : opcodes) {
-			wcet += getCycles(instr.opcode, instr.cacheAccessCycles);
+		for(InstructionInfo instr : opcodes) {
+			wcet += getCycles(instr.opcode, instr.procState);
 		}
 		return wcet;
 	}
-	/** 
-	 * Get the timing info for a basic block.<br/>
-	 * The default implementation simply sums the WCETs of the instructions.
+
+	 /*             Aspect: Method Cache
+	  ---------------------------------------------------------------------
 	 */
-	public long getCycles(List<Instruction> opcodes, LocalState st) {
-		return getCycles(opcodes);
+	public long methodCacheAccessCycles(boolean hit, int words) {
+		throw new AssertionError("getMethodCacheAccessCycles: architecture has not method cache");
 	}
-	
+	public long methodCacheHiddenAccessCycles(boolean onInvoke) {
+		throw new AssertionError("methodCacheHiddenAccessCycles: architecture has not method cache");		
+	}
+	public long methodCacheHiddenAccessCycles(int opcode) {
+		throw new AssertionError("methodCacheHiddenAccessCycles: architecture has not method cache");		
+	}
 	
 	/*             Aspect: Java Implemented Bytecodes
 	 * ----------------------------------------------------------------------
 	 */
-	
-	/**
-	 * query whether the given opcode is implemented in Java.
-	 */
-	public boolean isImplementedInJava(int opcode) {
-		return false;
-	}
-	
+		
 	/**
 	 * return the number of 'dispatch cycles' for a Java implemented bytecode.
 	 * Implementations should throw a runtime error if the opcode is not implemented
 	 * in Java.
 	 */
-	public boolean javaImplBcDispatchCycles(int opcode, int cacheAccessDelay) {
+	public long javaImplBcDispatchCycles(int opcode, ProcessorState st) {
 		throw new AssertionError("The platform " + this.getClass() 
 				               + " does not support Java implemented bytecodes");
 	}

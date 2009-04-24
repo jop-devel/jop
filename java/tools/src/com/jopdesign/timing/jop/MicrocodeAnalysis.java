@@ -42,6 +42,8 @@ import com.jopdesign.tools.Jopa.Line;
  * @author Benedikt Huber <benedikt.huber@gmail.com>
  */
 public class MicrocodeAnalysis {
+	public static int JOPSYS_NOIM = 254;
+
 	public static class MicrocodeVerificationException extends Exception {
 		private static final long serialVersionUID = 1L;
 		public MicrocodeVerificationException(String msg) { super(msg); }
@@ -572,7 +574,7 @@ public class MicrocodeAnalysis {
 	}
 	
 	public Integer getStartAddress(int opcode) {
-		if(opcode == 254) return this.jInstrs.get(254);  // sys no-im
+		if(opcode == JOPSYS_NOIM) return this.jInstrs.get(JOPSYS_NOIM);  // sys no-im
 		String name = JopInstr.name(opcode);
 		int jopinstr = JopInstr.get(name);
 		return this.jInstrs.get(jopinstr);		

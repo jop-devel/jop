@@ -23,10 +23,14 @@ package com.jopdesign.timing.jop;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.Vector;
 import java.util.Map.Entry;
+
+import org.apache.bcel.Constants;
 
 import com.jopdesign.timing.ConsoleTable;
 import com.jopdesign.timing.TimingTable;
@@ -39,28 +43,97 @@ import com.jopdesign.timing.jop.MicrocodeAnalysis.MicrocodeVerificationException
  * Before generating the timing table do not forget to run e.g.
  * {@code make gen_mem -e ASM_SRC=jvm JVM_TYPE=USB @} 
  */
-public class JOPTimingTable extends TimingTable<Void> {
+public class JOPTimingTable extends TimingTable<JOPInstructionInfo> {
+	/**
+	 * Create a new timing table (read and write states are taken from WCETInstruction
+	 * until CMP is completed)
+	 * @param asmFile the preprocessed assembler file
+	 * @return
+	 * @throws IOException if loading the assembler file fails
+	 */
+	public static JOPTimingTable getTimingTable(File asmFile, boolean cmp) 
+		throws IOException {
+		MicropathTable mpt = MicropathTable.getTimingTable(asmFile);
+		if(cmp) {
+			return new JOPCmpTimingTable(mpt);			
+		} else {
+			JOPTimingTable tt = new JOPTimingTable(mpt);	
+			tt.configureDelays(WCETInstruction.r, WCETInstruction.w);
+			return tt;
+		}
+	}
 
+	/** return opcodes are hardcoded: {A,D,F,I,L,_}RETURN */
+	public static final int[] RETURN_OPCODES = {
+		Constants.ARETURN,
+		Constants.DRETURN,
+		Constants.FRETURN,
+		Constants.IRETURN,
+		Constants.LRETURN,
+		Constants.RETURN };
 	private MicropathTable micropathTable;
 
 	@Override
-	public long getCycles(int opcode, Long cacheAccessCycles) {
-		Vector<MicropathTiming> timing = this.getTiming(opcode);
-		return this.getCycles(timing, cacheAccessCycles);
-	}
-	
-	@Override
-	public long getCycles(int opcode, Long cacheAccessCycles, Void st) {
-		return this.getCycles(opcode, cacheAccessCycles);
-	}
-	
 	public long getCycles(int opcode) {
-		Vector<MicropathTiming> timing = this.getTiming(opcode);
-		if(hasBytecodeLoad(timing)) {
-			throw new AssertionError("getCycles(opcode) : bytecode load requires to specify size of Java method");
-		}
-		return getCycles(timing,0);
+		return getCycles(opcode,null);
 	}
+	@Override
+	public long getCycles(int opcode, JOPInstructionInfo info) {
+		Vector<MicropathTiming> timing = this.getTiming(opcode);
+		if(hasBytecodeLoad(timing) && info == null) {
+			throw new AssertionError("Cannot calculate WCET of instruction accessing method cache"+
+					                 "without information on the size of the method");
+		} else {
+			info = new JOPInstructionInfo();
+		}
+		return this.getCycles(timing, this.methodCacheAccessCycles(info.hit, info.methodLoadWords));
+	}
+	@Override
+	public boolean hasTimingInfo(int opcode) {
+		return this.timingTable.containsKey(opcode);
+	}
+	/*
+	 * Method load time on invoke or return if there is a cache miss (see pMiss).
+	 * 
+	 * @see ms thesis p 232
+	 */
+	@Override
+	public long methodCacheAccessCycles(boolean hit, int words) {
+		int b = -1;
+		int c = readCycles-1;
+		if (hit) {
+			b = 4;
+		} else {
+			b = 6 + (words+1) * (2+c);
+		}
+		return b;
+	}
+	@Override
+	public long methodCacheHiddenAccessCycles(boolean onInvoke) {
+		return (onInvoke ? minCyclesHiddenOnInvoke : minCyclesHiddenOnReturn);
+	}
+	@Override
+	public long methodCacheHiddenAccessCycles(int opcode) {
+		long hiddenAccess = Long.MAX_VALUE;
+		for(MicropathTiming path : this.timingTable.get(opcode)) {
+			if(! path.hasBytecodeLoad()) continue;
+			hiddenAccess = Math.min(hiddenAccess,path.getHiddenBytecodeLoadCycles());
+		}
+		return hiddenAccess;
+	}
+	@Override
+	public long javaImplBcDispatchCycles(int opcode, JOPInstructionInfo info) {
+		if(this.hasTimingInfo(opcode)) {
+			if(! hasBytecodeLoad(this.timingTable.get(opcode))) {
+				throw new AssertionError(""+ MicropathTable.OPCODE_NAMES[opcode]+ 
+						                 " is not a java implemented bytecode");
+			}
+			return this.getCycles(opcode, info);
+		} else {
+			return this.getCycles(MicrocodeAnalysis.JOPSYS_NOIM, info);
+		}
+	}
+
 	protected JOPTimingTable(MicropathTable mpt) {
 		this.micropathTable = mpt;
 		timingTable = new TreeMap<Integer,Vector<MicropathTiming>>();
@@ -75,7 +148,27 @@ public class JOPTimingTable extends TimingTable<Void> {
 				}
 			}
 		}
+		calculateHiddenCycles();
 	}
+	private void calculateHiddenCycles() {
+		Set<Integer> returnOpcodes = new HashSet<Integer>();
+		long rhidden = Integer.MAX_VALUE;
+		for(int rop : RETURN_OPCODES) {
+			rhidden = Math.min(rhidden, this.methodCacheHiddenAccessCycles(rop));
+			returnOpcodes.add(rop);
+		}
+		this.minCyclesHiddenOnReturn = rhidden;
+		
+		/* now check all other opcodes with a bytecode load */
+		long ihidden = Integer.MAX_VALUE;
+		for(int iop = 0; iop < 256; iop++) {
+			if(returnOpcodes.contains(iop)) continue;
+			if(! hasTimingInfo(iop)) continue;
+			ihidden = Math.min(ihidden, methodCacheHiddenAccessCycles(iop));
+		}
+		this.minCyclesHiddenOnInvoke = ihidden;
+	}
+	
 	private Vector<MicropathTiming> calculateTiming(int opcode) throws MicrocodeVerificationException {
 		Vector<MicropathTiming> timings = new Vector<MicropathTiming>();
 		for(MicrocodePath p : micropathTable.getMicroPaths(opcode)) {
@@ -84,37 +177,27 @@ public class JOPTimingTable extends TimingTable<Void> {
 		}
 		return timings;
 	}
-	
-	public static JOPTimingTable getTimingTable(File asm) throws IOException, MicrocodeVerificationException {
-		MicropathTable mpt = MicropathTable.getTimingTable(asm);
-		return new JOPTimingTable(mpt);
-	}
-	public static JOPTimingTable getTimingTable(File asm, int r, int w) throws IOException, MicrocodeVerificationException {
-		JOPTimingTable tt = JOPTimingTable.getTimingTable(asm);
-		tt.configureDelays(r,w);
-		return tt;
-	}
+
 
 	private int readCycles;
 	private int writeCycles;
 	
+	
+	private TreeMap<Integer, MicrocodeVerificationException> analysisErrors;	
+	private TreeMap<Integer, Vector<MicropathTiming>> timingTable;
+	private long minCyclesHiddenOnInvoke = 0, minCyclesHiddenOnReturn = 0;
+	
+	public MicrocodeVerificationException getAnalysisError(int opcode) { 
+		return analysisErrors.get(opcode); 
+	}
 	public boolean isImplemented(int opcode) {
 		return micropathTable.isImplemented(opcode);
 	}
 	
-	private TreeMap<Integer, MicrocodeVerificationException> analysisErrors;	
-	public MicrocodeVerificationException getAnalysisError(int opcode) { 
-		return analysisErrors.get(opcode); 
-	}
-	
-	private TreeMap<Integer, Vector<MicropathTiming>> timingTable;
 	
 	private void configureDelays(int r, int w) {
 		this.readCycles = r;
 		this.writeCycles = w;
-	}
-	private boolean isConfigured() {
-		return readCycles >= 1;
 	}
 	
 	public Vector<MicropathTiming> getTiming(int opcode) {
@@ -122,42 +205,27 @@ public class JOPTimingTable extends TimingTable<Void> {
 			throw new AssertionError("Failed to analyse microcode timing: "+opcode);			
 		}
 		if(! micropathTable.hasMicrocodeImpl(opcode)) {
-			return this.timingTable.get(254);
+			return this.timingTable.get(MicrocodeAnalysis.JOPSYS_NOIM);
 		} else {
 			return this.timingTable.get(opcode);			
 		}
 	}
 		
 	private long getCycles(Vector<MicropathTiming> timing, long bytecodeDelay) {
-		if(! isConfigured()) throw new AssertionError("getCycles(): read/write delay not set");
 		long maxCycles = 0;
 		for(MicropathTiming mtiming : timing) {
 			maxCycles = Math.max(maxCycles, mtiming.getCycles(readCycles, writeCycles, bytecodeDelay));
 		}
 		return maxCycles;
 	}
-	private static boolean hasBytecodeLoad(Vector<MicropathTiming> timings) {
+
+	public static boolean hasBytecodeLoad(Vector<MicropathTiming> timings) {
 		for(MicropathTiming ptime : timings) {
 			if(ptime.hasBytecodeLoad()) return true;
 		}
 		return false;
 	}
 
-	/**
-	 * Method load time on invoke or return if there is a cache miss (see pMiss).
-	 * 
-	 * @see ms thesis p 232
-	 */
-	public long calculateBcLoadDelay(boolean hit, int bytecodeWords) {
-		int b = -1;
-		int c = readCycles-1;
-		if (hit) {
-			b = 4;
-		} else {
-			b = 6 + (bytecodeWords+1) * (2+c);
-		}
-		return b;
-	}
 	/**
 	 * Print the microcode timing table from asm/generated/jvmgen.asm
 	 * @param argv
@@ -171,7 +239,7 @@ public class JOPTimingTable extends TimingTable<Void> {
 
 		JOPTimingTable tt = null;
 		try {
-			tt = JOPTimingTable.getTimingTable(asmFile);
+			tt = JOPTimingTable.getTimingTable(asmFile,false);
 		} catch (Exception e) {
 			e.printStackTrace();
 			System.exit(1);
@@ -200,11 +268,11 @@ public class JOPTimingTable extends TimingTable<Void> {
 			} else {
 				String timingPath = MicropathTiming.toString(tt.getTiming(opcode));
 				tt.configureDelays(1, 2);
-				long exampleTiming1 = tt.getCycles(opcode, tt.calculateBcLoadDelay(true, 0)); 
-				long exampleTiming2 = tt.getCycles(opcode, tt.calculateBcLoadDelay(false, 32));
+				long exampleTiming1 = tt.getCycles(opcode, new JOPInstructionInfo(true, 0)); 
+				long exampleTiming2 = tt.getCycles(opcode, new JOPInstructionInfo(false, 32));
 				tt.configureDelays(3, 5);
-				long exampleTiming3 = tt.getCycles(opcode, tt.calculateBcLoadDelay(true, 0));
-				long exampleTiming4 = tt.getCycles(opcode, tt.calculateBcLoadDelay(false, 32));
+				long exampleTiming3 = tt.getCycles(opcode, new JOPInstructionInfo(true, 0));
+				long exampleTiming4 = tt.getCycles(opcode, new JOPInstructionInfo(false, 32));
 				row.addCell(timingPath)
 				   .addCell(exampleTiming1)
 				   .addCell(exampleTiming2)
@@ -217,6 +285,8 @@ public class JOPTimingTable extends TimingTable<Void> {
 		table.addLegendTop("  infeasible branches: "+Arrays.toString(MicrocodeAnalysis.INFEASIBLE_BRANCHES));
 		table.addLegendBottom("  [expr] denotes max(0,expr)");
 		table.addLegendBottom("  r = read delay, w = write delay, b = bytecode load delay");
+		table.addLegendBottom(String.format("  hidden cycles on invoke (including JIB) and return: %d / %d",
+				tt.minCyclesHiddenOnInvoke,tt.minCyclesHiddenOnReturn));
 		System.out.println(table.render());
 
 		/* for now, check if we agree with WCETInstruction */
@@ -256,8 +326,7 @@ public class JOPTimingTable extends TimingTable<Void> {
 			}
 			for(int j = 0; j < testHit.length; j++) {
 				long wiT = WCETInstruction.getCycles(i, ! testHit[j], testLoad[j]);
-				long bcaDelay = tt.calculateBcLoadDelay(testHit[j], testLoad[j]);
-				long wiMA = tt.getCycles(i, bcaDelay);
+				long wiMA = tt.getCycles(i, new JOPInstructionInfo(testHit[j],testLoad[j]));
 				if(wiT != wiMA) {
 					failures.put(i,"WCETInstruction has DIFFERENT TIMING INFO: "+
 							     "microcodeanalysis := "+wiMA+ " /= "+ wiT + " =: wcetinstruction"); 

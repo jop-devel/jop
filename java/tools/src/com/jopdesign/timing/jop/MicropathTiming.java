@@ -89,7 +89,7 @@ public class MicropathTiming {
 	
 	private List<TimingExpression> timing = new Vector<TimingExpression>();
 	private int bcAccessHidden = -1;
-	
+
 	/** Calculate timing info for the given path */
 	public MicropathTiming(MicrocodePath p) throws MicrocodeVerificationException {
 		computeTiming(p);
@@ -98,6 +98,9 @@ public class MicropathTiming {
 
 	public boolean hasBytecodeLoad() {
 		return this.bcAccessHidden > 0;
+	}
+	public long getHiddenBytecodeLoadCycles() {
+		return this.bcAccessHidden;
 	}
 	
 	private void computeTiming(MicrocodePath p) throws MicrocodeVerificationException {
@@ -248,4 +251,5 @@ public class MicropathTiming {
 		}
 		return buf;
 	}
+
 }
