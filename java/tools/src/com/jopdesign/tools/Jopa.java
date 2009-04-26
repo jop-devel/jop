@@ -45,7 +45,6 @@ revision:
 import java.io.*;
 import java.util.*;
 
-
 public class Jopa {
 
 	private String fname;
@@ -62,13 +61,7 @@ public class Jopa {
 	private String dstDir;
 
 	public Jopa(String fn) {
-		srcDir = System.getProperty("user.dir");
-		dstDir = System.getProperty("user.dir");
-		fname = fn;
-		if (!srcDir.endsWith(File.separator))
-			srcDir += File.separator;
-		if (!dstDir.endsWith(File.separator))
-			dstDir += File.separator;
+		this(fn,System.getProperty("user.dir"),System.getProperty("user.dir"));
 	}
 
 	public Jopa(String[] clist) {
@@ -80,7 +73,21 @@ public class Jopa {
 		if (!dstDir.endsWith(File.separator))
 			dstDir += File.separator;
 	}
-
+	/** 
+	 * Creates a new Jopa (JopAssembler) instance
+	 * @param fn name of the assembler file
+	 * @param src source directory for assembler files
+	 * @param dst destination directory for ROM vhdl
+	 */
+	public Jopa(String fn, String src, String dst) {
+		this.fname = fn;
+		this.srcDir = src;
+		this.dstDir = dst;
+		if (!srcDir.endsWith(File.separator))
+			srcDir += File.separator;
+		if (!dstDir.endsWith(File.separator))
+			dstDir += File.separator;
+	}
 	void error(StreamTokenizer in, String s) {
 		System.out.println((in.lineno()-1)+" error: "+s);
 	}
@@ -105,7 +112,7 @@ public class Jopa {
 		}
 	}
 
-	private class Line {
+	public class Line {
 		int jinstr;
 		String label;
 		Instruction instr;
@@ -114,6 +121,38 @@ public class Jopa {
 		String symVal;
 		boolean nxt;
 		boolean opd;
+		public boolean hasNxtFlag() {
+			return nxt;
+		}
+		public boolean hasOpdFlag() {
+			return opd;
+		}
+		public Instruction getInstruction() {
+			return instr;
+		}
+		public String getSymVal() {
+			return symVal;
+		}
+		public Integer getIntVal() {
+			return intVal;
+		}
+		public Integer getSpecial() {
+			return special;
+		}
+
+		@Override
+		public String toString() {
+			StringBuffer sb = new StringBuffer();
+			sb.append(instr.name);
+			if(instr.hasOpd) {
+				sb.append(' '); 
+				if(symVal != null) { sb.append(symVal); }
+				else               { sb.append(special); sb.append(" / "); sb.append(intVal); }
+			}
+			if(hasOpdFlag()) sb.append(" [opd]");
+			if(hasNxtFlag()) sb.append(" [nxt]");
+			return sb.toString();
+		}
 	}
 
 	private Line getLine(StreamTokenizer in) {
@@ -182,27 +221,28 @@ public class Jopa {
 	private int memcnt = 0;
 	private List varList = new LinkedList();
 	private int version = -1;
+	private Map jinstrMap = new HashMap();
+	private List instructions = new LinkedList();
 
-/**
-*	first pass.
-*	get values for all symbols
-*/
+	/**
+	 * Parse the assembler file and build symbol table (first pass).
+	 * During this pass, the assembler code, the symboltable and vartable are build.
+	 * @return the  map from program locations (pc) to microcode lines
+	 */
 	public void pass1() {
-
 		StreamTokenizer in = getSt();
 		int pc = 0;
 
 		try {
 			while (in.nextToken() != StreamTokenizer.TT_EOF) {
 				in.pushBack();
-
 				Line l = getLine(in);
-//System.out.println(l.jinstr+" "+l.label+" "+l.instr+" '"+(char) l.special+"' "+l.intVal+" "+l.symVal);
+				//System.out.println("L"+in.lineno()+" "+l.jinstr+" "+l.label+" "+l.instr+" '"+(char) l.special+"' "+l.intVal+" "+l.symVal);
 
 				if (l.jinstr==-1) {
 					if (l.label!=null) {
 						if (symMap.containsKey(l.label)) {
-							error(in, "symbol "+l.label+" allready defined");
+							error(in, "symbol "+l.label+" already defined");
 						} else {
 							symMap.put(l.label, new Integer(pc));
 						}
@@ -227,19 +267,55 @@ public class Jopa {
 						}
 					}
 
+				} else {
+					jinstrMap.put(l.jinstr,pc);
 				}
 				if (l.instr!=null) {
 					++pc;
+					instructions.add(l);
 				}
-
 			}
 		} catch (IOException e) {
 			System.out.println(e.getMessage());
 			System.exit(-1);
 		}
-//System.out.println(symMap);
+		//System.out.println(symMap);
 	}
-
+	/**
+	 * Get the symbol table:
+	 * Maps labels to program counter, constants to values and variables to memory
+	 * positions
+	 * @return 
+	 */
+	public Map getSymMap() {
+		return this.symMap;
+	}
+	/**
+	 * Get list of variables
+	 * @return 
+	 */
+	public List getVarList() {
+		return this.varList;
+	}
+	/** 
+	 * get table of java instructions 
+	 */
+	public Map getJavaInstructions() {
+		return this.jinstrMap;
+	}
+	/**
+	 * Get instruction list
+	 * @return 
+	 */
+	public List getInstructions() {
+		return this.instructions;
+	}
+	
+	/**
+	 * @param i
+	 * @param len
+	 * @return
+	 */
 	static String hex(int i, int len) {
 
 		String s = Integer.toHexString(i);

@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.TreeSet;
 import java.util.Vector;
 
 import org.apache.bcel.classfile.LineNumberTable;
@@ -355,13 +356,27 @@ public class BasicBlock  {
 			if(line != null) {
 				int l1 = lnt.getSourceLine(first.getPosition());
 				int l2 = lnt.getSourceLine(ih.getPosition());
-				if(l1 != l2) sb.append("["+l1+"-"+l2+"] ");
-				else         sb.append("["+l1+"]  ");
+				if(l1 != l2) sb.append("["+ (l1 < 0 ? "?" : l1) +"-"+(l2 < 0 ? "?" : l2)+"] ");
+				else         sb.append("["+ (l1 < 0 ? "?" : l1) +"]  ");
 				sb.append(line+"\n");
 				first = null;
 				lineBuilder = new StringBuilder();
 			}
 		}
 		return sb.toString();
+	}
+	
+	/**
+	 * Return all source code lines this basic block maps to
+	 * @return
+	 */
+	public TreeSet<Integer> getSourceLineRange() {
+		TreeSet<Integer> lines = new TreeSet<Integer>();
+		LineNumberTable lnt = this.getMethodInfo().getMethod().getLineNumberTable();
+		for(InstructionHandle ih : instructions) {
+			int sourceLine = lnt.getSourceLine(ih.getPosition());
+			if(sourceLine >= 0) lines.add(sourceLine);
+		}
+		return lines;
 	}
 }

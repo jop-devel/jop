@@ -598,7 +598,7 @@ System.out.println(mp+" "+pc);
 		int new_pc;		// for cond. branches
 		int ref, val, idx, val2;
 		int a, b, c, d;
-
+		long la, lb;
 
 		if (maxInstr!=0 && instrCnt>=maxInstr) {
 			exit=true;
@@ -969,7 +969,12 @@ System.out.println(mp+" "+pc);
 					stack[--sp] = val;
 					break;
 				case 97 :		// ladd
-					noim(97);
+					la = ((long)stack[sp-1] << 32) | ((long)stack[sp] & 0xffffffffL);
+					lb = ((long)stack[sp-3] << 32) | ((long)stack[sp-2] & 0xffffffffL);
+					la += lb;
+					stack[sp-3] = (int)(la >>> 32);
+					stack[sp-2] = (int)la;
+					sp-=2;
 					break;
 				case 98 :		// fadd
 					noim(98);
@@ -982,7 +987,12 @@ System.out.println(mp+" "+pc);
 					stack[--sp] = val;
 					break;
 				case 101 :		// lsub
-					noim(101);
+					la = ((long)stack[sp-1] << 32) | ((long)stack[sp] & 0xffffffffL);
+					lb = ((long)stack[sp-3] << 32) | ((long)stack[sp-2] & 0xffffffffL);
+					la = lb - la;
+					stack[sp-3] = (int)(la >>> 32);
+					stack[sp-2] = (int)la;
+					sp-=2;
 					break;
 				case 102 :		// fsub
 					noim(102);
@@ -1033,7 +1043,10 @@ System.out.println(mp+" "+pc);
 					stack[sp] = -stack[sp];
 					break;
 				case 117 :		// lneg
-					noim(117);
+					la = ((long)stack[sp-1] << 32) | ((long)stack[sp] & 0xffffffffL);
+					la = -la;
+					stack[sp-1] = (int)(la >>> 32);
+					stack[sp] = (int)la;
 					break;
 				case 118 :		// fneg
 					noim(118);
@@ -1046,49 +1059,79 @@ System.out.println(mp+" "+pc);
 					stack[--sp] = val;
 					break;
 				case 121 :		// lshl
-					noim(121);
+					la = ((long)stack[sp-2] << 32) | ((long)stack[sp-1] & 0xffffffffL);
+					la <<= stack[sp];
+					stack[sp-2] = (int)(la >>> 32);
+					stack[sp-1] = (int)la;
+					sp--;
 					break;
 				case 122 :		// ishr
 					val = stack[sp-1] >> stack[sp];
 					stack[--sp] = val;
 					break;
 				case 123 :		// lshr
-					noim(123);
+					la = ((long)stack[sp-2] << 32) | ((long)stack[sp-1] & 0xffffffffL);
+					la >>= stack[sp];
+					stack[sp-2] = (int)(la >>> 32);
+					stack[sp-1] = (int)la;
+					sp--;
 					break;
 				case 124 :		// iushr
 					val = stack[sp-1] >>> stack[sp];
 					stack[--sp] = val;
 					break;
 				case 125 :		// lushr
-					noim(125);
+					la = ((long)stack[sp-2] << 32) | ((long)stack[sp-1] & 0xffffffffL);
+					la >>>= stack[sp];
+					stack[sp-2] = (int)(la >>> 32);
+					stack[sp-1] = (int)la;
+					sp--;
 					break;
 				case 126 :		// iand
 					val = stack[sp-1] & stack[sp];
 					stack[--sp] = val;
 					break;
 				case 127 :		// land
-					noim(127);
+					la = ((long)stack[sp-1] << 32) | ((long)stack[sp] & 0xffffffffL);
+					lb = ((long)stack[sp-3] << 32) | ((long)stack[sp-2] & 0xffffffffL);
+					la &= lb;
+					stack[sp-3] = (int)(la >>> 32);
+					stack[sp-2] = (int)la;
+					sp-=2;
 					break;
 				case 128 :		// ior
 					val = stack[sp-1] | stack[sp];
 					stack[--sp] = val;
 					break;
 				case 129 :		// lor
-					noim(129);
+					la = ((long)stack[sp-1] << 32) | ((long)stack[sp] & 0xffffffffL);
+					lb = ((long)stack[sp-3] << 32) | ((long)stack[sp-2] & 0xffffffffL);
+					la |= lb;
+					stack[sp-3] = (int)(la >>> 32);
+					stack[sp-2] = (int)la;
+					sp-=2;
 					break;
 				case 130 :		// ixor
 					val = stack[sp-1] ^ stack[sp];
 					stack[--sp] = val;
 					break;
 				case 131 :		// lxor
-					noim(131);
+					la = ((long)stack[sp-1] << 32) | ((long)stack[sp] & 0xffffffffL);
+					lb = ((long)stack[sp-3] << 32) | ((long)stack[sp-2] & 0xffffffffL);
+					la ^= lb;
+					stack[sp-3] = (int)(la >>> 32);
+					stack[sp-2] = (int)la;
+					sp-=2;
 					break;
 				case 132 :		// iinc
 					idx = readOpd8u();
 					stack[vp+idx] = stack[vp+idx]+readOpd8s();
 					break;
 				case 133 :		// i2l
-					noim(133);
+					val = stack[sp];
+					stack[sp] = (val >> 16) >> 16;
+					stack[sp+1] = val;
+					sp++;
 					break;
 				case 134 :		// i2f
 					noim(134);

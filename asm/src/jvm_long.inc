@@ -62,8 +62,10 @@ l2i:		stm	a				// low part
 
 i2l:		dup
 			stm a
-			ldi 31
-			shr					// high part is a >> 31
+			ldi 16
+			shr
+			ldi 16
+			shr					// high part is a >> 32
 			ldm a nxt			// low part is a
 
 dload_0:

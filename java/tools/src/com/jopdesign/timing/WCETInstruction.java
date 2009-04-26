@@ -858,7 +858,7 @@ public class WCETInstruction {
 			break;
 		// I2L = 133
 		case org.apache.bcel.Constants.I2L:
-			wcet = 5;
+			wcet = 7;
 			break;
 		// I2F = 134
 		case org.apache.bcel.Constants.I2F:

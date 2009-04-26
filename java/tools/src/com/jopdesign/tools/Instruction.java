@@ -25,7 +25,7 @@ import java.util.*;
 
 public class Instruction {
 
-	String name;
+	public String name;
 	public int opcode;
 	public boolean hasOpd;
 	public boolean isJmp;
@@ -42,6 +42,19 @@ public class Instruction {
 	public String toString() {
 		return name;
 	}
+	
+	public boolean isStackConsumer() {
+		return opcode < 0x80;
+	}
+	
+	public boolean isStackProducer() {
+		return opcode >= 0xa0;
+	}
+
+	public boolean noStackUse() {
+		return (! isStackConsumer()) && (! isStackProducer());
+	}
+
 
 	private static Instruction[] ia = new Instruction[] 
 	{
@@ -144,17 +157,22 @@ public class Instruction {
 		new Instruction("dup", 0xf8, false, false),
 	};
 
-	public static Map map = new HashMap();
+	public static Map<String,Instruction> map = new HashMap<String,Instruction>();
+	public static Map<Integer,Instruction> imap = new TreeMap<Integer,Instruction>();
 
 	static {
 		for (int i=0; i<ia.length; ++i) {
 			map.put(ia[i].name, ia[i]);
+			imap.put(ia[i].opcode, ia[i]);
 		}
 	}
 
-	public static Instruction get(String s) {
+	public static Instruction get(String name) {
+		return map.get(name);
+	}
 
-		return (Instruction) map.get(s);
+	public static Instruction get(int opcode) {
+		return imap.get(opcode);
 	}
 
 	public static void printVhdl() {
@@ -192,11 +210,62 @@ public class Instruction {
 		}
 	}
 
+	public static void printTable() {
+		
+		Instruction table[] = new Instruction[256];
+		for(int i = 0; i < 256; i++) table[i] = null;
+		for (int i=0; i<ia.length; ++i) {
+			Instruction ins = ia[i];
+			int up = 1;
+			if(ins.hasOpd) up = (1<<5);
+			for(int j = 0; j < up; j++) {
+					int code = ins.opcode | j;
+					if(table[code] != null) {
+						System.err.println("Two entries for: "+code+" : "+ins+" and "+table[code]);
+						System.exit(1);
+					}
+					else table[code] = ins;
+			}
+		}
+		for(int i = 0; i < 256; i++) {
+			System.out.print(String.format("0x%02x ",i));
+			if(table[i] == null) System.out.print("---");
+			else {
+				Instruction ins = table[i];
+				System.out.print(ins);
+				if(ins.hasOpd) System.out.print(" "+(i&((1<<5)-1)));
+				if(ins.isStackConsumer()) System.out.print(" [-]");
+				else if(ins.isStackProducer()) System.out.print(" [+]");				
+			}
+			System.out.println("");
+		}
+	}
 
+	public static String genJavaConstants() {
+		
+		StringBuffer sb = new StringBuffer();
+		sb.append("package com.jopdesign.timing;\n");
+		sb.append("public class MicrocodeConstants {\n");
+		for(Instruction i : ia) {
+			sb.append(String.format("  public static final int %-15s = 0x%x; /* %s %s%s*/ \n",
+									i.name.toUpperCase(),
+									i.opcode,
+									i.isStackConsumer() 
+									  ? "consumer"
+									  : (i.isStackProducer() ? "producer" : "nostack"),
+									i.hasOpd ? "opd " : "",
+									i.isJmp  ? "jmp " : ""));
+		}
+		sb.append("};");				
+		return sb.toString();
+	}
+	
 	public static void main(String[] args) {
 
 		// printVhdl();
 		printCsv();
+		// printTable();
+		// System.out.println(genJavaConstants());
 	}
 
 }
