@@ -10,21 +10,11 @@ import java.util.Vector;
 import com.jopdesign.timing.jop.MicrocodeAnalysis.MicrocodeVerificationException;
 import com.jopdesign.tools.JopInstr;
 
-/** Table of micropathes.
- *  Will be used for CMP timing.
- *
+/** 
+ *  Table of micropathes.
+ *  Used to generate the JOPTimingTable and will be used to calculate CMP timings.
  */
 public class MicropathTable {
-	// TODO factor out
-	public final static String OPCODE_NAMES[] = new String[256];
-	static {
-		for(int i = 0; i < 256; i++) {
-			OPCODE_NAMES[i] = JopInstr.name(i);
-		}
-	}
-	public static boolean isReserved(int opcode) {
-		return OPCODE_NAMES[opcode].matches("res[0-9a-zA-F]{2,2}");
-	}
 	private HashSet<Integer> hasMicrocode = new HashSet<Integer>();	
 	public boolean hasMicrocodeImpl(int opcode) {
 		return hasMicrocode.contains(opcode);
@@ -38,7 +28,7 @@ public class MicropathTable {
 	private HashSet<Integer> notImplemented = new HashSet<Integer>();
 	
 	public boolean isImplemented(int opcode) {
-		return ! (isReserved(opcode) || notImplemented.contains(opcode));
+		return ! (JopInstr.isReserved(opcode) || notImplemented.contains(opcode));
 	}
 	
 	public boolean hasTiming(int opcode) {
@@ -59,7 +49,7 @@ public class MicropathTable {
 		MicrocodeAnalysis ana = new MicrocodeAnalysis(asm.getPath());
 		MicropathTable pt = new MicropathTable();
 		for(int i = 0; i < 256; i++) {
-			if(isReserved(i)) {
+			if(JopInstr.isReserved(i)) {
 				continue;
 			}
 			try {
@@ -67,7 +57,7 @@ public class MicropathTable {
 				
 				if(addr != null) {
 					pt.hasMicrocode.add(i);
-					pt.paths.put(i,ana.getMicrocodePaths(OPCODE_NAMES[i], addr));
+					pt.paths.put(i,ana.getMicrocodePaths(JopInstr.OPCODE_NAMES[i], addr));
 				} else {
 					pt.notImplemented.add(i);
 				}

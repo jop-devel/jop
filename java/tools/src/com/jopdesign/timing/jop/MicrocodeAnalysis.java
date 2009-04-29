@@ -54,7 +54,7 @@ public class MicrocodeAnalysis {
 	}
 
 	/** Limit for the length of a microcode path during simulation */
-	public final int PATH_SIZE_LIMIT = 10000;
+	public final int PATH_SIZE_LIMIT = 1000;
 	/** Number of branch delay slots */
 	public final int BRANCH_DELAY_SLOTS = 2;
 

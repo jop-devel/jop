@@ -38,12 +38,13 @@ import com.jopdesign.timing.WCETInstruction;
 import com.jopdesign.timing.ConsoleTable.Alignment;
 import com.jopdesign.timing.ConsoleTable.TableRow;
 import com.jopdesign.timing.jop.MicrocodeAnalysis.MicrocodeVerificationException;
+import com.jopdesign.tools.JopInstr;
 
 /** Microcode Timing Table 
  * Before generating the timing table do not forget to run e.g.
  * {@code make gen_mem -e ASM_SRC=jvm JVM_TYPE=USB @} 
  */
-public class JOPTimingTable extends TimingTable<JOPInstructionInfo> {
+public class JOPTimingTable extends TimingTable<JOPInstrParam> {
 	/**
 	 * Create a new timing table (read and write states are taken from WCETInstruction
 	 * until CMP is completed)
@@ -51,16 +52,10 @@ public class JOPTimingTable extends TimingTable<JOPInstructionInfo> {
 	 * @return
 	 * @throws IOException if loading the assembler file fails
 	 */
-	public static JOPTimingTable getTimingTable(File asmFile, boolean cmp) 
-		throws IOException {
+	public static JOPTimingTable getTimingTable(File asmFile) throws IOException {
 		MicropathTable mpt = MicropathTable.getTimingTable(asmFile);
-		if(cmp) {
-			return new JOPCmpTimingTable(mpt);			
-		} else {
-			JOPTimingTable tt = new JOPTimingTable(mpt);	
-			tt.configureDelays(WCETInstruction.r, WCETInstruction.w);
-			return tt;
-		}
+		JOPTimingTable tt = new JOPTimingTable(mpt);
+		return tt;
 	}
 
 	/** return opcodes are hardcoded: {A,D,F,I,L,_}RETURN */
@@ -77,14 +72,18 @@ public class JOPTimingTable extends TimingTable<JOPInstructionInfo> {
 	public long getCycles(int opcode) {
 		return getCycles(opcode,null);
 	}
+	public long getLocalCycles(int opcode) {
+		return getCycles(opcode, new JOPInstrParam(false, 0));
+	}
+
 	@Override
-	public long getCycles(int opcode, JOPInstructionInfo info) {
+	public long getCycles(int opcode, JOPInstrParam info) {
 		Vector<MicropathTiming> timing = this.getTiming(opcode);
 		if(hasBytecodeLoad(timing) && info == null) {
 			throw new AssertionError("Cannot calculate WCET of instruction accessing method cache"+
 					                 "without information on the size of the method");
 		} else {
-			info = new JOPInstructionInfo();
+			info = new JOPInstrParam(false, 0);
 		}
 		return this.getCycles(timing, this.methodCacheAccessCycles(info.hit, info.methodLoadWords));
 	}
@@ -122,10 +121,10 @@ public class JOPTimingTable extends TimingTable<JOPInstructionInfo> {
 		return hiddenAccess;
 	}
 	@Override
-	public long javaImplBcDispatchCycles(int opcode, JOPInstructionInfo info) {
+	public long javaImplBcDispatchCycles(int opcode, JOPInstrParam info) {
 		if(this.hasTimingInfo(opcode)) {
 			if(! hasBytecodeLoad(this.timingTable.get(opcode))) {
-				throw new AssertionError(""+ MicropathTable.OPCODE_NAMES[opcode]+ 
+				throw new AssertionError(""+ JopInstr.OPCODE_NAMES[opcode]+ 
 						                 " is not a java implemented bytecode");
 			}
 			return this.getCycles(opcode, info);
@@ -195,7 +194,7 @@ public class JOPTimingTable extends TimingTable<JOPInstructionInfo> {
 	}
 	
 	
-	private void configureDelays(int r, int w) {
+	public void configureWaitStates(int r, int w) {
 		this.readCycles = r;
 		this.writeCycles = w;
 	}
@@ -219,7 +218,11 @@ public class JOPTimingTable extends TimingTable<JOPInstructionInfo> {
 		return maxCycles;
 	}
 
-	public static boolean hasBytecodeLoad(Vector<MicropathTiming> timings) {
+	public boolean hasBytecodeLoad(short opcode) {
+		return hasBytecodeLoad(this.getTiming(opcode));
+	}
+
+	protected static boolean hasBytecodeLoad(Vector<MicropathTiming> timings) {
 		for(MicropathTiming ptime : timings) {
 			if(ptime.hasBytecodeLoad()) return true;
 		}
@@ -239,13 +242,13 @@ public class JOPTimingTable extends TimingTable<JOPInstructionInfo> {
 
 		JOPTimingTable tt = null;
 		try {
-			tt = JOPTimingTable.getTimingTable(asmFile,false);
+			tt = JOPTimingTable.getTimingTable(asmFile);
 		} catch (Exception e) {
 			e.printStackTrace();
 			System.exit(1);
 		}
 		// demo config
-		tt.configureDelays(1, 2);
+		tt.configureWaitStates(1, 2);
 		// build table
 		ConsoleTable table = new ConsoleTable();
 		table.addColumn("opcode", Alignment.ALIGN_RIGHT)
@@ -257,22 +260,22 @@ public class JOPTimingTable extends TimingTable<JOPInstructionInfo> {
              .addColumn("(3,5,32)",Alignment.ALIGN_RIGHT);
 		for(int i = 0; i < 256; i++) {
 			int opcode = i;
-			if(MicropathTable.isReserved(opcode)) continue;
+			if(JopInstr.isReserved(opcode)) continue;
 			TableRow row = table.addRow();
 			row.addCell(opcode)
-			   .addCell(MicropathTable.OPCODE_NAMES[i]);
+			   .addCell(JopInstr.OPCODE_NAMES[i]);
 			if(tt.getAnalysisError(i) != null) {
 				row.addCell("... FAILED: "+tt.getAnalysisError(i).getMessage()+" ...",5,Alignment.ALIGN_LEFT);
 			} else if (! tt.isImplemented(i)) {
 				row.addCell("... no microcode implementation ...",5,Alignment.ALIGN_LEFT);
 			} else {
 				String timingPath = MicropathTiming.toString(tt.getTiming(opcode));
-				tt.configureDelays(1, 2);
-				long exampleTiming1 = tt.getCycles(opcode, new JOPInstructionInfo(true, 0)); 
-				long exampleTiming2 = tt.getCycles(opcode, new JOPInstructionInfo(false, 32));
-				tt.configureDelays(3, 5);
-				long exampleTiming3 = tt.getCycles(opcode, new JOPInstructionInfo(true, 0));
-				long exampleTiming4 = tt.getCycles(opcode, new JOPInstructionInfo(false, 32));
+				tt.configureWaitStates(1, 2);
+				long exampleTiming1 = tt.getCycles(opcode, new JOPInstrParam(true, 0)); 
+				long exampleTiming2 = tt.getCycles(opcode, new JOPInstrParam(false, 32));
+				tt.configureWaitStates(3, 5);
+				long exampleTiming3 = tt.getCycles(opcode, new JOPInstrParam(true, 0));
+				long exampleTiming4 = tt.getCycles(opcode, new JOPInstrParam(false, 32));
 				row.addCell(timingPath)
 				   .addCell(exampleTiming1)
 				   .addCell(exampleTiming2)
@@ -297,11 +300,11 @@ public class JOPTimingTable extends TimingTable<JOPInstructionInfo> {
 		boolean[] testHit  = { true, true, false, false, false };
 		int[]     testLoad = {    1,  128,     1,    11,    57 };
 		Map<Integer,String> failures = new TreeMap<Integer,String>();
-		tt.configureDelays(WCETInstruction.r, WCETInstruction.w);
+		tt.configureWaitStates(WCETInstruction.r, WCETInstruction.w);
 		outer:
 		for(int i = 0; i < 256; i++) {
 			long wiTime0 = WCETInstruction.getCycles(i, false, 0);
-			if(MicropathTable.isReserved(i)) {
+			if(JopInstr.isReserved(i)) {
 				if(wiTime0 >= 0) {
 					failures.put(i,"WCETInstruction has timing: "+wiTime0+", but JopInstr says this is a RESERVED INSTRUCTION");
 				} 
@@ -326,7 +329,7 @@ public class JOPTimingTable extends TimingTable<JOPInstructionInfo> {
 			}
 			for(int j = 0; j < testHit.length; j++) {
 				long wiT = WCETInstruction.getCycles(i, ! testHit[j], testLoad[j]);
-				long wiMA = tt.getCycles(i, new JOPInstructionInfo(testHit[j],testLoad[j]));
+				long wiMA = tt.getCycles(i, new JOPInstrParam(testHit[j],testLoad[j]));
 				if(wiT != wiMA) {
 					failures.put(i,"WCETInstruction has DIFFERENT TIMING INFO: "+
 							     "microcodeanalysis := "+wiMA+ " /= "+ wiT + " =: wcetinstruction"); 
@@ -336,7 +339,7 @@ public class JOPTimingTable extends TimingTable<JOPInstructionInfo> {
 		}
 		for(Entry<Integer, String> fail : failures.entrySet()) {
 			int opc = fail.getKey();
-			System.err.println("["+opc+"] " + MicropathTable.OPCODE_NAMES[opc]+" : "+fail.getValue());
+			System.err.println("["+opc+"] " + JopInstr.OPCODE_NAMES[opc]+" : "+fail.getValue());
 		}
 	}
 

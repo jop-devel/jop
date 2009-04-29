@@ -27,7 +27,7 @@ import java.util.List;
  * 
  * Currently we support the following aspects:
  * <ul>
- * <li/> Cycles needed to execute an instruction (ProcessorState as type parameter))
+ * <li/> Cycles needed to execute an instruction (InstrParam as type parameter))
  * <li/> WCET of basic blocks
  * <li/> Method Caches
  * <li/> Java Implemented Bytecodes
@@ -36,17 +36,18 @@ import java.util.List;
  * We currently only support architectures where there is a worst case for the
  * ProcessorState.
  */
-public abstract class TimingTable<ProcessorState> {
+public abstract class TimingTable<InstrParam> {
+	
 	/**
 	 * Class for encapsulating a instruction to be analyzed
 	 */
-	public class InstructionInfo {
+	public static class InstructionInfo<InstrParam> {
 		int opcode;
-		ProcessorState procState = null;
+		InstrParam procState = null;
 		public InstructionInfo(int opcode) { 
 			this.opcode = opcode;
 		}
-		public InstructionInfo(int opcode, ProcessorState ps) {
+		public InstructionInfo(int opcode, InstrParam ps) {
 			this(opcode);
 			this.procState = ps;
 		}
@@ -69,7 +70,7 @@ public abstract class TimingTable<ProcessorState> {
 	/** 
 	 * Get the WCET for an instruction.
 	 */
-	public abstract long getCycles(int opcode, ProcessorState ps);
+	public abstract long getCycles(int opcode, InstrParam ps);
 	
 
 	/*                      Get WCETs of Basic Block
@@ -80,9 +81,9 @@ public abstract class TimingTable<ProcessorState> {
 	 * Get the timing info for a basic block.<br/>
 	 * The default implementation simply sums the WCETs of the instructions.
 	 */
-	public long getCycles(List<InstructionInfo> opcodes) {
+	public long getCycles(List<InstructionInfo<InstrParam>> opcodes) {
 		long wcet = 0;
-		for(InstructionInfo instr : opcodes) {
+		for(InstructionInfo<InstrParam> instr : opcodes) {
 			wcet += getCycles(instr.opcode, instr.procState);
 		}
 		return wcet;
@@ -110,7 +111,7 @@ public abstract class TimingTable<ProcessorState> {
 	 * Implementations should throw a runtime error if the opcode is not implemented
 	 * in Java.
 	 */
-	public long javaImplBcDispatchCycles(int opcode, ProcessorState st) {
+	public long javaImplBcDispatchCycles(int opcode, InstrParam st) {
 		throw new AssertionError("The platform " + this.getClass() 
 				               + " does not support Java implemented bytecodes");
 	}

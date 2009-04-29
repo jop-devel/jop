@@ -27,6 +27,7 @@ import java.util.Map;
 import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
 
+import com.jopdesign.tools.JopInstr;
 import com.jopdesign.wca_rup.WU;
 
 
@@ -45,8 +46,8 @@ public class WCETInstruction {
 	public static final int r = 1;
 	public static final int w = 2;
 	// cache read wait state (r-1)
-	public static final int c = 0; // if read wait state <= 1
-	// public static final int c = r-1; // if read wait state > 1
+	//public static final int c = 0; // if read wait state <= 1
+	public static final int c = r-1; // if read wait state > 1
 
 	// hidden load cycles
 	public static final int INVOKE_HIDDEN_LOAD_CYCLES = 37;
@@ -57,13 +58,13 @@ public class WCETInstruction {
 	public static final int LRETURN_HIDDEN_LOAD_CYCLES = 11;
 	public static final int DRETURN_HIDDEN_LOAD_CYCLES = 11;
 	public static final int MIN_HIDDEN_LOAD_CYCLES = RETURN_HIDDEN_LOAD_CYCLES; 
-	// TODO: Describe CMP_WCET !
+	// CMP: Multiprocessing with time sliced memory access (christof)
 	public static final boolean CMP_WCET = false;
 
 	// Arbitration
-	public static final int CPUS = 3;
-	public static final int TIMESLOT = 3;
-	public static final int MAX_CYCLES = 100000;
+	public static int CPUS = 8;
+	public static int TIMESLOT = 10; // has to be greater r !!
+	public static final int MAX_CYCLES = 1000000;
 	public static final int ARB_PERIOD = CPUS*TIMESLOT;
 	
 	// Build Instructions
@@ -99,15 +100,19 @@ public class WCETInstruction {
 	public static WCETMemInstruction invokespecial; 
 	public static WCETMemInstruction invokestatic; // same as invokespecial
 	public static WCETMemInstruction invokeinterface;
-	
 	static {
 		if (CMP_WCET){
-			// Initialize 
-			initArbiter();
-			generateStaticInstr();
+			initCMP(CPUS, TIMESLOT);
 		}
 	}
-	
+	// FIXME: Workaround for the transition to the new timing system
+	public static void initCMP(int cpus, int timeslot) {
+		// Initialize 
+		CPUS = cpus;
+		TIMESLOT = timeslot;
+		initArbiter();
+		generateStaticInstr();		
+	}
 	//Native bytecodes (see jvm.asm)
 	private static final int JOPSYS_RD = 209;
 	private static final int JOPSYS_WR = 210;
@@ -271,11 +276,8 @@ public class WCETInstruction {
 	 */
 	public static int getCycles(int opcode, boolean pmiss, int n) {
 		int wcet = -1;
-		int loadTime = -1;
-		
 		// cache load time
-		loadTime = calculateB(!pmiss, n);
-
+		int loadTime = calculateB(!pmiss, n);
 		switch (opcode) {
 		// NOP = 0
 		case org.apache.bcel.Constants.NOP:
@@ -1375,81 +1377,12 @@ public class WCETInstruction {
 			wcet = -1;
 		}
 		// TODO: Add the JOP speciffic codes?
-		if (isInJava(opcode)) {
+		if (JopInstr.isInJava(opcode)) {
 			return -1;
 		}
 		return wcet;
 	}
 
-	public static boolean isInJava(int opcode) {
-		
-		switch (opcode) {
-			case org.apache.bcel.Constants.FCONST_0:
-				return true;
-			case org.apache.bcel.Constants.FCONST_1:
-				return true;
-			case org.apache.bcel.Constants.FCONST_2:
-				return true;
-			case org.apache.bcel.Constants.AASTORE:
-				return true;
-			case org.apache.bcel.Constants.FADD:
-				return true;
-			case org.apache.bcel.Constants.FSUB:
-				return true;
-			case org.apache.bcel.Constants.LMUL:
-				return true;
-			case org.apache.bcel.Constants.FMUL:
-				return true;
-			case org.apache.bcel.Constants.IDIV:
-				return true;
-			case org.apache.bcel.Constants.LDIV:
-				return true;
-			case org.apache.bcel.Constants.FDIV:
-				return true;
-			case org.apache.bcel.Constants.IREM:
-				return true;
-			case org.apache.bcel.Constants.LREM:
-				return true;
-			case org.apache.bcel.Constants.FREM:
-				return true;
-			case org.apache.bcel.Constants.FNEG:
-				return true;
-			case org.apache.bcel.Constants.I2F:
-				return true;
-			case org.apache.bcel.Constants.F2I:
-				return true;
-			case org.apache.bcel.Constants.I2B:
-				return true;
-			case org.apache.bcel.Constants.I2S:
-				return true;
-			case org.apache.bcel.Constants.LCMP:
-				return true;
-			case org.apache.bcel.Constants.FCMPL:
-				return true;
-			case org.apache.bcel.Constants.FCMPG:
-				return true;
-			case org.apache.bcel.Constants.TABLESWITCH:
-				return true;
-			case org.apache.bcel.Constants.LOOKUPSWITCH:
-				return true;
-			case org.apache.bcel.Constants.NEW:
-				return true;
-			case org.apache.bcel.Constants.NEWARRAY:
-				return true;
-			case org.apache.bcel.Constants.ANEWARRAY:
-				return true;
-			case org.apache.bcel.Constants.ATHROW:
-				return true;
-			case org.apache.bcel.Constants.CHECKCAST:
-				return true;
-			case org.apache.bcel.Constants.INSTANCEOF:
-				return true;
-			case org.apache.bcel.Constants.MULTIANEWARRAY:
-				return true;
-			default:
-				return false;
-		}
-	}
 	/**
 	 * Check to see if there is a valid WCET count for the instruction.
 	 * 
