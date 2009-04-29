@@ -18,9 +18,6 @@
 	  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 	*/
 package com.jopdesign.timing.jamuth;
-import java.io.File;
-import java.util.Arrays;
-import java.util.List;
 
 import org.apache.bcel.Constants;
 
@@ -28,16 +25,13 @@ import com.jopdesign.timing.ConsoleTable;
 import com.jopdesign.timing.TimingTable;
 import com.jopdesign.timing.ConsoleTable.Alignment;
 import com.jopdesign.timing.ConsoleTable.TableRow;
-import com.jopdesign.timing.jop.JOPTimingTable;
-import com.jopdesign.timing.jop.MicrocodeAnalysis;
-import com.jopdesign.timing.jop.MicropathTable;
-import com.jopdesign.timing.jop.MicropathTiming;
+import com.jopdesign.tools.JopInstr;
 
 /**
  * It has wcet info on byte code instruction granularity. Should we consider
  * making a class that wraps the microcodes into objects?
  */
-public class JamuthTimingTable extends TimingTable<JamuthInstructionInfo> {
+public class JamuthTimingTable extends TimingTable<JamuthInstrParam> {
 
 	private static final int WCETNOTAVAILABLE = -1;
 
@@ -71,12 +65,12 @@ public class JamuthTimingTable extends TimingTable<JamuthInstructionInfo> {
 
 	@Override
 	public long getCycles(int opcode) {
-		return getCycles(opcode, new JamuthInstructionInfo());
+		return getCycles(opcode, new JamuthInstrParam());
 	}
 	
 	@Override
 	public boolean hasTimingInfo(int opcode) {
-		if (getCycles(opcode, new JamuthInstructionInfo()) == WCETNOTAVAILABLE)
+		if (getCycles(opcode, new JamuthInstrParam()) == WCETNOTAVAILABLE)
 			return false;
 		else
 			return true;
@@ -90,7 +84,7 @@ public class JamuthTimingTable extends TimingTable<JamuthInstructionInfo> {
 	 * - TODO: cache ?
 	 */
 	@Override
-	public long getCycles(int opcode, JamuthInstructionInfo info) {
+	public long getCycles(int opcode, JamuthInstrParam info) {
 		int wcet = -1;
 
 		int branchlatency=fla;
@@ -995,12 +989,12 @@ public class JamuthTimingTable extends TimingTable<JamuthInstructionInfo> {
 		     .addColumn("Cyc (n?=15)", Alignment.ALIGN_RIGHT);
 		for(int i = 0; i < 256; i++) {
 			int opcode = i;
-			if(MicropathTable.isReserved(opcode)) continue;
+			if(JopInstr.isReserved(opcode)) continue;
 			TableRow row = table.addRow();
 			row.addCell(opcode)
-			   .addCell(MicropathTable.OPCODE_NAMES[i]);
+			   .addCell(JopInstr.OPCODE_NAMES[i]);
 			if(timing.hasTimingInfo(opcode)) {
-				long t1 = timing.getCycles(i, new JamuthInstructionInfo());
+				long t1 = timing.getCycles(i, new JamuthInstrParam());
 				row.addCell(t1);
 			} else {
 				row.addCell("... no info ...",2,Alignment.ALIGN_LEFT);
