@@ -167,6 +167,7 @@ public class MiscUtils {
 		Collections.reverse(revTopo);
 		return revTopo;
 	}
+	public static final int BYTES_PER_WORD = 4;
 
 
 }

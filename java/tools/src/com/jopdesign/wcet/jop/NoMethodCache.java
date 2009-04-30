@@ -4,7 +4,7 @@ import com.jopdesign.build.MethodInfo;
 import com.jopdesign.wcet.ProcessorModel;
 import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.frontend.ControlFlowGraph;
-import com.jopdesign.wcet.jop.CacheConfig.CacheImplementation;
+import com.jopdesign.wcet.jop.JOPConfig.CacheImplementation;
 
 public class NoMethodCache extends MethodCache {
 

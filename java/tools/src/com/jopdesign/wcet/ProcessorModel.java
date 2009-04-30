@@ -29,7 +29,7 @@ import com.jopdesign.wcet.frontend.ControlFlowGraph;
 import com.jopdesign.wcet.frontend.WcetAppInfo;
 import com.jopdesign.wcet.jop.MethodCache;
 
-public interface ProcessorModel{
+public interface ProcessorModel {
 
 	/**
 	 * Check whether we need to deal with the given statement in a special way,

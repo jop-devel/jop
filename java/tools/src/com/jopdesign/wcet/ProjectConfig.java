@@ -30,6 +30,8 @@ import com.jopdesign.wcet.graphutils.MiscUtils;
 public class ProjectConfig {
 	public static final StringOption PROJECT_NAME =
 		new StringOption("projectname","name of the 'project', used when generating reports",true);
+	public static final StringOption JAVA_PROCESSOR =
+		new StringOption("java-processor","which java processor to use (jamuth, JOP)","JOP");
 	public static final StringOption APP_CLASS_NAME = 
 		new StringOption("app-class",
 			             "the name of the class containing the main entry point of the RTJava application",
@@ -60,7 +62,7 @@ public class ProjectConfig {
 		OUT_DIR,
 		APP_CLASS_NAME, TARGET_METHOD, PROJECT_NAME,
 		TARGET_CLASSPATH, TARGET_SOURCEPATH,
-		DO_DFA, USE_UPPAAL,
+		JAVA_PROCESSOR, DO_DFA, USE_UPPAAL,
 		RESULT_FILE, RESULTS_APPEND
 	};
 	public static File getOutDir(String subdir) {
@@ -128,6 +130,9 @@ public class ProjectConfig {
 	 */
 	public String getSourcePath() {
 		return config.getOption(TARGET_SOURCEPATH);		
+	}
+	public String getProcessorName() {
+		return config.getOption(JAVA_PROCESSOR);
 	}
 	/**
 	 * Whether reports should be generated

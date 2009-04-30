@@ -411,7 +411,6 @@ public class ControlFlowGraph {
 			new DefaultFlowGraph<CFGNode, CFGEdge>(CFGEdge.class, subEntry, subExit);
 	}
 	/* worker: create the flow graph */
-	@SuppressWarnings("static-access")
 	private void createFlowGraph(MethodInfo method) {
 		WcetAppInfo.logger.info("creating flow graph for: "+method);
 		blocks = BasicBlock.buildBasicBlocks(this.appInfo,method);

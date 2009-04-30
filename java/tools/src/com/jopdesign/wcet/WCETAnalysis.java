@@ -45,7 +45,7 @@ import com.jopdesign.wcet.graphutils.MiscUtils;
 import com.jopdesign.wcet.ipet.IpetConfig;
 import com.jopdesign.wcet.ipet.LpSolveWrapper;
 import com.jopdesign.wcet.ipet.IpetConfig.StaticCacheApproximation;
-import com.jopdesign.wcet.jop.CacheConfig;
+import com.jopdesign.wcet.jop.JOPConfig;
 import com.jopdesign.wcet.report.Report;
 import com.jopdesign.wcet.report.ReportConfig;
 import com.jopdesign.wcet.uppaal.UppAalConfig;
@@ -61,7 +61,7 @@ public class WCETAnalysis {
 	private static final Logger tlLogger = Logger.getLogger(WCETAnalysis.class);
 	public static Option<?>[][] options = {
 		ProjectConfig.projectOptions,
-		CacheConfig.cacheOptions,
+		JOPConfig.jopOptions,
 		IpetConfig.ipetOptions,
 		UppAalConfig.uppaalOptions,
 		ReportConfig.reportOptions

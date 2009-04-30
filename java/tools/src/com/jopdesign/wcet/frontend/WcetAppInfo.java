@@ -267,6 +267,9 @@ public class WcetAppInfo  {
 	private ControlFlowGraph loadFlowGraph(MethodInfo method) throws BadAnnotationException, IOException, BadGraphException {
 		SortedMap<Integer,LoopBound> wcaMap = project.getAnnotations(method.getCli());
 		assert(wcaMap != null);
+		if(method.getCode() == null) {
+			throw new BadGraphException("No implementation of "+method.getFQMethodName()+" available for the target processor");
+		}
 		ControlFlowGraph fg;
 		try {
 			fg = new ControlFlowGraph(cfgsByIndex.size(),project,method);
