@@ -40,7 +40,7 @@ public class EjipBenchCMP {
 	
 	static Object monitor = new Object();
 	static final int CNT = 1000;
-	static final int VECTOR_LEN = 10;
+	static final int VECTOR_LEN = 20;
 	static final int MAX_OUTSTANDING = 4;
 		
 	static Ejip ejip;
@@ -60,8 +60,7 @@ public class EjipBenchCMP {
 */
 	public static void init() {
 
-		// maximum packet length: (Udp.DATA+1+2*VECTOR_LEN)*4 = 28*4 = 112;
-		ejip = new Ejip(Ejip.CNT, 112);
+		ejip = new Ejip(Ejip.CNT, (Udp.DATA+1+VECTOR_LEN*2)*4);
 		net = new Net(ejip);
 		udp = net.getUdp();
 		int ip = Ejip.makeIp(192, 168, 1, 2);
@@ -69,6 +68,9 @@ public class EjipBenchCMP {
 		
 		macQueue = new PacketQueue(Ejip.CNT);
 		resultQueue = new PacketQueue(Ejip.CNT);
+		
+		// we don't need the TFTP handler in this benchmark
+		net.getUdp().removeHandler(Tftp.PORT);
 
 		UdpHandler mac;
 		mac = new UdpHandler() {
@@ -105,8 +107,8 @@ public class EjipBenchCMP {
 			int result = 0;
 			
 			
-			for (int i=0; i<len; ++i) { // @WCA loop=10
-				result += buf[Udp.DATA+1+i*2] * buf[Udp.DATA+2+i*2];
+			for (int i=0; i<len; ++i) { // @WCA loop=20
+				result += buf[Udp.DATA+1+(i<<1)] * buf[Udp.DATA+2+(i<<1)];
 			}
 			
 			buf[Udp.DATA] = result;
@@ -139,9 +141,9 @@ public class EjipBenchCMP {
 			}
 			int buf[] = p.buf;
 			buf[Udp.DATA] = VECTOR_LEN;			
-			for (int i=0; i<VECTOR_LEN; ++i) { // @WCA loop=10
-				buf[Udp.DATA+1+i*2] = a;
-				buf[Udp.DATA+2+i*2] = b;				
+			for (int i=0; i<VECTOR_LEN; ++i) {
+				buf[Udp.DATA+1+(i<<1)] = a;
+				buf[Udp.DATA+2+(i<<1)] = b;				
 				// just generate new 'funny' values and use sum
 				a = (a<<1)^b;
 				b = (b<<1)^sum;

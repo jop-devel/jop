@@ -91,7 +91,16 @@ public class Ip {
 	
 		int i;
 		int sum = 0;
+		int max = (buf.length+3)>>2;
 		cnt = (cnt + 3) >> 2; // word count
+// the following has a bug that shows up in the
+// simple Html server
+//		for (int j=0; j<cnt && j<max; ++j) {
+//			i = buf[off];
+//			sum += i & 0xffff;
+//			sum += i >>> 16;
+//			++off;
+//		}
 		while (cnt != 0) {
 			i = buf[off];
 			sum += i & 0xffff;
@@ -100,7 +109,7 @@ public class Ip {
 			--cnt;
 		}
 	
-		while ((sum >> 16) != 0)
+		while ((sum >> 16) != 0) // @WCA loop<=2
 			sum = (sum & 0xffff) + (sum >> 16);
 	
 		sum = (~sum) & 0xffff;

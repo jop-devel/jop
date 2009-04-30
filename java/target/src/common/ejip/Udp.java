@@ -70,6 +70,7 @@ public class Udp implements Runnable {
 		ports = new int[MAX_HANDLER];
 		loopCnt = 0;
 
+// disable for WCET analysis as it is hard for the analysis
 		addHandler(Tftp.PORT, new Tftp(ejip));
 	}
 	/**
