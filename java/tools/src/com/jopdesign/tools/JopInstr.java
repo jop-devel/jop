@@ -464,9 +464,9 @@ public class JopInstr{
 			System.out.println(JopInstr.cnt(i));
 		}
 /*
-		// check wether imp no/asm/java flag is correct
+		// check wether (noimp | asm | java) flag is correct
 		try {
-			JOPTimingTable tt = JOPTimingTable.getTimingTable(new File("asm/generated/jvmgen.asm"));
+			JOPTimingTable tt = JOPTimingTable.getTimingTable(MicrocodeAnalysis.ASM_FILE);
 			for (int i=0; i<256; ++i) {
 				int staticInfo = JopInstr.imp(i);
 				if(staticInfo == IMP_JAVA) {
