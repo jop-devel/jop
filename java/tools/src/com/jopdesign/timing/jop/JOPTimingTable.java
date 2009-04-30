@@ -21,7 +21,6 @@
 package com.jopdesign.timing.jop;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
@@ -46,14 +45,14 @@ import com.jopdesign.tools.JopInstr;
  */
 public class JOPTimingTable extends TimingTable<JOPInstrParam> {
 	/**
-	 * Create a new timing table (read and write states are taken from WCETInstruction
-	 * until CMP is completed)
-	 * @param asmFile the preprocessed assembler file
-	 * @return
-	 * @throws IOException if loading the assembler file fails
+	 * Create a new timing table.
+	 * We try to read the generated assembler file, if it has been
+	 * changed since the last release. If the assembler file is unchanged
+	 * or cannot be not found, we use a precompiled table.
+	 * @param file 
 	 */
-	public static JOPTimingTable getTimingTable(File asmFile) throws IOException {
-		MicropathTable mpt = MicropathTable.getTimingTable(asmFile);
+	public static JOPTimingTable getTimingTable(File file)  {
+		MicropathTable mpt = MicropathTable.getTimingTable(file);
 		JOPTimingTable tt = new JOPTimingTable(mpt);
 		return tt;
 	}
@@ -79,11 +78,13 @@ public class JOPTimingTable extends TimingTable<JOPInstrParam> {
 	@Override
 	public long getCycles(int opcode, JOPInstrParam info) {
 		Vector<MicropathTiming> timing = this.getTiming(opcode);
-		if(hasBytecodeLoad(timing) && info == null) {
-			throw new AssertionError("Cannot calculate WCET of instruction accessing method cache"+
-					                 "without information on the size of the method");
-		} else {
-			info = new JOPInstrParam(false, 0);
+		if(info == null) {
+			if(hasBytecodeLoad(timing)) {
+				throw new AssertionError("Cannot calculate WCET of instruction accessing method cache"+
+                "without information on the size of the method");
+			} else {
+				info = new JOPInstrParam(false, 0);				
+			}
 		}
 		return this.getCycles(timing, this.methodCacheAccessCycles(info.hit, info.methodLoadWords));
 	}
@@ -230,19 +231,17 @@ public class JOPTimingTable extends TimingTable<JOPInstrParam> {
 	}
 
 	/**
-	 * Print the microcode timing table from asm/generated/jvmgen.asm
+	 * Print the microcode timing table from jvmgen.asm
 	 * @param argv
 	 */
 	public static void main(String argv[]) {
-		File asmFile = new File("asm/generated/jvmgen.asm");
-
-		System.out.println("Loading "+asmFile);
+		System.out.println("Loading " + MicrocodeAnalysis.DEFAULT_ASM_FILE);
 		System.out.println("  Before generating the timing table do not forget to run e.g.");
 		System.out.println("  > make gen_mem -e ASM_SRC=jvm JVM_TYPE=USB"); 
 
 		JOPTimingTable tt = null;
 		try {
-			tt = JOPTimingTable.getTimingTable(asmFile);
+			tt = JOPTimingTable.getTimingTable(MicrocodeAnalysis.DEFAULT_ASM_FILE);
 		} catch (Exception e) {
 			e.printStackTrace();
 			System.exit(1);
@@ -331,8 +330,9 @@ public class JOPTimingTable extends TimingTable<JOPInstrParam> {
 				long wiT = WCETInstruction.getCycles(i, ! testHit[j], testLoad[j]);
 				long wiMA = tt.getCycles(i, new JOPInstrParam(testHit[j],testLoad[j]));
 				if(wiT != wiMA) {
-					failures.put(i,"WCETInstruction has DIFFERENT TIMING INFO: "+
-							     "microcodeanalysis := "+wiMA+ " /= "+ wiT + " =: wcetinstruction"); 
+					failures.put(i,"WCETInstruction has DIFFERENT TIMING INFO "+
+							       "(hit = " + testHit[j] + ", load = " + testLoad[j] + "): " +
+							     "microcodeanalysis := " + wiMA + " /= " + wiT + " =: wcetinstruction"); 
 					continue outer;
 				}
 			}

@@ -1,5 +1,6 @@
 package com.jopdesign.timing.jop;
 
+import java.io.Serializable;
 import java.util.Vector;
 
 import com.jopdesign.timing.jop.MicrocodeAnalysis.MicrocodeVerificationException;
@@ -7,17 +8,20 @@ import com.jopdesign.tools.Instruction;
 import com.jopdesign.tools.Jopa.Line;
 
 /** Class representing microcode paths */
-public class MicrocodePath {
+public class MicrocodePath implements Serializable {
+	private static final long serialVersionUID = 1L;
+
 	/** Path Entry, 'constant', i.e. you never modify any fields after construction */
-	public class PathEntry {
+	public class PathEntry implements Serializable {
+		private static final long serialVersionUID = 1L;
+		private final Line line;		
+		private final Integer tos; /** TOS (op of stack), if available */    
+
 		private PathEntry(Line l) { this(l,null); }
 		private PathEntry(Line l, Integer tos) {
 			this.line = l;
 			this.tos  = tos;
 		}
-		private final Line line;
-		/** TOS (op of stack), if available */
-		private final Integer tos;    
 		public Instruction getInstruction() {
 			return line.getInstruction();
 		}

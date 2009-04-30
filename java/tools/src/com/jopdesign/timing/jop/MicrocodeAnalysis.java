@@ -525,6 +525,7 @@ public class MicrocodeAnalysis {
 	private Map<Object, Object> symMap;
 	private Map<Integer,Integer> jInstrs;
 	private List<Line> instrs;
+	public static final File DEFAULT_ASM_FILE = new File("asm", new File("generated","jvmgen.asm").getPath());
 
 	public MicrocodeAnalysis(String jvmAsm) throws IOException {
 		asmFile = new File(jvmAsm);
@@ -588,10 +589,6 @@ public class MicrocodeAnalysis {
 
 
 	public static void main(String[] argv) {
-//		String asmFile= 
-//			"/Users/benedikt/Documents/programming/community/jop/cvs_head/opencores_jop/asm/src/jvm.asm";
-//		String asmFile =
-//			"/Users/benedikt/Documents/programming/community/jop/git/jop/asm/generated/jvmgen.asm";
 //		MicrocodeAnalysis mt = null;
 //		try {
 //			mt = new MicrocodeAnalysis(asmFile);
