@@ -15,7 +15,7 @@ public class StartDSVM {
 	/**
 	 * Set to false for the WCET analysis, true for measurement
 	 */
-	final static boolean MEASURE = true;
+	final static boolean MEASURE = false;
 	static int ts, te, to;
 
 	public static void main(String[] args) {
