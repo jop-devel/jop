@@ -106,7 +106,6 @@ public class EjipBenchCMP {
 			int len = buf[Udp.DATA];
 			int result = 0;
 			
-			
 			for (int i=0; i<len; ++i) { // @WCA loop=20
 				result += buf[Udp.DATA+1+(i<<1)] * buf[Udp.DATA+2+(i<<1)];
 			}
@@ -159,6 +158,16 @@ public class EjipBenchCMP {
 //		System.out.println(received);
 	}
 
+	/**
+	 * Run all five tasks in a single loop for WCET example.
+	 */
+	public static void loop() {
+		ipLink.run();
+		resultServer();
+		request();
+		macServer();
+		net.run();
+	}
 	
 	public static void main(String[] args) {
 
