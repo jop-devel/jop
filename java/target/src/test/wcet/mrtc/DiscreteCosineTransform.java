@@ -1,5 +1,4 @@
 package wcet.mrtc;
-//import edu.uci.eecs.doc.clepsydra.loop.LoopBound;
 
 /**
  * Forward Discrete Cosine Transform. Used on 8x8 image blocks to reassemble blocks

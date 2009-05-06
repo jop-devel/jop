@@ -1,5 +1,4 @@
 package wcet.mrtc;
-//import edu.uci.eecs.doc.clepsydra.loop.LoopBound;
 
 /**
  * Search in a multi-dimensional array. Test of deeply nested loops and non-local exits.
@@ -452,18 +451,14 @@ public class NestedSearch
     	}
     };
     
-    private int foo(int x)
+    public int foo(int x)
     {
-        //@LoopBound(max=5)
-    	for (int i = 0; i < 5; i++)
+     	for (int i = 0; i < 5; i++)
     	{
-            //@LoopBound(max=5)
     		for (int j = 0; j < 5; j++)
     		{
-                //@LoopBound(max=5)
     			for (int k = 0; k < 5; k++)
     			{
-                    //@LoopBound(max=5)
     				for (int l = 0; l < 5; l++)
     				{
     					if (keys[i][j][k][l] == x)

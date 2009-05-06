@@ -1,5 +1,4 @@
 package wcet.mrtc;
-//import edu.uci.eecs.doc.clepsydra.loop.LoopBound;
 
 /**
  * Simultaneous linear equations by LU decomposition (from the book C Programming
@@ -36,10 +35,11 @@ public class SimultaneousLinearEquations
         int w;
 
         //@LoopBound(max=N)
-        for (int i = 0; i < n; i++)
+        for (int i = 0; i < n; i++)	// @WCA loop<=5
         {
             //@LoopBound(max=N)
-            for (int j = i + 1; j <= n; j++)  // triangular loop vs. i
+        	// triangular loop vs. i
+            for (int j = i + 1; j <= n; j++) // @WCA loop<=5
             {
                 w = a[j][i];
 
@@ -47,7 +47,7 @@ public class SimultaneousLinearEquations
                 {
                     // sub-loop is conditional, done all iterations except first of the OUTER loop                    
                     //@LoopBound(max=N)
-                    for (int k = 0; k < i; k++)
+                    for (int k = 0; k < i; k++) // @WCA loop<=5
                         w -= a[j][k] * a[k][i];
                 }
 
@@ -57,12 +57,14 @@ public class SimultaneousLinearEquations
             }
 
             //@LoopBound(max=N)
-            for (int j = i + 1; j <= n; j++)  // triangular loop vs. i
+        	// triangular loop vs. i
+            for (int j = i + 1; j <= n; j++) // @WCA loop<=5 
             {
                 w = a[i + 1][j];
 
                 //@LoopBound(max=N)
-                for (int k = 0; k <= i; k++)  // triangular loop vs. i
+                // triangular loop vs. i
+                for (int k = 0; k <= i; k++) // @WCA loop<=5  
                     w -= a[i + 1][k] * a[k][j];
 
                 a[i + 1][j] = w;
@@ -72,12 +74,14 @@ public class SimultaneousLinearEquations
         y[0] = b[0];
 
         //@LoopBound(max=N)
-        for (int i = 1; i <= n; i++)  // iterates n times
+        // iterates n times
+        for (int i = 1; i <= n; i++) // @WCA loop<=5
         {
             w = b[i];
 
             //@LoopBound(max=N)
-            for (int j = 0; j < i; j++)  // triangular sub loop
+        	// triangular sub loop
+            for (int j = 0; j < i; j++) // @WCA loop<=5
                 w -= a[i][j] * y[j];
 
             y[i] = w;
@@ -88,12 +92,14 @@ public class SimultaneousLinearEquations
         x[n] = y[n] * a[n][n];
 
         //@LoopBound(max=N)
-        for (int i = n - 1; i >= 0; i--)  // iterates n times
+    	// iterates n times
+        for (int i = n - 1; i >= 0; i--) // @WCA loop<=5
         {
             w = y[i];
 
             //@LoopBound(max=N)
-            for (int j = i + 1; j <= n; j++)  // triangular sub loop
+        	// triangular sub loop
+            for (int j = i + 1; j <= n; j++) // @WCA loop<=5
                 w -= a[i][j] * x[j];
 
             // FIXME: Cannot do division because idiv bytecode is implemented in software on JOP, causing problems for Clepsydra. Replace with multiplication for now.
@@ -102,16 +108,16 @@ public class SimultaneousLinearEquations
         }
     }
 
-    private void run()
+    public void run()
     {
         // Initialize the matrices
         //@LoopBound(max=N+1)
-        for (int i = 0; i <= N; i++)
+        for (int i = 0; i <= N; i++) // @WCA loop<=6
         {
             int w = 0;  // data to fill in cells
 
             //@LoopBound(max=N+1)
-            for (int j = 0; j <= N; j++)
+            for (int j = 0; j <= N; j++) // @WCA loop<=6
             {
                 a[i][j] = (i + 1) + (j + 1);
 

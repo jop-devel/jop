@@ -1,5 +1,4 @@
 package wcet.mrtc;
-//import edu.uci.eecs.doc.clepsydra.loop.LoopBound;
 
 /**
  * Nested loop program.
@@ -28,13 +27,13 @@ package wcet.mrtc;
  */
 public class JanneComplex
 {
-    private void complex(int a, int b)
+    public void complex(int a, int b)
     {
         //@LoopBound(max=9)  // max=9 when a=1 and b=1
-    	while (a < 30)
+    	while (a < 30)	// @WCA loop<=9
     	{
     	    //@LoopBound(max=12)  // max=12 when a=1 and b=1
-    		while (b < a)
+    		while (b < a)	// @WCA loop<=12
     		{
     			if (b > 5)
     			{

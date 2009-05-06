@@ -1,5 +1,4 @@
 package wcet.mrtc;
-//import edu.uci.eecs.doc.clepsydra.loop.LoopBound;
 
 /**
  * Matrix multiplication of two 20x20 square matrices. It tests a compiler's speed
@@ -40,11 +39,9 @@ public class MatrixMultiplication
     // Intializes the given matrix with random integers.
     private void initialize(int[][] matrix)
     {
-        //@LoopBound(max=UPPER_LIMIT)
-    	for (int outer = 0; outer < UPPER_LIMIT; outer++) //@WCA loop=20
+    	for (int outer = 0; outer < UPPER_LIMIT; outer++)
     	{
-            //@LoopBound(max=UPPER_LIMIT)
-    		for (int inner = 0; inner < UPPER_LIMIT; inner++) //@WCA loop=20
+    		for (int inner = 0; inner < UPPER_LIMIT; inner++)
     		{
     			matrix[outer][inner] = randomInteger();
     		}
@@ -55,23 +52,19 @@ public class MatrixMultiplication
     private int randomInteger()
     {
     	seed = ((seed * 133) + 81) % 8095;
-    	//seed = ((seed * 133) + 81) & 0x00001FFF;  // Simulate remainder by masking
     	return seed;
     }
 
     // Multiplies arrays a and b and stores the result in res.
     private void multiply(int[][] a, int[][] b, int[][] res)
     {
-        //@LoopBound(max=UPPER_LIMIT)
-    	for (int i = 0; i < UPPER_LIMIT; i++) //@WCA loop=20
+    	for (int i = 0; i < UPPER_LIMIT; i++)
         {
-            //@LoopBound(max=UPPER_LIMIT)
-    		for (int j = 0; j < UPPER_LIMIT; j++) //@WCA loop=20
+    		for (int j = 0; j < UPPER_LIMIT; j++)
     		{
     			res[i][j] = 0;
     			
-                //@LoopBound(max=UPPER_LIMIT)
-    			for (int k = 0; k < UPPER_LIMIT; k++) //@WCA loop=20
+    			for (int k = 0; k < UPPER_LIMIT; k++)
     			{
     				res[i][j] += a[i][k] * b[k][j];
     			}

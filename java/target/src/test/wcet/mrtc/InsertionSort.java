@@ -1,7 +1,5 @@
 package wcet.mrtc;
 
-//import edu.uci.eecs.doc.clepsydra.loop.LoopBound;
-
 /**
  * Insertion sort on a reversed array of size 10.
  *
@@ -35,14 +33,14 @@ public class InsertionSort
     	a[10] = 2;
     }
 
-    private void sort()
+    public void sort()
     {
         int count = 0;
         //@LoopBound(max=SIZE - 1)
     	for (int i = 2; i <= SIZE; i++)
     	{
-    	    //@LoopBound(max=45)  // Worst-case loop bound: (n^2 - n) / 2
-    		for (int j = i; a[j] < a[j - 1]; j--)
+    		// Worst-case loop bound: (n^2 - n) / 2 
+    		for (int j = i; a[j] < a[j - 1]; j--) // @WCA loop=45 
     		{
     			int temp = a[j];
     			a[j] = a[j - 1];
