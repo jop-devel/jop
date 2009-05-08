@@ -1,5 +1,4 @@
 package wcet.mrtc;
-//import edu.uci.eecs.doc.clepsydra.loop.LoopBound;
 
 /**
  * Simulates an extended Petri Net.
@@ -36,7 +35,7 @@ public class PetriNet
         P3_marking_member_0 = new int[6];
     }
 
-    private int run()
+    public int run()
     {
     	int             dummy_i;
     /*   dummy_i = 17; Takes too much time */

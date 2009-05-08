@@ -35,7 +35,7 @@ public class QuicksortNonRecursive
         arr[b] = temp;
     }
 
-    private void sort()
+    public void sort()
     {
     	int ir = arr.length - 1;  // Subtract one because this algorithm assumes 1-based arrays
     	int l = 1;
@@ -44,19 +44,19 @@ public class QuicksortNonRecursive
     	boolean broke = false;
 
         //@LoopBound(max=10)  // max=n/2
-    	while (!broke)
+    	while (!broke) // @WCA loop<=10
     	{
     		if (ir - l < M)
     		{
         	    //@LoopBound(max=M-1)
-    			for (int j = l + 1; j <= ir; j++)
+    			for (int j = l + 1; j <= ir; j++) // @WCA loop<=6
     			{
     				a = arr[j];
     		
     				int i;
 
                     //@LoopBound(max=M-1)
-    				for (i = j - 1; i >= l && !broke; i--)
+    				for (i = j - 1; i >= l && !broke; i--) // @WCA loop<=6
     				{
     					if (arr[i] <= a)
     						broke = true;  // break;
@@ -108,21 +108,19 @@ public class QuicksortNonRecursive
     			a = arr[l + 1];
 
     			//@LoopBound(max=10)  // max=n/2
-    			while (!broke)
+    			while (!broke) // @WCA loop<=10
     			{
         			//@LoopBound(max=10)  // max=n/2
-                    do
-                    {
+                    do { 
         				i++;
                     }
-    				while (arr[i] < a);
+    				while (arr[i] < a); // @WCA loop<=10
 
                     //@LoopBound(max=10)  // max=n/2
-    				do
-    				{
+    				do { 
         				j--;
     				}
-    				while (arr[j] > a);
+    				while (arr[j] > a); // @WCA loop<=10
 
     				if (j < i)
     					broke = true;  // break;

@@ -1,5 +1,4 @@
 package wcet.mrtc;
-//import edu.uci.eecs.doc.clepsydra.loop.LoopBound;
 
 /**
  * Counts and sums non-negative numbers in a matrix.
@@ -33,9 +32,7 @@ public class MatrixCount
     // Generates random integers between 0 and 8095
     private int randomInteger()
     {
-        // FIXME: Cannot do remainder because irem bytecode is implemented in software on JOP, causing problems for Clepsydra
-    	// seed = ((seed * 133) + 81) % 8095;
-    	seed = ((seed * 133) + 81) & 0x00001FFF;  // Simulate remainder by masking
+    	seed = ((seed * 133) + 81) % 8095;
 
     	return seed;
     }
@@ -43,10 +40,8 @@ public class MatrixCount
     // Intializes the given array with random integers.
     private void initialize(int[][] array)
     {
-        //@LoopBound(max=MAX_SIZE)
     	for (int outer = 0; outer < MAX_SIZE; outer++)
     	{
-    	    //@LoopBound(max=MAX_SIZE)
     		for (int inner = 0; inner < MAX_SIZE; inner++)
     		{
     			array[outer][inner] = randomInteger();
@@ -54,12 +49,10 @@ public class MatrixCount
     	}
     }
     
-    private void count()
+    public void count()
     {
-        //@LoopBound(max=MAX_SIZE)
     	for (int outer = 0; outer < MAX_SIZE; outer++)
     	{
-    	    //@LoopBound(max=MAX_SIZE)
             for (int inner = 0; inner < MAX_SIZE; inner++)
             {
     			if (array[outer][inner] >= 0)

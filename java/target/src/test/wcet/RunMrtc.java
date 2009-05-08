@@ -16,7 +16,7 @@
 
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ */
 
 package wcet;
 
@@ -24,7 +24,16 @@ import wcet.mrtc.BinarySearch;
 import wcet.mrtc.BubbleSort;
 import wcet.mrtc.CyclicRedundancyCheck;
 import wcet.mrtc.DiscreteCosineTransform;
+import wcet.mrtc.ExponentialIntegral;
 import wcet.mrtc.Fibonacci;
+import wcet.mrtc.InsertionSort;
+import wcet.mrtc.JanneComplex;
+import wcet.mrtc.MatrixCount;
+import wcet.mrtc.MatrixMultiplication;
+import wcet.mrtc.NestedSearch;
+import wcet.mrtc.QuicksortNonRecursive;
+import wcet.mrtc.SelectSmallest;
+import wcet.mrtc.SimultaneousLinearEquations;
 
 import com.jopdesign.sys.*;
 
@@ -36,32 +45,58 @@ public class RunMrtc {
 	final static boolean MEASURE = false;
 	static int ts, te, to;
 	static BubbleSort b = new BubbleSort();
-    static BinarySearch bs = new BinarySearch();
-    static int[] crcVal = new int[2];
-    static CyclicRedundancyCheck crc = new CyclicRedundancyCheck();
-    static DiscreteCosineTransform d = new DiscreteCosineTransform();
-    static Fibonacci fib = new Fibonacci();
+	static BinarySearch bs = new BinarySearch();
+	static int[] crcVal = new int[2];
+	static CyclicRedundancyCheck crc = new CyclicRedundancyCheck();
+	static DiscreteCosineTransform d = new DiscreteCosineTransform();
+	static Fibonacci fib = new Fibonacci();
+	static ExponentialIntegral e = new ExponentialIntegral();
+	static InsertionSort is = new InsertionSort();
+	static JanneComplex j = new JanneComplex();
+	static MatrixCount c = new MatrixCount();
+	static MatrixMultiplication m = new MatrixMultiplication();
+	static NestedSearch n = new NestedSearch();
+	// static PetriNet p = new PetriNet(); too large method
+	static QuicksortNonRecursive q = new QuicksortNonRecursive();
+	static SelectSmallest s = new SelectSmallest();
+    static SimultaneousLinearEquations sle = new SimultaneousLinearEquations();
 
 	public static void main(String[] args) {
-		
+
 		ts = Native.rdMem(Const.IO_CNT);
 		te = Native.rdMem(Const.IO_CNT);
-		to = te-ts;
+		to = te - ts;
 		invoke();
-		if (MEASURE) System.out.println(te-ts-to);
+		if (MEASURE)
+			System.out.println(te - ts - to);
 	}
-	
+
 	static void invoke() {
 		measure();
-		if (MEASURE) te = Native.rdMem(Const.IO_CNT);
+		if (MEASURE)
+			te = Native.rdMem(Const.IO_CNT);
 	}
-	
+
 	static void measure() {
-		if (MEASURE) ts = Native.rdMem(Const.IO_CNT);
-	    // bs.binarySearch(-1);  // Use non-existent key to drive worst-case performance
+		if (MEASURE)
+			ts = Native.rdMem(Const.IO_CNT);
+		// bs.binarySearch(-1); // Use non-existent key to drive worst-case
+		// performance
 		// b.bubbleSort();
-	    // crc.crc(crcVal);
-	    d.fdct(d.block, 8);
-		// fib.fib(30);		
+		// crc.crc(crcVal);
+		// d.fdct(d.block, 8);
+		// fib.fib(30);
+		// e.expint(50, 1);
+		// is.sort();
+		// j.complex(1, 1);
+		// c.count();
+		// m.multiplyTest();
+		// n.foo(400);
+		// p.run(); too large method
+		// q.sort();
+		// s.select(10, 20);
+	    sle.run();
+
+
 	}
 }

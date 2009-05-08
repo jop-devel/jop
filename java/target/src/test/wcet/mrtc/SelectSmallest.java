@@ -1,5 +1,4 @@
 package wcet.mrtc;
-//import edu.uci.eecs.doc.clepsydra.loop.LoopBound;
 
 /**
  * A function to select the Nth smallest number in an array.
@@ -32,7 +31,7 @@ public class SelectSmallest
     // The parameters to function select are k and n. The function
     // selects the k-th largest number out of n original numbers.
     // Note: This code is based on the code from "Numerical Recipes in C, Second Edition". Someone changed it by adding flag variables to replace the return and break statements.
-    private int select(int k, int n)
+    public int select(int k, int n)
     {
     	int i, ir, j, l, mid;
     	int a, temp;
@@ -43,7 +42,7 @@ public class SelectSmallest
     	flag = flag2 = 0;
 
         //@LoopBound(max=5)  // max=log(n)
-    	while (flag == 0)
+    	while (flag == 0) // @WCA loop<=5
     	{
     		if (ir <= l + 1)
     		{
@@ -80,21 +79,21 @@ public class SelectSmallest
     			a = arr[l+1];
 
     			//@LoopBound(max=10) // max=n/2
-    			while (flag2 == 0)
-    			{
+    			while (flag2 == 0) {   // @WCA loop<=10
+    				
                     //@LoopBound(max=10)  // max=n/2
                     do
                     {
         				i++;
                     }
-    				while (arr[i] < a);
+    				while (arr[i] < a);	// @WCA loop<=10
 
 			        //@LoopBound(max=10)  // max=n/2
     			    do
     			    {
         				j--;
     			    }
-    				while (arr[j] > a);
+    				while (arr[j] > a); // @WCA loop<=10
     			
     				if (j < i)
     					flag2 = 1;  // break;
