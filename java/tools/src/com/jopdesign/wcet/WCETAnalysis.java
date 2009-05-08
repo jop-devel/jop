@@ -147,6 +147,8 @@ public class WCETAnalysis {
 
 		/* Run */
 		boolean succeed = false;
+		// FIXME: Report generation is a BIG MESS 
+		// bh will fix this in next revision
 		try {
 			/* Analysis */
 			project.setGenerateWCETReport(false); /* generate reports later */
@@ -189,7 +191,7 @@ public class WCETAnalysis {
 				reportSpecial("min-cache-cost",mincachecost, start, stop, LpSolveWrapper.getSolverTime());
 			}
 			tlLogger.info("Starting precise WCET analysis");
-			project.setGenerateWCETReport(true);
+			project.setGenerateWCETReport(false);
 			if(project.getProjectConfig().useUppaal()) {
 				UppaalAnalysis an = new UppaalAnalysis(tlLogger,project,project.getOutDir("uppaal"));
 				config.checkPresent(UppAalConfig.UPPAAL_VERIFYTA_BINARY);
@@ -199,9 +201,10 @@ public class WCETAnalysis {
 				reportUppaal(wcet,start,stop,an.getSearchtime(),an.getSolvertimemax());
 			} else {
 				RecursiveWCETStrategy<StaticCacheApproximation> recStrategy;
-				if(preciseApprox == StaticCacheApproximation.ALL_FIT_REGIONS) {
+				if(preciseApprox == StaticCacheApproximation.ALL_FIT_REGIONS) {					
 					recStrategy = new GlobalAnalysis.GlobalIPETStrategy(ipetConfig);
 				} else {
+					project.setGenerateWCETReport(true);
 					recStrategy = new RecursiveAnalysis.LocalIPETStrategy(ipetConfig);
 				}
 				RecursiveAnalysis<StaticCacheApproximation> an =
