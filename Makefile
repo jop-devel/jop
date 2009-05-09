@@ -641,9 +641,12 @@ wcet:
 	java $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.build.WcetPreprocess \
 		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/tmp $(MAIN_CLASS)
 	-mkdir -p $(TARGET)/wcet
+	-mkdir $(TARGET)/tmp
+	java $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.build.WcetPreprocess \
+		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/tmp $(MAIN_CLASS)
 	java -Xss16M \
 	  $(TOOLS_CP) com.jopdesign.wcet.WCETAnalysis \
-		-cp $(TARGET)/dist/classes -sp $(TARGET_SOURCE) \
+		-cp $(TARGET)/tmp -sp $(TARGET_SOURCE) \
 		-app-class $(MAIN_CLASS) -target-method $(WCET_METHOD) \
 		-outdir $(TARGET)/wcet \
 		-dataflow-analysis $(WCET_DFA) \
