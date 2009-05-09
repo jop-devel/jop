@@ -39,8 +39,8 @@ public class InsertionSort
         //@LoopBound(max=SIZE - 1)
     	for (int i = 2; i <= SIZE; i++)
     	{
-    		// Worst-case loop bound: (n^2 - n) / 2 
-    		for (int j = i; a[j] < a[j - 1]; j--) // @WCA loop=45 
+    		// Worst-case 'absolute' loop bound: (n^2 - n) / 2 
+    		for (int j = i; a[j] < a[j - 1]; j--) // @WCA loop=9
     		{
     			int temp = a[j];
     			a[j] = a[j - 1];
