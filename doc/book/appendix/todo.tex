@@ -4,6 +4,8 @@ Start 130h counting down from 14.9.2008
 
 Count: 109.5 8.3.2009
 
+13:00
+
 22 pages in three hours! (many removed, but with graphics changes)
 
 \section{TODO Handbook}
@@ -11,15 +13,13 @@ Count: 109.5 8.3.2009
 \begin{itemize}
   \item Green book corrections of
   \begin{itemize}
-    \item Chapter~\ref{chap:arch}
-    \item Chapter~\ref{chap:runtime}
-    \item Chapter~\ref{chap:rtgc}
-    \item Chapter~\ref{chap:wcet}
-    \item Chapter~\ref{chap:simpcon}
-    \item Chapter~\ref{chap:cmp}
-    \item Chapter~\ref{chap:results}
-    \item Chapter~\ref{chap:related}
-    \item Chapter~\ref{chap:conclusions}
+    \item Chapter~6
+    \item Chapter~7
+    \item Chapter~8
+    \item Chapter~9
+    \item Chapter~10
+    \item Chapter~11
+    \item Chapter~12
   \end{itemize}
 
     \item Acknowledgements
@@ -63,8 +63,10 @@ Count: 109.5 8.3.2009
 
 \begin{itemize}
   \item \textbf{change all units in tables to (x)!}
+  \item change all IO to I/O
   \item check java* fonts -- has been 9pt for the green book
   \item check figure sizes for the orange book size
+  \item check figure placements
   \item unbounded vs. unbound in the whole test
   \item removed 'proposed'
   \item the WCET analysis -- WCET analysis (for all analysis)
@@ -163,15 +165,18 @@ Copy stuff from JSA paper. However, only paragraphs to avoid
     \item Chapter~\ref{chap:build}
     \item Chapter~\ref{chap:java}
     \item Chapter~RT Java (removed)
-       \item Some text from Chapter~RT Java into the embedded
-           section of Chapter~\ref{chap:java}, Intro from it
-           as part of the history section
+    \begin{itemize}
+      \item Some text from Chapter~RT Java into the
+          embedded section of Chapter~\ref{chap:java},
+          Intro from it as part of the history section
+    \end{itemize}
+    \item Chapter~5 (HW Arch)
     \item Trevor's changes in the Wiki design flow page
     \item Redraw block diagram
     \begin{itemize}
       \item I/O after memory controller, memory interface
       \item jopcpu
-      \item B goes to memory contrller
+      \item B goes to memory controller
       \item Method instead of Bytecode cache
     \end{itemize}
 
@@ -184,8 +189,23 @@ Copy stuff from JSA paper. However, only paragraphs to avoid
   \item Show a pipeline example (is in brown book) in
       Chapter~\ref{chap:arch}
   \item Interrupt figure + how to connect I/O interrupts
+  \item Interrupt plus scheduling from ISORC/TECS paper
   \item Memory figure + section on memory controller with
       reference to SimpCon
+  \item The benchmark section is gone (commented out in
+      java.tex). To include it again redo the measurements with
+      specJVM and other more interesting apps (Kfl, Lift,...).
+  \item The memory subsystem
+  \begin{itemize}
+    \item Mem. controller (some stuff from the JTRES paper)
+    \item Mem. interface
+  \end{itemize}
+  \item The I/O Subsystem
+  \begin{itemize}
+    \item scio -- the I/O top-level
+    \item sys io
+    \item other examples
+  \end{itemize}
 \end{itemize}
 
 \chapter{Other Stuff}

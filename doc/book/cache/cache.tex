@@ -35,7 +35,7 @@ now also used by the Java processor SHAP \cite{shap:mcache}.
 Furthermore, the idea has been adapted for a processor that executes
 compiled C programs \cite{Metzlaff:SPM:2008}.
 
-\subsection{Method Cache}
+\subsection{Method Cache Architecture}
 
 In this section, we will develop a solution for a time-predictable
 instruction cache. Typical Java programs consist of short methods.
@@ -50,13 +50,11 @@ Tag memory and address translation are not necessary.
 In the method cache several cache blocks (similar to cache lines) are
 used for a method. The main difference from a conventional cache is
 that the blocks for a method are all loaded at once and need to be
-consecutive.
+consecutive. Choosing the block size is now a major design decision.
+Smaller block sizes allow better memory usage, but the search time
+for a hit also increases.
 
-Choosing the block size is now a major design decision. Smaller
-block sizes allow better memory usage, but the search time for a hit
-also increases.
-
-With varying block numbers per method, an LRU replacement becomes
+With varying numbers of blocks per method, an LRU replacement is
 impractical. When the method found to be LRU is smaller than the
 loaded method, this new method invalidates two cached methods.
 
@@ -65,20 +63,31 @@ start of the blocks to be replaced on a cache miss. Two practical
 replace policies are:
 %
 \begin{description}
-\item [Next block:]At the very first beginning, $next$ points to the
-first block. When a method of length $l$ is loaded into the block
-$n$, $next$ is updated to $(n+l)\;mod\;block\;count$.
+\item [Next block:]At the very first beginning, $next$ points to
+    the first block. When a method of length $l$ is loaded into
+    the block $n$, $next$ is updated to
+    $(n+l)\;mod\;block\;count$. This replacement policy is
+    effectively FIFO.
 \item [Stack oriented:]$next$ is updated in the same way as before
 on a method load. It is also updated on a method return --
 independent of a resulting hit or miss -- to point to the first
 block of the leaving method.
 \end{description}
 %
-We will show the operation of these different replacement policies
-in an example with three methods: a(), b() and c() of block sizes 2,
-2 and 1. The cache consists of 4 blocks and is therefore too small
-to hold all the methods during the execution of the code fragment
-shown in Listing~\ref{lst:cache:replace}.
+We will show the operation of these different replacement policies in
+an example with three methods: a(), b() and c() of block sizes 2, 2
+and 1. The cache consists of 4 blocks and is therefore too small to
+hold all the methods during the execution of the code fragment shown
+in Listing~\ref{lst:cache:replace}. Tables
+\ref{tab_cache_replace_next} and \ref{tab_cache_replace_stack} show
+the cache content during program execution for both replacement
+policies. The content of the cache blocks is shown after the
+execution of the invoke or return instruction. An uppercase letter
+indicates that this block has been newly loaded. A right arrow
+depicts the block to be replaced on a cache miss (the \emph{next}
+pointer). The last row shows the number of blocks that are filled
+during the execution of the program.
+
 %
 \begin{samepage}
 \begin{lstlisting}[float,caption={Code fragment for the replacement example},
@@ -93,16 +102,8 @@ label=lst:cache:replace]
 \end{lstlisting}
 \end{samepage}
 %
-Tables \ref{tab_cache_replace_next} and
-\ref{tab_cache_replace_stack} show the cache content during program
-execution for both replacement policies. The content of the cache
-blocks is shown after the execution of the invoke or return
-instruction. An uppercase letter indicates that this block has been
-newly loaded. A right arrow depicts the block to be replaced on a
-cache miss (the \emph{next} pointer). The last row shows the number
-of blocks that are filled during the execution of the program.
 
-\begin{table}
+\begin{table}[t]
     \centering
 \begin{tt}
     \begin{tabular}{lrrrrrrrrrrr}
@@ -192,6 +193,22 @@ analysis is still simpler than a cache modeling of a direct-mapped
 instruction cache, as cache block replacement depends on the call
 tree instead of instruction addresses.
 
+WCET analysis of cache hits for the method cache is most beneficial
+for methods invoked in a loop, where the methods are classified as
+first miss. The basic idea of the method cache analysis is as
+follows: Within a loop it is statically analyzed if all methods
+invoked and the invoking method, which contains the loop, fit
+together in the method cache. If this is the case, all methods will
+at most miss once. The concrete implementation of the the analysis
+algorithm is described in \cite{master:huber:2009}.
+
+Except for leaf methods, the cache load can be triggered by an invoke
+instruction of by a return instruction. On an invoke some of the miss
+penalty is hidden by concurrent microcode execution. Therefore, we
+have to assume the higher cost of loading methods into the cache on a
+return instruction for non-leaf methods. Leaf nodes can naturally
+only miss on an invoke.
+
 In traditional caches, data access and instruction cache fill
 requests can compete for the main memory bus. For example, a load or
 store at the end of the processor pipeline competes with an
@@ -213,12 +230,12 @@ traditional cache designs.
 
 \subsection{Caches Compared}
 
-In this section, we will compare the different cache architectures
-in a quantitative way. Although our primary concern is
-predictability, performance remains important. We will therefore
-first present the results from a conventional direct-mapped
-instruction cache. These measurements will then provide a baseline
-for the evaluation of the proposed architecture.
+In this section, we compare two different cache architectures in a
+quantitative way. Although our primary concern is predictability,
+performance remains important. We will therefore first present the
+results from a conventional direct-mapped instruction cache. These
+measurements provide a baseline for the evaluation of the proposed
+architecture.
 
 Cache performance varies with different application domains. As the
 proposed system is intended for real-time applications, the
@@ -236,412 +253,140 @@ The data for all measurements was captured using a simulation of JOP
 and running the application for 500,000 clock cycles. During this
 time, the major loop of the application was executed several hundred
 times, effectively rendering any misses during the initialization
-code irrelevant to the measurements.
+code irrelevant to the measurements. As the embedded application is
+quite small (1366 LOC), small instruction caches have been simulated.
 
-\subsubsection{Direct-Mapped Cache}
+WCET analysis based comparison of the method cache and of standard
+instruction caches is currently under development. Therefore, we
+perform only average case measurements for a comparison between a
+time-predictable cache organization and a standard cache
+organization. With a simulation of JOP, we measure the cache misses
+and miss penalties for different configurations of the method cache
+and a direct-mapped cache. The miss penalty and the resulting effect
+on the execution time depend on the main memory system. Therefore, we
+simulate three different memory technologies: static RAM (SRAM),
+synchronous DRAM (SDRAM), and double data rate (DDR) SDRAM. For the
+SRAM, a latency of 1 clock cycle and an access time of 2 clock cycles
+per 32-bit word are assumed. For the SDRAM, a latency of 5 cycles (3
+cycles for the row address and 2 cycles for the CAS latency) is
+assumed. The SDRAM delivers one word (4 bytes) per cycle. The DDR
+SDRAM has a shorter latency of 4.5 cycles and transfers data on both
+the rising and falling edge of the clock signal.
 
-\tablename~\ref{tab_cache_direct} gives the memory bytes and memory
-transactions per instruction byte for a standard direct-mapped
-cache. As we can see from the values for a cache size of 4KB, the
-kernel of the application is small enough to fit completely into the
-4KB cache. The cache performs better (i.e.\ fewer bytes are
-transferred) with smaller block sizes. With smaller block sizes, the
-chance of unused data being read is reduced and the larger number of
-blocks reduces conflict misses. However, reducing the block size
-also increases memory transactions (MTIB), which directly relates to
-memory latency.
-
-
-\begin{table}
-    \centering
-    \begin{tabular}{cd{2.0}cc}
-    \toprule
-
-    Cache size & \cc{Block size} & MBIB & MTIB \\
-
-    \midrule
-
-     1 KB &  8 & 0.28 & 0.035 \\
-     1 KB & 16 & 0.38 & 0.024 \\
-     1 KB & 32 & 0.58 & 0.018 \\
-     2 KB &  8 & 0.17 & 0.022 \\
-     2 KB & 16 & 0.25 & 0.015 \\
-     2 KB & 32 & 0.41 & 0.013 \\
-     4 KB &  8 & 0.00 & 0.001 \\
-     4 KB & 16 & 0.01 & 0.000 \\
-     4 KB & 32 & 0.01 & 0.000 \\
-
-    \bottomrule
-
-    \end{tabular}
-    \caption{Direct-mapped cache}
-    \label{tab_cache_direct}
-\end{table}
-
-Which configuration performs best depends on the relationship between
-memory bandwidth and memory latency. Examples of average memory
-access times in cycles per instruction byte for different memory
-technologies are provided in Table~\ref{tab_cache_direct_mem}. The
-third column shows the cache performance for a Static RAM (SRAM) that
-is very common in embedded systems. A latency of 1 clock cycle and an
-access time of 2 clock cycles per 32-bit word are assumed. For the
-synchronous DRAM (SDRAM) in the forth column, a latency of 5 cycles
-(3 cycles for the row address and 2 cycles for the CAS latency) is
-assumed. The memory delivers one word (4 bytes) per cycle. The Double
-Data Rate (DDR) SDRAM in the last column has an enhanced latency of
-4.5 cycles and transfers data on both the rising and falling edge of
-the clock signal.
-
-%
-%       simulate 32-bits (DDR) SDRAM
-%
-%       SDRAM:  5 cycle latency: 3 cycle row address and 2 cycle CAS latency
-%               4 Bytes / cycle (0.25 / Byte)
-%
-%       DDR:    4.5 cycle latency: 2 cycle row address and 2.5 cycle CAS latency
-%               4 Bytes / 0.5 cycle (0.125 / Byte)
-%
-%       SRAM 15 ns at 100 MHz: 1 cycle latency, 2 cycles / word
-%
-
+The resulting miss cycles are scaled to the bandwidth consumed by the
+instruction fetch unit. The result is the number of cache fill cycles
+per fetched instruction byte. In other words: the average main memory
+access time in cycles per instruction byte. A value of 0.1 means that
+for every 10 fetched instruction bytes, one clock cycle is spent to
+fill the cache.
 
 \begin{table}
     \centering
-    \begin{tabular}{cd{2.0}ccc}
-    \toprule
-
-    Cache size & \cc{Block size} & SRAM & SDRAM & DDR \\
-
-    \midrule
-
-    1 KB & 8 & \textbf{0.18} & 0.25 & 0.19 \\
-    1 KB & 16 & 0.22 & \textbf{0.22} & 0.16 \\
-    1 KB & 32 & 0.31 & 0.24 & \textbf{0.15} \\
-    2 KB & 8 & \textbf{0.11} & 0.15 & 0.12 \\
-    2 KB & 16 & 0.14 & \textbf{0.14} & \textbf{0.10} \\
-    2 KB & 32 & 0.22 & 0.17 & 0.11 \\
-
-    \bottomrule
-
-    \end{tabular}
     \caption{Direct-mapped cache, average memory access time}
-    \label{tab_cache_direct_mem}
-\end{table}
-
-The data in bold give the best block size for different memory
-technologies. As expected, memories with a higher latency and
-bandwidth perform better with larger block sizes. For small block
-sizes, the latency clearly dominates the access time. Although the
-SRAM has half the bandwidth of the SDRAM and a quarter of the DDR,
-with a block size of 8 bytes, it is faster than the DRAM memories.
-In most cases a block size of 16 bytes is the fastest solution and
-we will therefore use this configuration for comparison with the
-following cache solutions.
-
-\subsubsection{Fixed Block Cache}
-
-Cache performance for single method per block architectures is shown
-in Table~\ref{tab_cache_block}. The measurements for a simple 8 byte
-prefetch queue are also given, for reference. With prefetching, we
-would expect to see an MBIB of about 1. The 37\% overhead results
-from the fact that the prefetch queue fetches 4 bytes a time and has
-to buffer a minimum of 3 bytes for the instruction fetch stage. On a
-branch or return, the queue is flushed and these bytes are lost.
-
-A single block that has to be filled on every invoke and return
-requires considerable overheads. More than twice the amount of data
-is read from the main memory than is consumed by the processor.
-However, the memory transaction count is 16 times lower than with
-simple prefetching, which can compensate for the large MBIB for main
-memories with high latency.
-
-The solution with two blocks for two methods performs almost twice
-as well as the simple one method cache. This is due to the fact
-that, for all leaves in the call tree, the caller method can be
-found on return. If the block count is doubled again, the number of
-misses is reduced by a further 25\%, but the cache size also
-doubles. For this measurement, an LRU replacement policy applies for
-the two and four block caches.
-
-\begin{table}
-    \centering
-    \begin{tabular}{lcccc}
+    \label{tab:direct:mapped}
+    \begin{tabular}{crccc}
     \toprule
 
-    Type & Cache size & MBIB & MTIB \\
+    Cache size & \multicolumn{1}{c}{Block size} & SRAM & SDRAM & DDR \\
 
     \midrule
-        Prefetch & 8 B & 1.37 & 0.342  \\
-        Single method & 1 KB & 2.32 & 0.021  \\
-        Two blocks & 2 KB & 1.21 & 0.013  \\
-        Four blocks & 4 KB & 0.90 & 0.010  \\
+
+    1 KB & 8 B & \textbf{0.18} & 0.25 & 0.19 \\
+    1 KB & 16 B & 0.22 & \textbf{0.22} & 0.16 \\
+    1 KB & 32 B & 0.31 & 0.24 & \textbf{0.15} \\
+    \cmidrule{1-5}
+    2 KB & 8 B & \textbf{0.11} & 0.15 & 0.12 \\
+    2 KB & 16 B & 0.14 & \textbf{0.14} & \textbf{0.10} \\
+    2 KB & 32 B & 0.22 & 0.17 & 0.11 \\
+
     \bottomrule
 
     \end{tabular}
-    \caption{Fixed block cache}
-    \label{tab_cache_block}
 \end{table}
 
-The same memory parameters as in the previous section are also used
-in Table~\ref{tab_cache_block_mem}. With the high latency of the
-DRAMs, even the simple one block cache is a faster (and more
-accurately predictable) solution than a prefetch queue. As MBIB and
-MTBI show the same trend as a function of the number of blocks, this
-is reflected in the access time in all three memory examples.
+Table~\ref{tab:direct:mapped} shows the result for different
+configurations of a direct-mapped cache. Which configuration performs
+best depends on the relationship between memory bandwidth and memory
+latency. The data in bold emphasize the best block size for the
+different memory technologies. As expected, memories with a higher
+latency and bandwidth perform better with larger block sizes. For
+small block sizes, the latency clearly dominates the access time.
+Although the SRAM has half the bandwidth of the SDRAM and a quarter
+of the DDR SDRAM, it is faster than the SDRAM memories with a block
+size of 8 byte. In most cases a block size of 16 bytes is fastest.
 
 \begin{table}
     \centering
-    \begin{tabular}{lcccc}
+    \caption{Method cache, average memory access time}
+    \label{tab:mcache}
+    \begin{tabular}{crccc}
     \toprule
 
-    Type & Cache size & SRAM & SDRAM & DDR \\
+    Cache size & \multicolumn{1}{c}{Block size} & SRAM & SDRAM & DDR \\
 
     \midrule
-        Prefetch & 8 B & 1.02 & 2.05 & 1.71 \\
-        Single Method & 1 KB & 1.18 & 0.69 & 0.39 \\
-        Two blocks & 2 KB & 0.62 & 0.37 & 0.21 \\
-        Four blocks & 4 KB & 0.46 & 0.27 & 0.16 \\
+        1 KB & 16 B & 0.36 & 0.21 & 0.12 \\
+        1 KB & 32 B & 0.36 & 0.21 & 0.12 \\
+        1 KB & 64 B & 0.36 & 0.22 & 0.12 \\
+        1 KB & 128 B & 0.41 & 0.24 & 0.14 \\
+        \cmidrule{1-5}
+        2 KB & 32 B & 0.06 & 0.04 & 0.02 \\
+        2 KB & 64 B& 0.12 & 0.08 & 0.04 \\
+        2 KB & 128 B & 0.19 & 0.11 & 0.06 \\
+        2 KB & 256 B & 0.37 & 0.22 & 0.13 \\
     \bottomrule
 
     \end{tabular}
-    \caption{Fixed block cache, average memory access time}
-    \label{tab_cache_block_mem}
 \end{table}
 
-\subsubsection{Variable Block Cache}
+Table~\ref{tab:mcache} shows the average memory access time per
+instruction byte for the method cache. Because we load full methods,
+we have chosen larger block sizes than for a standard cache. All
+configurations benefit from a memory system with a higher bandwidth.
+The method cache is less latency sensitive than the direct-mapped
+instruction cache. For the small 1~KB cache the access time is almost
+independent of the block size. The capacity misses dominate. From the
+2~KB configuration we see that smaller block sizes result in less
+cache misses. However, smaller block sizes result in more hardware
+for the hit detection since the method cache is in effect fully
+associatively. Therefore, we need a balance between the number of
+blocks and the performance.
 
-\tablename~\ref{tab_cache_var_block} shows the cache performance of
-the proposed solution, i.e.\ of a method cache with several blocks
-per method, for different cache sizes and number of blocks. For this
-measurement, a \emph{next block} replacement policy applies.
+The cache conflict is high for the small configuration with 1~KB
+cache. The direct-mapped cache, backed up with a low-latency main
+memory, performs better than the method cache. When high-latency
+memories are used, the method cache performs better than the direct
+mapped cache. This is expected as the long latency for a transfer is
+amortized when more data (the whole method) is filled in one request.
 
-\begin{table}
-    \centering
-    \begin{tabular}{cd{2.0}cc}
-    \toprule
+A small block size of 32 Bytes is needed in the 2~KB method cache to
+outperform the direct mapped cache with the low-latency main memory
+as represented by the SRAM. For higher latency memories (SDRAM and
+DDR), a method cache with a block size of 128 bytes outperforms the
+direct mapped instruction cache.
 
-    Cache size & \cc{Block count} & MBIB & MTIB \\
+The comparison does not show if the method cache is more easily
+predictable than other cache solutions. It shows that caching full
+methods performs similarly to standard caching techniques.
 
-    \midrule
-        1 KB & 8 & 0.80 & 0.009  \\
-        1 KB & 16 & 0.71 & 0.008  \\
-        1 KB & 32 & 0.70 & 0.008  \\
-        1 KB & 64 & 0.70 & 0.008  \\
-        2 KB & 8 & 0.73 & 0.008  \\
-        2 KB & 16 & 0.37 & 0.004  \\
-        2 KB & 32 & 0.24 & 0.003  \\
-        2 KB & 64 & 0.12 & 0.001  \\
-        4 KB & 8 & 0.73 & 0.008  \\
-        4 KB & 16 & 0.25 & 0.003  \\
-        4 KB & 32 & 0.01 & 0.000  \\
-        4 KB & 64 & 0.00 & 0.000  \\
-    \bottomrule
-
-    \end{tabular}
-    \caption{Variable block cache}
-    \label{tab_cache_var_block}
-\end{table}
-
-In this scenario, as the MBIB is very high at a cache size of 1KB
-and almost independent of the block count, the cache capacity is
-seen to be clearly dominant. The most interesting cache size with
-this benchmark is 2KB. Here, we can see the influence of the number
-of blocks on both performance parameters. Both values benefit from
-more blocks. However, a higher block count requires more time or
-more hardware for the hit detection. With a cache size of 4KB and
-enough blocks, the kernel of the application completely fits into
-the variable block cache, as we have seen with a 4KB traditional
-cache. From the gap between 16 and 32 blocks (within the 4KB cache),
-we can say that the application consists of fewer than 32 different
-methods.
-
-It can be seen that even the smallest configuration with a cache
-size of 1KB and only 8 blocks outperforms fixed block caches with 2
-or 4KB in both parameters (MBIB and MTIB). Compared with the fixed
-block solutions, MTIB is low in all configurations. This is due to
-the better hit rate, as indicated by the lower MBIB.
-
-In most configurations, MBIB is higher than for the direct-mapped
-cache. It is very interesting to note that, in all configurations
-(even the small 1KB cache), MTIB is lower than in all 1KB and 2KB
-configurations of the direct-mapped cache. This is a result of the
-complete method transfers when a miss occurs and is clearly an
-advantage for main memory systems with high latency.
-
-As in the previous examples, Table~\ref{tab_cache_var_block_mem}
-shows the average memory access time per instruction byte for three
-different main memories.
-
-\begin{table}
-    \centering
-    \begin{tabular}{cd{2.0}ccc}
-    \toprule
-
-    Cache size & \cc{Block count} & SRAM & SDRAM & DDR \\
-
-    \midrule
-        1 KB & 8 & 0.41 & 0.24 & 0.14 \\
-        1 KB & 16 & 0.36 & 0.22 & 0.12 \\
-        1 KB & 32 & 0.36 & 0.21 & 0.12 \\
-        1 KB & 64 & 0.36 & 0.21 & 0.12 \\
-        2 KB & 8 & 0.37 & 0.22 & 0.13 \\
-        2 KB & 16 & 0.19 & 0.11 & 0.06 \\
-        2 KB & 32 & 0.12 & 0.08 & 0.04 \\
-        2 KB & 64 & 0.06 & 0.04 & 0.02 \\
-    \bottomrule
-
-    \end{tabular}
-    \caption{Variable block cache, average memory access time}
-    \label{tab_cache_var_block_mem}
-\end{table}
-
-In the DRAM configurations, the variable block cache directly
-benefits from the low MTBI. When comparing the values between SDRAM
-and DDR, we can see that the bandwidth affects the memory access
-time in a way that is approximately linear. The high latency of
-these memories is completely hidden. The configuration with 16 or
-more blocks and dynamic RAMs outperforms the direct-mapped cache of
-the same size. As expected, a memory with low latency (the SRAM in
-this example) depends on the MBIB values. The variable block cache
-is slower than the direct-mapped cache in the 1KB configuration
-because of the higher MBIB (0.7 compared to 0.3-0.6), and performs
-very similarly at a cache size of 2KB.
-
-In Table~\ref{tab_cache_compared}, the different cache solutions with
-a size of 2KB are summarized.
-%
-\begin{table}
-    \centering
-    \begin{tabular}{lcc}
-    \toprule
-
-    Cache type & MBIB & MTIB \\
-
-    \midrule
-        Single method        & 2.32 & 0.021  \\
-        Two blocks           & 1.21 & 0.013  \\
-        Variable block (16)  & 0.37 & 0.004  \\
-        Variable block (32)  & 0.24 & 0.003  \\
-        Direct-mapped        & 0.25 & 0.015 \\
-    \bottomrule
-
-    \end{tabular}
-    \caption{Caches compared}
-    \label{tab_cache_compared}
-\end{table}
-%
-All full method caches with two or more blocks have a lower MTIB
-than a conventional cache solution. This becomes more significant
-with increasing latency in main memories. The MBIB value is only
-quite high for one or two methods in the cache. However, the most
-surprising result is that the variable block cache with 32 blocks
-outperforms a direct-mapped cache of the same size at both values.
-
-We can see that predictability is indirectly related to performance
--- a trend we had anticipated. The most predictable solution with a
-single method cache performs very poorly compared to a conventional
-direct-mapped cache. If we accept a slightly more complex WCET
-analysis (taking a small part of the call tree into account), we can
-use the two-block cache that is about two times better.
-
-With the variable block cache, it could be argued that the WCET
-analysis becomes too complex, but it is nevertheless simpler than
-that with the direct-mapped cache. However, every hit in the
-two-block cache will also be a hit in a variable block cache (of the
-same size). A tradeoff might be to analyze the program by assuming a
-two-block cache but using a version of the variable block cache. The
-additional performance gain can than be used by non- or soft
-real-time parts of an application.
 
 
 \subsection{Summary}
 
-In this section, we have extended the single cache performance
-measurement \emph{miss rate} to a two value set, memory read and
-transaction rate, in order to perform a more detailed evaluation of
-different cache architectures. From the properties of the Java
-language -- usually small methods and relative branches -- we
-derived the novel idea of a \emph{method cache}, i.e.\ a cache
-organization in which whole methods are loaded into the cache on
-method invocation and the return from a method. This cache
-organization is time-predictable, as all cache misses are lumped
-together in these two instructions. Using only one block for a
+From the properties of the Java language -- usually small methods and
+relative branches -- we derived the novel idea of a \emph{method
+cache}, i.e.\ a cache organization in which whole methods are loaded
+into the cache on method invocation and the return from a method.
+This cache organization is time-predictable, as all cache misses are
+lumped together in these two instructions. Using only one block for a
 single method introduces considerable overheads in comparison with a
 conventional cache, but is very simple to analyze. We extended this
-cache to hold more methods, with one block per method and several
-smaller blocks per method.
+cache to hold more methods, with several smaller blocks per method.
 
-Comparing these organizations quantitatively with a benchmark
-derived from a real-time application, we have seen that the
-variable block cache performs similarly to (and in one configuration
-even better than) a direct-mapped cache, in respect of the bytes
-that have to be filled on a cache miss. In all configurations and
-sizes of the variable block cache, the number of memory
-transactions, which relates to memory latency, is lower than in a
-traditional cache.
-
-Only filling the cache on method invocation and return simplifies
-WCET analysis and removes another source of uncertainty, as there is
-no competition for the main memory access between instruction cache
-and data cache.
-
-%\subsubsection{Future Work}
-%\begin{itemize}
-%    \item Variation of direct-mapped with link addresses
-%    Varies between version of paper and now
-%    \item cache graphs: cycles per loop
-%    \item more benchmarks
-%\end{itemize}
-
-%\bibliographystyle{plain}
-%\bibliography{../bib/mybib}
-%
-%\begin{table*}
-%    \centering
-%    \begin{tabular}{lcccccc}
-%    \toprule
-%    & & & & \multicolumn{3}{c}{Memory access time} \\
-%    \cmidrule{5-7}
-%    Type & Size & MBIB & MTIB & SRAM & SDRAM & DDR SDRAM \\
-%    \midrule
-%
-%    Prefetch buffer & 8 B & 1.37 & 0.342                 & 1.02 & 2.05 & 1.71 \\
-%    Single method cache & 1 KB & 2.32 & 0.021            & 1.18 & 0.69 & 0.39 \\
-%    Two block cache & 2 KB & 1.21 & 0.013                & 0.62 & 0.37 & 0.21 \\
-%    Four block cache & 4 KB & 0.90 & 0.010               & 0.46 & 0.27 & 0.16 \\
-%    Direct mapped 8 bytes & 1 KB & 0.28 & 0.035          & 0.18 & 0.25 & 0.19 \\
-%    Direct mapped 16 bytes & 1 KB & 0.38 & 0.024         & 0.22 & 0.22 & 0.16 \\
-%    Direct mapped 32 bytes & 1 KB & 0.58 & 0.018         & 0.31 & 0.24 & 0.15 \\
-%    Direct mapped 8 bytes & 2 KB & 0.17 & 0.022          & 0.11 & 0.15 & 0.12 \\
-%    Direct mapped 16 bytes & 2 KB & 0.25 & 0.015         & 0.14 & 0.14 & 0.10 \\
-%    Direct mapped 32 bytes & 2 KB & 0.41 & 0.013         & 0.22 & 0.17 & 0.11 \\
-%    Direct mapped 8 bytes & 4 KB & 0.00 & 0.001          & 0.00 & 0.00 & 0.00 \\
-%    Direct mapped 16 bytes & 4 KB & 0.01 & 0.000         & 0.00 & 0.00 & 0.00 \\
-%    Direct mapped 32 bytes & 4 KB & 0.01 & 0.000         & 0.00 & 0.00 & 0.00 \\
-%    Variable block cache 8 blocks & 1 KB & 0.80 & 0.009  & 0.41 & 0.24 & 0.14 \\
-%    Variable block cache 16 blocks & 1 KB & 0.71 & 0.008 & 0.36 & 0.22 & 0.12 \\
-%    Variable block cache 32 blocks & 1 KB & 0.70 & 0.008 & 0.36 & 0.21 & 0.12 \\
-%    Variable block cache 64 blocks & 1 KB & 0.70 & 0.008 & 0.36 & 0.21 & 0.12 \\
-%    Variable block cache 8 blocks & 2 KB & 0.73 & 0.008  & 0.37 & 0.22 & 0.13 \\
-%    Variable block cache 16 blocks & 2 KB & 0.37 & 0.004 & 0.19 & 0.11 & 0.06 \\
-%    Variable block cache 32 blocks & 2 KB & 0.24 & 0.003 & 0.12 & 0.08 & 0.04 \\
-%    Variable block cache 64 blocks & 2 KB & 0.12 & 0.001 & 0.06 & 0.04 & 0.02 \\
-%    Variable block cache 8 blocks & 4 KB & 0.73 & 0.008  & 0.37 & 0.22 & 0.13 \\
-%    Variable block cache 16 blocks & 4 KB & 0.25 & 0.003 & 0.13 & 0.08 & 0.05 \\
-%    Variable block cache 32 blocks & 4 KB & 0.01 & 0.000 & 0.00 & 0.00 & 0.00 \\
-%    Variable block cache 64 blocks & 4 KB & 0.00 & 0.000 & 0.00 & 0.00 & 0.00 \\
-%
-%    \bottomrule
-%
-%    \end{tabular}
-%    \caption[Cache performance compared]{Cache performance in MBIB and MTIB of all variations of
-%    the method cache and a conventional direct mapped cache. Average
-%    memory access time per instruction byte for three different main
-%    memory technologies. All numbers are in clock cycles.
-%    }
-%    \label{tab_cache_all}
-%\end{table*}
-%
-%
-%
-%\end{document}
+Comparing these organizations quantitatively with a benchmark derived
+from a real-time application, we have seen that the method cache
+performs similarly to (and in some configurations even better than) a
+direct-mapped cache. Only filling the cache on method invocation and
+return simplifies WCET analysis and removes another source of
+uncertainty, as there is no competition for the main memory access
+between instruction cache and data cache.
