@@ -44,22 +44,22 @@ public class RunMrtc {
 	 */
 	final static boolean MEASURE = false;
 	static int ts, te, to;
-	static BubbleSort b = new BubbleSort();
 	static BinarySearch bs = new BinarySearch();
-	static int[] crcVal = new int[2];
-	static CyclicRedundancyCheck crc = new CyclicRedundancyCheck();
-	static DiscreteCosineTransform d = new DiscreteCosineTransform();
-	static Fibonacci fib = new Fibonacci();
-	static ExponentialIntegral e = new ExponentialIntegral();
-	static InsertionSort is = new InsertionSort();
-	static JanneComplex j = new JanneComplex();
-	static MatrixCount c = new MatrixCount();
-	static MatrixMultiplication m = new MatrixMultiplication();
-	static NestedSearch n = new NestedSearch();
-	// static PetriNet p = new PetriNet(); too large method
-	static QuicksortNonRecursive q = new QuicksortNonRecursive();
-	static SelectSmallest s = new SelectSmallest();
-    static SimultaneousLinearEquations sle = new SimultaneousLinearEquations();
+//	static BubbleSort b = new BubbleSort();
+//	static int[] crcVal = new int[2];
+//	static CyclicRedundancyCheck crc = new CyclicRedundancyCheck();
+//	static ExponentialIntegral e = new ExponentialIntegral();
+//	static DiscreteCosineTransform d = new DiscreteCosineTransform();
+//	static Fibonacci fib = new Fibonacci();
+//	static InsertionSort is = new InsertionSort();
+//	static JanneComplex j = new JanneComplex();
+//	static MatrixCount mc = new MatrixCount();
+//	static MatrixMultiplication m = new MatrixMultiplication();
+//	static NestedSearch n = new NestedSearch();
+//	// static PetriNet p = new PetriNet(); too large method
+//	static QuicksortNonRecursive q = new QuicksortNonRecursive();
+//	static SelectSmallest s = new SelectSmallest();
+//    static SimultaneousLinearEquations sle = new SimultaneousLinearEquations();
 
 	public static void main(String[] args) {
 
@@ -80,22 +80,21 @@ public class RunMrtc {
 	static void measure() {
 		if (MEASURE)
 			ts = Native.rdMem(Const.IO_CNT);
-		// bs.binarySearch(-1); // Use non-existent key to drive worst-case
-		// performance
+		bs.binarySearch(-1); // Use non-existent key to drive worst-case performance
 		// b.bubbleSort();
 		// crc.crc(crcVal);
+		// e.expint(50, 1);
 		// d.fdct(d.block, 8);
 		// fib.fib(30);
-		// e.expint(50, 1);
 		// is.sort();
 		// j.complex(1, 1);
-		// c.count();
+		// mc.count();
 		// m.multiplyTest();
 		// n.foo(400);
 		// p.run(); too large method
 		// q.sort();
 		// s.select(10, 20);
-	    sle.run();
+	    // sle.run();
 
 
 	}
