@@ -6,8 +6,8 @@ chapter we describe a concurrent collector that is scheduled
 periodically in the same way as ordinary application threads. We
 provide an upper bound for the collector period so that the
 application threads will never run out of memory. This chapter is
-based on the published papers \cite{jop:rtgc_sched} and
-\cite{jop:scjgc}.
+based on following papers:
+\cite{jop:rtgc_sched,jop:scjgc,jop:nbobjcopy:jtres2008}.
 
 
 \section{Introduction}
@@ -76,13 +76,12 @@ as part of the mutator work. Therefore we name it
 \emph{concurrent-copy} collector.
 
 We will use the terms first introduced by Dijkstra with his
-\emph{On-the-Fly} concurrent collector. The application is called the
-\emph{mutator} to reinforce that the application changes (mutates)
-the object graph while the GC does the collection work. The GC
-process is simply called \emph{collector}. In the following
-discussion we will use the color scheme of white, gray, and black
-objects as introduced by Dijkstra with his \emph{On-the-Fly}
-concurrent collector.
+\emph{On-the-Fly} concurrent collector \cite{gc:dijkstra78}. The
+application is called the \emph{mutator} to reinforce that the
+application changes (mutates) the object graph while the GC does the
+collection work. The GC process is simply called \emph{collector}. In
+the following discussion we will use the color scheme of white, gray,
+and black objects:
 
 \begin{description}
     \item[Black] indicates that the object and all immediate
@@ -117,43 +116,44 @@ realize the collector as dedicated hardware \cite{gc:flavius}.
 
 Incremental collector algorithms are conservative, meaning that
 objects becoming unreachable during collection are not collected by
-the collector --- they are floating garbage. Many approaches exist
-to reduce this conservatism in the general case. However, algorithms
-that completely avoid floating garbage are impractical. For
-different conservative collectors the worst-case bounds are all the
-same (i.e., all objects that become unreachable remain floating
+the collector --- they are floating garbage. Many approaches exist to
+reduce this conservatism in the general case. However, algorithms
+that completely avoid floating garbage are impractical. For different
+conservative collectors the worst-case bounds are all the same (i.e.,
+all objects that become unreachable during collection remain floating
 garbage). Therefore the level of conservatism is not an issue for
 real-time collectors.
 
 \subsection{Safety Critical Java}
 
-In Section~\ref{sec:scjava} a profile for safety critical Java (SCJ)
-is defined. SCJ has two interesting properties that may simplify the
+In \cite{jop:scjava} a profile for safety critical Java (SCJ) is
+defined. SCJ has two interesting properties that may simplify the
 implementation of a real-time collector. Firstly, the split between
 initialization and mission phase, and secondly the simplified
 threading model (which also mandates that self-blocking operations
-are illegal in mission).  During initialization of the application a
-SCJ virtual machine does not have to meet any real-time constraints
-(other than possibly a worst case bound on the entire initialization
-phase). It is perfectly acceptable to use a non-real-time GC
-implementation during this phase -- even a stop-the-world GC. As the
-change from initialization to mission phase is explicit, it is clear
-when the virtual machine must initiate real-time collection and
-which code runs during the mission phase.
+are illegal in the mission phase).  During initialization of the
+application a SCJ virtual machine does not have to meet any real-time
+constraints (other than possibly a worst case bound on the entire
+initialization phase). It is perfectly acceptable to use a
+non-real-time GC implementation during this phase -- even a
+stop-the-world GC. As the change from initialization to mission phase
+is explicit, it is clear when the virtual machine must initiate
+real-time collection and which code runs during the mission phase.
 
 
 Simplifying the threading model has the following advantage, if the
 collector thread runs at a lower priority than all other threads in
 the system, it is the case that when it runs \emph{all} other threads
 have returned from their calls to \code{run()}. This is trivially
-true due to the priority preemptive scheduling discipline\footnote{If
-we would allow blocking in the application threads, we would also
-need to block the GC thread.}. Any thread that has not returned from
-its \code{run()} method will preempt the GC until it returns. This
-has the side effect that the GC will never see a root in the call
-stack of another thread. Therefore, the usually atomic operation of
-scanning call stacks can be omitted in the mission phase. We will
-elaborate on this in Section~\ref{sec:scj:simple}.
+true due to the priority preemptive scheduling
+discipline.\footnote{If we would allow blocking in the application
+threads, we would also need to block the GC thread.} Any thread that
+has not returned from its \code{run()} method will preempt the GC
+until it returns. This has the side effect that the GC will never see
+a root in the call stack of another thread. Therefore, the usually
+atomic operation of scanning call stacks can be omitted in the
+mission phase. We will elaborate on this property in
+Section~\ref{sec:scj:simple}.
 
 
 \section{Scheduling of the Collector Thread}
@@ -162,16 +162,16 @@ elaborate on this in Section~\ref{sec:scj:simple}.
 The collector work can be scheduled either \emph{work} based or
 \emph{time} based. On a work based scheduling, as performed in
 \cite{gc:siebert:phd}, an incremental part of the collector work is
-performed at object allocation. This approach sounds quite natural
-as threads that allocate more objects have to pay for the collector
+performed at object allocation. This approach sounds quite natural as
+threads that allocate more objects have to pay for the collector
 work. Furthermore, no additional collector thread is necessary. The
-main issue with this approach is to determine how much work has to
-be done on each allocation -- a non trivial question as collection
-work consists of different phases. A more subtle question is: Why
-should a high frequency (and high priority) thread increase its WCET
-by performing collector work that does not have to be done at that
+main issue with this approach is to determine how much work has to be
+done on each allocation -- a non trivial question as collection work
+consists of different phases. A more subtle question is: Why should a
+high frequency (and high priority) thread increase its WCET by
+performing collector work that does not have to be done at that
 period? Leaving the collector work to a thread with a longer period
-will allow higher utilization of the system.
+allows higher utilization of the system.
 
 On a time based scheduling of the collector work, the collector runs
 in its own thread. Scheduling this thread as a \emph{normal}
@@ -203,9 +203,9 @@ from a set of threads.
 
 We assume that the mutator allocates all memory at the start of the
 period and the memory becomes garbage at the end. In other words the
-memory is live for one period. This is the worst-case\footnote{See
+memory is live for one period. This is the worst-case,\footnote{See
 Section~\ref{sec:wc:live} for an example where the worst-case
-lifetime is two periods.}, but very common as we can see in the
+lifetime is two periods.} but very common as we can see in the
 following code fragment.
 \begin{samepage}
 \begin{lstlisting}
@@ -220,9 +220,7 @@ The object \code{Node} is allocated at the start of the period and
 \code{n} will reference it until the next period when a new
 \code{Node} is created and assigned to \code{n}. In this example we
 assume that no reference to \code{Node} is stored (inside
-\code{work}) to an object with longer lifetime.
-
-
+\code{work}) to an object with a longer lifetime.
 
 
 \subsection{An Example} \label{sec:example}
@@ -599,8 +597,8 @@ collector does not hold for an incremental real-time collector. We
 need double the memory of the allocated data during a collection
 cycle in either case. The advantage of the copying collector over a
 compacting one is that newly allocated data are placed in the
-to-space and do not need to be copied. The compacting collector moves
-all newly created data (that is mostly floating garbage) at the
+to-space and does not need to be copied. The compacting collector
+moves all newly created data (that is mostly floating garbage) at the
 compaction phase.
 
 \subsection{Garbage Collection Period}
@@ -719,59 +717,6 @@ and for the concurrent-copy collector
 \begin{equation}
     \Rightarrow T_{GC} \le T_M \left\lfloor\frac{H_{CC}-2a}{2a}\right\rfloor
 \end{equation}
-
-% wrong way!!!
-%
-%The ceiling function covers the worst case schedule between the
-%collector thread and the mutator thread and is per definition
-%
-%\begin{equation}
-%    \label{equ:ceil:gt}
-%    \left\lceil\frac{T_{GC}}{T_{M}}\right\rceil \ge \frac{T_{GC}}{T_{M}}
-%\end{equation}
-
-
-%
-%can be converted to get the half-closed interval of solutions for
-%$T_{GC}$
-%\begin{equation}
-%    T_{GC} = ((n-1)T_{M}, nT_{M}]
-%\end{equation}
-%%
-%The maximum $T_{GC}$ for a given $n$ is therefore
-%\begin{equation} \label{equ:ceil:sub}
-%    T_{GC_{max}} = nT_{M}
-%\end{equation}
-%%
-%
-%  This is WRONG!!!
-%
-%As we are interested in the maximum value for the collector period
-%we get for the mark-compact collector
-%%
-%\begin{equation}
-%    H_{MC} \ge a \left(1 + 2
-%    \left\lceil\frac{T_{GC}}{T_{M}}\right\rceil\right)
-%    \ge a \left(1 + 2
-%    \frac{T_{GC}}{T_{M}}\right)
-%\end{equation}
-%
-%\begin{equation}
-%    \Rightarrow T_{GC} \le T_M\frac{H_{MC}-a}{2a}
-%\end{equation}
-%%
-%and for the concurrent-copy collector
-%%
-%\begin{equation}
-%    H_{CC} \ge 2a \left(1 +
-%    \left\lceil\frac{T_{GC}}{T_{M}}\right\rceil\right)
-%    \ge 2a \left(1 +
-%    \frac{T_{GC}}{T_{M}}\right)
-%\end{equation}
-%
-%\begin{equation}
-%    \Rightarrow T_{GC} \le T_M\frac{H_{CC}-2a}{2a}
-%\end{equation}
 
 \end{proof}
 
@@ -920,14 +865,14 @@ $T_c$ as the period of the consumer thread $\tau_c$. $\tau_p$
 allocates $a_p$ memory each period. During one period of the
 consumer $\tau_c$ the producer $\tau_p$ allocates
 \begin{equation*}
-    \left\lceil\frac{T_C}{T_P}\right\rceil a_p
+    \left\lceil\frac{T_c}{T_p}\right\rceil a_p
 \end{equation*}
 memory. The worst case is that $\tau_c$ takes over all objects at
 the start of the period and frees them at the end. Therefore the
 maximum amount of live data for this producer/consumer combination
 is
 \begin{equation*}
-    2\left\lceil\frac{T_C}{T_P}\right\rceil a_p
+    \left\lceil\frac{2 T_c}{T_p}\right\rceil a_p
 \end{equation*}
 To incorporate this extended lifetime of objects we introduce a
 lifetime factor $l_i$ which is
@@ -935,7 +880,7 @@ lifetime factor $l_i$ which is
     l_i = \left\{
     \begin{array}{ll}
     1 & :\ \mbox{for normal threads}\\
-    2\left\lceil\frac{T_c}{T_i}\right\rceil & :
+    \left\lceil\frac{2 T_c}{T_i}\right\rceil & :
     \ \mbox{for producer}\ \tau_i\ \mbox{and associated consumer}\ \tau_c
     \end{array}
     \right.
@@ -991,56 +936,26 @@ $L_{max}$
 \end{equation}
 
 
-A mark-compact collector will moves all static data to the bottom of
-the heap in the first and second\footnote{A second cycle is
-necessary as this static data can get intermixed by floating garbage
-from the first collector cycle.} collection cycle after the
-allocation. It does not have to compact these data during the
-following collection cycles in the mission phase. The
-concurrent-copy collector would move these static data in each
-collection cycle. Furthermore, the memory demand for the concurrent
-copy is increased by the double amount of the static data (compared
-to the single amount in the mark-compact collector)\footnote{Or the
-collector period gets shortened.}.
+A mark-compact collector moves all static data to the bottom of the
+heap in the first and second\footnote{A second cycle is necessary as
+this static data can get intermixed by floating garbage from the
+first collector cycle.} collection cycle after the allocation. It
+does not have to compact these data during the following collection
+cycles in the mission phase. The concurrent-copy collector moves
+these static data in each collection cycle. Furthermore, the memory
+demand for the concurrent copy is increased by the double amount of
+the static data (compared to the single amount in the mark-compact
+collector)\footnote{Or the collector period gets shortened.}.
 
-As these static objects live \emph{forever}, we propose a similar
-solution to the immortal memory of the RTSJ. We divide our
-application into an initialization and a mission phase
-\cite{Pusch01}. All static data is allocated during the
-initialization phase (where no application threads are scheduled).
-As part of the transition to the mission phase we perform a
-\emph{special} collection cycle in a stop-the-world fashion. Live
-data that exists after this cycle are assumed to be \emph{immortal}
-data and make up the \emph{immortal} memory area. The remaining
-memory is used for the garbage collected heap.
+The SCJ application model with an initialization and a mission phase
+can reduce the amount of live data that needs to be copied (see
+Section~\ref{sec:scj:simple}).
 
-This static live data will still be scanned by the collector to find
-references into the heap but it is not collected. The main
-differences between our immortal memory and the memory areas of the
-RTSJ are:
-\begin{itemize}
-    \item We do not have to state explicitly which data belongs to
-    the application life-time data. This information is implicitly gathered
-    by the start-mission transition.
-    \item References from the static memory to the garbage collected
-    heap are allowed contrary to the fact in the RTSJ that references to scoped
-    memories, that have to be used for dynamic memory management
-    without a GC, are not allowed from immortal memory.
-\end{itemize}
-
-The second fact greatly simplifies communication between threads.
-For a typical producer/consumer configuration the container for the
-shared data is allocated in immortal memory and the actual data in
-the garbage collected heap.
-
-With this \emph{immortal} memory solution the actual $L_{max}$ only
-contains allocated memory from the periodic threads.
 
 \subsubsection{Object Lifetime} \label{sec:wc:live}
 
-Listing~\ref{lst:bcnode} shows our Java example of a periodic thread
-that allocates an object in the main loop and the resulting
-bytecodes.
+Listing~\ref{lst:bcnode} shows an example of a periodic thread that
+allocates an object in the main loop and the resulting bytecodes.
 
 \begin{lstlisting}[float, caption={Example periodic thread and the corresponding Java bytecodes},
 label=lst:bcnode]
@@ -1166,66 +1081,105 @@ allocated in the initialization phase stay alive for the whole
 application lifetime.  In an RTSJ application this data would be
 allocated in immortal memory.  With a real-time GC there is no notion
 of {immortal} memory, instead we will use the term \emph{static}
-memory.\footnote{This is a slight misnomer -- as object allocated in
-static memory are mutable and can die. In the context of the SCJ the
-latter is expected to be the exception.} Without special treatment, a
-copying collector will move this data at each GC cycle. Furthermore,
-the memory demand for the collector increases by the amount of the
-static data.
+memory. Without special treatment, a copying collector will move this
+data at each GC cycle. Furthermore, the memory demand for the
+collector increases by the amount of the static data.
 
-As those static objects (mostly) live {forever}, we propose a solution
-similar to the immortal memory of the RTSJ.  All data allocated during the
-initialization phase (where no application threads are scheduled) is
-considered potentially static. As part of the transition to the mission
-phase we perform a \emph{special} collection cycle in a stop-the-world
-fashion. Objects that are still alive after this cycle are assumed to live
-forever and make up the \emph{static} memory area. The remaining memory is
-used for the garbage collected heap.
 
-The initialization phase and the transition to the mission phase are
-usually not time critical. However, there are classes of
-applications for which startup is critical, for example in avionics
-systems it is essential for the system to come up promptly after a
-momentary power failure. There are two potential solutions, one
-could trade initialization time GC against more copy work during the
-mission phase, or, as an alternative, one could push most of the
-initialization time work to virtual machine build-time as is done in
-Ovm~\cite{ovm:tecs:07}.
+As those static objects (mostly) live \emph{forever}, we propose a
+solution similar to the immortal memory of the RTSJ. All data
+allocated during the initialization phase (where no application
+threads are scheduled) is considered potentially static. As part of
+the transition to the mission phase a \emph{special} collection cycle
+in a stop-the-world fashion is performed. Objects that are still
+alive after this cycle are assumed to live forever and make up the
+\emph{static} memory area. The remaining memory is used for the
+garbage collected heap.
+
+%% Jan's text
+%The initialization phase and the transition to the mission phase are
+%usually not time critical. However, there are classes of
+%applications for which startup is critical, for example in avionics
+%systems it is essential for the system to come up promptly after a
+%momentary power failure. There are two potential solutions, one
+%could trade initialization time GC against more copy work during the
+%mission phase, or, as an alternative, one could push most of the
+%initialization time work to virtual machine build-time as is done in
+%Ovm~\cite{ovm:tecs:07}.
 
 This static memory will still be scanned by the collector to find
 references into the heap but it is not collected. The main
 differences between our static memory and the immortal memory of the
-RTSJ are: Firstly, that the choice of allocation context is
-implicit. There is no need to specify where an object must be
-allocated. And secondly, that references from the static memory to
-the garbage collected heap are allowed.  This greatly simplifies
-communication between threads.  For a typical producer/consumer
-configuration the container for the shared data is allocated in
-static memory and the actual data in the garbage collected heap.
+RTSJ are:
 
+This static live data will still be scanned by the collector to find
+references into the heap but it is not collected. The main
+differences between our immortal memory and the memory areas of the
+RTSJ are:
+\begin{itemize}
+    \item The choice of allocation context is implicit. There is
+        no need to specify where an object must be allocated. We
+        do not have to state explicitly which data belongs to the
+        application life-time data. This information is
+        implicitly gathered by the start-mission transition.
+    \item References from the static memory to the garbage
+        collected heap are allowed contrary to the fact in the
+        RTSJ that references to scoped memories, that have to be
+        used for dynamic memory management without a GC, are not
+        allowed from immortal memory.
+\end{itemize}
 
-\begin{figure*}  \centering
-  \includegraphics{jvm/handles}
-  \caption{Heap layout with the handle area}\label{fig:handles}
-\end{figure*}
+The second fact greatly simplifies communication between threads. For
+a typical producer/consumer configuration the container for the
+shared data is allocated in immortal memory and the actual data in
+the garbage collected heap. With this \emph{immortal} memory solution
+the actual $L_{max}$ only contains allocated memory from the periodic
+threads.
 
 
 \section{Implementation}
 
-Our collector is an incremental collector with a
-snapshot-at-the-beginning write barrier \cite{gc:yuasa90}. The GC is
-based on the copy collector by Cheney \cite{gc:cheney70} and the
-incremental version by Baker \cite{gc:baker78}. To avoid the
-expensive read barrier in Baker's collector we perform all object
-copies concurrently by the collector. Therefore we call it the
-\emph{concurrent-copy} collector. We have implemented the
-concurrent-copy GC on the Java processor JOP \cite{jop:thesis,
-jop:jnl:jsa2007}. The whole collector, the \code{new} operation, and
-the write barriers are implemented in Java (with the help of two
-native functions for direct memory access). Only the copy operation
-is optimized by a faster microcode implementation. Although we show
-the implementation on a Java processor, the GC is not JOP specific
-and can also be implemented on a conventional processor.
+%% rewrite in RTS version
+
+The collector for JOP is an incremental collector
+\cite{jop:rtgc_sched, jop:scjgc} based on the copy collector by
+Cheney \cite{gc:cheney70} and the incremental version by Baker
+\cite{gc:baker78}. To avoid the expensive read barrier in Baker's
+collector all object copies are performed concurrently by the
+collector. The collector is concurrent and resembles the collectors
+presented by Steele~\cite{gc:steele75} and
+Dijkstra~et~al.~\cite{gc:dijkstra78}. Therefore we call it the
+\emph{concurrent-copy} collector.
+
+The collector and the mutator are synchronized by two barriers. A
+Brooks-style~\cite{gc:broo84} forwarding directs the access to the
+object either into tospace or fromspace. The forwarding pointer is
+kept in a separate handle area as proposed in \cite{gc:nort87}. The
+separate handle area reduces the space overheads as only one pointer
+is needed for both object copies. Furthermore, the indirection
+pointer does not need to be copied. The handle also contains other
+object related data, such as type information, and the mark list. The
+objects in the heap only contain the fields and no object header.
+
+The second synchronization barrier is a \emph{snapshot-at-beginning}
+write-barrier \cite{gc:yuasa90}. A snapshot-at-beginning
+write-barrier synchronizes the mutator with the collector on a
+reference store into a static field, an object field, or an array.
+
+
+% We have implemented the concurrent-copy GC on the Java processor JOP
+% \cite{jop:thesis, jop:jnl:jsa2007}.
+The whole collector, the \code{new} operation, and the write barriers
+are implemented in Java (with the help of native functions for direct
+memory access). The object copy operation is implemented in hardware
+and can be interrupted by mutator threads after each word copied
+\cite{jop:nbobjcopy:jtres2008}. The copy unit redirects the access to
+the object under copy, depending on the accessed field, either to the
+original or the new version of the object.
+
+Although we show the implementation on a Java processor, the GC is
+not JOP specific and can also be implemented on a conventional
+processor.
 
 \subsection{Heap Layout}
 
@@ -1236,6 +1190,12 @@ runtime constants, such as class information or string constants.
 This memory region, although logically part of the heap, is neither
 scanned, nor copied by the GC. This constant area contains its own
 handles and all references into this area are ignored by the GC.
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics{jvm/handles}
+  \caption{Heap layout with the handle area}\label{fig:handles}
+\end{figure*}
 
 To simplify object move by the collector, all objects are accessed
 with one indirection, called the handle. The handle also contains
@@ -1254,7 +1214,7 @@ subsequent uses of the reference can be performed on the direct
 pointer until a GC preemption point. This optimization is performed
 by the compiler.
 
-We use a hardware based optimization for this indirection
+JOP uses a hardware based optimization for this indirection
 \cite{jop:oohw:jtres2007}. The indirection is unconditionally
 performed in the memory access unit. Furthermore, null pointer checks
 and array bounds checks are done in parallel to this indirection.
@@ -1273,8 +1233,12 @@ are floating garbage.
 
 \subsection{The Collector}
 
-The collector is scheduled periodically at the lowest priority and
-within each period it performs the following steps:
+The collector can operate in two modes: (1) as stop-the-world
+collector triggered on allocation when the heap is full, or (2) as
+concurrent real-time collector running in its own thread.
+
+The real-time collector is scheduled periodically at the lowest
+priority and within each period it performs the following steps:
 \begin{description}
     \item[Flip] An atomic flip exchanges the roles of tospace and
     fromspace.
@@ -1296,13 +1260,10 @@ within each period it performs the following steps:
     time.
 \end{description}
 %
-The longest atomic operation is the copy of an object or array.  To
-reduce blocking time, we plan to implement an array\footnote{Since
-objects are typically small, this optimization is likely to pay off
-only for arrays.} copy and access hardware module within JOP. The
-hardware can perform copies in an interruptible fashion, and records
-the copy position on an interrupt. On an array access the hardware
-knows whether the access should go to the already copied part in the
+To reduce blocking time, a hardware unit performs copies of objects
+and arrays in an interruptible fashion, and records the copy position
+on an interrupt. On an object or array access the hardware knows
+whether the access should go to the already copied part in the
 tospace or in the not yet copied part in the fromspace. It has to be
 noted that splitting larger arrays into smaller chunks, as done in
 Metronome~\cite{gc:bacon03} and in the GC for the
@@ -1319,6 +1280,7 @@ position in the heap. This information is considered by the GC to
 distinguish pointers from primitives. Therefore the chance to keep an
 object artificially alive is low.
 
+%% This is RTS paper stuff and should go away in the handbook
 As part of the mission start one stop-the-world cycle is performed to
 clean up the heap from garbage generated at initialization. From that
 point on the GC runs in concurrent mode in its own thread and omits
@@ -1480,21 +1442,26 @@ fromspace to provide a constant time allocation after the next flip.
 The coordination between the mutator and the collector is performed
 within the \code{new} and \code{newarray} bytecodes and within write
 barriers for JVM bytecodes \code{putfield} and \code{putstatic} for
-reference fields, and bytecode \code{aastore}.
+reference fields, and bytecode \code{aastore}. The field access
+bytecodes are substituted at application link time (run of
+\code{JOPizer}). Only write accesses to reference fields are
+substituted by special versions of the bytecodes
+(\code{putfield\_ref} and \code{putstatic\_ref}). Therefore, the
+write barrier code is only executed on reference write access.
 
 \subsubsection{Allocation}
 
-Objects are allocated black (in tospace). In non real-time
-collectors it is more common to allocate objects white. It is argued
+Objects are allocated black (in tospace). In non real-time collectors
+it is more common to allocate objects white. It is argued
 \cite{gc:dijkstra78} that objects die young and the chances are high
 that the GC never needs to touch them. However, in the worst case no
-object that is created and becomes garbage during the GC cycle can
-be reclaimed. Those floating garbage will be reclaimed in the next
-GC cycle. Therefore, we do not benefit from the white allocation
-optimization in a real-time GC. Allocating a new object black has
-the benefit that those objects do not need to be copied. The same
+object that is created and becomes garbage during the GC cycle can be
+reclaimed. Those floating garbage will be reclaimed in the next GC
+cycle. Therefore, we do not benefit from the white allocation
+optimization in a real-time GC. Allocating a new object black has the
+benefit that those objects do not need to be copied. The same
 argument applies to the chosen write barrier. The following code
-shows our simple implementation of bytecode \code{new}:
+shows the simple implementation of bytecode \code{new}:
 
 \begin{samepage}
 \begin{lstlisting}
@@ -1510,11 +1477,11 @@ synchronized (mutex) {
 \end{lstlisting}
 \end{samepage}
 
-As the old fromspace is cleared by the GC we do not need to
-initialize the new object and perform \code{new} in constant time.
-The methods \code{Native.rdMem()} and \code{Native.wrMem()} provide
-direct access to the main memory. Only those two native methods are
-necessary for an implementation of a GC in pure Java.
+As the old fromspace is cleared by the GC, the new object is already
+initialized and \code{new} executes in constant time. The methods
+\code{Native.rdMem()} and \code{Native.wrMem()} provide direct access
+to the main memory. Only those two native methods are necessary for
+an implementation of a GC in pure Java.
 
 \subsubsection{Write Barriers}
 
@@ -1527,7 +1494,7 @@ write barrier in the mutator to not foil the collector. According to
     \item[Snapshot-at-beginning] Keep the object graph as it was at
     the the GC start
     \begin{itemize}
-        \item Save to-be-overwritten pointer
+        \item Save the to-be-overwritten reference
         \item More conservative -- not an issue for RTs as worst case
         counts
         \item Allocate black
@@ -1594,58 +1561,102 @@ for the worst case all floating garbage will not be found by the GC
 in the current cycle. Therefore, we use the snapshot-at-begin write
 barrier in our implementation.
 
+A snapshot-at-beginning write-barrier synchronizes the mutator with
+the collector on a reference store into a static field, an object
+field, or an array. The \emph{to be overwritten} field is shaded gray
+as shown in Figure~\ref{fig:barrier}. An object is shaded gray by
+pushing the reference of the object onto the mark
+stack.\footnote{Although the GC is a copying collector a mark stack
+is needed to perform the object copy in the GC thread and not by the
+mutator.} Further scanning and copying into tospace -- coloring it
+black -- is left to the GC thread. One field in the handle area is
+used to implement the mark stack as a simple linked list. The
+following code shows the implementation of \code{putfield} for
+reference fields:
 
-
-A snapshot-at-begin write barrier synchronizes the mutator with the
-collector on a reference store into a static field, an object field,
-or an array. The \emph{to be overwritten} field is pushed on the
-mark stack when it points to a white object. The following code
-shows the implementation of \code{putfield} for reference fields:
-
+% Caption for floating listing
+% Snapshot-at-beginning write-barrier in JOP's JVM
 \begin{lstlisting}
-private static void f_putfield_ref(int ref, int val,
-                                    int index) {
+private static void f_putfield_ref(int ref, int value, int index) {
 
-    if (ref==0) {
-        throw new NullPointerException();
-    }
     synchronized (GC.mutex) {
-        // handle indirection
-        ref = Native.rdMem(ref);
+
         // snapshot-at-beginning barrier
-        int oldVal = Native.rdMem(ref+index);
-        if (oldVal!=0 &&
-            Native.rdMem(oldVal+GC.OFF_SPACE)!=GC.toSpace) {
-
-            GC.push(oldVal);
+        int oldVal = Native.getField(ref, index);
+        // Is it white?
+        if (oldVal != 0
+            && Native.rdMem(oldVal+GC.OFF_SPACE) != GC.toSpace) {
+            // Mark grey
+            GC.push(oldVal)
         }
-
-        Native.wrMem(val, ref+index);
+        Native.putField(ref, index, value);
     }
 }
 \end{lstlisting}
 
-The shown code is part of a special class (\code{com.jopdesign.sys.JVM})
-where Java bytecodes that are not directly implemented by JOP can be
-implemented in Java \cite{jop:thesis}. All \code{putfield} bytecodes are
-replaced by quick variants on class linking. During this step also
-\code{putfield} instructions for references and double-word length fields
-(\code{double} and \code{long}) are replaced by special
-bytecodes. Therefore, the code shows the special bytecode
-\code{putfield\_ref}.
+%All \code{putfield} bytecodes are replaced by quick variants on class
+%linking. During this step also \code{putfield} instructions for
+%references and double-word length fields (\code{double} and
+%\code{long}) are replaced by special bytecodes. Therefore, the code
+%shows the special bytecode \code{putfield\_ref}.
 
+Note that field and array access is implemented in hardware on JOP.
+Only write accesses to reference fields need to be protected by the
+write-barrier, which is implemented in software. During class linking
+all write operations to reference fields (\code{putfield} and
+\code{putstatic} when accessing reference fields) are replaced by a
+JVM internal bytecodes (e.g., \code{putfield\_ref}) to execute the
+write-barrier code as shown before.
+% RTS version
+% in Figure~\ref{fig:barrier}.
+The shown code is part of a special class
+(\code{com.jopdesign.sys.JVM}) where Java bytecodes that are not
+directly implemented by JOP can be implemented in Java
+\cite{jop:thesis}. %% add a reference to a Section in the handbook.
 
+The methods of class \code{Native} are JVM internal methods needed to
+implement part of the JVM in Java. The methods are replaced by
+regular or JVM internal bytecodes during class linking. Methods
+\code{getField(ref, index)} and \code{putField(ref, value, index)}
+map to the JVM bytecodes \code{getfield} and \code{putfield}. The
+method \code{rdMem()} is an example of an internal JVM bytecode and
+performs a memory read. The null pointer check for
+\code{putfield\_ref} is implicitly performed by the hardware
+implementation of \code{getfield} that is executed by
+\code{Native.getField()}. The hardware implementation of
+\code{getfield} triggers an exception interrupt when the reference is
+null. The implementation of the write-barrier shows how a bytecode is
+substituted by a special version (\code{pufield\_ref}), but uses in
+the software implementation the hardware implementation of that
+bytecode (\code{Naitve.putfield()}).
+
+In principle this write-barrier could also be implemented in
+microcode to avoid the expensive invoke of a Java method. However,
+the interaction with the GC, which is written in Java, is simplified
+by the Java implementation. As a future optimization we intend to
+inline the write-barrier code.
+
+The collector runs in its own thread and the priority is assigned
+according to the deadline, which equals the period of the GC cycle.
+As the GC period is usually longer than the mutator task deadlines,
+the GC runs at the lowest priority. When a high priority task becomes
+ready, the GC thread will be preempted. Atomic operations of the GC
+are protected simply by turning the timer interrupt off.\footnote{If
+interrupt handlers are allowed to change the object graph those
+interrupts also need to be disabled.} Those atomic sections lead to
+release jitter of the real-time tasks and shall be minimized. It has
+to be noted that the GC protection with interrupt disabling is not an
+option for multiprocessor systems.
 
 \section{Evaluation}
 
-To evaluate our proposed real-time GC we execute a simple test
-application on JOP and measure heap usage and the release time
-jitter of high priority threads. The test setup consists of JOP
-implemented in an Altera Cyclone FPGA clocked at 100~MHz. The main
-memory is a 1~MB SRAM with an access time of two clock cycles. JOP
-is configured with a 4~KB method cache (a special form of
-instruction cache) and a 128 entry stack cache. No additional data
-cache is used.
+To evaluate the proposed real-time GC we execute a simple test
+application on JOP and measure heap usage and the release time jitter
+of high priority threads. The test setup consists of JOP implemented
+in an Altera Cyclone FPGA clocked at 100~MHz. The main memory is a
+1~MB SRAM with an access time of two clock cycles. JOP is configured
+with a 4~KB method cache (a special form of instruction cache) and a
+128 entry stack cache. No additional data cache is used.
 
 \subsection{Scheduling Experiments}
 
@@ -1717,10 +1728,9 @@ measurement.
 
 In our example we use a concurrent-copy collector with a heap size
 (for both semi-spaces) of 100~KB. At startup the JVM allocates about
-3.5~KB data. We incorporate\footnote{We have not yet implemented the
-suggested handling of static data to be moved to \emph{immortal}
-memory at mission start in our prototype.} these 3.5~KB as static
-live data $L_s$.
+3.5~KB data. We incorporate\footnote{The suggested handling of static
+data to be moved to \emph{immortal} memory at mission start is not
+yet implemented.} these 3.5~KB as static live data $L_s$.
 
 
 
@@ -1801,11 +1811,11 @@ the flip. The different memory requests of two times 1~KB from
 thread $\tau_1$ and one time 3~KB from thread $\tau_2$ can be seen
 every 10~ms.
 
-In this example the heap is used until it is almost full, but we run
-never out of memory and no thread misses a deadline. From the
-regular allocation pattern we also see that this collector runs
-concurrently. With a stop-the-world collector we would notice gaps
-of 10~ms (the measured execution time of the collector) in the
+In this example the heap is used until it is almost full, but the
+application never runs out of memory and no thread misses a deadline.
+From the regular allocation pattern we also see that this collector
+runs concurrently. With a stop-the-world collector we would notice
+gaps of 10~ms (the measured execution time of the collector) in the
 graph.
 
 \subsubsection{Producer/Consumer Threads}
@@ -1840,8 +1850,8 @@ As explained in Section~\ref{sec:prod:cons} we calculate the
 lifetime factor $l_1$ for memory allocated by the producer $\tau_1$
 with the corresponding consumer $\tau_3$ with period $T_3$.
 \begin{equation*}
-    l_1 = 2\left\lceil\frac{T_3}{T_1}\right\rceil
-        = 2\left\lceil\frac{30}{5}\right\rceil
+    l_1 = \left\lceil\frac{2 T_3}{T_1}\right\rceil
+        = \left\lceil\frac{2 \times 30}{5}\right\rceil
         = 12
 \end{equation*}
 %
@@ -1888,6 +1898,8 @@ minimum.
 
 
 \subsection{Measuring Release Jitter}
+
+%% TODO use text and new results form JTRES/TECS paper.
 
 Our main concern on garbage collection in real-time systems is the
 blocking time introduced  by the GC due to atomic code sections.
@@ -1939,9 +1951,9 @@ difference between \code{max} and \code{min}.
 To provide a baseline we measure the release time jitter of a single
 real-time thread (plus an endless loop in the \code{main} method as
 an idle non-real-time background thread). No GC thread is scheduled.
-The code is similar to the code in in Figure~\ref{lst:measure}. A
-stop condition is inserted that prints out the minimum and maximum
-time differences measured after 1 million iterations.
+The code is similar to the code in Listing~\ref{lst:measure}. A stop
+condition is inserted that prints out the minimum and maximum time
+differences measured after 1 million iterations.
 
 \begin{table}
     \centering
@@ -1967,6 +1979,8 @@ our system. We will use this period for the high-priority real-time
 thread in the following measurement with an enabled GC.
 
 \subsection{Measurements}
+
+%% TODO use new results form JTRES/TECS paper.
 
 The test application consisting of three real-time threads
 ($\tau_{hf}$, $\tau_{p}$, and $\tau_{c}$), one logging thread
@@ -2109,6 +2123,9 @@ we moved this function to microcode. However, the microcoded
 support in hardware can lead to a copy time of 4--5 clock cycles per
 word.
 
+%% Rewrite/redo with copy unit (for RTS) and probably also
+%% the handbook. Or use JTRES/TECS results.
+
 The maximum blocking time of 54~$\mu$s on a 100 MHz processor is less than
 blocking times reported for other solutions.
 
@@ -2141,31 +2158,6 @@ evaluate a real-time collector.
 %\url{http://www.robot.lth.se/java/} compiler
 %read \url{http://www.ulb.ac.be/di/ssd/goossens/RTS05.pdf}
 
-%\subsection{Future Enhancements}
-
-Although we measured a low blocking time in our experiment we think
-there is room for improvements. As a first enhancement we will
-implement a hardware \emph{memcpy} in the memory unit of JOP to
-reduce the blocking time. However, for very large arrays the
-resulting blocking time may still be too large. A common solution is
-to break up arrays into smaller chunks sometimes called Arraylets
-\cite{gc:bacon03}. However, this comes at a more complex array
-access with a higher cost.
-
-As we are running our GC on a soft-core Java processor our design
-space is larger and we can consider implementing a function unit
-that supports incremental copy. This copy unit will be integrated
-with the array (field) access unit. On a timer interrupt (for a
-scheduling decision) the memory copy will also be interrupted and
-the application thread can run. The copy/access unit remembers the
-copy position and will redirect the array/field access either to
-fromspace or to tospace.
-
-Another option is a full hardware implementation of the GC. The
-proposed algorithm is not very complex and should result in a not
-too complex hardware. However, this design direction should be
-carefully evaluated against a way simpler parallel solution: running
-the GC on one CPU of a chip multiprocessor version of JOP.
 
 \section{Analysis}
 
@@ -2218,13 +2210,12 @@ analysis of the collector thread.
 
 In this chapter we have presented a real-time garbage collector in
 order to benefit from a more dynamic programming model for real-time
-applications. Our collector is incremental and scheduled as a normal
+applications. The collector is incremental and scheduled as a normal
 real-time thread and, according to its deadline, assigned the lowest
 priority in the system. The restrictions from the SCJ programming
 model and the low priority result in two advantages: (a) avoidance of
 stack root scanning and (b) short blocking time of high priority
-threads. We have implemented the proposed GC on the Java processor
-JOP. At 100~MHz we measured 40~$\mu$s maximum blocking time
+threads. At 100~MHz we measured 40~$\mu$s maximum blocking time
 introduced by the GC thread.
 
 To guarantee that the applications will not run out of memory, the
@@ -2235,10 +2226,10 @@ due to object sharing between threads can be incorporated into the
 collector period analysis.
 
 A critical operation for a concurrent, compacting GC is the atomic
-copy of large arrays. We consider extending JOP with a copy unit that
-can be interrupted. This unit is integrated with the array access
-unit and will redirect the access to either fromspace or tospace
-depending on the array index and the value of the copy pointer.
+copy of large arrays. JOP has been extended by a copy unit that can
+be interrupted. This unit is integrated with the memory access unit
+and redirects the access to either fromspace or tospace depending on
+the array/field index and the value of the copy pointer.
 
 \section{Further Reading}
 
@@ -2276,8 +2267,6 @@ properties that we need today. A good overview of GC techniques can
 be found in \cite{gc:jone96} and in the GC survey by Wilson
 \cite{gc:wils94}.
 
-\subsection{Related Work}
-
 Baker \cite{gc:baker78} extends Cheneys \cite{gc:cheney70} copying
 collector for incremental GC. However, it uses an expensive read
 barrier that moves the object to the to-space as part of the mutator
@@ -2289,12 +2278,12 @@ In \cite{gc:hwgc94} a garbage-collected memory module is suggested to
 provide a real-time collector. A worst-case delay time of 1$\mu$s is
 claimed without giving the processor speed.
 
-Despite the title \cite{gc:bacon03} is still not a real-time
-collector. Non real-time applications are used (SPECjvm98) in the
-experiments. They propose a collector with constant utilization to
-meet real-time requirements. However, utilization is \emph{not} a
-real-time measure per se; it should be schedulability or response
-time instead. Pause times are in the range of 12ms.
+Despite the title \cite{gc:bacon03}, Metronome is still not a (hard)
+real-time collector. Non real-time applications are used (SPECjvm98)
+in the experiments. They propose a collector with constant
+utilization to meet real-time requirements. However, utilization is
+\emph{not} a real-time measure per se; it should be schedulability or
+response time instead. Pause times are in the range of 12ms.
 
 In \cite{gc:pfeffer04} two collectors based on \cite{gc:dijkstra78}
 and \cite{gc:baker92} are implemented on a multithreaded
@@ -2326,3 +2315,5 @@ This result is the same as in our finding (see
 Theorem~\ref{sch:theorem}) for the mark-compact collector. No
 analysis is given how objects with longer lifetime and static
 objects can be incorporated.
+
+%% TODO: add JamicaVM, Sun RTS
