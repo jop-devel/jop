@@ -301,14 +301,6 @@ In this section we show the memory bounds for a mark-compact
 collector with a single heap memory and a concurrent-copying
 collector with the two spaces \emph{from-space} and \emph{to-space}.
 
-The following symbols are used for the rest of the paper: heap size
-for a mark-compact collector ($H_{MC}$) and for a concurrent-copying
-collector ($H_{CC}$) containing both semi-spaces, period of the GC
-thread ($T_{GC}$), period of a single mutator thread ($T_M$), period
-of mutator thread $i$ ($T_i$) from a set of threads, and memory
-amount allocated by a single mutator ($a$) or by mutator $i$ ($a_i$)
-from a set of threads.
-
 \subsubsection{Mark-Compact} \label{sec:gcsched:mc}
 
 For the mark-compact collector, the heap $H_{MC}$ can be divided into
@@ -619,108 +611,108 @@ period and the memory becomes garbage at the end. In other words the
 memory is live for one period. This is the worst case, but very
 common.
 
-\subsubsection{Single Mutator Thread}
-
-First we give an upper bound for the collector cycle time for a
-single mutator thread.
-
-\begin{lemma}
-
-For a single mutator thread with period $T_M$ that allocates memory
-``$a$" each period, the maximum collector period $T_{GC}$ that
-guarantees that we will not run out of memory is
-
-\begin{align}\label{sth:mc:lemma}
-    T_{GC} & \le T_M\left\lfloor\frac{H_{MC}-a}{2a}\right\rfloor\\
-    \label{sth:cc:lemma}
-    T_{GC} & \le T_M\left\lfloor\frac{H_{CC}-2a}{2a}\right\rfloor
-\end{align}
-
-\end{lemma}
-
-\begin{proof}
-The maximum live data referenced by a single mutator is the maximum
-data allocated by the mutator in a single cycle.
-\begin{equation}
-    L_{max} = a
-\end{equation}
-A single mutator allocates $a$ memory during the period $T_M$.
-Therefore the maximum allocation during the collector period
-$T_{GC}$ is
+%\subsubsection{Single Mutator Thread}
 %
-\begin{equation}
-    A_{max} = a \left\lceil\frac{T_{GC}}{T_{M}}\right\rceil
-\end{equation}
+%First we give an upper bound for the collector cycle time for a
+%single mutator thread.
 %
-Using equations (\ref{equ:mcheapmin}) and (\ref{equ:mc:lemma}) we
-get the minimum heap size $H_{MC}$ for a mark-compact collector
+%\begin{lemma}
 %
-\begin{align}
-\nonumber
-    H_{MC} & \ge L_{max} + 2 A_{max}\\
-    H_{MC} & \ge a \left(1 + 2
-    \left\lceil\frac{T_{GC}}{T_{M}}\right\rceil\right)
-\end{align}
+%For a single mutator thread with period $T_M$ that allocates memory
+%``$a$" each period, the maximum collector period $T_{GC}$ that
+%guarantees that we will not run out of memory is
 %
-Equations (\ref{equ:ccheapmin}) and (\ref{equ:cc:lemma}) result in
-the minimum heap size $H_{CC}$, containing both semi-spaces, for the
-concurrent-copy collector
+%\begin{align}\label{sth:mc:lemma}
+%    T_{GC} & \le T_M\left\lfloor\frac{H_{MC}-a}{2a}\right\rfloor\\
+%    \label{sth:cc:lemma}
+%    T_{GC} & \le T_M\left\lfloor\frac{H_{CC}-2a}{2a}\right\rfloor
+%\end{align}
 %
-\begin{align}
-\nonumber
-    H_{CC} & \ge 2(L_{max} + A_{max})\\
-    H_{CC} & \ge 2a \left(1 +
-    \left\lceil\frac{T_{GC}}{T_{M}}\right\rceil\right)
-\end{align}
+%\end{lemma}
 %
-The ceiling function covers the worst-case schedule between the
-collector thread and the mutator thread. We are interested in the
-maximum collector period $T_{GC}$ with a given heap size $H_{MC}$ or
-$H_{CC}$
+%\begin{proof}
+%The maximum live data referenced by a single mutator is the maximum
+%data allocated by the mutator in a single cycle.
+%\begin{equation}
+%    L_{max} = a
+%\end{equation}
+%A single mutator allocates $a$ memory during the period $T_M$.
+%Therefore the maximum allocation during the collector period
+%$T_{GC}$ is
+%%
+%\begin{equation}
+%    A_{max} = a \left\lceil\frac{T_{GC}}{T_{M}}\right\rceil
+%\end{equation}
+%%
+%Using equations (\ref{equ:mcheapmin}) and (\ref{equ:mc:lemma}) we
+%get the minimum heap size $H_{MC}$ for a mark-compact collector
+%%
+%\begin{align}
+%\nonumber
+%    H_{MC} & \ge L_{max} + 2 A_{max}\\
+%    H_{MC} & \ge a \left(1 + 2
+%    \left\lceil\frac{T_{GC}}{T_{M}}\right\rceil\right)
+%\end{align}
+%%
+%Equations (\ref{equ:ccheapmin}) and (\ref{equ:cc:lemma}) result in
+%the minimum heap size $H_{CC}$, containing both semi-spaces, for the
+%concurrent-copy collector
+%%
+%\begin{align}
+%\nonumber
+%    H_{CC} & \ge 2(L_{max} + A_{max})\\
+%    H_{CC} & \ge 2a \left(1 +
+%    \left\lceil\frac{T_{GC}}{T_{M}}\right\rceil\right)
+%\end{align}
+%%
+%The ceiling function covers the worst-case schedule between the
+%collector thread and the mutator thread. We are interested in the
+%maximum collector period $T_{GC}$ with a given heap size $H_{MC}$ or
+%$H_{CC}$
+%%
+%\begin{align}
+%    \label{equ:mc:ceil}
+%    \left\lceil\frac{T_{GC}}{T_{M}}\right\rceil &
+%    \le \frac{H_{MC}-a}{2a}
+%\end{align}
+%%
+%\begin{align}
+%    \label{equ:cc:ceil}
+%    \left\lceil\frac{T_{GC}}{T_{M}}\right\rceil &
+%    \le \frac{H_{CC}-2a}{2a}
+%\end{align}
+%%
+%The maximum quotient ($\frac{T_{GC}}{T_{M}}$) that fulfills
+%(\ref{equ:mc:ceil}) or (\ref{equ:cc:ceil}) is an integer $n$. $n$ is
+%the largest integer that is less than or equal the right side of
+%(\ref{equ:mc:ceil}) or (\ref{equ:cc:ceil}). Therefore we get for the
+%mark-compact collector
+%%
+%\begin{align}
+%    \label{equ:mc:floor}
+%    \frac{T_{GC}}{T_{M}} &
+%    \le \left\lfloor\frac{H_{MC}-a}{2a}\right\rfloor
+%\end{align}
+%%
+%\begin{equation}
+%    \Rightarrow T_{GC} \le T_M \left\lfloor\frac{H_{MC}-a}{2a}\right\rfloor
+%\end{equation}
+%%
+%and for the concurrent-copy collector
+%%
+%\begin{align}
+%    \label{equ:cc:floor}
+%    \frac{T_{GC}}{T_{M}} &
+%    \le \left\lfloor\frac{H_{CC}-2a}{2a}\right\rfloor
+%\end{align}
+%%
+%\begin{equation}
+%    \Rightarrow T_{GC} \le T_M \left\lfloor\frac{H_{CC}-2a}{2a}\right\rfloor
+%\end{equation}
 %
-\begin{align}
-    \label{equ:mc:ceil}
-    \left\lceil\frac{T_{GC}}{T_{M}}\right\rceil &
-    \le \frac{H_{MC}-a}{2a}
-\end{align}
+%\end{proof}
 %
-\begin{align}
-    \label{equ:cc:ceil}
-    \left\lceil\frac{T_{GC}}{T_{M}}\right\rceil &
-    \le \frac{H_{CC}-2a}{2a}
-\end{align}
-%
-The maximum quotient ($\frac{T_{GC}}{T_{M}}$) that fulfills
-(\ref{equ:mc:ceil}) or (\ref{equ:cc:ceil}) is an integer $n$. $n$ is
-the largest integer that is less than or equal the right side of
-(\ref{equ:mc:ceil}) or (\ref{equ:cc:ceil}). Therefore we get for the
-mark-compact collector
-%
-\begin{align}
-    \label{equ:mc:floor}
-    \frac{T_{GC}}{T_{M}} &
-    \le \left\lfloor\frac{H_{MC}-a}{2a}\right\rfloor
-\end{align}
-%
-\begin{equation}
-    \Rightarrow T_{GC} \le T_M \left\lfloor\frac{H_{MC}-a}{2a}\right\rfloor
-\end{equation}
-%
-and for the concurrent-copy collector
-%
-\begin{align}
-    \label{equ:cc:floor}
-    \frac{T_{GC}}{T_{M}} &
-    \le \left\lfloor\frac{H_{CC}-2a}{2a}\right\rfloor
-\end{align}
-%
-\begin{equation}
-    \Rightarrow T_{GC} \le T_M \left\lfloor\frac{H_{CC}-2a}{2a}\right\rfloor
-\end{equation}
-
-\end{proof}
-
-\subsubsection{Several Mutator Threads}
+%\subsubsection{Several Mutator Threads}
 
 In this section the upper bound of the period for the collector
 thread is given for $n$ independent mutator threads.
