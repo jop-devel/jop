@@ -47,12 +47,12 @@ begin
 process(clk, reset)
 begin
 
-	if (reset='1') then
+	if reset='1' then
 
 		nxt <= (others => '0');
 		hit <= '0';
 		for i in 0 to lines-1 loop
-			tag(i) <= (others => '1');
+--			tag(i) <= (others => '1');
 			valid(i) <= '0';
 		end loop;
 

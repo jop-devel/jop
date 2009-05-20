@@ -14,6 +14,8 @@ work:
 
 clean:
 	-rm -rf work
+	-rm transcript
+	-rm *.wlf
 
 
 
