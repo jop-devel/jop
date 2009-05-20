@@ -1452,12 +1452,14 @@ reclaimed. Those floating garbage will be reclaimed in the next GC
 cycle. Therefore, we do not benefit from the white allocation
 optimization in a real-time GC. Allocating a new object black has the
 benefit that those objects do not need to be copied. The same
-argument applies to the chosen write barrier. The following code
-shows the simple implementation of bytecode \code{new}:
+argument applies to the chosen write barrier. The code in
+Listing~\ref{lst:new} shows the simple implementation of bytecode
+\code{new}:
 
-\begin{samepage}
-\begin{lstlisting}
-synchronized (mutex) {
+\begin{lstlisting}[float=t, caption={Implementation of bytecode \code{new} in JOP’s JVM},
+label=lst:new]
+
+synchronized (GC.mutex) {
     // we allocate from the upper part
     allocPtr -= size;
     ref = getHandle(size);
@@ -1467,7 +1469,6 @@ synchronized (mutex) {
     Native.wrMem(cons+CLASS_HEADR, ref+OFF_MTAB_ALEN);
 }
 \end{lstlisting}
-\end{samepage}
 
 As the old fromspace is cleared by the GC, the new object is already
 initialized and \code{new} executes in constant time. The methods
@@ -1556,19 +1557,19 @@ barrier in our implementation.
 A snapshot-at-beginning write-barrier synchronizes the mutator with
 the collector on a reference store into a static field, an object
 field, or an array. The \emph{to be overwritten} field is shaded gray
-as shown in Figure~\ref{fig:barrier}. An object is shaded gray by
+as shown in Listing~\ref{lst:barrier}. An object is shaded gray by
 pushing the reference of the object onto the mark
 stack.\footnote{Although the GC is a copying collector a mark stack
 is needed to perform the object copy in the GC thread and not by the
 mutator.} Further scanning and copying into tospace -- coloring it
 black -- is left to the GC thread. One field in the handle area is
-used to implement the mark stack as a simple linked list. The
-following code shows the implementation of \code{putfield} for
-reference fields:
+used to implement the mark stack as a simple linked list.
+Listing~\ref{lst:barrier} shows the implementation of \code{putfield}
+for reference fields.
 
-% Caption for floating listing
-% Snapshot-at-beginning write-barrier in JOP's JVM
-\begin{lstlisting}
+\begin{lstlisting}[float=t, caption={Snapshot-at-beginning write-barrier in JOP’s JVM},
+label=lst:barrier]
+
 private static void f_putfield_ref(int ref, int value, int index) {
 
     synchronized (GC.mutex) {
