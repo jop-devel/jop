@@ -41,6 +41,8 @@ architecture rtl of tm is
 	-- pointer to next block to be used on a miss
 	signal nxt			: unsigned(way_bits-1 downto 0);
 	signal hit			: std_logic;
+
+	signal reg_data		: std_logic_vector(31 downto 0);
 	
 begin
 
@@ -62,21 +64,29 @@ begin
 		for i in 0 to lines-1 loop
 			if tag(i) = from_cpu.address then
 				line_addr <= to_unsigned(i, way_bits);
-				if valid(i)='1' then
-					hit <= '1';
---					exit;		-- not much difference using exit or not...
-				end if;
+				hit <= '1';
+				exit;		-- not much difference using exit or not...
 			end if;
 		end loop;
 		
-		if from_cpu.wr='1' and hit='0' then
-			tag(to_integer(nxt)) <= from_cpu.address;
-			data(to_integer(nxt)) <= from_cpu.wr_data;
-			valid(to_integer(nxt)) <= '1';
-			nxt <= nxt + 1;
+		if from_cpu.wr='1' then
+			if valid(to_integer(line_addr))='1' and hit='1' then
+				data(to_integer(line_addr)) <= from_cpu.wr_data;
+			else
+				data(to_integer(nxt)) <= from_cpu.wr_data;
+				tag(to_integer(nxt)) <= from_cpu.address;
+				valid(to_integer(nxt)) <= '1';
+				nxt <= nxt + 1;
+			end if;
 		end if;
 
-		to_cpu.rd_data <= data(to_integer(line_addr));
+		-- one cycle delay to infer on-chip memory
+		reg_data <= data(to_integer(line_addr));
+		if from_cpu.rd='1' then
+			if valid(to_integer(line_addr))='1' and hit='1' then
+				to_cpu.rd_data <= reg_data;
+			end if;
+		end if;
 
 	end if;
 end process;

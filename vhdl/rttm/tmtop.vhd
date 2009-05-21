@@ -44,6 +44,8 @@ architecture rtl of tmtop is
 	signal from_cpu		: sc_out_type;
 	signal to_cpu		: sc_in_type;
 
+	signal clk_int: std_logic;
+
 	-- size of main memory simulation in 32-bit words.
 	-- change it to less memory to speedup the simulation
 	-- minimum is 64 KB, 14 bits
@@ -51,13 +53,22 @@ architecture rtl of tmtop is
 
 begin
 
+	pll_inst : entity work.pll generic map(
+		multiply_by => 5,
+		divide_by => 1
+	)
+	port map (
+		inclk0	 => clk,
+		c0	 => clk_int
+	);
+
 	cmp_tm: entity work.tm
 		generic map(
 			addr_width => SC_ADDR_SIZE,
-			way_bits => 5
+			way_bits => 6
 		)
 		port map(
-			clk => clk,
+			clk => clk_int,
 			reset => reset,
 			
 			from_cpu => from_cpu,
@@ -68,7 +79,7 @@ begin
 process(clk)
 begin
 
-	if rising_edge(clk) then
+	if rising_edge(clk_int) then
 
 		from_cpu <= in_cpu;
 		out_cpu <= to_cpu;
