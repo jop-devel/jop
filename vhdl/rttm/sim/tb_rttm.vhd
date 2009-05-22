@@ -81,17 +81,24 @@ begin
 end process;
 
 process
+	variable result: natural;
 begin
+
 	from_cpu.address <= (others => '0');
 	from_cpu.wr_data <= (others => '0');
 	from_cpu.wr <= '0';
 	from_cpu.rd <= '0';
 
-	wait for 11 ns;
-	from_cpu.wr <= '1';
-	wait for 10 ns;
-	from_cpu.wr <= '0';
-	
+	wait until rising_edge(clk);
+	wait until rising_edge(clk);
+
+	sc_write(clk, 0, 16000, from_cpu, to_cpu);
+	sc_write(clk, 123, 456, from_cpu, to_cpu);
+	sc_write(clk, 4711, 15, from_cpu, to_cpu);
+	sc_read(clk, 123, result, from_cpu, to_cpu);
+	sc_write(clk, 0, 255, from_cpu, to_cpu);
+	sc_read(clk, 0, result, from_cpu, to_cpu);
+
 
 
 	wait;

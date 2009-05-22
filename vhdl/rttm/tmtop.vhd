@@ -76,7 +76,7 @@ begin
 		);
 		
 		
-process(clk)
+process(clk_int)
 begin
 
 	if rising_edge(clk_int) then

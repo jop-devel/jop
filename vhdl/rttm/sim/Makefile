@@ -11,6 +11,13 @@ all: work
 work:
 	vlib work
 
+ED=c:/programs/lemmy/lemmy
+
+edit:
+	$(ED) ../tm.vhd &
+	$(ED) ../tmtop.vhd &
+	$(ED) tb_rttm.vhd &
+	$(ED) ../../simpcon/sc_pack.vhd &
 
 clean:
 	-rm -rf work
