@@ -52,7 +52,7 @@ architecture tb of tb_rttm is
 
 begin
 
-	cmp_tm: entity work.tm
+	tm: entity work.tm
 		generic map(
 			addr_width => SC_ADDR_SIZE,
 			way_bits => 3

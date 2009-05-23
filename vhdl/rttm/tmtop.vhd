@@ -65,7 +65,7 @@ begin
 	cmp_tm: entity work.tm
 		generic map(
 			addr_width => SC_ADDR_SIZE,
-			way_bits => 6
+			way_bits => 8
 		)
 		port map(
 			clk => clk_int,
