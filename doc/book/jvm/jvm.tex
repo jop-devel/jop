@@ -1,12 +1,10 @@
-\section{JVM Architecture}
+\section{JVM Data Structures}
 
 This section presents the details of the implementation of the JVM on
 JOP. The representation of objects and the stack frame is chosen to
 support JOP as a processor for real-time systems. However, since the
 data structures are realized through microcode they can be easily
-changed for a system with different needs. For example: to simplify a
-compacting GC a handle to an object can be implemented by changing
-the microcode of \code{getfield}, \code{putfield} and \code{new}.
+changed for a system with different needs.
 
 \subsection{Runtime Data Structures}
 
