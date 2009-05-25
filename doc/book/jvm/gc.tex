@@ -2271,12 +2271,24 @@ In \cite{gc:hwgc94} a garbage-collected memory module is suggested to
 provide a real-time collector. A worst-case delay time of 1$\mu$s is
 claimed without giving the processor speed.
 
-Despite the title \cite{gc:bacon03}, Metronome is still not a (hard)
-real-time collector. Non real-time applications are used (SPECjvm98)
-in the experiments. They propose a collector with constant
-utilization to meet real-time requirements. However, utilization is
-\emph{not} a real-time measure per se; it should be schedulability or
-response time instead. Pause times are in the range of 12ms.
+Metronome is a collector intended for soft real-time systems
+\cite{gc:bacon03}. Non real-time applications are used (SPECjvm98) in
+the experiments. They propose a collector with constant utilization
+to meet real-time requirements. However, utilization is \emph{not} a
+real-time measure per se; it should be schedulability or response
+time instead. In contrast to our proposal the GC thread is scheduled
+at the highest priority in short periods. To ensure that, despite the
+high priority of the GC thread, mutator threads will be scheduled,
+the GC thread runs only for a fraction of time within a time window.
+This fraction and the size of the time window can be adjusted for
+different work loads.
+%Pause times are in the range of 12~ms.
+
+Although not mandated, all commercial and academic implementations of
+the RTSJ \cite{gc:siebert:phd,Mackinac,rtsj:ibm:2007,ovm:tecs:07} and
+related real-time Java systems \cite{perc:pico:um} also contain a
+real-time garbage collector.
+
 
 In \cite{gc:pfeffer04} two collectors based on \cite{gc:dijkstra78}
 and \cite{gc:baker92} are implemented on a multithreaded
@@ -2284,9 +2296,10 @@ microcontroller.  Higuera suggests in \cite{gc:higu02} the use of
 hardware features from picoJava to speed up RTSJ memory region
 protection and garbage collection.
 
-In \cite{780745} the authors provide an upper bound in the GC cycle
-time as\footnote{We use our symbols in the equation for easier
-comparison to our finding.}
+The work closest to our scheduling analysis is presented in
+\cite{780745}. The authors provide an upper bound of the GC cycle
+as\footnote{We use our symbols in the equation for easier comparison
+to our finding.}
 %
 \begin{equation}
 \nonumber
