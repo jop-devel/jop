@@ -45,6 +45,7 @@ public class TMSim extends JopSim {
 	int retryCnt;
 	int maxRead;
 	int maxWrite;
+	int maxSum;
 	
 	int nestingCnt;
 	int savedPc;
@@ -52,6 +53,33 @@ public class TMSim extends JopSim {
 	LinkedHashSet<Integer> readSet = new LinkedHashSet<Integer>();
 	LinkedHashMap<Integer, Integer> writeSet = new LinkedHashMap<Integer, Integer>();
 
+	/**
+	 * Handles are not part of the transaction.
+	 */
+	int readMemHandle(int addr) {
+		// Transaction active and not an I/O address
+		if (nestingCnt>0 && addr>=0 && !invokeRead) {
+			Integer addrInt = new Integer(addr);
+			if (writeSet.containsKey(addrInt)) {
+				return writeSet.get(addrInt).intValue();
+			}
+		}
+		return super.readMem(addr);
+	}
+	/**
+	 * Array length is not part of the transaction.
+	 */
+	int readMemAlen(int addr) {
+		// Transaction active and not an I/O address
+		if (nestingCnt>0 && addr>=0 && !invokeRead) {
+			Integer addrInt = new Integer(addr);
+			if (writeSet.containsKey(addrInt)) {
+				return writeSet.get(addrInt).intValue();
+			}
+		}
+		return super.readMem(addr);
+	}
+	
 	// TODO: we should earlier abort the transaction as we
 	// can read inconsistent data from another commited transaction
 	// TODO: we're still having constants and method table loads in
@@ -116,6 +144,12 @@ public class TMSim extends JopSim {
 				}
 			}
 		}
+		// find the sum of different addresses
+		for (Iterator<Integer> it = readSet.iterator(); it.hasNext();) {
+			int addr = it.next();
+			writeSet.put(addr, 0);
+		}
+		if (writeSet.size()>maxSum) maxSum = writeSet.size();
 		writeSet.clear();
 		readSet.clear();
 	}
@@ -177,7 +211,8 @@ public class TMSim extends JopSim {
 		System.out.println("TM statistics");
 		System.out.println("Nr of transactions: "+trCnt);
 		System.out.println("Nr of retries: "+retryCnt);
-		System.out.println("Max write set "+maxWrite+" max read set "+maxRead);
+		System.out.println("Max write set "+maxWrite+" max read set "+maxRead+
+				" max sum "+maxSum);
 	}
 
 	/**

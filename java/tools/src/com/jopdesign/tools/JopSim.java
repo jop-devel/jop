@@ -258,6 +258,35 @@ System.out.println(mp+" "+pc);
 	int copy_dest = 0;
 	int copy_pos = 0;
 
+	/**
+	 * Read the handle. Can be used for cache/TM experiments.
+	 * @param addr
+	 * @return
+	 */
+	int readMemHandle(int addr) {
+		return readMem(addr);
+	}
+	/**
+	 * Read the array length from the handle area. Can be used for cache/TM experiments.
+	 * @param addr
+	 * @return
+	 */
+	int readMemAlen(int addr) {
+		return readMem(addr);
+	}
+	/**
+	 * Read from constant area. Can be used for cache/TM experiments.
+	 * @param addr
+	 * @return
+	 */
+	int readMemConst(int addr) {
+		return readMem(addr);
+	}
+	/**
+	 * a plain memory read
+	 * @param addr
+	 * @return
+	 */
 	int readMem(int addr) {
 		
 		// System.out.println(addr+" "+mem[addr]);
@@ -529,7 +558,7 @@ System.out.println(mp+" "+pc);
 		int val = stack[sp--];
 		int ref = stack[sp--];
 		checkNullPointer(ref);		
-		ref = readMem(ref);
+		ref = readMemHandle(ref);
 		writeMem(ref+off, val);						
 	}
 
@@ -539,7 +568,7 @@ System.out.println(mp+" "+pc);
 		int ref = stack[sp];
 		checkNullPointer(ref);		
 		// handle needs indirection
-		ref = readMem(ref);
+		ref = readMemHandle(ref);
 		stack[sp] = readMem(ref+off);
 	}
 	
@@ -550,7 +579,7 @@ System.out.println(mp+" "+pc);
 		int ref = stack[sp--];
 		checkNullPointer(ref);		
 		// handle needs indirection
-		ref = readMem(ref);
+		ref = readMemHandle(ref);
 		writeMem(ref+off, val);
 	}
 
@@ -560,7 +589,7 @@ System.out.println(mp+" "+pc);
 		int ref = stack[sp];
 		checkNullPointer(ref);		
 		// handle needs indirection
-		ref = readMem(ref);
+		ref = readMemHandle(ref);
 		stack[sp] = readMem(ref+off);
 	}
 
@@ -572,7 +601,7 @@ System.out.println(mp+" "+pc);
 		int ref = stack[sp--];
 		checkNullPointer(ref);		
 		// handle needs indirection
-		ref = readMem(ref);
+		ref = readMemHandle(ref);
 		writeMem(ref+off, val_h);
 		writeMem(ref+off+1, val_l);			
 	}
@@ -583,7 +612,7 @@ System.out.println(mp+" "+pc);
 		int ref = stack[sp];
 		// handle needs indirection
 		checkNullPointer(ref);		
-		ref = readMem(ref);
+		ref = readMemHandle(ref);
 		stack[sp] = readMem(ref+off);
 		stack[++sp] = readMem(ref+off+1);
 	}
@@ -783,20 +812,20 @@ System.out.println(mp+" "+pc);
 					idx = stack[sp--];	// index
 					ref = stack[sp--];	// ref
 					checkNullPointer(ref);
-					a = readMem(ref+1);
+					a = readMemAlen(ref+1);
 					if (idx<0 || idx>=a) throw new JopSimRtsException("saload: index out of bounds",Const.EXC_AB);
 					// handle needs indirection
-					ref = readMem(ref);
+					ref = readMemHandle(ref);
 					stack[++sp] = readMem(ref+idx);							
 					break;
 				case 47 :		// laload
 					idx = stack[sp--];	// index
 					ref = stack[sp--];	// ref
 					checkNullPointer(ref);
-					a = readMem(ref+1);
+					a = readMemAlen(ref+1);
 					if (idx<0 || idx>=a) throw new JopSimRtsException("laload: index out of bounds",Const.EXC_AB);
 					// handle needs indirection
-					ref = readMem(ref);
+					ref = readMemHandle(ref);
 					stack[++sp] = readMem(ref+idx*2);
 					stack[++sp] = readMem(ref+idx*2+1);							
 					break;
@@ -879,10 +908,10 @@ System.out.println(mp+" "+pc);
 					idx = stack[sp--];	// index
 					ref = stack[sp--];	// ref
 					checkNullPointer(ref);
-					a = readMem(ref+1);
+					a = readMemAlen(ref+1);
 					if (idx<0 || idx>=a) throw new JopSimRtsException("sastore: index out of bounds",Const.EXC_AB);
 					// handle needs indirection
-					ref = readMem(ref);
+					ref = readMemHandle(ref);
 					writeMem(ref+idx, val);							
 					break;
 				case 80 :		// lastore
@@ -891,10 +920,10 @@ System.out.println(mp+" "+pc);
 					idx = stack[sp--];	// index
 					ref = stack[sp--];	// ref
 					checkNullPointer(ref);
-					a = readMem(ref+1);
+					a = readMemAlen(ref+1);
 					if (idx<0 || idx>=a) throw new JopSimRtsException("lastore: index out of bounds",Const.EXC_AB);
 					// handle needs indirection
-					ref = readMem(ref);
+					ref = readMemHandle(ref);
 					writeMem(ref+idx*2, val2);					
 					writeMem(ref+idx*2+1, val);												
 					break;
@@ -1371,7 +1400,7 @@ System.out.println("new heap: "+heap);
 					ref = stack[sp--];	// ref from stack
 					checkNullPointer(ref);
 					// lenght in handle at offset 1
-					stack[++sp] = readMem(ref+1);
+					stack[++sp] = readMemAlen(ref+1);
 					break;
 				case 191 :		// athrow
 					noim(191);
@@ -1520,7 +1549,7 @@ System.out.println("new heap: "+heap);
 					a = stack[sp--];
 					b = stack[sp--];
 					// handle needs indirection
-					b = readMem(b);
+					b = readMemHandle(b);
 					c = stack[sp--];
 					for(; a>=0; --a) {
 						writeMem(b+a, stack[c+a]);
@@ -1532,7 +1561,7 @@ System.out.println("new heap: "+heap);
 					b = stack[sp--];
 					c = stack[sp--];
 					// handle needs indirection
-					c = readMem(c);
+					c = readMemHandle(c);
 					for(; a>=0; --a) {
 						stack[b+a] = readMem(c+a);
 					}
