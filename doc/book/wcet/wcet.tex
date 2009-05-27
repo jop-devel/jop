@@ -18,10 +18,15 @@ of different phases:
     hardware features such as caches on program execution time. This
     analysis can use information from the path analysis to provide less
     pessimistic values.
-    \item[WCET Calculation] collapses the control flow graph to
-    provide the final WCET estimate. Alternative paths in the graph
-    are collapsed to a single value (the largest of the alternatives)
-    and loops are collapsed once the loop bound is known.
+    \item[WCET Calculation] The final WCET is calculated by
+        transforming the control flow graph with the timing
+        information of basic blocks\footnote{A basic block is a
+        sequence of instructions without any jumps or jump
+        targets within this sequence.} with the program
+        annotations for loops to an integer linear programming
+        (ILP) problem. This problem is solved by an ILP solver.
+        This approach is also called implicit path enumeration
+        (IPET).
 \end{description}
 
 For the low-level analysis, a good timing model of the processor is
@@ -29,32 +34,34 @@ needed. The main problem for the low-level analysis is the execution
 time dependency of instructions in modern processors that are not
 designed for real-time systems. JOP is designed to be an easy target
 for WCET analysis. The WCET of each bytecode can be predicted in
-terms of the number of cycles it requires. There are no dependencies
-between bytecodes.
-
-Each bytecode is implemented by microcode. We can obtain the WCET of
-a single bytecode by performing WCET analysis at the microcode
-level. To prove that there are no time dependencies between
-bytecodes, we have to show that no processor states are
-\emph{shared} between different bytecodes.
+terms of the number of cycles it requires. There are no timing
+dependencies between bytecodes.
 
 WCET analysis has to be done at two levels: at the microcode level
 and at the bytecode level. The microcode WCET analysis is performed
 only once for a processor configuration and described in the next
-sections. The result from this microcode analysis is the timing
-model of the  processor. The timing model is the input for the WCET
-analysis at the bytecode level (i.e.\ the Java application) as shown
-in the example in Section~\ref{subsec:wcet:eval} and in the WCET
-tool description in Section~\ref{sec:wcet:java}.
+section. The result from this microcode analysis is the timing model
+of the  processor. The timing model is the input for the WCET
+analysis at the bytecode level (i.e.\ the Java application) as
+explained in Section~\ref{sec:wcet:app}.
 
+The first WCET analysis tool that targets JOP has been developed by
+Rasmus Pedersen \cite{jop:wcet:jtres06}. Benedikt Huber implemented a
+new version of the analyzer with support of bytecodes implemented in
+Java and a better method cache approximation has
+\cite{jop:wcet:model:checking}. The new tool also contains a module
+to extract the low-level bytecode timing from the microcode assembler
+program (\code{jvm.asm}) automatically.
 
-It has to be noted that we cannot provide WCET values for the other
-Java systems from Section~\ref{sec:performance}, e.g.\ the aJile Java
-processor, as there is no information available on their instruction
-timing.
+\section{Microcode WCET Analysis}
 
+Each bytecode is implemented by microcode. We can obtain the WCET of
+a single bytecode by performing WCET analysis at the microcode level.
+To prove that there are no time dependencies between bytecodes, we
+have to show that no processor states are \emph{shared} between
+different bytecodes.
 
-\section{Microcode Path Analysis}
+\subsection{Microcode Path Analysis}
 
 To obtain the WCET values for the individual bytecodes we perform
 the path analysis at the microcode level. First, we have to ensure
@@ -90,22 +97,18 @@ iteration count for this loop is constant.
 A few bytecodes are implemented in Java\footnote{The implementation
 can be found in the class \code{com.jopdesign.sys.JVM}.} and can be
 analyzed in the same way as application code. The bytecodes
-\code{idiv} and \code{irem} contain a constant loop. The bytecodes
-\code{new} and \code{anewarray} contain loops to initialize (with
-zero values) new objects or arrays. The loop is bound by the size of
-the object or array. The bytecode
+\code{idiv} and \code{irem} contain a constant loop. The bytecode
 \code{lookupswitch}\footnote{\codefoot{lookupswitch} is one way of
 implementing the Java \codefoot{switch} statement. The other
 bytecode, \codefoot{tableswitch}, uses an index in the table of
-branch offsets and has therefore a constant execution time.}
-performs a linear search through a table of branch offsets. The WCET
-depends on the table size that can be found as part of the
-instruction.
+branch offsets and has therefore a constant execution time.} performs
+a linear search through a table of branch offsets. The WCET depends
+on the table size that can be found as part of the instruction.
 
 As the microcode sequences are very short, the calculation of the
 control flow graph for each bytecode is done manually.
 
-\section{Microcode Low-level Analysis}
+\subsection{Microcode Low-level Analysis}
 
 To calculate the execution time of basic blocks in the microcode, we
 need to establish the timing of microcode instructions on JOP. All
@@ -120,18 +123,17 @@ system and, if the memory system is predictable, has a known WCET. A
 main memory consisting of SRAM chips can provide this predictability
 and this solution is therefore advised. The predictable handling of
 DMA, which is used for the instruction cache fill, is explained in
-\cite{jop:jtres_cache}. The \code{wait} instruction is the only way
+Section~\ref{sec:cache}. The \code{wait} instruction is the only way
 to stall the processor. Hardware events, such as interrupts (see
-\cite{jop:design}), do not stall the processor.
+Section~\ref{sec:interrupt}), do not stall the processor.
 
 Microcode is stored in on-chip memory with single cycle access. Each
 microcode instruction is a single word long and there is no need for
 either caching or prefetching at this stage. We can therefore omit
-performing a low-level analysis. No pipeline analysis
-\cite{EngblomPhD}, with its possible unbound timing effects, is
-necessary.
+the low-level analysis. No pipeline analysis \cite{EngblomPhD}, with
+its possible unbound timing effects, is necessary.
 
-\section{Bytecode Independency}
+\subsection{Bytecode Independency}
 
 We have seen that all microcode instructions except \code{wait} take
 one cycle to execute and are therefore independent of other
@@ -162,26 +164,30 @@ every read operation. Since read operations are more frequent than
 write operations (15\% vs. 2.5\%, see \cite{jop:thesis}), the
 performance gain from the hidden memory store is lost.
 
-\section{WCET of Bytecodes} \label{sec:wcet:bc}
-The control flow of the individual bytecodes together with the basic
-block length (that directly corresponds with the execution time) and
-the time for memory access result in the WCET (and BCET) values of
-the bytecodes. These values can be found in
+\subsection{WCET of Bytecodes}
+
+\label{sec:wcet:bc} The control flow of the individual bytecodes
+together with the basic block length (that directly corresponds with
+the execution time) and the time for memory access result in the WCET
+(and BCET) values of the bytecodes. These values can be found in
 Appendix~\ref{appx:bytecode}.
 
+\subsubsection{Basic Bytecodes}
 
-Simple bytecode instructions are executed by either one
-microinstruction or a short sequence of microinstructions. The
-execution time in cycles equals the number of microinstructions
-executed. As the stack is on-chip it can be accessed in a single
-cycle. We do not need to incorporate the main memory timing into the
-instruction timing. Table~\ref{tab:simple} shows examples of the
-execution time of such bytecodes.
-
+Most bytecode instructions that do not access memory have a constant
+execution time. They are executed by either one microcode instruction
+or a short sequence of microcode instructions. The execution time in
+clock cycles equals the number of microinstructions executed. As the
+stack is on-chip, it can be accessed in a single cycle. We do not
+need to incorporate the main memory timing into the instruction
+timing. Most simple bytecodes execute in a single cycle.
+Table~\ref{tab:simple} shows example instructions, their timing, and
+their meaning. Access to object, array, and class fields depend on
+the timing of the main memory.
 
 \begin{table}
 \centering
-\begin{tabular*}{\columnwidth}{@{\extracolsep{\fill}} clcl}
+\begin{tabular}{rlcl}
     \toprule
     Opcode & Instruction & Cycles & Funtion\\
     \midrule
@@ -200,34 +206,30 @@ execution time of such bytecodes.
 96 & iadd & 1 & integer addition\\
 153 & ifeq & 4 & conditional branch\\
     \bottomrule
-\end{tabular*}
+\end{tabular}
     \caption{Execution time of simple bytecodes in cycles}
     \label{tab:simple}
 \end{table}
 
 
+\subsubsection{Object Oriented Bytecodes}
 
 Object oriented instructions, array access, and invoke instructions
-access the main memory. Therefore we have to model the memory access
+access the main memory. Therefore, we have to model the memory access
 time. We assume a simple SRAM with a constant access time. Access
 time that exceeds a single cycle includes additional wait states
-($r_{ws}$ for a memory read and $w_{ws}$ for a memory write). The
-following example gives the execution time for \code{getfield}, the
-read access of an object field:
-%
-{\small
+($r_{ws}$ for a memory read and $w_{ws}$ for a memory write). With a
+memory with $r_{ws}$ wait states, the execution time for, e.g.,
+\code{getfield} is
 \begin{equation*}
-    t_{getfield} = 10+2 r_{ws}
+    t_{\textit{getfield}} = 11 + 2 r_{ws}
 \end{equation*}
-}
 
+The memory subsystem performs reads and writes in parallel to the
+execution of microcode. Therefore, some access cycles can be hidden.
+The following example gives the exact execution time of bytecode
+\code{ldc2\_w} in clock cycles:
 
-However, the memory subsystem performs read and write parallel to
-the execution of microcode. Therefore, some access cycles can be
-hidden. The following example gives the exact execution time of
-bytecode \code{ldc2\_w} in clock cycles:
-%
-{\small
 \begin{equation*}
     t_{ldc2\_w} = 17+\left\{\begin{array}{r@{\quad:\quad}l}
     r_{ws}-2 & r_{ws}>2 \\
@@ -238,48 +240,39 @@ bytecode \code{ldc2\_w} in clock cycles:
     r_{ws}-1 & r_{ws}>1 \\
     0   & r_{ws}\le1
     \end{array} \right.
-\end{equation*}}
+\end{equation*}
 
-Thus, for a memory with two-cycle access time ($r_{ws}=1)$, as used
-for a 100~MHz version of JOP with a 15~ns SRAM, the wait state is
-completely hidden by microcode instructions for this bytecode.
+Thus, for a memory with two cycles access time ($r_{ws}=1)$, as we
+use it for a 100~MHz version of JOP with a 15~ns SRAM, the wait state
+is completely hidden by microcode instructions for this bytecode.
 
 Memory access time also determines the cache load time on a miss. For
-the current implementation, the cache load time is calculated as
+the current implementation the cache load time is calculated as
 follows: the wait state $c_{ws}$ for a single word cache load is:
-%
-{\small
 \begin{equation*}
     c_{ws} =
     \left\{\begin{array}{r@{\quad:\quad}l}
-    r_{ws}-1 & r_{ws}>1 \\
-    0   & r_{ws}\le1
+    r_{ws} & r_{ws}>1 \\
+    1   & r_{ws}\le1
     \end{array} \right.
 \end{equation*}
-}
-
-On a method invoke or return the bytecode has to be loaded into the
-cache on a cache miss. The load time $l$ is:
 %
-{\small
+On a method invoke or return, the respective method has to be loaded
+into the cache on a cache miss. The load time $l$ is:
 \[
     l =
     \left\{\begin{array}{r@{\quad:\quad}l}
-    6+(n+1)(2+c_{ws}) & \mbox{cache miss} \\
-    4   & \mbox{cach hit}
+    6+(n+1)(1+c_{ws}) & \mbox{cache miss} \\
+    4   & \mbox{cache hit}
     \end{array} \right.
 \]
-}
-
-where $n$ is the length of the method in number of 32-bit words. For
-short methods the load time of the method on a cache miss, or part
-of it, is hidden by microcode execution. As an example the exact
+where $n$ is the size of the method in number of 32-bit words. For
+short methods, the load time of the method on a cache miss, or part
+of it, is hidden by microcode execution. As an example, the exact
 execution time for the bytecode \code{invokestatic} is:
 %
-{\small
-\begin{eqnarray}
-\nonumber
-    t &=& 74+r+
+\begin{equation*}
+    t = 74+r_{ws}+
     \left\{\begin{array}{r@{\quad:\quad}l}
     r_{ws}-3 & r_{ws}>3 \\
     0   & r_{ws}\le3
@@ -288,27 +281,54 @@ execution time for the bytecode \code{invokestatic} is:
     \left\{\begin{array}{r@{\quad:\quad}l}
     r_{ws}-2 & r_{ws}>2 \\
     4   & r_{ws}\le2
-    \end{array} \right.\\
-\nonumber
-    &+&
+    \end{array} \right.
+    +
     \left\{\begin{array}{r@{\quad:\quad}l}
     l-37 & l>37 \\
     0   & l\le37
     \end{array} \right.
-\end{eqnarray}
-}
+\end{equation*}
+%
 
 For \code{invokestatic} a cache load time $l$ of up to 37 cycles is
 completely hidden. For the example SRAM timing the cache load of
 methods up to 36 bytes long is hidden. The WCET analysis tool, as
-described in the next section, knows the length of the invoked
-method and can therefore calculate the time for the invoke
-instruction cycle accurate.
+described in the next section, knows the length of the invoked method
+and can therefore calculate the time for the invoke instruction cycle
+accurate.
 
+\subsubsection{Bytecodes in Java}
 
+Bytecodes can be implemented in Java on JOP. In this case, a static
+method from a JVM internal class gets invoked when such a bytecode is
+executed. For the WCET analysis this bytecode is substituted by an
+invoke instruction to this method. The influence on the cache (the
+bytecode execution results in a method load) can be analyzed in the
+same way as for \emph{ordinary} static methods.
 
+%\begin{itemize}
+%    \item Java based bytecodes -- handle them as methods
+%    \item \code{new} with constant execution time (in our current GC
+%    implementation and also possible with scopes)
+%\end{itemize}
+
+\subsubsection{Native Methods}
+
+Most of the JVM internal functionality in JOP, such as input, output,
+and thread scheduling, is implemented in Java. However, Java and the
+JVM do not allow direct access to memory, peripheral devices or
+processor registers. For this low-level access to system resources,
+we need \emph{native} methods. For a Java processor, the
+\emph{native} language is still Java bytecode. We solve this issue by
+substituting the native method invocation by a special bytecode
+instruction on class loading. Those special bytecodes are implemented
+in JOP microcode in the same way as regular bytecodes (see
+Section~\ref{sec:microcode}. The execution time of the native methods
+(or in other words special bytecodes) is given in the same way as the
+execution time for standard bytecodes.
 
 \section{WCET Analysis of the Java Application}
+\label{sec:wcet:app}
 
 
 We conclude this section with a worst-case analysis (now at the
