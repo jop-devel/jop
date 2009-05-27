@@ -1,4 +1,6 @@
-\section{JVM Data Structures}
+\section{JVM Architecture}
+
+\index{JVM}
 
 This section presents the details of the implementation of the JVM on
 JOP. The representation of objects and the stack frame is chosen to
@@ -8,12 +10,14 @@ changed for a system with different needs.
 
 \subsection{Runtime Data Structures}
 
+\index{JVM!data structures}
+
 Memory is addressed as 32-bit data, which means that memory pointers
-are incremented for every four bytes. No single byte or 16-bit
-access is necessary. The abstract type reference is a pointer to
-memory that represents the object or an array. The reference is
-pushed on the stack before an instruction can operate on it. A null
-reference is represented by the value 0.
+are incremented for every four bytes. No single byte or 16-bit access
+is necessary. The abstract type reference is a pointer (via a handle
+indirection) to memory that represents the object or an array. The
+reference is pushed on the stack before an instruction can operate on
+it. A null reference is represented by the value 0.
 
 \subsubsection{Stack Frame}
 
@@ -65,14 +69,18 @@ with information from the method structure:
 
 \subsubsection{Object Layout}
 
+\index{object layout}
+
 \figurename~\ref{fig_jvm_object} shows the representation of an
-object in memory. The object reference points to the first instance
-variable of the object. At the offset $-1$, a pointer is located to
-access class information. To speed-up method invocation, it points
-directly to the method table of the objects class instead of the
-beginning of the class data. With the GC, the object is accessed via
-one indirection, the handle (see Chapter~\ref{chap:rtgc}). The
-pointer to the method vector base is part of the handle.
+object in memory. The object reference points to a handle area and
+the first element in the handle area points to the first instance
+variable of the object. At the offset $1$ in the handle area, a
+pointer is located to access class information. To speed-up method
+invocation, it points directly to the method table of the objects
+class instead of the beginning of the class data. The handle
+indirection simplifies the implementation of a compacting GC (see
+Chapter~\ref{chap:rtgc}).
+
 
 \begin{figure}
     \centering
@@ -83,12 +91,13 @@ pointer to the method vector base is part of the handle.
 
 \subsubsection{Array Layout}
 
+\index{array layout}
+
 \figurename~\ref{fig_jvm_array} shows the representation of an array
-in memory. The object reference points to the first element of the
-array. At the offset $-1$, the length of the array can be found.
-With the GC the array is accessed via one indirection, the handle
-(see Chapter~\ref{chap:rtgc}). The size fields is part of the
-handle.
+in memory. The array reference points to a handle area and the first
+element in the handle area points to the first element of the array.
+At the offset $1$ in the handle area, the length of the array can be
+found.
 
 \begin{figure}
     \centering
@@ -100,9 +109,19 @@ handle.
 
 \subsubsection{Class Structure}
 
+\index{class structure}
+
+
 Runtime class information, as shown in Figure~\ref{fig_jvm_class},
-consists of the class variables, the dispatch table for the methods,
-the constant pool and an optional interface table.
+consists of the instance size, GC info, the dispatch table for the
+methods, a reference to the super class, the constant pool, and an
+optional interface table. The class variables (static fields) are
+located at the start of the memory to speedup access to the fields
+(the constant pool index of \code{getstatic} and \code{putstatic} is
+converted at class link time to the address in memory). Furthermore
+all reference static fields are located in one continuous region for
+simple GC root scanning. A pointer to the static primitive fields of
+the class is needed for the implementation of hardware objects.
 
 \begin{figure}
     \centering
@@ -113,42 +132,43 @@ the constant pool and an optional interface table.
 
 
 The class reference is obtained from the constant pool when a new
-object is created. The method vector base pointer is a reference
-from an object to its class (see Figure~\ref{fig_jvm_object}). It is
-used on \code{invokevirtual} with an index retrieved from the
-constant pool. A pointer to the method structure of the current
-method is saved in the JVM variable MP. The method structure, as
-shown in Figure~\ref{fig_jvm_method}, contains the starting address
-and length of the method (in 32-bit words), argument and local
-variable count and a pointer to the constant pool of the class.
-Since the constant pool is an often accessed memory area, a pointer
-to it is kept in the JVM variable CP.
+object is created. The method vector base pointer is a reference from
+an object to its class (see Figure~\ref{fig_jvm_object}). It is used
+on \code{invokevirtual}. The index is the argument of the bytecode to
+avoid an additional memory access in invoke (the original index into
+the constant pool is overwritten by the direct index at class link
+time). A pointer to the method structure of the current method is
+saved in the JVM variable MP. The method structure, as shown in
+Figure~\ref{fig_jvm_method}, contains the starting address and length
+of the method (in 32-bit words), argument and local variable count
+and a pointer to the constant pool of the class. Since the constant
+pool is an often accessed memory area, a pointer to it is cached in
+the JVM variable CP.
 
-\begin{figure*}
+\begin{figure}
     \centering
     \includegraphics[scale=\picscale]{jvm/jvm_method}
     \caption{Method structure}
     \label{fig_jvm_method}
-\end{figure*}
+\end{figure}
 
 
 The interface table contains references to the method structures of
 the implementation. Only classes that implement an interface contain
 this table. To avoid searching the class hierarchy on
 \code{invokeinterface}, each interface method is assigned a unique
-index. This provides constant execution time, but can lead to large
-interface tables.
+index. This arrangement provides constant execution time, but can
+lead to large interface tables.
 
-The constant pool contains various constants of a class. The entry
-at index 0 is the length of the pool. All constants, which are
-symbolic in the class files, are resolved on class loading or during
-pre-linking. The different constant types and their values after
-resolving are listed in \tablename~\ref{tab_jvm_const_pool}. The
-names for the types are the same as in the JVM specification
-\cite{jvm}.
+The constant pool contains various constants of a class. The entry at
+index 0 is the length of the pool. All constants, which are symbolic
+in the class files, are resolved during class linking. The different
+constant types and their values after resolving are listed in
+\tablename~\ref{tab_jvm_const_pool}. The names for the types are the
+same as in the JVM specification \cite{jvm}.
 
 
-\begin{table}[htbp]
+\begin{table}[t]
     \centering
     \begin{tabular}{ll}
         \toprule
@@ -176,8 +196,11 @@ names for the types are the same as in the JVM specification
     \label{tab_jvm_const_pool}
 \end{table}
 
-\subsubsection{Class Initialization Issues}
+\subsection{Class Initialization}
 \label{para:restrict:clinit}
+
+\index{JVM!class initialization}
+
 
 According to \cite{jvm} the static initializers of a class C are
 executed immediately before one of the following occurs: (i) an
@@ -202,7 +225,7 @@ and puts this list into the application file. If a circular
 dependency is detected the application will not be built. The class
 initializers are invoked at JVM startup.
 
-\begin{lstlisting}[float,caption={Class initialization can occur very late},
+\begin{lstlisting}[float=t,caption={Class initialization can occur very late},
 label=lst:retrict:clinit]
     public class Problem {
 
@@ -226,7 +249,7 @@ label=lst:retrict:clinit]
     int nrOfProblems = Problem.cnt;
 \end{lstlisting}
 
-\subsubsection{Synchronization Issue}
+\subsection{Synchronization}
 
 Synchronization is possible with methods and on code blocks. Each
 object has a monitor associated with it and there are two different
@@ -242,5 +265,5 @@ of synchronized methods with bytecodes \code{monitorenter} and
 \cite{pjProgRef}. The code is manipulated in the class loader. Two
 different ways of coding synchronization, in the bytecode stream and
 as access flags, are inconsistent. With \cmd{JOPizer} the same
-manipulation is of the methods is performed to wrap the method code
-in a synchronized block when the method is defined synchronized.
+manipulation of the methods is performed to wrap the method code in a
+synchronized block when the method is defined synchronized.
