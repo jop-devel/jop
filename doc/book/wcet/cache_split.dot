@@ -1,0 +1,18 @@
+digraph G {
+	B1 -> B41 [label="f1"];
+	B2 -> B41 [label="f2"];
+	B3 -> B41 [label="f3"];
+	B41 -> B42 [label="fih"];
+	B41 -> BIM [label="fim"];
+	BIM -> B42;
+	B42 -> B43 [label="frh"];
+	B42 -> BRM [label="frm"];
+	BRM -> B43;
+	B43 -> B5 [label="f5"];
+	B43 -> B6 [label="f6"];
+	B41 [label="iload_1\niload_2", shape=box];
+	B42 [label="invoke foo", shape=box];
+	B43 [label="ifeq", shape=box];
+	BIM [label="invoke\nmiss", shape=box];
+	BRM [label="return\nmiss", shape=box];
+}

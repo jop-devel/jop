@@ -1,0 +1,8 @@
+digraph G {
+	B1 -> B4 [label="f1"];
+	B2 -> B4 [label="f2"];
+	B3 -> B4 [label="f3"];
+	B4 -> B5 [label="f5"];
+	B4 -> B6 [label="f6"];
+	B4 [label="iload_1\niload_2\ninvoke foo\nifeq", shape=box];
+}

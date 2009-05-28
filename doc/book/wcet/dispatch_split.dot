@@ -1,0 +1,11 @@
+digraph G {
+	B1 -> B2 [label="f1"];
+	B2 -> B31 [label="f2"];
+	B2 -> B32 [label="f3"];
+	B31 -> B4;
+	B32 -> B4;
+	B2 [label="iload_1\niload_2\naload_0", shape=box];
+	B31 [label="invoke A.foo", shape=box];
+	B32 [label="invoke B.foo", shape=box];
+	B4 [label="istore_3", shape=box];
+}
