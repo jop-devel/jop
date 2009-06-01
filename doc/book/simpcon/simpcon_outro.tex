@@ -1,0 +1,24 @@
+\section{Summary}
+
+This chapter describes a simple (with respect to the definition and
+implementation) and efficient SoC interconnect \cite{simpcon}. The
+novel signal \sign{rdy\_cnt} allows an early signalling to the master
+when read data will be valid. This feature allows the master to
+restart a stalled pipeline earlier to react for arriving data.
+Furthermore, this feature also enables pipelined bus transactions
+with a minimal effort on the master and the slave side.
+
+We have compared SimpCon quantitative with AMBA and Avalon, two
+common interconnection definitions. The application benchmark shows a
+performance advantage of SimpCon by 17\% over AMBA and 19\% over
+Avalon interfaces to an SRAM.
+
+SimpCon is used as the main interconnect for the Java processor JOP
+in a single master, multiple salves configuration. SimpCon is also
+used to implement a shared memory chip-multiprocessor version of JOP.
+Furthermore, in a research project on time-triggered network-on-chip
+\cite{jop:ttnoc} SimpCon is used as the \emph{socket} to this NoC.
+
+The author thanks Kevin Jennings and Tommy Thorn for the interesting
+discussions about SimpCon, Avalon, and on-chip interconnection in
+general at the Usenet newsgroup \texttt{comp.arch.fpga}.

@@ -949,7 +949,7 @@ Section~\ref{sec:scj:simple}).
 Listing~\ref{lst:bcnode} shows an example of a periodic thread that
 allocates an object in the main loop and the resulting bytecodes.
 
-\begin{lstlisting}[float, caption={Example periodic thread and the corresponding Java bytecodes},
+\begin{lstlisting}[float=t, caption={Example periodic thread and the corresponding Java bytecodes},
 label=lst:bcnode]
     public void run() {
 
@@ -1899,7 +1899,7 @@ blocking time introduced  by the GC due to atomic code sections.
 This blocking time will be seen as release time jitter on the
 real-time threads. Therefore we want to measure this jitter.
 
-\begin{lstlisting}[float, caption={Measuring release time jitter},
+\begin{lstlisting}[float=t, caption={Measuring release time jitter},
 label=lst:measure]
 
 public boolean run() {
