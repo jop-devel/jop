@@ -25,8 +25,8 @@
 package rtlib;
 
 /**
- * A non-locking integer buffer for single reader and
- * single writer. A classical usage is in an interrupt handler.
+ * A non-blocking integer buffer for a single reader and
+ * a single writer. Classical usage is in an interrupt handler.
  *  
  * @author Martin Schoeberl
  *

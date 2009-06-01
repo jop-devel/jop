@@ -37,6 +37,7 @@ benefits:
 
 
 \subsection{An Example}
+\index{hardware object!example}
 
 Let us consider a simple I/O device, e.g.\ a parallel input/output
 (PIO) device -- a common device in embedded systems for control
@@ -132,6 +133,7 @@ object and receive a reference to it.
 
 
 \subsection{Definition}
+\index{hardware object!definition}
 
 All hardware classes have to extend the abstract class
 \code{HardwareObject} (see Lising~\ref{lst:hwo:marker}). This empty
@@ -258,6 +260,7 @@ public final class AppGetterSetter extends HardwareObject {
 
 
 \subsection{Using Hardware Objects}
+\index{hardware object!usage}
 
 Use of hardware objects is straightforward. After obtaining a
 reference to the object all that has to be done (or can be done) is
@@ -294,6 +297,7 @@ public class Example {
 
 
 \subsection{Hardware Arrays}
+\index{hardware object!arrays}
 
 For devices that use DMA (e.g., video frame buffer, disk, and network
 I/O buffers) we map that memory area to Java arrays. Arrays in Java
@@ -308,9 +312,9 @@ abstractions from the RTSJ such as \code{RawMemory} or scoped memory
 Interaction between the garbage collector (GC) and hardware objects
 needs to be crafted into the JVM. We do not want to \emph{collect}
 hardware objects. The hardware object should not be scanned for
-references\footnote{If a hardware coprocessor, represented by a
+references.\footnote{If a hardware coprocessor, represented by a
 hardware object, itself manipulates an object on the heap and holds
-the only reference to that object it has to be scanned by the GC.}.
+the only reference to that object it has to be scanned by the GC.}
 This is permissible when only primitive types are used in the class
 definition for hardware objects -- the GC scans only reference
 fields. To avoid collecting hardware objects, we \emph{mark} the
@@ -333,7 +337,7 @@ Handles which are not touched by the GC do not need the additional GC
 info fields. We need only two fields: (1) the indirection field and
 (2) the class reference or array length field.
 
-\subsection{Hardware Object Creation} \label{sec:factory}
+\subsection{Hardware Object Creation} \label{sec:factory} \index{hardware object!creation}
 
 The idea to represent each device by a single object or array is
 straightforward, the remaining question is: How are those objects
@@ -383,6 +387,7 @@ requires a different (or additional) \code{IOSystem} class that lists
 all devices. A more elegant solution is proposed in the next section.
 
 \subsection{Board Configurations}
+\index{hardware object!board configuration}
 
 Replacing the static factory methods by instance methods avoids code
 duplication; inheritance then gives configurations. With a factory
@@ -473,13 +478,18 @@ function \code{jvmHWOCreate()} return the correct device type.
 %
 
 \subsection{Implementation}
-
-\label{sec:hwo:implementation}
+\label{sec:hwo:implementation} \index{hardware object!implementation}
 
 In this subsection the internals of the hardware object creation are
 described. Just to use hardware objects this section can be skipped.
 To create new types of hardware objects and the companion factory
 this section contains the needed details.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[scale=\picscale]{io/memory}
+    \caption{Memory layout of the JOP JVM}\label{fig:hwo:mem}
+\end{figure}
 
 In JOP, objects and arrays are referenced through an indirection
 called \emph{handle}. This indirection is a lightweight read barrier
@@ -498,13 +508,6 @@ configuration is shown in the upper part of Figure~\ref{fig:hwo:mem}.
 Note that we do not need the GC information for the hardware object
 handles. The factory, which creates the hardware objects, implements
 this indirection.
-
-\begin{figure}[t]
-    \centering
-    \includegraphics[scale=\picscale]{io/memory}
-    \caption{Memory layout of the JOP JVM}\label{fig:hwo:mem}
-\end{figure}
-
 
 As described in Section~\ref{sec:factory} we do not allow
 applications to create hardware objects; the constructor is private
@@ -525,7 +528,7 @@ Therefore, the name is \codefoot{XX\_MTAB}.} The address of the
 static field \code{SP\_PTR} is returned as the reference to the
 serial port object.
 
-\begin{lstlisting}[float=t,caption={Simplified version of the JOP base factory},
+\begin{lstlisting}[caption={Simplified version of the JOP base factory},
 label=lst:hwo:jop:base]
 
 public class IOFactory {
@@ -646,17 +649,17 @@ hardware objects.
 
 \section{Interrupt Handlers}
 
-\index{interrupt handler}
+\index{interrupt!handler}
 
 Interrupts are notifications from hardware components to the
 processor. As a response to the interrupt signal some method needs to
 be invoked and executed. To allow implementation of first-level
-interrupt handler in Java we map interrupt requests to invocations of
-the \code{run()} method of a \code{Runnable}.
+interrupt handler (IH) in Java we map interrupt requests to
+invocations of the \code{run()} method of a \code{Runnable}.
 Listing~\ref{lst:io:int:example} shows an example of such an
 interrupt handler and how it is registered.
 
-\begin{lstlisting}[float=t,caption={A simple first-level interrupt handler in Java},
+\begin{lstlisting}[caption={A simple first-level interrupt handler in Java},
 label=lst:io:int:example]
 
 public class InterruptHandler implements Runnable {
@@ -680,17 +683,271 @@ public class InterruptHandler implements Runnable {
 }
 \end{lstlisting}
 
+\subsection{Synchronization}
+
+\index{interrupt!synchronization}
+
+When an interrupt handler is invoked, it starts with global interrupt
+disabled. The global interrupt mask is enabled again when the
+interrupt handler returns. On the uniprocessor version of JOP the
+monitor is also implemented by simply masking all interrupts.
+Therefore, those critical sections cannot be interrupted and
+synchronization between the interrupt handler and a normal thread is
+fulfilled. For a CMP version of JOP synchronization is performed via
+a global hardware lock. As the CMP system offers true concurrency,
+the IH has to protect the access to shared data when the handler and
+the thread are located on different cores.
+
+A better approach for data sharing between a first-level IH and a
+device driver task (or second-level IH) is the usage of non-blocking
+queues.  Listing~\ref{lst:hwo:nonbl:buffer} shows an example of such
+a bonded, non-blocking buffer for single reader and single writer
+communication. The class \code{Buffer} is part of the package
+\code{rtlib}.
+
+\index{non-blocking queue} \index{interrupt!non-blocking queue}
+
+\begin{lstlisting}[caption={A non-blocking integer buffer for a
+single reader and a single writer. Classical usage is in an interrupt
+handler.}, label=lst:hwo:nonbl:buffer]
+
+public class Buffer {
+
+    private volatile int[] data;
+    private volatile int rdPtr;
+    private volatile int wrPtr;
+
+    public Buffer(int size) {
+        data = new int[size+1];
+        rdPtr = wrPtr = 0;
+    }
+    public boolean empty() {
+        return rdPtr==wrPtr;
+    }
+    public boolean full() {
+        int i = wrPtr+1;
+        if (i>=data.length) i=0;
+        return i==rdPtr;
+    }
+    public int read() {
+        int i =rdPtr;
+        int val = data[i++];
+        if (i>=data.length) i=0;
+        rdPtr = i;
+        return val;
+    }
+    public void write(int val) {
+        int i = wrPtr;
+        data[i++] = val;
+        if (i>=data.length) i=0;
+        wrPtr = i;
+    }
+    public int cnt() {
+        int i = wrPtr-rdPtr;
+        if (i<0) i+=data.length;
+        return i;
+    }
+    public int free() {
+        return data.length-1-cnt();
+    }
+    public int checkedRead() {
+        if (empty()) return -1;
+        return read();
+    }
+    public boolean checkedWrite(int val) {
+        if (full()) return false;
+        write(val);
+        return true;
+    }
+}
+\end{lstlisting}
+
+
+The buffer \code{data} is manipulated by the reader and writer. The
+size of the buffer is determined by the constructor. The read pointer
+\code{rdPtr} is only manipulated by the reader, the write pointer
+\code{wrPtr} only by the writer. The buffer is empty when
+\code{rdPtr} equals \code{wrPtr} and full when \code{wrPtr}+1 equals
+the \code{rdPtr}. In method \code{full()} two points are notable: (1)
+the usage of the local variable to get an atomic snapshot of the
+\code{wrPtr}; and (2) the usage of $>=$ instead of $=$ for easier
+data-flow analysis \cite{dfa:puffitsch:2009}.
+
+The methods \code{read()} and \code{write()} perform an unchecked
+read and write from the buffer -- the unchecked version is for
+performance reason. Therefore, before invoking those methods the
+buffer fill state has to be checked with \code{emtpy()} and
+\code{full()}. If read is performed on an empty buffer, the buffer is
+corrupted -- old, alread read data appears as new data. Write to a
+full buffer drops all former data. The fill stat of the buffer can be
+queried with \code{cnt()} and \code{free()}. Method
+\code{checkedRead()} reads one entry from the buffer or returns -1 if
+the buffer is empty. Method \code{checkedWrite()} write one entry
+into the buffer when not full and returns \code{true} if the write
+operation was successfully.
+
+An object oriented version of this single reader/writer queue is
+available in class \code{SRSWQueue}.  Those queues are also handy for
+communication between threads as blocking can be avoided. The
+redesigned TCP/IP stack \code{ejip} uses those non-blocking queues
+for communication of network packets between different protocol
+layers.
+
+\subsection{Interrupt Handler Registration}
+
+Interrupt handlers can be registered for a interrupt number $n$. On
+the CMP system the interrupt is registered on the core where the
+method is invoked. Following methods are available in the factory
+class for interrupt handler registration/deregistration and
+enable/disable of a specific interrupt.
+
+\begin{samepage}
+\begin{lstlisting}
+    public void registerInterruptHandler(int nr, Runnable logic) { }
+    public void deregisterInterruptHandler(int nr) { }
+    public void enableInterrupt(int nr) { }
+    public void disableInterrupt(int nr) { }
+\end{lstlisting}
+\end{samepage}
+
+Interrupt 0 has a special meaning as it is the reprogrammable timer
+interrupt for the scheduler. On the transition to the mission phase
+(\code{startMission()}) a scheduler, which is a simple
+\code{Runable}, is registered for each core for the timer interrupt.
+
+\subsection{Implementation}
+
+\index{interrupt!implementation}
+
+The original JOP \cite{jop:thesis,jop:jnl:jsa2007} was a very
+puristic hard real-time processor. There existed only one interrupt
+-- the programmable timer interrupt as time is the primary source for
+hard real-time events. All I/O requests were handled by periodic
+threads that poll for pending input data or free output buffers.
+However, to allow a more flexible programming model additional
+hardware interrupts are now available.
+
+On a pending interrupt (or exception generated by the hardware) a
+special bytecode is inserted into the instruction stream (see
+Section~\ref{sec:interrupt}. This approach keeps the interrupt
+completely transparent to the core pipeline. The special bytecode
+that is unused by the JVM specification \cite{jvm} is used to invoke
+the special method \code{interrupt()} from the JVM helper class
+\code{JVMHelp}.
+
+The implemented interrupt controller (IC) is priority based. The
+number of interrupt sources can be configured. Each interrupt can be
+triggered in software by a IC register write as well. There is one
+global interrupt enable and each interrupt line can be enabled or
+disabled locally. The interrupt is forwarded to the
+bytecode/microcode translation stage with the interrupt number. When
+accepted by this stage, the interrupt is acknowledged and the global
+enable flag cleared. This feature avoids immediate handling of an
+arriving higher priority interrupt during the first part of the
+handler. The interrupts have to be enabled again by the handler at a
+\emph{convenient} time. All interrupts are mapped to the same special
+bytecode. Therefore, we perform the dispatch of the correct handler
+in Java. On an interrupt the static method \code{interrupt()} from a
+system internal class gets invoked. The method reads the interrupt
+number and performs the dispatch to the registered \code{Runnable} as
+illustrated below. Note, how a hardware object of type
+\code{SysDevice} is used to read the interrupt number.
+
+\index{interrupt!dispatch}
+
+\begin{samepage}
+\begin{lstlisting}
+    static Runnable ih[] = new Runnable[Const.NUM_INTERRUPTS];
+    static SysDevice sys = IOFactory.getFactory().getSysDevice();
+
+    static void interrupt() {
+        ih[sys.intNr].run();
+    }
+\end{lstlisting}
+\end{samepage}
+
+The timer interrupt, used for the real-time scheduler, is located at
+index 0. The scheduler is just a plain interrupt handler that gets
+registered at mission start at index 0. At system startup, the table
+of Runnables is initialized with dummy handlers. The application code
+provides the handler via a class that implements \code{Runnable} and
+registers that class for an interrupt number.
+
+For interrupts that should be handled by an event handler under the
+control of the scheduler, the following steps need to be performed on
+JOP:
+\begin{enumerate}
+  \item Create a \code{SwEvent} with the correct priority that
+      performs the second level interrupt handler work
+  \item Create a short first level interrupt handler as
+      \code{Runnable} that invokes \code{fire()} of the
+      corresponding software event handler
+  \item Register the first level interrupt handler as shown in
+      Figure~\ref{fig:ihjop} and start the real-time scheduler
+\end{enumerate}
+
+
+\subsection{An Example}
+
+The system device (\code{sc\_sys.vhd}) contains input lines for
+external interrupts (in port \code{io\_int}). The number of interrupt
+lines is configurable with \code{num\_io\_int}. Each hardware
+interrupt can also be triggered by a write into the system device.
+Listing~\ref{lst:hwo:full:example} shows registering and using a
+first level interrupt handler. The interrupt is triggered in software
+by the main thread.
+
+\begin{lstlisting}[caption={Interrupt register/deregister methods in the factory class},
+label=lst:hwo:full:example]
+
+public class InterruptHandler implements Runnable {
+
+    public static void main(String[] args) {
+
+        IOFactory fact = IOFactory.getFactory();
+        SysDevice sys = fact.getSysDevice();
+
+        InterruptHandler ih = new InterruptHandler();
+        fact.registerInterruptHandler(1, ih);
+
+        // enable software interrupt 1
+        fact.enableInterrupt(1);
+
+        for (int i=0; i<20; ++i) {
+            Timer.wd();
+            int t = Timer.getTimeoutMs(200);
+            while (!Timer.timeout(t)) ;
+            // trigger a SW interrupt via the system HW object
+            System.out.println("Trigger");
+            sys.intNr = 1;
+            if (i==10) {
+                fact.disableInterrupt(1);
+            }
+        }
+    }
+
+    public void run() {
+        System.out.println("Interrupt fired!");
+    }
+}
+\end{lstlisting}
+
 
 \section{Standard Devices}
 
+A minimum version of JOP consists of two standard devices: the system
+device and a UART device for program download and as a representation
+of \code{System.ou}.
 
 \subsection{The System Device}
+
+\index{system device}
 
 The system device contains all the logic for interrupts, CMP
 interaction, timers, and the watchdog control. The registers
 definition is shown in Table~\ref{tab:io:sysdev}.
 
-\begin{table}
+\begin{table}[t]
     \centering
     \begin{tabular}{cll}
         \toprule
@@ -701,7 +958,7 @@ definition is shown in Table~\ref{tab:io:sysdev}.
         2 & Interrupt number & SW interrupt \\
         3 & --- & Watchdog \\
         4 & Exception reason & Generate exception \\
-        5 & Lock status? & Lock request \\
+        5 & Lock request status & Lock request \\
         6 & CPU ID & --- \\
         7 & Polled in JVM startup & Start CMP \\
         8 & --- & Interrupt mask \\
@@ -711,4 +968,23 @@ definition is shown in Table~\ref{tab:io:sysdev}.
     \end{tabular}
     \caption{Registers in the system device.}
     \label{tab:io:sysdev}
+\end{table}
+
+\subsection{The UART}
+
+The UART contains a contral/status register and a data read/write
+register is shown in Table~\ref{tab:io:uart}.
+
+\begin{table}[t]
+    \centering
+    \begin{tabular}{cll}
+        \toprule
+        Address  & Read & Write \\
+        \midrule
+        0 & status & control \\
+        1 & receive data & transmit buffer \\
+        \bottomrule
+    \end{tabular}
+    \caption{Registers in the UART device.}
+    \label{tab:io:uart}
 \end{table}
