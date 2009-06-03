@@ -1,4 +1,4 @@
---
+-- 
 --  This file is part of JOP, the Java Optimized Processor
 --
 --  Copyright (C) 2007,2008, Christof Pitter
@@ -111,22 +111,7 @@ architecture rtl of arbiter is
 	signal pipelined : pipelined_type;
 	signal next_pipelined : pipelined_type;
 	
--- counter
-	signal counter : integer;
-	signal period	: integer;
-	signal slot_length : integer;
-	type time_type is array (0 to cpu_cnt-1) of integer;
-	signal cpu_time : time_type; -- how much clock cycles each CPU
-	type slot_type is array (0 to cpu_cnt-1) of std_logic;
-	signal slot : slot_type; -- defines which CPU is on turn
-	
 -- read and write gaps
-
-	signal read_gap : integer;
-	signal write_gap : integer;
-		
-	
-begin
 
 -- Constants for read_gap, write_gap, slot_length:
 -- DE2 board:   6 cycle memory write, 4 cycle memory read
@@ -136,10 +121,21 @@ begin
 --              write_gap <= 2; read_gap <= 1;
 --              minimal slot_length <= 3;
 
-write_gap <= 2;
-read_gap <= 1;
-slot_length <=7;
-period <= cpu_cnt*slot_length;
+  constant write_gap : integer := 2;
+  constant read_gap  : integer := 1;
+  constant slot_length : integer := 7;
+  constant period : integer := cpu_cnt*slot_length;
+
+-- counter
+	subtype counter_type is integer range 0 to period;
+	signal counter : counter_type;
+	type time_type is array (0 to cpu_cnt-1) of counter_type;
+	signal cpu_time : time_type; -- how much clock cycles each CPU
+	type slot_type is array (0 to cpu_cnt-1) of std_logic;
+	signal slot : slot_type; -- defines which CPU is on turn
+	
+begin
+
 
 -- generate slot information
 slots: for i in 0 to cpu_cnt-1 generate
@@ -185,52 +181,24 @@ process(clk, reset)
 end process;
 				
 -- A time slot is assigned to each CPU 
-process(counter, cpu_time, read_gap, write_gap, arb_out)
+process(counter, cpu_time, arb_out)
+  variable lower_limit : integer;
 	begin
 		for j in 0 to cpu_cnt-1 loop
 			slot(j) <= '0';
 		end loop;
-		
-		if (counter > -1) and (counter < cpu_time(0)-write_gap) then
-			slot(0) <= '1';
-		elsif (counter > -1) and (counter < cpu_time(0)-read_gap) and (arb_out(0).rd = '1') then -- rd is 2 cycles longer allowed
-			slot(0) <= '1';
-			
-		elsif (counter > cpu_time(0)-1) and (counter < cpu_time(1)-write_gap) then
-			slot(1) <= '1';
-		elsif (counter > cpu_time(0)-1) and (counter < cpu_time(1)-read_gap) and (arb_out(1).rd = '1') then -- rd is 2 cycles longer allowed
-			slot(1) <= '1';
-			
-		elsif (counter > cpu_time(1)-1) and (counter < cpu_time(2)-write_gap) then
-			slot(2) <= '1';
-		elsif (counter > cpu_time(1)-1) and (counter < cpu_time(2)-read_gap) and (arb_out(2).rd = '1') then -- rd is 2 cycles longer allowed
-			slot(2) <= '1';
---			
---		elsif (counter > cpu_time(2)-1) and (counter < cpu_time(3)-write_gap) then
---			slot(3) <= '1';
---		elsif (counter > cpu_time(2)-1) and (counter < cpu_time(3)-read_gap) and (arb_out(3).rd = '1') then -- rd is 2 cycles longer allowed
---			slot(3) <= '1';
---			
---		elsif (counter > cpu_time(3)-1) and (counter < cpu_time(4)-write_gap) then
---			slot(4) <= '1';
---		elsif (counter > cpu_time(3)-1) and (counter < cpu_time(4)-read_gap) and (arb_out(4).rd = '1') then -- rd is 2 cycles longer allowed
---			slot(4) <= '1';
---			
---		elsif (counter > cpu_time(4)-1) and (counter < cpu_time(5)-write_gap) then
---			slot(5) <= '1';
---		elsif (counter > cpu_time(4)-1) and (counter < cpu_time(5)-read_gap) and (arb_out(5).rd = '1') then -- rd is 2 cycles longer allowed
---			slot(5) <= '1';
---			
---		elsif (counter > cpu_time(5)-1) and (counter < cpu_time(6)-write_gap) then
---			slot(6) <= '1';
---		elsif (counter > cpu_time(5)-1) and (counter < cpu_time(6)-read_gap) and (arb_out(6).rd = '1') then -- rd is 2 cycles longer allowed
---			slot(6) <= '1';
---			
---		elsif (counter > cpu_time(6)-1) and (counter < cpu_time(7)-write_gap) then
---			slot(7) <= '1';
---		elsif (counter > cpu_time(6)-1) and (counter < cpu_time(7)-read_gap) and (arb_out(7).rd = '1') then -- rd is 2 cycles longer allowed
---			slot(7) <= '1';
-		end if;
+
+    lower_limit := 0;
+    for j in 0 to cpu_cnt-1 loop
+      if (counter >= lower_limit) and (counter < cpu_time(j)-write_gap) then
+        slot(j) <= '1';
+        exit;
+      elsif (counter >= lower_limit) and (counter < cpu_time(j)-read_gap) and (arb_out(j).rd = '1') then -- rd is 2 cycles longer allowed
+        slot(j) <= '1';
+        exit;
+      end if;
+      lower_limit := cpu_time(j);
+    end loop;
 end process;	
 	
 	
