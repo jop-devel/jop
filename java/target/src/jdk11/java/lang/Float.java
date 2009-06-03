@@ -534,9 +534,8 @@ public final class Float // JDK 1.4 extends Number implements Comparable
       int v = Native.toInt(value);
 
       // collapse NaNs
-      if ((((v >>> 23) & 0xff) == 0xff)
-	  && ((v & 0x007fffff) != 0)) {
-	  return 0x7fc00000;
+      if ((v & 0x7fffffff) > 0x7f800000) {
+		  return 0x7fc00000;
       }
 
       return v;

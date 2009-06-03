@@ -522,10 +522,13 @@ public final class Double extends Number implements Comparable
    */
   public static long doubleToLongBits(double value)
   {
-	  // TODO: hanlde 
-	  // TODO: handle NaN collapsing
-	  System.out.println("NYI");
-	  return Native.toLong(value);
+	  long v = Native.toLong(value);
+
+	  if ((v & 0x7fffffffffffffffL) > 0x7ff0000000000000L) {
+		  return 0x7ff8000000000000L;
+	  }
+
+	  return v;
   }
 
   /**

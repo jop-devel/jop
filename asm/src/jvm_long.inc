@@ -51,6 +51,7 @@ ldc2_w:
 			wait
 			ldmrd		 nxt	// second word
 
+dconst_0:
 lconst_0:	ldi	0
 			ldi 0 nxt
 lconst_1:	ldi	0
@@ -62,10 +63,8 @@ l2i:		stm	a				// low part
 
 i2l:		dup
 			stm a
-			ldi 16
-			shr
-			ldi 16
-			shr					// high part is a >> 32
+			ldi 31
+			shr					// high part is a >> 31
 			ldm a nxt			// low part is a
 
 dload_0:
@@ -285,6 +284,7 @@ putfield_long:
 			wait
 			nop	nxt
 
+dastore:
 lastore:
 			stm	a				// value_h
 			stm c               // value_l
@@ -341,6 +341,7 @@ lastore:
 			wait
 			nop	nxt
 
+daload:
 laload:                           
 			stm	b				// index
 			// arrayref is TOS

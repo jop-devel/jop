@@ -776,32 +776,24 @@ System.out.println(mp+" "+pc);
 					stack[++sp] = stack[vp+3];
 					break;
 				case 30 :		// lload_0
+				case 38 :		// dload_0
 					stack[++sp] = stack[vp];
 					stack[++sp] = stack[vp+1];
 					break;
 				case 31 :		// lload_1
+				case 39 :		// dload_1
 					stack[++sp] = stack[vp+1];
 					stack[++sp] = stack[vp+2];
 					break;
 				case 32 :		// lload_2
+				case 40 :		// dload_2
 					stack[++sp] = stack[vp+2];
 					stack[++sp] = stack[vp+3];
 					break;
 				case 33 :		// lload_3
+				case 41 :		// dload_3
 					stack[++sp] = stack[vp+3];
 					stack[++sp] = stack[vp+4];
-					break;
-				case 38 :		// dload_0
-					noim(38);
-					break;
-				case 39 :		// dload_1
-					noim(39);
-					break;
-				case 40 :		// dload_2
-					noim(40);
-					break;
-				case 41 :		// dload_3
-					noim(41);
 					break;
 				case 50 :		// aaload
 				case 51 :		// baload
@@ -819,6 +811,7 @@ System.out.println(mp+" "+pc);
 					stack[++sp] = readMem(ref+idx);							
 					break;
 				case 47 :		// laload
+				case 49 :		// daload
 					idx = stack[sp--];	// index
 					ref = stack[sp--];	// ref
 					checkNullPointer(ref);
@@ -828,9 +821,6 @@ System.out.println(mp+" "+pc);
 					ref = readMemHandle(ref);
 					stack[++sp] = readMem(ref+idx*2);
 					stack[++sp] = readMem(ref+idx*2+1);							
-					break;
-				case 49 :		// daload
-					noim(49);
 					break;
 				case 58 :		// astore
 				case 56 :		// fstore
@@ -869,32 +859,24 @@ System.out.println(mp+" "+pc);
 					stack[vp+3] = stack[sp--];
 					break;
 				case 63 :		// lstore_0
+				case 71 :		// dstore_0
 					stack[vp+1] = stack[sp--];
 					stack[vp] = stack[sp--];
 					break;
 				case 64 :		// lstore_1
+				case 72 :		// dstore_1
 					stack[vp+2] = stack[sp--];
 					stack[vp+1] = stack[sp--];
 					break;
 				case 65 :		// lstore_2
+				case 73 :		// dstore_2
 					stack[vp+3] = stack[sp--];
 					stack[vp+2] = stack[sp--];
 					break;
 				case 66 :		// lstore_3
+				case 74 :		// dstore_3
 					stack[vp+4] = stack[sp--];
 					stack[vp+3] = stack[sp--];
-					break;
-				case 71 :		// dstore_0
-					noim(71);
-					break;
-				case 72 :		// dstore_1
-					noim(72);
-					break;
-				case 73 :		// dstore_2
-					noim(73);
-					break;
-				case 74 :		// dstore_3
-					noim(74);
 					break;
 				case 83 :		// aastore
 					noim(83);
@@ -915,6 +897,7 @@ System.out.println(mp+" "+pc);
 					writeMem(ref+idx, val);							
 					break;
 				case 80 :		// lastore
+				case 82 :		// dastore
 					val = stack[sp--];	// value
 					val2 = stack[sp--];	// value
 					idx = stack[sp--];	// index
@@ -926,9 +909,6 @@ System.out.println(mp+" "+pc);
 					ref = readMemHandle(ref);
 					writeMem(ref+idx*2, val2);					
 					writeMem(ref+idx*2+1, val);												
-					break;
-				case 82 :		// dastore
-					noim(82);
 					break;
 				case 87 :		// pop
 					sp--;
