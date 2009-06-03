@@ -118,7 +118,7 @@ class IntArrayType(JavaType):
         return ADDRESS_SIZE
 
     def convertForHardware(self, java_name, hardware_name):
-        return "%s = _dereference ( %s ) ;\n" % (hardware_name, java_name)
+        return "%s = Native.rdMem ( Native.toInt ( %s ) );\n" % (hardware_name, java_name)
 
     def convertForJava(self, hardware_name, java_name):
         assert False, "IMPOSSIBLE"
@@ -197,29 +197,30 @@ class Method:
                     if ( 16 >= java_type.getVectorSize() ):
                         continue
 
-                out.append("control_channel.write"
+                out.append("control_channel.data = "
                     "(0x%x | (((%s) >> %u) & 0xffff));\n" %
                         (( base | ( high << 23 ) |
                             ( reg_number << 16 )),
                         HN(name), high * 16))
 
         out.append("// start\n")
-        out.append("control_channel.write(0x%x);\n" % 
+        out.append("control_channel.data = 0x%x;\n" % 
                         ( base | ( self.busy_reg_num << 16 ) | 1 ))
         out.append("// run (wait while busy)\n")
-        out.append("while ( 0 != ( _ccTransaction(0x%x) & 1 )) { /* yield */ }\n" % 
-                        ( base | ( self.busy_reg_num << 16 )))
+        out.append("int rc = 1;\n")
+        out.append(self.makeCCTransaction("rc", base | ( self.busy_reg_num << 16 ), True))
 
         if ( isinstance(self.ret_type, VoidType) ):
             # Nothing is returned.
             pass
         else:
             out.append("// get result\n")
-            out.append("int %s;\n" % ret_name)
-            out.append("int %s = _ccTransaction(0x%x) | ( _ccTransaction(0x%x) << 16 );\n" % (
-                        HN(ret_name),
-                        base | ( self.ret_reg_num << 16 ),
-                        base | ( self.ret_reg_num << 16 ) | ( 1 << 23 )))
+            out.append("int %s, %s = 0;\n" % (ret_name, HN(ret_name)))
+            out.append(self.makeCCTransaction(HN(ret_name), 
+                      base | ( self.ret_reg_num << 16 ) | ( 1 << 23 ))) # high bits
+            out.append(self.makeCCTransaction("rc", 
+                      base | ( self.ret_reg_num << 16 ))) # low bits
+            out.append("%s = rc | ( %s << 16 );\n" % (HN(ret_name), HN(ret_name)))
             out.append("// convert result\n")
             out.append(self.ret_type.convertForJava(HN(ret_name), ret_name))
             out.append("return %s;\n" % ret_name)
@@ -305,6 +306,31 @@ class Method:
             }
         
 
+    def makeCCTransaction(self, out_var, msg, await_zero=False):
+        mask = 0x7fff0000
+        fields = { 
+            "cond" : "" ,
+            "out_var" : out_var, 
+            "msg" : msg, 
+            "mask" : mask,
+        }
+        if ( await_zero ):
+            fields[ "cond" ] = " || (( %(out_var)s & 1 ) != 0 )" % fields
+
+        return """
+    {   // _ccTransaction(0x%(msg)x)
+        int reply_masked = 0;
+        int msg = 0x%(msg)x;
+        int mask = 0x%(mask)x;
+        int msg_masked = msg & mask;
+        while (( reply_masked != msg_masked )%(cond)s) {
+            control_channel.data = msg;
+            %(out_var)s = control_channel.data;
+            reply_masked = %(out_var)s & mask;
+        }
+        %(out_var)s &= 0xffff;
+    }\n""" % fields
+                    
         
 class Coprocessor:
     def __init__(self, name):
@@ -510,21 +536,6 @@ import com.jopdesign.sys.Native;
 JAVA_BODY = """
     private ControlChannel control_channel ;
 
-    private int _ccTransaction ( int msg )
-    {
-        int reply;
-        do {
-            control_channel.write(msg);
-            reply = control_channel.read();
-        } while (( reply & 0x7fff0000 ) != ( msg & 0x7fff0000 )) ;
-        /* assert high bit = 1 */
-        return reply & 0xffff;
-    }
-                    
-    private int _dereference ( int [] a )
-    {
-        return Native.rdMem ( Native.toInt ( a ) ) ;
-    }
 
 """
 
