@@ -10,7 +10,7 @@ public class FileOutputStream {
 
 
 	public static FatItS FatInterface = new FatItS();
-	public static FatMmc MmcInterface = new FatMmc();
+	//public static FatMmc MmcInterface = new FatMmc();
 	public static int[] FOStream_Buffer  = new int [512];
 	public static long[] FOStream_size  = new long [1];
 	public static int[] FOStream_startcluster = new int [1];
@@ -37,6 +37,7 @@ public class FileOutputStream {
 *
 *  Parameters:
 *	file - Directories and files are seperated with "/". Do not write the leading "/" in the filename string.
+*	append - if true, then bytes will be written to the end of the file rather than the beginning 
 ******************************************************************/
 public static boolean FileOutputStream(String file, boolean append)
 {
@@ -266,7 +267,6 @@ if (append == true)
 *
 *  Parameters:
 *	file - Directories and files are seperated with "/". Do not write the leading "/" in the filename string.
-*	append - if true, then bytes will be written to the end of the file rather than the beginning 
 ******************************************************************/
 public static boolean FileOutputStream(String filename)
 {

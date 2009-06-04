@@ -18,7 +18,7 @@ public class FatTest {
 	// FileIn/OutputStream def Begin
 	// ####################################################################################
 
-	public static FatItS FatInterface = new FatItS();
+	//public static FatItS FatInterface = new FatItS();
 	public static FatMmc MmcInterface = new FatMmc();
 	public static FileOutputStream FOS;
 	public static FileInputStream FIS;
@@ -28,6 +28,12 @@ public class FatTest {
 	// ####################################################################################
 
 
+/*********************************************************************************
+*	public static void read_test()
+*
+*	prints the content of the FileInputStream FIS. The FileInputStream FIS has to be open.
+*********************************************************************************/
+	
 	public static void read_test() {
 	
 		byte[] k = new byte[400];
@@ -67,17 +73,18 @@ public class FatTest {
 	}
 	
 	
-
+	
+/*********************************************************************************
+* 	public static void write_test() 
+*
+*	writes a char array the FileOutputStream FOS (all types of FOS.write are used). The FileOutputStream FOS has to be open.
+*********************************************************************************/
 	public static void write_test() {
 		int fj = 0;
 		byte[] tes = new byte[518];
-		/*
-		 * for ( fj=0; fj < 512; fj++) { write((int) 'A'); }
-		 * 
-		 * 
-		 * write((int) 0x0D); write((int) 0x0A);
-		 */
 
+		 
+		// filling the test string with chars
 		for (fj = 0; fj < 512; fj++) {
 			tes[fj] = (byte) 'F';
 		}
@@ -91,7 +98,6 @@ public class FatTest {
 		FOS.write(tes);
 
 
-
 /*		 512* 1Byte write      very very slow
 		for (fj = 0; fj < 512; fj++) {
 			
@@ -103,21 +109,23 @@ public class FatTest {
 		FOS.write((int) 0x0a);
 */		
 		
-		
+		// filling the test string with chars
 		for (fj = 0; fj < 512; fj++) {
 			tes[fj] = (byte) 'A';
 		}
 
+		
 		// write 514 Bytes with offset 0
 		FOS.write(tes,0,512);
 	
 
 		// 1 Byte write 
 		FOS.write((int) 0x0d);
+		// 1 Byte write 
 		FOS.write((int) 0x0a);
 
 	
-		
+		// filling the test string with chars
 		for (fj = 0; fj < 512; fj++) {
 			tes[fj] = (byte) 'T';
 		}
@@ -129,6 +137,8 @@ public class FatTest {
 		// write 514 Bytes with offset 0
 		FOS.write(tes,0,514);
 		
+		
+		// filling the test string with chars
 		for (fj = 0; fj < 512; fj++) {
 			tes[fj] = (byte) '1';
 		}
@@ -140,6 +150,7 @@ public class FatTest {
 		// write 514 Bytes with offset 0
 		FOS.write(tes,0,514);
 		
+		// filling the test string with chars
 		for (fj = 0; fj < 512; fj++) {
 			tes[fj] = (byte) '6';
 		}
@@ -162,7 +173,13 @@ public class FatTest {
 	}
 
 	
-	
+/*********************************************************************************
+* 	public static void run()
+*
+*	strats the test program  FileIn/OutputStream objacts. The test programm opens the FileOutputStream  FOS for 
+*	the file "FAT-TEST.TXT" and runs then write_test(); afterwards the written file is printed with read_test();
+*	
+*********************************************************************************/
 	public static void run() {
 
 		int i, j, x = 1;
@@ -178,10 +195,10 @@ public class FatTest {
 		//FatInterface.fat_cluster_data_store();
 	
 		
-/*	"FAT-TEST.TXT" -> /FAT-TEST.TXT
+/*	Do not start the filename string with "/" !
+* 	
+*	"FAT-TEST.TXT" -> /FAT-TEST.TXT
 *	"TEST/FAT-TEST.TXT"  ->  /TEST/FAT-TEST.TXT 
-*	
-*	Do not start the filename string with "/" !
 */	
 		
 		String namea = new String("FAT-TEST.TXT");
@@ -197,7 +214,6 @@ public class FatTest {
 		System.out.println("Finished write_test();");
 		System.out.println();
 		System.out.println();
-		//FatInterface.fat_load_reset();
 		
 		
 		System.out.println();
@@ -219,10 +235,12 @@ public class FatTest {
 		System.out.println("Finished read_test();");
 		System.out.println();
 				
-				
+		
+		//
+		/*		
 		System.out.println();
 		System.out.println();
-		System.out.println("         print Directory-listing of write file dir");
+		System.out.println("         print Directory-listing of  dir");
 		System.out.println();
 		System.out.println();
 		
@@ -246,9 +264,8 @@ public class FatTest {
 		
 		}
 		System.out.println("Directory Print End");
+*/
 
-
-	
 /*	
 	System.out.println();
 	System.out.println();
@@ -266,7 +283,8 @@ public class FatTest {
 				
 		System.out.println("MmcInterface.mmc_init  start" );
 		
-		if ( MmcInterface.mmc_init() != 0)
+		//if ( MmcInterface.mmc_init() != 0)
+		if ( FOS.FatInterface.MmcInterface.mmc_init() != 0)
 		{
 			System.out.println("MmcInterface.mmc_init  failed or no Card connected" );
 		}
@@ -278,6 +296,9 @@ public class FatTest {
 			System.out.println();
 			run();
 		}
+		
+
+		
 	}
 
 }

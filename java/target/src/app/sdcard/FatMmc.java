@@ -11,7 +11,10 @@ public class FatMmc {
 //####################################################################################
 //					 MMC Section BEGIN
 //####################################################################################
-	
+
+// FUNCTIONS FOR OLD SPI IP CORE
+
+	/*
 public static int mmc_read_byte ()
 {
 	int i = 0;
@@ -23,8 +26,8 @@ public static int mmc_read_byte ()
 	
 	return (i);
 }
-	
-	
+	*/
+	/*
 public static void mmc_read_nybble (int[] k,int n)
 {
 	
@@ -57,8 +60,9 @@ public static void mmc_read_nybble (int[] k,int n)
 //	System.out.println("CC");
 	
 }	
-	
+	*/
 
+	/*
 public static void mmc_write_byte (int k)
 {
 	Native.wrMem(k, Const.WB_SPI+0x02);
@@ -67,8 +71,9 @@ public static void mmc_write_byte (int k)
 	Native.wrMem(0x80, Const.WB_SPI+0x1);
 	
 }	
-	
+	*/
 
+	/*
 public static void mmc_write_nybble (int[] k,int n)
 {
 	Native.wrMem(k[n+0], Const.WB_SPI+0x02);
@@ -90,6 +95,7 @@ Native.wrMem(0xe0, Const.WB_SPI+3);
 	
 	
 }	
+	/*
 	
 
 public static void mmc_write_all (int[] k)
@@ -130,7 +136,7 @@ public static void mmc_read_all (int[] k)
 	
 }	
 
-
+/*
 public static void mmc_read_all (char[] k)
 {
 	
@@ -150,8 +156,9 @@ public static void mmc_read_all (char[] k)
 	Native.wrMem(0x80, Const.WB_SPI+0x1);
 	
 }	
+*/
 
-
+/*
 public static int  mmc_write_command (int[] cmd)
 {
 	int tmp = 0xff;
@@ -198,9 +205,9 @@ public static int  mmc_write_command (int[] cmd)
 		}
 	return(tmp);
 }	
+*/	
 	
-	
-	
+	/*
 public static int mmc_init ()
 {
 	int a,b;
@@ -253,8 +260,9 @@ public static int mmc_init ()
 	return(0);
 }
 	
-	
-	
+	*/
+
+	/*
 public static int mmc_write_sector (int addr,int[] Buffer)
 {
 	int CMD[] = new int[6];
@@ -269,7 +277,7 @@ public static int mmc_write_sector (int addr,int[] Buffer)
 
 	/*Die Adressierung der MMC/SD-Karte wird in Bytes angegeben,
 	  addr wird von Blocks zu Bytes umgerechnet danach werden 
-	  diese in das Commando eingefügt*/
+	  diese in das Commando eingefügt/
 	  
 	addr = addr << 9; //addr = addr * 512
 	
@@ -340,17 +348,17 @@ public static int mmc_write_sector (int addr,int[] Buffer)
 	CMD=null;
 return(0);
 }
-
+*/
 
 	
-	
+/*	
 public static void MMC_Disable()
 {
 Native.wrMem(0x10, Const.WB_SPI+3);	
 }
+	*/
 	
-	
-	
+/*	
 public static void  mmc_read_block(int[] CMD,int[] Buffer,int Bytes)
 {	
 	
@@ -366,7 +374,7 @@ public static void  mmc_read_block(int[] CMD,int[] Buffer,int Bytes)
 	{
 		System.out.println("in read block1");
 	} 
-*/	
+/	
 	//Sendet Commando cmd an MMC/SD-Karte
 	if (mmc_write_command (CMD) != 0)
 			{
@@ -379,7 +387,7 @@ public static void  mmc_read_block(int[] CMD,int[] Buffer,int Bytes)
 	{
 		System.out.println("in read block2");
 	} 
-*/	
+/	
 	while (mmc_read_byte() != 0xfe){};
 
 	/*
@@ -387,7 +395,7 @@ public static void  mmc_read_block(int[] CMD,int[] Buffer,int Bytes)
 	{
 		System.out.println("in read block3");
 	} 
-*/
+/
 	
 	//Native.wrMem(0x80, Const.WB_SPI+0x1);
 	Native.wrMem(0xe0, Const.WB_SPI+3);
@@ -396,7 +404,7 @@ public static void  mmc_read_block(int[] CMD,int[] Buffer,int Bytes)
 	{
 		System.out.println("in read block4");
 	} 
-*/
+/
 	
 	for (a=0;a<Bytes;a=a+8)
 		{
@@ -409,7 +417,7 @@ public static void  mmc_read_block(int[] CMD,int[] Buffer,int Bytes)
 	{
 		System.out.println("in read block5");
 	} 
-*/
+/
 	
 	Native.wrMem(0x00, Const.WB_SPI+3);
 
@@ -422,9 +430,10 @@ public static void  mmc_read_block(int[] CMD,int[] Buffer,int Bytes)
 	
 	return;
 }	
+*/	
 	
 	
-	
+/*	
 public static int mmc_read_sector (int addr,int[] Buffer)
 {	
 	
@@ -435,7 +444,7 @@ public static int mmc_read_sector (int addr,int[] Buffer)
 	{
 		System.out.println("in read sector1");
 	}
-	*/
+	/
 	//Commando 16 zum lesen eines Blocks von der MMC/SD - Karte
 
 	CMD[0]=0x51;
@@ -454,7 +463,7 @@ public static int mmc_read_sector (int addr,int[] Buffer)
 	{
 		System.out.println("in read sector2");
 	}
-	  */
+	  /
 	addr = addr << 9; //addr = addr * 512
 
 	CMD[1] = ((addr & 0xFF000000) >>24 );
@@ -465,19 +474,19 @@ public static int mmc_read_sector (int addr,int[] Buffer)
 	{
 		System.out.println("in read sector3");
 	}
-	*/
+	/
     mmc_read_block(CMD,Buffer,512);
 /*
 	if (addr==(558<<9))
 	{
 		System.out.println("in read sector4");
 	}
-	*/
+	/
 	return(0);
 }
-	
+*/	
 
-
+/*
 public static int  mmc_read_cid (int[] Buffer)
 {
 	int CMD[] = new int[6];
@@ -515,6 +524,135 @@ public static int  mmc_read_csd (int[] Buffer)
 	return(0);
 }
 
+*/
+
+
+
+
+
+public static int mmc_init()
+{
+int x=0;
+Native.wrMem(0x01,Const.WB_SPI+1);  // spi core reset
+//wait(2);
+//Native.wrMem(Const.WB_SPI+0x0b,0x0);  // SPI_CLK_DEL_REG
+Native.wrMem(0x04,Const.WB_SPI+0x0b);  // SPI_CLK_DEL_REG
+Native.wrMem(0x01,Const.WB_SPI+2);  // TRANS_TYPE = INIT_SD
+Native.wrMem(0x01,Const.WB_SPI+3);  // TRANS_CTRL_REG = SPI_TRANS_START
+do
+{
+x=Native.rdMem(Const.WB_SPI+4);
+//printf("x= %x\n",x);
+}
+while((x&0x01)==1); //TRANS_STS_REG==TRANS_BUSY
+
+// TRANS_ERROR_REG[5:4] == 00
+x=Native.rdMem(Const.WB_SPI+5);
+
+if ((x&0xFF)==0)
+{
+    return(0x00);  
+}
+//System.out.print("ERROR mmc_init() = ");
+//System.out.println(x);
+
+return(x);
+
+}
+
+
+
+
+
+
+
+
+
+
+
+public static int mmc_read_sector (int addr,int[] Buffer)
+{
+ int i;
+
+
+Native.wrMem(0,Const.WB_SPI+0x07);  // SD_ADDR_7_0
+Native.wrMem((addr<<1)&0xfe,Const.WB_SPI+0x08);  // SD_ADDR_15_8
+Native.wrMem((addr>>7)&0xff,Const.WB_SPI+0x09);  // SD_ADDR_23_16
+Native.wrMem((addr>>15)&0xff,Const.WB_SPI+0x0a);  // SD_ADDR_31_24
+
+Native.wrMem(0x02,Const.WB_SPI+2);  // TRANS_TYPE = RW_READ_SD_BLOCK
+Native.wrMem(0x01,Const.WB_SPI+3);  // TRANS_CTRL_REG = SPI_TRANS_START
+while((Native.rdMem(Const.WB_SPI+4)&0x01)==1); //TRANS_STS_REG==TRANS_BUSY
+
+// TRANS_ERROR_REG[5:4] == 00
+if ((Native.rdMem(Const.WB_SPI+5)&0x3F)==0)
+{
+   for(i=0; i < 512; i++)
+    {
+    Buffer[i]=Native.rdMem(Const.WB_SPI+0x10)&0xFF;
+    //alt_printf("%c",buf[i]);  //RX_FIFO_DATA_REG
+    //alt_printf("%x: %c\n",i,Native.rdMem(Const.WB_SPI+0x10)&0xFF);  //RX_FIFO_DATA_REG
+    
+    }  
+}
+
+else
+{
+//System.out.println("ERROR mmc_read_sector");
+}
+
+Native.wrMem(0xFF,Const.WB_SPI+0x14);  // Clear rx fifo
+return(0);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+public static int mmc_write_sector (int addr,int[] Buffer)
+{
+ int i;
+
+//System.out.println("write sec");
+Native.wrMem(0x01,Const.WB_SPI+0x24);  //RX_FIFO_DATA_REG
+    
+
+for(i=0; i < 512; i++)
+    {
+    Native.wrMem(Buffer[i],Const.WB_SPI+0x20);  //TX_FIFO_DATA_REG
+    }  
+
+Native.wrMem(0,Const.WB_SPI+0x07);  // SD_ADDR_7_0
+Native.wrMem((addr<<1)&0xfe,Const.WB_SPI+0x08);  // SD_ADDR_15_8
+Native.wrMem((addr>>7)&0xff,Const.WB_SPI+0x09);  // SD_ADDR_23_16
+Native.wrMem((addr>>15)&0xff,Const.WB_SPI+0x0a);  // SD_ADDR_31_24
+
+
+Native.wrMem(0x03,Const.WB_SPI+2);  // TRANS_TYPE = RW_WRITE_SD_BLOCK
+Native.wrMem(0x01,Const.WB_SPI+3);  // TRANS_CTRL_REG = SPI_TRANS_START
+while((Native.rdMem(Const.WB_SPI+4)&0x01)==1); //TRANS_STS_REG==TRANS_BUSY
+
+	
+//System.out.println("write sec");	
+// TRANS_ERROR_REG[5:4] == 00
+i=Native.rdMem(Const.WB_SPI+5);
+if (i!=0)
+{
+//System.out.println("ERROR mmc_write_sector");
+//System.out.println(i);
+return(1);
+}
+
+return(0);
+
+}
 
 //####################################################################################
 //					 MMC Section END

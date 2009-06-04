@@ -113,10 +113,10 @@ public static int fat_addr (int[] Buffer)
     
 	//auslesen des Master Boot Record von der MMC/SD Karte (addr = 0)
 	MmcInterface.mmc_read_sector (MASTER_BOOT_RECORD,Buffer); //Read Master Boot Record
-  //  System.out.println("WO");
+    //System.out.println("WO");
 	volume_boot_record_addr = Buffer[VBR_ADDR] + (Buffer[VBR_ADDR+1] << 8);
 	//Berechnet Volume Boot Record 
-	//System.out.println("WO");
+	//System.out.println("WO"+volume_boot_record_addr);
 	MmcInterface.mmc_read_sector (volume_boot_record_addr,Buffer); //Read Master Boot Record
     return (volume_boot_record_addr);
 }
@@ -370,6 +370,11 @@ public static void fat_cluster_data_store ()
  
 	MmcInterface.mmc_read_sector (volume_boot_record_addr,tmp_buffer);
 
+	//for(int i=0;i<512;i++)
+	//{
+	//System.out.println(i+" "+tmp_buffer[i]);
+	//}
+	
     bootp.set(tmp_buffer);
 
 	cluster_size = bootp.BPB_SecPerClus;
@@ -379,6 +384,7 @@ public static void fat_cluster_data_store ()
 	cluster_offset = ((bootp.BPB_BytesPerSec * 32)/BlockSize);	
 	cluster_offset += fat_root_dir_addr(tmp_buffer);
 
+	
 	bootp = null;
 }
 
@@ -457,6 +463,7 @@ public static int fat_search_file (char[] File_Name,		//Name des zu suchenden Fi
 			//System.out.println("a in search aus = "+a);
 			return(0); //File not Found
 			}
+			//System.out.println(Buffer[0]+Buffer[1]+Buffer[2]);
 		if(strcasecmp(File_Name,Buffer) == 0)
 			{
 			return(1); //File Found
@@ -1115,7 +1122,7 @@ public static int  fat_add_file_ent(int[] dir_cluster, char[] filename, int[] Bu
 	if ((fat_find_free_offset( dir_cluster[0], Entry_Count,  Buffer) &0x0000FFFF)== 0x0000FFFF)
 		return 0;
 
-		System.out.println("Entry_Count[0]"+Entry_Count[0]);
+	//	System.out.println("Entry_Count[0]"+Entry_Count[0]);
 		
 	// Generate checksum of short filename
 	checksum = 0;
@@ -1129,7 +1136,7 @@ public static int  fat_add_file_ent(int[] dir_cluster, char[] filename, int[] Bu
 	int b=0;
 	
 	
-	System.out.println("dir_cluster[0] ="+dir_cluster[0]);
+	//System.out.println("dir_cluster[0] ="+dir_cluster[0]);
 
 	if (dir_cluster[0] == 0)
 		{
@@ -1148,7 +1155,7 @@ public static int  fat_add_file_ent(int[] dir_cluster, char[] filename, int[] Bu
 
 		
 		
-	System.out.println("Block ="+Block);
+	//System.out.println("Block ="+Block);
 		
 	//auslesen des gesamten Directory
 	for (int blk = Block;;blk++)
@@ -1159,7 +1166,7 @@ public static int  fat_add_file_ent(int[] dir_cluster, char[] filename, int[] Bu
    			if (TMP_Entry_Count  == Entry_Count[0] ) 
 			{
 			
-				System.out.println("a ="+a);
+				//System.out.println("a ="+a);
 			/*
 					for (b=0;b<512;b++)
 					{
@@ -1187,7 +1194,7 @@ public static int  fat_add_file_ent(int[] dir_cluster, char[] filename, int[] Bu
 					Buffer[a+31] = ((int)(1&0xFF000000) >>24);	
 
 					
-				System.out.println("write dir entr");
+			//	System.out.println("write dir entr");
 					//Eintrag gefunden ändern und speichern
 					MmcInterface.mmc_write_sector (blk,Buffer);
 

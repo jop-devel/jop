@@ -10,7 +10,7 @@ public class FileInputStream {
 
 
 	public static FatItS FatInterface = new FatItS();
-	public static FatMmc MmcInterface = new FatMmc();
+//	public static FatMmc MmcInterface = new FatMmc();
 
 
 	public static int[] FIStream_Buffer  = new int [512];
@@ -169,14 +169,14 @@ public static boolean FileInputStream(String file)
 
 
 /*****************************************************************
-*  public int read(byte[] b)
-*    	Reads up to b.length bytes of data from this input stream into an array of bytes. 
+*  public int read()
+*    	Reads up to one byte of data from this input stream. 
 *	This method blocks until some input is available. 
 *
 *  Parameters:
-*	b - the buffer into which the data is read. 
+*	
 *  Returns:
-*	the total number of bytes read into the buffer, or -1 if there is no more data because the end of the file has been reached. 
+*	the next byte of data, or -1 if the end of the file is reached. 
 *****************************************************************/
 public static int read ()
 {
@@ -363,7 +363,7 @@ FIStream_size =null;
 FIStream_startcluster =null;
 FIStream_offset_from_start =null;
 FatInterface =null;
-MmcInterface =null;
+//MmcInterface =null;
 }
 
 
