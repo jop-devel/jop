@@ -200,6 +200,9 @@ begin
 	sc_io_in.rd_data <= sc_dout(sel_reg);
 	sc_io_in.rdy_cnt <= sc_rdy_cnt(sel_reg);
 
+	-- unused slave address
+	sc_rdy_cnt(3) <= (others => '0');
+	sc_dout(3) <= (others => '0');
 	--
 	-- Connect SLAVE_CNT simple slaves
 	--

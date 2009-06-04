@@ -35,7 +35,7 @@ package wb_pack is
 
 	constant TIMEOUT : integer := 10;
 	constant M_ADDR_SIZE : integer := 8;
-	constant S_ADDR_SIZE : integer := 4;
+	constant S_ADDR_SIZE : integer := 6;
 
 
 --

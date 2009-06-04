@@ -228,7 +228,7 @@ public class Const {
 	// public static final int WB_AC97 = WB_BASE+0x30;
 	// new version with SPI interface - scio_dspio.vhd is missing!
 	public static final int WB_AC97 = WB_BASE+0x40;
-	public static final int WB_SPI = WB_BASE+0x30;
+	public static final int WB_SPI = WB_BASE+0x40;
 
 
 	// LEGO stuff (scio_lego.vhd)
