@@ -21,7 +21,7 @@ entity jop is
 
 generic (
     debugger    : boolean := true;
-	ram_cnt		: integer := 4;		-- clock cycles for external ram
+	ram_cnt		: integer := 3;		-- clock cycles for external ram
 	rom_cnt		: integer := 15;	-- not used for S3K
 	jpc_width	: integer := 11;	-- address bits of java bytecode pc = cache size
 	block_bits	: integer := 4;		-- 2*block_bits is number of cache blocks
@@ -107,7 +107,7 @@ signal ram_addr 		: std_logic_vector(17 downto 0);
 --------------------------------------------------------------
 --------------------------------------------------------------
 
-    constant cpu_cnt        : Integer := 3;
+    constant cpu_cnt        : Integer := 1;
     constant coproc_cnt     : Integer := 1;
     constant master_cnt     : Integer := coproc_cnt + cpu_cnt;
 
@@ -278,12 +278,12 @@ dbg : if ( debugger ) generate
             sc_arb_out_0_address => sc_arb_out(0).address,
             sc_arb_in_0_rd_data => sc_arb_in(0).rd_data,
             sc_arb_in_0_rdy_cnt => rdyc0,
-            sc_arb_out_1_rd => sc_arb_out(1).rd,
-            sc_arb_out_1_wr => sc_arb_out(1).wr,
-            sc_arb_out_1_wr_data => sc_arb_out(1).wr_data,
-            sc_arb_out_1_atomic => sc_arb_out(1).atomic,
-            sc_arb_out_1_address => sc_arb_out(1).address,
-            sc_arb_in_1_rd_data => sc_arb_in(1).rd_data,
+            sc_arb_out_1_rd => sc_arb_out(cpu_cnt).rd,
+            sc_arb_out_1_wr => sc_arb_out(cpu_cnt).wr,
+            sc_arb_out_1_wr_data => sc_arb_out(cpu_cnt).wr_data,
+            sc_arb_out_1_atomic => sc_arb_out(cpu_cnt).atomic,
+            sc_arb_out_1_address => sc_arb_out(cpu_cnt).address,
+            sc_arb_in_1_rd_data => sc_arb_in(cpu_cnt).rd_data,
             sc_arb_in_1_rdy_cnt => rdyc1,
             sc_mem_out_rd => sc_mem_out.rd,
             sc_mem_out_wr => sc_mem_out.wr,
@@ -298,19 +298,21 @@ dbg : if ( debugger ) generate
             dc_out => dc_in ) ;
 
     rdyc0 <= std_logic_vector ( sc_arb_in(0).rdy_cnt ) ;
-    rdyc1 <= std_logic_vector ( sc_arb_in(1).rdy_cnt ) ;
+    rdyc1 <= std_logic_vector ( sc_arb_in(cpu_cnt).rdy_cnt ) ;
     rdyc2 <= std_logic_vector ( sc_mem_in.rdy_cnt ) ;
 
-    process ( break_command,
+    process ( break_command,sc_arb_in,
             cc_wr, cc_rdy, start, sc_arb_out ) is
     begin
         case break_command is
         when "000" => breakpoint <= sc_arb_out(0).rd;
         when "001" => breakpoint <= sc_arb_out(0).wr;
-        when "010" => breakpoint <= sc_arb_out(1).rd;
-        when "011" => breakpoint <= sc_arb_out(1).wr;
+        when "010" => breakpoint <= sc_arb_out(cpu_cnt).rd;
+        when "011" => breakpoint <= sc_arb_out(cpu_cnt).wr;
         when "100" => breakpoint <= sc_arb_out(0).rd or sc_arb_out(0).wr 
                         or ( not sc_arb_in(0).rdy_cnt(0) ) ;
+        when "101" => breakpoint <= cc_wr(0) ;
+        when "110" => breakpoint <= running;
         when others => breakpoint <= '0';
         end case;
     end process;
@@ -335,10 +337,17 @@ begin
 	end if;
 end process;
 
-    cp1 : entity test_cp
+    cp1 : entity mac_coprocessor
         port map (
                 clk => clk_int,
                 reset => int_res,
+
+                start => start,
+                busy => busy,
+                grab => grab,
+                running => running,
+                reading => reading,
+                terminal => terminal,
 
                 sc_mem_out => sc_arb_out(cpu_cnt), 
                 sc_mem_in => sc_arb_in(cpu_cnt),
@@ -375,7 +384,7 @@ end process;
 	cmp_arbiter: entity work.arbiter
 		generic map(
 			addr_bits => SC_ADDR_SIZE,
-			cpu_cnt => cpu_cnt + coproc_cnt
+			cpu_cnt => master_cnt
 		)
 		port map(clk_int, int_res,
 			sc_arb_out, sc_arb_in,
