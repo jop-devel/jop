@@ -43,7 +43,7 @@ architecture cp of mac_coprocessor is
     signal size                     : std_logic_vector ( 31 downto 0 );
     signal pointer_1                : std_logic_vector ( 23 downto 0 );
     signal pointer_2                : std_logic_vector ( 23 downto 0 );
-    signal address_register         : std_logic_vector ( 23 downto 0 );
+    signal address                  : std_logic_vector ( 23 downto 0 );
     signal mult_busy_0              : std_logic;
     signal mult_busy_1              : std_logic;
     signal mult_busy_2              : std_logic;
@@ -61,7 +61,13 @@ architecture cp of mac_coprocessor is
     signal capture_2, mult_busy     : std_logic;
     signal mem_ready                : std_logic;
 
-    type State_Type is ( STANDBY, MAC_1, MAC_2, MAC_3, MAC_4 ) ;
+    signal ready_count              : integer range 0 to 3;
+    signal pipeline_ready           : std_logic;
+    signal pipeline_ready_1         : std_logic;
+    signal pipeline_ready_2         : std_logic;
+    signal data_ready               : std_logic;
+
+    type State_Type is ( STANDBY, MAC_1, MAC_1A, MAC_2, MAC_3, MAC_4 ) ;
 
     signal state                    : State_Type;
 
@@ -86,6 +92,7 @@ begin
             cc_in_wr => cc_in_wr,
             cc_in_rdy => cc_in_rdy);
     
+    -- Registered part of state machine
     process ( clk , reset ) is
     begin
         if ( reset = '1' )
@@ -93,16 +100,15 @@ begin
             size <= ( others => '0' ) ;
             pointer_1 <= ( others => '0' ) ;
             pointer_2 <= ( others => '0' ) ;
-            address_register <= ( others => '0' ) ;
+            pipeline_ready_2 <= '0';
+            pipeline_ready_1 <= '0';
             state <= STANDBY;
             
         elsif ( clk = '1' )
         and ( clk'event )
         then
-            clear <= '0';
-            read <= '0';
-            capture_1 <= '0';
-            capture_2 <= '0';
+            pipeline_ready_2 <= pipeline_ready_1;
+            pipeline_ready_1 <= pipeline_ready;
 
             case state is
             when STANDBY =>
@@ -115,38 +121,43 @@ begin
                 end if;
                 
             when MAC_1 =>
-                address_register <= pointer_1;
+                -- Start transaction 0
                 pointer_1 <= pointer_1 + 1;
-                clear <= '1';
-                read <= '1';
+                state <= MAC_2;
+
+            when MAC_1A =>
+                -- Additional delay cycle - wait for memory
+                -- to receive read command.
                 state <= MAC_2;
 
             when MAC_2 =>
-                if ( mem_ready = '1' )
+                if ( pipeline_ready = '1' )
                 then
-                    address_register <= pointer_2;
+                    -- Start transaction N
                     pointer_2 <= pointer_2 + 1;
-                    size <= size - 1;
-                    capture_1 <= '1';
-                    read <= '1';
-                    state <= MAC_3;
                 end if;
-
-            when MAC_3 =>
-                if ( mem_ready = '1' )
+                if ( data_ready = '1' )
                 then
-                    address_register <= pointer_1;
+                    -- End transaction N-1
+                    state <= MAC_3 ;
+                end if;
+            when MAC_3 =>
+                if ( pipeline_ready = '1' )
+                then
+                    -- Start transaction N+1
                     pointer_1 <= pointer_1 + 1;
-                    capture_2 <= '1';
+                end if;
+                if ( data_ready = '1' )
+                then
+                    -- End transaction N
                     if ( conv_integer ( size ) = 0 )
                     then
                         state <= MAC_4;
                     else
-                        read <= '1';
                         state <= MAC_2;
+                        size <= size - 1;
                     end if;
                 end if;
-
             when MAC_4 =>
                 if ( mult_busy = '0' )
                 then
@@ -156,9 +167,60 @@ begin
         end if;
     end process;
 
-    method_mac1_running <= '1' when state /= STANDBY else '0';
-    method_mac1_return <= total;
+    -- Combinatorial part of state machine
+    process ( state, pointer_1, pointer_2,
+            pipeline_ready, data_ready ) is
+    begin
+        clear <= '0';
+        read <= '0';
+        capture_1 <= '0';
+        capture_2 <= '0';
+        address <= pointer_1;
 
+        case state is
+        when STANDBY|MAC_4|MAC_1A =>
+            null;
+
+        when MAC_1 =>
+            -- Begin transaction 0
+            address <= pointer_1;
+            clear <= '1';
+            read <= '1';
+
+        when MAC_2 =>
+            -- End transaction N-1, start N
+            address <= pointer_2;
+            capture_1 <= data_ready;
+            read <= pipeline_ready;
+
+        when MAC_3 =>
+            -- End transaction N, start N+1
+            address <= pointer_1;
+            capture_2 <= data_ready;
+            read <= pipeline_ready;
+        end case ;
+    end process;
+
+    -- Ready signal generator
+    process ( state, ready_count, pipeline_ready_2 ) is
+    begin
+        data_ready <= pipeline_ready_2;
+        pipeline_ready <= '0';
+        if ( state /= MAC_2 ) and ( state /= MAC_3 )
+        then
+            pipeline_ready <= '0' ;
+            data_ready <= '0';
+        elsif ( ready_count = 1 )
+        then
+            pipeline_ready <= '1' ;
+        elsif ( ready_count = 0 )
+        then
+            pipeline_ready <= '1' ;
+            data_ready <= '1';
+        end if;
+    end process;
+
+    -- MAC unit
     process ( clk , reset ) is
     begin
         if ( reset = '1' )
@@ -201,24 +263,26 @@ begin
     mult_busy <= capture_2 or mult_busy_0 or mult_busy_1 or
                         mult_busy_2 or mult_busy_3 or
                         mult_busy_4 or mult_busy_5;
-    mem_ready <= '1' when (( sc_mem_in.rdy_cnt(1) = '0' )
-                and ( sc_mem_in.rdy_cnt(0) = '0' )
-                and ( read = '0' )) else '0';
+
+    method_mac1_running <= '1' when state /= STANDBY else '0';
+    method_mac1_return <= total;
+    ready_count <= conv_integer ( std_logic_vector ( sc_mem_in.rdy_cnt ) ) ;
 
     sc_mem_out.rd <= read;
     sc_mem_out.wr <= '0';
-    sc_mem_out.wr_data <= ( others => '0' );
+    sc_mem_out.wr_data <= total; -- ( others => '0' );
     sc_mem_out.atomic <= '0' ;
 
-    process ( address_register ) is
+    process ( address ) is
     begin
         sc_mem_out.address <= ( others => '0' ) ;
-        sc_mem_out.address <= address_register ( SC_ADDR_SIZE - 1 downto 0 );
+        sc_mem_out.address <= address ( SC_ADDR_SIZE - 1 downto 0 );
     end process ;
 
-    grab <= capture_1 or capture_2;
+    grab <= capture_1;
+    busy <= capture_2;
+
     start <= method_mac1_start;
-    busy <= mult_busy;
     running <= method_mac1_running;
     terminal <= '1' when ( state = MAC_4 ) else '0' ;
     reading <= '1' when ( state = MAC_2 ) or ( state = MAC_3 ) else '0' ;
