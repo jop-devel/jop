@@ -170,13 +170,17 @@
 
 
 \newcommand{\codefoot}{\textsf}
-\newcommand{\code}[1]{{\javatext#1}} % for LaTeX
+\newcommand{\code}[1]{{\javatext#1}}
+\newcommand{\codeb}[1]{{\javattb#1}}
 %\newcommand{\cmd}[1]{{\texttt{#1}}}
 %\newcommand{\dirent}[1]{{\texttt{#1}}}
 %\newcommand{\menuitem}[1]{\textsf{\textbf{#1}}}
-\newcommand{\cmd}[1]{{\code{#1}}}
+\newcommand{\cmd}[1]{{\code{#1}}\index{#1}}
+\newcommand{\cmdb}[1]{{\textsf{\textbf{#1}}}\index{#1}}
 \newcommand{\dirent}[1]{{\code{#1}}}
 \newcommand{\menuitem}[1]{\textsf{\textsl{#1}}}
+
+\newcommand{\idx}[1]{#1\index{#1}}
 
 % for flow.tex - part of index helper
 \newcommand{\eei}[1]{%
