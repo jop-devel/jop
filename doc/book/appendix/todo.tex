@@ -2,9 +2,9 @@
 
 Start 130h counting down from 14.9.2008
 
-Count: 86.5h 1.6. interrupt handler, SimpCon
+Count: 84h 5.6. corrections from other green book
 
-2.6. 14:15-
+
 
 1.6. SimpCon 17 pages corrected in 2 hours
 
@@ -22,13 +22,13 @@ pages in 2 hours
 \section{TODO Handbook}
 
 \begin{itemize}
-    \item redraw Figure 4.3
   \item Green book corrections of
   \begin{itemize}
     \item Chapter~10
     \item Chapter~11
     \item Chapter~12
   \end{itemize}
+  \item Chapter order? WCET before RTGC?
     \item Figure PDF check (Done in Runtime, RTGC, WCET,
         Low-level IO, SimpCon)
 
@@ -203,6 +203,7 @@ Copy stuff from JSA paper. However, only paragraphs to avoid
         scheduler
     \item First JHAL text + removed text
     \item At the end of I/O the legacy Native stuff
+    \item redraw Figure 4.3
 
 
   \end{itemize}
@@ -237,9 +238,14 @@ Copy stuff from JSA paper. However, only paragraphs to avoid
     \item Joptimizer
     \item WCA
   \end{itemize}
-  \item Better scheduler description, redo
-      Figure~\ref{fig_arch_rt_user_interaction}, show code from
-      RtThread, scheduler code, and also CMP scheduling
+  \item Better scheduler description
+\begin{itemize}
+  \item Explain implicit context store on the stack -- it was
+      a major insigt
+  \item redo Figure~\ref{fig_arch_rt_user_interaction}
+  \item show code from RtThread
+  \item scheduler code, and also CMP scheduling
+\end{itemize}
   \item Add GC object copy unit description to the GC section
   \item Use new JTRES/TECS results in the GC evaluation section
   \item References are missing in further reading section on RTGC

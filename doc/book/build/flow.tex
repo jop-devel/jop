@@ -1,7 +1,7 @@
 
-This section describes the design flow for JOP --- how to build the
-Java processor and a Java application from scratch (the VHDL and
-Java sources) and download the processor to an FPGA and the Java
+This chapter describes the design flow for JOP --- how to build the
+Java processor and a Java application from scratch (the VHDL and Java
+sources) and download the processor to an FPGA and the Java
 application to the processor.
 
 
@@ -10,9 +10,9 @@ application to the processor.
 JOP \cite{jop:thesis}, the Java optimized processor, is an
 open-source development platform available for different targets
 (Altera and Xilinx FPGAs and various types of FPGA boards). To
-support several targets, the design-flow is a little bit complicated.
-There is a \code{Makefile} available and when everything is set up
-correctly, a simple
+support several targets, the resulting design-flow is a little bit
+complicated. There is a \code{Makefile} available and when everything
+is set up correctly, a simple
 %
 \begin{lstlisting}
     make
@@ -374,19 +374,20 @@ checked in into the repository. The sources can be found in directory
 \dirent{c\_src}.
 
 \begin{description}
-    \item[\eei{down.exe}] The workhorse to download Java programs. The
-    mandatory argument is the COM-port. Optional switch \code{-e}
-    keeps the program running after the download and echoes the
-    characters from the serial line (\code{System.out} in JOP) to
-    stdout. Switch \code{-usb} disables the echo protocol to speed up the
-    download over USB.
-    \item[\eei{e.exe}] Echoes the characters from the serial line
-        to stdout. Parameter is the COM-port.
-    \item[\eei{amd.exe}] A utility to send data over the serial
+    \item[\cmdb{down.exe}] The workhorse to download Java
+        programs. The mandatory argument is the COM-port.
+        Optional switch \code{-e} keeps the program running after
+        the download and echoes the characters from the serial
+        line (\code{System.out} in JOP) to stdout. Switch
+        \code{-usb} disables the echo protocol to speed up the
+        download over USB.
+    \item[\cmdb{e.exe}] Echoes the characters from the serial
+        line to stdout. Parameter is the COM-port.
+    \item[\cmdb{amd.exe}] A utility to send data over the serial
         line to program the on-board Flash. The complementary
         Java program \code{util.Mem} must be running on JOP.
-    \item[\eei{USBRunner.exe}] Download the FPGA configuration via
-    USB with the FTDI2232C chip (dpsio board).
+    \item[\cmdb{USBRunner.exe}] Download the FPGA configuration
+        via USB with the FTDI2232C chip (dpsio board).
 \end{description}
 
 \subsubsection{Generation of Files}
@@ -397,14 +398,17 @@ files are in \code{jop-tools.jar} in directory
 \dirent{java/tools/dist/lib}.
 
 \begin{description}
-    \item[\eei{Jopa}] The JOP assembler. Assembles the microcoded
-    JVM and produces on-chip memory initialization files and VHDL
-    files.
-    \item[\eei{BlockGen}] converts Altera memory initialization
+    \item[\cmdb{Jopa}] The JOP assembler. Assembles the
+        microcoded JVM and produces on-chip memory initialization
+        files and VHDL files.
+    \item[\cmdb{BlockGen}] converts Altera memory initialization
         files to VHDL files for a Xilinx FPGA.
-    \item[\eei{JOPizer}] links a Java application and converts the
-    class information to the format that JOP expects (a \code{.jop} file).
-    \cmd{JOPizer} uses the bytecode engineering library\footnote{\url{http://jakarta.apache.org/bcel/}} (BCEL).
+    \item[\cmdb{JOPizer}] links a Java application and converts
+        the class information to the format that JOP expects (a
+        \code{.jop} file). \cmd{JOPizer} uses the bytecode
+        engineering
+        library\footnote{\url{http://jakarta.apache.org/bcel/}}
+        (BCEL).
 
 \end{description}
 
@@ -412,12 +416,12 @@ files are in \code{jop-tools.jar} in directory
 
 \index{simulation!JopSim}
 \begin{description}
-    \item[\eei{JopSim}] reads a \code{.jop} file and executes it in
-    a debug JVM written in Java. Command line option
-    \code{-Dlog="true"} prints a log entry for each executed JVM
-    bytecode.
-    \item[\eei{pcsim}] simulates the BaseIO expansion board for Java
-    debugging on a PC (using the JVM on the PC).
+    \item[\cmdb{JopSim}] reads a \code{.jop} file and executes it
+        in a debug JVM written in Java. Command line option
+        \code{-Dlog="true"} prints a log entry for each executed
+        JVM bytecode.
+    \item[\cmdb{pcsim}] simulates the BaseIO expansion board for
+        Java debugging on a PC (using the JVM on the PC).
 \end{description}
 
 \subsection{Targets}
@@ -807,6 +811,8 @@ Internet at the following places:
 
 \section{Porting JOP}
 
+\index{JOP porting}
+
 Porting JOP to a different FPGA platform or board usually consists
 of adapting pin definitions and selection of the correct memory
 interface. Memory interfaces for the SimpCon interconnect can be
@@ -831,6 +837,8 @@ targets \cmd{jop\_blink\_test} and \cmd{jop\_testmon}.
 
 \subsubsection{Blinking LED and UART output}
 
+\index{UART test}
+
 The test is built with:
 %
 \begin{lstlisting}
@@ -842,6 +850,8 @@ out 0 and 1 on the serial line. Use a terminal program or the utility
 \cmd{e.exe} to check the output from the serial line.
 
 \subsubsection{Test Monitor}
+
+\index{memory test}
 
 Start a terminal program (e.g. HyperTerm) to communicate with the
 monitor program and build the test monitor with:
@@ -986,11 +996,15 @@ in several files.
 
 \subsubsection{Speed Configuration}
 
+\index{clock frequency}
+
 By default, JOP is configured for 80 Mhz. To build the 100 MHz
 configuration, edit \code{quartus/cycmin/jop.qsf} and change
 \code{jop\_config\_80} to \code{jop\_config\_100}.
 
 \subsubsection{Method Cache Configuration}
+
+\index{cache!configuration}
 
 The default configuration (for the Altera Cyclone) is a 4~KB method
 cache configured with 16 blocks (i.e., a variable block cache). For
@@ -1022,6 +1036,8 @@ simulate a dual block cache, \code{block\_bits} has to be set to 1.
 force a miss at the cache lookup.)
 
 \subsubsection{Stack Size}
+
+\index{stack!size}
 
 The on-chip stack size can be configured by changing following
 constants:
