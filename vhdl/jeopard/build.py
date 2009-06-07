@@ -323,9 +323,10 @@ class Method:
         int msg = 0x%(msg)x;
         int mask = 0x%(mask)x;
         int msg_masked = msg & mask;
+        int addr = Const.IO_BASE + 0x30;
         while (( reply_masked != msg_masked )%(cond)s) {
-            control_channel.data = msg;
-            %(out_var)s = control_channel.data;
+            Native.wrMem ( msg , addr ) ;
+            %(out_var)s = Native.rdMem ( addr ) ;
             reply_masked = %(out_var)s & mask;
         }
         %(out_var)s &= 0xffff;
@@ -365,7 +366,12 @@ class Coprocessor:
         for method in self.method_list:
             out.append(method.generateJava())
         out.append(JAVA_BODY)
-        out.append("public %s () {\n" % self.name)
+        out.append("public final static %s INSTANCE = new %s () ;\n" % (
+                      self.name, self.name))
+        out.append("public static %s getInstance () {\n" % self.name)
+        out.append("return %s.INSTANCE;\n" % self.name)
+        out.append("}\n")
+        out.append("protected %s () {\n" % self.name)
         out.append("JeopardIOFactory factory = "
                 "JeopardIOFactory.getJeopardIOFactory();\n")
         out.append("control_channel = factory.getControlPort();\n")
@@ -531,11 +537,11 @@ package test;
 import com.jopdesign.io.ControlChannel;
 import com.jopdesign.io.JeopardIOFactory;
 import com.jopdesign.sys.Native;
+import com.jopdesign.sys.Const;
 """
 
 JAVA_BODY = """
     private ControlChannel control_channel ;
-
 
 """
 
