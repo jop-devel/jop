@@ -1,4 +1,4 @@
-
+JAVA ../../java/target/src/test/test
 
 COPROCESSOR test_cp
 METHOD test01

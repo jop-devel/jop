@@ -31,7 +31,7 @@ public class MacTestHW {
 		measure();
 	}
 
-  public static final int mac_size = 10000 ;
+  public static final int mac_size = 10001 ;
   public static int [] array1 ;
   public static int [] array2 ;
   public static int expect ;
