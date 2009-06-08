@@ -1,10 +1,12 @@
-
+JAVA ../../java/target/src/test/test
+PACKAGE test
 
 COPROCESSOR mac_coprocessor
 METHOD mac1
 PARAMETER size int
 PARAMETER alpha int[]
 PARAMETER beta int[]
+ITERATIONS 10000 
+COST 6
 RETURN int
-
 

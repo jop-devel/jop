@@ -9,7 +9,6 @@
 \begin{document}
 
 
-
 \frontmatter \pagestyle{empty}
 
 \input{intro/frontmatter}
@@ -71,7 +70,7 @@
     \input{runtime/rt_intro}
     \input{runtime/rt_profile}
 % rename to scheduler and describe it
-    \input{runtime/rt_user}
+%    \input{runtime/rt_user}
 % rewrite scjava
     \input{runtime/scjava}
 \clearpage
@@ -92,11 +91,12 @@
 
 \chapter{The SimpCon Interconnect}
 \label{chap:simpcon}
-\newcommand{\scgrsc}{.65}
+\newcommand{\scgrsc}{0.72}
 \newcommand{\scgrp}{simpcon}
 \hyphenation{SimpCon}
 \input{simpcon/simpcon_intro}
 \input{simpcon/simpcon_text}
+\input{simpcon/simpcon_outro}
 
 \chapter{Chip Multiprocessing}
 \label{chap:cmp}
@@ -112,7 +112,7 @@
 %\label{chap:ongoing}
 %    \input{ongoing/interrupt}
 
-\chapter{Results}
+\chapter{Evaluation}
 %\emph{Copy some stuff from the thesis (and JSA). Change this chapter
 %to new form... Update with actual numbers!}
 
@@ -129,7 +129,6 @@
 
 \chapter{Summary}
 \label{chap:conclusions}
-
     \input{outro/outro}
 
 
@@ -165,8 +164,9 @@
 %\input{test/test}
 
 
-\chapter{Cyclone FPGA Board} \label{appx:cycore}
-\input{appendix/cycore}
+\chapter{Printed Circuit Boards} \label{appx:boards}
+\input{appendix/boards}
+
 
 %\input{classes/classes}
 

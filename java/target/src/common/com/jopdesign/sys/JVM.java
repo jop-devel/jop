@@ -23,9 +23,7 @@ package com.jopdesign.sys;
 class JVM {
 
 	private static void f_nop() { JVMHelp.noim(); /* jvm.asm */ }
-	private static int f_aconst_null() { 
-		return 0;
-	}
+	private static void f_aconst_null() { JVMHelp.noim(); /* jvm.asm */ }
 	private static void f_iconst_m1() { JVMHelp.noim(); /* jvm.asm */ }
 	private static void f_iconst_0() { JVMHelp.noim(); /* jvm.asm */ }
 	private static void f_iconst_1() { JVMHelp.noim(); /* jvm.asm */ }
@@ -35,17 +33,17 @@ class JVM {
 	private static void f_iconst_5() { JVMHelp.noim(); /* jvm.asm */ }
 	private static void f_lconst_0() { JVMHelp.noim(); /* jvm_long.inc */ }
 	private static void f_lconst_1() { JVMHelp.noim(); /* jvm_long.inc */ }
-	private static int f_fconst_0() { 
-		return 0;
-	}
+	private static void f_fconst_0() { JVMHelp.noim(); /* jvm.asm */ }
 	private static int f_fconst_1() { 
 		return 0x3f800000;
 	}
 	private static int f_fconst_2() { 
 		return 0x40000000;
 	}
-	private static void f_dconst_0() { JVMHelp.noim();}
-	private static void f_dconst_1() { JVMHelp.noim();}
+	private static void f_dconst_0() { JVMHelp.noim(); /* jvm_long.inc */ }
+	private static long f_dconst_1() {
+	   return 0x3ff0000000000000L;
+  }
 	private static void f_bipush() { JVMHelp.noim(); /* jvm.asm */ }
 	private static void f_sipush() { JVMHelp.noim(); /* jvm.asm */ }
 	private static void f_ldc() { JVMHelp.noim(); /* jvm.asm */ }
@@ -77,13 +75,13 @@ class JVM {
 	private static void f_aload_2() { JVMHelp.noim(); /* jvm.asm */ }
 	private static void f_aload_3() { JVMHelp.noim(); /* jvm.asm */ }
 	private static void f_iaload() { JVMHelp.noim(); /* jvm.asm */ }
-	private static void f_laload() { JVMHelp.noim(); /* jvm.asm */}
-	private static void f_faload() { JVMHelp.noim();}
-	private static void f_daload() { JVMHelp.noim();}
-	private static void f_aaload() { JVMHelp.noim();}
-	private static void f_baload() { JVMHelp.noim();}
-	private static void f_caload() { JVMHelp.noim();}
-	private static void f_saload() { JVMHelp.noim();}
+	private static void f_laload() { JVMHelp.noim(); /* jvm_long.inc */ }
+	private static void f_faload() { JVMHelp.noim(); /* jvm.asm */ }
+	private static void f_daload() { JVMHelp.noim(); /* jvm_long.inc */ }
+	private static void f_aaload() { JVMHelp.noim(); /* jvm.asm */ }
+	private static void f_baload() { JVMHelp.noim(); /* jvm.asm */ }
+	private static void f_caload() { JVMHelp.noim(); /* jvm.asm */ }
+	private static void f_saload() { JVMHelp.noim(); /* jvm.asm */ }
 	private static void f_istore() { JVMHelp.noim(); /* jvm.asm */ }
 	private static void f_lstore() { JVMHelp.noim(); /* jvm_long.inc */ }
 	private static void f_fstore() { JVMHelp.noim();}
@@ -110,9 +108,9 @@ class JVM {
 	private static void f_astore_2() { JVMHelp.noim(); /* jvm.asm */ }
 	private static void f_astore_3() { JVMHelp.noim(); /* jvm.asm */ }
 	private static void f_iastore() { JVMHelp.noim(); /* jvm.asm */ }
-	private static void f_lastore() { JVMHelp.noim(); /* jvm.asm */ }
-	private static void f_fastore() { JVMHelp.noim();}
-	private static void f_dastore() { JVMHelp.noim();}
+	private static void f_lastore() { JVMHelp.noim(); /* jvm_long.inc */ }
+	private static void f_fastore() { JVMHelp.noim(); /* jvm.asm */ }
+	private static void f_dastore() { JVMHelp.noim(); /* jvm_long.inc */ }
 	private static void f_aastore(int ref, int index, int value) {
 			
 		synchronized (GC.mutex) {
@@ -154,20 +152,46 @@ class JVM {
 		return Native.makeLong(ah+bh+carry, al+bl);
 	}
 	private static int f_fadd(int a, int b) {
-
-		return SoftFloat.float32_add(a, b);
+		if (Const.SUPPORT_FLOAT) {
+			return SoftFloat32.float_add(a, b);
+		} else {
+			JVMHelp.noim();
+			return 0;
+		}
 	}
-	private static void f_dadd() { JVMHelp.noim();}
+	private static long f_dadd(long a, long b) {
+		if (Const.SUPPORT_DOUBLE) {
+			return SoftFloat64.double_add(a, b);
+		} else {
+			JVMHelp.noim();
+			return 0;
+		}
+	}
 	private static void f_isub() { JVMHelp.noim(); /* jvm.asm */ }
+
 	private static long f_lsub(long a, long b) {
 
-		return a+(~b)+1;
+		return a + (~b) + 1;
 	}
-	private static int f_fsub(int a, int b) {
 
-		return SoftFloat.float32_sub(a, b);
+	private static int f_fsub(int a, int b) {
+		if (Const.SUPPORT_FLOAT) {
+			return SoftFloat32.float_sub(a, b);
+		} else {
+			JVMHelp.noim();
+			return 0;
+		}
 	}
-	private static void f_dsub() { JVMHelp.noim();}
+
+	private static long f_dsub( long a, long b) {
+		if (Const.SUPPORT_DOUBLE) {
+			return SoftFloat64.double_sub(a, b);
+		} else {
+			JVMHelp.noim();
+			return 0;
+		}
+	}
+
 	private static void f_imul() { JVMHelp.noim(); /* jvm.asm */ }
 	private static long f_lmul(long a, long b) {
 		
@@ -202,11 +226,24 @@ class JVM {
 		if(!positive) res = -res;
 		return res;
 	}
-	private static int f_fmul(int a, int b) {
 
-		return SoftFloat.float32_mul(a, b);
+	private static int f_fmul(int a, int b) {
+		if (Const.SUPPORT_FLOAT) {
+			return SoftFloat32.float_mul(a, b);
+		} else {
+			JVMHelp.noim();
+			return 0;
+		}
 	}
-	private static void f_dmul() { JVMHelp.noim();}
+
+	private static long f_dmul(long a, long b) {
+		if (Const.SUPPORT_DOUBLE) {
+			return SoftFloat64.double_mul(a, b);
+		} else {
+			JVMHelp.noim();
+			return 0;
+		}
+	}
 
 	private static int f_idiv(int a, int b) { 
 
@@ -302,10 +339,22 @@ class JVM {
 	}
 	
 	private static int f_fdiv(int a, int b) {
-
-		return SoftFloat.float32_div(a, b);
+		if (Const.SUPPORT_FLOAT) {
+			return SoftFloat32.float_div(a, b);
+		} else {
+			JVMHelp.noim();
+			return 0;
+		}
 	}
-	private static void f_ddiv() { JVMHelp.noim();}
+
+	private static long f_ddiv(long a, long b) {
+		if (Const.SUPPORT_DOUBLE) {
+			return SoftFloat64.double_div(a, b);
+		} else {
+			JVMHelp.noim();
+			return 0;
+		}
+	}
 
 	private static int f_irem(int a, int b) {
 
@@ -346,8 +395,6 @@ class JVM {
 		}
 		return r;
 	}
-
-
 
 	private static long f_lrem(long a, long b) {
 
@@ -390,21 +437,35 @@ class JVM {
 		}
 		return r;
 	}
-	private static int f_frem(int a, int b) {
 
-		return SoftFloat.float32_rem(a, b);
+	private static int f_frem(int a, int b) {
+		if (Const.SUPPORT_FLOAT) {
+			return SoftFloat32.float_rem(a, b);
+		} else {
+			JVMHelp.noim();
+			return 0;
+		}
 	}
-	private static void f_drem() { JVMHelp.noim();}
+
+	private static long f_drem(long a, long b) {
+		if (Const.SUPPORT_DOUBLE) {
+			return SoftFloat64.double_rem(a, b);
+		} else {
+			JVMHelp.noim();
+			return 0;
+		}
+	}
+
 	private static void f_ineg() { JVMHelp.noim(); /* jvm.asm */ }
 	private static long f_lneg(long a) {
-
 		return ~a+1;
 	}
 	private static int f_fneg(int a) { 
-
-                return a ^ 0x80000000;
+		return a ^ 0x80000000;
 	}
-	private static void f_dneg() { JVMHelp.noim();}
+	private static long f_dneg(long a) {
+		return a ^ 0x8000000000000000L;
+	}
 	private static void f_ishl() { JVMHelp.noim(); /* jvm.asm */ }
 	private static long f_lshl(int ah, int al, int cnt) { 
 		
@@ -476,32 +537,94 @@ class JVM {
 	}
 	private static void f_iinc() { JVMHelp.noim(); /* jvm.asm */ }
 	private static long f_i2l(int a) {
-
 		return Native.makeLong(a>>31, a);
 	}
 	private static int f_i2f(int a) {
-
-		return SoftFloat.int32_to_float32(a);
+		if (Const.SUPPORT_FLOAT) {
+			return SoftFloat32.intToFloat(a);
+		} else {
+			JVMHelp.noim();
+			return 0;
+		}
 	}
-	private static void f_i2d() { JVMHelp.noim();}
+	private static long f_i2d(int a) {
+		if (Const.SUPPORT_DOUBLE) {
+			return SoftFloat64.intToDouble(a);
+		} else {
+			JVMHelp.noim();
+			return 0;
+		}
+	}
 	private static void f_l2i() { JVMHelp.noim(); /* jvm_long.inc */}
-	private static void f_l2f() { JVMHelp.noim();}
-	private static void f_l2d() { JVMHelp.noim();}
-	private static int f_f2i(int a) {
-
-		return SoftFloat.float32_to_int32_round_to_zero(a);
+	private static int f_l2f(long a) {
+		if (Const.SUPPORT_FLOAT) {
+			return SoftFloat32.longToFloat(a);
+		} else {
+			JVMHelp.noim();
+			return 0;
+		}
 	}
-	private static void f_f2l() { JVMHelp.noim();}
-	private static void f_f2d() { JVMHelp.noim();}
-	private static void f_d2i() { JVMHelp.noim();}
-	private static void f_d2l() { JVMHelp.noim();}
-	private static void f_d2f() { JVMHelp.noim();}
+	private static long f_l2d(long a) {
+		if (Const.SUPPORT_DOUBLE) {
+			return SoftFloat64.longToDouble(a);
+		} else {
+			JVMHelp.noim();
+			return 0;
+		}
+	}
+	private static int f_f2i(int a) {
+		if (Const.SUPPORT_FLOAT) {
+			return SoftFloat32.intValue(a);
+		} else {
+			JVMHelp.noim();
+			return 0;
+		}
+	}
+	private static long f_f2l(int a) {
+		if (Const.SUPPORT_FLOAT) {
+			return SoftFloat32.longValue(a);
+		} else {
+			JVMHelp.noim();
+			return 0;
+		}
+	}
+	private static long f_f2d(int f) {
+		if (Const.SUPPORT_DOUBLE) {
+			return SoftFloat64.floatToDouble(f);
+		} else {
+			JVMHelp.noim();
+			return 0;
+		}
+	}
+	private static int f_d2i(long d) {
+		if (Const.SUPPORT_DOUBLE) {
+			return SoftFloat64.intValue(d);
+		} else {
+			JVMHelp.noim();
+			return 0;
+		}
+	}
+	private static long f_d2l(long d) {
+		if (Const.SUPPORT_DOUBLE) {
+			return SoftFloat64.longValue(d);
+		} else {
+			JVMHelp.noim();
+			return 0;
+		}
+	}
+	private static int f_d2f(long d) {
+		if (Const.SUPPORT_FLOAT) {
+			return SoftFloat32.doubleToFloat(d);
+		} else {
+			JVMHelp.noim();
+			return 0;
+		}
+	}
 
 // i2x should be done in jvm.asm!!!
 // just to lazy and stay compatible with OEBB project
 
 	private static int f_i2b(int a) {
-
 		a &= 0xff;
 		if ((a & 0x80)!=0) {
 			a |= 0xffffff00;
@@ -518,6 +641,7 @@ class JVM {
 		}
 		return a;
 	}
+
 	private static int f_lcmp(int ah, int al, int bh, int bl) {
 
 		//overflow, underflow, if a and b have different signs
@@ -537,16 +661,43 @@ class JVM {
 			return -1;
 		}
 	}
+
 	private static int f_fcmpl(int a, int b) {
-
-		return SoftFloat.float32_cmpl(a, b);
+		if (Const.SUPPORT_FLOAT) {
+			return SoftFloat32.float_cmpl(a, b);
+		} else {
+			JVMHelp.noim();
+			return 0;
+		}
 	}
+
 	private static int f_fcmpg(int a, int b) {
-
-		return SoftFloat.float32_cmpg(a, b);
+		if (Const.SUPPORT_FLOAT) {
+			return SoftFloat32.float_cmpg(a, b);
+		} else {
+			JVMHelp.noim();
+			return 0;
+		}
 	}
-	private static void f_dcmpl() { JVMHelp.noim();}
-	private static void f_dcmpg() { JVMHelp.noim();}
+
+	private static int f_dcmpl(long a, long b) {
+		if (Const.SUPPORT_DOUBLE) {
+			return SoftFloat64.double_cmpl(a, b);
+		} else {
+			JVMHelp.noim();
+			return 0;
+		}
+	}
+
+	private static int f_dcmpg(long a, long b) {
+		if (Const.SUPPORT_DOUBLE) {
+			return SoftFloat64.double_cmpg(a, b);
+		} else {
+			JVMHelp.noim();
+			return 0;
+		}
+	}
+
 	private static void f_ifeq() { JVMHelp.noim(); /* jvm.asm */ }
 	private static void f_ifne() { JVMHelp.noim(); /* jvm.asm */ }
 	private static void f_iflt() { JVMHelp.noim(); /* jvm.asm */ }

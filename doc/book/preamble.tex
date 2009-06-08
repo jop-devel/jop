@@ -115,19 +115,16 @@
 \newcommand{\javatext}{\javatt}
 
 \newcommand{\picscale}{1}
-\newcommand{\excelwidth}{10cm}
+\newcommand{\excelwidth}{12cm}
 
 % for SimpCon description
-\newcommand{\sign}[1]{{\texttt{#1}}}
-
-
+\newcommand{\sign}[1]{{\code{#1}}}
 
 % for chapter head without a number
 % \renewcommand{\chaptermark}[1]{\def\myleftmark{#1}}
 % \ihead{\myleftmark} \chead{} \ohead{{\rightmark}}
 
 \setkomafont{captionlabel}{\sffamily\bfseries}
-
 
 \usepackage{latexsym}
 \usepackage{graphicx}
@@ -144,17 +141,20 @@
 %\newfont{\javattb}{plssdc10 scaled 1200}
 % cmss is NOT a tt font....
 
-
 \usepackage{listings}
-\lstset{language=Java,keywordstyle=,
-basicstyle=\javatt,emphstyle=\javattb,commentstyle=\javatti,
-showstringspaces=false,captionpos=b}
+%\lstset{language=Java,keywordstyle=,
+%basicstyle=\small\javatt,emphstyle=\small\javattb,commentstyle=\small\javatti,
+%%basicstyle=\small,
+%%
+%showstringspaces=false,captionpos=b,columns=flexible}
+%%\lstset{basicstyle=\small,language=Java,columns=flexible}
+
+\lstset{basicstyle=\sffamily\small,keywordstyle=\sffamily\small,language=Java,captionpos=b,columns=flexible,showstringspaces=false}
 
 \usepackage{array}
 \usepackage{dcolumn}
 \newcommand{\cc}[1]{\multicolumn{1}{c}{#1}}
 \newcolumntype{d}[1]{D{.}{.}{#1}}
-
 
 \usepackage{capt-of}
 \usepackage[colorlinks=true,urlcolor=black,linkcolor=black,citecolor=black]{hyperref}
@@ -170,13 +170,17 @@ showstringspaces=false,captionpos=b}
 
 
 \newcommand{\codefoot}{\textsf}
-\newcommand{\code}[1]{{\javatext#1}} % for LaTeX
+\newcommand{\code}[1]{{\javatext#1}}
+\newcommand{\codeb}[1]{{\javattb#1}}
 %\newcommand{\cmd}[1]{{\texttt{#1}}}
 %\newcommand{\dirent}[1]{{\texttt{#1}}}
 %\newcommand{\menuitem}[1]{\textsf{\textbf{#1}}}
-\newcommand{\cmd}[1]{{\code{#1}}}
+\newcommand{\cmd}[1]{{\code{#1}}\index{#1}}
+\newcommand{\cmdb}[1]{{\textsf{\textbf{#1}}}\index{#1}}
 \newcommand{\dirent}[1]{{\code{#1}}}
 \newcommand{\menuitem}[1]{\textsf{\textsl{#1}}}
+
+\newcommand{\idx}[1]{#1\index{#1}}
 
 % for flow.tex - part of index helper
 \newcommand{\eei}[1]{%

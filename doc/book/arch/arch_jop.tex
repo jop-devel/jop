@@ -15,8 +15,8 @@ solutions for both areas that are implemented in JOP are presented.
 This section gives an overview of JOP architecture.
 Figure~\ref{fig:arch:jop:block} shows JOP's major function units. A
 typical configuration of JOP contains the processor core, a memory
-interface and a number of IO devices. The module extension provides
-the link between the processor core, and the memory and IO modules.
+interface and a number of I/O devices. The module extension provides
+the link between the processor core, and the memory and I/O modules.
 
 \begin{figure}[t]
     \centering
@@ -29,10 +29,10 @@ the link between the processor core, and the memory and IO modules.
 The processor core contains the three microcode pipeline stages
 \emph{microcode fetch}, \emph{decode} and \emph{execute} and an
 additional translation stage \emph{bytecode fetch}. The ports to the
-other modules are the two top elements of the stack (A and B), input
-to the top-of-stack (Data), bytecode cache address and data, and a
-number of control signals. There is no direct connection between the
-processor core and the external world.
+other modules are the two top elements of the stack (TOS and NOS),
+input to the top-of-stack (Data), bytecode cache address and data,
+and a number of control signals. There is no direct connection
+between the processor core and the external world.
 
 The memory controller implements the simple memory load and store
 operations and the field and array access bytecodes. It also contains
@@ -63,8 +63,8 @@ connect e.g.\ an Ethernet chip.} are connected to the I/O interface.
 The extension module performs two functions: (a) it contains hardware
 accelerators (such as the multiplier unit in this example) and (b)
 the multiplexer for the read data that is loaded into the
-top-of-stack register. The write data from the top-of-stack (A) is
-connected directly to all modules.
+top-of-stack register. The write data from the top-of-stack (TOS) and
+next-of-stack (NOS) are connected directly to all modules.
 
 The division of the processor into those modules greatly simplifies
 the adaptation of JOP for different application domains or hardware
@@ -269,12 +269,12 @@ The operand is loaded from the bytecode RAM, converted to a 32-bit
 word and pushed on the stack with: \code{ld\_opd\_8s},
 \code{ld\_opd\_8u}, \code{ld\_opd\_16s}, \code{ld\_opd\_16u}
 
-    \item[External memory access:]
-The autonomous memory subsystem and the IO subsystem are accessed by
-using the following instructions: \code{stmra}, \code{stmwa},
-\code{stmwd}, \code{wait}, \code{ldmrd}, \code{stbcrd},
-\code{ldbcstart}, \code{stald}, \code{stast}, \code{stgf},
-\code{stpf}, \code{stcp}
+    \item[External memory access:] The autonomous memory
+        subsystem and the I/O subsystem are accessed by using the
+        following instructions: \code{stmra}, \code{stmwa},
+        \code{stmwd}, \code{wait}, \code{ldmrd}, \code{stbcrd},
+        \code{ldbcstart}, \code{stald}, \code{stast},
+        \code{stgf}, \code{stpf}, \code{stcp}
 
     \item[Multiplier:]
 The multiplier is accessed with: \code{stmul}, \code{ldmul}
@@ -496,10 +496,10 @@ read the operands, the program counter is saved in \emph{jpcbr}
 during an instruction fetch. \emph{jinstr} is used to decode the
 branch type and \emph{jpcbr} to calculate the branch target address.
 
-\subsection{JOP Instruction Fetch}
+\subsection{Microcode Instruction Fetch}
 
 The second pipeline stage, as shown in Figure~\ref{fig_arch_fetch},
-fetches JOP instructions from the internal microcode memory and
+fetches microcode instructions from the internal microcode memory and
 executes microcode branches.
 
 \begin{figure}[t]
@@ -618,6 +618,7 @@ stack architecture are described in Section~\ref{sec:stack}.
 
 \subsection{Interrupt Logic}
 \label{sec:interrupt}
+\index{interrupt}
 
 Interrupts and (precise) exceptions are considered hard to implement
 in a pipelined processor \cite{Hennessy02}, meaning implementation

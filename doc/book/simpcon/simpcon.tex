@@ -7,6 +7,10 @@
 
 \usepackage[latin1]{inputenc}
 
+\usepackage{listings}
+\lstset{basicstyle=\sffamily\small,keywordstyle=\sffamily\small,language=Java,captionpos=b,columns=flexible,showstringspaces=false}
+
+
 \newcommand{\code}[1]{{\textsf{#1}}}
 \newcommand{\sign}[1]{{\texttt{#1}}}
 \newcommand{\scgrsc}{.8}
@@ -15,22 +19,55 @@
 
 \begin{document}
 
-\title{SimpCon -- a Simple SoC Interconnect\\Version 1.0}
+\title{SimpCon -- a Simple SoC Interconnect\\Version 1.1}
 \author{Martin Schoeberl\\ martin@jopdesign.com}
 \maketitle \thispagestyle{empty}
 
 \begin{abstract}
-
-This document proposes a simple interconnection standard for
+This document describes a simple interconnection standard for
 system-on-chip (SoC) components. It is intended to provide pipelined
 access to devices such on-chip peripherals and on-chip memory
 controller with minimum hardware resources.
-
-
 \end{abstract}
 
+\subsection*{Versions}
+
+\begin{description}
+  \item[V 1.0] November 13, 2007, Initial version
+  \item[V 1.1] June 1, 2009, Updated version
+  \begin{itemize}
+    \item Typo correction
+    \item Additional signals for cache control
+    \item A simple I/O example
+  \end{itemize}
+\end{description}
 
 \input{simpcon_text}
+
+\section{Summary}
+
+This document describes a simple (with respect to the definition and
+implementation) and efficient SoC interconnect \cite{simpcon}. The
+novel signal \sign{rdy\_cnt} allows an early signalling to the master
+when read data will be valid. This feature allows the master to
+restart a stalled pipeline earlier to react for arriving data.
+Furthermore, this feature also enables pipelined bus transactions
+with a minimal effort on the master and the slave side.
+
+We have compared SimpCon quantitative with AMBA and Avalon, two
+common interconnection definitions. The application benchmark shows a
+performance advantage of SimpCon by 17\% over AMBA and 19\% over
+Avalon interfaces to an SRAM.
+
+SimpCon is used as the main interconnect for the Java processor JOP
+in a single master, multiple salves configuration. SimpCon is also
+used to implement a shared memory chip-multiprocessor version of JOP.
+Furthermore, in a research project on time-triggered network-on-chip
+\cite{jop:ttnoc} SimpCon is used as the \emph{socket} to this NoC.
+
+The author thanks Kevin Jennings and Tommy Thorn for the interesting
+discussions about SimpCon, Avalon, and on-chip interconnection in
+general at the Usenet newsgroup \texttt{comp.arch.fpga}.
 
 \bibliographystyle{plain}
 \bibliography{../../bib/all}

@@ -1,0 +1,15 @@
+JAVA ../../java/target/src/test/wcet
+PACKAGE wcet
+
+COPROCESSOR MacTestHWDrv
+METHOD mac1
+PARAMETER size int
+PARAMETER alpha int[]
+PARAMETER beta int[]
+ITERATIONS 10000 
+COST 6
+RETURN int
+
+
+
+

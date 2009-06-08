@@ -42,7 +42,9 @@ package java.lang;
 
 //import java.util.Random;
 
-import com.jopdesign.sys.SoftFloat;
+import com.jopdesign.sys.Const;
+import com.jopdesign.sys.SoftFloat32;
+import com.jopdesign.sys.SoftFloat64;
 
 /**
  * Helper class containing useful mathematical functions and constants.
@@ -304,7 +306,20 @@ public final class Math
    */
   public static int round(float a)
   {
-    return SoftFloat.float32_to_int32(Float.floatToIntBits(a));
+	  if (Const.SUPPORT_FLOAT) {
+		  return SoftFloat32.float_round(Float.floatToIntBits(a));
+	  } else {
+		  throw new RuntimeException("Not implemented");
+	  }
+  }
+
+  public static long round(double a)
+  {
+	  if (Const.SUPPORT_DOUBLE) {
+		  return SoftFloat64.double_round(Double.doubleToLongBits(a));
+	  } else {
+		  throw new RuntimeException("Not implemented");
+	  }
   }
 
 }

@@ -271,7 +271,7 @@ public class Startup {
 
 		pc = 0;
 		sp = 0;
-		int instr, val, ref, idx;
+		int instr, val, val2, ref, idx;
 
 		for (;;) {
 
@@ -308,6 +308,14 @@ public class Startup {
 				case 8 :		// iconst_5
 					stack[++sp] = 5;
 					break;
+				case 9 :		// lconst_0
+					stack[++sp] = 0;
+					stack[++sp] = 0;
+					break;
+				case 10 :		// lconst_1
+					stack[++sp] = 0;
+					stack[++sp] = 1;
+					break;
 				case 11 :		// fconst_0
 					stack[++sp] = 0;
 					break;
@@ -317,6 +325,14 @@ public class Startup {
 				case 13 :		// fconst_2
 					stack[++sp] = 0x40000000;
 					break;
+				case 14 :		// dconst_0
+					stack[++sp] = 0;
+					stack[++sp] = 0;
+					break;
+				case 15 :		// dconst_1
+					stack[++sp] = 0x3ff00000;
+					stack[++sp] = 0x00000000;
+					break;
 				case 16 :		// bipush
 					stack[++sp] = readBC8s();
 					break;
@@ -325,6 +341,11 @@ public class Startup {
 					break;
 				case 18 :		// ldc
 					stack[++sp] = Native.rdMem(cp+readBC8u());
+					break;
+				case 20 :		// ldc2_w
+					idx = readBC16u();
+					stack[++sp] = Native.rdMem(cp+idx);
+					stack[++sp] = Native.rdMem(cp+idx+1);
 					break;
 				case 83 :		// aastore
 				case 84 :		// bastore
@@ -338,6 +359,17 @@ public class Startup {
 					// handle:
 					ref = Native.rdMem(ref);
 					Native.wrMem(val, ref+idx);
+					break;
+				case 80 :		// lastore
+				case 82 :		// dastore
+					val = stack[sp--];	// value
+					val2 = stack[sp--];	// value2
+					idx = stack[sp--] << 1;	// index
+					ref = stack[sp--];	// ref
+					// handle:
+					ref = Native.rdMem(ref);
+					Native.wrMem(val2, ref+idx);
+					Native.wrMem(val, ref+idx+1);
 					break;
 				case 89 :		// dup
 					val = stack[sp];

@@ -1,16 +1,32 @@
+/*
+  This file is part of JOP, the Java Optimized Processor
+    see <http://www.jopdesign.com/>
+
+  Copyright (C) 2008-2009, Rainhard Raschbauer
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
 
 package sdcard;
 
-import joprt.RtThread;
-
-import com.jopdesign.sys.*;
 
 
 public class FileOutputStream {
 
 
 	public static FatItS FatInterface = new FatItS();
-	public static FatMmc MmcInterface = new FatMmc();
+	//public static FatMmc MmcInterface = new FatMmc();
 	public static int[] FOStream_Buffer  = new int [512];
 	public static long[] FOStream_size  = new long [1];
 	public static int[] FOStream_startcluster = new int [1];
@@ -37,6 +53,7 @@ public class FileOutputStream {
 *
 *  Parameters:
 *	file - Directories and files are seperated with "/". Do not write the leading "/" in the filename string.
+*	append - if true, then bytes will be written to the end of the file rather than the beginning 
 ******************************************************************/
 public static boolean FileOutputStream(String file, boolean append)
 {
@@ -266,7 +283,6 @@ if (append == true)
 *
 *  Parameters:
 *	file - Directories and files are seperated with "/". Do not write the leading "/" in the filename string.
-*	append - if true, then bytes will be written to the end of the file rather than the beginning 
 ******************************************************************/
 public static boolean FileOutputStream(String filename)
 {

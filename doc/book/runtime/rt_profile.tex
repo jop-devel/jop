@@ -22,10 +22,9 @@ provided)
 
 The real-time profile under discussion is inspired by the restricted
 versions of the RTSJ described in \cite{Pusch01} and
-\cite{ravenscar:java} (see Section~\ref{subsec:restr:rtsj}). It is
-intended for high-integrity real-time applications and as a test case
-to evaluate the architecture of JOP as a Java processor for real-time
-systems.
+\cite{ravenscar:java}. It is intended for high-integrity real-time
+applications and as a test case to evaluate the architecture of JOP
+as a Java processor for real-time systems.
 
 The proposed definition is not compatible with the RTSJ. Since the
 application domain for the RTSJ is different from high-integrity
@@ -34,39 +33,17 @@ RTSJ. Restrictions can be enforced by defining new classes (e.g.\
 setting thread priority in the constructor of a real-time thread
 alone, enforcing minimum interarrival times for sporadic events).
 
-%Hardware interrupts, that are usually handled by device drivers, are
-%part of this profile. These interrupts are mapped to events and
-%scheduled in the same way as application threads. This feature
-%allows priority assignment to the device drivers and the execution
-%time can be incorporated in the schedulability analysis with normal
-%tasks. This solution also avoids problems with preemption latency
-%caused by device drivers.
-
-All hardware interrupts are represented by threads under the control
-of the scheduler. With this solution, a priority is assigned to the
-device drivers and the execution time can be incorporated in the
-schedulability analysis with normal tasks. This solution also avoids
-problems with preemption latency provoked by device drivers. One
-example of this problem is the \emph{caps-lock} issue in Linux
-\cite{REDLinux2003}: A device driver performs a spinlock wait for
-keyboard acknowledgement and produces preemption latency up to
-9166$\mu$s. With the proposed concept of hardware interrupts under
-scheduler control, a lower assigned priority to such a device driver
-avoids preemption delays of \emph{more important} real-time threads
-and events.
-
-%This specification is functional compatible with Ravenscar-Java (RJ)
-%\cite{ravenscar:java}, but avoids inheritance of complex RTSJ classes. In
-%fact, it is possible (and has been done) to implement RJ with the
-%additional necessary RTSJ classes on top of it.
-
 To verify that this specification is expressive enough for
 high-integrity real-time applications, Ravenscar-Java (RJ)
-\cite{ravenscar:java} (see Section~\ref{subsec:rj}), with the
-additional necessary RTSJ classes, has been implemented on top of it.
-However, RJ inherits some of the complexity of the RTSJ. Therefore,
-the implementation of RJ has a larger memory and runtime overhead
-than this simple specification.
+\cite{ravenscar:java}, with the additional necessary RTSJ classes,
+has been implemented on top of it. However, RJ inherits some of the
+complexity of the RTSJ. Therefore, the implementation of RJ has a
+larger memory and runtime overhead than this simple specification.
+
+When the specification for Safety-Critical Java (JSR
+302)\footnote{\url{http://jcp.org/en/jsr/detail?id=302}}
+\cite{scj:as:proceedings} will be finalized the profile will be
+adapted for this specification.
 
 \subsection{Application Structure}
 
@@ -111,18 +88,13 @@ work is coded in \code{run()}, which gets invoked on
 \code{missionStart()}. A scoped memory object can be attached to an
 \code{RtThread} at creation.
 
-    \item[HwEvent] represents an interrupt with a minimum
-interarrival time. If the hardware generates more interrupts, they
-get lost.
-
-    \item[SwEvent] represents a software-generated event.
-It is triggered by \code{fire()} and needs to override
-\code{handle()}.
+    \item[SwEvent] represents a software-generated event. It is
+        triggered by \code{fire()} and needs to override
+        \code{handle()}.
 
 \end{description}
 %
-Listing~\ref{lst:arch:rt:profile:schobj} shows the definition of the
-basic classes.
+
 
 \begin{lstlisting}[float,caption={Schedulable objects},
 label=lst:arch:rt:profile:schobj,{emph=RtThread,enterMemory,
@@ -137,22 +109,16 @@ public class RtThread {
     public RtThread(int priority, int period, int offset,
                     Memory mem)
 
-    public void enterMemory()
-    public void exitMemory()
+    public void setProcessor(int id)
 
     public void run()
     public boolean waitForNextPeriod()
 
     public static void startMission()
-}
 
-public class HwEvent extends RtThread {
-
-    public HwEvent(int priority, int minTime, int number)
-    public HwEvent(int priority, int minTime, Memory mem,
-                   int number)
-
-    public void handle()
+    public static void sleepMs(int millis)
+    public static void busyWait(int us)
+    public static RtThread currentRtThread()
 }
 
 public class SwEvent extends RtThread {
@@ -165,97 +131,11 @@ public class SwEvent extends RtThread {
 }
 \end{lstlisting}
 
-Listing~\ref{lst:arch:rt:profile:example} shows the principle coding
-of a worker thread. An example for creation of two real-time threads
-and an event handler can be seen in
+Listing~\ref{lst:arch:rt:profile:schobj} shows the definition of the
+basic classes. Listing~\ref{lst:arch:rt:profile:example} shows the
+principle coding of a worker thread. An example for creation of two
+real-time threads and an event handler can be seen in
 Listing~\ref{lst:arch:rt:profile:usage}.
-
-
-\subsection{Scheduling}
-
-
-The scheduler is a preemptive, priority-based scheduler with
-unlimited priority levels and a unique priority value for each
-schedulable object. No real-time threads or events are scheduled
-during the initialization phase.
-
-The design decision to use unique priority levels, instead of FIFO
-within priorities, is based on following facts: Two common ways to
-assign priorities are rate monotonic and, in a more general form,
-deadline monotonic assignment. When two tasks are given the same
-priority, we can choose one of them and assign a higher priority to
-that task and the task set will still be schedulable. This results
-in a strictly monotonic priority order and we do not need to deal
-with FIFO order. This eliminates queues for each priority level and
-results in a single, priority ordered task list with unlimited
-priority levels.
-
-Synchronized blocks are executed with priority ceiling emulation
-protocol. An object, used for synchronization, for which the
-priority is not set, top priority is assumed. This avoids priority
-inversions on objects that are not accessible from the application
-(e.g. objects inside a library).
-
-In addition, the scheduler contains methods for worst-case time
-measurement for both the periodic work and handler methods. These
-measured execution times can be used during development when no WCET
-analysis tool is available.
-
-\subsection{Memory}
-
-The profile does not support a garbage collector. All memory should
-be allocated at the initialization phase. Without a garbage
-collector, the heap implicitly becomes immortal memory (as defined by
-the RTSJ). For objects created during the mission phase, a scoped
-memory is provided.\footnote{As we now consider real-time GC as the
-better solution, scopes are not supported in the current
-implementation of the profile.} Each scoped memory area is assigned
-to one \code{RtThread}. A scoped memory area cannot be shared between
-threads. No references are allowed from the heap to scoped memory.
-Scoped memory is explicitly entered and left using invocations from
-the application logic. Memory areas are cleared both on creation and
-when leaving the scope (invocation of \code{exitMemory()}), leading
-to a memory area with constant allocation time, as opposed to memory
-with linear allocation time (as the memory type \code{LTMemory} in
-the RTSJ) \cite{Corsaro:2003:DPR}.
-
-
-\subsection{Restrictions on Java}
-
-A list of some of the language features that should be avoided for
-WCET analyzable real-time threads and bound memory usage:
-
-\begin{description}
-    \item[WCET:] Only analyzable language constructs are allowed
-        (see \cite{pusch:maxt:jnl}).
-
-    \item[Static class initialization:] Since the definition when
-        to call the static class initializer is problematic (see
-        Section~\ref{para:restrict:clinit}), they are disallowed.
-        Move this code to a static method (e.g. \code{init()})
-        and invoke it explicitly in the initialization phase.
-
-    \item[Inheritance:] Reduce usage of interfaces and overridden methods.
-
-    \item[String concatenation:] In the immortal memory scope,
-        only string concatenation with string literals is
-        allowed.
-
-    \item[Finalization:] \code{finalize()} has a weak definition
-in Java. Because real-time systems run \emph{forever}, objects in
-the heap, which is immortal in this specification, will never be
-finalized. Objects in scoped memory are released on
-\code{exitMemory()}. However, finalizations on these objects
-complicate WCET analysis of \code{exitMemory()}.
-
-    \item[Dynamic Class Loading:] Due to the implementation and WCET analysis
-complexity dynamic class loading is avoided.
-
-\end{description}
-%
-A program analysis tool can greatly help in enforcing these
-restrictions.
-
 
 \begin{lstlisting}[float,caption={A periodic real-time thread},
 label=lst:arch:rt:profile:example]
@@ -286,11 +166,6 @@ public class Worker extends RtThread {
             work();       // do some work
             event.fire(); // and fire an event
 
-            // some work in scoped memory
-            enterMemory();
-            workWithMem();
-            exitMemory();
-
             // wait for next period
             if (!waitForNextPeriod()) {
                 missedDeadline();
@@ -301,7 +176,7 @@ public class Worker extends RtThread {
 }
 \end{lstlisting}
 
-\begin{lstlisting}[float,caption={Start of the application},
+\begin{lstlisting}[float=t,caption={Start of the application},
 label=lst:arch:rt:profile:usage]
     // create an Event
     Handler h = new Handler(3, 1000);
@@ -319,9 +194,126 @@ label=lst:arch:rt:profile:usage]
     // and invoke sleep() or yield()
     for (;;) {
         watchdogBlink();
-        Thread.sleep(500);
+        RtThread.sleepMs(500);
     }
 \end{lstlisting}
+
+
+
+\subsection{Scheduling}
+
+The scheduler is a preemptive, priority-based scheduler with
+unlimited priority levels and a unique priority value for each
+schedulable object. No real-time threads or events are scheduled
+during the initialization phase.
+
+The design decision to use unique priority levels, instead of FIFO
+within priorities, is based on following facts: Two common ways to
+assign priorities are rate monotonic and, in a more general form,
+deadline monotonic assignment. When two tasks are given the same
+priority, we can choose one of them and assign a higher priority to
+that task and the task set will still be schedulable. This results
+in a strictly monotonic priority order and we do not need to deal
+with FIFO order. This eliminates queues for each priority level and
+results in a single, priority ordered task list with unlimited
+priority levels.
+
+Synchronized blocks are executed with priority ceiling emulation
+protocol. In the current implementation top priority is assumed for
+all objects. This avoids priority inversions on objects that are not
+accessible from the application (e.g. objects inside a library).
+
+
+\subsection{Memory}
+
+The profile does not support a garbage collector.\footnote{This
+restriction can be relaxed when the real-time GC for JOP is used (see
+Chapter~\ref{chap:rtgc}).} All memory should be allocated at the
+initialization phase. Without a garbage collector, the heap
+implicitly becomes immortal memory (as defined by the RTSJ).
+% not yet completely implemented -- just as prototype
+%For objects created during the mission phase, a scoped memory is
+%provided.\footnote{As we now consider real-time GC as the better
+%solution, scopes are not supported in the current implementation of
+%the profile.} Each scoped memory area is assigned to one
+%\code{RtThread}.
+%A scoped memory area cannot be shared between threads. No references
+%are allowed from the heap to scoped memory. Scoped memory is
+%explicitly entered and left using invocations from the application
+%logic. Memory areas are cleared both on creation and when leaving the
+%scope (invocation of \code{exitMemory()}), leading to a memory area
+%with constant allocation time, as opposed to memory with linear
+%allocation time (as the memory type \code{LTMemory} in the RTSJ)
+%\cite{Corsaro:2003:DPR}.
+Scoped memory is currently in a prototyping stage, but will be
+supported in the future.
+
+
+\subsection{Restrictions on Java}
+
+A list of some of the language features that should be avoided for
+WCET analyzable real-time threads and bound memory usage:
+
+\begin{description}
+    \item[WCET:] Only analyzable language constructs are allowed
+        (see \cite{pusch:maxt:jnl}).
+
+    \item[Static class initialization:] Static class initializer
+        are invoked at JVM boot. No cyclic dependency is allowed
+        and the initialization order is determined at class link
+        time. This violation of the JVM specification is
+        necessary for tight WCET values of bytecodes \code{new},
+        \code{getstatic}, and \code{putstatic}, which usually
+        trigger class initialization.
+
+    \item[Inheritance:] Reduce usage of interfaces and overridden methods.
+
+    \item[String concatenation:] In the immortal memory scope,
+        only string concatenation with string literals is
+        allowed.
+
+    \item[Finalization:] \code{finalize()} has a weak definition
+        in Java. Because real-time systems run \emph{forever},
+        objects in the heap, which is immortal in this
+        specification, will never be finalized.
+
+    \item[Dynamic Class Loading:] Due to the implementation and WCET analysis
+complexity dynamic class loading is avoided.
+
+\end{description}
+
+
+\subsection{Interaction of RtThread, the Scheduler, and the JVM}
+
+
+\figurename~\ref{fig_arch_rt_user_interaction} shows an interaction
+example of the scheduler, the application, and the JVM. The
+interaction diagram shows the message sequences between two
+application tasks, the scheduler, the JVM and the hardware. The
+hardware represents interrupt and timer logic. Task 2 is a periodic
+task with a higher priority than Task 1.
+
+\begin{figure*}
+    \centering
+    \includegraphics[scale=\picscale]{runtime/rt_user_interaction}
+    \caption[Interaction diagram of the scheduler framework]
+    {Interaction and message exchange between the application,
+the scheduler, the JVM, and the hardware}
+    \label{fig_arch_rt_user_interaction}
+\end{figure*}
+
+The first event is a timer event to unblock Task 2 for a new period.
+The generated timer event results in a call of the scheduler. The
+scheduler performs its scheduling decision and issues a context
+switch to Task 2. With every context switch the timer is reprogrammed
+to generate an interrupt at the next time triggered event for a
+higher priority task. Task 2 performs the periodic work and ceases
+execution by invocation of \code{waitForNextPeriod()}. The scheduler
+is called and requests an interrupt from the hardware resulting in
+the same call sequence as with a timer. The software generated
+interrupt imposes negligible overhead and results in a single entry
+point for the scheduler. Task 1 is the only ready task in this
+example and is resumed by the scheduler.
 
 \subsection{Implementation Results}
 
@@ -337,15 +329,15 @@ Experimental results of basic scheduling benchmarks, such as periodic
 thread jitter, context switch time for threads and asynchronous
 events, can be found in \cite{jop:rtjava}.
 
-To implement system functions, such as scheduling, in Java, access
-to JVM and processor internal data structures have to be available.
+To implement system functions, such as scheduling, in Java, access to
+JVM and processor internal data structures have to be available.
 However, Java does not allow memory access or access to hardware
-devices. In JOP, this access is provided by way of additional
-bytecodes. In the Java environment, these bytecodes are represented
-as static native methods. The compiled invoke instruction for these
-methods (\code{invokestatic}) is replaced by these additional
-bytecodes in the class file. This solution provides a very efficient
-way to incorporate low-level functions into a pure Java system. The
+devices. In JOP, this access is provided by additional bytecodes. In
+the Java environment, these bytecodes are represented as static
+native methods. The compiled invoke instruction for these methods
+(\code{invokestatic}) is replaced by these additional bytecodes in
+the class file. This solution provides a very efficient way to
+incorporate low-level functions into a pure Java system. The
 translation can be performed during class loading to avoid
 non-standard class files.
 
@@ -355,5 +347,22 @@ environment than C (e.g.\ no pointers) and the boundary between
 \emph{kernel} and \emph{user space} can become quite loose.
 Scheduling, usually part of the operating system or the JVM, is
 implemented in Java and executed in the same context as the
-application. This property provides an easy path to a framework for
-user-defined scheduling.
+application.
+
+This property provides an easy path to a framework for user-defined
+scheduling. In \cite{jop:javasched} a framework for a user defined
+scheduler for JOP is presented. The events that result in the
+scheduling decision are listed. Hooks for these events allow the
+implementation of a user defined scheduler.
+
+\subsection{Summary}
+
+This section consider a simple profile for real-time Java and the
+implementation of real-time scheduling on a Java processor. The
+novelty of the described approach is in implementing functions
+usually associated with an RTOS in Java. That means that real-time
+Java is not based on an RTOS, and therefore not restricted to the
+functionality provided by the RTOS. With JOP, a self-contained
+real-time system in pure Java becomes possible. The implementation of
+the specification is successfully used as the basis for a commercial
+real-time application in the railway industry.

@@ -70,6 +70,17 @@ public class Const {
 	public static final int STACK_SIZE = 256;
 	
 	/**
+	 * Set to true if support for double bytecodes should be
+	 * provided.
+	 */
+	public static final boolean SUPPORT_DOUBLE = true;
+	/**
+	 * Set to true if support for float bytecodes should be
+	 * provided.
+	 */
+	public static final boolean SUPPORT_FLOAT = true;
+
+	/**
 	 * Offset of the real stack in the on-chip RAM. Is set in
 	 * <code>jvm.asm</code>.
 	 */
@@ -217,7 +228,7 @@ public class Const {
 	// public static final int WB_AC97 = WB_BASE+0x30;
 	// new version with SPI interface - scio_dspio.vhd is missing!
 	public static final int WB_AC97 = WB_BASE+0x40;
-	public static final int WB_SPI = WB_BASE+0x30;
+	public static final int WB_SPI = WB_BASE+0x40;
 
 
 	// LEGO stuff (scio_lego.vhd)

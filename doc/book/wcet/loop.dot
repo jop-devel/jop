@@ -1,0 +1,32 @@
+digraph G {
+size = "10,7.5"
+	S->B1 [label="fs"];
+	B1->B2 [label="f1"];
+	B2->B3 [label="f2"];
+	B2->B11 [label="f3"];
+	B3->B4 [label="f4"];
+	B3->B7 [label="f5"];
+	B4->B5 [label="f6"];
+	B5->B6 [label="f7"];
+	B5->B10 [label="f8"];
+	B6->B5 [label="f9"];
+	B7->B8 [label="f10"];
+	B8->B9 [label="f11"];
+	B8->B10 [label="f12"];
+	B9->B8 [label="f13"];
+	B10->B2 [label="f14"];
+	B11->T [label="ft"];
+	S;
+	B1 [label="B1\n2"];
+	B2 [label="B2\n7"];
+	B3 [label="B3\n5"];
+	B4 [label="B4\n2"];
+	B5 [label="B5\n6"];
+	B6 [label="B6\n30"];
+	B7 [label="B7\n2"];
+	B8 [label="B8\n6"];
+	B9 [label="B9\n12"];
+	B10 [label="B10\n8"];
+	B11 [label="B11\n24"];
+	T;
+}

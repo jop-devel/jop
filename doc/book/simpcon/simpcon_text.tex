@@ -1,3 +1,4 @@
+\index{SimpCon}
 
 \section{Introduction}
 
@@ -17,18 +18,18 @@ to delay the actual read if it is busy with internal operations.
 
 The slave signals the end of the transaction through a novel
 \emph{ready counter} to provide an early notification. This early
-notification simplifies the integration of peripherals into
-pipelined masters.
-
-Slaves can also provide several levels of pipelining. This feature
-is announced by two static output ports (one for read and one write
-pipeline levels).
+notification simplifies the integration of peripherals into pipelined
+masters. Slaves can also provide several levels of pipelining. This
+feature is announced by two static output ports (one for read and one
+write pipeline levels).
 
 Off-chip connections (e.g.\ main memory) are device specific and
 need a slave to perform the translation. Peripheral interrupts are
 not covered by this specification.
 
 \subsection{Features}
+
+SimpCon provides following main features:
 
 \begin{itemize}
     \item Master/slave point-to-point connection
@@ -42,22 +43,24 @@ not covered by this specification.
 
 \subsection{Basic Read Transaction}
 
+\index{SimpCon!read transaction}
+
 Figure~\ref{fig:sc:basic:rd} shows a basic read transaction for a
-slave with one cycle latency. The acknowledge signals are omitted
-from the figure. In the first cycle, the address phase, the \sign{rd}
-signals the slave to start the read transaction. The address is
-registered by the slave. During the following cycle, the read
-phase\footnote{It has to be noted that the read phase can be longer
-for devices with a high latency. For simple on-chip IO devices the
-read phase can be omitted completely (0 cycles). In that case
-\sign{rdy\_cnt} will be zero in the cycle following the address
-phase.}, the slave performs the read and registers the data. Due to
+slave with one cycle latency. In the first cycle, the address phase,
+the \sign{rd} signals the slave to start the read transaction. The
+address is registered by the slave. During the following cycle, the
+read phase,\footnote{It has to be noted that the read phase can be
+longer for devices with a high latency. For simple on-chip I/O
+devices the read phase can be omitted completely (0 cycles). In that
+case \sign{rdy\_cnt} will be zero in the cycle following the address
+phase.} the slave performs the read and registers the data. Due to
 the register in the slave, the data is available in the third cycle,
 the result phase. To simplify the master, \sign{rd\_data} stays valid
 until the next read request response. It is therefore possible for a
 master to issue a pre-fetch command early. When the pre-fetched data
 arrives too early it is still valid when the master actually wants to
-read it.
+read it. Keeping the read data stable in the slave is
+\emph{mandatory}.
 
 \begin{figure}
     \centering
@@ -68,6 +71,8 @@ read it.
 
 \subsection{Basic Write Transaction}
 
+\index{SimpCon!write transaction}
+
 A write transaction consists of a single cycle address/command phase
 started by assertion of \sign{wr} where the address and the write
 data are valid. \sign{address} and \sign{wr\_data} are usually
@@ -76,6 +81,7 @@ the master by the slave with \sign{rdy\_cnt}. See
 Section~\ref{sec:ack} and an example in Figure~\ref{fig:sc:wr:ws}.
 
 \section{SimpCon Signals}
+\index{SimpCon!signals}
 
 This sections defines the signals used by the SimpCon connection.
 Some of the signals are optional and may not be present on a
@@ -112,6 +118,10 @@ whether the signal is driven by the master or the slave.
         \sign{wr\_pipeline\_level} & 2 & Slave & No & Maximum pipeline
         level\\
         & & & & for write transactions \\
+        \sign{sel\_byte} & 2 & Master & No & Reserved for future use\\
+        \sign{uncached}  & 1 & Master & No & Non cached access\\
+        \sign{cache\_flash} & 1 & Master & No & Flush/invalidate a cache\\
+
         \bottomrule
 
     \end{tabular}
@@ -132,10 +142,9 @@ initiate a transaction.
 Master addresses represent word addresses as offsets in the slave's
 address range. \sign{address} is valid a single cycle either with
 \sign{rd} for a read transaction or with \sign{wr} and
-\sign{wr\_data} for a write transaction.
-
-The number of bits for \sign{address} depends on the slave's address
-range. For a single port slave, \sign{address} can be omitted.
+\sign{wr\_data} for a write transaction. The number of bits for
+\sign{address} depends on the slave's address range. For a single
+port slave, \sign{address} can be omitted.
 
 \subsubsection{wr\_data}
 
@@ -160,6 +169,17 @@ valid in the same cycle.
 The \sign{sel\_byte} signal is reserved for future versions of the
 SimpCon specification to add individual byte enables.
 
+\subsubsection{uncached}
+
+The \sign{uncached} signal is asserted for a single clock cycle
+during a read or write transaction to signal that a cache, connected
+in the SimpCon pipeline, shall not cache the read or write access.
+
+\subsubsection{cache\_flash}
+
+The \sign{cache\_flash} signal is asserted for a single clock cycle
+invalidates a cache connected in the SimpCon pipeline.
+
 \subsection{Slave Signal Details}
 
 This section describes the signals that are driven by the slave as a
@@ -168,10 +188,10 @@ response to transactions initiated by the master.
 \subsubsection{rd\_data}
 
 The \sign{rd\_data} signals carry the result of a read transaction.
-The data is valid when \sign{rdy\_cnt} reaches 0 and stays valid
-until a new read result is available. The signal is typically 32 bits
-wide. Slaves that provide less than 32 bits should pad the upper bits
-with 0.
+The data is valid when \sign{rdy\_cnt} reaches 0 and \emph{stays
+valid} until a new read result is available. The signal is typically
+32 bits wide. Slaves that provide less than 32 bits should pad the
+upper bits with 0.
 
 \subsubsection{rdy\_cnt}
 
@@ -200,7 +220,7 @@ enable the synthesizer to optimize the pipeline level dependent
 state machine in the master.
 
 \section{Slave Acknowledge}
-\label{sec:ack}
+\label{sec:ack} \index{SimpCon!ready count}
 
 Flow control between the slave and the master is usually done by a
 single signal in the form of \emph{wait} or \emph{acknowledge}. The
@@ -209,16 +229,15 @@ the data is available or the write operation has finished. However,
 for a pipelined master it can be of interest to know it
 \emph{earlier} when a transaction will finish.
 
-
 For many slaves, e.g.\ an SRAM interface with fixed wait states, this
 information is available inside the slave. In the SimpCon interface,
 this information is communicated to the master through the two bit
 ready counter (\sign{rdy\_cnt}). \sign{rdy\_cnt} signals the number
 of cycles until the read data will be available or the write
-transaction will be finished. Value 0 is equivalent to an \emph{ack}
-signal and 1, 2, and 3 are equivalent to a wait request with the
-distinction that the master knows how long the wait request will
-last.
+transaction will be finished. A value of 0 is equivalent to an
+\emph{ack} signal and 1, 2, and 3 are equivalent to a wait request
+with the distinction that the master knows how long the wait request
+will last.
 
 To avoid too many signals at the interconnect, \sign{rdy\_cnt} has a
 width of two bits. Therefore, the maximum value of 3 has the special
@@ -226,16 +245,16 @@ meaning that the transaction will finish in 3 or \emph{more} cycles.
 As a result the master can only use the values 0, 1, and 2 to release
 actions in its pipeline. If necessary, an extension for a longer
 pipeline is straightforward with a larger
-\sign{rdy\_cnt}\footnote{The maximum value of the ready counter is
+\sign{rdy\_cnt}.\footnote{The maximum value of the ready counter is
 relevant for the early restart of a waiting master. A longer latency
 from the slave e.g., for DDR SDRAM, will map to the maximum value of
-the counter for the first cycles.}.
+the counter for the first cycles.}
 
 Idle slaves will keep the former value of 0 for \sign{rdy\_cnt}.
 Slaves that do not know in advance how many wait states are needed
 for the transaction can produce sequences that omit any of the
 numbers 3, 2, and 1. A simple slave can hold \sign{rdy\_cnt} on 3
-until the data is available and set it than directly to 0. The master
+until the data is available and set it then directly to 0. The master
 has to handle those situations. Practically, this reduces the
 possibilities of pipelining and therefore the performance of the
 interconnect. The master will read the data later, which is not an
@@ -262,8 +281,8 @@ their value until a new transaction is requested.
 Figure~\ref{fig:sc:wr:ws} shows an example of a slave that needs
 three cycles for the write to be processed. The address, the data to
 be written, and the write command are valid during cycle 1. The slave
-registers the address and write data during cycle 1 and performs the
-write operation during cycles 2--4. The \sign{rdy\_cnt} is
+registers the address and the write data during cycle 1 and performs
+the write operation during cycles 2--4. The \sign{rdy\_cnt} is
 decremented and a non-pipelined slave can accept a new command after
 cycle 4.
 
@@ -277,6 +296,7 @@ cycle 4.
 
 
 \section{Pipelining}
+\index{SimpCon!pipelining}
 
 Figure~\ref{fig:sc:pipe:level} shows a read transaction for a slave
 with four clock cycles latency. Without any pipelining, the next read
@@ -306,14 +326,15 @@ necessary.
 To implement level 3 pipelining in the slave, at least one additional
 address register is needed. However, to use level 3 the master has to
 issue the request in the same cycle as \sign{rdy\_cnt} goes to 2.
-That means this transition is combinatorial. We see in
+That means that this transition is combinatorial. We see in
 Figure~\ref{fig:sc:pipe:level} that \sign{rdy\_cnt} value of 3 means
 three or more cycles until the data is available and can therefore
 not be used to trigger a new transaction. Extension to an even deeper
 pipeline needs a wider \sign{rdy\_cnt}.
 
 
-\subsection{Interconnect}
+\section{Interconnect}
+\index{SimpCon!interconnection}
 
 Although the definition of SimpCon is from a single master/slave
 point-to-point viewpoint, all variations of multiple slave and
@@ -332,6 +353,7 @@ to further speed up the multiplexer.
 %TODO: add a schematic for the master \sign{rd\_data} multiplexer.
 
 \subsubsection{Master Multiplexing}
+\index{SimpCon!CMP}
 
 SimpCon defines no signals for the communication between a master and
 an arbiter. However, it is possible to build a multi-master system
@@ -341,7 +363,8 @@ In this case the arbiter acts as a slave for the master and as a
 master for the peripheral devices. An example of an arbiter for
 SimpCon, where JOP and a VGA controller are two masters for a shared
 main memory, can be found in \cite{jop:dma}. The same arbiter is also
-used to build a chip-multiprocessor version of JOP.
+used to build a chip-multiprocessor version of JOP
+\cite{jop:cmp:eval}.
 
 The missing arbitration protocol in SimpCon results in the need to
 queue $n-1$ requests in an arbiter for $n$ masters. However, this
@@ -351,34 +374,100 @@ cycle as the original read/write request.
 
 %TODO: add a timing diagram to explain this concept.
 
+To add several slaves to a single master the \sign{rd\_data} and
+\sign{rdy\_cnt} have to be multiplexed. Due to the fact that all
+\sign{rd\_data} signals are registered by the slaves a single
+pipeline stage will be enough for a large multiplexer. The selection
+of the multiplexer is also known at the transaction start but needed
+at most in the next cycle. Therefore it can be registered to further
+speed up the multiplexer.
+%\ \\
+%\ \\
+%TODO: add a schematic for the master \sign{rd\_data} multiplexer.
+
 
 \section{Examples}
 
 This section provides some examples for the application of the
 SimpCon definition.
 
-\subsection{IO Port}
+\begin{figure}
+    \centering
+    \includegraphics{\scgrp/ioport}
+    \caption{A simple input/output port with a SimpCon interface}
+    \label{fig:sc:ioport}
+\end{figure}
 
-TODO: Show how simple an IO port can be with SimpCon. We need no
-addresses and can tie \sign{bsy\_cnt} to 0. We only need the
-\sign{rd} or \sign{wr} signal to enable the port.
+\subsection{I/O Port}
+\index{SimpCon!I/O port example}
+
+Figure~\ref{fig:sc:ioport} shows a simple I/O port with a minimal
+SimpCon interface. As address decoding is omitted for this simple
+device signal \sign{address} is not needed. Furthermore we can tie
+\sign{rdy\_cnt} to 0. We only need the \sign{rd} or \sign{wr} signal
+to enable the port. Listing~\ref{lst:sc:ioport} shows the VHDL code
+for this I/O port.
+
+\begin{lstlisting}[float,caption={VHDL source for the simple input/output port},
+label=lst:sc:ioport]
+
+entity sc_test_slave is generic (addr_bits : integer);
+
+port (
+    clk      : in std_logic;
+    reset    : in std_logic;
+-- SimpCon interface
+    wr_data        : in std_logic_vector(31 downto 0);
+    rd, wr         : in std_logic;
+    rd_data        : out std_logic_vector(31 downto 0);
+    rdy_cnt        : out unsigned(1 downto 0);
+-- input/output ports
+    in_data        : in std_logic_vector(31 downto 0)
+    out_data       : out std_logic_vector(31 downto 0)
+
+); end sc_test_slave;
+
+architecture rtl of sc_test_slave is
+
+begin
+
+    rdy_cnt <= "00";    -- no wait states
+
+process(clk, reset) begin
+
+    if (reset='1') then
+        rd_data <= (others => '0');
+        out_data <= (others => '0');
+    elsif rising_edge(clk) then
+        if rd='1' then
+            rd_data <= in_data;
+        end if;
+        if wr='1' then
+            out_data <= wr_data;
+        end if;
+    end if;
+
+end process;
+
+end rtl;
+\end{lstlisting}
 
 \subsection{SRAM interface}
+\index{SimpCon!SRAM interface}
 
-The following example is taken from an implementation of SimpCon for
-a Java processor. The processor is clocked at 100~MHz and the main
-memory consists of 15~ns static RAMs. Therefore the minimum access
-time for the RAM is two cycles. The slack time of 5ns forces us to
-use output registers for the RAM address and write data and input
-registers for the read data in the IO cells of the FPGA. These
-registers fit nicely with the intention of SimpCon to use registers
-inside the slave.
+The following example assumes a master (processor) clocked at 100~MHz
+and an static RAM (SRAM) with 15~ns access time. Therefore the
+minimum access time for the SRAM is two cycles. The slack time of
+5~ns forces us to use output registers for the SRAM address and write
+data and input registers for the read data in the I/O cells of the
+FPGA. These registers fit nicely with the intention of SimpCon to use
+registers inside the slave.
 
 Figure~\ref{fig:sc:sram} shows the memory interface for a
 non-pipelined read access followed by a write access. Four signals
-are driven by the master and two signals by the slave. The lower
-half of the figure shows the signals at the FPGA pins where the RAM
-is connected.
+are driven by the master and two signals by the slave. The lower half
+of the figure shows the signals at the FPGA pins where the SRAM is
+connected.
 
 
 \begin{figure}
@@ -391,21 +480,21 @@ is connected.
 In cycle~1 the read transaction is started by the master and the
 slave registers the address. The slave also sets the registered
 control signals \sign{ncs} and \sign{noe} during cycle~1. Due to the
-placement of the registers in the IO cells, the address and control
+placement of the registers in the I/O cells, the address and control
 signals are valid at the FPGA pins very early in cycle~2. At the end
 of cycle~3 (15~ns after \sign{address}, \sign{ncs} and \sign{noe} are
-stable) the data from the RAM is available and can be sampled with
+stable) the data from the SRAM is available and can be sampled with
 the rising edge for cycle~4. The setup time for the read register is
-short, as the register can be placed in the IO cell. The master reads
-the data in cycle~4 and starts a write transaction in cycle~5.
+short, as the register can be placed in the I/O cell. The master
+reads the data in cycle~4 and starts a write transaction in cycle~5.
 Address and data are again registered by the slave and are available
-for the RAM at the beginning of cycle~6. To perform a write in two
+for the SRAM at the beginning of cycle~6. To perform a write in two
 cycles the \sign{nwr} signal is registered by a negative triggered
 flip-flop.
 
-In Figure~\ref{fig:sc:sram:prd} we see a pipelined read from the RAM
+In Figure~\ref{fig:sc:sram:prd} we see a pipelined read from the SRAM
 with pipeline level 2. With this pipeline level and the two cycles
-read access time of the RAM we achieve the maximum possible
+read access time of the SRAM we achieve the maximum possible
 bandwidth.
 
 \begin{figure}
@@ -415,13 +504,13 @@ bandwidth.
     \label{fig:sc:sram:prd}
 \end{figure}
 
-We can see the start of the second read transaction in cycle 3
-during the read of the first data from the RAM. The new address is
-registered in the same cycle and available for the RAM in the
+We can see the start of the second read transaction in cycle 3 during
+the read of the first data from the SRAM. The new address is
+registered in the same cycle and available for the SRAM in the
 following cycle 4. Although we have a pipeline level of 2 we need no
 additional address or data register. The read data is available for
 two cycles (\sign{rdy\_cnt} 2 or 1 for the next read) and the master
-is free to select one of the two cycles to read the data.
+has the freedom to select one of the two cycles to read the data.
 
 It has to be noted that pipelining with one read per cycle is
 possible with SimpCon. We just showed a 2 cycle slave in this
@@ -430,25 +519,13 @@ either at 2 or 1 during the single cycle reads (depending on the
 slave pipeline level). It will go down to 0 only for the last data
 word to read.
 
-\subsection{Master Multiplexing}
-
-To add several slaves to a single master the \sign{rd\_data} and
-\sign{bsy\_cnt} have to be multiplexed. Due to the fact that all
-\sign{rd\_data} signals are registered by the slaves a single
-pipeline stage will be enough for a large multiplexer. The selection
-of the multiplexer is also known at the transaction start but needed
-at most in the next cycle. Therefore it can be registered to further
-speed up the multiplexer.
-\ \\
-\ \\
-TODO: add a schematic for the master \sign{rd\_data} multiplexer.
 
 \section{Available VHDL Files}
 
 Besides the SimpCon documentation, some example VHDL files for slave
 devices and bridges are available from
-\url{http://www.opencores.org/projects.cgi/web/simpcon/overview}. All
-components are also part of the standard JOP distribution.
+\url{http://opencores.org/?do=project&who=simpcon}. All components
+are also part of the standard JOP distribution.
 
 
 \subsection{Components}
@@ -456,10 +533,11 @@ components are also part of the standard JOP distribution.
 \begin{itemize}
     \item \code{sc\_pack.vhd} defines VHDL records and some
     constants.
-    \item \code{sc\_test\_slave} is a very simple SimpCon device. A
-    counter to be read out and a register that can be written and
-    read. There is no connection to the outer world. This example
-    can be used as basis for a new SimpCon device.
+    \item \code{sc\_test\_slave.vhd} is a very simple SimpCon
+        device. A counter to be read out and a register that can
+        be written and read. There is no connection to the outer
+        world. This example can be used as basis for a new
+        SimpCon device.
     \item \code{sc\_sram16.vhd} is a memory controller for 16-bit
     SRAM.
     \item \code{sc\_sram32.vhd} is a memory controller for 32-bit
@@ -474,13 +552,13 @@ components are also part of the standard JOP distribution.
     replacement for a UART.
     \item \code{sc\_isa.vhd} interfaces the old ISA bus. It can be used
     for the popular CS8900 Ethernet chip.
-    \item \code{sc\_sigdel.vhd} is a configurable sigma-delta converter
-    for an FPGA that needs at minimum just two external components:
-    a capacitor and a resistor.
+    \item \code{sc\_sigdel.vhd} is a configurable sigma-delta ADC
+        for an FPGA that needs just two external components: a
+        capacitor and a resistor.
     \item \code{sc\_fpu.vhd} provides an interface to the 32-bit FPU available
     at \url{www.opencores.org}.
-    \item \code{sc\_arbiter.vhd} is a zero cycle latency,
-        priority-based SimpCon arbiter written by Christof Pitter
+    \item \code{sc\_arbiter\_*.vhd} different zero cycle SimpCon
+        arbiters for CMP systems written by Christof Pitter
         \cite{jop:cmp}.
 \end{itemize}
 
@@ -521,26 +599,26 @@ System Bus (ASB), and Advanced Peripheral Bus (APB). The AHB is used
 to connect on-chip memory, cache, and external memory to the
 processor. Peripheral devices are connected to the APB. A bridge
 connects the AHB to the lower bandwidth APB. An AHB bus transfer can
-be one cycle with burst operation. With the APB a bus transfer
-requires two cycles and no burst mode is available. Peripheral bus
-cycles with wait states are added in the version 3 of the APB
-specification. ASB is the predecessor of AHB and is not recommended
-for new designs (ASB uses both clock phases for the bus signals --
-very uncommon for today's synchronous designs). The AMBA 3 AXI
-(Advanced eXtensible Interface) \cite{soc:amba3} is the latest
-extension to AMBA. AXI introduces out-of-order transaction completion
-with the help of a 4 bit transaction ID tag. A ready signal
-acknowledges the transaction start. The master has to hold the
-transaction information (e.g.\ address) until the interconnect
-signals ready. This enhancement ruins the elegant single cycle
-address phase from the original AHB specification.
+be one cycle at burst operation. With the APB a bus transfer requires
+two cycles and no burst mode is available. Peripheral bus cycles with
+wait states are added in the version 3 of the APB specification. ASB
+is the predecessor of AHB and is not recommended for new designs (ASB
+uses both clock phases for the bus signals -- very uncommon for
+today's synchronous designs). The AMBA 3 AXI (Advanced eXtensible
+Interface) \cite{soc:amba3} is the latest extension to AMBA. AXI
+introduces out-of-order transaction completion with the help of a 4
+bit transaction ID tag. A ready signal acknowledges the transaction
+start. The master has to hold the transaction information (e.g.\
+address) until the interconnect signals ready. This enhancement ruins
+the elegant single cycle address phase from the original AHB
+specification.
 
 Wishbone \cite{soc:wishbone} is a public domain standard used by
 several open-source IP cores. The Wishbone interface specification is
 still in the tradition of microcomputer or backplane busses. However,
 for a SoC interconnect, which is usually
-point-to-point\footnote{Multiplexers are used instead of busses to
-connect several slaves and masters.}, this is not the best approach.
+point-to-point,\footnote{Multiplexers are used instead of busses to
+connect several slaves and masters.} this is not the best approach.
 The master is requested to hold the address and data valid through
 the whole read or write cycle. This complicates the connection to a
 master that has the data valid only for one cycle. In this case the
@@ -644,12 +722,12 @@ of the bus and the slaves is only limited by the bit width of
 
 
 Another issue with all interconnection standards is the single cycle
-availability of read data at the slaves. Why not keep the read data
-valid as long as there is no new read data available? This feature
-would allow the master to be more flexible when to read the data. It
-would allow issuing a read command and then continuing with other
-instructions -- a feature known as data pre-fetching to hide long
-latencies.
+availability of the read data at the slaves. Why not keep the read
+data valid as long as there is no new read data available? This
+feature would allow the master to be more flexible when to read the
+data. It would allow issuing a read command and then continuing with
+other instructions -- a feature known as data pre-fetching to hide
+long latencies.
 
 The last argument sounds contradictory to the first argument: provide
 the transaction data at the master just for a single cycle, but
@@ -786,7 +864,7 @@ than the VHDL version that generates the Avalon \sign{waitrequest}
 signal. It is assumed that the SOPC Builder version uses fixed wait
 states within the switch fabric.
 
-We also implemented an Avalon interface to the single-cycle on-chip
+We also implemented an Avalon interface to a single-cycle on-chip
 memory. SimpCon is even faster with the 32 bit off-chip SRAM than
 with the on-chip memory connected via Avalon. Furthermore, we also
 performed experiments with a 16 bit memory interface to the same
@@ -795,31 +873,5 @@ interconnection and memory interface is higher. As a result the
 difference between SimpCon and Avalon gets larger (30\%) on the 16
 bit SRAM interface. To complete the picture we also measured the
 performance with an SDRAM memory connected to the Avalon bus. We see
-that the large latency of an SDRAM is a big performance issue for
-the Java processor.
-
-\section{Summary}
-
-This document describes a simple (with respect to the definition and
-implementation) and efficient SoC interconnect. The novel signal
-\sign{rdy\_cnt} allows an early signalling to the master when read
-data will be valid. This feature allows the master to restart a
-stalled pipeline earlier to react for arriving data. Furthermore,
-this feature also enables pipelined bus transactions with a minimal
-effort on the master and the slave side.
-
-We have compared SimpCon quantitative with AMBA and Avalon, two
-common interconnection definitions. The application benchmark shows
-a performance advantage of SimpCon by 17\% over AMBA and 19\% over
-Avalon interfaces to an SRAM.
-
-SimpCon is used as the main interconnect for the Java processor JOP
-in a single master, multiple salves configuration. SimpCon is also
-used to implement a shared memory chip-multiprocessor version of
-JOP. Furthermore, in a research project on time-triggered
-network-on-chip \cite{jop:ttnoc} SimpCon is used as the
-\emph{socket} to this NoC.
-
-The author thanks Kevin Jennings and Tommy Thorn for the interesting
-discussions about SimpCon, Avalon, and on-chip interconnection in
-general at the Usenet newsgroup \texttt{comp.arch.fpga}.
+that the large latency of an SDRAM is a big performance issue for the
+Java processor.

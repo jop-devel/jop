@@ -545,6 +545,7 @@ cpux_boot:
 nop:		nop nxt
 
 iconst_m1:	ldi -1 nxt
+fconst_0:
 aconst_null:
 iconst_0:	ldi 0 nxt
 iconst_1:	ldi 1 nxt

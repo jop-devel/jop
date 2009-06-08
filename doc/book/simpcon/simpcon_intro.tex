@@ -1,14 +1,14 @@
-SimpCon \cite{simpcon} is the main interconnection interface used
-for JOP. The IO modules and the main memory are connected via this
+SimpCon \cite{simpcon} is the main interconnection interface used for
+JOP. The I/O modules and the main memory are connected via this
 standard. In the following chapter an introduction to SimpCon is
 presented.
 
-The VHDL files in \dirent{vhdl/scio} are SimpCon IO components
-(e.g.\ \code{sc\_uart.vhd} is a simple UART) and SimpCon IO
-configurations. The IO configurations define the IO devices and the
-address mapping for a JOP system. All those configurations start
-with \code{scio\_}. The IO components start with \code{sc\_}.
-Configuration \code{scio\_min} contains the minimal IO components
+The VHDL files in \dirent{vhdl/scio} are SimpCon I/O components
+(e.g.\ \code{sc\_uart.vhd} is a simple UART) and SimpCon I/O
+configurations. The I/O configurations define the I/O devices and the
+address mapping for a JOP system. All those configurations start with
+\code{scio\_}. The I/O components start with \code{sc\_}.
+Configuration \code{scio\_min} contains the minimal I/O components
 for a JOP system: the system module \code{sc\_sys.vhd} and a UART
 \code{sc\_uart.vhd} for program download and basic communication
 (\code{System.in} and \code{System.out}).
@@ -22,5 +22,5 @@ In directory \dirent{vhdl/memory} the memory controller
 \code{mem\_sc.vhd} is a SimpCon master that can be connected to
 various SRAM memory controllers \code{sc\_sram*.vhd}. Other memory
 controller (e.g.\ the free Altera SDRAM interface) can be connected
-via SimpCon bridges to Avalon, Wishbone, and AHB slave (available in
+via SimpCon bridges to Avalon, Wishbone, and AHB slaves (available in
 \dirent{vhdl/simpcon}).

@@ -1,7 +1,7 @@
 
-This section describes the design flow for JOP --- how to build the
-Java processor and a Java application from scratch (the VHDL and
-Java sources) and download the processor to an FPGA and the Java
+This chapter describes the design flow for JOP --- how to build the
+Java processor and a Java application from scratch (the VHDL and Java
+sources) and download the processor to an FPGA and the Java
 application to the processor.
 
 
@@ -10,13 +10,13 @@ application to the processor.
 JOP \cite{jop:thesis}, the Java optimized processor, is an
 open-source development platform available for different targets
 (Altera and Xilinx FPGAs and various types of FPGA boards). To
-support several targets, the design-flow is a little bit complicated.
-There is a \code{Makefile} available and when everything is set up
-correctly, a simple
+support several targets, the resulting design-flow is a little bit
+complicated. There is a \code{Makefile} available and when everything
+is set up correctly, a simple
 %
-\begin{verbatim}
+\begin{lstlisting}
     make
-\end{verbatim}
+\end{lstlisting}
 %
 should build everything from the sources and download a \emph{Hello
 World} example. However, to customize the \code{Makefile} for a
@@ -48,13 +48,13 @@ The PATH variable should contain entries to the executables of all
 packages (java and javac, Cygwin bin, and Quartus executables). Check
 the PATH at the command prompt with:
 %
-\begin{verbatim}
+\begin{lstlisting}
     javac
     gcc
     make
-    cvs
+    git
     quartus_map
-\end{verbatim}
+\end{lstlisting}
 %
 All the executables should be found and usually report their usage.
 
@@ -69,20 +69,20 @@ explained in more detail in one of the following sections.
 
 \subsubsection{Download the Source}
 
-Create a working directory and download JOP from the
-\url{www.opencores.org} CVS server:
-
-\begin{verbatim}
- cvs -d :pserver:anonymous@cvs.opencores.org:/cvsroot/anonymous \
-    -z9 co -P jop
-\end{verbatim}
-
+Create a working directory and download JOP from the GIT server:
+\begin{lstlisting}
+    git clone git://www.soc.tuwien.ac.at/jop.git
+\end{lstlisting}
+For a write access clone (for developers) use following URL:
+\begin{lstlisting}
+    git clone ssh://user@www.soc.tuwien.ac.at/home/git/jop.git
+\end{lstlisting}
 All sources are downloaded to a directory \dirent{jop}. For the
 following command change to this directory. Create the needed
 directories with:
-\begin{verbatim}
+\begin{lstlisting}
     make directories
-\end{verbatim}
+\end{lstlisting}
 
 \subsubsection{Tools}
 
@@ -90,18 +90,18 @@ The tools contain \cmd{Jopa}, the microcode assembler, \cmd{JopSim},
 a Java based simulation of JOP, and \cmd{JOPizer}, the application
 builder. The tools are built with following make command:
 
-\begin{verbatim}
+\begin{lstlisting}
     make tools
-\end{verbatim}
+\end{lstlisting}
 
 \subsubsection{Assemble the Microcode JVM, Compile the Processor}
 
 The JVM configured to download the Java application from the serial
 interface is built with:
 
-\begin{verbatim}
+\begin{lstlisting}
     make jopser
-\end{verbatim}
+\end{lstlisting}
 
 This command also invokes Quartus to build the processer. If you
 want to build it within Quartus follow the following instructions:
@@ -125,9 +125,9 @@ want to build it within Quartus follow the following instructions:
 A simple \emph{Hello World} application is the default application
 in the Makefile. It is built and downloaded to JOP with:
 
-\begin{verbatim}
+\begin{lstlisting}
     make japp
-\end{verbatim}
+\end{lstlisting}
 
 The ``Hello World" message should be printed in the command window.
 
@@ -135,9 +135,9 @@ For a different application change the Makefile targets or override
 the \code{make} variables at the command line. The following example
 builds and runs some benchmarks on JOP:
 
-\begin{verbatim}
+\begin{lstlisting}
     make japp -e P1=bench P2=jbe P3=DoAll
-\end{verbatim}
+\end{lstlisting}
 
 The three variables \code{P1}, \code{P2}, and \code{P3} are a
 shortcut to set the directory, the package name, and the main class
@@ -150,9 +150,9 @@ and Java program download. To change the download flow for those
 boards change the value of the following variable in the Makefile to
 \code{true}:
 
-\begin{verbatim}
+\begin{lstlisting}
     USB=true
-\end{verbatim}
+\end{lstlisting}
 
 The Java download channel is mapped to a virtual serial port on the
 PC. Check the port number in the system properties and set the
@@ -164,12 +164,12 @@ variable \code{COM\_PORT} accordingly.
 the Makefile or the Ant design flow. Here is a short list on how to
 build JOP for a Xilinx board:
 
-\begin{verbatim}
+\begin{lstlisting}
     make tools
     cd asm
     jopser
     cd ..
-\end{verbatim}
+\end{lstlisting}
 
 
 Now start the Xilinx IDE wirh the project file \code{jop.npl}. It
@@ -184,10 +184,10 @@ will be converted to a new (binary) \code{jop.ise} project. The
 The above is a one step build for the processor. The Java
 application is built and downloaded by:
 
-\begin{verbatim}
+\begin{lstlisting}
     make java_app
     make download
-\end{verbatim}
+\end{lstlisting}
 
 Now your first Java program runs on JOP/Spartan-3!
 
@@ -297,38 +297,38 @@ on the I/O capabilities several options are possible:
 The following text describes the Flash programming and PLD
 reconfiguration for a stand alone configuration. Fist we have to
 build a JOP version that will load a Java program from the Flash:
-\begin{verbatim}
+\begin{lstlisting}
     make jopflash
-\end{verbatim}
+\end{lstlisting}
 As usual a \code{jop.sof} file will be generated. For easier reading
 of the configuration it will be converted to \code{jop.ttf}. This
 file will be programmed into the Flash starting at address 0x40000.
 Therefore, we need to save that file and rebuild a JOP version that
 loads a Java program (the Flash programmer) from the serial line:
-\begin{verbatim}
+\begin{lstlisting}
     copy quartus\cycmin\jop.ttf ttf\cycmin.ttf
     make jopser
-\end{verbatim}
+\end{lstlisting}
 As a next step we will build the Java program that will be programmed
 into the Flash and save a copy of the \code{.jop} file.
 \code{Hello.java} is the embedded version of a \emph{Hello World}
 program that blinks the WD LED at 1~Hz.
-\begin{verbatim}
+\begin{lstlisting}
     make java_app -e P1=test P2=test P3=Hello
     copy java\target\dist\bin\Hello.jop .
-\end{verbatim}
+\end{lstlisting}
 To program the Flash the programmer tool \code{util.Mem} will run on
 JOP and \code{amd.exe} is used at the PC side:
-\begin{verbatim}
+\begin{lstlisting}
     make japp -e P1=common P2=util P3=Mem COM_FLAG=
     amd Hello.jop COM1
     amd ttf\cycmin.ttf COM1
-\end{verbatim}
+\end{lstlisting}
 As a last step the PLD will be programmed to enable FPGA
 configuration form the Flash:
-\begin{verbatim}
+\begin{lstlisting}
     make pld_conf
-\end{verbatim}
+\end{lstlisting}
 The board shall now boot after a power cycle and the LED will blink.
 To read the output from the serial line the small utility
 \code{e.exe} can be used.
@@ -336,9 +336,9 @@ To read the output from the serial line the small utility
 
 In the case the PLD configuration shall be changed back to JTAG FPGA
 configuration following make command will reset the PLD:
-\begin{verbatim}
+\begin{lstlisting}
     make pld_init
-\end{verbatim}
+\end{lstlisting}
 
 Note, that in a stand alone configuration the watchdog (WD) pin has
 to be toggled every second (e.g., by invoking \code{util.Timer.wd()}.
@@ -349,9 +349,9 @@ Due to wrong file permissions the Windows executables \code{amd.exe}
 and \code{USBRunner.exe} will not have the execution permission set.
 Change the setting with the Windows Explorer. The tool \code{amd.exe}
 can also be rebuilt with:
-\begin{verbatim}
+\begin{lstlisting}
     make cprog
-\end{verbatim}
+\end{lstlisting}
 
 
 \section{The Design Flow}
@@ -374,19 +374,20 @@ checked in into the repository. The sources can be found in directory
 \dirent{c\_src}.
 
 \begin{description}
-    \item[\eei{down.exe}] The workhorse to download Java programs. The
-    mandatory argument is the COM-port. Optional switch \code{-e}
-    keeps the program running after the download and echoes the
-    characters from the serial line (\code{System.out} in JOP) to
-    stdout. Switch \code{-usb} disables the echo protocol to speed up the
-    download over USB.
-    \item[\eei{e.exe}] Echoes the characters from the serial line
-        to stdout. Parameter is the COM-port.
-    \item[\eei{amd.exe}] A utility to send data over the serial
+    \item[\cmdb{down.exe}] The workhorse to download Java
+        programs. The mandatory argument is the COM-port.
+        Optional switch \code{-e} keeps the program running after
+        the download and echoes the characters from the serial
+        line (\code{System.out} in JOP) to stdout. Switch
+        \code{-usb} disables the echo protocol to speed up the
+        download over USB.
+    \item[\cmdb{e.exe}] Echoes the characters from the serial
+        line to stdout. Parameter is the COM-port.
+    \item[\cmdb{amd.exe}] A utility to send data over the serial
         line to program the on-board Flash. The complementary
         Java program \code{util.Mem} must be running on JOP.
-    \item[\eei{USBRunner.exe}] Download the FPGA configuration via
-    USB with the FTDI2232C chip (dpsio board).
+    \item[\cmdb{USBRunner.exe}] Download the FPGA configuration
+        via USB with the FTDI2232C chip (dpsio board).
 \end{description}
 
 \subsubsection{Generation of Files}
@@ -397,14 +398,17 @@ files are in \code{jop-tools.jar} in directory
 \dirent{java/tools/dist/lib}.
 
 \begin{description}
-    \item[\eei{Jopa}] The JOP assembler. Assembles the microcoded
-    JVM and produces on-chip memory initialization files and VHDL
-    files.
-    \item[\eei{BlockGen}] converts Altera memory initialization
+    \item[\cmdb{Jopa}] The JOP assembler. Assembles the
+        microcoded JVM and produces on-chip memory initialization
+        files and VHDL files.
+    \item[\cmdb{BlockGen}] converts Altera memory initialization
         files to VHDL files for a Xilinx FPGA.
-    \item[\eei{JOPizer}] links a Java application and converts the
-    class information to the format that JOP expects (a \code{.jop} file).
-    \cmd{JOPizer} uses the bytecode engineering library\footnote{\url{http://jakarta.apache.org/bcel/}} (BCEL).
+    \item[\cmdb{JOPizer}] links a Java application and converts
+        the class information to the format that JOP expects (a
+        \code{.jop} file). \cmd{JOPizer} uses the bytecode
+        engineering
+        library\footnote{\url{http://jakarta.apache.org/bcel/}}
+        (BCEL).
 
 \end{description}
 
@@ -412,12 +416,12 @@ files are in \code{jop-tools.jar} in directory
 
 \index{simulation!JopSim}
 \begin{description}
-    \item[\eei{JopSim}] reads a \code{.jop} file and executes it in
-    a debug JVM written in Java. Command line option
-    \code{-Dlog="true"} prints a log entry for each executed JVM
-    bytecode.
-    \item[\eei{pcsim}] simulates the BaseIO expansion board for Java
-    debugging on a PC (using the JVM on the PC).
+    \item[\cmdb{JopSim}] reads a \code{.jop} file and executes it
+        in a debug JVM written in Java. Command line option
+        \code{-Dlog="true"} prints a log entry for each executed
+        JVM bytecode.
+    \item[\cmdb{pcsim}] simulates the BaseIO expansion board for
+        Java debugging on a PC (using the JVM on the PC).
 \end{description}
 
 \subsection{Targets}
@@ -578,9 +582,9 @@ of JOP running. There are two ways to simulate JOP:
 The high level simulation with \cmd{JopSim} is a simple JVM written
 in Java that can execute the JOP specific application (the
 \code{.jop} file). It is started with:
-\begin{verbatim}
+\begin{lstlisting}
     make jsim
-\end{verbatim}
+\end{lstlisting}
 
 To output each executing bytecode during the simulation run change in
 the Makefile the logging parameter to \code{-Dlog="true"}.
@@ -657,9 +661,9 @@ In directory \dirent{modelsim} you will find a small batch file
 order and starts ModelSim. The whole simulation process (including
 generation of the correct microcode) is started with:
 
-\begin{verbatim}
+\begin{lstlisting}
     make sim
-\end{verbatim}
+\end{lstlisting}
 
 After a few seconds you should see the startup message from JOP
 printed in ModelSim's command window. The simulation can be continued
@@ -807,6 +811,8 @@ Internet at the following places:
 
 \section{Porting JOP}
 
+\index{JOP porting}
+
 Porting JOP to a different FPGA platform or board usually consists
 of adapting pin definitions and selection of the correct memory
 interface. Memory interfaces for the SimpCon interconnect can be
@@ -831,11 +837,13 @@ targets \cmd{jop\_blink\_test} and \cmd{jop\_testmon}.
 
 \subsubsection{Blinking LED and UART output}
 
+\index{UART test}
+
 The test is built with:
 %
-\begin{verbatim}
+\begin{lstlisting}
     make jop_blink_test
-\end{verbatim}
+\end{lstlisting}
 %
 After download, the watchdog LED should blink and the FPGA will print
 out 0 and 1 on the serial line. Use a terminal program or the utility
@@ -843,12 +851,14 @@ out 0 and 1 on the serial line. Use a terminal program or the utility
 
 \subsubsection{Test Monitor}
 
+\index{memory test}
+
 Start a terminal program (e.g. HyperTerm) to communicate with the
 monitor program and build the test monitor with:
 %
-\begin{verbatim}
+\begin{lstlisting}
     make jop_testmon
-\end{verbatim}
+\end{lstlisting}
 %
 After download the program prints the content of the memory at
 address 0. The program understands following \emph{commands}:
@@ -928,14 +938,14 @@ as a base to the I/O address.
 By convention this address mapping is defined in
 \code{com.jopdesign.sys.Const}. Here is the UART example:
 
-\begin{verbatim}
+\begin{lstlisting}
     // use negative base address for fast constant load
     // with bipush
     public static final int IO_BASE = 0xffffff80;
     ...
     public static final int IO_STATUS = IO_BASE+0x10;
     public static final int IO_UART = IO_BASE+0x10+1;
-\end{verbatim}
+\end{lstlisting}
 
 The I/O devices are accessed from Java by
 \emph{native}\footnote{These are not real functions and are
@@ -943,7 +953,7 @@ substituted by special bytecodes on application building with
 JOPizer.} functions: \code{Native.rdMem()} and \code{Native.wrMem()}
 in pacakge \code{com.jopdesign.sys}. Again an example with the UART:
 
-\begin{verbatim}
+\begin{lstlisting}
     // busy wait on free tx buffer
     // no wait on an open serial line, just wait
     // on the baud rate
@@ -951,7 +961,7 @@ in pacakge \code{com.jopdesign.sys}. Again an example with the UART:
         ;
     }
     Native.wrMem(c, Const.IO_UART);
-\end{verbatim}
+\end{lstlisting}
 
 Best practise is to create a new I/O configuration
 \code{scio\_xxx.vhdl} and a new Quartus project for this
@@ -961,9 +971,9 @@ version of JOP. For the new Quartus project only the three files
 in a new directory under \dirent{quartus}. This new directory is the
 project name that has to be set in the Makefile:
 
-\begin{verbatim}
+\begin{lstlisting}
     QPROJ=yourproject
-\end{verbatim}
+\end{lstlisting}
 
 The new VHDL module and the \code{scio\_xxx.vhdl} are added in
 \code{jop.qsf}. This file is a plain ASCII file and can be edited
@@ -986,11 +996,15 @@ in several files.
 
 \subsubsection{Speed Configuration}
 
+\index{clock frequency}
+
 By default, JOP is configured for 80 Mhz. To build the 100 MHz
 configuration, edit \code{quartus/cycmin/jop.qsf} and change
 \code{jop\_config\_80} to \code{jop\_config\_100}.
 
 \subsubsection{Method Cache Configuration}
+
+\index{cache!configuration}
 
 The default configuration (for the Altera Cyclone) is a 4~KB method
 cache configured with 16 blocks (i.e., a variable block cache). For
@@ -1002,7 +1016,7 @@ need to edit the top-level VHDL. Here is an example from
 \code{vhdl/top/jopcyc.vhd}:
 
 {\small
-\begin{verbatim}
+\begin{lstlisting}
 entity jop is
 
 generic (
@@ -1012,7 +1026,7 @@ generic (
    jpc_width : integer := 12; -- address bits of java bytecode pc = cache size
    block_bits : integer := 4  -- 2*block_bits is number of cache blocks
 );
-\end{verbatim}
+\end{lstlisting}
 }
 
 The power of 2 of the \code{jpc\_width} is the cache size, and the
@@ -1022,6 +1036,8 @@ simulate a dual block cache, \code{block\_bits} has to be set to 1.
 force a miss at the cache lookup.)
 
 \subsubsection{Stack Size}
+
+\index{stack!size}
 
 The on-chip stack size can be configured by changing following
 constants:

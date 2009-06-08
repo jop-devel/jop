@@ -1,63 +1,12 @@
 
-In this chapter, we will present the evaluation results for JOP, with
-respect to size, performance, and WCET.
-\tablename~\ref{tab_results_proc} compares JOP with other Java
-hardware solutions (see also Chapter~\ref{chap:related}). The column
-year indicates the first date at which the processor became available
-or the first publication about the processor. The research project
-Komodo has now ceased, while FemtoJava is still being used as a basis
-for active research.
-
-We can see that JOP is the smallest realization in an FPGA and also
-has the highest clock frequency of all soft-core implementations. JOP
-also has a minimum CPI of 1 while Komodo and FemtoJava have minimum
-CPIs of four and three respectively.
-
-\emph{TODO: CPI of four is not true anymore (for jamuth).}
-
-\begin{table}[tbh]
-    \centering
-{\footnotesize
-\begin{tabular}
-    {|>{\bfseries}m{1.6cm}|>{\raggedright}m{1.6cm}|>{\raggedright}m{1.7cm}|r|>{\raggedright}m{2cm}|r|r|}
-%    {p{1.5cm}p{1.5cm}p{1.4cm}p{1.6cm}cp{1.4cm}cp{2.5cm}}
-
-    \hline
-         & Target  & Size & Speed & Java     & Min.  & Year \\
-         & technology &      & (MHz) & standard & CPI  & \\
-    \hline
-    JOP & Altera, Xilinx FPGA & 1830 LCs, 3 KB RAM & 100 & J2ME CLDC & 1 & 2001 \\
-    \hline
-    picoJava & No realization & 128K gates + memory &  & Full & 1 & 1999 \\
-    \hline
-    aJile & ASIC 0.25$\mu$ & 25K gates + ROM & 100 & J2ME CLDC &  &  2000 \\
-    \hline
-    Moon & Altera FPGA & 3660 LCs, 4 KB RAM &  &  &  &  2000 \\
-    \hline
-    Lightfoot & Xilinx FPGA & 3400 LCs & 40 &  &  &  2001 \\
-    \hline
-    Komodo & Xilinx FPGA & 2600 LCs & 33 & & 4 & 2000 \\
-    \hline
-    FemtoJava & Altera Flex 10K & 2000 LCs & 4 & Subset: 69 bytecodes, 16-bit ALU & 3  & 2001 \\
-    \hline
-
-\end{tabular}
-}
-    \caption{Comparison of Java hardware with JOP}
-    \label{tab_results_proc}
-\end{table}
-
-In the following section, the hardware platform that is used for
+In this chapter, we present the evaluation results for JOP. In the
+following section, the hardware platform that is used for
 benchmarking is described. This is followed by a comparison of JOP's
-resource usage with other soft-core processors. In the `General
-Performance' section, a number of different solutions for embedded
-Java are compared at the bytecode level and at the application
-level. The basic properties of the real-time scheduler are evaluated
-using the Reference Implementation (RI) of the RTSJ on a Linux
-system and the real-time profile from Section~\ref{sec:rtprof} on
-top of JOP. It is also shown that our objective of providing an easy
-target for WCET analysis has been achieved. This chapter concludes
-with a short description of real-world applications that use JOP.
+resource usage with other soft-core processors. In
+Section~\ref{sec:performance} the performance of a number of
+different solutions for embedded Java is compared. This chapter
+concludes with a short description of real-world applications that
+use JOP.
 
 \section{Hardware Platforms}
 
@@ -73,30 +22,31 @@ pin-compatible and are used in commercial applications of JOP. The
 Cyclone board is the hardware that is used for the following
 evaluations.
 
-This board is an ideal development system for JOP. Static RAM and
+This board is an ideal development platform for JOP. Static RAM and
 FLASH are connected via independent buses to the FPGA. All unused
 FPGA pins and the serial line are available via four connectors. The
 FLASH can be used to store configuration data for the FPGA and
 application program/data. The FPGA can be configured with a
-ByteBlasterMV download cable or loaded from the flash (with a small
-CPLD on board). As the FLASH is also connected to the FPGA, it can
-be programmed from the FPGA. This allows for upgrades of the Java
-program and even the processor core itself in the field. The board
-is slightly different from other FPGA prototyping boards, in that
-its connectors are on the bottom side. Therefore, it can be used as
-a module (60~mm x 48~mm), i.e.\ as part of a larger board that
-contains the periphery. The Cyclone board contains:
+ByteBlasterMV download cable or loaded from the FLASH (with a small
+CPLD on board). As the FLASH is also connected to the FPGA, it can be
+programmed from the FPGA. This allows for upgrades of the Java
+program and even the processor core itself in the field. The board is
+slightly different from other FPGA prototyping boards, in that its
+connectors are on the bottom side. Therefore, it can be used as a
+module (60~mm x 48~mm), i.e.\ as part of a larger board that contains
+the periphery. The Cyclone board contains:
 %
 %\begin{samepage}
 \begin{itemize}
 \item Altera Cyclone EP1C6Q240 or EP1C12Q240
 \item Step Down voltage regulator (1V5)
-\item Crystal clock (20MHz) at the PLL input (up to 640MHz internal)
-\item 512KB FLASH (for FPGA configuration and program code)
-\item 1MB fast asynchronous RAM (15 ns)
-\item Up to 128MB NAND FLASH
+\item Crystal clock (20~MHz) at the PLL input (up to 640~MHz
+    internal)
+\item 512~KB FLASH (for FPGA configuration and program code)
+\item 1~MB fast asynchronous RAM (15 ns)
+\item Up to 128~MB NAND FLASH
 \item ByteBlasterMV port
-\item Watchdog with LED
+\item Watchdog with a LED
 \item EPM7064 PLD to configure the FPGA from the FLASH on watchdog reset
 \item Serial interface driver (MAX3232)
 \item 56 general-purpose IO pins

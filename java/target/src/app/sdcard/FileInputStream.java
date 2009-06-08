@@ -1,16 +1,31 @@
+/*
+  This file is part of JOP, the Java Optimized Processor
+    see <http://www.jopdesign.com/>
+
+  Copyright (C) 2008-2009, Rainhard Raschbauer
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
 
 package sdcard;
-
-import joprt.RtThread;
-
-import com.jopdesign.sys.*;
 
 
 public class FileInputStream {
 
 
 	public static FatItS FatInterface = new FatItS();
-	public static FatMmc MmcInterface = new FatMmc();
+//	public static FatMmc MmcInterface = new FatMmc();
 
 
 	public static int[] FIStream_Buffer  = new int [512];
@@ -169,14 +184,14 @@ public static boolean FileInputStream(String file)
 
 
 /*****************************************************************
-*  public int read(byte[] b)
-*    	Reads up to b.length bytes of data from this input stream into an array of bytes. 
+*  public int read()
+*    	Reads up to one byte of data from this input stream. 
 *	This method blocks until some input is available. 
 *
 *  Parameters:
-*	b - the buffer into which the data is read. 
+*	
 *  Returns:
-*	the total number of bytes read into the buffer, or -1 if there is no more data because the end of the file has been reached. 
+*	the next byte of data, or -1 if the end of the file is reached. 
 *****************************************************************/
 public static int read ()
 {
@@ -363,7 +378,7 @@ FIStream_size =null;
 FIStream_startcluster =null;
 FIStream_offset_from_start =null;
 FatInterface =null;
-MmcInterface =null;
+//MmcInterface =null;
 }
 
 
