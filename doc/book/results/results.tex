@@ -50,7 +50,7 @@ the periphery. The Cyclone board contains:
 \item Watchdog with a LED
 \item EPM7064 PLD to configure the FPGA from the FLASH on watchdog reset
 \item Serial interface driver (MAX3232)
-\item 56 general-purpose IO pins
+\item 56 general-purpose I/O pins
 \end{itemize}
 %\end{samepage}
 %
@@ -232,7 +232,8 @@ academia and two just-in-time (JIT) compiler based systems. For the
 comparison we use \code{JavaBenchEmbedded},\footnote{Available at
 \url{http://www.jopwiki.com/JavaBenchEmbedded}.} a set of open-source
 Java benchmarks for embedded systems. \code{Kfl} and \code{Lift} are
-two real-world applications adapted with a simulation of the
+two real-world applications, described in
+Section~\ref{sec:applications}, adapted with a simulation of the
 environment to run as stand-alone benchmarks. \code{UdpIp} is a
 simple client/server test program that uses a TCP/IP stack written in
 Java.
@@ -345,231 +346,448 @@ optimized for the average case.
 \section{Applications}
 \label{sec:applications}
 
-During the research for the PhD thesis, the first working version of
-JOP was used in a real-world application. Using an architecture under
-development in a commercial project entails risks. Nevertheless, this
-was deemed to be the best way to prove the feasibility of the
-processor. In this section, the experiences of the first project
-involving JOP are summarized.
 
-\subsection{Motor Control}
+Since the start of the development of JOP in late 2000 it has been
+successfully deployed in several embedded control and automation
+systems. The following section highlights three different industrial
+real-time applications that are based on JOP. This section is based
+on \cite{jop:app}; the first application is also described in
+\cite{jop:wises03}.
+
+Implementation of a processor in an FPGA is a little bit more
+expensive than using an ASIC processor. However, additional
+application logic, such as a communication controller or an AD
+converter, can also be integrated into the FPGA. Integration of the
+processor and the surrounding logic in the same reprogrammable chip
+is a flexible solution: one can even produce the PCB before all logic
+components are developed as the interconnection is programmed on-chip
+and not routed on the PCB. For low-volume projects, as those
+presented in this section, this flexibility reduces development cost
+and therefore outweighs the cost of the FPGA device. It has to be
+noted that low-cost FPGAs, that are big enough for JOP, are available
+at \$11 for a single unit.
+
+Furthermore, most embedded systems are implemented as distributed
+systems and even very small and memory constraint devices need to
+communicate. In control applications this communication has to be
+performed under real-time constraints. We show in this section
+different communication systems that are all based on simple
+communication patterns.
+
+\subsection{The Kippfahrleitung}
 \label{sec:app:kfl}
+
+The first commercial project where JOP had to prove that a Java
+processor is a valuable option for embedded real-time systems was a
+distributed motor control system.
 
 In rail cargo, a large amount of time is spent on loading and
 unloading of goods wagons. The contact wire above the wagons is the
 main obstacle. Balfour Beatty Austria developed and patented a
 technical solution, the so-called \emph{Kippfahrleitung}, to tilt up
-the contact wire. This is done on a line up to one kilometer. An
-asynchronous motor on each mast is used for this tilting. However, it
-has to be done synchronously on the whole line.
-
-Each motor is controlled by an embedded system. This system also
-measures the position and communicates with a base station.
-\figurename~\ref{fig:results:kfl:mast} shows the mast with the motor
-and the control system in the `down' and `up' positions. The base
-station has to control the deviation of individual positions during
-the tilt. It also includes the user interface for the operator. In
-technical terms, this is a distributed, embedded real-time control
-system, communicating over an RS485 network.
+the contact wire. \figurename~\ref{fig:results:kfl:mast} shows the
+construction of the mechanical tilt system driven by an asynchronous
+motor (just below the black tube). The little box mounted on the mast
+contains the control system. The black cable is the network
+interconnection of all control systems. In
+\figurename~\ref{fig:results:kfl:mast2} the same mast is shown with
+the contact wire tilted up.
 
 \begin{figure}
     \centering
     \includegraphics[width=7cm]{results/results_kfl_mast1}
-    \hspace{1cm}
-    \includegraphics[width=4cm]{results/results_kfl_mast2}
-    \caption{Picture of a \emph{Kippfahrleitung} mast in down and up position}
+    \caption{A \emph{Kippfahrleitung} mast in down position}
     \label{fig:results:kfl:mast}
 \end{figure}
 
-%\begin{figure}
-%    \centering
-%    \includegraphics[width=4cm]{results/results_kfl_mast2}
-%    \caption{Picture of the mast in up position}
-%    \label{fig:results:kfl:mast2}
-%\end{figure}
+
+The contact wire is tilted up on a distance of up to one kilometer.
+For a maximum distance of 1~km the whole system consists of 12~masts.
+Each mast is tilted by an asynchronous motor. However, the individual
+motors have to be synchronized so the tilt is performed in a smooth
+way. The maximum difference of the position of the contact wire is
+10~cm. Therefore, a control algorithm has to slow down the faster
+motors.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=4cm]{results/results_kfl_mast2}
+    \caption{The mast in the up position with the tilted contact wire}
+    \label{fig:results:kfl:mast2}
+\end{figure}
+
+\subsubsection{Hardware}
+
+Each motor is controlled by its own embedded system (as seen in
+\figurename~\ref{fig:results:kfl:mast}) by silicon switches. The
+system measures the position of the arm with two end sensors and a
+revolving sensor. It also supervises the supply voltage and the
+amount of current through the motor. Those values are transmitted to
+the base station.
+
+The base station, shown in Figure~\ref{fig:results:base}, provides
+the user interface for the operator via a simple display and a
+keyboard. It is usually located at one end of the line. The base
+station acts as master and controls the deviation of individual
+positions during the tilt. In technical terms, this is a distributed,
+embedded real-time control system, communicating over a shared
+network. The communication bus (up to one kilometer) is attached via
+an isolated RS485 data interface.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=5cm]{results/base}
+    \caption{The base station with the operator interface}
+    \label{fig:results:base}
+\end{figure}
 
 
-\subsubsection{Real Hardware}
-
-Although this system is not mass-produced, there were nevertheless
+Although this system is not a mass product, there are nevertheless
 cost constraints. Even a small FPGA is more expensive than a general
 purpose CPU. To compensate for this, additional chips for the memory
 and the FPGA configuration were optimized for cost. One standard
-128KB Flash was used to hold FPGA configuration data, the Java
-program and a logbook. External main memory was reduced to 128KB
-with an 8-bit data bus.
+128~KB Flash is used to hold FPGA configuration data, the Java
+program and a logbook. External main memory is reduced to 128~KB with
+an 8-bit data bus. Furthermore, all peripheral components, such as
+two UARTS, four sigma delta ADCs, and I/O ports are integrated in the
+FPGA.
 
-To reduce external components, the boot process is a little
-complicated. A watchdog circuit delivers a reset signal to a 32
-macro-cell PLD. This PLD loads the configuration data into the FPGA.
-When the FPGA starts, it disables the PLD and loads the Java program
-from the Flash into the external RAM. After the JVM is initialized,
-the program starts at \code{main()}.
+Five silicon switches in the power line are controlled by the
+application program. A wrong setting of the switches due to a
+software error could result in a short circuit. Simple logic in the
+FPGA (coded in VHDL) can enforce the proper conditions for the
+switches. The sigma-delta ADCs are used to measure the temperature of
+the silicon switches and the current through the motor.
 
-The motor is controlled by silicon switches connected to the FPGA
-with opto couplers. The position is measured with two end sensors and
-a revolving sensor. The processor supervises the voltage and current
-of the motor supply. A display and keyboard are attached to the base
-station for the user interface. The communication bus (up to one
-kilometer) is attached via an isolated RS485 data interface.
-
-\subsubsection{Synthesized Hardware}
-
-The following I/O modules were added to the JOP core in the FPGA:
-%
-\begin{itemize}
-\item Timer
-\item UART for debugging
-\item UART with FIFO for the RS485 line
-\item Four sigma delta ADCs
-\item I/O ports
-\end{itemize}
-%
-Five switches in the power line needed to be controlled by the
-program. A wrong setting of the switches due to a software error
-could result in a short circuit. Ensuring that this could not happen
-was a straightforward task at the VHDL level. The sigma-delta ADCs
-are used to measure the temperature of the silicon switches and the
-current through the motor.
 
 \subsubsection{Software Architecture}
 
-The main task of the program was to measure the position using the
-revolving sensor and communicate with the base station. This has to
-be done under real-time constraints. This is not a very complicated
-task. However, at the time of development, many features from a
-full-blown JVM implementation, such as threads or objects, were
-missing in JOP. The resulting Java was more like a \emph{tiny Java}.
-It had to be kept in mind which Java constructs were supported by
-JOP. Because there was no multi-threading capability, and in the
-interests of simplicity, a simple infinite loop with constant time
-intervals was used. Listing~\ref{lst:results:main} shows the
-simplified program structure. After initialization and memory
-allocation, this loop enters and never exits.
+The main task of the program is to measure the position using the
+revolving sensor and to communicate with the base station under
+real-time constraints. The conservative style of a cyclic executive
+was chosen for the application. At application start all data
+structures are allocated and initialized. In the mission phase no
+allocation takes place and the cyclic executive loop is entered and
+never exited. The simple infinite loop, unblocked at constant time
+intervals, is shown in Listing~\ref{lst:results:main}. At the time
+the application was developed no static WCET analysis tool for Java
+was available. The actual execution time was measured and the maximum
+values have been recorded regularly. The loop and communication
+periods have been chosen to leave slack fur unexpected execution time
+variations. However, the application code and the Java processor are
+fully WCET analyzable, as shown later \cite{jop:wcet:jtres06}. The
+application is used in Chapter~\ref{chap:wcet} as a test case for the
+WCET analysis tool.
 
-\begin{lstlisting}[float,caption=Simplified program structure,
+No interrupts or direct memory access (DMA) devices that can
+influence the execution time are used in the simple system. All
+sensors and the communication port are polled in the cyclic
+executive.
+
+\begin{lstlisting}[float,caption=The cyclic executive (simplified version),
 label=lst:results:main]
-    public static void main(String[] args) {
 
-        init();
-        Timer.start();
-        forever();
-        // this point is NEVER reached
-    }
+private static void forever() {
 
-    private static void forever() {
-
-        for (;;) {
-            Msg.loop();
-            Triac.loop();
-            if (Msg.available) {
-                handleMsg();
-            } else {
-                chkMsgTimeout();
-            }
-            handleWatchDog();
-            Timer.waitForNextInterval();
+    for (;;) {
+        Msg.loop();
+        Triac.loop();
+        if (Msg.available) {
+            handleMsg();
+        } else {
+            chkMsgTimeout();
         }
+        handleWatchDog();
+        Timer.waitForNextInterval();
     }
+}
 \end{lstlisting}
 
 \subsubsection{Communication}
 
-Communication is based on a client-server structure. Only the base
-station is allowed to send a request to a single mast station. The
-station is then required to reply. The maximum reply time is bounded
-by two time intervals. The base station handles timeout and retry. If
-an irrecoverable error occurs, the base station switches off the
-power to the mast stations, including the power supply to the motor.
-This is the safe state of the whole system.
+Communication is based on a master/slave model. Only the base station
+(the master) is allowed to send a request to a single mast station.
+This station is then required to reply within bounded time. The
+master handles timeout and retry. If an irrecoverable error occurs,
+the base station switches off the power for all mast stations,
+including the power supplies to the motors. This is the safe state of
+the whole system.
 
-From the mast station perspective, every mast station supervises the
-base station. The base station is required to send requests on a
-regular basis. If this requirement is violated, the mast station
-switches off its motor. The data is exchanged in small packets of
-four bytes, including a one-byte CRC. To simplify the development,
-commands to program the Flash in the mast stations and force a reset
-were included. It is therefore possible to update the program, or
-even change the FPGA configuration, over the network.
+In a master/slave protocol no media access protocol is needed. In the
+case of a failure in the slave that delays a message collision can
+occur. The collision is detected by a violation of the message CRC.
+Spurious collisions are tolerated due to the retry of the base
+station. If the RS485 link is broken and only a subset of the mast
+stations reply the base station, the base station switches of the
+power supply for the whole system.
 
-%\subsubsection{Benefits from using an FPGA}
-%
-%The flexibility of FPGAs made it possible to postpone some design
-%decisions after production of the PCB. Since the production of the
-%PBC was on the critical time line this helped to finish the complete
-%project in time. During development, there have been situations
-%where problems showed up that have not been foreseen.  Two examples
-%are given where it was possible to find simple solutions:
-%
-%The routing of the PCB was almost finished. A question about cooling
-%the switches (TRIAC) has arisen. The electronic development team
-%insisted on a temperature sensor. The requirements in resolution and
-%conversion time were low. A sigma-delta ADC with only two external
-%passive components (a NTC thermistor and a capacitor) was
-%implemented in the FPGA.
-%
-%When the sample rate for an ADC is low compared to the clock
-%frequency of the digital system it is possible to transfer the AD
-%conversion problem from the analogue to the time domain. In
-%\figurename~\ref{fig_results_sigdel} the principle of a Sigma-Delta
-%ADC is shown. Only the adder and the integrator have to be analogue
-%components. A single bit DAC is just the FPGA digital output driving
-%the signal between GND and VCCIO. The single bit ADC can be built
-%with a comparator. For low resolution the threshold of the FPGA
-%input is practical. The simplest form of an ADC built with an FPGA
-%is shown in \figurename~\ref{fig_results_sigdel_real}. The filter
-%averages $2^n$ samples and can be implemented as a counter.
-%
-%\begin{figure*}
-%    \centering
-%    \includegraphics{results/results_sigdel}
-%    \caption{A sigma-delta ADC}
-%    \label{fig_results_sigdel}
-%\end{figure*}
-%
-%
-%\begin{figure*}
-%    \centering
-%    \includegraphics{results/results_sigdel_real}
-%    \caption{A minimal sigma-delta ADC with an FPGA}
-%    \label{fig_results_sigdel_real}
-%\end{figure*}
-%
-%
-%The AC current of the motor had to be monitored. The solution for
-%this was a shunt resistor in every power line and an opto-coupler
-%for isolation. However, it turned out that the shunt resistors got
-%too hot and delivered to little voltage for the opto-couplers to
-%work reliable. Having seen that it is possible to build an ADC in
-%the FPGA a new idea was born. For EMC reasons, there is an inductor
-%in every AC line. With a few windings of wire, a simple transformer
-%can be built. The resulting voltage was amplified, rectified and
-%used for current measurement. An additional comparator was used for
-%an exacter threshold than the input buffer of the FPGA. This
-%solution kept the board cool and added extra functionality. It is
-%now possible to define two thresholds for too little and too much
-%current.
-%
+On the other hand the mast stations supervise the base station. The
+base station is required to send the requests on a regular basis. If
+this requirement is violated, each mast station switches off its
+motor. The local clocks are not synchronized. The mast stations
+measure the time elapsed since the last request from the base station
+and locally switch off based on a timeout.
 
-\subsection{Further Projects}
+The maximum distance of 1~km determines the maximum baud rate of the
+RS485 communication network. The resulting 12 masts on such a long
+line determine the number of packets that have to be sent in one
+master/slave round. Therefore, the pressure is high on the packet
+length. The data is exchanged in small packets of four bytes,
+including a one-byte CRC. To simplify the development, commands to
+reprogram the Flash in the mast stations and to force a reset are
+included. Therefore, it is possible to update the program, or even
+change the FPGA configuration, over the network.
 
-TAL, short for TeleAlarm, is a remote tele-control and data logging
-system. TAL communicates via a modem or an Ethernet bus with a SCADA
-system or via SMS with a mobile phone. For this application, a
-minimal TCP/IP stack needed to be implemented. This stack was the
-reason for implementing threads and a simple real-time system in
-JOP.
+\subsection{The SCADA Device TeleAlarm}
+
+TeleAlarm (TAL) is a typical remote terminal unit of a supervisory
+control and data acquisition (SCADA) system. It is used by the Lower
+Austria's energy provider EVN (electricity, gas, and heating) to
+monitor the distribution plant. TeleAlarm also includes output ports
+for remote control of gas valves.
+
+\subsubsection{Hardware}
+
+The TAL device consists of a CPU FPGA module and an I/O board. The
+FPGA module contains an Altera Cyclone device, 1~MB static memory,
+512~KB Flash, and 32~MB NAND Flash. The I/O board contains several
+EMC protected digital input and output ports, two 20~mA input ports,
+Ethernet connection, and a serial interface. Furthermore, the device
+performs loading of a rechargeable battery to survive power down
+failures. On power down, an important event for a energy provider, an
+alarm is sent. The rechargeable battery is also monitored and the
+device switches itself off when the minimal voltage threshold is
+reached. This event is sent to the SCADA system before the power is
+switched off.
+
+The same hardware is also used for a different project: a lift
+control in an automation factory in Turkey. The simple lift control
+software is now used as a test case for WCET tool development (see
+Chapter~\ref{chap:wcet}).
+
+\subsubsection{Communication}
+
+The communication between the TAL and the main supervisory control
+system is performed with a proprietary protocol. On a value change,
+the TAL sends the new data to the central system. Furthermore, the
+remote units are polled by the central system at a regular base. The
+TAL itself also sends the actual state regularly. TAL can communicate
+via Internet/Ethernet, a modem, and via SMS to a mobile phone.
+
+EVN uses a mixture of dial-up network and leased lines for the plant
+communication. The dial-up modems are hosted by EVN itself. For
+safety and security reason there is no connection between the control
+network and the office network or the Internet.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[scale=0.75]{results/tal}
+    \caption{EVN SCADA system with the modem pool and TALs as remote terminal units}
+    \label{fig:tal}
+\end{figure}
+
+\figurename~\ref{fig:tal} shows the SCADA system setup at EVN.
+Several TALs are connected via modems to the central modem pool. The
+modem pool itself is connected to the central server. It has to be
+noted that there are many more TALs in the field than modems in the
+pool. The communication is usually very short (several seconds) and
+performed on demand and on a long regular interval. Not shown in the
+figure are additional SCADA stations and other remote terminal units
+from other manufacturers.
+
+\subsection{Support for Single Track Railway Control}
 
 Another application of JOP is in a communication device with soft
-real-time properties -- Austrian Railways' (\"OBB) new security
-system for single-track lines. Each locomotive is equipped with a GPS
-receiver and a communication device. The position of the train,
-differential correction data for GPS, and commands are exchanged with
-a server at the central station over a GPRS virtual private network.
-JOP is the heart of the communication device in the locomotive. The
-flexibility of the FPGA and an Internet connection to the embedded
-system make it possible to upgrade the software and even the
-processor in the field.
+real-time properties -- Austrian Railways' (\"OBB) new support system
+for single-track lines. The system helps the superintendent at the
+railway station to keep track of all trains on the track. He can
+submit commands to the engine drivers of the individual trains.
+Furthermore, the device checks the current position of the train and
+generates an alarm when the train enters a track segment without a
+clearance.
+
+At the central station all track segments are administered and
+controlled. When a train enters a non-allowed segment all trains
+nearby are warned automatically. This warning generates an alarm at
+the locomotive and the engine driver has to perform an emergency
+stop.
+
+\figurename~\ref{fig:zlb} gives an overview of the system. The
+display and command terminal at the railway station is connected to
+the Intranet of the railway company. On the right side of the figure
+a picture of the terminal that is connected to the Internet via GPRS
+and to a GPS receiver is shown. Each locomotive that enters the track
+is equipped with either one or two of those terminals.
+
+\begin{figure}
+    \centering
+    \includegraphics[scale=0.75]{results/zlb}
+    \caption{Support system for single track railway control for the Austrian railway company}
+    \label{fig:zlb}
+\end{figure}
+
+It has to be noted that this system is not a safety-critical system.
+The communication over a public mobile phone network is not reliable
+and the system is not certified for safety. The intension is just to
+\emph{support} the superintendent and the engine drivers.
+
+\subsubsection{Hardware}
+
+Each locomotive is equipped with a GPS receiver, a GPRS modem, and
+the communication device (terminal). The terminal is a custom made
+device. The FPGA module is the same as in TAL, only the I/O board is
+adapted for this application. The I/O board contains several serial
+line interfaces for the GPS receiver, the GPRS modem, debug and
+download, and display connection. Auxiliary I/O ports connected to
+relays are reserved for future use. A possible extension is to stop
+the train automatically.
+
+\subsubsection{Communication}
+
+The current position of the train is measured with GPS and the
+current track segment is calculated. The number of this segment is
+regularly sent to the central station. To increase the accuracy of
+the position, differential GPS correction data is transmitted to the
+terminal. The differential GPS data is generated by a ground base
+reference located at the central station.
+
+The exchange of positions, commands, and alarm messages is performed
+via a public mobile phone network (via GPRS). The connection is
+secured via a virtual private network that is routed by the mobile
+network provider to the railway company's Intranet. The application
+protocol is command/response and uses UDP/IP as transport layer. Both
+systems (the central server and the terminal) can initiate a command.
+The system that sends the command is responsible for retries when no
+response arrives. The deadline for the communication of important
+messages is in the range of several seconds. After several
+non-successful retries the operator is informed about the
+communication error. He is than in charge to perform the necessary
+actions.
+
+Besides the application specific protocol a TFTP server is
+implemented in the terminal. It is used to update the track data for
+the position detection and to upload a new version of the software.
+The flexibility of the FPGA and an Internet connection to the
+embedded system allows to upgrade the software and even the processor
+in the field.
+
+
+\subsection{Communication and Common Design Patterns} \label{sec:comm}
+
+Although we described embedded systems from quite different
+application domains we have been facing similar challenges. All
+systems are distributed systems and therefore need to communicate.
+Furthermore, they are real-time systems (at least with soft
+deadlines) and need to trust the communication and perform regular
+checks. The issues in the design of embedded real-time systems are
+quite similar in the three described projects. We found that several
+design patterns are used over and over and describe three of them in
+this section.
+
+
+\subsubsection{Master/Slave Designs}
+
+Developing safe embedded systems is an exercise in reducing
+complexity. One paradigm to simplify embedded software development is
+the master/slave pattern. Usually a single master is responsible to
+initiate commands to the slaves. The single master is also
+responsible to handle reliable communication. The master/slave
+pattern also fits very well with the command/response pattern for the
+communication.
+
+\subsubsection{Dealing with Communication Errors}
+
+Communication is not per se reliable. The RS485 link at the
+Kippfahrleitung operates in a rough environment and electromagnetic
+influences can lead to packet loss. The TAL system can suffer from
+broken phone lines. The single track control system operates on a
+public mobile phone network -- a network without any guarantees for
+the GPRS data traffic. Therefore, we have to find solutions to
+operate in a safe and controlled manner the distributed system
+despite the chance of communication errors and failures.
+
+Reliable communication is usually provided by the transport layer,
+TCP/IP in the case of the Internet. However, the timeouts in TCP/IP
+are way longer than the communication deadlines within control
+systems. The approach in all three presented projects is to use a
+datagram oriented protocol and perform the timeout and retransmission
+at the application level. To simplify the timeout handling a simple
+command and response pattern is used. One partner sends a command and
+expects the response within a specific time bound. The command
+initiator is responsible for retransmission after the timeout. The
+response partner just needs to reply to the command and does not need
+to remember the state of the communication. After several timeouts
+the communication error is handled by an upper layer. Either the
+operator is informed (in the SCADA and the railway control system) or
+the whole system is brought into a safe state (in the motor control
+project).
+
+Communication errors are either transient or longer lasting.
+Transient communication errors are lost packets due to network
+overload or external electromagnetic influences. In a
+command/response system the lost packets (either the command or the
+response) is detected by a timeout on the response. A simple
+retransmission of the command can correct those transient errors.
+
+A longer network failure, e.g.\ caused by a wire break, can be
+detected by too many transmission retries. In such a case the system
+has to enter some form of safe state. Either the power is switched
+off or a human operator has to be informed. The individual timeout
+values and the number of retries depend, similar to thread periods,
+on the controlled environment. In the Kippfahrleitung the maximum
+timeout is in the millisecond range, whereas in the SCADA system the
+timeout is several minutes.
+
+\subsubsection{Software Update}
+
+Correction of implementation bugs during development can be very
+costly when physical access to the embedded system is necessary for a
+software update. Furthermore, a system is usually never really
+finished. When the system is in use the customer often finds new ways
+to enhance the system or requests additional features.
+
+Therefore, an important feature of a networked embedded system is a
+software and parameter update in the field. In the first project the
+software update is performed via a home-made protocol. The other
+projects use the Internet protocol to some extent and therefore TFTP
+is a natural choice. TFTP is a very simple protocol that can be
+implemented within about 100 lines of code. It is applicable even in
+very small and resource constraint embedded devices.
+
+\subsection{Discussion} \label{sec:lessions}
+
+Writing embedded control software in Java is still not very common
+due to the lack of small and efficient implementations of the JVM.
+Our Java processor JOP is a solution for some embedded systems.
+
+Using Java as the implementation language was a pleasure during
+programming and debugging. We did not waste many hours to hunt for
+pointer related bugs. The stricter (compared to C) type system of
+Java also catches many more programming errors at compile time.
+However, when using Java in a small embedded system one should not
+expect that a full blown Java library is available. Almost all of the
+code had to be written without library support. Embedded C
+programmers are aware of that fact, but Java programmers are new in
+the embedded domain and have to learn the difference between a PC and
+a 1~MB memory embedded system.
+
+Up to date FPGAs in embedded control systems are only used for
+auxiliary functions or to implement high-performance DPS algorithm
+directly in hardware. Using the FPGA as the main processor is still
+not very common. However, combining the main processor with some
+peripheral devices in the same chip can simplify the PCB layout and
+also reduce the production cost. Furthermore, a field-reprogrammable
+hardware device offers a great deal of flexibility: When some part of
+the software becomes the bottleneck, an implementation of that
+function in hardware can be a solution. Leaving some headroom in the
+logic resources can extend the lifetime of the product.
+
+For a prototype, JOP has been attached to a time-triggered
+network-on-chip \cite{jop:ttnoc}. It would be an interesting exercise
+to implement a JOP based node in a time-triggered distributed system
+as proposed by \cite{journals/pieee/KopetzB03}. The combination of a
+real-time Java processor and a real-time network can ensure real-time
+characteristics for the whole system.
 
 
 \section{Summary}
@@ -581,36 +799,19 @@ architecture, JOP is also smaller than a \emph{comparable} RISC
 processor in an FPGA. Implemented in an FPGA, JOP has the highest
 clock frequency of all known Java processors.
 
-We compared JOP against several embedded Java systems and, as a
-reference, with Java on a standard PC. A Java processor is up to 500
-times faster than an interpreting JVM on a standard processor for an
-embedded system. JOP is about six times faster than the aJ80 Java
-processor and as fast as the aJ100\footnote{The measured aJ100
-system contained faster SRAMs than the FPGA board for JOP.}.
-Preliminary results using compiled Java for a RISC processor in an
-FPGA, with a similar resource usage and maximum clock frequency to
-JOP, showed that native execution of Java bytecodes is faster than
-compiled Java.
+We compared JOP against several embedded Java systems. JOP is about
+40\% faster than the commercial Java processor aJ100, but picoJava
+and a JIT/RISC combination are faster than JOP. These results show
+that a time-predictable architecture does not need to be slow, but
+will never be as fast as an architecture optimized for average case
+performance.
 
-We compared the basic properties of the real-time scheduler on JOP
-against the RTSJ implementation on Linux. The integration of the
-scheduler in the JVM, and the timer interrupt under scheduler
-control, results in an efficient platform for Java in embedded
-real-time systems. JOP performs better and more predictably than the
-reference implementation of the RTSJ under Linux.
-
-We also performed WCET analysis of the implemented JVM at the
-microcode level. This analysis provides the WCET and BCET values for
-the individual bytecodes. We have also shown that there are no
-dependencies between individual bytecodes. This feature, in
-combination with the method cache (see Section~\ref{sec:cache}),
-makes JOP an easy target for low-level WCET analysis of Java
-applications.
-
-Usage of JOP in three real-world applications showed that the
-processor is mature enough to be used in commercial projects.
-
-
-%\bibliographystyle{plain}
-%\bibliography{../bib/mybib}
-%\end{document}
+Furthermore, we have presented three industrial applications
+implemented in Java on an embedded, real-time Java processor. All
+projects included custom designed hardware (digital functions) and
+the central computation unit implemented in a single FPGA. The
+applications are written in pure Java without the need for native
+methods in C. Java proved to be a productive implementation language
+for embedded systems. Usage of JOP in four real-world applications
+showed that the processor is mature enough to be used in commercial
+projects.
