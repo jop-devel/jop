@@ -42,7 +42,6 @@ public class InsertionSort
             // The guard will be false when j=1, because a[0] = 0 < a[i>1]
             // Worst case loop bound :  n - 1
             // Worst-case total bound : ((n-1) * n) / 2
-            for (int j = i; a[j] < a[j - 1]; j--) // @WCA loop=9
     		for (int j = i; a[j] < a[j - 1]; j--) // @WCA loop=9
     		{
     			int temp = a[j];
