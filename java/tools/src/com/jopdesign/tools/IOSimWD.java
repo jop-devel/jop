@@ -31,11 +31,11 @@ import com.jopdesign.sys.Const;
  */
 public class IOSimWD extends IOSimMin {
 
-	int read(int addr) {
+	public int read(int addr) {
 		return super.read(addr);
 	}
 	
-	void write(int addr, int val) {
+	public void write(int addr, int val) {
 
 		switch (addr) {
 			case Const.IO_WD:

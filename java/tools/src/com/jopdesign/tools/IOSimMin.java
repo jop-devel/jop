@@ -34,21 +34,21 @@ import com.jopdesign.sys.Const;
  * 
  */
 public class IOSimMin {
+	protected JopSim js;
 
 	// must not interfere with constants (check at compile time) and
 	// within the interval [-128,-1]
-	private static final int SIM_CACHE_FLUSH = -51;
-	private static final int SIM_CACHE_COST = -52;
-	private static final int SIM_CACHE_DUMP = -53;
+	protected static final int SIM_CACHE_FLUSH = -51;
+	protected static final int SIM_CACHE_COST = -52;
+	protected static final int SIM_CACHE_DUMP = -53;
 
-	JopSim js;
 	// find JVM exit
-	static String exitStr = "JVM exit!";
-	char[] exitBuf = new char[exitStr.length()];
+	protected static String exitStr = "JVM exit!";
+	protected char[] exitBuf = new char[exitStr.length()];
 
-	int cpuId;
-	static int cpuCnt = 1;
-	static boolean startCMP = false;
+	protected int cpuId;
+	protected static int cpuCnt = 1;
+	protected static boolean startCMP = false;
 	static boolean globalLock = false;
 	
 	int moncnt = 0;
@@ -56,27 +56,27 @@ public class IOSimMin {
 	/**
 	 * The interrupt register
 	 */
-	private int interrupt;
+	protected int interrupt;
 	/**
 	 * Interrupt mask
 	 */
-	private int mask;
+	protected int mask;
 	/**
 	 * The global enable
 	 */
-	private boolean intEna;
+	protected boolean intEna;
 	/**
 	 * Timer was triggered
 	 */
-	private boolean timeShot;
+	protected boolean timeShot;
 	/**
 	 * Time for the next timer interrupt
 	 */
-	private int nextTimerInt;
+	protected int nextTimerInt;
 	/**
 	 * Interrupt as a number
 	 */
-	private int intNr;
+	protected int intNr;
 
 	/**
 	 * Set reference to simulation
@@ -144,7 +144,7 @@ public class IOSimMin {
 	// }
 	// }
 
-	int read(int addr) {
+	public int read(int addr) {
 
 		int val;
 		int i;
@@ -196,7 +196,7 @@ public class IOSimMin {
 			// System device
 			//
 			case Const.IO_CNT:
-				val = js.clkCnt;
+				val = (int)js.clkCnt;
 				break;
 			case Const.IO_US_CNT:
 				val = usCnt();
@@ -234,7 +234,7 @@ public class IOSimMin {
 		return val;
 	}
 
-	void write(int addr, int val) {
+	public void write(int addr, int val) {
 
 		switch (addr) {
 		case Const.IO_UART:
@@ -379,7 +379,7 @@ public class IOSimMin {
 		return false;
 	}
 
-	static int usCnt() {
+	public int usCnt() {
 		// return ((int) (System.nanoTime()/1000)); // does not really work as
 		// expected
 		return ((int) System.currentTimeMillis()) * 1000;

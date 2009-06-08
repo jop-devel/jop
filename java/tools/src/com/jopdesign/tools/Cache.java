@@ -208,7 +208,7 @@ public class Cache {
 
 	}
 	
-	void flushCache() {
+	public void flushCache() {
 		use.flush=true;
 	}
 
