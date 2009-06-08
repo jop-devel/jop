@@ -45,10 +45,12 @@ public class ILPModelBuilder {
 	public interface CostProvider<T> {
 		public long getCost(T obj);
 	}
-	Project project;
-	public ILPModelBuilder(Project project) {
-		this.project = project;
+
+	private IpetConfig ipetConfig;
+	public ILPModelBuilder(IpetConfig ipetConfig) {
+		this.ipetConfig = ipetConfig;
 	}
+	
 	/**
 	 * Create a max-cost maxflow problem for the given flow graph graph, based on a 
 	 * given node to cost mapping.
@@ -58,7 +60,7 @@ public class ILPModelBuilder {
 	 * @return The max-cost maxflow problem
 	 */
 	public MaxCostFlow<CFGNode,CFGEdge> 
-		buildLocalILPModel(String key, ControlFlowGraph g,CostProvider<CFGNode> nodeWCET) {
+		buildLocalILPModel(String key, ControlFlowGraph g, CostProvider<CFGNode> nodeWCET) {
 		Vector<FlowConstraint> flowCs = topLevelEntryExitConstraints(g);
 		flowCs.addAll(loopBoundConstraints(g));
 		MaxCostFlow<CFGNode,CFGEdge> maxflow = 
@@ -67,8 +69,10 @@ public class ILPModelBuilder {
 			maxflow.setCost(n, nodeWCET.getCost(n));
 		}
 		for(FlowConstraint c : flowCs) maxflow.addFlowConstraint(c);
+		maxflow.setDumpILP(ipetConfig.dumpIlp);
 		return maxflow;
 	}
+	
 	/**
 	 * Create an interprocedural max-cost max-flow problem for the given flow graph 
 	 * based on a given node to cost mapping.
@@ -93,15 +97,18 @@ public class ILPModelBuilder {
 			maxflow.setCost(n, nodeWCET.getCost(n));
 		}
 		for(FlowConstraint c : flowCs) maxflow.addFlowConstraint(c);
+		maxflow.setDumpILP(ipetConfig.dumpIlp);
 		return maxflow;
 	}
+	
 	private FlowConstraint superEdgeConstraint(SuperInvokeEdge in, SuperReturnEdge out) {
 		FlowConstraint pairConstraint = new FlowConstraint(ConstraintType.Equal);
 		pairConstraint.addLHS(in);
 		pairConstraint.addRHS(out);
 		return pairConstraint;		
 	}
-	/**
+	
+	/*
 	 * Top level flow constraints: flow out of entry and flow into exit should be 1
 	 */
 	private Vector<FlowConstraint> topLevelEntryExitConstraints(ControlFlowGraph g) {
@@ -123,7 +130,7 @@ public class ILPModelBuilder {
 		return constraints;
 	}
 	
-	/**
+	/*
 	 * Compute flow constraints: Loop Bound constraints
 	 * @param g the flow graph
 	 * @return A list of flow constraints
@@ -136,7 +143,7 @@ public class ILPModelBuilder {
 		for(CFGNode hol : loops.getHeadOfLoops()) {
 			FlowConstraint loopConstraint = new FlowConstraint(ConstraintType.Equal);
 			if(g.getLoopBounds().get(hol) == null) {
-				throw new Error("No loop bound recorder for head of loop: "+hol+
+				throw new Error("No loop bound record for head of loop: "+hol+
 								" : "+g.getLoopBounds());
 			}
 			int lhsMultiplicity = g.getLoopBounds().get(hol).getUpperBound();

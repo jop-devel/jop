@@ -55,18 +55,23 @@ import com.jopdesign.wcet.ipet.LinearConstraint.ConstraintType;
  * @param <E> the edge type
  */
 public class MaxCostFlow<V,E> { 
+	/**
+	 * Data type encapsulating decision variables
+	 */
 	public static class DecisionVariable {
 		private int id;
 		private DecisionVariable(int id) {
 			this.id = id;
 		}
 	}
+	// Implies that this will only work if flow is < 10 billion for each node
+	private static final long BIGM = Long.MAX_VALUE;
 	private DirectedGraph<V, E> graph;
 	private Map<E,Integer> idMap;
 	private Map<DecisionVariable, Integer> dMap;
 	private int dGen;
 	private Map<Integer,E> revMap;
-	private Map<V,Long> costObjective;
+	private Map<V,Long> nodeCostObjective;
 	private Vector<LinearConstraint<E>> flowConstraints;
 	private Vector<LinearConstraint<Object>> extraConstraints;
 	private LinearVector<Object> extraCost;
@@ -76,7 +81,16 @@ public class MaxCostFlow<V,E> {
 	private String key;
 	private HashMap<Integer, DecisionVariable> dRevMap;
 	private boolean doDumpILP = false;
-	public void setDumpILP() { doDumpILP = true; }
+
+	/**
+	 * if set, the problem will be dumped into a file
+	 * @param dumpILP whether the ILP should be written into a file
+	 * 
+	 */
+	public void setDumpILP(boolean dumpILP) {
+		doDumpILP = dumpILP;
+	}
+
 	/**
 	 * Initialize the MCMF problem with the given graph
 	 * @param g the graph
@@ -88,13 +102,14 @@ public class MaxCostFlow<V,E> {
 		this.graph = g;
 		this.entry = entry;
 		this.exit  = exit;
-		this.costObjective = new HashMap<V, Long>();
+		this.nodeCostObjective = new HashMap<V, Long>();
 		this.flowConstraints = new Vector<LinearConstraint<E>>();
 		this.extraConstraints = new Vector<LinearConstraint<Object>>();
 		this.extraCost = new LinearVector<Object>();
 		generateMapping();
 		addBasicFlowConstraints();
 	}
+
 	/**
 	 * Set the cost for a node <code>n</code>: for each unit of flow passing <code>n</code>,
 	 * <code>cost</code> is added to the total cost of the solution.
@@ -103,8 +118,8 @@ public class MaxCostFlow<V,E> {
 	 */
 	public void setCost(V n, long cost) {
 		if(cost == 0) return;
-		this.costObjective.put(n,
-				(costObjective.containsKey(n) ? costObjective.get(n) : 0) + cost);
+		this.nodeCostObjective.put(n,
+				(nodeCostObjective.containsKey(n) ? nodeCostObjective.get(n) : 0) + cost);
 	}
 	
 	/**
@@ -146,7 +161,7 @@ public class MaxCostFlow<V,E> {
 		}
 		LinearVector<Object> costVec = new LinearVector<Object>(extraCost);
 		// build cost objective
-		for(Entry<V,Long> e : this.costObjective.entrySet()) {
+		for(Entry<V,Long> e : this.nodeCostObjective.entrySet()) {
 			long costFactor = e.getValue();
 			for(E edge : this.graph.incomingEdgesOf(e.getKey())) {
 				costVec.add(edge, costFactor);
@@ -250,7 +265,7 @@ public class MaxCostFlow<V,E> {
 		StringBuffer s = new StringBuffer();
 		s.append("Max-Cost-Flow problem with cost vector: ");
 		boolean first = true;
-		for(Entry<V,Long> e: costObjective.entrySet()) {			
+		for(Entry<V,Long> e: nodeCostObjective.entrySet()) {			
 			if(first) first = false;
 			else s.append(" + ");
 			s.append(e.getValue());
@@ -275,7 +290,7 @@ public class MaxCostFlow<V,E> {
 	public DecisionVariable addFlowDecision(LinearVector<E> lv) {
 		DecisionVariable dv = createDecisionVariable();
 		LinearConstraint<Object> lc = new LinearConstraint<Object>(ConstraintType.GreaterEqual);
-		lc.addLHS(dv, Long.MAX_VALUE);
+		lc.addLHS(dv, BIGM);
 		for(Entry<E, Long> coeff : lv.getCoeffs().entrySet()) {
 			lc.addRHS(coeff.getKey(), coeff.getValue());
 		}
@@ -288,9 +303,16 @@ public class MaxCostFlow<V,E> {
 		this.extraConstraints.add(lc);
 		return dv;
 	}
+	
+	/**
+	 * Add cost when the decision variable {@code dv} is true.
+	 * @param dv the decision variable the cost depends on
+	 * @param cost the cost to add
+	 */
 	public void addDecisionCost(DecisionVariable dv, long cost) {
 		this.extraCost.add(dv,cost);
 	}
+
 	private DecisionVariable createDecisionVariable() {
 		DecisionVariable dv = new DecisionVariable(dGen++);
 		this.dMap.put(dv, dv.id);
