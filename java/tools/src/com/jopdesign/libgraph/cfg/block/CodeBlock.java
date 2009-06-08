@@ -26,7 +26,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.NavigableMap;
+import java.util.SortedMap;
 import java.util.TreeMap;
 
 /**
@@ -79,7 +79,7 @@ public class CodeBlock {
 
     private BasicBlock block;
     private List stmts;
-    private NavigableMap handles;
+    private SortedMap handles;
 
     public CodeBlock(BasicBlock block) {
         this.block = block;
