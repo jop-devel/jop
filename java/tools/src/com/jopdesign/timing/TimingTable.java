@@ -36,25 +36,7 @@ import java.util.List;
  * We currently only support architectures where there is a worst case for the
  * ProcessorState.
  */
-public abstract class TimingTable<InstrParam> {
-	
-	/**
-	 * Class for encapsulating a instruction to be analyzed
-	 */
-	public static class InstructionInfo<InstrParam> {
-		int opcode;
-		InstrParam procState = null;
-		public InstructionInfo(int opcode) { 
-			this.opcode = opcode;
-		}
-		public InstructionInfo(int opcode, InstrParam ps) {
-			this(opcode);
-			this.procState = ps;
-		}
-		public boolean hasStateInfo() {
-			return procState != null;
-		}
-	}
+public abstract class TimingTable<I extends InstructionInfo> {
 	
 	/**
 	 * return true if timing info is available for the given instruction
@@ -63,14 +45,9 @@ public abstract class TimingTable<InstrParam> {
 	
 	/** 
 	 * Get the WCET for an instruction.
-	 * The default implementation delegates to {@code getCycles(opcode,null)}.
 	 * */
-	public abstract long getCycles(int opcode);
+	public abstract long getCycles(I instr);
 
-	/** 
-	 * Get the WCET for an instruction.
-	 */
-	public abstract long getCycles(int opcode, InstrParam ps);
 	
 
 	/*                      Get WCETs of Basic Block
@@ -81,25 +58,12 @@ public abstract class TimingTable<InstrParam> {
 	 * Get the timing info for a basic block.<br/>
 	 * The default implementation simply sums the WCETs of the instructions.
 	 */
-	public long getCycles(List<InstructionInfo<InstrParam>> opcodes) {
+	public long getCycles(List<I> opcodes) {
 		long wcet = 0;
-		for(InstructionInfo<InstrParam> instr : opcodes) {
-			wcet += getCycles(instr.opcode, instr.procState);
+		for(I instr : opcodes) {
+			wcet += getCycles(instr);
 		}
 		return wcet;
-	}
-
-	 /*             Aspect: Method Cache
-	  ---------------------------------------------------------------------
-	 */
-	public long methodCacheAccessCycles(boolean hit, int words) {
-		throw new AssertionError("getMethodCacheAccessCycles: architecture has not method cache");
-	}
-	public long methodCacheHiddenAccessCycles(boolean onInvoke) {
-		throw new AssertionError("methodCacheHiddenAccessCycles: architecture has not method cache");		
-	}
-	public long methodCacheHiddenAccessCycles(int opcode) {
-		throw new AssertionError("methodCacheHiddenAccessCycles: architecture has not method cache");		
 	}
 	
 	/*             Aspect: Java Implemented Bytecodes
@@ -111,7 +75,7 @@ public abstract class TimingTable<InstrParam> {
 	 * Implementations should throw a runtime error if the opcode is not implemented
 	 * in Java.
 	 */
-	public long javaImplBcDispatchCycles(int opcode, InstrParam st) {
+	public long javaImplBcDispatchCycles(I instr) {
 		throw new AssertionError("The platform " + this.getClass() 
 				               + " does not support Java implemented bytecodes");
 	}

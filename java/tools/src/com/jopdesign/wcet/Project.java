@@ -89,13 +89,16 @@ public class Project {
 			super.visitJavaClass(clazz);
 			ClassInfo cli = super.getCli();
 			for(MethodInfo m : cli.getMethods()) {
-				m.getMethodGen().removeNOPs();
+				MethodGen mg = m.getMethodGen();
+				mg.removeNOPs();
 				m.updateMethodFromGen();
 			}
 		}		
 	}
 	/**
 	 * Set {@link MethodGen} in all reachable classes 
+	 * // FIXME: THIS SHOULD NOT BE NECCESSARY
+	 *    REMOVEME when not needed anymore
 	 */
 	public static class CreateMethodGenerators extends AppVisitor {
 		public CreateMethodGenerators(AppInfo ai) {
@@ -267,7 +270,7 @@ public class Project {
 		} else {
 			appInfo.load();
 			WcetPreprocess.preprocess(appInfo);
-			appInfo.iterate(new CreateMethodGenerators(appInfo));			
+			appInfo.iterate(new CreateMethodGenerators(appInfo));
 		}
 		return appInfo;
 	}

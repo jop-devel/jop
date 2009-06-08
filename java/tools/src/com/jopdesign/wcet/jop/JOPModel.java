@@ -37,7 +37,7 @@ public class JOPModel implements ProcessorModel {
 		this.config = new JOPConfig(p);
 		this.cache = MethodCache.getCacheModel(p);
 		if(config.cmp) {
-			this.timing = JOPCmpTimingTable.getTimingTable(
+			this.timing = JOPCmpTimingTable.getCmpTimingTable(
 					MicrocodeAnalysis.DEFAULT_ASM_FILE,config.rws, config.wws,config.cpus.intValue(), config.timeslot.intValue());
 		} else {
 			this.timing = JOPTimingTable.getTimingTable(config.asmFile);
@@ -92,7 +92,8 @@ public class JOPModel implements ProcessorModel {
 		return jvmClasses;
 	}
 	/* get plain execution time, without global effects */
-	public int getExecutionTime(MethodInfo context, Instruction i) {
+	public int getExecutionTime(MethodInfo context, InstructionHandle ih) {
+		Instruction i = ih.getInstruction();
 		int jopcode = this.getNativeOpCode(context,i);
 		long cycles = timing.getLocalCycles(jopcode);
 		if(cycles < 0) {
@@ -127,7 +128,7 @@ public class JOPModel implements ProcessorModel {
 		int wcet = 0;
 		MethodInfo ctx = bb.getMethodInfo();
 		for(InstructionHandle ih : bb.getInstructions()) {
-			wcet += getExecutionTime(ctx, ih.getInstruction());
+			wcet += getExecutionTime(ctx, ih);
 		}
 		return wcet;
 	}

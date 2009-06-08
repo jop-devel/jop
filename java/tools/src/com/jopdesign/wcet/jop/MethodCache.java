@@ -128,13 +128,14 @@ public abstract class MethodCache {
 		return largestMethod;
 	}
 	public long getMissOnInvokeCost(ProcessorModel proc, ControlFlowGraph invoked) {
-		//System.err.println("Miss on invoke cost: "+invoked+": "+proc.getMethodCacheLoadTime(invoked.getNumberOfWords(), true)+
-		//		", for: "+invoked.getNumberOfWords()+"words.");
+		// System.err.println("Miss on invoke cost: "+invoked+": "+proc.getMethodCacheLoadTime(invoked.getNumberOfWords(), true)+
+		//		", for: "+invoked.getNumberOfWords()+" words.");
 		return proc.getMethodCacheLoadTime(invoked.getNumberOfWords(), true);
 	}
 
 	public long getMissOnReturnCost(ProcessorModel proc, ControlFlowGraph invoker) {
-		//System.err.println("Miss on return cost: "+invoker+": "+proc.getMethodCacheLoadTime(invoker.getNumberOfWords(), false));
+		// System.err.println("Miss on return cost: "+invoker+": "+proc.getMethodCacheLoadTime(invoker.getNumberOfWords(), false)+
+		//		", for: "+invoker.getNumberOfWords()+" words.");
 		return proc.getMethodCacheLoadTime(invoker.getNumberOfWords(), false);
 	}
 	public long getMaxMissCost(ProcessorModel proc, ControlFlowGraph cfg) {

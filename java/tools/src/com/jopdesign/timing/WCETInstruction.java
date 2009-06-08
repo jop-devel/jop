@@ -64,8 +64,10 @@ public class WCETInstruction {
 	// Arbitration
 	public static int CPUS = 8;
 	public static int TIMESLOT = 10; // has to be greater r !!
+	// bh: max cycles seems unnecessary: you should check statically whether
+	//     the configuration is valid (e.g. timeslot > delay)
 	public static final int MAX_CYCLES = 1000000;
-	public static final int ARB_PERIOD = CPUS*TIMESLOT;
+	public static int getArbiterPeriod() { return CPUS*TIMESLOT; }
 	
 	// Build Instructions
 	public static final int NOP = 0;
@@ -100,11 +102,13 @@ public class WCETInstruction {
 	public static WCETMemInstruction invokespecial; 
 	public static WCETMemInstruction invokestatic; // same as invokespecial
 	public static WCETMemInstruction invokeinterface;
+
 	static {
 		if (CMP_WCET){
 			initCMP(CPUS, TIMESLOT);
 		}
 	}
+	
 	// FIXME: Workaround for the transition to the new timing system
 	public static void initCMP(int cpus, int timeslot) {
 		// Initialize 
@@ -113,6 +117,7 @@ public class WCETInstruction {
 		initArbiter();
 		generateStaticInstr();		
 	}
+	
 	//Native bytecodes (see jvm.asm)
 	private static final int JOPSYS_RD = 209;
 	private static final int JOPSYS_WR = 210;
@@ -1448,10 +1453,11 @@ public class WCETInstruction {
 	public static void initArbiter(){
 		
 		int i;
+		int arb_period = getArbiterPeriod();
 		arbiter = new boolean [MAX_CYCLES];
 		
 		for(i=0;i<MAX_CYCLES;i++){
-			if( (i%(ARB_PERIOD)) < TIMESLOT ){
+			if( (i % arb_period) < TIMESLOT ){
 				arbiter[i]=true;}
 			else{
 				arbiter[i]=false;}
@@ -1861,8 +1867,8 @@ public class WCETInstruction {
 		int j = 0;
 		int wcet=0;
 		int exec = 0;	
-		
-		for(i=0;i<ARB_PERIOD;i++){
+		int arb_period = getArbiterPeriod();
+		for(i=0;i<arb_period;i++){
 			exec = calcExecTime(i,microcode);
 			if (wcet<exec){
 				wcet = exec;
@@ -1878,7 +1884,7 @@ public class WCETInstruction {
 	// arbitration period
 	
 	public static int calcExecTime(int arb_position,  int [] microcode){	
-		
+		int arb_period = getArbiterPeriod();
 		int i=0;
 		int exec_time=0;
 			
@@ -1894,7 +1900,8 @@ public class WCETInstruction {
 					
 			case RD:				
 				while( (arbiter[arb_position]==false) || 
-					   (((arb_position%(ARB_PERIOD))>=TIMESLOT-r) && ((arb_position%(ARB_PERIOD))<=TIMESLOT)) ){
+					   (((arb_position % arb_period ) >=TIMESLOT-r) && 
+					    ((arb_position % arb_period ) <=TIMESLOT)) ){
 					exec_time++;
 					arb_position++;
 					//System.out.println("Blocking RD: " + exec_time);
@@ -1909,7 +1916,8 @@ public class WCETInstruction {
 					
 			case WR:
 				while( (arbiter[arb_position]==false) || 
-					   (((arb_position%(ARB_PERIOD))>=TIMESLOT-w) && ((arb_position%(ARB_PERIOD))<=TIMESLOT)) ){
+					   (((arb_position % arb_period)>=TIMESLOT-w) && 
+					    ((arb_position % arb_period)<=TIMESLOT)) ){
 					exec_time++;
 					arb_position++;
 				}

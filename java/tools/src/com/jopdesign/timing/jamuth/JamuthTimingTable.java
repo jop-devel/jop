@@ -19,6 +19,8 @@
 	*/
 package com.jopdesign.timing.jamuth;
 
+import java.util.Date;
+
 import org.apache.bcel.Constants;
 
 import com.jopdesign.timing.ConsoleTable;
@@ -31,7 +33,7 @@ import com.jopdesign.tools.JopInstr;
  * It has wcet info on byte code instruction granularity. Should we consider
  * making a class that wraps the microcodes into objects?
  */
-public class JamuthTimingTable extends TimingTable<JamuthInstrParam> {
+public class JamuthTimingTable extends TimingTable<JamuthInstructionInfo> {
 
 	private static final int WCETNOTAVAILABLE = -1;
 
@@ -63,14 +65,8 @@ public class JamuthTimingTable extends TimingTable<JamuthInstrParam> {
 		// constants hardcoded for now
 	}
 
-	@Override
-	public long getCycles(int opcode) {
-		return getCycles(opcode, new JamuthInstrParam());
-	}
-	
-	@Override
 	public boolean hasTimingInfo(int opcode) {
-		if (getCycles(opcode, new JamuthInstrParam()) == WCETNOTAVAILABLE)
+		if (getCycles(new JamuthInstructionInfo(opcode,0)) == WCETNOTAVAILABLE)
 			return false;
 		else
 			return true;
@@ -78,24 +74,26 @@ public class JamuthTimingTable extends TimingTable<JamuthInstrParam> {
 
 	/**
 	 * Returns the wcet count for the instruction.
-	 * Data dependencies and processor state to take into account:
-	 * - the alignment of the target address for jumps
-	 * - TODO: pipeline ?
-	 * - TODO: cache ?
+	 * - FIXME: is the calculation for the alignment delay correct ?
+	 * - FIXME: No branchlatency for ifeq  ?
+	 * - TODO: pipeline dependencies ?
+	 * - TODO: LDC
+	 * - TODO: tableswitch, lookupswitch
+	 * - TODO: monitorenter, monitorext
+	 * - Unsupported: invokeinterface, instanceof, checkcast
 	 */
-	@Override
-	public long getCycles(int opcode, JamuthInstrParam info) {
+	public long getCycles(JamuthInstructionInfo info) {
 		int wcet = -1;
 
 		int branchlatency=fla;
-		// TODO: this has probably todo something with the alignment
-		// Assume the worst case for now
-		if(! info.hasJumpTarget() || (info.getJumpTarget() & 3) > 1){
+		// Add latency if the jump target isn't aligned
+		// TODO @ sascha: is > 0 correct (i.e. 4 byte alignment) ?
+		if(! info.hasJumpTargetAddress() || (info.getJumpTargetAddress() & 3) > 0) {
 			branchlatency+=fla;
 		}
 		int latency = 0;
 
-		switch (opcode) {
+		switch (info.getOpcode()) {
 		// NOP = 0
 		case Constants.NOP:
 			wcet = 1;
@@ -169,8 +167,10 @@ public class JamuthTimingTable extends TimingTable<JamuthInstrParam> {
 			wcet = 1;
 			break;
 			// LDC = 18
+		
 		case Constants.LDC:
-			wcet = -1; //TODO: je nach dem, ob String oder Zahl
+			// TODO: je nach dem, ob String oder Zahl
+			wcet = -1; 
 			break;
 			// LDC_W = 19
 		case Constants.LDC_W:
@@ -738,6 +738,7 @@ public class JamuthTimingTable extends TimingTable<JamuthInstrParam> {
 			break;
 			// IFEQ = 153
 		case Constants.IFEQ:
+			// - FIXME: No branchlatency for ifeq  ?
 			wcet = 1+j;
 			latency = j;
 			break;
@@ -973,7 +974,11 @@ public class JamuthTimingTable extends TimingTable<JamuthInstrParam> {
 
 	// print timing table
 	public static void main(String[] argv) {
-		System.out.println("Printing Jamuth Timing Table");
+		String head = "Jamuth Timing Table on " + new Date();
+		System.out.println(head);
+		System.out.println(ConsoleTable.getSepLine('=',head.length()));
+		System.out.println();
+		
 		ConsoleTable table = new ConsoleTable();
 		JamuthTimingTable timing = new JamuthTimingTable();
 
@@ -985,8 +990,8 @@ public class JamuthTimingTable extends TimingTable<JamuthInstrParam> {
 		// build table
 		table.addColumn("opcode", Alignment.ALIGN_RIGHT)
 		     .addColumn("name", Alignment.ALIGN_LEFT)
-		     .addColumn("Cyc", Alignment.ALIGN_RIGHT)
-		     .addColumn("Cyc (n?=15)", Alignment.ALIGN_RIGHT);
+		     .addColumn("Cyc (&jump = 4)", Alignment.ALIGN_RIGHT)
+		     .addColumn("Cyc (&jump = 1)", Alignment.ALIGN_RIGHT);
 		for(int i = 0; i < 256; i++) {
 			int opcode = i;
 			if(JopInstr.isReserved(opcode)) continue;
@@ -994,13 +999,16 @@ public class JamuthTimingTable extends TimingTable<JamuthInstrParam> {
 			row.addCell(opcode)
 			   .addCell(JopInstr.OPCODE_NAMES[i]);
 			if(timing.hasTimingInfo(opcode)) {
-				long t1 = timing.getCycles(i, new JamuthInstrParam());
+				long t1 = timing.getCycles(new JamuthInstructionInfo(opcode,4));
+				long t2 = timing.getCycles(new JamuthInstructionInfo(opcode,1));
 				row.addCell(t1);
+				row.addCell(t2);
 			} else {
 				row.addCell("... no info ...",2,Alignment.ALIGN_LEFT);
 			}
 		}
 		System.out.println(table.render());
 	}
+
 
 }

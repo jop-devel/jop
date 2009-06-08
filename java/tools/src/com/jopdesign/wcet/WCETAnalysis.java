@@ -163,7 +163,7 @@ public class WCETAnalysis {
 				/* always hit */
 				RecursiveAnalysis<StaticCacheApproximation> an = 
 					new RecursiveAnalysis<StaticCacheApproximation>(
-							project,
+							project, ipetConfig,
 							new RecursiveAnalysis.LocalIPETStrategy(ipetConfig));
 				LpSolveWrapper.resetSolverTime();
 				start = System.nanoTime();
@@ -208,7 +208,7 @@ public class WCETAnalysis {
 					recStrategy = new RecursiveAnalysis.LocalIPETStrategy(ipetConfig);
 				}
 				RecursiveAnalysis<StaticCacheApproximation> an =
-					new RecursiveAnalysis<StaticCacheApproximation>(project,recStrategy);
+					new RecursiveAnalysis<StaticCacheApproximation>(project,ipetConfig,recStrategy);
 				LpSolveWrapper.resetSolverTime();
 				long start = System.nanoTime();
 				wcet = an.computeWCET(project.getTargetMethod(),preciseApprox);
