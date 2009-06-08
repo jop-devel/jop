@@ -45,7 +45,7 @@ import com.jopdesign.wcet.graphutils.MiscUtils;
 import com.jopdesign.wcet.ipet.IpetConfig;
 import com.jopdesign.wcet.ipet.LpSolveWrapper;
 import com.jopdesign.wcet.ipet.IpetConfig.StaticCacheApproximation;
-import com.jopdesign.wcet.jop.CacheConfig;
+import com.jopdesign.wcet.jop.JOPConfig;
 import com.jopdesign.wcet.report.Report;
 import com.jopdesign.wcet.report.ReportConfig;
 import com.jopdesign.wcet.uppaal.UppAalConfig;
@@ -61,7 +61,7 @@ public class WCETAnalysis {
 	private static final Logger tlLogger = Logger.getLogger(WCETAnalysis.class);
 	public static Option<?>[][] options = {
 		ProjectConfig.projectOptions,
-		CacheConfig.cacheOptions,
+		JOPConfig.jopOptions,
 		IpetConfig.ipetOptions,
 		UppAalConfig.uppaalOptions,
 		ReportConfig.reportOptions
@@ -147,6 +147,8 @@ public class WCETAnalysis {
 
 		/* Run */
 		boolean succeed = false;
+		// FIXME: Report generation is a BIG MESS 
+		// bh will fix this in next revision
 		try {
 			/* Analysis */
 			project.setGenerateWCETReport(false); /* generate reports later */
@@ -161,7 +163,7 @@ public class WCETAnalysis {
 				/* always hit */
 				RecursiveAnalysis<StaticCacheApproximation> an = 
 					new RecursiveAnalysis<StaticCacheApproximation>(
-							project,
+							project, ipetConfig,
 							new RecursiveAnalysis.LocalIPETStrategy(ipetConfig));
 				LpSolveWrapper.resetSolverTime();
 				start = System.nanoTime();
@@ -199,14 +201,14 @@ public class WCETAnalysis {
 				reportUppaal(wcet,start,stop,an.getSearchtime(),an.getSolvertimemax());
 			} else {
 				RecursiveWCETStrategy<StaticCacheApproximation> recStrategy;
-				if(preciseApprox == StaticCacheApproximation.ALL_FIT_REGIONS) {
+				if(preciseApprox == StaticCacheApproximation.ALL_FIT_REGIONS) {					
 					recStrategy = new GlobalAnalysis.GlobalIPETStrategy(ipetConfig);
 				} else {
 					project.setGenerateWCETReport(true);
 					recStrategy = new RecursiveAnalysis.LocalIPETStrategy(ipetConfig);
 				}
 				RecursiveAnalysis<StaticCacheApproximation> an =
-					new RecursiveAnalysis<StaticCacheApproximation>(project,recStrategy);
+					new RecursiveAnalysis<StaticCacheApproximation>(project,ipetConfig,recStrategy);
 				LpSolveWrapper.resetSolverTime();
 				long start = System.nanoTime();
 				wcet = an.computeWCET(project.getTargetMethod(),preciseApprox);

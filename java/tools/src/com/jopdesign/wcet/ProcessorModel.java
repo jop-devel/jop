@@ -22,6 +22,7 @@ package com.jopdesign.wcet;
 import java.util.List;
 
 import org.apache.bcel.generic.Instruction;
+import org.apache.bcel.generic.InstructionHandle;
 
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.wcet.frontend.BasicBlock;
@@ -29,7 +30,7 @@ import com.jopdesign.wcet.frontend.ControlFlowGraph;
 import com.jopdesign.wcet.frontend.WcetAppInfo;
 import com.jopdesign.wcet.jop.MethodCache;
 
-public interface ProcessorModel{
+public interface ProcessorModel {
 
 	/**
 	 * Check whether we need to deal with the given statement in a special way,
@@ -69,7 +70,7 @@ public interface ProcessorModel{
 	 */
 	public List<String> getJVMClasses();
 	
-	public int getExecutionTime(MethodInfo context, Instruction i);
+	public int getExecutionTime(MethodInfo context, InstructionHandle i);
 	public int getMethodCacheLoadTime(int words, boolean loadOnInvoke);
 	/**
 	 * return method cache, or NoMethodCache if the processor does not have a method cache

@@ -2,8 +2,8 @@
   This file is part of JOP, the Java Optimized Processor
     see <http://www.jopdesign.com/>
 
-  Copyright (C) 2001-2008, Martin Schoeberl (martin@jopdesign.com)
-
+  Copyright (C) 2009, Benedikt Huber (benedikt.huber@gmail.com)
+  
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
@@ -18,31 +18,30 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-package com.jopdesign.tools;
+package com.jopdesign.timing;
 
-import com.jopdesign.sys.Const;
+import org.apache.bcel.Constants;
 
 /**
- * Just a simple IO example class that implements the watchdog LED
- * to show how to extend IOSimMin with useful simulation.
- * 
- * @author martin
- *
+ * Class for encapsulating a instruction to be analyzed.
+ * Can be specialized for specific processor models.
  */
-public class IOSimWD extends IOSimMin {
+public class InstructionInfo {
+	/** return opcodes are hardcoded: {A,D,F,I,L,_}RETURN */
+	public static final int[] RETURN_OPCODES = {
+		Constants.ARETURN,
+		Constants.DRETURN,
+		Constants.FRETURN,
+		Constants.IRETURN,
+		Constants.LRETURN,
+		Constants.RETURN };
 
-	public int read(int addr) {
-		return super.read(addr);
+	private int opcode;
+
+	public InstructionInfo(int opcode) {
+		this.opcode = opcode;
 	}
-	
-	public void write(int addr, int val) {
-
-		switch (addr) {
-			case Const.IO_WD:
-				System.out.print((val==1) ? '*' : 'o');
-				break;
-			default:
-				super.write(addr, val);
-		}
+	public int getOpcode() {
+		return opcode;
 	}
 }

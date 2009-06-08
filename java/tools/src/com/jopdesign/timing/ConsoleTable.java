@@ -207,8 +207,8 @@ public class ConsoleTable {
 		renderChar(sep,totalWidth,sb);
 		sb.append('\n');
 	}
-	
-	private void renderChar(char s, int count, StringBuffer sb) {
+
+	private static void renderChar(char s, int count, StringBuffer sb) {
 		for(int i = 0 ; i < count; i++) sb.append(s);		
 	}
 	
@@ -234,4 +234,9 @@ public class ConsoleTable {
 		totalWidth += width.size() + 1;
 	}
 	
+	public static String getSepLine(char sep, int l) {
+		StringBuffer sb = new StringBuffer();
+		renderChar(sep, l, sb);
+		return sb.toString();
+	}
 }

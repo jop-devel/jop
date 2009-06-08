@@ -2,7 +2,7 @@
 #   This file is part of JOP, the Java Optimized Processor
 #     see <http://www.jopdesign.com/>
 # 
-#   Copyright (C) 2008, Jack Whitham
+#   Copyright (C) 2008-2009, Jack Whitham
 # 
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -18,8 +18,10 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 # 
 
-import os
+import os, math, collections, glob
 ADDRESS_SIZE = 24
+LOOP_COST = 50      # $i$ - for fixedpr arbiter on ML401, 1 CPU
+LOOP_OVERHEAD = 34  # $f$ - for fixedpr arbiter on ML401, 1 CPU
 
 # NOTE: error types that are not handled properly
 # - starting a method while it's already running
@@ -149,6 +151,16 @@ class Method:
         self.ret_reg_num = None
         self.busy_reg_num = None
         self.coproc = None
+        self.iterations = 1
+        self.cost = 1
+        self.message_values = []
+        self.message_variables = dict()
+
+    def setIterations(self, i):
+        self.iterations = i
+
+    def setCost(self, c):
+        self.cost = c
 
     def addParameter(self, name, java_type):
         assert isinstance(java_type, JavaType)
@@ -172,24 +184,10 @@ class Method:
             return '__hw_%s' % name
 
         base = self.coproc.getId() << 24
-        out = []
-        out.append("public %s %s (\n" % (self.ret_type.name, self.name))
-        first = True
-        for (name, java_type, reg_number) in self.param_list:
-            if ( not first ):
-                out.append(',\n')
-            out.append("\t\t%s %s " % (java_type.name, name))
-            first = False
-        out.append(")\n")
-        out.append("{\n")
+        out = collections.deque()
         ret_name = "__ret"
-        for (name, java_type, reg_number) in self.param_list:
-            out.append("int %s; // 0x%x\n" % (HN(name), reg_number))
 
-        out.append("// convert parameters\n")
-        for (name, java_type, reg_number) in self.param_list:
-            out.append(java_type.convertForHardware(name, HN(name)))
-
+        # Communications with co-processor:
         out.append("// load parameters\n")
         for (name, java_type, reg_number) in self.param_list:
             for high in (0, 1):
@@ -197,19 +195,20 @@ class Method:
                     if ( 16 >= java_type.getVectorSize() ):
                         continue
 
-                out.append("control_channel.data = "
-                    "(0x%x | (((%s) >> %u) & 0xffff));\n" %
-                        (( base | ( high << 23 ) |
-                            ( reg_number << 16 )),
-                        HN(name), high * 16))
+                out.append(self.makeWrite(self.makeMsgVar(
+                      "0x%x | (((%s) >> %u) & 0xffff)" %
+                        (( base | ( high << 23 ) | ( reg_number << 16 )),
+                        HN(name), high * 16))))
 
         out.append("// start\n")
-        out.append("control_channel.data = 0x%x;\n" % 
-                        ( base | ( self.busy_reg_num << 16 ) | 1 ))
+        out.append(self.makeWrite(self.makeMsgVar(hex( 
+                base | ( self.busy_reg_num << 16 ) | 1 ))))
         out.append("// run (wait while busy)\n")
         out.append("int rc = 1;\n")
-        out.append(self.makeCCTransaction("rc", base | ( self.busy_reg_num << 16 ), True))
+        out.append(self.makeCCTransaction("rc", 
+                base | ( self.busy_reg_num << 16 ), True))
 
+        # Handling of returned data
         if ( isinstance(self.ret_type, VoidType) ):
             # Nothing is returned.
             pass
@@ -225,6 +224,37 @@ class Method:
             out.append(self.ret_type.convertForJava(HN(ret_name), ret_name))
             out.append("return %s;\n" % ret_name)
         out.append("}\n\n")
+
+        rotate_by = len(out)
+
+        # Create header of function:
+        out.append("public %s %s (\n" % (self.ret_type.name, self.name))
+        first = True
+        for (name, java_type, reg_number) in self.param_list:
+            if ( not first ):
+                out.append(',\n')
+            out.append("\t\t%s %s " % (java_type.name, name))
+            first = False
+        out.append(")\n")
+        out.append("{\n")
+        out.append("int __cci_addr = Const.IO_BASE + 0x30;\n")
+
+        for (name, java_type, reg_number) in self.param_list:
+            out.append("int %s; // 0x%x\n" % (HN(name), reg_number))
+
+        out.append("// convert parameters\n")
+        for (name, java_type, reg_number) in self.param_list:
+            out.append(java_type.convertForHardware(name, HN(name)))
+
+        # All messages created before communication begins so that
+        # no accesses to memory are necessary during communication.
+        out.append("// create messages\n")
+        for value in self.message_values:
+            out.append("int %s = %s;\n" % (
+                self.message_variables[ value ], value))
+
+        out.rotate(-rotate_by)
+
         return ''.join(out)
 
     def generateVHDL(self):
@@ -306,39 +336,57 @@ class Method:
             }
         
 
+    def makeMsgVar(self, msg):
+        name = self.message_variables.get(msg, None)
+        if ( name == None ):
+            name = "__msg%u" % (len(self.message_values))
+            self.message_values.append(msg)
+            self.message_variables[ msg ] = name
+            assert len(self.message_values) == len(self.message_variables)
+        return name
+
     def makeCCTransaction(self, out_var, msg, await_zero=False):
-        mask = 0x7fff0000
         fields = { 
             "cond" : "" ,
             "out_var" : out_var, 
             "msg" : msg, 
-            "mask" : mask,
+            "bound" : " // @WCA loop=1",
+            "msg_var" : self.makeMsgVar(hex(msg)),
+            "antimask" : self.makeMsgVar("0xffff"),
+            "mask" : self.makeMsgVar("0x7fff0000"),
         }
+
+
         if ( await_zero ):
+            bound_value = int(math.ceil((( 
+                self.iterations * self.cost ) + LOOP_OVERHEAD ) / 
+                    float(LOOP_COST)))
             fields[ "cond" ] = " || (( %(out_var)s & 1 ) != 0 )" % fields
+            fields[ "bound" ] = " // @WCA loop<=%u" % bound_value
 
         return """
     {   // _ccTransaction(0x%(msg)x)
         int reply_masked = 0;
-        int msg = 0x%(msg)x;
-        int mask = 0x%(mask)x;
-        int msg_masked = msg & mask;
-        int addr = Const.IO_BASE + 0x30;
-        while (( reply_masked != msg_masked )%(cond)s) {
-            Native.wrMem ( msg , addr ) ;
-            %(out_var)s = Native.rdMem ( addr ) ;
-            reply_masked = %(out_var)s & mask;
+        int msg_masked = %(msg_var)s & %(mask)s;
+        while (( reply_masked != msg_masked )%(cond)s) {%(bound)s
+            Native.wrMem(%(msg_var)s, __cci_addr);
+            %(out_var)s = Native.rdMem(__cci_addr);
+            reply_masked = %(out_var)s & %(mask)s;
         }
-        %(out_var)s &= 0xffff;
+        %(out_var)s &= %(antimask)s;
     }\n""" % fields
+
+    def makeWrite(self, value):
+        return "Native.wrMem(%s, __cci_addr);\n" % value
                     
         
 class Coprocessor:
-    def __init__(self, name):
+    def __init__(self, name, package_name):
         self.name = name
         self.method_list = []
         self.coproc_id = None
         self.reg_count = 0
+        self.package_name = package_name
 
     def addMethod(self, method):
         assert isinstance(method, Method)
@@ -360,6 +408,7 @@ class Coprocessor:
 
     def generateJava(self):
         out = []
+        out.append("package %s;\n" % self.package_name)
         out.append(JAVA_HEADER)
         out.append("/* coprocessor id %u */\n" % self.coproc_id)
         out.append("public class %s {\n" % self.name)
@@ -372,9 +421,9 @@ class Coprocessor:
         out.append("return %s.INSTANCE;\n" % self.name)
         out.append("}\n")
         out.append("protected %s () {\n" % self.name)
-        out.append("JeopardIOFactory factory = "
-                "JeopardIOFactory.getJeopardIOFactory();\n")
-        out.append("control_channel = factory.getControlPort();\n")
+        #out.append("JeopardIOFactory factory = "
+        #        "JeopardIOFactory.getJeopardIOFactory();\n")
+        #out.append("control_channel = factory.getControlPort();\n")
         out.append("\n}\n}\n")
         return ''.join(out)
             
@@ -465,11 +514,13 @@ end architecture cpi ;
 
 
 
-def makeInterfaces(definition_fname, java_dir, vhdl_dir):
+def makeInterfaces(definition_fname):
 
     all_cps = []
     coproc = None
     method = None
+    package_name = "test"
+    java_dir = vhdl_dir = '.'
 
     for line in file(definition_fname):
         line = line.split('#')[ 0 ].strip()
@@ -495,11 +546,19 @@ def makeInterfaces(definition_fname, java_dir, vhdl_dir):
                 raise InterfaceDefinitionException(
                     "%s statement must follow METHOD.")
 
-        if ( command == "COPROCESSOR" ):
+        if ( command == "PACKAGE" ):
             NFields(1)
-            coproc = Coprocessor(fields[ 1 ])
+            package_name = fields[ 1 ]
+        elif ( command == "JAVA" ):
+            NFields(1)
+            java_dir = fields[ 1 ]
+        elif ( command == "VHDL" ):
+            NFields(1)
+            vhdl_dir = fields[ 1 ]
+        elif ( command == "COPROCESSOR" ):
+            NFields(1)
+            coproc = Coprocessor(fields[ 1 ], package_name)
             all_cps.append(coproc)
-
         elif ( command == "METHOD" ):
             NFields(1)
             HasCP()
@@ -513,6 +572,12 @@ def makeInterfaces(definition_fname, java_dir, vhdl_dir):
             NFields(1)
             HasMethod()
             method.addReturn(AnyType(fields[ 1 ]))
+        elif ( command == "ITERATIONS" ):
+            NFields(1)
+            method.setIterations(int(fields[ 1 ]))
+        elif ( command == "COST" ):
+            NFields(1)
+            method.setCost(int(fields[ 1 ]))
         else:
             raise InterfaceDefinitionException(
                     "%s statement is unknown." % command)
@@ -531,27 +596,21 @@ def makeInterfaces(definition_fname, java_dir, vhdl_dir):
         file(vname, 'wt').write(coproc.generateVHDL())
 
 JAVA_HEADER = """
-package test;
 
 
-import com.jopdesign.io.ControlChannel;
-import com.jopdesign.io.JeopardIOFactory;
+//import com.jopdesign.io.ControlChannel;
+//import com.jopdesign.io.JeopardIOFactory;
 import com.jopdesign.sys.Native;
 import com.jopdesign.sys.Const;
 """
 
 JAVA_BODY = """
-    private ControlChannel control_channel ;
 
 """
 
 if ( __name__ == "__main__" ):
-    makeInterfaces(definition_fname="mac_coprocessor.def", 
-                java_dir="../../java/target/src/test/test", 
-                vhdl_dir=".")
-    makeInterfaces(definition_fname="test_cp.def", 
-                java_dir="../../java/target/src/test/test", 
-                vhdl_dir=".")
+    for idl in glob.glob("*.def"):
+        makeInterfaces(definition_fname=idl)
 
 
 

@@ -35,7 +35,7 @@ import com.jopdesign.wcet.graphutils.MiscUtils.Function1;
 import com.jopdesign.wcet.jop.BlockCache;
 import com.jopdesign.wcet.jop.MethodCache;
 import com.jopdesign.wcet.jop.VarBlockCache;
-import com.jopdesign.wcet.jop.CacheConfig.CacheImplementation;
+import com.jopdesign.wcet.jop.JOPConfig.CacheImplementation;
 import com.jopdesign.wcet.uppaal.UppAalConfig;
 import com.jopdesign.wcet.uppaal.UppAalConfig.UppaalCacheApproximation;
 import com.jopdesign.wcet.uppaal.model.DuplicateKeyException;

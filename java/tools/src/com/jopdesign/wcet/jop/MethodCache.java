@@ -8,7 +8,7 @@ import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.config.Config;
 import com.jopdesign.wcet.frontend.ControlFlowGraph;
 import com.jopdesign.wcet.graphutils.MiscUtils;
-import com.jopdesign.wcet.jop.CacheConfig.CacheImplementation;
+import com.jopdesign.wcet.jop.JOPConfig.CacheImplementation;
 
 public abstract class MethodCache {
 	protected Project project;
@@ -19,14 +19,14 @@ public abstract class MethodCache {
 	}
 	public static MethodCache getCacheModel(Project p) {
 		Config c = p.getConfig();
-		switch(c.getOption(CacheConfig.CACHE_IMPL)) {
+		switch(c.getOption(JOPConfig.CACHE_IMPL)) {
 		case NO_METHOD_CACHE: return new NoMethodCache(p);
 		case LRU_CACHE: return BlockCache.fromConfig(p,true);
 		case FIFO_CACHE: return BlockCache.fromConfig(p,false);
 		case LRU_VARBLOCK_CACHE: return VarBlockCache.fromConfig(p, true);
 		case FIFO_VARBLOCK_CACHE: return VarBlockCache.fromConfig(p,false);
 		default: throw new AssertionError("Non-exhaustive match on enum: CACHE_IMPL: "+
-				                          c.getOption(CacheConfig.CACHE_IMPL));
+				                          c.getOption(JOPConfig.CACHE_IMPL));
 		}
 	}
 	public abstract boolean allFit(MethodInfo m);
@@ -128,13 +128,14 @@ public abstract class MethodCache {
 		return largestMethod;
 	}
 	public long getMissOnInvokeCost(ProcessorModel proc, ControlFlowGraph invoked) {
-		//System.err.println("Miss on invoke cost: "+invoked+": "+proc.getMethodCacheLoadTime(invoked.getNumberOfWords(), true)+
-		//		", for: "+invoked.getNumberOfWords()+"words.");
+		// System.err.println("Miss on invoke cost: "+invoked+": "+proc.getMethodCacheLoadTime(invoked.getNumberOfWords(), true)+
+		//		", for: "+invoked.getNumberOfWords()+" words.");
 		return proc.getMethodCacheLoadTime(invoked.getNumberOfWords(), true);
 	}
 
 	public long getMissOnReturnCost(ProcessorModel proc, ControlFlowGraph invoker) {
-		//System.err.println("Miss on return cost: "+invoker+": "+proc.getMethodCacheLoadTime(invoker.getNumberOfWords(), false));
+		// System.err.println("Miss on return cost: "+invoker+": "+proc.getMethodCacheLoadTime(invoker.getNumberOfWords(), false)+
+		//		", for: "+invoker.getNumberOfWords()+" words.");
 		return proc.getMethodCacheLoadTime(invoker.getNumberOfWords(), false);
 	}
 	public long getMaxMissCost(ProcessorModel proc, ControlFlowGraph cfg) {

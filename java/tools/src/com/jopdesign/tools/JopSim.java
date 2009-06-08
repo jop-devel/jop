@@ -114,20 +114,21 @@ public class JopSim {
 	int wrMemCnt;
 	int maxInstr;
 	int instrCnt;
-	int clkCnt;
+	long clkCnt;
 	int maxSp;
 	int cacheCost;
 
-	JopSim(String fn, IOSimMin ioSim, int max) {
+	public JopSim(String binaryFile, IOSimMin ioSim, int maxInstructions) {
 		
-		maxInstr = max;
+		ioSim.setJopSimRef(this);		
+		maxInstr = maxInstructions;
 		
 		// only first simulation object loads the memory
 		if (ioSim.cpuId==0) {
 			heap = 0;
 			
 			try {
-				StreamTokenizer in = new StreamTokenizer(new FileReader(fn));
+				StreamTokenizer in = new StreamTokenizer(new FileReader(binaryFile));
 			
 				in.wordChars( '_', '_' );
 				in.wordChars( ':', ':' );
@@ -149,7 +150,7 @@ public class JopSim {
 			}
 
 			int instr = mem_load[0];
-			System.out.println("Program: "+fn);
+			System.out.println("Program: "+binaryFile);
 			System.out.println(instr + " instruction word ("+(instr*4/1024)+" KB)");
 			System.out.println(heap + " words mem read ("+(heap*4/1024)+" KB)");
 			empty_heap = heap;
@@ -239,7 +240,11 @@ System.out.println(mp+" "+pc);
 	void dump() {
 		
 		System.out.print("cp="+cp+" vp="+vp+" sp="+sp+" pc="+pc);
-		System.out.println(" Stack=[..., "+stack[sp-2]+", "+stack[sp-1]+", "+stack[sp]+"]");
+		try {
+			System.out.println(" Stack=[..., "+stack[sp-2]+", "+stack[sp-1]+", "+stack[sp]+"]");
+		} catch(ArrayIndexOutOfBoundsException ex) {
+			System.out.println(" Stack="+stack);
+		}
 	}
 
 	/**
@@ -1749,6 +1754,21 @@ System.out.println("new heap: "+heap);
 		return maxInstr;
 	}
 	
+	/** simple runner: 1 cpu, 1 cache implementation */
+	public void runSim() {
+		cache.use(0);
+		start();
+		while(! exit) { interpret(); }
+		if (stopped) {
+			System.out.println();
+			System.out.println("JopSim stopped");
+		}
+		System.out.println();
+		stat();
+		cache.stat();
+	}
+	
+	/** run simulation for multicore JOP */
 	public static void runSimulation() {
 		
 		// loop over all cache simulations
@@ -1799,9 +1819,31 @@ System.out.println("new heap: "+heap);
 			}
 			io.setCpuId(i);
 			js[i] = new JopSim(args[0], io, maxInstr);
-			io.setJopSimRef(js[i]);			
 		}
 		
 		runSimulation();
 	}
+	/* interface for IOSim */
+	
+	public long getClkCnt() {
+		return clkCnt;
+	}
+
+	public int getExceptReason() {
+		return this.exceptReason;
+	}
+	
+	public void setException(int val) {
+		intExcept = true;
+		exceptReason = val;		
+	}
+
+	public Cache getCache() {
+		return cache;
+	}
+
+	public int getCacheCost() {
+		return this.cacheCost;
+	}
+
 }

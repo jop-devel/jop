@@ -3,7 +3,7 @@ package com.jopdesign.wcet.jop;
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.config.Config;
-import com.jopdesign.wcet.jop.CacheConfig.CacheImplementation;
+import com.jopdesign.wcet.jop.JOPConfig.CacheImplementation;
 
 public class VarBlockCache extends MethodCache {
 
@@ -25,8 +25,8 @@ public class VarBlockCache extends MethodCache {
 	public static MethodCache fromConfig(Project p, boolean isLRU) {
 		Config c = p.getConfig();
 		return new VarBlockCache(p,
-				                 c.getOption(CacheConfig.CACHE_BLOCKS).intValue(),
-								 c.getOption(CacheConfig.CACHE_SIZE_WORDS).intValue(),
+				                 c.getOption(JOPConfig.CACHE_BLOCKS).intValue(),
+								 c.getOption(JOPConfig.CACHE_SIZE_WORDS).intValue(),
 								 isLRU);
 	}
 	/** Return the number of blocks needed for the a method of size {@code words}.

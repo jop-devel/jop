@@ -1,0 +1,253 @@
+JOP CMP Timing Table on Sat Jun 06 12:43:31 CEST 2009
+=====================================================
+
+  Loading asm/generated/jvmgen.asm
+    Before generating the timing table do not forget to run e.g.
+    > make gen_mem -e ASM_SRC=jvm JVM_TYPE=USB
+
+================================================================================
+| opcode |      name       | (3,5,3,10) | (3,5,3,15) | (3,5,8,10) | (3,5,8,15) |
+--------------------------------------------------------------------------------
+|   (x,y,c,t) ~ (read delay, write delay, cpus, timeslot)                      |
+|   c1 / c2 ... cycles cache hit / cycles cache miss 32 words                  |
+|   infeasible branches: [null_pointer, array_bound, ! invoke_vpsave]          |
+--------------------------------------------------------------------------------
+|      0 | nop             |          1 |          1 |          1 |          1 |
+|      1 | aconst_null     |          1 |          1 |          1 |          1 |
+|      2 | iconst_m1       |          1 |          1 |          1 |          1 |
+|      3 | iconst_0        |          1 |          1 |          1 |          1 |
+|      4 | iconst_1        |          1 |          1 |          1 |          1 |
+|      5 | iconst_2        |          1 |          1 |          1 |          1 |
+|      6 | iconst_3        |          1 |          1 |          1 |          1 |
+|      7 | iconst_4        |          1 |          1 |          1 |          1 |
+|      8 | iconst_5        |          1 |          1 |          1 |          1 |
+|      9 | lconst_0        |          2 |          2 |          2 |          2 |
+|     10 | lconst_1        |          2 |          2 |          2 |          2 |
+|     11 | fconst_0        | ... not supported ...                             |
+|     12 | fconst_1        | ... not supported ...                             |
+|     13 | fconst_2        | ... not supported ...                             |
+|     14 | dconst_0        | ... not supported ...                             |
+|     15 | dconst_1        | ... not supported ...                             |
+|     16 | bipush          |          2 |          2 |          2 |          2 |
+|     17 | sipush          |          3 |          3 |          3 |          3 |
+|     18 | ldc             |          8 |          8 |          8 |          8 |
+|     19 | ldc_w           |          9 |          9 |          9 |          9 |
+|     20 | ldc2_w          |         17 |         17 |         17 |         17 |
+|     21 | iload           |          2 |          2 |          2 |          2 |
+|     22 | lload           |         11 |         11 |         11 |         11 |
+|     23 | fload           |          2 |          2 |          2 |          2 |
+|     24 | dload           |         11 |         11 |         11 |         11 |
+|     25 | aload           |          2 |          2 |          2 |          2 |
+|     26 | iload_0         |          1 |          1 |          1 |          1 |
+|     27 | iload_1         |          1 |          1 |          1 |          1 |
+|     28 | iload_2         |          1 |          1 |          1 |          1 |
+|     29 | iload_3         |          1 |          1 |          1 |          1 |
+|     30 | lload_0         |          2 |          2 |          2 |          2 |
+|     31 | lload_1         |          2 |          2 |          2 |          2 |
+|     32 | lload_2         |          2 |          2 |          2 |          2 |
+|     33 | lload_3         |         11 |         11 |         11 |         11 |
+|     34 | fload_0         |          1 |          1 |          1 |          1 |
+|     35 | fload_1         |          1 |          1 |          1 |          1 |
+|     36 | fload_2         |          1 |          1 |          1 |          1 |
+|     37 | fload_3         |          1 |          1 |          1 |          1 |
+|     38 | dload_0         |          2 |          2 |          2 |          2 |
+|     39 | dload_1         |          2 |          2 |          2 |          2 |
+|     40 | dload_2         |          2 |          2 |          2 |          2 |
+|     41 | dload_3         |         11 |         11 |         11 |         11 |
+|     42 | aload_0         |          1 |          1 |          1 |          1 |
+|     43 | aload_1         |          1 |          1 |          1 |          1 |
+|     44 | aload_2         |          1 |          1 |          1 |          1 |
+|     45 | aload_3         |          1 |          1 |          1 |          1 |
+|     46 | iaload          |         10 |         10 |         10 |         10 |
+|     47 | laload          |         47 |         47 |         47 |         47 |
+|     48 | faload          |         10 |         10 |         10 |         10 |
+|     49 | daload          | ... not supported ...                             |
+|     50 | aaload          |         10 |         10 |         10 |         10 |
+|     51 | baload          |         10 |         10 |         10 |         10 |
+|     52 | caload          |         10 |         10 |         10 |         10 |
+|     53 | saload          |         10 |         10 |         10 |         10 |
+|     54 | istore          |          2 |          2 |          2 |          2 |
+|     55 | lstore          |         11 |         11 |         11 |         11 |
+|     56 | fstore          |          2 |          2 |          2 |          2 |
+|     57 | dstore          |         11 |         11 |         11 |         11 |
+|     58 | astore          |          2 |          2 |          2 |          2 |
+|     59 | istore_0        |          1 |          1 |          1 |          1 |
+|     60 | istore_1        |          1 |          1 |          1 |          1 |
+|     61 | istore_2        |          1 |          1 |          1 |          1 |
+|     62 | istore_3        |          1 |          1 |          1 |          1 |
+|     63 | lstore_0        |          2 |          2 |          2 |          2 |
+|     64 | lstore_1        |          2 |          2 |          2 |          2 |
+|     65 | lstore_2        |          2 |          2 |          2 |          2 |
+|     66 | lstore_3        |         11 |         11 |         11 |         11 |
+|     67 | fstore_0        |          1 |          1 |          1 |          1 |
+|     68 | fstore_1        |          1 |          1 |          1 |          1 |
+|     69 | fstore_2        |          1 |          1 |          1 |          1 |
+|     70 | fstore_3        |          1 |          1 |          1 |          1 |
+|     71 | dstore_0        |          2 |          2 |          2 |          2 |
+|     72 | dstore_1        |          2 |          2 |          2 |          2 |
+|     73 | dstore_2        |          2 |          2 |          2 |          2 |
+|     74 | dstore_3        |         11 |         11 |         11 |         11 |
+|     75 | astore_0        |          1 |          1 |          1 |          1 |
+|     76 | astore_1        |          1 |          1 |          1 |          1 |
+|     77 | astore_2        |          1 |          1 |          1 |          1 |
+|     78 | astore_3        |          1 |          1 |          1 |          1 |
+|     79 | iastore         |         14 |         14 |         14 |         14 |
+|     80 | lastore         |         52 |         52 |         52 |         52 |
+|     81 | fastore         |         14 |         14 |         14 |         14 |
+|     82 | dastore         | ... not supported ...                             |
+|     83 | aastore         | ... not supported ...                             |
+|     84 | bastore         |         14 |         14 |         14 |         14 |
+|     85 | castore         |         14 |         14 |         14 |         14 |
+|     86 | sastore         |         14 |         14 |         14 |         14 |
+|     87 | pop             |          1 |          1 |          1 |          1 |
+|     88 | pop2            |          2 |          2 |          2 |          2 |
+|     89 | dup             |          1 |          1 |          1 |          1 |
+|     90 | dup_x1          |          5 |          5 |          5 |          5 |
+|     91 | dup_x2          |          7 |          7 |          7 |          7 |
+|     92 | dup2            |          6 |          6 |          6 |          6 |
+|     93 | dup2_x1         |          8 |          8 |          8 |          8 |
+|     94 | dup2_x2         |         10 |         10 |         10 |         10 |
+|     95 | swap            |          4 |          4 |          4 |          4 |
+|     96 | iadd            |          1 |          1 |          1 |          1 |
+|     97 | ladd            |         26 |         26 |         26 |         26 |
+|     98 | fadd            | ... not supported ...                             |
+|     99 | dadd            | ... not supported ...                             |
+|    100 | isub            |          1 |          1 |          1 |          1 |
+|    101 | lsub            |         38 |         38 |         38 |         38 |
+|    102 | fsub            | ... not supported ...                             |
+|    103 | dsub            | ... not supported ...                             |
+|    104 | imul            |         19 |         19 |         19 |         19 |
+|    105 | lmul            | ... not supported ...                             |
+|    106 | fmul            | ... not supported ...                             |
+|    107 | dmul            | ... not supported ...                             |
+|    108 | idiv            | ... not supported ...                             |
+|    109 | ldiv            | ... not supported ...                             |
+|    110 | fdiv            | ... not supported ...                             |
+|    111 | ddiv            | ... not supported ...                             |
+|    112 | irem            | ... not supported ...                             |
+|    113 | lrem            | ... not supported ...                             |
+|    114 | frem            | ... not supported ...                             |
+|    115 | drem            | ... not supported ...                             |
+|    116 | ineg            |          4 |          4 |          4 |          4 |
+|    117 | lneg            |         34 |         34 |         34 |         34 |
+|    118 | fneg            | ... not supported ...                             |
+|    119 | dneg            | ... not supported ...                             |
+|    120 | ishl            |          1 |          1 |          1 |          1 |
+|    121 | lshl            |         28 |         28 |         28 |         28 |
+|    122 | ishr            |          1 |          1 |          1 |          1 |
+|    123 | lshr            |         28 |         28 |         28 |         28 |
+|    124 | iushr           |          1 |          1 |          1 |          1 |
+|    125 | lushr           |         28 |         28 |         28 |         28 |
+|    126 | iand            |          1 |          1 |          1 |          1 |
+|    127 | land            |          8 |          8 |          8 |          8 |
+|    128 | ior             |          1 |          1 |          1 |          1 |
+|    129 | lor             |          8 |          8 |          8 |          8 |
+|    130 | ixor            |          1 |          1 |          1 |          1 |
+|    131 | lxor            |          8 |          8 |          8 |          8 |
+|    132 | iinc            |          8 |          8 |          8 |          8 |
+|    133 | i2l             |          7 |          7 |          7 |          7 |
+|    134 | i2f             | ... not supported ...                             |
+|    135 | i2d             | ... not supported ...                             |
+|    136 | l2i             |          3 |          3 |          3 |          3 |
+|    137 | l2f             | ... not supported ...                             |
+|    138 | l2d             | ... not supported ...                             |
+|    139 | f2i             | ... not supported ...                             |
+|    140 | f2l             | ... not supported ...                             |
+|    141 | f2d             | ... not supported ...                             |
+|    142 | d2i             | ... not supported ...                             |
+|    143 | d2l             | ... not supported ...                             |
+|    144 | d2f             | ... not supported ...                             |
+|    145 | i2b             | ... not supported ...                             |
+|    146 | i2c             |          2 |          2 |          2 |          2 |
+|    147 | i2s             | ... not supported ...                             |
+|    148 | lcmp            | ... not supported ...                             |
+|    149 | fcmpl           | ... not supported ...                             |
+|    150 | fcmpg           | ... not supported ...                             |
+|    151 | dcmpl           | ... not supported ...                             |
+|    152 | dcmpg           | ... not supported ...                             |
+|    153 | ifeq            |          4 |          4 |          4 |          4 |
+|    154 | ifne            |          4 |          4 |          4 |          4 |
+|    155 | iflt            |          4 |          4 |          4 |          4 |
+|    156 | ifge            |          4 |          4 |          4 |          4 |
+|    157 | ifgt            |          4 |          4 |          4 |          4 |
+|    158 | ifle            |          4 |          4 |          4 |          4 |
+|    159 | if_icmpeq       |          4 |          4 |          4 |          4 |
+|    160 | if_icmpne       |          4 |          4 |          4 |          4 |
+|    161 | if_icmplt       |          4 |          4 |          4 |          4 |
+|    162 | if_icmpge       |          4 |          4 |          4 |          4 |
+|    163 | if_icmpgt       |          4 |          4 |          4 |          4 |
+|    164 | if_icmple       |          4 |          4 |          4 |          4 |
+|    165 | if_acmpeq       |          4 |          4 |          4 |          4 |
+|    166 | if_acmpne       |          4 |          4 |          4 |          4 |
+|    167 | goto            |          4 |          4 |          4 |          4 |
+|    168 | jsr             | ... not supported ...                             |
+|    169 | ret             | ... not supported ...                             |
+|    170 | tableswitch     | ... not supported ...                             |
+|    171 | lookupswitch    | ... not supported ...                             |
+|    172 | ireturn         |    23 / 85 |    23 / 85 |    23 / 85 |    23 / 85 |
+|    173 | lreturn         |    25 / 86 |    25 / 86 |    25 / 86 |    25 / 86 |
+|    174 | freturn         |    23 / 85 |    23 / 85 |    23 / 85 |    23 / 85 |
+|    175 | dreturn         |    25 / 86 |    25 / 86 |    25 / 86 |    25 / 86 |
+|    176 | areturn         |    23 / 85 |    23 / 85 |    23 / 85 |    23 / 85 |
+|    177 | return          |    21 / 84 |    21 / 84 |    21 / 84 |    21 / 84 |
+|    178 | getstatic       |          8 |          8 |          8 |          8 |
+|    179 | putstatic       |         10 |         10 |         10 |         10 |
+|    180 | getfield        |         13 |         13 |         13 |         13 |
+|    181 | putfield        |         16 |         16 |         16 |         16 |
+|    182 | invokevirtual   |  100 / 135 |  100 / 135 |  100 / 135 |  100 / 135 |
+|    183 | invokespecial   |   75 / 110 |   75 / 110 |   75 / 110 |   75 / 110 |
+|    184 | invokestatic    |   75 / 110 |   75 / 110 |   75 / 110 |   75 / 110 |
+|    185 | invokeinterface |  116 / 151 |  116 / 151 |  116 / 151 |  116 / 151 |
+|    186 | unused_ba       | ... not supported ...                             |
+|    187 | new             | ... not supported ...                             |
+|    188 | newarray        | ... not supported ...                             |
+|    189 | anewarray       | ... not supported ...                             |
+|    190 | arraylength     |          7 |          7 |          7 |          7 |
+|    191 | athrow          | ... not supported ...                             |
+|    192 | checkcast       | ... not supported ...                             |
+|    193 | instanceof      | ... not supported ...                             |
+|    194 | monitorenter    |         19 |         19 |         19 |         19 |
+|    195 | monitorexit     |         22 |         22 |         22 |         22 |
+|    196 | wide            | ... not supported ...                             |
+|    197 | multianewarray  | ... not supported ...                             |
+|    198 | ifnull          |          4 |          4 |          4 |          4 |
+|    199 | ifnonnull       |          4 |          4 |          4 |          4 |
+|    200 | goto_w          | ... not supported ...                             |
+|    201 | jsr_w           | ... not supported ...                             |
+|    202 | breakpoint      | ... not supported ...                             |
+|    204 | jopsys_inval    | ... not supported ...                             |
+|    208 | jopsys_null     | ... not supported ...                             |
+|    209 | jopsys_rd       |          5 |          5 |          5 |          5 |
+|    210 | jopsys_wr       |          7 |          7 |          7 |          7 |
+|    211 | jopsys_rdmem    |          5 |          5 |          5 |          5 |
+|    212 | jopsys_wrmem    |          7 |          7 |          7 |          7 |
+|    213 | jopsys_rdint    |          3 |          3 |          3 |          3 |
+|    214 | jopsys_wrint    |          3 |          3 |          3 |          3 |
+|    215 | jopsys_getsp    |          3 |          3 |          3 |          3 |
+|    216 | jopsys_setsp    |          4 |          4 |          4 |          4 |
+|    217 | jopsys_getvp    |          1 |          1 |          1 |          1 |
+|    218 | jopsys_setvp    |          2 |          2 |          2 |          2 |
+|    219 | jopsys_int2ext  | ... not supported ...                             |
+|    220 | jopsys_ext2int  | ... not supported ...                             |
+|    221 | jopsys_nop      |          1 |          1 |          1 |          1 |
+|    222 | jopsys_invoke   | ... not supported ...                             |
+|    224 | getstatic_ref   |          8 |          8 |          8 |          8 |
+|    225 | putstatic_ref   | ... not supported ...                             |
+|    226 | getfield_ref    |         13 |         13 |         13 |         13 |
+|    227 | putfield_ref    | ... not supported ...                             |
+|    228 | getstatic_long  | ... not supported ...                             |
+|    229 | putstatic_long  | ... not supported ...                             |
+|    230 | getfield_long   | ... not supported ...                             |
+|    231 | putfield_long   | ... not supported ...                             |
+|    232 | jopsys_memcpy   | ... not supported ...                             |
+|    233 | jopsys_getfield | ... not supported ...                             |
+|    234 | jopsys_putfield | ... not supported ...                             |
+|    236 | invokesuper     | ... not supported ...                             |
+|    240 | sys_int         | ... not supported ...                             |
+|    241 | sys_exc         | ... not supported ...                             |
+|    254 | sys_noim        | ... not supported ...                             |
+|    255 | sys_init        | ... not supported ...                             |
+--------------------------------------------------------------------------------
+|   hidden cycles on invoke (including JavaImplBCs) and return: 37 / 9         |
+================================================================================
+

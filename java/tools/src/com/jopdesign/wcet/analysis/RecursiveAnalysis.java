@@ -177,14 +177,20 @@ public class RecursiveAnalysis<Context> {
 	private ProcessorModel processor;
 	private RecursiveWCETStrategy<Context> recursiveWCET;
 
-	public RecursiveAnalysis(Project project, RecursiveWCETStrategy<Context> recursiveStrategy) {
+	public RecursiveAnalysis(Project project,
+                             RecursiveWCETStrategy<Context> recursiveStrategy) {
+		this(project, new IpetConfig(project.getConfig()), recursiveStrategy);
+	}
+	public RecursiveAnalysis(Project project,
+			                 IpetConfig ipetConfig,
+			                 RecursiveWCETStrategy<Context> recursiveStrategy) {
 		this.project = project;
 		this.appInfo = project.getWcetAppInfo();
 		this.processor = project.getWcetAppInfo().getProcessorModel();
 
 		this.wcetMap = new Hashtable<WcetKey,WcetCost>();
 
-		this.modelBuilder = new ILPModelBuilder(project);
+		this.modelBuilder = new ILPModelBuilder(ipetConfig);
 		this.recursiveWCET = recursiveStrategy;
 	}
 	/**
@@ -204,7 +210,10 @@ public class RecursiveAnalysis<Context> {
 		sol.checkConsistentency();
 		recordCost(key, sol.getCost());
 		/* Logging and Report */
-		if(project.reportGenerationActive()) updateReport(key, sol);
+		if(project.reportGenerationActive()) {
+			logger.info("Report generation active: "+m+" in context "+ctx);
+			updateReport(key, sol);
+		}
 		return sol.getTotalCost();
 	}
 	
@@ -228,7 +237,9 @@ public class RecursiveAnalysis<Context> {
 					ClassReport cr = project.getReport().getClassReport(cli);
 					Long oldCost = (Long) cr.getLineProperty(lineRange.first(), "cost");
 					if(oldCost == null) oldCost = 0L;
-					cr.addLineProperty(lineRange.first(), "cost", oldCost + sol.getNodeFlow(n)*nodeCosts.get(n).getCost());
+					long newCost = sol.getNodeFlow(n)*nodeCosts.get(n).getCost();
+					Project.logger.debug("Attaching cost "+oldCost + " + "+newCost+" to line "+lineRange.first());
+					cr.addLineProperty(lineRange.first(), "cost", oldCost + newCost);
 					for(int i : lineRange) {
 						cr.addLineProperty(i, "color", "red");
 					}
@@ -306,7 +317,7 @@ public class RecursiveAnalysis<Context> {
 		}
 		@Override
 		public void visitInvokeNode(InvokeNode n) {
-			cost.addLocalCost(processor.getExecutionTime(n.getBasicBlock().getMethodInfo(),n.getInstructionHandle().getInstruction()));
+			cost.addLocalCost(processor.getExecutionTime(n.getBasicBlock().getMethodInfo(),n.getInstructionHandle()));
 			if(n.isInterface()) {
 				throw new AssertionError("Invoke node "+n.getReferenced()+" without implementation in WCET analysis - did you preprocess virtual methods ?");
 			}

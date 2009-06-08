@@ -1,5 +1,26 @@
+/*
+  This file is part of JOP, the Java Optimized Processor
+    see <http://www.jopdesign.com/>
+
+  Copyright (C) 2009, Benedikt Huber (benedikt.huber@gmail.com)
+  
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 package com.jopdesign.timing.jop;
 
+import java.io.Serializable;
 import java.util.Vector;
 
 import com.jopdesign.timing.jop.MicrocodeAnalysis.MicrocodeVerificationException;
@@ -7,17 +28,20 @@ import com.jopdesign.tools.Instruction;
 import com.jopdesign.tools.Jopa.Line;
 
 /** Class representing microcode paths */
-public class MicrocodePath {
+public class MicrocodePath implements Serializable {
+	private static final long serialVersionUID = 1L;
+
 	/** Path Entry, 'constant', i.e. you never modify any fields after construction */
-	public class PathEntry {
+	public class PathEntry implements Serializable {
+		private static final long serialVersionUID = 1L;
+		private final Line line;		
+		private final Integer tos; /** TOS (op of stack), if available */    
+
 		private PathEntry(Line l) { this(l,null); }
 		private PathEntry(Line l, Integer tos) {
 			this.line = l;
 			this.tos  = tos;
 		}
-		private final Line line;
-		/** TOS (op of stack), if available */
-		private final Integer tos;    
 		public Instruction getInstruction() {
 			return line.getInstruction();
 		}

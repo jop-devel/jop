@@ -50,7 +50,7 @@ public class GlobalAnalysis {
 		}
 		String key = m.getFQMethodName() + "_global_" + cacheMode;
 		SuperGraph sg = new SuperGraph(project.getWcetAppInfo(),project.getFlowGraph(m));
-		ILPModelBuilder imb = new ILPModelBuilder(project);
+		ILPModelBuilder imb = new ILPModelBuilder(ipetConfig);
 		Map<CFGNode, WcetCost> nodeCostMap = buildNodeCostMap(sg, cacheMode);
 		CostProvider<CFGNode> nodeWCET = new MapCostProvider<CFGNode>(nodeCostMap);
 		/* create an ILP graph for all reachable methods */

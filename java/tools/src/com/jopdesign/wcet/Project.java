@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Date;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
@@ -56,7 +57,7 @@ import com.jopdesign.wcet.frontend.SourceAnnotations.LoopBound;
 import com.jopdesign.wcet.frontend.WcetAppInfo.MethodNotFoundException;
 import com.jopdesign.wcet.graphutils.MiscUtils;
 import com.jopdesign.wcet.ipet.IpetConfig;
-import com.jopdesign.wcet.jop.CacheConfig;
+import com.jopdesign.wcet.jop.JOPConfig;
 import com.jopdesign.wcet.jop.JOPModel;
 import com.jopdesign.wcet.report.Report;
 import com.jopdesign.wcet.uppaal.UppAalConfig;
@@ -88,13 +89,16 @@ public class Project {
 			super.visitJavaClass(clazz);
 			ClassInfo cli = super.getCli();
 			for(MethodInfo m : cli.getMethods()) {
-				m.getMethodGen().removeNOPs();
+				MethodGen mg = m.getMethodGen();
+				mg.removeNOPs();
 				m.updateMethodFromGen();
 			}
 		}		
 	}
 	/**
 	 * Set {@link MethodGen} in all reachable classes 
+	 * // FIXME: THIS SHOULD NOT BE NECCESSARY
+	 *    REMOVEME when not needed anymore
 	 */
 	public static class CreateMethodGenerators extends AppVisitor {
 		public CreateMethodGenerators(AppInfo ai) {
@@ -163,9 +167,16 @@ public class Project {
 		}
 		if(projectConfig.saveResults()) {
 			this.resultRecord = new File(config.getConfigManager().getOption(ProjectConfig.RESULT_FILE));
-			if(! projectConfig.appendResults()) { resultRecord.delete(); resultRecord.createNewFile(); }
+			if(! projectConfig.appendResults()) {
+				recordMetric("problem",this.getProjectName());
+				recordMetric("date",new Date()); 
+			}
 		}
-		this.processor = new JOPModel(this);
+		if(projectConfig.getProcessorName().equals("jamuth")) {
+		    this.processor = new JamuthModel(this);
+		} else {
+			this.processor = new JOPModel(this);
+		}
 	}
 	public String getProjectName() {
 		return this.projectName;
@@ -259,7 +270,7 @@ public class Project {
 		} else {
 			appInfo.load();
 			WcetPreprocess.preprocess(appInfo);
-			appInfo.iterate(new CreateMethodGenerators(appInfo));			
+			appInfo.iterate(new CreateMethodGenerators(appInfo));
 		}
 		return appInfo;
 	}
@@ -387,9 +398,9 @@ public class Project {
 		if(resultRecord == null) return;
 		Config c = projectConfig.getConfigManager();		
 		recordCVS("wcet","ipet",wcet,timeDiff,solverTime,
-					c.getOption(CacheConfig.CACHE_IMPL),
-					c.getOption(CacheConfig.CACHE_SIZE_WORDS),
-					c.getOption(CacheConfig.CACHE_BLOCKS),
+					c.getOption(JOPConfig.CACHE_IMPL),
+					c.getOption(JOPConfig.CACHE_SIZE_WORDS),
+					c.getOption(JOPConfig.CACHE_BLOCKS),
 					c.getOption(IpetConfig.STATIC_CACHE_APPROX),
 					c.getOption(IpetConfig.ASSUME_MISS_ONCE_ON_INVOKE));
 		
@@ -399,9 +410,9 @@ public class Project {
 		if(resultRecord == null) return;
 		Config c = projectConfig.getConfigManager();		
 		recordCVS("wcet","uppaal",wcet,timeDiff,searchtime,solvertimemax,
-				c.getOption(CacheConfig.CACHE_IMPL),
-				c.getOption(CacheConfig.CACHE_SIZE_WORDS),
-				c.getOption(CacheConfig.CACHE_BLOCKS),
+				c.getOption(JOPConfig.CACHE_IMPL),
+				c.getOption(JOPConfig.CACHE_SIZE_WORDS),
+				c.getOption(JOPConfig.CACHE_BLOCKS),
 				c.getOption(UppAalConfig.UPPAAL_CACHE_APPROX),
 				c.getOption(UppAalConfig.UPPAAL_COMPLEXITY_TRESHOLD),
 				c.getOption(UppAalConfig.UPPAAL_COLLAPSE_LEAVES),

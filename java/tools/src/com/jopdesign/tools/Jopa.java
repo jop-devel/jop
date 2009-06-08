@@ -112,7 +112,9 @@ public class Jopa {
 		}
 	}
 
-	public class Line {
+	public static class Line implements Serializable {
+		private static final long serialVersionUID = 1L;
+
 		int jinstr;
 		String label;
 		Instruction instr;
@@ -121,6 +123,7 @@ public class Jopa {
 		String symVal;
 		boolean nxt;
 		boolean opd;
+
 		public boolean hasNxtFlag() {
 			return nxt;
 		}

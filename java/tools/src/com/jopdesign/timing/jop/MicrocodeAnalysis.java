@@ -42,6 +42,8 @@ import com.jopdesign.tools.Jopa.Line;
  * @author Benedikt Huber <benedikt.huber@gmail.com>
  */
 public class MicrocodeAnalysis {
+	public static int JOPSYS_NOIM = 254;
+
 	public static class MicrocodeVerificationException extends Exception {
 		private static final long serialVersionUID = 1L;
 		public MicrocodeVerificationException(String msg) { super(msg); }
@@ -52,7 +54,7 @@ public class MicrocodeAnalysis {
 	}
 
 	/** Limit for the length of a microcode path during simulation */
-	public final int PATH_SIZE_LIMIT = 10000;
+	public final int PATH_SIZE_LIMIT = 1000;
 	/** Number of branch delay slots */
 	public final int BRANCH_DELAY_SLOTS = 2;
 
@@ -523,6 +525,7 @@ public class MicrocodeAnalysis {
 	private Map<Object, Object> symMap;
 	private Map<Integer,Integer> jInstrs;
 	private List<Line> instrs;
+	public static final File DEFAULT_ASM_FILE = new File("asm", new File("generated","jvmgen.asm").getPath());
 
 	public MicrocodeAnalysis(String jvmAsm) throws IOException {
 		asmFile = new File(jvmAsm);
@@ -572,7 +575,7 @@ public class MicrocodeAnalysis {
 	}
 	
 	public Integer getStartAddress(int opcode) {
-		if(opcode == 254) return this.jInstrs.get(254);  // sys no-im
+		if(opcode == JOPSYS_NOIM) return this.jInstrs.get(JOPSYS_NOIM);  // sys no-im
 		String name = JopInstr.name(opcode);
 		int jopinstr = JopInstr.get(name);
 		return this.jInstrs.get(jopinstr);		
@@ -586,10 +589,6 @@ public class MicrocodeAnalysis {
 
 
 	public static void main(String[] argv) {
-//		String asmFile= 
-//			"/Users/benedikt/Documents/programming/community/jop/cvs_head/opencores_jop/asm/src/jvm.asm";
-//		String asmFile =
-//			"/Users/benedikt/Documents/programming/community/jop/git/jop/asm/generated/jvmgen.asm";
 //		MicrocodeAnalysis mt = null;
 //		try {
 //			mt = new MicrocodeAnalysis(asmFile);

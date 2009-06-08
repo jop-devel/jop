@@ -42,7 +42,7 @@ public class UppaalAnalysis {
 	}
 	public WcetCost computeWCETWithTreshold(MethodInfo targetMethod, long complexityTreshold) {
 		RecursiveAnalysis<UppaalCacheApproximation> sa = 
-			new RecursiveAnalysis<UppaalCacheApproximation>(project,new UppaalTresholdStrategy(this,complexityTreshold));
+			new RecursiveAnalysis<UppaalCacheApproximation>(project, new UppaalTresholdStrategy(this,complexityTreshold));
 		return sa.computeWCET(targetMethod, uppaalConfig.getCacheApproximation());
 	}
 	public WcetCost calculateWCET(MethodInfo m) throws IOException, DuplicateKeyException, XmlSerializationException {

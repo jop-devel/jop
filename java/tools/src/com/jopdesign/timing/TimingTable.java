@@ -27,45 +27,28 @@ import java.util.List;
  * 
  * Currently we support the following aspects:
  * <ul>
- * <li/> Local State (pipeline, arbiter)
+ * <li/> Cycles needed to execute an instruction (InstrParam as type parameter))
+ * <li/> WCET of basic blocks
+ * <li/> Method Caches
  * <li/> Java Implemented Bytecodes
- * <li/> Instruction Cache
  * </ul>
  * 
- * We will need to extend this interface in order to support other
- * hardware aspects.
- * 
- * The type parameter LocalState will be used for timings which depend on
- * a local state (CMP, Pipelines), but for which (in contrast to method cache
- * access cycles), a local worst case can be assumed. 
+ * We currently only support architectures where there is a worst case for the
+ * ProcessorState.
  */
-public abstract class TimingTable<LocalState> {
+public abstract class TimingTable<I extends InstructionInfo> {
 	
 	/**
-	 * Class for encapsulating a instruction to be analyzed
+	 * return true if timing info is available for the given instruction
 	 */
-	class Instruction {
-		public int opcode;
-		public long cacheAccessCycles;
-		public Instruction(int opcode, long cac) { 
-			this.opcode = opcode;
-			this.cacheAccessCycles = cac;
-		}
-	}
+	public abstract boolean hasTimingInfo(int opcode);
 	
-	/** Get the WCET for an instruction.
-	 *  The default implementation delegates to {@code getCycles(opcode,null)}.
+	/** 
+	 * Get the WCET for an instruction.
 	 * */
-	public long getCycles(int opcode, Long cacheAccessCycles) {
-		return getCycles(opcode,cacheAccessCycles, null);
-	}
+	public abstract long getCycles(I instr);
+
 	
-	/** Get the timing info for a 'locally dependent' instruction.
-	 *  For example, pipeline or arbiter state are supplied.
-	 *  If {@code st} is {@code null}, the worst case scenario shall
-	 *  be assumed.  
-	 */
-	public abstract long getCycles(int opcode, Long cacheAccessCycles, LocalState st);
 
 	/*                      Get WCETs of Basic Block
 	 * ----------------------------------------------------------------------
@@ -75,39 +58,24 @@ public abstract class TimingTable<LocalState> {
 	 * Get the timing info for a basic block.<br/>
 	 * The default implementation simply sums the WCETs of the instructions.
 	 */
-	public long getCycles(List<Instruction> opcodes) {
+	public long getCycles(List<I> opcodes) {
 		long wcet = 0;
-		for(Instruction instr : opcodes) {
-			wcet += getCycles(instr.opcode, instr.cacheAccessCycles);
+		for(I instr : opcodes) {
+			wcet += getCycles(instr);
 		}
 		return wcet;
 	}
-	/** 
-	 * Get the timing info for a basic block.<br/>
-	 * The default implementation simply sums the WCETs of the instructions.
-	 */
-	public long getCycles(List<Instruction> opcodes, LocalState st) {
-		return getCycles(opcodes);
-	}
-	
 	
 	/*             Aspect: Java Implemented Bytecodes
 	 * ----------------------------------------------------------------------
 	 */
-	
-	/**
-	 * query whether the given opcode is implemented in Java.
-	 */
-	public boolean isImplementedInJava(int opcode) {
-		return false;
-	}
-	
+		
 	/**
 	 * return the number of 'dispatch cycles' for a Java implemented bytecode.
 	 * Implementations should throw a runtime error if the opcode is not implemented
 	 * in Java.
 	 */
-	public boolean javaImplBcDispatchCycles(int opcode, int cacheAccessDelay) {
+	public long javaImplBcDispatchCycles(I instr) {
 		throw new AssertionError("The platform " + this.getClass() 
 				               + " does not support Java implemented bytecodes");
 	}

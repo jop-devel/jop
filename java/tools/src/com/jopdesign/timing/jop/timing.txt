@@ -1,0 +1,279 @@
+JOP Timing Table on Sat Jun 06 12:43:03 CEST 2009
+=================================================
+
+  Loading asm/generated/jvmgen.asm
+    Before generating the timing table do not forget to run e.g.
+    > make gen_mem -e ASM_SRC=jvm JVM_TYPE=USB
+
+=================================================================================================================
+| opcode |      name       |               timing path                | (1,2,H) | (1,2,32) | (3,5,H) | (3,5,32) |
+-----------------------------------------------------------------------------------------------------------------
+|   (x,y,z) ~ (read delay, write delay, bytecode access)                                                        |
+|   z = H ... cache hit, n ... load n words into cache                                                          |
+|   infeasible branches: [null_pointer, array_bound, ! invoke_vpsave]                                           |
+-----------------------------------------------------------------------------------------------------------------
+|      0 | nop             | 1                                        |       1 |        1 |       1 |        1 |
+|      1 | aconst_null     | 1                                        |       1 |        1 |       1 |        1 |
+|      2 | iconst_m1       | 1                                        |       1 |        1 |       1 |        1 |
+|      3 | iconst_0        | 1                                        |       1 |        1 |       1 |        1 |
+|      4 | iconst_1        | 1                                        |       1 |        1 |       1 |        1 |
+|      5 | iconst_2        | 1                                        |       1 |        1 |       1 |        1 |
+|      6 | iconst_3        | 1                                        |       1 |        1 |       1 |        1 |
+|      7 | iconst_4        | 1                                        |       1 |        1 |       1 |        1 |
+|      8 | iconst_5        | 1                                        |       1 |        1 |       1 |        1 |
+|      9 | lconst_0        | 2                                        |       2 |        2 |       2 |        2 |
+|     10 | lconst_1        | 2                                        |       2 |        2 |       2 |        2 |
+|     11 | fconst_0        | ... no microcode implementation ...                                                |
+|     12 | fconst_1        | ... no microcode implementation ...                                                |
+|     13 | fconst_2        | ... no microcode implementation ...                                                |
+|     14 | dconst_0        | ... no microcode implementation ...                                                |
+|     15 | dconst_1        | ... no microcode implementation ...                                                |
+|     16 | bipush          | 2                                        |       2 |        2 |       2 |        2 |
+|     17 | sipush          | 3                                        |       3 |        3 |       3 |        3 |
+|     18 | ldc             | 7 + r                                    |       8 |        8 |      10 |       10 |
+|     19 | ldc_w           | 8 + r                                    |       9 |        9 |      11 |       11 |
+|     20 | ldc2_w          | 17 + [r - 2] + [r - 1]                   |      17 |       17 |      20 |       20 |
+|     21 | iload           | 2                                        |       2 |        2 |       2 |        2 |
+|     22 | lload           | 11                                       |      11 |       11 |      11 |       11 |
+|     23 | fload           | 2                                        |       2 |        2 |       2 |        2 |
+|     24 | dload           | 11                                       |      11 |       11 |      11 |       11 |
+|     25 | aload           | 2                                        |       2 |        2 |       2 |        2 |
+|     26 | iload_0         | 1                                        |       1 |        1 |       1 |        1 |
+|     27 | iload_1         | 1                                        |       1 |        1 |       1 |        1 |
+|     28 | iload_2         | 1                                        |       1 |        1 |       1 |        1 |
+|     29 | iload_3         | 1                                        |       1 |        1 |       1 |        1 |
+|     30 | lload_0         | 2                                        |       2 |        2 |       2 |        2 |
+|     31 | lload_1         | 2                                        |       2 |        2 |       2 |        2 |
+|     32 | lload_2         | 2                                        |       2 |        2 |       2 |        2 |
+|     33 | lload_3         | 11                                       |      11 |       11 |      11 |       11 |
+|     34 | fload_0         | 1                                        |       1 |        1 |       1 |        1 |
+|     35 | fload_1         | 1                                        |       1 |        1 |       1 |        1 |
+|     36 | fload_2         | 1                                        |       1 |        1 |       1 |        1 |
+|     37 | fload_3         | 1                                        |       1 |        1 |       1 |        1 |
+|     38 | dload_0         | 2                                        |       2 |        2 |       2 |        2 |
+|     39 | dload_1         | 2                                        |       2 |        2 |       2 |        2 |
+|     40 | dload_2         | 2                                        |       2 |        2 |       2 |        2 |
+|     41 | dload_3         | 11                                       |      11 |       11 |      11 |       11 |
+|     42 | aload_0         | 1                                        |       1 |        1 |       1 |        1 |
+|     43 | aload_1         | 1                                        |       1 |        1 |       1 |        1 |
+|     44 | aload_2         | 1                                        |       1 |        1 |       1 |        1 |
+|     45 | aload_3         | 1                                        |       1 |        1 |       1 |        1 |
+|     46 | iaload          | 7 + 3 r                                  |      10 |       10 |      16 |       16 |
+|     47 | laload          | 43 + 4 r                                 |      47 |       47 |      55 |       55 |
+|     48 | faload          | 7 + 3 r                                  |      10 |       10 |      16 |       16 |
+|     49 | daload          | ... no microcode implementation ...                                                |
+|     50 | aaload          | 7 + 3 r                                  |      10 |       10 |      16 |       16 |
+|     51 | baload          | 7 + 3 r                                  |      10 |       10 |      16 |       16 |
+|     52 | caload          | 7 + 3 r                                  |      10 |       10 |      16 |       16 |
+|     53 | saload          | 7 + 3 r                                  |      10 |       10 |      16 |       16 |
+|     54 | istore          | 2                                        |       2 |        2 |       2 |        2 |
+|     55 | lstore          | 11                                       |      11 |       11 |      11 |       11 |
+|     56 | fstore          | 2                                        |       2 |        2 |       2 |        2 |
+|     57 | dstore          | 11                                       |      11 |       11 |      11 |       11 |
+|     58 | astore          | 2                                        |       2 |        2 |       2 |        2 |
+|     59 | istore_0        | 1                                        |       1 |        1 |       1 |        1 |
+|     60 | istore_1        | 1                                        |       1 |        1 |       1 |        1 |
+|     61 | istore_2        | 1                                        |       1 |        1 |       1 |        1 |
+|     62 | istore_3        | 1                                        |       1 |        1 |       1 |        1 |
+|     63 | lstore_0        | 2                                        |       2 |        2 |       2 |        2 |
+|     64 | lstore_1        | 2                                        |       2 |        2 |       2 |        2 |
+|     65 | lstore_2        | 2                                        |       2 |        2 |       2 |        2 |
+|     66 | lstore_3        | 11                                       |      11 |       11 |      11 |       11 |
+|     67 | fstore_0        | 1                                        |       1 |        1 |       1 |        1 |
+|     68 | fstore_1        | 1                                        |       1 |        1 |       1 |        1 |
+|     69 | fstore_2        | 1                                        |       1 |        1 |       1 |        1 |
+|     70 | fstore_3        | 1                                        |       1 |        1 |       1 |        1 |
+|     71 | dstore_0        | 2                                        |       2 |        2 |       2 |        2 |
+|     72 | dstore_1        | 2                                        |       2 |        2 |       2 |        2 |
+|     73 | dstore_2        | 2                                        |       2 |        2 |       2 |        2 |
+|     74 | dstore_3        | 11                                       |      11 |       11 |      11 |       11 |
+|     75 | astore_0        | 1                                        |       1 |        1 |       1 |        1 |
+|     76 | astore_1        | 1                                        |       1 |        1 |       1 |        1 |
+|     77 | astore_2        | 1                                        |       1 |        1 |       1 |        1 |
+|     78 | astore_3        | 1                                        |       1 |        1 |       1 |        1 |
+|     79 | iastore         | 10 + 2 r + w                             |      14 |       14 |      21 |       21 |
+|     80 | lastore         | 48 + 2 r + w + [w - 3]                   |      52 |       52 |      61 |       61 |
+|     81 | fastore         | 10 + 2 r + w                             |      14 |       14 |      21 |       21 |
+|     82 | dastore         | ... no microcode implementation ...                                                |
+|     83 | aastore         | ... no microcode implementation ...                                                |
+|     84 | bastore         | 10 + 2 r + w                             |      14 |       14 |      21 |       21 |
+|     85 | castore         | 10 + 2 r + w                             |      14 |       14 |      21 |       21 |
+|     86 | sastore         | 10 + 2 r + w                             |      14 |       14 |      21 |       21 |
+|     87 | pop             | 1                                        |       1 |        1 |       1 |        1 |
+|     88 | pop2            | 2                                        |       2 |        2 |       2 |        2 |
+|     89 | dup             | 1                                        |       1 |        1 |       1 |        1 |
+|     90 | dup_x1          | 5                                        |       5 |        5 |       5 |        5 |
+|     91 | dup_x2          | 7                                        |       7 |        7 |       7 |        7 |
+|     92 | dup2            | 6                                        |       6 |        6 |       6 |        6 |
+|     93 | dup2_x1         | 8                                        |       8 |        8 |       8 |        8 |
+|     94 | dup2_x2         | 10                                       |      10 |       10 |      10 |       10 |
+|     95 | swap            | 4                                        |       4 |        4 |       4 |        4 |
+|     96 | iadd            | 1                                        |       1 |        1 |       1 |        1 |
+|     97 | ladd            | 26                                       |      26 |       26 |      26 |       26 |
+|     98 | fadd            | ... no microcode implementation ...                                                |
+|     99 | dadd            | ... no microcode implementation ...                                                |
+|    100 | isub            | 1                                        |       1 |        1 |       1 |        1 |
+|    101 | lsub            | 38                                       |      38 |       38 |      38 |       38 |
+|    102 | fsub            | ... no microcode implementation ...                                                |
+|    103 | dsub            | ... no microcode implementation ...                                                |
+|    104 | imul            | 19                                       |      19 |       19 |      19 |       19 |
+|    105 | lmul            | ... no microcode implementation ...                                                |
+|    106 | fmul            | ... no microcode implementation ...                                                |
+|    107 | dmul            | ... no microcode implementation ...                                                |
+|    108 | idiv            | ... no microcode implementation ...                                                |
+|    109 | ldiv            | ... no microcode implementation ...                                                |
+|    110 | fdiv            | ... no microcode implementation ...                                                |
+|    111 | ddiv            | ... no microcode implementation ...                                                |
+|    112 | irem            | ... no microcode implementation ...                                                |
+|    113 | lrem            | ... no microcode implementation ...                                                |
+|    114 | frem            | ... no microcode implementation ...                                                |
+|    115 | drem            | ... no microcode implementation ...                                                |
+|    116 | ineg            | 4                                        |       4 |        4 |       4 |        4 |
+|    117 | lneg            | 34                                       |      34 |       34 |      34 |       34 |
+|    118 | fneg            | ... no microcode implementation ...                                                |
+|    119 | dneg            | ... no microcode implementation ...                                                |
+|    120 | ishl            | 1                                        |       1 |        1 |       1 |        1 |
+|    121 | lshl            | 28 <|> 22 <|> 7                          |      28 |       28 |      28 |       28 |
+|    122 | ishr            | 1                                        |       1 |        1 |       1 |        1 |
+|    123 | lshr            | 28 <|> 24 <|> 7                          |      28 |       28 |      28 |       28 |
+|    124 | iushr           | 1                                        |       1 |        1 |       1 |        1 |
+|    125 | lushr           | 28 <|> 22 <|> 7                          |      28 |       28 |      28 |       28 |
+|    126 | iand            | 1                                        |       1 |        1 |       1 |        1 |
+|    127 | land            | 8                                        |       8 |        8 |       8 |        8 |
+|    128 | ior             | 1                                        |       1 |        1 |       1 |        1 |
+|    129 | lor             | 8                                        |       8 |        8 |       8 |        8 |
+|    130 | ixor            | 1                                        |       1 |        1 |       1 |        1 |
+|    131 | lxor            | 8                                        |       8 |        8 |       8 |        8 |
+|    132 | iinc            | 8                                        |       8 |        8 |       8 |        8 |
+|    133 | i2l             | 7                                        |       7 |        7 |       7 |        7 |
+|    134 | i2f             | ... no microcode implementation ...                                                |
+|    135 | i2d             | ... no microcode implementation ...                                                |
+|    136 | l2i             | 3                                        |       3 |        3 |       3 |        3 |
+|    137 | l2f             | ... no microcode implementation ...                                                |
+|    138 | l2d             | ... no microcode implementation ...                                                |
+|    139 | f2i             | ... no microcode implementation ...                                                |
+|    140 | f2l             | ... no microcode implementation ...                                                |
+|    141 | f2d             | ... no microcode implementation ...                                                |
+|    142 | d2i             | ... no microcode implementation ...                                                |
+|    143 | d2l             | ... no microcode implementation ...                                                |
+|    144 | d2f             | ... no microcode implementation ...                                                |
+|    145 | i2b             | ... no microcode implementation ...                                                |
+|    146 | i2c             | 2                                        |       2 |        2 |       2 |        2 |
+|    147 | i2s             | ... no microcode implementation ...                                                |
+|    148 | lcmp            | ... no microcode implementation ...                                                |
+|    149 | fcmpl           | ... no microcode implementation ...                                                |
+|    150 | fcmpg           | ... no microcode implementation ...                                                |
+|    151 | dcmpl           | ... no microcode implementation ...                                                |
+|    152 | dcmpg           | ... no microcode implementation ...                                                |
+|    153 | ifeq            | 4                                        |       4 |        4 |       4 |        4 |
+|    154 | ifne            | 4                                        |       4 |        4 |       4 |        4 |
+|    155 | iflt            | 4                                        |       4 |        4 |       4 |        4 |
+|    156 | ifge            | 4                                        |       4 |        4 |       4 |        4 |
+|    157 | ifgt            | 4                                        |       4 |        4 |       4 |        4 |
+|    158 | ifle            | 4                                        |       4 |        4 |       4 |        4 |
+|    159 | if_icmpeq       | 4                                        |       4 |        4 |       4 |        4 |
+|    160 | if_icmpne       | 4                                        |       4 |        4 |       4 |        4 |
+|    161 | if_icmplt       | 4                                        |       4 |        4 |       4 |        4 |
+|    162 | if_icmpge       | 4                                        |       4 |        4 |       4 |        4 |
+|    163 | if_icmpgt       | 4                                        |       4 |        4 |       4 |        4 |
+|    164 | if_icmple       | 4                                        |       4 |        4 |       4 |        4 |
+|    165 | if_acmpeq       | 4                                        |       4 |        4 |       4 |        4 |
+|    166 | if_acmpne       | 4                                        |       4 |        4 |       4 |        4 |
+|    167 | goto            | 4                                        |       4 |        4 |       4 |        4 |
+|    168 | jsr             | ... no microcode implementation ...                                                |
+|    169 | ret             | ... no microcode implementation ...                                                |
+|    170 | tableswitch     | ... no microcode implementation ...                                                |
+|    171 | lookupswitch    | ... no microcode implementation ...                                                |
+|    172 | ireturn         | 23 + [r - 3] + [b - 10]                  |      23 |       85 |      23 |      151 |
+|    173 | lreturn         | 25 + [r - 3] + [b - 11]                  |      25 |       86 |      25 |      152 |
+|    174 | freturn         | 23 + [r - 3] + [b - 10]                  |      23 |       85 |      23 |      151 |
+|    175 | dreturn         | 25 + [r - 3] + [b - 11]                  |      25 |       86 |      25 |      152 |
+|    176 | areturn         | 23 + [r - 3] + [b - 10]                  |      23 |       85 |      23 |      151 |
+|    177 | return          | 21 + [r - 3] + [b - 9]                   |      21 |       84 |      21 |      150 |
+|    178 | getstatic       | 7 + r                                    |       8 |        8 |      10 |       10 |
+|    179 | putstatic       | 8 + w                                    |      10 |       10 |      13 |       13 |
+|    180 | getfield        | 11 + 2 r                                 |      13 |       13 |      17 |       17 |
+|    181 | putfield        | 13 + r + w                               |      16 |       16 |      21 |       21 |
+|    182 | invokevirtual   | 98 + 2 r + [r - 3] + [r - 2] + [b - 37]  |     100 |      135 |     105 |      206 |
+|    183 | invokespecial   | 74 + r + [r - 3] + [r - 2] + [b - 37]    |      75 |      110 |      78 |      179 |
+|    184 | invokestatic    | 74 + r + [r - 3] + [r - 2] + [b - 37]    |      75 |      110 |      78 |      179 |
+|    185 | invokeinterface | 112 + 4 r + [r - 3] + [r - 2] + [b - 37] |     116 |      151 |     125 |      226 |
+|    186 | unused_ba       | ... no microcode implementation ...                                                |
+|    187 | new             | 95 + r + [r - 3] + [r - 2] + [b - 37]    |      96 |      131 |      99 |      200 |
+|    188 | newarray        | 89 + [r - 3] + [r - 2] + [b - 37]        |      89 |      124 |      90 |      191 |
+|    189 | anewarray       | 95 + r + [r - 3] + [r - 2] + [b - 37]    |      96 |      131 |      99 |      200 |
+|    190 | arraylength     | 6 + r                                    |       7 |        7 |       9 |        9 |
+|    191 | athrow          | ... no microcode implementation ...                                                |
+|    192 | checkcast       | 95 + r + [r - 3] + [r - 2] + [b - 37]    |      96 |      131 |      99 |      200 |
+|    193 | instanceof      | 95 + r + [r - 3] + [r - 2] + [b - 37]    |      96 |      131 |      99 |      200 |
+|    194 | monitorenter    | 18                                       |      18 |       18 |      18 |       18 |
+|    195 | monitorexit     | 10 <|> 20                                |      20 |       20 |      20 |       20 |
+|    196 | wide            | ... no microcode implementation ...                                                |
+|    197 | multianewarray  | ... no microcode implementation ...                                                |
+|    198 | ifnull          | 4                                        |       4 |        4 |       4 |        4 |
+|    199 | ifnonnull       | 4                                        |       4 |        4 |       4 |        4 |
+|    200 | goto_w          | ... no microcode implementation ...                                                |
+|    201 | jsr_w           | ... no microcode implementation ...                                                |
+|    202 | breakpoint      | ... no microcode implementation ...                                                |
+|    204 | jopsys_inval    | 7                                        |       7 |        7 |       7 |        7 |
+|    208 | jopsys_null     | ... no microcode implementation ...                                                |
+|    209 | jopsys_rd       | 4 + r                                    |       5 |        5 |       7 |        7 |
+|    210 | jopsys_wr       | 5 + w                                    |       7 |        7 |      10 |       10 |
+|    211 | jopsys_rdmem    | 4 + r                                    |       5 |        5 |       7 |        7 |
+|    212 | jopsys_wrmem    | 5 + w                                    |       7 |        7 |      10 |       10 |
+|    213 | jopsys_rdint    | 3                                        |       3 |        3 |       3 |        3 |
+|    214 | jopsys_wrint    | 3                                        |       3 |        3 |       3 |        3 |
+|    215 | jopsys_getsp    | 3                                        |       3 |        3 |       3 |        3 |
+|    216 | jopsys_setsp    | 4                                        |       4 |        4 |       4 |        4 |
+|    217 | jopsys_getvp    | 1                                        |       1 |        1 |       1 |        1 |
+|    218 | jopsys_setvp    | 2                                        |       2 |        2 |       2 |        2 |
+|    219 | jopsys_int2ext  | ... FAILED: Interpreter failed: <loop>: path exceeded maximal size of 1000 ...     |
+|    220 | jopsys_ext2int  | ... FAILED: Interpreter failed: <loop>: path exceeded maximal size of 1000 ...     |
+|    221 | jopsys_nop      | 1                                        |       1 |        1 |       1 |        1 |
+|    222 | jopsys_invoke   | 66 + [r - 3] + [r - 2] + [b - 37]        |      66 |      101 |      67 |      168 |
+|    224 | getstatic_ref   | 7 + r                                    |       8 |        8 |      10 |       10 |
+|    225 | putstatic_ref   | 90 + [r - 3] + [r - 2] + [b - 37]        |      90 |      125 |      91 |      192 |
+|    226 | getfield_ref    | 11 + 2 r                                 |      13 |       13 |      17 |       17 |
+|    227 | putfield_ref    | 90 + [r - 3] + [r - 2] + [b - 37]        |      90 |      125 |      91 |      192 |
+|    228 | getstatic_long  | 16 + r + [r - 3]                         |      17 |       17 |      19 |       19 |
+|    229 | putstatic_long  | 17 + w + [w - 2]                         |      19 |       19 |      25 |       25 |
+|    230 | getfield_long   | 26 + 2 r + [r - 3]                       |      28 |       28 |      32 |       32 |
+|    231 | putfield_long   | 29 + r + w + [w - 2]                     |      32 |       32 |      40 |       40 |
+|    232 | jopsys_memcpy   | ... FAILED: stcp not yet supported: 14 ...                                         |
+|    233 | jopsys_getfield | 8 + 2 r                                  |      10 |       10 |      14 |       14 |
+|    234 | jopsys_putfield | 9 + r + w                                |      12 |       12 |      17 |       17 |
+|    236 | invokesuper     | 110 + 3 r + [r - 3] + [r - 2] + [b - 37] |     113 |      148 |     120 |      221 |
+|    240 | sys_int         | 76 + [r - 3] + [r - 2] + [b - 37]        |      76 |      111 |      77 |      178 |
+|    241 | sys_exc         | 78 + [r - 3] + [r - 2] + [b - 37]        |      78 |      113 |      79 |      180 |
+|    254 | sys_noim        | 85 + [r - 3] + [r - 2] + [b - 37]        |      85 |      120 |      86 |      187 |
+|    255 | sys_init        | ... no microcode implementation ...                                                |
+-----------------------------------------------------------------------------------------------------------------
+|   [expr] denotes max(0,expr)                                                                                  |
+|   r = read delay, w = write delay, b = bytecode load delay                                                    |
+|   hidden cycles on invoke (including JavaImplBCs) and return: 37 / 9                                          |
+=================================================================================================================
+
+[187] new : WCETInstruction HAS NO TIMING information, but we have: 95 + r + [r - 3] + [r - 2] + [b - 37]
+[188] newarray : WCETInstruction HAS NO TIMING information, but we have: 89 + [r - 3] + [r - 2] + [b - 37]
+[189] anewarray : WCETInstruction HAS NO TIMING information, but we have: 95 + r + [r - 3] + [r - 2] + [b - 37]
+[192] checkcast : WCETInstruction HAS NO TIMING information, but we have: 95 + r + [r - 3] + [r - 2] + [b - 37]
+[193] instanceof : WCETInstruction HAS NO TIMING information, but we have: 95 + r + [r - 3] + [r - 2] + [b - 37]
+[194] monitorenter : WCETInstruction has DIFFERENT TIMING INFO (hit = true, load = 1): microcodeanalysis := 18 /= 19 =: wcetinstruction
+[195] monitorexit : WCETInstruction has DIFFERENT TIMING INFO (hit = true, load = 1): microcodeanalysis := 20 /= 22 =: wcetinstruction
+[204] jopsys_inval : WCETInstruction HAS NO TIMING information, but we have: 7
+[219] jopsys_int2ext : WCETInstruction has timing: 15, but we FAILED TO ANALYSE the microcode
+[220] jopsys_ext2int : WCETInstruction has timing: 15, but we FAILED TO ANALYSE the microcode
+[222] jopsys_invoke : WCETInstruction HAS NO TIMING information, but we have: 66 + [r - 3] + [r - 2] + [b - 37]
+[223] resDF : WCETInstruction has timing: 5, but JopInstr says this is a RESERVED INSTRUCTION
+[225] putstatic_ref : WCETInstruction HAS NO TIMING information, but we have: 90 + [r - 3] + [r - 2] + [b - 37]
+[227] putfield_ref : WCETInstruction HAS NO TIMING information, but we have: 90 + [r - 3] + [r - 2] + [b - 37]
+[228] getstatic_long : WCETInstruction HAS NO TIMING information, but we have: 16 + r + [r - 3]
+[229] putstatic_long : WCETInstruction HAS NO TIMING information, but we have: 17 + w + [w - 2]
+[230] getfield_long : WCETInstruction HAS NO TIMING information, but we have: 26 + 2 r + [r - 3]
+[231] putfield_long : WCETInstruction HAS NO TIMING information, but we have: 29 + r + w + [w - 2]
+[233] jopsys_getfield : WCETInstruction HAS NO TIMING information, but we have: 8 + 2 r
+[234] jopsys_putfield : WCETInstruction HAS NO TIMING information, but we have: 9 + r + w
+[236] invokesuper : WCETInstruction HAS NO TIMING information, but we have: 110 + 3 r + [r - 3] + [r - 2] + [b - 37]
+[240] sys_int : WCETInstruction HAS NO TIMING information, but we have: 76 + [r - 3] + [r - 2] + [b - 37]
+[241] sys_exc : WCETInstruction HAS NO TIMING information, but we have: 78 + [r - 3] + [r - 2] + [b - 37]
+[254] sys_noim : WCETInstruction HAS NO TIMING information, but we have: 85 + [r - 3] + [r - 2] + [b - 37]

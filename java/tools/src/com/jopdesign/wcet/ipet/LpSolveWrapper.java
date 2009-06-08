@@ -53,10 +53,24 @@ public class LpSolveWrapper<T> {
 		}
 	}
 	private static long solverTime = 0;
+	/** 
+	 * Get time spend in the solver since the last call to {@link resetSolverTime}
+	 * @return the time spend in the solver in seconds
+	 */
 	public static double getSolverTime() { return ((double)solverTime)/1.0E9; }
+	
+	/**
+	 * Reset the cummulative solver time to 0.
+	 */
 	public static void resetSolverTime() { solverTime = 0; }
 
 	private static Map<Integer,SolverStatus> readMap = null;
+	
+	/**
+	 * Wrap the return code of lp_solve into a {@ link SolverStatus} variable. 
+	 * @param code the code returned by the solver
+	 * @return
+	 */
 	public static SolverStatus getSolverStatus(int code) {
 		if(readMap == null) {
 			readMap = new TreeMap<Integer,SolverStatus>();
@@ -89,10 +103,14 @@ public class LpSolveWrapper<T> {
 			vec.ixs[i] = objId;			
 			long val = e.getValue();
 			double dval;
+			// FIXME: The Big M method is extremely sensitive to numeric instabilities
+			// 1E7 works fine in practice, but may fail on arbitrary problems
+			// Should do some research to find whether there are solutions to this problem,
+			// but in general better avoid Big M and use statically derived constants
 			if(val == Long.MAX_VALUE) {
-				dval = 10000000.0; /* Fixme: What value to choose for Big M  ? difficult */
+				dval = 1.0E7; 
 			} else if (val == Long.MIN_VALUE) {
-				dval = 10000000.0;
+				dval = - (1.0E7);
 			} else {
 				dval = (double)val;
 			}
@@ -131,6 +149,7 @@ public class LpSolveWrapper<T> {
 		}
 		lpsolve.setAddRowmode(true);
 	}
+
 	/**
 	 * add a linear constraint to the the problem
 	 * @param linearConstraint the linear constraint
@@ -143,6 +162,7 @@ public class LpSolveWrapper<T> {
 		double rh = linearConstraint.getInhomogenousTermOnRHS();
 		this.lpsolve.addConstraintex(rawVector.count, rawVector.coeffs, rawVector.ixs, constrType , rh);
 	}
+
 	/**
 	 * Set the objective of the (I)LP problem.
 	 * @param <T> Type of variables
@@ -157,6 +177,7 @@ public class LpSolveWrapper<T> {
 		if(doMax) lpsolve.setMaxim();
 		else      lpsolve.setMinim();
 	}
+	
 	/**
 	 * Turn row mode off - changes are expensive now,
 	 * but possible to dump ILP
@@ -200,10 +221,21 @@ public class LpSolveWrapper<T> {
 			default: throw new AssertionError("unexpected constraint type: "+constraintType);
 		}
 	}
+	
+	/**
+	 * Dump the (I)LP problem to the given file
+	 * @param outFile
+	 * @throws LpSolveException
+	 */
 	public void dumpToFile(File outFile) throws LpSolveException {
 		outFile.delete();
 		this.lpsolve.writeLp(outFile.getPath());		
 	}
+	
+	/**
+	 * Mark the given variable (after adding it) as being binary 
+	 * @param dv
+	 */
 	public void setBinary(T dv) {
 		try {
 			this.lpsolve.setBinary(this.idProvider.getID(dv), true);
