@@ -62,6 +62,8 @@ architecture rtl of sc_control_channel is
 	signal incoming_message     : std_logic_vector(31 downto 0);
 	signal outgoing_message     : std_logic_vector(31 downto 0);
 	signal send_ack, send_flag  : std_logic;
+	signal queue_message        : std_logic_vector(31 downto 0);
+	signal queue_flag           : std_logic;
 
     type StateType is ( IDLE, RELAY, SEND, AWAIT_REPLY, AWAIT_REPLY_RELAY );
 
@@ -74,6 +76,7 @@ begin
         if ( reset = '1' ) 
         then
             send_flag <= '0';
+            queue_flag <= '0' ;
 
         elsif ( clk = '1' )
         and ( clk'event )
@@ -88,13 +91,31 @@ begin
                 null;
             elsif ( wr = '1' ) 
             then
-                outgoing_message <= wr_data;
+                if ( send_flag = '1' )
+                then
+                    -- enqueue for transmission 
+                    queue_message <= wr_data;
+                    queue_flag <= '1';
+                else
+                    -- send now
+                    outgoing_message <= wr_data;
+                    send_flag <= '1';
+                end if;
+            elsif ((( send_flag = '0' ) 
+                or ( send_ack = '1' ))
+            and ( queue_flag = '1' ))
+            then
+                -- load outgoing message register from queue
+                -- (or empty)
+                queue_flag <= '0';
                 send_flag <= '1';
+                outgoing_message <= queue_message;
             end if;
         end if;
     end process;
 
-    rdy_cnt <= "00" when (( state = IDLE ) and ( send_flag = '0' )) else "11";
+    -- only block accesses if message had to be queued
+    rdy_cnt <= "00" when ( queue_flag = '0' ) else "11";
     rd_data <= incoming_message;
 
     process ( clk , reset ) is
@@ -150,7 +171,8 @@ begin
                 if ( cc_in_wr = '1' )
                 then
                     -- Examine incoming message
-                    if ( cc_in_data ( 30 downto 16 ) = outgoing_message ( 30 downto 16 ) )
+                    if ( cc_in_data ( 30 downto 16 ) = 
+                              outgoing_message ( 30 downto 16 ) )
                     then
                         -- Correct message
                         incoming_message <= cc_in_data;

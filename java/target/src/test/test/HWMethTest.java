@@ -69,6 +69,8 @@ public class HWMethTest {
 
       System.out.print(mac_size);
       System.out.print(" ");
+      // Warmup method cache
+      out = m.mac1(mac_size, array1, array2);
 
       for ( i = 0 ; i < max_cycles ; i ++ )
       {
