@@ -49,7 +49,7 @@ int rc = 1;
     {   // _ccTransaction(0x1000000)
         int reply_masked = 0;
         int msg_masked = __msg7 & __msg9;
-        while (( reply_masked != msg_masked ) || (( rc & 1 ) != 0 )) { // @WCA loop<=1201
+        while (( reply_masked != msg_masked ) || (( rc & 1 ) != 0 )) { // @WCA loop<=1278
             Native.wrMem(__msg7, __cci_addr);
             rc = Native.rdMem(__cci_addr);
             reply_masked = rc & __msg9;

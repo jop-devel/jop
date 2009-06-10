@@ -59,11 +59,12 @@ end sc_control_channel;
 
 architecture rtl of sc_control_channel is
 
-	signal incoming_message     : std_logic_vector(31 downto 0);
-	signal outgoing_message     : std_logic_vector(31 downto 0);
-	signal send_ack, send_flag  : std_logic;
-	signal queue_message        : std_logic_vector(31 downto 0);
-	signal queue_flag           : std_logic;
+    signal incoming_message     : std_logic_vector(31 downto 0);
+    signal outgoing_message     : std_logic_vector(31 downto 0);
+    signal send_ack, send_flag  : std_logic;
+    signal queue_message        : std_logic_vector(31 downto 0);
+    signal queue_flag           : std_logic;
+    signal wait_states          : Natural range 0 to 7;
 
     type StateType is ( IDLE, RELAY, SEND, AWAIT_REPLY, AWAIT_REPLY_RELAY );
 
@@ -71,12 +72,18 @@ architecture rtl of sc_control_channel is
 
 begin
 
+    rdy_cnt <=   "10" when wait_states = 3
+            else "01" when wait_states = 2
+            else "00" when wait_states = 1
+            else "11" ;
+
     process ( clk , reset ) is
     begin
         if ( reset = '1' ) 
         then
             send_flag <= '0';
             queue_flag <= '0' ;
+            wait_states <= 0;
 
         elsif ( clk = '1' )
         and ( clk'event )
@@ -86,11 +93,17 @@ begin
                 send_flag <= '0';
             end if;
 
+            if ( wait_states /= 0 )
+            then
+                wait_states <= wait_states - 1;
+            end if;
+
             if ( rd = '1' ) 
             then
-                null;
+                wait_states <= 1;
             elsif ( wr = '1' ) 
             then
+                wait_states <= 4;
                 if ( send_flag = '1' )
                 then
                     -- enqueue for transmission 
@@ -114,8 +127,6 @@ begin
         end if;
     end process;
 
-    -- only block accesses if message had to be queued
-    rdy_cnt <= "00" when ( queue_flag = '0' ) else "11";
     rd_data <= incoming_message;
 
     process ( clk , reset ) is

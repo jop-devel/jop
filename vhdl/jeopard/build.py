@@ -20,8 +20,8 @@
 
 import os, math, collections, glob
 ADDRESS_SIZE = 24
-LOOP_COST = 50      # $i$ - for fixedpr arbiter on ML401, 1 CPU
-LOOP_OVERHEAD = 34  # $f$ - for fixedpr arbiter on ML401, 1 CPU
+LOOP_COST = 47      # $i$ - for fixedpr arbiter on ML401, 1 CPU
+LOOP_OVERHEAD = 27  # $f$ - for fixedpr arbiter on ML401, 1 CPU
 
 # NOTE: error types that are not handled properly
 # - starting a method while it's already running
