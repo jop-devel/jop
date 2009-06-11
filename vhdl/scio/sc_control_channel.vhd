@@ -93,6 +93,8 @@ begin
                 send_flag <= '0';
             end if;
 
+            -- wait_states is used to match the memory timing assumed by the 
+            -- WCA tool; it has no other function and can be kept at zero.
             if ( wait_states /= 0 )
             then
                 wait_states <= wait_states - 1;
@@ -100,10 +102,10 @@ begin
 
             if ( rd = '1' ) 
             then
-                wait_states <= 1;
+                wait_states <= 4;  
             elsif ( wr = '1' ) 
             then
-                wait_states <= 4;
+                wait_states <= 5;
                 if ( send_flag = '1' )
                 then
                     -- enqueue for transmission 

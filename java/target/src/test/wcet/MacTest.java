@@ -21,39 +21,20 @@
 package wcet;
 
 import com.jopdesign.sys.*;
+import test.HWMethTest;
 
 public class MacTest {
 
-	public static void main(String[] args) {
-		measure();
-	}
+  public static HWMethTest hwm;
 
-  public static final int mac_size = 10000 ;
-  public static int [] array1 ;
-  public static int [] array2 ;
-  public static int expect ;
-
-  // Initialise arrays and compute expected result
-  static {
-    array1 = new int [ mac_size ] ;
-    array2 = new int [ mac_size ] ;
-    expect = 0 ;
-    for ( int i = 0 ; i < mac_size ; i ++ )
-    {
-      array1 [ i ] = 123 + ( i * 99 ) + ( i * i * 12 ) ;
-      array2 [ i ] = 456 + ( i * 78 ) + ( i * i * 9 ) ;
-      expect += array1 [ i ] * array2 [ i ] ;
-    }
+  public static void main(String[] args) {
+    hwm = new HWMethTest () ;
+    hwm.Prepare_Noisy_Vector ( hwm.max_test_size ) ;
+    measure () ;
   }
 
-  // The task, for WCET measurement purposes
-	public static int measure() {
-    int val = - expect ;
-    for ( int i = 0 ; i < mac_size ; i ++ )
-    {
-      val += array1 [ i ] * array2 [ i ] ;
-    }
-		return val ;
-	}
+  public static void measure () {
+    hwm.mac ( hwm.max_test_size, hwm.test_vector, hwm.test_vector ) ;
+  }
 }
 
