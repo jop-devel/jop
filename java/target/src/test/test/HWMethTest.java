@@ -50,7 +50,7 @@ public class HWMethTest {
     array1 = new int [ max_mac_size + 1 ] ;
     array2 = new int [ max_mac_size + 1 ] ;
 
-    m = new mac_coprocessor () ;
+    m = mac_coprocessor.getInstance () ;
     int icount = 0 ;
     boolean error = false ;
 

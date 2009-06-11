@@ -23,23 +23,25 @@ package wcet;
 
 import com.jopdesign.io.JeopardIOFactory;
 import com.jopdesign.sys.Native;
+import test.mac_coprocessor;
 
 
 public class MacTestHW {
 
 	public static void main(String[] args) {
-		measure();
+    MacTestHW mt = new MacTestHW () ;
+		mt.measure();
 	}
 
-  public static final int mac_size = 10001 ;
-  public static int [] array1 ;
-  public static int [] array2 ;
-  public static int expect ;
-  public static MacTestHWDrv m ;
+  public static final int mac_size = 10000 ;
+  public int [] array1 ;
+  public int [] array2 ;
+  public int expect ;
+  public mac_coprocessor m ;
 
   // Initialise arrays and compute expected result
   // Create co-processor object
-  static {
+  MacTestHW () {
     array1 = new int [ mac_size ] ;
     array2 = new int [ mac_size ] ;
     expect = 0 ;
@@ -49,11 +51,11 @@ public class MacTestHW {
       array2 [ i ] = 456 + ( i * 78 ) + ( i * i * 9 ) ;
       expect += array1 [ i ] * array2 [ i ] ;
     }
-    m = new MacTestHWDrv () ;
+    m = mac_coprocessor.getInstance () ;
   }
 
   // The task, for WCET measurement purposes
-	public static int measure() {
+	public int measure() {
     return m.mac1(mac_size, array1, array2) - expect;
 	}
 }
