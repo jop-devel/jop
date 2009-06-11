@@ -13,7 +13,6 @@ public int mac1 (
 		int[] alpha ,
 		int[] beta )
 {
-int __cci_addr = Const.IO_BASE + 0x30;
 int __hw_size; // 0x1
 int __hw_alpha; // 0x2
 int __hw_beta; // 0x3
@@ -21,6 +20,8 @@ int __hw_beta; // 0x3
 __hw_size = size;
 __hw_alpha = Native.rdMem ( Native.toInt ( alpha ) );
 __hw_beta = Native.rdMem ( Native.toInt ( beta ) );
+// I/O address
+int __cci_addr = Const.IO_BASE + 0x30;
 // create messages
 int __msg0 = 0x1010000 | (((__hw_size) >> 0) & 0xffff);
 int __msg1 = 0x1810000 | (((__hw_size) >> 16) & 0xffff);

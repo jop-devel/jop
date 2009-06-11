@@ -237,7 +237,6 @@ class Method:
             first = False
         out.append(")\n")
         out.append("{\n")
-        out.append("int __cci_addr = Const.IO_BASE + 0x30;\n")
 
         for (name, java_type, reg_number) in self.param_list:
             out.append("int %s; // 0x%x\n" % (HN(name), reg_number))
@@ -245,6 +244,11 @@ class Method:
         out.append("// convert parameters\n")
         for (name, java_type, reg_number) in self.param_list:
             out.append(java_type.convertForHardware(name, HN(name)))
+
+        # Constants - don't use "final" for these, because that moves
+        # them out of the local variable area
+        out.append("// I/O address\n")
+        out.append("int __cci_addr = Const.IO_BASE + 0x30;\n")
 
         # All messages created before communication begins so that
         # no accesses to memory are necessary during communication.

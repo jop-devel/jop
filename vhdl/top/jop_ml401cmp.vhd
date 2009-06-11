@@ -108,7 +108,7 @@ signal ram_addr 		: std_logic_vector(17 downto 0);
 --------------------------------------------------------------
 
     constant cpu_cnt        : Integer := 1;
-    constant coproc_cnt     : Integer := 1;
+    constant coproc_cnt     : Integer := 2;
     constant master_cnt     : Integer := coproc_cnt + cpu_cnt;
 
 --
@@ -359,6 +359,23 @@ end process;
                 cc_in_data => cc_data(0),
                 cc_in_wr => cc_wr(0),
                 cc_in_rdy => cc_rdy(0)
+            );
+
+    cp2 : entity bitcount_maxsearch
+        port map (
+                clk => clk_int,
+                reset => int_res,
+
+                sc_mem_out => sc_arb_out(cpu_cnt + 1), 
+                sc_mem_in => sc_arb_in(cpu_cnt + 1),
+
+                cc_out_data => cc_data(2),
+                cc_out_wr => cc_wr(2),
+                cc_out_rdy => cc_rdy(2),
+
+                cc_in_data => cc_data(1),
+                cc_in_wr => cc_wr(1),
+                cc_in_rdy => cc_rdy(1)
             );
 
 --
