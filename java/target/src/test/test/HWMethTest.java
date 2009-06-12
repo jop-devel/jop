@@ -169,6 +169,14 @@ public class HWMethTest {
     error = HWM_SW_Measure ( max_test_size ) ;
     if ( error ) return ;
 
+    System.out.print("v=0..9 ");
+    for ( i = 0 ; i < 10 ; i ++ )
+    {
+      test_vector[ i ] = i ;
+    }
+    error = HWM_SW_Measure ( max_test_size ) ;
+    if ( error ) return ;
+
     Prepare_Fill_Vector ( max_test_size , 0x7fffffff ) ;
     System.out.print("v=-1 ");
     error = HWM_SW_Measure ( max_test_size ) ;
