@@ -301,14 +301,12 @@ public class HWMethTest {
 
   public int bit_count1(int size, int[]data) {
     int count = 0;
-    int one = 1;
-    for ( int i = 0 ; i < size ; i += one ) // @WCA loop<=10000
+    for ( int i = 0 ; i < size ; i ++ ) // @WCA loop<=10000
     { 
       int d = data [ i ];
-      for ( int j = 0 ; j < 32 ; j += one ) // @WCA loop=32
+      for ( int j = 0 ; j < 32 ; j ++ ) // @WCA loop=32
       {
-        if (( d & 1 ) == 1 )
-          count += one ;
+        if (( d & 1 ) == 1 ) count ++ ;
         d = d >> 1 ;
       }
     }
@@ -317,11 +315,10 @@ public class HWMethTest {
 
   public int bit_count2(int size, int[]data) {
     int count = 0;
-    int one = 1;
-    for ( int i = 0 ; i < size ; i += one ) // @WCA loop<=10000
+    for ( int i = 0 ; i < size ; i ++ ) // @WCA loop<=10000
     { 
       int d = data [ i ];
-      for ( int j = 0 ; j < 4 ; j += one ) // @WCA loop=4
+      for ( int j = 0 ; j < 4 ; j ++ ) // @WCA loop=4
       {
         count += lut [ d & 255 ] ;
         d = d >> 8 ;
@@ -332,8 +329,7 @@ public class HWMethTest {
 
   public int search_max(int size, int[]data) {
     int max = 0;
-    int one = 1;
-    for ( int i = 0 ; i < size ; i += one ) // @WCA loop<=10000
+    for ( int i = 0 ; i < size ; i ++ ) // @WCA loop<=10000
     { 
       int d = data [ i ];
       if ( d > max ) max = d ;
@@ -343,8 +339,7 @@ public class HWMethTest {
 
 	public int mac(int size, int[] array1, int[] array2) {
     int val = 0;
-    int one = 1;
-    for ( int i = 0 ; i < size ; i += one ) // @WCA loop<=10000
+    for ( int i = 0 ; i < size ; i ++ ) // @WCA loop<=10000
     {
       val += array1 [ i ] * array2 [ i ] ;
     }
