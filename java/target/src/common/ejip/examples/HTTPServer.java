@@ -31,12 +31,13 @@
 package ejip.examples;
 
 import com.jopdesign.sys.Const;
-import com.jopdesign.sys.GC;
 
+import java.io.IOException;
 import util.Serial;
 import util.Timer;
 
 import ejip.*;
+import sdcard.*;
 
 /**
  * Test main for TCP.
@@ -49,6 +50,7 @@ public class HTTPServer extends TcpHandler {
 	public static final int QUIT = 3;
 
 	public static final int MAX_CMDLEN = 4*1024;
+	private static final int BUFFER_LEN = 1024;
 
 	static Ejip ejip;
 	static Net net;
@@ -59,15 +61,8 @@ public class HTTPServer extends TcpHandler {
 	private StringBuffer sb = new StringBuffer();
 	private StringBuffer cmd = new StringBuffer();
 
-	private StringBuffer indexFile;
-	private int replyOffset;
-
-	public HTTPServer(String index) {
-		indexFile = new StringBuffer();
-		indexFile.append(index.length());
-		indexFile.append("\r\n\r\n");
-		indexFile.append(index);
-	}
+	private FileInputStream currentFile;
+	private byte[] buffer = new byte[BUFFER_LEN];
 
 	public Packet request(Packet p) {
 
@@ -94,16 +89,40 @@ public class HTTPServer extends TcpHandler {
 				//System.out.println("--------------------------------");
 				// parse command and send first reply
 				if (cmd.charAt(0)=='G' && cmd.charAt(1)=='E' && cmd.charAt(2)=='T' && cmd.charAt(3)==' ') {
-					if (cmd.charAt(4)=='/' && cmd.charAt(5)==' ') {
-						Ip.setData(p, Tcp.DATA, "HTTP/1.0 200 OK\r\nContent-Length: ");
-						replyOffset = 0;
-						state = CONT_REPLY;
+
+					if (cmd.charAt(4)=='/') {
+
+						sb.delete(0, sb.length());
+						if (cmd.charAt(5)==' ') {
+							sb.append("index.htm");
+						} else {
+							int i = 5;
+							while (cmd.charAt(i) != ' ') {
+								sb.append(cmd.charAt(i));
+								i++;
+							}
+						}
+
+						try {
+							currentFile = new FileInputStream(sb);
+
+							sb.delete(0, sb.length());
+							sb.append("HTTP/1.0 200 OK\r\nContent-Length: ");
+							sb.append(currentFile.available());
+							sb.append("\r\n\r\n");
+							Ip.setData(p, Tcp.DATA, sb);
+							state = CONT_REPLY;
+
+						} catch (IOException exc) {
+							Ip.setData(p, Tcp.DATA, "HTTP/1.0 404 File not found\r\nContent-Length: 3\r\n\r\n404");
+							state = QUIT;
+						}
 					} else {
-						Ip.setData(p, Tcp.DATA, "HTTP/1.0 404 File not found\r\n\r\n");
+						Ip.setData(p, Tcp.DATA, "HTTP/1.0 404 File not found\r\nContent-Length: 3\r\n\r\n404");
 						state = QUIT;
 					}
 				} else {
-					Ip.setData(p, Tcp.DATA, "HTTP/1.0 501 I can only handle GET\r\n\r\n");
+					Ip.setData(p, Tcp.DATA, "HTTP/1.0 501 I can only handle GET\r\nContent-Length: 3\r\n\r\n501");
 					state = QUIT;
 				}
 			} else {
@@ -115,10 +134,15 @@ public class HTTPServer extends TcpHandler {
 			}
 			break;
 		case CONT_REPLY:
-			replyOffset = Ip.setData(p, Tcp.DATA, indexFile, replyOffset);
-			if (replyOffset < indexFile.length()) {
+			// read from file
+			int r = currentFile.read(buffer);
+			// hand over packet
+			Ip.setData(p, Tcp.DATA, buffer, r);
+			// check for EOF
+			if (r == buffer.length) {
 				state = CONT_REPLY;
 			} else {
+				currentFile.close();
 				state = QUIT;
 			}
 			break;
@@ -143,7 +167,7 @@ public class HTTPServer extends TcpHandler {
 	*	Start network and enter forever loop.
 	*/
 	public static void main(String[] args) {
-		
+
 		ejip = new Ejip(100, 1500);
 
 		//
@@ -160,14 +184,10 @@ public class HTTPServer extends TcpHandler {
 		ipLink = new Slip(ejip, ser, ip);
 		
 		// create http server
-		String index = ("<html><head><title>JOP HTTP Server</title></head>\n"
-						+"<body>\n"
-						+"This page was left intentionally blank."
-						+"</body></html>");
-		HTTPServer client = new HTTPServer(index);
+		HTTPServer server = new HTTPServer();
 
-		// register smtp client
-		net.getTcp().addHandler(80, client);
+		// register http server
+		net.getTcp().addHandler(80, server);
 
 		forever();
 	}

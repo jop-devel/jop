@@ -211,4 +211,37 @@ public class Ip {
 		p.len = (off<<2)+cnt;
 	}
 
+	/**
+	 * Set data from byte array into the packet
+	 * @param p packet
+	 * @param off offset in 32-bit words
+	 * @param b byte array
+	 */
+	public static void setData(Packet p, int off, byte[] b) {
+		setData(p, off, b, b.length);
+	}
+
+	/**
+	 * Set data from byte array into the packet
+	 * @param p packet
+	 * @param off offset in 32-bit words
+	 * @param b byte array
+	 * @param cnt length of payload data
+	 */
+	public static void setData(Packet p, int off, byte[] b, int cnt) {
+
+		int[] buf = p.buf;
+		// copy buffer
+		int k = 0;
+		for (int i=0; i<cnt; i+=4) {
+			for (int j=0; j<4; ++j) {
+				k <<= 8;
+				if (i+j < cnt) k += (int)b[i+j] & 0xff;
+			}
+			buf[off + (i>>>2)] = k;
+		}
+
+		p.len = (off<<2)+cnt;
+	}
+
 }

@@ -20,10 +20,10 @@
 
 package sdcard;
 
-//  Boot Sector Struct
+//Boot Sector Struct
 
-public class BootSec 
-{
+public final class BootSec {
+
 	public static int[]	BS_jmpBoot = new int[3];
 	public static int[]	BS_OEMName = new int[8];
 	public static int 	BPB_BytesPerSec; //2 bytes
@@ -39,38 +39,45 @@ public class BootSec
 	public static int	BPB_HiddSec; //4 bytes
 	public static int	BPB_TotSec32; //4 bytes
 
-public static void set(int[] Buffer)
-{
-	BS_jmpBoot[0] =Buffer[0];
-	BS_jmpBoot[1] =Buffer[1];
-	BS_jmpBoot[2] =Buffer[2];
-	
-	BS_OEMName[0] =Buffer[3];
-	BS_OEMName[1] =Buffer[4];
-	BS_OEMName[2] =Buffer[5];
-	BS_OEMName[3] =Buffer[6];
-	BS_OEMName[4] =Buffer[7];
-	BS_OEMName[5] =Buffer[8];
-	BS_OEMName[6] =Buffer[9];
-	BS_OEMName[7] =Buffer[10];
-	
-	BPB_BytesPerSec = ((Buffer[11]&0x000000FF)  ) | ((Buffer[12]&0x000000FF) <<8);
-	BPB_SecPerClus = Buffer[13];
-	BPB_RsvdSecCnt = ((Buffer[14]&0x000000FF)  ) | ((Buffer[15]&0x000000FF) <<8);
-	BPB_NumFATs = Buffer[16];
-	BPB_RootEntCnt = ((Buffer[17]&0x000000FF)  ) | ((Buffer[18]&0x000000FF) <<8);
-	BPB_TotSec16 = ((Buffer[19]&0x000000FF)  ) | ((Buffer[20]&0x000000FF) <<8); 
-	BPB_Media = Buffer[21];
-	BPB_FATSz16 = ((Buffer[22]&0x000000FF)  ) | ((Buffer[23]&0x000000FF) <<8);
-	BPB_SecPerTrk = ((Buffer[24]&0x000000FF)  ) | ((Buffer[25]&0x000000FF) <<8);
-	BPB_NumHeads = ((Buffer[26]&0x000000FF)  ) | ((Buffer[27]&0x000000FF) <<8);
-	BPB_HiddSec = ((Buffer[28]&0x000000FF)  ) | ((Buffer[29]&0x000000FF) <<8) |
-						((Buffer[30]&0x000000FF) << 16 ) | ((Buffer[31]&0x000000FF) <<24);
-	BPB_TotSec32 = ((Buffer[32]&0x000000FF)  ) | ((Buffer[33]&0x000000FF) <<8) |
-						((Buffer[34]&0x000000FF) << 16 ) | ((Buffer[35]&0x000000FF) <<24);
-	
-	
-	
-}	
-	
+	public static void set(int[] Buffer) {
+		BS_jmpBoot[0] =Buffer[0];
+		BS_jmpBoot[1] =Buffer[1];
+		BS_jmpBoot[2] =Buffer[2];
+
+		BS_OEMName[0] =Buffer[3];
+		BS_OEMName[1] =Buffer[4];
+		BS_OEMName[2] =Buffer[5];
+		BS_OEMName[3] =Buffer[6];
+		BS_OEMName[4] =Buffer[7];
+		BS_OEMName[5] =Buffer[8];
+		BS_OEMName[6] =Buffer[9];
+		BS_OEMName[7] =Buffer[10];
+
+		BPB_BytesPerSec = ((Buffer[11] & 0x000000FF))
+				| ((Buffer[12] & 0x000000FF) << 8);
+		BPB_SecPerClus = Buffer[13];
+		BPB_RsvdSecCnt = ((Buffer[14] & 0x000000FF))
+				| ((Buffer[15] & 0x000000FF) << 8);
+		BPB_NumFATs = Buffer[16];
+		BPB_RootEntCnt = ((Buffer[17] & 0x000000FF))
+				| ((Buffer[18] & 0x000000FF) << 8);
+		BPB_TotSec16 = ((Buffer[19] & 0x000000FF))
+				| ((Buffer[20] & 0x000000FF) << 8);
+		BPB_Media = Buffer[21];
+		BPB_FATSz16 = ((Buffer[22] & 0x000000FF))
+				| ((Buffer[23] & 0x000000FF) << 8);
+		BPB_SecPerTrk = ((Buffer[24] & 0x000000FF))
+				| ((Buffer[25] & 0x000000FF) << 8);
+		BPB_NumHeads = ((Buffer[26] & 0x000000FF))
+				| ((Buffer[27] & 0x000000FF) << 8);
+		BPB_HiddSec = ((Buffer[28] & 0x000000FF))
+				| ((Buffer[29] & 0x000000FF) << 8)
+				| ((Buffer[30] & 0x000000FF) << 16)
+				| ((Buffer[31] & 0x000000FF) << 24);
+		BPB_TotSec32 = ((Buffer[32] & 0x000000FF))
+				| ((Buffer[33] & 0x000000FF) << 8)
+				| ((Buffer[34] & 0x000000FF) << 16)
+				| ((Buffer[35] & 0x000000FF) << 24);
+	}
+
 }

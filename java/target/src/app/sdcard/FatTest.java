@@ -20,6 +20,7 @@
 
 package sdcard;
 
+import java.io.IOException;
 
 public class FatTest {
 
@@ -29,7 +30,6 @@ public class FatTest {
 	// FileIn/OutputStream def Begin
 	// ####################################################################################
 
-	//public static FatItS FatInterface = new FatItS();
 	public static FatMmc MmcInterface = new FatMmc();
 	public static FileOutputStream FOS;
 	public static FileInputStream FIS;
@@ -49,8 +49,6 @@ public class FatTest {
 	
 		byte[] k = new byte[400];
 		int y = 0;
-		
-		
 		
 		// 1 Byte read
 		System.out.print((char) FIS.read());
@@ -90,7 +88,7 @@ public class FatTest {
 *
 *	writes a char array the FileOutputStream FOS (all types of FOS.write are used). The FileOutputStream FOS has to be open.
 *********************************************************************************/
-	public static void write_test() {
+	public static void write_test() throws IOException {
 		int fj = 0;
 		byte[] tes = new byte[518];
 
@@ -178,8 +176,6 @@ public class FatTest {
 		FOS.write((int) 'E');
 		FOS.write((int) 'N');
 		FOS.write((int) 'D');
-		
-	
 
 	}
 
@@ -193,48 +189,45 @@ public class FatTest {
 *********************************************************************************/
 	public static void run() {
 
-		int i, j, x = 1;
-		int[] Buffer = new int[520];
-		int Clustervar;
-		int[] Dir_Attrib = new int[1];
-		Dir_Attrib[0] = 0;
-		long tmp;
-		long[] Size = new long[1];
-		Size[0] = 0;
-		
-		// needed for FatInterface.printf_fat(0);
-		//FatInterface.fat_cluster_data_store();
-	
-		
 /*	Do not start the filename string with "/" !
 * 	
 *	"FAT-TEST.TXT" -> /FAT-TEST.TXT
 *	"TEST/FAT-TEST.TXT"  ->  /TEST/FAT-TEST.TXT 
 */	
 		
-		String namea = new String("FAT-TEST.TXT");
+		String namea = "FATTEST0.TXT";
 		System.out.print("Open File ");
 		System.out.print(namea);
 		System.out.print(" for write = ");
-		System.out.println(FOS.FileOutputStream(namea));
-		namea = null;
+		try {
+			System.out.println(FOS = new FileOutputStream(namea));
+		} catch (IOException exc) {
+			System.out.println("Exception: "+exc);
+		}
 		
 		System.out.println();
 		System.out.println("Start write_test();");
-		write_test();
+		try {
+			write_test();
+		} catch (IOException exc){
+			System.out.println("Exception: "+exc);
+		}
 		System.out.println("Finished write_test();");
 		System.out.println();
 		System.out.println();
 		
 		
 		System.out.println();
-		String nameb = new String("FAT-TEST.TXT");
+		String nameb = "FATTEST0.TXT";
 		System.out.print("Open File ");
 		System.out.print(nameb);
 		System.out.print(" for read = ");
-		System.out.println(FIS.FileInputStream(nameb));
-		nameb = null;
 		
+		try {
+			System.out.println(FIS = new FileInputStream(nameb));
+		} catch (IOException exc) {
+			System.out.println("Exception caught: "+exc);
+		}
 		
 		System.out.println();
 		System.out.println("Start read_test();");
@@ -245,7 +238,6 @@ public class FatTest {
 		System.out.println();
 		System.out.println("Finished read_test();");
 		System.out.println();
-				
 		
 		//
 		/*		
@@ -291,25 +283,18 @@ public class FatTest {
 	
 	public static void main(String[] args) {
 
-				
-		System.out.println("MmcInterface.mmc_init  start" );
-		
-		//if ( MmcInterface.mmc_init() != 0)
-		if ( FOS.FatInterface.MmcInterface.mmc_init() != 0)
-		{
-			System.out.println("MmcInterface.mmc_init  failed or no Card connected" );
+		System.out.println("FatMmc.mmc_init  start");
+
+		if (FatMmc.mmc_init() != 0) {
+			System.out.println("FatMmc.mmc_init  failed or no Card connected");
 		}
-		
-		else
-		{
-			System.out.println("MmcInterface.mmc_init  done" );
+
+		else {
+			System.out.println("FatMmc.mmc_init  done");
 			System.out.println();
 			System.out.println();
 			run();
 		}
-		
-
-		
 	}
 
 }
