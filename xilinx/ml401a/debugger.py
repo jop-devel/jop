@@ -1,5 +1,5 @@
 
-import sys, os
+import sys
 
 import vlab, collections, time, vlabif
 from twisted.internet import reactor, defer, protocol
@@ -8,27 +8,14 @@ from vlab.download import BOARD_NAME, DecodeJOP, EXIT_STRING
 
 @defer.inlineCallbacks
 def Run():
-    if ( len(sys.argv) != 2 ):
-        print 'Usage: %s <JOP file>' % sys.argv[ 1 ]
-        reactor.stop()
-        return
+    print 'Initialising...'
 
-    print 'Loading...'
-    name = sys.argv[ 1 ]
-    print '?', name
-    if ( not os.path.exists(name) ):
-        name += '.jop'
-        print '?', name
-        if ( not os.path.exists(name) ):
-            name = "../../java/target/dist/bin/" + name
-            print '?', name
-            if ( not os.path.exists(name) ):
-                print 'JOP file not found'
-                reactor.stop()
-                return
+    try:
+        bt = int(sys.argv[ 1 ])
+    except:
+        bt = None
 
-    print 'Initialising...', name
-    byte_buffer = DecodeJOP(name)
+    byte_buffer = DecodeJOP("../../java/target/dist/bin/HWMethTest.jop")
     bits = file("ml401.bit").read()
     debug_chain = vlabif.DebugConfig(chain_config_file="chain_config.py")
     vlihp = vlabif.VlabInterfaceProtocol(debug=False)
@@ -36,6 +23,7 @@ def Run():
     dbg = vlabif.DebugDriver(debug_chain, debug=False)
     uproto = vlab.VlabUARTProtocol()
 
+    print 'Breakpoint type = %s' % bt
     print 'Connecting to lab service... (1)'
     vlf = vlab.VlabClientFactory(auth)
     reactor.connectTCP(auth.relay_server_name, 22, vlf)
@@ -56,7 +44,8 @@ def Run():
     yield dbg.reset()
     yield dbg.capture()
     data = yield dbg.downloadChain()
-    data[ 'break_command' ].setOutput(0) # BREAKPOINT TYPE
+    if ( bt != None ):
+        data[ 'break_command' ].setOutput(bt & 0x7) 
     yield dbg.uploadChain()
     yield dbg.ready()
     yield dbg.setControlLines(free_run_break=True)
@@ -71,6 +60,20 @@ def Run():
 
     print 'Sending JOP data and running to breakpoint...'
     uproto.write(byte_buffer)
+    discard = yield uproto.read(int(len(byte_buffer) * 0.95))
+
+    if ( bt != None ):
+        if ( bt < 8 ):
+            print 'run to break'
+            yield runToBreak(dbg) 
+            print 'hit'
+            yield activityCapture(dbg)
+            return
+        else:
+            yield dbg.setControlLines(free_run=True)
+            yield delay(5.0)
+            yield activityCapture(dbg)
+            return
 
     yield dbg.setControlLines(free_run=True)
     fifo = collections.deque()
@@ -99,7 +102,17 @@ def Run():
 
 
 @defer.inlineCallbacks
+def activityCapture(dbg):
+    while True:
+        yield dbg.capture()
+        yield dbg.downloadChain()
+        yield dbg.printChain()
+        yield dbg.clock(1)
+
+
+@defer.inlineCallbacks
 def memoryCapture(dbg):
+    data = yield dbg.downloadChain()
     yield runToBreak(dbg) # run to memory read state
     data[ 'break_command' ].setOutput(4)
     yield dbg.uploadChain()
@@ -200,6 +213,13 @@ def multibreak(dbg, capture_timer, repeats):
                 cd = capture_timer
             else:
                 cd -= 1
+
+def delay(seconds):
+    done = defer.Deferred()
+    def fire(): 
+        done.callback(True)
+    reactor.callLater(seconds, fire)
+    return done
 
 
 if ( __name__ == "__main__" ):

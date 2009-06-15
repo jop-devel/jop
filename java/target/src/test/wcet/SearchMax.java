@@ -20,26 +20,24 @@
 
 package wcet;
 
-
-import com.jopdesign.io.JeopardIOFactory;
-import com.jopdesign.sys.Native;
-import test.mac_coprocessor;
+import com.jopdesign.sys.*;
 import test.HWMethTest;
 
-
-public class MacTestHW {
+public class SearchMax {
 
   public static HWMethTest hwm;
-  public static mac_coprocessor m ;
+
 
   public static void main(String[] args) {
     hwm = new HWMethTest () ;
     hwm.Prepare_Noisy_Vector ( hwm.max_test_size ) ;
-    m = mac_coprocessor.getInstance () ;
     measure () ;
   }
 
   public static void measure () {
-    m.mac1(hwm.max_test_size, hwm.test_vector, hwm.test_vector ) ;
+    hwm.search_max ( hwm.max_test_size, hwm.test_vector ) ;
   }
 }
+
+
+

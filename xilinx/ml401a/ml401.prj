@@ -5,6 +5,8 @@ vhdl work  ../../vhdl/simpcon/sc_arbiter_pack.vhd
 vhdl work  ../../vhdl/simpcon/sc_arbiter_fixedpr.vhd
 vhdl work  ../../vhdl/jeopard/mac_coprocessor_if.vhd
 vhdl work  ../../vhdl/jeopard/mac_coprocessor.vhd
+vhdl work  ../../vhdl/jeopard/bitcount_maxsearch_if.vhd
+vhdl work  ../../vhdl/jeopard/bitcount_maxsearch.vhd
 vhdl work  ../../vhdl/jeopard/test_cp_if.vhd
 vhdl work  ../../vhdl/jeopard/test_cp.vhd
 vhdl work  ../../vhdl/scio/fifo.vhd

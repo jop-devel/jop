@@ -124,6 +124,7 @@ begin
                 -- Start transaction 0
                 pointer_1 <= pointer_1 + 1;
                 state <= MAC_2;
+                size <= size - 1;
 
             when MAC_1A =>
                 -- Additional delay cycle - wait for memory

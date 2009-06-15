@@ -59,9 +59,12 @@ end sc_control_channel;
 
 architecture rtl of sc_control_channel is
 
-	signal incoming_message     : std_logic_vector(31 downto 0);
-	signal outgoing_message     : std_logic_vector(31 downto 0);
-	signal send_ack, send_flag  : std_logic;
+    signal incoming_message     : std_logic_vector(31 downto 0);
+    signal outgoing_message     : std_logic_vector(31 downto 0);
+    signal send_ack, send_flag  : std_logic;
+    signal queue_message        : std_logic_vector(31 downto 0);
+    signal queue_flag           : std_logic;
+    signal wait_states          : Natural range 0 to 7;
 
     type StateType is ( IDLE, RELAY, SEND, AWAIT_REPLY, AWAIT_REPLY_RELAY );
 
@@ -69,11 +72,18 @@ architecture rtl of sc_control_channel is
 
 begin
 
+    rdy_cnt <=   "10" when wait_states = 3
+            else "01" when wait_states = 2
+            else "00" when wait_states = 1
+            else "11" ;
+
     process ( clk , reset ) is
     begin
         if ( reset = '1' ) 
         then
             send_flag <= '0';
+            queue_flag <= '0' ;
+            wait_states <= 0;
 
         elsif ( clk = '1' )
         and ( clk'event )
@@ -83,18 +93,42 @@ begin
                 send_flag <= '0';
             end if;
 
+            -- wait_states is used to match the memory timing assumed by the 
+            -- WCA tool; it has no other function and can be kept at zero.
+            if ( wait_states /= 0 )
+            then
+                wait_states <= wait_states - 1;
+            end if;
+
             if ( rd = '1' ) 
             then
-                null;
+                wait_states <= 4;  
             elsif ( wr = '1' ) 
             then
-                outgoing_message <= wr_data;
+                wait_states <= 5;
+                if ( send_flag = '1' )
+                then
+                    -- enqueue for transmission 
+                    queue_message <= wr_data;
+                    queue_flag <= '1';
+                else
+                    -- send now
+                    outgoing_message <= wr_data;
+                    send_flag <= '1';
+                end if;
+            elsif ((( send_flag = '0' ) 
+                or ( send_ack = '1' ))
+            and ( queue_flag = '1' ))
+            then
+                -- load outgoing message register from queue
+                -- (or empty)
+                queue_flag <= '0';
                 send_flag <= '1';
+                outgoing_message <= queue_message;
             end if;
         end if;
     end process;
 
-    rdy_cnt <= "00" when (( state = IDLE ) and ( send_flag = '0' )) else "11";
     rd_data <= incoming_message;
 
     process ( clk , reset ) is
@@ -150,7 +184,8 @@ begin
                 if ( cc_in_wr = '1' )
                 then
                     -- Examine incoming message
-                    if ( cc_in_data ( 30 downto 16 ) = outgoing_message ( 30 downto 16 ) )
+                    if ( cc_in_data ( 30 downto 16 ) = 
+                              outgoing_message ( 30 downto 16 ) )
                     then
                         -- Correct message
                         incoming_message <= cc_in_data;

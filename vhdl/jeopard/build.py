@@ -20,8 +20,7 @@
 
 import os, math, collections, glob
 ADDRESS_SIZE = 24
-LOOP_COST = 50      # $i$ - for fixedpr arbiter on ML401, 1 CPU
-LOOP_OVERHEAD = 34  # $f$ - for fixedpr arbiter on ML401, 1 CPU
+LOOP_COST = 49      # $I$ - for fixedpr arbiter on ML401, 1 CPU
 
 # NOTE: error types that are not handled properly
 # - starting a method while it's already running
@@ -153,8 +152,12 @@ class Method:
         self.coproc = None
         self.iterations = 1
         self.cost = 1
+        self.loop_overhead = 25
         self.message_values = []
         self.message_variables = dict()
+
+    def setOverhead(self, l):
+        self.loop_overhead = l
 
     def setIterations(self, i):
         self.iterations = i
@@ -237,7 +240,6 @@ class Method:
             first = False
         out.append(")\n")
         out.append("{\n")
-        out.append("int __cci_addr = Const.IO_BASE + 0x30;\n")
 
         for (name, java_type, reg_number) in self.param_list:
             out.append("int %s; // 0x%x\n" % (HN(name), reg_number))
@@ -245,6 +247,11 @@ class Method:
         out.append("// convert parameters\n")
         for (name, java_type, reg_number) in self.param_list:
             out.append(java_type.convertForHardware(name, HN(name)))
+
+        # Constants - don't use "final" for these, because that moves
+        # them out of the local variable area
+        out.append("// I/O address\n")
+        out.append("int __cci_addr = Const.IO_BASE + 0x30;\n")
 
         # All messages created before communication begins so that
         # no accesses to memory are necessary during communication.
@@ -359,7 +366,7 @@ class Method:
 
         if ( await_zero ):
             bound_value = int(math.ceil((( 
-                self.iterations * self.cost ) + LOOP_OVERHEAD ) / 
+                self.iterations * self.cost ) + self.loop_overhead ) / 
                     float(LOOP_COST)))
             fields[ "cond" ] = " || (( %(out_var)s & 1 ) != 0 )" % fields
             fields[ "bound" ] = " // @WCA loop<=%u" % bound_value
@@ -575,6 +582,9 @@ def makeInterfaces(definition_fname):
         elif ( command == "ITERATIONS" ):
             NFields(1)
             method.setIterations(int(fields[ 1 ]))
+        elif ( command == "LOOP_OVERHEAD" ):
+            NFields(1)
+            method.setOverhead(int(fields[ 1 ]))
         elif ( command == "COST" ):
             NFields(1)
             method.setCost(int(fields[ 1 ]))
