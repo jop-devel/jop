@@ -114,12 +114,14 @@ idea how to build an embedded real-time system based on JOP.
 \addchap{Acknowledgements}
 
 Many users of JOP contributed to the design of JOP and to the tool
-chain. I also want to thank for the discussions with the students at
-the Vienna University of Technology during three years of the course
-``The JVM in Hardware" and one semester in Copenhagen at an embedded
-systems course in Java. Furthermore, the questions and discussions in
-the Java processor mailing list provided valuable input for the
-documentation now available in form of this book.
+chain. I also want to thank the students at the Vienna University of
+Technology during the four years of the course ``The JVM in Hardware"
+and the students from CBS, Copenhagen at an embedded systems course
+in Java for the interesting questions and discussions. Furthermore,
+the questions and discussions in the Java processor mailing list
+provided valuable input for the documentation now available in form
+of this book. The following list of contributors to JOP is roughly in
+chronological order.
 
 Ed Anuff wrote \code{testmon.asm} to perform a memory interface test
 and \code{BlockGen.java} to convert Altera \code{.mif} files to
@@ -127,5 +129,31 @@ Xilinx memory blocks. \code{BlockGen.java} was the key tool to port
 JOP to Xilinx FPGAs in general and the Spartan-3 specifically.
 Flavius Gruian wrote the initial version of \cmd{JOPizer} to generate
 the \code{.jop} file from the application classes. \cmd{JOPizer} is
-based on the open source BCEL and is a substitute to the formerly
-used \code{JavaCodeCompact} from Sun.
+based on the open source library BCEL and is a substitute to the
+formerly used \code{JavaCodeCompact} from Sun. Peter Schrammel and
+Christof Pitter have implemented the first version of long bytecodes.
+Rasmus Pedersen based a class on very small information systems on
+JOP and invited my to co-teach this class in Copenhagen. During this
+time the first version of the WCET analysis tool was developed by
+Rasmus. Rasmus has also implemented an Eclipse plugin for the JOP
+design flow. Alexander Dejaco and Peter Hilber have developed the I/O
+interface board for the LEGO Mindstorms. Christof Pitter designed and
+implemented the chip-multiprocessor (CMP) version of JOP during his
+PhD thesis. Wolfgang Puffitsch first contribution to JOP was the
+finalization of the floating point library SoftFloat. Wolfgang, now
+an active developer of JOP, contributed several enhancements (e.g.,
+exceptions, HW field access, data cache,...) and works towards
+real-time garbage collection for the CMP version of JOP. Alberto
+Andriotti contributed several JVM test cases. Stefan Hepp has
+implemented an optimizer at bytecode level during his Bachelor thesis
+work. Benedikt Huber has redesigned the WCET analysis tool for JOP
+during his Master's thesis. Trevor Harmon, who implemented the WCET
+tool Volta for JOP during his PhD thesis, helped me with proofreading
+of the handbook.
+
+Furthermore, I would like to thank Walter Wilhelm from EEG for taking
+the risk to accept a JOP based hardware for the
+\emph{Kippfahrleitung} project at a very early development stage of
+JOP. The development of JOP has received funding from the Wiener
+Innovationsf\"oderprogram (Call IKT 2004) and from the EU project
+JEOPARD.
