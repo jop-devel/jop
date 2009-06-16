@@ -25,35 +25,33 @@ package com.jopdesign.tools;
 
 import java.util.*;
 
-
 /**
  * Extension of JopSim to simulation real-time transactional memory (RTTM)
  * 
  * @author Martin Schoeberl
- *
+ * 
  */
 public class TMSim extends JopSim {
-	
+
 	final static int MAGIC = -10000;
 	final static boolean LOG = false;
 
 	TMSim(String fn, IOSimMin ioSim, int max) {
 		super(fn, ioSim, max);
 	}
-	
+
 	int trCnt;
 	int retryCnt;
 	int maxRead;
 	int maxWrite;
 	int maxSum;
-	
+
 	int nestingCnt;
 	int savedPc;
-	
+
 	LinkedHashSet<Integer> readSet = new LinkedHashSet<Integer>();
 	LinkedHashMap<Integer, Integer> writeSet = new LinkedHashMap<Integer, Integer>();
 
-	
 	// TODO: we should earlier abort the transaction as we
 	// can read inconsistent data from another commited transaction
 	// TODO: we're still having constants and method table loads in
@@ -61,14 +59,19 @@ public class TMSim extends JopSim {
 	int readMem(int addr, Access type) {
 
 		// TODO: use access type
-		
-		// Transaction active and not an I/O address
-		if (nestingCnt>0 && addr>=0 && !invokeRead) {
-			Integer addrInt = new Integer(addr);
-			readSet.add(addrInt);
-			if (writeSet.containsKey(addrInt)) {
-				return writeSet.get(addrInt).intValue();
+		switch (type) {
+		case MTAB:
+			break;
+		default:
+			// Transaction active and not an I/O address
+			if (nestingCnt > 0 && addr >= 0) {
+				Integer addrInt = new Integer(addr);
+				readSet.add(addrInt);
+				if (writeSet.containsKey(addrInt)) {
+					return writeSet.get(addrInt).intValue();
+				}
 			}
+			break;
 		}
 		return super.readMem(addr, type);
 
@@ -76,8 +79,8 @@ public class TMSim extends JopSim {
 
 	void writeMem(int addr, int data, Access type) {
 
-		if (addr==MAGIC) {
-			if (data!=0) {
+		if (addr == MAGIC) {
+			if (data != 0) {
 				startTransaction();
 			} else {
 				endTransaction();
@@ -85,37 +88,47 @@ public class TMSim extends JopSim {
 			return;
 		}
 		// Transaction active and not an I/O address
-		if (nestingCnt>0 && addr>=0) {
+		if (nestingCnt > 0 && addr >= 0) {
 			writeSet.put(new Integer(addr), new Integer(data));
 		} else {
-			super.writeMem(addr, data, type);			
+			super.writeMem(addr, data, type);
 		}
 	}
-	
+
 	void commit() {
-		if (LOG) System.out.print("Commiting TR "+trCnt+" on CPU "+io.cpuId);
-		if (LOG) System.out.println(" - write set "+writeSet.size()+" read set "+readSet.size());
-		if (writeSet.size()>maxWrite) maxWrite = writeSet.size();
-		if (readSet.size()>maxRead) maxRead = readSet.size();
-		
+		if (LOG)
+			System.out.print("Commiting TR " + trCnt + " on CPU " + io.cpuId);
+		if (LOG)
+			System.out.println(" - write set " + writeSet.size() + " read set "
+					+ readSet.size());
+		if (writeSet.size() > maxWrite)
+			maxWrite = writeSet.size();
+		if (readSet.size() > maxRead)
+			maxRead = readSet.size();
+
 		Collection<Integer> keys = writeSet.keySet();
 		for (Iterator<Integer> iterator = keys.iterator(); iterator.hasNext();) {
 			Integer addr = iterator.next();
 			int thisAddr = addr;
 			int val = writeSet.get(addr);
 			// TODO: type lost
-			super.writeMem(thisAddr, val, Access.INTERNAL);
-			
+			super.writeMem(thisAddr, val, Access.INTERN);
+
 			// test for conflict
-			for (int i=0; i<nrCpus; ++i) {
-				if (i==io.cpuId) continue;
+			for (int i = 0; i < nrCpus; ++i) {
+				if (i == io.cpuId)
+					continue;
 				TMSim otherSim = (TMSim) js[i];
-				if (otherSim.abort) continue;
-				for (Iterator<Integer> other = otherSim.readSet.iterator(); other.hasNext();) {
+				if (otherSim.abort)
+					continue;
+				for (Iterator<Integer> other = otherSim.readSet.iterator(); other
+						.hasNext();) {
 					int otherAddr = other.next();
-					if (otherAddr==thisAddr) {
-						otherSim.abort=true;
-						if (LOG) System.out.println("Transaction on CPU "+i+" aborted");
+					if (otherAddr == thisAddr) {
+						otherSim.abort = true;
+						if (LOG)
+							System.out.println("Transaction on CPU " + i
+									+ " aborted");
 						break;
 					}
 				}
@@ -126,11 +139,12 @@ public class TMSim extends JopSim {
 			int addr = it.next();
 			writeSet.put(addr, 0);
 		}
-		if (writeSet.size()>maxSum) maxSum = writeSet.size();
+		if (writeSet.size() > maxSum)
+			maxSum = writeSet.size();
 		writeSet.clear();
 		readSet.clear();
 	}
-	
+
 	void retry() {
 		abort = false;
 		pc = savedPc;
@@ -139,57 +153,60 @@ public class TMSim extends JopSim {
 		stack[++sp] = MAGIC;
 		writeSet.clear();
 		readSet.clear();
-		if (LOG) System.out.println("Retry TR "+trCnt+" on CPU "+io.cpuId);
+		if (LOG)
+			System.out.println("Retry TR " + trCnt + " on CPU " + io.cpuId);
 		--trCnt;
 		++retryCnt;
 	}
-	
+
 	/**
-	 * The single commit token. 0 means free otherwise it
-	 * contains the CPU ID + 1.
+	 * The single commit token. 0 means free otherwise it contains the CPU ID +
+	 * 1.
 	 */
 	static int commitingCpu;
 	boolean abort;
-	
+
 	void startTransaction() {
 		++trCnt;
-		if (LOG) System.out.println("Start TR "+trCnt+" on CPU "+io.cpuId);
-		if (nestingCnt==0) {
-			savedPc = pc-1;	
+		if (LOG)
+			System.out.println("Start TR " + trCnt + " on CPU " + io.cpuId);
+		if (nestingCnt == 0) {
+			savedPc = pc - 1;
 		}
 		++nestingCnt;
 	}
 
 	void endTransaction() {
-		if (LOG) System.out.println("End TR "+trCnt+" on CPU "+io.cpuId);
+		if (LOG)
+			System.out.println("End TR " + trCnt + " on CPU " + io.cpuId);
 		--nestingCnt;
-		if (nestingCnt==0) {
+		if (nestingCnt == 0) {
 			// do the commit or retry
 			if (abort) {
 				retry();
 			} else {
-				if (commitingCpu!=0) {
+				if (commitingCpu != 0) {
 					// wait for commit token
 					--pc;
 					stack[++sp] = 0;
 					stack[++sp] = MAGIC;
 					System.out.println("wait for token");
 				} else {
-					commitingCpu=io.cpuId+1;
+					commitingCpu = io.cpuId + 1;
 					commit();
-					commitingCpu=0;
+					commitingCpu = 0;
 				}
 			}
 		}
 	}
-	
+
 	void stat() {
 		super.stat();
 		System.out.println("TM statistics");
-		System.out.println("Nr of transactions: "+trCnt);
-		System.out.println("Nr of retries: "+retryCnt);
-		System.out.println("Max write set "+maxWrite+" max read set "+maxRead+
-				" max sum "+maxSum);
+		System.out.println("Nr of transactions: " + trCnt);
+		System.out.println("Nr of retries: " + retryCnt);
+		System.out.println("Max write set " + maxWrite + " max read set "
+				+ maxRead + " max sum " + maxSum);
 	}
 
 	/**

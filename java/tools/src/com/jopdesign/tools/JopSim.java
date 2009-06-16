@@ -108,7 +108,7 @@ public class JopSim {
 		/**
 		 * JVM internal access
 		 */
-		INTERNAL;
+		INTERN;
 		
 		private int rdCnt;
 		private int wrCnt;
@@ -160,7 +160,6 @@ public class JopSim {
 	int jjp;
 	int jjhp;
 
-	boolean invokeRead;
 	//
 	// exception handling
 	//
@@ -260,9 +259,9 @@ public class JopSim {
 
 		pc = vp = 0;
 		sp = Const.STACK_OFF;
-		int ptr = readMem(1, Access.INTERNAL);
-		jjp = readMem(ptr+1, Access.INTERNAL);
-		jjhp = readMem(ptr+2, Access.INTERNAL);
+		int ptr = readMem(1, Access.INTERN);
+		jjp = readMem(ptr+1, Access.INTERN);
+		jjhp = readMem(ptr+2, Access.INTERN);
 
 		invokestatic(ptr);			// load main()
 	}
@@ -499,7 +498,6 @@ System.out.println(mp+" "+pc);
 */
 	void invoke(int new_mp) {
 
-		invokeRead = true;
 		if (log) {
 			System.out.println("addr. of meth.struct="+new_mp);		
 		}
@@ -529,7 +527,6 @@ System.out.println(mp+" "+pc);
 		stack[++sp] = old_mp;
 
 		pc = cache.invoke(start, len);
-		invokeRead = false;
 	}
 
 /**
@@ -1493,21 +1490,21 @@ System.out.println("new heap: "+heap);
 					break;
 				case 209 :		// jopsys_rd
 					ref = stack[sp--];
-					stack[++sp] = readMem(ref, Access.INTERNAL);
+					stack[++sp] = readMem(ref, Access.INTERN);
 					break;
 				case 210 :		// jopsys_wr
 					ref = stack[sp--];
 					val = stack[sp--];
-					writeMem(ref, val, Access.INTERNAL);
+					writeMem(ref, val, Access.INTERN);
 					break;
 				case 211 :		// jopsys_rdmem
 					ref = stack[sp--];
-					stack[++sp] = readMem(ref, Access.INTERNAL);
+					stack[++sp] = readMem(ref, Access.INTERN);
 					break;
 				case 212 :		// jopsys_wrmem
 					ref = stack[sp--];
 					val = stack[sp--];
-					writeMem(ref, val, Access.INTERNAL);
+					writeMem(ref, val, Access.INTERN);
 					break;
 				case 213 :		// jopsys_rdint
 					ref = stack[sp--];
@@ -1640,7 +1637,7 @@ System.out.println("new heap: "+heap);
 					b = stack[sp--];
 					c = stack[sp--];
 					if (a >= 0) {
-						writeMem(c+a, readMem(b+a, Access.INTERNAL), Access.INTERNAL);
+						writeMem(c+a, readMem(b+a, Access.INTERN), Access.INTERN);
 						copy_src = b;
 						copy_dest = c;
 						copy_pos = a+1;
@@ -1756,14 +1753,22 @@ System.out.println("new heap: "+heap);
 		int insByte = cache.instrBytes();
 		System.out.println(insByte+" Instructions bytes");
 		System.out.println(((float) insByte/instrCnt)+" average Instruction length");
+		
+		System.out.println();
+		System.out.println("\tType \t&       Load &      &      Store &      \\\\");
+		int ld = 0, st=0;
+		for (Access a : Access.values()) {
+			ld += a.rdCnt; st += a.wrCnt;
+			System.out.printf("\t%s\t& %10d & %2d\\%% & %10d & %2d\\%% \\\\%n",
+					a.name(), a.rdCnt, (a.rdCnt*1000/rdMemCnt+5)/10, a.wrCnt, (a.wrCnt*1000/wrMemCnt+5)/10);
+		}
+		System.out.printf("\tSum\t& %10d &      & %10d &      \\\\%n", ld, st);
+		
+		System.out.println();
 		System.out.println("memory word: "+rdMemCnt+" load "+wrMemCnt+" store");
 		System.out.println("memory word per instruction: "+
 			((float) rdMemCnt/instrCnt)+" load "+
 			((float) wrMemCnt/instrCnt)+" store");
-		for (Access a : Access.values()) {
-			System.out.println(a.name()+" load: "+a.rdCnt);
-			System.out.println(a.name()+" store: "+a.wrCnt);
-		}
 		System.out.println("total cache load cycles: "+this.cacheCost);
 		System.out.println();
 
