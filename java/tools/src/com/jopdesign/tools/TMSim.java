@@ -53,39 +53,15 @@ public class TMSim extends JopSim {
 	LinkedHashSet<Integer> readSet = new LinkedHashSet<Integer>();
 	LinkedHashMap<Integer, Integer> writeSet = new LinkedHashMap<Integer, Integer>();
 
-	/**
-	 * Handles are not part of the transaction.
-	 */
-	int readMemHandle(int addr) {
-		// Transaction active and not an I/O address
-		if (nestingCnt>0 && addr>=0 && !invokeRead) {
-			Integer addrInt = new Integer(addr);
-			if (writeSet.containsKey(addrInt)) {
-				return writeSet.get(addrInt).intValue();
-			}
-		}
-		return super.readMem(addr);
-	}
-	/**
-	 * Array length is not part of the transaction.
-	 */
-	int readMemAlen(int addr) {
-		// Transaction active and not an I/O address
-		if (nestingCnt>0 && addr>=0 && !invokeRead) {
-			Integer addrInt = new Integer(addr);
-			if (writeSet.containsKey(addrInt)) {
-				return writeSet.get(addrInt).intValue();
-			}
-		}
-		return super.readMem(addr);
-	}
 	
 	// TODO: we should earlier abort the transaction as we
 	// can read inconsistent data from another commited transaction
 	// TODO: we're still having constants and method table loads in
 	// the read set, but cache load uses readInstrMem().
-	int readMem(int addr) {
+	int readMem(int addr, Access type) {
 
+		// TODO: use access type
+		
 		// Transaction active and not an I/O address
 		if (nestingCnt>0 && addr>=0 && !invokeRead) {
 			Integer addrInt = new Integer(addr);
@@ -94,11 +70,11 @@ public class TMSim extends JopSim {
 				return writeSet.get(addrInt).intValue();
 			}
 		}
-		return super.readMem(addr);
+		return super.readMem(addr, type);
 
 	}
 
-	void writeMem(int addr, int data) {
+	void writeMem(int addr, int data, Access type) {
 
 		if (addr==MAGIC) {
 			if (data!=0) {
@@ -112,7 +88,7 @@ public class TMSim extends JopSim {
 		if (nestingCnt>0 && addr>=0) {
 			writeSet.put(new Integer(addr), new Integer(data));
 		} else {
-			super.writeMem(addr, data);			
+			super.writeMem(addr, data, type);			
 		}
 	}
 	
@@ -127,7 +103,8 @@ public class TMSim extends JopSim {
 			Integer addr = iterator.next();
 			int thisAddr = addr;
 			int val = writeSet.get(addr);
-			super.writeMem(thisAddr, val);
+			// TODO: type lost
+			super.writeMem(thisAddr, val, Access.INTERNAL);
 			
 			// test for conflict
 			for (int i=0; i<nrCpus; ++i) {

@@ -60,6 +60,72 @@ public class JopSim {
 			super(message);
 		}
 	}
+	
+	/**
+	 * Classify memory access type for cache and TM experiments.
+	 */
+	enum Access {
+		/**
+		 * General class info
+		 */
+		CLINFO,
+		/**
+		 * Method table
+		 */
+		MTAB,
+		/**
+		 * Constant pool
+		 */
+		CONST,
+		/**
+		 * Interface table
+		 */
+		IFTAB,
+		/**
+		 * Handle indirection
+		 */
+		HANDLE,
+		/**
+		 * Array length
+		 */
+		ALEN,
+		/**
+		 * Method vector base (= class reference)
+		 */
+		MVB,
+		/**
+		 * Field access
+		 */
+		FIELD,
+		/**
+		 * Static field access
+		 */
+		STATIC,
+		/**
+		 * Array access
+		 */
+		ARRAY,
+		/**
+		 * JVM internal access
+		 */
+		INTERNAL;
+		
+		private int rdCnt;
+		private int wrCnt;
+		
+		void incrRd() {
+			rdCnt++;
+		}
+		void incrWr() {
+			wrCnt++;
+		}
+		int getRdCnt() {
+			return rdCnt;
+		}
+		int getWrCnt() {
+			return wrCnt;
+		}
+	};
 
 	static final int MAX_MEM = 1024*1024/4;
 	static final int MAX_STACK = Const.STACK_SIZE;	// with internal memory
@@ -194,9 +260,9 @@ public class JopSim {
 
 		pc = vp = 0;
 		sp = Const.STACK_OFF;
-		int ptr = readMem(1);
-		jjp = readMem(ptr+1);
-		jjhp = readMem(ptr+2);
+		int ptr = readMem(1, Access.INTERNAL);
+		jjp = readMem(ptr+1, Access.INTERNAL);
+		jjhp = readMem(ptr+2, Access.INTERNAL);
 
 		invokestatic(ptr);			// load main()
 	}
@@ -221,7 +287,7 @@ System.out.println(mp+" "+pc);
 	void jjvmConst(int instr) {
 
 		int idx = readOpd16u();
-		int val = readMem(cp+idx);			// read constant
+		int val = readMem(cp+idx, Access.CONST);			// read constant
 		// System.out.println("jjvmConst: "+instr+" "+(cp+idx)+" "+val);
 		stack[++sp] = val;					// push on stack
 		invoke(jjp+(instr<<1));
@@ -264,38 +330,15 @@ System.out.println(mp+" "+pc);
 	int copy_pos = 0;
 
 	/**
-	 * Read the handle. Can be used for cache/TM experiments.
-	 * @param addr
-	 * @return
-	 */
-	int readMemHandle(int addr) {
-		return readMem(addr);
-	}
-	/**
-	 * Read the array length from the handle area. Can be used for cache/TM experiments.
-	 * @param addr
-	 * @return
-	 */
-	int readMemAlen(int addr) {
-		return readMem(addr);
-	}
-	/**
-	 * Read from constant area. Can be used for cache/TM experiments.
-	 * @param addr
-	 * @return
-	 */
-	int readMemConst(int addr) {
-		return readMem(addr);
-	}
-	/**
 	 * a plain memory read
 	 * @param addr
 	 * @return
 	 */
-	int readMem(int addr) {
+	int readMem(int addr, Access type) {
 		
 		// System.out.println(addr+" "+mem[addr]);
 		rdMemCnt++;
+		type.incrRd();
 
 		// translate addresses
 		if (addr >= copy_src && addr < copy_src+copy_pos) {
@@ -319,9 +362,10 @@ System.out.println(mp+" "+pc);
 
 		return mem[addr%MAX_MEM];
 	}
-	void writeMem(int addr, int data) {
+	void writeMem(int addr, int data, Access type) {
 
 		wrMemCnt++;
+		type.incrWr();
 
 		// that's an access to our scratchpad memory
 		if (addr >= Const.SCRATCHPAD_ADDRESS && addr <= Const.SCRATCHPAD_ADDRESS+MEM_TEST_OFF) {
@@ -380,7 +424,7 @@ System.out.println(mp+" "+pc);
 	void invokesuper() throws JopSimRtsException {
 
 		int idx = readOpd16u();
-		int off = readMem(cp+idx);	// index in vt and arg count (-1)
+		int off = readMem(cp+idx, Access.CONST);	// index in vt and arg count (-1)
 		int args = off & 0xff;		// this is args count without obj-ref
 		off >>>= 8;
 		int ref = stack[sp-args];
@@ -388,10 +432,10 @@ System.out.println(mp+" "+pc);
 		checkNullPointer(ref);
 		
 		// pointer to method table in handle at offset 1
-		int vt = readMem(ref+1);
+		int vt = readMem(ref+1, Access.MVB);
 		// pointer to super class in method table at offset -2
 		// == -Const.CLASS_HEADR+Const.CLASS_SUPER
-		int sup = readMem(vt-2);
+		int sup = readMem(vt-2, Access.CLINFO);
 		// the real VT is located at offset 5
 		// == Const.CLASS_HEADR
 		vt = sup+5;
@@ -403,14 +447,14 @@ System.out.println(mp+" "+pc);
 	void invokevirtual() throws JopSimRtsException {
 
 		int idx = readOpd16u();
-		int off = readMem(cp+idx);	// index in vt and arg count (-1)
+		int off = readMem(cp+idx, Access.CONST);	// index in vt and arg count (-1)
 		int args = off & 0xff;		// this is args count without obj-ref
 		off >>>= 8;
 		int ref = stack[sp-args];
 		checkNullPointer(ref);
 		
 		// pointer to method table in handle at offset 1
-		int vt = readMem(ref+1);
+		int vt = readMem(ref+1, Access.MVB);
 		// System.out.println("invvirt: off: "+off+" args: "+args+" ref: "+ref+" vt: "+vt+" addr: "+(vt+off));
 		invoke(vt+off);
 	}
@@ -420,7 +464,7 @@ System.out.println(mp+" "+pc);
 		int idx = readOpd16u();
 		readOpd16u();				// read historical argument count and 0
 
-		int off = readMem(cp+idx);			// index in interface table
+		int off = readMem(cp+idx, Access.CONST);			// index in interface table
 
 		int args = off & 0xff;				// this is args count without obj-ref
 		off >>>= 8;
@@ -428,10 +472,10 @@ System.out.println(mp+" "+pc);
 		checkNullPointer(ref);
 		
 		// pointer to method table in handle at offset 1
-		int vt = readMem(ref+1);			// pointer to virtual table in obj-1
-		int it = readMem(vt-1);				// pointer to interface table one befor vt
+		int vt = readMem(ref+1, Access.MVB);	// pointer to virtual table in obj-1
+		int it = readMem(vt-1, Access.CLINFO);	// pointer to interface table one befor vt
 
-		int mp = readMem(it+off);
+		int mp = readMem(it+off, Access.IFTAB);
 // System.out.println("invint: off: "+off+" args: "+args+" ref: "+ref+" vt: "+vt+" mp: "+(mp));
 		invoke(mp);
 	}
@@ -447,7 +491,7 @@ System.out.println(mp+" "+pc);
 
 	void invokestatic(int ptr) {
 		
-		invoke(readMem(ptr));
+		invoke(readMem(ptr, Access.CONST));
 	}
 
 /**
@@ -465,10 +509,10 @@ System.out.println(mp+" "+pc);
 
 		mp = new_mp;
 
-		int start = readMem(mp);
+		int start = readMem(mp, Access.MTAB);
 		int len = start & 0x03ff;
 		start >>>= 10;
-		cp = readMem(mp+1);
+		cp = readMem(mp+1, Access.MTAB);
 		int locals = (cp>>>5) & 0x01f;
 		int args = cp & 0x01f;
 		cp >>>= 10;
@@ -499,7 +543,7 @@ System.out.println(mp+" "+pc);
 		pc = stack[sp--];
 		sp = stack[sp--];
 
-		int start = readMem(mp);
+		int start = readMem(mp, Access.MTAB);
 		int len = start & 0x03ff;
 		start >>>= 10;
 		// cp = readMem(mp+1)>>>10;
@@ -534,27 +578,27 @@ System.out.println(mp+" "+pc);
 	void putstatic() {
 
 		int addr = readOpd16u();
-		writeMem(addr, stack[sp--]);
+		writeMem(addr, stack[sp--], Access.STATIC);
 	}
 
 	void getstatic() {
 
 		int addr = readOpd16u();
-		stack[++sp] = readMem(addr);
+		stack[++sp] = readMem(addr, Access.STATIC);
 	}
 
 	void putstatic_long() {
 
 		int addr = readOpd16u();
-		writeMem(addr+1, stack[sp--]);
-		writeMem(addr, stack[sp--]);
+		writeMem(addr+1, stack[sp--], Access.STATIC);
+		writeMem(addr, stack[sp--], Access.STATIC);
 	}
 
 	void getstatic_long() {
 
 		int addr = readOpd16u();
-		stack[++sp] = readMem(addr);
-		stack[++sp] = readMem(addr+1);
+		stack[++sp] = readMem(addr, Access.STATIC);
+		stack[++sp] = readMem(addr+1, Access.STATIC);
 	}
 
 	void putfield() {
@@ -563,8 +607,8 @@ System.out.println(mp+" "+pc);
 		int val = stack[sp--];
 		int ref = stack[sp--];
 		checkNullPointer(ref);		
-		ref = readMemHandle(ref);
-		writeMem(ref+off, val);						
+		ref = readMem(ref, Access.HANDLE);
+		writeMem(ref+off, val, Access.FIELD);						
 	}
 
 	void getfield() {
@@ -573,8 +617,8 @@ System.out.println(mp+" "+pc);
 		int ref = stack[sp];
 		checkNullPointer(ref);		
 		// handle needs indirection
-		ref = readMemHandle(ref);
-		stack[sp] = readMem(ref+off);
+		ref = readMem(ref, Access.HANDLE);
+		stack[sp] = readMem(ref+off, Access.FIELD);
 	}
 	
 	void jopsys_putfield() {
@@ -584,8 +628,8 @@ System.out.println(mp+" "+pc);
 		int ref = stack[sp--];
 		checkNullPointer(ref);		
 		// handle needs indirection
-		ref = readMemHandle(ref);
-		writeMem(ref+off, val);
+		ref = readMem(ref, Access.HANDLE);
+		writeMem(ref+off, val, Access.FIELD);
 	}
 
 	void jopsys_getfield() {
@@ -594,8 +638,8 @@ System.out.println(mp+" "+pc);
 		int ref = stack[sp];
 		checkNullPointer(ref);		
 		// handle needs indirection
-		ref = readMemHandle(ref);
-		stack[sp] = readMem(ref+off);
+		ref = readMem(ref, Access.HANDLE);
+		stack[sp] = readMem(ref+off, Access.FIELD);
 	}
 
 	void putfield_long() {
@@ -606,9 +650,9 @@ System.out.println(mp+" "+pc);
 		int ref = stack[sp--];
 		checkNullPointer(ref);		
 		// handle needs indirection
-		ref = readMemHandle(ref);
-		writeMem(ref+off, val_h);
-		writeMem(ref+off+1, val_l);			
+		ref = readMem(ref, Access.HANDLE);
+		writeMem(ref+off, val_h, Access.FIELD);
+		writeMem(ref+off+1, val_l, Access.FIELD);			
 	}
 
 	void getfield_long() {
@@ -617,9 +661,9 @@ System.out.println(mp+" "+pc);
 		int ref = stack[sp];
 		// handle needs indirection
 		checkNullPointer(ref);		
-		ref = readMemHandle(ref);
-		stack[sp] = readMem(ref+off);
-		stack[++sp] = readMem(ref+off+1);
+		ref = readMem(ref, Access.HANDLE);
+		stack[sp] = readMem(ref+off, Access.FIELD);
+		stack[++sp] = readMem(ref+off+1, Access.FIELD);
 	}
 
 /**
@@ -713,7 +757,7 @@ System.out.println(mp+" "+pc);
 					stack[++sp] = 1;
 					break;
 				case 11 :		// fconst_0
-					noim(11);
+					stack[++sp] = 0;
 					break;
 				case 12 :		// fconst_1
 					noim(12);
@@ -722,7 +766,8 @@ System.out.println(mp+" "+pc);
 					noim(13);
 					break;
 				case 14 :		// dconst_0
-					noim(14);
+					stack[++sp] = 0;
+					stack[++sp] = 0;
 					break;
 				case 15 :		// dconst_1
 					noim(15);
@@ -734,19 +779,19 @@ System.out.println(mp+" "+pc);
 					stack[++sp] = readOpd16s();
 					break;
 				case 18 :		// ldc
-					stack[++sp] = readMem(cp+readOpd8u());
+					stack[++sp] = readMem(cp+readOpd8u(), Access.CONST);
 					break;
 				case 19 :		// ldc_w
-					stack[++sp] = readMem(cp+readOpd16u());
+					stack[++sp] = readMem(cp+readOpd16u(), Access.CONST);
 					break;
 				case 20 :		// ldc2_w
 					idx = readOpd16u();
-					stack[++sp] = readMem(cp+idx);
-					stack[++sp] = readMem(cp+idx+1);
+					stack[++sp] = readMem(cp+idx, Access.CONST);
+					stack[++sp] = readMem(cp+idx+1, Access.CONST);
 					break;
-				case 25 :		// aload
-				case 23 :		// fload
 				case 21 :		// iload
+				case 23 :		// fload
+				case 25 :		// aload
 					idx = readOpd8u();
 					stack[++sp] = stack[vp+idx];
 					break;
@@ -809,23 +854,23 @@ System.out.println(mp+" "+pc);
 					idx = stack[sp--];	// index
 					ref = stack[sp--];	// ref
 					checkNullPointer(ref);
-					a = readMemAlen(ref+1);
+					a = readMem(ref+1, Access.ALEN);
 					if (idx<0 || idx>=a) throw new JopSimRtsException("saload: index out of bounds",Const.EXC_AB);
 					// handle needs indirection
-					ref = readMemHandle(ref);
-					stack[++sp] = readMem(ref+idx);							
+					ref = readMem(ref, Access.HANDLE);
+					stack[++sp] = readMem(ref+idx, Access.ARRAY);							
 					break;
 				case 47 :		// laload
 				case 49 :		// daload
 					idx = stack[sp--];	// index
 					ref = stack[sp--];	// ref
 					checkNullPointer(ref);
-					a = readMemAlen(ref+1);
+					a = readMem(ref+1, Access.ALEN);
 					if (idx<0 || idx>=a) throw new JopSimRtsException("laload: index out of bounds",Const.EXC_AB);
 					// handle needs indirection
-					ref = readMemHandle(ref);
-					stack[++sp] = readMem(ref+idx*2);
-					stack[++sp] = readMem(ref+idx*2+1);							
+					ref = readMem(ref, Access.HANDLE);
+					stack[++sp] = readMem(ref+idx*2, Access.ARRAY);
+					stack[++sp] = readMem(ref+idx*2+1, Access.ARRAY);							
 					break;
 				case 58 :		// astore
 				case 56 :		// fstore
@@ -895,11 +940,11 @@ System.out.println(mp+" "+pc);
 					idx = stack[sp--];	// index
 					ref = stack[sp--];	// ref
 					checkNullPointer(ref);
-					a = readMemAlen(ref+1);
+					a = readMem(ref+1, Access.ALEN);
 					if (idx<0 || idx>=a) throw new JopSimRtsException("sastore: index out of bounds",Const.EXC_AB);
 					// handle needs indirection
-					ref = readMemHandle(ref);
-					writeMem(ref+idx, val);							
+					ref = readMem(ref, Access.HANDLE);
+					writeMem(ref+idx, val, Access.ARRAY);							
 					break;
 				case 80 :		// lastore
 				case 82 :		// dastore
@@ -908,12 +953,12 @@ System.out.println(mp+" "+pc);
 					idx = stack[sp--];	// index
 					ref = stack[sp--];	// ref
 					checkNullPointer(ref);
-					a = readMemAlen(ref+1);
+					a = readMem(ref+1, Access.ALEN);
 					if (idx<0 || idx>=a) throw new JopSimRtsException("lastore: index out of bounds",Const.EXC_AB);
 					// handle needs indirection
-					ref = readMemHandle(ref);
-					writeMem(ref+idx*2, val2);					
-					writeMem(ref+idx*2+1, val);												
+					ref = readMem(ref, Access.HANDLE);
+					writeMem(ref+idx*2, val2, Access.ARRAY);					
+					writeMem(ref+idx*2+1, val, Access.ARRAY);												
 					break;
 				case 87 :		// pop
 					sp--;
@@ -1385,7 +1430,7 @@ System.out.println("new heap: "+heap);
 					ref = stack[sp--];	// ref from stack
 					checkNullPointer(ref);
 					// lenght in handle at offset 1
-					stack[++sp] = readMemAlen(ref+1);
+					stack[++sp] = readMem(ref+1, Access.ALEN);
 					break;
 				case 191 :		// athrow
 					noim(191);
@@ -1448,21 +1493,21 @@ System.out.println("new heap: "+heap);
 					break;
 				case 209 :		// jopsys_rd
 					ref = stack[sp--];
-					stack[++sp] = readMem(ref);
+					stack[++sp] = readMem(ref, Access.INTERNAL);
 					break;
 				case 210 :		// jopsys_wr
 					ref = stack[sp--];
 					val = stack[sp--];
-					writeMem(ref, val);
+					writeMem(ref, val, Access.INTERNAL);
 					break;
 				case 211 :		// jopsys_rdmem
 					ref = stack[sp--];
-					stack[++sp] = readMem(ref);
+					stack[++sp] = readMem(ref, Access.INTERNAL);
 					break;
 				case 212 :		// jopsys_wrmem
 					ref = stack[sp--];
 					val = stack[sp--];
-					writeMem(ref, val);
+					writeMem(ref, val, Access.INTERNAL);
 					break;
 				case 213 :		// jopsys_rdint
 					ref = stack[sp--];
@@ -1534,10 +1579,10 @@ System.out.println("new heap: "+heap);
 					a = stack[sp--];
 					b = stack[sp--];
 					// handle needs indirection
-					b = readMemHandle(b);
+					b = readMem(b, Access.HANDLE);
 					c = stack[sp--];
 					for(; a>=0; --a) {
-						writeMem(b+a, stack[c+a]);
+						writeMem(b+a, stack[c+a], Access.ARRAY);
 					}
 					break;
 				case 220 :		// jopsys_ext2int
@@ -1546,9 +1591,9 @@ System.out.println("new heap: "+heap);
 					b = stack[sp--];
 					c = stack[sp--];
 					// handle needs indirection
-					c = readMemHandle(c);
+					c = readMem(c, Access.HANDLE);
 					for(; a>=0; --a) {
-						stack[b+a] = readMem(c+a);
+						stack[b+a] = readMem(c+a, Access.ARRAY);
 					}
 					break;
 				case 221 :		// jopsys_nop
@@ -1595,7 +1640,7 @@ System.out.println("new heap: "+heap);
 					b = stack[sp--];
 					c = stack[sp--];
 					if (a >= 0) {
-						writeMem(c+a, readMem(b+a));
+						writeMem(c+a, readMem(b+a, Access.INTERNAL), Access.INTERNAL);
 						copy_src = b;
 						copy_dest = c;
 						copy_pos = a+1;
@@ -1715,6 +1760,10 @@ System.out.println("new heap: "+heap);
 		System.out.println("memory word per instruction: "+
 			((float) rdMemCnt/instrCnt)+" load "+
 			((float) wrMemCnt/instrCnt)+" store");
+		for (Access a : Access.values()) {
+			System.out.println(a.name()+" load: "+a.rdCnt);
+			System.out.println(a.name()+" store: "+a.wrCnt);
+		}
 		System.out.println("total cache load cycles: "+this.cacheCost);
 		System.out.println();
 
