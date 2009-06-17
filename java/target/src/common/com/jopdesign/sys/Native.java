@@ -51,7 +51,8 @@ public class Native {
 	public static native long toLong(double d);
 	public static native double toDouble(long l);
 	public static native void monitorExit(int ref);
-//	public static native int condMove(int a, int b, boolean cond);
+	public static native int condMove(int a, int b, boolean cond);
+	public static native Object condMoveRef(Object a, Object b, boolean cond);
 	public static native void invalidate();
 
 	/**

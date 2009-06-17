@@ -1600,10 +1600,10 @@ System.out.println("new heap: "+heap);
 					invoke(a);
 					break;
 				case 223 :		// jopsys_cond_move
-//					a = stack[sp--];
-//					b = stack[sp--];
-//					c = stack[sp--];
-//					stack[++sp] = a!=0 ? c : b;
+					a = stack[sp--];
+					b = stack[sp--];
+					c = stack[sp--];
+					stack[++sp] = a!=0 ? c : b;
 					noim(223);
 					break;
 				case 224 :		// resE0 - getstatic_ref

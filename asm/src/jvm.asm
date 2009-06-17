@@ -131,6 +131,8 @@
 //	2008-07-13	MS: mapping of Native.put/getfield to jopsys version
 //	2008-08-21	MS: Corrected data out enable in SRAM/Flash interface
 //	2008-12-10	MS: static field access uses index as address
+//	... no comments ...
+//	2009-06-17	Enable conditional move again
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -140,7 +142,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20090305
+version		= 20090617
 
 //
 //	start of stack area in the on-chip RAM
@@ -1764,13 +1766,14 @@ jopsys_nop:
 //jopsys_invoke: see invoke
 
 
-//jopsys_cond_move:
-//			nop		// one cycle for the condition
-//			bz		false_path
-//			stm		b
-//			stm		c
-//			ldm		c nxt
-//false_path:	ldm		b nxt
+jopsys_cond_move:
+			nop		// one cycle for the condition
+			bz		false_path
+			stm		b
+			stm		c
+nop // just because we run out of branch distances
+			ldm		c nxt
+false_path:	ldm		b nxt
 
 jopsys_inval:
 			ldi io_inval
