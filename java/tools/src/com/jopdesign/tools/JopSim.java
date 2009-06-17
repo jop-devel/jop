@@ -1604,7 +1604,7 @@ System.out.println("new heap: "+heap);
 					b = stack[sp--];
 					c = stack[sp--];
 					stack[++sp] = a!=0 ? c : b;
-					noim(223);
+//					noim(223);
 					break;
 				case 224 :		// resE0 - getstatic_ref
 					getstatic();
