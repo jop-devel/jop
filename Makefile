@@ -463,6 +463,13 @@ tmsim: java_app
 	com.jopdesign.tools.TMSim java/target/dist/bin/$(JOPBIN)
 
 #
+#	Simulate data cache
+#
+dcsim: java_app
+	java $(DEBUG_JOPSIM) -cp java/tools/dist/lib/jop-tools.jar \
+	com.jopdesign.tools.DCacheSim java/target/dist/bin/$(JOPBIN)
+
+#
 #	JopServer target
 #		without the tools
 #
