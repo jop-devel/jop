@@ -137,6 +137,9 @@ public class Const {
 	public static final int IO_SYS_DEVICE = IO_BASE+0;
 	public static final int IO_USB = IO_BASE+0x20;
 	
+	// output port for SD DAC
+	public static final int IO_DSPIO_OUT = IO_BASE+0x40;
+	
 	// scio_min.vhd
 	public static final int IO_CNT = IO_BASE+0;
 	/**

@@ -46,6 +46,7 @@
 --  2007-11-22  added global lock and bootup of CMP
 --	2007-12-03	prioritized interrupt processing
 --  2007-12-07  global lock redesign
+--	2009-06-18	add port for deadline instruction
 
 
 --
@@ -193,11 +194,14 @@ architecture rtl of sc_sys is
 	signal prioint		: std_logic_vector(4 downto 0);
 	signal intnr		: std_logic_vector(4 downto 0);		-- processing int number
 	signal clearall		: std_logic;	
+	-- delay instruction
+	signal dly_timeout	: std_logic_vector(31 downto 0);
+	signal dly_block	: std_logic;
 
 begin
 
 	cpu_identity <= std_logic_vector(to_unsigned(cpu_id,32));
-	rdy_cnt <= "11" when (sync_out.halted='1' and lock_reqest='1') else "00";
+	rdy_cnt <= "11" when (sync_out.halted='1' and lock_reqest='1') or dly_block='1' else "00";
 	
 --
 --	read cnt values
@@ -360,7 +364,8 @@ process(clk, reset) begin
 end process;
 
 --
---	io write processing and exception processing
+--	io write processing, exception processing,
+--	and delay instruciton
 --
 process(clk, reset)
 
@@ -380,6 +385,9 @@ begin
 		swreq <= (others => '0');
 		mask <= (others => '0');
 		clearall <= '0';
+
+		dly_block <= '0';
+		dly_timeout <= (others => '0');
 
 	elsif rising_edge(clk) then
 
@@ -433,8 +441,9 @@ begin
 					mask <= wr_data(NUM_INT-1 downto 0);
 				when "1001" =>
 					clearall <= '1';
-				when "1010" =>
-					-- nothing, ram_counter is read only
+				when "1010" =>		-- dely 'instruction'
+					dly_timeout <= wr_data;
+					dly_block <= '1';
 				when "1111" =>
 					-- explicit cache invalidation
 					inval <= '1';
@@ -442,8 +451,15 @@ begin
 			end case;
 		end if;
 		
+		-- Simple equal test, so be exact and don't miss it!
+		if dly_timeout=clock_cnt then
+			dly_block <= '0';
+		end if;
+
 	end if;
 end process;
+
+
 
 -- remove the comment for RAM access counting
 -- process(clk, reset)

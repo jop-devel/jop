@@ -32,6 +32,7 @@
 --		0x00 0-3		system clock counter, us counter, timer int, wd bit
 --		0x10 0-1		uart (download)
 --		0x20 0-1		USB connection (download)
+--		0x40			I/O pins for SD DAC
 --
 --	status word in uarts:
 --		0	uart transmit data register empty
@@ -46,6 +47,7 @@
 --	2005-11-30	changed to SimpCon
 --	2005-12-20	dspio board
 --	2007-03-17	use records
+--	2009-06-18	add I/O pins for SD DAC output
 --
 --
 
@@ -107,10 +109,10 @@ end scio;
 
 architecture rtl of scio is
 
-	constant SLAVE_CNT : integer := 3;
+	constant SLAVE_CNT : integer := 5;
 	-- SLAVE_CNT <= 2**DECODE_BITS
 	-- take care of USB address 0x20!
-	constant DECODE_BITS : integer := 2;
+	constant DECODE_BITS : integer := 3;
 	-- number of bits that can be used inside the slave
 	constant SLAVE_ADDR_BITS : integer := 4;
 
@@ -136,7 +138,7 @@ begin
 	l <= (others => 'Z');
 	r(20 downto 14) <= (others => 'Z');
 	t <= (others => 'Z');
-	b <= (others => 'Z');
+	b(10 downto 3)  <= (others => 'Z');
 
 	assert SLAVE_CNT <= 2**DECODE_BITS report "Wrong constant in scio";
 
@@ -145,6 +147,11 @@ begin
 	-- What happens when sel_reg > SLAVE_CNT-1??
 	sc_io_in.rd_data <= sc_dout(sel_reg);
 	sc_io_in.rdy_cnt <= sc_rdy_cnt(sel_reg);
+	-- default for other unused devices
+	sc_dout(3) <= (others => '0');
+	sc_rdy_cnt(3) <= (others => '0');
+	sc_dout(4) <= (others => '0');
+	sc_rdy_cnt(4) <= (others => '0');
 
 	--
 	-- Connect SLAVE_CNT simple slaves
@@ -166,6 +173,19 @@ begin
 		elsif rising_edge(clk) then
 			if sc_io_out.rd='1' or sc_io_out.wr='1' then
 				sel_reg <= sel;
+			end if;
+		end if;
+	end process;
+
+	-- simple output port
+	-- bit 0 is right channel, bit 1 the left channel
+	process(clk, reset)
+	begin
+		if (reset='1') then
+			b(2 downto 1) <= "00";
+		elsif rising_edge(clk) then
+			if sc_wr(4)='1' then
+				b(2 downto 1) <= sc_io_out.wr_data(1 downto 0); 
 			end if;
 		end if;
 	end process;

@@ -37,6 +37,9 @@ add wave -noupdate -format Logic /tb_jop/cmp_jop/cmp_io/cmp_sys/irq_dly
 add wave -noupdate -format Logic /tb_jop/cmp_jop/cmp_io/cmp_sys/exc_dly
 add wave -noupdate -format Literal /tb_jop/cmp_jop/cmp_io/cmp_sys/irq_in
 add wave -noupdate -format Literal /tb_jop/cmp_jop/cmp_io/cmp_sys/irq_out
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cmp_io/cmp_sys/clock_cnt
+add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/cmp_io/cmp_sys/dly_block
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/cmp_io/cmp_sys/dly_timeout
 add wave -noupdate -divider {bcfetch interrupt}
 add wave -noupdate -format Logic /tb_jop/cmp_jop/cpm_cpu/cmp_core/cmp_bcf/int_pend
 add wave -noupdate -format Logic /tb_jop/cmp_jop/cpm_cpu/cmp_core/cmp_bcf/int_taken
@@ -97,4 +100,4 @@ configure wave -gridperiod 1
 configure wave -griddelta 40
 configure wave -timeline 0
 update
-WaveRestoreZoom {7021558 ns} {7089094 ns}
+WaveRestoreZoom {0 ns} {67536 ns}

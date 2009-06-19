@@ -27,14 +27,20 @@ import com.jopdesign.sys.Native;
 public class DspioFactory extends IOFactory {
 
 	private SerialPort usb;
+	private OutPort oport;
 
 	// Handles should be the first static fields!
 	private static int USB_PTR;
 	private static int USB_MTAB;
+	private static int OUT_PRT;
+	private static int OUT_MTAB;
 
 	DspioFactory() {
 		usb = (SerialPort) makeHWObject(new SerialPort(),
 				Const.IO_USB, 0);
+		oport = (OutPort) makeHWObject(new OutPort(),
+				Const.IO_DSPIO_OUT, 1);
+
 	};
 	// that has to be overridden by each sub class to get
 	// the correct cp
@@ -50,5 +56,7 @@ public class DspioFactory extends IOFactory {
 	}
 
 	public SerialPort getUsbPort() { return usb; }
+	
+	public OutPort getOutPort() { return oport; }
 
 }

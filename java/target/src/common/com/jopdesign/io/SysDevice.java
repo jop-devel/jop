@@ -83,9 +83,9 @@ public final class SysDevice extends HardwareObject {
 	public volatile int clearInt;
 	
 	/**
-	 * Ram access counter - notused
+	 * Deadline port (read is unused ram access counter)
 	 */
-	public volatile int ramCnt;
+	public volatile int deadLine;
 	
 	/**
 	 * Number of CPUs

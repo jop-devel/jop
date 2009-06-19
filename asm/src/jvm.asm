@@ -132,7 +132,7 @@
 //	2008-08-21	MS: Corrected data out enable in SRAM/Flash interface
 //	2008-12-10	MS: static field access uses index as address
 //	... no comments ...
-//	2009-06-17	Enable conditional move again
+//	2009-06-17	MS: Enable conditional move again
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java

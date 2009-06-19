@@ -73,7 +73,7 @@ public class MatrixBenchCMP_RamCounter implements Runnable {
 		}
 		
 		// Startpoint of measuring
-		count0 = sys.ramCnt;
+		count0 = sys.deadLine;
 		//us0 = sys.uscntTimer; 
 		us0 = Native.rdMem(Const.IO_CNT); // Clockcycles
 					
@@ -94,7 +94,7 @@ public class MatrixBenchCMP_RamCounter implements Runnable {
 		
 		// End of measurement
 		us1 = Native.rdMem(Const.IO_CNT); // Clockcycles
-		count1 = sys.ramCnt;
+		count1 = sys.deadLine;
 		
 		count_result = count1 - count0;
 		us_result = us1 - us0;
