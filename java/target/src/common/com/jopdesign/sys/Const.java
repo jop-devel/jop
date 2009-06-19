@@ -172,6 +172,7 @@ public class Const {
 	 */
 	// remove the comment for RAM access counting
 	public static final int IO_RAMCNT = IO_BASE+10;
+	public static final int IO_DEADLINE = IO_BASE+10;
 
 	public static final int IO_CPUCNT = IO_BASE+11;
 

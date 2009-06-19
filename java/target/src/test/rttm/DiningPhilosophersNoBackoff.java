@@ -43,7 +43,7 @@ import com.jopdesign.sys.Startup;
  * 
  * @author michael muck
  */
-public class DiningPhilosophers {
+public class DiningPhilosophersNoBackoff {
 	
 	static SysDevice sys = IOFactory.getFactory().getSysDevice();
 	
@@ -144,29 +144,19 @@ public class DiningPhilosophers {
 		
 		private int usage_one = 0, usage_two = 0;
 		
-		private int myThinkingTime = 0;
-		
 		private int bad_res = 0;
 		
 		public Philosopher(int i) {
 			id = i;
 			
 			one = id;
-			two = (id+1)%sys.nrCpu;			
-			
-			myThinkingTime = Native.rdMem(IO_PRAND)%MAX_THINKING_TIME;
-			
-			System.out.println("Philosophers "+id+" Thinking Time: " + myThinkingTime);
+			two = (id+1)%sys.nrCpu;					
 		}
 		
 		public void run() {	
 			boolean ok = true;
 			
-			while(ok) {
-				
-				// think ...
-				RtThreadImpl.busyWait(myThinkingTime);
-				
+			while(ok) {		
 				// ... and eat				
 				Native.wrMem(1, MAGIC);	// start transaction
 				
@@ -176,11 +166,6 @@ public class DiningPhilosophers {
 						// aquire my ressources (chopsticks)
 						chopsticks[one] = this.id;
 						chopsticks[two] = this.id;				
-				
-						// check for our ressources - due to the fact that we work with TM this should never be true!
-						//if(!(chopsticks[one] == this.id && chopsticks[two] == this.id)) {
-						//	bad_res++;
-						//}
 						
 						// eat
 						pot--;						

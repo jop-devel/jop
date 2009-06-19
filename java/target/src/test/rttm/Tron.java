@@ -28,23 +28,33 @@ import java.util.Random;
 
 import com.jopdesign.io.IOFactory;
 import com.jopdesign.io.SysDevice;
+import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 import com.jopdesign.sys.Startup;
 
 /**
  * @author Michael Muck
- * rttm version
+ * rttm version of Tron
  */
 public class Tron {
+	
+	// read a random number from IO
+	private static final int IO_RAND = Const.IO_CPUCNT+1;	// its likely that this var needs to be changed!
+	// read a positive random number from IO
+	private static final int IO_PRAND = IO_RAND+1;	
 	
 	static SysDevice sys = IOFactory.getFactory().getSysDevice();
 	
 	static final int EMPTY = -1;
 	
+	// Game Array Size
 	static final int SIZE = 15;
 	static int array[][] = new int[SIZE][SIZE];
 	
+	// running field
 	static boolean running[] = new boolean[sys.nrCpu];
+	// tronRunners
+	static TronRunner s[] = new TronRunner[sys.nrCpu];		
 	
 	/**
 	 * @param args
@@ -62,28 +72,10 @@ public class Tron {
 				array[x][y] = EMPTY;
 			}
 		}
-		
-		// initialize players
-		TronRunner s[] = new TronRunner[sys.nrCpu];		
-				
-		Random r = new Random();
-		for (int i=0; i<sys.nrCpu; ++i) {
-			int x,y;
-			// get a start point for this player
-			do {
-				x = Math.abs(r.nextInt()%SIZE);
-				y = Math.abs(r.nextInt()%SIZE);
-			} while(array[x][y] != EMPTY);
 
-			if(i < sys.nrCpu-1) {
-				s[i] = new TronRunner(i, x, y);
-				Startup.setRunnable(s[i], i);
-			}
-			else {
-				s[i] = new TronRunner(sys.nrCpu-1, x, y);
-			}
-		}			
-		
+		// create the runnables for all cores
+		createPlayers();
+				
 		// print initial game table
 		printGameTable();
 		
@@ -122,6 +114,68 @@ public class Tron {
 		}
 	}
 	
+	private static void createPlayers() {
+		int cores = sys.nrCpu;
+		int no = 0;
+		int sector = 0;
+		int x = 0, y = 0;
+		int d = (sys.nrCpu/4)%SIZE;
+		if(sys.nrCpu%4 != 0) { d += 1; }
+		int step = (SIZE-1)/d;
+		int grenze = sys.nrCpu/4 + sys.nrCpu%4 ;
+		
+		System.out.println("d: " + d + " - step: " + step);
+		
+		for (int i=0; i<4; ++i) {			
+			for( int k=0; k<grenze; ++k) {			
+				System.out.println("no: " + no);
+				if(cores > 0) {
+					if(no < sys.nrCpu-1) {
+						s[no] = new TronRunner(no+1, x, y);
+						Startup.setRunnable(s[no], no);
+					}
+					else {
+						s[no] = new TronRunner(0, x, y);
+					}
+					cores--;
+				}
+					
+				// position update
+				if(sector == 0) {	// sector0
+					x += step;
+					if(x >= SIZE-1) {
+						System.out.println("sector = 1");
+						sector = 1;
+					}
+				}
+				else if(sector == 1) {	// sector1
+					y += step;
+					if(y >= SIZE-1) {
+						System.out.println("sector = 2");
+						sector = 2;
+					}
+				}
+				else if(sector == 2) {
+					x -= step;
+					if(x <= 0) {
+						System.out.println("sector = 3");
+						sector = 3;
+					}
+				}
+				else if(sector == 3) {
+					y -= step;
+					if(y <= 0) {
+						System.out.println("sector = 0");
+						sector = 0;
+					}				
+				}	
+				
+				no++;	// cpu count
+			}
+		}
+
+	}
+	
 	private static void printGameTable() {
 		System.out.println();
 		for(int y=-1; y<SIZE; y++) {
@@ -129,7 +183,11 @@ public class Tron {
 				if(x > -1) {
 					if(y > -1) {
 						if(array[x][y] == EMPTY) { System.out.print("."); }
-						else { System.out.print(array[x][y]); }
+						else {
+							System.out.print("\33[3"+array[x][y]+"m");
+							System.out.print(array[x][y]); 
+							System.out.print("\33[30m");
+						}
 						System.out.print("\t");
 					}
 					else {
@@ -148,19 +206,21 @@ public class Tron {
 	static class TronRunner implements Runnable {
 
 		private static final int MAGIC = -10000;		
-		
-		private static Random r = new Random();
-		
+			
 		private boolean finished = false;
 		
 		private int playerno;
 		
 		private int x, y;
 		private int dx, dy;
+		private int dxt = 0;
+		private int dyt = 0;
 		
-		private int moves = 0;
+		private int randIterations = 0;
 		
-		private boolean[][] setPossible = new boolean[3][3];
+		private int moves = 1;
+		
+		private boolean[] setPossible = new boolean[9];
 		
 		public TronRunner(int p, int startx, int starty) {
 			playerno = p;			
@@ -171,122 +231,163 @@ public class Tron {
 			// set start field
 			array[x][y] = p;
 			
-			// set an initial direction
-			randDir();
+			// set the initial direction
+			dx = ((SIZE-1)/2)-x;
+			if(dx<0) { dx /= -dx; }
+			else if(dx == 0) { dx = 0; }
+			else { dx /= dx; }
+			dy = ((SIZE-1)/2)-y;
+			if(dy<0) { dy /= -dy; }
+			else if(dy == 0) { dy = 0; }
+			else { dy /= dy; }
+			
 			// initial reset - everything is possible
-			reset();
+			for(int n=0; n<9; ++n) {
+				setPossible[n] = true;
+			}
+			setPossible[4] = false;
 			
-			System.out.println("Player " + playerno + " at (" + x + " | " + y + ")");
+			System.out.println("Player " + playerno + " at (" + x + " | " + y + ") with (" + dx + " | " + dy + ")");
 		}
-		
-		/**
-		 * 7 0 1
-		 * 6 X 2
-		 * 5 4 3
-		 * @return
-		 */
-		private void randDir() {
-			dx = r.nextInt()%2;
-			dy = r.nextInt()%2;
-		}
-		
-		public void run() {				
-			int m = 0;
+				
+		public void run() {		
+			boolean game_over = false;			
+			int n;
 			
-			while(anyMovePossible()) {
-				// test direction
-				if( x+dx >= 0 && x+dx < SIZE && y+dy >= 0 && y+dy < SIZE) {
-					m = moves;
-					
-					Native.wrMem(1, MAGIC);
-						if( array[x+dx][y+dy] == EMPTY) {
-							// found a hole
-							reset();
+			while(!game_over) {
+				// we have a starting field, an initial direction - now go
+				
+				Native.wrMem(1, MAGIC);
+					// test for game field boundaries and test our field for emptyness 
+					if( x+dx >= 0 && x+dx < SIZE && y+dy >= 0 && y+dy < SIZE 
+							&& 
+						array[x+dx][y+dy] == EMPTY) {
 						
-							// advance					
-							x += dx;
-							y += dy;
-							array[x][y] = playerno;	// set my marker
+						// step forward
+						x += dx; y += dy;
+													
+						// set our landmark
+						array[x][y] = this.playerno;
 							
-							moves++;
+						moves++;
+						randIterations = 0;	
+						
+						//resetPossibilities(); -> problems with method invocation -> do inline
+						// reset possible directions
+						for(n=0; n<9; ++n) {
+							setPossible[n] = true;
 						}
-					Native.wrMem(0, MAGIC);
-					
-					// if there was no move -> select new direction
-					if(m == moves) {
-						setNotPossible();
-						randDir();
+						setPossible[4] = false;
+							
+						// mark move impossible from where we came
+						setPossible[(-dx+1)+((-dy+1)*3)] = false;
 					}
-
+					else { // if not possible, choose another direction to go
+						setPossible[(dx+1)+((dy+1)*3)] = false;
+						
+						//randDirection();	-> problems with method invocation during a transaction
+					}
+				Native.wrMem(0, MAGIC);
+				
+				// if setPossible[direction] = false -> search new direction
+				if(setPossible[(dx+1)+((dy+1)*3)] == false) {
+					randDirection();
+				}
+				
+				// see if we have options where to go left
+				game_over = true;
+				for(n=0; n<9; ++n) {
+					if(setPossible[n] == true) {
+						game_over = false;
+					}
+				}
+				
+				// check the randIterations
+				if(randIterations > 20) {
+					game_over = true;
+				}		
+			}	
+			
+			// check if there are other players left
+			/*
+			Native.wrMem(1, MAGIC);
+				running[playerno] = false;
+			Native.wrMem(0, MAGIC);
+			*/
+			System.out.println("player"+playerno + " dead");
+			
+			boolean anyOther = false;
+			Native.wrMem(1, MAGIC);
+				for(n=0; n<sys.nrCpu; ++n) {				
+					if(running[n] == true && n != this.playerno) {	// uh we are not the last player
+						anyOther = true;					// we lost :(
+					}				
+				}
+					
+				if(!anyOther) {
+					running[playerno] = true;
 				}
 				else {
-					setNotPossible();
-					randDir();
-				}
-			}
-				
-			Native.wrMem(1, MAGIC);
-				// check if there are other players left
-				boolean loose = false;
-				for(int i=0; i<sys.nrCpu; ++i) {
-					if(running[i] == true && i != playerno) {
-						loose = true;
-					}
-				}
-				if(loose) {
 					running[playerno] = false;
 				}
-			Native.wrMem(0, MAGIC);							
-			
-			finished = true;
-		}
-		
+			Native.wrMem(0, MAGIC);
 
-		private void setNotPossible() {
-			// set current dir as not possible
-			setPossible[dx+1][dy+1] = false;
-		}		
-		
-		private void reset() {
-			for(int x=0; x<3; ++x) {
-				for(int y=0; y<3; ++y) {
-					setPossible[x][y] = true;
-				}
-			}				
-			// middle is never possible
-			setPossible[1][1] = false;
+			finished = true;			
 		}
 		
-		private boolean anyMovePossible() {
-			// first check if there is any place to go			
-			boolean any = false;
-			int kx, ky;
-			for(int ny=-1; ny<=1; ++ny) {
-				for(int nx=-1; nx<=1; ++nx) {
-					kx = x+nx;
-					ky = y+ny;
-					if( (kx >= 0) && 
-						(kx < SIZE) && 
-						(ky >= 0) && 
-						(ky < SIZE) ) {
-
-						if(array[kx][ky] == EMPTY) {
-							any = true;
-						}
-					}
-				}
-			}
-			if(!any) { return false; }
+		private void randDirection() {
+			/*	  dy/dx
+			 * 				-1		0		1
+			 * 		-1		0		1		2		0
+			 * 		0		3		4		5		3
+			 * 		1		6		7		8		6
+			 * 				0		1		2	
+			 * 										x/y
+			 */
+			//int new_dir;
+			/*
+			do {
+				new_dir = Native.rdMem(IO_PRAND)%9;
+			} while(new_dir == direction || new_dir == 4 );
+			*/
+			//		|| new_dir == 0 || new_dir == 2 || new_dir == 6 || new_dir == 8);
 			
-			for(int y=0; y<3; ++y) {
-				for(int x=0; x<3; ++x) {
-					if(setPossible[x][y] == true)
-						return true;
+			int lr = Native.rdMem(IO_PRAND)%2;
+			if(lr == 0) {
+				if(dx > 0) { dx--; dxt = -1; }
+				else if(dx == 0) { 
+					if(dxt > 0) { dx++; }
+					else { dx--; } 
 				}
+				else { dx++; dxt = 1; }
 			}
-			return false;
+			else {
+				if(dy > 0) { dy--; dyt = -1; }
+				else if(dy == 0) { 
+					if(dyt > 0) { dy++; }
+					else { dy--; } 
+				}
+				else { dy++; dyt = 1; }
+			}			
+			
+			/*
+			direction = new_dir;
+			switch(direction) {
+				case 0: dx = -1; dy = -1; break;
+				case 1: dx = 0; dy = -1; break;
+				case 2: dx = 1; dy = -1; break;
+				case 3: dx = -1; dy = 0; break;
+				case 4: break;	// falscher wert
+				case 5: dx = 1; dy = 0; break;
+				case 6: dx = -1; dy = 1; break;
+				case 7: dx = 0; dy = 1; break;
+				case 8: dx = 1; dy = 1; break;
+			}
+			*/			
+			
+			randIterations++;
 		}
-		
+				
 		public void stats() {
 			System.out.println("Player " + playerno + " stopped at (" + x + " | " + y +") with " + moves + " moves");
 		}

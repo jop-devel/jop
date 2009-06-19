@@ -30,15 +30,13 @@ import com.jopdesign.sys.Native;
 import com.jopdesign.sys.Startup;
 
 /**
- * Jede CPU liest den aktuellen Stand der globalen
-incrementVar und versucht diesen (addiert mit der jeweiligen cpuid) in
-ein, ebenfalls globales, array zu schreiben. zusätzlich speichert jede
-cpu in welche felder sie geschrieben hat. nachdem das array
-vollgeschrieben ist, werden die tatsächlich geschriebenen werte mit den
-sollwerten verglichen und bei einem falschen wert eine dementsprechende
-meldung ausgegeben.
-
- * @author Michael Muck
+ * each core read the actual global increment value and tries to write 
+ * the sum of its own id and this value into a global array.
+ * additionally each core saves the array indices it has written to
+ * after the array has been filled, each core indice list is compared to
+ * the real written values and any inconsistency is reported
+ *    
+ * @author michael muck
  * simple increment test
  */
 public class IncrementTest {
@@ -133,12 +131,14 @@ public class IncrementTest {
 			
 			while(ok) {
 				
+				/*
 				try {
 					Thread.sleep(10);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
+				*/
 				
 				Native.wrMem(1, MAGIC);	// start transaction
 					

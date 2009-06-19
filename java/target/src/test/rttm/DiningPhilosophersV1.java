@@ -37,13 +37,9 @@ import com.jopdesign.sys.Startup;
  * to show that there is no such problem
  * as a deadlock on a tm-system
  * 
- * uses IOSimRNG!
- * 
- * thinking time restricted by MAX_THINKING_TIME
- * 
  * @author michael muck
  */
-public class DiningPhilosophers {
+public class DiningPhilosophersV1 {
 	
 	static SysDevice sys = IOFactory.getFactory().getSysDevice();
 	
@@ -59,18 +55,18 @@ public class DiningPhilosophers {
 	
 	static int pot;
 	
-	static int[] chopsticks;	
-		
+	static boolean[] chopstickInUse;
+
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) {
 
-		chopsticks = new int[sys.nrCpu];	
+		chopstickInUse = new boolean[sys.nrCpu];
 		
-		// reset sticks usage array
+		// reset sticks inuse array
 		for(int i=0; i<sys.nrCpu; ++i) {
-			chopsticks[i] = -1;		
+			chopstickInUse[i] = false;
 		}
 		// fill pot
 		pot = FULL;
@@ -79,14 +75,14 @@ public class DiningPhilosophers {
 		Philosopher p[] = new Philosopher[sys.nrCpu];
 		for (int i=0; i<sys.nrCpu; ++i) {
 			p[i] = new Philosopher(i);
-			if(i > 0) {			
+			if(i > 0) {
 				Startup.setRunnable(p[i], i-1);
 			}
 		}		
-		
+				
 		long startTime, endTime;
 		startTime = System.currentTimeMillis();	
-		
+				
 		// start the other CPUs
 		sys.signal = 1;
 		
@@ -109,7 +105,6 @@ public class DiningPhilosophers {
 		System.out.println("\n");
 		
 		System.out.println("Initial Portions available: " + FULL);
-		
 		// output stats
 		System.out.println("Philosophers Portions:");
 		for(int i=0; i<sys.nrCpu; ++i) {
@@ -146,13 +141,11 @@ public class DiningPhilosophers {
 		
 		private int myThinkingTime = 0;
 		
-		private int bad_res = 0;
-		
 		public Philosopher(int i) {
 			id = i;
 			
 			one = id;
-			two = (id+1)%sys.nrCpu;			
+			two = (id+1)%sys.nrCpu;	
 			
 			myThinkingTime = Native.rdMem(IO_PRAND)%MAX_THINKING_TIME;
 			
@@ -163,32 +156,24 @@ public class DiningPhilosophers {
 			boolean ok = true;
 			
 			while(ok) {
-				
 				// think ...
 				RtThreadImpl.busyWait(myThinkingTime);
 				
 				// ... and eat				
 				Native.wrMem(1, MAGIC);	// start transaction
-				
-					// check if there are any ressources left
-					if(pot > EMPTY) {
-				
-						// aquire my ressources (chopsticks)
-						chopsticks[one] = this.id;
-						chopsticks[two] = this.id;				
-				
-						// check for our ressources - due to the fact that we work with TM this should never be true!
-						//if(!(chopsticks[one] == this.id && chopsticks[two] == this.id)) {
-						//	bad_res++;
-						//}
+					
+					if(pot > EMPTY && !chopstickInUse[one] && !chopstickInUse[two]) {
+						// take chopsticks
+						chopstickInUse[one] = true;
+						chopstickInUse[two] = true;
 						
 						// eat
 						pot--;						
 						portions++;
-										
+						
 						// lay down chopsticks
-						chopsticks[one] = -1;
-						chopsticks[two] = -1;
+						chopstickInUse[one] = false;
+						chopstickInUse[two] = false;
 												
 						// stats
 						usage_one++;
@@ -205,7 +190,7 @@ public class DiningPhilosophers {
 		}
 	
 		public void stat() {
-			System.out.println("\tPhilosopher No" + id + " had " + portions + " portion/s! - Bad Res Usage: " + bad_res);
+			System.out.println("\tPhilosopher No" + id + " had " + portions + " portion/s!");
 		}
 		
 		public int getLeftChopstickUsage() {

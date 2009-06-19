@@ -38,11 +38,11 @@ import com.jopdesign.sys.Startup;
  * 
  * @author Michael Muck
  */
-public class SingleLinkedList {
+public class SingleLinkedListSynchronized {
 	
 	private static SysDevice sys = IOFactory.getFactory().getSysDevice();
 	
-	private static TransactionalLinkedList l = new TransactionalLinkedList();
+	private static SynchronizedLinkedList l = new SynchronizedLinkedList();
 		
 	/**
 	 * @param args
@@ -99,11 +99,11 @@ public class SingleLinkedList {
 	static class ListMover implements Runnable {
 		public boolean finished = false;
 		
-		private TransactionalLinkedList myWorkingList;
+		private SynchronizedLinkedList myWorkingList;
 		
 		private int cnt = 0;
 		
-		public ListMover(TransactionalLinkedList ll) {
+		public ListMover(SynchronizedLinkedList ll) {
 			myWorkingList = ll;
 		}
 		
@@ -121,20 +121,20 @@ public class SingleLinkedList {
 		}
 	}
 		
-	static class TransactionalLinkedList {
+	static class SynchronizedLinkedList {
 		public LinkedObject head;
 		public LinkedObject tail;
 		public LinkedObject current; 	// for iterations
 		
-		public TransactionalLinkedList() {
+		public SynchronizedLinkedList() {
 			head = null;
 			tail = null;
 		}
 		
 		public void insertAtHead(Object newObject) {
 			LinkedObject lo = new LinkedObject(newObject, null, null);
-			
-			Native.wrMem(1, Const.MAGIC); // start transaction			
+		
+			synchronized(this) {
 				if(head == null) {	// list is empty
 					head = lo;
 					tail = head;
@@ -144,13 +144,13 @@ public class SingleLinkedList {
 					head.previous = lo;	// set previous in old head to new head
 					head = lo;			// finally set new head as head
 				}			
-			Native.wrMem(0, Const.MAGIC); // end transaction
+			}		
 		}	
 		
 		public Object removeFromTail() {
 			Object o = null;
 			
-			Native.wrMem(1, Const.MAGIC); // start transaction
+			synchronized(this) {
 				if(tail != null) {
 					o = tail.thisObject;	// get object
 					if( tail.previous == null ) {
@@ -162,26 +162,26 @@ public class SingleLinkedList {
 						tail.next = null;
 					}
 				}
-			Native.wrMem(0, Const.MAGIC); // end transaction
+			}
 			
 			return o;
 		}
 	
 		public void reset() {
-			Native.wrMem(1, Const.MAGIC); // start transaction
+			synchronized(this) {
 				current = head;
-			Native.wrMem(1, Const.MAGIC); // end transaction
+			}
 		}
 		
 		public Object next() {
 			Object o = null;
 			
-			Native.wrMem(1, Const.MAGIC); // start transaction
+			synchronized(this) {
 				if(current != null) {
 					o = current.thisObject;				
 					current = current.next;
 				}
-			Native.wrMem(0, Const.MAGIC); // end transaction
+			}
 			
 			return o;
 		}

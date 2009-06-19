@@ -321,6 +321,9 @@ public class IOSimMin {
 		case SIM_CACHE_FLUSH:
 			js.cache.flushCache();
 			break;
+		case Const.IO_DEADLINE:
+			js.localCnt += (val-((int) js.clkCnt));
+			break;
 		default:
 			System.out.println("Default write " + addr + " " + val);
 		}

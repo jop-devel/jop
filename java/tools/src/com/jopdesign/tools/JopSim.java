@@ -180,6 +180,7 @@ public class JopSim {
 	int maxInstr;
 	int instrCnt;
 	long clkCnt;
+	int localCnt;
 	int maxSp;
 	int cacheCost;
 
@@ -248,6 +249,7 @@ public class JopSim {
 		wrMemCnt = 0;
 		instrCnt = 0;
 		clkCnt = 0;
+		localCnt = 0;
 		maxSp = 0;
 		cacheCost = 0;
 		for (int i=0; i<256; ++i) bcStat[i] = 0;
@@ -570,6 +572,7 @@ System.out.println(mp+" "+pc);
 		penalty = Math.max(0, penalty-hiddenCycles);
 		this.cacheCost += penalty;
 		this.clkCnt += penalty;
+		this.localCnt += penalty;
 	}
 	
 	void putstatic() {
@@ -675,6 +678,10 @@ System.out.println(mp+" "+pc);
 		int a, b, c, d;
 		long la, lb;
 
+		if (localCnt>0) {
+			--localCnt;
+			return;
+		}
 		if (maxInstr!=0 && instrCnt>=maxInstr) {
 			exit=true;
 		}
@@ -707,7 +714,9 @@ System.out.println(mp+" "+pc);
 		bcStat[instr]++;
 		// TODO add cache miss timing and a different timing info for
 		// Java implemented bytecodes
-		clkCnt += bcTiming[instr];
+		localCnt = bcTiming[instr];
+		clkCnt += localCnt;
+		--localCnt;
 
 		if (log) {
 			String spc = (pc-1)+" ";
