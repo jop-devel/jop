@@ -218,8 +218,27 @@ public class TMSim extends JopSim {
 
 		int maxInstr = getArgs(args);
 
+		String ioDevice = System.getProperty("ioclass");
+		if(ioDevice != null) {
+			System.out.println("Using IO Class: " + ioDevice);
+		}
+		else {
+			System.out.println("Using IO Class: IOSimMin");
+		}
+
 		for (int i = 0; i < nrCpus; ++i) {
-			io = new IOSimMin();
+			// select the IO simulation
+			if (ioDevice!=null) {
+				try {
+					io = (IOSimMin) Class.forName("com.jopdesign.tools."+ioDevice).newInstance();
+					
+				} catch (Exception e) {
+					e.printStackTrace();
+					io = new IOSimMin();
+				}			
+			} else {
+				io = new IOSimMin();
+			}
 			io.setCpuId(i);
 			js[i] = new TMSim(args[0], io, maxInstr);
 			io.setJopSimRef(js[i]);
