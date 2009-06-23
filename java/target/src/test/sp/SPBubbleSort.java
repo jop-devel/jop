@@ -28,13 +28,16 @@ class SPBubbleSort {
 
     // read data from mem
     public void read() {
-	for (int i=0; i < aDat.length; i++) {
+	for (i=0; i < aDat.length; i++) {
 	    aDat[i] = (i + 30) % SIZE;
 	}
     } 
 
-    // read data from mem
+    // write data back to mem
     public void write() {
+	for (i=0; i < aDat.length; i++) {
+            System.out.println("array["+i+"]: "+aDat[i]+";");
+	}
     }
 
     // sort routine
@@ -43,7 +46,7 @@ class SPBubbleSort {
 	i = 0;
 	while ( i < aDat.length) {  
 	    j = aDat.length - 1;
-	    while ( j >= i ) {
+	    while ( j > i ) {
 		cond = aDat[j] < aDat[j-1];
 		// conventional swap:
 		//if ( cond==true ) {
