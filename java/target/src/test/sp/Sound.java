@@ -29,6 +29,8 @@ import joprt.RtThread;
 import com.jopdesign.io.DspioFactory;
 import com.jopdesign.io.OutPort;
 import com.jopdesign.io.SysDevice;
+import com.jopdesign.sys.Const;
+import com.jopdesign.sys.Native;
 
 /**
  * Use deadline timer for sound generation with PWM.
@@ -51,6 +53,16 @@ public class Sound {
 
 		time = sys.cntInt;
 		val = 300;
+		time += 1000;
+
+//		for (;;) {
+//			time += 30;
+//			Native.wr(time, Const.IO_DEADLINE);
+//			Native.wr(3, Const.IO_DSPIO_OUT);
+//			time += 30;
+//			Native.wr(time, Const.IO_DEADLINE);
+//			Native.wr(0, Const.IO_DSPIO_OUT);
+//		}
 
 		for (;;) {
 			time += PERIOD;
