@@ -133,6 +133,7 @@
 //	2008-12-10	MS: static field access uses index as address
 //	... no comments ...
 //	2009-06-17	MS: Enable conditional move again
+//  2009-06-26  WP: fixing invokesuper
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -142,7 +143,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20090617
+version		= 20090626
 
 //
 //	start of stack area in the on-chip RAM
