@@ -432,11 +432,11 @@ System.out.println(mp+" "+pc);
 		
 		checkNullPointer(ref);
 		
-		// pointer to method table in handle at offset 1
-		int vt = readMem(ref+1, Access.MVB);
-		// pointer to super class in method table at offset -2
-		// == -Const.CLASS_HEADR+Const.CLASS_SUPER
-		int sup = readMem(vt-2, Access.CLINFO);
+		// pointer to class info at cp-1
+		int vt = readMem(cp-1, Access.CLINFO);
+		// pointer to super class at offset 3
+		// == Const.CLASS_SUPER
+		int sup = readMem(vt+3, Access.CLINFO);
 		// the real VT is located at offset 5
 		// == Const.CLASS_HEADR
 		vt = sup+5;
