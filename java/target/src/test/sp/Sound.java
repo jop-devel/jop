@@ -44,16 +44,26 @@ public class Sound {
 
 	public static void main(String[] args) {
 
-		int time, off, val;
+		int time, off, val, idx;
 
 		SysDevice sys = DspioFactory.getDspioFactory().getSysDevice();
 		OutPort pwm = DspioFactory.getDspioFactory().getOutPort();
+		
+		int samples[] = new int[16*4*1024];
+		val = 0;
+		for (int i=0; i<16*4*1024; ++i) {
+//			val += 149;
+			val += 1490;
+			if (val>65535) val = 0;
+			samples[i] = val>>>6;
+		}
 		
 		System.out.println("Period: "+PERIOD);
 
 		time = sys.cntInt;
 		val = 300;
 		time += 1000;
+		idx = 0;
 
 //		for (;;) {
 //			time += 30;
@@ -66,8 +76,9 @@ public class Sound {
 
 		for (;;) {
 			time += PERIOD;
-			val += 10;
-			if (val>1000) val = 100;
+			++idx;
+			idx &= 0xffff;
+			val = 100+samples[idx];
 			off = time + val;
 			sys.deadLine = time;
 			pwm.port = 3;
