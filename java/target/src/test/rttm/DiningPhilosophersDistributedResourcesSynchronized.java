@@ -43,7 +43,7 @@ import com.jopdesign.sys.Startup;
  * 
  * @author michael muck
  */
-public class DiningPhilosophers {
+public class DiningPhilosophersDistributedResourcesSynchronized {
 	
 	static SysDevice sys = IOFactory.getFactory().getSysDevice();
 	
@@ -52,13 +52,9 @@ public class DiningPhilosophers {
 	// read a positive random number from IO
 	private static final int IO_PRAND = IO_RAND+1;	
 	
-	static final int MAX_THINKING_TIME = 300;	// minimum = ~150us
-	
 	static final int FULL = 10000;
 	static final int EMPTY = 0;
-	
-	static int pot;
-	
+		
 	static int[] chopsticks;	
 		
 	/**
@@ -72,8 +68,6 @@ public class DiningPhilosophers {
 		for(int i=0; i<sys.nrCpu; ++i) {
 			chopsticks[i] = -1;		
 		}
-		// fill pot
-		pot = FULL;
 		
 		// create philosophers
 		Philosopher p[] = new Philosopher[sys.nrCpu];
@@ -85,7 +79,7 @@ public class DiningPhilosophers {
 		}		
 		
 		int startTime, endTime;
-		startTime = Native.rd(Const.IO_US_CNT);	
+		startTime = Native.rd(Const.IO_US_CNT);
 		
 		// start the other CPUs
 		sys.signal = 1;
@@ -102,12 +96,13 @@ public class DiningPhilosophers {
 			}			
 		}
 		
-		endTime = Native.rd(Const.IO_US_CNT);	
+		endTime = Native.rd(Const.IO_US_CNT);
 		
 		System.out.print("Time: ");
 		System.out.print(endTime-startTime);
 		System.out.println("\n");
 		
+		/*
 		System.out.println("Initial Portions available: " + FULL);
 		
 		// output stats
@@ -126,6 +121,7 @@ public class DiningPhilosophers {
 
 			System.out.println("\tChopstick " + i + " used " + usage + " times!");
 		}
+		*/
 		
 		// write the magic string to stop the simulation
 		System.out.println("\r\nJVM exit!\r\n");
@@ -144,31 +140,23 @@ public class DiningPhilosophers {
 		
 		private int usage_one = 0, usage_two = 0;
 		
-		private int myThinkingTime = 0;
-		
 		private int bad_res = 0;
+		
+		private int pot = FULL;	// local Pot
 		
 		public Philosopher(int i) {
 			id = i;
 			
 			one = id;
-			two = (id+1)%sys.nrCpu;			
-			
-			myThinkingTime = Native.rdMem(IO_PRAND)%MAX_THINKING_TIME;
-			
-			System.out.println("Philosophers "+id+" Thinking Time: " + myThinkingTime);
+			two = (id+1)%sys.nrCpu;					
 		}
 		
 		public void run() {	
 			boolean ok = true;
 			
-			while(ok) {
-				
-				// think ...
-				RtThreadImpl.busyWait(myThinkingTime);
-				
+			while(ok) {		
 				// ... and eat				
-				Native.wrMem(1, MAGIC);	// start transaction
+				synchronized(chopsticks) {
 				
 					// check if there are any ressources left
 					if(pot > EMPTY) {
@@ -176,11 +164,6 @@ public class DiningPhilosophers {
 						// aquire my ressources (chopsticks)
 						chopsticks[one] = this.id;
 						chopsticks[two] = this.id;				
-				
-						// check for our ressources - due to the fact that we work with TM this should never be true!
-						//if(!(chopsticks[one] == this.id && chopsticks[two] == this.id)) {
-						//	bad_res++;
-						//}
 						
 						// eat
 						pot--;						
@@ -198,7 +181,7 @@ public class DiningPhilosophers {
 						ok = false;
 					}					
 				
-				Native.wrMem(0, MAGIC);	// end transaction
+				}
 			}
 			
 			finished = true;

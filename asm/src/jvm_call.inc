@@ -137,7 +137,7 @@ invokeinterface:
 
 invokesuper:					// this was invokespecial, replaced in JOPizer when calling super methods
 			ldm	cp opd
-			nop	opd
+			dup	opd
 			ld_opd_16u
 			add
 
@@ -165,21 +165,22 @@ invokesuper:					// this was invokespecial, replaced in JOPizer when calling sup
 			ldmi				// read objectref
 			// objectref is now on TOS
 
-			dup					// null pointer check
+			nop					// null pointer check
 			nop
 			bz	null_pointer
 			ldvp				// save vp in branch slot
 			stm	old_vp
 
-			ldi	1				// at address ref+1 (in the handle) is the pointer to method table
-			add
+								// cp is already loaded!
+			ldi	1				// at address cp-1 is the pointer to class structure
+			sub
 
-			stmra				// read pointer to method table of this
+			stmra				// read pointer to class of method
 			wait
 			wait
 			ldmrd		 		// read ext. mem
 
-			ldi	-2				// superclass pointer is at vt-2
+			ldi	3				// superclass pointer is at offset 3
 			add
 
 			stmra				// read pointer to superclass

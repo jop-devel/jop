@@ -437,6 +437,10 @@ lneg, land, lor, lxor, lshr, lushr, lshl, i2l) in microcode. Changes
 in \code{jvm\_long.asm} and in WCET timing; minor cleanups in
 JVM.java, but kept Java implementations for long bytecodes.
 
+\paragraph{20090626} WP: Fixed invokesuper special bytecode. The
+invoked method depends on which implementation of a method is
+executed, not the class of \code{this}.
+
 \subsection{Documentation}
 
 \paragraph{20080108} corrected timing for \code{xastore}. It's $10 +

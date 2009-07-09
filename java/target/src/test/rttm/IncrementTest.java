@@ -26,13 +26,14 @@ package rttm;
 
 import com.jopdesign.io.IOFactory;
 import com.jopdesign.io.SysDevice;
+import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 import com.jopdesign.sys.Startup;
 
 /**
- * each core read the actual global increment value and tries to write 
+ * each core reads the current global increment value and tries to write 
  * the sum of its own id and this value into a global array.
- * additionally each core saves the array indices it has written to
+ * additionally each core saves the array indices it has written to.
  * after the array has been filled, each core indice list is compared to
  * the real written values and any inconsistency is reported
  *    
@@ -43,7 +44,7 @@ public class IncrementTest {
 	
 	static SysDevice sys = IOFactory.getFactory().getSysDevice();
 	
-	static final int SIZE = 100;
+	static final int SIZE = 1000;
 	static final int EMPTY = -1;
 	
 	static int[] ia = new int[SIZE];
@@ -71,6 +72,10 @@ public class IncrementTest {
 			ia[i] = EMPTY;
 		}
 		
+		// time measurement
+		int startTime, endTime;
+		startTime = Native.rd(Const.IO_US_CNT);		
+		
 		// start the other CPUs
 		sys.signal = 1;
 		
@@ -86,6 +91,11 @@ public class IncrementTest {
 			}			
 		}
 		
+		endTime = Native.rd(Const.IO_US_CNT);
+		System.out.print("Time: ");
+		System.out.print(endTime-startTime);
+		System.out.println("\n");
+		
 		// verify
 		for(int i=0; i<sys.nrCpu; ++i) {
 			r[i].verify();
@@ -93,8 +103,10 @@ public class IncrementTest {
 		
 		// print array
 		System.out.println("Raw output: ");
+		String space = " ";
 		for(int i=0; i<SIZE; ++i) {
-			System.out.print(ia[i] + " ");
+			System.out.print(ia[i]);
+			System.out.print(space);
 		}
 		
 		// wipe off cpuid from the numbers
@@ -105,8 +117,10 @@ public class IncrementTest {
 		// print array
 		System.out.println("\nWithout cpuid: ");
 		for(int i=0; i<SIZE; ++i) {
-			System.out.print(ia[i] + " ");
+			System.out.print(ia[i]);
+			System.out.print(space);
 		}
+		
 	}
 	
 	static class Incrementer implements Runnable {
@@ -129,17 +143,7 @@ public class IncrementTest {
 		public void run() {	
 			boolean ok = true;
 			
-			while(ok) {
-				
-				/*
-				try {
-					Thread.sleep(10);
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				*/
-				
+			while(ok) {							
 				Native.wrMem(1, MAGIC);	// start transaction
 					
 					if(incrementVar < SIZE) {

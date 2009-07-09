@@ -79,6 +79,10 @@ public class Tron {
 		// print initial game table
 		printGameTable();
 		
+		// measure time
+		int startTime, endTime;
+		startTime = Native.rd(Const.IO_US_CNT);	
+		
 		// start the other CPUs
 		sys.signal = 1;
 
@@ -92,6 +96,12 @@ public class Tron {
 				allDone &= s[i].finished;
 			}			
 		}
+		
+		endTime = Native.rd(Const.IO_US_CNT);	
+		
+		System.out.print("Time: ");
+		System.out.print(endTime-startTime);
+		System.out.println("\n");
 				
 		// print out "picture"
 		printGameTable();
@@ -121,7 +131,7 @@ public class Tron {
 		int x = 0, y = 0;
 		int d = (sys.nrCpu/4)%SIZE;
 		if(sys.nrCpu%4 != 0) { d += 1; }
-		int step = (SIZE-1)/d;
+		int step = SIZE/d;
 		int grenze = sys.nrCpu/4 + sys.nrCpu%4 ;
 		
 		System.out.println("d: " + d + " - step: " + step);
@@ -144,13 +154,15 @@ public class Tron {
 				if(sector == 0) {	// sector0
 					x += step;
 					if(x >= SIZE-1) {
-						System.out.println("sector = 1");
+						x = SIZE-1;
+						System.out.println("x=" + x + " sector = 1");
 						sector = 1;
 					}
 				}
 				else if(sector == 1) {	// sector1
 					y += step;
 					if(y >= SIZE-1) {
+						y = SIZE-1;
 						System.out.println("sector = 2");
 						sector = 2;
 					}
@@ -158,6 +170,7 @@ public class Tron {
 				else if(sector == 2) {
 					x -= step;
 					if(x <= 0) {
+						x = 0;
 						System.out.println("sector = 3");
 						sector = 3;
 					}
@@ -165,6 +178,7 @@ public class Tron {
 				else if(sector == 3) {
 					y -= step;
 					if(y <= 0) {
+						y = 0;
 						System.out.println("sector = 0");
 						sector = 0;
 					}				
@@ -213,10 +227,11 @@ public class Tron {
 		
 		private int x, y;
 		private int dx, dy;
-		private int dxt = 0;
-		private int dyt = 0;
 		
 		private int randIterations = 0;
+		
+		private boolean forceDirection = false;
+		private int lastlr = 0;
 		
 		private int moves = 1;
 		
@@ -303,6 +318,9 @@ public class Tron {
 				}
 				
 				// check the randIterations
+				if(randIterations > 5) {
+					forceDirection = true;
+				}
 				if(randIterations > 20) {
 					game_over = true;
 				}		
@@ -314,7 +332,7 @@ public class Tron {
 				running[playerno] = false;
 			Native.wrMem(0, MAGIC);
 			*/
-			System.out.println("player"+playerno + " dead");
+			//System.out.println("player"+playerno + " dead");
 			
 			boolean anyOther = false;
 			Native.wrMem(1, MAGIC);
@@ -344,47 +362,92 @@ public class Tron {
 			 * 				0		1		2	
 			 * 										x/y
 			 */
-			//int new_dir;
-			/*
-			do {
-				new_dir = Native.rdMem(IO_PRAND)%9;
-			} while(new_dir == direction || new_dir == 4 );
-			*/
-			//		|| new_dir == 0 || new_dir == 2 || new_dir == 6 || new_dir == 8);
 			
-			int lr = Native.rdMem(IO_PRAND)%2;
-			if(lr == 0) {
-				if(dx > 0) { dx--; dxt = -1; }
-				else if(dx == 0) { 
-					if(dxt > 0) { dx++; }
-					else { dx--; } 
-				}
-				else { dx++; dxt = 1; }
+			int lr;
+			
+			if(forceDirection) {
+				lr = lastlr; 	// do not turn around!
 			}
 			else {
-				if(dy > 0) { dy--; dyt = -1; }
-				else if(dy == 0) { 
-					if(dyt > 0) { dy++; }
-					else { dy--; } 
-				}
-				else { dy++; dyt = 1; }
-			}			
-			
-			/*
-			direction = new_dir;
-			switch(direction) {
-				case 0: dx = -1; dy = -1; break;
-				case 1: dx = 0; dy = -1; break;
-				case 2: dx = 1; dy = -1; break;
-				case 3: dx = -1; dy = 0; break;
-				case 4: break;	// falscher wert
-				case 5: dx = 1; dy = 0; break;
-				case 6: dx = -1; dy = 1; break;
-				case 7: dx = 0; dy = 1; break;
-				case 8: dx = 1; dy = 1; break;
+				lr = Native.rdMem(IO_PRAND)%2;
 			}
-			*/			
 			
+			if(lr == 0) {	// turn left		
+				if(dx > 0) { 
+					if(dy > 0) {
+						dy = 0;
+					}
+					else if(dy == 0) {
+						dy = -1;
+					}
+					else {
+						dx = 0;
+					}					
+				}
+				else if(dx == 0) { 
+					if(dy > 0) {
+						dx = 1;
+					}
+					/*	-> impossible!
+					else if(dy == 0) {
+						dy = -1;
+					}
+					*/
+					else {
+						dx = -1;
+					}
+				}
+				else { 
+					if(dy > 0) {
+						dx = 0;
+					}					
+					else if(dy == 0) {
+						dy = 1;
+					}					
+					else {
+						dy = 0;
+					} 
+				}
+			}
+			else {	// turn right		
+				if(dx > 0) { 
+					if(dy > 0) {
+						dx = 0;
+					}
+					else if(dy == 0) {
+						dy = 1;
+					}
+					else {
+						dy = 0;
+					}					
+				}
+				else if(dx == 0) { 
+					if(dy > 0) {
+						dx = -1;
+					}
+					/*	-> impossible!
+					else if(dy == 0) {
+						dy = -1;
+					}
+					*/
+					else {
+						dx = 1;
+					}
+				}
+				else { 
+					if(dy > 0) {
+						dy = 0;
+					}					
+					else if(dy == 0) {
+						dy = -1;
+					}					
+					else {
+						dx = 0;
+					} 
+				}
+			}	
+			
+			lastlr = lr;	// save lastlr
 			randIterations++;
 		}
 				

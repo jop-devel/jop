@@ -39,7 +39,7 @@ import com.jopdesign.sys.Startup;
  * 
  * uses IOSimRNG!
  * 
- * thinking time restricted by MAX_THINKING_TIME
+ * thinking time = 0
  * 
  * @author michael muck
  */
@@ -51,8 +51,6 @@ public class DiningPhilosophersNoBackoff {
 	private static final int IO_RAND = Const.IO_CPUCNT+1;	// its likely that this var needs to be changed!
 	// read a positive random number from IO
 	private static final int IO_PRAND = IO_RAND+1;	
-	
-	static final int MAX_THINKING_TIME = 10;
 	
 	static final int FULL = 10000;
 	static final int EMPTY = 0;
@@ -84,8 +82,8 @@ public class DiningPhilosophersNoBackoff {
 			}
 		}		
 		
-		long startTime, endTime;
-		startTime = System.currentTimeMillis();	
+		int startTime, endTime;
+		startTime = Native.rd(Const.IO_US_CNT);
 		
 		// start the other CPUs
 		sys.signal = 1;
@@ -102,7 +100,7 @@ public class DiningPhilosophersNoBackoff {
 			}			
 		}
 		
-		endTime = System.currentTimeMillis();
+		endTime = Native.rd(Const.IO_US_CNT);
 		
 		System.out.print("Time: ");
 		System.out.print(endTime-startTime);

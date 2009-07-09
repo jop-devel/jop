@@ -67,6 +67,7 @@ public class DoAll {
 				new Logic2(),
 				new Logic3(),
 				new InvokeSpecial(),
+				new InvokeSuper(),
 				new PutRef()
 		};
 		

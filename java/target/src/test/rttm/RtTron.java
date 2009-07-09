@@ -151,7 +151,7 @@ public class RtTron {
 		int x = 0, y = 0;
 		int d = (PLAYERS/4)%SIZE;
 		if(PLAYERS%4 != 0) { d += 1; }
-		int step = (SIZE-1)/d;
+		int step = SIZE/d;
 		int grenze = PLAYERS/4 + PLAYERS%4 ;
 		
 		System.out.println("d: " + d + " - step: " + step);
@@ -297,10 +297,11 @@ public class RtTron {
 		
 		private int x,y;
 		private int dx, dy;
-		private int dxt = 0;
-		private int dyt = 0;
 		
 		private int randIterations = 0;
+		
+		private boolean forceDirection = false;
+		private int lastlr = 0;
 		
 		private int moves = 1;
 		
@@ -415,24 +416,91 @@ public class RtTron {
 			 * 										x/y
 			 */
 			
-			int lr = Native.rdMem(IO_PRAND)%2;
-			if(lr == 0) {
-				if(dx > 0) { dx--; dxt = -1; }
-				else if(dx == 0) { 
-					if(dxt > 0) { dx++; }
-					else { dx--; } 
-				}
-				else { dx++; dxt = 1; }
+			int lr;
+			
+			if(forceDirection) {
+				lr = lastlr; 	// do not turn around!
 			}
 			else {
-				if(dy > 0) { dy--; dyt = -1; }
-				else if(dy == 0) { 
-					if(dyt > 0) { dy++; }
-					else { dy--; } 
-				}
-				else { dy++; dyt = 1; }
-			}				
+				lr = Native.rdMem(IO_PRAND)%2;
+			}
 			
+			if(lr == 0) {	// turn left		
+				if(dx > 0) { 
+					if(dy > 0) {
+						dy = 0;
+					}
+					else if(dy == 0) {
+						dy = -1;
+					}
+					else {
+						dx = 0;
+					}					
+				}
+				else if(dx == 0) { 
+					if(dy > 0) {
+						dx = 1;
+					}
+					/*	-> impossible!
+					else if(dy == 0) {
+						dy = -1;
+					}
+					*/
+					else {
+						dx = -1;
+					}
+				}
+				else { 
+					if(dy > 0) {
+						dx = 0;
+					}					
+					else if(dy == 0) {
+						dy = 1;
+					}					
+					else {
+						dy = 0;
+					} 
+				}
+			}
+			else {	// turn right		
+				if(dx > 0) { 
+					if(dy > 0) {
+						dx = 0;
+					}
+					else if(dy == 0) {
+						dy = 1;
+					}
+					else {
+						dy = 0;
+					}					
+				}
+				else if(dx == 0) { 
+					if(dy > 0) {
+						dx = -1;
+					}
+					/*	-> impossible!
+					else if(dy == 0) {
+						dy = -1;
+					}
+					*/
+					else {
+						dx = 1;
+					}
+				}
+				else { 
+					if(dy > 0) {
+						dy = 0;
+					}					
+					else if(dy == 0) {
+						dy = -1;
+					}					
+					else {
+						dx = 0;
+					} 
+				}
+			}	
+			
+			lastlr = lr;	// save lastlr
 			randIterations++;
 		}
 		

@@ -48,7 +48,7 @@ public class DiningPhilosophersV1 {
 	// read a positive random number from IO
 	private static final int IO_PRAND = IO_RAND+1;	
 	
-	static final int MAX_THINKING_TIME = 10;
+	static final int MAX_THINKING_TIME = 300;
 	
 	static final int FULL = 10000;
 	static final int EMPTY = 0;
@@ -80,8 +80,8 @@ public class DiningPhilosophersV1 {
 			}
 		}		
 				
-		long startTime, endTime;
-		startTime = System.currentTimeMillis();	
+		int startTime, endTime;
+		startTime = Native.rd(Const.IO_US_CNT);	
 				
 		// start the other CPUs
 		sys.signal = 1;
@@ -98,7 +98,7 @@ public class DiningPhilosophersV1 {
 			}			
 		}
 		
-		endTime = System.currentTimeMillis();
+		endTime = Native.rd(Const.IO_US_CNT);
 		
 		System.out.print("Time: ");
 		System.out.print(endTime-startTime);
