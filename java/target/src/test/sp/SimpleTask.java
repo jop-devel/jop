@@ -28,25 +28,51 @@ package sp;
  * The base class for simple tasks on a CMP based single-path system.
  * 
  * @author Martin Schoeberl (martin@jopdesign.com)
+ *         Raimund Kirner (raimund@vmars.tuwien.ac.at)
  *
  */
 public class SimpleTask {
+    int nWCETread    = -1;
+    int nWCETexecute = -1;
+    int nWCETwrite   = -1;
 
-	/**
-	 * Perform read access to shared data.
-	 */
-	public void read() {
-	}
+    /**
+     * Perform read access to shared data.
+     */
+    public void read() {
+    }
 	
-	/**
-	 * Execute task logic. Read and write access to shared data is forbidden.
-	 */
-	public void execute() {
-	}
-	
-	/**
-	 * Write results to the shared memory.
-	 */
-	public void write() {
-	}
+    /**
+     * Execute task logic. Read and write access to shared data is forbidden.
+     */
+    public void execute() {
+    }
+    
+    /**
+     * Write results to the shared memory.
+     */
+    public void write() {
+    }
+    
+    /**
+     * Returns the WCET of the read operation
+     */
+    public int getWCETread() {
+	return nWCETread;
+    }
+
+    /**
+     * Returns the WCET of the execute operation
+     */
+    public int getWCETexecute() {
+	return nWCETexecute;
+    }
+
+    /**
+     * Returns the WCET of the write operation
+     */
+    public int getWCETwrite() {
+	return nWCETwrite;
+    }
+
 }
