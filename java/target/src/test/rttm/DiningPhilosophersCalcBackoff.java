@@ -39,11 +39,12 @@ import com.jopdesign.sys.Startup;
  * 
  * uses IOSimRNG!
  * 
- * thinking time restricted by MAX_THINKING_TIME
+ * thinking time restricted by sys.nrCpu * BACKOFF_SCALE
+ * each core rotates its time each round
  * 
  * @author michael muck
  */
-public class DiningPhilosophers {
+public class DiningPhilosophersCalcBackoff {
 	
 	static SysDevice sys = IOFactory.getFactory().getSysDevice();
 	
@@ -51,8 +52,8 @@ public class DiningPhilosophers {
 	private static final int IO_RAND = Const.IO_CPUCNT+1;	// its likely that this var needs to be changed!
 	// read a positive random number from IO
 	private static final int IO_PRAND = IO_RAND+1;	
-	
-	static final int MAX_THINKING_TIME = 300;	// minimum = ~150us
+		
+	static final int BACKOFF_SCALE = 500;
 	
 	static final int FULL = 10000;
 	static final int EMPTY = 0;
@@ -84,7 +85,7 @@ public class DiningPhilosophers {
 			}
 		}		
 		
-		int startTime, endTime;
+		long startTime, endTime;
 		startTime = Native.rd(Const.IO_US_CNT);	
 		
 		// start the other CPUs
@@ -102,12 +103,12 @@ public class DiningPhilosophers {
 			}			
 		}
 		
-		endTime = Native.rd(Const.IO_US_CNT);	
+		endTime = Native.rd(Const.IO_US_CNT);
 		
 		System.out.print("Time: ");
 		System.out.print(endTime-startTime);
 		System.out.println("\n");
-		
+		/*
 		System.out.println("Initial Portions available: " + FULL);
 		
 		// output stats
@@ -126,7 +127,7 @@ public class DiningPhilosophers {
 
 			System.out.println("\tChopstick " + i + " used " + usage + " times!");
 		}
-		
+		*/
 		// write the magic string to stop the simulation
 		System.out.println("\r\nJVM exit!\r\n");
 	}
@@ -146,7 +147,7 @@ public class DiningPhilosophers {
 		
 		private int myThinkingTime = 0;
 		
-		private int bad_res = 0;
+		private int bad_loops = 0;
 		
 		public Philosopher(int i) {
 			id = i;
@@ -154,20 +155,22 @@ public class DiningPhilosophers {
 			one = id;
 			two = (id+1)%sys.nrCpu;			
 			
-			myThinkingTime = Native.rdMem(IO_PRAND)%MAX_THINKING_TIME;
+			myThinkingTime = id+1;
 			
-			System.out.println("Philosophers "+id+" Thinking Time: " + myThinkingTime);
+			System.out.println("Philosophers "+id+" Initial Thinking Time: " + myThinkingTime * BACKOFF_SCALE);
 		}
 		
 		public void run() {	
 			boolean ok = true;
 			
 			while(ok) {
-				
+							
 				// think ...
-				RtThreadImpl.busyWait(myThinkingTime);
+				RtThreadImpl.busyWait(myThinkingTime * BACKOFF_SCALE);
+				myThinkingTime = (myThinkingTime+1) %sys.nrCpu;	// rotate thinking time
 				
-				// ... and eat				
+				// ... and eat
+				
 				Native.wrMem(1, MAGIC);	// start transaction
 				
 					// check if there are any ressources left
@@ -177,15 +180,10 @@ public class DiningPhilosophers {
 						chopsticks[one] = this.id;
 						chopsticks[two] = this.id;				
 				
-						// check for our ressources - due to the fact that we work with TM this should never be true!
-						//if(!(chopsticks[one] == this.id && chopsticks[two] == this.id)) {
-						//	bad_res++;
-						//}
-						
 						// eat
 						pot--;						
 						portions++;
-										
+						
 						// lay down chopsticks
 						chopsticks[one] = -1;
 						chopsticks[two] = -1;
@@ -205,7 +203,7 @@ public class DiningPhilosophers {
 		}
 	
 		public void stat() {
-			System.out.println("\tPhilosopher No" + id + " had " + portions + " portion/s! - Bad Res Usage: " + bad_res);
+			System.out.println("\tPhilosopher No" + id + " had " + portions + " portion/s! - Bad Loops: " + bad_loops);
 		}
 		
 		public int getLeftChopstickUsage() {

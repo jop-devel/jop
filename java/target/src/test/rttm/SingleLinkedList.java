@@ -25,11 +25,14 @@
 package rttm;
 
 import rttm.IncrementTest.Incrementer;
+import rttm.SingleLinkedListSynchronized.SynchronizedLinkedList;
 
 import com.jopdesign.io.IOFactory;
 import com.jopdesign.io.SysDevice;
+import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 import com.jopdesign.sys.Startup;
+
 
 /**
  * Test program for RTTM with a single double linked list (producer/consumer).
@@ -40,7 +43,13 @@ import com.jopdesign.sys.Startup;
  */
 public class SingleLinkedList {
 	
+	private static final int MAGIC = -10000;
+	
 	private static SysDevice sys = IOFactory.getFactory().getSysDevice();
+	
+	private static int SIZE = sys.nrCpu+1;
+	
+	private static int MAX_ITERATIONS = 1000;
 	
 	private static TransactionalLinkedList l = new TransactionalLinkedList();
 		
@@ -59,13 +68,21 @@ public class SingleLinkedList {
 		}	
 		
 		// PreFill List with sys.nrCpu elements
-		for(int i=0; i<sys.nrCpu+1; ++i) {	
+		for(int i=0; i<SIZE; ++i) {	
 			l.insertAtHead(Integer.toString(i));	// for testing ... object is everytime the same
 		}
-		System.out.println("\nprefilled list!\n");
+		System.out.println("\nprefilled list:\n");
+		/*
+		l.reset();
+		for(int i=0; i<SIZE; ++i) {
+			System.out.print(l.next());
+			System.out.print(" ");
+		}
+		System.out.println("start");
+		*/
 		
-		long startTime, endTime;
-		startTime = System.currentTimeMillis();	
+		int startTime, endTime;
+		startTime = Native.rd(Const.IO_US_CNT);
 		
 		// start the other CPUs
 		sys.signal = 1;
@@ -84,11 +101,20 @@ public class SingleLinkedList {
 			}
 		}
 		
-		endTime = System.currentTimeMillis();
+		endTime = Native.rd(Const.IO_US_CNT);
 		
 		System.out.print("Time: ");
 		System.out.print(endTime-startTime);
 		System.out.println("\n");
+		
+		/*
+		System.out.println("\nlist check:\n");
+		l.reset();
+		for(int i=0; i<SIZE; ++i) {
+			System.out.print(l.next());
+			System.out.print(" ");
+		}
+		*/
 		
 		System.out.println("Finished!");
 		
@@ -109,13 +135,51 @@ public class SingleLinkedList {
 		
 		public void run() {
 			Object o = null;
-			while (cnt < Const.CNT) {
+			//LinkedObject lo = null;
+			
+			while (cnt < MAX_ITERATIONS) {
+				
 				o = myWorkingList.removeFromTail();
+				/*
+				Native.wrMem(1, MAGIC); // start transaction
+					if(l.tail != null) {
+						o = l.tail.thisObject;	// get object
+						if( l.tail.previous == null ) {
+							l.tail = null;
+							l.head = null;
+						}
+						else {
+							l.tail = l.tail.previous;	// tail.previous should never be emtpy
+							l.tail.next = null;
+						}
+					}
+				Native.wrMem(0, MAGIC); // end transaction
+				*/
 					
 				if(o != null) {
 					myWorkingList.insertAtHead(o);
+					/*
+					lo = new LinkedObject(o, null, null);
+					
+					Native.wrMem(1, MAGIC); // start transaction			
+						if(l.head == null) {	// list is empty
+							l.head = lo;
+							l.tail = l.head;
+						}
+						else {
+							lo.next = l.head;		// save old head as new_head.next
+							l.head.previous = lo;	// set previous in old head to new head
+							l.head = lo;			// finally set new head as head
+						}			
+					Native.wrMem(0, MAGIC); // end transaction
+					*/
 					++cnt;
 				}
+				/*
+				else {
+					System.out.print("null");
+				}
+				*/
 			}
 			finished = true;
 		}
@@ -134,7 +198,7 @@ public class SingleLinkedList {
 		public void insertAtHead(Object newObject) {
 			LinkedObject lo = new LinkedObject(newObject, null, null);
 			
-			Native.wrMem(1, Const.MAGIC); // start transaction			
+			Native.wrMem(1, MAGIC); // start transaction			
 				if(head == null) {	// list is empty
 					head = lo;
 					tail = head;
@@ -144,13 +208,13 @@ public class SingleLinkedList {
 					head.previous = lo;	// set previous in old head to new head
 					head = lo;			// finally set new head as head
 				}			
-			Native.wrMem(0, Const.MAGIC); // end transaction
+			Native.wrMem(0, MAGIC); // end transaction
 		}	
 		
 		public Object removeFromTail() {
 			Object o = null;
 			
-			Native.wrMem(1, Const.MAGIC); // start transaction
+			Native.wrMem(1, MAGIC); // start transaction
 				if(tail != null) {
 					o = tail.thisObject;	// get object
 					if( tail.previous == null ) {
@@ -162,26 +226,26 @@ public class SingleLinkedList {
 						tail.next = null;
 					}
 				}
-			Native.wrMem(0, Const.MAGIC); // end transaction
+			Native.wrMem(0, MAGIC); // end transaction
 			
 			return o;
 		}
 	
 		public void reset() {
-			Native.wrMem(1, Const.MAGIC); // start transaction
+			Native.wrMem(1, MAGIC); // start transaction
 				current = head;
-			Native.wrMem(1, Const.MAGIC); // end transaction
+			Native.wrMem(0, MAGIC); // end transaction
 		}
 		
 		public Object next() {
 			Object o = null;
 			
-			Native.wrMem(1, Const.MAGIC); // start transaction
+			Native.wrMem(1, MAGIC); // start transaction
 				if(current != null) {
 					o = current.thisObject;				
 					current = current.next;
 				}
-			Native.wrMem(0, Const.MAGIC); // end transaction
+			Native.wrMem(0, MAGIC); // end transaction
 			
 			return o;
 		}
@@ -197,5 +261,8 @@ public class SingleLinkedList {
 				next = nex;
 			}
 		}
+
 	}
+	
+
 }

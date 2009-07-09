@@ -39,11 +39,12 @@ import com.jopdesign.sys.Startup;
  * 
  * uses IOSimRNG!
  * 
- * thinking time restricted by MAX_THINKING_TIME
+ * a single transaction in this test usually takes 600-700us
+ * -> if we wait 700us or a multiple we can go through the test with minimal time
  * 
  * @author michael muck
  */
-public class DiningPhilosophers {
+public class DiningPhilosophersCalc2Backoff {
 	
 	static SysDevice sys = IOFactory.getFactory().getSysDevice();
 	
@@ -51,8 +52,6 @@ public class DiningPhilosophers {
 	private static final int IO_RAND = Const.IO_CPUCNT+1;	// its likely that this var needs to be changed!
 	// read a positive random number from IO
 	private static final int IO_PRAND = IO_RAND+1;	
-	
-	static final int MAX_THINKING_TIME = 300;	// minimum = ~150us
 	
 	static final int FULL = 10000;
 	static final int EMPTY = 0;
@@ -72,13 +71,19 @@ public class DiningPhilosophers {
 		for(int i=0; i<sys.nrCpu; ++i) {
 			chopsticks[i] = -1;		
 		}
+		
 		// fill pot
 		pot = FULL;
+		
+		// benchmark our transaction
+		BenchPhilosopher bp = new BenchPhilosopher(0, 100);				
+		int btime = bp.getBenchmarkTime();
+		int ttime = bp.getTransactionTime();
 		
 		// create philosophers
 		Philosopher p[] = new Philosopher[sys.nrCpu];
 		for (int i=0; i<sys.nrCpu; ++i) {
-			p[i] = new Philosopher(i);
+			p[i] = new Philosopher(i, btime, ttime);
 			if(i > 0) {			
 				Startup.setRunnable(p[i], i-1);
 			}
@@ -102,7 +107,7 @@ public class DiningPhilosophers {
 			}			
 		}
 		
-		endTime = Native.rd(Const.IO_US_CNT);	
+		endTime = Native.rd(Const.IO_US_CNT);
 		
 		System.out.print("Time: ");
 		System.out.print(endTime-startTime);
@@ -126,7 +131,7 @@ public class DiningPhilosophers {
 
 			System.out.println("\tChopstick " + i + " used " + usage + " times!");
 		}
-		
+				
 		// write the magic string to stop the simulation
 		System.out.println("\r\nJVM exit!\r\n");
 	}
@@ -135,32 +140,48 @@ public class DiningPhilosophers {
 
 		public boolean finished;
 		
-		private static final int MAGIC = -10000;
+		protected static final int MAGIC = -10000;
 
-		private int id;
+		protected int id;
 		
-		private int one, two;
-		private int portions = 0;		
+		protected int one;
+
+		protected int two;
+		protected int portions = 0;		
 		
-		private int usage_one = 0, usage_two = 0;
+		protected int usage_one = 0;
+
+		protected int usage_two = 0;
 		
-		private int myThinkingTime = 0;
+		protected int myThinkingTime = 0;
+		protected int transactionTime = 0;
 		
-		private int bad_res = 0;
+		public Philosopher() {	
+		}
 		
-		public Philosopher(int i) {
+		public Philosopher(int i, int btime, int ttime) {
 			id = i;
 			
 			one = id;
 			two = (id+1)%sys.nrCpu;			
+					
+			myThinkingTime = ttime * (id+1);
+			transactionTime = (ttime * (sys.nrCpu-1))+(ttime/3);
+			if(sys.nrCpu == 1) {
+				myThinkingTime = 0;
+				transactionTime = 0;
+			}
 			
-			myThinkingTime = Native.rdMem(IO_PRAND)%MAX_THINKING_TIME;
-			
-			System.out.println("Philosophers "+id+" Thinking Time: " + myThinkingTime);
+			System.out.println("Philosophers "+id+" Initial Thinking Time: " + myThinkingTime);
+			System.out.println("Philosophers "+id+" Thinking Time: " + transactionTime);
 		}
 		
 		public void run() {	
 			boolean ok = true;
+			
+			// first thought
+			RtThreadImpl.busyWait(myThinkingTime);
+			myThinkingTime = transactionTime;
 			
 			while(ok) {
 				
@@ -171,21 +192,16 @@ public class DiningPhilosophers {
 				Native.wrMem(1, MAGIC);	// start transaction
 				
 					// check if there are any ressources left
-					if(pot > EMPTY) {
-				
+					if(pot > EMPTY) {			
+						
 						// aquire my ressources (chopsticks)
 						chopsticks[one] = this.id;
 						chopsticks[two] = this.id;				
-				
-						// check for our ressources - due to the fact that we work with TM this should never be true!
-						//if(!(chopsticks[one] == this.id && chopsticks[two] == this.id)) {
-						//	bad_res++;
-						//}
-						
+									
 						// eat
 						pot--;						
 						portions++;
-										
+						
 						// lay down chopsticks
 						chopsticks[one] = -1;
 						chopsticks[two] = -1;
@@ -198,14 +214,14 @@ public class DiningPhilosophers {
 						ok = false;
 					}					
 				
-				Native.wrMem(0, MAGIC);	// end transaction
+				Native.wrMem(0, MAGIC);	// end transaction			
 			}
 			
 			finished = true;
 		}
 	
 		public void stat() {
-			System.out.println("\tPhilosopher No" + id + " had " + portions + " portion/s! - Bad Res Usage: " + bad_res);
+			System.out.println("\tPhilosopher No" + id + " had " + portions + " portion/s!");
 		}
 		
 		public int getLeftChopstickUsage() {
@@ -214,6 +230,125 @@ public class DiningPhilosophers {
 		
 		public int getRightChopstickUsage() {
 			return this.usage_two;
+		}
+
+	}
+	
+	public static class BenchPhilosopher extends Philosopher {
+
+		int startBM, endBM;
+		int startWait, endWait;
+		int startTrans, endTrans;
+			
+		public BenchPhilosopher(int i, int ttime) {
+			id = i;
+			
+			one = id;
+			two = (id+1)%sys.nrCpu;			
+			
+			myThinkingTime = ttime;
+			
+			// 1 rotation
+			pot = EMPTY+1;
+			
+			System.out.println("\nStarting Benchmark ...");
+			run();
+			
+			// reset pot
+			pot = FULL;
+			
+			System.out.println("BM Time: " + (endBM-startBM));
+			System.out.println("Wait Time: 0us = " + (endWait-startWait));			
+			System.out.println("Trans Time: " + (endTrans-startTrans));
+			System.out.println("Benchmarking end!\n");
+		}
+		
+		public void run() {
+			boolean ok = true;
+			
+			startBM = Native.rd(Const.IO_US_CNT);
+			
+			while(ok) {			
+				
+				// think ...
+				RtThreadImpl.busyWait(myThinkingTime);
+				
+				// ... and eat				
+				Native.wrMem(1, MAGIC);	// start transaction
+				
+					// check if there are any ressources left
+					if(pot > EMPTY) {			
+						
+						// aquire my ressources (chopsticks)
+						chopsticks[one] = this.id;
+						chopsticks[two] = this.id;				
+									
+						// eat
+						pot--;						
+						portions++;
+						
+						// lay down chopsticks
+						chopsticks[one] = -1;
+						chopsticks[two] = -1;
+												
+						// stats
+						usage_one++;
+						usage_two++;
+					}
+					else { 
+						ok = false;
+					}					
+				
+				Native.wrMem(0, MAGIC);	// end transaction		
+			}
+			
+			endBM = Native.rd(Const.IO_US_CNT);
+			
+			// another one
+			pot = EMPTY+1;
+			
+			startTrans = Native.rd(Const.IO_US_CNT);
+			Native.wrMem(1, MAGIC);	// start transaction
+			
+				// check if there are any ressources left
+				if(pot > EMPTY) {			
+					
+					// aquire my ressources (chopsticks)
+					chopsticks[one] = this.id;
+					chopsticks[two] = this.id;				
+								
+					// eat
+					pot--;						
+					portions++;
+					
+					// lay down chopsticks
+					chopsticks[one] = -1;
+					chopsticks[two] = -1;
+											
+					// stats
+					usage_one++;
+					usage_two++;
+				}
+				else { 
+					ok = false;
+				}					
+			
+			Native.wrMem(0, MAGIC);	// end transaction	
+			endTrans = Native.rd(Const.IO_US_CNT);
+			
+			startWait = Native.rd(Const.IO_US_CNT);
+			RtThreadImpl.busyWait(355);
+			endWait = Native.rd(Const.IO_US_CNT);
+			
+			finished = true;		
+		}
+		
+		public int getTransactionTime() {
+			return endTrans-startTrans;
+		}
+		
+		public int getBenchmarkTime() {
+			return endBM-startBM;
 		}
 		
 	}

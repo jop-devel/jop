@@ -28,11 +28,14 @@ import rttm.IncrementTest.Incrementer;
 
 import com.jopdesign.io.IOFactory;
 import com.jopdesign.io.SysDevice;
+import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 import com.jopdesign.sys.Startup;
 
 /**
  * Test program for RTTM with a single double linked list (producer/consumer).
+ * 
+ * This Version uses "Synchronized" instead of TM
  * 
  * like in Herlihy & Moss, Transactional Memory: Architectural Support for Lock-Free Data Structures 1993 
  * 
@@ -41,6 +44,10 @@ import com.jopdesign.sys.Startup;
 public class SingleLinkedListSynchronized {
 	
 	private static SysDevice sys = IOFactory.getFactory().getSysDevice();
+	
+	private static int SIZE = sys.nrCpu+1;
+	
+	private static int MAX_ITERATIONS = 1000;
 	
 	private static SynchronizedLinkedList l = new SynchronizedLinkedList();
 		
@@ -59,13 +66,20 @@ public class SingleLinkedListSynchronized {
 		}	
 		
 		// PreFill List with sys.nrCpu elements
-		for(int i=0; i<sys.nrCpu+1; ++i) {	
+		for(int i=0; i<SIZE; ++i) {	
 			l.insertAtHead(Integer.toString(i));	// for testing ... object is everytime the same
 		}
-		System.out.println("\nprefilled list!\n");
+		System.out.println("\nprefilled list:\n");
+		/*
+		l.reset();
+		for(int i=0; i<SIZE; ++i) {
+			System.out.print(l.next());
+			System.out.print(" ");
+		}
+		*/
 		
-		long startTime, endTime;
-		startTime = System.currentTimeMillis();	
+		int startTime, endTime;
+		startTime = Native.rd(Const.IO_US_CNT);
 		
 		// start the other CPUs
 		sys.signal = 1;
@@ -84,11 +98,20 @@ public class SingleLinkedListSynchronized {
 			}
 		}
 		
-		endTime = System.currentTimeMillis();
+		endTime = Native.rd(Const.IO_US_CNT);
 		
 		System.out.print("Time: ");
 		System.out.print(endTime-startTime);
 		System.out.println("\n");
+		
+		/*
+		System.out.println("\nlist check:\n");
+		l.reset();
+		for(int i=0; i<SIZE; ++i) {
+			System.out.print(l.next());
+			System.out.print(" ");
+		}
+		*/
 		
 		System.out.println("Finished!");
 		
@@ -109,13 +132,24 @@ public class SingleLinkedListSynchronized {
 		
 		public void run() {
 			Object o = null;
-			while (cnt < Const.CNT) {
-				o = myWorkingList.removeFromTail();
+			while (cnt < MAX_ITERATIONS) {
+				
+				synchronized(myWorkingList) {
+					o = myWorkingList.removeFromTail();
+				}
 					
 				if(o != null) {
-					myWorkingList.insertAtHead(o);
+					synchronized(myWorkingList) {
+						myWorkingList.insertAtHead(o);
+					}
 					++cnt;
 				}
+				/*
+				else {
+					System.out.print("null");
+				}
+				*/
+				
 			}
 			finished = true;
 		}
@@ -134,7 +168,7 @@ public class SingleLinkedListSynchronized {
 		public void insertAtHead(Object newObject) {
 			LinkedObject lo = new LinkedObject(newObject, null, null);
 		
-			synchronized(this) {
+			//synchronized(l) {
 				if(head == null) {	// list is empty
 					head = lo;
 					tail = head;
@@ -144,13 +178,13 @@ public class SingleLinkedListSynchronized {
 					head.previous = lo;	// set previous in old head to new head
 					head = lo;			// finally set new head as head
 				}			
-			}		
+			//}		
 		}	
 		
 		public Object removeFromTail() {
 			Object o = null;
 			
-			synchronized(this) {
+			//synchronized(l) {
 				if(tail != null) {
 					o = tail.thisObject;	// get object
 					if( tail.previous == null ) {
@@ -162,26 +196,26 @@ public class SingleLinkedListSynchronized {
 						tail.next = null;
 					}
 				}
-			}
+			//}
 			
 			return o;
 		}
 	
 		public void reset() {
-			synchronized(this) {
+			//synchronized(l) {
 				current = head;
-			}
+			//}
 		}
 		
 		public Object next() {
 			Object o = null;
 			
-			synchronized(this) {
+			//synchronized(l) {
 				if(current != null) {
 					o = current.thisObject;				
 					current = current.next;
 				}
-			}
+			//}
 			
 			return o;
 		}

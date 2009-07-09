@@ -44,7 +44,7 @@ import com.jopdesign.sys.Native;
  * @author michael muck
  *
  */
-public class OverlapSort {
+public class OverlapSortCocktail {
 	private static final int MAGIC = -10000;	
 	
 	// read a random number from IO
@@ -74,7 +74,7 @@ public class OverlapSort {
 		
 		// fill array with random vars
 		for(int x=0; x<SIZE; ++x) {
-			array[x] = Native.rdMem(IO_PRAND)%MAX_NUMBER;
+				
 		}
 		
 		// setup sorters
@@ -130,11 +130,11 @@ public class OverlapSort {
 		}	
 		
 		// print the whole array
-		//printArray();
+		printArray();
 				
 		// measure time
-		int startTime, endTime;
-		startTime = Native.rd(Const.IO_US_CNT);	
+		long startTime, endTime;
+		startTime = System.currentTimeMillis();	
 		
 		// start the other CPUs
 		sys.signal = 1;
@@ -156,14 +156,14 @@ public class OverlapSort {
 			sortstate = sys.nrCpu;
 		Native.wrMem(0, MAGIC);
 
-		endTime = Native.rd(Const.IO_US_CNT);	
+		endTime = System.currentTimeMillis();
 		
 		System.out.print("Time: ");
 		System.out.print(endTime-startTime);
 		System.out.println("\n");
 		
 		// print the whole array
-		//printArray();
+		printArray();
 		
 		// check the sort
 		checkArray();
@@ -286,7 +286,8 @@ public class OverlapSort {
 								
 								// if the last element was swapped, our high array must also be sorted
 								if(i+1 == kb) { 
-									sortedhigh = false; 
+									sortedhigh = false;
+									sortstate = 0;
 									//System.out.println("sortedlow set sortedhigh false");
 								}	
 							}	
@@ -317,6 +318,7 @@ public class OverlapSort {
 								// if the first element was swapped, our low array must also be sorted
 								if(i == kb) { 
 									sortedlow = false; 
+									sortstate = 0;
 									//System.out.println("sortedhigh set sortedlow false"); 
 								}	
 							}	
@@ -325,6 +327,68 @@ public class OverlapSort {
 					
 					// if not sorted ... get sorter n+1 back to sorting
 					if(sortedhigh == false && sorterr != null) {
+						Native.wrMem(1, MAGIC);
+							sortstate = 0;
+						Native.wrMem(0, MAGIC);
+					}
+				}	
+							
+				if( sortedhigh == false ) {
+					sortedhigh = true;
+					
+					for(int i=k2-1; i>kb; i--) {
+						Native.wrMem(1, MAGIC);
+							if(array[i-1] > array[i]) { 
+								tmp = array[i-1];
+								array[i-1] = array[i];
+								array[i] = tmp;
+								sortedhigh = false;
+								
+								//System.out.println("swaphigh: " + array[i+1] + " <> " + array[i]);
+								
+								// if the first element was swapped, our low array must also be sorted
+								if(i-1 == kb) { 
+									sortedlow = false; 
+									sortstate = 0;
+									//System.out.println("sortedhigh set sortedlow false"); 
+								}	
+							}	
+						Native.wrMem(0, MAGIC);
+					}
+					
+					// if not sorted ... get sorter n+1 back to sorting
+					if(sortedhigh == false && sorterr != null) {
+						Native.wrMem(1, MAGIC);
+							sortstate = 0;
+						Native.wrMem(0, MAGIC);
+					}
+				}	
+				
+				if( sortedlow == false ) {
+					sortedlow = true;
+					
+					for(int i=kb-1; i>k1; i--) {
+						Native.wrMem(1, MAGIC);
+							if(array[i-1] > array[i]) { 
+								tmp = array[i-1];
+								array[i-1] = array[i];
+								array[i] = tmp;
+								sortedlow = false;
+								
+								//System.out.println("swaplow: " + array[i+1] + " <> " + array[i]);
+								
+								// if the last element was swapped, our high array must also be sorted
+								if(i == kb-1) {									
+									sortedhigh = false;
+									sortstate = 0;
+									//System.out.println("sortedlow set sortedhigh false");
+								}
+							}	
+						Native.wrMem(0, MAGIC);
+					}
+					
+					// if not sorted ... get sorter n-1 back to sorting
+					if(sortedlow == false && sorterl != null) {
 						Native.wrMem(1, MAGIC);
 							sortstate = 0;
 						Native.wrMem(0, MAGIC);
