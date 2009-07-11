@@ -439,13 +439,6 @@ set_instance_assignment -name SLOW_SLEW_RATE OFF -to io_l[19]
 set_global_assignment -name FMAX_REQUIREMENT "20 MHz" -section_id clk_input
 set_instance_assignment -name CLOCK_SETTINGS clk_input -to clk
 
-set_location_assignment PIN_120 -to vga_rgb[0]
-set_location_assignment PIN_62 -to vga_rgb[1]
-set_location_assignment PIN_122 -to vga_rgb[2]
-set_location_assignment PIN_121 -to vga_rgb[3]
-set_location_assignment PIN_60 -to vga_h_out
-set_location_assignment PIN_61 -to vga_v_out
-
 set_global_assignment -name ENABLE_CLOCK_LATENCY ON
 set_instance_assignment -name PARTITION_HIERARCHY no_file_for_top_partition -to | -section_id Top
 set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
@@ -510,6 +503,6 @@ set_global_assignment -name VHDL_FILE ../../vhdl/core/mul.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/shift.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/stack.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_arbiter_pack.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_arbiter_fair.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_arbiter_tdma.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/jopcpu.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jopmul.vhd
