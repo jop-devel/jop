@@ -94,6 +94,7 @@ public class STGuard extends SimpleTask {
 	/* insert new task is array slot is free */
 	tmpTsk = tsk[tmp1];
 	tsk[tmp1] = Native.condMove(tmpTsk, task, cond);
+	tsk[tmp1] = Native.condMoveRef(tmpTsk, task, cond);
     }
 	
     /**

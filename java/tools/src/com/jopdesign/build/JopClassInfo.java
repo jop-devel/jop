@@ -323,7 +323,7 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 		instGCinfo = getGCInfo();
 		classRefAddress = addr;
 		// class head contains the instance size and
-		// a pointer to the inteface table
+		// a pointer to the interface table
 		// class references point to the instance size
 		addr += ClassStructConstants.CLS_HEAD;
 		// start of the method table, objects contain a pointer
@@ -351,6 +351,7 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 		addr += 1;
 		// constant pool
 		cpoolAddress = addr;
+		((JOPizer) ai).outLinkInfo.println(clazz.getClassName()+" "+methodsAddress+" "+addr);
 		// System.out.println(clazz.getClassName()+"
 		// cplen="+clazz.getConstantPool().getLength());
 		// the final size of the cp plus the length field
