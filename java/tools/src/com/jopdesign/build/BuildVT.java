@@ -121,6 +121,10 @@ System.err.println("build VT on class: "+cli.clazz);
 
 		int maxLen = methodCount;
 		if (supVt!=null) maxLen += supVt.len;
+		for (JavaClass cl : clazz.getInterfaces()) {
+			maxLen += cl.getMethods().length;
+		}
+
 		clvt.len = 0;
 		clvt.key = new String[maxLen];
 //		clvt.ptr = new int[maxLen];
@@ -183,6 +187,24 @@ System.err.println("build VT on class: "+cli.clazz);
 				++clvt.len;
 			}
 		}
+
+		// add interface methods that are not actually implemented here
+		for (i = 0; i < clazz.getInterfaces().length; i++) {
+			ClassInfo icli = ai.cliMap.get(clazz.getInterfaces()[i].getClassName());
+			for (String methodId : icli.methods.keySet()) {
+				for (j=0; j<clvt.len; ++j) {
+					if (clvt.key[j].equals(methodId)) { // ok, we have the method
+						break;
+					}
+				}
+				if (j==clvt.len) { // method not found
+					clvt.key[clvt.len] = methodId;
+					clvt.mi[clvt.len] = (JopMethodInfo)icli.methods.get(methodId);
+					++clvt.len;
+				}				
+			}
+		}
+
 //System.out.println("The VT of "+clazzName);
 //for (i=0; i<clvt.len; i++) { 
 //	System.out.println("//\t"+clvt.meth[i].cli.clazz.getClassName()+"."+clvt.key[i]);
