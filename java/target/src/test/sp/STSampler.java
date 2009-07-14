@@ -33,18 +33,18 @@ package sp;
  * @author Raimund Kirner (raimund@vmars.tuwien.ac.at)
  *
  */
-public class STSampler extends SimpleTask {
+public class STSampler extends SimpleHBTask {
     int nWCETread    = 300;
     int nWCETexecute = 300;
     int nWCETwrite   = 300;
 
     int nDat = 0;
     int nDat2 = 0;
-    Integer IRd;
-    Integer IWrt;
+    SharedIMem IRd;
+    SharedIMem IWrt;
 
-    // Standard Constructor 
-    public void STSampler(Integer Rd, Integer Wrt) {
+    // Constructor 
+    public void STSampler(SharedIMem Rd, SharedIMem Wrt) {
         IRd  = Rd;
         IWrt = Wrt;
     }
@@ -53,21 +53,22 @@ public class STSampler extends SimpleTask {
      * Perform read access to shared data.
      */
     public void read() {
-	nDat2 = IRd.intValue;
+	nDat2 = IRd.get();
     }
 	
     /**
      * Execute task logic. Read and write access to shared data is forbidden.
      */
     public void execute() {
-	nDat = (nDat + nRd) / 2;
+	nDat = (nDat + nDat2) / 2;
+	self.setAlive();
     }
 	
     /**
      * Write results to the shared memory.
      */
     public void write() {
-	nWrt = nDat;
+	IWrt.set(nDat);
     }
 
 }
