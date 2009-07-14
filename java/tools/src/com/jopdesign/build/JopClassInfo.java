@@ -374,8 +374,7 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 		if (superClass != null) {
 			String[] interfaceNames = clazz.getInterfaceNames();
 			for (i = 0; i < interfaceNames.length; i++) {
-				if (!((JopClassInfo) superClass)
-						.implementsInterface(interfaceNames[i])) {
+				if (!((JopClassInfo) superClass).implementsInterface(interfaceNames[i])) {
 					needsInterfaceTable = true;
 				}
 			}
@@ -412,8 +411,8 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 					return true;
 				} else {
 					// an interface may have a super-interface
-					boolean match = ((JopClassInfo) appInfo.cliMap
-							.get(interfaces[i])).implementsInterface(ifname);
+					JopClassInfo superCli = (JopClassInfo) appInfo.cliMap.get(interfaces[i]);
+					boolean match = superCli.implementsInterface(ifname);
 					if (match) {
 						return true;
 					}
@@ -531,8 +530,7 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 					// find the class for this method
 					int mclidx;
 					if (isInterface) {
-						mclidx = ((ConstantInterfaceMethodref) co)
-								.getClassIndex();
+						mclidx = ((ConstantInterfaceMethodref) co).getClassIndex();
 					} else {
 						mclidx = ((ConstantMethodref) co).getClassIndex();
 					}
@@ -542,17 +540,14 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 					String mclname = mcl.getBytes(cp).replace('/', '.');
 					int sigidx;
 					if (isInterface) {
-						sigidx = ((ConstantInterfaceMethodref) co)
-								.getNameAndTypeIndex();
+						sigidx = ((ConstantInterfaceMethodref) co).getNameAndTypeIndex();
 					} else {
 						sigidx = ((ConstantMethodref) co).getNameAndTypeIndex();
 					}
-					ConstantNameAndType signt = (ConstantNameAndType) cp
-							.getConstant(sigidx);
+					ConstantNameAndType signt = (ConstantNameAndType) cp.getConstant(sigidx);
 					String sigstr = signt.getName(cp) + signt.getSignature(cp);
 					// now find the address of the method struct!
-					JopClassInfo clinf = (JopClassInfo) appInfo.cliMap
-							.get(mclname);
+					JopClassInfo clinf = (JopClassInfo) appInfo.cliMap.get(mclname);
 					if (clinf == null) {
 						// probably a reference to Native - a class that
 						// is NOT present in the application.
@@ -572,8 +567,7 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 						System.out.println("Error: Method "
 								+ clinf.clazz.getClassName() + '.' + sigstr
 								+ " not found.");
-						System.out
-								.println("Invoked by " + clazz.getClassName());
+						System.out.println("Invoked by " + clazz.getClassName());
 						for (int xxx = 0; xxx < clinf.clvt.len; ++xxx) {
 							System.out.println(clinf.clvt.key[xxx]);
 						}
