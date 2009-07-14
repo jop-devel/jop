@@ -54,7 +54,7 @@ public class STController extends SimpleHBTask {
     float KD = 1.0F;
 
     // Constructor 
-    public void STController(SharedIMem SetVal, SharedIMem CurrVal, SharedIMem CtrlVal) {
+    public STController(SharedIMem SetVal, SharedIMem CurrVal, SharedIMem CtrlVal) {
         ShmSetVal  = SetVal;
 	ShmCurrVal = CurrVal;
 	ShmCtrlVal = CtrlVal;

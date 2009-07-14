@@ -24,6 +24,7 @@
  */
 package sp;
 
+import sp.STSampler;
 import com.jopdesign.sys.Native;
 
 /**
@@ -70,7 +71,7 @@ public class STGuard extends SimpleTask {
     SharedIMem IWrt;
 
     // Constructor 
-    public void STGuard(SharedIMem Wrt, int size) {
+    public STGuard(SharedIMem Wrt, int size) {
 	cond = (size <= 0 || size >= MAXTASK); // size must me at least 1 and at maximum MAXTASK.
 	nError = Native.condMove(1, nError, cond);
 

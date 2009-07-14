@@ -24,104 +24,164 @@
  */
 package sp;
 
+import com.jopdesign.io.SysDevice;
+import com.jopdesign.io.IOFactory;
+
 /**
  * The sheduler API for the single-path based CMP system.
  * @author Martin Schoeberl (martin@jopdesign.com)
+ *         Raimund Kirner (raimund@vmars.tuwien.ac.at)
  *
  */
-public class STScheduler {
+public class STScheduler implements Runnable {
+    int i;
+    public int time = 0;
+    int period = 0;
+    SysDevice sys = IOFactory.getFactory().getSysDevice();
+
+    /**
+     * A table for the cyclic executive...
+     * @author Raimund Kirner (raimund@vmars.tuwien.ac.at)
+     *
+     */
+    static class TabCyclicExec {
+	Runnable tsk;
+	int tactivation;
+    }
+
+    public TabCyclicExec[] tabCyclicExec; /* this table must be filled with the task schedules */
 	
-	/**
-	 * A helper runnable for the read phase
-	 * @author Martin Schoeberl (martin@jopdesign.com)
-	 *
-	 */
-	static class RRunner implements Runnable {
-		SimpleTask task;
-		public RRunner(SimpleTask st) {
-			task = st;
-		}
-		public void run() {
-			task.read();
-		}
+    /**
+     * A helper runnable for the read phase
+     * @author Martin Schoeberl (martin@jopdesign.com)
+     *
+     */
+    static class RRunner implements Runnable {
+	SimpleTask task;
+	public RRunner(SimpleTask st) {
+	    task = st;
 	}
+	public void run() {
+	    task.read();
+	}
+    }
 
-	/**
-	 * A helper runnable for the execute phase
-	 * @author Martin Schoeberl (martin@jopdesign.com)
-	 *
-	 */
-	static class XRunner implements Runnable {
-		SimpleTask task;
-		public XRunner(SimpleTask st) {
-			task = st;
-		}
-		public void run() {
-			task.execute();
-		}
+    /**
+     * A helper runnable for the execute phase
+     * @author Martin Schoeberl (martin@jopdesign.com)
+     *
+     */
+    static class XRunner implements Runnable {
+	SimpleTask task;
+	public XRunner(SimpleTask st) {
+	    task = st;
 	}
+	public void run() {
+	    task.execute();
+	}
+    }
 
-	/**
-	 * A helper runnable for the write phase
-	 * @author Martin Schoeberl (martin@jopdesign.com)
-	 *
-	 */
-	static class WRunner implements Runnable {
-		SimpleTask task;
-		public WRunner(SimpleTask st) {
-			task = st;
-		}
-		public void run() {
-			task.write();
-		}
+    /**
+     * A helper runnable for the write phase
+     * @author Martin Schoeberl (martin@jopdesign.com)
+     *
+     */
+    static class WRunner implements Runnable {
+	SimpleTask task;
+	public WRunner(SimpleTask st) {
+	    task = st;
 	}
+	public void run() {
+	    task.write();
+	}
+    }
 
-	/**
-	 * Get the operating frequency of the processor in clock
-	 * ticks per millisecond.
-	 * @return
-	 */
-	public int getMsCycles() {
-		// TODO: add query method to the I/O factory
-		return 60000;
-	}
+
+    // Constructor 
+    public STScheduler(int maxtask) {
+	tabCyclicExec = new TabCyclicExec[maxtask];
+    }
+
+    /**
+     * Get the operating frequency of the processor in clock
+     * ticks per millisecond.
+     * @return
+     */
+    public int getMsCycles() {
+	// TODO: add query method to the I/O factory
+	return 60000;
+    }
+    
+    /**
+     * Shall we really provide a wrapper for a standard Java class/method?
+     * @return
+     */
+    public int getNrCores() {
+	return Runtime.getRuntime().availableProcessors();
+    }
+
+    /**
+     * The major cycle for all cores.
+     * @param period
+     */
+    public void setMajorCycle(int period) {
+	this.period = period;
+    }
+    
+    /**
+     * Perform a wait till the begin of the next scheduling cycle
+     * @return
+     */
+    public boolean waitForNextPeriod() {
+	time = time + period;
+	sys.deadLine = time;
+	return true;
+    }
+
+    /**
+     * Start the execution of the remaining cores of the JOP
+     * @return
+     */
+    public void startCPUs() {
+	sys.signal = 1;
+    }
 	
-	/**
-	 * Shall we really provide a wrapper for a standard Java class/method?
-	 * @return
-	 */
-	public int getNrCores() {
-		return Runtime.getRuntime().availableProcessors();
-	}
-
-	/**
-	 * The major cycle for all cores.
-	 * @param period
-	 */
-	public void setMajorCycle(int period) {
+    /**
+     * Add a simple task to the static schedule.
+     * @param task the task
+     * @param core the CMP core where it shall run
+     * @param readStart start time relative to the major frame in clock cycles for the data read
+     * @param exeStart start time of the execute phase
+     * @param writeStart start time for the data write phase
+     */
+    public void addTask(SimpleTask task, int core, int readStart, int exeStart, int writeStart) {
+	// TODO: insert the task in a runtime data structure
+    }
+	
+    public void genShedule() {
+	// TODO wrap all tasks into lists of runnables for each core
+    }
+	
+    /**
+     * Start the mission phase. All cores execute their static schedule.
+     */
+    public void startMission() {
 		
+    }
+
+    /**
+     * Start the cyclic executive....
+     */
+    public void run() {
+	waitForNextPeriod();
+	for (;;) {
+	    for (i=0; i<tabCyclicExec.length; i++) {
+		/* wait for the begin of the task activation */
+		sys.deadLine = (time + tabCyclicExec[i].tactivation);
+		/* start the task (either read(), execute(), or write()) */
+		tabCyclicExec[i].tsk.run();
+	    }
+	    waitForNextPeriod();
 	}
-	
-	/**
-	 * Add a simple task to the static schedule.
-	 * @param task the task
-	 * @param core the CMP core where it shall run
-	 * @param readStart start time relative to the major frame in clock cycles for the data read
-	 * @param exeStart start time of the execute phase
-	 * @param writeStart start time for the data write phase
-	 */
-	public void addTask(SimpleTask task, int core, int readStart, int exeStart, int writeStart) {
-		// TODO: insert the task in a runtime data structure
-	}
-	
-	public void genShedule() {
-		// TODO wrap all tasks into lists of runnables for each core
-	}
-	
-	/**
-	 * Start the mission phase. All cores execute their static schedule.
-	 */
-	public void startMission() {
-		
-	}
+    }
 }

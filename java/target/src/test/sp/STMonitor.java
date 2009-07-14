@@ -52,7 +52,7 @@ public class STMonitor extends SimpleHBTask {
     boolean bError;
 
     // Constructor 
-    public void STMonitor(SharedIMem SetVal, SharedIMem CurrVal, 
+    public STMonitor(SharedIMem SetVal, SharedIMem CurrVal, 
 			  SharedIMem CtrlVal, STGuard tskGuard) {
 	ShmSetVal  = SetVal;
 	ShmCurrVal = CurrVal;

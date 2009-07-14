@@ -44,7 +44,7 @@ public class STSampler extends SimpleHBTask {
     SharedIMem IWrt;
 
     // Constructor 
-    public void STSampler(SharedIMem Rd, SharedIMem Wrt) {
+    public STSampler(SharedIMem Rd, SharedIMem Wrt) {
         IRd  = Rd;
         IWrt = Wrt;
     }
@@ -54,7 +54,8 @@ public class STSampler extends SimpleHBTask {
      */
     public void read() {
 	nDat2 = IRd.get();
-    }
+	System.out.println("STSampler.read()");
+   }
 	
     /**
      * Execute task logic. Read and write access to shared data is forbidden.
