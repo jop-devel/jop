@@ -93,8 +93,7 @@ public class STGuard extends SimpleTask {
 
 	/* insert new task is array slot is free */
 	tmpTsk = tsk[tmp1];
-	tsk[tmp1] = Native.condMove(tmpTsk, task, cond);
-	tsk[tmp1] = Native.condMoveRef(tmpTsk, task, cond);
+	tsk[tmp1] = (SimpleHBTask) Native.condMoveRef(tmpTsk, task, cond);
     }
 	
     /**
@@ -116,7 +115,7 @@ public class STGuard extends SimpleTask {
 	    /* check whether the task of current index is valid */
 	    tmpTsk2 = tsk[tmp];
 	    cond = (tmpTsk2 != null);
-	    tmpTsk = Native.condMove(tmpTsk2, dummyTsk, cond);
+	    tmpTsk = (SimpleHBTask) Native.condMoveRef(tmpTsk2, dummyTsk, cond);
 
 	    /* check whether the task is alive */
 	    cond = (tmpTsk.alive == false);
@@ -142,7 +141,7 @@ public class STGuard extends SimpleTask {
 	    /* check whether the task of current index is valid */
 	    tmpTsk2 = tsk[tmp];
 	    cond = (tmpTsk2 != null);
-	    tmpTsk = Native.condMove(tmpTsk2, dummyTsk, cond);
+	    tmpTsk = (SimpleHBTask) Native.condMoveRef(tmpTsk2, dummyTsk, cond);
 
 	    /* clear the alive of the task */
 	    tmpTsk.clearAlive();
