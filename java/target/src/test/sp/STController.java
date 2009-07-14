@@ -49,9 +49,9 @@ public class STController extends SimpleHBTask {
     int lastErr = 0;
     int newErr;
     int dt = 1;
-    float KP = 1.0;
-    float KI = 1.0;
-    float KD = 1.0;
+    float KP = 1.0F;
+    float KI = 1.0F;
+    float KD = 1.0F;
 
     // Constructor 
     public void STController(SharedIMem SetVal, SharedIMem CurrVal, SharedIMem CtrlVal) {
@@ -82,9 +82,9 @@ public class STController extends SimpleHBTask {
 	newErr     = nSetVal = nCurrVal;
 	integral   = integral + newErr * dt;
 	derivative = (newErr - lastErr) / dt;
-	nCtrlVal   = KP*newErr + KI*integral + KD*derivative;
+	nCtrlVal   = (int)(KP*newErr + KI*integral + KD*derivative);
 	lastErr    = newErr;
-	self.setAlive();
+	this.setAlive();
     }
 	
     /**

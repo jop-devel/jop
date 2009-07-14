@@ -61,7 +61,7 @@ public class STSampler extends SimpleHBTask {
      */
     public void execute() {
 	nDat = (nDat + nDat2) / 2;
-	self.setAlive();
+	this.setAlive();
     }
 	
     /**
