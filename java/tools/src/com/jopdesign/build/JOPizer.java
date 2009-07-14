@@ -67,6 +67,8 @@ public class JOPizer extends AppInfo implements Serializable {
 	transient PrintWriter out;
 	/** text file for additional information */
 	transient PrintWriter outTxt;
+	/** link info for the D$ analysis */
+	transient PrintWriter outLinkInfo;
 	
 	/**
 	 * Length of the generated application in words.
@@ -116,6 +118,7 @@ public class JOPizer extends AppInfo implements Serializable {
 		try {
 			jz.out = new PrintWriter(new FileOutputStream(jz.outFile));
 			jz.outTxt = new PrintWriter(new FileOutputStream(jz.outFile+".txt"));
+			jz.outLinkInfo = new PrintWriter(new FileOutputStream(jz.outFile+".link.txt"));
 
 			jz.load();
 			
@@ -196,6 +199,8 @@ public class JOPizer extends AppInfo implements Serializable {
 			
 			// Finally we can write the .jop file....
 			new JopWriter(jz).write();
+
+			jz.outLinkInfo.close();
 
 		} catch(Exception e) { e.printStackTrace();}
 	}

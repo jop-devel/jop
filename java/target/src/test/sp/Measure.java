@@ -48,7 +48,7 @@ public class Measure {
 
 		SysDevice sys = IOFactory.getFactory().getSysDevice();
 		int frequ = new STScheduler().getMsCycles()*1000;
-		int shift = frequ/10/(TDMA_LENGTH)*TDMA_LENGTH+1;
+		int shift = frequ/10/(TDMA_LENGTH)*TDMA_LENGTH;
 		
 		int a[] = new int[5];
 		
