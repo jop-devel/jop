@@ -98,12 +98,12 @@ public final class SoftFloat32 {
 	// 	private static final int IMPLIED_ONE       = 0x00800000; // 24th bit
 
 	/** @return an integer in the range [-150, 105] */
-	static int unpackExponent(int f) {
+	public static int unpackExponent(int f) {
 		return ((f >> 23) & 0xff) - 150;
 	}
 
 	/** @return an integer in the range [0, 0x00ffffff] */
-	static int unpackMantissa(int f) {
+	public static int unpackMantissa(int f) {
 		if ((f & 0x7f800000) == 0) {
 			return ((f & 0x007fffff) << 1);
 		} else {
@@ -127,7 +127,7 @@ public final class SoftFloat32 {
 	 * @return the float which most closely represents the given base-2 mantissa
 	 *         and exponent
 	 */
-	static int pack(boolean negative, int exponent, long mantissa) {
+	public static int pack(boolean negative, int exponent, long mantissa) {
 		// shift mantissa so that it is left-aligned when cast to an int
 		int shift = 32 - BitUtils.countLeadingZeros(mantissa);
 		exponent += shift;

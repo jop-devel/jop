@@ -181,8 +181,7 @@ public final class Float // JDK 1.4 extends Number implements Comparable
    */
   public static String toString(float f)
   {
-//    return VMDouble.toString(f, true);
-	  return "NYI";
+	  return VMFloat.toString(f);
   }
 
   /**

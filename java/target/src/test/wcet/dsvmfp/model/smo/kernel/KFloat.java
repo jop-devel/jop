@@ -8,7 +8,7 @@ import com.jopdesign.sys.Native;
 /**
  * @author rup & ms
  */
-public class KFP {
+public class KFloat {
 
   // mask to test a resolution in the dot kernel functions
   // 0xFF:1111 1111
@@ -32,47 +32,47 @@ public class KFP {
   public final static int GAUSSIANKERNEL = 2;
 
   // All decimal numbers are FP
-  private static int[][] data;// data
+  private static float[][] data;// data
 
   private static int m; // number of rows (observations)
 
   private static int n; // number of columns (dimensions)
 
-  private static int[] x; // FP test data
+  private static float[] x; // FP test data
 
-  private static int[] kernelCache; // kernelDot(i,i)
+  private static float[] kernelCache; // kernelDot(i,i)
 
-  private static int sigma2; // sigma squared
+  private static float sigma2; // sigma squared
 
-  private static int gaussConst;// -0.5/(sigma*sigma)
+  private static float gaussConst;// -0.5/(sigma*sigma)
 
   private static int kernelType;// GAUSSIANKERNEL or DOTKERNEL;
 
   // A few variables to avoid too deep calls (and stack overflows)
-  private static int tmp1;
+  private static float tmp1;
 
-  private static int tmp2;
+  private static float tmp2;
 
   // Gauss k(data[i1],data[i2])
-  private static int kernelGauss(int i1, int i2) {
-//    Dbg.wr("K-SP: ", Native.getSP());
-    tmp1 = FP.mul(FP.TWO, kernelDot(i1, i2));
-//    Dbg.wr("K-SP1: ", Native.getSP());
-    tmp2 = FP.sub(FP.add(kernelCache[i1], kernelCache[i2]), tmp1);
-//    Dbg.wr("K-SP2: ", Native.getSP());
-    tmp1 = FP.mul(gaussConst, tmp2);
-//    Dbg.wr("K-SP3: ", Native.getSP());
-//    Dbg.wr("tmp1: ", tmp1);
-    tmp1 = FP.exp(tmp1);
-//    Dbg.wr("K-SP4: ", Native.getSP());
-//    Dbg.wr("tmp1: ", tmp1);
-    return tmp1;
+  private static float kernelGauss(int i1, int i2) {
+
+    tmp1 = FloatUtil.mul(2.0f, kernelDot(i1, i2));
+
+    tmp2 = FloatUtil.sub((kernelCache[i1] + kernelCache[i2]), tmp1);
+
+    tmp1 = FloatUtil.mul(gaussConst, tmp2);
+//rup
+    //tmp1 = ABC.exp(tmp1);
+    throw new Error("Fixme exp missing in KFloat");
+
+    //return tmp1;
   }
 
   // Gauss k(data[i1],x)
   private static int kernelGaussX(int i1) {
-    return FP.exp(FP.mul(gaussConst, FP.sub(FP.add(kernelCache[i1],
-        kernelDotXX()), FP.mul(FP.TWO, kernelDotX(i1)))));
+	  throw new Error("Fixme exp missing in KFloat");
+    //return ABC.exp(ABC.mul(gaussConst, ABC.sub(ABC.add(kernelCache[i1],
+      //  kernelDotXX()), ABC.mul(ABC.TWO, kernelDotX(i1)))));
   }
 
   /*
@@ -87,7 +87,7 @@ public class KFP {
    * Native.wrMem(data[i1][j], Const.IO_MAC_A); Native.wrMem(data[i2][j],
    * Const.IO_MAC_B); } r = Native.rdMem(Const.IO_MAC_A);
    * Native.rdMem(Const.IO_MAC_B); } else { for (int j = 0; j < n; j++) { r =
-   * FP.add(r, FP.mul(data[i1][j], data[i2][j])); } } t =
+   * ABC.add(r, ABC.mul(data[i1][j], data[i2][j])); } } t =
    * Native.rd(Const.IO_CNT)-t; System.out.print("time in cycles: ");
    * System.out.println(t); return r; }
    */
@@ -103,14 +103,14 @@ public class KFP {
    */
 
   // this and an optimized version of kernelDotX should be inlined!
-  private static int kernelDot(int i1, int i2) {
-    int r;
-    int n = KFP.n;
+  private static float kernelDot(int i1, int i2) {
+	float r;
+    int n = KFloat.n;
 
 //    int t;
     //t = Native.rd(Const.IO_CNT);
-    int a[] = data[i1];
-    int b[] = data[i2];
+    float a[] = data[i1];
+    float b[] = data[i2];
     // t = Native.rd(Const.IO_CNT);
 
     // long lr = 0;
@@ -138,7 +138,7 @@ public class KFP {
       n = n - 1;
       // the mask is for experimenting with #sv and test err vs. resolution
       //r += ((a[n] & mask) >> 8) * ((b[n] & mask) >> 8);
-      r += (a[n] >> 8) * (b[n] >> 8);
+      r += a[n] * b[n];
     }
 
 
@@ -158,20 +158,20 @@ public class KFP {
   }
 
   // Dot k(data[i1],x)
-  public static int kernelDotX(int i1) {
-    int r;
-    int n = KFP.n;
+  public static float kernelDotX(int i1) {
+	  float r;
+    int n = KFloat.n;
     // int t = Native.rd(Const.IO_CNT);
-    int a[] = data[i1];
+    float a[] = data[i1];
 
     // HW version
      while(n!=0){
        n=n-1;
-       Native.wrMem(a[n], Const.IO_MAC_A);
-       Native.wrMem(x[n], Const.IO_MAC_B);
+       //Native.wrMem(a[n], Const.IO_MAC_A);
+       //Native.wrMem(x[n], Const.IO_MAC_B);
      }
      r = a[0]; // we need this time for the MAC to finish!
-     r = Native.rdMem(Const.IO_MAC_A);
+     //r = Native.rdMem(Const.IO_MAC_A);
 
     // SW version
 //    r = 0;
@@ -190,10 +190,10 @@ public class KFP {
   }
 
   // Dot k(x,x)
-  private static int kernelDotXX() {
-    int r = 0;
+  private static float kernelDotXX() {
+	  float r = 0;
     for (int j = 0; j < n; j++) {
-      r = FP.add(r, FP.mul(x[j], x[j]));
+      r = r + FloatUtil.mul(x[j], x[j]);
     }
     return r;
   }
@@ -201,7 +201,7 @@ public class KFP {
   // TRAINING //
 
   // kernelType: k(data[i1],data[i1]
-  public static int kernel(int i1, int i2) {
+  public static float kernel(int i1, int i2) {
     if (kernelType == DOTKERNEL)
       return kernelDot(i1, i2);
 
@@ -212,10 +212,10 @@ public class KFP {
   }
 
   // Sum over i k(data[i1],data[i])
-  public static int kernelArray(int i1) {
-    int s = 0;
+  public static float kernelArray(int i1) {
+	float s = 0;
     for (int i = 0; i < m; i++) {
-      s = FP.add(s, kernel(i1, i));
+      s = s + kernel(i1, i);
     }
     return s;
   }
@@ -223,7 +223,7 @@ public class KFP {
   // TESTING //
 
   // kernelType k(data[i1],x)
-  public static int kernelX(int i1) {
+  public static float kernelX(int i1) {
     if (kernelType == DOTKERNEL)
       return kernelDotX(i1);
 
@@ -234,36 +234,36 @@ public class KFP {
   }
 
   // Sum over i kernelType k(data[i],x)
-  public static int kernelXArray() {
-    int s = 0;
+  public static float kernelXArray() {
+	float s = 0;
     for (int i = 0; i < m; i++) {
-      s = FP.add(s, kernelX(i));
+      s = s + kernelX(i);
     }
     return s;
   }
 
   // SETUP //
 
-  public static void setData(int[][] data) {
-    KFP.data = data;
+  public static void setData(float[][] data) {
+    KFloat.data = data;
     m = data.length;
     n = data[0].length;
-    kernelCache = new int[m];
+    kernelCache = new float[m];
     for (int i = 0; i < m; i++) {
       kernelCache[i] = kernelDot(i, i);
     }
   }
 
-  public static void setX(int[] x) {
-    KFP.x = x;
+  public static void setX(float[] x) {
+    KFloat.x = x;
   }
 
   public static void setKernelType(int kernelType) {
-    KFP.kernelType = kernelType;
+    KFloat.kernelType = kernelType;
   }
 
-  public static void setSigma2(int sigma2) {
-    KFP.sigma2 = sigma2;
-    gaussConst = FP.div(-FP.HALF, sigma2);
+  public static void setSigma2(float sigma2) {
+    KFloat.sigma2 = sigma2;
+    gaussConst = FloatUtil.div(-FloatUtil.HALF, sigma2);
   }
 }

@@ -3,15 +3,14 @@ package wcet.dsvmfp;
 import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 
-import wcet.dsvmfp.model.smo.classification.*;
-import wcet.dsvmfp.model.smo.kernel.*;
+import wcet.dsvmfp.model.smo.classification.SMOBinaryClassifierFloat;
 
-public class TestSMO {
-  static int m = 60;
-  static int data_fp[][] = new int[m][];
-  static int y_fp[] = new int[m];
-  static int testdata_fp[][] = new int[m][];
-  static int testlabel_fp[] = new int[m];
+public class TestSMOFloat {
+  static int m = 4;
+  static float data_fp[][] = new float[m][];
+  static float y_fp[] = new float[m];
+  static float testdata_fp[][] = new float[m][];
+  static float testlabel_fp[] = new float[m];
 
   // 0 belongs to positive
   static int errcnt = 0;
@@ -23,6 +22,10 @@ public class TestSMO {
 	init();
 	deployRT();
 	report();
+  }
+  
+  public static void main(String args[]){
+	  init();
   }
 
   // non-real time inialization of SVM
@@ -37,8 +40,8 @@ public class TestSMO {
     // Training instances
     // Remember to make same as in dsvm.test.smo.ServerData
     // Change these files for the four setups
-    TrainingData2.assign(data_fp, y_fp);
-    TestData2.assign(testdata_fp,testlabel_fp);
+    TrainingData1Float.assign(data_fp, y_fp);
+    //TestData2.assign(testdata_fp,testlabel_fp);
 //    dsvmfp.TrainingData2.assign(data_fp, y_fp);
 //    dsvmfp.TestData2.assign(testdata_fp,testlabel_fp);
 //    dsvmfp.TrainingData3.assign(data_fp, y_fp);
@@ -46,11 +49,11 @@ public class TestSMO {
 //    dsvmfp.TrainingData4.assign(data_fp, y_fp);
 //    dsvmfp.TestData4.assign(testdata_fp,testlabel_fp);
 
-    SMOBinaryClassifierFP.setData_fp(data_fp);
-    SMOBinaryClassifierFP.setY_fp(y_fp);
+    SMOBinaryClassifierFloat.setData_fp(data_fp);
+    SMOBinaryClassifierFloat.setY_fp(y_fp);
 
     // Train the model prior to deployment
-    SMOBinaryClassifierFP.mainRoutine();
+    SMOBinaryClassifierFloat.mainRoutine();
   }
 
   // Real-time part of SVM
@@ -59,14 +62,14 @@ public class TestSMO {
 
 
 
-    for (int i = 0; i < m; i++) { // @WCA loop=60
+    for (int i = 0; i < m; i++) { // @WCA loop=4
 
 
       int starttime = Native.rd(Const.IO_US_CNT);
       int t = Native.rd(Const.IO_CNT);
       //System.out.println("---ALIVE1---" + i);
       //int smores = SMOBinaryClassifierFP.getFunctionOutputTestPointFP(testdata_fp[i]);;
-      int smores = SMOBinaryClassifierFP.getFunctionOutputTestPointFP(testdata_fp[i]);;
+      float smores = SMOBinaryClassifierFloat.getFunctionOutputTestPointFP(testdata_fp[i]);;
       //System.out.println("---ALIVE2---" + i);
       t = Native.rd(Const.IO_CNT) - t;
       time += Native.rd(Const.IO_US_CNT)-starttime;
@@ -90,7 +93,7 @@ public class TestSMO {
     System.out.print("Error cnt:");
     System.out.println(errcnt);
     System.out.print("#sv");
-    System.out.println(SMOBinaryClassifierFP.getSV());
+    System.out.println(SMOBinaryClassifierFloat.getSV());
     System.out.print("total time (classifying):");
     System.out.print(time);
     System.out.println(" us");
