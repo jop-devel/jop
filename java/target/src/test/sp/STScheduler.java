@@ -100,6 +100,10 @@ public class STScheduler implements Runnable {
     // Constructor 
     public STScheduler(int maxtask) {
 	tabCyclicExec = new TabCyclicExec[maxtask];
+	for (i=0; i<maxtask; i++) {
+	    tabCyclicExec[i] = new TabCyclicExec();
+	}
+	//System.out.println("STScheduler.constructor("+maxtask+")");System.out.flush();
     }
 
     /**
@@ -109,7 +113,7 @@ public class STScheduler implements Runnable {
      */
     public int getMsCycles() {
 	// TODO: add query method to the I/O factory
-	return 60000;
+	return 60000;	
     }
     
     /**
@@ -129,7 +133,9 @@ public class STScheduler implements Runnable {
     }
     
     /**
-     * Perform a wait till the begin of the next scheduling cycle
+     * Perform a wait till the begin of 	r1.tabCyclicExec[1].tsk = new XRunner(TaskSampleSet);
+	r1.tabCyclicExec[1].tactivation = 0;
+the next scheduling cycle
      * @return
      */
     public boolean waitForNextPeriod() {
@@ -176,10 +182,13 @@ public class STScheduler implements Runnable {
 	waitForNextPeriod();
 	for (;;) {
 	    for (i=0; i<tabCyclicExec.length; i++) {
-		/* wait for the begin of the task activation */
-		sys.deadLine = (time + tabCyclicExec[i].tactivation);
-		/* start the task (either read(), execute(), or write()) */
-		tabCyclicExec[i].tsk.run();
+		//System.out.println("STSscheduler.run().i="+i);
+		if (tabCyclicExec[i].tsk != null) {
+		    /* wait for the begin of the task activation */
+		    sys.deadLine = (time + tabCyclicExec[i].tactivation);
+		    /* start the task (either read(), execute(), or write()) */
+		    tabCyclicExec[i].tsk.run();
+		}
 	    }
 	    waitForNextPeriod();
 	}
