@@ -122,7 +122,7 @@ public class STGuard extends SimpleTask {
 	    cond = (tmpTsk.alive == false);
 	    nError = Native.condMove(1, nError, cond);	    
 	}
-	System.out.println("STGuard.read()");
+	//System.out.println("STGuard.read()");
     }
 	
     /**

@@ -54,7 +54,8 @@ public class STSampler extends SimpleHBTask {
      */
     public void read() {
 	nDat2 = IRd.get();
-	System.out.println("STSampler.read()");
+	//IRd.set(nDat2+1);
+	//System.out.println("STSampler.read()");
    }
 	
     /**
