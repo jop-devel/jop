@@ -73,6 +73,7 @@ public class STController extends SimpleHBTask {
     public void read() {
 	nSetVal  = ShmSetVal.get();
 	nCurrVal = ShmCurrVal.get();
+	System.out.println("STController.read()");
     }
 	
     /**
