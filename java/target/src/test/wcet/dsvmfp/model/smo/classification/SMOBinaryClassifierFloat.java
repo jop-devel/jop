@@ -3,28 +3,15 @@ package wcet.dsvmfp.model.smo.classification;
 import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 
-import wcet.dsvmfp.model.smo.kernel.FP;
-import wcet.dsvmfp.model.smo.kernel.KFP;
-
-// Fixed point guide
-// 1. comparison ok without FP
-// 2. ==0 ok
-// 3. postfix int vars with "_fp"
-// 4. postfix method name with "FP" if it returns an int_fp
+import wcet.dsvmfp.model.smo.kernel.FloatUtil;
+import wcet.dsvmfp.model.smo.kernel.KFloat;
 
 /**
- * Class SMOBinaryClassifier, which is the model for performing a binary
- * classification task. It will receive an input set to train it self. After
- * training of the model it will retire the datapoints that are not part of the
- * model. Only the support vectors are kept. The original index of the data
- * points are kept. <br>
- * Internal responsibilities: 1. Provide support for binary classification.<br>
- * External responsibilities: 1. Provide the classification of the training
- * points. 2. Provide the classification of test points.
+ * Class SMOBinaryClassifier with float.
  */
-public class SMOBinaryClassifierFP{
+public class SMOBinaryClassifierFloat{
 
-	final static boolean PRINT = false;
+  final static boolean PRINT = true;
 
   /** Number of lagrange multipliers in deployed RT model */
   public final static int ALPHA_RT = 5;
@@ -34,10 +21,10 @@ public class SMOBinaryClassifierFP{
   static public boolean printSMOInfo;
 
   /** The F cache. */
-  static public int[] fcache_fp;
+  static public float[] fcache_fp;
 
   /** Kernel cache i==i kernels. */
-  static public int[] kernelCache_fp;
+  static public float[] kernelCache_fp;
 
   /**
    * The index set. The value is an int that determines if the point belongs to
@@ -68,41 +55,41 @@ public class SMOBinaryClassifierFP{
   static public int findexset0Size;
 
   /** The [m] Lagrange multipliers. */
-  static public int[] alpha_fp;
+  static public float[] alpha_fp;
 
   /** Sorted to have largest alpha index on [0] and so on.*/
   static public int[] alpha_index_sorted;
 
   /** The target vector of {-1,+1}. */
-  static public int[] y_fp;
+  static public float[] y_fp;
 
   /** The data vector [rows][columns]. */
-  static public int[][] data_fp;
+  static public float[][] data_fp;
 
   /** The high bound. */
-  static public int c_fp;
+  static public float c_fp;
 
   /** The error tolerance. */
-  static public int tol_fp;
+  static public float tol_fp;
 
   /** The error tolerance, that is used for KKT violation checks. */
-  static public int eps_fp;
+  static public float eps_fp;
 
   /**
    * Accuracy used when dividing the alpha_fp values into sets. For example: if
    * (a <alphaTol_fp) then a = 0
    */
-  static public int alphaTol_fp;
+  static public float alphaTol_fp;
 
   /** Parameters used for keeping the indices of the low and high Fs. */
-  static public int b_up_fp;
+  static public float b_up_fp;
 
-  static public int b_low_fp;
+  static public float b_low_fp;
 
   static public int i_low, i_up;
 
   /** The bias_fp. */
-  static public int bias_fp;
+  static public float bias_fp;
 
   static public int i1, i2;
 
@@ -169,7 +156,7 @@ public class SMOBinaryClassifierFP{
     time = Native.rd(Const.IO_US_CNT);
     //for(int i=0;i<1000000;i++);
     info = false;
-    // FP.init();
+    // ABC.init();
     // The number of updated that significantly changed the
     // Lagrange multipliers
     numChanged = 0;
@@ -265,7 +252,7 @@ public class SMOBinaryClassifierFP{
     // double f2_fp;
     // Assignment to local variables
 
-    int f2_fp;
+    float f2_fp;
     // int y2_fp = y_fp[i2];
     // int alph2_fp = alpha_fp[i2];
     // Todo: Enable cache
@@ -295,13 +282,13 @@ public class SMOBinaryClassifierFP{
     // find and index i1 to do joint optimization with i2
     boolean optimality = true;
     if (findexset[i2] == 0 || findexset[i2] == 1 || findexset[i2] == 2) {
-      if (FP.sub(b_low_fp, f2_fp) > FP.mul(FP.intToFp(2), tol_fp)) {
+      if ((b_low_fp- f2_fp) > (2 * tol_fp)) {
         optimality = false;
         i1 = i_low;
       }
     }
     if (findexset[i2] == 0 || findexset[i2] == 3 || findexset[i2] == 4) {
-      if (FP.sub(f2_fp, b_up_fp) > FP.mul(FP.intToFp(2), tol_fp)) {
+      if (FloatUtil.sub(f2_fp, b_up_fp) > FloatUtil.mul(FloatUtil.intToFp(2), tol_fp)) {
         optimality = false;
         i1 = i_up;
       }
@@ -312,7 +299,7 @@ public class SMOBinaryClassifierFP{
     }
     // For i2 choose the better i1...
     if (findexset[i2] == 0) {
-      if (FP.sub(b_low_fp, f2_fp) > FP.sub(f2_fp, b_up_fp)) {
+      if (FloatUtil.sub(b_low_fp, f2_fp) > FloatUtil.sub(f2_fp, b_up_fp)) {
         i1 = i_low;
       } else {
         i1 = i_up;
@@ -348,7 +335,7 @@ public class SMOBinaryClassifierFP{
 
   /**
    * Method takeStep, which optimizes two lagrange multipliers at a time. The
-   * method uses DsvmUtilFP.epsEqual to determine if there was positive
+   * method uses DsvmUtilABC.epsEqual to determine if there was positive
    * progress.
    *
    * @param i1 -
@@ -382,10 +369,10 @@ public class SMOBinaryClassifierFP{
 
     // if (info)
     // for (int i = 0; i < m; i++)
-    // alphaCheck = FP.add(alphaCheck, FP.mul(y_fp[i], alpha_fp[i]));
-    // if (FP.abs(alphaCheck) > alphaTol_fp && info)
+    // alphaCheck = ABC.add(alphaCheck, ABC.mul(y_fp[i], alpha_fp[i]));
+    // if (ABC.abs(alphaCheck) > alphaTol_fp && info)
     // System.out.println("Entry: Alphas*y does not add up to 0="
-    // + FP.fpToStr(alphaCheck));
+    // + ABC.fpToStr(alphaCheck));
     // System.out.println("ts here 1");
     // if (takeStepCount % 1000 == 0 && info) {
     // System.out.println("takeStep(): count=" + takeStepCount
@@ -405,31 +392,31 @@ public class SMOBinaryClassifierFP{
     }
     // TODO: remove repeated assignments
     // System.out.println("ts here2");
-    int alph1_fp = alpha_fp[i1];
-    int alph2_fp = alpha_fp[i2];
+    float alph1_fp = alpha_fp[i1];
+    float alph2_fp = alpha_fp[i2];
     // int y1_fp = y_fp[i1];
     // int y2_fp = y_fp[i2];
     // System.out.println("ts here3");
-    int f1_fp = getfFP(i1);
+    float f1_fp = getfFP(i1);
 
     // System.out.println("ts here3a");
-    int f2_fp = getfFP(i2);
+    float f2_fp = getfFP(i2);
     // System.out.println("ts here4");
-    int s_fp = FP.mul(y_fp[i1], y_fp[i2]);
+    float s_fp = FloatUtil.mul(y_fp[i1], y_fp[i2]);
     // System.out.println("ts here5");
-    int eta_fp = getEtaFP(i1, i2);
+    float eta_fp = getEtaFP(i1, i2);
     // System.out.println("ts here5");
-    int l_fp = getLowerClipFP(i1, i2);
+    float l_fp = getLowerClipFP(i1, i2);
     // System.out.println("ts here6");
-    int h_fp = getUpperClipFP(i1, i2); // TODO: It returned 6 (393216_fp)
+    float h_fp = getUpperClipFP(i1, i2); // TODO: It returned 6 (393216_fp)
     // System.out.println("ts here7");
     // on
-    int a2_fp, a1_fp;
+    float a2_fp, a1_fp;
     // inner loop with 1,2,3 example
 
     if (eta_fp < 0) {
       // a2 = alph2 - y2 * (f1 - f2) / eta;
-      a2_fp = FP.sub(alph2_fp, FP.mul(y_fp[i2], FP.div(FP.sub(f1_fp, f2_fp),
+      a2_fp = FloatUtil.sub(alph2_fp, FloatUtil.mul(y_fp[i2], FloatUtil.div(FloatUtil.sub(f1_fp, f2_fp),
           eta_fp))); // TODO: This one is wrong on first inner loop.
       // a2 evaluates to zero
       if (a2_fp < l_fp) {
@@ -441,62 +428,60 @@ public class SMOBinaryClassifierFP{
       // TODO: Check how often this is called and tune
       // getObjectivefunction
       // if needed
-      int tempAlpha2_fp = alpha_fp[i2];
+      float tempAlpha2_fp = alpha_fp[i2];
       alpha_fp[i2] = l_fp;
-      int lObj_fp = getObjectiveFunctionFP();
+      float lObj_fp = getObjectiveFunctionFP();
       alpha_fp[i2] = h_fp;
-      int hObj_fp = getObjectiveFunctionFP();
+      float hObj_fp = getObjectiveFunctionFP();
       alpha_fp[i2] = tempAlpha2_fp;
-      if (lObj_fp > FP.add(hObj_fp, eps_fp)) {
+      if (lObj_fp > (hObj_fp + eps_fp)) {
         a2_fp = l_fp;
-      } else if (lObj_fp < FP.sub(hObj_fp, eps_fp)) {
+      } else if (lObj_fp < FloatUtil.sub(hObj_fp, eps_fp)) {
         a2_fp = h_fp;
       } else {
         a2_fp = alph2_fp;
       }
     } // Return false if no significant optimization has taken place
-    if (FP.abs(FP.sub(a2_fp, alph2_fp)) < FP.mul(eps_fp, FP.add(a2_fp, FP.add(
-        alph2_fp, eps_fp)))) {
+    if (FloatUtil.abs(FloatUtil.sub(a2_fp, alph2_fp)) < FloatUtil.mul(eps_fp, FloatUtil.add(a2_fp, (alph2_fp + eps_fp)))) {
       takeStepResult = false;
       takeStepFlag = false;
       return false;
     }
     // System.out.println("ts:y");
-    a1_fp = FP.add(alph1_fp, FP.mul(s_fp, FP.sub(alph2_fp, a2_fp)));
+    a1_fp = alph1_fp + FloatUtil.mul(s_fp, FloatUtil.sub(alph2_fp, a2_fp));
     if (a1_fp < alphaTol_fp) {
       a1_fp = 0;
     }
     if (a2_fp < alphaTol_fp) {
       a2_fp = 0;
     }
-    if (a1_fp > FP.add(c_fp, alphaTol_fp)) {
+    if (a1_fp > (c_fp + alphaTol_fp)) {
       System.out.println("a1_fp too large");// a1_fp = c_fp; //
       // TODO: Can this be
       // removed
     }
-    if (a2_fp > FP.add(c_fp, alphaTol_fp)) {
+    if (a2_fp > (c_fp + alphaTol_fp)) {
       System.out.println("a2_fp too large");// a2_fp = c_fp; //
       // TODO: Can this be
       // removed
     }
     // System.out.println("ts:update fcache");
     // Update fcache_fp for i in I_0 using new Lagrange multipliers
-    int fcache_fp_tmpi1 = 0;
-    int fcache_fp_tmpi2 = 0;
-    int fcache_fp_tmp_sum = 0;
+    float fcache_fp_tmpi1 = 0;
+    float fcache_fp_tmpi2 = 0;
+    float fcache_fp_tmp_sum = 0;
     for (int i = 0; i < findexset0Size; i++) { // @WCA loop=2
-      // fcache_fp[findexset0[i]] = FP.add(fcache_fp[findexset0[i]], FP.add(
-      // FP.mul(y_fp[i1], FP.mul(FP.sub(a1_fp, alph1_fp),
+      // fcache_fp[findexset0[i]] = ABC.add(fcache_fp[findexset0[i]], ABC.add(
+      // ABC.mul(y_fp[i1], ABC.mul(ABC.sub(a1_fp, alph1_fp),
       // getKernelOutputFP(i1, findexset0[i], true))),
-      // FP.mul(y_fp[i2], FP.mul(FP.sub(a2_fp, alph2_fp),
+      // ABC.mul(y_fp[i2], ABC.mul(ABC.sub(a2_fp, alph2_fp),
       // getKernelOutputFP(i2, findexset0[i], true)))));
-      fcache_fp_tmpi1 = FP.mul(y_fp[i1], FP.mul(FP.sub(a1_fp, alph1_fp),
+      fcache_fp_tmpi1 = FloatUtil.mul(y_fp[i1], FloatUtil.mul(FloatUtil.sub(a1_fp, alph1_fp),
           getKernelOutputFP(i1, findexset0[i], true)));
-      fcache_fp_tmpi2 = FP.mul(y_fp[i2], FP.mul(FP.sub(a2_fp, alph2_fp),
+      fcache_fp_tmpi2 = FloatUtil.mul(y_fp[i2], FloatUtil.mul(FloatUtil.sub(a2_fp, alph2_fp),
           getKernelOutputFP(i2, findexset0[i], true)));
-      fcache_fp_tmp_sum = FP.add(fcache_fp_tmpi1, fcache_fp_tmpi2);
-      fcache_fp[findexset0[i]] = FP.add(fcache_fp[findexset0[i]],
-          fcache_fp_tmp_sum);
+      fcache_fp_tmp_sum = fcache_fp_tmpi1 + fcache_fp_tmpi2;
+      fcache_fp[findexset0[i]] = fcache_fp[findexset0[i]] + fcache_fp_tmp_sum;
     }
     // Update the alphas //TODO: Check if FP 516 is too low
     alpha_fp[i1] = a1_fp;
@@ -504,30 +489,30 @@ public class SMOBinaryClassifierFP{
     // and F1 if not covered by I_0 //TODO:Check this for first run
 
     if (findexset[i1] != 0) {
-      // fcache_fp[i1] = FP.add(f1_fp, FP.add((FP.mul(FP.mul(y_fp[i1], FP.sub(
+      // fcache_fp[i1] = ABC.add(f1_fp, ABC.add((ABC.mul(ABC.mul(y_fp[i1], ABC.sub(
       // a1_fp, alph1_fp)), getKernelOutputFP(i1, i1, true))), (FP
-      // .mul(FP.mul(y_fp[i2], FP.sub(a2_fp, alph2_fp)),
+      // .mul(ABC.mul(y_fp[i2], ABC.sub(a2_fp, alph2_fp)),
       // getKernelOutputFP(i1, i2, true)))));
-      fcache_fp_tmpi1 = FP.mul(FP.mul(y_fp[i1], FP.sub(a1_fp, alph1_fp)),
+      fcache_fp_tmpi1 = FloatUtil.mul(FloatUtil.mul(y_fp[i1], FloatUtil.sub(a1_fp, alph1_fp)),
           getKernelOutputFP(i1, i1, true));
-      fcache_fp_tmpi2 = FP.mul(FP.mul(y_fp[i2], FP.sub(a2_fp, alph2_fp)),
+      fcache_fp_tmpi2 = FloatUtil.mul(FloatUtil.mul(y_fp[i2], FloatUtil.sub(a2_fp, alph2_fp)),
           getKernelOutputFP(i1, i2, true));
-      fcache_fp_tmp_sum = FP.add(fcache_fp_tmpi1, fcache_fp_tmpi2);
-      fcache_fp[i1] = FP.add(f1_fp, fcache_fp_tmp_sum);
+      fcache_fp_tmp_sum = fcache_fp_tmpi1 + fcache_fp_tmpi2;
+      fcache_fp[i1] = f1_fp + fcache_fp_tmp_sum;
     }
 
     // and F2 if not covered by I_0
     if (findexset[i2] != 0) {
-      // fcache_fp[i2] = FP.add(f2_fp, FP.add((FP.mul(FP.mul(y_fp[i1], FP.sub(
+      // fcache_fp[i2] = ABC.add(f2_fp, ABC.add((ABC.mul(ABC.mul(y_fp[i1], ABC.sub(
       // a1_fp, alph1_fp)), getKernelOutputFP(i1, i2, true))), (FP
-      // .mul(FP.mul(y_fp[i2], FP.sub(a2_fp, alph2_fp)),
+      // .mul(ABC.mul(y_fp[i2], ABC.sub(a2_fp, alph2_fp)),
       // getKernelOutputFP(i2, i2, true)))));
-      fcache_fp_tmpi1 = FP.mul(FP.mul(y_fp[i1], FP.sub(a1_fp, alph1_fp)),
+      fcache_fp_tmpi1 = FloatUtil.mul(FloatUtil.mul(y_fp[i1], FloatUtil.sub(a1_fp, alph1_fp)),
           getKernelOutputFP(i1, i2, true));
-      fcache_fp_tmpi2 = FP.mul(FP.mul(y_fp[i2], FP.sub(a2_fp, alph2_fp)),
+      fcache_fp_tmpi2 = FloatUtil.mul(FloatUtil.mul(y_fp[i2], FloatUtil.sub(a2_fp, alph2_fp)),
           getKernelOutputFP(i2, i2, true));
-      fcache_fp_tmp_sum = FP.add(fcache_fp_tmpi1, fcache_fp_tmpi2);
-      fcache_fp[i2] = FP.add(f2_fp, fcache_fp_tmp_sum);
+      fcache_fp_tmp_sum = fcache_fp_tmpi1 + fcache_fp_tmpi2;
+      fcache_fp[i2] = f2_fp + fcache_fp_tmp_sum;
     }
 
     // System.out.println("tsII start");
@@ -558,7 +543,7 @@ public class SMOBinaryClassifierFP{
     // printQP("takeStep before leaving takestep", i1, getAlpha(i1), i2,
     // getAlpha(i2), true);
 
-    bias_fp = FP.div(FP.add(b_low_fp, b_up_fp), FP.TWO);
+    bias_fp = FloatUtil.div((b_low_fp + b_up_fp), FloatUtil.TWO);
     // System.out.println("tsII: calling smo 10, d");
     // smoInfo10();
 
@@ -568,14 +553,14 @@ public class SMOBinaryClassifierFP{
     // int objEnd = getObjectiveFunctionFP();
     // if (objEnd < objStart)
     // System.out.println("Objectivefunction not descreasing. Diff="
-    // + FP.fpToStr(objStart - objEnd));
+    // + ABC.fpToStr(objStart - objEnd));
     // int alphaCheck = 0;
     // for (int i = 0; i < m; i++)
-    // alphaCheck = FP.add(alphaCheck, FP.mul(y_fp[i], alpha_fp[i]));
-    // if (FP.abs(alphaCheck) > alphaTol_fp)
+    // alphaCheck = ABC.add(alphaCheck, ABC.mul(y_fp[i], alpha_fp[i]));
+    // if (ABC.abs(alphaCheck) > alphaTol_fp)
     // System.out.println("Exit(+" + takeStepCount
     // + "): Alphas*y does not add up to 0="
-    // + FP.fpToStr(alphaCheck));
+    // + ABC.fpToStr(alphaCheck));
     // }
     // System.out.println("ts II ok");
     // smoInfo();
@@ -628,7 +613,7 @@ public class SMOBinaryClassifierFP{
       if (!inner_loop_success) {
         break;
       }
-      if (b_up_fp > FP.sub(b_low_fp, FP.mul(FP.TWO, tol_fp))) {
+      if (b_up_fp > FloatUtil.sub(b_low_fp, FloatUtil.mul(FloatUtil.TWO, tol_fp))) {
         break;
       }
       if ((i1 == i_up && i2 == i_low) || (i1 == i_low && i2 == i_up)) // avoid
@@ -648,30 +633,30 @@ public class SMOBinaryClassifierFP{
     takeStepFlag = false;
     m = y_fp.length;
     n = data_fp[0].length;
-    alpha_fp = new int[m];
+    alpha_fp = new float[m];
     alpha_index_sorted = new int[m];
     findexset = new int[m];
     findexset0 = new int[m];
     findexset0Size = 0;
     findexset0pos = new int[m];
     // System.out.println("A initParams()");
-    c_fp = FP.mul(FP.ONE, FP.intToFp(1));
+    c_fp = FloatUtil.mul(FloatUtil.ONE, FloatUtil.intToFp(1));
     // System.out.println("Bd initParams()");
-    bias_fp = FP.intToFp(0);
+    bias_fp = FloatUtil.intToFp(0);
     // System.out.println("Ca initParams()");
-    eps_fp = FP.div(FP.ONE, FP.intToFp(100));
+    eps_fp = FloatUtil.div(FloatUtil.ONE, FloatUtil.intToFp(100));
     // System.out.println("Cb initParams()");
-    tol_fp = FP.div(FP.ONE, FP.intToFp(10));
+    tol_fp = FloatUtil.div(FloatUtil.ONE, FloatUtil.intToFp(10));
     // System.out.println("Cc initParams()");
-    alphaTol_fp = FP.div(FP.ONE, FP.intToFp(100));
+    alphaTol_fp = FloatUtil.div(FloatUtil.ONE, FloatUtil.intToFp(100));
 
-    KFP.setSigma2(FP.mul(FP.ONE, FP.ONE));
-    KFP.setKernelType(KFP.DOTKERNEL);// GAUSSIANKERNEL or DOTKERNEL
+    KFloat.setSigma2(FloatUtil.mul(FloatUtil.ONE, FloatUtil.ONE));
+    KFloat.setKernelType(KFloat.DOTKERNEL);// GAUSSIANKERNEL or DOTKERNEL
 
-    //KFP.setSigma2(FP.ONE);
+    //KABC.setSigma2(ABC.ONE);
 
     // Kernel type must be set first
-    KFP.setData(data_fp);
+    KFloat.setData(data_fp);
 
     for (int i = 0; i < m; i++) {
       findexset0pos[i] = -1;
@@ -679,9 +664,9 @@ public class SMOBinaryClassifierFP{
       findexset[i] = calculatefindex(i);
       alpha_index_sorted[i] = i;
     }
-    fcache_fp = new int[m];
+    fcache_fp = new float[m];
     // Kernel cache init
-    kernelCache_fp = new int[m];
+    kernelCache_fp = new float[m];
     //Dbg.wr("SP: ",Native.getSP());
     for (int i = 0; i < m; i++) {
       //Dbg.wr("SP1: ",Native.getSP());
@@ -691,16 +676,16 @@ public class SMOBinaryClassifierFP{
     // System.out.println("C initParams()");
     // _low initialization, class 2 = -1 (keerthi99)
     // _up initialization, class 1 = +1
-    b_up_fp = FP.intToFp(-1);
-    b_low_fp = FP.intToFp(1);
+    b_up_fp = FloatUtil.intToFp(-1);
+    b_low_fp = FloatUtil.intToFp(1);
     for (int i = 0; i < m; i++) {
-      if (y_fp[i] == FP.ONE) {// Classs 1
+      if (y_fp[i] == FloatUtil.ONE) {// Classs 1
         i_up = i;
-        fcache_fp[i] = FP.intToFp(-1);
-      } else if (y_fp[i] == -FP.ONE) // Class 2
+        fcache_fp[i] = FloatUtil.intToFp(-1);
+      } else if (y_fp[i] == -FloatUtil.ONE) // Class 2
       {
         i_low = i;
-        fcache_fp[i] = FP.intToFp(1);
+        fcache_fp[i] = FloatUtil.intToFp(1);
       }
     }
     // System.out.println("D initParams()");
@@ -721,8 +706,8 @@ public class SMOBinaryClassifierFP{
    * @return fcache delta
    */
   // int fcacheDeltaFP(int i) {
-  // return FP.add((FP.mul(FP.mul(y_fp[i1], FP.sub(a1_fp, alph1_fp)),
-  // getKernelOutputFP(i1, i, true))), (FP.mul(FP.mul(y_fp[i2], FP.sub(
+  // return ABC.add((ABC.mul(ABC.mul(y_fp[i1], ABC.sub(a1_fp, alph1_fp)),
+  // getKernelOutputFP(i1, i, true))), (ABC.mul(ABC.mul(y_fp[i2], ABC.sub(
   // a2_fp, alph2_fp)), getKernelOutputFP(i, i2, true))));
   // }
   /**
@@ -739,14 +724,14 @@ public class SMOBinaryClassifierFP{
 
     int retVal = -1;
     if (alpha_fp[i] > alphaTol_fp) {
-      if (alpha_fp[i] < FP.sub(c_fp, alphaTol_fp)) {
+      if (alpha_fp[i] < FloatUtil.sub(c_fp, alphaTol_fp)) {
         retVal = 0;
-      } else if (y_fp[i] == FP.ONE) {
+      } else if (y_fp[i] == FloatUtil.ONE) {
         retVal = 3;
       } else {
         retVal = 2;
       }
-    } else if (y_fp[i] == FP.ONE) {
+    } else if (y_fp[i] == FloatUtil.ONE) {
       retVal = 1;
     } else {
       retVal = 4;
@@ -823,21 +808,21 @@ public class SMOBinaryClassifierFP{
    * @return the non-biased functional output.
    */
   //TODO: fix fcache. Test set kernel resolution 12:12 problem
-  static int getfFP(int i) {
+  static float getfFP(int i) {
     // First check if i is in I_0 or i_low or i_up
     // System.out.println("g:"); // +(cnt++));
     if (findexset[i] == 0 || i == i_low || i == i_up) {
       return fcache_fp[i];
     } else {
       // Calculate f using I_0
-      int f_fp = 0;
-      int f_fp_tmp = 0;
+    	float f_fp = 0;
+    	float f_fp_tmp = 0;
       for (int j = 0; j < m; j++) {
-        f_fp_tmp = FP.mul(y_fp[j], alpha_fp[j]);
-        f_fp_tmp = FP.mul(f_fp_tmp, getKernelOutputFP(i, j, true));
-        f_fp = FP.add(f_fp, f_fp_tmp);
+        f_fp_tmp = FloatUtil.mul(y_fp[j], alpha_fp[j]);
+        f_fp_tmp = FloatUtil.mul(f_fp_tmp, getKernelOutputFP(i, j, true));
+        f_fp = FloatUtil.add(f_fp, f_fp_tmp);
       }
-      f_fp = FP.sub(f_fp, y_fp[i]);
+      f_fp = FloatUtil.sub(f_fp, y_fp[i]);
       return f_fp;
     }
   }
@@ -882,9 +867,9 @@ public class SMOBinaryClassifierFP{
     // Compute i_low, b_low_fp and i_up, b_up_fp
     // System.out.println("updatefully A");
     // printScalar("b_low_fp",b_low_fp);
-    b_low_fp = FP.intToFp(-10000);
-    // b_low_fp = FP.MIN;
-    b_up_fp = FP.intToFp(10000);// FP.MAX;
+    b_low_fp = FloatUtil.intToFp(-10000);
+    // b_low_fp = ABC.MIN;
+    b_up_fp = FloatUtil.intToFp(10000);// ABC.MAX;
     i_low = -1;
     i_up = -1;
     // System.out.println("updatefully B");
@@ -896,7 +881,7 @@ public class SMOBinaryClassifierFP{
     for (int i = 0; i < m; i++) {
       // I0
       if (findexset[i] == 0) {
-        if (y_fp[i] == FP.ONE) {
+        if (y_fp[i] == FloatUtil.ONE) {
           if (b_up_fp >= fcache_fp[i]) {
             b_up_fp = fcache_fp[i];
             i_up = i;
@@ -952,12 +937,12 @@ public class SMOBinaryClassifierFP{
     // smo.waitForNextPeriod();
 
     // Compute i_low, b_low_fp and i_up, b_up_fp
-    b_low_fp = FP.intToFp(-10000);// FP.MIN;
+    b_low_fp = FloatUtil.intToFp(-10000);// ABC.MIN;
     // System.out.println("upd -1 A");
     // printSMOInfo = true;
     // while(printSMOInfo)
     // smo.waitForNextPeriod();
-    b_up_fp = FP.intToFp(10000);// FP.MAX;
+    b_up_fp = FloatUtil.intToFp(10000);// ABC.MAX;
     // System.out.println("upd -1 B");
     // printSMOInfo = true;
     // while(printSMOInfo)
@@ -1063,7 +1048,7 @@ public class SMOBinaryClassifierFP{
         System.out.print("]]:");
         System.out.print(fcache_fp[findexset0[i]]);
         System.out.print(" ");
-        System.out.println(FP.fpToInt(fcache_fp[findexset0[i]]));
+        //System.out.println(ABC.fpToInt(fcache_fp[findexset0[i]]));
       }
 
       System.exit(-1);
@@ -1088,21 +1073,21 @@ public class SMOBinaryClassifierFP{
    */
   static boolean isKktViolated(int p) {
     boolean violation = true;
-    int f_fp = getFunctionOutputFP(p);
+    float f_fp = getFunctionOutputFP(p);
     // Is alpha_fp on lower bound?
     if (alpha_fp[p] == 0) {
-      if (FP.mul(y_fp[p], f_fp) >= FP.sub(1, eps_fp)) {
+      if (FloatUtil.mul(y_fp[p], f_fp) >= FloatUtil.sub(1, eps_fp)) {
         violation = false;
       }
     } // or is alpha_fp in non-bound, NB, set?
     else if (alpha_fp[p] > 0 && alpha_fp[p] < c_fp) {
-      if (FP.mul(y_fp[p], f_fp) > FP.sub(1, eps_fp)
-          && FP.mul(y_fp[p], f_fp) < FP.add(1, eps_fp)) {
+      if (FloatUtil.mul(y_fp[p], f_fp) > FloatUtil.sub(1, eps_fp)
+          && FloatUtil.mul(y_fp[p], f_fp) < FloatUtil.add(1, eps_fp)) {
         violation = false;
       }
     } // alpha_fp is on upper bound
     else {
-      if (FP.mul(y_fp[p], f_fp) <= FP.add(1, eps_fp)) {
+      if (FloatUtil.mul(y_fp[p], f_fp) <= FloatUtil.add(1, eps_fp)) {
         violation = false;
       }
     }
@@ -1115,17 +1100,17 @@ public class SMOBinaryClassifierFP{
    *
    * @return the objective function (6.1 in Christianini).
    */
-  static int getObjectiveFunctionFP() {
+  static float getObjectiveFunctionFP() {
     // TODO: Check how often this is called and tune if possible
-    int objfunc_fp = 0;
+	  float objfunc_fp = 0;
     for (int i = 0; i < m; i++) {
       // Don't do the calculation for zero alphas
       if (alpha_fp[i] > 0) {
-        objfunc_fp = FP.add(objfunc_fp, alpha_fp[i]);
+        objfunc_fp = objfunc_fp + alpha_fp[i];
         for (int j = 0; j < m; j++) {
           if (alpha_fp[j] > 0) {
-            objfunc_fp = FP.sub(objfunc_fp, FP.mul(FP.mul(FP.mul(FP.mul(FP.mul(
-                FP.HALF, y_fp[i]), y_fp[j]), alpha_fp[i]), alpha_fp[j]),
+            objfunc_fp = FloatUtil.sub(objfunc_fp, FloatUtil.mul(FloatUtil.mul(FloatUtil.mul(FloatUtil.mul(FloatUtil.mul(
+                FloatUtil.HALF, y_fp[i]), y_fp[j]), alpha_fp[i]), alpha_fp[j]),
                 getKernelOutputFP(i, j, true)));
           }
         }
@@ -1141,8 +1126,8 @@ public class SMOBinaryClassifierFP{
    *          point to calculte error for
    * @return calculated error
    */
-  static int getCalculatedErrorFP(int p) {
-    return FP.sub(getFunctionOutputFP(p), y_fp[p]);
+  static float getCalculatedErrorFP(int p) {
+    return FloatUtil.sub(getFunctionOutputFP(p), y_fp[p]);
   }
 
   /**
@@ -1153,18 +1138,18 @@ public class SMOBinaryClassifierFP{
    *          the point index
    * @return the functinal output
    */
-  static int getFunctionOutputFP(int p) {
-    int functionalOutput_fp = 0;
-    int kernelOutput_fp = 0;
+  static float getFunctionOutputFP(int p) {
+	  float functionalOutput_fp = 0;
+	  float kernelOutput_fp = 0;
     for (int i = 0; i < m; i++) {
       // Don't do the kernel if it is epsequal
       if (alpha_fp[i] > 0) {
         kernelOutput_fp = getKernelOutputFP(i, p, true);
-        functionalOutput_fp = FP.add(functionalOutput_fp, FP.mul(FP.mul(
+        functionalOutput_fp = FloatUtil.add(functionalOutput_fp, FloatUtil.mul(FloatUtil.mul(
             alpha_fp[i], y_fp[i]), kernelOutput_fp));
       }
     } // Make a check here to see any alphas has been modified after
-    functionalOutput_fp = FP.sub(functionalOutput_fp, bias_fp);
+    functionalOutput_fp = FloatUtil.sub(functionalOutput_fp, bias_fp);
     return functionalOutput_fp;
   }
 
@@ -1181,11 +1166,11 @@ public class SMOBinaryClassifierFP{
    *          will use the cache if possible
    * @return kernel output
    */
-  static int getKernelOutputFP(int i1, int i2, boolean useCache) {
+  static float getKernelOutputFP(int i1, int i2, boolean useCache) {
     if (i1 == i2 && useCache) {
       return kernelCache_fp[i1];
     }
-    return KFP.kernel(i1, i2);
+    return KFloat.kernel(i1, i2);
   }
 
   /**
@@ -1197,14 +1182,14 @@ public class SMOBinaryClassifierFP{
    *          -index of second point
    * @return double - eta_fp
    */
-  static int getEtaFP(int i1, int i2) {
-    int eta_fp;
-    int eta_fp_tmp;
-    int kernel11_fp, kernel22_fp, kernel12_fp;
+  static float getEtaFP(int i1, int i2) {
+	  float eta_fp;
+    float eta_fp_tmp;
+    float kernel11_fp, kernel22_fp, kernel12_fp;
     kernel11_fp = getKernelOutputFP(i1, i1, true);
     kernel22_fp = getKernelOutputFP(i2, i2, true);
     kernel12_fp = getKernelOutputFP(i1, i2, true);
-    eta_fp = FP.sub(FP.sub(FP.mul(FP.TWO, kernel12_fp), kernel11_fp),
+    eta_fp = FloatUtil.sub(FloatUtil.sub(FloatUtil.mul(FloatUtil.TWO, kernel12_fp), kernel11_fp),
         kernel22_fp);
     return eta_fp;
   }
@@ -1219,15 +1204,15 @@ public class SMOBinaryClassifierFP{
    *          second point
    * @return the lower clip value
    */
-  static int getLowerClipFP(int i1, int i2) {
-    int u_fp = 0;
+  static float getLowerClipFP(int i1, int i2) {
+	  float u_fp = 0;
     if (y_fp[i1] == y_fp[i2]) {
-      u_fp = FP.sub(FP.add(alpha_fp[i1], alpha_fp[i2]), c_fp);
+      u_fp = FloatUtil.sub(FloatUtil.add(alpha_fp[i1], alpha_fp[i2]), c_fp);
       if (u_fp < 0) {
         u_fp = 0;
       }
     } else {
-      u_fp = FP.sub(alpha_fp[i2], alpha_fp[i1]);
+      u_fp = FloatUtil.sub(alpha_fp[i2], alpha_fp[i1]);
       if (u_fp < 0) {
         u_fp = 0;
       }
@@ -1245,15 +1230,15 @@ public class SMOBinaryClassifierFP{
    *          second point
    * @return the upper clip
    */
-  static int getUpperClipFP(int i1, int i2) {
-    int v_fp = 0;
+  static float getUpperClipFP(int i1, int i2) {
+	  float v_fp = 0;
     if (y_fp[i1] == y_fp[i2]) {
-      v_fp = FP.add(alpha_fp[i1], alpha_fp[i2]);
+      v_fp = FloatUtil.add(alpha_fp[i1], alpha_fp[i2]);
       if (v_fp > c_fp) {
         v_fp = c_fp;
       }
     } else {
-      v_fp = FP.add(c_fp, FP.sub(alpha_fp[i2], alpha_fp[i1]));
+      v_fp = FloatUtil.add(c_fp, FloatUtil.sub(alpha_fp[i2], alpha_fp[i1]));
       if (v_fp > c_fp) {
         v_fp = c_fp;
       }
@@ -1264,7 +1249,7 @@ public class SMOBinaryClassifierFP{
   static public int getTrainingErrorCountFP() {
     int errorCount = 0;
     for (int i = 0; i < m; i++) {
-      int fout_fp = getFunctionOutputFP(i);
+    	float fout_fp = getFunctionOutputFP(i);
 //      System.out.print("Tr ");
 //      System.out.print(i);
 //      System.out.print(" fn ");
@@ -1288,12 +1273,12 @@ public class SMOBinaryClassifierFP{
    *
    * @return the weight [n] vector
    */
-  static int[] calculateWFP() {
-    int[] w_fp;
-    w_fp = new int[n];
+  static float[] calculateWFP() {
+	  float[] w_fp;
+    w_fp = new float[n];
     for (int i = 0; i < m; i++) {
       for (int j = 0; j < n; j++) {
-        w_fp[j] = FP.add(w_fp[j], FP.mul(FP.mul(y_fp[i], alpha_fp[i]),
+        w_fp[j] = FloatUtil.add(w_fp[j], FloatUtil.mul(FloatUtil.mul(y_fp[i], alpha_fp[i]),
             data_fp[i][j]));
       }
     }
@@ -1309,7 +1294,7 @@ public class SMOBinaryClassifierFP{
    * @return true if p is on bound
    */
   static boolean isExampleOnBound(int p) {
-    return alpha_fp[p] < tol_fp || alpha_fp[p] > FP.sub(c_fp, tol_fp);
+    return alpha_fp[p] < tol_fp || alpha_fp[p] > FloatUtil.sub(c_fp, tol_fp);
   }
 
   /**
@@ -1320,11 +1305,11 @@ public class SMOBinaryClassifierFP{
    *          the input vector
    * @return the functinal output
    */
-  static public int getFunctionOutputTestPointFP(int[] xtest) {
-    int functionalOutput_fp = 0;
-    int[][] data_fp_local = data_fp;
+  static public float getFunctionOutputTestPointFP(float[] xtest) {
+	  float functionalOutput_fp = 0;
+    float[][] data_fp_local = data_fp;
     int m = data_fp_local.length;
-    int func_out = 0;
+    float func_out = 0;
     //System.out.println("---ALIVE1m---" + m);
     int n = xtest.length;
     int n2 = data_fp_local[0].length;
@@ -1341,8 +1326,8 @@ public class SMOBinaryClassifierFP{
         n = n - 1;
         //System.out.println("---ALIVEnin---" + n);
         //System.out.println("---ALIVEnim---" + m);
-        //functionalOutput_fp += KFP.kernelX(i);
-        func_out += (data_fp_local[alpha_index_sorted[i]][n] >> 8) * (xtest[n] >> 8);
+        //functionalOutput_fp += KABC.kernelX(i);
+        func_out += (data_fp_local[alpha_index_sorted[i]][n]) * (xtest[n]);
       }
       if (alpha_fp[alpha_index_sorted[i]] > 0) {
         functionalOutput_fp += func_out;
@@ -1361,29 +1346,29 @@ public class SMOBinaryClassifierFP{
    *          the input vector
    * @return the functinal output
    */
-  static public int getFunctionOutputTestPointFP_OOAD(int[] xtest) {
-    int functionalOutput_fp = 0;
-    int kernelOutput_fp = 0;
-    KFP.setX(xtest);
+  static public float getFunctionOutputTestPointFP_OOAD(float[] xtest) {
+	  float functionalOutput_fp = 0;
+	  float kernelOutput_fp = 0;
+    KFloat.setX(xtest);
     for (int i = 0; i < m; i++) {
       // Don't do the kernel if it is epsequal
       if (alpha_fp[i] > 0) {
-        kernelOutput_fp = KFP.kernelX(i);
-        functionalOutput_fp = FP.add(functionalOutput_fp, FP.mul(FP.mul(
+        kernelOutput_fp = KFloat.kernelX(i);
+        functionalOutput_fp = FloatUtil.add(functionalOutput_fp, FloatUtil.mul(FloatUtil.mul(
             alpha_fp[i], y_fp[i]), kernelOutput_fp));
       }
     } // Make a check here to see any alphas has been modified after
-    functionalOutput_fp = FP.sub(functionalOutput_fp, bias_fp);
+    functionalOutput_fp = FloatUtil.sub(functionalOutput_fp, bias_fp);
     return functionalOutput_fp;
   }
 
 
-  static public void setData_fp(int[][] data_fp) {
-    SMOBinaryClassifierFP.data_fp = data_fp;
+  static public void setData_fp(float[][] data_fp) {
+    SMOBinaryClassifierFloat.data_fp = data_fp;
   }
 
-  static public void setY_fp(int[] y_fp) {
-    SMOBinaryClassifierFP.y_fp = y_fp;
+  static public void setY_fp(float[] y_fp) {
+    SMOBinaryClassifierFloat.y_fp = y_fp;
   }
 
   static void gccheck() {
@@ -1442,8 +1427,8 @@ public class SMOBinaryClassifierFP{
     printScalar("training err cnt",getTrainingErrorCountFP());
 
     // printScalar("GC free words",GC.free());
-    // printScalar("FP.MAX",FP.MAX);
-    // printScalar("FP.MIN",FP.MIN);
+    // printScalar("ABC.MAX",ABC.MAX);
+    // printScalar("ABC.MIN",ABC.MIN);
     // printScalar("sp",Native.rd(com.jopdesign.sys.Const.IO_WD));
     for (int i = 0; i < 100000; i++)
       ;
@@ -1466,8 +1451,15 @@ public class SMOBinaryClassifierFP{
     for (int i = 0; i < 100; i++)
       ;
   }
-
-  static void printVector(String str, int[] ve) {
+  
+  static void printScalar(String str, float sca) {
+	    System.out.print(str);
+	    System.out.print(':');
+	    System.out.println(sca);
+	    for (int i = 0; i < 100; i++)
+	      ;
+	  }
+  static void printVector(String str, float[] ve) {
     System.out.print(str);
     System.out.print(" {");
     for (int i = 0; i < ve.length; i++) {
@@ -1485,7 +1477,25 @@ public class SMOBinaryClassifierFP{
       ;
   }
 
-  static void printMatrix(String str, int[][] ma) {
+  static void printVector(String str, int[] ve) {
+	    System.out.print(str);
+	    System.out.print(" {");
+	    for (int i = 0; i < ve.length; i++) {
+	      System.out.print(i);
+	      System.out.print(':');
+	      System.out.print(ve[i]);
+	      if (i < (ve.length - 1))
+	        System.out.print(", ");
+
+	      for (int j = 0; j < 1000; j++)
+	        ;
+	    }
+	    System.out.println("}");
+	    for (int i = 0; i < 1000; i++)
+	      ;
+	  }
+  
+  static void printMatrix(String str, float[][] ma) {
     for (int i = 0; i < ma.length; i++) {
       System.out.print(str);
       System.out.print("[");
@@ -1532,5 +1542,5 @@ public class SMOBinaryClassifierFP{
   /**
    * Do not instanciate me.
    */
-  private SMOBinaryClassifierFP(){}
+  private SMOBinaryClassifierFloat(){}
 }
