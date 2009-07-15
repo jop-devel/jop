@@ -30,7 +30,7 @@ package cmp;
  */
 public class ParallelExecutor {
 
-	public void execute(Execute e, int cnt) {
+	public void executeParallel(Execute e, int cnt) {
 		// distribute the work to all cores.
 		for (int i=0; i<cnt; ++i) {
 			e.execute(i);
@@ -40,8 +40,18 @@ public class ParallelExecutor {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		// TODO Auto-generated method stub
+		
+		Execute e = new Test();
+		ParallelExecutor pe = new ParallelExecutor();
+		pe.executeParallel(e, 10);
+	}
+	
+	private static class Test implements Execute {
 
+		public void execute(int nr) {
+			System.out.println(nr);
+		}
+		
 	}
 
 }
