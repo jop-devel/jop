@@ -32,6 +32,9 @@ public class ParallelExecutor {
 
 	public void execute(Execute e, int cnt) {
 		// distribute the work to all cores.
+		for (int i=0; i<cnt; ++i) {
+			e.execute(i);
+		}
 	}
 	/**
 	 * @param args
