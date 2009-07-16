@@ -544,6 +544,8 @@ public class SMOBinaryClassifierFloat {
 
 		bias_fp = -bias;//FloatUtil.div((b_low_fp + b_up_fp), FloatUtil.TWO);
 		P("==bias_fp:"+bias_fp);
+		
+		
 		// System.out.println("tsII: calling smo 10, d");
 		// smoInfo10();
 
