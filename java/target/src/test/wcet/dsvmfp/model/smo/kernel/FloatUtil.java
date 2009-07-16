@@ -119,7 +119,8 @@ public class FloatUtil {
 	}
 
 	public static float div(float f1, float f2) {
-		return f1 / f2;
+		
+		return f2 == 0.0f ? 0 : f1 / f2;
 	}
 
 	public static int mod(int f1, int f2) {

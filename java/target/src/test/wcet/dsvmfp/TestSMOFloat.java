@@ -6,7 +6,7 @@ import com.jopdesign.sys.Native;
 import wcet.dsvmfp.model.smo.classification.SMOBinaryClassifierFloat;
 
 public class TestSMOFloat {
-  static int m = 4;
+  static int m = 2;
   static float data_fp[][] = new float[m][];
   static float y_fp[] = new float[m];
   static float testdata_fp[][] = new float[m][];
