@@ -6,9 +6,9 @@ import com.jopdesign.sys.Native;
 import wcet.dsvmfp.model.smo.classification.SMOBinaryClassifierFloat;
 
 public class TestSMOFloat {
-  static int m = 2;
-  static float data_fp[][] = new float[m][];
-  static float y_fp[] = new float[m];
+  static int m;// = 2;
+  static float data_fp[][];// = new float[m][];
+  static float y_fp[];// = new float[m];
   static float testdata_fp[][] = new float[m][];
   static float testlabel_fp[] = new float[m];
 
@@ -40,7 +40,12 @@ public class TestSMOFloat {
     // Training instances
     // Remember to make same as in dsvm.test.smo.ServerData
     // Change these files for the four setups
-    TrainingData1Float.assign(data_fp, y_fp);
+	  SVMData d = new TrainingData1Float();
+	  data_fp = d.getTrainingData();
+	  y_fp = d.getTrainingLabels();
+	  m = y_fp.length;
+	  
+//    TrainingData1Float.assign(data_fp, y_fp);
     //TestData2.assign(testdata_fp,testlabel_fp);
 //    dsvmfp.TrainingData2.assign(data_fp, y_fp);
 //    dsvmfp.TestData2.assign(testdata_fp,testlabel_fp);
