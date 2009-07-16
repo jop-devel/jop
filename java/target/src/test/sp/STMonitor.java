@@ -68,7 +68,7 @@ public class STMonitor extends SimpleHBTask {
 	nCurrVal = ShmCurrVal.get();
 	nCtrlVal = ShmCtrlVal.get();
 	bError = tskGuard.error();
-	System.out.println("STMonitor.read()");
+	//System.out.println("STMonitor.read(SetVal="+nSetVal+", CurrVal="+nSetVal+", CtrlVal="+nCtrlVal+")");
     }
 	
     /**

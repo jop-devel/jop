@@ -140,7 +140,7 @@ the next scheduling cycle
      */
     public boolean waitForNextPeriod() {
 	time = time + period;
-	sys.deadLine = time;
+	//sys.deadLine = time;
 	return true;
     }
 
@@ -185,7 +185,7 @@ the next scheduling cycle
 		//System.out.println("STSscheduler.run().i="+i);
 		if (tabCyclicExec[i].tsk != null) {
 		    /* wait for the begin of the task activation */
-		    sys.deadLine = (time + tabCyclicExec[i].tactivation);
+		    //sys.deadLine = (time + tabCyclicExec[i].tactivation);
 		    /* start the task (either read(), execute(), or write()) */
 		    tabCyclicExec[i].tsk.run();
 		}
