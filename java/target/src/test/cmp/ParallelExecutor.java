@@ -24,6 +24,8 @@
  */
 package cmp;
 
+import com.jopdesign.io.IOFactory;
+
 /**
  * @author Martin Schoeberl (martin@jopdesign.com)
  *
@@ -43,15 +45,25 @@ public class ParallelExecutor {
 		
 		Execute e = new Test();
 		ParallelExecutor pe = new ParallelExecutor();
-		pe.executeParallel(e, 10);
+		pe.executeParallel(e, Test.N);
+		Test.result();
 	}
 	
 	private static class Test implements Execute {
+		
+		final static int N = 100;
+		static int a[] = new int[N];
 
 		public void execute(int nr) {
 			System.out.println(nr);
+			a[nr] = IOFactory.getFactory().getSysDevice().cpuId+1;
 		}
 		
+		public static void result() {
+			for (int i=0; i<N; ++i) {
+				System.out.println(a[i]);
+			}
+		}
 	}
 
 }
