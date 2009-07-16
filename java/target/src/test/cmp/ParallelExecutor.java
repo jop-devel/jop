@@ -25,18 +25,99 @@
 package cmp;
 
 import com.jopdesign.io.IOFactory;
+import com.jopdesign.io.SysDevice;
+import com.jopdesign.sys.Startup;
 
 /**
+ * A minimal framework for work distribution to the CMP cores.
+ * 
  * @author Martin Schoeberl (martin@jopdesign.com)
  *
  */
 public class ParallelExecutor {
+	
+	private class Runner implements Runnable {
 
-	public void executeParallel(Execute e, int cnt) {
-		// distribute the work to all cores.
-		for (int i=0; i<cnt; ++i) {
-			e.execute(i);
+		volatile boolean finished;
+		Execute ex;
+		
+		public Runner() {
+			finished = true;
 		}
+		
+		void setExecute(Execute e) {
+			ex = e;
+		}
+		
+		public void run() {
+			for (;;) {
+				if (cnt<size && !finished) {
+					int i;
+					synchronized(ex) {
+						i = cnt++; 
+					}
+					if (i<size) {
+						ex.execute(i);
+					}
+				} else {
+					finished = true;
+				}
+			}
+		}
+		
+	}
+
+	private volatile int cnt;
+	private volatile int size;
+	private Runner runner[];
+	SysDevice sys = IOFactory.getFactory().getSysDevice();
+	
+	public ParallelExecutor() {
+		
+		runner = new Runner[sys.nrCpu-1];
+		for (int i=0; i<sys.nrCpu-1; i++) {
+			runner[i] = new Runner();
+			Startup.setRunnable(runner[i], i);
+		}
+		// we already start all cores here
+		sys.signal = 1;
+	}
+	
+	public void executeParallel(Execute e, int size) {
+		
+		this.size = size;
+		cnt = 0;
+		
+		// distribute the work to all cores.
+		for (int i=0; i<sys.nrCpu-1; ++i) {
+			runner[i].setExecute(e);
+			runner[i].finished = false;
+		}
+		// do also some work
+		while (cnt<size) {
+			int i;
+			synchronized(e) {
+				i = cnt++; 
+			}
+			if (i<size) {
+				e.execute(i);
+			}
+		}
+		// now wait for others finishing their work
+		boolean allFinished;
+		do {
+			allFinished = true;
+			for (int i=0; i<sys.nrCpu-1; ++i) {
+				allFinished &= runner[i].finished;
+			}
+		} while (!allFinished);
+		// now we can return
+
+		
+		// that would be a serial version for tests:
+//		for (int i=0; i<size; ++i) {
+//			e.execute(i);
+//		}
 	}
 	/**
 	 * @param args
@@ -55,7 +136,6 @@ public class ParallelExecutor {
 		static int a[] = new int[N];
 
 		public void execute(int nr) {
-			System.out.println(nr);
 			a[nr] = IOFactory.getFactory().getSysDevice().cpuId+1;
 		}
 		
@@ -65,5 +145,6 @@ public class ParallelExecutor {
 			}
 		}
 	}
+
 
 }
