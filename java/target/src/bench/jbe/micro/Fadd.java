@@ -68,7 +68,7 @@ public class Fadd extends BenchMark {
 		return 0;
 	}
 
-	public String getName() {
+	public String toString() {
 
 		return "fload_3 fadd";
 	}

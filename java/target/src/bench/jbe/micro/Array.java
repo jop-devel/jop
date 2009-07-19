@@ -78,7 +78,7 @@ public class Array extends BenchMark {
 	}
 
 
-	public String getName() {
+	public String toString() {
 
 		return "iaload";
 	}

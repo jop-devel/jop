@@ -52,7 +52,7 @@ public class BenchSieve extends BenchMark {
 	}
 
 
-	public String getName() {
+	public String toString() {
 
 		return "Sieve";
 	}

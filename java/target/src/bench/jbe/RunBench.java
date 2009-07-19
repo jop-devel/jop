@@ -48,7 +48,7 @@ public class RunBench {
 		for (int i=0; i<bm.length; ++i) {
 			// remove the following to avoid initializing the JDK
 			System.out.print("Benchmark ");
-			System.out.print(bm[i].getName());
+			System.out.print(bm[i].toString());
 			System.out.println(" started");
 			
 			// start measurement here

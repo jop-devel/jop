@@ -68,7 +68,7 @@ public class Add extends BenchMark {
 		return 0;
 	}
 
-	public String getName() {
+	public String toString() {
 
 		return "iload_3 iadd";
 	}

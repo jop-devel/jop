@@ -73,7 +73,7 @@ public class BranchTaken extends BenchMark {
 		return a;
 	}
 
-	public String getName() {
+	public String toString() {
 
 		return "if_icmplt taken";
 	}

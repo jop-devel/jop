@@ -86,7 +86,7 @@ public class GetField extends BenchMark {
 	}
 
 
-	public String getName() {
+	public String toString() {
 
 		return "getfield";
 	}

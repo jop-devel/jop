@@ -51,7 +51,7 @@ public class Jitter {
 		int min = 2000000000;
 
 		LowLevel.msg("Jitter");
-		LowLevel.msg(b.getName());
+		LowLevel.msg(b.toString());
 		LowLevel.lf();
 		
 		for (int i=0; i<CNT; ++i) {

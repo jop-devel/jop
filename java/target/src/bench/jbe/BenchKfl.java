@@ -40,7 +40,7 @@ public class BenchKfl extends BenchMark {
 		return i;
 	}
 
-	public String getName() {
+	public String toString() {
 
 		return "Kfl";
 	}

@@ -43,7 +43,7 @@ public class BenchLift extends BenchMark {
 		return i;
 	}
 
-	public String getName() {
+	public String toString() {
 
 		return "Lift";
 	}

@@ -76,7 +76,7 @@ public class InvokeInterface extends BenchMark {
 	}
 
 
-	public String getName() {
+	public String toString() {
 
 		return "invokeinterface";
 	}

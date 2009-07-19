@@ -2,7 +2,7 @@
   This file is part of JOP, the Java Optimized Processor
     see <http://www.jopdesign.com/>
 
-  Copyright (C) 2001-2008, Martin Schoeberl (martin@jopdesign.com)
+  Copyright (C) 2009, Martin Schoeberl (martin@jopdesign.com)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -18,61 +18,24 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-package jbe.micro;
+package jbe;
 
-import jbe.BenchMark;
-import jbe.Execute;
-
-public class Ldc extends BenchMark {
-
-/*
-   14:	iload_2
-   15:	iload_3
-   16:	iadd
-   17:	ldc	#2; //int 12345678
-   19:	iadd
-   20:	istore_2
-*/
-	public int test(int cnt) {
-
-		int a = 0;
-		int b = 123;
-		int i;
-		for (i=0; i<cnt; ++i) {
-			a = a+b+12345678;
-		}
-		return a;
-	}
-
-/*
-   14:	iload_2
-   15:	iload_3
-   16:	iadd
-   17:	istore_2
-*/
-	public int overhead(int cnt) {
-
-		int a = 0;
-		int b = 123;
-		int i;
-
-		for (i=0; i<cnt; ++i) {
-			a = a+b;
-		}
-		return a;
-	}
-
-
-	public String toString() {
-
-		return "ldc";
-	}
-
+/**
+ * Run the Kfl benchmark for a fixed iteration count (10000).
+ * 
+ * @author Martin Schoeberl (martin@jopdesign.com)
+ *
+ */
+public class LoopUdpIp {
+	
 	public static void main(String[] args) {
-
-		BenchMark bm = new Ldc();
-
-		Execute.perform(bm);
+		
+		BenchMark bench = new BenchUdpIp();
+		System.out.println(bench);
+		int t1 = (int) System.currentTimeMillis();
+		bench.test(10000);
+		int t2 = (int) System.currentTimeMillis();
+		System.out.print(t2-t1);			
+		System.out.println(" ms");
 	}
-			
 }

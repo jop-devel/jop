@@ -49,7 +49,7 @@ public abstract class BenchMark {
 	/**
 	 * Provide the name of the benchmark.
 	 */
-	public abstract String getName();
+	public abstract String toString();
 
 	public static void main(String[] args) {
 

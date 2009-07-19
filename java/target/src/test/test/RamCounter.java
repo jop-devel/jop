@@ -67,7 +67,7 @@ public class RamCounter {
 		count_result = count1 - count0;
 		us_result = us1 - us0;
 			
-		LowLevel.msg(bm0.getName());
+		LowLevel.msg(bm0.toString());
 		LowLevel.msg("on JOP0:", benchmark0);
 		LowLevel.lf();
 		LowLevel.msg("RAM Accesses:", count_result);

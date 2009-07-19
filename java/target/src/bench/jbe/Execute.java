@@ -30,7 +30,7 @@ public class Execute {
 		overhead = 0;
 		minus = 0;
 
-		LowLevel.msg(bm.getName());
+		LowLevel.msg(bm.toString());
 		while (time<1000) {
 			cnt <<= 1;
 			if (cnt < 0) {
@@ -60,7 +60,7 @@ public class Execute {
 		time += minus;
 
 		if (time<25 || cnt<0) {
-			LowLevel.msg(bm.getName());
+			LowLevel.msg(bm.toString());
 			LowLevel.msg(" no result");
 			LowLevel.lf();
 			return;
@@ -71,7 +71,7 @@ public class Execute {
 		if (cnt>2000000) {		// check for overflow on cnt*1000
 			result = cnt/time;
 			if (result>2000000) {
-				LowLevel.msg(bm.getName());
+				LowLevel.msg(bm.toString());
 				LowLevel.msg(" no result");
 				LowLevel.lf();
 				return;
@@ -133,7 +133,7 @@ public class Execute {
 		time += minus;
 
 		if (time<25 || cnt<0) {
-			LowLevel.msg(bm.getName());
+			LowLevel.msg(bm.toString());
 			LowLevel.msg(" no result");
 			LowLevel.lf();
 			//return ;
@@ -145,7 +145,7 @@ public class Execute {
 		if (cnt>2000000) {		// check for overflow on cnt*1000
 			result = cnt/time;
 			if (result>2000000) {
-				LowLevel.msg(bm.getName());
+				LowLevel.msg(bm.toString());
 				LowLevel.msg(" no result");
 				LowLevel.lf();
 				//return ;

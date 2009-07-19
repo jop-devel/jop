@@ -73,7 +73,7 @@ public class GetStatic extends BenchMark {
 	}
 
 
-	public String getName() {
+	public String toString() {
 
 		return "getstatic";
 	}

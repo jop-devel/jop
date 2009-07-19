@@ -84,7 +84,7 @@ public class InvokeStatic extends BenchMark {
 	}
 
 
-	public String getName() {
+	public String toString() {
 
 		return "invokestatic";
 	}

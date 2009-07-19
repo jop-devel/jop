@@ -62,7 +62,7 @@ public class Iinc extends BenchMark {
 		return a;
 	}
 
-	public String getName() {
+	public String toString() {
 
 		return "iinc";
 	}
