@@ -1771,6 +1771,7 @@ System.out.println("new heap: "+heap);
 			System.out.printf("\t%s\t& %10d & %2d\\%% & %10d & %2d\\%% \\\\%n",
 					a.name(), a.rdCnt, (a.rdCnt*1000/rdMemCnt+5)/10, a.wrCnt, (a.wrCnt*1000/wrMemCnt+5)/10);
 		}
+		System.out.println("\t\\midrule");
 		System.out.printf("\tSum\t& %10d &      & %10d &      \\\\%n", ld, st);
 		
 		System.out.println();
@@ -1778,7 +1779,7 @@ System.out.println("new heap: "+heap);
 		System.out.println("memory word per instruction: "+
 			((float) rdMemCnt/instrCnt)+" load "+
 			((float) wrMemCnt/instrCnt)+" store");
-		System.out.println("total cache load cycles: "+this.cacheCost);
+		System.out.println("total method cache load cycles: "+this.cacheCost);
 		System.out.println();
 
 

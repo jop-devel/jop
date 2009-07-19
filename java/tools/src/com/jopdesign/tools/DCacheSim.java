@@ -33,15 +33,28 @@ import java.util.*;
  */
 public class DCacheSim extends JopSim {
 	
-	/**
-	 * A direct mapped cache with line size of one word. Size should be a power of 2.
-	 */
-	static class DirectMapped {
-		
+	static abstract class Cache {
 		int tag[], data[];
 		boolean valid[];
 		int rdCnt;
 		int hitCnt;
+
+		abstract int read(int addr, int val);
+		
+		public String toString() {
+			int percent = 0;
+			if (rdCnt!=0) {
+				percent = (hitCnt*1000/rdCnt+5)/10;
+			}
+			return String.format("\t%3d\t& %10d & %10d & %2d\\%% \\\\",
+					tag.length, rdCnt, hitCnt, percent);
+		}
+	}
+	/**
+	 * A direct mapped cache with line size of one word. Size should be a power of 2.
+	 */
+	static class DirectMapped extends Cache {
+		
 		int shift;
 
 		/**
@@ -72,15 +85,10 @@ public class DCacheSim extends JopSim {
 	}
 	
 	/**
-	 * A direct mapped cache with line size of one word. Size should be a power of 2.
+	 * A fully associative cache with line size of one word.
 	 */
-	static class LRU {
+	static class LRU extends Cache {
 		
-		int tag[], data[];
-		boolean valid[];
-		int rdCnt;
-		int hitCnt;
-
 		public LRU(int size) {
 			tag = new int[size];
 			valid = new boolean[size];
@@ -115,35 +123,75 @@ public class DCacheSim extends JopSim {
 	}
 
 //	DirectMapped hcache = new DirectMapped(32, 3);
-	final static int SIZE = 512;
-	LRU hcache = new LRU(SIZE);
-	LRU alencache = new LRU(SIZE);
-	DirectMapped cpcache = new DirectMapped(SIZE, 0);
-	DirectMapped mtabcache = new DirectMapped(SIZE, 0);
+	final static int CNT = 10;
+	Cache hdmcache[] = new Cache[CNT];
+	Cache hcache[] = new Cache[CNT];
+	Cache alencache[] = new Cache[CNT];
+	Cache mvbcache[] = new Cache[CNT];
+	Cache cpcache[] = new Cache[CNT];
+	Cache mtabcache[] = new Cache[CNT];
+	Cache fieldcache[] = new Cache[CNT];
+	Cache staticcache[] = new Cache[CNT];
+	Cache arraycache[] = new Cache[CNT];
 
 	DCacheSim(String fn, IOSimMin ioSim, int max) {
 		super(fn, ioSim, max);
+		for (int i=0; i<CNT; ++i) {
+			hdmcache[i] = new DirectMapped(1<<i, 3);
+			hcache[i] = new LRU(1<<i);
+			alencache[i] = new LRU(1<<i);
+			mvbcache[i] = new LRU(1<<i);
+			cpcache[i] = new DirectMapped(1<<i, 0);
+			mtabcache[i] = new DirectMapped(1<<i, 0);
+			fieldcache[i] = new LRU(1<<i);
+			staticcache[i] = new DirectMapped(1<<i, 0);
+			arraycache[i] = new DirectMapped(1<<i, 0);
+		}
 	}
 
 	int readMem(int addr, Access type) {
 
 		int data = super.readMem(addr, type);
-		// TODO: use access type
-		switch (type) {
-		case HANDLE:
-			data = hcache.read(addr, data);
-			break;
-		case ALEN:
-			data = alencache.read(addr, data);
-			break;
-		case CONST:
-			data = cpcache.read(addr, data);
-			break;
-		case MTAB:
-			data = mtabcache.read(addr, data);
-			break;
-		default:
-			break;
+		for (int i=0; i<CNT; ++i) {
+			switch (type) {
+			case HANDLE:
+				data = hcache[i].read(addr, data);				
+				data = hdmcache[i].read(addr, data);				
+				break;
+			case ALEN:
+				data = alencache[i].read(addr, data);
+				break;
+			case MVB:
+				data = mvbcache[i].read(addr, data);
+				break;
+			case CONST:
+				data = cpcache[i].read(addr, data);
+				break;
+			case MTAB:
+				data = mtabcache[i].read(addr, data);
+				break;
+			case FIELD:
+				// TODO: crashes when reading from cache
+				// data = 
+				fieldcache[i].read(addr, data);
+				break;
+			case STATIC:
+				// TODO: crashes when reading from cache
+				// data = 
+				staticcache[i].read(addr, data);
+				break;
+			case ARRAY:
+				// TODO: crashes when reading from cache
+				// data = 
+				arraycache[i].read(addr, data);
+				break;
+			case CLINFO:
+			case IFTAB:
+			case INTERN:
+				break;
+			default:
+				break;
+			}			
 		}
 		return data;
 
@@ -157,18 +205,42 @@ public class DCacheSim extends JopSim {
 	void stat() {
 		super.stat();
 		System.out.println("Cache statistics");
-		System.out.println("Handle:");
-		System.out.printf("\t%3d\t& %10d & %10d & %2d\\%% \\\\%n",
-				hcache.tag.length, hcache.rdCnt, hcache.hitCnt, (hcache.hitCnt*1000/hcache.rdCnt+5)/10);
-		System.out.println("Array length:");
-		System.out.printf("\t%3d\t& %10d & %10d & %2d\\%% \\\\%n",
-				alencache.tag.length, alencache.rdCnt, alencache.hitCnt, (alencache.hitCnt*1000/alencache.rdCnt+5)/10);		
-		System.out.println("Constant pool:");
-		System.out.printf("\t%3d\t& %10d & %10d & %2d\\%% \\\\%n",
-				cpcache.tag.length, cpcache.rdCnt, cpcache.hitCnt, (cpcache.hitCnt*1000/cpcache.rdCnt+5)/10);
-		System.out.println("Method table:");
-		System.out.printf("\t%3d\t& %10d & %10d & %2d\\%% \\\\%n",
-				mtabcache.tag.length, mtabcache.rdCnt, mtabcache.hitCnt, (mtabcache.hitCnt*1000/mtabcache.rdCnt+5)/10);
+		System.out.println("Handle (DM):");
+		for (int i=0; i<CNT; ++i) {
+			System.out.println(hdmcache[i]);				
+		}
+		System.out.println("Handle (LRU):");
+		for (int i=0; i<CNT; ++i) {
+			System.out.println(hcache[i]);				
+		}
+		System.out.println("Array length (LRU):");
+		for (int i=0; i<CNT; ++i) {
+			System.out.println(alencache[i]);				
+		}
+		System.out.println("Method vector base (LRU):");
+		for (int i=0; i<CNT; ++i) {
+			System.out.println(mvbcache[i]);				
+		}
+		System.out.println("Constant pool (DM):");
+		for (int i=0; i<CNT; ++i) {
+			System.out.println(cpcache[i]);				
+		}
+		System.out.println("Method table (DM):");
+		for (int i=0; i<CNT; ++i) {
+			System.out.println(mtabcache[i]);				
+		}
+		System.out.println("Field (LRU):");
+		for (int i=0; i<CNT; ++i) {
+			System.out.println(fieldcache[i]);				
+		}
+		System.out.println("Static (DM):");
+		for (int i=0; i<CNT; ++i) {
+			System.out.println(staticcache[i]);				
+		}
+		System.out.println("Array (DM):");
+		for (int i=0; i<CNT; ++i) {
+			System.out.println(arraycache[i]);				
+		}
 	}
 
 	/**
