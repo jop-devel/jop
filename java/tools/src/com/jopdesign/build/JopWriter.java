@@ -38,11 +38,13 @@ public class JopWriter {
 
 	private JOPizer jz;
 	private PrintWriter out;
+	private PrintWriter outStatic;
 	
 
 	public JopWriter(JOPizer jz) {
 		this.jz = jz;
 		out = jz.out;
+		outStatic = jz.outStaticInfo;
 	}
 	
 	public void write() {
@@ -120,13 +122,13 @@ public class JopWriter {
 		Iterator<? extends ClassInfo> it = jz.cliMap.values().iterator();
 		while (it.hasNext()) {
 			JopClassInfo cli = (JopClassInfo) it.next();
-			cli.dumpStaticFields(out, false);			
+			cli.dumpStaticFields(out, outStatic, false);			
 		}	
 		// dump the static ref fields
 		it = jz.cliMap.values().iterator();
 		while (it.hasNext()) {
 			JopClassInfo cli = (JopClassInfo) it.next();
-			cli.dumpStaticFields(out, true);			
+			cli.dumpStaticFields(out, outStatic, true);			
 		}	
 	}
 	

@@ -674,7 +674,7 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 
 	}
 
-	public void dumpStaticFields(PrintWriter out, boolean ref) {
+	public void dumpStaticFields(PrintWriter out, PrintWriter outStatic, boolean ref) {
 
 		int i, addr;
 		if (ref) {
@@ -686,9 +686,11 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 		out.println("//\t" + addr + ": " + clazz.getClassName() + " static "
 				+ (ref ? "reference " : " ") + "fields");
 		out.println("//");
+		
 		for (i = 0; i < clft.len; ++i) {
 			if (clft.isStatic[i]) {
 				if (clft.isReference[i] == ref) {
+					outStatic.println(clazz.getClassName()+"."+clft.key[i]+" "+clft.idx[i]);
 					if (clft.size[i] == 1) {
 						out.print("\t\t0,");
 					} else {
