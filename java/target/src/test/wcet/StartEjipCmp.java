@@ -25,6 +25,12 @@ import cmp.EjipBenchCMP;
 import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 
+/**
+ * Run the Ejip CMP benchmark on one CPU for a fixed iteration count.
+ * 
+ * @author Martin Schoeberl (martin@jopdesign.com)
+ *
+ */
 public class StartEjipCmp {
 
 	/**
@@ -45,7 +51,7 @@ public class StartEjipCmp {
 		int min = 0x7fffffff;
 		int max = 0;
 		int val = 0;
-		for (int i=0; i<100; ++i) {
+		for (int i=0; i<1000; ++i) {
 			invoke();
 			val = te-ts-to;
 			if (val<min) min = val;
