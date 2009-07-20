@@ -46,7 +46,7 @@ architecture rtl of lru is
 	signal state, next_state : state_type;
 	
 	-- enabling data shifting
-	signal ena :		std_logic_vector(0 to line_cnt-1);
+	signal enable :		std_logic_vector(0 to line_cnt-1);
 	-- connecting cache lines
 	signal data :		cache_line_array(-1 to line_cnt-1);
     -- signaling hits
@@ -88,7 +88,7 @@ begin
 			port map (
 				clk		 => clk,
 				reset	 => int_reset,
-				enable	 => ena(i),
+				enable	 => enable(i),
 				data_in	 => data(i-1),
 				data_out => data(i),
 				address	 => cpu_out_reg.address,
@@ -168,7 +168,8 @@ begin
 					hit_cnt, miss_cnt, write_cnt, nc_cnt)
 
 		variable merged_index : std_logic_vector(index_bits-1 downto 0);
-		variable write_hit, read_hit : std_logic;
+		variable merged_hit : std_logic;
+		variable ena : std_logic_vector(0 to line_cnt-1);
 		
 	begin  -- process async
 
@@ -178,19 +179,23 @@ begin
 		next_nc_cnt <= nc_cnt;
 		
 		-- gate data, depending on hit
+		merged_hit := '0';
+		ena := (others => '0');
 		merged_index := (others => '0');
 		for i in 0 to line_cnt-1 loop
+			merged_hit := merged_hit or hit(i);
 			if hit(i) = '1' then
+				for k in 0 to i loop
+					ena(k) := ena(k) or '1';
+				end loop;  -- k
 				merged_index := merged_index or data(i).index;
 			end if;
 		end loop;  -- i
-
+		
 		-- hit data that goes to cache line 0
 		data(-1) <= (merged_index, cpu_out_reg.address, '0');
-		-- set enable signals
-		for i in 0 to line_cnt-1 loop
-			ena(i) <= '0';
-		end loop;  -- i
+		-- nothing is enabled by default
+		enable <= (others => '0');
 
 		-- register data from CPU
 		if cpu_out.rd = '1' or cpu_out.wr = '1' then
@@ -264,7 +269,7 @@ begin
 
 			when rd2 =>  				-- write back data to cache
 				-- shift in new data
-				ena <= (others => '1');
+				enable <= (others => '1');
 
 				data(-1) <= (data(line_cnt-1).index, cpu_out_reg.address, '1');				
 				ram_data <= mem_in.rd_data;
@@ -300,23 +305,14 @@ begin
 				next_cpu_out.wr <= cpu_out.wr;
 				
 				-- set enables for shifting lines
-				write_hit := '0';
-				for i in 0 to line_cnt-1 loop
-					if hit(i) = '1' then
-						write_hit := '1';
-						for k in 0 to i loop
-							ena(k) <= '1';
-						end loop;  -- k
-					end if;
-				end loop;  -- i
-					
+				enable <= ena;
 				-- fixup enables
-				if write_hit = '0' then
-					ena <= (others => '1');
+				if merged_hit = '0' then
+					enable <= (others => '1');
 				end if;
 
 				-- shift in new data
-				if write_hit = '1' then
+				if merged_hit = '1' then
 					data(-1) <= (merged_index, cpu_out_reg.address, '1');
 					ram_data <= cpu_out_reg.wr_data;
 					ram_wraddress <= merged_index;
@@ -339,18 +335,10 @@ begin
 
 				next_cpu_out.rd <= cpu_out.rd;
 
-				-- check for hits
-				read_hit := '0';
-				for i in 0 to line_cnt-1 loop
-					if hit(i) = '1' then
-						read_hit := '1';
-						for k in 0 to i loop
-							ena(k) <= '1';
-						end loop;  -- k
-					end if;
-				end loop;  -- i
+				-- set enables for shifting lines
+				enable <= ena;
 
-				if read_hit = '1' then
+				if merged_hit = '1' then
 
 					next_hit_cnt <= hit_cnt+1;
 						
