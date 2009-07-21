@@ -535,8 +535,8 @@ public class SMOBinaryClassifierFloat {
 		P("!!!alpha_fp[i1]="+alpha_fp[i1]);
 		P("!!!alpha_fp[i2]="+alpha_fp[i2]);
 		
-		float bias = (y_fp[i1]-f1_fp) +y_fp[i1]*(a1_fp-alph1_fp)*getKernelOutputFloat(i1, i1, false)+
-		y_fp[i2]*(a2_fp-alph2_fp)*getKernelOutputFloat(i1, i2, true)+bias_fp;
+		float bias = (f1_fp-y_fp[i1]) +y_fp[i1]*(a1_fp-alph1_fp)*getKernelOutputFloat(i1, i1, false)+
+		y_fp[i2]*(a2_fp-alph2_fp)*getKernelOutputFloat(i1, i2, false)+bias_fp;
 		P("!bias="+bias);
 		
 		
@@ -645,7 +645,7 @@ public class SMOBinaryClassifierFloat {
 		// System.out.println("A initParams()");
 		c_fp = FloatUtil.mul(FloatUtil.ONE, FloatUtil.intToFp(1));
 		// System.out.println("Bd initParams()");
-		bias_fp = FloatUtil.intToFp(0);
+		bias_fp = 0;
 		// System.out.println("Ca initParams()");
 		eps_fp = FloatUtil.div(FloatUtil.ONE, FloatUtil.intToFp(100));
 		// System.out.println("Cb initParams()");
