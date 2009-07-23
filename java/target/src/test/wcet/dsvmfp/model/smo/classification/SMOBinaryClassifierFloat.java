@@ -390,44 +390,6 @@ public class SMOBinaryClassifierFloat {
 	 */
 	public static boolean takeStep() {
 
-		// System.out.print("TAKESTEP START: i1=");
-		// System.out.print(i1);
-		// System.out.print(", i2=");
-		// System.out.println(i2);
-		// if(i1 == 15 && i2 ==74){
-		// printSMOInfo = true;
-		// while(printSMOInfo)
-		// smo.waitForNextPeriod();
-		// }
-		// rec();
-
-		// Native.wr(1, com.jopdesign.sys.Const.IO_WD);
-
-		// rec();
-		// this.i1 = i1;
-		// this.i2 = i2;
-		// int objStart = 0;
-		// if (info)
-		// objStart = getObjectiveFunctionFP();
-		// int alphaCheck = 0;
-
-		// if (info)
-		// for (int i = 0; i < m; i++)
-		// alphaCheck = ABC.add(alphaCheck, ABC.mul(y_fp[i], alpha_fp[i]));
-		// if (ABC.abs(alphaCheck) > alphaTol_fp && info)
-		// System.out.println("Entry: Alphas*y does not add up to 0="
-		// + ABC.fpToStr(alphaCheck));
-		// System.out.println("ts here 1");
-		// if (takeStepCount % 1000 == 0 && info) {
-		// System.out.println("takeStep(): count=" + takeStepCount
-		// + ", Entering method, i1=" + i1 + ", i2=" + i2);
-		// }
-		// System.out.println("ts here 1a");
-		// double qp = printQP("takeStep start", i1, getAlpha(i1), i2,
-		// getAlpha(i2), true);
-		// dLog.log("qp=" + qp, Log.NORMAL);
-		// showQPGraph("MyQpGraph: loop " + loop, i1, getAlpha(i1), i2);
-		// Second derivative along the diagonal line in the box constraints for
 		// If the first and second point is the same then return false
 		if (i1 == i2) {
 			takeStepResult = false;
@@ -444,15 +406,17 @@ public class SMOBinaryClassifierFloat {
 		// int y2_fp = y_fp[i2];
 		// System.out.println("ts here3");
 		float f1_fp = getfFP(i1);
+		P("---: f1_fp:" + f1_fp);
 		E1 = f1_fp - y_fp[i1];
 
 		// System.out.println("ts here3a");
 		float f2_fp = getfFP(i2);
+		P("---: f2_fp:" + f2_fp);
 		E2 = f2_fp - y_fp[i2];
 
 		// System.out.println("ts here4");
 		float s_fp = FloatUtil.mul(y_fp[i1], y_fp[i2]);
-		System.out.println("s_fp:" + s_fp);
+		// System.out.println("s_fp:" + s_fp);
 		// System.out.println("ts here5");
 		float eta_fp = getEtaFP(i1, i2);
 		System.out.println("eta:" + eta_fp);
@@ -467,8 +431,11 @@ public class SMOBinaryClassifierFloat {
 		// inner loop with 1,2,3 example
 
 		if (eta_fp < 0) {
-			P("!!!: alph2_fp:" + alph2_fp);
-			a2_fp = alph2_fp - y_fp[i2] * (E1 - E2) / eta_fp;
+			P("*!!: alph2_fp:" + alph2_fp);
+			a2_fp = alph2_fp - (y_fp[i2] * (E1 - E2)) / eta_fp;
+			P("*!!: E1:" + E1);
+			P("*!!: E2:" + E2);
+			P("*!!: a2_fp:" + a2_fp);
 			// a2_fp = FloatUtil.sub(alph2_fp, FloatUtil.mul(y_fp[i2], FloatUtil
 			// .div(FloatUtil.sub(f1_fp, f2_fp), eta_fp))); // TODO: This
 			// // one is
@@ -506,8 +473,6 @@ public class SMOBinaryClassifierFloat {
 			throw new Error("Wrong path in takestep");
 		} // Return false if no significant optimization has taken place
 
-		P("test a2_fp" + a2_fp);
-		P("test alph2_fp" + alph2_fp);
 		if (FloatUtil.abs(FloatUtil.sub(a2_fp, alph2_fp)) < FloatUtil.mul(
 				eps_fp, FloatUtil.add(a2_fp, (alph2_fp + eps_fp)))) {
 			takeStepResult = false;
@@ -534,17 +499,15 @@ public class SMOBinaryClassifierFloat {
 			// TODO: Can this be
 			// removed
 		}
-		P("!!a1_fp=" + a1_fp);
-		P("!!a2_fp=" + a2_fp);
 		alpha_fp[i1] = a1_fp;
 		alpha_fp[i2] = a2_fp;
 		// P("!!!f1_fp="+f1_fp);
 		// P("!!!f2_fp="+f2_fp);
 		P("!!!bias_fp=" + bias_fp);
-		P("!!!getKernelOutputFloat(i1, i1, false)="
-				+ getKernelOutputFloat(i1, i1, false));
-		P("!!!getKernelOutputFloat(i1, i2, false)="
-				+ getKernelOutputFloat(i1, i2, false));
+		// P("!!!getKernelOutputFloat(i1, i1, false)="
+		// + getKernelOutputFloat(i1, i1, false));
+		// P("!!!getKernelOutputFloat(i1, i2, false)="
+		// + getKernelOutputFloat(i1, i2, false));
 
 		float bias = E1 + y_fp[i1] * (a1_fp - alph1_fp)
 				* getKernelOutputFloat(i1, i1, false);
@@ -556,8 +519,8 @@ public class SMOBinaryClassifierFloat {
 		bias_fp = -bias;// FloatUtil.div((b_low_fp + b_up_fp), FloatUtil.TWO);
 		P("==bias_fp:" + bias_fp);
 
-		P("f(i 0):" + getFunctionOutputFloat(0,false));
-		P("f(i 1):" + getFunctionOutputFloat(1,false));
+		P("f(i 0):" + getFunctionOutputFloat(0, false));
+		P("f(i 1):" + getFunctionOutputFloat(1, false));
 		// System.out.println("tsII: calling smo 10, d");
 		// smoInfo10();
 
@@ -825,25 +788,16 @@ public class SMOBinaryClassifierFloat {
 	 *            - index
 	 * @return the non-biased functional output.
 	 */
-	// TODO: fix fcache. Test set kernel resolution 12:12 problem
 	static float getfFP(int i) {
-		// First check if i is in I_0 or i_low or i_up
-		// System.out.println("g:"); // +(cnt++));
-		if (findexset[i] == 0 || i == i_low || i == i_up) {
-			return fcache_fp[i];
-		} else {
-			// Calculate f using I_0
-			float f_fp = 0;
-			float f_fp_tmp = 0;
-			for (int j = 0; j < m; j++) {
-				f_fp_tmp = FloatUtil.mul(y_fp[j], alpha_fp[j]);
-				f_fp_tmp = FloatUtil.mul(f_fp_tmp, getKernelOutputFloat(i, j,
-						true));
-				f_fp = FloatUtil.add(f_fp, f_fp_tmp);
+		float f_fp = 0;
+		for (int j = 0; j < m; j++) {
+			if (alpha_fp[j] > 0) {
+				f_fp += y_fp[j] * alpha_fp[j]
+						* getKernelOutputFloat(i, j, false);
 			}
-			f_fp = FloatUtil.sub(f_fp, y_fp[i]);
-			return f_fp;
 		}
+		f_fp -= bias_fp;
+		return f_fp;
 	}
 
 	/**
@@ -1092,7 +1046,7 @@ public class SMOBinaryClassifierFloat {
 	 */
 	static boolean isKktViolated(int p) {
 		boolean violation = true;
-		float f_fp = getFunctionOutputFloat(p,false);
+		float f_fp = getFunctionOutputFloat(p, false);
 		// Is alpha_fp on lower bound?
 		if (alpha_fp[p] == 0) {
 			if (FloatUtil.mul(y_fp[p], f_fp) >= FloatUtil.sub(1, eps_fp)) {
@@ -1148,7 +1102,7 @@ public class SMOBinaryClassifierFloat {
 	 * @return calculated error
 	 */
 	static float getCalculatedErrorFP(int p) {
-		return FloatUtil.sub(getFunctionOutputFloat(p,false), y_fp[p]);
+		return FloatUtil.sub(getFunctionOutputFloat(p, false), y_fp[p]);
 	}
 
 	/**
@@ -1293,7 +1247,7 @@ public class SMOBinaryClassifierFloat {
 		P("getTrainingErrorCountFP");
 		int errorCount = 0;
 		for (int i = 0; i < m; i++) {
-			float fout_fp = getFunctionOutputFloat(i,false);
+			float fout_fp = getFunctionOutputFloat(i, false);
 			System.out.print("Tr ");
 			System.out.print(i);
 			System.out.print(" fn ");
