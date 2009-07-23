@@ -177,8 +177,9 @@ public class AppInfo implements Serializable {
 	
 	/**
 	 * Load all classes that belong to the application.
+	 * @throws ClassNotFoundException 
 	 */
-	public void load() throws IOException {
+	public void load() throws IOException, ClassNotFoundException {
 		
 		JavaClass[] jcl = new JavaClass[clsArgs.size()];
 		Repository.setRepository(SyntheticRepository.getInstance(classpath));
@@ -230,7 +231,7 @@ public class AppInfo implements Serializable {
 		System.out.println("CLASSPATH="+ai.classpath+"\tmain class="+ai.mainClass);
 		try {
 			ai.load();
-		} catch (IOException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 			System.exit(-1);
 		}

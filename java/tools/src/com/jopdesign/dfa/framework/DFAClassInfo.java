@@ -70,8 +70,13 @@ public class DFAClassInfo extends com.jopdesign.build.ClassInfo {
 			}
 			
 			// visit superclass first
-			if (clazz.getSuperClass() != null) {
-				visitJavaClass(clazz.getSuperClass());
+			try {
+				if (clazz.getSuperClass() != null) {
+					visitJavaClass(clazz.getSuperClass());
+				}
+			} catch (ClassNotFoundException e) {
+				e.printStackTrace();
+				throw new Error();
 			}
 			
 			// do basic stuff
@@ -81,7 +86,13 @@ public class DFAClassInfo extends com.jopdesign.build.ClassInfo {
 			fields = cli.getFields();
 
 			// add inherited members
-			JavaClass[] superClazz = clazz.getSuperClasses();
+			JavaClass[] superClazz;
+			try {
+				superClazz = clazz.getSuperClasses();
+			} catch (ClassNotFoundException e) {
+				e.printStackTrace();
+				throw new Error();
+			}
 			for (int i = superClazz.length - 1; i >= 0; --i) {
 				Method[] m = superClazz[i].getMethods();
 				for (int k = 0; k < m.length; k++) {

@@ -114,15 +114,15 @@ WCET_METHOD=measure
 TOOLS=java/tools
 # setting for my Eclipse CVS project
 # TOOLS=../../workspace/cvs_jop_tools
-EXT_CP=-classpath java/lib/bcel-5.1.jar$(S)java/lib/jakarta-regexp-1.3.jar$(S)java/lib/RXTXcomm.jar$(S)java/lib/lpsolve55j.jar$(S)java/lib/log4j-1.2.15.jar$(S)java/lib/jgrapht-jdk1.5.jar$(S)java/lib/velocity-1.5.jar$(S)java/lib/velocity-dep-1.5.jar
+EXT_CP=java/lib/bcel-5.2.jar$(S)java/lib/jakarta-regexp-1.3.jar$(S)java/lib/RXTXcomm.jar$(S)java/lib/lpsolve55j.jar$(S)java/lib/log4j-1.2.15.jar$(S)java/lib/jgrapht-jdk1.5.jar$(S)java/lib/velocity-1.5.jar$(S)java/lib/velocity-dep-1.5.jar
 
 # The line below makes the compilation crash, because it causes JOPizer to include a *lot*
 # of classes which are actually not necessary.
-#EXT_CP=-classpath java/jopeclipse/com.jopdesign.jopeclipse/lib/bcel-5.2.jar$(S)java/lib/jakarta-regexp-1.3.jar$(S)java/lib/RXTXcomm.jar$(S)java/lib/lpsolve55j.jar
-#EXT_CP=-classpath java/lib/recompiled_bcel-5.2.jar$(S)java/lib/jakarta-regexp-1.3.jar$(S)java/lib/RXTXcomm.jar$(S)java/lib/lpsolve55j.jar
+#EXT_CP=java/jopeclipse/com.jopdesign.jopeclipse/lib/bcel-5.2.jar$(S)java/lib/jakarta-regexp-1.3.jar$(S)java/lib/RXTXcomm.jar$(S)java/lib/lpsolve55j.jar
+#EXT_CP=java/lib/recompiled_bcel-5.2.jar$(S)java/lib/jakarta-regexp-1.3.jar$(S)java/lib/RXTXcomm.jar$(S)java/lib/lpsolve55j.jar
 
-#TOOLS_JFLAGS=-d $(TOOLS)/dist/classes $(EXT_CP) -sourcepath $(TOOLS)/src$(S)$(TARGET)/src/common
-TOOLS_JFLAGS=-g -d $(TOOLS)/dist/classes $(EXT_CP) -sourcepath $(TOOLS)/src$(S)$(TARGET)/src/common -encoding Latin1
+#TOOLS_JFLAGS=-d $(TOOLS)/dist/classes -classpath $(EXT_CP) -sourcepath $(TOOLS)/src$(S)$(TARGET)/src/common
+TOOLS_JFLAGS=-g -d $(TOOLS)/dist/classes -classpath $(EXT_CP) -sourcepath $(TOOLS)/src$(S)$(TARGET)/src/common -encoding Latin1
 
 PCTOOLS=java/pc
 PCTOOLS_JFLAGS=-g -d $(PCTOOLS)/dist/classes -sourcepath $(PCTOOLS)/src -encoding Latin1
@@ -131,8 +131,8 @@ PCTOOLS_JFLAGS=-g -d $(PCTOOLS)/dist/classes -sourcepath $(PCTOOLS)/src -encodin
 TARGET=java/target
 
 # changed to add another class to the tool chain
-#TOOLS_CP=$(EXT_CP)$(S)$(TOOLS)/dist/lib/jop-tools.jar
-TOOLS_CP=$(EXT_CP)$(S)$(TOOLS)/dist/lib/jop-tools.jar$(S)$(TOOLS)/dist/lib/JopDebugger.jar
+#TOOLS_CP=-classpath $(EXT_CP)$(S)$(TOOLS)/dist/lib/jop-tools.jar
+TOOLS_CP=-classpath $(TOOLS)/dist/lib/jop-tools.jar$(S)$(TOOLS)/dist/lib/JopDebugger.jar$(S)$(EXT_CP)
 
 TARGET_SOURCE=$(TARGET)/src/common$(S)$(TARGET)/src/jdk_base$(S)$(TARGET)/src/jdk11$(S)$(TARGET)/src/rtapi$(S)$(TARGET_APP_SOURCE_PATH)
 TARGET_JFLAGS=-d $(TARGET)/dist/classes -sourcepath $(TARGET_SOURCE) -bootclasspath "" -extdirs "" -classpath "" -source 1.5
@@ -201,7 +201,7 @@ DEBUG_JOPSIM=
 #	application optimization with JOPtimizer
 #	uncomment the following lines to use it
 #
-#OPTIMIZE=java $(EXT_CP)$(S)$(TOOLS)/dist/lib/joptimizer.jar joptimizer.JOPtimizerRunner \
+#OPTIMIZE=java -classpath $(EXT_CP)$(S)$(TOOLS)/dist/lib/joptimizer.jar joptimizer.JOPtimizerRunner \
 #	 -config jar:file:$(TOOLS)/dist/lib/joptimizer.jar!/jop.conf $(MAIN_CLASS) && \
 #	cd $(TARGET)/dist/classes && jar cf ../lib/classes.zip *
 
@@ -264,6 +264,7 @@ tools:
 	mkdir $(TOOLS)/dist/lib
 	mkdir $(TOOLS)/dist/classes
 	javac $(TOOLS_JFLAGS) $(TOOLS)/src/*.java
+	javac $(TOOLS_JFLAGS) $(TOOLS)/src/org/apache/bcel/util/*.java
 	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/build/*.java
 	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/tools/*.java
 	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/wca_rup/*.java

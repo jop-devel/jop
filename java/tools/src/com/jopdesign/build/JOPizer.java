@@ -124,7 +124,6 @@ public class JOPizer extends AppInfo implements Serializable {
 			jz.outStaticInfo = new PrintWriter(new FileOutputStream(jz.outFile+".static.txt"));
 
 			jz.load();
-			
 			// Reduce constant pool
 			// TODO: remove unused field and static field entries
 			// and remove the code from resolveCPool(cp).
@@ -140,7 +139,7 @@ public class JOPizer extends AppInfo implements Serializable {
 			
 			// add monitorenter and exit for synchronized
 			// methods
-			jz.iterate(new InsertSynchronized(jz));
+//			jz.iterate(new InsertSynchronized(jz));
 			
 	        // dump of BCEL info to a text file
 			jz.iterate(new Dump(jz, jz.outTxt));
