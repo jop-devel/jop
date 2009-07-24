@@ -29,16 +29,19 @@ import com.jopdesign.sys.*;
  */
 public class Leds
 {
-	public static final int IO_LEDS = Const.IO_LEGO + 0;	
+	public static final int IO_LEDS = Const.IO_LEGO + 0;
+	public static final int LED_COUNT = 4;
 	protected static int value;
 	
 	/**
-	 * Turns the LED on and off several times a second (if called that often).
+	 * Turns the LED on and off several times a second (if called that often).<br/>
+	 * The LED is set to {@code (us & ((1<<19) - 1)) >> 18} <br/>
+	 * <i>NOTE: The old implementation was broken</i>
 	 * @param index 0-3.
 	 */
 	public static final void blinkUpdate(int index)
 	{
-		setLed(index, (Native.rd(Const.IO_US_CNT) & 0x40000) != 0);
+		setLed(index, ((Native.rd(Const.IO_US_CNT) & ((1<<19) - 1)) >> 18) != 0);
 	}
 	
 	/**
