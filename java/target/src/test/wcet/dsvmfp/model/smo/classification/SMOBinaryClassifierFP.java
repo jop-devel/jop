@@ -729,7 +729,7 @@ public class SMOBinaryClassifierFP{
    * Method calculatefindex, which return which set the point belongs to based
    * on the alpha_fp value and the target.
    *
-   * @param alpha_fp -
+   * @param alpha_array -
    *          the alpha_fp value
    * @return target - the target value
    */
