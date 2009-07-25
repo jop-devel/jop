@@ -96,7 +96,7 @@ public abstract class Enum<T extends Enum<T>>
       throw new NullPointerException();
 
     System.out.println("Enum value of "+s);
-    return null;
+    throw new Error("NYI");
 //    try
 //      {
 //        // XXX We should not use getDeclaredField, because it does

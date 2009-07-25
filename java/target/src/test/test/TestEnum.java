@@ -39,6 +39,29 @@ public class TestEnum {
 
 		Test t = Test.A;
 		System.out.println(t);
+		t = Test.B;
+		System.out.println(t);
+		
+		test(Test.A);
+		test(Test.B);
+		test(Test.C);
+		
+		// not yet supported:
+		// System.out.println(t.valueOf("A"));
+		// System.out.println(t.values());
+	}
+	
+	static void test(Test t) {
+		if (t==Test.A) {
+			System.out.println("enum A");
+		}
+		if (t==Test.B) {
+			System.out.println("enum B");
+		}
+		if (t==Test.C) {
+			System.out.println("enum C");
+		}
+			
 	}
 
 }
