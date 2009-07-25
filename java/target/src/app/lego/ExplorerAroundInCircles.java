@@ -101,8 +101,7 @@ public class ExplorerAroundInCircles {
 					runningMode = null; 
 					state = 0;
 			    }
-			}
-			if(! stop) {
+			} else if(! stop) {
 			  if(iface.buttonEdge[BUTTON_CALIB]) {				
 				state = 1;
 				iface.ledStatus[3] = BotInterface.LED_STATUS_BLINK;
