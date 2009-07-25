@@ -332,7 +332,7 @@ public class SMOBinaryClassifierFloat {
 				* getKernelOutputFloat(i1, i2) + bias_fp;
 		// P("!2bias="+bias);
 
-		bias_fp = -bias;// FloatUtil.div((b_low_fp + b_up_fp), FloatUtil.TWO);
+		bias_fp = bias;// FloatUtil.div((b_low_fp + b_up_fp), FloatUtil.TWO);
 		P("==bias_fp:" + bias_fp);
 
 		P("f(i 0):" + getFunctionOutputFloat(0, false));
@@ -524,11 +524,14 @@ public class SMOBinaryClassifierFloat {
 	 */
 	static float getFunctionOutputFloat(int p, boolean parallel) {
 		float functionalOutput_fp = 0;
+		SVMHelp.p = p;
 		if (parallel) {
+			SVMHelp.functionalOutput_fp = 0.0f;
 			ParallelExecutor pe = new ParallelExecutor();
 			System.out.print("m:");
 			System.out.println(m);
 			pe.executeParallel(new SVMHelp(), m);
+			SVMHelp.functionalOutput_fp -= bias_fp;
 			functionalOutput_fp = SVMHelp.functionalOutput_fp;
 		} else {
 			for (int i = 0; i < m; i++) {
@@ -916,7 +919,7 @@ public class SMOBinaryClassifierFloat {
 				float tmp = ((alph[nr] * target[nr]) * kernelOutput_fp);
 				synchronized (lock) {
 					functionalOutput_fp += tmp;
-					functionalOutput_fp += bias_fp;
+					//functionalOutput_fp += bias_fp;
 				}
 			}
 		}
