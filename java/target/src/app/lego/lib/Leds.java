@@ -35,13 +35,13 @@ public class Leds
 	
 	/**
 	 * Turns the LED on and off several times a second (if called that often).<br/>
-	 * The LED is set to {@code (us & ((1<<19) - 1)) >> 18} <br/>
-	 * <i>NOTE: The old implementation was broken</i>
+	 * The LED is set if the 18^th bit of us is on.
+	 * Therefore, the update has to be called at least 8 times a second.
 	 * @param index 0-3.
 	 */
 	public static final void blinkUpdate(int index)
 	{
-		setLed(index, ((Native.rd(Const.IO_US_CNT) & ((1<<19) - 1)) >> 18) != 0);
+		setLed(index, (Native.rd(Const.IO_US_CNT) & 0x40000) == 1);
 	}
 	
 	/**
