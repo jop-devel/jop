@@ -4,24 +4,27 @@ import lego.lib.Motor;
 
 public class Drive {
 
-	public int[] motorLeftEMF = new int[2], motorRightEMF = new int[2];
+	private static final int LEFT = 0, RIGHT = 1;
 
-	private Motor motorLeft, motorRight;
-	private int motorStateLeft = Motor.STATE_OFF, motorDutyLeft = 0;
-	private int motorStateRight = Motor.STATE_OFF, motorDutyRight = 0;
+	private Motor motor[] = new Motor[2];
+	private int motorState[] = { Motor.STATE_OFF, Motor.STATE_OFF };
+	private int motorDuty[] = { 0, 0 };
+	public int[][] motorEMF = { new int[2], new int[2] };
 
 	public Drive(int motorLeft, int motorRight) {
-		this.motorLeft = new Motor(motorLeft);
-		this.motorRight = new Motor(motorRight);
+		this.motor[LEFT] = new Motor(motorLeft);
+		this.motor[RIGHT] = new Motor(motorRight);
 	}
 	public void write() {
-		motorLeft.setMotorPercentage(motorStateLeft, true, motorDutyLeft);
-		motorRight.setMotorPercentage(motorStateRight, true, motorDutyRight);
+		for(int i = 0; i < 2; i++) {
+			motor[i].setMotorPercentage(motorState[i], true, motorDuty[i]);
+		}
 	}
 	public void read() {
 		Motor.synchronizedReadBackEMF();
-		motorLeft.updateSynchronizedNormalizedBackEMF(motorLeftEMF);
-		motorRight.updateSynchronizedNormalizedBackEMF(motorRightEMF);
+		for(int i = 0; i < 2; i++) {
+			motor[i].updateSynchronizedNormalizedBackEMF(motorEMF[i]);
+		}
 	}
 	public void goForward(int duty) {
 		goTogether(duty, Motor.STATE_FORWARD);
@@ -33,12 +36,28 @@ public class Drive {
 		goTogether(75, Motor.STATE_BRAKE);
 	}
 	private void goTogether(int duty, int state) {
-		motorStateLeft = motorStateRight = state;
-		motorDutyLeft = motorDutyRight = duty;
+		for(int i = 0; i < 2; i++) {
+			motorState[i] = state;
+			motorDuty[i] = duty;
+		}
 	}
 	public void set(int stateL, int dutyL, int stateR, int dutyR) {
-		motorStateLeft = stateL; motorStateRight = stateR;
-		motorDutyLeft = dutyL; motorDutyRight = dutyR;		
+		motorState[LEFT] = stateL;
+		motorDuty[LEFT] = dutyL;
+		motorState[RIGHT] = stateR;
+		motorDuty[RIGHT] = dutyR;
+	}
+	public void dump() {
+		for(int i = 0; i < 2; i++) {
+			System.out.print("Motor ");
+			if(i==LEFT) System.out.print("LEFT");
+			else        System.out.print("RIGHT");
+		    System.out.print("(state,duty,emf[0],emf[1]): (");
+			System.out.print(motorState[i]);System.out.print(", ");
+			System.out.print(motorDuty[i]);System.out.print(", ");
+			System.out.print(motorEMF[i][0]);System.out.print(", ");
+			System.out.print(motorEMF[i][1]);System.out.println(")");
+		}		
 	}
 
 }

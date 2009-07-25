@@ -29,12 +29,23 @@ public class BotInterface {
 	private boolean timeInit = false;
 	private int usecBase = 0;
 
-	/** Board elements */
+	/* Board elements */
+	
+	/** IR Sensor */
 	public IRSensor irSensor;
+
+	/** Drive */
 	public Drive drive;
-	public boolean[] buttons = new boolean[4];
+
+	/** Digitial sensors */
 	public boolean[] digitals = new boolean[3];
+
+	/** LEDs */
 	public int[] ledStatus = new int[Leds.LED_COUNT];
+
+	/** Buttons */
+	private boolean[] buttons = new boolean[4];
+	public boolean[] buttonEdge = new boolean[4];
 
 	
 	public BotInterface(int irSensorId, int motorLeft, int motorRight) {
@@ -77,21 +88,24 @@ public class BotInterface {
 		irSensor.updateSensor();
 		int buttonVal = Buttons.getButtons();
 		for(int ix = 0; ix < 4; ix++) {
-			buttons[ix] = ((buttonVal >> ix) & 1) != 0;
+			boolean btnDown = ((buttonVal >> ix) & 1) != 0;
+			if(btnDown && ! buttons[ix]) buttonEdge[ix] = true;
+			else                         buttonEdge[ix] = false;
+			buttons[ix] = btnDown;
 		}
 		int  digitalVal = DigitalInputs.getDigitalInputs();
 		for(int ix = 0; ix < 3; ix++) {
-			digitals[ix] = ((digitalVal >> ix) & 1) != 1;
+			boolean digitalOn = ((digitalVal >> ix) & 1) != 1;
+			digitals[ix] = digitalOn;
 		}		
 	}
 	
 	public void dump() {
-		System.out.print("IR Sensor: ");
-		System.out.print(irSensor.value);
-		System.out.print(" = ");
-		System.out.println(irSensor.isHigh);
-		System.out.print(" <>  ");
-		System.out.println(irSensor.treshold);
+		System.out.print("Interface State at time ");
+		System.out.print(time.secs);
+		System.out.print(".");
+		System.out.println(time.usecs);
+		irSensor.dump();
 		
 		System.out.print("Buttons ");
 		for(int i = 0; i < 4; i ++) {
@@ -100,6 +114,15 @@ public class BotInterface {
 			System.out.print(buttons[i]);
 			System.out.print(" | ");
 		}
+		
+		System.out.print("\nDigitals ");
+		for(int i = 0; i < 3; i ++) {
+			System.out.print(i);
+			System.out.print(" = ");
+			System.out.print(digitals[i]);
+			System.out.print(" | ");
+		}
 		System.out.println("");
+		drive.dump();
 	}
 }

@@ -41,7 +41,7 @@ public class Leds
 	 */
 	public static final void blinkUpdate(int index)
 	{
-		setLed(index, (Native.rd(Const.IO_US_CNT) & 0x40000) == 1);
+		setLed(index, (Native.rd(Const.IO_US_CNT) & 0x40000) != 0);
 	}
 	
 	/**

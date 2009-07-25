@@ -4,11 +4,8 @@ import joprt.RtThread;
 import lego.explorer.BotInterface;
 import lego.explorer.BotMode;
 import lego.explorer.ManualCalibrationMode;
-import lego.explorer.TriBot;
-import lego.explorer.ZUnused_IRAutoCalibrationMode;
 import lego.explorer.BotInterface.TimeStamp;
 import lego.lib.Motor;
-import lego.lib.Sensors;
 
 /*
  * The explorer is a lego bot project.
@@ -18,8 +15,9 @@ import lego.lib.Sensors;
  * As a test application, it should use as many sensors, actuators and I/O devices as possible :)
  * Really, we need more complex applications !
  * 
- * Currently, I'm still fighting with simple LineFollowing examples, though ...
- * So complexity seems to be a relative thing
+ * Currently, I'm still fighting with simple LineFollowing examples, though --
+ * takes time to get used to time-triggered programming.
+ * So complexity seems to be a relative thing.
  */
 
 /**
@@ -29,7 +27,7 @@ import lego.lib.Sensors;
  *  Simple, but fun to watch.
  *  - Bot: Tribot
  *  - Implementation: Work in progress, but basic functionality is here
- *  - Buttons: B0: Start, B1: Calibrate, B3: Emergency Stop
+ *  - Buttons: B0: Start, B1: Calibrate IR, B3: Emergency Stop (in all modes)
  *  - Provides IR Calibration (B0: Record Low, B1: Record High: B2: Finish)
  *  - Follows the Line on the floor. Either to its left (ccw, start) or right (cw). Pushing one
  *    of the touch sensors stops the explorer and changes orientation.
@@ -71,28 +69,31 @@ public class ExplorerAroundInCircles {
 			return inst;
 		}
 		public boolean driver(boolean stop) {
-			stop = iface.buttons[BUTTON_STOP];
 			for(int i = 0; i < 4; i++) {
 				iface.ledStatus[i] = BotInterface.LED_STATUS_OFF;
 			}
 
+			stop = iface.buttonEdge[BUTTON_STOP];
 			if(runningMode != null) {
 				boolean active = runningMode.driver(stop);
 				if(! active) { 
 					runningMode = null; 
 					state = 0;
 			    }
-			} else if(iface.buttons[BUTTON_CALIB]) {				
+			}
+			if(! stop) {
+			  if(iface.buttonEdge[BUTTON_CALIB]) {				
 				state = 1;
 				iface.ledStatus[3] = BotInterface.LED_STATUS_BLINK;
 				runningMode = ManualCalibrationMode.start(iface);
-			} else if(iface.buttons[BUTTON_START]) {
+			  } else if(iface.buttonEdge[BUTTON_START]) {
 				state = 2;
 				runningMode = LineFollowerMode.start(iface,false);
-			} else {
+			  } else {
 				iface.ledStatus[1] = BotInterface.LED_STATUS_BLINK;
+			  }
 			}
-			return true;
+			return true; // never stop master mode
 		}
 	}
 	/** Spec
@@ -120,7 +121,6 @@ public class ExplorerAroundInCircles {
 			inst.iface = iface;
 			inst.clockWise = clockWise;
 			inst.mode = MODE_RUN;
-			inst.iface.irSensor.running = true;
 			iface.time.sync(inst.ts);
 			return inst;
 		}
@@ -137,7 +137,6 @@ public class ExplorerAroundInCircles {
 				return true;
 			} else {
 				iface.drive.stopMotor();
-				inst.iface.irSensor.running = false;
 				return false;
 			}
 		}
