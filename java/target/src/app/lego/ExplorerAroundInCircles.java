@@ -1,3 +1,36 @@
+/*
+  This file is part of JOP, the Java Optimized Processor
+    see <http://www.jopdesign.com/>
+
+  Copyright (C) 2009, Benedikt Huber
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/*
+ * The explorer is a lego bot project.
+ * The task is to write a robot that explores (later on in coop mode) its environment,
+ * builds a model and synchronizes it with the server.
+ * 
+ * As a test application, it should use as many sensors, actuators and I/O devices as possible :)
+ * Really, we need more complex applications !
+ * 
+ * Currently, I'm still fighting with simple LineFollowing examples, though --
+ * takes time to get used to time-triggered programming.
+ * So complexity seems to be a relative thing.
+ */
+
 package lego;
 
 import joprt.RtThread;
@@ -7,18 +40,6 @@ import lego.explorer.ManualCalibrationMode;
 import lego.explorer.BotInterface.TimeStamp;
 import lego.lib.Motor;
 
-/*
- * The explorer is a lego bot project.
- * The task is to write a robot that
- * --> explores (later on in coop mode) its environment, builds a model and synchronize with the server.
- * 
- * As a test application, it should use as many sensors, actuators and I/O devices as possible :)
- * Really, we need more complex applications !
- * 
- * Currently, I'm still fighting with simple LineFollowing examples, though --
- * takes time to get used to time-triggered programming.
- * So complexity seems to be a relative thing.
- */
 
 /**
  * ExplorerAroundInCircles:
@@ -88,7 +109,7 @@ public class ExplorerAroundInCircles {
 				runningMode = ManualCalibrationMode.start(iface);
 			  } else if(iface.buttonEdge[BUTTON_START]) {
 				state = 2;
-				runningMode = LineFollowerMode.start(iface,false);
+				runningMode = LineFollowerMode.start(iface);
 			  } else {
 				iface.ledStatus[1] = BotInterface.LED_STATUS_BLINK;
 			  }
@@ -117,25 +138,22 @@ public class ExplorerAroundInCircles {
 		private static LineFollowerMode inst = new LineFollowerMode();
 		
 		private LineFollowerMode() { }
-		public static LineFollowerMode start(BotInterface iface, boolean clockWise) {
+		public static LineFollowerMode start(BotInterface iface) {
 			inst.iface = iface;
-			inst.clockWise = clockWise;
 			inst.mode = MODE_RUN;
 			iface.time.sync(inst.ts);
 			return inst;
 		}
 		public boolean driver(boolean stop) {
 			boolean obstacle = iface.digitals[DIGITAL_LEFT] || iface.digitals[DIGITAL_RIGHT];
-			if(obstacle) {
-				clockWise = ! clockWise;
-				stop = true;
-			}
+			if(obstacle) stop = true;
 			if(! stop) {
 				iface.ledStatus[3] = BotInterface.LED_STATUS_ON;
 				if(mode == MODE_RUN) modeRun();
 				else if(mode == MODE_CORRECT) modeCorrect();
 				return true;
 			} else {
+				if(obstacle) clockWise = ! clockWise;
 				iface.drive.stopMotor();
 				return false;
 			}
@@ -208,6 +226,7 @@ public class ExplorerAroundInCircles {
 			iface.dump();
 			System.out.print("control.state: ");System.out.println(control.state);
 			System.out.print("lf.state: ");System.out.println(LineFollowerMode.inst.mode);
+			System.out.print("lf.clockwise: ");System.out.println(LineFollowerMode.inst.clockWise);
 			System.out.print("lf.timer ms: ");System.out.println(iface.time.msDiff(LineFollowerMode.inst.ts));
 			RtThread.sleepMs(400);
 		}
