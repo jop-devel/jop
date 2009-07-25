@@ -513,6 +513,11 @@ public class SMOBinaryClassifierFloat {
 	}
 
 	/**
+	 * Only one executor allowed.
+	 */
+	static ParallelExecutor pe = new ParallelExecutor();
+
+	/**
 	 * Method getFunctionOutput, which will return the functional output for
 	 * point p.
 	 * 
@@ -527,7 +532,6 @@ public class SMOBinaryClassifierFloat {
 		SVMHelp.p = p;
 		if (parallel) {
 			SVMHelp.functionalOutput_fp = 0.0f;
-			ParallelExecutor pe = new ParallelExecutor();
 			System.out.print("m:");
 			System.out.println(m);
 			pe.executeParallel(new SVMHelp(), m);
