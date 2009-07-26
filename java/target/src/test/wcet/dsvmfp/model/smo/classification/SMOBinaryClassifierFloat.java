@@ -71,10 +71,10 @@ public class SMOBinaryClassifierFloat {
 
 	static public int loop;
 
-    static public float k11, k12, k22;
-    
-    //objective function at a2=L and a2=H
-    static public float Lobj, Hobj;
+	static public float k11, k12, k22;
+
+	// objective function at a2=L and a2=H
+	static public float Lobj, Hobj;
 
 	/**
 	 * Method mainRoutine, which estimates the SVM parameters. The parameters
@@ -126,9 +126,8 @@ public class SMOBinaryClassifierFloat {
 		}
 		P("++++Post while++++");
 
-        measure();
-		
-		
+		measure();
+
 		if (false) {
 
 			while (numChanged > 0 || examineAll) { // @WCA loop=2
@@ -289,8 +288,8 @@ public class SMOBinaryClassifierFloat {
 			throw new Error("Wrong path in takestep");
 		} // Return false if no significant optimization has taken place
 
-		if (FloatUtil.abs(FloatUtil.sub(a2_fp, alph2_fp)) < FloatUtil.mul(
-				eps, FloatUtil.add(a2_fp, (alph2_fp + eps)))) {
+		if (FloatUtil.abs(FloatUtil.sub(a2_fp, alph2_fp)) < FloatUtil.mul(eps,
+				FloatUtil.add(a2_fp, (alph2_fp + eps)))) {
 			takeStepResult = false;
 			takeStepFlag = false;
 			P("No signigicant optimization");
@@ -328,8 +327,8 @@ public class SMOBinaryClassifierFloat {
 		float bias = E1 + target[i1] * (a1_fp - alph1_fp)
 				* getKernelOutputFloat(i1, i1);
 		// P("!1bias="+bias);
-		bias += target[i2] * (a2_fp - alph2_fp)
-				* getKernelOutputFloat(i1, i2) + bias_fp;
+		bias += target[i2] * (a2_fp - alph2_fp) * getKernelOutputFloat(i1, i2)
+				+ bias_fp;
 		// P("!2bias="+bias);
 
 		bias_fp = bias;// FloatUtil.div((b_low_fp + b_up_fp), FloatUtil.TWO);
@@ -393,7 +392,7 @@ public class SMOBinaryClassifierFloat {
 		takeStepFlag = false;
 		m = target.length;
 		n = point[0].length;
-		//initialize alpha array to zero
+		// initialize alpha array to zero
 		alph = new float[m];
 		// System.out.println("A initParams()");
 		C = FloatUtil.mul(FloatUtil.ONE, FloatUtil.intToFp(1));
@@ -415,8 +414,6 @@ public class SMOBinaryClassifierFloat {
 		int loopStartInit = 1;
 	}
 
-
-
 	/**
 	 * Method getf, which calculates and returns the functional output without
 	 * using a bias_fp. see keerti99
@@ -429,17 +426,12 @@ public class SMOBinaryClassifierFloat {
 		float f_fp = 0;
 		for (int j = 0; j < m; j++) {
 			if (alph[j] > 0) {
-				f_fp += target[j] * alph[j]
-						* getKernelOutputFloat(i, j);
+				f_fp += target[j] * alph[j] * getKernelOutputFloat(i, j);
 			}
 		}
 		f_fp -= bias_fp;
 		return f_fp;
 	}
-
-
-
-
 
 	/**
 	 * Method to check if the example violates the KKT conditions. The method
@@ -490,9 +482,10 @@ public class SMOBinaryClassifierFloat {
 				for (int j = 0; j < m; j++) {
 					if (alph[j] > 0) {
 						objfunc_fp = FloatUtil.sub(objfunc_fp, FloatUtil.mul(
-								FloatUtil.mul(FloatUtil.mul(FloatUtil.mul(
-										FloatUtil.mul(FloatUtil.HALF, target[i]),
-										target[j]), alph[i]), alph[j]),
+								FloatUtil.mul(FloatUtil
+										.mul(FloatUtil.mul(FloatUtil.mul(
+												FloatUtil.HALF, target[i]),
+												target[j]), alph[i]), alph[j]),
 								getKernelOutputFloat(i, j)));
 					}
 				}
@@ -598,8 +591,7 @@ public class SMOBinaryClassifierFloat {
 	static float getLowerClipFP(int i1, int i2) {
 		float u_fp = 0;
 		if (target[i1] == target[i2]) {
-			u_fp = FloatUtil.sub(FloatUtil.add(alph[i1], alph[i2]),
-					C);
+			u_fp = FloatUtil.sub(FloatUtil.add(alph[i1], alph[i2]), C);
 			if (u_fp < 0) {
 				u_fp = 0;
 			}
@@ -630,8 +622,7 @@ public class SMOBinaryClassifierFloat {
 				v_fp = C;
 			}
 		} else {
-			v_fp = FloatUtil.add(C, FloatUtil
-					.sub(alph[i2], alph[i1]));
+			v_fp = FloatUtil.add(C, FloatUtil.sub(alph[i2], alph[i1]));
 			if (v_fp > C) {
 				v_fp = C;
 			}
@@ -688,8 +679,7 @@ public class SMOBinaryClassifierFloat {
 	 * @return true if p is on bound
 	 */
 	static boolean isExampleOnBound(int p) {
-		return alph[p] < tol
-				|| alph[p] > FloatUtil.sub(C, tol);
+		return alph[p] < tol || alph[p] > FloatUtil.sub(C, tol);
 	}
 
 	/**
@@ -712,7 +702,7 @@ public class SMOBinaryClassifierFloat {
 		// System.out.println("---ALIVE1n---" + n);
 		// System.out.println("---ALIVE11---");
 		// RT bound it to ALPHA_RT
-		for (int i = 0; i < ALPHA_RT; i++) { // @WCA loop=5
+		for (int i = 0; i < ALPHA_RT; i++) { // @WCA loop=2
 			// System.out.println("---ALIVE1111---" + i);
 
 			n = xtest.length;
@@ -723,12 +713,12 @@ public class SMOBinaryClassifierFloat {
 				// System.out.println("---ALIVEnim---" + m);
 				// functionalOutput_fp += KABC.kernelX(i);
 				// TODO
-				//func_out += (data_fp_local[alpha_index_sorted[i]][n])
-				//		* (xtest[n]);
+				// func_out += (data_fp_local[alpha_index_sorted[i]][n])
+				// * (xtest[n]);
 			}
-			//if (alpha_fp[alpha_index_sorted[i]] > 0) {
-			//	functionalOutput_fp += func_out;
-			//}
+			// if (alpha_fp[alpha_index_sorted[i]] > 0) {
+			// functionalOutput_fp += func_out;
+			// }
 			func_out = 0;
 		}
 		functionalOutput_fp -= bias_fp;
@@ -894,8 +884,6 @@ public class SMOBinaryClassifierFloat {
 		return svs;
 	}
 
-
-
 	static void P(String s) {
 		if (PRINT)
 			System.out.println(s);
@@ -916,14 +904,14 @@ public class SMOBinaryClassifierFloat {
 		static float functionalOutput_fp;
 
 		public void execute(int nr) {
-			System.out.println("Parallel in core 0:nr=" + nr);
+			// System.out.println("Parallel in core 0:nr=" + nr);
 			if (alph[nr] > 0) {
 
 				float kernelOutput_fp = getKernelOutputFloat(nr, p);
 				float tmp = ((alph[nr] * target[nr]) * kernelOutput_fp);
 				synchronized (lock) {
 					functionalOutput_fp += tmp;
-					//functionalOutput_fp += bias_fp;
+					// functionalOutput_fp += bias_fp;
 				}
 			}
 		}
@@ -937,25 +925,32 @@ public class SMOBinaryClassifierFloat {
 			return functionalOutput_fp;
 		}
 	}
-	
-	//First measure
-	public static void measure(){
-		
+
+	// First measure
+	public static void measure() {
+
 		int time = 0;
-		
-		//serial
+		float ser0, ser1, par0, par1;
+
+		// serial
 		time = Native.rd(Const.IO_US_CNT);
-		P("f(i 0):" + getFunctionOutputFloat(0, false));
-		P("f(i 1):" + getFunctionOutputFloat(1, false));
-		time = Native.rd(Const.IO_US_CNT) - time;		
+		ser0 = getFunctionOutputFloat(0, false);
+		ser1 = getFunctionOutputFloat(1, false);
+		time = Native.rd(Const.IO_US_CNT) - time;
+
 		P("Serial time=" + time);
-		
-		//parallel
+		P("f(i 0):" + ser0);
+		P("f(i 1):" + ser1);
+
+		// parallel
 		time = Native.rd(Const.IO_US_CNT);
-		P("f(i 0):" + getFunctionOutputFloat(0, true));
-		P("f(i 1):" + getFunctionOutputFloat(1, true));
-		time = Native.rd(Const.IO_US_CNT) - time;		
+		par0 = getFunctionOutputFloat(0, true);
+		par1 = getFunctionOutputFloat(1, true);
+		time = Native.rd(Const.IO_US_CNT) - time;
+
 		P("Parrallel time=" + time);
+		P("f(i 0):" + par0);
+		P("f(i 1):" + par1);
 
 	}
 
