@@ -68,16 +68,16 @@ public class STGuard extends SimpleTask {
     int tmp1 = 0;
     int tmp;
     int i;
-    SharedIMem IWrt;
+    SharedIMem iwrt;
 
     // Constructor 
-    public STGuard(SharedIMem Wrt, int size) {
+    public STGuard(SharedIMem iwrt, int size) {
 	cond = (size <= 0 || size >= MAXTASK); // size must me at least 1 and at maximum MAXTASK.
 	nError = Native.condMove(1, nError, cond);
 
 	this.size = size;
 	tsk = new SimpleHBTask[size];
-        IWrt = Wrt;
+        this.iwrt = iwrt;
     }
 
     /**
@@ -153,7 +153,7 @@ public class STGuard extends SimpleTask {
 	// -1 ... fatal error --> start the hunt for a safe state
         //  0 ... everything is ok, continue as normal
 	tmp = Native.condMove(-1, 0, cond);
-	IWrt.set(tmp);
+	iwrt.set(tmp);
     }
 
 }

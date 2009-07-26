@@ -40,20 +40,20 @@ public class STSampler extends SimpleHBTask {
 
     int nDat = 0;
     int nDat2 = 0;
-    SharedIMem IRd;
-    SharedIMem IWrt;
+    SharedIMem ird;
+    SharedIMem iwrt;
 
     // Constructor 
-    public STSampler(SharedIMem Rd, SharedIMem Wrt) {
-        IRd  = Rd;
-        IWrt = Wrt;
+    public STSampler(SharedIMem ird, SharedIMem iwrt) {
+        this.ird  = ird;
+        this.iwrt = iwrt;
     }
     
     /**
      * Perform read access to shared data.
      */
     public void read() {
-	nDat2 = IRd.get();
+	nDat2 = ird.get();
 	//IRd.set(nDat2+1);
 	//System.out.println("STSampler.read()");
    }
@@ -70,7 +70,7 @@ public class STSampler extends SimpleHBTask {
      * Write results to the shared memory.
      */
     public void write() {
-	IWrt.set(nDat);
+	iwrt.set(nDat);
     }
 
 }
