@@ -452,7 +452,8 @@ sim: java_app
 #		use -Dcpucnt=# for a CMP simulation
 #
 jsim: java_app
-	java $(DEBUG_JOPSIM) -cp java/tools/dist/lib/jop-tools.jar -Dlog="false" \
+	#java $(DEBUG_JOPSIM) -cp java/tools/dist/lib/jop-tools.jar -Dlog="false" \
+	java $(DEBUG_JOPSIM) -cp java/tools/dist/lib/jop-tools.jar -Dcpucnt=3 -Dlog="false" \
 	com.jopdesign.tools.JopSim java/target/dist/bin/$(JOPBIN)
 
 #

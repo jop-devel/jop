@@ -4,13 +4,15 @@ package wcet.dsvmfp;
 public class TrainingData1Float implements SVMData{
 	
 	private static float data[][] = {
-		{1.0f, 8.0f},
-		{-2.0f, 8.0f},
+		{1.0f, 1.0f},
+		{-1.0f, -1.0f},
+		{-2.0f, -2.0f},
 	};
 	
 	private static float y[] = {
 		1.0f,
 		-1.0f,		
+		-1.0f,
 	};
 /*
   public static float data_fp2[] = {1.0f, 0.0f};
