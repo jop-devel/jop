@@ -712,7 +712,7 @@ public class SMOBinaryClassifierFloat {
 		// System.out.println("---ALIVE1n---" + n);
 		// System.out.println("---ALIVE11---");
 		// RT bound it to ALPHA_RT
-		for (int i = 0; i < ALPHA_RT; i++) { // @WCA loop=2
+		for (int i = 0; i < ALPHA_RT; i++) { // @WCA loop=5
 			// System.out.println("---ALIVE1111---" + i);
 
 			n = xtest.length;
@@ -916,7 +916,7 @@ public class SMOBinaryClassifierFloat {
 		static float functionalOutput_fp;
 
 		public void execute(int nr) {
-			//System.out.println("Parallel in core 0:nr=" + nr);
+			System.out.println("Parallel in core 0:nr=" + nr);
 			if (alph[nr] > 0) {
 
 				float kernelOutput_fp = getKernelOutputFloat(nr, p);
@@ -942,28 +942,20 @@ public class SMOBinaryClassifierFloat {
 	public static void measure(){
 		
 		int time = 0;
-		float ser0, ser1, par0, par1;
 		
 		//serial
 		time = Native.rd(Const.IO_US_CNT);
-		ser0 = getFunctionOutputFloat(0, false);
-		ser1 = getFunctionOutputFloat(1, false);
+		P("f(i 0):" + getFunctionOutputFloat(0, false));
+		P("f(i 1):" + getFunctionOutputFloat(1, false));
 		time = Native.rd(Const.IO_US_CNT) - time;		
-		
 		P("Serial time=" + time);
-		P("f(i 0):" + ser0);
-		P("f(i 1):" + ser1);
-
 		
 		//parallel
 		time = Native.rd(Const.IO_US_CNT);
-		par0 = getFunctionOutputFloat(0, true);
-		par1 = getFunctionOutputFloat(1, true);
+		P("f(i 0):" + getFunctionOutputFloat(0, true));
+		P("f(i 1):" + getFunctionOutputFloat(1, true));
 		time = Native.rd(Const.IO_US_CNT) - time;		
-
 		P("Parrallel time=" + time);
-		P("f(i 0):" + par0);
-		P("f(i 1):" + par1);
 
 	}
 
