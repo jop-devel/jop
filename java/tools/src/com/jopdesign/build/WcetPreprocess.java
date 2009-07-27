@@ -53,7 +53,7 @@ public class WcetPreprocess extends AppInfo {
 		ai.parseOptions(args);
 		try {
 			ai.load();
-		} catch (IOException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 			System.exit(-1);
 		}

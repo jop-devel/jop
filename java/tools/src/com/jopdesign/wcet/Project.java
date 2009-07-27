@@ -264,13 +264,18 @@ public class Project {
 		for(String klass : processor.getJVMClasses()) {
 			appInfo.addClass(klass);			
 		}
-		if(projectConfig.doDataflowAnalysis()) {			
-			appInfo.load();
-			appInfo.iterate(new RemoveNops(appInfo));
-		} else {
-			appInfo.load();
-			WcetPreprocess.preprocess(appInfo);
-			appInfo.iterate(new CreateMethodGenerators(appInfo));
+		try {
+			if(projectConfig.doDataflowAnalysis()) {			
+					appInfo.load();
+				appInfo.iterate(new RemoveNops(appInfo));
+			} else {
+				appInfo.load();
+				WcetPreprocess.preprocess(appInfo);
+				appInfo.iterate(new CreateMethodGenerators(appInfo));
+			}
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+			throw new Error();
 		}
 		return appInfo;
 	}

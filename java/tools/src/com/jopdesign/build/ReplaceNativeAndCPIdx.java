@@ -141,7 +141,12 @@ public class ReplaceNativeAndCPIdx extends JOPizerVisitor {
 						}
 					}
 					if (field == null) {
-						jc = jc.getSuperClass();
+						try {
+							jc = jc.getSuperClass();
+						} catch (ClassNotFoundException e) {
+							e.printStackTrace();
+							throw new Error();
+						}
 					}
 				}
 
