@@ -173,8 +173,13 @@ public class WcetAppInfo  {
 			ClassInfo superRec = receiver;
 			while(staticImpl == null && superRec != null) {
 				staticImpl = superRec.getMethodInfo(methodId);
-				if(superRec.clazz.getSuperClass() == null) superRec = null;
-				else superRec = superRec.superClass;
+				try {
+					if(superRec.clazz.getSuperClass() == null) superRec = null;
+					else superRec = superRec.superClass;
+				} catch (ClassNotFoundException e) {
+					e.printStackTrace();
+					throw new Error();
+				}
 			}
 		}		
 		return staticImpl;

@@ -124,7 +124,6 @@ public class JOPizer extends AppInfo implements Serializable {
 			jz.outStaticInfo = new PrintWriter(new FileOutputStream(jz.outFile+".static.txt"));
 
 			jz.load();
-			
 			// Reduce constant pool
 			// TODO: remove unused field and static field entries
 			// and remove the code from resolveCPool(cp).

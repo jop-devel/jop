@@ -1053,9 +1053,14 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 
 		boolean threaded = false;	
 		
-		if (p.cliMap.get(receiver).clazz.instanceOf(p.cliMap.get("joprt.RtThread").clazz) && signature.equals("run()V")) {
-			c.createThread();
-			threaded = true;
+		try {
+			if (p.cliMap.get(receiver).clazz.instanceOf(p.cliMap.get("joprt.RtThread").clazz) && signature.equals("run()V")) {
+				c.createThread();
+				threaded = true;
+			}
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+			throw new Error();
 		}
 
 		// carry only minimal information with call

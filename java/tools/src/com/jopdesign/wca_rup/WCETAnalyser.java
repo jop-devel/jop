@@ -262,7 +262,7 @@ public class WCETAnalyser extends com.jopdesign.dfa.framework.DFAAppInfo {
 		
 		try {
 			wca.load();
-		} catch (IOException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		
