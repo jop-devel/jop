@@ -139,7 +139,7 @@ public class JOPizer extends AppInfo implements Serializable {
 			
 			// add monitorenter and exit for synchronized
 			// methods
-//			jz.iterate(new InsertSynchronized(jz));
+			jz.iterate(new InsertSynchronized(jz));
 			
 	        // dump of BCEL info to a text file
 			jz.iterate(new Dump(jz, jz.outTxt));
