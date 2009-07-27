@@ -45,7 +45,7 @@ public class SMOBinaryClassifierFloat {
 	static public float E1, E2;
 
 	/** The bias_fp. */
-	static public float bias_fp;
+	static public float bias;
 
 	static public int i1, i2;
 
@@ -58,9 +58,9 @@ public class SMOBinaryClassifierFloat {
 	/** The input space dimensinality. */
 	static public int n;
 
-	static public boolean takeStepFlag;
+//	static public boolean takeStepFlag;
 
-	static public boolean takeStepResult;
+	//static public boolean takeStepResult;
 
 	// ////////////Performance Variables////////////////////
 	static public int takeStepCount;
@@ -108,6 +108,7 @@ public class SMOBinaryClassifierFloat {
 			// assigns i1 and i2
 			// getIndex(indexarray);
 
+			boolean takeStepResult = false;
 			for (i1 = 0; i1 < m; i1++) {
 				System.out.println("*******takeStep()*****");
 				System.out.print("i1:");
@@ -115,7 +116,7 @@ public class SMOBinaryClassifierFloat {
 				for (i2 = 0; i2 < m; i2++) {
 					System.out.print("i2:");
 					System.out.println(i2);
-					takeStep();
+					takeStepResult = takeStep();
 					if (takeStepResult)
 						numChanged++;
 					System.out.print("takeStep: ");
@@ -207,64 +208,57 @@ public class SMOBinaryClassifierFloat {
 
 		// If the first and second point is the same then return false
 		if (i1 == i2) {
-			takeStepResult = false;
-			takeStepFlag = false;
 			return false;
 		}
 		// TODO: remove repeated assignments
 		// System.out.println("ts here2");
-		float alph1_fp = alph[i1];
-		float alph2_fp = alph[i2];
-		P("S: alph1_fp:" + alph1_fp);
-		P("S: alph2_fp:" + alph2_fp);
-		// int y1_fp = y_fp[i1];
-		// int y2_fp = y_fp[i2];
-		// System.out.println("ts here3");
-		float f1_fp = getfFP(i1);
-		P("---: f1_fp:" + f1_fp);
-		E1 = f1_fp - target[i1];
+		float alph1 = alph[i1];
+		float alph2 = alph[i2];
+		P("S: alph1:" + alph1);
+		P("S: alph2:" + alph2);
+		float f1 = getfFP(i1);
+		P("f1_fp:" + f1);
+		E1 = f1 - target[i1];
 
-		// System.out.println("ts here3a");
-		float f2_fp = getfFP(i2);
-		P("---: f2_fp:" + f2_fp);
-		E2 = f2_fp - target[i2];
+		float f2 = getfFP(i2);
+		P("f2:" + f2);
+		E2 = f2 - target[i2];
 
-		// System.out.println("ts here4");
-		float s_fp = FloatUtil.mul(target[i1], target[i2]);
-		// System.out.println("s_fp:" + s_fp);
-		// System.out.println("ts here5");
-		float eta_fp = getEtaFP(i1, i2);
-		System.out.println("eta:" + eta_fp);
-		float l_fp = getLowerClipFP(i1, i2);
-		System.out.println("l_fp=" + l_fp);
-		float h_fp = getUpperClipFP(i1, i2); // TODO: It returned 6 (393216_fp)
-		System.out.println("h_fp=" + h_fp);
-		// System.out.println("ts here7");
+		float s_fp = target[i1] * target[i2];
+
+		float L = getLowerClipFP(i1, i2);
+		P("L=" + L);
+
+		float H = getUpperClipFP(i1, i2);
+		P("H=" + H);
+
+		if (L == H)
+			return false;
+
+		k11 = getKernelOutputFloat(i1, i1);
+		k12 = getKernelOutputFloat(i1, i2);
+		k22 = getKernelOutputFloat(i2, i2);
+
+		float eta_fp = 2 * k12 - k11 - k22;
+		P("eta:" + eta_fp);
 
 		// on
 		float a2_fp, a1_fp;
-		// inner loop with 1,2,3 example
 
 		if (eta_fp < 0) {
-			P("*!!: alph2_fp:" + alph2_fp);
-			a2_fp = alph2_fp - (target[i2] * (E1 - E2)) / eta_fp;
+			P("*!!: alph2_fp:" + alph2);
+			a2_fp = alph2 - (target[i2] * (E1 - E2)) / eta_fp;
 			P("*!!: E1:" + E1);
 			P("*!!: E2:" + E2);
 			P("*!!: a2_fp:" + a2_fp);
-			// a2_fp = FloatUtil.sub(alph2_fp, FloatUtil.mul(y_fp[i2], FloatUtil
-			// .div(FloatUtil.sub(f1_fp, f2_fp), eta_fp))); // TODO: This
-			// // one is
-			// wrong on
-			// first
-			// inner
-			// loop.
+
 			P("!!!: a2_fp:" + a2_fp);
 
 			// a2 evaluates to zero
-			if (a2_fp < l_fp) {
-				a2_fp = l_fp;
-			} else if (a2_fp > h_fp) {
-				a2_fp = h_fp;
+			if (a2_fp < L) {
+				a2_fp = L;
+			} else if (a2_fp > H) {
+				a2_fp = H;
 			}
 			P("1: a2_fp:" + a2_fp);
 		} else {
@@ -273,30 +267,28 @@ public class SMOBinaryClassifierFloat {
 			// getObjectivefunction
 			// if needed
 			float tempAlpha2_fp = alph[i2];
-			alph[i2] = l_fp;
+			alph[i2] = L;
 			float lObj_fp = getObjectiveFunctionFP();
-			alph[i2] = h_fp;
+			alph[i2] = H;
 			float hObj_fp = getObjectiveFunctionFP();
 			alph[i2] = tempAlpha2_fp;
 			if (lObj_fp > (hObj_fp + eps)) {
-				a2_fp = l_fp;
+				a2_fp = L;
 			} else if (lObj_fp < FloatUtil.sub(hObj_fp, eps)) {
-				a2_fp = h_fp;
+				a2_fp = H;
 			} else {
-				a2_fp = alph2_fp;
+				a2_fp = alph2;
 			}
 			throw new Error("Wrong path in takestep");
 		} // Return false if no significant optimization has taken place
 
-		if (FloatUtil.abs(FloatUtil.sub(a2_fp, alph2_fp)) < FloatUtil.mul(eps,
-				FloatUtil.add(a2_fp, (alph2_fp + eps)))) {
-			takeStepResult = false;
-			takeStepFlag = false;
+		if (FloatUtil.abs(FloatUtil.sub(a2_fp, alph2)) < FloatUtil.mul(eps,
+				FloatUtil.add(a2_fp, (alph2 + eps)))) {
 			P("No signigicant optimization");
 			return false;
 		}
 		// System.out.println("ts:y");
-		a1_fp = alph1_fp + s_fp * (alph2_fp - a2_fp);
+		a1_fp = alph1 + s_fp * (alph2 - a2_fp);
 		P("Raw a1_fp:" + a1_fp);
 		if (a1_fp < tol) {
 			a1_fp = 0;
@@ -318,52 +310,26 @@ public class SMOBinaryClassifierFloat {
 		alph[i2] = a2_fp;
 		// P("!!!f1_fp="+f1_fp);
 		// P("!!!f2_fp="+f2_fp);
-		P("!!!bias_fp=" + bias_fp);
+		P("!!!bias_fp=" + bias);
 		// P("!!!getKernelOutputFloat(i1, i1, false)="
 		// + getKernelOutputFloat(i1, i1, false));
 		// P("!!!getKernelOutputFloat(i1, i2, false)="
 		// + getKernelOutputFloat(i1, i2, false));
 
-		float bias = E1 + target[i1] * (a1_fp - alph1_fp)
+		float bias = E1 + target[i1] * (a1_fp - alph1)
 				* getKernelOutputFloat(i1, i1);
 		// P("!1bias="+bias);
-		bias += target[i2] * (a2_fp - alph2_fp) * getKernelOutputFloat(i1, i2)
-				+ bias_fp;
+		bias += target[i2] * (a2_fp - alph2) * k12 + bias;
 		// P("!2bias="+bias);
 
-		bias_fp = bias;// FloatUtil.div((b_low_fp + b_up_fp), FloatUtil.TWO);
-		P("==bias_fp:" + bias_fp);
+		bias = bias;// FloatUtil.div((b_low_fp + b_up_fp), FloatUtil.TWO);
+		P("==bias_fp:" + bias);
 
 		P("f(i 0):" + getFunctionOutputFloat(0, false));
 		P("f(i 1):" + getFunctionOutputFloat(1, false));
-		// System.out.println("tsII: calling smo 10, d");
-		// smoInfo10();
 
-		// last ok
-
-		// if (info) {
-		// int objEnd = getObjectiveFunctionFP();
-		// if (objEnd < objStart)
-		// System.out.println("Objectivefunction not descreasing. Diff="
-		// + ABC.fpToStr(objStart - objEnd));
-		// int alphaCheck = 0;
-		// for (int i = 0; i < m; i++)
-		// alphaCheck = ABC.add(alphaCheck, ABC.mul(y_fp[i], alpha_fp[i]));
-		// if (ABC.abs(alphaCheck) > alphaTol_fp)
-		// System.out.println("Exit(+" + takeStepCount
-		// + "): Alphas*y does not add up to 0="
-		// + ABC.fpToStr(alphaCheck));
-		// }
-		// System.out.println("ts II ok");
-		// smoInfo();
-		// if(gohome) // and do nothing (will exit the smo after a copuple of
-		// iterations if it worked)
-		// return false;
-		// System.out.print("TAKESTEP END:");
-		// System.out.println(takeStepCount);
 		takeStepCount++;
-		takeStepResult = true;
-		takeStepFlag = false;
+
 		return true;
 	}
 
@@ -389,16 +355,13 @@ public class SMOBinaryClassifierFloat {
 	 */
 	static void initParams() {
 
-		takeStepFlag = false;
 		m = target.length;
 		n = point[0].length;
 		// initialize alpha array to zero
 		alph = new float[m];
-		// System.out.println("A initParams()");
+
 		C = FloatUtil.mul(FloatUtil.ONE, FloatUtil.intToFp(1));
-		// System.out.println("Bd initParams()");
-		bias_fp = 0;
-		// System.out.println("Ca initParams()");
+		bias = 0;
 		eps = FloatUtil.div(FloatUtil.ONE, FloatUtil.intToFp(100));
 		// System.out.println("Cb initParams()");
 		tol = FloatUtil.div(FloatUtil.ONE, FloatUtil.intToFp(10));
@@ -429,7 +392,7 @@ public class SMOBinaryClassifierFloat {
 				f_fp += target[j] * alph[j] * getKernelOutputFloat(i, j);
 			}
 		}
-		f_fp -= bias_fp;
+		f_fp -= bias;
 		return f_fp;
 	}
 
@@ -528,7 +491,7 @@ public class SMOBinaryClassifierFloat {
 			System.out.print("m:");
 			System.out.println(m);
 			pe.executeParallel(new SVMHelp(), m);
-			SVMHelp.functionalOutput_fp -= bias_fp;
+			SVMHelp.functionalOutput_fp -= bias;
 			functionalOutput_fp = SVMHelp.functionalOutput_fp;
 		} else {
 			for (int i = 0; i < m; i++) {
@@ -538,7 +501,7 @@ public class SMOBinaryClassifierFloat {
 							* getKernelOutputFloat(i, p);
 				}
 			} // Make a check here to see any alphas has been modified after
-			functionalOutput_fp -= bias_fp;
+			functionalOutput_fp -= bias;
 		}
 		return functionalOutput_fp;
 	}
@@ -721,7 +684,7 @@ public class SMOBinaryClassifierFloat {
 			// }
 			func_out = 0;
 		}
-		functionalOutput_fp -= bias_fp;
+		functionalOutput_fp -= bias;
 		return functionalOutput_fp;
 	}
 
@@ -746,7 +709,7 @@ public class SMOBinaryClassifierFloat {
 								kernelOutput_fp));
 			}
 		} // Make a check here to see any alphas has been modified after
-		functionalOutput_fp = FloatUtil.sub(functionalOutput_fp, bias_fp);
+		functionalOutput_fp = FloatUtil.sub(functionalOutput_fp, bias);
 		return functionalOutput_fp;
 	}
 
@@ -774,7 +737,7 @@ public class SMOBinaryClassifierFloat {
 		// printScalar("sp",Native.rd(com.jopdesign.sys.Const.IO_WD));
 		printScalar("i1", i1);
 		printScalar("i2", i2);
-		printScalar("bias_fp", bias_fp);
+		printScalar("bias_fp", bias);
 		printScalar("m", m);
 		printScalar("n", n);
 		printMatrix("data_fp", point);
@@ -783,8 +746,6 @@ public class SMOBinaryClassifierFloat {
 		printScalar("C", C);
 		printScalar("tol", tol);
 		printScalar("eps", eps);
-		printBoolean("takeStepFlag", takeStepFlag);
-		printBoolean("takeStepResult", takeStepResult);
 		printScalar("takeStepCount", takeStepCount);
 		int svs = 0;
 		for (int i = 0; i < m; i++) {
@@ -794,10 +755,6 @@ public class SMOBinaryClassifierFloat {
 		printScalar("#sv", svs);
 		printScalar("training err cnt", getTrainingErrorCountFP());
 
-		// printScalar("GC free words",GC.free());
-		// printScalar("ABC.MAX",ABC.MAX);
-		// printScalar("ABC.MIN",ABC.MIN);
-		// printScalar("sp",Native.rd(com.jopdesign.sys.Const.IO_WD));
 		for (int i = 0; i < 100000; i++)
 			;
 		System.out.println("======SMO INFO END======");
