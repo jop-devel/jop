@@ -51,7 +51,7 @@ public class ProjectConfig {
 		new StringOption("sp","the sourcepath",false);
 	
 	public static final StringOption TARGET_BINPATH =
-		new StringOption("sp", "directory holding linker info (.link.txt)","java/target/dist/bin");
+		new StringOption("linkinfo-path", "directory holding linker info (.link.txt)","java/target/dist/bin");
 	
 	public static final StringOption OUT_DIR =
 		 new StringOption("outdir","directory for output of the analysis tool","java/target/wcet/");
@@ -127,6 +127,18 @@ public class ProjectConfig {
 	}
 	
 	/**
+	 * Get the name of the application class, unqualified
+	 * @see getAppClassName
+	 */
+	public String getUnqualifiedAppClassName() {
+		String appClassName = getAppClassName();
+		if(appClassName.indexOf('.') > 0) {
+			appClassName = appClassName.substring(appClassName.lastIndexOf('.')+1);
+		}
+		return appClassName;		
+	}
+	
+	/**
 	 * get the name of the method to be analyzed
 	 * @return
 	 */
@@ -149,12 +161,12 @@ public class ProjectConfig {
 				MiscUtils.sanitizeFileName(getAppClassName() + "_" + getTargetMethodName()));
 	}
 	
-	public File getMethodLinkInfoFile() {
-		return new File(config.getOption(TARGET_BINPATH), getAppClassName() + ".jop.link.txt");
+	public File getClassLinkInfoFile() {
+		return new File(config.getOption(TARGET_BINPATH), getUnqualifiedAppClassName() + ".jop.link.txt");
 	}
 	
-	public File getConstantsLinkInfoFile() {
-		return new File(config.getOption(TARGET_BINPATH), getAppClassName() + ".jop.static.txt");
+	public File getStaticLinkInfoFile() {
+		return new File(config.getOption(TARGET_BINPATH), getUnqualifiedAppClassName() + ".jop.static.txt");
 	}
 	
 	public File getOutDir() {
@@ -200,7 +212,11 @@ public class ProjectConfig {
 		return config.getOption(RESULTS_APPEND);
 	}
 
-	public static String splitFQMethod(String s, boolean getClass) {		
+	public static String splitFQMethod(String s, boolean getClass) {
+		return splitClassName(s)[getClass ? 0 : 1];
+	}
+	
+	public static String[] splitClassName(String s) {		
 		int sigIx = s.indexOf('(');
 		String sWithoutSig;
 		if(sigIx > 0) {
@@ -208,19 +224,15 @@ public class ProjectConfig {
 		} else {
 			sWithoutSig = s;
 		}
-		int methIx = sWithoutSig.lastIndexOf('.');
-		if(getClass) {
-			if(methIx > 0) {
-				return s.substring(0,methIx);
-			} else {
-				return null;
-			}
+		int nameIx = sWithoutSig.lastIndexOf('.');
+		String[] splittedName = new String[2];
+		if(nameIx > 0) {
+			splittedName[0] = s.substring(0,nameIx);
+			splittedName[1] = s.substring(nameIx + 1);
 		} else {
-			if(methIx > 0) {
-				return s.substring(methIx + 1);
-			} else {
-				return s;
-			}
+			splittedName[0] = null;
+			splittedName[1] = s;
 		}
+		return splittedName;
 	}
 }
