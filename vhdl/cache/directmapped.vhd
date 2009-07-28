@@ -6,8 +6,8 @@ use work.sc_pack.all;
 
 entity directmapped is
 generic (
-	index_bits : integer := 11;
-	line_cnt : integer := 2048);
+	index_bits : integer := 9;
+	line_cnt : integer := 512);
 port (
 	clk, reset:	    in std_logic;
 
@@ -37,18 +37,15 @@ architecture rtl of directmapped is
 	signal ram_dout : cache_line_type;
 	signal ram_rdaddress : std_logic_vector(index_bits-1 downto 0);
 
-	signal tag, next_tag : std_logic_vector(SC_ADDR_SIZE-1 downto 0);
-	signal wrdata, next_wrdata : std_logic_vector(31 downto 0);
-	signal rddata, next_rddata : std_logic_vector(31 downto 0);
-	signal fetchtag, next_fetchtag : std_logic_vector(SC_ADDR_SIZE-1 downto 0);
-	signal fetch, next_fetch : std_logic;
-	signal ncfetch, next_ncfetch : std_logic;
+	signal cpu_out_reg, next_cpu_out : sc_out_type;
+	
+	signal rddata_reg, next_rddata : std_logic_vector(31 downto 0);
+	signal fetchtag_reg, next_fetchtag : std_logic_vector(SC_ADDR_SIZE-1 downto 0);
+	signal fetch_reg, next_fetch : std_logic;
 	
 	type STATE_TYPE is (idle,
 						rd0, rd1, rd2,
-						wr0, wr1,
-						ncrd0,
-						ncwr0);
+						wr0, wr1);
 	signal state, next_state : STATE_TYPE;
 
 	signal hit : std_logic;
@@ -63,15 +60,15 @@ begin
 			addr_width => index_bits)
 		port map (
 			wrclk	   => clk,
-			data(32+SC_ADDR_SIZE-11 downto SC_ADDR_SIZE-11+1) => ram_din.data,
-			data(SC_ADDR_SIZE-11 downto 1) => ram_din.tag,
+			data(32+SC_ADDR_SIZE-9 downto SC_ADDR_SIZE-9+1) => ram_din.data,
+			data(SC_ADDR_SIZE-9 downto 1) => ram_din.tag,
 			data(0)    => ram_din.valid,
 			wraddress  => ram_wraddress,
 			wren	   => ram_wren,
 			
 			rdclk	   => clk,
-			dout(32+SC_ADDR_SIZE-11 downto SC_ADDR_SIZE-11+1) => ram_dout.data,
-			dout(SC_ADDR_SIZE-11 downto 1) => ram_dout.tag,
+			dout(32+SC_ADDR_SIZE-9 downto SC_ADDR_SIZE-9+1) => ram_dout.data,
+			dout(SC_ADDR_SIZE-9 downto 1) => ram_dout.tag,
 			dout(0)    => ram_dout.valid,
 			rdaddress  => ram_rdaddress,
 			rden	   => '1');
@@ -80,66 +77,58 @@ begin
 	begin  -- process sync
 		if int_reset = '1' then  -- asynchronous reset (active low)
 			
-			tag <= (others => '0');
-			wrdata <= (others => '0');
-			rddata <= (others => '0');
-			fetchtag <= (others => '0');
-			fetch <= '0';
-			ncfetch <= '0';
+			cpu_out_reg <= ((others => '0'), (others => '0'), '0', '0', '0', bypass);
+			rddata_reg <= (others => '0');
+			fetchtag_reg <= (others => '0');
+			fetch_reg <= '0';
 			state <= idle;
 
 		elsif clk'event and clk = '1' then  -- rising clock edge
 
-			tag <= next_tag;
-			wrdata <= next_wrdata;
-			rddata <= next_rddata;
-			fetchtag <= next_fetchtag;
-			fetch <= next_fetch;
-			ncfetch <= next_ncfetch;
+			cpu_out_reg <= next_cpu_out;
+			rddata_reg <= next_rddata;
+			fetchtag_reg <= next_fetchtag;
+			fetch_reg <= next_fetch;
 			state <= next_state;
 
 		end if;
 	end process sync;
 	
 	async: process (cpu_out, mem_in, ram_dout,
-					tag, rddata, wrdata, fetchtag, fetch, ncfetch, state)
+					cpu_out_reg, rddata_reg, fetchtag_reg, fetch_reg, state)
 	begin  -- process async
 
-		next_rddata <= rddata;
-		next_tag <= tag;
-		next_wrdata <= wrdata;
-		next_fetchtag <= fetchtag;
+		next_cpu_out <= cpu_out_reg;
+		next_rddata <= rddata_reg;
+		next_fetchtag <= fetchtag_reg;
 		next_fetch <= '0';
-		next_ncfetch <= '0';
 		next_state <= state;
 
-		cpu_in.rd_data <= rddata;
+		cpu_in.rd_data <= rddata_reg;
 		cpu_in.rdy_cnt <= "00";
 
-		mem_out.address <= tag;
-		mem_out.wr_data <= wrdata;
+		mem_out.address <= cpu_out_reg.address;
+		mem_out.wr_data <= cpu_out_reg.wr_data;
 		mem_out.rd <= '0';
 		mem_out.wr <= '0';
-		mem_out.nc <= '0';
-		mem_out.atomic <= '0';
+		mem_out.cache <= cpu_out_reg.cache;
+		mem_out.atomic <= cpu_out_reg.atomic;
 
 		ram_rdaddress <= cpu_out.address(index_bits-1 downto 0);
 
 		ram_din.valid <= '1';
 		ram_din.data <= mem_in.rd_data;
-		ram_din.tag <= tag(SC_ADDR_SIZE-1 downto index_bits);
-		ram_wraddress <= tag(index_bits-1 downto 0);
+		ram_din.tag <= cpu_out_reg.address(SC_ADDR_SIZE-1 downto index_bits);
+		ram_wraddress <= cpu_out_reg.address(index_bits-1 downto 0);
 		ram_wren <= '0';		
 		
 		hit <= '0';
 
-		if fetch = '1' or ncfetch = '1' then
+		if fetch_reg = '1' then
 			cpu_in.rd_data <= mem_in.rd_data;
 			next_rddata <= mem_in.rd_data;
-		end if;
-		if fetch = '1' then
-			ram_din.tag <= fetchtag(SC_ADDR_SIZE-1 downto index_bits);
-			ram_wraddress <= fetchtag(index_bits-1 downto 0);
+			ram_din.tag <= fetchtag_reg(SC_ADDR_SIZE-1 downto index_bits);
+			ram_wraddress <= fetchtag_reg(index_bits-1 downto 0);
 			ram_wren <= '1';
 		end if;
 
@@ -148,7 +137,7 @@ begin
 			when rd0 =>
 				cpu_in.rdy_cnt <= "11";
 
-				if ram_dout.tag = tag(SC_ADDR_SIZE-1 downto index_bits)
+				if ram_dout.tag = cpu_out_reg.address(SC_ADDR_SIZE-1 downto index_bits)
 					and ram_dout.valid = '1' then
 					
 					next_rddata <= ram_dout.data;
@@ -167,13 +156,13 @@ begin
 			when rd2 =>
 				cpu_in.rdy_cnt <= mem_in.rdy_cnt;				
 				if mem_in.rdy_cnt <= 1 then
-					next_fetchtag <= tag;
+					next_fetchtag <= cpu_out_reg.address;
 					next_fetch <= '1';
 					next_state <= idle;
 				end if;
 				
 			when wr0 =>
-				ram_din.data <= wrdata;
+				ram_din.data <= cpu_out_reg.wr_data;
 				ram_wren <= '1';
 				
 				mem_out.wr <= '1';				
@@ -186,46 +175,22 @@ begin
 					next_state <= idle;
 				end if;
 				
-			when ncrd0 =>
-				cpu_in.rdy_cnt <= mem_in.rdy_cnt;
-				if mem_in.rdy_cnt <= 1 then
-					next_ncfetch <= '1';
-					next_state <= idle;
-				end if;
-
-			when ncwr0 =>
-				cpu_in.rdy_cnt <= mem_in.rdy_cnt;
-				if mem_in.rdy_cnt <= 1 then
-					next_state <= idle;
-				end if;
-				
 			when others => null;
 		end case;
 
 		if state = idle
 			or state = wr1
-			or state = rd2
-		    or state = ncwr0
-			or state = ncrd0 then
+			or state = rd2 then
 
 			if cpu_out.rd = '1' or cpu_out.wr = '1' then
-				next_tag <= cpu_out.address;				
-				next_wrdata <= cpu_out.wr_data;
+				next_cpu_out <= cpu_out;
 			end if;
 
-			if cpu_out.rd = '1' and cpu_out.nc = '0' then
+			if cpu_out.rd = '1' and cpu_out.cache = direct_mapped then
 				next_state <= rd0;
 			end if;
-			if cpu_out.wr = '1' and cpu_out.nc = '0' then
+			if cpu_out.wr = '1' and cpu_out.cache = direct_mapped then
 				next_state <= wr0;
-			end if;
-			if cpu_out.rd = '1' and cpu_out.nc = '1' then
-				mem_out <= cpu_out;
-				next_state <= ncrd0;
-			end if;
-			if cpu_out.wr = '1' and cpu_out.nc = '1' then
-				mem_out <= cpu_out;
-				next_state <= ncwr0;
 			end if;
 
 		end if;

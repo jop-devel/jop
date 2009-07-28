@@ -244,7 +244,7 @@ end process;
 			inval => inval
 		);
 
-	cmp_lru: entity work.lru
+	cmp_dcache: entity work.datacache
 		port map (
 			clk		=> clk_int,
 			reset	=> int_res,

@@ -275,15 +275,21 @@ end process;
 	sc_mem_out.wr_data <= sc_ctrl_mem_out.wr_data;
 	sc_mem_out.wr <= sc_ctrl_mem_out.wr and mem_access;
 	sc_mem_out.rd <= sc_ctrl_mem_out.rd and mem_access;
+	sc_mem_out.atomic <= sc_ctrl_mem_out.atomic;
+	sc_mem_out.cache <= sc_ctrl_mem_out.cache;
 
 	sc_scratch_out.address <= sc_ctrl_mem_out.address;
 	sc_scratch_out.wr_data <= sc_ctrl_mem_out.wr_data;
 	sc_scratch_out.wr <= sc_ctrl_mem_out.wr and scratch_access;
 	sc_scratch_out.rd <= sc_ctrl_mem_out.rd and scratch_access;
+	sc_scratch_out.atomic <= sc_ctrl_mem_out.atomic;
+	sc_scratch_out.cache <= sc_ctrl_mem_out.cache;
 
 	sc_io_out.address <= sc_ctrl_mem_out.address;
 	sc_io_out.wr_data <= sc_ctrl_mem_out.wr_data;
 	sc_io_out.wr <= sc_ctrl_mem_out.wr and io_access;
 	sc_io_out.rd <= sc_ctrl_mem_out.rd and io_access;
+	sc_io_out.atomic <= sc_ctrl_mem_out.atomic;
+	sc_io_out.cache <= sc_ctrl_mem_out.cache;
 
 end rtl;

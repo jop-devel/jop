@@ -163,10 +163,9 @@ begin
 	end if;
 end process;
 
-	-- bsy is too late to register pcwait and bsy
-	pc_inc <= std_logic_vector(to_unsigned(0, pc_width-1)) & not (pcwait and bsy);
+	pc_inc <= std_logic_vector(unsigned(pc) + 1);
 
-process(jfetch, br, jpaddr, brdly, pc, pc_inc)
+process(jfetch, br, jpaddr, brdly, pcwait, bsy, pc, pc_inc)
 begin
 	if (jfetch='1') then
 		pc_mux <= jpaddr;
@@ -174,7 +173,12 @@ begin
 		if (br='1') then
 			pc_mux <= brdly;
 		else
-			pc_mux <= std_logic_vector(unsigned(pc) + unsigned(pc_inc));
+			-- bsy is too late to register pcwait and bsy
+			if (pcwait='1' and bsy='1') then
+				pc_mux <= pc;
+			else
+				pc_mux <= pc_inc;
+			end if;
 		end if;
 	end if;
 end process;
