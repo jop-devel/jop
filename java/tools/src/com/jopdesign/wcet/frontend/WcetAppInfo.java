@@ -115,6 +115,7 @@ public class WcetAppInfo  {
 		if(cli == null) throw new MethodNotFoundException("The class "+className+" couldn't be found");
 		return searchMethod(cli,methodName);
 	}
+	
 	public MethodInfo searchMethod(ClassInfo cli, String methodName) throws MethodNotFoundException {
 		MethodInfo mi = null;
 		if(methodName.indexOf("(") > 0) {

@@ -49,9 +49,11 @@ import com.jopdesign.wcet.analysis.WcetCost;
 import com.jopdesign.wcet.config.Config;
 import com.jopdesign.wcet.frontend.CallGraph;
 import com.jopdesign.wcet.frontend.ControlFlowGraph;
+import com.jopdesign.wcet.frontend.LinkerInfo;
 import com.jopdesign.wcet.frontend.SourceAnnotations;
 import com.jopdesign.wcet.frontend.WcetAppInfo;
 import com.jopdesign.wcet.frontend.CallGraph.CallGraphNode;
+import com.jopdesign.wcet.frontend.LinkerInfo.LinkInfo;
 import com.jopdesign.wcet.frontend.SourceAnnotations.BadAnnotationException;
 import com.jopdesign.wcet.frontend.SourceAnnotations.LoopBound;
 import com.jopdesign.wcet.frontend.WcetAppInfo.MethodNotFoundException;
@@ -147,6 +149,7 @@ public class Project {
 	private ProcessorModel processor;
 	private SourceAnnotations sourceAnnotations;
 	private File resultRecord;
+	private LinkerInfo linkerInfo;
 
 	public Project(ProjectConfig config) throws IOException {
 		this.projectConfig =  config;
@@ -275,7 +278,7 @@ public class Project {
 			}
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
-			throw new Error();
+			throw new AssertionError(e.getMessage());
 		}
 		return appInfo;
 	}
@@ -286,7 +289,9 @@ public class Project {
 		/* Initialize annotation map */
 		annotationMap = new Hashtable<ClassInfo, SortedMap<Integer,LoopBound>>();
 		sourceAnnotations = new SourceAnnotations(this);
-
+		linkerInfo = new LinkerInfo(this);
+		linkerInfo.loadLinkInfo();
+		
 		/* run dataflow analysis */
 		if(projectConfig.doDataflowAnalysis()) {
 			topLevelLogger.info("Starting DFA analysis");
@@ -319,6 +324,18 @@ public class Project {
 		}
 		return annots;		
 	}
+	
+	/**
+	 * Get link info for a given class
+	 * @param cli 
+	 * @return the linker info
+	 * @throws IOException if we failed to load the linker info
+	 * @throws FormatException if the linker info was faulty
+	 */
+	public LinkInfo getLinkInfo(ClassInfo cli) throws IOException {
+		return this.linkerInfo.getLinkInfo(cli);
+	}
+	
 	
 	/* Data flow analysis
 	 * ------------------
