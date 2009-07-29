@@ -25,6 +25,9 @@ public class SMOBinaryClassifierFloat {
 
 	/** The [m] Lagrange multipliers. */
 	static public float[] alph;
+	static float alph1, alph2;
+
+	static float y1, y2;
 
 	/** The target vector of {-1,+1}. */
 	static public float[] target;
@@ -58,9 +61,9 @@ public class SMOBinaryClassifierFloat {
 	/** The input space dimensinality. */
 	static public int n;
 
-//	static public boolean takeStepFlag;
+	// static public boolean takeStepFlag;
 
-	//static public boolean takeStepResult;
+	// static public boolean takeStepResult;
 
 	// ////////////Performance Variables////////////////////
 	static public int takeStepCount;
@@ -84,9 +87,7 @@ public class SMOBinaryClassifierFloat {
 	 */
 	static public boolean mainRoutine() {
 
-		// for(int i=0;i<1000000;i++);
 		info = false;
-		// ABC.init();
 		// The number of updated that significantly changed the
 		// Lagrange multipliers
 		numChanged = 0;
@@ -116,7 +117,7 @@ public class SMOBinaryClassifierFloat {
 				for (i2 = 0; i2 < m; i2++) {
 					System.out.print("i2:");
 					System.out.println(i2);
-					takeStepResult = takeStep();
+					takeStepResult = examineExample();
 					if (takeStepResult)
 						numChanged++;
 					System.out.print("takeStep: ");
@@ -176,23 +177,6 @@ public class SMOBinaryClassifierFloat {
 		return true;
 	}
 
-	// METHODS////////////////////////////////////////
-	/**
-	 * Method examineExample, which will take a step using a number of
-	 * heuristics. The points coming into this method is from the outer in the
-	 * SMO main routine: first choice heuristic
-	 * 
-	 * @param i2
-	 *            - zero based index of second point to classify, which is
-	 *            chosen by the outer loop in smo
-	 * @return true if it was possible to take a step
-	 */
-	static boolean examineExample() {
-
-		takeStep();
-		return true;
-	}
-
 	/**
 	 * Method takeStep, which optimizes two lagrange multipliers at a time. The
 	 * method uses DsvmUtilABC.epsEqual to determine if there was positive
@@ -206,32 +190,29 @@ public class SMOBinaryClassifierFloat {
 	 */
 	public static boolean takeStep() {
 
+		P("takeStep, takeStepCount=" + takeStepCount + " i1=" + i1 + " i2="
+				+ i2);
+
 		// If the first and second point is the same then return false
 		if (i1 == i2) {
 			return false;
 		}
-		// TODO: remove repeated assignments
-		// System.out.println("ts here2");
-		float alph1 = alph[i1];
-		float alph2 = alph[i2];
+
+		alph1 = alph[i1];
+		y1 = target[i1];
+
 		P("S: alph1:" + alph1);
-		P("S: alph2:" + alph2);
-		float f1 = getfFP(i1);
-		P("f1_fp:" + f1);
-		E1 = f1 - target[i1];
 
-		float f2 = getfFP(i2);
-		P("f2:" + f2);
-		E2 = f2 - target[i2];
+		E1 = getfFP(i1) - y1;
+		P("f1_fp:" + getfFP(i1));
 
-		float s_fp = target[i1] * target[i2];
+		float s_fp = y1 * y2;
 
+		// Compute L, H
 		float L = getLowerClipFP(i1, i2);
 		P("L=" + L);
-
 		float H = getUpperClipFP(i1, i2);
 		P("H=" + H);
-
 		if (L == H)
 			return false;
 
@@ -239,98 +220,94 @@ public class SMOBinaryClassifierFloat {
 		k12 = getKernelOutputFloat(i1, i2);
 		k22 = getKernelOutputFloat(i2, i2);
 
-		float eta_fp = 2 * k12 - k11 - k22;
-		P("eta:" + eta_fp);
+		float eta = 2 * k12 - k11 - k22;
+		P("eta=" + eta);
 
 		// on
-		float a2_fp, a1_fp;
+		float a2, a1;
 
-		if (eta_fp < 0) {
-			P("*!!: alph2_fp:" + alph2);
-			a2_fp = alph2 - (target[i2] * (E1 - E2)) / eta_fp;
-			P("*!!: E1:" + E1);
-			P("*!!: E2:" + E2);
-			P("*!!: a2_fp:" + a2_fp);
+		if (eta < 0) {
+			a2 = alph2 - (y2 * (E1 - E2)) / eta;
+			P("eta < 0: a2=" + a2);
 
-			P("!!!: a2_fp:" + a2_fp);
-
-			// a2 evaluates to zero
-			if (a2_fp < L) {
-				a2_fp = L;
-			} else if (a2_fp > H) {
-				a2_fp = H;
+			if (a2 < L) {
+				a2 = L;
+				P("eta < 0: L=" + L + " a2=" + a2);
+			} else if (a2 > H) {
+				a2 = H;
+				P("eta < 0: H=" + H + " a2=" + a2);
 			}
-			P("1: a2_fp:" + a2_fp);
 		} else {
 
-			// TODO: Check how often this is called and tune
-			// getObjectivefunction
-			// if needed
 			float tempAlpha2_fp = alph[i2];
 			alph[i2] = L;
-			float lObj_fp = getObjectiveFunctionFP();
+			float Lobj = getObjectiveFunctionFP();
 			alph[i2] = H;
-			float hObj_fp = getObjectiveFunctionFP();
+			float Hobj = getObjectiveFunctionFP();
 			alph[i2] = tempAlpha2_fp;
-			if (lObj_fp > (hObj_fp + eps)) {
-				a2_fp = L;
-			} else if (lObj_fp < FloatUtil.sub(hObj_fp, eps)) {
-				a2_fp = H;
+			if (Lobj > (Hobj + eps)) {
+				a2 = L;
+			} else if (Lobj < Hobj - eps) {
+				a2 = H;
 			} else {
-				a2_fp = alph2;
+				a2 = alph2;
 			}
-			throw new Error("Wrong path in takestep");
-		} // Return false if no significant optimization has taken place
 
-		if (FloatUtil.abs(FloatUtil.sub(a2_fp, alph2)) < FloatUtil.mul(eps,
-				FloatUtil.add(a2_fp, (alph2 + eps)))) {
-			P("No signigicant optimization");
+		}
+
+		if (a2 < 1e-8f)
+			a2 = 0;
+		else if (a2 > C - 1e-8f)
+			a2 = C;
+
+		if (Math.abs(a2 - alph2) < eps * (a2 + alph2 + eps))
 			return false;
-		}
-		// System.out.println("ts:y");
-		a1_fp = alph1 + s_fp * (alph2 - a2_fp);
-		P("Raw a1_fp:" + a1_fp);
-		if (a1_fp < tol) {
-			a1_fp = 0;
-		}
-		if (a2_fp < tol) {
-			a2_fp = 0;
-		}
-		if (a1_fp > (C + tol)) {
-			System.out.println("a1_fp too large");// a1_fp = c_fp; //
-			// TODO: Can this be
-			// removed
-		}
-		if (a2_fp > (C + tol)) {
-			System.out.println("a2_fp too large");// a2_fp = c_fp; //
-			// TODO: Can this be
-			// removed
-		}
-		alph[i1] = a1_fp;
-		alph[i2] = a2_fp;
-		// P("!!!f1_fp="+f1_fp);
-		// P("!!!f2_fp="+f2_fp);
-		P("!!!bias_fp=" + bias);
-		// P("!!!getKernelOutputFloat(i1, i1, false)="
-		// + getKernelOutputFloat(i1, i1, false));
-		// P("!!!getKernelOutputFloat(i1, i2, false)="
-		// + getKernelOutputFloat(i1, i2, false));
 
-		float bias = E1 + target[i1] * (a1_fp - alph1)
-				* getKernelOutputFloat(i1, i1);
-		// P("!1bias="+bias);
-		bias += target[i2] * (a2_fp - alph2) * k12 + bias;
-		// P("!2bias="+bias);
+		a1 = alph1 + s_fp * (alph2 - a2);
 
-		bias = bias;// FloatUtil.div((b_low_fp + b_up_fp), FloatUtil.TWO);
-		P("==bias_fp:" + bias);
+		// Update threshold to reflect change in Lagrange multipliers
+		bias = E1 + target[i1] * (a1 - alph1) * getKernelOutputFloat(i1, i1)
+				+ target[i2] * (a2 - alph2) * k12 + bias;
+		P("bias:" + bias);
 
+		// Update weight vector to reflect change in a1 & a2, if linear SVM
+
+		// Update error cache using new Lagrange multipliers
+
+		// Store a1 in the alpha array
+		alph[i1] = a1;
+		// Store a2 in the alpha array
+		alph[i2] = a2;
+
+		// Checking (can be removed later)
 		P("f(i 0):" + getFunctionOutputFloat(0, false));
 		P("f(i 1):" + getFunctionOutputFloat(1, false));
 
 		takeStepCount++;
 
 		return true;
+	}
+
+	// METHODS////////////////////////////////////////
+	/**
+	 * Method examineExample, which will take a step using a number of
+	 * heuristics. The points coming into this method is from the outer in the
+	 * SMO main routine: first choice heuristic
+	 * 
+	 * @param i2
+	 *            - zero based index of second point to classify, which is
+	 *            chosen by the outer loop in smo
+	 * @return true if it was possible to take a step
+	 */
+	static boolean examineExample() {
+		y2 = target[i2];
+		alph2 = alph[i2];
+		P("S: alph2:" + alph2);
+		E2 = getfFP(i2) - target[i2];
+		P("f2:" + getfFP(i2));
+
+		// TODO: i1 will/should be set here
+		return takeStep();
 	}
 
 	static int changed;
