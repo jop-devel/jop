@@ -6,8 +6,8 @@ use work.sc_pack.all;
 
 entity directmapped is
 generic (
-	index_bits : integer := 9;
-	line_cnt : integer := 512);
+	index_bits : integer := 11;
+	line_cnt : integer := 2048);
 port (
 	clk, reset:	    in std_logic;
 
@@ -60,15 +60,15 @@ begin
 			addr_width => index_bits)
 		port map (
 			wrclk	   => clk,
-			data(32+SC_ADDR_SIZE-9 downto SC_ADDR_SIZE-9+1) => ram_din.data,
-			data(SC_ADDR_SIZE-9 downto 1) => ram_din.tag,
+			data(32+SC_ADDR_SIZE-index_bits downto SC_ADDR_SIZE-index_bits+1) => ram_din.data,
+			data(SC_ADDR_SIZE-index_bits downto 1) => ram_din.tag,
 			data(0)    => ram_din.valid,
 			wraddress  => ram_wraddress,
 			wren	   => ram_wren,
 			
 			rdclk	   => clk,
-			dout(32+SC_ADDR_SIZE-9 downto SC_ADDR_SIZE-9+1) => ram_dout.data,
-			dout(SC_ADDR_SIZE-9 downto 1) => ram_dout.tag,
+			dout(32+SC_ADDR_SIZE-index_bits downto SC_ADDR_SIZE-index_bits+1) => ram_dout.data,
+			dout(SC_ADDR_SIZE-index_bits downto 1) => ram_dout.tag,
 			dout(0)    => ram_dout.valid,
 			rdaddress  => ram_rdaddress,
 			rden	   => '1');
