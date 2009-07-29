@@ -67,10 +67,10 @@ public class CallGraph {
 			return new MethodRef(method.getCli(),method.methodId);
 		}
 		
-		public int hashCode() { return method.getMethod().hashCode(); }
+		public int hashCode() { return method.hashCode(); }
 		public boolean equals(Object that) {
 			return (that instanceof CallGraphNode) ? 
-				   (method.getMethod().equals(((CallGraphNode) that).method.getMethod())) : 
+				   (method.equals(((CallGraphNode) that).method)) : 
 				   false;
 		}
 		public String toString() {
@@ -137,6 +137,11 @@ public class CallGraph {
 		Pair<List<CallGraphNode>,List<CallGraphNode>> cycle = 
 			DirectedCycleDetector.findCycle(callGraph,rootNode);
 		if(cycle != null) {
+			for(DefaultEdge e : callGraph.edgeSet()) {
+				CallGraphNode src = callGraph.getEdgeSource(e);
+				CallGraphNode target = callGraph.getEdgeTarget(e);
+				System.err.println(""+src+" --> "+target);
+			}
 			throw new AssertionError(cyclicCallGraphMsg(cycle));
 		}
 		invalidate();

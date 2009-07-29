@@ -96,5 +96,11 @@ public class MethodInfo {
 	@Override public String toString() {
 		return super.toString()+"\""+getFQMethodName() +"\"";
 	}
-
+	@Override public boolean equals(Object other) {
+		if(this == other) return true;
+		return(this.getFQMethodName().equals(((MethodInfo) other).getFQMethodName()));
+	}
+	@Override public int hashCode() {
+		return(this.getFQMethodName().hashCode());
+	}
 }
