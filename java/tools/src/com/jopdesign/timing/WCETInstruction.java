@@ -59,7 +59,7 @@ public class WCETInstruction {
 	public static final int DRETURN_HIDDEN_LOAD_CYCLES = 11;
 	public static final int MIN_HIDDEN_LOAD_CYCLES = RETURN_HIDDEN_LOAD_CYCLES; 
 	// CMP: Multiprocessing with time sliced memory access (christof)
-	public static final boolean CMP_WCET = false;
+	public static boolean CMP_WCET = false;
 
 	// Arbitration
 	public static int CPUS = 8;
@@ -112,6 +112,7 @@ public class WCETInstruction {
 	// FIXME: Workaround for the transition to the new timing system
 	public static void initCMP(int cpus, int timeslot) {
 		// Initialize 
+		CMP_WCET = true;
 		CPUS = cpus;
 		TIMESLOT = timeslot;
 		initArbiter();

@@ -79,10 +79,10 @@ public class JOPCmpTimingTable extends JOPTimingTable {
 	// but too lazy now to extract common stuff.
 	private static ConsoleTable dumpCmpTimingTable(JOPCmpTimingTable tt) {
 		//              r  w  cpus timeslot
-		int conf1[] = { 3, 5, 3, 10 };
-		int conf2[] = { 3, 5, 3, 15 };
-		int conf3[] = { 3, 5, 8, 10 };
-		int conf4[] = { 3, 5, 8, 15 };
+		int conf1[] = { 1, 2, 3, 4 };
+		int conf2[] = { 1, 2, 3, 5 };
+		int conf3[] = { 1, 2, 3, 6 };
+		int conf4[] = { 1, 2, 3, 7 };
 		int[][] cmpTestConfig = { conf1, conf2, conf3, conf4 };
 		ConsoleTable table = new ConsoleTable();
 		table.addColumn("opcode", Alignment.ALIGN_RIGHT)

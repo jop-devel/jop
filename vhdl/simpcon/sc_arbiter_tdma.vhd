@@ -123,7 +123,7 @@ architecture rtl of arbiter is
 
   constant write_gap : integer := 2;
   constant read_gap  : integer := 1;
-  constant slot_length : integer := 7;
+  constant slot_length : integer := 6;
   constant period : integer := cpu_cnt*slot_length;
 
 -- counter
@@ -142,7 +142,6 @@ slots: for i in 0 to cpu_cnt-1 generate
 	cpu_time(i) <= (i+1)*slot_length;
 end generate;	
 
--- TODO: should really be configrable with: number of CPUs, slot length,
 -- and memory access time. Should use assert to check that the slot length
 -- is longer than the memory access time.
 
