@@ -111,8 +111,8 @@ public class WCETInstruction {
 	
 	// FIXME: Workaround for the transition to the new timing system
 	public static void initCMP(int cpus, int timeslot) {
-		// Initialize
-		CMP_WCET=true;
+		// Initialize 
+		CMP_WCET = true;
 		CPUS = cpus;
 		TIMESLOT = timeslot;
 		initArbiter();

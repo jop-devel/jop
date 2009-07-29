@@ -35,7 +35,7 @@ import com.jopdesign.io.SysDevice;
  */
 public class Measure {
 
-	final static int TDMA_LENGTH = 3*7;
+	final static int TDMA_LENGTH = 3*6;
 	/**
 	 * @param args
 	 */
@@ -47,8 +47,8 @@ public class Measure {
 	public static void lowLevel() {
 
 		SysDevice sys = IOFactory.getFactory().getSysDevice();
-		int frequ = new STScheduler().getMsCycles()*1000;
-		int shift = frequ/10/(TDMA_LENGTH)*TDMA_LENGTH;
+		int frequ = new STScheduler(1).getMsCycles()*1000;
+		int shift = frequ/10/(TDMA_LENGTH)*TDMA_LENGTH+1;
 		
 		int a[] = new int[5];
 		
@@ -78,7 +78,7 @@ public class Measure {
 
 		SPBubbleSort bs = new SPBubbleSort();
 		SysDevice sys = IOFactory.getFactory().getSysDevice();
-		int frequ = new STScheduler().getMsCycles()*1000;
+		int frequ = new STScheduler(1).getMsCycles()*1000;
 		int shift = frequ/10/(TDMA_LENGTH)*TDMA_LENGTH+1;
 		
 		
