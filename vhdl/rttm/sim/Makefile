@@ -7,6 +7,7 @@ all: work compile
 
 compile:
 	vcom $(OPTIONS) $(JOPDIR)/simpcon/sc_pack.vhd
+	vcom $(OPTIONS) ../tag.vhd
 	vcom $(OPTIONS) ../tm.vhd
 	vcom $(OPTIONS) tb_rttm.vhd
 
