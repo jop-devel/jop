@@ -19,6 +19,9 @@
  */
 package com.jopdesign.wcet;
 
+import java.io.File;
+import java.net.URI;
+import java.net.URL;
 import java.text.MessageFormat;
 import java.util.Arrays;
 
@@ -38,7 +41,7 @@ import com.jopdesign.wcet.config.Config.BadConfigurationException;
  */
 public class ExecHelper {
 	private Class<?> execClass;
-	private String configFile;
+	private String configFileProp;
 	private Logger tlLogger;
 	private Config config;
 	private String version;
@@ -47,7 +50,7 @@ public class ExecHelper {
 		this.execClass = clazz;
 		this.version = version;
 		this.tlLogger = topLevelLogger;
-		this.configFile = configFile;
+		this.configFileProp = configFile;
 	}
 	public void initTopLevelLogger() {
 		ConsoleAppender consoleApp = new ConsoleAppender(new PatternLayout(), ConsoleAppender.SYSTEM_ERR);
@@ -61,7 +64,10 @@ public class ExecHelper {
 	 */
 	public void loadConfig(String[] args) {
 		try {
-			String[] argsrest = Config.load(System.getProperty(configFile),args);
+			String configFile = System.getProperty(configFileProp);
+			if(configFile == null) configFile = 
+				new File("java/tools/src/com/jopdesign/wcet/work.properties").toURI().toURL().toString();			
+			String[] argsrest = Config.load(configFile,args);
 			config = Config.instance();
 			if(config.helpRequested()) exitUsage(false);
 			if(config.versionRequested()) exitVersion();
@@ -103,11 +109,11 @@ public class ExecHelper {
 		System.err.println(
 			MessageFormat.format("" +
 					"Usage:\n  java -D{0}=file://<path-to-config> {1} [OPTIONS]", 
-					configFile, execClass.getCanonicalName()));
+					configFileProp, execClass.getCanonicalName()));
 		System.err.println(
 			MessageFormat.format(
 				"Example:\n    java -D{0}=file:///home/jop/myconf.props {1} -{2} {3}\n",
-				 configFile, WCETAnalysis.class.getName(), 
+				 configFileProp, WCETAnalysis.class.getName(), 
 				 ProjectConfig.APP_CLASS_NAME.getKey(), "wcet.Method"));
 		System.err.println("OPTIONS can be configured using system properties"+
 		                   ", supplying a property file or as command line arguments");

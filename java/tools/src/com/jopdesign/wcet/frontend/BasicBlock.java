@@ -27,21 +27,7 @@ import java.util.TreeSet;
 import java.util.Vector;
 
 import org.apache.bcel.classfile.LineNumberTable;
-import org.apache.bcel.generic.ATHROW;
-import org.apache.bcel.generic.BranchInstruction;
-import org.apache.bcel.generic.ConstantPoolGen;
-import org.apache.bcel.generic.EmptyVisitor;
-import org.apache.bcel.generic.FieldInstruction;
-import org.apache.bcel.generic.GotoInstruction;
-import org.apache.bcel.generic.IfInstruction;
-import org.apache.bcel.generic.Instruction;
-import org.apache.bcel.generic.InstructionHandle;
-import org.apache.bcel.generic.InstructionList;
-import org.apache.bcel.generic.InvokeInstruction;
-import org.apache.bcel.generic.JsrInstruction;
-import org.apache.bcel.generic.ReturnInstruction;
-import org.apache.bcel.generic.Select;
-import org.apache.bcel.generic.StoreInstruction;
+import org.apache.bcel.generic.*;
 
 import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.MethodInfo;
@@ -317,55 +303,7 @@ public class BasicBlock  {
 	}
 	
 	
-	/** <p>Compact, human-readable String representation of the basic block.</p>
-	 *
-	 *  <p>Mixed Stack notation, with at most one side-effect statement per line.</p> 
-	 *  Example:<br/>
-	 *  {@code local_0 <- sipush[3] sipush[4] dup add add} <br/>
-	 *  {@code local_1 <- load[local_0] load[local_0] mul}
-	 *  */
-	public String dump() {
-		StringBuilder sb = new StringBuilder();
-		LineNumberTable lnt = methodInfo.getMethod().getLineNumberTable();
-		ConstantPoolGen cpg = methodInfo.getConstantPoolGen();
-		Iterator<InstructionHandle> ihIter = this.instructions.iterator();
-		StringBuilder lineBuilder = new StringBuilder();
-		InstructionHandle first = null;
-		while(ihIter.hasNext()) {
-			InstructionHandle ih = ihIter.next();
-			String line = null;
-			if(first == null) {
-				first = ih;
-			} else {
-				lineBuilder.append(" ");
-			}
-			Instruction ii = ih.getInstruction();
-			// SIPUSH, RET, NOP, NEWARRAY, MONITORENTER, MONITOREXIT
-			if(ii instanceof ReturnInstruction) {
-				line = ii.getName() + ": " + lineBuilder.toString();
-			} else if(ii instanceof StoreInstruction) {
-				line = "$l"+((StoreInstruction)ii).getIndex()+" <- "+lineBuilder.toString();
-			} else if(ii instanceof FieldInstruction && ii.getName().startsWith("put") ) {
-				line = "$"+((FieldInstruction)ii).getFieldName(cpg)+" <- "+lineBuilder.toString();
-		    } else {
-				lineBuilder.append(ii.getName());
-			}
-			if(! ihIter.hasNext()) {
-				line = lineBuilder.toString();
-			}
-			if(line != null) {
-				int l1 = lnt.getSourceLine(first.getPosition());
-				int l2 = lnt.getSourceLine(ih.getPosition());
-				if(l1 != l2) sb.append("["+ (l1 < 0 ? "?" : l1) +"-"+(l2 < 0 ? "?" : l2)+"] ");
-				else         sb.append("["+ (l1 < 0 ? "?" : l1) +"]  ");
-				sb.append(line+"\n");
-				first = null;
-				lineBuilder = new StringBuilder();
-			}
-		}
-		return sb.toString();
-	}
-	
+
 	/**
 	 * Return all source code lines this basic block maps to
 	 * @return
@@ -378,5 +316,122 @@ public class BasicBlock  {
 			if(sourceLine >= 0) lines.add(sourceLine);
 		}
 		return lines;
+	}
+
+	/** <p>Compact, human-readable String representation of the basic block.</p>
+	 *
+	 *  <p>Mixed Stack notation, with at most one side-effect statement per line.</p> 
+	 *  Example:<br/>
+	 *  {@code local_0 <- sipush[3] sipush[4] dup add add} <br/>
+	 *  {@code local_1 <- load[local_0] load[local_0] mul}
+	 *  */
+	public String dump() {
+		StringBuilder sb = new StringBuilder();
+		Iterator<InstructionHandle> ihIter = this.instructions.iterator();
+		InstructionPrettyPrinter ipp = new InstructionPrettyPrinter();
+		while(ihIter.hasNext()) {
+			InstructionHandle ih = ihIter.next();
+			ipp.visitInstruction(ih);			
+		}
+		sb.append(ipp.getBuffer());		
+		return sb.toString();
+	}
+
+	/* Prototyping */
+	/* TODO: Refactor into some pretty printing class */
+	private class InstructionPrettyPrinter extends EmptyVisitor {
+		private StringBuilder sb;
+		private StringBuilder lineBuffer;
+		private boolean visited;
+		private LineNumberTable lnt;
+		private int startPos = -1, lastPos = -1;
+		private int currentPos;
+		private Integer address;
+		private ControlFlowGraph cfg;
+
+
+		public InstructionPrettyPrinter() {
+			this.sb = new StringBuilder();
+			this.lnt = methodInfo.getMethod().getLineNumberTable();
+			this.lineBuffer = new StringBuilder();
+			this.cfg = appInfo.getFlowGraph(methodInfo);
+		}
+		public StringBuilder getBuffer() {
+			nextLine();
+			return sb;
+		}
+		public void visitInstruction(InstructionHandle ih) {
+			this.visited = false;
+			this.address = cfg.getConstAddress(ih);
+			currentPos = lnt.getSourceLine(ih.getPosition());			
+			ih.accept(this);
+			if(! visited) {
+				String s = ih.getInstruction().toString(cpg().getConstantPool());
+				append(s);
+			}
+		}
+		private void nextLine() {
+			if(lineBuffer.length() > 0) {
+				String start = startPos < 0 ? "?" : (""+startPos);
+				String end = lastPos < 0 ? "?" : (""+lastPos);
+				if(startPos != lastPos) lineBuffer.insert(0,"["+start+"-"+end+"] ");
+				else                    lineBuffer.insert(0,"["+ start +"]  ");
+				sb.append(lineBuffer); 
+				sb.append("\n");
+				lineBuffer = new StringBuilder();
+				startPos = currentPos;
+				lastPos  = currentPos;
+			}
+		}
+		private void append(String stackOp) {
+			if(lineBuffer.length() > 0) {
+				if(lineBuffer.length() < 45) lineBuffer.append(" ");
+				else lineBuffer.append("\n  \\ ");
+			}
+			if(address != null) stackOp = String.format("%s<%d>",stackOp,address);
+			lineBuffer.append(stackOp);
+			markVisited();
+		}
+		private void assign(String lhs) {
+			if(address != null) lhs = String.format("%s<%d>",lhs,address);
+			lineBuffer.insert(0, lhs + "<-");			
+			nextLine();
+			markVisited();
+			visited = true;			
+		}
+		private void markVisited() {
+			visited = true;
+			if(startPos < 0) startPos = currentPos;
+			lastPos = currentPos;			
+		}
+		
+		@Override
+		public void visitBranchInstruction(BranchInstruction obj) {
+			nextLine();
+		}
+		@Override
+		public void visitUnconditionalBranch(UnconditionalBranch obj) {			
+			nextLine();
+		}
+		
+		@Override
+		public void visitStoreInstruction(StoreInstruction obj) {
+			assign("$"+obj.getIndex());
+		}
+		@Override
+		public void visitPUTFIELD(PUTFIELD obj) {
+			assign(obj.getFieldName(cpg()));
+		}
+
+		@Override
+		public void visitPUTSTATIC(PUTSTATIC obj) {
+			String fieldName = obj.getFieldName(cpg());
+			assign(fieldName);
+		}
+		@Override
+		public void visitInvokeInstruction(InvokeInstruction obj) {
+			append(obj.toString());
+		}
+
 	}
 }

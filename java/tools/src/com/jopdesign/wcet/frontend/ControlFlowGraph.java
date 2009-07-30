@@ -32,11 +32,16 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.Vector;
 
+import org.apache.bcel.Constants;
+import org.apache.bcel.generic.CPInstruction;
+import org.apache.bcel.generic.ConstantPoolGen;
+import org.apache.bcel.generic.FieldInstruction;
 import org.apache.bcel.generic.INVOKEINTERFACE;
 import org.apache.bcel.generic.INVOKEVIRTUAL;
 import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.InvokeInstruction;
+import org.apache.bcel.generic.ObjectType;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 import org.jgrapht.traverse.TopologicalOrderIterator;
@@ -59,6 +64,7 @@ import com.jopdesign.wcet.graphutils.LoopColoring;
 import com.jopdesign.wcet.graphutils.MiscUtils;
 import com.jopdesign.wcet.graphutils.TopOrder;
 import com.jopdesign.wcet.graphutils.TopOrder.BadGraphException;
+import com.jopdesign.wcet.jop.LinkerInfo;
 
 /**
  * General purpose control flow graph, for use in WCET analysis. 
@@ -927,6 +933,45 @@ public class ControlFlowGraph {
 		}
 		return s.toString();
 	}
+	
+	/* Prototyping ... */
+	/** 
+	 * PROTOTYPE status: Find the set of non-heap addresses that might be accessed by the instruction handle
+	 * @param ih
+	 * @return
+	 */
+	public Integer getConstAddress(InstructionHandle ih) {
+		Instruction ii = ih.getInstruction();
+		ConstantPoolGen cpg = methodInfo.getConstantPoolGen();
+		Integer address = null;
+		switch(ii.getOpcode()) {
+		case Constants.PUTSTATIC: 
+		case Constants.GETSTATIC: 
+			address = getStaticFieldAddress(cpg,(FieldInstruction) ii); break;
+		case Constants.LDC:
+		case Constants.LDC_W:
+		case Constants.LDC2_W:
+			address = getConstantPoolAddress(cpg, (CPInstruction) ii); break;				
+		default:
+			if(ii instanceof InvokeInstruction) {
+				address = getConstantPoolAddress(cpg,(InvokeInstruction) ii);
+			} else {
+				address = null;
+			}
+			break;
+		}
+		return address;
+	}
+	private int getStaticFieldAddress(ConstantPoolGen cpg, FieldInstruction fii) {
+		String fieldName = fii.getFieldName(cpg) + fii.getSignature(cpg);
+		return appInfo.getProject().getLinkerInfo().getStaticFieldAddress(
+				((ObjectType) fii.getReferenceType(cpg)).getClassName(),fieldName);			
+	}
+	private Integer getConstantPoolAddress(ConstantPoolGen cpg, CPInstruction ii) {
+		LinkerInfo linker = appInfo.getProject().getLinkerInfo();
+		return linker.getLinkInfo(this.methodInfo.getCli()).getConstAddress(ii.getIndex());		
+	}
+
 //	/**
 //	 * get single entry single exit sets
 //	 * @return

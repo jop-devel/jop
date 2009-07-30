@@ -45,6 +45,7 @@ import com.jopdesign.wcet.graphutils.MiscUtils;
 import com.jopdesign.wcet.ipet.IpetConfig;
 import com.jopdesign.wcet.ipet.LpSolveWrapper;
 import com.jopdesign.wcet.ipet.IpetConfig.StaticCacheApproximation;
+import com.jopdesign.wcet.jop.ConstantCache;
 import com.jopdesign.wcet.jop.JOPConfig;
 import com.jopdesign.wcet.report.Report;
 import com.jopdesign.wcet.report.ReportConfig;
@@ -123,6 +124,9 @@ public class WCETAnalysis {
 			exec.logException("Loading project", e);
 			return false;
 		}
+
+		new ConstantCache(project).build().dumpStats();
+		
 		/* Tree based WCET analysis - has to be equal to ALWAYS_MISS */
 		{
 			long start,stop;

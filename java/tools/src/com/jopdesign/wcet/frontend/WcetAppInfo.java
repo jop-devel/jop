@@ -87,6 +87,10 @@ public class WcetAppInfo  {
 		return ai.cliMap;
 	}
 	
+	public Project getProject() {
+		return project;
+	}
+
 	/**
 	 * @return The typegraph of all loaded classes
 	 */

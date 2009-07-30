@@ -17,17 +17,16 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-package com.jopdesign.wcet.frontend;
+package com.jopdesign.wcet.jop;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.apache.log4j.Logger;
+import java.util.TreeMap;
 
 import com.jopdesign.build.ClassInfo;
 import com.jopdesign.wcet.Project;
@@ -40,12 +39,12 @@ import com.jopdesign.wcet.ProjectConfig;
  *
  */
 public class LinkerInfo {
-	private static final Logger logger = Logger.getLogger(LinkerInfo.class);
 	public static class LinkInfo {
 		private ClassInfo klass;
 		private int clinfoAddress;
 		private int constsAddress;
 		private Map <String,Integer> staticAddresses;
+		private Map <Integer,Integer> constMap = new TreeMap<Integer,Integer>();
 		
 		public LinkInfo(ClassInfo ci, int clinfoAddress, int constsAddress) {
 			this.klass = ci;
@@ -82,11 +81,25 @@ public class LinkerInfo {
 			return "LinkInfo@"+this.klass.clazz.getClassName()+".LinkInfo: CLINFO @ "+clinfoAddress+
 			       ", CONSTANTS @ "+constsAddress + ", " + staticAddresses.size() + " static fields";
 		}
+		public Integer getConstAddress(int constIndex) {
+			if(! constMap.containsKey(constIndex)) return null;
+			return(constsAddress + constMap.get(constIndex) + 1);
+		}
+		public void parseInfo(String[] tks) {
+			String key = tks[0];
+			if(key.equals("-constmap")) {
+				int keyIx = Integer.parseInt(tks[1]);
+				int valIx = Integer.parseInt(tks[2]);
+				constMap.put(keyIx,valIx);
+			} else {
+				throw new AssertionError("Bad format for class info: "+Arrays.toString(tks));
+			}
+		}
 	}
 	private Project project;
-	private Map<ClassInfo, LinkInfo> classLinkInfo;
+	private Map<String, LinkInfo> classLinkInfo;
 	
-	public Map<ClassInfo, LinkInfo>getClassLinkInfo() {
+	public Map<String, LinkInfo>getClassLinkInfo() {
 		return classLinkInfo;
 	}
 
@@ -95,7 +108,7 @@ public class LinkerInfo {
 	}
 	
 	public void loadLinkInfo() throws IOException, ClassNotFoundException {
-		classLinkInfo = new HashMap<ClassInfo, LinkInfo>();
+		classLinkInfo = new HashMap<String, LinkInfo>();
 		readClassLinkInfo(project.getProjectConfig().getClassLinkInfoFile());
 		readStaticLinkInfo(project.getProjectConfig().getStaticLinkInfoFile());
 //		for(LinkInfo li : classLinkInfo.values()) {
@@ -110,14 +123,20 @@ public class LinkerInfo {
 	private void readClassLinkInfo(File classLinkInfoFile) 
 			throws IOException, ClassNotFoundException {
 		BufferedReader br = new BufferedReader(new FileReader(classLinkInfoFile));		
-		String l;
-		while((l = br.readLine()) != null) {
+		String l = br.readLine();
+		while(l != null) {
 			String tks[] = l.split("\\s+");
-			ClassInfo klass = project.getWcetAppInfo().getClassInfo(tks[0]);
-			if(klass == null) throw new ClassNotFoundException(tks[0]);
+			String classname = tks[0];
+			ClassInfo klass = project.getWcetAppInfo().getClassInfo(classname);
+			if(klass == null) throw new ClassNotFoundException(classname);
 			LinkInfo linkInfo =
 				new LinkInfo(klass,Integer.parseInt(tks[1]),Integer.parseInt(tks[2]));
-			classLinkInfo.put(klass, linkInfo);
+			classLinkInfo.put(classname, linkInfo);
+			while((l=br.readLine()) != null) {
+				l = l.trim();
+				if(! l.startsWith("-")) break;
+				linkInfo.parseInfo(l.split("\\s"));
+			}
 		}
 		br.close();
 	}
@@ -149,7 +168,13 @@ public class LinkerInfo {
 	}
 
 	public LinkInfo getLinkInfo(ClassInfo cli) {
-		return classLinkInfo.get(cli);
+		return classLinkInfo.get(cli.clazz.getClassName());
+	}
+
+	public Integer getStaticFieldAddress(String className, String fieldNameAndSig) {
+		LinkInfo info = classLinkInfo.get(className);
+		if(info == null) throw new AssertionError("No linker info for "+className);
+		return info.getStaticFieldAddress(fieldNameAndSig);
 	}
 	
 }

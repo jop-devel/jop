@@ -36,6 +36,7 @@ import org.apache.bcel.classfile.Method;
 import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.MethodGen;
+import org.apache.bcel.util.BCELComparator;
 import org.apache.log4j.Logger;
 import com.jopdesign.build.AppInfo;
 import com.jopdesign.build.AppVisitor;
@@ -49,11 +50,9 @@ import com.jopdesign.wcet.analysis.WcetCost;
 import com.jopdesign.wcet.config.Config;
 import com.jopdesign.wcet.frontend.CallGraph;
 import com.jopdesign.wcet.frontend.ControlFlowGraph;
-import com.jopdesign.wcet.frontend.LinkerInfo;
 import com.jopdesign.wcet.frontend.SourceAnnotations;
 import com.jopdesign.wcet.frontend.WcetAppInfo;
 import com.jopdesign.wcet.frontend.CallGraph.CallGraphNode;
-import com.jopdesign.wcet.frontend.LinkerInfo.LinkInfo;
 import com.jopdesign.wcet.frontend.SourceAnnotations.BadAnnotationException;
 import com.jopdesign.wcet.frontend.SourceAnnotations.LoopBound;
 import com.jopdesign.wcet.frontend.WcetAppInfo.MethodNotFoundException;
@@ -61,6 +60,8 @@ import com.jopdesign.wcet.graphutils.MiscUtils;
 import com.jopdesign.wcet.ipet.IpetConfig;
 import com.jopdesign.wcet.jop.JOPConfig;
 import com.jopdesign.wcet.jop.JOPModel;
+import com.jopdesign.wcet.jop.LinkerInfo;
+import com.jopdesign.wcet.jop.LinkerInfo.LinkInfo;
 import com.jopdesign.wcet.report.Report;
 import com.jopdesign.wcet.uppaal.UppAalConfig;
 
@@ -181,6 +182,7 @@ public class Project {
 			this.processor = new JOPModel(this);
 		}
 	}
+
 	public String getProjectName() {
 		return this.projectName;
 	}
@@ -218,7 +220,7 @@ public class Project {
 			File sourceFile = new File(sourceDir, ci.clazz.getSourceFileName());
 			if(sourceFile.exists()) return sourceFile;	
 		}
-		throw new FileNotFoundException("Source for "+ci.clazz.getClassName()+" not found.");
+		throw new FileNotFoundException("Source for "+ci.clazz.getClassName()+" not found in "+dirs);
 	}
 	private List<File> getSearchDirs(ClassInfo ci, String path) {
 		List<File> dirs = new Vector<File>();
@@ -329,11 +331,13 @@ public class Project {
 	 * Get link info for a given class
 	 * @param cli 
 	 * @return the linker info
-	 * @throws IOException if we failed to load the linker info
-	 * @throws FormatException if the linker info was faulty
 	 */
-	public LinkInfo getLinkInfo(ClassInfo cli) throws IOException {
+	public LinkInfo getLinkInfo(ClassInfo cli) {
 		return this.linkerInfo.getLinkInfo(cli);
+	}
+
+	public LinkerInfo getLinkerInfo() {
+		return this.linkerInfo;
 	}
 	
 	
