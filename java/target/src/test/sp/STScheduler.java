@@ -37,7 +37,8 @@ public class STScheduler implements Runnable {
     int i;
     public int time = 0;
     int period = 0;
-    SysDevice sys = IOFactory.getFactory().getSysDevice();
+    static SysDevice sys = IOFactory.getFactory().getSysDevice();
+    static final int MEM_TDMA_ROUND = 18; //length of the mem TDA round (= #Cores * size_of_TDMA_slot)
 
     /**
      * A table for the cyclic executive...
@@ -133,14 +134,27 @@ public class STScheduler implements Runnable {
     }
     
     /**
-     * Perform a wait till the begin of 	r1.tabCyclicExec[1].tsk = new XRunner(TaskSampleSet);
-	r1.tabCyclicExec[1].tactivation = 0;
-the next scheduling cycle
+     * Perform a wait till the begin of the next scheduling cycle
      * @return
      */
     public boolean waitForNextPeriod() {
 	time = time + period;
-	//sys.deadLine = time;
+	//sys.deadLine = time; /* perform the wait */
+	return true;
+    }
+
+    /**
+     * Perform a wait till the start of a new round of the TDMA memory arbiter.
+     * This allows to synchronize the start of a task to be allways in the same
+     * sync with the TDMA memory arbiter.
+     * Drawback of implementation: is hardware dependent, as it has to wait longer than
+     *         the calculation of the waiting time takes.
+     * @return
+     */
+    public static boolean syncWithMEMTDMA() {
+	sys.deadLine = (sys.cntInt / MEM_TDMA_ROUND) * MEM_TDMA_ROUND 
+	    + 2207; /* 2207 cycles is the determined WCET of this method (without cache) */
+	    // + 60000*100;  // (mod time + 100ms);
 	return true;
     }
 

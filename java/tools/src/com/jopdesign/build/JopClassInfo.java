@@ -28,6 +28,7 @@ package com.jopdesign.build;
 import java.io.PrintWriter;
 import java.io.Serializable;
 import java.util.*;
+import java.util.Map.Entry;
 
 import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.*;
@@ -177,6 +178,10 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 	public int methodsAddress;
 	public int cpoolAddress;
 	public int iftableAddress;
+	
+	/** Mapping from original constant pool indices to constant pool indices used in the binary */
+	
+	private Map<Integer, Integer> cpoolMap = new TreeMap<Integer,Integer>();
 
 	@Override
 	public ClassInfo newClassInfo(JavaClass jc, AppInfo ai) {
@@ -351,8 +356,12 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 		addr += 1;
 		// constant pool
 		cpoolAddress = addr;
-		((JOPizer) ai).outLinkInfo.println(clazz.getClassName()+" "+methodsAddress+" "+addr);
-		// System.out.println(clazz.getClassName()+"
+		((JOPizer) ai).outLinkInfo.println(clazz.getClassName()+" "+methodsAddress+" "+cpoolAddress);
+		
+		for(Entry<Integer, Integer> entry : cpoolMap.entrySet()) {
+			((JOPizer) ai).outLinkInfo.println(" -constmap "+entry.getKey()+" "+entry.getValue());			
+		}
+		// System.out.println(clazz.getClassName()+"		
 		// cplen="+clazz.getConstantPool().getLength());
 		// the final size of the cp plus the length field
 		addr += cpoolUsed.size() + 1;
@@ -452,6 +461,7 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 			// add a dummy entry for a long or double constant
 			cpoolUsed.add(null);
 		}
+		cpoolMap.put(idx,cpoolUsed.indexOf(ii));
 	}
 
 	/**
@@ -671,7 +681,6 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 			}
 
 		}
-
 	}
 
 	public void dumpStaticFields(PrintWriter out, PrintWriter outStatic, boolean ref) {
