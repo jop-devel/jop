@@ -54,8 +54,10 @@ public class TestSMOFloat {
 //    dsvmfp.TestData3.assign(testdata_fp,testlabel_fp);
 //    dsvmfp.TrainingData4.assign(data_fp, y_fp);
 //    dsvmfp.TestData4.assign(testdata_fp,testlabel_fp);
-
-    SMOBinaryClassifierFloat.setData_fp(data_fp);
+ //   IrisFlowerData id = new IrisFlowerData();
+   // float data[][] = id.getData();
+    
+	SMOBinaryClassifierFloat.setData_fp(data_fp);
     SMOBinaryClassifierFloat.setY_fp(y_fp);
 
     // Train the model prior to deployment
