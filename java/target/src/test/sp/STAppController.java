@@ -67,6 +67,7 @@ public class STAppController extends STScheduler {
 		}
 		//System.out.println("measuring ["+i+","+j+"]...");
 		syncWithMEMTDMA(); 
+		tskList[i].tabCyclicExec[j].tsk.run(); /* enforce measurement with cache hit */
 		tskList[i].tabCyclicExec[j].tsk.measure();
 		tmeas = tskList[i].tabCyclicExec[j].tsk.getMeasResult();
 
