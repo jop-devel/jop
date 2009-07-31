@@ -108,7 +108,7 @@ public class STGuard extends SimpleTask {
      * Perform read access to shared data.
      */
     public void read() {
-	for (i = 0; i < MAXTASK; i++) {
+	for (i = 0; i < MAXTASK; i++) { //@WCA loop=20
 	    /* check whether the current index represents a valid task */
 	    cond = (i >= ipos);
 	    tmp = Native.condMove(0, i, cond); // bound i to an index with valid tasks
@@ -135,7 +135,7 @@ public class STGuard extends SimpleTask {
      * Write results to the shared memory.
      */
     public void write() {
-	for (i = 0; i < MAXTASK; i++) {
+	for (i = 0; i < MAXTASK; i++) { //@WCA loop=20
 	    /* check whether the current index represents a valid task */
 	    cond = (i >= ipos);
 	    tmp = Native.condMove(0, i, cond); // bound i to an index with valid tasks

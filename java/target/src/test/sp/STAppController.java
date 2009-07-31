@@ -168,6 +168,7 @@ public class STAppController extends STScheduler {
 	Startup.setRunnable(tskList[1],0);
 	Startup.setRunnable(tskList[0],1);
 
+
 	/* Set a reasonable start time for each task */
         /* f_clk=60MHz --> 60000=1ms */
 	SysDevice sys = IOFactory.getFactory().getSysDevice();

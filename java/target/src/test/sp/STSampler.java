@@ -62,7 +62,8 @@ public class STSampler extends SimpleHBTask {
      * Execute task logic. Read and write access to shared data is forbidden.
      */
     public void execute() {
-	nDat = (nDat + nDat2) / 2;
+	//nDat = (nDat + nDat2) / 2;
+	nDat = (nDat + nDat2) >> 1; /* work around, since "/" is problematic for WCET analysis */
 	this.setAlive();
     }
 	
