@@ -73,4 +73,20 @@ public class STSampler extends SimpleHBTask {
 	iwrt.set(nDat);
     }
 
+    /**
+     * Some wrapper methods to enable WCET analysis including cache loading.
+     */
+
+    public void readWrapperWCET() {
+	read();
+    }
+
+    public void executeWrapperWCET() {
+	execute();
+    }
+
+    public void writeWrapperWCET() {
+	write();
+    }
+
 }

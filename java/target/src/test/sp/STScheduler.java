@@ -41,29 +41,42 @@ public class STScheduler implements Runnable {
     static final int MEM_TDMA_ROUND = 18; //length of the mem TDA round (= #Cores * size_of_TDMA_slot)
 
     /**
-     * A table for the cyclic executive...
+     * A helper runnable to treat the different task phases in uniform way.
      * @author Raimund Kirner (raimund@vmars.tuwien.ac.at)
      *
      */
-    static class TabCyclicExec {
-	Runnable tsk;
-	int tactivation;
+    static abstract class Runner implements Runnable {
+	SimpleTask task;
+	static int tstart,tstop,tmeas;
+	public Runner(SimpleTask st) {
+	    task = st;
+	}
+	public void measure() {
+	}
+	public int getMeasResult() {
+	    tmeas = tstop - tstart;
+	    tstart  = sys.cntInt;    
+	    tstop   = sys.cntInt;
+	    return tmeas + (tstop - tstart);
+	}
     }
-
-    public TabCyclicExec[] tabCyclicExec; /* this table must be filled with the task schedules */
 	
     /**
      * A helper runnable for the read phase
      * @author Martin Schoeberl (martin@jopdesign.com)
      *
      */
-    static class RRunner implements Runnable {
-	SimpleTask task;
+    static class RRunner extends Runner {
 	public RRunner(SimpleTask st) {
-	    task = st;
+	    super(st);
 	}
 	public void run() {
 	    task.read();
+	}
+	public void measure() {
+	    tstart = sys.cntInt;    
+	    task.read();
+	    tstop = sys.cntInt;
 	}
     }
 
@@ -72,13 +85,17 @@ public class STScheduler implements Runnable {
      * @author Martin Schoeberl (martin@jopdesign.com)
      *
      */
-    static class XRunner implements Runnable {
-	SimpleTask task;
+    static class XRunner extends Runner {
 	public XRunner(SimpleTask st) {
-	    task = st;
+	    super(st);
 	}
 	public void run() {
 	    task.execute();
+	}
+	public void measure() {
+	    tstart = sys.cntInt;    
+	    task.execute();
+	    tstop = sys.cntInt;
 	}
     }
 
@@ -87,15 +104,32 @@ public class STScheduler implements Runnable {
      * @author Martin Schoeberl (martin@jopdesign.com)
      *
      */
-    static class WRunner implements Runnable {
-	SimpleTask task;
+    static class WRunner extends Runner {
 	public WRunner(SimpleTask st) {
-	    task = st;
+	    super(st);
 	}
 	public void run() {
 	    task.write();
 	}
+	public void measure() {
+	    tstart = sys.cntInt;    
+	    task.write();
+	    tstop = sys.cntInt;
+	}
     }
+
+    /**
+     * A table for the cyclic executive...
+     * @author Raimund Kirner (raimund@vmars.tuwien.ac.at)
+     *
+     */
+    static class TabCyclicExec {
+	Runner tsk;
+	int tactivation;
+    }
+
+    public TabCyclicExec[] tabCyclicExec; /* this table must be filled with the task schedules */
+
 
 
     // Constructor 
@@ -152,9 +186,10 @@ public class STScheduler implements Runnable {
      * @return
      */
     public static boolean syncWithMEMTDMA() {
-	sys.deadLine = (sys.cntInt / MEM_TDMA_ROUND) * MEM_TDMA_ROUND 
-	    + 2253; /* 2253 cycles is the determined WCET of this method */
-	    // + 60000*100;  // (mod time + 100ms);
+	sys.deadLine = ((sys.cntInt 
+			 + 2253) /* 2253 cycles is the determined WCET of this method */
+			/ MEM_TDMA_ROUND) * MEM_TDMA_ROUND;
+	// + 60000*100;  // (mod time + 100ms);
 	return true;
     }
 

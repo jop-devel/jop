@@ -156,4 +156,20 @@ public class STGuard extends SimpleTask {
 	iwrt.set(tmp);
     }
 
+    /**
+     * Some wrapper methods to enable WCET analysis including cache loading.
+     */
+
+    public void readWrapperWCET() {
+	read();
+    }
+
+    public void executeWrapperWCET() {
+	execute();
+    }
+
+    public void writeWrapperWCET() {
+	write();
+    }
+
 }

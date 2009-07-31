@@ -84,4 +84,20 @@ public class STMonitor extends SimpleHBTask {
 	/* send the data to a host computer... */
     }
 
+    /**
+     * Some wrapper methods to enable WCET analysis including cache loading.
+     */
+
+    public void readWrapperWCET() {
+	read();
+    }
+
+    public void executeWrapperWCET() {
+	execute();
+    }
+
+    public void writeWrapperWCET() {
+	write();
+    }
+
 }

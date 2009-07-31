@@ -42,11 +42,13 @@ public class STAppController extends STScheduler {
 	/* see constructor of super class */
     }
 
+    static SysDevice sys = IOFactory.getFactory().getSysDevice();
 
     static boolean measureExecTimes(STAppController tskList[]) {
 	int i,j;
-	int tstart,tstop,tsum=0;
-	SysDevice sys = IOFactory.getFactory().getSysDevice();
+	int tsum=0;
+	int tmeas;
+	//SysDevice sys = IOFactory.getFactory().getSysDevice();
 
 	System.out.println("Measured execution times of task set:\\\\");
 	System.out.println("\\begin{tabular}{l|r|r|r|r}");
@@ -65,11 +67,11 @@ public class STAppController extends STScheduler {
 		}
 		//System.out.println("measuring ["+i+","+j+"]...");
 		syncWithMEMTDMA(); 
-		tstart = sys.cntInt;
-		tskList[i].tabCyclicExec[j].tsk.run();
-		tstop = sys.cntInt;
-		tsum = tsum + (tstop-tstart);
-		System.out.print(tstop-tstart);
+		tskList[i].tabCyclicExec[j].tsk.measure();
+		tmeas = tskList[i].tabCyclicExec[j].tsk.getMeasResult();
+
+		tsum = tsum + tmeas;
+		System.out.print(tmeas);
 		System.out.print(" & ");
 		if (j%3 == 0 || 
 		    j%3 == 1) {
@@ -155,13 +157,6 @@ public class STAppController extends STScheduler {
 	tskList[2].tabCyclicExec[5].tsk = new WRunner(TskMonitor);
 	tskList[2].tabCyclicExec[5].tactivation = 0;
 
-	/* Set a reasonable start time for each task */
-        /* f_clk=60MHz --> 60000=1ms */
-	SysDevice sys = IOFactory.getFactory().getSysDevice();
-	int localtime = sys.cntInt + 60000*100;  // (current time + 100ms)
-	tskList[0].time = localtime;
-	tskList[1].time = localtime;
-	tskList[2].time = localtime;
 
 	//--- tskList[0].syncWithMEMTDMA(); 
 	measureExecTimes(tskList);
@@ -171,6 +166,16 @@ public class STAppController extends STScheduler {
 	/* start the other CPUs */
 	Startup.setRunnable(tskList[1],0);
 	Startup.setRunnable(tskList[0],1);
+
+	/* Set a reasonable start time for each task */
+        /* f_clk=60MHz --> 60000=1ms */
+	SysDevice sys = IOFactory.getFactory().getSysDevice();
+	int localtime = ((sys.cntInt + 60000*100) / MEM_TDMA_ROUND) * MEM_TDMA_ROUND;  // (current time + 100ms)
+	tskList[0].time = localtime;
+	tskList[1].time = localtime;
+	tskList[2].time = localtime;
+
+        /* calc. starting time... */
 	//tskList[2].startCPUs();
 	//tskList[2].run();
     }

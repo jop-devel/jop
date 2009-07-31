@@ -1,4 +1,4 @@
-version/*
+/*
   This file is part of JOP, the Java Optimized Processor
     see <http://www.jopdesign.com/>
 
@@ -93,6 +93,22 @@ public class STController extends SimpleHBTask {
      */
     public void write() {
 	ShmCtrlVal.set(nCtrlVal);
+    }
+
+    /**
+     * Some wrapper methods to enable WCET analysis including cache loading.
+     */
+
+    public void readWrapperWCET() {
+	read();
+    }
+
+    public void executeWrapperWCET() {
+	execute();
+    }
+
+    public void writeWrapperWCET() {
+	write();
     }
 
 }
