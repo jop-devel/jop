@@ -53,6 +53,22 @@ public class SimpleTask {
      */
     public void write() {
     }
+
+    /**
+     * Some wrapper methods to enable WCET analysis including cache loading.
+     */
+
+    public void readWrapperWCET() {
+	read();
+    }
+
+    public void executeWrapperWCET() {
+	execute();
+    }
+
+    public void writeWrapperWCET() {
+	write();
+    }
     
     /**
      * Returns the WCET of the read operation

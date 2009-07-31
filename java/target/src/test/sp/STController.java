@@ -1,4 +1,4 @@
-/*
+version/*
   This file is part of JOP, the Java Optimized Processor
     see <http://www.jopdesign.com/>
 

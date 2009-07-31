@@ -153,7 +153,7 @@ public class STScheduler implements Runnable {
      */
     public static boolean syncWithMEMTDMA() {
 	sys.deadLine = (sys.cntInt / MEM_TDMA_ROUND) * MEM_TDMA_ROUND 
-	    + 2207; /* 2207 cycles is the determined WCET of this method (without cache) */
+	    + 2253; /* 2253 cycles is the determined WCET of this method */
 	    // + 60000*100;  // (mod time + 100ms);
 	return true;
     }
