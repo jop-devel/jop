@@ -23,21 +23,11 @@ architecture rtl of datacache is
 	signal out_mux_reg, next_out_mux : mux_type;	
 	signal in_mux_reg, next_in_mux : mux_type;	
 	
-	signal bp_cpu_in, dm_cpu_in, fa_cpu_in : sc_in_type;
-	signal bp_mem_out, dm_mem_out, fa_mem_out : sc_out_type;
+	signal dm_cpu_in, fa_cpu_in : sc_in_type;
+	signal dm_mem_out, fa_mem_out : sc_out_type;
 	
 begin  -- rtl
 
-	cmp_bypass: entity work.null_cache
-		port map (
-			clk		=> clk,
-			reset	=> reset,
-			inval	=> inval,
-			cpu_in	=> bp_cpu_in,
-			cpu_out => cpu_out,
-			mem_in	=> mem_in,
-			mem_out => bp_mem_out);
-	
 	cmp_dm: entity work.directmapped
 		port map (
 			clk		=> clk,
@@ -71,8 +61,11 @@ begin  -- rtl
 
 	async: process (cpu_out, mem_in,
 					out_mux_reg, in_mux_reg,
-					bp_mem_out, dm_mem_out, fa_mem_out,
-					bp_cpu_in, dm_cpu_in, fa_cpu_in)
+					dm_mem_out, fa_mem_out,
+					dm_cpu_in, fa_cpu_in)
+
+		variable bp_rd, bp_wr : std_logic;
+		
 	begin  -- process async
 		
 		next_out_mux <= out_mux_reg;
@@ -86,23 +79,31 @@ begin  -- rtl
 				mem_out <= fa_mem_out;					   
 				cpu_in.rdy_cnt <= fa_cpu_in.rdy_cnt;
 			when others =>
-				mem_out <= bp_mem_out;
-				cpu_in.rdy_cnt <= bp_cpu_in.rdy_cnt;
+				mem_out <= cpu_out;
+				cpu_in.rdy_cnt <= mem_in.rdy_cnt;
 		end case;
+
+		bp_rd := '0';
+		bp_wr := '0';
 
 		if cpu_out.rd = '1' or cpu_out.wr = '1' then
 			case cpu_out.cache is
 				when direct_mapped =>
-					mem_out <= dm_mem_out;
 					next_out_mux <= dm;									  
 				when full_assoc =>
-					mem_out <= fa_mem_out;
 					next_out_mux <= fa;
 				when others =>
-					mem_out <= bp_mem_out;
 					next_out_mux <= bp;
+					-- immediate bypassing
+					mem_out <= cpu_out;
+					bp_rd := cpu_out.rd;
+					bp_wr := cpu_out.wr;
 			end case;
 		end if;
+
+		-- simplify rd/wr path; precondition: caches assert rd/wr only when necessary
+		mem_out.rd <= dm_mem_out.rd or fa_mem_out.rd or bp_rd;
+		mem_out.wr <= dm_mem_out.wr or fa_mem_out.wr or bp_wr;
 
 		case in_mux_reg is
 			when dm =>
@@ -110,10 +111,10 @@ begin  -- rtl
 			when fa =>
 				cpu_in.rd_data <= fa_cpu_in.rd_data;					   
 			when others =>
-				cpu_in.rd_data <= bp_cpu_in.rd_data;
+				cpu_in.rd_data <= mem_in.rd_data;
 		end case;
 
-		if out_mux_reg = bp and bp_cpu_in.rdy_cnt(1) = '0' then
+		if out_mux_reg = bp and mem_in.rdy_cnt(1) = '0' then
 			next_in_mux <= bp;
 		end if;
 		if out_mux_reg = dm and dm_cpu_in.rdy_cnt(1) = '0' then
@@ -123,8 +124,8 @@ begin  -- rtl
 			next_in_mux <= fa;
 		end if;
 
-		if out_mux_reg = bp and bp_cpu_in.rdy_cnt = "00" then
-			cpu_in.rd_data <= bp_cpu_in.rd_data;
+		if out_mux_reg = bp and mem_in.rdy_cnt = "00" then
+			cpu_in.rd_data <= mem_in.rd_data;
 		end if;
 		if out_mux_reg = dm and dm_cpu_in.rdy_cnt = "00" then
 			cpu_in.rd_data <= dm_cpu_in.rd_data;
