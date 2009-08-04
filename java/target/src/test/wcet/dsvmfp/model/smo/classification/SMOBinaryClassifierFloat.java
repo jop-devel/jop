@@ -111,7 +111,8 @@ public class SMOBinaryClassifierFloat {
 
 			boolean takeStepResult = false;
 			for (i1 = 0; i1 < m; i1++) {
-				System.out.println("*******takeStep()*****");
+				P(" ");
+				P("*******takeStep()*****");
 				System.out.print("i1:");
 				System.out.println(i1);
 				for (i2 = 0; i2 < m; i2++) {
@@ -120,8 +121,9 @@ public class SMOBinaryClassifierFloat {
 					takeStepResult = examineExample();
 					if (takeStepResult)
 						numChanged++;
-					System.out.print("takeStep: ");
-					System.out.println(takeStepResult);
+					P("takeStep: " + takeStepResult);
+					P("W(after "+ takeStepCount +"): " + getObjectiveFunctionFP());
+					
 				}
 			}
 			P("////Post for loop:" + numChanged);
@@ -421,12 +423,9 @@ public class SMOBinaryClassifierFloat {
 				objfunc_fp = objfunc_fp + alph[i];
 				for (int j = 0; j < m; j++) {
 					if (alph[j] > 0) {
-						objfunc_fp = FloatUtil.sub(objfunc_fp, FloatUtil.mul(
-								FloatUtil.mul(FloatUtil
-										.mul(FloatUtil.mul(FloatUtil.mul(
-												FloatUtil.HALF, target[i]),
-												target[j]), alph[i]), alph[j]),
-								getKernelOutputFloat(i, j)));
+						objfunc_fp -= objfunc_fp - 0.5 * target[i] * target[j]
+								* getKernelOutputFloat(i, j) * alph[i]
+								* alph[j];
 					}
 				}
 			}
