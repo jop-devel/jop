@@ -87,6 +87,8 @@ public class STAppController extends STScheduler {
 	System.out.println("\\end{tabular}");
 	return true;
     }
+    
+    static Runner wcetrun;
 
     /**
      * Creation of all tasks, shared memory objects, and scheduling tables
@@ -121,6 +123,10 @@ public class STAppController extends STScheduler {
 	tskList[0].setMajorCycle(100000);
 	tskList[1].setMajorCycle(200000);
 	tskList[2].setMajorCycle(200000);
+
+	// WCET estimation
+	wcetrun = new RRunner(TskSampleSet);
+
 
 	/* Construction of task list 0 */
 	tskList[0].tabCyclicExec[0].tsk = new RRunner(TskSampleSet);
@@ -181,5 +187,10 @@ public class STAppController extends STScheduler {
 	//tskList[2].startCPUs();
 	//tskList[2].run();
     }
+    
+    void wrapWCET() {
+    	wcetrun.run();
+    }
+    
 
 }
