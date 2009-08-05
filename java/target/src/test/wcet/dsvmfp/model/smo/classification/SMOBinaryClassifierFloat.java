@@ -99,57 +99,48 @@ public class SMOBinaryClassifierFloat {
 		System.out.println("After init params");
 
 		loop = 0;
-
-		boolean first = true;
-		P("++++Pre While++++");
-		while (numChanged > 0 || first) {
-			P("----Pre loop----");
-			first = false;
-			numChanged = 0;
-			// assigns i1 and i2
-			// getIndex(indexarray);
-
-			boolean takeStepResult = false;
-			for (i1 = 0; i1 < m; i1++) {
-				P(" ");
-				P("*******takeStep()*****");
-				System.out.print("i1:");
-				System.out.println(i1);
-				for (i2 = 0; i2 < m; i2++) {
-					System.out.print("i2:");
-					System.out.println(i2);
-					takeStepResult = examineExample();
-					if (takeStepResult)
-						numChanged++;
-					P("takeStep: " + takeStepResult);
-					P("W(after "+ takeStepCount +"): " + getObjectiveFunctionFP());
-					
-				}
-			}
-			P("////Post for loop:" + numChanged);
-		}
-		P("++++Post while++++");
-
-		measure();
-
 		if (false) {
+			boolean first = true;
+			P("++++Pre While++++");
+			while (numChanged > 0 || first) {
+				P("----Pre loop----");
+				first = false;
+				numChanged = 0;
+				// assigns i1 and i2
+				// getIndex(indexarray);
+
+				boolean takeStepResult = false;
+				for (i1 = 0; i1 < m; i1++) {
+					P(" ");
+					P("*******takeStep()*****");
+					System.out.print("i1:");
+					System.out.println(i1);
+					for (i2 = 0; i2 < m; i2++) {
+						System.out.print("i2:");
+						System.out.println(i2);
+						takeStepResult = examineExample();
+						if (takeStepResult)
+							numChanged++;
+						P("takeStep: " + takeStepResult);
+						P("W(after " + takeStepCount + "): "
+								+ getObjectiveFunctionFP());
+
+					}
+				}
+				P("////Post for loop:" + numChanged);
+			}
+			P("++++Post while++++");
+		}
+
+		if (true) {
 
 			while (numChanged > 0 || examineAll) { // @WCA loop=2
-				// while (loop>=0) { //temp debug forever loop
-				// System.out.print("Starting loop=");
-				// System.out.println(loop);
+
 				loop++;
-				// System.out.print("numChanged=");
-				// System.out.println(numChanged);
-				// if (examineAll)
-				// System.out.println("examineAll=true");
-				// else
-				// System.out.println("examineAll=false");
-				for (int i = 0; i < 100000; i++)
-					// @WCA loop=2
-					; // slow it down to print
+
 				numChanged = 0;
 				if (examineAll) {
+					// loop I over all training examples
 					for (i2 = 0; i2 < m; i2++) { // @WCA loop=2
 						if (examineExample()) {
 							numChanged++;
@@ -157,8 +148,13 @@ public class SMOBinaryClassifierFloat {
 					}
 				} else {
 					// Inner loop success
-					numChanged = innerLoop();
-					// numChanged = 0; // TODO: remove
+					for (i2 = 0; i2 < m; i2++) { // @WCA loop=2
+						if (alph[i2] > 0 && alph[i2] < C) {
+							if (examineExample()) {
+								numChanged++;
+							}
+						}
+					}
 				}
 				if (examineAll) {
 					examineAll = false;
@@ -170,7 +166,7 @@ public class SMOBinaryClassifierFloat {
 			if (PRINT)
 				System.out.println("SMO.mainroutine.trained");
 		}// false
-
+		measure();
 		if (PRINT) {
 			System.out.println("Done!");
 			smoInfo();
@@ -302,14 +298,101 @@ public class SMOBinaryClassifierFloat {
 	 * @return true if it was possible to take a step
 	 */
 	static boolean examineExample() {
+
 		y2 = target[i2];
 		alph2 = alph[i2];
 		P("S: alph2:" + alph2);
 		E2 = getfFP(i2) - target[i2];
 		P("f2:" + getfFP(i2));
+		float r2 = E2 * y2;
+		if ((r2 < -tol && alph2 < C) || (r2 > tol && alph2 > 0)) {
+			int nonBounds = 0;
+			for (int i = 0; i < m; i++) {
+				if (!isExampleOnBound(i)) {
+					nonBounds++;
+					if (nonBounds > 1)
+						break;
+				}
+			}
 
-		// TODO: i1 will/should be set here
-		return takeStep();
+			// if(number of non-zero & non-C alpha > 1)
+			if (nonBounds > 1) {
+				// i1 = result of second choice heuristic
+				secondChoiceHeuristic();
+				if (takeStep())
+					return true;
+			}
+			// loop over all non-zero and non-C alpha, starting at random point
+			boolean firstTime = true;
+			int i;
+			while ((i = randomLoop(firstTime)) != -1) {
+				firstTime = false;
+				if (!isExampleOnBound(i)) {
+					i1 = i;
+					if (takeStep())
+						return true;
+				}
+			}
+			// loop over all possible i1, starting at random point
+			firstTime = true;
+			while ((i = randomLoop(firstTime)) != -1) {
+				i1 = i;
+				if (takeStep())
+					return true;
+			}
+
+		}
+
+		return false;
+	}
+
+	static void secondChoiceHeuristic() {
+		E2 = getError(i2);
+		float maxabs = 0f;
+		i1 = 0;
+		float abs = 0f;
+		for (int i = 0; i < m; i++) {
+			if (!isExampleOnBound(i)) {
+				if ((abs = Math.abs(getError(i) - E2)) >= maxabs) {
+					maxabs = abs;
+					i1 = i;
+				}
+			}
+		}
+	}
+
+	static int firstIndex = -1;
+	static int nextIndex = -1;
+
+	/**
+	 * Will generate a random point if lastIndex == -1. It will return -1 when
+	 * full loop is done.
+	 * 
+	 * @param firstTime
+	 *            true for the first call;
+	 * @return -1 when done
+	 */
+	static int randomLoop(boolean firstTime) {
+		// random index init for first call
+		if (firstTime) {
+			firstIndex = nextIndex = (int) (System.currentTimeMillis() % m);
+			return firstIndex;
+		}
+
+		// next index
+		nextIndex = nextIndex + 1;
+		// start from 0 if past last index
+		if (nextIndex > (m - 1)) {
+			nextIndex = 0;
+		}
+		if (nextIndex != firstIndex) {
+			return nextIndex;
+		}
+
+		// stop: it has looped
+		firstIndex = -1;
+		nextIndex = -1;
+		return -1;
 	}
 
 	static int changed;
@@ -321,7 +404,7 @@ public class SMOBinaryClassifierFloat {
 	 * 
 	 * @return the number of changed examples
 	 */
-	static int innerLoop() {
+	static int innerLoop() {// TODO remove
 		changed = 0;
 		inner_loop_success = true;
 		return changed;
@@ -339,11 +422,11 @@ public class SMOBinaryClassifierFloat {
 		// initialize alpha array to zero
 		alph = new float[m];
 
-		C = FloatUtil.mul(FloatUtil.ONE, FloatUtil.intToFp(1));
-		bias = 0;
-		eps = FloatUtil.div(FloatUtil.ONE, FloatUtil.intToFp(100));
+		C = 10f;
+		bias = 0f;
+		eps = 0.01f;
 		// System.out.println("Cb initParams()");
-		tol = FloatUtil.div(FloatUtil.ONE, FloatUtil.intToFp(10));
+		tol = 0.01f;
 
 		KFloat.setSigma2(FloatUtil.mul(FloatUtil.ONE, FloatUtil.ONE));
 		KFloat.setKernelType(KFloat.DOTKERNEL);// GAUSSIANKERNEL or DOTKERNEL
@@ -373,6 +456,16 @@ public class SMOBinaryClassifierFloat {
 		}
 		f_fp -= bias;
 		return f_fp;
+	}
+
+	/**
+	 * The error of the training example i.
+	 * 
+	 * @param i
+	 * @return error
+	 */
+	static float getError(int i) {
+		return getfFP(i) - target[i];
 	}
 
 	/**
@@ -618,7 +711,7 @@ public class SMOBinaryClassifierFloat {
 	 * @return true if p is on bound
 	 */
 	static boolean isExampleOnBound(int p) {
-		return alph[p] < tol || alph[p] > FloatUtil.sub(C, tol);
+		return alph[p] < tol || alph[p] > (C - tol);
 	}
 
 	/**

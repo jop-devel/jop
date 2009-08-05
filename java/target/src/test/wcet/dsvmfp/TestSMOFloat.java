@@ -41,10 +41,10 @@ public class TestSMOFloat {
 		// Training instances
 		// Remember to make same as in dsvm.test.smo.ServerData
 		// Change these files for the four setups
-		//SVMData d = new TrainingData1Float();
-		//data_fp = d.getTrainingData();
-		//y_fp = d.getTrainingLabels();
-		//m = y_fp.length;
+		SVMData d = new TrainingData1Float();
+		data_fp = d.getTrainingData();
+		y_fp = d.getTrainingLabels();
+		m = y_fp.length;
 
 		// TrainingData1Float.assign(data_fp, y_fp);
 		// TestData2.assign(testdata_fp,testlabel_fp);
@@ -54,12 +54,15 @@ public class TestSMOFloat {
 		// dsvmfp.TestData3.assign(testdata_fp,testlabel_fp);
 		// dsvmfp.TrainingData4.assign(data_fp, y_fp);
 		// dsvmfp.TestData4.assign(testdata_fp,testlabel_fp);
+		
+		/*
 		Data id = new IrisFlowerData();
 		float data[][] = id.getData();
 
 		data_fp = getDataDim(data, new int[] {0,1});
 		y_fp = getTarget(data, 4);
 		m = y_fp.length;
+		*/
 		
 		SMOBinaryClassifierFloat.setData_fp(data_fp);
 		SMOBinaryClassifierFloat.setY_fp(y_fp);
