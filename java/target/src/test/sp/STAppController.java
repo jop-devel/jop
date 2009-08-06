@@ -39,7 +39,8 @@ public class STAppController extends STScheduler {
     // Constructor 
     public STAppController(int maxtask) {
 	super(maxtask);
-	/* see constructor of super class */
+	/* see constructor of			tmeas = -(tstop-tstart);
+ super class */
     }
 
     static SysDevice sys = IOFactory.getFactory().getSysDevice();

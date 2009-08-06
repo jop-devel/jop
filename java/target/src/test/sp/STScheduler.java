@@ -58,16 +58,16 @@ public class STScheduler implements Runnable {
 		public void measure() {
 			int tstart, tstop;
 			tstart = sys.cntInt;
-			tstop = sys.cntInt;
-			tmeas = -(tstop-tstart);
-			tstart = sys.cntInt;
 			run();
 			tstop = sys.cntInt;
-			tmeas += tstop-tstart;
+			tmeas = tstop-tstart;
 		}
 
 		public int getMeasResult() {
-			return tmeas;
+			int tstart, tstop;
+			tstart = sys.cntInt;
+			tstop = sys.cntInt;
+			return tmeas - (tstop-tstart);
 		}
 		
 	}
