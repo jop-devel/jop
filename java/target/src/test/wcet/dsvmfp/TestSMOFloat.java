@@ -17,6 +17,8 @@ public class TestSMOFloat {
 	static int errcnt = 0;
 	static int time = 0;
 
+	static SMOBinaryClassifierFloat smo = new SMOBinaryClassifierFloat();;
+
 	// Run this to see the whole program run
 	// Notice that only the deplyyRT() method is RT enabled
 	public static void goAll() {
@@ -54,28 +56,28 @@ public class TestSMOFloat {
 		// dsvmfp.TestData3.assign(testdata_fp,testlabel_fp);
 		// dsvmfp.TrainingData4.assign(data_fp, y_fp);
 		// dsvmfp.TestData4.assign(testdata_fp,testlabel_fp);
-		
-		/*
-		Data id = new IrisFlowerData();
-		float data[][] = id.getData();
 
-		data_fp = getDataDim(data, new int[] {0,1});
-		y_fp = getTarget(data, 4);
-		m = y_fp.length;
-		*/
-		
-		SMOBinaryClassifierFloat.setData_fp(data_fp);
-		SMOBinaryClassifierFloat.setY_fp(y_fp);
-		
+		/*
+		 * Data id = new IrisFlowerData(); float data[][] = id.getData();
+		 * 
+		 * data_fp = getDataDim(data, new int[] {0,1}); y_fp = getTarget(data,
+		 * 4); m = y_fp.length;
+		 */
+
+		smo.setData_fp(data_fp);
+		smo.setY_fp(y_fp);
 
 		// Train the model prior to deployment
-		SMOBinaryClassifierFloat.mainRoutine();
+		smo.mainRoutine();
 	}
 
 	/**
 	 * Get the data out of the data matrix.
-	 * @param data datamatrix
-	 * @param dims array with indicies of the desired vectors
+	 * 
+	 * @param data
+	 *            datamatrix
+	 * @param dims
+	 *            array with indicies of the desired vectors
 	 * @return new datamatrix
 	 */
 	static float[][] getDataDim(float[][] data, int[] dims) {
@@ -93,8 +95,11 @@ public class TestSMOFloat {
 
 	/**
 	 * Get the target vector
-	 * @param data datamatrix
-	 * @param targetdim index of target vector (last index)
+	 * 
+	 * @param data
+	 *            datamatrix
+	 * @param targetdim
+	 *            index of target vector (last index)
 	 * @return target vector
 	 */
 	static float[] getTarget(float[][] data, int targetdim) {
@@ -117,8 +122,7 @@ public class TestSMOFloat {
 			// System.out.println("---ALIVE1---" + i);
 			// int smores =
 			// SMOBinaryClassifierFP.getFunctionOutputTestPointFP(testdata_fp[i]);;
-			float smores = SMOBinaryClassifierFloat
-					.getFunctionOutputTestPointFP(testdata_fp[i]);
+			float smores = smo.getFunctionOutputTestPointFP(testdata_fp[i]);
 			;
 			// System.out.println("---ALIVE2---" + i);
 			t = Native.rd(Const.IO_CNT) - t;
@@ -140,7 +144,7 @@ public class TestSMOFloat {
 		System.out.print("Error cnt:");
 		System.out.println(errcnt);
 		System.out.print("#sv");
-		System.out.println(SMOBinaryClassifierFloat.getSV());
+		System.out.println(smo.getSV());
 		System.out.print("total time (classifying):");
 		System.out.print(time);
 		System.out.println(" us");

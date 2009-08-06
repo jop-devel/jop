@@ -16,78 +16,74 @@
 
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
-
-/**
- * 
  */
+
 package sp;
 
-//import com.jopdesign.sys.Native;
-
 /**
- * A single path programming example on JOP.
- * It samples an input value and performs sliding averaging.
+ * A single path programming example on JOP. It samples an input value and
+ * performs sliding averaging.
  * 
  * @author Raimund Kirner (raimund@vmars.tuwien.ac.at)
- *
+ * 
  */
 public class STSampler extends SimpleHBTask {
-    int nWCETread    = 300;
-    int nWCETexecute = 300;
-    int nWCETwrite   = 300;
+	int nWCETread = 300;
+	int nWCETexecute = 300;
+	int nWCETwrite = 300;
 
-    int nDat = 0;
-    int nDat2 = 0;
-    SharedIMem ird;
-    SharedIMem iwrt;
+	int buf[];
+	int inval;
+	int nDat = 0;
+	SharedIMem ird;
+	SharedIMem iwrt;
 
-    // Constructor 
-    public STSampler(SharedIMem ird, SharedIMem iwrt) {
-        this.ird  = ird;
-        this.iwrt = iwrt;
-    }
-    
-    /**
-     * Perform read access to shared data.
-     */
-    public void read() {
-	nDat2 = ird.get();
-	//IRd.set(nDat2+1);
-	//System.out.println("STSampler.read()");
-   }
-	
-    /**
-     * Execute task logic. Read and write access to shared data is forbidden.
-     */
-    public void execute() {
-	//nDat = (nDat + nDat2) / 2;
-	nDat = (nDat + nDat2) >> 1; /* work around, since "/" is problematic for WCET analysis */
-	this.setAlive();
-    }
-	
-    /**
-     * Write results to the shared memory.
-     */
-    public void write() {
-	iwrt.set(nDat);
-    }
+	public STSampler(SharedIMem ird, SharedIMem iwrt) {
+		this.ird = ird;
+		this.iwrt = iwrt;
+		buf = new int[2];
+	}
 
-    /**
-     * Some wrapper methods to enable WCET analysis including cache loading.
-     */
+	/**
+	 * Perform read access to shared data.
+	 */
+	public void read() {
+		inval = ird.get();
+	}
 
-    public void readWrapperWCET() {
-	read();
-    }
+	/**
+	 * Execute task logic. Read and write access to shared data is forbidden.
+	 * MS: a running average uses a buffer and not the last average value. Gives
+	 * also different r/x/w cycles ;-)
+	 */
+	public void execute() {
+		buf[1] = buf[0];
+		buf[0] = inval;
+		nDat = (buf[1] + buf[0]) >> 1;
+		this.setAlive();
+	}
 
-    public void executeWrapperWCET() {
-	execute();
-    }
+	/**
+	 * Write results to the shared memory.
+	 */
+	public void write() {
+		iwrt.set(nDat);
+	}
 
-    public void writeWrapperWCET() {
-	write();
-    }
+	/**
+	 * Some wrapper methods to enable WCET analysis including cache loading.
+	 */
+
+	public void readWrapperWCET() {
+		read();
+	}
+
+	public void executeWrapperWCET() {
+		execute();
+	}
+
+	public void writeWrapperWCET() {
+		write();
+	}
 
 }

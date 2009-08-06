@@ -14,80 +14,67 @@ import wcet.dsvmfp.model.smo.kernel.KFloat;
  */
 public class SMOBinaryClassifierFloat {
 
-	final static boolean PRINT = true;
+	final boolean PRINT = true;
 
 	/** Number of lagrange multipliers in deployed RT model */
-	public final static int ALPHA_RT = 2;
-
-	static boolean info;
-
-	static public boolean printSMOInfo;
+	public final int ALPHA_RT = 2;
 
 	/** The [m] Lagrange multipliers. */
-	static public float[] alph;
-	static float alph1, alph2;
+	public float[] alph;
+	float alph1, alph2;
 
-	static float y1, y2;
+	float y1, y2;
 
 	/** The target vector of {-1,+1}. */
-	static public float[] target;
+	public float[] target;
 
 	/** The data vector [rows][columns]. */
-	static public float[][] point;
+	public float[][] point;
 
 	/** The high bound. */
-	static public float C;
+	public float C;
 
 	/** The error tolerance. */
-	static public float tol;
+	public float tol;
 
 	/** The error tolerance, that is used for KKT violation checks. */
-	static public float eps;
+	public float eps;
 
 	// E1 and E1 as used in takestep
-	static public float E1, E2;
+	public float E1, E2;
 
 	/** The bias_fp. */
-	static public float bias;
+	public float bias;
 
-	static public int i1, i2;
+	public int i1, i2;
 
 	/**
 	 * The number of training points. It is declared final to avoid
 	 * synchronization problems.
 	 */
-	public static int m;
+	public int m;
 
-	/** The input space dimensinality. */
-	static public int n;
+	/** The input space dimensionality. */
+	public int n;
 
-	// static public boolean takeStepFlag;
-
-	// static public boolean takeStepResult;
 
 	// ////////////Performance Variables////////////////////
-	static public int takeStepCount;
+	public int takeStepCount;
 
-	static public int numChanged;
+	public int numChanged;
 
-	static public boolean examineAll;
+	public boolean examineAll;
 
-	static public int loop;
-
-	static public float k11, k12, k22;
-
-	// objective function at a2=L and a2=H
-	static public float Lobj, Hobj;
+	public int loop;
 
 	/**
 	 * Method mainRoutine, which estimates the SVM parameters. The parameters
 	 * are intialized before the training of the SVM is conducted.
 	 * 
-	 * @return true if the trainng went well
+	 * @return true if the training went well
 	 */
-	static public boolean mainRoutine() {
+	public boolean mainRoutine() {
 
-		info = false;
 		// The number of updated that significantly changed the
 		// Lagrange multipliers
 		numChanged = 0;
@@ -186,8 +173,9 @@ public class SMOBinaryClassifierFloat {
 	 *            - first choice heuristics
 	 * @return true if a positive step has occured
 	 */
-	public static boolean takeStep() {
-
+	public boolean takeStep() {
+		float k11, k12, k22;
+		
 		P("takeStep, takeStepCount=" + takeStepCount + " i1=" + i1 + " i2="
 				+ i2);
 
@@ -297,7 +285,7 @@ public class SMOBinaryClassifierFloat {
 	 *            chosen by the outer loop in smo
 	 * @return true if it was possible to take a step
 	 */
-	static boolean examineExample() {
+	boolean examineExample() {
 
 		y2 = target[i2];
 		alph2 = alph[i2];
@@ -346,7 +334,7 @@ public class SMOBinaryClassifierFloat {
 		return false;
 	}
 
-	static void secondChoiceHeuristic() {
+	void secondChoiceHeuristic() {
 		E2 = getError(i2);
 		float maxabs = 0f;
 		i1 = 0;
@@ -361,8 +349,8 @@ public class SMOBinaryClassifierFloat {
 		}
 	}
 
-	static int firstIndex = -1;
-	static int nextIndex = -1;
+	int firstIndex = -1;
+	int nextIndex = -1;
 
 	/**
 	 * Will generate a random point if lastIndex == -1. It will return -1 when
@@ -372,7 +360,7 @@ public class SMOBinaryClassifierFloat {
 	 *            true for the first call;
 	 * @return -1 when done
 	 */
-	static int randomLoop(boolean firstTime) {
+	int randomLoop(boolean firstTime) {
 		// random index init for first call
 		if (firstTime) {
 			firstIndex = nextIndex = (int) (System.currentTimeMillis() % m);
@@ -395,27 +383,12 @@ public class SMOBinaryClassifierFloat {
 		return -1;
 	}
 
-	static int changed;
-	static boolean inner_loop_success;
-
-	/**
-	 * Method innerLoop, which is the inner loop that iterates until the
-	 * examples in the inner loop are self consistent.
-	 * 
-	 * @return the number of changed examples
-	 */
-	static int innerLoop() {// TODO remove
-		changed = 0;
-		inner_loop_success = true;
-		return changed;
-	}
-
 	/**
 	 * Method initParams, which will init the parameters of the SMO algorithm.
 	 * This method should only be called once, which would be just before the
 	 * mainRoutine().
 	 */
-	static void initParams() {
+	void initParams() {
 
 		m = target.length;
 		n = point[0].length;
@@ -447,7 +420,7 @@ public class SMOBinaryClassifierFloat {
 	 *            - index
 	 * @return the non-biased functional output.
 	 */
-	static float getfFP(int i) {
+	float getfFP(int i) {
 		float f_fp = 0;
 		for (int j = 0; j < m; j++) {
 			if (alph[j] > 0) {
@@ -464,7 +437,7 @@ public class SMOBinaryClassifierFloat {
 	 * @param i
 	 * @return error
 	 */
-	static float getError(int i) {
+	float getError(int i) {
 		return getfFP(i) - target[i];
 	}
 
@@ -478,7 +451,7 @@ public class SMOBinaryClassifierFloat {
 	 *            the example to check
 	 * @return true if example violates KKT
 	 */
-	static boolean isKktViolated(int p) {
+	boolean isKktViolated(int p) {
 		boolean violation = true;
 		float f_fp = getFunctionOutputFloat(p, false);
 		// Is alpha_fp on lower bound?
@@ -507,7 +480,7 @@ public class SMOBinaryClassifierFloat {
 	 * 
 	 * @return the objective function (6.1 in Christianini).
 	 */
-	static float getObjectiveFunctionFP() {
+	float getObjectiveFunctionFP() {
 		// TODO: Check how often this is called and tune if possible
 		float objfunc_fp = 0;
 		for (int i = 0; i < m; i++) {
@@ -533,14 +506,16 @@ public class SMOBinaryClassifierFloat {
 	 *            - point to calculte error for
 	 * @return calculated error
 	 */
-	static float getCalculatedErrorFP(int p) {
+	float getCalculatedErrorFP(int p) {
 		return FloatUtil.sub(getFunctionOutputFloat(p, false), target[p]);
 	}
 
 	/**
 	 * Only one executor allowed.
 	 */
-	static ParallelExecutor pe = new ParallelExecutor();
+	ParallelExecutor pe = new ParallelExecutor();
+
+	SVMHelp svmHelp = new SVMHelp();
 
 	/**
 	 * Method getFunctionOutput, which will return the functional output for
@@ -552,16 +527,16 @@ public class SMOBinaryClassifierFloat {
 	 *            - true if to be done in parallel
 	 * @return the functinal output
 	 */
-	static float getFunctionOutputFloat(int p, boolean parallel) {
+	float getFunctionOutputFloat(int p, boolean parallel) {
 		float functionalOutput_fp = 0;
-		SVMHelp.p = p;
+		svmHelp.p = p;
 		if (parallel) {
-			SVMHelp.functionalOutput_fp = 0.0f;
+			svmHelp.functionalOutput_fp = 0.0f;
 			System.out.print("m:");
 			System.out.println(m);
 			pe.executeParallel(new SVMHelp(), m);
-			SVMHelp.functionalOutput_fp -= bias;
-			functionalOutput_fp = SVMHelp.functionalOutput_fp;
+			svmHelp.functionalOutput_fp -= bias;
+			functionalOutput_fp = svmHelp.functionalOutput_fp;
 		} else {
 			for (int i = 0; i < m; i++) {
 				// Don't do the kernel if it is epsequal
@@ -584,7 +559,7 @@ public class SMOBinaryClassifierFloat {
 	 *            - index of alpha_fp 2
 	 * @return kernel output
 	 */
-	static float getKernelOutputFloat(int i1, int i2) {
+	float getKernelOutputFloat(int i1, int i2) {
 
 		return KFloat.kernel(i1, i2);
 	}
@@ -598,7 +573,7 @@ public class SMOBinaryClassifierFloat {
 	 *            -index of second point
 	 * @return double - eta_fp
 	 */
-	static float getEtaFP(int i1, int i2) {
+	float getEtaFP(int i1, int i2) {
 		float eta_fp;
 		float eta_fp_tmp;
 		float kernel11_fp, kernel22_fp, kernel12_fp;
@@ -620,7 +595,7 @@ public class SMOBinaryClassifierFloat {
 	 *            - second point
 	 * @return the lower clip value
 	 */
-	static float getLowerClipFP(int i1, int i2) {
+	float getLowerClipFP(int i1, int i2) {
 		float u_fp = 0;
 		if (target[i1] == target[i2]) {
 			u_fp = FloatUtil.sub(FloatUtil.add(alph[i1], alph[i2]), C);
@@ -646,7 +621,7 @@ public class SMOBinaryClassifierFloat {
 	 *            - second point
 	 * @return the upper clip
 	 */
-	static float getUpperClipFP(int i1, int i2) {
+	float getUpperClipFP(int i1, int i2) {
 		float v_fp = 0;
 		if (target[i1] == target[i2]) {
 			v_fp = FloatUtil.add(alph[i1], alph[i2]);
@@ -662,7 +637,7 @@ public class SMOBinaryClassifierFloat {
 		return v_fp;
 	}
 
-	static public int getTrainingErrorCountFP() {
+	public int getTrainingErrorCountFP() {
 		P("getTrainingErrorCountFP");
 		int errorCount = 0;
 		for (int i = 0; i < m; i++) {
@@ -690,7 +665,7 @@ public class SMOBinaryClassifierFloat {
 	 * 
 	 * @return the weight [n] vector
 	 */
-	static float[] calculateWFP() {
+	float[] calculateWFP() {
 		float[] w_fp;
 		w_fp = new float[n];
 		for (int i = 0; i < m; i++) {
@@ -710,7 +685,7 @@ public class SMOBinaryClassifierFloat {
 	 *            - index of point
 	 * @return true if p is on bound
 	 */
-	static boolean isExampleOnBound(int p) {
+	boolean isExampleOnBound(int p) {
 		return alph[p] < tol || alph[p] > (C - tol);
 	}
 
@@ -722,7 +697,7 @@ public class SMOBinaryClassifierFloat {
 	 *            - the input vector
 	 * @return the functinal output
 	 */
-	static public float getFunctionOutputTestPointFP(float[] xtest) {
+	public float getFunctionOutputTestPointFP(float[] xtest) {
 		float functionalOutput_fp = 0;
 		float[][] data_fp_local = point;
 		int m = data_fp_local.length;
@@ -765,7 +740,7 @@ public class SMOBinaryClassifierFloat {
 	 *            - the input vector
 	 * @return the functinal output
 	 */
-	static public float getFunctionOutputTestPointFP_OOAD(float[] xtest) {
+	public float getFunctionOutputTestPointFP_OOAD(float[] xtest) {
 		float functionalOutput_fp = 0;
 		float kernelOutput_fp = 0;
 		KFloat.setX(xtest);
@@ -782,25 +757,25 @@ public class SMOBinaryClassifierFloat {
 		return functionalOutput_fp;
 	}
 
-	static public void setData_fp(float[][] data_fp) {
-		SMOBinaryClassifierFloat.point = data_fp;
+	public void setData_fp(float[][] data_fp) {
+		point = data_fp;
 	}
 
-	static public void setY_fp(float[] y_fp) {
-		SMOBinaryClassifierFloat.target = y_fp;
+	public void setY_fp(float[] y_fp) {
+		target = y_fp;
 	}
 
-	static void gccheck() {
+	void gccheck() {
 		System.out.print("GC free words ");
 		// System.out.println(GC.free());
 	}
 
-	static void sp() {
+	void sp() {
 		System.out.print("sp=");
 		System.out.println(Native.rd(com.jopdesign.sys.Const.IO_WD));
 	}
 
-	static public void smoInfo() {
+	public void smoInfo() {
 		// printScalar("wd",Native.rd(Const.IO_WD)); //TODO: Can it be read?
 		System.out.println("======SMO INFO START======");
 		// printScalar("sp",Native.rd(com.jopdesign.sys.Const.IO_WD));
@@ -829,7 +804,7 @@ public class SMOBinaryClassifierFloat {
 		System.out.println("======SMO INFO END======");
 	}
 
-	static void printBoolean(String str, boolean b) {
+	void printBoolean(String str, boolean b) {
 		System.out.print(str);
 		System.out.print(':');
 		if (b)
@@ -838,7 +813,7 @@ public class SMOBinaryClassifierFloat {
 			System.out.println("false");
 	}
 
-	static void printScalar(String str, int sca) {
+	void printScalar(String str, int sca) {
 		System.out.print(str);
 		System.out.print(':');
 		System.out.println(sca);
@@ -846,7 +821,7 @@ public class SMOBinaryClassifierFloat {
 			;
 	}
 
-	static void printScalar(String str, float sca) {
+	void printScalar(String str, float sca) {
 		System.out.print(str);
 		System.out.print(':');
 		System.out.println(sca);
@@ -854,7 +829,7 @@ public class SMOBinaryClassifierFloat {
 			;
 	}
 
-	static void printVector(String str, float[] ve) {
+	void printVector(String str, float[] ve) {
 		System.out.print(str);
 		System.out.print(" {");
 		for (int i = 0; i < ve.length; i++) {
@@ -872,7 +847,7 @@ public class SMOBinaryClassifierFloat {
 			;
 	}
 
-	static void printVector(String str, int[] ve) {
+	void printVector(String str, int[] ve) {
 		System.out.print(str);
 		System.out.print(" {");
 		for (int i = 0; i < ve.length; i++) {
@@ -890,7 +865,7 @@ public class SMOBinaryClassifierFloat {
 			;
 	}
 
-	static void printMatrix(String str, float[][] ma) {
+	void printMatrix(String str, float[][] ma) {
 		for (int i = 0; i < ma.length; i++) {
 			System.out.print(str);
 			System.out.print("[");
@@ -901,7 +876,7 @@ public class SMOBinaryClassifierFloat {
 		}
 	}
 
-	static public int getSV() {
+	public int getSV() {
 		int svs = 0;
 		for (int i = 0; i < m; i++) {
 			if (alph[i] > tol)
@@ -910,24 +885,22 @@ public class SMOBinaryClassifierFloat {
 		return svs;
 	}
 
-	static void P(String s) {
+	void P(String s) {
 		if (PRINT)
 			System.out.println(s);
 	}
 
-	/**
-	 * Do not instanciate me.
-	 */
-	private SMOBinaryClassifierFloat() {
+	public SMOBinaryClassifierFloat() {
+		System.out.println("SMOBinaryClassifier object constructed.");
 	}
 
-	private static class SVMHelp implements Execute {
+	private class SVMHelp implements Execute {
 
-		static Object lock;
+		Object lock;
 
-		static int p; // the test point index
+		int p; // the test point index
 
-		static float functionalOutput_fp;
+		float functionalOutput_fp;
 
 		public void execute(int nr) {
 			// System.out.println("Parallel in core 0:nr=" + nr);
@@ -943,7 +916,7 @@ public class SMOBinaryClassifierFloat {
 		}
 
 		void setP(int p) {
-			SVMHelp.p = p;
+			this.p = p;
 			functionalOutput_fp = 0;
 		}
 
@@ -953,7 +926,7 @@ public class SMOBinaryClassifierFloat {
 	}
 
 	// First measure
-	public static void measure() {
+	public void measure() {
 
 		int time = 0;
 		float ser0, ser1, par0, par1;
