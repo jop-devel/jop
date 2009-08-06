@@ -3,7 +3,7 @@
     see <http://www.jopdesign.com/>
 
   Copyright (C) 2009, Benedikt Huber (benedikt.huber@gmail.com)
-  
+
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
@@ -38,7 +38,7 @@ import com.jopdesign.tools.Jopa;
 import com.jopdesign.tools.Jopa.Line;
 
 /**
- * Parse microcode file, compute timings 
+ * Parse microcode file, compute timings
  * @author Benedikt Huber <benedikt.huber@gmail.com>
  */
 public class MicrocodeAnalysis {
@@ -49,8 +49,8 @@ public class MicrocodeAnalysis {
 		public MicrocodeVerificationException(String msg) { super(msg); }
 	}
 
-	private static void ifail(String msg) throws AssertionError { 
-		throw new AssertionError("Interpreter failed: "+msg); 
+	private static void ifail(String msg) throws AssertionError {
+		throw new AssertionError("Interpreter failed: "+msg);
 	}
 
 	/** Limit for the length of a microcode path during simulation */
@@ -69,11 +69,11 @@ public class MicrocodeAnalysis {
 	public static final String ARRAY_BOUND_CHECK_LABEL = "array_bound";
 
 	public static final String VP_SAVE_LABEL = "invoke_vpsave";
-	
-	public static String[] INFEASIBLE_BRANCHES = 
+
+	public static String[] INFEASIBLE_BRANCHES =
 		{ NULL_PTR_CHECK_LABEL, ARRAY_BOUND_CHECK_LABEL, "! "+VP_SAVE_LABEL };
 
-	
+
 	/** Symbolic values */
 	private static abstract class MachineValue {
 		public abstract boolean isConcrete();
@@ -100,7 +100,7 @@ public class MicrocodeAnalysis {
 			} else {
 				return expr(opcode,e1,e2);
 			}
-			
+
 		}
 		public static MachineValue expr(int opcode, Vector<MachineValue> args) {
 			return new Expression(opcode,args);
@@ -126,15 +126,15 @@ public class MicrocodeAnalysis {
 		@Override public String toString()    { return symbol; }
 	}
 	private static class Expression extends MachineValue {
-		int funSym; 
+		int funSym;
 		List<MachineValue> args;
-		public Expression(int sym, List<MachineValue> args) { 
-			this.funSym = sym; 
+		public Expression(int sym, List<MachineValue> args) {
+			this.funSym = sym;
 			this.args = args;
 		}
 		@Override public Integer evaluate()      { return null; }
 		@Override public boolean isConcrete() { return false; }
-		@Override public String toString()    { 
+		@Override public String toString()    {
 			StringBuilder sb = new StringBuilder();
 			sb.append(Instruction.get(funSym));
 			sb.append('(');
@@ -157,24 +157,24 @@ public class MicrocodeAnalysis {
 		private int stackInputCount;  /* number of stack items consumed from the initial stack */
 		private int symbolGenCount = 0; /* number of generated symbols */
 		private String genSymbol(String prefix) { return prefix+"_"+(++symbolGenCount);}
-		
+
 		private Stack<MachineValue> stack = new Stack<MachineValue>();
 		private HashMap<String,MachineValue> localVars = new HashMap<String,MachineValue>();
 		private HashMap<MachineValue,Boolean> constraints = new HashMap<MachineValue, Boolean>();
-		
+
 		public MachineValue getLocalVar(String name) {
 			if(! localVars.containsKey(name)) {
 				localVars.put(name, MachineValue.symbol("local_"+name));
 			}
 			return localVars.get(name);
 		}
-		
+
 		public MachineState(int addr) {
 			this.addr = addr;
 			this.stackInputCount = 0;
-		    stack.push(MachineValue.symbol("ts_0"));			
+		    stack.push(MachineValue.symbol("ts_0"));
 		}
-		
+
 		@SuppressWarnings("unchecked")
 		public MachineState clone() {
 			MachineState cloned = new MachineState(addr);
@@ -190,34 +190,34 @@ public class MicrocodeAnalysis {
 			cloned.constraints = new HashMap<MachineValue, Boolean>(constraints);
 			return cloned;
 		}
-		
+
 		public int stackUsage() {
 			return stack.size() - stackInputCount;
 		}
-		
+
 		public MachineValue stackPop() {
 			MachineValue v = stack.pop();
 			if(stack.empty()) {
 				stackInputCount++;
 			    stack.push(MachineValue.symbol("ts_"+stackInputCount));
-			} 
+			}
 			return v;
 		}
-		
+
 		public void stackPush(MachineValue v) {
 			stack.push(v);
 		}
-		
+
 		public void stackPushNewSymbol(String prefix) {
 			stack.push(MachineValue.symbol(genSymbol(prefix)));
 		}
-		
+
 		public void arithmeticOp(int opcode) {
 			MachineValue v1 = stackPop();
 			MachineValue v2 = stackPop();
 			stackPush(MachineValue.alu(opcode,v1,v2));
 		}
-		
+
 		public void initBranch(int targetPC) {
 			if(branchDelay >= 0) { /* branch initialized; fail */
 				ifail("initBranch: branching already initialized");
@@ -225,7 +225,7 @@ public class MicrocodeAnalysis {
 			this.branchDelay = BRANCH_DELAY_SLOTS;
 			this.jmpAddr = targetPC;
 		}
-		
+
 		public Line fetchNext() {
 			if(branchDelay == 0) {
 				addr = jmpAddr;
@@ -236,7 +236,7 @@ public class MicrocodeAnalysis {
 			ic++;
 			return instrs.get(addr++);
 		}
-		
+
 		public void initMul() {
 			MachineValue a = stackPop();
 			MachineValue b = stackPop();
@@ -248,7 +248,7 @@ public class MicrocodeAnalysis {
 				mulResult = MachineValue.expr(MicrocodeConstants.STMUL, a, b);
 			}
 		}
-		
+
 		public int readMul() {
 			if(mulStart < 0) ifail("multiplier: load before store");
 			stackPush(mulResult);
@@ -256,11 +256,11 @@ public class MicrocodeAnalysis {
 			mulStart = -1; mulResult = null;
 			return delay;
 		}
-		
+
 		public int getIC() {
 			return ic;
 		}
-		
+
 		public void addConstraint(MachineValue val, boolean isEqualZero) throws MicrocodeVerificationException {
 			if(this.constraints.containsKey(val)) {
 				boolean wasEqualZero = constraints.get(val);
@@ -270,7 +270,7 @@ public class MicrocodeAnalysis {
 			}
 			this.constraints.put(val, isEqualZero);
 		}
-		
+
 		public String dumpConstraints() {
 			Vector<String> cts = new Vector<String>();
 			for(Entry<MachineValue, Boolean> x : this.constraints.entrySet()) {
@@ -284,7 +284,7 @@ public class MicrocodeAnalysis {
 			return MicropathTiming.concat(", ", cts).toString();
 		}
 	}
-	
+
 	/**
 	 * mini-interpreter to compute microcode paths
 	 */
@@ -339,7 +339,7 @@ public class MicrocodeAnalysis {
 			if(microLine.getSymVal() != null) {
 				constant = (Integer) jopa.getSymMap().get(microLine.getSymVal());
 			} else {
-				constant = microLine.getIntVal(); 
+				constant = microLine.getIntVal();
 			}
 			current.p.addInstr(microLine, current.st.stack.peek().evaluate());
 			if(current.p.getPath().size() > PATH_SIZE_LIMIT) {
@@ -347,7 +347,7 @@ public class MicrocodeAnalysis {
 			}
 
 			switch(microInstr.opcode) {
-			case MicrocodeConstants.POP: 
+			case MicrocodeConstants.POP:
 				current.st.stackPop();break;
 			case MicrocodeConstants.AND:
 			case MicrocodeConstants.OR:
@@ -409,7 +409,7 @@ public class MicrocodeAnalysis {
 				current.st.localVars.put(localVar,local);
 				break;
 			/* microcode branches */
-			case MicrocodeConstants.BNZ: 
+			case MicrocodeConstants.BNZ:
 			case MicrocodeConstants.BZ:
 				mcBranch(microInstr, label);
 				break;
@@ -417,7 +417,7 @@ public class MicrocodeAnalysis {
 			// -----------------------------------------------------------------------------------
 			//	'no sp change' instructions
 			// -----------------------------------------------------------------------------------
-			case MicrocodeConstants.NOP: 
+			case MicrocodeConstants.NOP:
 				break;
 			case MicrocodeConstants.WAIT:
 				current.p.setHasWait();
@@ -432,7 +432,7 @@ public class MicrocodeAnalysis {
 
 			//5 bits
 		    // stack.push(local[n])
-			case MicrocodeConstants.LDM: 
+			case MicrocodeConstants.LDM:
 				current.st.stackPush(current.st.getLocalVar(localVar));
 				break;
 
@@ -441,7 +441,7 @@ public class MicrocodeAnalysis {
 				break;
 
 			//	extension 'address' selects function 4 bits
-			case MicrocodeConstants.LDMRD: 
+			case MicrocodeConstants.LDMRD:
 				current.st.stackPushNewSymbol("ldmrd");break;
 			/* multiplier */
 			case MicrocodeConstants.LDMUL:
@@ -486,7 +486,7 @@ public class MicrocodeAnalysis {
 			if(targetPC == null) ifail("Label not defined: "+symVal);
 			current.st.initBranch(targetPC);
 		}
-		/* non-deterministic jump  */		
+		/* non-deterministic jump  */
 		private void jumpMaybe(Instruction branchInstr, MachineValue val, String symVal) throws MicrocodeVerificationException {
 			boolean branchOnZero = branchInstr.opcode == MicrocodeConstants.BZ;
 			pushBranchFalse(branchOnZero, val);
@@ -494,13 +494,13 @@ public class MicrocodeAnalysis {
 			jump(symVal);
 		}
 		private void mcBranch(Instruction microInstr, String symVal) throws MicrocodeVerificationException {
-			/* branch when zero/not zero. 
+			/* branch when zero/not zero.
 			 * Attention: the TOS from the last cycle isn't
 			 * yet available. To avoid accidental errors, will require that
 			 * the last instruction was a NOP */
 			MachineValue val = current.st.stackPop();
 			if(symVal.equals(NULL_PTR_CHECK_LABEL)) {
-				current.p.setNullPtrCheck();					
+				current.p.setNullPtrCheck();
 			} else if(symVal.equals(ARRAY_BOUND_CHECK_LABEL)) {
 				current.p.setArrayBoundCheck();
 			} else if(symVal.equals(VP_SAVE_LABEL)) {
@@ -515,7 +515,7 @@ public class MicrocodeAnalysis {
 						               (val.evaluate() != 0);
 					if(doBranch) jump(symVal);
 				}
-			}			
+			}
 		}
 	}
 	private File asmFile;
@@ -531,7 +531,7 @@ public class MicrocodeAnalysis {
 		asmFile = new File(jvmAsm);
 		parse(false);
 	}
-	
+
 	private File preprocess() throws IOException {
 		/* create temporary file for preprocessing */
 		File asmfilePath = new File(asmFile.getParent());
@@ -558,9 +558,12 @@ public class MicrocodeAnalysis {
 		}
 		return tmpFile;
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	private void parse(boolean preprocess) throws IOException {
+		if(! asmFile.exists()) {
+			throw new IOException("Assembler file "+asmFile+" not found. You may need to run e.g.: 'make gen_mem -e ASM_SRC=jvm JVM_TYPE=USB'");
+		}
 		File inFile;
 		if(preprocess) {
 			inFile = preprocess();
@@ -573,12 +576,12 @@ public class MicrocodeAnalysis {
 		this.jInstrs = jopa.getJavaInstructions();
 		this.instrs = jopa.getInstructions();
 	}
-	
+
 	public Integer getStartAddress(int opcode) {
 		if(opcode == JOPSYS_NOIM) return this.jInstrs.get(JOPSYS_NOIM);  // sys no-im
 		String name = JopInstr.name(opcode);
 		int jopinstr = JopInstr.get(name);
-		return this.jInstrs.get(jopinstr);		
+		return this.jInstrs.get(jopinstr);
 	}
 
 	Vector<MicrocodePath> getMicrocodePaths(String opName, int addr)
