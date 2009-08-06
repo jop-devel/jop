@@ -20,7 +20,7 @@ public class FIFOCacheBuilder extends DynamicCacheBuilder {
 		else                 this.simNumBlocks = blockCache.getNumBlocks() / 2;
 	}
 	@Override
-	public long getWaitTime(ProcessorModel proc, ControlFlowGraph cfg, boolean isInvoke) {
+	public long getWaitTime(ProcessorModel proc, ControlFlowGraph cfg, boolean isInvoke) {		
 		if(isInvoke && assumeEmptyCache) return this.cache.getMissOnInvokeCost(proc, cfg);
 		else                             return this.cache.getMaxMissCost(proc, cfg);
 	}

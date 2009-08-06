@@ -71,13 +71,32 @@ public interface ProcessorModel {
 	public List<String> getJVMClasses();
 	
 	public int getExecutionTime(MethodInfo context, InstructionHandle i);
-	public int getMethodCacheLoadTime(int words, boolean loadOnInvoke);
+
+	public long basicBlockWCET(BasicBlock codeBlock);
+
+	public boolean hasMethodCache();
 	/**
 	 * return method cache, or NoMethodCache if the processor does not have a method cache
 	 * @return
 	 */
 	public MethodCache getMethodCache();
-	public boolean hasMethodCache();
+
+	/**
+	 * get the miss penalty (method cache)
+	 * FIXME: We have to rewrite this portion of the analyzer - hardcoding miss penalties
+	 * is to inflexible
+	 * @param numberOfWords ... size of the method
+	 * @param loadOnInvoke  ... whether the method is loaded on invoke
+	 * @return
+	 */
+	public long getMethodCacheMissPenalty(int numberOfWords, boolean loadOnInvoke);
+
+	/**
+	 * FIXME: We have to rewrite this portion of the analyzer - hardcoding miss penalties
+	 * is to inflexible
+	 * @param invokerFlowGraph
+	 * @param receiverFlowGraph
+	 * @return
+	 */
 	public long getInvokeReturnMissCost(ControlFlowGraph invokerFlowGraph,ControlFlowGraph receiverFlowGraph);
-	public long basicBlockWCET(BasicBlock codeBlock);
 }
