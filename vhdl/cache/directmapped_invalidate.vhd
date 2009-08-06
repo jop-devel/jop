@@ -37,6 +37,8 @@ architecture rtl of directmapped is
 	signal ram_dout : cache_line_type;
 	signal ram_rdaddress : std_logic_vector(index_bits-1 downto 0);
 
+	signal valid_reg, next_valid : std_logic_vector(line_cnt-1 downto 0);
+	
 	signal cpu_out_reg, next_cpu_out : sc_out_type;
 	
 	signal rddata_reg, next_rddata : std_logic_vector(31 downto 0);
@@ -81,6 +83,7 @@ begin
 			rddata_reg <= (others => '0');
 			fetchtag_reg <= (others => '0');
 			fetch_reg <= '0';
+			valid_reg <= (others => '0');
 			state <= idle;
 
 		elsif clk'event and clk = '1' then  -- rising clock edge
@@ -89,12 +92,13 @@ begin
 			rddata_reg <= next_rddata;
 			fetchtag_reg <= next_fetchtag;
 			fetch_reg <= next_fetch;
+			valid_reg <= next_valid;
 			state <= next_state;
 
 		end if;
 	end process sync;
 	
-	async: process (cpu_out, mem_in, ram_dout,
+	async: process (cpu_out, mem_in, ram_dout, valid_reg,
 					cpu_out_reg, rddata_reg, fetchtag_reg, fetch_reg, state)
 	begin  -- process async
 
@@ -116,6 +120,7 @@ begin
 
 		ram_rdaddress <= cpu_out.address(index_bits-1 downto 0);
 
+		next_valid <= valid_reg;
 		ram_din.valid <= '1';
 		ram_din.data <= mem_in.rd_data;
 		ram_din.tag <= cpu_out_reg.address(SC_ADDR_SIZE-1 downto index_bits);
@@ -127,9 +132,11 @@ begin
 		if fetch_reg = '1' then
 			cpu_in.rd_data <= mem_in.rd_data;
 			next_rddata <= mem_in.rd_data;
+			
+			next_valid(to_integer(unsigned(fetchtag_reg(index_bits-1 downto 0)))) <= '1';
 			ram_din.tag <= fetchtag_reg(SC_ADDR_SIZE-1 downto index_bits);
-			ram_wraddress <= fetchtag_reg(index_bits-1 downto 0);
-			ram_wren <= '1';
+			ram_wraddress <= fetchtag_reg(index_bits-1 downto 0);			
+			ram_wren <= '1';			
 		end if;
 
 		case state is
@@ -138,7 +145,7 @@ begin
 				cpu_in.rdy_cnt <= "11";
 
 				if ram_dout.tag = cpu_out_reg.address(SC_ADDR_SIZE-1 downto index_bits)
-					and ram_dout.valid = '1' then
+					and valid_reg(to_integer(unsigned(cpu_out_reg.address(index_bits-1 downto 0)))) = '1' then
 					
 					next_rddata <= ram_dout.data;
 					next_state <= idle;
@@ -161,7 +168,8 @@ begin
 					next_state <= idle;
 				end if;
 				
-			when wr0 =>
+			when wr0 =>				
+				next_valid(to_integer(unsigned(cpu_out_reg.address(index_bits-1 downto 0)))) <= '1';
 				ram_din.data <= cpu_out_reg.wr_data;
 				ram_wren <= '1';
 				

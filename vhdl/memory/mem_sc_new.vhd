@@ -159,6 +159,9 @@ architecture rtl of mem_sc is
 	-- used to 'store' the size of arrays
 	signal size_reg, size_next		: unsigned(SC_ADDR_SIZE-1 downto 0);
 
+	-- registering exception signals
+	signal np_exc_next, ab_exc_next : std_logic;
+
 --
 --	values for bytecode read/cache
 --
@@ -231,6 +234,8 @@ begin
 			offset_reg <= (others => '0');
 			bc_len <= (others => '0');
 			bc_wr_addr <= (others => '0');
+			ab_exc <= '0';
+			np_exc <= '0';
 			state <= idl;
 			
 		elsif rising_edge(clk) then
@@ -244,6 +249,8 @@ begin
 			offset_reg <= offset_next;
 			bc_len <= bc_len_next;
 			bc_wr_addr <= bc_wr_addr_next;
+			ab_exc <= ab_exc_next;
+			np_exc <= np_exc_next;
 			state <= state_next;
 			
 		end if;
@@ -280,8 +287,8 @@ begin
 		end if;
 
 		-- no exceptions as default
-		np_exc <= '0';
-		ab_exc <= '0';
+		np_exc_next <= '0';
+		ab_exc_next <= '0';
 
 		-- address registering
 		addr_next <= addr_reg;	
@@ -454,7 +461,7 @@ begin
 
 				-- NP check
 				if addr_reg = 0 then
-					np_exc <= '1';
+					np_exc_next <= '1';
 					state_next <= last;
 				end if;
 
@@ -492,7 +499,7 @@ begin
 
 				-- NP check
 				if addr_reg = 0 then
-					np_exc <= '1';
+					np_exc_next <= '1';
 					state_next <= last;
 				end if;
 					
@@ -529,11 +536,11 @@ begin
 
 				-- NP and AB checks
 				if addr_reg = 1 then  	-- already added 1
-					np_exc <= '1';
+					np_exc_next <= '1';
 					state_next <= last;
 				end if;
 				if index_reg(SC_ADDR_SIZE-1) = '1' then
-					ab_exc <= '1';
+					ab_exc_next <= '1';
 					state_next <= last;
 				end if;
 
@@ -581,7 +588,7 @@ begin
 				end if;
 				-- AB check
 				if index_reg >= size_reg then
-					ab_exc <= '1';
+					ab_exc_next <= '1';
 					state_next <= last;
 				end if;
 				
@@ -622,11 +629,11 @@ begin
 
 				-- NP and AB checks
 				if addr_reg = 1 then  	-- already added 1
-					np_exc <= '1';
+					np_exc_next <= '1';
 					state_next <= last;
 				end if;
 				if index_reg(SC_ADDR_SIZE-1) = '1' then
-					ab_exc <= '1';
+					ab_exc_next <= '1';
 					state_next <= last;
 				end if;
 
@@ -655,7 +662,7 @@ begin
 
 				-- check bounds and trigger write only if it's ok
 				if index_reg >= size_reg then
-					ab_exc <= '1';
+					ab_exc_next <= '1';
 					state_next <= last;
 				else
 					sc_mem_out.wr <= '1';

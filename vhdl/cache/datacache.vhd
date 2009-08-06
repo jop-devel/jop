@@ -25,6 +25,9 @@ architecture rtl of datacache is
 	
 	signal dm_cpu_in, fa_cpu_in : sc_in_type;
 	signal dm_mem_out, fa_mem_out : sc_out_type;
+
+	signal bp_fetch, next_bp_fetch : std_logic;
+	signal bp_rd_data, next_bp_rd_data : std_logic_vector(31 downto 0);
 	
 begin  -- rtl
 
@@ -38,7 +41,7 @@ begin  -- rtl
 			mem_in	=> mem_in,
 			mem_out => dm_mem_out);
 
-	cmp_fa: entity work.lru
+	cmp_fa: entity work.fifo_cache
 		port map (
 			clk		=> clk,
 			reset	=> reset,
@@ -53,9 +56,13 @@ begin  -- rtl
 		if reset = '1' then  			-- asynchronous reset (active low)
 			out_mux_reg <= bp;
 			in_mux_reg <= bp;
+			bp_fetch <= '0';
+			bp_rd_data <= (others => '0');			
 		elsif clk'event and clk = '1' then  -- rising clock edge
 			out_mux_reg <= next_out_mux;
 			in_mux_reg <= next_in_mux;
+			bp_fetch <= next_bp_fetch;
+			bp_rd_data <= next_bp_rd_data;
 		end if;
 	end process sync;
 
@@ -70,6 +77,8 @@ begin  -- rtl
 		
 		next_out_mux <= out_mux_reg;
 		next_in_mux <= in_mux_reg;
+		next_bp_fetch <= '0';
+		next_bp_rd_data <= bp_rd_data;
 
 		case out_mux_reg is
 			when dm =>
@@ -111,11 +120,12 @@ begin  -- rtl
 			when fa =>
 				cpu_in.rd_data <= fa_cpu_in.rd_data;					   
 			when others =>
-				cpu_in.rd_data <= mem_in.rd_data;
+				cpu_in.rd_data <= bp_rd_data;
 		end case;
 
 		if out_mux_reg = bp and mem_in.rdy_cnt(1) = '0' then
 			next_in_mux <= bp;
+			next_bp_fetch <= '1';
 		end if;
 		if out_mux_reg = dm and dm_cpu_in.rdy_cnt(1) = '0' then
 			next_in_mux <= dm;
@@ -124,8 +134,9 @@ begin  -- rtl
 			next_in_mux <= fa;
 		end if;
 
-		if out_mux_reg = bp and mem_in.rdy_cnt = "00" then
+		if (out_mux_reg = bp and mem_in.rdy_cnt = "00") or bp_fetch = '1' then
 			cpu_in.rd_data <= mem_in.rd_data;
+			next_bp_rd_data <= mem_in.rd_data;
 		end if;
 		if out_mux_reg = dm and dm_cpu_in.rdy_cnt = "00" then
 			cpu_in.rd_data <= dm_cpu_in.rd_data;
