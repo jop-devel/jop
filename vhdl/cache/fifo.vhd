@@ -38,6 +38,8 @@ entity tag is
 	port (
 		clk, reset	: in std_logic;
 		addr        : in std_logic_vector(addr_width-1 downto 0);
+		wraddr      : in std_logic_vector(addr_width-1 downto 0);
+		wrline      : in unsigned(index_bits-1 downto 0);
 		wr          : in std_logic;
 		hit         : out std_logic;
 		line        : out unsigned(index_bits-1 downto 0);
@@ -61,7 +63,6 @@ architecture rtl of tag is
 	signal nxt: unsigned(index_bits-1 downto 0);
 
 	signal hit_reg, next_hit: std_logic;
-	signal addr_reg: std_logic_vector(addr_width-1 downto 0);
 
 begin
 
@@ -109,7 +110,6 @@ begin
 
 			nxt <= (others => '0');
 			valid <= (others => '0');
-			addr_reg <= (others => '0');
 			hit_reg <= '0';
 			
 			for i in 0 to line_cnt-1 loop
@@ -119,13 +119,12 @@ begin
 		elsif rising_edge(clk) then
 
 			-- update tag memory in the next cycle
-			if wr='1' and hit_reg='0' then
-				tag(to_integer(nxt)) <= addr_reg;
-				valid(to_integer(nxt)) <= '1';
+			if wr='1' then
+				tag(to_integer(wrline)) <= wraddr;
+				valid(to_integer(wrline)) <= '1';
 				nxt <= nxt + 1;
 			end if;
 
-			addr_reg <= addr;
 			hit_reg <= next_hit;
 			line_reg <= next_line;
 
@@ -170,7 +169,8 @@ architecture rtl of fifo_cache is
 	signal int_reset: std_logic;
 
 	-- index for hit and new elements
-	signal line_addr, newline_addr: unsigned(index_bits-1 downto 0);
+	signal line, newline: unsigned(index_bits-1 downto 0);
+	signal wrline_reg, next_wrline : unsigned(index_bits-1 downto 0);
 
 	-- cache ram signals
 	signal ram_data : std_logic_vector(31 downto 0);
@@ -183,6 +183,8 @@ architecture rtl of fifo_cache is
 	signal hit: std_logic;
 
 	signal tag_addr : std_logic_vector(mem_bits-1 downto 0);
+	signal tag_wraddr : std_logic_vector(mem_bits-1 downto 0);
+	signal tag_wrline : unsigned(index_bits-1 downto 0);
 	signal tag_wr : std_logic;
 	
 	-- register data from CPU
@@ -213,10 +215,12 @@ begin
 			reset => int_reset,
 			
 			addr => tag_addr,
+			wraddr => tag_wraddr,
+			wrline => tag_wrline,
 			wr => tag_wr,
 			hit => hit,
-			line => line_addr,
-			newline => newline_addr
+			line => line,
+			newline => newline
 			);
 
 	cache_ram: entity work.sdpram
@@ -244,6 +248,7 @@ begin
 			rd_data_reg <= (others => '0');
 			fetch_reg <= '0';
 			crd_reg <= '0';
+			wrline_reg <= (others => '0');
 			state <= idle;
 			
 		elsif rising_edge(clk) then
@@ -252,6 +257,7 @@ begin
 			mem_out <= next_mem_out;
 			fetch_reg <= next_fetch;
 			crd_reg <= next_crd;
+			wrline_reg <= next_wrline;
 			state <= next_state;		
 
 		end if;
@@ -259,11 +265,15 @@ begin
 
 	async: process (cpu_out, cpu_out_reg, mem_in,
 					ram_dout, rd_data_reg, fetch_reg, crd_reg,
-					hit, line_addr, newline_addr,
+					hit, line, newline,
 					state)
 	begin
 
+		next_wrline <= wrline_reg;
+		
 		tag_addr <= cpu_out.address(mem_bits-1 downto 0);
+		tag_wraddr <= cpu_out_reg.address(mem_bits-1 downto 0);
+		tag_wrline <= wrline_reg;		
 		tag_wr <= '0';
 		
 		-- register data from CPU
@@ -298,8 +308,8 @@ begin
 
 		-- signals for ram block
 		ram_data <= cpu_out_reg.wr_data;
-		ram_wraddress <= std_logic_vector(line_addr);
-		ram_rdaddress <= std_logic_vector(line_addr);
+		ram_wraddress <= std_logic_vector(line);
+		ram_rdaddress <= std_logic_vector(line);
 		ram_wren <= '0';
 		
 		-- we're idle unless we know better
@@ -329,7 +339,6 @@ begin
 				
 			when rd1 =>  				-- wait for memory
 				if mem_in.rdy_cnt <= 1 then
-					tag_addr <= cpu_out_reg.address(mem_bits-1 downto 0);
 					cpu_in.rdy_cnt <= "10";
 					next_state <= rd2;
 				else
@@ -339,11 +348,12 @@ begin
 
 			when rd2 =>  				-- write back data to cache
 				-- write new data to cache, address/hit from previous cycle
+				tag_wrline <= wrline_reg;
 				tag_wr <= '1';
 
 				ram_wren <= '1';
 				ram_data <= mem_in.rd_data;
-				ram_wraddress <= std_logic_vector(newline_addr);
+				ram_wraddress <= std_logic_vector(wrline_reg);
 				
 				cpu_in.rdy_cnt <= "01";
 				next_fetch <= '1';
@@ -360,14 +370,14 @@ begin
 				next_cpu_out.wr <= cpu_out.wr;
 				
 				-- write new data to cache, address/hit from previous cycle
-				tag_wr <= '1';
-
 				ram_wren <= '1';
 				ram_data <= cpu_out_reg.wr_data;
 				if hit = '1' then
-					ram_wraddress <= std_logic_vector(line_addr);
+					ram_wraddress <= std_logic_vector(line);
 				else
-					ram_wraddress <= std_logic_vector(newline_addr);
+					tag_wrline <= newline;
+					tag_wr <= '1';
+					ram_wraddress <= std_logic_vector(newline);
 				end if;
 
 				-- trigger a write
@@ -389,6 +399,7 @@ begin
 				else
 
 				    -- trigger a read
+					next_wrline <= newline;
 					next_mem_out.rd <= '1';
 					cpu_in.rdy_cnt <= "11";
 					next_state <= rd0;
