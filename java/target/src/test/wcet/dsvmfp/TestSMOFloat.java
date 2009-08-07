@@ -43,10 +43,10 @@ public class TestSMOFloat {
 		// Training instances
 		// Remember to make same as in dsvm.test.smo.ServerData
 		// Change these files for the four setups
-		SVMData d = new TrainingData1Float();
-		data_fp = d.getTrainingData();
-		y_fp = d.getTrainingLabels();
-		m = y_fp.length;
+		// SVMData d = new TrainingData1Float();
+		// data_fp = d.getTrainingData();
+		// y_fp = d.getTrainingLabels();
+		// m = y_fp.length;
 
 		// TrainingData1Float.assign(data_fp, y_fp);
 		// TestData2.assign(testdata_fp,testlabel_fp);
@@ -57,12 +57,14 @@ public class TestSMOFloat {
 		// dsvmfp.TrainingData4.assign(data_fp, y_fp);
 		// dsvmfp.TestData4.assign(testdata_fp,testlabel_fp);
 
-		/*
-		 * Data id = new IrisFlowerData(); float data[][] = id.getData();
-		 * 
-		 * data_fp = getDataDim(data, new int[] {0,1}); y_fp = getTarget(data,
-		 * 4); m = y_fp.length;
-		 */
+		Data id = new IrisFlowerData();
+		float data[][] = id.getData();
+
+		data_fp = getDataDim(data, new int[] { 0, 1 });
+		int targetIndex = 4;
+		float positiveID = 1.0f;
+		y_fp = getTarget(data, targetIndex, positiveID);
+		m = y_fp.length;
 
 		smo.setData_fp(data_fp);
 		smo.setY_fp(y_fp);
@@ -94,19 +96,26 @@ public class TestSMOFloat {
 	}
 
 	/**
-	 * Get the target vector
+	 * Get the target vector and convert it to a binary target.
 	 * 
 	 * @param data
 	 *            datamatrix
 	 * @param targetdim
 	 *            index of target vector (last index)
+	 * @param positiveClassID
+	 *            id of the positive class, which will be +1 and the rest will
+	 *            be -1
 	 * @return target vector
 	 */
-	static float[] getTarget(float[][] data, int targetdim) {
+	static float[] getTarget(float[][] data, int targetdim, float positiveClassID) {
 		int r = data.length;
 		float[] target = new float[r];
 		for (int i = 0; i < r; i++) {
-			target[i] = data[i][targetdim];
+			if (data[i][targetdim] == positiveClassID) {
+				target[i] = +1.0f;
+			} else {
+				target[i] = -1.0f;
+			}
 		}
 		return target;
 	}

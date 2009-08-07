@@ -21,51 +21,51 @@ public class SMOBinaryClassifierFloat {
 
 	/** The [m] Lagrange multipliers. */
 	public float[] alph;
-	float alph1, alph2;
+	static float alph1, alph2;
 
-	float y1, y2;
+	static float y1, y2;
 
 	/** The target vector of {-1,+1}. */
-	public float[] target;
+	static public float[] target;
 
 	/** The data vector [rows][columns]. */
-	public float[][] point;
+	static public float[][] point;
 
 	/** The high bound. */
-	public float C;
+	static public float C;
 
 	/** The error tolerance. */
-	public float tol;
+	static public float tol;
 
 	/** The error tolerance, that is used for KKT violation checks. */
-	public float eps;
+	static public float eps;
 
 	// E1 and E1 as used in takestep
-	public float E1, E2;
+	static public float E1, E2;
 
 	/** The bias_fp. */
-	public float bias;
+	static public float bias;
 
-	public int i1, i2;
+	static public int i1, i2;
 
 	/**
 	 * The number of training points. It is declared final to avoid
 	 * synchronization problems.
 	 */
-	public int m;
+	static public int m;
 
 	/** The input space dimensionality. */
-	public int n;
+	static public int n;
 
 
 	// ////////////Performance Variables////////////////////
-	public int takeStepCount;
+	static public int takeStepCount;
 
-	public int numChanged;
+	static public int numChanged;
 
-	public boolean examineAll;
+	static public boolean examineAll;
 
-	public int loop;
+	static public int loop;
 
 	/**
 	 * Method mainRoutine, which estimates the SVM parameters. The parameters
