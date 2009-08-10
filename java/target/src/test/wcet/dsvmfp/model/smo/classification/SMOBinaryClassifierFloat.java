@@ -8,12 +8,12 @@ import com.jopdesign.sys.Native;
 
 import wcet.dsvmfp.model.smo.kernel.FloatUtil;
 import wcet.dsvmfp.model.smo.kernel.KFloat;
-
+//BUGTEST 1 
 /**
  * Class SMOBinaryClassifier with float.
  */
 public class SMOBinaryClassifierFloat {
-
+	//BUGTEST 2
 	final boolean PRINT = true;
 
 	/** Number of lagrange multipliers in deployed RT model */
@@ -22,7 +22,7 @@ public class SMOBinaryClassifierFloat {
 	/** The [m] Lagrange multipliers. */
 	public float[] alph;
 	static float alph1, alph2;
-
+	//BUGTEST 3
 	static float y1, y2;
 
 	/** The target vector of {-1,+1}. */
@@ -30,7 +30,7 @@ public class SMOBinaryClassifierFloat {
 
 	/** The data vector [rows][columns]. */
 	static public float[][] point;
-
+	//BUGTEST 4
 	/** The high bound. */
 	static public float C;
 
@@ -42,7 +42,7 @@ public class SMOBinaryClassifierFloat {
 
 	// E1 and E1 as used in takestep
 	static public float E1, E2;
-
+	//BUGTEST 5
 	/** The bias_fp. */
 	static public float bias;
 
@@ -56,7 +56,7 @@ public class SMOBinaryClassifierFloat {
 
 	/** The input space dimensionality. */
 	static public int n;
-
+	//BUGTEST 6
 
 	// ////////////Performance Variables////////////////////
 	static public int takeStepCount;
@@ -74,7 +74,7 @@ public class SMOBinaryClassifierFloat {
 	 * @return true if the training went well
 	 */
 	public boolean mainRoutine() {
-
+		//BUGTEST 7
 		// The number of updated that significantly changed the
 		// Lagrange multipliers
 		numChanged = 0;
@@ -118,7 +118,7 @@ public class SMOBinaryClassifierFloat {
 			}
 			P("++++Post while++++");
 		}
-
+		//BUGTEST 8
 		if (true) {
 
 			while (numChanged > 0 || examineAll) { // @WCA loop=2
@@ -158,7 +158,7 @@ public class SMOBinaryClassifierFloat {
 			System.out.println("Done!");
 			smoInfo();
 		}
-
+		//BUGTEST 9
 		return true;
 	}
 
@@ -211,7 +211,7 @@ public class SMOBinaryClassifierFloat {
 
 		// on
 		float a2, a1;
-
+		//BUGTEST 10
 		if (eta < 0) {
 			a2 = alph2 - (y2 * (E1 - E2)) / eta;
 			P("eta < 0: a2=" + a2);
@@ -245,7 +245,7 @@ public class SMOBinaryClassifierFloat {
 			a2 = 0;
 		else if (a2 > C - 1e-8f)
 			a2 = C;
-
+		//BUGTEST 11
 		if (Math.abs(a2 - alph2) < eps * (a2 + alph2 + eps))
 			return false;
 
@@ -270,7 +270,7 @@ public class SMOBinaryClassifierFloat {
 		P("f(i 1):" + getFunctionOutputFloat(1, false));
 
 		takeStepCount++;
-
+		//BUGTEST 12
 		return true;
 	}
 
@@ -328,7 +328,7 @@ public class SMOBinaryClassifierFloat {
 				if (takeStep())
 					return true;
 			}
-
+			//BUGTEST 12
 		}
 
 		return false;
@@ -366,7 +366,7 @@ public class SMOBinaryClassifierFloat {
 			firstIndex = nextIndex = (int) (System.currentTimeMillis() % m);
 			return firstIndex;
 		}
-
+		//BUGTEST 13
 		// next index
 		nextIndex = nextIndex + 1;
 		// start from 0 if past last index
@@ -400,7 +400,7 @@ public class SMOBinaryClassifierFloat {
 		eps = 0.01f;
 		// System.out.println("Cb initParams()");
 		tol = 0.01f;
-
+		//BUGTEST 14
 		KFloat.setSigma2(FloatUtil.mul(FloatUtil.ONE, FloatUtil.ONE));
 		KFloat.setKernelType(KFloat.DOTKERNEL);// GAUSSIANKERNEL or DOTKERNEL
 
@@ -430,7 +430,7 @@ public class SMOBinaryClassifierFloat {
 		f_fp -= bias;
 		return f_fp;
 	}
-
+	//BUGTEST 15
 	/**
 	 * The error of the training example i.
 	 * 
@@ -498,7 +498,7 @@ public class SMOBinaryClassifierFloat {
 		}
 		return objfunc_fp;
 	}
-
+	//BUGTEST 16
 	/**
 	 * Method calculatedError, which calculates the error from from scratch.
 	 * 
@@ -549,7 +549,7 @@ public class SMOBinaryClassifierFloat {
 		}
 		return functionalOutput_fp;
 	}
-
+	//BUGTEST 17
 	/**
 	 * Method getKernelOutput, which returns the kernel of two points.
 	 * 
@@ -610,7 +610,7 @@ public class SMOBinaryClassifierFloat {
 		}
 		return u_fp;
 	}
-
+	//BUGTEST 18
 	/**
 	 * Method getUpperClip, which will return the upper clip based on two
 	 * Lagrange multipliers.
@@ -658,7 +658,7 @@ public class SMOBinaryClassifierFloat {
 		}
 		return errorCount;
 	}
-
+	//BUGTEST 19 
 	/**
 	 * Method calculateW, which calculates the weight vector. This is used for
 	 * linear SVMs.
@@ -731,7 +731,7 @@ public class SMOBinaryClassifierFloat {
 		functionalOutput_fp -= bias;
 		return functionalOutput_fp;
 	}
-
+	//BUGTEST 20
 	/**
 	 * Method getFunctionOutput, which will return the functional output for
 	 * point represented by a input vector only.
@@ -774,7 +774,7 @@ public class SMOBinaryClassifierFloat {
 		System.out.print("sp=");
 		System.out.println(Native.rd(com.jopdesign.sys.Const.IO_WD));
 	}
-
+	//BUGTEST 21
 	public void smoInfo() {
 		// printScalar("wd",Native.rd(Const.IO_WD)); //TODO: Can it be read?
 		System.out.println("======SMO INFO START======");
@@ -828,7 +828,7 @@ public class SMOBinaryClassifierFloat {
 		for (int i = 0; i < 100; i++)
 			;
 	}
-
+	//BUGTEST 22
 	void printVector(String str, float[] ve) {
 		System.out.print(str);
 		System.out.print(" {");
@@ -864,7 +864,7 @@ public class SMOBinaryClassifierFloat {
 		for (int i = 0; i < 1000; i++)
 			;
 	}
-
+	//BUGTEST 23
 	void printMatrix(String str, float[][] ma) {
 		for (int i = 0; i < ma.length; i++) {
 			System.out.print(str);
@@ -924,7 +924,7 @@ public class SMOBinaryClassifierFloat {
 			return functionalOutput_fp;
 		}
 	}
-
+	//BUGTEST 24
 	// First measure
 	public void measure() {
 
