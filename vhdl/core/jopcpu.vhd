@@ -58,6 +58,12 @@ port (
 --
 	sc_mem_out		: out sc_out_type;
 	sc_mem_in		: in sc_in_type;
+	
+--
+--	TM exception
+--
+
+	exc_tm_rollback	: in std_logic;
 
 --
 --	SimpCon IO interface
@@ -116,6 +122,8 @@ architecture rtl of jopcpu is
 	signal sp_ov			: std_logic;
 
 begin
+
+	exc_req.rollback <= exc_tm_rollback;
 
 --
 --	components of jop

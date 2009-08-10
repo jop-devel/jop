@@ -132,11 +132,15 @@ end component;
 --
 --	jopcpu connections
 --
+	signal sc_tm_out		: arb_out_type(0 to cpu_cnt-1);
+	signal sc_tm_in			: arb_in_type(0 to cpu_cnt-1);
+	
 	signal sc_arb_out		: arb_out_type(0 to cpu_cnt-1);
 	signal sc_arb_in		: arb_in_type(0 to cpu_cnt-1);
+		
+	signal sc_mem_out	: sc_out_type;
+	signal sc_mem_in	: sc_in_type;
 	
-	signal sc_mem_out		: sc_out_type;
-	signal sc_mem_in		: sc_in_type;
 	
 	signal sc_io_out		: sc_out_array_type(0 to cpu_cnt-1);
 	signal sc_io_in			: sc_in_array_type(0 to cpu_cnt-1);
@@ -171,6 +175,12 @@ end component;
 	
 -- remove the comment for RAM access counting
 -- signal ram_count		: std_logic;
+
+--
+--	TM
+--
+	
+	signal exc_tm_rollback: std_logic_vector(0 to cpu_cnt-1); 
 	
 	
 begin
@@ -224,10 +234,33 @@ end process;
 				spm_width => spm_width
 			)
 			port map(clk_int, int_res,
-				sc_arb_out(i), sc_arb_in(i),
+				sc_tm_out(i), sc_tm_in(i), exc_tm_rollback,
 				sc_io_out(i), sc_io_in(i), irq_in(i), 
 				irq_out(i), exc_req(i));
 	end generate;
+	
+	gen_tm: for i in 0 to cpu_cnt-1 generate
+		cmp_tm: entity work.tmif
+			port map (
+				clk	=> clk,
+				reset => int_res,
+				
+				commit_try => ,
+				commit_allow => ,
+			
+				commit_address_valid => ,
+				commit_address => (),
+			
+				sc_cpu_out => sc_tm_out(i),  
+				sc_cpu_in => sc_tm_in(i), 
+			
+				sc_arb_out => sc_arb_out(i),
+				sc_arb_in => sc_arb_in(i),
+			
+				exc_tm_rollback => exc_tm_rollback(i)
+				);
+	end generate;
+
 			
 	cmp_arbiter: entity work.arbiter
 		generic map(

@@ -121,8 +121,7 @@ begin
 			if hit='1' then
 				rd_hit <= '1'; -- delayed
 			end if;
-			-- TODO no hit => use main memory accessed in parallel(?)
-			-- probably not if it is a cache 
+			-- TODO no hit 
 		end if;
 
 		if rd_hit='1' then

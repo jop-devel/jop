@@ -401,7 +401,7 @@ begin
 			int_ena <= '0';
 		end if;
 
-		-- exceptions from core or memory
+		-- exceptions from core, memory or rttm
 		if exc_req.spov='1' then
 			exc_type(2 downto 0) <= EXC_SPOV;
 			exc_pend <= '1';
@@ -414,6 +414,11 @@ begin
 			exc_type(2 downto 0) <= EXC_AB;
 			exc_pend <= '1';
 		end if;
+		-- gets priority over all other exceptions
+		if exc_req.rollback='1' then
+			exc_type(2 downto 0) <= EXC_ROLLBACK;
+			exc_pend <= '1';
+		end if;			
 
 		if wr='1' then
 			case address(3 downto 0) is

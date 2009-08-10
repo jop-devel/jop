@@ -114,6 +114,11 @@ public class Const {
 	 * out of bounds exception.
 	 */
 	public static final int EXC_AB = 3;
+	/**
+	 * Hardware generated exception number for
+	 * RTTM rollback exception.
+	 */
+	public static final int EXC_ROLLBACK = 4;
 	
 	/**
 	 * Software generated divide by zero exception.

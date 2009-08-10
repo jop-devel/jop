@@ -40,23 +40,28 @@ port (
 	--
 	--	Memory IF to cpu
 	--
-	sc_cpu_mem_out		: in sc_out_type;
-	sc_cpu_mem_in		: out sc_in_type;		
+	sc_cpu_out		: in sc_out_type;
+	sc_cpu_in		: out sc_in_type;		
 	-- memory access types
-	nc					: in std_logic;
 	-- TODO more hints about memory access type?
 
 	--
 	--	Memory IF to arbiter
 	--
-	sc_arb_mem_out		: out sc_out_type;
-	sc_arb_mem_in		: in sc_in_type;
+	sc_arb_out		: out sc_out_type;
+	sc_arb_in		: in sc_in_type;
 
 	--
 	--	Rollback exception
 	--
-	exc_trans_rollback	: out std_logic
+	exc_tm_rollback	: out std_logic
 		
 );
 
 end tmif;
+
+architecture rtl of tmif is
+
+begin
+
+end rtl;
