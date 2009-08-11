@@ -174,6 +174,8 @@ public class SMOBinaryClassifierFloat {
 	 * @return true if a positive step has occured
 	 */
 	public boolean takeStep() {
+		
+		
 		float k11, k12, k22;
 		
 		P("takeStep, takeStepCount=" + takeStepCount + " i1=" + i1 + " i2="
@@ -286,6 +288,8 @@ public class SMOBinaryClassifierFloat {
 	 * @return true if it was possible to take a step
 	 */
 	boolean examineExample() {
+		
+		System.gc();
 
 		y2 = target[i2];
 		alph2 = alph[i2];
