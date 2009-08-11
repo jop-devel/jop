@@ -93,8 +93,10 @@ standard MIPS architecture (YARI), the LEON SPARC processor, and a
 complex Java processor (picoJava), when implemented in the same FPGA
 (Altera EP1C6/12 FPGA \cite{AltCyc}). For the resource comparison we
 compare the consumption of the two basic structures of an FPGA; Logic
-Cells (LC) and embedded memory blocks. The maximum frequency for all
+cells (LC) and embedded memory blocks. The maximum frequency for all
 soft-core processors is in the same technology.
+
+\index{Java processor!picoJava}
 
 \begin{table}
   \begin{center}
@@ -135,7 +137,7 @@ FPGA \cite{master:puffitsch}.
 
 The streamlined architecture of JOP results in a small design: JOP is
 half the size of the MIPS core YARI or the SPARC core LEON. Compared
-with picoJava JOP consumes about 12\% of the resources. JOP's size
+with picoJava, JOP consumes about 12\% of the resources. JOP's size
 allows implementing a CMP version of JOP even in a low-cost FPGA. The
 simple pipeline of JOP achieves the highest clock frequency of the
 three designs. From the frequency comparison we can estimate that the
@@ -283,6 +285,9 @@ with a 4~KB method cache and a 1~KB stack cache.
     \label{fig:bench}
 \end{figure}
 
+\index{Java processor!aJile} \index{Java processor!Cjip} \index{Java
+processor!jamuth} \index{Java processor!SHAP}
+
 Cjip \cite{Cjip} and aJ100 \cite{aJile} are commercial Java
 processors, which are implemented in an ASIC and clocked at 80 and
 100~Mhz, respectively. Both cores do not cache instructions. The
@@ -298,6 +303,8 @@ object manager. SHAP also implements the method cache
 SHAP website.\footnote{\url{http://shap.inf.tu-dresden.de/}, accessed
 December, 2008} SHAP is configured with a 2~KB method cache and 2~KB
 stack cache.
+
+\index{Java processor!picoJava}
 
 picoJava \cite{pJ1} is a Java processor developed by Sun. picoJava is
 no longer produced and the second version (picoJava-II) was available
