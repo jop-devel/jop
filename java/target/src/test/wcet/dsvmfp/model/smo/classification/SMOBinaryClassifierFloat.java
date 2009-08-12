@@ -98,41 +98,7 @@ public class SMOBinaryClassifierFloat {
 		System.out.println("After init params");
 
 		loop = 0;
-		if (false) {
-			boolean first = true;
-			P("++++Pre While++++", TR4);
-			while (numChanged > 0 || first) {
-				P("----Pre loop----", TR4);
-				first = false;
-				numChanged = 0;
-				// assigns i1 and i2
-				// getIndex(indexarray);
 
-				boolean takeStepResult = false;
-				for (i1 = 0; i1 < m; i1++) {
-					P(" ", TR4);
-					P("*******takeStep()*****", TR2);
-					P("i1:", TR4);
-					P(i1, TR4);
-					for (i2 = 0; i2 < m; i2++) {
-						P("i2:", TR4);
-						P(i2, TR4);
-						takeStepResult = examineExample();
-						if (takeStepResult)
-							numChanged++;
-						P("takeStep: ", TR4);
-						P(takeStepResult, TR4);
-						P("takeStepCount:", TR4);
-						P(takeStepCount, TR4);
-						P("W(after): ", TR2);
-						P(getObjectiveFunctionFP(), TR2);
-					}
-				}
-				P("////Post for loop:", TR4);
-				P(numChanged, TR4);
-			}
-			P("++++Post while++++", TR4);
-		}
 		// BUGTEST 8
 		if (true) {
 
@@ -147,9 +113,13 @@ public class SMOBinaryClassifierFloat {
 						if (examineExample()) {
 							numChanged++;
 						}
-						P("W all (after): ", TR2);
-						P(getObjectiveFunctionFP(), TR2);
+						P("i2:", TR2);
+						P(i2, TR2);
 					}
+					P("W all (after): ", TR2);
+					P(getObjectiveFunctionFP(), TR2);
+					P("numChanged:", TR2);
+					P(numChanged, TR2);
 				} else {
 					// Inner loop success
 					for (i2 = 0; i2 < m; i2++) { // @WCA loop=2
@@ -158,9 +128,13 @@ public class SMOBinaryClassifierFloat {
 								numChanged++;
 							}
 						}
-						P("W inner (after): ", TR2);
-						P(getObjectiveFunctionFP(), TR2);
+						P("i2:", TR2);
+						P(i2, TR2);
 					}
+					P("W inner (after): ", TR2);
+					P(getObjectiveFunctionFP(), TR2);
+					P("numChanged:", TR2);
+					P(numChanged, TR2);
 				}
 				if (examineAll) {
 					examineAll = false;
@@ -938,10 +912,16 @@ public class SMOBinaryClassifierFloat {
 
 	void P(float f, int traceLevel) {
 		if (traceLevel <= TRACELEVEL) {
-			if (sb.length() > 0)
-				sb.delete(0, sb.length() - 1);
-			sb.append(f);
-			System.out.println(sb);
+			// StringBuffer NYI
+//			if (sb.length() > 0)
+//				sb.delete(0, sb.length() - 1);
+//			sb.append(f);
+//			System.out.println(sb);
+			int i = (int) f;
+			int j = (int) (f * 100 - i * 100);
+			System.out.print(i);
+			System.out.print(".");
+			System.out.print(j);
 		}
 	}
 
