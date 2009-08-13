@@ -57,11 +57,12 @@ public class TestSMOFloat {
 		// dsvmfp.TrainingData4.assign(data_fp, y_fp);
 		// dsvmfp.TestData4.assign(testdata_fp,testlabel_fp);
 
-		Data id = new IrisFlowerData();
+		// Data id = new IrisFlowerData();
+		Data id = new WeatherData();
 		float data[][] = id.getData();
-
-		data_fp = getDataDim(data, new int[] { 0, 1 });
-		int targetIndex = 4;
+        int[] datacols = new int[] { 0, 1, 2, 3, 4, 5 };
+		data_fp = getDataDim(data, datacols);
+		int targetIndex = 6;
 		float positiveID = 1.0f;
 		y_fp = getTarget(data, targetIndex, positiveID);
 		m = y_fp.length;
@@ -107,7 +108,8 @@ public class TestSMOFloat {
 	 *            be -1
 	 * @return target vector
 	 */
-	static float[] getTarget(float[][] data, int targetdim, float positiveClassID) {
+	static float[] getTarget(float[][] data, int targetdim,
+			float positiveClassID) {
 		int r = data.length;
 		float[] target = new float[r];
 		for (int i = 0; i < r; i++) {
