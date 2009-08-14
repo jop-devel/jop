@@ -264,7 +264,7 @@ begin
 	end process sync;
 
 	async: process (cpu_out, cpu_out_reg, mem_in,
-					ram_dout, rd_data_reg, fetch_reg, crd_reg,
+					ram_dout, rd_data_reg, fetch_reg, crd_reg, wrline_reg,
 					hit, line, newline,
 					state)
 	begin

@@ -6,8 +6,8 @@ use work.sc_pack.all;
 
 entity directmapped is
 generic (
-	index_bits : integer := 7;
-	line_cnt : integer := 128);
+	index_bits : integer := 8;
+	line_cnt : integer := 256);
 port (
 	clk, reset:	    in std_logic;
 
@@ -22,9 +22,11 @@ end directmapped;
 
 architecture rtl of directmapped is
 
+	constant mem_bits : integer := SC_ADDR_SIZE-3;
+	
 	type cache_line_type is record
 		data	: std_logic_vector(31 downto 0);
-		tag		: std_logic_vector(SC_ADDR_SIZE-index_bits-1 downto 0);
+		tag		: std_logic_vector(mem_bits-index_bits-1 downto 0);
 		valid   : std_logic;
 	end record;
 
@@ -40,7 +42,7 @@ architecture rtl of directmapped is
 	signal cpu_out_reg, next_cpu_out : sc_out_type;
 	
 	signal rddata_reg, next_rddata : std_logic_vector(31 downto 0);
-	signal fetchtag_reg, next_fetchtag : std_logic_vector(SC_ADDR_SIZE-1 downto 0);
+	signal fetchtag_reg, next_fetchtag : std_logic_vector(mem_bits-1 downto 0);
 	signal fetch_reg, next_fetch : std_logic;
 	
 	type STATE_TYPE is (idle,
@@ -56,19 +58,19 @@ begin
 	
 	cache_ram: entity work.sdpram
 		generic map (
-			width	   => 32+SC_ADDR_SIZE-index_bits+1,
+			width	   => 32+mem_bits-index_bits+1,
 			addr_width => index_bits)
 		port map (
 			wrclk	   => clk,
-			data(32+SC_ADDR_SIZE-7 downto SC_ADDR_SIZE-7+1) => ram_din.data,
-			data(SC_ADDR_SIZE-7 downto 1) => ram_din.tag,
+			data(32+mem_bits-8 downto mem_bits-8+1) => ram_din.data,
+			data(mem_bits-8 downto 1) => ram_din.tag,
 			data(0)    => ram_din.valid,
 			wraddress  => ram_wraddress,
 			wren	   => ram_wren,
 			
 			rdclk	   => clk,
-			dout(32+SC_ADDR_SIZE-7 downto SC_ADDR_SIZE-7+1) => ram_dout.data,
-			dout(SC_ADDR_SIZE-7 downto 1) => ram_dout.tag,
+			dout(32+mem_bits-8 downto mem_bits-8+1) => ram_dout.data,
+			dout(mem_bits-8 downto 1) => ram_dout.tag,
 			dout(0)    => ram_dout.valid,
 			rdaddress  => ram_rdaddress,
 			rden	   => '1');
@@ -118,7 +120,7 @@ begin
 
 		ram_din.valid <= '1';
 		ram_din.data <= mem_in.rd_data;
-		ram_din.tag <= cpu_out_reg.address(SC_ADDR_SIZE-1 downto index_bits);
+		ram_din.tag <= cpu_out_reg.address(mem_bits-1 downto index_bits);
 		ram_wraddress <= cpu_out_reg.address(index_bits-1 downto 0);
 		ram_wren <= '0';		
 		
@@ -127,7 +129,7 @@ begin
 		if fetch_reg = '1' then
 			cpu_in.rd_data <= mem_in.rd_data;
 			next_rddata <= mem_in.rd_data;
-			ram_din.tag <= fetchtag_reg(SC_ADDR_SIZE-1 downto index_bits);
+			ram_din.tag <= fetchtag_reg(mem_bits-1 downto index_bits);
 			ram_wraddress <= fetchtag_reg(index_bits-1 downto 0);
 			ram_wren <= '1';
 		end if;
@@ -137,7 +139,7 @@ begin
 			when rd0 =>
 				cpu_in.rdy_cnt <= "11";
 
-				if ram_dout.tag = cpu_out_reg.address(SC_ADDR_SIZE-1 downto index_bits)
+				if ram_dout.tag = cpu_out_reg.address(mem_bits-1 downto index_bits)
 					and ram_dout.valid = '1' then
 					
 					next_rddata <= ram_dout.data;

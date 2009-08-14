@@ -41,7 +41,7 @@ begin  -- rtl
 			mem_in	=> mem_in,
 			mem_out => dm_mem_out);
 
-	cmp_fa: entity work.fifo_cache
+	cmp_fa: entity work.lru
 		port map (
 			clk		=> clk,
 			reset	=> reset,

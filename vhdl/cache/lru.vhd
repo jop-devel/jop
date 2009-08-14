@@ -6,8 +6,8 @@ use work.sc_pack.all;
 
 entity lru is
 generic (
-	index_bits : integer := 4;
-	line_cnt : integer := 16);
+	index_bits : integer := 5;
+	line_cnt : integer := 32);
 port (
 	clk, reset:	    in std_logic;
 
@@ -22,9 +22,11 @@ end lru;
 
 architecture rtl of lru is
 
+	constant mem_bits : integer := SC_ADDR_SIZE-3;
+	
 	type cache_line_type is record
 		index	: std_logic_vector(index_bits-1 downto 0);
-		tag		: std_logic_vector(SC_ADDR_SIZE-1 downto 0);
+		tag		: std_logic_vector(mem_bits-1 downto 0);
 		valid	: std_logic;
 	end record;
 
@@ -76,7 +78,7 @@ begin
 				enable: 	in std_logic;
 				data_in: 	in cache_line_type;
 				data_out:	out cache_line_type;
-				address: 	in std_logic_vector(SC_ADDR_SIZE-1 downto 0);
+				address: 	in std_logic_vector(mem_bits-1 downto 0);
 				hit: 		out std_logic
 				);
 			port map (
@@ -85,7 +87,7 @@ begin
 				enable	 => enable(i),
 				data_in	 => data(i-1),
 				data_out => data(i),
-				address	 => cpu_out_reg.address,
+				address	 => cpu_out_reg.address(mem_bits-1 downto 0),
 				hit		 => hit(i));			
 			signal data: cache_line_type;
 		begin
@@ -171,7 +173,7 @@ begin
 		end loop;  -- i
 		
 		-- hit data that goes to cache line 0
-		data(-1) <= (merged_index, cpu_out_reg.address, '0');
+		data(-1) <= (merged_index, cpu_out_reg.address(mem_bits-1 downto 0), '0');
 		-- nothing is enabled by default
 		enable <= (others => '0');
 
@@ -249,7 +251,7 @@ begin
 				-- shift in new data
 				enable <= (others => '1');
 
-				data(-1) <= (data(line_cnt-1).index, cpu_out_reg.address, '1');				
+				data(-1) <= (data(line_cnt-1).index, cpu_out_reg.address(mem_bits-1 downto 0), '1');				
 				ram_data <= mem_in.rd_data;
 				ram_wraddress <= data(line_cnt-1).index;
 				ram_wren <= '1';
@@ -277,12 +279,12 @@ begin
 
 				-- shift in new data
 				if merged_hit = '1' then
-					data(-1) <= (merged_index, cpu_out_reg.address, '1');
+					data(-1) <= (merged_index, cpu_out_reg.address(mem_bits-1 downto 0), '1');
 					ram_data <= cpu_out_reg.wr_data;
 					ram_wraddress <= merged_index;
 					ram_wren <= '1';
 				else
-					data(-1) <= (data(line_cnt-1).index, cpu_out_reg.address, '1');
+					data(-1) <= (data(line_cnt-1).index, cpu_out_reg.address(mem_bits-1 downto 0), '1');
 					ram_data <= cpu_out_reg.wr_data;
 					ram_wraddress <= data(line_cnt-1).index;
 					ram_wren <= '1';
@@ -303,7 +305,7 @@ begin
 				if merged_hit = '1' then
 
 					-- shift in new data
-					data(-1) <= (merged_index, cpu_out_reg.address, '1');
+					data(-1) <= (merged_index, cpu_out_reg.address(mem_bits-1 downto 0), '1');
 					ram_rdaddress <= merged_index;
 					-- read from cache
 					cpu_in.rdy_cnt <= "11";
