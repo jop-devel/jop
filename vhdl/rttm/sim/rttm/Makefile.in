@@ -1,0 +1,7 @@
+TARGET=tb_rttm
+
+SRC= \
+	$(JOPDIR)/simpcon/sc_pack.vhd \
+	../../tag.vhd \
+	../../tm.vhd \
+	$(TARGET).vhd

@@ -1,0 +1,6 @@
+TARGET=tb_tm_coordinator
+
+SRC= \
+	../../tm_pack.vhd \
+	../../tm_coordinator.vhd \
+	$(TARGET).vhd
