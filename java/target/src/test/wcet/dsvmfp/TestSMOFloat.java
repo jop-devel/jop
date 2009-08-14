@@ -59,6 +59,7 @@ public class TestSMOFloat {
 
 		// Data id = new IrisFlowerData();
 		Data id = new WeatherData();
+		id.toString();
 		float data[][] = id.getData();
         int[] datacols = new int[] { 0, 1, 2, 3, 4, 5 };
 		data_fp = getDataDim(data, datacols);

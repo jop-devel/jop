@@ -26,7 +26,7 @@ public class SMOBinaryClassifierFloat {
 	final int TR4 = 4;// TR4: verbose
 
 	// Set this as needed
-	final int TRACELEVEL = TR2;
+	final int TRACELEVEL = TR1;
 
 	/** Number of lagrange multipliers in deployed RT model */
 	public final int ALPHA_RT = 2;
@@ -59,6 +59,8 @@ public class SMOBinaryClassifierFloat {
 	static public float bias;
 
 	static public int i1, i2;
+	
+	float WTemp;
 
 	/**
 	 * The number of training points. It is declared final to avoid
@@ -96,14 +98,17 @@ public class SMOBinaryClassifierFloat {
 		takeStepCount = 0;
 		initParams();
 		System.out.println("After init params");
-
+        //P(1.005f, TR1);
+        //smoInfo();
 		loop = 0;
 
 		// BUGTEST 8
 		if (true) {
 
 			while (numChanged > 0 || examineAll) { // @WCA loop=2
-
+				P("*********************", TR1);
+				P("loop:", TR1);
+				P(loop, TR1);
 				loop++;
 
 				numChanged = 0;
@@ -173,6 +178,8 @@ public class SMOBinaryClassifierFloat {
 		P("i2:", TR4);
 		P(i2, TR4);
 
+		WTemp = getObjectiveFunctionFP();
+		
 		// If the first and second point is the same then return false
 		if (i1 == i2) {
 			return false;
@@ -192,11 +199,11 @@ public class SMOBinaryClassifierFloat {
 
 		// Compute L, H
 		float L = getLowerClipFP(i1, i2);
-		P("L=", TR4);
-		P(L, TR4);
+		P("L=", TR2);
+		P(L, TR2);
 		float H = getUpperClipFP(i1, i2);
-		P("H=", TR4);
-		P(H, TR4);
+		P("H=", TR2);
+		P(H, TR2);
 		if (L == H)
 			return false;
 
@@ -243,7 +250,9 @@ public class SMOBinaryClassifierFloat {
 				a2 = H;
 			} else {
 				a2 = alph2;
-			}
+			}			
+			P("eta > 0: a2:", TR4);
+			P(a2, TR4);
 
 		}
 
@@ -258,10 +267,28 @@ public class SMOBinaryClassifierFloat {
 		a1 = alph1 + s_fp * (alph2 - a2);
 
 		// Update threshold to reflect change in Lagrange multipliers
-		bias = E1 + target[i1] * (a1 - alph1) * getKernelOutputFloat(i1, i1)
-				+ target[i2] * (a2 - alph2) * k12 + bias;
-		P("bias:", TR4);
-		P(bias, TR4);
+		float bias_a1 = E1 + target[i1] * (a1 - alph1)
+				* getKernelOutputFloat(i1, i1) + target[i2] * (a2 - alph2)
+				* k12 + bias;
+
+		// Update threshold to reflect change in Lagrange multipliers
+		float bias_a2 = E2 + target[i1] * (a1 - alph1)
+				* getKernelOutputFloat(i1, i2) + target[i2] * (a2 - alph2)
+				* k22 + bias;
+
+		if (!isExampleOnBound(a1)) {
+			bias = bias_a1;
+			P("bias a1:", TR2);
+			P(bias, TR2);
+		} else if (!isExampleOnBound(a2)) {
+			bias = bias_a2;
+			P("bias a2:", TR2);
+			P(bias, TR2);
+		} else {
+			bias = (bias_a1 + bias_a2) / 2;
+			P("bias (a1+a2)/2:", TR2);
+			P(bias, TR2);
+		}
 
 		// Update weight vector to reflect change in a1 & a2, if linear SVM
 
@@ -277,7 +304,23 @@ public class SMOBinaryClassifierFloat {
 		P(getFunctionOutputFloat(0, false), TR4);
 		P("f(i 1):", TR4);
 		P(getFunctionOutputFloat(1, false), TR4);
-
+        
+		
+		if(WTemp> getObjectiveFunctionFP()){
+			P("Objectivefunction error!!!!", TR1);
+			P(WTemp, TR1);
+			P(getObjectiveFunctionFP(),TR1);
+			float sumcheck = 0;
+			for(int i=0;i<m;i++){
+				sumcheck += target[i]*alph[i];
+			}
+			P("Check:", TR1);
+			P(sumcheck, TR1);
+			smoInfo();
+			while(true){}
+		}
+		P("W:", TR1);
+		P(getObjectiveFunctionFP(),TR1);
 		takeStepCount++;
 		// BUGTEST 12
 		return true;
@@ -296,8 +339,8 @@ public class SMOBinaryClassifierFloat {
 	 */
 	boolean examineExample() {
 
-		System.gc();
-
+		// System.gc();
+		P("-------ea--------", TR2);
 		y2 = target[i2];
 		alph2 = alph[i2];
 		P("S: alph2:", TR4);
@@ -320,8 +363,18 @@ public class SMOBinaryClassifierFloat {
 			if (nonBounds > 1) {
 				// i1 = result of second choice heuristic
 				secondChoiceHeuristic();
-				if (takeStep())
+				P("ea:i2", TR2);
+				P(i2, TR2);
+				P("ea:i1", TR2);
+				P(i1, TR2);
+				P("W (ea:second heu): ", TR2);
+				P(getObjectiveFunctionFP(), TR2);
+				P("numChanged:", TR2);
+				P(numChanged, TR2);
+				if (takeStep()) {
+
 					return true;
+				}
 			}
 			// loop over all non-zero and non-C alpha, starting at random point
 			boolean firstTime = true;
@@ -330,8 +383,18 @@ public class SMOBinaryClassifierFloat {
 				firstTime = false;
 				if (!isExampleOnBound(i)) {
 					i1 = i;
-					if (takeStep())
+					P("ea:i2", TR2);
+					P(i2, TR2);
+					P("ea:i1", TR2);
+					P(i1, TR2);
+					P("W (ea:all non bound): ", TR2);
+					P(getObjectiveFunctionFP(), TR2);
+					P("numChanged:", TR2);
+					P(numChanged, TR2);
+					if (takeStep()) {
+
 						return true;
+					}
 				}
 			}
 			// loop over all possible i1, starting at random point
@@ -339,8 +402,18 @@ public class SMOBinaryClassifierFloat {
 			while ((i = randomLoop(firstTime)) != -1) {
 				firstTime = false;
 				i1 = i;
-				if (takeStep())
+				P("ea:i2", TR2);
+				P(i2, TR2);
+				P("ea:i1", TR2);
+				P(i1, TR2);
+				P("W (ea: all): ", TR2);
+				P(getObjectiveFunctionFP(), TR2);
+				P("numChanged:", TR2);
+				P(numChanged, TR2);
+				if (takeStep()) {
+
 					return true;
+				}
 			}
 			// BUGTEST 12
 		}
@@ -349,7 +422,6 @@ public class SMOBinaryClassifierFloat {
 	}
 
 	void secondChoiceHeuristic() {
-		E2 = getError(i2);
 		float maxabs = 0f;
 		i1 = 0;
 		float abs = 0f;
@@ -507,7 +579,8 @@ public class SMOBinaryClassifierFloat {
 				objfunc_fp = objfunc_fp + alph[i];
 				for (int j = 0; j < m; j++) {
 					if (alph[j] > 0) {
-						objfunc_fp -= objfunc_fp - 0.5 * target[i] * target[j]
+						//objfunc_fp -= objfunc_fp - 0.5 * target[i] * target[j]
+						objfunc_fp -= 0.5 * target[i] * target[j]
 								* getKernelOutputFloat(i, j) * alph[i]
 								* alph[j];
 					}
@@ -709,6 +782,10 @@ public class SMOBinaryClassifierFloat {
 	 */
 	boolean isExampleOnBound(int p) {
 		return alph[p] < tol || alph[p] > (C - tol);
+	}
+
+	boolean isExampleOnBound(float aTest) {
+		return aTest < tol || aTest > (C - tol);
 	}
 
 	/**
@@ -913,15 +990,17 @@ public class SMOBinaryClassifierFloat {
 	void P(float f, int traceLevel) {
 		if (traceLevel <= TRACELEVEL) {
 			// StringBuffer NYI
-//			if (sb.length() > 0)
-//				sb.delete(0, sb.length() - 1);
-//			sb.append(f);
-//			System.out.println(sb);
+			// if (sb.length() > 0)
+			// sb.delete(0, sb.length() - 1);
+			// sb.append(f);
+			// System.out.println(sb);
 			int i = (int) f;
-			int j = (int) (f * 100 - i * 100);
+			int j = (int) (f * 100 - (float)i * 100+1);
 			System.out.print(i);
 			System.out.print(".");
-			System.out.print(j);
+			if(j<10)
+				System.out.print("0");
+			System.out.println(j);
 		}
 	}
 
