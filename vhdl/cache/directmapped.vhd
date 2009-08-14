@@ -158,7 +158,7 @@ begin
 			when rd2 =>
 				cpu_in.rdy_cnt <= mem_in.rdy_cnt;				
 				if mem_in.rdy_cnt <= 1 then
-					next_fetchtag <= cpu_out_reg.address;
+					next_fetchtag <= cpu_out_reg.address(mem_bits-1 downto 0);
 					next_fetch <= '1';
 					next_state <= idle;
 				end if;
