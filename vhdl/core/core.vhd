@@ -74,7 +74,7 @@ generic (
 
 	width		: integer := 32;	-- one data word
 	pc_width	: integer := 11;	-- address bits of internal instruction rom (upper half)
-	i_width		: integer := 8		-- instruction width
+	i_width		: integer := 10		-- instruction width
 );
 
 port (

@@ -49,7 +49,7 @@ public class Jopa {
 
 	private String fname;
 	static final int ADDRBITS = 11;
-	static final int DATABITS = 10;
+	static final int DATABITS = 12;
 //	static final int BRBITS = 10;
 	static final int BRBITS = ADDRBITS;
 	static final int OPDBITS = 5;
@@ -501,6 +501,8 @@ public class Jopa {
 
 					if (l.nxt) opcode |= 0x200;
 					if (l.opd) opcode |= 0x100;
+					// TODO: quick hack for longer opcodes
+					opcode <<= 2;
 					romData[romLen] = opcode;
 					++romLen;
 					line += hex(pc, 4)+" : "+hex(opcode, 3)+";\t";
