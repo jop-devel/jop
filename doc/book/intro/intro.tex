@@ -54,19 +54,19 @@ prompt that \cmd{javac} is in the path.} a simple \cmd{make} should
 build the tools, the processor, compile the ``Hello World" example,
 configure the FPGA and download the application. The whole build
 process will take a few minutes. After typing
-\begin{verbatim}
+\begin{lstlisting}
     make
-\end{verbatim}
+\end{lstlisting}
 you see a lot of messages from the various tools. However, the last
 lines should be actual messages received from JOP. It should look
 similar to the following:
-\begin{verbatim}
+\begin{lstlisting}
     JOP start V 20080821
     60 MHz, 1024 KB RAM, 1 CPUs
     Hello World from JOP!
 
     JVM exit!
-\end{verbatim}
+\end{lstlisting}
 Note that JOP prints some internal information, such as version and
 memory size, at startup. After that, the message ``Hello World from
 JOP!" can be seen. Our first program runs on JOP!
@@ -77,9 +77,9 @@ and change the output message. The tools and the processor have been
 built already. So we do not need to compile everything from scratch.
 Use the following make target to just compile the Java application
 and download the processor and the application:
-\begin{verbatim}
+\begin{lstlisting}
     make japp
-\end{verbatim}
+\end{lstlisting}
 The compile process should now be faster and the output similar to
 before.
 

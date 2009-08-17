@@ -204,8 +204,8 @@ filled with zeros -- This will change with the GC}
 \footnotetext[209]{The native instructions \codefoot{jopsys\_rd} and
 \codefoot{jopsys\_wr} are alias to the \codefoot{jopsys\_rdmem} and
 \codefoot{jopsys\_wrmem} instructions just for compatibility to
-existing Java code. IO devices are now memory mapped. In the case
-for simple IO devices there are no wait states and the exact values
+existing Java code. I/O devices are now memory mapped. In the case
+for simple I/O devices there are no wait states and the exact values
 are 4 and 5 cycles respective.}
 
 %14+r+n*(23+w)
@@ -295,32 +295,35 @@ subtraction of the saved cycles is given in the footnote.
 
 \subsubsection*{Cache Load}
 
-For the method cache load the cache wait state $c_{ws}$ is:
-\begin{equation*}
-    c_{ws} =
-    \left\{\begin{array}{r@{\quad:\quad}l}
-    r_{ws}-1 & r_{ws}>1 \\
-    0   & r_{ws}\le1
-    \end{array} \right.
-\end{equation*}
-
-On a method invoke or return the bytecode has to be loaded into the
-cache on a cache miss. The load time $l$ is:
-\[
-    l =
-    \left\{\begin{array}{r@{\quad:\quad}l}
-    6+(n+1)(2+c_{ws}) & \mbox{cache miss} \\
-    4   & \mbox{cach hit}
-    \end{array} \right.
-\]
-with $n$ as the length of the method in number of 32-bit words. For
-short methods the load time of the method on a cache miss, or part
-of it, is hidden by microcode execution. The exact value is given in
-the footnote.
 
 % We count the hidden cycles in the same way as for a read or write:
 %   the instructions between stbcr and the first wait
 %
+
+Memory access time also determines the cache load time on a miss. For
+the current implementation the cache load time is calculated as
+follows: the wait state $c_{ws}$ for a single word cache load is:
+\begin{equation*}
+    c_{ws} =
+    \left\{\begin{array}{r@{\quad:\quad}l}
+    r_{ws} & r_{ws}>1 \\
+    1   & r_{ws}\le1
+    \end{array} \right.
+\end{equation*}
+%
+On a method invoke or return, the respective method has to be loaded
+into the cache on a cache miss. The load time $l$ is:
+\[
+    l =
+    \left\{\begin{array}{r@{\quad:\quad}l}
+    6+(n+1)(1+c_{ws}) & \mbox{cache miss} \\
+    4   & \mbox{cache hit}
+    \end{array} \right.
+\]
+where $n$ is the size of the method in number of 32-bit words. For
+short methods, the load time of the method on a cache miss, or part
+of it, is hidden by microcode execution. The exact value is given in
+the footnote.
 
 \subsubsection*{lastore}
 
@@ -332,10 +335,10 @@ the footnote.
     \end{array} \right.
 \end{equation*}
 
-\subsubsection*{get/putfield/ref/long}
-
-TODO: add different values for 32-bit, 64-bit and reference type.
-
-TODO: add invokesuper - a special version of invokespecial
+%\subsubsection*{get/putfield/ref/long}
+%
+%TODO: add different values for 32-bit, 64-bit and reference type.
+%
+%TODO: add invokesuper - a special version of invokespecial
 
 %\end{document}
