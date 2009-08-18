@@ -13,21 +13,17 @@ approach.
 In the following section we will give a quick overview on JOP and a
 short description how to get JOP running within an FPGA. A detailed
 description of the build process can be found in
-Chapter~\ref{chap:build}.
-
-JOP is a soft-core written in VHDL plus tools in Java, a simplified
-Java library (JDK), and application examples. JOP is delivered in
-source only and the sources are hosted at
-Opencores.\footnote{\url{http://www.opencores.org/projects.cgi/web/jop}}
-
+Chapter~\ref{chap:build}. JOP is a soft-core written in VHDL plus
+tools in Java, a simplified Java library (JDK), and application
+examples. JOP is delivered in source only.
 
 \subsection{Building JOP and Running ``Hello World"}
 
-To build JOP you first have to download the source tree from
-Opencores. A \emph{Makefile} (or an Ant file) contains all necessary
-steps to build the tools, the processor, and the application.
-Configuration of the FPGA and downloading the Java application is
-also part of the Makefile.
+To build JOP you first have to download the source tree. A
+\emph{Makefile} (or an Ant file) contains all necessary steps to
+build the tools, the processor, and the application. Configuration of
+the FPGA and downloading the Java application is also part of the
+Makefile.
 
 In this description we assume the FPGA board Cycore (see
 Appendix~\ref{appx:cycore}). This board is the default target for
