@@ -32,6 +32,7 @@ public class Array extends TestCase {
 		boolean ok = true;
 		
 		int ia[] = new int[3];
+		int nulla[] = null;
 		int val = 1;
 /*
 		System.out.println("iaload");
@@ -55,6 +56,57 @@ public class Array extends TestCase {
 				ok = false;
 			}
 		}
+		
+		boolean caught = false;
+		try {
+			val = ia[-1];
+		} catch (ArrayIndexOutOfBoundsException e) {
+			caught = true;
+		}
+		ok &= caught;
+
+		caught = false;
+		try {
+			val = nulla[0];
+		} catch (NullPointerException e) {
+			caught = true;
+		}
+		ok &= caught;
+
+		System.out.println("TODO:");
+		System.out.println("\tarraylength null pointer check");
+		System.out.println("\tupper bound exception comes too late");
+//		caught = false;
+//		try {
+//			val = nulla.length;
+//		} catch (NullPointerException e) {
+//			caught = true;
+//		}
+//		ok &= caught;
+
+//		caught = false;
+//		try {
+//			val = ia[3];
+//		} catch (ArrayIndexOutOfBoundsException e) {
+//			caught = true;
+//		}
+//		ok &= caught;
+
+//		caught = false;
+//		try {
+//			ia[-1] = val;
+//		} catch (ArrayIndexOutOfBoundsException e) {
+//			caught = true;
+//		}
+//		ok &= caught;
+
+//		caught = false;
+//		try {
+//			ia[3] = val;
+//		} catch (ArrayIndexOutOfBoundsException e) {
+//			caught = true;
+//		}
+//		ok &= caught;
 
 //		System.out.println("iaload bound");
 //		val = ia[-1];
