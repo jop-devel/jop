@@ -107,6 +107,13 @@ end jop;
 architecture rtl of jop is
 
 --
+--	constants:
+--
+
+-- TODO -1?
+constant cpu_cnt_width: integer := integer(ceil(log2(real(cpu_cnt-1))));
+
+--
 --	components:
 --
 
@@ -245,11 +252,11 @@ end process;
 				clk	=> clk,
 				reset => int_res,
 				
-				commit_try => ,
-				commit_allow => ,
+				commit_out_try => ,
+				commit_in_allow => ,
 			
-				commit_address_valid => ,
-				commit_address => (),
+				commit_in_address_valid => ,
+				commit_in_address => (),
 			
 				sc_cpu_out => sc_tm_out(i),  
 				sc_cpu_in => sc_tm_in(i), 

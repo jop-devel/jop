@@ -20,22 +20,14 @@ port (
 	--
 	
 	-- set until transaction finished/aborted
-	commit_try			: out std_logic;
-	-- valid one cycle after commit_try set
-	commit_allow		: in std_logic;
-	-- not needed(?)
--- 	-- set while anyone is committing
--- 	commit_happening	: in std_logic;
+	commit_out_try			: out std_logic;
+	commit_in_allow			: in std_logic;
 
-	--
-	--	Rollback triggers
-	--
-	
 	--
 	--	Commit addresses
 	--
-	commit_address_valid: in std_logic;
-	commit_address		: in std_logic_vector(31 downto 0);
+	commit_in_address_valid	: in std_logic;
+	commit_in_address		: in std_logic_vector(31 downto 0);
 
 	--
 	--	Memory IF to cpu
