@@ -2,7 +2,7 @@
 In this chapter we will undertake a short review of the project and
 summarize the contributions. Java for real-time systems is a new and
 active research area. This chapter offers suggestions for future
-research, based on the proposed Java processor.
+research, based on the described Java processor.
 
 The research contributions made by this work are related to two
 areas: real-time Java and resource-constrained embedded systems.
@@ -35,11 +35,11 @@ bandwidth. A standard technique to avoid processing bottlenecks due
 to the higher memory bandwidth is caching.
 %In order to fill the gap between processor speed and the memory
 %access time, caches are mandatory, even in embedded systems.
-However, standard cache organizations improve the average execution
-time but are difficult to predict for WCET analysis. Two
-time-predictable caches are proposed for JOP: a \emph{stack cache}
-as a substitution for the data cache and a \emph{method cache} to
-cache the instructions.
+However, standard cache organizations improve the average
+execution time but are difficult to predict for WCET analysis.
+Two time-predictable caches are implemented in JOP: a \emph{stack
+cache} as a substitution for the data cache and a \emph{method
+cache} to cache the instructions.
 
 As the stack is a heavily accessed memory region, the stack -- or
 part of it -- is placed in local memory. This part of the stack is
@@ -94,7 +94,7 @@ analysis in the same way as normal application tasks.
 The contributions described above result in a time-predictable
 execution environment for real-time applications written in Java,
 without the resource implications and unpredictability of a
-JIT-compiler. The proposed processor architecture is a
+JIT-compiler. The described processor architecture is a
 straightforward target for low-level WCET analysis.
 
 %New applications, such as multimedia streaming, result in
@@ -233,19 +233,20 @@ algorithm.
 
 
 
-    \item[Instruction cache:]
-The cache solution proposed in Section~\ref{sec:cache} provides
-predictable instruction cache behavior while, in the average case,
-still performing in a similar way to a direct-mapped cache. However,
-an analysis tool for the worst-case behavior is still needed. With
-this tool, and a more complex analysis tool for traditional
-instruction caches, we also need to verify that the worst-case miss
-penalty is lower than with a traditional instruction cache.
+    \item[Instruction cache:] The cache solution, described in
+        Section~\ref{sec:cache}, provides predictable instruction
+        cache behavior while, in the average case, still
+        performing in a similar way to a direct-mapped cache.
+        However, an analysis tool for the worst-case behavior is
+        still needed. With this tool, and a more complex analysis
+        tool for traditional instruction caches, we also need to
+        verify that the worst-case miss penalty is lower than
+        with a traditional instruction cache.
 
-A second interesting aspect of the proposed method cache is the fact
-that the replacement decision on a cache miss only occurs on method
-invoke and return. The infrequency of this decision means that more
-time is available for more advanced replacement algorithms.
+A second interesting aspect of the method cache is the fact that
+the replacement decision on a cache miss only occurs on method
+invoke and return. The infrequency of this decision means that
+more time is available for more advanced replacement algorithms.
 
 
     \item[Real-time Java:] Although there is already a definition

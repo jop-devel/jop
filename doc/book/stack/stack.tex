@@ -170,26 +170,25 @@ stack \emph{and} the local variables results in the following access
 patterns:
 %
 \begin{description}
-\item[Stack Operation:] Read of the two top elements, operate on them and
-push back the result on the top of the stack. The pipeline stages
-for this operation are:\newline
-\texttt{
-    value1 $\leftarrow $ stack[sp], value2 $\leftarrow $ stack[sp-1]\newline
-    result $\leftarrow $ value1 op value2, sp $\leftarrow $ sp-1\newline
-    stack[sp] $\leftarrow $ result
+\item[Stack Operation:] Read of the two top elements, operate on
+    them and push back the result on the top of the stack. The
+    pipeline stages for this operation are:\newline \code{ value1
+    $\leftarrow $ stack[sp], value2 $\leftarrow $
+    stack[sp-1]\newline result $\leftarrow $ value1 op value2, sp
+    $\leftarrow $ sp-1\newline stack[sp] $\leftarrow $ result
 }
 
 \item[Variable Load:] Read a data element deeper down in the
     stack, relative to a variable base address pointer (VP), and
     push this data on the top of the stack. This operation needs
-    two pipeline stages:\newline \texttt{ value $\leftarrow $
+    two pipeline stages:\newline \code{ value $\leftarrow $
     stack[vp+offset], sp $\leftarrow $ sp+1\newline stack[sp]
     $\leftarrow $ value
 }
 
-\item[Variable Store:] Pop the top element of the stack and write it in
-the variable relative to the variable base address:\newline
-\texttt{
+\item[Variable Store:] Pop the top element of the stack and write
+    it in the variable relative to the variable base
+    address:\newline \code{
     value $\leftarrow $ stack[sp]\newline
     stack[vp+offset] $\leftarrow $ value, sp $\leftarrow $ sp-1
 }
@@ -200,9 +199,9 @@ register file (two read ports and one write port) would be necessary.
 
 
 In following section, we will discuss access patterns of the JVM and
-their implication on the functional units of the pipeline. A faster
-and smaller architecture is proposed for the stack cache of a Java
-processor.
+their implication on the functional units of the pipeline. A fast and
+small architecture for the stack cache of a Java processor is
+described.
 
 \subsection{JVM Stack Access Revised}
 
@@ -350,14 +349,13 @@ pipeline stage for an instruction.
 
 As the probability of data dependency is very high in a stack-based
 architecture, one would expect several data forwarding paths to be
-necessary. However, in the two-level architecture proposed, with its
-resulting three-stage pipeline, no data hazards will occur and no
-data forwarding is therefore necessary. This simplifies the decoding
-stage and reduces the number of multiplexers in the execution path.
-We will show that none of the three data hazard types
-\cite{Hennessy06} is an issue in this architecture. With instructions
-$i$ and $j$, where $i$ is issued before $j$, the data hazard types
-are:
+necessary. However, in the two-level architecture, with its resulting
+three-stage pipeline, no data hazards will occur and no data
+forwarding is therefore necessary. This simplifies the decoding stage
+and reduces the number of multiplexers in the execution path. We will
+show that none of the three data hazard types \cite{Hennessy06} is an
+issue in this architecture. With instructions $i$ and $j$, where $i$
+is issued before $j$, the data hazard types are:
 
 \paragraph{Read after write:} $j$ reads a source before $i$ writes it. This
 is the most common type of hazard and, in the architectures
@@ -445,10 +443,10 @@ also doubles the amount of memory.
 
 Detailed analysis of the access patterns to the stack showed that
 only the two top elements of the stack are accessed in a single
-cycle. Given this fact, the proposed architecture uses registers to
-cache only the two top elements of the stack. The next level of the
-stack cache is provided by a simple on-chip memory. The memory
-automatically spills and fills the second register. Implementing the
-two top elements of the stack as fixed registers, instead of elements
-that are indexed by a stack pointer, also greatly simplifies the
-overall pipeline.
+cycle. Given this fact, the architecture uses registers to cache only
+the two top elements of the stack. The next level of the stack cache
+is provided by a simple on-chip memory. The memory automatically
+spills and fills the second register. Implementing the two top
+elements of the stack as fixed registers, instead of elements that
+are indexed by a stack pointer, also greatly simplifies the overall
+pipeline.

@@ -45,9 +45,9 @@ WCET analysis has to be done at two levels: at the microcode level
 and at the bytecode level. The microcode WCET analysis is performed
 only once for a processor configuration and described in the next
 section. The result from this microcode analysis is the timing model
-of the  processor. The timing model is the input for the WCET
-analysis at the bytecode level (i.e.\ the Java application) as
-explained in Section~\ref{sec:wcet:app}.
+of the  processor. The timing model is the input for WCET analysis at
+the bytecode level (i.e.\ the Java application) as explained in
+Section~\ref{sec:wcet:app}.
 
 The first WCET analysis tool that targets JOP has been developed by
 Rasmus Pedersen \cite{jop:wcet:jtres06}. Benedikt Huber implemented a
@@ -136,7 +136,7 @@ Microcode is stored in on-chip memory with single cycle access. Each
 microcode instruction is a single word long and there is no need for
 either caching or prefetching at this stage. We can therefore omit
 the low-level analysis. No pipeline analysis \cite{EngblomPhD}, with
-its possible unbound timing effects, is necessary.
+its possible unbounded timing effects, is necessary.
 
 \subsection{Bytecode Independency}
 
@@ -310,10 +310,10 @@ accurate.
 
 Bytecodes can be implemented in Java on JOP. In this case, a static
 method from a JVM internal class gets invoked when such a bytecode is
-executed. For the WCET analysis this bytecode is substituted by an
-invoke instruction to this method. The influence on the cache (the
-bytecode execution results in a method load) can be analyzed in the
-same way as for \emph{ordinary} static methods.
+executed. For WCET analysis this bytecode is substituted by an invoke
+instruction to this method. The influence on the cache (the bytecode
+execution results in a method load) can be analyzed in the same way
+as for \emph{ordinary} static methods.
 
 %\begin{itemize}
 %    \item Java based bytecodes -- handle them as methods
@@ -361,7 +361,7 @@ in Java in our analysis.
 
 We replace the function pointer restriction by the following
 restriction: \emph{Dynamic class loading is not allowed}. As the full
-application has to be available for the WCET analysis dynamic class
+application has to be available for WCET analysis, dynamic class
 loading cannot be supported. For embedded real-time systems this is
 not a severe restriction.
 
@@ -522,7 +522,7 @@ constraints for the method cache can be integrated into the analysis.
 
 
 
-\begin{lstlisting}[float=t, caption={The example used for the WCET analysis},label=lst:wcet:example]
+\begin{lstlisting}[float=t, caption={The example used for WCET analysis},label=lst:wcet:example]
 
 public static int loop(boolean b, int val) {
 
@@ -784,8 +784,8 @@ novel idea of a \emph{method cache} \cite{jop:jtres_cache}, i.e.,\ an
 instruction cache organization in which whole methods are loaded into
 the cache on method invocation and on the return from a method.
 
-The method cache is designed to simplify the WCET analysis. Due to
-the fact that all cache misses are only included in two instructions
+The method cache is designed to simplify WCET analysis. Due to the
+fact that all cache misses are only included in two instructions
 (\emph{invoke} and \emph{return}), the instruction cache can be
 ignored on all other instructions. The time needed to load a complete
 method is calculated using the memory properties (latency and
@@ -793,7 +793,7 @@ bandwidth) and the size of the method. On an invoke, the size of the
 invoked method is used, and on a return, the method size of the
 caller.
 
-Integration of the method cache into the WCET analysis is straight
+Integration of the method cache into WCET analysis is straight
 forward. As the cache hits or misses can only happen at method
 invocation, or return from a method, we can model the miss times as
 extra vertices in the graph. Figure~\ref{fig:cache:bb} shows an
@@ -890,7 +890,7 @@ variants can be found in \cite{jop:wcet:jtres06}.
 %A natural extension of the single block cache is the usage of
 %several cache blocks, each one storing exactly one method. With more
 %than one method in the cache, cache hit detection has to be performed
-%as part of the WCET analysis. Considering the minimal variant of two
+%as part of WCET analysis. Considering the minimal variant of two
 %blocks, the analysis can be locally performed. We do not need to
 %consider the whole program flow. We use a least recently used (LRU)
 %replace strategy. LRU is quite natural for two blocks, as we fill the
@@ -999,12 +999,12 @@ the fitting set that are not leafs need to consider the miss penalty
 of a return bytecode. Leaf nodes can naturally only miss on an
 invoke.
 
-With the variable block cache, it could be argued that the WCET
-analysis becomes too complex, but the technique presented above is
-easy to apply and only needs to perform a simple static analysis. In
-contrast to a direct-mapped instruction cache, we only need to
-consider invoke instructions and do not need to know the actual
-bytecode address of any instruction.
+With the variable block cache, it could be argued that WCET analysis
+becomes too complex, but the technique presented above is easy to
+apply and only needs to perform a simple static analysis. In contrast
+to a direct-mapped instruction cache, we only need to consider invoke
+instructions and do not need to know the actual bytecode address of
+any instruction.
 
 
 %% text from BH
@@ -1094,7 +1094,7 @@ The WCET analyzer (WCA) is an open source Java program first
 described in \cite{jop:wcet:jtres06} and later redesigned
 \cite{master:huber:2009}. It is based on the standard IPET approach
 \cite{Puschner:JRTS1997}, as described in Section~\ref{sec:ilp}.
-Hereby, the WCET is computed by solving a maximum cost circulation
+Hereby, WCET is computed by solving a maximum cost circulation
 problem in a directed graph representing the program's control flow.
 In contrast to the former description, WCA associates the execution
 cost to the edges instead of the vertices. For modeling the execution
@@ -1122,7 +1122,7 @@ extracted. WCA uses the open-source ILP solver \code{lp\_solve}.
 \code{lp\_solve} is integrated into the WCA by directly invoking it
 via the Java library binding.
 
-After completing the WCET analysis, WCA creates detailed reports to
+After completing WCET analysis, WCA creates detailed reports to
 provide feedback to the user and annotate the source code as far as
 possible. All reports are formatted as HTML pages. Each individual
 method is listed with basic blocks and execution time of bytecodes,
@@ -1144,7 +1144,7 @@ costs, and then mapping the costs back to the source code.
 \end{figure}
 
 The \code{Makefile} contains the target \code{wcet} for the WCET
-tool.The following example performs WCET analysis of the method
+tool. The following example performs WCET analysis of the method
 \code{measure} of the \code{crc} example and uses DFA for the loop
 bound detection. The method that is the root of the application to be
 analyzed can be set in variable \code{WCET\_METHOD}.
@@ -1160,14 +1160,13 @@ collection of real-time benchmarks. The measurement gives us
 confidence that we have no serious bugs in the analysis and an idea
 of the pessimism of the analyzed WCET. It has to be noted that we
 actually cannot guarantee to measure the real WCET. If we could
-measure the WCET, we would not need to perform the WCET analysis at
-all.
+measure the WCET, we would not need to perform WCET analysis at all.
 
-Furthermore, the WCET analysis gives a safe bound, but this bound may
-be conservative. Due to the abstractions in the analysis the WCET
-bound may not be associated with a real feasible execution path.
-There is no general guarantee that we have knowledge about the worst
-case path.
+Furthermore, WCET analysis gives a safe bound, but this bound may be
+conservative. Due to the abstractions in the analysis the WCET bound
+may not be associated with a real feasible execution path. There is
+no general guarantee that we have knowledge about the worst case
+path.
 
 
 \subsection{Benchmarks}
@@ -1318,7 +1317,7 @@ for a read and 3 cycles for a write.
 %Not really as each if contains a return.}
 %
 %\emph{TODO: write on cache miss for the return to the measure()
-%method. Define what we mean when doing the WCET analysis of method
+%method. Define what we mean when doing WCET analysis of method
 %m(): no invoke m() included, no cache miss on invoke m() included,
 %but the cache miss for a return to m() is included although it is not
 %part of the measurement. Perhaps show the code snipped that is used
@@ -1328,7 +1327,7 @@ Table~\ref{tab:wcet:compared} shows the measured execution time and
 the analyzed WCET. The last column gives an idea of the pessimism of
 the WCET analysis. It has to be noted (again) that we actually cannot
 guarantee to measure the real WCET. If we could measure the WCET, we
-would not need to perform the WCET analysis at all. The WCET analysis
+would not need to perform WCET analysis at all. The WCET analysis
 result of a method is defined as follows: WCA reports the WCET of the
 executable code within a method including the return statement. The
 invoke of the to-be-analyzed method is not part of the analysis. With
@@ -1441,17 +1440,18 @@ to deploy JOP in the next safety-critical application.
 
 \subsection{Is JOP the Only Target Architecture?}
 
-JOP is the primary low-level target for the WCET analysis  as it is:
-(a) A simple processor, (b) open-source, and (c) the execution timing
-is well-documented (see Appendix~\ref{appx:bytecode}). Furthermore,
-the JOP design is actually the root of a family of Java processors.
-Flavius Gruian has built a JOP compatible processor, with a different
-pipeline organization, with Bluespec Verilog \cite{flavius:bluejep}.
-The SHAP Java processor \cite{shap}, although now with a different
-pipeline structure and hardware assisted garbage collection, also has
-its roots in the JOP design. We assume that these processors are also
-WCET analysis \emph{friendly}. The question remains how easy the
-analysis can be adapted for other Java processors.
+JOP is the primary low-level target for the WCET analysis tool as it
+is: (a) a simple processor, (b) open-source, and (c) the execution
+timing is well-documented (see Appendix~\ref{appx:bytecode}).
+Furthermore, the JOP design is actually the root of a family of Java
+processors. Flavius Gruian has built a JOP compatible processor, with
+a different pipeline organization, with Bluespec Verilog
+\cite{flavius:bluejep}. The SHAP Java processor \cite{shap}, although
+now with a different pipeline structure and hardware assisted garbage
+collection, also has its roots in the JOP design. We assume that
+these processors are also WCET analysis \emph{friendly}. The question
+remains how easy the analysis can be adapted for other Java
+processors.
 
 
 The same analysis is not possible for other Java processors. Either
@@ -1474,7 +1474,7 @@ Only for the Cjip processor is the execution time well documented
 \cite{CjipRef}. However, the \emph{measured} execution time of some
 bytecodes is \emph{higher} than the documented values
 \cite{jop:thesis}. Therefore the documentation is not complete to
-provide a safe processor model of the Cjip for the WCET analysis.
+provide a safe processor model of the Cjip for WCET analysis.
 
 The real-time Java processor jamuth \cite{jamuth:jtres07} is a
 possible target for the WCA. There is on-going work with Sascha Uhrig
@@ -1563,7 +1563,7 @@ time-predictable processors.
 \subsection{Further Paths to Explore}
 
 The combination of a bytecode based optimizer (a prototype is
-available as part of the JOP sources) with the WCET analysis can be
+available as part of the JOP sources) with WCET analysis can be
 applied to minimize the WCET path. The optimizer can be guided by the
 results from the application. This iterative flow can be used to
 minimize the worst-case path instead of the average-case path in the
@@ -1591,10 +1591,10 @@ application.
 
 In this chapter, the WCET analysis tool based on the ILP approach has
 been presented. The architecture of the Java processor greatly
-simplifies the low-level part of the WCET analysis as it can be
+simplifies the low-level part of WCET analysis, as it can be
 performed at the Java bytecode level. An instruction cache, named
 \emph{method cache}, stores complete methods, and is integrated into
-the WCET analysis.
+the WCET analysis tool.
 
 The WCET analysis tool, with the help of DFA detected loop bounds,
 provides WCET values for the schedulability analysis. Complex loops
@@ -1609,11 +1609,11 @@ information. This representation of the WCET path through the code
 can guide the developer to write WCET aware real-time code.
 
 The experiments with the WCET analyzer tool have demonstrated that we
-have achieved our goal: JOP is a simple target for the WCET analysis.
+have achieved our goal: JOP is a simple target for WCET analysis.
 Most bytecodes have a single execution time (WCET = BCET), and the
 WCET of a task (the analysis at the bytecode level) depends only on
 the control flow. No pipeline or data dependencies complicate the
-low-level part of the WCET analysis.
+low-level part of WCET analysis.
 
 \section{Further Reading}
 \label{sec:wcet:related}
@@ -1698,7 +1698,7 @@ It is argued that the well formed intermediate representation of a
 program in Java bytecode, which can also be generated from compilers
 for other languages (e.g.\ Ada), is well suited for a portable WCET
 analysis tool. In that paper, annotations for Java and Ada are
-presented to guide the WCET analysis at bytecode level. The work is
+presented to guide WCET analysis at bytecode level. The work is
 extended to address the machine-dependent low-level timing analysis
 \cite{R:Bate:2000a}. Worst-case execution frequencies of Java
 bytecodes are introduced for a machine independent timing

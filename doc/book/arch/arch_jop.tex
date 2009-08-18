@@ -154,17 +154,16 @@ Figure~\ref{fig_arch_data_flow} the implementation of bytecode
 microcode instruction \code{ldm c nxt}.
 
 The difference to other forms of instruction translation in hardware
-is that the proposed solution is time predictable. The translation
-takes one cycle (one pipeline stage) for each bytecode, independent
-from the execution history. Instruction folding, e.g., implemented
-in picoJava \cite{pJ1,pjMicroArch}, is also a form of instruction
-translation in hardware. Folding is used to translate several (stack
-oriented) bytecode instructions to a RISC type instruction. This
-translation needs an instruction buffer and the fill level of this
-instruction buffer depends on the execution history. The length of
-this history that has to be considered for analysis is not bounded.
-Therefore this form of instruction translation is not exactly time
-predictable.
+is that this solution is time predictable. The translation takes one
+cycle (one pipeline stage) for each bytecode, independent from the
+execution history. Instruction folding, e.g., implemented in picoJava
+\cite{pJ1,pjMicroArch}, is also a form of instruction translation in
+hardware. Folding is used to translate several (stack oriented)
+bytecode instructions to a RISC type instruction. This translation
+needs an instruction buffer and the fill level of this instruction
+buffer depends on the execution history. The length of this history
+that has to be considered for analysis is not bounded. Therefore this
+form of instruction translation is not exactly time predictable.
 
 
 \subsection{Compact Microcode}
@@ -398,7 +397,7 @@ world} program (34~KB memory footprint).
 \subsection{Summary}
 
 In order to handle the great variation in the complexity of Java
-bytecodes we have proposed a translation to a different instruction
+bytecodes, the bytecodes are translated to a different instruction
 set, the so-called microcode. This microcode is still an instruction
 set for a stack machine, but more RISC-like than the CISC-like JVM
 bytecodes.

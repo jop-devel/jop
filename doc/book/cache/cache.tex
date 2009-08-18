@@ -39,7 +39,7 @@ compiled C programs \cite{Metzlaff:SPM:2008}.
 In this section, we will develop a solution for a time-predictable
 instruction cache. Typical Java programs consist of short methods.
 There are no branches out of the method and all branches inside are
-relative. In the proposed architecture, the full code of a method is
+relative. In the described architecture, the full code of a method is
 loaded into the cache before execution. The cache is filled on
 invocations and returns. This means that all cache fills are lumped
 together with a known execution time. The full loaded method and
@@ -148,25 +148,25 @@ label=lst:cache:replace]
 
 In this example, the stack oriented approach needs fewer fills, as
 only methods b() and c() are exchanged and method a() stays in the
-cache. However, if, for example, method b() is the size of one
-block, all methods can be held in the cache using the the \emph{next
-block} policy, but b() and c() would be still exchanged using the
+cache. However, if, for example, method b() is the size of one block,
+all methods can be held in the cache using the the \emph{next block}
+policy, but b() and c() would be still exchanged using the
 \emph{stack} policy. Therefore, the first approach is used in the
-proposed cache.
+JOP's cache.
 
 
 \subsection{WCET Analysis}
 
 \label{sec:cache:wcet}
 
-The proposed instruction cache is designed to simplify WCET
-analysis. Due to the fact that all cache misses are only included in
-two instructions (\emph{invoke} and \emph{return}), the instruction
-cache can be ignored on all other instructions. The time needed to
-load a complete method is calculated using the memory properties
-(latency and bandwidth) and the length of the method. On an invoke,
-the length of the invoked method is used, and on a return, the
-method length of the caller is used to calculate the load time.
+The instruction cache is designed to simplify WCET analysis. Due to
+the fact that all cache misses are only included in two instructions
+(\emph{invoke} and \emph{return}), the instruction cache can be
+ignored on all other instructions. The time needed to load a complete
+method is calculated using the memory properties (latency and
+bandwidth) and the length of the method. On an invoke, the length of
+the invoked method is used, and on a return, the method length of the
+caller is used to calculate the load time.
 
 With a single method cache this calculation can be further
 simplified. For every invoke there is a corresponding return. That
@@ -233,20 +233,19 @@ In this section, we compare two different cache architectures in a
 quantitative way. Although our primary concern is predictability,
 performance remains important. We will therefore first present the
 results from a conventional direct-mapped instruction cache. These
-measurements provide a baseline for the evaluation of the proposed
-architecture.
+measurements provide a baseline for the evaluation of the described
+cache architecture.
 
 Cache performance varies with different application domains. As the
-proposed system is intended for real-time applications, the
-benchmark for these tests should reflect this fact. However, there
-are no standard benchmarks available for embedded real-time systems.
-A real-time application was therefore adapted to create this
-benchmark. The application is from one node of a distributed motor
-control system \cite{jop:wises03} (see also
-Section~\ref{sec:app:kfl}). A simulation of the environment (sensors
-and actors) and the communication system (commands from the master
-station) forms part of the benchmark for simulating the real-world
-workload.
+system is intended for real-time applications, the benchmark for
+these tests should reflect this fact. However, there are no standard
+benchmarks available for embedded real-time systems. A real-time
+application was therefore adapted to create this benchmark. The
+application is from one node of a distributed motor control system
+\cite{jop:wises03} (see also Section~\ref{sec:app:kfl}). A simulation
+of the environment (sensors and actors) and the communication system
+(commands from the master station) forms part of the benchmark for
+simulating the real-world workload.
 
 The data for all measurements was captured using a simulation of JOP
 and running the application for 500,000 clock cycles. During this
