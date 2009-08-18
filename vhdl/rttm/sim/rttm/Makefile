@@ -8,7 +8,7 @@ include Makefile.in
 ifeq ($(BATCH),true)
 	RUN=vsim -c -do ../sim_batch.do $(TARGET)
 else
-	RUN=vsim -do sim.do $(TARGET)
+	RUN=vsim -i -do sim.do $(TARGET)
 endif
 
 all: work src

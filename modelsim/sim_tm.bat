@@ -61,4 +61,4 @@ rem vcom %options% %jopdir%/top/jopmul_256x16.vhd
 vcom %options% %jopdir%/simulation/tb_jop.vhd
 rem vcom %options% %jopdir%/simulation/tb_jop_sram16.vhd
 
-vsim -do sim_cmp.do tb_jop
+vsim -i -do sim_cmp.do tb_jop
