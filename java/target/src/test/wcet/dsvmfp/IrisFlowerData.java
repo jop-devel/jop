@@ -29,7 +29,6 @@ package wcet.dsvmfp;
  *
  */
 public class IrisFlowerData extends Data {
-
 	private static float data[][] = {
 		{ 5.1F, 3.5F, 1.4F, 0.2F, 1F },
 		{ 4.9F, 3.0F, 1.4F, 0.2F, 1F },

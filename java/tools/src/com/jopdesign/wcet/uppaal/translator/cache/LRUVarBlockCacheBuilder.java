@@ -53,6 +53,6 @@ public class LRUVarBlockCacheBuilder extends VarBlockCacheBuilder {
 		return SystemBuilder.constArray(cacheElems);
 	}
 	public long getWaitTime(ProcessorModel proc, ControlFlowGraph cfg, boolean isInvoke) {
-		return proc.getMethodCacheLoadTime(cfg.getNumberOfWords(), isInvoke);
+		return proc.getMethodCacheMissPenalty(cfg.getNumberOfWords(), isInvoke);
 	}
 }

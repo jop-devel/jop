@@ -1243,6 +1243,9 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 		} else if (methodId.equals("com.jopdesign.sys.Native.putField(III)V")
 				|| methodId.equals("com.jopdesign.sys.Native.arrayStore(III)V")) {
 			filterSet(input, result, context.stackPtr-3);
+		} else if (methodId.equals("com.jopdesign.sys.Native.condMove(IIZ)I")
+				|| methodId.equals("com.jopdesign.sys.Native.condMoveRef(Ljava/lang/Object;Ljava/lang/Object;Z)Ljava/lang/Object;")) {
+			filterSet(input, result, context.stackPtr-3);
 		} else {
 			System.err.println("Unknown native method: "+methodId);
 			System.exit(-1);

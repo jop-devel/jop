@@ -3,7 +3,7 @@
     see <http://www.jopdesign.com/>
 
   Copyright (C) 2009, Benedikt Huber (benedikt.huber@gmail.com)
-  
+
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
@@ -27,41 +27,54 @@ import com.jopdesign.timing.jop.MicrocodeAnalysis.MicrocodeVerificationException
 import com.jopdesign.tools.Instruction;
 import com.jopdesign.tools.Jopa.Line;
 
-/** Class representing microcode paths */
+/**
+ * A {@code MicrocodePath} represents a microcode instruction sequence.
+ * Each path is a list of {@code PathEntry} objects, which correspond to
+ * single microcode instructions, along with some static analysis information.
+ *
+ * @author Benedikt Huber <benedikt.huber@gmail.com>
+ */
 public class MicrocodePath implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 	/** Path Entry, 'constant', i.e. you never modify any fields after construction */
 	public class PathEntry implements Serializable {
 		private static final long serialVersionUID = 1L;
-		private final Line line;		
-		private final Integer tos; /** TOS (op of stack), if available */    
+		private final Line line;
+		private final Integer tos; /** TOS (op of stack), if available */
 
 		private PathEntry(Line l) { this(l,null); }
 		private PathEntry(Line l, Integer tos) {
 			this.line = l;
 			this.tos  = tos;
 		}
+		/** Get the microcode instruction
+		 * @return
+		 */
 		public Instruction getInstruction() {
 			return line.getInstruction();
 		}
-		public String toString() {
+		/** Return the top of stack value, if it is known at this instruction
+		 *
+		 * @return the TOS, or {@code null} if the TOS isn't known at this point
+		 */
+		public Integer getTOS() {
+			return tos;
+		}
+		@Override public String toString() {
 			Instruction i = getInstruction();
 			String stringRepr = i.name;
-			if(i.hasOpd) { 
+			if(i.hasOpd) {
 				if(line.getSymVal() != null) stringRepr += " "+line.getSymVal();
 				else                         stringRepr += " "+line.getIntVal();
 			}
 			if(tos != null) { stringRepr += "{tos="+tos+"}"; }
 			return stringRepr;
 		}
-		public Integer getTOS() {
-			return tos;
-		}
 	}
 	private String opName;
 	private Vector<PathEntry> path;
-	private boolean nullPtrCheck = false, 
+	private boolean nullPtrCheck = false,
 	                arrayBoundCheck = false,
 	                hasWait = false;
 	private int minMultiplierDelay = Integer.MAX_VALUE;
@@ -70,7 +83,25 @@ public class MicrocodePath implements Serializable {
 		this.opName = name;
 		this.path = new Vector<PathEntry>();
 	}
-	
+	/** Get the micro code instruction sequence aggregated by this {@code MicrocodePath}
+	 *
+	 * @return
+	 */
+	public Vector<PathEntry> getPath() {
+		return this.path;
+	}
+
+	/**
+	 * Query whether there is a byte code load instruction on the path
+	 * @return
+	 */
+	public boolean hasBytecodeLoad() {
+		for(PathEntry instr : path) {
+			if(instr.getInstruction().opcode == MicrocodeConstants.STBCRD) return true;
+		}
+		return false;
+	}
+
 	public MicrocodePath clone() {
 		MicrocodePath cloned = new MicrocodePath(opName);
 		cloned.path = new Vector<PathEntry>(path);
@@ -80,11 +111,11 @@ public class MicrocodePath implements Serializable {
 		cloned.minMultiplierDelay = minMultiplierDelay;
 		return cloned;
 	}
-	
+
 	public void addInstr(Line microInstr, Integer tos) {
 		this.path.add(new PathEntry(microInstr,tos));
 	}
-	
+
 	/** check that the instruction before the current one did not modify the TOS value */
 	public void checkStableTOS() throws MicrocodeVerificationException {
 		/* Unknown last instr: MAYBE modified TOS */
@@ -102,7 +133,7 @@ public class MicrocodePath implements Serializable {
 		}
 		/* If we have a DUP first, and the next instruction consumes one element without producing
 		 * any, the TOS values isn't modified */
-		if(path.size() >= 3 && 
+		if(path.size() >= 3 &&
 		   path.get(path.size() - 3).getInstruction().opcode == MicrocodeConstants.DUP &&
 		     lastInstr.isStackConsumer() &&
 		   ! lastInstr.isStackProducer()) {
@@ -112,8 +143,8 @@ public class MicrocodePath implements Serializable {
 		System.err.println("[WARNING] "+opName+" : "+
 				           "last instruction maybe modified TOS: "+lastInstr);
 	}
-	
-	public String toString() {
+
+	@Override public String toString() {
 		String s = path.toString();
 		if(hasWait) s+= "[wait]";
 		if(nullPtrCheck) s+= "[check-null-ptr]";
@@ -121,24 +152,21 @@ public class MicrocodePath implements Serializable {
 		if(minMultiplierDelay != Integer.MAX_VALUE) s+= "[multiplier/delay "+minMultiplierDelay+"]";
 		return s;
 	}
-	
+
 	public void setNullPtrCheck() {
 		this.nullPtrCheck = true;
 	}
-	
+
 	public void setArrayBoundCheck() {
 		this.arrayBoundCheck = true;
 	}
-	
+
 	public void setNeedsMultiplier(int delay) {
 		this.minMultiplierDelay = Math.min(minMultiplierDelay, delay);
 	}
-	
+
 	public void setHasWait() {
 		this.hasWait = true;
 	}
-	
-	public Vector<PathEntry> getPath() {
-		return this.path;
-	}
+
 }

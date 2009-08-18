@@ -95,4 +95,20 @@ public class STController extends SimpleHBTask {
 	ShmCtrlVal.set(nCtrlVal);
     }
 
+    /**
+     * Some wrapper methods to enable WCET analysis including cache loading.
+     */
+
+    public void readWrapperWCET() {
+	read();
+    }
+
+    public void executeWrapperWCET() {
+	execute();
+    }
+
+    public void writeWrapperWCET() {
+	write();
+    }
+
 }

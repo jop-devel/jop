@@ -6,106 +6,163 @@ import com.jopdesign.sys.Native;
 import wcet.dsvmfp.model.smo.classification.SMOBinaryClassifierFloat;
 
 public class TestSMOFloat {
-  static int m;
-  static float data_fp[][];
-  static float y_fp[];
-  // TODO
-  static float testdata_fp[][] = new float[m][];
-  static float testlabel_fp[] = new float[m];
+	static int m;
+	static float data_fp[][];
+	static float y_fp[];
+	// TODO
+	static float testdata_fp[][] = new float[m][];
+	static float testlabel_fp[] = new float[m];
 
-  // 0 belongs to positive
-  static int errcnt = 0;
-  static int time = 0;
+	// 0 belongs to positive
+	static int errcnt = 0;
+	static int time = 0;
 
-  // Run this to see the whole program run
-  // Notice that only the deplyyRT() method is RT enabled
-  public static void goAll(){
-	init();
-	deployRT();
-	report();
-  }
-  
-  public static void main(String args[]){
-	  init();
-  }
+	static SMOBinaryClassifierFloat smo = new SMOBinaryClassifierFloat();;
 
-  // non-real time inialization of SVM
-  public static void init() {
-    // DATA
-    // int[][] traindata_fp = { {FP.intToFp(1)}, {FP.intToFp(3)},
-    // {FP.intToFp(5)} };
-    // int[] trainy_fp = { FP.intToFp(-1), FP.intToFp(+1), FP.intToFp(+1) };
-    // int[] testdata_fp = { FP.intToFp(3)};//, FP.intToFp(0) };
-    // new SMOBinaryClassifierFP();
+	// Run this to see the whole program run
+	// Notice that only the deplyyRT() method is RT enabled
+	public static void goAll() {
+		init();
+		deployRT();
+		report();
+	}
 
-    // Training instances
-    // Remember to make same as in dsvm.test.smo.ServerData
-    // Change these files for the four setups
-	  SVMData d = new TrainingData1Float();
-	  data_fp = d.getTrainingData();
-	  y_fp = d.getTrainingLabels();
-	  m = y_fp.length;
-	  
-//    TrainingData1Float.assign(data_fp, y_fp);
-    //TestData2.assign(testdata_fp,testlabel_fp);
-//    dsvmfp.TrainingData2.assign(data_fp, y_fp);
-//    dsvmfp.TestData2.assign(testdata_fp,testlabel_fp);
-//    dsvmfp.TrainingData3.assign(data_fp, y_fp);
-//    dsvmfp.TestData3.assign(testdata_fp,testlabel_fp);
-//    dsvmfp.TrainingData4.assign(data_fp, y_fp);
-//    dsvmfp.TestData4.assign(testdata_fp,testlabel_fp);
+	public static void main(String args[]) {
+		init();
+	}
 
-    SMOBinaryClassifierFloat.setData_fp(data_fp);
-    SMOBinaryClassifierFloat.setY_fp(y_fp);
+	// non-real time inialization of SVM
+	public static void init() {
+		// DATA
+		// int[][] traindata_fp = { {FP.intToFp(1)}, {FP.intToFp(3)},
+		// {FP.intToFp(5)} };
+		// int[] trainy_fp = { FP.intToFp(-1), FP.intToFp(+1), FP.intToFp(+1) };
+		// int[] testdata_fp = { FP.intToFp(3)};//, FP.intToFp(0) };
+		// new SMOBinaryClassifierFP();
 
-    // Train the model prior to deployment
-    SMOBinaryClassifierFloat.mainRoutine();
-  }
+		// Training instances
+		// Remember to make same as in dsvm.test.smo.ServerData
+		// Change these files for the four setups
+		// SVMData d = new TrainingData1Float();
+		// data_fp = d.getTrainingData();
+		// y_fp = d.getTrainingLabels();
+		// m = y_fp.length;
 
-  // Real-time part of SVM
-  // This is the method that is to be called and analyzed from a WCA tool
-  public static void deployRT(){
+		// TrainingData1Float.assign(data_fp, y_fp);
+		// TestData2.assign(testdata_fp,testlabel_fp);
+		// dsvmfp.TrainingData2.assign(data_fp, y_fp);
+		// dsvmfp.TestData2.assign(testdata_fp,testlabel_fp);
+		// dsvmfp.TrainingData3.assign(data_fp, y_fp);
+		// dsvmfp.TestData3.assign(testdata_fp,testlabel_fp);
+		// dsvmfp.TrainingData4.assign(data_fp, y_fp);
+		// dsvmfp.TestData4.assign(testdata_fp,testlabel_fp);
 
+		// Data id = new IrisFlowerData();
+		Data id = new WeatherData();
+		id.toString();
+		float data[][] = id.getData();
+        int[] datacols = new int[] { 0, 1, 2, 3, 4, 5 };
+		data_fp = getDataDim(data, datacols);
+		int targetIndex = 6;
+		float positiveID = 1.0f;
+		y_fp = getTarget(data, targetIndex, positiveID);
+		m = y_fp.length;
 
+		smo.setData_fp(data_fp);
+		smo.setY_fp(y_fp);
 
-    for (int i = 0; i < m; i++) { // @WCA loop=4
+		// Train the model prior to deployment
+		smo.mainRoutine();
+	}
 
+	/**
+	 * Get the data out of the data matrix.
+	 * 
+	 * @param data
+	 *            datamatrix
+	 * @param dims
+	 *            array with indicies of the desired vectors
+	 * @return new datamatrix
+	 */
+	static float[][] getDataDim(float[][] data, int[] dims) {
+		int r = data.length;
+		int c = data[0].length;
+		int newc = dims.length;
+		float[][] newdata = new float[r][newc];
+		for (int i = 0; i < r; i++) {
+			for (int j = 0; j < newc; j++) {
+				newdata[i][j] = data[i][dims[j]];
+			}
+		}
+		return newdata;
+	}
 
-      int starttime = Native.rd(Const.IO_US_CNT);
-      int t = Native.rd(Const.IO_CNT);
-      //System.out.println("---ALIVE1---" + i);
-      //int smores = SMOBinaryClassifierFP.getFunctionOutputTestPointFP(testdata_fp[i]);;
-      float smores = SMOBinaryClassifierFloat.getFunctionOutputTestPointFP(testdata_fp[i]);;
-      //System.out.println("---ALIVE2---" + i);
-      t = Native.rd(Const.IO_CNT) - t;
-      time += Native.rd(Const.IO_US_CNT)-starttime;
-//      System.out.print("classification time cycles:");
-//      System.out.println(t);
-      if(smores<0 && testlabel_fp[i]>=0){
-        errcnt++;
-      }
-      else if(smores >= 0 && testlabel_fp[i]<0){
-        errcnt++;
-      }
-      //System.out.println(FP.fpToStr(SMOBinaryClassifierFP.getFunctionOutputTestPointFP(testdata_fp)));
-    }
-  }
+	/**
+	 * Get the target vector and convert it to a binary target.
+	 * 
+	 * @param data
+	 *            datamatrix
+	 * @param targetdim
+	 *            index of target vector (last index)
+	 * @param positiveClassID
+	 *            id of the positive class, which will be +1 and the rest will
+	 *            be -1
+	 * @return target vector
+	 */
+	static float[] getTarget(float[][] data, int targetdim,
+			float positiveClassID) {
+		int r = data.length;
+		float[] target = new float[r];
+		for (int i = 0; i < r; i++) {
+			if (data[i][targetdim] == positiveClassID) {
+				target[i] = +1.0f;
+			} else {
+				target[i] = -1.0f;
+			}
+		}
+		return target;
+	}
 
+	// Real-time part of SVM
+	// This is the method that is to be called and analyzed from a WCA tool
+	public static void deployRT() {
 
-  // Show testual output from the system (non-real time)
-  public static void report()
-  {
-    System.out.println("---TESTING---");
-    System.out.print("Error cnt:");
-    System.out.println(errcnt);
-    System.out.print("#sv");
-    System.out.println(SMOBinaryClassifierFloat.getSV());
-    System.out.print("total time (classifying):");
-    System.out.print(time);
-    System.out.println(" us");
-    System.out.print("per observation time (classifying):");
-    System.out.print(time/m);
-    System.out.println(" us");
-  }
+		for (int i = 0; i < m; i++) { // @WCA loop=4
+
+			int starttime = Native.rd(Const.IO_US_CNT);
+			int t = Native.rd(Const.IO_CNT);
+			// System.out.println("---ALIVE1---" + i);
+			// int smores =
+			// SMOBinaryClassifierFP.getFunctionOutputTestPointFP(testdata_fp[i]);;
+			float smores = smo.getFunctionOutputTestPointFP(testdata_fp[i]);
+			;
+			// System.out.println("---ALIVE2---" + i);
+			t = Native.rd(Const.IO_CNT) - t;
+			time += Native.rd(Const.IO_US_CNT) - starttime;
+			// System.out.print("classification time cycles:");
+			// System.out.println(t);
+			if (smores < 0 && testlabel_fp[i] >= 0) {
+				errcnt++;
+			} else if (smores >= 0 && testlabel_fp[i] < 0) {
+				errcnt++;
+			}
+			// System.out.println(FP.fpToStr(SMOBinaryClassifierFP.getFunctionOutputTestPointFP(testdata_fp)));
+		}
+	}
+
+	// Show testual output from the system (non-real time)
+	public static void report() {
+		System.out.println("---TESTING---");
+		System.out.print("Error cnt:");
+		System.out.println(errcnt);
+		System.out.print("#sv");
+		System.out.println(smo.getSV());
+		System.out.print("total time (classifying):");
+		System.out.print(time);
+		System.out.println(" us");
+		System.out.print("per observation time (classifying):");
+		System.out.print(time / m);
+		System.out.println(" us");
+	}
 
 }

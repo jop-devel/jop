@@ -23,6 +23,6 @@ public class StaticCacheBuilder extends CacheSimBuilder {
 	public void appendDeclarations(NTASystem system, String NUM_METHODS) { }
 	@Override
 	public long getWaitTime(ProcessorModel proc, ControlFlowGraph cfg,boolean isInvoke) {
-		return proc.getMethodCacheLoadTime(cfg.getNumberOfWords(), isInvoke);
+		return proc.getMethodCacheMissPenalty(cfg.getNumberOfWords(), isInvoke);
 	}
 }

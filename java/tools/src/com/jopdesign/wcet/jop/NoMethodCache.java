@@ -32,10 +32,6 @@ public class NoMethodCache extends MethodCache {
 		return 0;
 	}
 	@Override 
-	public long getMissOnInvokeCost(ProcessorModel proc, ControlFlowGraph invoked) {
-		return 0;
-	}
-	@Override 
 	public long getMissOnReturnCost(ProcessorModel proc, ControlFlowGraph invoker) {
 		return 0;		
 	}

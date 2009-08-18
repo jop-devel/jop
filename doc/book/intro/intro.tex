@@ -54,19 +54,19 @@ prompt that \cmd{javac} is in the path.} a simple \cmd{make} should
 build the tools, the processor, compile the ``Hello World" example,
 configure the FPGA and download the application. The whole build
 process will take a few minutes. After typing
-\begin{verbatim}
+\begin{lstlisting}
     make
-\end{verbatim}
+\end{lstlisting}
 you see a lot of messages from the various tools. However, the last
 lines should be actual messages received from JOP. It should look
 similar to the following:
-\begin{verbatim}
+\begin{lstlisting}
     JOP start V 20080821
     60 MHz, 1024 KB RAM, 1 CPUs
     Hello World from JOP!
 
     JVM exit!
-\end{verbatim}
+\end{lstlisting}
 Note that JOP prints some internal information, such as version and
 memory size, at startup. After that, the message ``Hello World from
 JOP!" can be seen. Our first program runs on JOP!
@@ -77,9 +77,9 @@ and change the output message. The tools and the processor have been
 built already. So we do not need to compile everything from scratch.
 Use the following make target to just compile the Java application
 and download the processor and the application:
-\begin{verbatim}
+\begin{lstlisting}
     make japp
-\end{verbatim}
+\end{lstlisting}
 The compile process should now be faster and the output similar to
 before.
 
@@ -302,38 +302,38 @@ Chapter~\ref{chap:runtime} describes the runtime environment on top
 of JOP, including the definition of a real-time profile for Java and
 the description of the scheduler in Java.
 
+In Chapter~\ref{chap:wcet} worst-case execution time (WCET) analysis
+for JOP is presented. It is shown how the time-predictable bytecode
+instructions form the basis of WCET analysis of Java applications.
+
 Garbage collection (GC) is an important part of the Java technology.
-Even in real-time systems new real-time garbage collectors emerge.
-In Chapter~\ref{chap:rtgc} the formulas to calculate the correct
+Even in real-time systems new real-time garbage collectors emerge. In
+Chapter~\ref{chap:rtgc} the formulas to calculate the correct
 scheduling of the GC thread are given and the implementation of the
 real-time GC for JOP is explained.
 
-In Chapter~\ref{chap:wcet} WCET analysis of the individual Java
-bytecodes is performed. It is shown how these bytecode instruction
-timings form the basis of WCET analysis of Java applications.
-
-JOP uses a simple and efficient system-on-chip interconnection
-called SimpCon to connect the memory controller and peripheral
-devices to the processor pipeline. The definition of SimpCon and the
-rationale behind the SimpCon specification is given in
-Chapter~\ref{chap:simpcon}.
+JOP uses a simple and efficient system-on-chip interconnection called
+SimpCon to connect the memory controller and peripheral devices to
+the processor pipeline. The definition of SimpCon and the rationale
+behind the SimpCon specification is given in
+Chapter~\ref{chap:simpcon}. Based on a SimpCon memory arbiter,
+chip-multiprocessor (CMP) versions of JOP can be configured.
+Chapter~\ref{chap:cmp} gives some background information on the JOP
+CMP system.
 
 %Chapter~\ref{chap:ejip} sketches the implementation of an embedded
 %TCP/IP stack called \code{ejip}.
 
 In Chapter~\ref{chap:results}, JOP is evaluated with respect to size
-and performance. This is followed by a description of some
-commercial real-world applications of JOP.
-
-Other hardware implementations of the JVM are presented in
-Chapter~\ref{chap:related}. Different hardware solutions from both
-academia and industry for accelerating Java in embedded systems are
-analyzed.
+and performance. This is followed by a description of some commercial
+real-world applications of JOP. Other hardware implementations of the
+JVM are presented in Chapter~\ref{chap:related}. Different hardware
+solutions from both academia and industry for accelerating Java in
+embedded systems are analyzed.
 
 Finally, in Chapter~\ref{chap:conclusions}, the work is summarized
 and the major contributions are presented. This chapter concludes
-with directions for future research using JOP and real-time Java.
-
-A more theoretical treatment of the design of JOP can be found in the
-PhD thesis \cite{jop:thesis}, which is also available as book
+with directions for future work using JOP and real-time Java. A more
+theoretical treatment of the design of JOP can be found in the PhD
+thesis \cite{jop:thesis}, which is also available as book
 \cite{jop:thesis:book}.
