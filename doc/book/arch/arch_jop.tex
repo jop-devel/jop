@@ -386,16 +386,14 @@ During the assembly of the JVM, all labels that represent an entry
 point for the bytecode implementation are used to generate the
 translation table. For all bytecodes for which no such label is
 found, i.e.\ there is no implementation in microcode, a
-\emph{not-implemented} address is generated. The instruction
-sequence at this address invokes a static method from a system
-class. This class contains 256 static methods, one for each possible
-bytecode, ordered by the bytecode value. The bytecode is used as the
-index in the method table of this system class. A single empty
-static method consumes three 32-bit words in memory. Therefore, the
-overhead of this special class is 3~KB, which is 9\% of a minimal
-\emph{hello world} program (34~KB memory footprint). As described in
-Section~\ref{sec:hwsw:co}, this feature also allows for the easy
-configuration of resource usage versus performance.
+\emph{not-implemented} address is generated. The instruction sequence
+at this address invokes a static method from a system class. This
+class contains 256 static methods, one for each possible bytecode,
+ordered by the bytecode value. The bytecode is used as the index in
+the method table of this system class. A single empty static method
+consumes three 32-bit words in memory. Therefore, the overhead of
+this special class is 3~KB, which is 9\% of a minimal \emph{hello
+world} program (34~KB memory footprint).
 
 \subsection{Summary}
 
