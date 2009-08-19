@@ -31,6 +31,9 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+use ieee.math_real.log2;
+use ieee.math_real.ceil;
+
 use work.jop_types.all;
 use work.sc_pack.all;
 use work.sc_arbiter_pack.all;
@@ -111,7 +114,7 @@ architecture rtl of jop is
 --
 
 -- TODO -1?
-constant cpu_cnt_width: integer := integer(ceil(log2(real(cpu_cnt-1))));
+constant cpu_cnt_width: integer := integer(ceil(log2(real(cpu_cnt))));
 
 --
 --	components:
@@ -187,7 +190,12 @@ end component;
 --	TM
 --
 	
-	signal exc_tm_rollback: std_logic_vector(0 to cpu_cnt-1); 
+	signal exc_tm_rollback	: std_logic_vector(0 to cpu_cnt-1);
+	signal tm_broadcast		: tm_broadcast_type;
+	
+	signal commit_try		: std_logic_vector(0 to cpu_cnt-1);
+	signal commit_allow		: std_logic_vector(0 to cpu_cnt-1);
+	
 	
 	
 begin
@@ -241,7 +249,7 @@ end process;
 				spm_width => spm_width
 			)
 			port map(clk_int, int_res,
-				sc_tm_out(i), sc_tm_in(i), exc_tm_rollback,
+				sc_tm_out(i), sc_tm_in(i), exc_tm_rollback(i),
 				sc_io_out(i), sc_io_in(i), irq_in(i), 
 				irq_out(i), exc_req(i));
 	end generate;
@@ -252,11 +260,10 @@ end process;
 				clk	=> clk,
 				reset => int_res,
 				
-				commit_out_try => ,
-				commit_in_allow => ,
+				commit_out_try => commit_try(i),
+				commit_in_allow => commit_allow(i),
 			
-				commit_in_address_valid => ,
-				commit_in_address => (),
+				broadcast => tm_broadcast,
 			
 				sc_cpu_out => sc_tm_out(i),  
 				sc_cpu_in => sc_tm_in(i), 
@@ -268,6 +275,17 @@ end process;
 				);
 	end generate;
 
+	cmp_coordinator: entity work.tm_coordinator(rtl)
+	generic map (
+		cpu_cnt => cpu_cnt,
+		cpu_cnt_width => cpu_cnt_width
+		)
+	port map (
+		clk => clk,
+		reset => int_res,
+		commit_try => commit_try,
+		commit_allow => commit_allow
+		);
 			
 	cmp_arbiter: entity work.arbiter
 		generic map(
@@ -276,7 +294,8 @@ end process;
 		)
 		port map(clk_int, int_res,
 			sc_arb_out, sc_arb_in,
-			sc_mem_out, sc_mem_in
+			sc_mem_out, sc_mem_in,
+			tm_broadcast
 			-- Enable for use with Round Robin Arbiter
 			-- sync_out_array(1)
 			);

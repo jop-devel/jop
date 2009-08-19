@@ -54,6 +54,7 @@ package sc_pack is
 		wr			: std_logic;
 		atomic		: std_logic;
 		nc			: std_logic;
+		tm_broadcast	: std_logic;
 	end record;
 
 	type sc_in_type is record

@@ -3,6 +3,8 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 use work.sc_pack.all;
+use work.sc_arbiter_pack.all;
+use work.tm_pack.all;
 
 entity tmif is
 
@@ -26,8 +28,7 @@ port (
 	--
 	--	Commit addresses
 	--
-	commit_in_address_valid	: in std_logic;
-	commit_in_address		: in std_logic_vector(31 downto 0);
+	broadcast				: in tm_broadcast_type;
 
 	--
 	--	Memory IF to cpu
