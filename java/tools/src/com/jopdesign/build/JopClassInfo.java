@@ -34,19 +34,22 @@ import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.*;
 
 /**
+ * Class Struct
+ * <ul>
+ * <li/> 0: instance size (class reference)
+ * <li/> 1: pointer to static primitiv fields (if any)
+ * <li/> 2: GC info field (one bit per field)
+ * <li/> 3: pointer to super class
+ * <li/> 4: pointer to interface table
+ * <li/> 5+: method table, two words per entry,
+ *           class reference (pointer back to class info),
+ *           constant pool (cp),
+ *           optional interface table
+ * </ul>
+ * <p>class variables are collected in one area for easier GC access of the
+ * reference types</p>
+ *
  * @author Flavius, Martin
- * 
- * Class struct:
- * 
- * 0: instance size (class reference) 1: pointer to static primitiv fields (if
- * any) 2: GC info field (one bit per field) 3: pointer to super class 4:
- * pointer to interface table 5+: method table, two words per entry : class
- * reference (pointer back to class info) : constant pool (cp) : optional
- * interface table
- * 
- * class variables are collected in one area for easier GC access of the
- * reference types
- * 
  */
 
 public class JopClassInfo extends ClassInfo implements Serializable {
@@ -128,9 +131,9 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 
 	/**
 	 * Field table
-	 * 
+	 *
 	 * @author Martin
-	 * 
+	 *
 	 */
 	class ClFT implements Serializable {
 		private static final long serialVersionUID = 1L;
@@ -178,9 +181,9 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 	public int methodsAddress;
 	public int cpoolAddress;
 	public int iftableAddress;
-	
+
 	/** Mapping from original constant pool indices to constant pool indices used in the binary */
-	
+
 	private Map<Integer, Integer> cpoolMap = new TreeMap<Integer,Integer>();
 
 	@Override
@@ -200,7 +203,7 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 
 	/**
 	 * A template of the cli type for the factory.
-	 * 
+	 *
 	 * @return
 	 */
 	public static ClassInfo getTemplate() {
@@ -210,7 +213,7 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 	/**
 	 * Constructor is only used by following two factory methods: getTemplate
 	 * for the dispatch of the creation with newClassInfo
-	 * 
+	 *
 	 * @param clazz
 	 * @param ai
 	 */
@@ -274,7 +277,7 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 
 	/**
 	 * Get an IT object.
-	 * 
+	 *
 	 * @return
 	 */
 	public static IT getITObject() {
@@ -296,7 +299,7 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 	}
 
 	public void setStaticAddresses() {
-		
+
 		// the class variables (the static fields) are in a special area
 		staticRefVarAddress = addrRefStatic;
 		staticValueVarAddress = addrValueStatic;
@@ -313,12 +316,12 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 				}
 			}
 		}
-		
+
 	}
 	/**
 	 * Calculate the size of the class info table, adjust the addresses and
 	 * return the next available address. Calculate GC info for the instance.
-	 * 
+	 *
 	 * @param addr
 	 * @return
 	 */
@@ -357,11 +360,11 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 		// constant pool
 		cpoolAddress = addr;
 		((JOPizer) ai).outLinkInfo.println(clazz.getClassName()+" "+methodsAddress+" "+cpoolAddress);
-		
+
 		for(Entry<Integer, Integer> entry : cpoolMap.entrySet()) {
-			((JOPizer) ai).outLinkInfo.println(" -constmap "+entry.getKey()+" "+entry.getValue());			
+			((JOPizer) ai).outLinkInfo.println(" -constmap "+entry.getKey()+" "+entry.getValue());
 		}
-		// System.out.println(clazz.getClassName()+"		
+		// System.out.println(clazz.getClassName()+"
 		// cplen="+clazz.getConstantPool().getLength());
 		// the final size of the cp plus the length field
 		addr += cpoolUsed.size() + 1;
@@ -373,7 +376,7 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 		for (i = 0; i < listIT.size(); i++) {
 			IT it = (IT) listIT.get(i);
 			boolean matchMethod = methods.containsKey(it.meth.methodId);
-			
+
 			boolean matchInterface = implementsInterface(it.meth.getCli().clazz.getClassName());
 			if (matchMethod && matchInterface) {
 				needsInterfaceTable = true;
@@ -693,9 +696,9 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 		}
 		out.println("//");
 		out.println("//\t" + addr + ": " + clazz.getClassName() + " static "
-				+ (ref ? "reference " : " ") + "fields");
+				+ (ref ? "reference " : "") + "fields");
 		out.println("//");
-		
+
 		for (i = 0; i < clft.len; ++i) {
 			if (clft.isStatic[i]) {
 				if (clft.isReference[i] == ref) {
@@ -716,7 +719,7 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 		int i;
 
 		out.println("//");
-		out.println("//\t" + classRefAddress + ": " + clazz.getClassName());
+		out.println("//\t" + classRefAddress + ": " + clazz.getClassName()+" class info");
 		out.println("//");
 		out.println("\t\t" + instSize + ",\t//\tinstance size");
 		for (i = 0; i < clft.len; ++i) {
@@ -783,7 +786,7 @@ public class JopClassInfo extends ClassInfo implements Serializable {
 
 		// constant pool length includes the length field
 		// same is true for the index in the bytecodes:
-		// The lowest constant has indes 1.
+		// The lowest constant has index 1.
 		out.println("\t\t" + (cpoolArry.length + 1)
 				+ ",\t//\tconst pool length");
 		out.println();
