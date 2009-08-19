@@ -384,6 +384,9 @@ System.out.println(mp+" "+pc);
 		mem[addr%MAX_MEM] = data;
 	}
 
+	void invalCache() {
+	}
+	
 	int readOpd16u() {
 
 		int idx = ((cache.bc(pc)<<8) | (cache.bc(pc+1)&0x0ff)) & 0x0ffff;
@@ -1453,6 +1456,7 @@ System.out.println("new heap: "+heap);
 					} else {
 						pc--;	// restart if we don't get the global lock
 					}
+					invalCache();
 					break;
 				case 195 :		// monitorexit
 					sp--;		// we don't use the objref
@@ -1483,7 +1487,7 @@ System.out.println("new heap: "+heap);
 					noim(203);
 					break;
 				case 204 :		// jopsys_inval
-					// ignore cache invalidation here
+					invalCache();
 					break;
 				case 205 :		// resCD
 					noim(205);

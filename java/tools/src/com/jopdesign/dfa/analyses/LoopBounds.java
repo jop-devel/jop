@@ -1621,6 +1621,14 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 				}
 			}
 			out.put(new Location(context.stackPtr-1), new ValueMapping());
+		} else if (methodId.equals("com.jopdesign.sys.Native.condMove(IIZ)I")
+				|| methodId.equals("com.jopdesign.sys.Native.condMoveRef(Ljava/lang/Object;Ljava/lang/Object;Z)Ljava/lang/Object;")) {
+			for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
+				Location l = i.next();
+				if (l.stackLoc < context.stackPtr-3) {
+					out.put(l, in.get(l));
+				}
+			}
 		} else {
 			System.err.println("Unknown native method: "+methodId);
 			System.exit(-1);

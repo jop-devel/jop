@@ -1,7 +1,7 @@
 
 In this chapter we will undertake a short review of the project and
-summarize the contributions. Java for real-time systems is a very new
-and active research area. This chapter offers suggestions for future
+summarize the contributions. Java for real-time systems is a new and
+active research area. This chapter offers suggestions for future
 research, based on the proposed Java processor.
 
 The research contributions made by this work are related to two
@@ -57,18 +57,16 @@ still provides substantial performance gain when compared to a
 solution without an instruction cache.
 
     \item The time-predictable processor described above provides
-        the basis for real-time Java. The issues with standard
-        Java and the Real-Time Specification for Java were
-        analyzed in Chapter~\ref{chap:rtjava}. To enable
-        real-time Java to operate on resource-constrained
-        devices, a simple real-time profile was defined in
-        Section~\ref{sec:rtprof} and implemented in Java on JOP.
-        The beauty of this approach is in implementing functions
-        usually associated with an RTOS in Java. This means that
-        real-time Java is not based on an RTOS, and therefore not
-        restricted to the functionality provided by the RTOS.
-        With JOP, a self-contained real-time system in pure Java
-        becomes possible.
+        the basis for real-time Java. To enable real-time Java to
+        operate on resource-constrained devices, a simple
+        real-time profile was defined in Section~\ref{sec:rtprof}
+        and implemented in Java on JOP. The beauty of this
+        approach is in implementing functions usually associated
+        with an RTOS in Java. This means that real-time Java is
+        not based on an RTOS, and therefore not restricted to the
+        functionality provided by the RTOS. With JOP, a
+        self-contained real-time system in pure Java becomes
+        possible.
 
 The tight integration of the scheduler and the hardware that
 generates schedule events results in low latency and low jitter of
@@ -200,7 +198,7 @@ implemented in an ASIC. Smart sensors and actuators, for example,
 are very sensitive to cost, which is proportional to the die area.
 
 
-\section{Future Research Directions}
+\section{Future Work}
 
 JOP provides a basis for various directions for future research.
 Some suggestions are given below:
@@ -216,16 +214,15 @@ the worst-case memory consumptions of tasks (similar to the WCET
 values), and scheduling the GC so that it can keep up with the
 allocation rate.
 
-    \item[Hardware accelerator:]
-The flexibility of an FPGA implementation of a processor opens up
-new possibilities for hardware accelerators. We have shown in
-Section~\ref{sec:hwsw:co} how the implementation of a bytecode can
-be moved between hardware and software. A further step would be to
-generate an application specific-system in which part of the
-application code is moved to hardware. Ideally, the hardware
-description should be extracted automatically from the Java source.
-Preliminary work in this area, using JOP as its basis, can be found
-in \cite{jop:sac05}.
+    \item[Hardware accelerator:] The flexibility of an FPGA
+        implementation of a processor opens up new possibilities
+        for hardware accelerators. A further step would be to
+        generate an application specific-system in which part of
+        the application code is moved to hardware. Ideally, the
+        hardware description should be extracted automatically
+        from the Java source. Preliminary work in this area,
+        using JOP as its basis, can be found in \cite{jop:sac05,
+        jop:hwmethods}.
 
     \item[Hardware scheduler:]
 In JOP, scheduling and dispatch is done in Java (with some microcode
@@ -234,22 +231,7 @@ overheads can prove to be too high. A scheduler implemented in
 hardware can shorten this time, due to the parallel nature of the
 algorithm.
 
-    \item[Multiprocessor JVM:] In order to generate a small and
-        predictable processor, several advanced and
-        resource-consuming features (such as instruction folding
-        or branch prediction) were omitted from the design. The
-        resulting low resource usage of JOP makes it possible to
-        integrate more than one processor in an FPGA. Since
-        embedded applications are naturally multi-threaded
-        systems, the performance can easily be enhanced using a
-        multi-processor solution. A multi-processor JVM with
-        shared memory offers research possibilities such as:
-        scheduling of Java threads and synchronization between
-        the processors or WCET analysis for the shared memory
-        access.
 
-Initial results on a JOP CMP are described in \cite{jop:dma,
-jop:cmp}.
 
     \item[Instruction cache:]
 The cache solution proposed in Section~\ref{sec:cache} provides
