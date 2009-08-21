@@ -18,7 +18,7 @@ port (
 	reset						: in std_logic;
 
 	commit_try					: in std_logic_vector(0 to cpu_cnt-1);
-	commit_allow				: buffer std_logic_vector(0 to cpu_cnt-1)
+	commit_allow				: out std_logic_vector(0 to cpu_cnt-1)
 	
 	-- TODO
 -- 	commit_in_address_valid		: in std_logic_vector(0 to cpu_cnt-1);
@@ -34,7 +34,8 @@ architecture rtl of tm_coordinator is
 	signal committer			: std_logic_vector(cpu_cnt_width-1 downto 0);
 	signal commit_race_winner	: std_logic_vector(cpu_cnt_width-1 downto 0);
 
-	signal next_commit_allow	: std_logic_vector(0 to cpu_cnt-1);
+	signal commit_allow_internal		: std_logic_vector(0 to cpu_cnt-1);
+	signal next_commit_allow_internal	: std_logic_vector(0 to cpu_cnt-1);
 	signal next_committing		: std_logic;
 	signal committing			: std_logic;
 	
@@ -46,24 +47,27 @@ begin
 		if reset = '1' then
 			committing <= '0';
 			committer <= (others => '0');
-			commit_allow <= (others => '0');
+			commit_allow_internal <= (others => '0');
 		elsif rising_edge(clk) then
 			committing <= next_committing;
 			committer <= next_committer;
-			commit_allow <= next_commit_allow;
+			commit_allow_internal <= next_commit_allow_internal;
 		end if;
 	end process sync;
 	
-	main: process(commit_allow, commit_race_result, commit_race_winner, 
+	-- TODO speed
+	commit_allow <= next_commit_allow_internal;
+	
+	main: process(commit_allow_internal, commit_race_result, commit_race_winner, 
 		commit_try, committer, committing) is
 	begin
 		next_committer <= committer;
-		next_commit_allow <= commit_allow;
+		next_commit_allow_internal <= commit_allow_internal;
 	
 		-- TODO explicit cast
 		if committing = '0' or commit_try(to_integer(ieee.numeric_std.unsigned(committer))) = '0' then
 			next_committer <= commit_race_winner;
-			next_commit_allow <= commit_race_result;
+			next_commit_allow_internal <= commit_race_result;
 		end if;
 		
 		next_committing <= '0';

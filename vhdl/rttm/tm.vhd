@@ -42,9 +42,9 @@ generic (
 port (
 	clk, reset	: in std_logic;
 	from_cpu		: in sc_out_type;
-	to_cpu			: out sc_in_type
---	to_mem			: out sc_out_type;
---	from_mem		: in sc_in_type;
+	to_cpu			: out sc_in_type;
+ 	to_mem			: out sc_out_type;
+ 	from_mem		: in sc_in_type
 
 );
 end tm;
