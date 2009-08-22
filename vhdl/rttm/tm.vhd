@@ -61,7 +61,9 @@ port (
 
 end tm;
 
-architecture rtl of tm is 
+architecture rtl of tm is
+
+	signal tm_rdy_cnt		: unsigned(RDY_CNT_SIZE-1 downto 0); 
 
 	--
 	-- Write buffer
@@ -80,6 +82,8 @@ architecture rtl of tm is
 
 	signal from_cpu_dly: sc_out_type;
 	signal rd_hit: std_logic;
+	signal rd_miss				: std_logic;
+	
 	signal reg_data, save_data: std_logic_vector(31 downto 0);
 	
 	signal write_tags_full: std_logic;
@@ -107,7 +111,9 @@ begin
 	write_buffer_of <= write_tags_full;
 
 
-
+--
+-- Read tag memory
+--
 
 	read_tags_wr <= from_cpu.rd and not from_cpu.nc;
 
@@ -190,26 +196,29 @@ begin
 end process gen_read_tags_addr_sync;
 
 
-
+--
+-- Write buffer
+--
 
 gen_write_buffer_signals: process(clk, reset)
 begin
 
 	if reset='1' then
 
-		to_cpu.rdy_cnt <= "00";
-		rd_hit <= '0';	
+		tm_rdy_cnt <= "00";
+		rd_hit <= '0';
+		rd_miss <= '0';	
 
 	elsif rising_edge(clk) then
 
 
-		to_cpu.rdy_cnt <= "00";
+		tm_rdy_cnt <= "00";
 		rd_hit <= '0';	
 
 		from_cpu_dly <= from_cpu;
 
 		if from_cpu.wr='1' or from_cpu.rd='1' then
-			to_cpu.rdy_cnt <= "01";
+			tm_rdy_cnt <= "01";
 		end if;
 
 		-- write in the next cycle
@@ -225,23 +234,40 @@ begin
 		-- TODO line_addr was already clocked in tag, why is it clocked again?
 		reg_data <= data(to_integer(line_addr));
 		if from_cpu_dly.rd='1' then
+			-- TODO check how fast memory can be
+			rd_miss <= not hit;
+			
 			if hit='1' then
 				rd_hit <= '1'; -- delayed
 			end if;
-			-- TODO no hit 
 		end if;
 
 		if rd_hit='1' then
 			save_data <= reg_data;
 		end if;
-
+		
+		if rd_miss = '1' and from_mem.rdy_cnt = "00" then
+			save_data <= from_mem.rd_data;
+			rd_miss <= '0';
+		end if;
 	end if;
 end process gen_write_buffer_signals;
 
-process (rd_hit, reg_data, save_data)
+gen_rdy_cnt: process(tm_rdy_cnt, from_mem.rdy_cnt) is
 begin
-	-- TODO this is temporal information only
-	if rd_hit='1' then
+	if tm_rdy_cnt > from_mem.rdy_cnt then
+		to_cpu.rdy_cnt <= tm_rdy_cnt;
+	else
+		to_cpu.rdy_cnt <= from_mem.rdy_cnt;
+	end if;
+end process gen_rdy_cnt;
+
+process (rd_hit, reg_data, save_data, rd_miss, from_mem)
+begin
+	-- TODO
+	if rd_miss = '1' then
+		to_cpu.rd_data <= from_mem.rd_data;
+	elsif rd_hit='1' then
 		to_cpu.rd_data <= reg_data;
 	else
 		to_cpu.rd_data <= save_data;
