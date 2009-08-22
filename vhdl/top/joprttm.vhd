@@ -142,11 +142,11 @@ end component;
 --
 --	jopcpu connections
 --
-	signal sc_tm_out		: arb_out_type(0 to cpu_cnt-1);
-	signal sc_tm_in			: arb_in_type(0 to cpu_cnt-1);
+	signal sc_out_tm		: arb_out_type(0 to cpu_cnt-1);
+	signal sc_in_tm			: arb_in_type(0 to cpu_cnt-1);
 	
-	signal sc_arb_out		: arb_out_type(0 to cpu_cnt-1);
-	signal sc_arb_in		: arb_in_type(0 to cpu_cnt-1);
+	signal sc_out_arb		: arb_out_type(0 to cpu_cnt-1);
+	signal sc_in_arb		: arb_in_type(0 to cpu_cnt-1);
 		
 	signal sc_mem_out	: sc_out_type;
 	signal sc_mem_in	: sc_in_type;
@@ -249,7 +249,7 @@ end process;
 				spm_width => spm_width
 			)
 			port map(clk_int, int_res,
-				sc_tm_out(i), sc_tm_in(i), exc_tm_rollback(i),
+				sc_out_tm(i), sc_in_tm(i), exc_tm_rollback(i),
 				sc_io_out(i), sc_io_in(i), irq_in(i), 
 				irq_out(i), exc_req(i));
 	end generate;
@@ -265,11 +265,11 @@ end process;
 			
 				broadcast => tm_broadcast,
 			
-				sc_cpu_out => sc_tm_out(i),  
-				sc_cpu_in => sc_tm_in(i), 
+				sc_out_cpu => sc_out_tm(i),  
+				sc_in_cpu => sc_in_tm(i), 
 			
-				sc_arb_out => sc_arb_out(i),
-				sc_arb_in => sc_arb_in(i),
+				sc_out_arb => sc_out_arb(i),
+				sc_in_arb => sc_in_arb(i),
 			
 				exc_tm_rollback => exc_tm_rollback(i)
 				);
@@ -293,7 +293,7 @@ end process;
 			cpu_cnt => cpu_cnt
 		)
 		port map(clk_int, int_res,
-			sc_arb_out, sc_arb_in,
+			sc_out_arb, sc_in_arb,
 			sc_mem_out, sc_mem_in,
 			tm_broadcast
 			-- Enable for use with Round Robin Arbiter

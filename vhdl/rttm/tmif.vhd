@@ -34,16 +34,16 @@ port (
 	--
 	--	Memory IF to cpu
 	--
-	sc_cpu_out		: in sc_out_type;
-	sc_cpu_in		: out sc_in_type;		
+	sc_out_cpu		: in sc_out_type;
+	sc_in_cpu		: out sc_in_type;		
 	-- memory access types
 	-- TODO more hints about memory access type?
 
 	--
 	--	Memory IF to arbiter
 	--
-	sc_arb_out		: out sc_out_type;
-	sc_arb_in		: in sc_in_type;
+	sc_out_arb		: out sc_out_type;
+	sc_in_arb		: in sc_in_type;
 
 	--
 	--	Rollback exception
@@ -83,25 +83,45 @@ architecture rtl of tmif is
 		
 	signal conflict					: std_logic;
 	
-	-- set synchronously
+	-- set asynchronously
 	signal tm_cmd					: tm_cmd_type;
 	
 	-- TODO
 	--signal tm_cmd_valid				: std_logic;
 	
+	signal start_commit				: std_logic;
+	signal committing				: std_logic;
 	
-	signal commit_finished			: std_logic;
-	
-	signal read_tag_memory_of		: std_logic;
+	signal read_tag_of				: std_logic;
 	signal write_buffer_of			: std_logic;
 
 
-	signal sc_cpu_in_filtered		: sc_in_type;
+	-- filter signals to/from tm module
+	signal sc_out_cpu_filtered		: sc_out_type;
+	
+	signal sc_in_cpu_filtered		: sc_in_type;
+	signal sc_out_arb_filtered		: sc_out_type;
 
 	signal processing_tm_cmd		: std_logic;	
 	signal next_processing_tm_cmd	: std_logic;
 	
 	signal tm_cmd_rdy_cnt			: unsigned(RDY_CNT_SIZE-1 downto 0);
+
+
+
+	--
+	-- MEMORY ACCESS SELECTOR
+	--
+	
+	type memory_access_mode_type is (
+		bypass,
+		transactional,
+		commit
+		);
+		
+	signal memory_access_mode			: memory_access_mode_type;
+
+
 begin
 
 	--
@@ -112,10 +132,16 @@ begin
 	port map (
 		clk => clk,
 		reset => reset,
-		from_cpu => sc_cpu_out,
-		to_cpu => sc_cpu_in_filtered,
-		to_mem => sc_arb_out,
-		from_mem => sc_arb_in
+		from_cpu => sc_out_cpu_filtered,
+		to_cpu => sc_in_cpu_filtered,
+		to_mem => sc_out_arb_filtered,
+		from_mem => sc_in_arb,
+		
+		start_commit => start_commit,
+		committing => committing,
+		
+		read_tag_of => open,
+		write_buffer_of => open
 		);			
 
 	sync: process(reset, clk) is
@@ -135,15 +161,15 @@ begin
 		end if;
 	end process sync;
 	
-	gen_tm_cmd: process (sc_cpu_out) is
+	gen_tm_cmd: process (sc_out_cpu) is
 	begin
 		tm_cmd <= none;
 		
 		-- TODO
-		if sc_cpu_out.wr = '1' then
-			if sc_cpu_out.address = TM_MAGIC then
+		if sc_out_cpu.wr = '1' then
+			if sc_out_cpu.address = TM_MAGIC then
 				tm_cmd <= tm_cmd_type'val(to_integer(unsigned(
-					sc_cpu_out.wr_data(tm_cmd_raw'range))));
+					sc_out_cpu.wr_data(tm_cmd_raw'range))));
 			end if;
 		end if;
 	end process gen_tm_cmd;	
@@ -164,9 +190,6 @@ begin
 		end if;
 	end process gen_rdy_cnt_sel;
 	
-	sc_cpu_in.rdy_cnt <= sc_cpu_in_filtered.rdy_cnt 
-		when next_processing_tm_cmd = '0'
-		else tm_cmd_rdy_cnt;
 
 	
 	nesting_cnt_process: process(nesting_cnt, tm_cmd) is
@@ -181,13 +204,14 @@ begin
 		end case;				
 	end process nesting_cnt_process; 
 
-	-- sets next_state, exc_tm_rollback, tm_cmd_rdy_cnt
+	-- sets next_state, exc_tm_rollback, tm_cmd_rdy_cnt, start_commit
 	state_machine: process(state, tm_cmd, nesting_cnt, commit_in_allow,
-		conflict, write_buffer_of, read_tag_memory_of, commit_finished) is
+		conflict, write_buffer_of, read_tag_of, start_commit, committing) is
 	begin
 		next_state <= state;
 		exc_tm_rollback <= '0';
 		tm_cmd_rdy_cnt <= "00";
+		start_commit <= '0';
 		
 		case state is
 			when no_transaction =>
@@ -213,7 +237,7 @@ begin
 						null;
 				end case;						
 				
-				if read_tag_memory_of = '1' or write_buffer_of = '1' then
+				if read_tag_of = '1' or write_buffer_of = '1' then
 					next_state <= early_commit_wait_token;
 				end if;
 				
@@ -223,24 +247,35 @@ begin
 			when commit_wait_token =>
 				if commit_in_allow = '1' then
 					next_state <= commit;
+					start_commit <= '1';
 				end if;
 			
 				if conflict = '1' then
 					next_state <= rollback;
+					start_commit <= '0';
 				end if;
-			when commit =>	
+			when commit =>
+				
+				-- TODO check condition
+				if start_commit = '0' and committing = '0' then
+					-- TODO which state?
+					next_state <= end_transaction;
+				end if;
+				
 				
 			when early_commit_wait_token =>
 				if commit_in_allow = '1' then
 					next_state <= early_commit;
-					-- TODO start commit
+					start_commit <= '1';
 				end if;
 				
 				if conflict = '1' then
 					next_state <= rollback;
+					start_commit <= '0';
 				end if;
 			when early_commit =>
-				if commit_finished = '1' then
+				-- TODO check condition
+				if start_commit = '0' and committing = '0' then
 					next_state <= early_committed_transaction;
 				end if;
 			when early_committed_transaction =>
@@ -276,5 +311,49 @@ begin
 		state = early_committed_transaction or state = commit
 		-- or state = end_transaction
 		else '0';
+		
+	
+	
+	
+	--
+	-- MEMORY ACCESS SELECTOR
+	--
+
+	-- sets sc_out_cpu_filtered, sc_out_arb, sc_in_cpu
+	-- TODO this is not well thought-out	
+	process(memory_access_mode, next_processing_tm_cmd, processing_tm_cmd,
+		tm_cmd_rdy_cnt,
+		sc_in_cpu_filtered, sc_out_cpu,  
+		sc_out_arb_filtered, sc_in_arb
+		) is
+	begin
+		sc_out_cpu_filtered <= sc_out_cpu;
+		sc_out_arb <= sc_out_cpu;
+		sc_in_cpu <= sc_in_cpu_filtered;
+	
+		case memory_access_mode is
+			when bypass =>				
+				 sc_in_cpu <= sc_in_arb;
+							
+			when transactional =>
+				sc_out_arb.wr <= '0';
+				
+			when commit =>
+				sc_out_arb <= sc_out_arb_filtered;
+		end case;
+		
+		-- overrides when executing TM command
+		
+		if next_processing_tm_cmd = '1' then
+			sc_out_cpu_filtered.wr <= '0';
+			sc_out_arb.wr <= '0';
+		end if;					
+		
+		if processing_tm_cmd = '1' then									
+			sc_in_cpu.rdy_cnt <= tm_cmd_rdy_cnt;
+		end if;		
+	end process; 
+	
+	
 
 end rtl;

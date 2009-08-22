@@ -41,7 +41,8 @@ port (
 	wr: in std_logic;
 	hit: out std_logic;
 	line: out unsigned(way_bits-1 downto 0);
-	newline: out unsigned(way_bits-1 downto 0)
+	newline: out unsigned(way_bits-1 downto 0);
+	full: out std_logic
 );
 end tag;
 
@@ -136,6 +137,7 @@ begin
 		for i in 0 to lines-1 loop
 			tag(i) <= (others => '0');
 		end loop;
+		full <= '0';
 
 	elsif rising_edge(clk) then
 		-- TODO v has to be reset on transaction begin
@@ -148,12 +150,15 @@ begin
 		line_addr <= l;
 
 		-- update tag memory in the next cycle
-		-- TODO overflow
 		if wr_dly='1' then
 			if hit_reg='0' then
 				tag(to_integer(nxt)) <= addr_dly;
 				v(to_integer(nxt)) <= '1';
 				nxt <= nxt + 1;
+				
+				if nxt = (way_bits-1 downto 0 => '1') then
+					full <= '1';
+				end if;  
 			end if;
 		end if;
 

@@ -32,30 +32,46 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 use work.sc_pack.all;
+use work.sc_arbiter_pack.all;
+
 
 entity tm is
 
 generic (
-	addr_width	: integer := 18;	-- address bits of cachable memory
-	way_bits	: integer := 5		-- 2**way_bits is number of entries
+	-- TODO flash has to be .nc to avoid duplicates
+	addr_width		: integer := 18;	-- address bits of cachable memory
+	way_bits		: integer := 5		-- 2**way_bits is number of entries
 );
 port (
-	clk, reset	: in std_logic;
+	clk, reset		: in std_logic;
 	from_cpu		: in sc_out_type;
 	to_cpu			: out sc_in_type;
  	to_mem			: out sc_out_type;
- 	from_mem		: in sc_in_type
+ 	from_mem		: in sc_in_type;
+ 	
+ 	broadcast		: in tm_broadcast_type;
+ 	conflict		: out std_logic;
+ 	
+ 	start_commit	: in std_logic;
+ 	committing		: out std_logic;
 
-);
+	read_tag_of		: out std_logic;
+	write_buffer_of	: out std_logic
+	);
+
 end tm;
 
 architecture rtl of tm is 
 
+	--
+	-- Write buffer
+	--
+	
 	constant lines		: integer := 2**way_bits;
-	constant mem_bits	: integer := SC_ADDR_SIZE-3;	-- should be 20 for 1 MB SRAM
+	-- TODO delete?
+	-- constant mem_bits	: integer := SC_ADDR_SIZE-3;	-- should be 20 for 1 MB SRAM
 
 	signal line_addr, newline: unsigned(way_bits-1 downto 0);
-	-- tag_width can be used to reduce cachable area - saves a lot in the comperators
 
 	type data_array is array (0 to lines-1) of std_logic_vector(31 downto 0);
 	signal data			: data_array;
@@ -65,28 +81,118 @@ architecture rtl of tm is
 	signal from_cpu_dly: sc_out_type;
 	signal rd_hit: std_logic;
 	signal reg_data, save_data: std_logic_vector(31 downto 0);
-
+	
+	signal write_tags_full: std_logic;
+	
+	--
+	-- Read tag memory
+	--
+	
+	signal read_tags_wr			: std_logic;
+	signal read_tags_addr		: std_logic_vector(addr_width-1 downto 0);
+	
+	signal read_tags_hit		: std_logic;
+	signal read_tags_full		: std_logic;
+	
+	signal is_conflict_check	: std_logic;
+	
+	signal broadcast_addr_del	: std_logic_vector(SC_ADDR_SIZE-1 downto 0);
+	signal broadcast_check_del	: std_logic;
+	signal next_broadcast_check_del	: std_logic;
 	
 begin
 
-	tag: entity work.tag
+	-- TODO not an OF yet, but easier to handle
+	read_tag_of <= read_tags_full;
+	write_buffer_of <= write_tags_full;
+
+
+
+
+	read_tags_wr <= from_cpu.rd and not from_cpu.nc;
+
+	read_tags: entity work.tag(rtl)
+	generic map (
+		addr_width => addr_width,
+		way_bits => way_bits
+		)
+	port map (
+		clk => clk,
+		reset => reset,
+		
+		addr => read_tags_addr,
+		wr => read_tags_wr,
+		hit => read_tags_hit,
+		line => open,
+		newline => open,
+		full => read_tags_full
+		); 
+
+
+
+	write_tags: entity work.tag
 		generic map(
-			addr_width => mem_bits,
+			addr_width => addr_width,
 			way_bits => way_bits
 		)
 		port map(
 			clk => clk,
 			reset => reset,
 			
-			addr => from_cpu.address(mem_bits-1 downto 0),
+			addr => from_cpu.address(addr_width-1 downto 0),
 			wr => from_cpu.wr,
 			hit => hit,
 			line => line_addr,
-			newline => newline
+			newline => newline,
+			full => write_tags_full
 		);
+		
+gen_read_tags_addr_async: process(from_cpu, broadcast, broadcast_addr_del, 
+	broadcast_check_del) is
+begin
+	next_broadcast_check_del <= '0';
+
+	if from_cpu.rd = '1' then
+		read_tags_addr <= from_cpu.addr;
+		if broadcast.valid = '1' then
+			next_broadcast_check_del <= '1';
+		end if;
+	else
+		-- TODO e.g. here: use don't care?
+		read_tags_addr <= broadcast.address;
+		is_conflict_check <= broadcast.valid;
+	
+		if broadcast_check_del = '1' then			
+			read_tags_addr <= broadcast_addr_del;
+			is_conflict_check <= '1';
+		end if;							
+		-- TODO make sure conflicts that are detected one cycle later still
+		-- prevent (early) commit
+	end if;	
+end process gen_read_tags_addr_async;
+
+-- TODO this assumes that there are 2 cycles delay 
+-- between successive reads and writes (during commit)
+--
+-- sets conflict 
+gen_read_tags_addr_sync: process(clk, reset) is
+begin
+	if reset = '1' then
+		broadcast_check_del <= '0';
+		
+		conflict <= '0';
+	elsif rising_edge(clk) then
+		broadcast_addr_del <= broadcast.address;
+		broadcast_check_del <= next_broadcast_check_del;
+		
+		conflict <= is_conflict_check and read_tags_hit;
+	end if;
+end process gen_read_tags_addr_sync;
 
 
-process(clk, reset)
+
+
+gen_write_buffer_signals: process(clk, reset)
 begin
 
 	if reset='1' then
@@ -116,6 +222,7 @@ begin
 		end if;
 
 		-- another cycle delay to infer on-chip memory
+		-- TODO line_addr was already clocked in tag, why is it clocked again?
 		reg_data <= data(to_integer(line_addr));
 		if from_cpu_dly.rd='1' then
 			if hit='1' then
@@ -129,10 +236,11 @@ begin
 		end if;
 
 	end if;
-end process;
+end process gen_write_buffer_signals;
 
 process (rd_hit, reg_data, save_data)
 begin
+	-- TODO this is temporal information only
 	if rd_hit='1' then
 		to_cpu.rd_data <= reg_data;
 	else
