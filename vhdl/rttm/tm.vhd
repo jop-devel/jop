@@ -53,7 +53,7 @@ port (
  	conflict		: out std_logic;
  	
  	start_commit	: in std_logic;
- 	committing		: out std_logic;
+ 	committing		: out std_logic; 	
 
 	read_tag_of		: out std_logic;
 	write_buffer_of	: out std_logic
@@ -87,6 +87,13 @@ architecture rtl of tm is
 	signal reg_data, save_data: std_logic_vector(31 downto 0);
 	
 	signal write_tags_full: std_logic;
+	
+	--
+	-- Commit/broadcast logic
+	--
+	
+	signal commit_line			: unsigned(way_bits-1 downto 0);
+	signal commit_wr			: std_logic_vector(31 downto 0);
 	
 	--
 	-- Read tag memory
@@ -232,7 +239,12 @@ begin
 
 		-- another cycle delay to infer on-chip memory
 		-- TODO line_addr was already clocked in tag, why is it clocked again?
-		reg_data <= data(to_integer(line_addr));
+		if committing = '0' then
+			reg_data <= data(to_integer(line_addr));
+		else
+			reg_data <= data(to_integer(commit_line));
+		end if;		
+		
 		if from_cpu_dly.rd='1' then
 			-- TODO check how fast memory can be
 			rd_miss <= not hit;
@@ -273,6 +285,60 @@ begin
 		to_cpu.rd_data <= save_data;
 	end if;
 end process;
+
+
+
+--
+-- Commit
+--
+
+-- sets committing, commit_line, commit_wr
+commit: process(reset, clk) is
+begin
+	if reset = '1' then
+		committing <= '0';
+		
+		commit_wr <= '0';		
+	elsif rising_edge(clk) then
+		commit_wr <= '0';
+	
+		if start_commit = '1' then
+			committing <= '1';
+			commit_line <= (others => '0');
+		end if;
+		
+		-- TODO rdy_cnt = "00"
+		if from_mem.rdy_cnt = "00" and start_commit = '0' then
+			commit_line <= commit_line + 1;
+			commit_wr <= '1';
+		end if;
+		
+		if committing = '1' and commit_line = newline then
+			committing <= '0';
+		end if;
+	end if;
+end process commit;
+
+process(reset, clk) is
+begin
+	if reset = '1' then
+		to_mem <= (
+			(others => '0'),
+			(others => '0'),
+			'0', '0', '0', '0', '0');
+	elsif rising_edge(clk) then
+		to_mem <= (
+			address	=> xxx(commit_line),
+			wr_data	=> reg_data,		
+			rd => '0',
+			wr => commit_wr,
+			atomic => '0',
+			nc => '0',
+			tm_broadcast => '0'
+		);
+	end if;
+end process;
+
 
 end;
 	
