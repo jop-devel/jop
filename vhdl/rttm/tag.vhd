@@ -26,6 +26,7 @@
 --
 --	Tag memory
 --
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -39,10 +40,15 @@ port (
 	clk, reset	: in std_logic;
 	addr: in std_logic_vector(addr_width-1 downto 0);
 	wr: in std_logic;
+	
 	hit: out std_logic;
 	line: out unsigned(way_bits-1 downto 0);
 	newline: out unsigned(way_bits-1 downto 0);
-	full: out std_logic
+			
+	full: out std_logic;
+	
+	shift 			: in std_logic;
+	lowest_addr		: out std_logic_vector(addr_width-1 downto 0)
 );
 end tag;
 
@@ -161,8 +167,15 @@ begin
 				end if;  
 			end if;
 		end if;
-
+		
+		if shift = '1' then
+			for i in 0 to lines-2 loop
+				tag(i) <= tag(i+1);
+			end loop;
+		end if;
 	end if;
 end process;
+
+lowest_addr <= tag(0);
 
 end;

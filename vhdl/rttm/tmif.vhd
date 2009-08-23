@@ -7,6 +7,8 @@ use work.sc_pack.all;
 use work.sc_arbiter_pack.all;
 use work.tm_pack.all;
 
+-- TODO filter flash accesses
+
 entity tmif is
 
 -- generic (
@@ -136,6 +138,9 @@ begin
 		to_cpu => sc_in_cpu_filtered,
 		to_mem => sc_out_arb_filtered,
 		from_mem => sc_in_arb,
+		
+		broadcast => broadcast,
+		conflict => conflict,
 		
 		start_commit => start_commit,
 		committing => committing,

@@ -53,7 +53,7 @@ port (
  	conflict		: out std_logic;
  	
  	start_commit	: in std_logic;
- 	committing		: out std_logic; 	
+ 	committing		: buffer std_logic; -- TODO
 
 	read_tag_of		: out std_logic;
 	write_buffer_of	: out std_logic
@@ -93,7 +93,10 @@ architecture rtl of tm is
 	--
 	
 	signal commit_line			: unsigned(way_bits-1 downto 0);
-	signal commit_wr			: std_logic_vector(31 downto 0);
+	signal next_commit_wr		: std_logic;
+	signal commit_wr			: std_logic;
+	
+	signal commit_addr			: std_logic_vector(addr_width-1 downto 0);
 	
 	--
 	-- Read tag memory
@@ -138,7 +141,10 @@ begin
 		hit => read_tags_hit,
 		line => open,
 		newline => open,
-		full => read_tags_full
+		full => read_tags_full,
+		
+		shift => '0',
+		lowest_addr => open
 		); 
 
 
@@ -157,7 +163,10 @@ begin
 			hit => hit,
 			line => line_addr,
 			newline => newline,
-			full => write_tags_full
+			full => write_tags_full,
+			
+			shift => next_commit_wr,
+			lowest_addr => commit_addr
 		);
 		
 gen_read_tags_addr_async: process(from_cpu, broadcast, broadcast_addr_del, 
@@ -166,17 +175,17 @@ begin
 	next_broadcast_check_del <= '0';
 
 	if from_cpu.rd = '1' then
-		read_tags_addr <= from_cpu.addr;
+		read_tags_addr <= from_cpu.address(addr_width-1 downto 0);
 		if broadcast.valid = '1' then
 			next_broadcast_check_del <= '1';
 		end if;
 	else
 		-- TODO e.g. here: use don't care?
-		read_tags_addr <= broadcast.address;
+		read_tags_addr <= broadcast.address(addr_width-1 downto 0);
 		is_conflict_check <= broadcast.valid;
 	
 		if broadcast_check_del = '1' then			
-			read_tags_addr <= broadcast_addr_del;
+			read_tags_addr <= broadcast_addr_del(addr_width-1 downto 0);
 			is_conflict_check <= '1';
 		end if;							
 		-- TODO make sure conflicts that are detected one cycle later still
@@ -319,6 +328,8 @@ begin
 	end if;
 end process commit;
 
+next_commit_wr <= '1' when from_mem.rdy_cnt = "00" and start_commit = '0' else '0';
+
 process(reset, clk) is
 begin
 	if reset = '1' then
@@ -328,7 +339,7 @@ begin
 			'0', '0', '0', '0', '0');
 	elsif rising_edge(clk) then
 		to_mem <= (
-			address	=> xxx(commit_line),
+			address	=> (SC_ADDR_SIZE-1 downto addr_width => '0') & commit_addr,
 			wr_data	=> reg_data,		
 			rd => '0',
 			wr => commit_wr,
