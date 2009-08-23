@@ -85,6 +85,7 @@ port (
 	bsy			: in std_logic;
 	din			: in std_logic_vector(width-1 downto 0);
 	ext_addr	: out std_logic_vector(EXTA_WIDTH-1 downto 0);
+	mem_type	: out std_logic_vector(1 downto 0);
 	rd, wr		: out std_logic;
 
 -- jbc connections
@@ -209,6 +210,7 @@ port (
 	jbr			: out std_logic;
 
 	ext_addr	: out std_logic_vector(EXTA_WIDTH-1 downto 0);
+	mem_type	: out std_logic_vector(1 downto 0);
 	rd, wr		: out std_logic;
 
 	dir			: out std_logic_vector(ram_width-1 downto 0);
@@ -316,7 +318,7 @@ begin
 	cmp_dec: decode generic map (i_width)
 		port map (clk, reset, instr, stk_zf, stk_nf, stk_eq, stk_lt,
 			br, jbr,
-			ext_addr, rd, wr,
+			ext_addr, mem_type, rd, wr,
 			dir,
 			sel_sub, sel_amux, ena_a,
 			sel_bmux, sel_log, sel_shf, sel_lmux, sel_imux, sel_rmux, sel_smux,

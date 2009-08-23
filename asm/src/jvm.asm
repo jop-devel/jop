@@ -134,6 +134,7 @@
 //	... no comments ...
 //	2009-06-17	MS: Enable conditional move again
 //  2009-06-26  WP: fixing invokesuper
+//	2009-08-23	MS: start with typed memory access for data caches
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -143,7 +144,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20090626
+version		= 20090823
 
 //
 //	start of stack area in the on-chip RAM

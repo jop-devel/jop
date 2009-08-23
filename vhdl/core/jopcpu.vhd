@@ -84,6 +84,7 @@ architecture rtl of jopcpu is
 	signal stack_nos		: std_logic_vector(31 downto 0);
 	signal rd, wr			: std_logic;
 	signal ext_addr			: std_logic_vector(EXTA_WIDTH-1 downto 0);
+	signal mem_type			: std_logic_vector(1 downto 0);
 	signal stack_din		: std_logic_vector(31 downto 0);
 
 -- extension/mem interface
@@ -125,7 +126,7 @@ begin
 		generic map(jpc_width)
 		port map (clk, reset,
 			bsy,
-			stack_din, ext_addr,
+			stack_din, ext_addr, mem_type,
 			rd, wr,
 			jbc_addr, jbc_data,
 			irq_in, irq_out, sp_ov,
@@ -142,6 +143,7 @@ begin
 			bin => stack_nos,
 
 			ext_addr => ext_addr,
+			mem_type => mem_type,
 			rd => rd,
 			wr => wr,
 			bsy => bsy,
