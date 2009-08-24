@@ -204,8 +204,8 @@ filled with zeros -- This will change with the GC}
 \footnotetext[209]{The native instructions \codefoot{jopsys\_rd} and
 \codefoot{jopsys\_wr} are alias to the \codefoot{jopsys\_rdmem} and
 \codefoot{jopsys\_wrmem} instructions just for compatibility to
-existing Java code. IO devices are now memory mapped. In the case
-for simple IO devices there are no wait states and the exact values
+existing Java code. I/O devices are now memory mapped. In the case
+for simple I/O devices there are no wait states and the exact values
 are 4 and 5 cycles respective.}
 
 %14+r+n*(23+w)
@@ -224,8 +224,8 @@ $n$ is the number of words transferred.}
     \end{array} \right. )$.
 $n$ is the number of words transferred.}
 
-\footnotetext[240]{\emph{Is the interrupt and the exception still a
-bytecode or is it now inserted just as microcode address?}}
+%\footnotetext[240]{\emph{Is the interrupt and the exception still a
+%bytecode or is it now inserted just as microcode address?}}
 
 
 \subsection*{Memory Timing}
@@ -233,17 +233,17 @@ bytecode or is it now inserted just as microcode address?}}
 The external memory timing is defined in the top level VHDL file
 (e.g.\ \code{jopcyc.vhd}) with \code{ram\_cnt} for the number of
 cycles for a read and write access. At the moment there is no
-difference for a read and write access. For the 100MHz JOP with 15ns
-SRAMs this access time is two cycles (\code{ram\_cnt}=2, 20ns).
-Therefore the wait state $n_{ws}$ is 1 (\code{ram\_cnt-1}).
+difference for a read and write access. For the 100~MHz JOP with
+15~ns SRAMs this access time is two cycles (\code{ram\_cnt}=2,
+20~ns). Therefore the wait state $n_{ws}$ is 1 (\code{ram\_cnt-1}).
 %
 A basic memory read in microcode is as follows:
-\begin{verbatim}
+\begin{lstlisting}
     stmra    // start read with address store
     wait     // fill the pipeline with two
     wait     // wait instructions
     ldmrd    // push read result on TOS
-\end{verbatim}
+\end{lstlisting}
 %
 In this sequence the \emph{last} \code{wait} executes for $1+n_{ws}$
 cycles. Therefore the whole read sequence takes $4+n_{ws}$ cycles.
@@ -251,12 +251,12 @@ For the example with \code{ram\_cnt}=2 this basic memory read takes
 5 cycles.
 
 A memory write in microcode is as follows:
-\begin{verbatim}
+\begin{lstlisting}
     stmwa    // store address
     stmwd    // store data and start the write
     wait     // fill the pipeline with wait
     wait     // wait for the memory ready
-\end{verbatim}
+\end{lstlisting}
 The last wait again executes for $1+n_{ws}$ cycles and the basic
 write takes $4+n_{ws}$ cycles. For the native bytecode \code
 {jopsys\_wrmem} an additional \code{nop} instruction for the
@@ -278,13 +278,13 @@ exact value is given in the footnote.
 
 \subsection*{Instruction Timing}
 
-The bytecodes that access memory are indicated by an $r$ for a
-memory read and an $w$ for a memory write at the cycles column ($r$
-and $w$ are the additional wait states). The wait cycles for the
-memory access have to be added to the execution time. These two
-values are implementation dependent (clock frequency versus RAM
-access time, data bus width); for the Cyclone EP1C6 board with 15ns
-SRAMs and 100MHz clock frequency these values are both 1 cycle
+The bytecodes that access memory are indicated by an $r$ for a memory
+read and an $w$ for a memory write at the cycles column ($r$ and $w$
+are the additional wait states). The wait cycles for the memory
+access have to be added to the execution time. These two values are
+implementation dependent (clock frequency versus RAM access time,
+data bus width); for the Cyclone EP1C6 board with 15~ns SRAMs and
+100~MHz clock frequency these values are both 1 cycle
 (\code{ram\_cnt}-1).
 
 For some bytecodes, part of the memory latency can be hidden by
@@ -295,32 +295,35 @@ subtraction of the saved cycles is given in the footnote.
 
 \subsubsection*{Cache Load}
 
-For the method cache load the cache wait state $c_{ws}$ is:
-\begin{equation*}
-    c_{ws} =
-    \left\{\begin{array}{r@{\quad:\quad}l}
-    r_{ws}-1 & r_{ws}>1 \\
-    0   & r_{ws}\le1
-    \end{array} \right.
-\end{equation*}
-
-On a method invoke or return the bytecode has to be loaded into the
-cache on a cache miss. The load time $l$ is:
-\[
-    l =
-    \left\{\begin{array}{r@{\quad:\quad}l}
-    6+(n+1)(2+c_{ws}) & \mbox{cache miss} \\
-    4   & \mbox{cach hit}
-    \end{array} \right.
-\]
-with $n$ as the length of the method in number of 32-bit words. For
-short methods the load time of the method on a cache miss, or part
-of it, is hidden by microcode execution. The exact value is given in
-the footnote.
 
 % We count the hidden cycles in the same way as for a read or write:
 %   the instructions between stbcr and the first wait
 %
+
+Memory access time also determines the cache load time on a miss. For
+the current implementation the cache load time is calculated as
+follows: the wait state $c_{ws}$ for a single word cache load is:
+\begin{equation*}
+    c_{ws} =
+    \left\{\begin{array}{r@{\quad:\quad}l}
+    r_{ws} & r_{ws}>1 \\
+    1   & r_{ws}\le1
+    \end{array} \right.
+\end{equation*}
+%
+On a method invoke or return, the respective method has to be loaded
+into the cache on a cache miss. The load time $l$ is:
+\[
+    l =
+    \left\{\begin{array}{r@{\quad:\quad}l}
+    6+(n+1)(1+c_{ws}) & \mbox{cache miss} \\
+    4   & \mbox{cache hit}
+    \end{array} \right.
+\]
+where $n$ is the size of the method in number of 32-bit words. For
+short methods, the load time of the method on a cache miss, or part
+of it, is hidden by microcode execution. The exact value is given in
+the footnote.
 
 \subsubsection*{lastore}
 
@@ -332,10 +335,10 @@ the footnote.
     \end{array} \right.
 \end{equation*}
 
-\subsubsection*{get/putfield/ref/long}
-
-TODO: add different values for 32-bit, 64-bit and reference type.
-
-TODO: add invokesuper - a special version of invokespecial
+%\subsubsection*{get/putfield/ref/long}
+%
+%TODO: add different values for 32-bit, 64-bit and reference type.
+%
+%TODO: add invokesuper - a special version of invokespecial
 
 %\end{document}

@@ -2,81 +2,27 @@
 
 Start 130h counting down from 14.9.2008
 
-Count: 75h 15.6. Ack.
+Restrict to 40h from 11.8.09 (other count was 75h)
+
+Count: 65h 18.8. first edition submitted!!!
 
 
-1.6. SimpCon 17 pages corrected in 2 hours
+New count: 30h
 
-31.5./1.6. 14 new hwo pages in 2.5 hours, 6 new interrupt handler
-pages in 2 hours
-
-22 pages in three hours! (many removed, but with graphics changes)
-
-25 pages (with remove) in 2.5 hours.
-
-40 pages (RTGC) in 3 hours.
-
-6 pages including new figures in 3.5 hours :-(
 
 \section{TODO Handbook}
 
 \begin{itemize}
-  \item Green book corrections of
-  \begin{itemize}
-    \item Chapter~11
-    \item Chapter~12
-  \end{itemize}
-  \item Chapter order? WCET before RTGC?
-    \item Figure PDF check (Done in Runtime, RTGC, WCET,
-        Low-level IO, SimpCon)
-    \item check quality of pictures (base station) on printout
-    \item Update Results section (and decide on a different name)
-    \item Derived work: Flavius BlueJEP, Christof, Dresden! -- in
-        related work or usage of JOP in academia in Evaluation
-    \item Figure from Slides on configuration (FPGA + serial/USB
-    channel)
-    \item Index
-    \item Cover and back cover including text on Martin Schoeberl
-    \item A list of extended bytecodes around
-        Section~\label{subsec:flex:bc} -- see also nice listing
-        in Beneidkt's thesis (Listing 3.2).
-    \item scheduler code into the Runtime section
-    \item check line width for Visio graphics (HW pipeline
-        stages, heap layout in GC section)
-    \item A description (with code example) in the GC section how
-        to start the parallel GC.
-    \item Related Work
-    \begin{itemize}
-        \item Cut it down
-        \item Add jHISC, jamuth
-        \item Add derived work (again)
-    \end{itemize}
+    \item Cover: Blue boxes, better test, better formatting,
+        smaller author on binding
+    \item Cover and back cover including text on Martin
+        Schoeberl\\
+        MS is the main devel. of JOP, SCJ, Position (Ass. Prof
+    TU/DTU)
 \end{itemize}
 
-\subsection{Minor Change Ideas}
 
-\begin{itemize}
-  \item Add references to the work that is only described in the
-      thesis.
-\end{itemize}
 
-\subsection{Editorial Stuff}
-
-\begin{itemize}
-  \item \textbf{change all units in tables to (x)!}
-  \item change all IO to I/O
-  \item check java* fonts -- has been 9pt for the green book
-  \item check figure sizes for the orange book size
-  \item check figure placements
-  \item use same listing environment (Java)
-  \item unbounded vs. unbound in the whole text
-  \item removed 'proposed'
-  \item the WCET analysis -- WCET analysis (for all analysis)
-  \item missing commas
-  \item adjective 'ly'
-  \item articles (the, a)
-  \item compatible \emph{with} and compare \emph{with}
-\end{itemize}
 
 
 \chapter{DONE}
@@ -94,6 +40,8 @@ pages in 2 hours
     \item Chapter~8
     \item Chapter~9
     \item Chapter~10
+    \item Chapter~11
+    \item Chapter~12
     \begin{itemize}
       \item Some text from Chapter~RT Java into the
           embedded section of Chapter~\ref{chap:java},
@@ -123,6 +71,29 @@ pages in 2 hours
     \end{itemize}
     \item IFAC paper into application section
     \item Acknowledgements
+    \item Related Work
+    \begin{itemize}
+        \item Cut it down
+        \item Add jHISC, jamuth
+        \item Add derived work (again)
+    \end{itemize}
+  \item Chapter order? WCET before RTGC?
+    \item Figure PDF check (Done in Runtime, RTGC, WCET,
+        Low-level IO, SimpCon)
+    \item check quality of pictures (base station) on printout
+    \item Update Results section (and decide on a different name)
+  \item \textbf{change all units in tables to (x)!}
+    \item check line width for Visio graphics (HW pipeline
+        stages, heap layout in GC section)
+  \item change all IO to I/O
+  \item check java* fonts -- has been 9pt for the green book
+  \item check figure sizes for the orange book size
+  \item check figure placements
+  \item use same listing environment (Java)
+  \item unbounded vs. unbound in the whole text
+  \item remove 'proposed'
+  \item the WCET analysis -- WCET analysis (for all analysis)
+    \item Foreword
 \end{itemize}
 
 \chapter{TODO for the 2nd Edition}
@@ -194,7 +165,37 @@ pages in 2 hours
         \item micro benchmarks? Example in jhal paper.
         \item comparison with picoJava from EURASIP paper?
     \end{itemize}
+  \item WCET timings for get/putfield/ref/long
+    \item Derived work: Flavius BlueJEP, Christof, Dresden! -- in
+        related work or usage of JOP in academia in Evaluation
+    \item Figure from Slides on configuration (FPGA + serial/USB
+        channel)
+    \item A list of extended bytecodes around
+        Section~\label{subsec:flex:bc} -- see also nice listing
+        in Beneidkt's thesis (Listing 3.2).
+    \item scheduler code into the Runtime section
+    \item A description (with code example) in the GC section how
+        to start the parallel GC.
+    \item Printout some chapters and read them
+    \item Index
 \end{itemize}
+
+\subsection{Minor Change Ideas}
+
+\begin{itemize}
+  \item Add references to the work that is only described in the
+      thesis.
+\end{itemize}
+
+\subsection{Editorial Stuff}
+
+\begin{itemize}
+  \item missing commas
+  \item adjective 'ly'
+  \item articles (the, a)
+  \item compatible \emph{with} and compare \emph{with}
+\end{itemize}
+
 
 \section{Additional Sections}
 

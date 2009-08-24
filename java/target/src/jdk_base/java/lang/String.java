@@ -150,13 +150,12 @@ public final class String implements CharSequence {
 			throw new UnsupportedEncodingException();
 
 		if (offset < 0)
-			throw new StringIndexOutOfBoundsException("offset: " + offset);
+			throw new StringIndexOutOfBoundsException();
 		if (count < 0)
-			throw new StringIndexOutOfBoundsException("count: " + count);
+			throw new StringIndexOutOfBoundsException();
 		// equivalent to: offset + count < 0 || offset + count > data.length
 		if (data.length - offset < count)
-			throw new StringIndexOutOfBoundsException("offset + count: "
-					+ (offset + count));
+			throw new StringIndexOutOfBoundsException();
 
 		char[] cbuf = new char[count];
 		for (int i = 0; i < count; i++) {
@@ -235,13 +234,12 @@ public final class String implements CharSequence {
 			throws IndexOutOfBoundsException {
 
 		if (offset < 0)
-			throw new StringIndexOutOfBoundsException("offset: " + offset);
+			throw new StringIndexOutOfBoundsException();
 		if (count < 0)
-			throw new StringIndexOutOfBoundsException("count: " + count);
+			throw new StringIndexOutOfBoundsException();
 		// equivalent to: offset + count < 0 || offset + count > data.length
 		if (data.length - offset < count)
-			throw new StringIndexOutOfBoundsException("offset + count: "
-					+ (offset + count));
+			throw new StringIndexOutOfBoundsException();
 		value = new char[count];
 		// VMSystem.arraycopy(data, offset, value, 0, count);
 		//System.out.println("dbg: String constructor");
