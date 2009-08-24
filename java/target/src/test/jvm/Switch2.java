@@ -22,7 +22,7 @@ package jvm;
 
 public class Switch2  extends TestCase{
 
-	public String getName() {
+	public String toString() {
 		return "Switch2";
 	}
 	

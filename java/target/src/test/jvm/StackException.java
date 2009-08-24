@@ -22,7 +22,7 @@ package jvm;
 
 public class StackException extends TestCase {
 	
-	public String getName() {
+	public String toString() {
 		return "Except";
 	}
 	

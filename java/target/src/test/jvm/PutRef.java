@@ -29,7 +29,7 @@ public class PutRef extends TestCase {
 	static PutRef sref;
 	PutRef refa[];
 	
-	public String getName() {
+	public String toString() {
 		return "PutRef";
 	}
 	

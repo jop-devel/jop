@@ -25,7 +25,7 @@ public class Ifacmp extends TestCase {
 	static class A {}
 	static class B {}
 	
-	public String getName() {
+	public String toString() {
 		return "Ifacmp";
 	}
 	

@@ -50,7 +50,7 @@ public class ArrayTest2  extends TestCase {
 									}
 	
 	
-	public String getName() {
+	public String toString() {
 		return "ArrayTest2";
 	}
 	

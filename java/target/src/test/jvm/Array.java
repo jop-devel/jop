@@ -23,7 +23,7 @@ package jvm;
 
 public class Array extends TestCase {
 
-	public String getName() {
+	public String toString() {
 		return "Array";
 	}
 

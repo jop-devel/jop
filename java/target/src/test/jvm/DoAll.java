@@ -72,7 +72,7 @@ public class DoAll {
 		};
 		
 		for (int i=0; i<tc.length; ++i) {
-			System.out.print(tc[i].getName());
+			System.out.print(tc[i].toString());
 			if (tc[i].test()) {
 				System.out.println(" ok");
 			} else {

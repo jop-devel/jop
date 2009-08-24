@@ -24,7 +24,7 @@ import jvm.TestCase;
 
 public class HashCode extends TestCase {
 
-	public String getName() {
+	public String toString() {
 		return "HashCode";
 	}
 

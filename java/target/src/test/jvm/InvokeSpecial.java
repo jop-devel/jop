@@ -28,7 +28,7 @@ import jvm.TestCase;
  */
 public class InvokeSpecial extends TestCase {
 	
-    public String getName() {
+    public String toString() {
 	return "Invokespecial";
     }
 	
