@@ -35,7 +35,8 @@ public class Instruction implements Serializable {
 	public boolean isJmp;
 	StackType sType;
 
-	final static int INSTLEN = 16;
+	/** Length of instruction without opd and nxt */
+	final static int INSTLEN = 8;
 
 	private Instruction(String s, int oc, int ops, boolean jp, StackType st) {
 		name = s;
@@ -186,11 +187,9 @@ public class Instruction implements Serializable {
 			Instruction ins = ia[i];
 
 			System.out.print("\t\t\twhen \"");
-			if (ins.hasOpd) {
-				System.out.print(Jopa.bin(ins.opcode>>>5, 3));
-				System.out.print("-----");
-			} else {
-				System.out.print(Jopa.bin(ins.opcode, 8));
+			System.out.print(Jopa.bin(ins.opcode>>>ins.opdSize, INSTLEN-ins.opdSize));
+			for (int j=0; j<ins.opdSize; ++j) {
+				System.out.print("-");
 			}
 			System.out.print("\" =>\t\t\t\t-- ");
 			System.out.print(ins.name);
@@ -205,11 +204,9 @@ public class Instruction implements Serializable {
 
 			System.out.print(ins.name);
 			System.out.print(";;{");
-			if (ins.hasOpd) {
-				System.out.print(Jopa.bin(ins.opcode>>>5, 3));
-				System.out.print("-----");
-			} else {
-				System.out.print(Jopa.bin(ins.opcode, 8));
+			System.out.print(Jopa.bin(ins.opcode>>>ins.opdSize, INSTLEN-ins.opdSize));
+			for (int j=0; j<ins.opdSize; ++j) {
+				System.out.print("-");
 			}
 			System.out.println("}");
 		}
@@ -221,8 +218,7 @@ public class Instruction implements Serializable {
 		for(int i = 0; i < 256; i++) table[i] = null;
 		for (int i=0; i<ia.length; ++i) {
 			Instruction ins = ia[i];
-			int up = 1;
-			if(ins.hasOpd) up = (1<<5);
+			int up = 1<<ins.opdSize;
 			for(int j = 0; j < up; j++) {
 					int code = ins.opcode | j;
 					if(table[code] != null) {
@@ -238,7 +234,7 @@ public class Instruction implements Serializable {
 			else {
 				Instruction ins = table[i];
 				System.out.print(ins);
-				if(ins.hasOpd) System.out.print(" "+(i&((1<<5)-1)));
+				if(ins.opdSize!=0) System.out.print(" "+(i&((1<<ins.opdSize)-1)));
 				if(ins.isStackConsumer()) System.out.print(" [-]");
 				else if(ins.isStackProducer()) System.out.print(" [+]");				
 			}
@@ -258,7 +254,7 @@ public class Instruction implements Serializable {
 									i.isStackConsumer() 
 									  ? "consumer"
 									  : (i.isStackProducer() ? "producer" : "nostack"),
-									i.hasOpd ? "opd " : "",
+									i.opdSize!=0 ? "opd MS: not to confuse it with opd in mc" : "",
 									i.isJmp  ? "jmp " : ""));
 		}
 		sb.append("};");				

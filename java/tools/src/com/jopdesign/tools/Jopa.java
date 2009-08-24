@@ -49,7 +49,8 @@ public class Jopa {
 
 	private String fname;
 	static final int ADDRBITS = 11;
-	static final int DATABITS = 10;
+	/** length of microcode instruction including nxt and opd */	
+	static final int DATABITS = Instruction.INSTLEN+2;
 //	static final int BRBITS = 10;
 	static final int BRBITS = ADDRBITS;
 	static final int OPDBITS = 5;
@@ -59,6 +60,7 @@ public class Jopa {
 	static final int ROM_LEN = 1<<ADDRBITS;
 	private String srcDir;
 	private String dstDir;
+	private boolean error;
 
 	public Jopa(String fn) {
 		this(fn,System.getProperty("user.dir"),System.getProperty("user.dir"));
@@ -90,6 +92,7 @@ public class Jopa {
 	}
 	void error(StreamTokenizer in, String s) {
 		System.out.println((in.lineno()-1)+" error: "+s);
+		error = true;
 	}
 
 	private StreamTokenizer getSt() {
@@ -147,7 +150,7 @@ public class Jopa {
 		public String toString() {
 			StringBuffer sb = new StringBuffer();
 			sb.append(instr.name);
-			if(instr.hasOpd) {
+			if(instr.opdSize!=0) {
 				sb.append(' '); 
 				if(symVal != null) { sb.append(symVal); }
 				else               { sb.append(special); sb.append(" / "); sb.append(intVal); }
@@ -369,7 +372,7 @@ public class Jopa {
 			line += "\n";
 			line += "begin\n";
 			line += "\n";
-			line += "\t[0..1ff] : 080;	-- nop\n\n";
+			line += "\t[0..1ff] : 080;	-- nop TODO: new instruction\n\n";
 
 			rom.write( line );
 
@@ -451,7 +454,7 @@ public class Jopa {
 //
 					int opcode = l.instr.opcode;
 
-					if (l.instr.hasOpd) {
+					if (l.instr.opdSize!=0) {
 						int opVal = 0;
 						if (l.symVal!=null) {
 							Integer i = (Integer) symMap.get(l.symVal);
@@ -808,5 +811,8 @@ public class Jopa {
 		Jopa j = new Jopa(args);
 		j.pass1();
 		j.pass2();
+		if (j.error) {
+			throw new Error("Errors in assembler file!");
+		}
 	}
 }
