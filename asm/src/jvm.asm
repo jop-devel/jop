@@ -544,9 +544,224 @@ cpux_boot:
 			bnz	invoke_main	// simulate invokestatic
 			nop
 			nop
+
 ///////////////////////////////////////////////////////////////////////////
 //
 //	begin of jvm code
+//
+///////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////
+//
+//	some special instructions that use invoke
+//
+///////////////////////////////////////////////////////////////////////////
+
+//
+//	call com.jopdesign.sys.JMV.fxxx(int constant) for not implemented  byte codes.
+//		... JVM in Java!
+//		with constant on stack
+//
+
+new:
+anewarray:
+checkcast:
+instanceof:
+
+//
+//	find address for JVM function
+//
+			ldjpc
+			ldi	1
+			sub
+			stjpc				// get last byte code
+			nop					// ???
+			nop					// one more now (2004-04-06) ?
+			ldm	jjp
+			nop	opd
+			ld_opd_8u
+			ldi	255
+			and
+			dup
+			add					// *2
+			add					// jjp+2*bc
+			stm	a				// save
+
+//
+//	get constant
+//
+			ldm	cp opd
+			nop	opd
+			ld_opd_16u
+			add
+
+			stmra				// read ext. mem, mem_bsy comes one cycle later
+			wait
+			wait
+			ldmrd		 		// read ext. mem
+
+			ldm	a				// restore mp
+
+//
+//	invoke JVM.fxxx(int cons)
+//
+			ldi	1
+			nop
+			bnz	invoke
+			nop
+			nop
+
+
+newarray:
+			nop opd
+			ld_opd_8u
+			stm a
+			ldjpc
+			ldi	2
+			sub
+			stjpc				// get last byte code
+			nop					// ???
+			nop					// one more now (2004-04-06) ?
+			ldm	a
+			ldm	jjp
+			nop	opd
+			ld_opd_8u
+			ldi	255 
+			and opd				// remove type info
+			dup
+			add					// *2
+			add					// jjp+2*bc
+
+// invoke JVM.fxxx();
+			ldi	1
+			nop
+			bnz	invoke			// simulate invokestatic with ptr to meth. str. on stack
+			nop
+			nop
+
+//
+//	call com.jopdesign.sys.JMV.fxxx(int index) for not implemented  byte codes.
+//		... JVM in Java!
+//		with index into constant pool on stack
+//
+
+putfield_ref:
+putstatic_ref:
+
+//
+//	find address for JVM function
+//
+			ldjpc
+			ldi	1
+			sub
+			stjpc				// get last byte code
+			nop					// ???
+			nop					// one more now (2004-04-06) ?
+			ldm	jjp
+			nop	opd
+			ld_opd_8u
+			ldi	255
+			and
+			dup
+			add					// *2
+			add					// jjp+2*bc
+			stm	a				// save
+
+//
+//	get index
+//
+			nop	opd
+			nop	opd
+			ld_opd_16u
+
+			ldm	a				// restore mp
+
+//
+//	invoke JVM.fxxx(int index)
+//
+			ldi	1
+			nop
+			bnz	invoke
+			nop
+			nop
+//
+//	this is an interrupt, (bytecode 0xf0)
+//	call com.jopdesign.sys.JVMHelp.interrupt()	(
+//		oder gleich eine f aus JVMHelp ????
+//		... JVM in Java!
+//
+sys_int:
+			ldjpc				// correct wrong increment on jpc
+			ldi	1				//    could also be done in bcfetch.vhd
+			sub					//    but this is simpler :-)
+			stjpc
+			ldm	jjhp			// interrupt() is at offset 0
+								// jjhp points in method table to first
+								// method after methods inherited from Object
+
+			ldi	1
+			nop
+			bnz	invoke			// simulate invokestatic with ptr to meth. str. on stack
+			nop
+			nop
+
+
+//
+//	this is an exception, (bytecode 0xf1)
+//	call com.jopdesign.sys.JVMHelp.except()	(
+//
+sys_exc:
+			ldjpc				// correct wrong increment on jpc
+			ldi	1				//    could also be done in bcfetch.vhd
+			sub					//    but this is simpler :-)
+			stjpc
+			ldm	jjhp			// interrupt() is at offset 0
+								// jjhp points in method table to first
+			ldi	6				// forth method (index 3 * 2 word);
+			add
+
+
+			ldi	1
+			nop
+			bnz	invoke			// simulate invokestatic with ptr to meth. str. on stack
+			nop
+			nop
+
+//
+//	call com.jopdesign.sys.JMV.fxxx() for not implemented  byte codes.
+//		... JVM in Java!
+//
+sys_noim:
+			ldjpc
+			ldi	1
+			sub
+			stjpc				// get last byte code
+			nop					// ???
+			nop					// one more now (2004-04-06) ?
+			ldm	jjp
+			nop	opd
+			ld_opd_8u
+			ldi	255
+			and
+			dup
+			add					// *2
+			add					// jjp+2*bc
+
+			ldi	1
+			nop
+			bnz	invoke			// simulate invokestatic with ptr to meth. str. on stack
+			nop
+			nop
+
+
+//
+//	invoke and return functions
+//
+#include "jvm_call.inc"
+
+///////////////////////////////////////////////////////////////////////////
+//
+//	begin of simple bytecodes
 //
 ///////////////////////////////////////////////////////////////////////////
 
@@ -1119,33 +1334,6 @@ jopsys_putfield:				// Version from Native
 			wait
 			pop nxt
 
-newarray:
-			nop opd
-			ld_opd_8u
-			stm a
-			ldjpc
-			ldi	2
-			sub
-			stjpc				// get last byte code
-			nop					// ???
-			nop					// one more now (2004-04-06) ?
-			ldm	a
-			ldm	jjp
-			nop	opd
-			ld_opd_8u
-			ldi	255 
-			and opd				// remove type info
-			dup
-			add					// *2
-			add					// jjp+2*bc
-
-// invoke JVM.fxxx();
-			ldi	1
-			nop
-			bnz	invoke			// simulate invokestatic with ptr to meth. str. on stack
-			nop
-			nop
-
 
 arraylength:
 
@@ -1233,185 +1421,13 @@ monitorexit:
 			wait
 mon_no_ena:	nop		nxt
 
-//
-//	invoke and return functions
-//
-#include "jvm_call.inc"
-
 //		
 // long bytecodes
 //
 #include "jvm_long.inc"
 
-//
-//	this is an interrupt, (bytecode 0xf0)
-//	call com.jopdesign.sys.JVMHelp.interrupt()	(
-//		oder gleich eine f aus JVMHelp ????
-//		... JVM in Java!
-//
-sys_int:
-			ldjpc				// correct wrong increment on jpc
-			ldi	1				//    could also be done in bcfetch.vhd
-			sub					//    but this is simpler :-)
-			stjpc
-			ldm	jjhp			// interrupt() is at offset 0
-								// jjhp points in method table to first
-								// method after methods inherited from Object
-
-			ldi	1
-			nop
-			bnz	invoke			// simulate invokestatic with ptr to meth. str. on stack
-			nop
-			nop
 
 
-//
-//	this is an exception, (bytecode 0xf1)
-//	call com.jopdesign.sys.JVMHelp.except()	(
-//
-sys_exc:
-			ldjpc				// correct wrong increment on jpc
-			ldi	1				//    could also be done in bcfetch.vhd
-			sub					//    but this is simpler :-)
-			stjpc
-			ldm	jjhp			// interrupt() is at offset 0
-								// jjhp points in method table to first
-			ldi	6				// forth method (index 3 * 2 word);
-			add
-
-
-			ldi	1
-			nop
-			bnz	invoke			// simulate invokestatic with ptr to meth. str. on stack
-			nop
-			nop
-
-
-//
-//	call com.jopdesign.sys.JMV.fxxx() for not implemented  byte codes.
-//		... JVM in Java!
-//
-sys_noim:
-			ldjpc
-			ldi	1
-			sub
-			stjpc				// get last byte code
-			nop					// ???
-			nop					// one more now (2004-04-06) ?
-			ldm	jjp
-			nop	opd
-			ld_opd_8u
-			ldi	255
-			and
-			dup
-			add					// *2
-			add					// jjp+2*bc
-
-			ldi	1
-			nop
-			bnz	invoke			// simulate invokestatic with ptr to meth. str. on stack
-			nop
-			nop
-
-//
-//	call com.jopdesign.sys.JMV.fxxx(int constant) for not implemented  byte codes.
-//		... JVM in Java!
-//		with constant on stack
-//
-
-new:
-anewarray:
-checkcast:
-instanceof:
-
-//
-//	find address for JVM function
-//
-			ldjpc
-			ldi	1
-			sub
-			stjpc				// get last byte code
-			nop					// ???
-			nop					// one more now (2004-04-06) ?
-			ldm	jjp
-			nop	opd
-			ld_opd_8u
-			ldi	255
-			and
-			dup
-			add					// *2
-			add					// jjp+2*bc
-			stm	a				// save
-
-//
-//	get constant
-//
-			ldm	cp opd
-			nop	opd
-			ld_opd_16u
-			add
-
-			stmra				// read ext. mem, mem_bsy comes one cycle later
-			wait
-			wait
-			ldmrd		 		// read ext. mem
-
-			ldm	a				// restore mp
-
-//
-//	invoke JVM.fxxx(int cons)
-//
-			ldi	1
-			nop
-			bnz	invoke
-			nop
-			nop
-
-//
-//	call com.jopdesign.sys.JMV.fxxx(int index) for not implemented  byte codes.
-//		... JVM in Java!
-//		with index into constant pool on stack
-//
-
-putfield_ref:
-putstatic_ref:
-
-//
-//	find address for JVM function
-//
-			ldjpc
-			ldi	1
-			sub
-			stjpc				// get last byte code
-			nop					// ???
-			nop					// one more now (2004-04-06) ?
-			ldm	jjp
-			nop	opd
-			ld_opd_8u
-			ldi	255
-			and
-			dup
-			add					// *2
-			add					// jjp+2*bc
-			stm	a				// save
-
-//
-//	get index
-//
-			nop	opd
-			nop	opd
-			ld_opd_16u
-
-			ldm	a				// restore mp
-
-//
-//	invoke JVM.fxxx(int index)
-//
-			ldi	1
-			nop
-			bnz	invoke
-			nop
-			nop
 
 //****************
 
