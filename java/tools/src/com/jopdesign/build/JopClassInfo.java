@@ -768,7 +768,7 @@ public class JopClassInfo extends ClassInfo implements Serializable {
             int addr = methodsAddress;
             for (i = 0; i < clvt.len; i++) {
                 clvt.mi[i].dumpMethodStruct(out, addr);
-                outLinkInfo.println(" -mtab "+clvt.mi[i]+" "+addr);
+                outLinkInfo.println(" -mtab "+clvt.mi[i].getFQMethodName()+" "+addr);
                 addr += ClassStructConstants.METH_STR;
             }
         } else {
