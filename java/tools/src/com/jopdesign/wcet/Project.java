@@ -36,6 +36,7 @@ import org.apache.bcel.classfile.Method;
 import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.MethodGen;
+import org.apache.bcel.util.BCELComparator;
 import org.apache.log4j.Logger;
 import com.jopdesign.build.AppInfo;
 import com.jopdesign.build.AppVisitor;
@@ -59,6 +60,8 @@ import com.jopdesign.wcet.graphutils.MiscUtils;
 import com.jopdesign.wcet.ipet.IpetConfig;
 import com.jopdesign.wcet.jop.JOPConfig;
 import com.jopdesign.wcet.jop.JOPModel;
+import com.jopdesign.wcet.jop.LinkerInfo;
+import com.jopdesign.wcet.jop.LinkerInfo.LinkInfo;
 import com.jopdesign.wcet.report.Report;
 import com.jopdesign.wcet.uppaal.UppAalConfig;
 
@@ -147,6 +150,7 @@ public class Project {
 	private ProcessorModel processor;
 	private SourceAnnotations sourceAnnotations;
 	private File resultRecord;
+	private LinkerInfo linkerInfo;
 
 	public Project(ProjectConfig config) throws IOException {
 		this.projectConfig =  config;
@@ -178,6 +182,7 @@ public class Project {
 			this.processor = new JOPModel(this);
 		}
 	}
+
 	public String getProjectName() {
 		return this.projectName;
 	}
@@ -215,7 +220,7 @@ public class Project {
 			File sourceFile = new File(sourceDir, ci.clazz.getSourceFileName());
 			if(sourceFile.exists()) return sourceFile;	
 		}
-		throw new FileNotFoundException("Source for "+ci.clazz.getClassName()+" not found.");
+		throw new FileNotFoundException("Source for "+ci.clazz.getClassName()+" not found in "+dirs);
 	}
 	private List<File> getSearchDirs(ClassInfo ci, String path) {
 		List<File> dirs = new Vector<File>();
@@ -264,13 +269,18 @@ public class Project {
 		for(String klass : processor.getJVMClasses()) {
 			appInfo.addClass(klass);			
 		}
-		if(projectConfig.doDataflowAnalysis()) {			
-			appInfo.load();
-			appInfo.iterate(new RemoveNops(appInfo));
-		} else {
-			appInfo.load();
-			WcetPreprocess.preprocess(appInfo);
-			appInfo.iterate(new CreateMethodGenerators(appInfo));
+		try {
+			if(projectConfig.doDataflowAnalysis()) {			
+					appInfo.load();
+				appInfo.iterate(new RemoveNops(appInfo));
+			} else {
+				appInfo.load();
+				WcetPreprocess.preprocess(appInfo);
+				appInfo.iterate(new CreateMethodGenerators(appInfo));
+			}
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+			throw new AssertionError(e.getMessage());
 		}
 		return appInfo;
 	}
@@ -281,7 +291,9 @@ public class Project {
 		/* Initialize annotation map */
 		annotationMap = new Hashtable<ClassInfo, SortedMap<Integer,LoopBound>>();
 		sourceAnnotations = new SourceAnnotations(this);
-
+		linkerInfo = new LinkerInfo(this);
+		linkerInfo.loadLinkInfo();
+		
 		/* run dataflow analysis */
 		if(projectConfig.doDataflowAnalysis()) {
 			topLevelLogger.info("Starting DFA analysis");
@@ -314,6 +326,20 @@ public class Project {
 		}
 		return annots;		
 	}
+	
+	/**
+	 * Get link info for a given class
+	 * @param cli 
+	 * @return the linker info
+	 */
+	public LinkInfo getLinkInfo(ClassInfo cli) {
+		return this.linkerInfo.getLinkInfo(cli);
+	}
+
+	public LinkerInfo getLinkerInfo() {
+		return this.linkerInfo;
+	}
+	
 	
 	/* Data flow analysis
 	 * ------------------

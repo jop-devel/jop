@@ -22,7 +22,7 @@
 /* Notes: WCET times reported by JOP (noted if JopSIM+cache-timing differs)
  * Method.java: 12039
  * StartKfl.java: 3048-11200
- * StartLift.java: 4638-4772 (JopSIM: 4636-4774) 
+ * StartLift.java: 4638-4772 (JopSIM: 4636-4774)
  */
 
 package com.jopdesign.wcet;
@@ -45,6 +45,7 @@ import com.jopdesign.wcet.graphutils.MiscUtils;
 import com.jopdesign.wcet.ipet.IpetConfig;
 import com.jopdesign.wcet.ipet.LpSolveWrapper;
 import com.jopdesign.wcet.ipet.IpetConfig.StaticCacheApproximation;
+import com.jopdesign.wcet.jop.ConstantCache;
 import com.jopdesign.wcet.jop.JOPConfig;
 import com.jopdesign.wcet.report.Report;
 import com.jopdesign.wcet.report.ReportConfig;
@@ -57,7 +58,7 @@ import static com.jopdesign.wcet.ExecHelper.timeDiff;
  */
 public class WCETAnalysis {
 	private static final String CONFIG_FILE_PROP = "config";
-	public static final String VERSION = "1.0.1"; 
+	public static final String VERSION = "1.0.1";
 	private static final Logger tlLogger = Logger.getLogger(WCETAnalysis.class);
 	public static Option<?>[][] options = {
 		ProjectConfig.projectOptions,
@@ -97,14 +98,14 @@ public class WCETAnalysis {
 			exec.bail("Failed to load the lp_solve Java library: "+ule);
 		}
 		if(config.getOption(ProjectConfig.USE_UPPAAL)) {
-			String vbinary = config.getOption(UppAalConfig.UPPAAL_VERIFYTA_BINARY); 
+			String vbinary = config.getOption(UppAalConfig.UPPAAL_VERIFYTA_BINARY);
 			try {
 				String version = WcetSearch.getVerifytaVersion(vbinary);
 				tlLogger.info("Using uppaal/verifyta: "+vbinary+" version "+version);
 			} catch(Exception fne) {
 				exec.bail("Failed to run uppaal verifier: "+fne);
 			}
-		} 
+		}
 	}
 	private boolean run() {
 		project = null;
@@ -123,6 +124,9 @@ public class WCETAnalysis {
 			exec.logException("Loading project", e);
 			return false;
 		}
+
+		//new ConstantCache(project).build().dumpStats();
+
 		/* Tree based WCET analysis - has to be equal to ALWAYS_MISS */
 		{
 			long start,stop;
@@ -135,19 +139,19 @@ public class WCETAnalysis {
 		}
 
 		/* Perf-Test */
-//		for(int i = 0; i < 50; i++) { 
-//			RecursiveAnalysis<StaticCacheApproximation> an = 
+//		for(int i = 0; i < 50; i++) {
+//			RecursiveAnalysis<StaticCacheApproximation> an =
 //				new RecursiveAnalysis<StaticCacheApproximation>(project,new RecursiveAnalysis.LocalIPETStrategy());
-//			an.computeWCET(project.getTargetMethod(),StaticCacheApproximation.ALWAYS_HIT);			
+//			an.computeWCET(project.getTargetMethod(),StaticCacheApproximation.ALWAYS_HIT);
 //		}
 //		System.err.println("Total solver time (50): "+LpSolveWrapper.getSolverTime());
 //		System.exit(1);
 
-		//new ETMCExport(project).export(project.getOutFile("Spec_"+project.getProjectName()+".txt")); 
+		//new ETMCExport(project).export(project.getOutFile("Spec_"+project.getProjectName()+".txt"));
 
 		/* Run */
 		boolean succeed = false;
-		// FIXME: Report generation is a BIG MESS 
+		// FIXME: Report generation is a BIG MESS
 		// bh will fix this in next revision
 		try {
 			/* Analysis */
@@ -157,29 +161,29 @@ public class WCETAnalysis {
 			IpetConfig ipetConfig = new IpetConfig(config);
 			StaticCacheApproximation preciseApprox = IpetConfig.getPreciseCacheApprox(config);
 			/* Perform a few standard analysis (MIN_CACHE_COST, ALWAYS_HIT, ALWAYS_MISS) */
-			{	
+			{
 				long start,stop;
-				
+
 				/* always hit */
-				RecursiveAnalysis<StaticCacheApproximation> an = 
+				RecursiveAnalysis<StaticCacheApproximation> an =
 					new RecursiveAnalysis<StaticCacheApproximation>(
 							project, ipetConfig,
 							new RecursiveAnalysis.LocalIPETStrategy(ipetConfig));
 				LpSolveWrapper.resetSolverTime();
 				start = System.nanoTime();
-				ah = an.computeWCET(project.getTargetMethod(),StaticCacheApproximation.ALWAYS_HIT);			
+				ah = an.computeWCET(project.getTargetMethod(),StaticCacheApproximation.ALWAYS_HIT);
 				stop  = System.nanoTime();
 				reportSpecial("always-hit",ah,start,stop,LpSolveWrapper.getSolverTime());
 
 				/* always miss */
 				/* FIXME: We don't have  report generation for UPPAAL and global analysis yet */
-				if(project.getProjectConfig().useUppaal() || preciseApprox.needsInterProcIPET()) { 
+				if(project.getProjectConfig().useUppaal() || preciseApprox.needsInterProcIPET()) {
 					project.setGenerateWCETReport(true);
 				}
 				am = an.computeWCET(project.getTargetMethod(),StaticCacheApproximation.ALWAYS_MISS);
 				reportSpecial("always-miss",am,0,0,0);
 				project.setGenerateWCETReport(false);
-				
+
 				/* minimal cache cost */
 				IpetConfig mmcConfig = ipetConfig.clone();
 				mmcConfig.assumeMissOnceOnInvoke = true;
@@ -201,7 +205,7 @@ public class WCETAnalysis {
 				reportUppaal(wcet,start,stop,an.getSearchtime(),an.getSolvertimemax());
 			} else {
 				RecursiveWCETStrategy<StaticCacheApproximation> recStrategy;
-				if(preciseApprox == StaticCacheApproximation.ALL_FIT_REGIONS) {					
+				if(preciseApprox == StaticCacheApproximation.ALL_FIT_REGIONS) {
 					recStrategy = new GlobalAnalysis.GlobalIPETStrategy(ipetConfig);
 				} else {
 					project.setGenerateWCETReport(true);

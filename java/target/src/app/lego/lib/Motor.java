@@ -242,6 +242,8 @@ public class Motor {
 	/**
 	 * Reads and returns the raw back-EMF values last measured by the ADC.
 	 * Reading back-EMF values is only supported for Motor 0 and Motor 1.
+	 * 
+	 * @warning Allocates Memory, only use when garbage collector is active
 	 * @return 9 bit ADC value. XXX typical range
 	 */
 	public int[] readBackEMF()
@@ -253,6 +255,8 @@ public class Motor {
 	/**
 	 * Reads and returns the back-EMF values last measured by the ADC.
 	 * Reading back-EMF values is only supported for Motor 0 and Motor 1.
+	 * 
+	 * @warning Allocates Memory, only use when garbage collector is active
 	 * @return The values returned are the differences of the 9 bit ADC value and {@linkplain #BACKEMF_IDLE_VALUE}. 
 	 */
 	public int[] readNormalizedBackEMF()
@@ -265,6 +269,22 @@ public class Motor {
 	 * Returns the back-EMF values for the motor last read by an 
 	 * invocation of the class method {@linkplain #synchronizedReadBackEMF()}.
 	 * Reading back-EMF values is only supported for Motor 0 and Motor 1.
+	 * @param emfData array of size 2 to hold the results
+	 * @return 9 bit ADC value.
+	 * @warning Allocates Memory, only use when garbage collector is active
+	 */
+	public void updateSynchronizedBackEMF(int[] emfData)
+	{
+		emfData[0] = readValue[index] & MASK_BACKEMF;
+		emfData[1] = (readValue[index] >> OFFSET_BACKEMF1) & MASK_BACKEMF;
+	}
+
+	/**
+	 * Returns the back-EMF values for the motor last read by an 
+	 * invocation of the class method {@linkplain #synchronizedReadBackEMF()}.
+	 * 
+	 * @warning Allocates Memory, only use when garbage collector is active
+	 * @see updateSynchronizedBackEMF
 	 * @return 9 bit ADC value.
 	 */
 	public int[] getSynchronizedBackEMF()
@@ -286,7 +306,7 @@ public class Motor {
 		for (int i = 0; i < 2; i++)
 			readValue[i] = Native.rd(IO_SYNCHRONIZED_INPUT_MOTOR[i]);		
 	}
-	
+
 	/**
 	 * Gets the back-EMF values last measured by the ADC.
 	 * The Motor 0 and Motor 1 back-EMF values are guaranteed to be synchronized.
@@ -295,6 +315,8 @@ public class Motor {
 	 * Therefore, the hardware won't update both values after the values for the 
 	 * first motor have been read until the values for the second motor have been 
 	 * read, too.
+	 * 
+	 * @warning Allocates Memory, only use when garbage collector is active
 	 * @return The values returned are the differences of the 9 bit ADC value and {@linkplain #BACKEMF_IDLE_VALUE}.
 	 */
 	public int[] getSynchronizedNormalizedBackEMF()
@@ -302,4 +324,19 @@ public class Motor {
 		int[] raw = getSynchronizedBackEMF();
 		return new int[] { raw[0]-BACKEMF_IDLE_VALUE, raw[1]-BACKEMF_IDLE_VALUE };		
 	}
+
+	/** Gets the back-EMF values last measured by the ADC.
+	 * The Motor 0 and Motor 1 back-EMF values are guaranteed to be synchronized.
+	 * <p>
+	 * 9*4 bits for the 4 back-EMF values cannot be transferred in a single cycle.
+	 * Therefore, the hardware won't update both values after the values for the 
+	 * first motor have been read until the values for the second motor have been 
+	 * read, too.
+	 */
+	public void updateSynchronizedNormalizedBackEMF(int[] emfData) {		
+		updateSynchronizedBackEMF(emfData);
+		emfData[0] -= BACKEMF_IDLE_VALUE;
+		emfData[1] -= BACKEMF_IDLE_VALUE;
+	}
+
 }

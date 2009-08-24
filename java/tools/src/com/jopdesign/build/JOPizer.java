@@ -107,11 +107,15 @@ public class JOPizer extends AppInfo implements Serializable {
 //		JOPizer jz = new JOPizer();
 		jz = new JOPizer(JopClassInfo.getTemplate());
 		
-		if(args.length == 0) {
-			System.err.println("JOPizer arguments: [-cp classpath] [-o file] class [class]*");
+		if(args.length < 3) {
+			System.err.println("JOPizer arguments: [-cp classpath] -o file class [class]*");
 			System.exit(-1);
 		};
 		jz.parseOptions(args);
+		if(jz.outFile == null) {
+			System.err.println("JOPizer: Missing argument: '-o file'");
+			System.exit(-1);			
+		}
 		jz.addClass(startupClass);
 		jz.addClass(jvmClass);
 		jz.addClass(helpClass);
@@ -120,11 +124,10 @@ public class JOPizer extends AppInfo implements Serializable {
 		try {
 			jz.out = new PrintWriter(new FileOutputStream(jz.outFile));
 			jz.outTxt = new PrintWriter(new FileOutputStream(jz.outFile+".txt"));
-			jz.outLinkInfo = new PrintWriter(new FileOutputStream(jz.outFile+".link.txt"));
+			jz.outLinkInfo = new PrintWriter(new FileOutputStream(jz.outFile+".link.txt"));			
 			jz.outStaticInfo = new PrintWriter(new FileOutputStream(jz.outFile+".static.txt"));
 
 			jz.load();
-			
 			// Reduce constant pool
 			// TODO: remove unused field and static field entries
 			// and remove the code from resolveCPool(cp).

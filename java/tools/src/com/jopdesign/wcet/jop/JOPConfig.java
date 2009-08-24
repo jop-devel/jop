@@ -1,21 +1,21 @@
 /*
-  This file is part of JOP, the Java Optimized Processor
-    see <http://www.jopdesign.com/>
+This file is part of JOP, the Java Optimized Processor
+	see <http://www.jopdesign.com/>
 
-  Copyright (C) 2008, Benedikt Huber (benedikt.huber@gmail.com)
+Copyright (C) 2008, Benedikt Huber (benedikt.huber@gmail.com)
 
-  This program is free software: you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-  You should have received a copy of the GNU General Public License
-  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 package com.jopdesign.wcet.jop;
 
@@ -63,7 +63,7 @@ public class JOPConfig {
 		new IntegerOption("jop-cmp-cpus", "JOP number of processors",WCETInstruction.CPUS);
 	public static final IntegerOption CMP_TIMESLOT =
 		new IntegerOption("jop-cmp-timeslot", "JOP arbiter timeslot cycles",WCETInstruction.TIMESLOT);
-	
+
 	/**
 	 * Supported method cache implementations:
 	 * <ul>
@@ -75,7 +75,7 @@ public class JOPConfig {
 	public enum CacheImplementation {
 		LRU_CACHE, FIFO_CACHE,
 		LRU_VARBLOCK_CACHE, FIFO_VARBLOCK_CACHE,
-		NO_METHOD_CACHE, 
+		NO_METHOD_CACHE,
 	}
 	public static final EnumOption<CacheImplementation> CACHE_IMPL =
 		new EnumOption<CacheImplementation>(
@@ -87,9 +87,9 @@ public class JOPConfig {
 
 	public static final IntegerOption CACHE_SIZE_WORDS =
 		new IntegerOption("cache-size-words",
-						  "size of the cache in words",
-						  1024);
-			
+						"size of the cache in words",
+						1024);
+
 	public static final Option<?>[] jopOptions = {
 		ASM_FILE, READ_WAIT_STATES, WRITE_WAIT_STATES,
 		MULTIPROCESSOR, CMP_CPUS, CMP_TIMESLOT,

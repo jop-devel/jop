@@ -49,9 +49,9 @@ public class STController extends SimpleHBTask {
     int lastErr = 0;
     int newErr;
     int dt = 1;
-    float KP = 1.0F;
-    float KI = 1.0F;
-    float KD = 1.0F;
+    float kp = 1.0F;
+    float ki = 1.0F;
+    float kd = 1.0F;
 
     // Constructor 
     public STController(SharedIMem SetVal, SharedIMem CurrVal, SharedIMem CtrlVal) {
@@ -61,10 +61,10 @@ public class STController extends SimpleHBTask {
     }
 
     // Set the amplification values of the controller
-    public void setAmplification(float KP, float KI, float KD) {
-	this.KP = KP;
-	this.KI = KI;
-	this.KD = KD;
+    public void setAmplification(float kp, float ki, float kd) {
+	this.kp = kp;
+	this.ki = ki;
+	this.kd = kd;
     }
     
     /**
@@ -83,7 +83,7 @@ public class STController extends SimpleHBTask {
 	newErr     = nSetVal = nCurrVal;
 	integral   = integral + newErr * dt;
 	derivative = (newErr - lastErr) / dt;
-	nCtrlVal   = (int)(KP*newErr + KI*integral + KD*derivative);
+	nCtrlVal   = (int)(kp*newErr + ki*integral + kd*derivative);
 	lastErr    = newErr;
 	this.setAlive();
     }
@@ -93,6 +93,22 @@ public class STController extends SimpleHBTask {
      */
     public void write() {
 	ShmCtrlVal.set(nCtrlVal);
+    }
+
+    /**
+     * Some wrapper methods to enable WCET analysis including cache loading.
+     */
+
+    public void readWrapperWCET() {
+	read();
+    }
+
+    public void executeWrapperWCET() {
+	execute();
+    }
+
+    public void writeWrapperWCET() {
+	write();
     }
 
 }

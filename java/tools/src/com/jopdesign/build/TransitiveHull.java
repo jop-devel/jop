@@ -31,6 +31,8 @@ package com.jopdesign.build;
 import org.apache.bcel.classfile.*;
 import org.apache.bcel.generic.*;
 import org.apache.bcel.util.*;
+
+import java.io.IOException;
 import java.util.*;
 import org.apache.bcel.Constants;
 import org.apache.bcel.Repository;
@@ -128,7 +130,13 @@ public class TransitiveHull extends org.apache.bcel.classfile.EmptyVisitor {
 			return;
 		}
 
-		JavaClass clazz = Repository.lookupClass(class_name);
+		JavaClass clazz;
+		try {
+			clazz = Repository.lookupClass(class_name);
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+			throw new Error();
+		}
 
 		if (clazz == null) {
 			System.out.println("lookupClass("+class_name+") failed in TransitiveHull");

@@ -75,6 +75,7 @@ package jop_types is
 		getfield        : std_logic;
 		putfield        : std_logic;
 		copy            : std_logic;
+		mtype			: std_logic_vector(1 downto 0);
 	end record;
 
 	type mem_out_type is record

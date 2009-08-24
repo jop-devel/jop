@@ -36,6 +36,12 @@ public class InstructionInfo {
 		Constants.LRETURN,
 		Constants.RETURN };
 
+	public static boolean isReturnOpcode(int opcode) {
+		for(int rop : RETURN_OPCODES) {
+			if(rop == opcode) return true;
+		}
+		return false;
+	}
 	private int opcode;
 
 	public InstructionInfo(int opcode) {

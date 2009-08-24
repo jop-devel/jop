@@ -29,11 +29,14 @@ import com.jopdesign.sys.*;
  */
 public class Leds
 {
-	public static final int IO_LEDS = Const.IO_LEGO + 0;	
+	public static final int IO_LEDS = Const.IO_LEGO + 0;
+	public static final int LED_COUNT = 4;
 	protected static int value;
 	
 	/**
-	 * Turns the LED on and off several times a second (if called that often).
+	 * Turns the LED on and off several times a second (if called that often).<br/>
+	 * The LED is set if the 18^th bit of us is on.
+	 * Therefore, the update has to be called at least 8 times a second.
 	 * @param index 0-3.
 	 */
 	public static final void blinkUpdate(int index)

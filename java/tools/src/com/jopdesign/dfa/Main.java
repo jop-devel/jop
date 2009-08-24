@@ -39,7 +39,7 @@ public class Main {
 		// load the program, ready to be analyzed
 		try {
 			program.load();
-		} catch (IOException exc) {
+		} catch (Exception exc) {
 			exc.printStackTrace();
 		}
 

@@ -68,16 +68,16 @@ public class STGuard extends SimpleTask {
     int tmp1 = 0;
     int tmp;
     int i;
-    SharedIMem IWrt;
+    SharedIMem iwrt;
 
     // Constructor 
-    public STGuard(SharedIMem Wrt, int size) {
+    public STGuard(SharedIMem iwrt, int size) {
 	cond = (size <= 0 || size >= MAXTASK); // size must me at least 1 and at maximum MAXTASK.
 	nError = Native.condMove(1, nError, cond);
 
 	this.size = size;
 	tsk = new SimpleHBTask[size];
-        IWrt = Wrt;
+        this.iwrt = iwrt;
     }
 
     /**
@@ -108,7 +108,7 @@ public class STGuard extends SimpleTask {
      * Perform read access to shared data.
      */
     public void read() {
-	for (i = 0; i < MAXTASK; i++) {
+	for (i = 0; i < MAXTASK; i++) { //@WCA loop=20
 	    /* check whether the current index represents a valid task */
 	    cond = (i >= ipos);
 	    tmp = Native.condMove(0, i, cond); // bound i to an index with valid tasks
@@ -135,7 +135,7 @@ public class STGuard extends SimpleTask {
      * Write results to the shared memory.
      */
     public void write() {
-	for (i = 0; i < MAXTASK; i++) {
+	for (i = 0; i < MAXTASK; i++) { //@WCA loop=20
 	    /* check whether the current index represents a valid task */
 	    cond = (i >= ipos);
 	    tmp = Native.condMove(0, i, cond); // bound i to an index with valid tasks
@@ -153,7 +153,23 @@ public class STGuard extends SimpleTask {
 	// -1 ... fatal error --> start the hunt for a safe state
         //  0 ... everything is ok, continue as normal
 	tmp = Native.condMove(-1, 0, cond);
-	IWrt.set(tmp);
+	iwrt.set(tmp);
+    }
+
+    /**
+     * Some wrapper methods to enable WCET analysis including cache loading.
+     */
+
+    public void readWrapperWCET() {
+	read();
+    }
+
+    public void executeWrapperWCET() {
+	execute();
+    }
+
+    public void writeWrapperWCET() {
+	write();
     }
 
 }

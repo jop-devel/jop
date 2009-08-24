@@ -87,6 +87,10 @@ public class WcetAppInfo  {
 		return ai.cliMap;
 	}
 	
+	public Project getProject() {
+		return project;
+	}
+
 	/**
 	 * @return The typegraph of all loaded classes
 	 */
@@ -115,6 +119,7 @@ public class WcetAppInfo  {
 		if(cli == null) throw new MethodNotFoundException("The class "+className+" couldn't be found");
 		return searchMethod(cli,methodName);
 	}
+	
 	public MethodInfo searchMethod(ClassInfo cli, String methodName) throws MethodNotFoundException {
 		MethodInfo mi = null;
 		if(methodName.indexOf("(") > 0) {
@@ -173,8 +178,13 @@ public class WcetAppInfo  {
 			ClassInfo superRec = receiver;
 			while(staticImpl == null && superRec != null) {
 				staticImpl = superRec.getMethodInfo(methodId);
-				if(superRec.clazz.getSuperClass() == null) superRec = null;
-				else superRec = superRec.superClass;
+				try {
+					if(superRec.clazz.getSuperClass() == null) superRec = null;
+					else superRec = superRec.superClass;
+				} catch (ClassNotFoundException e) {
+					e.printStackTrace();
+					throw new Error();
+				}
 			}
 		}		
 		return staticImpl;

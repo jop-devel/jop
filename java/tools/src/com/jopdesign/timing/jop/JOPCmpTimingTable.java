@@ -10,16 +10,16 @@ import com.jopdesign.timing.WCETInstruction;
 import com.jopdesign.timing.ConsoleTable.Alignment;
 import com.jopdesign.timing.ConsoleTable.TableRow;
 import com.jopdesign.tools.JopInstr;
-/** 
+/**
  *  Chip multiprocessing timing.
  *  Currently delegates to {link com.jopdesign.timing.WCETInstruction}
- *  TODO: We need a common abstract superclass of JOPTimingTable, JOPCmpTimingTable
+ *  FIXME: Create a microcode analysis based class in com.jopdesign.timing.jop.MultiCoreTiming
  */
 public class JOPCmpTimingTable extends JOPTimingTable {
 
-	public static JOPCmpTimingTable getCmpTimingTable( 
+	public static JOPCmpTimingTable getCmpTimingTable(
 			File asmFile, int rws, int wws, int cpus, int timeslot) throws IOException {
-		MicropathTable mpt = MicropathTable.getTimingTable(asmFile);
+		MicropathTable mpt = MicropathTable.getTimingTableFromAsmFile(asmFile);
 		JOPCmpTimingTable tt = new JOPCmpTimingTable(mpt);
 		tt.configureWaitStates(rws, wws);
 		tt.configureMultiprocessor(cpus, timeslot);
@@ -31,23 +31,27 @@ public class JOPCmpTimingTable extends JOPTimingTable {
 	protected JOPCmpTimingTable(MicropathTable mpt) {
 		super(mpt);
 	}
-	
-    @Override
-	public long getCycles(int opcode, boolean isHit, int methodLoadWords) {
-    	return WCETInstruction.getCycles(opcode, ! isHit, methodLoadWords);
-    }
 
-    // should be inherited, but currently we delegate to the old impl,
-    // so fewer bytecodes are supported
+	@Override
+	public long getCycles(int opcode, boolean isHit, int methodLoadWords) {
+		long cycles = WCETInstruction.getCycles(opcode, ! isHit, methodLoadWords);
+		if(JopInstr.isInJava(opcode)) {
+			cycles = WCETInstruction.getCycles(org.apache.bcel.Constants.INVOKESTATIC, ! isHit, methodLoadWords);
+		}
+		return cycles;
+	}
+
+	// should be inherited, but currently we delegate to the old impl,
+	// so fewer bytecodes are supported
 	@Override
 	public boolean hasTimingInfo(int opcode) {
 		if(! super.hasTimingInfo(opcode)) return false;
 		return getCycles(opcode,false,32) != WCETInstruction.WCETNOTAVAILABLE;
 	}
-    
 
-    /* TODO: improve WCET by taking basic blocks into account */
-    // @Override
+
+	/* TODO: improve WCET by taking basic blocks into account */
+	// @Override
 	// public long getCycles(List<Instruction> opcodes) {
 	// }
 
@@ -57,10 +61,10 @@ public class JOPCmpTimingTable extends JOPTimingTable {
 		System.out.println(ConsoleTable.getSepLine('=',head.length()));
 		System.out.println();
 
-		
+
 		System.out.println("  Loading " + MicrocodeAnalysis.DEFAULT_ASM_FILE);
 		System.out.println("    Before generating the timing table do not forget to run e.g.");
-		System.out.println("    > make gen_mem -e ASM_SRC=jvm JVM_TYPE=USB\n"); 
+		System.out.println("    > make gen_mem -e ASM_SRC=jvm JVM_TYPE=USB\n");
 
 		JOPCmpTimingTable tt = null;
 		try {
@@ -69,24 +73,25 @@ public class JOPCmpTimingTable extends JOPTimingTable {
 			e.printStackTrace();
 			System.exit(1);
 		}
-		
+
 		// build table
 		ConsoleTable table = dumpCmpTimingTable(tt);
 
 		System.out.println(table.render());
 	}
+
 	// TODO: there is some duplication with JOPTimingTable (naturally),
 	// but too lazy now to extract common stuff.
 	private static ConsoleTable dumpCmpTimingTable(JOPCmpTimingTable tt) {
 		//              r  w  cpus timeslot
-		int conf1[] = { 3, 5, 3, 10 };
-		int conf2[] = { 3, 5, 3, 15 };
-		int conf3[] = { 3, 5, 8, 10 };
-		int conf4[] = { 3, 5, 8, 15 };
+		int conf1[] = { 1, 2, 3, 4 };
+		int conf2[] = { 1, 2, 3, 5 };
+		int conf3[] = { 1, 2, 3, 6 };
+		int conf4[] = { 1, 2, 3, 7 };
 		int[][] cmpTestConfig = { conf1, conf2, conf3, conf4 };
 		ConsoleTable table = new ConsoleTable();
 		table.addColumn("opcode", Alignment.ALIGN_RIGHT)
-		     .addColumn("name", Alignment.ALIGN_LEFT);
+			.addColumn("name", Alignment.ALIGN_LEFT);
 		for(int[] conf : cmpTestConfig) {
 			table.addColumn(String.format("(%d,%d,%d,%d)",conf[0],conf[1],conf[2],conf[3]),Alignment.ALIGN_RIGHT);
 		}
@@ -95,7 +100,7 @@ public class JOPCmpTimingTable extends JOPTimingTable {
 			if(JopInstr.isReserved(opcode)) continue;
 			TableRow row = table.addRow();
 			row.addCell(opcode)
-	           .addCell(JopInstr.OPCODE_NAMES[i]);
+			.addCell(JopInstr.OPCODE_NAMES[i]);
 			if(! tt.hasTimingInfo(opcode)) {
 				row.addCell("... not supported ...",cmpTestConfig.length,Alignment.ALIGN_LEFT);
 			} else {
@@ -103,11 +108,13 @@ public class JOPCmpTimingTable extends JOPTimingTable {
 					tt.configureWaitStates(conf[0], conf[1]);
 					tt.configureMultiprocessor(conf[2], conf[3]);
 					long timingHit = tt.getCycles(opcode, true, 0);
-					long timingMiss = tt.getCycles(opcode, false, 32);
-					if(timingHit == timingMiss) {
+					long timingMiss1 = tt.getCycles(opcode, false, 1);
+					long timingMiss2 = tt.getCycles(opcode, false, 2);
+					long timingMiss32 = tt.getCycles(opcode, false, 32);
+					if(timingHit == timingMiss32) {
 						row.addCell(timingHit);
 					} else {
-						row.addCell(timingHit + " / " + timingMiss);
+						row.addCell(timingHit + " / " + timingMiss32);
 					}
 				}
 			}
@@ -115,9 +122,9 @@ public class JOPCmpTimingTable extends JOPTimingTable {
 		table.addLegendTop("  (x,y,c,t) ~ (read delay, write delay, cpus, timeslot)");
 		table.addLegendTop("  c1 / c2 ... cycles cache hit / cycles cache miss 32 words");
 		table.addLegendTop("  infeasible branches: "+Arrays.toString(MicrocodeAnalysis.INFEASIBLE_BRANCHES));
-		table.addLegendBottom(String.format("  hidden cycles on invoke (including JavaImplBCs) and return: %d / %d",
-				tt.minCyclesHiddenOnInvoke,tt.minCyclesHiddenOnReturn));
+//		table.addLegendBottom(String.format("  hidden cycles on invoke (including JavaImplBCs) and return: %d / %d",
+//				tt.minCyclesHiddenOnInvoke,tt.minCyclesHiddenOnReturn));
 		return table;
 	}
-    
+
 }

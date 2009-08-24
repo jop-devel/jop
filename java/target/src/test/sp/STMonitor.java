@@ -41,9 +41,9 @@ public class STMonitor extends SimpleHBTask {
     int nWCETexecute = 300;
     int nWCETwrite   = 300;
 
-    SharedIMem ShmSetVal;
-    SharedIMem ShmCurrVal;
-    SharedIMem ShmCtrlVal;
+    SharedIMem shmSetVal;
+    SharedIMem shmCurrVal;
+    SharedIMem shmCtrlVal;
     STGuard tskGuard;
 
     int nSetVal;
@@ -52,11 +52,11 @@ public class STMonitor extends SimpleHBTask {
     boolean bError;
 
     // Constructor 
-    public STMonitor(SharedIMem SetVal, SharedIMem CurrVal, 
-			  SharedIMem CtrlVal, STGuard tskGuard) {
-	ShmSetVal  = SetVal;
-	ShmCurrVal = CurrVal;
-	ShmCtrlVal = CtrlVal;
+    public STMonitor(SharedIMem setVal, SharedIMem currVal, 
+			  SharedIMem ctrlVal, STGuard tskGuard) {
+	shmSetVal  = setVal;
+	shmCurrVal = currVal;
+	shmCtrlVal = ctrlVal;
 	this.tskGuard = tskGuard;
     }
     
@@ -64,9 +64,9 @@ public class STMonitor extends SimpleHBTask {
      * Perform read access to shared data.
      */
     public void read() {
-	nSetVal  = ShmSetVal.get();
-	nCurrVal = ShmCurrVal.get();
-	nCtrlVal = ShmCtrlVal.get();
+	nSetVal  = shmSetVal.get();
+	nCurrVal = shmCurrVal.get();
+	nCtrlVal = shmCtrlVal.get();
 	bError = tskGuard.error();
 	//System.out.println("STMonitor.read(SetVal="+nSetVal+", CurrVal="+nSetVal+", CtrlVal="+nCtrlVal+")");
     }
@@ -82,6 +82,22 @@ public class STMonitor extends SimpleHBTask {
      */
     public void write() {
 	/* send the data to a host computer... */
+    }
+
+    /**
+     * Some wrapper methods to enable WCET analysis including cache loading.
+     */
+
+    public void readWrapperWCET() {
+	read();
+    }
+
+    public void executeWrapperWCET() {
+	execute();
+    }
+
+    public void writeWrapperWCET() {
+	write();
     }
 
 }

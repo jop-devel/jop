@@ -49,7 +49,8 @@ public class Jopa {
 
 	private String fname;
 	static final int ADDRBITS = 11;
-	static final int DATABITS = 10;
+	/** length of microcode instruction including nxt and opd */
+	static final int DATABITS = Instruction.INSTLEN+2;
 //	static final int BRBITS = 10;
 	static final int BRBITS = ADDRBITS;
 	static final int OPDBITS = 5;
@@ -369,7 +370,7 @@ public class Jopa {
 			line += "\n";
 			line += "begin\n";
 			line += "\n";
-			line += "\t[0..1ff] : 080;	-- nop\n\n";
+			line += "\t[0..1ff] : 080;	-- nop -- TODO: new instruction format\n\n";
 
 			rom.write( line );
 
@@ -496,11 +497,11 @@ public class Jopa {
 						if (opVal>31 || opVal<0) {
 							error(in, "operand wrong: "+opVal);
 						}
-						opcode |= opVal & 0x1f;		// use 5 bit operand
+						opcode |= (opVal & 0x1f)<<2;	// use 5 bit operand
 					}
 
-					if (l.nxt) opcode |= 0x200;
-					if (l.opd) opcode |= 0x100;
+					if (l.nxt) opcode |= 0x200<<2;
+					if (l.opd) opcode |= 0x100<<2;
 					romData[romLen] = opcode;
 					++romLen;
 					line += hex(pc, 4)+" : "+hex(opcode, 3)+";\t";

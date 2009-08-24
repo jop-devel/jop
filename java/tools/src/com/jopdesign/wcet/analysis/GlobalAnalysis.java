@@ -159,8 +159,7 @@ public class GlobalAnalysis {
 	 * @param sg the supergraph, whose vertices are considered
 	 * @return
 	 */
-	private Map<CFGNode, WcetCost> 
-		buildNodeCostMap(SuperGraph sg, StaticCacheApproximation approx) {		
+	private Map<CFGNode, WcetCost> buildNodeCostMap(SuperGraph sg, StaticCacheApproximation approx) {		
 		HashMap<CFGNode, WcetCost> nodeCost = new HashMap<CFGNode,WcetCost>();
 		GlobalVisitor visitor;
 		switch(approx) {

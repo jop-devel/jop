@@ -78,6 +78,7 @@ port (
 	jbr			: out std_logic;
 
 	ext_addr	: out std_logic_vector(EXTA_WIDTH-1 downto 0);
+	mem_type	: out std_logic_vector(1 downto 0);
 	rd, wr		: out std_logic;
 
 	dir			: out std_logic_vector(ram_width-1 downto 0);
@@ -120,9 +121,11 @@ architecture rtl of decode is
 
 begin
 
-	ir <= instr;		-- registered in fetch
+	-- TODO: ignored additional 2 bits at the moment
+	ir <= instr(9 downto 2);		-- registered in fetch
 
 	ext_addr <= ir(EXTA_WIDTH-1 downto 0);	-- address for extension select
+	mem_type <= instr(1 downto 0);
 
 --
 --	branch, jbranch

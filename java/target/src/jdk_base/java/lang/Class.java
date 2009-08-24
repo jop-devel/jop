@@ -38,7 +38,7 @@
 
 package java.lang;
 
-public final class Class {
+public final class Class<T> {
 	public Class getComponentType() {
 		throw new Error("NYI");
 	}

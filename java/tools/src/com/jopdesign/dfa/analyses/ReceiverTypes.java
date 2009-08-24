@@ -1053,9 +1053,14 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 
 		boolean threaded = false;	
 		
-		if (p.cliMap.get(receiver).clazz.instanceOf(p.cliMap.get("joprt.RtThread").clazz) && signature.equals("run()V")) {
-			c.createThread();
-			threaded = true;
+		try {
+			if (p.cliMap.get(receiver).clazz.instanceOf(p.cliMap.get("joprt.RtThread").clazz) && signature.equals("run()V")) {
+				c.createThread();
+				threaded = true;
+			}
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+			throw new Error();
 		}
 
 		// carry only minimal information with call
@@ -1237,6 +1242,9 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 			filterSet(input, result, context.stackPtr-2);
 		} else if (methodId.equals("com.jopdesign.sys.Native.putField(III)V")
 				|| methodId.equals("com.jopdesign.sys.Native.arrayStore(III)V")) {
+			filterSet(input, result, context.stackPtr-3);
+		} else if (methodId.equals("com.jopdesign.sys.Native.condMove(IIZ)I")
+				|| methodId.equals("com.jopdesign.sys.Native.condMoveRef(Ljava/lang/Object;Ljava/lang/Object;Z)Ljava/lang/Object;")) {
 			filterSet(input, result, context.stackPtr-3);
 		} else {
 			System.err.println("Unknown native method: "+methodId);

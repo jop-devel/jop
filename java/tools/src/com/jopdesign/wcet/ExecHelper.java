@@ -38,7 +38,7 @@ import com.jopdesign.wcet.config.Config.BadConfigurationException;
  */
 public class ExecHelper {
 	private Class<?> execClass;
-	private String configFile;
+	private String configFileProp;
 	private Logger tlLogger;
 	private Config config;
 	private String version;
@@ -47,21 +47,22 @@ public class ExecHelper {
 		this.execClass = clazz;
 		this.version = version;
 		this.tlLogger = topLevelLogger;
-		this.configFile = configFile;
+		this.configFileProp = configFile;
 	}
 	public void initTopLevelLogger() {
 		ConsoleAppender consoleApp = new ConsoleAppender(new PatternLayout(), ConsoleAppender.SYSTEM_ERR);
 		consoleApp.setName("TOP-LEVEL");
 		consoleApp.setThreshold(Level.INFO);
 		consoleApp.setLayout(new PatternLayout("["+execClass.getSimpleName()+" %-6rms] %m%n"));
-		tlLogger.addAppender(consoleApp);		
+		tlLogger.addAppender(consoleApp);
 	}
 	/**
 	 * @param args
 	 */
 	public void loadConfig(String[] args) {
 		try {
-			String[] argsrest = Config.load(System.getProperty(configFile),args);
+			String configFile = System.getProperty(configFileProp);
+			String[] argsrest = Config.load(configFile,args);
 			config = Config.instance();
 			if(config.helpRequested()) exitUsage(false);
 			if(config.versionRequested()) exitVersion();
@@ -71,8 +72,8 @@ public class ExecHelper {
 			config.checkOptions();
 			tlLogger.info("Configuration:\n"+config.dumpConfiguration(4));
 			tlLogger.info("java.library.path: "+System.getProperty("java.library.path"));
-		} catch(BadConfigurationException e) { 
-			exitUsage(e.getMessage());					
+		} catch(BadConfigurationException e) {
+			exitUsage(e.getMessage());
 		} catch (Exception e) {
 			e.printStackTrace();
 			bail("Loading configuration failed");
@@ -83,7 +84,7 @@ public class ExecHelper {
 		System.err.println(""+this.execClass);
 		System.err.println("Version: "+version);
 		printSep();
-		System.exit(0);		
+		System.exit(0);
 	}
 	public void exitUsage(String reason) {
 		printSep();
@@ -102,12 +103,12 @@ public class ExecHelper {
 		if(dumpConfig) System.err.println("Current configuration:\n"+Config.instance().dumpConfiguration(4));
 		System.err.println(
 			MessageFormat.format("" +
-					"Usage:\n  java -D{0}=file://<path-to-config> {1} [OPTIONS]", 
-					configFile, execClass.getCanonicalName()));
+					"Usage:\n  java -D{0}=file://<path-to-config> {1} [OPTIONS]",
+					configFileProp, execClass.getCanonicalName()));
 		System.err.println(
 			MessageFormat.format(
 				"Example:\n    java -D{0}=file:///home/jop/myconf.props {1} -{2} {3}\n",
-				 configFile, WCETAnalysis.class.getName(), 
+				 configFileProp, WCETAnalysis.class.getName(),
 				 ProjectConfig.APP_CLASS_NAME.getKey(), "wcet.Method"));
 		System.err.println("OPTIONS can be configured using system properties"+
 		                   ", supplying a property file or as command line arguments");
@@ -131,6 +132,6 @@ public class ExecHelper {
 		System.err.println("---------------------------------------------------------------");
 	}
 	public static double timeDiff(long nanoStart, long nanoStop) {
-		return (((double)nanoStop-nanoStart) / 1.0E9);		
+		return (((double)nanoStop-nanoStart) / 1.0E9);
 	}
 }

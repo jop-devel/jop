@@ -130,10 +130,10 @@ begin
 --		=> first instruction from ROM gets NEVER executed.
 --
 	cmp_rom: rom generic map (i_width+2, pc_width) port map(clk, pc_mux, rom_data);
-	jfetch <= rom_data(9);
-	jopdfetch <= rom_data(8);
+	jfetch <= rom_data(i_width+1);
+	jopdfetch <= rom_data(i_width);
 
-	cmp_off: offtbl port map(ir(4 downto 0), off);
+	cmp_off: offtbl port map(ir(6 downto 2), off);
 
 	dout <= ir;
 	nxt <= jfetch;
@@ -142,10 +142,10 @@ begin
 process(clk)
 begin
 	if rising_edge(clk) then				-- we don't need a reset
-		ir <= rom_data(7 downto 0);			-- better read (second) instruction from room
+		ir <= rom_data(i_width-1 downto 0);			-- better read (second) instruction from room
 		pcwait <= '0';
 		-- decode wait instruction from unregistered rom
-		if (rom_data(7 downto 0)="10000001") then	-- wait instuction
+		if (rom_data(i_width-1 downto 0)="1000000100") then	-- wait instuction
 			pcwait <= '1';
 		end if;
 	end if;

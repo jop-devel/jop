@@ -70,9 +70,19 @@ public abstract class MethodCache {
 		boolean loadOnInvoke =    project.getCallGraph().isLeafNode(mi) 
 		                       || this.isLRU() 
 		                       || assumeOnInvoke;
-		int thisMiss = project.getProcessorModel().getMethodCacheLoadTime(words,loadOnInvoke);
+		long thisMiss = project.getProcessorModel().getMethodCacheMissPenalty(words,loadOnInvoke);
 		Project.logger.info("Cache miss penalty to cumulative cache cost: "+mi+": "+thisMiss);
 		return thisMiss;
+	}
+
+	/** Get miss penalty for invoking the given method */
+	public long getMissOnInvokeCost(ProcessorModel proc, ControlFlowGraph cfg) {
+		return proc.getMethodCacheMissPenalty(cfg.getNumberOfWords(), true);
+	}
+	
+	/** Get miss penalty for returning to the given method */
+	public long getMissOnReturnCost(ProcessorModel proc, ControlFlowGraph cfg) {
+		return proc.getMethodCacheMissPenalty(cfg.getNumberOfWords(), false);
 	}
 
 	/**
@@ -89,6 +99,7 @@ public abstract class MethodCache {
 		}
 		return size;
 	}
+	
 	/** Check that cache is big enough to hold any method possibly invoked
 	 *  Return largest method */
 	public MethodInfo checkCache() throws Exception {
@@ -127,23 +138,12 @@ public abstract class MethodCache {
 //		}
 		return largestMethod;
 	}
-	public long getMissOnInvokeCost(ProcessorModel proc, ControlFlowGraph invoked) {
-		// System.err.println("Miss on invoke cost: "+invoked+": "+proc.getMethodCacheLoadTime(invoked.getNumberOfWords(), true)+
-		//		", for: "+invoked.getNumberOfWords()+" words.");
-		return proc.getMethodCacheLoadTime(invoked.getNumberOfWords(), true);
-	}
 
-	public long getMissOnReturnCost(ProcessorModel proc, ControlFlowGraph invoker) {
-		// System.err.println("Miss on return cost: "+invoker+": "+proc.getMethodCacheLoadTime(invoker.getNumberOfWords(), false)+
-		//		", for: "+invoker.getNumberOfWords()+" words.");
-		return proc.getMethodCacheLoadTime(invoker.getNumberOfWords(), false);
-	}
 	public long getMaxMissCost(ProcessorModel proc, ControlFlowGraph cfg) {
-		long invokeCost=getMissOnInvokeCost(proc,cfg);
+		long invokeCost = proc.getMethodCacheMissPenalty(cfg.getNumberOfWords(), true);
 		if(! cfg.isLeafMethod()) return Math.max(invokeCost, getMissOnReturnCost(proc,cfg));
 		else                     return invokeCost;
 	}
-	
 	/**
 	 * Get an upper bound for the miss cost involved in invoking a method of length
 	 * <pre>invokedBytes</pre> and returning to a method of length <pre>invokerBytes</pre> 
@@ -152,7 +152,8 @@ public abstract class MethodCache {
 	 * @return the maximal cache miss penalty for the invoke/return
 	 */
 	public long getInvokeReturnMissCost(ProcessorModel proc, ControlFlowGraph invoker, ControlFlowGraph invoked) {
-		return getMissOnInvokeCost(proc,invoked)+getMissOnReturnCost(proc,invoker);
+		return proc.getMethodCacheMissPenalty(invoked.getNumberOfWords(), true) +
+		       proc.getMethodCacheMissPenalty(invoker.getNumberOfWords(), false);
 	}
 	public abstract CacheImplementation getName();
 }

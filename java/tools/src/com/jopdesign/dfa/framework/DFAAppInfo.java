@@ -68,7 +68,7 @@ public class DFAAppInfo extends com.jopdesign.build.AppInfo {
 		this.receivers = null;
 	}
 
-	public void load() throws IOException {
+	public void load() throws IOException, ClassNotFoundException {
 		
 		// do the usual stuff
 		super.load();
