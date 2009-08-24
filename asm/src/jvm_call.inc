@@ -135,6 +135,22 @@ invokeinterface:
 			nop
 			nop
 
+//
+//	null pointer exception
+//		only used by invoke instructions
+//
+
+null_pointer:
+			wait				// just for shure if we jump during
+			wait				// a memory transaction to this point
+			ldi	io_exc
+			stmwa				// write ext. mem address
+			ldi	exc_np
+			stmwd				// write ext. mem data
+			wait
+			wait
+			nop	nxt
+
 invokesuper:					// this was invokespecial, replaced in JOPizer when calling super methods
 			ldm	cp opd
 			dup	opd

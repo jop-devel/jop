@@ -68,7 +68,8 @@ public class DoAll {
 				new Logic3(),
 				new InvokeSpecial(),
 				new InvokeSuper(),
-				new PutRef()
+				new PutRef(),
+				new NullPointer()
 		};
 		
 		for (int i=0; i<tc.length; ++i) {

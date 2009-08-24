@@ -134,6 +134,7 @@
 //	... no comments ...
 //	2009-06-17	MS: Enable conditional move again
 //  2009-06-26  WP: fixing invokesuper
+//	2009-08-24	MS: use I/O port for null pointer and array exception
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -143,7 +144,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20090626
+version		= 20090824
 
 //
 //	start of stack area in the on-chip RAM
@@ -162,10 +163,14 @@ stack_init	= 64
 //
 io_cnt		=	-128
 io_wd		=	-125
+io_exc		=	-124
 io_int_ena	=	-128
 io_inval    =   -113
 io_status	=	-112
 io_uart		=	-111
+
+exc_np		=	2
+exc_ab		=	3
 
 io_lock = -123
 io_cpu_id = -122
@@ -1158,7 +1163,6 @@ castore:
 fastore:
 iastore:
 sastore:
-// new HW version :-)))
 			stast
 			pop
 			pop
@@ -1166,142 +1170,17 @@ sastore:
 			wait
 			nop nxt
 
-//*******************************
-// test for oohw change
-//			ldi	6			// 7*5+2+1=38
-//dly7:
-//			dup
-//			nop
-//			bnz	dly7
-//			ldi	-1			// decrement in branch slot
-//			add
-//			pop				// remove counter
-//			nop
-//*******************************
-
-// original SW version
-//			stm	a				// value
-//			stm	b				// index
-//			// arrayref is TOS
-//			dup					// for null pointer check
-//			dup					// for bound check, one cycle wait for bz
-//			bz	null_pointer	// 
-//			// we do the following in the
-//			// branch slot -> one more element
-//			// from the former dup on the stack
-//			ldi	1
-//			add					// arrayref+1
-//			stmra				// read ext. mem, mem_bsy comes one cycle later
-//			wait				// is this ok? - wait in branch slot
-//			wait
-//			ldmrd		 		// read ext. mem (array length)
-//
-//			ldi	1
-//			sub					// length-1
-//			ldm	b				// index
-//			sub					// TOS = length-1-index
-//			ldm	b				// check if index is negativ
-//			or					// is one of both checks negativ?
-//         	ldi	-2147483648		//  0x80000000
-//			and
-//			nop
-//			bnz	array_bound
-//			nop
-//			nop
-//
-//// we could save one or two cycles when
-//// starting the read in the branch slot
-//			stmra				// read handle indirection
-//			wait				// for the GC
-//			wait
-//			ldmrd
-//			ldm	b
-//			add					// index+arrayref
-//
-//			stmwa				// write ext. mem address
-//			ldm	a
-//			stmwd				// write ext. mem data
-//			wait
-//			wait
-//			nop	nxt
-
 aaload:
 baload:
 caload:
 faload:
 iaload:
 saload:
-// new HW version :-)))
 			stald
 			pop
 			wait
 			wait
 			ldmrd nxt
-
-//*******************************
-// test for oohw change
-//			ldi	5			// 6*5+2+3=35
-//dly6:
-//			dup
-//			nop
-//			bnz	dly6
-//			ldi	-1			// decrement in branch slot
-//			add
-//			pop				// remove counter
-//			nop
-//			nop
-//			nop
-//*******************************
-
-// original SW version
-//
-//	ideas for enhancements:
-//		array pointer points to length and not the first element
-//		load and checks in memory interface
-//
-//			stm	b				// index
-//			// arrayref is TOS
-//			dup					// for null pointer check
-//			dup					// for bound check, one cycle wait for bz
-//			bz	null_pointer	// 
-//			// we do the following in the
-//			// branch slot -> one more element
-//			// from the former dup on the stack
-//			ldi	1
-//			add					// arrayref+1
-//
-//			stmra				// read array length
-//			wait				// is this ok? - wait in branch slot
-//			wait
-//			ldmrd		 		// read ext. mem (array length)
-//
-//			ldi	1
-//			add					// length+1
-//			ldm	b				// index
-//			sub					// TOS = length-1-index
-//			ldm	b				// check if index is negativ
-//			or					// is one of both checks neagtv?
-//         	ldi	-2147483648		//  0x80000000
-//			and
-//			nop
-//			bnz	array_bound
-//			nop
-//			nop
-//
-//// we could save one ot two cycles when
-//// starting the read in the branch slot
-//			stmra				// read handle indirection
-//			wait				// for the GC
-//			wait
-//			ldmrd
-//			ldm	b
-//			add					// index+arrayref
-//
-//			stmra				// read ext. mem, mem_bsy comes one cycle later
-//			wait
-//			wait
-//			ldmrd		 nxt	// read ext. mem
-
 
 monitorenter:
  			pop					// drop reference
@@ -1358,47 +1237,6 @@ mon_no_ena:	nop		nxt
 //	invoke and return functions
 //
 #include "jvm_call.inc"
-
-//
-//	null pointer
-//		call JVMHelp.nullPoint();
-//
-
-null_pointer:
-			wait				// just for shure if we jump during
-			wait				// a memory transaction to this point
-			ldm	jjhp			// interrupt() is at offset 0
-								// jjhp points in method table to first
-								// method after methods inherited from Object
-			ldi	2				// second method (index 1 * 2 word);
-			add
-
-			ldi	1
-			nop
-			bnz	invoke			// simulate invokestatic with ptr to meth. str. on stack
-			nop
-			nop
-
-
-//
-//	array bound exception
-//		call JVMHelp.arrayBound();
-//
-
-array_bound:
-			wait				// just for shure if we jump during
-			wait				// a memory transaction to this point
-			ldm	jjhp			// interrupt() is at offset 0
-								// jjhp points in method table to first
-								// method after methods inherited from Object
-			ldi	4				// third method (index 2 * 2 word);
-			add
-
-			ldi	1
-			nop
-			bnz	invoke			// simulate invokestatic with ptr to meth. str. on stack
-			nop
-			nop
 
 //		
 // long bytecodes
