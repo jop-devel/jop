@@ -132,7 +132,7 @@
 	
 	<path id="ext-cp">
 		<fileset dir="java/lib">
-			<include name="bcel-5.1.jar"/>
+			<include name="bcel-5.2.jar"/>
 			<include name="jakarta-regexp-1.3.jar"/>
 			<include name="RXTXcomm.jar"/>
 			<include name="lpsolve55j.jar"/>
@@ -146,8 +146,8 @@
 	<property name="target" value="java/target"/>
 	
 	<path id="tools-cp">
-		<path refid="ext-cp"/>
 		<pathelement location="${tools}/dist/lib/jop-tools.jar"/>
+		<path refid="ext-cp"/>
 	</path>
 	
 	<!-- application optimization with ProGuard: proguard.sourceforge.net -->
