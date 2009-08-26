@@ -6,15 +6,16 @@ use ieee.std_logic_unsigned.all;
 use work.sc_pack.all;
 use work.sc_arbiter_pack.all;
 use work.tm_pack.all;
+use work.tm_internal_pack.all;
 
 -- TODO filter flash accesses
 
 entity tmif is
 
--- generic (
--- 
--- 
--- );
+generic (
+	addr_width		: integer;
+	way_bits		: integer
+);
 
 port (
 	clk					: in std_logic;
@@ -25,7 +26,7 @@ port (
 	--
 	
 	-- set until transaction finished/aborted
-	commit_out_try			: out std_logic;
+	commit_out_try			: buffer std_logic; -- TODO
 	commit_in_allow			: in std_logic;
 
 	--
@@ -58,26 +59,6 @@ end tmif;
 
 architecture rtl of tmif is
 
-	--
-	-- TM STATE MACHINE
-	--
-
-	type state_type is (
-		no_transaction,
-
-		start_normal_transaction,
-		normal_transaction,
-		commit_wait_token, -- TODO additional states to register commit_in_allow?
-		commit,
-
-		early_commit_wait_token,
-		early_commit,
-		early_committed_transaction, -- TODO same for expl./OF EC?
-
-		end_transaction, -- TODO only for EC?
-		
-		rollback
-		);
 		
 	signal state, next_state		: state_type;
 	signal nesting_cnt				: nesting_cnt_type;
@@ -97,8 +78,11 @@ architecture rtl of tmif is
 	signal read_tag_of				: std_logic;
 	signal write_buffer_of			: std_logic;
 
+	signal reset_on_transaction_start 	: std_logic;
 
 	-- filter signals to/from tm module
+	signal reset_tm					: std_logic;
+	
 	signal sc_out_cpu_filtered		: sc_out_type;
 	
 	signal sc_in_cpu_filtered		: sc_in_type;
@@ -107,8 +91,9 @@ architecture rtl of tmif is
 	signal processing_tm_cmd		: std_logic;	
 	signal next_processing_tm_cmd	: std_logic;
 	
-	signal tm_cmd_rdy_cnt			: unsigned(RDY_CNT_SIZE-1 downto 0);
-
+	signal next_tm_cmd_rdy_cnt			: unsigned(RDY_CNT_SIZE-1 downto 0);
+	signal tm_cmd_rdy_cnt				: unsigned(RDY_CNT_SIZE-1 downto 0);
+	
 
 
 	--
@@ -122,18 +107,20 @@ architecture rtl of tmif is
 		);
 		
 	signal memory_access_mode			: memory_access_mode_type;
-
+	signal next_memory_access_mode		: memory_access_mode_type;
 
 begin
 
-	--
-	-- TM STATE MACHINE
-	--
+	reset_tm <= reset or reset_on_transaction_start;
 
 	cmp_tm: entity work.tm(rtl)
+	generic map (
+		addr_width => addr_width,
+		way_bits => way_bits
+	)	
 	port map (
 		clk => clk,
-		reset => reset,
+		reset => reset_tm,
 		from_cpu => sc_out_cpu_filtered,
 		to_cpu => sc_in_cpu_filtered,
 		to_mem => sc_out_arb_filtered,
@@ -145,9 +132,14 @@ begin
 		start_commit => start_commit,
 		committing => committing,
 		
-		read_tag_of => open,
-		write_buffer_of => open
+		read_tag_of => read_tag_of,
+		write_buffer_of => write_buffer_of
 		);			
+
+
+	--
+	-- TM STATE MACHINE
+	--
 
 	sync: process(reset, clk) is
 	begin
@@ -158,11 +150,14 @@ begin
 			processing_tm_cmd <= '0';
 			
 			--tm_cmd <= none;
+			
+			tm_cmd_rdy_cnt <= "00";
 		elsif rising_edge(clk) then
 			state <= next_state;
 			nesting_cnt <= next_nesting_cnt;
 			
-			processing_tm_cmd <= next_processing_tm_cmd;			
+			processing_tm_cmd <= next_processing_tm_cmd;
+			tm_cmd_rdy_cnt <= next_tm_cmd_rdy_cnt;			
 		end if;
 	end process sync;
 	
@@ -180,7 +175,7 @@ begin
 	end process gen_tm_cmd;	
 
 	
-	gen_rdy_cnt_sel: process(processing_tm_cmd, tm_cmd, tm_cmd_rdy_cnt) is
+	gen_rdy_cnt_sel: process(processing_tm_cmd, tm_cmd, next_tm_cmd_rdy_cnt) is
 	begin
 		next_processing_tm_cmd <= processing_tm_cmd;	
 	
@@ -189,7 +184,9 @@ begin
 				next_processing_tm_cmd <= '1';
 			end if;
 		else
-			if tm_cmd_rdy_cnt = "00" then
+			-- TODO
+			if next_tm_cmd_rdy_cnt = "00" and 
+				(committing = '0' and commit_out_try = '0') then
 				next_processing_tm_cmd <= '0';
 			end if;
 		end if;
@@ -215,29 +212,32 @@ begin
 	begin
 		next_state <= state;
 		exc_tm_rollback <= '0';
-		tm_cmd_rdy_cnt <= "00";
+		next_tm_cmd_rdy_cnt <= "00";
 		start_commit <= '0';
+		
+		reset_on_transaction_start <= '0';
 		
 		case state is
 			when no_transaction =>
 				if tm_cmd = start_transaction then
 						next_state <= start_normal_transaction;
 						-- TODO not needed if set asynchronously
-						tm_cmd_rdy_cnt <= "01";
+						next_tm_cmd_rdy_cnt <= "01";
 				end if;
 				
 			when start_normal_transaction =>
 				next_state <= normal_transaction;
+				reset_on_transaction_start <= '1';
 			when normal_transaction =>
 				case tm_cmd is
 					when end_transaction =>
 						if nesting_cnt = nesting_cnt_type'(0 => '1', others => '0') then
 							next_state <= commit_wait_token;
-							tm_cmd_rdy_cnt <= "11";
+							next_tm_cmd_rdy_cnt <= "11";
 						end if;
 					when early_commit =>
 						next_state <= early_commit_wait_token;
-						tm_cmd_rdy_cnt <= "11";
+						next_tm_cmd_rdy_cnt <= "11";
 					when others => 
 						null;
 				end case;						
@@ -250,6 +250,8 @@ begin
 					next_state <= rollback;
 				end if;
 			when commit_wait_token =>
+				next_tm_cmd_rdy_cnt <= "11";
+			
 				if commit_in_allow = '1' then
 					next_state <= commit;
 					start_commit <= '1';
@@ -260,6 +262,7 @@ begin
 					start_commit <= '0';
 				end if;
 			when commit =>
+				next_tm_cmd_rdy_cnt <= "11";
 				
 				-- TODO check condition
 				if start_commit = '0' and committing = '0' then
@@ -289,7 +292,7 @@ begin
 						if nesting_cnt = 
 							nesting_cnt_type'(0 => '1', others => '0') then
 							next_state <= end_transaction;
-							tm_cmd_rdy_cnt <= "10"; -- TODO
+							next_tm_cmd_rdy_cnt <= "10"; -- TODO
 						end if;
 					when others =>
 						null;
@@ -299,7 +302,7 @@ begin
 				-- TODO
 				next_state <= no_transaction;
 				-- TODO not needed if set asynchronously
-				tm_cmd_rdy_cnt <= "01";
+				next_tm_cmd_rdy_cnt <= "01";
 				
 			when rollback =>
 				exc_tm_rollback <= '1';
@@ -323,6 +326,27 @@ begin
 	--
 	-- MEMORY ACCESS SELECTOR
 	--
+
+	-- TODO
+	with next_state select
+		next_memory_access_mode <= 
+			bypass when no_transaction | start_normal_transaction |
+				early_committed_transaction | end_transaction, 
+			transactional when normal_transaction,
+			commit when commit_wait_token | commit | 
+				early_commit_wait_token | early_commit |
+				rollback;
+
+	gen_memory_access_mode: process (clk, reset) is
+	begin
+	    if reset = '1' then
+	    	memory_access_mode <= bypass;
+	    elsif rising_edge(clk) then
+	    	memory_access_mode <= next_memory_access_mode;
+	    end if;
+	end process gen_memory_access_mode;
+
+
 
 	-- sets sc_out_cpu_filtered, sc_out_arb, sc_in_cpu
 	-- TODO this is not well thought-out	
@@ -354,7 +378,8 @@ begin
 			sc_out_arb.wr <= '0';
 		end if;					
 		
-		if processing_tm_cmd = '1' then									
+		-- TODO
+		if processing_tm_cmd = '1' and (committing = '0' and commit_out_try = '0') then									
 			sc_in_cpu.rdy_cnt <= tm_cmd_rdy_cnt;
 		end if;		
 	end process; 
