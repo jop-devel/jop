@@ -502,8 +502,8 @@ public class Jopa {
 						opcode |= opVal & 0x1f;		// use 5 bit operand
 					}
 
-					if (l.nxt) opcode |= 0x200;
-					if (l.opd) opcode |= 0x100;
+					if (l.nxt) opcode |= 0x2<<Instruction.INSTLEN;
+					if (l.opd) opcode |= 0x1<< Instruction.INSTLEN;
 					romData[romLen] = opcode;
 					++romLen;
 					line += hex(pc, 4)+" : "+hex(opcode, 3)+";\t";
