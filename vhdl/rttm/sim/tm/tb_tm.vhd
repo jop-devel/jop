@@ -35,6 +35,8 @@ constant addr_width		: integer := 18;	-- address bits of cachable memory
 constant way_bits		: integer := 3;		-- 2**way_bits is number of entries
 
 
+constant conflict_detection_cycles		: integer := 5;
+
 --
 --	Generic
 --
@@ -61,6 +63,20 @@ constant reset_time			: time := 5 ns;
 	signal sc_in_arb: sc_in_type;		
 	signal exc_tm_rollback: std_logic;
 
+	signal broadcast: tm_broadcast_type := 
+		(
+			valid => '0',
+			address => (others => 'U')
+		);
+
+--
+--	Test activity flags
+--
+
+	signal testing_commit: boolean := false;
+	signal testing_conflict: boolean := false;
+
+
 --
 --	ModelSim Signal Spy
 --
@@ -84,21 +100,16 @@ begin
 		reset => reset,
 		commit_out_try => commit_out_try,
 		commit_in_allow => commit_in_allow,
-		broadcast => ('0', (others => '0')),
+		broadcast => broadcast,
 		sc_out_cpu => sc_out_cpu,
 		sc_in_cpu => sc_in_cpu,
 		sc_out_arb => sc_out_arb,
 		sc_in_arb => sc_in_arb,
 		exc_tm_rollback => exc_tm_rollback
 		);
-
---	
---	Normal mode assertions
--- TODO in own testbench
---
-	
-	--assert commit_out_try /= '1';
-	--assert exc_tm_rollback /= '1';
+		
+	-- TODO why is this ignored?
+	sc_out_cpu.nc <= '1';
 
 	commit_coordinator: process is
 	begin
@@ -115,7 +126,20 @@ begin
 		commit_in_allow <= '0'; 
 	end process commit_coordinator;
 
+	signal_spy: process is
+	begin
+		init_signal_spy("/tb_tm/dut/cmp_tm/data","/tb_tm/write_buffer");
+		wait;
+	end process signal_spy;
+
+
+--	
+--	Normal mode assertions
+-- TODO in own testbench
+--
 	
+
+	-- TODO why doesn't this fail?
 	forwarding: postponed process (reset, clk) is
 	begin
 		if reset = '1' then
@@ -129,38 +153,47 @@ begin
 --	
 --	Input
 --
-	
-	signal_spy: process is
-	begin
-		init_signal_spy("/tb_tm/dut/cmp_tm/data","/tb_tm/write_buffer");
-		wait;
-	end process signal_spy;
-	
+		
 	gen: process is
-		variable result: natural;
-		variable result_vector: std_logic_vector(31 downto 0);
+		variable result: std_logic_vector(31 downto 0);
 	
-		alias nesting_cnt is << signal dut.nesting_cnt: nesting_cnt_type >>;
+		-- main memory
 		
 		type ram_type is array (0 to 2**MEM_BITS-1) 
 			of std_logic_vector(31 downto 0); 
 		alias ram is << signal .memory.main_mem.ram: ram_type >>;
+
+		-- tm state
+
+		alias nesting_cnt is << signal dut.nesting_cnt: nesting_cnt_type >>;
+		
+		-- write tags
 		
 		alias write_tags_v is << signal .dut.cmp_tm.write_tags.v: 
 			std_logic_vector(2**way_bits-1 downto 0) >>;		
-		alias write_tags_shift is << signal .dut.cmp_tm.write_tags.shift: 
-			std_logic >>;
+			
+		-- read tags
+			
+		alias read_tags_v is << signal .dut.cmp_tm.read_tags.v: 
+			std_logic_vector(2**way_bits-1 downto 0) >>;		
+		
 		
 		--alias buf is << signal .dut.cmp_tm.data: 
 		--	data_array(0 to << constant .dut.cmp_tm.lines: integer >> - 1) >>;
+		
+		type tag_array is array (0 to 2**way_bits-1) of 
+			std_logic_vector(addr_width-1 downto 0);
+		alias read_tags is << signal .dut.cmp_tm.read_tags.tag: tag_array >>;
+		
+		-- test data
 	
 		type addr_array is array (natural range <>) of 
 			std_logic_vector(SC_ADDR_SIZE-1 downto 0);
 		constant addr: addr_array := 
-			("000" & X"049f8", "000" & X"07607"); 
+			("000" & X"049f8", "000" & X"07607", "000" & X"00001"); 
 			
 		constant data: data_array :=
-			(X"aa25359b" , X"acd23bd6", X"42303eea");
+			(X"aa25359b" , X"acd23bd6", X"42303eea", X"0000007b");
 	begin
 		-- TODO sc_out_cpu <= sc_out_idle;
 	
@@ -171,12 +204,12 @@ begin
 		
 		assert << signal .dut.state: state_type>> = no_transaction;
 		
-		sc_write(clk, 1, 123, sc_out_cpu, sc_in_cpu);
+		sc_write(clk, addr(2), data(3), sc_out_cpu, sc_in_cpu);
 		assert now = 60 ns;
-		assert to_integer(unsigned(ram(1))) = 123;
+		assert ram(to_integer(unsigned(addr(2)))) = data(3);
 		
-		sc_read(clk, 1, result, sc_out_cpu, sc_in_cpu);
-		assert now = 100 ns and result = 123;
+		sc_read(clk, addr(2), result, sc_out_cpu, sc_in_cpu);
+		assert now = 100 ns and result = data(3);
 		
 		 
 
@@ -211,9 +244,12 @@ begin
 		
 		assert << signal .dut.conflict: std_logic >> /= '1';
 		assert write_tags_v = (2**way_bits-1 downto 0 => '0');
-		assert write_tags_shift = '0';
+		assert << signal .dut.cmp_tm.write_tags.shift: 
+			std_logic >> = '0';
 		
-		
+		assert read_tags_v = (2**way_bits-1 downto 0 => '0');		
+		assert << signal .dut.cmp_tm.read_tags.shift: 
+			std_logic >> = '0';
 		
 		-- writes and reads in transactional mode
 		
@@ -225,9 +261,22 @@ begin
 		assert write_buffer(0) = data(0);
 		assert ram(to_integer(unsigned(addr(0)))) = (31 downto 0 => 'U');
 		
-		sc_read(clk, addr(0), result_vector, sc_out_cpu, sc_in_cpu);
+		sc_read(clk, addr(0), result, sc_out_cpu, sc_in_cpu);
 		
-		assert result_vector = data(0);
+		assert result = data(0);
+		
+		
+		-- read uncached word
+		
+		sc_read(clk, addr(2), result, sc_out_cpu, sc_in_cpu);
+		
+		assert result = data(3);		
+		assert read_tags(0) = addr(0)(addr_width-1 downto 0);
+		assert read_tags(1) = addr(2)(addr_width-1 downto 0);
+		
+		assert read_tags_v(2**way_bits-1 downto 2) = 
+			(2**way_bits-1 downto 2 => '0');
+		assert read_tags_v(1 downto 0) = "11";
 		
 
 		sc_write(clk, TM_MAGIC, 
@@ -246,9 +295,9 @@ begin
 			std_logic_vector(way_bits-1 downto 0) >> = 
 			(way_bits-1 downto 2 => '0') & "01";
 		
-		sc_read(clk, addr(0), result_vector, sc_out_cpu, sc_in_cpu);
+		sc_read(clk, addr(0), result, sc_out_cpu, sc_in_cpu);
 		
-		assert result_vector = data(1);
+		assert result = data(1);
 						
 		sc_write(clk, addr(1), data(2), sc_out_cpu, sc_in_cpu);
 
@@ -258,9 +307,16 @@ begin
 			std_logic_vector(way_bits-1 downto 0) >> = 
 			(way_bits-1 downto 2 => '0') & "10";
 		
+		
+		-- commit transaction
+
+		testing_commit <= true;
+		
 		sc_write(clk, TM_MAGIC, 
 			(31 downto tm_cmd_raw'length => '0') & TM_CMD_END_TRANSACTION, 
 			sc_out_cpu, sc_in_cpu);
+		
+		testing_commit <= false;
 		
 		assert << signal .dut.state: state_type>> = no_transaction;
 		assert to_integer(unsigned(nesting_cnt)) = 0;
@@ -268,10 +324,77 @@ begin
 		assert ram(to_integer(unsigned(addr(0)))) = (data(1));
 		assert ram(to_integer(unsigned(addr(1)))) = (data(2));		
 		
+		
+		
+		-- start another transaction
+		
+		sc_write(clk, TM_MAGIC, 
+			(31 downto tm_cmd_raw'length => '0') & TM_CMD_START_TRANSACTION, 
+			sc_out_cpu, sc_in_cpu);
+		
+		assert << signal .dut.state: state_type>> = normal_transaction;
+		
+		-- no conflict
+				
+		broadcast <= (
+			valid => '1',
+			address => addr(0));
+			
+		wait until rising_edge(clk);
+		assert exc_tm_rollback = '0';
+		
+		broadcast.valid <= '0';
+		
+		for i in 2 to conflict_detection_cycles loop
+			wait until rising_edge(clk);
+			assert exc_tm_rollback = '0';
+		end loop;
+		
+		
+		-- conflict
+		
+		sc_read(clk, addr(0), result, sc_out_cpu, sc_in_cpu);
+		
+		testing_conflict <= true;
+		
+		broadcast <= (
+			valid => '1',
+			address => addr(0));
+		
+		wait until rising_edge(clk);
+		
+		broadcast.valid <= '0';
+		
+		for i in 2 to conflict_detection_cycles+1 loop
+			
+			assert i <= conflict_detection_cycles;
+			exit when exc_tm_rollback = '1';
+			wait until rising_edge(clk);					
+		end loop;
+
+		testing_conflict <= false;
+		
 		finished <= true;
 		write(output, "Test finished.");
 		wait;
 	end process gen;
+	
+	
+	check_flags: process is
+	begin
+		wait until falling_edge(reset);
+		loop
+			wait until rising_edge(clk);
+			
+			assert commit_out_try = '0' or testing_commit;
+			assert exc_tm_rollback = '0' or testing_conflict;
+		end loop; 
+	end process check_flags;
+
+	
+		--assert commit_out_try /= '1';
+	--assert exc_tm_rollback /= '1';
+	
 
 --
 --	Generic

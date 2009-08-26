@@ -134,7 +134,7 @@ begin
 -- Read tag memory
 --
 
-	read_tags_wr <= from_cpu.rd and not from_cpu.nc;
+	read_tags_wr <= from_cpu.rd; -- TODO and not from_cpu.nc;
 
 	read_tags: entity work.tag(rtl)
 	generic map (
