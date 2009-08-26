@@ -138,9 +138,9 @@ public class Startup {
 	 * @return RAM size in 32 bit words
 	 */
 	static int getRamSize(int offset) {
-		
-		int size = 0x0078500; // adresses for JOP - after this memory for vga
-		/*
+
+		// change for DE2-70 VGA board
+		// int size = 0x0078500; // adresses for JOP - after this memory for vga
 		int size = 0;
 		int firstWord = Native.rd(offset+0);
 		int val;
@@ -161,7 +161,7 @@ public class Startup {
 		}
 		// restore the first word
 		Native.wr(firstWord, offset+0);
-		*/
+
 		return size;
 	}
 	
