@@ -139,10 +139,11 @@ public class Startup {
 	 */
 	static int getRamSize(int offset) {
 		
+		int size = 0x0078500; // adresses for JOP - after this memory for vga
+		/*
 		int size = 0;
 		int firstWord = Native.rd(offset+0);
 		int val;
-		
 		// increment in 512 Bytes
 		for (size=0; ; size+=128) {
 			val = Native.rd(offset+size);
@@ -160,6 +161,7 @@ public class Startup {
 		}
 		// restore the first word
 		Native.wr(firstWord, offset+0);
+		*/
 		return size;
 	}
 	

@@ -41,8 +41,8 @@ else
 	COM_FLAG=-e
 endif
 
-BLASTER_TYPE=ByteBlasterMV
-#BLASTER_TYPE=USB-Blaster
+#BLASTER_TYPE=ByteBlasterMV
+BLASTER_TYPE=USB-Blaster
 
 ifeq ($(WINDIR),)
 	USBRUNNER=./USBRunner
@@ -53,16 +53,16 @@ else
 endif
 
 # 'some' different Quartus projects
-QPROJ=cycmin cycbaseio cycbg dspio lego cycfpu cyc256x16 sopcmin usbmin cyccmp
+QPROJ=cycmin cycbaseio cycbg dspio lego cycfpu cyc256x16 sopcmin usbmin cyccmp de2-70vga
 # if you want to build only one Quartus project use e.q.:
 ifeq ($(USB),true)
 	QPROJ=usbmin
 else
-	QPROJ=cycmin
+	QPROJ=de2-70vga
 endif
 
 # Number of cores for JopSim and RTTM simulation
-CORE_CNT=4
+CORE_CNT=1
 
 # Which project do you want to be downloaded?
 DLPROJ=$(QPROJ)
@@ -72,9 +72,9 @@ FLPROJ=$(DLPROJ)
 IPDEST=192.168.1.2
 IPDEST=192.168.0.123
 
-P1=test
-P2=test
-P3=HelloWorld
+#P1=test
+#P2=test
+#P3=HelloWorld
 #P2=jvm
 #P3=DoAll
 #P1=rtapi
@@ -107,6 +107,15 @@ WCET_METHOD=measure
 #P1=.
 #P2=dsvmmcp
 #P3=TestDSVMMCP
+
+##### JOP-UI #####
+P1=test
+P2=jopui
+#P3=PrimitivesTest
+P3=JopUIDemo
+#P3=Clock
+#P3=Mouse_test
+#P3=JPFTest
 
 #
 #	some variables
@@ -189,7 +198,8 @@ DEBUG_JOPIZER=
 #DEBUG_JOPSIM=$(DEBUG_PARAMETERS)
 DEBUG_JOPSIM=
 
-
+# Resource File for JopGui
+RES_FILE=test.jpf
 
 #
 #	application optimization with ProGuard:
@@ -452,9 +462,15 @@ sim: java_app
 #		without the tools
 #		use -Dcpucnt=# for a CMP simulation
 #
-jsim: java_app
+jsimonly:
 	java $(DEBUG_JOPSIM) -cp java/tools/dist/lib/jop-tools.jar -Dlog="false" \
-	com.jopdesign.tools.JopSim java/target/dist/bin/$(JOPBIN)
+	com.jopdesign.tools.JopSimDisplay java/target/dist/bin/$(JOPBIN)
+
+jsim: java_app jsimonly
+
+jsend:
+	java $(DEBUG_JOPSIM) -cp java/tools/dist/lib/jop-tools.jar -Dlog="false" \
+	com.jopdesign.tools.JopSimDisplay java/target/dist/bin/$(JOPBIN) < $(RES_FILE)
 
 #
 #	Simulate RTTM
@@ -493,6 +509,16 @@ download:
 #	this is the download version with down.exe
 	down $(COM_FLAG) java/target/dist/bin/$(JOPBIN) $(COM_PORT)
 
+send_file:
+	sendfile $(COM_FLAG) $(RES_FILE) $(COM_PORT)
+
+upload:
+ifeq ($(USB),true)
+	make config_usb
+else	
+	make config_byteblaster
+endif
+	make download
 
 #
 #	flash programming
