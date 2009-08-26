@@ -33,6 +33,7 @@ use ieee.numeric_std.all;
 
 use work.sc_pack.all;
 use work.sc_arbiter_pack.all;
+use work.tm_pack.all;
 
 
 entity tm is
@@ -63,6 +64,15 @@ end tm;
 
 architecture rtl of tm is
 
+	type state_type is (
+		no_commit,
+		commit_read,
+		commit_write,
+		commit_wait
+		);
+
+	signal state			: state_type;
+
 	signal tm_rdy_cnt		: unsigned(RDY_CNT_SIZE-1 downto 0); 
 
 	--
@@ -75,8 +85,8 @@ architecture rtl of tm is
 
 	signal line_addr, newline: unsigned(way_bits-1 downto 0);
 
-	type data_array is array (0 to lines-1) of std_logic_vector(31 downto 0);
-	signal data			: data_array;
+	--type data_array is array (0 to lines-1) of std_logic_vector(31 downto 0);
+	signal data			: data_array(0 to lines-1);
 
 	signal hit			: std_logic;
 
@@ -93,8 +103,7 @@ architecture rtl of tm is
 	--
 	
 	signal commit_line			: unsigned(way_bits-1 downto 0);
-	signal next_commit_wr		: std_logic;
-	signal commit_wr			: std_logic;
+	signal shift				: std_logic;
 	
 	signal commit_addr			: std_logic_vector(addr_width-1 downto 0);
 	
@@ -165,10 +174,11 @@ begin
 			newline => newline,
 			full => write_tags_full,
 			
-			shift => next_commit_wr,
+			shift => shift,
 			lowest_addr => commit_addr
 		);
 		
+-- TODO why is is_conflict_check set here?
 gen_read_tags_addr_async: process(from_cpu, broadcast, broadcast_addr_del, 
 	broadcast_check_del) is
 begin
@@ -179,6 +189,8 @@ begin
 		if broadcast.valid = '1' then
 			next_broadcast_check_del <= '1';
 		end if;
+		
+		is_conflict_check <= '0';
 	else
 		-- TODO e.g. here: use don't care?
 		read_tags_addr <= broadcast.address(addr_width-1 downto 0);
@@ -285,6 +297,7 @@ end process gen_rdy_cnt;
 
 process (rd_hit, reg_data, save_data, rd_miss, from_mem)
 begin
+	-- TODO test
 	-- TODO
 	if rd_miss = '1' then
 		to_cpu.rd_data <= from_mem.rd_data;
@@ -301,52 +314,62 @@ end process;
 -- Commit
 --
 
--- sets committing, commit_line, commit_wr
-commit: process(reset, clk) is
+-- sets state, commit_line, committing
+commit: process (clk, reset) is
 begin
-	if reset = '1' then
-		committing <= '0';
-		
-		commit_wr <= '0';		
-	elsif rising_edge(clk) then
-		commit_wr <= '0';
-	
-		if start_commit = '1' then
-			committing <= '1';
-			commit_line <= (others => '0');
-		end if;
-		
-		-- TODO rdy_cnt = "00"
-		if from_mem.rdy_cnt = "00" and start_commit = '0' then
-			commit_line <= commit_line + 1;
-			commit_wr <= '1';
-		end if;
-		
-		if committing = '1' and commit_line = newline then
-			committing <= '0';
-		end if;
-	end if;
+    if reset = '1' then
+    	state <= no_commit;
+    	
+    	commit_line <= (others => '0');
+    	committing <= '0';
+    elsif rising_edge(clk) then
+    	shift <= '0';
+    	to_mem.wr <= '0';
+    
+		case state is
+			when no_commit =>
+				if start_commit = '1' then					
+					state <= commit_read;
+					commit_line <= (others => '0');
+					committing <= '1';
+				end if;
+			when commit_read =>				
+				if commit_line = newline then
+					state <= no_commit;
+					committing <= '0';
+				else
+					state <= commit_write;
+					
+					shift <= '1';
+					to_mem.wr <= '1'; 
+				end if;
+				
+				-- for next commit_read state
+				commit_line <= commit_line + 1;
+			when commit_write =>
+				
+				state <= commit_wait;
+			when commit_wait =>
+				-- TODO rdy_cnt = "0X"
+				if from_mem.rdy_cnt = "00" then
+					state <= commit_read;
+				end if;
+		end case;
+			
+    end if;
 end process commit;
 
-next_commit_wr <= '1' when from_mem.rdy_cnt = "00" and start_commit = '0' else '0';
+to_mem.rd <= '0';
 
 process(reset, clk) is
 begin
 	if reset = '1' then
-		to_mem <= (
-			(others => '0'),
-			(others => '0'),
-			'0', '0', '0', '0', '0');
+		to_mem.address	<= (others => '0'); 
+		to_mem.wr_data <= (others => '0');		
 	elsif rising_edge(clk) then
-		to_mem <= (
-			address	=> (SC_ADDR_SIZE-1 downto addr_width => '0') & commit_addr,
-			wr_data	=> reg_data,		
-			rd => '0',
-			wr => commit_wr,
-			atomic => '0',
-			nc => '0',
-			tm_broadcast => '0'
-		);
+		to_mem.address	<= (SC_ADDR_SIZE-1 downto addr_width => '0') 
+			& commit_addr;
+		to_mem.wr_data <= reg_data;		
 	end if;
 end process;
 

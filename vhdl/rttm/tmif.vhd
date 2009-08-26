@@ -175,7 +175,8 @@ begin
 	end process gen_tm_cmd;	
 
 	
-	gen_rdy_cnt_sel: process(processing_tm_cmd, tm_cmd, next_tm_cmd_rdy_cnt) is
+	gen_rdy_cnt_sel: process(commit_out_try, committing, next_tm_cmd_rdy_cnt, 
+		processing_tm_cmd, tm_cmd) is
 	begin
 		next_processing_tm_cmd <= processing_tm_cmd;	
 	
@@ -350,11 +351,9 @@ begin
 
 	-- sets sc_out_cpu_filtered, sc_out_arb, sc_in_cpu
 	-- TODO this is not well thought-out	
-	process(memory_access_mode, next_processing_tm_cmd, processing_tm_cmd,
-		tm_cmd_rdy_cnt,
-		sc_in_cpu_filtered, sc_out_cpu,  
-		sc_out_arb_filtered, sc_in_arb
-		) is
+	process(memory_access_mode, processing_tm_cmd, sc_in_arb, 
+		sc_in_cpu_filtered, sc_out_arb_filtered, sc_out_cpu, tm_cmd, 
+		tm_cmd_rdy_cnt) is
 	begin
 		sc_out_cpu_filtered <= sc_out_cpu;
 		sc_out_arb <= sc_out_cpu;
@@ -373,13 +372,15 @@ begin
 		
 		-- overrides when executing TM command
 		
-		if next_processing_tm_cmd = '1' then
+		-- TODO define processing_tm_cmd
+		if tm_cmd /= none then
 			sc_out_cpu_filtered.wr <= '0';
-			sc_out_arb.wr <= '0';
+			sc_out_arb.wr <= '0'; -- TODO?
 		end if;					
 		
 		-- TODO
-		if processing_tm_cmd = '1' and (committing = '0' and commit_out_try = '0') then									
+		if processing_tm_cmd = '1' then 
+		-- TODO and (committing = '0' and commit_out_try = '0') then									
 			sc_in_cpu.rdy_cnt <= tm_cmd_rdy_cnt;
 		end if;		
 	end process; 

@@ -1,7 +1,7 @@
 JOPDIR=../../..
 
-#OPTIONS=-2008 -quiet -check_synthesis -lint -pedanticerrors -suppress 1236
-OPTIONS=-2008 -quiet #-suppress 1236
+OPTIONS=-2008 -quiet -check_synthesis -lint -pedanticerrors -suppress 1236
+#OPTIONS=-2008 -quiet -suppress 1236
 
 include Makefile.in
 

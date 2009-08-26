@@ -32,7 +32,7 @@ architecture behav of tb_tm is
 constant MEM_BITS			: integer := 15;
 
 constant addr_width		: integer := 18;	-- address bits of cachable memory
-constant way_bits		: integer := 5;		-- 2**way_bits is number of entries
+constant way_bits		: integer := 3;		-- 2**way_bits is number of entries
 
 
 --
@@ -102,6 +102,8 @@ begin
 
 	commit_coordinator: process is
 	begin
+		commit_in_allow <= '0';
+	
 		wait until commit_out_try = '1';
 		wait for cycle * 3;
 				
@@ -151,12 +153,14 @@ begin
 		
 		--alias buf is << signal .dut.cmp_tm.data: 
 		--	data_array(0 to << constant .dut.cmp_tm.lines: integer >> - 1) >>;
-
-		constant addr1: std_logic_vector(SC_ADDR_SIZE-1 downto 0) := 
-			"000" & X"049f8";
+	
+		type addr_array is array (natural range <>) of 
+			std_logic_vector(SC_ADDR_SIZE-1 downto 0);
+		constant addr: addr_array := 
+			("000" & X"049f8", "000" & X"07607"); 
 			
-		constant data1: std_logic_vector(31 downto 0) :=
-			X"acd23bd6";
+		constant data: data_array :=
+			(X"aa25359b" , X"acd23bd6", X"42303eea");
 	begin
 		-- TODO sc_out_cpu <= sc_out_idle;
 	
@@ -183,7 +187,7 @@ begin
 		sc_write(clk, TM_MAGIC, 
 			(31 downto tm_cmd_raw'length => '0') & TM_CMD_START_TRANSACTION, 
 			sc_out_cpu, sc_in_cpu);
-			
+		
 		assert << signal .dut.state: state_type>> = normal_transaction;
 		assert to_integer(unsigned(nesting_cnt)) = 1;		
 
@@ -213,17 +217,17 @@ begin
 		
 		-- writes and reads in transactional mode
 		
-		sc_write(clk, addr1, data1, sc_out_cpu, sc_in_cpu);
+		sc_write(clk, addr(0), data(0), sc_out_cpu, sc_in_cpu);
 		
 		assert write_tags_v(0) = '1';
 		assert write_tags_v(2**way_bits-1 downto 1) = (2**way_bits-1 downto 1 => '0');  
 		-- TODO this does fail, why? assert write_tags_v = (2**way_bits-1 downto 1 => '0', 0 => '1');
-		assert write_buffer(0) = data1;
-		assert ram(to_integer(unsigned(addr1))) = (31 downto 0 => 'U');
+		assert write_buffer(0) = data(0);
+		assert ram(to_integer(unsigned(addr(0)))) = (31 downto 0 => 'U');
 		
-		sc_read(clk, addr1, result_vector, sc_out_cpu, sc_in_cpu);
+		sc_read(clk, addr(0), result_vector, sc_out_cpu, sc_in_cpu);
 		
-		assert result_vector = data1;
+		assert result_vector = data(0);
 		
 
 		sc_write(clk, TM_MAGIC, 
@@ -233,27 +237,36 @@ begin
 		assert to_integer(unsigned(nesting_cnt)) = 1;
 
  
-		sc_write(clk, addr1, X"acd23bd6", sc_out_cpu, sc_in_cpu);
+		sc_write(clk, addr(0), data(1), sc_out_cpu, sc_in_cpu);
 		
 		assert write_tags_v(0) = '1';
 		assert write_tags_v(2**way_bits-1 downto 1) = (2**way_bits-1 downto 1 => '0');  
-		assert write_buffer(0) = X"acd23bd6";
+		assert write_buffer(0) = data(1);
+		assert << signal .dut.cmp_tm.newline:
+			std_logic_vector(way_bits-1 downto 0) >> = 
+			(way_bits-1 downto 2 => '0') & "01";
 		
-		sc_read(clk, addr1, result_vector, sc_out_cpu, sc_in_cpu);
+		sc_read(clk, addr(0), result_vector, sc_out_cpu, sc_in_cpu);
 		
-		assert result_vector = X"acd23bd6";
-		
-		
+		assert result_vector = data(1);
+						
+		sc_write(clk, addr(1), data(2), sc_out_cpu, sc_in_cpu);
+
+		assert write_buffer(0) = data(1);
+		assert write_buffer(1) = data(2);
+		assert << signal .dut.cmp_tm.newline:
+			std_logic_vector(way_bits-1 downto 0) >> = 
+			(way_bits-1 downto 2 => '0') & "10";
 		
 		sc_write(clk, TM_MAGIC, 
 			(31 downto tm_cmd_raw'length => '0') & TM_CMD_END_TRANSACTION, 
 			sc_out_cpu, sc_in_cpu);
 		
+		assert << signal .dut.state: state_type>> = no_transaction;
 		assert to_integer(unsigned(nesting_cnt)) = 0;
 		
-		
-		-- TODO assert ram(to_integer(unsigned(addr1))) = (data1);
-		
+		assert ram(to_integer(unsigned(addr(0)))) = (data(1));
+		assert ram(to_integer(unsigned(addr(1)))) = (data(2));		
 		
 		finished <= true;
 		write(output, "Test finished.");
