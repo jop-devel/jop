@@ -254,6 +254,7 @@ begin
 	elsif rising_edge(clk) then
 
 		sel_log <= "00";
+		-- TODO: could be without condition
 		if (ir(9 downto 2)="00000000") then		-- pop, and, or, xor
 			sel_log <= ir(1 downto 0);
 		end if;
@@ -281,7 +282,6 @@ begin
 			when "0000000110" =>				-- stmul
 			when "0000000111" =>				-- stmwa
 			when "0000001000" =>				-- stmra
-					ena_ar <= '1';
 			when "0000001001" =>				-- stmwd
 			when "0000001010" =>				-- stald
 			when "0000001011" =>				-- stast
@@ -300,6 +300,7 @@ begin
 			when "0000011001" =>				-- stjpc
 					ena_jpc <= '1';
 			when "0000011010" =>				-- star
+					ena_ar <= '1';
 			when "0000011011" =>				-- stsp
 			when "0000011100" =>				-- ushr
 			when "0000011101" =>				-- shl
