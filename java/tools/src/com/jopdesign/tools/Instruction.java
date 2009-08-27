@@ -121,10 +121,9 @@ public class Instruction implements Serializable {
 			//
 			// 'no sp change' instructions
 			//
-			new Instruction("nop", 0x080, 0, false, StackType.NOP),
-			new Instruction("wait", 0x081, 0, false, StackType.NOP),
-
-			new Instruction("jbr", 0x082, 0, false, StackType.NOP),
+			new Instruction("nop", 0x100, 0, false, StackType.NOP),
+			new Instruction("wait", 0x101, 0, false, StackType.NOP),
+			new Instruction("jbr", 0x102, 0, false, StackType.NOP),
 
 			//
 			// 'push' instructions
@@ -195,7 +194,7 @@ public class Instruction implements Serializable {
 			for (int j = 0; j < ins.opdSize; ++j) {
 				System.out.print("-");
 			}
-			System.out.print("\" =>\t\t\t\t-- ");
+			System.out.print("\" =>\t\t\t-- ");
 			System.out.print(ins.name);
 			System.out.println();
 		}
@@ -211,14 +210,20 @@ public class Instruction implements Serializable {
 			if (st[idx] == null) {
 				st[idx] = ins.sType;
 			} else if (st[idx] != ins.sType) {
-//				throw new Error("Conflicting stack types: " + ins.name);
+				throw new Error("Conflicting stack types: " + ins.name);
 			}
 		}
 		for (int i = 0; i < 16; ++i) {
-			System.out.print("\t\t\twhen \"");
+			System.out.print("\t\twhen \"");
 			System.out.print(Jopa.bin(i, 4));
-			System.out.print("\" =>\t\t\t\t-- " + st[i]);
+			System.out.print("\" =>\t\t\t-- " + st[i]);
 			System.out.println();
+			if (st[i]==StackType.PUSH) {
+				System.out.println("\t\t\t\tis_push <= '1';");
+			}
+			if (st[i]==StackType.POP) {
+				System.out.println("\t\t\t\tis_pop <= '1';");
+			}
 		}
 	}
 

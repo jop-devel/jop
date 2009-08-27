@@ -145,7 +145,7 @@ begin
 		ir <= rom_data(i_width-1 downto 0);			-- better read (second) instruction from room
 		pcwait <= '0';
 		-- decode wait instruction from unregistered rom
-		if (rom_data(i_width-1 downto 0)="0010000001") then	-- wait instuction
+		if (rom_data(i_width-1 downto 0)="0100000001") then	-- wait instuction
 			pcwait <= '1';
 		end if;
 	end if;

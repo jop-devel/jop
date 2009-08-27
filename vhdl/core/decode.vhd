@@ -117,6 +117,8 @@ architecture rtl of decode is
 --
 --	signal ir		: std_logic_vector(i_width-1 downto 0);		-- Xilinx and ModelSim don't like this... instruction register
 	signal ir		: std_logic_vector(9 downto 0);		-- instruction register
+	signal is_push	: std_logic;
+	signal is_pop	: std_logic;
 
 begin
 
@@ -149,7 +151,7 @@ process(ir)
 begin
 
 	jbr <= '0';
-	if (ir="0010000010") then		-- jbr: goto and if_xxx
+	if (ir="0100000010") then		-- jbr: goto and if_xxx
 		jbr <= '1';
 	end if;
 
@@ -159,15 +161,44 @@ end process;
 --	addr, read stage:
 --		decode from ir (only logic, no register)
 --
-process(ir)
+process(ir, is_pop, is_push)
 begin
+
+	is_pop <= '0';
+	is_push <= '0';
+
+	case ir(9 downto 6) is
+
+		when "0000" =>			-- POP
+				is_pop <= '1';
+		when "0001" =>			-- POP
+				is_pop <= '1';
+		when "0010" =>			-- PUSH
+				is_push <= '1';
+		when "0011" =>			-- PUSH
+				is_push <= '1';
+		when "0100" =>			-- NOP
+		when "0101" =>			-- null
+		when "0110" =>			-- null
+		when "0111" =>			-- null
+		when "1000" =>			-- NOP
+		when "1001" =>			-- null
+		when "1010" =>			-- null
+		when "1011" =>			-- null
+		when "1100" =>			-- null
+		when "1101" =>			-- null
+		when "1110" =>			-- null
+		when "1111" =>			-- null
+		when others =>
+			null;
+	end case;
+
+
 
 -- ram wraddress and wrena are registered
 
 	wr_ena <= '0';
-	if (ir(9 downto 5)="00101" or			-- 'push' instructions
-		ir(9 downto 5)="00110" or
-		ir(9 downto 5)="00111" or
+	if (is_push='1' or						-- push instructions
 		ir(9 downto 5)="00001" or			-- stm
 		ir(9 downto 3)="0000010") then	-- st, stn, stmi
 
@@ -179,8 +210,8 @@ begin
 		rd <= '1';
 	end if;
 	wr <= '0';
-	if ir(9 downto 0)="0000000110"
-		or ir(9 downto 0)="0000000111"
+	if ir(9 downto 0)="0000000110"			-- stmul
+		or ir(9 downto 0)="0000000111"		-- stmwa
 		or ir(9 downto 3)="0000001" then -- st memio
 		wr <= '1';
 	end if;
@@ -215,15 +246,13 @@ begin
 -- select for sp update
 
 	sel_smux <= "00";				-- sp = sp
-	if(ir(7)='0') then			-- 'pop' instruction
+	if is_pop='1' then				-- 'pop' instruction
 		sel_smux <= "01";			-- --sp
 	end if;
-	if(ir(9 downto 5)="00101" or	-- 'push' instruction
-		ir(9 downto 5)="00110" or
-		ir(9 downto 5)="00111") then
+	if is_push='1' then				-- 'push' instruction
 		sel_smux <= "10";			-- ++sp
 	end if;
-	if (ir="0000011011") then			-- st sp
+	if ir="0000011011" then			-- st sp
 		sel_smux <= "11";			-- sp = a
 	end if;
 			
@@ -253,8 +282,7 @@ begin
 
 	elsif rising_edge(clk) then
 
-		sel_log <= "00";
-		-- TODO: could be without condition
+		sel_log <= "00";						-- default is pop path
 		if (ir(9 downto 2)="00000000") then		-- pop, and, or, xor
 			sel_log <= ir(1 downto 0);
 		end if;
@@ -306,11 +334,11 @@ begin
 			when "0000011101" =>				-- shl
 			when "0000011110" =>				-- shr
 --			when "00001-----" =>				-- stm
-			when "0010000000" =>				-- nop
+			when "0100000000" =>				-- nop
 					ena_a <= '0';
-			when "0010000001" =>				-- wait
+			when "0100000001" =>				-- wait
 					ena_a <= '0';
-			when "0010000010" =>				-- jbr
+			when "0100000010" =>				-- jbr
 					ena_a <= '0';
 --			when "00101-----" =>				-- ldm
 --			when "00110-----" =>				-- ldi
@@ -434,13 +462,13 @@ begin
 									-- default 'pop'
 		sel_bmux <= '1';			-- mem
 		sel_mmux <= '0';			-- a
-		if (ir(7)='1') then		-- 'push' and 'no stack change'
+		if is_pop='0' then			-- 'push' or 'no stack change'
 			sel_bmux <= '0';		-- a
 			sel_mmux <= '1';		-- b
 		end if;
 
 		ena_b <= '1';
-		if (ir(9 downto 5)="00100") then	-- 'no stack change' (nop, jbr)
+		if is_push='0' and is_pop='0' then	-- 'no stack change' (nop, wait, jbr)
 			ena_b <= '0';
 		end if;
 
