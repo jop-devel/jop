@@ -1,7 +1,6 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
-use ieee.std_logic_unsigned.all;
 
 use work.sc_pack.all;
 use work.sc_arbiter_pack.all;
@@ -203,8 +202,10 @@ begin
 				next_nesting_cnt <= nesting_cnt + 1;
 			when end_transaction =>
 				next_nesting_cnt <= nesting_cnt - 1;
-			when aborted | early_commit | none =>
+			when early_commit | none =>
 				next_nesting_cnt <= nesting_cnt;
+			when aborted =>
+				next_nesting_cnt <= (others => '0');				
 		end case;				
 	end process nesting_cnt_process; 
 

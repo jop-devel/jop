@@ -108,9 +108,6 @@ begin
 		exc_tm_rollback => exc_tm_rollback
 		);
 		
-	-- TODO why is this ignored?
-	sc_out_cpu.nc <= '1';
-
 	commit_coordinator: process is
 	begin
 		commit_in_allow <= '0';
@@ -192,13 +189,16 @@ begin
 		constant addr: addr_array := 
 			("000" & X"049f8", "000" & X"07607", 
 			"000" & X"00001", "000" & X"01b22",
-			"000" & X"016c4", "000" & X"07e39"); 
+			"000" & X"016c4", "000" & X"07e39",
+			"000" & X"5280c"); 
 			
 		constant data: data_array :=
 			(X"aa25359b" , X"acd23bd6", X"42303eea", X"0000007b",
-			X"5bdae77b", X"f9967474");
+			X"5bdae77b", X"f9967474", X"987ca438");
 	begin
 		-- TODO sc_out_cpu <= sc_out_idle;
+		sc_out_cpu.nc <= '0';
+		
 	
 		wait until falling_edge(reset);		
 		wait until rising_edge(clk);
@@ -214,36 +214,36 @@ begin
 		sc_read(clk, addr(2), result, sc_out_cpu, sc_in_cpu);
 		assert now = 100 ns and result = data(3);
 		
-		 
+		sc_write(clk, addr(6), data(6), sc_out_cpu, sc_in_cpu);
 
 		-- start and end transactions
 		
-		assert to_integer(unsigned(nesting_cnt)) = 0; 
+		assert to_integer(nesting_cnt) = 0; 
 
 		sc_write(clk, TM_MAGIC, 
 			(31 downto tm_cmd_raw'length => '0') & TM_CMD_START_TRANSACTION, 
 			sc_out_cpu, sc_in_cpu);
 		
 		assert << signal .dut.state: state_type>> = normal_transaction;
-		assert to_integer(unsigned(nesting_cnt)) = 1;		
+		assert to_integer(nesting_cnt) = 1;		
 
 		sc_write(clk, TM_MAGIC, 
 			(31 downto tm_cmd_raw'length => '0') & TM_CMD_START_TRANSACTION, 
 			sc_out_cpu, sc_in_cpu);
 
-		assert to_integer(unsigned(nesting_cnt)) = 2;
+		assert to_integer(nesting_cnt) = 2;
 		
 		sc_write(clk, TM_MAGIC, 
 			(31 downto tm_cmd_raw'length => '0') & TM_CMD_END_TRANSACTION, 
 			sc_out_cpu, sc_in_cpu);
 		
-		assert to_integer(unsigned(nesting_cnt)) = 1;
+		assert to_integer(nesting_cnt) = 1;
 		
 		sc_write(clk, TM_MAGIC, 
 			(31 downto tm_cmd_raw'length => '0') & TM_CMD_START_TRANSACTION, 
 			sc_out_cpu, sc_in_cpu);
 			
-		assert to_integer(unsigned(nesting_cnt)) = 2;
+		assert to_integer(nesting_cnt) = 2;
 		
 		assert << signal .dut.conflict: std_logic >> /= '1';
 		assert write_tags_v = (2**way_bits-1 downto 0 => '0');
@@ -279,16 +279,33 @@ begin
 		
 		assert read_tags_v(2**way_bits-1 downto 2) = 
 			(2**way_bits-1 downto 2 => '0');
-		assert read_tags_v(1 downto 0) = "11";
-		
+		assert read_tags_v(1 downto 0) = "11";				
 
+
+
+		-- exit inner transaction
+		
 		sc_write(clk, TM_MAGIC, 
 			(31 downto tm_cmd_raw'length => '0') & TM_CMD_END_TRANSACTION, 
 			sc_out_cpu, sc_in_cpu);
 		
-		assert to_integer(unsigned(nesting_cnt)) = 1;
+		assert to_integer(nesting_cnt) = 1;
 
- 
+
+		-- read .nc word
+
+		sc_out_cpu.nc <= '1';
+		sc_read(clk, addr(6), result, sc_out_cpu, sc_in_cpu);
+		sc_out_cpu.nc <= '0';
+		
+		assert result = data(6);
+		assert read_tags_v(2**way_bits-1 downto 2) = 
+			(2**way_bits-1 downto 2 => '0');
+		assert read_tags_v(1 downto 0) = "11";				
+		
+		
+		
+
 		sc_write(clk, addr(0), data(1), sc_out_cpu, sc_in_cpu);
 		
 		assert write_tags_v(0) = '1';
@@ -322,7 +339,7 @@ begin
 		testing_commit <= false;
 		
 		assert << signal .dut.state: state_type>> = no_transaction;
-		assert to_integer(unsigned(nesting_cnt)) = 0;
+		assert to_integer(nesting_cnt) = 0;
 		
 		assert ram(to_integer(unsigned(addr(0)))) = (data(1));
 		assert ram(to_integer(unsigned(addr(1)))) = (data(2));		
@@ -398,7 +415,9 @@ begin
 			(31 downto tm_cmd_raw'length => '0') & TM_CMD_ABORTED, 
 			sc_out_cpu, sc_in_cpu);
 		
-		assert << signal .dut.state: state_type>> = no_transaction;			
+		assert << signal .dut.state: state_type>> = no_transaction;
+		assert to_integer(nesting_cnt) = 0; -- ( ) 
+			
 		assert ram(to_integer(unsigned(addr(3)))) = (31 downto 0 => 'U');
 		assert ram(to_integer(unsigned(addr(5)))) = (31 downto 0 => 'U');
 		
@@ -419,9 +438,6 @@ begin
 		end loop; 
 	end process check_flags;
 
-	
-		--assert commit_out_try /= '1';
-	--assert exc_tm_rollback /= '1';
 	
 
 --

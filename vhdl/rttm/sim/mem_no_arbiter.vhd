@@ -41,11 +41,12 @@ signal fl_d	: std_logic_vector(7 downto 0);
 	signal ram_addr			: std_logic_vector(17 downto 0);
 --	signal ram_dout			: std_logic_vector(31 downto 0);
 --	signal ram_din			: std_logic_vector(31 downto 0);
-	signal ram_dout_en	: std_logic;
+	signal ram_dout_en		: std_logic;
 	signal ram_ncs			: std_logic;
 	signal ram_noe			: std_logic;
 	signal ram_nwe			: std_logic;
 	
+	signal ram_dout			: std_logic_vector(31 downto 0);
 	signal ram_data			: std_logic_vector(31 downto 0);
 
 begin
@@ -61,7 +62,7 @@ begin
 		sc_mem_out => sc_mem_out,
 		sc_mem_in => sc_mem_in,
 		ram_addr => ram_addr,
-		ram_dout => ram_data,
+		ram_dout => ram_dout,
 		ram_din => ram_data,
 		ram_dout_en => ram_dout_en,
 		ram_ncs => ram_ncs,
@@ -70,8 +71,15 @@ begin
 		fl_d => fl_d,
 		fl_rdy => '1'
 		);
-
-
+		
+	process(ram_dout_en, ram_dout)
+	begin
+		if ram_dout_en='1' then
+			ram_data <= ram_dout;
+		else
+			ram_data <= (others => 'Z');
+		end if;
+	end process;
 
 	main_mem: entity work.memory generic map(MEM_BITS, 32) port map(
 			addr => ram_addr(MEM_BITS-1 downto 0),
