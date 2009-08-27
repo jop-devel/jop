@@ -22,7 +22,8 @@ package tm_internal_pack is
 
 		end_transaction, -- TODO only for EC?
 		
-		rollback
+		rollback_signal,
+		rollback_wait
 		);
 
 	--type data_array is array (integer range <>) of std_logic_vector(31 downto 0);

@@ -103,7 +103,8 @@ architecture rtl of tmif is
 	type memory_access_mode_type is (
 		bypass,
 		transactional,
-		commit
+		commit,
+		contain
 		);
 		
 	signal memory_access_mode			: memory_access_mode_type;
@@ -163,7 +164,7 @@ begin
 	
 	gen_tm_cmd: process (sc_out_cpu) is
 	begin
-		tm_cmd <= none;
+		tm_cmd <= none;			
 		
 		-- TODO
 		if sc_out_cpu.wr = '1' then
@@ -202,7 +203,7 @@ begin
 				next_nesting_cnt <= nesting_cnt + 1;
 			when end_transaction =>
 				next_nesting_cnt <= nesting_cnt - 1;
-			when others =>
+			when aborted | early_commit | none =>
 				next_nesting_cnt <= nesting_cnt;
 		end case;				
 	end process nesting_cnt_process; 
@@ -248,7 +249,7 @@ begin
 				end if;
 				
 				if conflict = '1' then
-					next_state <= rollback;
+					next_state <= rollback_signal;
 				end if;
 			when commit_wait_token =>
 				next_tm_cmd_rdy_cnt <= "11";
@@ -259,7 +260,7 @@ begin
 				end if;
 			
 				if conflict = '1' then
-					next_state <= rollback;
+					next_state <= rollback_signal;
 					start_commit <= '0';
 				end if;
 			when commit =>
@@ -279,7 +280,7 @@ begin
 				end if;
 				
 				if conflict = '1' then
-					next_state <= rollback;
+					next_state <= rollback_signal;
 					start_commit <= '0';
 				end if;
 			when early_commit =>
@@ -305,11 +306,17 @@ begin
 				-- TODO not needed if set asynchronously
 				next_tm_cmd_rdy_cnt <= "01";
 				
-			when rollback =>
+			when rollback_signal =>
+				-- TODO this is set asynchronously
 				exc_tm_rollback <= '1';
 				-- TODO
-				next_state <= no_transaction;
+				next_state <= rollback_wait;
 				
+			when rollback_wait =>
+				-- TODO make sure all other commands ignored
+				if tm_cmd = aborted then
+					next_state <= no_transaction;
+				end if;
 			
 		end case;
 	end process state_machine;
@@ -335,8 +342,9 @@ begin
 				early_committed_transaction | end_transaction, 
 			transactional when normal_transaction,
 			commit when commit_wait_token | commit | 
-				early_commit_wait_token | early_commit |
-				rollback;
+				early_commit_wait_token | early_commit,
+			contain when rollback_signal | rollback_wait;						
+
 
 	gen_memory_access_mode: process (clk, reset) is
 	begin
@@ -368,6 +376,16 @@ begin
 				
 			when commit =>
 				sc_out_arb <= sc_out_arb_filtered;
+			
+			when contain =>
+				sc_out_cpu_filtered.wr <= '0';
+				sc_out_cpu_filtered.rd <= '0'; -- TODO reads?
+				
+				sc_out_arb.wr <= '0';
+				
+				sc_in_cpu <= (
+					rdy_cnt => (others => '0'),
+					rd_data => (others => '0'));
 		end case;
 		
 		-- overrides when executing TM command
@@ -375,7 +393,7 @@ begin
 		-- TODO define processing_tm_cmd
 		if tm_cmd /= none then
 			sc_out_cpu_filtered.wr <= '0';
-			sc_out_arb.wr <= '0'; -- TODO?
+			sc_out_arb.wr <= '0';
 		end if;					
 		
 		-- TODO

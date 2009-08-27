@@ -190,10 +190,13 @@ begin
 		type addr_array is array (natural range <>) of 
 			std_logic_vector(SC_ADDR_SIZE-1 downto 0);
 		constant addr: addr_array := 
-			("000" & X"049f8", "000" & X"07607", "000" & X"00001"); 
+			("000" & X"049f8", "000" & X"07607", 
+			"000" & X"00001", "000" & X"01b22",
+			"000" & X"016c4", "000" & X"07e39"); 
 			
 		constant data: data_array :=
-			(X"aa25359b" , X"acd23bd6", X"42303eea", X"0000007b");
+			(X"aa25359b" , X"acd23bd6", X"42303eea", X"0000007b",
+			X"5bdae77b", X"f9967474");
 	begin
 		-- TODO sc_out_cpu <= sc_out_idle;
 	
@@ -350,8 +353,12 @@ begin
 			assert exc_tm_rollback = '0';
 		end loop;
 		
+		-- write something that is not committed
 		
-		-- conflict
+		sc_write(clk, addr(3), data(4), sc_out_cpu, sc_in_cpu);
+		
+		
+		-- conflict 
 		
 		sc_read(clk, addr(0), result, sc_out_cpu, sc_in_cpu);
 		
@@ -366,13 +373,34 @@ begin
 		broadcast.valid <= '0';
 		
 		for i in 2 to conflict_detection_cycles+1 loop
-			
 			assert i <= conflict_detection_cycles;
 			exit when exc_tm_rollback = '1';
 			wait until rising_edge(clk);					
 		end loop;
 
 		testing_conflict <= false;
+		
+		assert << signal .dut.state: state_type>> = rollback_signal;
+		
+		-- TODO zombie reads/writes
+		
+		sc_read(clk, addr(4), result, sc_out_cpu, sc_in_cpu);
+
+		sc_write(clk, addr(5), data(5), sc_out_cpu, sc_in_cpu);
+
+		assert result = (31 downto 0 => '0');
+		
+		assert << signal .dut.state: state_type>> = rollback_wait;
+		
+		-- ack rollback
+		
+		sc_write(clk, TM_MAGIC, 
+			(31 downto tm_cmd_raw'length => '0') & TM_CMD_ABORTED, 
+			sc_out_cpu, sc_in_cpu);
+		
+		assert << signal .dut.state: state_type>> = no_transaction;			
+		assert ram(to_integer(unsigned(addr(3)))) = (31 downto 0 => 'U');
+		assert ram(to_integer(unsigned(addr(5)))) = (31 downto 0 => 'U');
 		
 		finished <= true;
 		write(output, "Test finished.");
