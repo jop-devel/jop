@@ -31,6 +31,9 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+use ieee.math_real.log2;
+use ieee.math_real.ceil;
+
 use work.jop_types.all;
 use work.sc_pack.all;
 use work.sc_arbiter_pack.all;
@@ -45,7 +48,7 @@ generic (
 	jpc_width	: integer := 10;	-- address bits of java bytecode pc = cache size
 	block_bits	: integer := 4;		-- 2*block_bits is number of cache blocks
 	spm_width	: integer := 8;		-- size of scratchpad RAM (in number of address bits for 32-bit words)
-	cpu_cnt		: integer := 3		-- number of cpus
+	cpu_cnt		: integer := 2		-- number of cpus
 );
 
 port (
@@ -107,6 +110,16 @@ end jop;
 architecture rtl of jop is
 
 --
+--	constants:
+--
+
+-- TODO -1?
+constant cpu_cnt_width: integer := integer(ceil(log2(real(cpu_cnt))));
+constant tm_addr_width		: integer := 18;	-- address bits of cachable memory
+constant tm_way_bits		: integer := 3;		-- 2**way_bits is number of entries
+
+
+--
 --	components:
 --
 
@@ -132,11 +145,15 @@ end component;
 --
 --	jopcpu connections
 --
-	signal sc_arb_out		: arb_out_type(0 to cpu_cnt-1);
-	signal sc_arb_in		: arb_in_type(0 to cpu_cnt-1);
+	signal sc_out_tm		: arb_out_type(0 to cpu_cnt-1);
+	signal sc_in_tm			: arb_in_type(0 to cpu_cnt-1);
 	
-	signal sc_mem_out		: sc_out_type;
-	signal sc_mem_in		: sc_in_type;
+	signal sc_out_arb		: arb_out_type(0 to cpu_cnt-1);
+	signal sc_in_arb		: arb_in_type(0 to cpu_cnt-1);
+		
+	signal sc_mem_out	: sc_out_type;
+	signal sc_mem_in	: sc_in_type;
+	
 	
 	signal sc_io_out		: sc_out_array_type(0 to cpu_cnt-1);
 	signal sc_io_in			: sc_in_array_type(0 to cpu_cnt-1);
@@ -171,6 +188,17 @@ end component;
 	
 -- remove the comment for RAM access counting
 -- signal ram_count		: std_logic;
+
+--
+--	TM
+--
+	
+	signal exc_tm_rollback	: std_logic_vector(0 to cpu_cnt-1);
+	signal tm_broadcast		: tm_broadcast_type;
+	
+	signal commit_try		: std_logic_vector(0 to cpu_cnt-1);
+	signal commit_allow		: std_logic_vector(0 to cpu_cnt-1);
+	
 	
 	
 begin
@@ -224,10 +252,47 @@ end process;
 				spm_width => spm_width
 			)
 			port map(clk_int, int_res,
-				sc_arb_out(i), sc_arb_in(i),
+				sc_out_tm(i), sc_in_tm(i), exc_tm_rollback(i),
 				sc_io_out(i), sc_io_in(i), irq_in(i), 
 				irq_out(i), exc_req(i));
 	end generate;
+	
+	gen_tm: for i in 0 to cpu_cnt-1 generate
+		cmp_tm: entity work.tmif
+			generic map (
+				addr_width => tm_addr_width,
+				way_bits => tm_way_bits
+			)	
+			port map (
+				clk	=> clk,
+				reset => int_res,
+				
+				commit_out_try => commit_try(i),
+				commit_in_allow => commit_allow(i),
+			
+				broadcast => tm_broadcast,
+			
+				sc_out_cpu => sc_out_tm(i),  
+				sc_in_cpu => sc_in_tm(i), 
+			
+				sc_out_arb => sc_out_arb(i),
+				sc_in_arb => sc_in_arb(i),
+			
+				exc_tm_rollback => exc_tm_rollback(i)
+				);
+	end generate;
+
+	cmp_coordinator: entity work.tm_coordinator(rtl)
+	generic map (
+		cpu_cnt => cpu_cnt,
+		cpu_cnt_width => cpu_cnt_width
+		)
+	port map (
+		clk => clk,
+		reset => int_res,
+		commit_try => commit_try,
+		commit_allow => commit_allow
+		);
 			
 	cmp_arbiter: entity work.arbiter
 		generic map(
@@ -235,8 +300,9 @@ end process;
 			cpu_cnt => cpu_cnt
 		)
 		port map(clk_int, int_res,
-			sc_arb_out, sc_arb_in,
-			sc_mem_out, sc_mem_in
+			sc_out_arb, sc_in_arb,
+			sc_mem_out, sc_mem_in,
+			tm_broadcast
 			-- Enable for use with Round Robin Arbiter
 			-- sync_out_array(1)
 			);

@@ -24,7 +24,7 @@
 #
 #	Set USB to true for an USB based board (dspio, usbmin, lego)
 #
-USB=false
+USB=true
 
 
 #
@@ -34,7 +34,7 @@ USB=false
 #		without the echo 'protocol' on USB
 #
 ifeq ($(USB),true)
-	COM_PORT=COM5
+	COM_PORT=COM4
 	COM_FLAG=-e -usb
 else
 	COM_PORT=COM1
@@ -53,10 +53,10 @@ else
 endif
 
 # 'some' different Quartus projects
-QPROJ=cycmin cycbaseio cycbg dspio lego cycfpu cyc256x16 sopcmin usbmin cyccmp de2-70vga
+QPROJ=cycmin cycbaseio cycbg dspio lego cycfpu cyc256x16 sopcmin usbmin cyccmp de2-70vga cycrttm
 # if you want to build only one Quartus project use e.q.:
 ifeq ($(USB),true)
-	QPROJ=usbmin
+	QPROJ=cycrttm
 else
 	QPROJ=cycmin
 endif
@@ -73,8 +73,8 @@ IPDEST=192.168.1.2
 IPDEST=192.168.0.123
 
 P1=test
-P2=test
-P3=HelloWorld
+P2=cmp
+P3=HelloCMP
 #P2=jvm
 #P3=DoAll
 #P1=rtapi
@@ -237,11 +237,11 @@ clean:
 	for ext in $(EXTENSIONS); do \
 		find . -name \*.$$ext -print -exec rm -r -f {} \; ; \
 	done
-	find . -name jop.pof -print -exec rm -r -f {} \;
-	find . -name db -print -exec rm -r -f {} \;
-	find . -name incremental_db -print -exec rm -r -f {} \;
-	rm -rf asm/generated
-	rm -f vhdl/*.vhd
+	-find . -name jop.pof -print -exec rm -r -f {} \;
+	-find . -name db -print -exec rm -r -f {} \;
+	-find . -name incremental_db -print -exec rm -r -f {} \;
+	-rm -rf asm/generated
+	-rm -f vhdl/*.vhd
 	-rm -rf $(TOOLS)/dist
 	-rm -rf $(PCTOOLS)/dist
 	-rm -rf $(TARGET)/dist
@@ -380,7 +380,7 @@ jopusb:
 	make gen_mem -e ASM_SRC=jvm JVM_TYPE=USB
 	@echo $(QPROJ)
 	for target in $(QPROJ); do \
-		make qsyn -e QBT=$$target; \
+		make qsyn -e QBT=$$target || exit; \
 		cd quartus/$$target; \
 		quartus_cpf -c jop.sof ../../rbf/$$target.rbf; \
 		cd ../..; \
@@ -393,7 +393,7 @@ jopflash:
 	make gen_mem -e ASM_SRC=jvm JVM_TYPE=FLASH
 	@echo $(QPROJ)
 	for target in $(QPROJ); do \
-		make qsyn -e QBT=$$target; \
+		make qsyn -e QBT=$$target || exit; \
 		quartus_cpf -c quartus/$$target/jop.sof ttf/$$target.ttf; \
 	done
 
@@ -441,9 +441,9 @@ qsyn:
 #
 sim: java_app
 	make gen_mem -e ASM_SRC=jvm JVM_TYPE=SIMULATION
-	cd modelsim && ./sim.bat
+	#cd modelsim && ./sim.bat
 	# for simulation of CMP 
-	# cd modelsim && ./sim_cmp.bat
+	cd modelsim && ./sim_cmp.bat
 
 #
 #	JopSim target
@@ -455,11 +455,23 @@ jsim: java_app
 	com.jopdesign.tools.JopSim java/target/dist/bin/$(JOPBIN)
 
 #
-#	Simulate RTTM
+#	Simulate RTTM (Jopsim target)
 #
-tmsim: java_app
+jtmsim: java_app
 	java $(DEBUG_JOPSIM) -cp java/tools/dist/lib/jop-tools.jar -Dcpucnt=$(CORE_CNT) \
 	com.jopdesign.tools.TMSim java/target/dist/bin/$(JOPBIN)
+	
+#
+#   Simulate RTTM (Modelsim target)
+#
+tmsim: java_app
+	make gen_mem -e ASM_SRC=jvm JVM_TYPE=SIMULATION
+	cd modelsim && ./sim_tm.bat -i -do sim_tm.do
+
+tmsimcon: java_app
+	make gen_mem -e ASM_SRC=jvm JVM_TYPE=SIMULATION
+	cd modelsim && ./sim_tm.bat -c -do sim_tm_con.do
+
 
 #
 #	Simulate data cache

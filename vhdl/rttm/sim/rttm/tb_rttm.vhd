@@ -44,6 +44,9 @@ architecture tb of tb_rttm is
 
 	signal from_cpu		: sc_out_type;
 	signal to_cpu		: sc_in_type;
+	
+	signal from_mem		: sc_in_type;
+	signal to_mem		: sc_out_type; 
 
 	-- size of main memory simulation in 32-bit words.
 	-- change it to less memory to speedup the simulation
@@ -62,7 +65,16 @@ begin
 			reset => reset,
 			
 			from_cpu => from_cpu,
-			to_cpu => to_cpu
+			to_cpu => to_cpu,
+			
+			from_mem => from_mem,
+			to_mem => to_mem,
+			
+			start_commit => '0',
+			committing => open,
+			
+			read_tag_of => open,
+			write_buffer_of => open
 		);
 		
 --	100 MHz clock

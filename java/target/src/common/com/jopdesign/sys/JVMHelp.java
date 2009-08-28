@@ -142,6 +142,8 @@ synchronized (o) {
 			throw ABExc;
 		} else if (i==Const.EXC_DIVZ) {
 			throw ArithExc;
+		} else if (i==Const.EXC_ROLLBACK) {
+			// TMTODO
 		}
 
 		for (;;);

@@ -218,7 +218,7 @@ end process;
 --
 --	MUX registered RAM and Flash data or ready signal
 --
-process(ram_access, ram_data, flash_data, nand_rdy(1))
+process(flash_data, nand_rdy, ram_access, ram_data, sel_rdy)
 
 begin
 	if (ram_access='1') then
@@ -235,7 +235,7 @@ end process;
 --
 --	next state logic
 --
-process(state, sc_mem_out, trans_ram, wait_state)
+process(sc_mem_out, state, trans_flash, trans_ram, trans_rdy, wait_state)
 
 begin
 

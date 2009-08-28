@@ -5,15 +5,15 @@ add wave -noupdate -format Logic -radix hexadecimal /tb_rttm/reset
 add wave -noupdate -format Literal -radix hexadecimal -expand /tb_rttm/from_cpu
 add wave -noupdate -format Literal -radix hexadecimal -expand /tb_rttm/to_cpu
 add wave -noupdate -divider tag
-add wave -noupdate -format Literal -radix hexadecimal /tb_rttm/tm/tag/addr
-add wave -noupdate -format Logic -radix hexadecimal /tb_rttm/tm/tag/wr
-add wave -noupdate -format Literal /tb_rttm/tm/tag/h
-add wave -noupdate -format Logic -radix hexadecimal /tb_rttm/tm/tag/hit
-add wave -noupdate -format Literal -radix hexadecimal /tb_rttm/tm/tag/line
-add wave -noupdate -format Literal -radix hexadecimal /tb_rttm/tm/tag/nxt
-add wave -noupdate -format Logic -radix hexadecimal /tb_rttm/tm/tag/wr_dly
-add wave -noupdate -format Literal /tb_rttm/tm/tag/v
-add wave -noupdate -format Literal -radix hexadecimal -expand /tb_rttm/tm/tag/tag
+add wave -noupdate -format Literal -radix hexadecimal /tb_rttm/tm/write_tags/addr
+add wave -noupdate -format Logic -radix hexadecimal /tb_rttm/tm/write_tags/wr
+add wave -noupdate -format Literal /tb_rttm/tm/write_tags/h
+add wave -noupdate -format Logic -radix hexadecimal /tb_rttm/tm/write_tags/hit
+add wave -noupdate -format Literal -radix hexadecimal /tb_rttm/tm/write_tags/line
+add wave -noupdate -format Literal -radix hexadecimal /tb_rttm/tm/write_tags/nxt
+add wave -noupdate -format Logic -radix hexadecimal /tb_rttm/tm/write_tags/wr_dly
+add wave -noupdate -format Literal /tb_rttm/tm/write_tags/v
+add wave -noupdate -format Literal -radix hexadecimal -expand /tb_rttm/tm/write_tags/tag
 add wave -noupdate -divider tm
 add wave -noupdate -format Literal -radix hexadecimal /tb_rttm/tm/from_cpu_dly
 add wave -noupdate -format Logic -radix hexadecimal /tb_rttm/tm/rd_hit

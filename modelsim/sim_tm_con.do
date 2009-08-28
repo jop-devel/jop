@@ -1,6 +1,5 @@
 set BreakOnAssertion 1
 set NumericStdNoWarnings 1
-#view *
-view wave
-do wave_tm.do
+
+nolog -all
 run 15 ms
