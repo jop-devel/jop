@@ -9,56 +9,46 @@ vlib work
 vlib grlib
 vlib gaisler
 vlib techmap
-rem vcom -work grlib ../ext/gaisler/version.vhd
-rem vcom -work grlib ../ext/gaisler/stdlib.vhd
-rem vcom -work grlib ../ext/gaisler/amba.vhd
-rem vcom -work gaisler ../ext/gaisler/devices.vhd
-rem vcom -work techmap ../ext/gaisler/gencomp.vhd
-rem vcom -work gaisler ../ext/gaisler/memctrl.vhd
-rem vcom -work gaisler ../ext/gaisler/srctrl.vhd
-vcom %options% %jopdir%/simulation/sim_jop_config_100.vhd
-vcom %options% %jopdir%/core/jop_types.vhd
-vcom %options% %jopdir%/simpcon/sc_pack.vhd
-rem vcom %options% %jopdir%/simpcon/sc2ahbsl.vhd
-vcom %options% %jopdir%/simulation/sim_ram.vhd
-vcom %options% %jopdir%/simulation/sim_pll.vhd
-vcom %options% %jopdir%/simulation/sim_jbc.vhd
-vcom %options% %jopdir%/simulation/sim_rom.vhd
-vcom %options% %jopdir%/simulation/sim_memory.vhd
-vcom %options% %jopdir%/simulation/sim_sc_uart.vhd
-vcom %options% %jopdir%/simulation/bytecode.vhd
-vcom %options% %jopdir%/jtbl.vhd
-vcom %options% %jopdir%/offtbl.vhd
-vcom %options% %jopdir%/core/cache.vhd
 
-vcom %options% %jopdir%/memory/sc_sram32_flash.vhd
-rem vcom %options% %jopdir%/memory/sc_sram16.vhd
+vcom %options% ^
+%jopdir%/simulation/sim_jop_config_100.vhd ^
+%jopdir%/core/jop_types.vhd ^
+%jopdir%/simpcon/sc_pack.vhd ^
+%jopdir%/simulation/sim_ram.vhd ^
+%jopdir%/simulation/sim_pll.vhd ^
+%jopdir%/simulation/sim_jbc.vhd ^
+%jopdir%/simulation/sim_rom.vhd ^
+%jopdir%/simulation/sim_memory.vhd ^
+%jopdir%/simulation/sim_sc_uart.vhd ^
+%jopdir%/simulation/bytecode.vhd ^
+%jopdir%/simulation/microcode.vhd ^
+%jopdir%/jtbl.vhd ^
+%jopdir%/offtbl.vhd ^
+%jopdir%/core/cache.vhd ^
+%jopdir%/memory/sc_sram32_flash.vhd ^
+%jopdir%/memory/mem_sc.vhd ^
+%jopdir%/memory/sdpram.vhd ^
+%jopdir%/core/mul.vhd ^
+%jopdir%/core/extension.vhd ^
+%jopdir%/core/bcfetch.vhd ^
+%jopdir%/core/fetch.vhd ^
+%jopdir%/core/decode.vhd ^
+%jopdir%/core/shift.vhd ^
+%jopdir%/core/stack.vhd ^
+%jopdir%/core/core.vhd ^
+%jopdir%/scio/sc_sys.vhd ^
+%jopdir%/scio/scio_min.vhd ^
+%jopdir%/simpcon/sc_arbiter_pack.vhd ^
+%jopdir%/simpcon/sc_arbiter_fair.vhd ^
+%jopdir%/scio/cmpsync.vhd ^
+%jopdir%/core/jopcpu.vhd ^
+%jopdir%/rttm/tm_pack.vhd ^
+%jopdir%/rttm/tm_internal_pack.vhd ^
+%jopdir%/rttm/tm_coordinator.vhd ^
+%jopdir%/rttm/tag.vhd ^
+%jopdir%/rttm/tm.vhd ^
+%jopdir%/rttm/tmif.vhd ^
+%jopdir%/top/joprttm.vhd ^
+%jopdir%/simulation/tb_jop.vhd
 
-vcom %options% %jopdir%/memory/mem_sc.vhd
-vcom %options% %jopdir%/memory/sdpram.vhd
-vcom %options% %jopdir%/core/mul.vhd
-vcom %options% %jopdir%/core/extension.vhd
-vcom %options% %jopdir%/core/bcfetch.vhd
-vcom %options% %jopdir%/core/fetch.vhd
-vcom %options% %jopdir%/core/decode.vhd
-vcom %options% %jopdir%/core/shift.vhd
-vcom %options% %jopdir%/core/stack.vhd
-vcom %options% %jopdir%/core/core.vhd
-vcom %options% %jopdir%/scio/sc_sys.vhd
-vcom %options% %jopdir%/scio/scio_min.vhd
-vcom %options% %jopdir%/simpcon/sc_arbiter_pack.vhd
-vcom %options% %jopdir%/simpcon/sc_arbiter_fair.vhd
-vcom %options% %jopdir%/scio/cmpsync.vhd
-vcom %options% %jopdir%/core/jopcpu.vhd
-
-rem RTTM specific
-vcom %options% %jopdir%/rttm/tmif.vhd
-
-rem top level
-vcom %options% %jopdir%/top/joprttm.vhd
-rem vcom %options% %jopdir%/top/jopmul_256x16.vhd
-
-vcom %options% %jopdir%/simulation/tb_jop.vhd
-rem vcom %options% %jopdir%/simulation/tb_jop_sram16.vhd
-
-vsim -i -do sim_cmp.do tb_jop
+vsim %* tb_jop

@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream:vhdl/rttm/sim/tm_coordinator/wave.do
 onerror {resume}
 quietly WaveActivateNextPane {} 0
 add wave -noupdate -format Logic /tb_tm_coordinator/finished
@@ -33,3 +34,7 @@ configure wave -timeline 0
 configure wave -timelineunits ns
 update
 WaveRestoreZoom {0 ns} {67 ns}
+=======
+add wave *
+add wave /dut/*
+>>>>>>> Stashed changes:vhdl/rttm/sim/tm_coordinator/wave.do

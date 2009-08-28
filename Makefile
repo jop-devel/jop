@@ -73,8 +73,8 @@ IPDEST=192.168.1.2
 IPDEST=192.168.0.123
 
 P1=test
-P2=rttm
-P3=TestExample
+P2=cmp
+P3=HelloCMP
 #P2=jvm
 #P3=DoAll
 #P1=rtapi
@@ -382,7 +382,7 @@ jopusb:
 	make gen_mem -e ASM_SRC=jvm JVM_TYPE=USB
 	@echo $(QPROJ)
 	for target in $(QPROJ); do \
-		make qsyn -e QBT=$$target; \
+		make qsyn -e QBT=$$target || exit; \
 		cd quartus/$$target; \
 		quartus_cpf -c jop.sof ../../rbf/$$target.rbf; \
 		cd ../..; \
@@ -395,7 +395,7 @@ jopflash:
 	make gen_mem -e ASM_SRC=jvm JVM_TYPE=FLASH
 	@echo $(QPROJ)
 	for target in $(QPROJ); do \
-		make qsyn -e QBT=$$target; \
+		make qsyn -e QBT=$$target || exit; \
 		quartus_cpf -c quartus/$$target/jop.sof ttf/$$target.ttf; \
 	done
 
@@ -443,10 +443,9 @@ qsyn:
 #
 sim: java_app
 	make gen_mem -e ASM_SRC=jvm JVM_TYPE=SIMULATION
-	cd modelsim && ./sim.bat
-	# TODO runs in batch mode:
+	#cd modelsim && ./sim.bat
 	# for simulation of CMP 
-	#cd modelsim && ./sim_cmp.bat
+	cd modelsim && ./sim_cmp.bat
 
 #
 #	JopSim target
@@ -469,7 +468,12 @@ jtmsim: java_app
 #
 tmsim: java_app
 	make gen_mem -e ASM_SRC=jvm JVM_TYPE=SIMULATION
-	cd modelsim && ./sim_tm.bat
+	cd modelsim && ./sim_tm.bat -i -do sim_tm.do
+
+tmsimcon: java_app
+	make gen_mem -e ASM_SRC=jvm JVM_TYPE=SIMULATION
+	cd modelsim && ./sim_tm.bat -c -do sim_tm_con.do
+
 
 #
 #	Simulate data cache

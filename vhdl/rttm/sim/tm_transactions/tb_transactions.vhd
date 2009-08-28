@@ -56,6 +56,7 @@ begin
 --	Testbench
 --
 
+<<<<<<< Updated upstream:vhdl/rttm/sim/tm_transactions/tb_transactions.vhd
 	dut: entity work.tmif(rtl)
 	port map (
 		clk => clk,
@@ -68,6 +69,20 @@ begin
 		sc_arb_out => sc_arb_out,
 		sc_arb_in => sc_arb_in,
 		exc_tm_rollback => exc_tm_rollback
+=======
+	dut: entity work.tmif(rtl)
+	port map (
+		clk => clk,
+		reset => reset,
+		commit_out_try => commit_out_try,
+		commit_in_allow => commit_in_allow,
+		broadcast => broadcast,
+		sc_out_cpu => sc_cpu_out,
+		sc_in_cpu => sc_cpu_in,
+		sc_out_arb => sc_arb_out,
+		sc_in_arb => sc_arb_in,
+		exc_tm_rollback => exc_tm_rollback
+>>>>>>> Stashed changes:vhdl/rttm/sim/tm_transactions/tb_transactions.vhd
 		);
 
 	gen: process is
@@ -96,6 +111,7 @@ begin
 		sc_cpu_out <= idle;
 		
 		finished <= true;
+		wait;
 	end process gen;
 
 --

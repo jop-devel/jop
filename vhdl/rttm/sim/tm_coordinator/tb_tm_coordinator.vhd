@@ -60,6 +60,8 @@ begin
 		commit_allow => commit_allow
 		);
 
+	-- TODO use postponed process in parallel or ugly manual delay? 
+
 	gen: process is
 	begin
 		commit_try <= (others => '0');
@@ -67,14 +69,19 @@ begin
 		wait until falling_edge(reset);
 		wait until rising_edge(clk);
 		
-		assert commit_try = (0 to cpu_cnt-1 => '0');
+		assert commit_allow= (0 to cpu_cnt-1 => '0');
 		
 		commit_try <= (others => '1');
 		wait until rising_edge(clk);
 		
+		commit_try(3) <= '0';
+		
+		assert commit_allow = cpu_flags'(0 => '1', others => '0');
+		
 		commit_try(1) <= '0';
 		
-		wait for delta; assert commit_allow = cpu_flags'(0 => '1', others => '0');		
+		--wait for delta; 
+		--assert commit_allow = cpu_flags'(0 => '1', others => '0');		
 		
 		wait until rising_edge(clk);
 		wait until rising_edge(clk);
@@ -83,16 +90,16 @@ begin
 		
 		wait until rising_edge(clk);
 		
-		commit_try <= (others => '0');
+		assert commit_allow = cpu_flags'(2 => '1', others => '0');
 		
-		wait for delta; assert commit_allow = cpu_flags'(2 => '1', others => '0');
+		commit_try <= (others => '0');
 		
 		wait until rising_edge(clk);
 		
-		wait for delta; assert commit_allow = cpu_flags'(others => '0');
+		assert commit_allow = cpu_flags'(others => '0');
 		
 		finished <= true;
-		--assert false report "Finished" severity failure;
+		wait;
 	end process gen;
 
 --

@@ -1,7 +1,7 @@
 JOPDIR=../../..
 
-#OPTIONS=-93 -quiet -check_synthesis -lint -pedanticerrors
-OPTIONS=-93 -quiet
+OPTIONS=-93 -quiet -check_synthesis -lint -pedanticerrors
+#OPTIONS=-93 -quiet
 
 include Makefile.in
 

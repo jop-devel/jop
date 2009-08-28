@@ -72,7 +72,9 @@ begin
 			reset => reset,
 			
 			from_cpu => from_cpu,
-			to_cpu => to_cpu
+			to_cpu => to_cpu,
+		read_tag_of => open,
+		write_buffer_of => open
 		);
 		
 		

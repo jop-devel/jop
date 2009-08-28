@@ -267,6 +267,8 @@ begin
 			sc_ctrl_mem_in <= sc_mem_in;
 	end case;
 
+	-- TODO assert sc_ctrl_mem_out.address /= "000" & X"FFFFF";
+
 	-- select
 	case sc_ctrl_mem_out.address(SC_ADDR_SIZE-1 downto SC_ADDR_SIZE-2) is
 		when "10" =>
