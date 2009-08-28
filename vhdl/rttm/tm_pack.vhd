@@ -11,7 +11,7 @@ package tm_pack is
 	
 	-- TODO which address?
 	constant TM_MAGIC: std_logic_vector(SC_ADDR_SIZE-1 downto 0) := 
-		 "000" & X"40000"; 
+		 "000" & X"FFFFF"; 
 
 	constant TM_CMD_WIDTH: integer := 2;
 	subtype tm_cmd_raw is std_logic_vector(TM_CMD_WIDTH-1 downto 0);
