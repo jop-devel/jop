@@ -13,21 +13,17 @@ approach.
 In the following section we will give a quick overview on JOP and a
 short description how to get JOP running within an FPGA. A detailed
 description of the build process can be found in
-Chapter~\ref{chap:build}.
-
-JOP is a soft-core written in VHDL plus tools in Java, a simplified
-Java library (JDK), and application examples. JOP is delivered in
-source only and the sources are hosted at
-Opencores.\footnote{\url{http://www.opencores.org/projects.cgi/web/jop}}
-
+Chapter~\ref{chap:build}. JOP is a soft-core written in VHDL plus
+tools in Java, a simplified Java library (JDK), and application
+examples. JOP is delivered in source only.
 
 \subsection{Building JOP and Running ``Hello World"}
 
-To build JOP you first have to download the source tree from
-Opencores. A \emph{Makefile} (or an Ant file) contains all necessary
-steps to build the tools, the processor, and the application.
-Configuration of the FPGA and downloading the Java application is
-also part of the Makefile.
+To build JOP you first have to download the source tree. A
+\emph{Makefile} (or an Ant file) contains all necessary steps to
+build the tools, the processor, and the application. Configuration of
+the FPGA and downloading the Java application is also part of the
+Makefile.
 
 In this description we assume the FPGA board Cycore (see
 Appendix~\ref{appx:cycore}). This board is the default target for
@@ -145,7 +141,7 @@ stages and special support for decoding bytecode instructions was
 added -- a first version of the dynamic bytecode to microcode address
 translation as it is used in the current version of JOP. The
 enhancements within JOP2 resulted in the reduction of the execution
-time for a simple bytecode to 3 cycles. A great enhancement compared
+time for a simple bytecode to 3 cycles. A great enhancement, compared
 to the 23 cycles in JOP1.
 
 The next redesign (JOP3) followed in June 2001. The challenge was to
@@ -203,9 +199,9 @@ The architectural features and highlights of JOP are:
 
     \item The translation takes exactly one cycle per bytecode
         and is therefore pipelined. Compared to other forms of
-        dynamic code translation the proposed translation does
-        not add any variable latency to the execution time and is
-        therefore time predictable.
+        dynamic code translation the translation does not add any
+        variable latency to the execution time and is therefore
+        time predictable.
 
     \item Interrupts are inserted in the translation stage as
         special bytecodes and are transparent to the microcode
@@ -237,13 +233,13 @@ The architectural features and highlights of JOP are:
         and spill is under microcode control and analyzable.
 
     \item No prefetch buffers or store buffers that can introduce
-        unbound time dependencies of instructions. Even simple
+        unbounded time dependencies of instructions. Even simple
         processors can contain an instruction prefetch buffer
         that prohibits exact WCET values. The design of the
         method cache and the translation unit avoids the variable
         latency of a prefetch buffer.
 
-    \item Good average case performance compared to other non
+    \item Good average case performance compared with other non
         real-time Java processors.
 
     \item Avoidance of hard to analyze architectural features

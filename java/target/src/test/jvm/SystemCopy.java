@@ -23,7 +23,7 @@ import java.lang.*;
 
 public class SystemCopy extends TestCase
 {
-	public String getName () 
+	public String toString () 
 	{
 		return "SystemCopy";
 	}

@@ -128,6 +128,7 @@ public class JopSim {
 	};
 
 	static final int MAX_MEM = 1024*1024/4;
+	// static final int MAX_MEM = 2*1024*1024/4; // 2MB for de2-70 board
 	static final int MAX_STACK = Const.STACK_SIZE;	// with internal memory
 	static final int MEM_TEST_OFF = 256;
 	static final int MAX_SCRATCHPAD = 256;	// 1 KB scratchpad memory

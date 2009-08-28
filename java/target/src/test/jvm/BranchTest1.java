@@ -25,7 +25,7 @@ public class BranchTest1   extends TestCase {
 	static class A {}
 	static class B {}
 	
-	public String getName() {
+	public String toString() {
 		return "BranchTest1";
 	}
 	

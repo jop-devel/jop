@@ -25,7 +25,7 @@ import jvm.TestCase;
 
 public class FloatTest extends TestCase {
 
-	public String getName() {
+	public String toString() {
 		return "FloatTest";
 	}
 	

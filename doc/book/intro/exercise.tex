@@ -35,9 +35,9 @@ In the root directory (\code{jop}) there is a \code{Makefile}. Open
 it with an editor and try to find the corresponding lines of code for
 the steps you did in the first exercise. Reset the FPGA by cycling
 the power and run the build with a simple
-\begin{verbatim}
+\begin{lstlisting}
     make
-\end{verbatim}
+\end{lstlisting}
 
 The whole process should run without errors and the result should be
 identical to the previous exercise.
@@ -47,9 +47,9 @@ identical to the previous exercise.
 The whole build process is not necessary when changing the Java
 application. Once the processor is built, a Java application can be
 built and downloaded with the following make target:
-\begin{verbatim}
+\begin{lstlisting}
     make japp
-\end{verbatim}
+\end{lstlisting}
 Change \code{HelloWorld.java} and run it on JOP. Now change the class
 name that contains the \code{main()} method from \code{HelloWorld} to
 \code{Hello} and rerun the Java application build. Now an embedded
@@ -65,13 +65,12 @@ generated during assembly. For a test change only the version
 string\footnote{The actual version date will probably be different
 from the actual sources.} in \code{jvm.asm} to the actual date and
 run a full make.
-\begin{verbatim}
-    version     = 20070831
-\end{verbatim}
-    change to:
-\begin{verbatim}
-    version     = 20110101
-\end{verbatim}
+\begin{lstlisting}
+    version = 20090626
+\end{lstlisting}
+\begin{lstlisting}
+    version = 20110101
+\end{lstlisting}
 The start message should reflect your change. As the microcode was
 changed a full make run is necessary. The microcode assembly
 generates VHDL files and the complete processor has to be rebuilt.
@@ -142,9 +141,9 @@ variables \code{P1}, \code{P2}, and \code{P3} in the
 Change the \code{Makefile} to compile the embedded Java benchmark
 \code{jbe.DoAll}. The parameters for the Java application can also
 be given to the \code{make} with following command line arguments:
-\begin{verbatim}
+\begin{lstlisting}
     make -e P1=bench P2=jbe P3=DoAll
-\end{verbatim}
+\end{lstlisting}
 
 The three variables \code{P1}, \code{P2}, and \code{P3} are a
 shortcut to set the main class of the application. You can also
@@ -167,9 +166,9 @@ An important step in real-time system development is the analysis of
 the WCET of the individual tasks. Compile and run the WCET example
 \code{Loop.java} in package \code{wcet}. You can analyze the WCET of
 the method \code{measure()} with following make command:
-\begin{verbatim}
+\begin{lstlisting}
     make java_app wcet -e P1=test P2=wcet P3=Loop
-\end{verbatim}
+\end{lstlisting}
 Change the code in \code{Loop.java} to enable measurement of the
 execution time and compare it with the output of the static analysis.
 In this simple example the WCET can be measured. However, be aware

@@ -26,7 +26,7 @@ import java.io.*;
 
 public class PrimitiveClasses3 extends TestCase {
 
-	public String getName() {
+	public String toString() {
 		return "PrimitiveClasses3";
 	}
 	

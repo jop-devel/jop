@@ -22,7 +22,7 @@ package jvm;
 
 public class MultiArray extends TestCase {
 
-	public String getName() {
+	public String toString() {
 		return "MultiArray";
 	}
 	

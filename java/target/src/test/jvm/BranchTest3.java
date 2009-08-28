@@ -29,7 +29,7 @@ package jvm;
 public class BranchTest3  extends TestCase {
 
 	
-	public String getName() {
+	public String toString() {
 		return "BranchTest3";
 	}
 	

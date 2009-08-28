@@ -21,7 +21,7 @@
 package jvm;
 
 public class Logic2 extends TestCase {
-	public String getName() {
+	public String toString() {
 		return "Logic2";
 	}
 

@@ -193,6 +193,15 @@ putstatic_long:
 			wait
 			nop	nxt
 
+long_null_pointer:
+			ldi	io_exc
+			stmwa				// write ext. mem address
+			ldi	exc_np
+			stmwd				// write ext. mem data
+			wait
+			wait
+			nop	nxt
+
 getfield_long:
 				// int off = readOpd16u();
 				// int ref = stack[sp];
@@ -205,7 +214,7 @@ getfield_long:
 
 			dup					// null pointer check
 			nop					// could be interleaved with
-			bz	null_pointer	// following code
+			bz	long_null_pointer	// following code
 			nop
 			nop
 
@@ -253,7 +262,7 @@ putfield_long:
 
 			dup					// null pointer check
 			nop					// could be interleaved with
-			bz	null_pointer	// following code
+			bz	long_null_pointer	// following code
 			nop
 			nop
 
@@ -292,7 +301,7 @@ lastore:
 			// arrayref is TOS
 			dup					// for null pointer check
 			dup					// for bound check, one cycle wait for bz
-			bz	null_pointer	// 
+			bz	long_null_pointer	// 
 			// we do the following in the
 			// branch slot -> one more element
 			// from the former dup on the stack
@@ -341,13 +350,29 @@ lastore:
 			wait
 			nop	nxt
 
+//
+//	array bound exception
+//		now only used by long bytecodes
+//
+
+array_bound:
+			wait				// just for shure if we jump during
+			wait				// a memory transaction to this point
+			ldi	io_exc
+			stmwa				// write ext. mem address
+			ldi	exc_ab
+			stmwd				// write ext. mem data
+			wait
+			wait
+			nop	nxt
+
 daload:
 laload:                           
 			stm	b				// index
 			// arrayref is TOS
 			dup					// for null pointer check
 			dup					// for bound check, one cycle wait for bz
-			bz	null_pointer			// we do the following in the
+			bz	long_null_pointer			// we do the following in the
 			// branch slot -> one more element
 			// from the former dup on the stack
 			ldi	1

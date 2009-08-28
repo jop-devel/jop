@@ -224,8 +224,8 @@ $n$ is the number of words transferred.}
     \end{array} \right. )$.
 $n$ is the number of words transferred.}
 
-\footnotetext[240]{\emph{Is the interrupt and the exception still a
-bytecode or is it now inserted just as microcode address?}}
+%\footnotetext[240]{\emph{Is the interrupt and the exception still a
+%bytecode or is it now inserted just as microcode address?}}
 
 
 \subsection*{Memory Timing}
@@ -233,17 +233,17 @@ bytecode or is it now inserted just as microcode address?}}
 The external memory timing is defined in the top level VHDL file
 (e.g.\ \code{jopcyc.vhd}) with \code{ram\_cnt} for the number of
 cycles for a read and write access. At the moment there is no
-difference for a read and write access. For the 100MHz JOP with 15ns
-SRAMs this access time is two cycles (\code{ram\_cnt}=2, 20ns).
-Therefore the wait state $n_{ws}$ is 1 (\code{ram\_cnt-1}).
+difference for a read and write access. For the 100~MHz JOP with
+15~ns SRAMs this access time is two cycles (\code{ram\_cnt}=2,
+20~ns). Therefore the wait state $n_{ws}$ is 1 (\code{ram\_cnt-1}).
 %
 A basic memory read in microcode is as follows:
-\begin{verbatim}
+\begin{lstlisting}
     stmra    // start read with address store
     wait     // fill the pipeline with two
     wait     // wait instructions
     ldmrd    // push read result on TOS
-\end{verbatim}
+\end{lstlisting}
 %
 In this sequence the \emph{last} \code{wait} executes for $1+n_{ws}$
 cycles. Therefore the whole read sequence takes $4+n_{ws}$ cycles.
@@ -251,12 +251,12 @@ For the example with \code{ram\_cnt}=2 this basic memory read takes
 5 cycles.
 
 A memory write in microcode is as follows:
-\begin{verbatim}
+\begin{lstlisting}
     stmwa    // store address
     stmwd    // store data and start the write
     wait     // fill the pipeline with wait
     wait     // wait for the memory ready
-\end{verbatim}
+\end{lstlisting}
 The last wait again executes for $1+n_{ws}$ cycles and the basic
 write takes $4+n_{ws}$ cycles. For the native bytecode \code
 {jopsys\_wrmem} an additional \code{nop} instruction for the
@@ -278,13 +278,13 @@ exact value is given in the footnote.
 
 \subsection*{Instruction Timing}
 
-The bytecodes that access memory are indicated by an $r$ for a
-memory read and an $w$ for a memory write at the cycles column ($r$
-and $w$ are the additional wait states). The wait cycles for the
-memory access have to be added to the execution time. These two
-values are implementation dependent (clock frequency versus RAM
-access time, data bus width); for the Cyclone EP1C6 board with 15ns
-SRAMs and 100MHz clock frequency these values are both 1 cycle
+The bytecodes that access memory are indicated by an $r$ for a memory
+read and an $w$ for a memory write at the cycles column ($r$ and $w$
+are the additional wait states). The wait cycles for the memory
+access have to be added to the execution time. These two values are
+implementation dependent (clock frequency versus RAM access time,
+data bus width); for the Cyclone EP1C6 board with 15~ns SRAMs and
+100~MHz clock frequency these values are both 1 cycle
 (\code{ram\_cnt}-1).
 
 For some bytecodes, part of the memory latency can be hidden by

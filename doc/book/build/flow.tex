@@ -903,11 +903,10 @@ the following files have to be changed:
 First implement the native code in \code{JopSim.java} for easy
 debugging. The \emph{real} microcode is added in \code{jvm.asm} with
 a label for the special byctecode. The naming convention is
-\code{jopsys\_name}. In \code{Native.java} provide a method
-signature for the native method and enter the mapping between this
-signature and the name in \code{jvm.asm} and in
-\code{JopInstr.java}. Provide the execution time in
-\code{WCETInstruction.java} for the WCET analysis.
+\code{jopsys\_name}. In \code{Native.java} provide a method signature
+for the native method and enter the mapping between this signature
+and the name in \code{jvm.asm} and in \code{JopInstr.java}. Provide
+the execution time in \code{WCETInstruction.java} for WCET analysis.
 
 The native method is accessed by the method provided in
 \code{Native.java}. There is no calling overhead involved in the

@@ -53,7 +53,7 @@ else
 endif
 
 # 'some' different Quartus projects
-QPROJ=cycmin cycbaseio cycbg dspio lego cycfpu cyc256x16 sopcmin usbmin cyccmp
+QPROJ=cycmin cycbaseio cycbg dspio lego cycfpu cyc256x16 sopcmin usbmin cyccmp de2-70vga
 # if you want to build only one Quartus project use e.q.:
 ifeq ($(USB),true)
 	QPROJ=usbmin
@@ -62,7 +62,7 @@ else
 endif
 
 # Number of cores for JopSim and RTTM simulation
-CORE_CNT=4
+CORE_CNT=1
 
 # Which project do you want to be downloaded?
 DLPROJ=$(QPROJ)
@@ -188,8 +188,6 @@ DEBUG_JOPIZER=
 
 #DEBUG_JOPSIM=$(DEBUG_PARAMETERS)
 DEBUG_JOPSIM=
-
-
 
 #
 #	application optimization with ProGuard:
@@ -492,7 +490,6 @@ download:
 #
 #	this is the download version with down.exe
 	down $(COM_FLAG) java/target/dist/bin/$(JOPBIN) $(COM_PORT)
-
 
 #
 #	flash programming

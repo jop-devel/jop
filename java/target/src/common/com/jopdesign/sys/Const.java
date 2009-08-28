@@ -189,6 +189,24 @@ public class Const {
 	public static final int MSK_UA_TDRE = 1;
 	public static final int MSK_UA_RDRF = 2;
 	
+	// Keyboard
+	public static final int KB_CTRL = IO_BASE+0x30+0;
+	public static final int KB_DATA = IO_BASE+0x30+1;
+	public static final int KB_SCANCODE = IO_BASE+0x30+2;
+
+	// Mouse
+	public static final int MOUSE_STATUS 	= IO_BASE+0x40+0;
+	public static final int MOUSE_FLAG 	= IO_BASE+0x40+1;
+	public static final int MOUSE_X_INC	= IO_BASE+0x40+2;
+	public static final int MOUSE_Y_INC	= IO_BASE+0x40+3;
+		
+	public static final int MSK_DTA_RDY  	= 0x01;
+	public static final int MSK_BTN_LEFT	= 0x02;
+	public static final int MSK_BTN_RIGHT	= 0x04;
+	public static final int MSK_BTN_MIDDLE	= 0x08;
+	public static final int MSK_X_OVFLOW	= 0x10;
+	public static final int MSK_Y_OVFLOW	= 0x20;
+
 	// FPU
 	public static final int IO_FPU = IO_BASE+0x70;
 	public static final int FPU_A = IO_FPU+0;
