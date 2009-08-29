@@ -54,7 +54,7 @@ port (
  	conflict		: out std_logic;
  	
  	start_commit	: in std_logic;
- 	committing		: buffer std_logic; -- TODO
+ 	committing		: out std_logic;
 
 	read_tag_of		: out std_logic;
 	write_buffer_of	: out std_logic
@@ -80,12 +80,9 @@ architecture rtl of tm is
 	--
 	
 	constant lines		: integer := 2**way_bits;
-	-- TODO delete?
-	-- constant mem_bits	: integer := SC_ADDR_SIZE-3;	-- should be 20 for 1 MB SRAM
 
 	signal line_addr, newline: unsigned(way_bits-1 downto 0);
 
-	--type data_array is array (0 to lines-1) of std_logic_vector(31 downto 0);
 	signal data			: data_array(0 to lines-1);
 
 	signal hit			: std_logic;
@@ -106,6 +103,8 @@ architecture rtl of tm is
 	signal shift				: std_logic;
 	
 	signal commit_addr			: std_logic_vector(addr_width-1 downto 0);
+	
+	signal committing_internal	: std_logic;
 	
 	--
 	-- Read tag memory
@@ -260,7 +259,7 @@ begin
 
 		-- another cycle delay to infer on-chip memory
 		-- TODO line_addr was already clocked in tag, why is it clocked again?
-		if committing = '0' then
+		if committing_internal = '0' then
 			reg_data <= data(to_integer(line_addr));
 		else
 			reg_data <= data(to_integer(commit_line));
@@ -314,14 +313,16 @@ end process;
 -- Commit
 --
 
--- sets state, commit_line, committing
+committing <= committing_internal;
+
+-- sets state, commit_line, committing_internal
 commit: process (clk, reset) is
 begin
     if reset = '1' then
     	state <= no_commit;
     	
     	commit_line <= (others => '0');
-    	committing <= '0';
+    	committing_internal <= '0';
     elsif rising_edge(clk) then
     	shift <= '0';
     	to_mem.wr <= '0';
@@ -331,12 +332,12 @@ begin
 				if start_commit = '1' then					
 					state <= commit_read;
 					commit_line <= (others => '0');
-					committing <= '1';
+					committing_internal <= '1';
 				end if;
 			when commit_read =>				
 				if commit_line = newline then
 					state <= no_commit;
-					committing <= '0';
+					committing_internal <= '0';
 				else
 					state <= commit_write;
 					

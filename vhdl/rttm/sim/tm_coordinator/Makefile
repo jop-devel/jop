@@ -1,11 +1,11 @@
 JOPDIR=../../..
 
-OPTIONS=-93 -quiet -check_synthesis -lint -pedanticerrors
-#OPTIONS=-93 -quiet
+OPTIONS=-2008 -quiet -check_synthesis -lint -pedanticerrors -suppress 1236
+#OPTIONS=-2008 -quiet -suppress 1236
 
 include Makefile.in
 
-ifeq ($(BATCH),true)
+ifeq ($(BATCH),y)
 	RUN=vsim -c -do ../sim_batch.do $(TARGET)
 else
 	RUN=vsim -i -do sim.do $(TARGET)
@@ -14,16 +14,12 @@ endif
 all: work src
 	$(RUN)	
 
-src: $(SRC)
-
-%.vhd: force
-	vcom $(OPTIONS) $*.vhd
-
-force: ;
+src:
+	vcom $(OPTIONS) $(SRC)
 
 work:
 	vlib work
-
+	
 clean:
 	-rm -rf work
 	-rm transcript

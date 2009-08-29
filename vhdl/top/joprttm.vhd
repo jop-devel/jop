@@ -252,7 +252,7 @@ end process;
 				spm_width => spm_width
 			)
 			port map(clk_int, int_res,
-				sc_out_tm(i), sc_in_tm(i), exc_tm_rollback(i),
+				sc_out_tm(i), sc_in_tm(i),
 				sc_io_out(i), sc_io_in(i), irq_in(i), 
 				irq_out(i), exc_req(i));
 	end generate;

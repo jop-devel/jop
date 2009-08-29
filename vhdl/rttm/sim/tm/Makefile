@@ -11,7 +11,7 @@ else
 	RUN=vsim -i -do sim.do $(TARGET)
 endif
 
-all: work src mem_main.dat
+all: work src
 	$(RUN)	
 
 src:
@@ -20,11 +20,7 @@ src:
 work:
 	vlib work
 	
-mem_main.dat:
-	touch $@
-
 clean:
 	-rm -rf work
 	-rm transcript
 	-rm *.wlf
-	-rm mem_main.dat

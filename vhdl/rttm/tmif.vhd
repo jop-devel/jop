@@ -25,7 +25,7 @@ port (
 	--
 	
 	-- set until transaction finished/aborted
-	commit_out_try			: buffer std_logic; -- TODO
+	commit_out_try			: out std_logic;
 	commit_in_allow			: in std_logic;
 
 	--
@@ -73,6 +73,8 @@ architecture rtl of tmif is
 	
 	signal start_commit				: std_logic;
 	signal committing				: std_logic;
+	
+	signal commit_out_try_internal	: std_logic;
 	
 	signal read_tag_of				: std_logic;
 	signal write_buffer_of			: std_logic;
@@ -175,7 +177,7 @@ begin
 	end process gen_tm_cmd;	
 
 	
-	gen_rdy_cnt_sel: process(commit_out_try, committing, next_tm_cmd_rdy_cnt, 
+	gen_rdy_cnt_sel: process(commit_out_try_internal, committing, next_tm_cmd_rdy_cnt, 
 		processing_tm_cmd, tm_cmd) is
 	begin
 		next_processing_tm_cmd <= processing_tm_cmd;	
@@ -187,7 +189,7 @@ begin
 		else
 			-- TODO
 			if next_tm_cmd_rdy_cnt = "00" and 
-				(committing = '0' and commit_out_try = '0') then
+				(committing = '0' and commit_out_try_internal = '0') then
 				next_processing_tm_cmd <= '0';
 			end if;
 		end if;
@@ -322,8 +324,10 @@ begin
 		end case;
 	end process state_machine;
 	
-	-- TODO register?
-	commit_out_try <= '1' 
+	commit_out_try <= commit_out_try_internal;
+	
+	-- TODO register?	
+	commit_out_try_internal <= '1' 
 		when state = commit_wait_token or state = early_commit_wait_token or
 		state = early_committed_transaction or state = commit
 		-- or state = end_transaction

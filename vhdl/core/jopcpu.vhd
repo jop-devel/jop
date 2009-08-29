@@ -58,12 +58,6 @@ port (
 --
 	sc_mem_out		: out sc_out_type;
 	sc_mem_in		: in sc_in_type;
-	
---
---	TM exception
---
-
-	exc_tm_rollback	: in std_logic;
 
 --
 --	SimpCon IO interface
@@ -76,7 +70,13 @@ port (
 --
 	irq_in			: in irq_bcf_type;
 	irq_out			: out irq_ack_type;
-	exc_req			: out exception_type
+	exc_req			: out exception_type;
+	
+--
+--	TM exception
+--
+
+	exc_tm_rollback	: in std_logic := '0'
 );
 end jopcpu;
 

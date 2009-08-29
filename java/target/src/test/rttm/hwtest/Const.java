@@ -22,15 +22,20 @@
 /**
  * 
  */
-package rttm;
+package rttm.hwtest;
 
 /**
- * @author Martin Schoeberl
+ * @author Peter Hilber
  *
  */
 public class Const {
 
 	static final int MAGIC = 0x07ffff;
-	static final int CNT = 1000;
+
+	enum cmd {
+		end_transaction,
+		start_transaction,
+		aborted,
+		early_commit }
 
 }

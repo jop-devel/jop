@@ -2,7 +2,6 @@ library std;
 library ieee;
 
 use std.textio.all;
-use ieee.std_logic_textio.all;
 
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -47,7 +46,6 @@ signal clk					: std_logic := '1';
 signal reset				: std_logic;
 
 constant cycle				: time := 10 ns;
-constant delta				: time := cycle/2;
 constant reset_time			: time := 5 ns;
 
 --
@@ -131,23 +129,6 @@ begin
 
 
 --	
---	Normal mode assertions
--- TODO in own testbench
---
-	
-
-	-- TODO why doesn't this fail?
-	forwarding: postponed process (reset, clk) is
-	begin
-		if reset = '1' then
-			null;
-		elsif rising_edge(clk) then
-			assert sc_out_arb = sc_out_cpu;
-			assert sc_in_cpu = sc_in_arb;
-		end if;
-	end process; 
-
---	
 --	Input
 --
 		
@@ -159,10 +140,10 @@ begin
 		type ram_type is array (0 to 2**MEM_BITS-1) 
 			of std_logic_vector(31 downto 0); 
 		alias ram is << signal .memory.main_mem.ram: ram_type >>;
-
+		
 		-- tm state
 
-		alias nesting_cnt is << signal dut.nesting_cnt: nesting_cnt_type >>;
+		alias nesting_cnt is << signal .dut.nesting_cnt: nesting_cnt_type >>;
 		
 		-- write tags
 		
@@ -193,10 +174,9 @@ begin
 			"000" & X"5280c"); 
 			
 		constant data: data_array :=
-			(X"aa25359b" , X"acd23bd6", X"42303eea", X"0000007b",
-			X"5bdae77b", X"f9967474", X"987ca438");
+			(X"2a25359b" , X"2cd23bd6", X"42303eea", X"0000007b",
+			X"5bdae77b", X"79967474", X"187ca438");
 	begin
-		-- TODO sc_out_cpu <= sc_out_idle;
 		sc_out_cpu.nc <= '0';
 		
 	
@@ -258,9 +238,7 @@ begin
 		
 		sc_write(clk, addr(0), data(0), sc_out_cpu, sc_in_cpu);
 		
-		assert write_tags_v(0) = '1';
-		assert write_tags_v(2**way_bits-1 downto 1) = (2**way_bits-1 downto 1 => '0');  
-		-- TODO this does fail, why? assert write_tags_v = (2**way_bits-1 downto 1 => '0', 0 => '1');
+		assert write_tags_v = (2**way_bits-1 downto 1 => '0') & "1";
 		assert write_buffer(0) = data(0);
 		assert ram(to_integer(unsigned(addr(0)))) = (31 downto 0 => 'U');
 		
@@ -277,9 +255,7 @@ begin
 		assert read_tags(0) = addr(0)(addr_width-1 downto 0);
 		assert read_tags(1) = addr(2)(addr_width-1 downto 0);
 		
-		assert read_tags_v(2**way_bits-1 downto 2) = 
-			(2**way_bits-1 downto 2 => '0');
-		assert read_tags_v(1 downto 0) = "11";				
+		assert read_tags_v = (2**way_bits-1 downto 2 => '0') & "11";				
 
 
 
@@ -399,7 +375,7 @@ begin
 		
 		assert << signal .dut.state: state_type>> = rollback_signal;
 		
-		-- TODO zombie reads/writes
+		-- zombie reads/writes
 		
 		sc_read(clk, addr(4), result, sc_out_cpu, sc_in_cpu);
 

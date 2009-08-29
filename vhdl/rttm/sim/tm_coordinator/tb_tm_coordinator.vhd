@@ -30,7 +30,6 @@ signal clk					: std_logic := '1';
 signal reset				: std_logic;
 
 constant cycle				: time := 10 ns;
-constant delta				: time := cycle/2; -- TODO
 constant reset_time			: time := 8 ns;
 
 --

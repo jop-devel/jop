@@ -4,19 +4,14 @@ import com.jopdesign.io.IOFactory;
 import com.jopdesign.io.SysDevice;
 import com.jopdesign.sys.Native;
 import com.jopdesign.sys.Startup;
-
 import joprt.RtThread;
+
+import static rttm.hwtest.Const.*;
 
 public class Transaction implements Runnable {
 	
-	static final int TM_MAGIC = 0x0FFFFF;
-	enum cmd {
-			end_transaction,
-			start_transaction,
-			aborted,
-			early_commit }
-	
 	static volatile boolean flag = false;
+	static final int scale = 1; // 10000
 	
 	int id;
 	
@@ -35,34 +30,32 @@ public class Transaction implements Runnable {
 		
 		sys.signal = 1;
 		
-		System.out.println("Waiting for flag.");
-		
 		while (true)
 		{
-			RtThread.busyWait(100000);
+			RtThread.busyWait(10 * scale);
 			System.out.println(flag);
 		}
 		
 	}
 
 	public void run() {
-		Native.wrMem(1, TM_MAGIC);
+		Native.wrMem(1, MAGIC);
 		
 		flag = true;
 		
-		Native.wrMem(0, TM_MAGIC);
+		Native.wrMem(0, MAGIC);
 		
-		RtThread.busyWait(1000000);
+		RtThread.busyWait(100 * scale);
 		flag = false;
-		RtThread.busyWait(1000000);
+		RtThread.busyWait(100 * scale);
 		
-		Native.wrMem(1, TM_MAGIC);
+		Native.wrMem(1, MAGIC);
 		
 		flag = true;
 		
-		Native.wrMem(0, TM_MAGIC);
+		Native.wrMem(0, MAGIC);
 		
-		Native.wrMem(1, TM_MAGIC);
+		Native.wrMem(1, MAGIC);
 		
 		flag = false;
 		

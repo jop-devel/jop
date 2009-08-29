@@ -33,7 +33,7 @@ import java.util.*;
  */
 public class TMSim extends JopSim {
 
-	final static int MAGIC = -10000;
+	final static int MAGIC = 0x07ffff;
 	final static boolean LOG = false;
 
 	TMSim(String fn, IOSimMin ioSim, int max) {
