@@ -40,6 +40,7 @@
 -- 070808: removed combinatorial loop (pipelined bug)
 -- 210808: - reg_in_rd_data(i) also gets loaded when rdy_cnt = 3 using pipelined access
 --				 - arb_in(i).rd_data gets mem_in.rd_data when rdy_cnt 3 using pipelined access
+-- 310809: Added transactional memory broadcast support
 
 -- TODO:  - Add atomic for Wolfgang
 --				- full pipelined version
@@ -64,7 +65,8 @@ port (
 			arb_out			: in arb_out_type(0 to cpu_cnt-1);
 			arb_in			: out arb_in_type(0 to cpu_cnt-1);
 			mem_out			: out sc_out_type;
-			mem_in			: in sc_in_type
+			mem_in			: in sc_in_type;
+			tm_broadcast	: out tm_broadcast_type
 );
 end arbiter;
 
@@ -76,6 +78,7 @@ architecture rtl of arbiter is
 	type reg_type is record
 		rd : std_logic;
 		wr : std_logic;
+		tm_broadcast : std_logic;
 		wr_data : std_logic_vector(31 downto 0);
 		address : std_logic_vector(addr_bits-1 downto 0);
 	end record; 
@@ -153,12 +156,14 @@ gen_register: for i in 0 to cpu_cnt-1 generate
 		if reset = '1' then
 			reg_out(i).rd <= '0';
 			reg_out(i).wr <= '0';
+			reg_out(i).tm_broadcast <= '0';
 			reg_out(i).wr_data <= (others => '0'); 
 			reg_out(i).address <= (others => '0');
 		elsif rising_edge(clk) then
 			if arb_out(i).rd = '1' or arb_out(i).wr = '1' then
 				reg_out(i).rd <= arb_out(i).rd;
 				reg_out(i).wr <= arb_out(i).wr;
+				reg_out(i).tm_broadcast <= arb_out(i).tm_broadcast;
 				reg_out(i).address <= arb_out(i).address;
 				reg_out(i).wr_data <= arb_out(i).wr_data;
 			end if;
@@ -324,6 +329,7 @@ begin
 	mem_out.address <= (others => '0');
 	mem_out.wr_data <= (others => '0');
 	mem_out.atomic <= '0';
+	tm_broadcast <= (valid => '0', address => (others => '0'));
 	
 	for i in 0 to cpu_cnt-1 loop
 		set(i) <= "00";
@@ -341,6 +347,10 @@ begin
 				mem_out.wr <= arb_out(i).wr;
 				mem_out.address <= arb_out(i).address;
 				mem_out.wr_data <= arb_out(i).wr_data;			
+				tm_broadcast <= (
+						valid => arb_out(i).wr,
+						address => arb_out(i).address);
+				
 			
 			when waitingR =>
 				
@@ -356,6 +366,10 @@ begin
 				mem_out.wr <= reg_out(i).wr;
 				mem_out.address <= reg_out(i).address;
 				mem_out.wr_data <= reg_out(i).wr_data;
+				tm_broadcast <= (
+						valid => reg_out(i).wr,
+						address => reg_out(i).address);
+				
 				
 		end case;
 	end loop;
