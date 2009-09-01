@@ -264,7 +264,7 @@ end process;
 				way_bits => tm_way_bits
 			)	
 			port map (
-				clk	=> clk,
+				clk	=> clk_int,
 				reset => int_res,
 				
 				commit_out_try => commit_try(i),
@@ -288,7 +288,7 @@ end process;
 		cpu_cnt_width => cpu_cnt_width
 		)
 	port map (
-		clk => clk,
+		clk => clk_int,
 		reset => int_res,
 		commit_try => commit_try,
 		commit_allow => commit_allow
