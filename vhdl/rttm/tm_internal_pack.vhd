@@ -11,7 +11,6 @@ package tm_internal_pack is
 	type state_type is (
 		no_transaction,
 
-		start_normal_transaction,
 		normal_transaction,
 		commit_wait_token, -- TODO additional states to register commit_in_allow?
 		commit,

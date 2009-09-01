@@ -8,12 +8,16 @@ use work.sc_pack.all;
 package tm_pack is
 	subtype data is std_logic_vector(31 downto 0);
 	type data_array is array(natural range <>) of data;
-	
-	-- Magic address to execute TM commands.
-	-- Located in upper half of external SRAM mirror (18 downto 17 => '1') 
-	-- The lower bits are actually ignored.	 
+		
+	-- Magic address to execute TM commands is located in upper half 
+	-- of external SRAM mirror (TM_MAGIC_DETECT) 
+	-- The lower bits are actually ignored.	
+	constant TM_MAGIC_DETECT: std_logic_vector(18 downto 17) := 
+		(others => '1');
 	constant TM_MAGIC: std_logic_vector(SC_ADDR_SIZE-1 downto 0) := 
-		 (SC_ADDR_SIZE-1 downto 19 => '0', 18 downto 0 => '1'); 
+		(SC_ADDR_SIZE-1 downto 19 => '0', 18 downto 0 => '1');
+		
+		 
 
 	constant TM_CMD_WIDTH: integer := 2;
 	subtype tm_cmd_raw is std_logic_vector(TM_CMD_WIDTH-1 downto 0);
