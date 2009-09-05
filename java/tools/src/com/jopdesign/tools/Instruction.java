@@ -285,7 +285,7 @@ public class Instruction implements Serializable {
 	public static String genJavaConstants() {
 
 		StringBuffer sb = new StringBuffer();
-		sb.append("package com.jopdesign.timing;\n");
+		sb.append("package com.jopdesign.timing.jop;\n");
 		sb.append("public class MicrocodeConstants {\n");
 		for (Instruction i : ia) {
 			sb.append(String.format(
@@ -302,8 +302,8 @@ public class Instruction implements Serializable {
 
 	public static void main(String[] args) {
 
-		printVhdl();
-		// printCsv();
+		// printVhdl();
+		printCsv();
 		// printTable();
 		// System.out.println(genJavaConstants());
 	}
