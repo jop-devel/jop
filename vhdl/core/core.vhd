@@ -147,6 +147,7 @@ port (
 	nxt, opd	: out std_logic;	-- jfetch and jopdfetch from table
 
 	br			: in std_logic;
+	jmp			: in std_logic;
 	bsy 		: in std_logic;
 	jpaddr		: in std_logic_vector(pc_width-1 downto 0);
 
@@ -206,6 +207,7 @@ port (
 	eq, lt		: in std_logic;
 
 	br			: out std_logic;
+	jmp			: out std_logic;
 	jbr			: out std_logic;
 
 	ext_addr	: out std_logic_vector(EXTA_WIDTH-1 downto 0);
@@ -245,6 +247,7 @@ end component;
 -- (bc)fetch connections
 --
 	signal br			: std_logic;
+	signal jmp			: std_logic;
 	signal jbr			: std_logic;
 
 	signal jfetch		: std_logic;
@@ -302,7 +305,7 @@ begin
 
 	cmp_fch: fetch generic map (pc_width, i_width)
 		port map (clk, reset, jfetch, jopdfetch,
-			br, bsy, jpaddr, instr);
+			br, jmp, bsy, jpaddr, instr);
 
 	cmp_stk: stack generic map (width, jpc_width)
 		port map (clk, reset, din, dir, opd, jpc_out,
@@ -315,7 +318,7 @@ begin
 
 	cmp_dec: decode generic map (i_width)
 		port map (clk, reset, instr, stk_zf, stk_nf, stk_eq, stk_lt,
-			br, jbr,
+			br, jmp, jbr,
 			ext_addr, rd, wr,
 			dir,
 			sel_sub, sel_amux, ena_a,

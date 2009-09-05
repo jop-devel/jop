@@ -135,6 +135,7 @@
 //	2009-06-17	MS: Enable conditional move again
 //  2009-06-26  WP: fixing invokesuper
 //	2009-08-24	MS: use I/O port for null pointer and array exception
+//	2009-09-05	MS: new unconditional jmp instruction
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -144,7 +145,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20090824
+version		= 20090905
 
 //
 //	start of stack area in the on-chip RAM
@@ -229,6 +230,10 @@ addr		?			// address used for bc load from flash
 			nop			// written in adr/read stage!
 			stsp		// someting strange in stack.vhd A->B !!!
 
+jmp fin
+nop
+nop
+xxx:
 
 // TEST read after write
 
@@ -539,9 +544,9 @@ cpux_boot:
 			stm	jjhp
 
 			ldm	mp			// pointer to pointer to main meth. struct
-			ldi	1
 			nop
-			bnz	invoke_main	// simulate invokestatic
+			nop
+			jmp	invoke_main	// simulate invokestatic
 			nop
 			nop
 
@@ -605,9 +610,9 @@ instanceof:
 //
 //	invoke JVM.fxxx(int cons)
 //
-			ldi	1
 			nop
-			bnz	invoke
+			nop
+			jmp	invoke
 			nop
 			nop
 
@@ -633,9 +638,9 @@ newarray:
 			add					// jjp+2*bc
 
 // invoke JVM.fxxx();
-			ldi	1
 			nop
-			bnz	invoke			// simulate invokestatic with ptr to meth. str. on stack
+			nop
+			jmp	invoke			// simulate invokestatic with ptr to meth. str. on stack
 			nop
 			nop
 
@@ -679,9 +684,9 @@ putstatic_ref:
 //
 //	invoke JVM.fxxx(int index)
 //
-			ldi	1
 			nop
-			bnz	invoke
+			nop
+			jmp	invoke
 			nop
 			nop
 //
@@ -699,9 +704,9 @@ sys_int:
 								// jjhp points in method table to first
 								// method after methods inherited from Object
 
-			ldi	1
 			nop
-			bnz	invoke			// simulate invokestatic with ptr to meth. str. on stack
+			nop
+			jmp	invoke			// simulate invokestatic with ptr to meth. str. on stack
 			nop
 			nop
 
@@ -721,9 +726,9 @@ sys_exc:
 			add
 
 
-			ldi	1
 			nop
-			bnz	invoke			// simulate invokestatic with ptr to meth. str. on stack
+			nop
+			jmp	invoke			// simulate invokestatic with ptr to meth. str. on stack
 			nop
 			nop
 
@@ -747,13 +752,17 @@ sys_noim:
 			add					// *2
 			add					// jjp+2*bc
 
-			ldi	1
 			nop
-			bnz	invoke			// simulate invokestatic with ptr to meth. str. on stack
+			nop
+			jmp	invoke			// simulate invokestatic with ptr to meth. str. on stack
 			nop
 			nop
 
 
+fin:
+	jmp xxx
+	nop
+	nop
 //
 //	invoke and return functions
 //

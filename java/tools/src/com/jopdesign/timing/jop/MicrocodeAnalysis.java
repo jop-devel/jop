@@ -522,7 +522,7 @@ public class MicrocodeAnalysis {
 
 	private Jopa jopa;
 	//private Vector<Line> lines;
-	private Map<Object, Object> symMap;
+	private Map<String, Integer> symMap;
 	private Map<Integer,Integer> jInstrs;
 	private List<Line> instrs;
 	public static final File DEFAULT_ASM_FILE = new File("asm", new File("generated","jvmgen.asm").getPath());

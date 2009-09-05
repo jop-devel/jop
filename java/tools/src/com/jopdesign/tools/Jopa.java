@@ -45,6 +45,8 @@ revision:
 import java.io.*;
 import java.util.*;
 
+import com.jopdesign.tools.Instruction.JmpType;
+
 public class Jopa {
 
 	private String fname;
@@ -223,12 +225,12 @@ public class Jopa {
 		return s;
 	}
 
-	private Map symMap  = new HashMap();
+	private Map<String, Integer> symMap  = new HashMap<String, Integer>();
 	private int memcnt = 0;
-	private List varList = new LinkedList();
+	private List<String> varList = new LinkedList<String>();
 	private int version = -1;
-	private Map jinstrMap = new HashMap();
-	private List instructions = new LinkedList();
+	private Map<Integer, Integer> jinstrMap = new HashMap<Integer, Integer>();
+	private List<Line> instructions = new LinkedList<Line>();
 
 	/**
 	 * Parse the assembler file and build symbol table (first pass).
@@ -293,27 +295,27 @@ public class Jopa {
 	 * positions
 	 * @return 
 	 */
-	public Map getSymMap() {
+	public Map<String, Integer> getSymMap() {
 		return this.symMap;
 	}
 	/**
 	 * Get list of variables
 	 * @return 
 	 */
-	public List getVarList() {
+	public List<String> getVarList() {
 		return this.varList;
 	}
 	/** 
 	 * get table of java instructions 
 	 */
-	public Map getJavaInstructions() {
+	public Map<Integer, Integer> getJavaInstructions() {
 		return this.jinstrMap;
 	}
 	/**
 	 * Get instruction list
 	 * @return 
 	 */
-	public List getInstructions() {
+	public List<Line> getInstructions() {
 		return this.instructions;
 	}
 	
@@ -331,10 +333,10 @@ public class Jopa {
 	}
 
 
-	private Map constMap = new HashMap();
-	private List constList = new LinkedList();
-	private Map offMap = new HashMap();
-	private List offList = new LinkedList();
+	private Map<Integer, Integer> constMap = new HashMap<Integer, Integer>();
+	private List<Integer> constList = new LinkedList<Integer>();
+	private Map<Integer, Integer> offMap = new HashMap<Integer, Integer>();
+	private List<Integer> offList = new LinkedList<Integer>();
 
 	private int[] romData = new int[ROM_LEN];
 	private int romLen = 0;
@@ -457,7 +459,7 @@ public class Jopa {
 					if (l.instr.opdSize!=0) {
 						int opVal = 0;
 						if (l.symVal!=null) {
-							Integer i = (Integer) symMap.get(l.symVal);
+							Integer i = symMap.get(l.symVal);
 							if (i==null) {
 								error(in, "Symbol "+l.symVal+" not defined");
 							} else {
@@ -471,7 +473,7 @@ public class Jopa {
 							Integer i = new Integer(opVal);
 							Integer addr;
 							if (constMap.containsKey(i)) {
-								addr = (Integer) constMap.get(i);
+								addr = constMap.get(i);
 							} else {
 								addr = new Integer(constMap.size());
 								constMap.put(i, addr);
@@ -480,14 +482,15 @@ public class Jopa {
 							opVal = addr.intValue();
 						}
 
-						if (l.instr.isJmp) {						// List of branch offsets
+						// for branches and jumps opVal points to the target address
+						if (l.instr.jType == JmpType.BR) {						// List of branch offsets
 							Integer off = new Integer(opVal-pc-1);
 							if (off.intValue()< -ROM_LEN || off.intValue()>(ROM_LEN-1)) {
 								error(in, "offset "+off+" wrong range");
 							}
 							Integer addr;
 							if (offMap.containsKey(off)) {
-								addr = (Integer) offMap.get(off);
+								addr = offMap.get(off);
 							} else {
 								addr = new Integer(offMap.size());
 								offMap.put(off, addr);
@@ -495,11 +498,24 @@ public class Jopa {
 							}
 							opVal = addr.intValue();
 						}
+						
+						int mask = (1<<l.instr.opdSize)-1;
 
-						if (opVal>31 || opVal<0) {
+						// relative address
+						if (l.instr.jType == JmpType.JMP) {
+							opVal = opVal-pc-1;
+							// check maximum relative offset
+							if (opVal>(mask>>1) || opVal<(-((mask>>1)+1))) {
+								error(in, "jmp address too far: "+opVal);								
+							}
+							opVal &= mask;
+						}
+
+						// general check
+						if (opVal>mask || opVal<0) {
 							error(in, "operand wrong: "+opVal);
 						}
-						opcode |= opVal & 0x1f;		// use 5 bit operand
+						opcode |= opVal & mask;		// use operand
 					}
 
 					if (l.nxt) opcode |= 0x2<<Instruction.INSTLEN;
@@ -664,7 +680,7 @@ public class Jopa {
 			offtbl.write( line );
 
 			for (int i=0; i<offList.size(); ++i) {
-				Integer val = (Integer) offList.get(i);
+				Integer val = offList.get(i);
 				offtbl.write("\t\twhen \""+bin(i, OPDBITS) +
 					"\" => q <= \""+bin(val.intValue(), BRBITS)+"\";");
 				offtbl.write("\t-- "+val.intValue()+"\n");
@@ -712,7 +728,7 @@ public class Jopa {
 			// Variables
 			//
 			for (int i=0; i<varList.size(); ++i) {
-				String s = (String) varList.get(i);
+				String s = varList.get(i);
 				ramData[i] = 0;
 				line = "\t";
 				line += hex(i, 4) + " : " ;
@@ -735,7 +751,7 @@ public class Jopa {
 			//	Constants
 			//
 			for (int i=0; i<constList.size(); ++i) {
-				Integer val = (Integer) constList.get(i);
+				Integer val = constList.get(i);
 				ramData[CONST_ADDR+i] = val.intValue();
 				line = "\t";
 				line += hex(CONST_ADDR+i, 4) + " : " ;
@@ -745,7 +761,7 @@ public class Jopa {
 			}
 
 			// check if version is set
-			Integer ver = (Integer) symMap.get("version");
+			Integer ver = symMap.get("version");
 			if (ver==null) {
 				error(in, "version not set, setting to -1");
 			} else {

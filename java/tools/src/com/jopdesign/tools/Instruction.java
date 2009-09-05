@@ -29,21 +29,25 @@ public class Instruction implements Serializable {
 	enum StackType {
 		PUSH, POP, NOP
 	};
+	
+	enum JmpType {
+		BR, JMP, NOP
+	};
 
 	public String name;
 	public int opcode;
 	public int opdSize;
-	public boolean isJmp;
+	public JmpType jType;
 	StackType sType;
 
 	/** Length of instruction without opd and nxt */
 	final static int INSTLEN = 10;
 
-	private Instruction(String s, int oc, int ops, boolean jp, StackType st) {
+	private Instruction(String s, int oc, int ops, JmpType jp, StackType st) {
 		name = s;
 		opcode = oc;
 		opdSize = ops;
-		isJmp = jp;
+		jType = jp;
 		sType = st;
 	}
 
@@ -69,101 +73,102 @@ public class Instruction implements Serializable {
 			// 'pop' instructions
 			//
 
-			new Instruction("pop", 0x000, 0, false, StackType.POP),
-			new Instruction("and", 0x001, 0, false, StackType.POP),
-			new Instruction("or",  0x002, 0, false, StackType.POP),
-			new Instruction("xor", 0x003, 0, false, StackType.POP),
-			new Instruction("add", 0x004, 0, false, StackType.POP),
-			new Instruction("sub", 0x005, 0, false, StackType.POP),
+			new Instruction("pop", 0x000, 0, JmpType.NOP, StackType.POP),
+			new Instruction("and", 0x001, 0, JmpType.NOP, StackType.POP),
+			new Instruction("or",  0x002, 0, JmpType.NOP, StackType.POP),
+			new Instruction("xor", 0x003, 0, JmpType.NOP, StackType.POP),
+			new Instruction("add", 0x004, 0, JmpType.NOP, StackType.POP),
+			new Instruction("sub", 0x005, 0, JmpType.NOP, StackType.POP),
 
 			// extension 'address' selects function 4 bits
 
 			// multiplication
-			new Instruction("stmul", 0x006, 0, false, StackType.POP),
+			new Instruction("stmul", 0x006, 0, JmpType.NOP, StackType.POP),
 
-			new Instruction("stmwa", 0x007, 0, false, StackType.POP),
+			new Instruction("stmwa", 0x007, 0, JmpType.NOP, StackType.POP),
 
-			new Instruction("stmra", 0x008 + 0, 0, false, StackType.POP),
-			new Instruction("stmwd", 0x008 + 1, 0, false, StackType.POP),
+			new Instruction("stmra", 0x008 + 0, 0, JmpType.NOP, StackType.POP),
+			new Instruction("stmwd", 0x008 + 1, 0, JmpType.NOP, StackType.POP),
 			// array instructions
-			new Instruction("stald", 0x008 + 2, 0, false, StackType.POP),
-			new Instruction("stast", 0x008 + 3, 0, false, StackType.POP),
+			new Instruction("stald", 0x008 + 2, 0, JmpType.NOP, StackType.POP),
+			new Instruction("stast", 0x008 + 3, 0, JmpType.NOP, StackType.POP),
 			// getfield/putfield
-			new Instruction("stgf", 0x008 + 4, 0, false, StackType.POP),
-			new Instruction("stpf", 0x008 + 5, 0, false, StackType.POP),
+			new Instruction("stgf", 0x008 + 4, 0, JmpType.NOP, StackType.POP),
+			new Instruction("stpf", 0x008 + 5, 0, JmpType.NOP, StackType.POP),
 			// magic copying
-			new Instruction("stcp", 0x008 + 6, 0, false, StackType.POP),
+			new Instruction("stcp", 0x008 + 6, 0, JmpType.NOP, StackType.POP),
 			// bytecode read
-			new Instruction("stbcrd", 0x008 + 7, 0, false, StackType.POP),
+			new Instruction("stbcrd", 0x008 + 7, 0, JmpType.NOP, StackType.POP),
 
 			// st (vp) 3 bits
-			new Instruction("st0", 0x010 + 0, 0, false, StackType.POP),
-			new Instruction("st1", 0x010 + 1, 0, false, StackType.POP),
-			new Instruction("st2", 0x010 + 2, 0, false, StackType.POP),
-			new Instruction("st3", 0x010 + 3, 0, false, StackType.POP),
-			new Instruction("st",  0x010 + 4, 0, false, StackType.POP),
-			new Instruction("stmi", 0x010 + 5, 0, false, StackType.POP),
+			new Instruction("st0", 0x010 + 0, 0, JmpType.NOP, StackType.POP),
+			new Instruction("st1", 0x010 + 1, 0, JmpType.NOP, StackType.POP),
+			new Instruction("st2", 0x010 + 2, 0, JmpType.NOP, StackType.POP),
+			new Instruction("st3", 0x010 + 3, 0, JmpType.NOP, StackType.POP),
+			new Instruction("st",  0x010 + 4, 0, JmpType.NOP, StackType.POP),
+			new Instruction("stmi", 0x010 + 5, 0, JmpType.NOP, StackType.POP),
 
-			new Instruction("stvp", 0x018, 0, false, StackType.POP),
-			new Instruction("stjpc", 0x019, 0, false, StackType.POP),
-			new Instruction("star", 0x01a, 0, false, StackType.POP),
-			new Instruction("stsp", 0x01b, 0, false, StackType.POP),
+			new Instruction("stvp", 0x018, 0, JmpType.NOP, StackType.POP),
+			new Instruction("stjpc", 0x019, 0, JmpType.NOP, StackType.POP),
+			new Instruction("star", 0x01a, 0, JmpType.NOP, StackType.POP),
+			new Instruction("stsp", 0x01b, 0, JmpType.NOP, StackType.POP),
 
 			// shift
-			new Instruction("ushr", 0x01c, 0, false, StackType.POP),
-			new Instruction("shl", 0x01d, 0, false, StackType.POP),
-			new Instruction("shr", 0x01e, 0, false, StackType.POP),
-			// new Instruction("shift reserved", 0x1f, 0, false, StackType.POP),
+			new Instruction("ushr", 0x01c, 0, JmpType.NOP, StackType.POP),
+			new Instruction("shl", 0x01d, 0, JmpType.NOP, StackType.POP),
+			new Instruction("shr", 0x01e, 0, JmpType.NOP, StackType.POP),
+			// new Instruction("shift reserved", 0x1f, 0, JmpType.NOP, StackType.POP),
 
 			// 5 bits
-			new Instruction("stm", 0x020, 5, false, StackType.POP),
-
-			//
-			// 'no sp change' instructions
-			//
-			new Instruction("nop", 0x100, 0, false, StackType.NOP),
-			new Instruction("wait", 0x101, 0, false, StackType.NOP),
-			new Instruction("jbr", 0x102, 0, false, StackType.NOP),
+			new Instruction("stm", 0x020, 5, JmpType.NOP, StackType.POP),
 
 			//
 			// 'push' instructions
 			//
 
 			// 5 bits
-			new Instruction("ldm", 0x0a0, 5, false, StackType.PUSH),
+			new Instruction("ldm", 0x0a0, 5, JmpType.NOP, StackType.PUSH),
 
-			new Instruction("ldi", 0x0c0, 5, false, StackType.PUSH),
+			new Instruction("ldi", 0x0c0, 5, JmpType.NOP, StackType.PUSH),
 
 			// extension 'address' selects function 4 bits
-			new Instruction("ldmrd", 0x0e0 + 0, 0, false, StackType.PUSH),
-			new Instruction("ldmul", 0x0e0 + 6, 0, false, StackType.PUSH),
-			new Instruction("ldbcstart", 0x0e0 + 7, 0, false, StackType.PUSH),
+			new Instruction("ldmrd", 0x0e0 + 0, 0, JmpType.NOP, StackType.PUSH),
+			new Instruction("ldmul", 0x0e0 + 6, 0, JmpType.NOP, StackType.PUSH),
+			new Instruction("ldbcstart", 0x0e0 + 7, 0, JmpType.NOP, StackType.PUSH),
 
 			// ld (vp) 3 bits
-			new Instruction("ld0", 0x0e8 + 0, 0, false, StackType.PUSH),
-			new Instruction("ld1", 0x0e8 + 1, 0, false, StackType.PUSH),
-			new Instruction("ld2", 0x0e8 + 2, 0, false, StackType.PUSH),
-			new Instruction("ld3", 0x0e8 + 3, 0, false, StackType.PUSH),
-			new Instruction("ld", 0x0e8 + 4, 0, false, StackType.PUSH),
-			new Instruction("ldmi", 0x0e8 + 5, 0, false, StackType.PUSH),
+			new Instruction("ld0", 0x0e8 + 0, 0, JmpType.NOP, StackType.PUSH),
+			new Instruction("ld1", 0x0e8 + 1, 0, JmpType.NOP, StackType.PUSH),
+			new Instruction("ld2", 0x0e8 + 2, 0, JmpType.NOP, StackType.PUSH),
+			new Instruction("ld3", 0x0e8 + 3, 0, JmpType.NOP, StackType.PUSH),
+			new Instruction("ld", 0x0e8 + 4, 0, JmpType.NOP, StackType.PUSH),
+			new Instruction("ldmi", 0x0e8 + 5, 0, JmpType.NOP, StackType.PUSH),
 
 			// 2 bits
-			new Instruction("ldsp", 0x0f0 + 0, 0, false, StackType.PUSH),
-			new Instruction("ldvp", 0x0f0 + 1, 0, false, StackType.PUSH),
-			new Instruction("ldjpc", 0x0f0 + 2, 0, false, StackType.PUSH),
+			new Instruction("ldsp", 0x0f0 + 0, 0, JmpType.NOP, StackType.PUSH),
+			new Instruction("ldvp", 0x0f0 + 1, 0, JmpType.NOP, StackType.PUSH),
+			new Instruction("ldjpc", 0x0f0 + 2, 0, JmpType.NOP, StackType.PUSH),
 
 			// ld opd 2 bits
-			new Instruction("ld_opd_8u", 0x0f4 + 0, 0, false, StackType.PUSH),
-			new Instruction("ld_opd_8s", 0x0f4 + 1, 0, false, StackType.PUSH),
-			new Instruction("ld_opd_16u", 0x0f4 + 2, 0, false, StackType.PUSH),
-			new Instruction("ld_opd_16s", 0x0f4 + 3, 0, false, StackType.PUSH),
+			new Instruction("ld_opd_8u", 0x0f4 + 0, 0, JmpType.NOP, StackType.PUSH),
+			new Instruction("ld_opd_8s", 0x0f4 + 1, 0, JmpType.NOP, StackType.PUSH),
+			new Instruction("ld_opd_16u", 0x0f4 + 2, 0, JmpType.NOP, StackType.PUSH),
+			new Instruction("ld_opd_16s", 0x0f4 + 3, 0, JmpType.NOP, StackType.PUSH),
 
-			new Instruction("dup", 0x0f8, 0, false, StackType.PUSH),
+			new Instruction("dup", 0x0f8, 0, JmpType.NOP, StackType.PUSH),
+
+			//
+			// 'no sp change' instructions
+			//
+			new Instruction("nop", 0x100, 0, JmpType.NOP, StackType.NOP),
+			new Instruction("wait", 0x101, 0, JmpType.NOP, StackType.NOP),
+			new Instruction("jbr", 0x102, 0, JmpType.NOP, StackType.NOP),
 
 			// branches
-			new Instruction("br", 0x200, 9, true, StackType.NOP),
-			new Instruction("bz", 0x040, 5, true, StackType.POP),
-			new Instruction("bnz", 0x060, 5, true, StackType.POP), };
+			new Instruction("bz", 0x180, 5, JmpType.BR, StackType.POP),
+			new Instruction("bnz", 0x1c0, 5, JmpType.BR, StackType.POP),
+			new Instruction("jmp", 0x200, 9, JmpType.JMP, StackType.NOP),
+		};
 
 	public static Map<String, Instruction> map = new HashMap<String, Instruction>();
 	public static Map<Integer, Instruction> imap = new TreeMap<Integer, Instruction>();
@@ -291,7 +296,7 @@ public class Instruction implements Serializable {
 					i.isStackConsumer() ? "consumer"
 							: (i.isStackProducer() ? "producer" : "nostack"),
 					i.opdSize != 0 ? "opd MS: not to confuse it with opd in mc"
-							: "", i.isJmp ? "jmp " : ""));
+							: "", i.jType==JmpType.BR || i.jType==JmpType.JMP ? "jmp " : ""));
 		}
 		sb.append("};");
 		return sb.toString();

@@ -63,9 +63,9 @@ invoke_main:					// jmp with pointer to pointer to mp on TOS
 jopsys_invoke:					// called from Startup.boot() with pointer to main() method struct
 invoke:							// jmp with mp on TOS (pointer to method struct)
 
-			ldi	1
+			nop
 //			nop			// mp is != 0
-			bnz	invoke_vpsave
+			jmp	invoke_vpsave
 			ldvp				// save vp
 			stm	old_vp			// in branch slots
 
@@ -129,9 +129,9 @@ invokeinterface:
 			wait
 			ldmrd		 		// mp on TOS
 
-			ldi	1
+			nop
 //			nop		// mp is != 0
-			bnz	invoke_vpsave
+			jmp	invoke_vpsave
 			nop
 			nop
 
@@ -207,9 +207,9 @@ invokesuper:					// this was invokespecial, replaced in JOPizer when calling sup
 			ldi	5				// "super" method table is at superclass+5
 			add
 
-			ldi	1
+			nop
 //			nop		// mp is != 0
-			bnz	invoke_addoffset
+			jmp	invoke_addoffset
 			nop
 			nop
 
@@ -268,22 +268,6 @@ invoke_addoffset:
 
 invoke_vpsave:					// vp is allready saved in old_vp
 								// used for invokestatic and invokevirtual
-
-//*******************************
-// test for oohw change
-// invoke would be 102, invokestatic would be 75
-// we use 89 as arithmetic mean
-//			ldi	16			// 17*5+2+2=102
-//dlyl:
-//			dup
-//			nop
-//			bnz	dlyl
-//			ldi	-1			// decrement in branch slot
-//			add
-//			pop				// remove counter
-//			nop
-//			nop
-//*******************************
 
 //	mp is on TOS
 //		we will not read mem[mp] now,

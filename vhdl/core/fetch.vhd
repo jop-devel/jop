@@ -73,6 +73,7 @@ port (
 	nxt, opd	: out std_logic;	-- jfetch and jopdfetch from table
 
 	br			: in std_logic;
+	jmp			: in std_logic;
 	bsy			: in std_logic;		-- direct from the memory module
 	jpaddr		: in std_logic_vector(pc_width-1 downto 0);
 
@@ -112,6 +113,7 @@ end component;
 	signal pc_inc		: std_logic_vector(pc_width-1 downto 0);
 	signal pc			: std_logic_vector(pc_width-1 downto 0);
 	signal brdly		: std_logic_vector(pc_width-1 downto 0);
+	signal jpdly		: std_logic_vector(pc_width-1 downto 0);
 
 	signal off			: std_logic_vector(pc_width-1 downto 0);
 
@@ -151,14 +153,17 @@ begin
 	end if;
 end process;
 
-process(clk, reset, pc, off)
+process(clk, reset)
 
 begin
 	if (reset='1') then
-		pc <= std_logic_vector(to_unsigned(0, pc_width));
-		brdly <= std_logic_vector(to_unsigned(0, pc_width));
+		pc <= (others => '0');
+		brdly <= (others => '0');
+		jpdly <= (others => '0');
 	elsif rising_edge(clk) then
 		brdly <= std_logic_vector(unsigned(pc) + unsigned(off));
+		-- 9 bits as signed jump offset
+		jpdly <= std_logic_vector(signed(pc) + to_signed(to_integer(signed(ir(i_width-2 downto 0))), pc_width));
 		pc <= pc_mux;
 	end if;
 end process;
@@ -166,13 +171,15 @@ end process;
 	-- bsy is too late to register pcwait and bsy
 	pc_inc <= std_logic_vector(to_unsigned(0, pc_width-1)) & not (pcwait and bsy);
 
-process(jfetch, br, jpaddr, brdly, pc, pc_inc)
+process(jfetch, br, jmp, jpaddr, brdly, pc, pc_inc)
 begin
-	if (jfetch='1') then
+	if jfetch='1' then
 		pc_mux <= jpaddr;
 	else 
-		if (br='1') then
+		if br='1' then
 			pc_mux <= brdly;
+		elsif jmp='1' then
+			pc_mux <= jpdly;
 		else
 			pc_mux <= std_logic_vector(unsigned(pc) + unsigned(pc_inc));
 		end if;

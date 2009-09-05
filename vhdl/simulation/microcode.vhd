@@ -29,6 +29,7 @@
 --
 --
 --	2009-08-18	creation
+--	FIXME: adapt to new microcode (generate from Instruction.java)
 --
 
 
@@ -41,7 +42,7 @@ use ieee.numeric_std.all;
 
 entity microcode is
 
-port (instr : in std_logic_vector(7 downto 0));
+port (instr : in std_logic_vector(9 downto 0));
 end microcode;
 
 architecture sim of microcode is
@@ -308,6 +309,6 @@ architecture sim of microcode is
 
 begin
 
-	val <= ucval'val(to_integer(unsigned(instr)));
+	val <= ucval'val(to_integer(unsigned(instr(7 downto 0))));
 
 end sim;

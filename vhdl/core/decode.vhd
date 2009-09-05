@@ -75,6 +75,7 @@ port (
 	eq, lt		: in std_logic;
 
 	br			: out std_logic;
+	jmp			: out std_logic;
 	jbr			: out std_logic;
 
 	ext_addr	: out std_logic_vector(EXTA_WIDTH-1 downto 0);
@@ -130,16 +131,21 @@ begin
 --	branch, jbranch
 --
 
-process(clk, reset, ir, zf)
+process(clk, reset)
 begin
 	if (reset='1') then
 		br <= '0';
+		jmp <= '0';
 	elsif rising_edge(clk) then
 
 		br <= '0';
-		if((ir(9 downto 5)="00010" and zf='1') or		-- bz
-			(ir(9 downto 5)="00011" and zf='0')) then	-- bnz
+		jmp <= '0';
+		if((ir(9 downto 6)="0110" and zf='1') or		-- bz
+			(ir(9 downto 6)="0111" and zf='0')) then	-- bnz
 			br <= '1';
+		end if;
+		if (ir(9)='1') then								-- jmp
+			jmp <= '1';
 		end if;
 
 	end if;
@@ -171,16 +177,17 @@ begin
 
 		when "0000" =>			-- POP
 				is_pop <= '1';
-		when "0001" =>			-- POP
-				is_pop <= '1';
+		when "0001" =>			-- null
 		when "0010" =>			-- PUSH
 				is_push <= '1';
 		when "0011" =>			-- PUSH
 				is_push <= '1';
 		when "0100" =>			-- NOP
 		when "0101" =>			-- null
-		when "0110" =>			-- null
-		when "0111" =>			-- null
+		when "0110" =>			-- POP
+				is_pop <= '1';
+		when "0111" =>			-- POP
+				is_pop <= '1';
 		when "1000" =>			-- NOP
 		when "1001" =>			-- null
 		when "1010" =>			-- null
@@ -200,7 +207,7 @@ begin
 	wr_ena <= '0';
 	if (is_push='1' or						-- push instructions
 		ir(9 downto 5)="00001" or			-- stm
-		ir(9 downto 3)="0000010") then	-- st, stn, stmi
+		ir(9 downto 3)="0000010") then		-- st, stn, stmi
 
 		wr_ena <= '1';
 	end if;
@@ -212,7 +219,7 @@ begin
 	wr <= '0';
 	if ir(9 downto 0)="0000000110"			-- stmul
 		or ir(9 downto 0)="0000000111"		-- stmwa
-		or ir(9 downto 3)="0000001" then -- st memio
+		or ir(9 downto 3)="0000001" then 	-- st memio
 		wr <= '1';
 	end if;
 
@@ -226,17 +233,17 @@ begin
 	if (ir(9 downto 3)="0011101") then	-- ld, ldn, ldmi
 		sel_rda <= ir(2 downto 0);
 	end if;
-	if (ir(9 downto 5)="00101") then		-- ldm
+	if (ir(9 downto 5)="00101") then	-- ldm
 		sel_rda <= "111";
 	end if;
-	if (ir(9 downto 5)="00110") then		-- ldi
+	if (ir(9 downto 5)="00110") then	-- ldi
 		sel_rda <= "111";
 		dir <= std_logic_vector(to_unsigned(1, ram_width-5)) & 
-			ir(4 downto 0);	-- addr > 31 constants
+			ir(4 downto 0);				-- addr > 31 constants
 	end if;
 
 	sel_wra <= "110";					-- spp
-	if ir(9 downto 3)="0000010" then		-- st, stn, stmi
+	if ir(9 downto 3)="0000010" then	-- st, stn, stmi
 		sel_wra <= ir(2 downto 0);
 	end if;
 	if ir(9 downto 5)="00001" then		-- stm
@@ -360,10 +367,11 @@ begin
 			when "0011110111" =>				-- ld_opd_16s
 			when "0011111000" =>				-- dup
 					ena_a <= '0';
+
+--			when "01100-----" =>			-- bz
+--			when "01110-----" =>			-- bnz
 --			when "1---------" =>				-- br
 --					ena_a <= '0';
---			when "00010-----" =>				-- bz
---			when "00011-----" =>				-- bnz
 
 --			when "00000000" =>				-- pop
 --			when "00000001" =>				-- and
@@ -429,6 +437,9 @@ begin
 				null;
 		end case;
 
+		if ir(9)='1' then		-- br
+			ena_a <= '0';
+		end if;
 
 		sel_lmux <= "000";		-- log
 
