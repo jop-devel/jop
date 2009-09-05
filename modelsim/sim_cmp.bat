@@ -27,6 +27,7 @@ vcom %options% %jopdir%/simulation/sim_rom.vhd
 vcom %options% %jopdir%/simulation/sim_memory.vhd
 vcom %options% %jopdir%/simulation/sim_sc_uart.vhd
 vcom %options% %jopdir%/simulation/bytecode.vhd
+vcom %options% %jopdir%/simulation/microcode.vhd
 vcom %options% %jopdir%/jtbl.vhd
 vcom %options% %jopdir%/offtbl.vhd
 vcom %options% %jopdir%/core/cache.vhd

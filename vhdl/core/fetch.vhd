@@ -179,5 +179,10 @@ begin
 	end if;
 end process;
 
+-- synthesis translate_off
+	-- show microcode mnemonic
+	uc: entity work.microcode port map(ir);
+-- synthesis translate_on
+
 end rtl;
 

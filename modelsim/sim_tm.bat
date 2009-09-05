@@ -25,16 +25,15 @@ vcom %options% %jopdir%/simulation/sim_pll.vhd
 vcom %options% %jopdir%/simulation/sim_jbc.vhd
 vcom %options% %jopdir%/simulation/sim_rom.vhd
 vcom %options% %jopdir%/simulation/sim_memory.vhd
-vcom %options% %jopdir%/simulation/bytecode.vhd
-vcom %options% %jopdir%/simulation/microcode.vhd
-rem vcom %options% %jopdir%/scio/fifo.vhd
-rem vcom %options% %jopdir%/scio/sc_uart.vhd
 vcom %options% %jopdir%/simulation/sim_sc_uart.vhd
+vcom %options% %jopdir%/simulation/bytecode.vhd
 vcom %options% %jopdir%/jtbl.vhd
 vcom %options% %jopdir%/offtbl.vhd
 vcom %options% %jopdir%/core/cache.vhd
+
 vcom %options% %jopdir%/memory/sc_sram32_flash.vhd
 rem vcom %options% %jopdir%/memory/sc_sram16.vhd
+
 vcom %options% %jopdir%/memory/mem_sc.vhd
 vcom %options% %jopdir%/memory/sdpram.vhd
 vcom %options% %jopdir%/core/mul.vhd
@@ -47,11 +46,19 @@ vcom %options% %jopdir%/core/stack.vhd
 vcom %options% %jopdir%/core/core.vhd
 vcom %options% %jopdir%/scio/sc_sys.vhd
 vcom %options% %jopdir%/scio/scio_min.vhd
+vcom %options% %jopdir%/simpcon/sc_arbiter_pack.vhd
+vcom %options% %jopdir%/simpcon/sc_arbiter_fair.vhd
+vcom %options% %jopdir%/scio/cmpsync.vhd
 vcom %options% %jopdir%/core/jopcpu.vhd
-vcom %options% %jopdir%/top/jopcyc.vhd
-rem vcom %options% %jopdir%/top/jop_amba.vhd
+
+rem RTTM specific
+vcom %options% %jopdir%/rttm/tmif.vhd
+
+rem top level
+vcom %options% %jopdir%/top/joprttm.vhd
+rem vcom %options% %jopdir%/top/jopmul_256x16.vhd
+
 vcom %options% %jopdir%/simulation/tb_jop.vhd
-rem vcom %options% %jopdir%/top/jop_256x16.vhd
 rem vcom %options% %jopdir%/simulation/tb_jop_sram16.vhd
-pause Start simulation?
-vsim -do sim.do tb_jop
+
+vsim -do sim_cmp.do tb_jop
