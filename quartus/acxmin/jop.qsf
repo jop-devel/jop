@@ -48,7 +48,6 @@ set_global_assignment -name VHDL_FILE ../../vhdl/core/mem.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/mul.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/shift.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/stack.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/offtbl.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/jtbl.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/io/iomin.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/io/uart.vhd

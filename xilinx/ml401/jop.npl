@@ -38,7 +38,6 @@ SOURCE ../../vhdl/core/mul.vhd
 SOURCE ../../vhdl/core/core.vhd
 SOURCE ../../vhdl/core/decode.vhd
 SOURCE ../../vhdl/jtbl.vhd
-SOURCE ../../vhdl/offtbl.vhd
 SOURCE ../../vhdl/rom.vhd
 SOURCE ../../vhdl/xilinx/xram.vhd
 SOURCE ../../vhdl/xv4ram_block.vhd

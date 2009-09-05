@@ -52,6 +52,7 @@
 --				stioa, stiod, ldiod removed
 --	2007-08-31	use addr_width for signal dir
 --	2007-09-01	use ram_width from jop_config instead of parameter
+--	2005-09-05	use new branch and jmp instructions (offset part of instruction)
 --
 
 

@@ -133,7 +133,7 @@
 //	2008-12-10	MS: static field access uses index as address
 //	... no comments ...
 //	2009-06-17	MS: Enable conditional move again
-//  2009-06-26  WP: fixing invokesuper
+//  2009-06-26  WP: fixed invokesuper
 //	2009-08-24	MS: use I/O port for null pointer and array exception
 //	2009-09-05	MS: new unconditional jmp instruction
 //
@@ -230,11 +230,6 @@ addr		?			// address used for bc load from flash
 			nop			// written in adr/read stage!
 			stsp		// someting strange in stack.vhd A->B !!!
 
-jmp fin
-nop
-nop
-xxx:
-
 // TEST read after write
 
 // ldi 1
@@ -326,11 +321,14 @@ cpux_loop:
 			wait
 			ldmrd
 			nop
-			bnz cpux_boot
+			bz cpu0_load
 			nop
 			nop
-			
-			
+
+			jmp	cpux_boot
+			nop
+			nop
+
 cpu0_load:
 #ifdef SIMULATION
 //
@@ -501,7 +499,11 @@ not_first:
 			ldm	a
 			xor
 			nop
-			bnz	xram_loop
+			bz	cpux_boot
+			nop
+			nop
+
+			jmp	xram_loop
 			nop
 			nop
 
@@ -544,8 +546,6 @@ cpux_boot:
 			stm	jjhp
 
 			ldm	mp			// pointer to pointer to main meth. struct
-			nop
-			nop
 			jmp	invoke_main	// simulate invokestatic
 			nop
 			nop
@@ -610,8 +610,6 @@ instanceof:
 //
 //	invoke JVM.fxxx(int cons)
 //
-			nop
-			nop
 			jmp	invoke
 			nop
 			nop
@@ -638,8 +636,6 @@ newarray:
 			add					// jjp+2*bc
 
 // invoke JVM.fxxx();
-			nop
-			nop
 			jmp	invoke			// simulate invokestatic with ptr to meth. str. on stack
 			nop
 			nop
@@ -684,8 +680,6 @@ putstatic_ref:
 //
 //	invoke JVM.fxxx(int index)
 //
-			nop
-			nop
 			jmp	invoke
 			nop
 			nop
@@ -704,8 +698,6 @@ sys_int:
 								// jjhp points in method table to first
 								// method after methods inherited from Object
 
-			nop
-			nop
 			jmp	invoke			// simulate invokestatic with ptr to meth. str. on stack
 			nop
 			nop
@@ -726,8 +718,6 @@ sys_exc:
 			add
 
 
-			nop
-			nop
 			jmp	invoke			// simulate invokestatic with ptr to meth. str. on stack
 			nop
 			nop
@@ -752,17 +742,10 @@ sys_noim:
 			add					// *2
 			add					// jjp+2*bc
 
-			nop
-			nop
 			jmp	invoke			// simulate invokestatic with ptr to meth. str. on stack
 			nop
 			nop
 
-
-fin:
-	jmp xxx
-	nop
-	nop
 //
 //	invoke and return functions
 //
@@ -1635,7 +1618,6 @@ jopsys_cond_move:
 			bz		false_path
 			stm		b
 			stm		c
-nop // just because we run out of branch distances
 			ldm		c nxt
 false_path:	ldm		b nxt
 

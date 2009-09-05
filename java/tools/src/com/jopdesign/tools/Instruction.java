@@ -165,8 +165,8 @@ public class Instruction implements Serializable {
 			new Instruction("jbr", 0x102, 0, JmpType.NOP, StackType.NOP),
 
 			// branches
-			new Instruction("bz", 0x180, 5, JmpType.BR, StackType.POP),
-			new Instruction("bnz", 0x1c0, 5, JmpType.BR, StackType.POP),
+			new Instruction("bz", 0x180, 6, JmpType.BR, StackType.POP),
+			new Instruction("bnz", 0x1c0, 6, JmpType.BR, StackType.POP),
 			new Instruction("jmp", 0x200, 9, JmpType.JMP, StackType.NOP),
 		};
 

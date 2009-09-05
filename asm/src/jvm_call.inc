@@ -63,8 +63,6 @@ invoke_main:					// jmp with pointer to pointer to mp on TOS
 jopsys_invoke:					// called from Startup.boot() with pointer to main() method struct
 invoke:							// jmp with mp on TOS (pointer to method struct)
 
-			nop
-//			nop			// mp is != 0
 			jmp	invoke_vpsave
 			ldvp				// save vp
 			stm	old_vp			// in branch slots
@@ -104,10 +102,13 @@ invokeinterface:
 
 			dup					// null pointer check
 			nop
-			bz	null_pointer
+			bnz	interface_pointer_ok
 			ldvp				// save vp in branch slot
 			stm	old_vp
 
+			jmp	null_pointer
+
+interface_pointer_ok:
 			ldi	1				// at address ref+1 (in the handle) is the pointer to method table
 			add
 			stmra				// read pointer to method table
@@ -129,27 +130,9 @@ invokeinterface:
 			wait
 			ldmrd		 		// mp on TOS
 
-			nop
-//			nop		// mp is != 0
 			jmp	invoke_vpsave
 			nop
 			nop
-
-//
-//	null pointer exception
-//		only used by invoke instructions
-//
-
-null_pointer:
-			wait				// just for shure if we jump during
-			wait				// a memory transaction to this point
-			ldi	io_exc
-			stmwa				// write ext. mem address
-			ldi	exc_np
-			stmwd				// write ext. mem data
-			wait
-			wait
-			nop	nxt
 
 invokesuper:					// this was invokespecial, replaced in JOPizer when calling super methods
 			ldm	cp opd
@@ -207,13 +190,25 @@ invokesuper:					// this was invokespecial, replaced in JOPizer when calling sup
 			ldi	5				// "super" method table is at superclass+5
 			add
 
-			nop
-//			nop		// mp is != 0
 			jmp	invoke_addoffset
 			nop
 			nop
 
-nop	// to keep offtbl.vhd short enough....
+//
+//	null pointer exception
+//		only used by invoke instructions
+//
+
+null_pointer:
+			wait				// just for shure if we jump during
+			wait				// a memory transaction to this point
+			ldi	io_exc
+			stmwa				// write ext. mem address
+			ldi	exc_np
+			stmwd				// write ext. mem data
+			wait
+			wait
+			nop	nxt
 
 invokevirtual:
 
@@ -248,10 +243,13 @@ invokevirtual:
 
 			dup					// null pointer check
 			nop
-			bz	null_pointer
+			bnz	invoke_pointer_ok
 			ldvp				// save vp in branch slot
 			stm	old_vp
 
+			jmp	null_pointer
+
+invoke_pointer_ok:
 			ldi	1				// at address ref+1 (in the handle) is the pointer to method table
 			add
 

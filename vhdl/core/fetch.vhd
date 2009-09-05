@@ -53,6 +53,7 @@
 --	2004-04-06	nxt and opd are in rom. rom address from jpc_mux and with
 --				positiv edge rdaddr. unregistered output in rom.
 --	2004-10-08	moved bsy/pcwait from decode to fetch
+--	2005-09-05	use new branch and jmp instructions (offset part of instruction)
 --
 --
 
@@ -99,23 +100,12 @@ port (
 	q			: out std_logic_vector(i_width+1 downto 0)
 );
 end component;
---
---	offsets for relativ branches.
---
-component offtbl is
-port (
-	idx		: in std_logic_vector(4 downto 0);
-	q		: out std_logic_vector(pc_width-1 downto 0)
-);
-end component;
 
 	signal pc_mux		: std_logic_vector(pc_width-1 downto 0);
 	signal pc_inc		: std_logic_vector(pc_width-1 downto 0);
 	signal pc			: std_logic_vector(pc_width-1 downto 0);
 	signal brdly		: std_logic_vector(pc_width-1 downto 0);
 	signal jpdly		: std_logic_vector(pc_width-1 downto 0);
-
-	signal off			: std_logic_vector(pc_width-1 downto 0);
 
 	signal jfetch		: std_logic;		-- fetch next byte code as opcode
 	signal jopdfetch	: std_logic;		-- fetch next byte code as operand
@@ -135,7 +125,6 @@ begin
 	jfetch <= rom_data(i_width+1);
 	jopdfetch <= rom_data(i_width);
 
-	cmp_off: offtbl port map(ir(4 downto 0), off);
 
 	dout <= ir;
 	nxt <= jfetch;
@@ -144,7 +133,7 @@ begin
 process(clk)
 begin
 	if rising_edge(clk) then				-- we don't need a reset
-		ir <= rom_data(i_width-1 downto 0);			-- better read (second) instruction from room
+		ir <= rom_data(i_width-1 downto 0);			-- better read (second) instruction from rom
 		pcwait <= '0';
 		-- decode wait instruction from unregistered rom
 		if (rom_data(i_width-1 downto 0)="0100000001") then	-- wait instuction
@@ -161,7 +150,8 @@ begin
 		brdly <= (others => '0');
 		jpdly <= (others => '0');
 	elsif rising_edge(clk) then
-		brdly <= std_logic_vector(unsigned(pc) + unsigned(off));
+		-- 6 bits as signed branch offset
+		brdly <= std_logic_vector(signed(pc) + to_signed(to_integer(signed(ir(5 downto 0))), pc_width));
 		-- 9 bits as signed jump offset
 		jpdly <= std_logic_vector(signed(pc) + to_signed(to_integer(signed(ir(i_width-2 downto 0))), pc_width));
 		pc <= pc_mux;
