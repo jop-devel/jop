@@ -80,26 +80,6 @@ public class Instruction implements Serializable {
 			new Instruction("add", 0x004, 0, JmpType.NOP, StackType.POP),
 			new Instruction("sub", 0x005, 0, JmpType.NOP, StackType.POP),
 
-			// extension 'address' selects function 4 bits
-
-			// multiplication
-			new Instruction("stmul", 0x006, 0, JmpType.NOP, StackType.POP),
-
-			new Instruction("stmwa", 0x007, 0, JmpType.NOP, StackType.POP),
-
-			new Instruction("stmra", 0x008 + 0, 0, JmpType.NOP, StackType.POP),
-			new Instruction("stmwd", 0x008 + 1, 0, JmpType.NOP, StackType.POP),
-			// array instructions
-			new Instruction("stald", 0x008 + 2, 0, JmpType.NOP, StackType.POP),
-			new Instruction("stast", 0x008 + 3, 0, JmpType.NOP, StackType.POP),
-			// getfield/putfield
-			new Instruction("stgf", 0x008 + 4, 0, JmpType.NOP, StackType.POP),
-			new Instruction("stpf", 0x008 + 5, 0, JmpType.NOP, StackType.POP),
-			// magic copying
-			new Instruction("stcp", 0x008 + 6, 0, JmpType.NOP, StackType.POP),
-			// bytecode read
-			new Instruction("stbcrd", 0x008 + 7, 0, JmpType.NOP, StackType.POP),
-
 			// st (vp) 3 bits
 			new Instruction("st0", 0x010 + 0, 0, JmpType.NOP, StackType.POP),
 			new Instruction("st1", 0x010 + 1, 0, JmpType.NOP, StackType.POP),
@@ -119,22 +99,40 @@ public class Instruction implements Serializable {
 			new Instruction("shr", 0x01e, 0, JmpType.NOP, StackType.POP),
 			// new Instruction("shift reserved", 0x1f, 0, JmpType.NOP, StackType.POP),
 
-			// 5 bits
+			// 5 bits: 0x20-0x3f
 			new Instruction("stm", 0x020, 5, JmpType.NOP, StackType.POP),
+
+			// extension 'address' selects function of memory/multiplication
+			// with 4 bits in extension.vhd
+
+			new Instruction("stmul", 0x040 + 0, 0, JmpType.NOP, StackType.POP),
+			new Instruction("stmwa", 0x040 + 1, 0, JmpType.NOP, StackType.POP),
+			new Instruction("stmra", 0x040 + 2, 0, JmpType.NOP, StackType.POP),
+			new Instruction("stmwd", 0x040 + 3, 0, JmpType.NOP, StackType.POP),
+			// array instructions
+			new Instruction("stald", 0x040 + 4, 0, JmpType.NOP, StackType.POP),
+			new Instruction("stast", 0x040 + 5, 0, JmpType.NOP, StackType.POP),
+			// getfield/putfield
+			new Instruction("stgf",  0x040 + 6, 0, JmpType.NOP, StackType.POP),
+			new Instruction("stpf",  0x040 + 7, 0, JmpType.NOP, StackType.POP),
+			// magic copying
+			new Instruction("stcp",  0x040 + 8, 0, JmpType.NOP, StackType.POP),
+			// bytecode read
+			new Instruction("stbcrd", 0x040 + 9, 0, JmpType.NOP, StackType.POP),
 
 			//
 			// 'push' instructions
 			//
 
-			// 5 bits
+			// 5 bits: 0xa0-0xbf
 			new Instruction("ldm", 0x0a0, 5, JmpType.NOP, StackType.PUSH),
-
+			// 5 bits: 0xc0-0xdf
 			new Instruction("ldi", 0x0c0, 5, JmpType.NOP, StackType.PUSH),
 
 			// extension 'address' selects function 4 bits
 			new Instruction("ldmrd", 0x0e0 + 0, 0, JmpType.NOP, StackType.PUSH),
-			new Instruction("ldmul", 0x0e0 + 6, 0, JmpType.NOP, StackType.PUSH),
-			new Instruction("ldbcstart", 0x0e0 + 7, 0, JmpType.NOP, StackType.PUSH),
+			new Instruction("ldmul", 0x0e0 + 1, 0, JmpType.NOP, StackType.PUSH),
+			new Instruction("ldbcstart", 0x0e0 + 2, 0, JmpType.NOP, StackType.PUSH),
 
 			// ld (vp) 3 bits
 			new Instruction("ld0", 0x0e8 + 0, 0, JmpType.NOP, StackType.PUSH),

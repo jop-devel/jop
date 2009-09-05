@@ -176,9 +176,11 @@ begin
 
 	case ir(9 downto 6) is
 
+
 		when "0000" =>			-- POP
 				is_pop <= '1';
-		when "0001" =>			-- null
+		when "0001" =>			-- POP
+				is_pop <= '1';
 		when "0010" =>			-- PUSH
 				is_push <= '1';
 		when "0011" =>			-- PUSH
@@ -197,6 +199,7 @@ begin
 		when "1101" =>			-- null
 		when "1110" =>			-- null
 		when "1111" =>			-- null
+
 		when others =>
 			null;
 	end case;
@@ -218,9 +221,8 @@ begin
 		rd <= '1';
 	end if;
 	wr <= '0';
-	if ir(9 downto 0)="0000000110"			-- stmul
-		or ir(9 downto 0)="0000000111"		-- stmwa
-		or ir(9 downto 3)="0000001" then 	-- st memio
+	-- we use 16 mmu instructions, could be more
+	if ir(9 downto 4)="000100" then			-- stmul/mem unit
 		wr <= '1';
 	end if;
 
@@ -306,139 +308,148 @@ begin
 
 		case ir is
 
-			when "0000000000" =>				-- pop
-			when "0000000001" =>				-- and
-			when "0000000010" =>				-- or
-			when "0000000011" =>				-- xor
-			when "0000000100" =>				-- add
+			when "0000000000" =>			-- pop
+			when "0000000001" =>			-- and
+			when "0000000010" =>			-- or
+			when "0000000011" =>			-- xor
+			when "0000000100" =>			-- add
 					sel_sub <= '0';
 					sel_amux <= '0';
-			when "0000000101" =>				-- sub
+			when "0000000101" =>			-- sub
 					sel_amux <= '0';
-			when "0000000110" =>				-- stmul
-			when "0000000111" =>				-- stmwa
-			when "0000001000" =>				-- stmra
-			when "0000001001" =>				-- stmwd
-			when "0000001010" =>				-- stald
-			when "0000001011" =>				-- stast
-			when "0000001100" =>				-- stgf
-			when "0000001101" =>				-- stpf
-			when "0000001110" =>				-- stcp
-			when "0000001111" =>				-- stbcrd
-			when "0000010000" =>				-- st0
-			when "0000010001" =>				-- st1
-			when "0000010010" =>				-- st2
-			when "0000010011" =>				-- st3
-			when "0000010100" =>				-- st
-			when "0000010101" =>				-- stmi
-			when "0000011000" =>				-- stvp
+			when "0000010000" =>			-- st0
+			when "0000010001" =>			-- st1
+			when "0000010010" =>			-- st2
+			when "0000010011" =>			-- st3
+			when "0000010100" =>			-- st
+			when "0000010101" =>			-- stmi
+			when "0000011000" =>			-- stvp
 					ena_vp <= '1';
-			when "0000011001" =>				-- stjpc
+			when "0000011001" =>			-- stjpc
 					ena_jpc <= '1';
-			when "0000011010" =>				-- star
+			when "0000011010" =>			-- star
 					ena_ar <= '1';
-			when "0000011011" =>				-- stsp
-			when "0000011100" =>				-- ushr
-			when "0000011101" =>				-- shl
-			when "0000011110" =>				-- shr
---			when "00001-----" =>				-- stm
-			when "0100000000" =>				-- nop
+			when "0000011011" =>			-- stsp
+			when "0000011100" =>			-- ushr
+			when "0000011101" =>			-- shl
+			when "0000011110" =>			-- shr
+--			when "00001-----" =>			-- stm
+			when "0001000000" =>			-- stmul
+			when "0001000001" =>			-- stmwa
+			when "0001000010" =>			-- stmra
+			when "0001000011" =>			-- stmwd
+			when "0001000100" =>			-- stald
+			when "0001000101" =>			-- stast
+			when "0001000110" =>			-- stgf
+			when "0001000111" =>			-- stpf
+			when "0001001000" =>			-- stcp
+			when "0001001001" =>			-- stbcrd
+--			when "00101-----" =>			-- ldm
+--			when "00110-----" =>			-- ldi
+			when "0011100000" =>			-- ldmrd
+			when "0011100001" =>			-- ldmul
+			when "0011100010" =>			-- ldbcstart
+			when "0011101000" =>			-- ld0
+			when "0011101001" =>			-- ld1
+			when "0011101010" =>			-- ld2
+			when "0011101011" =>			-- ld3
+			when "0011101100" =>			-- ld
+			when "0011101101" =>			-- ldmi
+			when "0011110000" =>			-- ldsp
+			when "0011110001" =>			-- ldvp
+			when "0011110010" =>			-- ldjpc
+			when "0011110100" =>			-- ld_opd_8u
+			when "0011110101" =>			-- ld_opd_8s
+			when "0011110110" =>			-- ld_opd_16u
+			when "0011110111" =>			-- ld_opd_16s
+			when "0011111000" =>			-- dup
 					ena_a <= '0';
-			when "0100000001" =>				-- wait
+			when "0100000000" =>			-- nop
 					ena_a <= '0';
-			when "0100000010" =>				-- jbr
+			when "0100000001" =>			-- wait
 					ena_a <= '0';
---			when "00101-----" =>				-- ldm
---			when "00110-----" =>				-- ldi
-			when "0011100000" =>				-- ldmrd
-			when "0011100110" =>				-- ldmul
-			when "0011100111" =>				-- ldbcstart
-			when "0011101000" =>				-- ld0
-			when "0011101001" =>				-- ld1
-			when "0011101010" =>				-- ld2
-			when "0011101011" =>				-- ld3
-			when "0011101100" =>				-- ld
-			when "0011101101" =>				-- ldmi
-			when "0011110000" =>				-- ldsp
-			when "0011110001" =>				-- ldvp
-			when "0011110010" =>				-- ldjpc
-			when "0011110100" =>				-- ld_opd_8u
-			when "0011110101" =>				-- ld_opd_8s
-			when "0011110110" =>				-- ld_opd_16u
-			when "0011110111" =>				-- ld_opd_16s
-			when "0011111000" =>				-- dup
+			when "0100000010" =>			-- jbr
 					ena_a <= '0';
-
---			when "01100-----" =>			-- bz
---			when "01110-----" =>			-- bnz
---			when "1---------" =>				-- br
+--			when "0110------" =>			-- bz
+--			when "0111------" =>			-- bnz
+--			when "1---------" =>			-- jmp
 --					ena_a <= '0';
 
---			when "00000000" =>				-- pop
---			when "00000001" =>				-- and
---			when "00000010" =>				-- or
---			when "00000011" =>				-- xor
---			when "00000100" =>				-- add
+
+
+--			when "0000000000" =>				-- pop
+--			when "0000000001" =>				-- and
+--			when "0000000010" =>				-- or
+--			when "0000000011" =>				-- xor
+--			when "0000000100" =>				-- add
 --					sel_sub <= '0';
 --					sel_amux <= '0';
---			when "00000101" =>				-- sub
+--			when "0000000101" =>				-- sub
 --					sel_amux <= '0';
---			when "00001010" =>				-- stmra
---			when "00001011" =>				-- stmwa
---			when "00001100" =>				-- stmwd
---			when "00001101" =>				-- stopa
---			when "00001110" =>				-- stopb
---			when "00010000" =>				-- st0
---			when "00010001" =>				-- st1
---			when "00010010" =>				-- st2
---			when "00010011" =>				-- st3
---			when "00010100" =>				-- st
---			when "00010101" =>				-- stmi
---			when "00011000" =>				-- stvp
+--			when "0000000110" =>				-- stmul
+--			when "0000000111" =>				-- stmwa
+--			when "0000001000" =>				-- stmra
+--			when "0000001001" =>				-- stmwd
+--			when "0000001010" =>				-- stald
+--			when "0000001011" =>				-- stast
+--			when "0000001100" =>				-- stgf
+--			when "0000001101" =>				-- stpf
+--			when "0000001110" =>				-- stcp
+--			when "0000001111" =>				-- stbcrd
+--			when "0000010000" =>				-- st0
+--			when "0000010001" =>				-- st1
+--			when "0000010010" =>				-- st2
+--			when "0000010011" =>				-- st3
+--			when "0000010100" =>				-- st
+--			when "0000010101" =>				-- stmi
+--			when "0000011000" =>				-- stvp
 --					ena_vp <= '1';
---			when "00011001" =>				-- stjpc
+--			when "0000011001" =>				-- stjpc
 --					ena_jpc <= '1';
---			when "00011010" =>				-- star
+--			when "0000011010" =>				-- star
 --					ena_ar <= '1';
---			when "00011011" =>				-- stsp
---			when "00011100" =>				-- ushr
---			when "00011101" =>				-- shl
---			when "00011110" =>				-- shr
-----			when "001-----" =>				-- stm
-----			when "010-----" =>				-- bz
-----			when "011-----" =>				-- bnz
---			when "10000000" =>				-- nop
+--			when "0000011011" =>				-- stsp
+--			when "0000011100" =>				-- ushr
+--			when "0000011101" =>				-- shl
+--			when "0000011110" =>				-- shr
+----			when "00001-----" =>				-- stm
+--			when "0100000000" =>				-- nop
 --					ena_a <= '0';
---			when "10000001" =>				-- wait
+--			when "0100000001" =>				-- wait
 --					ena_a <= '0';
---			when "10000010" =>				-- jbr
+--			when "0100000010" =>				-- jbr
 --					ena_a <= '0';
-----			when "101-----" =>				-- ldm
-----			when "110-----" =>				-- ldi
---			when "11100010" =>				-- ldmrd
---			when "11100011" =>				-- ldmbsy
---			when "11100101" =>				-- ldmul
---			when "11101000" =>				-- ld0
---			when "11101001" =>				-- ld1
---			when "11101010" =>				-- ld2
---			when "11101011" =>				-- ld3
---			when "11101100" =>				-- ld
---			when "11101101" =>				-- ldmi
---			when "11110000" =>				-- ldsp
---			when "11110001" =>				-- ldvp
---			when "11110010" =>				-- ldjpc
---			when "11110100" =>				-- ld_opd_8u
---			when "11110101" =>				-- ld_opd_8s
---			when "11110110" =>				-- ld_opd_16u
---			when "11110111" =>				-- ld_opd_16s
---			when "11111000" =>				-- dup
+----			when "00101-----" =>				-- ldm
+----			when "00110-----" =>				-- ldi
+--			when "0011100000" =>				-- ldmrd
+--			when "0011100110" =>				-- ldmul
+--			when "0011100111" =>				-- ldbcstart
+--			when "0011101000" =>				-- ld0
+--			when "0011101001" =>				-- ld1
+--			when "0011101010" =>				-- ld2
+--			when "0011101011" =>				-- ld3
+--			when "0011101100" =>				-- ld
+--			when "0011101101" =>				-- ldmi
+--			when "0011110000" =>				-- ldsp
+--			when "0011110001" =>				-- ldvp
+--			when "0011110010" =>				-- ldjpc
+--			when "0011110100" =>				-- ld_opd_8u
+--			when "0011110101" =>				-- ld_opd_8s
+--			when "0011110110" =>				-- ld_opd_16u
+--			when "0011110111" =>				-- ld_opd_16s
+--			when "0011111000" =>				-- dup
 --					ena_a <= '0';
+--
+----			when "01100-----" =>			-- bz
+----			when "01110-----" =>			-- bnz
+----			when "1---------" =>				-- br
+----					ena_a <= '0';
 
 			when others =>
 				null;
 		end case;
 
-		if ir(9)='1' then		-- br
+		if ir(9)='1' then		-- jmp
 			ena_a <= '0';
 		end if;
 
@@ -463,7 +474,7 @@ begin
 			sel_lmux <= "011";
 		end if;
 
-		if ir(9 downto 3)="0011100" then				-- ld io
+		if ir(9 downto 3)="0011100" then				-- ld from extenstion/mem
 			sel_lmux <= "100";
 		end if;
 
