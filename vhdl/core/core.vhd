@@ -87,10 +87,11 @@ port (
 	ext_addr	: out std_logic_vector(EXTA_WIDTH-1 downto 0);
 	rd, wr		: out std_logic;
 
--- jbc connections
+--	connection to mmu
 
-	jbc_addr	: out std_logic_vector(jpc_width-1 downto 0);
-	jbc_data	: in std_logic_vector(7 downto 0);
+	bc_wr_addr	: in std_logic_vector(jpc_width-3 downto 0);	-- address for jbc (in words!)
+	bc_wr_data	: in std_logic_vector(31 downto 0);	-- write data for jbc
+	bc_wr_ena	: in std_logic;
 
 -- interrupt from io
 
@@ -118,10 +119,12 @@ port (
 	din			: in std_logic_vector(31 downto 0);				-- A from stack
 	jpc_wr		: in std_logic;
 
---	connection to bytecode cache
+--	connection to mmu
 
-	jbc_addr	: out std_logic_vector(jpc_width-1 downto 0);
-	jbc_data	: in std_logic_vector(7 downto 0);
+	bc_wr_addr	: in std_logic_vector(jpc_width-3 downto 0);	-- address for jbc (in words!)
+	bc_wr_data	: in std_logic_vector(31 downto 0);	-- write data for jbc
+	bc_wr_ena	: in std_logic;
+
 
 	jfetch		: in std_logic;
 	jopdfetch	: in std_logic;
@@ -297,7 +300,7 @@ begin
 
 	cmp_bcf: bcfetch generic map(jpc_width, pc_width)
 			port map (clk, reset, jpc_out, stk_aout, ena_jpc,
-			jbc_addr, jbc_data,
+			bc_wr_addr, bc_wr_data, bc_wr_ena,
 			jfetch, jopdfetch,
 			stk_zf, stk_nf, stk_eq, stk_lt, jbr,
 			irq_in, irq_out,

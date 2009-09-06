@@ -68,10 +68,11 @@ port (
 	din			: in std_logic_vector(31 downto 0);			-- A from stack
 	jpc_wr		: in std_logic;
 
---	connection to bytecode cache
+--	connection to mmu
 
-	jbc_addr	: out std_logic_vector(jpc_width-1 downto 0);
-	jbc_data	: in std_logic_vector(7 downto 0);
+	bc_wr_addr	: in std_logic_vector(jpc_width-3 downto 0);	-- address for jbc (in words!)
+	bc_wr_data	: in std_logic_vector(31 downto 0);	-- write data for jbc
+	bc_wr_ena	: in std_logic;
 
 	jfetch		: in std_logic;
 	jopdfetch	: in std_logic;
@@ -105,6 +106,33 @@ port (
 );
 end component;
 
+--
+--	jbc component (use technology specific vhdl-file cyc_jbc,...)
+--
+--	ajbc,xjbc are OLD!
+--	check if ajbc.vhd can still be used (multicycle write!)
+--
+--	dual port ram
+--	wraddr and wrena registered
+--	rdaddr is registered
+--	indata registered
+--	outdata is unregistered
+--
+
+component jbc is
+generic (jpc_width : integer);
+port (
+	clk		: in std_logic;
+	data		: in std_logic_vector(31 downto 0);
+	rd_addr		: in std_logic_vector(jpc_width-1 downto 0);
+	wr_addr		: in std_logic_vector(jpc_width-3 downto 0);
+	wr_en		: in std_logic;
+	q		: out std_logic_vector(7 downto 0)
+);
+end component;
+
+	signal jbc_addr	: std_logic_vector(jpc_width-1 downto 0);
+	signal jbc_data	: std_logic_vector(7 downto 0);
 
 	signal jbc_mux	: std_logic_vector(jpc_width downto 0);
 	signal jbc_q	: std_logic_vector(7 downto 0);
@@ -133,6 +161,14 @@ end component;
 
 -- synthesis translate_off 
 -- synthesis translate_on 
+
+--
+--	signals for method cache (jbc)
+--
+	signal mca_out : std_logic_vector(31 downto 0);
+	signal mcb_out : std_logic_vector(31 downto 0);
+	signal mca_wr_ena, mcb_wr_ena : std_logic;
+	signal jbc_sel_reg : std_logic_vector(2 downto 0);
 
 begin
 
@@ -189,6 +225,79 @@ end process;
 
 	jbc_addr <= jbc_mux(jpc_width-1 downto 0);
 	jbc_q <= jbc_data;
+
+--
+--	double buffered method cache
+--		mca is for even word addresses, mcb for odd word addresses
+--
+	mca_wr_ena <= bc_wr_ena and not bc_wr_addr(0);
+	mcb_wr_ena <= bc_wr_ena and bc_wr_addr(0);
+
+mca: entity work.sdpram generic map (32, jpc_width-3)
+	port map (
+	wrclk => clk,
+	data => bc_wr_data,
+	wraddress => bc_wr_addr(jpc_width-3 downto 1),
+	wren => mca_wr_ena,
+	rdclk => clk,
+	rdaddress => jbc_addr(jpc_width-1 downto 3),
+	rden => '1',
+	dout => mca_out
+);
+
+mcb: entity work.sdpram generic map (32, jpc_width-3)
+	port map (
+	wrclk => clk,
+	data => bc_wr_data,
+	wraddress => bc_wr_addr(jpc_width-3 downto 1),
+	wren => mcb_wr_ena,
+	rdclk => clk,
+	rdaddress => jbc_addr(jpc_width-1 downto 3),
+	rden => '1',
+	dout => mcb_out
+);
+
+process(clk)
+begin
+	if rising_edge(clk) then
+		jbc_sel_reg <= jbc_addr(2 downto 0);
+	end if;
+end process;
+
+process(jbc_sel_reg, mca_out, mcb_out)
+begin
+	case jbc_sel_reg is
+		when "011" =>
+			jbc_data <= mca_out(31 downto 24);
+		when "010" =>
+			jbc_data <= mca_out(23 downto 16);
+		when "001" =>
+			jbc_data <= mca_out(15 downto 8);
+		when "000" =>
+			jbc_data <= mca_out(7 downto 0);
+		when "111" =>
+			jbc_data <= mcb_out(31 downto 24);
+		when "110" =>
+			jbc_data <= mcb_out(23 downto 16);
+		when "101" =>
+			jbc_data <= mcb_out(15 downto 8);
+		when "100" =>
+			jbc_data <= mcb_out(7 downto 0);
+		when others =>
+			null;
+	end case;
+end process;
+
+
+--	cmp_jbc: jbc generic map (jpc_width)
+--	port map(
+--		clk => clk,
+--		data => bc_wr_data,
+--		wr_en => bc_wr_ena,
+--		wr_addr => bc_wr_addr,
+--		rd_addr => jbc_addr,
+--		q => jbc_data
+--	);
 
 
 --

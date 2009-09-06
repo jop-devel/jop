@@ -108,8 +108,9 @@ architecture rtl of jopcpu is
 
 	signal bsy				: std_logic;
 
-	signal jbc_addr			: std_logic_vector(jpc_width-1 downto 0);
-	signal jbc_data			: std_logic_vector(7 downto 0);
+	signal bc_wr_addr		: std_logic_vector(jpc_width-3 downto 0);	-- address for jbc (in words!)
+	signal bc_wr_data		: std_logic_vector(31 downto 0);	-- write data for jbc
+	signal bc_wr_ena		: std_logic;
 
 -- SimpCon io interface
 
@@ -127,7 +128,7 @@ begin
 			bsy,
 			stack_din, ext_addr,
 			rd, wr,
-			jbc_addr, jbc_data,
+			bc_wr_addr, bc_wr_data, bc_wr_ena,
 			irq_in, irq_out, sp_ov,
 			stack_tos, stack_nos
 		);
@@ -168,8 +169,9 @@ begin
 			mem_in => mem_in,
 			mem_out => mem_out,
 	
-			jbc_addr => jbc_addr,
-			jbc_data => jbc_data,
+			bc_wr_addr => bc_wr_addr,
+			bc_wr_data => bc_wr_data,
+			bc_wr_ena => bc_wr_ena,
 
 			sc_mem_out => sc_ctrl_mem_out,
 			sc_mem_in => sc_ctrl_mem_in

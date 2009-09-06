@@ -70,8 +70,9 @@ port (
 
 -- jbc connections
 
-	jbc_addr	: in std_logic_vector(jpc_width-1 downto 0);
-	jbc_data	: out std_logic_vector(7 downto 0);
+	bc_wr_addr	: out std_logic_vector(jpc_width-3 downto 0);	-- address for jbc (in words!)
+	bc_wr_data	: out std_logic_vector(31 downto 0);	-- write data for jbc
+	bc_wr_ena	: out std_logic;
 
 -- SimpCon interface
 
@@ -102,30 +103,7 @@ port (
 );
 end component;
 
---
---	jbc component (use technology specific vhdl-file cyc_jbc,...)
---
---	ajbc,xjbc are OLD!
---	check if ajbc.vhd can still be used (multicycle write!)
---
---	dual port ram
---	wraddr and wrena registered
---	rdaddr is registered
---	indata registered
---	outdata is unregistered
---
 
-component jbc is
-generic (jpc_width : integer);
-port (
-	clk		: in std_logic;
-	data		: in std_logic_vector(31 downto 0);
-	rd_addr		: in std_logic_vector(jpc_width-1 downto 0);
-	wr_addr		: in std_logic_vector(jpc_width-3 downto 0);
-	wr_en		: in std_logic;
-	q		: out std_logic_vector(7 downto 0)
-);
-end component;
 
 
 --
@@ -184,10 +162,8 @@ end component;
 	signal bc_len		: unsigned(METHOD_SIZE_BITS-1 downto 0);	-- length of method in words
 	signal inc_addr_reg	: std_logic;
 	signal dec_len		: std_logic;
-	signal bc_wr_addr	: unsigned(jpc_width-3 downto 0);	-- address for jbc (in words!)
-	signal bc_wr_data	: std_logic_vector(31 downto 0);	-- write data for jbc
-	signal bc_wr_ena	: std_logic;
 
+	signal bc_addr		: std_logic_vector(jpc_width-3 downto 0);	-- address for jbc (in words!)
 --
 --	signals for cache connection
 --
@@ -230,6 +206,8 @@ end process;
 				sc_mem_in.rd_data(23 downto 16) &
 				sc_mem_in.rd_data(31 downto 24);
 
+	bc_wr_addr <= bc_addr;
+
 
 	cmp_cache: cache generic map (jpc_width, block_bits) port map(
 		clk, reset,
@@ -239,16 +217,6 @@ end process;
 		cache_rdy, cache_in_cache
 	);
 
-
-	cmp_jbc: jbc generic map (jpc_width)
-	port map(
-		clk => clk,
-		data => bc_wr_data,
-		wr_en => bc_wr_ena,
-		wr_addr => std_logic_vector(bc_wr_addr),
-		rd_addr => jbc_addr,
-		q => jbc_data
-	);
 
 --
 --	SimpCon connections
@@ -735,7 +703,7 @@ begin
 
 			when bc_r1 =>
 				-- setup data
-				bc_wr_addr <= unsigned(cache_bcstart);
+				bc_addr <= cache_bcstart;
 				-- first memory read
 				inc_addr_reg <= '1';
 				state_rd <= '1';
@@ -864,7 +832,7 @@ begin
 					
 		-- increment in state write
 		if state=bc_wr then
-			bc_wr_addr <= bc_wr_addr+1;		-- next jbc address
+			bc_addr <= std_logic_vector(unsigned(bc_addr)+1);		-- next jbc address
 		end if;
 	end if;
 end process;
