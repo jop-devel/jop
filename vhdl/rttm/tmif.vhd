@@ -72,7 +72,7 @@ architecture rtl of tmif is
 	--signal tm_cmd_valid				: std_logic;
 	
 	signal start_commit				: std_logic;
-	signal committing				: std_logic;
+	signal commit_finished				: std_logic;
 	
 	signal commit_out_try_internal	: std_logic;
 	
@@ -135,10 +135,12 @@ begin
 		conflict => conflict,
 		
 		start_commit => start_commit,
-		committing => committing,
+		commit_finished => commit_finished,
 		
 		read_tag_of => read_tag_full,
-		write_buffer_of => write_buffer_full
+		write_buffer_of => write_buffer_full,
+		
+		state => state
 		);			
 
 
@@ -189,7 +191,7 @@ begin
 	end process nesting_cnt_process; 
 
 	-- sets next_state, exc_tm_rollback, tm_cmd_rdy_cnt, start_commit
-	state_machine: process(commit_in_allow, committing, conflict, nesting_cnt, 
+	state_machine: process(commit_in_allow, commit_finished, conflict, nesting_cnt, 
 		state, tm_cmd) is
 	begin
 		next_state <= state;
@@ -246,7 +248,7 @@ begin
 				tm_cmd_rdy_cnt <= "11";
 				
 				-- TODO check condition
-				if committing = '0' then
+				if commit_finished = '1' then
 					-- TODO which state?
 					next_state <= end_transaction;
 				end if;
@@ -263,7 +265,7 @@ begin
 				
 			when early_commit =>
 				-- TODO check condition
-				if committing = '0' then
+				if commit_finished = '1' then
 					next_state <= early_committed_transaction;
 				end if;
 				

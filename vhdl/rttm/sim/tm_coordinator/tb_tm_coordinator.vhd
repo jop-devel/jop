@@ -25,7 +25,6 @@ constant cpu_cnt			: integer := 8;
 
 signal finished				: boolean := false;
 
-constant cpu_cnt_width		: integer := integer(ceil(log2(real(cpu_cnt-1))));
 signal clk					: std_logic := '1';
 signal reset				: std_logic;
 
@@ -49,8 +48,7 @@ begin
 
 	dut: entity work.tm_coordinator(rtl)
 	generic map (
-		cpu_cnt => cpu_cnt,
-		cpu_cnt_width => cpu_cnt_width
+		cpu_cnt => cpu_cnt
 		)
 	port map (
 		clk => clk,
@@ -67,25 +65,27 @@ begin
 	
 		wait until falling_edge(reset);
 		wait until rising_edge(clk);
-		
+				
 		assert commit_allow= (0 to cpu_cnt-1 => '0');
 		
 		commit_try <= (others => '1');
 		wait until rising_edge(clk);
 		
 		commit_try(3) <= '0';
+		wait for 0 ns;
 		
 		assert commit_allow = cpu_flags'(0 => '1', others => '0');
 		
-		commit_try(1) <= '0';
+		commit_try(1) <= '0';				
+		wait for 0 ns;
 		
-		--wait for delta; 
-		--assert commit_allow = cpu_flags'(0 => '1', others => '0');		
+		assert commit_allow = cpu_flags'(0 => '1', others => '0');		
 		
 		wait until rising_edge(clk);
 		wait until rising_edge(clk);
 		
 		commit_try(0) <= '0';
+		wait for 0 ns;
 		
 		wait until rising_edge(clk);
 		

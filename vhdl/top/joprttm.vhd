@@ -284,8 +284,7 @@ end process;
 
 	cmp_coordinator: entity work.tm_coordinator(rtl)
 	generic map (
-		cpu_cnt => cpu_cnt,
-		cpu_cnt_width => cpu_cnt_width
+		cpu_cnt => cpu_cnt
 		)
 	port map (
 		clk => clk_int,

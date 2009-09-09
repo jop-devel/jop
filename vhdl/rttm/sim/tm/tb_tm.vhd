@@ -147,12 +147,12 @@ begin
 		
 		-- write tags
 		
-		alias write_tags_v is << signal .dut.cmp_tm.write_tags.v: 
+		alias write_tags_v is << signal .dut.cmp_tm.dirty: 
 			std_logic_vector(2**way_bits-1 downto 0) >>;		
 			
 		-- read tags
 			
-		alias read_tags_v is << signal .dut.cmp_tm.read_tags.v: 
+		alias read_tags_v is << signal .dut.cmp_tm.read: 
 			std_logic_vector(2**way_bits-1 downto 0) >>;		
 		
 		
@@ -161,7 +161,7 @@ begin
 		
 		type tag_array is array (0 to 2**way_bits-1) of 
 			std_logic_vector(addr_width-1 downto 0);
-		alias read_tags is << signal .dut.cmp_tm.read_tags.tag: tag_array >>;
+		alias read_tags is << signal .dut.cmp_tm.tag.tag: tag_array >>;
 		
 		-- test data
 	
