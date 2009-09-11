@@ -77,6 +77,10 @@ public class Fwp {
 					ejip.returnPacket(p);
 				}
 			}
+
+			public void loop() {
+				// do nothing
+			}
 		};
 		net.getUdp().addHandler(FWP_PORT, uh);
 	}

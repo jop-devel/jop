@@ -41,7 +41,7 @@ package ejip;
 *	UdpHandler.
 */
 
-public abstract class UdpHandler {
+public interface UdpHandler {
 
 /**
 *	handle one request of registered port.
@@ -49,6 +49,5 @@ public abstract class UdpHandler {
 	public abstract void request(Packet p);
 
 	// TODO: shouldn't this be a run() from Runnable?
-	public void loop() {
-	}
+	public void loop();
 }

@@ -37,22 +37,30 @@ public class Const {
 	
 	/**
 	 * Size of class header part.
-	 * Difference between class struct and method table
+	 * Difference between class struct and method table.
 	 */
 	static final int CLASS_HEADR = 5;
+	/**
+	 * Size of instance relative to class struct.
+	 */
+	public static final int CLASS_SIZE = 0;
+	/**
+	 * Pointer to super class relative to class struct.
+	 */
+	public static final int CLASS_SUPER = 3;
+	/**
+	 * Pointer to super class relative to class struct.
+	 */
+	static final int CLASS_IFTAB = 4;
+	
+	/**
+	 * Class info start relative to start of MTAB.
+	 */
+	public static final int MTAB2CLINFO = -5;
 	/**
 	 * GC_INFO field relative to start of MTAB.
 	 */
 	static final int MTAB2GC_INFO = -3;
-	/**
-	 * Pointer to super class relative to class struct
-	 */
-	static final int CLASS_SUPER = 3;
-	/**
-	 * Pointer to super class relative to class struct
-	 */
-	static final int CLASS_IFTAB = 4;
-	
 	
 	/**
 	 * Size of the on-chip stack cache including the area
