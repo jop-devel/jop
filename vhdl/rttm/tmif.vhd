@@ -72,6 +72,7 @@ architecture rtl of tmif is
 	--signal tm_cmd_valid				: std_logic;
 	
 	signal start_commit				: std_logic;
+	signal next_start_commit		: std_logic;
 	signal commit_finished				: std_logic;
 	
 	signal commit_out_try_internal	: std_logic;
@@ -156,12 +157,16 @@ begin
 			
 			is_tm_magic_addr_sync <= '0';
 			sc_out_cpu_del <= sc_out_idle;
+			
+			start_commit <= '0';
 		elsif rising_edge(clk) then
 			state <= next_state;
 			nesting_cnt <= next_nesting_cnt;
 			
 			is_tm_magic_addr_sync <= is_tm_magic_addr_async;
-			sc_out_cpu_del <= sc_out_cpu;			
+			sc_out_cpu_del <= sc_out_cpu;
+			
+			start_commit <= next_start_commit; 			
 		end if;
 	end process sync;
 	
@@ -197,7 +202,7 @@ begin
 		next_state <= state;
 		exc_tm_rollback <= '0';
 		tm_cmd_rdy_cnt <= "00";
-		start_commit <= '0';
+		next_start_commit <= '0';
 		
 		reset_on_transaction_start <= '0';
 		
@@ -241,7 +246,7 @@ begin
 					next_state <= rollback_signal;
 				elsif commit_in_allow = '1' then
 					next_state <= commit;
-					start_commit <= '1';
+					next_start_commit <= '1';
 				end if;
 			
 			when commit =>
@@ -260,7 +265,7 @@ begin
 					next_state <= rollback_signal;
 				elsif commit_in_allow = '1' then
 					next_state <= early_commit;
-					start_commit <= '1';
+					next_start_commit <= '1';
 				end if;
 				
 			when early_commit =>
@@ -338,25 +343,66 @@ begin
 
 
 
+-- 	-- sets sc_out_cpu_filtered, sc_out_arb, sc_in_cpu
+-- 	-- TODO this is not well thought-out	
+-- 	process(is_tm_magic_addr_async, memory_access_mode, sc_in_arb, 
+-- 		sc_in_cpu_filtered, sc_out_arb_filtered, sc_out_cpu, tm_cmd_rdy_cnt) is
+-- 	begin
+-- 		sc_out_cpu_filtered <= sc_out_cpu;
+-- 		sc_out_arb <= sc_out_cpu;
+-- 		sc_in_cpu <= sc_in_cpu_filtered;
+-- 	
+-- 		case memory_access_mode is
+-- 			when bypass =>				
+-- 				 sc_in_cpu <= sc_in_arb;
+-- 							
+-- 			when transactional =>
+-- 				sc_out_arb.wr <= '0';
+-- 				
+-- 			when commit =>
+-- 				sc_out_arb <= sc_out_arb_filtered;
+-- 			
+-- 			when contain =>
+-- 				sc_out_cpu_filtered.wr <= '0';
+-- 				sc_out_cpu_filtered.rd <= '0'; -- TODO reads?
+-- 				
+-- 				sc_out_arb.wr <= '0';
+-- 				
+-- 				sc_in_cpu <= (
+-- 					rdy_cnt => (others => '0'),
+-- 					rd_data => (others => '0'));
+-- 		end case;
+-- 		
+-- 		-- TODO
+-- 		if memory_access_mode = bypass then
+-- 			if sc_in_arb.rdy_cnt < tm_cmd_rdy_cnt then
+-- 				sc_in_cpu.rdy_cnt <= tm_cmd_rdy_cnt;
+-- 			end if;
+-- 		else
+-- 			if sc_in_cpu_filtered.rdy_cnt < tm_cmd_rdy_cnt then
+-- 				sc_in_cpu.rdy_cnt <= tm_cmd_rdy_cnt;
+-- 			end if;
+-- 		end if;
+-- 		
+-- 				
+-- 		-- overrides when TM command is issued
+-- 		if sc_out_cpu.wr = '1' and is_tm_magic_addr_async = '1' then		
+-- 			sc_out_cpu_filtered.wr <= '0';
+-- 			sc_out_arb.wr <= '0';
+-- 		end if;
+-- 	end process; 
+
+
 	-- sets sc_out_cpu_filtered, sc_out_arb, sc_in_cpu
 	-- TODO this is not well thought-out	
 	process(is_tm_magic_addr_async, memory_access_mode, sc_in_arb, 
 		sc_in_cpu_filtered, sc_out_arb_filtered, sc_out_cpu, tm_cmd_rdy_cnt) is
 	begin
 		sc_out_cpu_filtered <= sc_out_cpu;
-		sc_out_arb <= sc_out_cpu;
+		sc_out_arb <= sc_out_arb_filtered;
 		sc_in_cpu <= sc_in_cpu_filtered;
 	
 		case memory_access_mode is
-			when bypass =>				
-				 sc_in_cpu <= sc_in_arb;
-							
-			when transactional =>
-				sc_out_arb.wr <= '0';
-				
-			when commit =>
-				sc_out_arb <= sc_out_arb_filtered;
-			
 			when contain =>
 				sc_out_cpu_filtered.wr <= '0';
 				sc_out_cpu_filtered.rd <= '0'; -- TODO reads?
@@ -366,6 +412,8 @@ begin
 				sc_in_cpu <= (
 					rdy_cnt => (others => '0'),
 					rd_data => (others => '0'));
+			when others =>
+				null;
 		end case;
 		
 		-- TODO
@@ -383,9 +431,10 @@ begin
 		-- overrides when TM command is issued
 		if sc_out_cpu.wr = '1' and is_tm_magic_addr_async = '1' then		
 			sc_out_cpu_filtered.wr <= '0';
-			sc_out_arb.wr <= '0';
+			-- sc_out_arb.wr <= '0';
 		end if;
 	end process; 
+
 	
 	
 

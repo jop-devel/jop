@@ -67,14 +67,14 @@ architecture rtl of tag is
 	-- pointer to next block to be used on a miss
 	signal nxt			: unsigned(way_bits-1 downto 0);
 
-	signal h_res, hit_reg, wr_dly: std_logic;
+	signal h_res, hit_reg: std_logic;
 	signal addr_dly: std_logic_vector(addr_width-1 downto 0);
 
 begin
 
 
-	hit <= hit_reg;
-	line <= line_addr;
+	hit <= h_res; -- TODO not registered any more
+	line <= l; -- TODO not registered any more
 	newline <= nxt;
 
 -- asynchronous
@@ -150,13 +150,12 @@ begin
 
 		hit_reg <= h_res;
 
-		wr_dly <= wr;
 		addr_dly <= addr;
 
 		line_addr <= l;
 
 		-- update tag memory in the next cycle
-		if wr_dly='1' then
+		if wr='1' then
 			if hit_reg='0' then
 				tag(to_integer(nxt)) <= addr_dly;
 				v(to_integer(nxt)) <= '1';

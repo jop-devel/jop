@@ -120,12 +120,10 @@ architecture rtl of tm is
 	
 	signal stage1_async: stage1_async_type;
 
-	signal rdy_cnt		: unsigned(RDY_CNT_SIZE-1 downto 0); 
-
 	signal read_data, next_read_data: std_logic_vector(31 downto 0);
 	
 	-- TODO merge w/ stage1.{addr, cpu_data}
-	signal from_cpu_del: sc_out_type;
+	signal from_cpu_dly: sc_out_type;
 
 	--
 	-- Write buffer
@@ -138,8 +136,8 @@ architecture rtl of tm is
 	signal dirty		: std_logic_vector(lines-1 downto 0);
 	signal read			: std_logic_vector(lines-1 downto 0);
 
-	signal next_dirty	: std_logic_vector(0 to lines-1);
-	signal next_read	: std_logic_vector(0 to lines-1);
+	signal next_dirty	: std_logic_vector(lines-1 downto 0);
+	signal next_read	: std_logic_vector(lines-1 downto 0);
 
 	signal save_data, next_save_data: std_logic_vector(31 downto 0);
 	
@@ -152,7 +150,7 @@ architecture rtl of tm is
 	
 	signal commit_addr			: std_logic_vector(addr_width-1 downto 0);
 	
-	signal broadcast_valid_del	: std_logic;
+	signal broadcast_valid_dly	: std_logic;
 
 	signal write_to_mem_finishing: std_logic;
 	
@@ -171,14 +169,13 @@ begin
 	read_tag_of <= tag_full; -- TODO
 	write_buffer_of <= tag_full;
 
-	proc_stage0: process (broadcast, broadcast_valid_del, commit_addr, 
-		commit_line, from_cpu, stage1, stage1_async, state, 
+	proc_stage0: process (broadcast, broadcast_valid_dly, commit_addr, 
+		commit_line, from_cpu, stage1, stage1_async, start_commit, state, 
 		write_to_mem_finishing) is
 	begin
 		-- TODO assertion that no signals are issued in wrong time
 		next_stage1.addr <= (others => 'X'); -- TODO
 		next_stage1.cpu_data <= from_cpu.wr_data;
-		shift <= '0';
 		
 		commit_finished <= '0';
 	
@@ -190,7 +187,9 @@ begin
 			when commit_wait_token | early_commit_wait_token =>
 				next_stage1.state <= idle;
 				
-				if broadcast.valid = '1' or broadcast_valid_del = '1' then
+				if broadcast.valid = '1' or 
+					(broadcast_valid_dly = '1' and stage1.state /= broadcast1) 
+					then
 					next_stage1.state <= broadcast1;
 					next_stage1.addr <= broadcast.address(next_stage1.addr'range); -- TODO
 				end if;				
@@ -199,54 +198,64 @@ begin
 				next_stage1.state <= idle;
 			
 				if state = normal_transaction and 
-					(broadcast.valid = '1' or broadcast_valid_del = '1') then
+					(broadcast.valid = '1'  or 
+					(broadcast_valid_dly = '1' and stage1.state /= broadcast1))
+					then
 					next_stage1.state <= broadcast1;
 					next_stage1.addr <= broadcast.address(next_stage1.addr'range); 
 				end if;
-											
-				if from_cpu.wr = '1' then
-					next_stage1.state <= write;
-					next_stage1.addr <= from_cpu.address(next_stage1.addr'range);
-				elsif from_cpu.rd = '1' then
-					next_stage1.state <= read1;
-					next_stage1.addr <= from_cpu.address(next_stage1.addr'range);
-				end if;
+
+				-- TODO check if .nc condition needed elsewhere
+				-- TODO enable .nc signalling in CPU
+				--if from_cpu.nc = '0' then
+					if from_cpu.wr = '1' then
+						next_stage1.state <= write;
+						next_stage1.addr <= from_cpu.address(next_stage1.addr'range);
+					elsif from_cpu.rd = '1' then
+						next_stage1.state <= read1;
+						next_stage1.addr <= from_cpu.address(next_stage1.addr'range);
+					end if;
+				--end if;
 				
 			when commit | early_commit =>
-				next_stage1.state <= stage1.state; -- TODO ?
+				next_stage1.state <= idle; -- TODO ?
 				-- TODO use FIFO
 				-- write is nearly finished and not all lines comm.
-				if write_to_mem_finishing = '1' then 
-					if commit_line = stage1_async.newline then
+				if write_to_mem_finishing = '1' or start_commit = '1' then
+					if commit_line = stage1_async.newline then						
 						commit_finished <= '1';
 					else 
 						next_stage1.state <= commit;
 						next_stage1.addr <= commit_addr;
-						shift <= '1';
+						-- shift <= '1';
 					end if;
 				end if;
 		end case;		
 	end process proc_stage0;
 
-	proc_stage1: process(commit_line, stage1, stage1_async, stage2) is
+	proc_stage1: process(commit_line, stage1, stage1_async) is
 	begin
 		-- TODO optimize w/ X
 		next_stage2.update_tags <= '0';
 		next_stage2.hit <= stage1_async.hit;
 		
-		next_stage2.update_read <= stage2.update_read;
-		next_stage2.update_dirty <= stage2.update_dirty;
+		next_stage2.update_read <= '0';
+		next_stage2.update_dirty <= '0';
 		
 		next_stage2.address <= stage1.addr;
 		
 		next_bcstage2 <= '0';
 		
+		next_stage23.line_addr <= stage23.line_addr;
+		
 		if stage1.state = commit then
 			next_stage23.line_addr <= commit_line;
-		elsif stage1_async.hit = '1' then
-			next_stage23.line_addr <= stage1_async.line_addr;
-		else
-			next_stage23.line_addr <= stage1_async.newline;
+		elsif stage1.state = read1 or stage1.state = write then -- TODO
+			if stage1_async.hit = '1' then
+				next_stage23.line_addr <= stage1_async.line_addr;
+			else
+				next_stage23.line_addr <= stage1_async.newline;
+			end if;
 		end if;
 		
 		case stage1.state is
@@ -290,11 +299,13 @@ begin
 		next_stage3.read_read <= read(to_integer(stage23.line_addr));
 	end process proc_stage2only;
 	
-	proc_stage23: process(commit_addr, commit_line, data, from_cpu_del, 
+	proc_stage23: process(commit_addr, commit_line, data, from_cpu_dly, 
 		from_mem, read_data, save_data, stage1, stage1_async, stage2, 
 		stage23, state) is
 	begin
 		next_data <= data;
+		
+		shift <= '0';
 	
 		-- TODO stage 2 or 3?
 		if stage23.update_data = '1' then
@@ -320,105 +331,127 @@ begin
 		
 		next_save_data <= save_data;
 		
-		case state is
-			when no_transaction | early_committed_transaction =>
-				to_mem <= from_cpu_del;
-			
-			when others =>
-				case stage23.state is
-					when idle =>
-						null;
-					
-					when read_hit2 =>
-						next_stage23.state <= read_hit3;
-					
-					when write2 =>
-						next_stage23.state <= write3;
-						next_stage23.update_data <= '1';
-					
-					when write3 =>
-						null;
-					
-					when read_hit3 =>
-						-- TODO read_data is already a reg.
-						next_save_data <= read_data;
-						to_cpu.rd_data <= read_data;
-						
-					when read_miss2 =>
-						next_stage23.state <= read_miss3;
-						to_mem.rd <= '1';
-						to_mem.address <= 
-							(SC_ADDR_SIZE-1 downto addr_width => 
-							'0') & stage2.address; -- TODO
-					
-					when read_miss3 =>
-						if from_mem.rdy_cnt(1) = '0' then
-							next_stage23.state <= read_miss4;
-						end if;
-						
-					when read_miss4 =>
-						next_save_data <= from_mem.rd_data;
-						to_cpu.rd_data <= from_mem.rd_data;
-						next_stage23.update_data <= '1';
-						next_stage23.wr_data <= from_mem.rd_data; 
-					
-					when commit_2 =>
-						next_stage23.state <= commit_3;
-					
-					when commit_3 =>
-						to_mem.wr <= '1';
-						to_mem.address <= (SC_ADDR_SIZE-1 downto addr_width => 
-							'0') & commit_addr;
-						to_mem.wr_data <= read_data;
-						next_stage23.state <= commit_4;
-						next_commit_line <= commit_line + 1;
-						
-					when commit_4 =>
-						next_stage23.state <= commit_4;
-						
-						if from_mem.rdy_cnt(1) = '0' then
-							write_to_mem_finishing <= '1';
-							next_stage23.state <= idle;
-						end if;
-				end case;
+		if state = no_transaction or state = early_committed_transaction 
+			-- or from_cpu_dly.nc = '1' -- TODO .nc 
+			then  
+				to_cpu.rd_data <= from_mem.rd_data;
+				to_mem <= from_cpu_dly;
+		else
+			case stage23.state is
+				when idle =>
+					null;
 				
-				case stage1.state is
-					when idle | broadcast1 =>
-						null;
-					when read1 =>
-						if stage1_async.hit = '1' then
-							next_stage23.state <= read_hit2;
-						else
-							next_stage23.state <= read_miss2;
-						end if;
-					when write =>
-						next_stage23.state <= write2;
-						next_stage23.wr_data <= stage1.cpu_data;
-						next_stage23.update_data <= '1';										
-					when commit =>
-						next_stage23.state <= commit_2;
-				end case;
-		end case;
+				when read_hit2 =>
+					next_stage23.state <= read_hit3;
+				
+				when write2 =>
+					next_stage23.state <= write3;
+					-- TODO earlier? next_stage23.update_data <= '1';
+				
+				when write3 =>
+					null;
+				
+				when read_hit3 =>
+					-- TODO read_data is already a reg.
+					next_save_data <= read_data;
+					to_cpu.rd_data <= read_data;
+					
+				when read_miss2 =>
+					next_stage23.state <= read_miss3;
+					to_mem.rd <= '1';
+					to_mem.address <= 
+						(SC_ADDR_SIZE-1 downto addr_width => 
+						'0') & stage2.address; -- TODO
+				
+				when read_miss3 =>
+					next_stage23.state <= read_miss3;
+					
+					if from_mem.rdy_cnt(1) = '0' then
+						next_stage23.state <= read_miss4;
+					end if;
+					
+				when read_miss4 =>
+					next_save_data <= from_mem.rd_data;
+					to_cpu.rd_data <= from_mem.rd_data;
+					next_stage23.update_data <= '1';
+					next_stage23.wr_data <= from_mem.rd_data; 
+				
+				when commit_2 =>
+					next_stage23.state <= commit_3;
+				
+				when commit_3 =>
+					-- TODO don't write if not dirty
+					to_mem.wr <= '1';
+					to_mem.address <= (SC_ADDR_SIZE-1 downto addr_width => 
+						'0') & commit_addr;
+					to_mem.wr_data <= read_data;
+					next_stage23.state <= commit_4;					
+					
+					next_commit_line <= commit_line + 1;
+					shift <= '1'; -- TODO
+					
+				when commit_4 =>
+					next_stage23.state <= commit_4;
+					
+					if from_mem.rdy_cnt(1) = '0' then
+						write_to_mem_finishing <= '1';
+						next_stage23.state <= idle;
+					end if;
+			end case;
+			
+			case stage1.state is
+				when idle | broadcast1 =>
+					null;
+				when read1 =>
+					if stage1_async.hit = '1' then
+						next_stage23.state <= read_hit2;
+					else
+						next_stage23.state <= read_miss2;
+					end if;
+				when write =>
+					next_stage23.state <= write2;
+					next_stage23.wr_data <= stage1.cpu_data;
+					next_stage23.update_data <= '1';										
+				when commit =>
+					next_stage23.state <= commit_2;
+			end case;
+		end if;
 	end process proc_stage23;
 	
-	gen_rdy_cnt: process (from_mem, stage1, stage23, state, stage1_async) is
+	gen_rdy_cnt: process (from_cpu_dly, from_mem, stage1, stage23, state) is
 		variable var_rdy_cnt: unsigned(RDY_CNT_SIZE-1 downto 0);
 	begin
 		var_rdy_cnt := "00";
-				
+		
+		-- TODO not for tm cmd
+		if from_cpu_dly.rd = '1' or from_cpu_dly.wr = '1' then
+			var_rdy_cnt := "11";
+		end if;
+		
 		case stage1.state is
 			when write =>
 				var_rdy_cnt := "10";
 			when read1 =>
-				if stage1_async.hit = '1' then
-					var_rdy_cnt := "10";
-				else
-					var_rdy_cnt := "11";
-				end if;
+				var_rdy_cnt := "11"; -- TODO not waiting for hit res. is faster
+-- 				if stage1_async.hit = '1' then
+-- 					var_rdy_cnt := "10";
+-- 				else
+-- 					var_rdy_cnt := "11";
+-- 				end if;
 			when others =>
 				case stage23.state is
 					when write2 | read_hit2 =>
 						var_rdy_cnt := "01";
+					when read_miss2 =>
+						var_rdy_cnt := "11"; -- TODO issue to_mem.rd earlier?
+						
+					-- TODO hazard fix - or add reg. and disable cycle 2 write
+					-- TODO actually min(3, from_mem.rdy_cnt + 1)	
+					when read_miss3 =>
+						var_rdy_cnt := "11";
+					when read_miss4 =>
+						var_rdy_cnt := "01";					
+					 
 					when others =>
 						case state is 
 							when commit_wait_token | commit | 
@@ -436,7 +469,7 @@ begin
 			var_rdy_cnt := from_mem.rdy_cnt;
 		end if;
 		
-		rdy_cnt <= var_rdy_cnt;
+		to_cpu.rdy_cnt <= var_rdy_cnt;
 	end process gen_rdy_cnt;
 	
 	--
@@ -473,10 +506,10 @@ begin
 				 wr_data => (others => '0'), update_data => '0',
 				 line_addr => (others => '0'));
 				 bcstage2 <= '0';
-				 broadcast_valid_del <= '0';
+				 broadcast_valid_dly <= '0';
 				 data <= (others => (others => '0'));
 				 save_data <= (others => '0');
-				 from_cpu_del <= sc_out_idle;
+				 from_cpu_dly <= sc_out_idle;
 				 commit_line <= (others => '0');
 			
 			read_data <= (others => '0'); 
@@ -490,10 +523,10 @@ begin
 			stage3 <= next_stage3;
 			stage23 <= next_stage23;
 			bcstage2 <= next_bcstage2;
-			broadcast_valid_del <= broadcast.valid;
+			broadcast_valid_dly <= broadcast.valid;
 			data <= next_data;
 			save_data <= next_save_data;
-			from_cpu_del <= from_cpu;
+			from_cpu_dly <= from_cpu;
 			commit_line <= next_commit_line;
 			
 			read_data <= next_read_data;

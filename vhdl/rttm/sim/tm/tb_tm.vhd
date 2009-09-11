@@ -23,6 +23,12 @@ end tb_tm;
 
 architecture behav of tb_tm is
 
+--
+--	Implementation variants
+--
+
+constant cache_combined: boolean := true;
+
 
 --
 --	Settings
@@ -34,7 +40,7 @@ constant addr_width		: integer := 18;	-- address bits of cachable memory
 constant way_bits		: integer := 3;		-- 2**way_bits is number of entries
 
 
-constant conflict_detection_cycles		: integer := 5;
+constant conflict_detection_cycles		: integer := 6; -- TODO
 
 --
 --	Generic
@@ -143,7 +149,7 @@ begin
 		
 		-- tm state
 
-		alias nesting_cnt is << signal .dut.nesting_cnt: nesting_cnt_type >>;
+ 		alias nesting_cnt is << signal .dut.nesting_cnt: nesting_cnt_type >>;
 		
 		-- write tags
 		
@@ -152,16 +158,16 @@ begin
 			
 		-- read tags
 			
-		alias read_tags_v is << signal .dut.cmp_tm.read: 
-			std_logic_vector(2**way_bits-1 downto 0) >>;		
+-- 		alias read_tags_v is << signal .dut.cmp_tm.read: 
+-- 			std_logic_vector(2**way_bits-1 downto 0) >>;		
 		
 		
 		--alias buf is << signal .dut.cmp_tm.data: 
 		--	data_array(0 to << constant .dut.cmp_tm.lines: integer >> - 1) >>;
 		
-		type tag_array is array (0 to 2**way_bits-1) of 
-			std_logic_vector(addr_width-1 downto 0);
-		alias read_tags is << signal .dut.cmp_tm.tag.tag: tag_array >>;
+-- 		type tag_array is array (0 to 2**way_bits-1) of 
+-- 			std_logic_vector(addr_width-1 downto 0);
+-- 		alias read_tags is << signal .dut.cmp_tm.tag.tag: tag_array >>;
 		
 		-- test data
 	
@@ -171,11 +177,16 @@ begin
 			("000" & X"049f8", "000" & X"07607", 
 			"000" & X"00001", "000" & X"01b22",
 			"000" & X"016c4", "000" & X"07e39",
-			"000" & X"5280c"); 
+			"000" & X"1280c"); 
 			
 		constant data: data_array :=
 			(X"2a25359b" , X"2cd23bd6", X"42303eea", X"0000007b",
 			X"5bdae77b", X"79967474", X"187ca438");
+
+		-- assertion helpers
+				
+		variable lines_used: integer;
+		variable addr_used: integer;
 	begin
 		sc_out_cpu.nc <= '0';
 		
@@ -185,53 +196,53 @@ begin
 		
 		-- normal mode read and write
 		
-		assert << signal .dut.state: state_type>> = no_transaction;
+ 		assert << signal .dut.state: state_type>> = no_transaction;
 		
 		sc_write(clk, addr(2), data(3), sc_out_cpu, sc_in_cpu);
-		assert now = 60 ns;
+ 		assert now = 70 ns;
 		assert ram(to_integer(unsigned(addr(2)))) = data(3);
 		
 		sc_read(clk, addr(2), result, sc_out_cpu, sc_in_cpu);
-		assert now = 100 ns and result = data(3);
+		assert now = 120 ns and result = data(3);
 		
 		sc_write(clk, addr(6), data(6), sc_out_cpu, sc_in_cpu);
 
 		-- start and end transactions
 		
-		assert to_integer(nesting_cnt) = 0; 
+ 		assert to_integer(nesting_cnt) = 0; 
 
 		sc_write(clk, TM_MAGIC, 
 			(31 downto tm_cmd_raw'length => '0') & TM_CMD_START_TRANSACTION, 
 			sc_out_cpu, sc_in_cpu);
 		
-		assert << signal .dut.state: state_type>> = normal_transaction;
-		assert to_integer(nesting_cnt) = 1;		
+ 		assert << signal .dut.state: state_type>> = normal_transaction;
+ 		assert to_integer(nesting_cnt) = 1;		
 
 		sc_write(clk, TM_MAGIC, 
 			(31 downto tm_cmd_raw'length => '0') & TM_CMD_START_TRANSACTION, 
 			sc_out_cpu, sc_in_cpu);
 
-		assert to_integer(nesting_cnt) = 2;
+ 		assert to_integer(nesting_cnt) = 2;
 		
 		sc_write(clk, TM_MAGIC, 
 			(31 downto tm_cmd_raw'length => '0') & TM_CMD_END_TRANSACTION, 
 			sc_out_cpu, sc_in_cpu);
 		
-		assert to_integer(nesting_cnt) = 1;
+ 		assert to_integer(nesting_cnt) = 1;
 		
 		sc_write(clk, TM_MAGIC, 
 			(31 downto tm_cmd_raw'length => '0') & TM_CMD_START_TRANSACTION, 
 			sc_out_cpu, sc_in_cpu);
 			
-		assert to_integer(nesting_cnt) = 2;
+ 		assert to_integer(nesting_cnt) = 2;
 		
 		assert << signal .dut.conflict: std_logic >> /= '1';
 		assert write_tags_v = (2**way_bits-1 downto 0 => '0');
-		assert << signal .dut.cmp_tm.write_tags.shift: 
+		assert << signal .dut.cmp_tm.tag.shift: 
 			std_logic >> = '0';
 		
-		assert read_tags_v = (2**way_bits-1 downto 0 => '0');		
-		assert << signal .dut.cmp_tm.read_tags.shift: 
+-- 		assert read_tags_v = (2**way_bits-1 downto 0 => '0');		
+		assert << signal .dut.cmp_tm.tag.shift: 
 			std_logic >> = '0';
 		
 		-- writes and reads in transactional mode
@@ -244,18 +255,18 @@ begin
 		
 		sc_read(clk, addr(0), result, sc_out_cpu, sc_in_cpu);
 		
-		assert result = data(0);
+ 		assert result = data(0);
 		
 		
 		-- read uncached word
 		
 		sc_read(clk, addr(2), result, sc_out_cpu, sc_in_cpu);
 		
-		assert result = data(3);		
-		assert read_tags(0) = addr(0)(addr_width-1 downto 0);
-		assert read_tags(1) = addr(2)(addr_width-1 downto 0);
+ 		assert result = data(3);		
+-- 		assert read_tags(0) = addr(0)(addr_width-1 downto 0);
+-- 		assert read_tags(1) = addr(2)(addr_width-1 downto 0);
 		
-		assert read_tags_v = (2**way_bits-1 downto 2 => '0') & "11";				
+-- 		assert read_tags_v = (2**way_bits-1 downto 2 => '0') & "11";				
 
 
 
@@ -265,7 +276,7 @@ begin
 			(31 downto tm_cmd_raw'length => '0') & TM_CMD_END_TRANSACTION, 
 			sc_out_cpu, sc_in_cpu);
 		
-		assert to_integer(nesting_cnt) = 1;
+ 		assert to_integer(nesting_cnt) = 1;
 
 
 		-- read .nc word
@@ -275,21 +286,32 @@ begin
 		sc_out_cpu.nc <= '0';
 		
 		assert result = data(6);
-		assert read_tags_v(2**way_bits-1 downto 2) = 
-			(2**way_bits-1 downto 2 => '0');
-		assert read_tags_v(1 downto 0) = "11";				
+-- 		assert read_tags_v(2**way_bits-1 downto 2) = 
+-- 			(2**way_bits-1 downto 2 => '0');
+-- 		assert read_tags_v(1 downto 0) = "11";				
 		
 		
 		
 
 		sc_write(clk, addr(0), data(1), sc_out_cpu, sc_in_cpu);
 		
-		assert write_tags_v(0) = '1';
-		assert write_tags_v(2**way_bits-1 downto 1) = (2**way_bits-1 downto 1 => '0');  
+		if cache_combined then
+			lines_used := 3;
+		else
+			lines_used := 1;
+		end if;
+		
+		assert write_tags_v(lines_used-1 downto 0) = (lines_used-1 downto 0 => '1');
+		assert write_tags_v(2**way_bits-1 downto lines_used) = (2**way_bits-1 downto lines_used => '0');  
 		assert write_buffer(0) = data(1);
-		assert << signal .dut.cmp_tm.newline:
-			std_logic_vector(way_bits-1 downto 0) >> = 
-			(way_bits-1 downto 2 => '0') & "01";
+
+		if cache_combined then
+			assert to_integer(<< signal .dut.cmp_tm.tag.nxt: -- newline
+				unsigned(way_bits-1 downto 0) >>) = 2;
+		else
+			assert to_integer(<< signal .dut.cmp_tm.tag.nxt: -- newline
+				unsigned(way_bits-1 downto 0) >>) = 1;
+		end if;
 		
 		sc_read(clk, addr(0), result, sc_out_cpu, sc_in_cpu);
 		
@@ -298,11 +320,24 @@ begin
 		sc_write(clk, addr(1), data(2), sc_out_cpu, sc_in_cpu);
 
 		assert write_buffer(0) = data(1);
-		assert write_buffer(1) = data(2);
-		assert << signal .dut.cmp_tm.newline:
-			std_logic_vector(way_bits-1 downto 0) >> = 
-			(way_bits-1 downto 2 => '0') & "10";
 		
+		if cache_combined then
+			addr_used := 2;
+		else
+			addr_used := 1;
+		end if;
+		
+		assert write_buffer(addr_used) = data(2);
+
+		if cache_combined then
+			lines_used := 3;
+		else
+			lines_used := 1;
+		end if;
+
+		assert to_integer(<< signal .dut.cmp_tm.tag.nxt: -- newline
+				unsigned(way_bits-1 downto 0) >>) = lines_used;
+						
 		
 		-- commit transaction
 
@@ -314,8 +349,8 @@ begin
 		
 		testing_commit <= false;
 		
-		assert << signal .dut.state: state_type>> = no_transaction;
-		assert to_integer(nesting_cnt) = 0;
+ 		assert << signal .dut.state: state_type>> = no_transaction;
+ 		assert to_integer(nesting_cnt) = 0;
 		
 		assert ram(to_integer(unsigned(addr(0)))) = (data(1));
 		assert ram(to_integer(unsigned(addr(1)))) = (data(2));		
@@ -328,7 +363,7 @@ begin
 			(31 downto tm_cmd_raw'length => '0') & TM_CMD_START_TRANSACTION, 
 			sc_out_cpu, sc_in_cpu);
 		
-		assert << signal .dut.state: state_type>> = normal_transaction;
+ 		assert << signal .dut.state: state_type>> = normal_transaction;
 		
 		-- no conflict
 				
@@ -373,7 +408,7 @@ begin
 
 		testing_conflict <= false;
 		
-		assert << signal .dut.state: state_type>> = rollback_signal;
+ 		assert << signal .dut.state: state_type>> = rollback_signal;
 		
 		-- zombie reads/writes
 		
@@ -383,7 +418,7 @@ begin
 
 		assert result = (31 downto 0 => '0');
 		
-		assert << signal .dut.state: state_type>> = rollback_wait;
+ 		assert << signal .dut.state: state_type>> = rollback_wait;
 		
 		-- ack rollback
 		
@@ -391,8 +426,8 @@ begin
 			(31 downto tm_cmd_raw'length => '0') & TM_CMD_ABORTED, 
 			sc_out_cpu, sc_in_cpu);
 		
-		assert << signal .dut.state: state_type>> = no_transaction;
-		assert to_integer(nesting_cnt) = 0; -- ( ) 
+ 		assert << signal .dut.state: state_type>> = no_transaction;
+ 		assert to_integer(nesting_cnt) = 0; -- ( ) 
 			
 		assert ram(to_integer(unsigned(addr(3)))) = (31 downto 0 => 'U');
 		assert ram(to_integer(unsigned(addr(5)))) = (31 downto 0 => 'U');
