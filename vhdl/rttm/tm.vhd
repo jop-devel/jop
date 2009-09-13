@@ -92,6 +92,8 @@ architecture rtl of tm is
 		update_tags: std_logic;
 		update_read: std_logic;
 		update_dirty: std_logic;
+		read: std_logic;
+		dirty: std_logic;
 	end record;
 	
 	type stage3_type is record
@@ -131,13 +133,10 @@ architecture rtl of tm is
 	
 	constant lines		: integer := 2**way_bits;
 
-	signal data, next_data: data_array(0 to lines-1);
+	signal data: data_array(0 to lines-1);
 	
 	signal dirty		: std_logic_vector(lines-1 downto 0);
 	signal read			: std_logic_vector(lines-1 downto 0);
-
-	signal next_dirty	: std_logic_vector(lines-1 downto 0);
-	signal next_read	: std_logic_vector(lines-1 downto 0);
 
 	signal save_data, next_save_data: std_logic_vector(31 downto 0);
 	
@@ -233,7 +232,7 @@ begin
 		end case;		
 	end process proc_stage0;
 
-	proc_stage1: process(commit_line, stage1, stage1_async) is
+	proc_stage1: process(commit_line, stage1, stage1_async, stage23) is
 	begin
 		-- TODO optimize w/ X
 		next_stage2.update_tags <= '0';
@@ -241,6 +240,8 @@ begin
 		
 		next_stage2.update_read <= '0';
 		next_stage2.update_dirty <= '0';
+		next_stage2.read <= '0'; -- TODO X
+		next_stage2.dirty <= '0'; -- TODO X 
 		
 		next_stage2.address <= stage1.addr;
 		
@@ -269,29 +270,29 @@ begin
 			when read1 =>
 				next_stage2.update_tags <= '1';
 				
-				if stage1_async.hit = '0' then
-					next_stage2.update_read <= '1';
+				next_stage2.update_read <= '1';
+				next_stage2.read <= '1';
+				
+				if stage1_async.hit = '0' then					
+					next_stage2.update_dirty <= '1';
+					next_stage2.dirty <= '0';
 				end if;				
 			when write =>
 				next_stage2.update_tags <= '1';
+				
 				next_stage2.update_dirty <= '1';
+				next_stage2.dirty <= '1';
+				
+				if stage1_async.hit = '0' then					
+					next_stage2.update_read <= '1';
+					next_stage2.read <= '0';
+				end if;								
 			when commit =>
 		end case;				
 	end process proc_stage1;
 	
-	proc_stage2only: process(data, dirty, read, stage2, stage23) is
-	begin
-		next_dirty <= dirty;
-		next_read <= read;
-	
-		if stage2.update_dirty = '1' then
-			next_dirty(to_integer(stage23.line_addr)) <= '1';
-		end if;
-		
-		if stage2.update_read = '1' then
-			next_read(to_integer(stage23.line_addr)) <= '1';
-		end if;
-		
+	proc_stage2only: process(data, dirty, read, stage23) is
+	begin		
 		-- TODO only valid in next cycle
 		next_read_data <= data(to_integer(stage23.line_addr));
 		
@@ -299,19 +300,31 @@ begin
 		next_stage3.read_read <= read(to_integer(stage23.line_addr));
 	end process proc_stage2only;
 	
-	proc_stage23: process(commit_addr, commit_line, data, from_cpu_dly, 
-		from_mem, read_data, save_data, stage1, stage1_async, stage2, 
-		stage23, state) is
+	mem_sync: process (clk) is
 	begin
-		next_data <= data;
-		
-		shift <= '0';
-	
-		-- TODO stage 2 or 3?
-		if stage23.update_data = '1' then
-			-- TODO which reg?
-			next_data(to_integer(stage23.line_addr)) <= stage23.wr_data;
+	    if rising_edge(clk) then
+			-- TODO stage 2 or 3?
+			if stage23.update_data = '1' then
+				-- TODO which reg?
+				data(to_integer(stage23.line_addr)) <= stage23.wr_data;
+			end if;
+			
+			if stage2.update_dirty = '1' then
+				dirty(to_integer(stage23.line_addr)) <= stage2.dirty;
+			end if;
+			
+			if stage2.update_read = '1' then
+				read(to_integer(stage23.line_addr)) <= stage2.read;
+			end if;
 		end if;
+	end process mem_sync;
+
+	
+	proc_stage23: process(commit_addr, commit_line, from_cpu_dly, from_mem, 
+		read_data, save_data, stage1, stage1_async, stage2, stage23, stage3, 
+		state) is
+	begin
+		shift <= '0';
 	
 		-- stage 3 signals
 		to_cpu.rd_data <= save_data;
@@ -381,11 +394,17 @@ begin
 				
 				when commit_3 =>
 					-- TODO don't write if not dirty
-					to_mem.wr <= '1';
-					to_mem.address <= (SC_ADDR_SIZE-1 downto addr_width => 
-						'0') & commit_addr;
-					to_mem.wr_data <= read_data;
-					next_stage23.state <= commit_4;					
+					if stage3.read_dirty = '1' then
+						to_mem.wr <= '1';
+						to_mem.address <= (SC_ADDR_SIZE-1 downto addr_width => 
+							'0') & commit_addr;
+						to_mem.wr_data <= read_data;
+						next_stage23.state <= commit_4;
+					else
+						-- TODO one cycle earlier => no since shift etc.
+						write_to_mem_finishing <= '1';
+						next_stage23.state <= idle;
+					end if;					
 					
 					next_commit_line <= commit_line + 1;
 					shift <= '1'; -- TODO
@@ -500,22 +519,19 @@ begin
 				cpu_data => (others => '0'));
 			stage2 <= (hit => '0', address => (others => '0'),
 				update_tags => '0', update_read => '0',
-				update_dirty => '0');
+				update_dirty => '0', read => '0', dirty => '0');
 			stage3 <= (read_read => '0', read_dirty => '0');
 			stage23 <= (state => idle,
 				 wr_data => (others => '0'), update_data => '0',
 				 line_addr => (others => '0'));
-				 bcstage2 <= '0';
-				 broadcast_valid_dly <= '0';
-				 data <= (others => (others => '0'));
-				 save_data <= (others => '0');
-				 from_cpu_dly <= sc_out_idle;
-				 commit_line <= (others => '0');
+				 
+			bcstage2 <= '0';
+			broadcast_valid_dly <= '0';
+			save_data <= (others => '0');
+			from_cpu_dly <= sc_out_idle;
+			commit_line <= (others => '0');
 			
 			read_data <= (others => '0'); 
-				 
-			read <= (others => '0');
-			dirty <= (others => '0'); 
 				 
 	    elsif rising_edge(clk) then
 			stage1 <= next_stage1;
@@ -524,15 +540,11 @@ begin
 			stage23 <= next_stage23;
 			bcstage2 <= next_bcstage2;
 			broadcast_valid_dly <= broadcast.valid;
-			data <= next_data;
 			save_data <= next_save_data;
 			from_cpu_dly <= from_cpu;
 			commit_line <= next_commit_line;
 			
 			read_data <= next_read_data;
-			
-			read <= next_read;
-			dirty <= next_dirty;
 	    end if;
 	end process sync;
 

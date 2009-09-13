@@ -116,7 +116,7 @@ architecture rtl of jop is
 -- TODO -1?
 constant cpu_cnt_width: integer := integer(ceil(log2(real(cpu_cnt))));
 constant tm_addr_width		: integer := 18;	-- address bits of cachable memory
-constant tm_way_bits		: integer := 4;		-- 2**way_bits is number of entries
+constant tm_way_bits		: integer := 5;		-- 2**way_bits is number of entries
 
 
 --
@@ -254,7 +254,11 @@ end process;
 			port map(clk_int, int_res,
 				sc_out_tm(i), sc_in_tm(i),
 				sc_io_out(i), sc_io_in(i), irq_in(i), 
-				irq_out(i), exc_req(i)); -- TODO , exc_tm_rollback);
+				irq_out(i), exc_req(i), exc_tm_rollback(i));
+	end generate;
+	
+	assert_no_rollback: for i in 0 to cpu_cnt-1 generate
+		assert exc_tm_rollback(i) /= '1'; -- TODO
 	end generate;
 	
 	gen_tm: for i in 0 to cpu_cnt-1 generate

@@ -5,7 +5,7 @@ use ieee.numeric_std.all;
 
 entity tm_coordinator is
 generic (
-	cpu_cnt			: integer := 8
+	cpu_cnt			: integer := 32
 );
 
 port (
