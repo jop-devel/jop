@@ -425,6 +425,11 @@ begin
 			end if;
 		end if;
 		
+		if memory_access_mode = commit then
+			sc_out_arb.tm_broadcast <= '1';
+		else
+			sc_out_arb.tm_broadcast <= '0';
+		end if;
 				
 		-- overrides when TM command is issued
 		if sc_out_cpu.wr = '1' and is_tm_magic_addr_async = '1' then		

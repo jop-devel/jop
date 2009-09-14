@@ -113,8 +113,6 @@ architecture rtl of jop is
 --	constants:
 --
 
--- TODO -1?
-constant cpu_cnt_width: integer := integer(ceil(log2(real(cpu_cnt))));
 constant tm_addr_width		: integer := 18;	-- address bits of cachable memory
 constant tm_way_bits		: integer := 5;		-- 2**way_bits is number of entries
 

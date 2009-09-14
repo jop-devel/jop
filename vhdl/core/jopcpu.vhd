@@ -285,6 +285,7 @@ end process;
 	sc_mem_out.wr_data <= sc_ctrl_mem_out.wr_data;
 	sc_mem_out.wr <= sc_ctrl_mem_out.wr and mem_access;
 	sc_mem_out.rd <= sc_ctrl_mem_out.rd and mem_access;
+	sc_mem_out.nc <= sc_ctrl_mem_out.nc;
 
 	sc_scratch_out.address <= sc_ctrl_mem_out.address;
 	sc_scratch_out.wr_data <= sc_ctrl_mem_out.wr_data;
