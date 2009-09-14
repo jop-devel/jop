@@ -72,17 +72,15 @@ architecture rtl of tmif is
 	--signal tm_cmd_valid				: std_logic;
 	
 	signal start_commit				: std_logic;
-	signal committing				: std_logic;
+	signal next_start_commit		: std_logic;
+	signal commit_finished				: std_logic;
 	
 	signal commit_out_try_internal	: std_logic;
 	
 	signal read_tag_full				: std_logic;
 	signal write_buffer_full			: std_logic;
 
-	signal reset_on_transaction_start 	: std_logic;
-
 	-- filter signals to/from tm module
-	signal reset_tm					: std_logic;
 	
 	signal sc_out_cpu_filtered		: sc_out_type;
 	
@@ -110,13 +108,13 @@ architecture rtl of tmif is
 	signal is_tm_magic_addr_async: std_logic;
 	signal is_tm_magic_addr_sync: std_logic;
 	
-	signal sc_out_cpu_del: sc_out_type; 
+	signal sc_out_cpu_del: sc_out_type;
+	 
+	signal transaction_start: std_logic;
 begin
 
 	is_tm_magic_addr_async <= '1' when
 		sc_out_cpu.address(TM_MAGIC_DETECT'range) = TM_MAGIC_DETECT else '0';
-
-	reset_tm <= reset or reset_on_transaction_start;
 
 	cmp_tm: entity work.tm(rtl)
 	generic map (
@@ -125,7 +123,7 @@ begin
 	)	
 	port map (
 		clk => clk,
-		reset => reset_tm,
+		reset => reset,
 		from_cpu => sc_out_cpu_filtered,
 		to_cpu => sc_in_cpu_filtered,
 		to_mem => sc_out_arb_filtered,
@@ -135,10 +133,13 @@ begin
 		conflict => conflict,
 		
 		start_commit => start_commit,
-		committing => committing,
+		commit_finished => commit_finished,
 		
 		read_tag_of => read_tag_full,
-		write_buffer_of => write_buffer_full
+		write_buffer_of => write_buffer_full,
+		
+		state => state,
+		transaction_start => transaction_start
 		);			
 
 
@@ -154,12 +155,16 @@ begin
 			
 			is_tm_magic_addr_sync <= '0';
 			sc_out_cpu_del <= sc_out_idle;
+			
+			start_commit <= '0';
 		elsif rising_edge(clk) then
 			state <= next_state;
 			nesting_cnt <= next_nesting_cnt;
 			
 			is_tm_magic_addr_sync <= is_tm_magic_addr_async;
-			sc_out_cpu_del <= sc_out_cpu;			
+			sc_out_cpu_del <= sc_out_cpu;
+			
+			start_commit <= next_start_commit; 			
 		end if;
 	end process sync;
 	
@@ -189,15 +194,15 @@ begin
 	end process nesting_cnt_process; 
 
 	-- sets next_state, exc_tm_rollback, tm_cmd_rdy_cnt, start_commit
-	state_machine: process(commit_in_allow, committing, conflict, nesting_cnt, 
+	state_machine: process(commit_in_allow, commit_finished, conflict, nesting_cnt, 
 		state, tm_cmd) is
 	begin
 		next_state <= state;
 		exc_tm_rollback <= '0';
 		tm_cmd_rdy_cnt <= "00";
-		start_commit <= '0';
+		next_start_commit <= '0';
 		
-		reset_on_transaction_start <= '0';
+		transaction_start <= '0';
 		
 		case state is
 			when no_transaction =>
@@ -205,7 +210,7 @@ begin
 					next_state <= normal_transaction;
 					tm_cmd_rdy_cnt <= "01";
 					
-					reset_on_transaction_start <= '1';
+					transaction_start <= '1';
 				end if;
 				
 			when normal_transaction =>
@@ -239,14 +244,14 @@ begin
 					next_state <= rollback_signal;
 				elsif commit_in_allow = '1' then
 					next_state <= commit;
-					start_commit <= '1';
+					next_start_commit <= '1';
 				end if;
 			
 			when commit =>
 				tm_cmd_rdy_cnt <= "11";
 				
 				-- TODO check condition
-				if committing = '0' then
+				if commit_finished = '1' then
 					-- TODO which state?
 					next_state <= end_transaction;
 				end if;
@@ -258,12 +263,12 @@ begin
 					next_state <= rollback_signal;
 				elsif commit_in_allow = '1' then
 					next_state <= early_commit;
-					start_commit <= '1';
+					next_start_commit <= '1';
 				end if;
 				
 			when early_commit =>
 				-- TODO check condition
-				if committing = '0' then
+				if commit_finished = '1' then
 					next_state <= early_committed_transaction;
 				end if;
 				
@@ -339,22 +344,14 @@ begin
 	-- sets sc_out_cpu_filtered, sc_out_arb, sc_in_cpu
 	-- TODO this is not well thought-out	
 	process(is_tm_magic_addr_async, memory_access_mode, sc_in_arb, 
-		sc_in_cpu_filtered, sc_out_arb_filtered, sc_out_cpu, tm_cmd_rdy_cnt) is
+		sc_in_cpu_filtered, sc_out_arb_filtered, sc_out_cpu, state, 
+		tm_cmd_rdy_cnt) is
 	begin
 		sc_out_cpu_filtered <= sc_out_cpu;
-		sc_out_arb <= sc_out_cpu;
+		sc_out_arb <= sc_out_arb_filtered;
 		sc_in_cpu <= sc_in_cpu_filtered;
 	
 		case memory_access_mode is
-			when bypass =>				
-				 sc_in_cpu <= sc_in_arb;
-							
-			when transactional =>
-				sc_out_arb.wr <= '0';
-				
-			when commit =>
-				sc_out_arb <= sc_out_arb_filtered;
-			
 			when contain =>
 				sc_out_cpu_filtered.wr <= '0';
 				sc_out_cpu_filtered.rd <= '0'; -- TODO reads?
@@ -364,6 +361,8 @@ begin
 				sc_in_cpu <= (
 					rdy_cnt => (others => '0'),
 					rd_data => (others => '0'));
+			when others =>
+				null;
 		end case;
 		
 		-- TODO
@@ -377,13 +376,25 @@ begin
 			end if;
 		end if;
 		
+		case state is
+			when commit | early_commit | early_committed_transaction => 
+				sc_out_arb.tm_broadcast <= '1';
+			when normal_transaction | commit_wait_token | 
+			early_commit_wait_token =>
+				assert false; -- TODO no writes to mem should happen 
+				sc_out_arb.tm_broadcast <= '0';
+			when no_transaction | end_transaction | rollback_signal |
+			rollback_wait =>
+				sc_out_arb.tm_broadcast <= '0';
+		end case;
 				
 		-- overrides when TM command is issued
 		if sc_out_cpu.wr = '1' and is_tm_magic_addr_async = '1' then		
 			sc_out_cpu_filtered.wr <= '0';
-			sc_out_arb.wr <= '0';
+			-- sc_out_arb.wr <= '0';
 		end if;
 	end process; 
+
 	
 	
 

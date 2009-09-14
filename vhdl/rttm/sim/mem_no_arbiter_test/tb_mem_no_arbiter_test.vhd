@@ -1,4 +1,7 @@
 library ieee;
+
+use std.textio.all;
+
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 use ieee.math_real.log2;
@@ -68,6 +71,7 @@ begin
 		assert now = 100 ns and result = 123;
 		
 		finished <= true;
+		write(output, "Test finished.");
 		wait;
 	end process gen;
 

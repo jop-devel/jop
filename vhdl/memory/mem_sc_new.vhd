@@ -546,7 +546,7 @@ begin
 
 			when iald2 =>
 				sc_mem_out.atomic <= '1';
---				sc_mem_out.nc <= '0';
+				sc_mem_out.nc <= '0'; -- TODO why commented out?
 				mem_out.bsy <= '1';
 
 				-- either 1 or 0
@@ -650,7 +650,7 @@ begin
 				
 			when iast4 =>
 				sc_mem_out.atomic <= '1';
---				sc_mem_out.nc <= '0';
+				sc_mem_out.nc <= '0'; -- TODO why commented out?
 				mem_out.bsy <= '1';
 
 				-- check bounds and trigger write only if it's ok

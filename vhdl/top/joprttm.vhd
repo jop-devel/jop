@@ -113,10 +113,8 @@ architecture rtl of jop is
 --	constants:
 --
 
--- TODO -1?
-constant cpu_cnt_width: integer := integer(ceil(log2(real(cpu_cnt))));
 constant tm_addr_width		: integer := 18;	-- address bits of cachable memory
-constant tm_way_bits		: integer := 3;		-- 2**way_bits is number of entries
+constant tm_way_bits		: integer := 5;		-- 2**way_bits is number of entries
 
 
 --
@@ -254,7 +252,11 @@ end process;
 			port map(clk_int, int_res,
 				sc_out_tm(i), sc_in_tm(i),
 				sc_io_out(i), sc_io_in(i), irq_in(i), 
-				irq_out(i), exc_req(i));
+				irq_out(i), exc_req(i), exc_tm_rollback(i));
+	end generate;
+	
+	assert_no_rollback: for i in 0 to cpu_cnt-1 generate
+		assert exc_tm_rollback(i) /= '1'; -- TODO
 	end generate;
 	
 	gen_tm: for i in 0 to cpu_cnt-1 generate
@@ -284,8 +286,7 @@ end process;
 
 	cmp_coordinator: entity work.tm_coordinator(rtl)
 	generic map (
-		cpu_cnt => cpu_cnt,
-		cpu_cnt_width => cpu_cnt_width
+		cpu_cnt => cpu_cnt
 		)
 	port map (
 		clk => clk_int,

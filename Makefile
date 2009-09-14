@@ -62,7 +62,7 @@ else
 endif
 
 # Number of cores for JopSim and RTTM simulation
-CORE_CNT=1
+CORE_CNT=2
 
 # Which project do you want to be downloaded?
 DLPROJ=$(QPROJ)
@@ -73,8 +73,8 @@ IPDEST=192.168.1.2
 IPDEST=192.168.0.123
 
 P1=test
-P2=cmp
-P3=HelloCMP
+P2=rttm/hwtest
+P3=Transaction
 #P2=jvm
 #P3=DoAll
 #P1=rtapi

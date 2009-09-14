@@ -54,7 +54,7 @@ package sc_pack is
 		wr			: std_logic;
 		atomic		: std_logic;
 		nc			: std_logic;
-		tm_broadcast	: std_logic; -- TODO move into arb_out_type type
+		tm_broadcast: std_logic;
 	end record;
 
 	type sc_in_type is record
