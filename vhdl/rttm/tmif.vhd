@@ -80,10 +80,7 @@ architecture rtl of tmif is
 	signal read_tag_full				: std_logic;
 	signal write_buffer_full			: std_logic;
 
-	signal reset_on_transaction_start 	: std_logic;
-
 	-- filter signals to/from tm module
-	signal reset_tm					: std_logic;
 	
 	signal sc_out_cpu_filtered		: sc_out_type;
 	
@@ -111,13 +108,13 @@ architecture rtl of tmif is
 	signal is_tm_magic_addr_async: std_logic;
 	signal is_tm_magic_addr_sync: std_logic;
 	
-	signal sc_out_cpu_del: sc_out_type; 
+	signal sc_out_cpu_del: sc_out_type;
+	 
+	signal transaction_start: std_logic;
 begin
 
 	is_tm_magic_addr_async <= '1' when
 		sc_out_cpu.address(TM_MAGIC_DETECT'range) = TM_MAGIC_DETECT else '0';
-
-	reset_tm <= reset or reset_on_transaction_start;
 
 	cmp_tm: entity work.tm(rtl)
 	generic map (
@@ -126,7 +123,7 @@ begin
 	)	
 	port map (
 		clk => clk,
-		reset => reset_tm,
+		reset => reset,
 		from_cpu => sc_out_cpu_filtered,
 		to_cpu => sc_in_cpu_filtered,
 		to_mem => sc_out_arb_filtered,
@@ -141,7 +138,8 @@ begin
 		read_tag_of => read_tag_full,
 		write_buffer_of => write_buffer_full,
 		
-		state => state
+		state => state,
+		transaction_start => transaction_start
 		);			
 
 
@@ -204,7 +202,7 @@ begin
 		tm_cmd_rdy_cnt <= "00";
 		next_start_commit <= '0';
 		
-		reset_on_transaction_start <= '0';
+		transaction_start <= '0';
 		
 		case state is
 			when no_transaction =>
@@ -212,7 +210,7 @@ begin
 					next_state <= normal_transaction;
 					tm_cmd_rdy_cnt <= "01";
 					
-					reset_on_transaction_start <= '1';
+					transaction_start <= '1';
 				end if;
 				
 			when normal_transaction =>

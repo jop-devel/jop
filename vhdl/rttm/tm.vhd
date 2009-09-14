@@ -66,8 +66,9 @@ port (
 	read_tag_of		: out std_logic;
 	write_buffer_of	: out std_logic;
 	
-	state: in state_type
-	);
+	state: in state_type;
+	
+	transaction_start: in std_logic);
 
 end tm;
 
@@ -206,7 +207,7 @@ begin
 
 				-- TODO check if .nc condition needed elsewhere
 				-- TODO enable .nc signalling in CPU
-				--if from_cpu.nc = '0' then
+				if from_cpu.nc = '0' then
 					if from_cpu.wr = '1' then
 						next_stage1.state <= write;
 						next_stage1.addr <= from_cpu.address(next_stage1.addr'range);
@@ -214,7 +215,7 @@ begin
 						next_stage1.state <= read1;
 						next_stage1.addr <= from_cpu.address(next_stage1.addr'range);
 					end if;
-				--end if;
+				end if;
 				
 			when commit | early_commit =>
 				next_stage1.state <= idle; -- TODO ?
@@ -345,8 +346,10 @@ begin
 		next_save_data <= save_data;
 		
 		if state = no_transaction or state = early_committed_transaction 
-			-- or from_cpu_dly.nc = '1' -- TODO .nc 
-			then  
+			or (from_cpu_dly.nc = '1' and 
+			(from_cpu_dly.rd = '1' or from_cpu_dly.wr = '1')) -- TODO .nc 
+			then
+				-- TODO set next_save_data  
 				to_cpu.rd_data <= from_mem.rd_data;
 				to_mem <= from_cpu_dly;
 		else
@@ -522,8 +525,8 @@ begin
 				update_dirty => '0', read => '0', dirty => '0');
 			stage3 <= (read_read => '0', read_dirty => '0');
 			stage23 <= (state => idle,
-				 wr_data => (others => '0'), update_data => '0',
-				 line_addr => (others => '0'));
+				wr_data => (others => '0'), update_data => '0',
+				line_addr => (others => '0'));
 				 
 			bcstage2 <= '0';
 			broadcast_valid_dly <= '0';
@@ -561,6 +564,8 @@ begin
 		port map(
 			clk => clk,
 			reset => reset,
+			
+			transaction_start => transaction_start,
 			
 			addr => stage1.addr, -- TODO feed from stage 0?
 			wr => stage2.update_tags,

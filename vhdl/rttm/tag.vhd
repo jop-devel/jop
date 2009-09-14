@@ -38,6 +38,9 @@ generic (
 );
 port (
 	clk, reset	: in std_logic;
+	
+	transaction_start: in std_logic;
+	
 	addr: in std_logic_vector(addr_width-1 downto 0);
 	wr: in std_logic;
 	
@@ -56,13 +59,13 @@ architecture rtl of tag is
 
 	constant lines		: integer := 2**way_bits;
 
-	signal l, line_addr: unsigned(way_bits-1 downto 0);
+	signal l: unsigned(way_bits-1 downto 0);
 
 	-- tag_width can be used to reduce cachable area - saves a lot in the comperators
 	type tag_array is array (0 to lines-1) of std_logic_vector(addr_width-1 downto 0);
 	signal tag			: tag_array;
 	signal h: std_logic_vector(lines-1 downto 0); -- hit
-	signal v: std_logic_vector(lines-1 downto 0); -- valid
+	signal valid: std_logic_vector(lines-1 downto 0); -- valid
 
 	-- pointer to next block to be used on a miss
 	signal nxt			: unsigned(way_bits-1 downto 0);
@@ -78,7 +81,7 @@ begin
 	newline <= nxt;
 
 -- asynchronous
-hit_detection: process(tag, addr, h, v)
+hit_detection: process(tag, addr, h, valid)
 	variable h_or: std_logic;
 	variable n: unsigned(way_bits-1 downto 0);
 begin
@@ -86,7 +89,7 @@ begin
 	-- hit detection
 	h <= (others => '0');
 	for i in 0 to lines-1 loop
-		if tag(i)=addr and v(i)='1' then
+		if tag(i)=addr and valid(i)='1' then
 			h(i) <= '1';
 		end if;
 	end loop;
@@ -138,7 +141,7 @@ begin
 	if reset='1' then
 
 		nxt <= (others => '0');
-		v <= (others => '0');
+		valid <= (others => '0');
 		hit_reg <= '0';
 		for i in 0 to lines-1 loop
 			tag(i) <= (others => '0');
@@ -146,19 +149,15 @@ begin
 		full <= '0';
 
 	elsif rising_edge(clk) then
-		-- TODO v has to be reset on transaction begin
-
 		hit_reg <= h_res;
 
 		addr_dly <= addr;
-
-		line_addr <= l;
 
 		-- update tag memory in the next cycle
 		if wr='1' then
 			if hit_reg='0' then
 				tag(to_integer(nxt)) <= addr_dly;
-				v(to_integer(nxt)) <= '1';
+				valid(to_integer(nxt)) <= '1';
 				nxt <= nxt + 1;
 				
 				if nxt = (way_bits-1 downto 0 => '1') then
@@ -171,6 +170,11 @@ begin
 			for i in 0 to lines-2 loop
 				tag(i) <= tag(i+1);
 			end loop;
+		end if;
+		
+		if transaction_start = '1' then
+			nxt <= (others => '0');
+			valid <= (others => '0');			
 		end if;
 	end if;
 end process;
