@@ -381,7 +381,7 @@ begin
 				sc_out_arb.tm_broadcast <= '1';
 			when normal_transaction | commit_wait_token | 
 			early_commit_wait_token =>
-				assert false; -- TODO no writes to mem should happen 
+				-- TODO no writes to mem should happen 
 				sc_out_arb.tm_broadcast <= '0';
 			when no_transaction | end_transaction | rollback_signal |
 			rollback_wait =>
