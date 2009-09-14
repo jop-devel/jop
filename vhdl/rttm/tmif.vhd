@@ -341,60 +341,11 @@ begin
 
 
 
--- 	-- sets sc_out_cpu_filtered, sc_out_arb, sc_in_cpu
--- 	-- TODO this is not well thought-out	
--- 	process(is_tm_magic_addr_async, memory_access_mode, sc_in_arb, 
--- 		sc_in_cpu_filtered, sc_out_arb_filtered, sc_out_cpu, tm_cmd_rdy_cnt) is
--- 	begin
--- 		sc_out_cpu_filtered <= sc_out_cpu;
--- 		sc_out_arb <= sc_out_cpu;
--- 		sc_in_cpu <= sc_in_cpu_filtered;
--- 	
--- 		case memory_access_mode is
--- 			when bypass =>				
--- 				 sc_in_cpu <= sc_in_arb;
--- 							
--- 			when transactional =>
--- 				sc_out_arb.wr <= '0';
--- 				
--- 			when commit =>
--- 				sc_out_arb <= sc_out_arb_filtered;
--- 			
--- 			when contain =>
--- 				sc_out_cpu_filtered.wr <= '0';
--- 				sc_out_cpu_filtered.rd <= '0'; -- TODO reads?
--- 				
--- 				sc_out_arb.wr <= '0';
--- 				
--- 				sc_in_cpu <= (
--- 					rdy_cnt => (others => '0'),
--- 					rd_data => (others => '0'));
--- 		end case;
--- 		
--- 		-- TODO
--- 		if memory_access_mode = bypass then
--- 			if sc_in_arb.rdy_cnt < tm_cmd_rdy_cnt then
--- 				sc_in_cpu.rdy_cnt <= tm_cmd_rdy_cnt;
--- 			end if;
--- 		else
--- 			if sc_in_cpu_filtered.rdy_cnt < tm_cmd_rdy_cnt then
--- 				sc_in_cpu.rdy_cnt <= tm_cmd_rdy_cnt;
--- 			end if;
--- 		end if;
--- 		
--- 				
--- 		-- overrides when TM command is issued
--- 		if sc_out_cpu.wr = '1' and is_tm_magic_addr_async = '1' then		
--- 			sc_out_cpu_filtered.wr <= '0';
--- 			sc_out_arb.wr <= '0';
--- 		end if;
--- 	end process; 
-
-
 	-- sets sc_out_cpu_filtered, sc_out_arb, sc_in_cpu
 	-- TODO this is not well thought-out	
 	process(is_tm_magic_addr_async, memory_access_mode, sc_in_arb, 
-		sc_in_cpu_filtered, sc_out_arb_filtered, sc_out_cpu, tm_cmd_rdy_cnt) is
+		sc_in_cpu_filtered, sc_out_arb_filtered, sc_out_cpu, state, 
+		tm_cmd_rdy_cnt) is
 	begin
 		sc_out_cpu_filtered <= sc_out_cpu;
 		sc_out_arb <= sc_out_arb_filtered;
@@ -425,11 +376,17 @@ begin
 			end if;
 		end if;
 		
-		if memory_access_mode = commit then
-			sc_out_arb.tm_broadcast <= '1';
-		else
-			sc_out_arb.tm_broadcast <= '0';
-		end if;
+		case state is
+			when commit | early_commit | early_committed_transaction => 
+				sc_out_arb.tm_broadcast <= '1';
+			when normal_transaction | commit_wait_token | 
+			early_commit_wait_token =>
+				assert false; -- TODO no writes to mem should happen 
+				sc_out_arb.tm_broadcast <= '0';
+			when no_transaction | end_transaction | rollback_signal |
+			rollback_wait =>
+				sc_out_arb.tm_broadcast <= '0';
+		end case;
 				
 		-- overrides when TM command is issued
 		if sc_out_cpu.wr = '1' and is_tm_magic_addr_async = '1' then		
