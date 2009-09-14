@@ -151,12 +151,12 @@ begin
 
  		alias nesting_cnt is << signal .dut.nesting_cnt: nesting_cnt_type >>;
 		
-		-- write tags
+		alias valid is << signal .dut.cmp_tm.tag.valid: 
+			std_logic_vector(2**way_bits-1 downto 0) >>;
+		
 		
 		alias write_tags_v is << signal .dut.cmp_tm.dirty: 
 			std_logic_vector(2**way_bits-1 downto 0) >>;		
-			
-		-- read tags
 			
 -- 		alias read_tags_v is << signal .dut.cmp_tm.read: 
 -- 			std_logic_vector(2**way_bits-1 downto 0) >>;		
@@ -237,7 +237,7 @@ begin
  		assert to_integer(nesting_cnt) = 2;
 		
 		assert << signal .dut.conflict: std_logic >> /= '1';
-		assert write_tags_v = (2**way_bits-1 downto 0 => '0');
+		assert valid = (2**way_bits-1 downto 0 => '0');
 		assert << signal .dut.cmp_tm.tag.shift: 
 			std_logic >> = '0';
 		
@@ -249,7 +249,7 @@ begin
 		
 		sc_write(clk, addr(0), data(0), sc_out_cpu, sc_in_cpu);
 		
-		assert write_tags_v = (2**way_bits-1 downto 1 => '0') & "1";
+		assert write_tags_v = (2**way_bits-1 downto 1 => 'U') & "1";
 		assert write_buffer(0) = data(0);
 		assert ram(to_integer(unsigned(addr(0)))) = (31 downto 0 => 'U');
 		
@@ -296,22 +296,17 @@ begin
 		sc_write(clk, addr(0), data(1), sc_out_cpu, sc_in_cpu);
 		
 		if cache_combined then
-			lines_used := 3;
+			lines_used := 2;
 		else
 			lines_used := 1;
 		end if;
 		
-		assert write_tags_v(lines_used-1 downto 0) = (lines_used-1 downto 0 => '1');
-		assert write_tags_v(2**way_bits-1 downto lines_used) = (2**way_bits-1 downto lines_used => '0');  
+		assert valid(lines_used-1 downto 0) = (lines_used-1 downto 0 => '1');
+		assert valid(2**way_bits-1 downto lines_used) = (2**way_bits-1 downto lines_used => '0');  
 		assert write_buffer(0) = data(1);
 
-		if cache_combined then
-			assert to_integer(<< signal .dut.cmp_tm.tag.nxt: -- newline
-				unsigned(way_bits-1 downto 0) >>) = 2;
-		else
-			assert to_integer(<< signal .dut.cmp_tm.tag.nxt: -- newline
-				unsigned(way_bits-1 downto 0) >>) = 1;
-		end if;
+		assert to_integer(<< signal .dut.cmp_tm.tag.nxt: -- newline
+			unsigned(way_bits-1 downto 0) >>) = lines_used;
 		
 		sc_read(clk, addr(0), result, sc_out_cpu, sc_in_cpu);
 		

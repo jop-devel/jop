@@ -5,18 +5,17 @@ import com.jopdesign.io.SysDevice;
 import com.jopdesign.sys.Native;
 import com.jopdesign.sys.Startup;
 
-import joprt.RtThread;
+import static rttm.hwtest.Const.*;
 
 public class TransactionArray implements Runnable {
 	
-	static final int TM_MAGIC = 0x0FFFFF;
 	enum cmd {
 			end_transaction,
 			start_transaction,
 			aborted,
 			early_commit }
 	
-	static volatile int[] vals = { 0, 0, 0, 0 };
+	static volatile int[] vals = new int[10];
 	
 	int id;
 	
@@ -35,26 +34,33 @@ public class TransactionArray implements Runnable {
 		
 		sys.signal = 1;
 		
-		System.out.println("Waiting for flag.");
-		
 		while (true)
 		{
-		
-				System.out.print(vals[0]);
-				System.out.print(vals[1]);
-				System.out.print(vals[2]);
-				System.out.println(vals[3]);
+			for (int i = 0; i < vals.length; i++)
+			{
+				System.out.print(vals[i]);
+			}
+			
+			System.out.println();
 		}
-		
 	}
 
 	public void run() {
-		Native.wrMem(1, TM_MAGIC);
+		Native.wrMem(1, MAGIC);
 		
-		vals[0] = 1;
-		vals[1] = 2;
+		for (int i = 0; i < vals.length; i++)
+		{
+			vals[i] = i;
+		}
 		
-		//Native.wrMem(0, TM_MAGIC);
+		Native.wrMem(0, MAGIC);
+		
+		Native.wrMem(1, MAGIC);
+		
+		for (int i = 0; i < vals.length; i++)
+		{
+			vals[i] = 0;
+		}
 		
 		while (true);
 	}

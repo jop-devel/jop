@@ -1,4 +1,7 @@
 library ieee;
+
+use std.textio.all;
+
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 -- TODO
@@ -98,6 +101,7 @@ begin
 		assert commit_allow = cpu_flags'(others => '0');
 		
 		finished <= true;
+		write(output, "Test finished.");
 		wait;
 	end process gen;
 
