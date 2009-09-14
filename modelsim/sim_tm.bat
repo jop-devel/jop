@@ -23,7 +23,6 @@ vcom %options% ^
 %jopdir%/simulation/bytecode.vhd ^
 %jopdir%/simulation/microcode.vhd ^
 %jopdir%/jtbl.vhd ^
-%jopdir%/offtbl.vhd ^
 %jopdir%/core/cache.vhd ^
 %jopdir%/memory/sc_sram32_flash.vhd ^
 %jopdir%/memory/mem_sc_new.vhd ^

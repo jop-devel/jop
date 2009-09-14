@@ -38,7 +38,6 @@ SOURCE ../../vhdl/xram_block.vhd
 SOURCE ../../vhdl/xrom_block.vhd
 SOURCE ../../vhdl/xjbc_block.vhd
 SOURCE ../../vhdl/jtbl.vhd
-SOURCE ../../vhdl/offtbl.vhd
 SOURCE ../../vhdl/bcfetbl.vhd
 DEPASSOC jop jop.ucf
 [STRATEGY-LIST]
