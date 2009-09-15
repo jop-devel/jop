@@ -49,21 +49,20 @@ package jop_types is
 --	        8+7	st	start bytecode load (or cache)
 --	          7	ld	read new pc base (for cache version)
 --
-	constant STMUL	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "0110";
-	constant STMWA	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "0111"; 
+	constant STMUL	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "0000";
+	constant STMWA	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "0001"; 
+	constant STMRA	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "0010"; 
+	constant STMWD	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "0011"; 
+	constant STALD	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "0100"; 
+	constant STAST	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "0101"; 
+	constant STGF	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "0110"; 
+	constant STPF	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "0111"; 
+	constant STCP	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "1000"; 
+	constant STBCR	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "1001"; 
 
-	constant STMRA	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "1000"; 
-	constant STMWD	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "1001"; 
-	constant STALD	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "1010"; 
-	constant STAST	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "1011"; 
-	constant STGF	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "1100"; 
-	constant STPF	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "1101"; 
-	constant STCP	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "1110"; 
-	constant STBCR	: std_logic_vector(EXTA_WIDTH-1 downto 0) := "1111"; 
-
-	constant LDMRD	        : std_logic_vector(EXTA_WIDTH-1 downto 0) := "0000"; 
-	constant LDMUL	        : std_logic_vector(EXTA_WIDTH-1 downto 0) := "0110"; 
-	constant LDBCSTART      : std_logic_vector(EXTA_WIDTH-1 downto 0) := "0111"; 
+	constant LDMRD	   : std_logic_vector(EXTA_WIDTH-1 downto 0) := "0000"; 
+	constant LDMUL	   : std_logic_vector(EXTA_WIDTH-1 downto 0) := "0001"; 
+	constant LDBCSTART : std_logic_vector(EXTA_WIDTH-1 downto 0) := "0010"; 
 
 	type mem_in_type is record
 		rd		: std_logic;

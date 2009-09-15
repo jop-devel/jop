@@ -14,7 +14,6 @@ vcom %options% %jopdir%/wishbone/wb_pack.vhd
 vcom %options% %jopdir%/wishbone/wb_test_slave.vhd
 vcom %options% %jopdir%/wishbone/wb_top.vhd
 vcom %options% %jopdir%/jtbl.vhd
-vcom %options% %jopdir%/offtbl.vhd
 vcom %options% %jopdir%/core/cache.vhd
 vcom %options% %jopdir%/memory/wb_mem_sram32.vhd
 vcom %options% %jopdir%/memory/mem_wb.vhd

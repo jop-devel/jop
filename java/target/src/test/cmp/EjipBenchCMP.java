@@ -77,6 +77,10 @@ public class EjipBenchCMP {
 			public void request(Packet p) {
 				macQueue.enq(p);
 			}
+
+			public void loop() {
+				// do nothing
+			}
 		};
 		net.getUdp().addHandler(1234, mac);
 
@@ -84,6 +88,10 @@ public class EjipBenchCMP {
 		result = new UdpHandler() {
 			public void request(Packet p) {
 				resultQueue.enq(p);
+			}
+
+			public void loop() {
+				// do nothing
 			}
 		};
 		net.getUdp().addHandler(5678, result);

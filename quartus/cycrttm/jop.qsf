@@ -477,7 +477,8 @@ set_global_assignment -name LL_MEMBER_STATE LOCKED -section_id "Root Region"
 
 
 
-set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_20.vhd
+
+set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_60.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/jop_types.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_pack.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc_pll.vhd
@@ -487,7 +488,6 @@ set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_uart.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_usb.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/scio_dspiomin.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/cmpsync.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/offtbl.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/jtbl.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/arom.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/aram.vhd
@@ -497,7 +497,7 @@ set_global_assignment -name VHDL_FILE ../../vhdl/core/decode.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/fetch.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/memory/sc_sram32_flash.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc_jbc.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/memory/mem_sc.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/memory/mem_sc_new.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/memory/sdpram.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/extension.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/cache.vhd
@@ -514,3 +514,4 @@ set_global_assignment -name VHDL_FILE ../../vhdl/rttm/tmif.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/rttm/tm_coordinator.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/jopcpu.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/top/joprttm.vhd
+set_global_assignment -name ALLOW_ANY_RAM_SIZE_FOR_RECOGNITION OFF

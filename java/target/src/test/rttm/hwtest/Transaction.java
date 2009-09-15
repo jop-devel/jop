@@ -11,7 +11,7 @@ import static rttm.hwtest.Const.*;
 public class Transaction implements Runnable {
 	
 	static volatile boolean flag = false;
-	static final int scale = 1; // 10000
+	static final int scale = 10000;
 	
 	int id;
 	

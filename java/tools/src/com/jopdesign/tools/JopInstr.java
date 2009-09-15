@@ -460,9 +460,14 @@ public class JopInstr{
 			System.out.println();
 		}
 		for (int i=0; i<256; ++i) {
-			System.out.print(i+"; ");
-			System.out.print(JopInstr.name(i)+"; ");
-			System.out.println(JopInstr.cnt(i));
+			int adjLen = len(i);
+			if (adjLen>3) adjLen = 3;	// that's for invokeinterface
+			if (adjLen==0) adjLen = 1;	// that's for tableswitch and lookupswitch
+			System.out.print("\t\t\""+Jopa.bin(i, 8));
+			System.out.print("\" => len <= \""+Jopa.bin(adjLen, 2)+"\";");
+			System.out.print("\t-- "+i+" "+JopInstr.name(i));
+			if (len(i)>3) System.out.print(" has "+len(i)+" operand bytes");
+			System.out.println();
 		}
 /*
 		// check wether (noimp | asm | java) flag is correct

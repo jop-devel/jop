@@ -16,10 +16,9 @@
 
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ */
 
 package com.jopdesign.tools;
-
 
 import java.io.Serializable;
 import java.util.*;
@@ -27,143 +26,153 @@ import java.util.*;
 public class Instruction implements Serializable {
 	private static final long serialVersionUID = 1L;
 
+	enum StackType {
+		PUSH, POP, NOP
+	};
+	
+	enum JmpType {
+		BR, JMP, NOP
+	};
+
 	public String name;
 	public int opcode;
-	public boolean hasOpd;
-	public boolean isJmp;
+	public int opdSize;
+	public JmpType jType;
+	StackType sType;
 
-	final static int INSTLEN = 16;
+	/** Length of instruction without opd and nxt */
+	final static int INSTLEN = 10;
 
-	private Instruction(String s, int oc, boolean opd, boolean jp) {
+	private Instruction(String s, int oc, int ops, JmpType jp, StackType st) {
 		name = s;
 		opcode = oc;
-		hasOpd = opd;
-		isJmp = jp;
+		opdSize = ops;
+		jType = jp;
+		sType = st;
 	}
 
 	public String toString() {
 		return name;
 	}
-	
+
 	public boolean isStackConsumer() {
-		return opcode < 0x80;
+		return sType == StackType.POP;
 	}
-	
+
 	public boolean isStackProducer() {
-		return opcode >= 0xa0;
+		return sType == StackType.PUSH;
 	}
 
 	public boolean noStackUse() {
-		return (! isStackConsumer()) && (! isStackProducer());
+		return sType == StackType.NOP;
 	}
 
+	private static Instruction[] ia = new Instruction[] {
 
-	private static Instruction[] ia = new Instruction[] 
-	{
+			//
+			// 'pop' instructions
+			//
 
-//
-//	'pop' instructions
-//
-		new Instruction("pop", 0x00, false, false),
-		new Instruction("and", 0x01, false, false),
-		new Instruction("or",  0x02, false, false),
-		new Instruction("xor", 0x03, false, false),
-		new Instruction("add", 0x04, false, false),
-		new Instruction("sub", 0x05, false, false),
+			new Instruction("pop", 0x000, 0, JmpType.NOP, StackType.POP),
+			new Instruction("and", 0x001, 0, JmpType.NOP, StackType.POP),
+			new Instruction("or",  0x002, 0, JmpType.NOP, StackType.POP),
+			new Instruction("xor", 0x003, 0, JmpType.NOP, StackType.POP),
+			new Instruction("add", 0x004, 0, JmpType.NOP, StackType.POP),
+			new Instruction("sub", 0x005, 0, JmpType.NOP, StackType.POP),
 
-//	extension 'address' selects function 4 bits
+			// st (vp) 3 bits
+			new Instruction("st0", 0x010 + 0, 0, JmpType.NOP, StackType.POP),
+			new Instruction("st1", 0x010 + 1, 0, JmpType.NOP, StackType.POP),
+			new Instruction("st2", 0x010 + 2, 0, JmpType.NOP, StackType.POP),
+			new Instruction("st3", 0x010 + 3, 0, JmpType.NOP, StackType.POP),
+			new Instruction("st",  0x010 + 4, 0, JmpType.NOP, StackType.POP),
+			new Instruction("stmi", 0x010 + 5, 0, JmpType.NOP, StackType.POP),
 
-		// multiplication
-		new Instruction("stmul", 0x06, false, false),
+			new Instruction("stvp", 0x018, 0, JmpType.NOP, StackType.POP),
+			new Instruction("stjpc", 0x019, 0, JmpType.NOP, StackType.POP),
+			new Instruction("star", 0x01a, 0, JmpType.NOP, StackType.POP),
+			new Instruction("stsp", 0x01b, 0, JmpType.NOP, StackType.POP),
 
-		new Instruction("stmwa", 0x07, false, false),
+			// shift
+			new Instruction("ushr", 0x01c, 0, JmpType.NOP, StackType.POP),
+			new Instruction("shl", 0x01d, 0, JmpType.NOP, StackType.POP),
+			new Instruction("shr", 0x01e, 0, JmpType.NOP, StackType.POP),
+			// new Instruction("shift reserved", 0x1f, 0, JmpType.NOP, StackType.POP),
 
-		new Instruction("stmra", 0x08+0, false, false),
-		new Instruction("stmwd", 0x08+1, false, false),
-		// array instructions
-		new Instruction("stald", 0x08+2, false, false),
-		new Instruction("stast", 0x08+3, false, false),
-		// getfield/putfield
-		new Instruction("stgf",  0x08+4, false, false),
-		new Instruction("stpf",  0x08+5, false, false),
-		// magic copying
-		new Instruction("stcp",  0x08+6, false, false),
-		// bytecode read
-		new Instruction("stbcrd",0x08+7, false, false),
+			// 5 bits: 0x20-0x3f
+			new Instruction("stm", 0x020, 5, JmpType.NOP, StackType.POP),
 
-//	st (vp)	3 bits
-		new Instruction("st0",   0x10+0, false, false),
-		new Instruction("st1",   0x10+1, false, false),
-		new Instruction("st2",   0x10+2, false, false),
-		new Instruction("st3",   0x10+3, false, false),
-		new Instruction("st",    0x10+4, false, false),
-		new Instruction("stmi",  0x10+5, false, false),
+			// extension 'address' selects function of memory/multiplication
+			// with 4 bits in extension.vhd
 
-		new Instruction("stvp",  0x18, false, false),
-		new Instruction("stjpc", 0x19, false, false),
-		new Instruction("star",  0x1a, false, false),
-		new Instruction("stsp",  0x1b, false, false),
+			new Instruction("stmul", 0x040 + 0, 0, JmpType.NOP, StackType.POP),
+			new Instruction("stmwa", 0x040 + 1, 0, JmpType.NOP, StackType.POP),
+			new Instruction("stmra", 0x040 + 2, 0, JmpType.NOP, StackType.POP),
+			new Instruction("stmwd", 0x040 + 3, 0, JmpType.NOP, StackType.POP),
+			// array instructions
+			new Instruction("stald", 0x040 + 4, 0, JmpType.NOP, StackType.POP),
+			new Instruction("stast", 0x040 + 5, 0, JmpType.NOP, StackType.POP),
+			// getfield/putfield
+			new Instruction("stgf",  0x040 + 6, 0, JmpType.NOP, StackType.POP),
+			new Instruction("stpf",  0x040 + 7, 0, JmpType.NOP, StackType.POP),
+			// magic copying
+			new Instruction("stcp",  0x040 + 8, 0, JmpType.NOP, StackType.POP),
+			// bytecode read
+			new Instruction("stbcrd", 0x040 + 9, 0, JmpType.NOP, StackType.POP),
 
-//	shift
-		new Instruction("ushr", 0x1c, false, false),
-		new Instruction("shl", 0x1d, false, false),
-		new Instruction("shr", 0x1e, false, false),
-		//new Instruction("shift reserved", 0x1f, false, false),
+			//
+			// 'push' instructions
+			//
 
-//	5 bits
-		new Instruction("stm", 0x20, true, false),
+			// 5 bits: 0xa0-0xbf
+			new Instruction("ldm", 0x0a0, 5, JmpType.NOP, StackType.PUSH),
+			// 5 bits: 0xc0-0xdf
+			new Instruction("ldi", 0x0c0, 5, JmpType.NOP, StackType.PUSH),
 
-		new Instruction("bz", 0x40, true, true),
-		new Instruction("bnz", 0x60, true, true),
-//
-//	'no sp change' instructions
-//
-		new Instruction("nop", 0x80, false, false),
-		new Instruction("wait", 0x81, false, false),
+			// extension 'address' selects function 4 bits
+			new Instruction("ldmrd", 0x0e0 + 0, 0, JmpType.NOP, StackType.PUSH),
+			new Instruction("ldmul", 0x0e0 + 1, 0, JmpType.NOP, StackType.PUSH),
+			new Instruction("ldbcstart", 0x0e0 + 2, 0, JmpType.NOP, StackType.PUSH),
 
-		new Instruction("jbr", 0x82, false, false),
+			// ld (vp) 3 bits
+			new Instruction("ld0", 0x0e8 + 0, 0, JmpType.NOP, StackType.PUSH),
+			new Instruction("ld1", 0x0e8 + 1, 0, JmpType.NOP, StackType.PUSH),
+			new Instruction("ld2", 0x0e8 + 2, 0, JmpType.NOP, StackType.PUSH),
+			new Instruction("ld3", 0x0e8 + 3, 0, JmpType.NOP, StackType.PUSH),
+			new Instruction("ld", 0x0e8 + 4, 0, JmpType.NOP, StackType.PUSH),
+			new Instruction("ldmi", 0x0e8 + 5, 0, JmpType.NOP, StackType.PUSH),
 
-//
-//	'push' instructions
-//
+			// 2 bits
+			new Instruction("ldsp", 0x0f0 + 0, 0, JmpType.NOP, StackType.PUSH),
+			new Instruction("ldvp", 0x0f0 + 1, 0, JmpType.NOP, StackType.PUSH),
+			new Instruction("ldjpc", 0x0f0 + 2, 0, JmpType.NOP, StackType.PUSH),
 
-//	5 bits
-		new Instruction("ldm", 0xa0, true, false),
+			// ld opd 2 bits
+			new Instruction("ld_opd_8u", 0x0f4 + 0, 0, JmpType.NOP, StackType.PUSH),
+			new Instruction("ld_opd_8s", 0x0f4 + 1, 0, JmpType.NOP, StackType.PUSH),
+			new Instruction("ld_opd_16u", 0x0f4 + 2, 0, JmpType.NOP, StackType.PUSH),
+			new Instruction("ld_opd_16s", 0x0f4 + 3, 0, JmpType.NOP, StackType.PUSH),
 
-		new Instruction("ldi", 0xc0, true, false),
+			new Instruction("dup", 0x0f8, 0, JmpType.NOP, StackType.PUSH),
 
-//		extension 'address' selects function 4 bits
-		new Instruction("ldmrd", 0xe0+0, false, false),
-		new Instruction("ldmul", 0xe0+6, false, false),
-		new Instruction("ldbcstart", 0xe0+7, false, false),
+			//
+			// 'no sp change' instructions
+			//
+			new Instruction("nop", 0x100, 0, JmpType.NOP, StackType.NOP),
+			new Instruction("wait", 0x101, 0, JmpType.NOP, StackType.NOP),
+			new Instruction("jbr", 0x102, 0, JmpType.NOP, StackType.NOP),
 
-//	ld (vp)	3 bits
-		new Instruction("ld0", 0xe8+0, false, false),
-		new Instruction("ld1", 0xe8+1, false, false),
-		new Instruction("ld2", 0xe8+2, false, false),
-		new Instruction("ld3", 0xe8+3, false, false),
-		new Instruction("ld",  0xe8+4, false, false),
-		new Instruction("ldmi",  0xe8+5, false, false),
+			// branches
+			new Instruction("bz", 0x180, 6, JmpType.BR, StackType.POP),
+			new Instruction("bnz", 0x1c0, 6, JmpType.BR, StackType.POP),
+			new Instruction("jmp", 0x200, 9, JmpType.JMP, StackType.NOP),
+		};
 
-//	2 bits
-		new Instruction("ldsp", 0xf0+0, false, false),
-		new Instruction("ldvp", 0xf0+1, false, false),
-		new Instruction("ldjpc", 0xf0+2, false, false),
-
-//	ld opd 2 bits
-		new Instruction("ld_opd_8u", 0xf4+0, false, false),
-		new Instruction("ld_opd_8s", 0xf4+1, false, false),
-		new Instruction("ld_opd_16u", 0xf4+2, false, false),
-		new Instruction("ld_opd_16s", 0xf4+3, false, false),
-
-		new Instruction("dup", 0xf8, false, false),
-	};
-
-	public static Map<String,Instruction> map = new HashMap<String,Instruction>();
-	public static Map<Integer,Instruction> imap = new TreeMap<Integer,Instruction>();
+	public static Map<String, Instruction> map = new HashMap<String, Instruction>();
+	public static Map<Integer, Instruction> imap = new TreeMap<Integer, Instruction>();
 
 	static {
-		for (int i=0; i<ia.length; ++i) {
+		for (int i = 0; i < ia.length; ++i) {
 			map.put(ia[i].name, ia[i]);
 			imap.put(ia[i].opcode, ia[i]);
 		}
@@ -179,89 +188,118 @@ public class Instruction implements Serializable {
 
 	public static void printVhdl() {
 
-		for (int i=0; i<ia.length; ++i) {
+		for (int i = 0; i < ia.length; ++i) {
 			Instruction ins = ia[i];
 
 			System.out.print("\t\t\twhen \"");
-			if (ins.hasOpd) {
-				System.out.print(Jopa.bin(ins.opcode>>>5, 3));
-				System.out.print("-----");
-			} else {
-				System.out.print(Jopa.bin(ins.opcode, 8));
+			System.out.print(Jopa.bin(ins.opcode >>> ins.opdSize, INSTLEN
+					- ins.opdSize));
+			for (int j = 0; j < ins.opdSize; ++j) {
+				System.out.print("-");
 			}
-			System.out.print("\" =>\t\t\t\t-- ");
+			System.out.print("\" =>\t\t\t-- ");
 			System.out.print(ins.name);
 			System.out.println();
+		}
+
+		System.out.println();
+		// we assume that the stack type is encoded in the upper
+		// 4 bits
+		StackType st[] = new StackType[16];
+		for (int i = 0; i < ia.length; ++i) {
+			Instruction ins = ia[i];
+
+			int idx = ins.opcode >>> (INSTLEN - 4);
+			if (st[idx] == null) {
+				st[idx] = ins.sType;
+			} else if (st[idx] != ins.sType) {
+				throw new Error("Conflicting stack types: " + ins.name);
+			}
+		}
+		for (int i = 0; i < 16; ++i) {
+			System.out.print("\t\twhen \"");
+			System.out.print(Jopa.bin(i, 4));
+			System.out.print("\" =>\t\t\t-- " + st[i]);
+			System.out.println();
+			if (st[i]==StackType.PUSH) {
+				System.out.println("\t\t\t\tis_push <= '1';");
+			}
+			if (st[i]==StackType.POP) {
+				System.out.println("\t\t\t\tis_pop <= '1';");
+			}
 		}
 	}
 
 	public static void printCsv() {
 
-		for (int i=0; i<ia.length; ++i) {
+		for (int i = 0; i < ia.length; ++i) {
 			Instruction ins = ia[i];
 
 			System.out.print(ins.name);
 			System.out.print(";;{");
-			if (ins.hasOpd) {
-				System.out.print(Jopa.bin(ins.opcode>>>5, 3));
-				System.out.print("-----");
-			} else {
-				System.out.print(Jopa.bin(ins.opcode, 8));
+			System.out.print(Jopa.bin(ins.opcode >>> ins.opdSize, INSTLEN
+					- ins.opdSize));
+			for (int j = 0; j < ins.opdSize; ++j) {
+				System.out.print("-");
 			}
 			System.out.println("}");
 		}
 	}
 
 	public static void printTable() {
-		
+
 		Instruction table[] = new Instruction[256];
-		for(int i = 0; i < 256; i++) table[i] = null;
-		for (int i=0; i<ia.length; ++i) {
+		for (int i = 0; i < 256; i++)
+			table[i] = null;
+		for (int i = 0; i < ia.length; ++i) {
 			Instruction ins = ia[i];
-			int up = 1;
-			if(ins.hasOpd) up = (1<<5);
-			for(int j = 0; j < up; j++) {
-					int code = ins.opcode | j;
-					if(table[code] != null) {
-						System.err.println("Two entries for: "+code+" : "+ins+" and "+table[code]);
-						System.exit(1);
-					}
-					else table[code] = ins;
+			int up = 1 << ins.opdSize;
+			for (int j = 0; j < up; j++) {
+				int code = ins.opcode | j;
+				if (table[code] != null) {
+					System.err.println("Two entries for: " + code + " : " + ins
+							+ " and " + table[code]);
+					System.exit(1);
+				} else
+					table[code] = ins;
 			}
 		}
-		for(int i = 0; i < 256; i++) {
-			System.out.print(String.format("0x%02x ",i));
-			if(table[i] == null) System.out.print("---");
+		for (int i = 0; i < 256; i++) {
+			System.out.print(String.format("0x%02x ", i));
+			if (table[i] == null)
+				System.out.print("---");
 			else {
 				Instruction ins = table[i];
 				System.out.print(ins);
-				if(ins.hasOpd) System.out.print(" "+(i&((1<<5)-1)));
-				if(ins.isStackConsumer()) System.out.print(" [-]");
-				else if(ins.isStackProducer()) System.out.print(" [+]");				
+				if (ins.opdSize != 0)
+					System.out.print(" " + (i & ((1 << ins.opdSize) - 1)));
+				if (ins.isStackConsumer())
+					System.out.print(" [-]");
+				else if (ins.isStackProducer())
+					System.out.print(" [+]");
 			}
 			System.out.println("");
 		}
 	}
 
 	public static String genJavaConstants() {
-		
+
 		StringBuffer sb = new StringBuffer();
-		sb.append("package com.jopdesign.timing;\n");
+		sb.append("package com.jopdesign.timing.jop;\n");
 		sb.append("public class MicrocodeConstants {\n");
-		for(Instruction i : ia) {
-			sb.append(String.format("  public static final int %-15s = 0x%x; /* %s %s%s*/ \n",
-									i.name.toUpperCase(),
-									i.opcode,
-									i.isStackConsumer() 
-									  ? "consumer"
-									  : (i.isStackProducer() ? "producer" : "nostack"),
-									i.hasOpd ? "opd " : "",
-									i.isJmp  ? "jmp " : ""));
+		for (Instruction i : ia) {
+			sb.append(String.format(
+					"  public static final int %-15s = 0x%x; /* %s %s%s*/ \n",
+					i.name.toUpperCase(), i.opcode,
+					i.isStackConsumer() ? "consumer"
+							: (i.isStackProducer() ? "producer" : "nostack"),
+					i.opdSize != 0 ? "opd MS: not to confuse it with opd in mc"
+							: "", i.jType==JmpType.BR || i.jType==JmpType.JMP ? "jmp " : ""));
 		}
-		sb.append("};");				
+		sb.append("};");
 		return sb.toString();
 	}
-	
+
 	public static void main(String[] args) {
 
 		// printVhdl();
@@ -271,4 +309,3 @@ public class Instruction implements Serializable {
 	}
 
 }
-		

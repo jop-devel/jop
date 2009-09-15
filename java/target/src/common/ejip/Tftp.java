@@ -48,7 +48,7 @@ import util.Timer;
  * Tftp.java: A simple TFTP Server. see rfc1350.
  */
 
-public class Tftp extends UdpHandler {
+public class Tftp implements UdpHandler {
 
 	public static final int PORT = 69;
 

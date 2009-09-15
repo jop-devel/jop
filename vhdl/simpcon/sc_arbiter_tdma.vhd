@@ -348,7 +348,7 @@ begin
 				mem_out.address <= arb_out(i).address;
 				mem_out.wr_data <= arb_out(i).wr_data;			
 				tm_broadcast <= (
-						valid => arb_out(i).wr,
+						valid => arb_out(i).wr and arb_out(i).tm_broadcast,
 						address => arb_out(i).address);
 				
 			
@@ -367,7 +367,7 @@ begin
 				mem_out.address <= reg_out(i).address;
 				mem_out.wr_data <= reg_out(i).wr_data;
 				tm_broadcast <= (
-						valid => reg_out(i).wr,
+						valid => reg_out(i).wr and arb_out(i).tm_broadcast,
 						address => reg_out(i).address);
 				
 				
