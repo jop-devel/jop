@@ -7,7 +7,7 @@ use work.sc_arbiter_pack.all;
 use work.tm_pack.all;
 use work.tm_internal_pack.all;
 
--- TODO filter flash accesses
+
 
 entity tmif is
 
@@ -68,9 +68,7 @@ architecture rtl of tmif is
 	-- set asynchronously
 	signal tm_cmd					: tm_cmd_type;
 	
-	-- TODO
-	--signal tm_cmd_valid				: std_logic;
-	
+
 	signal start_commit				: std_logic;
 	signal next_start_commit		: std_logic;
 	signal commit_finished				: std_logic;
@@ -86,24 +84,6 @@ architecture rtl of tmif is
 
 	signal tm_cmd_rdy_cnt				: unsigned(RDY_CNT_SIZE-1 downto 0);
 	
-
-
-	--
-	-- MEMORY ACCESS SELECTOR
-	--
-	
-	type memory_access_mode_type is (
-		bypass,
-		transactional,
-		commit,
-		contain
-		);
-		
-	signal memory_access_mode			: memory_access_mode_type;
-	signal next_memory_access_mode		: memory_access_mode_type;
-
-
-
 
 
 	signal is_tm_magic_addr_async: std_logic;
@@ -232,14 +212,16 @@ begin
 						null;
 				end case;						
 				
-				-- TODO this should be included in memory access
 				if tag_full = '1' then
 					next_state <= early_commit_wait_token;
 					tm_cmd_rdy_cnt <= "11";
 				end if;				
 				
 				if conflict = '1' then
-					-- TODO how is current access terminated?
+					-- > current transaction will be terminated before
+					--   tm command is issued 
+					-- > no internal actions until then
+					-- => therefore no need to wait
 					next_state <= rollback_signal;					
 					tm_cmd_rdy_cnt <= "00";
 				end if;
@@ -264,18 +246,16 @@ begin
 				
 				-- TODO check condition
 				if commit_finished = '1' then
-					-- TODO which state?
 					next_state <= end_transaction;
 				end if;
 				
-			
 			-- TODO rdy_cnt	
 			when early_commit_wait_token =>
 				tm_cmd_rdy_cnt <= "11";
 			
 				if conflict = '1' then
 					next_state <= rollback_signal;
-					-- TODO tm_cmd_rdy_cnt
+					-- TODO tm_cmd_rdy_cnt <= "00";
 				elsif commit_in_allow = '1' then
 					next_state <= early_commit;
 					next_start_commit <= '1';
@@ -313,9 +293,9 @@ begin
 				exc_tm_rollback <= '1';
 								
 			when rollback_wait =>
-				-- TODO make sure all other commands ignored
-				
-				-- possibly begun memory access has finished
+				-- sw ack that exception has been raised
+				-- > also implies that a possibly begun memory access has 
+				--   finished
 				if tm_cmd = aborted then
 					next_state <= no_transaction;
 				end if;
@@ -327,50 +307,23 @@ begin
 	commit_out_try_internal <= '1' 
 		when state = commit_wait_token or state = early_commit_wait_token or
 		state = early_committed_transaction or state = commit
-		-- or state = end_transaction
+		-- or state = end_transaction -- TODO
 		else '0';
 	
 	commit_out_try <= commit_out_try_internal;		
 	
 	
-	
-	--
-	-- MEMORY ACCESS SELECTOR
-	--
-
-	-- TODO
-	with next_state select
-		next_memory_access_mode <= 
-			bypass when no_transaction |
-				early_committed_transaction | end_transaction, 
-			transactional when normal_transaction,
-			commit when commit_wait_token | commit | 
-				early_commit_wait_token | early_commit,
-			contain when rollback_signal | rollback_wait;						
-
-
-	gen_memory_access_mode: process (clk, reset) is
-	begin
-	    if reset = '1' then
-	    	memory_access_mode <= bypass;
-	    elsif rising_edge(clk) then
-	    	memory_access_mode <= next_memory_access_mode;
-	    end if;
-	end process gen_memory_access_mode;
-
-
 
 	-- sets sc_out_cpu_filtered, sc_out_arb, sc_in_cpu
-	-- TODO this is not well thought-out	
-	process(is_tm_magic_addr_async, memory_access_mode, sc_in_cpu_filtered, 
+	process(is_tm_magic_addr_async, sc_in_cpu_filtered, 
 		sc_out_arb_filtered, sc_out_cpu, state, tm_cmd_rdy_cnt) is
 	begin
 		sc_out_cpu_filtered <= sc_out_cpu;
 		sc_out_arb <= sc_out_arb_filtered;
 		sc_in_cpu <= sc_in_cpu_filtered;
 	
-		case memory_access_mode is
-			when contain =>
+		case state is
+			when rollback_signal | rollback_wait =>
 				-- do not issue any further commands
 				sc_out_cpu_filtered.wr <= '0';
 				sc_out_cpu_filtered.rd <= '0'; -- TODO reads?
@@ -380,15 +333,17 @@ begin
 				
 				-- keep rdy_cnt to finish tm module transaction
 				-- TODO can rd_data just keep last value read?
-			when others =>
+			when no_transaction | early_committed_transaction | 
+			end_transaction | normal_transaction | commit_wait_token | 
+			commit | early_commit_wait_token | early_commit =>
 				null;
 		end case;
 		
-		-- TODO
 		if sc_in_cpu_filtered.rdy_cnt < tm_cmd_rdy_cnt then
 			sc_in_cpu.rdy_cnt <= tm_cmd_rdy_cnt;
 		end if;
 		
+		-- set broadcast
 		case state is
 			when commit | early_commit | early_committed_transaction => 
 				sc_out_arb.tm_broadcast <= '1';

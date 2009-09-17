@@ -46,7 +46,6 @@ use work.tm_internal_pack.all;
 entity tm is
 
 generic (
-	-- TODO flash has to be .nc to avoid duplicates
 	addr_width		: integer := 18;	-- address bits of cachable memory
 	way_bits		: integer := 5		-- 2**way_bits is number of entries
 );
@@ -77,7 +76,7 @@ architecture rtl of tm is
 	( idle, write, read1, commit, broadcast1);
 	
 	type stage23_state_type is
-	( idle, read_hit2, write2, write3, read_hit3, read_miss2, read_miss3,
+	( idle, read_hit2, write2, read_hit3, read_miss2, read_miss3,
 		read_miss4, commit_2, commit_3, commit_4 );
 
 	type stage1_type is record
@@ -167,7 +166,7 @@ begin
 		write_to_mem_finishing) is
 	begin
 		-- TODO assertion that no signals are issued in wrong time
-		next_stage1.addr <= (others => 'X'); -- TODO
+		next_stage1.addr <= (others => 'X');
 		next_stage1.cpu_data <= from_cpu.wr_data;
 		
 		commit_finished <= '0';
@@ -184,7 +183,8 @@ begin
 					(broadcast_valid_dly = '1' and stage1.state /= broadcast1) 
 					then
 					next_stage1.state <= broadcast1;
-					next_stage1.addr <= broadcast.address(next_stage1.addr'range); -- TODO
+					-- TODO
+					next_stage1.addr <= broadcast.address(next_stage1.addr'range);
 				end if;				
 			
 			when normal_transaction | early_committed_transaction =>
@@ -198,8 +198,6 @@ begin
 					next_stage1.addr <= broadcast.address(next_stage1.addr'range); 
 				end if;
 
-				-- TODO check if .nc condition needed elsewhere
-				-- TODO enable .nc signalling in CPU
 				if from_cpu.nc = '0' then
 					if from_cpu.wr = '1' then
 						next_stage1.state <= write;
@@ -228,14 +226,13 @@ begin
 
 	proc_stage1: process(commit_line, stage1, stage1_async, stage23) is
 	begin
-		-- TODO optimize w/ X
 		next_stage2.update_tags <= '0';
 		next_stage2.hit <= stage1_async.hit;
 		
 		next_stage2.update_read <= '0';
 		next_stage2.update_dirty <= '0';
-		next_stage2.read <= '0'; -- TODO X
-		next_stage2.dirty <= '0'; -- TODO X 
+		next_stage2.read <= 'X';
+		next_stage2.dirty <= 'X'; 
 		
 		next_stage2.address <= stage1.addr;
 		
@@ -255,6 +252,7 @@ begin
 			end if;
 			
 			if stage1_async.hit = '0' then
+				-- TODO this is in the critical path
 				if stage1_async.newline = (way_bits-1 downto 0 => '1') then
 					tag_full <= '1';
 				end if;
@@ -266,7 +264,6 @@ begin
 				null;
 				
 			when broadcast1 =>
-				-- TODO broadcast
 				next_bcstage2 <= '1';
 						
 			when read1 =>
@@ -333,11 +330,10 @@ begin
 		
 		next_stage23.update_data <= '0';		
 		next_stage23.state <= idle;
-		next_stage23.wr_data <= (others => '0'); -- TODO
 		
-		 -- TODO
-		to_mem.address <= (others => '0');
-		to_mem.wr_data <= (others => '0');
+		next_stage23.wr_data <= (others => 'X');
+		to_mem.address <= (others => 'X');
+		to_mem.wr_data <= (others => 'X');
 		
 		to_mem.wr <= '0';
 		to_mem.rd <= '0';
@@ -346,10 +342,7 @@ begin
 		
 		next_commit_line <= commit_line;
 		
-		if transaction_start = '1' then
-			next_commit_line <= (others => '0');
-		end if;
-		
+				
 		
 		next_save_data <= save_data;
 		
@@ -374,11 +367,11 @@ begin
 				next_stage23.state <= read_hit3;
 			
 			when write2 =>
-				next_stage23.state <= write3;
-				-- TODO earlier? next_stage23.update_data <= '1';
-			
-			when write3 =>
 				null;
+-- 				next_stage23.state <= write3;
+			
+-- 			when write3 =>
+-- 				null;
 			
 			when read_hit3 =>
 				-- TODO read_data is already a reg.
@@ -450,6 +443,10 @@ begin
 			when commit =>
 				next_stage23.state <= commit_2;
 		end case;
+		
+		if transaction_start = '1' then
+			next_commit_line <= (others => '0');
+		end if;		
 	end process proc_stage23;
 	
 	gen_rdy_cnt: process (from_cpu_dly, from_mem, stage1, stage23) is
