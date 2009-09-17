@@ -77,9 +77,6 @@ architecture rtl of tmif is
 	
 	signal commit_out_try_internal	: std_logic;
 	
-	signal read_tag_full				: std_logic;
-	signal write_buffer_full			: std_logic;
-
 	-- filter signals to/from tm module
 	
 	signal sc_out_cpu_filtered		: sc_out_type;
@@ -105,12 +102,21 @@ architecture rtl of tmif is
 	signal memory_access_mode			: memory_access_mode_type;
 	signal next_memory_access_mode		: memory_access_mode_type;
 
+
+
+
+
 	signal is_tm_magic_addr_async: std_logic;
 	signal is_tm_magic_addr_sync: std_logic;
 	
-	signal sc_out_cpu_del: sc_out_type;
+	signal sc_out_cpu_dly: sc_out_type;
 	 
 	signal transaction_start: std_logic;
+	
+	
+	signal tag_full: std_logic;
+	
+	
 begin
 
 	is_tm_magic_addr_async <= '1' when
@@ -135,8 +141,7 @@ begin
 		start_commit => start_commit,
 		commit_finished => commit_finished,
 		
-		read_tag_of => read_tag_full,
-		write_buffer_of => write_buffer_full,
+		tag_full => tag_full,
 		
 		state => state,
 		transaction_start => transaction_start
@@ -154,7 +159,7 @@ begin
 			nesting_cnt <= (others => '0');
 			
 			is_tm_magic_addr_sync <= '0';
-			sc_out_cpu_del <= sc_out_idle;
+			sc_out_cpu_dly <= sc_out_idle;
 			
 			start_commit <= '0';
 		elsif rising_edge(clk) then
@@ -162,19 +167,19 @@ begin
 			nesting_cnt <= next_nesting_cnt;
 			
 			is_tm_magic_addr_sync <= is_tm_magic_addr_async;
-			sc_out_cpu_del <= sc_out_cpu;
+			sc_out_cpu_dly <= sc_out_cpu;
 			
 			start_commit <= next_start_commit; 			
 		end if;
 	end process sync;
 	
-	gen_tm_cmd: process (sc_out_cpu_del, is_tm_magic_addr_sync) is
+	gen_tm_cmd: process (sc_out_cpu_dly, is_tm_magic_addr_sync) is
 	begin
 		tm_cmd <= none;			
 		
-		if sc_out_cpu_del.wr = '1' and is_tm_magic_addr_sync = '1' then
+		if sc_out_cpu_dly.wr = '1' and is_tm_magic_addr_sync = '1' then
 			tm_cmd <= tm_cmd_type'val(to_integer(unsigned(
-				sc_out_cpu_del.wr_data(tm_cmd_raw'range))));
+				sc_out_cpu_dly.wr_data(tm_cmd_raw'range))));
 		end if;
 	end process gen_tm_cmd;	
 
@@ -194,8 +199,8 @@ begin
 	end process nesting_cnt_process; 
 
 	-- sets next_state, exc_tm_rollback, tm_cmd_rdy_cnt, start_commit
-	state_machine: process(commit_in_allow, commit_finished, conflict, nesting_cnt, 
-		state, tm_cmd) is
+	state_machine: process(commit_finished, commit_in_allow, conflict, 
+		nesting_cnt, state, tag_full, tm_cmd, sc_in_cpu_filtered.rdy_cnt) is
 	begin
 		next_state <= state;
 		exc_tm_rollback <= '0';
@@ -228,13 +233,15 @@ begin
 				end case;						
 				
 				-- TODO this should be included in memory access
-				--if read_tag_full = '1' or write_buffer_full = '1' then
-				--	next_state <= early_commit_wait_token;
-				--end if;
+				if tag_full = '1' then
+					next_state <= early_commit_wait_token;
+					tm_cmd_rdy_cnt <= "11";
+				end if;				
 				
 				if conflict = '1' then
 					-- TODO how is current access terminated?
-					next_state <= rollback_signal;
+					next_state <= rollback_signal;					
+					tm_cmd_rdy_cnt <= "00";
 				end if;
 				
 			when commit_wait_token =>
@@ -242,9 +249,14 @@ begin
 			
 				if conflict = '1' then
 					next_state <= rollback_signal;
-				elsif commit_in_allow = '1' then
-					next_state <= commit;
-					next_start_commit <= '1';
+				else
+					-- wait for possibly begun memory access to finish
+					if sc_in_cpu_filtered.rdy_cnt = 0 then -- TODO (1)?
+						if commit_in_allow = '1' then
+							next_state <= commit;
+							next_start_commit <= '1';
+						end if;
+					end if;
 				end if;
 			
 			when commit =>
@@ -259,14 +271,19 @@ begin
 			
 			-- TODO rdy_cnt	
 			when early_commit_wait_token =>
+				tm_cmd_rdy_cnt <= "11";
+			
 				if conflict = '1' then
 					next_state <= rollback_signal;
+					-- TODO tm_cmd_rdy_cnt
 				elsif commit_in_allow = '1' then
 					next_state <= early_commit;
 					next_start_commit <= '1';
 				end if;
 				
 			when early_commit =>
+				tm_cmd_rdy_cnt <= "11";
+			
 				-- TODO check condition
 				if commit_finished = '1' then
 					next_state <= early_committed_transaction;
@@ -277,8 +294,9 @@ begin
 					when end_transaction =>
 						if nesting_cnt = 
 							nesting_cnt_type'(0 => '1', others => '0') then
-							next_state <= end_transaction;
 							tm_cmd_rdy_cnt <= "10"; -- TODO
+							
+							next_state <= end_transaction;
 						end if;
 					when others =>
 						null;
@@ -293,10 +311,11 @@ begin
 			when rollback_signal =>
 				next_state <= rollback_wait;
 				exc_tm_rollback <= '1';
-				-- TODO
-				
+								
 			when rollback_wait =>
 				-- TODO make sure all other commands ignored
+				
+				-- possibly begun memory access has finished
 				if tm_cmd = aborted then
 					next_state <= no_transaction;
 				end if;
@@ -343,9 +362,8 @@ begin
 
 	-- sets sc_out_cpu_filtered, sc_out_arb, sc_in_cpu
 	-- TODO this is not well thought-out	
-	process(is_tm_magic_addr_async, memory_access_mode, sc_in_arb, 
-		sc_in_cpu_filtered, sc_out_arb_filtered, sc_out_cpu, state, 
-		tm_cmd_rdy_cnt) is
+	process(is_tm_magic_addr_async, memory_access_mode, sc_in_cpu_filtered, 
+		sc_out_arb_filtered, sc_out_cpu, state, tm_cmd_rdy_cnt) is
 	begin
 		sc_out_cpu_filtered <= sc_out_cpu;
 		sc_out_arb <= sc_out_arb_filtered;
@@ -353,27 +371,22 @@ begin
 	
 		case memory_access_mode is
 			when contain =>
+				-- do not issue any further commands
 				sc_out_cpu_filtered.wr <= '0';
 				sc_out_cpu_filtered.rd <= '0'; -- TODO reads?
 				
-				sc_out_arb.wr <= '0';
+				assert sc_out_arb_filtered.wr /= '1';
+				-- sc_out_arb.wr <= '0'; -- not needed
 				
-				sc_in_cpu <= (
-					rdy_cnt => (others => '0'),
-					rd_data => (others => '0'));
+				-- keep rdy_cnt to finish tm module transaction
+				-- TODO can rd_data just keep last value read?
 			when others =>
 				null;
 		end case;
 		
 		-- TODO
-		if memory_access_mode = bypass then
-			if sc_in_arb.rdy_cnt < tm_cmd_rdy_cnt then
-				sc_in_cpu.rdy_cnt <= tm_cmd_rdy_cnt;
-			end if;
-		else
-			if sc_in_cpu_filtered.rdy_cnt < tm_cmd_rdy_cnt then
-				sc_in_cpu.rdy_cnt <= tm_cmd_rdy_cnt;
-			end if;
+		if sc_in_cpu_filtered.rdy_cnt < tm_cmd_rdy_cnt then
+			sc_in_cpu.rdy_cnt <= tm_cmd_rdy_cnt;
 		end if;
 		
 		case state is

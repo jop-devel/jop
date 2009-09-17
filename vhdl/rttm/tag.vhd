@@ -48,7 +48,7 @@ port (
 	line: out unsigned(way_bits-1 downto 0);
 	newline: out unsigned(way_bits-1 downto 0);
 			
-	full: out std_logic;
+-- 	full: out std_logic;
 	
 	shift 			: in std_logic;
 	lowest_addr		: out std_logic_vector(addr_width-1 downto 0)
@@ -146,7 +146,7 @@ begin
 		for i in 0 to lines-1 loop
 			tag(i) <= (others => '0');
 		end loop;
-		full <= '0';
+-- 		full <= '0';
 
 	elsif rising_edge(clk) then
 		hit_reg <= h_res;
@@ -154,15 +154,17 @@ begin
 		addr_dly <= addr;
 
 		-- update tag memory in the next cycle
+		-- TODO hazard on 2 consecutive pipelined writes 
 		if wr='1' then
 			if hit_reg='0' then
 				tag(to_integer(nxt)) <= addr_dly;
 				valid(to_integer(nxt)) <= '1';
 				nxt <= nxt + 1;
 				
-				if nxt = (way_bits-1 downto 0 => '1') then
-					full <= '1';
-				end if;  
+				-- now calculated in tm module
+-- 				if nxt = (way_bits-1 downto 0 => '1') then
+-- 					full <= '1';
+-- 				end if;  
 			end if;
 		end if;
 		

@@ -411,7 +411,8 @@ begin
 
 		sc_write(clk, addr(5), data(5), sc_out_cpu, sc_in_cpu);
 
-		assert result = (31 downto 0 => '0');
+		-- TODO zombie mode results are not defined yet
+		--assert result = (31 downto 0 => '0');
 		
  		assert << signal .dut.state: state_type>> = rollback_wait;
 		

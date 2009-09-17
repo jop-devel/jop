@@ -13,6 +13,7 @@ port (
 	reset						: in std_logic;
 
 	commit_try					: in std_logic_vector(0 to cpu_cnt-1);
+	-- TODO delay long enough for conflict detection
 	commit_allow				: out std_logic_vector(0 to cpu_cnt-1)
 );
 
@@ -22,7 +23,7 @@ architecture rtl of tm_coordinator is
 	signal commit_allow_internal: std_logic_vector(0 to cpu_cnt-1);
 	signal next_commit_allow_internal: std_logic_vector(0 to cpu_cnt-1);
 begin
-	commit_allow <= next_commit_allow_internal;
+	commit_allow <= next_commit_allow_internal; -- TODO register
 
 	sync: process (clk, reset) is
 	begin

@@ -63,8 +63,7 @@ port (
  	start_commit	: in std_logic;
  	commit_finished		: out std_logic;
 
-	read_tag_of		: out std_logic;
-	write_buffer_of	: out std_logic;
+	tag_full: out std_logic;
 	
 	state: in state_type;
 	
@@ -161,14 +160,7 @@ architecture rtl of tm is
 	
 	signal next_commit_line: unsigned (way_bits-1 downto 0);
 	
-	
-	-- TODO
-	signal tag_full: std_logic;
 begin
-
-	-- TODO not an OF yet, but easier to handle
-	read_tag_of <= tag_full; -- TODO
-	write_buffer_of <= tag_full;
 
 	proc_stage0: process (broadcast, broadcast_valid_dly, commit_addr, 
 		commit_line, from_cpu, stage1, stage1_async, start_commit, state, 
@@ -251,6 +243,8 @@ begin
 		
 		next_stage23.line_addr <= stage23.line_addr;
 		
+		tag_full <= '0';
+		
 		if stage1.state = commit then
 			next_stage23.line_addr <= commit_line;
 		elsif stage1.state = read1 or stage1.state = write then -- TODO
@@ -258,6 +252,12 @@ begin
 				next_stage23.line_addr <= stage1_async.line_addr;
 			else
 				next_stage23.line_addr <= stage1_async.newline;
+			end if;
+			
+			if stage1_async.hit = '0' then
+				if stage1_async.newline = (way_bits-1 downto 0 => '1') then
+					tag_full <= '1';
+				end if;
 			end if;
 		end if;
 		
@@ -452,7 +452,7 @@ begin
 		end case;
 	end process proc_stage23;
 	
-	gen_rdy_cnt: process (from_cpu_dly, from_mem, stage1, stage23, state) is
+	gen_rdy_cnt: process (from_cpu_dly, from_mem, stage1, stage23) is
 		variable var_rdy_cnt: unsigned(RDY_CNT_SIZE-1 downto 0);
 	begin
 		var_rdy_cnt := "00";
@@ -487,15 +487,7 @@ begin
 						var_rdy_cnt := "01";					
 					 
 					when others =>
-						case state is 
-							when commit_wait_token | commit | 
-								early_commit_wait_token | early_commit |
-								end_transaction | rollback_signal | 
-								rollback_wait =>
-								var_rdy_cnt := "11";
-							when others =>
-								null;
-						end case;
+						null; -- set in state machine
 				end case;
 		end case;
 		
@@ -586,7 +578,7 @@ begin
 			hit => stage1_async.hit, -- TODO delay if fed in stage 0
 			line => stage1_async.line_addr,
 			newline => stage1_async.newline,
-			full => tag_full,
+-- 			full => tag_full,
 			
 			shift => shift,
 			lowest_addr => commit_addr
