@@ -174,6 +174,8 @@ begin
 			when early_commit | none =>
 				next_nesting_cnt <= nesting_cnt;
 			when aborted =>
+				-- TODO reference counter could also be maintained exclusively
+				-- in hw 
 				next_nesting_cnt <= (others => '0');				
 		end case;				
 	end process nesting_cnt_process; 
