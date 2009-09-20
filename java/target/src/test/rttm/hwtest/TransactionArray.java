@@ -46,16 +46,16 @@ public class TransactionArray implements Runnable {
 	}
 
 	public void run() {
-		Native.wrMem(1, MAGIC);
+		Native.wrMem(START_TRANSACTION, MAGIC);
 		
 		for (int i = 0; i < vals.length; i++)
 		{
 			vals[i] = i;
 		}
 		
-		Native.wrMem(0, MAGIC);
+		Native.wrMem(END_TRANSACTION, MAGIC);
 		
-		Native.wrMem(1, MAGIC);
+		Native.wrMem(START_TRANSACTION, MAGIC);
 		
 		for (int i = 0; i < vals.length; i++)
 		{

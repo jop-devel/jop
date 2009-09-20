@@ -39,23 +39,23 @@ public class Transaction implements Runnable {
 	}
 
 	public void run() {
-		Native.wrMem(1, MAGIC);
+		Native.wrMem(START_TRANSACTION, MAGIC);
 		
 		flag = true;
 		
-		Native.wrMem(0, MAGIC);
+		Native.wrMem(END_TRANSACTION, MAGIC);
 		
 		RtThread.busyWait(100 * scale);
 		flag = false;
 		RtThread.busyWait(100 * scale);
 		
-		Native.wrMem(1, MAGIC);
+		Native.wrMem(START_TRANSACTION, MAGIC);
 		
 		flag = true;
 		
-		Native.wrMem(0, MAGIC);
+		Native.wrMem(END_TRANSACTION, MAGIC);
 		
-		Native.wrMem(1, MAGIC);
+		Native.wrMem(START_TRANSACTION, MAGIC);
 		
 		flag = false;
 		

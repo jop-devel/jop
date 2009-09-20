@@ -32,10 +32,9 @@ public class Const {
 
 	static final int MAGIC = 0x07ffff;
 
-	enum cmd {
-		end_transaction,
-		start_transaction,
-		aborted,
-		early_commit }
+	static final int END_TRANSACTION = 0;
+	static final int START_TRANSACTION = 1;
+	static final int ABORTED = 2;
+	static final int EARLY_COMMIT = 3; 
 
 }
