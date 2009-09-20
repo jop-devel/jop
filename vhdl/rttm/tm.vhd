@@ -400,6 +400,7 @@ begin
 				next_stage23.wr_data <= from_mem.rd_data; 
 			
 			when commit_2 =>
+				next_commit_line <= commit_line + 1;
 				next_stage23.state <= commit_3;
 			
 			when commit_3 =>
@@ -416,7 +417,6 @@ begin
 					next_stage23.state <= idle;
 				end if;					
 				
-				next_commit_line <= commit_line + 1;
 				shift <= '1'; -- TODO
 				
 			when commit_4 =>

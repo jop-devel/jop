@@ -434,9 +434,15 @@ begin
 		wait until falling_edge(reset);
 		loop
 			wait until rising_edge(clk);
-			
+						
 			assert commit_out_try = '0' or testing_commit;
 			assert exc_tm_rollback = '0' or testing_conflict;
+			
+			-- check if broadcast flags set
+			assert testing_commit or 
+				not (sc_out_arb.wr ='1' and sc_out_arb.tm_broadcast = '1');
+			assert not testing_commit or 
+				not (sc_out_arb.wr ='1' and sc_out_arb.tm_broadcast = '0');
 		end loop; 
 	end process check_flags;
 
