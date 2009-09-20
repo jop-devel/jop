@@ -213,7 +213,8 @@ begin
 				-- TODO use FIFO
 				-- write is nearly finished and not all lines comm.
 				if write_to_mem_finishing = '1' or start_commit = '1' then
-					if commit_line = stage1_async.newline then						
+					if start_commit = '0' and 
+					commit_line = stage1_async.newline then						
 						commit_finished <= '1';
 					else 
 						next_stage1.state <= commit;

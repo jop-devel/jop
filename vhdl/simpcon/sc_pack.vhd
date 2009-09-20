@@ -65,35 +65,39 @@ package sc_pack is
 	type sc_out_array_type is array (integer range <>) of sc_out_type;
 	type sc_in_array_type is array (integer range <>) of sc_in_type;
 
-	constant TIMEOUT : integer := 50;
+	constant DEFAULT_TIMEOUT_CYCLES : integer := 50; 
 
 	procedure sc_write(
 		signal clk : in std_logic;
 		constant addr : in natural;
 		constant data : in natural;
 		signal sc_out : out sc_out_type;
-		signal sc_in  : in sc_in_type);
+		signal sc_in  : in sc_in_type;
+		constant timeout_cycles : integer := DEFAULT_TIMEOUT_CYCLES);
 
 	procedure sc_write(
 		signal clk : in std_logic;
 		constant addr : in std_logic_vector(SC_ADDR_SIZE-1 downto 0);
 		constant data : in std_logic_vector(31 downto 0);
 		signal sc_out : out sc_out_type;
-		signal sc_in  : in sc_in_type);
+		signal sc_in  : in sc_in_type;
+		constant timeout_cycles : integer := DEFAULT_TIMEOUT_CYCLES);
 
 	procedure sc_read(
 		signal clk : in std_logic;
 		constant addr : in natural;
 		variable data : out natural;
 		signal sc_out : out sc_out_type;
-		signal sc_in  : in sc_in_type);
+		signal sc_in  : in sc_in_type;
+		constant timeout_cycles : integer := DEFAULT_TIMEOUT_CYCLES);
 		
 	procedure sc_read(
 		signal clk : in std_logic;
 		constant addr : in std_logic_vector(SC_ADDR_SIZE-1 downto 0);
 		variable data : out std_logic_vector(31 downto 0);
 		signal sc_out : out sc_out_type;
-		signal sc_in  : in sc_in_type);
+		signal sc_in  : in sc_in_type;
+		constant timeout_cycles : integer := DEFAULT_TIMEOUT_CYCLES);
 	
 
 
@@ -106,7 +110,8 @@ package body sc_pack is
 		constant addr : in natural;
 		constant data : in natural;
 		signal sc_out : out sc_out_type;
-		signal sc_in  : in sc_in_type) is
+		signal sc_in  : in sc_in_type;
+		constant timeout_cycles : integer := DEFAULT_TIMEOUT_CYCLES) is
 
 		variable txt : line;
 		variable timedout : boolean := false;
@@ -129,10 +134,10 @@ package body sc_pack is
 		sc_out.address <= (others => 'X');
 		sc_out.wr <= '0';
 
-		for i in 1 to TIMEOUT loop
+		for i in 1 to timeout_cycles loop
 			wait until rising_edge(clk);
 			exit when sc_in.rdy_cnt = "00";
-			if (i = TIMEOUT) then
+			if (i = timeout_cycles) then
 				timedout := true;
 				write (txt, LF & string'("No acknowledge recevied!"));
 			end if;		
@@ -149,7 +154,8 @@ package body sc_pack is
 		constant addr : in std_logic_vector(SC_ADDR_SIZE-1 downto 0);
 		constant data : in std_logic_vector(31 downto 0);
 		signal sc_out : out sc_out_type;
-		signal sc_in  : in sc_in_type) is
+		signal sc_in  : in sc_in_type;
+		constant timeout_cycles : integer := DEFAULT_TIMEOUT_CYCLES) is
 
 		variable txt : line;
 		variable timedout : boolean := false;
@@ -172,10 +178,10 @@ package body sc_pack is
 		sc_out.address <= (others => 'X');
 		sc_out.wr <= '0';
 
-		for i in 1 to TIMEOUT loop
+		for i in 1 to timeout_cycles loop
 			wait until rising_edge(clk);
 			exit when sc_in.rdy_cnt = "00";
-			if (i = TIMEOUT) then
+			if (i = timeout_cycles) then
 				timedout := true;
 				write (txt, LF & string'("No acknowledge recevied!"));
 			end if;		
@@ -193,7 +199,8 @@ package body sc_pack is
 		constant addr : in natural;
 		variable data : out natural;
 		signal sc_out : out sc_out_type;
-		signal sc_in  : in sc_in_type) is
+		signal sc_in  : in sc_in_type;
+		constant timeout_cycles : integer := DEFAULT_TIMEOUT_CYCLES) is
 
 		variable txt : line;
 		variable in_data : natural;
@@ -216,10 +223,10 @@ package body sc_pack is
 		sc_out.rd <= '0';
 
 		-- wait for acknowledge
-		for i in 1 to TIMEOUT loop
+		for i in 1 to timeout_cycles loop
 			wait until rising_edge(clk);
 			exit when sc_in.rdy_cnt = "00";
-			if (i = TIMEOUT) then
+			if (i = timeout_cycles) then
 				timedout := true;
 				write (txt, LF & string'("No acknowledge recevied!"));
 			end if;		
@@ -243,7 +250,8 @@ package body sc_pack is
 		constant addr : in std_logic_vector(SC_ADDR_SIZE-1 downto 0);
 		variable data : out std_logic_vector(31 downto 0);
 		signal sc_out : out sc_out_type;
-		signal sc_in  : in sc_in_type) is
+		signal sc_in  : in sc_in_type;
+		constant timeout_cycles : integer := DEFAULT_TIMEOUT_CYCLES) is
 
 		variable txt : line;
 		variable in_data : natural;
@@ -266,10 +274,10 @@ package body sc_pack is
 		sc_out.rd <= '0';
 
 		-- wait for acknowledge
-		for i in 1 to TIMEOUT loop
+		for i in 1 to timeout_cycles loop
 			wait until rising_edge(clk);
 			exit when sc_in.rdy_cnt = "00";
-			if (i = TIMEOUT) then
+			if (i = timeout_cycles) then
 				timedout := true;
 				write (txt, LF & string'("No acknowledge recevied!"));
 			end if;		

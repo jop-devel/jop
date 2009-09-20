@@ -96,6 +96,11 @@ architecture rtl of tmif is
 	
 	signal tag_full: std_logic;
 	
+	-- commit_finished signal is delayed long enough so that other processors
+	-- detect conflict before they can obtain commit token
+	-- (after commit_finished_dly has caused reset of commit_out_try)		
+	signal commit_finished_dly: std_logic;
+	signal commit_finished_dly_internal_1: std_logic;
 	
 begin
 
@@ -125,9 +130,9 @@ begin
 		
 		state => state,
 		transaction_start => transaction_start
-		);			
-
-
+		);
+		
+	
 	--
 	-- TM STATE MACHINE
 	--
@@ -142,6 +147,9 @@ begin
 			sc_out_cpu_dly <= sc_out_idle;
 			
 			start_commit <= '0';
+			
+			commit_finished_dly_internal_1 <= '0';
+			commit_finished_dly <= '0';
 		elsif rising_edge(clk) then
 			state <= next_state;
 			nesting_cnt <= next_nesting_cnt;
@@ -149,7 +157,10 @@ begin
 			is_tm_magic_addr_sync <= is_tm_magic_addr_async;
 			sc_out_cpu_dly <= sc_out_cpu;
 			
-			start_commit <= next_start_commit; 			
+			start_commit <= next_start_commit;
+			
+			commit_finished_dly_internal_1 <= commit_finished;
+			commit_finished_dly <= commit_finished_dly_internal_1;
 		end if;
 	end process sync;
 	
@@ -181,7 +192,7 @@ begin
 	end process nesting_cnt_process; 
 
 	-- sets next_state, exc_tm_rollback, tm_cmd_rdy_cnt, start_commit
-	state_machine: process(commit_finished, commit_in_allow, conflict, 
+	state_machine: process(commit_finished_dly, commit_in_allow, conflict, 
 		nesting_cnt, state, tag_full, tm_cmd, sc_in_cpu_filtered.rdy_cnt) is
 	begin
 		next_state <= state;
@@ -247,7 +258,7 @@ begin
 				tm_cmd_rdy_cnt <= "11";
 				
 				-- TODO check condition
-				if commit_finished = '1' then
+				if commit_finished_dly = '1' then
 					next_state <= end_transaction;
 				end if;
 				
@@ -267,7 +278,7 @@ begin
 				tm_cmd_rdy_cnt <= "11";
 			
 				-- TODO check condition
-				if commit_finished = '1' then
+				if commit_finished_dly = '1' then
 					next_state <= early_committed_transaction;
 				end if;
 				
@@ -308,7 +319,8 @@ begin
 	
 	commit_out_try_internal <= '1' 
 		when state = commit_wait_token or state = early_commit_wait_token or
-		state = early_committed_transaction or state = commit
+		state = commit or state = early_commit or
+		state = early_committed_transaction
 		-- or state = end_transaction -- TODO
 		else '0';
 	

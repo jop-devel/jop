@@ -367,14 +367,8 @@ begin
 			address => addr(0));
 			
 		wait until rising_edge(clk);
-		assert exc_tm_rollback = '0';
 		
 		broadcast.valid <= '0';
-		
-		for i in 2 to conflict_detection_cycles loop
-			wait until rising_edge(clk);
-			assert exc_tm_rollback = '0';
-		end loop;
 		
 		-- write something that is not committed
 		
@@ -395,6 +389,7 @@ begin
 		
 		broadcast.valid <= '0';
 		
+		-- TODO
 		for i in 2 to conflict_detection_cycles+1 loop
 			assert i <= conflict_detection_cycles;
 			exit when exc_tm_rollback = '1';

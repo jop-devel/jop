@@ -1,3 +1,5 @@
+-- TODO rewrite to test commit_allow port instead of internal signals
+
 library ieee;
 
 use std.textio.all;
@@ -41,7 +43,6 @@ constant reset_time			: time := 8 ns;
 subtype cpu_flags is std_logic_vector(0 to cpu_cnt-1);
 
 signal commit_try			: cpu_flags;
-signal commit_allow			: cpu_flags;
 
 begin
 
@@ -57,19 +58,22 @@ begin
 		clk => clk,
 		reset => reset,
 		commit_try => commit_try,
-		commit_allow => commit_allow
+		-- test internal next_commit_allow_internal signal
+		commit_allow => open 
 		);
 
 	-- TODO use postponed process in parallel or ugly manual delay? 
 
 	gen: process is
+		alias next_commit_allow is 
+			<< signal .dut.next_commit_allow_internal: cpu_flags >>;
 	begin
 		commit_try <= (others => '0');
 	
 		wait until falling_edge(reset);
 		wait until rising_edge(clk);
 				
-		assert commit_allow= (0 to cpu_cnt-1 => '0');
+		assert next_commit_allow= (0 to cpu_cnt-1 => '0');
 		
 		commit_try <= (others => '1');
 		wait until rising_edge(clk);
@@ -77,12 +81,12 @@ begin
 		commit_try(3) <= '0';
 		wait for 0 ns;
 		
-		assert commit_allow = cpu_flags'(0 => '1', others => '0');
+		assert next_commit_allow = cpu_flags'(0 => '1', others => '0');
 		
 		commit_try(1) <= '0';				
 		wait for 0 ns;
 		
-		assert commit_allow = cpu_flags'(0 => '1', others => '0');		
+		assert next_commit_allow = cpu_flags'(0 => '1', others => '0');		
 		
 		wait until rising_edge(clk);
 		wait until rising_edge(clk);
@@ -92,13 +96,13 @@ begin
 		
 		wait until rising_edge(clk);
 		
-		assert commit_allow = cpu_flags'(2 => '1', others => '0');
+		assert next_commit_allow = cpu_flags'(2 => '1', others => '0');
 		
 		commit_try <= (others => '0');
 		
 		wait until rising_edge(clk);
 		
-		assert commit_allow = cpu_flags'(others => '0');
+		assert next_commit_allow = cpu_flags'(others => '0');
 		
 		finished <= true;
 		write(output, "Test finished.");
