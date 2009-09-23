@@ -60,6 +60,9 @@ port (
  	conflict		: out std_logic;
  	
  	start_commit	: in std_logic;
+ 	
+ 	-- signal must be delayed by at least one cycle before being processed
+ 	-- to allow memory transaction to finish
  	commit_finished		: out std_logic;
 
 	tag_full: out std_logic;
@@ -173,6 +176,7 @@ begin
 	
 		case state is 
 			when no_transaction | rollback_signal | rollback_wait |
+				early_committed_transaction |
 				end_transaction =>
 				next_stage1.state <= idle;
 				
@@ -187,12 +191,11 @@ begin
 					next_stage1.addr <= broadcast.address(next_stage1.addr'range);
 				end if;				
 			
-			when normal_transaction | early_committed_transaction =>
+			when normal_transaction =>
 				next_stage1.state <= idle;
 			
-				if state = normal_transaction and 
-					(broadcast.valid = '1'  or 
-					(broadcast_valid_dly = '1' and stage1.state /= broadcast1))
+				if broadcast.valid = '1'  or 
+					(broadcast_valid_dly = '1' and stage1.state /= broadcast1)
 					then
 					next_stage1.state <= broadcast1;
 					next_stage1.addr <= broadcast.address(next_stage1.addr'range); 
@@ -214,7 +217,7 @@ begin
 				-- write is nearly finished and not all lines comm.
 				if write_to_mem_finishing = '1' or start_commit = '1' then
 					if start_commit = '0' and 
-					commit_line = stage1_async.newline then						
+					commit_line = stage1_async.newline then
 						commit_finished <= '1';
 					else 
 						next_stage1.state <= commit;
@@ -254,6 +257,7 @@ begin
 			
 			if stage1_async.hit = '0' then
 				-- TODO this is in the critical path
+				-- TODO make sure operation finishes first
 				if stage1_async.newline = (way_bits-1 downto 0 => '1') then
 					tag_full <= '1';
 				end if;
@@ -349,6 +353,7 @@ begin
 		
 		case stage23.state is
 			when idle =>
+				-- TODO hazard?
 				if state = no_transaction or 
 				state = early_committed_transaction or 
 				from_cpu_dly.nc = '1' then
@@ -422,7 +427,8 @@ begin
 			when commit_4 =>
 				next_stage23.state <= commit_4;
 				
-				if from_mem.rdy_cnt(1) = '0' then
+				-- save one cycle
+				if from_mem.rdy_cnt < 3 then
 					write_to_mem_finishing <= '1';
 					next_stage23.state <= idle;
 				end if;

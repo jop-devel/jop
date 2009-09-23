@@ -11,7 +11,8 @@ package tm_pack is
 		
 	-- Magic address to execute TM commands is located in upper half 
 	-- of external SRAM mirror (TM_MAGIC_DETECT) 
-	-- The lower bits are actually ignored.	
+	-- The lower bits are actually ignored.
+	-- TODO Keep in synch with jvm.asm constant 	
 	constant TM_MAGIC_DETECT: std_logic_vector(18 downto 17) := 
 		(others => '1');
 	constant TM_MAGIC: std_logic_vector(SC_ADDR_SIZE-1 downto 0) := 
@@ -24,6 +25,7 @@ package tm_pack is
 	
 	constant TM_CMD_END_TRANSACTION: tm_cmd_raw := "00";
 	constant TM_CMD_START_TRANSACTION: tm_cmd_raw := "01";
+	-- TODO Keep in synch with jvm.asm constant
 	constant TM_CMD_ABORTED: tm_cmd_raw := "10";
 	constant TM_CMD_EARLY_COMMIT: tm_cmd_raw := "11";
 	

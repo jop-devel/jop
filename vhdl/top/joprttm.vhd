@@ -255,10 +255,6 @@ end process;
 				irq_out(i), exc_req(i), exc_tm_rollback(i));
 	end generate;
 	
-	assert_no_rollback: for i in 0 to cpu_cnt-1 generate
-		assert exc_tm_rollback(i) /= '1'; -- TODO
-	end generate;
-	
 	gen_tm: for i in 0 to cpu_cnt-1 generate
 		cmp_tm: entity work.tmif
 			generic map (

@@ -415,10 +415,11 @@ begin
 			exc_pend <= '1';
 		end if;
 		-- gets priority over all other exceptions
+		-- TODO this also masks SPOV occurring in same cycle
 		if exc_req.rollback='1' then
 			exc_type(2 downto 0) <= EXC_ROLLBACK;
 			exc_pend <= '1';
-		end if;			
+		end if;
 
 		if wr='1' then
 			case address(3 downto 0) is
@@ -455,7 +456,7 @@ begin
 				when others =>
 			end case;
 		end if;
-		
+				
 		-- Simple equal test, so be exact and don't miss it!
 		if dly_timeout=clock_cnt then
 			dly_block <= '0';

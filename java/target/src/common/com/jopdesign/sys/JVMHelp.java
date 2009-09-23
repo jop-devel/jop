@@ -45,6 +45,8 @@ public class JVMHelp {
 	static ArrayIndexOutOfBoundsException ABExc;
 	static ArithmeticException ArithExc;
 	static ClassCastException CCExc;
+	
+	static RollbackException RBExc;
 
 	//
 	// DON'T change order of first functions!!!
@@ -143,7 +145,7 @@ synchronized (o) {
 		} else if (i==Const.EXC_DIVZ) {
 			throw ArithExc;
 		} else if (i==Const.EXC_ROLLBACK) {
-			// TMTODO
+			throw RBExc;
 		}
 
 		for (;;);
@@ -173,6 +175,8 @@ synchronized (o) {
 		ABExc = new ArrayIndexOutOfBoundsException();
 		ArithExc = new ArithmeticException();
 		CCExc = new ClassCastException();
+		
+		RBExc = new RollbackException();
 
 	}
 

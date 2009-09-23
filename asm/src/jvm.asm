@@ -191,6 +191,10 @@ fpu_const_op  = -14
 fpu_const_res = -13
 #endif
 
+tm_magic = 524287
+tm_aborted = 2
+
+
 
 //
 //	first vars for start
@@ -708,6 +712,16 @@ sys_int:
 //	call com.jopdesign.sys.JVMHelp.except()	(
 //
 sys_exc:
+
+			// inform tm module 
+			
+			ldi tm_aborted
+			ldi tm_magic
+			stmwa				// store memory address
+			stmwd				// store memory data
+			wait
+			wait
+
 			ldjpc				// correct wrong increment on jpc
 			ldi	1				//    could also be done in bcfetch.vhd
 			sub					//    but this is simpler :-)
