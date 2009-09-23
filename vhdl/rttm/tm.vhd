@@ -59,8 +59,6 @@ port (
  	broadcast		: in tm_broadcast_type;
  	conflict		: out std_logic;
  	
- 	start_commit	: in std_logic;
- 	
  	-- signal must be delayed by at least one cycle before being processed
  	-- to allow memory transaction to finish
  	commit_finished		: out std_logic;
@@ -119,7 +117,7 @@ architecture rtl of tm is
 	type stage1_async_type is record
 		hit: std_logic;
 		line_addr: unsigned(way_bits-1 downto 0);
-		newline: unsigned(way_bits-1 downto 0);
+		newline: unsigned(way_bits downto 0);
 	end record;
 	
 	signal stage1_async: stage1_async_type;
@@ -147,7 +145,7 @@ architecture rtl of tm is
 	-- Commit/broadcast logic
 	--
 	
-	signal commit_line			: unsigned(way_bits-1 downto 0);
+	signal commit_line			: unsigned(way_bits downto 0);
 	signal shift				: std_logic;
 	
 	signal commit_addr			: std_logic_vector(addr_width-1 downto 0);
@@ -160,19 +158,23 @@ architecture rtl of tm is
 	signal bcstage2, next_bcstage2: std_logic;
 	signal bcstage3: std_logic;
 	
-	signal next_commit_line: unsigned (way_bits-1 downto 0);
+	signal next_commit_line: unsigned (way_bits downto 0);
 	
+	signal next_commit_started: std_logic;
+	signal commit_started: std_logic;
 begin
 
 	proc_stage0: process (broadcast, broadcast_valid_dly, commit_addr, 
-		commit_line, from_cpu, stage1, stage1_async, start_commit, state, 
-		write_to_mem_finishing) is
+		commit_line, commit_started, from_cpu, from_mem, stage1, stage1_async, 
+		state, write_to_mem_finishing) is
 	begin
 		-- TODO assertion that no signals are issued in wrong time
 		next_stage1.addr <= (others => 'X');
 		next_stage1.cpu_data <= from_cpu.wr_data;
 		
 		commit_finished <= '0';
+		
+		next_commit_started <= commit_started; -- TODO
 	
 		case state is 
 			when no_transaction | rollback_signal | rollback_wait |
@@ -189,7 +191,9 @@ begin
 					next_stage1.state <= broadcast1;
 					-- TODO
 					next_stage1.addr <= broadcast.address(next_stage1.addr'range);
-				end if;				
+				end if;
+				
+				next_commit_started <= '0';				
 			
 			when normal_transaction =>
 				next_stage1.state <= idle;
@@ -215,9 +219,11 @@ begin
 				next_stage1.state <= idle; -- TODO ?
 				-- TODO use FIFO
 				-- write is nearly finished and not all lines comm.
-				if write_to_mem_finishing = '1' or start_commit = '1' then
-					if start_commit = '0' and 
-					commit_line = stage1_async.newline then
+				-- TODO check rdy_cnt
+				if write_to_mem_finishing = '1' or 
+					((commit_started = '0') and (from_mem.rdy_cnt = 0)) then
+					next_commit_started <= '1';
+					if commit_line = stage1_async.newline then
 						commit_finished <= '1';
 					else 
 						next_stage1.state <= commit;
@@ -247,18 +253,20 @@ begin
 		tag_full <= '0';
 		
 		if stage1.state = commit then
-			next_stage23.line_addr <= commit_line;
+			next_stage23.line_addr <= commit_line(way_bits-1 downto 0);
 		elsif stage1.state = read1 or stage1.state = write then -- TODO
 			if stage1_async.hit = '1' then
 				next_stage23.line_addr <= stage1_async.line_addr;
 			else
-				next_stage23.line_addr <= stage1_async.newline;
+				next_stage23.line_addr <= stage1_async.newline(
+					way_bits-1 downto 0);
 			end if;
 			
 			if stage1_async.hit = '0' then
 				-- TODO this is in the critical path
 				-- TODO make sure operation finishes first
-				if stage1_async.newline = (way_bits-1 downto 0 => '1') then
+				if stage1_async.newline(way_bits-1 downto 0) = 
+					(way_bits-1 downto 0 => '1') then
 					tag_full <= '1';
 				end if;
 			end if;
@@ -543,7 +551,9 @@ begin
 			-- TODO from_mem_dly
 			commit_line <= (others => '0');
 			
-			read_data <= (others => '0'); 
+			read_data <= (others => '0');
+			
+			commit_started <= '0'; 
 				 
 	    elsif rising_edge(clk) then
 			stage1 <= next_stage1;
@@ -558,6 +568,8 @@ begin
 			commit_line <= next_commit_line;
 			
 			read_data <= next_read_data;
+			
+			commit_started <= next_commit_started;
 	    end if;
 	end process sync;
 

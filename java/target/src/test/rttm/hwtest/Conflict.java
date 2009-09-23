@@ -38,7 +38,6 @@ public class Conflict implements Runnable {
 			boolean ignored = conflicting;						
 			
 			while (true);
-//			Native.wrMem(EARLY_COMMIT, MAGIC);
 		} catch (RollbackException e){
 			System.out.println("Rollback exception");			
 		}

@@ -46,7 +46,7 @@ port (
 	
 	hit: out std_logic;
 	line: out unsigned(way_bits-1 downto 0);
-	newline: out unsigned(way_bits-1 downto 0);
+	newline: out unsigned(way_bits downto 0);
 			
 -- 	full: out std_logic;
 	
@@ -68,7 +68,7 @@ architecture rtl of tag is
 	signal valid: std_logic_vector(lines-1 downto 0); -- valid
 
 	-- pointer to next block to be used on a miss
-	signal nxt			: unsigned(way_bits-1 downto 0);
+	signal nxt			: unsigned(way_bits downto 0);
 
 	signal h_res, hit_reg: std_logic;
 	signal addr_dly: std_logic_vector(addr_width-1 downto 0);
@@ -157,8 +157,8 @@ begin
 		-- TODO hazard on 2 consecutive pipelined writes 
 		if wr='1' then
 			if hit_reg='0' then
-				tag(to_integer(nxt)) <= addr_dly;
-				valid(to_integer(nxt)) <= '1';
+				tag(to_integer(nxt(way_bits-1 downto 0))) <= addr_dly;
+				valid(to_integer(nxt(way_bits-1 downto 0))) <= '1';
 				nxt <= nxt + 1;
 				
 				-- now calculated in tm module

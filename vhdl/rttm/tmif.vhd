@@ -69,8 +69,6 @@ architecture rtl of tmif is
 	signal tm_cmd					: tm_cmd_type;
 	
 
-	signal start_commit				: std_logic;
-	signal next_start_commit		: std_logic;
 	signal commit_finished				: std_logic;
 	
 	signal commit_out_try_internal	: std_logic;
@@ -123,7 +121,6 @@ begin
 		broadcast => broadcast,
 		conflict => conflict,
 		
-		start_commit => start_commit,
 		commit_finished => commit_finished,
 		
 		tag_full => tag_full,
@@ -146,8 +143,6 @@ begin
 			is_tm_magic_addr_sync <= '0';
 			sc_out_cpu_dly <= sc_out_idle;
 			
-			start_commit <= '0';
-			
 			commit_finished_dly_internal_1 <= '0';
 			commit_finished_dly <= '0';
 		elsif rising_edge(clk) then
@@ -156,8 +151,6 @@ begin
 			
 			is_tm_magic_addr_sync <= is_tm_magic_addr_async;
 			sc_out_cpu_dly <= sc_out_cpu;
-			
-			start_commit <= next_start_commit;
 			
 			commit_finished_dly_internal_1 <= commit_finished;
 			commit_finished_dly <= commit_finished_dly_internal_1;
@@ -191,14 +184,13 @@ begin
 		end case;				
 	end process nesting_cnt_process; 
 
-	-- sets next_state, exc_tm_rollback, tm_cmd_rdy_cnt, start_commit
+	-- sets next_state, exc_tm_rollback, tm_cmd_rdy_cnt
 	state_machine: process(commit_finished_dly, commit_in_allow, conflict, 
 		nesting_cnt, state, tag_full, tm_cmd, sc_in_cpu_filtered.rdy_cnt) is
 	begin
 		next_state <= state;
 		exc_tm_rollback <= '0';
 		tm_cmd_rdy_cnt <= "00";
-		next_start_commit <= '0';
 		
 		transaction_start <= '0';
 		
@@ -249,7 +241,6 @@ begin
 					if sc_in_cpu_filtered.rdy_cnt = 0 then -- TODO (1)?
 						if commit_in_allow = '1' then
 							next_state <= commit;
-							next_start_commit <= '1';
 						end if;
 					end if;
 				end if;
@@ -271,7 +262,6 @@ begin
 					-- TODO tm_cmd_rdy_cnt <= "00";
 				elsif commit_in_allow = '1' then
 					next_state <= early_commit;
-					next_start_commit <= '1';
 				end if;
 				
 			when early_commit =>

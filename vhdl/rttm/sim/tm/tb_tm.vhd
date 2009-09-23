@@ -306,7 +306,7 @@ begin
 		assert write_buffer(0) = data(1);
 
 		assert to_integer(<< signal .dut.cmp_tm.tag.nxt: -- newline
-			unsigned(way_bits-1 downto 0) >>) = lines_used;
+			unsigned(way_bits downto 0) >>) = lines_used;
 		
 		sc_read(clk, addr(0), result, sc_out_cpu, sc_in_cpu);
 		
@@ -331,7 +331,7 @@ begin
 		end if;
 
 		assert to_integer(<< signal .dut.cmp_tm.tag.nxt: -- newline
-				unsigned(way_bits-1 downto 0) >>) = lines_used;
+				unsigned(way_bits downto 0) >>) = lines_used;
 						
 		
 		-- commit transaction
