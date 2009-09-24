@@ -21,6 +21,6 @@ work:
 	vlib work
 	
 clean:
-	-rm -rf work
-	-rm transcript
-	-rm *.wlf
+	rm -rf work
+	rm -f transcript
+	rm -f *.wlf

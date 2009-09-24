@@ -71,161 +71,17 @@ add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/fl_rdy
 add wave -noupdate -divider mem_sc
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/main_mem/data
 add wave -noupdate -divider tmif0
-add wave -noupdate -format Logic /tb_jop/cmp_jop/gen_tm__0/cmp_tm/clk
-add wave -noupdate -format Logic /tb_jop/cmp_jop/gen_tm__0/cmp_tm/commit_out_try
-add wave -noupdate -format Logic /tb_jop/cmp_jop/gen_tm__0/cmp_tm/commit_in_allow
-add wave -noupdate -format Literal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/broadcast
-add wave -noupdate -format Literal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/sc_out_cpu
-add wave -noupdate -format Literal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/sc_in_cpu
-add wave -noupdate -format Literal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/sc_out_arb
-add wave -noupdate -format Literal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/sc_in_arb
-add wave -noupdate -format Logic /tb_jop/cmp_jop/gen_tm__0/cmp_tm/exc_tm_rollback
-add wave -noupdate -format Literal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/state
-add wave -noupdate -format Literal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/next_state
-add wave -noupdate -format Literal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/nesting_cnt
-add wave -noupdate -format Logic /tb_jop/cmp_jop/gen_tm__0/cmp_tm/conflict
-add wave -noupdate -format Literal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/tm_cmd
-add wave -noupdate -format Logic /tb_jop/cmp_jop/gen_tm__0/cmp_tm/start_commit
-add wave -noupdate -format Logic /tb_jop/cmp_jop/gen_tm__0/cmp_tm/commit_finished
-add wave -noupdate -format Logic /tb_jop/cmp_jop/gen_tm__0/cmp_tm/commit_out_try_internal
-add wave -noupdate -format Logic /tb_jop/cmp_jop/gen_tm__0/cmp_tm/read_tag_full
-add wave -noupdate -format Logic /tb_jop/cmp_jop/gen_tm__0/cmp_tm/write_buffer_full
-add wave -noupdate -format Literal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/sc_out_cpu_filtered
-add wave -noupdate -format Literal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/sc_in_cpu_filtered
-add wave -noupdate -format Literal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/sc_out_arb_filtered
-add wave -noupdate -format Literal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/tm_cmd_rdy_cnt
-add wave -noupdate -format Literal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/memory_access_mode
-add wave -noupdate -format Logic /tb_jop/cmp_jop/gen_tm__0/cmp_tm/is_tm_magic_addr_async
-add wave -noupdate -format Logic /tb_jop/cmp_jop/gen_tm__0/cmp_tm/is_tm_magic_addr_sync
-add wave -noupdate -format Logic /tb_jop/cmp_jop/gen_tm__0/cmp_tm/transaction_start
+add wave -noupdate -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/*
 add wave -noupdate -divider tm0
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/clk
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/from_cpu
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/to_cpu
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/to_mem
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/from_mem
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/broadcast
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/conflict
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/start_commit
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/commit_finished
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/read_tag_of
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/write_buffer_of
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/state
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/transaction_start
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/stage1
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/stage2
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/stage3
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/stage23
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/stage1_async
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/read_data
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/data
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/dirty
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/read
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/save_data
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/commit_line
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/shift
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/commit_addr
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/write_to_mem_finishing
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/bcstage2
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/bcstage3
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/tag_full
+add wave -noupdate -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/*
 add wave -noupdate -divider tag0
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/tag/clk
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/tag/transaction_start
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/tag/addr
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/tag/wr
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/tag/hit
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/tag/line
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/tag/newline
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/tag/full
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/tag/shift
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/tag/lowest_addr
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/tag/l
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/tag/tag
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/tag/h
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/tag/valid
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/tag/nxt
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/tag/h_res
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/tag/hit_reg
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/tag/addr_dly
+add wave -noupdate -radix hexadecimal /tb_jop/cmp_jop/gen_tm__0/cmp_tm/cmp_tm/tag/*
 add wave -noupdate -divider tmif1
-add wave -noupdate -format Logic /tb_jop/cmp_jop/gen_tm__1/cmp_tm/clk
-add wave -noupdate -format Logic /tb_jop/cmp_jop/gen_tm__1/cmp_tm/commit_out_try
-add wave -noupdate -format Logic /tb_jop/cmp_jop/gen_tm__1/cmp_tm/commit_in_allow
-add wave -noupdate -format Literal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/broadcast
-add wave -noupdate -format Literal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/sc_out_cpu
-add wave -noupdate -format Literal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/sc_in_cpu
-add wave -noupdate -format Literal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/sc_out_arb
-add wave -noupdate -format Literal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/sc_in_arb
-add wave -noupdate -format Logic /tb_jop/cmp_jop/gen_tm__1/cmp_tm/exc_tm_rollback
-add wave -noupdate -format Literal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/state
-add wave -noupdate -format Literal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/next_state
-add wave -noupdate -format Literal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/nesting_cnt
-add wave -noupdate -format Logic /tb_jop/cmp_jop/gen_tm__1/cmp_tm/conflict
-add wave -noupdate -format Literal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/tm_cmd
-add wave -noupdate -format Logic /tb_jop/cmp_jop/gen_tm__1/cmp_tm/start_commit
-add wave -noupdate -format Logic /tb_jop/cmp_jop/gen_tm__1/cmp_tm/commit_finished
-add wave -noupdate -format Logic /tb_jop/cmp_jop/gen_tm__1/cmp_tm/commit_out_try_internal
-add wave -noupdate -format Logic /tb_jop/cmp_jop/gen_tm__1/cmp_tm/read_tag_full
-add wave -noupdate -format Logic /tb_jop/cmp_jop/gen_tm__1/cmp_tm/write_buffer_full
-add wave -noupdate -format Literal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/sc_out_cpu_filtered
-add wave -noupdate -format Literal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/sc_in_cpu_filtered
-add wave -noupdate -format Literal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/sc_out_arb_filtered
-add wave -noupdate -format Literal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/tm_cmd_rdy_cnt
-add wave -noupdate -format Literal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/memory_access_mode
-add wave -noupdate -format Logic /tb_jop/cmp_jop/gen_tm__1/cmp_tm/is_tm_magic_addr_async
-add wave -noupdate -format Logic /tb_jop/cmp_jop/gen_tm__1/cmp_tm/is_tm_magic_addr_sync
-add wave -noupdate -format Logic /tb_jop/cmp_jop/gen_tm__1/cmp_tm/transaction_start
-add wave -noupdate -divider tm0
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/clk
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/from_cpu
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/to_cpu
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/to_mem
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/from_mem
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/broadcast
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/conflict
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/start_commit
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/commit_finished
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/read_tag_of
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/write_buffer_of
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/state
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/transaction_start
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/stage1
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/stage2
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/stage3
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/stage23
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/stage1_async
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/read_data
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/data
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/dirty
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/read
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/save_data
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/commit_line
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/shift
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/commit_addr
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/write_to_mem_finishing
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/bcstage2
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/bcstage3
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/tag_full
-add wave -noupdate -divider tag0
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/tag/clk
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/tag/transaction_start
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/tag/addr
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/tag/wr
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/tag/hit
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/tag/line
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/tag/newline
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/tag/full
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/tag/shift
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/tag/lowest_addr
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/tag/l
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/tag/tag
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/tag/h
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/tag/valid
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/tag/nxt
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/tag/h_res
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/tag/hit_reg
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/tag/addr_dly
+add wave -noupdate -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/*
+add wave -noupdate -divider tm1
+add wave -noupdate -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/*
+add wave -noupdate -divider tag1
+add wave -noupdate -radix hexadecimal /tb_jop/cmp_jop/gen_tm__1/cmp_tm/cmp_tm/tag/*
 TreeUpdate [SetDefaultTree]
 WaveRestoreCursors {{Cursor 1} {117 ns} 0}
 configure wave -namecolwidth 432

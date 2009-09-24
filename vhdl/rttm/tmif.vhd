@@ -330,7 +330,7 @@ begin
 			when rollback_signal | rollback_wait =>
 				-- do not issue any further commands
 				sc_out_cpu_filtered.wr <= '0';
-				sc_out_cpu_filtered.rd <= '0'; -- TODO reads?
+				-- sc_out_cpu_filtered.rd <= '0'; -- TODO reads?
 				
 				assert sc_out_arb_filtered.wr /= '1';
 				-- sc_out_arb.wr <= '0'; -- not needed
