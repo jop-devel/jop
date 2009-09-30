@@ -122,15 +122,6 @@ port (
 );
 end component;
 
-component crt_pll
-	PORT
-	(
-		areset		: IN STD_LOGIC  := '0';
-		inclk0		: IN STD_LOGIC  := '0';
-		c0		: OUT STD_LOGIC ;
-		locked		: OUT STD_LOGIC 
-	);
-end component;
 
 component arbiter is
 generic(
@@ -145,35 +136,11 @@ port (
 );
 end component;
 
-component vga_fb is
-generic (sh_mem_start_address :integer := 16#78500#;
-			sh_mem_end_address :integer := 16#7d000#); 
-  port ( 
-    reset :in std_logic;
-    clk :in std_logic;
-    pixel_clk :in std_logic;
-    VGA_HS :out std_logic;
-    VGA_VS :out std_logic;
-    VGA_BLANK_N :out std_logic;
-    VGA_SYNC_N :out std_logic;
-    VGA_CLOCK :out std_logic;
-    VGA_R :out std_logic_vector(9 downto 0);
-    VGA_G :out std_logic_vector(9 downto 0);
-    VGA_B :out std_logic_vector(9 downto 0);
-	
-	--simpcon  master interface
-	address		: out std_logic_vector(22 downto 0);
-	wr_data		: out std_logic_vector(31 downto 0);
-	rd, wr		: out std_logic;
-	rd_data		: in std_logic_vector(31 downto 0);
-	rdy_cnt		: in unsigned(1 downto 0)
-    );
-end component;
 
 --
 --	Signals
 --
-	constant cpu_cnt :integer := 2; -- 1 cpu, one vga 
+	constant cpu_cnt :integer := 2;
 	signal reset,nxt_reset,reset_off,nxt_off :std_logic;
 	signal clk_int			: std_logic;
 
@@ -222,38 +189,11 @@ end component;
 -- remove the comment for RAM access counting
 -- signal ram_count		: std_logic;
 
-	signal locked :std_logic;
-	signal pixel_clk :std_logic;
-	
---signals for kbd ps2 controller
-	signal kbd_clk_in,kbd_clk_out,kbd_data_in,kbd_data_out,kbd_data_oe,kbd_clk_oe :std_logic;
-	
--- signals for mouse ps2 controller
-    signal ms_clk_in, ms_clk_out, ms_data_in, ms_data_out, ms_data_oe, ms_clk_oe :std_logic;
 
 begin
 
 reset <= '0';
 
---mux for the tri-state ports of ps2 controller pins
-tri_state_mux_kbd : process(kbd_clk_out,kbd_data_out,kbd_data_oe,kbd_clk_oe,PS2_KBCLK,PS2_KBDAT)
-begin
-	
-	if(kbd_data_oe = '1') then
-		PS2_KBDAT <= kbd_data_out;
-	else
-      PS2_KBDAT <= 'Z';
-    end if;
-      kbd_data_in <= PS2_KBDAT;
-      
-    if(kbd_clk_oe = '1') then
-      PS2_KBCLK <= kbd_clk_out;
-    else
-      PS2_KBCLK <= 'Z';
-    end if;
-      kbd_clk_in <= PS2_KBCLK;
-
-end process;
 
 --ser_ncts <= '0';
 --
@@ -285,15 +225,6 @@ end process;
 		c0	 => clk_int
 	);
 	
-my_crt_pll : crt_pll
-	PORT map
-	(
-		areset		=> reset,
-		inclk0		=> clk2,
-		c0		=> pixel_clk,
-		locked		=> locked 
-	);
-
 
 	wd <= wd_out;
 
@@ -321,32 +252,6 @@ my_crt_pll : crt_pll
 			mem_in => sc_mem_in
 		);
 
-	cmp_vga :entity work.vga_fb
-		generic map (sh_mem_start_address => 16#78500#,
-			sh_mem_end_address => 16#7d000#) 
-		port map( 
-			reset => reset,
-			clk => clk_int,
-			pixel_clk => pixel_clk,
-			VGA_HS => oVGA_HS,
-			VGA_VS  => oVGA_VS,
-			VGA_BLANK_N => oVGA_BLANK_N,
-			VGA_SYNC_N => oVGA_SYNC_N,
-			VGA_CLOCK => oVGA_CLOCK,
-			VGA_R => oVGA_R,
-			VGA_G => oVGA_G,
-			VGA_B => oVGA_B,
-	
-			--simpcon  master interface
-			address	=> sc_arb_out(0).address,
-			wr_data	=> sc_arb_out(0).wr_data,
-			rd => sc_arb_out(0).rd,
-			wr => sc_arb_out(0).wr,
-			rd_data => sc_arb_in(0).rd_data,
-			rdy_cnt => sc_arb_in(0).rdy_cnt
-    );
-    
-    
 	cmp_io: entity work.scio 
 		port map (clk_int, int_res,
 			sc_io_out, sc_io_in,
@@ -360,19 +265,7 @@ my_crt_pll : crt_pll
 			l => open,
 			r => open,
 			t => open,
-			b => open,
-			
-			--ps2 kbd pins	
-			kbd_clk_in => kbd_clk_in,
-			kbd_clk_out => kbd_clk_out,
-			kbd_data_in => kbd_data_in,
-			kbd_data_out => kbd_data_out,
-			kbd_data_oe => kbd_data_oe,
-			kbd_clk_oe => kbd_clk_oe,
-			
-			--ps2 mouse pins
-			ps2_clk   => PS2_MSCLK,
-			ps2_data  => PS2_MSDAT
+			b => open
 			
 			-- remove the comment for RAM access counting
 			-- ram_cnt => ram_count
