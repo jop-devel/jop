@@ -715,9 +715,9 @@ sys_exc:
 
 			// inform tm module 
 			
-			ldi tm_aborted
 			ldi tm_magic
 			stmwa				// store memory address
+			ldi tm_aborted
 			stmwd				// store memory data
 			wait
 			wait
