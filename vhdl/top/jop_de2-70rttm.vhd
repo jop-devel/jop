@@ -25,7 +25,7 @@
 --	top level for a 512x32 SRMA board (e.g. Altera DE2 board)
 --
 --	2009-03-31	adapted from jop_256x16.vhd
---
+--	2009-09-30	adapted for RTTM
 --
 
 
@@ -47,7 +47,8 @@ generic (
     rom_cnt		: integer := 15;	-- clock cycles for external rom for 100 MHz
 	jpc_width	: integer := 12;	-- address bits of java bytecode pc = cache size
 	block_bits	: integer := 4;		-- 2*block_bits is number of cache blocks
-	spm_width	: integer := 0		-- size of scratchpad RAM (in number of address bits for 32-bit words)
+	spm_width	: integer := 8;		-- size of scratchpad RAM (in number of address bits for 32-bit words)
+	cpu_cnt		: integer := 8		-- number of cpus
 );
 
 port (
@@ -111,6 +112,14 @@ end jop;
 architecture rtl of jop is
 
 --
+--	constants:
+--
+
+constant tm_addr_width		: integer := 19;	-- address bits of cachable memory
+constant tm_way_bits		: integer := 5;		-- 2**way_bits is number of entries
+
+
+--
 --	components:
 --
 
@@ -122,25 +131,9 @@ port (
 );
 end component;
 
-
-component arbiter is
-generic(
-			addr_bits : integer;
-			cpu_cnt	: integer);		-- number of masters for the arbiter
-port (
-			clk, reset	: in std_logic;			
-			arb_out			: in arb_out_type(0 to cpu_cnt-1);
-			arb_in			: out arb_in_type(0 to cpu_cnt-1);
-			mem_out			: out sc_out_type;
-			mem_in			: in sc_in_type
-);
-end component;
-
-
 --
 --	Signals
 --
-	constant cpu_cnt :integer := 2;
 	signal reset,nxt_reset,reset_off,nxt_off :std_logic;
 	signal clk_int			: std_logic;
 
@@ -153,16 +146,21 @@ end component;
 --
 --	jopcpu connections
 --
+	signal sc_out_tm		: arb_out_type(0 to cpu_cnt-1);
+	signal sc_in_tm			: arb_in_type(0 to cpu_cnt-1);
+	
 	signal sc_arb_out		: arb_out_type(0 to cpu_cnt-1);
 	signal sc_arb_in		: arb_in_type(0 to cpu_cnt-1);
 
 	signal sc_mem_out		: sc_out_type;
 	signal sc_mem_in		: sc_in_type;
-	signal sc_io_out		: sc_out_type;
-	signal sc_io_in			: sc_in_type;
-	signal irq_in			: irq_bcf_type;
-	signal irq_out			: irq_ack_type;
-	signal exc_req			: exception_type;
+	
+	
+	signal sc_io_out		: sc_out_array_type(0 to cpu_cnt-1);
+	signal sc_io_in			: sc_in_array_type(0 to cpu_cnt-1);
+	signal irq_in			  : irq_in_array_type(0 to cpu_cnt-1);
+	signal irq_out			: irq_out_array_type(0 to cpu_cnt-1);
+	signal exc_req			: exception_array_type(0 to cpu_cnt-1);
 
 --
 --	IO interface
@@ -185,14 +183,28 @@ end component;
 -- not available at this board:
 	signal ser_ncts			: std_logic;
 	signal ser_nrts			: std_logic;
+
+-- cmpsync
+
+	signal sync_in_array	: sync_in_array_type(0 to cpu_cnt-1);
+	signal sync_out_array	: sync_out_array_type(0 to cpu_cnt-1);
 	
 -- remove the comment for RAM access counting
 -- signal ram_count		: std_logic;
 
+--
+--	TM
+--
+	
+	signal exc_tm_rollback	: std_logic_vector(0 to cpu_cnt-1);
+	signal tm_broadcast		: tm_broadcast_type;
+	
+	signal commit_try		: std_logic_vector(0 to cpu_cnt-1);
+	signal commit_allow		: std_logic_vector(0 to cpu_cnt-1);
 
 begin
 
-reset <= '0';
+reset <= '0'; -- TODO
 
 
 --ser_ncts <= '0';
@@ -228,53 +240,73 @@ end process;
 
 	wd <= wd_out;
 
-	cpm_cpu: entity work.jopcpu
+	gen_cpu: for i in 0 to cpu_cnt-1 generate
+		cmp_cpu: entity work.jopcpu
 		generic map(
 			jpc_width => jpc_width,
 			block_bits => block_bits,
 			spm_width => spm_width
 		)
 		port map(clk_int, int_res,
-			sc_arb_out(1), sc_arb_in(1),
-			sc_io_out, sc_io_in,
-			irq_in, irq_out, exc_req);
+				sc_out_tm(i), sc_in_tm(i),
+				sc_io_out(i), sc_io_in(i), irq_in(i), 
+				irq_out(i), exc_req(i), exc_tm_rollback(i));
+	end generate;
+	
+	gen_tm: for i in 0 to cpu_cnt-1 generate
+		cmp_tm: entity work.tmif
+			generic map (
+				addr_width => tm_addr_width,
+				way_bits => tm_way_bits
+			)	
+			port map (
+				clk	=> clk_int,
+				reset => int_res,
 			
-	cmp_arbiter : entity work.arbiter
+				commit_out_try => commit_try(i),
+				commit_in_allow => commit_allow(i),
+			
+				broadcast => tm_broadcast,
+			
+				sc_out_cpu => sc_out_tm(i),  
+				sc_in_cpu => sc_in_tm(i), 
+			
+				sc_out_arb => sc_arb_out(i),
+				sc_in_arb => sc_arb_in(i),
+			
+				exc_tm_rollback => exc_tm_rollback(i)
+				);
+	end generate;
+
+	cmp_coordinator: entity work.tm_coordinator(rtl)
+	generic map (
+		cpu_cnt => cpu_cnt
+		)
+	port map (
+		clk => clk_int,
+		reset => int_res,
+		commit_try => commit_try,
+		commit_allow => commit_allow
+		);
+
+cmp_arbiter : entity work.arbiter
 		generic map(
 			addr_bits => SC_ADDR_SIZE,
-			cpu_cnt	=> 2)		-- number of masters for the arbiter
+			cpu_cnt	=> cpu_cnt)
 		port map(
 			clk => clk_int,
-			reset => reset,			
+			reset => int_res, -- TODO			
 			arb_out => sc_arb_out,
 			arb_in => sc_arb_in,
 			mem_out => sc_mem_out,
-			mem_in => sc_mem_in
+			mem_in => sc_mem_in,
+			tm_broadcast => tm_broadcast
 		);
 
-	cmp_io: entity work.scio 
-		port map (clk_int, int_res,
-			sc_io_out, sc_io_in,
-			irq_in, irq_out, exc_req,
-
-			txd => ser_txd,
-			rxd => ser_rxd,
-			ncts => oUART_CTS,
-			nrts => iUART_RTS,
-			wd => wd_out,
-			l => open,
-			r => open,
-			t => open,
-			b => open
-			
-			-- remove the comment for RAM access counting
-			-- ram_cnt => ram_count
-		);
-		
 	cmp_scm: entity work.sc_mem_if
 		generic map (
 			ram_ws => ram_cnt-1,
-			addr_bits => 19			-- edit
+			addr_bits => tm_addr_width			-- edit
 		)
 		port map (clk_int, int_res,
 			sc_mem_out, sc_mem_in,
@@ -287,6 +319,74 @@ end process;
 			ram_noe => ram_noe,
 			ram_nwe => ram_nwe
 		);
+
+	-- syncronization of processors
+	cmp_sync: entity work.cmpsync generic map (
+		cpu_cnt => cpu_cnt)
+		port map
+		(
+			clk => clk_int,
+			reset => int_res,
+			sync_in_array => sync_in_array,
+			sync_out_array => sync_out_array
+		);
+
+	-- io for processor 0
+	cmp_io: entity work.scio generic map (
+			cpu_id => 0,
+			cpu_cnt => cpu_cnt
+		) 
+		port map (clk_int, int_res,
+			sc_io_out(0), sc_io_in(0),
+			irq_in(0), irq_out(0), exc_req(0),
+
+			sync_out => sync_out_array(0),
+			sync_in => sync_in_array(0),
+
+			txd => ser_txd,
+			rxd => ser_rxd,
+			ncts => oUART_CTS,
+			nrts => iUART_RTS,
+			wd => wd_out,
+			l => open,
+			r => open,
+			t => open,
+			b => open
+			-- remove the comment for RAM access counting
+			-- ram_cnt => ram_count			
+		);
+	
+	-- io for processors with only sc_sys
+	gen_io: for i in 1 to cpu_cnt-1 generate
+		cmp_io2: entity work.sc_sys generic map (
+			addr_bits => 4,
+			clk_freq => clk_freq,
+			cpu_id => i,
+			cpu_cnt => cpu_cnt
+		)
+		port map(
+			clk => clk_int,
+			reset => int_res,
+			address => sc_io_out(i).address(3 downto 0),
+			wr_data => sc_io_out(i).wr_data,
+			rd => sc_io_out(i).rd,
+			wr => sc_io_out(i).wr,
+			rd_data => sc_io_in(i).rd_data,
+			rdy_cnt => sc_io_in(i).rdy_cnt,
+			
+			irq_in => irq_in(i),
+			irq_out => irq_out(i),
+			exc_req => exc_req(i),
+			
+			sync_out => sync_out_array(i),
+			sync_in => sync_in_array(i),
+			wd => open
+			-- remove the comment for RAM access counting
+			-- ram_cnt => ram_count
+		);	
+
+	end generate;
+	
 
 	process(ram_dout_en, ram_dout)
 	begin

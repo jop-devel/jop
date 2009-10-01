@@ -62,7 +62,6 @@ set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
 set_global_assignment -name PARTITION_COLOR 2147039 -section_id Top
 set_global_assignment -name LL_ROOT_REGION ON -section_id "Root Region"
 set_global_assignment -name LL_MEMBER_STATE LOCKED -section_id "Root Region"
-set_global_assignment -name MISC_FILE "H:/jop/jop/quartus/cyc512x32/jop.dpf"
 set_location_assignment PIN_D27 -to oENET_CLK
 set_location_assignment PIN_E16 -to iCLK_28
 set_location_assignment PIN_D16 -to clk2
@@ -599,15 +598,14 @@ set_location_assignment PIN_AD15 -to clk
 set_location_assignment PIN_AJ6 -to wd
 set_location_assignment PIN_D21 -to ser_rxd
 set_location_assignment PIN_E21 -to ser_txd
-set_global_assignment -name MISC_FILE "H:/vga_jop/jop/quartus/de2-70vga/jop.dpf"
-set_global_assignment -name MISC_FILE "H:/jop_repos/jvm/jop/quartus/de2-70vga/jop.dpf"
-set_global_assignment -name MISC_FILE "D:/Uni/jop/git/jop/quartus/de2-70vga/jop.dpf"
+
+set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_50.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/vga_fb/altera_fifo.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_arbiter_fixedpr.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_arbiter_tdma.vhd
 set_global_assignment -name VHDL_FILE "../../vhdl/top/jop_de2-70rttm.vhd"
 set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_arbiter_pack.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_50.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/scio_min.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/scio/cmpsync.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/memory/sc_sram32.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/jop_types.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_pack.vhd
@@ -630,4 +628,10 @@ set_global_assignment -name VHDL_FILE ../../vhdl/core/extension.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/cache.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/shift.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/stack.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/rttm/tm_pack.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/rttm/tm_internal_pack.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/rttm/tag.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/rttm/tm.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/rttm/tmif.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/rttm/tm_coordinator.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/jopcpu.vhd
