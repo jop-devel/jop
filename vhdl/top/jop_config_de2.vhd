@@ -30,9 +30,9 @@ use ieee.std_logic_1164.all;
 
 package jop_config is
 
-	-- constants for 50MHz input clock
-	constant clk_freq : integer := 90000000;
-	constant pll_mult : natural := 9;
+	-- constants for 50 MHz input clock
+	constant clk_freq : integer := 100000000;
+	constant pll_mult : natural := 10;
 	constant pll_div : natural := 5;
 
 	-- constant for on-chip memory
