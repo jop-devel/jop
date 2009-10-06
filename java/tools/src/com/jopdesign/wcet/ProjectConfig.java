@@ -32,7 +32,7 @@ public class ProjectConfig {
 		new StringOption("projectname","name of the 'project', used when generating reports",true);
 	
 	public static final StringOption JAVA_PROCESSOR =
-		new StringOption("java-processor","which java processor to use (jamuth, JOP)","JOP");
+		new StringOption("java-processor","which java processor to use (jamuth, JOP, alloc)","JOP");
 	
 	public static final StringOption APP_CLASS_NAME = 
 		new StringOption("app-class",
