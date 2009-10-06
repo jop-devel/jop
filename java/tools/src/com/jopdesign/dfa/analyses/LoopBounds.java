@@ -291,6 +291,7 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 
 	private Map<InstructionHandle, ContextMap<List<HashedString>, Pair<ValueMapping>>> bounds = new HashMap<InstructionHandle, ContextMap<List<HashedString>, Pair<ValueMapping>>>();
 	private Map<InstructionHandle, Integer> scopes = new HashMap<InstructionHandle, Integer>();
+	private Map<InstructionHandle, ContextMap<List<HashedString>, Interval>> sizes = new HashMap<InstructionHandle, ContextMap<List<HashedString>, Interval>>();
 	
 	public void initialize(String sig, Context context) {
 	}
@@ -1067,10 +1068,11 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 		}
 		break;
 
-		case Constants.NEW:
+		case Constants.NEW: {
 			result = in;
 			retval.put(context.callString, result);
-			break;
+		}
+		break;
 			
 		case Constants.NEWARRAY: {
 			NEWARRAY instr = (NEWARRAY)instruction;
@@ -1086,6 +1088,8 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 				}
 				if (l.stackLoc == context.stackPtr-1) {
 					result.put(new Location(name+".length"), in.get(l));
+					
+ 					recordSize(stmt, context, in.get(l).assigned);
 				}
 			}
 		}
@@ -1105,6 +1109,8 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 				}
 				if (l.stackLoc == context.stackPtr-1) {
 					result.put(new Location(name+".length"), in.get(l));
+
+ 					recordSize(stmt, context, in.get(l).assigned);
 				}
 			}
 		}
@@ -1269,7 +1275,7 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 		context.stackPtr += instruction.produceStack(context.constPool) - instruction.consumeStack(context.constPool);
 		return retval;
 	}
-	
+
 	private void doIf(InstructionHandle stmt, FlowEdge edge, Context context,
 			Map<Location, ValueMapping> in,	Map<Location, ValueMapping> result) {
 		
@@ -1736,6 +1742,20 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 				}
 			}			
 		}
+	}
+	
+	private void recordSize(InstructionHandle stmt, Context context, Interval size) {
+		ContextMap<List<HashedString>, Interval> sizeMap;
+		sizeMap = sizes.get(stmt);
+		if (sizeMap == null) {
+			sizeMap = new ContextMap<List<HashedString>, Interval>(context, new HashMap<List<HashedString>, Interval>());
+		}
+		sizeMap.put(context.callString, size);
+		sizes.put(stmt, sizeMap);
+	}
+	
+	public Map<InstructionHandle, ContextMap<List<HashedString>, Interval>> getArraySizes() {
+		return sizes;
 	}
 
 }
