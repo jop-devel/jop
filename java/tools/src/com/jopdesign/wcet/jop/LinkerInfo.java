@@ -20,22 +20,23 @@
 package com.jopdesign.wcet.jop;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.Map.Entry;
 
 import com.jopdesign.build.ClassInfo;
 import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.ProjectConfig;
 
-/** 
+/**
  * Build map for data addresses, provided by the linker
- * 
- * @author Benedikt Huber (benedikt.huber@gmail.com) 
+ *
+ * @author Benedikt Huber (benedikt.huber@gmail.com)
  *
  */
 public class LinkerInfo {
@@ -43,14 +44,16 @@ public class LinkerInfo {
 		private ClassInfo klass;
 		private int clinfoAddress;
 		private int constsAddress;
-		private Map <String,Integer> staticAddresses;
+		private Map <String,Integer> staticAddresses = new HashMap<String,Integer>();;
+		private Map <String,Integer> codeAddresses = new HashMap<String,Integer>();
+		private Map <String,Integer> mtabAddresses = new HashMap<String,Integer>();
 		private Map <Integer,Integer> constMap = new TreeMap<Integer,Integer>();
-		
-		public LinkInfo(ClassInfo ci, int clinfoAddress, int constsAddress) {
+		private int superAddress;
+
+		public LinkInfo(ClassInfo ci, int mtabAddress, int constsAddress) {
 			this.klass = ci;
-			this.clinfoAddress = clinfoAddress;
+			this.clinfoAddress = mtabAddress - 5;
 			this.constsAddress = constsAddress;
-			this.staticAddresses = new HashMap<String,Integer>();
 		}
 		public ClassInfo getTargetClass() {
 			return klass;
@@ -67,20 +70,63 @@ public class LinkerInfo {
 		public int getConstTableAddress() {
 			return constsAddress;
 		}
-		public void setStaticFieldAddress(String name, int address) {
-			if(staticAddresses.containsKey(name)) {
-				throw new AssertionError("LinkerInfo.addStaticLinkInfo: Double entry for "+klass+"."+name);
-			}
-			staticAddresses.put(name, address);			
+		public int getSuperAddress() {
+			return superAddress;
 		}
+		private <K,V> void addAddress(String ctx, Map<K,V> amap, K key, V value) {
+			if(amap.containsKey(key)) {
+				throw new AssertionError("LinkerInfo.setAddress"+ctx+": Double entry for "+klass+"."+key);
+			}
+			amap.put(key, value);
+		}
+
+		private void setStaticFieldAddress(String name, int address) {
+			addAddress("StaticAddresses",staticAddresses,name,address);
+		}
+		private void setCodeAddress(String name, int address) {
+			addAddress("CodeAddresses",codeAddresses,name,address);
+		}
+
 		public int getStaticFieldAddress(String name) {
 			return staticAddresses.get(name);
 		}
+		public Integer getCodeAddress(String name) {
+			return codeAddresses.get(name);
+		}
+		public Integer getMTabAddress(String name) {
+			return mtabAddresses.get(name);
+		}
+
 		@Override
 		public String toString() {
-			return "LinkInfo@"+this.klass.clazz.getClassName()+".LinkInfo: CLINFO @ "+clinfoAddress+
-			       ", CONSTANTS @ "+constsAddress + ", " + staticAddresses.size() + " static fields";
+			return "LinkInfo "+this.klass.clazz.getClassName()+" "+clinfoAddress;
 		}
+
+		public void dump(PrintStream out) {
+			StringBuilder sb = new StringBuilder();
+			dump(sb);
+			out.println(sb);
+		}
+		public void dump(StringBuilder sb) {
+			sb.append("LinkInfo: "+this.klass.clazz.getClassName()+"\n");
+			sb.append("  classInfo @ "+this.clinfoAddress+"\n");
+			sb.append("  mtab @ "+this.getMTabAddress()+"\n");
+			sb.append("  cpool @ "+this.constsAddress+"\n");
+
+			sb.append("  Static Addresses"+"\n");
+			for(Entry<String, Integer> entry : staticAddresses.entrySet()) {
+				sb.append("    " + entry.getKey() + "  ==>  " + entry.getValue()+"\n");
+			}
+			sb.append("  Code Addresses"+"\n");
+			for(Entry<String, Integer> entry : codeAddresses.entrySet()) {
+				sb.append("    " + entry.getKey() + "  ==>  " + entry.getValue()+"\n");
+			}
+			sb.append("  MTab Addresses"+"\n");
+			for(Entry<String, Integer> entry : mtabAddresses.entrySet()) {
+				sb.append("    " + entry.getKey()+"  ==>  " + entry.getValue()+"\n");
+			}
+		}
+
 		public Integer getConstAddress(int constIndex) {
 			if(! constMap.containsKey(constIndex)) return null;
 			return(constsAddress + constMap.get(constIndex) + 1);
@@ -91,90 +137,112 @@ public class LinkerInfo {
 				int keyIx = Integer.parseInt(tks[1]);
 				int valIx = Integer.parseInt(tks[2]);
 				constMap.put(keyIx,valIx);
-			} else {
+			} else if(key.equals("-super")) {
+				this.superAddress = Integer.parseInt(tks[1]);
+		    } else if (key.equals("-mtab")) {
+				String nameParts[] = ProjectConfig.splitClassName(tks[1]);
+				int valIx = Integer.parseInt(tks[2]);
+				addAddress("MTabAddresses",mtabAddresses,nameParts[1],valIx);
+		    } else {
 				throw new AssertionError("Bad format for class info: "+Arrays.toString(tks));
 			}
 		}
 	}
 	private Project project;
 	private Map<String, LinkInfo> classLinkInfo;
-	
-	public Map<String, LinkInfo>getClassLinkInfo() {
+
+	public Map<String, LinkInfo> getClassLinkInfo() {
 		return classLinkInfo;
 	}
 
 	public LinkerInfo(Project p) {
 		this.project = p;
 	}
-	
+	/** Load the linker info.
+	 * Currently, we support the following entries in the Link file:
+	 * <ul><li/>{@code static} fully-qualified-static-field-name address
+	 *     <li/>{@code bytecode} fully-qualified-method-name bytecode-start
+	 *     <li/>{@code class} class-name mtab-start cpool-start <br/>
+	 *       with subinfo
+	 *     <ul><li/> {@code -super} super-class-address
+	 *         <li/> {@code -mtab} method-name mtab-address
+	 *         <li/> {@code -constmap} constant-classfile-index constant-actual-index
+	 *     </ul>
+	 * </ul>
+	 * @throws IOException
+	 * @throws ClassNotFoundException
+	 */
 	public void loadLinkInfo() throws IOException, ClassNotFoundException {
-		classLinkInfo = new HashMap<String, LinkInfo>();
-		readClassLinkInfo(project.getProjectConfig().getClassLinkInfoFile());
-		readStaticLinkInfo(project.getProjectConfig().getStaticLinkInfoFile());
+		//File jopFile = project.getProjectConfig().getBinaryFile());
+
 //		for(LinkInfo li : classLinkInfo.values()) {
 //			System.out.println("  "+li);
 //		}
-	}
-
-	/** Read link info for classes
-	 *  Format: {@code class clinfoAddress constantsAddress} 
-	 * @throws IOException if an IOError occurs while reading the file
-	 * @throws ClassNotFoundException if a specified class could not be found */
-	private void readClassLinkInfo(File classLinkInfoFile) 
-			throws IOException, ClassNotFoundException {
-		BufferedReader br = new BufferedReader(new FileReader(classLinkInfoFile));		
+		classLinkInfo = new HashMap<String, LinkInfo>();
+		BufferedReader br = new BufferedReader(new FileReader(project.getProjectConfig().getLinkInfoFile()));
 		String l = br.readLine();
-		while(l != null) {
-			String tks[] = l.split("\\s+");
-			String classname = tks[0];
-			ClassInfo klass = project.getWcetAppInfo().getClassInfo(classname);
-			if(klass == null) throw new ClassNotFoundException(classname);
-			LinkInfo linkInfo =
-				new LinkInfo(klass,Integer.parseInt(tks[1]),Integer.parseInt(tks[2]));
-			classLinkInfo.put(classname, linkInfo);
-			while((l=br.readLine()) != null) {
-				l = l.trim();
-				if(! l.startsWith("-")) break;
-				linkInfo.parseInfo(l.split("\\s"));
+		try {
+			while(l != null) {
+				LinkInfo linkInfo;
+				String tks[] = l.split("\\s+");
+				if(tks[0].equals("static") || tks[0].equals("bytecode")) {
+					String nameParts[] = ProjectConfig.splitClassName(tks[1]);
+					linkInfo = getOrCreateLinkInfo(nameParts[0]);
+					String objectName = nameParts[1];
+					int address = Integer.parseInt(tks[2]);
+					if(tks[0].equals("bytecode")) {
+						linkInfo.setCodeAddress(objectName, address);
+					} else {
+						linkInfo.setStaticFieldAddress(objectName, address);
+					}
+				} else if(tks[0].equals("class")) {
+					String classname = tks[1];
+					linkInfo = getOrCreateLinkInfo(classname);
+					linkInfo.clinfoAddress = Integer.parseInt(tks[2]) - 5;
+					linkInfo.constsAddress = Integer.parseInt(tks[3]);
+				} else {
+					throw new IOException("Bad format in link info file: "+l);
+				}
+				while((l=br.readLine()) != null) {
+					l = l.trim();
+					if(! l.startsWith("-")) break;
+					linkInfo.parseInfo(l.split("\\s"));
+				}
 			}
+		} finally {
+			br.close();
 		}
-		br.close();
 	}
 
-	/** Read link info for static data
-	 *  Format: {@code constantName address}
-	 * @param staticLinkInfoFile
-	 * @return a map from classes to (name -> address) maps
-	 * @throws ClassNotFoundException 
-	 * @throws IOException 
-	 * @throws NumberFormatException 
-	 */
-	private void readStaticLinkInfo(File staticLinkInfoFile) throws NumberFormatException, IOException, ClassNotFoundException {
-		BufferedReader br = new BufferedReader(new FileReader(staticLinkInfoFile));		
-		String l;
-		while((l = br.readLine()) != null) {
-			
-			String tks[] = l.split("\\s+");
-			String nameParts[] = ProjectConfig.splitClassName(tks[0]);
-			ClassInfo cli = project.getWcetAppInfo().getClassInfo(nameParts[0]);
-			if(cli == null) throw new ClassNotFoundException(tks[0]);
-			String objectName = nameParts[1];
-			int address = Integer.parseInt(tks[1]);
-			LinkInfo linkInfo = getLinkInfo(cli);
-			if(linkInfo == null) throw new ClassNotFoundException("No link info for" + cli);
-			linkInfo.setStaticFieldAddress(objectName, address);
+	private LinkInfo getOrCreateLinkInfo(String classname) throws ClassNotFoundException {
+		ClassInfo klass = project.getWcetAppInfo().getClassInfo(classname);
+		if(klass == null) throw new ClassNotFoundException(classname);
+		LinkInfo linkInfo = classLinkInfo.get(classname);
+		if(linkInfo == null) {
+			linkInfo = new LinkInfo(klass, 0, 0);
+			classLinkInfo.put(classname,linkInfo);
 		}
-		br.close();
+		return linkInfo;
 	}
 
 	public LinkInfo getLinkInfo(ClassInfo cli) {
 		return classLinkInfo.get(cli.clazz.getClassName());
 	}
 
-	public Integer getStaticFieldAddress(String className, String fieldNameAndSig) {
-		LinkInfo info = classLinkInfo.get(className);
-		if(info == null) throw new AssertionError("No linker info for "+className);
-		return info.getStaticFieldAddress(fieldNameAndSig);
+	public Integer getStaticFieldAddress(String className, String fieldName) {
+		LinkInfo li;
+		try {
+			li = this.getOrCreateLinkInfo(className);
+		} catch (ClassNotFoundException e) {
+			return null;
+		}
+		return li.getStaticFieldAddress(fieldName);
 	}
-	
+
+	public void dump(PrintStream out) {
+		for(Entry<String, LinkInfo> linkInfo : project.getLinkerInfo().getClassLinkInfo().entrySet()) {
+			linkInfo.getValue().dump(System.out);
+		}
+	}
+
 }

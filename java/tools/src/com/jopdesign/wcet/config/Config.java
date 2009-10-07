@@ -37,7 +37,7 @@ import org.apache.log4j.Level;
 import org.apache.log4j.PropertyConfigurator;
 
 /** Configuration for WCET Analysis
- *  
+ *
  *  The configuration is a singleton, which is configured via
  *  properties, command line options and/or setters
  */
@@ -75,7 +75,7 @@ public class Config {
 	}
 	/*
 	 * Options
-	 * ~~~~~~~ 
+	 * ~~~~~~~
 	 */
 	private Map<String,Option<? extends Object>> optionSet;
 	private List<Option<? extends Object>> optionList;
@@ -107,9 +107,9 @@ public class Config {
 	 * The underlying Properties object
 	 */
 	protected Properties props;
-	
-	public void setProperty(String key, String val) { 
-		props.setProperty(key, val); 
+
+	public void setProperty(String key, String val) {
+		props.setProperty(key, val);
 	}
 	Properties getProperties() {
 		return this.props;
@@ -120,12 +120,12 @@ public class Config {
 	 * Logging configuration
 	 */
 	LoggerConfig loggerConfig;
-	
-	
+
+
 	/**
-	 * Create a new configuration, using @{link System.getProperties} 
+	 * Create a new configuration, using @{link System.getProperties}
 	 */
-	protected Config() { 
+	protected Config() {
 		theConfig = this; /* avoid potential recursive loop */
 		props = new Properties();
 		for(Entry<?,?> e : System.getProperties().entrySet()) {
@@ -136,12 +136,12 @@ public class Config {
 		optionList = new LinkedList<Option<? extends Object>>();
 		optionSet  = new Hashtable<String, Option<? extends Object>>();
 		addOptions(standardOptions);
-	}		
-	
+	}
+
 	public <T> boolean hasOption(Option<T> option) {
 		return (getOption(option) != null);
 	}
-	
+
 	private <T> T tryGetOption(Option<T> option) {
 		String val = this.props.getProperty(option.getKey());
 		if(val == null) {
@@ -149,7 +149,7 @@ public class Config {
 			return null;
 		} else {
 			return option.parse(val);
-		}		
+		}
 	}
 
 	public <T> T getOptionWithDefault(Option<T> option, T def) {
@@ -158,32 +158,32 @@ public class Config {
 			return def;
 		} else {
 			return option.parse(val);
-		}		
+		}
 	}
-	
+
 	public <T> T getOption(Option<T> option) throws BadConfigurationError {
 		T opt = tryGetOption(option);
 		if(opt == null && ! option.isOptional()) throw new BadConfigurationError("Missing option: "+option.getKey());
 		return opt;
 	}
-	
+
 	public<T> void checkPresent(Option<T> option) throws BadConfigurationException {
 		if(getOption(option) == null) {
 			throw new BadConfigurationException("Missing option: "+option);
 		}
 	}
-	
+
 	public<T> void setOption(Option<T> option, T value) {
 		this.props.setProperty(option.getKey(), value.toString());
 	}
 
 	/**
 	 * Initialize the configuration.
-	 * After this method has been executed, the configuration is available via 
+	 * After this method has been executed, the configuration is available via
 	 * {@code instance()}
 	 * @param configURL The URL to initialize the project from
-	 * @throws BadConfigurationException 
-	 * @throws IOException 
+	 * @throws BadConfigurationException
+	 * @throws IOException
 	 */
 	public static void load(String configURL) throws BadConfigurationException {
 		if(configURL != null) instance().loadConfig(configURL);
@@ -191,19 +191,19 @@ public class Config {
 	}
 	public static String[] load(String configURL, String[] argv) throws BadConfigurationException {
 		Config c = instance();
-		if(configURL != null) c.loadConfig(configURL);		
+		if(configURL != null) c.loadConfig(configURL);
 		String[] argvrest = c.consumeOptions(argv);
 		PropertyConfigurator.configure(c.props);
 		return argvrest;
 	}
-		
+
 	/** Load a configuration file
 	 * @throws BadConfigurationException if an error occurs while reading the configuration file
 	 */
 	public void loadConfig(String configURL) throws BadConfigurationException  {
-		if(configURL == null) 
+		if(configURL == null)
 			throw new BadConfigurationException("No URL to configuration file supplied (configURL == null)");
-		URL file;
+		URL file = null;
 		try {
 			file = new URL(configURL);
 	        InputStream fileStream = file.openStream();
@@ -212,20 +212,20 @@ public class Config {
 		} catch (MalformedURLException e) {
 			throw new BadConfigurationException("configFile: Malformed URL",e);
 		} catch (IOException e) {
-			throw new BadConfigurationException("IO Error while reading config file",e);
+			throw new BadConfigurationException("configFile: IO Error: "+e.getMessage());
 		}
 	}
 	/**
 	 * load a configuration
 	 * @param propStream an open InputStream serving the properties
-	 * @throws IOException 
+	 * @throws IOException
 	 */
 	public void loadConfig(InputStream propStream) throws IOException {
 		Properties p = new Properties();
 		p.load(propStream);
 		props.putAll(p);
 	}
-	
+
 	public void checkOptions() throws BadConfigurationException {
 		for(Option<?> o : optionList) {
 			try {
@@ -253,7 +253,7 @@ public class Config {
 		}
 		return opts;
 	}
-	
+
 	/**
 	 * Dump configuration for debugging purposes
 	 * @return
@@ -266,10 +266,10 @@ public class Config {
 		}
 		return sb.toString();
 	}
-	
+
 	/**
 	 * Consume all command line options and turn them into properties.<br/>
-	 * 
+	 *
 	 * <p>The arguments are processed as follows: If an argument is of the form
 	 * "-option" or "--option", it is considered to be an option.
 	 * If an argument is an option, the next argument is considered to be the parameter,
@@ -279,14 +279,14 @@ public class Config {
 	 * @param argv The argument list
 	 * @param props The properties to update
 	 * @return An array of unconsumed arguments
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	public String[] consumeOptions(String[] argv) throws BadConfigurationException {
 		int i = 0;
 		Vector<String> rest = new Vector<String>();
-		while(i < argv.length && argv[i].startsWith("-") && 
+		while(i < argv.length && argv[i].startsWith("-") &&
 			  ! (argv[i].equals("-") || argv[i].equals("--"))) {
-			String key; 
+			String key;
 			if(argv[i].charAt(1) == '-') key = argv[i].substring(2);
 			else key = argv[i].substring(1);
 			if(null != getOptionSpec(key)) {
@@ -321,7 +321,7 @@ public class Config {
 	 * non existing
 	 * @param dir the path to the directory
 	 * @param createIfNonExist whether the directory should be created, if it doesn't exist yet
-	 * @throws IOException 
+	 * @throws IOException
 	 */
 	public static void checkDir(File outDir, boolean createIfNonExist) throws IOException {
 		if(outDir.exists()) {
@@ -332,6 +332,6 @@ public class Config {
 			outDir.mkdirs();
 		} else {
 			throw new IOException("Directory does not exist: "+outDir);
-		}		
+		}
 	}
 }

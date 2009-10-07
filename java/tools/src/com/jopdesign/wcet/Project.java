@@ -96,10 +96,10 @@ public class Project {
 				mg.removeNOPs();
 				m.updateMethodFromGen();
 			}
-		}		
+		}
 	}
 	/**
-	 * Set {@link MethodGen} in all reachable classes 
+	 * Set {@link MethodGen} in all reachable classes
 	 * // FIXME: THIS SHOULD NOT BE NECCESSARY
 	 *    REMOVEME when not needed anymore
 	 */
@@ -125,8 +125,8 @@ public class Project {
 
 	public static final Logger logger = Logger.getLogger(Project.class);
 	private Logger topLevelLogger = Logger.getLogger(Project.class); /* special logger */
-	public void setTopLevelLooger(Logger tlLogger) {
-		this.topLevelLogger = tlLogger;		
+	public void setTopLevelLogger(Logger tlLogger) {
+		this.topLevelLogger = tlLogger;
 	}
 
 	private ProjectConfig projectConfig;
@@ -140,7 +140,7 @@ public class Project {
 
 	private WcetAppInfo wcetAppInfo;
 	private CallGraph callGraph;
-		
+
 	private Map<ClassInfo, SortedMap<Integer, LoopBound>> annotationMap;
 
 	private LoopBounds dfaLoopBounds;
@@ -173,7 +173,7 @@ public class Project {
 			this.resultRecord = new File(config.getConfigManager().getOption(ProjectConfig.RESULT_FILE));
 			if(! projectConfig.appendResults()) {
 				recordMetric("problem",this.getProjectName());
-				recordMetric("date",new Date()); 
+				recordMetric("date",new Date());
 			}
 		}
 		if(projectConfig.getProcessorName().equals("jamuth")) {
@@ -194,9 +194,9 @@ public class Project {
 	}
 
 	public String getTargetName() {
-		return MiscUtils.sanitizeFileName(projectConfig.getAppClassName()+"_"+projectConfig.getTargetMethodName());		
+		return MiscUtils.sanitizeFileName(projectConfig.getAppClassName()+"_"+projectConfig.getTargetMethodName());
 	}
-		
+
 	public File getSourceFile(MethodInfo method) throws FileNotFoundException {
 		return getSourceFile(method.getCli());
 	}
@@ -206,7 +206,7 @@ public class Project {
 			String classname = ci.clazz.getClassName();
 			classname = classname.substring(classname.lastIndexOf(".")+1);
 			File classFile = new File(classDir, classname + ".class");
-			if(classFile.exists()) return classFile;	
+			if(classFile.exists()) return classFile;
 		}
 		for(File classDir : dirs) {
 			File classFile = new File(classDir, ci.clazz.getClassName()+".class");
@@ -218,7 +218,7 @@ public class Project {
 		List<File> dirs = getSearchDirs(ci, projectConfig.getSourcePath());
 		for(File sourceDir : dirs) {
 			File sourceFile = new File(sourceDir, ci.clazz.getSourceFileName());
-			if(sourceFile.exists()) return sourceFile;	
+			if(sourceFile.exists()) return sourceFile;
 		}
 		throw new FileNotFoundException("Source for "+ci.clazz.getClassName()+" not found in "+dirs);
 	}
@@ -254,7 +254,7 @@ public class Project {
 	public boolean doWriteReport() {
 		return projectConfig.getReportDir() != null;
 	}
-	
+
 	public AppInfo loadApp() throws IOException {
 		AppInfo appInfo;
 		if(projectConfig.doDataflowAnalysis()) {
@@ -267,10 +267,10 @@ public class Project {
 						  projectConfig.getSourcePath(),
 						  projectConfig.getAppClassName());
 		for(String klass : processor.getJVMClasses()) {
-			appInfo.addClass(klass);			
+			appInfo.addClass(klass);
 		}
 		try {
-			if(projectConfig.doDataflowAnalysis()) {			
+			if(projectConfig.doDataflowAnalysis()) {
 					appInfo.load();
 				appInfo.iterate(new RemoveNops(appInfo));
 			} else {
@@ -284,7 +284,7 @@ public class Project {
 		}
 		return appInfo;
 	}
-	
+
 	public void load() throws Exception  {
 		AppInfo appInfo = loadApp();
 		wcetAppInfo = new WcetAppInfo(this,appInfo,processor);
@@ -293,14 +293,14 @@ public class Project {
 		sourceAnnotations = new SourceAnnotations(this);
 		linkerInfo = new LinkerInfo(this);
 		linkerInfo.loadLinkInfo();
-		
+
 		/* run dataflow analysis */
 		if(projectConfig.doDataflowAnalysis()) {
 			topLevelLogger.info("Starting DFA analysis");
 			dataflowAnalysis();
 			topLevelLogger.info("DFA analysis finished");
 		}
-		
+
 		/* build callgraph */
 		callGraph = CallGraph.buildCallGraph(wcetAppInfo,
 											 projectConfig.getTargetClass(),
@@ -310,7 +310,7 @@ public class Project {
 	public WcetAppInfo getWcetAppInfo() {
 		return this.wcetAppInfo;
 	}
-	
+
 	/**
 	 * Get flow fact annotations for a class, lazily.
 	 * @param cli
@@ -324,12 +324,12 @@ public class Project {
 			annots = sourceAnnotations.calculateWCA(cli);
 			annotationMap.put(cli, annots);
 		}
-		return annots;		
+		return annots;
 	}
-	
+
 	/**
 	 * Get link info for a given class
-	 * @param cli 
+	 * @param cli
 	 * @return the linker info
 	 */
 	public LinkInfo getLinkInfo(ClassInfo cli) {
@@ -339,25 +339,25 @@ public class Project {
 	public LinkerInfo getLinkerInfo() {
 		return this.linkerInfo;
 	}
-	
-	
+
+
 	/* Data flow analysis
 	 * ------------------
 	 */
 	public boolean doDataflowAnalysis() {
 		return projectConfig.doDataflowAnalysis();
 	}
-	
+
 	public com.jopdesign.dfa.framework.DFAAppInfo getDfaProgram() {
 		return (com.jopdesign.dfa.framework.DFAAppInfo) this.wcetAppInfo.getAppInfo();
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	public void dataflowAnalysis() {
 		com.jopdesign.dfa.framework.DFAAppInfo program = getDfaProgram();
 		topLevelLogger.info("Receiver analysis");
 		ReceiverTypes recTys = new ReceiverTypes();
-		Map<InstructionHandle, ContextMap<String, String>> receiverResults = 
+		Map<InstructionHandle, ContextMap<String, String>> receiverResults =
 			program.runAnalysis(recTys);
 		program.setReceivers(receiverResults);
 		wcetAppInfo.setReceivers(receiverResults);
@@ -383,7 +383,7 @@ public class Project {
 	public int getSizeInWords(MethodInfo mi) {
 		return this.getFlowGraph(mi).getNumberOfWords();
 	}
-	
+
 	public void writeReport() throws Exception {
 		this.results.addStat( "classpath", projectConfig.getClassPath());
 		this.results.addStat( "application", projectConfig.getAppClassName());
@@ -391,7 +391,7 @@ public class Project {
 		this.results.addStat( "method", projectConfig.getTargetMethod());
 		this.results.writeReport();
 	}
-	
+
 	public File getOutDir(String sub) {
 		File outDir = projectConfig.getOutDir();
 		File subDir = new File(outDir,sub);
@@ -422,19 +422,19 @@ public class Project {
 	/* recording for scripted evaluation */
 	public void recordResult(WcetCost wcet, double timeDiff, double solverTime) {
 		if(resultRecord == null) return;
-		Config c = projectConfig.getConfigManager();		
+		Config c = projectConfig.getConfigManager();
 		recordCVS("wcet","ipet",wcet,timeDiff,solverTime,
 					c.getOption(JOPConfig.CACHE_IMPL),
 					c.getOption(JOPConfig.CACHE_SIZE_WORDS),
 					c.getOption(JOPConfig.CACHE_BLOCKS),
 					c.getOption(IpetConfig.STATIC_CACHE_APPROX),
 					c.getOption(IpetConfig.ASSUME_MISS_ONCE_ON_INVOKE));
-		
+
 	}
 	public void recordResultUppaal(WcetCost wcet,
 			                       double timeDiff, double searchtime,double solvertimemax) {
 		if(resultRecord == null) return;
-		Config c = projectConfig.getConfigManager();		
+		Config c = projectConfig.getConfigManager();
 		recordCVS("wcet","uppaal",wcet,timeDiff,searchtime,solvertimemax,
 				c.getOption(JOPConfig.CACHE_IMPL),
 				c.getOption(JOPConfig.CACHE_SIZE_WORDS),
@@ -461,13 +461,13 @@ public class Project {
 	}
 	private void recordCVS(String key, String subkey, WcetCost cost, Object... params) {
 		Object fixedCols[] = { key, subkey };
-		try {			
+		try {
 			FileWriter fw = new FileWriter(resultRecord,true);
 			fw.write(MiscUtils.joinStrings(fixedCols, ";"));
 			if(cost != null) {
-				Object costCols[] = { cost.getCost(), cost.getNonCacheCost(),cost.getCacheCost() }; 
+				Object costCols[] = { cost.getCost(), cost.getNonCacheCost(),cost.getCacheCost() };
 				fw.write(";");
-				fw.write(MiscUtils.joinStrings(costCols, ";"));				
+				fw.write(MiscUtils.joinStrings(costCols, ";"));
 			}
 			if(params.length > 0) {
 				fw.write(";");
