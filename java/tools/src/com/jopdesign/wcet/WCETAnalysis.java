@@ -134,7 +134,7 @@ public class WCETAnalysis {
 		}
 
 		// project.getLinkerInfo().dump(System.out);
-		new ConstantCache(project).build().dumpStats();
+		// new ConstantCache(project).build().dumpStats();
 
 		/* Tree based WCET analysis - has to be equal to ALWAYS_MISS */
 		{
@@ -165,7 +165,7 @@ public class WCETAnalysis {
 		try {
 			/* Analysis */
 			project.setGenerateWCETReport(false); /* generate reports later */
-			exec.info("Cyclomatic complexity: "+project.computeCyclomaticComplexity(project.getTargetMethod()));
+			exec.info("Cyclomatic complexity: " + project.computeCyclomaticComplexity(project.getTargetMethod()));
 			WcetCost mincachecost, ah, am, wcet;
 			IpetConfig ipetConfig = new IpetConfig(config);
 			StaticCacheApproximation preciseApprox = IpetConfig.getPreciseCacheApprox(config);
