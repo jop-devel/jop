@@ -32,7 +32,6 @@ SOURCE ../../vhdl/io/iomin.vhd
 SOURCE ../../vhdl/io/uart.vhd
 SOURCE ../../vhdl/io/fifo.vhd
 SOURCE ../../vhdl/jtbl.vhd
-SOURCE ../../vhdl/offtbl.vhd
 SOURCE ../../vhdl/rom.vhd
 SOURCE ../../vhdl/core/xram.vhd
 SOURCE ../../vhdl/xram_block.vhd

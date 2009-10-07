@@ -39,7 +39,7 @@ static int[] b = { 123, -123, 456, -456, 50000, -50000 };
 
 static Object o = new Object();
 
-	public String getName() {
+	public String toString() {
 		return "Clinit";
 	}
 

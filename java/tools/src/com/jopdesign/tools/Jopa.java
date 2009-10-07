@@ -23,10 +23,7 @@ package com.jopdesign.tools;
 /**
 	Assemler for JOP3
 
-	Author: Martin Schoeberl	martin@good-ear.com
-
-
-	instruction coding:
+	Author: Martin Schoeberl
 
 
 revision:
@@ -39,26 +36,28 @@ revision:
 	2005-02-20	Generate memory data for the simulation
 	2006-12-29	Remove bcfetbl.vhd generation (it's part of rom.vhd/mif)
 				Changed rom legth to 2K
+	2009-09-05	Branch and jump offsets are part of the instruction (no offtbl.vhd)
 
 */
 
 import java.io.*;
 import java.util.*;
 
+import com.jopdesign.tools.Instruction.JmpType;
+
 public class Jopa {
 
 	private String fname;
 	static final int ADDRBITS = 11;
-	static final int DATABITS = 10;
-//	static final int BRBITS = 10;
-	static final int BRBITS = ADDRBITS;
-	static final int OPDBITS = 5;
+	/** length of microcode instruction including nxt and opd */	
+	static final int DATABITS = Instruction.INSTLEN+2;
 	static final int CONST_ADDR = 32;
 	static final int VER_ADDR = 64-2;
 	static final int RAM_LEN = 256;
 	static final int ROM_LEN = 1<<ADDRBITS;
 	private String srcDir;
 	private String dstDir;
+	private boolean error;
 
 	public Jopa(String fn) {
 		this(fn,System.getProperty("user.dir"),System.getProperty("user.dir"));
@@ -90,6 +89,7 @@ public class Jopa {
 	}
 	void error(StreamTokenizer in, String s) {
 		System.out.println((in.lineno()-1)+" error: "+s);
+		error = true;
 	}
 
 	private StreamTokenizer getSt() {
@@ -147,7 +147,7 @@ public class Jopa {
 		public String toString() {
 			StringBuffer sb = new StringBuffer();
 			sb.append(instr.name);
-			if(instr.hasOpd) {
+			if(instr.opdSize!=0) {
 				sb.append(' '); 
 				if(symVal != null) { sb.append(symVal); }
 				else               { sb.append(special); sb.append(" / "); sb.append(intVal); }
@@ -220,12 +220,12 @@ public class Jopa {
 		return s;
 	}
 
-	private Map symMap  = new HashMap();
+	private Map<String, Integer> symMap  = new HashMap<String, Integer>();
 	private int memcnt = 0;
-	private List varList = new LinkedList();
+	private List<String> varList = new LinkedList<String>();
 	private int version = -1;
-	private Map jinstrMap = new HashMap();
-	private List instructions = new LinkedList();
+	private Map<Integer, Integer> jinstrMap = new HashMap<Integer, Integer>();
+	private List<Line> instructions = new LinkedList<Line>();
 
 	/**
 	 * Parse the assembler file and build symbol table (first pass).
@@ -290,27 +290,27 @@ public class Jopa {
 	 * positions
 	 * @return 
 	 */
-	public Map getSymMap() {
+	public Map<String, Integer> getSymMap() {
 		return this.symMap;
 	}
 	/**
 	 * Get list of variables
 	 * @return 
 	 */
-	public List getVarList() {
+	public List<String> getVarList() {
 		return this.varList;
 	}
 	/** 
 	 * get table of java instructions 
 	 */
-	public Map getJavaInstructions() {
+	public Map<Integer, Integer> getJavaInstructions() {
 		return this.jinstrMap;
 	}
 	/**
 	 * Get instruction list
 	 * @return 
 	 */
-	public List getInstructions() {
+	public List<Line> getInstructions() {
 		return this.instructions;
 	}
 	
@@ -328,10 +328,8 @@ public class Jopa {
 	}
 
 
-	private Map constMap = new HashMap();
-	private List constList = new LinkedList();
-	private Map offMap = new HashMap();
-	private List offList = new LinkedList();
+	private Map<Integer, Integer> constMap = new HashMap<Integer, Integer>();
+	private List<Integer> constList = new LinkedList<Integer>();
 
 	private int[] romData = new int[ROM_LEN];
 	private int romLen = 0;
@@ -369,7 +367,7 @@ public class Jopa {
 			line += "\n";
 			line += "begin\n";
 			line += "\n";
-			line += "\t[0..1ff] : 080;	-- nop\n\n";
+			line += "\t[0..1ff] : 080;	-- nop TODO: new instruction\n\n";
 
 			rom.write( line );
 
@@ -451,10 +449,10 @@ public class Jopa {
 //
 					int opcode = l.instr.opcode;
 
-					if (l.instr.hasOpd) {
+					if (l.instr.opdSize!=0) {
 						int opVal = 0;
 						if (l.symVal!=null) {
-							Integer i = (Integer) symMap.get(l.symVal);
+							Integer i = symMap.get(l.symVal);
 							if (i==null) {
 								error(in, "Symbol "+l.symVal+" not defined");
 							} else {
@@ -468,7 +466,7 @@ public class Jopa {
 							Integer i = new Integer(opVal);
 							Integer addr;
 							if (constMap.containsKey(i)) {
-								addr = (Integer) constMap.get(i);
+								addr = constMap.get(i);
 							} else {
 								addr = new Integer(constMap.size());
 								constMap.put(i, addr);
@@ -477,30 +475,29 @@ public class Jopa {
 							opVal = addr.intValue();
 						}
 
-						if (l.instr.isJmp) {						// List of branch offsets
-							Integer off = new Integer(opVal-pc-1);
-							if (off.intValue()< -ROM_LEN || off.intValue()>(ROM_LEN-1)) {
-								error(in, "offset "+off+" wrong range");
+						
+						int mask = (1<<l.instr.opdSize)-1;
+
+						// for branches and jumps opVal points to the target address
+						if (l.instr.jType==JmpType.JMP || l.instr.jType==JmpType.BR) {
+							// relative address
+							opVal = opVal-pc-1;
+							// check maximum relative offset
+							if (opVal>(mask>>1) || opVal<(-((mask>>1)+1))) {
+								error(in, "jmp/br address too far: "+opVal);								
 							}
-							Integer addr;
-							if (offMap.containsKey(off)) {
-								addr = (Integer) offMap.get(off);
-							} else {
-								addr = new Integer(offMap.size());
-								offMap.put(off, addr);
-								offList.add(off);
-							}
-							opVal = addr.intValue();
+							opVal &= mask;
 						}
 
-						if (opVal>31 || opVal<0) {
+						// general check
+						if (opVal>mask || opVal<0) {
 							error(in, "operand wrong: "+opVal);
 						}
-						opcode |= opVal & 0x1f;		// use 5 bit operand
+						opcode |= opVal & mask;		// use operand
 					}
 
-					if (l.nxt) opcode |= 0x200;
-					if (l.opd) opcode |= 0x100;
+					if (l.nxt) opcode |= 0x2<<Instruction.INSTLEN;
+					if (l.opd) opcode |= 0x1<< Instruction.INSTLEN;
 					romData[romLen] = opcode;
 					++romLen;
 					line += hex(pc, 4)+" : "+hex(opcode, 3)+";\t";
@@ -623,59 +620,6 @@ public class Jopa {
 			}
 			rom_mem.close();
 
-//
-//	print table of branch offsets
-//
-			FileWriter offtbl = new FileWriter(dstDir + "offtbl.vhd");
-
-			line = "--\n";
-			line += "--\tofftbl.vhd\n";
-			line += "--\n";
-			line += "--\tnext bc or bc operand read for offtch.\n";
-			line += "--\n";
-			line += "--\t\tDONT edit this file!\n";
-			line += "--\t\tgenerated by Jopa.java\n";
-			line += "--\n";
-			line += "\n";
-			line += "library ieee;\n";
-			line += "use ieee.std_logic_1164.all;\n";
-			line += "use ieee.std_logic_arith.all;\n";
-			line += "use ieee.std_logic_unsigned.all;\n";
-			line += "\n";
-			line += "entity offtbl is\n";
-			line += "port (\n";
-			line += "\tidx\t\t: in std_logic_vector("+(OPDBITS-1)+" downto 0);\n";
-			line += "\tq\t\t: out std_logic_vector("+(BRBITS-1)+" downto 0)\n";
-			line += ");\n";
-			line += "end offtbl;\n";
-			line += "\n";
-			line += "architecture rtl of offtbl is\n";
-			line += "\n";
-			line += "begin\n";
-			line += "\n";
-			line += "process(idx) begin\n";
-			line += "\n";
-			line += "\tcase idx is\n";
-			line += "\n";
-
-			offtbl.write( line );
-
-			for (int i=0; i<offList.size(); ++i) {
-				Integer val = (Integer) offList.get(i);
-				offtbl.write("\t\twhen \""+bin(i, OPDBITS) +
-					"\" => q <= \""+bin(val.intValue(), BRBITS)+"\";");
-				offtbl.write("\t-- "+val.intValue()+"\n");
-			}
-
-			line = "\n";
-			line += "\t\twhen others => q <= \""+bin(0, BRBITS)+"\";\n";
-			line += "\tend case;\n";
-			line += "end process;\n";
-			line += "\n";
-			line += "end rtl;\n";
-
-			offtbl.write( line );
-			offtbl.close();
 
 
 //
@@ -709,7 +653,7 @@ public class Jopa {
 			// Variables
 			//
 			for (int i=0; i<varList.size(); ++i) {
-				String s = (String) varList.get(i);
+				String s = varList.get(i);
 				ramData[i] = 0;
 				line = "\t";
 				line += hex(i, 4) + " : " ;
@@ -732,7 +676,7 @@ public class Jopa {
 			//	Constants
 			//
 			for (int i=0; i<constList.size(); ++i) {
-				Integer val = (Integer) constList.get(i);
+				Integer val = constList.get(i);
 				ramData[CONST_ADDR+i] = val.intValue();
 				line = "\t";
 				line += hex(CONST_ADDR+i, 4) + " : " ;
@@ -742,7 +686,7 @@ public class Jopa {
 			}
 
 			// check if version is set
-			Integer ver = (Integer) symMap.get("version");
+			Integer ver = symMap.get("version");
 			if (ver==null) {
 				error(in, "version not set, setting to -1");
 			} else {
@@ -808,5 +752,8 @@ public class Jopa {
 		Jopa j = new Jopa(args);
 		j.pass1();
 		j.pass2();
+		if (j.error) {
+			throw new Error("Errors in assembler file!");
+		}
 	}
 }

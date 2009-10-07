@@ -32,7 +32,7 @@ import jvm.TestCase;
  */
 public class Static extends TestCase {
 	
-	public String getName() {
+	public String toString() {
 		return "Object Static";
 	}
 	

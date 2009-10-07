@@ -1,9 +1,20 @@
 \index{CMP}
 
+In order to generate a small and predictable processor, several
+advanced and resource-consuming features (such as instruction folding
+or branch prediction) were omitted from the design. The resulting low
+resource usage of JOP makes it possible to integrate more than one
+processor in an FPGA. Since embedded applications are naturally
+multi-threaded systems, the performance can easily be enhanced using
+a multi-processor solution.
+
 This chapter describes the configuration of a chip multiprocessor
 (CMP) version of JOP. The various SimpCon based arbiters have been
 developed by Christof Pitter and are described in \cite{jop:dma,
-jop:cmp, jop:cmp:eval}.
+jop:cmp, jop:cmp:eval}. A multi-processor JVM with shared memory
+offers research possibilities such as: scheduling of Java threads and
+synchronization between the processors or WCET analysis for the
+shared memory access.
 
 The project file to start with is \code{cyccmp}, a configuration for
 three processors with a TDMA based arbiter in the Cycore board with
@@ -15,11 +26,27 @@ A central arbiter regulates the synchronization on memory read and
 write operations.
 
 \subsection{Main Memory}
+\index{CMP!TDMA arbiter}
 
 Three different arbiter are available for the access policy to the
 main memory: priority based, fairness based, and a time division
 multiple access (TDMA) arbiter. The main memory is shared between all
 cores.
+
+The TDMA based memory arbiter provides a static schedule for the
+memory access. Therefore, access time to the memory is independent of
+tasks running on other cores. The worst-case execution time (WCET) of
+a memory loads or stores can be calculated by considering the
+worst-case phasing of the memory access pattern relative to the TDMA
+schedule \cite{tdma:arbiter:jtres2008}.
+
+
+In the default configuration each processor cores has an equally
+sized slot for the memory access. The TDMA schedule can also be
+optimized for different utilizations of processing cores. The TDMA
+schedule can be optimized to distribute slack time of tasks to other
+tasks with a tighter deadline \cite{jop:cmp:single:thread}.
+
 
 \subsection{I/O Devices}
 

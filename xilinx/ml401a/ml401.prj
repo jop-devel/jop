@@ -37,7 +37,6 @@ vhdl work  ../../vhdl/core/mul.vhd
 vhdl work  ../../vhdl/core/core.vhd
 vhdl work  ../../vhdl/core/decode.vhd
 vhdl work  ../../vhdl/jtbl.vhd
-vhdl work  ../../vhdl/offtbl.vhd
 vhdl work  ../../vhdl/rom.vhd
 vhdl work  ../../vhdl/xilinx/xram.vhd
 vhdl work  ../../vhdl/xv4ram_block.vhd

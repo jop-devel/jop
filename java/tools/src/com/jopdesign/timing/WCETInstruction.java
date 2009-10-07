@@ -1165,7 +1165,7 @@ public class WCETInstruction {
 			break;
 		// INVOKESPECIAL = 183
 		case org.apache.bcel.Constants.INVOKESPECIAL:
-			wcet = 74 + r;
+			wcet = 72 + r;
 			if (r > 3) {
 				wcet += r - 3;
 			}
@@ -1186,7 +1186,7 @@ public class WCETInstruction {
 		// case org.apache.bcel.Constants.INVOKENONVIRTUAL : wcet = -1; break;
 		// INVOKESTATIC = 184
 		case org.apache.bcel.Constants.INVOKESTATIC:
-			wcet = 74 + r;
+			wcet = 72 + r;
 			if (r > 3) {
 				wcet += r - 3;
 			}
@@ -1205,7 +1205,7 @@ public class WCETInstruction {
 			break;
 		// INVOKEINTERFACE = 185
 		case org.apache.bcel.Constants.INVOKEINTERFACE:
-			wcet = 112 + 4 * r;
+			wcet = 110 + 4 * r;
 			if (r > 3) {
 				wcet += r - 3;
 			}

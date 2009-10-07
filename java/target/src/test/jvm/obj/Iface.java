@@ -32,7 +32,7 @@ import jvm.TestCase;
  */
 public class Iface extends TestCase {
 	
-	public String getName() {
+	public String toString() {
 		return "Interface";
 	}
 	

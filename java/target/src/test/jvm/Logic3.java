@@ -22,7 +22,7 @@ package jvm;
 
 public class Logic3  extends TestCase{
 
-	public String getName() {
+	public String toString() {
 		return "Logic3";
 	}
 	

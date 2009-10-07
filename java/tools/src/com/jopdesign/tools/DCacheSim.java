@@ -41,6 +41,8 @@ public class DCacheSim extends JopSim {
 
 		abstract int read(int addr, int val);
 		
+		abstract void inval();
+		
 		public String toString() {
 			int percent = 0;
 			if (rdCnt!=0) {
@@ -82,6 +84,13 @@ public class DCacheSim extends JopSim {
 			}
 			return data[line];
 		}
+
+		@Override
+		void inval() {
+			for (int i=0; i<valid.length; ++i) {
+				valid[i] = false;
+			}
+		}
 	}
 	
 	/**
@@ -119,6 +128,13 @@ public class DCacheSim extends JopSim {
 			tag[0] = addr;
 			valid[0] = true;
 			return data[0];
+		}
+
+		@Override
+		void inval() {
+			for (int i=0; i<valid.length; ++i) {
+				valid[i] = false;
+			}
 		}
 	}
 
@@ -200,6 +216,14 @@ public class DCacheSim extends JopSim {
 	// do we write allocate?
 	void writeMem(int addr, int data, Access type) {
 		super.writeMem(addr, data, type);
+	}
+
+	void invalCache() {
+		for (int i=0; i<CNT; ++i) {
+			fieldcache[i].inval();
+			staticcache[i].inval();
+			arraycache[i].inval();
+		}
 	}
 
 	void stat() {

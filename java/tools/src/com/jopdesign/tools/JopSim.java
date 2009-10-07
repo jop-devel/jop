@@ -128,6 +128,7 @@ public class JopSim {
 	};
 
 	static final int MAX_MEM = 1024*1024/4;
+	// static final int MAX_MEM = 2*1024*1024/4; // 2MB for de2-70 board
 	static final int MAX_STACK = Const.STACK_SIZE;	// with internal memory
 	static final int MEM_TEST_OFF = 256;
 	static final int MAX_SCRATCHPAD = 256;	// 1 KB scratchpad memory
@@ -384,6 +385,9 @@ System.out.println(mp+" "+pc);
 		mem[addr%MAX_MEM] = data;
 	}
 
+	void invalCache() {
+	}
+	
 	int readOpd16u() {
 
 		int idx = ((cache.bc(pc)<<8) | (cache.bc(pc+1)&0x0ff)) & 0x0ffff;
@@ -1453,6 +1457,7 @@ System.out.println("new heap: "+heap);
 					} else {
 						pc--;	// restart if we don't get the global lock
 					}
+					invalCache();
 					break;
 				case 195 :		// monitorexit
 					sp--;		// we don't use the objref
@@ -1483,7 +1488,7 @@ System.out.println("new heap: "+heap);
 					noim(203);
 					break;
 				case 204 :		// jopsys_inval
-					// ignore cache invalidation here
+					invalCache();
 					break;
 				case 205 :		// resCD
 					noim(205);

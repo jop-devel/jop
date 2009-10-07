@@ -25,7 +25,7 @@ import jvm.TestCase;
 
 public class TestVector extends TestCase {
 
-	public String getName() {
+	public String toString() {
 		return "Vector";
 	}
 

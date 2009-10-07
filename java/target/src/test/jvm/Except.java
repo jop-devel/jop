@@ -22,7 +22,7 @@ package jvm;
 
 public class Except extends TestCase {
 	
-	public String getName() {
+	public String toString() {
 		return "Except";
 	}
 	

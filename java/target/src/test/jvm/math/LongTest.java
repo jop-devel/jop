@@ -28,7 +28,7 @@ public class LongTest extends TestCase {
 	
 		return a-b;
 	}
-	public String getName() {
+	public String toString() {
 		return "LongTest";
 	}
 	

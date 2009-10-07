@@ -27,7 +27,7 @@ import java.io.*;
 
 public class BArrayOutputStream extends TestCase {
 
-	public String getName() {
+	public String toString() {
 		return "BArrayOutputStream";
 	}
 

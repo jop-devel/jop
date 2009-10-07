@@ -32,7 +32,7 @@ import jvm.TestCase;
  */
 public class TypeMix extends TestCase {
 	
-	public String getName() {
+	public String toString() {
 		return "Object Type Mix";
 	}
 	
