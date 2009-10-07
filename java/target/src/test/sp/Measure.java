@@ -50,7 +50,7 @@ public class Measure {
 		int frequ = new STScheduler(1).getMsCycles()*1000;
 		int shift = frequ/10/(TDMA_LENGTH)*TDMA_LENGTH+1;
 		
-		int a[] = new int[5];
+		int a[] = new int[3];
 		
 		for (int i=0; i<a.length; ++i) {
 			a[i] = 1;
@@ -61,12 +61,12 @@ public class Measure {
 		int off = time;
 		
 		int start = sys.cntInt + shift;
-		for (int i=0; i<100; ++i) {
+		for (int i=0; i<30; ++i) {
 			sys.deadLine = start;
 			time = sys.cntInt;
 			int sum=0;
 			for (int j=0; j<a.length; ++j) {
-				sum += a[j];
+				a[j] += 12345678;
 			}
 			time = sys.cntInt - time;
 			System.out.println(time-off);

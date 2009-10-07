@@ -526,7 +526,6 @@ set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_sys.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_usb.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc2wb.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/scio_dspio.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/offtbl.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/jtbl.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/arom.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/aram.vhd

@@ -37,7 +37,7 @@ import ejip.Udp;
  * @author martin
  * 
  */
-public class State extends ejip.UdpHandler implements Runnable {
+public class State implements ejip.UdpHandler, Runnable {
 
 	// State of the system - exchanged periodically
 	int bgid;
@@ -774,6 +774,10 @@ public class State extends ejip.UdpHandler implements Runnable {
 
 	int getPos() {
 		return pos;
+	}
+
+	public void loop() {
+		// do nothing
 	}
 
 }

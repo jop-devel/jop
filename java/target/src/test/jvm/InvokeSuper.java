@@ -28,7 +28,7 @@ import jvm.TestCase;
  */
 public class InvokeSuper extends TestCase {
 
-	public String getName() {
+	public String toString() {
 		return "Invokesuper";
 	}
 

@@ -32,7 +32,7 @@ import jvm.TestCase;
  */
 public class Basic2 extends TestCase {
 	
-	public String getName() {
+	public String toString() {
 		return "Object Basic2";
 	}
 	

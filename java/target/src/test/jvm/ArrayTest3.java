@@ -26,7 +26,7 @@
 package jvm;
 public class ArrayTest3 extends TestCase {
 
-	public String getName() {
+	public String toString() {
 		return "ArrayTest3";
 	}
 	

@@ -115,7 +115,7 @@ public class DOutputStream extends TestCase {
 		}
 	}
 	
-	public String getName() {
+	public String toString() {
 		return "DOutputStream";
 	}
 

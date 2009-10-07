@@ -25,7 +25,7 @@ import jvm.TestCase;
 
 public class PrimitiveClasses2 extends TestCase {
 
-	public String getName() {
+	public String toString() {
 		return "PrimitiveClasses2";
 	}
 	

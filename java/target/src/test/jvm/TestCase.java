@@ -30,7 +30,7 @@ package jvm;
  */
 public abstract class TestCase {
 	
-	public String getName() {
+	public String toString() {
 		return "dummy test case";
 	}
 

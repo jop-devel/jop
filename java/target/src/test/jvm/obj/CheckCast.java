@@ -31,7 +31,7 @@ import jvm.TestCase;
  */
 public class CheckCast extends TestCase implements Runnable {
 	
-	public String getName() {
+	public String toString() {
 		return "CheckCast";
 	}
 	

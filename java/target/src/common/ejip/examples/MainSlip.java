@@ -82,7 +82,6 @@ public class MainSlip {
 		for (;;) {
 			for (int i=0; i<1000; ++i) {
 				ser.loop();
-				// timeout in slip depends on loop time!
 				ipLink.run();
 				ser.loop();
 				net.run();

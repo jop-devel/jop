@@ -52,6 +52,7 @@
 --				stioa, stiod, ldiod removed
 --	2007-08-31	use addr_width for signal dir
 --	2007-09-01	use ram_width from jop_config instead of parameter
+--	2005-09-05	use new branch and jmp instructions (offset part of instruction)
 --
 
 
@@ -75,6 +76,7 @@ port (
 	eq, lt		: in std_logic;
 
 	br			: out std_logic;
+	jmp			: out std_logic;
 	jbr			: out std_logic;
 
 	ext_addr	: out std_logic_vector(EXTA_WIDTH-1 downto 0);
@@ -115,8 +117,10 @@ architecture rtl of decode is
 --
 -- intruction register, shortcut
 --
---	signal ir		: std_logic_vector(i_width-1 downto 0);		-- Xilinx does not like this... instruction register
-	signal ir		: std_logic_vector(7 downto 0);		-- instruction register
+--	signal ir		: std_logic_vector(i_width-1 downto 0);		-- Xilinx and ModelSim don't like this... instruction register
+	signal ir		: std_logic_vector(9 downto 0);		-- instruction register
+	signal is_push	: std_logic;
+	signal is_pop	: std_logic;
 
 begin
 
@@ -128,16 +132,21 @@ begin
 --	branch, jbranch
 --
 
-process(clk, reset, ir, zf)
+process(clk, reset)
 begin
 	if (reset='1') then
 		br <= '0';
+		jmp <= '0';
 	elsif rising_edge(clk) then
 
 		br <= '0';
-		if((ir(7 downto 5)="010" and zf='1') or		-- bz
-			(ir(7 downto 5)="011" and zf='0')) then	-- bnz
+		jmp <= '0';
+		if((ir(9 downto 6)="0110" and zf='1') or		-- bz
+			(ir(9 downto 6)="0111" and zf='0')) then	-- bnz
 			br <= '1';
+		end if;
+		if (ir(9)='1') then								-- jmp
+			jmp <= '1';
 		end if;
 
 	end if;
@@ -149,7 +158,7 @@ process(ir)
 begin
 
 	jbr <= '0';
-	if (ir="10000010") then		-- jbr: goto and if_xxx
+	if (ir="0100000010") then		-- jbr: goto and if_xxx
 		jbr <= '1';
 	end if;
 
@@ -159,29 +168,61 @@ end process;
 --	addr, read stage:
 --		decode from ir (only logic, no register)
 --
-process(ir)
+process(ir, is_pop, is_push)
 begin
+
+	is_pop <= '0';
+	is_push <= '0';
+
+	case ir(9 downto 6) is
+
+
+		when "0000" =>			-- POP
+				is_pop <= '1';
+		when "0001" =>			-- POP
+				is_pop <= '1';
+		when "0010" =>			-- PUSH
+				is_push <= '1';
+		when "0011" =>			-- PUSH
+				is_push <= '1';
+		when "0100" =>			-- NOP
+		when "0101" =>			-- null
+		when "0110" =>			-- POP
+				is_pop <= '1';
+		when "0111" =>			-- POP
+				is_pop <= '1';
+		when "1000" =>			-- NOP
+		when "1001" =>			-- null
+		when "1010" =>			-- null
+		when "1011" =>			-- null
+		when "1100" =>			-- null
+		when "1101" =>			-- null
+		when "1110" =>			-- null
+		when "1111" =>			-- null
+
+		when others =>
+			null;
+	end case;
+
+
 
 -- ram wraddress and wrena are registered
 
 	wr_ena <= '0';
-	if (ir(7 downto 5)="101" or			-- 'push' instructions
-		ir(7 downto 5)="110" or
-		ir(7 downto 5)="111" or
-		ir(7 downto 5)="001" or			-- stm
-		ir(7 downto 3)="00010") then	-- st, stn, stmi
+	if (is_push='1' or						-- push instructions
+		ir(9 downto 5)="00001" or			-- stm
+		ir(9 downto 3)="0000010") then		-- st, stn, stmi
 
 		wr_ena <= '1';
 	end if;
 
 	rd <= '0';
-	if ir(7 downto 3)="11100" then		-- ld memio
+	if ir(9 downto 3)="0011100" then		-- ld memio
 		rd <= '1';
 	end if;
 	wr <= '0';
-	if ir(7 downto 0)="00000110"
-		or ir(7 downto 0)="00000111"
-		or ir(7 downto 3)="00001" then -- st memio
+	-- we use 16 mmu instructions, could be more
+	if ir(9 downto 4)="000100" then			-- stmul/mem unit
 		wr <= '1';
 	end if;
 
@@ -192,38 +233,36 @@ begin
 	dir <= std_logic_vector(to_unsigned(0, ram_width-5)) & ir(4 downto 0);
 
 	sel_rda <= "110";					-- sp
-	if (ir(7 downto 3)="11101") then	-- ld, ldn, ldmi
+	if (ir(9 downto 3)="0011101") then	-- ld, ldn, ldmi
 		sel_rda <= ir(2 downto 0);
 	end if;
-	if (ir(7 downto 5)="101") then		-- ldm
+	if (ir(9 downto 5)="00101") then	-- ldm
 		sel_rda <= "111";
 	end if;
-	if (ir(7 downto 5)="110") then		-- ldi
+	if (ir(9 downto 5)="00110") then	-- ldi
 		sel_rda <= "111";
 		dir <= std_logic_vector(to_unsigned(1, ram_width-5)) & 
-			ir(4 downto 0);	-- addr > 31 constants
+			ir(4 downto 0);				-- addr > 31 constants
 	end if;
 
 	sel_wra <= "110";					-- spp
-	if ir(7 downto 3)="00010" then		-- st, stn, stmi
+	if ir(9 downto 3)="0000010" then	-- st, stn, stmi
 		sel_wra <= ir(2 downto 0);
 	end if;
-	if ir(7 downto 5)="001" then		-- stm
+	if ir(9 downto 5)="00001" then		-- stm
 		sel_wra <= "111";
 	end if;
 
 -- select for sp update
 
 	sel_smux <= "00";				-- sp = sp
-	if(ir(7)='0') then			-- 'pop' instruction
+	if is_pop='1' then				-- 'pop' instruction
 		sel_smux <= "01";			-- --sp
 	end if;
-	if(ir(7 downto 5)="101" or	-- 'push' instruction
-		ir(7 downto 5)="110" or
-		ir(7 downto 5)="111") then
+	if is_push='1' then				-- 'push' instruction
 		sel_smux <= "10";			-- ++sp
 	end if;
-	if (ir="00011011") then			-- st sp
+	if ir="0000011011" then			-- st sp
 		sel_smux <= "11";			-- sp = a
 	end if;
 			
@@ -253,8 +292,8 @@ begin
 
 	elsif rising_edge(clk) then
 
-		sel_log <= "00";
-		if (ir(7 downto 2)="000000") then		-- pop, and, or, xor
+		sel_log <= "00";						-- default is pop path
+		if (ir(9 downto 2)="00000000") then		-- pop, and, or, xor
 			sel_log <= ir(1 downto 0);
 		end if;
 
@@ -269,110 +308,190 @@ begin
 
 		case ir is
 
-			when "00000000" =>				-- pop
-			when "00000001" =>				-- and
-			when "00000010" =>				-- or
-			when "00000011" =>				-- xor
-			when "00000100" =>				-- add
+			when "0000000000" =>			-- pop
+			when "0000000001" =>			-- and
+			when "0000000010" =>			-- or
+			when "0000000011" =>			-- xor
+			when "0000000100" =>			-- add
 					sel_sub <= '0';
 					sel_amux <= '0';
-			when "00000101" =>				-- sub
+			when "0000000101" =>			-- sub
 					sel_amux <= '0';
-			when "00001010" =>				-- stmra
-			when "00001011" =>				-- stmwa
-			when "00001100" =>				-- stmwd
-			when "00001101" =>				-- stopa
-			when "00001110" =>				-- stopb
-			when "00010000" =>				-- st0
-			when "00010001" =>				-- st1
-			when "00010010" =>				-- st2
-			when "00010011" =>				-- st3
-			when "00010100" =>				-- st
-			when "00010101" =>				-- stmi
-			when "00011000" =>				-- stvp
+			when "0000010000" =>			-- st0
+			when "0000010001" =>			-- st1
+			when "0000010010" =>			-- st2
+			when "0000010011" =>			-- st3
+			when "0000010100" =>			-- st
+			when "0000010101" =>			-- stmi
+			when "0000011000" =>			-- stvp
 					ena_vp <= '1';
-			when "00011001" =>				-- stjpc
+			when "0000011001" =>			-- stjpc
 					ena_jpc <= '1';
-			when "00011010" =>				-- star
+			when "0000011010" =>			-- star
 					ena_ar <= '1';
-			when "00011011" =>				-- stsp
-			when "00011100" =>				-- ushr
-			when "00011101" =>				-- shl
-			when "00011110" =>				-- shr
---			when "001-----" =>				-- stm
---			when "010-----" =>				-- bz
---			when "011-----" =>				-- bnz
-			when "10000000" =>				-- nop
+			when "0000011011" =>			-- stsp
+			when "0000011100" =>			-- ushr
+			when "0000011101" =>			-- shl
+			when "0000011110" =>			-- shr
+--			when "00001-----" =>			-- stm
+			when "0001000000" =>			-- stmul
+			when "0001000001" =>			-- stmwa
+			when "0001000010" =>			-- stmra
+			when "0001000011" =>			-- stmwd
+			when "0001000100" =>			-- stald
+			when "0001000101" =>			-- stast
+			when "0001000110" =>			-- stgf
+			when "0001000111" =>			-- stpf
+			when "0001001000" =>			-- stcp
+			when "0001001001" =>			-- stbcrd
+--			when "00101-----" =>			-- ldm
+--			when "00110-----" =>			-- ldi
+			when "0011100000" =>			-- ldmrd
+			when "0011100001" =>			-- ldmul
+			when "0011100010" =>			-- ldbcstart
+			when "0011101000" =>			-- ld0
+			when "0011101001" =>			-- ld1
+			when "0011101010" =>			-- ld2
+			when "0011101011" =>			-- ld3
+			when "0011101100" =>			-- ld
+			when "0011101101" =>			-- ldmi
+			when "0011110000" =>			-- ldsp
+			when "0011110001" =>			-- ldvp
+			when "0011110010" =>			-- ldjpc
+			when "0011110100" =>			-- ld_opd_8u
+			when "0011110101" =>			-- ld_opd_8s
+			when "0011110110" =>			-- ld_opd_16u
+			when "0011110111" =>			-- ld_opd_16s
+			when "0011111000" =>			-- dup
 					ena_a <= '0';
-			when "10000001" =>				-- wait
+			when "0100000000" =>			-- nop
 					ena_a <= '0';
-			when "10000010" =>				-- jbr
+			when "0100000001" =>			-- wait
 					ena_a <= '0';
---			when "101-----" =>				-- ldm
---			when "110-----" =>				-- ldi
-			when "11100010" =>				-- ldmrd
-			when "11100011" =>				-- ldmbsy
-			when "11100101" =>				-- ldmul
-			when "11101000" =>				-- ld0
-			when "11101001" =>				-- ld1
-			when "11101010" =>				-- ld2
-			when "11101011" =>				-- ld3
-			when "11101100" =>				-- ld
-			when "11101101" =>				-- ldmi
-			when "11110000" =>				-- ldsp
-			when "11110001" =>				-- ldvp
-			when "11110010" =>				-- ldjpc
-			when "11110100" =>				-- ld_opd_8u
-			when "11110101" =>				-- ld_opd_8s
-			when "11110110" =>				-- ld_opd_16u
-			when "11110111" =>				-- ld_opd_16s
-			when "11111000" =>				-- dup
+			when "0100000010" =>			-- jbr
 					ena_a <= '0';
+--			when "0110------" =>			-- bz
+--			when "0111------" =>			-- bnz
+--			when "1---------" =>			-- jmp
+--					ena_a <= '0';
+
+
+
+--			when "0000000000" =>				-- pop
+--			when "0000000001" =>				-- and
+--			when "0000000010" =>				-- or
+--			when "0000000011" =>				-- xor
+--			when "0000000100" =>				-- add
+--					sel_sub <= '0';
+--					sel_amux <= '0';
+--			when "0000000101" =>				-- sub
+--					sel_amux <= '0';
+--			when "0000000110" =>				-- stmul
+--			when "0000000111" =>				-- stmwa
+--			when "0000001000" =>				-- stmra
+--			when "0000001001" =>				-- stmwd
+--			when "0000001010" =>				-- stald
+--			when "0000001011" =>				-- stast
+--			when "0000001100" =>				-- stgf
+--			when "0000001101" =>				-- stpf
+--			when "0000001110" =>				-- stcp
+--			when "0000001111" =>				-- stbcrd
+--			when "0000010000" =>				-- st0
+--			when "0000010001" =>				-- st1
+--			when "0000010010" =>				-- st2
+--			when "0000010011" =>				-- st3
+--			when "0000010100" =>				-- st
+--			when "0000010101" =>				-- stmi
+--			when "0000011000" =>				-- stvp
+--					ena_vp <= '1';
+--			when "0000011001" =>				-- stjpc
+--					ena_jpc <= '1';
+--			when "0000011010" =>				-- star
+--					ena_ar <= '1';
+--			when "0000011011" =>				-- stsp
+--			when "0000011100" =>				-- ushr
+--			when "0000011101" =>				-- shl
+--			when "0000011110" =>				-- shr
+----			when "00001-----" =>				-- stm
+--			when "0100000000" =>				-- nop
+--					ena_a <= '0';
+--			when "0100000001" =>				-- wait
+--					ena_a <= '0';
+--			when "0100000010" =>				-- jbr
+--					ena_a <= '0';
+----			when "00101-----" =>				-- ldm
+----			when "00110-----" =>				-- ldi
+--			when "0011100000" =>				-- ldmrd
+--			when "0011100110" =>				-- ldmul
+--			when "0011100111" =>				-- ldbcstart
+--			when "0011101000" =>				-- ld0
+--			when "0011101001" =>				-- ld1
+--			when "0011101010" =>				-- ld2
+--			when "0011101011" =>				-- ld3
+--			when "0011101100" =>				-- ld
+--			when "0011101101" =>				-- ldmi
+--			when "0011110000" =>				-- ldsp
+--			when "0011110001" =>				-- ldvp
+--			when "0011110010" =>				-- ldjpc
+--			when "0011110100" =>				-- ld_opd_8u
+--			when "0011110101" =>				-- ld_opd_8s
+--			when "0011110110" =>				-- ld_opd_16u
+--			when "0011110111" =>				-- ld_opd_16s
+--			when "0011111000" =>				-- dup
+--					ena_a <= '0';
+--
+----			when "01100-----" =>			-- bz
+----			when "01110-----" =>			-- bnz
+----			when "1---------" =>				-- br
+----					ena_a <= '0';
 
 			when others =>
 				null;
 		end case;
 
+		if ir(9)='1' then		-- jmp
+			ena_a <= '0';
+		end if;
 
 		sel_lmux <= "000";		-- log
 
-		if ir(7 downto 2)="000111" then				-- ushr, shl, shr
+		if ir(9 downto 2)="00000111" then				-- ushr, shl, shr
 			sel_lmux <= "001";
 		end if;
 
-		if ir(7 downto 5)="101" then				-- ldm
+		if ir(9 downto 5)="00101" then				-- ldm
 			sel_lmux <= "010";
 		end if;
-		if ir(7 downto 5)="110" then				-- ldi
-			sel_lmux <= "010";
-		end if;
-
-		if ir(7 downto 3)="11101" then				-- ld, ldn, ldmi
+		if ir(9 downto 5)="00110" then				-- ldi
 			sel_lmux <= "010";
 		end if;
 
-		if ir(7 downto 2)="111101" then				-- ld_opd_x
+		if ir(9 downto 3)="0011101" then				-- ld, ldn, ldmi
+			sel_lmux <= "010";
+		end if;
+
+		if ir(9 downto 2)="00111101" then				-- ld_opd_x
 			sel_lmux <= "011";
 		end if;
 
-		if ir(7 downto 3)="11100" then				-- ld io
+		if ir(9 downto 3)="0011100" then				-- ld from extenstion/mem
 			sel_lmux <= "100";
 		end if;
 
-		if ir(7 downto 2)="111100" then				-- ldsp, ldvp, ldjpc
+		if ir(9 downto 2)="00111100" then				-- ldsp, ldvp, ldjpc
 			sel_lmux <= "101";
 		end if;
 
 									-- default 'pop'
 		sel_bmux <= '1';			-- mem
 		sel_mmux <= '0';			-- a
-		if (ir(7)='1') then		-- 'push' and 'no stack change'
+		if is_pop='0' then			-- 'push' or 'no stack change'
 			sel_bmux <= '0';		-- a
 			sel_mmux <= '1';		-- b
 		end if;
 
 		ena_b <= '1';
-		if (ir(7 downto 5)="100") then	-- 'no stack change' (nop, jbr)
+		if is_push='0' and is_pop='0' then	-- 'no stack change' (nop, wait, jbr)
 			ena_b <= '0';
 		end if;
 

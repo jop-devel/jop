@@ -34,7 +34,7 @@ public class LongField extends TestCase {
 	long a, b;
 	static long sa, sb;
 	
-	public String getName() {
+	public String toString() {
 		return "Long Field";
 	}
 	

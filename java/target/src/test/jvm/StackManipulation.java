@@ -22,7 +22,7 @@ package jvm;
 
 public class StackManipulation extends TestCase {
 	
-	public String getName() {
+	public String toString() {
 		return "StackManipulation";
 	}
 

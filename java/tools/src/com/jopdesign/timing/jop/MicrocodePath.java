@@ -64,7 +64,7 @@ public class MicrocodePath implements Serializable {
 		@Override public String toString() {
 			Instruction i = getInstruction();
 			String stringRepr = i.name;
-			if(i.hasOpd) {
+			if(i.opdSize!=0) {
 				if(line.getSymVal() != null) stringRepr += " "+line.getSymVal();
 				else                         stringRepr += " "+line.getIntVal();
 			}

@@ -55,7 +55,7 @@ public class Clinit2 extends TestCase {
 		indir += 7;
 	}
 	
-	public String getName() {
+	public String toString() {
 		return "Clinit2";
 	}
 
@@ -92,7 +92,7 @@ public class Clinit2 extends TestCase {
 		// ... not really possible as it is a HashSet
 // 		new Clinit2_X();
 		
-		System.out.print(clinit.getName());
+		System.out.print(clinit.toString());
 		if (clinit.test()) {
 			System.out.println(" ok");
 		} else {

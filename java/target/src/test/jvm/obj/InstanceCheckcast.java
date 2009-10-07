@@ -32,7 +32,7 @@ import jvm.TestCase;
  */
 public class InstanceCheckcast extends TestCase {
 	
-	public String getName() {
+	public String toString() {
 		return "Instance Checkcast";
 	}
 	

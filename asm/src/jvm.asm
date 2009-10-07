@@ -133,7 +133,9 @@
 //	2008-12-10	MS: static field access uses index as address
 //	... no comments ...
 //	2009-06-17	MS: Enable conditional move again
-//  2009-06-26  WP: fixing invokesuper
+//  2009-06-26  WP: fixed invokesuper
+//	2009-08-24	MS: use I/O port for null pointer and array exception
+//	2009-09-05	MS: new unconditional jmp instruction
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -143,7 +145,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20090626
+version		= 20090905
 
 //
 //	start of stack area in the on-chip RAM
@@ -162,10 +164,14 @@ stack_init	= 64
 //
 io_cnt		=	-128
 io_wd		=	-125
+io_exc		=	-124
 io_int_ena	=	-128
 io_inval    =   -113
 io_status	=	-112
 io_uart		=	-111
+
+exc_np		=	2
+exc_ab		=	3
 
 io_lock = -123
 io_cpu_id = -122
@@ -223,7 +229,6 @@ addr		?			// address used for bc load from flash
 			ldi	stack_init
 			nop			// written in adr/read stage!
 			stsp		// someting strange in stack.vhd A->B !!!
-
 
 // TEST read after write
 
@@ -316,11 +321,14 @@ cpux_loop:
 			wait
 			ldmrd
 			nop
-			bnz cpux_boot
+			bz cpu0_load
 			nop
 			nop
-			
-			
+
+			jmp	cpux_boot
+			nop
+			nop
+
 cpu0_load:
 #ifdef SIMULATION
 //
@@ -491,7 +499,11 @@ not_first:
 			ldm	a
 			xor
 			nop
-			bnz	xram_loop
+			bz	cpux_boot
+			nop
+			nop
+
+			jmp	xram_loop
 			nop
 			nop
 
@@ -534,14 +546,214 @@ cpux_boot:
 			stm	jjhp
 
 			ldm	mp			// pointer to pointer to main meth. struct
-			ldi	1
-			nop
-			bnz	invoke_main	// simulate invokestatic
+			jmp	invoke_main	// simulate invokestatic
 			nop
 			nop
+
 ///////////////////////////////////////////////////////////////////////////
 //
 //	begin of jvm code
+//
+///////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////
+//
+//	some special instructions that use invoke
+//
+///////////////////////////////////////////////////////////////////////////
+
+//
+//	call com.jopdesign.sys.JMV.fxxx(int constant) for not implemented  byte codes.
+//		... JVM in Java!
+//		with constant on stack
+//
+
+new:
+anewarray:
+checkcast:
+instanceof:
+
+//
+//	find address for JVM function
+//
+			ldjpc
+			ldi	1
+			sub
+			stjpc				// get last byte code
+			nop					// ???
+			nop					// one more now (2004-04-06) ?
+			ldm	jjp
+			nop	opd
+			ld_opd_8u
+			ldi	255
+			and
+			dup
+			add					// *2
+			add					// jjp+2*bc
+			stm	a				// save
+
+//
+//	get constant
+//
+			ldm	cp opd
+			nop	opd
+			ld_opd_16u
+			add
+
+			stmra				// read ext. mem, mem_bsy comes one cycle later
+			wait
+			wait
+			ldmrd		 		// read ext. mem
+
+			ldm	a				// restore mp
+
+//
+//	invoke JVM.fxxx(int cons)
+//
+			jmp	invoke
+			nop
+			nop
+
+
+newarray:
+			nop opd
+			ld_opd_8u
+			stm a
+			ldjpc
+			ldi	2
+			sub
+			stjpc				// get last byte code
+			nop					// ???
+			nop					// one more now (2004-04-06) ?
+			ldm	a
+			ldm	jjp
+			nop	opd
+			ld_opd_8u
+			ldi	255 
+			and opd				// remove type info
+			dup
+			add					// *2
+			add					// jjp+2*bc
+
+// invoke JVM.fxxx();
+			jmp	invoke			// simulate invokestatic with ptr to meth. str. on stack
+			nop
+			nop
+
+//
+//	call com.jopdesign.sys.JMV.fxxx(int index) for not implemented  byte codes.
+//		... JVM in Java!
+//		with index into constant pool on stack
+//
+
+putfield_ref:
+putstatic_ref:
+
+//
+//	find address for JVM function
+//
+			ldjpc
+			ldi	1
+			sub
+			stjpc				// get last byte code
+			nop					// ???
+			nop					// one more now (2004-04-06) ?
+			ldm	jjp
+			nop	opd
+			ld_opd_8u
+			ldi	255
+			and
+			dup
+			add					// *2
+			add					// jjp+2*bc
+			stm	a				// save
+
+//
+//	get index
+//
+			nop	opd
+			nop	opd
+			ld_opd_16u
+
+			ldm	a				// restore mp
+
+//
+//	invoke JVM.fxxx(int index)
+//
+			jmp	invoke
+			nop
+			nop
+//
+//	this is an interrupt, (bytecode 0xf0)
+//	call com.jopdesign.sys.JVMHelp.interrupt()	(
+//		oder gleich eine f aus JVMHelp ????
+//		... JVM in Java!
+//
+sys_int:
+			ldjpc				// correct wrong increment on jpc
+			ldi	1				//    could also be done in bcfetch.vhd
+			sub					//    but this is simpler :-)
+			stjpc
+			ldm	jjhp			// interrupt() is at offset 0
+								// jjhp points in method table to first
+								// method after methods inherited from Object
+
+			jmp	invoke			// simulate invokestatic with ptr to meth. str. on stack
+			nop
+			nop
+
+
+//
+//	this is an exception, (bytecode 0xf1)
+//	call com.jopdesign.sys.JVMHelp.except()	(
+//
+sys_exc:
+			ldjpc				// correct wrong increment on jpc
+			ldi	1				//    could also be done in bcfetch.vhd
+			sub					//    but this is simpler :-)
+			stjpc
+			ldm	jjhp			// interrupt() is at offset 0
+								// jjhp points in method table to first
+			ldi	6				// forth method (index 3 * 2 word);
+			add
+
+
+			jmp	invoke			// simulate invokestatic with ptr to meth. str. on stack
+			nop
+			nop
+
+//
+//	call com.jopdesign.sys.JMV.fxxx() for not implemented  byte codes.
+//		... JVM in Java!
+//
+sys_noim:
+			ldjpc
+			ldi	1
+			sub
+			stjpc				// get last byte code
+			nop					// ???
+			nop					// one more now (2004-04-06) ?
+			ldm	jjp
+			nop	opd
+			ld_opd_8u
+			ldi	255
+			and
+			dup
+			add					// *2
+			add					// jjp+2*bc
+
+			jmp	invoke			// simulate invokestatic with ptr to meth. str. on stack
+			nop
+			nop
+
+//
+//	invoke and return functions
+//
+#include "jvm_call.inc"
+
+///////////////////////////////////////////////////////////////////////////
+//
+//	begin of simple bytecodes
 //
 ///////////////////////////////////////////////////////////////////////////
 
@@ -1114,33 +1326,6 @@ jopsys_putfield:				// Version from Native
 			wait
 			pop nxt
 
-newarray:
-			nop opd
-			ld_opd_8u
-			stm a
-			ldjpc
-			ldi	2
-			sub
-			stjpc				// get last byte code
-			nop					// ???
-			nop					// one more now (2004-04-06) ?
-			ldm	a
-			ldm	jjp
-			nop	opd
-			ld_opd_8u
-			ldi	255 
-			and opd				// remove type info
-			dup
-			add					// *2
-			add					// jjp+2*bc
-
-// invoke JVM.fxxx();
-			ldi	1
-			nop
-			bnz	invoke			// simulate invokestatic with ptr to meth. str. on stack
-			nop
-			nop
-
 
 arraylength:
 
@@ -1158,7 +1343,6 @@ castore:
 fastore:
 iastore:
 sastore:
-// new HW version :-)))
 			stast
 			pop
 			pop
@@ -1166,142 +1350,17 @@ sastore:
 			wait
 			nop nxt
 
-//*******************************
-// test for oohw change
-//			ldi	6			// 7*5+2+1=38
-//dly7:
-//			dup
-//			nop
-//			bnz	dly7
-//			ldi	-1			// decrement in branch slot
-//			add
-//			pop				// remove counter
-//			nop
-//*******************************
-
-// original SW version
-//			stm	a				// value
-//			stm	b				// index
-//			// arrayref is TOS
-//			dup					// for null pointer check
-//			dup					// for bound check, one cycle wait for bz
-//			bz	null_pointer	// 
-//			// we do the following in the
-//			// branch slot -> one more element
-//			// from the former dup on the stack
-//			ldi	1
-//			add					// arrayref+1
-//			stmra				// read ext. mem, mem_bsy comes one cycle later
-//			wait				// is this ok? - wait in branch slot
-//			wait
-//			ldmrd		 		// read ext. mem (array length)
-//
-//			ldi	1
-//			sub					// length-1
-//			ldm	b				// index
-//			sub					// TOS = length-1-index
-//			ldm	b				// check if index is negativ
-//			or					// is one of both checks negativ?
-//         	ldi	-2147483648		//  0x80000000
-//			and
-//			nop
-//			bnz	array_bound
-//			nop
-//			nop
-//
-//// we could save one or two cycles when
-//// starting the read in the branch slot
-//			stmra				// read handle indirection
-//			wait				// for the GC
-//			wait
-//			ldmrd
-//			ldm	b
-//			add					// index+arrayref
-//
-//			stmwa				// write ext. mem address
-//			ldm	a
-//			stmwd				// write ext. mem data
-//			wait
-//			wait
-//			nop	nxt
-
 aaload:
 baload:
 caload:
 faload:
 iaload:
 saload:
-// new HW version :-)))
 			stald
 			pop
 			wait
 			wait
 			ldmrd nxt
-
-//*******************************
-// test for oohw change
-//			ldi	5			// 6*5+2+3=35
-//dly6:
-//			dup
-//			nop
-//			bnz	dly6
-//			ldi	-1			// decrement in branch slot
-//			add
-//			pop				// remove counter
-//			nop
-//			nop
-//			nop
-//*******************************
-
-// original SW version
-//
-//	ideas for enhancements:
-//		array pointer points to length and not the first element
-//		load and checks in memory interface
-//
-//			stm	b				// index
-//			// arrayref is TOS
-//			dup					// for null pointer check
-//			dup					// for bound check, one cycle wait for bz
-//			bz	null_pointer	// 
-//			// we do the following in the
-//			// branch slot -> one more element
-//			// from the former dup on the stack
-//			ldi	1
-//			add					// arrayref+1
-//
-//			stmra				// read array length
-//			wait				// is this ok? - wait in branch slot
-//			wait
-//			ldmrd		 		// read ext. mem (array length)
-//
-//			ldi	1
-//			add					// length+1
-//			ldm	b				// index
-//			sub					// TOS = length-1-index
-//			ldm	b				// check if index is negativ
-//			or					// is one of both checks neagtv?
-//         	ldi	-2147483648		//  0x80000000
-//			and
-//			nop
-//			bnz	array_bound
-//			nop
-//			nop
-//
-//// we could save one ot two cycles when
-//// starting the read in the branch slot
-//			stmra				// read handle indirection
-//			wait				// for the GC
-//			wait
-//			ldmrd
-//			ldm	b
-//			add					// index+arrayref
-//
-//			stmra				// read ext. mem, mem_bsy comes one cycle later
-//			wait
-//			wait
-//			ldmrd		 nxt	// read ext. mem
-
 
 monitorenter:
  			pop					// drop reference
@@ -1354,226 +1413,13 @@ monitorexit:
 			wait
 mon_no_ena:	nop		nxt
 
-//
-//	invoke and return functions
-//
-#include "jvm_call.inc"
-
-//
-//	null pointer
-//		call JVMHelp.nullPoint();
-//
-
-null_pointer:
-			wait				// just for shure if we jump during
-			wait				// a memory transaction to this point
-			ldm	jjhp			// interrupt() is at offset 0
-								// jjhp points in method table to first
-								// method after methods inherited from Object
-			ldi	2				// second method (index 1 * 2 word);
-			add
-
-			ldi	1
-			nop
-			bnz	invoke			// simulate invokestatic with ptr to meth. str. on stack
-			nop
-			nop
-
-
-//
-//	array bound exception
-//		call JVMHelp.arrayBound();
-//
-
-array_bound:
-			wait				// just for shure if we jump during
-			wait				// a memory transaction to this point
-			ldm	jjhp			// interrupt() is at offset 0
-								// jjhp points in method table to first
-								// method after methods inherited from Object
-			ldi	4				// third method (index 2 * 2 word);
-			add
-
-			ldi	1
-			nop
-			bnz	invoke			// simulate invokestatic with ptr to meth. str. on stack
-			nop
-			nop
-
 //		
 // long bytecodes
 //
 #include "jvm_long.inc"
 
-//
-//	this is an interrupt, (bytecode 0xf0)
-//	call com.jopdesign.sys.JVMHelp.interrupt()	(
-//		oder gleich eine f aus JVMHelp ????
-//		... JVM in Java!
-//
-sys_int:
-			ldjpc				// correct wrong increment on jpc
-			ldi	1				//    could also be done in bcfetch.vhd
-			sub					//    but this is simpler :-)
-			stjpc
-			ldm	jjhp			// interrupt() is at offset 0
-								// jjhp points in method table to first
-								// method after methods inherited from Object
-
-			ldi	1
-			nop
-			bnz	invoke			// simulate invokestatic with ptr to meth. str. on stack
-			nop
-			nop
 
 
-//
-//	this is an exception, (bytecode 0xf1)
-//	call com.jopdesign.sys.JVMHelp.except()	(
-//
-sys_exc:
-			ldjpc				// correct wrong increment on jpc
-			ldi	1				//    could also be done in bcfetch.vhd
-			sub					//    but this is simpler :-)
-			stjpc
-			ldm	jjhp			// interrupt() is at offset 0
-								// jjhp points in method table to first
-			ldi	6				// forth method (index 3 * 2 word);
-			add
-
-
-			ldi	1
-			nop
-			bnz	invoke			// simulate invokestatic with ptr to meth. str. on stack
-			nop
-			nop
-
-
-//
-//	call com.jopdesign.sys.JMV.fxxx() for not implemented  byte codes.
-//		... JVM in Java!
-//
-sys_noim:
-			ldjpc
-			ldi	1
-			sub
-			stjpc				// get last byte code
-			nop					// ???
-			nop					// one more now (2004-04-06) ?
-			ldm	jjp
-			nop	opd
-			ld_opd_8u
-			ldi	255
-			and
-			dup
-			add					// *2
-			add					// jjp+2*bc
-
-			ldi	1
-			nop
-			bnz	invoke			// simulate invokestatic with ptr to meth. str. on stack
-			nop
-			nop
-
-//
-//	call com.jopdesign.sys.JMV.fxxx(int constant) for not implemented  byte codes.
-//		... JVM in Java!
-//		with constant on stack
-//
-
-new:
-anewarray:
-checkcast:
-instanceof:
-
-//
-//	find address for JVM function
-//
-			ldjpc
-			ldi	1
-			sub
-			stjpc				// get last byte code
-			nop					// ???
-			nop					// one more now (2004-04-06) ?
-			ldm	jjp
-			nop	opd
-			ld_opd_8u
-			ldi	255
-			and
-			dup
-			add					// *2
-			add					// jjp+2*bc
-			stm	a				// save
-
-//
-//	get constant
-//
-			ldm	cp opd
-			nop	opd
-			ld_opd_16u
-			add
-
-			stmra				// read ext. mem, mem_bsy comes one cycle later
-			wait
-			wait
-			ldmrd		 		// read ext. mem
-
-			ldm	a				// restore mp
-
-//
-//	invoke JVM.fxxx(int cons)
-//
-			ldi	1
-			nop
-			bnz	invoke
-			nop
-			nop
-
-//
-//	call com.jopdesign.sys.JMV.fxxx(int index) for not implemented  byte codes.
-//		... JVM in Java!
-//		with index into constant pool on stack
-//
-
-putfield_ref:
-putstatic_ref:
-
-//
-//	find address for JVM function
-//
-			ldjpc
-			ldi	1
-			sub
-			stjpc				// get last byte code
-			nop					// ???
-			nop					// one more now (2004-04-06) ?
-			ldm	jjp
-			nop	opd
-			ld_opd_8u
-			ldi	255
-			and
-			dup
-			add					// *2
-			add					// jjp+2*bc
-			stm	a				// save
-
-//
-//	get index
-//
-			nop	opd
-			nop	opd
-			ld_opd_16u
-
-			ldm	a				// restore mp
-
-//
-//	invoke JVM.fxxx(int index)
-//
-			ldi	1
-			nop
-			bnz	invoke
-			nop
-			nop
 
 //****************
 
@@ -1772,7 +1618,6 @@ jopsys_cond_move:
 			bz		false_path
 			stm		b
 			stm		c
-nop // just because we run out of branch distances
 			ldm		c nxt
 false_path:	ldm		b nxt
 

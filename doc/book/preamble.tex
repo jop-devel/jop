@@ -106,13 +106,13 @@
 %\newcommand{\excelwidth}{10cm}
 
 
-% was set to 9 for the green book
-% should be ok with 11 for the orange book
-\newfont{\javatt}{cmss11}
-\newfont{\javattb}{cmssdc11}
-% TODO find an italic
-\newfont{\javatti}{cmss11}
-\newcommand{\javatext}{\javatt}
+%% was set to 9 for the green book
+%% should be ok with 11 for the orange book
+%\newfont{\javatt}{cmss11}
+%\newfont{\javattb}{cmssdc11}
+%% TODO find an italic
+%\newfont{\javatti}{cmss11}
+%\newcommand{\javatext}{\javatt}
 
 \newcommand{\picscale}{1}
 \newcommand{\excelwidth}{12cm}
@@ -169,9 +169,14 @@
 % does not work with latex2html!
 
 
-\newcommand{\codefoot}{\textsf}
-\newcommand{\code}[1]{{\javatext#1}}
-\newcommand{\codeb}[1]{{\javattb#1}}
+%\newcommand{\codefoot}{\textsf}
+%\newcommand{\code}[1]{{\javatext#1}}
+%\newcommand{\codeb}[1]{{\javattb#1}}
+
+\newcommand{\codefoot}{\sffamily}
+\newcommand{\code}[1]{{\small\sffamily{#1}}}
+
+
 %\newcommand{\cmd}[1]{{\texttt{#1}}}
 %\newcommand{\dirent}[1]{{\texttt{#1}}}
 %\newcommand{\menuitem}[1]{\textsf{\textbf{#1}}}
@@ -213,6 +218,7 @@
 
 \newcommand{\instr}[6]{
     \begin{table}
+    \index{microcode!{\textsf{#1}}}
         \begin{tabular}{ll}
             \emph{\large\textbf{#1}} & \\
             \\ \\

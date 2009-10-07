@@ -68,11 +68,12 @@ public class DoAll {
 				new Logic3(),
 				new InvokeSpecial(),
 				new InvokeSuper(),
-				new PutRef()
+				new PutRef(),
+				new NullPointer()
 		};
 		
 		for (int i=0; i<tc.length; ++i) {
-			System.out.print(tc[i].getName());
+			System.out.print(tc[i].toString());
 			if (tc[i].test()) {
 				System.out.println(" ok");
 			} else {
