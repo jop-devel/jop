@@ -47,6 +47,7 @@ import com.jopdesign.dfa.analyses.LoopBounds;
 import com.jopdesign.dfa.analyses.ReceiverTypes;
 import com.jopdesign.dfa.framework.ContextMap;
 import com.jopdesign.wcet.allocation.AllocationModel;
+import com.jopdesign.wcet.allocation.HandleAllocationModel;
 import com.jopdesign.wcet.analysis.WcetCost;
 import com.jopdesign.wcet.config.Config;
 import com.jopdesign.wcet.frontend.CallGraph;
@@ -180,7 +181,7 @@ public class Project {
 		if(projectConfig.getProcessorName().equals("jamuth")) {
 		    this.processor = new JamuthModel(this);
 		} else if (projectConfig.getProcessorName().equals("alloc")) {
-			this.processor = new AllocationModel(this);			
+			this.processor = new HandleAllocationModel(this);			
 		} else {
 			this.processor = new JOPModel(this);
 		}
