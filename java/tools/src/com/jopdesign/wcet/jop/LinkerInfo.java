@@ -44,16 +44,20 @@ public class LinkerInfo {
 		private ClassInfo klass;
 		private int clinfoAddress;
 		private int constsAddress;
+		private int instSize;
+		private int superAddress;
+
 		private Map <String,Integer> staticAddresses = new HashMap<String,Integer>();;
 		private Map <String,Integer> codeAddresses = new HashMap<String,Integer>();
 		private Map <String,Integer> mtabAddresses = new HashMap<String,Integer>();
 		private Map <Integer,Integer> constMap = new TreeMap<Integer,Integer>();
-		private int superAddress;
 
 		public LinkInfo(ClassInfo ci, int mtabAddress, int constsAddress) {
 			this.klass = ci;
 			this.clinfoAddress = mtabAddress - 5;
 			this.constsAddress = constsAddress;
+			this.superAddress = -1;
+			this.instSize = -1;
 		}
 		public ClassInfo getTargetClass() {
 			return klass;
@@ -109,6 +113,7 @@ public class LinkerInfo {
 		}
 		public void dump(StringBuilder sb) {
 			sb.append("LinkInfo: "+this.klass.clazz.getClassName()+"\n");
+			sb.append("  instSize: "+this.instSize+"\n");
 			sb.append("  classInfo @ "+this.clinfoAddress+"\n");
 			sb.append("  mtab @ "+this.getMTabAddress()+"\n");
 			sb.append("  cpool @ "+this.constsAddress+"\n");
@@ -139,13 +144,15 @@ public class LinkerInfo {
 				constMap.put(keyIx,valIx);
 			} else if(key.equals("-super")) {
 				this.superAddress = Integer.parseInt(tks[1]);
-		    } else if (key.equals("-mtab")) {
+			} else if(key.equals("-instSize")) {
+				this.instSize = Integer.parseInt(tks[1]);
+			} else if (key.equals("-mtab")) {
 				String nameParts[] = ProjectConfig.splitClassName(tks[1]);
 				int valIx = Integer.parseInt(tks[2]);
 				addAddress("MTabAddresses",mtabAddresses,nameParts[1],valIx);
-		    } else {
-				throw new AssertionError("Bad format for class info: "+Arrays.toString(tks));
-			}
+			} else {
+				throw new AssertionError("Bad format for class info (Unknown key: '" + key +"')"+Arrays.toString(tks));
+		    }
 		}
 	}
 	private Project project;

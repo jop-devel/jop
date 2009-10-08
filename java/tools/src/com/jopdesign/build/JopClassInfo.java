@@ -726,6 +726,7 @@ public class JopClassInfo extends ClassInfo implements Serializable {
         }
         // link info: class addresses
         outLinkInfo.println("class "+clazz.getClassName()+" "+methodsAddress+" "+cpoolAddress);
+        outLinkInfo.println(" -instSize "+instSize);
 
         out.println("\t\t" + staticValueVarAddress
                 + ",\t//\tpointer to static primitive fields");
