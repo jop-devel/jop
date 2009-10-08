@@ -90,7 +90,9 @@ public class LinkerInfo {
 		private void setCodeAddress(String name, int address) {
 			addAddress("CodeAddresses",codeAddresses,name,address);
 		}
-
+		public int getInstanceSize() {
+			return this.instSize;
+		}
 		public int getStaticFieldAddress(String name) {
 			return staticAddresses.get(name);
 		}
