@@ -19,14 +19,9 @@
 */
 package com.jopdesign.wcet.frontend;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.Writer;
-import java.util.Arrays;
 import java.util.BitSet;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -36,12 +31,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
 
-import org.apache.bcel.classfile.Attribute;
-import org.apache.bcel.classfile.ConstantPool;
-import org.apache.bcel.classfile.Field;
-import org.apache.bcel.classfile.JavaClass;
-import org.apache.bcel.classfile.Method;
-import org.apache.bcel.generic.ConstantPoolGen;
 import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleGraph;
@@ -53,6 +42,20 @@ import com.jopdesign.build.ClassInfo;
 import com.jopdesign.wcet.graphutils.AdvancedDOTExporter;
 import com.jopdesign.wcet.graphutils.Pair;
 import com.jopdesign.wcet.graphutils.AdvancedDOTExporter.DefaultNodeLabeller;
+
+/* For testing:
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.util.Arrays;
+import java.util.Collection;
+import org.apache.bcel.classfile.Attribute;
+import org.apache.bcel.classfile.ConstantPool;
+import org.apache.bcel.classfile.Field;
+import org.apache.bcel.classfile.JavaClass;
+import org.apache.bcel.classfile.Method;
+import org.apache.bcel.generic.ConstantPoolGen;
+*/
 
 /**
  * TypeGraph based on JGraphT. Supports Interfaces.
