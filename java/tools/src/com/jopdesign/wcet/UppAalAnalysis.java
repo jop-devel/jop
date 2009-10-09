@@ -81,7 +81,7 @@ public class UppAalAnalysis {
 		Project project = null;
 		try { 
 			project = new Project(new ProjectConfig(c));
-			project.setTopLevelLooger(tlLogger);
+			project.setTopLevelLogger(tlLogger);
 			tlLogger.info("Loading project");
 			project.load();
 			uppaalOutDir = project.getOutDir("uppaal");
