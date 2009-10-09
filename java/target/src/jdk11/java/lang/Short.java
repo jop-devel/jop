@@ -141,4 +141,29 @@ public final class Short {
 		// return String.valueOf(value);
 	}
 
+	  /**
+	   * Converts the <code>short</code> to a <code>String</code> and assumes
+	   * a radix of 10.
+	   *
+	   * @param s the <code>short</code> to convert to <code>String</code>
+	   * @return the <code>String</code> representation of the argument
+	   */
+	  public static String toString(short s)
+	  {
+	    return String.valueOf(s);
+	  }
+	  
+	  /**
+	   * Returns a <code>Short</code> object wrapping the value.
+	   * In contrast to the <code>Short</code> constructor, this method
+	   * will cache some values.  It is used by boxing conversion.
+	   *
+	   * @param val the value to wrap
+	   * @return the <code>Short</code>
+	   * @since 1.5
+	   */
+	  public static Short valueOf(short val)
+	  {
+	      return new Short(val);
+	  }
 }
