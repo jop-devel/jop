@@ -36,10 +36,10 @@ import com.jopdesign.wcet.frontend.ControlFlowGraph.EdgeKind;
 
 /**
  * A lightweight basic block class, based on linked lists.<br/>
- * 
+ *
  * @see A more elaborated attempt to add BasicBlocks to BCEL
  *      http://findbugs.sourceforge.net/api/edu/umd/cs/findbugs/ba/BasicBlock.html
- * 
+ *
  * @author Benedikt Huber (benedikt.huber@gmail.com)
  *
  */
@@ -53,9 +53,9 @@ public class BasicBlock  {
 		boolean alwaysTaken = false;
 		boolean splitBefore = false;
 		boolean splitAfter = false;
-		boolean exit = false;		
+		boolean exit = false;
 		List<FlowTarget> targets = new Vector<FlowTarget>();
-		
+
 		void addTarget(InstructionHandle ih, EdgeKind kind) {
 			targets.add(new FlowTarget(ih,kind));
 		}
@@ -66,32 +66,32 @@ public class BasicBlock  {
 	static class FlowTarget {
 		InstructionHandle target;
 		EdgeKind edgeKind;
-		FlowTarget(InstructionHandle target, EdgeKind edgeKind) { 
-			this.target = target; this.edgeKind = edgeKind; 
+		FlowTarget(InstructionHandle target, EdgeKind edgeKind) {
+			this.target = target; this.edgeKind = edgeKind;
 		}
 		@Override public String toString() {
 			return "FlowTarget<"+target.getPosition()+","+edgeKind+">";
 		}
 	}
-	
+
 
 	/** Keys for the custom {@link InstructionHandle} attributes */
 	private enum InstrField { FLOW_INFO, LINE_NUMBER };
-	
+
 	/** Get FlowInfo associated with an {@link InstructionHandle} */
 	static FlowInfo getFlowInfo(InstructionHandle ih) {
 		return (FlowInfo)ih.getAttribute(InstrField.FLOW_INFO);
 	}
-	
+
 	/** Get Line number associated with an {@link InstructionHandle} */
 	static Integer getLineNumber(InstructionHandle ih) {
 		return (Integer)ih.getAttribute(InstrField.LINE_NUMBER);
 	}
-	
+
 	private LinkedList<InstructionHandle> instructions = new LinkedList<InstructionHandle>();
 	private MethodInfo methodInfo;
 	private WcetAppInfo appInfo;
-	
+
 	/** Create a basic block
 	 * @param appInfo    The WCET context
 	 * @param methodInfo The method the basic block belongs to
@@ -168,13 +168,13 @@ public class BasicBlock  {
 		int len = 0;
 		for(InstructionHandle ih : this.instructions) {
 			len += appInfo.getProcessorModel().getNumberOfBytes(
-					this.methodInfo, ih.getInstruction()					
+					this.methodInfo, ih.getInstruction()
 			);
 		}
 		return len;
 	}
 	/*---------------------------------------------------------------------------
-	 *  Control flow graph construction 
+	 *  Control flow graph construction
 	 *---------------------------------------------------------------------------
 	 */
 	/**
@@ -220,14 +220,14 @@ public class BasicBlock  {
 			flowInfo.alwaysTaken = true;
 		}
 
-		/** FIXME: Exceptions aren't supported yet, but to avoid 
+		/** FIXME: Exceptions aren't supported yet, but to avoid
 		 *  early bail out, we assume exceptions terminate execution (for now) */
 		@Override
 		public void visitATHROW(ATHROW obj) {
 			flowInfo.exit = true;
 			flowInfo.splitAfter = true;
 		}
-		
+
 		// Not neccesarily, but nice for WCET analysis
 		@Override public void visitInvokeInstruction(InvokeInstruction obj) {
 			if(! appInfo.getProcessorModel().isSpecialInvoke(methodInfo, obj)) {
@@ -244,13 +244,13 @@ public class BasicBlock  {
 			this.methodInfo = m;
 			this.appInfo = ai;
 		}
-		
+
 		public FlowInfo getFlowInfo(InstructionHandle ih) {
 			flowInfo = new FlowInfo();
 			visitInstruction(ih);
 			return flowInfo;
 		}
-		
+
 	}
 
 	/**
@@ -264,7 +264,7 @@ public class BasicBlock  {
 		Vector<BasicBlock> basicBlocks = new Vector<BasicBlock>();
 		InstructionList il = methodInfo.getMethodGen().getInstructionList();
 		il.setPositions(true);
-		LineNumberTable lineNumberTable = 
+		LineNumberTable lineNumberTable =
 			methodInfo.getMethodGen().getLineNumberTable(methodInfo.getConstantPoolGen());
 		/* Step 1: compute flow info */
 		for(InstructionHandle ih : il.getInstructionHandles()) {
@@ -298,11 +298,11 @@ public class BasicBlock  {
 					}
 				}
 			}
-		}		
+		}
 		return basicBlocks;
 	}
-	
-	
+
+
 
 	/**
 	 * Return all source code lines this basic block maps to
@@ -320,7 +320,7 @@ public class BasicBlock  {
 
 	/** <p>Compact, human-readable String representation of the basic block.</p>
 	 *
-	 *  <p>Mixed Stack notation, with at most one side-effect statement per line.</p> 
+	 *  <p>Mixed Stack notation, with at most one side-effect statement per line.</p>
 	 *  Example:<br/>
 	 *  {@code local_0 <- sipush[3] sipush[4] dup add add} <br/>
 	 *  {@code local_1 <- load[local_0] load[local_0] mul}
@@ -331,9 +331,9 @@ public class BasicBlock  {
 		InstructionPrettyPrinter ipp = new InstructionPrettyPrinter();
 		while(ihIter.hasNext()) {
 			InstructionHandle ih = ihIter.next();
-			ipp.visitInstruction(ih);			
+			ipp.visitInstruction(ih);
 		}
-		sb.append(ipp.getBuffer());		
+		sb.append(ipp.getBuffer());
 		return sb.toString();
 	}
 
@@ -362,8 +362,8 @@ public class BasicBlock  {
 		}
 		public void visitInstruction(InstructionHandle ih) {
 			this.visited = false;
-			this.address = cfg.getConstAddress(ih);
-			currentPos = lnt.getSourceLine(ih.getPosition());			
+			//this.address = cfg.getConstAddress(ih);
+			currentPos = lnt.getSourceLine(ih.getPosition());
 			ih.accept(this);
 			if(! visited) {
 				String s = ih.getInstruction().toString(cpg().getConstantPool());
@@ -376,7 +376,7 @@ public class BasicBlock  {
 				String end = lastPos < 0 ? "?" : (""+lastPos);
 				if(startPos != lastPos) lineBuffer.insert(0,"["+start+"-"+end+"] ");
 				else                    lineBuffer.insert(0,"["+ start +"]  ");
-				sb.append(lineBuffer); 
+				sb.append(lineBuffer);
 				sb.append("\n");
 				lineBuffer = new StringBuilder();
 				startPos = currentPos;
@@ -394,26 +394,26 @@ public class BasicBlock  {
 		}
 		private void assign(String lhs) {
 			if(address != null) lhs = String.format("%s<%d>",lhs,address);
-			lineBuffer.insert(0, lhs + "<-");			
+			lineBuffer.insert(0, lhs + "<-");
 			nextLine();
 			markVisited();
-			visited = true;			
+			visited = true;
 		}
 		private void markVisited() {
 			visited = true;
 			if(startPos < 0) startPos = currentPos;
-			lastPos = currentPos;			
+			lastPos = currentPos;
 		}
-		
+
 		@Override
 		public void visitBranchInstruction(BranchInstruction obj) {
 			nextLine();
 		}
 		@Override
-		public void visitUnconditionalBranch(UnconditionalBranch obj) {			
+		public void visitUnconditionalBranch(UnconditionalBranch obj) {
 			nextLine();
 		}
-		
+
 		@Override
 		public void visitStoreInstruction(StoreInstruction obj) {
 			assign("$"+obj.getIndex());

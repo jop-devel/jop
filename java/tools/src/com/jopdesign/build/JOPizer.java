@@ -33,14 +33,14 @@ public class JOPizer extends AppInfo implements Serializable {
 
 	// needed to avoid issues related to store/load of serializable content
 	private static final long serialVersionUID = 1307508540685275006L;
-	
+
 	public final static String nativeClass = "com.jopdesign.sys.Native";
 	public final static String startupClass = "com.jopdesign.sys.Startup";
 	public final static String jvmClass = "com.jopdesign.sys.JVM";
 	public final static String helpClass = "com.jopdesign.sys.JVMHelp";
 	public final static String bootMethod = "boot()V";
 	public final static String mainMethod = "main([Ljava/lang/String;)V";
-	
+
 	public final static String stringClass = "java.lang.String";
 	public final static String objectClass = "java.lang.Object";
 
@@ -62,16 +62,14 @@ public class JOPizer extends AppInfo implements Serializable {
 	public static final int METHOD_MAX_SIZE = 1024;
 
 	public static boolean dumpMgci = false;
-	
+
 	/** .jop output file */
 	transient PrintWriter out;
 	/** text file for additional information */
 	transient PrintWriter outTxt;
 	/** link info for the D$ analysis */
 	transient PrintWriter outLinkInfo;
-	/** link info for the D$ analysis of static fields */
-	transient PrintWriter outStaticInfo;
-	
+
 	/**
 	 * Length of the generated application in words.
 	 * It is written as the first word in .jop
@@ -97,7 +95,7 @@ public class JOPizer extends AppInfo implements Serializable {
 	public JOPizer(ClassInfo template) {
 		super(template);
 	}
-	
+
 
 	public static void main(String[] args) {
 
@@ -106,7 +104,7 @@ public class JOPizer extends AppInfo implements Serializable {
     // TODO: small change to implement quickly the symbol manager
 //		JOPizer jz = new JOPizer();
 		jz = new JOPizer(JopClassInfo.getTemplate());
-		
+
 		if(args.length < 3) {
 			System.err.println("JOPizer arguments: [-cp classpath] -o file class [class]*");
 			System.exit(-1);
@@ -114,7 +112,7 @@ public class JOPizer extends AppInfo implements Serializable {
 		jz.parseOptions(args);
 		if(jz.outFile == null) {
 			System.err.println("JOPizer: Missing argument: '-o file'");
-			System.exit(-1);			
+			System.exit(-1);
 		}
 		jz.addClass(startupClass);
 		jz.addClass(jvmClass);
@@ -124,8 +122,7 @@ public class JOPizer extends AppInfo implements Serializable {
 		try {
 			jz.out = new PrintWriter(new FileOutputStream(jz.outFile));
 			jz.outTxt = new PrintWriter(new FileOutputStream(jz.outFile+".txt"));
-			jz.outLinkInfo = new PrintWriter(new FileOutputStream(jz.outFile+".link.txt"));			
-			jz.outStaticInfo = new PrintWriter(new FileOutputStream(jz.outFile+".static.txt"));
+			jz.outLinkInfo = new PrintWriter(new FileOutputStream(jz.outFile+".link.txt"));
 
 			jz.load();
 			// Reduce constant pool
@@ -140,11 +137,11 @@ public class JOPizer extends AppInfo implements Serializable {
 	        // replace the wide instructions generated
 			// by Sun's javac 1.5
 			jz.iterate(new ReplaceIinc(jz));
-			
+
 			// add monitorenter and exit for synchronized
 			// methods
 			jz.iterate(new InsertSynchronized(jz));
-			
+
 	        // dump of BCEL info to a text file
 			jz.iterate(new Dump(jz, jz.outTxt));
 
@@ -155,13 +152,13 @@ public class JOPizer extends AppInfo implements Serializable {
 			// Build the virtual tables
 			BuildVT vt = new BuildVT(jz);
 			jz.iterate(vt);
-			
+
 			// find all <clinit> methods and their dependency,
 			// resolve the depenency and generate the list
 			ClinitOrder cliOrder = new  ClinitOrder(jz);
 			jz.iterate(cliOrder);
 			JopMethodInfo.clinitList = cliOrder.findOrder();
-			
+
 			// calculate addresses for static fields
 			jz.iterate(new CountStaticFields(jz));
 			int addrVal = 2;
@@ -170,7 +167,7 @@ public class JOPizer extends AppInfo implements Serializable {
 			JopClassInfo.addrRefStatic = addrRef;
 			jz.iterate(new SetStaticAddresses(jz));
 			// set back the start addresses
-			JopClassInfo.addrValueStatic = addrVal; 
+			JopClassInfo.addrValueStatic = addrVal;
 			JopClassInfo.addrRefStatic = addrRef;
 
 			// change methods - replace Native calls
@@ -184,15 +181,15 @@ public class JOPizer extends AppInfo implements Serializable {
 			// Now we can set the method info code and the address
 			// jz.pointerAddr is set
 			jz.iterate(new SetMethodAddress(jz));
-			
+
 			// How long is the <clinit> List?
 			int cntClinit = JopMethodInfo.clinitList.size();
 			// How long is the string table?
 			StringInfo.stringTableAddress = jz.pointerAddr+PTRS+cntClinit+1;
-						
+
 			// Start of class info
 			jz.clinfoAddr = StringInfo.stringTableAddress + StringInfo.length;
-			
+
 			// Calculate class info addresses
 			ClassAddress cla = new ClassAddress(jz, jz.clinfoAddr);
 			jz.iterate(cla);
@@ -202,12 +199,11 @@ public class JOPizer extends AppInfo implements Serializable {
 			// As all addresses are now known we can
 			// resolve the constants.
 			jz.iterate(new ResolveCPool(jz));
-			
+
 			// Finally we can write the .jop file....
 			new JopWriter(jz).write();
 
 			jz.outLinkInfo.close();
-			jz.outStaticInfo.close();
 
 		} catch(Exception e) { e.printStackTrace();}
 	}
