@@ -249,6 +249,30 @@ public final class Integer
   {
     return new Integer(parseInt(s, 10, false));
   }
+  
+  public static Integer valueOf(int val)
+  {
+      return new Integer(val);
+  }
+  /**
+   * Return the value of this <code>Integer</code> as a <code>float</code>.
+   *
+   * @return the float value
+   */
+  public float floatValue()
+  {
+    return value;
+  }
+
+  /**
+   * Return the value of this <code>Integer</code> as a <code>double</code>.
+   *
+   * @return the double value
+   */
+  public double doubleValue()
+  {
+    return value;
+  }
 
 
   private static int parseInt(String str, int radix, boolean decode)

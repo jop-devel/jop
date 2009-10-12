@@ -321,5 +321,21 @@ public final class Math
 		  throw new RuntimeException("Not implemented");
 	  }
   }
+  
+  public static int floor(double d) {
+	  if (Const.SUPPORT_DOUBLE) {
+		  return (int) d;
+	  } else {
+		  throw new RuntimeException("Not implemented");
+	  }	  
+  }
+
+  public static int floor(float f) {
+	  if (Const.SUPPORT_FLOAT) {
+		  return (int) f;
+	  } else {
+		  throw new RuntimeException("Not implemented");
+	  }	  
+  }
 
 }

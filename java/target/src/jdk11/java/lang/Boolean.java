@@ -150,6 +150,11 @@ public final class Boolean {
 	public String toString() {
 		return value ? "true" : "false";
 	}
+	
+	  public static String toString(boolean b)
+	  {
+	    return b ? "true" : "false";
+	  }
 
 	/**
 	 * Returns the integer <code>1231</code> if this object represents the
