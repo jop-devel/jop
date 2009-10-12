@@ -344,6 +344,9 @@ public class Startup {
 				case 18 :		// ldc
 					stack[++sp] = Native.rdMem(cp+readBC8u());
 					break;
+				case 19 :		// ldc_w
+					stack[++sp] = Native.rdMem(cp+readBC16u());
+					break;
 				case 20 :		// ldc2_w
 					idx = readBC16u();
 					stack[++sp] = Native.rdMem(cp+idx);
