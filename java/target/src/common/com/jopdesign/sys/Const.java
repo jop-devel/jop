@@ -87,6 +87,11 @@ public class Const {
 	 * provided.
 	 */
 	public static final boolean SUPPORT_FLOAT = true;
+	
+	/**
+	 * Set to true if RTTM is used. 
+	 */
+	public static final boolean USE_RTTM = true;
 
 	/**
 	 * Offset of the real stack in the on-chip RAM. Is set in
@@ -303,5 +308,14 @@ public class Const {
 	public static final int WB_TS2 = WB_BASE+0x74;
 	public static final int WB_TS3 = WB_BASE+0x76;
 
-	
+	// RTTM
+	// TMTODO adapt magic address to available memory
+	public static final int MEM_TM_MAGIC = 0x07ffff;
+
+	public static final int TM_END_TRANSACTION = 0;
+	public static final int TM_START_TRANSACTION = 1;
+	public static final int TM_ABORTED = 2;
+	public static final int TM_EARLY_COMMIT = 3;
+	public static final int TM_ABORT = 4;
+
 }

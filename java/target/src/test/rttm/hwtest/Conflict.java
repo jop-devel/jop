@@ -7,7 +7,7 @@ import com.jopdesign.sys.RollbackException;
 import com.jopdesign.sys.Startup;
 import joprt.RtThread;
 
-import static rttm.hwtest.Const.*;
+import static com.jopdesign.sys.Const.*;
 
 public class Conflict implements Runnable {
 	
@@ -32,7 +32,7 @@ public class Conflict implements Runnable {
 		sys.signal = 1;
 		
 		try {
-			Native.wrMem(START_TRANSACTION, MAGIC);
+			Native.wrMem(TM_START_TRANSACTION, MEM_TM_MAGIC);
 			
 			notCommitted = true;
 			boolean ignored = conflicting;						
@@ -51,11 +51,11 @@ public class Conflict implements Runnable {
 		// make sure it will be a conflict
 		RtThread.busyWait(100);
 		
-		Native.wrMem(START_TRANSACTION, MAGIC);
+		Native.wrMem(TM_START_TRANSACTION, MEM_TM_MAGIC);
 		
 		conflicting = true;
 		
-		Native.wrMem(END_TRANSACTION, MAGIC);
+		Native.wrMem(TM_END_TRANSACTION, MEM_TM_MAGIC);
 	}
 
 }

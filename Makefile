@@ -138,6 +138,9 @@ TARGET_SOURCE=$(TARGET)/src/common$(S)$(TARGET)/src/jdk_base$(S)$(TARGET)/src/jd
 TARGET_JFLAGS=-d $(TARGET)/dist/classes -sourcepath $(TARGET_SOURCE) -bootclasspath "" -extdirs "" -classpath "" -source 1.5
 GCC_PARAMS=
 
+# uncomment this if you use RTTM
+GCC_PARAMS=-DRTTM
+
 # uncomment this if you want floating point operations in hardware
 # ATTN: be sure to choose 'cycfpu' as QPROJ else no FPU will be available
 #GCC_PARAMS=-DFPU_ATTACHED

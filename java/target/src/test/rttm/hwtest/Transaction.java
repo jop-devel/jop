@@ -6,7 +6,7 @@ import com.jopdesign.sys.Native;
 import com.jopdesign.sys.Startup;
 import joprt.RtThread;
 
-import static rttm.hwtest.Const.*;
+import static com.jopdesign.sys.Const.*;
 
 public class Transaction implements Runnable {
 	
@@ -39,23 +39,23 @@ public class Transaction implements Runnable {
 	}
 
 	public void run() {
-		Native.wrMem(START_TRANSACTION, MAGIC);
+		Native.wrMem(TM_START_TRANSACTION, MEM_TM_MAGIC);
 		
 		flag = true;
 		
-		Native.wrMem(END_TRANSACTION, MAGIC);
+		Native.wrMem(TM_END_TRANSACTION, MEM_TM_MAGIC);
 		
 		RtThread.busyWait(100 * scale);
 		flag = false;
 		RtThread.busyWait(100 * scale);
 		
-		Native.wrMem(START_TRANSACTION, MAGIC);
+		Native.wrMem(TM_START_TRANSACTION, MEM_TM_MAGIC);
 		
 		flag = true;
 		
-		Native.wrMem(END_TRANSACTION, MAGIC);
+		Native.wrMem(TM_END_TRANSACTION, MEM_TM_MAGIC);
 		
-		Native.wrMem(START_TRANSACTION, MAGIC);
+		Native.wrMem(TM_START_TRANSACTION, MEM_TM_MAGIC);
 		
 		flag = false;
 		
