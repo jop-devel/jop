@@ -176,11 +176,13 @@ begin
 			when end_transaction =>
 				next_nesting_cnt <= nesting_cnt - 1;
 			when early_commit | none =>
-				next_nesting_cnt <= nesting_cnt;
+				next_nesting_cnt <= nesting_cnt;			
 			when aborted =>
 				-- TODO reference counter could also be maintained exclusively
 				-- in hw 
-				next_nesting_cnt <= (others => '0');				
+				next_nesting_cnt <= (others => '0');
+			when abort =>
+				next_nesting_cnt <= nesting_cnt; -- TODO implement				
 		end case;				
 	end process nesting_cnt_process; 
 

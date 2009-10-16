@@ -363,7 +363,9 @@ begin
 			when idle =>
 				-- TODO hazard?
 				if state = no_transaction or 
-				state = early_committed_transaction or 
+				state = early_committed_transaction or
+				state = rollback_signal or
+				state = rollback_wait or
 				from_cpu_dly.nc = '1' then
 					to_mem.wr <= from_cpu_dly.wr;
 					to_mem.rd <= from_cpu_dly.rd;
