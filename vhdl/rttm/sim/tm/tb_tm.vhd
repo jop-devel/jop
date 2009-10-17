@@ -205,6 +205,8 @@ begin
 		sc_read(clk, addr(2), result, sc_out_cpu, sc_in_cpu);
 		assert now = 120 ns and result = data(3);
 		
+		sc_write(clk, addr(4), data(0), sc_out_cpu, sc_in_cpu);
+		
 		sc_write(clk, addr(6), data(6), sc_out_cpu, sc_in_cpu);
 
 		-- start and end transactions
@@ -369,6 +371,10 @@ begin
 		wait until rising_edge(clk);
 		
 		broadcast.valid <= '0';
+		
+		-- no conflict, no hit
+		
+		-- TODO
 		
 		-- write something that is not committed
 		

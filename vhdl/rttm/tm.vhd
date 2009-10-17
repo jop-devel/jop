@@ -254,7 +254,8 @@ begin
 		
 		if stage1.state = commit then
 			next_stage23.line_addr <= commit_line(way_bits-1 downto 0);
-		elsif stage1.state = read1 or stage1.state = write then -- TODO
+		elsif stage1.state = read1 or stage1.state = write or
+			stage1.state = broadcast1 then -- TODO
 			if stage1_async.hit = '1' then
 				next_stage23.line_addr <= stage1_async.line_addr;
 			else
@@ -303,13 +304,15 @@ begin
 		end case;				
 	end process proc_stage1;
 	
-	proc_stage2only: process(data, dirty, read, stage23) is
+	proc_stage2only: process(data, dirty, read, stage23, stage2) is
 	begin		
 		-- TODO only valid in next cycle
 		next_read_data <= data(to_integer(stage23.line_addr));
 		
 		next_stage3.read_dirty <= dirty(to_integer(stage23.line_addr));
-		next_stage3.read_read <= read(to_integer(stage23.line_addr));
+		-- TODO naming ^v
+		next_stage3.read_read <= read(to_integer(stage23.line_addr)) and
+			stage2.hit;
 	end process proc_stage2only;
 	
 	mem_sync: process (clk) is
@@ -528,6 +531,7 @@ begin
 	proc_bcstage3: process(bcstage3, stage3) is
 	begin
 		conflict <= '0';
+		-- TODO only if it was a hit
 		if bcstage3 = '1' and stage3.read_read = '1' then
 			conflict <= '1';
 		end if;
