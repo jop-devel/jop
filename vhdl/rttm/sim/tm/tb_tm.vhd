@@ -149,7 +149,7 @@ begin
 		
 		-- tm state
 
- 		alias nesting_cnt is << signal .dut.nesting_cnt: nesting_cnt_type >>;
+--  		alias nesting_cnt is << signal .dut.nesting_cnt: nesting_cnt_type >>;
 		
 		alias valid is << signal .dut.cmp_tm.tag.valid: 
 			std_logic_vector(2**way_bits-1 downto 0) >>;
@@ -211,32 +211,32 @@ begin
 
 		-- start and end transactions
 		
- 		assert to_integer(nesting_cnt) = 0; 
+--  		assert to_integer(nesting_cnt) = 0; 
 
 		sc_write(clk, TM_MAGIC, 
 			(31 downto tm_cmd_raw'length => '0') & TM_CMD_START_TRANSACTION, 
 			sc_out_cpu, sc_in_cpu);
 		
  		assert << signal .dut.state: state_type>> = normal_transaction;
- 		assert to_integer(nesting_cnt) = 1;		
-
-		sc_write(clk, TM_MAGIC, 
-			(31 downto tm_cmd_raw'length => '0') & TM_CMD_START_TRANSACTION, 
-			sc_out_cpu, sc_in_cpu);
-
- 		assert to_integer(nesting_cnt) = 2;
-		
-		sc_write(clk, TM_MAGIC, 
-			(31 downto tm_cmd_raw'length => '0') & TM_CMD_END_TRANSACTION, 
-			sc_out_cpu, sc_in_cpu);
-		
- 		assert to_integer(nesting_cnt) = 1;
-		
-		sc_write(clk, TM_MAGIC, 
-			(31 downto tm_cmd_raw'length => '0') & TM_CMD_START_TRANSACTION, 
-			sc_out_cpu, sc_in_cpu);
-			
- 		assert to_integer(nesting_cnt) = 2;
+--  		assert to_integer(nesting_cnt) = 1;		
+-- 
+-- 		sc_write(clk, TM_MAGIC, 
+-- 			(31 downto tm_cmd_raw'length => '0') & TM_CMD_START_TRANSACTION, 
+-- 			sc_out_cpu, sc_in_cpu);
+-- 
+--  		assert to_integer(nesting_cnt) = 2;
+-- 		
+-- 		sc_write(clk, TM_MAGIC, 
+-- 			(31 downto tm_cmd_raw'length => '0') & TM_CMD_END_TRANSACTION, 
+-- 			sc_out_cpu, sc_in_cpu);
+-- 		
+--  		assert to_integer(nesting_cnt) = 1;
+-- 		
+-- 		sc_write(clk, TM_MAGIC, 
+-- 			(31 downto tm_cmd_raw'length => '0') & TM_CMD_START_TRANSACTION, 
+-- 			sc_out_cpu, sc_in_cpu);
+-- 			
+--  		assert to_integer(nesting_cnt) = 2;
 		
 		assert << signal .dut.conflict: std_logic >> /= '1';
 		assert valid = (2**way_bits-1 downto 0 => '0');
@@ -272,13 +272,13 @@ begin
 
 
 
-		-- exit inner transaction
-		
-		sc_write(clk, TM_MAGIC, 
-			(31 downto tm_cmd_raw'length => '0') & TM_CMD_END_TRANSACTION, 
-			sc_out_cpu, sc_in_cpu);
-		
- 		assert to_integer(nesting_cnt) = 1;
+-- 		-- exit inner transaction
+-- 		
+-- 		sc_write(clk, TM_MAGIC, 
+-- 			(31 downto tm_cmd_raw'length => '0') & TM_CMD_END_TRANSACTION, 
+-- 			sc_out_cpu, sc_in_cpu);
+-- 		
+--  		assert to_integer(nesting_cnt) = 1;
 
 
 		-- read .nc word
@@ -347,7 +347,7 @@ begin
 		testing_commit <= false;
 		
  		assert << signal .dut.state: state_type>> = no_transaction;
- 		assert to_integer(nesting_cnt) = 0;
+--  		assert to_integer(nesting_cnt) = 0;
 		
 		assert ram(to_integer(unsigned(addr(0)))) = (data(1));
 		assert ram(to_integer(unsigned(addr(1)))) = (data(2));		
@@ -424,7 +424,7 @@ begin
 			sc_out_cpu, sc_in_cpu);
 		
  		assert << signal .dut.state: state_type>> = no_transaction;
- 		assert to_integer(nesting_cnt) = 0; -- ( ) 
+--  		assert to_integer(nesting_cnt) = 0; -- ( ) 
 			
 		assert ram(to_integer(unsigned(addr(3)))) = (31 downto 0 => 'U');
 		assert ram(to_integer(unsigned(addr(5)))) = (31 downto 0 => 'U');

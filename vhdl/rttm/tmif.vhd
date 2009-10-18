@@ -60,8 +60,6 @@ architecture rtl of tmif is
 
 		
 	signal state, next_state		: state_type;
-	signal nesting_cnt				: nesting_cnt_type;
-	signal next_nesting_cnt			: nesting_cnt_type;
 		
 	signal conflict					: std_logic;
 	
@@ -138,7 +136,6 @@ begin
 	begin
 		if reset = '1' then
 			state <= no_transaction;
-			nesting_cnt <= (others => '0');
 			
 			is_tm_magic_addr_sync <= '0';
 			sc_out_cpu_dly <= sc_out_idle;
@@ -147,7 +144,6 @@ begin
 			commit_finished_dly <= '0';
 		elsif rising_edge(clk) then
 			state <= next_state;
-			nesting_cnt <= next_nesting_cnt;
 			
 			is_tm_magic_addr_sync <= is_tm_magic_addr_async;
 			sc_out_cpu_dly <= sc_out_cpu;
@@ -168,27 +164,9 @@ begin
 	end process gen_tm_cmd;	
 
 	
-	nesting_cnt_process: process(nesting_cnt, tm_cmd) is
-	begin	
-		case tm_cmd is
-			when start_transaction =>
-				next_nesting_cnt <= nesting_cnt + 1;
-			when end_transaction =>
-				next_nesting_cnt <= nesting_cnt - 1;
-			when early_commit | none =>
-				next_nesting_cnt <= nesting_cnt;			
-			when aborted =>
-				-- TODO reference counter could also be maintained exclusively
-				-- in hw 
-				next_nesting_cnt <= (others => '0');
-			when abort =>
-				next_nesting_cnt <= nesting_cnt; -- TODO implement				
-		end case;				
-	end process nesting_cnt_process; 
-
 	-- sets next_state, exc_tm_rollback, tm_cmd_rdy_cnt
 	state_machine: process(commit_finished_dly, commit_in_allow, conflict, 
-		nesting_cnt, state, tag_full, tm_cmd, sc_in_cpu_filtered.rdy_cnt) is
+		state, tag_full, tm_cmd, sc_in_cpu_filtered.rdy_cnt) is
 	begin
 		next_state <= state;
 		exc_tm_rollback <= '0';
@@ -208,10 +186,8 @@ begin
 			when normal_transaction =>
 				case tm_cmd is
 					when end_transaction =>
-						if nesting_cnt = nesting_cnt_type'(0 => '1', others => '0') then
-							next_state <= commit_wait_token;
-							tm_cmd_rdy_cnt <= "11";
-						end if;
+						next_state <= commit_wait_token;
+						tm_cmd_rdy_cnt <= "11";
 					when early_commit =>
 						next_state <= early_commit_wait_token;
 						tm_cmd_rdy_cnt <= "11";
@@ -277,12 +253,9 @@ begin
 			when early_committed_transaction =>
 				case tm_cmd is
 					when end_transaction =>
-						if nesting_cnt = 
-							nesting_cnt_type'(0 => '1', others => '0') then
-							tm_cmd_rdy_cnt <= "10"; -- TODO
-							
-							next_state <= end_transaction;
-						end if;
+						tm_cmd_rdy_cnt <= "10"; -- TODO
+						
+						next_state <= end_transaction;
 					when others =>
 						null;
 				end case;
