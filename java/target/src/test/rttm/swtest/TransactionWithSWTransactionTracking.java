@@ -7,6 +7,8 @@ import com.jopdesign.sys.RollbackException;
 import rttm.utils.Utils;
 
 public abstract class TransactionWithSWTransactionTracking {
+	
+	// TMTODO use Native.wr() if more efficient
 
 	public static boolean conflicting = false;
 	
@@ -57,7 +59,7 @@ public abstract class TransactionWithSWTransactionTracking {
 					for (int i = 0; i < 10; i++);
 				}
 			} catch (Throwable e) { // RollbackError or any other exception
-				// TMTODO is this early enough?
+				// TMTODO this is redundant
 				// it only works if nothing has been written so far
 				// signal end of transactional code to HW
 				// TMTODO what if RollbackError is thrown here?
@@ -76,8 +78,7 @@ public abstract class TransactionWithSWTransactionTracking {
 					// transaction
 					throw Utils.RollbackException;
 				} else {
-					// TMTODO continue implement
-					// Native.wrMem(0, Const.IO_EXCPT);
+					Utils.sysDev.enableHwExceptions = 0;
 					transactionAborted = true;
 					
 					System.out.println("Transaction aborted.");
@@ -88,6 +89,9 @@ public abstract class TransactionWithSWTransactionTracking {
 			} finally {
 				if (outermostTransaction) {
 					Utils.inTransaction[Utils.sysDev.cpuId] = false;
+					
+					// TMTODO re-enable interrupts here?
+					// Utils.sysDev.cntInt = 1;
 				}
 			}
 		} while (transactionAborted);
