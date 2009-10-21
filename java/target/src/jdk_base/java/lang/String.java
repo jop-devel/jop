@@ -677,4 +677,10 @@ public final class String implements CharSequence {
 		// TODO Auto-generated method stub
 		throw new Error("NYI");
 	}
+	
+	  /** @since 1.5 */
+	  public static String format(String format, Object... args)
+	  {
+	    return format + " String.format() not implemented";
+	  }
 }
