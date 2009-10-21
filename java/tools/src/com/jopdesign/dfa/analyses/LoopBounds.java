@@ -396,15 +396,17 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 		retval.put(context.callString, result);		
 
 		Instruction instruction = stmt.getInstruction();
-		
-//		System.out.println(context.method+": "+stmt);
-//		System.out.println("###"+context.stackPtr+" + "+instruction.produceStack(context.constPool)+" - "+instruction.consumeStack(context.constPool));		
-//		System.out.println(stmt+" "+(edge.getType() == FlowEdge.TRUE_EDGE ? "TRUE" : (edge.getType() == FlowEdge.FALSE_EDGE) ? "FALSE" : "NORMAL")+" "+edge);
-//		System.out.println(context.callString+"/"+context.method);
-//		System.out.print(stmt.getInstruction()+":\t{ ");
-//		System.out.print(input.get(context.callString));
-//		System.out.println("}");
 
+//		if (context.method.startsWith("java.lang.String.<init>([B")) {
+//			System.out.println(context.method+": "+stmt);
+//			System.out.println("###"+context.stackPtr+" + "+instruction.produceStack(context.constPool)+" - "+instruction.consumeStack(context.constPool));		
+//			System.out.println(stmt+" "+(edge.getType() == FlowEdge.TRUE_EDGE ? "TRUE" : (edge.getType() == FlowEdge.FALSE_EDGE) ? "FALSE" : "NORMAL")+" "+edge);
+//			System.out.println(context.callString+"/"+context.method);
+//			System.out.print(stmt.getInstruction()+":\t{ ");
+//			System.out.print(input.get(context.callString));
+//			System.out.println("}");
+//		}		
+		
 		switch (instruction.getOpcode()) {
 
 		case Constants.ICONST_M1:
@@ -492,12 +494,10 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 		case Constants.ILOAD_3:
 		case Constants.ILOAD: {	
 			LoadInstruction instr = (LoadInstruction)instruction; 
+			filterSet(in, result, context.stackPtr);
 			int index = instr.getIndex();
 			for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
 				Location l = i.next();
-				if (l.stackLoc < context.stackPtr) {
-					result.put(l, in.get(l));
-				}
 				if (l.stackLoc == index) {
 					ValueMapping m = new ValueMapping(in.get(l), true);
 					m.source = l;
@@ -517,12 +517,7 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 			break;	
 
 		case Constants.ARRAYLENGTH: {	
-			for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
-				Location l = i.next();
-				if (l.stackLoc < context.stackPtr-1) {
-					result.put(l, in.get(l));
-				}
-			}
+			filterSet(in, result, context.stackPtr-1);
 
 			DFAAppInfo p = interpreter.getProgram();
 			ContextMap<String, String> receivers = p.getReceivers().get(stmt);
@@ -532,7 +527,6 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 				for (Iterator<String> i = receivers.keySet().iterator(); i.hasNext(); ) {
 					String arrayName = i.next();
 					ValueMapping m = in.get(new Location(arrayName+".length"));
-					// System.out.println("ARRAY LENGTH: "+arrayName+": "+m);
 					if (m != null) {
 						ValueMapping value = new ValueMapping(m, false);
 						value.join(result.get(location));
@@ -594,12 +588,7 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 		case Constants.GETFIELD: {			
 			GETFIELD instr = (GETFIELD)instruction;
 			
-			for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
-				Location l = i.next();
-				if (l.stackLoc < context.stackPtr-1) {
-					result.put(l, in.get(l));
-				}
-			}
+			filterSet(in, result, context.stackPtr-1);
 
 			DFAAppInfo p = interpreter.getProgram();
 			ContextMap<String, String> receivers = p.getReceivers().get(stmt);
@@ -730,12 +719,7 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 		break;
 
 		case Constants.AASTORE: {
-			for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
-				Location l = i.next();
-				if (l.stackLoc < context.stackPtr-3) {
-					result.put(l, in.get(l));
-				}
-			}
+			filterSet(in, result, context.stackPtr-3);
 		}
 		break;
 			
@@ -744,12 +728,7 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 		case Constants.SALOAD:			
 		case Constants.BALOAD: {
 			
-			for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
-				Location l = i.next();
-				if (l.stackLoc < context.stackPtr-2) {
-					result.put(l, in.get(l));
-				}
-			}
+			filterSet(in, result, context.stackPtr-2);
 
 			DFAAppInfo p = interpreter.getProgram();
 			ContextMap<String, String> receivers = p.getReceivers().get(stmt);
@@ -777,12 +756,7 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 		break;
 		
 		case Constants.AALOAD: {
-			for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
-				Location l = i.next();
-				if (l.stackLoc < context.stackPtr-2) {
-					result.put(l, in.get(l));
-				}
-			}
+			filterSet(in, result, context.stackPtr-2);
 		}
 		break;
 					
@@ -828,22 +802,12 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 		break;
 		
 		case Constants.POP: {	
-			for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
-				Location l = i.next();
-				if (l.stackLoc < context.stackPtr-1) {
-					result.put(l, in.get(l));
-				}
-			}
+			filterSet(in, result, context.stackPtr-1);
 		}
 		break;
 		
 		case Constants.POP2: {	
-			for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
-				Location l = i.next();
-				if (l.stackLoc < context.stackPtr-2) {
-					result.put(l, in.get(l));
-				}
-			}
+			filterSet(in, result, context.stackPtr-2);
 		}
 		break;
 
@@ -1055,12 +1019,7 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 			break;
 			
 		case Constants.INSTANCEOF: {
-			for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
-				Location l = i.next();
-				if (l.stackLoc < context.stackPtr-1) {
-					result.put(l, in.get(l));
-				}
-			}
+			filterSet(in, result, context.stackPtr-1);
 			ValueMapping bool = new ValueMapping();
 			bool.assigned.setLb(0);
 			bool.assigned.setUb(1);
@@ -1079,18 +1038,22 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 
 			String name = instr.getType().toString();
 			name += "@"+context.method+":"+stmt.getPosition();
-			//System.out.println("NEW ARRAY: "+name);
 
+			filterSet(in, result, context.stackPtr-1);
+
+			boolean valid = false;
 			for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
 				Location l = i.next();
-				if (l.stackLoc < context.stackPtr-1) {
-					result.put(l, in.get(l));
-				}
 				if (l.stackLoc == context.stackPtr-1) {
 					result.put(new Location(name+".length"), in.get(l));
-					
  					recordSize(stmt, context, in.get(l).assigned);
+ 					valid = true;
 				}
+			}
+			if (!valid) {
+				ValueMapping v = new ValueMapping();
+				result.put(new Location(name+".length"), v);
+				recordSize(stmt, context, v.assigned);				
 			}
 		}
 		break;
@@ -1102,16 +1065,20 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 			name += "@"+context.method+":"+stmt.getPosition();
 			//System.out.println("NEW ARRAY: "+name);
 
+			filterSet(in, result, context.stackPtr-1);
+			boolean valid = false;
 			for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
 				Location l = i.next();
-				if (l.stackLoc < context.stackPtr-1) {
-					result.put(l, in.get(l));
-				}
 				if (l.stackLoc == context.stackPtr-1) {
 					result.put(new Location(name+".length"), in.get(l));
-
  					recordSize(stmt, context, in.get(l).assigned);
+ 					valid = true;
 				}
+			}
+			if (!valid) {
+				ValueMapping v = new ValueMapping();
+				result.put(new Location(name+".length"), v);
+				recordSize(stmt, context, v.assigned);				
 			}
 		}
 		break;
@@ -1120,12 +1087,7 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 			MULTIANEWARRAY instr = (MULTIANEWARRAY)instruction;
 			int dim = instr.getDimensions();
 
-			for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
-				Location l = i.next();
-				if (l.stackLoc < context.stackPtr-dim) {
-					result.put(l, in.get(l));
-				}
-			}
+			filterSet(in, result, context.stackPtr-dim);
 			
 			String type = instr.getType(context.constPool).toString();
 			type = type.substring(0, type.indexOf("["));
@@ -1154,31 +1116,15 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 		
 		case Constants.IFNULL:
 		case Constants.IFNONNULL: {	
-			if (scopes.get(stmt) == null) {
-				ValueMapping.scope = ++ValueMapping.scopeCnt;
-				scopes.put(stmt, new Integer(ValueMapping.scope));
-			}
-			for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
-				Location l = i.next();
-				if (l.stackLoc < context.stackPtr-1) {
-					result.put(l, in.get(l));
-				}
-			}
+			checkScope(stmt);
+			filterSet(in, result, context.stackPtr-1);
 		}
 		break;
 		
 		case Constants.IF_ACMPEQ:
 		case Constants.IF_ACMPNE: {	
-			if (scopes.get(stmt) == null) {
-				ValueMapping.scope = ++ValueMapping.scopeCnt;
-				scopes.put(stmt, new Integer(ValueMapping.scope));
-			}
-			for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
-				Location l = i.next();
-				if (l.stackLoc < context.stackPtr-2) {
-					result.put(l, in.get(l));
-				}
-			}
+			checkScope(stmt);
+			filterSet(in, result, context.stackPtr-2);
 		}
 		break;			
 			
@@ -1188,10 +1134,7 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 		case Constants.IFGE:
 		case Constants.IFLE:
 		case Constants.IFGT:
-			if (scopes.get(stmt) == null) {
-				ValueMapping.scope = ++ValueMapping.scopeCnt;
-				scopes.put(stmt, new Integer(ValueMapping.scope));
-			}
+			checkScope(stmt);
 			doIf(stmt, edge, context, in, result);
 			break;
 
@@ -1201,10 +1144,7 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 		case Constants.IF_ICMPGE:
 		case Constants.IF_ICMPGT:
 		case Constants.IF_ICMPLE:
-			if (scopes.get(stmt) == null) {
-				ValueMapping.scope = ++ValueMapping.scopeCnt;
-				scopes.put(stmt, new Integer(ValueMapping.scope));
-			}
+			checkScope(stmt);
 			doIfIcmp(stmt, edge, context, in, result);
 			break;
 
@@ -1222,6 +1162,7 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 			ContextMap<String, String> receivers = p.getReceivers().get(stmt);
 			if (receivers == null) {
 				System.out.println(context.method + ": invoke "	+ instruction.toString(context.constPool.getConstantPool()) + " unknown receivers");
+				result = in;
 				break;
 			}
 			for (Iterator<String> i = receivers.keySet().iterator(); i.hasNext(); ) {
@@ -1233,21 +1174,14 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 		
 		case Constants.ARETURN:
 		case Constants.RETURN: {
-			for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
-				Location l = i.next();
-				if (l.stackLoc < 0) {
-					result.put(l, in.get(l));
-				}
-			}
+			filterSet(in, result, 0);
 		}
 		break;						
 
 		case Constants.IRETURN: {
+			filterSet(in, result, 0);
 			for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
 				Location l = i.next();
-				if (l.stackLoc < 0) {
-					result.put(l, in.get(l));
-				}
 				if (l.stackLoc == context.stackPtr-1) {
 					result.put(new Location(0), new ValueMapping(in.get(l), false));
 				}
@@ -1274,6 +1208,22 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 		
 		context.stackPtr += instruction.produceStack(context.constPool) - instruction.consumeStack(context.constPool);
 		return retval;
+	}
+
+	private void filterSet(HashMap<Location, ValueMapping> in, HashMap<Location, ValueMapping> result, int bound) {
+		for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
+			Location l = i.next();
+			if (l.stackLoc < bound) {
+				result.put(l, in.get(l));
+			}
+		}
+	}
+
+	private void checkScope(InstructionHandle stmt) {
+		if (scopes.get(stmt) == null) {
+			ValueMapping.scope = ++ValueMapping.scopeCnt;
+			scopes.put(stmt, new Integer(ValueMapping.scope));
+		}
 	}
 
 	private void doIf(InstructionHandle stmt, FlowEdge edge, Context context,
@@ -1530,15 +1480,20 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 			tmpresult.put(c.callString, out);
 					
 			InstructionHandle entry = mi.getMethodGen().getInstructionList().getStart();
-			state.put(entry, join(tmpresult, state.get(entry)));
+			state.put(entry, join(state.get(entry), tmpresult));
+
+			//System.out.println("out: "+out.get(new Location("byte[]@com.parthus.CryptoBench.CryptoBench.performDecrypt([B[B)Ljava/lang/String;:25.length")));
 
 			// interpret method
 			Map<InstructionHandle, ContextMap<List<HashedString>, Map<Location, ValueMapping>>> r = interpreter.interpret(c, entry, state, false);
 
+			//System.out.println(">>>>>>>>");
+			
 			// pull out relevant information from call
 			InstructionHandle exit = mi.getMethodGen().getInstructionList().getEnd();
 			if (r.get(exit) != null) {
 				Map<Location, ValueMapping> returned = r.get(exit).get(c.callString);
+				//System.out.println("returned: "+returned.get(new Location("byte[]@com.parthus.CryptoBench.CryptoBench.performDecrypt([B[B)Ljava/lang/String;:25.length")));
 				if (returned != null) {
 					for (Iterator<Location> i = returned.keySet().iterator(); i.hasNext(); ) {
 						Location l = i.next();
@@ -1556,6 +1511,8 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 					}
 				}
 			}
+
+			//System.out.println("result: "+result.get(new Location("byte[]@com.parthus.CryptoBench.CryptoBench.performDecrypt([B[B)Ljava/lang/String;:25.length")));
 
 			// add relevant information to result
 			for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {

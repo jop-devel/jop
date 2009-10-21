@@ -149,14 +149,19 @@ public class AllocationModel implements ProcessorModel {
 			} else {
 				// TODO: do we have proper callstrings?
 				List<HashedString> callString = new LinkedList<HashedString>();			
-				analyzed = sizes.get(ih).get(callString);
-				if (analyzed == null) {
-					Project.logger.info("No DFA bound for array at " + context + ":" + srcLine);
+				ContextMap<List<HashedString>, Interval> t = sizes.get(ih);
+				if (t == null) {
+					Project.logger.info("No DFA bound for array at " + context + ":" + srcLine);					
+				} else {
+					analyzed = t.get(callString);
+					if (analyzed == null) {
+						Project.logger.info("No DFA bound for array at " + context + ":" + srcLine);
+					}
 				}
 			}
 						
 			// compute which bound to use
-			if (analyzed.hasUb()) {
+			if (analyzed != null && analyzed.hasUb()) {
 				if (annotated != null) {
 					if (annotated.getUpperBound() > analyzed.getUb()) {
 						Project.logger.warn("DFA bound smaller than annotated bound for array at " + context + ":" + srcLine);
