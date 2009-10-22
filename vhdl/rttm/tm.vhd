@@ -283,8 +283,11 @@ begin
 			when read1 =>
 				next_stage2.update_tags <= '1';
 				
-				next_stage2.update_read <= '1';
-				next_stage2.read <= '1';
+				-- set read flag only if first access in transaction is a read 
+				if stage1_async.hit = '0' then					
+					next_stage2.update_read <= '1';
+					next_stage2.read <= '1';
+				end if;
 				
 				if stage1_async.hit = '0' then					
 					next_stage2.update_dirty <= '1';
