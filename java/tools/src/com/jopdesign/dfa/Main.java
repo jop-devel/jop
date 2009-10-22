@@ -65,7 +65,8 @@ public class Main {
 		long lbTime = System.currentTimeMillis();
 		
 		lb.printResult(program);				
-
+		lb.printSizeResult(program);
+		
 		System.out.println("Time for LoopBounds: "+(lbTime - startLbTime));
 
 	}

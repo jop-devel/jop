@@ -20,6 +20,7 @@
 
 package com.jopdesign.dfa.analyses;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -291,7 +292,7 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 
 	private Map<InstructionHandle, ContextMap<List<HashedString>, Pair<ValueMapping>>> bounds = new HashMap<InstructionHandle, ContextMap<List<HashedString>, Pair<ValueMapping>>>();
 	private Map<InstructionHandle, Integer> scopes = new HashMap<InstructionHandle, Integer>();
-	private Map<InstructionHandle, ContextMap<List<HashedString>, Interval>> sizes = new HashMap<InstructionHandle, ContextMap<List<HashedString>, Interval>>();
+	private Map<InstructionHandle, ContextMap<List<HashedString>, Interval[]>> sizes = new HashMap<InstructionHandle, ContextMap<List<HashedString>, Interval[]>>();
 	
 	public void initialize(String sig, Context context) {
 	}
@@ -623,7 +624,7 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 				}
 			}
 			if (!valid && !(instr.getFieldType(context.constPool) instanceof ReferenceType)) {
-				result.put(new Location(context.stackPtr-1), new ValueMapping(0));				
+				result.put(new Location(context.stackPtr-1), new ValueMapping());				
 			}
 		}
 		break;
@@ -1092,6 +1093,8 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 			String type = instr.getType(context.constPool).toString();
 			type = type.substring(0, type.indexOf("["));
 			
+			Interval [] size = new Interval[dim];
+			
 			for (int i = 1; i <= dim; i++) {
 				String name = type;
 				for (int k = 0; k < i; k++) {
@@ -1099,13 +1102,27 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 				}
 				name += "@"+context.method+":"+stmt.getPosition();
 
+				boolean valid = false;
 				for (Iterator<Location> k = in.keySet().iterator(); k.hasNext(); ) {
 					Location l = k.next();
 					if (l.stackLoc == context.stackPtr-i) {
 						result.put(new Location(name+".length"), in.get(l));
+						if (size[i-1] != null) {
+							size[i-1].join(in.get(l).assigned);
+						} else {
+							size[i-1] = in.get(l).assigned;
+						}
+						valid = true;
 					}
 				}
+				if (!valid) {
+					ValueMapping v = new ValueMapping();
+					result.put(new Location(name+".length"), v);
+					size[i-1] = v.assigned;				
+				}
 			}
+			
+			recordSize(stmt, context, size);
 		}
 		break;
 
@@ -1702,16 +1719,49 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 	}
 	
 	private void recordSize(InstructionHandle stmt, Context context, Interval size) {
-		ContextMap<List<HashedString>, Interval> sizeMap;
+		ContextMap<List<HashedString>, Interval[]> sizeMap;
 		sizeMap = sizes.get(stmt);
 		if (sizeMap == null) {
-			sizeMap = new ContextMap<List<HashedString>, Interval>(context, new HashMap<List<HashedString>, Interval>());
+			sizeMap = new ContextMap<List<HashedString>, Interval[]>(context, new HashMap<List<HashedString>, Interval[]>());
+		}
+		Interval [] v = new Interval[1];
+		v[0] = size;
+		sizeMap.put(context.callString, v);
+		sizes.put(stmt, sizeMap);
+	}
+	
+	private void recordSize(InstructionHandle stmt, Context context, Interval [] size) {
+		ContextMap<List<HashedString>, Interval[]> sizeMap;
+		sizeMap = sizes.get(stmt);
+		if (sizeMap == null) {
+			sizeMap = new ContextMap<List<HashedString>, Interval[]>(context, new HashMap<List<HashedString>, Interval[]>());
 		}
 		sizeMap.put(context.callString, size);
 		sizes.put(stmt, sizeMap);
 	}
 	
-	public Map<InstructionHandle, ContextMap<List<HashedString>, Interval>> getArraySizes() {
+	public void printSizeResult(DFAAppInfo program) {
+		
+		for (Iterator<InstructionHandle> i = sizes.keySet().iterator(); i.hasNext(); ) {
+			InstructionHandle instr = i.next();
+
+			ContextMap<List<HashedString>, Interval[]> r = sizes.get(instr);
+			Context c = r.getContext();
+
+			LineNumberTable lines = program.getMethod(c.method).getMethod().getLineNumberTable();
+			int sourceLine = lines.getSourceLine(instr.getPosition());			
+
+			for (Iterator<List<HashedString>> k = r.keySet().iterator(); k.hasNext(); ) {
+				List<HashedString> callString = k.next();
+				Interval[] bounds = r.get(callString);
+
+				System.out.println(c.method+":"+sourceLine+":\t"+callString+"\t$"+scopes.get(instr)+": ");
+				System.out.println(Arrays.asList(bounds));
+			}			
+		}
+	}
+
+	public Map<InstructionHandle, ContextMap<List<HashedString>, Interval[]>> getArraySizes() {
 		return sizes;
 	}
 
