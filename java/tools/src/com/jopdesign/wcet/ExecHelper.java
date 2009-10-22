@@ -49,6 +49,7 @@ public class ExecHelper {
 		this.tlLogger = topLevelLogger;
 		this.configFileProp = configFile;
 	}
+
 	public void initTopLevelLogger() {
 		ConsoleAppender consoleApp = new ConsoleAppender(new PatternLayout(), ConsoleAppender.SYSTEM_ERR);
 		consoleApp.setName("TOP-LEVEL");
@@ -56,7 +57,9 @@ public class ExecHelper {
 		consoleApp.setLayout(new PatternLayout("["+execClass.getSimpleName()+" %-6rms] %m%n"));
 		tlLogger.addAppender(consoleApp);
 	}
+
 	/**
+	 * Load configuration from config file and command line arguments
 	 * @param args
 	 */
 	public void loadConfig(String[] args) {
@@ -79,6 +82,7 @@ public class ExecHelper {
 			bail("Loading configuration failed");
 		}
 	}
+
 	public void exitVersion() {
 		printSep();
 		System.err.println(""+this.execClass);
@@ -99,6 +103,7 @@ public class ExecHelper {
 		printUsage(dumpConfig);
 		System.exit(1);
 	}
+
 	public void printUsage(boolean dumpConfig) {
 		if(dumpConfig) System.err.println("Current configuration:\n"+Config.instance().dumpConfiguration(4));
 		System.err.println(
@@ -117,10 +122,24 @@ public class ExecHelper {
 		}
 		System.err.println("\nSee 'wcet.properties' for an example configuration");
 	}
+
+	public static double timeDiff(long nanoStart, long nanoStop) {
+		return (((double)nanoStop-nanoStart) / 1.0E9);
+	}
+
+	public Logger getExecLogger() {
+		return tlLogger;
+	}
+
+	public void info(String string) {
+		tlLogger.info("WCET Analysis finished.");
+	}
+
 	public void logException(String ctx, Throwable e) {
 		e.printStackTrace();
 		tlLogger.error("Exception occured when "+ctx+": "+e);
 	}
+
 	public void bail(String msg) {
 		printSep();
 		System.err.println("[ERROR] "+msg);
@@ -128,10 +147,15 @@ public class ExecHelper {
 		System.exit(1);
 	}
 
+	public void bail(Exception e) {
+		printSep();
+		e.printStackTrace();
+		bail(e.getMessage());
+	}
+
 	private void printSep() {
 		System.err.println("---------------------------------------------------------------");
 	}
-	public static double timeDiff(long nanoStart, long nanoStop) {
-		return (((double)nanoStop-nanoStart) / 1.0E9);
-	}
+
+
 }

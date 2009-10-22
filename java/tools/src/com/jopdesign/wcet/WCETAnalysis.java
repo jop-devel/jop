@@ -27,6 +27,8 @@
 
 package com.jopdesign.wcet;
 
+import java.util.Map.Entry;
+
 import lpsolve.LpSolve;
 import lpsolve.VersionInfo;
 
@@ -47,19 +49,21 @@ import com.jopdesign.wcet.ipet.LpSolveWrapper;
 import com.jopdesign.wcet.ipet.IpetConfig.StaticCacheApproximation;
 import com.jopdesign.wcet.jop.ConstantCache;
 import com.jopdesign.wcet.jop.JOPConfig;
+import com.jopdesign.wcet.jop.LinkerInfo.LinkInfo;
 import com.jopdesign.wcet.report.Report;
 import com.jopdesign.wcet.report.ReportConfig;
 import com.jopdesign.wcet.uppaal.UppAalConfig;
 import com.jopdesign.wcet.uppaal.WcetSearch;
 
 import static com.jopdesign.wcet.ExecHelper.timeDiff;
+
 /**
  * WCET Analysis for JOP - Executable
  */
 public class WCETAnalysis {
 	private static final String CONFIG_FILE_PROP = "config";
 	public static final String VERSION = "1.0.1";
-	private static final Logger tlLogger = Logger.getLogger(WCETAnalysis.class);
+
 	public static Option<?>[][] options = {
 		ProjectConfig.projectOptions,
 		JOPConfig.jopOptions,
@@ -71,7 +75,7 @@ public class WCETAnalysis {
 	public static void main(String[] args) {
 		Config config = Config.instance();
 		config.addOptions(options);
-		ExecHelper exec = new ExecHelper(WCETAnalysis.class,VERSION,tlLogger,CONFIG_FILE_PROP);
+		ExecHelper exec = new ExecHelper(WCETAnalysis.class,VERSION,Logger.getLogger(WCETAnalysis.class),CONFIG_FILE_PROP);
 		exec.initTopLevelLogger();       /* Console logging for top level messages */
 		exec.loadConfig(args);           /* Load config */
 		WCETAnalysis inst = new WCETAnalysis(config,exec);
@@ -79,19 +83,22 @@ public class WCETAnalysis {
 		inst.checkLibs();
 		/* run */
 		if(! inst.run()) exec.bail("WCET Analysis failed");
-		tlLogger.info("WCET Analysis finished.");
+		exec.info("WCET Analysis finished");
 	}
+
 	private Config config;
 	private Project project;
 	private ExecHelper exec;
+
 	public WCETAnalysis(Config c, ExecHelper e) {
 		this.config = c;
 		this.exec   = e;
 	}
+
 	private void checkLibs() {
 		try {
 			VersionInfo v = LpSolve.lpSolveVersion();
-			tlLogger.info("Using lp_solve for Java, v"+
+			exec.info("Using lp_solve for Java, v"+
 					v.getMajorversion()+"."+v.getMinorversion()+
 					" build "+v.getBuild()+" release "+v.getRelease());
 		} catch(UnsatisfiedLinkError ule) {
@@ -101,21 +108,22 @@ public class WCETAnalysis {
 			String vbinary = config.getOption(UppAalConfig.UPPAAL_VERIFYTA_BINARY);
 			try {
 				String version = WcetSearch.getVerifytaVersion(vbinary);
-				tlLogger.info("Using uppaal/verifyta: "+vbinary+" version "+version);
+				exec.info("Using uppaal/verifyta: "+vbinary+" version "+version);
 			} catch(Exception fne) {
 				exec.bail("Failed to run uppaal verifier: "+fne);
 			}
 		}
 	}
+
 	private boolean run() {
 		project = null;
 		ProjectConfig pConfig = new ProjectConfig(config);
 		/* Initialize */
 		try {
 			project = new Project(pConfig);
-			project.setTopLevelLooger(tlLogger);
+			project.setTopLevelLogger(exec.getExecLogger());
 			Report.initVelocity(config);     /* Initialize velocity engine */
-			tlLogger.info("Loading project");
+			exec.info("Loading project");
 			project.load();
 			MethodInfo largestMethod = project.getProcessorModel().getMethodCache().checkCache();
 			int minWords = MiscUtils.bytesToWords(largestMethod.getCode().getCode().length);
@@ -125,7 +133,8 @@ public class WCETAnalysis {
 			return false;
 		}
 
-		//new ConstantCache(project).build().dumpStats();
+		// project.getLinkerInfo().dump(System.out);
+		// new ConstantCache(project).build().dumpStats();
 
 		/* Tree based WCET analysis - has to be equal to ALWAYS_MISS */
 		{
@@ -156,7 +165,7 @@ public class WCETAnalysis {
 		try {
 			/* Analysis */
 			project.setGenerateWCETReport(false); /* generate reports later */
-			tlLogger.info("Cyclomatic complexity: "+project.computeCyclomaticComplexity(project.getTargetMethod()));
+			exec.info("Cyclomatic complexity: " + project.computeCyclomaticComplexity(project.getTargetMethod()));
 			WcetCost mincachecost, ah, am, wcet;
 			IpetConfig ipetConfig = new IpetConfig(config);
 			StaticCacheApproximation preciseApprox = IpetConfig.getPreciseCacheApprox(config);
@@ -194,10 +203,10 @@ public class WCETAnalysis {
 				stop  = System.nanoTime();
 				reportSpecial("min-cache-cost",mincachecost, start, stop, LpSolveWrapper.getSolverTime());
 			}
-			tlLogger.info("Starting precise WCET analysis");
+			exec.info("Starting precise WCET analysis");
 			project.setGenerateWCETReport(false);
 			if(project.getProjectConfig().useUppaal()) {
-				UppaalAnalysis an = new UppaalAnalysis(tlLogger,project,project.getOutDir("uppaal"));
+				UppaalAnalysis an = new UppaalAnalysis(exec.getExecLogger(),project,project.getOutDir("uppaal"));
 				config.checkPresent(UppAalConfig.UPPAAL_VERIFYTA_BINARY);
 				long start = System.nanoTime();
 				wcet = an.computeWCET(project.getTargetMethod(),am.getCost());
@@ -219,34 +228,36 @@ public class WCETAnalysis {
 				long stop  = System.nanoTime();
 				report(wcet,start,stop,LpSolveWrapper.getSolverTime());
 			}
-			tlLogger.info("WCET analysis finsihed: "+wcet);
+			exec.info("WCET analysis finsihed: "+wcet);
 			succeed = true;
 		} catch (Exception e) {
 			exec.logException("analysis", e);
 		}
 		if(! project.doWriteReport()) {
-			tlLogger.info("Ommiting HTML report");
+			exec.info("Ommiting HTML report");
 			return succeed;
 		}
 		try {
 			/* Report */
-			tlLogger.info("Generating info pages");
+			exec.info("Generating info pages");
 			project.getReport().generateInfoPages();
-			tlLogger.info("Generating result document");
+			exec.info("Generating result document");
 			project.writeReport();
-			tlLogger.info("Generated files are in "+pConfig.getOutDir());
+			exec.info("Generated files are in "+pConfig.getOutDir());
 		} catch (Exception e) {
 			exec.logException("Report generation", e);
 			return false;
 		}
 		return succeed;
 	}
+
 	private void reportMetric(String metric, Object... args) {
 		project.recordMetric(metric, args);
 		System.out.print(metric+":");
 		for(Object o : args) System.out.print(" "+o);
 		System.out.println("");
 	}
+
 	private void report(WcetCost wcet, long start, long stop,double solverTime) {
 		String key = "wcet";
 		System.out.println(key+": "+wcet);
@@ -255,6 +266,7 @@ public class WCETAnalysis {
 		project.recordResult(wcet,timeDiff(start,stop),solverTime);
 		project.getReport().addStat(key, wcet.toString());
 	}
+
 	private void reportUppaal(WcetCost wcet, long start, long stop, double searchtime, double solvertimemax) {
 		String key = "wcet";
 		System.out.println(key+": "+wcet);
@@ -264,6 +276,7 @@ public class WCETAnalysis {
 		project.recordResultUppaal(wcet,timeDiff(start,stop),searchtime,solvertimemax);
 		project.getReport().addStat(key, wcet.toString());
 	}
+
 	private void reportSpecial(String metric, WcetCost cost, long start, long stop, double solverTime) {
 		String key = "wcet."+metric;
 		System.out.println(key+": "+cost);

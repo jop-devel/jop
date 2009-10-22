@@ -172,7 +172,9 @@ public final class Double extends Number implements Comparable
   public static String toString(double d)
   {
 //    return VMDouble.toString(d, false);
-	  return "NYI";
+	  // return "NYI";
+	  // TODO: a very quick hack:
+	  return Float.toString((float) d);
   }
 
   /**

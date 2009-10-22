@@ -32,7 +32,7 @@ public  class  ProgressMeasure<V,E> {
 			return sb.toString();
 		}
 	}
-	
+
 	/* input */
 	private LoopColoring<V, E> loopColors;
 	private FlowGraph<V, E> cfg;
@@ -46,9 +46,9 @@ public  class  ProgressMeasure<V,E> {
 		return this.loopProgress.get(target);
 	}
 
-	public ProgressMeasure(FlowGraph<V,E> cfg, 
+	public ProgressMeasure(FlowGraph<V,E> cfg,
 						   LoopColoring<V, E> loopColors,
-			               Map<V, Integer> loopBounds, 
+			               Map<V, Integer> loopBounds,
 			               Map<V, Long> blockMeasure) {
 		this.cfg = cfg;
 		this.loopBounds = loopBounds;
@@ -68,6 +68,7 @@ public  class  ProgressMeasure<V,E> {
 		loopProgress = new HashMap<V, Long>();
 		/* for all loops in reverse topo order of the loop nest tree */
 		List<V> reverseTopo = MiscUtils.reverseTopologicalOrder(loopColors.getLoopNestDAG());
+
 		for(V hol: reverseTopo) {
 			/* set progress of loop header to 0 */
 			pMaxMap.put(hol, 0L);
@@ -112,8 +113,8 @@ public  class  ProgressMeasure<V,E> {
 		}
 		return relProgress;
 	}
-	private void updatePMax(DirectedGraph<V, 
-			                E> subgraph,V node, 
+	private void updatePMax(DirectedGraph<V,
+			                E> subgraph,V node,
 			                LoopColoring<V, E> color) {
 		long pMax = 0;
 		for(E incoming : subgraph.incomingEdgesOf(node)) {
@@ -137,27 +138,27 @@ public  class  ProgressMeasure<V,E> {
 				          {5,6},{6,7},{6,2},{7,5},{7,10},
 				          {5,8},{3,9},{8,9},{9,2},
 				          {8,10},{9,11},{10,11} };
-		FlowGraph<Integer,DefaultEdge> testGraph = 
+		FlowGraph<Integer,DefaultEdge> testGraph =
 			new DefaultFlowGraph<Integer,DefaultEdge>(DefaultEdge.class,0,11);
 		for(int n : nodes) testGraph.addVertex(n);
 		for(int[] e : edges) testGraph.addEdge(e[0],e[1]);
-		
+
 		Map<Integer,Integer> testLoopBounds = new HashMap<Integer, Integer>();
 		testLoopBounds.put(2,7); testLoopBounds.put(5,15);
-		
+
 		TopOrder<Integer, DefaultEdge> topo = null;
 		try {
 			topo = new TopOrder<Integer, DefaultEdge>(testGraph,1);
 		} catch (BadGraphException e1) {
 			e1.printStackTrace();
 		}
-		LoopColoring<Integer,DefaultEdge> testLoopColors 
+		LoopColoring<Integer,DefaultEdge> testLoopColors
 			= new LoopColoring<Integer, DefaultEdge>(testGraph, topo , 11);
 		HashMap<Integer,Long> testBlockMeasure = new HashMap<Integer, Long>();
 		for(int i = 0; i < nodes.length; i++) {
 			testBlockMeasure.put(nodes[i],blockm[i]);
 		}
-		ProgressMeasure<Integer,DefaultEdge> pm = 
+		ProgressMeasure<Integer,DefaultEdge> pm =
 			new ProgressMeasure<Integer,DefaultEdge>(testGraph,testLoopColors,testLoopBounds,testBlockMeasure );
 		Map<Integer, Long> maxProgress = pm.getMaxProgress();
 		MiscUtils.printMap(System.out,new TreeMap<Integer,Long>(maxProgress), 10);

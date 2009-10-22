@@ -3,7 +3,7 @@
     see <http://www.jopdesign.com/>
 
   Copyright (C) 2009, Benedikt Huber (benedikt.huber@gmail.com)
-  
+
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
@@ -29,23 +29,23 @@ import com.jopdesign.timing.jop.MicrocodePath.PathEntry;
 import com.jopdesign.tools.Instruction;
 
 /** Timing information for one microcode path of the form<br/>
- *  {@code sum(exprs) + max(0, b - hidden) } <br/> 
+ *  {@code sum(exprs) + max(0, b - hidden) } <br/>
  */
 public class MicropathTiming {
-	/** Timing expression: {@code Math.max(0, C + x r + y w - hidden)} */ 
+	/** Timing expression: {@code Math.max(0, C + x r + y w - hidden)} */
 	public static class TimingExpression {
 		private int constCycles;
 		private int reads;
-		private int writes;		
+		private int writes;
 		private int hidden;
 		public static TimingExpression constTime(int constCycles) {
 			return new TimingExpression(constCycles,0,0);
 		}
-		public static TimingExpression read(int hidden) 
+		public static TimingExpression read(int hidden)
 			throws MicrocodeVerificationException {
 			return new TimingExpression(0,1,0,hidden);
 		}
-		public static TimingExpression write(int hidden) 
+		public static TimingExpression write(int hidden)
 			throws MicrocodeVerificationException {
 			return new TimingExpression(0,0,1,hidden);
 		}
@@ -55,7 +55,7 @@ public class MicropathTiming {
 			this.writes = writes;
 			this.hidden = 0;
 		}
-		public TimingExpression(int constCycles, int reads, int writes, int hidden) 
+		public TimingExpression(int constCycles, int reads, int writes, int hidden)
 			throws MicrocodeVerificationException {
 			this(constCycles,reads,writes);
 			if(hidden < 0) {
@@ -86,7 +86,7 @@ public class MicropathTiming {
 			else return count + " " + name;
 		}
 	}
-	
+
 	private List<TimingExpression> timing = new Vector<TimingExpression>();
 	private int bcAccessHidden = -1;
 
@@ -102,7 +102,7 @@ public class MicropathTiming {
 	public long getHiddenBytecodeLoadCycles() {
 		return this.bcAccessHidden;
 	}
-	
+
 	private void computeTiming(MicrocodePath p) throws MicrocodeVerificationException {
 		int start = -1;
 		int constantCycles = 0;
@@ -126,17 +126,19 @@ public class MicropathTiming {
 			case MicrocodeConstants.STCP:
 			case MicrocodeConstants.STAST:
 				if(accessKind >= 0) {
-					throw new MicrocodeVerificationException("No wait after memory access (unsafe)");
+					throw new MicrocodeVerificationException("No wait after memory access (unsafe) !");
 				}
 				start = constantCycles;
 				accessKind = i.opcode;
+				wasWait = false;
 				break;
 			case MicrocodeConstants.WAIT:
-				if(wasWait) {
+				if(wasWait && accessKind > 0) { // unhandled wait
 					int passed = constantCycles - start;
-					if(accessKind < 0) {
-						throw new MicrocodeVerificationException("Wait without memory access ?");
-					}
+					/* We currently have some possibly redundant wait s in null_pointer: */
+//					if(accessKind < 0) {
+//						throw new MicrocodeVerificationException("Wait without memory access (or 3 waits in a row) ?: "+p.getPath());
+//					}
 					switch(accessKind) {
 					case MicrocodeConstants.STMRA:
 						if(accessAddress != null) {
@@ -177,17 +179,17 @@ public class MicropathTiming {
 						throw new MicrocodeVerificationException("Unsupport kind of memory access: "+accessKind);
 					}
 					accessKind = start = -1;
+				} else {
+					wasWait = true;
 				}
 				break;
 			default: break;
 			}
 			constantCycles++;
-			if(i.opcode == MicrocodeConstants.WAIT) wasWait = true;
-			else wasWait = false;
 		}
 		timing.add(TimingExpression.constTime(constantCycles));
 	}
-	
+
 	/* compact all timing expressions without hidden cycles */
 	private void compress() {
 		int constCycles = 0, reads = 0, writes = 0;
@@ -218,16 +220,16 @@ public class MicropathTiming {
 	/* Abbrev. form: [expr] denotes max(0,expr) */
 	public String toString() {
 		Vector<String> timingExprs = new Vector<String>();
-		for(TimingExpression x : timing) { timingExprs.add(x.toString()); } 
+		for(TimingExpression x : timing) { timingExprs.add(x.toString()); }
 		StringBuffer s = concat(" + ",timingExprs);
 		if(this.hasBytecodeLoad()) {
 			s.append(" + [b - "+bcAccessHidden+"]");
 		}
 		return s.toString();
 	}
-	
+
 	/** String representation of several path timing informations.<br/>
-	 *  {@code [expr]} denotes {@code max(0,expr)} 
+	 *  {@code [expr]} denotes {@code max(0,expr)}
 	 * @param timings
 	 * @return
 	 */
