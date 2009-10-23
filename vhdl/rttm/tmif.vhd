@@ -38,8 +38,6 @@ port (
 	--
 	sc_out_cpu		: in sc_out_type;
 	sc_in_cpu		: out sc_in_type;		
-	-- memory access types
-	-- TODO more hints about memory access type?
 
 	--
 	--	Memory IF to arbiter
@@ -171,7 +169,7 @@ begin
 	
 	-- sets next_state, exc_tm_rollback, tm_cmd_rdy_cnt
 	state_machine: process(commit_finished_dly, commit_in_allow, conflict, 
-		rollback_busy, sc_in_cpu_filtered, state, tag_full, tm_cmd) is
+		rollback_busy, state, tag_full, tm_cmd) is
 	begin
 		next_state <= state;
 		exc_tm_rollback <= '0';
@@ -224,13 +222,8 @@ begin
 			
 				if conflict = '1' then
 					next_state <= rollback_signal;
-				else
-					-- wait for possibly begun memory access to finish
-					if sc_in_cpu_filtered.rdy_cnt = 0 then -- TODO (1)?
-						if commit_in_allow = '1' then
-							next_state <= commit;
-						end if;
-					end if;
+				elsif commit_in_allow = '1' then
+					next_state <= commit;
 				end if;
 			
 			when commit =>
@@ -317,16 +310,13 @@ begin
 	
 		case state is
 			when rollback_signal | rollback_wait =>
-				-- do not issue any further commands
+				-- ignore writes
 				sc_out_cpu_filtered.wr <= '0';
+				
+				-- reads from main memory
 				-- TODO reads outside of RAM
-				-- sc_out_cpu_filtered.rd <= '0';
 				
 				assert sc_out_arb_filtered.wr /= '1';
-				-- sc_out_arb.wr <= '0'; -- not needed
-				
-				-- keep rdy_cnt to finish tm module transaction
-				-- TODO can rd_data just keep last value read?
 			when no_transaction | early_committed_transaction | 
 			normal_transaction | commit_wait_token | 
 			commit | early_commit_wait_token | early_commit =>
@@ -342,22 +332,17 @@ begin
 			when commit | early_commit | early_committed_transaction => 
 				sc_out_arb.tm_broadcast <= '1';
 			when normal_transaction | commit_wait_token | 
-			early_commit_wait_token =>
+			early_commit_wait_token | rollback_signal | rollback_wait =>
 				-- TODO no writes to mem should happen 
 				sc_out_arb.tm_broadcast <= '0';
-			when no_transaction | rollback_signal |
-			rollback_wait =>
+			when no_transaction =>
 				sc_out_arb.tm_broadcast <= '0';
 		end case;
 				
 		-- overrides when TM command is issued
 		if sc_out_cpu.wr = '1' and is_tm_magic_addr_async = '1' then		
 			sc_out_cpu_filtered.wr <= '0';
-			-- sc_out_arb.wr <= '0';
 		end if;
 	end process; 
-
-	
-	
 
 end rtl;

@@ -82,7 +82,7 @@ architecture rtl of tm is
 
 	type stage1_type is record
 		state: stage1_state_type;
-		addr: std_logic_vector(addr_width-1 downto 0);
+		addr: std_logic_vector(SC_ADDR_SIZE-1 downto 0);
 		cpu_data: std_logic_vector(31 downto 0);
 	end record;
 	
@@ -124,7 +124,6 @@ architecture rtl of tm is
 
 	signal read_data, next_read_data: std_logic_vector(31 downto 0);
 	
-	-- TODO merge w/ stage1.{addr, cpu_data}
 	signal from_cpu_dly: sc_out_type;
 	signal from_mem_dly: sc_in_type;
 
@@ -180,37 +179,38 @@ begin
 			when no_transaction | rollback_signal | rollback_wait |
 				early_committed_transaction =>
 				next_stage1.state <= idle;
+				next_stage1.addr <= from_cpu.address;
 				
 			when commit_wait_token | early_commit_wait_token =>
 				next_stage1.state <= idle;
+				next_stage1.addr <= from_cpu.address;
 				
 				if broadcast.valid = '1' or 
 					(broadcast_valid_dly = '1' and stage1.state /= broadcast1) 
 					then
 					next_stage1.state <= broadcast1;
-					-- TODO
-					next_stage1.addr <= broadcast.address(next_stage1.addr'range);
+					-- TODO why still valid if delayed?
+					next_stage1.addr <= broadcast.address;
 				end if;
 				
 				next_commit_started <= '0';				
 			
 			when normal_transaction =>
 				next_stage1.state <= idle;
+				next_stage1.addr <= from_cpu.address;
 			
 				if broadcast.valid = '1'  or 
 					(broadcast_valid_dly = '1' and stage1.state /= broadcast1)
 					then
 					next_stage1.state <= broadcast1;
-					next_stage1.addr <= broadcast.address(next_stage1.addr'range); 
+					next_stage1.addr <= broadcast.address; 
 				end if;
 
 				if from_cpu.nc = '0' then
 					if from_cpu.wr = '1' then
 						next_stage1.state <= write;
-						next_stage1.addr <= from_cpu.address(next_stage1.addr'range);
 					elsif from_cpu.rd = '1' then
 						next_stage1.state <= read1;
-						next_stage1.addr <= from_cpu.address(next_stage1.addr'range);
 					end if;
 				end if;
 				
@@ -226,7 +226,9 @@ begin
 						commit_finished <= '1';
 					else 
 						next_stage1.state <= commit;
-						next_stage1.addr <= commit_addr;
+						
+						next_stage1.addr <= (others => '0');
+						next_stage1.addr(commit_addr'range) <= commit_addr;
 						-- shift <= '1';
 					end if;
 				end if;
@@ -243,7 +245,7 @@ begin
 		next_stage2.read <= 'X';
 		next_stage2.dirty <= 'X'; 
 		
-		next_stage2.address <= stage1.addr;
+		next_stage2.address <= stage1.addr(next_stage2.address'range);
 		
 		next_bcstage2 <= '0';
 		
@@ -375,8 +377,8 @@ begin
 					to_mem.wr <= from_cpu_dly.wr;
 					to_mem.rd <= from_cpu_dly.rd;
 					
-					to_mem.address <= from_cpu_dly.address;
-					to_mem.wr_data <= from_cpu_dly.wr_data;
+					to_mem.address <= stage1.addr;
+					to_mem.wr_data <= stage1.cpu_data;
 				end if;
 				
 				if from_mem_dly.rdy_cnt /= 0 and from_mem.rdy_cnt = 0 then
@@ -597,7 +599,8 @@ begin
 			
 			transaction_start => transaction_start,
 			
-			addr => stage1.addr, -- TODO feed from stage 0?
+			-- TODO feed from stage 0?
+			addr => stage1.addr(addr_width-1 downto 0),
 			wr => stage2.update_tags,
 			hit => stage1_async.hit, -- TODO delay if fed in stage 0
 			line => stage1_async.line_addr,
