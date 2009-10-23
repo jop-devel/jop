@@ -54,9 +54,6 @@ public abstract class TransactionWithSWTransactionTracking {
 				if (outermostTransaction) {
 					// flush write set					
 					Native.wrMem(Const.TM_END_TRANSACTION, Const.MEM_TM_MAGIC);
-					
-					// TMTODO wait long enough for RollbackError to be handled
-					for (int i = 0; i < 10; i++);
 				}
 			} catch (Throwable e) { // RollbackError or any other exception
 				// TMTODO this is redundant
@@ -65,9 +62,6 @@ public abstract class TransactionWithSWTransactionTracking {
 				// TMTODO what if RollbackError is thrown here?
 				try {
 					Native.wrMem(Const.TM_ABORTED, Const.MEM_TM_MAGIC);
-					
-					// TMTODO wait long enough for RollbackError to be handled
-					for (int i = 0; i < 10; i++);
 				} catch (Throwable e2) {
 					// if RollbackError was thrown, re-execute abort
 					Native.wrMem(Const.TM_ABORTED, Const.MEM_TM_MAGIC);

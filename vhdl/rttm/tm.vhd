@@ -178,8 +178,7 @@ begin
 	
 		case state is 
 			when no_transaction | rollback_signal | rollback_wait |
-				early_committed_transaction |
-				end_transaction =>
+				early_committed_transaction =>
 				next_stage1.state <= idle;
 				
 			when commit_wait_token | early_commit_wait_token =>

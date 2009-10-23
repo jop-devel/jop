@@ -19,8 +19,6 @@ package tm_internal_pack is
 		early_commit,
 		early_committed_transaction, -- TODO same for expl./OF EC?
 
-		end_transaction, -- TODO only for EC?
-		
 		rollback_signal,
 		rollback_wait
 		);

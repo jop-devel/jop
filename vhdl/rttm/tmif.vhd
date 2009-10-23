@@ -78,8 +78,6 @@ architecture rtl of tmif is
 	signal sc_in_cpu_filtered		: sc_in_type;
 	signal sc_out_arb_filtered		: sc_out_type;
 
-	signal tm_cmd_rdy_cnt				: unsigned(RDY_CNT_SIZE-1 downto 0);
-	
 
 
 	signal is_tm_magic_addr_async: std_logic;
@@ -98,6 +96,9 @@ architecture rtl of tmif is
 	signal commit_finished_dly: std_logic;
 	signal commit_finished_dly_internal_1: std_logic;
 	
+	signal rollback_busy: std_logic;
+	signal next_rollback_busy: std_logic;
+	signal tm_busy: std_logic;
 begin
 
 	is_tm_magic_addr_async <= '1' when
@@ -142,6 +143,8 @@ begin
 			
 			commit_finished_dly_internal_1 <= '0';
 			commit_finished_dly <= '0';
+			
+			rollback_busy <= '0';
 		elsif rising_edge(clk) then
 			state <= next_state;
 			
@@ -150,6 +153,8 @@ begin
 			
 			commit_finished_dly_internal_1 <= commit_finished;
 			commit_finished_dly <= commit_finished_dly_internal_1;
+			
+			rollback_busy <= next_rollback_busy;
 		end if;
 	end process sync;
 	
@@ -166,11 +171,13 @@ begin
 	
 	-- sets next_state, exc_tm_rollback, tm_cmd_rdy_cnt
 	state_machine: process(commit_finished_dly, commit_in_allow, conflict, 
-		state, tag_full, tm_cmd, sc_in_cpu_filtered.rdy_cnt) is
+		rollback_busy, sc_in_cpu_filtered, state, tag_full, tm_cmd) is
 	begin
 		next_state <= state;
 		exc_tm_rollback <= '0';
-		tm_cmd_rdy_cnt <= "00";
+		tm_busy <= '0';
+		
+		next_rollback_busy <= 'X';
 		
 		transaction_start <= '0';
 		
@@ -178,7 +185,7 @@ begin
 			when no_transaction =>
 				if tm_cmd = start_transaction then
 					next_state <= normal_transaction;
-					tm_cmd_rdy_cnt <= "01";
+					tm_busy <= '1';
 					
 					transaction_start <= '1';
 				end if;
@@ -187,17 +194,20 @@ begin
 				case tm_cmd is
 					when end_transaction =>
 						next_state <= commit_wait_token;
-						tm_cmd_rdy_cnt <= "11";
+						tm_busy <= '1';
 					when early_commit =>
 						next_state <= early_commit_wait_token;
-						tm_cmd_rdy_cnt <= "11";
+						tm_busy <= '1';
+					when abort =>
+						next_state <= rollback_signal;
+						tm_busy <= '1';
 					when others => 
 						null;
 				end case;						
 				
 				if tag_full = '1' then
 					next_state <= early_commit_wait_token;
-					tm_cmd_rdy_cnt <= "11";
+					tm_busy <= '1';
 				end if;				
 				
 				if conflict = '1' then
@@ -206,11 +216,11 @@ begin
 					-- > no internal actions until then
 					-- => therefore no need to wait
 					next_state <= rollback_signal;					
-					tm_cmd_rdy_cnt <= "00";
+					tm_busy <= '1';
 				end if;
 				
 			when commit_wait_token =>
-				tm_cmd_rdy_cnt <= "11";
+				tm_busy <= '1';
 			
 				if conflict = '1' then
 					next_state <= rollback_signal;
@@ -224,26 +234,24 @@ begin
 				end if;
 			
 			when commit =>
-				tm_cmd_rdy_cnt <= "11";
+				tm_busy <= '1';
 				
 				-- TODO check condition
 				if commit_finished_dly = '1' then
-					next_state <= end_transaction;
+					next_state <= no_transaction;
 				end if;
 				
-			-- TODO rdy_cnt	
 			when early_commit_wait_token =>
-				tm_cmd_rdy_cnt <= "11";
+				tm_busy <= '1';
 			
 				if conflict = '1' then
 					next_state <= rollback_signal;
-					-- TODO tm_cmd_rdy_cnt <= "00";
 				elsif commit_in_allow = '1' then
 					next_state <= early_commit;
 				end if;
 				
 			when early_commit =>
-				tm_cmd_rdy_cnt <= "11";
+				tm_busy <= '1';
 			
 				-- TODO check condition
 				if commit_finished_dly = '1' then
@@ -253,24 +261,31 @@ begin
 			when early_committed_transaction =>
 				case tm_cmd is
 					when end_transaction =>
-						tm_cmd_rdy_cnt <= "10"; -- TODO
+						tm_busy <= '1';
 						
-						next_state <= end_transaction;
+						next_state <= no_transaction;
 					when others =>
 						null;
 				end case;
 				
-			when end_transaction =>
-				-- TODO
-				next_state <= no_transaction;
-				tm_cmd_rdy_cnt <= "01";
-	
 				
 			when rollback_signal =>
+				tm_busy <= '1';
+				next_rollback_busy <= '1';
+			
 				next_state <= rollback_wait;
 				exc_tm_rollback <= '1';
 								
 			when rollback_wait =>
+				next_rollback_busy <= '0';
+			
+				-- 1 cycle delay to ensure that exception will be handled when
+				-- next bytecode is issued
+				-- TODO refer to documentation
+				if rollback_busy = '1' then
+					tm_busy <= '1';					
+				end if;
+			
 				-- sw ack that exception has been raised
 				-- > also implies that a possibly begun memory access has 
 				--   finished
@@ -286,7 +301,6 @@ begin
 		when state = commit_wait_token or state = early_commit_wait_token or
 		state = commit or state = early_commit or
 		state = early_committed_transaction
-		-- or state = end_transaction -- TODO
 		else '0';
 	
 	commit_out_try <= commit_out_try_internal;		
@@ -295,7 +309,7 @@ begin
 
 	-- sets sc_out_cpu_filtered, sc_out_arb, sc_in_cpu
 	process(is_tm_magic_addr_async, sc_in_cpu_filtered, 
-		sc_out_arb_filtered, sc_out_cpu, state, tm_cmd_rdy_cnt) is
+		sc_out_arb_filtered, sc_out_cpu, state, tm_busy) is
 	begin
 		sc_out_cpu_filtered <= sc_out_cpu;
 		sc_out_arb <= sc_out_arb_filtered;
@@ -314,13 +328,13 @@ begin
 				-- keep rdy_cnt to finish tm module transaction
 				-- TODO can rd_data just keep last value read?
 			when no_transaction | early_committed_transaction | 
-			end_transaction | normal_transaction | commit_wait_token | 
+			normal_transaction | commit_wait_token | 
 			commit | early_commit_wait_token | early_commit =>
 				null;
 		end case;
 		
-		if sc_in_cpu_filtered.rdy_cnt < tm_cmd_rdy_cnt then
-			sc_in_cpu.rdy_cnt <= tm_cmd_rdy_cnt;
+		if tm_busy = '1' then
+			sc_in_cpu.rdy_cnt <= "11";
 		end if;
 		
 		-- set broadcast
@@ -331,7 +345,7 @@ begin
 			early_commit_wait_token =>
 				-- TODO no writes to mem should happen 
 				sc_out_arb.tm_broadcast <= '0';
-			when no_transaction | end_transaction | rollback_signal |
+			when no_transaction | rollback_signal |
 			rollback_wait =>
 				sc_out_arb.tm_broadcast <= '0';
 		end case;

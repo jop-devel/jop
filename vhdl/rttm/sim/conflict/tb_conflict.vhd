@@ -154,7 +154,7 @@ begin
 		
 		ended_of <= true;
 		
-		waitStates(states_type'(early_committed_transaction, end_transaction, 
+		waitStates(states_type'(early_committed_transaction,  
 			no_transaction), << signal .dut.state: state_type>>);
 			
 		ended_transaction <= true;
