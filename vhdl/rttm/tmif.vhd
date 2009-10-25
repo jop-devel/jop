@@ -94,9 +94,10 @@ architecture rtl of tmif is
 	signal commit_finished_dly: std_logic;
 	signal commit_finished_dly_internal_1: std_logic;
 	
-	signal rollback_busy: std_logic;
-	signal next_rollback_busy: std_logic;
 	signal tm_busy: std_logic;
+	
+	type rollback_state_type is (rbi0, rbb0, rbb1, rbb2, rba1, rba2, rbi);
+	signal next_rollback_state, rollback_state: rollback_state_type;
 begin
 
 	is_tm_magic_addr_async <= '1' when
@@ -142,7 +143,7 @@ begin
 			commit_finished_dly_internal_1 <= '0';
 			commit_finished_dly <= '0';
 			
-			rollback_busy <= '0';
+			-- rollback_state <= -- don't care
 		elsif rising_edge(clk) then
 			state <= next_state;
 			
@@ -152,7 +153,7 @@ begin
 			commit_finished_dly_internal_1 <= commit_finished;
 			commit_finished_dly <= commit_finished_dly_internal_1;
 			
-			rollback_busy <= next_rollback_busy;
+			rollback_state <= next_rollback_state;
 		end if;
 	end process sync;
 	
@@ -169,21 +170,20 @@ begin
 	
 	-- sets next_state, exc_tm_rollback, tm_cmd_rdy_cnt
 	state_machine: process(commit_finished_dly, commit_in_allow, conflict, 
-		rollback_busy, state, tag_full, tm_cmd) is
+		rollback_state, state, tag_full, tm_cmd) is		
 	begin
 		next_state <= state;
 		exc_tm_rollback <= '0';
 		tm_busy <= '0';
 		
-		next_rollback_busy <= 'X';
-		
 		transaction_start <= '0';
+		
+		next_rollback_state <= rollback_state;
 		
 		case state is
 			when no_transaction =>
 				if tm_cmd = start_transaction then
 					next_state <= normal_transaction;
-					tm_busy <= '1';
 					
 					transaction_start <= '1';
 				end if;
@@ -192,36 +192,47 @@ begin
 				case tm_cmd is
 					when end_transaction =>
 						next_state <= commit_wait_token;
-						tm_busy <= '1';
 					when early_commit =>
 						next_state <= early_commit_wait_token;
-						tm_busy <= '1';
 					when abort =>
 						next_state <= rollback_signal;
-						tm_busy <= '1';
-					when others => 
+						next_rollback_state <= rbb0;
+					when aborted =>
+						-- command is only issued if an exception is being 
+						-- handled
+						next_state <= no_transaction;
+					when start_transaction | none => 
 						null;
 				end case;						
 				
 				if tag_full = '1' then
 					next_state <= early_commit_wait_token;
-					tm_busy <= '1';
-				end if;				
+				end if;
 				
 				if conflict = '1' then
 					-- > current transaction will be terminated before
 					--   tm command is issued 
 					-- > no internal actions until then
 					-- => therefore no need to wait
-					next_state <= rollback_signal;					
-					tm_busy <= '1';
+					
+					next_state <= rollback_signal;
+					
+					if tm_cmd = none then						
+						next_rollback_state <= rbi0;
+					elsif tm_cmd = aborted then
+						-- don't miss aborted command					
+ 						next_state <= no_transaction; 
+					else
+						next_rollback_state <= rbb0;
+					end if;			
 				end if;
-				
+								
 			when commit_wait_token =>
 				tm_busy <= '1';
 			
 				if conflict = '1' then
 					next_state <= rollback_signal;
+					next_rollback_state <= rbb0;
 				elsif commit_in_allow = '1' then
 					next_state <= commit;
 				end if;
@@ -254,41 +265,66 @@ begin
 			when early_committed_transaction =>
 				case tm_cmd is
 					when end_transaction =>
-						tm_busy <= '1';
-						
 						next_state <= no_transaction;
+					when abort | aborted =>
+						null; 
+						-- not supported since transaction may have changed
+						-- main memory 
 					when others =>
 						null;
 				end case;
-				
-				
 			when rollback_signal =>
-				tm_busy <= '1';
-				next_rollback_busy <= '1';
-			
-				next_state <= rollback_wait;
-				exc_tm_rollback <= '1';
-								
-			when rollback_wait =>
-				next_rollback_busy <= '0';
-			
-				-- 1 cycle delay to ensure that exception will be handled when
+
+				-- 2 cycles delay to ensure that exception will be handled when
 				-- next bytecode is issued
+
+				-- don't set busy when asynchronous, but else delay for 2 cycles
 				-- TODO refer to documentation
-				if rollback_busy = '1' then
-					tm_busy <= '1';					
-				end if;
 			
-				-- sw ack that exception has been raised
-				-- > also implies that a possibly begun memory access has 
-				--   finished
-				if tm_cmd = aborted then
-					next_state <= no_transaction;
-				end if;
-			
+				case rollback_state is
+					when rbi0 =>
+						exc_tm_rollback <= '1';
+					
+						next_rollback_state <= rbi;
+						
+					when rbb0 =>
+						exc_tm_rollback <= '1';
+					
+						next_rollback_state <= rbb1;
+						tm_busy <= '1';
+					
+					when rbb1 =>
+						next_rollback_state <= rbb2;
+						tm_busy <= '1';
+					
+					when rbb2 =>
+						next_rollback_state <= rbi;
+						tm_busy <= '1';
+					
+					when rbi =>
+						null;
+												
+					when rba1 =>
+						next_rollback_state <= rba2;
+						tm_busy <= '1';
+		
+					when rba2 =>
+						next_state <= no_transaction;
+						tm_busy <= '1';
+						
+				end case;
+				
+				case tm_cmd is
+					when none =>
+						null;
+					when aborted =>
+						next_rollback_state <= rba1;
+					when others =>
+						next_rollback_state <= rbb1;
+				end case;
 		end case;
 	end process state_machine;
-	
+		
 	
 	commit_out_try_internal <= '1' 
 		when state = commit_wait_token or state = early_commit_wait_token or
@@ -301,15 +337,15 @@ begin
 	
 
 	-- sets sc_out_cpu_filtered, sc_out_arb, sc_in_cpu
-	process(is_tm_magic_addr_async, sc_in_cpu_filtered, 
-		sc_out_arb_filtered, sc_out_cpu, state, tm_busy) is
+	process(is_tm_magic_addr_async, sc_in_cpu_filtered, sc_out_arb_filtered, 
+		sc_out_cpu, state, tm_busy, tm_cmd) is
 	begin
 		sc_out_cpu_filtered <= sc_out_cpu;
 		sc_out_arb <= sc_out_arb_filtered;
 		sc_in_cpu <= sc_in_cpu_filtered;
 	
 		case state is
-			when rollback_signal | rollback_wait =>
+			when rollback_signal =>
 				-- ignore writes
 				sc_out_cpu_filtered.wr <= '0';
 				
@@ -323,16 +359,16 @@ begin
 				null;
 		end case;
 		
-		if tm_busy = '1' then
+		if tm_cmd /= none or tm_busy = '1' then
 			sc_in_cpu.rdy_cnt <= "11";
-		end if;
+ 		end if;
 		
 		-- set broadcast
 		case state is
 			when commit | early_commit | early_committed_transaction => 
 				sc_out_arb.tm_broadcast <= '1';
 			when normal_transaction | commit_wait_token | 
-			early_commit_wait_token | rollback_signal | rollback_wait =>
+			early_commit_wait_token | rollback_signal =>
 				-- TODO no writes to mem should happen 
 				sc_out_arb.tm_broadcast <= '0';
 			when no_transaction =>

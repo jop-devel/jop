@@ -19,8 +19,7 @@ package tm_internal_pack is
 		early_commit,
 		early_committed_transaction, -- TODO same for expl./OF EC?
 
-		rollback_signal,
-		rollback_wait
+		rollback_signal
 		);
 
 	--type data_array is array (integer range <>) of std_logic_vector(31 downto 0);

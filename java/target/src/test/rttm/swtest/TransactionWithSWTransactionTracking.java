@@ -56,16 +56,17 @@ public abstract class TransactionWithSWTransactionTracking {
 					Native.wrMem(Const.TM_END_TRANSACTION, Const.MEM_TM_MAGIC);
 				}
 			} catch (Throwable e) { // RollbackError or any other exception
-				// TMTODO this is redundant
+				// TMTODO this is redundant and unsafe, since tm might 
+				// interrupt stack manipulation in f_athrow.
 				// it only works if nothing has been written so far
 				// signal end of transactional code to HW
 				// TMTODO what if RollbackError is thrown here?
-				try {
-					Native.wrMem(Const.TM_ABORTED, Const.MEM_TM_MAGIC);
-				} catch (Throwable e2) {
-					// if RollbackError was thrown, re-execute abort
-					Native.wrMem(Const.TM_ABORTED, Const.MEM_TM_MAGIC);
-				}
+//				try {
+//					Native.wrMem(Const.TM_ABORTED, Const.MEM_TM_MAGIC);
+//				} catch (Throwable e2) {
+//					// if RollbackError was thrown, re-execute abort
+//					Native.wrMem(Const.TM_ABORTED, Const.MEM_TM_MAGIC);
+//				}
 				
 				if (!outermostTransaction) {
 					// don't rethrow an exception thrown during aborted 
