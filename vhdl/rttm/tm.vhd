@@ -176,7 +176,7 @@ begin
 		next_commit_started <= commit_started; -- TODO
 	
 		case state is 
-			when no_transaction | rollback_signal |
+			when no_transaction | rollback |
 				early_committed_transaction =>
 				next_stage1.state <= idle;
 				next_stage1.addr <= from_cpu.address;
@@ -372,7 +372,7 @@ begin
 				-- TODO hazard?
 				if state = no_transaction or 
 				state = early_committed_transaction or
-				state = rollback_signal or
+				state = rollback or
 				from_cpu_dly.nc = '1' then
 					to_mem.wr <= from_cpu_dly.wr;
 					to_mem.rd <= from_cpu_dly.rd;

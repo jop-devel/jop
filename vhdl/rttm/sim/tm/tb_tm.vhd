@@ -404,7 +404,7 @@ begin
 
 		testing_conflict <= false;
 		
- 		assert << signal .dut.state: state_type>> = rollback_signal;
+ 		assert << signal .dut.state: state_type>> = rollback;
 		
 		-- zombie reads/writes
 		
@@ -415,7 +415,7 @@ begin
 		-- TODO zombie mode results are not defined yet
 		--assert result = (31 downto 0 => '0');
 		
- 		assert << signal .dut.state: state_type>> = rollback_signal;
+ 		assert << signal .dut.state: state_type>> = rollback;
 		
 		-- ack rollback
 		

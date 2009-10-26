@@ -158,12 +158,12 @@ begin
 		wait until started_of;
 		
 		waitStates(states_type'(normal_transaction, early_commit_wait_token,
-			rollback_signal), 
+			rollback), 
 			<< signal .dut.state: state_type>>);
 		
 		ended_of <= true;
 		
-		waitStates(states_type'(rollback_signal, no_transaction), 
+		waitStates(states_type'(rollback, no_transaction), 
 			<< signal .dut.state: state_type>>);
 			
 		ended_transaction <= true;

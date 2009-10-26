@@ -199,7 +199,7 @@ begin
 					when early_commit =>
 						next_state <= early_commit_wait_token;
 					when abort =>
-						next_state <= rollback_signal;
+						next_state <= rollback;
 						next_rollback_state <= rbb0;
 					when aborted =>
 						-- command is only issued if an exception is being 
@@ -210,7 +210,7 @@ begin
 				end case;						
 								
 				if conflict = '1' then
-					next_state <= rollback_signal;
+					next_state <= rollback;
 					
 					case tm_cmd is
 						when none =>						
@@ -227,7 +227,7 @@ begin
 				tm_busy <= '1';
 			
 				if conflict = '1' then
-					next_state <= rollback_signal;
+					next_state <= rollback;
 					next_rollback_state <= rbb0;
 				elsif commit_in_allow = '1' then
 					next_state <= commit;
@@ -245,7 +245,7 @@ begin
 				tm_busy <= '1';
 			
 				if conflict = '1' then
-					next_state <= rollback_signal;
+					next_state <= rollback;
 				elsif commit_in_allow = '1' then
 					next_state <= early_commit;
 				end if;
@@ -263,6 +263,7 @@ begin
 					when end_transaction =>
 						next_state <= no_transaction;
 					when aborted =>
+						 -- TODO not consistent with exception handling
 						assert false;
 						next_state <= no_transaction;						
 					when abort =>
@@ -273,7 +274,7 @@ begin
 						null;
 				end case;
 				
-			when rollback_signal =>
+			when rollback =>
 
 				-- 2 cycles delay to ensure that exception will be handled when
 				-- next bytecode is issued
@@ -345,7 +346,7 @@ begin
 		sc_in_cpu <= sc_in_cpu_filtered;
 	
 		case state is
-			when rollback_signal =>
+			when rollback =>
 				-- ignore writes
 				sc_out_cpu_filtered.wr <= '0';
 				
@@ -368,7 +369,7 @@ begin
 			when commit | early_commit | early_committed_transaction => 
 				sc_out_arb.tm_broadcast <= '1';
 			when normal_transaction | commit_wait_token | 
-			early_commit_wait_token | rollback_signal =>
+			early_commit_wait_token | rollback =>
 				-- TODO no writes to mem should happen 
 				sc_out_arb.tm_broadcast <= '0';
 			when no_transaction =>
