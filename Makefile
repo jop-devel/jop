@@ -102,7 +102,7 @@ P3=HelloWorld
 
 #P2=wcet
 #P3=Loop
-WCET_METHOD=measure
+WCET_METHOD=foo
 
 #P1=.
 #P2=dsvmmcp
@@ -660,9 +660,9 @@ wcet:
 	-rm -rf $(TARGET)/tmp
 
 
-# dot2eps works for both rasmus WCETAnalyser and wcet.WCETAnalyser
-dot2eps:
-	cd $(TARGET)/wcet && make
+# dotgraph works for wcet.WCETAnalyser
+dotgraph:
+	cd $(TARGET)/wcet/$(P2).$(P3)_$(WCET_METHOD)/report && make
 
 dfa:
 	java -Xss16M $(TOOLS_CP) com.jopdesign.dfa.Main \
