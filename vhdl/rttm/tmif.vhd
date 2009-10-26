@@ -128,10 +128,6 @@ begin
 		);
 		
 	
-	--
-	-- TM STATE MACHINE
-	--
-
 	sync: process(reset, clk) is
 	begin
 		if reset = '1' then
@@ -161,6 +157,7 @@ begin
 	begin
 		tm_cmd <= none;			
 		
+		-- could be moved to previous cycle
 		if sc_out_cpu_dly.wr = '1' and is_tm_magic_addr_sync = '1' then
 			tm_cmd <= tm_cmd_type'val(to_integer(unsigned(
 				sc_out_cpu_dly.wr_data(tm_cmd_raw'range))));
@@ -168,7 +165,10 @@ begin
 	end process gen_tm_cmd;	
 
 	
-	-- sets next_state, exc_tm_rollback, tm_cmd_rdy_cnt
+	--
+	-- TM STATE MACHINE
+	--
+
 	state_machine: process(commit_finished_dly, commit_in_allow, conflict, 
 		rollback_state, state, tag_full, tm_cmd) is		
 	begin
@@ -189,6 +189,10 @@ begin
 				end if;
 				
 			when normal_transaction =>
+				if tag_full = '1' then
+					next_state <= early_commit_wait_token;
+				end if;
+			
 				case tm_cmd is
 					when end_transaction =>
 						next_state <= commit_wait_token;
@@ -204,27 +208,19 @@ begin
 					when start_transaction | none => 
 						null;
 				end case;						
-				
-				if tag_full = '1' then
-					next_state <= early_commit_wait_token;
-				end if;
-				
+								
 				if conflict = '1' then
-					-- > current transaction will be terminated before
-					--   tm command is issued 
-					-- > no internal actions until then
-					-- => therefore no need to wait
-					
 					next_state <= rollback_signal;
 					
-					if tm_cmd = none then						
-						next_rollback_state <= rbi0;
-					elsif tm_cmd = aborted then
-						-- don't miss aborted command					
- 						next_state <= no_transaction; 
-					else
-						next_rollback_state <= rbb0;
-					end if;			
+					case tm_cmd is
+						when none =>						
+							next_rollback_state <= rbi0;
+						when aborted =>
+							-- don't miss aborted command					
+	 						next_state <= no_transaction; 
+						when others =>
+							next_rollback_state <= rbb0;
+					end case;			
 				end if;
 								
 			when commit_wait_token =>
@@ -266,13 +262,17 @@ begin
 				case tm_cmd is
 					when end_transaction =>
 						next_state <= no_transaction;
-					when abort | aborted =>
+					when aborted =>
+						assert false;
+						next_state <= no_transaction;						
+					when abort =>
 						null; 
 						-- not supported since transaction may have changed
 						-- main memory 
 					when others =>
 						null;
 				end case;
+				
 			when rollback_signal =>
 
 				-- 2 cycles delay to ensure that exception will be handled when

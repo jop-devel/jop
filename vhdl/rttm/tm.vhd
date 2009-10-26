@@ -313,6 +313,7 @@ begin
 		-- TODO only valid in next cycle
 		next_read_data <= data(to_integer(stage23.line_addr));
 		
+		-- TODO RAM access is apparently synthesized in stage 3
 		next_stage3.read_dirty <= dirty(to_integer(stage23.line_addr));
 		-- TODO naming ^v
 		next_stage3.read_read <= read(to_integer(stage23.line_addr)) and
