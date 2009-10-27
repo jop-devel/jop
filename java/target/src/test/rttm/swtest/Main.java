@@ -22,7 +22,7 @@ public class Main implements Runnable {
 		sys.signal = 1;
 		
 		while (true) {
-			int result = TransactionWithSWTransactionTracking.run(1);
+			int result = Transaction.run(1);
 			
 			System.out.println(result);
 		}
@@ -32,8 +32,8 @@ public class Main implements Runnable {
 		while (true) {
 			Native.wrMem(TM_START_TRANSACTION, MEM_TM_MAGIC);
 			
-			TransactionWithSWTransactionTracking.conflicting = true;
-			for (int i = 0; i < 100; i++);
+			Transaction.conflicting = true;
+			for (int i = 0; i < 10; i++);
 			
 			Native.wrMem(TM_END_TRANSACTION, MEM_TM_MAGIC);
 		}
