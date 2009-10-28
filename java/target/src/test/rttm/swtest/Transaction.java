@@ -8,8 +8,6 @@ import rttm.utils.Utils;
 
 public abstract class Transaction {
 	
-	// TMTODO use Native.wr() if more efficient
-
 	protected static final boolean LOG = true; 
 	
 	public static boolean conflicting = false;
@@ -29,10 +27,12 @@ public abstract class Transaction {
 		int arg0Copy = 0xdeadbeef; // make compiler happy
 		int result = 0xdeadbeef; // make compiler happy
 		
-		boolean outermostTransaction = !Utils.inTransaction[Utils.sysDev.cpuId];
+		// TMTODO disable interrupts?
+		
+		boolean outermostTransaction = !Utils.inTransaction[Native.rd(Const.IO_CPU_ID)];
 		
 		if (outermostTransaction) {
-			Utils.inTransaction[Utils.sysDev.cpuId] = true;
+			Utils.inTransaction[Native.rd(Const.IO_CPU_ID)] = true;
 			arg0Copy = arg0;
 		}
 
@@ -62,7 +62,7 @@ public abstract class Transaction {
 					// transaction
 					throw Utils.RollbackException;
 				} else {
-					Utils.sysDev.enableHwExceptions = 0;
+					Native.wr(0, Const.IO_ENA_HW_EXC);
 					transactionAborted = true;
 					
 					if (LOG) {
@@ -74,7 +74,7 @@ public abstract class Transaction {
 				}
 			} finally {
 				if (outermostTransaction) {
-					Utils.inTransaction[Utils.sysDev.cpuId] = false;
+					Utils.inTransaction[Native.rd(Const.IO_CPU_ID)] = false;
 					
 					// TMTODO re-enable interrupts here?
 					// Utils.sysDev.cntInt = 1;

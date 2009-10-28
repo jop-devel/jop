@@ -193,6 +193,8 @@ public class Const {
 	public static final int IO_DEADLINE = IO_BASE+10;
 
 	public static final int IO_CPUCNT = IO_BASE+11;
+	
+	public static final int IO_ENA_HW_EXC = IO_BASE+12;
 
 	/**
 	 * Number of available interrupts depends on the parameter
