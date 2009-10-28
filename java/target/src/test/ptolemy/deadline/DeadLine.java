@@ -22,7 +22,7 @@
 /**
  * 
  */
-package sp;
+package ptolemy.deadline;
 
 import com.jopdesign.io.IOFactory;
 import com.jopdesign.io.SysDevice;
@@ -33,21 +33,58 @@ import com.jopdesign.io.SysDevice;
  */
 public class DeadLine {
 
+	static SysDevice sys = IOFactory.getFactory().getSysDevice();
+	static final int PERIOD = 60000000;
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) {
 
-		SysDevice sys = IOFactory.getFactory().getSysDevice();
+
+		// deadline();
+		busyWait();
+		
+	}
+
+	static void deadline() {
 
 		int time = sys.cntInt;
-		
+
 		for (;;) {
-			time += 60000000;
+			time += PERIOD;
 			sys.deadLine = time;
 			System.out.print("*");
-			// Timer.wd();
 		}
+	}
+	
+	static void busyWait() {
+
+		int time = sys.cntInt;
+
+		for (;;) {
+			time += PERIOD;
+			while (time - sys.cntInt >= 0) {
+				;
+			}
+			System.out.print("*");
+		}		
+	}
+	
+	static class DeadlineMiss extends RuntimeException {}
+	
+	static void excpetionExample() {
+	
+		int time;
+		
+		time = sys.cntInt+1000;
+		try {
+			// sys.setTimeout = time;
+			// do the work
+			sys.deadLine = time;
+		} catch (DeadlineMiss dm) {
+			// handle deadline miss
+		}
+		
 	}
 
 }
