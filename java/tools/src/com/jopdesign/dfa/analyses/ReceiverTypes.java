@@ -46,6 +46,7 @@ import org.apache.bcel.generic.ReferenceType;
 import org.apache.bcel.generic.StoreInstruction;
 import org.apache.bcel.generic.Type;
 
+import com.jopdesign.build.ClassInfo;
 import com.jopdesign.dfa.framework.Analysis;
 import com.jopdesign.dfa.framework.Context;
 import com.jopdesign.dfa.framework.ContextMap;
@@ -909,19 +910,40 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 			
 			InvokeInstruction instr = (InvokeInstruction)instruction;
 			int argSize = MethodHelper.getArgSize(instr, context.constPool);
+
+			DFAAppInfo p = interpreter.getProgram();
+			String constClassName = instr.getClassName(context.constPool);
+			ClassInfo constClass = p.cliMap.get(constClassName);
 			
 			// find possible revceiver types
 			List<String> receivers = new LinkedList<String>();
 			for (Iterator<TypeMapping> i = input.keySet().iterator(); i.hasNext(); ) {
 				TypeMapping m = i.next();
 				if (m.stackLoc == context.stackPtr-argSize) {
-					receivers.add(m.type.split("@")[0]);
+					String clName = m.type.split("@")[0];
+					
+					// check whether this class can possibly be a receiver
+					ClassInfo dynamicClass = (ClassInfo)p.cliMap.get(clName);
+					do {
+						if (constClass.equals(dynamicClass)) {
+							receivers.add(clName);
+							break;
+						}
+						dynamicClass = dynamicClass.superClass;
+					} while (dynamicClass != null);
+					
+					if (dynamicClass == null) {
+						System.out.println(context.method+": class "+constClassName+" is not a superclass of "+clName);
+					}
 				}
 			}
+			
+			// TODO: get it right for interfaces...
 
 			for (Iterator<String> i = receivers.iterator(); i.hasNext(); ) {
 				// find receiving method
 				String receiver = i.next();
+				
 				String signature = instr.getMethodName(context.constPool)+instr.getSignature(context.constPool);
 				String methodName = receiver+"."+signature;
 				

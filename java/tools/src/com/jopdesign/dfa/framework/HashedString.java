@@ -22,8 +22,8 @@ package com.jopdesign.dfa.framework;
 
 public class HashedString {
 
-	private String value;
-	private int hash;
+	private final String value;
+	private final int hash;
 	
 	public HashedString(String value) {
 		this.value = value;
