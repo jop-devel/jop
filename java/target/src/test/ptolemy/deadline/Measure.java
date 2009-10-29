@@ -26,6 +26,8 @@ package ptolemy.deadline;
 
 import com.jopdesign.io.IOFactory;
 import com.jopdesign.io.SysDevice;
+import com.jopdesign.sys.Const;
+import com.jopdesign.sys.Native;
 
 /**
  * Low-level measurements for bytecodes on the TDMA based CMP system.
@@ -54,16 +56,16 @@ public class Measure {
 		int shift = CLOCK_FREQ/10/(TDMA_LENGTH)*TDMA_LENGTH+1;
 		
 		// get measurement overhead
-		int time = sys.cntInt;
-		time = sys.cntInt - time;
+		int time = Native.rd(Const.IO_CNT);
+		time = Native.rd(Const.IO_CNT)-time;
 		int off = time;
 		
 		int start = sys.cntInt + shift;
 		for (int i=0; i<3*TDMA_LENGTH; ++i) {
 			sys.deadLine = start;
-			time = sys.cntInt;
+			time = Native.rd(Const.IO_CNT);
 			a[0] = 1;
-			time = sys.cntInt - time;
+			time = Native.rd(Const.IO_CNT)-time;
 			System.out.println(time-off);
 			start += shift;
 		}
