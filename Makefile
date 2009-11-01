@@ -138,8 +138,12 @@ TARGET_SOURCE=$(TARGET)/src/common$(S)$(TARGET)/src/jdk_base$(S)$(TARGET)/src/jd
 TARGET_JFLAGS=-d $(TARGET)/dist/classes -sourcepath $(TARGET_SOURCE) -bootclasspath "" -extdirs "" -classpath "" -source 1.5
 GCC_PARAMS=
 
-# uncomment this if you use RTTM
+# uncomment this to use RTTM
+USE_RTTM=yes
+
+ifeq ($(USE_RTTM),yes)
 GCC_PARAMS=-DRTTM
+endif
 
 # uncomment this if you want floating point operations in hardware
 # ATTN: be sure to choose 'cycfpu' as QPROJ else no FPU will be available
@@ -350,6 +354,9 @@ java_app:
 	-mkdir $(TARGET)/dist/bin
 	javac $(TARGET_JFLAGS) $(TARGET)/src/common/com/jopdesign/sys/*.java
 	javac $(TARGET_JFLAGS) $(TARGET)/src/jdk_base/java/lang/annotation/*.java	# oh new Java 1.5 world!
+ifeq ($(USE_RTTM),yes)	
+	javac $(TARGET_JFLAGS) $(TARGET)/src/common/rttm/utils/Utils.java
+endif
 	javac $(TARGET_JFLAGS) $(TARGET_APP)
 	cd $(TARGET)/dist/classes && jar cf ../lib/classes.zip *
 	$(OPTIMIZE)
