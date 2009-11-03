@@ -20,10 +20,11 @@ public abstract class WcetVisitor implements CfgVisitor {
 	public void visitSummaryNode(SummaryNode n) {
 		throw new AssertionError("summary nodes not supported using this WCET calculation method");
 	}
+
 	public abstract void visitInvokeNode(InvokeNode n);
-	public void visitBasicBlockNode(BasicBlockNode n) {
-		cost.addLocalCost(project.getProcessorModel().basicBlockWCET(n.getBasicBlock()));
-	}
+
+	public abstract void visitBasicBlockNode(BasicBlockNode n);
+
 	public WcetCost computeCost(CFGNode n) {
 		this.cost = new WcetCost();
 		n.accept(this);

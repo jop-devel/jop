@@ -11,6 +11,7 @@ import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis.MapCostProvider;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveWCETStrategy;
 import com.jopdesign.wcet.frontend.SuperGraph;
+import com.jopdesign.wcet.frontend.ControlFlowGraph.BasicBlockNode;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGEdge;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGNode;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.InvokeNode;
@@ -43,7 +44,7 @@ public class GlobalAnalysis {
 	}
 	/** Compute WCET using global ipet, and either ALWAYS_MISS or GLOBAL_ALL_FIT */
 	public WcetCost computeWCET(MethodInfo m, StaticCacheApproximation cacheMode) throws Exception {
-		if(cacheMode != StaticCacheApproximation.ALWAYS_MISS && 
+		if(cacheMode != StaticCacheApproximation.ALWAYS_MISS &&
 		   cacheMode != StaticCacheApproximation.GLOBAL_ALL_FIT) {
 			throw new Exception("Global IPET: only ALWAYS_MISS and GLOBAL_ALL_FIT are supported"+
 					            " as cache approximation strategies");
@@ -88,7 +89,7 @@ public class GlobalAnalysis {
 	/* add cost for missing each method once (ALL FIT) */
 	private void addMissOnceCost(SuperGraph sg, MaxCostFlow<CFGNode,CFGEdge> maxCostFlow) {
 		/* collect access sites */
-		Map<MethodInfo, Set<CFGEdge>> accessEdges = 
+		Map<MethodInfo, Set<CFGEdge>> accessEdges =
 			new HashMap<MethodInfo, Set<CFGEdge>>();
 		for(Entry<SuperInvokeEdge, SuperReturnEdge> invokeSite: sg.getSuperEdgePairs().entrySet()) {
 			MethodInfo invoked = invokeSite.getKey().getInvokeNode().receiverFlowGraph().getMethodInfo();
@@ -110,20 +111,21 @@ public class GlobalAnalysis {
 			maxCostFlow.addDecisionCost(dVar, cache.missOnceCost(mi,ipetConfig.assumeMissOnceOnInvoke));
 		}
 	}
-	public static class GlobalIPETStrategy implements RecursiveWCETStrategy<StaticCacheApproximation> {
+	public static class GlobalIPETStrategy implements RecursiveWCETStrategy<AnalysisContextIpet> {
 		private IpetConfig ipetConfig;
 		public GlobalIPETStrategy(IpetConfig ipetConfig) {
 			this.ipetConfig = ipetConfig;
 		}
 		public WcetCost recursiveWCET(
-				RecursiveAnalysis<StaticCacheApproximation> stagedAnalysis,
-				InvokeNode n, StaticCacheApproximation cacheMode) {
-			if(cacheMode != StaticCacheApproximation.ALL_FIT_REGIONS) {
-				throw new AssertionError("Cache Mode "+cacheMode+" not supported using"+
-						                " mixed local/global IPET strategy");
+				RecursiveAnalysis<AnalysisContextIpet> stagedAnalysis,
+				InvokeNode n,
+				AnalysisContextIpet ctx) {
+			if(ctx.cacheApprox != StaticCacheApproximation.ALL_FIT_REGIONS) {
+				throw new AssertionError("Cache Mode "+ctx.cacheApprox+" not supported using"+
+						                " _mixed_ local/global IPET strategy");
 			}
 			Project project = stagedAnalysis.getProject();
-			MethodInfo invoker = n.getBasicBlock().getMethodInfo(); 
+			MethodInfo invoker = n.getBasicBlock().getMethodInfo();
 			MethodInfo invoked = n.getImplementedMethod();
 			ProcessorModel proc = project.getProcessorModel();
 			MethodCache cache = proc.getMethodCache();
@@ -143,8 +145,8 @@ public class GlobalAnalysis {
 				cost.addPotentialCacheFlushes(1);
 				//System.err.println("Potential cache flush: "+invoked+" from "+invoker);
 			} else {
-				WcetCost recCost = stagedAnalysis.computeWCET(invoked, cacheMode);
-				cost.addCacheCost(recCost.getCacheCost() + invokeReturnCost);				
+				WcetCost recCost = stagedAnalysis.computeWCET(invoked, ctx);
+				cost.addCacheCost(recCost.getCacheCost() + invokeReturnCost);
 				cost.addNonLocalCost(recCost.getCost() - recCost.getCacheCost());
 			}
 			Project.logger.info("Recursive WCET computation [GLOBAL IPET]: " + invoked.getMethod() +
@@ -152,19 +154,21 @@ public class GlobalAnalysis {
 					            ", execution cost: "+ cost.getNonCacheCost());
 			return cost;
 		}
-		
+
 	}
 	/**
 	 * compute execution time of basic blocks in the supergraph
 	 * @param sg the supergraph, whose vertices are considered
 	 * @return
 	 */
-	private Map<CFGNode, WcetCost> buildNodeCostMap(SuperGraph sg, StaticCacheApproximation approx) {		
+	private Map<CFGNode, WcetCost> buildNodeCostMap(SuperGraph sg, StaticCacheApproximation approx) {
 		HashMap<CFGNode, WcetCost> nodeCost = new HashMap<CFGNode,WcetCost>();
 		GlobalVisitor visitor;
+		AnalysisContextIpet ctx =
+			new AnalysisContextIpet(approx);
 		switch(approx) {
-		case ALWAYS_MISS: visitor = new GlobalVisitor(project,true); break;
-		default: visitor = new GlobalVisitor(project,false); break; 
+		case ALWAYS_MISS: visitor = new GlobalVisitor(project,ctx,true); break;
+		default: visitor = new GlobalVisitor(project,ctx,false); break;
 		}
 		for(CFGNode n : sg.vertexSet()) {
 			WcetCost cost = visitor.computeCost(n);
@@ -174,8 +178,10 @@ public class GlobalAnalysis {
 	}
 	public static class GlobalVisitor extends WcetVisitor {
 		private boolean addAlwaysMissCost;
-		public GlobalVisitor(Project p, boolean addAlwaysMissCost) {
+		private AnalysisContextIpet ctx;
+		public GlobalVisitor(Project p, AnalysisContextIpet ctx, boolean addAlwaysMissCost) {
 			super(p);
+			this.ctx = ctx;
 			this.addAlwaysMissCost = addAlwaysMissCost;
 		}
 		public void visitInvokeNode(InvokeNode n) {
@@ -183,9 +189,13 @@ public class GlobalAnalysis {
 			if(addAlwaysMissCost) {
 				ProcessorModel proc = project.getProcessorModel();
 				this.cost.addCacheCost(proc.getInvokeReturnMissCost(
-						n.invokerFlowGraph(), 
+						n.invokerFlowGraph(),
 						n.receiverFlowGraph()));
 			}
+		}
+		@Override
+		public void visitBasicBlockNode(BasicBlockNode n) {
+			cost.addLocalCost(project.getProcessorModel().basicBlockWCET(ctx.getExecutionContext(n),n.getBasicBlock()));
 		}
 	}
 }
