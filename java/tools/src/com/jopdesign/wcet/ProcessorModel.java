@@ -25,6 +25,7 @@ import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
 
 import com.jopdesign.build.MethodInfo;
+import com.jopdesign.wcet.analysis.ExecutionContext;
 import com.jopdesign.wcet.frontend.BasicBlock;
 import com.jopdesign.wcet.frontend.ControlFlowGraph;
 import com.jopdesign.wcet.frontend.WcetAppInfo;
@@ -44,21 +45,21 @@ public interface ProcessorModel {
 	 * Check whether the given instruction is implemented in Java.
 	 */
 	public boolean isImplementedInJava(Instruction i);
-	
-	/** 
+
+	/**
 	 * For Java implemented bytecodes, get the method
 	 * implementing the bytecode.
-	 * @return the reference to the Java implementation of the bytecode, 
+	 * @return the reference to the Java implementation of the bytecode,
 	 *         or null if the instruction is not implemented in Java.
 	 */
 	public MethodInfo getJavaImplementation(WcetAppInfo ai, MethodInfo ctx, Instruction instr);
-	
+
 	public int getNativeOpCode(MethodInfo ctx, Instruction instr);
 
 	/**
 	 * Get number of bytes needed to encode an instruction
 	 * @param context The class the instruction belongs to
-	 * @param instruction 
+	 * @param instruction
 	 * @return
 	 */
 	public int getNumberOfBytes(MethodInfo context, Instruction instruction);
@@ -69,10 +70,10 @@ public interface ProcessorModel {
 	 * @return
 	 */
 	public List<String> getJVMClasses();
-	
-	public int getExecutionTime(MethodInfo context, InstructionHandle i);
 
-	public long basicBlockWCET(BasicBlock codeBlock);
+	public int getExecutionTime(ExecutionContext context, InstructionHandle i);
+
+	public long basicBlockWCET(ExecutionContext context, BasicBlock codeBlock);
 
 	public boolean hasMethodCache();
 	/**

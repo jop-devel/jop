@@ -35,6 +35,7 @@ import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.frontend.BasicBlock;
 import com.jopdesign.wcet.frontend.ControlFlowGraph;
 import com.jopdesign.wcet.frontend.WcetAppInfo;
+import com.jopdesign.wcet.frontend.ControlFlowGraph.BasicBlockNode;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGEdge;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGNode;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.InvokeNode;
@@ -43,20 +44,19 @@ import com.jopdesign.wcet.ipet.ILPModelBuilder;
 import com.jopdesign.wcet.ipet.IpetConfig;
 import com.jopdesign.wcet.ipet.MaxCostFlow;
 import com.jopdesign.wcet.ipet.ILPModelBuilder.CostProvider;
-import com.jopdesign.wcet.ipet.IpetConfig.StaticCacheApproximation;
-import com.jopdesign.wcet.jop.MethodCache;
 import com.jopdesign.wcet.report.ClassReport;
 
 /**
  * Simple and fast local analysis, with the possibility to use more expensive analysis
  * methods (global IPET for miss-once fit-all, UPPAAL) for parts of the program.
- * 
+ *
  * @author Benedikt Huber (benedikt.huber@gmail.com)
  *
  */
-public class RecursiveAnalysis<Context> {
+
+public class RecursiveAnalysis<Context extends AnalysisContext> {
 	/** Used for configuring recursive WCET caluclation */
-	public interface RecursiveWCETStrategy<Context> {
+	public interface RecursiveWCETStrategy<Context extends AnalysisContext> {
 		public WcetCost recursiveWCET(RecursiveAnalysis<Context> stagedAnalysis, InvokeNode invocation, Context ctx);
 	}
 	/** Key for caching recursive WCET calculations */
@@ -66,22 +66,56 @@ public class RecursiveAnalysis<Context> {
 		public WcetKey(MethodInfo m, Context mode) {
 			this.m = m; this.ctx = mode;
 		}
-		@Override
-		public boolean equals(Object that) {
-			return (that instanceof RecursiveAnalysis.WcetKey) ? equalsKey((WcetKey) that) : false;
-		}
-		private boolean equalsKey(WcetKey key) {
-			return this.m.equals(key.m) && (this.ctx.equals(key.ctx));
-		}
-		@Override
+
 		public int hashCode() {
-			return m.getFQMethodName().hashCode()+this.ctx.hashCode();
+			final int prime = 31;
+			int result = prime * m.getFQMethodName().hashCode();
+			result = prime * result + ctx.hashCode();
+			return result;
 		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj) return true;
+			if (obj == null) return false;
+			if (getClass() != obj.getClass()) return false;
+			RecursiveAnalysis<?>.WcetKey other = (RecursiveAnalysis<?>.WcetKey) obj;
+			if (!ctx.equals(other.ctx)) return false;
+			if (!m.equals(other.m)) return false;
+			return true;
+		}
+
 		@Override
 		public String toString() {
 			return this.m.getFQMethodName()+"["+this.ctx+"]";
 		}
 	}
+
+	/** Visitor for computing the WCET of CFG nodes */
+	private class LocalWcetVisitor extends WcetVisitor {
+		Context ctx;
+		public LocalWcetVisitor(Project project, Context ctx) {
+			super(project);
+			this.ctx = ctx;
+		}
+		@Override
+		public void visitSummaryNode(SummaryNode n) {
+			cost.addCost(runWCETComputation("summary",n.getSubGraph(),ctx).getCost());
+		}
+		@Override
+		public void visitInvokeNode(InvokeNode n) {
+			cost.addLocalCost(processor.getExecutionTime(ctx.getExecutionContext(n),n.getInstructionHandle()));
+			if(n.isInterface()) {
+				throw new AssertionError("Invoke node "+n.getReferenced()+" without implementation in WCET analysis - did you preprocess virtual methods ?");
+			}
+			cost.addCost(RecursiveAnalysis.this.recursiveWCET.recursiveWCET(RecursiveAnalysis.this, n, ctx));
+		}
+		@Override
+		public void visitBasicBlockNode(BasicBlockNode n) {
+			cost.addLocalCost(project.getProcessorModel().basicBlockWCET(ctx.getExecutionContext(n),n.getBasicBlock()));
+		}
+	}
+
 	/** Solution to local WCET problem */
 	public class LocalWCETSolution {
 		private long lpCost;
@@ -90,7 +124,7 @@ public class RecursiveAnalysis<Context> {
 		private Map<CFGEdge,Long> edgeFlow;
 		private DirectedGraph<CFGNode, CFGEdge> graph;
 		private Map<CFGNode, WcetCost> nodeCosts;
-		public LocalWCETSolution(DirectedGraph<CFGNode,CFGEdge> g, Map<CFGNode,WcetCost> nodeCosts) { 
+		public LocalWCETSolution(DirectedGraph<CFGNode,CFGEdge> g, Map<CFGNode,WcetCost> nodeCosts) {
 			this.graph = g;
 			this.nodeCosts= nodeCosts;
 		}
@@ -126,9 +160,9 @@ public class RecursiveAnalysis<Context> {
 		/** Safety check: compare flow*cost to actual solution */
 		public void checkConsistentency() {
 			if(cost.getCost() != lpCost) {
-				throw new AssertionError("The solution implies that the flow graph cost is " 
+				throw new AssertionError("The solution implies that the flow graph cost is "
 										 + cost.getCost() + ", but the ILP solver reported "+lpCost);
-			}			
+			}
 		}
 		private void computeNodeFlow() {
 			nodeFlow = new HashMap<CFGNode, Long>();
@@ -141,7 +175,7 @@ public class RecursiveAnalysis<Context> {
 					}
 					nodeFlow.put(n, flow);
 				}
-			}			
+			}
 		}
 		/* Compute cost, separating local and non-local cost */
 		private void computeCost() {
@@ -152,7 +186,7 @@ public class RecursiveAnalysis<Context> {
 				cost.addCacheCost(flow * nodeCosts.get(n).getCacheCost());
 				cost.addNonLocalCost(flow * nodeCosts.get(n).getNonLocalCost());
 			    cost.addPotentialCacheFlushes((int)flow * nodeCosts.get(n).getPotentialCacheFlushes());
-			}			
+			}
 		}
 	}
 	/** Provide execution cost using a node->cost table */
@@ -166,10 +200,10 @@ public class RecursiveAnalysis<Context> {
 			if(cost == null) throw new NullPointerException("Missing entry for "+obj+" in cost map");
 			return cost.getCost();
 		}
-		
+
 	}
-	
-	private static final Logger logger = Logger.getLogger(RecursiveAnalysis.class);
+
+	static final Logger logger = Logger.getLogger(RecursiveAnalysis.class);
 	private Project project;
 	private WcetAppInfo appInfo;
 	private Hashtable<WcetKey, WcetCost> wcetMap;
@@ -198,7 +232,7 @@ public class RecursiveAnalysis<Context> {
 	 * approximation.cache approximation scheme.
 	 * @param m the method to be analyzed
 	 * @return
-	 * 
+	 *
 	 * <p>FIXME: Logging/Report need to be cleaned up </p>
 	 */
 	public WcetCost computeWCET(MethodInfo m, Context ctx) {
@@ -216,7 +250,7 @@ public class RecursiveAnalysis<Context> {
 		}
 		return sol.getTotalCost();
 	}
-	
+
 	private void updateReport(WcetKey key, LocalWCETSolution sol) {
 		Map<CFGNode,WcetCost> nodeCosts = sol.getNodeCostMap();
 		Hashtable<CFGNode, String> nodeFlowCostDescrs = new Hashtable<CFGNode, String>();
@@ -231,7 +265,7 @@ public class RecursiveAnalysis<Context> {
 				if(basicBlock != null) {
 					TreeSet<Integer> lineRange = basicBlock.getSourceLineRange();
 					if(lineRange.isEmpty()) {
-						Project.logger.error("No source code lines associated with basic block ! ");						
+						Project.logger.error("No source code lines associated with basic block ! ");
 					}
 					ClassInfo cli = basicBlock.getClassInfo();
 					ClassReport cr = project.getReport().getClassReport(cli);
@@ -259,15 +293,15 @@ public class RecursiveAnalysis<Context> {
 	/**
 	 * Compute the WCET of the given control flow graph
 	 * @param name name for the ILP problem
-	 * @param cfg the control flow graph 
+	 * @param cfg the control flow graph
 	 * @param ctx the context to use
 	 * @return the WCET for the given CFG
 	 */
-	public LocalWCETSolution runWCETComputation(String name, ControlFlowGraph cfg, Context ctx) {		
+	public LocalWCETSolution runWCETComputation(String name, ControlFlowGraph cfg, Context ctx) {
 		Map<CFGNode,WcetCost> nodeCosts = buildNodeCostMap(cfg,ctx);
 		LocalWCETSolution sol = new LocalWCETSolution(cfg.getGraph(),nodeCosts);
 		CostProvider<CFGNode> costProvider = new MapCostProvider<CFGNode>(nodeCosts);
-		MaxCostFlow<CFGNode,CFGEdge> problem = 
+		MaxCostFlow<CFGNode,CFGEdge> problem =
 			modelBuilder.buildLocalILPModel(name,cfg, costProvider);
 		/* solve ILP */
 		/* extract node flow, local cost, cache cost, cummulative cost */
@@ -281,124 +315,38 @@ public class RecursiveAnalysis<Context> {
 		sol.setSolution(maxCost, edgeFlow);
 		return sol;
 	}
-	
+
+	private WcetCost computeCostOfNode(CFGNode n ,Context ctx) {
+		WcetVisitor wcetVisitor = new LocalWcetVisitor(project, ctx);
+		return wcetVisitor.computeCost(n);
+	}
+
 	/**
 	 * map flowgraph nodes to WCET
 	 * if the node is a invoke, we need to compute the WCET for the invoked method
 	 * otherwise, just take the basic block WCET
-	 * @param fg 
+	 * @param fg
 	 * @param cacheMode cache approximation mode
 	 * @return
 	 */
-	private Map<CFGNode, WcetCost> 
+	private Map<CFGNode, WcetCost>
 		buildNodeCostMap(ControlFlowGraph fg,Context ctx) {
-		
+
 		HashMap<CFGNode, WcetCost> nodeCost = new HashMap<CFGNode,WcetCost>();
 		for(CFGNode n : fg.getGraph().vertexSet()) {
 			nodeCost.put(n, computeCostOfNode(n, ctx));
 		}
 		return nodeCost;
 	}
-	private WcetCost 
-	computeCostOfNode(CFGNode n ,Context ctx) {	
-		WcetVisitor wcetVisitor = new LocalWcetVisitor(project, ctx);
-		return wcetVisitor.computeCost(n);
-	}
-	
-	private class LocalWcetVisitor extends WcetVisitor {
-		Context ctx;
-		public LocalWcetVisitor(Project project, Context ctx) {
-			super(project);
-			this.ctx = ctx;
-		}
-		@Override
-		public void visitSummaryNode(SummaryNode n) {
-			cost.addCost(runWCETComputation("summary",n.getSubGraph(),ctx).getCost());
-		}
-		@Override
-		public void visitInvokeNode(InvokeNode n) {
-			cost.addLocalCost(processor.getExecutionTime(n.getBasicBlock().getMethodInfo(),n.getInstructionHandle()));
-			if(n.isInterface()) {
-				throw new AssertionError("Invoke node "+n.getReferenced()+" without implementation in WCET analysis - did you preprocess virtual methods ?");
-			}
-			cost.addCost(RecursiveAnalysis.this.recursiveWCET.recursiveWCET(RecursiveAnalysis.this, n, ctx));
-		}
-	}
-
-	public static class LocalIPETStrategy implements RecursiveWCETStrategy<StaticCacheApproximation> {
-		private boolean assumeMissOnceOnInvoke;
-		public LocalIPETStrategy(IpetConfig ipetConfig) {
-			this.assumeMissOnceOnInvoke = ipetConfig.assumeMissOnceOnInvoke;
-		}
-		public LocalIPETStrategy() {
-			this.assumeMissOnceOnInvoke = false;
-		}
-		public WcetCost recursiveWCET(
-				RecursiveAnalysis<StaticCacheApproximation> stagedAnalysis,
-				InvokeNode n, 
-				StaticCacheApproximation cacheMode) {
-			if(cacheMode.needsInterProcIPET()) {
-				throw new AssertionError("Ups. Cache Mode "+cacheMode+" not supported using local IPET strategy");
-			}
-			Project project = stagedAnalysis.project;
-			MethodInfo invoker = n.getBasicBlock().getMethodInfo(); 
-			MethodInfo invoked = n.getImplementedMethod();
-			ProcessorModel proc = project.getProcessorModel();
-			MethodCache cache = proc.getMethodCache();
-			long cacheCost;
-			WcetCost recCost = stagedAnalysis.computeWCET(invoked, cacheMode);
-			long nonLocalExecCost = recCost.getCost() - recCost.getCacheCost();
-			long nonLocalCacheCost = recCost.getCacheCost();
-			long invokeReturnCost = cache.getInvokeReturnMissCost(
-					proc,
-					project.getFlowGraph(invoker),
-	                project.getFlowGraph(invoked));
-			if(! proc.hasMethodCache() || cacheMode == StaticCacheApproximation.ALWAYS_HIT) {
-				cacheCost = 0;
-			} else if(project.getCallGraph().isLeafNode(invoked)) {
-				cacheCost = invokeReturnCost + nonLocalCacheCost;
-			} else if(cacheMode == StaticCacheApproximation.ALL_FIT_SIMPLE && cache.allFit(invoked)) {
-				long returnCost = cache.getMissOnReturnCost(proc, project.getFlowGraph(invoker));
-				/* Maybe its better not to apply the all-fit heuristic ... */
-				long noAllFitCost = recCost.getCost() + invokeReturnCost;
-				/* Compute cost without method cache */
-				long alwaysHitCost = stagedAnalysis.computeWCET(invoked, StaticCacheApproximation.ALWAYS_HIT).getCost();
-				/* Compute penalty for loading each method exactly once */
-				long allFitPenalty = cache.getMissOnceCummulativeCacheCost(invoked,assumeMissOnceOnInvoke);
-				long allFitCacheCost = allFitPenalty  + returnCost;
-				/* Cost All-Fit: recursive + penalty for loading once + return to caller */
-				long allFitCost = alwaysHitCost + allFitCacheCost;
-				/* Choose the better approximation */
-				if(allFitCost <= noAllFitCost) {
-					cacheCost = allFitCacheCost;
-					nonLocalExecCost = alwaysHitCost;
-				} else {
-					cacheCost = invokeReturnCost + nonLocalCacheCost;						
-				}
-			} else { /* ALWAYS MISS or doesn't fit */
-				cacheCost = invokeReturnCost + nonLocalCacheCost;				
-			}
-			WcetCost cost = new WcetCost();
-			cost.addNonLocalCost(nonLocalExecCost);
-			cost.addCacheCost(cacheCost);
-			logger.info("Recursive WCET computation: " + invoked.getMethod() +
-					    ". invoke return cache cost: " + invokeReturnCost+
-					    ". non-local cache cost: "    + nonLocalCacheCost+
-					    ". cummulative cache cost: "+cacheCost+
-					    " non local execution cost: "+nonLocalExecCost);
-			return cost;
-		}
-		
-	}
 
 	public Project getProject() {
 		return project;
 	}
 	public void recordCost(MethodInfo invoked, Context ctx, WcetCost cost) {
-		recordCost(new WcetKey(invoked,ctx),cost);		
+		recordCost(new WcetKey(invoked,ctx),cost);
 	}
 	private void recordCost(WcetKey key, WcetCost cost) {
-		wcetMap.put(key, cost); 		
+		wcetMap.put(key, cost);
 	}
 	public boolean isCached(MethodInfo invoked, Context ctx) {
 		return wcetMap.containsKey(new WcetKey(invoked,ctx));
@@ -406,5 +354,5 @@ public class RecursiveAnalysis<Context> {
 	public WcetCost getCached(MethodInfo invoked, Context ctx) {
 		return wcetMap.get(new WcetKey(invoked,ctx));
 	}
-		
+
 }

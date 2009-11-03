@@ -22,6 +22,7 @@ import com.jopdesign.timing.jop.SingleCoreTiming;
 import com.jopdesign.tools.JopInstr;
 import com.jopdesign.wcet.ProcessorModel;
 import com.jopdesign.wcet.Project;
+import com.jopdesign.wcet.analysis.ExecutionContext;
 import com.jopdesign.wcet.frontend.BasicBlock;
 import com.jopdesign.wcet.frontend.ControlFlowGraph;
 import com.jopdesign.wcet.frontend.WcetAppInfo;
@@ -100,29 +101,31 @@ public class JOPModel implements ProcessorModel {
 		return jvmClasses;
 	}
 	/* get plain execution time, without global effects */
-	public int getExecutionTime(MethodInfo context, InstructionHandle ih) {
+	public int getExecutionTime(ExecutionContext context, InstructionHandle ih) {
+
 		Instruction i = ih.getInstruction();
-		int jopcode = this.getNativeOpCode(context,i);
+		MethodInfo mctx = context.getMethodInfo();
+		int jopcode = this.getNativeOpCode(mctx ,i);
 		long cycles = timing.getLocalCycles(jopcode);
 		if(cycles < 0) {
 			if(isUnboundedBytecode(i)){
 				Project.logger.error("[HACK] Unsupported (unbounded) bytecode: "+i.getName()+
-									" in " + context.getFQMethodName()+
+									" in " + mctx.getFQMethodName()+
 									".\nApproximating with 2000 cycles, but result is not safe anymore.");
 				return 2000;
 			} else {
-				throw new AssertionError("Requesting #cycles of non-implemented opcode: "+i+"(opcode "+jopcode+") used in context: "+context);
+				throw new AssertionError("Requesting #cycles of non-implemented opcode: "+
+						i+"(opcode "+jopcode+") used in context: "+context);
 			}
 		} else {
 			return (int) cycles;
 		}
 	}
 
-	public long basicBlockWCET(BasicBlock bb) {
+	public long basicBlockWCET(ExecutionContext context, BasicBlock bb) {
 		int wcet = 0;
-		MethodInfo ctx = bb.getMethodInfo();
 		for(InstructionHandle ih : bb.getInstructions()) {
-			wcet += getExecutionTime(ctx, ih);
+			wcet += getExecutionTime(context, ih);
 		}
 		return wcet;
 	}

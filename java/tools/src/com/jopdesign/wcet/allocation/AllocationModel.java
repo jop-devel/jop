@@ -2,8 +2,10 @@ package com.jopdesign.wcet.allocation;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Vector;
+import java.util.Map.Entry;
 
 import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.Field;
@@ -24,6 +26,7 @@ import com.jopdesign.dfa.framework.HashedString;
 import com.jopdesign.tools.JopInstr;
 import com.jopdesign.wcet.ProcessorModel;
 import com.jopdesign.wcet.Project;
+import com.jopdesign.wcet.analysis.ExecutionContext;
 import com.jopdesign.wcet.frontend.BasicBlock;
 import com.jopdesign.wcet.frontend.ControlFlowGraph;
 import com.jopdesign.wcet.frontend.WcetAppInfo;
@@ -37,15 +40,14 @@ public class AllocationModel implements ProcessorModel {
 	private final MethodCache NO_METHOD_CACHE;
 	private Map<InstructionHandle, ContextMap<List<HashedString>, Interval[]>> sizes;
 	protected Project project;
-	
+
 	public AllocationModel(Project p) {
 		project = p;
-		NO_METHOD_CACHE = new NoMethodCache(p);		
+		NO_METHOD_CACHE = new NoMethodCache(p);
 	}
 
-	public long basicBlockWCET(BasicBlock bb) {
+	public long basicBlockWCET(ExecutionContext ctx, BasicBlock bb) {
 		int size = 0;
-		MethodInfo ctx = bb.getMethodInfo();
 		for(InstructionHandle ih : bb.getInstructions()) {
 			size += getExecutionTime(ctx, ih);
 		}
@@ -111,15 +113,15 @@ public class AllocationModel implements ProcessorModel {
 		}
 	}
 
-	public int getExecutionTime(MethodInfo context, InstructionHandle ih) {
-	
+	public int getExecutionTime(ExecutionContext context, InstructionHandle ih) {
+
 		int opcode = ih.getInstruction().getOpcode();
-	
+		MethodInfo mCtx = context.getMethodInfo();
 		if (opcode == Constants.NEW) {
 			NEW insn = (NEW)ih.getInstruction();
-			ObjectType type = insn.getLoadClassType(context.getConstantPoolGen());
-			return computeObjectSize(getFieldSize(getObjectFields(type.getClassName())));			
-		} else if (opcode == Constants.NEWARRAY || opcode == Constants.ANEWARRAY) {	
+			ObjectType type = insn.getLoadClassType(mCtx.getConstantPoolGen());
+			return computeObjectSize(getFieldSize(getObjectFields(type.getClassName())));
+		} else if (opcode == Constants.NEWARRAY || opcode == Constants.ANEWARRAY) {
 			return computeArraySize(getArrayBound(context, ih, 0));
 		} else if (opcode == Constants.MULTIANEWARRAY) {
 			MULTIANEWARRAY insn = (MULTIANEWARRAY)ih.getInstruction();
@@ -137,22 +139,22 @@ public class AllocationModel implements ProcessorModel {
 		}
 	}
 
-	private int getArrayBound(MethodInfo context, InstructionHandle ih, int index) {
-		int srcLine = context.getMethod().getLineNumberTable().getSourceLine(ih.getPosition());
-		
+	private int getArrayBound(ExecutionContext context, InstructionHandle ih, int index) {
+		int srcLine = context.getMethodInfo().getMethod().getLineNumberTable().getSourceLine(ih.getPosition());
+
 		// get annotated size
 		LoopBound annotated = null;
 		try {
-			Map<Integer, LoopBound> annots = project.getAnnotations(context.getCli());
+			Map<Integer, LoopBound> annots = project.getAnnotations(context.getMethodInfo().getCli());
 			annotated = annots.get(new Integer(srcLine));
 			if (annotated == null) {
 				Project.logger.info("No annotated bound for array at " + context + ":" + srcLine);
 			}
 		} catch (Exception exc) {
 			// TODO: anything else to do?
-			Project.logger.warn("Problem reading annotated bound for array at " + context + ":" + srcLine);				
+			Project.logger.warn("Problem reading annotated bound for array at " + context + ":" + srcLine);
 		}
-		
+
 		// get analyzed size
 		Interval analyzed = null;
 		if (sizes == null && project.getDfaLoopBounds() != null) {
@@ -161,19 +163,23 @@ public class AllocationModel implements ProcessorModel {
 		if (sizes == null) {
 			Project.logger.info("No DFA available for array at " + context + ":" + srcLine);
 		} else {
-			// TODO: do we have proper callstrings?
-			List<HashedString> callString = new LinkedList<HashedString>();			
 			ContextMap<List<HashedString>, Interval[]> t = sizes.get(ih);
+			List<HashedString> callString = context.getCallString().asList();
 			if (t == null) {
-				Project.logger.info("No DFA bound for array at " + context + ":" + srcLine);					
+				Project.logger.info("No DFA bound for array at " + context + ":" + srcLine);
 			} else {
-				analyzed = t.get(callString)[index];
-				if (analyzed == null) {
-					Project.logger.info("No DFA bound for array at " + context + ":" + srcLine);
+				Interval[] analysisResults = getEntryBySuffix(t,callString);
+				if(analysisResults == null) {
+					Project.logger.error("No DFA results matching callstring " + context.getCallString());
+				} else {
+					analyzed = analysisResults[index];
+					if (analyzed == null) {
+						Project.logger.info("No DFA bound for array at " + context + ":" + srcLine);
+					}
 				}
 			}
 		}
-					
+
 		// compute which bound to use
 		if (analyzed != null && analyzed.hasUb()) {
 			if (annotated != null) {
@@ -187,7 +193,7 @@ public class AllocationModel implements ProcessorModel {
 					Project.logger.info("DFA bound equals annotated bound for array at " + context + ":" + srcLine);
 				}
 				return Math.max(annotated.getUpperBound(), analyzed.getUb());
-			} else {				
+			} else {
 				return analyzed.getUb();
 			}
 		} else {
@@ -201,6 +207,46 @@ public class AllocationModel implements ProcessorModel {
 		}
 	}
 
+	/** TODO: This operation suggests a tree like structure of the ContextMap.
+	 * Maybe this would be an interesting implementation option ?
+	 *  FIXME: This has a horrible complexity ( O(n*|callstring|) ) at the moment.
+	 * @param t
+	 * @param callStringSuffix a suffix of the call string
+	 * @return the join of all intervals matching the suffix
+	 */
+	private Interval[] getEntryBySuffix(ContextMap<List<HashedString>, Interval[]> t, List<HashedString> cs) {
+		Vector<Interval[]> intervals = new Vector<Interval[]>();
+		for(Entry<List<HashedString>, Interval[]> e : t.entrySet()) {
+			List<HashedString> callstring = e.getKey();
+			if(isSuffix(callstring,cs)) {
+				//System.out.println("Matches "+cs+": "+callstring);
+				intervals.add(e.getValue());
+			}
+		}
+		if(intervals.size() == 0) return null;
+		Interval[] head = intervals.get(0);
+		if(intervals.size() == 1) return head;
+
+		Interval[] merged = new Interval[head.length];
+		for(int i = 0; i < head.length; i++) {
+			merged[i] = new Interval(head[i]);
+			for(int j = 1; j < intervals.size(); j++)
+			{
+				merged[i].constrain(intervals.get(j)[i]);
+			}
+		}
+		return merged;
+	}
+
+	private<T> boolean isSuffix(List<T> list,
+							    List<T> cSuffix) {
+		int lN = list.size();
+		int sN = cSuffix.size();
+		if(lN < sN) return false;
+		List<T> listSuffix = list.subList(lN - sN, lN);
+		return cSuffix.equals(listSuffix);
+	}
+
 	public int computeObjectSize(int raw) {
 		return 1;
 	}
@@ -208,21 +254,21 @@ public class AllocationModel implements ProcessorModel {
 	public int computeArraySize(int raw) {
 		return 1;
 	}
-	
+
 	public List<Type> getObjectFields(String className) {
 		List<Type> l = new LinkedList<Type>();
-	
+
 		ClassInfo cli = project.getWcetAppInfo().getClassInfo(className);
-	
+
 		if (cli.superClass != null) {
 			l.addAll(getObjectFields(cli.superClass.toString()));
 		}
-	
-		Field [] f = cli.clazz.getFields();		
+
+		Field [] f = cli.clazz.getFields();
 		for (int i = 0; i < f.length; i++) {
 			l.add(f[i].getType());
-		}		
-	
+		}
+
 		return l;
 	}
 
