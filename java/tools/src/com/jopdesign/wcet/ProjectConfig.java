@@ -21,8 +21,10 @@ package com.jopdesign.wcet;
 
 import java.io.File;
 
+import com.jopdesign.dfa.analyses.LoopBounds;
 import com.jopdesign.wcet.config.BooleanOption;
 import com.jopdesign.wcet.config.Config;
+import com.jopdesign.wcet.config.IntegerOption;
 import com.jopdesign.wcet.config.Option;
 import com.jopdesign.wcet.config.StringOption;
 import com.jopdesign.wcet.graphutils.MiscUtils;
@@ -62,6 +64,10 @@ public class ProjectConfig {
 	public static final BooleanOption DO_DFA =
 		new BooleanOption("dataflow-analysis","whether dataflow analysis should be performed",false);
 
+	/* Here, because it both affects the DFA and the IPET */
+	public static final IntegerOption unusued_CALLSTRING_LENGTH =
+		new IntegerOption("callstring-depth", "Length of the callstring for DFA and IPET", 0);
+
 	public static final BooleanOption USE_UPPAAL =
 		new BooleanOption("uppaal","perform uppaal-based WCET analysis",false);
 
@@ -99,6 +105,8 @@ public class ProjectConfig {
 	}
 
 	private Config config;
+
+	public static final int CALLSTRING_LENGTH = LoopBounds.CALLSTRING_LENGTH;;
 	public Config getConfigManager() {
 		return this.config;
 	}
@@ -194,6 +202,10 @@ public class ProjectConfig {
 
 	public boolean doDataflowAnalysis() {
 		return config.getOption(DO_DFA);
+	}
+
+	public int callstringLength() {
+		return CALLSTRING_LENGTH ;
 	}
 
 	public boolean useUppaal() {
