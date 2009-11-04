@@ -25,6 +25,7 @@ public abstract class Transaction {
 	
 	public static int run(int arg0) throws RollbackException {
 		int arg0Copy = 0xdeadbeef; // make compiler happy
+		
 		int result = 0xdeadbeef; // make compiler happy
 		
 		// TMTODO disable interrupts?
@@ -45,7 +46,7 @@ public abstract class Transaction {
 				Native.wrMem(Const.TM_START_TRANSACTION, Const.MEM_TM_MAGIC);
 			} else {
 				if (LOG) {
-					System.out.println("Entered inner transaction.");
+					rttm.utils.Utils.logEnterInnerTransaction();
 				}
 			}
 
@@ -57,20 +58,20 @@ public abstract class Transaction {
 					Native.wrMem(Const.TM_END_TRANSACTION, Const.MEM_TM_MAGIC);
 				}
 			} catch (Throwable e) { // RollbackError or any other exception
-				if (!outermostTransaction) {
-					// don't rethrow an exception thrown during aborted 
-					// transaction
-					throw Utils.RollbackException;
-				} else {
+				if (outermostTransaction) {
 					Native.wr(0, Const.IO_ENA_HW_EXC);
 					transactionAborted = true;
 					
 					if (LOG) {
-						System.out.println("Transaction aborted.");
+						rttm.utils.Utils.logAbort();
 					}
 				
 					// rollback
 					arg0 = arg0Copy;					
+				} else {
+					// don't refer to exception thrown during aborted
+					// transaction
+					throw Utils.RollbackException;
 				}
 			} finally {
 				if (outermostTransaction) {
