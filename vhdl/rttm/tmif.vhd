@@ -31,6 +31,9 @@ port (
 	--
 	--	Commit addresses
 	--
+	
+	-- broadcast.valid is set for one cycle
+	-- broadcast.address value is held until next .valid
 	broadcast				: in tm_broadcast_type;
 
 	--

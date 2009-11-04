@@ -188,7 +188,6 @@ begin
 					(broadcast_valid_dly = '1' and stage1.state /= broadcast1) 
 					then
 					next_stage1.state <= broadcast1;
-					-- TODO why still valid if delayed?
 					next_stage1.addr <= broadcast.address;
 				end if;
 				
@@ -210,7 +209,6 @@ begin
 				elsif broadcast.valid = '1'  or 
 					(broadcast_valid_dly = '1' and stage1.state /= broadcast1)
 					then
-					-- TODO why still valid if delayed?
 					next_stage1.addr <= broadcast.address;
 					next_stage1.state <= broadcast1; 
 				end if;

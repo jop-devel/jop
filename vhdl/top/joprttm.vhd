@@ -193,6 +193,7 @@ end component;
 	
 	signal exc_tm_rollback	: std_logic_vector(0 to cpu_cnt-1);
 	signal tm_broadcast		: tm_broadcast_type;
+	signal tm_broadcast_del	: tm_broadcast_type;
 	
 	signal commit_try		: std_logic_vector(0 to cpu_cnt-1);
 	signal commit_allow		: std_logic_vector(0 to cpu_cnt-1);
@@ -268,7 +269,7 @@ end process;
 				commit_out_try => commit_try(i),
 				commit_in_allow => commit_allow(i),
 			
-				broadcast => tm_broadcast,
+				broadcast => tm_broadcast_del,
 			
 				sc_out_cpu => sc_out_tm(i),  
 				sc_in_cpu => sc_in_tm(i), 
@@ -303,6 +304,19 @@ end process;
 			-- Enable for use with Round Robin Arbiter
 			-- sync_out_array(1)
 			);
+			
+	del_tm_broadcast: process (clk_int, int_res) is
+	begin
+	    if int_res = '1' then
+	    	tm_broadcast_del <= ('0', (others => '0')); 
+	    elsif rising_edge(clk_int) then
+	    	tm_broadcast_del.valid <= tm_broadcast.valid;
+		 	if tm_broadcast.valid = '1' then
+				tm_broadcast_del.address <= tm_broadcast.address;
+			end if;
+	    end if;
+	end process del_tm_broadcast;
+
 
 	cmp_scm: entity work.sc_mem_if
 		generic map (
