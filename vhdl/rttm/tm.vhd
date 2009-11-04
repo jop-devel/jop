@@ -183,7 +183,6 @@ begin
 				
 			when commit_wait_token | early_commit_wait_token =>
 				next_stage1.state <= idle;
-				next_stage1.addr <= from_cpu.address;
 				
 				if broadcast.valid = '1' or 
 					(broadcast_valid_dly = '1' and stage1.state /= broadcast1) 
@@ -197,23 +196,25 @@ begin
 			
 			when normal_transaction =>
 				next_stage1.state <= idle;
-				next_stage1.addr <= from_cpu.address;
-			
-				if broadcast.valid = '1'  or 
+
+				if from_cpu.wr = '1' or from_cpu.rd = '1' then
+					next_stage1.addr <= from_cpu.address;
+
+					if from_cpu.nc = '0' then
+						if from_cpu.wr = '1' then
+							next_stage1.state <= write;
+						elsif from_cpu.rd = '1' then
+							next_stage1.state <= read1;
+						end if;
+					end if;
+				elsif broadcast.valid = '1'  or 
 					(broadcast_valid_dly = '1' and stage1.state /= broadcast1)
 					then
-					next_stage1.state <= broadcast1;
-					next_stage1.addr <= broadcast.address; 
+					-- TODO why still valid if delayed?
+					next_stage1.addr <= broadcast.address;
+					next_stage1.state <= broadcast1; 
 				end if;
 
-				if from_cpu.nc = '0' then
-					if from_cpu.wr = '1' then
-						next_stage1.state <= write;
-					elsif from_cpu.rd = '1' then
-						next_stage1.state <= read1;
-					end if;
-				end if;
-				
 			when commit | early_commit =>
 				next_stage1.state <= idle; -- TODO ?
 				-- TODO use FIFO
