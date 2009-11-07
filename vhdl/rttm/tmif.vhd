@@ -13,7 +13,8 @@ entity tmif is
 
 generic (
 	addr_width		: integer;
-	way_bits		: integer
+	way_bits		: integer;
+	rttm_instrum	: boolean := false
 );
 
 port (
@@ -101,6 +102,21 @@ architecture rtl of tmif is
 	
 	type rollback_state_type is (rbi0, rbb0, rbb1, rbb2, rba1, rba2, rbi);
 	signal next_rollback_state, rollback_state: rollback_state_type;
+	
+	-- instrumentation
+	
+	type instrumentation_type is record
+		retries: unsigned(31 downto 0);
+		commits: unsigned(31 downto 0);
+		early_commits: unsigned(31 downto 0);
+		
+		true_read_set: unsigned(way_bits-1 downto 0);
+		write_set: unsigned(way_bits-1 downto 0);
+		read_or_write_set: unsigned(way_bits-1 downto 0);
+	end record;
+	
+	signal instrumentation: instrumentation_type;
+	signal next_instrumentation: instrumentation_type;
 begin
 
 	is_tm_magic_addr_async <= '1' when
@@ -143,6 +159,10 @@ begin
 			commit_finished_dly <= '0';
 			
 			-- rollback_state <= -- don't care
+			
+			instrumentation <= ((others => '0'), (others => '0'), 
+				(others => '0'), (others => '0'), (others => '0'),
+				(others => '0'));
 		elsif rising_edge(clk) then
 			state <= next_state;
 			
@@ -153,6 +173,8 @@ begin
 			commit_finished_dly <= commit_finished_dly_internal_1;
 			
 			rollback_state <= next_rollback_state;
+			
+			instrumentation <= next_instrumentation;
 		end if;
 	end process sync;
 	
@@ -173,7 +195,7 @@ begin
 	--
 
 	state_machine: process(commit_finished_dly, commit_in_allow, conflict, 
-		rollback_state, state, tag_full, tm_cmd) is		
+		instrumentation, rollback_state, state, tag_full, tm_cmd) is		
 	begin
 		next_state <= state;
 		exc_tm_rollback <= '0';
@@ -182,6 +204,10 @@ begin
 		transaction_start <= '0';
 		
 		next_rollback_state <= rollback_state;
+		
+		next_instrumentation.retries <= instrumentation.retries;
+		next_instrumentation.commits <= instrumentation.commits;
+		next_instrumentation.early_commits <= instrumentation.early_commits;
 		
 		case state is
 			when no_transaction =>
@@ -204,6 +230,9 @@ begin
 					when abort =>
 						next_state <= rollback;
 						next_rollback_state <= rbb0;
+						
+						next_instrumentation.retries <= 
+							instrumentation.retries + 1;
 					when aborted =>
 						-- command is only issued if an exception is being 
 						-- handled
@@ -215,12 +244,15 @@ begin
 				if conflict = '1' then
 					next_state <= rollback;
 					
+					next_instrumentation.retries <= 
+						instrumentation.retries + 1;
+					
 					case tm_cmd is
 						when none =>						
 							next_rollback_state <= rbi0;
 						when aborted =>
 							-- don't miss aborted command					
-	 						next_state <= no_transaction; 
+	 						next_state <= no_transaction;
 						when others =>
 							next_rollback_state <= rbb0;
 					end case;			
@@ -232,8 +264,14 @@ begin
 				if conflict = '1' then
 					next_state <= rollback;
 					next_rollback_state <= rbb0;
+					
+					next_instrumentation.retries <= 
+						instrumentation.retries + 1;
 				elsif commit_in_allow = '1' then
 					next_state <= commit;
+					
+					next_instrumentation.commits <= 
+						instrumentation.commits + 1;
 				end if;
 			
 			when commit =>
@@ -249,8 +287,14 @@ begin
 			
 				if conflict = '1' then
 					next_state <= rollback;
+					
+					next_instrumentation.retries <= 
+						instrumentation.retries + 1;
 				elsif commit_in_allow = '1' then
 					next_state <= early_commit;
+					
+					next_instrumentation.early_commits <= 
+						instrumentation.early_commits + 1;
 				end if;
 				
 			when early_commit =>
@@ -265,6 +309,9 @@ begin
 				case tm_cmd is
 					when end_transaction =>
 						next_state <= no_transaction;
+
+						next_instrumentation.commits <= 
+							instrumentation.commits + 1;
 					when aborted =>
 						 -- TODO not consistent with exception handling
 						assert false;
@@ -290,7 +337,7 @@ begin
 						exc_tm_rollback <= '1';
 					
 						next_rollback_state <= rbi;
-						
+					
 					when rbb0 =>
 						exc_tm_rollback <= '1';
 					
@@ -311,7 +358,7 @@ begin
 					when rba1 =>
 						next_rollback_state <= rba2;
 						tm_busy <= '1';
-		
+					
 					when rba2 =>
 						next_state <= no_transaction;
 						tm_busy <= '1';
