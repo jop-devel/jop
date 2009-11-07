@@ -14,8 +14,9 @@ entity tmif is
 generic (
 	addr_width		: integer;
 	way_bits		: integer;
-	rttm_instrum	: boolean := false
-);
+	rttm_instrum	: boolean := false;
+	confl_rds_only	: boolean := false
+	);
 
 port (
 	clk					: in std_logic;
@@ -73,14 +74,10 @@ architecture rtl of tmif is
 	
 	signal commit_out_try_internal	: std_logic;
 	
-	-- filter signals to/from tm module
-	
+	-- filter signals to/from CPU/arbiter
 	signal sc_out_cpu_filtered		: sc_out_type;
-	
 	signal sc_in_cpu_filtered		: sc_in_type;
 	signal sc_out_arb_filtered		: sc_out_type;
-
-
 
 	signal is_tm_magic_addr_async: std_logic;
 	signal is_tm_magic_addr_sync: std_logic;
@@ -125,7 +122,9 @@ begin
 	cmp_tm: entity work.tm(rtl)
 	generic map (
 		addr_width => addr_width,
-		way_bits => way_bits
+		way_bits => way_bits,
+		rttm_instrum => rttm_instrum,
+		confl_rds_only => confl_rds_only
 	)	
 	port map (
 		clk => clk,
@@ -160,9 +159,11 @@ begin
 			
 			-- rollback_state <= -- don't care
 			
-			instrumentation <= ((others => '0'), (others => '0'), 
-				(others => '0'), (others => '0'), (others => '0'),
-				(others => '0'));
+			if rttm_instrum then
+				instrumentation <= ((others => '0'), (others => '0'), 
+					(others => '0'), (others => '0'), (others => '0'),
+					(others => '0'));
+			end if;
 		elsif rising_edge(clk) then
 			state <= next_state;
 			
@@ -174,7 +175,9 @@ begin
 			
 			rollback_state <= next_rollback_state;
 			
-			instrumentation <= next_instrumentation;
+			if rttm_instrum then
+				instrumentation <= next_instrumentation;
+			end if;
 		end if;
 	end process sync;
 	
@@ -205,9 +208,11 @@ begin
 		
 		next_rollback_state <= rollback_state;
 		
-		next_instrumentation.retries <= instrumentation.retries;
-		next_instrumentation.commits <= instrumentation.commits;
-		next_instrumentation.early_commits <= instrumentation.early_commits;
+		if rttm_instrum then
+			next_instrumentation.retries <= instrumentation.retries;
+			next_instrumentation.commits <= instrumentation.commits;
+			next_instrumentation.early_commits <= instrumentation.early_commits;
+		end if;
 		
 		case state is
 			when no_transaction =>
@@ -231,8 +236,10 @@ begin
 						next_state <= rollback;
 						next_rollback_state <= rbb0;
 						
-						next_instrumentation.retries <= 
-							instrumentation.retries + 1;
+						if rttm_instrum then
+							next_instrumentation.retries <= 
+								instrumentation.retries + 1;
+						end if;
 					when aborted =>
 						-- command is only issued if an exception is being 
 						-- handled
@@ -244,8 +251,10 @@ begin
 				if conflict = '1' then
 					next_state <= rollback;
 					
-					next_instrumentation.retries <= 
-						instrumentation.retries + 1;
+					if rttm_instrum then
+						next_instrumentation.retries <= 
+							instrumentation.retries + 1;
+					end if;
 					
 					case tm_cmd is
 						when none =>						
@@ -265,13 +274,17 @@ begin
 					next_state <= rollback;
 					next_rollback_state <= rbb0;
 					
-					next_instrumentation.retries <= 
-						instrumentation.retries + 1;
+					if rttm_instrum then
+						next_instrumentation.retries <= 
+							instrumentation.retries + 1;
+					end if;
 				elsif commit_in_allow = '1' then
 					next_state <= commit;
 					
-					next_instrumentation.commits <= 
-						instrumentation.commits + 1;
+					if rttm_instrum then
+						next_instrumentation.commits <= 
+							instrumentation.commits + 1;
+					end if;
 				end if;
 			
 			when commit =>
@@ -288,13 +301,17 @@ begin
 				if conflict = '1' then
 					next_state <= rollback;
 					
-					next_instrumentation.retries <= 
-						instrumentation.retries + 1;
+					if rttm_instrum then
+						next_instrumentation.retries <= 
+							instrumentation.retries + 1;
+					end if;
 				elsif commit_in_allow = '1' then
 					next_state <= early_commit;
 					
-					next_instrumentation.early_commits <= 
-						instrumentation.early_commits + 1;
+					if rttm_instrum then
+						next_instrumentation.early_commits <= 
+							instrumentation.early_commits + 1;
+					end if;
 				end if;
 				
 			when early_commit =>
@@ -310,8 +327,10 @@ begin
 					when end_transaction =>
 						next_state <= no_transaction;
 
-						next_instrumentation.commits <= 
-							instrumentation.commits + 1;
+						if rttm_instrum then
+							next_instrumentation.commits <= 
+								instrumentation.commits + 1;
+						end if;
 					when aborted =>
 						 -- TODO not consistent with exception handling
 						assert false;
@@ -385,30 +404,15 @@ begin
 	
 	commit_out_try <= commit_out_try_internal;		
 	
-	
 
 	-- sets sc_out_cpu_filtered, sc_out_arb, sc_in_cpu
 	process(is_tm_magic_addr_async, sc_in_cpu_filtered, sc_out_arb_filtered, 
 		sc_out_cpu, state, tm_busy, tm_cmd) is
 	begin
+		-- TODO writes/reads outside of RAM	
 		sc_out_cpu_filtered <= sc_out_cpu;
-		sc_out_arb <= sc_out_arb_filtered;
 		sc_in_cpu <= sc_in_cpu_filtered;
-	
-		case state is
-			when rollback =>
-				-- ignore writes
-				sc_out_cpu_filtered.wr <= '0';
-				
-				-- reads from main memory
-				-- TODO reads outside of RAM
-				
-				assert sc_out_arb_filtered.wr /= '1';
-			when no_transaction | early_committed_transaction | 
-			normal_transaction | commit_wait_token | 
-			commit | early_commit_wait_token | early_commit =>
-				null;
-		end case;
+		sc_out_arb <= sc_out_arb_filtered;
 		
 		if tm_cmd /= none or tm_busy = '1' then
 			sc_in_cpu.rdy_cnt <= "11";
@@ -430,6 +434,13 @@ begin
 		if sc_out_cpu.wr = '1' and is_tm_magic_addr_async = '1' then		
 			sc_out_cpu_filtered.wr <= '0';
 		end if;
+		
+		assert not ((
+			state = normal_transaction or
+			state = commit_wait_token or 
+			state = early_commit_wait_token or
+			state = rollback) and 
+			sc_out_arb_filtered.wr = '1');
 	end process; 
 
 end rtl;
