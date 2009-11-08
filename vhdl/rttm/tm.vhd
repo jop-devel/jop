@@ -69,7 +69,12 @@ port (
 	
 	state: in state_type;
 	
-	transaction_start: in std_logic);
+	transaction_start: in std_logic;
+	
+	read_set: out unsigned(way_bits downto 0);
+	write_set: out unsigned(way_bits downto 0);
+	read_or_write_set: out unsigned(way_bits downto 0)
+);
 
 end tm;
 
@@ -172,9 +177,9 @@ architecture rtl of tm is
 	--
 
 	type r_w_set_instrum_type is record
-	        read_set: unsigned(way_bits-1 downto 0);
-	        write_set: unsigned(way_bits-1 downto 0);
-	        read_or_write_set: unsigned(way_bits-1 downto 0);
+	        read_set: unsigned(way_bits downto 0);
+	        write_set: unsigned(way_bits downto 0);
+	        read_or_write_set: unsigned(way_bits downto 0);
 	end record;
 	
 	signal r_w_set_instrum_current: r_w_set_instrum_type;
@@ -402,16 +407,20 @@ begin
 					instr_stage3.set_read = '1' then
 					r_w_set_instrum_current.read_set <=
 						r_w_set_instrum_current.read_set + 1;
-					r_w_set_instrum_current.read_or_write_set <=
-						r_w_set_instrum_current.read_or_write_set + 1; 
 				end if;
-				
+								
 				if (stage3.read_dirty = '0' or instr_stage3.hit = '0') and
 					instr_stage3.set_dirty = '1' then
 					r_w_set_instrum_current.write_set <=
 						r_w_set_instrum_current.write_set + 1;
+				end if;
+				
+				if instr_stage3.hit = '0' and
+					(instr_stage3.set_read = '1' or
+					instr_stage3.set_dirty = '1') 
+					then
 					r_w_set_instrum_current.read_or_write_set <=
-						r_w_set_instrum_current.read_or_write_set + 1;  
+						r_w_set_instrum_current.read_or_write_set + 1; 
 				end if;
 				
 				-- reset counters
@@ -447,6 +456,10 @@ begin
 			end if;			
 		end if;
 	end process;
+	
+	read_set <= r_w_set_instrum_max.read_set;
+	write_set <= r_w_set_instrum_max.write_set;
+	read_or_write_set <= r_w_set_instrum_max.read_or_write_set;
 	
 	proc_stage23: process(commit_addr, commit_line, doing_mem_read, from_mem, 
 		read_data, save_data, stage1, stage1_async, stage2, stage23, stage3, 

@@ -107,13 +107,31 @@ architecture rtl of tmif is
 		commits: unsigned(31 downto 0);
 		early_commits: unsigned(31 downto 0);
 		
-		true_read_set: unsigned(way_bits-1 downto 0);
-		write_set: unsigned(way_bits-1 downto 0);
-		read_or_write_set: unsigned(way_bits-1 downto 0);
+		read_set: unsigned(way_bits downto 0);
+		write_set: unsigned(way_bits downto 0);
+		read_or_write_set: unsigned(way_bits downto 0);
 	end record;
 	
 	signal instrumentation: instrumentation_type;
 	signal next_instrumentation: instrumentation_type;
+	
+	type instr_helpers_type is record
+		last_value: unsigned(31 downto 0);
+		hold_instr_value: std_logic;
+	end record;
+	
+	signal instr_helpers: instr_helpers_type;
+	signal next_instr_helpers: instr_helpers_type;
+	
+	constant RETRIES_ADDR: std_logic_vector := "000";
+	constant COMMITS_ADDR: std_logic_vector := "001";
+	constant EARLY_COMMITS_ADDR: std_logic_vector := "010";
+		
+	constant READ_SET_ADDR: std_logic_vector := "011";
+	constant WRITE_SET_ADDR: std_logic_vector := "100";
+	constant READ_OR_WRITE_SET_ADDR: std_logic_vector := "101";
+	
+	
 begin
 
 	is_tm_magic_addr_async <= '1' when
@@ -142,8 +160,12 @@ begin
 		tag_full => tag_full,
 		
 		state => state,
-		transaction_start => transaction_start
-		);
+		transaction_start => transaction_start,
+		
+		read_set => next_instrumentation.read_set,
+		write_set => next_instrumentation.write_set,
+		read_or_write_set => next_instrumentation.read_or_write_set
+	 );
 		
 	
 	sync: process(reset, clk) is
@@ -163,6 +185,7 @@ begin
 				instrumentation <= ((others => '0'), (others => '0'), 
 					(others => '0'), (others => '0'), (others => '0'),
 					(others => '0'));
+				instr_helpers <= ((others => '0'), '0');
 			end if;
 		elsif rising_edge(clk) then
 			state <= next_state;
@@ -177,6 +200,7 @@ begin
 			
 			if rttm_instrum then
 				instrumentation <= next_instrumentation;
+				instr_helpers <= next_instr_helpers;
 			end if;
 		end if;
 	end process sync;
@@ -406,8 +430,9 @@ begin
 	
 
 	-- sets sc_out_cpu_filtered, sc_out_arb, sc_in_cpu
-	process(is_tm_magic_addr_async, sc_in_cpu_filtered, sc_out_arb_filtered, 
-		sc_out_cpu, state, tm_busy, tm_cmd) is
+	process(instr_helpers, instrumentation, is_tm_magic_addr_async, 
+		sc_in_cpu_filtered, sc_out_arb_filtered, sc_out_cpu, state, tm_busy, 
+		tm_cmd) is
 	begin
 		-- TODO writes/reads outside of RAM	
 		sc_out_cpu_filtered <= sc_out_cpu;
@@ -431,8 +456,53 @@ begin
 		end case;
 				
 		-- overrides when TM command is issued
-		if sc_out_cpu.wr = '1' and is_tm_magic_addr_async = '1' then		
+		if is_tm_magic_addr_async = '1' then		
 			sc_out_cpu_filtered.wr <= '0';
+			-- ignore diagnostic reads
+			sc_out_cpu_filtered.rd <= '0';
+		end if;
+		
+		if rttm_instrum then
+			next_instr_helpers <= instr_helpers;
+		
+			if sc_out_cpu.rd = '1' then
+				next_instr_helpers.hold_instr_value <= '0';
+				if is_tm_magic_addr_async = '1' then
+					next_instr_helpers.hold_instr_value <= '1';
+				
+					case sc_out_cpu.address(2 downto 0) is
+						when RETRIES_ADDR =>
+							next_instr_helpers.last_value <=
+								instrumentation.retries;
+						when COMMITS_ADDR =>
+							next_instr_helpers.last_value <=
+								instrumentation.commits;
+						when EARLY_COMMITS_ADDR =>
+							next_instr_helpers.last_value <=
+								instrumentation.early_commits;
+						when READ_SET_ADDR =>
+							next_instr_helpers.last_value <=
+								(31 downto way_bits+1 => '0') & 
+									instrumentation.read_set;
+						when WRITE_SET_ADDR =>
+							next_instr_helpers.last_value <=
+								(31 downto way_bits+1 => '0') &
+								instrumentation.write_set;
+						when READ_OR_WRITE_SET_ADDR =>
+							next_instr_helpers.last_value <=
+								(31 downto way_bits+1 => '0') &
+								instrumentation.read_or_write_set;
+						when others =>
+							next_instr_helpers.last_value <=
+								(others => 'X');
+					end case;
+				end if;
+			end if;
+			
+			if instr_helpers.hold_instr_value = '1' then
+				sc_in_cpu.rd_data <= 
+					std_logic_vector(instr_helpers.last_value);
+			end if;
 		end if;
 		
 		assert not ((
