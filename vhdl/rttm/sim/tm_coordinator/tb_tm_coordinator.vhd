@@ -57,9 +57,9 @@ begin
 	port map (
 		clk => clk,
 		reset => reset,
-		commit_try => commit_try,
+		commit_token_request => commit_try,
 		-- test internal next_commit_allow_internal signal
-		commit_allow => open 
+		commit_token_grant => open 
 		);
 
 	-- TODO use postponed process in parallel or ugly manual delay? 

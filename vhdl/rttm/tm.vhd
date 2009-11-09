@@ -185,13 +185,13 @@ architecture rtl of tm is
 	signal r_w_set_instrum_current: r_w_set_instrum_type;
 	signal r_w_set_instrum_max: r_w_set_instrum_type;
 	
-	type instr_stage3_type is record
+	type instrum_stage3_type is record
 		hit: std_logic;
 		set_read: std_logic;
 		set_dirty: std_logic;
 	end record;
 	
-	signal instr_stage3: instr_stage3_type;
+	signal instrum_stage3: instrum_stage3_type;
 	
 
 begin
@@ -398,26 +398,26 @@ begin
 		elsif rising_edge(clk) then
 			if rttm_instrum then
 				-- save for stage 3
-				instr_stage3.hit <= stage2.hit;
-				instr_stage3.set_read <= stage2.update_read and stage2.read;
-				instr_stage3.set_dirty <= stage2.update_dirty and stage2.dirty;
+				instrum_stage3.hit <= stage2.hit;
+				instrum_stage3.set_read <= stage2.update_read and stage2.read;
+				instrum_stage3.set_dirty <= stage2.update_dirty and stage2.dirty;
 			
 				-- update counters in stage 3
-				if (stage3.read_read = '0' or instr_stage3.hit = '0') and
-					instr_stage3.set_read = '1' then
+				if (stage3.read_read = '0' or instrum_stage3.hit = '0') and
+					instrum_stage3.set_read = '1' then
 					r_w_set_instrum_current.read_set <=
 						r_w_set_instrum_current.read_set + 1;
 				end if;
 								
-				if (stage3.read_dirty = '0' or instr_stage3.hit = '0') and
-					instr_stage3.set_dirty = '1' then
+				if (stage3.read_dirty = '0' or instrum_stage3.hit = '0') and
+					instrum_stage3.set_dirty = '1' then
 					r_w_set_instrum_current.write_set <=
 						r_w_set_instrum_current.write_set + 1;
 				end if;
 				
-				if instr_stage3.hit = '0' and
-					(instr_stage3.set_read = '1' or
-					instr_stage3.set_dirty = '1') 
+				if instrum_stage3.hit = '0' and
+					(instrum_stage3.set_read = '1' or
+					instrum_stage3.set_dirty = '1') 
 					then
 					r_w_set_instrum_current.read_or_write_set <=
 						r_w_set_instrum_current.read_or_write_set + 1; 

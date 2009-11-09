@@ -94,7 +94,7 @@ begin
 --	Testbench
 --
 
-	dut: entity work.tmif(rtl)
+	dut: entity work.tm_manager(rtl)
 	generic map (
 		addr_width => addr_width,
 		way_bits => way_bits
@@ -102,13 +102,13 @@ begin
 	port map (
 		clk => clk,
 		reset => reset,
-		commit_out_try => commit_out_try,
-		commit_in_allow => commit_in_allow,
+		commit_token_request => commit_out_try,
+		commit_token_grant => commit_in_allow,
 		broadcast => broadcast,
-		sc_out_cpu => sc_out_cpu,
-		sc_in_cpu => sc_in_cpu,
-		sc_out_arb => sc_out_arb,
-		sc_in_arb => sc_in_arb,
+		sc_cpu_out => sc_out_cpu,
+		sc_cpu_in => sc_in_cpu,
+		sc_arb_out => sc_out_arb,
+		sc_arb_in => sc_in_arb,
 		exc_tm_rollback => exc_tm_rollback
 		);
 		
@@ -213,7 +213,7 @@ begin
 		
 --  		assert to_integer(nesting_cnt) = 0; 
 
-		sc_write(clk, TM_MAGIC, 
+		sc_write(clk, TM_MAGIC_SIMULATION, 
 			(31 downto tm_cmd_raw'length => '0') & TM_CMD_START_TRANSACTION, 
 			sc_out_cpu, sc_in_cpu);
 		
@@ -340,7 +340,7 @@ begin
 
 		testing_commit <= true;
 		
-		sc_write(clk, TM_MAGIC, 
+		sc_write(clk, TM_MAGIC_SIMULATION, 
 			(31 downto tm_cmd_raw'length => '0') & TM_CMD_END_TRANSACTION, 
 			sc_out_cpu, sc_in_cpu);
 		
@@ -356,7 +356,7 @@ begin
 		
 		-- start another transaction
 		
-		sc_write(clk, TM_MAGIC, 
+		sc_write(clk, TM_MAGIC_SIMULATION, 
 			(31 downto tm_cmd_raw'length => '0') & TM_CMD_START_TRANSACTION, 
 			sc_out_cpu, sc_in_cpu);
 		
@@ -419,7 +419,7 @@ begin
 		
 		-- ack rollback
 		
-		sc_write(clk, TM_MAGIC, 
+		sc_write(clk, TM_MAGIC_SIMULATION, 
 			(31 downto tm_cmd_raw'length => '0') & TM_CMD_ABORTED, 
 			sc_out_cpu, sc_in_cpu);
 		

@@ -46,7 +46,7 @@ vcom %options% ^
 %jopdir%/rttm/tm_coordinator.vhd ^
 %jopdir%/rttm/tag.vhd ^
 %jopdir%/rttm/tm.vhd ^
-%jopdir%/rttm/tmif.vhd ^
+%jopdir%/rttm/tm_manager.vhd ^
 %jopdir%/top/joprttm.vhd ^
 %jopdir%/simulation/tb_jop.vhd
 

@@ -11,6 +11,6 @@ SRC= \
 	../../tm_internal_pack.vhd \
 	../../tag.vhd \
 	../../tm.vhd \
-	../../tmif.vhd \
+	../../tm_manager.vhd \
 	../mem_no_arbiter.vhd \
 	$(TARGET).vhd

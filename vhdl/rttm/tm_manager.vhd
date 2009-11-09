@@ -9,12 +9,29 @@ use work.tm_internal_pack.all;
 
 
 
-entity tmif is
+entity tm_manager is
 
 generic (
+	-- width of memory addresses cached during transaction
 	addr_width		: integer;
+	
+	-- Pattern used to detect magic address
+	-- Magic address to execute TM commands is located in upper half 
+	-- of external SRAM mirror.
+	-- The lower bits are actually ignored.
+	-- TODO Keep in synch with com.jopdesign.sys.Const.MEM_TM_MAGIC and
+	-- com.jopdesign.build.ReplaceAtomicAnnotation.
+	tm_magic_detect	: std_logic_vector(18 downto 17) := (others => '1');
+	
+	-- fully associative read and write buffer has 2**way_bits entries
 	way_bits		: integer;
+	
+	-- enable instrumentation (without probe effects)
+	-- turn off to lower hardware consumption
 	rttm_instrum	: boolean := false;
+	
+	-- enable to only detect truly conflicting reads,
+	-- i.e. reads of an address not yet written during the transaction
 	confl_rds_only	: boolean := false
 	);
 
@@ -27,8 +44,8 @@ port (
 	--
 	
 	-- set until transaction finished/aborted
-	commit_out_try			: out std_logic;
-	commit_in_allow			: in std_logic;
+	commit_token_request			: out std_logic;
+	commit_token_grant			: in std_logic;
 
 	--
 	--	Commit addresses
@@ -41,14 +58,14 @@ port (
 	--
 	--	Memory IF to cpu
 	--
-	sc_out_cpu		: in sc_out_type;
-	sc_in_cpu		: out sc_in_type;		
+	sc_cpu_out		: in sc_out_type;
+	sc_cpu_in		: out sc_in_type;		
 
 	--
 	--	Memory IF to arbiter
 	--
-	sc_out_arb		: out sc_out_type;
-	sc_in_arb		: in sc_in_type;
+	sc_arb_out		: out sc_out_type;
+	sc_arb_in		: in sc_in_type;
 
 	--
 	--	Rollback exception
@@ -57,9 +74,9 @@ port (
 		
 );
 
-end tmif;
+end tm_manager;
 
-architecture rtl of tmif is
+architecture rtl of tm_manager is
 
 		
 	signal state, next_state		: state_type;
@@ -72,17 +89,17 @@ architecture rtl of tmif is
 
 	signal commit_finished				: std_logic;
 	
-	signal commit_out_try_internal	: std_logic;
+	signal commit_token_request_buf	: std_logic;
 	
 	-- filter signals to/from CPU/arbiter
-	signal sc_out_cpu_filtered		: sc_out_type;
-	signal sc_in_cpu_filtered		: sc_in_type;
-	signal sc_out_arb_filtered		: sc_out_type;
+	signal sc_cpu_out_filtered		: sc_out_type;
+	signal sc_cpu_in_filtered		: sc_in_type;
+	signal sc_arb_out_filtered		: sc_out_type;
 
 	signal is_tm_magic_addr_async: std_logic;
 	signal is_tm_magic_addr_sync: std_logic;
 	
-	signal sc_out_cpu_dly: sc_out_type;
+	signal sc_cpu_out_dly: sc_out_type;
 	 
 	signal transaction_start: std_logic;
 	
@@ -95,13 +112,18 @@ architecture rtl of tmif is
 	signal commit_finished_dly: std_logic;
 	signal commit_finished_dly_internal_1: std_logic;
 	
-	signal tm_busy: std_logic;
+	signal rdy_cnt_busy: std_logic;
 	
+	-- rollback state has internal state machine for correct timing and rdy_cnt
+	-- generation
+	-- rbi... rollback idle
+	-- rbb... rollback busy
+	-- rba... rollback aborted
 	type rollback_state_type is (rbi0, rbb0, rbb1, rbb2, rba1, rba2, rbi);
 	signal next_rollback_state, rollback_state: rollback_state_type;
 	
 	-- instrumentation
-	
+
 	type instrumentation_type is record
 		retries: unsigned(31 downto 0);
 		commits: unsigned(31 downto 0);
@@ -120,7 +142,7 @@ architecture rtl of tmif is
 		hold_instr_value: std_logic;
 	end record;
 	
-	signal instr_helpers: instr_helpers_type;
+	signal instrum_helpers: instr_helpers_type;
 	signal next_instr_helpers: instr_helpers_type;
 	
 	constant RETRIES_ADDR: std_logic_vector := "000";
@@ -131,12 +153,11 @@ architecture rtl of tmif is
 	constant WRITE_SET_ADDR: std_logic_vector := "100";
 	constant READ_OR_WRITE_SET_ADDR: std_logic_vector := "101";
 	
-	
 begin
 
-	is_tm_magic_addr_async <= '1' when
-		sc_out_cpu.address(TM_MAGIC_DETECT'range) = TM_MAGIC_DETECT else '0';
-
+	--
+	--	Transactional memory core functionality
+	--
 	cmp_tm: entity work.tm(rtl)
 	generic map (
 		addr_width => addr_width,
@@ -147,10 +168,10 @@ begin
 	port map (
 		clk => clk,
 		reset => reset,
-		from_cpu => sc_out_cpu_filtered,
-		to_cpu => sc_in_cpu_filtered,
-		to_mem => sc_out_arb_filtered,
-		from_mem => sc_in_arb,
+		from_cpu => sc_cpu_out_filtered,
+		to_cpu => sc_cpu_in_filtered,
+		to_mem => sc_arb_out_filtered,
+		from_mem => sc_arb_in,
 		
 		broadcast => broadcast,
 		conflict => conflict,
@@ -165,68 +186,33 @@ begin
 		read_set => next_instrumentation.read_set,
 		write_set => next_instrumentation.write_set,
 		read_or_write_set => next_instrumentation.read_or_write_set
-	 );
-		
-	
-	sync: process(reset, clk) is
-	begin
-		if reset = '1' then
-			state <= no_transaction;
-			
-			is_tm_magic_addr_sync <= '0';
-			sc_out_cpu_dly <= sc_out_idle;
-			
-			commit_finished_dly_internal_1 <= '0';
-			commit_finished_dly <= '0';
-			
-			-- rollback_state <= -- don't care
-			
-			if rttm_instrum then
-				instrumentation <= ((others => '0'), (others => '0'), 
-					(others => '0'), (others => '0'), (others => '0'),
-					(others => '0'));
-				instr_helpers <= ((others => '0'), '0');
-			end if;
-		elsif rising_edge(clk) then
-			state <= next_state;
-			
-			is_tm_magic_addr_sync <= is_tm_magic_addr_async;
-			sc_out_cpu_dly <= sc_out_cpu;
-			
-			commit_finished_dly_internal_1 <= commit_finished;
-			commit_finished_dly <= commit_finished_dly_internal_1;
-			
-			rollback_state <= next_rollback_state;
-			
-			if rttm_instrum then
-				instrumentation <= next_instrumentation;
-				instr_helpers <= next_instr_helpers;
-			end if;
-		end if;
-	end process sync;
-	
-	gen_tm_cmd: process (sc_out_cpu_dly, is_tm_magic_addr_sync) is
-	begin
-		tm_cmd <= none;			
-		
-		-- could be moved to previous cycle
-		if sc_out_cpu_dly.wr = '1' and is_tm_magic_addr_sync = '1' then
-			tm_cmd <= tm_cmd_type'val(to_integer(unsigned(
-				sc_out_cpu_dly.wr_data(tm_cmd_raw'range))));
-		end if;
-	end process gen_tm_cmd;	
-
+	);
 	
 	--
-	-- TM STATE MACHINE
+	--	Parallel statements
 	--
-
-	state_machine: process(commit_finished_dly, commit_in_allow, conflict, 
-		instrumentation, rollback_state, state, tag_full, tm_cmd) is		
+	
+	is_tm_magic_addr_async <= '1' when
+		sc_cpu_out.address(tm_magic_detect'range) = tm_magic_detect else '0';
+	
+	-- request or hold commit token during these states  
+	commit_token_request_buf <= '1' 
+		when state = commit_wait_token or state = early_commit_wait_token or
+		state = commit or state = early_commit or
+		state = early_committed_transaction
+		else '0';
+	
+	commit_token_request <= commit_token_request_buf;			
+	
+	--
+	--	TM STATE MACHINE
+	--
+	state_machine: process(commit_finished_dly, commit_token_grant, conflict, 
+		rollback_state, state, tag_full, tm_cmd, instrumentation) is		
 	begin
 		next_state <= state;
 		exc_tm_rollback <= '0';
-		tm_busy <= '0';
+		rdy_cnt_busy <= '0';
 		
 		transaction_start <= '0';
 		
@@ -235,7 +221,8 @@ begin
 		if rttm_instrum then
 			next_instrumentation.retries <= instrumentation.retries;
 			next_instrumentation.commits <= instrumentation.commits;
-			next_instrumentation.early_commits <= instrumentation.early_commits;
+			next_instrumentation.early_commits <= 
+				instrumentation.early_commits;
 		end if;
 		
 		case state is
@@ -292,7 +279,7 @@ begin
 				end if;
 								
 			when commit_wait_token =>
-				tm_busy <= '1';
+				rdy_cnt_busy <= '1';
 			
 				if conflict = '1' then
 					next_state <= rollback;
@@ -302,7 +289,7 @@ begin
 						next_instrumentation.retries <= 
 							instrumentation.retries + 1;
 					end if;
-				elsif commit_in_allow = '1' then
+				elsif commit_token_grant = '1' then
 					next_state <= commit;
 					
 					if rttm_instrum then
@@ -312,7 +299,7 @@ begin
 				end if;
 			
 			when commit =>
-				tm_busy <= '1';
+				rdy_cnt_busy <= '1';
 				
 				-- TODO check condition
 				if commit_finished_dly = '1' then
@@ -320,7 +307,7 @@ begin
 				end if;
 				
 			when early_commit_wait_token =>
-				tm_busy <= '1';
+				rdy_cnt_busy <= '1';
 			
 				if conflict = '1' then
 					next_state <= rollback;
@@ -329,7 +316,7 @@ begin
 						next_instrumentation.retries <= 
 							instrumentation.retries + 1;
 					end if;
-				elsif commit_in_allow = '1' then
+				elsif commit_token_grant = '1' then
 					next_state <= early_commit;
 					
 					if rttm_instrum then
@@ -339,7 +326,7 @@ begin
 				end if;
 				
 			when early_commit =>
-				tm_busy <= '1';
+				rdy_cnt_busy <= '1';
 			
 				-- TODO check condition
 				if commit_finished_dly = '1' then
@@ -369,11 +356,14 @@ begin
 				
 			when rollback =>
 
-				-- 2 cycles delay to ensure that exception will be handled when
-				-- next bytecode is issued
-
-				-- don't set busy when asynchronous, but else delay for 2 cycles
+				-- If we are about to end a transaction (by executing a end 
+				-- transaction command), we need to assure that the try block 
+				-- is not exited (the transaction command write not finished)
+				-- before the exception is raised (a special bytecode issued)   
+				-- 2 cycles delay ensure that the exception will be handled 
+				-- when the next bytecode is issued.
 				-- TODO refer to documentation
+				-- TODO too many wait cycles?
 			
 				case rollback_state is
 					when rbi0 =>
@@ -385,26 +375,26 @@ begin
 						exc_tm_rollback <= '1';
 					
 						next_rollback_state <= rbb1;
-						tm_busy <= '1';
+						rdy_cnt_busy <= '1';
 					
 					when rbb1 =>
 						next_rollback_state <= rbb2;
-						tm_busy <= '1';
+						rdy_cnt_busy <= '1';
 					
 					when rbb2 =>
 						next_rollback_state <= rbi;
-						tm_busy <= '1';
+						rdy_cnt_busy <= '1';
 					
 					when rbi =>
 						null;
 												
 					when rba1 =>
 						next_rollback_state <= rba2;
-						tm_busy <= '1';
+						rdy_cnt_busy <= '1';
 					
 					when rba2 =>
 						next_state <= no_transaction;
-						tm_busy <= '1';
+						rdy_cnt_busy <= '1';
 						
 				end case;
 				
@@ -417,60 +407,54 @@ begin
 						next_rollback_state <= rbb1;
 				end case;
 		end case;
-	end process state_machine;
-		
-	
-	commit_out_try_internal <= '1' 
-		when state = commit_wait_token or state = early_commit_wait_token or
-		state = commit or state = early_commit or
-		state = early_committed_transaction
-		else '0';
-	
-	commit_out_try <= commit_out_try_internal;		
-	
+	end process state_machine;	
 
-	-- sets sc_out_cpu_filtered, sc_out_arb, sc_in_cpu
-	process(instr_helpers, instrumentation, is_tm_magic_addr_async, 
-		sc_in_cpu_filtered, sc_out_arb_filtered, sc_out_cpu, state, tm_busy, 
-		tm_cmd) is
+	--
+	--	 Adjustments to signals to/from CPU/arbiter.
+	--
+	filter: process(instrum_helpers, instrumentation, is_tm_magic_addr_async, 
+		sc_cpu_in_filtered, sc_arb_out_filtered, sc_cpu_out, state, 
+		rdy_cnt_busy, tm_cmd) is
 	begin
 		-- TODO writes/reads outside of RAM	
-		sc_out_cpu_filtered <= sc_out_cpu;
-		sc_in_cpu <= sc_in_cpu_filtered;
-		sc_out_arb <= sc_out_arb_filtered;
+		sc_cpu_out_filtered <= sc_cpu_out;
+		sc_cpu_in <= sc_cpu_in_filtered;
+		sc_arb_out <= sc_arb_out_filtered;
 		
-		if tm_cmd /= none or tm_busy = '1' then
-			sc_in_cpu.rdy_cnt <= "11";
+		if tm_cmd /= none or rdy_cnt_busy = '1' then
+			sc_cpu_in.rdy_cnt <= "11";
  		end if;
 		
-		-- set broadcast
+		-- set tm_broadcast flag for conflict detection,
+		-- which gets mapped to broadcast.valid by arbiter
 		case state is
 			when commit | early_commit | early_committed_transaction => 
-				sc_out_arb.tm_broadcast <= '1';
+				sc_arb_out.tm_broadcast <= '1';
 			when normal_transaction | commit_wait_token | 
 			early_commit_wait_token | rollback =>
 				-- TODO no writes to mem should happen 
-				sc_out_arb.tm_broadcast <= '0';
+				sc_arb_out.tm_broadcast <= '0';
 			when no_transaction =>
-				sc_out_arb.tm_broadcast <= '0';
+				sc_arb_out.tm_broadcast <= '0';
 		end case;
 				
 		-- overrides when TM command is issued
 		if is_tm_magic_addr_async = '1' then		
-			sc_out_cpu_filtered.wr <= '0';
+			sc_cpu_out_filtered.wr <= '0';
 			-- ignore diagnostic reads
-			sc_out_cpu_filtered.rd <= '0';
+			sc_cpu_out_filtered.rd <= '0';
 		end if;
-		
+				 
 		if rttm_instrum then
-			next_instr_helpers <= instr_helpers;
+			-- override rd_data, where appropriate
+			next_instr_helpers <= instrum_helpers;
 		
-			if sc_out_cpu.rd = '1' then
+			if sc_cpu_out.rd = '1' then
 				next_instr_helpers.hold_instr_value <= '0';
 				if is_tm_magic_addr_async = '1' then
 					next_instr_helpers.hold_instr_value <= '1';
 				
-					case sc_out_cpu.address(2 downto 0) is
+					case sc_cpu_out.address(2 downto 0) is
 						when RETRIES_ADDR =>
 							next_instr_helpers.last_value <=
 								instrumentation.retries;
@@ -499,9 +483,9 @@ begin
 				end if;
 			end if;
 			
-			if instr_helpers.hold_instr_value = '1' then
-				sc_in_cpu.rd_data <= 
-					std_logic_vector(instr_helpers.last_value);
+			if instrum_helpers.hold_instr_value = '1' then
+				sc_cpu_in.rd_data <= 
+					std_logic_vector(instrum_helpers.last_value);
 			end if;
 		end if;
 		
@@ -510,7 +494,61 @@ begin
 			state = commit_wait_token or 
 			state = early_commit_wait_token or
 			state = rollback) and 
-			sc_out_arb_filtered.wr = '1');
-	end process; 
+			sc_arb_out_filtered.wr = '1');
+	end process;
+	
+	--
+	--	Assign asynchronous signals
+	--
+	sync: process(reset, clk) is
+	begin
+		if reset = '1' then
+			state <= no_transaction;
+			
+			is_tm_magic_addr_sync <= '0';
+			sc_cpu_out_dly <= sc_out_idle;
+			
+			commit_finished_dly_internal_1 <= '0';
+			commit_finished_dly <= '0';
+			
+			-- rollback_state <= -- don't care
+			
+			if rttm_instrum then
+				instrumentation <= ((others => '0'), (others => '0'), 
+					(others => '0'), (others => '0'), (others => '0'),
+					(others => '0'));
+				instrum_helpers <= ((others => '0'), '0');
+			end if;
+		elsif rising_edge(clk) then
+			state <= next_state;
+			
+			is_tm_magic_addr_sync <= is_tm_magic_addr_async;
+			sc_cpu_out_dly <= sc_cpu_out;
+			
+			commit_finished_dly_internal_1 <= commit_finished;
+			commit_finished_dly <= commit_finished_dly_internal_1;
+			
+			rollback_state <= next_rollback_state;
+			
+			if rttm_instrum then
+				instrumentation <= next_instrumentation;
+				instrum_helpers <= next_instr_helpers;
+			end if;
+		end if;
+	end process sync;
+	
+	--
+	--	Decode TM command
+	--
+	decode_tm_cmd: process (sc_cpu_out_dly, is_tm_magic_addr_sync) is
+	begin
+		tm_cmd <= none;			
+		
+		-- TODO could be moved to previous cycle
+		if sc_cpu_out_dly.wr = '1' and is_tm_magic_addr_sync = '1' then
+			tm_cmd <= tm_cmd_type'val(to_integer(unsigned(
+				sc_cpu_out_dly.wr_data(tm_cmd_raw'range))));
+		end if;
+	end process decode_tm_cmd;	
 
 end rtl;
