@@ -49,7 +49,7 @@ generic (
 	block_bits	: integer := 4;		-- 2*block_bits is number of cache blocks
 	spm_width	: integer := 8;		-- size of scratchpad RAM (in number of address bits for 32-bit words)
 	cpu_cnt		: integer := 2;		-- number of cpus
-	rttm_instrum: boolean := false;	-- rttm instrumentation
+	rttm_instrum: boolean := true;	-- rttm instrumentation
 	confl_rds_only	: boolean := false
 );
 

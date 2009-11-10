@@ -115,8 +115,8 @@ architecture rtl of tm is
 	end record;
 	
 	type stage3_type is record
-		read_read: std_logic;
-		read_dirty: std_logic;
+		was_read: std_logic;
+		was_dirty: std_logic;
 	end record;	
 	
 	type stage23_type is record
@@ -168,7 +168,7 @@ architecture rtl of tm is
 	-- Commit logic
 	
 	signal commit_line			: unsigned(way_bits downto 0);
-	signal shift				: std_logic;
+	signal commit_shift				: std_logic;
 	
 	signal commit_addr			: std_logic_vector(addr_width-1 downto 0);
 	
@@ -208,6 +208,11 @@ architecture rtl of tm is
 	signal instrum_stage3: instrum_stage3_type;
 
 begin
+
+	--
+	--	(Somewhat) pipelined processing
+	--
+
 
 	proc_stage0: process (broadcast, broadcast_valid_dly, commit_addr, 
 		commit_line, commit_started, from_cpu, from_mem, stage1, stage1_async, 
@@ -306,6 +311,7 @@ begin
 		
 		tag_full <= '0';
 		
+		-- set line_addr and tag_full
 		if stage1.state = commit then
 			next_stage23.line_addr <= commit_line(way_bits-1 downto 0);
 		elsif stage1.state = read1 or stage1.state = write or
@@ -327,8 +333,9 @@ begin
 			end if;
 		end if;
 		
+		-- set tag update enables and next_bcstage2 
 		case stage1.state is
-			when idle =>
+			when idle | commit | read_direct | write_direct =>
 				null;
 				
 			when broadcast1 =>
@@ -358,22 +365,20 @@ begin
 					next_stage2.update_read <= '1';
 					next_stage2.read <= '0';
 				end if;								
-			when commit | read_direct | write_direct =>
-				null;
 		end case;				
 	end process proc_stage1;
 	
-	proc_stage2only: process(data, dirty, read, stage23, stage2) is
+	proc_stage2: process(data, dirty, read, stage23, stage2) is
 	begin		
 		-- TODO only valid in next cycle
 		next_read_data <= data(to_integer(stage23.line_addr));
 		
 		-- TODO RAM access is apparently synthesized in stage 3
-		next_stage3.read_dirty <= dirty(to_integer(stage23.line_addr));
+		next_stage3.was_dirty <= dirty(to_integer(stage23.line_addr));
 		-- TODO naming ^v
-		next_stage3.read_read <= read(to_integer(stage23.line_addr)) and
+		next_stage3.was_read <= read(to_integer(stage23.line_addr)) and
 			stage2.hit;
-	end process proc_stage2only;
+	end process proc_stage2;
 	
 	mem_sync: process (clk) is
 	begin
@@ -394,91 +399,11 @@ begin
 		end if;
 	end process mem_sync;
 	
-	gen_instr: process(reset, clk) is
-	begin
-		if reset = '1' then
-			if rttm_instrum then
-				-- reset maxima
-				r_w_set_instrum_max.write_set <=
-					(others => '0');
-				r_w_set_instrum_max.read_set <=
-					(others => '0');
-				r_w_set_instrum_max.read_or_write_set <=
-					(others => '0');
-			end if;  
-		elsif rising_edge(clk) then
-			if rttm_instrum then
-				-- save for stage 3
-				instrum_stage3.hit <= stage2.hit;
-				instrum_stage3.set_read <= stage2.update_read and stage2.read;
-				instrum_stage3.set_dirty <= stage2.update_dirty and stage2.dirty;
-			
-				-- update counters in stage 3
-				if (stage3.read_read = '0' or instrum_stage3.hit = '0') and
-					instrum_stage3.set_read = '1' then
-					r_w_set_instrum_current.read_set <=
-						r_w_set_instrum_current.read_set + 1;
-				end if;
-								
-				if (stage3.read_dirty = '0' or instrum_stage3.hit = '0') and
-					instrum_stage3.set_dirty = '1' then
-					r_w_set_instrum_current.write_set <=
-						r_w_set_instrum_current.write_set + 1;
-				end if;
-				
-				if instrum_stage3.hit = '0' and
-					(instrum_stage3.set_read = '1' or
-					instrum_stage3.set_dirty = '1') 
-					then
-					r_w_set_instrum_current.read_or_write_set <=
-						r_w_set_instrum_current.read_or_write_set + 1; 
-				end if;
-				
-				-- reset counters
-				if state = no_transaction then
-					r_w_set_instrum_current.write_set <=
-						(others => '0');
-					r_w_set_instrum_current.read_set <=
-						(others => '0');
-					r_w_set_instrum_current.read_or_write_set <=
-						(others => '0');  
-				end if;
-				
-				-- update maxima
-				if state = commit or state = early_commit then
-					if r_w_set_instrum_current.write_set > 
-						r_w_set_instrum_max.write_set then
-						r_w_set_instrum_max.write_set <= 
-							r_w_set_instrum_current.write_set;
-					end if;
-					
-					if r_w_set_instrum_current.read_set > 
-						r_w_set_instrum_max.read_set then
-						r_w_set_instrum_max.read_set <= 
-							r_w_set_instrum_current.read_set;
-					end if;
-	
-					if r_w_set_instrum_current.read_or_write_set > 
-						r_w_set_instrum_max.read_or_write_set then
-						r_w_set_instrum_max.read_or_write_set <= 
-							r_w_set_instrum_current.read_or_write_set;
-					end if;
-				end if;
-			end if;			
-		end if;
-	end process;
-	
-	read_set <= r_w_set_instrum_max.read_set;
-	write_set <= r_w_set_instrum_max.write_set;
-	read_or_write_set <= r_w_set_instrum_max.read_or_write_set;
-	
-	to_mem <= to_mem_buf;
-	
 	proc_stage23: process(commit_addr, commit_line, doing_mem_read, from_mem, 
 		read_data, save_data, stage1, stage1_async, stage2, stage23, stage3, 
 		to_mem_buf, transaction_start) is
 	begin
-		shift <= '0';
+		commit_shift <= '0';
 	
 		-- stage 3 signals
 		to_cpu.rd_data <= save_data;
@@ -501,17 +426,19 @@ begin
 		
 		next_doing_mem_read <= doing_mem_read;
 
-		-- memory reads are always forwarded to cpu
+		-- track memory reads and forward them to the CPU
+		
 		if doing_mem_read = '1' and from_mem.rdy_cnt = 0 then
 			next_doing_mem_read <= '0';
 			next_save_data <= from_mem.rd_data;
 			to_cpu.rd_data <= from_mem.rd_data;
 		end if;
-		
+				
 		if to_mem_buf.rd = '1' then
 			next_doing_mem_read <= '1';
 		end if;
 		
+				
 		case stage23.state is
 			when idle =>
 				null;
@@ -521,10 +448,6 @@ begin
 			
 			when write2 =>
 				null;
--- 				next_stage23.state <= write3;
-			
--- 			when write3 =>
--- 				null;
 			
 			when read_hit3 =>
 				-- TODO read_data is already a reg.
@@ -546,7 +469,7 @@ begin
 				end if;
 				
 			when read_miss4 =>
-				-- cpu forwarding is done based on rdy_cnt 
+				-- forwarding to cpu is done based on rdy_cnt 
 -- 				next_save_data <= from_mem.rd_data;
 -- 				to_cpu.rd_data <= from_mem.rd_data;
 				next_stage23.update_data <= '1';
@@ -557,20 +480,20 @@ begin
 				next_stage23.state <= commit_3;
 			
 			when commit_3 =>
-				-- TODO don't write if not dirty
-				if stage3.read_dirty = '1' then
+				-- write if dirty
+				if stage3.was_dirty = '1' then
 					to_mem_buf.wr <= '1';
 					to_mem_buf.address <= (SC_ADDR_SIZE-1 downto addr_width => 
 						'0') & commit_addr;
 					to_mem_buf.wr_data <= read_data;
 					next_stage23.state <= commit_4;
 				else
-					-- TODO one cycle earlier => no since shift etc.
+					-- not a cycle earlier to generate shift event
 					commit_word_finishing <= '1';
 					next_stage23.state <= idle;
 				end if;					
 				
-				shift <= '1'; -- TODO
+				commit_shift <= '1'; -- TODO
 				
 			when commit_4 =>
 				next_stage23.state <= commit_4;
@@ -614,6 +537,92 @@ begin
 		end if;		
 	end process proc_stage23;
 	
+	--
+	--	Instrumentation
+	--
+	
+	gen_instr: process(reset, clk) is
+	begin
+		if reset = '1' then
+			if rttm_instrum then
+				-- reset maxima
+				r_w_set_instrum_max <=
+					((others => '0'), (others => '0'), (others => '0'));
+			end if;  
+		elsif rising_edge(clk) then
+			if rttm_instrum then
+				-- save for stage 3
+				instrum_stage3.hit <= stage2.hit;
+				instrum_stage3.set_read <= stage2.update_read and stage2.read;
+				instrum_stage3.set_dirty <= stage2.update_dirty and stage2.dirty;
+			
+				-- update counters in stage 3
+				if (stage3.was_read = '0' or instrum_stage3.hit = '0') and
+					instrum_stage3.set_read = '1' then
+					r_w_set_instrum_current.read_set <=
+						r_w_set_instrum_current.read_set + 1;
+				end if;
+								
+				if (stage3.was_dirty = '0' or instrum_stage3.hit = '0') and
+					instrum_stage3.set_dirty = '1' then
+					r_w_set_instrum_current.write_set <=
+						r_w_set_instrum_current.write_set + 1;
+				end if;
+				
+				if instrum_stage3.hit = '0' and
+					(instrum_stage3.set_read = '1' or
+					instrum_stage3.set_dirty = '1') 
+					then
+					r_w_set_instrum_current.read_or_write_set <=
+						r_w_set_instrum_current.read_or_write_set + 1; 
+				end if;
+				
+				-- reset counters
+				if state = no_transaction then
+					r_w_set_instrum_current <=
+						((others => '0'), (others => '0'), (others => '0'));  
+				end if;
+				
+				-- update maxima
+				if state = commit or state = early_commit then
+					if r_w_set_instrum_current.write_set > 
+						r_w_set_instrum_max.write_set then
+						r_w_set_instrum_max.write_set <= 
+							r_w_set_instrum_current.write_set;
+					end if;
+					
+					if r_w_set_instrum_current.read_set > 
+						r_w_set_instrum_max.read_set then
+						r_w_set_instrum_max.read_set <= 
+							r_w_set_instrum_current.read_set;
+					end if;
+	
+					if r_w_set_instrum_current.read_or_write_set > 
+						r_w_set_instrum_max.read_or_write_set then
+						r_w_set_instrum_max.read_or_write_set <= 
+							r_w_set_instrum_current.read_or_write_set;
+					end if;
+				end if;
+			end if;			
+		end if;
+	end process;
+	
+	
+	--
+	--	Concurrent assignments
+	--
+	
+	read_set <= r_w_set_instrum_max.read_set;
+	write_set <= r_w_set_instrum_max.write_set;
+	read_or_write_set <= r_w_set_instrum_max.read_or_write_set;
+	
+	to_mem <= to_mem_buf;
+	
+	
+	--
+	--	Part of rdy_cnt generation
+	--
+	
 	gen_rdy_cnt: process (from_mem, stage1, stage23) is
 		variable var_rdy_cnt: unsigned(RDY_CNT_SIZE-1 downto 0);
 	begin
@@ -638,9 +647,10 @@ begin
 					when read_miss2 =>
 						var_rdy_cnt := "11"; -- TODO issue to_mem.rd earlier?
 						
-					-- TODO hazard fix - or add reg. and disable cycle 2 write
-					-- TODO actually min(3, from_mem.rdy_cnt + 1)	
 					when read_miss3 =>
+						-- hazard fix - or add reg. and disable cycle 2 write
+						-- TODO refer to documentation
+						-- TODO actually min(3, from_mem.rdy_cnt + 1)	
 						var_rdy_cnt := "11";
 					when read_miss4 =>
 						var_rdy_cnt := "01";					
@@ -648,7 +658,7 @@ begin
 					when idle | read_hit3 | commit_2 | commit_3 |
 						commit_4 =>
 						null; 
-						-- rdy_cnt 0 resp. set by tm_manager
+						-- rdy_cnt 0 or set by arbiter or tm_manager
 				end case;
 		end case;
 		
@@ -659,6 +669,7 @@ begin
 		to_cpu.rdy_cnt <= var_rdy_cnt;
 	end process gen_rdy_cnt;
 	
+
 	--
 	--	Conflict detection
 	--
@@ -676,20 +687,24 @@ begin
 	begin
 		conflict <= '0';
 		-- TODO only if it was a hit
-		if bcstage3 = '1' and stage3.read_read = '1' then
+		if bcstage3 = '1' and stage3.was_read = '1' then
 			conflict <= '1';
 		end if;
 	end process proc_bcstage3;
 
+
+	--
+	--	Register signals
+	--
 	sync: process (clk, reset) is
 	begin
 	    if reset = '1' then
 			stage1 <= (state => idle, addr => (others => '0'), 
 				cpu_data => (others => '0'));
-			stage2 <= (hit => '0', address => (others => '0'),
+			stage2 <= (hit => '0', addr => (others => '0'),
 				update_tags => '0', update_read => '0',
 				update_dirty => '0', read => '0', dirty => '0');
-			stage3 <= (read_read => '0', read_dirty => '0');
+			stage3 <= (was_read => '0', was_dirty => '0');
 			stage23 <= (state => idle,
 				wr_data => (others => '0'), update_data => '0',
 				line_addr => (others => '0'));
@@ -726,7 +741,6 @@ begin
 	--
 	--	Tag instantiation
 	--
-
 	tag: entity work.tag
 		generic map(
 			addr_width => addr_width,
@@ -738,15 +752,13 @@ begin
 			
 			transaction_start => transaction_start,
 			
-			-- TODO feed from stage 0?
 			addr => stage1.addr(addr_width-1 downto 0),
 			wr => stage2.update_tags,
 			hit => stage1_async.hit, -- TODO delay if fed in stage 0
 			line => stage1_async.line_addr,
 			newline => stage1_async.newline,
--- 			full => tag_full,
 			
-			shift => shift,
+			shift => commit_shift,
 			lowest_addr => commit_addr
 		);
 

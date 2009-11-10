@@ -199,7 +199,7 @@ begin
 	);
 	
 	--
-	--	Parallel statements
+	--	Concurrent assignments
 	--
 	
 	is_tm_magic_addr_async <= '1' when
@@ -508,7 +508,7 @@ begin
 	end process;
 	
 	--
-	--	Assign asynchronous signals
+	--	Register signals
 	--
 	sync: process(reset, clk) is
 	begin
