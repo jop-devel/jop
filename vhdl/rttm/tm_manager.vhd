@@ -78,33 +78,50 @@ end tm_manager;
 
 architecture rtl of tm_manager is
 
+	-- State machines
 		
 	signal state, next_state		: state_type;
-		
-	signal conflict					: std_logic;
-	
-	-- set asynchronously
-	signal tm_cmd					: tm_cmd_type;
-	
 
-	signal commit_finished				: std_logic;
+	-- rollback state has internal state machine for correct timing and rdy_cnt
+	-- generation
+	-- rbi... rollback idle
+	-- rbb... rollback busy
+	-- rba... rollback aborted
+	type rollback_state_type is (rbi0, rbb0, rbb1, rbb2, rba1, rba2, rbi);
+	signal next_rollback_state, rollback_state: rollback_state_type;
+
+		
+	-- TM commands
 	
-	signal commit_token_request_buf	: std_logic;
+	signal tm_cmd					: tm_cmd_type;
+
+	signal is_tm_magic_addr_async: std_logic;
+	signal is_tm_magic_addr_sync: std_logic;	
+
 	
 	-- filter signals to/from CPU/arbiter
+	
 	signal sc_cpu_out_filtered		: sc_out_type;
 	signal sc_cpu_in_filtered		: sc_in_type;
 	signal sc_arb_out_filtered		: sc_out_type;
 
-	signal is_tm_magic_addr_async: std_logic;
-	signal is_tm_magic_addr_sync: std_logic;
-	
-	signal sc_cpu_out_dly: sc_out_type;
+
+	-- Events
 	 
 	signal transaction_start: std_logic;
-	
-	
+
+	signal conflict					: std_logic;
 	signal tag_full: std_logic;
+
+	signal commit_finished				: std_logic;
+	
+	
+	-- Misc.
+	
+	signal commit_token_request_buf	: std_logic;
+	signal sc_cpu_out_dly: sc_out_type;
+	
+	
 	
 	-- commit_finished signal is delayed long enough so that other processors
 	-- detect conflict before they can obtain commit token
@@ -114,15 +131,8 @@ architecture rtl of tm_manager is
 	
 	signal rdy_cnt_busy: std_logic;
 	
-	-- rollback state has internal state machine for correct timing and rdy_cnt
-	-- generation
-	-- rbi... rollback idle
-	-- rbb... rollback busy
-	-- rba... rollback aborted
-	type rollback_state_type is (rbi0, rbb0, rbb1, rbb2, rba1, rba2, rbi);
-	signal next_rollback_state, rollback_state: rollback_state_type;
-	
-	-- instrumentation
+		
+	-- Instrumentation
 
 	type instrumentation_type is record
 		retries: unsigned(31 downto 0);

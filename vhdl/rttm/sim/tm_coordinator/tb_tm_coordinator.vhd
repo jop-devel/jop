@@ -58,7 +58,7 @@ begin
 		clk => clk,
 		reset => reset,
 		commit_token_request => commit_try,
-		-- test internal next_commit_allow_internal signal
+		-- test internal next_token_grant signal
 		commit_token_grant => open 
 		);
 
@@ -66,7 +66,7 @@ begin
 
 	gen: process is
 		alias next_commit_allow is 
-			<< signal .dut.next_commit_allow_internal: cpu_flags >>;
+			<< signal .dut.next_token_grant: cpu_flags >>;
 	begin
 		commit_try <= (others => '0');
 	

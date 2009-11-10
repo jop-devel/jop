@@ -510,7 +510,7 @@ set_global_assignment -name VHDL_FILE ../../vhdl/rttm/tm_pack.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/rttm/tm_internal_pack.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/rttm/tag.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/rttm/tm.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/rttm/tmif.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/rttm/tm_manager.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/rttm/tm_coordinator.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/jopcpu.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/top/joprttm.vhd

@@ -12,8 +12,12 @@ port (
 	clk							: in std_logic;
 	reset						: in std_logic;
 
-	-- TODO continue register
+	-- '1' while requesting and holding commit token.
+	-- TODO register
 	commit_token_request		: in std_logic_vector(0 to cpu_cnt-1);
+	
+	-- '1' when commit token is granted until token is given up 
+	-- by resetting commit_token_request.
 	-- TODO delay long enough for conflict detection
 	commit_token_grant			: out std_logic_vector(0 to cpu_cnt-1)
 );
