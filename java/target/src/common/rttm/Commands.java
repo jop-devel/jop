@@ -18,13 +18,28 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-package com.jopdesign.sys;
+package rttm;
 
-public class RollbackException extends RuntimeException {
-	// TMTODO
+import com.jopdesign.sys.Const;
+import com.jopdesign.sys.Native;
+
+/**
+ * User-visible transactional memory interface (apart from {@link Atomic}
+ * annotation).
+ * @author Peter Hilber (peter@hilber.name)
+ */
+public class Commands {
+	/**
+	 * TMTODO
+	 */
+	public static void abort() {
+		Native.wr(Const.TM_ABORT, Const.MEM_TM_MAGIC);
+	}
 	
-	public RollbackException() {
-		super("RollbackException");
+	/**
+	 * TMTODO
+	 */
+	public static void earlyCommit() {
+		Native.wr(Const.TM_EARLY_COMMIT, Const.MEM_TM_MAGIC);
 	}
 }
-
