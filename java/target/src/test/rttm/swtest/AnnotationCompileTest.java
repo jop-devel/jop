@@ -3,7 +3,7 @@ package rttm.swtest;
 import rttm.Atomic;
 
 public class AnnotationCompileTest {
-	static boolean foo = false;
+	static volatile boolean foo = false;
 
 	/**
 	 * @param args

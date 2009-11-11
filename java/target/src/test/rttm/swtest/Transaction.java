@@ -6,7 +6,7 @@ import com.jopdesign.sys.Native;
 import com.jopdesign.sys.RollbackException;
 import rttm.utils.Utils;
 
-public abstract class Transaction {
+public class Transaction {
 	
 	protected static final boolean LOG = true; 
 	
