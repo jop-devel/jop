@@ -210,9 +210,34 @@ architecture rtl of tm is
 begin
 
 	--
+	--	Tag instantiation
+	--
+	
+	tag: entity work.tag
+		generic map(
+			addr_width => addr_width,
+			way_bits => way_bits
+		)
+		port map(
+			clk => clk,
+			reset => reset,
+			
+			transaction_start => transaction_start,
+			
+			addr => stage1.addr(addr_width-1 downto 0),
+			wr => stage2.update_tags,
+			hit => stage1_async.hit, -- TODO delay if fed in stage 0
+			line => stage1_async.line_addr,
+			newline => stage1_async.newline,
+			
+			shift => commit_shift,
+			lowest_addr => commit_addr
+		);
+
+
+	--
 	--	(Somewhat) pipelined processing
 	--
-
 
 	proc_stage0: process (broadcast, broadcast_valid_dly, commit_addr, 
 		commit_line, commit_started, from_cpu, from_mem, stage1, stage1_async, 
@@ -380,7 +405,7 @@ begin
 			stage2.hit;
 	end process proc_stage2;
 	
-	mem_sync: process (clk) is
+	memory_block_access: process (clk) is
 	begin
 	    if rising_edge(clk) then
 			-- TODO stage 2 or 3?
@@ -397,7 +422,7 @@ begin
 				read(to_integer(stage23.line_addr)) <= stage2.read;
 			end if;
 		end if;
-	end process mem_sync;
+	end process memory_block_access;
 	
 	proc_stage23: process(commit_addr, commit_line, doing_mem_read, from_mem, 
 		read_data, save_data, stage1, stage1_async, stage2, stage23, stage3, 
@@ -537,76 +562,6 @@ begin
 		end if;		
 	end process proc_stage23;
 	
-	--
-	--	Instrumentation
-	--
-	
-	gen_instr: process(reset, clk) is
-	begin
-		if reset = '1' then
-			if rttm_instrum then
-				-- reset maxima
-				r_w_set_instrum_max <=
-					((others => '0'), (others => '0'), (others => '0'));
-			end if;  
-		elsif rising_edge(clk) then
-			if rttm_instrum then
-				-- save for stage 3
-				instrum_stage3.hit <= stage2.hit;
-				instrum_stage3.set_read <= stage2.update_read and stage2.read;
-				instrum_stage3.set_dirty <= stage2.update_dirty and stage2.dirty;
-			
-				-- update counters in stage 3
-				if (stage3.was_read = '0' or instrum_stage3.hit = '0') and
-					instrum_stage3.set_read = '1' then
-					r_w_set_instrum_current.read_set <=
-						r_w_set_instrum_current.read_set + 1;
-				end if;
-								
-				if (stage3.was_dirty = '0' or instrum_stage3.hit = '0') and
-					instrum_stage3.set_dirty = '1' then
-					r_w_set_instrum_current.write_set <=
-						r_w_set_instrum_current.write_set + 1;
-				end if;
-				
-				if instrum_stage3.hit = '0' and
-					(instrum_stage3.set_read = '1' or
-					instrum_stage3.set_dirty = '1') 
-					then
-					r_w_set_instrum_current.read_or_write_set <=
-						r_w_set_instrum_current.read_or_write_set + 1; 
-				end if;
-				
-				-- reset counters
-				if state = no_transaction then
-					r_w_set_instrum_current <=
-						((others => '0'), (others => '0'), (others => '0'));  
-				end if;
-				
-				-- update maxima
-				if state = commit or state = early_commit then
-					if r_w_set_instrum_current.write_set > 
-						r_w_set_instrum_max.write_set then
-						r_w_set_instrum_max.write_set <= 
-							r_w_set_instrum_current.write_set;
-					end if;
-					
-					if r_w_set_instrum_current.read_set > 
-						r_w_set_instrum_max.read_set then
-						r_w_set_instrum_max.read_set <= 
-							r_w_set_instrum_current.read_set;
-					end if;
-	
-					if r_w_set_instrum_current.read_or_write_set > 
-						r_w_set_instrum_max.read_or_write_set then
-						r_w_set_instrum_max.read_or_write_set <= 
-							r_w_set_instrum_current.read_or_write_set;
-					end if;
-				end if;
-			end if;			
-		end if;
-	end process;
-	
 	
 	--
 	--	Concurrent assignments
@@ -696,6 +651,7 @@ begin
 	--
 	--	Register signals
 	--
+	
 	sync: process (clk, reset) is
 	begin
 	    if reset = '1' then
@@ -739,27 +695,73 @@ begin
 
 
 	--
-	--	Tag instantiation
+	--	Instrumentation
 	--
-	tag: entity work.tag
-		generic map(
-			addr_width => addr_width,
-			way_bits => way_bits
-		)
-		port map(
-			clk => clk,
-			reset => reset,
+	
+	gen_instr: process(reset, clk) is
+	begin
+		if reset = '1' then
+			if rttm_instrum then
+				-- reset maxima
+				r_w_set_instrum_max <=
+					((others => '0'), (others => '0'), (others => '0'));
+			end if;  
+		elsif rising_edge(clk) then
+			if rttm_instrum then
+				-- save for stage 3
+				instrum_stage3.hit <= stage2.hit;
+				instrum_stage3.set_read <= stage2.update_read and stage2.read;
+				instrum_stage3.set_dirty <= stage2.update_dirty and stage2.dirty;
 			
-			transaction_start => transaction_start,
-			
-			addr => stage1.addr(addr_width-1 downto 0),
-			wr => stage2.update_tags,
-			hit => stage1_async.hit, -- TODO delay if fed in stage 0
-			line => stage1_async.line_addr,
-			newline => stage1_async.newline,
-			
-			shift => commit_shift,
-			lowest_addr => commit_addr
-		);
+				-- update counters in stage 3
+				if (stage3.was_read = '0' or instrum_stage3.hit = '0') and
+					instrum_stage3.set_read = '1' then
+					r_w_set_instrum_current.read_set <=
+						r_w_set_instrum_current.read_set + 1;
+				end if;
+								
+				if (stage3.was_dirty = '0' or instrum_stage3.hit = '0') and
+					instrum_stage3.set_dirty = '1' then
+					r_w_set_instrum_current.write_set <=
+						r_w_set_instrum_current.write_set + 1;
+				end if;
+				
+				if instrum_stage3.hit = '0' and
+					(instrum_stage3.set_read = '1' or
+					instrum_stage3.set_dirty = '1') 
+					then
+					r_w_set_instrum_current.read_or_write_set <=
+						r_w_set_instrum_current.read_or_write_set + 1; 
+				end if;
+				
+				-- reset counters
+				if state = no_transaction then
+					r_w_set_instrum_current <=
+						((others => '0'), (others => '0'), (others => '0'));  
+				end if;
+				
+				-- update maxima
+				if state = commit or state = early_commit then
+					if r_w_set_instrum_current.write_set > 
+						r_w_set_instrum_max.write_set then
+						r_w_set_instrum_max.write_set <= 
+							r_w_set_instrum_current.write_set;
+					end if;
+					
+					if r_w_set_instrum_current.read_set > 
+						r_w_set_instrum_max.read_set then
+						r_w_set_instrum_max.read_set <= 
+							r_w_set_instrum_current.read_set;
+					end if;
+	
+					if r_w_set_instrum_current.read_or_write_set > 
+						r_w_set_instrum_max.read_or_write_set then
+						r_w_set_instrum_max.read_or_write_set <= 
+							r_w_set_instrum_current.read_or_write_set;
+					end if;
+				end if;
+			end if;			
+		end if;
+	end process;
 
 end;

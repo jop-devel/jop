@@ -51,10 +51,10 @@ constant reset_time			: time := 5 ns;
 	signal commit_out_try: std_logic;
 	signal commit_in_allow: std_logic;
 	
-	signal sc_out_cpu: sc_out_type;
-	signal sc_in_cpu: sc_in_type;
-	signal sc_out_arb: sc_out_type;
-	signal sc_in_arb: sc_in_type;		
+	signal sc_cpu_out: sc_out_type;
+	signal sc_cpu_in: sc_in_type;
+	signal sc_arb_out: sc_out_type;
+	signal sc_arb_in: sc_in_type;		
 	signal exc_tm_rollback: std_logic;
 
 	signal broadcast: tm_broadcast_type := 
@@ -115,10 +115,10 @@ begin
 		commit_token_request => commit_out_try,
 		commit_token_grant => commit_in_allow,
 		broadcast => broadcast,
-		sc_cpu_out => sc_out_cpu,
-		sc_cpu_in => sc_in_cpu,
-		sc_arb_out => sc_out_arb,
-		sc_arb_in => sc_in_arb,
+		sc_cpu_out => sc_cpu_out,
+		sc_cpu_in => sc_cpu_in,
+		sc_arb_out => sc_arb_out,
+		sc_arb_in => sc_arb_in,
 		exc_tm_rollback => exc_tm_rollback
 		);
 		
@@ -173,23 +173,23 @@ begin
 		alias ram is << signal .memory.main_mem.ram: ram_type >>;	
 	
 	begin
-		sc_out_cpu.nc <= '0';
+		sc_cpu_out.nc <= '0';
 		
 		wait until falling_edge(reset);		
 		wait until rising_edge(clk);
 		
 		sc_write(clk, TM_MAGIC_SIMULATION, 
 			(31 downto tm_cmd_raw'length => '0') & TM_CMD_START_TRANSACTION, 
-			sc_out_cpu, sc_in_cpu);
+			sc_cpu_out, sc_cpu_in);
 		
 		for i in 1 to 2**way_bits-1 loop
-			sc_write(clk, i, i, sc_out_cpu, sc_in_cpu);
+			sc_write(clk, i, i, sc_cpu_out, sc_cpu_in);
 		end loop;
 		
 		started_of <= true;
 		testing_commit <= true;
 		
-		sc_write(clk, 2**way_bits, 2**way_bits, sc_out_cpu, sc_in_cpu, 100);		 	
+		sc_write(clk, 2**way_bits, 2**way_bits, sc_cpu_out, sc_cpu_in, 100);		 	
 		
 		assert ended_of;
 		assert not ended_transaction;
@@ -200,7 +200,7 @@ begin
 		
 		-- TODO explicit early commit, first line as read/dirty, ..., etc.
 		
-		sc_write(clk, 2**way_bits+1, 2**way_bits+1, sc_out_cpu, sc_in_cpu);
+		sc_write(clk, 2**way_bits+1, 2**way_bits+1, sc_cpu_out, sc_cpu_in);
 
 		for i in 1 to 2**way_bits+1 loop
 			assert to_integer(unsigned(ram(i))) = i;
@@ -208,7 +208,7 @@ begin
 		
 		sc_write(clk, TM_MAGIC_SIMULATION, 
 			(31 downto tm_cmd_raw'length => '0') & TM_CMD_END_TRANSACTION,
-			sc_out_cpu, sc_in_cpu);
+			sc_cpu_out, sc_cpu_in);
 		
 		assert ended_transaction;
 		
@@ -242,8 +242,8 @@ begin
 	port map (
 		clk => clk,
 		reset => reset,
-		sc_mem_out => sc_out_arb,
-		sc_mem_in => sc_in_arb
+		sc_mem_out => sc_arb_out,
+		sc_mem_in => sc_arb_in
 		);
 
 	clock: process

@@ -51,10 +51,10 @@ constant reset_time			: time := 5 ns;
 	signal commit_out_try: std_logic;
 	signal commit_in_allow: std_logic;
 	
-	signal sc_out_cpu: sc_out_type;
-	signal sc_in_cpu: sc_in_type;
-	signal sc_out_arb: sc_out_type;
-	signal sc_in_arb: sc_in_type;		
+	signal sc_cpu_out: sc_out_type;
+	signal sc_cpu_in: sc_in_type;
+	signal sc_arb_out: sc_out_type;
+	signal sc_arb_in: sc_in_type;		
 	signal exc_tm_rollback: std_logic;
 
 	signal broadcast: tm_broadcast_type := 
@@ -115,10 +115,10 @@ begin
 		commit_token_request => commit_out_try,
 		commit_token_grant => commit_in_allow,
 		broadcast => broadcast,
-		sc_cpu_out => sc_out_cpu,
-		sc_cpu_in => sc_in_cpu,
-		sc_arb_out => sc_out_arb,
-		sc_arb_in => sc_in_arb,
+		sc_cpu_out => sc_cpu_out,
+		sc_cpu_in => sc_cpu_in,
+		sc_arb_out => sc_arb_out,
+		sc_arb_in => sc_arb_in,
 		exc_tm_rollback => exc_tm_rollback
 		);
 		
@@ -177,20 +177,20 @@ begin
 	
 		variable result: natural;
 	begin
-		sc_out_cpu.nc <= '0';
+		sc_cpu_out.nc <= '0';
 		
 		wait until falling_edge(reset);		
 		wait until rising_edge(clk);
 		
-		sc_write(clk, conflict_addr, conflict_data, sc_out_cpu, sc_in_cpu);
+		sc_write(clk, conflict_addr, conflict_data, sc_cpu_out, sc_cpu_in);
 		
 		sc_write(clk, TM_MAGIC_SIMULATION, 
 			(31 downto tm_cmd_raw'length => '0') & TM_CMD_START_TRANSACTION, 
-			sc_out_cpu, sc_in_cpu);
+			sc_cpu_out, sc_cpu_in);
 			
 		-- TODO write	
 		
-		sc_read(clk, conflict_addr, result, sc_out_cpu, sc_in_cpu);
+		sc_read(clk, conflict_addr, result, sc_cpu_out, sc_cpu_in);
 		
 				
 		finished <= true;
@@ -223,8 +223,8 @@ begin
 	port map (
 		clk => clk,
 		reset => reset,
-		sc_mem_out => sc_out_arb,
-		sc_mem_in => sc_in_arb
+		sc_mem_out => sc_arb_out,
+		sc_mem_in => sc_arb_in
 		);
 
 	clock: process
