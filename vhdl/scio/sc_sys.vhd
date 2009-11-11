@@ -47,6 +47,8 @@
 --	2007-12-03	prioritized interrupt processing
 --  2007-12-07  global lock redesign
 --	2009-06-18	add port for deadline instruction
+--	2009-11-11	if auto_disable_hw_exceptions is set, only generate one
+--	          	hw exception until hw exceptions are re-enabled
 
 
 --

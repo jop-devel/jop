@@ -54,7 +54,8 @@ entity stack is
 
 generic (
 	width		: integer := 32;	-- one data word
-	jpc_width	: integer := 10		-- address bits of java byte code pc
+	jpc_width	: integer := 10;	-- address bits of java byte code pc
+	stov_using_geq	: boolean
 );
 port (
 	clk, reset	: in std_logic;
@@ -424,7 +425,11 @@ begin
 		-- usefull information can be printed out
 		-- -8 was ok with just a plain print...
 		-- -10 (or -12) should be ok for a stack trace?
-		if sp>=std_logic_vector(to_unsigned(2**ram_width-1-72, ram_width)) then
+		if (not stov_using_geq and
+			sp=std_logic_vector(to_unsigned(2**ram_width-1-16, ram_width))) 
+			or (stov_using_geq and 
+			sp>=std_logic_vector(to_unsigned(2**ram_width-1-72, ram_width))) 
+			then
 			sp_ov <= '1';
 		end if;
 		if (ena_vp = '1') then

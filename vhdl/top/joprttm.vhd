@@ -2,6 +2,7 @@
 --
 --  This file is a part of JOP, the Java Optimized Processor
 --
+--  Copyright (C) 2009, Peter Hilber (peter@hilber.name)
 --  Copyright (C) 2001-2008, Martin Schoeberl (martin@jopdesign.com)
 --
 --  This program is free software: you can redistribute it and/or modify
@@ -251,7 +252,8 @@ end process;
 			generic map(
 				jpc_width => jpc_width,
 				block_bits => block_bits,
-				spm_width => spm_width
+				spm_width => spm_width,
+				stov_using_geq => true
 			)
 			port map(clk_int, int_res,
 				sc_tm_out(i), sc_tm_in(i),

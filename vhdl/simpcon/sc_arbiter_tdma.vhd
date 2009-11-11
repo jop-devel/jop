@@ -41,6 +41,7 @@
 -- 210808: - reg_in_rd_data(i) also gets loaded when rdy_cnt = 3 using pipelined access
 --				 - arb_in(i).rd_data gets mem_in.rd_data when rdy_cnt 3 using pipelined access
 -- 310809: Added transactional memory broadcast support
+-- 111109: Integrated RTTM tm_broadcast signal
 
 -- TODO:  - Add atomic for Wolfgang
 --				- full pipelined version
