@@ -39,6 +39,8 @@ public class RunIt {
 	// static ReadInput model = new ReadInput();
 	// static SerialWrite model = new SerialWrite();
 	// static SerialRead model = new SerialRead();
+	// static FsmTest model = new FsmTest();
+	// static FsmDemo model = new FsmDemo();
 
 	/**
 	 * Create and run a Ptolemy model.
