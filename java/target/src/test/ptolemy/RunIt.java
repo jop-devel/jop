@@ -16,8 +16,7 @@
 
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
+ */
 
 /**
  * 
@@ -27,41 +26,68 @@ package ptolemy;
 import joprt.RtThread;
 
 /**
+ * Test code generated from Ptolemy.
+ * 
  * @author Martin Schoeberl (martin@jopdesign.com)
- *
+ * 
  */
 public class RunIt {
 
+	static Model model = new Model();
+	// static WatchDog model = new WatchDog();
+	// static WriteOutput model = new WriteOutput();
+	// static ReadInput model = new ReadInput();
+	// static SerialWrite model = new SerialWrite();
+	// static SerialRead model = new SerialRead();
+
 	/**
+	 * Create and run a Ptolemy model.
+	 * 
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		
-        final Model model = new Model();
-        model.initialize();
 
-		int us = (int) (Model.PERIOD*1000000);
-		if (us<100) {
-			throw new Error("Period of "+us+" us not supported");
-		}
-		new RtThread(1, us) {
-			public void run() {
-				for (;;) {
-			        try {
-						model.run();
-					} catch (Exception e) {
-						e.printStackTrace();
+		model.initialize();
+
+		int us = (int) (model.PERIOD * 1000000);
+		// If there is a useful period run it in a periodic
+		// thread. If not just in a tight loop.
+		if (us >= 100) {
+			new RtThread(1, us) {
+				public void run() {
+					for (;;) {
+						try {
+							model.run();
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+						waitForNextPeriod();
 					}
-					waitForNextPeriod();
+				}
+			};
+			RtThread.startMission();
+		} else {
+			for (;;) {
+				try {
+					model.run();
+				} catch (Exception e) {
+					e.printStackTrace();
 				}
 			}
-		};
-		
-		RtThread.startMission();
-		// never invoked as we run forever
-//        model.doWrapup();
-//        System.exit(0);
 
+		}
+
+		// never invoked as we run forever
+		// model.doWrapup();
+		// System.exit(0);
 	}
 
+	/**
+	 * A static method just for the WCET analysis.
+	 * 
+	 * @throws Exception
+	 */
+	public static void foo() throws Exception {
+		model.run();
+	}
 }

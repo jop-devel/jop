@@ -102,7 +102,7 @@ P3=Transaction
 
 #P2=wcet
 #P3=Loop
-WCET_METHOD=measure
+WCET_METHOD=foo
 
 #P1=.
 #P2=dsvmmcp
@@ -671,7 +671,7 @@ wcet:
 	-mkdir $(TARGET)/tmp
 	java $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.build.WcetPreprocess \
 		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/tmp $(MAIN_CLASS)
-	java -Xss16M -Xmx512M \
+	java -Xss16M -Xmx512M $(JAVA_OPT) \
 	  $(TOOLS_CP) com.jopdesign.wcet.WCETAnalysis \
 		-cp $(TARGET)/tmp -sp $(TARGET_SOURCE) \
 		-app-class $(MAIN_CLASS) -target-method $(WCET_METHOD) \
@@ -682,9 +682,9 @@ wcet:
 	-rm -rf $(TARGET)/tmp
 
 
-# dot2eps works for both rasmus WCETAnalyser and wcet.WCETAnalyser
-dot2eps:
-	cd $(TARGET)/wcet && make
+# dotgraph works for wcet.WCETAnalyser
+dotgraph:
+	cd $(TARGET)/wcet/$(P2).$(P3)_$(WCET_METHOD)/report && make
 
 dfa:
 	java -Xss16M $(TOOLS_CP) com.jopdesign.dfa.Main \

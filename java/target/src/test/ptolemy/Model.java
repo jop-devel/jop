@@ -112,58 +112,14 @@ public class Model {
             throw new RuntimeException("Boolean_convert(): Conversion from an unsupported type.: " + token.type);
         }
     }
-    /* Generate shared code for Model */
-    /* max and min may be used by the Expression actor. */
-    // #ifndef max
-    // #define max(a,b) ((a)>(b)?(a):(b))
-    // #endif
-    // #ifndef min
-    // #define min(a,b) ((a)<(b)?(a):(b))
-    // #endif
-    /* Finished generating shared code for Model */
     /* end shared code */
-    /* Model_Ramp's referenced parameter declarations. */
-    static int Model_Ramp_step_;
-    /* Model_Display's input variable declarations. */
-    static boolean Model_Display_input[] = new boolean[1];
-    /* Model_Expression's input variable declarations. */
-    static int Model_Expression_input;
-    /* Model_JopWatchDog's input variable declarations. */
-    static boolean Model_JopWatchDog_input;
-    /* Director has a period attribute, so we track current time. */
-    double _currentTime = 0;
+    /* Model_Discard's input variable declarations. */
+    static int Model_Discard_input[] = new int[1];
     /* Provide the period attribute as constant. */
-    public final static double PERIOD = 0.5;
-    /* The preinitialization of the director. */
-    /* preinitRamp */
-    static int Model_Ramp__state;
-    /* preinitExpression */
-    static int Model_Expression__iterationCount = 1;
-    /* preinitJopWatchDog */
-    static com.jopdesign.io.SysDevice sys = com.jopdesign.io.IOFactory.getFactory().getSysDevice();
+    public final static double PERIOD = 0.0;
     /* end preinitialize code */
-    /* before appending fireFunctionCode */
-    void Model_Ramp() {
-        Model_Expression_input = Model_Ramp__state;
-        Model_Ramp__state += Model_Ramp_step_;
-    }
-    void Model_Display() {
-        System.out.println("Display: " + Model_Display_input[0]);
-    }
-    void Model_Expression() {
-        Model_Display_input[0] = Model_JopWatchDog_input = ((Model_Expression_input%3) == 0);
-    }
-    void Model_JopWatchDog() {
-        sys.wd = Model_JopWatchDog_input ? 1 : 0;
-    }
-    /* Skipping creating top level here, thus avoiding duplicated code. */
-    /* after appending fireFunctionCode */
     public void initialize() {
-        /* Ramp's parameter initialization */
-        Model_Ramp_step_ = 1;
         /* The initialization of the director. */
-        /* initialize Ramp */
-        Model_Ramp__state = 0;
     }
     public void wrapup() {
         /* The wrapup of the director. */
@@ -175,7 +131,6 @@ public class Model {
         model.doWrapup();
         System.exit(0);
     }
-    // Don't call initialize() here, it is called in main.
     public void execute() throws Exception {
         int iteration;
         for (iteration = 0; iteration < 10; iteration ++) {
@@ -184,38 +139,23 @@ public class Model {
     }
     public void run() throws Exception {
         /* The firing of the StaticSchedulingDirector */
-        Model_Ramp();
+        /* Fire Model_Const */
+        Model_Discard_input[0] = 1;
         /*
-        ....Begin updateOffset....Model_Ramp_trigger */
+        ....Begin updateOffset....Model_Const_trigger */
         /*
-        ....Begin updateOffset....Model_Ramp_step */
+        ....Begin updateConnectedPortsOffset....Model_Const_output */
         /*
-        ....Begin updateConnectedPortsOffset....Model_Ramp_output */
+        ....End updateConnectedPortsOffset....Model_Const_output */
+        /* Fire Model_Discard */
+        // consume the input token.
+        ;
+        //Model_Discard_input[0];
         /*
-        ....End updateConnectedPortsOffset....Model_Ramp_output */
-        Model_Expression();
+        ....Begin updateOffset....Model_Discard_input */
         /*
-        ....Begin updateOffset....Model_Expression_input */
-        /*
-        ....End updateOffset....Model_Expression_input */
-        /*
-        ....Begin updateConnectedPortsOffset....Model_Expression_output */
-        /*
-        ....End updateConnectedPortsOffset....Model_Expression_output */
-        Model_JopWatchDog();
-        /*
-        ....Begin updateOffset....Model_JopWatchDog_input */
-        /*
-        ....End updateOffset....Model_JopWatchDog_input */
-        Model_Display();
-        /*
-        ....Begin updateOffset....Model_Display_input */
-        /*
-        ....End updateOffset....Model_Display_input */
+        ....End updateOffset....Model_Discard_input */
         /* The postfire of the director. */
-        /* postfireExpression */
-        Model_Expression__iterationCount++;
-        _currentTime += 0.5;
     }
     public void doWrapup() throws Exception {
     }
