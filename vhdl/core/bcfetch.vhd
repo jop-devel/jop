@@ -44,6 +44,8 @@
 --	2004-09-11	move jbc to mem
 --	2005-01-17	move interrupt mux to jtbl.vhd (mux after the table)
 --	2007-12-01	move most interrupt processing to sc_sys
+--	2009-09-06	move mcache to bcfetch and use two sdpram instances with 8:1 mux
+--	2009-11-13	use the jbc module again to keep fmax
 --
 --	TODO:	use 'running' bit and generate jbr here!
 --
