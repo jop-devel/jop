@@ -30,6 +30,7 @@ SOURCE ../../vhdl/core/bcfetch.vhd
 SOURCE ../../vhdl/core/fetch.vhd
 SOURCE ../../vhdl/core/shift.vhd
 SOURCE ../../vhdl/core/cache.vhd
+SOURCE ../../vhdl/cache/ocache.vhd
 SOURCE ../../vhdl/xilinx/xs3_jbc.vhd
 SOURCE ../../vhdl/memory/mem_sc.vhd
 SOURCE ../../vhdl/memory/sdpram.vhd
