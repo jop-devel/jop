@@ -276,6 +276,7 @@ end process;
 	-- at least we need to signal a miss....
 	ocin.index <= ain(MAX_OBJECT_SIZE-1 downto 0);
 	ocin.handle <= bin(SC_ADDR_SIZE-1 downto 0);
+	ocin.chk <= mem_in.getfield;
 
 --
 --	SimpCon connections
@@ -285,6 +286,7 @@ end process;
 	sc_mem_out.wr_data <= ram_wr_data;
 	sc_mem_out.rd <= mem_in.rd or state_rd;
 	sc_mem_out.wr <= mem_in.wr or state_wr;
+	-- add cache MUX
 	mem_out.dout <= sc_mem_in.rd_data;
 
 
