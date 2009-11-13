@@ -211,29 +211,29 @@ public class JopInstr{
 		new JopInstr("iadd", 1, IMP_ASM, 1),		// 0x60
 		new JopInstr("ladd", 1, IMP_ASM, 1),		// 0x61
 		new JopInstr("fadd", 1, IMP_JAVA, 1),		// 0x62
-		new JopInstr("dadd", 1, IMP_NO, 1),		// 0x63
+		new JopInstr("dadd", 1, IMP_JAVA, 1),		// 0x63
 		new JopInstr("isub", 1, IMP_ASM, 1),		// 0x64
 		new JopInstr("lsub", 1, IMP_ASM, 1),		// 0x65
 		new JopInstr("fsub", 1, IMP_JAVA, 1),		// 0x66
-		new JopInstr("dsub", 1, IMP_NO, 1),		// 0x67
+		new JopInstr("dsub", 1, IMP_JAVA, 1),		// 0x67
 
 		new JopInstr("imul", 1, IMP_ASM, 19),		// 0x68
 		new JopInstr("lmul", 1, IMP_JAVA, 1),		// 0x69
 		new JopInstr("fmul", 1, IMP_JAVA, 1),		// 0x6A
-		new JopInstr("dmul", 1, IMP_NO, 1),		// 0x6B
+		new JopInstr("dmul", 1, IMP_JAVA, 1),		// 0x6B
 		new JopInstr("idiv", 1, IMP_JAVA, 1300),		// 0x6C
 		new JopInstr("ldiv", 1, IMP_JAVA, 1),		// 0x6D
 		new JopInstr("fdiv", 1, IMP_JAVA, 1),		// 0x6E
-		new JopInstr("ddiv", 1, IMP_NO, 1),		// 0x6F
+		new JopInstr("ddiv", 1, IMP_JAVA, 1),		// 0x6F
 
 		new JopInstr("irem", 1, IMP_JAVA, 1300),		// 0x70
 		new JopInstr("lrem", 1, IMP_JAVA, 1),		// 0x71
 		new JopInstr("frem", 1, IMP_JAVA, 1),		// 0x72
-		new JopInstr("drem", 1, IMP_NO, 1),		// 0x73
+		new JopInstr("drem", 1, IMP_JAVA, 1),		// 0x73
 		new JopInstr("ineg", 1, IMP_ASM, 4),		// 0x74
 		new JopInstr("lneg", 1, IMP_ASM, 1),		// 0x75
 		new JopInstr("fneg", 1, IMP_JAVA, 1),		// 0x76
-		new JopInstr("dneg", 1, IMP_NO, 1),		// 0x77
+		new JopInstr("dneg", 1, IMP_JAVA, 1),		// 0x77
 
 		new JopInstr("ishl", 1, IMP_ASM, 1),		// 0x78
 		new JopInstr("lshl", 1, IMP_ASM, 1),		// 0x79
@@ -251,27 +251,27 @@ public class JopInstr{
 		new JopInstr("iinc", 3, IMP_ASM, 11),		// 0x84
 		new JopInstr("i2l", 1, IMP_ASM, 1),		// 0x85
 		new JopInstr("i2f", 1, IMP_JAVA, 1),		// 0x86
-		new JopInstr("i2d", 1, IMP_NO, 1),		// 0x87
+		new JopInstr("i2d", 1, IMP_JAVA, 1),		// 0x87
 
 		new JopInstr("l2i", 1, IMP_ASM, 3),		// 0x88
-		new JopInstr("l2f", 1, IMP_NO, 1),		// 0x89
-		new JopInstr("l2d", 1, IMP_NO, 1),		// 0x8A
+		new JopInstr("l2f", 1, IMP_JAVA, 1),		// 0x89
+		new JopInstr("l2d", 1, IMP_JAVA, 1),		// 0x8A
 		new JopInstr("f2i", 1, IMP_JAVA, 1),		// 0x8B
-		new JopInstr("f2l", 1, IMP_NO, 1),		// 0x8C
-		new JopInstr("f2d", 1, IMP_NO, 1),		// 0x8D
-		new JopInstr("d2i", 1, IMP_NO, 1),		// 0x8E
-		new JopInstr("d2l", 1, IMP_NO, 1),		// 0x8F
+		new JopInstr("f2l", 1, IMP_JAVA, 1),		// 0x8C
+		new JopInstr("f2d", 1, IMP_JAVA, 1),		// 0x8D
+		new JopInstr("d2i", 1, IMP_JAVA, 1),		// 0x8E
+		new JopInstr("d2l", 1, IMP_JAVA, 1),		// 0x8F
 
-		new JopInstr("d2f", 1, IMP_NO, 1),		// 0x90
+		new JopInstr("d2f", 1, IMP_JAVA, 1),		// 0x90
 		new JopInstr("i2b", 1, IMP_JAVA, 1),		// 0x91
 		new JopInstr("i2c", 1, IMP_ASM, 2),		// 0x92
 		new JopInstr("i2s", 1, IMP_JAVA, 1),		// 0x93
 		new JopInstr("lcmp", 1, IMP_JAVA, 1),		// 0x94
 		new JopInstr("fcmpl", 1, IMP_JAVA, 1),	// 0x95
 		new JopInstr("fcmpg", 1, IMP_JAVA, 1),	// 0x96
-		new JopInstr("dcmpl", 1, IMP_NO, 1),	// 0x97
+		new JopInstr("dcmpl", 1, IMP_JAVA, 1),	// 0x97
 
-		new JopInstr("dcmpg", 1, IMP_NO, 1),	// 0x98
+		new JopInstr("dcmpg", 1, IMP_JAVA, 1),	// 0x98
 		new JopInstr("ifeq", 3, IMP_ASM, 4),		// 0x99
 		new JopInstr("ifne", 3, IMP_ASM, 4),		// 0x9A
 		new JopInstr("iflt", 3, IMP_ASM, 4),		// 0x9B

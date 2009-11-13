@@ -126,6 +126,24 @@ public final class Long {
 		return (int) (value ^ (value >>> 32));
 	}
 
+	  public static Long valueOf(String s)
+	  {
+	    return new Long(parseLong(s, 10, false));
+	  }
+	  /**
+	   * Returns a <code>Long</code> object wrapping the value.
+	   *
+	   * @param val the value to wrap
+	   * @return the <code>Long</code>
+	   * @since 1.5
+	   */
+	  public static Long valueOf(long val)
+	  {
+	    // We aren't required to cache here.  We could, though perhaps we
+	    // ought to consider that as an empirical question.
+	    return new Long(val);
+	  }
+
 	/**
 	 * Return the value of this <code>Long</code>.
 	 * 

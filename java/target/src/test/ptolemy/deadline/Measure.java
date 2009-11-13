@@ -22,32 +22,53 @@
 /**
  * 
  */
-package sp;
+package ptolemy.deadline;
 
 import com.jopdesign.io.IOFactory;
 import com.jopdesign.io.SysDevice;
+import com.jopdesign.sys.Const;
+import com.jopdesign.sys.Native;
 
 /**
+ * Low-level measurements for bytecodes on the TDMA based CMP system.
+ * 
  * @author Martin Schoeberl (martin@jopdesign.com)
  *
  */
-public class DeadLine {
+public class Measure {
 
+	final static int TDMA_LENGTH = 3*6;
+	final static int CLOCK_FREQ = 60000000;
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) {
 
-		SysDevice sys = IOFactory.getFactory().getSysDevice();
+		lowLevel();
+	}
+	
+	public static void lowLevel() {
 
-		int time = sys.cntInt;
+		SysDevice sys = IOFactory.getFactory().getSysDevice();
+		int a[] = new int[1];
 		
-		for (;;) {
-			time += 60000000;
-			sys.deadLine = time;
-			System.out.print("*");
-			// Timer.wd();
+		// A 0.1s interval in multiple of the TDMA round plus 1
+		int shift = CLOCK_FREQ/10/(TDMA_LENGTH)*TDMA_LENGTH+1;
+		
+		// get measurement overhead
+		int time = Native.rd(Const.IO_CNT);
+		time = Native.rd(Const.IO_CNT)-time;
+		int off = time;
+		
+		int start = sys.cntInt + shift;
+		for (int i=0; i<3*TDMA_LENGTH; ++i) {
+			sys.deadLine = start;
+			time = Native.rd(Const.IO_CNT);
+			a[0] = 1;
+			time = Native.rd(Const.IO_CNT)-time;
+			System.out.println(time-off);
+			start += shift;
 		}
 	}
-
+	
 }

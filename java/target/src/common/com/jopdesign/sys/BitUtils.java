@@ -49,7 +49,7 @@ final class BitUtils {
       x <<= 8;
       count += 8;
     }
-    while (x > 0) {
+    while (x > 0) { // @WCA loop<=8
       count++;
       x <<= 1;
     }

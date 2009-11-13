@@ -21,7 +21,7 @@
 /**
  * 
  */
-package sp;
+package ptolemy.deadline;
 
 import util.Timer;
 import joprt.RtThread;

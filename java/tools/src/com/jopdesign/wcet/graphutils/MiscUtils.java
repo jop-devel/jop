@@ -24,7 +24,7 @@ public class MiscUtils {
 	public interface Function2<Arg1,Arg2,Ret> {
 		public Ret apply(Arg1 v1, Arg2 v2);
 	}
-	
+
 	public static<K,V> void addToSet(Map<K,Set<V>> map,K key, V val) {
 
 		Set<V> set = map.get(key);
@@ -43,7 +43,7 @@ public class MiscUtils {
 	 * @param priority
 	 * @return
 	 */
-	public static<K,V> 
+	public static<K,V>
 	TreeMap<K, Vector<V>> partialSort(
 			Collection<V> values, Function1<V, K> priority) {
 
@@ -63,9 +63,9 @@ public class MiscUtils {
 	public static int bytesToWords(int by) {
 		return ((by + 3) / 4);
 	}
-	
+
 	/**
-	 * 
+	 *
 	 * @param strs A collection of objects to join
 	 * @param sep A seperator string
 	 * @return The concatenated sequence of the given strings, interspersed with the seperator.
@@ -83,8 +83,8 @@ public class MiscUtils {
 		return joinStrings(Arrays.asList(entries), sep);
 	}
 
-	/** 
-	 * Remove problematic characters from a method name 
+	/**
+	 * Remove problematic characters from a method name
 	 * Note that fully qualified methods might become non-unique,
 	 * so use an additional unique identifier if you need unique names. */
 	public static String sanitizeFileName(String str) {
@@ -98,7 +98,7 @@ public class MiscUtils {
 		}
 		return sanitized.toString();
 	}
-	
+
 	/** Escape non-alpha numeric characters
 	 *  q -> qq
 	 *  . -> qd
@@ -151,17 +151,19 @@ public class MiscUtils {
 	}
 
 	public static <V,E>
-	List<V> topologicalOrder(DirectedGraph<V,E> acyclicGraph) 
+	List<V> topologicalOrder(DirectedGraph<V,E> acyclicGraph)
 	{
-		TopologicalOrderIterator<V,E> topo = new TopologicalOrderIterator<V,E>(acyclicGraph);
 		List<V> topoList = new ArrayList<V>();
-		while(topo.hasNext()) {
-			topoList.add(topo.next());
+		if(acyclicGraph.vertexSet().size() > 0) {
+			TopologicalOrderIterator<V,E> topo = new TopologicalOrderIterator<V,E>(acyclicGraph);
+			while(topo.hasNext()) {
+				topoList.add(topo.next());
+			}
 		}
 		return topoList;
 	}
 	public static <V,E>
-	List<V> reverseTopologicalOrder(DirectedGraph<V,E> acyclicGraph) 
+	List<V> reverseTopologicalOrder(DirectedGraph<V,E> acyclicGraph)
 	{
 		List<V> revTopo = topologicalOrder(acyclicGraph);
 		Collections.reverse(revTopo);

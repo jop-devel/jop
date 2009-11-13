@@ -98,19 +98,19 @@ port (
 	l			: inout std_logic_vector(20 downto 1);
 	r			: inout std_logic_vector(20 downto 1);
 	t			: inout std_logic_vector(6 downto 1);
-	b			: inout std_logic_vector(10 downto 1);
+	b			: inout std_logic_vector(10 downto 1)
 
 --ps2 kbd pins	
-	kbd_clk_in :in std_logic;
-	kbd_clk_out :out std_logic;
-	kbd_data_in :in std_logic;
-	kbd_data_out :out std_logic;
-	kbd_data_oe :out std_logic;
-	kbd_clk_oe :out std_logic;
+--	kbd_clk_in :in std_logic;
+--	kbd_clk_out :out std_logic;
+--	kbd_data_in :in std_logic;
+--	kbd_data_out :out std_logic;
+--	kbd_data_oe :out std_logic;
+--	kbd_clk_oe :out std_logic;
 	
 -- ps2 mouse pins
-    ps2_clk      : inout std_logic;
-    ps2_data     : inout std_logic
+--    ps2_clk      : inout std_logic;
+--    ps2_data     : inout std_logic
     
 -- remove the comment for RAM access counting
 -- ram_cnt 	: in std_logic
@@ -141,51 +141,51 @@ architecture rtl of scio is
 	-- remove the comment for RAM access counting 
 	-- signal ram_count : std_logic;
 	
-component kbd_cntrl is
-  generic ( 
-    addr_bits :integer := 23;
-    CLK_FREQ :integer := 50000000;
-    TIMEOUT_REG_WIDTH :integer := 13
-    );
-  port ( 
-    clk : in std_logic;
-    reset : in std_logic;
-    address		: in std_logic_vector(addr_bits-1 downto 0);
-    wr_data		: in std_logic_vector(31 downto 0);
-    rd : in std_logic;
-    wr		: in std_logic;
-    rd_data		: out std_logic_vector(31 downto 0);
-    rdy_cnt		: out unsigned(1 downto 0);
-    kbd_clk_oe :out std_logic;
-    kbd_data_oe :out std_logic;
-    kbd_clk_in :in std_logic;
-    kbd_clk_out :out std_logic;
-    kbd_data_in :in std_logic;
-    kbd_data_out :out std_logic
-    );
-end component;
+--component kbd_cntrl is
+--  generic ( 
+--    addr_bits :integer := 23;
+--    CLK_FREQ :integer := 50000000;
+--    TIMEOUT_REG_WIDTH :integer := 13
+--    );
+--  port ( 
+--    clk : in std_logic;
+--    reset : in std_logic;
+--    address		: in std_logic_vector(addr_bits-1 downto 0);
+--    wr_data		: in std_logic_vector(31 downto 0);
+--    rd : in std_logic;
+--    wr		: in std_logic;
+--    rd_data		: out std_logic_vector(31 downto 0);
+--    rdy_cnt		: out unsigned(1 downto 0);
+--    kbd_clk_oe :out std_logic;
+--    kbd_data_oe :out std_logic;
+--    kbd_clk_in :in std_logic;
+--    kbd_clk_out :out std_logic;
+--    kbd_data_in :in std_logic;
+--    kbd_data_out :out std_logic
+--    );
+--end component;
 
-component mouse_cntrl is
-  generic (
-    addr_bits 	: integer := 23;
-    CLK_FREQ :integer := 50000000;
-    TIMEOUT_REG_WIDTH :integer := 13
-    );
-  port ( 
-    clk 			: in std_logic;
-    rst 			: in std_logic;
-    
-    address			: in std_logic_vector(addr_bits-1 downto 0);
-    wr_data			: in std_logic_vector(31 downto 0);
-    rd 				: in std_logic;
-    wr				: in std_logic;
-    rd_data			: out std_logic_vector(31 downto 0);
-    rdy_cnt			: out unsigned(1 downto 0);
-    
-    ps2_clk         : inout std_logic;
-    ps2_data        : inout std_logic
-    );
-end component;
+--component mouse_cntrl is
+--  generic (
+--    addr_bits 	: integer := 23;
+--    CLK_FREQ :integer := 50000000;
+--    TIMEOUT_REG_WIDTH :integer := 13
+--    );
+--  port ( 
+--    clk 			: in std_logic;
+--    rst 			: in std_logic;
+--    
+--    address			: in std_logic_vector(addr_bits-1 downto 0);
+--    wr_data			: in std_logic_vector(31 downto 0);
+--    rd 				: in std_logic;
+--    wr				: in std_logic;
+--    rd_data			: out std_logic_vector(31 downto 0);
+--    rdy_cnt			: out unsigned(1 downto 0);
+--    
+--    ps2_clk         : inout std_logic;
+--    ps2_data        : inout std_logic
+--    );
+--end component;
 
 begin
 
@@ -291,46 +291,46 @@ begin
 			nrts => nrts
 	);
 	
-	cmp_ps2kbd : kbd_cntrl
-  generic map(
-    addr_bits => SLAVE_ADDR_BITS,
-    CLK_FREQ => 50000000,
-    TIMEOUT_REG_WIDTH => 13
-    )
-  port map( 
-    clk => clk,
-    reset => reset,
-    address	=> sc_io_out.address(SLAVE_ADDR_BITS-1 downto 0),
-    wr_data	=> sc_io_out.wr_data,
-    rd  => sc_rd(3),
-    wr	=> sc_wr(3),
-    rd_data		=> sc_dout(3),
-    rdy_cnt		=> sc_rdy_cnt(3),
-    kbd_clk_oe => kbd_clk_oe,
-    kbd_data_oe => kbd_data_oe,
-    kbd_clk_in => kbd_clk_in,
-    kbd_clk_out => kbd_clk_out,
-    kbd_data_in => kbd_data_in,
-    kbd_data_out => kbd_data_out
-    );    
+--	cmp_ps2kbd : kbd_cntrl
+--  generic map(
+--    addr_bits => SLAVE_ADDR_BITS,
+--    CLK_FREQ => 50000000,
+--    TIMEOUT_REG_WIDTH => 13
+--    )
+--  port map( 
+--    clk => clk,
+--    reset => reset,
+--    address	=> sc_io_out.address(SLAVE_ADDR_BITS-1 downto 0),
+--    wr_data	=> sc_io_out.wr_data,
+--    rd  => sc_rd(3),
+--    wr	=> sc_wr(3),
+--    rd_data		=> sc_dout(3),
+--    rdy_cnt		=> sc_rdy_cnt(3),
+--    kbd_clk_oe => kbd_clk_oe,
+--    kbd_data_oe => kbd_data_oe,
+--    kbd_clk_in => kbd_clk_in,
+--    kbd_clk_out => kbd_clk_out,
+--    kbd_data_in => kbd_data_in,
+--    kbd_data_out => kbd_data_out
+--    );    
 
- cmp_ps2mouse : entity work.mouse_cntrl   
-  generic map (
-    addr_bits => SLAVE_ADDR_BITS,
-    CLK_FREQ => 50000000,
-    TIMEOUT_REG_WIDTH => 13
-  )
-  port map(
-    clk 	     => clk,
-    rst 		 => reset,
-    address		 => sc_io_out.address(SLAVE_ADDR_BITS-1 downto 0),
-    wr_data		 => sc_io_out.wr_data,
-    rd  		 => sc_rd(4),
-    wr			 => sc_wr(4),
-    rd_data		 => sc_dout(4),
-    rdy_cnt		 => sc_rdy_cnt(4),
-
-    ps2_clk      => ps2_clk,
-    ps2_data     => ps2_data
-  );
+-- cmp_ps2mouse : entity work.mouse_cntrl   
+--  generic map (
+--    addr_bits => SLAVE_ADDR_BITS,
+--    CLK_FREQ => 50000000,
+--    TIMEOUT_REG_WIDTH => 13
+--  )
+--  port map(
+--    clk 	     => clk,
+--    rst 		 => reset,
+--    address		 => sc_io_out.address(SLAVE_ADDR_BITS-1 downto 0),
+--    wr_data		 => sc_io_out.wr_data,
+--    rd  		 => sc_rd(4),
+--    wr			 => sc_wr(4),
+--    rd_data		 => sc_dout(4),
+--    rdy_cnt		 => sc_rdy_cnt(4),
+--
+--    ps2_clk      => ps2_clk,
+--    ps2_data     => ps2_data
+--  );
 end rtl;

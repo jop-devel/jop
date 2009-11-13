@@ -9,7 +9,7 @@ import ejip.UdpHandler;
  * memberclass to receive packets
  *
  */
-class UdpHandlerImpl extends UdpHandler {	
+class UdpHandlerImpl implements UdpHandler {	
 	StringBuffer decodeMessageBuffer = new StringBuffer();
 	NfsClient nc;	
 	

@@ -176,4 +176,8 @@ public final class Byte  {
 		return String.valueOf(value);
 	}
 
+	   public static String toString(byte b)
+	   {
+	     return String.valueOf(b);
+	   }
 }

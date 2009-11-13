@@ -1036,9 +1036,11 @@ class JVM {
 		// we ignore type on anewarray
 		ret = f_anewarray(cnt, 0);
 		// handle
-		int ref = Native.rdMem(ret);
 		for (i=0; i<cnt; ++i) {
-			Native.wrMem(f_newarray(cnt2,10), ref+i);
+			int arr = f_newarray(cnt2,10);
+			synchronized(GC.mutex) {
+				Native.wrMem(arr, Native.rdMem(ret)+i);
+			}
 		}
 		
 		return ret;
