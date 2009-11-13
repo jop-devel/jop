@@ -226,78 +226,78 @@ end process;
 	jbc_addr <= jbc_mux(jpc_width-1 downto 0);
 	jbc_q <= jbc_data;
 
+----
+----	double buffered method cache
+----		mca is for even word addresses, mcb for odd word addresses
+----
+--	mca_wr_ena <= bc_wr_ena and not bc_wr_addr(0);
+--	mcb_wr_ena <= bc_wr_ena and bc_wr_addr(0);
 --
---	double buffered method cache
---		mca is for even word addresses, mcb for odd word addresses
+--mca: entity work.sdpram generic map (32, jpc_width-3)
+--	port map (
+--	wrclk => clk,
+--	data => bc_wr_data,
+--	wraddress => bc_wr_addr(jpc_width-3 downto 1),
+--	wren => mca_wr_ena,
+--	rdclk => clk,
+--	rdaddress => jbc_addr(jpc_width-1 downto 3),
+--	rden => '1',
+--	dout => mca_out
+--);
 --
-	mca_wr_ena <= bc_wr_ena and not bc_wr_addr(0);
-	mcb_wr_ena <= bc_wr_ena and bc_wr_addr(0);
-
-mca: entity work.sdpram generic map (32, jpc_width-3)
-	port map (
-	wrclk => clk,
-	data => bc_wr_data,
-	wraddress => bc_wr_addr(jpc_width-3 downto 1),
-	wren => mca_wr_ena,
-	rdclk => clk,
-	rdaddress => jbc_addr(jpc_width-1 downto 3),
-	rden => '1',
-	dout => mca_out
-);
-
-mcb: entity work.sdpram generic map (32, jpc_width-3)
-	port map (
-	wrclk => clk,
-	data => bc_wr_data,
-	wraddress => bc_wr_addr(jpc_width-3 downto 1),
-	wren => mcb_wr_ena,
-	rdclk => clk,
-	rdaddress => jbc_addr(jpc_width-1 downto 3),
-	rden => '1',
-	dout => mcb_out
-);
-
-process(clk)
-begin
-	if rising_edge(clk) then
-		jbc_sel_reg <= jbc_addr(2 downto 0);
-	end if;
-end process;
-
-process(jbc_sel_reg, mca_out, mcb_out)
-begin
-	case jbc_sel_reg is
-		when "011" =>
-			jbc_data <= mca_out(31 downto 24);
-		when "010" =>
-			jbc_data <= mca_out(23 downto 16);
-		when "001" =>
-			jbc_data <= mca_out(15 downto 8);
-		when "000" =>
-			jbc_data <= mca_out(7 downto 0);
-		when "111" =>
-			jbc_data <= mcb_out(31 downto 24);
-		when "110" =>
-			jbc_data <= mcb_out(23 downto 16);
-		when "101" =>
-			jbc_data <= mcb_out(15 downto 8);
-		when "100" =>
-			jbc_data <= mcb_out(7 downto 0);
-		when others =>
-			null;
-	end case;
-end process;
+--mcb: entity work.sdpram generic map (32, jpc_width-3)
+--	port map (
+--	wrclk => clk,
+--	data => bc_wr_data,
+--	wraddress => bc_wr_addr(jpc_width-3 downto 1),
+--	wren => mcb_wr_ena,
+--	rdclk => clk,
+--	rdaddress => jbc_addr(jpc_width-1 downto 3),
+--	rden => '1',
+--	dout => mcb_out
+--);
+--
+--process(clk)
+--begin
+--	if rising_edge(clk) then
+--		jbc_sel_reg <= jbc_addr(2 downto 0);
+--	end if;
+--end process;
+--
+--process(jbc_sel_reg, mca_out, mcb_out)
+--begin
+--	case jbc_sel_reg is
+--		when "011" =>
+--			jbc_data <= mca_out(31 downto 24);
+--		when "010" =>
+--			jbc_data <= mca_out(23 downto 16);
+--		when "001" =>
+--			jbc_data <= mca_out(15 downto 8);
+--		when "000" =>
+--			jbc_data <= mca_out(7 downto 0);
+--		when "111" =>
+--			jbc_data <= mcb_out(31 downto 24);
+--		when "110" =>
+--			jbc_data <= mcb_out(23 downto 16);
+--		when "101" =>
+--			jbc_data <= mcb_out(15 downto 8);
+--		when "100" =>
+--			jbc_data <= mcb_out(7 downto 0);
+--		when others =>
+--			null;
+--	end case;
+--end process;
 
 
---	cmp_jbc: jbc generic map (jpc_width)
---	port map(
---		clk => clk,
---		data => bc_wr_data,
---		wr_en => bc_wr_ena,
---		wr_addr => bc_wr_addr,
---		rd_addr => jbc_addr,
---		q => jbc_data
---	);
+	cmp_jbc: jbc generic map (jpc_width)
+	port map(
+		clk => clk,
+		data => bc_wr_data,
+		wr_en => bc_wr_ena,
+		wr_addr => bc_wr_addr,
+		rd_addr => jbc_addr,
+		q => jbc_data
+	);
 
 
 --
