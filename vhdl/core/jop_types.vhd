@@ -145,5 +145,27 @@ package jop_types is
 	-- constant for method length bits
 	-- changes here require also the object layout to be changed
 	constant METHOD_SIZE_BITS : integer := 10;
-	
+
+	-- object cache constants and types
+	-- depends on main memry size (sc_pack)
+
+	-- tag width, in words
+	constant CACHE_ADDR_SIZE : integer := 23;
+	-- maximum number of cached fields
+	constant MAX_OBJECT_SIZE : integer := 16;
+
+	type ocache_in_type is record
+		handle	: std_logic_vector(CACHE_ADDR_SIZE-1 downto 0);
+		index	: std_logic_vector(MAX_OBJECT_SIZE-1 downto 0);
+		din		: std_logic_vector(31 downto 0);
+		chk		: std_logic;
+		wr		: std_logic;
+	end record;
+
+	type ocache_out_type is record
+		hit		: std_logic;
+		-- just handle hit
+		dout	: std_logic_vector(31 downto 0);
+	end record;
+
 end jop_types;

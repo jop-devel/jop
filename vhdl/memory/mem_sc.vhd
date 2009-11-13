@@ -38,6 +38,7 @@
 --	2008-02-19	put/getfield in hardware
 --	2008-04-30  copy step in hardware
 --	2008-10-10	correct array access for fast (SPM) memory (+iald23 state)
+--	2009-11-11	split getfield and putfield state machine (for object cache)
 --
 
 Library IEEE;
@@ -138,7 +139,7 @@ end component;
 							iasrd, ialrb,
 							iast0, iaswb, iasrb, iasst,
 							gf0, gf1, gf2, gf3,
-							pf0, pf3,
+							pf0, pf1, pf2, pf3, pf4,
 							cp0, cp1, cp2, cp3, cp4, cpstop,
 							last,
 							npexc, abexc, excw
@@ -204,6 +205,12 @@ end component;
 	signal translate_bit : std_logic;
 	signal cp_stopbit   : std_logic;
 
+--
+-- signals for object cache
+--
+	signal ocin			: ocache_in_type;
+	signal ocout		: ocache_out_type;
+
 begin
 
 process(sc_mem_in, state_bsy, state)
@@ -249,6 +256,26 @@ end process;
 		rd_addr => jbc_addr,
 		q => jbc_data
 	);
+
+--
+--	Object cache connections
+--
+
+	oc: entity work.ocache
+		generic map (
+			size_bits => 2
+		)
+		port map (
+			clk => clk,
+			reset => reset,
+			ocin => ocin,
+			ocout => ocout
+		);
+
+	-- TODO: what about larger field indexes?
+	-- at least we need to signal a miss....
+	ocin.index <= ain(MAX_OBJECT_SIZE-1 downto 0);
+	ocin.handle <= bin(SC_ADDR_SIZE-1 downto 0);
 
 --
 --	SimpCon connections
@@ -399,7 +426,7 @@ begin
 	end if;
 
 	-- get/putfield could be optimized for faster memory (e.g. SPM)
-	if state=iald3 or state=iald23 or state=gf2 then
+	if state=iald3 or state=iald23 or state=gf2 or state=pf3 then
 		addr_next <= unsigned(sc_mem_in.rd_data(SC_ADDR_SIZE-1 downto 0))+unsigned(index);
 	end if;
 
@@ -636,17 +663,27 @@ begin
 			end if;
 		when gf2 =>
 			next_state <= gf3;
-			if was_a_store='1' then
-				next_state <= pf3;
-			end if;
 		when gf3 =>
 			next_state <= last;
 
 		when pf0 =>
 			-- just one cycle wait to store the value
-			next_state <= gf0;
-			-- states pf1 and pf2 are shared with getfield
+			next_state <= pf1;
+		when pf1 =>
+			if addr_reg=0 then
+				next_state <= npexc;
+			else
+				next_state <= pf2;
+			end if;
+		when pf2 =>
+			-- either 1 or 0
+			if sc_mem_in.rdy_cnt(1)='0' then
+				next_state <= pf3;
+			end if;
 		when pf3 =>
+			next_state <= pf4;
+
+		when pf4 =>
 			next_state <= last;
 
 		when cp0 =>
@@ -824,8 +861,19 @@ begin
                           
 			when pf0 =>
 				state_bsy <= '1';
+				sc_mem_out.atomic <= '1';
+
+			when pf1 =>
+				state_rd <= '1';
+				sc_mem_out.atomic <= '1';
+
+			when pf2 =>
+				sc_mem_out.atomic <= '1';
 
 			when pf3 =>
+				sc_mem_out.atomic <= '1';
+
+			when pf4 =>
 				state_wr <= '1';
 				sc_mem_out.atomic <= '1';
                           
