@@ -245,7 +245,16 @@ end process;
 	ocin.index <= ain(MAX_OBJECT_SIZE-1 downto 0);
 	ocin.handle <= bin(SC_ADDR_SIZE-1 downto 0);
 	ocin.chk_gf <= mem_in.getfield;
-	ocin.chk_pf <= mem_in.putfield;
+	ocin.din <= sc_mem_in.rd_data;
+
+-- a process just for a simple conditional
+process(state)
+begin
+	ocin.wr_gf <= '0';
+	if state=idl then
+		ocin.wr_gf <= '1';
+	end if;
+end process;
 
 --
 --	SimpCon connections
@@ -698,7 +707,7 @@ end process;
 
 --
 --	state machine register
---	output register
+--	and output register
 --
 process(clk, reset)
 
@@ -713,7 +722,9 @@ begin
 		null_pointer <= '0';
 		bounds_error <= '0';
 		state_wr <= '0';
-		sc_mem_out.atomic	<= '0';
+		sc_mem_out.atomic <= '0';
+		ocin.chk_pf <= '0';
+		ocin.wr_pf <= '0';
 
 	elsif rising_edge(clk) then
 
@@ -726,7 +737,9 @@ begin
 		null_pointer <= '0';
 		bounds_error <= '0';
 		state_wr <= '0';
-		sc_mem_out.atomic	<= '0';
+		sc_mem_out.atomic <= '0';
+		ocin.chk_pf <= '0';
+		ocin.wr_pf <= '0';
 
 		case next_state is
 
@@ -831,6 +844,7 @@ begin
 				sc_mem_out.atomic <= '1';
                           
 			when pf0 =>
+				ocin.chk_pf <= '1';
 				state_bsy <= '1';
 				sc_mem_out.atomic <= '1';
 
@@ -845,6 +859,8 @@ begin
 				sc_mem_out.atomic <= '1';
 
 			when pf4 =>
+				-- FIXME: just a dummy cache flush
+				ocin.wr_pf <= '1';
 				state_wr <= '1';
 				sc_mem_out.atomic <= '1';
                           
