@@ -56,7 +56,7 @@ architecture rtl of ocache is
 
 begin
 
-process(ocin)
+process(ocin, data, tag, index, valid)
 begin
 	ocout.hit <= '0';
 	ocout.dout <= data;

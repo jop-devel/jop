@@ -161,7 +161,7 @@ end process;
 	-- bsy is too late to register pcwait and bsy
 	pc_inc <= std_logic_vector(to_unsigned(0, pc_width-1)) & not (pcwait and bsy);
 
-process(jfetch, br, jmp, jpaddr, brdly, pc, pc_inc)
+process(jfetch, br, jmp, jpaddr, brdly, jpdly, pc, pc_inc)
 begin
 	if jfetch='1' then
 		pc_mux <= jpaddr;
