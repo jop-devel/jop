@@ -122,7 +122,7 @@ begin
 --	components of jop
 --
 
-	cmp_core: entity work.core
+	core: entity work.core
 		generic map(jpc_width)
 		port map (clk, reset,
 			bsy,
@@ -135,7 +135,7 @@ begin
 
 	exc_req.spov <= sp_ov;
 
-	cmp_ext: entity work.extension 
+	ext: entity work.extension 
 		port map (
 			clk => clk,
 			reset => reset,
@@ -152,7 +152,7 @@ begin
 			mem_out => mem_out
 		);
 
-	cmp_mem: entity work.mem_sc
+	mem: entity work.mem_sc
 		generic map (
 			jpc_width => jpc_width,
 			block_bits => block_bits
@@ -183,7 +183,7 @@ begin
 	-- Results in warnings when the size is 0.
 	--
 	sc1: if spm_width /= 0 generate
-		cmp_scm: entity work.sdpram
+		scm: entity work.sdpram
 			generic map (
 				width => 32,
 				addr_width => spm_width

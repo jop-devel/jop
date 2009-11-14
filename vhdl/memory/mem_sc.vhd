@@ -216,7 +216,7 @@ end process;
 	bc_wr_addr <= bc_addr;
 
 
-	cmp_cache: cache generic map (jpc_width, block_bits) port map(
+	mc: cache generic map (jpc_width, block_bits) port map(
 		clk, reset,
 		std_logic_vector(bc_len), std_logic_vector(addr_reg(17 downto 0)),
 		mem_in.bc_rd,
@@ -244,7 +244,8 @@ end process;
 	-- at least we need to signal a miss....
 	ocin.index <= ain(MAX_OBJECT_SIZE-1 downto 0);
 	ocin.handle <= bin(SC_ADDR_SIZE-1 downto 0);
-	ocin.chk <= mem_in.getfield;
+	ocin.chk_gf <= mem_in.getfield;
+	ocin.chk_pf <= mem_in.putfield;
 
 --
 --	SimpCon connections

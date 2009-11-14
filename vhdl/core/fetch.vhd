@@ -121,7 +121,7 @@ begin
 --	pc_mux is 1 during reset!
 --		=> first instruction from ROM gets NEVER executed.
 --
-	cmp_rom: rom generic map (i_width+2, pc_width) port map(clk, pc_mux, rom_data);
+	mcrom: rom generic map (i_width+2, pc_width) port map(clk, pc_mux, rom_data);
 	jfetch <= rom_data(i_width+1);
 	jopdfetch <= rom_data(i_width);
 

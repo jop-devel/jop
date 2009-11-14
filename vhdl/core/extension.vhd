@@ -112,7 +112,7 @@ end component mul;
 
 begin
 
-	cmp_mul : mul
+	ml : mul
 			port map (clk,
 				ain, bin, mul_wr,
 				mul_dout

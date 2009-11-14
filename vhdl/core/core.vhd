@@ -298,7 +298,7 @@ end component;
 
 begin
 
-	cmp_bcf: bcfetch generic map(jpc_width, pc_width)
+	bcf: bcfetch generic map(jpc_width, pc_width)
 			port map (clk, reset, jpc_out, stk_aout, ena_jpc,
 			bc_wr_addr, bc_wr_data, bc_wr_ena,
 			jfetch, jopdfetch,
@@ -306,11 +306,11 @@ begin
 			irq_in, irq_out,
 			jpaddr, opd);
 
-	cmp_fch: fetch generic map (pc_width, i_width)
+	fch: fetch generic map (pc_width, i_width)
 		port map (clk, reset, jfetch, jopdfetch,
 			br, jmp, bsy, jpaddr, instr);
 
-	cmp_stk: stack generic map (width, jpc_width)
+	stk: stack generic map (width, jpc_width)
 		port map (clk, reset, din, dir, opd, jpc_out,
 			sel_sub, sel_amux, ena_a,
 			sel_bmux, sel_log, sel_shf, sel_lmux, sel_imux, sel_rmux, sel_smux,
@@ -319,7 +319,7 @@ begin
 			sp_ov,
 			stk_zf, stk_nf, stk_eq, stk_lt, stk_aout, stk_bout);
 
-	cmp_dec: decode generic map (i_width)
+	dec: decode generic map (i_width)
 		port map (clk, reset, instr, stk_zf, stk_nf, stk_eq, stk_lt,
 			br, jmp, jbr,
 			ext_addr, rd, wr,

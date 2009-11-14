@@ -159,9 +159,9 @@ end component;
 	signal ci : std_logic_vector(width-1 downto 0);
 begin
 
-	cmp_shf: shift generic map (width) port map (b, a(4 downto 0), sel_shf, sout);
+	shf: shift generic map (width) port map (b, a(4 downto 0), sel_shf, sout);
 
-	cmp_ram: ram generic map(width, ram_width)
+	stkram: ram generic map(width, ram_width)
 			port map(mmux, wraddr, rdaddr, wr_ena, clk, reset, ram_dout);
 
 

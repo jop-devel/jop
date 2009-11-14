@@ -194,7 +194,7 @@ begin
 				  sc_mem_in.rd_data(31 downto 24);
 
 
-	cmp_cache: cache generic map (jpc_width, block_bits) port map(
+	cache: cache generic map (jpc_width, block_bits) port map(
 		clk, reset,
 		std_logic_vector(bc_len),
 		std_logic_vector(addr_reg(17 downto 0)),
@@ -205,7 +205,7 @@ begin
 		);
 
 
-	cmp_jbc: jbc generic map (jpc_width)
+	jbc: jbc generic map (jpc_width)
 		port map(
 			clk => clk,
 			data => bc_wr_data,

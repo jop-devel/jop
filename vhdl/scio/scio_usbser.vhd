@@ -172,7 +172,7 @@ begin
 		end if;
 	end process;
 			
-	cmp_sys: entity work.sc_sys generic map (
+	sys: entity work.sc_sys generic map (
 			addr_bits => SLAVE_ADDR_BITS,
 			clk_freq => clk_freq,
 			cpu_id => cpu_id,
@@ -204,7 +204,7 @@ begin
 	-- remove the comment for RAM access counting
 	-- ram_count <= ram_cnt;
 
-	cmp_ua: entity work.sc_uart generic map (
+	ua: entity work.sc_uart generic map (
 			addr_bits => SLAVE_ADDR_BITS,
 			clk_freq => clk_freq,
 			baud_rate => 115200,
@@ -232,7 +232,7 @@ begin
 
 	-- Siemens TC35 sends up to 32!!! characters after cts deasert
 	-- WW does not like the 115200 baud :-(
-	cmp_ua2: entity work.sc_uart generic map (
+	ua2: entity work.sc_uart generic map (
 			addr_bits => SLAVE_ADDR_BITS,
 			clk_freq => clk_freq,
 			baud_rate => 115200,
@@ -258,7 +258,7 @@ begin
 			nrts => nrts
 	);
 
-	cmp_usb: entity work.sc_usb generic map (
+	usb: entity work.sc_usb generic map (
 			addr_bits => SLAVE_ADDR_BITS,
 			clk_freq => clk_freq
 		)

@@ -216,7 +216,7 @@ end process;
 
 	wd <= wd_out;
 
-	cmp_cpu: entity work.jopcpu
+	cpu: entity work.jopcpu
 		generic map(
 			jpc_width => jpc_width,
 			block_bits => block_bits,
@@ -227,7 +227,7 @@ end process;
 			sc_io_out, sc_io_in,
 			irq_in, irq_out, exc_req);
 			
-	cmp_vga: entity work.vga
+	vga: entity work.vga
 		port map(clk_int, int_res,
   		vga_rgb, vga_h_out,
 			vga_v_out, sc_arb_out(0).address,
@@ -236,7 +236,7 @@ end process;
 			sc_arb_in(0).rd_data, 
 			sc_arb_in(0).rdy_cnt);
 			
-	cmp_arbiter: entity work.arbiter
+	arbiter: entity work.arbiter
 		generic map(
 			addr_bits => SC_ADDR_SIZE,
 			cpu_cnt => cpu_cnt
@@ -245,7 +245,7 @@ end process;
 			sc_arb_out, sc_arb_in,
 			sc_mem_out, sc_mem_in);
 
-	cmp_scm: entity work.sc_mem_if
+	scm: entity work.sc_mem_if
 		generic map (
 			ram_ws => ram_cnt-1,
 			rom_ws => rom_cnt-1
@@ -271,7 +271,7 @@ end process;
 
 		);
 		
-	cmp_io: entity work.scio generic map (
+	io: entity work.scio generic map (
 			cpu_id => 0
 		)
 		port map (clk_int, int_res,

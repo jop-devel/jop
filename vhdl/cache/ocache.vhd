@@ -70,10 +70,10 @@ begin
 	if reset='1' then
 		valid <= '0';
 	elsif rising_edge(clk) then
-		if ocin.chk='1' then
+		if ocin.chk_gf='1' then
 			ocin_reg <= ocin;
 		end if;
-		if ocin.wr='1' then
+		if ocin.wr_gf='1' then
 			valid <= '1';
 			tag <= ocin_reg.handle;
 			index <= ocin_reg.index;

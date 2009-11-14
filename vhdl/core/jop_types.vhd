@@ -158,8 +158,10 @@ package jop_types is
 		handle	: std_logic_vector(CACHE_ADDR_SIZE-1 downto 0);
 		index	: std_logic_vector(MAX_OBJECT_SIZE-1 downto 0);
 		din		: std_logic_vector(31 downto 0);
-		chk		: std_logic;
-		wr		: std_logic;
+		chk_gf	: std_logic;
+		chk_pf	: std_logic;
+		wr_gf	: std_logic;
+		wr_pf	: std_logic;
 	end record;
 
 	type ocache_out_type is record

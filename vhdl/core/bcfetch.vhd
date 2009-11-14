@@ -223,7 +223,7 @@ end process;
 
 	bytecode <= jbc_q;		-- register this for an additional pipeline stage
 
-	cmp_jtbl: jtbl port map(bytecode, int_req, exc_pend, jpaddr);
+	jt: jtbl port map(bytecode, int_req, exc_pend, jpaddr);
 
 	jbc_addr <= jbc_mux(jpc_width-1 downto 0);
 	jbc_q <= jbc_data;
@@ -291,7 +291,7 @@ end process;
 --end process;
 
 
-	cmp_jbc: jbc generic map (jpc_width)
+	mch: jbc generic map (jpc_width)
 	port map(
 		clk => clk,
 		data => bc_wr_data,

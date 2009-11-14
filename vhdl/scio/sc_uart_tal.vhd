@@ -286,7 +286,7 @@ end process;
 --
 --	transmit fifo
 --
-	cmp_tf: fifo generic map (8, txf_depth, txf_thres)
+	tf: fifo generic map (8, txf_depth, txf_thres)
 			port map (clk, reset, wr_data(7 downto 0), tf_dout, tf_rd, ua_wr, tf_empty, tf_full, tf_half);
 
 --
@@ -348,7 +348,7 @@ end process;
 --
 --	receive fifo
 --
-	cmp_rf: fifo generic map (8, rxf_depth, rxf_thres)
+	rf: fifo generic map (8, rxf_depth, rxf_thres)
 			port map (clk, reset, rsr(8 downto 1), ua_dout, ua_rd, rf_wr, rf_empty, rf_full, rf_half);
 
 	rdrf <= not rf_empty;

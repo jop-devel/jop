@@ -332,7 +332,7 @@ end process;
 
 	wd <= wd_out;
 
-	cmp_core: core generic map(jpc_width)
+	core: core generic map(jpc_width)
 		port map (clk_int, int_res,
 			bsy,
 			stack_din, ext_addr,
@@ -343,7 +343,7 @@ end process;
 			stack_tos, stack_nos
 		);
 
-	cmp_ext: extension
+	ext: extension
 		port map (clk_int, int_res, stack_tos, stack_nos,
 			ext_addr, rd, wr, bsy, stack_din,
 			mem_rd, mem_wr, mem_addr_wr, mem_bc_rd,
@@ -352,7 +352,7 @@ end process;
 		);
 
 	-- A0 is NOT connected to the SRAM!
-	cmp_mem: mem_trenz generic map (jpc_width, ram_cnt)
+	mem: mem_trenz generic map (jpc_width, ram_cnt)
 		port map (clk_int, int_res, stack_tos,
 			mem_rd, mem_wr, mem_addr_wr, mem_bc_rd,
 			mem_dout, mem_bcstart,
@@ -362,7 +362,7 @@ end process;
 			ram_d, ram_ncs, ram_nlb, ram_nub
 		);
 
-	cmp_io: io generic map (clk_freq)
+	io: io generic map (clk_freq)
 		port map (clk_int, int_res, stack_tos,
 			io_rd, io_wr, io_addr_wr, io_dout,
 			io_irq, io_irq_ena,
