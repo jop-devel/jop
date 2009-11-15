@@ -25,7 +25,7 @@ import com.jopdesign.sys.Native;
 
 public class Diagnostics {
 	/**
-	 * To be called by every thread for which {@link #stat(int)} will be called.
+	 * To be called for every CPU for which {@link #stat(int)} will be called.
 	 */
 	public static void saveStatistics() {
 		int cpuId = Native.rd(Const.IO_CPU_ID);

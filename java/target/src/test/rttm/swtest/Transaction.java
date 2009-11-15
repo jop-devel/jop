@@ -39,7 +39,6 @@ public class Transaction {
 	protected static int atomicSection(int arg0) throws Exception, 
 		RollbackException {
 		boolean ignored = conflicting;
-		//for (int i = 0; i < 10; i++);
 		return arg0;
 	}
 	
@@ -47,12 +46,12 @@ public class Transaction {
 		int arg0Copy = 0xdeadbeef; // make compiler happy
 		
 		int result = 0xdeadbeef; // make compiler happy
-		
-		// TMTODO disable interrupts?
-		
+			
 		boolean outermostTransaction = !Utils.inTransaction[Native.rd(Const.IO_CPU_ID)];
 		
 		if (outermostTransaction) {
+			// TMTODO disable interrupts?
+			Native.wr(0, Const.IO_INT_ENA);
 			Utils.inTransaction[Native.rd(Const.IO_CPU_ID)] = true;
 			arg0Copy = arg0;
 		}
@@ -96,12 +95,14 @@ public class Transaction {
 			} finally {
 				if (outermostTransaction) {
 					Utils.inTransaction[Native.rd(Const.IO_CPU_ID)] = false;
-					
-					// TMTODO re-enable interrupts here?
-					// Utils.sysDev.cntInt = 1;
 				}
 			}
 		} while (transactionAborted);
+		
+		if (outermostTransaction) {
+			// TMTODO (unconditionally) re-enable interrupts here?
+			Native.wr(1, Const.IO_INT_ENA);
+		}
 		
 		return result;
 	}

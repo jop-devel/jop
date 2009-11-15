@@ -286,6 +286,11 @@ begin
 						-- command is only issued if an exception is being 
 						-- handled
 						next_state <= no_transaction;
+						
+						if rttm_instrum then
+							next_instrumentation.retries <= 
+								instrumentation.retries + 1;
+						end if;
 					when start_transaction | none => 
 						null;
 				end case;						
@@ -376,6 +381,11 @@ begin
 					when aborted =>
 						 -- TODO not consistent with exception handling
 						assert false;
+						
+						if rttm_instrum then
+							next_instrumentation.retries <= 
+								instrumentation.retries + 1;
+						end if;
 						next_state <= no_transaction;						
 					when abort =>
 						null; 
