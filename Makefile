@@ -355,7 +355,7 @@ java_app:
 	javac $(TARGET_JFLAGS) $(TARGET)/src/common/com/jopdesign/sys/*.java
 	javac $(TARGET_JFLAGS) $(TARGET)/src/jdk_base/java/lang/annotation/*.java	# oh new Java 1.5 world!
 ifeq ($(USE_RTTM),yes)	
-	javac $(TARGET_JFLAGS) $(TARGET)/src/common/rttm/utils/Utils.java
+	javac $(TARGET_JFLAGS) $(TARGET)/src/common/rttm/internal/Utils.java
 endif
 	javac $(TARGET_JFLAGS) $(TARGET_APP)
 	cd $(TARGET)/dist/classes && jar cf ../lib/classes.zip *

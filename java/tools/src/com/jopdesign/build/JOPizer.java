@@ -44,7 +44,7 @@ public class JOPizer extends AppInfo implements Serializable {
 	public final static String helpClass = "com.jopdesign.sys.JVMHelp";
 	public final static String bootMethod = "boot()V";
 	public final static String mainMethod = "main([Ljava/lang/String;)V";
-	public final static String rttmClass = "rttm.utils.Utils";
+	public final static String rttmClass = "rttm.internal.Utils";
 
 	public final static String stringClass = "java.lang.String";
 	public final static String objectClass = "java.lang.Object";

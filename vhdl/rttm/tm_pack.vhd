@@ -35,15 +35,14 @@ package tm_pack is
 	constant TM_MAGIC_SIMULATION: std_logic_vector(SC_ADDR_SIZE-1 downto 0) := 
 		(SC_ADDR_SIZE-1 downto 19 => '0', 18 downto 0 => '1');
 
-	constant TM_CMD_WIDTH: integer := 3;
+	constant TM_CMD_WIDTH: integer := 2;
 	subtype tm_cmd_raw is std_logic_vector(TM_CMD_WIDTH-1 downto 0);
 	
 	-- TODO keep in synch w/ enumeration type order
-	constant TM_CMD_END_TRANSACTION: tm_cmd_raw := "000";
-	constant TM_CMD_START_TRANSACTION: tm_cmd_raw := "001";
-	constant TM_CMD_ABORTED: tm_cmd_raw := "010";
-	constant TM_CMD_EARLY_COMMIT: tm_cmd_raw := "011";
-	constant TM_CMD_ABORT: tm_cmd_raw := "100";
+	constant TM_CMD_END_TRANSACTION: tm_cmd_raw := "00";
+	constant TM_CMD_START_TRANSACTION: tm_cmd_raw := "01";
+	constant TM_CMD_ABORTED: tm_cmd_raw := "10";
+	constant TM_CMD_EARLY_COMMIT: tm_cmd_raw := "11";
 	
 	-- keep order in synch w/ constants
 	type tm_cmd_type is (
@@ -51,7 +50,6 @@ package tm_pack is
 		start_transaction,
 		aborted,
 		early_commit,
-		abort,
 		none
 	);
 	

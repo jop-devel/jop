@@ -25,7 +25,7 @@ import com.jopdesign.sys.Native;
 
 import com.jopdesign.sys.RollbackException;
 
-import rttm.utils.Utils;
+import rttm.internal.Utils;
 
 public class Transaction {
 	
@@ -69,7 +69,7 @@ public class Transaction {
 					Native.wrMem(Const.TM_START_TRANSACTION, Const.MEM_TM_MAGIC);
 				} else {
 					if (LOG) {
-						rttm.utils.Utils.logEnterInnerTransaction();
+						rttm.internal.Utils.logEnterInnerTransaction();
 					}
 				}
 	
@@ -93,7 +93,7 @@ public class Transaction {
 						retryTransaction = true;
 						
 						if (LOG) {
-							rttm.utils.Utils.logAbort();
+							rttm.internal.Utils.logAbort();
 						}
 					
 						// rollback

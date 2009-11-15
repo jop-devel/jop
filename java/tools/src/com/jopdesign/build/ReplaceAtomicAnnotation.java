@@ -157,7 +157,7 @@ public class ReplaceAtomicAnnotation extends JOPizerVisitor {
 		    il.append(_factory.createStore(Type.INT, transactionLocalsBaseIndex+1));
 		    InstructionHandle ih_3 = il.append(new PUSH(_cp, -559038737));
 		    il.append(_factory.createStore(Type.INT, transactionLocalsBaseIndex+2));
-		    InstructionHandle ih_6 = il.append(_factory.createFieldAccess("rttm.utils.Utils", "inTransaction", new ArrayType(Type.BOOLEAN, 1), Constants.GETSTATIC));
+		    InstructionHandle ih_6 = il.append(_factory.createFieldAccess("rttm.internal.Utils", "inTransaction", new ArrayType(Type.BOOLEAN, 1), Constants.GETSTATIC));
 		    il.append(new PUSH(_cp, -122));
 		    il.append(_factory.createInvoke("com.jopdesign.sys.Native", "rd", Type.INT, new Type[] { Type.INT }, Constants.INVOKESTATIC));
 		    il.append(InstructionConstants.BALOAD);
@@ -171,7 +171,7 @@ public class ReplaceAtomicAnnotation extends JOPizerVisitor {
 		    InstructionHandle ih_24 = il.append(_factory.createLoad(Type.INT, transactionLocalsBaseIndex+3));
 		        BranchInstruction ifeq_25 = _factory.createBranchInstruction(Constants.IFEQ, null);
 		    il.append(ifeq_25);
-		    InstructionHandle ih_28 = il.append(_factory.createFieldAccess("rttm.utils.Utils", "inTransaction", new ArrayType(Type.BOOLEAN, 1), Constants.GETSTATIC));
+		    InstructionHandle ih_28 = il.append(_factory.createFieldAccess("rttm.internal.Utils", "inTransaction", new ArrayType(Type.BOOLEAN, 1), Constants.GETSTATIC));
 		    il.append(new PUSH(_cp, -122));
 		    il.append(_factory.createInvoke("com.jopdesign.sys.Native", "rd", Type.INT, new Type[] { Type.INT }, Constants.INVOKESTATIC));
 		    il.append(new PUSH(_cp, 1));
@@ -252,7 +252,7 @@ public class ReplaceAtomicAnnotation extends JOPizerVisitor {
 		    InstructionHandle ih_79 = il.append(_factory.createLoad(Type.INT, transactionLocalsBaseIndex+3));
 		        BranchInstruction ifeq_80 = _factory.createBranchInstruction(Constants.IFEQ, null);
 		    il.append(ifeq_80);
-		    InstructionHandle ih_83 = il.append(_factory.createFieldAccess("rttm.utils.Utils", "inTransaction", new ArrayType(Type.BOOLEAN, 1), Constants.GETSTATIC));
+		    InstructionHandle ih_83 = il.append(_factory.createFieldAccess("rttm.internal.Utils", "inTransaction", new ArrayType(Type.BOOLEAN, 1), Constants.GETSTATIC));
 		    il.append(new PUSH(_cp, -122));
 		    il.append(_factory.createInvoke("com.jopdesign.sys.Native", "rd", Type.INT, new Type[] { Type.INT }, Constants.INVOKESTATIC));
 		    il.append(new PUSH(_cp, 0));
@@ -263,7 +263,7 @@ public class ReplaceAtomicAnnotation extends JOPizerVisitor {
 		    InstructionHandle ih_98 = il.append(_factory.createLoad(Type.INT, transactionLocalsBaseIndex+3));
 		        BranchInstruction ifne_99 = _factory.createBranchInstruction(Constants.IFNE, null);
 		    il.append(ifne_99);
-		    InstructionHandle ih_102 = il.append(_factory.createFieldAccess("rttm.utils.Utils", "RollbackException", new ObjectType("com.jopdesign.sys.RollbackException"), Constants.GETSTATIC));
+		    InstructionHandle ih_102 = il.append(_factory.createFieldAccess("rttm.internal.Utils", "rollbackException", new ObjectType("com.jopdesign.sys.RollbackException"), Constants.GETSTATIC));
 		    il.append(InstructionConstants.ATHROW);
 		    InstructionHandle ih_106 = il.append(new PUSH(_cp, 0));
 		    il.append(new PUSH(_cp, -116));
@@ -288,7 +288,7 @@ public class ReplaceAtomicAnnotation extends JOPizerVisitor {
 		    InstructionHandle ih_125 = il.append(_factory.createLoad(Type.INT, transactionLocalsBaseIndex+3));
 		        BranchInstruction ifeq_126 = _factory.createBranchInstruction(Constants.IFEQ, null);
 		    il.append(ifeq_126);
-		    InstructionHandle ih_129 = il.append(_factory.createFieldAccess("rttm.utils.Utils", "inTransaction", new ArrayType(Type.BOOLEAN, 1), Constants.GETSTATIC));
+		    InstructionHandle ih_129 = il.append(_factory.createFieldAccess("rttm.internal.Utils", "inTransaction", new ArrayType(Type.BOOLEAN, 1), Constants.GETSTATIC));
 		    il.append(new PUSH(_cp, -122));
 		    il.append(_factory.createInvoke("com.jopdesign.sys.Native", "rd", Type.INT, new Type[] { Type.INT }, Constants.INVOKESTATIC));
 		    il.append(new PUSH(_cp, 0));
@@ -299,7 +299,7 @@ public class ReplaceAtomicAnnotation extends JOPizerVisitor {
 		    il.append(_factory.createLoad(Type.INT, transactionLocalsBaseIndex+3));
 		        BranchInstruction ifeq_145 = _factory.createBranchInstruction(Constants.IFEQ, null);
 		    il.append(ifeq_145);
-		    InstructionHandle ih_148 = il.append(_factory.createFieldAccess("rttm.utils.Utils", "inTransaction", new ArrayType(Type.BOOLEAN, 1), Constants.GETSTATIC));
+		    InstructionHandle ih_148 = il.append(_factory.createFieldAccess("rttm.internal.Utils", "inTransaction", new ArrayType(Type.BOOLEAN, 1), Constants.GETSTATIC));
 		    il.append(new PUSH(_cp, -122));
 		    il.append(_factory.createInvoke("com.jopdesign.sys.Native", "rd", Type.INT, new Type[] { Type.INT }, Constants.INVOKESTATIC));
 		    il.append(new PUSH(_cp, 0));

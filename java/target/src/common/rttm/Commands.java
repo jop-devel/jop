@@ -20,7 +20,7 @@
 
 package rttm;
 
-import rttm.utils.Utils;
+import rttm.internal.Utils;
 
 import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
@@ -33,9 +33,22 @@ import com.jopdesign.sys.Native;
 public class Commands {
 	/**
 	 * TMTODO
+	 * It is the user's responsibility to ensure that no early commit has
+	 * happened before calling this method.
 	 */
 	public static void abort() {
+		Native.wrMem(Const.TM_ABORTED, Const.MEM_TM_MAGIC);
 		throw Utils.abortException;
+	}
+
+	/**
+	 * TMTODO
+	 * It is the user's responsibility to ensure that no early commit has
+	 * happened before calling this method.
+	 */
+	public static void rollback() {
+		Native.wrMem(Const.TM_ABORTED, Const.MEM_TM_MAGIC);
+		throw Utils.rollbackException;
 	}
 	
 	/**

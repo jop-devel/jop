@@ -18,7 +18,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-package rttm.utils;
+package rttm.internal;
 
 import rttm.AbortException;
 
@@ -28,6 +28,7 @@ import com.jopdesign.sys.RollbackException;
 
 /**
  * Internal use by RTTM.
+ * Some members need to be public to be accessible from atomic methods. 
  * 
  * @author Peter Hilber (peter@hilber.name)
  */

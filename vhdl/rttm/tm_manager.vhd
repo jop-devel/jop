@@ -274,14 +274,6 @@ begin
 						next_state <= commit_wait_token;
 					when early_commit =>
 						next_state <= early_commit_wait_token;
-					when abort =>
-						next_state <= rollback;
-						next_rollback_state <= rbb0;
-						
-						if rttm_instrum then
-							next_instrumentation.retries <= 
-								instrumentation.retries + 1;
-						end if;
 					when aborted =>
 						-- command is only issued if an exception is being 
 						-- handled
@@ -387,10 +379,6 @@ begin
 								instrumentation.retries + 1;
 						end if;
 						next_state <= no_transaction;						
-					when abort =>
-						null; 
-						-- not supported since transaction may have changed
-						-- main memory 
 					when others =>
 						null;
 				end case;

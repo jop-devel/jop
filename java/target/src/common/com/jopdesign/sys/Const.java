@@ -318,7 +318,6 @@ public class Const {
 	public static final int TM_START_TRANSACTION = 1;
 	public static final int TM_ABORTED = 2;
 	public static final int TM_EARLY_COMMIT = 3;
-	public static final int TM_ABORT = 4;
 
 	// RTTM instrumentation
 	public static final int MEM_TM_RETRIES = MEM_TM_MAGIC+0;

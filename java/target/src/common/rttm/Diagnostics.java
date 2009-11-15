@@ -18,7 +18,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-package rttm.utils;
+package rttm;
 
 import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
