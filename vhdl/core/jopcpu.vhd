@@ -29,9 +29,23 @@
 --	2008-02-20	memory - I/O muxing after the memory controller (mem_sc)
 --	2008-03-03	added scratchpad RAM
 --	2008-03-04	correct MUX selection
+--	2009-11-15	include extension code
 --
 --	todo: clean up: substitute all signals by records
 
+-- comments from former extension.vhd
+--
+--	2004-09-11	first version
+--	2005-04-05	Reserve negative addresses for wishbone interface
+--	2005-04-07	generate bsy from delayed wr or'ed with mem_out.bsy
+--	2005-05-30	added wishbone interface
+--	2005-11-28	Substitute WB interface by the SimpCon IO interface ;-)
+--				All IO devices are now memory mapped
+--	2007-04-13	Changed memory connection to records
+--				New array instructions
+--	2007-12-22	Correction of data MUX bug for array read access
+--	2008-02-20	Removed memory - I/O muxing
+--
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -116,6 +130,23 @@ architecture rtl of jopcpu is
 
 	signal sp_ov			: std_logic;
 
+-- *************** signals from extension ****************
+
+--
+--	signals for mulitiplier
+--
+	signal mul_dout				: std_logic_vector(31 downto 0);
+	signal mul_wr				: std_logic;
+
+	signal mem_scio_rd			: std_logic;	-- memory or SimpCon IO read
+	signal mem_scio_wr			: std_logic;	-- memory or SimpCon IO write
+	signal wraddr_wr			: std_logic;
+
+	signal wr_dly				: std_logic;	-- generate a bsy with delayed wr
+
+	signal exr					: std_logic_vector(31 downto 0); 	-- extension data register
+
+
 begin
 
 --
@@ -127,6 +158,7 @@ begin
 		port map (clk, reset,
 			bsy,
 			stack_din, ext_addr,
+-- rd signal not used here
 			rd, wr,
 			bc_wr_addr, bc_wr_data, bc_wr_ena,
 			irq_in, irq_out, sp_ov,
@@ -135,22 +167,22 @@ begin
 
 	exc_req.spov <= sp_ov;
 
-	ext: entity work.extension 
-		port map (
-			clk => clk,
-			reset => reset,
-			ain => stack_tos,
-			bin => stack_nos,
+--	ext: entity work.extension 
+--		port map (
+--			clk => clk,
+--			reset => reset,
+--			ain => stack_tos,
+--			bin => stack_nos,
 
-			ext_addr => ext_addr,
-			rd => rd,
-			wr => wr,
-			bsy => bsy,
-			dout => stack_din,
+--			ext_addr => ext_addr,
+--			rd => rd,
+--			wr => wr,
+--			bsy => bsy,
+--			dout => stack_din,
 
-			mem_in => mem_in,
-			mem_out => mem_out
-		);
+--			mem_in => mem_in,
+--			mem_out => mem_out
+--		);
 
 	mem: entity work.mem_sc
 		generic map (
@@ -287,5 +319,136 @@ end process;
 	sc_io_out.wr_data <= sc_ctrl_mem_out.wr_data;
 	sc_io_out.wr <= sc_ctrl_mem_out.wr and io_access;
 	sc_io_out.rd <= sc_ctrl_mem_out.rd and io_access;
+
+-- *************** code from extension ****************
+
+	ml : entity work.mul
+			port map (
+				clk => clk,
+				ain => stack_tos,
+				bin => stack_nos,
+				wr => mul_wr,
+				dout => mul_dout
+		);
+
+	stack_din <= exr;
+
+--
+--	read
+--
+--	TODO: the read MUX could be set by using the
+--	according wr/ext_addr from JOP and not the
+--	following rd/ext_addr
+--	Than no intermixing of mul/mem and io operations
+--	is allowed. But we are not using interleaved mul/mem/io
+--	operations in jvm.asm anyway.
+--
+--	TAKE CARE when mem_out.bcstart is read!
+--
+--   ** bcstart is also read without a mem_bc_rd JOP wr !!! ***
+--		=> a combinatorial mux select on rd and ext_adr==7!
+--
+--		The rest could be set with JOP wr start transaction 
+--		Is this also true for io_data?
+--
+--	29.11.2005 evening: I think this solution driving the exr
+--	mux from ext_addr is quite ok. The pipelining from rd/ext_adr
+--	to A is fixed.
+--
+process(clk, reset)
+begin
+	if (reset='1') then
+		exr <= (others => '0');
+	elsif rising_edge(clk) then
+
+		if (ext_addr=LDMRD) then
+			exr <= mem_out.dout;
+		elsif (ext_addr=LDMUL) then
+			exr <= mul_dout;
+		-- elsif (ext_addr=LDBCSTART) then
+		else
+			exr <= mem_out.bcstart;
+		end if;
+
+	end if;
+end process;
+
+
+--
+--	write
+--
+process(clk, reset)
+begin
+	if (reset='1') then
+		mem_scio_rd <= '0';
+		mem_scio_wr <= '0';
+		wraddr_wr <= '0';
+		mem_in.bc_rd <= '0';
+		mem_in.iaload <= '0';
+		mem_in.iastore <= '0';
+		mem_in.getfield <= '0';
+		mem_in.putfield <= '0';
+		mul_wr <= '0';
+		wr_dly <= '0';
+
+
+	elsif rising_edge(clk) then
+		mem_scio_rd <= '0';
+		mem_scio_wr <= '0';
+		wraddr_wr <= '0';
+		mem_in.bc_rd <= '0';
+		mem_in.iaload <= '0';
+		mem_in.iastore <= '0';
+		mem_in.getfield <= '0';
+		mem_in.putfield <= '0';
+		mem_in.copy <= '0';
+		mul_wr <= '0';
+
+		wr_dly <= wr;
+
+--
+--	wr is generated in decode and one cycle earlier than
+--	the data to be written (e.g. read address for the memory interface)
+--
+		if wr='1' then
+
+			if ext_addr=STMRA then
+				mem_scio_rd <= '1';		-- start memory or io read
+			elsif ext_addr=STMWA then
+				wraddr_wr <= '1';		-- store write address
+			elsif ext_addr=STMWD then
+				mem_scio_wr <= '1';		-- start memory or io write
+			elsif ext_addr=STALD then
+				mem_in.iaload <= '1';	-- start an array load
+			elsif ext_addr=STAST then
+				mem_in.iastore <= '1';	-- start an array store
+			elsif ext_addr=STGF then
+				mem_in.getfield <= '1';	-- start getfield
+			elsif ext_addr=STPF then
+				mem_in.putfield <= '1';	-- start getfield
+			elsif ext_addr=STCP then
+				mem_in.copy <= '1';		-- start copy
+			elsif ext_addr=STMUL then
+				mul_wr <= '1';			-- start multiplier
+			-- elsif ext_addr=STBCR then
+			else
+				mem_in.bc_rd <= '1';	-- start bc read
+			end if;
+		end if;
+
+	end if;
+end process;
+
+--
+--	memory read/write
+--
+	mem_in.rd <= mem_scio_rd;
+	mem_in.wr <= mem_scio_wr;
+	mem_in.addr_wr <= wraddr_wr;
+
+	-- a JOP wr generates the first bsy cycle
+	-- the following are generated by the memory
+	-- system or the SimpCon device
+	bsy <= wr_dly or mem_out.bsy;
 
 end rtl;

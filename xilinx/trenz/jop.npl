@@ -18,7 +18,6 @@ DEVSIMULATOR Modelsim
 SIMULATORTIME 0
 DEVGENERATEDSIMULATIONMODEL VHDL
 GENERATEDSIMULATIONMODELTIME 0
-SOURCE ../../vhdl/core/extension.vhd
 SOURCE ../../vhdl/core/bcfetch.vhd
 SOURCE ../../vhdl/core/fetch.vhd
 SOURCE ../../vhdl/core/shift.vhd

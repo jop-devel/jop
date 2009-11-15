@@ -23,7 +23,6 @@ vhdl work  ../../vhdl/scio/sc_uart.vhd
 vhdl work  ../../vhdl/scio/sc_control_channel.vhd
 vhdl work  ../../vhdl/scio/sc_sys.vhd
 vhdl work  ../../vhdl/scio/scio_jeopard.vhd
-vhdl work  ../../vhdl/core/extension.vhd
 vhdl work  ../../vhdl/core/bcfetch.vhd
 vhdl work  ../../vhdl/core/fetch.vhd
 vhdl work  ../../vhdl/core/shift.vhd
