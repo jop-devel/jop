@@ -20,6 +20,8 @@
 
 package rttm;
 
+import rttm.utils.Utils;
+
 import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 
@@ -33,7 +35,7 @@ public class Commands {
 	 * TMTODO
 	 */
 	public static void abort() {
-		Native.wr(Const.TM_ABORT, Const.MEM_TM_MAGIC);
+		throw Utils.abortException;
 	}
 	
 	/**

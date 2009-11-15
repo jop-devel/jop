@@ -20,16 +20,24 @@
 
 package rttm.utils;
 
+import rttm.AbortException;
+
 import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 import com.jopdesign.sys.RollbackException;
 
+/**
+ * Internal use by RTTM.
+ * 
+ * @author Peter Hilber (peter@hilber.name)
+ */
 public class Utils {
 
 	/**
 	 * TMTODO
 	 */
-	public static RollbackException RollbackException = new RollbackException();
+	public static final RollbackException rollbackException = new RollbackException();
+	public static final AbortException abortException = new AbortException();
 	
 	public static boolean[] inTransaction = new boolean[Native.rd(Const.IO_CPUCNT)];
 	

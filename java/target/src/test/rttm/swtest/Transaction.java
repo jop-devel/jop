@@ -24,6 +24,7 @@ import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 
 import com.jopdesign.sys.RollbackException;
+
 import rttm.utils.Utils;
 
 public class Transaction {
@@ -49,59 +50,73 @@ public class Transaction {
 			
 		boolean outermostTransaction = !Utils.inTransaction[Native.rd(Const.IO_CPU_ID)];
 		
-		if (outermostTransaction) {
-			// TMTODO disable interrupts?
-			Native.wr(0, Const.IO_INT_ENA);
-			Utils.inTransaction[Native.rd(Const.IO_CPU_ID)] = true;
-			arg0Copy = arg0;
-		}
-
-		boolean transactionAborted;
-
-		do {
-			transactionAborted = false;
+		try {
 			
 			if (outermostTransaction) {
-				Native.wrMem(Const.TM_START_TRANSACTION, Const.MEM_TM_MAGIC);
-			} else {
-				if (LOG) {
-					rttm.utils.Utils.logEnterInnerTransaction();
-				}
-			}
-
-			try {
-				result = atomicSection(arg0);
-
-				if (outermostTransaction) {
-					// flush write set					
-					Native.wrMem(Const.TM_END_TRANSACTION, Const.MEM_TM_MAGIC);
-				}
-			} catch (Throwable e) { // RollbackError or any other exception
-				if (outermostTransaction) {
-					Native.wr(0, Const.IO_ENA_HW_EXC);
-					transactionAborted = true;
-					
-					if (LOG) {
-						rttm.utils.Utils.logAbort();
-					}
+				// TMTODO disable interrupts?
+				Native.wr(0, Const.IO_INT_ENA);
 				
-					// rollback
-					arg0 = arg0Copy;					
-				} else {
-					// don't refer to exception thrown during aborted
-					// transaction
-					throw Utils.RollbackException;
-				}
-			} finally {
-				if (outermostTransaction) {
-					Utils.inTransaction[Native.rd(Const.IO_CPU_ID)] = false;
-				}
+				Utils.inTransaction[Native.rd(Const.IO_CPU_ID)] = true;
+				arg0Copy = arg0;
 			}
-		} while (transactionAborted);
-		
-		if (outermostTransaction) {
-			// TMTODO (unconditionally) re-enable interrupts here?
-			Native.wr(1, Const.IO_INT_ENA);
+	
+			boolean retryTransaction;
+	
+			do {
+				retryTransaction = false;
+				
+				if (outermostTransaction) {
+					Native.wrMem(Const.TM_START_TRANSACTION, Const.MEM_TM_MAGIC);
+				} else {
+					if (LOG) {
+						rttm.utils.Utils.logEnterInnerTransaction();
+					}
+				}
+	
+				try {
+					result = atomicSection(arg0);
+	
+					if (outermostTransaction) {
+						// flush write set					
+						Native.wrMem(Const.TM_END_TRANSACTION, Const.MEM_TM_MAGIC);
+					}
+					
+					// TMTODO we could move finally part there
+				} catch (Throwable e) { // RollbackError or any other exception
+					if (outermostTransaction) {
+						Native.wr(0, Const.IO_ENA_HW_EXC);
+						
+						if (e == Utils.abortException) {
+							throw Utils.abortException;
+						}
+						
+						retryTransaction = true;
+						
+						if (LOG) {
+							rttm.utils.Utils.logAbort();
+						}
+					
+						// rollback
+						arg0 = arg0Copy;					
+					} else {
+						// don't refer to exception thrown during aborted
+						// transaction
+						
+						if (e == Utils.abortException) {
+							throw Utils.abortException;
+						} else {
+							throw Utils.rollbackException;
+						}
+					}
+				}
+			} while (retryTransaction);
+		} finally {
+			if (outermostTransaction) {
+				Utils.inTransaction[Native.rd(Const.IO_CPU_ID)] = false;
+
+				// TMTODO (unconditionally) re-enable interrupts here?
+				Native.wr(1, Const.IO_INT_ENA);
+			}
 		}
 		
 		return result;
