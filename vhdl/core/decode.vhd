@@ -79,7 +79,7 @@ port (
 	jmp			: out std_logic;
 	jbr			: out std_logic;
 
-	ext_addr	: out std_logic_vector(EXTA_WIDTH-1 downto 0);
+	mmu_instr	: out std_logic_vector(MMU_WIDTH-1 downto 0);
 	rd, wr		: out std_logic;
 
 	dir			: out std_logic_vector(ram_width-1 downto 0);
@@ -126,7 +126,7 @@ begin
 
 	ir <= instr;		-- registered in fetch
 
-	ext_addr <= ir(EXTA_WIDTH-1 downto 0);	-- address for extension select
+	mmu_instr <= ir(MMU_WIDTH-1 downto 0);	-- address for extension select
 
 --
 --	branch, jbranch

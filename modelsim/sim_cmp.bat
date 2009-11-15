@@ -37,7 +37,6 @@ rem vcom %options% %jopdir%/memory/sc_sram16.vhd
 vcom %options% %jopdir%/memory/mem_sc.vhd
 vcom %options% %jopdir%/memory/sdpram.vhd
 vcom %options% %jopdir%/core/mul.vhd
-vcom %options% %jopdir%/core/extension.vhd
 vcom %options% %jopdir%/core/bcfetch.vhd
 vcom %options% %jopdir%/core/fetch.vhd
 vcom %options% %jopdir%/core/decode.vhd
