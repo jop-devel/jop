@@ -100,6 +100,8 @@ port (
 
 	sp_ov		: out std_logic;
 
+	bcopd		: out std_logic_vector(15 downto 0);	-- index for mmu
+
 	aout		: out std_logic_vector(width-1 downto 0);
 	bout		: out std_logic_vector(width-1 downto 0)
 );
@@ -331,5 +333,6 @@ begin
 
 	aout <= stk_aout;
 	bout <= stk_bout;
+	bcopd <= opd;
 
 end rtl;
