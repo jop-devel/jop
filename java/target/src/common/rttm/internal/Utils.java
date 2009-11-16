@@ -41,12 +41,4 @@ public class Utils {
 	public static final AbortException abortException = new AbortException();
 	
 	public static boolean[] inTransaction = new boolean[Native.rd(Const.IO_CPUCNT)];
-	
-	public static void logAbort() {
-		System.out.println("Transaction aborted.");
-	}
-	
-	public static void logEnterInnerTransaction() {
-		System.out.println("Entered inner transaction.");
-	}
 }

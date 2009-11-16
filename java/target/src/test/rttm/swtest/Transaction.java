@@ -25,25 +25,40 @@ import com.jopdesign.sys.Native;
 
 import com.jopdesign.sys.RollbackException;
 
+import rttm.AbortException;
+import rttm.Commands;
 import rttm.internal.Utils;
 
+/**
+ * This class serves both as a conceptual reference of an atomic method and
+ * as the base for the generation of an atomic method in 
+ * com.jopdesign.build.ReplaceAtomicAnnotation 
+ * (using org.apache.bcel.util.BCELifier to reverse engineer the compiled 
+ * class).
+ * 
+ * @author Peter Hilber (peter@hilber.name)
+ */
 public class Transaction {
-	
-	protected static final boolean LOG = true; 
 	
 	public static boolean conflicting = false;
 	
-	/**
-	 * @exception RollbackException Thrown by hardware if a conflict is detected 
-	 * or by user program.
-	 */
 	protected static int atomicSection(int arg0) throws Exception, 
-		RollbackException {
+		RollbackException, AbortException {
 		boolean ignored = conflicting;
 		return arg0;
 	}
 	
-	public static int run(int arg0) throws RollbackException {
+	/**
+	 * @exception RollbackException Thrown by hardware if a conflict is 
+	 * detected or by user program using {@link Commands#rollback()} .
+	 * Is not user-visible, i.e. not propagated outside of outermost 
+	 * transaction.
+	 * 
+	 * @exception AbortExcepton Thrown by user program to abort transaction, 
+	 * using {@link Commands#abort()}. 
+	 * Is user-visible, i.e. propagated outside of outermost transaction.
+	 */
+	public static int run(int arg0) throws RollbackException, AbortException {
 		int arg0Copy = 0xdeadbeef; // make compiler happy
 		
 		int result = 0xdeadbeef; // make compiler happy
@@ -67,10 +82,6 @@ public class Transaction {
 				
 				if (outermostTransaction) {
 					Native.wrMem(Const.TM_START_TRANSACTION, Const.MEM_TM_MAGIC);
-				} else {
-					if (LOG) {
-						rttm.internal.Utils.logEnterInnerTransaction();
-					}
 				}
 	
 				try {
@@ -82,7 +93,9 @@ public class Transaction {
 					}
 					
 					// TMTODO we could move finally part there
-				} catch (Throwable e) { // RollbackError or any other exception
+				} catch (Throwable e) { 
+					// RollbackException, AbortException or any other exception
+					
 					if (outermostTransaction) {
 						Native.wr(0, Const.IO_ENA_HW_EXC);
 						
@@ -92,10 +105,6 @@ public class Transaction {
 						
 						retryTransaction = true;
 						
-						if (LOG) {
-							rttm.internal.Utils.logAbort();
-						}
-					
 						// rollback
 						arg0 = arg0Copy;					
 					} else {
