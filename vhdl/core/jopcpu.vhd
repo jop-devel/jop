@@ -152,14 +152,24 @@ begin
 
 	core: entity work.core
 		generic map(jpc_width)
-		port map (clk, reset,
-			bsy,
-			stack_din, mmu_instr,
+		port map (
+			clk => clk,
+			reset => reset,
+			bsy => bsy,
+			din => stack_din,
+			mmu_instr => mmu_instr,
 -- rd signal not used here
-			rd, wr,
-			bc_wr_addr, bc_wr_data, bc_wr_ena,
-			irq_in, irq_out, sp_ov,
-			stack_tos, stack_nos
+			rd => rd,
+			wr => wr,
+			bc_wr_addr => bc_wr_addr,
+			bc_wr_data => bc_wr_data,
+			bc_wr_ena => bc_wr_ena,
+			irq_in => irq_in,
+			irq_out => irq_out,
+			sp_ov => sp_ov,
+			bcopd => mem_in.bcopd,
+			aout => stack_tos,
+			bout => stack_nos
 		);
 
 	exc_req.spov <= sp_ov;
@@ -314,6 +324,11 @@ end process;
 	stack_din <= exr;
 
 --
+--	TODO: the following code is degenerated to decode functions
+--	should probably go to decode.vhd
+--
+
+--
 --	read
 --
 --	TODO: the read MUX could be set by using the
@@ -364,6 +379,7 @@ begin
 		mem_in.wr <= '0';
 		mem_in.addr_wr <= '0';
 		mem_in.bc_rd <= '0';
+		mem_in.stidx <= '0';
 		mem_in.iaload <= '0';
 		mem_in.iastore <= '0';
 		mem_in.getfield <= '0';
@@ -377,6 +393,7 @@ begin
 		mem_in.wr <= '0';
 		mem_in.addr_wr <= '0';
 		mem_in.bc_rd <= '0';
+		mem_in.stidx <= '0';
 		mem_in.iaload <= '0';
 		mem_in.iastore <= '0';
 		mem_in.getfield <= '0';
@@ -407,6 +424,8 @@ begin
 				mem_in.putfield <= '1';	-- start getfield
 			elsif mmu_instr=STCP then
 				mem_in.copy <= '1';		-- start copy
+			elsif mmu_instr=STIDX then
+				mem_in.stidx <= '1';	-- store index
 			elsif mmu_instr=STMUL then
 				mul_wr <= '1';			-- start multiplier
 			-- elsif mmu_instr=STBCR then

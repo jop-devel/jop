@@ -2,7 +2,7 @@
 --
 --  This file is a part of JOP, the Java Optimized Processor
 --
---  Copyright (C) 2001-2008, Martin Schoeberl (martin@jopdesign.com)
+--  Copyright (C) 2001-2009, Martin Schoeberl (martin@jopdesign.com)
 --
 --  This program is free software: you can redistribute it and/or modify
 --  it under the terms of the GNU General Public License as published by
@@ -65,7 +65,7 @@ port (
 	np_exc		: out std_logic;
 	ab_exc		: out std_logic;
 
--- extension connection
+-- extension connection (now within jopcpu)
 	mem_in		: in mem_in_type;
 	mem_out		: out mem_out_type;
 
@@ -153,6 +153,7 @@ end component;
 	signal bounds_error	: std_logic;
 
 	signal was_a_store	: std_logic;
+	signal was_a_stidx	: std_logic;
 
 --
 --	values for bytecode read/cache
@@ -284,6 +285,7 @@ begin
 		index <= (others => '0');
 		value <= (others => '0');
 		was_a_store <= '0';
+		was_a_stidx <= '0';
 		bc_len <= (others => '0');
 
 		base_reg <= (others => '0');
@@ -300,8 +302,19 @@ begin
 		end if;
 
 		-- save array address and index
-		if mem_in.iaload='1' or mem_in.getfield='1' then
-			index <= ain(SC_ADDR_SIZE-1 downto 0);		-- store array index
+		if mem_in.iaload='1' or mem_in.stidx='1' then
+			index <= ain(SC_ADDR_SIZE-1 downto 0);		-- store array, field index
+		end if;
+		if mem_in.stidx='1' then
+			was_a_stidx <= '1';
+		end if;
+		-- store the index on getfield when not yet stored via stidx
+		if mem_in.getfield='1' then
+			if was_a_stidx='0' then
+				-- store the index from the bytecode operand, strange way to resize a slv
+				index <= std_logic_vector(to_signed(to_integer(unsigned(mem_in.bcopd)), SC_ADDR_SIZE));
+			end if;
+			was_a_stidx <= '0';		-- reset a former stidx
 		end if;
 		-- first step of three-operand operations
 		if mem_in.iastore='1' or mem_in.putfield='1' then
@@ -396,8 +409,12 @@ begin
 		end if;
 	end if;
 	
-	if mem_in.iaload='1' or mem_in.getfield='1' then
+	if mem_in.iaload='1' then
 		addr_next <= unsigned(bin(SC_ADDR_SIZE-1 downto 0));
+	end if;
+
+	if mem_in.getfield='1' then
+		addr_next <= unsigned(ain(SC_ADDR_SIZE-1 downto 0));
 	end if;
 
 	-- computations that depend on the state

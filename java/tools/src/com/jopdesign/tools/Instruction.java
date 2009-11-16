@@ -119,6 +119,8 @@ public class Instruction implements Serializable {
 			new Instruction("stcp",  0x040 + 8, 0, JmpType.NOP, StackType.POP),
 			// bytecode read
 			new Instruction("stbcrd", 0x040 + 9, 0, JmpType.NOP, StackType.POP),
+			// store TOS to MMU index register for jopsys_*field
+			new Instruction("stidx", 0x040 + 10, 0, JmpType.NOP, StackType.POP),
 
 			//
 			// 'push' instructions
