@@ -1304,7 +1304,7 @@ getfield:
 			stgf opd			// let the HW do the work
 			nop opd				// index is loaded from BC operand
 			// could the opd go to the wait instruction?
-			// I think yes - check it with a slow memory
+			// No, it breaks wait :-(
 			wait
 			wait
 			ldmrd nxt			// read result
