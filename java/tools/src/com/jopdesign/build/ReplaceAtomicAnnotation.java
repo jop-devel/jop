@@ -24,52 +24,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 
-import org.apache.bcel.Constants;
-import org.apache.bcel.classfile.Attribute;
-import org.apache.bcel.classfile.Field;
-import org.apache.bcel.classfile.JavaClass;
-import org.apache.bcel.classfile.Method;
-import org.apache.bcel.generic.ACONST_NULL;
-import org.apache.bcel.generic.ArrayType;
-import org.apache.bcel.generic.BasicType;
-import org.apache.bcel.generic.BranchInstruction;
-import org.apache.bcel.generic.CPInstruction;
-import org.apache.bcel.generic.ConstantPoolGen;
-import org.apache.bcel.generic.FieldInstruction;
-import org.apache.bcel.generic.GETFIELD;
-import org.apache.bcel.generic.GETSTATIC;
-import org.apache.bcel.generic.INVOKESPECIAL;
-import org.apache.bcel.generic.InstructionConstants;
-import org.apache.bcel.generic.InstructionFactory;
-import org.apache.bcel.generic.InstructionHandle;
-import org.apache.bcel.generic.InstructionList;
-import org.apache.bcel.generic.InstructionTargeter;
-import org.apache.bcel.generic.InvokeInstruction;
-import org.apache.bcel.generic.MONITORENTER;
-import org.apache.bcel.generic.MONITOREXIT;
-import org.apache.bcel.generic.MethodGen;
-import org.apache.bcel.generic.NOP;
-import org.apache.bcel.generic.ObjectType;
-import org.apache.bcel.generic.PUSH;
-import org.apache.bcel.generic.PUTFIELD;
-import org.apache.bcel.generic.PUTSTATIC;
-import org.apache.bcel.generic.ReferenceType;
-import org.apache.bcel.generic.TargetLostException;
-import org.apache.bcel.generic.Type;
+import org.apache.bcel.generic.*;
 import org.apache.bcel.util.InstructionFinder;
-
-import com.jopdesign.build.ReplaceNativeAndCPIdx.GETFIELD_LONG;
-import com.jopdesign.build.ReplaceNativeAndCPIdx.GETFIELD_REF;
-import com.jopdesign.build.ReplaceNativeAndCPIdx.GETSTATIC_LONG;
-import com.jopdesign.build.ReplaceNativeAndCPIdx.GETSTATIC_REF;
-import com.jopdesign.build.ReplaceNativeAndCPIdx.InvalidateInstruction;
-import com.jopdesign.build.ReplaceNativeAndCPIdx.JOPSYS_INVOKESUPER;
-import com.jopdesign.build.ReplaceNativeAndCPIdx.NativeInstruction;
-import com.jopdesign.build.ReplaceNativeAndCPIdx.PUTFIELD_LONG;
-import com.jopdesign.build.ReplaceNativeAndCPIdx.PUTFIELD_REF;
-import com.jopdesign.build.ReplaceNativeAndCPIdx.PUTSTATIC_LONG;
-import com.jopdesign.build.ReplaceNativeAndCPIdx.PUTSTATIC_REF;
-import com.jopdesign.tools.JopInstr;
+import org.apache.bcel.classfile.*;
+import org.apache.bcel.*;
 
 import boxpeeking.instrument.bcel.AnnotationsAttribute;
 
@@ -138,7 +96,7 @@ public class ReplaceAtomicAnnotation extends JOPizerVisitor {
             argsCount = max;
 		}
 		
-		final int transactionLocals = 7; // TMTODO 
+		final int transactionLocals = 4; // TMTODO 
 		
 		final int maxLocals = method.getMaxLocals();
 		
@@ -153,56 +111,59 @@ public class ReplaceAtomicAnnotation extends JOPizerVisitor {
 		method.setInstructionList(il);
 		
 		{
-		    InstructionHandle ih_0 = il.append(new PUSH(_cp, -559038737));
-		    il.append(_factory.createStore(Type.INT, transactionLocalsBaseIndex+1));
-		    InstructionHandle ih_3 = il.append(new PUSH(_cp, -559038737));
-		    il.append(_factory.createStore(Type.INT, transactionLocalsBaseIndex+2));
-		    InstructionHandle ih_6 = il.append(_factory.createFieldAccess("rttm.internal.Utils", "inTransaction", new ArrayType(Type.BOOLEAN, 1), Constants.GETSTATIC));
-		    il.append(new PUSH(_cp, -122));
-		    il.append(_factory.createInvoke("com.jopdesign.sys.Native", "rd", Type.INT, new Type[] { Type.INT }, Constants.INVOKESTATIC));
-		    il.append(InstructionConstants.BALOAD);
-		        BranchInstruction ifne_15 = _factory.createBranchInstruction(Constants.IFNE, null);
-		    il.append(ifne_15);
-		    il.append(new PUSH(_cp, 1));
-		        BranchInstruction goto_19 = _factory.createBranchInstruction(Constants.GOTO, null);
-		    il.append(goto_19);
-		    InstructionHandle ih_22 = il.append(new PUSH(_cp, 0));
-		    InstructionHandle ih_23 = il.append(_factory.createStore(Type.INT, transactionLocalsBaseIndex+3));
-		    InstructionHandle ih_24 = il.append(_factory.createLoad(Type.INT, transactionLocalsBaseIndex+3));
-		        BranchInstruction ifeq_25 = _factory.createBranchInstruction(Constants.IFEQ, null);
-		    il.append(ifeq_25);
-		    InstructionHandle ih_28 = il.append(_factory.createFieldAccess("rttm.internal.Utils", "inTransaction", new ArrayType(Type.BOOLEAN, 1), Constants.GETSTATIC));
-		    il.append(new PUSH(_cp, -122));
-		    il.append(_factory.createInvoke("com.jopdesign.sys.Native", "rd", Type.INT, new Type[] { Type.INT }, Constants.INVOKESTATIC));
-		    il.append(new PUSH(_cp, 1));
-		    il.append(InstructionConstants.BASTORE);
-		    
+//			InstructionHandle ih_0 = il.append(new PUSH(_cp, -559038737));
+//			il.append(_factory.createStore(Type.INT, transactionLocalsBaseIndex-2+1));
+			InstructionHandle ih_3 = il.append(_factory.createFieldAccess("rttm.internal.Utils", "inTransaction", new ArrayType(Type.BOOLEAN, 1), Constants.GETSTATIC));
+			il.append(new PUSH(_cp, -122));
+			il.append(_factory.createInvoke("com.jopdesign.sys.Native", "rd", Type.INT, new Type[] { Type.INT }, Constants.INVOKESTATIC));
+			il.append(InstructionConstants.BALOAD);
+			    BranchInstruction ifne_12 = _factory.createBranchInstruction(Constants.IFNE, null);
+			il.append(ifne_12);
+			il.append(new PUSH(_cp, 1));
+			    BranchInstruction goto_16 = _factory.createBranchInstruction(Constants.GOTO, null);
+			il.append(goto_16);
+			InstructionHandle ih_19 = il.append(new PUSH(_cp, 0));
+			InstructionHandle ih_20 = il.append(_factory.createStore(Type.INT, transactionLocalsBaseIndex-2+2));
+			InstructionHandle ih_21 = il.append(_factory.createLoad(Type.INT, transactionLocalsBaseIndex-2+2));
+			    BranchInstruction ifeq_22 = _factory.createBranchInstruction(Constants.IFEQ, null);
+			il.append(ifeq_22);
+//			InstructionHandle ih_25 = il.append(_factory.createLoad(Type.INT, transactionLocalsBaseIndex-2+0));
+//			il.append(_factory.createStore(Type.INT, transactionLocalsBaseIndex-2+1));
+			
 		    {
 		    	// TMTODO only for (possibly two-word) variables which are written to
 		    	for (int i = 0; i < argsCount; i++) {
 		    		il.append(_factory.createLoad(Type.INT, i));
 		    		il.append(_factory.createStore(Type.INT, copyBaseIndex+i));
 		    	}
-		    }
-		    
-		    InstructionHandle ih_40 = il.append(new PUSH(_cp, 0));
-		    il.append(_factory.createStore(Type.INT, transactionLocalsBaseIndex+4));
-		    InstructionHandle ih_43 = il.append(_factory.createLoad(Type.INT, transactionLocalsBaseIndex+3));
-		        BranchInstruction ifeq_44 = _factory.createBranchInstruction(Constants.IFEQ, null);
-		    il.append(ifeq_44);
-		    InstructionHandle ih_47 = il.append(new PUSH(_cp, 1));
-		    il.append(new PUSH(_cp, 524287));
-		    il.append(_factory.createInvoke("com.jopdesign.sys.Native", "wrMem", Type.VOID, new Type[] { Type.INT, Type.INT }, Constants.INVOKESTATIC));
-		        BranchInstruction goto_53 = _factory.createBranchInstruction(Constants.GOTO, null);
-		    il.append(goto_53);
-//		    InstructionHandle ih_56 = il.append(_factory.createFieldAccess("java.lang.System", "out", new ObjectType("java.io.PrintStream"), Constants.GETSTATIC));
-//		    il.append(new PUSH(_cp, "Entered inner transaction."));
-//		    il.append(_factory.createInvoke("java.io.PrintStream", "println", Type.VOID, new Type[] { Type.STRING }, Constants.INVOKEVIRTUAL));
-
-		    InstructionHandle ih_64 = oldIl.getStart();
+		    }		    			
+			
+			InstructionHandle ih_27 = il.append(new PUSH(_cp, 0));
+			il.append(new PUSH(_cp, -128));
+			il.append(_factory.createInvoke("com.jopdesign.sys.Native", "wr", Type.VOID, new Type[] { Type.INT, Type.INT }, Constants.INVOKESTATIC));
+			InstructionHandle ih_33 = il.append(_factory.createFieldAccess("rttm.internal.Utils", "inTransaction", new ArrayType(Type.BOOLEAN, 1), Constants.GETSTATIC));
+			il.append(new PUSH(_cp, -122));
+			il.append(_factory.createInvoke("com.jopdesign.sys.Native", "rd", Type.INT, new Type[] { Type.INT }, Constants.INVOKESTATIC));
+			il.append(new PUSH(_cp, 1));
+			il.append(InstructionConstants.BASTORE);
+			
+			// transaction loop
+			// TMTODO optimize jumps
+			
+			InstructionHandle ih_43 = il.append(_factory.createLoad(Type.INT, transactionLocalsBaseIndex-2+2));
+			    BranchInstruction ifeq_44 = _factory.createBranchInstruction(Constants.IFEQ, null);
+			il.append(ifeq_44);
+			InstructionHandle ih_47 = il.append(new PUSH(_cp, 1));
+			il.append(new PUSH(_cp, 393216));
+			il.append(_factory.createInvoke("com.jopdesign.sys.Native", "wrMem", Type.VOID, new Type[] { Type.INT, Type.INT }, Constants.INVOKESTATIC));
+//			InstructionHandle ih_53 = il.append(_factory.createLoad(Type.INT, transactionLocalsBaseIndex-2+0));
+//			il.append(_factory.createInvoke("rttm.swtest.Transaction", "atomicSection", Type.INT, new Type[] { Type.INT }, Constants.INVOKESTATIC));
+//			il.append(_factory.createStore(Type.INT, transactionLocalsBaseIndex-2+3));
+			
+			InstructionHandle ih_53 = oldIl.getStart();
 		    Collection<BranchInstruction> gotos_transactionCommit = new ArrayList<BranchInstruction>();
 		    {
-		    	// TMTODO redirect returns
+		    	// redirect returns
 		    	
 		    	InstructionFinder f = new InstructionFinder(oldIl);
 		    	
@@ -215,7 +176,7 @@ public class ReplaceAtomicAnnotation extends JOPizerVisitor {
 		    				    		
 		    		if (!method.getReturnType().equals(Type.VOID)) {		    		
 			    		nl.append(_factory.createStore(
-			    			method.getReturnType(), transactionLocalsBaseIndex+2));
+			    			method.getReturnType(), transactionLocalsBaseIndex-2+3));
 		    		}
 			    	
 		    		BranchInstruction goto_transactionCommit = 
@@ -241,106 +202,112 @@ public class ReplaceAtomicAnnotation extends JOPizerVisitor {
 		    	
 		    	il.append(oldIl);
 		    }
-//		    il.append(_factory.createStore(Type.INT, transactionLocalsBaseIndex+2));
+			
+			InstructionHandle ih_58 = il.append(_factory.createLoad(Type.INT, transactionLocalsBaseIndex-2+2));
+			    BranchInstruction ifeq_59 = _factory.createBranchInstruction(Constants.IFEQ, null);
+			il.append(ifeq_59);
+			InstructionHandle ih_62 = il.append(new PUSH(_cp, 0));
+			il.append(new PUSH(_cp, 393216));
+			il.append(_factory.createInvoke("com.jopdesign.sys.Native", "wrMem", Type.VOID, new Type[] { Type.INT, Type.INT }, Constants.INVOKESTATIC));
+			InstructionHandle ih_68 = il.append(_factory.createFieldAccess("rttm.internal.Utils", "inTransaction", new ArrayType(Type.BOOLEAN, 1), Constants.GETSTATIC));
+			il.append(new PUSH(_cp, -122));
+			il.append(_factory.createInvoke("com.jopdesign.sys.Native", "rd", Type.INT, new Type[] { Type.INT }, Constants.INVOKESTATIC));
+			il.append(new PUSH(_cp, 0));
+			il.append(InstructionConstants.BASTORE);
+			InstructionHandle ih_78 = il.append(new PUSH(_cp, 1));
+			il.append(new PUSH(_cp, -128));
+			il.append(_factory.createInvoke("com.jopdesign.sys.Native", "wr", Type.VOID, new Type[] { Type.INT, Type.INT }, Constants.INVOKESTATIC));
+//			InstructionHandle ih_84 = il.append(_factory.createLoad(Type.INT, transactionLocalsBaseIndex-2+3));
+//			il.append(_factory.createReturn(Type.INT));
+			
+			InstructionHandle ih_84;
+		    {
+		    	// return
+		    	if (!method.getReturnType().equals(Type.VOID)) {
+				    ih_84 = il.append(_factory.createLoad(method.getReturnType(), 
+				    		transactionLocalsBaseIndex-2+3));
+				    il.append(_factory.createReturn(method.getReturnType()));
+		    	} else {
+		    		ih_84 = il.append(_factory.createReturn(method.getReturnType()));
+		    	}
+			    
+		    }
 		    
-		    InstructionHandle ih_69 = il.append(_factory.createLoad(Type.INT, transactionLocalsBaseIndex+3));
-		        BranchInstruction ifeq_70 = _factory.createBranchInstruction(Constants.IFEQ, null);
-		    il.append(ifeq_70);
-		    InstructionHandle ih_73 = il.append(new PUSH(_cp, 0));
-		    il.append(new PUSH(_cp, 524287));
-		    InstructionHandle ih_76 = il.append(_factory.createInvoke("com.jopdesign.sys.Native", "wrMem", Type.VOID, new Type[] { Type.INT, Type.INT }, Constants.INVOKESTATIC));
-		    InstructionHandle ih_79 = il.append(_factory.createLoad(Type.INT, transactionLocalsBaseIndex+3));
-		        BranchInstruction ifeq_80 = _factory.createBranchInstruction(Constants.IFEQ, null);
-		    il.append(ifeq_80);
-		    InstructionHandle ih_83 = il.append(_factory.createFieldAccess("rttm.internal.Utils", "inTransaction", new ArrayType(Type.BOOLEAN, 1), Constants.GETSTATIC));
-		    il.append(new PUSH(_cp, -122));
-		    il.append(_factory.createInvoke("com.jopdesign.sys.Native", "rd", Type.INT, new Type[] { Type.INT }, Constants.INVOKESTATIC));
-		    il.append(new PUSH(_cp, 0));
-		    il.append(InstructionConstants.BASTORE);
-		        BranchInstruction goto_93 = _factory.createBranchInstruction(Constants.GOTO, null);
-		    il.append(goto_93);
-		    InstructionHandle ih_96 = il.append(_factory.createStore(Type.OBJECT, transactionLocalsBaseIndex+5));
-		    InstructionHandle ih_98 = il.append(_factory.createLoad(Type.INT, transactionLocalsBaseIndex+3));
-		        BranchInstruction ifne_99 = _factory.createBranchInstruction(Constants.IFNE, null);
-		    il.append(ifne_99);
-		    InstructionHandle ih_102 = il.append(_factory.createFieldAccess("rttm.internal.Utils", "rollbackException", new ObjectType("com.jopdesign.sys.RollbackException"), Constants.GETSTATIC));
-		    il.append(InstructionConstants.ATHROW);
-		    InstructionHandle ih_106 = il.append(new PUSH(_cp, 0));
-		    il.append(new PUSH(_cp, -116));
-		    il.append(_factory.createInvoke("com.jopdesign.sys.Native", "wr", Type.VOID, new Type[] { Type.INT, Type.INT }, Constants.INVOKESTATIC));
-		    InstructionHandle ih_112 = il.append(new PUSH(_cp, 1));
-		    il.append(_factory.createStore(Type.INT, transactionLocalsBaseIndex+4));
-//		    InstructionHandle ih_115 = il.append(_factory.createFieldAccess("java.lang.System", "out", new ObjectType("java.io.PrintStream"), Constants.GETSTATIC));
-//		    il.append(new PUSH(_cp, "Transaction aborted."));
-//		    il.append(_factory.createInvoke("java.io.PrintStream", "println", Type.VOID, new Type[] { Type.STRING }, Constants.INVOKEVIRTUAL));
-		    
-		    InstructionHandle ih_finally = ih_112;
+		    // catch block
+			
+			InstructionHandle ih_86 = il.append(_factory.createStore(Type.OBJECT, transactionLocalsBaseIndex-2+3));
+			InstructionHandle ih_87 = il.append(_factory.createLoad(Type.INT, transactionLocalsBaseIndex-2+2));
+			    BranchInstruction ifeq_88 = _factory.createBranchInstruction(Constants.IFEQ, null);
+			il.append(ifeq_88);
+			InstructionHandle ih_91 = il.append(new PUSH(_cp, 0));
+			il.append(new PUSH(_cp, -116));
+			il.append(_factory.createInvoke("com.jopdesign.sys.Native", "wr", Type.VOID, new Type[] { Type.INT, Type.INT }, Constants.INVOKESTATIC));
+			InstructionHandle ih_97 = il.append(_factory.createLoad(Type.OBJECT, transactionLocalsBaseIndex-2+3));
+			il.append(_factory.createFieldAccess("rttm.internal.Utils", "abortException", new ObjectType("rttm.AbortException"), Constants.GETSTATIC));
+			    BranchInstruction if_acmpne_101 = _factory.createBranchInstruction(Constants.IF_ACMPNE, null);
+			il.append(if_acmpne_101);
+			InstructionHandle ih_104 = il.append(_factory.createFieldAccess("rttm.internal.Utils", "abortException", new ObjectType("rttm.AbortException"), Constants.GETSTATIC));
+			il.append(InstructionConstants.ATHROW);
+//			InstructionHandle ih_108 = il.append(_factory.createLoad(Type.INT, transactionLocalsBaseIndex-2+1));
+//			il.append(_factory.createStore(Type.INT, transactionLocalsBaseIndex-2+0));
+			
+			InstructionHandle ih_108 = null;
 		    {
 		    	// TMTODO only for (possibly two-word) variables which are written to
 		    	for (int i = 0; i < argsCount; i++) {
-		    		il.append(_factory.createLoad(Type.INT, copyBaseIndex+i));
-		    		ih_finally = il.append(_factory.createStore(Type.INT, i));
+		    		InstructionHandle ih = il.append(_factory.createLoad(Type.INT, copyBaseIndex+i));
+		    		if (i == 0) {
+		    			ih_108 = ih;
+		    		}
+		    		il.append(_factory.createStore(Type.INT, i));
 		    	}
 		    }
-//		    InstructionHandle ih_123 = il.append(_factory.createLoad(Type.INT, transactionLocalsBaseIndex+1));
-//		    InstructionHandle ih_124 = il.append(_factory.createStore(Type.INT, 0));
-		    
-		    InstructionHandle ih_125 = il.append(_factory.createLoad(Type.INT, transactionLocalsBaseIndex+3));
-		        BranchInstruction ifeq_126 = _factory.createBranchInstruction(Constants.IFEQ, null);
-		    il.append(ifeq_126);
-		    InstructionHandle ih_129 = il.append(_factory.createFieldAccess("rttm.internal.Utils", "inTransaction", new ArrayType(Type.BOOLEAN, 1), Constants.GETSTATIC));
-		    il.append(new PUSH(_cp, -122));
-		    il.append(_factory.createInvoke("com.jopdesign.sys.Native", "rd", Type.INT, new Type[] { Type.INT }, Constants.INVOKESTATIC));
-		    il.append(new PUSH(_cp, 0));
-		    il.append(InstructionConstants.BASTORE);
-		        BranchInstruction goto_139 = _factory.createBranchInstruction(Constants.GOTO, null);
-		    il.append(goto_139);
-		    InstructionHandle ih_142 = il.append(_factory.createStore(Type.OBJECT, transactionLocalsBaseIndex+6));
-		    il.append(_factory.createLoad(Type.INT, transactionLocalsBaseIndex+3));
-		        BranchInstruction ifeq_145 = _factory.createBranchInstruction(Constants.IFEQ, null);
-		    il.append(ifeq_145);
-		    InstructionHandle ih_148 = il.append(_factory.createFieldAccess("rttm.internal.Utils", "inTransaction", new ArrayType(Type.BOOLEAN, 1), Constants.GETSTATIC));
-		    il.append(new PUSH(_cp, -122));
-		    il.append(_factory.createInvoke("com.jopdesign.sys.Native", "rd", Type.INT, new Type[] { Type.INT }, Constants.INVOKESTATIC));
-		    il.append(new PUSH(_cp, 0));
-		    il.append(InstructionConstants.BASTORE);
-		    InstructionHandle ih_158 = il.append(_factory.createLoad(Type.OBJECT, transactionLocalsBaseIndex+6));
-		    il.append(InstructionConstants.ATHROW);
-		    InstructionHandle ih_161 = il.append(_factory.createLoad(Type.INT, transactionLocalsBaseIndex+4));
-		        BranchInstruction ifne_163 = _factory.createBranchInstruction(Constants.IFNE, ih_40);
-		    il.append(ifne_163);
-		    
-		    {
-		    	if (!method.getReturnType().equals(Type.VOID)) {
-				    InstructionHandle ih_ret1 = il.append(_factory.createLoad(method.getReturnType(), 
-				    		transactionLocalsBaseIndex+2));
-		    	}
-			    InstructionHandle ih_ret2 = il.append(_factory.createReturn(method.getReturnType()));
-		    }
-		    
-		    ifne_15.setTarget(ih_22);
-		    goto_19.setTarget(ih_23);
-		    ifeq_25.setTarget(ih_40);
-		    ifeq_44.setTarget(ih_64); // TMTODO edited
-		    goto_53.setTarget(ih_64);
-		    ifeq_70.setTarget(ih_79);
-		    ifeq_80.setTarget(ih_161);
-		    goto_93.setTarget(ih_161);
-		    ifne_99.setTarget(ih_106);
-		    ifeq_126.setTarget(ih_161);
-		    goto_139.setTarget(ih_161);
-		    ifeq_145.setTarget(ih_158);
-		    
-		    for (BranchInstruction b: gotos_transactionCommit) {
-		    	b.setTarget(ih_69);
-		    }
-		    
-		    method.addExceptionHandler(ih_64, ih_76, ih_96, new ObjectType("java.lang.Throwable"));
-		    method.addExceptionHandler(ih_64, ih_76, ih_142, null);
-		    method.addExceptionHandler(ih_96, ih_finally, ih_142, null);
-		    method.addExceptionHandler(ih_142, ih_142, ih_142, null);
-		    method.setMaxStack();
-		    method.setMaxLocals();
+			
+			    BranchInstruction goto_110 = _factory.createBranchInstruction(Constants.GOTO, null);
+		    InstructionHandle ih_110 = il.append(goto_110);
+			
+			{
+				if (ih_108 == null) {
+					ih_108 = ih_110; // TMTODO
+				}
+			}
+			
+			InstructionHandle ih_113 = il.append(_factory.createLoad(Type.OBJECT, transactionLocalsBaseIndex-2+3));
+			il.append(_factory.createFieldAccess("rttm.internal.Utils", "abortException", new ObjectType("rttm.AbortException"), Constants.GETSTATIC));
+			    BranchInstruction if_acmpne_117 = _factory.createBranchInstruction(Constants.IF_ACMPNE, null);
+			il.append(if_acmpne_117);
+			InstructionHandle ih_120 = il.append(_factory.createFieldAccess("rttm.internal.Utils", "abortException", new ObjectType("rttm.AbortException"), Constants.GETSTATIC));
+			il.append(InstructionConstants.ATHROW);
+			InstructionHandle ih_124 = il.append(_factory.createFieldAccess("rttm.internal.Utils", "rollbackException", new ObjectType("com.jopdesign.sys.RollbackException"), Constants.GETSTATIC));
+			il.append(InstructionConstants.ATHROW);
+			InstructionHandle ih_128;
+			BranchInstruction goto_128 = _factory.createBranchInstruction(Constants.GOTO, ih_43);
+			ih_128 = il.append(goto_128);
+			
+			// set branch targets			
+			
+			ifne_12.setTarget(ih_19);
+			goto_16.setTarget(ih_20);
+			ifeq_22.setTarget(ih_43);
+			ifeq_44.setTarget(ih_53);
+			ifeq_59.setTarget(ih_84);
+			ifeq_88.setTarget(ih_113);
+			if_acmpne_101.setTarget(ih_108);
+			goto_110.setTarget(ih_128);
+			if_acmpne_117.setTarget(ih_124);
+			
+			{
+			    for (BranchInstruction b: gotos_transactionCommit) {
+			    	b.setTarget(ih_58);
+			    }
+			}
+			
+			// set exception handlers 
+			
+			// TMTODO restrict exception handler?
+			method.addExceptionHandler(ih_53, ih_84, ih_86, new ObjectType("java.lang.Throwable"));
+			method.setMaxStack();
+			method.setMaxLocals();
 		}
 		
 		m = method.getMethod();

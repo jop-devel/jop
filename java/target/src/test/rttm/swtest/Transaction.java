@@ -16,7 +16,7 @@
 
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ */
 
 package rttm.swtest;
 
@@ -39,15 +39,15 @@ import rttm.internal.Utils;
  * @author Peter Hilber (peter@hilber.name)
  */
 public class Transaction {
-	
+
 	public static boolean conflicting = false;
-	
+
 	protected static int atomicSection(int arg0) throws Exception, 
-		RollbackException, AbortException {
+	RollbackException, AbortException {
 		boolean ignored = conflicting;
 		return arg0;
 	}
-	
+
 	/**
 	 * @exception RollbackException Thrown by hardware if a conflict is 
 	 * detected or by user program using {@link Commands#rollback()} .
@@ -60,74 +60,58 @@ public class Transaction {
 	 */
 	public static int run(int arg0) throws RollbackException, AbortException {
 		int arg0Copy = 0xdeadbeef; // make compiler happy
-		
-		int result = 0xdeadbeef; // make compiler happy
-			
 		boolean outermostTransaction = !Utils.inTransaction[Native.rd(Const.IO_CPU_ID)];
-		
-		try {
-			
-			if (outermostTransaction) {
-				// TMTODO disable interrupts?
-				Native.wr(0, Const.IO_INT_ENA);
-				
-				Utils.inTransaction[Native.rd(Const.IO_CPU_ID)] = true;
-				arg0Copy = arg0;
-			}
-	
-			boolean retryTransaction;
-	
-			do {
-				retryTransaction = false;
-				
-				if (outermostTransaction) {
-					Native.wrMem(Const.TM_START_TRANSACTION, Const.MEM_TM_MAGIC);
-				}
-	
-				try {
-					result = atomicSection(arg0);
-	
-					if (outermostTransaction) {
-						// flush write set					
-						Native.wrMem(Const.TM_END_TRANSACTION, Const.MEM_TM_MAGIC);
-					}
-					
-					// TMTODO we could move finally part there
-				} catch (Throwable e) { 
-					// RollbackException, AbortException or any other exception
-					
-					if (outermostTransaction) {
-						Native.wr(0, Const.IO_ENA_HW_EXC);
-						
-						if (e == Utils.abortException) {
-							throw Utils.abortException;
-						}
-						
-						retryTransaction = true;
-						
-						// rollback
-						arg0 = arg0Copy;					
-					} else {
-						// don't refer to exception thrown during aborted
-						// transaction
-						
-						if (e == Utils.abortException) {
-							throw Utils.abortException;
-						} else {
-							throw Utils.rollbackException;
-						}
-					}
-				}
-			} while (retryTransaction);
-		} finally {
-			if (outermostTransaction) {
-				Utils.inTransaction[Native.rd(Const.IO_CPU_ID)] = false;
 
-				// TMTODO (unconditionally) re-enable interrupts here?
-				Native.wr(1, Const.IO_INT_ENA);
+		if (outermostTransaction) {
+			arg0Copy = arg0;
+
+			// TMTODO disable interrupts?
+			Native.wr(0, Const.IO_INT_ENA);
+
+			Utils.inTransaction[Native.rd(Const.IO_CPU_ID)] = true;
+		}
+
+		while (true) {
+			if (outermostTransaction) {
+				Native.wrMem(Const.TM_START_TRANSACTION, Const.MEM_TM_MAGIC);
+			}
+
+			try {
+				int result = atomicSection(arg0);
+
+				if (outermostTransaction) {
+
+					// flush write set					
+					Native.wrMem(Const.TM_END_TRANSACTION, Const.MEM_TM_MAGIC);
+
+					// no exceptions happen after this statement
+
+					Utils.inTransaction[Native.rd(Const.IO_CPU_ID)] = false;
+
+					// TMTODO (unconditionally) re-enable interrupts here?
+					Native.wr(1, Const.IO_INT_ENA);
+				}
+				return result;
+			} catch (Throwable e) { 
+				// RollbackException, AbortException or any other exception
+
+				if (outermostTransaction) {
+					Native.wr(0, Const.IO_ENA_HW_EXC);
+
+					if (e == Utils.abortException) {
+						throw Utils.abortException;
+					}
+
+					// rollback
+					arg0 = arg0Copy;
+				} else { // inner transaction
+					if (e == Utils.abortException) {
+						throw Utils.abortException;
+					} else {
+						throw Utils.rollbackException;
+					}
+				}
 			}
 		}
-		
-		return result;
 	}
 }

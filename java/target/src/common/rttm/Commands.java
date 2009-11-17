@@ -37,6 +37,7 @@ public class Commands {
 	 * happened before calling this method.
 	 */
 	public static void abort() {
+		// TMTODO immediately abort transaction to avoid early commit? 
 		Native.wrMem(Const.TM_ABORTED, Const.MEM_TM_MAGIC);
 		throw Utils.abortException;
 	}
@@ -47,6 +48,7 @@ public class Commands {
 	 * happened before calling this method.
 	 */
 	public static void rollback() {
+		// TMTODO immediately abort transaction to avoid early commit?
 		Native.wrMem(Const.TM_ABORTED, Const.MEM_TM_MAGIC);
 		throw Utils.rollbackException;
 	}
