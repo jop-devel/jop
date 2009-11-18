@@ -136,6 +136,7 @@
 //  2009-06-26  WP: fixed invokesuper
 //	2009-08-24	MS: use I/O port for null pointer and array exception
 //	2009-09-05	MS: new unconditional jmp instruction
+//	2009-11-17	MS: put/getfield in mmu uses bytecode operand directly for the index
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -145,7 +146,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20090905
+version		= 20091117
 
 //
 //	start of stack area in the on-chip RAM
@@ -1317,17 +1318,21 @@ jopsys_getfield:				// version from Native
 			ldmrd nxt			// read result
 
 putfield:
-			stm	a opd			// push index
-			nop	opd
-			ld_opd_16u
-			ldm	a
-jopsys_putfield:				// Version from Native
-			stpf				// let the HW do the work
-			pop
+			stpf opd			// start putfield index is taken from the BC operand
+			nop	opd				// get rid of second stack location
 			wait
 			wait
 			pop nxt
 
+			// TODO: change order between value and index in Native
+jopsys_putfield:				// Version from Native
+			stm a
+			stidx
+			ldm a
+			stpf				// let the HW do the work
+			wait
+			wait
+			pop nxt
 
 arraylength:
 

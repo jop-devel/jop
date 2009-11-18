@@ -39,6 +39,8 @@
 --	2008-04-30  copy step in hardware
 --	2008-10-10	correct array access for fast (SPM) memory (+iald23 state)
 --	2009-11-11	split getfield and putfield state machine (for object cache)
+--	2009-11-16	use bc operand for getfield index
+--	2009-11-17	use bc operand for putfield index
 --
 
 Library IEEE;
@@ -117,7 +119,7 @@ end component;
 							iasrd, ialrb,
 							iast0, iaswb, iasrb, iasst,
 							gf0, gf1, gf2, gf3,
-							pf0, pf1, pf2, pf3, pf4,
+							pf0, pf1, pf2, pf3,
 							cp0, cp1, cp2, cp3, cp4, cpstop,
 							last,
 							npexc, abexc, excw
@@ -308,8 +310,8 @@ begin
 		if mem_in.stidx='1' then
 			was_a_stidx <= '1';
 		end if;
-		-- store the index on getfield when not yet stored via stidx
-		if mem_in.getfield='1' then
+		-- store the index on get/putfield when not yet stored via stidx
+		if mem_in.getfield='1' or mem_in.putfield='1' then
 			if was_a_stidx='0' then
 				-- store the index from the bytecode operand, strange way to resize a slv
 				index <= std_logic_vector(to_signed(to_integer(unsigned(mem_in.bcopd)), SC_ADDR_SIZE));
@@ -320,8 +322,8 @@ begin
 		if mem_in.iastore='1' or mem_in.putfield='1' then
 			value <= ain;
 		end if;
-		-- get reference and index for putfield and array stores
-		if state=pf0 or state=iast0 then
+		-- get index for array stores
+		if state=iast0 then
 			index <= ain(SC_ADDR_SIZE-1 downto 0);		-- store array index			
 		end if;
 
@@ -417,13 +419,17 @@ begin
 		addr_next <= unsigned(ain(SC_ADDR_SIZE-1 downto 0));
 	end if;
 
-	-- computations that depend on the state
-	if state=pf0 or state=iast0 then
+	if mem_in.putfield='1' then
 		addr_next <= unsigned(bin(SC_ADDR_SIZE-1 downto 0));
 	end if;
 
-	-- get/putfield could be optimized for faster memory (e.g. SPM)
-	if state=iald3 or state=iald23 or state=gf2 or state=pf3 then
+	-- computations that depend on the state
+	if state=iast0 then
+		addr_next <= unsigned(bin(SC_ADDR_SIZE-1 downto 0));
+	end if;
+
+	-- get/putfield could be optimized for faster memory (e.g. SPM or SimpCon cache - see mem_sc_new)
+	if state=iald3 or state=iald23 or state=gf2 or state=pf2 then
 		addr_next <= unsigned(sc_mem_in.rd_data(SC_ADDR_SIZE-1 downto 0))+unsigned(index);
 	end if;
 
@@ -664,23 +670,20 @@ begin
 			next_state <= last;
 
 		when pf0 =>
-			-- just one cycle wait to store the value
-			next_state <= pf1;
-		when pf1 =>
 			if addr_reg=0 then
 				next_state <= npexc;
 			else
+				next_state <= pf1;
+			end if;
+		when pf1 =>
+			-- either 1 or 0
+			if sc_mem_in.rdy_cnt(1)='0' then
 				next_state <= pf2;
 			end if;
 		when pf2 =>
-			-- either 1 or 0
-			if sc_mem_in.rdy_cnt(1)='0' then
-				next_state <= pf3;
-			end if;
-		when pf3 =>
-			next_state <= pf4;
+			next_state <= pf3;
 
-		when pf4 =>
+		when pf3 =>
 			next_state <= last;
 
 		when cp0 =>
@@ -862,20 +865,17 @@ begin
                           
 			when pf0 =>
 				ocin.chk_pf <= '1';
+				state_rd <= '1';
 				state_bsy <= '1';
 				sc_mem_out.atomic <= '1';
 
 			when pf1 =>
-				state_rd <= '1';
 				sc_mem_out.atomic <= '1';
 
 			when pf2 =>
 				sc_mem_out.atomic <= '1';
 
 			when pf3 =>
-				sc_mem_out.atomic <= '1';
-
-			when pf4 =>
 				-- FIXME: just a dummy cache flush
 				ocin.wr_pf <= '1';
 				state_wr <= '1';

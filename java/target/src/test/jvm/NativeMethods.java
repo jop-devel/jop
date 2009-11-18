@@ -48,6 +48,14 @@ public class NativeMethods extends TestCase {
 		ok &= Native.getField(ref, 1)==2;
 		ok &= Native.getField(ref, 2)==3;
 		
+		Native.putField(ref, 0, 111);
+		Native.putField(ref, 1, 222);
+		Native.putField(ref, 2, 333);
+		
+		ok &= a==111;
+		ok &= b==222;
+		ok &= c==333;
+		
 		return ok;
 	}
 	
