@@ -86,13 +86,13 @@ package jop_types is
 		spov	: std_logic;	-- stack overflow
 		np		: std_logic;	-- null pointer
 		ab		: std_logic;	-- array out of bounds
-		rollback: std_logic;	-- rollback transaction
+		rollback: std_logic;	-- rollback RTTM transaction
 	end record;
 
 	constant EXC_SPOV	: std_logic_vector(2 downto 0) := "001";
 	constant EXC_NP		: std_logic_vector(2 downto 0) := "010";
 	constant EXC_AB		: std_logic_vector(2 downto 0) := "011";
-	constant EXC_ROLLBACK: std_logic_vector(2 downto 0) := "100"; -- TODO implement
+	constant EXC_ROLLBACK: std_logic_vector(2 downto 0) := "100";
 
 	-- interrupt and exception request to bcfetch
 	type irq_bcf_type is record

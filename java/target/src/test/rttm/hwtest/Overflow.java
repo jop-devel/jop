@@ -6,7 +6,7 @@ import com.jopdesign.sys.Native;
 import com.jopdesign.sys.Startup;
 import joprt.RtThread;
 
-import static rttm.hwtest.Const.*;
+import static com.jopdesign.sys.Const.*;
 
 public class Overflow implements Runnable {
 	
@@ -40,13 +40,13 @@ public class Overflow implements Runnable {
 	}
 
 	public void run() {
-		Native.wrMem(START_TRANSACTION, MAGIC);
+		Native.wrMem(TM_START_TRANSACTION, MEM_TM_MAGIC);
 		
 		for (int i = 0; i < vals.length; i++) {
 			vals[i] = i;
 		}
 		
-		Native.wrMem(END_TRANSACTION, MAGIC);
+		Native.wrMem(TM_END_TRANSACTION, MEM_TM_MAGIC);
 		
 		while (true);
 	}

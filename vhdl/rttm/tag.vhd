@@ -2,6 +2,7 @@
 --
 --  This file is a part of JOP, the Java Optimized Processor
 --
+--  Copyright (C) 2009, Peter Hilber (peter@hilber.name)
 --  Copyright (C) 2009, Martin Schoeberl (martin@jopdesign.com)
 --
 --  This program is free software: you can redistribute it and/or modify
@@ -48,8 +49,6 @@ port (
 	line: out unsigned(way_bits-1 downto 0);
 	newline: out unsigned(way_bits downto 0);
 			
--- 	full: out std_logic;
-	
 	shift 			: in std_logic;
 	lowest_addr		: out std_logic_vector(addr_width-1 downto 0)
 );
@@ -76,8 +75,8 @@ architecture rtl of tag is
 begin
 
 
-	hit <= h_res; -- TODO not registered any more
-	line <= l; -- TODO not registered any more
+	hit <= h_res;
+	line <= l;
 	newline <= nxt;
 
 -- asynchronous

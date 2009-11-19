@@ -2,7 +2,7 @@
   This file is part of JOP, the Java Optimized Processor
     see <http://www.jopdesign.com/>
 
-  Copyright (C) 2009, Martin Schoeberl (martin@jopdesign.com)
+  Copyright (C) 2009, Peter Hilber (peter@hilber.name)
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -18,23 +18,14 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+package rttm;
+
+//import java.lang.annotation.Target;
 
 /**
- * 
+ * The {@code Atomic} annotation marks methods to be executed in a transaction.
  */
-package rttm.hwtest;
-
-/**
- * @author Peter Hilber
- *
- */
-public class Const {
-
-	static final int MAGIC = 0x07ffff;
-
-	static final int END_TRANSACTION = 0;
-	static final int START_TRANSACTION = 1;
-	static final int ABORTED = 2;
-	static final int EARLY_COMMIT = 3; 
+//@Target(ElementType.METHOD)
+public @interface Atomic {
 
 }

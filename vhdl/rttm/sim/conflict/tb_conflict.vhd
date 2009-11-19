@@ -1,3 +1,24 @@
+--
+--
+--  This file is a part of JOP, the Java Optimized Processor
+--
+--  Copyright (C) 2009, Peter Hilber (peter@hilber.name)
+--
+--  This program is free software: you can redistribute it and/or modify
+--  it under the terms of the GNU General Public License as published by
+--  the Free Software Foundation, either version 3 of the License, or
+--  (at your option) any later version.
+--
+--  This program is distributed in the hope that it will be useful,
+--  but WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+--  GNU General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License
+--  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+--
+
+
 library std;
 library ieee;
 
@@ -51,10 +72,10 @@ constant reset_time			: time := 5 ns;
 	signal commit_out_try: std_logic;
 	signal commit_in_allow: std_logic;
 	
-	signal sc_out_cpu: sc_out_type;
-	signal sc_in_cpu: sc_in_type;
-	signal sc_out_arb: sc_out_type;
-	signal sc_in_arb: sc_in_type;		
+	signal sc_cpu_out: sc_out_type;
+	signal sc_cpu_in: sc_in_type;
+	signal sc_arb_out: sc_out_type;
+	signal sc_arb_in: sc_in_type;		
 	signal exc_tm_rollback: std_logic;
 
 	signal broadcast: tm_broadcast_type := 
@@ -104,7 +125,7 @@ begin
 --	Testbench
 --
 
-	dut: entity work.tmif(rtl)
+	dut: entity work.tm_manager(rtl)
 	generic map (
 		addr_width => addr_width,
 		way_bits => way_bits
@@ -112,13 +133,13 @@ begin
 	port map (
 		clk => clk,
 		reset => reset,
-		commit_out_try => commit_out_try,
-		commit_in_allow => commit_in_allow,
+		commit_token_request => commit_out_try,
+		commit_token_grant => commit_in_allow,
 		broadcast => broadcast,
-		sc_out_cpu => sc_out_cpu,
-		sc_in_cpu => sc_in_cpu,
-		sc_out_arb => sc_out_arb,
-		sc_in_arb => sc_in_arb,
+		sc_cpu_out => sc_cpu_out,
+		sc_cpu_in => sc_cpu_in,
+		sc_arb_out => sc_arb_out,
+		sc_arb_in => sc_arb_in,
 		exc_tm_rollback => exc_tm_rollback
 		);
 		
@@ -154,7 +175,7 @@ begin
 		
 		ended_of <= true;
 		
-		waitStates(states_type'(early_committed_transaction, end_transaction, 
+		waitStates(states_type'(early_committed_transaction,  
 			no_transaction), << signal .dut.state: state_type>>);
 			
 		ended_transaction <= true;
@@ -177,20 +198,20 @@ begin
 	
 		variable result: natural;
 	begin
-		sc_out_cpu.nc <= '0';
+		sc_cpu_out.nc <= '0';
 		
 		wait until falling_edge(reset);		
 		wait until rising_edge(clk);
 		
-		sc_write(clk, conflict_addr, conflict_data, sc_out_cpu, sc_in_cpu);
+		sc_write(clk, conflict_addr, conflict_data, sc_cpu_out, sc_cpu_in);
 		
-		sc_write(clk, TM_MAGIC, 
+		sc_write(clk, TM_MAGIC_SIMULATION, 
 			(31 downto tm_cmd_raw'length => '0') & TM_CMD_START_TRANSACTION, 
-			sc_out_cpu, sc_in_cpu);
+			sc_cpu_out, sc_cpu_in);
 			
 		-- TODO write	
 		
-		sc_read(clk, conflict_addr, result, sc_out_cpu, sc_in_cpu);
+		sc_read(clk, conflict_addr, result, sc_cpu_out, sc_cpu_in);
 		
 				
 		finished <= true;
@@ -223,8 +244,8 @@ begin
 	port map (
 		clk => clk,
 		reset => reset,
-		sc_mem_out => sc_out_arb,
-		sc_mem_in => sc_in_arb
+		sc_mem_out => sc_arb_out,
+		sc_mem_in => sc_arb_in
 		);
 
 	clock: process

@@ -91,4 +91,10 @@ public final class SysDevice extends HardwareObject {
 	 * Number of CPUs
 	 */
 	public volatile int nrCpu;
+	
+	/**
+	 * (Re-)enable exceptions thrown by hardware (used by RTTM)
+	 * a write only register
+	 */
+	public volatile int enableHwExceptions;
 }

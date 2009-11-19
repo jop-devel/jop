@@ -102,7 +102,7 @@ P3=Transaction
 
 #P2=wcet
 #P3=Loop
-WCET_METHOD=measure
+WCET_METHOD=foo
 
 #P1=.
 #P2=dsvmmcp
@@ -137,6 +137,13 @@ TOOLS_CP=-classpath $(TOOLS)/dist/lib/jop-tools.jar$(S)$(TOOLS)/dist/lib/JopDebu
 TARGET_SOURCE=$(TARGET)/src/common$(S)$(TARGET)/src/jdk_base$(S)$(TARGET)/src/jdk11$(S)$(TARGET)/src/rtapi$(S)$(TARGET_APP_SOURCE_PATH)
 TARGET_JFLAGS=-d $(TARGET)/dist/classes -sourcepath $(TARGET_SOURCE) -bootclasspath "" -extdirs "" -classpath "" -source 1.5
 GCC_PARAMS=
+
+# uncomment this to use RTTM
+USE_RTTM=yes
+
+ifeq ($(USE_RTTM),yes)
+GCC_PARAMS=-DRTTM
+endif
 
 # uncomment this if you want floating point operations in hardware
 # ATTN: be sure to choose 'cycfpu' as QPROJ else no FPU will be available
@@ -235,11 +242,11 @@ EXTENSIONS=class rbf rpt sof pin summary ttf qdf dat wlf
 
 clean:
 	for ext in $(EXTENSIONS); do \
-		find . -name \*.$$ext -print -exec rm -r -f {} \; ; \
+		find `ls` -name \*.$$ext -print -exec rm -r -f {} \; ; \
 	done
-	-find . -name jop.pof -print -exec rm -r -f {} \;
-	-find . -name db -print -exec rm -r -f {} \;
-	-find . -name incremental_db -print -exec rm -r -f {} \;
+	-find `ls` -name jop.pof -print -exec rm -r -f {} \;
+	-find `ls` -name db -print -exec rm -r -f {} \;
+	-find `ls` -name incremental_db -print -exec rm -r -f {} \;
 	-rm -rf asm/generated
 	-rm -f vhdl/*.vhd
 	-rm -rf $(TOOLS)/dist
@@ -347,6 +354,9 @@ java_app:
 	-mkdir $(TARGET)/dist/bin
 	javac $(TARGET_JFLAGS) $(TARGET)/src/common/com/jopdesign/sys/*.java
 	javac $(TARGET_JFLAGS) $(TARGET)/src/jdk_base/java/lang/annotation/*.java	# oh new Java 1.5 world!
+ifeq ($(USE_RTTM),yes)	
+	javac $(TARGET_JFLAGS) $(TARGET)/src/common/rttm/internal/Utils.java
+endif
 	javac $(TARGET_JFLAGS) $(TARGET_APP)
 	cd $(TARGET)/dist/classes && jar cf ../lib/classes.zip *
 	$(OPTIMIZE)
@@ -661,7 +671,7 @@ wcet:
 	-mkdir $(TARGET)/tmp
 	java $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.build.WcetPreprocess \
 		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/tmp $(MAIN_CLASS)
-	java -Xss16M -Xmx512M \
+	java -Xss16M -Xmx512M $(JAVA_OPT) \
 	  $(TOOLS_CP) com.jopdesign.wcet.WCETAnalysis \
 		-cp $(TARGET)/tmp -sp $(TARGET_SOURCE) \
 		-app-class $(MAIN_CLASS) -target-method $(WCET_METHOD) \
@@ -672,9 +682,9 @@ wcet:
 	-rm -rf $(TARGET)/tmp
 
 
-# dot2eps works for both rasmus WCETAnalyser and wcet.WCETAnalyser
-dot2eps:
-	cd $(TARGET)/wcet && make
+# dotgraph works for wcet.WCETAnalyser
+dotgraph:
+	cd $(TARGET)/wcet/$(P2).$(P3)_$(WCET_METHOD)/report && make
 
 dfa:
 	java -Xss16M $(TOOLS_CP) com.jopdesign.dfa.Main \

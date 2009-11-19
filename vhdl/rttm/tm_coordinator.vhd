@@ -12,55 +12,59 @@ port (
 	clk							: in std_logic;
 	reset						: in std_logic;
 
-	-- TODO continue register
-	commit_try					: in std_logic_vector(0 to cpu_cnt-1);
+	-- '1' while requesting and holding commit token.
+	-- TODO register
+	commit_token_request		: in std_logic_vector(0 to cpu_cnt-1);
+	
+	-- '1' when commit token is granted until token is given up 
+	-- by resetting commit_token_request.
 	-- TODO delay long enough for conflict detection
-	commit_allow				: out std_logic_vector(0 to cpu_cnt-1)
+	commit_token_grant			: out std_logic_vector(0 to cpu_cnt-1)
 );
 
 end tm_coordinator;
 
 architecture rtl of tm_coordinator is
-	signal commit_allow_internal: std_logic_vector(0 to cpu_cnt-1);
-	signal next_commit_allow_internal: std_logic_vector(0 to cpu_cnt-1);
+	signal token_grant: std_logic_vector(0 to cpu_cnt-1);
+	signal next_token_grant: std_logic_vector(0 to cpu_cnt-1);
 begin
-	commit_allow <= commit_allow_internal;
+	commit_token_grant <= token_grant;
 
 	sync: process (clk, reset) is
 	begin
 	    if reset = '1' then
-	    	commit_allow_internal <= (others => '0');
+	    	token_grant <= (others => '0');
 	    elsif rising_edge(clk) then
-	    	commit_allow_internal <= next_commit_allow_internal;
+	    	token_grant <= next_token_grant;
 	    end if;
 	end process sync;
 	
-	async: process(commit_try, commit_allow_internal) is
+	async: process(commit_token_request, token_grant) is
 		variable commit_continued: std_logic;
-		variable allow: std_logic_vector(0 to cpu_cnt-1);
-		variable allowed: std_logic;
+		variable grant: std_logic_vector(0 to cpu_cnt-1);
+		variable granted: std_logic;
 	begin
 		commit_continued := '0';		
 	
 		for i in 0 to cpu_cnt-1 loop
 			commit_continued := commit_continued or 
-				(commit_allow_internal(i) and commit_try(i));
+				(token_grant(i) and commit_token_request(i));
 		end loop;
 		
-		allow := (others => '0');		
-		allowed := '0';
+		grant := (others => '0');		
+		granted := '0';
 		
 		for i in 0 to cpu_cnt-1 loop
-			if commit_try(i) = '1' and allowed = '0' then
-				allow(i) := '1';
-				allowed := '1';					
+			if commit_token_request(i) = '1' and granted = '0' then
+				grant(i) := '1';
+				granted := '1';					
 			end if;
 		end loop;
 		
 		if commit_continued = '1' then
-			next_commit_allow_internal <= commit_allow_internal;
+			next_token_grant <= token_grant;
 		else
-			next_commit_allow_internal <= allow;
+			next_token_grant <= grant;
 		end if;
 	end process async;
 

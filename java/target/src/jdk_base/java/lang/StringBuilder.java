@@ -534,10 +534,10 @@ public final class StringBuilder
    * @return this <code>StringBuilder</code>
    * @see String#valueOf(double)
    */
-//  public StringBuilder append(double dnum)
-//  {
-//    return append(Double.toString(dnum));
-//  }
+  public StringBuilder append(double dnum)
+  {
+    return append(Double.toString(dnum));
+  }
 
   /**
    * Delete characters from this <code>StringBuilder</code>.
@@ -879,10 +879,10 @@ public final class StringBuilder
    * @throws StringIndexOutOfBoundsException if offset is out of bounds
    * @see String#valueOf(double)
    */
-//  public StringBuilder insert(int offset, double dnum)
-//  {
-//    return insert(offset, Double.toString(dnum));
-//  }
+  public StringBuilder insert(int offset, double dnum)
+  {
+    return insert(offset, Double.toString(dnum));
+  }
 
   /**
    * Finds the first instance of a substring in this StringBuilder.

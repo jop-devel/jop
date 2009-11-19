@@ -8,6 +8,7 @@ add wave -noupdate -divider core0
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_cpu__0/cmp_cpu/cmp_core/cmp_stk/a
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_cpu__0/cmp_cpu/cmp_core/cmp_stk/b
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_cpu__0/cmp_cpu/cmp_core/cmp_bcf/jpc
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_cpu__0/cmp_cpu/mem_out.bcstart
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_cpu__0/cmp_cpu/cmp_core/cmp_bcf/bc/val
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_cpu__0/cmp_cpu/cmp_core/cmp_fch/pc
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_cpu__0/cmp_cpu/cmp_core/cmp_fch/uc/val
@@ -15,6 +16,10 @@ add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/gen_cpu__0/c
 add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/gen_cpu__0/cmp_cpu/cmp_core/cmp_fch/nxt
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_cpu__0/cmp_cpu/cmp_core/cmp_stk/sp
 add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/gen_cpu__0/cmp_cpu/cmp_core/cmp_stk/sp_ov
+add wave -noupdate -divider {core0 bcfetch interrupt}
+add wave -noupdate -format Logic /tb_jop/cmp_jop/gen_cpu__0/cmp_cpu/cmp_core/cmp_bcf/exc_pend
+add wave -noupdate -format Logic /tb_jop/cmp_jop/gen_cpu__0/cmp_cpu/cmp_core/cmp_bcf/exc_taken
+add wave -noupdate -format Logic /tb_jop/cmp_jop/cmp_io/cmp_sys/exc_hw_dis
 add wave -noupdate -divider core1
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_cpu__1/cmp_cpu/cmp_core/cmp_bcf/jpc
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_cpu__1/cmp_cpu/cmp_core/cmp_bcf/bc/val
@@ -33,6 +38,7 @@ add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/cmp_io/cmp_s
 add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/cmp_io/cmp_sys/timer_int
 add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/cmp_io/cmp_sys/int_pend
 add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/cmp_io/cmp_sys/int_ena
+add wave -noupdate -format Logic -radix hexadecimal /tb_jop/cmp_jop/cmp_io/cmp_sys/exc_pend
 add wave -noupdate -divider sc_sys1
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_io__1/cmp_io2/address
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/cmp_jop/gen_io__1/cmp_io2/wr_data

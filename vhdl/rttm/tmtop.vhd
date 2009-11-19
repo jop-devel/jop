@@ -22,6 +22,7 @@
 --
 --
 --	Test top level for the RTTM
+--	TODO: broken
 --
 
 library ieee;

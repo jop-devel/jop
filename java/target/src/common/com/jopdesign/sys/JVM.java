@@ -804,6 +804,10 @@ class JVM {
 
 	private static Throwable f_athrow(Throwable t) {
 		
+		if (Const.USE_RTTM) {
+			Native.wrMem(Const.TM_ABORTED, Const.MEM_TM_MAGIC);
+		}
+		
 		int i, j;
 
 		// get frame pointer
@@ -1036,9 +1040,11 @@ class JVM {
 		// we ignore type on anewarray
 		ret = f_anewarray(cnt, 0);
 		// handle
-		int ref = Native.rdMem(ret);
 		for (i=0; i<cnt; ++i) {
-			Native.wrMem(f_newarray(cnt2,10), ref+i);
+			int arr = f_newarray(cnt2,10);
+			synchronized(GC.mutex) {
+				Native.wrMem(arr, Native.rdMem(ret)+i);
+			}
 		}
 		
 		return ret;

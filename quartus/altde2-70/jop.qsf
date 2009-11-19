@@ -28,7 +28,7 @@ set_global_assignment -name DEVICE EP2C70F896C6
 set_global_assignment -name TOP_LEVEL_ENTITY jop
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION "6.0 SP1"
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "20:32:02  AUGUST 07, 2006"
-set_global_assignment -name LAST_QUARTUS_VERSION 9.0
+set_global_assignment -name LAST_QUARTUS_VERSION "9.0 SP2"
 set_global_assignment -name DEVICE_FILTER_PIN_COUNT 896
 
 # Pin & Location Assignments
@@ -46,8 +46,8 @@ set_global_assignment -name CYCLONE_OPTIMIZATION_TECHNIQUE SPEED
 # start ENTITY(jop)
 
 # timing constraints for SRAM
-# setup relaxed due to input MUX on 16-bit memory
-# we use 80 MHz anyway
+set_instance_assignment -name TSU_REQUIREMENT "2 ns" -to *SRAM*
+set_instance_assignment -name TCO_REQUIREMENT "3 ns" -to *SRAM*
 
 # other default timings
 set_global_assignment -name TSU_REQUIREMENT "5 ns"
@@ -599,13 +599,13 @@ set_location_assignment PIN_AD15 -to clk
 set_location_assignment PIN_AJ6 -to wd
 set_location_assignment PIN_D21 -to ser_rxd
 set_location_assignment PIN_E21 -to ser_txd
-set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_50.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_de2.vhd
 set_global_assignment -name VHDL_FILE "../../vhdl/scio/scio_min_DE2-70.vhd"
 set_global_assignment -name VHDL_FILE ../../vhdl/memory/sc_sram32.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_512x32.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/jop_types.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_pack.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc_pll.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc2_pll.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/fifo.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_uart.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/sc_sys.vhd

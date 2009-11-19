@@ -1,3 +1,24 @@
+--
+--
+--  This file is a part of JOP, the Java Optimized Processor
+--
+--  Copyright (C) 2009, Peter Hilber (peter@hilber.name)
+--
+--  This program is free software: you can redistribute it and/or modify
+--  it under the terms of the GNU General Public License as published by
+--  the Free Software Foundation, either version 3 of the License, or
+--  (at your option) any later version.
+--
+--  This program is distributed in the hope that it will be useful,
+--  but WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+--  GNU General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License
+--  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+--
+
+
 library std;
 library ieee;
 
@@ -61,10 +82,10 @@ constant reset_time			: time := 5 ns;
 	signal commit_out_try: std_logic;
 	signal commit_in_allow: std_logic;
 	
-	signal sc_out_cpu: sc_out_type;
-	signal sc_in_cpu: sc_in_type;
-	signal sc_out_arb: sc_out_type;
-	signal sc_in_arb: sc_in_type;		
+	signal sc_cpu_out: sc_out_type;
+	signal sc_cpu_in: sc_in_type;
+	signal sc_arb_out: sc_out_type;
+	signal sc_arb_in: sc_in_type;		
 	signal exc_tm_rollback: std_logic;
 
 	signal broadcast: tm_broadcast_type := 
@@ -94,7 +115,7 @@ begin
 --	Testbench
 --
 
-	dut: entity work.tmif(rtl)
+	dut: entity work.tm_manager(rtl)
 	generic map (
 		addr_width => addr_width,
 		way_bits => way_bits
@@ -102,13 +123,13 @@ begin
 	port map (
 		clk => clk,
 		reset => reset,
-		commit_out_try => commit_out_try,
-		commit_in_allow => commit_in_allow,
+		commit_token_request => commit_out_try,
+		commit_token_grant => commit_in_allow,
 		broadcast => broadcast,
-		sc_out_cpu => sc_out_cpu,
-		sc_in_cpu => sc_in_cpu,
-		sc_out_arb => sc_out_arb,
-		sc_in_arb => sc_in_arb,
+		sc_cpu_out => sc_cpu_out,
+		sc_cpu_in => sc_cpu_in,
+		sc_arb_out => sc_arb_out,
+		sc_arb_in => sc_arb_in,
 		exc_tm_rollback => exc_tm_rollback
 		);
 		
@@ -149,7 +170,7 @@ begin
 		
 		-- tm state
 
- 		alias nesting_cnt is << signal .dut.nesting_cnt: nesting_cnt_type >>;
+--  		alias nesting_cnt is << signal .dut.nesting_cnt: nesting_cnt_type >>;
 		
 		alias valid is << signal .dut.cmp_tm.tag.valid: 
 			std_logic_vector(2**way_bits-1 downto 0) >>;
@@ -188,7 +209,7 @@ begin
 		variable lines_used: integer;
 		variable addr_used: integer;
 	begin
-		sc_out_cpu.nc <= '0';
+		sc_cpu_out.nc <= '0';
 		
 	
 		wait until falling_edge(reset);		
@@ -198,43 +219,45 @@ begin
 		
  		assert << signal .dut.state: state_type>> = no_transaction;
 		
-		sc_write(clk, addr(2), data(3), sc_out_cpu, sc_in_cpu);
+		sc_write(clk, addr(2), data(3), sc_cpu_out, sc_cpu_in);
  		assert now = 70 ns;
 		assert ram(to_integer(unsigned(addr(2)))) = data(3);
 		
-		sc_read(clk, addr(2), result, sc_out_cpu, sc_in_cpu);
+		sc_read(clk, addr(2), result, sc_cpu_out, sc_cpu_in);
 		assert now = 120 ns and result = data(3);
 		
-		sc_write(clk, addr(6), data(6), sc_out_cpu, sc_in_cpu);
+		sc_write(clk, addr(4), data(0), sc_cpu_out, sc_cpu_in);
+		
+		sc_write(clk, addr(6), data(6), sc_cpu_out, sc_cpu_in);
 
 		-- start and end transactions
 		
- 		assert to_integer(nesting_cnt) = 0; 
+--  		assert to_integer(nesting_cnt) = 0; 
 
-		sc_write(clk, TM_MAGIC, 
+		sc_write(clk, TM_MAGIC_SIMULATION, 
 			(31 downto tm_cmd_raw'length => '0') & TM_CMD_START_TRANSACTION, 
-			sc_out_cpu, sc_in_cpu);
+			sc_cpu_out, sc_cpu_in);
 		
  		assert << signal .dut.state: state_type>> = normal_transaction;
- 		assert to_integer(nesting_cnt) = 1;		
-
-		sc_write(clk, TM_MAGIC, 
-			(31 downto tm_cmd_raw'length => '0') & TM_CMD_START_TRANSACTION, 
-			sc_out_cpu, sc_in_cpu);
-
- 		assert to_integer(nesting_cnt) = 2;
-		
-		sc_write(clk, TM_MAGIC, 
-			(31 downto tm_cmd_raw'length => '0') & TM_CMD_END_TRANSACTION, 
-			sc_out_cpu, sc_in_cpu);
-		
- 		assert to_integer(nesting_cnt) = 1;
-		
-		sc_write(clk, TM_MAGIC, 
-			(31 downto tm_cmd_raw'length => '0') & TM_CMD_START_TRANSACTION, 
-			sc_out_cpu, sc_in_cpu);
-			
- 		assert to_integer(nesting_cnt) = 2;
+--  		assert to_integer(nesting_cnt) = 1;		
+-- 
+-- 		sc_write(clk, TM_MAGIC, 
+-- 			(31 downto tm_cmd_raw'length => '0') & TM_CMD_START_TRANSACTION, 
+-- 			sc_out_cpu, sc_in_cpu);
+-- 
+--  		assert to_integer(nesting_cnt) = 2;
+-- 		
+-- 		sc_write(clk, TM_MAGIC, 
+-- 			(31 downto tm_cmd_raw'length => '0') & TM_CMD_END_TRANSACTION, 
+-- 			sc_out_cpu, sc_in_cpu);
+-- 		
+--  		assert to_integer(nesting_cnt) = 1;
+-- 		
+-- 		sc_write(clk, TM_MAGIC, 
+-- 			(31 downto tm_cmd_raw'length => '0') & TM_CMD_START_TRANSACTION, 
+-- 			sc_out_cpu, sc_in_cpu);
+-- 			
+--  		assert to_integer(nesting_cnt) = 2;
 		
 		assert << signal .dut.conflict: std_logic >> /= '1';
 		assert valid = (2**way_bits-1 downto 0 => '0');
@@ -247,20 +270,20 @@ begin
 		
 		-- writes and reads in transactional mode
 		
-		sc_write(clk, addr(0), data(0), sc_out_cpu, sc_in_cpu);
+		sc_write(clk, addr(0), data(0), sc_cpu_out, sc_cpu_in);
 		
 		assert write_tags_v = (2**way_bits-1 downto 1 => 'U') & "1";
 		assert write_buffer(0) = data(0);
 		assert ram(to_integer(unsigned(addr(0)))) = (31 downto 0 => 'U');
 		
-		sc_read(clk, addr(0), result, sc_out_cpu, sc_in_cpu);
+		sc_read(clk, addr(0), result, sc_cpu_out, sc_cpu_in);
 		
  		assert result = data(0);
 		
 		
 		-- read uncached word
 		
-		sc_read(clk, addr(2), result, sc_out_cpu, sc_in_cpu);
+		sc_read(clk, addr(2), result, sc_cpu_out, sc_cpu_in);
 		
  		assert result = data(3);		
 -- 		assert read_tags(0) = addr(0)(addr_width-1 downto 0);
@@ -270,20 +293,20 @@ begin
 
 
 
-		-- exit inner transaction
-		
-		sc_write(clk, TM_MAGIC, 
-			(31 downto tm_cmd_raw'length => '0') & TM_CMD_END_TRANSACTION, 
-			sc_out_cpu, sc_in_cpu);
-		
- 		assert to_integer(nesting_cnt) = 1;
+-- 		-- exit inner transaction
+-- 		
+-- 		sc_write(clk, TM_MAGIC, 
+-- 			(31 downto tm_cmd_raw'length => '0') & TM_CMD_END_TRANSACTION, 
+-- 			sc_out_cpu, sc_in_cpu);
+-- 		
+--  		assert to_integer(nesting_cnt) = 1;
 
 
 		-- read .nc word
 
-		sc_out_cpu.nc <= '1';
-		sc_read(clk, addr(6), result, sc_out_cpu, sc_in_cpu);
-		sc_out_cpu.nc <= '0';
+		sc_cpu_out.nc <= '1';
+		sc_read(clk, addr(6), result, sc_cpu_out, sc_cpu_in);
+		sc_cpu_out.nc <= '0';
 		
 		assert result = data(6);
 -- 		assert read_tags_v(2**way_bits-1 downto 2) = 
@@ -293,7 +316,7 @@ begin
 		
 		
 
-		sc_write(clk, addr(0), data(1), sc_out_cpu, sc_in_cpu);
+		sc_write(clk, addr(0), data(1), sc_cpu_out, sc_cpu_in);
 		
 		if cache_combined then
 			lines_used := 2;
@@ -308,11 +331,11 @@ begin
 		assert to_integer(<< signal .dut.cmp_tm.tag.nxt: -- newline
 			unsigned(way_bits downto 0) >>) = lines_used;
 		
-		sc_read(clk, addr(0), result, sc_out_cpu, sc_in_cpu);
+		sc_read(clk, addr(0), result, sc_cpu_out, sc_cpu_in);
 		
 		assert result = data(1);
 						
-		sc_write(clk, addr(1), data(2), sc_out_cpu, sc_in_cpu);
+		sc_write(clk, addr(1), data(2), sc_cpu_out, sc_cpu_in);
 
 		assert write_buffer(0) = data(1);
 		
@@ -338,14 +361,14 @@ begin
 
 		testing_commit <= true;
 		
-		sc_write(clk, TM_MAGIC, 
+		sc_write(clk, TM_MAGIC_SIMULATION, 
 			(31 downto tm_cmd_raw'length => '0') & TM_CMD_END_TRANSACTION, 
-			sc_out_cpu, sc_in_cpu);
+			sc_cpu_out, sc_cpu_in);
 		
 		testing_commit <= false;
 		
  		assert << signal .dut.state: state_type>> = no_transaction;
- 		assert to_integer(nesting_cnt) = 0;
+--  		assert to_integer(nesting_cnt) = 0;
 		
 		assert ram(to_integer(unsigned(addr(0)))) = (data(1));
 		assert ram(to_integer(unsigned(addr(1)))) = (data(2));		
@@ -354,9 +377,9 @@ begin
 		
 		-- start another transaction
 		
-		sc_write(clk, TM_MAGIC, 
+		sc_write(clk, TM_MAGIC_SIMULATION, 
 			(31 downto tm_cmd_raw'length => '0') & TM_CMD_START_TRANSACTION, 
-			sc_out_cpu, sc_in_cpu);
+			sc_cpu_out, sc_cpu_in);
 		
  		assert << signal .dut.state: state_type>> = normal_transaction;
 		
@@ -370,14 +393,18 @@ begin
 		
 		broadcast.valid <= '0';
 		
+		-- no conflict, no hit
+		
+		-- TODO
+		
 		-- write something that is not committed
 		
-		sc_write(clk, addr(3), data(4), sc_out_cpu, sc_in_cpu);
+		sc_write(clk, addr(3), data(4), sc_cpu_out, sc_cpu_in);
 		
 		
 		-- conflict 
 		
-		sc_read(clk, addr(0), result, sc_out_cpu, sc_in_cpu);
+		sc_read(clk, addr(0), result, sc_cpu_out, sc_cpu_in);
 		
 		testing_conflict <= true;
 		
@@ -398,27 +425,27 @@ begin
 
 		testing_conflict <= false;
 		
- 		assert << signal .dut.state: state_type>> = rollback_signal;
+ 		assert << signal .dut.state: state_type>> = rollback;
 		
 		-- zombie reads/writes
 		
-		sc_read(clk, addr(4), result, sc_out_cpu, sc_in_cpu);
+		sc_read(clk, addr(4), result, sc_cpu_out, sc_cpu_in);
 
-		sc_write(clk, addr(5), data(5), sc_out_cpu, sc_in_cpu);
+		sc_write(clk, addr(5), data(5), sc_cpu_out, sc_cpu_in);
 
 		-- TODO zombie mode results are not defined yet
 		--assert result = (31 downto 0 => '0');
 		
- 		assert << signal .dut.state: state_type>> = rollback_wait;
+ 		assert << signal .dut.state: state_type>> = rollback;
 		
 		-- ack rollback
 		
-		sc_write(clk, TM_MAGIC, 
+		sc_write(clk, TM_MAGIC_SIMULATION, 
 			(31 downto tm_cmd_raw'length => '0') & TM_CMD_ABORTED, 
-			sc_out_cpu, sc_in_cpu);
+			sc_cpu_out, sc_cpu_in);
 		
  		assert << signal .dut.state: state_type>> = no_transaction;
- 		assert to_integer(nesting_cnt) = 0; -- ( ) 
+--  		assert to_integer(nesting_cnt) = 0; -- ( ) 
 			
 		assert ram(to_integer(unsigned(addr(3)))) = (31 downto 0 => 'U');
 		assert ram(to_integer(unsigned(addr(5)))) = (31 downto 0 => 'U');
@@ -440,9 +467,9 @@ begin
 			
 			-- check if broadcast flags set
 			assert testing_commit or 
-				not (sc_out_arb.wr ='1' and sc_out_arb.tm_broadcast = '1');
+				not (sc_arb_out.wr ='1' and sc_arb_out.tm_broadcast = '1');
 			assert not testing_commit or 
-				not (sc_out_arb.wr ='1' and sc_out_arb.tm_broadcast = '0');
+				not (sc_arb_out.wr ='1' and sc_arb_out.tm_broadcast = '0');
 		end loop; 
 	end process check_flags;
 
@@ -459,8 +486,8 @@ begin
 	port map (
 		clk => clk,
 		reset => reset,
-		sc_mem_out => sc_out_arb,
-		sc_mem_in => sc_in_arb
+		sc_mem_out => sc_arb_out,
+		sc_mem_in => sc_arb_in
 		);
 
 	clock: process

@@ -177,7 +177,7 @@ public class Nand extends NandLowLevel {
 	 * @param page
 	 * @return
 	 */
-	int read(int[] data, int block, int page) {
+	public int read(int[] data, int block, int page) {
 		block = getPhysicalBlock(block);
 		boolean ok = readPage(data, localSpare, block, page);
 		return ok ? (localSpare[0] & 0xffff) : -1;
@@ -282,6 +282,15 @@ public class Nand extends NandLowLevel {
 		}
 		int cnt = badCount();
 		int reservedStart = getNrOfBlocks() - remap.length - 2;
+		
+		// Check whether cnt is not higher than the maximum number of
+		// spare blocks. Otherwise referencing remap[cnt] will result
+		// in an ArrayIndexOutOfBoundsException.
+		if (cnt >= getNrOfBlocks() / 16 - 2) {
+			System.out.println("Not enough spare blocks available.");
+			System.exit(1);
+		}
+		
 		remap[cnt] = ((reservedStart + cnt) << 16) + block;
 		// if not yet marked in the spare do it.
 		updateMap();

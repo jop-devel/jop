@@ -74,7 +74,8 @@ generic (
 
 	width		: integer := 32;	-- one data word
 	pc_width	: integer := 11;	-- address bits of internal instruction rom (upper half)
-	i_width		: integer := 10		-- instruction width
+	i_width		: integer := 10;	-- instruction width
+	stov_using_geq	: boolean
 );
 
 port (
@@ -156,7 +157,7 @@ port (
 end component;
 
 component stack is
-generic (width : integer; jpc_width : integer);
+generic (width : integer; jpc_width : integer; stov_using_geq: boolean);
 port (
 	clk, reset	: in std_logic;
 
@@ -307,7 +308,7 @@ begin
 		port map (clk, reset, jfetch, jopdfetch,
 			br, jmp, bsy, jpaddr, instr);
 
-	cmp_stk: stack generic map (width, jpc_width)
+	cmp_stk: stack generic map (width, jpc_width, stov_using_geq)
 		port map (clk, reset, din, dir, opd, jpc_out,
 			sel_sub, sel_amux, ena_a,
 			sel_bmux, sel_log, sel_shf, sel_lmux, sel_imux, sel_rmux, sel_smux,

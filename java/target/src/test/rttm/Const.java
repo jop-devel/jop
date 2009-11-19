@@ -30,7 +30,7 @@ package rttm;
  */
 public class Const {
 
-	static final int MAGIC = 0x07ffff;
+	static final int MAGIC = -10000;
 	static final int CNT = 1000;
 
 }

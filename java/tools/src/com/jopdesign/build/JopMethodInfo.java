@@ -30,7 +30,7 @@ import org.apache.bcel.generic.Type;
 
 /**
  * @author Flavius, Martin
- * 
+ *
  */
 public class JopMethodInfo extends MethodInfo implements Serializable {
 
@@ -48,8 +48,8 @@ public class JopMethodInfo extends MethodInfo implements Serializable {
 	int vtindex;
 
 	/**
-	 * Constructor is only used by the ClassInfo visitor 
-	 * 
+	 * Constructor is only used by the ClassInfo visitor
+	 *
 	 * @param jc
 	 * @param mid
 	 */
@@ -65,7 +65,7 @@ public class JopMethodInfo extends MethodInfo implements Serializable {
 	public JopClassInfo getCli() {
 		return (JopClassInfo) super.getCli();
 	}
-	
+
 	/**
 	 * @param m
 	 */
@@ -128,8 +128,7 @@ public class JopMethodInfo extends MethodInfo implements Serializable {
 
 		if (methodId.equals(AppInfo.clinitSig)
 				&& len >= JOPizer.METHOD_MAX_SIZE / 4) {
-			out
-					.println("\t// no size for <clinit> - we iterpret it and allow larger methods!");
+			out.println("\t// no size for <clinit> - we interpret it and allow larger methods!");
 		}
 		// java_lang_String
 		// 0x01 TODO access
@@ -170,7 +169,9 @@ public class JopMethodInfo extends MethodInfo implements Serializable {
 
 	}
 
-	public void dumpByteCode(PrintWriter out) {
+	public void dumpByteCode(PrintWriter out, PrintWriter outLinkInfo) {
+		// link info: dump bytecode address
+		outLinkInfo.println("bytecode "+getFQMethodName()+" "+codeAddress);
 
 		out.println("//\t" + codeAddress + ": " + methodId);
 		if (getCode() == null) {

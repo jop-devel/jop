@@ -145,7 +145,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhdl files
 //
-version		= 20090905
+version		= 20091014
 
 //
 //	start of stack area in the on-chip RAM
@@ -190,10 +190,6 @@ fpu_const_b   = -15
 fpu_const_op  = -14
 fpu_const_res = -13
 #endif
-
-tm_magic = 524287
-tm_aborted = 2
-
 
 
 //
@@ -712,23 +708,18 @@ sys_int:
 //	call com.jopdesign.sys.JVMHelp.except()	(
 //
 sys_exc:
-
-			// inform tm module 
-			
-			ldi tm_magic
-			stmwa				// store memory address
-			ldi tm_aborted
-			stmwd				// store memory data
-			wait
-			wait
-
 			ldjpc				// correct wrong increment on jpc
 			ldi	1				//    could also be done in bcfetch.vhd
 			sub					//    but this is simpler :-)
 			stjpc
 			ldm	jjhp			// interrupt() is at offset 0
 								// jjhp points in method table to first
+#ifndef RTTM 
 			ldi	6				// forth method (index 3 * 2 word);
+#else
+			ldi 10				// call handleException() directly, don't 
+								// reset stack pointer
+#endif
 			add
 
 

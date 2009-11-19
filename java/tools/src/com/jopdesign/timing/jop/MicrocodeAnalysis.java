@@ -417,6 +417,10 @@ public class MicrocodeAnalysis {
 			// -----------------------------------------------------------------------------------
 			//	'no sp change' instructions
 			// -----------------------------------------------------------------------------------
+	        /* microcode jump */
+			case MicrocodeConstants.JMP:
+				jump(label);
+				break;
 			case MicrocodeConstants.NOP:
 				break;
 			case MicrocodeConstants.WAIT:

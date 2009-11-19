@@ -1,3 +1,24 @@
+--
+--
+--  This file is a part of JOP, the Java Optimized Processor
+--
+--  Copyright (C) 2009, Peter Hilber (peter@hilber.name)
+--
+--  This program is free software: you can redistribute it and/or modify
+--  it under the terms of the GNU General Public License as published by
+--  the Free Software Foundation, either version 3 of the License, or
+--  (at your option) any later version.
+--
+--  This program is distributed in the hope that it will be useful,
+--  but WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+--  GNU General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License
+--  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+--
+
+
 -- TODO rewrite to test commit_allow port instead of internal signals
 
 library ieee;
@@ -57,16 +78,16 @@ begin
 	port map (
 		clk => clk,
 		reset => reset,
-		commit_try => commit_try,
-		-- test internal next_commit_allow_internal signal
-		commit_allow => open 
+		commit_token_request => commit_try,
+		-- test internal next_token_grant signal
+		commit_token_grant => open 
 		);
 
 	-- TODO use postponed process in parallel or ugly manual delay? 
 
 	gen: process is
 		alias next_commit_allow is 
-			<< signal .dut.next_commit_allow_internal: cpu_flags >>;
+			<< signal .dut.next_token_grant: cpu_flags >>;
 	begin
 		commit_try <= (others => '0');
 	

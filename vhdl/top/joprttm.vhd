@@ -2,6 +2,7 @@
 --
 --  This file is a part of JOP, the Java Optimized Processor
 --
+--  Copyright (C) 2009, Peter Hilber (peter@hilber.name)
 --  Copyright (C) 2001-2008, Martin Schoeberl (martin@jopdesign.com)
 --
 --  This program is free software: you can redistribute it and/or modify
@@ -48,7 +49,9 @@ generic (
 	jpc_width	: integer := 10;	-- address bits of java bytecode pc = cache size
 	block_bits	: integer := 4;		-- 2*block_bits is number of cache blocks
 	spm_width	: integer := 8;		-- size of scratchpad RAM (in number of address bits for 32-bit words)
-	cpu_cnt		: integer := 2		-- number of cpus
+	cpu_cnt		: integer := 2;		-- number of cpus
+	rttm_instrum: boolean := true;	-- rttm instrumentation
+	confl_rds_only	: boolean := false
 );
 
 port (
@@ -113,8 +116,9 @@ architecture rtl of jop is
 --	constants:
 --
 
-constant tm_addr_width		: integer := 18;	-- address bits of cachable memory
-constant tm_way_bits		: integer := 5;		-- 2**way_bits is number of entries
+	constant tm_addr_width		: integer := 18;	-- address bits of cachable memory
+	constant tm_way_bits		: integer := 5;		-- 2**way_bits is number of entries
+	constant tm_magic_detect	: std_logic_vector(18 downto 17) := (others => '1');
 
 
 --
@@ -143,11 +147,11 @@ end component;
 --
 --	jopcpu connections
 --
-	signal sc_out_tm		: arb_out_type(0 to cpu_cnt-1);
-	signal sc_in_tm			: arb_in_type(0 to cpu_cnt-1);
+	signal sc_tm_out		: arb_out_type(0 to cpu_cnt-1);
+	signal sc_tm_in			: arb_in_type(0 to cpu_cnt-1);
 	
-	signal sc_out_arb		: arb_out_type(0 to cpu_cnt-1);
-	signal sc_in_arb		: arb_in_type(0 to cpu_cnt-1);
+	signal sc_arb_out		: arb_out_type(0 to cpu_cnt-1);
+	signal sc_arb_in		: arb_in_type(0 to cpu_cnt-1);
 		
 	signal sc_mem_out	: sc_out_type;
 	signal sc_mem_in	: sc_in_type;
@@ -193,9 +197,10 @@ end component;
 	
 	signal exc_tm_rollback	: std_logic_vector(0 to cpu_cnt-1);
 	signal tm_broadcast		: tm_broadcast_type;
+	signal tm_broadcast_del	: tm_broadcast_type;
 	
-	signal commit_try		: std_logic_vector(0 to cpu_cnt-1);
-	signal commit_allow		: std_logic_vector(0 to cpu_cnt-1);
+	signal commit_token_request		: std_logic_vector(0 to cpu_cnt-1);
+	signal commit_token_grant		: std_logic_vector(0 to cpu_cnt-1);
 	
 	
 	
@@ -247,34 +252,38 @@ end process;
 			generic map(
 				jpc_width => jpc_width,
 				block_bits => block_bits,
-				spm_width => spm_width
+				spm_width => spm_width,
+				stov_using_geq => true
 			)
 			port map(clk_int, int_res,
-				sc_out_tm(i), sc_in_tm(i),
+				sc_tm_out(i), sc_tm_in(i),
 				sc_io_out(i), sc_io_in(i), irq_in(i), 
 				irq_out(i), exc_req(i), exc_tm_rollback(i));
 	end generate;
 	
 	gen_tm: for i in 0 to cpu_cnt-1 generate
-		cmp_tm: entity work.tmif
+		cmp_tm: entity work.tm_manager
 			generic map (
 				addr_width => tm_addr_width,
-				way_bits => tm_way_bits
+				tm_magic_detect => tm_magic_detect,
+				way_bits => tm_way_bits,
+				rttm_instrum => rttm_instrum,
+				confl_rds_only => confl_rds_only
 			)	
 			port map (
 				clk	=> clk_int,
 				reset => int_res,
 				
-				commit_out_try => commit_try(i),
-				commit_in_allow => commit_allow(i),
+				commit_token_request => commit_token_request(i),
+				commit_token_grant => commit_token_grant(i),
 			
-				broadcast => tm_broadcast,
+				broadcast => tm_broadcast_del,
 			
-				sc_out_cpu => sc_out_tm(i),  
-				sc_in_cpu => sc_in_tm(i), 
+				sc_cpu_out => sc_tm_out(i),  
+				sc_cpu_in => sc_tm_in(i), 
 			
-				sc_out_arb => sc_out_arb(i),
-				sc_in_arb => sc_in_arb(i),
+				sc_arb_out => sc_arb_out(i),
+				sc_arb_in => sc_arb_in(i),
 			
 				exc_tm_rollback => exc_tm_rollback(i)
 				);
@@ -287,8 +296,8 @@ end process;
 	port map (
 		clk => clk_int,
 		reset => int_res,
-		commit_try => commit_try,
-		commit_allow => commit_allow
+		commit_token_request => commit_token_request,
+		commit_token_grant => commit_token_grant
 		);
 			
 	cmp_arbiter: entity work.arbiter
@@ -297,12 +306,26 @@ end process;
 			cpu_cnt => cpu_cnt
 		)
 		port map(clk_int, int_res,
-			sc_out_arb, sc_in_arb,
+			sc_arb_out, sc_arb_in,
 			sc_mem_out, sc_mem_in,
 			tm_broadcast
 			-- Enable for use with Round Robin Arbiter
 			-- sync_out_array(1)
 			);
+	
+	-- Hold valid TM broadcast addresses and delay broadcast for 1 cycle. 
+	hold_tm_broadcast: process (clk_int, int_res) is
+	begin
+	    if int_res = '1' then
+	    	tm_broadcast_del <= ('0', (others => '0')); 
+	    elsif rising_edge(clk_int) then
+	    	tm_broadcast_del.valid <= tm_broadcast.valid;
+		 	if tm_broadcast.valid = '1' then
+				tm_broadcast_del.address <= tm_broadcast.address;
+			end if;
+	    end if;
+	end process hold_tm_broadcast;
+
 
 	cmp_scm: entity work.sc_mem_if
 		generic map (
@@ -344,7 +367,8 @@ end process;
 	-- io for processor 0
 	cmp_io: entity work.scio generic map (
 			cpu_id => 0,
-			cpu_cnt => cpu_cnt
+			cpu_cnt => cpu_cnt,
+			auto_disable_hw_exceptions => true
 		)
 		port map (clk_int, int_res,
 			sc_io_out(0), sc_io_in(0),
@@ -372,7 +396,8 @@ end process;
 			addr_bits => 4,
 			clk_freq => clk_freq,
 			cpu_id => i,
-			cpu_cnt => cpu_cnt
+			cpu_cnt => cpu_cnt,
+			auto_disable_hw_exceptions => true
 		)
 		port map(
 			clk => clk_int,

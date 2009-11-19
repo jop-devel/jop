@@ -46,7 +46,8 @@ entity jopcpu is
 generic (
 	jpc_width	: integer;			-- address bits of java bytecode pc = cache size
 	block_bits	: integer;			-- 2*block_bits is number of cache blocks
-	spm_width	: integer := 0		-- size of scratchpad RAM (in number of address bits)
+	spm_width	: integer := 0;		-- size of scratchpad RAM (in number of address bits)
+	stov_using_geq	: boolean := false
 );
 
 port (
@@ -130,7 +131,7 @@ begin
 --
 
 	cmp_core: entity work.core
-		generic map(jpc_width)
+		generic map(jpc_width, stov_using_geq => stov_using_geq)
 		port map (clk, reset,
 			bsy,
 			stack_din, ext_addr,
@@ -266,8 +267,6 @@ begin
 		when others =>
 			sc_ctrl_mem_in <= sc_mem_in;
 	end case;
-
-	-- TODO assert sc_ctrl_mem_out.address /= "000" & X"FFFFF";
 
 	-- select
 	case sc_ctrl_mem_out.address(SC_ADDR_SIZE-1 downto SC_ADDR_SIZE-2) is

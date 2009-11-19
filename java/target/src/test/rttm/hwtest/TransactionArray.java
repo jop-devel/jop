@@ -5,7 +5,7 @@ import com.jopdesign.io.SysDevice;
 import com.jopdesign.sys.Native;
 import com.jopdesign.sys.Startup;
 
-import static rttm.hwtest.Const.*;
+import static com.jopdesign.sys.Const.*;
 
 public class TransactionArray implements Runnable {
 	
@@ -46,16 +46,16 @@ public class TransactionArray implements Runnable {
 	}
 
 	public void run() {
-		Native.wrMem(START_TRANSACTION, MAGIC);
+		Native.wrMem(TM_START_TRANSACTION, MEM_TM_MAGIC);
 		
 		for (int i = 0; i < vals.length; i++)
 		{
 			vals[i] = i;
 		}
 		
-		Native.wrMem(END_TRANSACTION, MAGIC);
+		Native.wrMem(TM_END_TRANSACTION, MEM_TM_MAGIC);
 		
-		Native.wrMem(START_TRANSACTION, MAGIC);
+		Native.wrMem(TM_START_TRANSACTION, MEM_TM_MAGIC);
 		
 		for (int i = 0; i < vals.length; i++)
 		{

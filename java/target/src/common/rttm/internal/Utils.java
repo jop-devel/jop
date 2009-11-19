@@ -1,0 +1,44 @@
+/*
+  This file is part of JOP, the Java Optimized Processor
+    see <http://www.jopdesign.com/>
+
+  Copyright (C) 2009, Peter Hilber (peter@hilber.name)
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+package rttm.internal;
+
+import rttm.AbortException;
+
+import com.jopdesign.sys.Const;
+import com.jopdesign.sys.Native;
+import com.jopdesign.sys.RollbackException;
+
+/**
+ * Internal use by RTTM.
+ * Some members need to be public to be accessible from atomic methods. 
+ * 
+ * @author Peter Hilber (peter@hilber.name)
+ */
+public class Utils {
+
+	/**
+	 * TMTODO
+	 */
+	public static final RollbackException rollbackException = new RollbackException();
+	public static final AbortException abortException = new AbortException();
+	
+	public static boolean[] inTransaction = new boolean[Native.rd(Const.IO_CPUCNT)];
+}

@@ -47,7 +47,7 @@ import com.jopdesign.wcet.graphutils.TopOrder.BadGraphException;
 /**
  * AppInfo subclass for the WCET analysis.
  * Provides a TypeGraph.
- * 
+ *
  * @author Benedikt Huber, benedikt.huber@gmail.com
  */
 public class WcetAppInfo  {
@@ -60,9 +60,9 @@ public class WcetAppInfo  {
 	public class MethodNotFoundException extends Exception {
 		private static final long serialVersionUID = 1L;
 		public MethodNotFoundException(String message) {
-			super(message);			
+			super(message);
 		}
-	}	
+	}
 	private TypeGraph typeGraph;
 	private AppInfo ai;
 	private Map<MethodInfo, ControlFlowGraph> cfgs;
@@ -73,20 +73,20 @@ public class WcetAppInfo  {
 
 	public WcetAppInfo(Project p, com.jopdesign.build.AppInfo ai, ProcessorModel processor) {
 		this.project = p;
-		this.ai = ai; 
+		this.ai = ai;
 		this.processor = processor;
 		this.typeGraph = new TypeGraph(this);
 		cfgsByIndex = new Vector<ControlFlowGraph>();
 		cfgs = new Hashtable<MethodInfo, ControlFlowGraph>();
 	}
-	
+
 	/**
 	 * @return A mapping from the name of a loaded class to {@link ClassInfo}.
 	 */
 	public Map<String, ? extends ClassInfo> getCliMap() {
 		return ai.cliMap;
 	}
-	
+
 	public Project getProject() {
 		return project;
 	}
@@ -97,7 +97,7 @@ public class WcetAppInfo  {
 	public TypeGraph getTypeGraph() {
 		return typeGraph;
 	}
-	
+
 	/**
 	 * @param className Name of the class to lookup
 	 * @return the class info, or null if the class could'nt be found
@@ -109,7 +109,7 @@ public class WcetAppInfo  {
 	/**
 	 * Find the given method
 	 * @param className The fully qualified name of the class the method is located in
-	 * @param methodName The name of the method to be searched. 
+	 * @param methodName The name of the method to be searched.
 	 * 				     Note that the signature is optional if the method name is unique.
 	 * @return The method searched for, or null if it couldn't be found
 	 * @throws MethodNotFoundException if the method couldn't be found or is ambiguous
@@ -119,7 +119,7 @@ public class WcetAppInfo  {
 		if(cli == null) throw new MethodNotFoundException("The class "+className+" couldn't be found");
 		return searchMethod(cli,methodName);
 	}
-	
+
 	public MethodInfo searchMethod(ClassInfo cli, String methodName) throws MethodNotFoundException {
 		MethodInfo mi = null;
 		if(methodName.indexOf("(") > 0) {
@@ -138,7 +138,7 @@ public class WcetAppInfo  {
 														  "Both "+mi.methodId+" and "+candidate.methodId+" match");
 					}
 				}
-			}			
+			}
 			if(mi == null) {
 				Vector<String> candidates = new Vector<String>();
 				for(MethodInfo candidate : cli.getMethods()) {
@@ -151,7 +151,7 @@ public class WcetAppInfo  {
 		return mi;
 	}
 	/**
-	 * Return the receiver name and method name of a 
+	 * Return the receiver name and method name of a
 	 * method referenced by the given invoke instruction
 	 * @param invokerCi the classinfo of the method which contains the {@link InvokeInstruciton}
 	 * @param instr the invoke instruction
@@ -186,7 +186,7 @@ public class WcetAppInfo  {
 					throw new Error();
 				}
 			}
-		}		
+		}
 		return staticImpl;
 	}
 
@@ -210,9 +210,9 @@ public class WcetAppInfo  {
 		}
 		return impls;
 	}
-	
+
 	/**
-	 * Variant operating on an instruction handle and therefore capable of 
+	 * Variant operating on an instruction handle and therefore capable of
 	 * using DFA analysis results.
 	 * @param invInstr
 	 * @return
@@ -251,7 +251,7 @@ public class WcetAppInfo  {
 			if(! m.getMethod().isAbstract() && ! m.getMethod().isInterface()) {
 				ms.add(m);
 			}
-		}		
+		}
 	}
 
 	public AppInfo getAppInfo() {
