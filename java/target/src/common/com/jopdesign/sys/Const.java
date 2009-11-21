@@ -311,8 +311,13 @@ public class Const {
 	public static final int WB_TS3 = WB_BASE+0x76;
 
 	// RTTM
-	// TMTODO adapt magic address to available memory
-	public static final int MEM_TM_MAGIC = 0x060000;
+	
+	// Adapt magic address to available SRAM: 2 MiB (TMTODO) or 1 MiB
+	public static final boolean USE_RTTM_BIGMEM = true;
+	
+	// Keep in synch with VHDL tm_manager.tm_magic_detect generic.
+	public static final int MEM_TM_MAGIC = USE_RTTM_BIGMEM ? 
+			0x0C0000 : 0x060000;
 
 	public static final int TM_END_TRANSACTION = 0;
 	public static final int TM_START_TRANSACTION = 1;
@@ -320,6 +325,7 @@ public class Const {
 	public static final int TM_EARLY_COMMIT = 3;
 
 	// RTTM instrumentation
+	// Keep in synch with VHDL tm_manager constants.
 	public static final int MEM_TM_RETRIES = MEM_TM_MAGIC+0;
 	public static final int MEM_TM_COMMITS = MEM_TM_MAGIC+1;
 	public static final int MEM_TM_EARLY_COMMITS = MEM_TM_MAGIC+2;

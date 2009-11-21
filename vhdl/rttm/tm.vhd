@@ -47,8 +47,8 @@ use work.tm_internal_pack.all;
 entity tm is
 
 generic (
-	addr_width		: integer := 18;	-- address bits of cachable memory
-	way_bits		: integer := 5;		-- 2**way_bits is number of entries
+	addr_width		: integer;		-- address bits of cachable memory
+	way_bits		: integer;		-- 2**way_bits is number of entries
 	rttm_instrum	: boolean;
 	confl_rds_only	: boolean
 );

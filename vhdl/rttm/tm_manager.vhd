@@ -37,12 +37,12 @@ generic (
 	addr_width		: integer;
 	
 	-- Pattern used to detect magic address
-	-- Magic address to execute TM commands is located in upper half 
-	-- of external SRAM mirror.
-	-- The lower bits are actually ignored.
-	-- TODO Keep in synch with com.jopdesign.sys.Const.MEM_TM_MAGIC and
-	-- com.jopdesign.build.ReplaceAtomicAnnotation.
-	tm_magic_detect	: std_logic_vector(18 downto 17) := (others => '1');
+	-- Magic address is located in upper half of external SRAM mirror.
+	-- The pattern is used to execute TM commands and to return diagnostic 
+	-- data, if rttm_instrum is enabled.
+	-- When executing a TM command, the lower bits are actually ignored.
+	-- Keep in synch with com.jopdesign.sys.Const.MEM_TM_MAGIC.
+	tm_magic_detect	: std_logic_vector;
 	
 	-- fully associative read and write buffer has 2**way_bits entries
 	way_bits		: integer;
@@ -176,6 +176,7 @@ architecture rtl of tm_manager is
 	signal instrum_helpers: instr_helpers_type;
 	signal next_instr_helpers: instr_helpers_type;
 	
+	-- Keep in synch with com.jopdesign.sys.Const constants.
 	constant RETRIES_ADDR: std_logic_vector := "000";
 	constant COMMITS_ADDR: std_logic_vector := "001";
 	constant EARLY_COMMITS_ADDR: std_logic_vector := "010";
