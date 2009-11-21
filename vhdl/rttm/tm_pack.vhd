@@ -34,6 +34,9 @@ package tm_pack is
 		
 	constant TM_MAGIC_SIMULATION: std_logic_vector(SC_ADDR_SIZE-1 downto 0) := 
 		(SC_ADDR_SIZE-1 downto 19 => '0', 18 downto 0 => '1');
+		
+	constant TM_MAGIC_DETECT_SIMULATION: std_logic_vector(18 downto 17) := 
+		(others => '1');
 
 	constant TM_CMD_WIDTH: integer := 2;
 	subtype tm_cmd_raw is std_logic_vector(TM_CMD_WIDTH-1 downto 0);

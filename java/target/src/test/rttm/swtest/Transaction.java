@@ -98,12 +98,13 @@ public class Transaction {
 				if (outermostTransaction) {
 					Native.wr(0, Const.IO_ENA_HW_EXC);
 
+					// reference comparison is enough
 					if (e == Utils.abortException) {
 						throw Utils.abortException;
+					} else {
+						// rollback
+						arg0 = arg0Copy;
 					}
-
-					// rollback
-					arg0 = arg0Copy;
 				} else { // inner transaction
 					if (e == Utils.abortException) {
 						throw Utils.abortException;

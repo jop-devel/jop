@@ -131,6 +131,7 @@ begin
 	dut: entity work.tm_manager(rtl)
 	generic map (
 		addr_width => addr_width,
+		tm_magic_detect => TM_MAGIC_DETECT_SIMULATION,		
 		way_bits => way_bits
 	)	
 	port map (

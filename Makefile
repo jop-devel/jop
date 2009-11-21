@@ -73,8 +73,8 @@ IPDEST=192.168.1.2
 IPDEST=192.168.0.123
 
 P1=test
-P2=rttm/hwtest
-P3=Transaction
+P2=test
+P3=HelloWorld
 #P2=jvm
 #P3=DoAll
 #P1=rtapi
@@ -233,6 +233,12 @@ else
 endif
 	make download
 
+ifeq ($(USB),true)
+TEST_JAPP_CONFIG=config_usb
+else
+TEST_JAPP_CONFIG=config_byteblaster
+endif
+test_japp: java_app $(TEST_JAPP_CONFIG) test_download
 
 install:
 	@echo nothing to install
@@ -377,7 +383,7 @@ jopser:
 	make gen_mem -e ASM_SRC=jvm JVM_TYPE=SERIAL
 	@echo $(QPROJ)
 	for target in $(QPROJ); do \
-		make qsyn -e QBT=$$target; \
+		make qsyn -e QBT=$$target || exit; \
 		cd quartus/$$target; \
 		cd ../..; \
 	done
@@ -482,6 +488,17 @@ tmsimcon: java_app
 	make gen_mem -e ASM_SRC=jvm JVM_TYPE=SIMULATION
 	cd modelsim && ./sim_tm.bat -c -do sim_tm_con.do
 
+#
+#	RTTM tests on hardware
+#
+
+rttm_tests:	
+	for t in `find java/target/src/test/rttm/tests/*.java -printf %f\\\\n|sed 's/\.java//'`; do \
+		make test_japp -e P1=test P2=rttm/tests P3=$$t REFERENCE_PATTERN=java/target/src/test/rttm/tests/$$t.pattern || exit; \
+	done
+
+
+
 
 #
 #	Simulate data cache
@@ -512,6 +529,9 @@ download:
 #
 #	this is the download version with down.exe
 	down $(COM_FLAG) java/target/dist/bin/$(JOPBIN) $(COM_PORT)
+
+test_download:
+	./down $(COM_FLAG) java/target/dist/bin/$(JOPBIN) $(COM_PORT)|java $(TOOLS_CP) com.jopdesign.tools.MatchPattern $(REFERENCE_PATTERN)
 
 #
 #	flash programming
