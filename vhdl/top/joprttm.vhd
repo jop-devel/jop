@@ -32,9 +32,6 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-use ieee.math_real.log2;
-use ieee.math_real.ceil;
-
 use work.jop_types.all;
 use work.sc_pack.all;
 use work.sc_arbiter_pack.all;

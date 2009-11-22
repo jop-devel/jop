@@ -389,7 +389,9 @@ begin
 		exc_type <= (others => '0');
 		exc_pend <= '0';
 		
-		exc_hw_dis <= '0';
+		if auto_disable_hw_exceptions then
+			exc_hw_dis <= '0';
+		end if;
 
 		swreq <= (others => '0');
 		mask <= (others => '0');
@@ -411,7 +413,8 @@ begin
 		end if;
 
 		-- exceptions from core, memory or RTTM
-		if exc_hw_dis = '0' then -- decision may only be false if using RTTM
+		if not auto_disable_hw_exceptions or 
+			exc_hw_dis = '0' then -- decision may only be false if using RTTM
 			if exc_req.spov='1' then
 				exc_type(2 downto 0) <= EXC_SPOV;
 				exc_pend <= '1';
