@@ -102,9 +102,7 @@ public class Instruction implements Serializable {
 			// 5 bits: 0x20-0x3f
 			new Instruction("stm", 0x020, 5, JmpType.NOP, StackType.POP),
 
-			// extension 'address' selects function of memory/multiplication
-			// with 4 bits in extension.vhd
-
+			// MMU 4 bit subfield selects function (pop type)
 			new Instruction("stmul", 0x040 + 0, 0, JmpType.NOP, StackType.POP),
 			new Instruction("stmwa", 0x040 + 1, 0, JmpType.NOP, StackType.POP),
 			new Instruction("stmra", 0x040 + 2, 0, JmpType.NOP, StackType.POP),
@@ -120,7 +118,9 @@ public class Instruction implements Serializable {
 			// bytecode read
 			new Instruction("stbcrd", 0x040 + 9, 0, JmpType.NOP, StackType.POP),
 			// store TOS to MMU index register for jopsys_*field
-			new Instruction("stidx", 0x040 + 10, 0, JmpType.NOP, StackType.POP),
+			new Instruction("stidx", 0x040 + 0xa, 0, JmpType.NOP, StackType.POP),
+			// putstatic
+			new Instruction("stps", 0x040 + 0xb, 0, JmpType.NOP, StackType.POP),
 
 			//
 			// 'push' instructions
@@ -131,7 +131,7 @@ public class Instruction implements Serializable {
 			// 5 bits: 0xc0-0xdf
 			new Instruction("ldi", 0x0c0, 5, JmpType.NOP, StackType.PUSH),
 
-			// extension 'address' selects function 4 bits
+			// MMU 4 bit subfield selects function (push type)
 			new Instruction("ldmrd", 0x0e0 + 0, 0, JmpType.NOP, StackType.PUSH),
 			new Instruction("ldmul", 0x0e0 + 1, 0, JmpType.NOP, StackType.PUSH),
 			new Instruction("ldbcstart", 0x0e0 + 2, 0, JmpType.NOP, StackType.PUSH),

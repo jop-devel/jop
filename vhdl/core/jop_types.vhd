@@ -46,10 +46,12 @@ package jop_types is
 	constant STCP	: std_logic_vector(MMU_WIDTH-1 downto 0) := "1000"; 
 	constant STBCR	: std_logic_vector(MMU_WIDTH-1 downto 0) := "1001"; 
 	constant STIDX	: std_logic_vector(MMU_WIDTH-1 downto 0) := "1010"; 
+	constant STPS	: std_logic_vector(MMU_WIDTH-1 downto 0) := "1100"; 
 
 	constant LDMRD	   : std_logic_vector(MMU_WIDTH-1 downto 0) := "0000"; 
 	constant LDMUL	   : std_logic_vector(MMU_WIDTH-1 downto 0) := "0001"; 
 	constant LDBCSTART : std_logic_vector(MMU_WIDTH-1 downto 0) := "0010"; 
+	constant STGS	   : std_logic_vector(MMU_WIDTH-1 downto 0) := "0011"; 
 
 	type mem_in_type is record
 		bcopd		: std_logic_vector(15 downto 0);
@@ -62,6 +64,8 @@ package jop_types is
 		stidx       : std_logic;
 		getfield    : std_logic;
 		putfield    : std_logic;
+		getstatic   : std_logic;
+		putstatic   : std_logic;
 		copy        : std_logic;
 	end record;
 

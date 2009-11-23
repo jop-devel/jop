@@ -84,8 +84,10 @@ port (
 
 	bsy			: in std_logic;
 	din			: in std_logic_vector(width-1 downto 0);
+	mem_in		: out mem_in_type;
 	mmu_instr	: out std_logic_vector(MMU_WIDTH-1 downto 0);
-	rd, wr		: out std_logic;
+	mul_wr		: out std_logic;
+	wr_dly		: out std_logic;
 
 --	connection to mmu
 
@@ -99,8 +101,6 @@ port (
 	irq_out		: out irq_ack_type;
 
 	sp_ov		: out std_logic;
-
-	bcopd		: out std_logic_vector(15 downto 0);	-- index for mmu
 
 	aout		: out std_logic_vector(width-1 downto 0);
 	bout		: out std_logic_vector(width-1 downto 0)
@@ -211,12 +211,16 @@ port (
 	zf, nf		: in std_logic;
 	eq, lt		: in std_logic;
 
+	bcopd		: in std_logic_vector(15 downto 0);	-- index for mmu
+
 	br			: out std_logic;
 	jmp			: out std_logic;
 	jbr			: out std_logic;
 
+	mem_in		: out mem_in_type;
 	mmu_instr	: out std_logic_vector(MMU_WIDTH-1 downto 0);
-	rd, wr		: out std_logic;
+	mul_wr		: out std_logic;
+	wr_dly		: out std_logic;
 
 	dir			: out std_logic_vector(ram_width-1 downto 0);
 
@@ -312,6 +316,18 @@ begin
 		port map (clk, reset, jfetch, jopdfetch,
 			br, jmp, bsy, jpaddr, instr);
 
+	dec: decode generic map (i_width)
+		port map (clk, reset, instr, stk_zf, stk_nf, stk_eq, stk_lt,
+			opd,
+			br, jmp, jbr,
+			mem_in,
+			mmu_instr, mul_wr, wr_dly,
+			dir,
+			sel_sub, sel_amux, ena_a,
+			sel_bmux, sel_log, sel_shf, sel_lmux, sel_imux, sel_rmux, sel_smux,
+			sel_mmux, sel_rda, sel_wra,
+			wr_ena, ena_b, ena_vp, ena_jpc, ena_ar);
+
 	stk: stack generic map (width, jpc_width)
 		port map (clk, reset, din, dir, opd, jpc_out,
 			sel_sub, sel_amux, ena_a,
@@ -321,18 +337,7 @@ begin
 			sp_ov,
 			stk_zf, stk_nf, stk_eq, stk_lt, stk_aout, stk_bout);
 
-	dec: decode generic map (i_width)
-		port map (clk, reset, instr, stk_zf, stk_nf, stk_eq, stk_lt,
-			br, jmp, jbr,
-			mmu_instr, rd, wr,
-			dir,
-			sel_sub, sel_amux, ena_a,
-			sel_bmux, sel_log, sel_shf, sel_lmux, sel_imux, sel_rmux, sel_smux,
-			sel_mmux, sel_rda, sel_wra,
-			wr_ena, ena_b, ena_vp, ena_jpc, ena_ar);
-
 	aout <= stk_aout;
 	bout <= stk_bout;
-	bcopd <= opd;
 
 end rtl;
