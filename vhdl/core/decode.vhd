@@ -127,15 +127,11 @@ architecture rtl of decode is
 	signal is_push	: std_logic;
 	signal is_pop	: std_logic;
 
-	signal wr		: std_logic;
-	signal mmu_select	: std_logic_vector(MMU_WIDTH-1 downto 0);
-
 begin
 
 	ir <= instr;		-- registered in fetch
 
 	mmu_instr <= ir(MMU_WIDTH-1 downto 0);	-- address for extension select
-	mmu_select <= ir(MMU_WIDTH-1 downto 0);	-- address for extension select
 
 --
 --	branch, jbranch
@@ -167,7 +163,7 @@ process(ir)
 begin
 
 	jbr <= '0';
-	if (ir="0100000010") then		-- jbr: goto and if_xxx
+	if ir="0100000010" then		-- jbr: goto and if_xxx
 		jbr <= '1';
 	end if;
 
@@ -184,7 +180,6 @@ begin
 	is_push <= '0';
 
 	case ir(9 downto 6) is
-
 
 		when "0000" =>			-- POP
 				is_pop <= '1';
@@ -223,17 +218,6 @@ begin
 		ir(9 downto 3)="0000010") then		-- st, stn, stmi
 
 		wr_ena <= '1';
-	end if;
-
--- rd not used???
---	rd <= '0';
---	if ir(9 downto 3)="0011100" then		-- ld memio
---		rd <= '1';
---	end if;
-	wr <= '0';
-	-- we use 16 mmu instructions, could be more
-	if ir(9 downto 4)="000100" then			-- stmul/mem unit
-		wr <= '1';
 	end if;
 
 	sel_imux <= ir(1 downto 0);			-- ld opd_x
@@ -418,7 +402,7 @@ begin
 			sel_lmux <= "011";
 		end if;
 
-		if ir(9 downto 3)="0011100" then				-- ld from extenstion/mem
+		if ir(9 downto 3)="0011100" then				-- ld from mmu/mul
 			sel_lmux <= "100";
 		end if;
 
@@ -476,39 +460,35 @@ begin
 		mem_in.putfield <= '0';
 		mem_in.copy <= '0';
 		mul_wr <= '0';
+		wr_dly <= '0';
 
-		wr_dly <= wr;
-
---
---	wr is generated in decode and one cycle earlier than
---	the data to be written (e.g. read address for the memory interface)
---
-		if wr='1' then
--- TODO: use a case
-			if mmu_select=STMRA then
-				mem_in.rd <= '1';		-- start memory or io read
-			elsif mmu_select=STMWA then
-				mem_in.addr_wr <= '1';	-- store write address
-			elsif mmu_select=STMWD then
-				mem_in.wr <= '1';		-- start memory or io write
-			elsif mmu_select=STALD then
-				mem_in.iaload <= '1';	-- start an array load
-			elsif mmu_select=STAST then
-				mem_in.iastore <= '1';	-- start an array store
-			elsif mmu_select=STGF then
-				mem_in.getfield <= '1';	-- start getfield
-			elsif mmu_select=STPF then
-				mem_in.putfield <= '1';	-- start getfield
-			elsif mmu_select=STCP then
-				mem_in.copy <= '1';		-- start copy
-			elsif mmu_select=STIDX then
-				mem_in.stidx <= '1';	-- store index
-			elsif mmu_select=STMUL then
-				mul_wr <= '1';			-- start multiplier
-			-- elsif mmu_select=STBCR then
-			else
-				mem_in.bc_rd <= '1';	-- start bc read
-			end if;
+		if ir(9 downto 4)="000100" then		-- a MMU or mul instruction
+			wr_dly <= '1';
+			case ir(MMU_WIDTH-1 downto 0) is
+				when STMRA =>
+					mem_in.rd <= '1';		-- start memory or io read
+				when STMWA =>
+					mem_in.addr_wr <= '1';	-- store write address
+				when STMWD =>
+					mem_in.wr <= '1';		-- start memory or io write
+				when STALD =>
+					mem_in.iaload <= '1';	-- start array load
+				when STAST =>
+					mem_in.iastore <= '1';	-- start array store
+				when STGF =>
+					mem_in.getfield <= '1';	-- start getfield
+				when STPF =>
+					mem_in.putfield <= '1';	-- start getfield
+				when STCP =>
+					mem_in.copy <= '1';		-- start copy
+				when STIDX =>
+					mem_in.stidx <= '1';	-- store index
+				when STMUL =>
+					mul_wr <= '1';			-- start multiplier
+				-- when STBCR =>
+				when others =>
+					mem_in.bc_rd <= '1';	-- start bc read
+			end case;
 		end if;
 
 	end if;
