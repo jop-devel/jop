@@ -50,6 +50,8 @@ public class AnalysisContextLocal extends AnalysisContextIpet {
 	}
 	@Override
 	public String toString() {
-		return super.toString()+"@"+getCallString();
+		String s = super.toString();
+		if(getCallString().isEmpty()) return s;
+		return s+"-"+getCallString();
 	}
 }

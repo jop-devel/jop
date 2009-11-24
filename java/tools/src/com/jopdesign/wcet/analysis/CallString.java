@@ -136,4 +136,8 @@ public class CallString {
 		}
 		return cs;
 	}
+
+	public boolean isEmpty() {
+		return callString.isEmpty();
+	}
 }
