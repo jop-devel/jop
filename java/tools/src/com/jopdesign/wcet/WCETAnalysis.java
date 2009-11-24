@@ -161,7 +161,7 @@ public class WCETAnalysis {
             WcetCost mincachecost, ah, am = null, wcet;
             IpetConfig ipetConfig = new IpetConfig(config);
             StaticCacheApproximation preciseApprox = IpetConfig.getPreciseCacheApprox(config);
-
+            if(! project.getProcessorModel().hasMethodCache()) preciseApprox = StaticCacheApproximation.ALWAYS_MISS;
             /* Perform a few standard analysis (MIN_CACHE_COST, ALWAYS_HIT, ALWAYS_MISS) without call strings */
             if(project.getProcessorModel().hasMethodCache()) {
             	long start,stop;
@@ -258,7 +258,7 @@ public class WCETAnalysis {
         } catch (Exception e) {
             exec.logException("analysis", e);
         }
-        if(! project.doWriteReport() || /* FIXME: QUICK HACK FOR ALLOC */ !project.getProcessorModel().hasMethodCache()) {
+        if(! project.doWriteReport()) {
             exec.info("Ommiting HTML report");
             return succeed;
         }
