@@ -35,6 +35,7 @@ package jop_types is
 --
 --	MMU instruction constants (used in jopcpu.vhd and Instruction.java)
 --
+	-- POP type
 	constant STMUL	: std_logic_vector(MMU_WIDTH-1 downto 0) := "0000";
 	constant STMWA	: std_logic_vector(MMU_WIDTH-1 downto 0) := "0001"; 
 	constant STMRA	: std_logic_vector(MMU_WIDTH-1 downto 0) := "0010"; 
@@ -46,12 +47,15 @@ package jop_types is
 	constant STCP	: std_logic_vector(MMU_WIDTH-1 downto 0) := "1000"; 
 	constant STBCR	: std_logic_vector(MMU_WIDTH-1 downto 0) := "1001"; 
 	constant STIDX	: std_logic_vector(MMU_WIDTH-1 downto 0) := "1010"; 
-	constant STPS	: std_logic_vector(MMU_WIDTH-1 downto 0) := "1100"; 
+	constant STPS	: std_logic_vector(MMU_WIDTH-1 downto 0) := "1011"; 
 
+	-- PUSH type
 	constant LDMRD	   : std_logic_vector(MMU_WIDTH-1 downto 0) := "0000"; 
 	constant LDMUL	   : std_logic_vector(MMU_WIDTH-1 downto 0) := "0001"; 
 	constant LDBCSTART : std_logic_vector(MMU_WIDTH-1 downto 0) := "0010"; 
-	constant STGS	   : std_logic_vector(MMU_WIDTH-1 downto 0) := "0011"; 
+
+	-- no stack change
+	constant STGS	   : std_logic_vector(MMU_WIDTH-1 downto 0) := "0000"; 
 
 	type mem_in_type is record
 		bcopd		: std_logic_vector(15 downto 0);

@@ -381,6 +381,11 @@ public class MicrocodeAnalysis {
 			// bytecode read
 			case MicrocodeConstants.STBCRD:
 				current.st.stackPop();break;
+			// TODO: why isn't the pop characteristic from
+			// instruction info used?
+			case MicrocodeConstants.STIDX:
+			case MicrocodeConstants.STPS:
+				current.st.stackPop();break;
 			//	st (vp)	3 bits
 			case MicrocodeConstants.ST0:
 			case MicrocodeConstants.ST1:
@@ -428,6 +433,9 @@ public class MicrocodeAnalysis {
 				break;
 			// bytecode branch
 			case MicrocodeConstants.JBR:
+				break;
+			// start getstatic
+			case MicrocodeConstants.STGS:
 				break;
 
 			// -----------------------------------------------------------------------------------

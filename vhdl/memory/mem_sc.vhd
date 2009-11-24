@@ -28,8 +28,6 @@
 --	Does the method cache load.
 --
 --
---	todo:
---
 --	2005-11-22  first version adapted from mem(_wb)
 --	2006-06-15	removed unnecessary state in BC load
 --				len decrement in bc_rn and exit from bc_wr
@@ -41,7 +39,10 @@
 --	2009-11-11	split getfield and putfield state machine (for object cache)
 --	2009-11-16	use bc operand for getfield index
 --	2009-11-17	use bc operand for putfield index
+--	2009-11-23	support for get/putstatic (stgs, stps)
 --
+--	comment: we could start putstatic SimpCon operation in the same cycle:
+--		SimpCon wr on mem_in.putstatic, address selection from A
 
 Library IEEE;
 use IEEE.std_logic_1164.all;
@@ -114,6 +115,8 @@ end component;
 --
 	type state_type		is (
 							idl, rd1, wr1,
+							ps1, 
+							gs1,
 							bc_cc, bc_r1, bc_w, bc_rn, bc_wr, bc_wl,
 							iald0, iald1, iald2, iald23, iald3, iald4,
 							iasrd, ialrb,
@@ -273,6 +276,7 @@ end process;
 
 --
 --	Store the write address
+--		and some other stuff for field and array access
 --	TODO: wouldn't it be easier to use A and B
 --		for data and address with a single write
 --		command?
@@ -319,7 +323,7 @@ begin
 			was_a_stidx <= '0';		-- reset a former stidx
 		end if;
 		-- first step of three-operand operations
-		if mem_in.iastore='1' or mem_in.putfield='1' then
+		if mem_in.iastore='1' or mem_in.putfield='1' or mem_in.putstatic='1' then
 			value <= ain;
 		end if;
 		-- get index for array stores
@@ -368,6 +372,10 @@ end process;
 --
 --	RAM address MUX (combinational)
 --
+--	TODO: check fmax without GC address translaction - it's 94 MHz instead of 83 MHz
+--	putstatic is more relaxed with one more cycle and registering
+--	the address
+--
 process(ain, addr_reg, offset_reg, mem_in, base_reg, pos_reg, translate_bit)
 begin
 	if mem_in.rd='1' then
@@ -394,6 +402,7 @@ begin
 
 	-- default values
 	addr_next <= addr_reg;	
+
 	if inc_addr_reg='1' then
 		addr_next <= addr_reg+1;
 	end if;
@@ -403,6 +412,10 @@ begin
 		addr_next <= unsigned(ain(SC_ADDR_SIZE-1 downto 0));
 	end if;
 	
+	if mem_in.putstatic ='1' or mem_in.getstatic='1' then
+		addr_next <= to_unsigned(to_integer(unsigned(mem_in.bcopd)), SC_ADDR_SIZE);
+	end if;
+
 	if mem_in.bc_rd='1' then
 		addr_next(17 downto 0) <= unsigned(ain(27 downto 10));
 		-- addr_bits is 17
@@ -473,8 +486,12 @@ begin
 		when idl =>
 			if mem_in.rd='1' then
 				next_state <= rd1;
-			elsif mem_in.wr='1' then
+			elsif mem_in.wr='1' then 
 				next_state <= wr1;
+			elsif mem_in.putstatic='1' then
+				next_state <= ps1;
+			elsif mem_in.getstatic='1' then
+				next_state <= gs1;
 			elsif mem_in.bc_rd='1' then
 				next_state <= bc_cc;
 			elsif mem_in.iaload='1' then
@@ -500,11 +517,19 @@ begin
 		-- We could avoid the idl state after wr1 to
 		-- get back to back wr/wr or wr/rd.
 		-- However, it is not used in JOP (at the moment).
+		--
+		-- Shared with putstatic
 		when wr1 =>
 			-- either 1 or 0
 			if sc_mem_in.rdy_cnt(1)='0' then
 				next_state <= idl;
 			end if;
+
+		when ps1 =>
+			next_state <= wr1;
+
+		when gs1 =>
+			next_state <= rd1;
 
 --
 --	bytecode read
@@ -767,8 +792,18 @@ begin
 				state_bsy <= '0';
 
 			when rd1 =>
+				state_bsy <= '0';
 
 			when wr1 =>
+				state_bsy <= '0';
+
+			when ps1 =>
+				state_bsy <= '1';
+				state_wr <= '1';
+
+			when gs1 =>
+				state_bsy <= '1';
+				state_rd <= '1';
 
 			when bc_cc =>
 				state_bsy <= '1';

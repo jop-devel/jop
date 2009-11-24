@@ -4,28 +4,33 @@ add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/clk_int
 add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/int_res
 add wave -noupdate -format Logic /tb_jop/joptop/io/wd
 add wave -noupdate -format Literal -radix ascii /tb_jop/joptop/io/ua/char
-add wave -noupdate -divider core
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/core/stk/a
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/core/stk/b
+add wave -noupdate -divider {java pc}
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/core/bcf/jpc
+add wave -noupdate -divider bcfetch
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/core/bcf/jinstr
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/core/bcf/opd
 add wave -noupdate -format Literal /tb_jop/joptop/cpu/core/bcf/bc/val
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/core/bcf/opd
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/core/fch/pc
+add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/cpu/core/fch/nxt
+add wave -noupdate -divider fetch
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/core/fch/ir
 add wave -noupdate -format Literal /tb_jop/joptop/cpu/core/fch/uc/val
+add wave -noupdate -divider decode
+add wave -noupdate -format Logic /tb_jop/joptop/cpu/core/dec/br
+add wave -noupdate -format Logic /tb_jop/joptop/cpu/core/dec/jmp
+add wave -noupdate -format Logic /tb_jop/joptop/cpu/core/dec/jbr
+add wave -noupdate -format Logic /tb_jop/joptop/cpu/core/dec/ena_a
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/core/dec/mem_in
 add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/cpu/core/fch/bsy
-add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/cpu/core/fch/nxt
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/core/stk/sp
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/core/stk/spp
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/core/stk/spm
-add wave -noupdate -format Logic /tb_jop/joptop/cpu/core/stk/sp_ov
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/core/stk/vp0
+add wave -noupdate -divider execute
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/core/stk/a
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/core/stk/b
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/core/stk/stkram/ram
 add wave -noupdate -divider mem_sc
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/mem/mem_in
-add wave -noupdate -format Literal -radix hexadecimal -expand /tb_jop/joptop/cpu/mem/mem_out
-add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/mem/next_state
+add wave -noupdate -format Literal -radix hexadecimal -expand /tb_jop/joptop/cpu/mem/mem_in
+add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/mem/mem_out
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/mem/state
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/mem/addr_reg
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/mem/index
@@ -78,4 +83,4 @@ configure wave -gridperiod 1
 configure wave -griddelta 40
 configure wave -timeline 0
 update
-WaveRestoreZoom {5546321 ns} {5546457 ns}
+WaveRestoreZoom {33826 ns} {33984 ns}

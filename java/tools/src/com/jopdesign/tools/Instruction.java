@@ -158,11 +158,18 @@ public class Instruction implements Serializable {
 			new Instruction("dup", 0x0f8, 0, JmpType.NOP, StackType.PUSH),
 
 			//
-			// 'no sp change' instructions
+			// 'no SP change' instructions
 			//
 			new Instruction("nop", 0x100, 0, JmpType.NOP, StackType.NOP),
 			new Instruction("wait", 0x101, 0, JmpType.NOP, StackType.NOP),
 			new Instruction("jbr", 0x102, 0, JmpType.NOP, StackType.NOP),
+			
+			// no SP change instructions for MMU
+			// 4 bit subfield selects function (pop type)
+
+			// getstatic
+			new Instruction("stgs", 0x110 + 0x0, 0, JmpType.NOP, StackType.NOP),
+
 
 			// branches
 			new Instruction("bz", 0x180, 6, JmpType.BR, StackType.POP),
@@ -250,8 +257,8 @@ public class Instruction implements Serializable {
 
 	public static void printTable() {
 
-		Instruction table[] = new Instruction[256];
-		for (int i = 0; i < 256; i++)
+		Instruction table[] = new Instruction[1024];
+		for (int i = 0; i < 1024; i++)
 			table[i] = null;
 		for (int i = 0; i < ia.length; ++i) {
 			Instruction ins = ia[i];
@@ -305,9 +312,9 @@ public class Instruction implements Serializable {
 	public static void main(String[] args) {
 
 		// printVhdl();
-		printCsv();
+		// printCsv();
 		// printTable();
-		// System.out.println(genJavaConstants());
+		System.out.println(genJavaConstants());
 	}
 
 }

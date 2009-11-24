@@ -57,6 +57,7 @@ public class MicrocodeConstants {
   public static final int NOP             = 0x100; /* nostack */ 
   public static final int WAIT            = 0x101; /* nostack */ 
   public static final int JBR             = 0x102; /* nostack */ 
+  public static final int STGS            = 0x110; /* nostack */ 
   public static final int BZ              = 0x180; /* consumer opd MS: not to confuse it with opd in mcjmp */ 
   public static final int BNZ             = 0x1c0; /* consumer opd MS: not to confuse it with opd in mcjmp */ 
   public static final int JMP             = 0x200; /* nostack opd MS: not to confuse it with opd in mcjmp */ 

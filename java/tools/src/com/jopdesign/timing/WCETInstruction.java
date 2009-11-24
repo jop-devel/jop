@@ -1120,13 +1120,13 @@ public class WCETInstruction {
 			break;
 		// GETSTATIC = 178
 		case org.apache.bcel.Constants.GETSTATIC:
-			wcet = 7 + r;
+			wcet = 5 + r;
 			if (CMP_WCET==true)
 				wcet = getstaticx.wcet; 
 			break;
 		// PUTSTATIC = 179
 		case org.apache.bcel.Constants.PUTSTATIC:
-			wcet = 8 + w;
+			wcet = 5 + w;
 			if (CMP_WCET==true)
 				wcet = putstatic.wcet;
 			break;
@@ -1514,12 +1514,12 @@ public class WCETInstruction {
 		generateInstruction(xastore, false, 0, 0);
 		xastore.wcet = wcetOfInstruction(xastore.microcode);
 		
-		getstaticx.microcode = new int [7+r];
+		getstaticx.microcode = new int [5+r];
 		getstaticx.opcode = 178;
 		generateInstruction(getstaticx, false, 0, 0);
 		getstaticx.wcet = wcetOfInstruction(getstaticx.microcode);
 		
-		putstatic.microcode = new int [8+w];
+		putstatic.microcode = new int [5+w];
 		putstatic.opcode = 179;
 		generateInstruction(putstatic, false, 0, 0);
 		putstatic.wcet = wcetOfInstruction(putstatic.microcode);
@@ -1635,17 +1635,19 @@ public class WCETInstruction {
 		case 178:
 		case 224:
 			for(int i=0;i<instruction.microcode.length;i++){
-				if(i<=4) instruction.microcode[i]=NOP;
-				else if(i==5) instruction.microcode[i]=RD;
+				if(i<=2) instruction.microcode[i]=NOP;
+				else if(i==3) instruction.microcode[i]=RD;
 				else instruction.microcode[i]=NOP;
 			}
 			break;
 			
 		// putstatic
 		case 179:
+			// TODO: is this pattern correct, but it does not really matter
+			// for single bytecode WCET values
 			for(int i=0;i<instruction.microcode.length;i++){
-				if(i<=4) instruction.microcode[i]=NOP;
-				else if(i==5) instruction.microcode[i]=WR;
+				if(i<=2) instruction.microcode[i]=NOP;
+				else if(i==3) instruction.microcode[i]=WR;
 				else instruction.microcode[i]=NOP;
 			}
 			break;

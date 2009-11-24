@@ -137,6 +137,7 @@
 //	2009-08-24	MS: use I/O port for null pointer and array exception
 //	2009-09-05	MS: new unconditional jmp instruction
 //	2009-11-17	MS: put/getfield in mmu uses bytecode operand directly for the index
+//	2009-11-23	MS: put/getstatic support in mmu (bc operand as address)
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -144,9 +145,9 @@
 //
 //	'special' constant for a version number
 //	gets written in RAM at position 64
-//	update it when changing .asm, .inc or .vhdl files
+//	update it when changing .asm, .inc or .vhd files
 //
-version		= 20091117
+version		= 20091123
 
 //
 //	start of stack area in the on-chip RAM
@@ -1273,32 +1274,20 @@ goto:
 			nop nxt
 
 
-			// new 'customized' getfield
-			// index is now the address
 getstatic_ref:
-getstatic:
+getstatic:				// address is in index (bc opd)
+			stgs opd
 			nop opd
-			nop	opd
-			ld_opd_16u
-
-			stmra
 			wait
 			wait
-			ldmrd		 nxt
+			ldmrd nxt
 
-			// new 'customized' getfield
-			// index is now the address
-putstatic:
+putstatic:				// address is in index (bc opd)
+			stps opd	// MMU uses bc opd
 			nop opd
-			nop	opd
-			ld_opd_16u
-
-			stmwa				// write ext. mem address
-//			nop				// ??? tos is val
-			stmwd				// write ext. mem data
 			wait
 			wait
-			nop	nxt
+			nop nxt
 
 getfield_ref:					// getfield for reference is the same
 getfield:

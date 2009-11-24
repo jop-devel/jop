@@ -204,6 +204,7 @@ begin
 		when "1110" =>			-- null
 		when "1111" =>			-- null
 
+
 		when others =>
 			null;
 	end case;
@@ -339,9 +340,7 @@ begin
 			when "0001001000" =>			-- stcp
 			when "0001001001" =>			-- stbcrd
 			when "0001001010" =>			-- stidx
--- ***** not the right encoding (POP/NOP)
-			when "0001001011" =>			-- stgs
-			when "0001001100" =>			-- stps
+			when "0001001011" =>			-- stps
 --			when "00101-----" =>			-- ldm
 --			when "00110-----" =>			-- ldi
 			when "0011100000" =>			-- ldmrd
@@ -367,6 +366,8 @@ begin
 			when "0100000001" =>			-- wait
 					ena_a <= '0';
 			when "0100000010" =>			-- jbr
+					ena_a <= '0';
+			when "0100010000" =>			-- stgs
 					ena_a <= '0';
 --			when "0110------" =>			-- bz
 --			when "0111------" =>			-- bnz
@@ -444,6 +445,9 @@ begin
 		mem_in.iastore <= '0';
 		mem_in.getfield <= '0';
 		mem_in.putfield <= '0';
+		mem_in.getstatic <= '0';
+		mem_in.putstatic <= '0';
+		mem_in.copy <= '0';
 		mul_wr <= '0';
 		wr_dly <= '0';
 
@@ -458,6 +462,8 @@ begin
 		mem_in.iastore <= '0';
 		mem_in.getfield <= '0';
 		mem_in.putfield <= '0';
+		mem_in.getstatic <= '0';
+		mem_in.putstatic <= '0';
 		mem_in.copy <= '0';
 		mul_wr <= '0';
 		wr_dly <= '0';
@@ -465,10 +471,12 @@ begin
 		if ir(9 downto 4)="000100" then		-- a MMU or mul instruction
 			wr_dly <= '1';
 			case ir(MMU_WIDTH-1 downto 0) is
-				when STMRA =>
-					mem_in.rd <= '1';		-- start memory or io read
+				when STMUL =>
+					mul_wr <= '1';			-- start multiplier
 				when STMWA =>
 					mem_in.addr_wr <= '1';	-- store write address
+				when STMRA =>
+					mem_in.rd <= '1';		-- start memory or io read
 				when STMWD =>
 					mem_in.wr <= '1';		-- start memory or io write
 				when STALD =>
@@ -478,16 +486,25 @@ begin
 				when STGF =>
 					mem_in.getfield <= '1';	-- start getfield
 				when STPF =>
-					mem_in.putfield <= '1';	-- start getfield
+					mem_in.putfield <= '1';	-- start putfield
 				when STCP =>
 					mem_in.copy <= '1';		-- start copy
+				when STBCR =>
+					mem_in.bc_rd <= '1';	-- start bytecode read
 				when STIDX =>
 					mem_in.stidx <= '1';	-- store index
-				when STMUL =>
-					mul_wr <= '1';			-- start multiplier
-				-- when STBCR =>
+				-- when STPS =>
 				when others =>
-					mem_in.bc_rd <= '1';	-- start bc read
+					mem_in.putstatic <= '1';	-- start putstatic
+			end case;
+		end if;
+
+		if ir(9 downto 4)="010001" then		-- a MMU instruction, no SP change
+			wr_dly <= '1';
+			case ir(MMU_WIDTH-1 downto 0) is
+				-- when STGS =>
+				when others =>
+					mem_in.getstatic <= '1';	-- start getstatic
 			end case;
 		end if;
 
