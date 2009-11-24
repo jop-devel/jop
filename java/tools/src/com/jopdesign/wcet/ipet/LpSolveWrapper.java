@@ -25,6 +25,8 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.Map.Entry;
 
+import org.apache.log4j.Logger;
+
 import com.jopdesign.wcet.graphutils.IDProvider;
 import com.jopdesign.wcet.ipet.LinearConstraint.ConstraintType;
 
@@ -33,7 +35,7 @@ import lpsolve.LpSolveException;
 
 /**
  * Simple, typed API for invoking LpSolve.
- * 
+ *
  * @param<T> type of variables. If you don't want typed variables, use {@link java.lang.Object}
  *
  * @author Benedikt Huber <benedikt.huber@gmail.com>
@@ -53,21 +55,21 @@ public class LpSolveWrapper<T> {
 		}
 	}
 	private static long solverTime = 0;
-	/** 
+	/**
 	 * Get time spend in the solver since the last call to {@link resetSolverTime}
 	 * @return the time spend in the solver in seconds
 	 */
 	public static double getSolverTime() { return ((double)solverTime)/1.0E9; }
-	
+
 	/**
 	 * Reset the cummulative solver time to 0.
 	 */
 	public static void resetSolverTime() { solverTime = 0; }
 
 	private static Map<Integer,SolverStatus> readMap = null;
-	
+
 	/**
-	 * Wrap the return code of lp_solve into a {@ link SolverStatus} variable. 
+	 * Wrap the return code of lp_solve into a {@ link SolverStatus} variable.
 	 * @param code the code returned by the solver
 	 * @return
 	 */
@@ -82,13 +84,13 @@ public class LpSolveWrapper<T> {
 		if(status == null) return SolverStatus.UNKNOWN;
 		else return status;
 	}
-	
+
 	private class RawVector {
 		int count;
 		int[] ixs;
 		double[] coeffs;
 	}
-	private RawVector buildRawVector(LinearVector<? extends T> inputVector) 
+	private RawVector buildRawVector(LinearVector<? extends T> inputVector)
 		throws LpSolveException {
 		RawVector vec = new RawVector();
 		vec.count = inputVector.size();
@@ -100,7 +102,7 @@ public class LpSolveWrapper<T> {
 			if(objId < 1 || objId > numVars) {
 				throw new LpSolveException("Bad id: "+e+"has id "+objId+" not in [1.."+numVars+"]");
 			}
-			vec.ixs[i] = objId;			
+			vec.ixs[i] = objId;
 			long val = e.getValue();
 			double dval;
 			// FIXME: The Big M method is extremely sensitive to numeric instabilities
@@ -108,7 +110,7 @@ public class LpSolveWrapper<T> {
 			// Should do some research to find whether there are solutions to this problem,
 			// but in general better avoid Big M and use statically derived constants
 			if(val == Long.MAX_VALUE) {
-				dval = 1.0E7; 
+				dval = 1.0E7;
 			} else if (val == Long.MIN_VALUE) {
 				dval = - (1.0E7);
 			} else {
@@ -123,7 +125,7 @@ public class LpSolveWrapper<T> {
 	private LpSolve lpsolve;
 	private int numVars;
 	private IDProvider<T> idProvider;
-	
+
 	/**
 	 * Create a new (I)LP problem with the given number of variables. Note that
 	 * variables are per default considered to be non-negative.
@@ -133,7 +135,7 @@ public class LpSolveWrapper<T> {
 	 * @param intVars     if true, all variables are considered to be integral, otherwise rational
 	 * @throws LpSolveException
 	 */
-	public LpSolveWrapper(int numVars, boolean intVars, IDProvider<T> idProvider) 
+	public LpSolveWrapper(int numVars, boolean intVars, IDProvider<T> idProvider)
 		throws LpSolveException {
 		this.numVars = numVars;
 		this.idProvider = idProvider;
@@ -170,14 +172,14 @@ public class LpSolveWrapper<T> {
 	 * @param doMax whether to maximize (if false, minimize)
 	 * @throws LpSolveException
 	 */
-	public void setObjective(LinearVector<? extends T> objVector, boolean doMax) 
+	public void setObjective(LinearVector<? extends T> objVector, boolean doMax)
 		throws LpSolveException {
 		RawVector rawVec = buildRawVector(objVector);
 		this.lpsolve.setObjFnex(rawVec.count, rawVec.coeffs, rawVec.ixs);
 		if(doMax) lpsolve.setMaxim();
 		else      lpsolve.setMinim();
 	}
-	
+
 	/**
 	 * Turn row mode off - changes are expensive now,
 	 * but possible to dump ILP
@@ -207,12 +209,12 @@ public class LpSolveWrapper<T> {
 					System.out.println(String.format("Objective entry %d: %.2f",i++,obj));
 				}
 			}
-			throw new LpSolveException("Failed to solve LP problem: "+st+" // "+ 
+			throw new LpSolveException("Failed to solve LP problem: "+st+" // "+
 					(objVec != null ? Arrays.toString(objVec) : " no info "));
 		}
 		return this.lpsolve.getObjective();
 	}
-	
+
 	private int mapConstraintType(ConstraintType constraintType) {
 		switch(constraintType) {
 			case Equal : return LpSolve.EQ;
@@ -221,7 +223,7 @@ public class LpSolveWrapper<T> {
 			default: throw new AssertionError("unexpected constraint type: "+constraintType);
 		}
 	}
-	
+
 	/**
 	 * Dump the (I)LP problem to the given file
 	 * @param outFile
@@ -229,11 +231,15 @@ public class LpSolveWrapper<T> {
 	 */
 	public void dumpToFile(File outFile) throws LpSolveException {
 		outFile.delete();
-		this.lpsolve.writeLp(outFile.getPath());		
+		try {
+			this.lpsolve.writeLp(outFile.getPath());
+		} catch(LpSolveException ex) {
+			Logger.getLogger(this.getClass()).error("Failed to dump LP Solve Problem to "+outFile.getPath()+": "+ex);
+		}
 	}
-	
+
 	/**
-	 * Mark the given variable (after adding it) as being binary 
+	 * Mark the given variable (after adding it) as being binary
 	 * @param dv
 	 */
 	public void setBinary(T dv) {
