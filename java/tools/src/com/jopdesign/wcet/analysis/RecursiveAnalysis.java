@@ -79,7 +79,6 @@ public class RecursiveAnalysis<Context extends AnalysisContext> {
 			if (this == obj) return true;
 			if (obj == null) return false;
 			if (getClass() != obj.getClass()) return false;
-			// JDK bug
 			RecursiveAnalysis.WcetKey other = (RecursiveAnalysis.WcetKey) obj;
 			if (!ctx.equals(other.ctx)) return false;
 			if (!m.equals(other.m)) return false;
@@ -88,7 +87,7 @@ public class RecursiveAnalysis<Context extends AnalysisContext> {
 
 		@Override
 		public String toString() {
-			return this.m.getFQMethodName()+"["+this.ctx+"]";
+			return this.m.getFQMethodName()+"["+this.ctx.hashCode()+"]";
 		}
 	}
 

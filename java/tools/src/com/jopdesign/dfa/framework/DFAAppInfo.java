@@ -188,11 +188,10 @@ public class DFAAppInfo extends com.jopdesign.build.AppInfo {
 	}
 	
 	public MethodInfo getMethod(String methodName) {
-		String className = methodName.substring(0, methodName.lastIndexOf("."));
+		String className = methodName.contains(".") ? methodName.substring(0, methodName.lastIndexOf(".")) : mainClass;
 		String signature = methodName.substring(methodName.lastIndexOf(".")+1, methodName.length());
 		DFAClassInfo cli = (DFAClassInfo)cliMap.get(className);
 		//System.out.println(cli.toString()+": "+cli.getMethods().keySet());
-		//System.out.println(signature+": "+cli.getMethods().get(signature)+" "+cli.getMethods().containsKey(signature));
 		return cli.getMethodInfo(signature);
 	}
 	

@@ -31,6 +31,8 @@ import org.apache.bcel.Constants;
 import org.apache.bcel.generic.ANEWARRAY;
 import org.apache.bcel.generic.GETFIELD;
 import org.apache.bcel.generic.GETSTATIC;
+import org.apache.bcel.generic.INVOKEINTERFACE;
+import org.apache.bcel.generic.INVOKEVIRTUAL;
 import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.InvokeInstruction;
@@ -924,22 +926,22 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 					
 					// check whether this class can possibly be a receiver
 					ClassInfo dynamicClass = (ClassInfo)p.cliMap.get(clName);
-					do {
-						if (constClass.equals(dynamicClass)) {
+
+					try {
+						if ((instr instanceof INVOKEVIRTUAL
+								&& dynamicClass.clazz.instanceOf(constClass.clazz))
+								|| (instr instanceof INVOKEINTERFACE
+										&& dynamicClass.clazz.implementationOf(constClass.clazz))) {
 							receivers.add(clName);
-							break;
+						} else {
+							System.out.println(context.method+": class "+constClassName+" is not a superclass of "+clName);
 						}
-						dynamicClass = dynamicClass.superClass;
-					} while (dynamicClass != null);
-					
-					if (dynamicClass == null) {
-						System.out.println(context.method+": class "+constClassName+" is not a superclass of "+clName);
+					} catch (ClassNotFoundException exc) {
+						System.err.println("class not found: "+exc.getMessage());
 					}
 				}
 			}
 			
-			// TODO: get it right for interfaces...
-
 			for (Iterator<String> i = receivers.iterator(); i.hasNext(); ) {
 				// find receiving method
 				String receiver = i.next();

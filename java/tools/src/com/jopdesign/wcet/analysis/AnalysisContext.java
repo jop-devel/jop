@@ -1,6 +1,7 @@
 package com.jopdesign.wcet.analysis;
 
 import com.jopdesign.build.MethodInfo;
+import com.jopdesign.dfa.framework.CallString;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.BasicBlockNode;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.InvokeNode;
 

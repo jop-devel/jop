@@ -1,6 +1,7 @@
 package com.jopdesign.wcet.analysis;
 
 import com.jopdesign.build.MethodInfo;
+import com.jopdesign.dfa.framework.CallString;
 
 /**
  * An execution context consists of the method where the

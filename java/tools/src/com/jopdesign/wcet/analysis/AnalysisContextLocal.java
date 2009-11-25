@@ -3,6 +3,7 @@
  */
 package com.jopdesign.wcet.analysis;
 
+import com.jopdesign.dfa.framework.CallString;
 import com.jopdesign.wcet.ipet.IpetConfig.StaticCacheApproximation;
 
 public class AnalysisContextLocal extends AnalysisContextIpet {

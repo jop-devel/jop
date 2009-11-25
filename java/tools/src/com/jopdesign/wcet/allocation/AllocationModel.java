@@ -21,6 +21,7 @@ import org.apache.bcel.generic.Type;
 import com.jopdesign.build.ClassInfo;
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.dfa.analyses.Interval;
+import com.jopdesign.dfa.framework.CallString;
 import com.jopdesign.dfa.framework.ContextMap;
 import com.jopdesign.dfa.framework.HashedString;
 import com.jopdesign.tools.JopInstr;
@@ -38,7 +39,7 @@ public class AllocationModel implements ProcessorModel {
 
 	public static final String JOP_NATIVE = "com.jopdesign.sys.Native";
 	private final MethodCache NO_METHOD_CACHE;
-	private Map<InstructionHandle, ContextMap<List<HashedString>, Interval[]>> sizes;
+	private Map<InstructionHandle, ContextMap<CallString, Interval[]>> sizes;
 	protected Project project;
 
 	public AllocationModel(Project p) {
@@ -163,12 +164,12 @@ public class AllocationModel implements ProcessorModel {
 		if (sizes == null) {
 			Project.logger.info("No DFA available for array at " + context + ":" + srcLine);
 		} else {
-			ContextMap<List<HashedString>, Interval[]> t = sizes.get(ih);
-			List<HashedString> callString = context.getCallString().asList();
+			ContextMap<CallString, Interval[]> t = sizes.get(ih);
+			CallString callString = context.getCallString();
 			if (t == null) {
 				Project.logger.info("No DFA bound for array at " + context + ":" + srcLine);
 			} else {
-				Interval[] analysisResults = getEntryBySuffix(t,callString);
+				Interval[] analysisResults = getEntryBySuffix(t, callString);
 				if(analysisResults == null) {
 					Project.logger.error("No DFA results matching callstring " + context.getCallString());
 				} else {
@@ -214,11 +215,11 @@ public class AllocationModel implements ProcessorModel {
 	 * @param callStringSuffix a suffix of the call string
 	 * @return the join of all intervals matching the suffix
 	 */
-	private Interval[] getEntryBySuffix(ContextMap<List<HashedString>, Interval[]> t, List<HashedString> cs) {
+	private Interval[] getEntryBySuffix(ContextMap<CallString, Interval[]> t, CallString cs) {
 		Vector<Interval[]> intervals = new Vector<Interval[]>();
-		for(Entry<List<HashedString>, Interval[]> e : t.entrySet()) {
-			List<HashedString> callstring = e.getKey();
-			if(isSuffix(callstring,cs)) {
+		for(Entry<CallString, Interval[]> e : t.entrySet()) {
+			CallString callstring = e.getKey();
+			if(isSuffix(callstring.asList(),cs.asList())) {
 				//System.out.println("Matches "+cs+": "+callstring);
 				intervals.add(e.getValue());
 			}
