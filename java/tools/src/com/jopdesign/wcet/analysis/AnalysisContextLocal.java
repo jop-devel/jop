@@ -52,6 +52,6 @@ public class AnalysisContextLocal extends AnalysisContextIpet {
 	public String toString() {
 		String s = super.toString();
 		if(getCallString().isEmpty()) return s;
-		return s+"-"+getCallString();
+		return s+"-"+getCallString().toString();
 	}
 }
