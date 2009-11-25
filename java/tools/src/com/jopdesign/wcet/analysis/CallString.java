@@ -1,5 +1,7 @@
 package com.jopdesign.wcet.analysis;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -139,5 +141,9 @@ public class CallString {
 
 	public boolean isEmpty() {
 		return callString.isEmpty();
+	}
+
+	public String toString() {
+		return "callctx["+hashCode()+"]";
 	}
 }

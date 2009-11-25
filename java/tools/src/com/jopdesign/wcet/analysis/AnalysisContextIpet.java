@@ -31,6 +31,6 @@ public class AnalysisContextIpet extends AnalysisContext  {
 	}
 	@Override
 	public String toString() {
-		return "ctx:"+cacheApprox.toString();
+		return "ctx_"+cacheApprox.toString();
 	}
 }
