@@ -470,7 +470,7 @@ public class JopInstr{
 			System.out.println();
 		}
 /*
-		// check wether (noimp | asm | java) flag is correct
+		// check whether (noimp | asm | java) flag is correct
 		try {
 			JOPTimingTable tt = JOPTimingTable.getTimingTable(MicrocodeAnalysis.ASM_FILE);
 			for (int i=0; i<256; ++i) {

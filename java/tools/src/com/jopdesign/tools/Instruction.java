@@ -308,13 +308,82 @@ public class Instruction implements Serializable {
 		sb.append("};");
 		return sb.toString();
 	}
+	
+	/**
+	 * Reserved VHDL keywords
+	 */
+	static String[] reserved = {
+		"and", "or", "xor", "wait"
+	};
+	static String substReserved(String s) {
+		
+		for (int i=0; i<reserved.length; ++i) {
+			if (reserved[i].equals(s)) {
+				return s+"_x";
+			}
+		}
+		return s;
+	}
+	/**
+	 * Print the VHDL code for microcode mnemonics in the simulation.
+	 */
+	public static void printVhdlMicrocode() {
+		
+		System.out.println("\ttype mcval is (");
+		for (int i = 0; i < ia.length; ++i) {
+			Instruction ins = ia[i];
+			System.out.println("\t\t"+substReserved(ins.name)+",");
+		}
+		System.out.println("\t\tunknown");
+
+		System.out.println("\t);");
+		System.out.println("\tsignal val : mcval;");
+
+		System.out.println("");
+		System.out.println("");
+		System.out.println("begin");
+		System.out.println("");
+		System.out.println("process(instr)");
+		System.out.println("begin");
+		System.out.println("");
+		System.out.println("\tval <= unknown;");
+		System.out.println("\tif instr(9)='1' then");
+		System.out.println("\t\tval <= jmp;");
+		System.out.println("\telsif instr(9 downto 6)=\"0110\" then");
+		System.out.println("\t\tval <= bz;");
+		System.out.println("\telsif instr(9 downto 6)=\"0111\" then");
+		System.out.println("\t\tval <= bnz;");
+		System.out.println("\telse");
+		System.out.println("\t\tcase instr is");
+		for (int i = 0; i < ia.length; ++i) {
+			Instruction ins = ia[i];
+			if (ins.opdSize>=6) {
+				continue;			// jmp, bz, and bnz
+			}
+			for (int j=0; j<1<<ins.opdSize; ++j) {
+				System.out.print("\t\t\twhen \"");
+				System.out.print(Jopa.bin(ins.opcode+j, INSTLEN));
+				System.out.print("\" => val <= ");
+				System.out.println(substReserved(ins.name)+";");
+			}
+		}
+
+		System.out.println("");
+		System.out.println("\t\t\twhen others => null;");
+		System.out.println("\t\tend case;");
+		System.out.println("\tend if;");
+		System.out.println("");
+		System.out.println("end process;");
+		System.out.println("");
+	}
 
 	public static void main(String[] args) {
 
 		// printVhdl();
 		// printCsv();
 		// printTable();
-		System.out.println(genJavaConstants());
+		// System.out.println(genJavaConstants());
+		printVhdlMicrocode();
 	}
 
 }
