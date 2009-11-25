@@ -268,7 +268,13 @@ public class SingleCoreTiming extends JOPTimingTable {
 			}
 			String tString = MicropathTiming.toString(tt.getTiming(i));
 			if(wiTime0 < 0) {
-				failures.put(i,"WCETInstruction HAS NO TIMING information, but we have: "+tString);
+				boolean javaImplemented = false;
+				for(MicropathTiming mt : tt.getTiming(i)) {
+					if(mt.hasBytecodeLoad()) javaImplemented  = true;
+				}
+				if(! javaImplemented) {
+					failures.put(i,"WCETInstruction HAS NO TIMING information, but we have: "+tString);
+				}
 				continue;
 			}
 			for(int j = 0; j < testHit.length; j++) {
@@ -277,7 +283,8 @@ public class SingleCoreTiming extends JOPTimingTable {
 				if(wiT != wiMA) {
 					failures.put(i,"WCETInstruction has DIFFERENT TIMING INFO "+
 								"(hit = " + testHit[j] + ", load = " + testLoad[j] + "): " +
-								"microcodeanalysis := " + wiMA + " /= " + wiT + " =: wcetinstruction");
+								"microcodeanalysis := " + wiMA + " /= " + wiT + " =: wcetinstruction" +
+								" ("+ tt.getTiming(i) + ")");
 					continue outer;
 				}
 			}
