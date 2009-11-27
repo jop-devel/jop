@@ -121,7 +121,7 @@ end component;
 							iald0, iald1, iald2, iald23, iald3, iald4,
 							iasrd, ialrb,
 							iast0, iaswb, iasrb, iasst,
-							gf0, gf1, gf2, gf3,
+							gf0, gf1, gf2, gf3, gf4,
 							pf0, pf1, pf2, pf3,
 							cp0, cp1, cp2, cp3, cp4, cpstop,
 							last,
@@ -201,7 +201,7 @@ begin
 	if sc_mem_in.rdy_cnt=3 then
 		mem_out.bsy <= '1';
 	else
-		if state/=ialrb and state/=last and state_bsy='1' then
+		if state/=ialrb and state/=last and state/=gf4 and state_bsy='1' then
 			mem_out.bsy <= '1';
 		end if;
 	end if;
@@ -248,19 +248,12 @@ end process;
 
 	-- TODO: what about larger field indexes?
 	-- at least we need to signal a miss....
-	ocin.index <= ain(MAX_OBJECT_SIZE-1 downto 0);
-	ocin.handle <= bin(SC_ADDR_SIZE-1 downto 0);
-	ocin.chk_gf <= mem_in.getfield;
+	ocin.index <= mem_in.bcopd(MAX_OBJECT_SIZE-1 downto 0);
+	ocin.handle <= ain(SC_ADDR_SIZE-1 downto 0);
+	-- putfield has the handle in bin...
+	-- check cache only on real getfield
+	ocin.chk_gf <= mem_in.getfield and not was_a_stidx;
 	ocin.din <= sc_mem_in.rd_data;
-
--- a process just for a simple conditional
-process(state)
-begin
-	ocin.wr_gf <= '0';
-	if state=idl then
-		ocin.wr_gf <= '1';
-	end if;
-end process;
 
 --
 --	SimpCon connections
@@ -274,99 +267,7 @@ end process;
 	mem_out.dout <= sc_mem_in.rd_data;
 
 
---
---	Store the write address
---		and some other stuff for field and array access
---	TODO: wouldn't it be easier to use A and B
---		for data and address with a single write
---		command?
---		- see jvm.asm...
---
---	and array access stores
---
-process(clk, reset)
-begin
-	if reset='1' then
-		addr_reg <= (others => '0');
-		index <= (others => '0');
-		value <= (others => '0');
-		was_a_store <= '0';
-		was_a_stidx <= '0';
-		bc_len <= (others => '0');
 
-		base_reg <= (others => '0');
-		pos_reg <= (others => '0');
-		offset_reg <= (others => '0');
-		
-	elsif rising_edge(clk) then
-		if mem_in.bc_rd='1' then
-			bc_len <= unsigned(ain(METHOD_SIZE_BITS-1 downto 0));
-		else
-			if dec_len='1' then
-				bc_len <= bc_len-1;
-			end if;
-		end if;
-
-		-- save array address and index
-		if mem_in.iaload='1' or mem_in.stidx='1' then
-			index <= ain(SC_ADDR_SIZE-1 downto 0);		-- store array, field index
-		end if;
-		if mem_in.stidx='1' then
-			was_a_stidx <= '1';
-		end if;
-		-- store the index on get/putfield when not yet stored via stidx
-		if mem_in.getfield='1' or mem_in.putfield='1' then
-			if was_a_stidx='0' then
-				-- store the index from the bytecode operand, strange way to resize a slv
-				index <= std_logic_vector(to_signed(to_integer(unsigned(mem_in.bcopd)), SC_ADDR_SIZE));
-			end if;
-			was_a_stidx <= '0';		-- reset a former stidx
-		end if;
-		-- first step of three-operand operations
-		if mem_in.iastore='1' or mem_in.putfield='1' or mem_in.putstatic='1' then
-			value <= ain;
-		end if;
-		-- get index for array stores
-		if state=iast0 then
-			index <= ain(SC_ADDR_SIZE-1 downto 0);		-- store array index			
-		end if;
-
-		-- get source and index for copying
-		if mem_in.copy='1' then
-			base_reg <= unsigned(bin(SC_ADDR_SIZE-1 downto 0));
-			pos_reg <= unsigned(ain(SC_ADDR_SIZE-1 downto 0)) + unsigned(bin(SC_ADDR_SIZE-1 downto 0));
-			cp_stopbit <= ain(31);
-		end if;
-		-- get destination for copying
-		if state=cp0 then
-			offset_reg <= unsigned(bin(SC_ADDR_SIZE-1 downto 0)) - base_reg;
-		end if;
-
-		-- address and data tweaking for copying
-		if state=cp3 then
-			pos_reg <= pos_reg+1;
-			value <= sc_mem_in.rd_data;
-		end if;
-		if state=cpstop then
-			pos_reg <= base_reg;
-		end if;
-
-		-- precompute address translation
-		if addr_next >= base_reg and addr_next < pos_reg then
-			translate_bit <= '1';
-		else
-			translate_bit <= '0';
-		end if;
-		addr_reg <= addr_next;
-		
-		-- set flag for state sharing
-		if mem_in.iaload='1' or mem_in.getfield='1' then
-			was_a_store <= '0';
-		elsif mem_in.iastore='1' or mem_in.putfield='1' then
-			was_a_store <= '1';
-		end if;		
-	end if;
-end process;
 
 
 --
@@ -692,7 +593,12 @@ begin
 		when gf2 =>
 			next_state <= gf3;
 		when gf3 =>
-			next_state <= last;
+			next_state <= gf4;
+		when gf4 =>
+			-- either 1 or 0
+			if sc_mem_in.rdy_cnt(1)='0' then
+				next_state <= idl;
+			end if;
 
 		when pf0 =>
 			if addr_reg=0 then
@@ -730,6 +636,7 @@ begin
 		when cpstop =>
 			next_state <= idl;
 			
+		-- just wait on rdy_cnt to finish the memory transaction
 		when last =>
 			-- either 1 or 0
 			if sc_mem_in.rdy_cnt(1)='0' then
@@ -754,10 +661,34 @@ end process;
 --	state machine register
 --	and output register
 --
+--
+--	Store the write address
+--		and some other stuff for field and array access
+--	TODO: wouldn't it be easier to use A and B
+--		for data and address with a single write
+--		command?
+--		- see jvm.asm...
+--
+--	and array access stores
+--
 process(clk, reset)
 
 begin
 	if (reset='1') then
+
+		-- address and index stuff
+		addr_reg <= (others => '0');
+		index <= (others => '0');
+		value <= (others => '0');
+		was_a_store <= '0';
+		was_a_stidx <= '0';
+		bc_len <= (others => '0');
+
+		base_reg <= (others => '0');
+		pos_reg <= (others => '0');
+		offset_reg <= (others => '0');
+
+		-- state machine and registered outputs
 		state <= idl;
 		bc_wr_ena <= '0';
 		inc_addr_reg <= '0';
@@ -768,13 +699,90 @@ begin
 		bounds_error <= '0';
 		state_wr <= '0';
 		sc_mem_out.atomic <= '0';
+		ocin.wr_gf <= '0';
 		ocin.chk_pf <= '0';
 		ocin.wr_pf <= '0';
 
 	elsif rising_edge(clk) then
 
+
+		--
+		-- address, index, bc registers
+		--
+		if mem_in.bc_rd='1' then
+			bc_len <= unsigned(ain(METHOD_SIZE_BITS-1 downto 0));
+		else
+			if dec_len='1' then
+				bc_len <= bc_len-1;
+			end if;
+		end if;
+
+		-- save array address and index
+		if mem_in.iaload='1' or mem_in.stidx='1' then
+			index <= ain(SC_ADDR_SIZE-1 downto 0);		-- store array, field index
+		end if;
+		if mem_in.stidx='1' then
+			was_a_stidx <= '1';
+		end if;
+		-- store the index on get/putfield when not yet stored via stidx
+		if mem_in.getfield='1' or mem_in.putfield='1' then
+			if was_a_stidx='0' then
+				-- store the index from the bytecode operand, strange way to resize a slv
+				index <= std_logic_vector(to_signed(to_integer(unsigned(mem_in.bcopd)), SC_ADDR_SIZE));
+			end if;
+			was_a_stidx <= '0';		-- reset a former stidx
+		end if;
+		-- first step of three-operand operations
+		if mem_in.iastore='1' or mem_in.putfield='1' or mem_in.putstatic='1' then
+			value <= ain;
+		end if;
+		-- get index for array stores
+		if state=iast0 then
+			index <= ain(SC_ADDR_SIZE-1 downto 0);		-- store array index			
+		end if;
+
+		-- get source and index for copying
+		if mem_in.copy='1' then
+			base_reg <= unsigned(bin(SC_ADDR_SIZE-1 downto 0));
+			pos_reg <= unsigned(ain(SC_ADDR_SIZE-1 downto 0)) + unsigned(bin(SC_ADDR_SIZE-1 downto 0));
+			cp_stopbit <= ain(31);
+		end if;
+		-- get destination for copying
+		if state=cp0 then
+			offset_reg <= unsigned(bin(SC_ADDR_SIZE-1 downto 0)) - base_reg;
+		end if;
+
+		-- address and data tweaking for copying
+		if state=cp3 then
+			pos_reg <= pos_reg+1;
+			value <= sc_mem_in.rd_data;
+		end if;
+		if state=cpstop then
+			pos_reg <= base_reg;
+		end if;
+
+		-- precompute address translation
+		if addr_next >= base_reg and addr_next < pos_reg then
+			translate_bit <= '1';
+		else
+			translate_bit <= '0';
+		end if;
+		addr_reg <= addr_next;
+		
+		-- set flag for state sharing
+		if mem_in.iaload='1' or mem_in.getfield='1' then
+			was_a_store <= '0';
+		elsif mem_in.iastore='1' or mem_in.putfield='1' then
+			was_a_store <= '1';
+		end if;		
+
+		--
+		-- state machine and registered outputs
+		-- default values
+		--
 		state <= next_state;
 
+		-- single cycle signals have a default
 		bc_wr_ena <= '0';
 		inc_addr_reg <= '0';
 		dec_len <= '0';
@@ -783,6 +791,7 @@ begin
 		bounds_error <= '0';
 		state_wr <= '0';
 		sc_mem_out.atomic <= '0';
+		ocin.wr_gf <= '0';
 		ocin.chk_pf <= '0';
 		ocin.wr_pf <= '0';
 
@@ -790,6 +799,12 @@ begin
 
 			when idl =>
 				state_bsy <= '0';
+				-- only valid on first idle cycle when comming
+				-- from a getfield
+				-- TODO: only from a 'real' getfield, not the jopsys version
+				if state=gf4 then
+					ocin.wr_gf <= '1';
+				end if;
 
 			when rd1 =>
 				state_bsy <= '0';
@@ -898,6 +913,9 @@ begin
 				state_rd <= '1';
 				sc_mem_out.atomic <= '1';
                           
+			when gf4 =>
+				sc_mem_out.atomic <= '1';
+
 			when pf0 =>
 				ocin.chk_pf <= '1';
 				state_rd <= '1';
@@ -951,9 +969,11 @@ begin
 					
 		-- increment in state write
 		if state=bc_wr then
-			bc_addr <= std_logic_vector(unsigned(bc_addr)+1);		-- next jbc address
+			-- next jbc address
+			bc_addr <= std_logic_vector(unsigned(bc_addr)+1);		
 		end if;
 	end if;
+
 end process;
 
 end rtl;
