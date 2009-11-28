@@ -49,13 +49,13 @@ architecture rtl of ocache is
 
 	signal ocin_reg : ocache_in_type;
 
-	signal valid : std_logic;
-	signal tag : std_logic_vector(CACHE_ADDR_SIZE-1 downto 0);
-	signal index : std_logic_vector(MAX_OBJECT_SIZE-1 downto 0);
-	signal data : std_logic_vector(31 downto 0);
+signal valid : std_logic;
+signal tag : std_logic_vector(CACHE_ADDR_SIZE-1 downto 0);
+signal index : std_logic_vector(MAX_OBJECT_SIZE-1 downto 0);
+signal data : std_logic_vector(31 downto 0);
 
-	signal wait4data : std_logic;
-	signal hit : std_logic;
+signal wait4data : std_logic;
+signal hit : std_logic;
 
 begin
 
@@ -76,7 +76,8 @@ begin
 		valid <= '0';
 		wait4data <= '0';
 	elsif rising_edge(clk) then
-		if ocin.chk_gf='1' or ocin.chk_pf='1' then
+		-- if ocin.chk_gf='1' or ocin.chk_pf='1' then
+		if ocin.chk_gf='1' then
 			ocin_reg <= ocin;
 			if hit='0' then
 				wait4data <= '1';
@@ -84,13 +85,13 @@ begin
 		end if;
 		-- wr_gf is just connected to idl state!
 		if ocin.wr_gf='1' then
-			if wait4data='1' then
+--			if wait4data='1' then
 				wait4data <= '0';
 				valid <= '1';
 				tag <= ocin_reg.handle;
 				index <= ocin_reg.index;
 				data <= ocin.din;
-			end if;
+--			end if;
 		end if;
 		-- quick hack invaludate on pf hit
 		-- at the moment too lazy to remember the value

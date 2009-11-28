@@ -193,6 +193,8 @@ end component;
 	signal ocin			: ocache_in_type;
 	signal ocout		: ocache_out_type;
 
+	signal read_ocache	: std_logic;	-- read data MUX
+
 begin
 
 process(sc_mem_in, state_bsy, state)
@@ -263,8 +265,19 @@ end process;
 	sc_mem_out.wr_data <= ram_wr_data;
 	sc_mem_out.rd <= mem_in.rd or state_rd;
 	sc_mem_out.wr <= mem_in.wr or state_wr;
-	-- add cache MUX
-	mem_out.dout <= sc_mem_in.rd_data;
+
+--
+--	read data MUX on cache hi
+--
+process(read_ocache, sc_mem_in, ocout)
+begin
+
+	if read_ocache='1' then
+		mem_out.dout <= ocout.dout;
+	else
+		mem_out.dout <= sc_mem_in.rd_data;
+	end if;
+end process;
 
 
 
@@ -377,7 +390,7 @@ end process;
 --
 process(state, mem_in, sc_mem_in,
 	cache_rdy, cache_in_cache, bc_len, value, index, 
-	addr_reg, cp_stopbit, was_a_store)
+	addr_reg, cp_stopbit, was_a_store, ocout)
 begin
 
 	next_state <= state;
@@ -398,7 +411,11 @@ begin
 			elsif mem_in.iaload='1' then
 				next_state <= iald0;
 			elsif mem_in.getfield='1' then
-				next_state <= gf0;
+				if ocout.hit='1' then
+					next_state <= idl;
+				else
+					next_state <= gf0;
+				end if;
 			elsif mem_in.putfield='1' then
 				next_state <= pf0;
 			elsif mem_in.copy='1' then
@@ -702,6 +719,7 @@ begin
 		ocin.wr_gf <= '0';
 		ocin.chk_pf <= '0';
 		ocin.wr_pf <= '0';
+		read_ocache <= '0';
 
 	elsif rising_edge(clk) then
 
@@ -730,15 +748,15 @@ begin
 				-- store the index from the bytecode operand, strange way to resize a slv
 				index <= std_logic_vector(to_signed(to_integer(unsigned(mem_in.bcopd)), SC_ADDR_SIZE));
 			end if;
-			was_a_stidx <= '0';		-- reset a former stidx
 		end if;
+
 		-- first step of three-operand operations
 		if mem_in.iastore='1' or mem_in.putfield='1' or mem_in.putstatic='1' then
 			value <= ain;
 		end if;
 		-- get index for array stores
 		if state=iast0 then
-			index <= ain(SC_ADDR_SIZE-1 downto 0);		-- store array index			
+			index <= ain(SC_ADDR_SIZE-1 downto 0);		-- store array index
 		end if;
 
 		-- get source and index for copying
@@ -776,6 +794,10 @@ begin
 			was_a_store <= '1';
 		end if;		
 
+		if ocout.hit='1' then
+			read_ocache<='1';
+		end if;
+
 		--
 		-- state machine and registered outputs
 		-- default values
@@ -800,27 +822,36 @@ begin
 			when idl =>
 				state_bsy <= '0';
 				-- only valid on first idle cycle when comming
-				-- from a getfield
-				-- TODO: only from a 'real' getfield, not the jopsys version
+				-- from a 'real' getfield (no preceeding stidx)
 				if state=gf4 then
-					ocin.wr_gf <= '1';
+					if was_a_stidx='0' then
+						ocin.wr_gf <= '1';
+					end if;
+				end if;
+				if state=gf4 or state=last then
+					was_a_stidx <= '0';		-- reset a former stidx marker
 				end if;
 
 			when rd1 =>
+				read_ocache<='0';
 				state_bsy <= '0';
 
 			when wr1 =>
+				read_ocache<='0';
 				state_bsy <= '0';
 
 			when ps1 =>
+				read_ocache<='0';
 				state_bsy <= '1';
 				state_wr <= '1';
 
 			when gs1 =>
+				read_ocache<='0';
 				state_bsy <= '1';
 				state_rd <= '1';
 
 			when bc_cc =>
+				read_ocache<='0';
 				state_bsy <= '1';
 				-- cache check
 
@@ -856,9 +887,11 @@ begin
 				-- wait for last (unnecessary read)
 
 			when iast0 =>
+				read_ocache<='0';
 				state_bsy <= '1';
 
 			when iald0 =>
+				read_ocache<='0';
 				state_rd <= '1';
 				state_bsy <= '1';
 				inc_addr_reg <= '1';
@@ -899,6 +932,7 @@ begin
 				sc_mem_out.atomic <= '1';
 
 			when gf0 =>
+				read_ocache<='0';
 				state_rd <= '1';
 				state_bsy <= '1';
 				sc_mem_out.atomic <= '1';
@@ -917,6 +951,7 @@ begin
 				sc_mem_out.atomic <= '1';
 
 			when pf0 =>
+				read_ocache<='0';
 				ocin.chk_pf <= '1';
 				state_rd <= '1';
 				state_bsy <= '1';
@@ -935,6 +970,7 @@ begin
 				sc_mem_out.atomic <= '1';
                           
 			when cp0 =>
+				read_ocache<='0';
 				sc_mem_out.atomic <= '1';
 				state_bsy <= '1';
 

@@ -36,6 +36,7 @@ add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/mem/add
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/mem/index
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/mem/value
 add wave -noupdate -format Logic /tb_jop/joptop/cpu/mem/was_a_store
+add wave -noupdate -format Logic /tb_jop/joptop/cpu/mem/was_a_stidx
 add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/cpu/mem/null_pointer
 add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/cpu/mem/bounds_error
 add wave -noupdate -format Logic /tb_jop/joptop/cpu/mem/np_exc
@@ -83,4 +84,4 @@ configure wave -gridperiod 1
 configure wave -griddelta 40
 configure wave -timeline 0
 update
-WaveRestoreZoom {33826 ns} {33984 ns}
+WaveRestoreZoom {5210968 ns} {5211190 ns}

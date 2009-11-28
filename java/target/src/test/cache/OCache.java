@@ -31,6 +31,7 @@ package cache;
 public class OCache {
 	
 	int a, b;
+	static int s;
 
 	/**
 	 * @param args
@@ -42,14 +43,17 @@ public class OCache {
 
 		// a marker for the ModelSim simulation
 		com.jopdesign.io.IOFactory.getFactory().getSysDevice().wd = 1;
+		s = 15;
 		
 		oc.a = 1;
 		oc.b = 2;
-		i = oc.a; 
-		i = oc.a; 
-		i = oc.b;
-		i = oc.b;
 		i = oc.a;
+		i = s;
+		i = oc.a; 
+		i = oc.b;
+		i = oc.b;
+		oc.b = 3;
+		i = oc.b;
 		i = oc.b;
 		
 
