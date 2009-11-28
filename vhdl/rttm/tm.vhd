@@ -252,11 +252,11 @@ begin
 		next_commit_started <= commit_started; -- TODO
 	
 		case state is 
-			when no_transaction | rollback |
+			when no_transaction | containment |
 				early_committed_transaction =>
 				if from_cpu.rd = '1' then
 					next_stage1.state <= read_direct;
-				elsif from_cpu.wr = '1' and state /= rollback then
+				elsif from_cpu.wr = '1' and state /= containment then
 					next_stage1.state <= write_direct;
 				else
 					next_stage1.state <= idle;

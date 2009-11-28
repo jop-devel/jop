@@ -40,7 +40,7 @@ package tm_internal_pack is
 		early_commit,
 		early_committed_transaction, -- TODO same for expl./OF EC?
 
-		rollback
+		containment
 		);
 
 	--type data_array is array (integer range <>) of std_logic_vector(31 downto 0);

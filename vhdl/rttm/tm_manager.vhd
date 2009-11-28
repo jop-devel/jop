@@ -89,7 +89,7 @@ port (
 	sc_arb_in		: in sc_in_type;
 
 	--
-	--	Rollback exception
+	--	rollback exception
 	--
 	exc_tm_rollback	: out std_logic
 		
@@ -103,13 +103,13 @@ architecture rtl of tm_manager is
 		
 	signal state, next_state		: state_type;
 
-	-- rollback state has internal state machine for correct timing and rdy_cnt
+	-- containment state has internal state machine for correct timing and rdy_cnt
 	-- generation
-	-- rbi... rollback idle
-	-- rbb... rollback busy
-	-- rba... rollback aborted
-	type rollback_state_type is (rbi0, rbb0, rbb1, rbb2, rba1, rba2, rbi);
-	signal next_rollback_state, rollback_state: rollback_state_type;
+	-- cbi... containment idle
+	-- cbb... containment busy
+	-- cba... containment aborted
+	type containment_state_type is (cbi0, cbb0, cbb1, cbb2, cba1, cba2, cbi);
+	signal next_containment_state, containment_state: containment_state_type;
 
 		
 	-- TM commands
@@ -240,7 +240,7 @@ begin
 	--	TM STATE MACHINE
 	--
 	state_machine: process(commit_finished_dly, commit_token_grant, conflict, 
-		rollback_state, state, tag_full, tm_cmd, instrumentation) is		
+		containment_state, state, tag_full, tm_cmd, instrumentation) is		
 	begin
 		next_state <= state;
 		exc_tm_rollback <= '0';
@@ -248,7 +248,7 @@ begin
 		
 		transaction_start <= '0';
 		
-		next_rollback_state <= rollback_state;
+		next_containment_state <= containment_state;
 		
 		if rttm_instrum then
 			next_instrumentation.retries <= instrumentation.retries;
@@ -289,7 +289,7 @@ begin
 				end case;						
 								
 				if conflict = '1' then
-					next_state <= rollback;
+					next_state <= containment;
 					
 					if rttm_instrum then
 						next_instrumentation.retries <= 
@@ -298,12 +298,12 @@ begin
 					
 					case tm_cmd is
 						when none =>						
-							next_rollback_state <= rbi0;
+							next_containment_state <= cbi0;
 						when aborted =>
 							-- don't miss aborted command					
 	 						next_state <= no_transaction;
 						when others =>
-							next_rollback_state <= rbb0;
+							next_containment_state <= cbb0;
 					end case;			
 				end if;
 								
@@ -311,8 +311,8 @@ begin
 				rdy_cnt_busy <= '1';
 			
 				if conflict = '1' then
-					next_state <= rollback;
-					next_rollback_state <= rbb0;
+					next_state <= containment;
+					next_containment_state <= cbb0;
 					
 					if rttm_instrum then
 						next_instrumentation.retries <= 
@@ -339,7 +339,7 @@ begin
 				rdy_cnt_busy <= '1';
 			
 				if conflict = '1' then
-					next_state <= rollback;
+					next_state <= containment;
 					
 					if rttm_instrum then
 						next_instrumentation.retries <= 
@@ -384,7 +384,7 @@ begin
 						null;
 				end case;
 				
-			when rollback =>
+			when containment =>
 
 				-- If we are about to end a transaction (by executing a end 
 				-- transaction command), we need to assure that the try block 
@@ -395,34 +395,34 @@ begin
 				-- TODO refer to documentation
 				-- TODO too many wait cycles?
 			
-				case rollback_state is
-					when rbi0 =>
+				case containment_state is
+					when cbi0 =>
 						exc_tm_rollback <= '1';
 					
-						next_rollback_state <= rbi;
+						next_containment_state <= cbi;
 					
-					when rbb0 =>
+					when cbb0 =>
 						exc_tm_rollback <= '1';
 					
-						next_rollback_state <= rbb1;
+						next_containment_state <= cbb1;
 						rdy_cnt_busy <= '1';
 					
-					when rbb1 =>
-						next_rollback_state <= rbb2;
+					when cbb1 =>
+						next_containment_state <= cbb2;
 						rdy_cnt_busy <= '1';
 					
-					when rbb2 =>
-						next_rollback_state <= rbi;
+					when cbb2 =>
+						next_containment_state <= cbi;
 						rdy_cnt_busy <= '1';
 					
-					when rbi =>
+					when cbi =>
 						null;
 												
-					when rba1 =>
-						next_rollback_state <= rba2;
+					when cba1 =>
+						next_containment_state <= cba2;
 						rdy_cnt_busy <= '1';
 					
-					when rba2 =>
+					when cba2 =>
 						next_state <= no_transaction;
 						rdy_cnt_busy <= '1';
 						
@@ -432,9 +432,9 @@ begin
 					when none =>
 						null;
 					when aborted =>
-						next_rollback_state <= rba1;
+						next_containment_state <= cba1;
 					when others =>
-						next_rollback_state <= rbb1;
+						next_containment_state <= cbb1;
 				end case;
 		end case;
 	end process state_machine;	
@@ -461,7 +461,7 @@ begin
 			when commit | early_commit | early_committed_transaction => 
 				sc_arb_out.tm_broadcast <= '1';
 			when normal_transaction | commit_wait_token | 
-			early_commit_wait_token | rollback =>
+			early_commit_wait_token | containment =>
 				-- TODO no writes to mem should happen 
 				sc_arb_out.tm_broadcast <= '0';
 			when no_transaction =>
@@ -523,7 +523,7 @@ begin
 			state = normal_transaction or
 			state = commit_wait_token or 
 			state = early_commit_wait_token or
-			state = rollback) and 
+			state = containment) and 
 			sc_arb_out_filtered.wr = '1');
 	end process;
 	
@@ -541,7 +541,7 @@ begin
 			commit_finished_dly_internal_1 <= '0';
 			commit_finished_dly <= '0';
 			
-			-- rollback_state <= -- don't care
+			-- containment_state <= -- don't care
 			
 			if rttm_instrum then
 				instrumentation <= ((others => '0'), (others => '0'), 
@@ -558,7 +558,7 @@ begin
 			commit_finished_dly_internal_1 <= commit_finished;
 			commit_finished_dly <= commit_finished_dly_internal_1;
 			
-			rollback_state <= next_rollback_state;
+			containment_state <= next_containment_state;
 			
 			if rttm_instrum then
 				instrumentation <= next_instrumentation;

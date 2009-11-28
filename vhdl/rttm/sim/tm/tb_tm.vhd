@@ -426,7 +426,7 @@ begin
 
 		testing_conflict <= false;
 		
- 		assert << signal .dut.state: state_type>> = rollback;
+ 		assert << signal .dut.state: state_type>> = containment;
 		
 		-- zombie reads/writes
 		
@@ -437,9 +437,9 @@ begin
 		-- TODO zombie mode results are not defined yet
 		--assert result = (31 downto 0 => '0');
 		
- 		assert << signal .dut.state: state_type>> = rollback;
+ 		assert << signal .dut.state: state_type>> = containment;
 		
-		-- ack rollback
+		-- ack containment
 		
 		sc_write(clk, TM_MAGIC_SIMULATION, 
 			(31 downto tm_cmd_raw'length => '0') & TM_CMD_ABORTED, 
