@@ -38,7 +38,7 @@ public class NativeMethods extends TestCase {
 	public boolean test() {
 
 		boolean ok = true;
-		int i, j;
+		int i, j, k;
 		
 		a = 1;
 		b = 2; 
@@ -60,7 +60,7 @@ public class NativeMethods extends TestCase {
 		// test caching with native access
 		a = 123;
 		i = a;
-		// jopsys_getfiedl goes directly to the memory
+		// jopsys_getfield goes directly to the memory
 		// as putfield invalidates this works
 		j = Native.getField(ref, 0);
 		ok &= i==j;
@@ -70,6 +70,27 @@ public class NativeMethods extends TestCase {
 		Native.putField(ref, 0, 444);
 		j = a;
 		ok &= j==444;
+		
+		a = 1;
+		i = a;
+		j = a;
+		Native.putField(ref, 1, 2);
+		ok &= i==1 && j==1;
+		i = a;
+		Native.putField(ref, 0, 2);
+		j = a;
+		ok &= i==j;
+
+		a = 123;
+		i = a;
+		j = a;
+		k = Native.getField(ref, 0);
+		ok = i==123 & j==123 & k==123;
+		// update cache
+		a = 456;
+		i = Native.getField(ref, 0);
+		j = a;
+		ok = i==456 && j==456;
 
 		return ok;
 	}

@@ -1138,7 +1138,7 @@ public class WCETInstruction {
 			break;
 		// PUTFIELD = 181
 		case org.apache.bcel.Constants.PUTFIELD:
-			wcet = 8 + r + w;
+			wcet = 9 + r + w;
 			if (CMP_WCET==true)
 				wcet = putfield.wcet;
 			break;
@@ -1524,12 +1524,12 @@ public class WCETInstruction {
 		generateInstruction(putstatic, false, 0, 0);
 		putstatic.wcet = wcetOfInstruction(putstatic.microcode);
 		
-		getfield.microcode = new int [5+2*r];
+		getfield.microcode = new int [8+2*r];
 		getfield.opcode = 180;
 		generateInstruction(getfield, false, 0, 0);
 		getfield.wcet = wcetOfInstruction(getfield.microcode);
 		
-		putfield.microcode = new int [5+r+w];
+		putfield.microcode = new int [9+r+w];
 		putfield.opcode = 181;
 		generateInstruction(putfield, false, 0, 0);
 		putfield.wcet = wcetOfInstruction(putfield.microcode);
@@ -1666,10 +1666,10 @@ public class WCETInstruction {
 		// putfield	
 		case 181:
 			for(int i=0;i<instruction.microcode.length;i++){
-				if(i<=2) instruction.microcode[i]=NOP;
-				else if(i==3) instruction.microcode[i]=RD;
-				else if(i>3 && i<=5+r) instruction.microcode[i]=NOP;
-				else if(i==6+r) instruction.microcode[i]=WR;
+				if(i<=3) instruction.microcode[i]=NOP;
+				else if(i==4) instruction.microcode[i]=RD;
+				else if(i>4 && i<=6+r) instruction.microcode[i]=NOP;
+				else if(i==7+r) instruction.microcode[i]=WR;
 				else instruction.microcode[i]=NOP;
 			}
 			break;

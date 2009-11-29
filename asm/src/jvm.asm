@@ -138,6 +138,8 @@
 //	2009-09-05	MS: new unconditional jmp instruction
 //	2009-11-17	MS: put/getfield in mmu uses bytecode operand directly for the index
 //	2009-11-23	MS: put/getstatic support in mmu (bc operand as address)
+//	2009-11-28	MS: pufield one cycle longer for object cache hit detection, first
+//				working object cache with a single entry
 //
 //		idiv, irem	WRONG when one operand is 0x80000000
 //			but is now in JVM.java
@@ -147,7 +149,7 @@
 //	gets written in RAM at position 64
 //	update it when changing .asm, .inc or .vhd files
 //
-version		= 20091123
+version		= 20091128
 
 //
 //	start of stack area in the on-chip RAM
@@ -1307,7 +1309,8 @@ jopsys_getfield:				// version from Native
 			ldmrd nxt			// read result
 
 putfield:
-			stpf opd			// start putfield index is taken from the BC operand
+			stpf 				// start putfield index is taken from the BC operand
+			nop opd
 			nop	opd				// get rid of second stack location
 			wait
 			wait

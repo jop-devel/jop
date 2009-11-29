@@ -130,7 +130,7 @@ end component;
 	-- size of main memory simulation in 32-bit words.
 	-- change it to less memory to speedup the simulation
 	-- minimum is 64 KB, 14 bits
-	constant  MEM_BITS	: integer := 14;
+	constant  MEM_BITS	: integer := 15;
 
 begin
 

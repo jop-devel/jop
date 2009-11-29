@@ -24,6 +24,8 @@
  */
 package cache;
 
+import com.jopdesign.sys.Native;
+
 /**
  * @author Martin Schoeberl (martin@jopdesign.com)
  *
@@ -46,17 +48,11 @@ public class OCache {
 		s = 15;
 		
 		oc.a = 1;
-		oc.b = 2;
 		i = oc.a;
-		i = s;
-		i = oc.a; 
-		i = oc.b;
-		i = oc.b;
-		oc.b = 3;
-		i = oc.b;
-		i = oc.b;
-		
-
+		j = oc.a;
+		int ref = Native.toInt(oc);
+		Native.putField(ref, 0, 2);
+		i = oc.a;
 	}
 
 }

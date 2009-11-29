@@ -189,8 +189,8 @@ public class MicropathTiming {
                         timing.add(new TimingExpression(5,2,0,passed-1));
                         break;
                     case MicrocodeConstants.STPF:
-                        /* wait (5+r+w) */
-                        timing.add(new TimingExpression(5,1,1,passed-1));
+                        /* wait (6+r+w) */
+                        timing.add(new TimingExpression(6,1,1,passed-1));
                         break;
                     case MicrocodeConstants.STALD:
                         /* wait (TODO) */

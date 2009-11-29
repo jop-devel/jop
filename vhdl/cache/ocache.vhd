@@ -25,6 +25,7 @@
 --	Object cache
 --
 --	2009-11-11  first version
+--	2009-11-28	single entry works
 --
 
 Library IEEE;
@@ -54,8 +55,7 @@ architecture rtl of ocache is
 	signal index : std_logic_vector(MAX_OBJECT_SIZE-1 downto 0);
 	signal data : std_logic_vector(31 downto 0);
 
-	signal wait4data : std_logic;
-	signal hit : std_logic;
+	signal hit, hit_reg : std_logic;
 
 begin
 
@@ -78,28 +78,24 @@ process(clk, reset)
 begin
 	if reset='1' then
 		valid <= '0';
-		wait4data <= '0';
 	elsif rising_edge(clk) then
-		-- if ocin.chk_gf='1' or ocin.chk_pf='1' then
-		if ocin.chk_gf='1' then
+		if ocin.chk_gf='1' or ocin.chk_pf='1' then
+			hit_reg <= hit;
 			ocin_reg <= ocin;
-			if hit='0' then
-				wait4data <= '1';
-			end if;
 		end if;
-		-- wr_gf is just connected to idl state!
 		if ocin.wr_gf='1' then
---			if wait4data='1' then
-				wait4data <= '0';
-				valid <= '1';
-				tag <= ocin_reg.handle;
-				index <= ocin_reg.index;
-				data <= ocin.din;
---			end if;
+			valid <= '1';
+			tag <= ocin_reg.handle;
+			index <= ocin_reg.index;
+			data <= ocin.gf_val;
 		end if;
-		-- quick hack invaludate on pf hit
-		-- at the moment too lazy to remember the value
-		if ocin.wr_pf='1' then
+		-- no write allocaton, just update cached values
+		if ocin.wr_pf='1' and hit_reg='1' then
+			data <= ocin.pf_val;
+		end if;
+		-- invalidate the cache (e.g. on jopsys_get/putfield)
+		-- TODO: also on monitorenter (or exit?) and GC start?
+		if ocin.inval='1' then
 			valid <= '0';
 		end if;
 	end if;

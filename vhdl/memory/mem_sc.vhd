@@ -40,6 +40,9 @@
 --	2009-11-16	use bc operand for getfield index
 --	2009-11-17	use bc operand for putfield index
 --	2009-11-23	support for get/putstatic (stgs, stps)
+--	2009-11-28	use the object cache, invalidate on native access
+--
+--	TODO: invalidate on monitorenter, volatile
 --
 --	comment: we could start putstatic SimpCon operation in the same cycle:
 --		SimpCon wr on mem_in.putstatic, address selection from A
@@ -122,7 +125,7 @@ end component;
 							iasrd, ialrb,
 							iast0, iaswb, iasrb, iasst,
 							gf0, gf1, gf2, gf3, gf4,
-							pf0, pf1, pf2, pf3,
+							pf0, pf1, pf2, pf3, pf4,
 							cp0, cp1, cp2, cp3, cp4, cpstop,
 							last,
 							npexc, abexc, excw
@@ -255,7 +258,9 @@ end process;
 	-- putfield has the handle in bin...
 	-- check cache only on real getfield
 	ocin.chk_gf <= mem_in.getfield and not was_a_stidx;
-	ocin.din <= sc_mem_in.rd_data;
+	ocin.gf_val <= sc_mem_in.rd_data;
+	ocin.pf_val <= value;
+	ocin.inval <= mem_in.stidx;
 
 --
 --	SimpCon connections
@@ -356,7 +361,7 @@ begin
 	end if;
 
 	-- get/putfield could be optimized for faster memory (e.g. SPM or SimpCon cache - see mem_sc_new)
-	if state=iald3 or state=iald23 or state=gf2 or state=pf2 then
+	if state=iald3 or state=iald23 or state=gf2 or state=pf3 then
 		addr_next <= unsigned(sc_mem_in.rd_data(SC_ADDR_SIZE-1 downto 0))+unsigned(index);
 	end if;
 
@@ -618,20 +623,24 @@ begin
 			end if;
 
 		when pf0 =>
+			-- just 'waste' a cycle to get opd in
+			-- ok postion
+			next_state <= pf1;
+		when pf1 =>
 			if addr_reg=0 then
 				next_state <= npexc;
 			else
-				next_state <= pf1;
-			end if;
-		when pf1 =>
-			-- either 1 or 0
-			if sc_mem_in.rdy_cnt(1)='0' then
 				next_state <= pf2;
 			end if;
 		when pf2 =>
-			next_state <= pf3;
-
+			-- either 1 or 0
+			if sc_mem_in.rdy_cnt(1)='0' then
+				next_state <= pf3;
+			end if;
 		when pf3 =>
+			next_state <= pf4;
+
+		when pf4 =>
 			next_state <= last;
 
 		when cp0 =>
@@ -743,7 +752,8 @@ begin
 			was_a_stidx <= '1';
 		end if;
 		-- store the index on get/putfield when not yet stored via stidx
-		if mem_in.getfield='1' or mem_in.putfield='1' then
+		-- if mem_in.getfield='1' or mem_in.putfield='1' then
+		if mem_in.getfield='1' or state=pf0 then
 			if was_a_stidx='0' then
 				-- store the index from the bytecode operand, strange way to resize a slv
 				index <= std_logic_vector(to_signed(to_integer(unsigned(mem_in.bcopd)), SC_ADDR_SIZE));
@@ -952,20 +962,25 @@ begin
 
 			when pf0 =>
 				read_ocache<='0';
-				ocin.chk_pf <= '1';
-				state_rd <= '1';
 				state_bsy <= '1';
-				sc_mem_out.atomic <= '1';
+				if was_a_stidx='0' then
+					ocin.chk_pf <= '1';
+				end if;
 
 			when pf1 =>
+				state_rd <= '1';
 				sc_mem_out.atomic <= '1';
 
 			when pf2 =>
 				sc_mem_out.atomic <= '1';
 
 			when pf3 =>
-				-- FIXME: just a dummy cache flush
-				ocin.wr_pf <= '1';
+				sc_mem_out.atomic <= '1';
+
+			when pf4 =>
+				if was_a_stidx='0' then
+					ocin.wr_pf <= '1';
+				end if;
 				state_wr <= '1';
 				sc_mem_out.atomic <= '1';
                           
