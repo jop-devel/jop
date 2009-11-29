@@ -218,7 +218,7 @@ begin
 		
 		-- normal mode read and write
 		
- 		assert << signal .dut.state: state_type>> = no_transaction;
+ 		assert << signal .dut.state: state_type>> = NO_TRANSACTION;
 		
 		sc_write(clk, addr(2), data(3), sc_cpu_out, sc_cpu_in);
  		assert now = 70 ns;
@@ -239,7 +239,7 @@ begin
 			(31 downto tm_cmd_raw'length => '0') & TM_CMD_START_TRANSACTION, 
 			sc_cpu_out, sc_cpu_in);
 		
- 		assert << signal .dut.state: state_type>> = normal_transaction;
+ 		assert << signal .dut.state: state_type>> = NORMAL_TRANSACTION;
 --  		assert to_integer(nesting_cnt) = 1;		
 -- 
 -- 		sc_write(clk, TM_MAGIC, 
@@ -368,7 +368,7 @@ begin
 		
 		testing_commit <= false;
 		
- 		assert << signal .dut.state: state_type>> = no_transaction;
+ 		assert << signal .dut.state: state_type>> = NO_TRANSACTION;
 --  		assert to_integer(nesting_cnt) = 0;
 		
 		assert ram(to_integer(unsigned(addr(0)))) = (data(1));
@@ -382,7 +382,7 @@ begin
 			(31 downto tm_cmd_raw'length => '0') & TM_CMD_START_TRANSACTION, 
 			sc_cpu_out, sc_cpu_in);
 		
- 		assert << signal .dut.state: state_type>> = normal_transaction;
+ 		assert << signal .dut.state: state_type>> = NORMAL_TRANSACTION;
 		
 		-- no conflict
 				
@@ -426,7 +426,7 @@ begin
 
 		testing_conflict <= false;
 		
- 		assert << signal .dut.state: state_type>> = containment;
+ 		assert << signal .dut.state: state_type>> = CONTAINMENT;
 		
 		-- zombie reads/writes
 		
@@ -437,7 +437,7 @@ begin
 		-- TODO zombie mode results are not defined yet
 		--assert result = (31 downto 0 => '0');
 		
- 		assert << signal .dut.state: state_type>> = containment;
+ 		assert << signal .dut.state: state_type>> = CONTAINMENT;
 		
 		-- ack containment
 		
@@ -445,7 +445,7 @@ begin
 			(31 downto tm_cmd_raw'length => '0') & TM_CMD_ABORTED, 
 			sc_cpu_out, sc_cpu_in);
 		
- 		assert << signal .dut.state: state_type>> = no_transaction;
+ 		assert << signal .dut.state: state_type>> = NO_TRANSACTION;
 --  		assert to_integer(nesting_cnt) = 0; -- ( ) 
 			
 		assert ram(to_integer(unsigned(addr(3)))) = (31 downto 0 => 'U');

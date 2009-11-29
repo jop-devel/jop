@@ -30,17 +30,17 @@ package tm_internal_pack is
 	--
 
 	type state_type is (
-		no_transaction,
+		NO_TRANSACTION,
 
-		normal_transaction,
-		commit_wait_token, -- TODO additional states to register commit_in_allow?
-		commit,
+		NORMAL_TRANSACTION,
+		COMMIT_WAIT_TOKEN, -- TODO additional states to register commit_in_allow?
+		COMMIT,
 
-		early_commit_wait_token,
-		early_commit,
-		early_committed_transaction, -- TODO same for expl./OF EC?
+		EARLY_COMMIT_WAIT_TOKEN,
+		EARLY_COMMIT,
+		EARLY_COMMITTED_TRANSACTION, -- TODO same for expl./OF EC?
 
-		containment
+		CONTAINMENT
 		);
 
 	--type data_array is array (integer range <>) of std_logic_vector(31 downto 0);

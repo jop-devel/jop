@@ -229,9 +229,9 @@ begin
 	
 	-- request or hold commit token during these states  
 	commit_token_request_buf <= '1' 
-		when state = commit_wait_token or state = early_commit_wait_token or
-		state = commit or state = early_commit or
-		state = early_committed_transaction
+		when state = COMMIT_WAIT_TOKEN or state = EARLY_COMMIT_WAIT_TOKEN or
+		state = COMMIT or state = EARLY_COMMIT or
+		state = EARLY_COMMITTED_TRANSACTION
 		else '0';
 	
 	commit_token_request <= commit_token_request_buf;			
@@ -258,27 +258,27 @@ begin
 		end if;
 		
 		case state is
-			when no_transaction =>
+			when NO_TRANSACTION =>
 				if tm_cmd = start_transaction then
-					next_state <= normal_transaction;
+					next_state <= NORMAL_TRANSACTION;
 					
 					transaction_start <= '1';
 				end if;
 				
-			when normal_transaction =>
+			when NORMAL_TRANSACTION =>
 				if tag_full = '1' then
-					next_state <= early_commit_wait_token;
+					next_state <= EARLY_COMMIT_WAIT_TOKEN;
 				end if;
 			
 				case tm_cmd is
 					when end_transaction =>
-						next_state <= commit_wait_token;
-					when early_commit =>
-						next_state <= early_commit_wait_token;
+						next_state <= COMMIT_WAIT_TOKEN;
+					when EARLY_COMMIT =>
+						next_state <= EARLY_COMMIT_WAIT_TOKEN;
 					when aborted =>
 						-- command is only issued if an exception is being 
 						-- handled
-						next_state <= no_transaction;
+						next_state <= NO_TRANSACTION;
 						
 						if rttm_instrum then
 							next_instrumentation.retries <= 
@@ -289,7 +289,7 @@ begin
 				end case;						
 								
 				if conflict = '1' then
-					next_state <= containment;
+					next_state <= CONTAINMENT;
 					
 					if rttm_instrum then
 						next_instrumentation.retries <= 
@@ -301,17 +301,17 @@ begin
 							next_containment_state <= cbi0;
 						when aborted =>
 							-- don't miss aborted command					
-	 						next_state <= no_transaction;
+	 						next_state <= NO_TRANSACTION;
 						when others =>
 							next_containment_state <= cbb0;
 					end case;			
 				end if;
 								
-			when commit_wait_token =>
+			when COMMIT_WAIT_TOKEN =>
 				rdy_cnt_busy <= '1';
 			
 				if conflict = '1' then
-					next_state <= containment;
+					next_state <= CONTAINMENT;
 					next_containment_state <= cbb0;
 					
 					if rttm_instrum then
@@ -319,7 +319,7 @@ begin
 							instrumentation.retries + 1;
 					end if;
 				elsif commit_token_grant = '1' then
-					next_state <= commit;
+					next_state <= COMMIT;
 					
 					if rttm_instrum then
 						next_instrumentation.commits <= 
@@ -327,26 +327,26 @@ begin
 					end if;
 				end if;
 			
-			when commit =>
+			when COMMIT =>
 				rdy_cnt_busy <= '1';
 				
 				-- TODO check condition
 				if commit_finished_dly = '1' then
-					next_state <= no_transaction;
+					next_state <= NO_TRANSACTION;
 				end if;
 				
-			when early_commit_wait_token =>
+			when EARLY_COMMIT_WAIT_TOKEN =>
 				rdy_cnt_busy <= '1';
 			
 				if conflict = '1' then
-					next_state <= containment;
+					next_state <= CONTAINMENT;
 					
 					if rttm_instrum then
 						next_instrumentation.retries <= 
 							instrumentation.retries + 1;
 					end if;
 				elsif commit_token_grant = '1' then
-					next_state <= early_commit;
+					next_state <= EARLY_COMMIT;
 					
 					if rttm_instrum then
 						next_instrumentation.early_commits <= 
@@ -354,18 +354,18 @@ begin
 					end if;
 				end if;
 				
-			when early_commit =>
+			when EARLY_COMMIT =>
 				rdy_cnt_busy <= '1';
 			
 				-- TODO check condition
 				if commit_finished_dly = '1' then
-					next_state <= early_committed_transaction;
+					next_state <= EARLY_COMMITTED_TRANSACTION;
 				end if;
 				
-			when early_committed_transaction =>
+			when EARLY_COMMITTED_TRANSACTION =>
 				case tm_cmd is
 					when end_transaction =>
-						next_state <= no_transaction;
+						next_state <= NO_TRANSACTION;
 
 						if rttm_instrum then
 							next_instrumentation.commits <= 
@@ -379,12 +379,12 @@ begin
 							next_instrumentation.retries <= 
 								instrumentation.retries + 1;
 						end if;
-						next_state <= no_transaction;						
+						next_state <= NO_TRANSACTION;						
 					when others =>
 						null;
 				end case;
 				
-			when containment =>
+			when CONTAINMENT =>
 
 				-- If we are about to end a transaction (by executing a end 
 				-- transaction command), we need to assure that the try block 
@@ -423,7 +423,7 @@ begin
 						rdy_cnt_busy <= '1';
 					
 					when cba2 =>
-						next_state <= no_transaction;
+						next_state <= NO_TRANSACTION;
 						rdy_cnt_busy <= '1';
 						
 				end case;
@@ -458,13 +458,13 @@ begin
 		-- set tm_broadcast flag for conflict detection,
 		-- which gets mapped to broadcast.valid by arbiter
 		case state is
-			when commit | early_commit | early_committed_transaction => 
+			when COMMIT | EARLY_COMMIT | EARLY_COMMITTED_TRANSACTION => 
 				sc_arb_out.tm_broadcast <= '1';
-			when normal_transaction | commit_wait_token | 
-			early_commit_wait_token | containment =>
+			when NORMAL_TRANSACTION | COMMIT_WAIT_TOKEN | 
+			EARLY_COMMIT_WAIT_TOKEN | CONTAINMENT =>
 				-- TODO no writes to mem should happen 
 				sc_arb_out.tm_broadcast <= '0';
-			when no_transaction =>
+			when NO_TRANSACTION =>
 				sc_arb_out.tm_broadcast <= '0';
 		end case;
 				
@@ -520,10 +520,10 @@ begin
 		end if;
 		
 		assert not ((
-			state = normal_transaction or
-			state = commit_wait_token or 
-			state = early_commit_wait_token or
-			state = containment) and 
+			state = NORMAL_TRANSACTION or
+			state = COMMIT_WAIT_TOKEN or 
+			state = EARLY_COMMIT_WAIT_TOKEN or
+			state = CONTAINMENT) and 
 			sc_arb_out_filtered.wr = '1');
 	end process;
 	
@@ -533,7 +533,7 @@ begin
 	sync: process(reset, clk) is
 	begin
 		if reset = '1' then
-			state <= no_transaction;
+			state <= NO_TRANSACTION;
 			
 			is_tm_magic_addr_sync <= '0';
 			sc_cpu_out_dly <= sc_out_idle;

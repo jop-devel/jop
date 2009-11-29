@@ -179,13 +179,13 @@ begin
 	begin
 		wait until started_of;
 		
-		waitStates(states_type'(normal_transaction, early_commit_wait_token,
-			containment), 
+		waitStates(states_type'(NORMAL_TRANSACTION, EARLY_COMMIT_WAIT_TOKEN,
+			CONTAINMENT), 
 			<< signal .dut.state: state_type>>);
 		
 		ended_of <= true;
 		
-		waitStates(states_type'(containment, no_transaction), 
+		waitStates(states_type'(CONTAINMENT, NO_TRANSACTION), 
 			<< signal .dut.state: state_type>>);
 			
 		ended_transaction <= true;

@@ -167,8 +167,8 @@ begin
 	verify_states: process is
 		-- states must be assumed in this order
 		constant states: states_type :=
-			(normal_transaction, early_commit_wait_token,
-			early_commit, early_committed_transaction);
+			(NORMAL_TRANSACTION, EARLY_COMMIT_WAIT_TOKEN,
+			EARLY_COMMIT, EARLY_COMMITTED_TRANSACTION);
 	begin
 		wait until started_of;
 		
@@ -176,7 +176,7 @@ begin
 		
 		ended_of <= true;
 		
-		waitStates(states_type'(early_committed_transaction, no_transaction), 
+		waitStates(states_type'(EARLY_COMMITTED_TRANSACTION, NO_TRANSACTION), 
 			<< signal .dut.state: state_type>>);
 			
 		ended_transaction <= true;

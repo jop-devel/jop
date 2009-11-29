@@ -252,11 +252,11 @@ begin
 		next_commit_started <= commit_started; -- TODO
 	
 		case state is 
-			when no_transaction | containment |
-				early_committed_transaction =>
+			when NO_TRANSACTION | CONTAINMENT |
+				EARLY_COMMITTED_TRANSACTION =>
 				if from_cpu.rd = '1' then
 					next_stage1.state <= read_direct;
-				elsif from_cpu.wr = '1' and state /= containment then
+				elsif from_cpu.wr = '1' and state /= CONTAINMENT then
 					next_stage1.state <= write_direct;
 				else
 					next_stage1.state <= idle;
@@ -264,7 +264,7 @@ begin
 				
 				next_stage1.addr <= from_cpu.address;
 				
-			when commit_wait_token | early_commit_wait_token =>
+			when COMMIT_WAIT_TOKEN | EARLY_COMMIT_WAIT_TOKEN =>
 				next_stage1.state <= idle;
 				
 				if broadcast.valid = '1' or 
@@ -276,7 +276,7 @@ begin
 				
 				next_commit_started <= '0';				
 			
-			when normal_transaction =>
+			when NORMAL_TRANSACTION =>
 				next_stage1.state <= idle;
 
 				if from_cpu.wr = '1' or from_cpu.rd = '1' then
@@ -299,7 +299,7 @@ begin
 					next_stage1.state <= broadcast1; 
 				end if;
 
-			when commit | early_commit =>
+			when COMMIT | EARLY_COMMIT =>
 				next_stage1.state <= idle;
 				-- TODO use FIFO
 
@@ -310,7 +310,7 @@ begin
 					if commit_line = stage1_async.newline then
 						commit_finished <= '1';
 					else 
-						next_stage1.state <= commit;
+						next_stage1.state <= COMMIT;
 						
 						next_stage1.addr <= (others => '0');
 						next_stage1.addr(commit_addr'range) <= commit_addr;
@@ -338,7 +338,7 @@ begin
 		tag_full <= '0';
 		
 		-- set line_addr and tag_full
-		if stage1.state = commit then
+		if stage1.state = COMMIT then
 			next_stage23.line_addr <= commit_line(way_bits-1 downto 0);
 		elsif stage1.state = read1 or stage1.state = write or
 			stage1.state = broadcast1 then -- TODO
@@ -736,13 +736,13 @@ begin
 				end if;
 				
 				-- reset counters
-				if state = no_transaction then
+				if state = NO_TRANSACTION then
 					r_w_set_instrum_current <=
 						((others => '0'), (others => '0'), (others => '0'));  
 				end if;
 				
 				-- update maxima
-				if state = commit or state = early_commit then
+				if state = COMMIT or state = EARLY_COMMIT then
 					if r_w_set_instrum_current.write_set > 
 						r_w_set_instrum_max.write_set then
 						r_w_set_instrum_max.write_set <= 
