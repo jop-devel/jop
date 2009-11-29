@@ -26,7 +26,7 @@ import com.jopdesign.sys.Native;
 import com.jopdesign.sys.RollbackException;
 
 import rttm.AbortException;
-import rttm.Commands;
+import rttm.Operations;
 import rttm.internal.Utils;
 
 /**
@@ -50,12 +50,12 @@ public class Transaction {
 
 	/**
 	 * @exception RollbackException Thrown by hardware if a conflict is 
-	 * detected or by user program using {@link Commands#rollback()} .
+	 * detected or by user program using {@link Operations#rollback()} .
 	 * Is not user-visible, i.e. not propagated outside of outermost 
 	 * transaction.
 	 * 
 	 * @exception AbortExcepton Thrown by user program to abort transaction, 
-	 * using {@link Commands#abort()}. 
+	 * using {@link Operations#abort()}. 
 	 * Is user-visible, i.e. propagated outside of outermost transaction.
 	 */
 	public static int run(int arg0) throws RollbackException, AbortException {
