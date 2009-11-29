@@ -49,15 +49,19 @@ architecture rtl of ocache is
 
 	signal ocin_reg : ocache_in_type;
 
-signal valid : std_logic;
-signal tag : std_logic_vector(CACHE_ADDR_SIZE-1 downto 0);
-signal index : std_logic_vector(MAX_OBJECT_SIZE-1 downto 0);
-signal data : std_logic_vector(31 downto 0);
+	signal valid : std_logic;
+	signal tag : std_logic_vector(CACHE_ADDR_SIZE-1 downto 0);
+	signal index : std_logic_vector(MAX_OBJECT_SIZE-1 downto 0);
+	signal data : std_logic_vector(31 downto 0);
 
-signal wait4data : std_logic;
-signal hit : std_logic;
+	signal wait4data : std_logic;
+	signal hit : std_logic;
 
 begin
+
+
+-- TODO: make sure that data stays valid after a hit till
+-- the next request
 
 process(ocin, data, tag, index, valid)
 begin
