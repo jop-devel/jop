@@ -85,6 +85,7 @@ in JOP.
         05.09.2009 & 20090905 & 20004 & 8856 & 18962 & 3502 & use jmp microcode (usb100 LCs) \\
         17.11.2009 & 20091117 & 20004 & 9031 & 20454 & 3615! & MMU uses opd for get/putfield (usb100 LCs) \\
         23.11.2009 & 20091123 & 20699 & 9168 & 20569 & 3666! & MMU support for get/putstatic (usb100 LCs) \\
+        28.11.2009 & 20091128 & 20699 & 9256 & 21005 & 3748! & Single word object cache (usb100 LCs) \\
         \bottomrule
     \end{tabular}
     \caption{JOP performance with 100MHz, 4KB/16 cache, cycmin}
@@ -274,6 +275,8 @@ uses bytecode operand directly for the index.
 
 \paragraph{20091123} MS: MMU support for get/putstatic (\code{stps}, \code{stgs})
 uses bytecode operand directly for the index.
+
+\paragraph{20091128} MS: Single word object cache for put/getfield.
 
 \subsection{Software}
 
