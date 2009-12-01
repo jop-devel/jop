@@ -199,9 +199,9 @@ DEBUG_JOPSIM=
 #	application optimization with JOPtimizer
 #	uncomment the following lines to use it
 #
-#OPTIMIZE=java -classpath $(EXT_CP)$(S)$(TOOLS)/dist/lib/joptimizer.jar joptimizer.JOPtimizerRunner \
-#	 -config jar:file:$(TOOLS)/dist/lib/joptimizer.jar!/jop.conf $(MAIN_CLASS) && \
-#	cd $(TARGET)/dist/classes && jar cf ../lib/classes.zip *
+OPTIMIZE=java $(TOOLS_CP)$(S)$(TOOLS)/dist/lib/joptimizer.jar joptimizer.JOPtimizerRunner \
+	 -config jar:file:$(TOOLS)/dist/lib/joptimizer.jar!/jop.conf $(MAIN_CLASS) && \
+	cd $(TARGET)/dist/classes && jar cf ../lib/classes.zip *
 
 
 
@@ -270,7 +270,7 @@ tools:
 	javac $(TOOLS_JFLAGS) $(TOOLS)/src/com/jopdesign/wcet/*.java
 	cp $(TOOLS)/src/com/jopdesign/wcet/report/*.vm $(TOOLS)/dist/classes/com/jopdesign/wcet/report
 # Build libgraph and joptimizer
-	#make joptimizer -e TOOLS_JFLAGS="$(TOOLS_JFLAGS)" TOOLS="$(TOOLS)"
+	make joptimizer -e TOOLS_JFLAGS="$(TOOLS_JFLAGS)" TOOLS="$(TOOLS)"
 # quick hack to get the tools with the debugger ok
 # the build.xml from the debugger contains the correct info
 # but also some more (old?) stuff
@@ -349,7 +349,7 @@ java_app:
 	javac $(TARGET_JFLAGS) $(TARGET)/src/jdk_base/java/lang/annotation/*.java	# oh new Java 1.5 world!
 	javac $(TARGET_JFLAGS) $(TARGET_APP)
 	cd $(TARGET)/dist/classes && jar cf ../lib/classes.zip *
-	$(OPTIMIZE)
+#	$(OPTIMIZE)
 # use SymbolManager for Paulo's version of JOPizer instead
 	java $(DEBUG_JOPIZER) $(TOOLS_CP) -Dmgci=false com.jopdesign.build.JOPizer \
 		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/dist/bin/$(JOPBIN) $(MAIN_CLASS)
