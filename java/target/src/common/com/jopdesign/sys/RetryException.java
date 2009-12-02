@@ -20,11 +20,11 @@
 
 package com.jopdesign.sys;
 
-public class RollbackException extends RuntimeException {
+public class RetryException extends RuntimeException {
 	// TMTODO
 	
-	public RollbackException() {
-		super("RollbackException");
+	public RetryException() {
+		super("RetryException");
 	}
 }
 

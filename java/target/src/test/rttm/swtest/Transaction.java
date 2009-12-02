@@ -23,7 +23,7 @@ package rttm.swtest;
 import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
 
-import com.jopdesign.sys.RollbackException;
+import com.jopdesign.sys.RetryException;
 
 import rttm.AbortException;
 import rttm.Operations;
@@ -43,14 +43,14 @@ public class Transaction {
 	public static boolean conflicting = false;
 
 	protected static int atomicSection(int arg0) throws Exception, 
-	RollbackException, AbortException {
+	RetryException, AbortException {
 		boolean ignored = conflicting;
 		return arg0;
 	}
 
 	/**
-	 * @exception RollbackException Thrown by hardware if a conflict is 
-	 * detected or by user program using {@link Operations#rollback()} .
+	 * @exception RetryException Thrown by hardware if a conflict is 
+	 * detected or by user program using {@link Operations#retry()} .
 	 * Is not user-visible, i.e. not propagated outside of outermost 
 	 * transaction.
 	 * 
@@ -58,7 +58,7 @@ public class Transaction {
 	 * using {@link Operations#abort()}. 
 	 * Is user-visible, i.e. propagated outside of outermost transaction.
 	 */
-	public static int run(int arg0) throws RollbackException, AbortException {
+	public static int run(int arg0) throws RetryException, AbortException {
 		int arg0Copy = 0xdeadbeef; // make compiler happy
 		boolean outermostTransaction = !Utils.inTransaction[Native.rd(Const.IO_CPU_ID)];
 
@@ -109,7 +109,7 @@ public class Transaction {
 					if (e == Utils.abortException) {
 						throw Utils.abortException;
 					} else {
-						throw Utils.rollbackException;
+						throw Utils.retryException;
 					}
 				}
 			}

@@ -24,7 +24,7 @@ import rttm.AbortException;
 
 import com.jopdesign.sys.Const;
 import com.jopdesign.sys.Native;
-import com.jopdesign.sys.RollbackException;
+import com.jopdesign.sys.RetryException;
 
 /**
  * Internal use by RTTM.
@@ -37,7 +37,7 @@ public class Utils {
 	/**
 	 * TMTODO
 	 */
-	public static final RollbackException rollbackException = new RollbackException();
+	public static final RetryException retryException = new RetryException();
 	public static final AbortException abortException = new AbortException();
 	
 	public static boolean[] inTransaction = new boolean[Native.rd(Const.IO_CPUCNT)];

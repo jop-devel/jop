@@ -47,10 +47,10 @@ public class Operations {
 	 * It is the user's responsibility to ensure that no early commit has
 	 * happened before calling this method.
 	 */
-	public static void rollback() {
+	public static void retry() {
 		// TMTODO immediately abort transaction to avoid early commit?
 		Native.wrMem(Const.TM_ABORTED, Const.MEM_TM_MAGIC);
-		throw Utils.rollbackException;
+		throw Utils.retryException;
 	}
 	
 	/**

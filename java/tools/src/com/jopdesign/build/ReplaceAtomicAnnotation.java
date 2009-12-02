@@ -280,7 +280,7 @@ public class ReplaceAtomicAnnotation extends JOPizerVisitor {
 			il.append(if_acmpne_117);
 			InstructionHandle ih_120 = il.append(_factory.createFieldAccess("rttm.internal.Utils", "abortException", new ObjectType("rttm.AbortException"), Constants.GETSTATIC));
 			il.append(InstructionConstants.ATHROW);
-			InstructionHandle ih_124 = il.append(_factory.createFieldAccess("rttm.internal.Utils", "rollbackException", new ObjectType("com.jopdesign.sys.RollbackException"), Constants.GETSTATIC));
+			InstructionHandle ih_124 = il.append(_factory.createFieldAccess("rttm.internal.Utils", "retryException", new ObjectType("com.jopdesign.sys.RetryException"), Constants.GETSTATIC));
 			il.append(InstructionConstants.ATHROW);
 			InstructionHandle ih_128;
 			BranchInstruction goto_128 = _factory.createBranchInstruction(Constants.GOTO, ih_43);

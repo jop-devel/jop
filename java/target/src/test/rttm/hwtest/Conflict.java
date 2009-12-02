@@ -3,7 +3,7 @@ package rttm.hwtest;
 import com.jopdesign.io.IOFactory;
 import com.jopdesign.io.SysDevice;
 import com.jopdesign.sys.Native;
-import com.jopdesign.sys.RollbackException;
+import com.jopdesign.sys.RetryException;
 import com.jopdesign.sys.Startup;
 import joprt.RtThread;
 
@@ -38,7 +38,7 @@ public class Conflict implements Runnable {
 			boolean ignored = conflicting;						
 			
 			while (true);
-		} catch (RollbackException e){
+		} catch (RetryException e){
 			System.out.println("Rollback exception");			
 		}
 		

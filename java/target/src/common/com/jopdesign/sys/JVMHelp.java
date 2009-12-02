@@ -46,7 +46,7 @@ public class JVMHelp {
 	static ArithmeticException ArithExc;
 	static ClassCastException CCExc;
 	
-	static RollbackException RBExc;
+	static RetryException REExc;
 
 	//
 	// DON'T change order of first functions!!!
@@ -145,7 +145,7 @@ synchronized (o) {
 		} else if (i==Const.EXC_DIVZ) {
 			throw ArithExc;
 		} else if (i==Const.EXC_ROLLBACK) {
-			throw RBExc;
+			throw REExc;
 		}
 
 		for (;;);
@@ -176,7 +176,7 @@ synchronized (o) {
 		ArithExc = new ArithmeticException();
 		CCExc = new ClassCastException();
 		
-		RBExc = new RollbackException();
+		REExc = new RetryException();
 
 	}
 
