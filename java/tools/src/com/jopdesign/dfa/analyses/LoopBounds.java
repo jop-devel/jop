@@ -23,19 +23,20 @@ package com.jopdesign.dfa.analyses;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.LineNumberTable;
 import org.apache.bcel.generic.ANEWARRAY;
+import org.apache.bcel.generic.BranchHandle;
+import org.apache.bcel.generic.BranchInstruction;
 import org.apache.bcel.generic.ConstantPushInstruction;
 import org.apache.bcel.generic.GETFIELD;
 import org.apache.bcel.generic.GETSTATIC;
 import org.apache.bcel.generic.IINC;
 import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
+import org.apache.bcel.generic.InstructionTargeter;
 import org.apache.bcel.generic.LDC;
 import org.apache.bcel.generic.LoadInstruction;
 import org.apache.bcel.generic.MULTIANEWARRAY;
@@ -53,17 +54,17 @@ import com.jopdesign.dfa.framework.CallString;
 import com.jopdesign.dfa.framework.Context;
 import com.jopdesign.dfa.framework.ContextMap;
 import com.jopdesign.dfa.framework.FlowEdge;
-import com.jopdesign.dfa.framework.HashedString;
 import com.jopdesign.dfa.framework.Interpreter;
 import com.jopdesign.dfa.framework.MethodHelper;
 import com.jopdesign.dfa.framework.DFAAppInfo;
 
 public class LoopBounds implements Analysis<CallString, Map<Location, LoopBounds.ValueMapping>> {
 
-	public static final int CALLSTRING_LENGTH = 10;
+	public static final int CALLSTRING_LENGTH = 0;
 
-	private static final int ASSIGN_LIMIT = 64;
-	private static final int CONSTRAINT_LIMIT = 1024;
+	private static final int WIDEN_LIMIT = 2;
+	private static final int ASSIGN_LIMIT = 4;
+	private static final int CONSTRAINT_LIMIT = 64;
 
 	public static class ValueMapping {
 
@@ -90,7 +91,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, LoopBounds
 
 		public ValueMapping(int val) {
 			assigned = new Interval(val, val);
-			constrained = new Interval();
+			constrained = new Interval(val, val);
 			increment = null;
 			source = null;
 			cnt = 0;
@@ -141,8 +142,10 @@ public class LoopBounds implements Analysis<CallString, Map<Location, LoopBounds
 				}
 				// apply new constraints
 				assigned.constrain(constrained);
-				// widen if possible
-				assigned.widen(constrained);
+				if (cnt > WIDEN_LIMIT) {
+					// widen if possible
+					assigned.widen(constrained);
+				}
 
 				// merge increments
 				if (increment == null) {
@@ -293,7 +296,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, LoopBounds
 	}
 
 	private Map<InstructionHandle, ContextMap<CallString, Pair<ValueMapping>>> bounds = new HashMap<InstructionHandle, ContextMap<CallString, Pair<ValueMapping>>>();
-	private Map<InstructionHandle, Integer> scopes = new HashMap<InstructionHandle, Integer>();
+	private Map<InstructionHandle, ContextMap<CallString, Integer>> scopes = new HashMap<InstructionHandle, ContextMap<CallString, Integer>>();
 	private Map<InstructionHandle, ContextMap<CallString, Interval[]>> sizes = new HashMap<InstructionHandle, ContextMap<CallString, Interval[]>>();
 	
 	public void initialize(String sig, Context context) {
@@ -400,7 +403,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, LoopBounds
 
 		Instruction instruction = stmt.getInstruction();
 
-//		if (context.method.startsWith("java.lang.String.<init>([B")) {
+//		if (context.method.startsWith("wcet.LBAnalysisTest.measure")) {
 //			System.out.println(context.method+": "+stmt);
 //			System.out.println("###"+context.stackPtr+" + "+instruction.produceStack(context.constPool)+" - "+instruction.consumeStack(context.constPool));		
 //			System.out.println(stmt+" "+(edge.getType() == FlowEdge.TRUE_EDGE ? "TRUE" : (edge.getType() == FlowEdge.FALSE_EDGE) ? "FALSE" : "NORMAL")+" "+edge);
@@ -409,6 +412,16 @@ public class LoopBounds implements Analysis<CallString, Map<Location, LoopBounds
 //			System.out.print(input.get(context.callString));
 //			System.out.println("}");
 //		}		
+		
+		if (stmt.hasTargeters() && context.method.startsWith("wcet.LBAnalysisTest.measure")) {
+			for (int i = 0; i < stmt.getTargeters().length; i++) {
+				InstructionTargeter targeter = stmt.getTargeters()[i];
+				if (targeter instanceof BranchInstruction) {
+					checkScope(context, stmt);
+					break;
+				}
+			}
+		}
 		
 		switch (instruction.getOpcode()) {
 
@@ -1135,14 +1148,14 @@ public class LoopBounds implements Analysis<CallString, Map<Location, LoopBounds
 		
 		case Constants.IFNULL:
 		case Constants.IFNONNULL: {	
-			checkScope(stmt);
+			checkScope(context, stmt);
 			filterSet(in, result, context.stackPtr-1);
 		}
 		break;
 		
 		case Constants.IF_ACMPEQ:
 		case Constants.IF_ACMPNE: {	
-			checkScope(stmt);
+			checkScope(context, stmt);
 			filterSet(in, result, context.stackPtr-2);
 		}
 		break;			
@@ -1153,7 +1166,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, LoopBounds
 		case Constants.IFGE:
 		case Constants.IFLE:
 		case Constants.IFGT:
-			checkScope(stmt);
+			checkScope(context, stmt);
 			doIf(stmt, edge, context, in, result);
 			break;
 
@@ -1163,7 +1176,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, LoopBounds
 		case Constants.IF_ICMPGE:
 		case Constants.IF_ICMPGT:
 		case Constants.IF_ICMPLE:
-			checkScope(stmt);
+			checkScope(context, stmt);
 			doIfIcmp(stmt, edge, context, in, result);
 			break;
 
@@ -1238,10 +1251,13 @@ public class LoopBounds implements Analysis<CallString, Map<Location, LoopBounds
 		}
 	}
 
-	private void checkScope(InstructionHandle stmt) {
+	private void checkScope(Context context, InstructionHandle stmt) {
 		if (scopes.get(stmt) == null) {
+			scopes.put(stmt, new ContextMap<CallString, Integer>(context, new HashMap<CallString, Integer>()));
+		}
+		if (scopes.get(stmt).get(context.callString) == null) {
 			ValueMapping.scope = ++ValueMapping.scopeCnt;
-			scopes.put(stmt, new Integer(ValueMapping.scope));
+			scopes.get(stmt).put(context.callString, new Integer(ValueMapping.scope));
 		}
 	}
 
@@ -1654,8 +1670,17 @@ public class LoopBounds implements Analysis<CallString, Map<Location, LoopBounds
 			LoopBounds.ValueMapping first = bounds.getFirst();
 			LoopBounds.ValueMapping second = bounds.getSecond();
 
-			if (scopes.get(instr).intValue() <= first.defscope
-					|| scopes.get(instr).intValue() <= second.defscope) {
+			InstructionHandle target = ((BranchInstruction)instr.getInstruction()).getTarget();
+			
+			if (scopes.get(target) != null) {
+				if (scopes.get(target).get(callString).intValue() <= first.defscope
+						|| scopes.get(target).get(callString).intValue() <= second.defscope) {
+					return -1;
+				}
+			}
+			
+			if (scopes.get(instr).get(callString).intValue() <= first.defscope
+					|| scopes.get(instr).get(callString).intValue() <= second.defscope) {
 				return -1;
 			}
 			
