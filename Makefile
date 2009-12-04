@@ -214,18 +214,22 @@ ifeq ($(USB),true)
 else
 	make jopser
 endif
+	make config
 	make japp
 
 # build the Java application and download it
 japp:
 	make java_app
+	make config
+	make download
+
+# configure the FPGA
+config:
 ifeq ($(USB),true)
 	make config_usb
 else
 	make config_byteblaster
 endif
-	make download
-
 
 install:
 	@echo nothing to install
@@ -368,8 +372,6 @@ jopser:
 	@echo $(QPROJ)
 	for target in $(QPROJ); do \
 		make qsyn -e QBT=$$target; \
-		cd quartus/$$target; \
-		cd ../..; \
 	done
 
 
@@ -381,9 +383,7 @@ jopusb:
 	@echo $(QPROJ)
 	for target in $(QPROJ); do \
 		make qsyn -e QBT=$$target; \
-		cd quartus/$$target; \
-		quartus_cpf -c jop.sof ../../rbf/$$target.rbf; \
-		cd ../..; \
+		cd quartus/$$target && quartus_cpf -c jop.sof ../../rbf/$$target.rbf; \
 	done
 
 #
@@ -572,9 +572,9 @@ jop_blink_test:
 		quartus_fit $$qp; \
 		quartus_asm $$qp; \
 		quartus_tan $$qp; \
-		cd quartus/$$target && quartus_cpf -c jop.cdf ../../jbc/$$target.jbc; \
+		cd quartus/$$target && quartus_cpf -c jop.sof ../../rbf/$$target.rbf; \
 	done
-	cd quartus/$(DLPROJ) && quartus_pgm -c $(BLASTER_TYPE) -m JTAG jop.cdf
+	make config
 	e $(COM_PORT)
 
 
@@ -590,9 +590,9 @@ jop_testmon:
 		quartus_fit $$qp; \
 		quartus_asm $$qp; \
 		quartus_tan $$qp; \
-		cd quartus/$$target && quartus_cpf -c jop.cdf ../../jbc/$$target.jbc; \
+		cd quartus/$$target && quartus_cpf -c jop.sof ../../rbf/$$target.rbf; \
 	done
-	cd quartus/$(DLPROJ) && quartus_pgm -c $(BLASTER_TYPE) -m JTAG jop.cdf
+	make config
 
 
 #
