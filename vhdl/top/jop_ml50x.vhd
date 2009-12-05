@@ -39,6 +39,8 @@ port (
 --	watchdog
 --
 	wd		: out std_logic;
+
+	led		: out std_logic;
 --
 ---==========================================================--
 ----===========Virtex-5 SRAM Port============================--
@@ -103,7 +105,7 @@ signal ram_addr 		: std_logic_vector(17 downto 0);
 --
 --	Signals
 --
-	signal clk_int, clk2    : std_logic;
+	signal clk_int			: std_logic;
 
 	signal int_res			: std_logic;
 	signal res_cnt			: unsigned(2 downto 0) := "000";	-- for the simulation
@@ -142,6 +144,9 @@ signal ram_addr 		: std_logic_vector(17 downto 0);
 	signal ser_ncts			: std_logic;
 	signal ser_nrts			: std_logic;
 
+	signal cnt				: integer;
+	signal toggle			: std_logic;
+
 begin
 
 --================================================--
@@ -152,7 +157,7 @@ sram_mode <= '0';
 sram_cen <= '0';
 virtex_ram_addr <= "0000" & ram_addr;
 sram_zz <= '0';
-sram_clk <= not clk2;
+sram_clk <= not clk_int;
 --================================================--
 --================================================-- 
 
@@ -172,20 +177,31 @@ begin
 		int_res <= not res_cnt(0) or not res_cnt(1) or not res_cnt(2);
 	end if;
 end process;
-process(clk)
+
+--
+--	A LED blinking at 0.5 Hz to show that the board is clocked.
+--
+process(clk_int, int_res)
 begin
-	if rising_edge(clk) then
-        clk2 <= not clk2;
+	if int_res='1' then
+		toggle <= '0';
+		cnt <= clk_freq;
+	elsif rising_edge(clk_int) then
+		cnt <= cnt-1;
+		if cnt=0 then
+			toggle <= not toggle;
+			cnt <= clk_freq;
+		end if;
 	end if;
 end process;
 
+	led <= toggle;
 --
 --	components of jop
 --
-	clk_int <= clk2;
+	clk_int <= clk;
 
---	wd <= wd_out;
-	wd <= '0';
+	wd <= wd_out;
 
 	cpu: entity work.jopcpu
 		generic map(

@@ -10,6 +10,7 @@ TIMESPEC "TS_clk" = PERIOD "clk" 33 ns HIGH 50 %;
 NET "clk" LOC = "AH17";
 
 NET "wd" LOC = "H18";
+NET "led" LOC = "L18";
 
 
 # UART connections 
