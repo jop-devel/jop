@@ -28,7 +28,6 @@ import java.util.Map;
 import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.LineNumberTable;
 import org.apache.bcel.generic.ANEWARRAY;
-import org.apache.bcel.generic.BranchHandle;
 import org.apache.bcel.generic.BranchInstruction;
 import org.apache.bcel.generic.ConstantPushInstruction;
 import org.apache.bcel.generic.GETFIELD;
@@ -36,7 +35,6 @@ import org.apache.bcel.generic.GETSTATIC;
 import org.apache.bcel.generic.IINC;
 import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
-import org.apache.bcel.generic.InstructionTargeter;
 import org.apache.bcel.generic.LDC;
 import org.apache.bcel.generic.LoadInstruction;
 import org.apache.bcel.generic.MULTIANEWARRAY;
@@ -413,15 +411,15 @@ public class LoopBounds implements Analysis<CallString, Map<Location, LoopBounds
 //			System.out.println("}");
 //		}		
 		
-		if (stmt.hasTargeters() && context.method.startsWith("wcet.LBAnalysisTest.measure")) {
-			for (int i = 0; i < stmt.getTargeters().length; i++) {
-				InstructionTargeter targeter = stmt.getTargeters()[i];
-				if (targeter instanceof BranchInstruction) {
-					checkScope(context, stmt);
-					break;
-				}
-			}
-		}
+//		if (stmt.hasTargeters() && context.method.startsWith("wcet.LBAnalysisTest.measure")) {
+//			for (int i = 0; i < stmt.getTargeters().length; i++) {
+//				InstructionTargeter targeter = stmt.getTargeters()[i];
+//				if (targeter instanceof BranchInstruction) {
+//					checkScope(context, stmt);
+//					break;
+//				}
+//			}
+//		}
 		
 		switch (instruction.getOpcode()) {
 

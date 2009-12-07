@@ -267,7 +267,9 @@ public class AllocationModel implements ProcessorModel {
 
 		Field [] f = cli.clazz.getFields();
 		for (int i = 0; i < f.length; i++) {
-			l.add(f[i].getType());
+			if (!f[i].isStatic()) {
+				l.add(f[i].getType());
+			}
 		}
 
 		return l;
