@@ -72,7 +72,8 @@ begin
 	end if;
 end process;
 
-	ocout.hit <= hit;
+--	ocout.hit <= hit;
+	ocout.hit <= '0';
 
 process(clk, reset)
 begin
