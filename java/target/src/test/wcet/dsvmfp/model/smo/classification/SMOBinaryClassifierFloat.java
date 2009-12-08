@@ -10,7 +10,7 @@ import com.jopdesign.sys.Native;
 import wcet.dsvmfp.model.smo.kernel.FloatUtil;
 import wcet.dsvmfp.model.smo.kernel.KFloat;
 
-//BUGTEST 1 
+//BUGTEST 1
 /**
  * Class SMOBinaryClassifier with float.
  */
@@ -59,7 +59,7 @@ public class SMOBinaryClassifierFloat {
 	static public float bias;
 
 	static public int i1, i2;
-	
+
 	float WTemp;
 
 	/**
@@ -84,10 +84,13 @@ public class SMOBinaryClassifierFloat {
 	/**
 	 * Method mainRoutine, which estimates the SVM parameters. The parameters
 	 * are intialized before the training of the SVM is conducted.
-	 * 
+	 *
 	 * @return true if the training went well
 	 */
 	public boolean mainRoutine() {
+
+//TODO: stop training when W does not increase by 10% after each training
+
 		// BUGTEST 7
 		// The number of updated that significantly changed the
 		// Lagrange multipliers
@@ -160,7 +163,7 @@ public class SMOBinaryClassifierFloat {
 	 * Method takeStep, which optimizes two lagrange multipliers at a time. The
 	 * method uses DsvmUtilABC.epsEqual to determine if there was positive
 	 * progress.
-	 * 
+	 *
 	 * @param i1
 	 *            - second choice heuristics
 	 * @param i2
@@ -179,7 +182,7 @@ public class SMOBinaryClassifierFloat {
 		P(i2, TR4);
 
 		WTemp = getObjectiveFunctionFP();
-		
+
 		// If the first and second point is the same then return false
 		if (i1 == i2) {
 			return false;
@@ -250,7 +253,7 @@ public class SMOBinaryClassifierFloat {
 				a2 = H;
 			} else {
 				a2 = alph2;
-			}			
+			}
 			P("eta > 0: a2:", TR4);
 			P(a2, TR4);
 
@@ -304,8 +307,8 @@ public class SMOBinaryClassifierFloat {
 		P(getFunctionOutputFloat(0, false), TR4);
 		P("f(i 1):", TR4);
 		P(getFunctionOutputFloat(1, false), TR4);
-        
-		
+
+
 		if(WTemp> getObjectiveFunctionFP()){
 			P("Objectivefunction error!!!!", TR1);
 			P(WTemp, TR1);
@@ -331,7 +334,7 @@ public class SMOBinaryClassifierFloat {
 	 * Method examineExample, which will take a step using a number of
 	 * heuristics. The points coming into this method is from the outer in the
 	 * SMO main routine: first choice heuristic
-	 * 
+	 *
 	 * @param i2
 	 *            - zero based index of second point to classify, which is
 	 *            chosen by the outer loop in smo
@@ -441,7 +444,7 @@ public class SMOBinaryClassifierFloat {
 	/**
 	 * Will generate a random point if lastIndex == -1. It will return -1 when
 	 * full loop is done.
-	 * 
+	 *
 	 * @param firstTime
 	 *            true for the first call;
 	 * @return -1 when done
@@ -505,7 +508,7 @@ public class SMOBinaryClassifierFloat {
 	/**
 	 * Method getf, which calculates and returns the functional output without
 	 * using a bias_fp. see keerti99
-	 * 
+	 *
 	 * @param i
 	 *            - index
 	 * @return the non-biased functional output.
@@ -524,7 +527,7 @@ public class SMOBinaryClassifierFloat {
 	// BUGTEST 15
 	/**
 	 * The error of the training example i.
-	 * 
+	 *
 	 * @param i
 	 * @return error
 	 */
@@ -537,7 +540,7 @@ public class SMOBinaryClassifierFloat {
 	 * assumes that the constrained Lagrange multipliers has been explicitly set
 	 * to the the appropriate boundary value zero or C. This equation relates to
 	 * equation 12.2 in Platts paper.
-	 * 
+	 *
 	 * @param p
 	 *            the example to check
 	 * @return true if example violates KKT
@@ -567,7 +570,7 @@ public class SMOBinaryClassifierFloat {
 	/**
 	 * Method getObjectiveFunction, which calculates and returns the value of
 	 * the objective function based on the values in the alpha_fp array.
-	 * 
+	 *
 	 * @return the objective function (6.1 in Christianini).
 	 */
 	float getObjectiveFunctionFP() {
@@ -593,7 +596,7 @@ public class SMOBinaryClassifierFloat {
 	// BUGTEST 16
 	/**
 	 * Method calculatedError, which calculates the error from from scratch.
-	 * 
+	 *
 	 * @param p
 	 *            - point to calculte error for
 	 * @return calculated error
@@ -612,7 +615,7 @@ public class SMOBinaryClassifierFloat {
 	/**
 	 * Method getFunctionOutput, which will return the functional output for
 	 * point p.
-	 * 
+	 *
 	 * @param p
 	 *            - the point index
 	 * @param parallel
@@ -645,7 +648,7 @@ public class SMOBinaryClassifierFloat {
 	// BUGTEST 17
 	/**
 	 * Method getKernelOutput, which returns the kernel of two points.
-	 * 
+	 *
 	 * @param i1
 	 *            - index of alpha_fp 1
 	 * @param i2
@@ -659,7 +662,7 @@ public class SMOBinaryClassifierFloat {
 
 	/**
 	 * Method getEta, which returns eta_fp = 2*k12-k11-k22
-	 * 
+	 *
 	 * @param i1
 	 *            - index of first point
 	 * @param i2
@@ -681,7 +684,7 @@ public class SMOBinaryClassifierFloat {
 	/**
 	 * Method getLowerClip, which returns the lower clip value for some pair of
 	 * Lagrange multipliers. Pls. refer to Nello's book for more info.
-	 * 
+	 *
 	 * @param i1
 	 *            - first point
 	 * @param i2
@@ -708,7 +711,7 @@ public class SMOBinaryClassifierFloat {
 	/**
 	 * Method getUpperClip, which will return the upper clip based on two
 	 * Lagrange multipliers.
-	 * 
+	 *
 	 * @param i1
 	 *            - first point
 	 * @param i2
@@ -757,7 +760,7 @@ public class SMOBinaryClassifierFloat {
 	/**
 	 * Method calculateW, which calculates the weight vector. This is used for
 	 * linear SVMs.
-	 * 
+	 *
 	 * @return the weight [n] vector
 	 */
 	float[] calculateWFP() {
@@ -775,7 +778,7 @@ public class SMOBinaryClassifierFloat {
 	/**
 	 * Method isExampleBound, which will return true if the point p is on the
 	 * bound as defined as less then (0+tol_fp) or greater than (C-tol_fp).
-	 * 
+	 *
 	 * @param p
 	 *            - index of point
 	 * @return true if p is on bound
@@ -791,7 +794,7 @@ public class SMOBinaryClassifierFloat {
 	/**
 	 * Method getFunctionOutput, which will return the functional output for
 	 * point represented by a input vector only.
-	 * 
+	 *
 	 * @param xtest
 	 *            - the input vector
 	 * @return the functinal output
@@ -826,7 +829,7 @@ public class SMOBinaryClassifierFloat {
 	/**
 	 * Method getFunctionOutput, which will return the functional output for
 	 * point represented by a input vector only.
-	 * 
+	 *
 	 * @param xtest
 	 *            - the input vector
 	 * @return the functinal output
