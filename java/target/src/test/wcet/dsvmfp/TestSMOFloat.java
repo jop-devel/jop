@@ -6,7 +6,11 @@ import com.jopdesign.sys.Native;
 import wcet.dsvmfp.model.smo.classification.SMOBinaryClassifierFloat;
 
 public class TestSMOFloat {
-	static int m;
+
+    // control if the benchmark is done in parallel or not
+    public static final boolean PARALELSVM = false;
+
+	static int m; // numbers of rows in the data matrix
 	static float data_fp[][];
 	static float y_fp[];
 	// TODO
@@ -28,7 +32,8 @@ public class TestSMOFloat {
 	}
 
 	public static void main(String args[]) {
-		init();
+		//init();
+		goAll();
 	}
 
 	// non-real time inialization of SVM
@@ -77,7 +82,7 @@ public class TestSMOFloat {
 
 	/**
 	 * Get the data out of the data matrix.
-	 * 
+	 *
 	 * @param data
 	 *            datamatrix
 	 * @param dims
@@ -99,7 +104,7 @@ public class TestSMOFloat {
 
 	/**
 	 * Get the target vector and convert it to a binary target.
-	 * 
+	 *
 	 * @param data
 	 *            datamatrix
 	 * @param targetdim
@@ -131,22 +136,20 @@ public class TestSMOFloat {
 
 			int starttime = Native.rd(Const.IO_US_CNT);
 			int t = Native.rd(Const.IO_CNT);
-			// System.out.println("---ALIVE1---" + i);
+
 			// int smores =
 			// SMOBinaryClassifierFP.getFunctionOutputTestPointFP(testdata_fp[i]);;
-			float smores = smo.getFunctionOutputTestPointFP(testdata_fp[i]);
-			;
-			// System.out.println("---ALIVE2---" + i);
-			t = Native.rd(Const.IO_CNT) - t;
-			time += Native.rd(Const.IO_US_CNT) - starttime;
-			// System.out.print("classification time cycles:");
-			// System.out.println(t);
-			if (smores < 0 && testlabel_fp[i] >= 0) {
+			float smores = smo.getFunctionOutputFloat(i, TestSMOFloat.PARALELSVM);
+			if (smores < 0 && y_fp[i] >= 0) {
 				errcnt++;
-			} else if (smores >= 0 && testlabel_fp[i] < 0) {
+			} else if (smores >= 0 && y_fp[i] < 0) {
 				errcnt++;
 			}
-			// System.out.println(FP.fpToStr(SMOBinaryClassifierFP.getFunctionOutputTestPointFP(testdata_fp)));
+
+			t = Native.rd(Const.IO_CNT) - t;
+			time += Native.rd(Const.IO_US_CNT) - starttime;
+			System.out.print("classification time cycles:");
+			System.out.println(t);
 		}
 	}
 

@@ -15,6 +15,11 @@ import wcet.dsvmfp.model.smo.kernel.KFloat;
  * Class SMOBinaryClassifier with float.
  */
 public class SMOBinaryClassifierFloat {
+
+    // make false to get reproduceable results
+    // or make true to get different stochastic index generation
+    boolean RANDOMLOOP = false;
+
 	// BUGTEST 2
 	// final boolean PRINT = true;
 
@@ -40,7 +45,7 @@ public class SMOBinaryClassifierFloat {
 	/** The target vector of {-1,+1}. */
 	static public float[] target;
 
-	/** The data vector [rows][columns]. */
+	/** The data vector [rows][columns]. One observation is one row */
 	static public float[][] point;
 	// BUGTEST 4
 	/** The high bound. */
@@ -105,13 +110,21 @@ public class SMOBinaryClassifierFloat {
         //smoInfo();
 		loop = 0;
 
-		// BUGTEST 8
-		if (true) {
+float W = getObjectiveFunctionFP();
+P("*********************", TR1);
+P("W initial:", TR1);
+P(W, TR1);
+P("*********************", TR1);
+// use this to just get one round of training, which is fine sometimes
+boolean quickstop = true;
 
-			while (numChanged > 0 || examineAll) { // @WCA loop=2
+            do { // @WCA loop=2
+                W = getObjectiveFunctionFP();
 				P("*********************", TR1);
 				P("loop:", TR1);
 				P(loop, TR1);
+                if(TRACELEVEL == TR2)
+                  smoInfo();
 				loop++;
 
 				numChanged = 0;
@@ -150,12 +163,20 @@ public class SMOBinaryClassifierFloat {
 					examineAll = true;
 				}
 				// break;
-			}
+
+
+				P("*********************", TR1);
+				P("Delta W:", TR1);
+				P(getObjectiveFunctionFP()-W, TR1);
+                P("*********************", TR1);
+                P("", TR1);
+
+			} // stop if improvement is less than 10%
+			while (((numChanged > 0 || examineAll) && (getObjectiveFunctionFP()-W)>(0.1*W)) && !quickstop);
 			P("SMO.mainroutine.trained", TR4);
-		}// false
+
 		measure();
 		smoInfo();
-		// BUGTEST 9
 		return true;
 	}
 
@@ -452,7 +473,11 @@ public class SMOBinaryClassifierFloat {
 	int randomLoop(boolean firstTime) {
 		// random index init for first call
 		if (firstTime) {
-			firstIndex = nextIndex = (int) (System.currentTimeMillis() % m);
+			if(RANDOMLOOP)
+			  firstIndex = nextIndex = (int) (System.currentTimeMillis() % m);
+            else
+               firstIndex = nextIndex = 0;
+
 			if (firstIndex < 0) {
 				firstIndex *= -1;
 				nextIndex *= -1;
@@ -622,13 +647,13 @@ public class SMOBinaryClassifierFloat {
 	 *            - true if to be done in parallel
 	 * @return the functinal output
 	 */
-	float getFunctionOutputFloat(int p, boolean parallel) {
+	public float getFunctionOutputFloat(int p, boolean parallel) {
 		float functionalOutput_fp = 0;
 		svmHelp.p = p;
 		if (parallel) {
 			svmHelp.functionalOutput_fp = 0.0f;
-			System.out.print("m:");
-			System.out.println(m);
+			//System.out.print("m:");
+			//System.out.println(m);
 			pe.executeParallel(new SVMHelp(), m);
 			svmHelp.functionalOutput_fp -= bias;
 			functionalOutput_fp = svmHelp.functionalOutput_fp;
@@ -756,7 +781,6 @@ public class SMOBinaryClassifierFloat {
 		return errorCount;
 	}
 
-	// BUGTEST 19
 	/**
 	 * Method calculateW, which calculates the weight vector. This is used for
 	 * linear SVMs.
@@ -790,6 +814,7 @@ public class SMOBinaryClassifierFloat {
 	boolean isExampleOnBound(float aTest) {
 		return aTest < tol || aTest > (C - tol);
 	}
+
 
 	/**
 	 * Method getFunctionOutput, which will return the functional output for
@@ -870,11 +895,11 @@ public class SMOBinaryClassifierFloat {
 		P(Native.rd(com.jopdesign.sys.Const.IO_WD), TR4);
 	}
 
-	// BUGTEST 21
 	public void smoInfo() {
 		// printScalar("wd",Native.rd(Const.IO_WD)); //TODO: Can it be read?
 		P("======SMO INFO START======", TR4);
 		// printScalar("sp",Native.rd(com.jopdesign.sys.Const.IO_WD));
+		printScalar("W", getObjectiveFunctionFP());
 		printScalar("i1", i1);
 		printScalar("i2", i2);
 		printScalar("bias_fp", bias);
