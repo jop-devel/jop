@@ -7,7 +7,7 @@ import wcet.dsvmfp.model.smo.classification.SMOBinaryClassifierFloat;
 
 public class TestSMOFloat {
 
-    // control if the benchmark is done in parallel or not
+    // control  if the benchmark is done in parallel or not
     public static final boolean PARALELSVM = true;
 
 	static int m; // numbers of rows in the data matrix
