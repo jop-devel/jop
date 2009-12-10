@@ -8,7 +8,7 @@ import wcet.dsvmfp.model.smo.classification.SMOBinaryClassifierFloat;
 public class TestSMOFloat {
 
     // control if the benchmark is done in parallel or not
-    public static final boolean PARALELSVM = false;
+    public static final boolean PARALELSVM = true;
 
 	static int m; // numbers of rows in the data matrix
 	static float data_fp[][];
@@ -20,6 +20,7 @@ public class TestSMOFloat {
 	// 0 belongs to positive
 	static int errcnt = 0;
 	static int time = 0;
+	static int cycles = 0;
 
 	static SMOBinaryClassifierFloat smo = new SMOBinaryClassifierFloat();;
 
@@ -131,6 +132,8 @@ public class TestSMOFloat {
 	// Real-time part of SVM
 	// This is the method that is to be called and analyzed from a WCA tool
 	public static void deployRT() {
+		time = 0;
+		cycles = 0;
 
 		for (int i = 0; i < m; i++) { // @WCA loop=4
 
@@ -147,6 +150,7 @@ public class TestSMOFloat {
 			}
 
 			t = Native.rd(Const.IO_CNT) - t;
+			cycles += t;
 			time += Native.rd(Const.IO_US_CNT) - starttime;
 			System.out.print("classification time cycles:");
 			System.out.println(t);
@@ -160,6 +164,14 @@ public class TestSMOFloat {
 		System.out.println(errcnt);
 		System.out.print("#sv");
 		System.out.println(smo.getSV());
+
+		System.out.print("total cycles (classifying):");
+		System.out.print(cycles);
+		System.out.println(" cycles");
+		System.out.print("per observation cycles (classifying):");
+		System.out.print(cycles / m);
+		System.out.println(" cycles");
+
 		System.out.print("total time (classifying):");
 		System.out.print(time);
 		System.out.println(" us");

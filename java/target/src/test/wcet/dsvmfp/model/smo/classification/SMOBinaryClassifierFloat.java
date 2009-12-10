@@ -116,7 +116,9 @@ P("W initial:", TR1);
 P(W, TR1);
 P("*********************", TR1);
 // use this to just get one round of training, which is fine sometimes
-boolean quickstop = true;
+boolean quickstop = false;
+
+resetKernelCalls(); // set the counter to zero
 
             do { // @WCA loop=2
                 W = getObjectiveFunctionFP();
@@ -345,6 +347,9 @@ boolean quickstop = true;
 		}
 		P("W:", TR1);
 		P(getObjectiveFunctionFP(),TR1);
+		P("kernelCalls:",TR1);
+		P(getKernelCalls(), TR1);
+
 		takeStepCount++;
 		// BUGTEST 12
 		return true;
@@ -682,7 +687,26 @@ boolean quickstop = true;
 	 */
 	float getKernelOutputFloat(int i1, int i2) {
 
+		kernelCalls++;
+
 		return KFloat.kernel(i1, i2);
+	}
+
+	// keeps track of how many times the kernel function has been called
+	int kernelCalls = 0;
+
+	/**
+	 * Return the kernel calls;
+	 */
+	public int getKernelCalls(){
+	  return kernelCalls;
+	}
+
+    /**
+     * Set the kernelCalls to zero.
+     */
+	public void resetKernelCalls(){
+		kernelCalls = 0;
 	}
 
 	/**
