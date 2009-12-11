@@ -663,7 +663,7 @@ resetKernelCalls(); // set the counter to zero
 			svmHelp.functionalOutput_fp -= bias;
 			functionalOutput_fp = svmHelp.functionalOutput_fp;
 		} else {
-			for (int i = 0; i < m; i++) {
+			for (int i = 0; i < m; i++) { // @WCA loop=14
 				// Don't do the kernel if it is epsequal
 				if (alph[i] > 0) {
 					functionalOutput_fp += target[i] * alph[i]

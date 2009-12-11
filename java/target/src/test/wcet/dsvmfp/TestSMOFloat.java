@@ -135,13 +135,12 @@ public class TestSMOFloat {
 		time = 0;
 		cycles = 0;
 
-		for (int i = 0; i < m; i++) { // @WCA loop=4
+		for (int i = 0; i < m; i++) { // @WCA loop=14
 
 			int starttime = Native.rd(Const.IO_US_CNT);
 			int t = Native.rd(Const.IO_CNT);
 
 			// int smores =
-			// SMOBinaryClassifierFP.getFunctionOutputTestPointFP(testdata_fp[i]);;
 			float smores = smo.getFunctionOutputFloat(i, TestSMOFloat.PARALELSVM);
 			if (smores < 0 && y_fp[i] >= 0) {
 				errcnt++;
@@ -152,8 +151,8 @@ public class TestSMOFloat {
 			t = Native.rd(Const.IO_CNT) - t;
 			cycles += t;
 			time += Native.rd(Const.IO_US_CNT) - starttime;
-			System.out.print("classification time cycles:");
-			System.out.println(t);
+			//System.out.print("classification time cycles:");
+			//System.out.println(t);
 		}
 	}
 

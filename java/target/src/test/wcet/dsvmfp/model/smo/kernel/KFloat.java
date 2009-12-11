@@ -134,7 +134,7 @@ public class KFloat {
 
     // SW version
     r = 0;
-    while (n != 0) {
+    while (n != 0) { //@WCA loop=6
       n = n - 1;
       // the mask is for experimenting with #sv and test err vs. resolution
       //r += ((a[n] & mask) >> 8) * ((b[n] & mask) >> 8);
