@@ -104,7 +104,6 @@ public class JamuthModel implements ProcessorModel {
 	public boolean isSpecialInvoke(MethodInfo ctx, Instruction i) {
 		return false;
 	}
-	@Override
 	public long getMethodCacheMissPenalty(int numberOfWords, boolean loadOnInvoke) {
 		return 0;
 	}
