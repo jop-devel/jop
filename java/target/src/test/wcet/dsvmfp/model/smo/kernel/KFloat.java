@@ -61,18 +61,13 @@ public class KFloat {
     tmp2 = FloatUtil.sub((kernelCache[i1] + kernelCache[i2]), tmp1);
 
     tmp1 = FloatUtil.mul(gaussConst, tmp2);
-//rup
-    //tmp1 = ABC.exp(tmp1);
-    throw new Error("Fixme exp missing in KFloat");
 
-    //return tmp1;
+    throw new Error("Fixme exp missing in KFloat");
   }
 
   // Gauss k(data[i1],x)
   private static int kernelGaussX(int i1) {
 	  throw new Error("Fixme exp missing in KFloat");
-    //return ABC.exp(ABC.mul(gaussConst, ABC.sub(ABC.add(kernelCache[i1],
-      //  kernelDotXX()), ABC.mul(ABC.TWO, kernelDotX(i1)))));
   }
 
   /*
@@ -113,25 +108,6 @@ public class KFloat {
     float b[] = data[i2];
     // t = Native.rd(Const.IO_CNT);
 
-    // long lr = 0;
-    // HW version
-//    while (n != 0) {
-//      n = n - 1;
-//      // lr += ((long) a[n]) * ((long) b[n]);
-//      Native.wrMem(a[n], Const.IO_MAC_A);
-//      Native.wrMem(b[n], Const.IO_MAC_B);
-//    }
-//    r = a[0]; // we need this time for the MAC to finish!
-//    r = Native.rdMem(Const.IO_MAC_A);
-
-    // check the MAC unit
-    // if (r != ((int) (lr>>16))) {
-    // System.out.print("result=");
-    // System.out.println(r);
-    // System.out.print("long result=");
-    // System.out.println((int) (lr>>16));
-    // }
-
     // SW version
     r = 0;
     while (n != 0) { //@WCA loop=6
@@ -141,19 +117,6 @@ public class KFloat {
       r += a[n] * b[n];
     }
 
-
-    // SW 2
-    // // int f1 = a[n]; int f2 = b[n];
-    // // r += ((f1 >> 16) * (f2 >> 16)) << 16; //AH*BH
-    // // r += ((f1 >> 16) * (f2 & 0x0000FFFF)) ; //AH*BL
-    // // r += ((f1 & 0x0000FFFF) * (f2 >> 16)) ; //AL*BH
-    // // r += ((f1 & 0x0000FFFF) * (f2 & 0x0000FFFF)) >> 16; //AL*BL
-    //
-    // }
-
-    // t = Native.rd(Const.IO_CNT) - t;
-    // System.out.print("time in cycles: ");
-    // System.out.println(t);
     return r;
   }
 
@@ -219,8 +182,6 @@ public class KFloat {
     }
     return s;
   }
-
-  // TESTING //
 
   // kernelType k(data[i1],x)
   public static float kernelX(int i1) {

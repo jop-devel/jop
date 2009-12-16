@@ -10,7 +10,6 @@ import com.jopdesign.sys.Native;
 import wcet.dsvmfp.model.smo.kernel.FloatUtil;
 import wcet.dsvmfp.model.smo.kernel.KFloat;
 
-//BUGTEST 1
 /**
  * Class SMOBinaryClassifier with float.
  */
@@ -20,7 +19,6 @@ public class SMOBinaryClassifierFloat {
     // or make true to get different stochastic index generation
     boolean RANDOMLOOP = false;
 
-	// BUGTEST 2
 	// final boolean PRINT = true;
 
 	// enum TRACELEVELS {TR0, TR1, TR2, TR3, TR4};
@@ -39,7 +37,6 @@ public class SMOBinaryClassifierFloat {
 	/** The [m] Lagrange multipliers. */
 	public float[] alph;
 	static float alph1, alph2;
-	// BUGTEST 3
 	static float y1, y2;
 
 	/** The target vector of {-1,+1}. */
@@ -47,7 +44,6 @@ public class SMOBinaryClassifierFloat {
 
 	/** The data vector [rows][columns]. One observation is one row */
 	static public float[][] point;
-	// BUGTEST 4
 	/** The high bound. */
 	static public float C;
 
@@ -59,7 +55,7 @@ public class SMOBinaryClassifierFloat {
 
 	// E1 and E1 as used in takestep
 	static public float E1, E2;
-	// BUGTEST 5
+
 	/** The bias_fp. */
 	static public float bias;
 
@@ -75,7 +71,6 @@ public class SMOBinaryClassifierFloat {
 
 	/** The input space dimensionality. */
 	static public int n;
-	// BUGTEST 6
 
 	// ////////////Performance Variables////////////////////
 	static public int takeStepCount;
@@ -94,9 +89,6 @@ public class SMOBinaryClassifierFloat {
 	 */
 	public boolean mainRoutine() {
 
-//TODO: stop training when W does not increase by 10% after each training
-
-		// BUGTEST 7
 		// The number of updated that significantly changed the
 		// Lagrange multipliers
 		numChanged = 0;
@@ -118,64 +110,64 @@ P("*********************", TR1);
 // use this to just get one round of training, which is fine sometimes
 boolean quickstop = false;
 
-resetKernelCalls(); // set the counter to zero
+        resetKernelCalls(); // set the counter to zero
 
-            do { // @WCA loop=2
-                W = getObjectiveFunctionFP();
-				P("*********************", TR1);
-				P("loop:", TR1);
-				P(loop, TR1);
-                if(TRACELEVEL == TR2)
-                  smoInfo();
-				loop++;
+		do { // @WCA loop=2
+			W = getObjectiveFunctionFP();
+			P("*********************", TR1);
+			P("loop:", TR1);
+			P(loop, TR1);
+			if(TRACELEVEL == TR2)
+			  smoInfo();
+			loop++;
 
-				numChanged = 0;
-				if (examineAll) {
-					// loop I over all training examples
-					for (i2 = 0; i2 < m; i2++) { // @WCA loop=2
+			numChanged = 0;
+			if (examineAll) {
+				// loop I over all training examples
+				for (i2 = 0; i2 < m; i2++) { // @WCA loop=14
+					if (examineExample()) {
+						numChanged++;
+					}
+					P("i2:", TR2);
+					P(i2, TR2);
+				}
+				P("W all (after): ", TR2);
+				P(getObjectiveFunctionFP(), TR2);
+				P("numChanged:", TR2);
+				P(numChanged, TR2);
+			} else {
+				// Inner loop success
+				for (i2 = 0; i2 < m; i2++) { // @WCA loop=14
+					if (alph[i2] > 0 && alph[i2] < C) {
 						if (examineExample()) {
 							numChanged++;
 						}
-						P("i2:", TR2);
-						P(i2, TR2);
 					}
-					P("W all (after): ", TR2);
-					P(getObjectiveFunctionFP(), TR2);
-					P("numChanged:", TR2);
-					P(numChanged, TR2);
-				} else {
-					// Inner loop success
-					for (i2 = 0; i2 < m; i2++) { // @WCA loop=2
-						if (alph[i2] > 0 && alph[i2] < C) {
-							if (examineExample()) {
-								numChanged++;
-							}
-						}
-						P("i2:", TR2);
-						P(i2, TR2);
-					}
-					P("W inner (after): ", TR2);
-					P(getObjectiveFunctionFP(), TR2);
-					P("numChanged:", TR2);
-					P(numChanged, TR2);
+					P("i2:", TR2);
+					P(i2, TR2);
 				}
-				if (examineAll) {
-					examineAll = false;
-				} else if (numChanged == 0) {
-					examineAll = true;
-				}
-				// break;
+				P("W inner (after): ", TR2);
+				P(getObjectiveFunctionFP(), TR2);
+				P("numChanged:", TR2);
+				P(numChanged, TR2);
+			}
+			if (examineAll) {
+				examineAll = false;
+			} else if (numChanged == 0) {
+				examineAll = true;
+			}
+			// break;
 
 
-				P("*********************", TR1);
-				P("Delta W:", TR1);
-				P(getObjectiveFunctionFP()-W, TR1);
-                P("*********************", TR1);
-                P("", TR1);
+			P("*********************", TR1);
+			P("Delta W:", TR1);
+			P(getObjectiveFunctionFP()-W, TR1);
+			P("*********************", TR1);
+			P("", TR1);
 
-			} // stop if improvement is less than 10%
-			while (((numChanged > 0 || examineAll) && (getObjectiveFunctionFP()-W)>(0.1*W)) && !quickstop);
-			P("SMO.mainroutine.trained", TR4);
+		} // stop if improvement is less than 10%
+		while (((numChanged > 0 || examineAll) && (getObjectiveFunctionFP()-W)>(0.1*W)) && !quickstop);
+		P("SMO.mainroutine.trained", TR4);
 
 		measure();
 		smoInfo();
@@ -243,7 +235,7 @@ resetKernelCalls(); // set the counter to zero
 
 		// on
 		float a2, a1;
-		// BUGTEST 10
+
 		if (eta < 0) {
 			a2 = alph2 - (y2 * (E1 - E2)) / eta;
 			P("eta < 0: a2:", TR4);
@@ -286,7 +278,7 @@ resetKernelCalls(); // set the counter to zero
 			a2 = 0;
 		else if (a2 > C - 1e-8f)
 			a2 = C;
-		// BUGTEST 11
+
 		if (Math.abs(a2 - alph2) < eps * (a2 + alph2 + eps))
 			return false;
 
@@ -444,7 +436,7 @@ resetKernelCalls(); // set the counter to zero
 					return true;
 				}
 			}
-			// BUGTEST 12
+
 		}
 
 		return false;
@@ -491,7 +483,7 @@ resetKernelCalls(); // set the counter to zero
 			P(firstIndex, TR3);
 			return firstIndex;
 		}
-		// BUGTEST 13
+
 		// next index
 		nextIndex = nextIndex + 1;
 		// start from 0 if past last index
@@ -525,7 +517,7 @@ resetKernelCalls(); // set the counter to zero
 		eps = 0.01f;
 
 		tol = 0.01f;
-		// BUGTEST 14
+
 		KFloat.setSigma2(FloatUtil.mul(FloatUtil.ONE, FloatUtil.ONE));
 		KFloat.setKernelType(KFloat.DOTKERNEL);// GAUSSIANKERNEL or DOTKERNEL
 
@@ -554,7 +546,7 @@ resetKernelCalls(); // set the counter to zero
 		return f_fp;
 	}
 
-	// BUGTEST 15
+
 	/**
 	 * The error of the training example i.
 	 *
@@ -623,7 +615,7 @@ resetKernelCalls(); // set the counter to zero
 		return objfunc_fp;
 	}
 
-	// BUGTEST 16
+
 	/**
 	 * Method calculatedError, which calculates the error from from scratch.
 	 *
@@ -675,7 +667,7 @@ resetKernelCalls(); // set the counter to zero
 		return functionalOutput_fp;
 	}
 
-	// BUGTEST 17
+
 	/**
 	 * Method getKernelOutput, which returns the kernel of two points.
 	 *
@@ -756,7 +748,7 @@ resetKernelCalls(); // set the counter to zero
 		return u_fp;
 	}
 
-	// BUGTEST 18
+
 	/**
 	 * Method getUpperClip, which will return the upper clip based on two
 	 * Lagrange multipliers.
@@ -856,17 +848,15 @@ resetKernelCalls(); // set the counter to zero
 		int n = xtest.length;
 		int n2 = data_fp_local[0].length;
 		// RT bound it to ALPHA_RT
-		for (int i = 0; i < ALPHA_RT; i++) { // @WCA loop=2
+		for (int i = 0; i < ALPHA_RT; i++) { // @WCA loop=14
 			n = xtest.length;
-			// MS: is the following bound correct?
-			while (n != 0) { // @WCA loop=2
+			while (n != 0) { // @WCA loop=14
 				n = n - 1;
-				// TODO
 				// func_out += (data_fp_local[alpha_index_sorted[i]][n])
 				// * (xtest[n]);
 			}
 			// if (alpha_fp[alpha_index_sorted[i]] > 0) {
-			// functionalOutput_fp += func_out;
+			//   functionalOutput_fp += func_out;
 			// }
 			func_out = 0;
 		}
@@ -874,7 +864,7 @@ resetKernelCalls(); // set the counter to zero
 		return functionalOutput_fp;
 	}
 
-	// BUGTEST 20
+
 	/**
 	 * Method getFunctionOutput, which will return the functional output for
 	 * point represented by a input vector only.
@@ -974,7 +964,7 @@ resetKernelCalls(); // set the counter to zero
 			;
 	}
 
-	// BUGTEST 22
+
 	void printVector(String str, float[] ve) {
 		System.out.print(str);
 		System.out.print(" {");
@@ -1011,7 +1001,7 @@ resetKernelCalls(); // set the counter to zero
 			;
 	}
 
-	// BUGTEST 23
+
 	void printMatrix(String str, float[][] ma) {
 		for (int i = 0; i < ma.length; i++) {
 			System.out.print(str);
@@ -1041,11 +1031,6 @@ resetKernelCalls(); // set the counter to zero
 
 	void P(float f, int traceLevel) {
 		if (traceLevel <= TRACELEVEL) {
-			// StringBuffer NYI
-			// if (sb.length() > 0)
-			// sb.delete(0, sb.length() - 1);
-			// sb.append(f);
-			// System.out.println(sb);
 			int i = (int) f;
 			int j = (int) (f * 100 - (float)i * 100+1);
 			System.out.print(i);
@@ -1101,7 +1086,6 @@ resetKernelCalls(); // set the counter to zero
 		}
 	}
 
-	// BUGTEST 24
 	// First measure
 	public void measure() {
 
