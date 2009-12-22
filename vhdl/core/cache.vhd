@@ -164,10 +164,8 @@ begin
 					if clr_val(i) = '1' then
 						tag(i) <= (others => '0');
 					end if;
-					if nxt = to_unsigned(i, block_bits) then
-						tag(i) <= use_addr;
-					end if;
 				end loop;
+				tag(to_integer(nxt)) <= use_addr;
 
 				state <= idle;
 				-- optimization to not advance the next pointer

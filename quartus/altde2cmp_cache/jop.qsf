@@ -28,7 +28,7 @@ set_global_assignment -name DEVICE EP2C35F672C6
 set_global_assignment -name TOP_LEVEL_ENTITY jop
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION "6.0 SP1"
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "20:32:02  AUGUST 07, 2006"
-set_global_assignment -name LAST_QUARTUS_VERSION 7.2
+set_global_assignment -name LAST_QUARTUS_VERSION 9.0
 
 # Pin & Location Assignments
 # ==========================
@@ -133,7 +133,10 @@ set_global_assignment -name VHDL_FILE ../../vhdl/core/bcfetch.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/core.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/decode.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/fetch.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/cache/directmapped.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/cache/lru.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/cache/fifo.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/cache/datacache.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/memory/sc_sram16.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc_jbc.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/memory/mem_sc_new.vhd
@@ -148,3 +151,17 @@ set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_arbiter_pack.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_arbiter_tdma.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/jopcpu.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jopmul_256x16_cache.vhd
+
+set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_RETIMING ON
+set_global_assignment -name SEED 7
+set_global_assignment -name STATE_MACHINE_PROCESSING AUTO
+set_global_assignment -name MUX_RESTRUCTURE ON
+set_global_assignment -name PHYSICAL_SYNTHESIS_COMBO_LOGIC ON
+set_global_assignment -name FITTER_EFFORT "AUTO FIT"
+set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_DUPLICATION ON
+set_global_assignment -name ROUTER_TIMING_OPTIMIZATION_LEVEL MAXIMUM
+set_global_assignment -name ROUTER_LCELL_INSERTION_AND_LOGIC_DUPLICATION ON
+set_global_assignment -name CYCLONEII_OPTIMIZATION_TECHNIQUE AREA
+set_global_assignment -name PRE_MAPPING_RESYNTHESIS OFF
+set_global_assignment -name PHYSICAL_SYNTHESIS_EFFORT NORMAL
+set_global_assignment -name ENABLE_BENEFICIAL_SKEW_OPTIMIZATION ON

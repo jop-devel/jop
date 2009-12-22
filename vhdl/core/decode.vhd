@@ -129,7 +129,8 @@ architecture rtl of decode is
 
 begin
 
-	ir <= instr;		-- registered in fetch
+	-- TODO: ignored additional 2 bits at the moment
+	ir <= instr(9 downto 2);		-- registered in fetch
 
 	mmu_instr <= ir(MMU_WIDTH-1 downto 0);	-- address for extension select
 

@@ -38,7 +38,7 @@ generic (width : integer; addr_width : integer);
 port (
 	clk			: in std_logic;
 	address		: in std_logic_vector(addr_width-1 downto 0);
-	q			: out std_logic_vector(11 downto 0)
+	q			: out std_logic_vector(width-1 downto 0)
 );
 
 	subtype word is std_logic_vector(width-1 downto 0);
