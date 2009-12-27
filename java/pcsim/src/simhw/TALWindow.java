@@ -27,7 +27,7 @@
 package simhw;
 
 import java.util.Enumeration;
-import javax.comm.CommPortIdentifier;
+import gnu.io.CommPortIdentifier;
 import javax.swing.*;
 
 /**
