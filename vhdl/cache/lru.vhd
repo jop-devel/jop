@@ -7,7 +7,7 @@ use work.sc_pack.all;
 entity lru is
 generic (
 	index_bits : integer := 5;
-	line_cnt : integer := 32);
+	line_cnt : integer := 16);
 port (
 	clk, reset:	    in std_logic;
 

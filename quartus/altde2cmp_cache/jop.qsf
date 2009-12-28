@@ -133,13 +133,13 @@ set_global_assignment -name VHDL_FILE ../../vhdl/core/bcfetch.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/core.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/decode.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/fetch.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/cache/directmapped.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/cache/directmapped_invalidate.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/cache/lru.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/cache/fifo.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/cache/datacache.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/memory/sc_sram16.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc_jbc.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/memory/mem_sc_new.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/memory/mem_sc.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/memory/sdpram.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/scio/cmpsync.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/cache.vhd
