@@ -1535,7 +1535,8 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 	
 		if (methodId.equals("com.jopdesign.sys.Native.rd(I)I")
 				|| methodId.equals("com.jopdesign.sys.Native.rdMem(I)I")
-				|| methodId.equals("com.jopdesign.sys.Native.rdIntMem(I)I")) {
+				|| methodId.equals("com.jopdesign.sys.Native.rdIntMem(I)I")
+				|| methodId.equals("com.jopdesign.sys.Native.getStatic(I)I")) {
 			for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
 				Location l = i.next();
 				if (l.stackLoc < context.stackPtr-1) {
@@ -1545,7 +1546,8 @@ public class LoopBounds implements Analysis<List<HashedString>, Map<Location, Lo
 			out.put(new Location(context.stackPtr-1), new ValueMapping());
 		} else if (methodId.equals("com.jopdesign.sys.Native.wr(II)V")
 				|| methodId.equals("com.jopdesign.sys.Native.wrMem(II)V")
-				|| methodId.equals("com.jopdesign.sys.Native.wrIntMem(II)V")) {
+				|| methodId.equals("com.jopdesign.sys.Native.wrIntMem(II)V")
+				|| methodId.equals("com.jopdesign.sys.Native.putStatic(II)V")) {
 			for (Iterator<Location> i = in.keySet().iterator(); i.hasNext(); ) {
 				Location l = i.next();
 				if (l.stackLoc < context.stackPtr-2) {

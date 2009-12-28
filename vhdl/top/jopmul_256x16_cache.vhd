@@ -46,10 +46,10 @@ generic (
 	ram_cnt		: integer := 2;		-- clock cycles for external ram
 --	rom_cnt		: integer := 3;		-- clock cycles for external rom OK for 20 MHz
 	rom_cnt		: integer := 10;	-- clock cycles for external rom for 100 MHz
-	jpc_width	: integer := 11;	-- address bits of java bytecode pc = cache size
+	jpc_width	: integer := 10;	-- address bits of java bytecode pc = cache size
 	block_bits	: integer := 4;		-- 2*block_bits is number of cache blocks
 	spm_width	: integer := 0;		-- size of scratchpad RAM (in number of address bits for 32-bit words)
-	cpu_cnt		: integer := 8		-- number of cpus
+	cpu_cnt		: integer := 4		-- number of cpus
 );
 
 port (
@@ -211,7 +211,7 @@ end process;
 				sc_io_out(i), sc_io_in(i),
 				irq_in(i), irq_out(i), exc_req(i));
 
-		lru: entity work.lru
+		cmp_dcache: entity work.datacache
 			port map (
 				clk		=> clk_int,
 				reset	=> int_res,

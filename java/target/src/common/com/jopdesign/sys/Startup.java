@@ -74,6 +74,7 @@ public class Startup {
 		// only CPU 0 does the initialization stuff
 		if (Native.rdMem(Const.IO_CPU_ID) == 0)	{
 			started = false;
+
 			msg();
 			spm_size = getRamSize(Const.SCRATCHPAD_ADDRESS);
 			mem_size = getRamSize(0);
@@ -383,13 +384,11 @@ public class Startup {
 				case 177 :		// return
 					return;
 				case 178 :		// getstatic
-				case 224 :		// resE0 - getstatic_ref
 					getstatic();
 					break;
 				case 221 :		// jopsys_nop
 					break;
 				case 179 :		// putstatic
-				case 225 :		// resE1 - putstatic_ref
 					putstatic();
 					break;
 				case 188 :		// newarray
@@ -443,13 +442,13 @@ public class Startup {
 	static void putstatic() {
 
 		int addr = readBC16u();
-		Native.wrMem(stack[sp--], addr);
+		Native.putStatic(stack[sp--], addr);
 	}
 
 	static void getstatic() {
 
 		int addr = readBC16u();
-		stack[++sp] = Native.rdMem(addr);
+		stack[++sp] = Native.getStatic(addr);
 	}
 
 	static void putfield() {
@@ -457,22 +456,16 @@ public class Startup {
 		int off = readBC16u();
 		int val = stack[sp--];
 		int ref = stack[sp--];
-		// handle indirection:
-		ref = Native.rdMem(ref);
 
-		Native.wrMem(val, ref+off);
+		Native.putField(ref, off, val);
 	}
 
 	static void getfield() {
 
 		int off = readBC16u();
 		int ref = stack[sp];
-		// handle indirection:
-		ref = Native.rdMem(ref);
 
-		stack[sp] = Native.rdMem(ref+off);
-
-
+		stack[sp] = Native.getField(ref, off);
 	}
 
 	static void newarray() {

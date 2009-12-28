@@ -134,6 +134,7 @@
 //	... no comments ...
 //	2009-06-17	MS: Enable conditional move again
 //  2009-06-26  WP: fixed invokesuper
+//	2009-08-23	MS: start with typed memory access for data caches
 //	2009-08-24	MS: use I/O port for null pointer and array exception
 //	2009-09-05	MS: new unconditional jmp instruction
 //	2009-11-17	MS: put/getfield in mmu uses bytecode operand directly for the index
@@ -1284,6 +1285,13 @@ getstatic:				// address is in index (bc opd)
 			wait
 			ldmrd nxt
 
+jopsys_getstatic:
+			stidx
+			stgs
+			wait
+			wait
+			ldmrd nxt
+
 putstatic:				// address is in index (bc opd)
 			stps opd	// MMU uses bc opd
 			nop opd
@@ -1291,6 +1299,13 @@ putstatic:				// address is in index (bc opd)
 			wait
 			nop nxt
 
+jopsys_putstatic:
+			stidx
+			stps
+			wait
+			wait
+			nop nxt
+		
 getfield_ref:					// getfield for reference is the same
 getfield:
 			stgf opd			// let the HW do the work

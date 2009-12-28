@@ -67,7 +67,7 @@ architecture rtl of sdpram is
 	constant nwords : integer := 2 ** addr_width;
 	type ram_type is array(0 to nwords-1) of word;
 
-	signal ram : ram_type;
+	signal ram : ram_type := (others => (others => '0'));
 
 begin
 

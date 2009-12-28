@@ -1080,7 +1080,7 @@ class JVM {
 				// TODO Scope check
 			} else {
 				// snapshot-at-beginning barrier
-				int oldVal = Native.rdMem(addr);
+				int oldVal = Native.getStatic(addr);
 				// Is it white?
 				if (oldVal != 0
 					&& Native.rdMem(oldVal+GC.OFF_SPACE) != GC.toSpace
@@ -1091,7 +1091,7 @@ class JVM {
 				}				
 			}
 
-			Native.wrMem(val, addr);			
+			Native.putStatic(val, addr);
 		}
 	}
 	private static void f_resE2() { JVMHelp.noim();}

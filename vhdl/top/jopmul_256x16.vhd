@@ -49,7 +49,7 @@ generic (
 	jpc_width	: integer := 11;	-- address bits of java bytecode pc = cache size
 	block_bits	: integer := 4;		-- 2*block_bits is number of cache blocks
 	spm_width	: integer := 0;		-- size of scratchpad RAM (in number of address bits for 32-bit words)
-	cpu_cnt		: integer := 3		-- number of cpus
+	cpu_cnt		: integer := 4		-- number of cpus
 );
 
 port (

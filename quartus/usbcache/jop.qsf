@@ -25,10 +25,10 @@
 
 # Project-Wide Assignments
 # ========================
-set_global_assignment -name SMART_RECOMPILE OFF
+set_global_assignment -name SMART_RECOMPILE ON
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION 4.0
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "02:05:59  APRIL 04, 2004"
-set_global_assignment -name LAST_QUARTUS_VERSION 7.2
+set_global_assignment -name LAST_QUARTUS_VERSION 9.0
 
 # Pin & Location Assignments
 # ==========================
@@ -222,16 +222,16 @@ set_global_assignment -name TOP_LEVEL_ENTITY jop
 
 # Fitter Assignments
 # ==================
-set_global_assignment -name DEVICE EP1C12Q240C8
+set_global_assignment -name DEVICE EP1C12Q240C6
 set_global_assignment -name CYCLONE_CONFIGURATION_SCHEME "PASSIVE SERIAL"
 set_global_assignment -name RESERVE_ALL_UNUSED_PINS "AS INPUT TRI-STATED"
 set_global_assignment -name OPTIMIZE_TIMING "NORMAL COMPILATION"
-set_global_assignment -name FINAL_PLACEMENT_OPTIMIZATION ALWAYS
+set_global_assignment -name FINAL_PLACEMENT_OPTIMIZATION AUTOMATICALLY
 set_global_assignment -name SEED 5
-set_global_assignment -name AUTO_PACKED_REGISTERS_CYCLONE "MINIMIZE AREA WITH CHAINS"
-set_global_assignment -name PHYSICAL_SYNTHESIS_COMBO_LOGIC OFF
-set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_DUPLICATION OFF
-set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_RETIMING OFF
+set_global_assignment -name AUTO_PACKED_REGISTERS_CYCLONE NORMAL
+set_global_assignment -name PHYSICAL_SYNTHESIS_COMBO_LOGIC ON
+set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_DUPLICATION ON
+set_global_assignment -name PHYSICAL_SYNTHESIS_REGISTER_RETIMING ON
 set_global_assignment -name PHYSICAL_SYNTHESIS_EFFORT NORMAL
 set_global_assignment -name INC_PLC_MODE OFF
 set_global_assignment -name ROUTING_BACK_ANNOTATION_MODE OFF
@@ -491,7 +491,7 @@ set_global_assignment -name TCO_REQUIREMENT "10 ns"
 # ---------------
 
 
-set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_60.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/top/jop_config_100.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/jop_types.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/simpcon/sc_pack.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc_pll.vhd
@@ -507,17 +507,55 @@ set_global_assignment -name VHDL_FILE ../../vhdl/core/bcfetch.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/core.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/decode.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/fetch.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/cache/lru.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/memory/sc_sram32_flash.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc_jbc.vhd
-set_global_assignment -name VHDL_FILE ../../vhdl/memory/mem_sc_new.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/memory/sdpram.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/cache.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/cache/ocache.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/cache/directmapped.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/cache/lru.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/cache/fifo.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/cache/datacache.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/memory/sc_sram32_flash.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/altera/cyc_jbc.vhd
+set_global_assignment -name VHDL_FILE ../../vhdl/memory/mem_sc.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/mul.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/shift.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/stack.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/core/jopcpu.vhd
 set_global_assignment -name VHDL_FILE ../../vhdl/top/jopcyc12_cache.vhd
-set_instance_assignment -name PARTITION_HIERARCHY no_file_for_top_partition -to | -section_id Top
+set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
 set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
+
+set_global_assignment -name ROUTER_LCELL_INSERTION_AND_LOGIC_DUPLICATION ON
+set_global_assignment -name ROUTER_TIMING_OPTIMIZATION_LEVEL MAXIMUM
+set_global_assignment -name PRE_MAPPING_RESYNTHESIS ON
+set_global_assignment -name FITTER_EFFORT "AUTO FIT"
+set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
+set_global_assignment -name LL_ROOT_REGION ON -section_id "Root Region"
+set_global_assignment -name LL_MEMBER_STATE LOCKED -section_id "Root Region"
+set_global_assignment -name STRATIXII_OPTIMIZATION_TECHNIQUE AREA
+set_global_assignment -name STRATIX_OPTIMIZATION_TECHNIQUE AREA
+set_global_assignment -name MAXII_OPTIMIZATION_TECHNIQUE AREA
+set_global_assignment -name MAX7000_OPTIMIZATION_TECHNIQUE AREA
+set_global_assignment -name APEX20K_OPTIMIZATION_TECHNIQUE AREA
+set_global_assignment -name ADV_NETLIST_OPT_SYNTH_WYSIWYG_REMAP ON
+set_global_assignment -name AUTO_SHIFT_REGISTER_RECOGNITION ALWAYS
+set_global_assignment -name REMOVE_REDUNDANT_LOGIC_CELLS ON
+set_global_assignment -name ALLOW_ANY_ROM_SIZE_FOR_RECOGNITION ON
+set_global_assignment -name ALLOW_ANY_RAM_SIZE_FOR_RECOGNITION ON
+set_global_assignment -name ALLOW_ANY_SHIFT_REGISTER_SIZE_FOR_RECOGNITION ON
+set_global_assignment -name IGNORE_LCELL_BUFFERS ON
+set_global_assignment -name IGNORE_CASCADE_BUFFERS ON
+set_global_assignment -name FITTER_AGGRESSIVE_ROUTABILITY_OPTIMIZATION AUTOMATICALLY
+set_global_assignment -name STATE_MACHINE_PROCESSING AUTO
+set_global_assignment -name OPTIMIZE_HOLD_TIMING "ALL PATHS"
+set_global_assignment -name AUTO_PACKED_REGISTERS_STRATIXII NORMAL
+set_global_assignment -name AUTO_PACKED_REGISTERS_MAXII NORMAL
+set_global_assignment -name AUTO_PACKED_REGISTERS NORMAL
+set_global_assignment -name AUTO_PACKED_REGISTERS_STRATIX NORMAL
+set_global_assignment -name ENABLE_DRC_SETTINGS ON
+set_global_assignment -name ENABLE_CLOCK_LATENCY ON
+set_global_assignment -name ENABLE_RECOVERY_REMOVAL_ANALYSIS ON
+set_global_assignment -name PHYSICAL_SYNTHESIS_ASYNCHRONOUS_SIGNAL_PIPELINING ON
+set_global_assignment -name ENABLE_BENEFICIAL_SKEW_OPTIMIZATION ON
+set_global_assignment -name PLACEMENT_EFFORT_MULTIPLIER 1.5
+set_global_assignment -name POWER_USE_INPUT_FILES OFF

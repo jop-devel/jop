@@ -317,7 +317,7 @@ end process;
 --
 -- prepare RAM address registering
 --
-process(addr_reg, sc_mem_in, mem_in, ain, bin, state, inc_addr_reg, index, pos_reg, offset_reg)
+process(addr_reg, sc_mem_in, mem_in, ain, bin, state, inc_addr_reg, index, pos_reg, offset_reg, was_a_stidx)
 begin
 
 	-- default values
@@ -333,7 +333,11 @@ begin
 	end if;
 	
 	if mem_in.putstatic ='1' or mem_in.getstatic='1' then
-		addr_next <= to_unsigned(to_integer(unsigned(mem_in.bcopd)), SC_ADDR_SIZE);
+		if was_a_stidx = '1' then
+			addr_next <= to_unsigned(to_integer(unsigned(index)), SC_ADDR_SIZE);
+		else
+			addr_next <= to_unsigned(to_integer(unsigned(mem_in.bcopd)), SC_ADDR_SIZE);			
+		end if;
 	end if;
 
 	if mem_in.bc_rd='1' then
@@ -450,10 +454,10 @@ begin
 			end if;
 
 		when ps1 =>
-			next_state <= wr1;
+			next_state <= last;
 
 		when gs1 =>
-			next_state <= rd1;
+			next_state <= last;
 
 --
 --	bytecode read
@@ -531,9 +535,10 @@ begin
 			-- w. pipeline level 2
 			-- would waste one cycle in a single cycle memory (similar
 			-- to bc load) - SimpCon rd comes from registered state_rd.
-			if sc_mem_in.rdy_cnt<=1 then
-				next_state <= iald23;
-			elsif sc_mem_in.rdy_cnt/=3 then
+--			if sc_mem_in.rdy_cnt<=1 then
+--				next_state <= iald23;
+--			els
+				if sc_mem_in.rdy_cnt/=3 then
 				next_state <= iald2;
 			end if;
 
@@ -727,6 +732,7 @@ begin
 		bounds_error <= '0';
 		state_wr <= '0';
 		sc_mem_out.atomic <= '0';
+		sc_mem_out.cache <= bypass;
 		ocin.wr_gf <= '0';
 		ocin.chk_pf <= '0';
 		ocin.wr_pf <= '0';
@@ -825,6 +831,7 @@ begin
 		bounds_error <= '0';
 		state_wr <= '0';
 		sc_mem_out.atomic <= '0';
+		sc_mem_out.cache <= bypass;
 		ocin.wr_gf <= '0';
 		ocin.chk_pf <= '0';
 		ocin.wr_pf <= '0';
@@ -857,11 +864,13 @@ begin
 				read_ocache<='0';
 				state_bsy <= '1';
 				state_wr <= '1';
+				sc_mem_out.cache <= direct_mapped;
 
 			when gs1 =>
 				read_ocache<='0';
 				state_bsy <= '1';
 				state_rd <= '1';
+				sc_mem_out.cache <= direct_mapped;
 
 			when bc_cc =>
 				read_ocache<='0';
@@ -909,6 +918,7 @@ begin
 				state_bsy <= '1';
 				inc_addr_reg <= '1';
 				sc_mem_out.atomic <= '1';
+				sc_mem_out.cache <= full_assoc;
 
 			when iald1 =>
 				sc_mem_out.atomic <= '1';
@@ -916,10 +926,12 @@ begin
 			when iald2 =>
 				state_rd <= '1';
 				sc_mem_out.atomic <= '1';
+				sc_mem_out.cache <= full_assoc;
 
 			when iald23 =>
 				state_rd <= '1';
 				sc_mem_out.atomic <= '1';
+				sc_mem_out.cache <= full_assoc;
 
 			when iald3 =>
 				sc_mem_out.atomic <= '1';
@@ -949,6 +961,7 @@ begin
 				state_rd <= '1';
 				state_bsy <= '1';
 				sc_mem_out.atomic <= '1';
+				sc_mem_out.cache <= full_assoc;
 
 			when gf1 =>
 				sc_mem_out.atomic <= '1';
@@ -960,6 +973,7 @@ begin
 				state_rd <= '1';
 				was_a_hwo <= sc_mem_in.rd_data(31);
 				sc_mem_out.atomic <= '1';
+				sc_mem_out.cache <= full_assoc;
                           
 			when gf4 =>
 				sc_mem_out.atomic <= '1';
@@ -974,6 +988,7 @@ begin
 			when pf1 =>
 				state_rd <= '1';
 				sc_mem_out.atomic <= '1';
+				sc_mem_out.cache <= full_assoc;
 
 			when pf2 =>
 				sc_mem_out.atomic <= '1';
@@ -989,6 +1004,7 @@ begin
 				end if;
 				state_wr <= '1';
 				sc_mem_out.atomic <= '1';
+				sc_mem_out.cache <= full_assoc;
                           
 			when cp0 =>
 				read_ocache<='0';
@@ -1013,6 +1029,7 @@ begin
 
 			when last =>
 				sc_mem_out.atomic <= '1';
+				state_bsy <= '0';
 
 			when npexc =>
 				null_pointer <= '1';
