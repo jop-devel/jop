@@ -42,9 +42,10 @@ public class OCache {
 		
 		OCache oc = new OCache();
 		int i, j;
+		com.jopdesign.io.SysDevice sys = com.jopdesign.io.IOFactory.getFactory().getSysDevice();
 
 		// a marker for the ModelSim simulation
-		com.jopdesign.io.IOFactory.getFactory().getSysDevice().wd = 1;
+		sys.wd = 1;
 		s = 15;
 		
 		oc.a = 1;
@@ -53,6 +54,10 @@ public class OCache {
 		int ref = Native.toInt(oc);
 		Native.putField(ref, 0, 2);
 		i = oc.a;
+		// test caching of I/O devices
+		i = sys.cntInt;
+		j = sys.cntInt;
+		sys.wd = 0;
 	}
 
 }

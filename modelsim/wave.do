@@ -37,6 +37,7 @@ add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/mem/ind
 add wave -noupdate -format Literal -radix hexadecimal /tb_jop/joptop/cpu/mem/value
 add wave -noupdate -format Logic /tb_jop/joptop/cpu/mem/was_a_store
 add wave -noupdate -format Logic /tb_jop/joptop/cpu/mem/was_a_stidx
+add wave -noupdate -format Logic /tb_jop/joptop/cpu/mem/was_a_hwo
 add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/cpu/mem/null_pointer
 add wave -noupdate -format Logic -radix hexadecimal /tb_jop/joptop/cpu/mem/bounds_error
 add wave -noupdate -format Logic /tb_jop/joptop/cpu/mem/np_exc
@@ -70,7 +71,7 @@ add wave -noupdate -format Logic /tb_jop/joptop/fl_noe
 add wave -noupdate -format Logic /tb_jop/joptop/fl_nwe
 add wave -noupdate -format Logic /tb_jop/joptop/fl_rdy
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {35999 ns} 0}
+WaveRestoreCursors {{Cursor 1} {35999000 ps} 0}
 configure wave -namecolwidth 228
 configure wave -valuecolwidth 144
 configure wave -justifyvalue left
@@ -83,5 +84,6 @@ configure wave -gridoffset 0
 configure wave -gridperiod 1
 configure wave -griddelta 40
 configure wave -timeline 0
+configure wave -timelineunits ps
 update
-WaveRestoreZoom {1031800 ns} {1032022 ns}
+WaveRestoreZoom {11789100 ps} {12011100 ps}

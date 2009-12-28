@@ -162,6 +162,7 @@ end component;
 
 	signal was_a_store	: std_logic;
 	signal was_a_stidx	: std_logic;
+	signal was_a_hwo	: std_logic;
 
 --
 --	values for bytecode read/cache
@@ -708,6 +709,7 @@ begin
 		value <= (others => '0');
 		was_a_store <= '0';
 		was_a_stidx <= '0';
+		was_a_hwo <= '0';
 		bc_len <= (others => '0');
 
 		base_reg <= (others => '0');
@@ -834,12 +836,13 @@ begin
 				-- only valid on first idle cycle when comming
 				-- from a 'real' getfield (no preceeding stidx)
 				if state=gf4 then
-					if was_a_stidx='0' then
+					if was_a_stidx='0' and was_a_hwo='0' then
 						ocin.wr_gf <= '1';
 					end if;
 				end if;
 				if state=gf4 or state=last then
 					was_a_stidx <= '0';		-- reset a former stidx marker
+					was_a_hwo <= '0';		-- reset a former hwo marker
 				end if;
 
 			when rd1 =>
@@ -955,6 +958,7 @@ begin
 
 			when gf3 =>
 				state_rd <= '1';
+				was_a_hwo <= sc_mem_in.rd_data(31);
 				sc_mem_out.atomic <= '1';
                           
 			when gf4 =>
@@ -978,7 +982,9 @@ begin
 				sc_mem_out.atomic <= '1';
 
 			when pf4 =>
-				if was_a_stidx='0' then
+				-- only on 'normal' putfield (no Native, no I/O)
+				-- decision on write allocate is in cache
+				if was_a_stidx='0' and sc_mem_in.rd_data(31)='0' then
 					ocin.wr_pf <= '1';
 				end if;
 				state_wr <= '1';
