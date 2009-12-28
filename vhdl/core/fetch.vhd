@@ -159,7 +159,7 @@ end process;
 
 	pc_inc <= std_logic_vector(unsigned(pc) + 1);
 
-process(jfetch, br, jmp, jpaddr, brdly, jpdly, pc, pc_inc)
+process(jfetch, br, jmp, jpaddr, brdly, jpdly, pc, pc_inc, pcwait, bsy)
 begin
 	if jfetch='1' then
 		pc_mux <= jpaddr;

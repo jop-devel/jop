@@ -370,8 +370,8 @@ public class JopInstr{
 		new JopInstr("resEB", 1, IMP_NO, 1),			// 0xEB
 		new JopInstr("invokesuper", 3, IMP_ASM, 30),			// 0xEC
 		new JopInstr("resED", 1, IMP_NO, 1),			// 0xED
-		new JopInstr("resEE", 1, IMP_NO, 1),			// 0xEE
-		new JopInstr("resEF", 1, IMP_NO, 1),			// 0xEF
+		new JopInstr("jopsys_getstatic", 1, IMP_ASM, 1),		// 0xEE
+		new JopInstr("jopsys_putstatic", 1, IMP_ASM, 1),		// 0xEF
 
 		new JopInstr("sys_int", 1, IMP_ASM, 1),			// 0xF0
 		new JopInstr("sys_exc", 1, IMP_ASM, 1),			// 0xF1
@@ -424,6 +424,8 @@ public class JopInstr{
 			"condMoveRef", "jopsys_cond_move",
 			"invalidate", "jopsys_inval",
 			"memCopy", "jopsys_memcpy",
+			"putStatic", "jopsys_putstatic",
+			"getStatic", "jopsys_getstatic",
 			"putField", "jopsys_putfield",
 			"getField", "jopsys_getfield",
 			"arrayLoad", "iaload",

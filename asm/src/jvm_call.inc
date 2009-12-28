@@ -118,14 +118,14 @@ interface_pointer_ok:
 
 			ldi	1				// pointer to interface table
 			sub					// befor method table
-			stmra_cinfo				// read interface table address
+			stmra				// read interface table address
 			wait
 			wait
 			ldmrd		 		// it on TOS
 
 			ldm	b
 			add					// add offset
-			stmra_cinfo				// read method pointer
+			stmra				// read method pointer
 			wait				// from interface table
 			wait
 			ldmrd		 		// mp on TOS
@@ -273,7 +273,7 @@ invoke_vpsave:					// vp is allready saved in old_vp
 			dup
 			ldi	1
 			add
-			stmra_cinfo			// read cp+arrg/locals count
+			stmra			// read cp+arrg/locals count
 			ldm	mp
 			stm	old_mp
 			stm	mp
@@ -298,7 +298,7 @@ invoke_vpsave:					// vp is allready saved in old_vp
 // get method start address and length
 
 			ldm	mp
-			stmra_cinfo
+			stmra
 
 			ldm	cp
 			stm	old_cp
@@ -411,7 +411,7 @@ freturn:
 ireturn:
 			stm	a			// store return value
 			dup				// mp is on tos
-			stmra_cinfo
+			stmra
 			stm	mp
 			stm	cp
 			stvp
@@ -443,7 +443,7 @@ lreturn:
 			stm	a			// store return value
 			stm	b
 			dup				// mp is on tos
-			stmra_cinfo
+			stmra
 			stm	mp
 			stm	cp
 			stvp
@@ -489,7 +489,7 @@ return:
 
 
 			dup				// mp is on tos
-			stmra_cinfo
+			stmra
 			stm	mp
 			stm	cp
 			stvp

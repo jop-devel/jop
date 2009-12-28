@@ -6,8 +6,7 @@ use work.sc_pack.all;
 
 entity directmapped is
 generic (
-	index_bits : integer := 8;
-	line_cnt : integer := 256);
+	index_bits : integer := 8);
 port (
 	clk, reset:	    in std_logic;
 
@@ -23,6 +22,7 @@ end directmapped;
 architecture rtl of directmapped is
 
 	constant mem_bits : integer := SC_ADDR_SIZE-3;
+	constant line_cnt : integer := 2**index_bits;
 	
 	type cache_line_type is record
 		data	: std_logic_vector(31 downto 0);
@@ -33,10 +33,12 @@ architecture rtl of directmapped is
 	signal int_reset : std_logic;
 	
 	signal ram_din : cache_line_type;
+	signal ram_din_raw : std_logic_vector(32+mem_bits-index_bits downto 0);
 	signal ram_wraddress : std_logic_vector(index_bits-1 downto 0);
 	signal ram_wren : std_logic;
 
 	signal ram_dout : cache_line_type;
+	signal ram_dout_raw : std_logic_vector(32+mem_bits-index_bits downto 0);
 	signal ram_rdaddress : std_logic_vector(index_bits-1 downto 0);
 
 	signal cpu_out_reg, next_cpu_out : sc_out_type;
@@ -56,22 +58,26 @@ begin
 
 	int_reset <= reset or inval;
 	
+	ram_din_raw(32+mem_bits-index_bits downto mem_bits-index_bits+1) <= ram_din.data;
+	ram_din_raw(mem_bits-index_bits downto 1) <= ram_din.tag;
+	ram_din_raw(0) <= ram_din.valid;
+
+	ram_dout.data <= ram_dout_raw(32+mem_bits-index_bits downto mem_bits-index_bits+1);
+	ram_dout.tag <= ram_dout_raw(mem_bits-index_bits downto 1);
+	ram_dout.valid <= ram_dout_raw(0);
+
 	cache_ram: entity work.sdpram
 		generic map (
 			width	   => 32+mem_bits-index_bits+1,
 			addr_width => index_bits)
 		port map (
 			wrclk	   => clk,
-			data(32+mem_bits-8 downto mem_bits-8+1) => ram_din.data,
-			data(mem_bits-8 downto 1) => ram_din.tag,
-			data(0)    => ram_din.valid,
+			data	   => ram_din_raw,
 			wraddress  => ram_wraddress,
 			wren	   => ram_wren,
 			
 			rdclk	   => clk,
-			dout(32+mem_bits-8 downto mem_bits-8+1) => ram_dout.data,
-			dout(mem_bits-8 downto 1) => ram_dout.tag,
-			dout(0)    => ram_dout.valid,
+			dout	   => ram_dout_raw,
 			rdaddress  => ram_rdaddress,
 			rden	   => '1');
 

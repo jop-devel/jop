@@ -1285,6 +1285,13 @@ getstatic:				// address is in index (bc opd)
 			wait
 			ldmrd nxt
 
+jopsys_getstatic:
+			stidx
+			stgs
+			wait
+			wait
+			ldmrd nxt
+
 putstatic:				// address is in index (bc opd)
 			stps opd	// MMU uses bc opd
 			nop opd
@@ -1292,6 +1299,13 @@ putstatic:				// address is in index (bc opd)
 			wait
 			nop nxt
 
+jopsys_putstatic:
+			stidx
+			stps
+			wait
+			wait
+			nop nxt
+		
 getfield_ref:					// getfield for reference is the same
 getfield:
 			stgf opd			// let the HW do the work

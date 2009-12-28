@@ -64,6 +64,20 @@ public class Native {
 	public static native void memCopy(int dest, int src, int pos);
 	
 	/**
+	 * Maps to bytecode getstatic, but with address on TOS.
+	 * @param addr
+	 * @return
+	 */
+	public static native int getStatic(int addr);
+	
+	/**
+	 * Maps to bytecode putstatic, but with address on TOS.
+	 * @param value
+	 * @param addr
+	 */
+	public static native void putStatic(int value, int addr);
+
+	/**
 	 * Maps to bytecode getfield, but with index on TOS.
 	 * @param ref
 	 * @param index
