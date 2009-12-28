@@ -1217,11 +1217,13 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 		
 		if (methodId.equals("com.jopdesign.sys.Native.rd(I)I")
 				|| methodId.equals("com.jopdesign.sys.Native.rdMem(I)I")
-				|| methodId.equals("com.jopdesign.sys.Native.rdIntMem(I)I")) {
+				|| methodId.equals("com.jopdesign.sys.Native.rdIntMem(I)I")
+				|| methodId.equals("com.jopdesign.sys.Native.getStatic(I)I")) {
 			filterSet(input, result, context.stackPtr-1);
 		} else if (methodId.equals("com.jopdesign.sys.Native.wr(II)V")
 				|| methodId.equals("com.jopdesign.sys.Native.wrMem(II)V")
-				|| methodId.equals("com.jopdesign.sys.Native.wrIntMem(II)V")) {
+				|| methodId.equals("com.jopdesign.sys.Native.wrIntMem(II)V")
+				|| methodId.equals("com.jopdesign.sys.Native.putStatic(II)V")) {
 			filterSet(input, result, context.stackPtr-2);
 		} else if (methodId.equals("com.jopdesign.sys.Native.getSP()I")) {
 			filterSet(input, result, context.stackPtr);
