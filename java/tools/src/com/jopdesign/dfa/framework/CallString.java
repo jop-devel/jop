@@ -1,14 +1,9 @@
-package com.jopdesign.wcet.analysis;
+package com.jopdesign.dfa.framework;
 
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 
 import com.jopdesign.build.MethodInfo;
-import com.jopdesign.dfa.analyses.Interval;
-import com.jopdesign.dfa.framework.ContextMap;
-import com.jopdesign.dfa.framework.HashedString;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.InvokeNode;
 
 /**
