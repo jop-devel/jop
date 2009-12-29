@@ -42,7 +42,7 @@ public class Transaction {
 
 	public static boolean conflicting = false;
 
-	protected static int atomicSection(int arg0) throws Exception, 
+	protected static int originalMethodBody(int arg0) throws Exception, 
 	RetryException, AbortException {
 		boolean ignored = conflicting;
 		return arg0;
@@ -60,49 +60,52 @@ public class Transaction {
 	 */
 	public static int run(int arg0) throws RetryException, AbortException {
 		int arg0Copy = 0xdeadbeef; // make compiler happy
-		boolean outermostTransaction = !Utils.inTransaction[Native.rd(Const.IO_CPU_ID)];
+		boolean isOutermostTransaction = !Utils.inTransaction[Native.rdMem(Const.IO_CPU_ID)];
 
-		if (outermostTransaction) {
-			arg0Copy = arg0;
+		if (isOutermostTransaction) {
+			arg0Copy = arg0; // save method arguments
 
 			// TMTODO disable interrupts?
-			Native.wr(0, Const.IO_INT_ENA);
+			Native.wrMem(0, Const.IO_INT_ENA);
 
 			Utils.inTransaction[Native.rd(Const.IO_CPU_ID)] = true;
 		}
 
 		while (true) {
-			if (outermostTransaction) {
+			if (isOutermostTransaction) {
 				Native.wrMem(Const.TM_START_TRANSACTION, Const.MEM_TM_MAGIC);
 			}
 
 			try {
-				int result = atomicSection(arg0);
+				// Not really a method invocation
+				// The original method body is inserted here, return 
+				// statements in it are redirected to the next statement
+				int result = originalMethodBody(arg0);
 
-				if (outermostTransaction) {
+				if (isOutermostTransaction) {
 
 					// flush write set					
 					Native.wrMem(Const.TM_END_TRANSACTION, Const.MEM_TM_MAGIC);
 
-					// no exceptions happen after this statement
+					// no exceptions happen after here
 
 					Utils.inTransaction[Native.rd(Const.IO_CPU_ID)] = false;
 
 					// TMTODO (unconditionally) re-enable interrupts here?
-					Native.wr(1, Const.IO_INT_ENA);
+					Native.wrMem(1, Const.IO_INT_ENA);
 				}
 				return result;
 			} catch (Throwable e) { 
 				// RollbackException, AbortException or any other exception
 
-				if (outermostTransaction) {
-					Native.wr(0, Const.IO_ENA_HW_EXC);
+				if (isOutermostTransaction) {
+					Native.wrMem(0, Const.IO_ENA_HW_EXC);
 
 					// reference comparison is enough
 					if (e == Utils.abortException) {
 						throw Utils.abortException;
 					} else {
-						// rollback
+						// restore method arguments
 						arg0 = arg0Copy;
 					}
 				} else { // inner transaction
