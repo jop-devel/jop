@@ -48,7 +48,7 @@
  *
  */
 
-package jbe.ejip;
+package jbe.udpip;
 /*
 *   Changelog:
 *		2002-03-16	works with ethernet
@@ -63,7 +63,7 @@ package jbe.ejip;
 *	It's enough to handel a HTTP request (and nothing more)!
 */
 
-public class TcpIp {
+public class UdpIpTcpIp {
 
 	private static final int PROT_ICMP = 1;
 	private static final int PROT_TCP = 6;
@@ -136,7 +136,7 @@ public class TcpIp {
 *	change buffer and set length to get a packet sent back.
 *	called from Net.run().
 */
-	public static void receive(Packet p) {
+	public static void receive(UdpIpPacket p) {
 
 		int i, j;
 		int ret = 0;
@@ -148,7 +148,7 @@ public class TcpIp {
 // NO options are assumed in ICMP/TCP/IP...
 //		=> copy if options present
 		if (len > p.len || (i>>>24!=0x45)) {
-			p.setStatus(Packet.FREE);	// packet to short or ip options => drop it
+			p.setStatus(UdpIpPacket.FREE);	// packet to short or ip options => drop it
 			return;
 		} else {
 			p.len = len;				// correct for to long packets
@@ -156,8 +156,8 @@ public class TcpIp {
 
 		// TODO fragmentation
 		if (chkSum(buf, 0, 20)!=0) {
-			p.setStatus(Packet.FREE);
-Dbg.wr("wrong IP checksum ");
+			p.setStatus(UdpIpPacket.FREE);
+UdpIpDbg.wr("wrong IP checksum ");
 			return;
 		}
 
@@ -168,10 +168,10 @@ Dbg.wr("wrong IP checksum ");
 		} else if (prot==PROT_TCP) {
 			doTCP(p);
 			doIp(p, prot);
-		} else if (prot==Udp.PROTOCOL) {
-			Udp.process(p);				// Udp generates the reply
+		} else if (prot==UdpIpUdp.PROTOCOL) {
+			UdpIpUdp.process(p);				// Udp generates the reply
 		} else {
-			p.setStatus(Packet.FREE);	// mark packet free
+			p.setStatus(UdpIpPacket.FREE);	// mark packet free
 		}
 	}
 
@@ -179,14 +179,14 @@ Dbg.wr("wrong IP checksum ");
 *	very simple generation of IP header.
 *	just swap source and destination.
 */
-	private static void doIp(Packet p, int prot) {
+	private static void doIp(UdpIpPacket p, int prot) {
 
 		int[] buf = p.buf;
 		int len = p.len;
 		int i;
 
 		if (len == 0) {
-			p.setStatus(Packet.FREE);	// mark packet free
+			p.setStatus(UdpIpPacket.FREE);	// mark packet free
 		} else {
 			buf[0] = 0x45000000 + len;			// ip length	(header without options)
 			buf[1] = getId();					// identification, no fragmentation
@@ -202,16 +202,16 @@ Dbg.wr("wrong IP checksum ");
 			p.llh[1] = p.llh[4];
 			p.llh[2] = p.llh[5];
 			p.llh[6] = 0x0800;
-			p.setStatus(Packet.SND);	// mark packet ready to send
+			p.setStatus(UdpIpPacket.SND);	// mark packet ready to send
 		}
 	}
 
 /**
 *	the famous ping.
 */
-	private static void doICMP(Packet p) {
+	private static void doICMP(UdpIpPacket p) {
 
-Dbg.wr('P');
+UdpIpDbg.wr('P');
 		if (p.buf[5]>>>16 == 0x0800) {
 			// TODO check received ICMP checksum
 			p.buf[5] = 0;							// echo replay plus clear checksu,
@@ -224,7 +224,7 @@ Dbg.wr('P');
 
 // TODO:!!!!!! do a real state machine,
 // end is wrong (sending ack in fw1 !!!) makes remote site crazy
-	static void doTCP(Packet p) {
+	static void doTCP(UdpIpPacket p) {
 
 		int i;
 		int datlen;
@@ -232,7 +232,7 @@ Dbg.wr('P');
 		int rcvcnt, sndcnt;
 		int fl;
 
-Dbg.wr('T');
+UdpIpDbg.wr('T');
 
 		// Find the payload
 		i = buf[8]>>>16;

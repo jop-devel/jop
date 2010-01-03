@@ -48,28 +48,73 @@
  *
  */
 
-package jbe.ejip;
+package jbe.udpip;
 
 /**
-*	LinkLayer.java
-*
-*	communicate with jopbb via serial line.
+*	Start device driver threads and poll for packets.
 */
 
+public class UdpIpNet {
+
+	public static int[] eth;				// own ethernet address
+	public static int ip;					// own ip address
+
+/**
+*	The one and only reference to this object.
+*/
+	private static UdpIpNet single;
+
+/**
+*	private because it's a singleton Thread.
+*/
+	private UdpIpNet() {
+	}
+
+/**
+*	Allocate buffer and create thread.
+*/
+	public static UdpIpNet init() {
+
+		if (single != null) return single;			// allready called init()
+
+		eth = new int[6];
+		eth[0] = 0x00;
+		eth[1] = 0xe0;
+		eth[2] = 0x98;
+		eth[3] = 0x33;
+		eth[4] = 0xb0;
+		eth[5] = 0xf7;		// this is eth card for chello
+		eth[5] = 0xf8;
+		ip = (192<<24) + (168<<16) + (0<<8) + 123;
+		// ip = (192<<24) + (168<<16) + (0<<8) + 4;
+
+		UdpIpUdp.init();
+		UdpIpPacket.init();
+		UdpIpTcpIp.init();
+
+		//
+		//	start my own thread
+		//
+		single = new UdpIpNet();
+		
+		return single;
+	}
 
 
 /**
-*	LinkLayer driver.
+*	Look for received packets and call TcpIp.
+*	Mark them to be sent if returned with len!=0 from TcpIp layer.
 */
+	public void loop() {
 
-public abstract class LinkLayer {
+		UdpIpPacket p;
 
-
-	public abstract int getIpAddress();
-	public abstract void startConnection(StringBuffer dialstr,
-			StringBuffer connect, StringBuffer user, StringBuffer passwd);
-	public abstract void reconnect();
-	public abstract int getConnCount();
-
-	public abstract void loop();
+		// is a received packet in the pool?
+		p = UdpIpPacket.getPacket(UdpIpPacket.RCV, UdpIpPacket.ALLOC);
+		if (p!=null) {					// got one received Packet from pool
+			UdpIpTcpIp.receive(p);
+		} else {
+			UdpIpUdp.loop();
+		}
+	}
 }

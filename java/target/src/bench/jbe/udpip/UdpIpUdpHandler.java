@@ -48,94 +48,26 @@
  *
  */
 
-package jbe.ejip;
+package jbe.udpip;
 
 /**
-*	Loopback.java
+*	UdpHandler.java
 *
-*	Loopback link layer driver.
+*	Handler for UDP request (server)
 */
+
 
 /**
-*	Loopback driver.
+*	UdpHandler.
 */
 
-public class Loopback extends LinkLayer {
-
-	private static final int MAX_BUF = 1500;		// or should we use 1006
+public abstract class UdpIpUdpHandler {
 
 /**
-*	ip address.
+*	handle one request of registered port.
 */
-	private static int ip;
+	public abstract void request(UdpIpPacket p);
 
-/**
-*	The one and only reference to this object.
-*/
-	private static Loopback single;
-	
-/**
-*	private constructor. The singleton object is created in init().
-*/
-	private Loopback() {
-	}
-
-/**
-*	allocate buffer, start serial buffer and slip Thread.
-*/
-	public static LinkLayer init() {
-
-		ip = (127<<24) + (0<<16) + (0<<8) + 1;
-
-		if (single != null) return single;	// allready called init()
-
-		single = new Loopback();
-		return single;
-	}
-
-	public int getIpAddress() {
-		return ip;
-	}
-
-	/**
-	*	Set connection strings and connect.
-	*/
-	public void startConnection(StringBuffer dialstr, StringBuffer connect, StringBuffer user, StringBuffer passwd) {
-		// useless for loopback driver
-	}
-	/**
-	*	Forces the connection to be new established.
-	*	On Slip ignored.
-	*/
-	public void reconnect() {
-	}
-	static int timer;
-	
-/**
-*	main loop.
-*/
 	public void loop() {
-
-		Packet p;
-
-		//
-		// get a ready to send packet with source from this driver.
-		//
-		p = Packet.getPacket(single, Packet.SND, Packet.ALLOC);
-		if (p!=null) {
-			//
-			// and simple mark it as received packet.
-			//
-			p.setStatus(Packet.RCV);		// inform upper layer
-		}
 	}
-
-/* (non-Javadoc)
- * @see ejip.LinkLayer#getConnCount()
- */
-public int getConnCount() {
-	return 0;
-}
-
-
 }

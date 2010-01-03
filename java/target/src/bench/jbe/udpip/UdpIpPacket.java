@@ -53,14 +53,14 @@
 *		2002-11-11	use LinkLayer info to mix Slip and Ethernet packets
 */
 
-package jbe.ejip;
+package jbe.udpip;
 
 
 /**
 *	Packet buffer handling for a minimalistic TCP/IP stack.
 *
 */
-public class Packet {
+public class UdpIpPacket {
 
 	// smaller packet sizes for the benchmark
 	public final static int MAX = 40;		// maximum Packet length in bytes
@@ -69,7 +69,7 @@ public class Packet {
 	private final static int CNT = 2;		// size of packet pool
 
 	/** interface source/destination */
-	public LinkLayer interf;
+	public UdpIpLinkLayer interf;
 	/** place for link layer data */
 	public int[] llh;
 	/** ip datagram */
@@ -86,7 +86,7 @@ public class Packet {
 	private static Object monitor;
 
 	//	no direct construction
-	private Packet() {
+	private UdpIpPacket() {
 		llh = new int[MAXLLH];
 		buf = new int[MAXW];
 		len = 0;
@@ -95,7 +95,7 @@ public class Packet {
 	}
 
 	private static boolean initOk;
-	private static Packet[] packets;
+	private static UdpIpPacket[] packets;
 
 	// a small race condition on init
 	public static void init() {
@@ -105,9 +105,9 @@ public class Packet {
 
 		synchronized (monitor) {
 			initOk = true;
-			packets = new Packet[CNT];
+			packets = new UdpIpPacket[CNT];
 			for (int i=0; i<CNT; ++i) { // @WCA loop=2
-				packets[i] = new Packet();
+				packets[i] = new UdpIpPacket();
 			}
 		}
 	}
@@ -115,11 +115,11 @@ public class Packet {
 private static void dbg() {
 
 	synchronized (monitor) {
-		Dbg.wr('|');
+		UdpIpDbg.wr('|');
 		for (int i=0; i<CNT; ++i) { // @WCA loop=2
-			Dbg.wr('0'+packets[i].status);
+			UdpIpDbg.wr('0'+packets[i].status);
 		}
-		Dbg.wr('|');
+		UdpIpDbg.wr('|');
 	}
 }
 
@@ -127,10 +127,10 @@ private static void dbg() {
 /**
 *	Request a packet of a given type from the pool and set new type.
 */
-	public static Packet getPacket(int type, int newType) {
+	public static UdpIpPacket getPacket(int type, int newType) {
 
 		int i;
-		Packet p;
+		UdpIpPacket p;
 
 		if (!initOk) {
 			init();
@@ -142,7 +142,7 @@ private static void dbg() {
 				}
 			}
 			if (i==CNT) {
-if (type==FREE) Dbg.wr('!');
+if (type==FREE) UdpIpDbg.wr('!');
 				return null;
 			}
 			packets[i].status = newType;
@@ -155,10 +155,10 @@ if (type==FREE) Dbg.wr('!');
 /**
 *	Request a packet of a given type from the pool and set new type and source.
 */
-	public static Packet getPacket(int type, int newType, LinkLayer s) {
+	public static UdpIpPacket getPacket(int type, int newType, UdpIpLinkLayer s) {
 
 		int i;
-		Packet p;
+		UdpIpPacket p;
 
 		if (!initOk) {
 			init();
@@ -170,7 +170,7 @@ if (type==FREE) Dbg.wr('!');
 				}
 			}
 			if (i==CNT) {
-if (type==FREE) Dbg.wr('!');
+if (type==FREE) UdpIpDbg.wr('!');
 				return null;
 			}
 			packets[i].status = newType;
@@ -184,10 +184,10 @@ if (type==FREE) Dbg.wr('!');
 /**
 *	Request a packet of a given type and source from the pool and set new type.
 */
-	public static Packet getPacket(LinkLayer s, int type, int newType) {
+	public static UdpIpPacket getPacket(UdpIpLinkLayer s, int type, int newType) {
 
 		int i;
-		Packet p;
+		UdpIpPacket p;
 
 		if (!initOk) {
 			init();
@@ -220,7 +220,7 @@ if (type==FREE) Dbg.wr('!');
 		return status;
 	}
 
-	public LinkLayer getLinkLayer() {
+	public UdpIpLinkLayer getLinkLayer() {
 		return interf;
 	}
 }

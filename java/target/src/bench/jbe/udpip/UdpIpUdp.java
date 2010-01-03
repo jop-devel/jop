@@ -48,7 +48,7 @@
  *
  */
 
-package jbe.ejip;
+package jbe.udpip;
 
 /*
 *   Changelog:
@@ -67,7 +67,7 @@ package jbe.ejip;
 *	UDP functions.
 */
 
-public class Udp {
+public class UdpIpUdp {
 
 	public static final int PROTOCOL = 17;
 
@@ -77,7 +77,7 @@ public class Udp {
 	private static Object monitor;
 
 	public static final int MAX_HANDLER = 8;
-	private static UdpHandler[] list;
+	private static UdpIpUdpHandler[] list;
 	private static int[] ports;
 	private static int loopCnt;
 
@@ -85,7 +85,7 @@ public class Udp {
 
 		if (monitor!=null) return;
 		monitor = new Object();
-		list = new UdpHandler[MAX_HANDLER];
+		list = new UdpIpUdpHandler[MAX_HANDLER];
 		ports = new int[MAX_HANDLER];
 		loopCnt = 0;
 
@@ -95,7 +95,7 @@ public class Udp {
 	*	add a handler for UDP requests.
 	*	returns false if list is full.
 	*/
-	public static boolean addHandler(int port, UdpHandler h) {
+	public static boolean addHandler(int port, UdpIpUdpHandler h) {
 
 		if (monitor==null) init();
 
@@ -130,7 +130,7 @@ public class Udp {
 	/**
 	*	process packet and generate reply if necessary.
 	*/
-	static void process(Packet p) {
+	static void process(UdpIpPacket p) {
 
 		int i, j;
 		int[] buf = p.buf;
@@ -140,24 +140,24 @@ public class Udp {
 		port &= 0xffff;
 
 		buf[2] = (PROTOCOL<<16) + p.len - 20; 		// set protocol and udp length in iph checksum for tcp checksum
-		if (TcpIp.chkSum(buf, 2, p.len-8)!=0) {
+		if (UdpIpTcpIp.chkSum(buf, 2, p.len-8)!=0) {
 //			Dbg.intVal(p.len);
 //			Dbg.wr(" : ");
 //			for (int k = 0; k < (p.len+3)/4; k++) {
 //				Dbg.hexVal(buf[k]);
 //			}
-			p.setStatus(Packet.FREE);	// mark packet free
-Dbg.wr("wrong UDP checksum ");
+			p.setStatus(UdpIpPacket.FREE);	// mark packet free
+UdpIpDbg.wr("wrong UDP checksum ");
 			return;
 		}
 
 		if (port == 1625) {
 
 			// do the Dgb thing!
-			i = Dbg.readBuffer(buf, 7);
+			i = UdpIpDbg.readBuffer(buf, 7);
 			p.len = 28+i;
 			// generate a reply with IP src/dst exchanged
-			Udp.build(p, buf[4], buf[3], remport);
+			UdpIpUdp.build(p, buf[4], buf[3], remport);
 
 		} else {
 
@@ -169,28 +169,28 @@ Dbg.wr("wrong UDP checksum ");
 					}
 				}
 				if (i==MAX_HANDLER) {
-					p.setStatus(Packet.FREE);	// mark packet free
-Dbg.lf();
-Dbg.wr('U');
-Dbg.intVal(port);
+					p.setStatus(UdpIpPacket.FREE);	// mark packet free
+UdpIpDbg.lf();
+UdpIpDbg.wr('U');
+UdpIpDbg.intVal(port);
 				}
 			} else {
-				p.setStatus(Packet.FREE);
+				p.setStatus(UdpIpPacket.FREE);
 			}
 		}
 	}
 	
 
-	public static void getData(Packet p, StringBuffer s) {
+	public static void getData(UdpIpPacket p, StringBuffer s) {
 		
 		int[] buf = p.buf;
 		s.setLength(0);
-		for (int i = Udp.DATA*4; i < p.len; i++) { // @WCA loop<=1500
+		for (int i = UdpIpUdp.DATA*4; i < p.len; i++) { // @WCA loop<=1500
 			s.append((char) ((buf[i>>2]>>(24 - ((i&3)<<3))) & 0xff));
 		}
 	}
 	
-	public static void setData(Packet p, StringBuffer s) {
+	public static void setData(UdpIpPacket p, StringBuffer s) {
 		
 		int[] buf = p.buf;
 		int cnt = s.length();
@@ -201,29 +201,29 @@ Dbg.intVal(port);
 				k <<= 8;
 				if (i+j < cnt) k += s.charAt(i+j);
 			}
-			buf[Udp.DATA + (i>>>2)] = k;
+			buf[UdpIpUdp.DATA + (i>>>2)] = k;
 		}
 
-		p.len = Udp.DATA*4+cnt;
+		p.len = UdpIpUdp.DATA*4+cnt;
 	}
 	/**
 	 * Generate a reply with IP src/dst exchanged.
 	 * @param p
 	 */
-	public static void reply(Packet p) {
+	public static void reply(UdpIpPacket p) {
 		
 		int[] buf = p.buf;
-		Udp.build(p, buf[4], buf[3], buf[HEAD]>>>16);
+		UdpIpUdp.build(p, buf[4], buf[3], buf[HEAD]>>>16);
 	}
 
 	/**
 	*	Get source IP from interface and build IP/UDP header.
 	*/
-	public static void build(Packet p, int dstIp, int port) {
+	public static void build(UdpIpPacket p, int dstIp, int port) {
 
 		int srcIp = p.interf.getIpAddress();
 		if (srcIp==0) {						// interface is down
-			p.setStatus(Packet.FREE);		// mark packet free
+			p.setStatus(UdpIpPacket.FREE);		// mark packet free
 		} else {
 			build(p, srcIp, dstIp, port);
 		}
@@ -232,7 +232,7 @@ Dbg.intVal(port);
 	/**
 	*	Fill UDP and IP header and mark packet ready to send.
 	*/
-	public static void build(Packet p, int srcIp, int dstIp, int port) {
+	public static void build(UdpIpPacket p, int srcIp, int dstIp, int port) {
 
 		int i;
 		int[] buf = p.buf;
@@ -246,7 +246,7 @@ Dbg.intVal(port);
 		// IP header
 		// TODO unique id for sent packet
 		buf[0] = 0x45000000 + p.len;		// ip length	(header without options)
-		buf[1] = TcpIp.getId();				// identification, no fragmentation
+		buf[1] = UdpIpTcpIp.getId();				// identification, no fragmentation
 		buf[3] = srcIp;
 		buf[4] = dstIp;
 
@@ -256,13 +256,13 @@ Dbg.intVal(port);
 		// Fill in UDP header
 		buf[HEAD+1] = (p.len-20)<<16;
 		buf[2] = (PROTOCOL<<16) + p.len - 20; 		// set protocol and udp length in iph checksum for tcp checksum
-		i = TcpIp.chkSum(buf, 2, p.len-8);
+		i = UdpIpTcpIp.chkSum(buf, 2, p.len-8);
 		if (i==0) i = 0xffff;
 		buf[HEAD+1] |= i;
 
 		// for UDP checksum used field of IP header
 		buf[2] = (0x20<<24) + (PROTOCOL<<16);	// ttl, protocol, clear checksum
-		buf[2] |= TcpIp.chkSum(buf, 0, 20);
+		buf[2] |= UdpIpTcpIp.chkSum(buf, 0, 20);
 
 		// a VERY dummy arp/routing!
 		// should this be in the cs8900 ?
@@ -273,6 +273,6 @@ Dbg.intVal(port);
 		p.llh[1] = p.llh[4];
 		p.llh[2] = p.llh[5];
 		p.llh[6] = 0x0800;
-		p.setStatus(Packet.SND);	// mark packet ready to send
+		p.setStatus(UdpIpPacket.SND);	// mark packet ready to send
 	}
 }

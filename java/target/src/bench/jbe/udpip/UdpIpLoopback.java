@@ -48,73 +48,94 @@
  *
  */
 
-package jbe.ejip;
+package jbe.udpip;
 
 /**
-*	Start device driver threads and poll for packets.
+*	Loopback.java
+*
+*	Loopback link layer driver.
 */
 
-public class Net {
+/**
+*	Loopback driver.
+*/
 
-	public static int[] eth;				// own ethernet address
-	public static int ip;					// own ip address
+public class UdpIpLoopback extends UdpIpLinkLayer {
+
+	private static final int MAX_BUF = 1500;		// or should we use 1006
+
+/**
+*	ip address.
+*/
+	private static int ip;
 
 /**
 *	The one and only reference to this object.
 */
-	private static Net single;
-
+	private static UdpIpLoopback single;
+	
 /**
-*	private because it's a singleton Thread.
+*	private constructor. The singleton object is created in init().
 */
-	private Net() {
+	private UdpIpLoopback() {
 	}
 
 /**
-*	Allocate buffer and create thread.
+*	allocate buffer, start serial buffer and slip Thread.
 */
-	public static Net init() {
+	public static UdpIpLinkLayer init() {
 
-		if (single != null) return single;			// allready called init()
+		ip = (127<<24) + (0<<16) + (0<<8) + 1;
 
-		eth = new int[6];
-		eth[0] = 0x00;
-		eth[1] = 0xe0;
-		eth[2] = 0x98;
-		eth[3] = 0x33;
-		eth[4] = 0xb0;
-		eth[5] = 0xf7;		// this is eth card for chello
-		eth[5] = 0xf8;
-		ip = (192<<24) + (168<<16) + (0<<8) + 123;
-		// ip = (192<<24) + (168<<16) + (0<<8) + 4;
+		if (single != null) return single;	// allready called init()
 
-		Udp.init();
-		Packet.init();
-		TcpIp.init();
-
-		//
-		//	start my own thread
-		//
-		single = new Net();
-		
+		single = new UdpIpLoopback();
 		return single;
 	}
 
+	public int getIpAddress() {
+		return ip;
+	}
 
+	/**
+	*	Set connection strings and connect.
+	*/
+	public void startConnection(StringBuffer dialstr, StringBuffer connect, StringBuffer user, StringBuffer passwd) {
+		// useless for loopback driver
+	}
+	/**
+	*	Forces the connection to be new established.
+	*	On Slip ignored.
+	*/
+	public void reconnect() {
+	}
+	static int timer;
+	
 /**
-*	Look for received packets and call TcpIp.
-*	Mark them to be sent if returned with len!=0 from TcpIp layer.
+*	main loop.
 */
 	public void loop() {
 
-		Packet p;
+		UdpIpPacket p;
 
-		// is a received packet in the pool?
-		p = Packet.getPacket(Packet.RCV, Packet.ALLOC);
-		if (p!=null) {					// got one received Packet from pool
-			TcpIp.receive(p);
-		} else {
-			Udp.loop();
+		//
+		// get a ready to send packet with source from this driver.
+		//
+		p = UdpIpPacket.getPacket(single, UdpIpPacket.SND, UdpIpPacket.ALLOC);
+		if (p!=null) {
+			//
+			// and simple mark it as received packet.
+			//
+			p.setStatus(UdpIpPacket.RCV);		// inform upper layer
 		}
 	}
+
+/* (non-Javadoc)
+ * @see ejip.LinkLayer#getConnCount()
+ */
+public int getConnCount() {
+	return 0;
+}
+
+
 }

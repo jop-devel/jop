@@ -18,10 +18,10 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-package jbe.ejip;
+package jbe.udpip;
 
 
-public class Dbg {
+public class UdpIpDbg {
 
 	/**
 	 * @param c

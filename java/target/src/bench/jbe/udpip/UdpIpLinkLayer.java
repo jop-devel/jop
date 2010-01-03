@@ -48,26 +48,28 @@
  *
  */
 
-package jbe.ejip;
+package jbe.udpip;
 
 /**
-*	UdpHandler.java
+*	LinkLayer.java
 *
-*	Handler for UDP request (server)
+*	communicate with jopbb via serial line.
 */
+
 
 
 /**
-*	UdpHandler.
+*	LinkLayer driver.
 */
 
-public abstract class UdpHandler {
+public abstract class UdpIpLinkLayer {
 
-/**
-*	handle one request of registered port.
-*/
-	public abstract void request(Packet p);
 
-	public void loop() {
-	}
+	public abstract int getIpAddress();
+	public abstract void startConnection(StringBuffer dialstr,
+			StringBuffer connect, StringBuffer user, StringBuffer passwd);
+	public abstract void reconnect();
+	public abstract int getConnCount();
+
+	public abstract void loop();
 }
