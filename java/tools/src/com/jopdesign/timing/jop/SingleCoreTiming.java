@@ -132,6 +132,10 @@ public class SingleCoreTiming extends JOPTimingTable {
 		Set<Integer> returnOpcodes = new HashSet<Integer>();
 		long rhidden = Integer.MAX_VALUE;
 		for(int rop : InstructionInfo.RETURN_OPCODES) {
+			if(! hasTimingInfo(rop)) {
+				System.err.println("No timing info for return opcode: "+rop);
+				continue;
+			}
 			rhidden = Math.min(rhidden, this.methodCacheHiddenAccessCycles(rop));
 			returnOpcodes.add(rop);
 		}
