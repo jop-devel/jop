@@ -138,7 +138,7 @@ public class SymbolicAddressMap {
 	}
 	
 	public BoundedSet<SymbolicAddress> getStack(int index) {
-		if(this == TOP) throw new AssertionError("getStack() called for TOP");
+		if(this == TOP) return bsFactory.top();
 		Location stackLoc = new Location(index);
 		BoundedSet<SymbolicAddress> val = map.get(stackLoc);
 		if(val == null) throw new AssertionError("Undefined stack loc: "+index);
@@ -146,10 +146,12 @@ public class SymbolicAddressMap {
 	}
 	
 	public BoundedSet<SymbolicAddress> getTopOfStack() {
+		if(this == TOP) return bsFactory.top();
 		return map.get(new Location(topOfStack));
 	}
 
 	public void put(Location l, BoundedSet<SymbolicAddress> bs) {
+		if(this == TOP) return;
 		if(! l.isHeapLoc() && l.stackLoc > this.topOfStack) {
 			this.topOfStack = l.stackLoc;
 		}
@@ -157,6 +159,7 @@ public class SymbolicAddressMap {
 	}
 	
 	public void putStack(int index, BoundedSet<SymbolicAddress> bs) {
+		if(this == TOP) return;
 		this.put(new Location(index), bs);
 	}
 	

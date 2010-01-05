@@ -39,7 +39,7 @@ public class BoundedSetFactory<V> {
 		public void add(V el);
 		public void addAll(BoundedSet<V> other);
 		public BoundedSet<V> join(BoundedSet<V> other);
-		public boolean isTop();
+		public boolean isSaturated();
 		/** precondition: not (isTop()) */
 		public Set<V> getSet();
 		public int getSize();
@@ -57,8 +57,12 @@ public class BoundedSetFactory<V> {
 		public BoundedSetImpl() {
 			setImpl = new HashSet<V>();
 		}
-		private BoundedSetImpl(HashSet<V> joinedSet) {
-			setImpl = joinedSet;
+		private BoundedSetImpl(HashSet<V> set) {
+			if(set.size() > limit) {
+				this.isSaturated = true;
+			} else {
+				setImpl = set;
+			}
 		}
 		public void add(V el) {
 			setImpl.add(el);
@@ -75,20 +79,21 @@ public class BoundedSetFactory<V> {
 			}
 		}
 		public BoundedSet<V> join(BoundedSet<V> other) {
+			if(this.isSaturated()) return this;
+			else if(other.isSaturated()) return other;
+			
 			HashSet<V> joinedSet = new HashSet<V>();
 			joinedSet.addAll(this.getSet());
-			if(other==null) return new BoundedSetImpl(joinedSet);
-			joinedSet.addAll(other.getSet());
-			if(joinedSet.size() >= limit) {
-				return top;
-			} else {
-				return new BoundedSetImpl(joinedSet);
-			}
+			if(other!=null) joinedSet.addAll(other.getSet());
+			BoundedSetImpl r = new BoundedSetImpl(joinedSet);
+			System.out.println(String.format("[D] %s `join` %s = %s",this,other,r));
+			return r;
+			// return top; /* Is this a good idea ?  */
 		}
 		public Set<V> getSet() {
 			return setImpl;
 		}
-		public boolean isTop() {
+		public boolean isSaturated() {
 			return this.isSaturated;
 		}
 		public int getSize() {
@@ -106,14 +111,14 @@ public class BoundedSetFactory<V> {
 			if (obj == null) return false;
 			if (getClass() != obj.getClass()) return false;
 			BoundedSetImpl other = (BoundedSetImpl) obj;
-			if(this.getSize() != other.getSize()) return false;
 			if(this.isSaturated) return other.isSaturated;
+			if(this.getSize() != other.getSize()) return false;
 			else                 return setImpl.equals(other.setImpl);
 		}
 
 		public boolean isSubset(BoundedSet<V> otherEntry) {
-			if(otherEntry.isTop()) return true;
-			else if(this.isTop())  return false;
+			if(otherEntry.isSaturated()) return true;
+			else if(this.isSaturated())  return false;
 			return otherEntry.getSet().containsAll(this.getSet());
 		}
 		@Override
