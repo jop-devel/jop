@@ -118,6 +118,7 @@ public class ObjectCache {
 		int val = 0;
 		val += test1();
 		val += test2();
+		val += test3();
 		return val;
 	}
 	/* test1: access field of one out of two static objects */
@@ -132,6 +133,24 @@ public class ObjectCache {
 	}
 	static int test2() {
 	    return obj1a.test2(obj1b,obj2a);
+	}
+	// here the number of objects accesses is unbounded [assuming unknown loop
+	// bounds] in the second part
+	static int test3() {
+        Obj1 obj1;
+        if(to > 10) {
+            obj1 = obj1a;
+        } else {
+            obj1 = obj1b;
+        }
+        int v = obj1.val;
+        Obj1 obj1a = obj1.next;
+	    for(int i = 0; i < 100; i++) { //@WCA loop = 100
+	        if(obj1.sub1.val > 0) v += obj1.sub1.val;
+	        else                  v *= obj1a.sub1.val;
+	        obj1 = obj1.next; 
+	    }
+	    return v;
 	}
 	
 }
