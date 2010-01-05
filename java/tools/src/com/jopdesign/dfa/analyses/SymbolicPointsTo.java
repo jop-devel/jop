@@ -8,8 +8,11 @@ import java.util.Map.Entry;
 
 import org.apache.bcel.Constants;
 import org.apache.bcel.classfile.LineNumberTable;
+import org.apache.bcel.generic.ARRAYLENGTH;
+import org.apache.bcel.generic.ArrayInstruction;
 import org.apache.bcel.generic.GETFIELD;
 import org.apache.bcel.generic.GETSTATIC;
+import org.apache.bcel.generic.IASTORE;
 import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.LoadInstruction;
@@ -247,7 +250,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		break;	
 
 		case Constants.ARRAYLENGTH: {	
-			// We do not consider arraylength for now
+			objects.put(stmt, input);
 			retval.put(context.callString, in.cloneFilterStack(newStackPtr));		
 		}
 		break;
@@ -314,6 +317,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		case Constants.CASTORE:
 		case Constants.SASTORE:
 		case Constants.BASTORE: {
+			objects.put(stmt, input);
 			retval.put(context.callString, in.cloneFilterStack(newStackPtr));		
 		}
 		break;
@@ -327,6 +331,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		case Constants.CALOAD:
 		case Constants.SALOAD:			
 		case Constants.BALOAD: {
+			objects.put(stmt, input);
 			retval.put(context.callString, in.cloneFilterStack(newStackPtr));		
 		}
 		break;
@@ -663,12 +668,27 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 				System.out.println(c.method+":"+sourceLine+":"+callString+": "+instr);
 				SymbolicAddressMap symAddr = r.get(callString);
 
+				String infoStr = null;
 				if(instr.getInstruction() instanceof GETFIELD) {
 					GETFIELD gfInstr = (GETFIELD) instr.getInstruction();
+					infoStr = String.format("GETFIELD %s %s %s",
+							symAddr.getTopOfStack().toString(),
+							gfInstr.getFieldName(c.constPool),
+							gfInstr.getFieldType(c.constPool));
+				} else if(instr.getInstruction() instanceof ARRAYLENGTH) {
+					infoStr = String.format("ARRAYLENGTH %s",
+							symAddr.getTopOfStack().toString());
+				} else if(instr.getInstruction() instanceof ArrayInstruction) {
+					ArrayInstruction aInstr = (ArrayInstruction) instr.getInstruction();
+					infoStr = String.format("%s %s %s[]",
+							aInstr.getName().toUpperCase(),
+							symAddr.getTopOfStack().toString(),										
+							aInstr.getType(c.constPool));
+				}
+				if(infoStr != null) {
 					String infoKey = String.format("%s:%04d:%s",c.method,sourceLine,callString);
-					String infoStr = "GETFIELD "+symAddr.getTopOfStack()+" "+gfInstr.getFieldName(c.constPool);
 					while(getFields.containsKey(infoKey)) infoKey = infoKey + "'";
-					getFields.put(infoKey,infoStr);
+					getFields.put(infoKey,infoStr);					
 				}
 				symAddr.print(System.out,2);
 			}						
