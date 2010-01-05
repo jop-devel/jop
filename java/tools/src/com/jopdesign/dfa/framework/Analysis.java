@@ -24,18 +24,30 @@ import java.util.Map;
 
 import org.apache.bcel.generic.InstructionHandle;
 
+import com.jopdesign.build.MethodInfo;
+
 public interface Analysis<K, V> {
 
 	public ContextMap<K, V>	bottom();
 	public ContextMap<K, V>	initial(InstructionHandle stmt);
-	
-	public void				initialize(String sig, Context context);
+
+	/**
+	 * Initialize the analysis
+	 * @param entry The entry method (main)
+	 * @param context The initial context
+	 */
+	public void				initialize(MethodInfo entry, Context context);
 	
 	public ContextMap<K, V> transfer(InstructionHandle stmt,
 									FlowEdge edge,
 									ContextMap<K, V> input,
 									Interpreter<K, V> interpreter,
 									Map<InstructionHandle, ContextMap<K, V>> state);
+	/**
+	 * {@code compare(s1,s2)} returns {@code true} if and only if both s1 and s2 have the same context
+	 * and s1 \subseteq s2 (s1 `join` s2 = s2)
+	 * 
+	 */
 	public boolean		 	compare(ContextMap<K, V> s1, ContextMap<K, V> s2);
 	public ContextMap<K, V> join(ContextMap<K, V> s1, ContextMap<K, V> s2);
 	

@@ -297,7 +297,7 @@ public class LoopBounds implements Analysis<CallString, Map<Location, LoopBounds
 	private Map<InstructionHandle, ContextMap<CallString, Integer>> scopes = new HashMap<InstructionHandle, ContextMap<CallString, Integer>>();
 	private Map<InstructionHandle, ContextMap<CallString, Interval[]>> sizes = new HashMap<InstructionHandle, ContextMap<CallString, Interval[]>>();
 	
-	public void initialize(String sig, Context context) {
+	public void initialize(MethodInfo sig, Context context) {
 	}
 	
 	public ContextMap<CallString, Map<Location, ValueMapping>> join(

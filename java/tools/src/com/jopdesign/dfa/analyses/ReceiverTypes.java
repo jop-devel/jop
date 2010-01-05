@@ -49,6 +49,7 @@ import org.apache.bcel.generic.StoreInstruction;
 import org.apache.bcel.generic.Type;
 
 import com.jopdesign.build.ClassInfo;
+import com.jopdesign.build.MethodInfo;
 import com.jopdesign.dfa.framework.Analysis;
 import com.jopdesign.dfa.framework.Context;
 import com.jopdesign.dfa.framework.ContextMap;
@@ -115,7 +116,8 @@ public class ReceiverTypes implements Analysis<ReceiverTypes.TypeMapping, Receiv
 		return init;
 	}
 
-	public void initialize(String sig, Context context) {
+	public void initialize(MethodInfo mi, Context context) {
+		String sig = mi.getFQMethodName();
 		threads.put(sig, new ContextMap<TypeMapping, TypeMapping>(context, new HashMap<TypeMapping, TypeMapping>()));
 	}
 

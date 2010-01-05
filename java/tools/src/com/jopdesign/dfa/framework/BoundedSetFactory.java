@@ -1,0 +1,127 @@
+package com.jopdesign.dfa.framework;
+
+import java.util.HashSet;
+import java.util.Set;
+
+import com.jopdesign.dfa.analyses.SymbolicAddress;
+
+/** 
+ * Factory for sets with a maximum size N.
+ * For every bound N, there is one factory, and one top element.
+ * 
+ * @author Benedikt Huber <benedikt.huber@gmail.com>
+ */
+
+public class BoundedSetFactory<V> {
+	private int limit;
+	private BoundedSet<V> top;
+
+	public BoundedSetFactory(int limit) {
+		this.limit = limit;
+		BoundedSetImpl topset = new BoundedSetImpl();
+		topset.isSaturated = true;
+		this.top = topset;
+	}
+
+	public BoundedSet<V> empty() {
+		return new BoundedSetImpl();
+	}
+	public BoundedSet<V> singleton(V el) {
+		BoundedSetImpl bs = new BoundedSetImpl();
+		bs.add(el);
+		return bs;
+	}
+	public BoundedSet<V> top() {
+		return top;
+	}
+	
+	public static interface BoundedSet<V>  {
+		public void add(V el);
+		public void addAll(BoundedSet<V> other);
+		public BoundedSet<V> join(BoundedSet<V> other);
+		public boolean isTop();
+		/** precondition: not (isTop()) */
+		public Set<V> getSet();
+		public int getSize();
+		public boolean isSubset(BoundedSet<V> otherEntry);
+	}
+	
+	/** 
+	 * Implementation for sets with a maximum size N.
+	 * 
+	 * @author Benedikt Huber <benedikt.huber@gmail.com>
+	 */
+	public class BoundedSetImpl implements BoundedSet<V> {
+		private Set<V> setImpl;
+		private boolean isSaturated;
+		public BoundedSetImpl() {
+			setImpl = new HashSet<V>();
+		}
+		private BoundedSetImpl(HashSet<V> joinedSet) {
+			setImpl = joinedSet;
+		}
+		public void add(V el) {
+			setImpl.add(el);
+			if(setImpl.size()  >= limit) {
+				this.isSaturated = true;
+				this.setImpl = null;
+			}			
+		}
+		public void addAll(BoundedSet<V> other) {
+			setImpl.addAll(other.getSet());
+			if(setImpl.size()  >= limit) {
+				this.isSaturated = true;
+				this.setImpl = null;
+			}
+		}
+		public BoundedSet<V> join(BoundedSet<V> other) {
+			HashSet<V> joinedSet = new HashSet<V>();
+			joinedSet.addAll(this.getSet());
+			if(other==null) return new BoundedSetImpl(joinedSet);
+			joinedSet.addAll(other.getSet());
+			if(joinedSet.size() >= limit) {
+				return top;
+			} else {
+				return new BoundedSetImpl(joinedSet);
+			}
+		}
+		public Set<V> getSet() {
+			return setImpl;
+		}
+		public boolean isTop() {
+			return this.isSaturated;
+		}
+		public int getSize() {
+			if(isSaturated) return limit;
+			else return setImpl.size();
+		}
+		@Override
+		public int hashCode() {
+			if(isSaturated) return 1;
+			else            return 2 + setImpl.hashCode();
+		}
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj) return true;
+			if (obj == null) return false;
+			if (getClass() != obj.getClass()) return false;
+			BoundedSetImpl other = (BoundedSetImpl) obj;
+			if(this.getSize() != other.getSize()) return false;
+			if(this.isSaturated) return other.isSaturated;
+			else                 return setImpl.equals(other.setImpl);
+		}
+
+		public boolean isSubset(BoundedSet<V> otherEntry) {
+			if(otherEntry.isTop()) return true;
+			else if(this.isTop())  return false;
+			return otherEntry.getSet().containsAll(this.getSet());
+		}
+		@Override
+		public String toString() {
+			if(this.isSaturated) return "BoundedSet.TOP";
+			return this.setImpl.toString();
+		}
+	}
+
+
+}
