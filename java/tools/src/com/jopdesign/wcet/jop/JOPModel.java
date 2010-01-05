@@ -150,7 +150,6 @@ public class JOPModel implements ProcessorModel {
 		return cache.getInvokeReturnMissCost(this, invoker, invokee);
 	}
 
-	@Override
 	public long getMethodCacheMissPenalty(int words, boolean loadOnInvoke) {
 		return this.timing.getMethodCacheMissPenalty(words, loadOnInvoke);
 	}
