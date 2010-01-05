@@ -12,7 +12,6 @@ import org.apache.bcel.generic.ARRAYLENGTH;
 import org.apache.bcel.generic.ArrayInstruction;
 import org.apache.bcel.generic.GETFIELD;
 import org.apache.bcel.generic.GETSTATIC;
-import org.apache.bcel.generic.IASTORE;
 import org.apache.bcel.generic.Instruction;
 import org.apache.bcel.generic.InstructionHandle;
 import org.apache.bcel.generic.LoadInstruction;
@@ -275,10 +274,10 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			if(instr.getFieldType(context.constPool) instanceof ReferenceType) {
 				BoundedSet<SymbolicAddress> objectMapping = in.getStack(context.stackPtr-1);
 				BoundedSet<SymbolicAddress> newMapping;
-				if(objectMapping == bsFactory.top()) {
+				if(objectMapping.isSaturated()) {
 					newMapping = bsFactory.top();
 				} else {
-					newMapping = bsFactory.empty();				
+					newMapping = bsFactory.empty();
 					for(SymbolicAddress addr: objectMapping.getSet()) {
 						newMapping.add(addr.access(instr.getFieldName(context.constPool)));
 					}
@@ -533,7 +532,10 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		// DEBUGGING
 		if(DEBUG_PRINT) {
 			System.out.println("[D] "+context+" / "+stmt);
-			System.out.println("    Stackptr: "+context.stackPtr + " -> "+newStackPtr);
+			System.out.println("  Stackptr: "+context.stackPtr + " -> "+newStackPtr);
+			System.out.println("  Before: ");
+			input.get(context.callString).print(System.out, 4);		
+			System.out.println("  After: ");
 			retval.get(context.callString).print(System.out, 4);			
 		}
 		
