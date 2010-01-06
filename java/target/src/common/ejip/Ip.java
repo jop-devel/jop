@@ -92,22 +92,31 @@ public class Ip {
 		int i;
 		int sum = 0;
 		int max = (buf.length+3)>>2;
+		// that's VERY conservative!
+		int ejipMax = cnt;
 		cnt = (cnt + 3) >> 2; // word count
 // the following has a bug that shows up in the
-// simple Html server
+// simple Html server, but works with the DFA loop bound analysis
+// that one was used for the WCET journal paper
 //		for (int j=0; j<cnt && j<max; ++j) {
-//			i = buf[off];
-//			sum += i & 0xffff;
-//			sum += i >>> 16;
-//			++off;
-//		}
-		while (cnt != 0) {
+
+// this one works, but not with DFA
+		for (int j=0; j<cnt; ++j) {
+// ejipMax is working, but DFA does not like it :-(
+//		for (int j=0; j<cnt && j<ejipMax; ++j) {
 			i = buf[off];
 			sum += i & 0xffff;
 			sum += i >>> 16;
 			++off;
-			--cnt;
 		}
+// that's the original ejip code
+//		while (cnt != 0) {
+//			i = buf[off];
+//			sum += i & 0xffff;
+//			sum += i >>> 16;
+//			++off;
+//			--cnt;
+//		}
 	
 		while ((sum >> 16) != 0) // @WCA loop<=2
 			sum = (sum & 0xffff) + (sum >> 16);
