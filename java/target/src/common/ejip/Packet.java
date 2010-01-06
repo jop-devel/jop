@@ -53,23 +53,7 @@ public class Packet {
 	public int len;
 	/** Mark as TCP packet on the fly. Don't free it in the link layer. */
 	public boolean isTcpOnFly;
-	
-	
-	/** Current status of the packet. */
-	private int status;
-//	/** The packet is free to use. */
-//	public final static int FREE = 0;
-//	/** Allocated and either under interpretation or under construction. */
-//	public final static int ALLOC = 1;
-//	/** A datagram packet ready to be sent by the link layer. */
-//	public final static int SND_DGRAM = 2;
-//	/** Received packet ready to be processed by the network stack. */
-//	public final static int RCV = 3;
-//	/** A TCP packet ready to be sent. This will go to TCP_ONFLY after sending. */
-//	public final static int SND_TCP = 4;
-//	/** A sent and not acked TCP packet. Can be resent after a timeout. */
-//	public final static int TCP_ONFLY = 5;
-	
+		
 	/**
 	 * Create a packet with maximum length. 
 	 */
@@ -77,15 +61,9 @@ public class Packet {
 		llh = new int[MAXLLH];
 		buf = new int[(pktSize+3)>>2]; // DFA likes shift, but not division
 		len = 0;
-		status = 0;
 		interf = null;
 	}
 
-
-
-	public int getStatus() {
-		return status;
-	}
 
 	public LinkLayer getLinkLayer() {
 		return interf;

@@ -68,6 +68,11 @@ public class TcpConnection {
 	 * decremented and retransmit on 0
 	 */
 	int timeout;
+	
+	/**
+	 * Retransmission counter.
+	 */
+	int retryCnt;
 
 	/**
 	 * We shut down the connection after being idle for too long.
@@ -77,7 +82,7 @@ public class TcpConnection {
 	/**
 	 * Maximum number of active TCP connections
 	 */
-	final static int CNT = 100;
+	final static int CNT = 10;
 	static TcpConnection[] connections;
 	
 	private static Object mutex = new Object();
@@ -177,12 +182,19 @@ public class TcpConnection {
 	}
 
 	/**
-	 * Close the connection and return it to the pool.
+	 * Close the connection and return any outstanding packet to the pool.
 	 *
-	 * TODO: outstanding packet shall be returned to the free pool.
 	 */
-	public void close() {
+	public void close(Ejip ejip) {
+
 		synchronized (mutex) {
+			if (outStanding != null) {
+				Packet os = outStanding;
+				// recycle the outstanding packet and reset isTcpOnFly
+				outStanding = null;
+				os.isTcpOnFly = false;
+				ejip.returnPacket(os);
+			}
 			state = Tcp.FREE;
 			outStanding = null;
 		}

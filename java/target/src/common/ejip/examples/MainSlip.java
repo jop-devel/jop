@@ -73,6 +73,9 @@ public class MainSlip {
 		ser = new Serial(Const.IO_UART_BG_MODEM_BASE);
 		int ip = Ejip.makeIp(192, 168, 1, 2);
 		ipLink = new Slip(ejip, ser, ip);
+		// register the simple HTTP server
+		net.getTcp().addHandler(80, new HtmlBaseio());
+
 		
 		forever();
 	}

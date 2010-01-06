@@ -32,7 +32,6 @@ package ejip;
  * TODO list:
  *		TcpConnection: outstanding packet shall be returned to the free pool.
  *			remove static array
- *		Make HTML a TCP handler and get rid of TcpIp.java
  *		Merge Net and Ejip -> remove Net reference in OEBB Logging and other apps
  *		There are still some statics around
  *		Merge TFTP implementations and test it with OEBB
@@ -42,7 +41,7 @@ public class Ejip {
 	/**
 	 * Enable the experimental TCP implementation
 	 */
-	public static final boolean TCP_ENABLED = false;
+	public static final boolean TCP_ENABLED = true;
 
 	// default values
 	private final static int MAX = 1500;		// maximum Packet length in bytes

@@ -46,7 +46,7 @@ public class Ip {
 	}
 
 	/**
-	 * very simple generation of IP header. just swap source and destination.
+	 * Very simple generation of IP header. Just swap source and destination.
 	 * Still used by ICMP and TCP.
 	 */
 	void doIp(Packet p, int prot) {
@@ -91,19 +91,10 @@ public class Ip {
 	
 		int i;
 		int sum = 0;
-		int max = (buf.length+3)>>2;
-		// that's VERY conservative!
-		int ejipMax = cnt;
+		int max = buf.length;
 		cnt = (cnt + 3) >> 2; // word count
-// the following has a bug that shows up in the
-// simple Html server, but works with the DFA loop bound analysis
-// that one was used for the WCET journal paper
-//		for (int j=0; j<cnt && j<max; ++j) {
-
-// this one works, but not with DFA
-		for (int j=0; j<cnt; ++j) {
-// ejipMax is working, but DFA does not like it :-(
-//		for (int j=0; j<cnt && j<ejipMax; ++j) {
+		// add max condition for DFA loop bound analysis
+		for (int j=0; j<cnt && j<max; ++j) {
 			i = buf[off];
 			sum += i & 0xffff;
 			sum += i >>> 16;

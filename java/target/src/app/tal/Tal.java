@@ -64,6 +64,7 @@ import ejip.Ejip;
 import ejip.Html;
 import ejip.LinkLayer;
 import ejip.Net;
+import ejip.Tftp;
 
 /**
 *	TAL Main.
@@ -106,6 +107,8 @@ evn = true;
 		//
 		Ejip ejip = new Ejip();
 		net = new Net(ejip);
+		net.getUdp().addHandler(Tftp.PORT, new Tftp(ejip));
+
 		int[] outReg = new int[1];
 		outReg[0] = 0;
 		Html.setOutValArray(outReg);

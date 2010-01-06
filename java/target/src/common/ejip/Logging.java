@@ -55,6 +55,10 @@ public class Logging {
 	static void wr(String string) {
 		System.out.print(string);
 	}
+	
+	static void wr(StringBuffer sb) {
+		System.out.println(sb);
+	}
 
 	public static void intVal(int val) {
 

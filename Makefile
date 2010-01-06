@@ -638,6 +638,8 @@ wcet_help:
 # WCET_OPTIONS: Additional WCET options (run 'make wcet_help')
 #
 # Profiling: add -Xss16M -agentlib:hprof=cpu=samples,interval=2,depth=8 to java arguments
+# On Mac don't forget:
+# export DYLD_FALLBACK_LIBRARY_PATH=.
 WCET_DFA?=no
 WCET_UPPAAL?=no
 WCET_VERIFYTA?=verifyta	 # only needed if WCET_UPPAAL=yes
@@ -646,9 +648,6 @@ wcet:
 	java $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.build.WcetPreprocess \
 		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/tmp $(MAIN_CLASS)
 	-mkdir -p $(TARGET)/wcet
-	-mkdir $(TARGET)/tmp
-	java $(DEBUG_JOPIZER) $(TOOLS_CP) com.jopdesign.build.WcetPreprocess \
-		-cp $(TARGET)/dist/lib/classes.zip -o $(TARGET)/tmp $(MAIN_CLASS)
 	java -Xss16M -Xmx512M $(JAVA_OPT) \
 	  $(TOOLS_CP) com.jopdesign.wcet.WCETAnalysis \
 		-cp $(TARGET)/tmp -sp $(TARGET_SOURCE) \
