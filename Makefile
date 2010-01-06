@@ -627,6 +627,12 @@ wca_rup:
 # WCET help
 wcet_help:
 	java $(TOOLS_CP) com.jopdesign.wcet.WCETAnalysis -help
+
+# set library path to current directory for the Mac
+DYLD_FALLBACK_LIBRARY_PATH:=.:$(DYLD_FALLBACK_LIBRARY_PATH)
+export DYLD_FALLBACK_LIBRARY_PATH 
+
+
 # WCET analyzer
 # make before     : java_app
 # make after (dot): (cd java/target/wcet/<project-name>; make)
