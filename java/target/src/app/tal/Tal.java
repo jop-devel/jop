@@ -61,7 +61,7 @@ import com.jopdesign.sys.Const;
 
 import ejip.CS8900;
 import ejip.Ejip;
-import ejip.Html;
+import ejip.HtmlBaseio;
 import ejip.LinkLayer;
 import ejip.Net;
 import ejip.Tftp;
@@ -111,7 +111,11 @@ evn = true;
 
 		int[] outReg = new int[1];
 		outReg[0] = 0;
-		Html.setOutValArray(outReg);
+		HtmlBaseio http = new HtmlBaseio();
+		// register the simple HTTP server
+		net.getTcp().addHandler(80, http);
+
+		http.setOutValArray(outReg);
 		// don't use CS8900 when simulating on PC
 		if (!simpc) {
 			int[] eth = {0x00, 0xe0, 0x98, 0x33, 0xb0, 0xf8};
