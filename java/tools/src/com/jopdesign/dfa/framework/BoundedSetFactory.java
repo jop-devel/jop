@@ -65,30 +65,25 @@ public class BoundedSetFactory<V> {
 			}
 		}
 		public void add(V el) {
+			if(this.isSaturated()) return; 
 			setImpl.add(el);
-			if(setImpl.size()  >= limit) {
-				this.isSaturated = true;
-				this.setImpl = null;
-			}			
+			if(setImpl.size()  > limit) { setTop(); }
 		}
 		public void addAll(BoundedSet<V> other) {
+			if(this.isSaturated()) return; 
+			if(other.isSaturated()) { setTop(); return; }
 			setImpl.addAll(other.getSet());
-			if(setImpl.size()  >= limit) {
-				this.isSaturated = true;
-				this.setImpl = null;
-			}
+			if(setImpl.size()  > limit) { setTop(); }
 		}
 		public BoundedSet<V> join(BoundedSet<V> other) {
 			if(this.isSaturated()) return this;
-			else if(other.isSaturated()) return other;
+			else if(other != null && other.isSaturated()) return other;
 			
 			HashSet<V> joinedSet = new HashSet<V>();
 			joinedSet.addAll(this.getSet());
 			if(other!=null) joinedSet.addAll(other.getSet());
 			BoundedSetImpl r = new BoundedSetImpl(joinedSet);
-			System.out.println(String.format("[D] %s `join` %s = %s",this,other,r));
 			return r;
-			// return top; /* Is this a good idea ?  */
 		}
 		public Set<V> getSet() {
 			return setImpl;
@@ -96,8 +91,12 @@ public class BoundedSetFactory<V> {
 		public boolean isSaturated() {
 			return this.isSaturated;
 		}
+		private void setTop() {
+			this.isSaturated = true;
+			this.setImpl = null;
+		}
 		public int getSize() {
-			if(isSaturated) return limit;
+			if(isSaturated) return limit+1;
 			else return setImpl.size();
 		}
 		@Override

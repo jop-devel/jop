@@ -33,7 +33,7 @@ public class ObjectCache {
 	static int ts, te, to;
     static int cs, ce;
     /* classes */
-    public static class Obj1 {
+    public abstract static class Obj1 {
         /* self references */
         public Obj1 next;
         public Obj1[] preds;
@@ -46,21 +46,34 @@ public class ObjectCache {
         public int[] vals;
         public long lval;
         public long[] lvals;
-	    /* test2: access instance fields, static fields and locals */
+        public static Obj1 create() {
+            if(to > 10) return new Obj1a();
+            else        return new Obj1b();
+        }
 	    public int test2(Obj1 other, Obj2 sub) {
-	        int v1 = this.next.val;  // arg[0].next . val
-	        int v2 = other.next.val; // arg[1].next . val
-	        Obj2 ssub = selectSub2(other,sub); // ssub = {$0.sub1,$0.next.next.sub1,
-	                                           //         $1.sub1, $1.next.next.sub1,
-	                                           //         $2 }
-	        int v3 = ssub.val;       // ssub.val
+	        int v1 = this.next.val;  // GF: $this, $this.next
+	        int v2 = other.next.val; // GF: $arg0, $arg0.next
+	        Obj2 ssub = this.selectSub2(other,sub); // ssub = {$0.sub1,$0.next.next.sub1,  // Obj1a
+	                                                //         $1.sub1, $1.next.next.sub1, // Obj1b
+	                                                //         $2 }                        // both
+	        int v3 = ssub.val;       // GF: ssub.val
 	        return v1+v2+v3;
 	    }
-        private Obj2 selectSub2(Obj1 other, Obj2 def) {
+	    protected abstract Obj2 selectSub2(Obj1 other, Obj2 def);
+    }
+    public static class Obj1a extends Obj1 {
+        protected Obj2 selectSub2(Obj1 other, Obj2 def) {
             Obj2 selected;
             if(te > 5) selected = this.sub1;
             else if(te > 7) selected = this.next.next.sub1;
-            else if(te > 10) selected = other.sub1;
+            else             selected = def;
+            return selected;
+        }
+    }
+    public static class Obj1b extends Obj1 {
+        protected Obj2 selectSub2(Obj1 other, Obj2 def) {
+            Obj2 selected;
+            if(te > 10)      selected = other.sub1;
             else if(te > 12) selected = other.next.next.sub1;
             else             selected = def;
             return selected;
@@ -89,7 +102,7 @@ public class ObjectCache {
     static Obj3[] obj3s;
     public static void init()
     {
-        obj1a = new Obj1(); obj1b = new Obj1();
+        obj1a = Obj1.create(); obj1b = Obj1.create();
         obj2a = new Obj2(); obj2b = new Obj2();
         obj3a = new Obj3(); obj3b = new Obj3();
         obj1a.sub1 = obj2a; obj1b.sub1 = obj2a;
@@ -131,9 +144,11 @@ public class ObjectCache {
 	    }
 	    return obj1.sub1.val + obj1.sub2.val;
 	}
+
 	static int test2() {
 	    return obj1a.test2(obj1b,obj2a);
 	}
+
 	// here the number of objects accesses is unbounded [assuming unknown loop
 	// bounds] in the second part
 	static int test3() {
@@ -143,14 +158,20 @@ public class ObjectCache {
         } else {
             obj1 = obj1b;
         }
-        int v = obj1.val;
-        Obj1 obj1a = obj1.next;
+        int v = obj1.val;            // {obj1a,ojb1b}.val
+        Obj1 obj1a = obj1.next;      // {obj1a,obj1b}.next
 	    for(int i = 0; i < 100; i++) { //@WCA loop = 100
-	        if(obj1.sub1.val > 0) v += obj1.sub1.val;
-	        else                  v *= obj1a.sub1.val;
-	        obj1 = obj1.next; 
+	        if(obj1.sub1.val > 0) v += obj1.sub1.val;  // top * 4
+	        else                  v *= obj1a.sub1.val; // obj1a, obj1a.sub1
+	        obj1 = obj1.next;                          // top
 	    }
 	    return v;
+	}
+	// Enhanced bug test case from wolfgang (5.1.2010)
+	static int test4() {
+	    int v = obj1a.next.val;         // GF: obj1a, obj1a.next
+		if(v == to) obj1a.next = obj1b; // heap modification -> TOP		
+		return v+obj1a.next.val;        // GF: top, top
 	}
 	
 }

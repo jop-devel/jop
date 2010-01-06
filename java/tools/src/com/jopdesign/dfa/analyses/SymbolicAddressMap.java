@@ -19,13 +19,26 @@ import com.jopdesign.dfa.framework.BoundedSetFactory.BoundedSet;
  *
  */
 public class SymbolicAddressMap {
+	// Attention:
+	// a.isTop() and b.isTop() does not imply a==b, but top() always returns _top
 	@SuppressWarnings("unchecked")
-	public static SymbolicAddressMap TOP = new SymbolicAddressMap(new BoundedSetFactory(0), (HashMap)null);
+	private static SymbolicAddressMap _top =
+		new SymbolicAddressMap(new BoundedSetFactory(0), (HashMap)null);
 
-	/* Invariant: obj.map == null ==> obj == BOTTOM || obj == TOP */
-	private Map<Location, BoundedSet<SymbolicAddress>> map;
 	private BoundedSetFactory<SymbolicAddress> bsFactory;
 
+	/* Invariant: obj.map == null iff obj == TOP */
+	private Map<Location, BoundedSet<SymbolicAddress>> map;
+
+	public boolean isTop()
+	{
+		return(this.map == null);
+	}
+	private void setTop()
+	{
+		this.map = null;
+	}
+	
 	private int topOfStack;
 
 	/** empty constructor */
@@ -38,15 +51,21 @@ public class SymbolicAddressMap {
 		this(a.bsFactory, new HashMap<Location,BoundedSet<SymbolicAddress>>(a.map));
 		this.topOfStack = a.topOfStack;
 	}
+	/** top element */
+	public static SymbolicAddressMap top() {
+		return _top;
+	}
+	
 	/* full, private constructor */
 	private SymbolicAddressMap(BoundedSetFactory<SymbolicAddress> bsFactory,
 							   HashMap<Location,BoundedSet<SymbolicAddress>> initMap) {
 		this.bsFactory = bsFactory;
 		this.map = initMap;
 	}
+
 	@Override
 	public int hashCode() {
-		if(this == TOP) return 1;
+		if(isTop()) return 1;
 		else return 2 + map.hashCode();
 	}
 	@Override
@@ -55,14 +74,15 @@ public class SymbolicAddressMap {
 		if (obj == null) return false;
 		if (getClass() != obj.getClass()) return false;
 		SymbolicAddressMap other = (SymbolicAddressMap) obj;
-		if (map == null || other.map == null) return false; // TOP and BOTTOM use object equality
+		if(this.isTop() || other.isTop()) return (this.isTop() && other.isTop());
 		return map.equals(other.map);
 	}
+
 	public boolean isSubset(SymbolicAddressMap other) {
-		if(other == TOP)       return true;
-		else if(this == TOP)   return false;
-		else if(other == null) return false;
-		/* Neither is bottom or top -> pointwise subseteq */
+		if(other.isTop())       return true;
+		else if(this.isTop())   return false;
+		else if(other == null)  return false;
+		/* Neither is \bot or \top -> pointwise subseteq */
 		for(Location l : this.map.keySet()) {
 			BoundedSet<SymbolicAddress> thisEntry = map.get(l);
 			BoundedSet<SymbolicAddress> otherEntry = other.map.get(l);
@@ -71,15 +91,16 @@ public class SymbolicAddressMap {
 		}
 		return true;
 	}
+	
 	@Override
-	protected SymbolicAddressMap clone() throws CloneNotSupportedException {
-		if(this == TOP) return this;
+	protected SymbolicAddressMap clone() {
+		if(this.isTop()) return this;
 		return new SymbolicAddressMap(this);
 	}
 	
 	/** Clone address map, but only those stack variables below {@code bound} */
 	public SymbolicAddressMap cloneFilterStack(int bound) {
-		if(this == TOP) return this;
+		if(this.isTop()) return this;
 		SymbolicAddressMap copy = new SymbolicAddressMap(this.bsFactory);
 		for(Entry<Location, BoundedSet<SymbolicAddress>> entry : map.entrySet()) {
 			Location loc = entry.getKey();
@@ -93,7 +114,7 @@ public class SymbolicAddressMap {
 	/** Clone address map, but only those stack variables with index greater than or equal to
 	 *  {@code framePtr}. The stack variables are move down to the beginning of the stack. */
 	public SymbolicAddressMap cloneInvoke(int framePtr) {
-		if(this == TOP) return this;
+		if(this.isTop()) return this;
 		SymbolicAddressMap copy = new SymbolicAddressMap(this.bsFactory);
 		for(Entry<Location, BoundedSet<SymbolicAddress>> entry : map.entrySet()) {
 			Location loc = entry.getKey();
@@ -109,7 +130,15 @@ public class SymbolicAddressMap {
 	/** Set stack info from other other map, upto bound.
 	 *  Used to restore stack frames when returning from a method */
 	public void addStackUpto(SymbolicAddressMap in, int bound) {
-		for(Entry<Location, BoundedSet<SymbolicAddress>> entry : map.entrySet()) {
+		if(in == null) {
+			throw new AssertionError("addStackUpto: caller map is undefined ?");
+		}
+		if(this.isTop()) return;
+		if(in.isTop()) {
+			setTop();
+			return;
+		}
+		for(Entry<Location, BoundedSet<SymbolicAddress>> entry : in.map.entrySet()) {
 			Location loc = entry.getKey();
 			if(! loc.isHeapLoc() && loc.stackLoc < bound) {
 				map.put(loc, in.getStack(loc.stackLoc));
@@ -118,27 +147,42 @@ public class SymbolicAddressMap {
 	}
 	
 	public void join(SymbolicAddressMap b) {
+		if(b == null) return;
 		joinReturned(b,0);
 	}
 	
-	/** Merge in df info from returned method */
+	/** Merge in df info from returned method. */
 	public void joinReturned(SymbolicAddressMap returned, int framePtr) {
-		if(this == TOP) return;
-
+		if(returned == null) {
+			throw new AssertionError("joinReturned: returned map is undefined ?");
+		}
+		if(this.isTop()) return;
+		else if(returned.isTop()) {
+			setTop();
+			return;
+		}
+//		System.out.println("JOIN RETURNED [returned]");
+//		returned.print(System.out, 2);
+//		System.out.println("JOIN RETURNED [before]");
+//		this.print(System.out, 2);
 		for(Entry<Location, BoundedSet<SymbolicAddress>> entry : returned.map.entrySet()) {
-			Location loc = entry.getKey();
-			BoundedSet<SymbolicAddress> currentSet = map.get(loc);
-			BoundedSet<SymbolicAddress> returnedSet = returned.map.get(loc);
-			if (loc.isHeapLoc()) {
-				put(loc, returnedSet.join(currentSet));
+			Location locReturnedFrame = entry.getKey();
+			Location locCallerFrame; 
+			if(locReturnedFrame.isHeapLoc()) {
+				locCallerFrame = locReturnedFrame;
 			} else {
-				putStack(loc.stackLoc + framePtr, returnedSet.join(currentSet));
+				locCallerFrame = new Location(locReturnedFrame.stackLoc + framePtr); 
 			}
+			BoundedSet<SymbolicAddress> callerSet = map.get(locCallerFrame);
+			BoundedSet<SymbolicAddress> returnedSet = returned.map.get(locReturnedFrame);
+			put(locCallerFrame, returnedSet.join(callerSet));
 		}		
+//		System.out.println("JOIN RETURNED [after]");
+//		this.print(System.out, 2);
 	}
 	
 	public BoundedSet<SymbolicAddress> getStack(int index) {
-		if(this == TOP) return bsFactory.top();
+		if(this.isTop()) return bsFactory.top();
 		Location stackLoc = new Location(index);
 		BoundedSet<SymbolicAddress> val = map.get(stackLoc);
 		if(val == null) throw new AssertionError("Undefined stack loc: "+index);
@@ -146,12 +190,12 @@ public class SymbolicAddressMap {
 	}
 	
 	public BoundedSet<SymbolicAddress> getTopOfStack() {
-		if(this == TOP) return bsFactory.top();
+		if(this.isTop()) return bsFactory.top();
 		return map.get(new Location(topOfStack));
 	}
 
 	public void put(Location l, BoundedSet<SymbolicAddress> bs) {
-		if(this == TOP) return;
+		if(this.isTop()) return;
 		if(! l.isHeapLoc() && l.stackLoc > this.topOfStack) {
 			this.topOfStack = l.stackLoc;
 		}
@@ -159,7 +203,7 @@ public class SymbolicAddressMap {
 	}
 	
 	public void putStack(int index, BoundedSet<SymbolicAddress> bs) {
-		if(this == TOP) return;
+		if(this.isTop()) return;
 		this.put(new Location(index), bs);
 	}
 	
@@ -171,7 +215,7 @@ public class SymbolicAddressMap {
 		StringBuffer indentstr = new StringBuffer();
 		for(int i = 0; i < indent; i++) indentstr.append(' ');
 		out.print(indentstr.toString());
-		if(this==TOP) {
+		if(this.isTop()) {
 			out.println("TOP"); return;
 		}
 		out.println("SymbolicAddressMap ("+map.size()+")");

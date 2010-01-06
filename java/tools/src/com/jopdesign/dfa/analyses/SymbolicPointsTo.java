@@ -88,9 +88,11 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		retval.put(l, init);
 		return retval;
 	}
+	
 	public void initialize(MethodInfo mi, Context context) {
 		entryMethod = mi;
 	}
+	
 	public ContextMap<CallString, SymbolicAddressMap> join(
 			ContextMap<CallString, SymbolicAddressMap> s1,
 			ContextMap<CallString, SymbolicAddressMap> s2) {
@@ -258,7 +260,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			PUTFIELD instr = (PUTFIELD)instruction;
 			// If PUTFIELD has object type, set result to TOP
 			if(instr.getFieldType(context.constPool) instanceof ReferenceType) {
-				retval.put(context.callString, SymbolicAddressMap.TOP);						
+				retval.put(context.callString, SymbolicAddressMap.top());						
 			} else {
 				retval.put(context.callString, in.cloneFilterStack(newStackPtr));		
 			}
@@ -293,7 +295,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 			PUTSTATIC instr = (PUTSTATIC)instruction;
 			// If PUTSTATIC has object type, set result to TOP
 			if(instr.getFieldType(context.constPool) instanceof ReferenceType) {
-				retval.put(context.callString, SymbolicAddressMap.TOP);						
+				retval.put(context.callString, SymbolicAddressMap.top());						
 			} else {
 				retval.put(context.callString, in.cloneFilterStack(newStackPtr));		
 			}
@@ -322,7 +324,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		break;
 		// changing the heap -> TOP
 		case Constants.AASTORE: {
-			retval.put(context.callString, SymbolicAddressMap.TOP);						
+			retval.put(context.callString, SymbolicAddressMap.top());						
 		}
 		break;
 			
@@ -336,7 +338,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		break;
 		// Similar to getfield, but not supported YET
 		case Constants.AALOAD: {
-			retval.put(context.callString, SymbolicAddressMap.TOP);						
+			retval.put(context.callString, SymbolicAddressMap.top());						
 		}
 		break;
 					
@@ -402,12 +404,12 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 
 		case Constants.MONITORENTER:
 			// not supported yet
-			retval.put(context.callString, SymbolicAddressMap.TOP);						
+			retval.put(context.callString, SymbolicAddressMap.top());						
 			break;
 
 		case Constants.MONITOREXIT:
 			// not supported yet
-			retval.put(context.callString, SymbolicAddressMap.TOP);						
+			retval.put(context.callString, SymbolicAddressMap.top());						
 			break;
 
 		case Constants.CHECKCAST:
@@ -421,25 +423,25 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 
 		case Constants.NEW: {
 			// not supported yet
-			retval.put(context.callString, SymbolicAddressMap.TOP);						
+			retval.put(context.callString, SymbolicAddressMap.top());						
 		}
 		break;
 			
 		case Constants.NEWARRAY: {
 			// not supported yet
-			retval.put(context.callString, SymbolicAddressMap.TOP);						
+			retval.put(context.callString, SymbolicAddressMap.top());						
 		}
 		break;
 		
 		case Constants.ANEWARRAY: {	
 			// not supported yet
-			retval.put(context.callString, SymbolicAddressMap.TOP);						
+			retval.put(context.callString, SymbolicAddressMap.top());						
 		}
 		break;
 		
 		case Constants.MULTIANEWARRAY: {
 			// not supported yet
-			retval.put(context.callString, SymbolicAddressMap.TOP);						
+			retval.put(context.callString, SymbolicAddressMap.top());						
 		}
 		break;
 
@@ -488,6 +490,7 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 		case Constants.INVOKESPECIAL: {
 			DFAAppInfo p = interpreter.getProgram();
 			ContextMap<String, String> receivers = p.getReceivers().get(stmt);
+			retval.put(context.callString, new SymbolicAddressMap(bsFactory));
 			if (receivers == null) {
 				String errMsg = context.method + ": invoke "	+ instruction.toString(context.constPool.getConstantPool()) + " unknown receivers";
 				throw new AssertionError(errMsg);
@@ -588,22 +591,24 @@ public class SymbolicPointsTo implements Analysis<CallString, SymbolicAddressMap
 					
 			InstructionHandle entry = mi.getMethodGen().getInstructionList().getStart();
 			state.put(entry, join(state.get(entry), tmpresult));
-
+			
 			// interpret method
 			Map<InstructionHandle, ContextMap<CallString, SymbolicAddressMap>> r = 
 				interpreter.interpret(c, entry, state, false);
 
-			//System.out.println(">>>>>>>>");
-			
 			SymbolicAddressMap ctxInfo = retval.get(context.callString);
 
 			// pull out relevant information from call
 			InstructionHandle exit = mi.getMethodGen().getInstructionList().getEnd();
-			if (r.get(exit) != null) {
+			if(r.get(exit) != null) {
 				SymbolicAddressMap returned = r.get(exit).get(c.callString);
 				if (returned != null) {
 					ctxInfo.joinReturned(returned, varPtr);
+				} else {
+					System.err.println("doInvoke(): No exit information for callstring ?");					
 				}
+			} else {
+				System.err.println("doInvoke(): No exit information ?");				
 			}
 
 			// add relevant information to result
