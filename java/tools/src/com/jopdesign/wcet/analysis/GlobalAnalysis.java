@@ -10,6 +10,7 @@ import com.jopdesign.wcet.ProcessorModel;
 import com.jopdesign.wcet.Project;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis.MapCostProvider;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveWCETStrategy;
+import com.jopdesign.wcet.analysis.cache.MethodCacheAnalysis;
 import com.jopdesign.wcet.frontend.SuperGraph;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.BasicBlockNode;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGEdge;
@@ -49,21 +50,32 @@ public class GlobalAnalysis {
 			throw new Exception("Global IPET: only ALWAYS_MISS and GLOBAL_ALL_FIT are supported"+
 					            " as cache approximation strategies");
 		}
+
 		String key = m.getFQMethodName() + "_global_" + cacheMode;
 		SuperGraph sg = new SuperGraph(project.getWcetAppInfo(),project.getFlowGraph(m));
 		ILPModelBuilder imb = new ILPModelBuilder(ipetConfig);
+
+		/* compute node costs */
 		Map<CFGNode, WcetCost> nodeCostMap = buildNodeCostMap(sg, cacheMode);
 		CostProvider<CFGNode> nodeWCET = new MapCostProvider<CFGNode>(nodeCostMap);
+		
 		/* create an ILP graph for all reachable methods */
 		MaxCostFlow<CFGNode, CFGEdge> maxCostFlow = imb.buildGlobalILPModel(key, sg, nodeWCET);
+		
+		/* Add constraints for cache */
 		if(cacheMode == StaticCacheApproximation.GLOBAL_ALL_FIT) {
 			addMissOnceCost(sg,maxCostFlow);
 		}
+
+		/* Return variables */
 		Map<CFGEdge, Long> flowMap = new HashMap<CFGEdge, Long>();
 		Map<DecisionVariable, Boolean> cacheMissMap = new HashMap<DecisionVariable, Boolean>();
+		
+		/* Solve */
 		double lpCost = maxCostFlow.solve(flowMap,cacheMissMap);
+
+		/* Cost extraction */
 		WcetCost cost = new WcetCost();
-		/* exact cost extraction */
 		for(Entry<CFGEdge,Long> flowEntry : flowMap.entrySet()) {
 			CFGNode target    = sg.getEdgeTarget(flowEntry.getKey());
 			WcetCost nodeCost = nodeCostMap.get(target).getFlowCost(flowEntry.getValue());
@@ -72,7 +84,8 @@ public class GlobalAnalysis {
 				throw new AssertionError("Local cache cost in global ILP ??");
 			}
 		}
-		/* decision variable map */
+
+		/* Extract decisions variables and associated cache cost */
 		MethodCache cache = project.getProcessorModel().getMethodCache();
 		for(Entry<DecisionVariable, Boolean> cacheMiss : cacheMissMap.entrySet()) {
 			if(cacheMiss.getValue()) {
@@ -80,23 +93,20 @@ public class GlobalAnalysis {
 				cost.addCacheCost(cache.missOnceCost(mi,ipetConfig.assumeMissOnceOnInvoke));
 			}
 		}
+		
+		/* Sanity Check, and Return */
 		long objValue = (long) (lpCost+0.5);
 		if(cost.getCost() != objValue) {
 			throw new AssertionError("Inconsistency: lpValue vs. extracted value: "+objValue+" / "+cost.getCost());
 		}
 		return cost;
 	}
+
 	/* add cost for missing each method once (ALL FIT) */
 	private void addMissOnceCost(SuperGraph sg, MaxCostFlow<CFGNode,CFGEdge> maxCostFlow) {
 		/* collect access sites */
-		Map<MethodInfo, Set<CFGEdge>> accessEdges =
+		Map<MethodInfo, Set<CFGEdge>> accessEdges = MethodCacheAnalysis.getAccessEdges(sg);
 			new HashMap<MethodInfo, Set<CFGEdge>>();
-		for(Entry<SuperInvokeEdge, SuperReturnEdge> invokeSite: sg.getSuperEdgePairs().entrySet()) {
-			MethodInfo invoked = invokeSite.getKey().getInvokeNode().receiverFlowGraph().getMethodInfo();
-			addToSet(accessEdges, invoked, invokeSite.getKey());
-			MethodInfo invoker = invokeSite.getKey().getInvokeNode().invokerFlowGraph().getMethodInfo();
-			addToSet(accessEdges, invoker, invokeSite.getValue());
-		}
 		MethodCache cache = project.getProcessorModel().getMethodCache();
 		/* For each  MethodInfo, create a binary decision variable */
 		for(MethodInfo mi : accessEdges.keySet()) {
@@ -111,6 +121,8 @@ public class GlobalAnalysis {
 			maxCostFlow.addDecisionCost(dVar, cache.missOnceCost(mi,ipetConfig.assumeMissOnceOnInvoke));
 		}
 	}
+	
+	
 	public static class GlobalIPETStrategy implements RecursiveWCETStrategy<AnalysisContextIpet> {
 		private IpetConfig ipetConfig;
 		public GlobalIPETStrategy(IpetConfig ipetConfig) {
@@ -156,6 +168,8 @@ public class GlobalAnalysis {
 		}
 
 	}
+	
+	
 	/**
 	 * compute execution time of basic blocks in the supergraph
 	 * @param sg the supergraph, whose vertices are considered
