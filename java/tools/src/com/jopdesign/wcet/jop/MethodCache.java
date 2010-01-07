@@ -33,6 +33,11 @@ public abstract class MethodCache {
 	public abstract boolean isLRU();
 	public abstract boolean fitsInCache(int sizeInWords);
 	public abstract int requiredNumberOfBlocks(int sizeInWords);
+	
+	public int requiredNumberOfBlocks(MethodInfo mi) {
+		return requiredNumberOfBlocks(project.getSizeInWords(mi));
+	}
+
 	/**
 	 * Compute the maximal total cache-miss penalty for <strong>invoking and executing</strong>
 	 * m.
@@ -95,7 +100,7 @@ public abstract class MethodCache {
 	public long getAllFitCacheBlocks(MethodInfo invoked) {
 		int size = 0;
 		for(MethodInfo mi : project.getCallGraph().getReachableImplementations(invoked)) {
-			size+= requiredNumberOfBlocks(project.getSizeInWords(mi));			
+			size+= requiredNumberOfBlocks(mi);			
 		}
 		return size;
 	}
