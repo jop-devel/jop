@@ -27,7 +27,7 @@
 
 package com.jopdesign.wcet;
 
-import java.util.Map.Entry;
+import java.util.Map;
 
 import lpsolve.LpSolve;
 import lpsolve.VersionInfo;
@@ -44,15 +44,18 @@ import com.jopdesign.wcet.analysis.TreeAnalysis;
 import com.jopdesign.wcet.analysis.UppaalAnalysis;
 import com.jopdesign.wcet.analysis.WcetCost;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveWCETStrategy;
+import com.jopdesign.wcet.analysis.cache.MethodCacheAnalysis;
+import com.jopdesign.wcet.analysis.cache.ObjectRefAnalysis;
 import com.jopdesign.wcet.config.Config;
 import com.jopdesign.wcet.config.Option;
+import com.jopdesign.wcet.frontend.CallGraph.CallGraphNode;
 import com.jopdesign.wcet.graphutils.MiscUtils;
+import com.jopdesign.wcet.graphutils.MiscUtils.Function2;
 import com.jopdesign.wcet.ipet.IpetConfig;
 import com.jopdesign.wcet.ipet.LpSolveWrapper;
 import com.jopdesign.wcet.ipet.IpetConfig.StaticCacheApproximation;
-import com.jopdesign.wcet.jop.ConstantCache;
 import com.jopdesign.wcet.jop.JOPConfig;
-import com.jopdesign.wcet.jop.LinkerInfo.LinkInfo;
+import com.jopdesign.wcet.jop.MethodCache;
 import com.jopdesign.wcet.report.Report;
 import com.jopdesign.wcet.report.ReportConfig;
 import com.jopdesign.wcet.uppaal.UppAalConfig;
@@ -66,6 +69,7 @@ import static com.jopdesign.wcet.ExecHelper.timeDiff;
 public class WCETAnalysis {
     private static final String CONFIG_FILE_PROP = "config";
     public static final String VERSION = "1.0.1";
+	private static final boolean TESTING_BUILD = true;
 
     public static Option<?>[][] options = {
         ProjectConfig.projectOptions,
@@ -149,7 +153,11 @@ public class WCETAnalysis {
 //		System.exit(1);
 
         //new ETMCExport(project).export(project.getOutFile("Spec_"+project.getProjectName()+".txt"));
-
+        
+        if(TESTING_BUILD) {
+            testCacheAnalysis();        	
+        }
+        
         /* Run */
         boolean succeed = false;
         // FIXME: Report generation is a BIG MESS
@@ -276,6 +284,38 @@ public class WCETAnalysis {
         return succeed;
     }
 
+	private void testCacheAnalysis() {
+		// Method Cache
+		LpSolveWrapper.resetSolverTime();
+		Map<CallGraphNode, Long> blockUsage = new MethodCacheAnalysis(project).getBlockUsage();
+		System.err.println("Total solver time (Method Cache Analysis) : "+LpSolveWrapper.getSolverTime());        
+		MiscUtils.printMap(System.out, blockUsage, new Function2<CallGraphNode, Long,String>() {
+			public String apply(CallGraphNode v1, Long maxBlocks) {
+		        MethodCache mc = project.getProcessorModel().getMethodCache();
+				return String.format("%40s ==> %2d <= %2d",
+						v1.getMethodImpl().getFQMethodName(),
+						maxBlocks,
+						mc.getAllFitCacheBlocks(v1.getMethodImpl()));
+			}        	
+		});
+		// Object Cache (total)
+		refUsageTotal_ = new ObjectRefAnalysis(project,true).getRefUsage();
+		// Object Cache
+		LpSolveWrapper.resetSolverTime();
+		Map<CallGraphNode, Long> refUsageDistinct = new ObjectRefAnalysis(project).getRefUsage();
+		System.err.println("Total solver time (Obj Ref Analysis) : "+LpSolveWrapper.getSolverTime());        
+		MiscUtils.printMap(System.out, refUsageDistinct, new Function2<CallGraphNode, Long,String>() {
+			public String apply(CallGraphNode v1, Long usedRefs) {
+				return String.format("%40s ==> %3d <= %3d",
+						v1.getMethodImpl().getFQMethodName(),
+						usedRefs,
+						refUsageTotal_.get(v1));
+			}        	
+		});		
+		
+	}
+	private Map<CallGraphNode, Long> refUsageTotal_;
+	
     private void reportMetric(String metric, Object... args) {
         project.recordMetric(metric, args);
         System.out.print(metric+":");
