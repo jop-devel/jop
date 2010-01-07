@@ -3,7 +3,6 @@ package com.jopdesign.wcet.analysis.cache;
 import static com.jopdesign.wcet.graphutils.MiscUtils.addToSet;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
@@ -13,8 +12,6 @@ import org.jgrapht.traverse.TopologicalOrderIterator;
 
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.wcet.Project;
-import com.jopdesign.wcet.analysis.WcetCost;
-import com.jopdesign.wcet.analysis.RecursiveAnalysis.MapCostProvider;
 import com.jopdesign.wcet.frontend.SuperGraph;
 import com.jopdesign.wcet.frontend.CallGraph.CallGraphNode;
 import com.jopdesign.wcet.frontend.ControlFlowGraph.CFGEdge;
@@ -25,8 +22,6 @@ import com.jopdesign.wcet.ipet.ILPModelBuilder;
 import com.jopdesign.wcet.ipet.IpetConfig;
 import com.jopdesign.wcet.ipet.LinearVector;
 import com.jopdesign.wcet.ipet.MaxCostFlow;
-import com.jopdesign.wcet.ipet.ILPModelBuilder.CostProvider;
-import com.jopdesign.wcet.ipet.IpetConfig.StaticCacheApproximation;
 import com.jopdesign.wcet.ipet.MaxCostFlow.DecisionVariable;
 import com.jopdesign.wcet.jop.MethodCache;
 

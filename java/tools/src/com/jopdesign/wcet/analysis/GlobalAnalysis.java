@@ -8,7 +8,7 @@ import java.util.Map.Entry;
 import com.jopdesign.build.MethodInfo;
 import com.jopdesign.wcet.ProcessorModel;
 import com.jopdesign.wcet.Project;
-import com.jopdesign.wcet.analysis.RecursiveAnalysis.MapCostProvider;
+import com.jopdesign.wcet.analysis.RecursiveAnalysis.WcetCostProvider;
 import com.jopdesign.wcet.analysis.RecursiveAnalysis.RecursiveWCETStrategy;
 import com.jopdesign.wcet.analysis.cache.MethodCacheAnalysis;
 import com.jopdesign.wcet.frontend.SuperGraph;
@@ -57,7 +57,7 @@ public class GlobalAnalysis {
 
 		/* compute node costs */
 		Map<CFGNode, WcetCost> nodeCostMap = buildNodeCostMap(sg, cacheMode);
-		CostProvider<CFGNode> nodeWCET = new MapCostProvider<CFGNode>(nodeCostMap);
+		CostProvider<CFGNode> nodeWCET = new WcetCostProvider<CFGNode>(nodeCostMap);
 		
 		/* create an ILP graph for all reachable methods */
 		MaxCostFlow<CFGNode, CFGEdge> maxCostFlow = imb.buildGlobalILPModel(key, sg, nodeWCET);

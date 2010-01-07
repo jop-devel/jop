@@ -189,18 +189,31 @@ public class RecursiveAnalysis<Context extends AnalysisContext> {
 			}
 		}
 	}
-	/** Provide execution cost using a node->cost table */
-	public static class MapCostProvider<T> implements CostProvider<T> {
+	/** Provide execution cost using a node->cost table
+	 */
+	public static class WcetCostProvider<T> implements CostProvider<T> {
 		private Map<T, WcetCost> costMap;
-		public MapCostProvider(Map<T,WcetCost> costMap) {
+		private WcetCost defCost;
+		public WcetCostProvider(Map<T,WcetCost> costMap) {
 			this.costMap = costMap;
+			this.defCost = null;
+		}
+		public WcetCostProvider(Map<T,WcetCost> costMap, WcetCost defCost) {
+			this.costMap = costMap;
+			this.defCost = defCost;
 		}
 		public long getCost(T obj) {
 			WcetCost cost = costMap.get(obj);
-			if(cost == null) throw new NullPointerException("Missing entry for "+obj+" in cost map");
-			return cost.getCost();
+			if(cost == null) {
+				if(defCost == null) {
+					throw new AssertionError("Missing entry for "+obj+" in cost map");
+				} else {
+					return defCost.getCost();
+				}
+			} else {
+				return cost.getCost();
+			}
 		}
-
 	}
 
 	static final Logger logger = Logger.getLogger(RecursiveAnalysis.class);
@@ -300,7 +313,7 @@ public class RecursiveAnalysis<Context extends AnalysisContext> {
 	public LocalWCETSolution runWCETComputation(String name, ControlFlowGraph cfg, Context ctx) {
 		Map<CFGNode,WcetCost> nodeCosts = buildNodeCostMap(cfg,ctx);
 		LocalWCETSolution sol = new LocalWCETSolution(cfg.getGraph(),nodeCosts);
-		CostProvider<CFGNode> costProvider = new MapCostProvider<CFGNode>(nodeCosts);
+		CostProvider<CFGNode> costProvider = new WcetCostProvider<CFGNode>(nodeCosts);
 		MaxCostFlow<CFGNode,CFGEdge> problem =
 			modelBuilder.buildLocalILPModel(name,cfg, costProvider);
 		/* solve ILP */
